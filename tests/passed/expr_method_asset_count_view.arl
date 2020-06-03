@@ -1,8 +1,8 @@
-archetype effect_method_asset_clear_view
+archetype expr_method_asset_count_view
 
 asset my_asset identified by id {
   id : string;
-  value : int = 0;
+  value : int;
 } initialized by {
   {"id0"; 0};
   {"id1"; 1};
@@ -12,7 +12,10 @@ asset my_asset identified by id {
 variable res : int = 0
 
 action exec () {
+  specification {
+    s0: res = 1;
+  }
   effect {
-    my_asset.select(value % 2 = 0).clear()
+    res := my_asset.select(value = 0).count()
   }
 }

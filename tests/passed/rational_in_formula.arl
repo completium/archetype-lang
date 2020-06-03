@@ -1,4 +1,4 @@
-archetype langtest
+archetype rational_in_formula
 
 asset u identified by addr {
 	addr	: address;
