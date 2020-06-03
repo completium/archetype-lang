@@ -1,0 +1,22 @@
+archetype expr_method_asset_head_one_field
+
+asset my_asset identified by id {
+  id : string;
+} initialized by {
+  {"id0"};
+  {"id1"};
+  {"id2"}
+}
+
+variable res : string = ""
+
+action exec () {
+  specification {
+    s0: res = "id1";
+  }
+  effect {
+    var l = my_asset.head(2);
+    var k = l.nth(1);
+    res := my_asset[k].id
+  }
+}
