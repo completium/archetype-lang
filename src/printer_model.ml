@@ -1141,13 +1141,21 @@ let pp_api_asset fmt = function
   | Shallow an -> pp_str fmt ("shallow\t " ^ an)
   | Unshallow an -> pp_str fmt ("unshallow\t " ^ an)
   | Listtocoll an -> pp_str fmt ("listtocoll\t " ^ an)
+  | Ccontains an -> pp_str fmt ("ccontains " ^ an)
   | Vcontains an -> pp_str fmt ("vcontains " ^ an)
+  | Cnth an -> pp_str fmt ("cnth\t " ^ an)
   | Vnth an -> pp_str fmt ("vnth\t " ^ an)
+  | Cselect (an, _, p) -> Format.fprintf fmt "cselect\t %s %a" an pp_mterm p
   | Vselect (an, _, p) -> Format.fprintf fmt "vselect\t %s %a" an pp_mterm p
+  | Csort (an, l) -> Format.fprintf fmt "csort\t%a on %a" pp_str an (pp_list ", " (fun fmt (a, b) -> Format.fprintf fmt "%a(%a)" pp_sort_kind b pp_ident a)) l
   | Vsort (an, l) -> Format.fprintf fmt "vsort\t%a on %a" pp_str an (pp_list ", " (fun fmt (a, b) -> Format.fprintf fmt "%a(%a)" pp_sort_kind b pp_ident a)) l
+  | Ccount an -> pp_str fmt ("ccount\t " ^ an)
   | Vcount an -> pp_str fmt ("vcount\t " ^ an)
+  | Csum (an, t, p) -> Format.fprintf fmt "csum\t (:%a) %s %a" pp_type t an pp_mterm p
   | Vsum (an, t, p) -> Format.fprintf fmt "vsum\t (:%a) %s %a" pp_type t an pp_mterm p
+  | Chead an -> pp_str fmt ("chead\t " ^ an)
   | Vhead an -> pp_str fmt ("vhead\t " ^ an)
+  | Ctail an -> pp_str fmt ("ctail\t " ^ an)
   | Vtail an -> pp_str fmt ("vtail\t " ^ an)
 
 let pp_api_list fmt = function

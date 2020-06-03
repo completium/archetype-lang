@@ -308,6 +308,17 @@ let pp_model fmt (model : model) =
     | Unshallow _ -> ()
     | Listtocoll _ -> ()
 
+    | Ccontains an ->
+      let _, t = Utils.get_asset_key model an in
+      Format.fprintf fmt
+        "let contains_%s (l, key : %a list * %a) : bool =@\n  \
+         List.fold_left (fun accu x ->@\n      \
+         accu || x = key@\n    \
+         ) false l@\n"
+        an
+        pp_btyp t
+        pp_btyp t
+
     | Vcontains an ->
       let _, t = Utils.get_asset_key model an in
       Format.fprintf fmt
@@ -318,6 +329,29 @@ let pp_model fmt (model : model) =
         an
         pp_btyp t
         pp_btyp t
+
+    | Cnth an ->
+      let _, t = Utils.get_asset_key model an in
+      Format.fprintf fmt
+        "let[@inline] nth_%s (s, l, idx : storage * %a list * int) : %s =@\n  \
+         match l with@\n  \
+         | [] -> failwith \"empty list\"@\n  \
+         | _ ->@\n  \
+         begin@\n  \
+         let cpt = idx in@\n  \
+         let _, res =@\n  \
+         List.fold (fun (x, accu) ->@\n  \
+         let cpt, res = accu in@\n  \
+         if cpt = 0@\n  \
+         then (cpt - 1, Some x)@\n  \
+         else (cpt - 1, res)@\n  \
+         ) l (cpt, None) in@\n  \
+         match res with@\n  \
+         | None -> failwith \"index out of bounds\"@\n  \
+         | Some k -> get_%s (s, k)@\n  \
+         end@\n"
+        an pp_btyp t an
+        an
 
     | Vnth an ->
       let _, t = Utils.get_asset_key model an in
@@ -342,6 +376,20 @@ let pp_model fmt (model : model) =
         an pp_btyp t an
         an
 
+    | Cselect (an, _, _) ->
+      let k, t = Utils.get_asset_key model an in
+      Format.fprintf fmt
+        "let select_%s (s, l, p : storage * %a list * (%s -> bool)) : %a list =@\n  \
+         List.fold_left (fun accu x ->@\n      \
+         let a = get_%s (s, x) in@\n      \
+         if p a@\n      \
+         then a.%s::accu@\n      \
+         else accu@\n    \
+         ) [] l@\n"
+        an pp_btyp t an pp_btyp t
+        an
+        k
+
     | Vselect (an, _, _) ->
       let k, t = Utils.get_asset_key model an in
       Format.fprintf fmt
@@ -356,11 +404,25 @@ let pp_model fmt (model : model) =
         an
         k
 
+    | Csort (an, _l) ->
+      Format.fprintf fmt
+        "let sort_%s (s : storage) : unit =@\n  \
+         () (*TODO*)@\n"
+        an
+
     | Vsort (an, _l) ->
       Format.fprintf fmt
         "let sort_%s (s : storage) : unit =@\n  \
          () (*TODO*)@\n"
         an
+
+    | Ccount an ->
+      let _, t = Utils.get_asset_key model an in
+      Format.fprintf fmt
+        "let count_%s (l : %a list) : int =@\n  \
+         List.length l@\n"
+        an
+        pp_btyp t
 
     | Vcount an ->
       let _, t = Utils.get_asset_key model an in
@@ -369,6 +431,22 @@ let pp_model fmt (model : model) =
          List.length l@\n"
         an
         pp_btyp t
+
+    | Csum (an, t, _p) -> (* TODO *)
+      let _, tk = Utils.get_asset_key model an in
+      Format.fprintf fmt
+        "let sum_%s (s, l : storage * %a list) : %a =@\n  \
+         List.fold_left (fun accu k ->@\n      \
+         let x =@\n        \
+         match Map.get k s.%s_assets with@\n        \
+         | Some v -> v@\n        \
+         | _ -> failwith \"not_found\"@\n      \
+         in@\n      \
+         accu + x@\n    \
+         ) %s l@\n"
+        an pp_btyp tk pp_type t
+        an
+        (show_zero t)
 
     | Vsum (an, t, _p) -> (* TODO *)
       let _, tk = Utils.get_asset_key model an in
@@ -386,10 +464,32 @@ let pp_model fmt (model : model) =
         an
         (show_zero t)
 
+    | Chead an ->
+      let _, t = Utils.get_asset_key model an in
+      Format.fprintf fmt
+        "let head_%s (l : %a list) : %a list =@\n  \
+         List.fold (fun (_, accu) ->@\n    \
+         accu@\n  \
+         ) l []@\n"
+        an
+        pp_btyp t
+        pp_btyp t
+
     | Vhead an ->
       let _, t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "let head_%s (l : %a list) : %a list =@\n  \
+         List.fold (fun (_, accu) ->@\n    \
+         accu@\n  \
+         ) l []@\n"
+        an
+        pp_btyp t
+        pp_btyp t
+
+    | Ctail an ->
+      let _, t = Utils.get_asset_key model an in
+      Format.fprintf fmt
+        "let tail_%s (l : %a list)  : %a list =@\n  \
          List.fold (fun (_, accu) ->@\n    \
          accu@\n  \
          ) l []@\n"
@@ -407,7 +507,6 @@ let pp_model fmt (model : model) =
         an
         pp_btyp t
         pp_btyp t
-
   in
 
   let pp_api_list fmt = function

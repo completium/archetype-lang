@@ -355,13 +355,21 @@ and api_asset =
   | Shallow          of ident
   | Unshallow        of ident
   | Listtocoll       of ident
+  | Ccontains        of ident
   | Vcontains        of ident
+  | Cnth             of ident
   | Vnth             of ident
+  | Cselect          of ident * (ident * type_) list * mterm
   | Vselect          of ident * (ident * type_) list * mterm
+  | Csort            of ident * (ident * sort_kind) list
   | Vsort            of ident * (ident * sort_kind) list
+  | Ccount           of ident
   | Vcount           of ident
+  | Csum             of ident * type_ * mterm
   | Vsum             of ident * type_ * mterm
+  | Chead            of ident
   | Vhead            of ident
+  | Ctail            of ident
   | Vtail            of ident
 [@@deriving show {with_path = false}]
 
@@ -1150,13 +1158,21 @@ let cmp_api_item_node (a1 : api_storage_node) (a2 : api_storage_node) : bool =
     | Shallow an1, Shallow an2                         -> cmp_ident an1 an2
     | Unshallow an1, Unshallow an2                     -> cmp_ident an1 an2
     | Listtocoll an1, Listtocoll an2                   -> cmp_ident an1 an2
+    | Ccontains an1, Ccontains an2                     -> cmp_ident an1 an2
     | Vcontains an1, Vcontains an2                     -> cmp_ident an1 an2
+    | Cnth an1, Cnth an2                               -> cmp_ident an1 an2
     | Vnth an1, Vnth an2                               -> cmp_ident an1 an2
+    | Cselect (an1, l1, p1), Cselect (an2, l2, p2)     -> cmp_ident an1 an2 && List.for_all2 (fun (i1, t1) (i2, t2) -> cmp_ident i1 i2 && cmp_type t1 t2) l1 l2 && cmp_mterm p1 p2
     | Vselect (an1, l1, p1), Vselect (an2, l2, p2)     -> cmp_ident an1 an2 && List.for_all2 (fun (i1, t1) (i2, t2) -> cmp_ident i1 i2 && cmp_type t1 t2) l1 l2 && cmp_mterm p1 p2
+    | Csort (an1 , l1), Csort (an2 , l2)               -> cmp_ident an1 an2 && List.for_all2 (fun (fn1, k1) (fn2, k2) -> cmp_ident fn1 fn2 && k1 = k2) l1 l2
     | Vsort (an1 , l1), Vsort (an2 , l2)               -> cmp_ident an1 an2 && List.for_all2 (fun (fn1, k1) (fn2, k2) -> cmp_ident fn1 fn2 && k1 = k2) l1 l2
+    | Ccount an1, Ccount an2                           -> cmp_ident an1 an2
     | Vcount an1, Vcount an2                           -> cmp_ident an1 an2
+    | Csum (an1, t1, p1), Csum (an2, t2, p2)           -> cmp_ident an1 an2 && cmp_type t1 t2 && cmp_mterm p1 p2
     | Vsum (an1, t1, p1), Vsum (an2, t2, p2)           -> cmp_ident an1 an2 && cmp_type t1 t2 && cmp_mterm p1 p2
+    | Chead an1, Chead an2                             -> cmp_ident an1 an2
     | Vhead an1, Vhead an2                             -> cmp_ident an1 an2
+    | Ctail an1, Ctail an2                             -> cmp_ident an1 an2
     | Vtail an1, Vtail an2                             -> cmp_ident an1 an2
     | _ -> false
   in
@@ -2739,13 +2755,21 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
         | Shallow an            -> Shallow (f KIassetname an)
         | Unshallow an          -> Unshallow (f KIassetname an)
         | Listtocoll an         -> Listtocoll (f KIassetname an)
+        | Ccontains an          -> Ccontains (f KIassetname an)
         | Vcontains an          -> Vcontains (f KIassetname an)
+        | Cnth an               -> Cnth (f KIassetname an)
         | Vnth an               -> Vnth (f KIassetname an)
+        | Cselect (an, l, p)    -> Cselect (f KIassetname an, List.map (fun (id, t) -> f KIparamlambda id, t) l, for_mterm p)
         | Vselect (an, l, p)    -> Vselect (f KIassetname an, List.map (fun (id, t) -> f KIparamlambda id, t) l, for_mterm p)
+        | Csort (an, l)         -> Csort (an, List.map (fun (id, k) -> f KIassetfield id, k) l)
         | Vsort (an, l)         -> Vsort (an, List.map (fun (id, k) -> f KIassetfield id, k) l)
+        | Ccount an             -> Ccount (f KIassetname an)
         | Vcount an             -> Vcount (f KIassetname an)
+        | Csum (an, t, e)       -> Csum (f KIassetname an, for_type t, for_mterm e)
         | Vsum (an, t, e)       -> Vsum (f KIassetname an, for_type t, for_mterm e)
+        | Chead an              -> Chead (f KIassetname an)
         | Vhead an              -> Vhead (f KIassetname an)
+        | Ctail an              -> Ctail (f KIassetname an)
         | Vtail an              -> Vtail (f KIassetname an)
 
       in

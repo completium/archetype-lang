@@ -1752,6 +1752,16 @@ let pp_model_internal fmt (model : model) b =
     | Unshallow _ -> ()
     | Listtocoll _ -> ()
 
+    | Ccontains an ->
+      let _, t = Utils.get_asset_key model an in
+      Format.fprintf fmt
+        "function contains_%s (const l : list(%a); const key : %a) : bool is@\n  \
+         begin@\n  \
+         function aggregate (const accu : bool; const v : %a) : bool is block { skip } with (accu or v = key);@\n  \
+         end with list_fold(aggregate, l, False)@\n"
+        an pp_btyp t pp_btyp t
+        pp_btyp t
+
     | Vcontains an ->
       let _, t = Utils.get_asset_key model an in
       Format.fprintf fmt
@@ -1760,6 +1770,24 @@ let pp_model_internal fmt (model : model) b =
          function aggregate (const accu : bool; const v : %a) : bool is block { skip } with (accu or v = key);@\n  \
          end with list_fold(aggregate, l, False)@\n"
         an pp_btyp t pp_btyp t
+        pp_btyp t
+
+    | Cnth an ->
+      let _k, t = Utils.get_asset_key model an in
+      Format.fprintf fmt
+        "function nth_%s (const s : storage_type; const l : list(%a); const index : int) : %a is@\n  \
+         block {@\n  \
+         function aggregate (const accu: map(int, %a); const x: %a) : map(int, %a) is@\n  \
+         block {@\n  \
+         const le : int = int(Map.size(accu));@\n  \
+         accu[le] := x;@\n  \
+         } with accu;@\n  \
+         const map_ : map(int, %a) = list_fold(aggregate, l, (map [] : map(int, %a)));@\n  \
+         const res : %a = get_force(index, map_);@\n  \
+         } with res@\n"
+        an pp_btyp t pp_btyp t
+        pp_btyp t pp_btyp t pp_btyp t
+        pp_btyp t pp_btyp t
         pp_btyp t
 
     | Vnth an ->
@@ -1780,6 +1808,26 @@ let pp_model_internal fmt (model : model) b =
         pp_btyp t pp_btyp t
         pp_btyp t
 
+    | Cselect (an, args, f) ->
+      let pp_arg fmt (arg_id, arg_type) =
+        Format.fprintf fmt "; const %s : %a" arg_id pp_type arg_type
+      in
+      let k, t = Utils.get_asset_key model an in
+      let i = get_preds_index env.select_preds f in
+      Format.fprintf fmt
+        "function select_%s_%i (const s : storage_type; const l : list(%a)%a) : list(%a) is@\n  \
+         begin@\n    \
+         function aggregate (const accu : list(%a); const i : %a) : list(%a) is@\n      \
+         begin@\n        \
+         const the : %s = get_%s(s, i);@\n        \
+         end with (if (%a) then cons(the.%s, accu) else accu);@\n    \
+         end with (list_fold(aggregate, l, (nil : list(%a))))@\n"
+        an i pp_btyp t (pp_list "" pp_arg) args pp_btyp t
+        pp_btyp t pp_btyp t pp_btyp t
+        an an
+        (pp_mterm (mk_env ())) f k
+        pp_btyp t
+
     | Vselect (an, args, f) ->
       let pp_arg fmt (arg_id, arg_type) =
         Format.fprintf fmt "; const %s : %a" arg_id pp_type arg_type
@@ -1798,6 +1846,94 @@ let pp_model_internal fmt (model : model) b =
         pp_btyp t pp_btyp t pp_btyp t
         an an
         (pp_mterm (mk_env ())) f k
+        pp_btyp t
+
+    | Csort (an, l) ->
+      let _, t = Utils.get_asset_key model an in
+      let pp_criteria fmt (fn, c) =
+        let op1, op2, d =
+          match c with
+          | SKasc -> ">", "<", "asc"
+          | SKdesc -> "<", ">", "desc"
+        in
+        Format.fprintf fmt
+          "// %s %s@\n    \
+           if (a1.%s %s a2.%s)@\n    \
+           then res := 1@\n    \
+           else if (a1.%s %s a2.%s)@\n    \
+           then res := -1"
+          fn d
+          fn op1 fn
+          fn op2 fn
+      in
+
+      let pp_fun_cmp fmt _ =
+        Format.fprintf fmt
+          "function cmp (const k1 : %a; const k2: %a) : int is@\n  \
+           block {@\n    \
+           var res : int := 0;@\n    \
+           const a1 : %s = get_%s(s, k1);@\n    \
+           const a2 : %s = get_%s(s, k2);@\n    \
+           %a@\n    \
+           else skip@\n  \
+           } with res;@\n"
+          pp_btyp t pp_btyp t
+          an an
+          an an
+          (pp_list "@\n    else " pp_criteria) l
+      in
+
+      let pp_fun_insert fmt _ =
+        Format.fprintf fmt
+          "function insert(const accu: option(%a) * list(%a); const x : %a) : option(%a) * list(%a) is@\n  \
+           block {@\n    \
+           const res : option(%a) * list(%a) =@\n    \
+           case accu.0 of@\n    \
+           | Some(v) ->@\n    \
+           if (cmp(x, v) < 0)@\n    \
+           then ((None : option(%a)), cons(x, cons(v, accu.1)))@\n    \
+           else (Some(v), cons(x, accu.1))@\n    \
+           | None -> ((None : option(%a)), cons(x, accu.1))@\n    \
+           end;@\n  \
+           } with res;@\n"
+          pp_btyp t pp_btyp t pp_btyp t pp_btyp t pp_btyp t
+          pp_btyp t pp_btyp t
+          pp_btyp t
+          pp_btyp t
+      in
+
+      let pp_fun_sort fmt _ =
+        Format.fprintf fmt
+          "function sort (const accu: list(%a); const x: %a) : list(%a) is@\n  \
+           block {@\n    \
+           const init : option(%a) * list(%a) = (Some(x), (list [] : list(%a)));@\n    \
+           const res_opt : option(%a) * list(%a) = list_fold(insert, accu, init);@\n    \
+           const res : list(%a) =@\n    \
+           case res_opt.0 of@\n    \
+           | Some(v) -> cons(v, res_opt.1)@\n    \
+           | None -> res_opt.1@\n    \
+           end;@\n  \
+           } with res;@\n"
+          pp_btyp t pp_btyp t pp_btyp t
+          pp_btyp t pp_btyp t pp_btyp t
+          pp_btyp t pp_btyp t
+          pp_btyp t
+      in
+
+      Format.fprintf fmt
+        "function sort_%s_%a (const s : storage_type; const l : list(%a)) : list(%a) is@\n  @\n  \
+         begin@\n    \
+         @[%a@]@\n    \
+         @[%a@]@\n    \
+         @[%a@]@\n    \
+         const init : list(%a) = list [];@\n    \
+         const res : list(%a) = list_fold (sort, l, init);@\n  \
+         end with res@\n"
+        an pp_postfix_sort l pp_btyp t pp_btyp t
+        pp_fun_cmp ()
+        pp_fun_insert ()
+        pp_fun_sort ()
+        pp_btyp t
         pp_btyp t
 
     | Vsort (an, l) ->
@@ -1888,6 +2024,14 @@ let pp_model_internal fmt (model : model) b =
         pp_btyp t
         pp_btyp t
 
+    | Ccount an ->
+      let _, t = Utils.get_asset_key model an in
+      Format.fprintf fmt
+        "function count_%s (const l : list(%a)) : int is@\n  \
+         block { skip }@\n  \
+         with int(size(l))@\n"
+        an pp_btyp t
+
     | Vcount an ->
       let _, t = Utils.get_asset_key model an in
       Format.fprintf fmt
@@ -1895,6 +2039,34 @@ let pp_model_internal fmt (model : model) b =
          block { skip }@\n  \
          with int(size(l))@\n"
         an pp_btyp t
+
+    | Csum (an, t, p) ->
+      let rec pp_expr fmt (mt : mterm) =
+        match mt.node with
+        | Mdot ({node = Mvarlocal ({pldesc = "the"; _}) }, fn) ->
+          Format.fprintf fmt "a.%a"
+            pp_id fn
+        | _ -> (pp_mterm_gen (mk_env ()) pp_expr) fmt mt
+      in
+      let get_zero = function
+        | _ -> "0"
+      in
+      let _, tk = Utils.get_asset_key model an in
+      let expr = p in
+      let i = get_preds_index env.sum_preds p in
+      Format.fprintf fmt
+        "function sum_%s_%i (const s : storage_type; const l : list(%a)) : %a is@\n  \
+         begin@\n    \
+         function aggregate (const accu : %a; const i : %a) : %a is@\n      \
+         block {@\n        \
+         const a : %s = get_%s(s, i);@\n      \
+         } with (accu + (%a));@\n  \
+         end with (list_fold(aggregate, l, %s))@\n"
+        an i pp_btyp tk pp_type t
+        pp_type t pp_btyp tk pp_type t
+        an an
+        pp_expr expr
+        (get_zero t)
 
     | Vsum (an, t, p) ->
       let rec pp_expr fmt (mt : mterm) =
@@ -1924,6 +2096,31 @@ let pp_model_internal fmt (model : model) b =
         pp_expr expr
         (get_zero t)
 
+    | Chead an ->
+      let _, t = Utils.get_asset_key model an in
+      Format.fprintf fmt
+        "function head_%s (const l : list(%a); const i : int) : list(%a) is@\n  \
+         block {@\n    \
+         const length : int = int(size(l));@\n    \
+         const bound : int = if i < length then i else length;@\n    \
+         if (i < 0) then failwith(\"head_%s: index out of bound\") else skip;@\n    \
+         function rev (const accu: list(%a); const x: %a) : list(%a) is x # accu;@\n    \
+         function aggregate (const accu: int * list(%a); const x: %a) : int * list(%a) is@\n    \
+         if accu.0 < bound@\n    \
+         then (accu.0 + 1, x # accu.1 );@\n    \
+         else (accu.0 + 1, accu.1 );@\n    \
+         const init : int * list(%a) = (0, ((list [] : list(%a))));@\n    \
+         const ltmp : int * list(%a) = list_fold (aggregate, l, init);@\n    \
+         const res  : list(%a) = list_fold (rev, ltmp.1, ((list [] : list(%a))));@\n  \
+         } with res@\n"
+        an pp_btyp t pp_btyp t
+        an
+        pp_btyp t pp_btyp t pp_btyp t
+        pp_btyp t pp_btyp t pp_btyp t
+        pp_btyp t pp_btyp t
+        pp_btyp t
+        pp_btyp t pp_btyp t
+
     | Vhead an ->
       let _, t = Utils.get_asset_key model an in
       Format.fprintf fmt
@@ -1935,6 +2132,32 @@ let pp_model_internal fmt (model : model) b =
          function rev (const accu: list(%a); const x: %a) : list(%a) is x # accu;@\n    \
          function aggregate (const accu: int * list(%a); const x: %a) : int * list(%a) is@\n    \
          if accu.0 < bound@\n    \
+         then (accu.0 + 1, x # accu.1 );@\n    \
+         else (accu.0 + 1, accu.1 );@\n    \
+         const init : int * list(%a) = (0, ((list [] : list(%a))));@\n    \
+         const ltmp : int * list(%a) = list_fold (aggregate, l, init);@\n    \
+         const res  : list(%a) = list_fold (rev, ltmp.1, ((list [] : list(%a))));@\n  \
+         } with res@\n"
+        an pp_btyp t pp_btyp t
+        an
+        pp_btyp t pp_btyp t pp_btyp t
+        pp_btyp t pp_btyp t pp_btyp t
+        pp_btyp t pp_btyp t
+        pp_btyp t
+        pp_btyp t pp_btyp t
+
+    | Ctail an ->
+      let _, t = Utils.get_asset_key model an in
+      Format.fprintf fmt
+        "function tail_%s (const l : list(%a); const i : int) : list(%a) is@\n  \
+         block {@\n    \
+         const length : int = int(size(l));@\n    \
+         const bound : int = if i < length then i else length;@\n    \
+         if (i < 0) then failwith(\"tail_%s: index out of bound\") else skip;@\n    \
+         const p : int = bound - i;@\n    \
+         function rev (const accu: list(%a); const x: %a) : list(%a) is x # accu;@\n    \
+         function aggregate (const accu: int * list(%a); const x: %a) : int * list(%a) is@\n    \
+         if accu.0 >= p@\n    \
          then (accu.0 + 1, x # accu.1 );@\n    \
          else (accu.0 + 1, accu.1 );@\n    \
          const init : int * list(%a) = (0, ((list [] : list(%a))));@\n    \
@@ -2283,7 +2506,7 @@ let pp_model_internal fmt (model : model) b =
   in
 
   let pp_storage_term env fmt _ =
-  let l = List.filter (fun (x : storage_item) -> not x.const) model.storage in
+    let l = List.filter (fun (x : storage_item) -> not x.const) model.storage in
     match l with
     | []  -> pp_str fmt "Unit"
     | _   ->

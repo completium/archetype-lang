@@ -198,11 +198,33 @@ let pp_model fmt (model : model) =
     | Unshallow _ -> ()
     | Listtocoll _ -> ()
 
+    | Ccontains an ->
+      Format.fprintf fmt
+        "def contains_%s (self, l, key):@\n  \
+         key in l@\n"
+        an
+
     | Vcontains an ->
       Format.fprintf fmt
         "def contains_%s (self, l, key):@\n  \
          key in l@\n"
         an
+
+    | Cselect (an, _, _) ->
+      Format.fprintf fmt
+        "def select_%s (self, c, p):@\n  \
+         reduce(@\n  \
+         (lambda x, key:@\n  \
+         item = get_%s(self, key)@\n  \
+         if (p item):@\n  \
+         x.insert (key)@\n  \
+         x@\n  \
+         else:@\n  \
+         x@\n  \
+         ),@\n  \
+         self.%s_keys,@\n  \
+         [])@\n"
+        an an an
 
     | Vselect (an, _, _) ->
       Format.fprintf fmt
@@ -220,9 +242,21 @@ let pp_model fmt (model : model) =
          [])@\n"
         an an an
 
+    | Csort (an, _l) ->
+      Format.fprintf fmt
+        "def sort_%s (self, s : storage) : unit =@\n  \
+         #TODO@\n"
+        an
+
     | Vsort (an, _l) ->
       Format.fprintf fmt
         "def sort_%s (self, s : storage) : unit =@\n  \
+         #TODO@\n"
+        an
+
+    | Cnth an ->
+      Format.fprintf fmt
+        "def nth_%s (self):@\n  \
          #TODO@\n"
         an
 
@@ -232,11 +266,26 @@ let pp_model fmt (model : model) =
          #TODO@\n"
         an
 
+    | Ccount an ->
+      Format.fprintf fmt
+        "def count_%s (self):@\n  \
+         #TODO@\n"
+        an
+
     | Vcount an ->
       Format.fprintf fmt
         "def count_%s (self):@\n  \
          #TODO@\n"
         an
+
+    | Csum (an, _, _) -> (* TODO *)
+      Format.fprintf fmt
+        "def sum_%s (self, p):@\n  \
+         reduce(@\n  \
+         (lambda x, key: p(self.data.%s_assets[key]) + x),@\n  \
+         self.data.%s_keys,@\n  \
+         0)@\n"
+        an an an
 
     | Vsum (an, _, _) -> (* TODO *)
       Format.fprintf fmt
@@ -247,9 +296,21 @@ let pp_model fmt (model : model) =
          0)@\n"
         an an an
 
+    | Chead an ->
+      Format.fprintf fmt
+        "def head_%s (self):@\n  \
+         #TODO@\n"
+        an
+
     | Vhead an ->
       Format.fprintf fmt
         "def head_%s (self):@\n  \
+         #TODO@\n"
+        an
+
+    | Ctail an ->
+      Format.fprintf fmt
+        "def tail_%s (self):@\n  \
          #TODO@\n"
         an
 
