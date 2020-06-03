@@ -98,7 +98,7 @@ let remove_add_update (model : model) : model =
           mk_mterm (Masset l) type_asset
         in
         let col    = mk_mterm (Mvarstorecol (dumloc an)) (Tcontainer (type_asset, Collection)) in
-        let cond   = mk_mterm (Mcontains (an, col, k)) Tunit in
+        let cond   = mk_mterm (Mvcontains (an, col, k)) Tunit in
         let asset  = mk_asset (an, k, l) in
         let add    = mk_mterm (Maddasset (an, asset)) Tunit in
         let update = mk_mterm (Mupdate (an, k, l)) Tunit in
@@ -1317,7 +1317,7 @@ let add_explicit_sort (model : model) : model =
     let is_sorted x : bool =
       let rec aux accu x : bool =
         match mt.node with
-        | Msort _ -> true
+        | Mvsort _ -> true
         | _ -> fold_term aux accu x
       in
       aux false x
@@ -1329,9 +1329,9 @@ let add_explicit_sort (model : model) : model =
       | Mvarlocal id -> not (List.exists (fun a -> String.equal a (unloc id)) env)
 
       (* asset api *)
-      | Mselect (_, c, _, _, _) -> is_implicit_sort env c
-      | Mhead   (_, c, _) -> is_implicit_sort env c
-      | Mtail   (_, c, _) -> is_implicit_sort env c
+      | Mvselect (_, c, _, _, _) -> is_implicit_sort env c
+      | Mvhead   (_, c, _) -> is_implicit_sort env c
+      | Mvtail   (_, c, _) -> is_implicit_sort env c
 
       | _ -> false
     in
@@ -1341,7 +1341,7 @@ let add_explicit_sort (model : model) : model =
     in
     let create_sort an c =
       let crit = get_crit an in
-      mk_mterm (Msort (an, c, crit)) c.type_
+      mk_mterm (Mvsort (an, c, crit)) c.type_
     in
     let extract_asset_name (c : mterm) =
       match c.type_ with
@@ -1358,14 +1358,14 @@ let add_explicit_sort (model : model) : model =
       let body = aux env ctx body in
       { mt with node = Mletin ([id], v, Some (Tcontainer (Tasset an, c)), body, o)}
 
-    | Mnth (an, c, idx) when is_implicit_sort env c ->
-      { mt with node = Mnth (an, create_sort an c, idx) }
+    | Mvnth (an, c, idx) when is_implicit_sort env c ->
+      { mt with node = Mvnth (an, create_sort an c, idx) }
 
-    | Mhead (an, c, idx) when is_implicit_sort env c ->
-      { mt with node = Mhead (an, create_sort an c, idx) }
+    | Mvhead (an, c, idx) when is_implicit_sort env c ->
+      { mt with node = Mvhead (an, create_sort an c, idx) }
 
-    | Mtail (an, c, idx) when is_implicit_sort env c ->
-      { mt with node = Mtail (an, create_sort an c, idx) }
+    | Mvtail (an, c, idx) when is_implicit_sort env c ->
+      { mt with node = Mvtail (an, create_sort an c, idx) }
 
     | Mfor (a, c, body, lbl) when is_implicit_sort env c ->
       let body = aux env ctx body in
@@ -1730,7 +1730,7 @@ let remove_fun_dotasset (model : model) : model =
     let rec efd_aux (accu : (lident * mterm) list) (mt : mterm) : mterm * (lident * mterm) list =
       let is_fun (mt : mterm) : bool =
         match mt.node with
-        | Mget _ | Mnth _-> true
+        | Mget _ | Mvnth _-> true
         | _ -> false
       in
       match mt.node with
@@ -1794,8 +1794,8 @@ let build_get (an : ident) v =
 let change_type_of_nth (model : model) : model =
   let rec aux ctx (mt : mterm) : mterm =
     match mt.node with
-    | Mnth (an, c, i) ->
-      build_get an (mk_mterm (Mnth (an, aux ctx c, aux ctx i)) (Tbuiltin (Utils.get_asset_key model an |> snd)))
+    | Mvnth (an, c, i) ->
+      build_get an (mk_mterm (Mvnth (an, aux ctx c, aux ctx i)) (Tbuiltin (Utils.get_asset_key model an |> snd)))
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
@@ -1856,7 +1856,7 @@ let add_contain_on_get (model : model) : model =
         let accu = f accu c in
         let env =
           match c.node with
-          | Mcontains(an, c, k) -> [an, c, k]
+          | Mvcontains(an, c, k) -> [an, c, k]
           | _ -> []
         in
         let te = aux_env env t in
@@ -1954,7 +1954,7 @@ let add_contain_on_get (model : model) : model =
       | _ ->
         begin
           let build_contains (an, c, k) : mterm =
-            let contains = mk_mterm (Mcontains(an, c, k)) (Tbuiltin Bbool) in
+            let contains = mk_mterm (Mvcontains(an, c, k)) (Tbuiltin Bbool) in
             let not_contains = mk_mterm (Mnot contains) (Tbuiltin Bbool) in
             let str_fail : mterm = mk_mterm (Mstring "get failed") (Tbuiltin Bstring) in
             let fail = mk_mterm (Mfail (Invalid str_fail)) Tunit in
@@ -2085,10 +2085,10 @@ let replace_for_to_iter (model : model) : model =
         end in
       let idx_id = "_i_" ^ lbl in
       let idx = mk_mterm (Mvarlocal (dumloc idx_id)) (Tbuiltin Bint) in
-      let nth = mk_mterm (Mnth(an, view, idx)) type_asset in
+      let nth = mk_mterm (Mvnth(an, view, idx)) type_asset in
       let letin = mk_mterm (Mletin ([id], nth, Some type_asset, nbody, None)) Tunit in
       let bound_min = mk_mterm (Mint Big_int.zero_big_int) (Tbuiltin Bint) in
-      let bound_max = mk_mterm (Mcount (an, view)) (Tbuiltin Bint) in
+      let bound_max = mk_mterm (Mvcount (an, view)) (Tbuiltin Bint) in
       let iter = Miter (dumloc idx_id, bound_min, bound_max, letin, Some lbl) in
       mk_mterm iter mt.type_
     | _ -> map_mterm (aux ctx) mt
@@ -2255,7 +2255,7 @@ let replace_instr_verif (model : model) : model =
     match mt.node with
     | Mremoveasset (an, k) ->
       begin
-        let cond : mterm = mk_mterm (Mcontains (an, build_col an, k)) (Tbuiltin Bbool) in
+        let cond : mterm = mk_mterm (Mvcontains (an, build_col an, k)) (Tbuiltin Bbool) in
         let get = build_get an k in
         let i : mterm = mk_mterm (Mremoveasset (an, get)) Tunit in
         let mif : mterm = mk_mterm (Mif (cond, i, None)) Tunit in

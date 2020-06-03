@@ -216,14 +216,14 @@ type ('id, 'term) mterm_node  =
   | Maddupdate        of ident * 'term * ('id * assignment_operator * 'term) list
   (* asset api expression *)
   | Mget              of ident * 'term * 'term
-  | Mselect           of ident * 'term * (ident * type_) list * 'term * 'term list (* asset_name, view, lambda (args, body, apply_args) *)
-  | Msort             of ident * 'term * (ident * sort_kind) list
-  | Mcontains         of ident * 'term * 'term
-  | Mnth              of ident * 'term * 'term
-  | Mcount            of ident * 'term
-  | Msum              of ident * 'term * 'term
-  | Mhead             of ident * 'term * 'term
-  | Mtail             of ident * 'term * 'term
+  | Mvselect          of ident * 'term * (ident * type_) list * 'term * 'term list (* asset_name, view, lambda (args, body, apply_args) *)
+  | Mvsort            of ident * 'term * (ident * sort_kind) list
+  | Mvcontains        of ident * 'term * 'term
+  | Mvnth             of ident * 'term * 'term
+  | Mvcount           of ident * 'term
+  | Mvsum             of ident * 'term * 'term
+  | Mvhead            of ident * 'term * 'term
+  | Mvtail            of ident * 'term * 'term
   (* utils *)
   | Mcast             of type_ * type_ * 'term
   | Mgetfrommap       of ident * 'term * 'term
@@ -350,19 +350,19 @@ and api_asset =
   | RemoveAll        of ident * ident
   | ToKeys           of ident
   | ColToKeys        of ident
-  | Select           of ident * (ident * type_) list * mterm
-  | Sort             of ident * (ident * sort_kind) list
-  | Contains         of ident
-  | Nth              of ident
-  | Count            of ident
-  | Sum              of ident * type_ * mterm
   | Min              of ident * ident
   | Max              of ident * ident
   | Shallow          of ident
   | Unshallow        of ident
   | Listtocoll       of ident
-  | Head             of ident
-  | Tail             of ident
+  | Vcontains        of ident
+  | Vnth             of ident
+  | Vselect          of ident * (ident * type_) list * mterm
+  | Vsort            of ident * (ident * sort_kind) list
+  | Vcount           of ident
+  | Vsum             of ident * type_ * mterm
+  | Vhead            of ident
+  | Vtail            of ident
 [@@deriving show {with_path = false}]
 
 and api_list =
@@ -1028,14 +1028,14 @@ let cmp_mterm_node
     | Maddupdate (an1, k1, l1), Maddupdate (an2, k2, l2)                               -> cmp_ident an1 an2 && cmp k1 k2 && List.for_all2 (fun (id1, op1, v1) (id2, op2, v2) -> cmpi id1 id2 && cmp_assign_op op1 op2 && cmp v1 v2) l1 l2
     (* asset api expression *)
     | Mget (an1, c1, k1), Mget (an2, c2, k2)                                           -> cmp_ident an1 an2 && cmp c1 c2 && cmp k1 k2
-    | Mselect (an1, c1, la1, lb1, a1), Mselect (an2, c2, la2, lb2, a2)                 -> cmp_ident an1 an2 && cmp c1 c2 && List.for_all2 (fun (i1, t1) (i2, t2) -> cmp_ident i1 i2 && cmp_type t1 t2) la1 la2 && cmp lb1 lb2 && List.for_all2 cmp a1 a2
-    | Msort (an1, c1, l1), Msort (an2, c2, l2)                                         -> cmp_ident an1 an2 && cmp c1 c2 && List.for_all2 (fun (fn1, k1) (fn2, k2) -> cmp_ident fn1 fn2 && k1 = k2) l1 l2
-    | Mcontains (an1, c1, i1), Mcontains (an2, c2, i2)                                 -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
-    | Mnth (an1, c1, i1), Mnth (an2, c2, i2)                                           -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
-    | Mcount (an1, c1), Mcount (an2, c2)                                               -> cmp_ident an1 an2 && cmp c1 c2
-    | Msum (an1, c1, p1), Msum (an2, c2, p2)                                           -> cmp_ident an1 an2 && cmp c1 c2 && cmp p1 p2
-    | Mhead (an1, c1, i1), Mhead (an2, c2, i2)                                         -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
-    | Mtail (an1, c1, i1), Mtail (an2, c2, i2)                                         -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
+    | Mvselect (an1, c1, la1, lb1, a1), Mvselect (an2, c2, la2, lb2, a2)               -> cmp_ident an1 an2 && cmp c1 c2 && List.for_all2 (fun (i1, t1) (i2, t2) -> cmp_ident i1 i2 && cmp_type t1 t2) la1 la2 && cmp lb1 lb2 && List.for_all2 cmp a1 a2
+    | Mvsort (an1, c1, l1), Mvsort (an2, c2, l2)                                       -> cmp_ident an1 an2 && cmp c1 c2 && List.for_all2 (fun (fn1, k1) (fn2, k2) -> cmp_ident fn1 fn2 && k1 = k2) l1 l2
+    | Mvcontains (an1, c1, i1), Mvcontains (an2, c2, i2)                               -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
+    | Mvnth (an1, c1, i1), Mvnth (an2, c2, i2)                                         -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
+    | Mvcount (an1, c1), Mvcount (an2, c2)                                             -> cmp_ident an1 an2 && cmp c1 c2
+    | Mvsum (an1, c1, p1), Mvsum (an2, c2, p2)                                         -> cmp_ident an1 an2 && cmp c1 c2 && cmp p1 p2
+    | Mvhead (an1, c1, i1), Mvhead (an2, c2, i2)                                       -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
+    | Mvtail (an1, c1, i1), Mvtail (an2, c2, i2)                                       -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     (* utils *)
     | Mcast (src1, dst1, v1), Mcast (src2, dst2, v2)                                   -> cmp_type src1 src2 && cmp_type dst1 dst2 && cmp v1 v2
     | Mgetfrommap (an1, k1, c1), Mgetfrommap (an2, k2, c2)                             -> cmp_ident an1 an2 && cmp k1 k2 && cmp c1 c2
@@ -1145,19 +1145,19 @@ let cmp_api_item_node (a1 : api_storage_node) (a2 : api_storage_node) : bool =
     | RemoveAll (an1, fn1), RemoveAll (an2, fn2)       -> cmp_ident an1 an2 && cmp_ident fn1 fn2
     | ToKeys an1, ToKeys an2                           -> cmp_ident an1 an2
     | ColToKeys an1, ColToKeys an2                     -> cmp_ident an1 an2
-    | Select (an1, l1, p1), Select (an2, l2, p2)       -> cmp_ident an1 an2 && List.for_all2 (fun (i1, t1) (i2, t2) -> cmp_ident i1 i2 && cmp_type t1 t2) l1 l2 && cmp_mterm p1 p2
-    | Sort (an1 , l1), Sort (an2 , l2)                 -> cmp_ident an1 an2 && List.for_all2 (fun (fn1, k1) (fn2, k2) -> cmp_ident fn1 fn2 && k1 = k2) l1 l2
-    | Contains an1, Contains an2                       -> cmp_ident an1 an2
-    | Nth an1, Nth an2                                 -> cmp_ident an1 an2
-    | Count an1, Count an2                             -> cmp_ident an1 an2
-    | Sum (an1, t1, p1), Sum (an2, t2, p2)             -> cmp_ident an1 an2 && cmp_type t1 t2 && cmp_mterm p1 p2
     | Min (an1, fn1), Min (an2, fn2)                   -> cmp_ident an1 an2 && cmp_ident fn1 fn2
     | Max (an1, fn1), Max (an2, fn2)                   -> cmp_ident an1 an2 && cmp_ident fn1 fn2
     | Shallow an1, Shallow an2                         -> cmp_ident an1 an2
     | Unshallow an1, Unshallow an2                     -> cmp_ident an1 an2
     | Listtocoll an1, Listtocoll an2                   -> cmp_ident an1 an2
-    | Head an1, Head an2                               -> cmp_ident an1 an2
-    | Tail an1, Tail an2                               -> cmp_ident an1 an2
+    | Vcontains an1, Vcontains an2                     -> cmp_ident an1 an2
+    | Vnth an1, Vnth an2                               -> cmp_ident an1 an2
+    | Vselect (an1, l1, p1), Vselect (an2, l2, p2)     -> cmp_ident an1 an2 && List.for_all2 (fun (i1, t1) (i2, t2) -> cmp_ident i1 i2 && cmp_type t1 t2) l1 l2 && cmp_mterm p1 p2
+    | Vsort (an1 , l1), Vsort (an2 , l2)               -> cmp_ident an1 an2 && List.for_all2 (fun (fn1, k1) (fn2, k2) -> cmp_ident fn1 fn2 && k1 = k2) l1 l2
+    | Vcount an1, Vcount an2                           -> cmp_ident an1 an2
+    | Vsum (an1, t1, p1), Vsum (an2, t2, p2)           -> cmp_ident an1 an2 && cmp_type t1 t2 && cmp_mterm p1 p2
+    | Vhead an1, Vhead an2                             -> cmp_ident an1 an2
+    | Vtail an1, Vtail an2                             -> cmp_ident an1 an2
     | _ -> false
   in
 
@@ -1317,14 +1317,14 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Maddupdate (an, k, l)          -> Maddupdate (fi an, f k, List.map (fun (id, op, v) -> (g id, op, f v)) l)
   (* asset api expression *)
   | Mget (an, c, k)                -> Mget (fi an, f c, f k)
-  | Mselect (an, c, la, lb, a)     -> Mselect (fi an, f c, List.map (fun (i, t) -> (fi i, ft t)) la, f lb, List.map f a)
-  | Msort (an, c, l)               -> Msort (fi an, f c, l)
-  | Mcontains (an, c, i)           -> Mcontains (fi an, f c, f i)
-  | Mnth (an, c, i)                -> Mnth (fi an, f c, f i)
-  | Mcount (an, c)                 -> Mcount (fi an, f c)
-  | Msum (an, c, p)                -> Msum (fi an, f c, f p)
-  | Mhead (an, c, i)               -> Mhead (fi an, f c, f i)
-  | Mtail (an, c, i)               -> Mtail (fi an, f c, f i)
+  | Mvselect (an, c, la, lb, a)    -> Mvselect (fi an, f c, List.map (fun (i, t) -> (fi i, ft t)) la, f lb, List.map f a)
+  | Mvsort (an, c, l)              -> Mvsort (fi an, f c, l)
+  | Mvcontains (an, c, i)          -> Mvcontains (fi an, f c, f i)
+  | Mvnth (an, c, i)               -> Mvnth (fi an, f c, f i)
+  | Mvcount (an, c)                -> Mvcount (fi an, f c)
+  | Mvsum (an, c, p)               -> Mvsum (fi an, f c, f p)
+  | Mvhead (an, c, i)              -> Mvhead (fi an, f c, f i)
+  | Mvtail (an, c, i)              -> Mvtail (fi an, f c, f i)
   (* utils *)
   | Mcast (src, dst, v)            -> Mcast (ft src, ft dst, f v)
   | Mgetfrommap (an, k, c)         -> Mgetfrommap (fi an, f k, f c)
@@ -1641,14 +1641,14 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Maddupdate (_, k, l)                  -> List.fold_left (fun accu (_, _, v) -> f accu v) (f accu k) l
   (* asset api expression *)
   | Mget (_, c, k)                        -> f (f accu c) k
-  | Mselect (_, c, _, lb, a)              -> List.fold_left (fun accu x -> f accu x) (f (f accu c) lb) a
-  | Msort (_, c,_)                        -> f accu c
-  | Mcontains (_, c, i)                   -> f (f accu c) i
-  | Mnth (_, c, i)                        -> f (f accu c) i
-  | Mcount (_, c)                         -> f accu c
-  | Msum (_, c, p)                        -> f (f accu c) p
-  | Mhead (_, c, i)                       -> f (f accu c) i
-  | Mtail (_, c, i)                       -> f (f accu c) i
+  | Mvselect (_, c, _, lb, a)             -> List.fold_left (fun accu x -> f accu x) (f (f accu c) lb) a
+  | Mvsort (_, c,_)                       -> f accu c
+  | Mvcontains (_, c, i)                  -> f (f accu c) i
+  | Mvnth (_, c, i)                       -> f (f accu c) i
+  | Mvcount (_, c)                        -> f accu c
+  | Mvsum (_, c, p)                       -> f (f accu c) p
+  | Mvhead (_, c, i)                      -> f (f accu c) i
+  | Mvtail (_, c, i)                      -> f (f accu c) i
   (* utils *)
   | Mcast (_ , _, v)                      -> f accu v
   | Mgetfrommap (_, k, c)                 -> f (f accu k) c
@@ -2165,7 +2165,7 @@ let fold_map_term
     let ke, ka = f ca k in
     g (Mget (an, ce, ke)), ka
 
-  | Mselect (an, c, la, lb, a) ->
+  | Mvselect (an, c, la, lb, a) ->
     let ce, ca = f accu c in
     let lbe, lba = f ca lb in
     let ae, aa =
@@ -2175,40 +2175,40 @@ let fold_map_term
            xa::ae, accu) ([], lba) a
       |> (fun (x, y) -> (List.rev x, y))
     in
-    g (Mselect (an, ce, la, lbe, ae)), aa
+    g (Mvselect (an, ce, la, lbe, ae)), aa
 
-  | Msort (an, c, l) ->
+  | Mvsort (an, c, l) ->
     let ce, ca = f accu c in
-    g (Msort (an, ce, l)), ca
+    g (Mvsort (an, ce, l)), ca
 
-  | Mcontains (an, c, i) ->
-    let ce, ca = f accu c in
-    let ie, ia = f ca i in
-    g (Mcontains (an, ce, ie)), ia
-
-  | Mnth (an, c, i) ->
+  | Mvcontains (an, c, i) ->
     let ce, ca = f accu c in
     let ie, ia = f ca i in
-    g (Mnth (an, ce, ie)), ia
+    g (Mvcontains (an, ce, ie)), ia
 
-  | Mcount (an, c) ->
+  | Mvnth (an, c, i) ->
     let ce, ca = f accu c in
-    g (Mcount (an, ce)), ca
+    let ie, ia = f ca i in
+    g (Mvnth (an, ce, ie)), ia
 
-  | Msum (an, c, p) ->
+  | Mvcount (an, c) ->
+    let ce, ca = f accu c in
+    g (Mvcount (an, ce)), ca
+
+  | Mvsum (an, c, p) ->
     let ce, ca = f accu c in
     let pe, pa = f ca p in
-    g (Msum (an, ce, pe)), pa
+    g (Mvsum (an, ce, pe)), pa
 
-  | Mhead (an, c, i) ->
+  | Mvhead (an, c, i) ->
     let ce, ca = f accu c in
     let ie, ia = f ca i in
-    g (Mhead (an, ce, ie)), ia
+    g (Mvhead (an, ce, ie)), ia
 
-  | Mtail (an, c, i) ->
+  | Mvtail (an, c, i) ->
     let ce, ca = f accu c in
     let ie, ia = f ca i in
-    g (Mtail (an, ce, ie)), ia
+    g (Mvtail (an, ce, ie)), ia
 
 
   (* utils *)
@@ -2545,7 +2545,7 @@ let fold_map_term
            xa::ae, accu) ([], lba) a
       |> (fun (x, y) -> (List.rev x, y))
     in
-    g (Mselect (an, ce, la, lbe, ae)), aa
+    g (Mapifselect (an, ce, la, lbe, ae)), aa
 
   | Mapifsort (an, c, l) ->
     let ce, ca = f accu c in
@@ -2734,19 +2734,20 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
         | RemoveAll (an, id)    -> RemoveAll (f KIassetname an, f KIassetfield id)
         | ToKeys an             -> ToKeys (f KIassetname an)
         | ColToKeys an          -> ColToKeys (f KIassetname an)
-        | Select (an, l, p)     -> Select (f KIassetname an, List.map (fun (id, t) -> f KIparamlambda id, t) l, for_mterm p)
-        | Sort (an, l)          -> Sort (an, List.map (fun (id, k) -> f KIassetfield id, k) l)
-        | Contains an           -> Contains (f KIassetname an)
-        | Nth an                -> Nth (f KIassetname an)
-        | Count an              -> Count (f KIassetname an)
-        | Sum (an, t, e)        -> Sum (f KIassetname an, for_type t, for_mterm e)
         | Min (an, id)          -> Min (f KIassetname an, f KIassetfield id)
         | Max (an, id)          -> Max (f KIassetname an, f KIassetfield id)
         | Shallow an            -> Shallow (f KIassetname an)
         | Unshallow an          -> Unshallow (f KIassetname an)
         | Listtocoll an         -> Listtocoll (f KIassetname an)
-        | Head an               -> Head (f KIassetname an)
-        | Tail an               -> Tail (f KIassetname an)
+        | Vcontains an          -> Vcontains (f KIassetname an)
+        | Vnth an               -> Vnth (f KIassetname an)
+        | Vselect (an, l, p)    -> Vselect (f KIassetname an, List.map (fun (id, t) -> f KIparamlambda id, t) l, for_mterm p)
+        | Vsort (an, l)         -> Vsort (an, List.map (fun (id, k) -> f KIassetfield id, k) l)
+        | Vcount an             -> Vcount (f KIassetname an)
+        | Vsum (an, t, e)       -> Vsum (f KIassetname an, for_type t, for_mterm e)
+        | Vhead an              -> Vhead (f KIassetname an)
+        | Vtail an              -> Vtail (f KIassetname an)
+
       in
       let for_api_list (alist : api_list) : api_list =
         match alist with
@@ -3790,8 +3791,8 @@ end = struct
       | (sc : api_storage) :: tl ->
         begin
           match typ, sc.node_item with
-          | SearchSelect, APIAsset (Select (a, _, t)) -> continue_internal_get_fun_idx tl acc a t
-          | SearchSum, APIAsset (Sum (a, _, t)) -> continue_internal_get_fun_idx tl acc a t
+          | SearchSelect, APIAsset (Vselect (a, _, t)) -> continue_internal_get_fun_idx tl acc a t
+          | SearchSum, APIAsset (Vsum (a, _, t)) -> continue_internal_get_fun_idx tl acc a t
           | _ -> internal_get_fun_idx acc tl
         end
       | [] -> acc
@@ -3813,7 +3814,7 @@ end = struct
   let get_sum_idxs m a = (* TODO *)
     List.fold_left (fun acc (ai : api_storage) ->
         match ai.node_item with
-        | APIAsset (Sum (asset, _type, formula)) when String.equal a asset ->
+        | APIAsset (Vsum (asset, _type, formula)) when String.equal a asset ->
           acc @ [get_sum_idx m a formula]
         | _ -> acc
       ) [] m.api_items
@@ -3858,7 +3859,7 @@ end = struct
   let with_count m a =
     List.fold_left (fun acc (ai : api_storage) ->
         match ai.node_item with
-        | APIAsset (Count asset) when String.equal a asset ->
+        | APIAsset (Vcount asset) when String.equal a asset ->
           acc || true
         | _ -> acc
       ) false m.api_items

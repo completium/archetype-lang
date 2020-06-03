@@ -183,7 +183,28 @@ let pp_model fmt (model : model) =
         an
         an
 
-    | Select (an, _, _) ->
+    | Min (an, fn) ->
+      Format.fprintf fmt
+        "def min_%s_%s (self):@\n  \
+         #TODO@\n"
+        an fn
+
+    | Max (an, fn) ->
+      Format.fprintf fmt
+        "def max_%s_%s (self):@\n  \
+         #TODO@\n"
+        an fn
+    | Shallow _ -> ()
+    | Unshallow _ -> ()
+    | Listtocoll _ -> ()
+
+    | Vcontains an ->
+      Format.fprintf fmt
+        "def contains_%s (self, l, key):@\n  \
+         key in l@\n"
+        an
+
+    | Vselect (an, _, _) ->
       Format.fprintf fmt
         "def select_%s (self, c, p):@\n  \
          reduce(@\n  \
@@ -199,31 +220,25 @@ let pp_model fmt (model : model) =
          [])@\n"
         an an an
 
-    | Sort (an, _l) ->
+    | Vsort (an, _l) ->
       Format.fprintf fmt
         "def sort_%s (self, s : storage) : unit =@\n  \
          #TODO@\n"
         an
 
-    | Contains an ->
-      Format.fprintf fmt
-        "def contains_%s (self, l, key):@\n  \
-         key in l@\n"
-        an
-
-    | Nth an ->
+    | Vnth an ->
       Format.fprintf fmt
         "def nth_%s (self):@\n  \
          #TODO@\n"
         an
 
-    | Count an ->
+    | Vcount an ->
       Format.fprintf fmt
         "def count_%s (self):@\n  \
          #TODO@\n"
         an
 
-    | Sum (an, _, _) -> (* TODO *)
+    | Vsum (an, _, _) -> (* TODO *)
       Format.fprintf fmt
         "def sum_%s (self, p):@\n  \
          reduce(@\n  \
@@ -232,27 +247,13 @@ let pp_model fmt (model : model) =
          0)@\n"
         an an an
 
-    | Min (an, fn) ->
-      Format.fprintf fmt
-        "def min_%s_%s (self):@\n  \
-         #TODO@\n"
-        an fn
-
-    | Max (an, fn) ->
-      Format.fprintf fmt
-        "def max_%s_%s (self):@\n  \
-         #TODO@\n"
-        an fn
-    | Shallow _ -> ()
-    | Unshallow _ -> ()
-    | Listtocoll _ -> ()
-    | Head an ->
+    | Vhead an ->
       Format.fprintf fmt
         "def head_%s (self):@\n  \
          #TODO@\n"
         an
 
-    | Tail an ->
+    | Vtail an ->
       Format.fprintf fmt
         "def tail_%s (self):@\n  \
          #TODO@\n"
@@ -815,7 +816,7 @@ let pp_model fmt (model : model) =
         in
         pp fmt (an, c, k)
 
-      | Mselect (an, c, la, lb, a) ->
+      | Mvselect (an, c, la, lb, a) ->
         let pp fmt (an, c, _la, lb, _a) =
           Format.fprintf fmt "self.select_%a (%a, fun the -> %a)"
             pp_str an
@@ -824,7 +825,7 @@ let pp_model fmt (model : model) =
         in
         pp fmt (an, c, la, lb, a)
 
-      | Msort (an, c, l) ->
+      | Mvsort (an, c, l) ->
         let pp fmt (an, c, l) =
           Format.fprintf fmt "self.sort_%a (%a, %a)"
             pp_str an
@@ -833,7 +834,7 @@ let pp_model fmt (model : model) =
         in
         pp fmt (an, c, l)
 
-      | Mcontains (an, c, i) ->
+      | Mvcontains (an, c, i) ->
         let pp fmt (an, c, i) =
           Format.fprintf fmt "self.contains_%a (%a, %a)"
             pp_str an
@@ -842,7 +843,7 @@ let pp_model fmt (model : model) =
         in
         pp fmt (an, c, i)
 
-      | Mnth (an, c, i) ->
+      | Mvnth (an, c, i) ->
         let pp fmt (an, c, i) =
           Format.fprintf fmt "self.nth_%a (%a, %a)"
             pp_str an
@@ -851,7 +852,7 @@ let pp_model fmt (model : model) =
         in
         pp fmt (an, c, i)
 
-      | Mcount (an, c) ->
+      | Mvcount (an, c) ->
         let pp fmt (an, c) =
           Format.fprintf fmt "self.count_%a (%a)"
             pp_str an
@@ -859,7 +860,7 @@ let pp_model fmt (model : model) =
         in
         pp fmt (an, c)
 
-      | Msum (an, c, p) ->
+      | Mvsum (an, c, p) ->
         let pp fmt (an, c, p) =
           Format.fprintf fmt "self.sum_%a (%a, fun the -> %a)"
             pp_str an
@@ -868,13 +869,13 @@ let pp_model fmt (model : model) =
         in
         pp fmt (an, c, p)
 
-      | Mhead (an, c, i) ->
+      | Mvhead (an, c, i) ->
         Format.fprintf fmt "self.head_%a (%a, %a)"
           pp_str an
           f c
           f i
 
-      | Mtail (an, c, i) ->
+      | Mvtail (an, c, i) ->
         Format.fprintf fmt "self.tail_%a (%a, %a)"
           pp_str an
           f c

@@ -660,6 +660,7 @@ let methods : (string * method_) list =
   in [
     ("isempty"     , mk M.Cisempty      `OnlyFormula `Pure       `Total   (`Fixed [              ], Some (`T M.vtbool)));
     ("get"         , mk M.Cget          `OnlyFormula `Pure       `Partial (`Fixed [`Pk           ], Some `The));
+    ("subsetof"    , mk M.Csubsetof     `OnlyFormula `Pure       `Total   (`Fixed [`SubColl      ], Some (`T M.vtbool)));
     ("add"         , mk M.Cadd          `Both        `Effect     `Total   (`Fixed [`The          ], None));
     ("remove"      , mk M.Cremove       `Both        `Effect     `Total   (`Fixed [`Pk           ], None));
     ("clear"       , mk M.Cclear        `Both        `EffectView `Total   (`Fixed [              ], None));
@@ -672,7 +673,6 @@ let methods : (string * method_) list =
     ("sort"        , mk M.Csort         `Both        `Pure       `Total   (`Multi (`Cmp          ), Some (`SubColl)));
     ("count"       , mk M.Ccount        `Both        `Pure       `Total   (`Fixed [              ], Some (`T M.vtint)));
     ("sum"         , mk M.Csum          `Both        `Pure       `Total   (`Fixed [`RExpr false  ], Some (`Ref 0)));
-    ("subsetof"    , mk M.Csubsetof     `OnlyFormula `Pure       `Total   (`Fixed [`SubColl      ], Some (`T M.vtbool)));
     ("head"        , mk M.Chead         `Both        `Pure       `Total   (`Fixed [`T M.vtint    ], Some (`SubColl)));
     ("tail"        , mk M.Ctail         `Both        `Pure       `Total   (`Fixed [`T M.vtint    ], Some (`SubColl)));
   ]

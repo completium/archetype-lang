@@ -579,8 +579,8 @@ let is_local_invariant _m an t =
   let rec internal_is_local acc (term : M.mterm) =
     match term.M.node with
     | M.Mforall (_i,M.Tasset a,_,_b) -> not (compare (a |> unloc) an = 0)
-    | M.Msum (a,_,_) -> not (compare a an = 0)
-    | M.Mselect (a, _, _, _, _) -> not (compare a an = 0)
+    | M.Mvsum (a,_,_) -> not (compare a an = 0)
+    | M.Mvselect (a, _, _, _, _) -> not (compare a an = 0)
     | _ -> M.fold_term internal_is_local acc term in
   internal_is_local true t
 
@@ -1280,25 +1280,25 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Mget (an, _c, k) -> Tapp (loc_term (Tvar ("get_" ^ an)),[map_mterm m ctx k])
 
-    | Mselect (a, l, _la, lb, _a) ->
+    | Mvselect (a, l, _la, lb, _a) ->
       let args = extract_args lb in
       let id = mk_select_name m a lb in
       let argids = args |> List.map (fun (e, _, _) -> e) |> List.map (map_mterm m ctx) in
       Tapp (loc_term (Tvar id), argids @ [map_mterm m ctx l; loc_term (mk_ac a)])
 
-    | Msort               (a,c,l) -> Tsort (with_dummy_loc (mk_sort_clone_id a l),map_mterm m ctx c,loc_term (mk_ac a))
+    | Mvsort               (a,c,l) -> Tsort (with_dummy_loc (mk_sort_clone_id a l),map_mterm m ctx c,loc_term (mk_ac a))
 
-    | Mcontains (a, _, r) -> Tapp (loc_term (Tvar ("contains_" ^ a)), [map_mterm m ctx r])
+    | Mvcontains (a, _, r) -> Tapp (loc_term (Tvar ("contains_" ^ a)), [map_mterm m ctx r])
 
-    | Mnth                (n,c,k) -> Tapp (loc_term (Tvar ("nth_" ^ n)),[map_mterm m ctx c; map_mterm m ctx k])
-    | Mcount              (a,t) -> Tvcard (with_dummy_loc a, map_mterm m ctx t)
+    | Mvnth                (n,c,k) -> Tapp (loc_term (Tvar ("nth_" ^ n)),[map_mterm m ctx c; map_mterm m ctx k])
+    | Mvcount              (a,t) -> Tvcard (with_dummy_loc a, map_mterm m ctx t)
 
-    | Msum          (a,v,f) ->
+    | Mvsum          (a,v,f) ->
       let cloneid = mk_sum_clone_id m a f in
       let col = mk_ac_ctx a ctx in
       Tsum(with_dummy_loc cloneid,map_mterm m ctx v,col)
-    | Mhead (n,c,v) -> Thead(with_dummy_loc n, map_mterm m ctx v, map_mterm m ctx c)
-    | Mtail  (n,c,v) -> Ttail(with_dummy_loc n, map_mterm m ctx v, map_mterm m ctx c)
+    | Mvhead (n,c,v) -> Thead(with_dummy_loc n, map_mterm m ctx v, map_mterm m ctx c)
+    | Mvtail  (n,c,v) -> Ttail(with_dummy_loc n, map_mterm m ctx v, map_mterm m ctx c)
 
     (* utils *)
     | Mcast (Tcontainer (Tasset a,Collection),Tcontainer (Tasset _, View), v) ->
@@ -2471,7 +2471,7 @@ let mk_rm_field m part asset keyf field rmed_asset rmkey : decl =
 let mk_storage_api_before_storage (m : M.model) _records =
   m.api_items |> List.fold_left (fun acc (sc : M.api_storage) ->
       match sc.node_item with
-      | M.APIAsset (Sum (asset,_,formula)) when compare asset "todo" <> 0 ->
+      | M.APIAsset (Vsum (asset,_,formula)) when compare asset "todo" <> 0 ->
         let key      = M.Utils.get_asset_key m asset |> fst in
         let mlw_formula = map_mterm m init_ctx formula |> unloc_term in
         let id = M.Utils.get_sum_idx m asset formula in
@@ -2492,7 +2492,7 @@ let mk_storage_api (m : M.model) records =
       | M.APIAsset (Get n) ->
         let k,kt = M.Utils.get_asset_key m n in
         acc @ [mk_get_asset n k (kt |> map_btype)]
-      | M.APIAsset (Nth n) ->
+      | M.APIAsset (Vnth n) ->
         acc @ [mk_nth_asset n]
       | M.APIAsset (Add n) ->
         let k = M.Utils.get_asset_key m n |> fst in
@@ -2518,13 +2518,13 @@ let mk_storage_api (m : M.model) records =
           (*mk_rm_asset           pa.pldesc (pt |> map_btype);*)
           mk_rm_field m (is_partition m n f) n t f pa pk
         ]
-      | M.APIAsset (Contains n) ->
+      | M.APIAsset (Vcontains n) ->
         let t         =  M.Utils.get_asset_key m n |> snd |> map_btype in
         acc @ [ mk_contains n t ]
-      | M.APIAsset (Select (asset, _, test)) ->
+      | M.APIAsset (Vselect (asset, _, test)) ->
         let mlw_test = map_mterm m init_ctx test in
         acc @ [ mk_select m asset test (mlw_test |> unloc_term) (match sc.api_loc with | OnlyFormula -> true | ExecFormula | OnlyExec -> false) ]
-      | M.APIAsset (Sort (asset,field)) ->
+      | M.APIAsset (Vsort (asset,field)) ->
         acc @ [ mk_cmp_function m asset field; mk_sort_clone m asset field]
       | M.APIAsset (Listtocoll n) ->
         acc @ [ mk_listtocoll m n ]
@@ -2545,7 +2545,7 @@ let fold_exns m body : term list =
   let rec internal_fold_exn acc (term : M.mterm) =
     match term.M.node with
     | M.Mget (_, _, k) -> internal_fold_exn (acc @ [Texn Enotfound]) k
-    | M.Mnth (_, c, k) -> internal_fold_exn (internal_fold_exn (acc @ [Texn Enotfound]) c) k
+    | M.Mvnth (_, c, k) -> internal_fold_exn (internal_fold_exn (acc @ [Texn Enotfound]) c) k
     | M.Mset (_, _, k, v) -> internal_fold_exn (internal_fold_exn (acc @ [Texn Enotfound]) k) v
     | M.Maddasset (_, i) -> internal_fold_exn (acc @ [Texn Ekeyexist]) i
     | M.Maddfield (a, f, c, i) ->

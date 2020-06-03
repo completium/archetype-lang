@@ -883,7 +883,7 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (an, c, k)
 
-    | Mselect (an, c, la, lb, a) ->
+    | Mvselect (an, c, la, lb, a) ->
       let index : int = get_preds_index env.select_preds lb in
       let pp fmt (an, c, _la, _lb, a) =
         Format.fprintf fmt "select_%a_%i (%s, %a%a)"
@@ -894,7 +894,7 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (an, c, la, lb, a)
 
-    | Msort (an, c, l) -> (* TODO *)
+    | Mvsort (an, c, l) -> (* TODO *)
       let pp fmt (an, c, l) =
         Format.fprintf fmt "sort_%a_%a (%s, %a)"
           pp_str an
@@ -904,7 +904,7 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (an, c, l)
 
-    | Mcontains (an, c, i) ->
+    | Mvcontains (an, c, i) ->
       let pp fmt (an, c, i) =
         Format.fprintf fmt "contains_%a (%a, %a)"
           pp_str an
@@ -913,7 +913,7 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (an, c, i)
 
-    | Mnth (an, c, i) ->
+    | Mvnth (an, c, i) ->
       let pp fmt (an, c, i) =
         Format.fprintf fmt "nth_%a (%s, %a, %a)"
           pp_str an
@@ -923,7 +923,7 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (an, c, i)
 
-    | Mcount (an, c) ->
+    | Mvcount (an, c) ->
       let pp fmt (an, c) =
         Format.fprintf fmt "count_%a (%a)"
           pp_str an
@@ -931,7 +931,7 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (an, c)
 
-    | Msum (an, c, p) ->
+    | Mvsum (an, c, p) ->
       let index : int = get_preds_index env.sum_preds p in
       let pp fmt (an, c, _p) =
         Format.fprintf fmt "sum_%a_%i (%s, %a)"
@@ -941,13 +941,13 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (an, c, p)
 
-    | Mhead (an, c, i) ->
+    | Mvhead (an, c, i) ->
       Format.fprintf fmt "head_%a (%a, %a)"
         pp_str an
         f c
         f i
 
-    | Mtail (an, c, i) ->
+    | Mvtail (an, c, i) ->
       Format.fprintf fmt "tail_%a (%a, %a)"
         pp_str an
         f c
@@ -1682,7 +1682,105 @@ let pp_model_internal fmt (model : model) b =
         (if single then "set" else "map") an
         pp_btyp t
 
-    | Select (an, args, f) ->
+    | Min (an, fn) ->
+      let _, t = Utils.get_asset_key model an in
+      let _, ct, _ = Utils.get_asset_field model (an, fn) in
+      Format.fprintf fmt
+        "function min_%s_%s (const s : storage_type; const l : list(%a)) : %a is@\n  \
+         block {@\n    \
+         function aggregate (const accu: option(%a); const x: %a) : option(%a) is@\n    \
+         block {@\n      \
+         const a : %s = get_%s(s, x);@\n      \
+         const r : option(%a) = Some(a.%s);@\n      \
+         case accu of@\n      \
+         | Some(v) -> r := if v < a.%s then Some (v) else accu@\n      \
+         | None -> skip@\n      \
+         end;@\n    \
+         } with r;@\n    \
+         var init : option(%a) := (None : option(%a));@\n    \
+         const res_opt : option(%a) = list_fold (aggregate, l, init);@\n    \
+         var res : %a := %a;@\n    \
+         case res_opt of@\n    \
+         | Some(v) -> res := v@\n    \
+         | None -> failwith(\"min_%s_%s failed\")@\n    \
+         end;@\n  \
+         } with res@\n"
+        an fn pp_btyp t pp_type ct
+        pp_type ct pp_btyp t pp_type ct
+        an an
+        pp_type ct fn
+        fn
+        pp_type ct pp_type ct
+        pp_type ct
+        pp_type ct pp_default ct
+        an fn
+
+    | Max (an, fn) ->
+      let _, t = Utils.get_asset_key model an in
+      let _, ct, _ = Utils.get_asset_field model (an, fn) in
+      Format.fprintf fmt
+        "function max_%s_%s (const s : storage_type; const l : list(%a)) : %a is@\n  \
+         block {@\n    \
+         function aggregate (const accu: option(%a); const x: %a) : option(%a) is@\n    \
+         block {@\n      \
+         const a : %s = get_%s(s, x);@\n      \
+         const r : option(%a) = Some(a.%s);@\n      \
+         case accu of@\n      \
+         | Some(v) -> r := if v > a.%s then Some (v) else accu@\n      \
+         | None -> skip@\n      \
+         end;@\n    \
+         } with r;@\n    \
+         var init : option(%a) := (None : option(%a));@\n    \
+         const res_opt : option(%a) = list_fold (aggregate, l, init);@\n    \
+         var res : %a := %a;@\n    \
+         case res_opt of@\n    \
+         | Some(v) -> res := v@\n    \
+         | None -> failwith(\"max_%s_%s failed\")@\n    \
+         end;@\n  \
+         } with res@\n"
+        an fn pp_btyp t pp_type ct
+        pp_type ct pp_btyp t pp_type ct
+        an an
+        pp_type ct fn
+        fn
+        pp_type ct pp_type ct
+        pp_type ct
+        pp_type ct pp_default ct
+        an fn
+
+    | Shallow _ -> ()
+    | Unshallow _ -> ()
+    | Listtocoll _ -> ()
+
+    | Vcontains an ->
+      let _, t = Utils.get_asset_key model an in
+      Format.fprintf fmt
+        "function contains_%s (const l : list(%a); const key : %a) : bool is@\n  \
+         begin@\n  \
+         function aggregate (const accu : bool; const v : %a) : bool is block { skip } with (accu or v = key);@\n  \
+         end with list_fold(aggregate, l, False)@\n"
+        an pp_btyp t pp_btyp t
+        pp_btyp t
+
+    | Vnth an ->
+      let _k, t = Utils.get_asset_key model an in
+      Format.fprintf fmt
+        "function nth_%s (const s : storage_type; const l : list(%a); const index : int) : %a is@\n  \
+         block {@\n  \
+         function aggregate (const accu: map(int, %a); const x: %a) : map(int, %a) is@\n  \
+         block {@\n  \
+         const le : int = int(Map.size(accu));@\n  \
+         accu[le] := x;@\n  \
+         } with accu;@\n  \
+         const map_ : map(int, %a) = list_fold(aggregate, l, (map [] : map(int, %a)));@\n  \
+         const res : %a = get_force(index, map_);@\n  \
+         } with res@\n"
+        an pp_btyp t pp_btyp t
+        pp_btyp t pp_btyp t pp_btyp t
+        pp_btyp t pp_btyp t
+        pp_btyp t
+
+    | Vselect (an, args, f) ->
       let pp_arg fmt (arg_id, arg_type) =
         Format.fprintf fmt "; const %s : %a" arg_id pp_type arg_type
       in
@@ -1702,7 +1800,7 @@ let pp_model_internal fmt (model : model) b =
         (pp_mterm (mk_env ())) f k
         pp_btyp t
 
-    | Sort (an, l) ->
+    | Vsort (an, l) ->
       let _, t = Utils.get_asset_key model an in
       let pp_criteria fmt (fn, c) =
         let op1, op2, d =
@@ -1790,35 +1888,7 @@ let pp_model_internal fmt (model : model) b =
         pp_btyp t
         pp_btyp t
 
-    | Contains an ->
-      let _, t = Utils.get_asset_key model an in
-      Format.fprintf fmt
-        "function contains_%s (const l : list(%a); const key : %a) : bool is@\n  \
-         begin@\n  \
-         function aggregate (const accu : bool; const v : %a) : bool is block { skip } with (accu or v = key);@\n  \
-         end with list_fold(aggregate, l, False)@\n"
-        an pp_btyp t pp_btyp t
-        pp_btyp t
-
-    | Nth an ->
-      let _k, t = Utils.get_asset_key model an in
-      Format.fprintf fmt
-        "function nth_%s (const s : storage_type; const l : list(%a); const index : int) : %a is@\n  \
-         block {@\n  \
-         function aggregate (const accu: map(int, %a); const x: %a) : map(int, %a) is@\n  \
-         block {@\n  \
-         const le : int = int(Map.size(accu));@\n  \
-         accu[le] := x;@\n  \
-         } with accu;@\n  \
-         const map_ : map(int, %a) = list_fold(aggregate, l, (map [] : map(int, %a)));@\n  \
-         const res : %a = get_force(index, map_);@\n  \
-         } with res@\n"
-        an pp_btyp t pp_btyp t
-        pp_btyp t pp_btyp t pp_btyp t
-        pp_btyp t pp_btyp t
-        pp_btyp t
-
-    | Count an ->
+    | Vcount an ->
       let _, t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "function count_%s (const l : list(%a)) : int is@\n  \
@@ -1826,7 +1896,7 @@ let pp_model_internal fmt (model : model) b =
          with int(size(l))@\n"
         an pp_btyp t
 
-    | Sum (an, t, p) ->
+    | Vsum (an, t, p) ->
       let rec pp_expr fmt (mt : mterm) =
         match mt.node with
         | Mdot ({node = Mvarlocal ({pldesc = "the"; _}) }, fn) ->
@@ -1854,76 +1924,7 @@ let pp_model_internal fmt (model : model) b =
         pp_expr expr
         (get_zero t)
 
-    | Min (an, fn) ->
-      let _, t = Utils.get_asset_key model an in
-      let _, ct, _ = Utils.get_asset_field model (an, fn) in
-      Format.fprintf fmt
-        "function min_%s_%s (const s : storage_type; const l : list(%a)) : %a is@\n  \
-         block {@\n    \
-         function aggregate (const accu: option(%a); const x: %a) : option(%a) is@\n    \
-         block {@\n      \
-         const a : %s = get_%s(s, x);@\n      \
-         const r : option(%a) = Some(a.%s);@\n      \
-         case accu of@\n      \
-         | Some(v) -> r := if v < a.%s then Some (v) else accu@\n      \
-         | None -> skip@\n      \
-         end;@\n    \
-         } with r;@\n    \
-         var init : option(%a) := (None : option(%a));@\n    \
-         const res_opt : option(%a) = list_fold (aggregate, l, init);@\n    \
-         var res : %a := %a;@\n    \
-         case res_opt of@\n    \
-         | Some(v) -> res := v@\n    \
-         | None -> failwith(\"min_%s_%s failed\")@\n    \
-         end;@\n  \
-         } with res@\n"
-        an fn pp_btyp t pp_type ct
-        pp_type ct pp_btyp t pp_type ct
-        an an
-        pp_type ct fn
-        fn
-        pp_type ct pp_type ct
-        pp_type ct
-        pp_type ct pp_default ct
-        an fn
-
-    | Max (an, fn) ->
-      let _, t = Utils.get_asset_key model an in
-      let _, ct, _ = Utils.get_asset_field model (an, fn) in
-      Format.fprintf fmt
-        "function max_%s_%s (const s : storage_type; const l : list(%a)) : %a is@\n  \
-         block {@\n    \
-         function aggregate (const accu: option(%a); const x: %a) : option(%a) is@\n    \
-         block {@\n      \
-         const a : %s = get_%s(s, x);@\n      \
-         const r : option(%a) = Some(a.%s);@\n      \
-         case accu of@\n      \
-         | Some(v) -> r := if v > a.%s then Some (v) else accu@\n      \
-         | None -> skip@\n      \
-         end;@\n    \
-         } with r;@\n    \
-         var init : option(%a) := (None : option(%a));@\n    \
-         const res_opt : option(%a) = list_fold (aggregate, l, init);@\n    \
-         var res : %a := %a;@\n    \
-         case res_opt of@\n    \
-         | Some(v) -> res := v@\n    \
-         | None -> failwith(\"max_%s_%s failed\")@\n    \
-         end;@\n  \
-         } with res@\n"
-        an fn pp_btyp t pp_type ct
-        pp_type ct pp_btyp t pp_type ct
-        an an
-        pp_type ct fn
-        fn
-        pp_type ct pp_type ct
-        pp_type ct
-        pp_type ct pp_default ct
-        an fn
-
-    | Shallow _ -> ()
-    | Unshallow _ -> ()
-    | Listtocoll _ -> ()
-    | Head an ->
+    | Vhead an ->
       let _, t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "function head_%s (const l : list(%a); const i : int) : list(%a) is@\n  \
@@ -1948,7 +1949,7 @@ let pp_model_internal fmt (model : model) b =
         pp_btyp t
         pp_btyp t pp_btyp t
 
-    | Tail an ->
+    | Vtail an ->
       let _, t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "function tail_%s (const l : list(%a); const i : int) : list(%a) is@\n  \

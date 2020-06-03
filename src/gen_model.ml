@@ -374,7 +374,7 @@ let to_model (ast : A.model) : M.model =
         let lambda_args, args = List.fold_right (fun (x, y, z) (l1, l2) -> ((unloc x, ptyp_to_type y)::l1, (f z)::l2)) l ([], []) in
         if formula
         then M.Mapifselect (asset_name, fp, lambda_args, lambda_body, args)
-        else M.Mselect (asset_name, fp, lambda_args, lambda_body, args)
+        else M.Mvselect (asset_name, fp, lambda_args, lambda_body, args)
 
       | A.Pcall (Some p, A.Cconst (A.Csort), args) when is_asset_container p ->
         let fp = f p in
@@ -390,7 +390,7 @@ let to_model (ast : A.model) : M.model =
         in
         if formula
         then M.Mapifsort (asset_name, fp, args)
-        else M.Msort (asset_name, fp, args)
+        else M.Mvsort (asset_name, fp, args)
 
       | A.Pcall (Some p, A.Cconst (A.Ccontains), [AExpr q]) when is_asset_container p ->
         let fp = f p in
@@ -398,7 +398,7 @@ let to_model (ast : A.model) : M.model =
         let asset_name = extract_asset_name fp in
         if formula
         then M.Mapifcontains (asset_name, fp, fq)
-        else M.Mcontains (asset_name, fp, fq)
+        else M.Mvcontains (asset_name, fp, fq)
 
       | A.Pcall (Some p, A.Cconst (A.Cnth), [AExpr q]) when is_asset_container p ->
         let fp = f p in
@@ -406,14 +406,14 @@ let to_model (ast : A.model) : M.model =
         let asset_name = extract_asset_name fp in
         if formula
         then M.Mapifnth (asset_name, fp, fq)
-        else M.Mnth (asset_name, fp, fq)
+        else M.Mvnth (asset_name, fp, fq)
 
       | A.Pcall (Some p, A.Cconst (A.Ccount), []) when is_asset_container p ->
         let fp = f p in
         let asset_name = extract_asset_name fp in
         if formula
         then M.Mapifcount (asset_name, fp)
-        else M.Mcount (asset_name, fp)
+        else M.Mvcount (asset_name, fp)
 
       | A.Pcall (Some p, A.Cconst (A.Csum), [AFun (_qi, _qt, _l, q)]) when is_asset_container p ->
         let fp = f p in
@@ -421,7 +421,7 @@ let to_model (ast : A.model) : M.model =
         let asset_name = extract_asset_name fp in
         if formula
         then M.Mapifsum (asset_name, fp, fq)
-        else M.Msum (asset_name, fp, fq)
+        else M.Mvsum (asset_name, fp, fq)
 
       | A.Pcall (Some p, A.Cconst (A.Chead), [AExpr e]) when is_asset_container p ->
         let fp = f p in
@@ -429,7 +429,7 @@ let to_model (ast : A.model) : M.model =
         let asset_name = extract_asset_name fp in
         if formula
         then M.Mapifhead (asset_name, fp, fe)
-        else M.Mhead (asset_name, fp, fe)
+        else M.Mvhead (asset_name, fp, fe)
 
       | A.Pcall (Some p, A.Cconst (A.Ctail), [AExpr e]) when is_asset_container p ->
         let fp = f p in
@@ -437,7 +437,7 @@ let to_model (ast : A.model) : M.model =
         let asset_name = extract_asset_name fp in
         if formula
         then M.Mapiftail (asset_name, fp, fe)
-        else M.Mtail (asset_name, fp, fe)
+        else M.Mvtail (asset_name, fp, fe)
 
       (* List*)
 
