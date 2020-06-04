@@ -1683,17 +1683,23 @@ let pp_model_internal fmt (model : model) b =
           pp_id fn
       | _ -> (pp_mterm_gen (mk_env ()) pp_expr) fmt mt
     in
-    let get_zero = function
+    let get_zero _ =
+      match t with
+      | Ttuple [(Tbuiltin Bint); (Tbuiltin Bint)] -> "(0, 0)"
       | _ -> "0"
     in
     let _, tk = Utils.get_asset_key model an in
-    let expr = p in
     let i = get_preds_index env.sum_preds p in
     let is_one_field = Model.Utils.is_asset_single_field model an in
     let pp_fun_arg fmt () =
       match kind_pp_ with
       | `Coll -> ()
       | `View -> Format.fprintf fmt "; const l : list(%a)" pp_btyp tk
+    in
+    let pp_formula fmt _ =
+      match t with
+      | Ttuple [(Tbuiltin Bint); (Tbuiltin Bint)] -> pp_str fmt "e.0 * accu.1 + accu.0 * e.1, e.1 * accu.1"
+      | _ -> pp_str fmt "accu + e"
     in
     let postfix, container, src, iter_type, iter_val =
       match kind_pp_ with
@@ -1710,12 +1716,14 @@ let pp_model_internal fmt (model : model) b =
        function aggregate (const accu : %a; const i : %a%s) : %a is@\n      \
        block {@\n        \
        const a : %s = get_%s(s, i%s);@\n      \
-       } with (accu + (%a));@\n  \
+       const e : %a = %a;@\n      \
+       } with (%a);@\n  \
        end with (%s_fold(aggregate, %s, %s))@\n"
       postfix an i pp_fun_arg () pp_type t
       pp_type t pp_btyp tk iter_type pp_type t
       an an iter_val
-      pp_expr expr
+      pp_type t pp_expr p
+      pp_formula ()
       container src (get_zero t)
   in
 
