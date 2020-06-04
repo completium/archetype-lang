@@ -144,7 +144,7 @@ type ('id, 'term) mterm_node  =
   (* control *)
   | Mif               of ('term * 'term * 'term option)
   | Mmatchwith        of 'term * ('id pattern_gen * 'term) list
-  | Mfor              of ('id * 'term * 'term * ident option)
+  | Mfor              of ('id * 'term iter_container_kind * 'term * ident option)
   | Miter             of ('id * 'term * 'term * 'term * ident option)
   | Mseq              of 'term list
   | Mreturn           of 'term
@@ -317,6 +317,11 @@ type ('id, 'term) mterm_node  =
 and 'term container_kind =
   | CKcoll
   | CKview of 'term
+
+and 'term iter_container_kind =
+  | ICKcoll of ident
+  | ICKview of 'term
+  | ICKlist of 'term
 
 and 'id mterm_gen = {
   node: ('id, 'id mterm_gen) mterm_node;
@@ -955,6 +960,13 @@ let cmp_mterm_node
     | CKview l, CKview r -> cmp l r
     | _ -> false
   in
+  let cmp_iter_container_kind (lhs : 'term iter_container_kind) (rhs : 'term iter_container_kind) : bool =
+    match lhs, rhs with
+    | ICKcoll an1, ICKcoll an2 -> String.equal an1 an2
+    | ICKview l, ICKview r -> cmp l r
+    | ICKlist l, ICKlist r -> cmp l r
+    | _ -> false
+  in
   try
     match term1, term2 with
     (* lambda *)
@@ -970,7 +982,7 @@ let cmp_mterm_node
     (* control *)
     | Mif (c1, t1, e1), Mif (c2, t2, e2)                                               -> cmp c1 c2 && cmp t1 t2 && Option.cmp cmp e1 e2
     | Mmatchwith (e1, l1), Mmatchwith (e2, l2)                                         -> cmp e1 e2 && List.for_all2 (fun (p1, t1) (p2, t2) -> cmp_pattern p1 p2 && cmp t1 t2) l1 l2
-    | Mfor (i1, c1, b1, lbl1), Mfor (i2, c2, b2, lbl2)                                 -> cmpi i1 i2 && cmp c1 c2 && cmp b1 b2 && Option.cmp cmp_ident lbl1 lbl2
+    | Mfor (i1, c1, b1, lbl1), Mfor (i2, c2, b2, lbl2)                                 -> cmpi i1 i2 && cmp_iter_container_kind c1 c2 && cmp b1 b2 && Option.cmp cmp_ident lbl1 lbl2
     | Miter (i1, a1, b1, c1, lbl1), Miter (i2, a2, b2, c2, lbl2)                       -> cmpi i1 i2 && cmp a1 a2 && cmp b1 b2 && cmp c1 c2 && Option.cmp cmp_ident lbl1 lbl2
     | Mseq is1, Mseq is2                                                               -> List.for_all2 cmp is1 is2
     | Mreturn x1, Mreturn x2                                                           -> cmp x1 x2
@@ -1255,6 +1267,11 @@ let map_container_kind f = function
   | CKcoll -> CKcoll
   | CKview mt -> CKview (f mt)
 
+let map_iter_container_kind f = function
+  | ICKcoll an -> ICKcoll an
+  | ICKview mt -> ICKview (f mt)
+  | ICKlist mt -> ICKlist (f mt)
+
 let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ -> type_) (f : 'id mterm_gen -> 'id mterm_gen) = function
   (* lambda *)
   | Mletin (i, a, t, b, o)         -> Mletin (List.map g i, f a, Option.map ft t, f b, Option.map f o)
@@ -1269,7 +1286,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   (* control *)
   | Mif (c, t, e)                  -> Mif (f c, f t, Option.map f e)
   | Mmatchwith (e, l)              -> Mmatchwith (f e, List.map (fun (p, e) -> (p, f e)) l)
-  | Mfor (i, c, b, lbl)            -> Mfor (g i, f c, f b, lbl)
+  | Mfor (i, c, b, lbl)            -> Mfor (g i, map_iter_container_kind f c, f b, lbl)
   | Miter (i, a, b, c, lbl)        -> Miter (g i, f a, f b, f c, lbl)
   | Mseq is                        -> Mseq (List.map f is)
   | Mreturn x                      -> Mreturn (f x)
@@ -1581,6 +1598,11 @@ let fold_container_kind f accu = function
   | CKcoll -> accu
   | CKview mt -> f accu mt
 
+let fold_iter_container_kind f accu = function
+  | ICKcoll _ -> accu
+  | ICKview mt -> f accu mt
+  | ICKlist mt -> f accu mt
+
 let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_gen) : 'a =
   let opt f accu x = match x with | Some v -> f accu v | None -> accu in
   match term.node with
@@ -1597,7 +1619,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   (* control *)
   | Mif (c, t, e)                         -> opt f (f (f accu c) t) e
   | Mmatchwith (e, l)                     -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
-  | Mfor (_, c, b, _)                     -> f (f accu c) b
+  | Mfor (_, c, b, _)                     -> f (fold_iter_container_kind f accu c) b
   | Miter (_, a, b, c, _)                 -> f (f (f accu a) b) c
   | Mseq is                               -> List.fold_left f accu is
   | Mreturn x                             -> f accu x
@@ -1778,6 +1800,15 @@ let fold_map_container_kind f accu = function
     let mte, mta = f accu mt in
     CKview mte, mta
 
+let fold_map_iter_container_kind f accu = function
+  | ICKcoll an -> ICKcoll an, accu
+  | ICKview mt ->
+    let mte, mta = f accu mt in
+    ICKview mte, mta
+  | ICKlist mt ->
+    let mte, mta = f accu mt in
+    ICKlist mte, mta
+
 let fold_map_term
     (g : ('id, 'id mterm_gen) mterm_node -> 'id mterm_gen)
     (f : 'a -> 'id mterm_gen -> 'id mterm_gen * 'a)
@@ -1861,7 +1892,7 @@ let fold_map_term
     g (Mmatchwith (ee, pse)), psa
 
   | Mfor (i, c, b, lbl) ->
-    let ce, ca = f accu c in
+    let ce, ca = fold_map_iter_container_kind f accu c in
     let bi, ba = f ca b in
     g (Mfor (i, ce, bi, lbl)), ba
 

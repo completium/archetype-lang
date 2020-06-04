@@ -266,7 +266,7 @@ let extend_loop_iter (model : model) : model =
   let get_for_collections () =
     let rec internal_get_for (ctx : ctx_model) acc (t : mterm) =
       match t.node with
-      | Mfor (_, c, _, Some id) -> acc @ [id,c]
+      | Mfor (_, (ICKview c | ICKlist c), _, Some id) -> acc @ [id, c]
       | _ -> fold_term (internal_get_for ctx) acc t
     in
     fold_model internal_get_for model [] in
@@ -598,7 +598,7 @@ let assign_loop_label (model : model) : model =
       begin
         let rec aux ctx accu (mt : mterm) : Ident.ident list =
           match mt.node with
-          | Mfor (_, col, body, Some label) ->
+          | Mfor (_, (ICKview col | ICKlist col), body, Some label) ->
             begin
               let accu = aux ctx accu col in
               let accu = aux ctx accu body in
@@ -642,11 +642,17 @@ let assign_loop_label (model : model) : model =
 
   let rec aux ctx (mt : mterm) : mterm =
     match mt.node with
-    | Mfor (a, col, body, None) ->
+    | Mfor (a, ICKview col, body, None) ->
       let ncol  = aux ctx col in
       let nbody = aux ctx body in
       let label = get_loop_label ctx in
-      { mt with node = Mfor (a, ncol, nbody, Some label)}
+      { mt with node = Mfor (a, ICKview ncol, nbody, Some label)}
+
+    | Mfor (a, ICKlist col, body, None) ->
+      let ncol  = aux ctx col in
+      let nbody = aux ctx body in
+      let label = get_loop_label ctx in
+      { mt with node = Mfor (a, ICKlist ncol, nbody, Some label)}
 
     | Miter (a, min, max, body, None) ->
       let nmin  = aux ctx min in
@@ -1364,10 +1370,15 @@ let add_explicit_sort (model : model) : model =
     | Mtail (an, CKview c, idx) when is_implicit_sort env c ->
       { mt with node = Mtail (an, CKview (create_sort an c), idx) }
 
-    | Mfor (a, c, body, lbl) when is_implicit_sort env c ->
+    | Mfor (a, ICKview c, body, lbl) when is_implicit_sort env c ->
       let body = aux env ctx body in
       let an = extract_asset_name c in
-      mk_mterm (Mfor (a, create_sort an c, body, lbl)) Tunit
+      mk_mterm (Mfor (a, ICKview (create_sort an c), body, lbl)) Tunit
+
+    | Mfor (a, ICKlist c, body, lbl) when is_implicit_sort env c ->
+      let body = aux env ctx body in
+      let an = extract_asset_name c in
+      mk_mterm (Mfor (a, ICKlist (create_sort an c), body, lbl)) Tunit
 
     | _ -> map_mterm (aux env ctx) mt
   in
@@ -1620,7 +1631,12 @@ let extract_term_from_instruction f (model : model) : model =
       process (mk_mterm (Mmatchwith (ee, ll)) mt.type_) ea
 
     | Mfor (i, c, b, lbl) ->
-      let ce, ca = f c in
+      let ce, ca =
+        match c with
+        | ICKcoll an -> ICKcoll an, []
+        | ICKview v -> let ve, va = f v in ICKview ve, va
+        | ICKlist v -> let ve, va = f v in ICKlist ve, va
+      in
       let be = aux ctx b in
       process (mk_mterm (Mfor (i, ce, be, lbl)) mt.type_) ca
 
@@ -1859,10 +1875,19 @@ let add_contain_on_get (model : model) : model =
         let ll = List.map (fun (p, e) -> (p, aux e)) l in
         gg accu (mk_mterm (Mmatchwith (e, ll)) mt.type_)
 
-      | Mfor (i, c, b, lbl) ->
+      | Mfor (i, ICKcoll an, b, lbl) ->
+        let be = aux b in
+        gg accu (mk_mterm (Mfor (i, ICKcoll an, be, lbl)) mt.type_)
+
+      | Mfor (i, ICKview c, b, lbl) ->
         let accu = f accu c in
         let be = aux b in
-        gg accu (mk_mterm (Mfor (i, c, be, lbl)) mt.type_)
+        gg accu (mk_mterm (Mfor (i, ICKview c, be, lbl)) mt.type_)
+
+      | Mfor (i, ICKlist c, b, lbl) ->
+        let accu = f accu c in
+        let be = aux b in
+        gg accu (mk_mterm (Mfor (i, ICKlist c, be, lbl)) mt.type_)
 
       | Miter (i, a, b, c, lbl) ->
         let accu = f accu a in
@@ -2047,15 +2072,15 @@ let split_key_values (model : model) : model =
   } |> map_mterm_model aux
 
 let replace_for_to_iter (model : model) : model =
-  let is_asset (col : mterm) : bool =
-    match col.type_ with
-    | Tcontainer (Tasset _, _) -> true
+  let is_asset (col : mterm iter_container_kind) =
+    match col with
+    | ICKview {type_ = Tcontainer (Tasset _, _)} -> true
     | _ -> false
   in
 
-  let extract_asset (col : mterm) =
-    match col.type_ with
-    | Tcontainer (Tasset an, _) -> an
+  let extract_asset (col : mterm iter_container_kind) =
+    match col with
+    | ICKview {type_ = Tcontainer (Tasset an, _)} -> an
     | _ -> assert false
   in
 
@@ -2066,12 +2091,13 @@ let replace_for_to_iter (model : model) : model =
       let asset_name = extract_asset col in
       let an = unloc asset_name in
       let type_asset = Tasset asset_name in
-      let type_col = Tcontainer (type_asset,Collection) in
-      let type_view = Tcontainer (type_asset,View) in
+      (* let type_col = Tcontainer (type_asset,Collection) in
+         let type_view = Tcontainer (type_asset,View) in *)
       let view =
-        begin match col.type_ with
-          | Tcontainer (_,Collection) -> mk_mterm (Mcast (type_col, type_view, col)) type_view
-          | _ -> col
+        begin match col with
+          | ICKview x -> x
+          | ICKlist x -> x
+          | _ -> assert false
         end in
       let idx_id = "_i_" ^ lbl in
       let idx = mk_mterm (Mvarlocal (dumloc idx_id)) (Tbuiltin Bint) in

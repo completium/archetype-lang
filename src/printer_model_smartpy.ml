@@ -340,6 +340,12 @@ let pp_model fmt (model : model) =
     | CKview mt -> f fmt mt
   in
 
+  let pp_iter_container_kind f fmt = function
+    | ICKcoll an -> Format.fprintf fmt "%a" pp_str an
+    | ICKview mt -> Format.fprintf fmt "%a" f mt
+    | ICKlist mt -> Format.fprintf fmt "%a" f mt
+  in
+
   let pp_mterm (env : Printer_model_tools.env) fmt (mt : mterm) =
     let rec f fmt (mtt : mterm) =
       match mtt.node with
@@ -425,7 +431,7 @@ let pp_model fmt (model : model) =
       | Mfor (i, c, b, _) ->
         Format.fprintf fmt "sp.for %a in %a:@\n  @[%a@]@\n"
           pp_id i
-          f c
+          (pp_iter_container_kind f) c
           f b
 
       | Miter (i, a, b, c, _) ->

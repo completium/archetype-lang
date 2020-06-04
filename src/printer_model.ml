@@ -114,6 +114,11 @@ let pp_container_kind f fmt = function
   | CKcoll -> pp_str fmt "_Coll_"
   | CKview mt -> f fmt mt
 
+let pp_iter_container_kind f fmt = function
+  | ICKcoll an -> Format.fprintf fmt "%a" pp_str an
+  | ICKview mt -> Format.fprintf fmt "%a" f mt
+  | ICKlist mt -> Format.fprintf fmt "%a" f mt
+
 let pp_mterm fmt (mt : mterm) =
   let rec f fmt (mtt : mterm) =
     match mtt.node with
@@ -199,7 +204,7 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "for %a%a in %a do@\n  @[%a@]@\ndone"
         (pp_option (fun fmt -> Format.fprintf fmt ": %a " pp_str)) l
         pp_id i
-        f c
+        (pp_iter_container_kind f) c
         f b
 
     | Miter (i, a, b, c, l) ->

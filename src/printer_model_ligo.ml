@@ -364,10 +364,26 @@ let pp_model_internal fmt (model : model) b =
       pp fmt (e, l)
 
     | Mfor (id, col, body, _) ->
+      let postvar = function
+        | ICKcoll an when Model.Utils.is_asset_single_field model an -> " -> value_"
+        | _ -> ""
+      in
+      let pp_iter_container_kind f fmt = function
+        | ICKcoll an ->
+          let is_asset_single_field = Model.Utils.is_asset_single_field model an in
+          Format.fprintf fmt "%s (%s.%s_assets)"
+            (if is_asset_single_field then "set" else "map")
+            const_storage
+            an
+        | ICKview mt -> Format.fprintf fmt "list (%a)" f mt
+        | ICKlist mt -> Format.fprintf fmt "list (%a)" f mt
+      in
+
       Format.fprintf fmt
-        "for %a in list (%a) block {@\n  @[%a@] }@\n"
+        "for %a%s in %a block {@\n  @[%a@] }@\n"
         pp_id id
-        f col
+        (postvar col)
+        (pp_iter_container_kind f) col
         f body
 
     (* | Mfor (_, _, _, None) -> assert false
