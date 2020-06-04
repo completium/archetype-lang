@@ -308,18 +308,7 @@ let pp_model fmt (model : model) =
     | Unshallow _ -> ()
     | Listtocoll _ -> ()
 
-    | Ccontains an ->
-      let _, t = Utils.get_asset_key model an in
-      Format.fprintf fmt
-        "let contains_%s (l, key : %a list * %a) : bool =@\n  \
-         List.fold_left (fun accu x ->@\n      \
-         accu || x = key@\n    \
-         ) false l@\n"
-        an
-        pp_btyp t
-        pp_btyp t
-
-    | Vcontains an ->
+    | Contains (an, _) ->
       let _, t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "let contains_%s (l, key : %a list * %a) : bool =@\n  \
@@ -601,6 +590,11 @@ let pp_model fmt (model : model) =
     match p.node with
     | Pconst i -> pp_id fmt i
     | Pwild -> pp_str fmt "_"
+  in
+
+  let pp_container_kind f fmt = function
+    | CKcoll -> pp_str fmt "_Coll_"
+    | CKview mt -> f fmt mt
   in
 
   let pp_mterm fmt (mt : mterm) =
@@ -1155,19 +1149,11 @@ let pp_model fmt (model : model) =
         in
         pp fmt (an, c, l)
 
-      | Mccontains (an, i) ->
-        let pp fmt (an, i) =
-          Format.fprintf fmt "contains_%a (%a)"
-            pp_str an
-            f i
-        in
-        pp fmt (an, i)
-
-      | Mvcontains (an, c, i) ->
+      | Mcontains (an, c, i) ->
         let pp fmt (an, c, i) =
           Format.fprintf fmt "contains_%a (%a, %a)"
             pp_str an
-            f c
+            (pp_container_kind f) c
             f i
         in
         pp fmt (an, c, i)

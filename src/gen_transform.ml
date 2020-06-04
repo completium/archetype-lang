@@ -98,7 +98,7 @@ let remove_add_update (model : model) : model =
           mk_mterm (Masset l) type_asset
         in
         let col    = mk_mterm (Mvarstorecol (dumloc an)) (Tcontainer (type_asset, Collection)) in
-        let cond   = mk_mterm (Mvcontains (an, col, k)) Tunit in
+        let cond   = mk_mterm (Mcontains (an, CKview col, k)) Tunit in
         let asset  = mk_asset (an, k, l) in
         let add    = mk_mterm (Maddasset (an, asset)) Tunit in
         let update = mk_mterm (Mupdate (an, k, l)) Tunit in
@@ -1847,7 +1847,7 @@ let add_contain_on_get (model : model) : model =
         let accu = f accu c in
         let env =
           match c.node with
-          | Mccontains(an, k) -> [an, k]
+          | Mcontains(an, _, k) -> [an, k]
           | _ -> []
         in
         let te = aux_env env t in
@@ -1945,7 +1945,7 @@ let add_contain_on_get (model : model) : model =
       | _ ->
         begin
           let build_contains (an, k) : mterm =
-            let contains = mk_mterm (Mccontains(an, k)) (Tbuiltin Bbool) in
+            let contains = mk_mterm (Mcontains(an, CKcoll, k)) (Tbuiltin Bbool) in
             let not_contains = mk_mterm (Mnot contains) (Tbuiltin Bbool) in
             let str_fail : mterm = mk_mterm (Mstring "get failed") (Tbuiltin Bstring) in
             let fail = mk_mterm (Mfail (Invalid str_fail)) Tunit in
@@ -2263,9 +2263,9 @@ let replace_api_view_by_col (model : model) : model =
     | Mvsort (an, c, l) when is_col c ->
       mk_mterm (Mcsort (an, l)) mt.type_
 
-    | Mvcontains (an, c, k) when is_col c->
+    | Mcontains (an, CKview c, k) when is_col c->
       let k = aux ctx k in
-      mk_mterm (Mccontains (an, k)) mt.type_
+      mk_mterm (Mcontains (an, CKcoll, k)) mt.type_
 
     | Mvnth (an, c, i) when is_col c ->
       let i = aux ctx i in
@@ -2295,7 +2295,7 @@ let replace_instr_verif (model : model) : model =
     match mt.node with
     | Mremoveasset (an, k) ->
       begin
-        let cond : mterm = mk_mterm (Mccontains (an, k)) (Tbuiltin Bbool) in
+        let cond : mterm = mk_mterm (Mcontains (an, CKcoll, k)) (Tbuiltin Bbool) in
         let get = build_get an k in
         let i : mterm = mk_mterm (Mremoveasset (an, get)) Tunit in
         let mif : mterm = mk_mterm (Mif (cond, i, None)) Tunit in

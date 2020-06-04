@@ -198,13 +198,7 @@ let pp_model fmt (model : model) =
     | Unshallow _ -> ()
     | Listtocoll _ -> ()
 
-    | Ccontains an ->
-      Format.fprintf fmt
-        "def contains_%s (self, l, key):@\n  \
-         key in l@\n"
-        an
-
-    | Vcontains an ->
+    | Contains (an, _) ->
       Format.fprintf fmt
         "def contains_%s (self, l, key):@\n  \
          key in l@\n"
@@ -394,6 +388,11 @@ let pp_model fmt (model : model) =
       | OrAssign    -> "|="
     in
     pp_str fmt (to_str op)
+  in
+
+  let pp_container_kind f fmt = function
+    | CKcoll -> pp_str fmt "_Coll_"
+    | CKview mt -> f fmt mt
   in
 
   let pp_mterm (env : Printer_model_tools.env) fmt (mt : mterm) =
@@ -911,19 +910,11 @@ let pp_model fmt (model : model) =
         in
         pp fmt (an, c, l)
 
-      | Mccontains (an, i) ->
-        let pp fmt (an, i) =
-          Format.fprintf fmt "self.contains_%a (%a)"
-            pp_str an
-            f i
-        in
-        pp fmt (an, i)
-
-      | Mvcontains (an, c, i) ->
+      | Mcontains (an, c, i) ->
         let pp fmt (an, c, i) =
           Format.fprintf fmt "self.contains_%a (%a, %a)"
             pp_str an
-            f c
+            (pp_container_kind f) c
             f i
         in
         pp fmt (an, c, i)

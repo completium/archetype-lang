@@ -220,8 +220,7 @@ type ('id, 'term) mterm_node  =
   | Mvselect          of ident * 'term * (ident * type_) list * 'term * 'term list (* asset_name, view, lambda (args, body, apply_args) *)
   | Mcsort            of ident * (ident * sort_kind) list
   | Mvsort            of ident * 'term * (ident * sort_kind) list
-  | Mccontains        of ident * 'term
-  | Mvcontains        of ident * 'term * 'term
+  | Mcontains         of ident * 'term container_kind * 'term
   | Mcnth             of ident * 'term
   | Mvnth             of ident * 'term * 'term
   | Mccount           of ident
@@ -322,6 +321,10 @@ type ('id, 'term) mterm_node  =
   | Mapiftail         of ident * 'term * 'term
 [@@deriving show {with_path = false}]
 
+and 'term container_kind =
+  | CKcoll
+  | CKview of 'term
+
 and 'id mterm_gen = {
   node: ('id, 'id mterm_gen) mterm_node;
   type_: type_;
@@ -346,6 +349,10 @@ and 'id fail_type_gen =
 and fail_type = lident fail_type_gen
 [@@deriving show {with_path = false}]
 
+and api_container_kind =
+  | Coll
+  | View
+
 and api_asset =
   | Get              of ident
   | Set              of ident
@@ -363,8 +370,7 @@ and api_asset =
   | Shallow          of ident
   | Unshallow        of ident
   | Listtocoll       of ident
-  | Ccontains        of ident
-  | Vcontains        of ident
+  | Contains         of ident * api_container_kind
   | Cnth             of ident
   | Vnth             of ident
   | Cselect          of ident * (ident * type_) list * mterm
@@ -957,6 +963,12 @@ let cmp_mterm_node
     (term1 : ('id, 'term) mterm_node)
     (term2 : ('id, 'term) mterm_node)
   : bool =
+  let cmp_container_kind (lhs : 'term container_kind) (rhs : 'term container_kind) : bool =
+    match lhs, rhs with
+    | CKcoll, CKcoll -> true
+    | CKview l, CKview r -> cmp l r
+    | _ -> false
+  in
   try
     match term1, term2 with
     (* lambda *)
@@ -1048,8 +1060,7 @@ let cmp_mterm_node
     | Mvselect (an1, c1, la1, lb1, a1), Mvselect (an2, c2, la2, lb2, a2)               -> cmp_ident an1 an2 && cmp c1 c2 && List.for_all2 (fun (i1, t1) (i2, t2) -> cmp_ident i1 i2 && cmp_type t1 t2) la1 la2 && cmp lb1 lb2 && List.for_all2 cmp a1 a2
     | Mcsort (an1, l1), Mcsort (an2, l2)                                               -> cmp_ident an1 an2 && List.for_all2 (fun (fn1, k1) (fn2, k2) -> cmp_ident fn1 fn2 && k1 = k2) l1 l2
     | Mvsort (an1, c1, l1), Mvsort (an2, c2, l2)                                       -> cmp_ident an1 an2 && cmp c1 c2 && List.for_all2 (fun (fn1, k1) (fn2, k2) -> cmp_ident fn1 fn2 && k1 = k2) l1 l2
-    | Mccontains (an1, i1), Mccontains (an2, i2)                                       -> cmp_ident an1 an2 && cmp i1 i2
-    | Mvcontains (an1, c1, i1), Mvcontains (an2, c2, i2)                               -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
+    | Mcontains (an1, c1, i1), Mcontains (an2, c2, i2)                                 -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && cmp i1 i2
     | Mcnth (an1, i1), Mcnth (an2, i2)                                                 -> cmp_ident an1 an2 && cmp i1 i2
     | Mvnth (an1, c1, i1), Mvnth (an2, c2, i2)                                         -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     | Mccount (an1), Mccount (an2)                                                     -> cmp_ident an1 an2
@@ -1156,6 +1167,12 @@ let cmp_mterm_node
 let rec cmp_mterm (term1 : mterm) (term2 : mterm) : bool =
   cmp_mterm_node cmp_mterm cmp_lident term1.node term2.node
 
+let cmp_container_kind lhs rhs =
+  match lhs, rhs with
+  | Coll, Coll
+  | View, View -> true
+  | _ -> false
+
 let cmp_api_item_node (a1 : api_storage_node) (a2 : api_storage_node) : bool =
   let cmp_api_asset (s1 : api_asset) (s2 : api_asset) : bool =
     match s1, s2 with
@@ -1174,8 +1191,7 @@ let cmp_api_item_node (a1 : api_storage_node) (a2 : api_storage_node) : bool =
     | Shallow an1, Shallow an2                         -> cmp_ident an1 an2
     | Unshallow an1, Unshallow an2                     -> cmp_ident an1 an2
     | Listtocoll an1, Listtocoll an2                   -> cmp_ident an1 an2
-    | Ccontains an1, Ccontains an2                     -> cmp_ident an1 an2
-    | Vcontains an1, Vcontains an2                     -> cmp_ident an1 an2
+    | Contains (an1, c1), Contains (an2, c2)           -> cmp_ident an1 an2 && cmp_container_kind c1 c2
     | Cnth an1, Cnth an2                               -> cmp_ident an1 an2
     | Vnth an1, Vnth an2                               -> cmp_ident an1 an2
     | Cselect (an1, l1, p1), Cselect (an2, l2, p2)     -> cmp_ident an1 an2 && List.for_all2 (fun (i1, t1) (i2, t2) -> cmp_ident i1 i2 && cmp_type t1 t2) l1 l2 && cmp_mterm p1 p2
@@ -1262,6 +1278,10 @@ let map_type (f : type_ -> type_) = function
   | Ttrace t          -> Ttrace t
 
 (* -------------------------------------------------------------------- *)
+
+let map_container_kind f = function
+  | CKcoll -> CKcoll
+  | CKview mt -> CKview (f mt)
 
 let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ -> type_) (f : 'id mterm_gen -> 'id mterm_gen) = function
   (* lambda *)
@@ -1353,8 +1373,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mvselect (an, c, la, lb, a)    -> Mvselect (fi an, f c, List.map (fun (i, t) -> (fi i, ft t)) la, f lb, List.map f a)
   | Mcsort (an, l)                 -> Mcsort (fi an, l)
   | Mvsort (an, c, l)              -> Mvsort (fi an, f c, l)
-  | Mccontains (an, i)             -> Mccontains (fi an, f i)
-  | Mvcontains (an, c, i)          -> Mvcontains (fi an, f c, f i)
+  | Mcontains (an, c, i)           -> Mcontains (fi an, map_container_kind f c, f i)
   | Mcnth (an, i)                  -> Mcnth (fi an, f i)
   | Mvnth (an, c, i)               -> Mvnth (fi an, f c, f i)
   | Mccount (an)                   -> Mccount (fi an)
@@ -1593,6 +1612,10 @@ let map_mterm_model_gen custom (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (
 let map_mterm_model (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (model : model) : model =
   map_mterm_model_gen () f model
 
+let fold_container_kind f accu = function
+  | CKcoll -> accu
+  | CKview mt -> f accu mt
+
 let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_gen) : 'a =
   let opt f accu x = match x with | Some v -> f accu v | None -> accu in
   match term.node with
@@ -1685,8 +1708,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mvselect (_, c, _, lb, a)             -> List.fold_left (fun accu x -> f accu x) (f (f accu c) lb) a
   | Mcsort (_,_)                          -> accu
   | Mvsort (_, c,_)                       -> f accu c
-  | Mccontains (_, i)                     -> f accu i
-  | Mvcontains (_, c, i)                  -> f (f accu c) i
+  | Mcontains (_, c, i)                   -> f (fold_container_kind f accu c) i
   | Mcnth (_, i)                          -> f accu i
   | Mvnth (_, c, i)                       -> f (f accu c) i
   | Mccount (_)                           -> accu
@@ -1791,6 +1813,12 @@ let fold_map_term_list f acc l : 'term list * 'a =
     (fun (pterms, accu) x ->
        let p, accu = f accu x in
        pterms @ [p], accu) ([], acc) l
+
+let fold_map_container_kind f accu = function
+  | CKcoll -> CKcoll, accu
+  | CKview mt ->
+    let mte, mta = f accu mt in
+    CKview mte, mta
 
 let fold_map_term
     (g : ('id, 'id mterm_gen) mterm_node -> 'id mterm_gen)
@@ -2242,14 +2270,10 @@ let fold_map_term
     let ce, ca = f accu c in
     g (Mvsort (an, ce, l)), ca
 
-  | Mccontains (an, i) ->
-    let ie, ia = f accu i in
-    g (Mccontains (an, ie)), ia
-
-  | Mvcontains (an, c, i) ->
-    let ce, ca = f accu c in
+  | Mcontains (an, c, i) ->
+    let ce, ca = fold_map_container_kind f accu c in
     let ie, ia = f ca i in
-    g (Mvcontains (an, ce, ie)), ia
+    g (Mcontains (an, ce, ie)), ia
 
   | Mcnth (an, i) ->
     let ie, ia = f accu i in
@@ -2823,8 +2847,7 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
         | Shallow an            -> Shallow (f KIassetname an)
         | Unshallow an          -> Unshallow (f KIassetname an)
         | Listtocoll an         -> Listtocoll (f KIassetname an)
-        | Ccontains an          -> Ccontains (f KIassetname an)
-        | Vcontains an          -> Vcontains (f KIassetname an)
+        | Contains (an, ck)     -> Contains (f KIassetname an, ck)
         | Cnth an               -> Cnth (f KIassetname an)
         | Vnth an               -> Vnth (f KIassetname an)
         | Cselect (an, l, p)    -> Cselect (f KIassetname an, List.map (fun (id, t) -> f KIparamlambda id, t) l, for_mterm p)

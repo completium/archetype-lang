@@ -1290,8 +1290,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mcsort _ -> error_not_translated "Mcsort"
     | Mvsort               (a,c,l) -> Tsort (with_dummy_loc (mk_sort_clone_id a l),map_mterm m ctx c,loc_term (mk_ac a))
 
-    | Mccontains _ -> error_not_translated "Mccontains"
-    | Mvcontains (a, _, r) -> Tapp (loc_term (Tvar ("contains_" ^ a)), [map_mterm m ctx r])
+    | Mcontains (a, _, r) -> Tapp (loc_term (Tvar ("contains_" ^ a)), [map_mterm m ctx r])
 
     | Mcnth _ -> error_not_translated "Mcnth"
     | Mvnth                (n,c,k) -> Tapp (loc_term (Tvar ("nth_" ^ n)),[map_mterm m ctx c; map_mterm m ctx k])
@@ -2526,7 +2525,7 @@ let mk_storage_api (m : M.model) records =
           (*mk_rm_asset           pa.pldesc (pt |> map_btype);*)
           mk_rm_field m (is_partition m n f) n t f pa pk
         ]
-      | M.APIAsset (Vcontains n) ->
+      | M.APIAsset (Contains (n, _)) ->
         let t         =  M.Utils.get_asset_key m n |> snd |> map_btype in
         acc @ [ mk_contains n t ]
       | M.APIAsset (Vselect (asset, _, test)) ->

@@ -923,20 +923,17 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (an, c, l)
 
-    | Mccontains (an, i) ->
-      let pp fmt (an, i) =
-        Format.fprintf fmt "contains_c_%a (%s, %a)"
-          pp_str an
-          const_storage
-          f i
-      in
-      pp fmt (an, i)
-
-    | Mvcontains (an, c, i) ->
+    | Mcontains (an, c, i) ->
       let pp fmt (an, c, i) =
-        Format.fprintf fmt "contains_v_%a (%a, %a)"
+        let prefix, pp =
+          match c with
+          | CKcoll    -> "c", (fun fmt _ -> pp_str fmt const_storage)
+          | CKview mt -> "v", (fun fmt _ -> f fmt mt)
+        in
+        Format.fprintf fmt "contains_%s_%a (%a, %a)"
+          prefix
           pp_str an
-          f c
+          pp ()
           f i
       in
       pp fmt (an, c, i)
@@ -2134,23 +2131,26 @@ let pp_model_internal fmt (model : model) b =
     | Unshallow _ -> ()
     | Listtocoll _ -> ()
 
-    | Ccontains an ->
-      let _, t = Utils.get_asset_key model an in
-      Format.fprintf fmt
-        "function contains_c_%s (const s : storage_type; const key : %a) : bool is@\n  \
-         block {skip} with %s.mem (key, s.%s_assets)@\n"
-        an pp_btyp t
-        (if Utils.is_asset_single_field model an then "Set" else "Map") an
-
-    | Vcontains an ->
-      let _, t = Utils.get_asset_key model an in
-      Format.fprintf fmt
-        "function contains_v_%s (const l : list(%a); const key : %a) : bool is@\n  \
-         begin@\n  \
-         function aggregate (const accu : bool; const v : %a) : bool is block { skip } with (accu or v = key);@\n  \
-         end with list_fold(aggregate, l, False)@\n"
-        an pp_btyp t pp_btyp t
-        pp_btyp t
+    | Contains (an, c) ->
+      begin
+        let _, t = Utils.get_asset_key model an in
+        match c with
+        | Coll ->
+          Format.fprintf fmt
+            "function contains_c_%s (const s : storage_type; const key : %a) : bool is@\n  \
+             block {skip} with %s.mem (key, s.%s_assets)@\n"
+            an pp_btyp t
+            (if Utils.is_asset_single_field model an then "Set" else "Map") an
+        | View ->
+          let _, t = Utils.get_asset_key model an in
+          Format.fprintf fmt
+            "function contains_v_%s (const l : list(%a); const key : %a) : bool is@\n  \
+             begin@\n  \
+             function aggregate (const accu : bool; const v : %a) : bool is block { skip } with (accu or v = key);@\n  \
+             end with list_fold(aggregate, l, False)@\n"
+            an pp_btyp t pp_btyp t
+            pp_btyp t
+      end
 
     | Cnth an -> pp_nth fmt `Coll env an
     | Vnth an -> pp_nth fmt `View env an

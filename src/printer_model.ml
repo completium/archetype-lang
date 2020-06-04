@@ -110,6 +110,10 @@ let pp_action_description fmt ad =
   | ADiterate  id -> Format.fprintf fmt "iterate (%a)" pp_ident id
   | ADcall     id -> Format.fprintf fmt "call (%a)" pp_ident id
 
+let pp_container_kind f fmt = function
+  | CKcoll -> pp_str fmt "_Coll_"
+  | CKview mt -> f fmt mt
+
 let pp_mterm fmt (mt : mterm) =
   let rec f fmt (mtt : mterm) =
     match mtt.node with
@@ -638,19 +642,11 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (an, c, l)
 
-    | Mccontains (an, i) ->
-      let pp fmt (an, i) =
-        Format.fprintf fmt "contains_%a (%a)"
-          pp_str an
-          f i
-      in
-      pp fmt (an, i)
-
-    | Mvcontains (an, c, i) ->
+    | Mcontains (an, c, i) ->
       let pp fmt (an, c, i) =
         Format.fprintf fmt "contains_%a (%a, %a)"
           pp_str an
-          f c
+          (pp_container_kind f) c
           f i
       in
       pp fmt (an, c, i)
@@ -1181,6 +1177,10 @@ let pp_label_term fmt (lt : label_term) =
     pp_id lt.label
     pp_mterm lt.term
 
+let pp_ck fmt = function
+  | Coll -> pp_str fmt "collection"
+  | View -> pp_str fmt "view"
+
 let pp_api_asset fmt = function
   | Get an -> pp_str fmt ("get\t " ^ an)
   | Set an -> pp_str fmt ("set\t " ^ an)
@@ -1199,8 +1199,7 @@ let pp_api_asset fmt = function
   | Shallow an -> pp_str fmt ("shallow\t " ^ an)
   | Unshallow an -> pp_str fmt ("unshallow\t " ^ an)
   | Listtocoll an -> pp_str fmt ("listtocoll\t " ^ an)
-  | Ccontains an -> pp_str fmt ("ccontains " ^ an)
-  | Vcontains an -> pp_str fmt ("vcontains " ^ an)
+  | Contains (an, c) -> Format.fprintf fmt "contains %s on %a" an pp_ck c
   | Cnth an -> pp_str fmt ("cnth\t " ^ an)
   | Vnth an -> pp_str fmt ("vnth\t " ^ an)
   | Cselect (an, _, p) -> Format.fprintf fmt "cselect\t %s %a" an pp_mterm p

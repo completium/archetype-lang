@@ -29,6 +29,11 @@ let generate_api_storage ?(verif=false) (model : model) : model =
       i::l
   in
 
+  let to_ck = function
+    | CKcoll   -> Coll
+    | CKview _ -> View
+  in
+
   let rec f (ctx : ctx_model) (accu : api_storage list) (term : mterm) : api_storage list =
     let api_items : api_storage_node list =
       let mt_type = term.type_ in
@@ -77,11 +82,10 @@ let generate_api_storage ?(verif=false) (model : model) : model =
         [APIAsset (Get asset_name); APIAsset (Csort (asset_name, l))]
       | Mvsort (asset_name, _, l) ->
         [APIAsset (Get asset_name); APIAsset (Vsort (asset_name, l))]
-      | Mapifcontains (asset_name, _, _)
-      | Mccontains (asset_name, _) ->
-        [APIAsset (Ccontains asset_name)]
-      | Mvcontains (asset_name, _, _) ->
-        [APIAsset (Vcontains asset_name)]
+      | Mapifcontains (asset_name, _, _) ->
+        [APIAsset (Contains (asset_name, Coll))]
+      | Mcontains (asset_name, c, _) ->
+        [APIAsset (Contains (asset_name, to_ck c))]
       | Mapifnth (asset_name, _, _)
       | Mcnth (asset_name, _) ->
         [APIAsset (Get asset_name); APIAsset (Cnth asset_name)]
@@ -189,8 +193,7 @@ let generate_api_storage ?(verif=false) (model : model) : model =
                    | APIAsset (Shallow       an)        -> an
                    | APIAsset (Unshallow     an)        -> an
                    | APIAsset (Listtocoll    an)        -> an
-                   | APIAsset (Ccontains     an)        -> an
-                   | APIAsset (Vcontains     an)        -> an
+                   | APIAsset (Contains      (an, _))   -> an
                    | APIAsset (Cnth          an)        -> an
                    | APIAsset (Vnth          an)        -> an
                    | APIAsset (Cselect      (an, _, _)) -> an
@@ -242,8 +245,7 @@ let generate_api_storage ?(verif=false) (model : model) : model =
                    | APIAsset   (Unshallow     _) -> 21
                    | APIAsset   (Listtocoll    _) -> 22
                    | APIAsset   (ColToKeys     _) -> 23
-                   | APIAsset   (Ccontains     _) -> 24
-                   | APIAsset   (Vcontains     _) -> 25
+                   | APIAsset   (Contains      _) -> 24
                    | APIAsset   (Cselect       _) -> 26
                    | APIAsset   (Vselect       _) -> 27
                    | APIAsset   (Csort         _) -> 28
