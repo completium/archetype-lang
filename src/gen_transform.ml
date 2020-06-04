@@ -121,10 +121,7 @@ let build_col_asset (an : ident) =
   let col : mterm  = mk_mterm (Mvarstorecol dan) type_col in
   mk_mterm (Mcast (type_col, type_view, col)) type_view, type_asset
 
-let build_get (an : ident) v =
-  let col, type_asset = build_col_asset an in
-  mk_mterm (Mget (an, col, v)) type_asset
-
+let build_get (an : ident) v = mk_mterm (Mget (an, v)) (Tasset (dumloc an))
 
 (* myasset.update k {f1 = v1; f2 = v2}
 
@@ -1785,12 +1782,6 @@ let build_col (an : ident) =
   let col : mterm  = mk_mterm (Mvarstorecol dan) type_col in
   mk_mterm (Mcast (type_col, type_view, col)) type_view
 
-let build_get (an : ident) v =
-  let dan = dumloc an in
-  let type_asset = Tasset dan in
-  let cast : mterm = build_col an in
-  mk_mterm (Mget (an, cast, v)) type_asset
-
 let change_type_of_nth (model : model) : model =
   let rec aux ctx (mt : mterm) : mterm =
     match mt.node with
@@ -1856,7 +1847,7 @@ let add_contain_on_get (model : model) : model =
         let accu = f accu c in
         let env =
           match c.node with
-          | Mvcontains(an, c, k) -> [an, c, k]
+          | Mccontains(an, k) -> [an, k]
           | _ -> []
         in
         let te = aux_env env t in
@@ -1948,33 +1939,32 @@ let add_contain_on_get (model : model) : model =
 
     in
 
-    let g (env : (ident * mterm * mterm) list) (accu : (ident * mterm * mterm) list) (mt : mterm) : mterm =
+    let g (env : (ident * mterm) list) (accu : (ident * mterm) list) (mt : mterm) : mterm =
       match accu with
       | [] -> mt
       | _ ->
         begin
-          let build_contains (an, c, k) : mterm =
-            let contains = mk_mterm (Mvcontains(an, c, k)) (Tbuiltin Bbool) in
+          let build_contains (an, k) : mterm =
+            let contains = mk_mterm (Mccontains(an, k)) (Tbuiltin Bbool) in
             let not_contains = mk_mterm (Mnot contains) (Tbuiltin Bbool) in
             let str_fail : mterm = mk_mterm (Mstring "get failed") (Tbuiltin Bstring) in
             let fail = mk_mterm (Mfail (Invalid str_fail)) Tunit in
             let mif : mterm = mk_mterm (Mif(not_contains, fail, None)) Tunit in
             mif
           in
-          let cmp (an1, c1, k1 : ident * mterm * mterm) (an2, c2, k2 : ident * mterm * mterm) : bool =
-            cmp_ident an1 an2 && cmp_mterm c1 c2 && cmp_mterm k1 k2
+          let cmp (an1, k1 : ident * mterm) (an2, k2 : ident * mterm) : bool =
+            cmp_ident an1 an2 && cmp_mterm k1 k2
           in
           let ll = List.filter (fun x -> not (List.exists (cmp x) env)) accu in
           let l = List.map build_contains ll @ [mt] in
           mk_mterm (Mseq l) mt.type_
         end
     in
-    let rec f (accu : (ident * mterm * mterm) list) (mt : mterm) : (ident * mterm * mterm) list =
+    let rec f (accu : (ident * mterm) list) (mt : mterm) : (ident * mterm) list =
       match mt.node with
-      | Mget(an, c, k) ->
-        let accu = f accu c in
+      | Mget(an, k) ->
         let accu = f accu k in
-        (an, c, k)::accu
+        (an, k)::accu
       | _ -> fold_term f accu mt
     in
     for_instruction g f [] [] mt

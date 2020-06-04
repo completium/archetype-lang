@@ -215,7 +215,7 @@ type ('id, 'term) mterm_node  =
   | Mupdate           of ident * 'term * ('id * assignment_operator * 'term) list
   | Maddupdate        of ident * 'term * ('id * assignment_operator * 'term) list
   (* asset api expression *)
-  | Mget              of ident * 'term * 'term
+  | Mget              of ident * 'term
   | Mcselect          of ident * (ident * type_) list * 'term * 'term list (* asset_name, lambda (args, body, apply_args) *)
   | Mvselect          of ident * 'term * (ident * type_) list * 'term * 'term list (* asset_name, view, lambda (args, body, apply_args) *)
   | Mcsort            of ident * (ident * sort_kind) list
@@ -1043,7 +1043,7 @@ let cmp_mterm_node
     | Mupdate (an1, k1, l1), Mupdate (an2, k2, l2)                                     -> cmp_ident an1 an2 && cmp k1 k2 && List.for_all2 (fun (id1, op1, v1) (id2, op2, v2) -> cmpi id1 id2 && cmp_assign_op op1 op2 && cmp v1 v2) l1 l2
     | Maddupdate (an1, k1, l1), Maddupdate (an2, k2, l2)                               -> cmp_ident an1 an2 && cmp k1 k2 && List.for_all2 (fun (id1, op1, v1) (id2, op2, v2) -> cmpi id1 id2 && cmp_assign_op op1 op2 && cmp v1 v2) l1 l2
     (* asset api expression *)
-    | Mget (an1, c1, k1), Mget (an2, c2, k2)                                           -> cmp_ident an1 an2 && cmp c1 c2 && cmp k1 k2
+    | Mget (an1, k1), Mget (an2, k2)                                                   -> cmp_ident an1 an2 && cmp k1 k2
     | Mcselect (an1, la1, lb1, a1), Mcselect (an2, la2, lb2, a2)                       -> cmp_ident an1 an2 && List.for_all2 (fun (i1, t1) (i2, t2) -> cmp_ident i1 i2 && cmp_type t1 t2) la1 la2 && cmp lb1 lb2 && List.for_all2 cmp a1 a2
     | Mvselect (an1, c1, la1, lb1, a1), Mvselect (an2, c2, la2, lb2, a2)               -> cmp_ident an1 an2 && cmp c1 c2 && List.for_all2 (fun (i1, t1) (i2, t2) -> cmp_ident i1 i2 && cmp_type t1 t2) la1 la2 && cmp lb1 lb2 && List.for_all2 cmp a1 a2
     | Mcsort (an1, l1), Mcsort (an2, l2)                                               -> cmp_ident an1 an2 && List.for_all2 (fun (fn1, k1) (fn2, k2) -> cmp_ident fn1 fn2 && k1 = k2) l1 l2
@@ -1348,7 +1348,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mupdate (an, k, l)             -> Mupdate (fi an, f k, List.map (fun (id, op, v) -> (g id, op, f v)) l)
   | Maddupdate (an, k, l)          -> Maddupdate (fi an, f k, List.map (fun (id, op, v) -> (g id, op, f v)) l)
   (* asset api expression *)
-  | Mget (an, c, k)                -> Mget (fi an, f c, f k)
+  | Mget (an, k)                   -> Mget (fi an, f k)
   | Mcselect (an, la, lb, a)       -> Mcselect (fi an, List.map (fun (i, t) -> (fi i, ft t)) la, f lb, List.map f a)
   | Mvselect (an, c, la, lb, a)    -> Mvselect (fi an, f c, List.map (fun (i, t) -> (fi i, ft t)) la, f lb, List.map f a)
   | Mcsort (an, l)                 -> Mcsort (fi an, l)
@@ -1680,7 +1680,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mupdate (_, k, l)                     -> List.fold_left (fun accu (_, _, v) -> f accu v) (f accu k) l
   | Maddupdate (_, k, l)                  -> List.fold_left (fun accu (_, _, v) -> f accu v) (f accu k) l
   (* asset api expression *)
-  | Mget (_, c, k)                        -> f (f accu c) k
+  | Mget (_, k)                           -> f accu k
   | Mcselect (_, _, lb, a)                -> List.fold_left (fun accu x -> f accu x) (f accu lb) a
   | Mvselect (_, c, _, lb, a)             -> List.fold_left (fun accu x -> f accu x) (f (f accu c) lb) a
   | Mcsort (_,_)                          -> accu
@@ -2208,10 +2208,9 @@ let fold_map_term
 
   (* asset api expression *)
 
-  | Mget (an, c, k) ->
-    let ce, ca = f accu c in
-    let ke, ka = f ca k in
-    g (Mget (an, ce, ke)), ka
+  | Mget (an, k) ->
+    let ke, ka = f accu k in
+    g (Mget (an, ke)), ka
 
   | Mcselect (an, la, lb, a) ->
     let lbe, lba = f accu lb in

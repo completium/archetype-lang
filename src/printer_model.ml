@@ -592,14 +592,13 @@ let pp_mterm fmt (mt : mterm) =
 
     (* asset api expression *)
 
-    | Mget (an, c, k) ->
-      let pp fmt (an, _c, k) =
-        Format.fprintf fmt "get_%a (%a, %a)"
+    | Mget (an, k) ->
+      let pp fmt (an, k) =
+        Format.fprintf fmt "get_%a (%a)"
           pp_str an
-          f c
           f k
       in
-      pp fmt (an, c, k)
+      pp fmt (an, k)
 
     | Mcselect (an, la, lb, a) ->
       let pp fmt (an, la, lb, a) =
