@@ -1697,7 +1697,11 @@ let extract_term_from_instruction f (model : model) : model =
       process (mk_mterm (Mremovefield (an, fn, ce, ie)) mt.type_) (ca @ ia)
 
     | Mclear (an, v) ->
-      let ve, va = f v in
+      let ve, va =
+        match v with
+        | CKcoll -> CKcoll, []
+        | CKview v -> let ve, va = f v in CKview ve, va
+      in
       process (mk_mterm (Mclear (an, ve)) mt.type_) va
 
     | Mset (an, l, k, v) ->
@@ -1875,19 +1879,15 @@ let add_contain_on_get (model : model) : model =
         let ll = List.map (fun (p, e) -> (p, aux e)) l in
         gg accu (mk_mterm (Mmatchwith (e, ll)) mt.type_)
 
-      | Mfor (i, ICKcoll an, b, lbl) ->
+      | Mfor (i, c, b, lbl) ->
+        let accu =
+          match c with
+          | ICKcoll _ -> accu
+          | ICKview c -> f accu c
+          | ICKlist c -> f accu c
+        in
         let be = aux b in
-        gg accu (mk_mterm (Mfor (i, ICKcoll an, be, lbl)) mt.type_)
-
-      | Mfor (i, ICKview c, b, lbl) ->
-        let accu = f accu c in
-        let be = aux b in
-        gg accu (mk_mterm (Mfor (i, ICKview c, be, lbl)) mt.type_)
-
-      | Mfor (i, ICKlist c, b, lbl) ->
-        let accu = f accu c in
-        let be = aux b in
-        gg accu (mk_mterm (Mfor (i, ICKlist c, be, lbl)) mt.type_)
+        gg accu (mk_mterm (Mfor (i, c, be, lbl)) mt.type_)
 
       | Miter (i, a, b, c, lbl) ->
         let accu = f accu a in
@@ -1942,7 +1942,11 @@ let add_contain_on_get (model : model) : model =
         gg accu mt
 
       | Mclear (_an, v) ->
-        let accu = f accu v in
+        let accu =
+          match v with
+          | CKcoll -> accu
+          | CKview c -> f accu c
+        in
         gg accu mt
 
       | Mset (_an, _l, k, v) ->
@@ -2059,8 +2063,6 @@ let split_key_values (model : model) : model =
   let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
     match mt.node, mt.type_ with
     | Mcast (Tcontainer (Tasset _, _), Tcontainer (Tasset _, _), v), _ -> aux ctx v
-    | Mvarstorecol an, _ ->
-      mk_mterm (Mcoltokeys (unloc an)) (Tlist (Tbuiltin (Utils.get_asset_key model (unloc an) |> snd)))
     | Massets l, Tcontainer (Tasset an, _) ->
       let l = List.map (aux ctx) l in
       mk_mterm (Mlitlist l) (Tlist (Tbuiltin (Utils.get_asset_key model (unloc an) |> snd)))
@@ -2287,6 +2289,9 @@ let replace_api_view_by_col (model : model) : model =
 
   let rec aux ctx (mt : mterm) : mterm =
     match mt.node with
+    | Mclear (an, CKview c) when is_storcol c ->
+      mk_mterm (Mclear (an, CKcoll)) mt.type_
+
     | Mselect (an, CKview c, args, body, vs) when is_col c ->
       let body = aux ctx body in
       let vs = List.map (aux ctx) vs in

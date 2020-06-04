@@ -1460,18 +1460,6 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mbreak                -> error_not_translated "break;"
 
 
-    (* shallowing *)
-    (* TODO : remove from model *)
-    | Mshallow (_a, _e) -> error_not_translated "shallow;"
-    | Munshallow (_a, _e) -> error_not_translated "unshallow;"
-    | Mlisttocoll (_n, _l) -> error_not_translated "listtocoll;"
-    | Maddshallow (_n, _l) -> error_not_translated "addshallow;"
-
-    (* collection keys *)
-
-    | Mtokeys             _ -> error_not_translated "Mtokeys"
-    | Mcoltokeys          _ -> error_not_translated "Mcoltokeys"
-
     (* quantifiers *)
 
     | Mforall (i, t, None, b) ->
@@ -2533,9 +2521,7 @@ let mk_storage_api (m : M.model) records =
         acc @ [ mk_select m asset test (mlw_test |> unloc_term) (match sc.api_loc with | OnlyFormula -> true | ExecFormula | OnlyExec -> false) ]
       | M.APIAsset (Sort (asset, _, field)) ->
         acc @ [ mk_cmp_function m asset field; mk_sort_clone m asset field]
-      | M.APIAsset (Listtocoll n) ->
-        acc @ [ mk_listtocoll m n ]
-      | M.APIAsset (Clear n) ->
+      | M.APIAsset (Clear (n, _ck)) ->
         acc @ [mk_clear_coll m n]
       (* | M.APIAsset (UpdateClear (n,f)) ->
         let (key,_) = M.Utils.get_asset_key m n in

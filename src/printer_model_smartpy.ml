@@ -131,7 +131,7 @@ let pp_model fmt (model : model) =
          del self.data.%s_assets[key]@\n"
         an an
 
-    | Clear an ->
+    | Clear (an, _) ->
       Format.fprintf fmt
         "def clear_%s (self):@\n  \
          self.data.%s_assets = {}@\n"
@@ -168,35 +168,6 @@ let pp_model fmt (model : model) =
         "def remove_all_%s_%s (self, s : storage) : unit =@\n  \
          #TODO@\n"
         an fn
-
-    | ToKeys an ->
-      Format.fprintf fmt
-        "def to_keys_%s (self):@\n  \
-         self.data.%s_assets.keys()@\n"
-        an
-        an
-
-    | ColToKeys an ->
-      Format.fprintf fmt
-        "def col_to_keys_%s (self):@\n  \
-         self.data.%s_assets.keys()@\n"
-        an
-        an
-
-    | Min (an, fn) ->
-      Format.fprintf fmt
-        "def min_%s_%s (self):@\n  \
-         #TODO@\n"
-        an fn
-
-    | Max (an, fn) ->
-      Format.fprintf fmt
-        "def max_%s_%s (self):@\n  \
-         #TODO@\n"
-        an fn
-    | Shallow _ -> ()
-    | Unshallow _ -> ()
-    | Listtocoll _ -> ()
 
     | Contains (an, _) ->
       Format.fprintf fmt
@@ -800,7 +771,7 @@ let pp_model fmt (model : model) =
         let pp fmt (an, v) =
           Format.fprintf fmt "self.clear_%a (%a)"
             pp_str an
-            f v
+            (pp_container_kind f) v
         in
         pp fmt (an, v)
 
@@ -1112,40 +1083,6 @@ let pp_model fmt (model : model) =
       (* imperative *)
 
       | Mbreak -> emit_error (UnsupportedTerm ("Mbreak"))
-
-
-      (* shallowing *)
-
-      | Mshallow (i, x) ->
-        Format.fprintf fmt "shallow_%a %a"
-          pp_str i
-          f x
-
-      | Munshallow (i, x) ->
-        Format.fprintf fmt "unshallow_%a %a"
-          pp_str i
-          f x
-
-      | Mlisttocoll (_, x) -> f fmt x
-
-      | Maddshallow (e, args) ->
-        let pp fmt (e, args) =
-          Format.fprintf fmt "add_shallow_%a (self, %a)"
-            pp_str e
-            (pp_list ", " f) args
-        in
-        pp fmt (e, args)
-
-
-      (* collection keys *)
-
-      | Mtokeys (an, x) ->
-        Format.fprintf fmt "%s.to_keys (%a)"
-          an
-          f x
-      | Mcoltokeys an ->
-        Format.fprintf fmt "self.col_to_keys_%s ()"
-          an
 
 
       (* quantifiers *)

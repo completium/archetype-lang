@@ -567,7 +567,7 @@ let pp_mterm fmt (mt : mterm) =
       let pp fmt (an, v) =
         Format.fprintf fmt "clear_%a (%a)"
           pp_str an
-          f v
+          (pp_container_kind f) v
       in
       pp fmt (an, v)
 
@@ -902,44 +902,7 @@ let pp_mterm fmt (mt : mterm) =
     | Mbreak -> pp_str fmt "break"
 
 
-    (* shallowing *)
-
-    | Mshallow (i, x) ->
-      Format.fprintf fmt "shallow_%a %a"
-        pp_str i
-        f x
-
-    | Munshallow (i, x) ->
-      Format.fprintf fmt "unshallow_%a (%a)"
-        pp_str i
-        f x
-
-    | Mlisttocoll (i, x) ->
-      Format.fprintf fmt "listtocoll_%a %a"
-        pp_str i
-        f x
-
-    | Maddshallow (e, args) ->
-      let pp fmt (e, args) =
-        Format.fprintf fmt "add_shallow_%a (%a)"
-          pp_str e
-          (pp_list ", " f) args
-      in
-      pp fmt (e, args)
-
-
-    (* collection keys *)
-
-    | Mtokeys (an, x) ->
-      Format.fprintf fmt "%s.to_keys (%a)"
-        an
-        f x
-
-    | Mcoltokeys an ->
-      Format.fprintf fmt "col_to_keys %s" an
-
-
-    (* quantifiers *)
+     (* quantifiers *)
 
     | Mforall (i, t, None, e) ->
       Format.fprintf fmt "forall (%a : %a), %a"
@@ -1140,19 +1103,12 @@ let pp_api_asset fmt = function
   | Set an -> pp_str fmt ("set\t " ^ an)
   | Add an -> pp_str fmt ("add\t " ^ an)
   | Remove an -> pp_str fmt ("remove\t " ^ an)
-  | Clear an -> pp_str fmt ("clear\t " ^ an)
+  | Clear (an, c) -> Format.fprintf fmt "clear %s on %a" an pp_ck c
   | Update (an, l) -> Format.fprintf fmt "update\t%a with %a" pp_str an (pp_list ", " (fun fmt (id, op, v) -> Format.fprintf fmt "%s %a %a)" id pp_assignment_operator op pp_mterm v)) l
   | UpdateAdd (an, fn) -> pp_str fmt ("add\t " ^ an ^ " " ^ fn)
   | UpdateRemove (an, fn) -> pp_str fmt ("remove\t " ^ an ^ " " ^ fn)
   | RemoveAll (an, fn) -> pp_str fmt ("removeall\t " ^ an ^ " " ^ fn)
   (* | UpdateClear (an, fn) -> pp_str fmt ("clear\t " ^ an ^ " " ^ fn) *)
-  | ToKeys an -> pp_str fmt ("to_keys\t " ^ an)
-  | ColToKeys an -> pp_str fmt ("col_to_keys\t " ^ an)
-  | Min (an, fn) -> pp_str fmt ("min\t " ^ an ^ " " ^ fn)
-  | Max (an, fn) -> pp_str fmt ("max\t " ^ an ^ " " ^ fn)
-  | Shallow an -> pp_str fmt ("shallow\t " ^ an)
-  | Unshallow an -> pp_str fmt ("unshallow\t " ^ an)
-  | Listtocoll an -> pp_str fmt ("listtocoll\t " ^ an)
   | Contains (an, c)     -> Format.fprintf fmt "contains %s on %a" an pp_ck c
   | Nth (an, c)          -> Format.fprintf fmt "nth %s on %a" an pp_ck c
   | Select (an, c, _, p) -> Format.fprintf fmt "select %s %a on %a" an pp_mterm p pp_ck c

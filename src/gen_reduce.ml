@@ -175,9 +175,6 @@ and process_mtern (model : model) (ctx : ctx_red) (s : s_red) (mt : mterm) : mte
   (* | Mremovelocal  of 'term * 'term *)
   (* | Mreverselocal of 'term *)
 
-  | Maddshallow (an, args) ->
-    mk_mterm (Maddshallow (an, storage_var::args)) Tstorage, s
-
   (* app local *)
   | Mapp (id, args) ->
     let type_ = get_type ctx (unloc id) in

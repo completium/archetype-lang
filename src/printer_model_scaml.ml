@@ -51,16 +51,6 @@ let to_lident = dumloc
 let pp_nothing (_fmt : Format.formatter) = ()
 
 let pp_model fmt (model : model) =
-  let remove_shallow (model : model) : model =
-    let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
-      match mt.node with
-      | Mshallow (_, x)
-      | Munshallow (_, x) -> aux ctx x
-      | _ -> map_mterm (aux ctx) mt
-    in
-    map_mterm_model aux model
-  in
-  let model = remove_shallow model in
   let pp_model_name (fmt : Format.formatter) _ =
     Format.fprintf fmt "(* contract: %a *)"
       pp_id model.name
@@ -226,87 +216,6 @@ let pp_model fmt (model : model) =
         "let to_keys_%s_%s (s : storage) : storage =@\n  \
          s (*TODO*)@\n"
         an fn
-
-    | ToKeys an ->
-      Format.fprintf fmt
-        "let to_keys_%s (s : storage) : storage =@\n  \
-         s (*TODO*)@\n"
-        an
-
-    | ColToKeys an ->
-      let _k, t = Utils.get_asset_key model an in
-      Format.fprintf fmt
-        "let col_to_keys_%s (s : storage) : %a list =@\n  \
-         let res = Map.fold (fun k v accu -> k::accu) s.%s_assets [] in@\n  \
-         List.rev res@\n"
-        an pp_btyp t
-        an
-
-    | Min (an, fn) ->
-      let _, tk = Utils.get_asset_key model an in
-      let _, t, _ = Utils.get_asset_field model (an, fn) in
-      Format.fprintf fmt
-        "let min_%s_%s (s, l : storage * %a list) : %a =@\n  \
-         match l with@\n  \
-         | [] -> failwith \"empty list\"@\n  \
-         | e::t ->@\n    \
-         let x = @\n      \
-         match Map.get e s.%s_assets with@\n      \
-         | Some v -> v@\n      \
-         | _ -> failwith \"not_found\" @\n    \
-         in@\n    \
-         let init = x.%s in@\n    \
-         List.fold_right (fun accu k ->@\n        \
-         let x = @\n          \
-         match Map.get k s.%s_assets with@\n          \
-         | Some v -> v@\n          \
-         | _ -> failwith \"not_found\" @\n        \
-         in@\n        \
-         if accu > x.%s@\n        \
-         then x.%s@\n        \
-         else accu@\n      \
-         ) init t@\n"
-        an fn pp_btyp tk pp_type t
-        an
-        fn
-        an
-        fn
-        fn
-
-    | Max (an, fn) ->
-      let _, tk = Utils.get_asset_key model an in
-      let _, t, _ = Utils.get_asset_field model (an, fn) in
-      Format.fprintf fmt
-        "let max_%s_%s (s, l : storage * %a list) : %a =@\n  \
-         match l with@\n  \
-         | [] -> failwith \"empty list\"@\n  \
-         | e::t ->@\n    \
-         let x = @\n      \
-         match Map.get e s.%s_assets with@\n      \
-         | Some v -> v@\n      \
-         | _ -> failwith \"not_found\" @\n    \
-         in@\n    \
-         let init = x.%s in@\n    \
-         List.fold_right (fun accu k ->@\n        \
-         let x = @\n          \
-         match Map.get k s.%s_assets with@\n          \
-         | Some v -> v@\n          \
-         | _ -> failwith \"not_found\" @\n        \
-         in@\n        \
-         if accu < x.%s@\n        \
-         then x.%s@\n        \
-         else accu@\n      \
-         ) init t@\n"
-        an fn pp_btyp tk pp_type t
-        an
-        fn
-        an
-        fn
-        fn
-
-    | Shallow _ -> ()
-    | Unshallow _ -> ()
-    | Listtocoll _ -> ()
 
     | Contains (an, _) ->
       let _, t = Utils.get_asset_key model an in
@@ -1002,7 +911,7 @@ let pp_model fmt (model : model) =
         let pp fmt (an, v) =
           Format.fprintf fmt "clear_%a (%a)"
             pp_str an
-            f v
+            (pp_container_kind f) v
         in
         pp fmt (an, v)
 
@@ -1316,42 +1225,6 @@ let pp_model fmt (model : model) =
       (* imperative *)
 
       | Mbreak -> emit_error (UnsupportedTerm ("break"))
-
-
-      (* shallowing *)
-
-      | Mshallow (i, x) ->
-        Format.fprintf fmt "shallow_%a %a"
-          pp_str i
-          f x
-
-      | Munshallow (i, x) ->
-        Format.fprintf fmt "unshallow_%a %a"
-          pp_str i
-          f x
-
-      | Mlisttocoll (_, x) -> f fmt x
-
-      | Maddshallow (e, args) ->
-        let pp fmt (e, args) =
-          Format.fprintf fmt "add_shallow_%a (%a)"
-            pp_str e
-            (pp_list ", " f) args
-        in
-        pp fmt (e, args)
-
-
-      (* collection keys *)
-
-      | Mtokeys (an, x) ->
-        Format.fprintf fmt "%s.to_keys (%a)"
-          an
-          f x
-
-      | Mcoltokeys (an) ->
-        Format.fprintf fmt "col_to_keys_%s (%s)"
-          an
-          const_storage
 
 
       (* quantifiers *)

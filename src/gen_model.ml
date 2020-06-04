@@ -658,7 +658,7 @@ let to_model (ast : A.model) : M.model =
               | _ -> assert false
             end
           in
-          M.Mclear (an, fp)
+          M.Mclear (an, CKview fp)
         )
 
       | A.Icall (Some p, A.Cconst (A.Caddupdate), [AExpr k; AEffect e]) when is_asset_container p ->

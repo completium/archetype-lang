@@ -210,7 +210,7 @@ type ('id, 'term) mterm_node  =
   | Mremoveasset      of ident * 'term
   | Mremovefield      of ident * ident * 'term * 'term
   | Mremoveall        of ident * ident * 'term
-  | Mclear            of ident * 'term
+  | Mclear            of ident * 'term container_kind
   | Mset              of ident * ident list * 'term * 'term (*asset_name * field_name modified * ... *)
   | Mupdate           of ident * 'term * ('id * assignment_operator * 'term) list
   | Maddupdate        of ident * 'term * ('id * assignment_operator * 'term) list
@@ -277,14 +277,6 @@ type ('id, 'term) mterm_node  =
   | Mfold             of ('id * 'id list * 'term * 'term) (* ident list * collection * body *)
   (* imperative *)
   | Mbreak
-  (* shallowing *)
-  | Mshallow          of ident * 'term
-  | Munshallow        of ident * 'term
-  | Mlisttocoll       of ident * 'term
-  | Maddshallow       of ident * 'term list
-  (* collection keys *)
-  | Mtokeys           of ident * 'term
-  | Mcoltokeys        of ident
   (* quantifiers *)
   | Mforall           of 'id * type_ * 'term option * 'term
   | Mexists           of 'id * type_ * 'term option * 'term
@@ -356,18 +348,11 @@ and api_asset =
   | Set              of ident
   | Add              of ident
   | Remove           of ident
-  | Clear            of ident
+  | Clear            of ident * api_container_kind
   | Update           of ident * (ident * assignment_operator * mterm) list
   | UpdateAdd        of ident * ident
   | UpdateRemove     of ident * ident
   | RemoveAll        of ident * ident
-  | ToKeys           of ident
-  | ColToKeys        of ident
-  | Min              of ident * ident
-  | Max              of ident * ident
-  | Shallow          of ident
-  | Unshallow        of ident
-  | Listtocoll       of ident
   | Contains         of ident * api_container_kind
   | Nth              of ident * api_container_kind
   | Select           of ident * api_container_kind * (ident * type_) list * mterm
@@ -1047,8 +1032,8 @@ let cmp_mterm_node
     | Maddfield (an1, fn1, c1, i1), Maddfield (an2, fn2, c2, i2)                       -> cmp_ident an1 an2 && cmp_ident fn1 fn2 && cmp c1 c2 && cmp i1 i2
     | Mremoveasset (an1, i1), Mremoveasset (an2, i2)                                   -> cmp_ident an1 an2 && cmp i1 i2
     | Mremovefield (an1, fn1, c1, i1), Mremovefield (an2, fn2, c2, i2)                 -> cmp_ident an1 an2 && cmp_ident fn1 fn2 && cmp c1 c2 && cmp i1 i2
-    | Mremoveall (an1, fn1, a1), Mremoveall (an2, fn2, a2)                           -> cmp_ident an1 an2 && cmp_ident fn1 fn2 && cmp a1 a2
-    | Mclear (an1, v1), Mclear (an2, v2)                                               -> cmp_ident an1 an2 && cmp v1 v2
+    | Mremoveall (an1, fn1, a1), Mremoveall (an2, fn2, a2)                             -> cmp_ident an1 an2 && cmp_ident fn1 fn2 && cmp a1 a2
+    | Mclear (an1, v1), Mclear (an2, v2)                                               -> cmp_ident an1 an2 && cmp_container_kind v1 v2
     | Mset (c1, l1, k1, v1), Mset (c2, l2, k2, v2)                                     -> cmp_ident c1 c2 && List.for_all2 cmp_ident l1 l2 && cmp k1 k2 && cmp v1 v2
     | Mupdate (an1, k1, l1), Mupdate (an2, k2, l2)                                     -> cmp_ident an1 an2 && cmp k1 k2 && List.for_all2 (fun (id1, op1, v1) (id2, op2, v2) -> cmpi id1 id2 && cmp_assign_op op1 op2 && cmp v1 v2) l1 l2
     | Maddupdate (an1, k1, l1), Maddupdate (an2, k2, l2)                               -> cmp_ident an1 an2 && cmp k1 k2 && List.for_all2 (fun (id1, op1, v1) (id2, op2, v2) -> cmpi id1 id2 && cmp_assign_op op1 op2 && cmp v1 v2) l1 l2
@@ -1115,14 +1100,6 @@ let cmp_mterm_node
     | Mfold (i1, is1, c1, b1), Mfold (i2, is2, c2, b2)                                 -> cmpi i1 i2 && List.for_all2 cmpi is1 is2 && cmp c1 c2 && cmp b1 b2
     (* imperative *)
     | Mbreak, Mbreak                                                                   -> true
-    (* shallowing *)
-    | Mshallow (i1, x1), Mshallow (i2, x2)                                             -> cmp x1 x2 && cmp_ident i1 i2
-    | Mlisttocoll (i1, x1), Mlisttocoll (i2, x2)                                       -> cmp x1 x2 && cmp_ident i1 i2
-    | Munshallow (i1, x1), Munshallow (i2, x2)                                         -> cmp x1 x2 && cmp_ident i1 i2
-    | Maddshallow (e1, args1), Maddshallow (e2, args2)                                 -> cmp_ident e1 e2 && List.for_all2 cmp args1 args2
-    (* collection keys *)
-    | Mtokeys (a1, x1), Mtokeys (a2, x2)                                               -> cmp_ident a1 a2 && cmp x1 x2
-    | Mcoltokeys (a1), Mcoltokeys (a2)                                                 -> cmp_ident a1 a2
     (* quantifiers *)
     | Mforall (i1, t1, t2, e1), Mforall (i2, t3, t4, e2)                               -> cmpi i1 i2 && cmp_type t1 t3 && Option.cmp cmp t2 t4 && cmp e1 e2
     | Mexists (i1, t1, t2, e1), Mforall (i2, t3, t4, e2)                               -> cmpi i1 i2 && cmp_type t1 t3 && Option.cmp cmp t2 t4 && cmp e1 e2
@@ -1175,13 +1152,6 @@ let cmp_api_item_node (a1 : api_storage_node) (a2 : api_storage_node) : bool =
     | UpdateAdd (an1, fn1), UpdateAdd (an2, fn2)         -> cmp_ident an1 an2 && cmp_ident fn1 fn2
     | UpdateRemove (an1, fn1), UpdateRemove (an2, fn2)   -> cmp_ident an1 an2 && cmp_ident fn1 fn2
     | RemoveAll (an1, fn1), RemoveAll (an2, fn2)         -> cmp_ident an1 an2 && cmp_ident fn1 fn2
-    | ToKeys an1, ToKeys an2                             -> cmp_ident an1 an2
-    | ColToKeys an1, ColToKeys an2                       -> cmp_ident an1 an2
-    | Min (an1, fn1), Min (an2, fn2)                     -> cmp_ident an1 an2 && cmp_ident fn1 fn2
-    | Max (an1, fn1), Max (an2, fn2)                     -> cmp_ident an1 an2 && cmp_ident fn1 fn2
-    | Shallow an1, Shallow an2                           -> cmp_ident an1 an2
-    | Unshallow an1, Unshallow an2                       -> cmp_ident an1 an2
-    | Listtocoll an1, Listtocoll an2                     -> cmp_ident an1 an2
     | Contains (an1, c1), Contains (an2, c2)             -> cmp_ident an1 an2 && cmp_container_kind c1 c2
     | Nth (an1, c1), Nth (an2, c2)                       -> cmp_ident an1 an2 && cmp_container_kind c1 c2
     | Select (an1, c1, l1, p1), Select (an2, c2, l2, p2) -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && List.for_all2 (fun (i1, t1) (i2, t2) -> cmp_ident i1 i2 && cmp_type t1 t2) l1 l2 && cmp_mterm p1 p2
@@ -1352,7 +1322,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mremoveasset (an, i)           -> Mremoveasset (fi an, f i)
   | Mremovefield (an, fn, c, i)    -> Mremovefield (fi an, fi fn, f c, f i)
   | Mremoveall (an, fn, a)         -> Mremoveall (fi an, fi fn, f a)
-  | Mclear (an, v)                 -> Mclear (fi an, f v)
+  | Mclear (an, v)                 -> Mclear (fi an, map_container_kind f v)
   | Mset (an, l, k, v)             -> Mset (fi an, List.map fi l, f k, f v)
   | Mupdate (an, k, l)             -> Mupdate (fi an, f k, List.map (fun (id, op, v) -> (g id, op, f v)) l)
   | Maddupdate (an, k, l)          -> Maddupdate (fi an, f k, List.map (fun (id, op, v) -> (g id, op, f v)) l)
@@ -1419,14 +1389,6 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mfold (i, is, c, b)            -> Mfold (g i, List.map g is, f c, f b)
   (* imperative *)
   | Mbreak                         -> Mbreak
-  (* shallowing *)
-  | Mshallow (i, x)                -> Mshallow (fi i, f x)
-  | Munshallow (i, x)              -> Munshallow (fi i, f x)
-  | Mlisttocoll (i, x)             -> Mlisttocoll (fi i, f x)
-  | Maddshallow (e, args)          -> Maddshallow (fi e, List.map f args)
-  (* collection keys *)
-  | Mtokeys (an, x)                -> Mtokeys (fi an, f x)
-  | Mcoltokeys an                  -> Mcoltokeys (fi an)
   (* quantifiers *)
   | Mforall (i, t, s, e)           -> Mforall (g i, ft t, Option.map f s, f e)
   | Mexists (i, t, s, e)           -> Mexists (g i, ft t, Option.map f s, f e)
@@ -1685,7 +1647,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mremoveasset (_, i)                   -> f accu i
   | Mremovefield (_, _, c, i)             -> f (f accu c) i
   | Mremoveall (_, _, a)                  -> f accu a
-  | Mclear (_, v)                         -> f accu v
+  | Mclear (_, v)                         -> fold_container_kind f accu v
   | Mset (_, _, k, v)                     -> f (f accu v) k
   | Mupdate (_, k, l)                     -> List.fold_left (fun accu (_, _, v) -> f accu v) (f accu k) l
   | Maddupdate (_, k, l)                  -> List.fold_left (fun accu (_, _, v) -> f accu v) (f accu k) l
@@ -1752,14 +1714,6 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mfold (_, _, c, b)                    -> f (f accu c) b
   (* imperative *)
   | Mbreak                                -> accu
-  (* shallowing *)
-  | Mshallow (_, x)                       -> f accu x
-  | Munshallow (_, x)                     -> f accu x
-  | Mlisttocoll (_, x)                    -> f accu x
-  | Maddshallow (_, args)                 -> List.fold_left f accu args
-  (* collection keys *)
-  | Mtokeys (_, x)                        -> f accu x
-  | Mcoltokeys (_)                        -> accu
   (* quantifiers *)
   | Mforall (_, _, s, e)                  -> f (opt f accu s) e
   | Mexists (_, _, s, e)                  -> f (opt f accu s) e
@@ -2192,7 +2146,7 @@ let fold_map_term
     g (Mremoveall (an, fn, ae)), aa
 
   | Mclear (an, v) ->
-    let ve, va = f accu v in
+    let ve, va = fold_map_container_kind f accu v in
     g (Mclear (an, ve)), va
 
   | Mset (c, l, k, v) ->
@@ -2480,40 +2434,6 @@ let fold_map_term
     g (Mbreak), accu
 
 
-  (* shallowing *)
-
-  | Mshallow (i, x) ->
-    let xe, xa = f accu x in
-    g (Mshallow (i,xe)), xa
-
-  | Munshallow (i, x) ->
-    let xe, xa = f accu x in
-    g (Munshallow (i, xe)), xa
-
-  | Mlisttocoll (i, x) ->
-    let xe, xa = f accu x in
-    g (Mlisttocoll (i,xe)), xa
-
-  | Maddshallow (id, args) ->
-    let ((argss, argsa) : 'c list * 'a) =
-      List.fold_left
-        (fun (pterms, accu) x ->
-           let p, accu = f accu x in
-           pterms @ [p], accu) ([], accu) args
-    in
-    g (Maddshallow (id, argss)), argsa
-
-
-  (* collection keys *)
-
-  | Mtokeys (an, x) ->
-    let xe, xa = f accu x in
-    g (Mtokeys (an, xe)), xa
-
-  | Mcoltokeys (an) ->
-    g (Mcoltokeys (an)), accu
-
-
   (* quantifiers *)
 
   | Mforall (id, t, Some s, e) ->
@@ -2791,18 +2711,11 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
         | Set an                -> Set (f KIassetname an)
         | Add an                -> Add (f KIassetname an)
         | Remove an             -> Remove (f KIassetname an)
-        | Clear an              -> Clear (f KIassetname an)
+        | Clear (an, ck)        -> Clear (f KIassetname an, ck)
         | Update (an, l)        -> Update (f KIassetname an, List.map (fun (id, op, v) -> (f KIparamlambda id, op, for_mterm v)) l)
         | UpdateAdd (an, id)    -> UpdateAdd (f KIassetname an, f KIassetfield id)
         | UpdateRemove (an, id) -> UpdateRemove (f KIassetname an, f KIassetfield id)
         | RemoveAll (an, id)    -> RemoveAll (f KIassetname an, f KIassetfield id)
-        | ToKeys an             -> ToKeys (f KIassetname an)
-        | ColToKeys an          -> ColToKeys (f KIassetname an)
-        | Min (an, id)          -> Min (f KIassetname an, f KIassetfield id)
-        | Max (an, id)          -> Max (f KIassetname an, f KIassetfield id)
-        | Shallow an            -> Shallow (f KIassetname an)
-        | Unshallow an          -> Unshallow (f KIassetname an)
-        | Listtocoll an         -> Listtocoll (f KIassetname an)
         | Contains (an, ck)     -> Contains (f KIassetname an, ck)
         | Nth (an, ck)          -> Nth (f KIassetname an, ck)
         | Select (an, ck, l, p) -> Select (f KIassetname an, ck, List.map (fun (id, t) -> f KIparamlambda id, t) l, for_mterm p)

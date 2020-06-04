@@ -112,17 +112,6 @@ end
 
 let pp_model_internal fmt (model : model) b =
 
-  let remove_shallow (model : model) : model =
-    let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
-      match mt.node with
-      | Mshallow (_, x)
-      | Munshallow (_, x) -> aux ctx x
-      | _ -> map_mterm (aux ctx) mt
-    in
-    map_mterm_model aux model
-  in
-  let model = remove_shallow model in
-
   let pp_model_name (fmt : Format.formatter) _ =
     Format.fprintf fmt "// contract: %a@\n"
       pp_id model.name
@@ -822,11 +811,17 @@ let pp_model_internal fmt (model : model) b =
 
     | Mclear (an, v) ->
       let pp fmt (an, v) =
-        Format.fprintf fmt "%s := clear_%a (%s, %a)"
+        let prefix = match v with | CKcoll -> "c" | CKview _ -> "v" in
+        let pp_arg fmt _ =
+          match v with
+          | CKcoll   -> Format.fprintf fmt  "%s" const_storage
+          | CKview c -> Format.fprintf fmt  "%s, %a" const_storage f c
+        in
+        Format.fprintf fmt "%s := clear_%s_%a (%a)"
           const_storage
+          prefix
           pp_str an
-          const_storage
-          f v
+          pp_arg ()
       in
       pp fmt (an, v)
 
@@ -1287,43 +1282,6 @@ let pp_model_internal fmt (model : model) b =
     | Mbreak -> emit_error (UnsupportedTerm ("break"))
 
 
-    (* shallowing *)
-
-    | Mshallow (i, x) ->
-      Format.fprintf fmt "shallow_%a %a"
-        pp_str i
-        f x
-
-    | Munshallow (i, x) ->
-      Format.fprintf fmt "unshallow_%a %a"
-        pp_str i
-        f x
-
-    | Mlisttocoll (_, x) -> f fmt x
-
-    | Maddshallow (e, args) ->
-      let pp fmt (e, args) =
-        Format.fprintf fmt "%s := add_shallow_%a (%s, %a)"
-          const_storage
-          pp_str e
-          const_storage
-          (pp_list ", " f) args
-      in
-      pp fmt (e, args)
-
-
-    (* collection keys *)
-
-    | Mtokeys (an, x) ->
-      Format.fprintf fmt "%s.to_keys (%a)"
-        an
-        f x
-
-    | Mcoltokeys (an) ->
-      Format.fprintf fmt "col_to_keys_%s (%s)"
-        an
-        const_storage
-
     (* quantifiers *)
 
     | Mforall _ -> emit_error (UnsupportedTerm ("forall"))
@@ -1613,18 +1571,35 @@ let pp_model_internal fmt (model : model) b =
         ) aps
         (if Utils.is_asset_single_field model an then "set" else "map") an
 
-    | Clear an ->
-      let _, t = Utils.get_asset_key model an in
-      Format.fprintf fmt
-        "function clear_%s (const s : storage_type; const l : list(%a)) : storage_type is@\n  \
-         begin@\n  \
-         for i in list (l) block {@\n  \
-         remove i from %s s.%s_assets@\n  \
-         }@\n  \
-         end with (s)@\n"
-        an pp_btyp t
-        (if Utils.is_asset_single_field model an then "set" else "map")
-        an
+    | Clear (an, c) ->
+      begin
+        let _, t = Utils.get_asset_key model an in
+        match c with
+        | Coll ->
+          let pp_empty fmt _ =
+            if Model.Utils.is_asset_single_field model an
+            then Format.fprintf fmt "(set [] : set(%a))" pp_btyp t
+            else Format.fprintf fmt "(map [] : map(%a, %s_storage))" pp_btyp t an
+          in
+          Format.fprintf fmt
+            "function clear_c_%s (const s : storage_type) : storage_type is@\n  \
+             begin@\n  \
+             s.%s_assets := %a@\n  \
+             end with (s)@\n"
+            an
+            an pp_empty ()
+        | View ->
+          Format.fprintf fmt
+            "function clear_v_%s (const s : storage_type; const l : list(%a)) : storage_type is@\n  \
+             begin@\n  \
+             for i in list (l) block {@\n  \
+             remove i from %s s.%s_assets@\n  \
+             }@\n  \
+             end with (s)@\n"
+            an pp_btyp t
+            (if Utils.is_asset_single_field model an then "set" else "map")
+            an
+      end
 
     | Update _ -> ()
 
@@ -1729,102 +1704,6 @@ let pp_model_internal fmt (model : model) b =
         fn pp_btyp t
         pp_btyp t an
         an *)
-
-    | ToKeys _an ->
-      Format.fprintf fmt "// TODO api asset: ToKeys"
-    (* "let[@inline] to_keys_%s (s : storage) : storage =@\n  \
-       s (*TODO*)@\n"
-       an *)
-
-    | ColToKeys an ->
-      let _k, t = Utils.get_asset_key model an in
-      let single = Utils.is_asset_single_field model an in
-
-      Format.fprintf fmt
-        "function col_to_keys_%s (const s : storage_type) : list(%a) is@\n \
-         begin@\n \
-         function to_keys (const accu : list(%a); const v : %a) : list(%a) is block { skip } with cons(%s, accu);@\n \
-         function rev     (const accu : list(%a); const v : %a) : list(%a) is block { skip } with cons(v, accu);@\n \
-         var res : list(%a) := (nil : list(%a));@\n \
-         res := %s_fold(to_keys, s.%s_assets, res);@\n \
-         res := list_fold(rev, res, (nil : list(%a)));@\n \
-         end with res@\n"
-        an pp_btyp t
-        pp_btyp t (fun fmt _ -> if single then pp_btyp fmt t else Format.fprintf fmt "(%a * %s_storage)" pp_btyp t an) () pp_btyp t (if single then "v" else "v.0")
-        pp_btyp t pp_btyp t pp_btyp t
-        pp_btyp t pp_btyp t
-        (if single then "set" else "map") an
-        pp_btyp t
-
-    | Min (an, fn) ->
-      let _, t = Utils.get_asset_key model an in
-      let _, ct, _ = Utils.get_asset_field model (an, fn) in
-      Format.fprintf fmt
-        "function min_%s_%s (const s : storage_type; const l : list(%a)) : %a is@\n  \
-         block {@\n    \
-         function aggregate (const accu: option(%a); const x: %a) : option(%a) is@\n    \
-         block {@\n      \
-         const a : %s = get_%s(s, x);@\n      \
-         const r : option(%a) = Some(a.%s);@\n      \
-         case accu of@\n      \
-         | Some(v) -> r := if v < a.%s then Some (v) else accu@\n      \
-         | None -> skip@\n      \
-         end;@\n    \
-         } with r;@\n    \
-         var init : option(%a) := (None : option(%a));@\n    \
-         const res_opt : option(%a) = list_fold (aggregate, l, init);@\n    \
-         var res : %a := %a;@\n    \
-         case res_opt of@\n    \
-         | Some(v) -> res := v@\n    \
-         | None -> failwith(\"min_%s_%s failed\")@\n    \
-         end;@\n  \
-         } with res@\n"
-        an fn pp_btyp t pp_type ct
-        pp_type ct pp_btyp t pp_type ct
-        an an
-        pp_type ct fn
-        fn
-        pp_type ct pp_type ct
-        pp_type ct
-        pp_type ct pp_default ct
-        an fn
-
-    | Max (an, fn) ->
-      let _, t = Utils.get_asset_key model an in
-      let _, ct, _ = Utils.get_asset_field model (an, fn) in
-      Format.fprintf fmt
-        "function max_%s_%s (const s : storage_type; const l : list(%a)) : %a is@\n  \
-         block {@\n    \
-         function aggregate (const accu: option(%a); const x: %a) : option(%a) is@\n    \
-         block {@\n      \
-         const a : %s = get_%s(s, x);@\n      \
-         const r : option(%a) = Some(a.%s);@\n      \
-         case accu of@\n      \
-         | Some(v) -> r := if v > a.%s then Some (v) else accu@\n      \
-         | None -> skip@\n      \
-         end;@\n    \
-         } with r;@\n    \
-         var init : option(%a) := (None : option(%a));@\n    \
-         const res_opt : option(%a) = list_fold (aggregate, l, init);@\n    \
-         var res : %a := %a;@\n    \
-         case res_opt of@\n    \
-         | Some(v) -> res := v@\n    \
-         | None -> failwith(\"max_%s_%s failed\")@\n    \
-         end;@\n  \
-         } with res@\n"
-        an fn pp_btyp t pp_type ct
-        pp_type ct pp_btyp t pp_type ct
-        an an
-        pp_type ct fn
-        fn
-        pp_type ct pp_type ct
-        pp_type ct
-        pp_type ct pp_default ct
-        an fn
-
-    | Shallow _ -> ()
-    | Unshallow _ -> ()
-    | Listtocoll _ -> ()
 
     | Contains (an, c) ->
       begin
