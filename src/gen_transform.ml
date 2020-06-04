@@ -2279,6 +2279,12 @@ let replace_api_view_by_col (model : model) : model =
     | _ -> false
   in
 
+  let is_storcol (c : mterm) =
+    match c.node with
+    | Mvarstorecol _ -> true
+    | _ -> false
+  in
+
   let rec aux ctx (mt : mterm) : mterm =
     match mt.node with
     | Mselect (an, CKview c, args, body, vs) when is_col c ->
@@ -2311,6 +2317,15 @@ let replace_api_view_by_col (model : model) : model =
     | Mtail (an, CKview c, n) when is_col c ->
       let n = aux ctx n in
       mk_mterm (Mtail (an, CKcoll, n)) mt.type_
+
+    | Mfor (i, ICKview c, b, l) when is_storcol c ->
+      let an =
+        match c.node with
+        | Mvarstorecol an -> unloc an
+        | _ -> assert false
+      in
+      let b = aux ctx b in
+      mk_mterm (Mfor (i, ICKcoll an, b, l)) mt.type_
 
     | _ -> map_mterm (aux ctx) mt
   in

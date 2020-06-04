@@ -365,7 +365,7 @@ let pp_model_internal fmt (model : model) b =
 
     | Mfor (id, col, body, _) ->
       let postvar = function
-        | ICKcoll an when Model.Utils.is_asset_single_field model an -> " -> value_"
+        | ICKcoll an when not (Model.Utils.is_asset_single_field model an) -> " -> value_"
         | _ -> ""
       in
       let pp_iter_container_kind f fmt = function
