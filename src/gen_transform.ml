@@ -97,8 +97,7 @@ let remove_add_update (model : model) : model =
             ) asset.values in
           mk_mterm (Masset l) type_asset
         in
-        let col    = mk_mterm (Mvarstorecol (dumloc an)) (Tcontainer (type_asset, Collection)) in
-        let cond   = mk_mterm (Mcontains (an, CKview col, k)) Tunit in
+        let cond   = mk_mterm (Mcontains (an, CKcoll, k)) Tunit in
         let asset  = mk_asset (an, k, l) in
         let add    = mk_mterm (Maddasset (an, asset)) Tunit in
         let update = mk_mterm (Mupdate (an, k, l)) Tunit in
