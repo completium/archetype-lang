@@ -319,7 +319,7 @@ let pp_model fmt (model : model) =
         pp_btyp t
         pp_btyp t
 
-    | Cnth an ->
+    | Nth (an, _) ->
       let _, t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "let[@inline] nth_%s (s, l, idx : storage * %a list * int) : %s =@\n  \
@@ -342,30 +342,7 @@ let pp_model fmt (model : model) =
         an pp_btyp t an
         an
 
-    | Vnth an ->
-      let _, t = Utils.get_asset_key model an in
-      Format.fprintf fmt
-        "let[@inline] nth_%s (s, l, idx : storage * %a list * int) : %s =@\n  \
-         match l with@\n  \
-         | [] -> failwith \"empty list\"@\n  \
-         | _ ->@\n  \
-         begin@\n  \
-         let cpt = idx in@\n  \
-         let _, res =@\n  \
-         List.fold (fun (x, accu) ->@\n  \
-         let cpt, res = accu in@\n  \
-         if cpt = 0@\n  \
-         then (cpt - 1, Some x)@\n  \
-         else (cpt - 1, res)@\n  \
-         ) l (cpt, None) in@\n  \
-         match res with@\n  \
-         | None -> failwith \"index out of bounds\"@\n  \
-         | Some k -> get_%s (s, k)@\n  \
-         end@\n"
-        an pp_btyp t an
-        an
-
-    | Cselect (an, _, _) ->
+    | Select (an, _, _, _) ->
       let k, t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "let select_%s (s, l, p : storage * %a list * (%s -> bool)) : %a list =@\n  \
@@ -379,33 +356,13 @@ let pp_model fmt (model : model) =
         an
         k
 
-    | Vselect (an, _, _) ->
-      let k, t = Utils.get_asset_key model an in
-      Format.fprintf fmt
-        "let select_%s (s, l, p : storage * %a list * (%s -> bool)) : %a list =@\n  \
-         List.fold_left (fun accu x ->@\n      \
-         let a = get_%s (s, x) in@\n      \
-         if p a@\n      \
-         then a.%s::accu@\n      \
-         else accu@\n    \
-         ) [] l@\n"
-        an pp_btyp t an pp_btyp t
-        an
-        k
-
-    | Csort (an, _l) ->
+    | Sort (an, _, _l) ->
       Format.fprintf fmt
         "let sort_%s (s : storage) : unit =@\n  \
          () (*TODO*)@\n"
         an
 
-    | Vsort (an, _l) ->
-      Format.fprintf fmt
-        "let sort_%s (s : storage) : unit =@\n  \
-         () (*TODO*)@\n"
-        an
-
-    | Ccount an ->
+    | Count (an, _) ->
       let _, t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "let count_%s (l : %a list) : int =@\n  \
@@ -413,15 +370,7 @@ let pp_model fmt (model : model) =
         an
         pp_btyp t
 
-    | Vcount an ->
-      let _, t = Utils.get_asset_key model an in
-      Format.fprintf fmt
-        "let count_%s (l : %a list) : int =@\n  \
-         List.length l@\n"
-        an
-        pp_btyp t
-
-    | Csum (an, t, _p) -> (* TODO *)
+    | Sum (an, _, t, _p) -> (* TODO *)
       let _, tk = Utils.get_asset_key model an in
       Format.fprintf fmt
         "let sum_%s (s, l : storage * %a list) : %a =@\n  \
@@ -437,23 +386,7 @@ let pp_model fmt (model : model) =
         an
         (show_zero t)
 
-    | Vsum (an, t, _p) -> (* TODO *)
-      let _, tk = Utils.get_asset_key model an in
-      Format.fprintf fmt
-        "let sum_%s (s, l : storage * %a list) : %a =@\n  \
-         List.fold_left (fun accu k ->@\n      \
-         let x =@\n        \
-         match Map.get k s.%s_assets with@\n        \
-         | Some v -> v@\n        \
-         | _ -> failwith \"not_found\"@\n      \
-         in@\n      \
-         accu + x@\n    \
-         ) %s l@\n"
-        an pp_btyp tk pp_type t
-        an
-        (show_zero t)
-
-    | Chead an ->
+    | Head (an, _) ->
       let _, t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "let head_%s (l : %a list) : %a list =@\n  \
@@ -464,29 +397,7 @@ let pp_model fmt (model : model) =
         pp_btyp t
         pp_btyp t
 
-    | Vhead an ->
-      let _, t = Utils.get_asset_key model an in
-      Format.fprintf fmt
-        "let head_%s (l : %a list) : %a list =@\n  \
-         List.fold (fun (_, accu) ->@\n    \
-         accu@\n  \
-         ) l []@\n"
-        an
-        pp_btyp t
-        pp_btyp t
-
-    | Ctail an ->
-      let _, t = Utils.get_asset_key model an in
-      Format.fprintf fmt
-        "let tail_%s (l : %a list)  : %a list =@\n  \
-         List.fold (fun (_, accu) ->@\n    \
-         accu@\n  \
-         ) l []@\n"
-        an
-        pp_btyp t
-        pp_btyp t
-
-    | Vtail an ->
+    | Tail (an, _) ->
       let _, t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "let tail_%s (l : %a list)  : %a list =@\n  \
@@ -543,7 +454,7 @@ let pp_model fmt (model : model) =
       let contains_select_asset_name a_name l : bool =
         List.fold_left (fun accu x ->
             match x.node_item with
-            | APIAsset  (Vselect (an, _, _)) -> accu || String.equal an a_name
+            | APIAsset  (Select (an, _, _, _)) -> accu || String.equal an a_name
             | _ -> accu
           ) false l
       in
@@ -552,7 +463,7 @@ let pp_model fmt (model : model) =
           then accu
           else
             match x.node_item with
-            | APIAsset  (Vselect (an, _p, _)) when contains_select_asset_name an accu -> accu
+            | APIAsset  (Select (an, _, _p, _)) when contains_select_asset_name an accu -> accu
             | _ -> x::accu
         ) l []
     in
@@ -1113,38 +1024,21 @@ let pp_model fmt (model : model) =
         in
         pp fmt (an, k)
 
-      | Mcselect (an, la, lb, a) ->
-        let pp fmt (an, _la, lb, _a) =
-          Format.fprintf fmt "select_%a (%s, fun the -> %a)"
-            pp_str an
-            const_storage
-            f lb
-        in
-        pp fmt (an, la, lb, a)
-
-      | Mvselect (an, c, la, lb, a) ->
+      | Mselect (an, c, la, lb, a) ->
         let pp fmt (an, c, _la, lb, _a) =
           Format.fprintf fmt "select_%a (%s, %a, fun the -> %a)"
             pp_str an
             const_storage
-            f c
+            (pp_container_kind f) c
             f lb
         in
         pp fmt (an, c, la, lb, a)
 
-      | Mcsort (an, l) ->
-        let pp fmt (an, l) =
-          Format.fprintf fmt "sort_%a (%a)"
-            pp_str an
-            (pp_list ", " (fun fmt (a, b) -> Format.fprintf fmt "%a %a" pp_ident a pp_sort_kind b)) l
-        in
-        pp fmt (an, l)
-
-      | Mvsort (an, c, l) ->
+      | Msort (an, c, l) ->
         let pp fmt (an, c, l) =
           Format.fprintf fmt "sort_%a (%a, %a)"
             pp_str an
-            f c
+            (pp_container_kind f) c
             (pp_list ", " (fun fmt (a, b) -> Format.fprintf fmt "%a %a" pp_ident a pp_sort_kind b)) l
         in
         pp fmt (an, c, l)
@@ -1158,47 +1052,24 @@ let pp_model fmt (model : model) =
         in
         pp fmt (an, c, i)
 
-      | Mcnth (an, i) ->
-        let pp fmt (an, i) =
-          Format.fprintf fmt "nth_%a (%a)"
-            pp_str an
-            f i
-        in
-        pp fmt (an, i)
-
-      | Mvnth (an, c, i) ->
+      | Mnth (an, c, i) ->
         let pp fmt (an, c, i) =
           Format.fprintf fmt "nth_%a (%a, %a)"
             pp_str an
-            f c
+            (pp_container_kind f) c
             f i
         in
         pp fmt (an, c, i)
 
-      | Mccount (an) ->
-        let pp fmt (an) =
-          Format.fprintf fmt "count_%a ()"
-            pp_str an
-        in
-        pp fmt (an)
-
-      | Mvcount (an, c) ->
+      | Mcount (an, c) ->
         let pp fmt (an, c) =
           Format.fprintf fmt "count_%a (%a)"
             pp_str an
-            f c
+            (pp_container_kind f) c
         in
         pp fmt (an, c)
 
-      | Mcsum (an, _) -> (* TODO *)
-        let pp fmt (an) =
-          Format.fprintf fmt "sum_%a (%s)"
-            pp_str an
-            const_storage
-        in
-        pp fmt (an)
-
-      | Mvsum (an, _, c) -> (* TODO *)
+      | Msum (an, _, c) -> (* TODO *)
         let pp fmt (an, c) =
           Format.fprintf fmt "sum_%a (%s, %a)"
             pp_str an
@@ -1207,26 +1078,16 @@ let pp_model fmt (model : model) =
         in
         pp fmt (an, c)
 
-      | Mchead (an, i) ->
-        Format.fprintf fmt "head_%a (%a)"
-          pp_str an
-          f i
-
-      | Mvhead (an, c, i) ->
+      | Mhead (an, c, i) ->
         Format.fprintf fmt "head_%a (%a, %a)"
           pp_str an
-          f c
+          (pp_container_kind f) c
           f i
 
-      | Mctail (an, i) ->
-        Format.fprintf fmt "tail_%a (%a)"
-          pp_str an
-          f i
-
-      | Mvtail (an, c, i) ->
+      | Mtail (an, c, i) ->
         Format.fprintf fmt "tail_%a (%a, %a)"
           pp_str an
-          f c
+          (pp_container_kind f) c
           f i
 
 

@@ -883,43 +883,38 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (an, k)
 
-    | Mcselect (an, la, lb, a) ->
-      let index : int = get_preds_index env.select_preds lb in
-      let pp fmt (an, _la, _lb, a) =
-        Format.fprintf fmt "select_c_%a_%i (%s%a)"
-          pp_str an index
-          const_storage
-          (pp_list "" (pp_prefix ", " f)) a
-      in
-      pp fmt (an, la, lb, a)
-
-    | Mvselect (an, c, la, lb, a) ->
+    | Mselect (an, c, la, lb, a) ->
       let index : int = get_preds_index env.select_preds lb in
       let pp fmt (an, c, _la, _lb, a) =
-        Format.fprintf fmt "select_v_%a_%i (%s, %a%a)"
-          pp_str an index
-          const_storage
-          f c
-          (pp_list "" (pp_prefix ", " f)) a
+        match c with
+        | CKcoll ->
+          Format.fprintf fmt "select_c_%a_%i (%s%a)"
+            pp_str an index
+            const_storage
+            (pp_list "" (pp_prefix ", " f)) a
+        | CKview c ->
+          Format.fprintf fmt "select_v_%a_%i (%s, %a%a)"
+            pp_str an index
+            const_storage
+            f c
+            (pp_list "" (pp_prefix ", " f)) a
       in
       pp fmt (an, c, la, lb, a)
 
-    | Mcsort (an, l) -> (* TODO *)
-      let pp fmt (an, l) =
-        Format.fprintf fmt "sort_c_%a_%a (%s)"
-          pp_str an
-          pp_postfix_sort l
-          const_storage
-      in
-      pp fmt (an, l)
-
-    | Mvsort (an, c, l) -> (* TODO *)
+    | Msort (an, c, l) ->
       let pp fmt (an, c, l) =
-        Format.fprintf fmt "sort_v_%a_%a (%s, %a)"
-          pp_str an
-          pp_postfix_sort l
-          const_storage
-          f c
+        match c with
+        | CKcoll ->
+          Format.fprintf fmt "sort_c_%a_%a (%s)"
+            pp_str an
+            pp_postfix_sort l
+            const_storage
+        | CKview c ->
+          Format.fprintf fmt "sort_v_%a_%a (%s, %a)"
+            pp_str an
+            pp_postfix_sort l
+            const_storage
+            f c
       in
       pp fmt (an, c, l)
 
@@ -938,84 +933,84 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (an, c, i)
 
-    | Mcnth (an, i) ->
-      let pp fmt (an, i) =
-        Format.fprintf fmt "nth_c_%a (%s, %a)"
-          pp_str an
-          const_storage
-          f i
-      in
-      pp fmt (an, i)
-
-    | Mvnth (an, c, i) ->
+    | Mnth (an, c, i) ->
       let pp fmt (an, c, i) =
-        Format.fprintf fmt "nth_v_%a (%s, %a, %a)"
-          pp_str an
-          const_storage
-          f c
-          f i
+        match c with
+        | CKcoll ->
+          Format.fprintf fmt "nth_c_%a (%s, %a)"
+            pp_str an
+            const_storage
+            f i
+        | CKview c ->
+          Format.fprintf fmt "nth_v_%a (%s, %a, %a)"
+            pp_str an
+            const_storage
+            f c
+            f i
       in
       pp fmt (an, c, i)
 
-    | Mccount (an) ->
-      let pp fmt (an) =
-        Format.fprintf fmt "count_c_%a (%s)"
-          pp_str an
-          const_storage
-      in
-      pp fmt an
-
-    | Mvcount (an, c) ->
+    | Mcount (an, c) ->
       let pp fmt (an, c) =
-        Format.fprintf fmt "count_v_%a (%a)"
-          pp_str an
-          f c
+        match c with
+        | CKcoll ->
+          Format.fprintf fmt "count_c_%a (%s)"
+            pp_str an
+            const_storage
+        | CKview c ->
+          Format.fprintf fmt "count_v_%a (%a)"
+            pp_str an
+            f c
       in
       pp fmt (an, c)
 
-    | Mcsum (an, p) ->
-      let index : int = get_preds_index env.sum_preds p in
-      let pp fmt (an, _p) =
-        Format.fprintf fmt "sum_c_%a_%i (%s)"
-          pp_str an index
-          const_storage
-      in
-      pp fmt (an, p)
-
-    | Mvsum (an, c, p) ->
+    | Msum (an, c, p) ->
       let index : int = get_preds_index env.sum_preds p in
       let pp fmt (an, c, _p) =
-        Format.fprintf fmt "sum_v_%a_%i (%s, %a)"
-          pp_str an index
-          const_storage
-          f c
+        match c with
+        | CKcoll ->
+          Format.fprintf fmt "sum_c_%a_%i (%s)"
+            pp_str an index
+            const_storage
+        | CKview c ->
+          Format.fprintf fmt "sum_v_%a_%i (%s, %a)"
+            pp_str an index
+            const_storage
+            f c
       in
       pp fmt (an, c, p)
 
-    | Mchead (an, i) ->
-      Format.fprintf fmt "head_c_%a (%s, %a)"
-        pp_str an
-        const_storage
-        f i
+    | Mhead (an, c, i) ->
+      begin
+        match c with
+        | CKcoll ->
+          Format.fprintf fmt "head_c_%a (%s, %a)"
+            pp_str an
+            const_storage
+            f i
 
-    | Mvhead (an, c, i) ->
-      Format.fprintf fmt "head_v_%a (%a, %a)"
-        pp_str an
-        f c
-        f i
+        | CKview c ->
+          Format.fprintf fmt "head_v_%a (%a, %a)"
+            pp_str an
+            f c
+            f i
+      end
 
-    | Mctail (an, i) ->
-      Format.fprintf fmt "tail_c_%a (%s, %a)"
-        pp_str an
-        const_storage
-        f i
+    | Mtail (an, c, i) ->
+      begin
+        match c with
+        | CKcoll ->
+          Format.fprintf fmt "tail_c_%a (%s, %a)"
+            pp_str an
+            const_storage
+            f i
 
-    | Mvtail (an, c, i) ->
-      Format.fprintf fmt "tail_v_%a (%a, %a)"
-        pp_str an
-        f c
-        f i
-
+        | CKview c ->
+          Format.fprintf fmt "tail_v_%a (%a, %a)"
+            pp_str an
+            f c
+            f i
+      end
 
     (* utils *)
 
@@ -1495,322 +1490,6 @@ let pp_model_internal fmt (model : model) b =
     | _ -> assert false
   in
 
-  let pp_nth fmt kind_pp_ _env an =
-    let _k, t = Utils.get_asset_key model an in
-    let is_one_field = Model.Utils.is_asset_single_field model an in
-    let pp_fun_arg fmt () =
-      match kind_pp_ with
-      | `Coll -> ()
-      | `View -> Format.fprintf fmt "; const l : list(%a)" pp_btyp t
-    in
-    let postfix, container, src, iter_type, iter_val =
-      match kind_pp_ with
-      | `Coll when is_one_field ->
-        "c", "set", "s." ^ an ^ "_assets", "", ""
-      | `Coll ->
-        "c", "map", "s." ^ an ^ "_assets", " * " ^ an ^ "_storage", ".0"
-      | `View ->
-        "v", "list", "l", "", ""
-    in
-    Format.fprintf fmt
-      "function nth_%s_%s (const s : storage_type%a; const index : int) : %a is@\n  \
-       block {@\n  \
-       function aggregate (const accu: map(int, %a); const x: %a%s) : map(int, %a) is@\n  \
-       block {@\n  \
-       const le : int = int(Map.size(accu));@\n  \
-       accu[le] := x%s;@\n  \
-       } with accu;@\n  \
-       const map_ : map(int, %a) = %s_fold(aggregate, %s, (map [] : map(int, %a)));@\n  \
-       const res : %a = get_force(index, map_);@\n  \
-       } with res@\n"
-      postfix an pp_fun_arg () pp_btyp t
-      pp_btyp t pp_btyp t iter_type pp_btyp t
-      iter_val
-      pp_btyp t container src pp_btyp t
-      pp_btyp t
-  in
-
-  let pp_select fmt kind_pp_ env (an, args, f) =
-    let pp_arg fmt (arg_id, arg_type) =
-      Format.fprintf fmt "; const %s : %a" arg_id pp_type arg_type
-    in
-    let k, t = Utils.get_asset_key model an in
-    let i = get_preds_index env.select_preds f in
-    let is_one_field = Model.Utils.is_asset_single_field model an in
-    let pp_fun_arg fmt () =
-      match kind_pp_ with
-      | `Coll -> ()
-      | `View -> Format.fprintf fmt "; const l : list(%a)" pp_btyp t
-    in
-    let postfix, container, src, iter_type, iter_val =
-      match kind_pp_ with
-      | `Coll when is_one_field ->
-        "c", "set", "s." ^ an ^ "_assets", "", ""
-      | `Coll ->
-        "c", "map", "s." ^ an ^ "_assets", " * " ^ an ^ "_storage", ".0"
-      | `View ->
-        "v", "list", "l", "", ""
-    in
-    Format.fprintf fmt
-      "function select_%s_%s_%i (const s : storage_type%a%a) : list(%a) is@\n  \
-       begin@\n    \
-       function aggregate (const accu : list(%a); const i : %a%s) : list(%a) is@\n      \
-       begin@\n        \
-       const the : %s = get_%s(s, i%s);@\n        \
-       end with (if (%a) then cons(the.%s, accu) else accu);@\n    \
-       end with (%s_fold(aggregate, %s, (nil : list(%a))))@\n"
-      postfix an i pp_fun_arg () (pp_list "" pp_arg) args pp_btyp t
-      pp_btyp t pp_btyp t iter_type pp_btyp t
-      an an iter_val
-      (pp_mterm (mk_env ())) f k
-      container src pp_btyp t
-  in
-
-  let pp_sort fmt kind_pp_ _env (an, l) =
-    let _, t = Utils.get_asset_key model an in
-
-    let is_one_field = Model.Utils.is_asset_single_field model an in
-    let pp_fun_arg fmt () =
-      match kind_pp_ with
-      | `Coll -> ()
-      | `View -> Format.fprintf fmt "; const l : list(%a)" pp_btyp t
-    in
-    let postfix, container, src, iter_type, iter_val =
-      match kind_pp_ with
-      | `Coll when is_one_field ->
-        "c", "set", "s." ^ an ^ "_assets", "", ""
-      | `Coll ->
-        "c", "map", "s." ^ an ^ "_assets", " * " ^ an ^ "_storage", ".0"
-      | `View ->
-        "v", "list", "l", "", ""
-    in
-
-    let pp_criteria fmt (fn, c) =
-      let op1, op2, d =
-        match c with
-        | SKasc -> ">", "<", "asc"
-        | SKdesc -> "<", ">", "desc"
-      in
-      Format.fprintf fmt
-        "// %s %s@\n    \
-         if (a1.%s %s a2.%s)@\n    \
-         then res := 1@\n    \
-         else if (a1.%s %s a2.%s)@\n    \
-         then res := -1"
-        fn d
-        fn op1 fn
-        fn op2 fn
-    in
-
-    let pp_fun_cmp fmt _ =
-      Format.fprintf fmt
-        "function cmp (const k1 : %a; const k2: %a) : int is@\n  \
-         block {@\n    \
-         var res : int := 0;@\n    \
-         const a1 : %s = get_%s(s, k1);@\n    \
-         const a2 : %s = get_%s(s, k2);@\n    \
-         %a@\n    \
-         else skip@\n  \
-         } with res;@\n"
-        pp_btyp t pp_btyp t
-        an an
-        an an
-        (pp_list "@\n    else " pp_criteria) l
-    in
-
-    let pp_fun_insert fmt _ =
-      Format.fprintf fmt
-        "function insert(const accu: option(%a) * list(%a); const x : %a) : option(%a) * list(%a) is@\n  \
-         block {@\n    \
-         const res : option(%a) * list(%a) =@\n    \
-         case accu.0 of@\n    \
-         | Some(v) ->@\n    \
-         if (cmp(x, v) < 0)@\n    \
-         then ((None : option(%a)), cons(x, cons(v, accu.1)))@\n    \
-         else (Some(v), cons(x, accu.1))@\n    \
-         | None -> ((None : option(%a)), cons(x, accu.1))@\n    \
-         end;@\n  \
-         } with res;@\n"
-        pp_btyp t pp_btyp t pp_btyp t pp_btyp t pp_btyp t
-        pp_btyp t pp_btyp t
-        pp_btyp t
-        pp_btyp t
-    in
-
-    let pp_fun_sort fmt _ =
-      Format.fprintf fmt
-        "function sort (const accu: list(%a); const x: %a%s) : list(%a) is@\n  \
-         block {@\n    \
-         const init : option(%a) * list(%a) = (Some(x%s), (list [] : list(%a)));@\n    \
-         const res_opt : option(%a) * list(%a) = list_fold(insert, accu, init);@\n    \
-         const res : list(%a) =@\n    \
-         case res_opt.0 of@\n    \
-         | Some(v) -> cons(v, res_opt.1)@\n    \
-         | None -> res_opt.1@\n    \
-         end;@\n  \
-         } with res;@\n"
-        pp_btyp t pp_btyp t iter_type pp_btyp t
-        pp_btyp t pp_btyp t iter_val pp_btyp t
-        pp_btyp t pp_btyp t
-        pp_btyp t
-    in
-
-    Format.fprintf fmt
-      "function sort_%s_%s_%a (const s : storage_type%a) : list(%a) is@\n  @\n  \
-       begin@\n    \
-       @[%a@]@\n    \
-       @[%a@]@\n    \
-       @[%a@]@\n    \
-       const init : list(%a) = list [];@\n    \
-       const res : list(%a) = %s_fold (sort, %s, init);@\n  \
-       end with res@\n"
-      postfix an pp_postfix_sort l pp_fun_arg () pp_btyp t
-      pp_fun_cmp ()
-      pp_fun_insert ()
-      pp_fun_sort ()
-      pp_btyp t
-      pp_btyp t container src
-  in
-
-  let pp_sum fmt kind_pp_ env (an, t, p) =
-    let rec pp_expr fmt (mt : mterm) =
-      match mt.node with
-      | Mdot ({node = Mvarlocal ({pldesc = "the"; _}) }, fn) ->
-        Format.fprintf fmt "a.%a"
-          pp_id fn
-      | _ -> (pp_mterm_gen (mk_env ()) pp_expr) fmt mt
-    in
-    let get_zero _ =
-      match t with
-      | Ttuple [(Tbuiltin Bint); (Tbuiltin Bint)] -> "(0, 0)"
-      | _ -> "0"
-    in
-    let _, tk = Utils.get_asset_key model an in
-    let i = get_preds_index env.sum_preds p in
-    let is_one_field = Model.Utils.is_asset_single_field model an in
-    let pp_fun_arg fmt () =
-      match kind_pp_ with
-      | `Coll -> ()
-      | `View -> Format.fprintf fmt "; const l : list(%a)" pp_btyp tk
-    in
-    let pp_formula fmt _ =
-      match t with
-      | Ttuple [(Tbuiltin Bint); (Tbuiltin Bint)] -> pp_str fmt "e.0 * accu.1 + accu.0 * e.1, e.1 * accu.1"
-      | _ -> pp_str fmt "accu + e"
-    in
-    let postfix, container, src, iter_type, iter_val =
-      match kind_pp_ with
-      | `Coll when is_one_field ->
-        "c", "set", "s." ^ an ^ "_assets", "", ""
-      | `Coll ->
-        "c", "map", "s." ^ an ^ "_assets", " * " ^ an ^ "_storage", ".0"
-      | `View ->
-        "v", "list", "l", "", ""
-    in
-    Format.fprintf fmt
-      "function sum_%s_%s_%i (const s : storage_type%a) : %a is@\n  \
-       begin@\n    \
-       function aggregate (const accu : %a; const i : %a%s) : %a is@\n      \
-       block {@\n        \
-       const a : %s = get_%s(s, i%s);@\n      \
-       const e : %a = %a;@\n      \
-       } with (%a);@\n  \
-       end with (%s_fold(aggregate, %s, %s))@\n"
-      postfix an i pp_fun_arg () pp_type t
-      pp_type t pp_btyp tk iter_type pp_type t
-      an an iter_val
-      pp_type t pp_expr p
-      pp_formula ()
-      container src (get_zero t)
-  in
-
-  let pp_head fmt kind_pp_ _env an =
-    let _, t = Utils.get_asset_key model an in
-    let is_one_field = Model.Utils.is_asset_single_field model an in
-    let pp_first_arg fmt () =
-      match kind_pp_ with
-      | `Coll -> Format.fprintf fmt "const s : storage_type"
-      | `View -> Format.fprintf fmt "const l : list(%a)" pp_btyp t
-    in
-    let postfix, size, container, src, iter_type, iter_val =
-      match kind_pp_ with
-      | `Coll when is_one_field ->
-        "c", "Set.size", "set", "s." ^ an ^ "_assets", "", ""
-      | `Coll ->
-        "c", "Map.size", "map", "s." ^ an ^ "_assets", " * " ^ an ^ "_storage", ".0"
-      | `View ->
-        "v", "size", "list", "l", "", ""
-    in
-    Format.fprintf fmt
-      "function head_%s_%s (%a; const i : int) : list(%a) is@\n  \
-       block {@\n    \
-       const length : int = int(%s(%s));@\n    \
-       const bound : int = if i < length then i else length;@\n    \
-       if (i < 0) then failwith(\"head_%s: index out of bound\") else skip;@\n    \
-       function rev (const accu: list(%a); const x: %a) : list(%a) is x # accu;@\n    \
-       function aggregate (const accu: int * list(%a); const x: %a%s) : int * list(%a) is@\n    \
-       if accu.0 < bound@\n    \
-       then (accu.0 + 1, x%s # accu.1 );@\n    \
-       else (accu.0 + 1, accu.1 );@\n    \
-       const init : int * list(%a) = (0, ((list [] : list(%a))));@\n    \
-       const ltmp : int * list(%a) = %s_fold (aggregate, %s, init);@\n    \
-       const res  : list(%a) = list_fold (rev, ltmp.1, ((list [] : list(%a))));@\n  \
-       } with res@\n"
-      postfix an pp_first_arg () pp_btyp t
-      size src
-      an
-      pp_btyp t pp_btyp t pp_btyp t
-      pp_btyp t pp_btyp t iter_type pp_btyp t
-      iter_val
-      pp_btyp t pp_btyp t
-      pp_btyp t container src
-      pp_btyp t pp_btyp t
-  in
-
-  let pp_tail fmt kind_pp_ _env an =
-    let _, t = Utils.get_asset_key model an in
-    let is_one_field = Model.Utils.is_asset_single_field model an in
-    let pp_first_arg fmt () =
-      match kind_pp_ with
-      | `Coll -> Format.fprintf fmt "const s : storage_type"
-      | `View -> Format.fprintf fmt "const l : list(%a)" pp_btyp t
-    in
-    let postfix, size, container, src, iter_type, iter_val =
-      match kind_pp_ with
-      | `Coll when is_one_field ->
-        "c", "Set.size", "set", "s." ^ an ^ "_assets", "", ""
-      | `Coll ->
-        "c", "Map.size", "map", "s." ^ an ^ "_assets", " * " ^ an ^ "_storage", ".0"
-      | `View ->
-        "v", "size", "list", "l", "", ""
-    in
-    Format.fprintf fmt
-      "function tail_%s_%s (%a; const i : int) : list(%a) is@\n  \
-       block {@\n    \
-       const length : int = int(%s(%s));@\n    \
-       const bound : int = if i < length then i else length;@\n    \
-       if (i < 0) then failwith(\"tail_%s: index out of bound\") else skip;@\n    \
-       const p : int = bound - i;@\n    \
-       function rev (const accu: list(%a); const x: %a) : list(%a) is x # accu;@\n    \
-       function aggregate (const accu: int * list(%a); const x: %a%s) : int * list(%a) is@\n    \
-       if accu.0 >= p@\n    \
-       then (accu.0 + 1, x%s # accu.1 );@\n    \
-       else (accu.0 + 1, accu.1 );@\n    \
-       const init : int * list(%a) = (0, ((list [] : list(%a))));@\n    \
-       const ltmp : int * list(%a) = %s_fold (aggregate, %s, init);@\n    \
-       const res  : list(%a) = list_fold (rev, ltmp.1, ((list [] : list(%a))));@\n  \
-       } with res@\n"
-      postfix an pp_first_arg () pp_btyp t
-      size src
-      an
-      pp_btyp t pp_btyp t pp_btyp t
-      pp_btyp t pp_btyp t iter_type pp_btyp t
-      iter_val
-      pp_btyp t pp_btyp t
-      pp_btyp t container src
-      pp_btyp t pp_btyp t
-  in
-
   let pp_api_asset (env : env) fmt = function
     | Get an ->
       let k, t = Utils.get_asset_key model an in
@@ -2152,42 +1831,338 @@ let pp_model_internal fmt (model : model) b =
             pp_btyp t
       end
 
-    | Cnth an -> pp_nth fmt `Coll env an
-    | Vnth an -> pp_nth fmt `View env an
-
-    | Cselect (an, args, f) -> pp_select fmt `Coll env (an, args, f)
-    | Vselect (an, args, f) -> pp_select fmt `View env (an, args, f)
-
-    | Csort (an, l) -> pp_sort fmt `Coll env (an, l)
-    | Vsort (an, l) -> pp_sort fmt `View env (an, l)
-
-    | Ccount an ->
-      let src = "s." ^ an ^ "_assets" in
-      let size = if Model.Utils.is_asset_single_field model an then "Set.size" else "Map.size"
+    | Nth (an, c) ->
+      let _k, t = Utils.get_asset_key model an in
+      let is_one_field = Model.Utils.is_asset_single_field model an in
+      let pp_fun_arg fmt () =
+        match c with
+        | Coll -> ()
+        | View -> Format.fprintf fmt "; const l : list(%a)" pp_btyp t
+      in
+      let postfix, container, src, iter_type, iter_val =
+        match c with
+        | Coll when is_one_field ->
+          "c", "set", "s." ^ an ^ "_assets", "", ""
+        | Coll ->
+          "c", "map", "s." ^ an ^ "_assets", " * " ^ an ^ "_storage", ".0"
+        | View ->
+          "v", "list", "l", "", ""
       in
       Format.fprintf fmt
-        "function count_c_%s (const s : storage_type) : int is@\n  \
-         block { skip }@\n  \
-         with int(%s(%s))@\n"
-        an
-        size src
+        "function nth_%s_%s (const s : storage_type%a; const index : int) : %a is@\n  \
+         block {@\n  \
+         function aggregate (const accu: map(int, %a); const x: %a%s) : map(int, %a) is@\n  \
+         block {@\n  \
+         const le : int = int(Map.size(accu));@\n  \
+         accu[le] := x%s;@\n  \
+         } with accu;@\n  \
+         const map_ : map(int, %a) = %s_fold(aggregate, %s, (map [] : map(int, %a)));@\n  \
+         const res : %a = get_force(index, map_);@\n  \
+         } with res@\n"
+        postfix an pp_fun_arg () pp_btyp t
+        pp_btyp t pp_btyp t iter_type pp_btyp t
+        iter_val
+        pp_btyp t container src pp_btyp t
+        pp_btyp t
 
-    | Vcount an ->
-      let _, t = Utils.get_asset_key model an in
+    | Select (an, c, args, f) ->
+      let pp_arg fmt (arg_id, arg_type) =
+        Format.fprintf fmt "; const %s : %a" arg_id pp_type arg_type
+      in
+      let k, t = Utils.get_asset_key model an in
+      let i = get_preds_index env.select_preds f in
+      let is_one_field = Model.Utils.is_asset_single_field model an in
+      let pp_fun_arg fmt () =
+        match c with
+        | Coll -> ()
+        | View -> Format.fprintf fmt "; const l : list(%a)" pp_btyp t
+      in
+      let postfix, container, src, iter_type, iter_val =
+        match c with
+        | Coll when is_one_field ->
+          "c", "set", "s." ^ an ^ "_assets", "", ""
+        | Coll ->
+          "c", "map", "s." ^ an ^ "_assets", " * " ^ an ^ "_storage", ".0"
+        | View ->
+          "v", "list", "l", "", ""
+      in
       Format.fprintf fmt
-        "function count_v_%s (const l : list(%a)) : int is@\n  \
-         block { skip }@\n  \
-         with int(size(l))@\n"
-        an pp_btyp t
+        "function select_%s_%s_%i (const s : storage_type%a%a) : list(%a) is@\n  \
+         begin@\n    \
+         function aggregate (const accu : list(%a); const i : %a%s) : list(%a) is@\n      \
+         begin@\n        \
+         const the : %s = get_%s(s, i%s);@\n        \
+         end with (if (%a) then cons(the.%s, accu) else accu);@\n    \
+         end with (%s_fold(aggregate, %s, (nil : list(%a))))@\n"
+        postfix an i pp_fun_arg () (pp_list "" pp_arg) args pp_btyp t
+        pp_btyp t pp_btyp t iter_type pp_btyp t
+        an an iter_val
+        (pp_mterm (mk_env ())) f k
+        container src pp_btyp t
 
-    | Csum (an, t, p) -> pp_sum fmt `Coll env (an, t, p)
-    | Vsum (an, t, p) -> pp_sum fmt `View env (an, t, p)
+    | Sort (an, c, l) ->
+      let _, t = Utils.get_asset_key model an in
 
-    | Chead an -> pp_head fmt `Coll env an
-    | Vhead an -> pp_head fmt `View env an
+      let is_one_field = Model.Utils.is_asset_single_field model an in
+      let pp_fun_arg fmt () =
+        match c with
+        | Coll -> ()
+        | View -> Format.fprintf fmt "; const l : list(%a)" pp_btyp t
+      in
+      let postfix, container, src, iter_type, iter_val =
+        match c with
+        | Coll when is_one_field ->
+          "c", "set", "s." ^ an ^ "_assets", "", ""
+        | Coll ->
+          "c", "map", "s." ^ an ^ "_assets", " * " ^ an ^ "_storage", ".0"
+        | View ->
+          "v", "list", "l", "", ""
+      in
 
-    | Ctail an -> pp_tail fmt `Coll env an
-    | Vtail an -> pp_tail fmt `View env an
+      let pp_criteria fmt (fn, c) =
+        let op1, op2, d =
+          match c with
+          | SKasc -> ">", "<", "asc"
+          | SKdesc -> "<", ">", "desc"
+        in
+        Format.fprintf fmt
+          "// %s %s@\n    \
+           if (a1.%s %s a2.%s)@\n    \
+           then res := 1@\n    \
+           else if (a1.%s %s a2.%s)@\n    \
+           then res := -1"
+          fn d
+          fn op1 fn
+          fn op2 fn
+      in
+
+      let pp_fun_cmp fmt _ =
+        Format.fprintf fmt
+          "function cmp (const k1 : %a; const k2: %a) : int is@\n  \
+           block {@\n    \
+           var res : int := 0;@\n    \
+           const a1 : %s = get_%s(s, k1);@\n    \
+           const a2 : %s = get_%s(s, k2);@\n    \
+           %a@\n    \
+           else skip@\n  \
+           } with res;@\n"
+          pp_btyp t pp_btyp t
+          an an
+          an an
+          (pp_list "@\n    else " pp_criteria) l
+      in
+
+      let pp_fun_insert fmt _ =
+        Format.fprintf fmt
+          "function insert(const accu: option(%a) * list(%a); const x : %a) : option(%a) * list(%a) is@\n  \
+           block {@\n    \
+           const res : option(%a) * list(%a) =@\n    \
+           case accu.0 of@\n    \
+           | Some(v) ->@\n    \
+           if (cmp(x, v) < 0)@\n    \
+           then ((None : option(%a)), cons(x, cons(v, accu.1)))@\n    \
+           else (Some(v), cons(x, accu.1))@\n    \
+           | None -> ((None : option(%a)), cons(x, accu.1))@\n    \
+           end;@\n  \
+           } with res;@\n"
+          pp_btyp t pp_btyp t pp_btyp t pp_btyp t pp_btyp t
+          pp_btyp t pp_btyp t
+          pp_btyp t
+          pp_btyp t
+      in
+
+      let pp_fun_sort fmt _ =
+        Format.fprintf fmt
+          "function sort (const accu: list(%a); const x: %a%s) : list(%a) is@\n  \
+           block {@\n    \
+           const init : option(%a) * list(%a) = (Some(x%s), (list [] : list(%a)));@\n    \
+           const res_opt : option(%a) * list(%a) = list_fold(insert, accu, init);@\n    \
+           const res : list(%a) =@\n    \
+           case res_opt.0 of@\n    \
+           | Some(v) -> cons(v, res_opt.1)@\n    \
+           | None -> res_opt.1@\n    \
+           end;@\n  \
+           } with res;@\n"
+          pp_btyp t pp_btyp t iter_type pp_btyp t
+          pp_btyp t pp_btyp t iter_val pp_btyp t
+          pp_btyp t pp_btyp t
+          pp_btyp t
+      in
+
+      Format.fprintf fmt
+        "function sort_%s_%s_%a (const s : storage_type%a) : list(%a) is@\n  @\n  \
+         begin@\n    \
+         @[%a@]@\n    \
+         @[%a@]@\n    \
+         @[%a@]@\n    \
+         const init : list(%a) = list [];@\n    \
+         const res : list(%a) = %s_fold (sort, %s, init);@\n  \
+         end with res@\n"
+        postfix an pp_postfix_sort l pp_fun_arg () pp_btyp t
+        pp_fun_cmp ()
+        pp_fun_insert ()
+        pp_fun_sort ()
+        pp_btyp t
+        pp_btyp t container src
+
+    | Count (an, c) ->
+      begin
+        match c with
+        | Coll ->
+          let src = "s." ^ an ^ "_assets" in
+          let size = if Model.Utils.is_asset_single_field model an then "Set.size" else "Map.size"
+          in
+          Format.fprintf fmt
+            "function count_c_%s (const s : storage_type) : int is@\n  \
+             block { skip }@\n  \
+             with int(%s(%s))@\n"
+            an
+            size src
+
+        | View ->
+          let _, t = Utils.get_asset_key model an in
+          Format.fprintf fmt
+            "function count_v_%s (const l : list(%a)) : int is@\n  \
+             block { skip }@\n  \
+             with int(size(l))@\n"
+            an pp_btyp t
+      end
+
+    | Sum (an, c, t, p) ->
+      let rec pp_expr fmt (mt : mterm) =
+        match mt.node with
+        | Mdot ({node = Mvarlocal ({pldesc = "the"; _}) }, fn) ->
+          Format.fprintf fmt "a.%a"
+            pp_id fn
+        | _ -> (pp_mterm_gen (mk_env ()) pp_expr) fmt mt
+      in
+      let get_zero _ =
+        match t with
+        | Ttuple [(Tbuiltin Bint); (Tbuiltin Bint)] -> "(0, 0)"
+        | _ -> "0"
+      in
+      let _, tk = Utils.get_asset_key model an in
+      let i = get_preds_index env.sum_preds p in
+      let is_one_field = Model.Utils.is_asset_single_field model an in
+      let pp_fun_arg fmt () =
+        match c with
+        | Coll -> ()
+        | View -> Format.fprintf fmt "; const l : list(%a)" pp_btyp tk
+      in
+      let pp_formula fmt _ =
+        match t with
+        | Ttuple [(Tbuiltin Bint); (Tbuiltin Bint)] -> pp_str fmt "e.0 * accu.1 + accu.0 * e.1, e.1 * accu.1"
+        | _ -> pp_str fmt "accu + e"
+      in
+      let postfix, container, src, iter_type, iter_val =
+        match c with
+        | Coll when is_one_field ->
+          "c", "set", "s." ^ an ^ "_assets", "", ""
+        | Coll ->
+          "c", "map", "s." ^ an ^ "_assets", " * " ^ an ^ "_storage", ".0"
+        | View ->
+          "v", "list", "l", "", ""
+      in
+      Format.fprintf fmt
+        "function sum_%s_%s_%i (const s : storage_type%a) : %a is@\n  \
+         begin@\n    \
+         function aggregate (const accu : %a; const i : %a%s) : %a is@\n      \
+         block {@\n        \
+         const a : %s = get_%s(s, i%s);@\n      \
+         const e : %a = %a;@\n      \
+         } with (%a);@\n  \
+         end with (%s_fold(aggregate, %s, %s))@\n"
+        postfix an i pp_fun_arg () pp_type t
+        pp_type t pp_btyp tk iter_type pp_type t
+        an an iter_val
+        pp_type t pp_expr p
+        pp_formula ()
+        container src (get_zero t)
+
+    | Head (an, c) ->
+      let _, t = Utils.get_asset_key model an in
+      let is_one_field = Model.Utils.is_asset_single_field model an in
+      let pp_first_arg fmt () =
+        match c with
+        | Coll -> Format.fprintf fmt "const s : storage_type"
+        | View -> Format.fprintf fmt "const l : list(%a)" pp_btyp t
+      in
+      let postfix, size, container, src, iter_type, iter_val =
+        match c with
+        | Coll when is_one_field ->
+          "c", "Set.size", "set", "s." ^ an ^ "_assets", "", ""
+        | Coll ->
+          "c", "Map.size", "map", "s." ^ an ^ "_assets", " * " ^ an ^ "_storage", ".0"
+        | View ->
+          "v", "size", "list", "l", "", ""
+      in
+      Format.fprintf fmt
+        "function head_%s_%s (%a; const i : int) : list(%a) is@\n  \
+         block {@\n    \
+         const length : int = int(%s(%s));@\n    \
+         const bound : int = if i < length then i else length;@\n    \
+         if (i < 0) then failwith(\"head_%s: index out of bound\") else skip;@\n    \
+         function rev (const accu: list(%a); const x: %a) : list(%a) is x # accu;@\n    \
+         function aggregate (const accu: int * list(%a); const x: %a%s) : int * list(%a) is@\n    \
+         if accu.0 < bound@\n    \
+         then (accu.0 + 1, x%s # accu.1 );@\n    \
+         else (accu.0 + 1, accu.1 );@\n    \
+         const init : int * list(%a) = (0, ((list [] : list(%a))));@\n    \
+         const ltmp : int * list(%a) = %s_fold (aggregate, %s, init);@\n    \
+         const res  : list(%a) = list_fold (rev, ltmp.1, ((list [] : list(%a))));@\n  \
+         } with res@\n"
+        postfix an pp_first_arg () pp_btyp t
+        size src
+        an
+        pp_btyp t pp_btyp t pp_btyp t
+        pp_btyp t pp_btyp t iter_type pp_btyp t
+        iter_val
+        pp_btyp t pp_btyp t
+        pp_btyp t container src
+        pp_btyp t pp_btyp t
+
+    | Tail (an, c) ->
+      let _, t = Utils.get_asset_key model an in
+      let is_one_field = Model.Utils.is_asset_single_field model an in
+      let pp_first_arg fmt () =
+        match c with
+        | Coll -> Format.fprintf fmt "const s : storage_type"
+        | View -> Format.fprintf fmt "const l : list(%a)" pp_btyp t
+      in
+      let postfix, size, container, src, iter_type, iter_val =
+        match c with
+        | Coll when is_one_field ->
+          "c", "Set.size", "set", "s." ^ an ^ "_assets", "", ""
+        | Coll ->
+          "c", "Map.size", "map", "s." ^ an ^ "_assets", " * " ^ an ^ "_storage", ".0"
+        | View ->
+          "v", "size", "list", "l", "", ""
+      in
+      Format.fprintf fmt
+        "function tail_%s_%s (%a; const i : int) : list(%a) is@\n  \
+         block {@\n    \
+         const length : int = int(%s(%s));@\n    \
+         const bound : int = if i < length then i else length;@\n    \
+         if (i < 0) then failwith(\"tail_%s: index out of bound\") else skip;@\n    \
+         const p : int = bound - i;@\n    \
+         function rev (const accu: list(%a); const x: %a) : list(%a) is x # accu;@\n    \
+         function aggregate (const accu: int * list(%a); const x: %a%s) : int * list(%a) is@\n    \
+         if accu.0 >= p@\n    \
+         then (accu.0 + 1, x%s # accu.1 );@\n    \
+         else (accu.0 + 1, accu.1 );@\n    \
+         const init : int * list(%a) = (0, ((list [] : list(%a))));@\n    \
+         const ltmp : int * list(%a) = %s_fold (aggregate, %s, init);@\n    \
+         const res  : list(%a) = list_fold (rev, ltmp.1, ((list [] : list(%a))));@\n  \
+         } with res@\n"
+        postfix an pp_first_arg () pp_btyp t
+        size src
+        an
+        pp_btyp t pp_btyp t pp_btyp t
+        pp_btyp t pp_btyp t iter_type pp_btyp t
+        iter_val
+        pp_btyp t pp_btyp t
+        pp_btyp t container src
+        pp_btyp t pp_btyp t
 
   in
 

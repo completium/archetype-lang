@@ -604,40 +604,22 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (an, k)
 
-    | Mcselect (an, la, lb, a) ->
-      let pp fmt (an, la, lb, a) =
-        Format.fprintf fmt "select_%a ((%a) -> %a)(%a)"
-          pp_str an
-          (pp_list ", " (fun fmt (id, t) -> Format.fprintf fmt "%s : %a" id pp_type t)) la
-          f lb
-          (pp_list ", " f) a
-      in
-      pp fmt (an, la, lb, a)
-
-    | Mvselect (an, c, la, lb, a) ->
+    | Mselect (an, c, la, lb, a) ->
       let pp fmt (an, c, la, lb, a) =
-        Format.fprintf fmt "select_%a (%a, ((%a) -> %a)(%a))"
+        Format.fprintf fmt "select_%a (%a, (%a) -> %a)(%a)"
           pp_str an
-          f c
+          (pp_container_kind f) c
           (pp_list ", " (fun fmt (id, t) -> Format.fprintf fmt "%s : %a" id pp_type t)) la
           f lb
           (pp_list ", " f) a
       in
       pp fmt (an, c, la, lb, a)
 
-    | Mcsort (an, l) ->
-      let pp fmt (an, l) =
-        Format.fprintf fmt "sort_%a (%a)"
-          pp_str an
-          (pp_list ", " (fun fmt (a, b) -> Format.fprintf fmt "%a(%a)" pp_sort_kind b pp_ident a)) l
-      in
-      pp fmt (an, l)
-
-    | Mvsort (an, c, l) ->
+    | Msort (an, c, l) ->
       let pp fmt (an, c, l) =
         Format.fprintf fmt "sort_%a (%a, %a)"
           pp_str an
-          f c
+          (pp_container_kind f) c
           (pp_list ", " (fun fmt (a, b) -> Format.fprintf fmt "%a(%a)" pp_sort_kind b pp_ident a)) l
       in
       pp fmt (an, c, l)
@@ -651,75 +633,42 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (an, c, i)
 
-    | Mcnth (an, i) ->
-      let pp fmt (an, i) =
-        Format.fprintf fmt "nth_%a (%a)"
-          pp_str an
-          f i
-      in
-      pp fmt (an, i)
-
-    | Mvnth (an, c, i) ->
+    | Mnth (an, c, i) ->
       let pp fmt (an, c, i) =
         Format.fprintf fmt "nth_%a (%a, %a)"
           pp_str an
-          f c
+          (pp_container_kind f) c
           f i
       in
       pp fmt (an, c, i)
 
-    | Mccount (an) ->
-      let pp fmt (an) =
-        Format.fprintf fmt "count_%a ()"
-          pp_str an
-      in
-      pp fmt (an)
-
-    | Mvcount (an, c) ->
+    | Mcount (an, c) ->
       let pp fmt (an, c) =
         Format.fprintf fmt "count_%a (%a)"
           pp_str an
-          f c
+          (pp_container_kind f) c
       in
       pp fmt (an, c)
 
-    | Mcsum (an, p) ->
-      let pp fmt (an, p) =
-        Format.fprintf fmt "sum_%a (%a)"
-          pp_str an
-          f p
-      in
-      pp fmt (an, p)
-
-    | Mvsum (an, c, p) ->
+    | Msum (an, c, p) ->
       let pp fmt (an, c, p) =
         Format.fprintf fmt "sum_%a (%a, %a)"
           pp_str an
-          f c
+          (pp_container_kind f) c
           f p
       in
       pp fmt (an, c, p)
 
-    | Mchead (an, i) ->
-      Format.fprintf fmt "head_%a (%a)"
-        pp_str an
-        f i
-
-    | Mvhead (an, c, i) ->
+    | Mhead (an, c, i) ->
       Format.fprintf fmt "head_%a (%a, %a)"
         pp_str an
-        f c
+        (pp_container_kind f) c
         f i
 
-    | Mctail (an, i) ->
-      Format.fprintf fmt "tail_%a (%a)"
-        pp_str an
-        f i
-
-    | Mvtail (an, c, i) ->
+    | Mtail (an, c, i) ->
       Format.fprintf fmt "tail_%a (%a, %a)"
         pp_str an
-        f c
+        (pp_container_kind f) c
         f i
 
 
@@ -1199,21 +1148,14 @@ let pp_api_asset fmt = function
   | Shallow an -> pp_str fmt ("shallow\t " ^ an)
   | Unshallow an -> pp_str fmt ("unshallow\t " ^ an)
   | Listtocoll an -> pp_str fmt ("listtocoll\t " ^ an)
-  | Contains (an, c) -> Format.fprintf fmt "contains %s on %a" an pp_ck c
-  | Cnth an -> pp_str fmt ("cnth\t " ^ an)
-  | Vnth an -> pp_str fmt ("vnth\t " ^ an)
-  | Cselect (an, _, p) -> Format.fprintf fmt "cselect\t %s %a" an pp_mterm p
-  | Vselect (an, _, p) -> Format.fprintf fmt "vselect\t %s %a" an pp_mterm p
-  | Csort (an, l) -> Format.fprintf fmt "csort\t%a on %a" pp_str an (pp_list ", " (fun fmt (a, b) -> Format.fprintf fmt "%a(%a)" pp_sort_kind b pp_ident a)) l
-  | Vsort (an, l) -> Format.fprintf fmt "vsort\t%a on %a" pp_str an (pp_list ", " (fun fmt (a, b) -> Format.fprintf fmt "%a(%a)" pp_sort_kind b pp_ident a)) l
-  | Ccount an -> pp_str fmt ("ccount\t " ^ an)
-  | Vcount an -> pp_str fmt ("vcount\t " ^ an)
-  | Csum (an, t, p) -> Format.fprintf fmt "csum\t (:%a) %s %a" pp_type t an pp_mterm p
-  | Vsum (an, t, p) -> Format.fprintf fmt "vsum\t (:%a) %s %a" pp_type t an pp_mterm p
-  | Chead an -> pp_str fmt ("chead\t " ^ an)
-  | Vhead an -> pp_str fmt ("vhead\t " ^ an)
-  | Ctail an -> pp_str fmt ("ctail\t " ^ an)
-  | Vtail an -> pp_str fmt ("vtail\t " ^ an)
+  | Contains (an, c)     -> Format.fprintf fmt "contains %s on %a" an pp_ck c
+  | Nth (an, c)          -> Format.fprintf fmt "nth %s on %a" an pp_ck c
+  | Select (an, c, _, p) -> Format.fprintf fmt "select %s %a on %a" an pp_mterm p pp_ck c
+  | Sort (an, c, l)      -> Format.fprintf fmt "sort %a on %a  on %a" pp_str an (pp_list ", " (fun fmt (a, b) -> Format.fprintf fmt "%a(%a)" pp_sort_kind b pp_ident a)) l pp_ck c
+  | Count (an, c)        -> Format.fprintf fmt "count %s on %a" an pp_ck c
+  | Sum (an, c, t, p)    -> Format.fprintf fmt "sum (:%a) %s %a on %a" pp_type t an pp_mterm p pp_ck c
+  | Head (an, c)         -> Format.fprintf fmt "head %s on %a" an pp_ck c
+  | Tail (an, c)         -> Format.fprintf fmt "tail %s on %a" an pp_ck c
 
 let pp_api_list fmt = function
   | Lprepend t  -> Format.fprintf fmt "list_prepend\t %a" pp_type t

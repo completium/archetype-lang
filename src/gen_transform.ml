@@ -1314,7 +1314,7 @@ let add_explicit_sort (model : model) : model =
     let is_sorted x : bool =
       let rec aux accu x : bool =
         match mt.node with
-        | Mvsort _ -> true
+        | Msort _ -> true
         | _ -> fold_term aux accu x
       in
       aux false x
@@ -1326,9 +1326,9 @@ let add_explicit_sort (model : model) : model =
       | Mvarlocal id -> not (List.exists (fun a -> String.equal a (unloc id)) env)
 
       (* asset api *)
-      | Mvselect (_, c, _, _, _) -> is_implicit_sort env c
-      | Mvhead   (_, c, _) -> is_implicit_sort env c
-      | Mvtail   (_, c, _) -> is_implicit_sort env c
+      | Mselect (_, CKview c, _, _, _) -> is_implicit_sort env c
+      | Mhead   (_, CKview c, _) -> is_implicit_sort env c
+      | Mtail   (_, CKview c, _) -> is_implicit_sort env c
 
       | _ -> false
     in
@@ -1338,7 +1338,7 @@ let add_explicit_sort (model : model) : model =
     in
     let create_sort an c =
       let crit = get_crit an in
-      mk_mterm (Mvsort (an, c, crit)) c.type_
+      mk_mterm (Msort (an, CKview c, crit)) c.type_
     in
     let extract_asset_name (c : mterm) =
       match c.type_ with
@@ -1355,14 +1355,14 @@ let add_explicit_sort (model : model) : model =
       let body = aux env ctx body in
       { mt with node = Mletin ([id], v, Some (Tcontainer (Tasset an, c)), body, o)}
 
-    | Mvnth (an, c, idx) when is_implicit_sort env c ->
-      { mt with node = Mvnth (an, create_sort an c, idx) }
+    | Mnth (an, CKview c, idx) when is_implicit_sort env c ->
+      { mt with node = Mnth (an, CKview (create_sort an c), idx) }
 
-    | Mvhead (an, c, idx) when is_implicit_sort env c ->
-      { mt with node = Mvhead (an, create_sort an c, idx) }
+    | Mhead (an, CKview c, idx) when is_implicit_sort env c ->
+      { mt with node = Mhead (an, CKview (create_sort an c), idx) }
 
-    | Mvtail (an, c, idx) when is_implicit_sort env c ->
-      { mt with node = Mvtail (an, create_sort an c, idx) }
+    | Mtail (an, CKview c, idx) when is_implicit_sort env c ->
+      { mt with node = Mtail (an, CKview (create_sort an c), idx) }
 
     | Mfor (a, c, body, lbl) when is_implicit_sort env c ->
       let body = aux env ctx body in
@@ -1727,7 +1727,7 @@ let remove_fun_dotasset (model : model) : model =
     let rec efd_aux (accu : (lident * mterm) list) (mt : mterm) : mterm * (lident * mterm) list =
       let is_fun (mt : mterm) : bool =
         match mt.node with
-        | Mget _ | Mvnth _-> true
+        | Mget _ | Mnth _-> true
         | _ -> false
       in
       match mt.node with
@@ -1785,8 +1785,8 @@ let build_col (an : ident) =
 let change_type_of_nth (model : model) : model =
   let rec aux ctx (mt : mterm) : mterm =
     match mt.node with
-    | Mvnth (an, c, i) ->
-      build_get an (mk_mterm (Mvnth (an, aux ctx c, aux ctx i)) (Tbuiltin (Utils.get_asset_key model an |> snd)))
+    | Mnth (an, CKview c, i) ->
+      build_get an (mk_mterm (Mnth (an, CKview (aux ctx c), aux ctx i)) (Tbuiltin (Utils.get_asset_key model an |> snd)))
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
@@ -2075,10 +2075,10 @@ let replace_for_to_iter (model : model) : model =
         end in
       let idx_id = "_i_" ^ lbl in
       let idx = mk_mterm (Mvarlocal (dumloc idx_id)) (Tbuiltin Bint) in
-      let nth = mk_mterm (Mvnth(an, view, idx)) type_asset in
+      let nth = mk_mterm (Mnth(an, CKview view, idx)) type_asset in
       let letin = mk_mterm (Mletin ([id], nth, Some type_asset, nbody, None)) Tunit in
       let bound_min = mk_mterm (Mint Big_int.zero_big_int) (Tbuiltin Bint) in
-      let bound_max = mk_mterm (Mvcount (an, view)) (Tbuiltin Bint) in
+      let bound_max = mk_mterm (Mcount (an, CKview view)) (Tbuiltin Bint) in
       let iter = Miter (dumloc idx_id, bound_min, bound_max, letin, Some lbl) in
       mk_mterm iter mt.type_
     | _ -> map_mterm (aux ctx) mt
@@ -2255,36 +2255,36 @@ let replace_api_view_by_col (model : model) : model =
 
   let rec aux ctx (mt : mterm) : mterm =
     match mt.node with
-    | Mvselect (an, c, args, body, vs) when is_col c ->
+    | Mselect (an, CKview c, args, body, vs) when is_col c ->
       let body = aux ctx body in
       let vs = List.map (aux ctx) vs in
-      mk_mterm (Mcselect (an, args, body, vs)) mt.type_
+      mk_mterm (Mselect (an, CKcoll, args, body, vs)) mt.type_
 
-    | Mvsort (an, c, l) when is_col c ->
-      mk_mterm (Mcsort (an, l)) mt.type_
+    | Msort (an, CKview c, l) when is_col c ->
+      mk_mterm (Msort (an, CKcoll, l)) mt.type_
 
     | Mcontains (an, CKview c, k) when is_col c->
       let k = aux ctx k in
       mk_mterm (Mcontains (an, CKcoll, k)) mt.type_
 
-    | Mvnth (an, c, i) when is_col c ->
+    | Mnth (an, CKview c, i) when is_col c ->
       let i = aux ctx i in
-      mk_mterm (Mcnth (an, i)) mt.type_
+      mk_mterm (Mnth (an, CKcoll, i)) mt.type_
 
-    | Mvcount (an, c) when is_col c ->
-      mk_mterm (Mccount (an)) mt.type_
+    | Mcount (an, CKview c) when is_col c ->
+      mk_mterm (Mcount (an, CKcoll)) mt.type_
 
-    | Mvsum (an, c, v) when is_col c ->
+    | Msum (an, CKview c, v) when is_col c ->
       let v = aux ctx v in
-      mk_mterm (Mcsum (an, v)) mt.type_
+      mk_mterm (Msum (an, CKcoll, v)) mt.type_
 
-    | Mvhead (an, c, n) when is_col c ->
+    | Mhead (an, CKview c, n) when is_col c ->
       let n = aux ctx n in
-      mk_mterm (Mchead (an, n)) mt.type_
+      mk_mterm (Mhead (an, CKcoll, n)) mt.type_
 
-    | Mvtail (an, c, n) when is_col c ->
+    | Mtail (an, CKview c, n) when is_col c ->
       let n = aux ctx n in
-      mk_mterm (Mctail (an, n)) mt.type_
+      mk_mterm (Mtail (an, CKcoll, n)) mt.type_
 
     | _ -> map_mterm (aux ctx) mt
   in

@@ -72,51 +72,44 @@ let generate_api_storage ?(verif=false) (model : model) : model =
         [APIAsset (Get asset_name); APIAsset (Remove pa); APIAsset (UpdateRemove (asset_name, field_name)); APIAsset (RemoveAll (asset_name, field_name))]
       | Mclear (an , _) ->
         [APIAsset (Clear an)]
-      | Mapifselect (asset_name, _, la, lb, _)
-      | Mcselect (asset_name, la, lb, _) ->
-        [APIAsset (Get asset_name); APIAsset (Cselect (asset_name, la, lb))]
-      | Mvselect (asset_name, _, la, lb, _) ->
-        [APIAsset (Get asset_name); APIAsset (Vselect (asset_name, la, lb))]
-      | Mapifsort (asset_name, _, l)
-      | Mcsort (asset_name, l) ->
-        [APIAsset (Get asset_name); APIAsset (Csort (asset_name, l))]
-      | Mvsort (asset_name, _, l) ->
-        [APIAsset (Get asset_name); APIAsset (Vsort (asset_name, l))]
+      | Mapifselect (asset_name, _, la, lb, _) ->
+        [APIAsset (Get asset_name); APIAsset (Select (asset_name, Coll, la, lb))]
+      | Mselect (asset_name, c, la, lb, _) ->
+        [APIAsset (Get asset_name); APIAsset (Select (asset_name, to_ck c, la, lb))]
+      | Mapifsort (asset_name, _, l) ->
+        [APIAsset (Get asset_name); APIAsset (Sort (asset_name, Coll, l))]
+      | Msort (asset_name, c, l) ->
+        [APIAsset (Get asset_name); APIAsset (Sort (asset_name, to_ck c, l))]
       | Mapifcontains (asset_name, _, _) ->
         [APIAsset (Contains (asset_name, Coll))]
       | Mcontains (asset_name, c, _) ->
         [APIAsset (Contains (asset_name, to_ck c))]
-      | Mapifnth (asset_name, _, _)
-      | Mcnth (asset_name, _) ->
-        [APIAsset (Get asset_name); APIAsset (Cnth asset_name)]
-      | Mvnth (asset_name, _, _) ->
-        [APIAsset (Get asset_name); APIAsset (Vnth asset_name)]
-      | Mapifcount (asset_name, _)
-      | Mccount (asset_name) ->
-        [APIAsset (Ccount asset_name)]
-      | Mvcount (asset_name, _) ->
-        [APIAsset (Vcount asset_name)]
-      | Mapifsum (asset_name, _, p)
-      | Mcsum (asset_name, p) ->
-        [APIAsset (Get asset_name); APIAsset (Csum (asset_name, p.type_, p))]
-      | Mvsum (asset_name, _, p) ->
-        [APIAsset (Get asset_name); APIAsset (Vsum (asset_name, p.type_, p))]
+      | Mapifnth (asset_name, _, _) ->
+        [APIAsset (Get asset_name); APIAsset (Nth (asset_name, Coll))]
+      | Mnth (asset_name, c, _) ->
+        [APIAsset (Get asset_name); APIAsset (Nth (asset_name, to_ck c))]
+      | Mapifcount (asset_name, _) ->
+        [APIAsset (Count (asset_name, Coll))]
+      | Mcount (asset_name, c) ->
+        [APIAsset (Count (asset_name, to_ck c))]
+      | Mapifsum (asset_name, _, p) ->
+        [APIAsset (Get asset_name); APIAsset (Sum (asset_name, Coll, p.type_, p))]
+      | Msum (asset_name, c, p) ->
+        [APIAsset (Get asset_name); APIAsset (Sum (asset_name, to_ck c, p.type_, p))]
       | Mshallow (asset_name, _) ->
         [APIAsset (Shallow asset_name)]
       | Munshallow (asset_name, _) ->
         [APIAsset (Unshallow asset_name)]
       | Mlisttocoll (asset_name, _) ->
         [APIAsset (Listtocoll asset_name)]
-      | Mapifhead (asset_name, _, _)
-      | Mvhead (asset_name, _, _) ->
-        [APIAsset (Vhead asset_name)]
-      | Mchead (asset_name, _) ->
-        [APIAsset (Chead asset_name)]
-      | Mapiftail (asset_name, _, _)
-      | Mctail (asset_name, _) ->
-        [APIAsset (Ctail asset_name)]
-      | Mvtail (asset_name, _, _) ->
-        [APIAsset (Vtail asset_name)]
+      | Mapifhead (asset_name, _, _) ->
+        [APIAsset (Head (asset_name, Coll))]
+      | Mhead (asset_name, c, _) ->
+        [APIAsset (Head (asset_name, to_ck c))]
+      | Mapiftail (asset_name, _, _) ->
+        [APIAsset (Tail (asset_name, Coll))]
+      | Mtail (asset_name, c, _) ->
+        [APIAsset (Tail (asset_name, to_ck c))]
       | Mcoltokeys asset_name ->
         [APIAsset (ColToKeys asset_name)]
       | Mlistprepend (t, _, _) ->
@@ -174,40 +167,33 @@ let generate_api_storage ?(verif=false) (model : model) : model =
                let criteria_asset_name () : int =
                  let default = "_" in
                  let get_asset_name = function
-                   | APIAsset (Get           an)        -> an
-                   | APIAsset (Set           an)        -> an
-                   | APIAsset (Add           an)        -> an
-                   | APIAsset (Remove        an)        -> an
-                   | APIAsset (Clear         an)        -> an
-                   | APIAsset (Update       (an, _))    -> an
-                   | APIAsset (UpdateAdd    (an, _))    -> an
-                   | APIAsset (UpdateRemove (an, _))    -> an
-                   | APIAsset (RemoveAll    (an, _))    -> an
-                   | APIAsset (ToKeys        an)        -> an
-                   | APIAsset (ColToKeys     an)        -> an
-                   | APIAsset (Min          (an, _))    -> an
-                   | APIAsset (Max          (an, _))    -> an
-                   | APIList _                          -> default
-                   | APIBuiltin _                       -> default
-                   | APIInternal _                      -> default
-                   | APIAsset (Shallow       an)        -> an
-                   | APIAsset (Unshallow     an)        -> an
-                   | APIAsset (Listtocoll    an)        -> an
-                   | APIAsset (Contains      (an, _))   -> an
-                   | APIAsset (Cnth          an)        -> an
-                   | APIAsset (Vnth          an)        -> an
-                   | APIAsset (Cselect      (an, _, _)) -> an
-                   | APIAsset (Vselect      (an, _, _)) -> an
-                   | APIAsset (Csort        (an, _))    -> an
-                   | APIAsset (Vsort        (an, _))    -> an
-                   | APIAsset (Ccount        an)        -> an
-                   | APIAsset (Vcount        an)        -> an
-                   | APIAsset (Csum         (an, _, _)) -> an
-                   | APIAsset (Vsum         (an, _, _)) -> an
-                   | APIAsset (Chead         an)        -> an
-                   | APIAsset (Vhead         an)        -> an
-                   | APIAsset (Ctail         an)        -> an
-                   | APIAsset (Vtail         an)        -> an
+                   | APIAsset (Get           an)         -> an
+                   | APIAsset (Set           an)         -> an
+                   | APIAsset (Add           an)         -> an
+                   | APIAsset (Remove        an)         -> an
+                   | APIAsset (Clear         an)         -> an
+                   | APIAsset (Update       (an, _))     -> an
+                   | APIAsset (UpdateAdd    (an, _))     -> an
+                   | APIAsset (UpdateRemove (an, _))     -> an
+                   | APIAsset (RemoveAll    (an, _))     -> an
+                   | APIAsset (ToKeys        an)         -> an
+                   | APIAsset (ColToKeys     an)         -> an
+                   | APIAsset (Min          (an, _))     -> an
+                   | APIAsset (Max          (an, _))     -> an
+                   | APIList _                           -> default
+                   | APIBuiltin _                        -> default
+                   | APIInternal _                       -> default
+                   | APIAsset (Shallow     an)           -> an
+                   | APIAsset (Unshallow   an)           -> an
+                   | APIAsset (Listtocoll  an)           -> an
+                   | APIAsset (Contains   (an, _))       -> an
+                   | APIAsset (Nth        (an, _))       -> an
+                   | APIAsset (Select     (an, _, _, _)) -> an
+                   | APIAsset (Sort       (an, _, _))    -> an
+                   | APIAsset (Count      (an, _))       -> an
+                   | APIAsset (Sum        (an, _, _, _)) -> an
+                   | APIAsset (Head       (an, _))       -> an
+                   | APIAsset (Tail       (an, _))       -> an
                  in
                  let asset_list : ident list = List.fold_left (fun accu (x : decl_node) ->
                      match x with
@@ -227,52 +213,45 @@ let generate_api_storage ?(verif=false) (model : model) : model =
                    | APIInternal (RatArith      ) ->  3
                    | APIInternal (RatUminus     ) ->  4
                    | APIInternal (RatTez        ) ->  5
-                   | APIAsset   (Cnth          _) -> if verif then 6 else 12
-                   | APIAsset   (Vnth          _) -> if verif then 7 else 13
-                   | APIAsset   (Min           _) -> 8
-                   | APIAsset   (Max           _) -> 9
-                   | APIAsset   (Get           _) -> if verif then 10 else 6
-                   | APIAsset   (Set           _) -> 11
-                   | APIAsset   (Add           _) -> 12
-                   | APIAsset   (Remove        _) -> 13
-                   | APIAsset   (Clear         _) -> 14
-                   | APIAsset   (Update        _) -> 15
-                   | APIAsset   (UpdateAdd     _) -> 16
-                   | APIAsset   (UpdateRemove  _) -> 17
-                   | APIAsset   (RemoveAll     _) -> 18
-                   | APIAsset   (ToKeys        _) -> 19
-                   | APIAsset   (Shallow       _) -> 20
-                   | APIAsset   (Unshallow     _) -> 21
-                   | APIAsset   (Listtocoll    _) -> 22
-                   | APIAsset   (ColToKeys     _) -> 23
-                   | APIAsset   (Contains      _) -> 24
-                   | APIAsset   (Cselect       _) -> 26
-                   | APIAsset   (Vselect       _) -> 27
-                   | APIAsset   (Csort         _) -> 28
-                   | APIAsset   (Vsort         _) -> 29
-                   | APIAsset   (Ccount        _) -> 30
-                   | APIAsset   (Vcount        _) -> 31
-                   | APIAsset   (Csum          _) -> 32
-                   | APIAsset   (Vsum          _) -> 33
-                   | APIAsset   (Chead         _) -> 34
-                   | APIAsset   (Vhead         _) -> 35
-                   | APIAsset   (Ctail         _) -> 36
-                   | APIAsset   (Vtail         _) -> 37
-                   | APIList    (Lprepend      _) -> 38
-                   | APIList    (Lcontains     _) -> 39
-                   | APIList    (Lcount        _) -> 40
-                   | APIList    (Lnth          _) -> 41
-                   | APIBuiltin (Bmin          _) -> 42
-                   | APIBuiltin (Bmax          _) -> 43
-                   | APIBuiltin (Babs          _) -> 44
-                   | APIBuiltin (Bconcat       _) -> 45
-                   | APIBuiltin (Bslice        _) -> 46
-                   | APIBuiltin (Blength       _) -> 47
-                   | APIBuiltin (Bisnone       _) -> 48
-                   | APIBuiltin (Bissome       _) -> 49
-                   | APIBuiltin (Bgetopt       _) -> 50
-                   | APIBuiltin (Bfloor         ) -> 51
-                   | APIBuiltin (Bceil          ) -> 52
+                   | APIAsset   (Nth           _) -> if verif then 6 else 9
+                   | APIAsset   (Min           _) -> 7
+                   | APIAsset   (Max           _) -> 8
+                   | APIAsset   (Get           _) -> if verif then 9 else 6
+                   | APIAsset   (Set           _) -> 10
+                   | APIAsset   (Add           _) -> 11
+                   | APIAsset   (Remove        _) -> 12
+                   | APIAsset   (Clear         _) -> 13
+                   | APIAsset   (Update        _) -> 14
+                   | APIAsset   (UpdateAdd     _) -> 15
+                   | APIAsset   (UpdateRemove  _) -> 16
+                   | APIAsset   (RemoveAll     _) -> 17
+                   | APIAsset   (ToKeys        _) -> 18
+                   | APIAsset   (Shallow       _) -> 19
+                   | APIAsset   (Unshallow     _) -> 20
+                   | APIAsset   (Listtocoll    _) -> 21
+                   | APIAsset   (ColToKeys     _) -> 22
+                   | APIAsset   (Contains      _) -> 23
+                   | APIAsset   (Select        _) -> 24
+                   | APIAsset   (Sort          _) -> 25
+                   | APIAsset   (Count         _) -> 26
+                   | APIAsset   (Sum           _) -> 27
+                   | APIAsset   (Head          _) -> 28
+                   | APIAsset   (Tail          _) -> 29
+                   | APIList    (Lprepend      _) -> 30
+                   | APIList    (Lcontains     _) -> 31
+                   | APIList    (Lcount        _) -> 32
+                   | APIList    (Lnth          _) -> 33
+                   | APIBuiltin (Bmin          _) -> 34
+                   | APIBuiltin (Bmax          _) -> 35
+                   | APIBuiltin (Babs          _) -> 36
+                   | APIBuiltin (Bconcat       _) -> 37
+                   | APIBuiltin (Bslice        _) -> 38
+                   | APIBuiltin (Blength       _) -> 39
+                   | APIBuiltin (Bisnone       _) -> 40
+                   | APIBuiltin (Bissome       _) -> 41
+                   | APIBuiltin (Bgetopt       _) -> 42
+                   | APIBuiltin (Bfloor         ) -> 43
+                   | APIBuiltin (Bceil          ) -> 44
                  in
                  let idx1 = get_kind i1.node_item in
                  let idx2 = get_kind i2.node_item in
