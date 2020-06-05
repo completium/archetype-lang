@@ -984,106 +984,22 @@ let pp_mterm fmt (mt : mterm) =
 
     (* formula asset collection methods *)
 
-    | Mapifget (a, c, k) ->
-      let pp fmt (a, c, k) =
-        Format.fprintf fmt "apifget_%a (%a, %a)"
-          pp_str a
-          f c
-          f k
-      in
-      pp fmt (a, c, k)
-
-    | Mapifpureget (a, k) ->
-      let pp fmt (a, k) =
-        Format.fprintf fmt "apifpureget_%a (%a)"
-          pp_str a
-          f k
-      in
-      pp fmt (a, k)
-
-    | Mapifsubsetof (an, c, i) ->
+    | Msubsetof (an, c, i) ->
       let pp fmt (an, c, i) =
-        Format.fprintf fmt "apifsubset_%a (%a, %a)"
+        Format.fprintf fmt "subset_%a (%a, %a)"
           pp_str an
           f c
           f i
       in
       pp fmt (an, c, i)
 
-    | Mapifisempty  (l, r) ->
+    | Misempty  (l, r) ->
       let pp fmt (l, r) =
-        Format.fprintf fmt "apifisempty (%a, %a)"
+        Format.fprintf fmt "isempty (%a, %a)"
           pp_str l
           f r
       in
       pp fmt (l, r)
-
-    | Mapifselect (an, c, la, lb, a) ->
-      let pp fmt (an, c, la, lb, a) =
-        Format.fprintf fmt "apifselect_%a (%a, ((%a) -> %a)(%a))"
-          pp_str an
-          f c
-          (pp_list ", " (fun fmt (id, t) -> Format.fprintf fmt "%s : %a" id pp_type t)) la
-          f lb
-          (pp_list ", " f) a
-      in
-      pp fmt (an, c, la, lb, a)
-
-    | Mapifsort (an, c, l) ->
-      let pp fmt (an, c, l) =
-        Format.fprintf fmt "apifsort_%a (%a, %a)"
-          pp_str an
-          f c
-          (pp_list ", " (fun fmt (a, b) -> Format.fprintf fmt "%a %a" pp_ident a pp_sort_kind b)) l
-      in
-      pp fmt (an, c, l)
-
-    | Mapifcontains (an, c, i) ->
-      let pp fmt (an, c, i) =
-        Format.fprintf fmt "apifcontains_%a (%a, %a)"
-          pp_str an
-          f c
-          f i
-      in
-      pp fmt (an, c, i)
-
-    | Mapifnth (an, c, i) ->
-      let pp fmt (an, c, i) =
-        Format.fprintf fmt "apifnth_%a (%a, %a)"
-          pp_str an
-          f c
-          f i
-      in
-      pp fmt (an, c, i)
-
-    | Mapifcount (an, c) ->
-      let pp fmt (an, c) =
-        Format.fprintf fmt "apifcount_%a (%a)"
-          pp_str an
-          f c
-      in
-      pp fmt (an, c)
-
-    | Mapifsum (an, c, p) ->
-      let pp fmt (an, c, p) =
-        Format.fprintf fmt "apifsum_%a (%a, %a)"
-          pp_str an
-          f c
-          f p
-      in
-      pp fmt (an, c, p)
-
-    | Mapifhead (an, c, i) ->
-      Format.fprintf fmt "apifhead_%a (%a, %a)"
-        pp_str an
-        f c
-        f i
-
-    | Mapiftail (an, c, i) ->
-      Format.fprintf fmt "apiftail_%a (%a, %a)"
-        pp_str an
-        f c
-        f i
 
 
   in

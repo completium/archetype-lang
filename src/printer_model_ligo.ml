@@ -1307,18 +1307,9 @@ let pp_model_internal fmt (model : model) b =
 
     (* formula asset collection methods *)
 
-    | Mapifget       _ -> emit_error (UnsupportedTerm ("apifget"))
-    | Mapifpureget   _ -> emit_error (UnsupportedTerm ("apifpureget"))
-    | Mapifsubsetof  _ -> emit_error (UnsupportedTerm ("apifsubsetof"))
-    | Mapifisempty   _ -> emit_error (UnsupportedTerm ("apifisempty"))
-    | Mapifselect    _ -> emit_error (UnsupportedTerm ("apifselect"))
-    | Mapifsort      _ -> emit_error (UnsupportedTerm ("apifsort"))
-    | Mapifcontains  _ -> emit_error (UnsupportedTerm ("apifcontains"))
-    | Mapifnth       _ -> emit_error (UnsupportedTerm ("apifnth"))
-    | Mapifcount     _ -> emit_error (UnsupportedTerm ("apifcount"))
-    | Mapifsum       _ -> emit_error (UnsupportedTerm ("apifsum"))
-    | Mapifhead      _ -> emit_error (UnsupportedTerm ("apifhead"))
-    | Mapiftail      _ -> emit_error (UnsupportedTerm ("apiftail"))
+    | Msubsetof  _ -> emit_error (UnsupportedTerm ("subsetof"))
+    | Misempty   _ -> emit_error (UnsupportedTerm ("isempty"))
+
   in
 
   let rec pp_mterm (env : env) fmt (mt : mterm) = pp_mterm_gen env (pp_mterm env) fmt mt in

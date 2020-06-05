@@ -352,29 +352,25 @@ let to_model (ast : A.model) : M.model =
         let fp = f p in
         let fq = f q in
         let asset_name = extract_asset_name fp in
-        M.Mapifsubsetof (asset_name, fp, fq)
+        M.Msubsetof (asset_name, fp, fq)
 
       | A.Pcall (Some p, A.Cconst (A.Cisempty), []) when is_asset_container p ->
         let fp = f p in
         let asset_name = extract_asset_name fp in
-        M.Mapifisempty (asset_name, fp)
+        M.Misempty (asset_name, fp)
 
       | A.Pcall (Some p, A.Cconst (A.Cget), [AExpr q]) when is_asset_container p ->
         let fp = f p in
         let fq = f q in
         let asset_name = extract_asset_name fp in
-        if formula
-        then M.Mapifget (asset_name, fp, fq)
-        else M.Mget (asset_name, fq)
+        M.Mget (asset_name, fq)
 
       | A.Pcall (Some p, A.Cconst (A.Cselect), [AFun (_id, _type, l, q)]) when is_asset_container p ->
         let fp = f p in
         let lambda_body = f q in
         let asset_name = extract_asset_name fp in
         let lambda_args, args = List.fold_right (fun (x, y, z) (l1, l2) -> ((unloc x, ptyp_to_type y)::l1, (f z)::l2)) l ([], []) in
-        if formula
-        then M.Mapifselect (asset_name, fp, lambda_args, lambda_body, args)
-        else M.Mselect (asset_name, CKview fp, lambda_args, lambda_body, args)
+        M.Mselect (asset_name, CKview fp, lambda_args, lambda_body, args)
 
       | A.Pcall (Some p, A.Cconst (A.Csort), args) when is_asset_container p ->
         let fp = f p in
@@ -388,56 +384,42 @@ let to_model (ast : A.model) : M.model =
                 end
               | _ -> assert false) args
         in
-        if formula
-        then M.Mapifsort (asset_name, fp, args)
-        else M.Msort (asset_name, CKview fp, args)
+        M.Msort (asset_name, CKview fp, args)
 
       | A.Pcall (Some p, A.Cconst (A.Ccontains), [AExpr q]) when is_asset_container p ->
         let fp = f p in
         let fq = f q in
         let asset_name = extract_asset_name fp in
-        if formula
-        then M.Mapifcontains (asset_name, fp, fq)
-        else M.Mcontains (asset_name, CKview fp, fq)
+        M.Mcontains (asset_name, CKview fp, fq)
 
       | A.Pcall (Some p, A.Cconst (A.Cnth), [AExpr q]) when is_asset_container p ->
         let fp = f p in
         let fq = f q in
         let asset_name = extract_asset_name fp in
-        if formula
-        then M.Mapifnth (asset_name, fp, fq)
-        else M.Mnth (asset_name, CKview fp, fq)
+        M.Mnth (asset_name, CKview fp, fq)
 
       | A.Pcall (Some p, A.Cconst (A.Ccount), []) when is_asset_container p ->
         let fp = f p in
         let asset_name = extract_asset_name fp in
-        if formula
-        then M.Mapifcount (asset_name, fp)
-        else M.Mcount (asset_name, CKview fp)
+        M.Mcount (asset_name, CKview fp)
 
       | A.Pcall (Some p, A.Cconst (A.Csum), [AFun (_qi, _qt, _l, q)]) when is_asset_container p ->
         let fp = f p in
         let fq = f q in
         let asset_name = extract_asset_name fp in
-        if formula
-        then M.Mapifsum (asset_name, fp, fq)
-        else M.Msum (asset_name, CKview fp, fq)
+        M.Msum (asset_name, CKview fp, fq)
 
       | A.Pcall (Some p, A.Cconst (A.Chead), [AExpr e]) when is_asset_container p ->
         let fp = f p in
         let fe = f e in
         let asset_name = extract_asset_name fp in
-        if formula
-        then M.Mapifhead (asset_name, fp, fe)
-        else M.Mhead (asset_name, CKview fp, fe)
+        M.Mhead (asset_name, CKview fp, fe)
 
       | A.Pcall (Some p, A.Cconst (A.Ctail), [AExpr e]) when is_asset_container p ->
         let fp = f p in
         let fe = f e in
         let asset_name = extract_asset_name fp in
-        if formula
-        then M.Mapiftail (asset_name, fp, fe)
-        else M.Mtail (asset_name, CKview fp, fe)
+        M.Mtail (asset_name, CKview fp, fe)
 
       (* List*)
 
