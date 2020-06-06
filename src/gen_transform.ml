@@ -2087,6 +2087,18 @@ let replace_for_to_iter (model : model) : model =
 
   let rec aux ctx (mt : mterm) : mterm =
     match mt.node with
+    | Mfor (id, ICKlist ({node = _; type_ = Tlist t} as col), body, Some lbl) ->
+      let nbody = aux ctx body in
+
+      let idx_id = "_i_" ^ lbl in
+      let idx = mk_mterm (Mvarlocal (dumloc idx_id)) (Tbuiltin Bint) in
+      let nth = mk_mterm (Mlistnth(t, col, idx)) t in
+      let letin = mk_mterm (Mletin ([id], nth, Some t, nbody, None)) Tunit in
+      let bound_min = mk_mterm (Mint Big_int.zero_big_int) (Tbuiltin Bint) in
+      let bound_max = mk_mterm (Mlistcount (t, col)) (Tbuiltin Bint) in
+      let iter = Miter (dumloc idx_id, bound_min, bound_max, letin, Some lbl) in
+      mk_mterm iter mt.type_
+
     | Mfor (id, col, body, Some lbl) when is_asset col ->
       let nbody = aux ctx body in
       let asset_name = extract_asset col in
