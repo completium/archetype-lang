@@ -2277,6 +2277,8 @@ let replace_api_view_by_col (model : model) : model =
           type_ = Tcontainer ((Tasset _), Collection); _});
         type_ = Tcontainer ((Tasset _), View);
         _} -> true
+    | { node = (Mvarstorecol _);
+        type_ = Tcontainer ((Tasset _), Collection); _} -> true
     | _ -> false
   in
 
