@@ -365,7 +365,7 @@ let to_model (ast : A.model) : M.model =
         let asset_name = extract_asset_name fp in
         if formula
         then M.Mapifget (asset_name, fp, fq)
-        else M.Mget (asset_name, fq)
+        else M.Mget (asset_name, CKview fp, fq)
 
       | A.Pcall (Some p, A.Cconst (A.Cselect), [AFun (_id, _type, l, q)]) when is_asset_container p ->
         let fp = f p in

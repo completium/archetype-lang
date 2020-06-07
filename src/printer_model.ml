@@ -601,10 +601,11 @@ let pp_mterm fmt (mt : mterm) =
 
     (* asset api expression *)
 
-    | Mget (an, k) ->
+    | Mget (an, c, k) ->
       let pp fmt (an, k) =
-        Format.fprintf fmt "get_%a (%a)"
+        Format.fprintf fmt "get_%a (%a, %a)"
           pp_str an
+          (pp_container_kind f) c
           f k
       in
       pp fmt (an, k)

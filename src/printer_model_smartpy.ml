@@ -790,13 +790,13 @@ let pp_model fmt (model : model) =
 
       (* asset api expression *)
 
-      | Mget (an, k) ->
-        let pp fmt (an, k) =
+      | Mget (an, c, k) ->
+        let pp fmt (an, _c, k) =
           Format.fprintf fmt "self.data.%a_assets[%a]"
             pp_str an
             f k
         in
-        pp fmt (an, k)
+        pp fmt (an, c, k)
 
       | Mselect (an, c, la, lb, a) ->
         let pp fmt (an, c, _la, lb, _a) =

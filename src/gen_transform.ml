@@ -120,7 +120,7 @@ let build_col_asset (an : ident) =
   let col : mterm  = mk_mterm (Mvarstorecol dan) type_col in
   mk_mterm (Mcast (type_col, type_view, col)) type_view, type_asset
 
-let build_get (an : ident) v = mk_mterm (Mget (an, v)) (Tasset (dumloc an))
+let build_get (an : ident) v = mk_mterm (Mget (an, CKcoll, v)) (Tasset (dumloc an))
 
 (* myasset.update k {f1 = v1; f2 = v2}
 
@@ -1990,7 +1990,7 @@ let add_contain_on_get (model : model) : model =
     in
     let rec f (accu : (ident * mterm) list) (mt : mterm) : (ident * mterm) list =
       match mt.node with
-      | Mget(an, k) ->
+      | Mget(an, _, k) ->
         let accu = f accu k in
         (an, k)::accu
       | _ -> fold_term f accu mt
