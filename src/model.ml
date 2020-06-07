@@ -495,7 +495,7 @@ type 'id var_gen = {
   constant: bool;
   default: 'id mterm_gen option;
   invariants: 'id label_term_gen list;
-  loc: Location.t;
+  loc: Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
