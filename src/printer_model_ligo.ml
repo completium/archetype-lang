@@ -1603,9 +1603,14 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt
         "function add_%s_%s (const s : storage_type; const asset_key : %a; const b : %s) : storage_type is@\n  \
          begin@\n    \
-         const asset_val : %s_storage = get_force(asset_key, s.%s_assets);@\n    \
+         const asset_val_opt : option(%s_storage) = s.%s_assets[asset_key];@\n    \
+         case asset_val_opt of@\n      \
+         None -> skip@\n    \
+         | Some (asset_val) -> block {@\n      \
          %a\
-         s.%s_assets[asset_key] := asset_val with record[%s = cons(b.%s, asset_val.%s)];@\n  \
+         s.%s_assets[asset_key] := asset_val with record[%s = cons(b.%s, asset_val.%s)];@\n    \
+         }@\n  \
+         end;@\n\
          end with (s)@\n"
         an fn pp_btyp t ft
         an an
@@ -1613,10 +1618,10 @@ let pp_model_internal fmt (model : model) b =
            match c with
            | Collection ->
              Format.fprintf fmt
-               "if not %s_mem(b.%s, s.%s_assets) then failwith (\"key does not exist\") else skip;@\n    "
+               "if not %s_mem(b.%s, s.%s_assets) then failwith (\"key does not exist\") else skip;@\n      "
                (if single then "set" else "map") kk ft
            | Partition ->
-             Format.fprintf fmt "s := add_%s(s, b);@\n    " ft
+             Format.fprintf fmt "s := add_%s(s, b);@\n      " ft
            | _ -> ()
         ) ()
         an fn kk fn
