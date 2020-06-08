@@ -1,0 +1,20 @@
+archetype before_var
+
+asset myasset identified by id {
+  id : int;
+  v: string;
+} initialized by {
+  {1; "str1"};
+  {2; "str2"};
+  {3; "str3"}
+}
+
+
+action exec () {
+  specification {
+    s1: before.myasset.contains(1);
+  }
+  effect {
+    ()
+  }
+}

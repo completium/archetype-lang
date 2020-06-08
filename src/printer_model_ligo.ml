@@ -841,7 +841,7 @@ let pp_model_internal fmt (model : model) b =
       let compute_ (k : mterm) : mterm =
         begin
           match k.node with
-          | Mget (_, k) -> k
+          | Mget (_, _, k) -> k
           | _ -> k
         end
       in
@@ -885,14 +885,14 @@ let pp_model_internal fmt (model : model) b =
 
     (* asset api expression *)
 
-    | Mget (an, k) ->
-      let pp fmt (an, k) =
+    | Mget (an, c, k) ->
+      let pp fmt (an, _c, k) =
         Format.fprintf fmt "get_%a (%s, %a)"
           pp_str an
           const_storage
           f k
       in
-      pp fmt (an, k)
+      pp fmt (an, c, k)
 
     | Mselect (an, c, la, lb, a) ->
       let index : int = get_preds_index env.select_preds lb in

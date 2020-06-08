@@ -215,7 +215,7 @@ type ('id, 'term) mterm_node  =
   | Mupdate           of ident * 'term * ('id * assignment_operator * 'term) list
   | Maddupdate        of ident * 'term * ('id * assignment_operator * 'term) list
   (* asset api expression *)
-  | Mget              of ident * 'term
+  | Mget              of ident * 'term container_kind * 'term
   | Mselect           of ident * 'term container_kind * (ident * type_) list * 'term * 'term list (* asset_name, view, lambda (args, body, apply_args) *)
   | Msort             of ident * 'term container_kind * (ident * sort_kind) list
   | Mcontains         of ident * 'term container_kind * 'term
@@ -495,7 +495,7 @@ type 'id var_gen = {
   constant: bool;
   default: 'id mterm_gen option;
   invariants: 'id label_term_gen list;
-  loc: Location.t;
+  loc: Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
@@ -1038,7 +1038,7 @@ let cmp_mterm_node
     | Mupdate (an1, k1, l1), Mupdate (an2, k2, l2)                                     -> cmp_ident an1 an2 && cmp k1 k2 && List.for_all2 (fun (id1, op1, v1) (id2, op2, v2) -> cmpi id1 id2 && cmp_assign_op op1 op2 && cmp v1 v2) l1 l2
     | Maddupdate (an1, k1, l1), Maddupdate (an2, k2, l2)                               -> cmp_ident an1 an2 && cmp k1 k2 && List.for_all2 (fun (id1, op1, v1) (id2, op2, v2) -> cmpi id1 id2 && cmp_assign_op op1 op2 && cmp v1 v2) l1 l2
     (* asset api expression *)
-    | Mget (an1, k1), Mget (an2, k2)                                                   -> cmp_ident an1 an2 && cmp k1 k2
+    | Mget (an1, c1, k1), Mget (an2, c2, k2)                                           -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && cmp k1 k2
     | Mselect (an1, c1, la1, lb1, a1), Mselect (an2, c2, la2, lb2, a2)                 -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && List.for_all2 (fun (i1, t1) (i2, t2) -> cmp_ident i1 i2 && cmp_type t1 t2) la1 la2 && cmp lb1 lb2 && List.for_all2 cmp a1 a2
     | Msort (an1, c1, l1), Msort (an2, c2, l2)                                         -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && List.for_all2 (fun (fn1, k1) (fn2, k2) -> cmp_ident fn1 fn2 && k1 = k2) l1 l2
     | Mcontains (an1, c1, i1), Mcontains (an2, c2, i2)                                 -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && cmp i1 i2
@@ -1327,7 +1327,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mupdate (an, k, l)             -> Mupdate (fi an, f k, List.map (fun (id, op, v) -> (g id, op, f v)) l)
   | Maddupdate (an, k, l)          -> Maddupdate (fi an, f k, List.map (fun (id, op, v) -> (g id, op, f v)) l)
   (* asset api expression *)
-  | Mget (an, k)                   -> Mget (fi an, f k)
+  | Mget (an, c, k)                -> Mget (fi an, map_container_kind f c, f k)
   | Mselect (an, c, la, lb, a)     -> Mselect (fi an, map_container_kind f c, List.map (fun (i, t) -> (fi i, ft t)) la, f lb, List.map f a)
   | Msort (an, c, l)               -> Msort (fi an, map_container_kind f c, l)
   | Mcontains (an, c, i)           -> Mcontains (fi an, map_container_kind f c, f i)
@@ -1652,7 +1652,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mupdate (_, k, l)                     -> List.fold_left (fun accu (_, _, v) -> f accu v) (f accu k) l
   | Maddupdate (_, k, l)                  -> List.fold_left (fun accu (_, _, v) -> f accu v) (f accu k) l
   (* asset api expression *)
-  | Mget (_, k)                           -> f accu k
+  | Mget (_, c, k)                        -> f (fold_container_kind f accu c) k
   | Mselect (_, c, _, lb, a)              -> List.fold_left (fun accu x -> f accu x) (f (fold_container_kind f accu c) lb) a
   | Msort (_, c,_)                        -> fold_container_kind f accu c
   | Mcontains (_, c, i)                   -> f (fold_container_kind f accu c) i
@@ -2179,9 +2179,10 @@ let fold_map_term
 
   (* asset api expression *)
 
-  | Mget (an, k) ->
-    let ke, ka = f accu k in
-    g (Mget (an, ke)), ka
+  | Mget (an, c, k) ->
+    let ce, ca = fold_map_container_kind f accu c in
+    let ke, ka = f ca k in
+    g (Mget (an, ce, ke)), ka
 
   | Mselect (an, c, la, lb, a) ->
     let ce, ca = fold_map_container_kind f accu c in

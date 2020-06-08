@@ -1322,7 +1322,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     (* asset api expression *)
 
-    | Mget (an, k) -> Tapp (loc_term (Tvar ("get_" ^ an)), [map_mterm m ctx k])
+    | Mget (an, _c, k) -> Tapp (loc_term (Tvar ("get_" ^ an)), [map_mterm m ctx k])
 
     | Mselect (a, CKview l, _la, lb, _a) ->
       let args = extract_args lb in
@@ -2617,7 +2617,7 @@ let mk_storage_api (m : M.model) records =
 let fold_exns m body : term list =
   let rec internal_fold_exn acc (term : M.mterm) =
     match term.M.node with
-    | M.Mget (_, k) -> internal_fold_exn (acc @ [Texn Enotfound]) k
+    | M.Mget (_, _, k) -> internal_fold_exn (acc @ [Texn Enotfound]) k
     | M.Mnth (_, CKview c, k) -> internal_fold_exn (internal_fold_exn (acc @ [Texn Enotfound]) c) k
     | M.Mnth (_, CKcoll, k) -> internal_fold_exn ((acc @ [Texn Enotfound])) k
     | M.Mset (_, _, k, v) -> internal_fold_exn (internal_fold_exn (acc @ [Texn Enotfound]) k) v
