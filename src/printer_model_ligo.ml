@@ -1033,14 +1033,6 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (src, dst, v)
 
-    | Mgetfrommap (an, k, m) ->
-      let pp fmt (_an, k, m) =
-        Format.fprintf fmt "get_force(%a, %a)"
-          f k
-          f m
-      in
-      pp fmt (an, k, m)
-
 
     (* list api expression *)
 
@@ -1611,9 +1603,14 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt
         "function add_%s_%s (const s : storage_type; const asset_key : %a; const b : %s) : storage_type is@\n  \
          begin@\n    \
-         const asset_val : %s_storage = get_force(asset_key, s.%s_assets);@\n    \
+         const asset_val_opt : option(%s_storage) = s.%s_assets[asset_key];@\n    \
+         case asset_val_opt of@\n      \
+         None -> skip@\n    \
+         | Some (asset_val) -> block {@\n      \
          %a\
-         s.%s_assets[asset_key] := asset_val with record[%s = cons(b.%s, asset_val.%s)];@\n  \
+         s.%s_assets[asset_key] := asset_val with record[%s = cons(b.%s, asset_val.%s)];@\n    \
+         }@\n  \
+         end;@\n\
          end with (s)@\n"
         an fn pp_btyp t ft
         an an
@@ -1621,10 +1618,10 @@ let pp_model_internal fmt (model : model) b =
            match c with
            | Collection ->
              Format.fprintf fmt
-               "if not %s_mem(b.%s, s.%s_assets) then failwith (\"key does not exist\") else skip;@\n    "
+               "if not %s_mem(b.%s, s.%s_assets) then failwith (\"key does not exist\") else skip;@\n      "
                (if single then "set" else "map") kk ft
            | Partition ->
-             Format.fprintf fmt "s := add_%s(s, b);@\n    " ft
+             Format.fprintf fmt "s := add_%s(s, b);@\n      " ft
            | _ -> ()
         ) ()
         an fn kk fn
@@ -1636,18 +1633,23 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt
         "function remove_%s_%s (const s : storage_type; const asset_key : %a; const removed_key : %a) : storage_type is@\n  \
          begin@\n    \
-         const asset_val : %s_storage = get_force(asset_key, s.%s_assets);@\n    \
-         function aux (const accu : list(%a); const i : %a) : list(%a) is block { skip } with (if (removed_key =/= i) then cons(i, accu) else accu);@\n    \
-         const new_keys : list(%a) = list_fold(aux, asset_val.%s, (nil : list(%a)));@\n    \
+         const asset_val_opt : option(%s_storage) = s.%s_assets[asset_key];@\n    \
+         case asset_val_opt of@\n      \
+         None -> skip@\n    \
+         | Some (asset_val) -> block {@\n      \
+         function aux (const accu : list(%a); const i : %a) : list(%a) is block { skip } with (if (removed_key =/= i) then cons(i, accu) else accu);@\n      \
+         const new_keys : list(%a) = list_fold(aux, asset_val.%s, (nil : list(%a)));@\n      \
          s.%s_assets[asset_key] := asset_val with record[%s = new_keys];@\n    \
-         %a  \
+         %a\
+         }@\n\
+         end;@\n\
          end with (s)@\n"
         an fn pp_btyp t pp_btyp tt
         an an
         pp_btyp tt pp_btyp tt pp_btyp tt
         pp_btyp tt fn pp_btyp tt
         an fn
-        (pp_do_if (match c with | Partition -> true | _ -> false) (fun fmt -> Format.fprintf fmt "s := remove_%s(s, removed_key);@\n")) ft
+        (pp_do_if (match c with | Partition -> true | _ -> false) (fun fmt -> Format.fprintf fmt "  s := remove_%s(s, removed_key);@\n")) ft
 
     | RemoveAll (an, fn) ->
       let _, t = Utils.get_asset_key model an in
@@ -1655,12 +1657,17 @@ let pp_model_internal fmt (model : model) b =
       let _kk, tt = Utils.get_asset_key model ft in
       Format.fprintf fmt
         "function removeall_%s_%s (const s : storage_type; const k : %a) : storage_type is@\n  \
-         begin@\n  \
-         const a : %s = get_%s(s, k);@\n  \
-         const l : list(%a) = a.%s;@\n  \
-         for i in list (l) block {@\n  \
-         s := remove_%s_%s(s, k, i)@\n  \
-         }@\n  \
+         begin@\n    \
+         const asset_val_opt : option(%s_storage) = s.%s_assets[k];@\n    \
+         case asset_val_opt of@\n      \
+         None -> skip@\n    \
+         | Some (asset_val) -> block {@\n        \
+         const l : list(%a) = asset_val.%s;@\n        \
+         for i in list (l) block {@\n          \
+         s := remove_%s_%s(s, k, i)@\n        \
+         }@\n      \
+         }@\n    \
+         end;@\n  \
          end with (s)@\n"
         an fn pp_btyp t
         an an

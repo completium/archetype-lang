@@ -1,4 +1,4 @@
-archetype before_var
+archetype before_asset_api
 
 asset myasset identified by id {
   id : int;

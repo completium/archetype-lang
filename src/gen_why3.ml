@@ -1367,7 +1367,6 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       | _ -> Ttoview (map_lident a,map_mterm m ctx v)
       end
     | Mcast (_, _, v)       -> map_mterm m ctx v |> Mlwtree.deloc
-    | Mgetfrommap         _ -> error_not_translated "Mgetfrommap"
 
 
     (* list api expression *)

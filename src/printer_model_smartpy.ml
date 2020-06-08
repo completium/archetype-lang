@@ -875,15 +875,6 @@ let pp_model fmt (model : model) =
          in
          pp fmt (src, dst, v) *)
 
-      | Mgetfrommap (an, k, c) ->
-        let pp fmt (an, k, c) =
-          Format.fprintf fmt "Mgetfrommap_%a (%a, %a)"
-            pp_str an
-            f k
-            f c
-        in
-        pp fmt (an, k, c)
-
 
       (* list api expression *)
 

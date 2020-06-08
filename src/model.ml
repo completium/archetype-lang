@@ -226,7 +226,6 @@ type ('id, 'term) mterm_node  =
   | Mtail             of ident * 'term container_kind * 'term
   (* utils *)
   | Mcast             of type_ * type_ * 'term
-  | Mgetfrommap       of ident * 'term * 'term
   (* list api expression *)
   | Mlistprepend      of type_ * 'term * 'term
   | Mlistcontains     of type_ * 'term * 'term
@@ -1049,7 +1048,6 @@ let cmp_mterm_node
     | Mtail (an1, c1, i1), Mtail (an2, c2, i2)                                         -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && cmp i1 i2
     (* utils *)
     | Mcast (src1, dst1, v1), Mcast (src2, dst2, v2)                                   -> cmp_type src1 src2 && cmp_type dst1 dst2 && cmp v1 v2
-    | Mgetfrommap (an1, k1, c1), Mgetfrommap (an2, k2, c2)                             -> cmp_ident an1 an2 && cmp k1 k2 && cmp c1 c2
     (* list api expression *)
     | Mlistprepend (t1, c1, a1), Mlistprepend (t2, c2, a2)                             -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
     | Mlistcontains (t1, c1, a1), Mlistcontains (t2, c2, a2)                           -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
@@ -1338,7 +1336,6 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mtail (an, c, i)               -> Mtail (fi an, map_container_kind f c, f i)
   (* utils *)
   | Mcast (src, dst, v)            -> Mcast (ft src, ft dst, f v)
-  | Mgetfrommap (an, k, c)         -> Mgetfrommap (fi an, f k, f c)
   (* list api expression *)
   | Mlistprepend (t, c, a)         -> Mlistprepend (ft t, f c, f a)
   | Mlistcontains (t, c, a)        -> Mlistcontains (t, f c, f a)
@@ -1663,7 +1660,6 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mtail (_, c, i)                       -> f (fold_container_kind f accu c) i
   (* utils *)
   | Mcast (_ , _, v)                      -> f accu v
-  | Mgetfrommap (_, k, c)                 -> f (f accu k) c
   (* list api expression *)
   | Mlistprepend (_, c, a)                -> f (f accu c) a
   | Mlistcontains (_, c, a)               -> f (f accu c) a
@@ -2235,11 +2231,6 @@ let fold_map_term
   | Mcast (src, dst, v) ->
     let ve, va = f accu v in
     g (Mcast (src, dst, ve)), va
-
-  | Mgetfrommap (an, k, c) ->
-    let ke, ka = f accu k in
-    let ce, ca = f ka c in
-    g (Mgetfrommap (an, ke, ce)), ca
 
 
   (* list api expression *)
