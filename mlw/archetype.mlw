@@ -183,6 +183,21 @@ module Utils
   | None -> raise NotFound
   end
 
+  (* ----------------------------------------------------------------------- *)
+  (* List *)
+  use list.Length as L
+  use list.Nth as N
+
+  let function lcard l = L.length l
+
+  let lnth l n
+  raises { NotFound }
+  =
+  match N.nth l n with
+  | Some e -> e
+  | None -> raise NotFound
+  end
+
 end
 
 module Trace

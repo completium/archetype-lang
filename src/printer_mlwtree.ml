@@ -241,8 +241,13 @@ let rec pp_term outer pos fmt = function
       pp_str (String.capitalize_ascii t)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
-  | Tcontains (t,e1,e2) ->
-    Format.fprintf fmt "%a.contains %a %a"
+  | Tvcontains (t,e1,e2) ->
+    Format.fprintf fmt "%a.vcontains %a %a"
+      pp_str (String.capitalize_ascii t)
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
+  | Tccontains (t,e1,e2) ->
+    Format.fprintf fmt "%a.ccontains %a %a"
       pp_str (String.capitalize_ascii t)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
@@ -279,11 +284,15 @@ let rec pp_term outer pos fmt = function
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
       (pp_with_paren (pp_term outer pos)) e3
-  | Tsum (i,e1,e2) ->
-    Format.fprintf fmt "%a.sum %a %a"
+  | Tvsum (i,e1,e2) ->
+    Format.fprintf fmt "%a.vsum %a %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
+  | Tcsum (i,e1) ->
+    Format.fprintf fmt "%a.csum %a"
+      pp_str (String.capitalize_ascii i)
+      (pp_with_paren (pp_term outer pos)) e1
   | Tsort (i,e1,e2) ->
     Format.fprintf fmt "%a.sort %a %a"
       pp_str (String.capitalize_ascii i)
@@ -458,8 +467,8 @@ let rec pp_term outer pos fmt = function
       pp_str (String.capitalize_ascii a)
       pp_str i
       (pp_with_paren (pp_term outer pos)) e
-  | Tcard (i,e) ->
-    Format.fprintf fmt "%a.card %a"
+  | Tccard (i,e) ->
+    Format.fprintf fmt "%a.ccard %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e
   | Tvcard (i,e) ->
@@ -517,8 +526,13 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "mod %a %a"
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
-  | Tnth (i,e1,e2) ->
-    Format.fprintf fmt "%a.nth %a %a"
+  | Tcnth (i,e1,e2) ->
+    Format.fprintf fmt "%a.cnth %a %a"
+      pp_str (String.capitalize_ascii i)
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
+  | Tvnth (i,e1,e2) ->
+    Format.fprintf fmt "%a.vnth %a %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2

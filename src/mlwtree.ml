@@ -92,7 +92,7 @@ type ('e,'t,'i) abstract_term =
   | Tnil    of 'i
   | Temptycoll of 'i
   | Temptyview of 'i
-  | Tcard   of 'i * 'e
+  | Tccard   of 'i * 'e
   | Tvcard   of 'i * 'e
   | Ttocoll  of 'i * 'e * 'e
   | Ttoview of 'i * 'e
@@ -111,7 +111,8 @@ type ('e,'t,'i) abstract_term =
   | Tget    of 'i * 'e * 'e
   | Tfget of 'i * 'e * 'e (* logical pure get; no fail *)
   | Tset    of 'i * 'e * 'e * 'e
-  | Tsum    of 'i * 'e * 'e
+  | Tvsum    of 'i * 'e * 'e
+  | Tcsum    of 'i * 'e
   | Tsort   of 'i * 'e * 'e
   | Tcoll   of 'i * 'e
   | Tassign of 'e * 'e
@@ -173,13 +174,15 @@ type ('e,'t,'i) abstract_term =
   | Tmem    of 'i * 'e * 'e
   | Tvmem    of 'i * 'e * 'e
   | Tlmem    of 'i * 'e * 'e
-  | Tcontains of 'i * 'e * 'e
+  | Tccontains of 'i * 'e * 'e
+  | Tvcontains of 'i * 'e * 'e
   | Tempty  of 'i * 'e
   | Tvempty  of 'i * 'e
   | Tsingl  of 'i * 'e
   | Thead   of 'i * 'e * 'e
   | Ttail   of 'i * 'e * 'e
-  | Tnth    of 'i * 'e * 'e
+  | Tcnth    of 'i * 'e * 'e
+  | Tvnth    of 'i * 'e * 'e
   | Tlnth   of 'i * 'e * 'e
   | Twitness of 'i
   (* option *)
@@ -372,7 +375,7 @@ and map_abstract_term
   | Tnil i             -> Tnil (map_i i)
   | Temptycoll i       -> Temptycoll (map_i i)
   | Temptyview i       -> Temptyview (map_i i)
-  | Tcard (i,e)        -> Tcard (map_i i, map_e e)
+  | Tccard (i,e)        -> Tccard (map_i i, map_e e)
   | Tvcard (i,e)        -> Tvcard (map_i i, map_e e)
   | Tmkcoll (i,e)      -> Tmkcoll (map_i i, map_e e)
   | Tmkview (i,e)      -> Tmkview (map_i i, map_e e)
@@ -390,7 +393,8 @@ and map_abstract_term
   | Tget (i,e1,e2)     -> Tget (map_i i, map_e e1, map_e e2)
   | Tfget (i,e1,e2)    -> Tfget (map_i i, map_e e1, map_e e2)
   | Tset (i, e1,e2,e3) -> Tset (map_i i, map_e e1, map_e e2, map_e e3)
-  | Tsum (i,e1,e2)     -> Tsum (map_i i, map_e e1, map_e e2)
+  | Tvsum (i,e1,e2)    -> Tvsum (map_i i, map_e e1, map_e e2)
+  | Tcsum (i,e1)     -> Tcsum (map_i i, map_e e1)
   | Tsort (i,e1,e2)    -> Tsort (map_i i, map_e e1, map_e e2)
   | Tcoll (i, e)       -> Tcoll (map_i i, map_e e)
   | Tassign (e1,e2)    -> Tassign (map_e e1, map_e e2)
@@ -438,13 +442,15 @@ and map_abstract_term
   | Tmem (t,e1,e2)     -> Tmem (map_i t, map_e e1, map_e e2)
   | Tvmem (t,e1,e2)     -> Tvmem (map_i t, map_e e1, map_e e2)
   | Tlmem (t,e1,e2)     -> Tlmem (map_i t, map_e e1, map_e e2)
-  | Tcontains (t,e1,e2) -> Tcontains (map_i t, map_e e1, map_e e2)
+  | Tccontains (t,e1,e2) -> Tccontains (map_i t, map_e e1, map_e e2)
+  | Tvcontains (t,e1,e2) -> Tvcontains (map_i t, map_e e1, map_e e2)
   | Tempty (i,e)       -> Tempty (map_i i, map_e e)
   | Tvempty (i,e)       -> Tvempty (map_i i, map_e e)
   | Tsingl (i,e)       -> Tsingl (map_i i, map_e e)
   | Thead (i,e1,e2)      -> Thead (map_i i,map_e e1, map_e e2)
   | Ttail (i,e1,e2)      -> Ttail (map_i i,map_e e1, map_e e2)
-  | Tnth (i,e1,e2)     -> Tnth (map_i i, map_e e1, map_e e2)
+  | Tcnth (i,e1,e2)     -> Tcnth (map_i i, map_e e1, map_e e2)
+  | Tvnth (i,e1,e2)     -> Tvnth (map_i i, map_e e1, map_e e2)
   | Tlnth (i,e1,e2)    -> Tlnth (map_i i, map_e e1, map_e e2)
   | Twitness i         -> Twitness (map_i i)
   | Tnone              -> Tnone
@@ -765,7 +771,7 @@ let compare_abstract_term
   | Tnil i1, Tnil i2 -> cmpi i1 i2
   | Temptycoll i1, Temptycoll i2 -> cmpi i1 i2
   | Temptyview i1, Temptyview i2 -> cmpi i1 i2
-  | Tcard (i1,e1), Tcard (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
+  | Tccard (i1,e1), Tccard (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tvcard (i1,e1), Tvcard (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tmkcoll (i1,e1), Tmkcoll (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tmkview (i1,e1), Tmkview (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
@@ -783,7 +789,8 @@ let compare_abstract_term
   | Tvremove (i1,e1,e2), Tvremove (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tfget (i1,e1,e2), Tfget (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tset (i1,e1,e2,e3), Tset (i2,f1,f2,f3) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2 && cmpe e3 f3
-  | Tsum (i1,e1,e2), Tsum (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
+  | Tcsum (i1,e1), Tcsum (i2,f1) -> cmpi i1 i2 && cmpe e1 f1
+  | Tvsum (i1,e1,e2), Tvsum (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tsort (i1,e1,e2), Tsort (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tcoll (i1,e1), Tcoll (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tassign (e1,e2), Tassign (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
@@ -835,13 +842,15 @@ let compare_abstract_term
   | Tmem (t1,e1,e2), Tmem (t2,f1,f2) -> cmpi t1 t2 && cmpe e1 f1 && cmpe e2 f2
   | Tvmem (t1,e1,e2), Tvmem (t2,f1,f2) -> cmpi t1 t2 && cmpe e1 f1 && cmpe e2 f2
   | Tlmem (t1,e1,e2), Tlmem (t2,f1,f2) -> cmpi t1 t2 && cmpe e1 f1 && cmpe e2 f2
-  | Tcontains (t1,e1,e2), Tcontains (t2,f1,f2) -> cmpi t1 t2 && cmpe e1 f1 && cmpe e2 f2
+  | Tccontains (t1,e1,e2), Tccontains (t2,f1,f2) -> cmpi t1 t2 && cmpe e1 f1 && cmpe e2 f2
+  | Tvcontains (t1,e1,e2), Tvcontains (t2,f1,f2) -> cmpi t1 t2 && cmpe e1 f1 && cmpe e2 f2
   | Tempty (i1,e1), Tempty (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tvempty (i1,e1), Tvempty (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tsingl (i1,e1), Tsingl (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Thead (i1,e1,e2), Thead (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Ttail (i1,e1,e2), Ttail (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
-  | Tnth (i1,e1,e2), Tnth (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
+  | Tcnth (i1,e1,e2), Tcnth (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
+  | Tvnth (i1,e1,e2), Tvnth (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Twitness i1, Twitness i2 -> cmpi i1 i2
   | Tnone, Tnone -> true
   | Tsome e1, Tsome e2 -> cmpe e1 e2
