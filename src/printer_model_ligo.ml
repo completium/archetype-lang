@@ -1628,18 +1628,23 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt
         "function remove_%s_%s (const s : storage_type; const asset_key : %a; const removed_key : %a) : storage_type is@\n  \
          begin@\n    \
-         const asset_val : %s_storage = get_force(asset_key, s.%s_assets);@\n    \
-         function aux (const accu : list(%a); const i : %a) : list(%a) is block { skip } with (if (removed_key =/= i) then cons(i, accu) else accu);@\n    \
-         const new_keys : list(%a) = list_fold(aux, asset_val.%s, (nil : list(%a)));@\n    \
+         const asset_val_opt : option(%s_storage) = s.%s_assets[asset_key];@\n    \
+         case asset_val_opt of@\n      \
+         None -> skip@\n    \
+         | Some (asset_val) -> block {@\n      \
+         function aux (const accu : list(%a); const i : %a) : list(%a) is block { skip } with (if (removed_key =/= i) then cons(i, accu) else accu);@\n      \
+         const new_keys : list(%a) = list_fold(aux, asset_val.%s, (nil : list(%a)));@\n      \
          s.%s_assets[asset_key] := asset_val with record[%s = new_keys];@\n    \
-         %a  \
+         %a\
+         }@\n\
+         end;@\n\
          end with (s)@\n"
         an fn pp_btyp t pp_btyp tt
         an an
         pp_btyp tt pp_btyp tt pp_btyp tt
         pp_btyp tt fn pp_btyp tt
         an fn
-        (pp_do_if (match c with | Partition -> true | _ -> false) (fun fmt -> Format.fprintf fmt "s := remove_%s(s, removed_key);@\n")) ft
+        (pp_do_if (match c with | Partition -> true | _ -> false) (fun fmt -> Format.fprintf fmt "  s := remove_%s(s, removed_key);@\n")) ft
 
     | RemoveAll (an, fn) ->
       let _, t = Utils.get_asset_key model an in
