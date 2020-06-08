@@ -1,0 +1,28 @@
+archetype expr_method_asset_nth
+
+asset o_asset identified by oid {
+  oid : string;
+  v : int;
+}
+
+asset my_asset identified by id {
+  id     : string;
+  value  : int;
+  col    : o_asset partition;
+} initialized by {
+  {"id0"; 0; []};
+  {"id1"; 1; []};
+  {"id2"; 2; []}
+}
+
+variable res : int = 0
+
+action exec () {
+  specification {
+    s0: res = 1;
+  }
+  effect {
+    var k = my_asset["id0"].col.nth(0);
+    require (res = 1)
+  }
+}
