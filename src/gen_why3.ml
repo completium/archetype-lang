@@ -2176,27 +2176,43 @@ let mk_clear_count_ensures m a =
   else []
 
 let mk_rm_ensures m p a e =
+  let mk_cond body =
+  Timpl (
+    Tccontains (a, Tvar e, mk_ac_old a),
+    Texists (
+      [["asset"],Tyasset a],
+      Tand (
+        Teq (Tyint,
+          Tget (a, mk_ac_old a, Tvar e),
+          Tsome (Tvar "asset")
+        ),
+        body
+      )
+    )
+  ) in
   [
     { id   = p ^ "_post1";
-      form = Tnot (Tmem (a,
+      form = Tnot (Tccontains (a,
                          Tvar (e),
                          mk_ac a))
     };
     { id   = p ^ "_post2";
-      form = Teq (Tycoll a,
+      form = mk_cond
+      (Teq (Tycoll a,
                   mk_ac a,
                   Tdiff (a,
                          mk_ac_old a,
                          Tsingl (a,
-                                 Tvar e)))
+                                 Tvar "asset"))))
     };
     { id   = p ^ "_post3";
-      form = Teq (Tycoll a,
+      form = mk_cond
+        (Teq (Tycoll a,
                   mk_ac_rmed a,
                   Tunion (a,
                           mk_ac_old_rmed a,
                           Tsingl (a,
-                                  Tvar e)))
+                                  Tvar "asset"))))
     }
   ] @ (mk_rm_sum_ensures m a e) @ (mk_rm_count_ensures m a)
 
@@ -2207,11 +2223,11 @@ let mk_clear_ensures m p a =
     };
   ] @ (mk_clear_sum_ensures m a) @ (mk_clear_count_ensures m a)
 
-let mk_rm_asset m asset key : decl =
+let mk_rm_asset m asset _key : decl =
   Dfun {
     name     = "remove_" ^ asset;
     logic    = NoMod;
-    args     = ["a", Tyasset asset];
+    args     = ["a", Tykey];
     returns  = Tyunit;
     raises   = [];
     variants = [];
@@ -2220,8 +2236,7 @@ let mk_rm_asset m asset key : decl =
     body =
       let get = Tget(asset,
                         mk_ac asset,
-                        Tdoti ("a",
-                               key)) in
+                        Tvar ("a")) in
       Tmatch (get,[
         Tpsome "e",
           Tseq [
@@ -2232,8 +2247,7 @@ let mk_rm_asset m asset key : decl =
             Tassign (mk_ac asset,
                      Tremove (asset,
                               mk_ac asset,
-                              Tdoti ("a",
-                                     key)))
+                              Tvar ("a")))
           ];
         Twild, Tunit
       ]);
@@ -2437,34 +2451,42 @@ let mk_add_field m part a ak field adda addak : decl =
       ]);
   }
 
-let mk_rm_field_ensures m part a _ak field prefix asset elem =
+let mk_rm_field_ensures m part asset elem _ak field prefix rm_asset rm_elem =
   let collfield = Tapp (Tvar field, [Tvar ("asset")]) in
-  let assetcollfield = Ttocoll (asset,collfield,mk_ac asset) in
-  let oldassetcollfield = Ttocoll (asset,collfield,mk_ac_old asset) in
+  let assetcollfield = collfield in
+  let oldassetcollfield = Ttocoll (rm_asset,collfield,mk_ac_old rm_asset) in (* TODO *)
+  let add_conditions b =
+  Timpl (
+    mk_key_found_cond `Curr asset (Tvar elem),
+    Timpl (
+      mk_key_found_cond `Old rm_asset (Tvar rm_elem),
+      b
+    )
+  ) in
   let rm_field_ensures = [
     { id   = prefix ^ "_field_post1";
-      form = exists_asset a (Tnot (Tmem (asset,
-                         Tvar (elem),
-                         assetcollfield)))
+      form = add_conditions (exists_asset asset (Tnot (Tvcontains (rm_asset,
+                         Tvar (rm_elem),
+                         assetcollfield))))
     };
   ] @
     List.fold_left (fun acc idx ->
         acc @ [{
-            id = "remove_" ^ asset ^ "_field_sum_post";
-            form = exists_asset a (Teq (Tyint,
-                        mk_sum_from_col asset idx assetcollfield,
+            id = "remove_" ^ rm_asset ^ "_field_sum_post";
+            form = exists_asset asset (Teq (Tyint,
+                        mk_sum_from_col rm_asset idx assetcollfield,
                         Tminus (Tyint,
-                                mk_sum_from_col asset idx oldassetcollfield,
+                                mk_sum_from_col rm_asset idx oldassetcollfield,
                                 Tapp(
-                                  Tvar (mk_get_sum_value_id asset idx),
-                                  [Tvar elem]))))
-          }]) [] (M.Utils.get_sum_idxs m asset) @
-    (if M.Utils.with_count m asset then [{
-         id = "rm_" ^ asset ^ "_field_ccount";
-         form = exists_asset a (Teq (Tyint,
-                     Tccard (asset, assetcollfield),
+                                  Tvar (mk_get_sum_value_id rm_asset idx),
+                                  [Tvar rm_elem]))))
+          }]) [] (M.Utils.get_sum_idxs m rm_asset) @
+    (if M.Utils.with_count m rm_asset then [{
+         id = "rm_" ^ rm_asset ^ "_field_ccount";
+         form = exists_asset asset (Teq (Tyint,
+                     Tccard (rm_asset, assetcollfield),
                      Tminus (Tyint,
-                             Tccard (asset, oldassetcollfield),
+                             Tccard (rm_asset, oldassetcollfield),
                              Tint (Big_int.big_int_of_int 1)
                             )
                     ))
@@ -2472,7 +2494,7 @@ let mk_rm_field_ensures m part a _ak field prefix asset elem =
      else [])
   in
   if part then
-    (mk_rm_ensures m prefix asset elem)@rm_field_ensures
+    (mk_rm_ensures m prefix rm_asset rm_elem)@rm_field_ensures
   else
     rm_field_ensures
 
@@ -2483,22 +2505,16 @@ let mk_rm_field_ensures m part a _ak field prefix asset elem =
    rmn    : removed asset name
    rmktyp : removed asset key type
 *)
-let mk_rm_field m part asset keyf field rmed_asset rmkey : decl =
-  let test,exn =
-    (* if part then
-      (fun mode -> mk_key_found_cond mode a (Tvar ("asset_id"))), Ekeyexist
-    else *)
-      (fun mode -> mk_not_found_cond mode asset (Tvar ("asset_id"))), Enotfound in
+let mk_rm_field m part asset keyf field rmed_asset _rmkey : decl =
   Dfun {
     name     = "remove_" ^ asset ^ "_" ^ field;
     logic    = NoMod;
-    args     = ["asset_id",Tykey; "rm_asset",Tyasset rmed_asset];
+    args     = ["asset_id",Tykey; "rm_asset_id",Tykey];
     returns  = Tyunit;
-    raises   = [Timpl (Texn exn,
-                       test `Old);];
+    raises   = [];
     variants = [];
     requires = [];
-    ensures  = mk_rm_field_ensures m part asset keyf field ("remove_" ^ asset ^ "_" ^ field) rmed_asset "rm_asset";
+    ensures  = mk_rm_field_ensures m part asset "asset_id" keyf field ("remove_" ^ asset ^ "_" ^ field) rmed_asset "rm_asset_id";
     body     =
       Tmatch (Tget(asset, mk_ac asset, Tvar "asset_id"),[
         Tpsome "asset",
@@ -2511,8 +2527,7 @@ let mk_rm_field m part asset keyf field rmed_asset rmkey : decl =
                       "new_" ^ asset ^ "_" ^ field,
                       None,
                       Tvremove (rmed_asset,
-                                Tdoti ("rm_asset",
-                                        rmkey),
+                                Tvar ("rm_asset_id"),
                                 Tvar (asset ^ "_" ^ field)),
                       Tletin (false,
                               "new_" ^ asset ^ "_asset",
@@ -2529,11 +2544,11 @@ let mk_rm_field m part asset keyf field rmed_asset rmkey : decl =
                                 Tseq [
                                   assign;
                                   Tapp (Tvar ("remove_" ^ rmed_asset),
-                                        [Tvar ("rm_asset")])
+                                        [Tvar ("rm_asset_id")])
                                 ] else assign
                              )))
         ;
-        Twild, Traise Enotfound
+        Twild, Tunit
       ])
       ;
   }
@@ -2626,7 +2641,6 @@ let fold_exns m body : term list =
       internal_fold_exn
         (internal_fold_exn (acc @ if (is_partition m a f) then [Texn Ekeyexist]
                             else [Texn Enotfound ]) c) i
-    | M.Mremovefield _ -> acc @ [Texn Enotfound ]
     | M.Mgetopt _ -> acc @ [Texn Enotfound]
     | M.Mfail InvalidCaller -> acc @ [Texn Einvalidcaller]
     | M.Mfail NoTransfer -> acc @ [Texn Enotransfer]
