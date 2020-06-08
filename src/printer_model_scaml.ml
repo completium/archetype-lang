@@ -1018,15 +1018,6 @@ let pp_model fmt (model : model) =
         in
         pp fmt (src, dst, v)
 
-      | Mgetfrommap (an, k, c) ->
-        let pp fmt (an, k, c) =
-          Format.fprintf fmt "(match Map.get (%a) (%a) with | Some x -> x | None -> failwith \"%s not_found\")"
-            f k
-            f c
-            an
-        in
-        pp fmt (an, k, c)
-
 
       (* list api expression *)
 

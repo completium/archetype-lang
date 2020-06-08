@@ -1033,14 +1033,6 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (src, dst, v)
 
-    | Mgetfrommap (an, k, m) ->
-      let pp fmt (_an, k, m) =
-        Format.fprintf fmt "get_force(%a, %a)"
-          f k
-          f m
-      in
-      pp fmt (an, k, m)
-
 
     (* list api expression *)
 
