@@ -1303,7 +1303,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
               ))
         [CUpdate f; CRm t]
 
-    | Mremoveall (_an, _fn, _a) -> error_not_translated "Mremoveall"
+    | Mremoveall (a, f, v) -> Tapp (loc_term (Tvar ("removeall_" ^ a ^ "_" ^ f)),[map_mterm m ctx v])
 
     | Mclear (n, _v) -> Tapp (loc_term (Tvar ("clear_"^(n))),[])
 
@@ -1349,10 +1349,10 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let col = mk_ac_ctx a ctx in
       Tvsum(with_dummy_loc cloneid,map_mterm m ctx v,col)
     | Msum _ -> error_not_translated "Msum"
-    | Mhead (n, CKview c, v) -> Thead(with_dummy_loc n, map_mterm m ctx v, map_mterm m ctx c)
-    | Mhead _ -> error_not_translated "Mhead"
-    | Mtail  (n, CKview c, v) -> Ttail(with_dummy_loc n, map_mterm m ctx v, map_mterm m ctx c)
-    | Mtail _ -> error_not_translated "Mtail"
+    | Mhead (n, CKview c, v) -> Tvhead(with_dummy_loc n, map_mterm m ctx v, map_mterm m ctx c)
+    | Mhead (n, CKcoll, v) -> Tvhead(with_dummy_loc n, map_mterm m ctx v, loc_term (mk_ac n))
+    | Mtail  (n, CKview c, v) -> Tvtail(with_dummy_loc n, map_mterm m ctx v, map_mterm m ctx c)
+    | Mtail  (n, CKcoll, v) -> Tctail(with_dummy_loc n, map_mterm m ctx v, loc_term (mk_ac n))
 
     (* utils *)
     | Mcast (Tcontainer (Tasset a,Collection),Tcontainer (Tasset _, View), v) ->
@@ -1581,8 +1581,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mapifsum       (a,v,f) ->
       let cloneid = mk_sum_clone_id m a f in
       Tvsum(with_dummy_loc cloneid,map_mterm m ctx v,mk_ac_ctx a ctx)
-    | Mapifhead (n,c,v) -> Thead (with_dummy_loc n, map_mterm m ctx v, map_mterm m ctx c)
-    | Mapiftail (n,c,v) -> Ttail (with_dummy_loc n, map_mterm m ctx v, map_mterm m ctx c)
+    | Mapifhead (n,c,v) -> Tchead (with_dummy_loc n, map_mterm m ctx v, map_mterm m ctx c)
+    | Mapiftail (n,c,v) -> Tctail (with_dummy_loc n, map_mterm m ctx v, map_mterm m ctx c)
   in
   mk_loc mt.loc t
 and mk_invariants (m : M.model) ctx id (lbl : ident option) lbody =
@@ -2261,7 +2261,7 @@ let mk_clear_coll m asset : decl = Dfun {
     variants = [];
     requires = [];
     ensures  = mk_clear_ensures m ("clear_" ^ asset) asset;
-    body = Tassign (mk_ac asset, Tdoti (String.capitalize_ascii asset,"empty"));
+    body = Tassign (mk_ac asset, Temptycoll asset);
   }
 
 let mk_clear_field_ensures m part p asset field _key =
@@ -2552,6 +2552,64 @@ let mk_rm_field m part asset keyf field rmed_asset _rmkey : decl =
       ;
   }
 
+let mk_removeall _m part asset field rm_asset =
+  Dfun {
+    name     = "removeall_" ^ asset ^ "_" ^ field;
+    logic    = NoMod;
+    args     = ["asset_id",Tykey];
+    returns  = Tyunit;
+    raises   = [];
+    variants = [];
+    requires = [];
+    ensures  = [];
+    body     =  Tmatch (
+      Tget(asset, mk_ac asset, Tvar "asset_id"),[
+      Tpsome "asset",
+      Tletin (false,
+              "new_" ^ asset ^ "_asset",
+              None,
+              Trecord (Some (Tvar ("asset")),
+                        [field, Temptyview rm_asset]),
+              let assign =
+              Tassign (mk_ac asset,
+                        Tset (asset,
+                              mk_ac asset,
+                              Tvar ("asset_id"),
+                              Tvar ("new_" ^ asset ^ "_asset"))) in
+              if part then
+                Tseq [
+                  assign;
+                  Tfor (
+                    "i",
+                    Tint Big_int.zero_big_int,
+                    Tvcard (
+                      rm_asset,
+                      Tapp (
+                        Tvar field,
+                        [Tvar ("asset")])),
+                    [], (* TODO : add invariant for storage api verification *)
+                    Tmatch (
+                      Tvnth (
+                        rm_asset,
+                        Tvar "i",
+                        Tapp (
+                          Tvar field,
+                          [Tvar ("asset")])
+                      ), [
+                      Tpsome "k", Tapp (
+                                    Tvar ("remove_" ^ rm_asset),
+                                    [Tvar ("k")]);
+                      Twild, Tunit]
+                    )
+                  )
+                ] else assign
+            )
+        ;
+        Twild, Tunit
+      ])
+      ;
+  }
+
 let mk_storage_api_before_storage (m : M.model) _records =
   m.api_items |> List.fold_left (fun acc (sc : M.api_storage) ->
       match sc.node_item with
@@ -2623,6 +2681,9 @@ let mk_storage_api (m : M.model) records =
         acc @ [mk_clear_field_coll m (is_partition m n f) n f key clearedasset] *)
       | M.APIBuiltin(Babs (M.Tbuiltin M.Bint)) ->
         acc @ [Duse (true,["int";"Abs"],None)]
+      | M.APIAsset (RemoveAll (a,f)) ->
+        let (pa,_,_) = M.Utils.get_container_asset_key m a f in
+        acc @ [mk_removeall m (is_partition m a f) a f pa]
       | _ -> acc
     ) [] |> loc_decl |> deloc
 

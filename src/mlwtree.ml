@@ -179,8 +179,10 @@ type ('e,'t,'i) abstract_term =
   | Tempty  of 'i * 'e
   | Tvempty  of 'i * 'e
   | Tsingl  of 'i * 'e
-  | Thead   of 'i * 'e * 'e
-  | Ttail   of 'i * 'e * 'e
+  | Tchead   of 'i * 'e * 'e
+  | Tvhead   of 'i * 'e * 'e
+  | Tctail   of 'i * 'e * 'e
+  | Tvtail   of 'i * 'e * 'e
   | Tcnth    of 'i * 'e * 'e
   | Tvnth    of 'i * 'e * 'e
   | Tlnth   of 'i * 'e * 'e
@@ -447,8 +449,10 @@ and map_abstract_term
   | Tempty (i,e)       -> Tempty (map_i i, map_e e)
   | Tvempty (i,e)       -> Tvempty (map_i i, map_e e)
   | Tsingl (i,e)       -> Tsingl (map_i i, map_e e)
-  | Thead (i,e1,e2)      -> Thead (map_i i,map_e e1, map_e e2)
-  | Ttail (i,e1,e2)      -> Ttail (map_i i,map_e e1, map_e e2)
+  | Tvhead (i,e1,e2)      -> Tvhead (map_i i,map_e e1, map_e e2)
+  | Tchead (i,e1,e2)      -> Tchead (map_i i,map_e e1, map_e e2)
+  | Tctail (i,e1,e2)      -> Tctail (map_i i,map_e e1, map_e e2)
+  | Tvtail (i,e1,e2)      -> Tvtail (map_i i,map_e e1, map_e e2)
   | Tcnth (i,e1,e2)     -> Tcnth (map_i i, map_e e1, map_e e2)
   | Tvnth (i,e1,e2)     -> Tvnth (map_i i, map_e e1, map_e e2)
   | Tlnth (i,e1,e2)    -> Tlnth (map_i i, map_e e1, map_e e2)
@@ -847,8 +851,10 @@ let compare_abstract_term
   | Tempty (i1,e1), Tempty (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tvempty (i1,e1), Tvempty (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tsingl (i1,e1), Tsingl (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
-  | Thead (i1,e1,e2), Thead (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
-  | Ttail (i1,e1,e2), Ttail (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
+  | Tvhead (i1,e1,e2), Tvhead (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
+  | Tchead (i1,e1,e2), Tchead (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
+  | Tctail (i1,e1,e2), Tctail (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
+  | Tvtail (i1,e1,e2), Tvtail (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tcnth (i1,e1,e2), Tcnth (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tvnth (i1,e1,e2), Tvnth (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Twitness i1, Twitness i2 -> cmpi i1 i2

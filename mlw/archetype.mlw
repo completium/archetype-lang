@@ -442,7 +442,7 @@ module AssetCollection
   (* Set theory ************************************************************* *)
 
   (* ------------------------------------------------------------------------ *)
-  let function empty : collection = mk F.fset0
+  let function cempty : collection = mk F.fset0
 
   (* ------------------------------------------------------------------------ *)
   predicate is_empty (c : collection) = is_nil (elts c)
@@ -451,7 +451,7 @@ module AssetCollection
   predicate mem (a : t) (c : collection) = F.fmem a c.content
 
   (* ------------------------------------------------------------------------ *)
-  lemma mem_empty : is_empty empty
+  lemma mem_empty : is_empty cempty
 
   (* ------------------------------------------------------------------------ *)
   let function vcard (v : view) : int

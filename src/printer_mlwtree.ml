@@ -425,7 +425,7 @@ let rec pp_term outer pos fmt = function
                        (pp_with_paren (pp_term outer pos)) e2
   | Tlist l -> pp_tlist outer pos fmt l
   | Tnil i -> Format.fprintf fmt "%a.Nil" pp_str i
-  | Temptycoll i -> Format.fprintf fmt "%a.empty" pp_str (String.capitalize_ascii i)
+  | Temptycoll i -> Format.fprintf fmt "%a.cempty" pp_str (String.capitalize_ascii i)
   | Temptyview i -> Format.fprintf fmt "%a.vempty" pp_str (String.capitalize_ascii i)
   | Tcaller i -> Format.fprintf fmt "%a._caller" pp_str i
   | Tsender i -> Format.fprintf fmt "%a._source" pp_str i
@@ -551,8 +551,13 @@ let rec pp_term outer pos fmt = function
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
-  | Ttail (i,e1,e2) ->
-    Format.fprintf fmt "%a.drop %a %a"
+  | Tctail (i,e1,e2) ->
+    Format.fprintf fmt "%a.cdrop %a %a"
+      pp_str (String.capitalize_ascii i)
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
+  | Tvtail (i,e1,e2) ->
+    Format.fprintf fmt "%a.vdrop %a %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
@@ -608,8 +613,13 @@ let rec pp_term outer pos fmt = function
   | Tdlte (_, _, _, _) -> pp_str fmt "TODO_Tdlte"
   | Taddr _ -> pp_str fmt "TODO_Taddr"
   | Tbytes _ -> pp_str fmt "TODO_Tbytes"
-  | Thead (i,e1,e2) ->
-    Format.fprintf fmt "%a.keep %a %a"
+  | Tvhead (i,e1,e2) ->
+    Format.fprintf fmt "%a.vkeep %a %a"
+      pp_str (String.capitalize_ascii i)
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
+  | Tchead (i,e1,e2) ->
+    Format.fprintf fmt "%a.ckeep %a %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
