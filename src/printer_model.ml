@@ -1094,12 +1094,12 @@ let pp_api_asset fmt = function
   | Get an -> pp_str fmt ("get\t " ^ an)
   | Set an -> pp_str fmt ("set\t " ^ an)
   | Add an -> pp_str fmt ("add\t " ^ an)
-  | Remove an -> pp_str fmt ("remove\t " ^ an)
-  | Clear (an, c) -> Format.fprintf fmt "clear %s on %a" an pp_ck c
-  | Update (an, l) -> Format.fprintf fmt "update\t%a with %a" pp_str an (pp_list ", " (fun fmt (id, op, v) -> Format.fprintf fmt "%s %a %a)" id pp_assignment_operator op pp_mterm v)) l
-  | UpdateAdd (an, fn) -> pp_str fmt ("add\t " ^ an ^ " " ^ fn)
-  | UpdateRemove (an, fn) -> pp_str fmt ("remove\t " ^ an ^ " " ^ fn)
-  | RemoveAll (an, fn) -> pp_str fmt ("removeall\t " ^ an ^ " " ^ fn)
+  | Remove an            -> pp_str fmt ("remove\t " ^ an)
+  | Clear (an, c)        -> Format.fprintf fmt "clear %s on %a" an pp_ck c
+  | Update (an, l)       -> Format.fprintf fmt "update\t%a with %a" pp_str an (pp_list ", " (fun fmt (id, op, v) -> Format.fprintf fmt "%s %a %a)" id pp_assignment_operator op pp_mterm v)) l
+  | FieldAdd (an, fn)    -> pp_str fmt ("field_add\t " ^ an ^ " " ^ fn)
+  | FieldRemove (an, fn) -> pp_str fmt ("field_remove\t " ^ an ^ " " ^ fn)
+  | RemoveAll (an, fn)   -> pp_str fmt ("removeall\t " ^ an ^ " " ^ fn)
   (* | UpdateClear (an, fn) -> pp_str fmt ("clear\t " ^ an ^ " " ^ fn) *)
   | Contains (an, c)     -> Format.fprintf fmt "contains %s on %a" an pp_ck c
   | Nth (an, c)          -> Format.fprintf fmt "nth %s on %a" an pp_ck c

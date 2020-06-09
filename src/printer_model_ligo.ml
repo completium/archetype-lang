@@ -1595,7 +1595,7 @@ let pp_model_internal fmt (model : model) b =
 
     | Update _ -> ()
 
-    | UpdateAdd (an, fn) ->
+    | FieldAdd (an, fn) ->
       let _, t = Utils.get_asset_key model an in
       let ft, c = Utils.get_field_container model an fn in
       let kk, _ = Utils.get_asset_key model ft in
@@ -1626,7 +1626,7 @@ let pp_model_internal fmt (model : model) b =
         ) ()
         an fn kk fn
 
-    | UpdateRemove (an, fn) ->
+    | FieldRemove (an, fn) ->
       let _k, t = Utils.get_asset_key model an in
       let ft, c = Utils.get_field_container model an fn in
       let _kk, tt = Utils.get_asset_key model ft in

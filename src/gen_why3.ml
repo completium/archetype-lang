@@ -2648,14 +2648,14 @@ let mk_storage_api (m : M.model) records =
         let record = get_record n (records |> unloc_decl) in
         let k      = M.Utils.get_asset_key m (get_record_name record) |> fst in
         acc @ [mk_set_asset m k record]
-      | M.APIAsset (UpdateAdd (a,pf)) ->
+      | M.APIAsset (FieldAdd (a,pf)) ->
         let k            = M.Utils.get_asset_key m a |> fst in
         let (pa,addak,_) = M.Utils.get_container_asset_key m a pf in
         acc @ [
           (*mk_add_asset           pa.pldesc addak.pldesc;*)
           mk_add_field m (is_partition m a pf) a k pf pa addak
         ]
-      | M.APIAsset (UpdateRemove (n,f)) ->
+      | M.APIAsset (FieldRemove (n,f)) ->
         let t         = M.Utils.get_asset_key m n |> fst in
         let (pa,pk,_) = M.Utils.get_container_asset_key m n f in
         acc @ [

@@ -145,7 +145,7 @@ let pp_model fmt (model : model) =
          TODO@\n"
         an
 
-    | UpdateAdd (an, fn) ->
+    | FieldAdd (an, fn) ->
       let k, _t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "def add_%s_%s (self, asset, b):@\n  \
@@ -153,7 +153,7 @@ let pp_model fmt (model : model) =
         an fn
         an pp_str k
 
-    | UpdateRemove (an, fn) ->
+    | FieldRemove (an, fn) ->
       let k, _t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "def remove_%s_%s (self, asset, key):@\n  \

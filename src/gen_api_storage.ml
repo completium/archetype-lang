@@ -51,7 +51,7 @@ let generate_api_storage ?(verif=false) (model : model) : model =
         [APIAsset (Add asset_name)]
       | Maddfield (asset_name, field_name, _, _) ->
         let (pa,_,_) = Utils.get_container_asset_key model asset_name field_name in
-        [APIAsset (Add pa); APIAsset (UpdateAdd (asset_name, field_name))]
+        [APIAsset (Add pa); APIAsset (FieldAdd (asset_name, field_name))]
       | Mremoveasset (asset_name, _) ->
         let ans : ident list =
           begin
@@ -66,10 +66,10 @@ let generate_api_storage ?(verif=false) (model : model) : model =
         List.map (fun x -> APIAsset (Remove x)) (asset_name::ans)
       | Mremovefield (asset_name, field_name, _, _) ->
         let (pa,_,_) = Utils.get_container_asset_key model asset_name field_name in
-        [APIAsset (Remove pa); APIAsset (UpdateRemove (asset_name, field_name))]
+        [APIAsset (Remove pa); APIAsset (FieldRemove (asset_name, field_name))]
       | Mremoveall (asset_name, field_name, _) ->
         let (pa,_,_) = Utils.get_container_asset_key model asset_name field_name in
-        [APIAsset (Get asset_name); APIAsset (Remove pa); APIAsset (UpdateRemove (asset_name, field_name)); APIAsset (RemoveAll (asset_name, field_name))]
+        [APIAsset (Get asset_name); APIAsset (Remove pa); APIAsset (FieldRemove (asset_name, field_name)); APIAsset (RemoveAll (asset_name, field_name))]
       | Mclear (an , c) ->
         [APIAsset (Clear (an, to_ck c))]
       | Mapifselect (asset_name, _, la, lb, _) ->
@@ -165,8 +165,8 @@ let generate_api_storage ?(verif=false) (model : model) : model =
                    | APIAsset (Remove        an)         -> an
                    | APIAsset (Clear        (an, _))     -> an
                    | APIAsset (Update       (an, _))     -> an
-                   | APIAsset (UpdateAdd    (an, _))     -> an
-                   | APIAsset (UpdateRemove (an, _))     -> an
+                   | APIAsset (FieldAdd    (an, _))      -> an
+                   | APIAsset (FieldRemove (an, _))      -> an
                    | APIAsset (RemoveAll    (an, _))     -> an
                    | APIList _                           -> default
                    | APIBuiltin _                        -> default
@@ -205,8 +205,8 @@ let generate_api_storage ?(verif=false) (model : model) : model =
                    | APIAsset   (Remove        _) -> 10
                    | APIAsset   (Clear         _) -> 11
                    | APIAsset   (Update        _) -> 12
-                   | APIAsset   (UpdateAdd     _) -> 13
-                   | APIAsset   (UpdateRemove  _) -> 14
+                   | APIAsset   (FieldAdd      _) -> 13
+                   | APIAsset   (FieldRemove   _) -> 14
                    | APIAsset   (RemoveAll     _) -> 15
                    | APIAsset   (Contains      _) -> 16
                    | APIAsset   (Select        _) -> 17

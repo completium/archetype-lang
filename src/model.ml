@@ -349,8 +349,8 @@ and api_asset =
   | Remove           of ident
   | Clear            of ident * api_container_kind
   | Update           of ident * (ident * assignment_operator * mterm) list
-  | UpdateAdd        of ident * ident
-  | UpdateRemove     of ident * ident
+  | FieldAdd        of ident * ident
+  | FieldRemove     of ident * ident
   | RemoveAll        of ident * ident
   | Contains         of ident * api_container_kind
   | Nth              of ident * api_container_kind
@@ -1147,8 +1147,8 @@ let cmp_api_item_node (a1 : api_storage_node) (a2 : api_storage_node) : bool =
     | Add an1 , Add an2                                  -> cmp_ident an1 an2
     | Remove an1, Remove an2                             -> cmp_ident an1 an2
     | Update (an1, l1), Update (an2, l2)                 -> cmp_ident an1 an2 && List.for_all2 (fun (i1, op1, v1) (i2, op2, v2) -> cmp_ident i1 i2 && cmp_assign_op op1 op2 && cmp_mterm v1 v2) l1 l2
-    | UpdateAdd (an1, fn1), UpdateAdd (an2, fn2)         -> cmp_ident an1 an2 && cmp_ident fn1 fn2
-    | UpdateRemove (an1, fn1), UpdateRemove (an2, fn2)   -> cmp_ident an1 an2 && cmp_ident fn1 fn2
+    | FieldAdd (an1, fn1), FieldAdd (an2, fn2)           -> cmp_ident an1 an2 && cmp_ident fn1 fn2
+    | FieldRemove (an1, fn1), FieldRemove (an2, fn2)     -> cmp_ident an1 an2 && cmp_ident fn1 fn2
     | RemoveAll (an1, fn1), RemoveAll (an2, fn2)         -> cmp_ident an1 an2 && cmp_ident fn1 fn2
     | Contains (an1, c1), Contains (an2, c2)             -> cmp_ident an1 an2 && cmp_container_kind c1 c2
     | Nth (an1, c1), Nth (an2, c2)                       -> cmp_ident an1 an2 && cmp_container_kind c1 c2
@@ -2705,8 +2705,8 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
         | Remove an             -> Remove (f KIassetname an)
         | Clear (an, ck)        -> Clear (f KIassetname an, ck)
         | Update (an, l)        -> Update (f KIassetname an, List.map (fun (id, op, v) -> (f KIparamlambda id, op, for_mterm v)) l)
-        | UpdateAdd (an, id)    -> UpdateAdd (f KIassetname an, f KIassetfield id)
-        | UpdateRemove (an, id) -> UpdateRemove (f KIassetname an, f KIassetfield id)
+        | FieldAdd (an, id)     -> FieldAdd (f KIassetname an, f KIassetfield id)
+        | FieldRemove (an, id)  -> FieldRemove (f KIassetname an, f KIassetfield id)
         | RemoveAll (an, id)    -> RemoveAll (f KIassetname an, f KIassetfield id)
         | Contains (an, ck)     -> Contains (f KIassetname an, ck)
         | Nth (an, ck)          -> Nth (f KIassetname an, ck)
