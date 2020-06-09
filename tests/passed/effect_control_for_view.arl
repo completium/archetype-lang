@@ -1,4 +1,4 @@
-archetype effect_control_for_one_field
+archetype effect_control_for_view
 
 asset myasset identified by id {
   id : int;

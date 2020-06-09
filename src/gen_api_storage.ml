@@ -30,8 +30,9 @@ let generate_api_storage ?(verif=false) (model : model) : model =
   in
 
   let to_ck = function
-    | CKcoll   -> Coll
-    | CKview _ -> View
+    | CKcoll          -> Coll
+    | CKview _        -> View
+    | CKfield _       -> Field
   in
 
   let rec f (ctx : ctx_model) (accu : api_storage list) (term : mterm) : api_storage list =

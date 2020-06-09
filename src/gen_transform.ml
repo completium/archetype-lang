@@ -1632,9 +1632,10 @@ let extract_term_from_instruction f (model : model) : model =
     | Mfor (i, c, b, lbl) ->
       let ce, ca =
         match c with
-        | ICKcoll an -> ICKcoll an, []
-        | ICKview v -> let ve, va = f v in ICKview ve, va
-        | ICKlist v -> let ve, va = f v in ICKlist ve, va
+        | ICKcoll  an -> ICKcoll an, []
+        | ICKview  v -> let ve, va = f v in ICKview  ve, va
+        | ICKfield v -> let ve, va = f v in ICKfield ve, va
+        | ICKlist  v -> let ve, va = f v in ICKlist  ve, va
       in
       let be = aux ctx b in
       process (mk_mterm (Mfor (i, ce, be, lbl)) mt.type_) ca
@@ -1699,7 +1700,8 @@ let extract_term_from_instruction f (model : model) : model =
       let ve, va =
         match v with
         | CKcoll -> CKcoll, []
-        | CKview v -> let ve, va = f v in CKview ve, va
+        | CKview v  -> let ve, va = f v in CKview ve, va
+        | CKfield v -> let ve, va = f v in CKfield ve, va
       in
       process (mk_mterm (Mclear (an, ve)) mt.type_) va
 
@@ -1883,6 +1885,7 @@ let add_contain_on_get (model : model) : model =
           match c with
           | ICKcoll _ -> accu
           | ICKview c -> f accu c
+          | ICKfield c -> f accu c
           | ICKlist c -> f accu c
         in
         let be = aux b in
@@ -1943,8 +1946,9 @@ let add_contain_on_get (model : model) : model =
       | Mclear (_an, v) ->
         let accu =
           match v with
-          | CKcoll -> accu
-          | CKview c -> f accu c
+          | CKcoll     -> accu
+          | CKview c   -> f accu c
+          | CKfield c  -> f accu c
         in
         gg accu mt
 
@@ -2064,7 +2068,7 @@ let split_key_values (model : model) : model =
     | Mcast (Tcontainer (Tasset _, _), Tcontainer (Tasset _, _), v), _ -> aux ctx v
     | Massets l, Tcontainer (Tasset an, _) ->
       let l = List.map (aux ctx) l in
-      mk_mterm (Mlitlist l) (Tlist (Tbuiltin (Utils.get_asset_key model (unloc an) |> snd)))
+      mk_mterm (Mlitset l) (Tset ((Utils.get_asset_key model (unloc an) |> snd)))
     | _ -> map_mterm (aux ctx) mt
   in
 
@@ -2280,6 +2284,14 @@ let check_if_asset_in_function (model : model) : model =
   model
 
 let replace_api_view_by_col (model : model) : model =
+  let is_field (c : mterm) =
+    match c with
+    | { node = _;
+        type_ = Tcontainer ((Tasset _), Partition);
+        _} -> true
+    | _ -> false
+  in
+
   let is_col (c : mterm) =
     match c with
     | { node = Mcast (
@@ -2305,36 +2317,79 @@ let replace_api_view_by_col (model : model) : model =
     | Mclear (an, CKview c) when is_storcol c ->
       mk_mterm (Mclear (an, CKcoll)) mt.type_
 
+    | Mclear (an, CKview c) when is_field c ->
+      let c = aux ctx c in
+      mk_mterm (Mclear (an, CKfield c)) mt.type_
+
     | Mselect (an, CKview c, args, body, vs) when is_col c ->
       let body = aux ctx body in
       let vs = List.map (aux ctx) vs in
       mk_mterm (Mselect (an, CKcoll, args, body, vs)) mt.type_
 
+    | Mselect (an, CKview c, args, body, vs) when is_field c ->
+      let c = aux ctx c in
+      let body = aux ctx body in
+      let vs = List.map (aux ctx) vs in
+      mk_mterm (Mselect (an, CKfield c, args, body, vs)) mt.type_
+
     | Msort (an, CKview c, l) when is_col c ->
       mk_mterm (Msort (an, CKcoll, l)) mt.type_
+
+    | Msort (an, CKview c, l) when is_field c ->
+      let c = aux ctx c in
+      mk_mterm (Msort (an, CKfield c, l)) mt.type_
 
     | Mcontains (an, CKview c, k) when is_col c->
       let k = aux ctx k in
       mk_mterm (Mcontains (an, CKcoll, k)) mt.type_
 
+    | Mcontains (an, CKview c, k) when is_field c ->
+      let c = aux ctx c in
+      let k = aux ctx k in
+      mk_mterm (Mcontains (an, CKfield c, k)) mt.type_
+
     | Mnth (an, CKview c, i) when is_col c ->
       let i = aux ctx i in
       mk_mterm (Mnth (an, CKcoll, i)) mt.type_
 
+    | Mnth (an, CKview c, i) when is_field c ->
+      let c = aux ctx c in
+      let i = aux ctx i in
+      mk_mterm (Mnth (an, CKfield c, i)) mt.type_
+
     | Mcount (an, CKview c) when is_col c ->
       mk_mterm (Mcount (an, CKcoll)) mt.type_
+
+    | Mcount (an, CKview c) when is_field c ->
+      let c = aux ctx c in
+      mk_mterm (Mcount (an, CKfield c)) mt.type_
 
     | Msum (an, CKview c, v) when is_col c ->
       let v = aux ctx v in
       mk_mterm (Msum (an, CKcoll, v)) mt.type_
 
+    | Msum (an, CKview c, v) when is_field c ->
+      let c = aux ctx c in
+      let v = aux ctx v in
+      mk_mterm (Msum (an, CKfield c, v)) mt.type_
+
     | Mhead (an, CKview c, n) when is_col c ->
       let n = aux ctx n in
       mk_mterm (Mhead (an, CKcoll, n)) mt.type_
 
+    | Mhead (an, CKview c, n) when is_field c ->
+      let c = aux ctx c in
+      let n = aux ctx n in
+      mk_mterm (Mhead (an, CKfield c, n)) mt.type_
+
     | Mtail (an, CKview c, n) when is_col c ->
       let n = aux ctx n in
       mk_mterm (Mtail (an, CKcoll, n)) mt.type_
+
+    | Mtail (an, CKview c, n) when is_col c ->
+      let c = aux ctx c in
+      let n = aux ctx n in
+      mk_mterm (Mtail (an, CKfield c, n)) mt.type_
 
     | Mfor (i, ICKview c, b, l) when is_storcol c ->
       let an =
@@ -2344,6 +2399,11 @@ let replace_api_view_by_col (model : model) : model =
       in
       let b = aux ctx b in
       mk_mterm (Mfor (i, ICKcoll an, b, l)) mt.type_
+
+    | Mfor (i, ICKview c, b, l) when is_field c ->
+      let c = aux ctx c in
+      let b = aux ctx b in
+      mk_mterm (Mfor (i, ICKfield c, b, l)) mt.type_
 
     | _ -> map_mterm (aux ctx) mt
   in

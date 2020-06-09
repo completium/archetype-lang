@@ -413,15 +413,17 @@ let pp_model fmt (model : model) =
   in
 
   let pp_container_kind f fmt = function
-    | CKcoll -> pp_str fmt "_Coll_"
-    | CKview mt -> f fmt mt
+    | CKcoll     -> pp_str fmt "_Coll_"
+    | CKview mt  -> f fmt mt
+    | CKfield mt -> f fmt mt
   in
 
 
   let pp_iter_container_kind f fmt = function
-    | ICKcoll an -> Format.fprintf fmt "%a" pp_str an
-    | ICKview mt -> Format.fprintf fmt "%a" f mt
-    | ICKlist mt -> Format.fprintf fmt "%a" f mt
+    | ICKcoll an  -> Format.fprintf fmt "%a" pp_str an
+    | ICKview mt  -> Format.fprintf fmt "%a" f mt
+    | ICKfield mt -> Format.fprintf fmt "%a" f mt
+    | ICKlist mt  -> Format.fprintf fmt "%a" f mt
   in
 
   let pp_mterm fmt (mt : mterm) =

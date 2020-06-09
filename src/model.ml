@@ -307,12 +307,14 @@ type ('id, 'term) mterm_node  =
 
 and 'term container_kind =
   | CKcoll
-  | CKview of 'term
+  | CKview  of 'term
+  | CKfield of 'term
 
 and 'term iter_container_kind =
-  | ICKcoll of ident
-  | ICKview of 'term
-  | ICKlist of 'term
+  | ICKcoll  of ident
+  | ICKview  of 'term
+  | ICKfield of 'term
+  | ICKlist  of 'term
 
 and 'id mterm_gen = {
   node: ('id, 'id mterm_gen) mterm_node;
@@ -341,6 +343,7 @@ and fail_type = lident fail_type_gen
 and api_container_kind =
   | Coll
   | View
+  | Field
 
 and api_asset =
   | Get              of ident
@@ -349,8 +352,8 @@ and api_asset =
   | Remove           of ident
   | Clear            of ident * api_container_kind
   | Update           of ident * (ident * assignment_operator * mterm) list
-  | FieldAdd        of ident * ident
-  | FieldRemove     of ident * ident
+  | FieldAdd         of ident * ident
+  | FieldRemove      of ident * ident
   | RemoveAll        of ident * ident
   | Contains         of ident * api_container_kind
   | Nth              of ident * api_container_kind
@@ -1232,13 +1235,15 @@ let map_type (f : type_ -> type_) = function
 (* -------------------------------------------------------------------- *)
 
 let map_container_kind f = function
-  | CKcoll -> CKcoll
-  | CKview mt -> CKview (f mt)
+  | CKcoll     -> CKcoll
+  | CKview  mt -> CKview  (f mt)
+  | CKfield mt -> CKfield (f mt)
 
 let map_iter_container_kind f = function
-  | ICKcoll an -> ICKcoll an
-  | ICKview mt -> ICKview (f mt)
-  | ICKlist mt -> ICKlist (f mt)
+  | ICKcoll an  -> ICKcoll an
+  | ICKview mt  -> ICKview (f mt)
+  | ICKfield mt -> ICKfield (f mt)
+  | ICKlist mt  -> ICKlist (f mt)
 
 let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ -> type_) (f : 'id mterm_gen -> 'id mterm_gen) = function
   (* lambda *)
@@ -1554,13 +1559,15 @@ let map_mterm_model (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (model : mod
   map_mterm_model_gen () f model
 
 let fold_container_kind f accu = function
-  | CKcoll -> accu
-  | CKview mt -> f accu mt
+  | CKcoll          -> accu
+  | CKview mt       -> f accu mt
+  | CKfield mt      -> f accu mt
 
 let fold_iter_container_kind f accu = function
-  | ICKcoll _ -> accu
-  | ICKview mt -> f accu mt
-  | ICKlist mt -> f accu mt
+  | ICKcoll _   -> accu
+  | ICKview mt  -> f accu mt
+  | ICKfield mt -> f accu mt
+  | ICKlist mt  -> f accu mt
 
 let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_gen) : 'a =
   let opt f accu x = match x with | Some v -> f accu v | None -> accu in
@@ -1749,12 +1756,19 @@ let fold_map_container_kind f accu = function
   | CKview mt ->
     let mte, mta = f accu mt in
     CKview mte, mta
+  | CKfield mt ->
+    let mte, mta = f accu mt in
+    CKfield mte, mta
+
 
 let fold_map_iter_container_kind f accu = function
   | ICKcoll an -> ICKcoll an, accu
   | ICKview mt ->
     let mte, mta = f accu mt in
     ICKview mte, mta
+  | ICKfield mt ->
+    let mte, mta = f accu mt in
+    ICKfield mte, mta
   | ICKlist mt ->
     let mte, mta = f accu mt in
     ICKlist mte, mta

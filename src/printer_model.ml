@@ -111,13 +111,15 @@ let pp_action_description fmt ad =
   | ADcall     id -> Format.fprintf fmt "call (%a)" pp_ident id
 
 let pp_container_kind f fmt = function
-  | CKcoll -> pp_str fmt "_Coll_"
-  | CKview mt -> f fmt mt
+  | CKcoll     -> pp_str fmt "_Coll_"
+  | CKview mt  -> f fmt mt
+  | CKfield mt -> f fmt mt
 
 let pp_iter_container_kind f fmt = function
-  | ICKcoll an -> Format.fprintf fmt "%a" pp_str an
-  | ICKview mt -> Format.fprintf fmt "%a" f mt
-  | ICKlist mt -> Format.fprintf fmt "%a" f mt
+  | ICKcoll  an -> Format.fprintf fmt "%a" pp_str an
+  | ICKview  mt -> Format.fprintf fmt "%a" f mt
+  | ICKfield mt -> Format.fprintf fmt "%a" f mt
+  | ICKlist  mt -> Format.fprintf fmt "%a" f mt
 
 let pp_mterm fmt (mt : mterm) =
   let rec f fmt (mtt : mterm) =
@@ -1087,8 +1089,9 @@ let pp_label_term fmt (lt : label_term) =
     pp_mterm lt.term
 
 let pp_ck fmt = function
-  | Coll -> pp_str fmt "collection"
-  | View -> pp_str fmt "view"
+  | Coll  -> Format.fprintf fmt "collection"
+  | View  -> Format.fprintf fmt "view"
+  | Field -> Format.fprintf fmt "field"
 
 let pp_api_asset fmt = function
   | Get an -> pp_str fmt ("get\t " ^ an)

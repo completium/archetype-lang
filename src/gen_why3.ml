@@ -1334,6 +1334,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let id = mk_select_name "c" m a lb in
       let argids = args |> List.map (fun (e, _, _) -> e) |> List.map (map_mterm m ctx) in
       Tapp (loc_term (Tvar id), argids @ [loc_term (mk_ac a)])
+    | Mselect (_a, CKfield _, _la, _lb, _v) -> error_not_translated "Mselect for CKfield"
     | Msort               (a, CKview c,l) -> Tsort (with_dummy_loc (mk_sort_clone_id a l),map_mterm m ctx c,loc_term (mk_ac a))
     | Msort _ -> error_not_translated "Msort"
 
@@ -1341,9 +1342,10 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Mnth (n, CKview c,k) -> Tapp (loc_term (Tvar ("vnth_" ^ n)),[map_mterm m ctx c; map_mterm m ctx k])
     | Mnth (n, CKcoll,k) -> Tapp (loc_term (Tvar ("cnth_" ^ n)),[loc_term (mk_ac n); map_mterm m ctx k])
+    | Mnth (_n, CKfield _, _k) -> error_not_translated "Mnth for CKfield"
     | Mcount (a, CKview t) -> Tvcard (with_dummy_loc a, map_mterm m ctx t)
     | Mcount (a, CKcoll) -> Tccard (with_dummy_loc a, loc_term (mk_ac a))
-
+    | Mcount (_a, CKfield _) -> error_not_translated "Mcount for CKfield"
     | Msum          (a, CKview v,f) ->
       let cloneid = mk_sum_clone_id m a f in
       let col = mk_ac_ctx a ctx in
@@ -1351,8 +1353,10 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Msum _ -> error_not_translated "Msum"
     | Mhead (n, CKview c, v) -> Tvhead(with_dummy_loc n, map_mterm m ctx v, map_mterm m ctx c)
     | Mhead (n, CKcoll, v) -> Tvhead(with_dummy_loc n, map_mterm m ctx v, loc_term (mk_ac n))
+    | Mhead (_n, CKfield _, _v) -> error_not_translated "Mhead for CKfield"
     | Mtail  (n, CKview c, v) -> Tvtail(with_dummy_loc n, map_mterm m ctx v, map_mterm m ctx c)
     | Mtail  (n, CKcoll, v) -> Tctail(with_dummy_loc n, map_mterm m ctx v, loc_term (mk_ac n))
+    | Mtail  (_n, CKfield _, _v) -> error_not_translated "Mtail for CKfield"
 
     (* utils *)
     | Mcast (Tcontainer (Tasset a,Collection),Tcontainer (Tasset _, View), v) ->
