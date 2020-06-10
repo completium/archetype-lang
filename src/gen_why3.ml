@@ -1038,24 +1038,14 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       Tmatch (Tvnth (loc_ident n,
                     map_mterm m ctx k,
                     map_mterm m ctx c) |> with_dummy_loc,[
-          Tpsome (with_dummy_loc "k"), Tmatch(Tget (with_dummy_loc n,
-                    loc_term (mk_ac n),
-                    loc_term (Tvar "k")) |> with_dummy_loc, [
-                      Tpsome (map_lident id), map_mterm m ctx b;
-                      Twild, map_mterm m ctx e
-                    ])  |> with_dummy_loc;
+          Tpsome (map_lident id),  map_mterm m ctx b;
           Twild, map_mterm m ctx e
       ])
     | Mletin ([id], { node = M.Mnth (n, CKcoll,k); type_ = _ }, _, b, Some e) ->
       Tmatch (Tcnth (loc_ident n,
                     map_mterm m ctx k,
                     mk_ac_ctx n ctx) |> with_dummy_loc,[
-          Tpsome (with_dummy_loc "k"), Tmatch(Tget (with_dummy_loc n,
-                    loc_term (mk_ac n),
-                    loc_term (Tvar "k")) |> with_dummy_loc, [
-                      Tpsome (map_lident id), map_mterm m ctx b;
-                      Twild, map_mterm m ctx e
-                    ])  |> with_dummy_loc;
+          Tpsome (map_lident id), map_mterm m ctx b;
           Twild, map_mterm m ctx e
       ])
     | Mletin              _ -> error_not_translated "Mletin"
@@ -2306,10 +2296,10 @@ let mk_clear_coll m asset : decl = Dfun {
     body = Tassign (mk_ac asset, Temptycoll asset);
   }
 
-let mk_clear_field _m asset : decl = Dfun {
-    name     = "clear_field_" ^ asset;
+let mk_clear_view _m asset : decl = Dfun {
+    name     = "clear_view_" ^ asset;
     logic    = NoMod;
-    args     = ["field", Tyview asset];
+    args     = ["v", Tyview asset];
     returns  = Tyunit;
     raises   = [];
     variants = [];
@@ -2322,7 +2312,7 @@ let mk_clear_field _m asset : decl = Dfun {
         Tvcard (
           asset,
           Tapp (
-            Tvar "field",
+            Tvar "v",
             [Tvar ("asset")])),
         [], (* TODO : add invariant for storage api verification *)
         Tmatch (
@@ -2330,7 +2320,7 @@ let mk_clear_field _m asset : decl = Dfun {
             asset,
             Tvar "i",
             Tapp (
-              Tvar "field",
+              Tvar "v",
               [Tvar ("asset")])
           ), [
           Tpsome "k", Tapp (
@@ -2629,7 +2619,10 @@ let mk_rm_field m part asset keyf field rmed_asset _rmkey : decl =
       ;
   }
 
-(* calls clear_field_asset if partition *)
+(* calls clear_view_asset if partition for now;
+   NB : when container field are implemented with dedicated types
+   and not view, this will change
+*)
 let mk_removeall _m part asset field rm_asset =
   Dfun {
     name     = "removeall_" ^ asset ^ "_" ^ field;
@@ -2658,7 +2651,7 @@ let mk_removeall _m part asset field rm_asset =
                 Tseq [
                   assign;
                   Tapp (
-                    Tvar ("clear_field_"^rm_asset),
+                    Tvar ("clear_view_"^rm_asset),
                     [Tdoti ("asset",field)])
                 ] else assign
             )
@@ -2733,8 +2726,8 @@ let mk_storage_api (m : M.model) records =
         acc @ [ mk_cmp_function m asset field; mk_sort_clone m asset field]
       | M.APIAsset (Clear (n, Coll)) ->
         acc @ [mk_clear_coll m n]
-      | M.APIAsset (Clear (n, Field)) ->
-        acc @ [mk_clear_field m n]
+      | M.APIAsset (Clear (n, (View | Field))) ->
+        acc @ [mk_clear_view m n]
 (*       | M.APIAsset (RemoveAll (n,f)) ->
         let (key,_) = M.Utils.get_asset_key m n in
         let (clearedasset,_,_) = M.Utils.get_container_asset_key m n f in
@@ -2744,7 +2737,7 @@ let mk_storage_api (m : M.model) records =
       | M.APIAsset (RemoveAll (a,f)) ->
         let (pa,_,_) = M.Utils.get_container_asset_key m a f in
         let ispart = is_partition m a f in
-        acc @ (if ispart then [mk_clear_field m pa] else []) @ [mk_removeall m ispart a f pa]
+        acc @ (if ispart then [mk_clear_view m pa] else []) @ [mk_removeall m ispart a f pa]
       | _ -> acc
     ) [] |> loc_decl |> deloc
 
