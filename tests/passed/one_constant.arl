@@ -2,7 +2,7 @@ archetype one_constant
 
 constant myconstant : string = ""
 
-action exec() {
+entry exec() {
   effect {
     require(true)
   }

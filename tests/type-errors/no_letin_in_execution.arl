@@ -1,6 +1,6 @@
 archetype no_letin_in_execution
 
-action exec () {
+entry exec () {
   effect {
     let x = 0 in
       x := 1;

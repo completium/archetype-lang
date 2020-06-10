@@ -6,13 +6,13 @@ asset challenge {
   solved : bool = false;
 }
 
-action emit (c_id : string, addr_ : address) {
+entry emit (c_id : string, addr_ : address) {
   effect {
     challenge.add({id = c_id; addr = addr_})
   }
 }
 
-action resolve (c_id : string) {
+entry resolve (c_id : string) {
   require {
     r1: challenge[c_id].addr = caller;
   }

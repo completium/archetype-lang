@@ -1,6 +1,6 @@
 archetype effect_require
 
-action exec () {
+entry exec () {
   effect {
     require (true)
   }

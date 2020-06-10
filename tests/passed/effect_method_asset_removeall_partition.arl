@@ -15,13 +15,13 @@ asset my_asset identified by id {
 
 variable res : int = 0
 
-action pre_exec () {
+entry pre_exec () {
   effect {
     my_asset["id0"].col.add({1})
   }
 }
 
-action exec () {
+entry exec () {
   effect {
     my_asset["id0"].col.removeall()
   }

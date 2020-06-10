@@ -1,6 +1,6 @@
 archetype lang_cst
 
-action exec () {
+entry exec () {
   effect {
     var a : tez     = balance;      (* BALANCE *)
     var b : address = caller;       (* SENDER *)

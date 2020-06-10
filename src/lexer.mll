@@ -18,7 +18,6 @@
 
   let keywords_ =
     [
-      "action"              , ACTION         ;
       "added"               , ADDED          ;
       "and"                 , AND            ;
       "any"                 , ANY            ;
@@ -41,6 +40,7 @@
       "effect"              , EFFECT         ;
       "else"                , ELSE           ;
       "end"                 , END            ;
+      "entry"               , ENTRY          ;
       "enum"                , ENUM           ;
       "exists"              , EXISTS         ;
       "extension"           , EXTENSION      ;

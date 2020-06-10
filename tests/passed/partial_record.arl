@@ -7,7 +7,7 @@ asset asset1 {
   val: int = 0;
 }
 
-action exec () {
+entry exec () {
   effect {
     var a = { id = "myid" }
   }

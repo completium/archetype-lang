@@ -2,7 +2,7 @@ archetype expr_arith_not_bool
 
 variable res : bool = false
 
-action exec () {
+entry exec () {
   specification {
     s0: res = true;
   }

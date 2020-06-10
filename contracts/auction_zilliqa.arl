@@ -27,7 +27,7 @@ specification {
   }
 }
 
-action place_bid () {
+entry place_bid () {
 
   require {
     c1 : auction_start <= now <= auction_end;
@@ -69,7 +69,7 @@ action place_bid () {
 }
 
 (* onlyonce extension specifies that one cannot withdraw more than once *)
-action[%onlyonce%] withdraw () {
+entry[%onlyonce%] withdraw () {
   require {
     c2 : pending_return.contains(caller);
   }

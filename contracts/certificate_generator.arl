@@ -10,7 +10,7 @@ asset certificate identified by id {
   hash : string;
 }
 
-action add (cid : string, cdescription : string, cformula : string, curl : string, chash : string) {
+entry add (cid : string, cdescription : string, cformula : string, curl : string, chash : string) {
   called by admin
 
   effect {

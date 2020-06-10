@@ -2,7 +2,7 @@ archetype test_at
 
 variable v : int = 1
 
-action exec () {
+entry exec () {
   specification {
     postcondition p1 {
       at(l1).v = 1 and

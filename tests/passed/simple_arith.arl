@@ -2,7 +2,7 @@ archetype simple_arith
 
 variable res : int = 0
 
-action exec() {
+entry exec() {
   effect {
     res := (1 + 2) * 3
   }

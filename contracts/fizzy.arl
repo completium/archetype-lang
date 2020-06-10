@@ -25,7 +25,7 @@ asset[@add creator (none)] flight identified by id {
   insurances : insurance partition;
 }
 
-action addflightinsurance (fi : string, iproductid : string, ilimit : date, ipremium : tez, iindemnity : tez, iproduct : string, istat : status) {
+entry addflightinsurance (fi : string, iproductid : string, ilimit : date, ipremium : tez, iindemnity : tez, iproduct : string, istat : status) {
     called by creator
 
     effect {
@@ -36,7 +36,7 @@ action addflightinsurance (fi : string, iproductid : string, ilimit : date, ipre
 }
 
 (* data should be signed by oracle ... *)
-action updatestatus (fi : string, arrival : date) {
+entry updatestatus (fi : string, arrival : date) {
 
     called by creator
 
@@ -52,7 +52,7 @@ action updatestatus (fi : string, arrival : date) {
     }
 }
 
-action manual (fi : string, pr : string, newst : status) {
+entry manual (fi : string, pr : string, newst : status) {
 
     called by creator
 

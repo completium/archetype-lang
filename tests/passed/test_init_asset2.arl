@@ -14,7 +14,7 @@ asset my_asset {
   { id = caller; tokens = total }
 }
 
-action exec() {
+entry exec() {
   effect {
     require(true)
   }

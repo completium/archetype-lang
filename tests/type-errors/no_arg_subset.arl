@@ -7,7 +7,7 @@ asset e identified by eid {
 	cells		: et subset;
 }
 
-action start (cl: et subset) {
+entry start (cl: et subset) {
 	effect {
 		var ev : e = { eid = "123"; cells = cl };
 	}

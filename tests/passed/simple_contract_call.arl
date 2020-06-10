@@ -1,12 +1,12 @@
 archetype simple_contract_call
 
 contract mycontract {
-  action an_entry (str : string)
+  entry an_entry (str : string)
 }
 
 variable contract_i : mycontract = @KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm
 
-action exec () {
+entry exec () {
   effect {
     transfer 2tz to contract_i call an_entry("mystr")
   }

@@ -2,9 +2,9 @@ archetype expr_list_prepend
 
 variable res : string list = []
 
-action exec () {
+entry exec () {
   specification {
-    s0: res.count () = 4;
+    s0: count(res) = 4;
   }
   effect {
     var l : string list = ["1"; "2"; "3"];

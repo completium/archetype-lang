@@ -28,7 +28,7 @@ states =
  | Voting          with { s2 : winner.isempty(); }
  | Buried
 
-action register (v : role) {
+entry register (v : role) {
   called by chairperson
   require {
     c1 : state = Created;
@@ -43,7 +43,7 @@ transition start () {
   to Voting when { now > startDate }
 }
 
-action vote (val : pkey of ballot) {
+entry vote (val : pkey of ballot) {
    require {
      c2 : voter.contains(caller);
      c3 : state = Voting;

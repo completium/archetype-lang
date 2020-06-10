@@ -1,6 +1,6 @@
 archetype contract_empty
 
-action exec () {
+entry exec () {
   effect {
     ()
   }

@@ -11,7 +11,7 @@ asset my_asset identified by id {
   {"my_id"; []}
 }
 
-action exec () {
+entry exec () {
   effect {
     fail ("nothing")
   }

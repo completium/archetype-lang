@@ -9,7 +9,7 @@ asset my_asset {
 
 variable res : string = ""
 
-action exec() {
+entry exec() {
   effect {
     res := my_asset[0].value
   }

@@ -11,7 +11,7 @@ asset myasset identified by str {
 
 variable res : int = 0
 
-action exec () {
+entry exec () {
   specification {
     s0: res = 6;
   }

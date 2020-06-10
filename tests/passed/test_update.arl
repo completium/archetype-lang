@@ -10,7 +10,7 @@ asset myasset2 {
   k : int;
 }
 
-action exec () {
+entry exec () {
   effect {
     myasset.update(myasset2[1].k, { v = "value" })
   }

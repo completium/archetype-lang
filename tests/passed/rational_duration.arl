@@ -2,7 +2,7 @@ archetype rational_duration
 
 variable last_exec : date = 2020-01-01
 
-action exec (dest : address) {
+entry exec (dest : address) {
   effect {
     if now > last_exec + 1w then (
       last_exec := now;

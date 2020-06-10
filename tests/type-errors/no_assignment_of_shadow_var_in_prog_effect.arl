@@ -1,6 +1,6 @@
 archetype no_assignment_of_shadow_var_in_prog_effect
 
-action exec () {
+entry exec () {
   effect {
     myvar += 2
   }

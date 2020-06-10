@@ -7,7 +7,7 @@ asset my_asset {
   {"id"; 1}
 }
 
-action exec () {
+entry exec () {
   specification {
     i1: forall a : my_asset, a.v = 0;
   }

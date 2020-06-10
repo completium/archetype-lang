@@ -1,10 +1,10 @@
 archetype duplicate_name_arg_contract
 
 contract my_contract {
-  action f (i : int, i : int)
+  entry f (i : int, i : int)
 }
 
-action exec () {
+entry exec () {
   effect {
     require (true)
   }

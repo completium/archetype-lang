@@ -7,7 +7,7 @@ asset myasset {
   id : string;
 }
 
-action exec () {
+entry exec () {
   effect {
     i := 1
   }

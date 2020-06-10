@@ -4,7 +4,7 @@ asset an_asset {
   id : string;
 }
 
-action a () {
+entry a () {
   effect {
     var l = an_asset.count;
     require (true)

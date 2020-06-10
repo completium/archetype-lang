@@ -2,7 +2,7 @@ archetype expr_lit_tuple
 
 variable res : int * int = (0, 0)
 
-action exec () {
+entry exec () {
   effect {
     res := (1, 2)
   }

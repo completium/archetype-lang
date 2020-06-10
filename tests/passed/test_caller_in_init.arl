@@ -8,7 +8,7 @@ asset my_asset identified by id {
 
 variable a : address = caller
 
-action exec () {
+entry exec () {
   effect {
     require(true)
   }

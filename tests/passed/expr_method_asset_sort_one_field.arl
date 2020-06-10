@@ -10,7 +10,7 @@ asset my_asset identified by id {
 
 variable res : string = "id2"
 
-action exec () {
+entry exec () {
   specification {
     s0: res = "id2";
   }

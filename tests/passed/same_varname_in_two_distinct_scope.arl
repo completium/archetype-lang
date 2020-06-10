@@ -1,6 +1,6 @@
 archetype same_varname_in_two_distinct_scope
 
-action exec() {
+entry exec() {
   effect {
     if true then (
       var v = 0;

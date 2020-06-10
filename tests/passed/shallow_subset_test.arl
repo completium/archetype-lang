@@ -9,7 +9,7 @@ asset asset1 identified by id1 {
   col: asset2 subset;
 }
 
-action exec (k : pkey of asset1) {
+entry exec (k : pkey of asset1) {
   effect {
     asset1.add({ id1 = k; col = []})
   }

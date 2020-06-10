@@ -4,7 +4,7 @@ function f (i : int) : int {
   return result
 }
 
-action main () {
+entry main () {
   effect {
     var v = result;
     ()

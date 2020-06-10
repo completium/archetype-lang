@@ -30,7 +30,7 @@ transition confirm () {
   to InProgress when { now > startdate }
 }
 
-action submit (ckey : pkey of submission, pscore[%signedby (oracle)%] : int) {
+entry submit (ckey : pkey of submission, pscore[%signedby (oracle)%] : int) {
   require {
     c1 : state = InProgress;
   }

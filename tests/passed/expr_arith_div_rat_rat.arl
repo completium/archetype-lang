@@ -2,7 +2,7 @@ archetype expr_arith_div_rat_rat
 
 variable res : rational = 0 div 1
 
-action exec () {
+entry exec () {
   specification {
     s0: res = 1 div 6;
   }

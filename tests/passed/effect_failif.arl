@@ -1,6 +1,6 @@
 archetype effect_failif
 
-action exec () {
+entry exec () {
   effect {
     failif (false)
   }

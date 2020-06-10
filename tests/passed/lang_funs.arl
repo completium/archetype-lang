@@ -8,7 +8,7 @@ variable t : tez      = 0tz
 variable s : string   = ""
 variable b : bytes    = 0x00
 
-action exec () {
+entry exec () {
   effect {
     i := min(1, 2);
     i := max(1, 2);

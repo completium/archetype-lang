@@ -7,7 +7,7 @@ asset my_asset identified by id {
 
 variable res : int = 0
 
-action exec (str : string) {
+entry exec (str : string) {
   effect {
     var l = my_asset.select(the.value = my_asset.get("1").id);
   }

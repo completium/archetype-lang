@@ -13,7 +13,7 @@ asset my_asset {
   {1; "mystr"}
 }
 
-action exec() {
+entry exec() {
   effect {
     require (my_asset[0].id = 0);
     var str = my_asset[0].v;

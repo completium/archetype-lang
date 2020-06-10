@@ -1,6 +1,6 @@
 archetype lang_arith
 
-action exec () {
+entry exec () {
   effect {
     var bool_bool_and : bool = true and false;
     var bool_bool_or  : bool = true or false;

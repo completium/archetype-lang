@@ -1,6 +1,6 @@
 archetype effect_fail
 
-action exec () {
+entry exec () {
   effect {
     fail ("message")
   }

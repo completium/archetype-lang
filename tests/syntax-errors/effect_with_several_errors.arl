@@ -1,6 +1,6 @@
 archetype effect_with_several_errors
 
-action ident () {
+entry ident () {
   effect {
     to; f(); when
   }

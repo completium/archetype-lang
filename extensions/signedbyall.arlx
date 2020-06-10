@@ -1,6 +1,6 @@
 archetype extension signedbyall (
 
-  action[%signedbyall (roles)%] aTransaction ()
+  entry[%signedbyall (roles)%] aTransaction ()
 
 ) {
 
@@ -8,14 +8,14 @@ archetype extension signedbyall (
     id_<%aTransaction> : address;
   }
 
-  action sign_<%aTransaction> () {
+  entry sign_<%aTransaction> () {
     called by roles
     effect {
       signer.add({ id_<%aTransaction> = caller })
     }
   }
 
-  action aTransaction () {
+  entry aTransaction () {
     require {
       r : requires;
       <%aTransaction>_signedbyall :

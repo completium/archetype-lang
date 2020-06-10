@@ -10,7 +10,7 @@ asset my_asset identified by id {
   o_assets : o_asset partition;
 }
 
-action add () {
+entry add () {
 	effect {
     my_asset.add({ id = 1; o_assets = [{"my_id1"; 42}; {"my_id2"; 43}; {"my_id3"; 44}] })
 	}

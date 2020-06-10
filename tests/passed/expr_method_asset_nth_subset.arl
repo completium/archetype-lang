@@ -15,7 +15,7 @@ asset my_asset identified by id {
 
 variable res : int = 0
 
-action exec () {
+entry exec () {
   specification {
     s0: res = 1;
   }

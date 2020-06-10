@@ -2,7 +2,7 @@ archetype effect_control_for_list
 
 variable res : int = 0
 
-action exec () {
+entry exec () {
   specification {
     s0: res = 6;
   }

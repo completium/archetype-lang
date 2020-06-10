@@ -2,7 +2,7 @@ archetype simple
 
 variable n : int = 0
 
-action exec () {
+entry exec () {
   effect {
     n := 2
   }

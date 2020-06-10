@@ -7,7 +7,7 @@ asset my_asset identified by id {
 
 variable res : int = 0
 
-action exec () {
+entry exec () {
   effect {
     if my_asset.contains("id1") then (
       res := my_asset["id1"].value;

@@ -5,7 +5,7 @@ asset myasset {
   value: int;
 }
 
-action exec () {
+entry exec () {
   require {
     r1: myasset["myid"].value = 0;
   }

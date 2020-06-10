@@ -1,4 +1,4 @@
-archetype security_pred_only_by_role_in_action
+archetype security_pred_only_in_entry
 
 constant admin : role = @tz1aazS5ms5cbGkb6FN1wvWmN7yrMTTcr6wB
 
@@ -7,12 +7,12 @@ asset my_asset identified by id {
   value : int;
 }
 
-action exec () {
+entry exec () {
   effect {
     require true
   }
 }
 
 security {
-  s0 : only_by_role_in_action (anyaction, admin, exec);
+  s0 : only_in_entry (anyentry, exec);
 }

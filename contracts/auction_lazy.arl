@@ -7,7 +7,7 @@ asset bid identified by incumbent {
 
 variable deadline : date = 2019-01-01T00:00:00
 
-action place_bid () {
+entry place_bid () {
   require {
     c1 : now < deadline;
   }
@@ -17,7 +17,7 @@ action place_bid () {
 }
 
 (*Users need to exhibit proof they are not the winner to reclaim their bid*)
-action reclaim (witness : address) {
+entry reclaim (witness : address) {
   require {
     c2 : now < deadline;
     c3 : (let bc = bid[caller].val in
