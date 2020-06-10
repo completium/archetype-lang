@@ -53,6 +53,52 @@ let mk_ac_old_rmed a  = Tdot (Told (Tvar gs), Tvar (mk_ac_rmed_id a))
 
 let mk_ac_sv s a      = Tdoti (s, mk_ac_id a)
 
+(* ---------------------------------------------------------------------------- *)
+let map_lident (i : M.lident) : loc_ident = {
+  obj = i.pldesc;
+  loc = i.plloc;
+}
+
+let map_btype = function
+  | M.Bbool          -> Tybool
+  | M.Bint           -> Tyint
+  | M.Brational      -> Tyrational
+  | M.Bdate          -> Tydate
+  | M.Bduration      -> Tyduration
+  | M.Btimestamp     -> Tyint
+  | M.Bstring        -> Tystring
+  | M.Baddress       -> Tyaddr
+  | M.Brole          -> Tyrole
+  | M.Bcurrency      -> Tytez
+  | M.Bsignature     -> Tysignature
+  | M.Bkey           -> Tykey
+  | M.Bbytes         -> Tybytes
+  | M.Bnat           -> Tyuint
+
+let rec map_mtype (t : M.type_) : loc_typ =
+  with_dummy_loc (match t with
+      | M.Tasset id                           -> Tyasset (map_lident id)
+      | M.Tenum id                            -> Tyenum (map_lident id)
+      | M.Tbuiltin v                          -> map_btype v
+      | M.Tcontainer (Tasset id,M.Partition)  -> Typartition (map_lident id)
+      | M.Tcontainer (Tasset id,M.Collection) -> Tycoll (map_lident id)
+      | M.Tcontainer (Tasset id,M.View)       -> Tyview (map_lident id)
+      | M.Tcontainer (t,M.Collection)         -> Tylist (map_mtype t).obj
+      | M.Toption t                           -> Tyoption (map_mtype t).obj
+      | M.Ttuple l                            -> Tytuple (l |> List.map map_mtype |> List.map deloc)
+      | M.Tunit                               -> Tyunit
+      | M.Tstate                              -> Tystate
+      | M.Tmap (_, _)                         -> Tyunit (* TODO: replace by the right type *)
+      | M.Tstorage                            -> Tystorage
+      | M.Toperation                          -> Tyunit (* TODO: replace by the right type *)
+      | M.Tentry                              -> Tyunit (* TODO: replace by the right type *)
+      | M.Tprog _                             -> Tyunit (* TODO: replace by the right type *)
+      | M.Tvset _                             -> Tyunit (* TODO: replace by the right type *)
+      | M.Ttrace _                            -> Tyunit (* TODO: replace by the right type *)
+      | M.Tcontract _                         -> Tyint
+      | M.Tlist t                             -> Tylist (map_mtype t).obj
+      | _ -> print_endline (Format.asprintf "%a@." M.pp_type_ t); assert false)
+
 (* Use ---------------------------------------------------------------------------*)
 
 let mk_use = Duse (false,[gArchetypeDir;gArchetypeLib],None) |> loc_decl |> deloc
@@ -455,13 +501,14 @@ let extract_args test =
 
 let mk_select_name prefix m asset test = prefix^"select_" ^ asset ^ "_" ^ (string_of_int (M.Utils.get_select_idx m asset test))
 
-let mk_vselect m asset test mlw_test only_formula =
+let mk_vselect m asset test mlw_test only_formula args =
   let id =  mk_select_name "v" m asset test in
   let (key,_) = M.Utils.get_asset_key m asset in
+  let args : (string * string abstract_type) list = List.map (fun (i,t) -> (i, (map_mtype t|> unloc_type))) args in
   let decl = Dfun {
       name     = id;
       logic    = if only_formula then Logic else NoMod;
-      args     = (extract_args test |> List.map (fun (_,a,b) -> a,b)) @ ["v",Tyview asset; "c", Tycoll asset];
+      args     = (extract_args test |> List.map (fun (_,a,b) -> a,b)) @ args @ ["v",Tyview asset; "c", Tycoll asset];
       returns  = Tyview asset;
       raises   = [];
       variants = [];
@@ -496,13 +543,14 @@ let mk_vselect m asset test mlw_test only_formula =
     } in
   decl
 
-let mk_cselect m asset test mlw_test only_formula =
+let mk_cselect m asset test mlw_test only_formula args =
   let id =  mk_select_name "c" m asset test in
   let (key,_) = M.Utils.get_asset_key m asset in
+  let args = List.map (fun (i,t) -> (i, map_mtype t |> unloc_type)) args in
   let decl = Dfun {
       name     = id;
       logic    = if only_formula then Logic else NoMod;
-      args     = (extract_args test |> List.map (fun (_,a,b) -> a,b)) @ ["c", Tycoll asset];
+      args     = (extract_args test |> List.map (fun (_,a,b) -> a,b)) @ args @ ["c", Tycoll asset];
       returns  = Tyview asset;
       raises   = [];
       variants = [];
@@ -554,11 +602,6 @@ let cap s = mk_loc s.loc (String.capitalize_ascii s.obj)
 
 (* Map model term -------------------------------------------------------------*)
 
-let map_lident (i : M.lident) : loc_ident = {
-  obj = i.pldesc;
-  loc = i.plloc;
-}
-
 let map_lidents = List.map map_lident
 
 let rec type_to_init m (typ : loc_typ) : loc_term =
@@ -573,46 +616,6 @@ let rec type_to_init m (typ : loc_typ) : loc_term =
       | Tytuple l     -> Ttuple (List.map (type_to_init m) (List.map with_dummy_loc l))
       | Tybool        -> Ttrue
       | _             -> Tint Big_int.zero_big_int)
-
-let map_btype = function
-  | M.Bbool          -> Tybool
-  | M.Bint           -> Tyint
-  | M.Brational      -> Tyrational
-  | M.Bdate          -> Tydate
-  | M.Bduration      -> Tyduration
-  | M.Btimestamp     -> Tyint
-  | M.Bstring        -> Tystring
-  | M.Baddress       -> Tyaddr
-  | M.Brole          -> Tyrole
-  | M.Bcurrency      -> Tytez
-  | M.Bsignature     -> Tysignature
-  | M.Bkey           -> Tykey
-  | M.Bbytes         -> Tybytes
-  | M.Bnat           -> Tyuint
-
-let rec map_mtype (t : M.type_) : loc_typ =
-  with_dummy_loc (match t with
-      | M.Tasset id                           -> Tyasset (map_lident id)
-      | M.Tenum id                            -> Tyenum (map_lident id)
-      | M.Tbuiltin v                          -> map_btype v
-      | M.Tcontainer (Tasset id,M.Partition)  -> Typartition (map_lident id)
-      | M.Tcontainer (Tasset id,M.Collection) -> Tycoll (map_lident id)
-      | M.Tcontainer (Tasset id,M.View)       -> Tyview (map_lident id)
-      | M.Tcontainer (t,M.Collection)         -> Tylist (map_mtype t).obj
-      | M.Toption t                           -> Tyoption (map_mtype t).obj
-      | M.Ttuple l                            -> Tytuple (l |> List.map map_mtype |> deloc)
-      | M.Tunit                               -> Tyunit
-      | M.Tstate                              -> Tystate
-      | M.Tmap (_, _)                         -> Tyunit (* TODO: replace by the right type *)
-      | M.Tstorage                            -> Tystorage
-      | M.Toperation                          -> Tyunit (* TODO: replace by the right type *)
-      | M.Tentry                              -> Tyunit (* TODO: replace by the right type *)
-      | M.Tprog _                             -> Tyunit (* TODO: replace by the right type *)
-      | M.Tvset _                             -> Tyunit (* TODO: replace by the right type *)
-      | M.Ttrace _                            -> Tyunit (* TODO: replace by the right type *)
-      | M.Tcontract _                         -> Tyint
-      | M.Tlist t                             -> Tylist (map_mtype t).obj
-      | _ -> print_endline (Format.asprintf "%a@." M.pp_type_ t); assert false)
 
 let map_record_field_type (t : M.type_) : loc_typ =
   match t with
@@ -1244,14 +1247,17 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     (* access *)
 
     | Mdot (e, i) -> Tdot (map_mterm m ctx e, mk_loc (loc i) (Tvar (map_lident i))) (* FIXME *)
-    | Mdotassetfield (_an, _k, _fn) -> error_not_translated "Mdotassetfield"
+    | Mdotassetfield (an, k, fn) ->
+      Tdot(
+        with_dummy_loc (Tapp (loc_term (Tvar ("get_"^(unloc an))),[map_mterm m ctx k])),
+        loc_term (Tvar (unloc fn)))
     | Mdotcontract       _ -> error_not_translated "Mdotcontract"
     | Maccestuple        _ -> error_not_translated "Maccestuple"
 
     (* comparison operators *)
 
-    | Mequal (l, r) -> Teq (with_dummy_loc Tyint,map_mterm m ctx l,map_mterm m ctx r)
-    | Mnequal (l, r) -> Tneq (with_dummy_loc Tyint,map_mterm m ctx l,map_mterm m ctx r)
+    | Mequal (l, r) -> Teq (map_mtype l.type_,map_mterm m ctx l,map_mterm m ctx r)
+    | Mnequal (l, r) -> Tneq (map_mtype l.type_,map_mterm m ctx l,map_mterm m ctx r)
     | Mgt (l, r) -> Tgt (with_dummy_loc Tyint, map_mterm m ctx l, map_mterm m ctx r)
     | Mge (l, r) -> Tge (with_dummy_loc Tyint, map_mterm m ctx l, map_mterm m ctx r)
     | Mlt (l, r) -> Tlt (with_dummy_loc Tyint, map_mterm m ctx l, map_mterm m ctx r)
@@ -1324,20 +1330,23 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Mget (an, _c, k) -> Tapp (loc_term (Tvar ("get_" ^ an)), [map_mterm m ctx k])
 
-    | Mselect (a, CKview l, _la, lb, _a) ->
+    | Mselect (a, CKview l, la, lb, _a) ->
       let args = extract_args lb in
       let id = mk_select_name "v" m a lb in
       let argids = args |> List.map (fun (e, _, _) -> e) |> List.map (map_mterm m ctx) in
-      Tapp (loc_term (Tvar id), argids @ [map_mterm m ctx l; loc_term (mk_ac a)])
-    | Mselect (a, CKcoll, _la, lb, _a) ->
+      let args = List.map (fun (i,_) -> loc_term (Tvar i)) la in
+      Tapp (loc_term (Tvar id), argids @ args @ [map_mterm m ctx l; loc_term (mk_ac a)])
+    | Mselect (a, CKcoll, la, lb, _a) ->
       let args = extract_args lb in
       let id = mk_select_name "c" m a lb in
       let argids = args |> List.map (fun (e, _, _) -> e) |> List.map (map_mterm m ctx) in
-      Tapp (loc_term (Tvar id), argids @ [loc_term (mk_ac a)])
-    | Msort               (a, CKview c,l) -> Tsort (with_dummy_loc (mk_sort_clone_id a l),map_mterm m ctx c,loc_term (mk_ac a))
-    | Msort _ -> error_not_translated "Msort"
+      let args = List.map (fun (i,_) -> loc_term (Tvar i)) la in
+      Tapp (loc_term (Tvar id), argids @ args @ [loc_term (mk_ac a)])
+    | Msort (a, CKview c,l) -> Tvsort (with_dummy_loc (mk_sort_clone_id a l),map_mterm m ctx c,loc_term (mk_ac a))
+    | Msort (a, CKcoll,l) -> Tcsort (with_dummy_loc (mk_sort_clone_id a l), loc_term (mk_ac a))
 
-    | Mcontains (a, _, r) -> Tapp (loc_term (Tvar ("contains_" ^ a)), [map_mterm m ctx r])
+    | Mcontains (a, CKview v, r) -> Tvcontains (with_dummy_loc a, map_mterm m ctx r, map_mterm m ctx v)
+    | Mcontains (a, CKcoll, r) -> Tccontains (with_dummy_loc a, map_mterm m ctx r, loc_term (mk_ac a) )
 
     | Mnth (n, CKview c,k) -> Tapp (loc_term (Tvar ("vnth_" ^ n)),[map_mterm m ctx c; map_mterm m ctx k])
     | Mnth (n, CKcoll,k) -> Tapp (loc_term (Tvar ("cnth_" ^ n)),[loc_term (mk_ac n); map_mterm m ctx k])
@@ -1348,9 +1357,12 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let cloneid = mk_sum_clone_id m a f in
       let col = mk_ac_ctx a ctx in
       Tvsum(with_dummy_loc cloneid,map_mterm m ctx v,col)
-    | Msum _ -> error_not_translated "Msum"
+    | Msum (a, CKcoll,f) ->
+      let cloneid = mk_sum_clone_id m a f in
+      let col = mk_ac_ctx a ctx in
+      Tcsum(with_dummy_loc cloneid,col)
     | Mhead (n, CKview c, v) -> Tvhead(with_dummy_loc n, map_mterm m ctx v, map_mterm m ctx c)
-    | Mhead (n, CKcoll, v) -> Tvhead(with_dummy_loc n, map_mterm m ctx v, loc_term (mk_ac n))
+    | Mhead (n, CKcoll, v) -> Tchead(with_dummy_loc n, map_mterm m ctx v, loc_term (mk_ac n))
     | Mtail  (n, CKview c, v) -> Tvtail(with_dummy_loc n, map_mterm m ctx v, map_mterm m ctx c)
     | Mtail  (n, CKcoll, v) -> Tctail(with_dummy_loc n, map_mterm m ctx v, loc_term (mk_ac n))
 
@@ -1371,8 +1383,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     (* list api expression *)
 
-    | Mlistprepend        _ -> error_not_translated "Mlistprepend"
-    | Mlistcontains       _ -> error_not_translated "Mlistcontains"
+    | Mlistprepend (_, l, e) -> Tapp (loc_term (Tvar "lprepend"),[map_mterm m ctx l; map_mterm m ctx e])
+    | Mlistcontains (_,l,e) -> Tapp (loc_term (Tvar "lcontains"),[map_mterm m ctx l; map_mterm m ctx e])
     | Mlistcount (_, l) -> Tapp (loc_term (Tvar "lcard"),[map_mterm m ctx l])
     | Mlistnth (_,n,l) -> Tapp (loc_term (Tvar "lnth"),[map_mterm m ctx l;map_mterm m ctx n])
 
@@ -1414,10 +1426,10 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     (* crypto functions *)
 
-    | Mblake2b        _ -> error_not_translated "Mblake2b"
-    | Msha256         _ -> error_not_translated "Msha256"
-    | Msha512         _ -> error_not_translated "Msha512"
-    | Mchecksignature _ -> error_not_translated "Mchecksignature"
+    | Mblake2b x -> Tapp (loc_term (Tvar "blake2b"),[map_mterm m ctx x])
+    | Msha256  x -> Tapp (loc_term (Tvar "sha256"),[map_mterm m ctx x])
+    | Msha512  x -> Tapp (loc_term (Tvar "sha512"),[map_mterm m ctx x])
+    | Mchecksignature (k,s,b) -> Tapp (loc_term (Tvar "check_signature"),[map_mterm m ctx k;map_mterm m ctx s;map_mterm m ctx b])
 
 
     (* constants *)
@@ -1509,9 +1521,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     (* quantifiers *)
 
     | Mforall (i, t, None, b) ->
-      let asset = M.Utils.get_asset_type (M.mk_mterm (M.Mbool false) t) in
+      let typ = map_mtype t in
       Tforall (
-        [[i |> map_lident],loc_type (Tyasset asset)],
+        [[i |> map_lident],typ],
         map_mterm m ctx b)
 
     | Mforall (i, t, Some coll, b) ->
@@ -1563,7 +1575,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let id = mk_select_name "c" m a r in
       let argids = args |> List.map (fun (e, _, _) -> e) |> List.map (map_mterm m ctx) in
       Tapp (loc_term (Tvar id), argids @ [map_mterm m ctx l; loc_term (mk_ac a)])
-    | Mapifsort (a,c,l) -> Tsort (with_dummy_loc (mk_sort_clone_id a l),map_mterm m ctx c,loc_term (mk_ac a))
+    | Mapifsort (a,c,l) -> Tvsort (with_dummy_loc (mk_sort_clone_id a l),map_mterm m ctx c,loc_term (mk_ac a))
     | Mapifcontains  (a, _, r) ->
       begin match ctx.lctx with
         | Inv ->
@@ -2129,17 +2141,17 @@ let mk_add_asset m asset key : decl = Dfun {
       ];
   }
 
-let mk_rm_sum_ensures m a e =
+let mk_rm_sum_ensures m prefix a _e =
   List.fold_left (fun acc idx ->
       acc @ [{
           id = "remove_" ^ a ^ "_sum_post";
-          form = Teq (Tyint,
+          form = prefix (Teq (Tyint,
                       mk_sum_from_col a idx (mk_ac a),
                       Tminus (Tyint,
                               mk_sum_from_col a idx (mk_ac_old a),
                               Tapp(
                                 Tvar (mk_get_sum_value_id a idx),
-                                [Tvar e])))
+                                [Tvar "asset"]))))
         }]) [] (M.Utils.get_sum_idxs m a)
 
 let mk_clear_sum_ensures m a =
@@ -2213,7 +2225,7 @@ let mk_rm_ensures m p a e =
                           Tsingl (a,
                                   Tvar "asset"))))
     }
-  ] @ (mk_rm_sum_ensures m a e) @ (mk_rm_count_ensures m a)
+  ] @ (mk_rm_sum_ensures m mk_cond a e) @ (mk_rm_count_ensures m a)
 
 let mk_clear_ensures m p a =
   [
@@ -2662,15 +2674,15 @@ let mk_storage_api (m : M.model) records =
           (*mk_rm_asset           pa.pldesc (pt |> map_btype);*)
           mk_rm_field m (is_partition m n f) n t f pa pk
         ]
-      | M.APIAsset (Contains (n, _)) ->
+      (* | M.APIAsset (Contains (n, _)) ->
         let t         =  M.Utils.get_asset_key m n |> snd |> map_btype in
-        acc @ [ mk_contains n t ]
-      | M.APIAsset (Select (asset, View, _, test)) ->
+        acc @ [ mk_contains n t ] *)
+      | M.APIAsset (Select (asset, View, args, test)) ->
         let mlw_test = map_mterm m init_ctx test in
-        acc @ [ mk_vselect m asset test (mlw_test |> unloc_term) (match sc.api_loc with | OnlyFormula -> true | ExecFormula | OnlyExec -> false) ]
-      | M.APIAsset (Select (asset, Coll, _, test)) ->
+        acc @ [ mk_vselect m asset test (mlw_test |> unloc_term) (match sc.api_loc with | OnlyFormula -> true | ExecFormula | OnlyExec -> false) args ]
+      | M.APIAsset (Select (asset, Coll, args, test)) ->
         let mlw_test = map_mterm m init_ctx test in
-        acc @ [ mk_cselect m asset test (mlw_test |> unloc_term) (match sc.api_loc with | OnlyFormula -> true | ExecFormula | OnlyExec -> false) ]
+        acc @ [ mk_cselect m asset test (mlw_test |> unloc_term) (match sc.api_loc with | OnlyFormula -> true | ExecFormula | OnlyExec -> false) args ]
       | M.APIAsset (Sort (asset, _, field)) ->
         acc @ [ mk_cmp_function m asset field; mk_sort_clone m asset field]
       | M.APIAsset (Clear (n, _ck)) ->

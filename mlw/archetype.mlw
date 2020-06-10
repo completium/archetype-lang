@@ -10,6 +10,7 @@ theory Types
   type date    = int
   type astring = int
   type bytes   = int
+  type signature = int
 
   exception Break
   exception NotFound
@@ -185,6 +186,7 @@ module Utils
 
   (* ----------------------------------------------------------------------- *)
   (* List *)
+  use list.List as A
   use list.Length as L
   use list.Nth as N
 
@@ -197,6 +199,27 @@ module Utils
   | Some e -> e
   | None -> raise NotFound
   end
+
+  let rec function lcontains l a
+  =
+  match l with
+  | A.Nil -> false
+  | A.Cons e tl -> a = e || lcontains tl a
+  end
+
+  let function lprepend l a
+  = A.Cons a l
+
+  (* ----------------------------------------------------------------------- *)
+  (* crypto *)
+  let function blake2b (b : bytes) : bytes = b
+  let function sha256 (b : bytes) : bytes = b
+  let function sha512 (b : bytes) : bytes = b
+  let check_signature (_k : key) (_s : signature) (_b : bytes) = true
+
+  (* ----------------------------------------------------------------------- *)
+  (* bool *)
+  let function neq_bool (a : bool) (b : bool) : bool = not (a && b)
 
 end
 

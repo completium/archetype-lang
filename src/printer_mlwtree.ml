@@ -293,8 +293,12 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "%a.csum %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
-  | Tsort (i,e1,e2) ->
-    Format.fprintf fmt "%a.sort %a %a"
+  | Tcsort (i,e1) ->
+    Format.fprintf fmt "%a.csort %a"
+      pp_str (String.capitalize_ascii i)
+      (pp_with_paren (pp_term outer pos)) e1
+  | Tvsort (i,e1,e2) ->
+    Format.fprintf fmt "%a.vsort %a %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
@@ -312,8 +316,12 @@ let rec pp_term outer pos fmt = function
       pp_str (String.capitalize_ascii a)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
+  | Teq (Tybool, e1, e2) ->
+    Format.fprintf fmt "%a && %a" (pp_term outer pos) e1 (pp_term outer pos) e2
   | Teq (_, e1, e2) ->
     Format.fprintf fmt "%a = %a" (pp_term outer pos) e1 (pp_term outer pos) e2
+  | Tneq (Tybool, e1, e2) ->
+    Format.fprintf fmt "not (%a && %a)" (pp_term outer pos) e1 (pp_term outer pos) e2
   | Tneq (_, e1, e2) ->
     Format.fprintf fmt "%a <> %a" (pp_term outer pos) e1 (pp_term outer pos) e2
   | Tunion (i, e1, e2) ->

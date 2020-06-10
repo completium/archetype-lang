@@ -3152,7 +3152,7 @@ end = struct
   let type_to_asset = function
     | Tasset n -> n |> unloc
     | Tcontainer (Tasset n, _) -> n |> unloc
-    | _ -> emit_error NotanAssetType
+    | _ as t -> Format.printf "%a" pp_type_ t; emit_error NotanAssetType
 
   let get_asset_type (t : mterm) : ident = type_to_asset t.type_
 

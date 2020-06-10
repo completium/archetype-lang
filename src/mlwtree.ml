@@ -113,7 +113,8 @@ type ('e,'t,'i) abstract_term =
   | Tset    of 'i * 'e * 'e * 'e
   | Tvsum    of 'i * 'e * 'e
   | Tcsum    of 'i * 'e
-  | Tsort   of 'i * 'e * 'e
+  | Tcsort   of 'i * 'e
+  | Tvsort   of 'i * 'e * 'e
   | Tcoll   of 'i * 'e
   | Tassign of 'e * 'e
   | Traise  of exn
@@ -397,7 +398,8 @@ and map_abstract_term
   | Tset (i, e1,e2,e3) -> Tset (map_i i, map_e e1, map_e e2, map_e e3)
   | Tvsum (i,e1,e2)    -> Tvsum (map_i i, map_e e1, map_e e2)
   | Tcsum (i,e1)     -> Tcsum (map_i i, map_e e1)
-  | Tsort (i,e1,e2)    -> Tsort (map_i i, map_e e1, map_e e2)
+  | Tcsort (i,e1)    -> Tcsort (map_i i, map_e e1)
+  | Tvsort (i,e1,e2)    -> Tvsort (map_i i, map_e e1, map_e e2)
   | Tcoll (i, e)       -> Tcoll (map_i i, map_e e)
   | Tassign (e1,e2)    -> Tassign (map_e e1, map_e e2)
   | Traise e           -> Traise e
@@ -795,7 +797,8 @@ let compare_abstract_term
   | Tset (i1,e1,e2,e3), Tset (i2,f1,f2,f3) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2 && cmpe e3 f3
   | Tcsum (i1,e1), Tcsum (i2,f1) -> cmpi i1 i2 && cmpe e1 f1
   | Tvsum (i1,e1,e2), Tvsum (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
-  | Tsort (i1,e1,e2), Tsort (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
+  | Tcsort (i1,e1), Tcsort (i2,f1) -> cmpi i1 i2 && cmpe e1 f1
+  | Tvsort (i1,e1,e2), Tvsort (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tcoll (i1,e1), Tcoll (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tassign (e1,e2), Tassign (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
   | Traise e1, Traise e2 -> compare_exn e1 e2
