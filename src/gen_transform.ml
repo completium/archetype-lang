@@ -2402,7 +2402,7 @@ let replace_api_view_by_col (model : model) : model =
       let n = aux ctx n in
       mk_mterm (Mtail (an, CKcoll, n)) mt.type_
 
-    | Mtail (an, CKview c, n) when is_col c ->
+    | Mtail (an, CKview c, n) when is_field c ->
       let c = aux ctx c |> remove_cast in
       let n = aux ctx n in
       mk_mterm (Mtail (an, CKfield c, n)) mt.type_
