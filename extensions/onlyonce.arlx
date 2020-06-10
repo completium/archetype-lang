@@ -1,10 +1,10 @@
 archetype extension onlyonce (
 
-  action[%onlyonce%] tr ()
+  entry[%onlyonce%] tr ()
 
 ) {
 
-  action tr () {
+  entry tr () {
     specification {
       variable call_count : int = 0
       shadow effect {

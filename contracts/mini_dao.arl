@@ -5,7 +5,7 @@ asset shares identified by addr {
   value : tez
 }
 
-action withdraw () {
+entry withdraw () {
   specification {
     postcondition p1 {
       let some s = shares.get(caller) in

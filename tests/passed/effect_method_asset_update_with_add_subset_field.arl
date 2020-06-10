@@ -12,7 +12,7 @@ asset my_asset identified by id {
   { "my_id"; 0; [] }
 }
 
-action exec () {
+entry exec () {
   effect {
     my_asset.update ("my_id", {value = 3; mysubset += [{str = "str1"}; {str = "str2"}; {str = "str3"}] })
     (*

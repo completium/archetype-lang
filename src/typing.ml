@@ -408,8 +408,8 @@ let pp_error_desc fmt e =
   | ForeignState (i1, i2)              -> pp "Expecting a state of %a, not %a" pp_ident (Option.get_dfl "<global>" i1) pp_ident (Option.get_dfl "<global>" i2)
   | FormulaExpected                    -> pp "Formula expected"
   | IncompatibleTypes (t1, t2)         -> pp "Incompatible types: found '%a' but expected '%a'" Printer_ast.pp_ptyp t1 Printer_ast.pp_ptyp t2
-  | InvalidActionDescription           -> pp "Invalid action description"
-  | InvalidActionExpression            -> pp "Invalid action expression"
+  | InvalidActionDescription           -> pp "Invalid entry description"
+  | InvalidActionExpression            -> pp "Invalid entry expression"
   | InvalidArcheTypeDecl               -> pp "Invalid Archetype declaration"
   | InvalidAssetCollectionExpr ty      -> pp "Invalid asset collection expression: %a" M.pp_ptyp ty
   | InvalidAssetExpression             -> pp "Invalid asset expression"
@@ -426,7 +426,7 @@ let pp_error_desc fmt e =
   | InvalidMethodInFormula             -> pp "Invalid method in formula"
   | InvalidNumberOfArguments (n1, n2)  -> pp "Invalid number of arguments: found '%i', but expected '%i'" n1 n2
   | InvalidRoleExpression              -> pp "Invalid role expression"
-  | InvalidSecurityAction              -> pp "Invalid security action"
+  | InvalidSecurityAction              -> pp "Invalid security entry"
   | InvalidSecurityRole                -> pp "Invalid security role"
   | InvalidSortingExpression           -> pp "Invalid sorting expression"
   | InvalidStateExpression             -> pp "Invalid state expression"
@@ -467,7 +467,7 @@ let pp_error_desc fmt e =
   | SpecOperatorInExpr                 -> pp "Specification operator in expression"
   | TransferWithoutDest                -> pp "Transfer without destination"
   | UninitializedVar                   -> pp "This variable declaration is missing an initializer"
-  | UnknownAction i                    -> pp "Unknown action: %a" pp_ident i
+  | UnknownAction i                    -> pp "Unknown entry: %a" pp_ident i
   | UnknownAsset i                     -> pp "Unknown asset: %a" pp_ident i
   | UnknownContractEntryPoint (c, m)   -> pp "Unknown contract entry point: %s.%s" c m
   | UnknownEnum i                      -> pp "Unknown enum: %a" pp_ident i
@@ -2641,7 +2641,7 @@ and for_formula (env : env) (topf : PT.expr) : M.pterm =
 (* -------------------------------------------------------------------- *)
 and for_action_description (env : env) (sa : PT.security_arg) : M.action_description =
   match unloc sa with
-  | Sident { pldesc = "anyaction" } ->
+  | Sident { pldesc = "anyentry" } ->
     M.ADAny
 
   | Sapp (act, [{ pldesc = PT.Sident asset }]) -> begin
@@ -2667,7 +2667,7 @@ and for_security_action (env : env) (sa : PT.security_arg) : M.security_action =
   | Sident id ->
     begin
       match unloc id with
-      | "anyaction" -> Sany
+      | "anyentry" -> Sany
       | _           ->
         let ad = Env.TAction.lookup env (unloc id) in
 
@@ -3241,11 +3241,11 @@ module SecurityPred = struct
 
   let preds = [
     "only_by_role",           vd2 (fun x y   -> M.SonlyByRole         (x, y)   ) ActionDesc Role;
-    "only_in_action",         vd2 (fun x y   -> M.SonlyInAction       (x, y)   ) ActionDesc Action;
-    "only_by_role_in_action", vd3 (fun x y z -> M.SonlyByRoleInAction (x, y, z)) ActionDesc Role Action;
+    "only_in_entry",          vd2 (fun x y   -> M.SonlyInAction       (x, y)   ) ActionDesc Action;
+    "only_by_role_in_entry",  vd3 (fun x y z -> M.SonlyByRoleInAction (x, y, z)) ActionDesc Role Action;
     "not_by_role",            vd2 (fun x y   -> M.SnotByRole          (x, y)   ) ActionDesc Role;
-    "not_in_action",          vd2 (fun x y   -> M.SnotInAction        (x, y)   ) ActionDesc Action;
-    "not_by_role_in_action",  vd3 (fun x y z -> M.SnotByRoleInAction  (x, y, z)) ActionDesc Role Action;
+    "not_in_entry",           vd2 (fun x y   -> M.SnotInAction        (x, y)   ) ActionDesc Action;
+    "not_by_role_in_entry",   vd3 (fun x y z -> M.SnotByRoleInAction  (x, y, z)) ActionDesc Role Action;
     "transferred_by",         vd1 (fun x     -> M.StransferredBy      (x)      ) ActionDesc;
     "transferred_to",         vd1 (fun x     -> M.StransferredTo      (x)      ) ActionDesc;
     "no_storage_fail",        vd1 (fun x     -> M.SnoStorageFail      (x)      ) Action;

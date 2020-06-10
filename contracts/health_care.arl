@@ -36,7 +36,7 @@ transition cancel () {
   to Canceled
 }
 
-action[%signedbyall ([patient; insurer])%] register_doctor (docid : address) {
+entry[%signedbyall ([patient; insurer])%] register_doctor (docid : address) {
   (*signed by [insurer; patient]*)
   require {
      r1 : state = Running;
@@ -46,7 +46,7 @@ action[%signedbyall ([patient; insurer])%] register_doctor (docid : address) {
   }
 }
 
-action declare_consultation (v : tez) {
+entry declare_consultation (v : tez) {
   require {
      r2 : state = Running;
      r3 : doctor.contains(caller);
@@ -57,7 +57,7 @@ action declare_consultation (v : tez) {
   }
 }
 
-action pay_doctor (docid : address) {
+entry pay_doctor (docid : address) {
   specification {
     postcondition idem_balance_pay_doctor {
       balance = before.balance
@@ -77,7 +77,7 @@ action pay_doctor (docid : address) {
   }
 }
 
-action pay_fee () {
+entry pay_fee () {
   specification {
     postcondition idem_balance_pay_fee {
       balance = before.balance
@@ -98,7 +98,7 @@ action pay_fee () {
   }
 }
 
-action pay_consulation () {
+entry pay_consulation () {
   specification {
     idem_balance_pay_consultation : balance = before.balance;
   }

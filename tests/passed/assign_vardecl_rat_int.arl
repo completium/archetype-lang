@@ -2,7 +2,7 @@ archetype assign_vardecl_rat_int
 
 variable res : rational = 0
 
-action exec () {
+entry exec () {
   effect {
     res := 1
   }

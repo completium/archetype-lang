@@ -96,7 +96,7 @@ function transition_to_finished () : gstate {
     end
 }
 
-action contribute () {
+entry contribute () {
 
   (* specification {
     postcondition p1 {
@@ -146,7 +146,7 @@ action contribute () {
 (* the onlyonce extension specifies that withdraw action can be
   executed only once, that is a contributor can withdraw only once. *)
 
-action[%onlyonce%] withdraw () {
+entry[%onlyonce%] withdraw () {
   require {
     c5 : vstate = Round2Finished;
     c6 : nb_tez_raised <= soft_cap;

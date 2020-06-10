@@ -2,7 +2,7 @@ archetype expr_lit_rat_div_neg
 
 variable res : rational = 0 div 1
 
-action exec () {
+entry exec () {
   specification {
     s0: res = -1 div 2;
   }

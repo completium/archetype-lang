@@ -2,7 +2,7 @@ archetype lang_cmp
 
 variable res : bool = false
 
-action exec () {
+entry exec () {
   effect {
     res := 1 =  2;
     res := 1 <> 2;

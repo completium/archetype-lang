@@ -196,7 +196,7 @@ function compute_expected (d : date) : tez {
 (* PAYMENT action *)
 variable actual_payment : tez = 0tz
 
-action pay_note () {
+entry pay_note () {
    called by issuer
    effect {
       actual_payment += transferred
@@ -204,7 +204,7 @@ action pay_note () {
 }
 
 (* action add_fixing (f[%signedby (oracle)%] : fixing) { *)
-action add_fixing (ffobservation : date, fbac : rational, fsg : rational, fubs : rational) {
+entry add_fixing (ffobservation : date, fbac : rational, fsg : rational, fubs : rational) {
   effect {
     fixing.add({ffobservation; fbac; fsg; fubs})
   }

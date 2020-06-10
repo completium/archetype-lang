@@ -15,7 +15,7 @@ asset owner identified by addr {
     miles : mile partition;
 }
 
-action add (ow : address, newmile_id : string, newmile_expiration : date, newmile_quantity : int) {
+entry add (ow : address, newmile_id : string, newmile_expiration : date, newmile_quantity : int) {
     called by admin
 	failif {
 	    f1: mile.contains(newmile_id)
@@ -28,7 +28,7 @@ action add (ow : address, newmile_id : string, newmile_expiration : date, newmil
 	}
 }
 
-action consume (ow : address, qty : int) {
+entry consume (ow : address, qty : int) {
     specification {
         postcondition p0 {
              mile.sum(the.quantity) = before.mile.sum(the.quantity) - qty

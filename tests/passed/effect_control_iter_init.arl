@@ -2,7 +2,7 @@ archetype effect_control_iter_init
 
 variable res : int = 0
 
-action exec () {
+entry exec () {
   specification {
     s0: res = before.res + 5;
   }

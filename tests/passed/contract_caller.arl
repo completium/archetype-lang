@@ -1,19 +1,19 @@
 archetype contract_caller
 
 contract contract_called_sig {
-   action set_value (n : int)
-   action add_value (a : int, b : int)
+   entry set_value (n : int)
+   entry add_value (a : int, b : int)
 }
 variable c : contract_called_sig = @KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm
 
 
-action update_value(n : int) {
+entry update_value(n : int) {
   effect {
     transfer 0tz to c call set_value(n)
   }
 }
 
-action add_one(n : int) {
+entry add_one(n : int) {
   effect {
     transfer 0tz to c call add_value(n, 2)
   }

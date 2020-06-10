@@ -824,7 +824,7 @@ let pp_enum fmt (e : lident enum_struct) =
     (pp_list "@\n" pp_enum_item) e.items
 
 let pp_signature fmt (s : lident signature) =
-  Format.fprintf fmt "action %a (%a)"
+  Format.fprintf fmt "entry %a (%a)"
     pp_id s.name
     (pp_list ", " (fun fmt (id, type_) -> Format.fprintf fmt "%a : %a" pp_id id pp_ptyp type_)) s.args
 

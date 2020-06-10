@@ -6,7 +6,7 @@ asset myasset {
   t3 : int;
 }
 
-action exec() {
+entry exec() {
   effect {
     require(true)
   }

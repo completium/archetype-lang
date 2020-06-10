@@ -10,7 +10,7 @@ asset asset2 {
   val2: bool;
 }
 
-action exec() {
+entry exec() {
   effect {
     require(true)
   }

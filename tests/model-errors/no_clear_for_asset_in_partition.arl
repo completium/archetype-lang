@@ -10,7 +10,7 @@ asset my_asset identified by id {
   col    : o_asset partition;
 }
 
-action exec() {
+entry exec() {
   effect {
     o_asset.clear()
   }

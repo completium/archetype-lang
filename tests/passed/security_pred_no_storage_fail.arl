@@ -7,7 +7,7 @@ asset my_asset identified by id {
   value : int;
 }
 
-action exec () {
+entry exec () {
   effect {
     require true
   }

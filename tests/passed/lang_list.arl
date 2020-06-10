@@ -1,6 +1,6 @@
 archetype lang_list
 
-action exec () {
+entry exec () {
   effect {
     var l : string list = ["1"; "2"; "3"];
 

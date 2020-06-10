@@ -1,6 +1,6 @@
 archetype cast
 
-action exec () {
+entry exec () {
   effect {
     var r1 : rational = 1;
 

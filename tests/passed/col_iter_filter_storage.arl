@@ -5,7 +5,7 @@ asset myasset {
   v : string;
 }
 
-action exec () {
+entry exec () {
   effect {
     var col = myasset.select(id % 2 = 0);
     for c in col do

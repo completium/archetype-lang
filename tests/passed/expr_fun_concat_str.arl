@@ -2,7 +2,7 @@ archetype expr_fun_concat_str
 
 variable res : string = ""
 
-action exec () {
+entry exec () {
   specification {
     s0: res = "abcdef";
   }

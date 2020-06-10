@@ -5,7 +5,7 @@ asset my_asset {
   value : int;
 }
 
-action exec () {
+entry exec () {
   effect {
     var x : bool = true;
     var y : bool = false;

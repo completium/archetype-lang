@@ -1,6 +1,6 @@
 archetype expr_formula_at
 
-action exec (x : int) {
+entry exec (x : int) {
 
   specification {
     s: at(lbl).x = 0;

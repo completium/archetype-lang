@@ -7,4 +7,4 @@ asset u identified by addr {
 	u1		: mg < 10.0 and mg > 0.0;
 }
 
-action start () { effect { () } }
+entry start () { effect { () } }

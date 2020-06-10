@@ -8,7 +8,7 @@ asset my_asset {
   {"id"; 1; 2}
 }
 
-action exec (k : int) {
+entry exec (k : int) {
   effect {
     var local = my_asset["id"].f1 * my_asset["id"].f2;
     require (local > 0);

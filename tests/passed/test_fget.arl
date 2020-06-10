@@ -14,7 +14,7 @@ asset owner identified by addr {
 }
 
 
-action exec (ow : address) {
+entry exec (ow : address) {
     specification {
 
       assert a0 {

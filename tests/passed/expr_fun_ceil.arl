@@ -3,7 +3,7 @@ archetype expr_fun_ceil
 variable r0 : int = 0
 variable r1 : int = 0
 
-action exec () {
+entry exec () {
   specification {
     s0: r0 = 2 and r1 = -1;
   }

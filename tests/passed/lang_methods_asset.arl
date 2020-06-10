@@ -11,7 +11,7 @@ asset my_asset identified by id {
   col : asset_0 partition = [];
 }
 
-action exec () {
+entry exec () {
   effect {
     var asset0_id = "id0";
 

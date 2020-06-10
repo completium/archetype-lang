@@ -27,7 +27,7 @@ asset certification {
 constant dtkl : int = 1
 constant dtki : int = 1
 
-action register_learner (do_add : bool) {
+entry register_learner (do_add : bool) {
   effect {
    if (do_add) then
    (if (not learner.contains(caller)) then
@@ -42,7 +42,7 @@ action register_learner (do_add : bool) {
   }
 }
 
-action register_learners (llid : role, lltokens : int, do_add : bool) {
+entry register_learners (llid : role, lltokens : int, do_add : bool) {
   effect {
     if do_add then
        institution[caller].ilearners.add({llid; lltokens})
@@ -51,7 +51,7 @@ action register_learners (llid : role, lltokens : int, do_add : bool) {
   }
 }
 
-action register_institution (do_add : bool) {
+entry register_institution (do_add : bool) {
   effect {
    if (do_add) then
    (if (not institution.contains(caller)) then
@@ -66,7 +66,7 @@ action register_institution (do_add : bool) {
   }
 }
 
-action register_certifier (do_add : bool) {
+entry register_certifier (do_add : bool) {
   effect {
    if (do_add) then
    (if (not certifier.contains(caller)) then
@@ -81,7 +81,7 @@ action register_certifier (do_add : bool) {
   }
 }
 
-action certify (
+entry certify (
   cert_cid : string,
   cert_cdate : date,
   cert_ccer : string,
@@ -102,7 +102,7 @@ action certify (
   }
 }
 
-action transfer_learner_token (nb_tokens : int, dest : address) {
+entry transfer_learner_token (nb_tokens : int, dest : address) {
   require {
     r2: learner.contains(caller);
     r3: learner[caller].ltokens >= nb_tokens;
@@ -112,7 +112,7 @@ action transfer_learner_token (nb_tokens : int, dest : address) {
   }
 }
 
-action transfer_institution_token (nb_tokens : int, dest : address) {
+entry transfer_institution_token (nb_tokens : int, dest : address) {
   require {
     r4: institution.contains(caller);
     r5: institution[caller].itokens >= nb_tokens;

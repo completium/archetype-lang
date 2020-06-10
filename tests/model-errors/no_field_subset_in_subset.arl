@@ -14,7 +14,7 @@ asset c {
   cc : b subset;
 }
 
-action exec () {
+entry exec () {
   effect {
     require(true)
   }

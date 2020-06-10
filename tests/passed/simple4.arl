@@ -1,6 +1,6 @@
 archetype simple4
 
-action exec() {
+entry exec() {
   effect {
     var a : int = 0;
     require (true);

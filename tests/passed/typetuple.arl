@@ -2,7 +2,7 @@ archetype typetuple
 
 variable v : (int * string) = (1, "")
 
-action exec() {
+entry exec() {
   effect {
     require(true)
   }

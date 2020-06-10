@@ -2,7 +2,7 @@ archetype expr_lit_rat_dec
 
 variable res : rational = 0.0
 
-action exec () {
+entry exec () {
   specification {
     s0: res = 0.5;
   }

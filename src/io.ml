@@ -127,13 +127,13 @@ let resume_on_error last_reduction lex =
 
   | `FoundDeclarationAt checkpoint ->
     let lex =
-      Lexer.skip_until_before (function EOF | CONSTANT | VARIABLE | ENUM | STATES | ASSET | ACTION | TRANSITION | NAMESPACE | CONTRACT -> true | _ -> false) lex
+      Lexer.skip_until_before (function EOF | CONSTANT | VARIABLE | ENUM | STATES | ASSET | ENTRY | TRANSITION | NAMESPACE | CONTRACT -> true | _ -> false) lex
     in
     (lex, checkpoint)
 
   | `FoundNothingAt checkpoint ->
     let lex =
-      Lexer.skip_until_before (function EOF | CONSTANT | VARIABLE | ENUM | STATES | ASSET | ACTION | TRANSITION | NAMESPACE | CONTRACT | RBRACE -> true | _ -> false) lex
+      Lexer.skip_until_before (function EOF | CONSTANT | VARIABLE | ENUM | STATES | ASSET | ENTRY | TRANSITION | NAMESPACE | CONTRACT | RBRACE -> true | _ -> false) lex
     in
     let _, checkpoint =
       List.fold_left (fun (cont, check) x ->

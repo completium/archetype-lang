@@ -2,13 +2,13 @@ archetype simple2
 
 variable n : int = 0
 
-action set_value (i : int) {
+entry set_value (i : int) {
   effect {
     n := i
   }
 }
 
-action inc () {
+entry inc () {
   effect {
     n += 1
   }

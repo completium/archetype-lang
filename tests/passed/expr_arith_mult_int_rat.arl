@@ -2,7 +2,7 @@ archetype expr_arith_mult_int_rat
 
 variable res : rational = 0 div 1
 
-action exec () {
+entry exec () {
   specification {
     s0: res = 3 div 2;
   }

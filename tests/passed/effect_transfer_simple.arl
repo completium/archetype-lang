@@ -1,6 +1,6 @@
 archetype effect_transfer_simple
 
-action exec() {
+entry exec() {
   effect {
     transfer 1tz to @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
   }

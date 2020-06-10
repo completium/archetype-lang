@@ -1,6 +1,6 @@
 archetype test_cmp_bool
 
-action exec() {
+entry exec() {
   effect {
     require (true = true);
     require ((true = true) = true);

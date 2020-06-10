@@ -2,7 +2,7 @@ archetype expr_fun_length_str
 
 variable res : int = 0
 
-action exec () {
+entry exec () {
   specification {
     s0: res = 5;
   }

@@ -2,7 +2,7 @@ archetype expr_lit_opt_some
 
 variable res : int option = none
 
-action exec () {
+entry exec () {
   effect {
     res := some(0)
   }

@@ -4,7 +4,7 @@ asset myasset {
   id: string;
 }
 
-action anaction () {
+entry anaction () {
   specification {
     s1 : let ma = myasset.get("myid") in "myid" = ma.id
   }

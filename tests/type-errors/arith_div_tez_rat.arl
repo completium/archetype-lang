@@ -1,6 +1,6 @@
 archetype arith_div_tez_rat
 
-action main () {
+entry main () {
   effect {
     var v = 1tz / (1 div 2)
   }

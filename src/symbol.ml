@@ -97,6 +97,7 @@ let string_of_token = function
   | EQUAL           -> "EQUAL"
   | EOF             -> "EOF"
   | ENUM            -> "ENUM"
+  | ENTRY           -> "ENTRY"
   | END             -> "END"
   | ELSE            -> "ELSE"
   | EFFECT          -> "EFFECT"
@@ -132,7 +133,6 @@ let string_of_token = function
   | AND             -> "AND"
   | ADDRESS s       -> Printf.sprintf "DURATION(%s)" s
   | ADDED           -> "ADDED"
-  | ACTION          -> "ACTION"
   | ACCEPT_TRANSFER -> "ACCEPT_TRANSFER"
 
 let string_of_symbol = function
@@ -232,6 +232,7 @@ let string_of_symbol = function
   | X (T T_EQUAL) -> "="
   | X (T T_EOF) -> "end-of-file"
   | X (T T_ENUM) -> "enum"
+  | X (T T_ENTRY) -> "entry"
   | X (T T_END) -> "end"
   | X (T T_ELSE) -> "else"
   | X (T T_EFFECT) -> "effect"
@@ -267,7 +268,6 @@ let string_of_symbol = function
   | X (T T_AND) -> "and"
   | X (T T_ADDRESS) -> "an address"
   | X (T T_ADDED) -> "added"
-  | X (T T_ACTION) -> "action"
   | X (T T_ACCEPT_TRANSFER) -> "accept address"
   | X (N N_vc_decl_VARIABLE_) -> "a variable declaration"
   | X (N N_vc_decl_CONSTANT_) -> "a constant declaration"

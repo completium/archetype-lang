@@ -2,7 +2,7 @@ archetype expr_arith_div_dur_dur
 
 variable res : int = 0
 
-action exec () {
+entry exec () {
   specification {
     s0: res = 8;
   }

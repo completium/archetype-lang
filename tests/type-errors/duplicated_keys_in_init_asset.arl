@@ -8,7 +8,7 @@ asset my_asset {
   {0; "str1"}
 }
 
-action exec () {
+entry exec () {
   effect {
     ()
   }

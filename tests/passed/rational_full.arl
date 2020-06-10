@@ -10,14 +10,14 @@ asset anasset {
 }
 
 contract mc {
-  action b(c : rational)
+  entry b(c : rational)
 }
 
 (* function f (r : rational) : rational {
   return r
 } *)
 
-action exec (r3 : rational) {
+entry exec (r3 : rational) {
   effect {
     var dest = anasset[@tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg].id;
     var r4 = 1 div 4;

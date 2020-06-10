@@ -697,7 +697,7 @@ let pp_asset_option fmt opt =
 let pp_signature fmt s =
   match s with
   | Ssignature (id, xs) ->
-    Format.fprintf fmt "action %a (%a)"
+    Format.fprintf fmt "entry %a (%a)"
       pp_id id
       (pp_list ", " (fun fmt (id, type_) -> Format.fprintf fmt "%a : %a" pp_id id pp_type type_)) xs
 
@@ -1008,7 +1008,7 @@ let rec pp_declaration fmt { pldesc = e; _ } =
       (pp_list " " pp_asset_post_option) apo
 
   | Daction (id, args, props, code, exts) ->
-    Format.fprintf fmt "action%a %a%a%a"
+    Format.fprintf fmt "entry%a %a%a%a"
       pp_extensions exts
       pp_id id
       pp_fun_args args

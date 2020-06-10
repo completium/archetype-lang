@@ -2,7 +2,7 @@ archetype before_var
 
 variable v : int = 0
 
-action exec () {
+entry exec () {
   specification {
     s1: before.v = v;
   }

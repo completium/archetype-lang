@@ -5,7 +5,7 @@ enum my_enum =
 | Two
 | Three
 
-action exec () {
+entry exec () {
   effect {
     var e : my_enum = One;
     failif(e = Two and e <> One);

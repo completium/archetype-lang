@@ -11,7 +11,7 @@ asset my_asset identified by id {
 
 variable res : int = 0
 
-action exec (str : string) {
+entry exec (str : string) {
   effect {
     require(my_asset["id0"].value = 1);
     failif(my_asset["id0"].value = 1);

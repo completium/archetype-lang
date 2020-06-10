@@ -1,6 +1,6 @@
 archetype lang_crypto
 
-action exec () {
+entry exec () {
   effect {
     var b : bytes = 0x050100000009617263686574797065;
 
