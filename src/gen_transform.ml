@@ -2337,6 +2337,15 @@ let replace_api_view_by_col (model : model) : model =
       let c = aux ctx c |> remove_cast in
       mk_mterm (Mclear (an, CKfield c)) mt.type_
 
+    | Mget (an, CKview c, k) when is_col c->
+      let k = aux ctx k in
+      mk_mterm (Mget (an, CKcoll, k)) mt.type_
+
+    | Mget (an, CKview c, k) when is_field c ->
+      let c = aux ctx c |> remove_cast in
+      let k = aux ctx k in
+      mk_mterm (Mget (an, CKfield c, k)) mt.type_
+
     | Mselect (an, CKview c, args, body, vs) when is_col c ->
       let body = aux ctx body in
       let vs = List.map (aux ctx) vs in
@@ -2402,7 +2411,7 @@ let replace_api_view_by_col (model : model) : model =
       let n = aux ctx n in
       mk_mterm (Mtail (an, CKcoll, n)) mt.type_
 
-    | Mtail (an, CKview c, n) when is_col c ->
+    | Mtail (an, CKview c, n) when is_field c ->
       let c = aux ctx c |> remove_cast in
       let n = aux ctx n in
       mk_mterm (Mtail (an, CKfield c, n)) mt.type_
