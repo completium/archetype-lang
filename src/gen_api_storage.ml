@@ -41,7 +41,6 @@ let generate_api_storage ?(verif=false) (model : model) : model =
       let is_rat = match mt_type with | Tbuiltin Brational | Ttuple [Tbuiltin Bint; Tbuiltin Bint] -> true | _ -> false in
       let extract_option_type = function | Toption x -> x | _ -> assert false in
       match term.node with
-      | Mapifget (asset_name, _, _)
       | Mget (asset_name, _, _) ->
         [APIAsset (Get asset_name)]
       | Mset (asset_name, _, _, _) ->
@@ -73,36 +72,20 @@ let generate_api_storage ?(verif=false) (model : model) : model =
         [APIAsset (Get asset_name); APIAsset (Remove pa); APIAsset (FieldRemove (asset_name, field_name)); APIAsset (RemoveAll (asset_name, field_name))]
       | Mclear (an , c) ->
         [APIAsset (Clear (an, to_ck c))]
-      | Mapifselect (asset_name, _, la, lb, _) ->
-        [APIAsset (Get asset_name); APIAsset (Select (asset_name, Coll, la, lb))]
       | Mselect (asset_name, c, la, lb, _) ->
         [APIAsset (Get asset_name); APIAsset (Select (asset_name, to_ck c, la, lb))]
-      | Mapifsort (asset_name, _, l) ->
-        [APIAsset (Get asset_name); APIAsset (Sort (asset_name, Coll, l))]
       | Msort (asset_name, c, l) ->
         [APIAsset (Get asset_name); APIAsset (Sort (asset_name, to_ck c, l))]
-      | Mapifcontains (asset_name, _, _) ->
-        [APIAsset (Contains (asset_name, Coll))]
       | Mcontains (asset_name, c, _) ->
         [APIAsset (Contains (asset_name, to_ck c))]
-      | Mapifnth (asset_name, _, _) ->
-        [APIAsset (Get asset_name); APIAsset (Nth (asset_name, Coll))]
       | Mnth (asset_name, c, _) ->
         [APIAsset (Get asset_name); APIAsset (Nth (asset_name, to_ck c))]
-      | Mapifcount (asset_name, _) ->
-        [APIAsset (Count (asset_name, Coll))]
       | Mcount (asset_name, c) ->
         [APIAsset (Count (asset_name, to_ck c))]
-      | Mapifsum (asset_name, _, p) ->
-        [APIAsset (Get asset_name); APIAsset (Sum (asset_name, Coll, p.type_, p))]
       | Msum (asset_name, c, p) ->
         [APIAsset (Get asset_name); APIAsset (Sum (asset_name, to_ck c, p.type_, p))]
-      | Mapifhead (asset_name, _, _) ->
-        [APIAsset (Head (asset_name, Coll))]
       | Mhead (asset_name, c, _) ->
         [APIAsset (Head (asset_name, to_ck c))]
-      | Mapiftail (asset_name, _, _) ->
-        [APIAsset (Tail (asset_name, Coll))]
       | Mtail (asset_name, c, _) ->
         [APIAsset (Tail (asset_name, to_ck c))]
       | Mlistprepend (t, _, _) ->

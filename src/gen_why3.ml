@@ -1010,7 +1010,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mletin ([id], v, _, b, None) ->
       Tletin (M.Utils.is_local_assigned (unloc id) b, map_lident id, None, map_mterm m ctx v, map_mterm m ctx b)
 
-    | Mletin ([id], { node = M.Mapifget (a, {node = M.Msetbefore _; _}, k); type_ = _ }, _, b, Some e) -> (* logical *)
+    (* | Mletin ([id], { node = M.Mget (a, {node = M.Msetbefore _; _}, k); type_ = _ }, _, b, Some e) -> (* logical *)
       let ctx = { ctx with (*old = true;*) localold = ctx.localold @ [unloc id] } in
       Tletin (M.Utils.is_local_assigned (unloc id) b,
               map_lident id,
@@ -1022,9 +1022,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                               Tvar (unloc id),
                               Twitness a)) |> loc_term,
                    map_mterm m ctx b,
-                   Some (map_mterm m ctx e)) |> with_dummy_loc)
+                   Some (map_mterm m ctx e)) |> with_dummy_loc) *)
 
-    | Mletin ([id], { node = M.Mapifget (a,_, k); type_ = _ }, _, b, Some e) -> (* logical *)
+    | Mletin ([id], { node = M.Mget (a, _, k); type_ = _ }, _, b, Some e) -> (* logical *)
       let ctx = ctx in
       Tmatch (Tget (loc_ident a,
                     loc_term (mk_ac a),
@@ -1032,8 +1032,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         Tpsome (map_lident id), map_mterm m ctx b;
         Twild, map_mterm m ctx e
       ])
-    | Mletin ([id], { node = M.Mapifnth (n,c,k); type_ = _ }, _, b, Some e) ->
-      Tmatch (Tcnth (loc_ident n,
+    | Mletin ([id], { node = M.Mnth (n, CKview c,k); type_ = _ }, _, b, Some e) ->
+      Tmatch (Tvnth (loc_ident n,
                     map_mterm m ctx k,
                     map_mterm m ctx c) |> with_dummy_loc,[
           Tpsome (with_dummy_loc "k"), Tmatch(Tget (with_dummy_loc n,
@@ -1568,20 +1568,22 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     (* formula asset collection methods *)
 
-    | Mapifget (a, _c, k) -> Tapp (loc_term (Tvar ("get_" ^ a)),[map_mterm m ctx k])
-    | Mapifpureget (a, k) -> Tfget(with_dummy_loc a, loc_term (mk_ac  a),map_mterm m ctx k)
-    | Mapifsubsetof (n, l, r) ->
+    (* | Mapifget (a, _c, k) -> Tapp (loc_term (Tvar ("get_" ^ a)),[map_mterm m ctx k])
+    | Mapifpureget (a, k) -> Tfget(with_dummy_loc a, loc_term (mk_ac  a),map_mterm m ctx k) *)
+    | Msubsetof (n, l, r) ->
       begin match l with
       | { node = Mcast(_,_,c); type_ = _ } -> Tsubset (with_dummy_loc n, map_mterm m ctx c, map_mterm m ctx r)
       | _ -> Tsubset (with_dummy_loc n, map_mterm m ctx l, map_mterm m ctx r)
       end
-    | Mapifisempty (l, r) ->
+    | Misempty (l, r) ->
       begin match r.type_ with
       | M.Tcontainer (_,View) -> Tvempty (with_dummy_loc l, map_mterm m ctx r)
       | _ -> Tempty (with_dummy_loc l, map_mterm m ctx r)
       end
-    | Mapifselect (a, l, _, r, _) ->  let args = extract_args r in
-      let id = mk_select_name "c" m a r in
+    (* | Mapifselect (a, l, _, r, _) ->  let args = extract_args r in
+      let id = mk_select_name "c" m a r in *)
+    (* | Mapifselect (a, l, _, r, _) ->  let args = extract_args r in
+      let id = mk_select_name m a r in
       let argids = args |> List.map (fun (e, _, _) -> e) |> List.map (map_mterm m ctx) in
       Tapp (loc_term (Tvar id), argids @ [map_mterm m ctx l; loc_term (mk_ac a)])
     | Mapifsort (a,c,l) -> Tvsort (with_dummy_loc (mk_sort_clone_id a l),map_mterm m ctx c,loc_term (mk_ac a))
@@ -1604,6 +1606,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       Tvsum(with_dummy_loc cloneid,map_mterm m ctx v,mk_ac_ctx a ctx)
     | Mapifhead (n,c,v) -> Tchead (with_dummy_loc n, map_mterm m ctx v, map_mterm m ctx c)
     | Mapiftail (n,c,v) -> Tctail (with_dummy_loc n, map_mterm m ctx v, map_mterm m ctx c)
+      Tsum(with_dummy_loc cloneid,map_mterm m ctx v,mk_ac_ctx a ctx)
+    | Mapifhead (n,c,v) -> Thead (with_dummy_loc n, map_mterm m ctx v, map_mterm m ctx c)
+    | Mapiftail (n,c,v) -> Ttail (with_dummy_loc n, map_mterm m ctx v, map_mterm m ctx c) *)
   in
   mk_loc mt.loc t
 and mk_invariants (m : M.model) ctx id (lbl : ident option) lbody =

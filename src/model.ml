@@ -291,18 +291,8 @@ type ('id, 'term) mterm_node  =
   | Msetiterated      of 'term
   | Msettoiterate     of 'term
   (* formula asset collection methods *)
-  | Mapifget          of ident * 'term * 'term (* asset_name * asset collection * value *)
-  | Mapifpureget      of ident * 'term         (* asset_name * value *)
-  | Mapifsubsetof     of ident * 'term * 'term
-  | Mapifisempty      of ident * 'term
-  | Mapifselect       of ident * 'term * (ident * type_) list * 'term * 'term list
-  | Mapifsort         of ident * 'term * (ident * sort_kind) list
-  | Mapifcontains     of ident * 'term * 'term
-  | Mapifnth          of ident * 'term * 'term
-  | Mapifcount        of ident * 'term
-  | Mapifsum          of ident * 'term * 'term
-  | Mapifhead         of ident * 'term * 'term
-  | Mapiftail         of ident * 'term * 'term
+  | Msubsetof         of ident * 'term * 'term
+  | Misempty          of ident * 'term
 [@@deriving show {with_path = false}]
 
 and 'term container_kind =
@@ -1116,18 +1106,8 @@ let cmp_mterm_node
     | Msetiterated e1, Msetiterated  e2                                                -> cmp e1 e2
     | Msettoiterate e1, Msettoiterate e2                                               -> cmp e1 e2
     (* formula asset collection methods *)
-    | Mapifget (a1, c1, k1), Mapifget (a2, c2, k2)                                     -> cmp_ident a1 a2 && cmp c1 c2 && cmp k1 k2
-    | Mapifpureget (a1, k1), Mapifpureget (a2, k2)                                     -> cmp_ident a1 a2 && cmp k1 k2
-    | Mapifsubsetof (an1, c1, i1), Mapifsubsetof (an2, c2, i2)                         -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
-    | Mapifisempty (l1, r1), Mapifisempty (l2, r2)                                     -> cmp_ident l1 l2 && cmp r1 r2
-    | Mapifselect (an1, c1, la1, lb1, a1), Mapifselect (an2, c2, la2, lb2, a2)         -> cmp_ident an1 an2 && cmp c1 c2 && List.for_all2 (fun (i1, t1) (i2, t2) -> cmp_ident i1 i2 && cmp_type t1 t2) la1 la2 && cmp lb1 lb2 && List.for_all2 cmp a1 a2
-    | Mapifsort (an1, c1, l1), Mapifsort (an2, c2, l2)                                 -> cmp_ident an1 an2 && cmp c1 c2 && List.for_all2 (fun (fn1, k1) (fn2, k2) -> cmp_ident fn1 fn2 && k1 = k2) l1 l2
-    | Mapifcontains (an1, c1, i1), Mapifcontains (an2, c2, i2)                         -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
-    | Mapifnth (an1, c1, i1), Mapifnth (an2, c2, i2)                                   -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
-    | Mapifcount (an1, c1), Mapifcount (an2, c2)                                       -> cmp_ident an1 an2 && cmp c1 c2
-    | Mapifsum (an1, c1, p1), Mapifsum (an2, c2, p2)                                   -> cmp_ident an1 an2 && cmp c1 c2 && cmp p1 p2
-    | Mapifhead (an1, c1, i1), Mapifhead (an2, c2, i2)                                 -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
-    | Mapiftail (an1, c1, i1), Mapiftail (an2, c2, i2)                                 -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
+    | Msubsetof (an1, c1, i1), Msubsetof (an2, c2, i2)                                 -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
+    | Misempty (l1, r1), Misempty (l2, r2)                                             -> cmp_ident l1 l2 && cmp r1 r2
     (* *)
     | _ -> false
   with
@@ -1406,18 +1386,8 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Msetiterated  e                -> Msetiterated  (f e)
   | Msettoiterate e                -> Msettoiterate (f e)
   (* formula asset collection methods *)
-  | Mapifget (an, c, k)            -> Mapifget      (fi an, f c, f k)
-  | Mapifpureget (an, k)           -> Mapifpureget  (fi an, f k)
-  | Mapifsubsetof (an, c, i)       -> Mapifsubsetof (fi an, f c, f i)
-  | Mapifisempty (an, r)           -> Mapifisempty  (fi an, f r)
-  | Mapifselect (an, c, la, lb, a) -> Mapifselect   (fi an, f c, List.map (fun (i, t) -> (fi i, ft t)) la, f lb, List.map f a)
-  | Mapifsort (an, c, l)           -> Mapifsort     (fi an, f c, l)
-  | Mapifcontains (an, c, i)       -> Mapifcontains (fi an, f c, f i)
-  | Mapifnth (an, c, i)            -> Mapifnth      (fi an, f c, f i)
-  | Mapifcount (an, c)             -> Mapifcount    (fi an, f c)
-  | Mapifsum (an, c, p)            -> Mapifsum      (fi an, f c, f p)
-  | Mapifhead (an, c, i)           -> Mapifhead     (fi an, f c, f i)
-  | Mapiftail (an, c, i)           -> Mapiftail     (fi an, f c, f i)
+  | Msubsetof (an, c, i)           -> Msubsetof (fi an, f c, f i)
+  | Misempty (an, r)               -> Misempty  (fi an, f r)
 
 let map_gen_mterm g f (i : 'id mterm_gen) : 'id mterm_gen =
   {
@@ -1732,18 +1702,8 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Msetiterated  e                       -> f accu e
   | Msettoiterate e                       -> f accu e
   (* formula asset collection methods *)
-  | Mapifget (_, c, k)                    -> f (f accu c) k
-  | Mapifpureget (_, k)                   -> f accu k
-  | Mapifsubsetof (_, c, i)               -> f (f accu c) i
-  | Mapifisempty  (_, r)                  -> f accu r
-  | Mapifselect (_, c, _, lb, a)          -> List.fold_left (fun accu x -> f accu x) (f (f accu c) lb) a
-  | Mapifsort (_, c, _)                   -> f accu c
-  | Mapifcontains (_, c, i)               -> f (f accu c) i
-  | Mapifnth (_, c, i)                    -> f (f accu c) i
-  | Mapifcount (_, c)                     -> f accu c
-  | Mapifsum (_, c, p)                    -> f (f accu c) p
-  | Mapifhead (_, c, i)                   -> f (f accu c) i
-  | Mapiftail (_, c, i)                   -> f (f accu c) i
+  | Msubsetof (_, c, i)                   -> f (f accu c) i
+  | Misempty  (_, r)                      -> f accu r
 
 let fold_map_term_list f acc l : 'term list * 'a =
   List.fold_left
@@ -2507,68 +2467,14 @@ let fold_map_term
 
   (* formula asset collection methods *)
 
-  | Mapifget (a, c, k) ->
-    let ce, ca = f accu c in
-    let ke, ka = f ca k in
-    g (Mapifget (a, ce, ke)), ka
-
-  | Mapifpureget (a, k) ->
-    let ke, ka = f accu k in
-    g (Mapifpureget (a, ke)), ka
-
-  | Mapifsubsetof (an, c, i) ->
+  | Msubsetof (an, c, i) ->
     let ce, ca = f accu c in
     let ie, ia = f ca i in
-    g (Mapifsubsetof (an, ce, ie)), ia
+    g (Msubsetof (an, ce, ie)), ia
 
-  | Mapifisempty  (l, r) ->
+  | Misempty  (l, r) ->
     let re, ra = f accu r in
-    g (Mapifisempty (l, re)), ra
-
-  | Mapifselect (an, c, la, lb, a) ->
-    let ce, ca = f accu c in
-    let lbe, lba = f ca lb in
-    let ae, aa =
-      List.fold_left
-        (fun (ae, accu) x ->
-           let xa, accu = f accu x in
-           xa::ae, accu) ([], lba) a
-      |> (fun (x, y) -> (List.rev x, y))
-    in
-    g (Mapifselect (an, ce, la, lbe, ae)), aa
-
-  | Mapifsort (an, c, l) ->
-    let ce, ca = f accu c in
-    g (Mapifsort (an, ce, l)), ca
-
-  | Mapifcontains (an, c, i) ->
-    let ce, ca = f accu c in
-    let ie, ia = f ca i in
-    g (Mapifcontains (an, ce, ie)), ia
-
-  | Mapifnth (an, c, i) ->
-    let ce, ca = f accu c in
-    let ie, ia = f ca i in
-    g (Mapifnth (an, ce, ie)), ia
-
-  | Mapifcount (an, c) ->
-    let ce, ca = f accu c in
-    g (Mapifcount (an, ce)), ca
-
-  | Mapifsum (an, c, p) ->
-    let ce, ca = f accu c in
-    let pe, pa = f ca p in
-    g (Mapifsum (an, ce, pe)), pa
-
-  | Mapifhead (an, c, i) ->
-    let ce, ca = f accu c in
-    let ie, ia = f ca i in
-    g (Mapifhead (an, ce, ie)), ia
-
-  | Mapiftail (an, c, i) ->
-    let ce, ca = f accu c in
-    let ie, ia = f ca i in
-    g (Mapiftail (an, ce, ie)), ia
+    g (Misempty (l, re)), ra
 
 
 let fold_left g l accu = List.fold_left (fun accu x -> g x accu) accu l

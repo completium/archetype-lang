@@ -1103,18 +1103,8 @@ let pp_model fmt (model : model) =
 
       (* formula asset collection methods *)
 
-      | Mapifget       _ -> emit_error (UnsupportedTerm ("Mapifget"))
-      | Mapifpureget   _ -> emit_error (UnsupportedTerm ("Mapifpureget"))
-      | Mapifsubsetof  _ -> emit_error (UnsupportedTerm ("Mapifsubsetof"))
-      | Mapifisempty   _ -> emit_error (UnsupportedTerm ("Mapifisempty"))
-      | Mapifselect    _ -> emit_error (UnsupportedTerm ("Mapifselect"))
-      | Mapifsort      _ -> emit_error (UnsupportedTerm ("Mapifsort"))
-      | Mapifcontains  _ -> emit_error (UnsupportedTerm ("Mapifcontains"))
-      | Mapifnth       _ -> emit_error (UnsupportedTerm ("Mapifnth"))
-      | Mapifcount     _ -> emit_error (UnsupportedTerm ("Mapifcount"))
-      | Mapifsum       _ -> emit_error (UnsupportedTerm ("Mapifsum"))
-      | Mapifhead      _ -> emit_error (UnsupportedTerm ("Mapifhead"))
-      | Mapiftail      _ -> emit_error (UnsupportedTerm ("Mapiftail"))
+      | Msubsetof  _ -> emit_error (UnsupportedTerm ("Msubsetof"))
+      | Misempty   _ -> emit_error (UnsupportedTerm ("Misempty"))
 
     in
     f fmt mt
