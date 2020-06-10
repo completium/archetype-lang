@@ -905,47 +905,31 @@ let pp_model_internal fmt (model : model) b =
     | Mselect (an, c, la, lb, a) ->
       let index : int = get_preds_index env.select_preds lb in
       let pp fmt (an, c, _la, _lb, a) =
-        match c with
-        | CKcoll ->
-          Format.fprintf fmt "select_c_%a_%i (%s%a)"
-            pp_str an index
-            const_storage
-            (pp_list "" (pp_prefix ", " f)) a
-        | CKview c ->
-          Format.fprintf fmt "select_v_%a_%i (%s, %a%a)"
-            pp_str an index
-            const_storage
-            f c
-            (pp_list "" (pp_prefix ", " f)) a
-        | CKfield mt ->
-          Format.fprintf fmt "select_%a_%i (%s, %a%a)"
-            (pp_prefix_container_kind an) c index
-            const_storage
-            f mt
-            (pp_list "" (pp_prefix ", " f)) a
+        let pp fmt _ =
+          match c with
+          | CKcoll -> pp_str fmt const_storage
+          | CKview mt
+          | CKfield mt -> Format.fprintf fmt "%s, %a" const_storage f mt
+        in
+        Format.fprintf fmt "select_%a_%i (%a%a)"
+          (pp_prefix_container_kind an) c index
+          pp ()
+          (pp_list "" (pp_prefix ", " f)) a
       in
       pp fmt (an, c, la, lb, a)
 
     | Msort (an, c, l) ->
       let pp fmt (an, c, l) =
-        match c with
-        | CKcoll ->
-          Format.fprintf fmt "sort_c_%a_%a (%s)"
-            pp_str an
-            pp_postfix_sort l
-            const_storage
-        | CKview c ->
-          Format.fprintf fmt "sort_v_%a_%a (%s, %a)"
-            pp_str an
-            pp_postfix_sort l
-            const_storage
-            f c
-        | CKfield mt ->
-          Format.fprintf fmt "sort_%a_%a (%s, %a)"
-            (pp_prefix_container_kind an) c
-            pp_postfix_sort l
-            const_storage
-            f mt
+        let pp fmt _ =
+          match c with
+          | CKcoll -> pp_str fmt const_storage
+          | CKview mt
+          | CKfield mt -> Format.fprintf fmt "%s, %a" const_storage f mt
+        in
+        Format.fprintf fmt "sort_%a_%a (%a)"
+          (pp_prefix_container_kind an) c
+          pp_postfix_sort l
+          pp ()
       in
       pp fmt (an, c, l)
 
@@ -994,21 +978,15 @@ let pp_model_internal fmt (model : model) b =
     | Msum (an, c, p) ->
       let index : int = get_preds_index env.sum_preds p in
       let pp fmt (an, c, _p) =
-        match c with
-        | CKcoll ->
-          Format.fprintf fmt "sum_c_%a_%i (%s)"
-            pp_str an index
-            const_storage
-        | CKview c ->
-          Format.fprintf fmt "sum_v_%a_%i (%s, %a)"
-            pp_str an index
-            const_storage
-            f c
-        | CKfield mt ->
-          Format.fprintf fmt "sum_%a_%i (%s, %a)"
-            (pp_prefix_container_kind an) c index
-            const_storage
-            f mt
+        let pp fmt _ =
+          match c with
+          | CKcoll     -> pp_str fmt const_storage
+          | CKview  mt
+          | CKfield mt -> Format.fprintf fmt "%s, %a" const_storage f mt
+        in
+        Format.fprintf fmt "sum_%a_%i (%a)"
+          (pp_prefix_container_kind an) c index
+          pp ()
       in
       pp fmt (an, c, p)
 
@@ -1765,29 +1743,30 @@ let pp_model_internal fmt (model : model) b =
       let is_one_field = Model.Utils.is_asset_single_field model an in
       let pp_fun_arg fmt () =
         match c with
-        | Coll -> ()
-        | View -> Format.fprintf fmt "; const l : list(%a)" pp_btyp t
-        | Field -> assert false
+        | Coll  -> ()
+        | View  -> Format.fprintf fmt "; const l : list(%a)" pp_btyp t
+        | Field -> Format.fprintf fmt "; const l : set(%a)" pp_btyp t
       in
-      let postfix, container, src, iter_type, iter_val =
+      let container, src, iter_type, iter_val =
         match c with
         | Coll when is_one_field ->
-          "c", "set", "s." ^ an ^ "_assets", "", ""
+          "set", "s." ^ an ^ "_assets", "", ""
         | Coll ->
-          "c", "map", "s." ^ an ^ "_assets", " * " ^ an ^ "_storage", ".0"
+          "map", "s." ^ an ^ "_assets", " * " ^ an ^ "_storage", ".0"
         | View ->
-          "v", "list", "l", "", ""
-        | Field -> assert false
+          "list", "l", "", ""
+        | Field ->
+          "set", "l", "", ""
       in
       Format.fprintf fmt
-        "function select_%s_%s_%i (const s : storage_type%a%a) : list(%a) is@\n  \
+        "function select_%a_%i (const s : storage_type%a%a) : list(%a) is@\n  \
          begin@\n    \
          function aggregate (const accu : list(%a); const i : %a%s) : list(%a) is@\n      \
          begin@\n        \
          const the : %s = get_%s(s, i%s);@\n        \
          end with (if (%a) then cons(the.%s, accu) else accu);@\n    \
          end with (%s_fold(aggregate, %s, (nil : list(%a))))@\n"
-        postfix an i pp_fun_arg () (pp_list "" pp_arg) args pp_btyp t
+        (pp_prefix_api_container_kind an) c i pp_fun_arg () (pp_list "" pp_arg) args pp_btyp t
         pp_btyp t pp_btyp t iter_type pp_btyp t
         an an iter_val
         (pp_mterm (mk_env ())) f k
@@ -1799,19 +1778,20 @@ let pp_model_internal fmt (model : model) b =
       let is_one_field = Model.Utils.is_asset_single_field model an in
       let pp_fun_arg fmt () =
         match c with
-        | Coll -> ()
-        | View -> Format.fprintf fmt "; const l : list(%a)" pp_btyp t
-        | Field -> assert false
+        | Coll  -> ()
+        | View  -> Format.fprintf fmt "; const l : list(%a)" pp_btyp t
+        | Field -> Format.fprintf fmt "; const l : set(%a)" pp_btyp t
       in
-      let postfix, container, src, iter_type, iter_val =
+      let container, src, iter_type, iter_val =
         match c with
         | Coll when is_one_field ->
-          "c", "set", "s." ^ an ^ "_assets", "", ""
+          "set", "s." ^ an ^ "_assets", "", ""
         | Coll ->
-          "c", "map", "s." ^ an ^ "_assets", " * " ^ an ^ "_storage", ".0"
+          "map", "s." ^ an ^ "_assets", " * " ^ an ^ "_storage", ".0"
         | View ->
-          "v", "list", "l", "", ""
-        | Field -> assert false
+          "list", "l", "", ""
+        | Field ->
+          "set", "l", "", ""
       in
 
       let pp_criteria fmt (fn, c) =
@@ -1885,7 +1865,7 @@ let pp_model_internal fmt (model : model) b =
       in
 
       Format.fprintf fmt
-        "function sort_%s_%s_%a (const s : storage_type%a) : list(%a) is@\n  @\n  \
+        "function sort_%a_%a (const s : storage_type%a) : list(%a) is@\n  @\n  \
          begin@\n    \
          @[%a@]@\n    \
          @[%a@]@\n    \
@@ -1893,7 +1873,7 @@ let pp_model_internal fmt (model : model) b =
          const init : list(%a) = list [];@\n    \
          const res : list(%a) = %s_fold (sort, %s, init);@\n  \
          end with res@\n"
-        postfix an pp_postfix_sort l pp_fun_arg () pp_btyp t
+        (pp_prefix_api_container_kind an) c pp_postfix_sort l pp_fun_arg () pp_btyp t
         pp_fun_cmp ()
         pp_fun_insert ()
         pp_fun_sort ()
@@ -1939,27 +1919,28 @@ let pp_model_internal fmt (model : model) b =
       let is_one_field = Model.Utils.is_asset_single_field model an in
       let pp_fun_arg fmt () =
         match c with
-        | Coll -> ()
-        | View -> Format.fprintf fmt "; const l : list(%a)" pp_btyp tk
-        | Field -> assert false
+        | Coll  -> ()
+        | View  -> Format.fprintf fmt "; const l : list(%a)" pp_btyp tk
+        | Field -> Format.fprintf fmt "; const l : set(%a)" pp_btyp tk
       in
       let pp_formula fmt _ =
         match t with
         | Ttuple [(Tbuiltin Bint); (Tbuiltin Bint)] -> pp_str fmt "e.0 * accu.1 + accu.0 * e.1, e.1 * accu.1"
         | _ -> pp_str fmt "accu + e"
       in
-      let postfix, container, src, iter_type, iter_val =
+      let container, src, iter_type, iter_val =
         match c with
         | Coll when is_one_field ->
-          "c", "set", "s." ^ an ^ "_assets", "", ""
+          "set", "s." ^ an ^ "_assets", "", ""
         | Coll ->
-          "c", "map", "s." ^ an ^ "_assets", " * " ^ an ^ "_storage", ".0"
+          "map", "s." ^ an ^ "_assets", " * " ^ an ^ "_storage", ".0"
         | View ->
-          "v", "list", "l", "", ""
-        | Field -> assert false
+          "list", "l", "", ""
+        | Field ->
+          "set", "l", "", ""
       in
       Format.fprintf fmt
-        "function sum_%s_%s_%i (const s : storage_type%a) : %a is@\n  \
+        "function sum_%a_%i (const s : storage_type%a) : %a is@\n  \
          begin@\n    \
          function aggregate (const accu : %a; const i : %a%s) : %a is@\n      \
          block {@\n        \
@@ -1967,7 +1948,7 @@ let pp_model_internal fmt (model : model) b =
          const e : %a = %a;@\n      \
          } with (%a);@\n  \
          end with (%s_fold(aggregate, %s, %s))@\n"
-        postfix an i pp_fun_arg () pp_type t
+        (pp_prefix_api_container_kind an) c i pp_fun_arg () pp_type t
         pp_type t pp_btyp tk iter_type pp_type t
         an an iter_val
         pp_type t pp_expr p
