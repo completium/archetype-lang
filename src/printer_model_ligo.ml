@@ -1544,7 +1544,7 @@ let pp_model_internal fmt (model : model) b =
              Format.fprintf fmt "const asset : %s_storage = get_force(key, s.%s_assets);@\n    " an an;
              (pp_list "" (fun fmt (fn, fan : ident * ident) ->
                   Format.fprintf fmt
-                    "for i in list (asset.%s) block {@\n      s := remove_%s(s, i)@\n    };@\n    "
+                    "for i in set (asset.%s) block {@\n      s := remove_%s(s, i)@\n    };@\n    "
                     fn fan)) fmt aps
         ) aps
         (if Utils.is_asset_single_field model an then "set" else "map") an
@@ -1605,7 +1605,7 @@ let pp_model_internal fmt (model : model) b =
          None -> skip@\n    \
          | Some (asset_val) -> block {@\n      \
          %a\
-         s.%s_assets[asset_key] := asset_val with record[%s = cons(b.%s, asset_val.%s)];@\n    \
+         s.%s_assets[asset_key] := asset_val with record[%s = Set.add(b.%s, asset_val.%s)];@\n    \
          }@\n  \
          end;@\n\
          end with (s)@\n"
@@ -1634,18 +1634,15 @@ let pp_model_internal fmt (model : model) b =
          case asset_val_opt of@\n      \
          None -> skip@\n    \
          | Some (asset_val) -> block {@\n      \
-         function aux (const accu : list(%a); const i : %a) : list(%a) is block { skip } with (if (removed_key =/= i) then cons(i, accu) else accu);@\n      \
-         const new_keys : list(%a) = list_fold(aux, asset_val.%s, (nil : list(%a)));@\n      \
-         s.%s_assets[asset_key] := asset_val with record[%s = new_keys];@\n    \
+         remove removed_key from set asset_val.%s;@\n      \
+         s.%s_assets[asset_key] := asset_val;@\n    \
          %a\
          }@\n\
          end;@\n\
          end with (s)@\n"
         an fn pp_btyp t pp_btyp tt
         an an
-        pp_btyp tt pp_btyp tt pp_btyp tt
-        pp_btyp tt fn pp_btyp tt
-        an fn
+        fn an
         (pp_do_if (match c with | Partition -> true | _ -> false) (fun fmt -> Format.fprintf fmt "  s := remove_%s(s, removed_key);@\n")) ft
 
     | RemoveAll (an, fn) ->
@@ -1659,8 +1656,8 @@ let pp_model_internal fmt (model : model) b =
          case asset_val_opt of@\n      \
          None -> skip@\n    \
          | Some (asset_val) -> block {@\n        \
-         const l : list(%a) = asset_val.%s;@\n        \
-         for i in list (l) block {@\n          \
+         const l : set(%a) = asset_val.%s;@\n        \
+         for i in set (l) block {@\n          \
          s := remove_%s_%s(s, k, i)@\n        \
          }@\n      \
          }@\n    \

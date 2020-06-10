@@ -4,7 +4,7 @@ asset o_asset identified by oid {
   oid : string;
   val : int = 0;
 } initialized by {
-  {"oid";0}
+  {"oid"; 0}
 }
 
 asset my_asset identified by id {
@@ -21,7 +21,7 @@ variable res : int = 0
 
 action exec () {
   effect {
-    my_asset["id0"].col.add({"oid";0})
+    my_asset["id0"].col.add({"oid"; 0})
   }
 }
 
