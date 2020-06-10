@@ -81,8 +81,9 @@ let rec map_mtype (t : M.type_) : loc_typ =
       | M.Tenum id                            -> Tyenum (map_lident id)
       | M.Tbuiltin v                          -> map_btype v
       | M.Tcontainer (Tasset id,M.Partition)  -> Typartition (map_lident id)
-      | M.Tcontainer (Tasset id,M.Collection) -> Tycoll (map_lident id)
+      | M.Tcontainer (Tasset id,M.Subset)     -> Tysubset (map_lident id)
       | M.Tcontainer (Tasset id,M.View)       -> Tyview (map_lident id)
+      | M.Tcontainer (Tasset id,M.Collection) -> Tycoll (map_lident id)
       | M.Tcontainer (t,M.Collection)         -> Tylist (map_mtype t).obj
       | M.Toption t                           -> Tyoption (map_mtype t).obj
       | M.Ttuple l                            -> Tytuple (l |> List.map map_mtype |> List.map deloc)
@@ -881,6 +882,7 @@ let mk_eq_asset _m (r : M.asset) =
       | Tasset a -> Tapp (Tvar ("eq_"^(unloc a)),[f1;f2])
       | Tcontainer (Tasset a, Collection) -> Teqview(unloc a,f1,f2)
       | Tcontainer (Tasset a, Partition) -> Teqview(unloc a,f1,f2)
+      | Tcontainer (Tasset a, Subset) -> Teqview(unloc a,f1,f2)
       | Tbuiltin Bbool -> (* a = b is (a && b) || (not a && not b) *)
         Tor (Tpand (f1,f2),Tpand(Tnot f1, Tnot f2))
       | Tbuiltin Brational ->
@@ -1036,6 +1038,18 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       Tmatch (Tvnth (loc_ident n,
                     map_mterm m ctx k,
                     map_mterm m ctx c) |> with_dummy_loc,[
+          Tpsome (with_dummy_loc "k"), Tmatch(Tget (with_dummy_loc n,
+                    loc_term (mk_ac n),
+                    loc_term (Tvar "k")) |> with_dummy_loc, [
+                      Tpsome (map_lident id), map_mterm m ctx b;
+                      Twild, map_mterm m ctx e
+                    ])  |> with_dummy_loc;
+          Twild, map_mterm m ctx e
+      ])
+    | Mletin ([id], { node = M.Mnth (n, CKcoll,k); type_ = _ }, _, b, Some e) ->
+      Tmatch (Tcnth (loc_ident n,
+                    map_mterm m ctx k,
+                    mk_ac_ctx n ctx) |> with_dummy_loc,[
           Tpsome (with_dummy_loc "k"), Tmatch(Tget (with_dummy_loc n,
                     loc_term (mk_ac n),
                     loc_term (Tvar "k")) |> with_dummy_loc, [
@@ -1311,7 +1325,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Mremoveall (a, f, v) -> Tapp (loc_term (Tvar ("removeall_" ^ a ^ "_" ^ f)),[map_mterm m ctx v])
 
-    | Mclear (n, _v) -> Tapp (loc_term (Tvar ("clear_"^(n))),[])
+    | Mclear (n, CKcoll) -> Tapp (loc_term (Tvar ("clear_"^(n))),[])
+    | Mclear (n, CKview v) -> Tapp (loc_term (Tvar ("clear_field_"^(n))),[map_mterm m ctx v])
+    | Mclear (n, CKfield v) -> Tapp (loc_term (Tvar ("clear_field_"^(n))),[map_mterm m ctx v])
 
     | Mset (a, l, k, v) ->
       mk_trace_seq m
@@ -1345,17 +1361,17 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mselect (_a, CKfield _, _la, _lb, _v) -> error_not_translated "Mselect for CKfield"
     | Msort (a, CKview c,l) -> Tvsort (with_dummy_loc (mk_sort_clone_id a l),map_mterm m ctx c,loc_term (mk_ac a))
     | Msort (a, CKfield c,l) -> Tvsort (with_dummy_loc (mk_sort_clone_id a l),map_mterm m ctx c,loc_term (mk_ac a))
-    | Msort (a, CKcoll,l) -> Tcsort (with_dummy_loc (mk_sort_clone_id a l), loc_term (mk_ac a))
+    | Msort (a, CKcoll,l) -> Tcsort (with_dummy_loc (mk_sort_clone_id a l), mk_ac_ctx a ctx)
     | Mcontains (a, CKview v, r) -> Tvcontains (with_dummy_loc a, map_mterm m ctx r, map_mterm m ctx v)
     | Mcontains (a, CKfield v, r) -> Tvcontains (with_dummy_loc a, map_mterm m ctx r, map_mterm m ctx v)
-    | Mcontains (a, CKcoll, r) -> Tccontains (with_dummy_loc a, map_mterm m ctx r, loc_term (mk_ac a) )
+    | Mcontains (a, CKcoll, r) -> Tccontains (with_dummy_loc a, map_mterm m ctx r,  mk_ac_ctx a ctx )
 
     | Mnth (n, CKview c,k) -> Tapp (loc_term (Tvar ("vnth_" ^ n)),[map_mterm m ctx c; map_mterm m ctx k])
     | Mnth (n, CKfield c,k) -> Tapp (loc_term (Tvar ("vnth_" ^ n)),[map_mterm m ctx c; map_mterm m ctx k])
-    | Mnth (n, CKcoll,k) -> Tapp (loc_term (Tvar ("cnth_" ^ n)),[loc_term (mk_ac n); map_mterm m ctx k])
+    | Mnth (n, CKcoll,k) -> Tapp (loc_term (Tvar ("cnth_" ^ n)),[ mk_ac_ctx n ctx; map_mterm m ctx k])
     | Mcount (a, CKview t) -> Tvcard (with_dummy_loc a, map_mterm m ctx t)
     | Mcount (a, CKfield t) -> Tvcard (with_dummy_loc a, map_mterm m ctx t)
-    | Mcount (a, CKcoll) -> Tccard (with_dummy_loc a, loc_term (mk_ac a))
+    | Mcount (a, CKcoll) -> Tccard (with_dummy_loc a, mk_ac_ctx a ctx)
     | Msum          (a, CKview v,f) ->
       let cloneid = mk_sum_clone_id m a f in
       let col = mk_ac_ctx a ctx in
@@ -2290,7 +2306,42 @@ let mk_clear_coll m asset : decl = Dfun {
     body = Tassign (mk_ac asset, Temptycoll asset);
   }
 
-let mk_clear_field_ensures m part p asset field _key =
+let mk_clear_field _m asset : decl = Dfun {
+    name     = "clear_field_" ^ asset;
+    logic    = NoMod;
+    args     = ["field", Tyview asset];
+    returns  = Tyunit;
+    raises   = [];
+    variants = [];
+    requires = [];
+    ensures  = []; (* TODO *)
+    body     =
+      Tfor (
+        "i",
+        Tint Big_int.zero_big_int,
+        Tvcard (
+          asset,
+          Tapp (
+            Tvar "field",
+            [Tvar ("asset")])),
+        [], (* TODO : add invariant for storage api verification *)
+        Tmatch (
+          Tvnth (
+            asset,
+            Tvar "i",
+            Tapp (
+              Tvar "field",
+              [Tvar ("asset")])
+          ), [
+          Tpsome "k", Tapp (
+                        Tvar ("remove_" ^ asset),
+                        [Tvar ("k")]);
+          Twild, Tunit]
+        )
+      );
+}
+
+(* let mk_clear_field_ensures m part p asset field _key =
   let collfield = Tapp (Tvar field, [Tvar ("a")]) in
   let oldassetcollfield = Ttocoll (asset,collfield,mk_ac_old asset) in
   let clear_field_ensures = [
@@ -2374,7 +2425,7 @@ let mk_clear_field_coll _m _part asset field key clearedasset = Dfun {
             Tvar ("new_asset"))
         )
       );
-  }
+  } *)
 
 let mk_add_field_ensures m partition a _ak field prefix adda elem =
   let collfield = Tapp (Tvar field, [Tvar ("asset")]) in
@@ -2578,6 +2629,7 @@ let mk_rm_field m part asset keyf field rmed_asset _rmkey : decl =
       ;
   }
 
+(* calls clear_field_asset if partition *)
 let mk_removeall _m part asset field rm_asset =
   Dfun {
     name     = "removeall_" ^ asset ^ "_" ^ field;
@@ -2587,7 +2639,7 @@ let mk_removeall _m part asset field rm_asset =
     raises   = [];
     variants = [];
     requires = [];
-    ensures  = [];
+    ensures  = []; (* TODO *)
     body     =  Tmatch (
       Tget(asset, mk_ac asset, Tvar "asset_id"),[
       Tpsome "asset",
@@ -2605,29 +2657,9 @@ let mk_removeall _m part asset field rm_asset =
               if part then
                 Tseq [
                   assign;
-                  Tfor (
-                    "i",
-                    Tint Big_int.zero_big_int,
-                    Tvcard (
-                      rm_asset,
-                      Tapp (
-                        Tvar field,
-                        [Tvar ("asset")])),
-                    [], (* TODO : add invariant for storage api verification *)
-                    Tmatch (
-                      Tvnth (
-                        rm_asset,
-                        Tvar "i",
-                        Tapp (
-                          Tvar field,
-                          [Tvar ("asset")])
-                      ), [
-                      Tpsome "k", Tapp (
-                                    Tvar ("remove_" ^ rm_asset),
-                                    [Tvar ("k")]);
-                      Twild, Tunit]
-                    )
-                  )
+                  Tapp (
+                    Tvar ("clear_field_"^rm_asset),
+                    [Tdoti ("asset",field)])
                 ] else assign
             )
         ;
@@ -2699,9 +2731,11 @@ let mk_storage_api (m : M.model) records =
         acc @ [ mk_cselect m asset test (mlw_test |> unloc_term) (match sc.api_loc with | OnlyFormula -> true | ExecFormula | OnlyExec -> false) args ]
       | M.APIAsset (Sort (asset, _, field)) ->
         acc @ [ mk_cmp_function m asset field; mk_sort_clone m asset field]
-      | M.APIAsset (Clear (n, _ck)) ->
+      | M.APIAsset (Clear (n, Coll)) ->
         acc @ [mk_clear_coll m n]
-      (* | M.APIAsset (UpdateClear (n,f)) ->
+      | M.APIAsset (Clear (n, Field)) ->
+        acc @ [mk_clear_field m n]
+(*       | M.APIAsset (RemoveAll (n,f)) ->
         let (key,_) = M.Utils.get_asset_key m n in
         let (clearedasset,_,_) = M.Utils.get_container_asset_key m n f in
         acc @ [mk_clear_field_coll m (is_partition m n f) n f key clearedasset] *)
@@ -2709,7 +2743,8 @@ let mk_storage_api (m : M.model) records =
         acc @ [Duse (true,["int";"Abs"],None)]
       | M.APIAsset (RemoveAll (a,f)) ->
         let (pa,_,_) = M.Utils.get_container_asset_key m a f in
-        acc @ [mk_removeall m (is_partition m a f) a f pa]
+        let ispart = is_partition m a f in
+        acc @ (if ispart then [mk_clear_field m pa] else []) @ [mk_removeall m ispart a f pa]
       | _ -> acc
     ) [] |> loc_decl |> deloc
 
@@ -2796,6 +2831,7 @@ let mk_preconds m args body : ((loc_term,loc_ident) abstract_formula) list =
               acc
           ) []
       | M.Tcontainer (Tasset n, Collection)
+      | M.Tcontainer (Tasset n, Subset)
       | M.Tcontainer (Tasset n, Partition) ->
         let n = unloc n in
         M.Utils.get_storage_invariants m (Some n)

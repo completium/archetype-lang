@@ -140,7 +140,8 @@ let pp_type fmt typ =
       | Tytransfers   -> "transfers"
       | Tycoll i      -> (String.capitalize_ascii i) ^ ".collection"
       | Tyview i      -> (String.capitalize_ascii i) ^ ".view"
-      | Typartition i -> (String.capitalize_ascii i) ^ ".collection"
+      | Typartition i -> (String.capitalize_ascii i) ^ ".view"
+      | Tysubset i    -> (String.capitalize_ascii i) ^ ".view"
       | Tymap i       -> "map " ^ i
       | Tyrecord i    -> i
       | Tyasset i     -> i
