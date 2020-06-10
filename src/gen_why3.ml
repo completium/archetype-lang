@@ -2662,7 +2662,7 @@ let mk_storage_api (m : M.model) records =
         acc @ [mk_get_asset n k (kt |> map_btype)]
       | M.APIAsset (Nth (n, Coll)) ->
         acc @ [mk_cnth_asset n]
-      | M.APIAsset (Nth (n, View)) ->
+      | M.APIAsset (Nth (n, (View | Field))) ->
         acc @ [mk_vnth_asset n]
       | M.APIAsset (Add n) ->
         let k = M.Utils.get_asset_key m n |> fst in
@@ -2691,7 +2691,7 @@ let mk_storage_api (m : M.model) records =
       (* | M.APIAsset (Contains (n, _)) ->
         let t         =  M.Utils.get_asset_key m n |> snd |> map_btype in
         acc @ [ mk_contains n t ] *)
-      | M.APIAsset (Select (asset, View, args, test)) ->
+      | M.APIAsset (Select (asset, (View | Field), args, test)) ->
         let mlw_test = map_mterm m init_ctx test in
         acc @ [ mk_vselect m asset test (mlw_test |> unloc_term) (match sc.api_loc with | OnlyFormula -> true | ExecFormula | OnlyExec -> false) args ]
       | M.APIAsset (Select (asset, Coll, args, test)) ->
