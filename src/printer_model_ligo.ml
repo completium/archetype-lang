@@ -966,24 +966,16 @@ let pp_model_internal fmt (model : model) b =
 
     | Mnth (an, c, i) ->
       let pp fmt (an, c, i) =
-        match c with
-        | CKcoll ->
-          Format.fprintf fmt "nth_c_%a (%s, %a)"
-            pp_str an
-            const_storage
-            f i
-        | CKview c ->
-          Format.fprintf fmt "nth_v_%a (%s, %a, %a)"
-            pp_str an
-            const_storage
-            f c
-            f i
-        | CKfield mt ->
-          Format.fprintf fmt "nth_%a (%s, %a, %a)"
-            (pp_prefix_container_kind an) c
-            const_storage
-            f mt
-            f i
+        let pp =
+          match c with
+          | CKcoll     -> (fun fmt _ -> Format.fprintf fmt "%s" const_storage)
+          | CKview mt
+          | CKfield mt -> (fun fmt _ -> Format.fprintf fmt "%s, %a" const_storage f mt)
+        in
+        Format.fprintf fmt "nth_%a (%a, %a)"
+          (pp_prefix_container_kind an) c
+          pp c
+          f i
       in
       pp fmt (an, c, i)
 
@@ -1701,44 +1693,6 @@ let pp_model_internal fmt (model : model) b =
         pp_btyp tt fn
         an fn
 
-    (* | UpdateClear (an, fn) ->
-       let k, t = Utils.get_asset_key model an in
-       Format.fprintf fmt
-        "function clear_%s_%s (const s : storage_type; const a : %s) : storage_type is@\n  \
-         begin@\n    \
-         const asset_key : %a = a.%s;@\n    \
-         const asset_val : %s = get_%s(s, asset_key);@\n    \
-         %a\
-         asset_val.%s := (list [] : list(%a));@\n    \
-         const map_local : map(%a, %s) = s.my_asset_assets;@\n    \
-         map_local[asset_key] := asset_val;@\n    \
-         s.%s_assets := map_local;@\n    \
-         end with (s)@\n"
-        an fn an
-        pp_btyp t k
-        an an
-        (fun fmt _ ->
-           let anc, c = Utils.get_field_container model an fn in
-           let _, kt = Utils.get_asset_key model anc in
-           match c with
-           | Partition ->
-             Format.fprintf fmt
-               "// partition@\n    \
-                const ar : list(%a) = asset_val.%s;@\n    \
-                const map_local_%s : map(%a, %s) = s.%s_assets;@\n    \
-                function aux (const key : %a) : unit is block {remove key from map map_local_%s } with unit;@\n    \
-                list_iter (aux, ar);@\n    \
-                s.%s_assets := map_local_%s;@\n    \
-                // end partition@\n    "
-               pp_btyp t fn
-               anc pp_btyp kt anc anc
-               pp_btyp kt anc
-               anc anc
-           | _ -> ()) ()
-        fn pp_btyp t
-        pp_btyp t an
-        an *)
-
     | Contains (an, c) ->
       begin
         let _, t = Utils.get_asset_key model an in
@@ -1772,20 +1726,21 @@ let pp_model_internal fmt (model : model) b =
         match c with
         | Coll -> ()
         | View -> Format.fprintf fmt "; const l : list(%a)" pp_btyp t
-        | Field -> assert false
+        | Field -> Format.fprintf fmt "; const l : set(%a)" pp_btyp t
       in
-      let postfix, container, src, iter_type, iter_val =
+      let container, src, iter_type, iter_val =
         match c with
         | Coll when is_one_field ->
-          "c", "set", "s." ^ an ^ "_assets", "", ""
+          "set", "s." ^ an ^ "_assets", "", ""
         | Coll ->
-          "c", "map", "s." ^ an ^ "_assets", " * " ^ an ^ "_storage", ".0"
+          "map", "s." ^ an ^ "_assets", " * " ^ an ^ "_storage", ".0"
         | View ->
-          "v", "list", "l", "", ""
-        | Field -> assert false
+          "list", "l", "", ""
+        | Field ->
+          "set", "l", "", ""
       in
       Format.fprintf fmt
-        "function nth_%s_%s (const s : storage_type%a; const index : int) : %a is@\n  \
+        "function nth_%a (const s : storage_type%a; const index : int) : %a is@\n  \
          block {@\n  \
          function aggregate (const accu: map(int, %a); const x: %a%s) : map(int, %a) is@\n  \
          block {@\n  \
@@ -1795,7 +1750,7 @@ let pp_model_internal fmt (model : model) b =
          const map_ : map(int, %a) = %s_fold(aggregate, %s, (map [] : map(int, %a)));@\n  \
          const res : %a = get_force(index, map_);@\n  \
          } with res@\n"
-        postfix an pp_fun_arg () pp_btyp t
+        (pp_prefix_api_container_kind an) c pp_fun_arg () pp_btyp t
         pp_btyp t pp_btyp t iter_type pp_btyp t
         iter_val
         pp_btyp t container src pp_btyp t
