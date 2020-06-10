@@ -136,7 +136,7 @@ let extract_properties (pt : archetype) : property list =
         | _ -> []
       end
 
-    | Daction (_, _, ap, _, _) ->
+    | Dentry (_, _, ap, _, _) ->
       begin
         match ap.spec_fun with
         | Some sp -> ep_specification sp

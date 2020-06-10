@@ -408,8 +408,8 @@ let pp_error_desc fmt e =
   | ForeignState (i1, i2)              -> pp "Expecting a state of %a, not %a" pp_ident (Option.get_dfl "<global>" i1) pp_ident (Option.get_dfl "<global>" i2)
   | FormulaExpected                    -> pp "Formula expected"
   | IncompatibleTypes (t1, t2)         -> pp "Incompatible types: found '%a' but expected '%a'" Printer_ast.pp_ptyp t1 Printer_ast.pp_ptyp t2
-  | InvalidActionDescription           -> pp "Invalid action description"
-  | InvalidActionExpression            -> pp "Invalid action expression"
+  | InvalidActionDescription           -> pp "Invalid entry description"
+  | InvalidActionExpression            -> pp "Invalid entry expression"
   | InvalidArcheTypeDecl               -> pp "Invalid Archetype declaration"
   | InvalidAssetCollectionExpr ty      -> pp "Invalid asset collection expression: %a" M.pp_ptyp ty
   | InvalidAssetExpression             -> pp "Invalid asset expression"
@@ -426,7 +426,7 @@ let pp_error_desc fmt e =
   | InvalidMethodInFormula             -> pp "Invalid method in formula"
   | InvalidNumberOfArguments (n1, n2)  -> pp "Invalid number of arguments: found '%i', but expected '%i'" n1 n2
   | InvalidRoleExpression              -> pp "Invalid role expression"
-  | InvalidSecurityAction              -> pp "Invalid security action"
+  | InvalidSecurityAction              -> pp "Invalid security entry"
   | InvalidSecurityRole                -> pp "Invalid security role"
   | InvalidSortingExpression           -> pp "Invalid sorting expression"
   | InvalidStateExpression             -> pp "Invalid state expression"
@@ -467,7 +467,7 @@ let pp_error_desc fmt e =
   | SpecOperatorInExpr                 -> pp "Specification operator in expression"
   | TransferWithoutDest                -> pp "Transfer without destination"
   | UninitializedVar                   -> pp "This variable declaration is missing an initializer"
-  | UnknownAction i                    -> pp "Unknown action: %a" pp_ident i
+  | UnknownAction i                    -> pp "Unknown entry: %a" pp_ident i
   | UnknownAsset i                     -> pp "Unknown asset: %a" pp_ident i
   | UnknownContractEntryPoint (c, m)   -> pp "Unknown contract entry point: %s.%s" c m
   | UnknownEnum i                      -> pp "Unknown enum: %a" pp_ident i
@@ -595,7 +595,7 @@ let opsigs =
 
 (* -------------------------------------------------------------------- *)
 type acttx = [
-  | `Action     of PT.action_decl
+  | `Action     of PT.entry_decl
   | `Transition of PT.transition_decl
 ]
 
@@ -785,7 +785,7 @@ type txeffect = {
   tx_effect : M.instruction option;
 }
 
-type 'env tactiondecl = {
+type 'env tentrydecl = {
   ad_name   : M.lident;
   ad_args   : (M.lident * M.ptyp) list;
   ad_callby : (M.pterm option) loced list;
@@ -848,7 +848,7 @@ module Env : sig
     | `Local       of M.ptyp * locvarkind
     | `Global      of vardecl
     | `Asset       of assetdecl
-    | `Action      of t tactiondecl
+    | `Action      of t tentrydecl
     | `Function    of t fundecl
     | `Field       of ident
     | `Contract    of contractdecl
@@ -919,10 +919,10 @@ module Env : sig
   end
 
   module TAction : sig
-    val lookup  : t -> ident -> t tactiondecl option
-    val get     : t -> ident -> t tactiondecl
+    val lookup  : t -> ident -> t tentrydecl option
+    val get     : t -> ident -> t tentrydecl
     val exists  : t -> ident -> bool
-    val push    : t -> t tactiondecl -> t
+    val push    : t -> t tentrydecl -> t
   end
 
   module Contract : sig
@@ -949,7 +949,7 @@ end = struct
     | `Local       of M.ptyp * locvarkind
     | `Global      of vardecl
     | `Asset       of assetdecl
-    | `Action      of t tactiondecl
+    | `Action      of t tentrydecl
     | `Function    of t fundecl
     | `Field       of ident
     | `Contract    of contractdecl
@@ -1200,7 +1200,7 @@ end = struct
     let get (env : t) (name : ident) =
       Option.get (lookup env name)
 
-    let push (env : t) (act : t tactiondecl) =
+    let push (env : t) (act : t tentrydecl) =
       push env ~loc:(loc act.ad_name) (unloc act.ad_name) (`Action act)
   end
 
@@ -2639,9 +2639,9 @@ and for_formula (env : env) (topf : PT.expr) : M.pterm =
     e.type_; e
 
 (* -------------------------------------------------------------------- *)
-and for_action_description (env : env) (sa : PT.security_arg) : M.action_description =
+and for_entry_description (env : env) (sa : PT.security_arg) : M.action_description =
   match unloc sa with
-  | Sident { pldesc = "anyaction" } ->
+  | Sident { pldesc = "anyentry" } ->
     M.ADAny
 
   | Sapp (act, [{ pldesc = PT.Sident asset }]) -> begin
@@ -2662,12 +2662,12 @@ and for_action_description (env : env) (sa : PT.security_arg) : M.action_descrip
     M.ADAny
 
 (* -------------------------------------------------------------------- *)
-and for_security_action (env : env) (sa : PT.security_arg) : M.security_action =
+and for_security_entry (env : env) (sa : PT.security_arg) : M.security_action =
   match unloc sa with
   | Sident id ->
     begin
       match unloc id with
-      | "anyaction" -> Sany
+      | "anyentry" -> Sany
       | _           ->
         let ad = Env.TAction.lookup env (unloc id) in
 
@@ -2680,7 +2680,7 @@ and for_security_action (env : env) (sa : PT.security_arg) : M.security_action =
   | Slist sas ->
     M.Sentry (List.flatten (List.map (
         fun x ->
-          let a = for_security_action env x in
+          let a = for_security_entry env x in
           match a with
           | Sentry ids -> ids
           | _ -> assert false) sas))
@@ -3189,9 +3189,9 @@ module SecurityPred = struct
 
   let validate1 (type a) (env : env) (mode : a mode) (v : PT.security_arg) : a =
     match mode with
-    | ActionDesc -> for_action_description env v
+    | ActionDesc -> for_entry_description env v
     | Role       -> for_security_role      env v
-    | Action     -> for_security_action    env v
+    | Action     -> for_security_entry    env v
 
   type _ validator =
     | V0 : unit validator
@@ -3241,11 +3241,11 @@ module SecurityPred = struct
 
   let preds = [
     "only_by_role",           vd2 (fun x y   -> M.SonlyByRole         (x, y)   ) ActionDesc Role;
-    "only_in_action",         vd2 (fun x y   -> M.SonlyInAction       (x, y)   ) ActionDesc Action;
-    "only_by_role_in_action", vd3 (fun x y z -> M.SonlyByRoleInAction (x, y, z)) ActionDesc Role Action;
+    "only_in_entry",         vd2 (fun x y   -> M.SonlyInAction       (x, y)   ) ActionDesc Action;
+    "only_by_role_in_entry", vd3 (fun x y z -> M.SonlyByRoleInAction (x, y, z)) ActionDesc Role Action;
     "not_by_role",            vd2 (fun x y   -> M.SnotByRole          (x, y)   ) ActionDesc Role;
-    "not_in_action",          vd2 (fun x y   -> M.SnotInAction        (x, y)   ) ActionDesc Action;
-    "not_by_role_in_action",  vd3 (fun x y z -> M.SnotByRoleInAction  (x, y, z)) ActionDesc Role Action;
+    "not_in_entry",          vd2 (fun x y   -> M.SnotInAction        (x, y)   ) ActionDesc Action;
+    "not_by_role_in_entry",  vd3 (fun x y z -> M.SnotByRoleInAction  (x, y, z)) ActionDesc Role Action;
     "transferred_by",         vd1 (fun x     -> M.StransferredBy      (x)      ) ActionDesc;
     "transferred_to",         vd1 (fun x     -> M.StransferredTo      (x)      ) ActionDesc;
     "no_storage_fail",        vd1 (fun x     -> M.SnoStorageFail      (x)      ) Action;
@@ -3381,7 +3381,7 @@ let rec for_callby (env : env) (cb : PT.expr) =
     [mkloc (loc cb) (Some (for_expr env ~ety:M.vtrole cb))]
 
 (* -------------------------------------------------------------------- *)
-let for_action_properties (env, poenv : env * env) (act : PT.action_properties) =
+let for_entry_properties (env, poenv : env * env) (act : PT.entry_properties) =
   let calledby  = Option.map (fun (x, _) -> for_callby env x) act.calledby in
   let env, req  = Option.foldmap for_lbls_bexpr env (Option.fst act.require) in
   let env, fai  = Option.foldmap for_lbls_bexpr env (Option.fst act.failif) in
@@ -3788,7 +3788,7 @@ let for_acttx_decl (env : env) (decl : acttx loced) =
             let effect = Option.map snd poeffect in
             let poenv  = Option.get_dfl env (Option.map fst poeffect) in
             let env, (callby, reqs, fais, spec, funs) =
-              for_action_properties (env, poenv) pt in
+              for_entry_properties (env, poenv) pt in
 
             let decl =
               { ad_name   = x;
@@ -3810,7 +3810,7 @@ let for_acttx_decl (env : env) (decl : acttx loced) =
       else (env, None)
     end
 
-  | `Transition (x, args, tgt, from_, actions, tx, _exts) ->
+  | `Transition (x, args, tgt, from_, entrys, tx, _exts) ->
     let env, decl =
       Env.inscope env (fun env ->
           let env, args = for_args_decl env args in
@@ -3833,7 +3833,7 @@ let for_acttx_decl (env : env) (decl : acttx loced) =
 
           let from_ = for_state_formula ?enum env from_ in
           let env, (callby, reqs, fais, spec, funs) =
-            for_action_properties (env, env) actions in
+            for_entry_properties (env, env) entrys in
           let env, tx =
             List.fold_left_map (for_transition ?enum) env tx in
 
@@ -3846,7 +3846,7 @@ let for_acttx_decl (env : env) (decl : acttx loced) =
               ad_reqs   = Option.get_dfl [] reqs;
               ad_fais   = Option.get_dfl [] fais;
               ad_spec   = Option.get_dfl [] spec;
-              ad_actfs  = actions.accept_transfer; }
+              ad_actfs  = entrys.accept_transfer; }
 
           in (env, decl))
 
@@ -3906,7 +3906,7 @@ let group_declarations (decls : (PT.declaration list)) =
     | PT.Dasset infos ->
       { g with gr_assets = mk infos :: g.gr_assets }
 
-    | PT.Daction infos ->
+    | PT.Dentry infos ->
       { g with gr_acttxs = mk (`Action infos) :: g.gr_acttxs }
 
     | PT.Dtransition infos ->
@@ -3938,7 +3938,7 @@ type decls = {
   enums     : statedecl option list;
   assets    : assetdecl option list;
   functions : env fundecl option list;
-  acttxs    : env tactiondecl option list;
+  acttxs    : env tentrydecl option list;
   specs     : env ispecification list list;
   secspecs  : M.security list;
 }
@@ -4147,7 +4147,7 @@ let functions_of_fdecls fdecls =
   in List.map for1 (List.pmap (fun x -> x) fdecls)
 
 (* -------------------------------------------------------------------- *)
-let transactions_of_tdecls tdecls =
+let transentrys_of_tdecls tdecls =
   let for_calledby cb : M.rexpr option =
     match cb with [] -> None | c :: cb ->
 
@@ -4219,7 +4219,7 @@ let for_declarations (env : env) (decls : (PT.declaration list) loced) : M.model
       )
       ~funs:(
         List.map (fun x -> M.Ffunction x)    (functions_of_fdecls decls.functions) @
-        List.map (fun x -> M.Ftransaction x) (transactions_of_tdecls decls.acttxs)
+        List.map (fun x -> M.Ftransaction x) (transentrys_of_tdecls decls.acttxs)
       )
       ~specifications:(List.map specifications_of_ispecifications decls.specs)
       ~securities:(decls.secspecs)

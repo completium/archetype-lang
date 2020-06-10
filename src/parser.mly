@@ -30,7 +30,6 @@
 %}
 
 %token ACCEPT_TRANSFER
-%token ACTION
 %token ADDED
 %token AND
 %token ANY
@@ -61,6 +60,7 @@
 %token EFFECT
 %token ELSE
 %token END
+%token ENTRY
 %token ENUM
 %token EOF
 %token EQUAL
@@ -322,7 +322,7 @@ contract:
 | LPAREN xs=sl(COMMA, sig_arg) RPAREN { xs }
 
 %inline signature:
-| ACTION x=ident xs=sig_args { Ssignature (x, xs) }
+| ENTRY x=ident xs=sig_args { Ssignature (x, xs) }
 
 %inline fun_body:
 | e=expr { (None, e) }
@@ -541,9 +541,9 @@ field_r:
 | x=loc(IDENT) { x }
 
 action:
-  ACTION exts=option(extensions) x=ident
+  ENTRY exts=option(extensions) x=ident
     args=function_args xs=transitems_eq
-      { let a, b = xs in Daction (x, args, a, b, exts) }
+      { let a, b = xs in Dentry (x, args, a, b, exts) }
 
 transition_to_item:
 | TO x=ident y=require_value? z=with_effect? { (x, y, z) }

@@ -697,7 +697,7 @@ let pp_asset_option fmt opt =
 let pp_signature fmt s =
   match s with
   | Ssignature (id, xs) ->
-    Format.fprintf fmt "action %a (%a)"
+    Format.fprintf fmt "entry %a (%a)"
       pp_id id
       (pp_list ", " (fun fmt (id, type_) -> Format.fprintf fmt "%a : %a" pp_id id pp_type type_)) xs
 
@@ -927,7 +927,7 @@ let pp_security fmt (items, exts) =
     pp_extensions exts
     pp_security_items items
 
-let pp_action_properties fmt (props : action_properties) =
+let pp_entry_properties fmt (props : entry_properties) =
   map_option (
     fun v ->
       let items, exts = v |> unloc in
@@ -963,7 +963,7 @@ let pp_transition fmt (to_, conditions, effect) =
            pp_simple_expr e)) effect
 
 let rec pp_declaration fmt { pldesc = e; _ } =
-  let is_empty_action_properties_opt (ap : action_properties) (a : 'a option) =
+  let is_empty_entry_properties_opt (ap : entry_properties) (a : 'a option) =
     match ap.calledby, ap.require, ap.functions, ap.spec_fun, a with
     | None, None, [], None, None -> true
     | _ -> false in
@@ -1007,16 +1007,16 @@ let rec pp_declaration fmt { pldesc = e; _ } =
       (pp_do_if (List.length shadow_fields > 0) ((fun fmt -> Format.fprintf fmt "shadow {@\n  @[%a@]@\n}" (pp_list ";@\n" pp_field)))) shadow_fields
       (pp_list " " pp_asset_post_option) apo
 
-  | Daction (id, args, props, code, exts) ->
-    Format.fprintf fmt "action%a %a%a%a"
+  | Dentry (id, args, props, code, exts) ->
+    Format.fprintf fmt "entry%a %a%a%a"
       pp_extensions exts
       pp_id id
       pp_fun_args args
-      (pp_do_if (not (is_empty_action_properties_opt props code))
+      (pp_do_if (not (is_empty_entry_properties_opt props code))
          (fun fmt x ->
             let pr, cod = x in
             Format.fprintf fmt " {@\n  @[%a%a@]@\n}"
-              pp_action_properties pr
+              pp_entry_properties pr
               (pp_option (fun fmt (code, exts) ->
                    Format.fprintf fmt "effect%a {@\n  @[%a@]@\n}@\n"
                      pp_extensions exts
@@ -1035,7 +1035,7 @@ let rec pp_declaration fmt { pldesc = e; _ } =
          )) on
       (fun fmt (pr, ts) ->
          Format.fprintf fmt " {@\n  @[%a%a%a@]@\n}"
-           (pp_do_if (not (is_empty_action_properties_opt props None)) pp_action_properties) pr
+           (pp_do_if (not (is_empty_entry_properties_opt props None)) pp_entry_properties) pr
            (fun fmt from -> Format.fprintf fmt "from %a@\n" pp_simple_expr from) from
            (pp_list "@\n" pp_transition) ts) (props, trs)
 
