@@ -640,6 +640,7 @@ type mthtyp = [
   | mthstyp
   | `The
   | `Pk
+  | `ThePkForSubset
   | `Asset
   | `SubColl
   | `Cmp
@@ -658,23 +659,23 @@ let methods : (string * method_) list =
   let mk mth_name mth_place mth_purity mth_totality mth_sig =
     { mth_name; mth_place; mth_purity; mth_totality; mth_sig; }
   in [
-    ("isempty"     , mk M.Cisempty      `OnlyFormula `Pure       `Total   (`Fixed [              ], Some (`T M.vtbool)));
-    ("get"         , mk M.Cget          `OnlyFormula `Pure       `Partial (`Fixed [`Pk           ], Some `The));
-    ("subsetof"    , mk M.Csubsetof     `OnlyFormula `Pure       `Total   (`Fixed [`SubColl      ], Some (`T M.vtbool)));
-    ("add"         , mk M.Cadd          `Both        `Effect     `Total   (`Fixed [`The          ], None));
-    ("remove"      , mk M.Cremove       `Both        `Effect     `Total   (`Fixed [`Pk           ], None));
-    ("clear"       , mk M.Cclear        `Both        `EffectView `Total   (`Fixed [              ], None));
-    ("removeall"   , mk M.Cremoveall    `Both        `Effect     `Total   (`Fixed [              ], None));
-    ("update"      , mk M.Cupdate       `Both        `Effect     `Total   (`Fixed [`Pk; `Ef true ], None));
-    ("addupdate"   , mk M.Caddupdate    `Both        `Effect     `Total   (`Fixed [`Pk; `Ef false], None));
-    ("contains"    , mk M.Ccontains     `Both        `Pure       `Total   (`Fixed [`Pk           ], Some (`T M.vtbool)));
-    ("nth"         , mk M.Cnth          `Both        `Pure       `Partial (`Fixed [`T M.vtint    ], Some (`Pk)));
-    ("select"      , mk M.Cselect       `Both        `Pure       `Total   (`Fixed [`Pred true    ], Some (`SubColl)));
-    ("sort"        , mk M.Csort         `Both        `Pure       `Total   (`Multi (`Cmp          ), Some (`SubColl)));
-    ("count"       , mk M.Ccount        `Both        `Pure       `Total   (`Fixed [              ], Some (`T M.vtint)));
-    ("sum"         , mk M.Csum          `Both        `Pure       `Total   (`Fixed [`RExpr false  ], Some (`Ref 0)));
-    ("head"        , mk M.Chead         `Both        `Pure       `Total   (`Fixed [`T M.vtint    ], Some (`SubColl)));
-    ("tail"        , mk M.Ctail         `Both        `Pure       `Total   (`Fixed [`T M.vtint    ], Some (`SubColl)));
+    ("isempty"     , mk M.Cisempty      `OnlyFormula `Pure       `Total   (`Fixed [                ], Some (`T M.vtbool)));
+    ("get"         , mk M.Cget          `OnlyFormula `Pure       `Partial (`Fixed [`Pk             ], Some `The));
+    ("subsetof"    , mk M.Csubsetof     `OnlyFormula `Pure       `Total   (`Fixed [`SubColl        ], Some (`T M.vtbool)));
+    ("add"         , mk M.Cadd          `Both        `Effect     `Total   (`Fixed [`ThePkForSubset ], None));
+    ("remove"      , mk M.Cremove       `Both        `Effect     `Total   (`Fixed [`Pk             ], None));
+    ("clear"       , mk M.Cclear        `Both        `EffectView `Total   (`Fixed [                ], None));
+    ("removeall"   , mk M.Cremoveall    `Both        `Effect     `Total   (`Fixed [                ], None));
+    ("update"      , mk M.Cupdate       `Both        `Effect     `Total   (`Fixed [`Pk; `Ef true   ], None));
+    ("addupdate"   , mk M.Caddupdate    `Both        `Effect     `Total   (`Fixed [`Pk; `Ef false  ], None));
+    ("contains"    , mk M.Ccontains     `Both        `Pure       `Total   (`Fixed [`Pk             ], Some (`T M.vtbool)));
+    ("nth"         , mk M.Cnth          `Both        `Pure       `Partial (`Fixed [`T M.vtint      ], Some (`Pk)));
+    ("select"      , mk M.Cselect       `Both        `Pure       `Total   (`Fixed [`Pred true      ], Some (`SubColl)));
+    ("sort"        , mk M.Csort         `Both        `Pure       `Total   (`Multi (`Cmp            ), Some (`SubColl)));
+    ("count"       , mk M.Ccount        `Both        `Pure       `Total   (`Fixed [                ], Some (`T M.vtint)));
+    ("sum"         , mk M.Csum          `Both        `Pure       `Total   (`Fixed [`RExpr false    ], Some (`Ref 0)));
+    ("head"        , mk M.Chead         `Both        `Pure       `Total   (`Fixed [`T M.vtint      ], Some (`SubColl)));
+    ("tail"        , mk M.Ctail         `Both        `Pure       `Total   (`Fixed [`T M.vtint      ], Some (`SubColl)));
   ]
 
 let methods = Mid.of_list methods
@@ -737,6 +738,7 @@ type assetdecl = {
   as_state  : M.lident option;
   as_init   : (M.pterm list) list;
 }
+[@@deriving show {with_path = false}]
 
 and fielddecl = {
   fd_name  : M.lident;
@@ -2454,7 +2456,7 @@ and for_gen_method_call mode env theloc (the, m, args)
       raise E.Bailout
     end;
 
-    let doarg arg (aty : mthtyp) =
+    let rec doarg arg (aty : mthtyp) =
       match aty with
       | `Pk ->
         let pk = Option.get (get_field (unloc asset.as_pk) asset) in
@@ -2462,6 +2464,12 @@ and for_gen_method_call mode env theloc (the, m, args)
 
       | `The ->
         M.AExpr (for_xexpr mode env ~ety:(Tasset asset.as_name) arg)
+
+      | `ThePkForSubset -> begin
+        match the.type_ with
+        | Some (M.Tcontainer(_, Subset)) ->  doarg arg `Pk
+        | _ -> doarg arg `The
+      end
 
       | (`Pred capture | `RExpr capture) as sub -> begin
           let env     = Env.Context.push env (unloc asset.as_name) in

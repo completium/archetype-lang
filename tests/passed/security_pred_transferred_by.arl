@@ -14,5 +14,5 @@ entry exec () {
 }
 
 security {
-  s0 : transferred_by (anyaction);
+  s0 : transferred_by (anyentry);
 }

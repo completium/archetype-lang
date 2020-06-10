@@ -14,5 +14,5 @@ entry exec () {
 }
 
 security {
-  s0 : no_storage_fail (anyaction);
+  s0 : no_storage_fail (anyentry);
 }

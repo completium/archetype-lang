@@ -50,7 +50,8 @@ entry do_vote (id : string, decision : bool) { // cannot name this 'vote'
     f1 : vote[id].voters.contains(caller);
   }
   effect {
-    vote[id].voters.add({ vaddr = caller });
+    voter.add({caller});
+    vote[id].voters.add(caller);
     if decision then vote[id].vcount += 1
   }
 }

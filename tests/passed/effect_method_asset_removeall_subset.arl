@@ -2,6 +2,10 @@ archetype effect_method_asset_removeall_subset
 
 asset o_asset identified by oid {
   oid : int;
+} initialized by {
+  {0};
+  {1};
+  {2}
 }
 
 asset my_asset identified by id {
@@ -17,7 +21,7 @@ variable res : int = 0
 
 entry pre_exec () {
   effect {
-    my_asset["id0"].col.add({1})
+    my_asset["id0"].col.add(1)
   }
 }
 

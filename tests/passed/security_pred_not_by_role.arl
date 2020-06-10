@@ -14,5 +14,5 @@ entry exec () {
 }
 
 security {
-  s0 : not_by_role (anyaction, admin);
+  s0 : not_by_role (anyentry, admin);
 }

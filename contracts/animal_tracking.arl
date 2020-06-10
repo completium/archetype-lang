@@ -30,7 +30,7 @@ transition transit (fk : string) on (ak : pkey of animal_a) {
   from In_field
   to In_transit
   with effect {
-    business_a.get(field_a.get(fk).business).incomings.add(animal_a.get(ak))
+    business_a.get(field_a.get(fk).business).incomings.add(ak)
   }
 }
 

@@ -1595,33 +1595,45 @@ let pp_model_internal fmt (model : model) b =
     | FieldAdd (an, fn) ->
       let _, t = Utils.get_asset_key model an in
       let ft, c = Utils.get_field_container model an fn in
-      let kk, _ = Utils.get_asset_key model ft in
+      let kk, kt = Utils.get_asset_key model ft in
       let single = Utils.is_asset_single_field model ft in
+      let bkey =
+        match c with
+        | Subset    -> "b"
+        | Partition -> "b." ^ kk
+        | _ -> assert false
+      in
+      let pp_instr, pp_b_arg_type =
+        match c with
+        | Subset ->
+          (fun fmt _ ->
+             Format.fprintf fmt
+               "if not %s.mem(%s, s.%s_assets) then failwith (\"key does not exist\") else skip;@\n      "
+               (if single then "Set" else "Map") bkey ft),
+          (fun fmt _ -> pp_btyp fmt kt)
+        | Partition ->
+          (fun fmt _ ->
+             Format.fprintf fmt "s := add_%s(s, b);@\n      " ft),
+          (fun fmt _ -> pp_str fmt ft)
+        | _ -> assert false
+      in
       Format.fprintf fmt
-        "function add_%s_%s (const s : storage_type; const asset_key : %a; const b : %s) : storage_type is@\n  \
+        "function add_%s_%s (const s : storage_type; const asset_key : %a; const b : %a) : storage_type is@\n  \
          begin@\n    \
          const asset_val_opt : option(%s_storage) = s.%s_assets[asset_key];@\n    \
          case asset_val_opt of@\n      \
          None -> skip@\n    \
          | Some (asset_val) -> block {@\n      \
          %a\
-         s.%s_assets[asset_key] := asset_val with record[%s = Set.add(b.%s, asset_val.%s)];@\n    \
+         s.%s_assets[asset_key] := asset_val with record[%s = Set.add(%s, asset_val.%s)];@\n    \
          }@\n  \
          end;@\n\
          end with (s)@\n"
-        an fn pp_btyp t ft
-        an an
-        (fun fmt _ ->
-           match c with
-           | Collection ->
-             Format.fprintf fmt
-               "if not %s_mem(b.%s, s.%s_assets) then failwith (\"key does not exist\") else skip;@\n      "
-               (if single then "set" else "map") kk ft
-           | Partition ->
-             Format.fprintf fmt "s := add_%s(s, b);@\n      " ft
-           | _ -> ()
-        ) ()
-        an fn kk fn
+        an fn pp_btyp t pp_b_arg_type ()
+        an
+        an
+        pp_instr ()
+        an fn bkey fn
 
     | FieldRemove (an, fn) ->
       let _k, t = Utils.get_asset_key model an in
