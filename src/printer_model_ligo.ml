@@ -1674,27 +1674,25 @@ let pp_model_internal fmt (model : model) b =
     | Contains (an, c) ->
       begin
         let _, t = Utils.get_asset_key model an in
-        match c with
-        | Coll ->
-          Format.fprintf fmt
-            "function contains_c_%s (const s : storage_type; const key : %a) : bool is@\n  \
-             block {skip} with %s.mem (key, s.%s_assets)@\n"
-            an pp_btyp t
-            (if Utils.is_asset_single_field model an then "Set" else "Map") an
-        | View ->
-          let _, t = Utils.get_asset_key model an in
-          Format.fprintf fmt
-            "function contains_v_%s (const l : list(%a); const key : %a) : bool is@\n  \
-             begin@\n  \
-             function aggregate (const accu : bool; const v : %a) : bool is block { skip } with (accu or v = key);@\n  \
-             end with list_fold(aggregate, l, False)@\n"
-            an pp_btyp t pp_btyp t
-            pp_btyp t
-        | Field ->
-          let _, t = Utils.get_asset_key model an in
-          Format.fprintf fmt
-            "function contains_%a (const l : set(%a); const key : %a) : bool is block {skip} with Set.mem(key, l)@\n"
-            (pp_prefix_api_container_kind an) c pp_btyp t pp_btyp t
+        Format.fprintf fmt
+          "function contains_%a (%a; const key : %a) : bool is block {%a} with %a@\n"
+          (pp_prefix_api_container_kind an) c
+          (fun fmt c ->
+             match c with
+             | Coll  -> Format.fprintf fmt "const s : storage_type"
+             | View  -> Format.fprintf fmt "const l : list(%a)" pp_btyp t
+             | Field -> Format.fprintf fmt "const l : set(%a)" pp_btyp t) c
+          pp_btyp t
+          (fun fmt c ->
+             match c with
+             | Coll  -> Format.fprintf fmt " skip "
+             | View  -> Format.fprintf fmt "@\n  function aggregate (const accu : bool; const v : %a) : bool is block { skip } with (accu or v = key);@\n" pp_btyp t
+             | Field -> Format.fprintf fmt " skip ") c
+          (fun fmt c ->
+             match c with
+             | Coll  -> Format.fprintf fmt "%s.mem (key, s.%s_assets)" (if Utils.is_asset_single_field model an then "Set" else "Map") an
+             | View  -> Format.fprintf fmt "list_fold(aggregate, l, False)"
+             | Field -> Format.fprintf fmt "Set.mem(key, l)" ) c
       end
 
     | Nth (an, c) ->
