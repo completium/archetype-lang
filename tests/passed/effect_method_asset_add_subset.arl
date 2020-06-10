@@ -1,4 +1,4 @@
-archetype effect_method_asset_add_collection
+archetype effect_method_asset_add_subset
 
 asset o_asset identified by oid {
   oid : string;
@@ -10,7 +10,7 @@ asset o_asset identified by oid {
 asset my_asset identified by id {
   id     : string;
   value  : int;
-  col    : o_asset collection;
+  col    : o_asset subset;
 } initialized by {
   {"id0"; 0; []};
   {"id1"; 1; []};

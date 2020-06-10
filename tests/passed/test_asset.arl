@@ -9,7 +9,7 @@ asset my_asset_simple identified by str {
 
 asset my_asset identified by j {
   j : int;
-  mycollection : my_asset_simple collection;
+  mysubset : my_asset_simple subset;
 } initialized by {
   { 0; [] }
 }

@@ -47,7 +47,6 @@
 %token BY
 %token CALL
 %token CALLED
-%token COLLECTION
 %token COLON
 %token COLONEQUAL
 %token COMMA
@@ -111,8 +110,8 @@
 %token PARTITION
 %token PERCENT
 %token PERCENTRBRACKET
-%token PKEY
 %token PIPE
+%token PKEY
 %token PLUS
 %token PLUSEQUAL
 %token POSTCONDITION
@@ -134,14 +133,15 @@
 %token SORTED
 %token SPECIFICATION
 %token STATES
+%token SUBSET
 %token THEN
 %token TO
 %token TRANSFER
 %token TRANSITION
 %token TRUE
-%token USE
 %token UNDERSCORE
 %token UNMOVED
+%token USE
 %token VAR
 %token VARIABLE
 %token WHEN
@@ -483,7 +483,7 @@ type_s_unloc:
 | MULT x=type_s { x }
 
 %inline container:
-| COLLECTION { Collection }
+| SUBSET     { Subset }
 | PARTITION  { Partition }
 
 %inline shadow_asset_fields:

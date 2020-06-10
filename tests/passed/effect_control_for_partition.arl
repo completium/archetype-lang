@@ -1,4 +1,4 @@
-archetype effect_control_for_view
+archetype effect_control_for_partition
 
 asset o_asset identified by oid {
   oid : int;

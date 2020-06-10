@@ -87,7 +87,7 @@ let get_prec_from_assignment_operator (op : assignment_operator) =
 (* -------------------------------------------------------------------------- *)
 let container_to_str c =
   match c with
-  | Collection -> "collection"
+  | Subset     -> "subset"
   | Partition  -> "partition"
 
 let pp_container fmt c =

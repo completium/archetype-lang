@@ -18,7 +18,7 @@ asset allowance {
 asset tokenHolder identified by holder {
     holder     : address;
     tokens     : int;
-    allowances : allowance collection;
+    allowances : allowance subset;
 } with {
     i1: tokens >= 0;
     i3: allowances.sum(the.amount) <= tokens;

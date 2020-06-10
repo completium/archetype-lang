@@ -1,4 +1,4 @@
-archetype no_field_collection_in_partition
+archetype no_field_partition_in_subset
 
 asset a {
   aid : int;
@@ -6,12 +6,12 @@ asset a {
 
 asset b {
   bid : int;
-  bc : a collection;
+  bc : a partition;
 }
 
 asset c {
   cid : int;
-  cc : b partition;
+  cc : b subset;
 }
 
 action exec () {

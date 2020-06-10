@@ -1,4 +1,4 @@
-archetype shallow_collection_test
+archetype shallow_subset_test
 
 asset asset2 identified by id2 {
   id2: string;
@@ -6,7 +6,7 @@ asset asset2 identified by id2 {
 
 asset asset1 identified by id1 {
   id1 : string;
-  col: asset2 collection;
+  col: asset2 subset;
 }
 
 action exec (k : pkey of asset1) {

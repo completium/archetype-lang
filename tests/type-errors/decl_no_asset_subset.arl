@@ -1,10 +1,10 @@
-archetype decl_no_asset_collection
+archetype decl_no_asset_subset
 
 asset my_asset {
   id : string;
 }
 
-variable a : my_asset collection = []
+variable a : my_asset subset = []
 
 action exec() {
   effect {

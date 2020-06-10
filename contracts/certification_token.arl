@@ -8,7 +8,7 @@ asset learner {
 asset institution {
   iid : address;
   itokens : int = 0;
-  ilearners : learner collection = [];
+  ilearners : learner subset = [];
 }
 
 asset certifier {

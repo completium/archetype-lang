@@ -32,7 +32,6 @@
       "by"                  , BY             ;
       "call"                , CALL           ;
       "called"              , CALLED         ;
-      "collection"          , COLLECTION     ;
       "constant"            , CONSTANT       ;
       "contract"            , CONTRACT       ;
       "definition"          , DEFINITION     ;
@@ -59,7 +58,6 @@
       "initialized"         , INITIALIZED    ;
       "invariant"           , INVARIANT      ;
       "iter"                , ITER           ;
-      "pkey"                , PKEY           ;
       "label"               , LABEL          ;
       "let"                 , LET            ;
       "list"                , LIST           ;
@@ -73,8 +71,9 @@
       "or"                  , OR             ;
       "otherwise"           , OTHERWISE      ;
       "partition"           , PARTITION      ;
-      "predicate"           , PREDICATE      ;
+      "pkey"                , PKEY           ;
       "postcondition"       , POSTCONDITION  ;
+      "predicate"           , PREDICATE      ;
       "record"              , RECORD         ;
       "ref"                 , REF            ;
       "removed"             , REMOVED        ;
@@ -82,10 +81,11 @@
       "return"              , RETURN         ;
       "security"            , SECURITY       ;
       "shadow"              , SHADOW         ;
-      "sorted"              , SORTED         ;
       "some"                , SOME           ;
+      "sorted"              , SORTED         ;
       "specification"       , SPECIFICATION  ;
       "states"              , STATES         ;
+      "subset"              , SUBSET         ;
       "then"                , THEN           ;
       "to"                  , TO             ;
       "transfer"            , TRANSFER       ;

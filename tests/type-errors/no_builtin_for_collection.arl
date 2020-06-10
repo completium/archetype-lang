@@ -1,9 +1,0 @@
-archetype no_builtin_for_collection
-
-variable res : int collection = []
-
-action exec () {
-  effect {
-    res := [1; 2; 3]
-  }
-}

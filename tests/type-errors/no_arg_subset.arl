@@ -1,13 +1,13 @@
-archetype no_arg_collection
+archetype no_arg_subset
 
 asset et identified by cid { cid: int; }
 
 asset e identified by eid {
 	eid			: string;
-	cells		: et collection;
+	cells		: et subset;
 }
 
-action start (cl: et collection) {
+action start (cl: et subset) {
 	effect {
 		var ev : e = { eid = "123"; cells = cl };
 	}

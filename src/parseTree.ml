@@ -11,7 +11,7 @@ type lident = ident loced
 
 (* -------------------------------------------------------------------- *)
 and container =
-  | Collection
+  | Subset
   | Partition
 
 and type_r =
