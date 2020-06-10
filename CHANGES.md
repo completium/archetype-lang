@@ -6,7 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
- - Next feature
+ - Introduce `container_kind` in model
+
+ ### Update
+ - Replace `list` by `set` container for asset container fields (Collection | Partition).
 
 ## [0.1.14] - 2020-04-25
 ### Added
