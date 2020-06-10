@@ -1342,18 +1342,25 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let argids = args |> List.map (fun (e, _, _) -> e) |> List.map (map_mterm m ctx) in
       let args = List.map (fun (i,_) -> loc_term (Tvar i)) la in
       Tapp (loc_term (Tvar id), argids @ args @ [loc_term (mk_ac a)])
+    | Mselect (_a, CKfield _, _la, _lb, _v) -> error_not_translated "Mselect for CKfield"
     | Msort (a, CKview c,l) -> Tvsort (with_dummy_loc (mk_sort_clone_id a l),map_mterm m ctx c,loc_term (mk_ac a))
+    | Msort (a, CKfield c,l) -> Tvsort (with_dummy_loc (mk_sort_clone_id a l),map_mterm m ctx c,loc_term (mk_ac a))
     | Msort (a, CKcoll,l) -> Tcsort (with_dummy_loc (mk_sort_clone_id a l), loc_term (mk_ac a))
-
     | Mcontains (a, CKview v, r) -> Tvcontains (with_dummy_loc a, map_mterm m ctx r, map_mterm m ctx v)
+    | Mcontains (a, CKfield v, r) -> Tvcontains (with_dummy_loc a, map_mterm m ctx r, map_mterm m ctx v)
     | Mcontains (a, CKcoll, r) -> Tccontains (with_dummy_loc a, map_mterm m ctx r, loc_term (mk_ac a) )
 
     | Mnth (n, CKview c,k) -> Tapp (loc_term (Tvar ("vnth_" ^ n)),[map_mterm m ctx c; map_mterm m ctx k])
+    | Mnth (n, CKfield c,k) -> Tapp (loc_term (Tvar ("vnth_" ^ n)),[map_mterm m ctx c; map_mterm m ctx k])
     | Mnth (n, CKcoll,k) -> Tapp (loc_term (Tvar ("cnth_" ^ n)),[loc_term (mk_ac n); map_mterm m ctx k])
     | Mcount (a, CKview t) -> Tvcard (with_dummy_loc a, map_mterm m ctx t)
+    | Mcount (a, CKfield t) -> Tvcard (with_dummy_loc a, map_mterm m ctx t)
     | Mcount (a, CKcoll) -> Tccard (with_dummy_loc a, loc_term (mk_ac a))
-
     | Msum          (a, CKview v,f) ->
+      let cloneid = mk_sum_clone_id m a f in
+      let col = mk_ac_ctx a ctx in
+      Tvsum(with_dummy_loc cloneid,map_mterm m ctx v,col)
+    | Msum          (a, CKfield v,f) ->
       let cloneid = mk_sum_clone_id m a f in
       let col = mk_ac_ctx a ctx in
       Tvsum(with_dummy_loc cloneid,map_mterm m ctx v,col)
@@ -1363,8 +1370,10 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       Tcsum(with_dummy_loc cloneid,col)
     | Mhead (n, CKview c, v) -> Tvhead(with_dummy_loc n, map_mterm m ctx v, map_mterm m ctx c)
     | Mhead (n, CKcoll, v) -> Tchead(with_dummy_loc n, map_mterm m ctx v, loc_term (mk_ac n))
+    | Mhead (_n, CKfield _, _v) -> error_not_translated "Mhead for CKfield"
     | Mtail  (n, CKview c, v) -> Tvtail(with_dummy_loc n, map_mterm m ctx v, map_mterm m ctx c)
     | Mtail  (n, CKcoll, v) -> Tctail(with_dummy_loc n, map_mterm m ctx v, loc_term (mk_ac n))
+    | Mtail  (_n, CKfield _, _v) -> error_not_translated "Mtail for CKfield"
 
     (* utils *)
     | Mcast (Tcontainer (Tasset a,Collection),Tcontainer (Tasset _, View), v) ->
@@ -2660,14 +2669,14 @@ let mk_storage_api (m : M.model) records =
         let record = get_record n (records |> unloc_decl) in
         let k      = M.Utils.get_asset_key m (get_record_name record) |> fst in
         acc @ [mk_set_asset m k record]
-      | M.APIAsset (UpdateAdd (a,pf)) ->
+      | M.APIAsset (FieldAdd (a,pf)) ->
         let k            = M.Utils.get_asset_key m a |> fst in
         let (pa,addak,_) = M.Utils.get_container_asset_key m a pf in
         acc @ [
           (*mk_add_asset           pa.pldesc addak.pldesc;*)
           mk_add_field m (is_partition m a pf) a k pf pa addak
         ]
-      | M.APIAsset (UpdateRemove (n,f)) ->
+      | M.APIAsset (FieldRemove (n,f)) ->
         let t         = M.Utils.get_asset_key m n |> fst in
         let (pa,pk,_) = M.Utils.get_container_asset_key m n f in
         acc @ [

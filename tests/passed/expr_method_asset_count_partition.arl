@@ -1,4 +1,4 @@
-archetype expr_method_asset_nth_partition
+archetype expr_method_asset_count_partition
 
 asset o_asset identified by oid {
   oid : int;
@@ -13,14 +13,13 @@ asset my_asset identified by id {
   {"id2"; []}
 }
 
-variable res : int = 0
+variable res : int = -1
 
 action exec () {
   specification {
-    s0: res = 1;
+    s0: res = 0;
   }
   effect {
-    var k = my_asset["id0"].col.nth(0);
-    require (res = 1)
+    res := my_asset["id0"].col.count();
   }
 }

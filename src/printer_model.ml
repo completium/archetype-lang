@@ -111,13 +111,15 @@ let pp_action_description fmt ad =
   | ADcall     id -> Format.fprintf fmt "call (%a)" pp_ident id
 
 let pp_container_kind f fmt = function
-  | CKcoll -> pp_str fmt "_Coll_"
-  | CKview mt -> f fmt mt
+  | CKcoll     -> pp_str fmt "_Coll_"
+  | CKview mt  -> f fmt mt
+  | CKfield mt -> f fmt mt
 
 let pp_iter_container_kind f fmt = function
-  | ICKcoll an -> Format.fprintf fmt "%a" pp_str an
-  | ICKview mt -> Format.fprintf fmt "%a" f mt
-  | ICKlist mt -> Format.fprintf fmt "%a" f mt
+  | ICKcoll  an -> Format.fprintf fmt "%a" pp_str an
+  | ICKview  mt -> Format.fprintf fmt "%a" f mt
+  | ICKfield mt -> Format.fprintf fmt "%a" f mt
+  | ICKlist  mt -> Format.fprintf fmt "%a" f mt
 
 let pp_mterm fmt (mt : mterm) =
   let rec f fmt (mtt : mterm) =
@@ -1087,19 +1089,20 @@ let pp_label_term fmt (lt : label_term) =
     pp_mterm lt.term
 
 let pp_ck fmt = function
-  | Coll -> pp_str fmt "collection"
-  | View -> pp_str fmt "view"
+  | Coll  -> Format.fprintf fmt "collection"
+  | View  -> Format.fprintf fmt "view"
+  | Field -> Format.fprintf fmt "field"
 
 let pp_api_asset fmt = function
   | Get an -> pp_str fmt ("get\t " ^ an)
   | Set an -> pp_str fmt ("set\t " ^ an)
   | Add an -> pp_str fmt ("add\t " ^ an)
-  | Remove an -> pp_str fmt ("remove\t " ^ an)
-  | Clear (an, c) -> Format.fprintf fmt "clear %s on %a" an pp_ck c
-  | Update (an, l) -> Format.fprintf fmt "update\t%a with %a" pp_str an (pp_list ", " (fun fmt (id, op, v) -> Format.fprintf fmt "%s %a %a)" id pp_assignment_operator op pp_mterm v)) l
-  | UpdateAdd (an, fn) -> pp_str fmt ("add\t " ^ an ^ " " ^ fn)
-  | UpdateRemove (an, fn) -> pp_str fmt ("remove\t " ^ an ^ " " ^ fn)
-  | RemoveAll (an, fn) -> pp_str fmt ("removeall\t " ^ an ^ " " ^ fn)
+  | Remove an            -> pp_str fmt ("remove\t " ^ an)
+  | Clear (an, c)        -> Format.fprintf fmt "clear %s on %a" an pp_ck c
+  | Update (an, l)       -> Format.fprintf fmt "update\t%a with %a" pp_str an (pp_list ", " (fun fmt (id, op, v) -> Format.fprintf fmt "%s %a %a)" id pp_assignment_operator op pp_mterm v)) l
+  | FieldAdd (an, fn)    -> pp_str fmt ("field_add\t " ^ an ^ " " ^ fn)
+  | FieldRemove (an, fn) -> pp_str fmt ("field_remove\t " ^ an ^ " " ^ fn)
+  | RemoveAll (an, fn)   -> pp_str fmt ("removeall\t " ^ an ^ " " ^ fn)
   (* | UpdateClear (an, fn) -> pp_str fmt ("clear\t " ^ an ^ " " ^ fn) *)
   | Contains (an, c)     -> Format.fprintf fmt "contains %s on %a" an pp_ck c
   | Nth (an, c)          -> Format.fprintf fmt "nth %s on %a" an pp_ck c

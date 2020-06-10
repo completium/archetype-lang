@@ -180,7 +180,7 @@ let pp_model fmt (model : model) =
 
     | Update _ -> Format.fprintf fmt "// TODO api storage: update"
 
-    | UpdateAdd (an, fn) ->
+    | FieldAdd (an, fn) ->
       let k, _t = Utils.get_asset_key model an in
       let ft, c = Utils.get_field_container model an fn in
       let kk, _ = Utils.get_asset_key model ft in
@@ -197,7 +197,7 @@ let pp_model fmt (model : model) =
              (fun fmt _ -> Format.fprintf fmt "if not (Map.mem b.%s s.%s_assets) then failwith \"key of b does not exist\";@\n  " kk ft)) ()
         an pp_str k an
 
-    | UpdateRemove (an, fn) ->
+    | FieldRemove (an, fn) ->
       let k, _t = Utils.get_asset_key model an in
       let ft, c = Utils.get_field_container model an fn in
       let _kk, tt = Utils.get_asset_key model ft in
@@ -413,15 +413,17 @@ let pp_model fmt (model : model) =
   in
 
   let pp_container_kind f fmt = function
-    | CKcoll -> pp_str fmt "_Coll_"
-    | CKview mt -> f fmt mt
+    | CKcoll     -> pp_str fmt "_Coll_"
+    | CKview mt  -> f fmt mt
+    | CKfield mt -> f fmt mt
   in
 
 
   let pp_iter_container_kind f fmt = function
-    | ICKcoll an -> Format.fprintf fmt "%a" pp_str an
-    | ICKview mt -> Format.fprintf fmt "%a" f mt
-    | ICKlist mt -> Format.fprintf fmt "%a" f mt
+    | ICKcoll an  -> Format.fprintf fmt "%a" pp_str an
+    | ICKview mt  -> Format.fprintf fmt "%a" f mt
+    | ICKfield mt -> Format.fprintf fmt "%a" f mt
+    | ICKlist mt  -> Format.fprintf fmt "%a" f mt
   in
 
   let pp_mterm fmt (mt : mterm) =
