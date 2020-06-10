@@ -3178,7 +3178,7 @@ end = struct
       ) []
 
   let get_containers m : (ident * ident * type_) list =
-    get_containers_internal (function | Tcontainer (Tasset _, (Partition | Collection)) -> true | _ -> false ) m
+    get_containers_internal (function | Tcontainer (Tasset _, (Partition | Subset)) -> true | _ -> false ) m
 
   let get_partitions m : (ident * ident * type_) list =
     get_containers_internal (function | Tcontainer (Tasset _, Partition) -> true | _ -> false ) m
@@ -3188,7 +3188,7 @@ end = struct
       let asset = get_asset m asset in
       List.fold_left (fun acc v ->
           match v.type_ with
-          | Tcontainer (Tasset _, (Partition | Collection)) -> true
+          | Tcontainer (Tasset _, (Partition | Subset)) -> true
           | _ -> acc
         ) false asset.values
     with
@@ -3199,14 +3199,14 @@ end = struct
       let asset = get_asset m asset in
       List.fold_left (fun acc v ->
           match v.type_ with
-          | Tcontainer (Tasset _, (Partition | Collection)) -> acc @ [unloc v.name, v.type_, v.default]
+          | Tcontainer (Tasset _, (Partition | Subset)) -> acc @ [unloc v.name, v.type_, v.default]
           | _ -> acc
         ) [] asset.values
     with
     | Not_found -> []
 
   let dest_container = function
-    | Tcontainer (Tasset p,(Partition | Collection)) -> unloc p
+    | Tcontainer (Tasset p,(Partition | Subset)) -> unloc p
     | _ -> assert false
 
   let get_asset_field (m : model) (asset_name, field_name : ident * ident) : ident * type_ * mterm option =
