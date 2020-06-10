@@ -2285,10 +2285,16 @@ let check_if_asset_in_function (model : model) : model =
 
 let replace_api_view_by_col (model : model) : model =
   let is_field (c : mterm) =
-    match c with
-    | { node = _;
-        type_ = Tcontainer ((Tasset _), Partition);
+      match c with
+    | { node = Mcast (
+        (Tcontainer ((Tasset _), (Subset | Partition))),
+        (Tcontainer ((Tasset _), View)),
+        { node = _;
+          type_ = Tcontainer ((Tasset _), (Subset | Partition)); _});
+        type_ = Tcontainer ((Tasset _), View);
         _} -> true
+    | { node = _;
+        type_ = Tcontainer ((Tasset _), (Subset | Partition)); _} -> true
     | _ -> false
   in
 
@@ -2297,11 +2303,11 @@ let replace_api_view_by_col (model : model) : model =
     | { node = Mcast (
         (Tcontainer ((Tasset _), Collection)),
         (Tcontainer ((Tasset _), View)),
-        { node = (Mvarstorecol _);
+        { node = _;
           type_ = Tcontainer ((Tasset _), Collection); _});
         type_ = Tcontainer ((Tasset _), View);
         _} -> true
-    | { node = (Mvarstorecol _);
+    | { node = _;
         type_ = Tcontainer ((Tasset _), Collection); _} -> true
     | _ -> false
   in

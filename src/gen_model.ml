@@ -28,6 +28,7 @@ let to_model (ast : A.model) : M.model =
   let to_container c =
     match c with
     | A.Collection -> M.Collection
+    | A.Subset     -> M.Subset
     | A.Partition  -> M.Partition
     | A.View       -> M.View
     (* | _            -> emit_error (NotSupportedContainer (Format.asprintf "%a@." A.pp_container c)) *)

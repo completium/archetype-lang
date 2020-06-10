@@ -13,6 +13,7 @@ type currency =
 
 type container =
   | Collection
+  | Subset
   | Partition
   | View
 [@@deriving show {with_path = false}]

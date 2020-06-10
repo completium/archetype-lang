@@ -136,6 +136,7 @@ let pp_model_internal fmt (model : model) b =
 
   let pp_container fmt = function
     | Collection -> Format.fprintf fmt "list"
+    | Subset     -> Format.fprintf fmt "set"
     | Partition  -> Format.fprintf fmt "set"
     | View       -> Format.fprintf fmt "list"
   in

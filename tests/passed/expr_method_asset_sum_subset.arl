@@ -1,0 +1,26 @@
+archetype expr_method_asset_sum_subset
+
+asset o_asset identified by oid {
+  oid : int;
+}
+
+asset my_asset identified by id {
+  id     : string;
+  col    : o_asset subset;
+} initialized by {
+  {"id0"; []};
+  {"id1"; []};
+  {"id2"; []}
+}
+
+variable res : int = -1
+
+action exec () {
+  specification {
+    s0: res = 0;
+  }
+  effect {
+    res := my_asset["id0"].col.sum(oid);
+    require (res = 0)
+  }
+}

@@ -1346,7 +1346,7 @@ let select_operator env loc (op, tys) =
 
 (* -------------------------------------------------------------------- *)
 let for_container (_ : env) = function
-  | PT.Subset     -> M.Collection
+  | PT.Subset     -> M.Subset
   | PT.Partition  -> M.Partition
 
 (* -------------------------------------------------------------------- *)

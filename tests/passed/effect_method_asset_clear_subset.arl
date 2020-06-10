@@ -3,8 +3,6 @@ archetype effect_method_asset_clear_subset
 asset o_asset identified by oid {
   oid : string;
   val : int = 0;
-} initialized by {
-  {"oid"; 1}
 }
 
 asset my_asset identified by id {
@@ -12,7 +10,7 @@ asset my_asset identified by id {
   value  : int;
   col    : o_asset subset;
 } initialized by {
-  {"id0"; 0; [{"oid"; 1}]};
+  {"id0"; 0; []};
   {"id1"; 1; []};
   {"id2"; 2; []}
 }
