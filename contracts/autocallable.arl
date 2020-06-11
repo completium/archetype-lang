@@ -171,22 +171,24 @@ function compute_expected (d : date) : tez {
          and fixing[gredemption].ubs >= ubs_strike
       then
          expected += nominal
-      else
+      else (
          var bac_trigger = fixing[gredemption].bac / bac_strike;
          var sg_trigger  = fixing[gredemption].sg  / sg_strike;
          var ubs_trigger = fixing[gredemption].ubs / ubs_strike;
          var worst = min ((min (bac_trigger, sg_trigger)), ubs_trigger);
-         expected += worst * nominal;
+         expected += worst * nominal
+      );
     (* expected interests *)
     var exp_interests = 0.0;
     for : interestloop i in interest do
       if interest[i].iobservation <= redeem_date and interest[i].payment <= d
-      then
+      then (
         var ii = interest[i].iobservation;
         if     fixing[ii].bac >= interest[i].barrier * bac_initial
            and fixing[ii].sg  >= interest[i].barrier * sg_initial
            and fixing[ii].ubs >= interest[i].barrier * ubs_initial
         then exp_interests := interest[i].rate * nominal
+      )
     done;
     expected += exp_interests;
     return expected
