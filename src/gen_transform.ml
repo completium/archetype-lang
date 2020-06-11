@@ -748,7 +748,7 @@ let remove_enum_matchwith (model : model) : model =
                 mk_mterm (Mequal (v, val_enum id)) type_bool
               end
             in
-            let mk_if cond then_ else_ = mk_mterm (Mif (cond, then_, Some else_)) Tunit in
+            let mk_if cond then_ else_ = mk_mterm (Mif (cond, then_, Some else_)) mt.type_ in
             match x with
             | {node = Pconst id; _}, e ->
               begin

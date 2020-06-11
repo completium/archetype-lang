@@ -24,7 +24,7 @@ variable nb_tez_raised : tez = 0tz
 
 (* Roles *)
 
-variable owner : role = @tz1_owner
+variable owner : role = @tz1XZ7s6uStC2hZVpPQhXgcdXPwxifByF3Ao
 
 variable whitelister : role = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 
