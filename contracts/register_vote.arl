@@ -28,14 +28,14 @@ asset vote {
   i0 : vcount > 0;
 }
 
-entry add_voter (voter_id : pkey of voter) {
+entry addvoter (voter_id : pkey of voter) {
   called by admin
   effect {
     voter.add({voter_id})
   }
 }
 
-entry add_vote (id : string, candidate : address) {
+entry addvote (id : string, candidate : address) {
   called by admin
   effect {
     vote.add({ vid = id; vcandidate = candidate })
