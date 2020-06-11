@@ -2441,8 +2441,7 @@ let mk_add_field_ensures m partition a _ak field prefix adda elem =
   if partition then
     add_field_ensures @ (mk_add_ensures m prefix adda elem)
   else
-    mk_add_ensures m prefix adda elem
-
+    []
 
 (* part    : is field a partition
    a       : asset name
@@ -2453,7 +2452,7 @@ let mk_add_field_ensures m partition a _ak field prefix adda elem =
 *)
 let mk_add_field m part a ak field adda addak : decl =
   (* let akey  = Tapp (Tvar ak,[Tvar "asset"]) in *)
-  let addak = Tapp (Tvar addak,[Tvar "new_asset"]) in
+  let addak = if part then Tapp (Tvar addak,[Tvar "new_asset"]) else Tvar "new_asset" in
   let test,exn =
     if part then
       (fun mode -> mk_key_found_cond mode a (Tvar ("asset_id"))), Ekeyexist
@@ -2463,7 +2462,7 @@ let mk_add_field m part a ak field adda addak : decl =
   Dfun {
     name     = "add_" ^ a ^ "_" ^ field;
     logic    = NoMod;
-    args     = ["asset_id",Tykey; "new_asset",Tyasset adda];
+    args     = ["asset_id",Tykey; "new_asset", if part then Tyasset adda else Tykey];
     returns  = Tyunit;
     raises   = [Timpl (Texn exn,
                        test `Old);
