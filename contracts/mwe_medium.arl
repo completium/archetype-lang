@@ -63,6 +63,6 @@ entry consume (ow : address, qty : int) {
 }
 
 security {
-    s0 : only_by_role (anyaction, admin);
+    s0 : only_by_role (anyentry, admin);
     s1 : no_storage_fail (add);
 }

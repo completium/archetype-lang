@@ -50,7 +50,3 @@ transition[%onlyonce%] cancel () {
     transfer price to buyer
   }
 }
-
-(* security {
-  s1 : only_by_role (transfers, oracle)
-} *)

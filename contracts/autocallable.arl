@@ -146,13 +146,13 @@ function compute_expected (d : date) : tez {
   }
 
   effect {
-    let expected = 0tz in
-    let terminated = false in
-    let redeem_date = final in
+    var expected = 0tz;
+    var terminated = false;
+    var redeem_date = final;
     (* early redemption *)
     for : redeemloop e in early do
       if early[e].redemption <= d
-      then (* is there early redemption ? *)
+      then ( (* is there early redemption ? *)
         var ee = early[e].eobservation;
         if     fixing[ee].bac >= early[e].trigger * bac_initial
            and fixing[ee].sg  >= early[e].trigger * sg_initial
@@ -161,7 +161,7 @@ function compute_expected (d : date) : tez {
            expected += early[e].value * nominal;
            redeem_date := early[e].eobservation;
            terminated := true
-        )
+        ))
     done;
     (* redemption *)
     if not terminated and gredemption <= d
@@ -172,13 +172,13 @@ function compute_expected (d : date) : tez {
       then
          expected += nominal
       else
-         let bac_trigger = fixing[gredemption].bac / bac_strike in
-         let sg_trigger  = fixing[gredemption].sg  / sg_strike  in
-         let ubs_trigger = fixing[gredemption].ubs / ubs_strike in
-         let worst = min ((min (bac_trigger, sg_trigger)), ubs_trigger) in
+         var bac_trigger = fixing[gredemption].bac / bac_strike;
+         var sg_trigger  = fixing[gredemption].sg  / sg_strike;
+         var ubs_trigger = fixing[gredemption].ubs / ubs_strike;
+         var worst = min ((min (bac_trigger, sg_trigger)), ubs_trigger);
          expected += worst * nominal;
     (* expected interests *)
-    let exp_interests = 0.0 in
+    var exp_interests = 0.0;
     for : interestloop i in interest do
       if interest[i].iobservation <= redeem_date and interest[i].payment <= d
       then
