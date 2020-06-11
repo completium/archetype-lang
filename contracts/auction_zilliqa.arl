@@ -69,7 +69,21 @@ entry place_bid () {
 }
 
 (* onlyonce extension specifies that one cannot withdraw more than once *)
-entry[%onlyonce%] withdraw () {
+entry withdraw () {
+  specification {
+    variable call_count : int = 0
+    shadow effect {
+      label step;
+      call_count += 1
+    }
+    postcondition o1 {
+      none
+      invariant for step {
+        requires -> call_count = 0;
+        call_count <= 1
+      }
+    }
+  }
   require {
     c2 : pending_return.contains(caller);
   }
