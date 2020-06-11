@@ -1,12 +1,14 @@
 archetype voting_process
 
-variable[%transferable%] chairperson : role = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
+variable chairperson : role = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
+
+variable chairperson_tmp : role = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 
 (* vote start *)
-variable[%mutable (chairperson, (instate (Created)))%] startDate : date = 2019-11-12T00:00:00
+variable startDate : date = 2019-11-12T00:00:00
 
 (* vote deadline *)
-variable[%mutable (chairperson, (instate (Created)))%] deadline : date = 2020-11-12T00:00:00
+variable deadline : date = 2020-11-12T00:00:00
 
 asset voter identified by addr {
   addr : role;
@@ -90,5 +92,39 @@ specification {
              let some wb = ballot.get(w.winvalue) in
              b.nbvotes <= wb.nbvotes
              otherwise false
+  }
+}
+
+entry assign_new_chairperson (newrole : role) {
+  called by chairperson
+  effect {
+    chairperson_tmp := newrole;
+  }
+}
+
+entry confirm_chairperson () {
+  called by chairperson_tmp
+  effect {
+    chairperson := chairperson_tmp;
+  }
+}
+
+entry set_startDate (newstartDate : date) {
+  called by chairperson
+  require {
+    set_startDate_c1 : state = Created;
+  }
+  effect {
+    startDate := newstartDate
+  }
+}
+
+entry set_deadline (newdeadline : date) {
+  called by chairperson
+  require {
+    set_deadline_c1 : state = Created;
+  }
+  effect {
+    deadline := newdeadline
   }
 }
