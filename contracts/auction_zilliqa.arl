@@ -77,9 +77,9 @@ entry withdraw () {
       call_count += 1
     }
     postcondition o1 {
-      none
+      true
       invariant for step {
-        requires -> call_count = 0;
+        pending_return.contains(caller) -> call_count = 0;
         call_count <= 1
       }
     }
