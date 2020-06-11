@@ -31,7 +31,7 @@ transition confirm () {
   to Confirmed when { balance = price }
 }
 
-transition[%onlyonce%] complete () {
+transition complete () {
   called by oracle
 
   from Confirmed
@@ -41,7 +41,7 @@ transition[%onlyonce%] complete () {
   }
 }
 
-transition[%onlyonce%] cancel () {
+transition cancel () {
   called by oracle
 
   from Confirmed

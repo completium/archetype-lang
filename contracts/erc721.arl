@@ -6,7 +6,7 @@ constant symbol : string = "my_token"
 
 asset token {
   id : string;
-  owner[%delegable%] : role;
+  owner : role;
 }
 
 entry transfer_ (k : role, tk : pkey of token) {

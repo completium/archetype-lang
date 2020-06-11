@@ -1,21 +1,21 @@
-archetype[%erc20%] ico
+archetype ico
 
 constant symbol : string = "BCDT"
 
 constant decimals : int  = 18
 
 (* contribution thresholds *)
-variable[%mutable (owner, (state = Init))%] min_contribution : tez = 1tz
-variable[%mutable (owner, (state = Init))%] max_contribution_silver : tez = 10tz
+variable min_contribution : tez = 1tz
+variable max_contribution_silver : tez = 10tz
 
 (* bcd token data *)
-variable[%mutable (owner, (state = Init))%] max_bcd_to_sell : tez = 100000000tz
-variable[%mutable (owner, (state = Init))%] exchange_rate_bcd_tez : int = 13000
+variable max_bcd_to_sell : tez = 100000000tz
+variable exchange_rate_bcd_tez : int = 13000
 
 (* round caps *)
-variable[%mutable (owner, (state = Init))%] soft_cap : tez = 1800tz
-variable[%mutable (owner, (state = Init))%] presales_cap : tez = 1800tz
-variable[%mutable (owner, (state = Init))%] round1_cap : tez = 3600tz
+variable soft_cap : tez = 1800tz
+variable presales_cap : tez = 1800tz
+variable round1_cap : tez = 3600tz
 (* presales_cap + 1600 *)
 
 (* Number tokens sent, eth raised, ... *)
@@ -24,7 +24,7 @@ variable nb_tez_raised : tez = 0tz
 
 (* Roles *)
 
-variable[%transferable%] owner : role = @tz1_owner
+variable owner : role = @tz1_owner
 
 variable whitelister : role = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 
@@ -38,8 +38,7 @@ enum whitelist =
  | Silver
  | Gold
 
-asset[@add @remove @update owner (state = Init)]
-     contributor identified by id {
+asset contributor identified by id {
    id           : address;
    wlist        : whitelist;
    contrib      : tez = 0tz;
@@ -135,7 +134,7 @@ entry contribute () {
 (* the onlyonce extension specifies that withdraw action can be
   executed only once, that is a contributor can withdraw only once. *)
 
-entry[%onlyonce%] withdraw () {
+entry withdraw () {
   require {
     c5 : vstate = Round2Finished;
     c6 : nb_tez_raised <= soft_cap;

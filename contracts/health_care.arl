@@ -21,7 +21,7 @@ states =
 | Running
 | Canceled
 
-transition[%signedbyall ([patient; insurer])%] confirm () {
+transition confirm () {
   from Created
   (*signed by [insrurer; patient]*)
   to Running
@@ -36,7 +36,7 @@ transition cancel () {
   to Canceled
 }
 
-entry[%signedbyall ([patient; insurer])%] register_doctor (docid : address) {
+entry register_doctor (docid : address) {
   (*signed by [insurer; patient]*)
   require {
      r1 : state = Running;
