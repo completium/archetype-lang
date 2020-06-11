@@ -32,7 +32,7 @@ entry register (newadmins : ((pkey of admins) list) option, oldhash : string, ne
         require (test = true);
         hash := newhash;
         if issome(newadmins) then (
-            admins.removeall();
+            admins.clear();
             for a in getopt(newadmins) do
                 admins.add ({ a })
             done

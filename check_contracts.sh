@@ -10,7 +10,6 @@ c3n.arl \
 certificate_generator.arl \
 certification_token.arl \
 clause_io_acceptance_of_delivery.arl \
-coase.arl \
 competition.arl \
 empty.arl \
 erc20.arl \
@@ -35,6 +34,7 @@ zero_coupon_bond_with_insurance.arl \
 REMAINED_RET_CONTRACTS="
 animal_tracking.arl \
 autocallable.arl \
+coase.arl \
 escrow_basic.arl \
 escrow_simple.arl \
 miles_with_expiration_simple.arl \
@@ -49,11 +49,9 @@ auction_no_memory.arl \
 auction_zilliqa.arl \
 auction.arl \
 bond.arl \
-c3n.arl \
 certificate_generator.arl \
 certification_token.arl \
 clause_io_acceptance_of_delivery.arl \
-coase.arl \
 competition.arl \
 empty.arl \
 erc20.arl \
@@ -77,6 +75,8 @@ zero_coupon_bond.arl \
 REMAINED_EXEC_CONTRACTS="\
 animal_tracking.arl \
 autocallable.arl \
+c3n.arl \
+coase.arl \
 escrow_basic.arl \
 escrow_simple.arl \
 ico.arl \
@@ -96,7 +96,6 @@ c3n.arl \
 certificate_generator.arl \
 certification_token.arl \
 clause_io_acceptance_of_delivery.arl \
-coase.arl \
 competition.arl \
 empty.arl \
 erc20.arl \
@@ -123,6 +122,7 @@ animal_tracking.arl \
 autocallable.arl \
 escrow_basic.arl \
 escrow_simple.arl \
+coase.arl \
 miles_with_expiration_simple.arl \
 miles_with_expiration.arl \
 mwe_medium.arl \
