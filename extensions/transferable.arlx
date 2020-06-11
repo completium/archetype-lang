@@ -9,14 +9,14 @@ archetype extension transferable (
   entry assign_new_<%aRole> (newrole : role) {
     called by aRole
     effect {
-      <%aRole>_tmp := newrole
+      <%aRole>_tmp := newrole;
     }
   }
 
   entry confirm_<%aRole> () {
     called by <%aRole>_tmp
     effect {
-      aRole := <%aRole>tmp
+      aRole := <%aRole>_tmp;
     }
   }
 }

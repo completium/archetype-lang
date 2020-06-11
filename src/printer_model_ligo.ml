@@ -141,6 +141,13 @@ let pp_model_internal fmt (model : model) b =
     | View       -> Format.fprintf fmt "list"
   in
 
+  let pp_pretty_container fmt = function
+    | Collection -> Format.fprintf fmt "collection"
+    | Subset     -> Format.fprintf fmt "subset"
+    | Partition  -> Format.fprintf fmt "partition"
+    | View       -> Format.fprintf fmt "view"
+  in
+
   let rec pp_type fmt t =
     match t with
     | Tasset an ->
@@ -194,6 +201,12 @@ let pp_model_internal fmt (model : model) b =
   let pp_pretty_type fmt t =
     match t with
     | Ttuple[Tbuiltin Bint; Tbuiltin Bint] -> pp_type fmt (Tbuiltin Brational)
+    | Tlist t           -> Format.fprintf fmt "list_%a" pp_type t
+    | Tcontainer (t, c) -> Format.fprintf fmt "container_%a_%a" pp_type t pp_pretty_container c
+    | Toption t         -> Format.fprintf fmt "option_%a" pp_type t
+    | Ttuple l          -> Format.fprintf fmt "tuple_%a" (pp_list "_" pp_type) l
+    | Tset t            -> Format.fprintf fmt "set_%a" pp_btyp t
+    | Tmap (k, v)       -> Format.fprintf fmt "map_%a_%a" pp_btyp k pp_type v
     | _ -> pp_type fmt t
   in
 
