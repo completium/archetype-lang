@@ -26,8 +26,8 @@ asset winner {
 
 (* state machine *)
 states =
- | Created initial with { s1 : winner.isempty(); }
- | Voting          with { s2 : winner.isempty(); }
+ | Created initial /* with { s1 : winner.isempty(); } */
+ | Voting          /* with { s2 : winner.isempty(); } */
  | Buried
 
 entry register (v : role) {
