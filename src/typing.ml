@@ -1284,7 +1284,7 @@ let check_and_emit_name_free (env : env) (x : M.lident) =
     false
 
 (* --------------------------------------------------------------------- *)
-let select_operator env loc (op, tys) =
+let select_operator env ?(asset = false) loc (op, tys) =
   match op with
   | PT.Cmp (PT.Equal | PT.Nequal) -> begin
       let module E = struct exception NoEq end in
@@ -1309,10 +1309,36 @@ let select_operator env loc (op, tys) =
     end
 
   | _ -> begin
-      let filter (sig_ : opsig) =
-        Type.sig_compatible ~from_:tys ~to_:sig_.osl_sig in
+      let ops = 
+        let filter (sig_ : opsig) =
+          Type.sig_compatible ~from_:tys ~to_:sig_.osl_sig
+        in List.filter filter (List.assoc_all op opsigs) in
 
-      match List.filter filter (List.assoc_all op opsigs) with
+      let ops =
+        let extra =
+          match asset, op, tys with
+          | true, PT.Arith PT.Plus,
+            [Tcontainer ((Tasset _) as aty, (Subset | Partition)) as rty;
+             Tcontainer ((Tasset _) as sty, Collection)]
+              when Type.compatible ~from_:sty ~to_:aty
+            -> [{ osl_sig = tys; osl_ret = rty }]
+  
+          | true, PT.Arith PT.Minus,
+            [Tcontainer (Tasset aty, (Subset | Partition)) as rty; Tlist sty] ->
+  
+            let asset = Env.Asset.get env (unloc aty) in
+            let pk    = Option.get (get_field (unloc asset.as_pk) asset) in
+  
+            if Type.compatible ~from_:sty ~to_:pk.fd_type then
+              [{ osl_sig = tys; osl_ret = rty }]
+            else []
+  
+          | _, _, _ -> []
+
+        in ops @ extra
+      in
+
+      match ops with
       | [] ->
         Env.emit_error env
           (loc, NoMatchingOperator (op, tys));
@@ -2570,7 +2596,7 @@ and for_arg_effect
           match get_field (unloc x) asset with
           | Some { fd_type = fty } ->
             let op  = for_assignment_operator op in
-            let e   = for_assign_expr mode env (loc x) (op, fty) e in
+            let e   = for_assign_expr ~asset:true mode env (loc x) (op, fty) e in
 
             if Mid.mem (unloc x) map then begin
               Env.emit_error env (loc x, DuplicatedFieldInRecordLiteral (unloc x));
@@ -2612,7 +2638,7 @@ and for_arg_effect
     None
 
 (* -------------------------------------------------------------------- *)
-and for_assign_expr mode env orloc (op, fty) e =
+and for_assign_expr ?(asset = false) mode env orloc (op, fty) e =
   let op =
     match op with
     | ValueAssign -> None
@@ -2628,15 +2654,10 @@ and for_assign_expr mode env orloc (op, fty) e =
   let e = for_xexpr mode env ?ety e in
 
   Option.get_dfl e (
-    op      |> Option.bind (fun op  ->
-        e.type_ |> Option.bind (fun ety ->
-            match select_operator env orloc (op, [fty; ety]) with
-            | Some sig_ ->
-              Some (cast_expr env (Some (List.last sig_.osl_sig)) e)
-            | None ->
-              Env.emit_error env (orloc, NoMatchingOperator (op, [fty; ety]));
-              None
-          )))
+    op |> Option.bind (fun op  ->
+      e.type_ |> Option.bind (fun ety ->
+        select_operator env ~asset orloc (op, [fty; ety])
+          |> Option.map (fun sig_ -> cast_expr env (Some (List.last sig_.osl_sig)) e))))
 
 (* -------------------------------------------------------------------- *)
 and for_formula (env : env) (topf : PT.expr) : M.pterm =
