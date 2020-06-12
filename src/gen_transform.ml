@@ -2471,9 +2471,15 @@ let rename_shadow_variable (model : model) : model =
       let for_mterm _ctx mt : mterm =
         let rec aux (mt : mterm) : mterm =
           match mt.node with
-          | Mvarlocal id when MapString.mem(unloc id) !map_ids ->
-            let newid : ident = MapString.find (unloc id) !map_ids in
-            { mt with node = Mvarstorevar (dumloc newid) }
+          | Massign (op, t, id, b) when MapString.mem (unloc id) !map_ids -> begin
+              let newb = aux b in
+              let newid : ident = MapString.find (unloc id) !map_ids in
+              { mt with node = Massignvarstore (op, t, dumloc newid, newb) }
+            end
+          | Mvarlocal id when MapString.mem(unloc id) !map_ids -> begin
+              let newid : ident = MapString.find (unloc id) !map_ids in
+              { mt with node = Mvarstorevar (dumloc newid) }
+            end
           | _ -> map_mterm aux mt
         in
         aux mt
@@ -2485,6 +2491,31 @@ let rename_shadow_variable (model : model) : model =
     { f__ with
       spec = Option.map for_specification f__.spec;
     }
+  in
+  { model with
+    functions = List.map for_function__ model.functions;
+  }
+
+let concat_shadown_effect_to_exec (model : model) : model =
+  let for_function__ (f__ : function__) : function__ =
+    let shadow_effect_opt = Option.map (fun s -> s.effects) f__.spec in
+    let shadow_effects =
+      match shadow_effect_opt with
+      | Some l -> l
+      | _ -> []
+    in
+    let for_function_node (fn : function_node) : function_node =
+      let for_function_struct (fs : function_struct) : function_struct =
+        {
+          fs with
+          body = (mk_mterm (Mseq (fs.body::shadow_effects)) Tunit) |> flat_sequence_mterm;
+        }
+      in
+      match fn with
+      | Function (fs, t) -> Function (for_function_struct fs, t)
+      | Entry fs         -> Entry (for_function_struct fs)
+    in
+    {f__ with node = for_function_node f__.node}
   in
   { model with
     functions = List.map for_function__ model.functions;
@@ -2504,3 +2535,4 @@ let transfer_shadow_variable_to_storage (model : model) : model =
     model with
     storage = model.storage @ storage_items
   }
+  |> concat_shadown_effect_to_exec

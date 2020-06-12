@@ -3,6 +3,9 @@ archetype shadow_var
 entry exec () {
   specification {
     variable call_count : int = 0
+    shadow effect {
+      call_count += 1;
+    }
     postcondition p1 {
       call_count = call_count
     }
