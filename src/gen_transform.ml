@@ -1,6 +1,7 @@
 open Ident
 open Location
 open Model
+module MapString = Map.Make(String)
 open Tools
 
 type error_desc =
@@ -2453,7 +2454,7 @@ let rename_shadow_variable (model : model) : model =
   let for_function__ (f__ : function__) : function__ =
     let fun_id =  match f__.node with | Entry fs | Function (fs, _) -> unloc fs.name in
     let for_specification spec : specification =
-      let map_ids : (ident * ident) list ref = ref [] in
+      let map_ids = ref MapString.empty in
       let rename_variables spec : specification =
         { spec with
           variables = List.map (fun x ->
@@ -2462,7 +2463,7 @@ let rename_shadow_variable (model : model) : model =
                   let id, t, dv = x.decl in
                   let id = unloc id in
                   let newid = id ^ "_" ^ fun_id in
-                  map_ids := (id, newid)::!map_ids;
+                  map_ids := MapString.add id newid !map_ids;
                   dumloc newid, t, dv
               }) spec.variables
         }
@@ -2470,8 +2471,8 @@ let rename_shadow_variable (model : model) : model =
       let for_mterm _ctx mt : mterm =
         let rec aux (mt : mterm) : mterm =
           match mt.node with
-          | Mvarlocal id when List.mem_assoc (unloc id) !map_ids ->
-            let newid : ident = List.assoc (unloc id) !map_ids in
+          | Mvarlocal id when MapString.mem(unloc id) !map_ids ->
+            let newid : ident = MapString.find (unloc id) !map_ids in
             { mt with node = Mvarlocal (dumloc newid) }
           | _ -> map_mterm aux mt
         in
