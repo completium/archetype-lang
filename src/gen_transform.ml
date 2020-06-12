@@ -2473,7 +2473,7 @@ let rename_shadow_variable (model : model) : model =
           match mt.node with
           | Mvarlocal id when MapString.mem(unloc id) !map_ids ->
             let newid : ident = MapString.find (unloc id) !map_ids in
-            { mt with node = Mvarlocal (dumloc newid) }
+            { mt with node = Mvarstorevar (dumloc newid) }
           | _ -> map_mterm aux mt
         in
         aux mt
