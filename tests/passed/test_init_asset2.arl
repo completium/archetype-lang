@@ -6,7 +6,7 @@ with {
 }
 
 asset my_asset {
-  id      : int;
+  id      : address;
   tokens  : int = 0;
 } with {
   i1: tokens >= 0;
