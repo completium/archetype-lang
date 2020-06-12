@@ -1307,7 +1307,7 @@ let select_operator env ?(asset = false) loc (op, tys) =
     end
 
   | _ -> begin
-      let ops = 
+      let ops =
         let filter (sig_ : opsig) =
           Type.sig_compatible ~from_:tys ~to_:sig_.osl_sig
         in List.filter filter (List.assoc_all op opsigs) in
@@ -1316,21 +1316,23 @@ let select_operator env ?(asset = false) loc (op, tys) =
         let extra =
           match asset, op, tys with
           | true, PT.Arith PT.Plus,
-            [Tcontainer ((Tasset _) as aty, (Subset | Partition)) as rty;
+            [Tcontainer ((Tasset _) as aty, Partition) as rty;
              Tcontainer ((Tasset _) as sty, Collection)]
               when Type.compatible ~from_:sty ~to_:aty
             -> [{ osl_sig = tys; osl_ret = rty }]
-  
+
+          | true, PT.Arith PT.Plus,
+            [Tcontainer (Tasset aty, Subset) as rty; Tlist sty]
           | true, PT.Arith PT.Minus,
             [Tcontainer (Tasset aty, (Subset | Partition)) as rty; Tlist sty] ->
-  
+
             let asset = Env.Asset.get env (unloc aty) in
             let pk    = Option.get (get_field (unloc asset.as_pk) asset) in
-  
+
             if Type.compatible ~from_:sty ~to_:pk.fd_type then
               [{ osl_sig = tys; osl_ret = rty }]
             else []
-  
+
           | _, _, _ -> []
 
         in ops @ extra
@@ -3757,8 +3759,8 @@ let for_asset_decl ?(force = false) (env : env) (decl : PT.asset_decl loced) =
               if   List.for_all Option.is_some init1
               then Some (List.pmap (fun x -> x) init1)
               else None
-                
-                     
+
+
             | _ -> Env.emit_error env (loc r, InvalidAssetExpression); None) l)
       | _ ->
         None
