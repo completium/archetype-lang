@@ -2449,18 +2449,55 @@ let replace_instr_verif (model : model) : model =
   in
   Model.map_mterm_model aux model
 
-let transfer_shadow_variable_to_storage (model : model) : model =
-  let vars : (variable * ident) list =
-    model.functions
-    |> List.map (fun x -> x.spec, x.node |> (fun x -> match x with | Entry fs | Function (fs, _) -> unloc fs.name) )
-    |> List.map (fun (x, fun_id) -> match x with | None -> [] | Some x -> List.map (fun x -> x, fun_id) x.variables)
-    |> List.flatten
+let rename_shadow_variable (model : model) : model =
+  let for_function__ (f__ : function__) : function__ =
+    let fun_id =  match f__.node with | Entry fs | Function (fs, _) -> unloc fs.name in
+    let for_specification spec : specification =
+      let map_ids : (ident * ident) list ref = ref [] in
+      let rename_variables spec : specification =
+        { spec with
+          variables = List.map (fun x ->
+              { x with
+                decl =
+                  let id, t, dv = x.decl in
+                  let id = unloc id in
+                  let newid = id ^ "_" ^ fun_id in
+                  map_ids := (id, newid)::!map_ids;
+                  dumloc newid, t, dv
+              }) spec.variables
+        }
+      in
+      let for_mterm _ctx mt : mterm =
+        let rec aux (mt : mterm) : mterm =
+          match mt.node with
+          | Mvarlocal id when List.mem_assoc (unloc id) !map_ids ->
+            let newid : ident = List.assoc (unloc id) !map_ids in
+            { mt with node = Mvarlocal (dumloc newid) }
+          | _ -> map_mterm aux mt
+        in
+        aux mt
+      in
+      spec
+      |> rename_variables
+      |> map_specification (mk_ctx_model ()) for_mterm
+    in
+    { f__ with
+      spec = Option.map for_specification f__.spec;
+    }
   in
+  { model with
+    functions = List.map for_function__ model.functions;
+  }
+
+let transfer_shadow_variable_to_storage (model : model) : model =
+  let model = rename_shadow_variable model in
   let storage_items : storage_item list =
-    vars
-    |> List.map (fun (v : variable * ident) ->
-        let id, t, dv = (fst v).decl in
-        let id = dumloc ((unloc id) ^ "_" ^ (snd v)) in
+    model.functions
+    |> List.map (fun x -> x.spec)
+    |> List.map (function | None -> [] | Some x -> x.variables)
+    |> List.flatten
+    |> List.map (fun v ->
+        let id, t, dv = v.decl in
         mk_storage_item id MTvar t (Option.get dv) ~ghost:true) in
   {
     model with

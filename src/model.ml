@@ -1444,63 +1444,63 @@ let map_mterm_model_exec custom (f : ('id, 't) ctx_model_gen -> mterm -> mterm) 
     storage = storage;
   }
 
-let map_mterm_model_formula custom (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (model : model) : model =
-  let map_specification (ctx : ('id, 't) ctx_model_gen) (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (v : specification) : specification = (
-    let map_label_term (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (lt : label_term) : label_term =
-      let ctx = { ctx with label = Some lt.label } in
-      { lt with
-        term = f ctx lt.term }
-    in
+let map_specification (ctx : ('id, 't) ctx_model_gen) (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (v : specification) : specification = (
+  let map_label_term (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (lt : label_term) : label_term =
+    let ctx = { ctx with label = Some lt.label } in
+    { lt with
+      term = f ctx lt.term }
+  in
 
-    let map_predicate (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (p : predicate) : predicate =
-      { p with
-        args = List.map (fun (x, y) -> (x, y)) p.args;
-        body = f ctx p.body;
-      }
-    in
-
-    let map_definition (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (d : definition) : definition =
-      { d with
-        body = f ctx d.body
-      }
-    in
-
-    let map_invariantt (f : ('id, 't) ctx_model_gen -> mterm -> mterm) ((it_id, it_lt) : 'id * 'id label_term_gen list) : 'id * 'id label_term_gen list =
-      (it_id, List.map (map_label_term f) it_lt)
-    in
-
-    let map_invariant (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (spec : invariant) : invariant =
-      let ctx = {ctx with invariant_id = Some spec.label } in
-      { spec with
-        formulas = List.map (f ctx) spec.formulas;
-      }
-    in
-
-    let map_postcondition (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (spec : postcondition) : postcondition =
-      let ctx = { ctx with spec_id = Some spec.name} in
-      { spec with
-        formula = f ctx spec.formula;
-        invariants = List.map (map_invariant f) spec.invariants;
-      }
-    in
-
-    let map_variable (_f : ('id, 't) ctx_model_gen -> mterm -> mterm) (spec : variable) : variable =
-      spec
-    in
-
-    let ctx = { ctx with formula = true} in
-    { v with
-      predicates = List.map (map_predicate f) v.predicates;
-      definitions = List.map (map_definition f) v.definitions;
-      lemmas = List.map (map_label_term f) v.lemmas;
-      theorems = List.map (map_label_term f) v.theorems;
-      variables = List.map (map_variable f) v.variables;
-      invariants = List.map (map_invariantt f) v.invariants;
-      effects = List.map (f ctx) v.effects;
-      postconditions = List.map (map_postcondition f) v.postconditions;
+  let map_predicate (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (p : predicate) : predicate =
+    { p with
+      args = List.map (fun (x, y) -> (x, y)) p.args;
+      body = f ctx p.body;
     }
-  ) in
+  in
 
+  let map_definition (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (d : definition) : definition =
+    { d with
+      body = f ctx d.body
+    }
+  in
+
+  let map_invariantt (f : ('id, 't) ctx_model_gen -> mterm -> mterm) ((it_id, it_lt) : 'id * 'id label_term_gen list) : 'id * 'id label_term_gen list =
+    (it_id, List.map (map_label_term f) it_lt)
+  in
+
+  let map_invariant (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (spec : invariant) : invariant =
+    let ctx = {ctx with invariant_id = Some spec.label } in
+    { spec with
+      formulas = List.map (f ctx) spec.formulas;
+    }
+  in
+
+  let map_postcondition (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (spec : postcondition) : postcondition =
+    let ctx = { ctx with spec_id = Some spec.name} in
+    { spec with
+      formula = f ctx spec.formula;
+      invariants = List.map (map_invariant f) spec.invariants;
+    }
+  in
+
+  let map_variable (_f : ('id, 't) ctx_model_gen -> mterm -> mterm) (spec : variable) : variable =
+    spec
+  in
+
+  let ctx = { ctx with formula = true} in
+  { v with
+    predicates = List.map (map_predicate f) v.predicates;
+    definitions = List.map (map_definition f) v.definitions;
+    lemmas = List.map (map_label_term f) v.lemmas;
+    theorems = List.map (map_label_term f) v.theorems;
+    variables = List.map (map_variable f) v.variables;
+    invariants = List.map (map_invariantt f) v.invariants;
+    effects = List.map (f ctx) v.effects;
+    postconditions = List.map (map_postcondition f) v.postconditions;
+  }
+)
+
+let map_mterm_model_formula custom (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (model : model) : model =
   let ctx : ('id, 't) ctx_model_gen = mk_ctx_model custom in
 
   let map_function (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (fun_ : function__) : function__ =
