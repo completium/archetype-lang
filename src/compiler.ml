@@ -231,8 +231,9 @@ let generate_target model =
     |> remove_cmp_bool
     |> replace_dotassetfield_by_dot
     |> replace_api_view_by_col
-(*     |> replace_instr_verif
- *)    |> generate_api_storage ~verif:true
+    |> transfer_shadow_variable_to_storage
+    (* |> replace_instr_verif *)
+    |> generate_api_storage ~verif:true
     |> output
 
   | _ -> ()

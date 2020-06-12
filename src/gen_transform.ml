@@ -2448,3 +2448,21 @@ let replace_instr_verif (model : model) : model =
     | _ -> map_mterm (aux ctx) mt
   in
   Model.map_mterm_model aux model
+
+let transfer_shadow_variable_to_storage (model : model) : model =
+  let vars : (variable * ident) list =
+    model.functions
+    |> List.map (fun x -> x.spec, x.node |> (fun x -> match x with | Entry fs | Function (fs, _) -> unloc fs.name) )
+    |> List.map (fun (x, fun_id) -> match x with | None -> [] | Some x -> List.map (fun x -> x, fun_id) x.variables)
+    |> List.flatten
+  in
+  let storage_items : storage_item list =
+    vars
+    |> List.map (fun (v : variable * ident) ->
+        let id, t, dv = (fst v).decl in
+        let id = dumloc ((unloc id) ^ "_" ^ (snd v)) in
+        mk_storage_item id MTvar t (Option.get dv) ~ghost:true) in
+  {
+    model with
+    storage = model.storage @ storage_items
+  }
