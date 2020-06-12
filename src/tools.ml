@@ -192,6 +192,7 @@ module List : sig
   val is_empty      : 'a list -> bool
   val is_not_empty  : 'a list -> bool
   val ohead         : 'a list -> 'a option
+  val chop          : 'a list -> 'a list
   val as_seq1       : 'a list -> 'a option
   val as_seq2       : 'a list -> ('a * 'a) option
   val make          : (int -> 'a) -> int -> 'a list
@@ -224,6 +225,8 @@ end = struct
   let as_seq2 = function [x; y] -> Some (x, y) | _ -> None
 
   let ohead = function [] -> None | x :: _ -> Some x
+
+  let chop = function [] -> [] | _ :: xs -> xs
 
   let make f =
     let rec doit acc n =

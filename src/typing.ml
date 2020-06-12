@@ -270,7 +270,6 @@ type error_desc =
   | InvalidExpressionForEffect
   | InvalidExpression
   | InvalidFieldsCountInRecordLiteral
-  | InvalidInitCount
   | InvalidLValue
   | InvalidFormula
   | InvalidInstruction
@@ -418,7 +417,6 @@ let pp_error_desc fmt e =
   | InvalidExpressionForEffect         -> pp "Invalid expression for effect"
   | InvalidExpression                  -> pp "Invalid expression"
   | InvalidFieldsCountInRecordLiteral  -> pp "Invalid fields count in record literal"
-  | InvalidInitCount                   -> pp "Invalid initializer length"
   | InvalidLValue                      -> pp "Invalid left-value"
   | InvalidFormula                     -> pp "Invalid formula"
   | InvalidInstruction                 -> pp "Invalid instruction"
@@ -1744,22 +1742,22 @@ let rec for_xexpr
         else begin
           let fmap =
             List.fold_left (fun fmap (fname, e) ->
-                let fname = unloc (snd (Option.get fname)) in
+              let fname = unloc (snd (Option.get fname)) in
 
-                Mid.update fname (function
-                    | None -> begin
-                        let asset = Env.Asset.byfield env fname in
-                        if Option.is_none asset then begin
-                          let err = UnknownFieldName fname in
-                          Env.emit_error env (loc tope, err)
-                        end; Some (asset, [e])
-                      end
-
-                    | Some (asset, es) ->
-                      if List.length es = 1 then begin
-                        let err = DuplicatedFieldInRecordLiteral fname in
+              Mid.update fname (function
+                  | None -> begin
+                      let asset = Env.Asset.byfield env fname in
+                      if Option.is_none asset then begin
+                        let err = UnknownFieldName fname in
                         Env.emit_error env (loc tope, err)
-                      end; Some (asset, e :: es)) fmap
+                      end; Some (asset, [e])
+                    end
+
+                  | Some (asset, es) ->
+                    if List.length es = 1 then begin
+                      let err = DuplicatedFieldInRecordLiteral fname in
+                      Env.emit_error env (loc tope, err)
+                    end; Some (asset, e :: es)) fmap
               ) Mid.empty fields
           in
 
@@ -3703,18 +3701,65 @@ let for_asset_decl ?(force = false) (env : env) (decl : PT.asset_decl loced) =
       | PT.APOinit l ->
         Some (List.pmap (fun r ->
             match unloc r with
-            | ParseTree.Erecord init1
+            | PT.Erecord init1
               when List.for_all (fun (x, _) -> Option.is_none x) init1
               ->
               if List.length init1 <> List.length fields then begin
-                Env.emit_error env (loc r, InvalidInitCount); None
+                Env.emit_error env (loc r, InvalidAssetExpression); None
               end else
                 let init1 =
                   List.map2
                     (fun { pldesc = (_, ety, _) } (_, ie) -> for_expr env ?ety ie)
                     fields init1 in
                 Some init1
-            | _ -> None) l)
+
+            | PT.Erecord init1
+              when List.for_all
+                     (function (Some (PT.ValueAssign, _), _) -> true | _ -> false)
+                     init1
+              ->
+
+              let init1 =
+                List.pmap (function (Some (_, x), e) -> Some (x, e) | _ -> None) init1 in
+
+              let init1 =
+                List.filter (fun (x, _) ->
+                  if not (List.exists (fun {pldesc = (y, _, _)} -> unloc x = y) fields) then
+                    (Env.emit_error env (loc x, UnknownFieldName (unloc x)); false)
+                  else true) init1 in
+
+              let init1 =
+                List.fold_left (fun init1 ({pldesc = x; plloc = tloc}, e) ->
+                    let {pldesc = _, fty, _} =
+                      List.find (fun {pldesc = (y, _, _)} -> x = y) fields in
+                    let e = for_expr env ?ety:fty e in
+                    Mid.update x (fun es -> Some ((e, tloc) :: (Option.get_dfl [] es))) init1
+                  ) Mid.empty init1 in
+
+              Mid.iter (fun x es ->
+                  List.iter
+                    (fun (_, lloc) ->
+                      Env.emit_error env (lloc, DuplicatedFieldInRecordLiteral x))
+                    (List.chop (List.rev es))
+                ) init1;
+
+              let init1 = List.map (fun {pldesc = (x, _, e); plloc = lloc} ->
+                  match Mid.find_opt x init1 with
+                  | None when Option.is_none e ->
+                      Env.emit_error env (lloc, MissingFieldInRecordLiteral x);
+                      None
+                  | None ->
+                      e
+                  | Some es ->
+                      Some (fst (Option.get (List.ohead (List.rev es))))
+                ) fields in
+
+              if   List.for_all Option.is_some init1
+              then Some (List.pmap (fun x -> x) init1)
+              else None
+                
+                     
+            | _ -> Env.emit_error env (loc r, InvalidAssetExpression); None) l)
       | _ ->
         None
     in List.flatten (List.pmap for1 postopts) in
