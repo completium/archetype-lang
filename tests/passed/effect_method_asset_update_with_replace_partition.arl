@@ -1,0 +1,27 @@
+archetype effect_method_asset_update_with_remove_partition
+
+asset my_asset_simple identified by oid {
+  oid : int
+}
+
+asset my_asset identified by id {
+  id : string;
+  value : int;
+  mypartition : my_asset_simple partition;
+} initialized by {
+  { "my_id"; 0; [] }
+}
+
+entry exec () {
+  effect {
+    my_asset.update ("my_id", {value = 3; mypartition = [{oid = 1}; {oid = 2}; {oid = 3}] })
+    (*
+    sugar for
+    my_asset.update ("my_id", {value = 3});
+    my_asset["my_id"].mypartition.removeall();
+    my_asset["my_id"].mypartition.add({oid = 1});
+    my_asset["my_id"].mypartition.add({oid = 2});
+    my_asset["my_id"].mypartition.add({oid = 3})
+    *)
+  }
+}

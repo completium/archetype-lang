@@ -46,6 +46,37 @@ let emit_error (lc, error : Location.t * error_desc) =
   let pos : Position.t list = [location_to_position lc] in
   Error.error_alert pos str (fun _ -> ())
 
+
+let flat_sequence_mterm (mt : mterm) =
+  let rec aux (mt : mterm) : mterm =
+    match mt.node with
+    | Mseq l ->
+      begin
+        match l with
+        | [] -> mt
+        | [e] -> aux e
+        | l ->
+          let l = List.fold_right (fun (x : mterm) accu ->
+              match x.node with
+              | Mseq [] -> accu
+              | _ -> (aux x)::accu) l [] in
+          begin
+            match l with
+            | [] -> mk_mterm (Mseq []) Tunit
+            | [e] -> aux e
+            | _ -> mk_mterm (Mseq (List.map aux l)) (List.last l).type_
+          end
+      end
+    | _ -> map_mterm aux mt
+  in
+  aux mt
+
+let flat_sequence (model : model) : model =
+  let aux (_ctx : ctx_model) (mt : mterm) : mterm =
+    flat_sequence_mterm mt
+  in
+  map_mterm_model aux model
+
 let remove_add_update (model : model) : model =
   let error = ref false in
   let f_error (l : Location.t) (an : string) (fn : string) = emit_error(l, CannotBuildAsset (an, fn)); error := true in
@@ -112,6 +143,66 @@ let remove_add_update (model : model) : model =
   then raise (Error.Stop 5)
   else res
 
+
+let remove_container_op_in_update (model : model) : model =
+  let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
+    let is_field_container asset (fn, _, _) =
+      let f = List.find (fun (x : asset_item) -> String.equal (unloc x.name) (unloc fn)) asset.values in
+      match f.original_type with
+      | Tcontainer _ -> true
+      | _ -> false
+    in
+    let with_container an l =
+      let asset = Model.Utils.get_asset model an in
+      List.exists (is_field_container asset) l
+    in
+    match mt.node with
+    | Mupdate (an, k, l) when with_container an l -> begin
+        let asset = Model.Utils.get_asset model an in
+        let newl, instrs =
+          List.fold_right (fun (fn, op, v : lident * assignment_operator * mterm) (accu_l, accu_instrs) ->
+              match is_field_container asset (fn, op, v) with
+              | false -> ((fn, op, v)::accu_l, accu_instrs)
+              | true  -> begin
+                  let fn = unloc fn in
+                  let process ?(with_remove=false) kind =
+                    let fnode = begin
+                      match kind with
+                      | `Add    -> fun x -> Maddfield (an, fn, k, x)
+                      | `Remove -> fun x -> Mremovefield (an, fn, k, x)
+                    end
+                    in
+                    let instrs : mterm list = begin
+                      match v.node with
+                      | Massets  ll
+                      | Mlitlist ll -> List.map (fun a -> mk_mterm (fnode a) Tunit) ll
+                      | _ -> []
+                    end
+                    in
+                    let instrs =
+                      match with_remove with
+                      | true -> (mk_mterm (Mremoveall (an, fn, k)) Tunit)::instrs
+                      | _ -> instrs
+                    in
+                    (accu_l, instrs @ accu_instrs)
+                  in
+                  match op with
+                  | ValueAssign -> process `Add ~with_remove:true
+                  | PlusAssign  -> process `Add
+                  | MinusAssign -> process `Remove
+                  | _ -> assert false
+                end
+            ) l ([], [])
+        in
+        let mterm_update = { mt with node = Mupdate (an, k, newl) } in
+        match instrs with
+        | [] -> mterm_update
+        | _ -> mk_mterm (Mseq (mterm_update::instrs)) Tunit
+      end
+    | _ -> map_mterm (aux ctx) mt
+  in
+  map_mterm_model aux model
+  |> flat_sequence
 
 let build_col_asset (an : ident) =
   let dan = dumloc an in
@@ -217,36 +308,6 @@ let remove_label (model : model) : model =
     match mt.node with
     | Mlabel _ -> mk_mterm (Mseq []) Tunit
     | _ -> map_mterm (aux ctx) mt
-  in
-  map_mterm_model aux model
-
-let flat_sequence_mterm (mt : mterm) =
-  let rec aux (mt : mterm) : mterm =
-    match mt.node with
-    | Mseq l ->
-      begin
-        match l with
-        | [] -> mt
-        | [e] -> aux e
-        | l ->
-          let l = List.fold_right (fun (x : mterm) accu ->
-              match x.node with
-              | Mseq [] -> accu
-              | _ -> (aux x)::accu) l [] in
-          begin
-            match l with
-            | [] -> mk_mterm (Mseq []) Tunit
-            | [e] -> aux e
-            | _ -> mk_mterm (Mseq (List.map aux l)) (List.last l).type_
-          end
-      end
-    | _ -> map_mterm aux mt
-  in
-  aux mt
-
-let flat_sequence (model : model) : model =
-  let aux (_ctx : ctx_model) (mt : mterm) : mterm =
-    flat_sequence_mterm mt
   in
   map_mterm_model aux model
 

@@ -131,6 +131,7 @@ let generate_target model =
     |> process_asset_state
     |> replace_assignfield_by_update
     |> remove_add_update
+    |> remove_container_op_in_update
     |> merge_update
     |> remove_assign_operator
     |> extract_item_collection_from_add_asset
