@@ -5,23 +5,28 @@ open Tools
 module A = Ast
 module M = Model
 
-exception Anomaly of string
+exception Anomaly
 type error_desc =
-  | NotSupportedContainer of string
-  | UnsupportedTypeForFile of A.type_
   | CannotConvertToAssignOperator
-  | CannotSetApiItem
   | CannotExtractBody
-  | CannotExtractAssetName
-  | AnyNotAuthorizedInTransitionTo of Location.t
-  | NoInitExprFor of string
-  | NoInitialValueFor of string
-  | TODO
+  | AnyNotAuthorizedInTransitionTo
+  | NoRemoveAllOnCollection
 [@@deriving show {with_path = false}]
 
-let emit_error (desc : error_desc) =
-  let str = Format.asprintf "%a@." pp_error_desc desc in
-  raise (Anomaly str)
+type error = Location.t * error_desc
+
+let pp_error_desc fmt = function
+  | CannotConvertToAssignOperator  -> Format.fprintf fmt "cannot convert to assign operator"
+  | CannotExtractBody              -> Format.fprintf fmt "cannot extract body"
+  | AnyNotAuthorizedInTransitionTo -> Format.fprintf fmt "any not authorized in transition to"
+  | NoRemoveAllOnCollection        -> Format.fprintf fmt "remove all cannot be called for a collection of asset"
+
+let emit_error (lc, error : Location.t * error_desc) =
+  let str : string = Format.asprintf "%a@." pp_error_desc error in
+  let pos : Position.t list = [location_to_position lc] in
+  Error.error_alert pos str (fun _ -> ())
+
+let bailout = fun () -> raise (Error.Stop 5)
 
 let to_model (ast : A.model) : M.model =
 
@@ -627,7 +632,7 @@ let to_model (ast : A.model) : M.model =
       | A.Icall (Some p, A.Cconst (A.Cremoveall), []) when is_asset_container p -> (
           let fp = f p in
           match fp with
-          (* | {node = M.Mvarstorecol asset_name; _} -> M.Mremoveasset (unloc asset_name, fq) *)
+          | {node = M.Mvarstorecol _; _} -> emit_error (instr.loc, NoRemoveAllOnCollection); bailout ()
           | {node = M.Mdotassetfield (asset_name , k, fn); _} -> M.Mremoveall (unloc asset_name, unloc fn, k)
           | _ -> assert false
         )
@@ -647,7 +652,7 @@ let to_model (ast : A.model) : M.model =
       | A.Icall (Some p, A.Cconst (A.Caddupdate), [AExpr k; AEffect e]) when is_asset_container p ->
         let to_op = function
           | `Assign op -> to_assignment_operator op
-          | _ -> emit_error CannotConvertToAssignOperator
+          | _ -> emit_error (instr.loc, CannotConvertToAssignOperator); bailout ()
         in
         let fp = f p in
         let fk = f k in
@@ -658,7 +663,7 @@ let to_model (ast : A.model) : M.model =
       | A.Icall (Some p, A.Cconst (A.Cupdate), [AExpr k; AEffect e]) when is_asset_container p ->
         let to_op = function
           | `Assign op -> to_assignment_operator op
-          | _ -> emit_error CannotConvertToAssignOperator
+          | _ -> emit_error (instr.loc, CannotConvertToAssignOperator); bailout ()
         in
         let fp = f p in
         let fk = f k in
@@ -947,7 +952,7 @@ let to_model (ast : A.model) : M.model =
                 match a.node with
                 | Sref id -> [M.mk_pattern (M.Pconst id)]
                 | Sor (a, b) -> [a; b] |> List.map (fun x -> compute_patterns x) |> List.flatten
-                | Sany -> emit_error (AnyNotAuthorizedInTransitionTo a.loc)
+                | Sany -> emit_error (a.loc, AnyNotAuthorizedInTransitionTo); bailout ()
               in
               let list_patterns : M.pattern list =
                 compute_patterns t.from in
@@ -967,7 +972,7 @@ let to_model (ast : A.model) : M.model =
         in
         args, body
 
-      | _ -> emit_error CannotExtractBody
+      | _ -> emit_error (transaction.loc, CannotExtractBody); bailout ()
     in
 
     (* let list  = list |> cont process_function ast.functions in *)

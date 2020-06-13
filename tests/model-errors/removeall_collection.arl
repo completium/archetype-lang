@@ -1,0 +1,11 @@
+archetype removeall_collection
+
+asset my_asset identified by id {
+  id : string;
+}
+
+entry exec () {
+  effect {
+    my_asset.removeall()
+  }
+}
