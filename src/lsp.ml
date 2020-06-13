@@ -268,7 +268,9 @@ let process (filename, channel) =
                   |> Gen_transform.check_number_entrypoint
                   |> Gen_transform.check_containers_asset
                   |> Gen_transform.check_empty_container_on_initializedby
-                  |> Gen_transform.remove_add_update in
+                  |> Gen_transform.remove_add_update
+                  |> Gen_transform.check_duplicated_keys_in_asset
+          in
           ();
           process_errors ()
         else

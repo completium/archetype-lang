@@ -11,6 +11,8 @@ type error_desc =
   | NoEmptyContainerForInitAsset of string * string * container
   | NoClearForPartitionAsset of ident
   | CallerNotSetInInit
+  | DuplicatedKeyAsset of ident
+  | OnlyLiteralInAssetInit
   | NoEntrypoint
 
 let pp_error_desc fmt = function
@@ -36,6 +38,12 @@ let pp_error_desc fmt = function
 
   | CallerNotSetInInit ->
     Format.fprintf fmt "'caller' is used in initialization of contract, please set caller value with '--set-caller-init'"
+
+  | DuplicatedKeyAsset an ->
+    Format.fprintf fmt "duplicate key for '%s'" an
+
+  | OnlyLiteralInAssetInit ->
+    Format.fprintf fmt "only literal is allowed for asset field initialisation"
 
   | NoEntrypoint -> Format.fprintf fmt "No entrypoint found (action or transtion)"
 
@@ -448,7 +456,7 @@ let check_empty_container_on_initializedby (model : model) : model =
   if List.is_not_empty l then raise (Error.Stop 5);
   model
 
-let check_and_replace_init_caller  (model : model) : model =
+let check_and_replace_init_caller (model : model) : model =
   let caller = !Options.opt_caller in
   let for_decl accu (d : decl_node) : decl_node * bool =
     let for_mterm accu (mt : mterm) : mterm * bool =
@@ -488,6 +496,61 @@ let check_and_replace_init_caller  (model : model) : model =
     | _ -> ()
   end;
   { model with decls = decls }
+
+let is_literal (mt : mterm) : bool =
+  match mt.node with
+  | Mint       _
+  | Muint      _
+  | Mbool      _
+  | Menum      _
+  | Mrational  _
+  | Mstring    _
+  | Mcurrency  _
+  | Maddress   _
+  | Mdate      _
+  | Mduration  _
+  | Mtimestamp _
+  | Mbytes     _
+  | Mnone
+  | Msome      _
+  | Mtuple     _
+  | Masset     _
+  | Massets    _
+  | Mlitset    _
+  | Mlitlist   _
+  | Mlitmap    _
+  | Mlitrecord _
+    -> true
+  | _ -> false
+
+let check_duplicated_keys_in_asset (model : model) : model =
+  let errors : (Location.t * error_desc) list ref = ref [] in
+  List.iter
+    (fun d ->
+       match d with
+       | Dasset dasset -> begin
+           let an = unloc dasset.name in
+           let marked : mterm list ref = ref [] in
+           List.iter (fun (value_asset : mterm) ->
+               match value_asset.node with
+               | Masset l -> begin
+                   let asset : asset = Model.Utils.get_asset model an in
+                   let asset_key = dasset.key in
+                   let assoc_fields = List.map2 (fun (ai : asset_item) (x : mterm) -> (unloc ai.name, x)) asset.values l in
+                   let value_key =  List.find (fun (id, _) -> String.equal asset_key id) assoc_fields |> snd in
+                   if not (is_literal value_key)
+                   then errors := (value_key.loc, OnlyLiteralInAssetInit)::!errors
+                   else (
+                     if List.exists (cmp_mterm value_key) !marked
+                     then errors := (value_key.loc, DuplicatedKeyAsset an)::!errors
+                     else marked := value_key::!marked)
+                 end
+               | _ -> ()
+             ) dasset.init;
+         end
+       | _ -> ()) model.decls;
+  List.iter emit_error !errors;
+  model
 
 let prune_properties (model : model) : model =
   match !Options.opt_property_focused with
