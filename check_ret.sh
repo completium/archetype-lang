@@ -1,6 +1,6 @@
 #! /bin/bash
 
-BIN=./archetype.exe
+BIN='./archetype.exe --set-caller-init=tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg'
 GRET=0
 
 process() {

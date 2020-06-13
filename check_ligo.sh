@@ -1,6 +1,6 @@
 #! /bin/bash
 
-BIN=./archetype.exe
+BIN='./archetype.exe --set-caller-init=tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg'
 BIN_LIGO=ligo
 NB_ERR=0
 NB_ERR_RET=0
@@ -13,7 +13,7 @@ process_ligo_storage() {
     OUT_STORAGE_LIGO=$FILE.storage.ligo
     TZ=out.storage.tz
     rm -fr $OUT_STORAGE_LIGO
-    $BIN --set-caller-init="tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg" -t ligo-storage $FILE >$OUT_STORAGE_LIGO 2>/dev/null
+    $BIN -t ligo-storage $FILE >$OUT_STORAGE_LIGO 2>/dev/null
     RET=$(echo $?)
     #STO=$(cat $OUT_STORAGE_LIGO)
     if [ ${RET} -eq 0 ]; then
@@ -40,7 +40,7 @@ process_ligo() {
     OUT_LIGO=$FILE.ligo
     TZ=out.tz
     rm -fr $OUT_LIGO
-    $BIN --set-caller-init="tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg" -t ligo $FILE >$OUT_LIGO 2>/dev/null
+    $BIN -t ligo $FILE >$OUT_LIGO 2>/dev/null
     RET=$(echo $?)
     if [ ${RET} -eq 0 ]; then
         echo -ne "\033[32m OK \033[0m"
@@ -70,7 +70,7 @@ process_ligo() {
 
 process_file() {
     printf '%-70s' $1
-    $BIN --set-caller-init="tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg" $i >/dev/null 2>/dev/null
+    $BIN $i >/dev/null 2>/dev/null
     RET=$?
     if [ $RET -eq $2 ]; then
         echo -ne "\033[32m OK \033[0m"

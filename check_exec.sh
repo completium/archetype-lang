@@ -1,6 +1,6 @@
 #! /bin/bash
 
-BIN='./archetype.exe --set-caller-init="tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg"'
+BIN='./archetype.exe --set-caller-init=tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg'
 BIN_LIGO=ligo
 GRET=0
 
@@ -19,15 +19,15 @@ process_ligo_storage() {
         if [ ${RET} -eq 0 ]; then
             echo -ne "\033[32m OK \033[0m"
         else
-            echo -ne "\033[31m KO \033[0m"
+            echo -ne "\033[31m KO1 \033[0m"
             GRET=1
         fi
     else
-        echo -ne "\033[31m KO \033[0m"
+        echo -ne "\033[31m KO2 \033[0m"
         GRET=1
     fi
 
-    rm -fr $OUT_STORAGE_LIGO *.pp.ligo
+#    rm -fr $OUT_STORAGE_LIGO *.pp.ligo
 }
 
 process_ligo() {
