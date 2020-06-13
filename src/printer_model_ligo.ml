@@ -1433,8 +1433,15 @@ let pp_model_internal fmt (model : model) b =
         (pp_list "@\n" pp_storage_item) l
   in
 
-  let pp_default fmt = function
-    | Tbuiltin Bbool       -> Format.fprintf fmt "False"
+  let rec pp_default fmt t =
+    let pp = pp_mterm (mk_env ()) fmt in
+    match t with
+    | Tlist _              -> pp (mk_mterm (Mlitlist []) t)
+    | Toption _            -> pp (mk_mterm (Mnone) t)
+    | Ttuple l             -> Format.fprintf fmt "(%a)" (pp_list ", " pp_default) l
+    | Tset _               -> pp (mk_mterm (Mlitset []) t)
+    | Tmap _               -> pp (mk_mterm (Mlitmap []) t)
+    | Tbuiltin Bbool       -> pp (mk_mterm (Mbool false) t)
     | Tbuiltin Bint        -> Format.fprintf fmt "0"
     | Tbuiltin Brational   -> Format.fprintf fmt "0"
     | Tbuiltin Bdate       -> Format.fprintf fmt "0"
