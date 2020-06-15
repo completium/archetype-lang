@@ -3001,9 +3001,13 @@ let rec for_instruction_r (env : env) (i : PT.expr) : env * M.instruction =
 
       let kty =
         match e.M.type_ with
-        | Some (M.Tcontainer (M.Tasset _, _))
-        | Some (M.Tlist _) ->
-            e.M.type_
+        | Some (M.Tcontainer (M.Tasset asset, _)) ->
+            let asset = Env.Asset.get env (unloc asset) in
+            let pk = Option.get (get_field (unloc asset.as_pk) asset) in
+            Some pk.fd_type
+
+        | Some (M.Tlist ty) ->
+            Some ty
 
         | Some _ ->
             Env.emit_error env (loc pe, NonIterable); None
@@ -3013,12 +3017,12 @@ let rec for_instruction_r (env : env) (i : PT.expr) : env * M.instruction =
 
       let env, i = Env.inscope env (fun env ->
           let _ : bool = check_and_emit_name_free env x in
-          let env, lblty =
-            Option.foldmap (fun env kty ->
-              Env.Local.push env ~kind:`LoopIndex (x, kty), kty) env kty in
+          let env =
+            Option.fold (fun env kty ->
+              Env.Local.push env ~kind:`LoopIndex (x, kty)) env kty in
 
           let env =
-            match lblty with
+            match e.M.type_ with
             | None ->
                 env
             | Some lblty ->
