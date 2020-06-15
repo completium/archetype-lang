@@ -1323,6 +1323,7 @@ let select_operator env ?(asset = false) loc (op, tys) =
 
           | true, PT.Arith PT.Plus,
             [Tcontainer (Tasset aty, Subset) as rty; Tlist sty]
+
           | true, PT.Arith PT.Minus,
             [Tcontainer (Tasset aty, (Subset | Partition)) as rty; Tlist sty] ->
 
@@ -2595,8 +2596,19 @@ and for_arg_effect
       | Some (op, x) -> begin
           match get_field (unloc x) asset with
           | Some { fd_type = fty } ->
+            let rfty =
+              match fty with
+              | M.Tcontainer (M.Tasset subasset, M.Subset) -> begin
+                  let subasset = Env.Asset.get env (unloc subasset) in
+                  match get_field (unloc subasset.as_pk) subasset with
+                  | Some fd -> M.Tlist fd.fd_type
+                  | _ -> fty
+                end
+              | _ -> fty
+            in
+
             let op  = for_assignment_operator op in
-            let e   = for_assign_expr ~asset:true mode env (loc x) (op, fty) e in
+            let e   = for_assign_expr ~asset:true mode env (loc x) (op, fty, rfty) e in
 
             if Mid.mem (unloc x) map then begin
               Env.emit_error env (loc x, DuplicatedFieldInRecordLiteral (unloc x));
@@ -2638,7 +2650,7 @@ and for_arg_effect
     None
 
 (* -------------------------------------------------------------------- *)
-and for_assign_expr ?(asset = false) mode env orloc (op, fty) e =
+and for_assign_expr ?(asset = false) mode env orloc (op, lfty, rfty) e =
   let op =
     match op with
     | ValueAssign -> None
@@ -2650,13 +2662,13 @@ and for_assign_expr ?(asset = false) mode env orloc (op, fty) e =
     | OrAssign    -> Some (PT.Logical PT.Or   )
   in
 
-  let ety = if Option.is_none op then Some fty else None in
+  let ety = if Option.is_none op then Some rfty else None in
   let e = for_xexpr mode env ?ety e in
 
   Option.get_dfl e (
     op |> Option.bind (fun op  ->
       e.type_ |> Option.bind (fun ety ->
-        select_operator env ~asset orloc (op, [fty; ety])
+        select_operator env ~asset orloc (op, [lfty; ety])
           |> Option.map (fun sig_ -> cast_expr env (Some (List.last sig_.osl_sig)) e))))
 
 (* -------------------------------------------------------------------- *)
@@ -2906,7 +2918,7 @@ let rec for_instruction_r (env : env) (i : PT.expr) : env * M.instruction =
             for_expr env pe
 
           | Some (_, fty) ->
-            for_assign_expr expr_mode env (loc plv) (op, fty) pe
+            for_assign_expr expr_mode env (loc plv) (op, fty, fty) pe
         in
 
         let type_assigned = M.Tbuiltin (VTint) in (* TODO: replace by the var/field assigned type *)
