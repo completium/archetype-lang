@@ -7,7 +7,7 @@ asset o_asset identified by oid {
 
 asset my_asset identified by id {
   id     : string;
-  col    : o_asset partition;
+  col    : o_asset subset;
 } initialized by {
   {"id0"; []};
   {"id1"; []};
