@@ -267,6 +267,7 @@ type error_desc =
   | InvalidAssetExpression
   | InvalidCallByExpression
   | InvalidContractExpression
+  | InvalidEffectForCtn                of M.container * M.container list
   | InvalidExpressionForEffect
   | InvalidExpression
   | InvalidFieldsCountInRecordLiteral
@@ -333,7 +334,6 @@ type error_desc =
   | UnknownState                       of ident
   | UnknownTypeName                    of ident
   | UnpureInFormula
-  | UnpureOnView
   | UpdateEffectWithoutDefault
   | UpdateEffectOnPkey
   | UselessPattern
@@ -414,6 +414,7 @@ let pp_error_desc fmt e =
   | InvalidAssetExpression             -> pp "Invalid asset expression"
   | InvalidCallByExpression            -> pp "Invalid 'Calledby' expression"
   | InvalidContractExpression          -> pp "Invalid contract expression"
+  | InvalidEffectForCtn _              -> pp "Invalid effect for this container kind"
   | InvalidExpressionForEffect         -> pp "Invalid expression for effect"
   | InvalidExpression                  -> pp "Invalid expression"
   | InvalidFieldsCountInRecordLiteral  -> pp "Invalid fields count in record literal"
@@ -477,7 +478,6 @@ let pp_error_desc fmt e =
   | UnknownState i                     -> pp "Unknown state: %a" pp_ident i
   | UnknownTypeName i                  -> pp "Unknown type: %a" pp_ident i
   | UnpureInFormula                    -> pp "Cannot use expression with side effect"
-  | UnpureOnView                       -> pp "Cannot call side-effectful methods on views"
   | UpdateEffectWithoutDefault         -> pp "Update effect without default value for field"
   | UpdateEffectOnPkey                 -> pp "Cannot set/update the primary key in an effect"
   | UselessPattern                     -> pp "Useless match branch"
@@ -625,7 +625,7 @@ let statename = "state"
 type ('args, 'rty) gmethod_ = {
   mth_name     : M.const;
   mth_place    : [`Both | `OnlyFormula | `OnlyExec ];
-  mth_purity   : [`Pure | `Effect | `EffectView ];
+  mth_purity   : [`Pure | `Effect of M.container list];
   mth_totality : [`Total | `Partial];
   mth_sig      : 'args * 'rty option;
 }
@@ -654,26 +654,32 @@ type smethod_ = (mthstyp list, mthstyp) gmethod_
 type method_  = (mthatyp     , mthtyp ) gmethod_
 
 let methods : (string * method_) list =
+  let csp  = [M.Collection; Subset; Partition]  in
+  let cspv = [M.Collection; Subset; Partition; View]  in
+  let sp   = [M.Subset; Partition] in
+  let c    = [M.Collection] in
+  let cp   = [M.Collection; Partition] in
+
   let mk mth_name mth_place mth_purity mth_totality mth_sig =
     { mth_name; mth_place; mth_purity; mth_totality; mth_sig; }
   in [
-    ("isempty"     , mk M.Cisempty      `OnlyFormula `Pure       `Total   (`Fixed [                ], Some (`T M.vtbool)));
-    ("get"         , mk M.Cget          `OnlyFormula `Pure       `Partial (`Fixed [`Pk             ], Some `The));
-    ("subsetof"    , mk M.Csubsetof     `OnlyFormula `Pure       `Total   (`Fixed [`SubColl        ], Some (`T M.vtbool)));
-    ("add"         , mk M.Cadd          `Both        `Effect     `Total   (`Fixed [`ThePkForSubset ], None));
-    ("remove"      , mk M.Cremove       `Both        `Effect     `Total   (`Fixed [`Pk             ], None));
-    ("clear"       , mk M.Cclear        `Both        `EffectView `Total   (`Fixed [                ], None));
-    ("removeall"   , mk M.Cremoveall    `Both        `Effect     `Total   (`Fixed [                ], None));
-    ("update"      , mk M.Cupdate       `Both        `Effect     `Total   (`Fixed [`Pk; `Ef true   ], None));
-    ("addupdate"   , mk M.Caddupdate    `Both        `Effect     `Total   (`Fixed [`Pk; `Ef false  ], None));
-    ("contains"    , mk M.Ccontains     `Both        `Pure       `Total   (`Fixed [`Pk             ], Some (`T M.vtbool)));
-    ("nth"         , mk M.Cnth          `Both        `Pure       `Partial (`Fixed [`T M.vtint      ], Some (`Pk)));
-    ("select"      , mk M.Cselect       `Both        `Pure       `Total   (`Fixed [`Pred true      ], Some (`SubColl)));
-    ("sort"        , mk M.Csort         `Both        `Pure       `Total   (`Multi (`Cmp            ), Some (`SubColl)));
-    ("count"       , mk M.Ccount        `Both        `Pure       `Total   (`Fixed [                ], Some (`T M.vtint)));
-    ("sum"         , mk M.Csum          `Both        `Pure       `Total   (`Fixed [`RExpr false    ], Some (`Ref 0)));
-    ("head"        , mk M.Chead         `Both        `Pure       `Total   (`Fixed [`T M.vtint      ], Some (`SubColl)));
-    ("tail"        , mk M.Ctail         `Both        `Pure       `Total   (`Fixed [`T M.vtint      ], Some (`SubColl)));
+    ("isempty"     , mk M.Cisempty      `OnlyFormula (`Pure       ) `Total   (`Fixed [                ], Some (`T M.vtbool)));
+    ("get"         , mk M.Cget          `OnlyFormula (`Pure       ) `Partial (`Fixed [`Pk             ], Some `The));
+    ("subsetof"    , mk M.Csubsetof     `OnlyFormula (`Pure       ) `Total   (`Fixed [`SubColl        ], Some (`T M.vtbool)));
+    ("add"         , mk M.Cadd          `Both        (`Effect csp ) `Total   (`Fixed [`ThePkForSubset ], None));
+    ("remove"      , mk M.Cremove       `Both        (`Effect csp ) `Total   (`Fixed [`Pk             ], None));
+    ("clear"       , mk M.Cclear        `Both        (`Effect cspv) `Total   (`Fixed [                ], None));
+    ("removeall"   , mk M.Cremoveall    `Both        (`Effect  sp ) `Total   (`Fixed [                ], None));
+    ("update"      , mk M.Cupdate       `Both        (`Effect c   ) `Total   (`Fixed [`Pk; `Ef true   ], None));
+    ("addupdate"   , mk M.Caddupdate    `Both        (`Effect cp  ) `Total   (`Fixed [`Pk; `Ef false  ], None));
+    ("contains"    , mk M.Ccontains     `Both        (`Pure       ) `Total   (`Fixed [`Pk             ], Some (`T M.vtbool)));
+    ("nth"         , mk M.Cnth          `Both        (`Pure       ) `Partial (`Fixed [`T M.vtint      ], Some (`Pk)));
+    ("select"      , mk M.Cselect       `Both        (`Pure       ) `Total   (`Fixed [`Pred true      ], Some (`SubColl)));
+    ("sort"        , mk M.Csort         `Both        (`Pure       ) `Total   (`Multi (`Cmp            ), Some (`SubColl)));
+    ("count"       , mk M.Ccount        `Both        (`Pure       ) `Total   (`Fixed [                ], Some (`T M.vtint)));
+    ("sum"         , mk M.Csum          `Both        (`Pure       ) `Total   (`Fixed [`RExpr false    ], Some (`Ref 0)));
+    ("head"        , mk M.Chead         `Both        (`Pure       ) `Total   (`Fixed [`T M.vtint      ], Some (`SubColl)));
+    ("tail"        , mk M.Ctail         `Both        (`Pure       ) `Total   (`Fixed [`T M.vtint      ], Some (`SubColl)));
   ]
 
 let methods = Mid.of_list methods
@@ -2084,10 +2090,10 @@ let rec for_xexpr
         end;
 
         begin match asset, purity, mode.em_kind with
-          | _, (`Effect | `EffectView), `Formula ->
+          | _, `Effect _, `Formula ->
             Env.emit_error env (loc tope, UnpureInFormula)
-          | Some (_, M.View), `Effect, _ ->
-            Env.emit_error env (loc tope, UnpureOnView)
+          | Some (_, ctn), `Effect allowed, _ when not (List.mem ctn allowed) ->
+            Env.emit_error env (loc tope, InvalidEffectForCtn (ctn, allowed))
           | _, _, _ ->
             ()
         end;
@@ -2879,8 +2885,8 @@ let rec for_instruction_r (env : env) (i : PT.expr) : env * M.instruction =
               let the, (asset, c), method_, args, _ = Option.get_fdfl bailout infos in
 
               begin match c, method_.mth_purity with
-                | M.View, `Effect ->
-                  Env.emit_error env (loc i, UnpureOnView)
+                | ctn, `Effect allowed when not (List.mem ctn allowed) ->
+                  Env.emit_error env (loc i, InvalidEffectForCtn (ctn, allowed))
                 | _, _ ->
                   () end;
 
