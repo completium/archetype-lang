@@ -1343,7 +1343,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mgetopt x                      -> Mgetopt (f x)
   | Mfloor x                       -> Mfloor (f x)
   | Mceil x                        -> Mceil (f x)
-  | Mpack x                        -> Mceil (f x)
+  | Mpack x                        -> Mpack (f x)
   | Munpack (t, x)                 -> Munpack (ft t, f x)
   (* crypto functions *)
   | Mblake2b x                     -> Mblake2b (f x)

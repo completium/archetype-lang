@@ -331,6 +331,19 @@ let to_model (ast : A.model) : M.model =
         let fx = f x in
         M.Mceil (fx)
 
+      | A.Pcall (None, A.Cconst A.Cpack, [AExpr x]) ->
+        let fx = f x in
+        M.Mpack (fx)
+
+      | A.Pcall (None, A.Cconst A.Cunpack, [AExpr x]) ->
+        let fx = f x in
+        let t =
+          match type_ with
+          | Toption t -> t
+          | _ -> assert false
+        in
+        M.Munpack (t, fx)
+
       | A.Pcall (None, A.Cconst A.Cblake2b, [AExpr x]) ->
         let fx = f x in
         M.Mblake2b (fx)

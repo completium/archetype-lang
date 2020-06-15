@@ -1128,13 +1128,13 @@ let pp_model_internal fmt (model : model) b =
         f x
 
     | Mpack x ->
-      Format.fprintf fmt "pack (%a)"
+      Format.fprintf fmt "Bytes.pack (%a)"
         f x
 
     | Munpack (t, x) ->
-      Format.fprintf fmt "unpack<%a>(%a)"
-        pp_type t
+      Format.fprintf fmt "(Bytes.unpack (%a) : option (%a))"
         f x
+        pp_type t
 
     (* crypto functions *)
 
