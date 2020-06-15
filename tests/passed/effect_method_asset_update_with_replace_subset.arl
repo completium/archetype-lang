@@ -1,4 +1,4 @@
-archetype effect_method_asset_update_with_add_subset
+archetype effect_method_asset_update_with_replace_subset
 
 asset my_asset_simple identified by oid {
   oid : int;

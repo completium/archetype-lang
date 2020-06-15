@@ -1,4 +1,4 @@
-archetype invariant_on_states
+archetype invariants_on_states
 
 asset my_asset {
   id : string

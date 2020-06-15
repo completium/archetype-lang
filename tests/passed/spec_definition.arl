@@ -1,0 +1,22 @@
+archetype spec_definition
+
+asset myasset {
+  id: int;
+}
+
+entry exec () {
+ specification {
+
+    definition mydef {
+      x : myasset | x.id = 0
+    }
+
+    postcondition s1 {
+      mydef.isempty()
+    }
+  }
+
+  effect {
+    ()
+  }
+}

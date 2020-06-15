@@ -1,4 +1,4 @@
-archetype expr_fun_slice_str
+archetype expr_fun_pack_string
 
 variable res : bytes = 0x00
 
