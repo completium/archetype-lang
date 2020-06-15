@@ -1,0 +1,23 @@
+archetype effect_method_asset_update_subset
+
+asset o_asset identified by oid {
+  oid : int;
+  v : int;
+}
+
+asset my_asset identified by id {
+  id     : string;
+  col    : o_asset subset;
+} initialized by {
+  {"id0"; []};
+  {"id1"; []};
+  {"id2"; []}
+}
+
+variable res : int = 0
+
+entry exec () {
+  effect {
+    my_asset["id0"].col.update(0, {v = 2})
+  }
+}
