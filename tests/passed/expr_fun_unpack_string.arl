@@ -1,0 +1,12 @@
+archetype expr_fun_unpack_string
+
+variable res : string = ""
+
+entry exec () {
+  specification {
+    s0: res = "archetype";
+  }
+  effect {
+    res := unpack<string>(0x050100000009617263686574797065)
+  }
+}
