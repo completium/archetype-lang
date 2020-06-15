@@ -1426,7 +1426,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mgetopt s -> Tapp (loc_term (Tvar "getopt"),[map_mterm m ctx s])
     | Mfloor  s -> Tapp (loc_term (Tvar "floor"),[map_mterm m ctx s])
     | Mceil   s -> Tapp (loc_term (Tvar "ceil"),[map_mterm m ctx s])
-
+    | Mpack   _ -> error_not_translated "Mpack"
+    | Munpack _ -> error_not_translated "Munpack"
 
     (* crypto functions *)
 

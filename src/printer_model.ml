@@ -765,6 +765,15 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "ceil (%a)"
         f x
 
+    | Mpack x ->
+      Format.fprintf fmt "pack (%a)"
+        f x
+
+    | Munpack (t, x) ->
+      Format.fprintf fmt "unpack<%a>(%a)"
+        pp_type t
+        f x
+
     (* crypto functions *)
 
     | Mblake2b x ->
@@ -897,7 +906,7 @@ let pp_mterm fmt (mt : mterm) =
     | Mbreak -> pp_str fmt "break"
 
 
-     (* quantifiers *)
+    (* quantifiers *)
 
     | Mforall (i, t, None, e) ->
       Format.fprintf fmt "forall (%a : %a), %a"

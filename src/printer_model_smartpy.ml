@@ -952,6 +952,14 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "ceil (%a)"
           f x
 
+      | Mpack x ->
+        Format.fprintf fmt "pack (%a)"
+          f x
+
+      | Munpack (t, x) ->
+        Format.fprintf fmt "unpack<%a>(%a)"
+          pp_type t
+          f x
 
       (* crypto functions *)
 

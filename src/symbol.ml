@@ -8,6 +8,7 @@ let string_of_token = function
   | VAR             -> "VAR"
   | UTZ n           -> Printf.sprintf "UTZ(%s)" (Big_int.string_of_big_int n)
   | USE             -> "USE"
+  | UNPACK          -> "UNPACK"
   | UNMOVED         -> "UNMOVED"
   | UNDERSCORE      -> "UNDERSCORE"
   | TZ n            -> Printf.sprintf "TZ(%s)" (Big_int.string_of_big_int n)
@@ -142,6 +143,7 @@ let string_of_symbol = function
   | X (T T_VAR) -> "var"
   | X (T T_UTZ) -> "a utz"
   | X (T T_USE) -> "use"
+  | X (T T_UNPACK) -> "unpack"
   | X (T T_UNMOVED) -> "unmoved"
   | X (T T_UNDERSCORE) -> "_"
   | X (T T_TZ) -> "a tz"

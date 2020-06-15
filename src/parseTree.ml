@@ -111,6 +111,7 @@ and expr_unloc =
   | Elabel        of lident
   | Ereturn       of expr
   | Eoption       of option_
+  | Eunpack       of type_t * expr
   | Eany
   | Enothing
   | Einvalid

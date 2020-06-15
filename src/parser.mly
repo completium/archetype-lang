@@ -141,6 +141,7 @@
 %token TRUE
 %token UNDERSCORE
 %token UNMOVED
+%token UNPACK
 %token USE
 %token VAR
 %token VARIABLE
@@ -733,6 +734,9 @@ expr_r:
 
  | NONE
      { Eoption ONone }
+
+ | UNPACK LESS t=type_t GREATER x=paren(expr)
+     { Eunpack (t, x) }
 
  | x=order_operations %prec prec_order { x }
 

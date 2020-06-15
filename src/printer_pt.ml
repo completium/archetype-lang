@@ -563,6 +563,15 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_colon pos pp) fmt i
 
+  | Eunpack (t, arg) ->
+
+    let pp fmt (t, arg) =
+      Format.fprintf fmt "unpack<%a>(%a)"
+        pp_type t
+        (pp_expr e_default PNone) arg
+    in
+    (maybe_paren outer e_colon pos pp) fmt (t, arg)
+
   | Eany -> Format.fprintf fmt "any"
 
   | Enothing -> Format.fprintf fmt "()"

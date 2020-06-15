@@ -196,6 +196,8 @@ let to_const = function
   | Cgetopt         -> "getopt"
   | Cfloor          -> "floor"
   | Cceil           -> "ceil"
+  | Cpack           -> "pack"
+  | Cunpack         -> "unpack"
   (* list *)
   | Chead           -> "head"
   | Ctail           -> "tail"

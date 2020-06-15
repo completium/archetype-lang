@@ -2231,6 +2231,7 @@ let rec for_xexpr
     | Ereturn   _
     | Eseq      _
     | Etransfer _
+    | Eunpack   _
     | Eany
     | Einvalid ->
       Env.emit_error env (loc tope, InvalidExpression);

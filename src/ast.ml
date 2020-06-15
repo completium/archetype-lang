@@ -149,6 +149,8 @@ type const =
   | Cgetopt
   | Cfloor
   | Cceil
+  | Cpack
+  | Cunpack
   (* list *)
   | Chead
   | Ctail

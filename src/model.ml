@@ -244,6 +244,8 @@ type ('id, 'term) mterm_node  =
   | Mgetopt           of 'term
   | Mfloor            of 'term
   | Mceil             of 'term
+  | Mpack             of 'term
+  | Munpack           of  type_ * 'term
   (* crypto functions *)
   | Mblake2b          of 'term
   | Msha256           of 'term
@@ -1059,6 +1061,8 @@ let cmp_mterm_node
     | Mgetopt x1, Mgetopt x2                                                           -> cmp x1 x2
     | Mfloor x1, Mfloor x2                                                             -> cmp x1 x2
     | Mceil x1, Mceil x2                                                               -> cmp x1 x2
+    | Mpack x1, Mpack x2                                                               -> cmp x1 x2
+    | Munpack (t1, x1), Munpack (t2, x2)                                               -> cmp_type t1 t2 && cmp x1 x2
     (* crypto functions *)
     | Mblake2b x1, Mblake2b x2                                                         -> cmp x1 x2
     | Msha256  x1, Msha256  x2                                                         -> cmp x1 x2
@@ -1339,6 +1343,8 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mgetopt x                      -> Mgetopt (f x)
   | Mfloor x                       -> Mfloor (f x)
   | Mceil x                        -> Mceil (f x)
+  | Mpack x                        -> Mceil (f x)
+  | Munpack (t, x)                 -> Munpack (ft t, f x)
   (* crypto functions *)
   | Mblake2b x                     -> Mblake2b (f x)
   | Msha256 x                      -> Msha256 (f x)
@@ -1655,6 +1661,8 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mgetopt x                             -> f accu x
   | Mfloor x                              -> f accu x
   | Mceil x                               -> f accu x
+  | Mpack x                               -> f accu x
+  | Munpack (_, x)                        -> f accu x
   (* crypto functions *)
   | Mblake2b x                            -> f accu x
   | Msha256  x                            -> f accu x
@@ -2280,6 +2288,14 @@ let fold_map_term
   | Mceil x ->
     let xe, xa = f accu x in
     g (Mceil xe), xa
+
+  | Mpack x ->
+    let xe, xa = f accu x in
+    g (Mpack xe), xa
+
+  | Munpack (t, x) ->
+    let xe, xa = f accu x in
+    g (Munpack (t, xe)), xa
 
   (* crypto functions *)
 

@@ -92,6 +92,7 @@
       "transition"          , TRANSITION     ;
       "true"                , TRUE           ;
       "unmoved"             , UNMOVED        ;
+      "unpack"              , UNPACK         ;
       "use"                 , USE            ;
       "var"                 , VAR            ;
       "variable"            , VARIABLE       ;
