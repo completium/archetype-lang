@@ -2903,7 +2903,7 @@ let for_lvalue kind (env : env) (e : PT.expr) : (M.lvalue * M.ptyp) option =
 
       | Some (`Global vd) ->
         begin match vd.vr_kind, kind with
-          | `Variable, _
+          | `Variable, `Concrete
           | `Ghost, `Ghost -> ()
           | _, _ ->
             Env.emit_error env (loc e, ReadOnlyGlobal (unloc x));
