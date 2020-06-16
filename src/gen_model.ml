@@ -231,11 +231,11 @@ let to_model (ast : A.model) : M.model =
       | A.Pcall (Some p, A.Cconst A.Cbefore,    []) -> M.Msetbefore    (f p)
       | A.Pletin (id, init, typ, body, o) -> M.Mletin         ([id], f init, Option.map ptyp_to_type typ, f body, Option.map f o)
       | A.Pdeclvar (i, t, v)              -> M.Mdeclvar       ([i], Option.map ptyp_to_type t, f v)
-      | A.Pvar (b, _vs, {pldesc = "state"; _})                -> let e = M.Mvarstate in process_before b e
-      | A.Pvar (b, _vs, id) when A.Utils.is_variable ast id   -> let e = M.Mvarstorevar id in process_before b e
-      | A.Pvar (b, _vs, id) when A.Utils.is_asset ast id      -> let e = M.Mvarstorecol id in process_before b e
-      | A.Pvar (b, _vs, id) when A.Utils.is_enum_value ast id -> let e = M.Mvarenumval  id in process_before b e
-      | A.Pvar (b, _vs, id)                                   -> let e = M.Mvarlocal    id in process_before b e
+      | A.Pvar (b, _vs, {pldesc = "state"; _})                -> let e = M.Mvar (dumloc "", Vstate) in process_before b e
+      | A.Pvar (b, _vs, id) when A.Utils.is_variable ast id   -> let e = M.Mvar (id, Vstorevar)     in process_before b e
+      | A.Pvar (b, _vs, id) when A.Utils.is_asset ast id      -> let e = M.Mvar (id, Vstorecol)     in process_before b e
+      | A.Pvar (b, _vs, id) when A.Utils.is_enum_value ast id -> let e = M.Mvar (id, Venumval)      in process_before b e
+      | A.Pvar (b, _vs, id)                                   -> let e = M.Mvar (id, Vlocal)        in process_before b e
       | A.Parray l                             ->
         begin
           let l = List.map f l in
@@ -258,7 +258,7 @@ let to_model (ast : A.model) : M.model =
         (* handle dot contract too *)
         M.Mdot (f d, i)
       | A.Pdotassetfield (an, k, fn)           -> M.Mdotassetfield (an, f k, fn)
-      | A.Pconst Cstate                        -> M.Mvarstate
+      | A.Pconst Cstate                        -> M.Mvar(dumloc "", Vstate)
       | A.Pconst Cnow                          -> M.Mnow
       | A.Pconst Ctransferred                  -> M.Mtransferred
       | A.Pconst Ccaller                       -> M.Mcaller
@@ -628,7 +628,7 @@ let to_model (ast : A.model) : M.model =
           let fp = f p in
           let fq = f q in
           match fp with
-          | {node = M.Mvarstorecol asset_name; _} -> M.Maddasset (unloc asset_name, fq)
+          | {node = M.Mvar (asset_name, Vstorecol); _} -> M.Maddasset (unloc asset_name, fq)
           | {node = M.Mdotassetfield (asset_name , k, fn); _} -> M.Maddfield (unloc asset_name, unloc fn, k, fq)
           | _ -> assert false
         )
@@ -637,7 +637,7 @@ let to_model (ast : A.model) : M.model =
           let fp = f p in
           let fq = f q in
           match fp with
-          | {node = M.Mvarstorecol asset_name; _} -> M.Mremoveasset (unloc asset_name, fq)
+          | {node = M.Mvar (asset_name, Vstorecol); _} -> M.Mremoveasset (unloc asset_name, fq)
           | {node = M.Mdotassetfield (asset_name , k, fn); _} -> M.Mremovefield (unloc asset_name, unloc fn, k, fq)
           | _ -> assert false
         )
@@ -645,7 +645,7 @@ let to_model (ast : A.model) : M.model =
       | A.Icall (Some p, A.Cconst (A.Cremoveall), []) when is_asset_container p -> (
           let fp = f p in
           match fp with
-          | {node = M.Mvarstorecol _; _} -> emit_error (instr.loc, NoRemoveAllOnCollection); bailout ()
+          | {node = M.Mvar (_, Vstorecol); _} -> emit_error (instr.loc, NoRemoveAllOnCollection); bailout ()
           | {node = M.Mdotassetfield (asset_name , k, fn); _} -> M.Mremoveall (unloc asset_name, unloc fn, k)
           | _ -> assert false
         )
@@ -819,7 +819,7 @@ let to_model (ast : A.model) : M.model =
     let is_arg (id : M.lident) = List.mem (unloc id) ident_args in
     let rec aux (mt : M.mterm) : M.mterm =
       match mt.node with
-      | M.Mvarlocal id when is_arg id -> {mt with node = M.Mvarparam id}
+      | M.Mvar (id, Vlocal) when is_arg id -> {mt with node = M.Mvar (id, Vparam)}
       | _ -> M.map_mterm aux mt
     in
     aux mt
@@ -943,11 +943,11 @@ let to_model (ast : A.model) : M.model =
                let tre : M.mterm =
                  match p_on with
                  | Some (key_ident, key_type, an, enum_type) ->
-                   let k : M.mterm = M.mk_mterm (M.Mvarlocal key_ident) key_type ~loc:(Location.loc key_ident) in
-                   let v : M.mterm = M.mk_mterm (M.Mvarenumval id) enum_type ~loc:(Location.loc id) in
+                   let k : M.mterm = M.mk_mterm (M.Mvar (key_ident, Vlocal)) key_type ~loc:(Location.loc key_ident) in
+                   let v : M.mterm = M.mk_mterm (M.Mvar (id, Venumval)) enum_type ~loc:(Location.loc id) in
                    M.mk_mterm (M.Massignassetstate (an, k, v)) Tunit
                  | _ ->
-                   let v : M.mterm = M.mk_mterm (M.Mvarlocal id) (M.Tstate) ~loc:(Location.loc id) in
+                   let v : M.mterm = M.mk_mterm (M.Mvar (id, Vlocal)) (M.Tstate) ~loc:(Location.loc id) in
                    M.mk_mterm (M.Massignstate v) Tunit
                in
                let code : M.mterm =
@@ -981,9 +981,9 @@ let to_model (ast : A.model) : M.model =
               let w =
                 match p_on with
                 | Some (ki, kt, an, et) ->
-                  let k : M.mterm = M.mk_mterm (M.Mvarlocal ki) kt ~loc:(Location.loc ki) in
-                  M.mk_mterm (M.Mvarassetstate (an, k)) et
-                | _ -> M.mk_mterm (M.Mvarstate) Tstate
+                  let k : M.mterm = M.mk_mterm (M.Mvar (ki, Vlocal)) kt ~loc:(Location.loc ki) in
+                  M.mk_mterm (M.Mvar (dumloc an, Vassetstate k)) et
+                | _ -> M.mk_mterm (M.Mvar(dumloc "", Vstate)) Tstate
               in
               M.mk_mterm (M.Mmatchwith (w, List.map (fun x -> (x, body)) list_patterns @ [pattern, fail_instr])) Tunit
             end

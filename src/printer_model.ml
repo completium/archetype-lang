@@ -798,7 +798,6 @@ let pp_mterm fmt (mt : mterm) =
 
     (* constants *)
 
-    | Mvarstate      -> pp_str fmt "state"
     | Mnow           -> pp_str fmt "now"
     | Mtransferred   -> pp_str fmt "transferred"
     | Mcaller        -> pp_str fmt "caller"
@@ -806,16 +805,17 @@ let pp_mterm fmt (mt : mterm) =
     | Msource        -> pp_str fmt "source"
 
 
-    (* variables *)
+    (* variable *)
 
-    | Mvarassetstate (an, k) -> Format.fprintf fmt "state_%a(%a)" pp_str an f k
-    | Mvarstorevar v -> pp_id fmt v
-    | Mvarstorecol v -> pp_id fmt v
-    | Mvarenumval v  -> pp_id fmt v
-    | Mvarlocal v    -> pp_id fmt v
-    | Mvarparam v    -> pp_id fmt v
-    | Mvarfield v    -> pp_id fmt v
-    | Mvarthe        -> pp_str fmt "the"
+    | Mvar (an, Vassetstate k) -> Format.fprintf fmt "state_%a(%a)" pp_str (Location.unloc an) f k
+    | Mvar(v, Vstorevar) -> pp_id fmt v
+    | Mvar(v, Vstorecol) -> pp_id fmt v
+    | Mvar(v, Venumval)  -> pp_id fmt v
+    | Mvar(v, Vlocal)    -> pp_id fmt v
+    | Mvar(v, Vparam)    -> pp_id fmt v
+    | Mvar(v, Vfield)    -> pp_id fmt v
+    | Mvar(_, Vthe)      -> pp_str fmt "the"
+    | Mvar(_, Vstate)    -> pp_str fmt "state"
 
 
     (* rational *)

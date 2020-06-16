@@ -281,7 +281,7 @@ let pp_model_internal fmt (model : model) b =
 
     | Mapp (e, args) ->
       let pp fmt (e, args) =
-        let args = (mk_mterm (Mvarlocal (dumloc const_storage)) Tstorage)::args in
+        let args = (mk_mterm (Mvar (dumloc const_storage, Vlocal)) Tstorage)::args in
         Format.fprintf fmt "%a (%a)"
           pp_id e
           (pp_list ", " f) args
@@ -1159,7 +1159,6 @@ let pp_model_internal fmt (model : model) b =
 
     (* constants *)
 
-    | Mvarstate      -> Format.fprintf fmt "%s.%s" const_storage const_state
     | Mnow           -> pp_str fmt "now"
     | Mtransferred   -> pp_str fmt "amount"
     | Mcaller        -> pp_str fmt "sender"
@@ -1169,23 +1168,23 @@ let pp_model_internal fmt (model : model) b =
 
     (* variables *)
 
-    | Mvarassetstate (an, k) ->
+    | Mvar (an, Vassetstate k) ->
       Format.fprintf fmt "state_%a(%a)"
-        pp_str an
+        pp_str (unloc an)
         f k
 
-    | Mvarstorevar v ->
+    | Mvar (v, Vstorevar) ->
       if (is_const env v)
       then pp_id fmt v
       else Format.fprintf fmt "%s.%a" const_storage pp_id v
 
-    | Mvarstorecol v -> Format.fprintf fmt "%s.%a" const_storage pp_id v
+    | Mvar (v, Vstorecol) -> Format.fprintf fmt "%s.%a" const_storage pp_id v
 
-    | Mvarenumval v  -> pp_id fmt v
+    | Mvar (v, Venumval)  -> pp_id fmt v
 
-    | Mvarlocal v    -> pp_id fmt v
+    | Mvar (v, Vlocal)    -> pp_id fmt v
 
-    | Mvarparam v    ->
+    | Mvar (v, Vparam)    ->
       Format.fprintf fmt "%a%a"
         (fun fmt x ->
            match x with
@@ -1194,10 +1193,11 @@ let pp_model_internal fmt (model : model) b =
         ) env.f
         pp_id v
 
-    | Mvarfield v    -> pp_id fmt v
+    | Mvar (v, Vfield)    -> pp_id fmt v
 
-    | Mvarthe        -> pp_str fmt "the"
+    | Mvar (_, Vthe)      -> pp_str fmt "the"
 
+    | Mvar (_, Vstate)    -> Format.fprintf fmt "%s.%s" const_storage const_state
 
     (* rational *)
 
@@ -1939,7 +1939,7 @@ let pp_model_internal fmt (model : model) b =
     | Sum (an, c, t, p) ->
       let rec pp_expr fmt (mt : mterm) =
         match mt.node with
-        | Mdot ({node = Mvarlocal ({pldesc = "the"; _}) }, fn) ->
+        | Mdot ({node = Mvar ({pldesc = "the"; _}, Vlocal) }, fn) ->
           Format.fprintf fmt "a.%a"
             pp_id fn
         | _ -> (pp_mterm_gen (mk_env ()) pp_expr) fmt mt

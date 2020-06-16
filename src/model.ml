@@ -131,6 +131,32 @@ type sort_kind =
   | SKdesc
 [@@deriving show {with_path = false}]
 
+type 'term var_kind_gen =
+  | Vassetstate of 'term
+  | Vstorevar
+  | Vstorecol
+  | Venumval
+  | Vlocal
+  | Vparam
+  | Vfield
+  | Vstate
+  | Vthe
+[@@deriving show {with_path = false}]
+
+type 'term container_kind_gen =
+  | CKcoll
+  | CKview  of 'term
+  | CKfield of 'term
+[@@deriving show {with_path = false}]
+
+type 'term iter_container_kind_gen =
+  | ICKcoll  of ident
+  | ICKview  of 'term
+  | ICKfield of 'term
+  | ICKlist  of 'term
+[@@deriving show {with_path = false}]
+
+
 type ('id, 'term) mterm_node  =
   (* lambda *)
   | Mletin            of 'id list * 'term * type_ option * 'term * 'term option
@@ -252,21 +278,13 @@ type ('id, 'term) mterm_node  =
   | Msha512           of 'term
   | Mchecksignature   of 'term * 'term * 'term
   (* constants *)
-  | Mvarstate
   | Mnow
   | Mtransferred
   | Mcaller
   | Mbalance
   | Msource
-  (* variables *)
-  | Mvarassetstate    of ident * 'term
-  | Mvarstorevar      of 'id
-  | Mvarstorecol      of 'id
-  | Mvarenumval       of 'id
-  | Mvarlocal         of 'id
-  | Mvarparam         of 'id
-  | Mvarfield         of 'id
-  | Mvarthe
+  (* variable *)
+  | Mvar              of 'id * 'term var_kind_gen
   (* rational *)
   | Mdivrat           of 'term * 'term
   | Mrateq            of 'term * 'term
@@ -298,18 +316,9 @@ type ('id, 'term) mterm_node  =
   | Misempty          of ident * 'term
 [@@deriving show {with_path = false}]
 
-and 'term container_kind_gen =
-  | CKcoll
-  | CKview  of 'term
-  | CKfield of 'term
+and var_kind = mterm var_kind_gen
 
 and container_kind = mterm container_kind_gen
-
-and 'term iter_container_kind_gen =
-  | ICKcoll  of ident
-  | ICKview  of 'term
-  | ICKfield of 'term
-  | ICKlist  of 'term
 
 and iter_container_kind = mterm iter_container_kind_gen
 
@@ -938,6 +947,19 @@ let cmp_mterm_node
     (term1 : ('id, 'term) mterm_node)
     (term2 : ('id, 'term) mterm_node)
   : bool =
+  let cmp_var_kind (lhs : var_kind) (rhs : var_kind) : bool =
+    match lhs, rhs with
+    | Vassetstate v1, Vassetstate v2 -> cmp v1 v2
+    | Vstorevar, Vstorevar
+    | Vstorecol, Vstorecol
+    | Venumval, Venumval
+    | Vlocal, Vlocal
+    | Vparam, Vparam
+    | Vfield, Vfield
+    | Vstate, Vstate
+    | Vthe, Vthe -> true
+    | _ -> false
+  in
   let cmp_container_kind (lhs : 'term container_kind_gen) (rhs : 'term container_kind_gen) : bool =
     match lhs, rhs with
     | CKcoll, CKcoll -> true
@@ -1073,21 +1095,13 @@ let cmp_mterm_node
     | Msha512  x1, Msha512  x2                                                         -> cmp x1 x2
     | Mchecksignature (k1, s1, x1), Mchecksignature (k2, s2, x2)                       -> cmp k1 k2 && cmp s1 s2 && cmp x1 x2
     (* constants *)
-    | Mvarstate, Mvarstate                                                             -> true
     | Mnow, Mnow                                                                       -> true
     | Mtransferred, Mtransferred                                                       -> true
     | Mcaller, Mcaller                                                                 -> true
     | Mbalance, Mbalance                                                               -> true
     | Msource, Msource                                                                 -> true
-    (* variables *)
-    | Mvarassetstate (an1, k1), Mvarassetstate (an2, k2)                               -> cmp_ident an1 an2 && cmp k1 k2
-    | Mvarstorevar v1, Mvarstorevar v2                                                 -> cmpi v1 v2
-    | Mvarstorecol v1, Mvarstorecol v2                                                 -> cmpi v1 v2
-    | Mvarenumval v1, Mvarenumval v2                                                   -> cmpi v1 v2
-    | Mvarlocal v1, Mvarlocal v2                                                       -> cmpi v1 v2
-    | Mvarparam v1, Mvarparam v2                                                       -> cmpi v1 v2
-    | Mvarfield v1, Mvarfield v2                                                       -> cmpi v1 v2
-    | Mvarthe, Mvarthe                                                                 -> true
+    (* variable *)
+    | Mvar (id1, k1), Mvar (id2, k2)                                                   -> cmpi id1 id2 && cmp_var_kind k1 k2
     (* rational *)
     | Mdivrat (l1, r1), Mdivrat (l2, r2)                                               -> cmp l1 l2 && cmp r1 r2
     | Mrateq (l1, r1), Mrateq (l2, r2)                                                 -> cmp l1 l2 && cmp r1 r2
@@ -1223,6 +1237,17 @@ let map_type (f : type_ -> type_) = function
 
 (* -------------------------------------------------------------------- *)
 
+let map_var_kind f = function
+  | Vassetstate mt -> Vassetstate (f mt)
+  | Vstorevar -> Vstorevar
+  | Vstorecol -> Vstorecol
+  | Venumval -> Venumval
+  | Vlocal -> Vlocal
+  | Vparam -> Vparam
+  | Vfield -> Vfield
+  | Vstate -> Vstate
+  | Vthe -> Vthe
+
 let map_container_kind f = function
   | CKcoll     -> CKcoll
   | CKview  mt -> CKview  (f mt)
@@ -1355,21 +1380,13 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Msha512 x                      -> Msha512 (f x)
   | Mchecksignature (k, s, x)      -> Mchecksignature (f k, f s, f x)
   (* constants *)
-  | Mvarstate                      -> Mvarstate
   | Mnow                           -> Mnow
   | Mtransferred                   -> Mtransferred
   | Mcaller                        -> Mcaller
   | Mbalance                       -> Mbalance
   | Msource                        -> Msource
-  (* variables *)
-  | Mvarassetstate (an, k)         -> Mvarassetstate (fi an, f k)
-  | Mvarstorevar v                 -> Mvarstorevar (g v)
-  | Mvarstorecol v                 -> Mvarstorecol (g v)
-  | Mvarenumval v                  -> Mvarenumval  (g v)
-  | Mvarlocal v                    -> Mvarlocal    (g v)
-  | Mvarparam v                    -> Mvarparam    (g v)
-  | Mvarfield v                    -> Mvarfield    (g v)
-  | Mvarthe                        -> Mvarthe
+  (* variable *)
+  | Mvar (id, k)                   -> Mvar (g id, map_var_kind f k)
   (* rational *)
   | Mdivrat (l, r)                 -> Mdivrat (f l, f r)
   | Mrateq (l, r)                  -> Mrateq (f l, f r)
@@ -1539,6 +1556,17 @@ let map_mterm_model_gen custom (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (
 let map_mterm_model (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (model : model) : model =
   map_mterm_model_gen () f model
 
+let fold_var_kind f accu = function
+  | Vassetstate mt -> f accu mt
+  | Vstorevar
+  | Vstorecol
+  | Venumval
+  | Vlocal
+  | Vparam
+  | Vfield
+  | Vstate
+  | Vthe -> accu
+
 let fold_container_kind f accu = function
   | CKcoll          -> accu
   | CKview mt       -> f accu mt
@@ -1673,21 +1701,13 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Msha512  x                            -> f accu x
   | Mchecksignature (k, s, x)             -> f (f (f accu k) s) x
   (* constants *)
-  | Mvarstate                             -> accu
   | Mnow                                  -> accu
   | Mtransferred                          -> accu
   | Mcaller                               -> accu
   | Mbalance                              -> accu
   | Msource                               -> accu
-  (* variables *)
-  | Mvarassetstate (_, k)                 -> f accu k
-  | Mvarstorevar _                        -> accu
-  | Mvarstorecol _                        -> accu
-  | Mvarenumval _                         -> accu
-  | Mvarlocal _                           -> accu
-  | Mvarparam _                           -> accu
-  | Mvarfield _                           -> accu
-  | Mvarthe                               -> accu
+  (* variable *)
+  | Mvar (_, k)                           -> fold_var_kind f accu k
   (* rational *)
   | Mdivrat (l, r)                        -> f (f accu l) r
   | Mrateq (l, r)                         -> f (f accu l) r
@@ -1724,6 +1744,19 @@ let fold_map_term_list f acc l : 'term list * 'a =
        let p, accu = f accu x in
        pterms @ [p], accu) ([], acc) l
 
+let fold_map_var_kind f accu = function
+  | Vassetstate mt ->
+    let mte, mta = f accu mt in
+    Vassetstate mte, mta
+  | Vstorevar -> Vstorevar, accu
+  | Vstorecol -> Vstorecol, accu
+  | Venumval  -> Venumval,  accu
+  | Vlocal    -> Vlocal,    accu
+  | Vparam    -> Vparam,    accu
+  | Vfield    -> Vfield,    accu
+  | Vstate    -> Vstate,    accu
+  | Vthe      -> Vthe,      accu
+
 let fold_map_container_kind f accu = function
   | CKcoll -> CKcoll, accu
   | CKview mt ->
@@ -1732,7 +1765,6 @@ let fold_map_container_kind f accu = function
   | CKfield mt ->
     let mte, mta = f accu mt in
     CKfield mte, mta
-
 
 let fold_map_iter_container_kind f accu = function
   | ICKcoll an -> ICKcoll an, accu
@@ -2325,9 +2357,6 @@ let fold_map_term
 
   (* constants *)
 
-  | Mvarstate ->
-    g Mvarstate, accu
-
   | Mnow ->
     g Mnow, accu
 
@@ -2344,32 +2373,11 @@ let fold_map_term
     g Msource, accu
 
 
-  (* variables *)
+  (* variable *)
 
-  | Mvarassetstate (an, k) ->
-    let ke, ka = f accu k in
-    g (Mvarassetstate (an, ke)), ka
-
-  | Mvarstorevar v ->
-    g (Mvarstorevar v), accu
-
-  | Mvarstorecol v ->
-    g (Mvarstorecol v), accu
-
-  | Mvarenumval v ->
-    g (Mvarenumval v), accu
-
-  | Mvarfield v ->
-    g (Mvarfield v), accu
-
-  | Mvarlocal v ->
-    g (Mvarlocal v), accu
-
-  | Mvarparam v ->
-    g (Mvarparam v), accu
-
-  | Mvarthe ->
-    g Mvarthe, accu
+  | Mvar (id, k) ->
+    let ke, ka = fold_map_var_kind f accu k in
+    g (Mvar (id, ke)), ka
 
 
   (* rational *)
@@ -3376,12 +3384,12 @@ end = struct
 
   let is_varlocal (t : mterm) =
     match t.node with
-    | Mvarlocal _ -> true
+    | Mvar (_, Vlocal) -> true
     | _ -> false
 
   let dest_varlocal (t : mterm) =
     match t.node with
-    | Mvarlocal i -> unloc i
+    |  Mvar (i, Vlocal) -> unloc i
     | _ -> assert false
 
   let is_container t =
@@ -3581,11 +3589,11 @@ end = struct
 
   let get_source_for (_m : model) (_ctx : ctx_model) (c : mterm) : mterm option =
     match c.node with
-    | Mvarparam an ->
+    | Mvar(an, Vparam) ->
       begin
         let l, an = deloc an in
         let idparam = mkloc l (an ^ "_values") in
-        Some (mk_mterm (Mvarparam idparam) (Tmap(Bint, Tasset (dumloc "myasset"))))
+        Some (mk_mterm (Mvar(idparam, Vparam) ) (Tmap(Bint, Tasset (dumloc "myasset"))))
       end
     | _ -> None
 
@@ -3595,8 +3603,8 @@ end = struct
     let remove_const (mt : mterm) : mterm =
       let rec aux (mt : mterm) : mterm =
         match mt.node with
-        | Mvarstorevar v
-        | Mvarlocal v when is_const (unloc v) ->
+        | Mvar(v, Vstorevar)
+        | Mvar(v, Vlocal) when is_const (unloc v) ->
           let dv = get_value (unloc v) in
           aux dv
         | _ -> map_mterm aux mt
@@ -3776,7 +3784,7 @@ end = struct
       ) false m.api_items
 
   let get_asset_collection (an : ident) : mterm =
-    mk_mterm (Mvarstorecol (dumloc an)) (Tcontainer (Tasset (dumloc an), Collection))
+    mk_mterm (Mvar (dumloc an, Vstorecol)) (Tcontainer (Tasset (dumloc an), Collection))
 
   let is_asset_single_field (model : model) (an : ident) : bool =
     get_asset model an |> fun x -> x.values |> List.filter (fun (x : asset_item) -> not x.shadow) |> List.length = 1

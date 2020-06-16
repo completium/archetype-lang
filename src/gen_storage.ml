@@ -27,7 +27,7 @@ let generate_storage (model : model) : model =
     | _ when String.equal (unloc e.name) "state" ->
       begin
         let iv = e.initial in
-        let dv = mk_mterm (Mvarlocal iv) (Tstate) in
+        let dv = mk_mterm (Mvar (iv, Vlocal)) (Tstate) in
         [ mk_storage_item e.name MTstate Tstate dv ]
       end
     | _ -> []
@@ -103,8 +103,8 @@ let generate_storage (model : model) : model =
           let vv = aux c v in
           mk_mterm (Massignvarstore (op, t, id, vv)) Tunit
         end
-      | Mvarlocal id when Model.Utils.is_field_storage model (unloc id) ->
-        mk_mterm (Mvarstorevar id) mt.type_
+      | Mvar (id, Vlocal) when Model.Utils.is_field_storage model (unloc id) ->
+        mk_mterm (Mvar (id, Vstorevar)) mt.type_
       | _ -> map_mterm (aux c) mt
     in
     Model.map_mterm_model aux model

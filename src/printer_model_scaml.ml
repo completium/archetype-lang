@@ -1127,7 +1127,6 @@ let pp_model fmt (model : model) =
 
       (* constants *)
 
-      | Mvarstate      -> Format.fprintf fmt "%s.%s" const_storage const_state
       | Mnow           -> pp_str fmt "Global.get_now ()"
       | Mtransferred   -> pp_str fmt "Global.get_amount ()"
       | Mcaller        -> pp_str fmt "Global.get_sender ()"
@@ -1137,14 +1136,15 @@ let pp_model fmt (model : model) =
 
       (* variables *)
 
-      | Mvarassetstate (an, k) -> Format.fprintf fmt "state_%a(%a)" pp_str an f k
-      | Mvarstorevar v -> Format.fprintf fmt "%s.%a" const_storage pp_id v
-      | Mvarstorecol v -> Format.fprintf fmt "%s.%a" const_storage pp_id v
-      | Mvarenumval v  -> pp_id fmt v
-      | Mvarlocal v    -> pp_id fmt v
-      | Mvarparam v    -> pp_id fmt v
-      | Mvarfield v    -> pp_id fmt v
-      | Mvarthe        -> pp_str fmt "the"
+      | Mvar (an, Vassetstate k) -> Format.fprintf fmt "state_%a(%a)" pp_str (Location.unloc an) f k
+      | Mvar (v, Vstorevar)      -> Format.fprintf fmt "%s.%a" const_storage pp_id v
+      | Mvar (v, Vstorecol)      -> Format.fprintf fmt "%s.%a" const_storage pp_id v
+      | Mvar (v, Venumval)       -> pp_id fmt v
+      | Mvar (v, Vlocal)         -> pp_id fmt v
+      | Mvar (v, Vparam)         -> pp_id fmt v
+      | Mvar (v, Vfield)         -> pp_id fmt v
+      | Mvar (_, Vthe)           -> pp_str fmt "the"
+      | Mvar (_, Vstate)         -> Format.fprintf fmt "%s.%s" const_storage const_state
 
 
       (* rational *)

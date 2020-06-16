@@ -984,7 +984,6 @@ let pp_model fmt (model : model) =
 
       (* constants *)
 
-      | Mvarstate      -> pp_str fmt "self.data.state"
       | Mnow           -> pp_str fmt "sp.now"
       | Mtransferred   -> pp_str fmt "sp.amount"
       | Mcaller        -> pp_str fmt "sp.sender"
@@ -994,20 +993,21 @@ let pp_model fmt (model : model) =
 
       (* variables *)
 
-      | Mvarassetstate (an, k) -> Format.fprintf fmt "state_%a(%a)" pp_str an f k
-      | Mvarstorevar v ->
+      | Mvar (an, Vassetstate k) -> Format.fprintf fmt "state_%a(%a)" pp_str (unloc an) f k
+      | Mvar (v, Vstorevar) ->
         Format.fprintf fmt "self%a.%a"
           (fun fmt b -> match b with false -> pp_str fmt ".data" | _ -> ()) (is_const env v)
           pp_id v
-      | Mvarstorecol v -> Format.fprintf fmt "self.data.%a" pp_id v
-      | Mvarenumval v  -> pp_id fmt v
-      | Mvarlocal v    ->
+      | Mvar (v, Vstorecol) -> Format.fprintf fmt "self.data.%a" pp_id v
+      | Mvar (v, Venumval)  -> pp_id fmt v
+      | Mvar (v, Vlocal)    ->
         Format.fprintf fmt "%a%a"
           (fun fmt b -> match b with true -> pp_str fmt "self." | _ -> ()) (is_const env v)
           pp_id v
-      | Mvarparam v    -> Format.fprintf fmt "%s.%a" const_params pp_id v
-      | Mvarfield v    -> pp_id fmt v
-      | Mvarthe        -> pp_str fmt "the"
+      | Mvar (v, Vparam)    -> Format.fprintf fmt "%s.%a" const_params pp_id v
+      | Mvar (v, Vfield)    -> pp_id fmt v
+      | Mvar (_, Vthe)      -> pp_str fmt "the"
+      | Mvar (_, Vstate)    -> pp_str fmt "self.data.state"
 
 
       (* rational *)

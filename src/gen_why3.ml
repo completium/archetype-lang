@@ -1184,7 +1184,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mfail (InvalidCondition _) -> Traise Einvalidcondition
     | Mfail InvalidState         -> Traise Einvalidstate
     | Mfail (Invalid { node = M.Mstring msg; type_=_ }) -> Traise (Einvalid (Some msg))
-    | Mfail (Invalid { node = M.Mvarlocal n; type_=_ }) -> Traise (Einvalid (Some (unloc n)))
+    | Mfail (Invalid { node = M.Mvar (n, Vlocal); type_=_ }) -> Traise (Einvalid (Some (unloc n)))
     | Mfail               _ -> error_not_translated "Mfail"
     | Mtransfer (a, t) -> Ttransfer(map_mterm m ctx a, map_mterm m ctx t)
     | Mentrycall (_, d, _, _, _) -> Tcall (map_mterm m ctx d)
@@ -1375,7 +1375,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       begin match v.node with
       | Mapp(f,_)  when is_coll_field m (unloc f) ->
         map_mterm m ctx v |> Mlwtree.deloc
-      | Mvarlocal f when is_coll_field m (unloc f) ->
+      | Mvar (f, Vlocal) when is_coll_field m (unloc f) ->
         map_mterm m ctx v |> Mlwtree.deloc
       (* | Mdotasset (_,f) when is_coll_field m (unloc f) -> *)
       | Mdotassetfield (_, _, f) when is_coll_field m (unloc f) ->
@@ -1439,13 +1439,6 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     (* constants *)
 
-    | Mvarstate ->
-      begin
-        match ctx.lctx with
-        | Inv -> loc_term (Tvar "state") |> Mlwtree.deloc
-        | _ -> loc_term (Tdoti (gs, "state")) |> Mlwtree.deloc
-      end
-
     | Mnow -> Tnow (with_dummy_loc gs)
     | Mtransferred -> Ttransferred (with_dummy_loc gs)
     | Mcaller -> Tcaller (with_dummy_loc gs)
@@ -1462,16 +1455,16 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     (* variables *)
 
-    | Mvarassetstate _ -> error_not_translated "Mvarassetstate"
+    | Mvar(_, Vassetstate _) -> error_not_translated "Mvar(_, Vassetstate _)"
 
-    | Mvarstorevar v ->
+    | Mvar (v, Vstorevar) ->
       begin
         match ctx.lctx with
         | Inv -> Tvar (map_lident v)
         | _ -> Tdoti (with_dummy_loc gs, map_lident v)
       end
 
-    | Mvarstorecol n ->
+    | Mvar (n, Vstorecol) ->
       let coll =
         match ctx.lctx, ctx.old, ctx.lmod with
         | Inv, _, _ -> Tvar (mk_ac_id (n |> unloc))
@@ -1484,11 +1477,18 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       in
       loc_term coll |> Mlwtree.deloc
 
-    | Mvarenumval v -> Tvar (map_lident v)
-    | Mvarlocal v -> Tvar (map_lident v)
-    | Mvarparam v -> Tvar (map_lident v)
-    | Mvarfield           _ -> error_not_translated "Mvarfield"
-    | Mvarthe               -> error_not_translated "Mvarthe"
+    | Mvar (v, Venumval) -> Tvar (map_lident v)
+    | Mvar (v, Vlocal) -> Tvar (map_lident v)
+    | Mvar (v, Vparam) -> Tvar (map_lident v)
+    | Mvar (_, Vfield) -> error_not_translated "Mvar (_, Vfield)"
+    | Mvar (_, Vthe)   -> error_not_translated "Mvar (_, Vthe)"
+    | Mvar (_, Vstate) ->
+      begin
+        match ctx.lctx with
+        | Inv -> loc_term (Tvar "state") |> Mlwtree.deloc
+        | _ -> loc_term (Tdoti (gs, "state")) |> Mlwtree.deloc
+      end
+
 
 
     (* rational *)
