@@ -2711,3 +2711,24 @@ let transfer_shadow_variable_to_storage (model : model) : model =
     storage = model.storage @ storage_items
   }
   |> concat_shadown_effect_to_exec
+
+let create_var_before_for (model : model) : model =
+  let rec aux ctx (mt : mterm) : mterm =
+    match mt.node with
+    | Mfor (id, ((ICKview c | ICKfield c | ICKlist c) as k), body, Some lbl) ->
+      begin
+        let var_id = "col_" ^ lbl ^ "_" in
+        let var : mterm = mk_mterm (Mvar (dumloc var_id, Vlocal)) c.type_ in
+        let ickvar : iter_container_kind =
+          match k with
+          | ICKview _  -> ICKview var
+          | ICKfield _ -> ICKfield var
+          | ICKlist _  -> ICKlist var
+          | _ -> assert false
+        in
+        let newfor : mterm  = mk_mterm (Mfor (id, ickvar, body, Some lbl)) mt.type_ in
+        mk_mterm (Mletin ([dumloc var_id], c, Some c.type_, newfor, None)) mt.type_
+      end
+    | _ -> map_mterm (aux ctx) mt
+  in
+  Model.map_mterm_model aux model

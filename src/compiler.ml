@@ -226,6 +226,7 @@ let generate_target model =
     (* |> shallow_asset_verif *)
     (* |> split_key_values *)
     |> Gen_transform.assign_loop_label
+    |> create_var_before_for
     |> replace_for_to_iter
     |> replace_assignfield_by_update
     |> replace_update_by_set
