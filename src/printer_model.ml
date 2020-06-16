@@ -979,12 +979,12 @@ let pp_mterm fmt (mt : mterm) =
         f e
 
     | Msetiterated e ->
-      Format.fprintf fmt "iterated %a"
-        f e
+      Format.fprintf fmt "iterated (%a)"
+        (pp_iter_container_kind f) e
 
     | Msettoiterate e ->
-      Format.fprintf fmt "to_iterate %a"
-        f e
+      Format.fprintf fmt "to_iterate (%a)"
+        (pp_iter_container_kind f) e
 
 
     (* formula asset collection methods *)

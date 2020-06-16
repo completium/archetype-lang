@@ -140,10 +140,10 @@ let remove_add_update (model : model) : model =
         let cond   = mk_mterm (Mcontains (an, c, k)) Tunit in
         let asset  = mk_asset (an, k, l) in
         let add    = mk_mterm (
-          match c with
-          | CKfield {node = Mdotassetfield (an, k, fn)} -> Maddfield (unloc an, unloc fn, k, asset)
-          | CKcoll -> Maddasset (an, asset)
-          | _ -> assert false) Tunit in
+            match c with
+            | CKfield {node = Mdotassetfield (an, k, fn)} -> Maddfield (unloc an, unloc fn, k, asset)
+            | CKcoll -> Maddasset (an, asset)
+            | _ -> assert false) Tunit in
         let update = mk_mterm (Mupdate (an, k, l)) Tunit in
         let if_node = Mif (cond, update, Some add) in
         mk_mterm if_node Tunit
@@ -339,7 +339,7 @@ let extend_loop_iter (model : model) : model =
   let get_for_collections () =
     let rec internal_get_for (ctx : ctx_model) acc (t : mterm) =
       match t.node with
-      | Mfor (_, (ICKview c | ICKlist c), _, Some id) -> acc @ [id, c]
+      | Mfor (_, c, _, Some id) -> acc @ [id, c]
       | _ -> fold_term (internal_get_for ctx) acc t
     in
     fold_model internal_get_for model [] in
@@ -349,10 +349,18 @@ let extend_loop_iter (model : model) : model =
       let mk_term const =
         let loop_id = Tools.Option.get ctx.invariant_id |> unloc in
         if List.mem_assoc loop_id for_colls then
-          let coll = List.assoc loop_id for_colls in
+          let coll : iter_container_kind = List.assoc loop_id for_colls in
+          let get_type (coll : iter_container_kind) =
+            match coll with
+            | ICKcoll an -> Tcontainer (Tasset (dumloc an), Collection)
+            | ICKview c  -> c.type_
+            | ICKfield c -> c.type_
+            | ICKlist c  -> c.type_
+          in
+          let tcoll = get_type coll in
           match const with
-          | `Toiterate -> mk_mterm (Msettoiterate coll) (coll.type_)
-          | `Iterated ->  mk_mterm (Msetiterated coll) (coll.type_)
+          | `Toiterate -> mk_mterm (Msettoiterate coll) tcoll
+          | `Iterated ->  mk_mterm (Msetiterated coll) tcoll
         else
           t in
       match t.node with

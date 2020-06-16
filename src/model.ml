@@ -313,8 +313,8 @@ type ('id, 'term) mterm_node  =
   | Msetunmoved       of 'term
   | Msetadded         of 'term
   | Msetremoved       of 'term
-  | Msetiterated      of 'term
-  | Msettoiterate     of 'term
+  | Msetiterated      of 'term iter_container_kind_gen
+  | Msettoiterate     of 'term iter_container_kind_gen
   (* formula asset collection methods *)
   | Msubsetof         of ident * 'term * 'term
   | Misempty          of ident * 'term
@@ -1137,8 +1137,8 @@ let cmp_mterm_node
     | Msetunmoved e1, Msetunmoved e2                                                   -> cmp e1 e2
     | Msetadded e1, Msetadded e2                                                       -> cmp e1 e2
     | Msetremoved e1, Msetremoved   e2                                                 -> cmp e1 e2
-    | Msetiterated e1, Msetiterated  e2                                                -> cmp e1 e2
-    | Msettoiterate e1, Msettoiterate e2                                               -> cmp e1 e2
+    | Msetiterated e1, Msetiterated  e2                                                -> cmp_iter_container_kind e1 e2
+    | Msettoiterate e1, Msettoiterate e2                                               -> cmp_iter_container_kind e1 e2
     (* formula asset collection methods *)
     | Msubsetof (an1, c1, i1), Msubsetof (an2, c2, i2)                                 -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     | Misempty (l1, r1), Misempty (l2, r2)                                             -> cmp_ident l1 l2 && cmp r1 r2
@@ -1425,8 +1425,8 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Msetunmoved   e                -> Msetunmoved   (f e)
   | Msetadded     e                -> Msetadded     (f e)
   | Msetremoved   e                -> Msetremoved   (f e)
-  | Msetiterated  e                -> Msetiterated  (f e)
-  | Msettoiterate e                -> Msettoiterate (f e)
+  | Msetiterated  e                -> Msetiterated  (map_iter_container_kind fi f e)
+  | Msettoiterate e                -> Msettoiterate (map_iter_container_kind fi f e)
   (* formula asset collection methods *)
   | Msubsetof (an, c, i)           -> Msubsetof (fi an, f c, f i)
   | Misempty (an, r)               -> Misempty  (fi an, f r)
@@ -1749,8 +1749,8 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Msetunmoved   e                       -> f accu e
   | Msetadded     e                       -> f accu e
   | Msetremoved   e                       -> f accu e
-  | Msetiterated  e                       -> f accu e
-  | Msettoiterate e                       -> f accu e
+  | Msetiterated  e                       -> fold_iter_container_kind f accu e
+  | Msettoiterate e                       -> fold_iter_container_kind f accu e
   (* formula asset collection methods *)
   | Msubsetof (_, c, i)                   -> f (f accu c) i
   | Misempty  (_, r)                      -> f accu r
@@ -2494,11 +2494,11 @@ let fold_map_term
     g (Msetremoved ee), ea
 
   | Msetiterated e ->
-    let ee, ea = f accu e in
+    let ee, ea = fold_map_iter_container_kind f accu e in
     g (Msetiterated ee), ea
 
   | Msettoiterate e ->
-    let ee, ea = f accu e in
+    let ee, ea = fold_map_iter_container_kind f accu e in
     g (Msettoiterate ee), ea
 
 
