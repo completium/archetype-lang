@@ -222,11 +222,11 @@ let generate_target model =
     |> flat_sequence
     |> remove_cmp_bool
     |> prune_properties
-    |> extend_loop_iter
     (* |> shallow_asset_verif *)
     (* |> split_key_values *)
     |> Gen_transform.assign_loop_label
     |> create_var_before_for
+    |> extend_loop_iter
     |> replace_for_to_iter
     |> replace_assignfield_by_update
     |> replace_update_by_set
