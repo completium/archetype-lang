@@ -768,7 +768,7 @@ type vardecl = {
 (* -------------------------------------------------------------------- *)
 type 'env ispecification = [
   | `Predicate     of M.lident * (M.lident * M.ptyp) list * M.pterm
-  | `Definition    of M.lident * (M.lident * M.ptyp) option * M.pterm
+  | `Definition    of M.lident * (M.lident * M.ptyp) * M.pterm
   | `Variable      of M.lident * M.pterm option
   | `Assert        of M.lident * M.pterm * (M.lident * M.pterm list) list * M.lident list
   | `Effect        of 'env * M.instruction
@@ -822,6 +822,14 @@ type contractdecl = {
 }
 
 (* -------------------------------------------------------------------- *)
+type definitiondecl = {
+  df_name  : M.lident;
+  df_arg   : M.lident * M.ptyp;
+  df_asset : M.lident;
+  df_body  : M.pterm;
+}
+
+(* -------------------------------------------------------------------- *)
 let pterm_arg_as_pterm = function M.AExpr e -> Some e | _ -> None
 
 (* -------------------------------------------------------------------- *)
@@ -853,6 +861,7 @@ module Env : sig
     | `Type        of M.ptyp
     | `Local       of M.ptyp * locvarkind
     | `Global      of vardecl
+    | `Definition  of definitiondecl
     | `Asset       of assetdecl
     | `Action      of t tactiondecl
     | `Function    of t fundecl
@@ -892,6 +901,13 @@ module Env : sig
     val get    : t -> ident -> (ident * (M.ptyp * locvarkind))
     val exists : t -> ident -> bool
     val push   : t -> ?kind:locvarkind -> M.lident * M.ptyp -> t
+  end
+
+  module Definition : sig
+    val lookup : t -> ident -> definitiondecl option
+    val get    : t -> ident -> definitiondecl
+    val exists : t -> ident -> bool
+    val push   : t -> definitiondecl -> t
   end
 
   module Var : sig
@@ -954,6 +970,7 @@ end = struct
     | `Type        of M.ptyp
     | `Local       of M.ptyp * locvarkind
     | `Global      of vardecl
+    | `Definition  of definitiondecl
     | `Asset       of assetdecl
     | `Action      of t tactiondecl
     | `Function    of t fundecl
@@ -1110,6 +1127,22 @@ end = struct
       push env ~loc:(loc x) (unloc x) (`Local (ty, kind))
   end
 
+  module Definition = struct
+    let proj = function `Definition x -> Some x | _ -> None
+
+    let lookup (env : t) (name : ident) =
+      lookup_gen proj env name
+
+    let exists (env : t) (name : ident) =
+      Option.is_some (lookup env name)
+
+    let get (env : t) (name : ident) =
+      Option.get (lookup env name)
+
+    let push (env : t) (decl : definitiondecl) =
+      push env ~loc:(loc decl.df_name) (unloc decl.df_name) (`Definition decl)
+  end
+
   module Var = struct
     let proj = function
       | `Global x ->
@@ -1128,6 +1161,15 @@ end = struct
         Some { vr_name = ctor;
                vr_type = M.Tenum enum.sd_name;
                vr_kind = `Enum;
+               vr_invs = [];
+               vr_core = None;
+               vr_tgt  = (None, None);
+               vr_def  = None; }
+
+      | `Definition def ->
+        Some { vr_name = def.df_name;
+               vr_type = M.Tcontainer (M.Tasset def.df_asset, M.View);
+               vr_kind = `Ghost;
                vr_invs = [];
                vr_core = None;
                vr_tgt  = (None, None);
@@ -1622,6 +1664,10 @@ let rec for_xexpr
 
         | Some (`Asset decl) ->
           let typ = M.Tcontainer ((M.Tasset decl.as_name), M.Collection) in
+          mk_sp (Some typ) (M.Pvar (vt, Vnone, x))
+
+        | Some (`Definition decl) ->
+          let typ = M.Tcontainer ((M.Tasset decl.df_asset), M.View) in
           mk_sp (Some typ) (M.Pvar (vt, Vnone, x))
 
         | Some (`StateByCtor (decl, _)) ->
@@ -3135,7 +3181,7 @@ type spmode = [`Global | `Local]
 
 let for_specification_item
     (mode : spmode) (env, poenv : env * env) (v : PT.specification_item)
-  : (env * env) * env ispecification
+  : (env * env) * (env ispecification) list
   =
   match unloc v with
   | PT.Vpredicate (x, args, f) ->
@@ -3145,15 +3191,31 @@ let for_specification_item
           let args = List.pmap id args in
           let f = for_formula env f in
           (env, (args, f)))
-    in (env, poenv), `Predicate (x, args, f)
+    in (env, poenv), [`Predicate (x, args, f)]
 
   | PT.Vdefinition (x, ty, y, f) ->
-    let env, (arg, f) =
+    let env, def =
       Env.inscope env (fun env ->
-          let env, arg = for_arg_decl env (y, ty, None) in
-          let f = for_formula env f in
-          (env, (arg, f)))
-    in ((env, poenv), `Definition (x, arg, f))
+        let env, arg = for_arg_decl env (y, ty, None) in
+
+        match arg with
+        | Some ((_, M.Tasset asset) as arg) ->
+          let f = for_formula env f in (env, Some (asset, arg, f))
+
+        | _ -> (env, None)) in
+
+    let decl =
+      Option.map (fun (asset, arg, f) ->
+        { df_name = x; df_arg = arg; df_asset = asset; df_body = f; }) def in
+
+    let poenv =
+      if not (check_and_emit_name_free env x) then poenv else
+        Option.fold (fun poenv decl ->
+          Env.Definition.push poenv decl) poenv decl in
+
+    let item = Option.map (fun decl ->
+       `Definition (decl.df_name, decl.df_arg, decl.df_body)) decl in
+    (env, poenv), Option.get_as_list item
 
   | PT.Vvariable (x, ty, e) ->
     let ty = for_type env ty in
@@ -3162,7 +3224,7 @@ let for_specification_item
       if not (check_and_emit_name_free env x) then poenv else
         Option.fold (fun poenv ty -> Env.Local.push poenv (x, ty)) poenv ty
 
-    in ((env, poenv), `Variable (x, e))
+    in (env, poenv), [`Variable (x, e)]
 
   | PT.Vassert (x, f, invs, uses) -> begin
       if mode = `Global then
@@ -3182,7 +3244,7 @@ let for_specification_item
       let f    = for_formula env0 f in
       let invs = List.map for_inv invs in
 
-      ((env, poenv), `Assert (x, f, invs, uses))
+      (env, poenv), [`Assert (x, f, invs, uses)]
     end
 
   | PT.Veffect i ->
@@ -3190,7 +3252,7 @@ let for_specification_item
       Env.emit_error env (loc i, EffectInGlobalSpec);
     (* FIXME: we are not properly tracking labels here *)
     let _, ((poenv, _) as i) = for_effect poenv i in
-    ((env, poenv), `Effect i)
+    (env, poenv), [`Effect i]
 
   | PT.Vpostcondition (x, f, invs, uses, kind) -> begin
       begin match kind, mode with
@@ -3219,14 +3281,14 @@ let for_specification_item
         in (lbl, List.map (for_formula env0) linvs) in
       let f    = for_formula poenv f in
       let invs = List.map for_inv invs in
-      ((env, poenv), `Postcondition (x, f, invs, uses))
+      (env, poenv), [`Postcondition (x, f, invs, uses)]
     end
 
 (* -------------------------------------------------------------------- *)
 let for_specification mode ((env, poenv) : env * env) (v : PT.specification) =
   let (env, _), items =
     List.fold_left_map (for_specification_item mode) (env, poenv) (fst (unloc v))
-  in (env, items)
+  in (env, List.flatten items)
 
 (* -------------------------------------------------------------------- *)
 module SecurityPred = struct
@@ -4218,8 +4280,9 @@ let specifications_of_ispecifications =
     | `Predicate _ ->
       assert false
 
-    | `Definition _ ->
-      assert false
+    | `Definition (defname, (x, xty), body) ->
+      let def = M.mk_definition ~loc:(loc defname) defname xty x body in
+      { env with M.definitions = env.definitions @ [def] }
 
   in fun ispecs -> List.fold_left do1 env0 ispecs
 
