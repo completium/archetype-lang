@@ -592,14 +592,15 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (an, k, l)
 
-    | Maddupdate (an, k, l) ->
-      let pp fmt (an, k, l) =
-        Format.fprintf fmt "add_update_%a (%a, {%a})"
+    | Maddupdate (an, c, k, l) ->
+      let pp fmt (an, c, k, l) =
+        Format.fprintf fmt "add_update_%a (%a, %a, {%a})"
           pp_str an
+          (pp_container_kind f) c
           f k
           (pp_list "; " (fun fmt (id, op, v) -> Format.fprintf fmt "%a %a %a" pp_id id pp_operator op f v)) l
       in
-      pp fmt (an, k, l)
+      pp fmt (an, c, k, l)
 
 
     (* asset api expression *)

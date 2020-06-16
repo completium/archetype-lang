@@ -145,7 +145,7 @@ type ('id, 'term) mterm_node  =
   (* control *)
   | Mif               of ('term * 'term * 'term option)
   | Mmatchwith        of 'term * ('id pattern_gen * 'term) list
-  | Mfor              of ('id * 'term iter_container_kind * 'term * ident option)
+  | Mfor              of ('id * 'term iter_container_kind_gen * 'term * ident option)
   | Miter             of ('id * 'term * 'term * 'term * ident option)
   | Mseq              of 'term list
   | Mreturn           of 'term
@@ -211,20 +211,20 @@ type ('id, 'term) mterm_node  =
   | Mremoveasset      of ident * 'term
   | Mremovefield      of ident * ident * 'term * 'term
   | Mremoveall        of ident * ident * 'term
-  | Mclear            of ident * 'term container_kind
+  | Mclear            of ident * 'term container_kind_gen
   | Mset              of ident * ident list * 'term * 'term (*asset_name * field_name modified * ... *)
   | Mupdate           of ident * 'term * ('id * assignment_operator * 'term) list
-  | Maddupdate        of ident * 'term * ('id * assignment_operator * 'term) list
+  | Maddupdate        of ident * 'term container_kind_gen * 'term * ('id * assignment_operator * 'term) list
   (* asset api expression *)
-  | Mget              of ident * 'term container_kind * 'term
-  | Mselect           of ident * 'term container_kind * (ident * type_) list * 'term * 'term list (* asset_name, view, lambda (args, body, apply_args) *)
-  | Msort             of ident * 'term container_kind * (ident * sort_kind) list
-  | Mcontains         of ident * 'term container_kind * 'term
-  | Mnth              of ident * 'term container_kind * 'term
-  | Mcount            of ident * 'term container_kind
-  | Msum              of ident * 'term container_kind * 'term
-  | Mhead             of ident * 'term container_kind * 'term
-  | Mtail             of ident * 'term container_kind * 'term
+  | Mget              of ident * 'term container_kind_gen * 'term
+  | Mselect           of ident * 'term container_kind_gen * (ident * type_) list * 'term * 'term list (* asset_name, view, lambda (args, body, apply_args) *)
+  | Msort             of ident * 'term container_kind_gen * (ident * sort_kind) list
+  | Mcontains         of ident * 'term container_kind_gen * 'term
+  | Mnth              of ident * 'term container_kind_gen * 'term
+  | Mcount            of ident * 'term container_kind_gen
+  | Msum              of ident * 'term container_kind_gen * 'term
+  | Mhead             of ident * 'term container_kind_gen * 'term
+  | Mtail             of ident * 'term container_kind_gen * 'term
   (* utils *)
   | Mcast             of type_ * type_ * 'term
   (* list api expression *)
@@ -298,16 +298,20 @@ type ('id, 'term) mterm_node  =
   | Misempty          of ident * 'term
 [@@deriving show {with_path = false}]
 
-and 'term container_kind =
+and 'term container_kind_gen =
   | CKcoll
   | CKview  of 'term
   | CKfield of 'term
 
-and 'term iter_container_kind =
+and container_kind = mterm container_kind_gen
+
+and 'term iter_container_kind_gen =
   | ICKcoll  of ident
   | ICKview  of 'term
   | ICKfield of 'term
   | ICKlist  of 'term
+
+and iter_container_kind = mterm iter_container_kind_gen
 
 and 'id mterm_gen = {
   node: ('id, 'id mterm_gen) mterm_node;
@@ -934,13 +938,13 @@ let cmp_mterm_node
     (term1 : ('id, 'term) mterm_node)
     (term2 : ('id, 'term) mterm_node)
   : bool =
-  let cmp_container_kind (lhs : 'term container_kind) (rhs : 'term container_kind) : bool =
+  let cmp_container_kind (lhs : 'term container_kind_gen) (rhs : 'term container_kind_gen) : bool =
     match lhs, rhs with
     | CKcoll, CKcoll -> true
     | CKview l, CKview r -> cmp l r
     | _ -> false
   in
-  let cmp_iter_container_kind (lhs : 'term iter_container_kind) (rhs : 'term iter_container_kind) : bool =
+  let cmp_iter_container_kind (lhs : iter_container_kind) (rhs : iter_container_kind) : bool =
     match lhs, rhs with
     | ICKcoll an1, ICKcoll an2 -> String.equal an1 an2
     | ICKview l, ICKview r -> cmp l r
@@ -1031,7 +1035,7 @@ let cmp_mterm_node
     | Mclear (an1, v1), Mclear (an2, v2)                                               -> cmp_ident an1 an2 && cmp_container_kind v1 v2
     | Mset (c1, l1, k1, v1), Mset (c2, l2, k2, v2)                                     -> cmp_ident c1 c2 && List.for_all2 cmp_ident l1 l2 && cmp k1 k2 && cmp v1 v2
     | Mupdate (an1, k1, l1), Mupdate (an2, k2, l2)                                     -> cmp_ident an1 an2 && cmp k1 k2 && List.for_all2 (fun (id1, op1, v1) (id2, op2, v2) -> cmpi id1 id2 && cmp_assign_op op1 op2 && cmp v1 v2) l1 l2
-    | Maddupdate (an1, k1, l1), Maddupdate (an2, k2, l2)                               -> cmp_ident an1 an2 && cmp k1 k2 && List.for_all2 (fun (id1, op1, v1) (id2, op2, v2) -> cmpi id1 id2 && cmp_assign_op op1 op2 && cmp v1 v2) l1 l2
+    | Maddupdate (an1, c1, k1, l1), Maddupdate (an2, c2, k2, l2)                       -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && cmp k1 k2 && List.for_all2 (fun (id1, op1, v1) (id2, op2, v2) -> cmpi id1 id2 && cmp_assign_op op1 op2 && cmp v1 v2) l1 l2
     (* asset api expression *)
     | Mget (an1, c1, k1), Mget (an2, c2, k2)                                           -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && cmp k1 k2
     | Mselect (an1, c1, la1, lb1, a1), Mselect (an2, c2, la2, lb2, a2)                 -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && List.for_all2 (fun (i1, t1) (i2, t2) -> cmp_ident i1 i2 && cmp_type t1 t2) la1 la2 && cmp lb1 lb2 && List.for_all2 cmp a1 a2
@@ -1313,7 +1317,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mclear (an, v)                 -> Mclear (fi an, map_container_kind f v)
   | Mset (an, l, k, v)             -> Mset (fi an, List.map fi l, f k, f v)
   | Mupdate (an, k, l)             -> Mupdate (fi an, f k, List.map (fun (id, op, v) -> (g id, op, f v)) l)
-  | Maddupdate (an, k, l)          -> Maddupdate (fi an, f k, List.map (fun (id, op, v) -> (g id, op, f v)) l)
+  | Maddupdate (an, c, k, l)       -> Maddupdate (fi an, map_container_kind f c, f k, List.map (fun (id, op, v) -> (g id, op, f v)) l)
   (* asset api expression *)
   | Mget (an, c, k)                -> Mget (fi an, map_container_kind f c, f k)
   | Mselect (an, c, la, lb, a)     -> Mselect (fi an, map_container_kind f c, List.map (fun (i, t) -> (fi i, ft t)) la, f lb, List.map f a)
@@ -1631,7 +1635,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mclear (_, v)                         -> fold_container_kind f accu v
   | Mset (_, _, k, v)                     -> f (f accu v) k
   | Mupdate (_, k, l)                     -> List.fold_left (fun accu (_, _, v) -> f accu v) (f accu k) l
-  | Maddupdate (_, k, l)                  -> List.fold_left (fun accu (_, _, v) -> f accu v) (f accu k) l
+  | Maddupdate (_, c, k, l)               -> List.fold_left (fun accu (_, _, v) -> f accu v) (f (fold_container_kind f accu c) k) l
   (* asset api expression *)
   | Mget (_, c, k)                        -> f (fold_container_kind f accu c) k
   | Mselect (_, c, _, lb, a)              -> List.fold_left (fun accu x -> f accu x) (f (fold_container_kind f accu c) lb) a
@@ -2144,8 +2148,9 @@ let fold_map_term
     in
     g (Mupdate (an, ke, le)), la
 
-  | Maddupdate (an, k, l) ->
-    let ke, ka = f accu k in
+  | Maddupdate (an, c, k, l) ->
+    let ce, ca = fold_map_container_kind f accu c in
+    let ke, ka = f ca k in
     let le, la =
       List.fold_left
         (fun (ps, accu) (id, op, v) ->
@@ -2153,7 +2158,7 @@ let fold_map_term
            (id, op, va)::ps, accu) ([], ka) l
       |> (fun (x, y) -> (List.rev x, y))
     in
-    g (Mupdate (an, ke, le)), la
+    g (Maddupdate (an, ce, ke, le)), la
 
 
   (* asset api expression *)

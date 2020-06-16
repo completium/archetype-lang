@@ -670,8 +670,13 @@ let to_model (ast : A.model) : M.model =
         let fp = f p in
         let fk = f k in
         let fe = List.map (fun (id, op, c) -> (id, to_op op, f c)) e in
-        let asset_name = extract_asset_name fp in
-        M.Maddupdate (asset_name, fk, fe)
+        let (an, c) : ident * M.container_kind =
+          match fp.type_ with
+          | Tcontainer (Tasset an, M.Collection) -> unloc an, M.CKcoll
+          | Tcontainer (Tasset an, M.Partition)  -> unloc an, M.CKfield fp
+          | _ -> assert false
+        in
+        M.Maddupdate (an, c, fk, fe)
 
       | A.Icall (Some p, A.Cconst (A.Cupdate), [AExpr k; AEffect e]) when is_asset_container p ->
         let to_op = function

@@ -90,7 +90,7 @@ let remove_add_update (model : model) : model =
   let f_error (l : Location.t) (an : string) (fn : string) = emit_error(l, CannotBuildAsset (an, fn)); error := true in
   let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
     match mt.node with
-    | Maddupdate (an, k, l) ->
+    | Maddupdate (an, c, k, l) ->
       begin
         let type_asset = Tasset (dumloc an) in
         let mk_asset (an, k, l) =
@@ -137,9 +137,13 @@ let remove_add_update (model : model) : model =
             ) asset.values in
           mk_mterm (Masset l) type_asset
         in
-        let cond   = mk_mterm (Mcontains (an, CKcoll, k)) Tunit in
+        let cond   = mk_mterm (Mcontains (an, c, k)) Tunit in
         let asset  = mk_asset (an, k, l) in
-        let add    = mk_mterm (Maddasset (an, asset)) Tunit in
+        let add    = mk_mterm (
+          match c with
+          | CKfield {node = Mdotassetfield (an, k, fn)} -> Maddfield (unloc an, unloc fn, k, asset)
+          | CKcoll -> Maddasset (an, asset)
+          | _ -> assert false) Tunit in
         let update = mk_mterm (Mupdate (an, k, l)) Tunit in
         let if_node = Mif (cond, update, Some add) in
         mk_mterm if_node Tunit
@@ -1842,12 +1846,18 @@ let extract_term_from_instruction f (model : model) : model =
           ((id, op, ve)::xe, va @ xa)) l ([], []) in
       process (mk_mterm (Mupdate (an, ke, le)) mt.type_) (ka @ la)
 
-    | Maddupdate (an, k, l) ->
+    | Maddupdate (an, c, k, l) ->
+      let ce, ca =
+        match c with
+        | CKcoll    -> CKcoll, []
+        | CKview c  -> let ce, ca = f c in CKview ce, ca
+        | CKfield c -> let ce, ca = f c in CKfield ce, ca
+      in
       let ke, ka = f k in
       let le, la = List.fold_right (fun (id, op, v) (xe, xa) ->
           let ve, va = f v in
           ((id, op, ve)::xe, va @ xa)) l ([], []) in
-      process (mk_mterm (Maddupdate (an, ke, le)) mt.type_) (ka @ la)
+      process (mk_mterm (Maddupdate (an, ce, ke, le)) mt.type_) (ca @ ka @ la)
 
     | _ -> map_mterm (aux ctx) mt
   in
@@ -2087,7 +2097,13 @@ let add_contain_on_get (model : model) : model =
         let accu = List.fold_right (fun (_, _, v) accu -> f accu v) l accu in
         gg accu mt
 
-      | Maddupdate (_an, k, l) ->
+      | Maddupdate (_an, c, k, l) ->
+        let accu =
+          match c with
+          | CKcoll     -> accu
+          | CKview c   -> f accu c
+          | CKfield c  -> f accu c
+        in
         let accu = f accu k in
         let accu = List.fold_right (fun (_, _, v) accu -> f accu v) l accu in
         gg accu mt
@@ -2202,13 +2218,13 @@ let split_key_values (model : model) : model =
   } |> map_mterm_model aux
 
 let replace_for_to_iter (model : model) : model =
-  let is_asset (col : mterm iter_container_kind) =
+  let is_asset (col : iter_container_kind) =
     match col with
     | ICKview {type_ = Tcontainer (Tasset _, _)} -> true
     | _ -> false
   in
 
-  let extract_asset (col : mterm iter_container_kind) =
+  let extract_asset (col : iter_container_kind) =
     match col with
     | ICKview {type_ = Tcontainer (Tasset an, _)} -> an
     | _ -> assert false
