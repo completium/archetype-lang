@@ -128,6 +128,7 @@ let generate_target model =
   | LigoStorage ->
     model
     |> replace_ligo_ident
+    |> replace_api_view_by_col
     |> process_asset_state
     |> replace_assignfield_by_update
     |> remove_add_update
@@ -148,10 +149,9 @@ let generate_target model =
     |> remove_label
     |> flat_sequence
     |> remove_cmp_bool
-    |> replace_api_view_by_col
     |> split_key_values
     |> remove_duplicate_key
-    |> Gen_transform.assign_loop_label
+    |> assign_loop_label
     |> remove_letin_from_expr
     |> remove_fun_dotasset
     |> generate_api_storage

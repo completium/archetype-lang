@@ -785,29 +785,11 @@ let assign_loop_label (model : model) : model =
 
   let rec aux ctx (mt : mterm) : mterm =
     match mt.node with
-    | Mfor (a, ICKcoll an, body, None) ->
-      let ncol  = mk_mterm (Mvar (dumloc an, Vstorecol)) (Tcontainer (Tasset (dumloc an), Collection)) in
+    | Mfor (a, c, body, None) ->
+      let nc = map_iter_container_kind (fun x -> x) (aux ctx) c in
       let nbody = aux ctx body in
       let label = get_loop_label ctx in
-      { mt with node = Mfor (a, ICKlist ncol, nbody, Some label)}
-
-    | Mfor (a, ICKview col, body, None) ->
-      let ncol  = aux ctx col in
-      let nbody = aux ctx body in
-      let label = get_loop_label ctx in
-      { mt with node = Mfor (a, ICKview ncol, nbody, Some label)}
-
-    | Mfor (a, ICKfield col, body, None) ->
-      let ncol  = aux ctx col in
-      let nbody = aux ctx body in
-      let label = get_loop_label ctx in
-      { mt with node = Mfor (a, ICKfield ncol, nbody, Some label)}
-
-    | Mfor (a, ICKlist col, body, None) ->
-      let ncol  = aux ctx col in
-      let nbody = aux ctx body in
-      let label = get_loop_label ctx in
-      { mt with node = Mfor (a, ICKlist ncol, nbody, Some label)}
+      { mt with node = Mfor (a, nc, nbody, Some label)}
 
     | Miter (a, min, max, body, None) ->
       let nmin  = aux ctx min in
@@ -1524,6 +1506,11 @@ let add_explicit_sort (model : model) : model =
 
     | Mtail (an, CKview c, idx) when is_implicit_sort env c ->
       { mt with node = Mtail (an, CKview (create_sort an c), idx) }
+
+    | Mfor (a, ICKfield c, body, lbl) when is_implicit_sort env c ->
+      let body = aux env ctx body in
+      let an = extract_asset_name c in
+      mk_mterm (Mfor (a, ICKfield (create_sort an c), body, lbl)) Tunit
 
     | Mfor (a, ICKview c, body, lbl) when is_implicit_sort env c ->
       let body = aux env ctx body in
@@ -2252,7 +2239,6 @@ let replace_for_to_iter (model : model) : model =
     | ICKcoll an -> an
     | ICKview {type_ = Tcontainer (Tasset an, _)} -> unloc an
     | ICKfield {type_ = Tcontainer (Tasset an, _)} -> unloc an
-    | ICKlist {type_ = Tcontainer (Tasset an, _)} -> unloc an
     | _ -> assert false
   in
 
@@ -2279,7 +2265,7 @@ let replace_for_to_iter (model : model) : model =
           | ICKcoll an -> mk_mterm (Mvar (dumloc an, Vstorecol)) (Tcontainer (Tasset (dumloc an), Collection))
           | ICKview x -> x
           | ICKfield x -> x
-          | ICKlist x -> x
+          | _ -> assert false
         end in
       let idx_id = "_i_" ^ lbl in
       let idx = mk_mterm (Mvar (dumloc idx_id, Vlocal)) (Tbuiltin Bint) in
