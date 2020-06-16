@@ -202,6 +202,7 @@ let generate_target model =
   | Whyml ->
     model
     |> replace_whyml_ident
+    |> replace_api_view_by_col
     |> replace_assignfield_by_update
     |> process_asset_state
     |> remove_add_update
@@ -233,7 +234,6 @@ let generate_target model =
     |> remove_cmp_enum
     |> remove_cmp_bool
     |> replace_dotassetfield_by_dot
-    |> replace_api_view_by_col
     |> transfer_shadow_variable_to_storage
     (* |> replace_instr_verif *)
     |> generate_api_storage ~verif:true
