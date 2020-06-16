@@ -1,14 +1,13 @@
-archetype expr_formula_iterated
+archetype expr_formula_iterated_subset
+
+asset o_asset identified by oid {
+  oid : int;
+}
 
 asset my_asset identified by id {
   id : string;
-  value : int;
-} initialized by {
-  {"id0"; 0};
-  {"id1"; 1};
-  {"id2"; 2}
+  s : o_asset subset;
 }
-
 
 entry exec () {
   specification {
@@ -22,7 +21,7 @@ entry exec () {
 
   effect {
     var res : int = 0;
-    for:loop i in my_asset do
+    for:loop i in my_asset["0"].s do
       res += 1;
     done
   }

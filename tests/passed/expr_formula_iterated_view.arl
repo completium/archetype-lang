@@ -1,0 +1,29 @@
+archetype expr_formula_iterated_view
+
+asset my_asset identified by id {
+  id : string;
+  value : int;
+} initialized by {
+  {"id0"; 0};
+  {"id1"; 1};
+  {"id2"; 2}
+}
+
+
+entry exec () {
+  specification {
+    postcondition p1 {
+      true
+      invariant for loop {
+         iterated.isempty()
+      }
+    }
+  }
+
+  effect {
+    var res : int = 0;
+    for:loop i in my_asset.head(3) do
+      res += 1;
+    done
+  }
+}

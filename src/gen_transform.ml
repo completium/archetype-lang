@@ -350,14 +350,14 @@ let extend_loop_iter (model : model) : model =
         let loop_id = Tools.Option.get ctx.invariant_id |> unloc in
         if List.mem_assoc loop_id for_colls then
           let coll : iter_container_kind = List.assoc loop_id for_colls in
-          let get_type (coll : iter_container_kind) =
+          let f = function | Tcontainer (Tasset an, _) -> an | _ -> assert false in
+          let tcoll =
             match coll with
-            | ICKcoll an -> Tcontainer (Tasset (dumloc an), Collection)
-            | ICKview c  -> c.type_
-            | ICKfield c -> c.type_
+            | ICKcoll an -> Tcontainer (Tasset (dumloc an), View)
+            | ICKview c  -> Tcontainer (Tasset (f c.type_), View)
+            | ICKfield c -> Tcontainer (Tasset (f c.type_), View)
             | ICKlist c  -> c.type_
           in
-          let tcoll = get_type coll in
           match const with
           | `Toiterate -> mk_mterm (Msettoiterate coll) tcoll
           | `Iterated ->  mk_mterm (Msetiterated coll) tcoll
@@ -2587,11 +2587,11 @@ let replace_api_view_by_col (model : model) : model =
         | Mvar (an, Vstorecol) -> unloc an
         | _ -> assert false
       in
-      mk_mterm (Msetiterated (ICKcoll an)) c.type_
+      mk_mterm (Msetiterated (ICKcoll an)) mt.type_
 
     | Msetiterated (ICKview c) when is_field c ->
       let c = aux ctx c |> remove_cast in
-      mk_mterm (Msetiterated (ICKfield c)) c.type_
+      mk_mterm (Msetiterated (ICKfield c)) mt.type_
 
     | Msettoiterate (ICKview c) when is_storcol c ->
       let c = aux ctx c |> remove_cast in
@@ -2600,11 +2600,11 @@ let replace_api_view_by_col (model : model) : model =
         | Mvar (an, Vstorecol) -> unloc an
         | _ -> assert false
       in
-      mk_mterm (Msettoiterate (ICKcoll an)) c.type_
+      mk_mterm (Msettoiterate (ICKcoll an)) mt.type_
 
     | Msettoiterate (ICKview c) when is_field c ->
       let c = aux ctx c |> remove_cast in
-      mk_mterm (Msettoiterate (ICKfield c)) c.type_
+      mk_mterm (Msettoiterate (ICKfield c)) mt.type_
 
     | _ -> map_mterm (aux ctx) mt
   in
