@@ -2260,19 +2260,19 @@ let replace_for_to_iter (model : model) : model =
       let nbody = aux ctx body in
       let an = extract_asset col in
       let type_asset = Tasset (dumloc an) in
-      let view =
+      let ck =
         begin match col with
-          | ICKcoll an -> mk_mterm (Mvar (dumloc an, Vstorecol)) (Tcontainer (Tasset (dumloc an), Collection))
-          | ICKview x -> x
-          | ICKfield x -> x
+          | ICKcoll _ -> CKcoll
+          | ICKview x -> CKview x
+          | ICKfield x -> CKfield x
           | _ -> assert false
         end in
       let idx_id = "_i_" ^ lbl in
       let idx = mk_mterm (Mvar (dumloc idx_id, Vlocal)) (Tbuiltin Bint) in
-      let nth = mk_mterm (Mnth(an, CKview view, idx)) type_asset in
+      let nth = mk_mterm (Mnth(an, ck, idx)) type_asset in
       let letin = mk_mterm (Mletin ([id], nth, Some type_asset, nbody, None)) Tunit in
       let bound_min = mk_mterm (Mint Big_int.zero_big_int) (Tbuiltin Bint) in
-      let bound_max = mk_mterm (Mcount (an, CKview view)) (Tbuiltin Bint) in
+      let bound_max = mk_mterm (Mcount (an, ck)) (Tbuiltin Bint) in
       let iter = Miter (dumloc idx_id, bound_min, bound_max, letin, Some lbl) in
       mk_mterm iter mt.type_
     | _ -> map_mterm (aux ctx) mt
