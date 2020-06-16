@@ -315,6 +315,7 @@ type error_desc =
   | NumericOrCurrencyExpressionExpected
   | OpInRecordLiteral
   | OrphanedLabel                      of ident
+  | PackUnpackOnNonPrimitive
   | PartialMatch                       of ident list
   | PostConditionInGlobalSpec
   | ReadOnlyGlobal                     of ident
@@ -459,6 +460,7 @@ let pp_error_desc fmt e =
   | NumericOrCurrencyExpressionExpected-> pp "Expecting numerical or currency expression"
   | OpInRecordLiteral                  -> pp "Operation in record literal"
   | OrphanedLabel i                    -> pp "Label not used: %a" pp_ident i
+  | PackUnpackOnNonPrimitive           -> pp "Cannot pack / unpack non primitive types"
   | PartialMatch ps                    -> pp "Partial match (%a)" (Printer_tools.pp_list ", " pp_ident) ps
   | PostConditionInGlobalSpec          -> pp "Post-conditions at global level are forbidden"
   | ReadOnlyGlobal i                   -> pp "Global is read only: %a" pp_ident i
@@ -730,7 +732,13 @@ let cryptoops =
      `Total, None, [M.vtkey; M.vtsignature; M.vtbytes], M.vtbool]
 
 (* -------------------------------------------------------------------- *)
-let allops = coreops @ optionops @ listops @ cryptoops
+let packops =
+  List.map
+    (fun ty -> ("pack", M.Cpack, `Total, None, [ty], M.vtbytes))
+    [M.vtbool; M.vtint; M.vtrational; M.vtdate; M.vtduration; M.vtstring]
+
+(* -------------------------------------------------------------------- *)
+let allops = coreops @ optionops @ listops @ cryptoops @ packops
 
 (* -------------------------------------------------------------------- *)
 type assetdecl = {
@@ -2262,7 +2270,19 @@ let rec for_xexpr
             mk_sp (Some M.vtbool) (M.Pquantifer (qt, x, (ast, xty), body))
       end
 
-    | Esqapp _ (* TODO *)
+    | Eunpack (ty, e) ->
+        let ty = for_type env ty in
+        let e  = for_xexpr env ~ety:M.vtbytes e in
+
+        Option.iter (fun ty ->
+          if not (Type.is_primitive ty) then
+            Env.emit_error env (loc tope, PackUnpackOnNonPrimitive)) ty;
+
+        mk_sp
+          (Option.map (fun ty -> M.Toption ty) ty)
+          (M.Pcall (None, M.Cconst M.Cunpack, [AExpr e]))
+
+    | Esqapp    _ (* TODO *)
     | Efail     _
     | Enothing
     | Eassert   _
@@ -2277,7 +2297,6 @@ let rec for_xexpr
     | Ereturn   _
     | Eseq      _
     | Etransfer _
-    | Eunpack   _
     | Eany
     | Einvalid ->
       Env.emit_error env (loc tope, InvalidExpression);
