@@ -734,8 +734,15 @@ let assign_loop_label (model : model) : model =
       begin
         let rec aux ctx accu (mt : mterm) : Ident.ident list =
           match mt.node with
-          | Mfor (_, (ICKview col | ICKlist col), body, Some label) ->
+          | Mfor (_, c, body, Some label) ->
             begin
+              let col =
+                match c with
+                | ICKcoll an -> mk_mterm (Mvar (dumloc an, Vstorecol)) (Tcontainer (Tasset (dumloc an), Collection))
+                | ICKview c
+                | ICKfield c
+                | ICKlist c -> c
+              in
               let accu = aux ctx accu col in
               let accu = aux ctx accu body in
               label::accu
@@ -778,11 +785,23 @@ let assign_loop_label (model : model) : model =
 
   let rec aux ctx (mt : mterm) : mterm =
     match mt.node with
+    | Mfor (a, ICKcoll an, body, None) ->
+      let ncol  = mk_mterm (Mvar (dumloc an, Vstorecol)) (Tcontainer (Tasset (dumloc an), Collection)) in
+      let nbody = aux ctx body in
+      let label = get_loop_label ctx in
+      { mt with node = Mfor (a, ICKlist ncol, nbody, Some label)}
+
     | Mfor (a, ICKview col, body, None) ->
       let ncol  = aux ctx col in
       let nbody = aux ctx body in
       let label = get_loop_label ctx in
       { mt with node = Mfor (a, ICKview ncol, nbody, Some label)}
+
+    | Mfor (a, ICKfield col, body, None) ->
+      let ncol  = aux ctx col in
+      let nbody = aux ctx body in
+      let label = get_loop_label ctx in
+      { mt with node = Mfor (a, ICKfield ncol, nbody, Some label)}
 
     | Mfor (a, ICKlist col, body, None) ->
       let ncol  = aux ctx col in
@@ -2227,15 +2246,13 @@ let split_key_values (model : model) : model =
   } |> map_mterm_model aux
 
 let replace_for_to_iter (model : model) : model =
-  let is_asset (col : iter_container_kind) =
-    match col with
-    | ICKview {type_ = Tcontainer (Tasset _, _)} -> true
-    | _ -> false
-  in
 
   let extract_asset (col : iter_container_kind) =
     match col with
-    | ICKview {type_ = Tcontainer (Tasset an, _)} -> an
+    | ICKcoll an -> an
+    | ICKview {type_ = Tcontainer (Tasset an, _)} -> unloc an
+    | ICKfield {type_ = Tcontainer (Tasset an, _)} -> unloc an
+    | ICKlist {type_ = Tcontainer (Tasset an, _)} -> unloc an
     | _ -> assert false
   in
 
@@ -2253,18 +2270,16 @@ let replace_for_to_iter (model : model) : model =
       let iter = Miter (dumloc idx_id, bound_min, bound_max, letin, Some lbl) in
       mk_mterm iter mt.type_
 
-    | Mfor (id, col, body, Some lbl) when is_asset col ->
+    | Mfor (id, col, body, Some lbl) ->
       let nbody = aux ctx body in
-      let asset_name = extract_asset col in
-      let an = unloc asset_name in
-      let type_asset = Tasset asset_name in
-      (* let type_col = Tcontainer (type_asset,Collection) in
-         let type_view = Tcontainer (type_asset,View) in *)
+      let an = extract_asset col in
+      let type_asset = Tasset (dumloc an) in
       let view =
         begin match col with
+          | ICKcoll an -> mk_mterm (Mvar (dumloc an, Vstorecol)) (Tcontainer (Tasset (dumloc an), Collection))
           | ICKview x -> x
+          | ICKfield x -> x
           | ICKlist x -> x
-          | _ -> assert false
         end in
       let idx_id = "_i_" ^ lbl in
       let idx = mk_mterm (Mvar (dumloc idx_id, Vlocal)) (Tbuiltin Bint) in
