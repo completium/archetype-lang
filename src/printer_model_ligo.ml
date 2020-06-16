@@ -291,7 +291,7 @@ let pp_model_internal fmt (model : model) b =
 
     (* assign *)
 
-    | Massign (op, _, Avar lhs, r) ->
+    | Massign (op, Avar lhs, r) ->
       Format.fprintf fmt "%a := %a"
         pp_id lhs
         (
@@ -306,7 +306,7 @@ let pp_model_internal fmt (model : model) b =
             | OrAssign    -> Format.fprintf fmt "%a or (%a)" pp_id lhs f r
         ) r
 
-    | Massign (op, _, Avarstore lhs, r) ->
+    | Massign (op, Avarstore lhs, r) ->
       Format.fprintf fmt "%s.%a := %a"
         const_storage
         pp_id lhs
@@ -322,7 +322,7 @@ let pp_model_internal fmt (model : model) b =
             | OrAssign    -> Format.fprintf fmt "%s.%a or (%a)"  const_storage pp_id lhs f r
         ) r
 
-    | Massign (op, _t, Afield (an, fn, k), v) ->
+    | Massign (op, Afield (an, fn, k), v) ->
       Format.fprintf fmt "%a[%a].%a %a %a"
         pp_id an
         f k
@@ -330,13 +330,13 @@ let pp_model_internal fmt (model : model) b =
         pp_operator op
         f v
 
-    | Massign (_op, _t, Astate, x) ->
+    | Massign (_op, Astate, x) ->
       Format.fprintf fmt "%s.%s := %a"
         const_storage
         const_state
         f x
 
-    | Massign (_op, _t, Aassetstate (an, k), v) ->
+    | Massign (_op, Aassetstate (an, k), v) ->
       Format.fprintf fmt "state_%a(%a) = %a"
         pp_ident an
         f k

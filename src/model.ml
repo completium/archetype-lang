@@ -171,7 +171,7 @@ type ('id, 'term) mterm_node  =
   | Mdeclvar          of 'id list * type_ option * 'term
   | Mapp              of 'id * 'term list
   (* assign *)
-  | Massign           of (assignment_operator * type_ * ('id, 'term) assign_kind_gen * 'term) (* assignment _type kind value*)
+  | Massign           of (assignment_operator * ('id, 'term) assign_kind_gen * 'term) (* assignment _type kind value*)
   (* control *)
   | Mif               of ('term * 'term * 'term option)
   | Mmatchwith        of 'term * ('id pattern_gen * 'term) list
@@ -995,7 +995,7 @@ let cmp_mterm_node
     | Mdeclvar (i1, t1, v1), Mdeclvar (i2, t2, v2)                                     -> List.for_all2 cmpi i1 i2 && Option.cmp cmp_type t1 t2 && cmp v1 v2
     | Mapp (e1, args1), Mapp (e2, args2)                                               -> cmpi e1 e2 && List.for_all2 cmp args1 args2
     (* assign *)
-    | Massign (op1, t1, k1, v1), Massign (op2, t2, k2, v2)                             -> cmp_assign_op op1 op2 && cmp_type t1 t2 && cmp_assign_kind k1 k2 && cmp v1 v2
+    | Massign (op1, k1, v1), Massign (op2, k2, v2)                                     -> cmp_assign_op op1 op2 && cmp_assign_kind k1 k2 && cmp v1 v2
     (* control *)
     | Mif (c1, t1, e1), Mif (c2, t2, e2)                                               -> cmp c1 c2 && cmp t1 t2 && Option.cmp cmp e1 e2
     | Mmatchwith (e1, l1), Mmatchwith (e2, l2)                                         -> cmp e1 e2 && List.for_all2 (fun (p1, t1) (p2, t2) -> cmp_pattern p1 p2 && cmp t1 t2) l1 l2
@@ -1283,7 +1283,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mdeclvar (i, t, v)             -> Mdeclvar (List.map g i, Option.map ft t, f v)
   | Mapp (e, args)                 -> Mapp (g e, List.map f args)
   (* assign *)
-  | Massign (op, t, k, v)          -> Massign (op, ft t, map_assign_kind fi g f k, f v)
+  | Massign (op, k, v)             -> Massign (op, map_assign_kind fi g f k, f v)
   (* control *)
   | Mif (c, t, e)                  -> Mif (f c, f t, Option.map f e)
   | Mmatchwith (e, l)              -> Mmatchwith (f e, List.map (fun (p, e) -> (p, f e)) l)
@@ -1607,7 +1607,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mdeclvar (_, _, v)                    -> f accu v
   | Mapp (_, args)                        -> List.fold_left f accu args
   (* assign *)
-  | Massign (_, _, k, e)                  -> f (fold_assign_kind f accu k) e
+  | Massign (_, k, e)                     -> f (fold_assign_kind f accu k) e
   (* control *)
   | Mif (c, t, e)                         -> opt f (f (f accu c) t) e
   | Mmatchwith (e, l)                     -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
@@ -1836,10 +1836,10 @@ let fold_map_term
 
   (* assign *)
 
-  | Massign (op, t, k, v) ->
+  | Massign (op, k, v) ->
     let ke, ka = fold_map_assign_kind f accu k in
     let ve, va = f ka v in
-    g (Massign (op, t, ke, ve)), va
+    g (Massign (op, ke, ve)), va
 
 
   (* control *)
@@ -3330,7 +3330,7 @@ end = struct
   let is_local_assigned (id : ident) (b : mterm) =
     let rec rec_search_assign _ (t : mterm) =
       match t.node with
-      | Massign (_, _, Avar i,_) when String.equal (unloc i) id -> raise FoundAssign
+      | Massign (_, Avar i,_) when String.equal (unloc i) id -> raise FoundAssign
       | _ -> fold_term rec_search_assign false t in
     try rec_search_assign false b
     with FoundAssign -> true
@@ -3752,7 +3752,7 @@ end = struct
       match t.node with
       | Mdiv (_,_) -> raise FoundDiv
       | Mmodulo _ -> raise FoundDiv
-      | Massign (DivAssign,_,_,_) -> raise FoundDiv
+      | Massign (DivAssign,_,_) -> raise FoundDiv
       | _ -> fold_term aux accu t in
     aux accu mt
 

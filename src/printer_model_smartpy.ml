@@ -355,19 +355,19 @@ let pp_model fmt (model : model) =
 
       (* assign *)
 
-      | Massign (op, _, Avar l, r) ->
+      | Massign (op, Avar l, r) ->
         Format.fprintf fmt "%a %a %a"
           pp_id l
           pp_operator op
           f r
 
-      | Massign (op, _, Avarstore l, r) ->
+      | Massign (op, Avarstore l, r) ->
         Format.fprintf fmt "self.%a %a %a"
           pp_id l
           pp_operator op
           f r
 
-      | Massign (op, _t, Afield (an, fn, k), v) ->
+      | Massign (op, Afield (an, fn, k), v) ->
         Format.fprintf fmt "%a[%a].%a %a %a"
           pp_id an
           f k
@@ -375,11 +375,11 @@ let pp_model fmt (model : model) =
           pp_operator op
           f v
 
-      | Massign (_op, _t, Astate, x) ->
+      | Massign (_op, Astate, x) ->
         Format.fprintf fmt "self.data.state = %a"
           f x
 
-      | Massign (_op, _t, Aassetstate (an, k), v) ->
+      | Massign (_op, Aassetstate (an, k), v) ->
         Format.fprintf fmt "state_%a(%a) = %a"
           pp_ident an
           f k

@@ -371,9 +371,9 @@ let process_single_field_storage (model : model) : model =
         match mt.node with
         | Mvar (a, Vstorevar) when String.equal (unloc a) (unloc i.id) ->
           mk_mterm (Mvar (storage_id, Vlocal)) mt.type_
-        | Massign (op, t, Avar a, v) when String.equal (unloc a) (unloc i.id) ->
+        | Massign (op, Avar a, v) when String.equal (unloc a) (unloc i.id) ->
           let vv = map_mterm (aux ctx) v in
-          mk_mterm (Massign (op, t, Avar storage_id, vv)) mt.type_
+          mk_mterm (Massign (op, Avar storage_id, vv)) mt.type_
         | _ -> map_mterm (aux ctx) mt
       in
       map_mterm_model aux model
@@ -1120,17 +1120,17 @@ let remove_rational (model : model) : model =
         { mt with
           node = Mdeclvar (ids, Option.map process_type t, aux v)
         }
-      | Massign (op, t, Avar i, v), _ when is_int v && is_t_rat t ->
+      | Massign (op, Avar i, v), _ when is_int v && is_t_rat v.type_ ->
         { mt with
-          node = Massign (op, process_type t, Avar i, (int_to_rat |@ aux) v)
+          node = Massign (op, Avar i, (int_to_rat |@ aux) v)
         }
-      | Massign (op, t, Avarstore i, v), _  when is_int v && is_t_rat t ->
+      | Massign (op, Avarstore i, v), _  when is_int v && is_t_rat v.type_ ->
         { mt with
-          node = Massign (op, process_type t, Avarstore i, (int_to_rat |@ aux) v)
+          node = Massign (op, Avarstore i, (int_to_rat |@ aux) v)
         }
-      | Massign (op, t, Afield (an, fn, k), v), _ when is_int v && is_t_rat t ->
+      | Massign (op, Afield (an, fn, k), v), _ when is_int v && is_t_rat v.type_ ->
         { mt with
-          node = Massign (op, process_type t, Afield (an, fn, (int_to_rat |@ aux) k), (int_to_rat |@ aux) v)
+          node = Massign (op, Afield (an, fn, (int_to_rat |@ aux) k), (int_to_rat |@ aux) v)
         }
       | Mforall (id, t, a, b), _ ->
         { mt with
@@ -1417,7 +1417,7 @@ let abs_tez model : model =
 let replace_assignfield_by_update (model : model) : model =
   let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
     match mt.node with
-    | Massign (op, _, Afield (an, fn, key), v) ->
+    | Massign (op, Afield (an, fn, key), v) ->
       let an = unloc an in
       let l = [(fn, op, v)] in
       mk_mterm (Mupdate (an, key, l)) Tunit
@@ -1691,7 +1691,7 @@ let process_asset_state (model : model) : model =
         let i = get_state_lident an in
         mk_mterm (Mdotassetfield (dumloc an, k, i)) mt.type_
       end
-    | Massign (op, _, Aassetstate (an, k), v) ->
+    | Massign (op, Aassetstate (an, k), v) ->
       let i = get_state_lident an in
       mk_mterm (Mupdate (an, k, [(i, op, v) ])) Tunit
     | _ -> map_mterm (aux ctx) mt
@@ -1723,27 +1723,27 @@ let extract_term_from_instruction f (model : model) : model =
 
     (* assign *)
 
-    | Massign (op, t, Avar l, r) ->
+    | Massign (op, Avar l, r) ->
       let re, ra = f r in
-      process (mk_mterm (Massign (op, t, Avar l, re)) mt.type_) ra
+      process (mk_mterm (Massign (op, Avar l, re)) mt.type_) ra
 
-    | Massign (op, t, Avarstore l, r)  ->
+    | Massign (op, Avarstore l, r)  ->
       let re, ra = f r in
-      process (mk_mterm (Massign (op, t, Avarstore l, re)) mt.type_) ra
+      process (mk_mterm (Massign (op, Avarstore l, re)) mt.type_) ra
 
-    | Massign (op, t, Afield (an, fn, k), v) ->
+    | Massign (op, Afield (an, fn, k), v) ->
       let ke, ka = f k in
       let ve, va = f v in
-      process (mk_mterm (Massign (op, t, Afield (an, fn, ke), ve)) mt.type_) (ka @ va)
+      process (mk_mterm (Massign (op, Afield (an, fn, ke), ve)) mt.type_) (ka @ va)
 
-    | Massign (op, t, Astate, x) ->
+    | Massign (op, Astate, x) ->
       let xe, xa = f x in
-      process (mk_mterm (Massign (op, t, Astate, xe)) mt.type_) xa
+      process (mk_mterm (Massign (op, Astate, xe)) mt.type_) xa
 
-    | Massign (op, t, Aassetstate (an, k), v) ->
+    | Massign (op, Aassetstate (an, k), v) ->
       let ke, ka = f k in
       let ve, va = f v in
-      process (mk_mterm (Massign (op, t, Aassetstate (an, ke), ve)) mt.type_) (ka @ va)
+      process (mk_mterm (Massign (op, Aassetstate (an, ke), ve)) mt.type_) (ka @ va)
 
 
     (* control *)
@@ -1975,24 +1975,24 @@ let add_contain_on_get (model : model) : model =
 
       (* assign *)
 
-      | Massign (_op, _t, Avar _l, r) ->
+      | Massign (_op, Avar _l, r) ->
         let accu = f accu r in
         gg accu mt
 
-      | Massign (_op, _t, Avarstore _l, r)  ->
+      | Massign (_op, Avarstore _l, r)  ->
         let accu = f accu r in
         gg accu mt
 
-      | Massign (_op, _t, Afield (_an, _fn, k), v) ->
+      | Massign (_op, Afield (_an, _fn, k), v) ->
         let accu = f accu k in
         let accu = f accu v in
         gg accu mt
 
-      | Massign (_op, _t, Astate, x) ->
+      | Massign (_op, Astate, x) ->
         let accu = f accu x in
         gg accu mt
 
-      | Massign (_op, _t, Aassetstate (_an, k), v) ->
+      | Massign (_op, Aassetstate (_an, k), v) ->
         let accu = f accu k in
         let accu = f accu v in
         gg accu mt
@@ -2340,18 +2340,18 @@ let remove_assign_operator (model : model) : model =
   in
   let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
     match mt.node with
-    | Massign (op, t, Avar id, v) ->
+    | Massign (op, Avar id, v) ->
       let lhs = mk_mterm (Mvar (id, Vlocal)) v.type_ in
       let v = compute op lhs v.type_ v in
-      mk_mterm (Massign (ValueAssign, t, Avar id, v)) mt.type_
-    | Massign (op, t, Avarstore id, v) ->
+      mk_mterm (Massign (ValueAssign, Avar id, v)) mt.type_
+    | Massign (op, Avarstore id, v) ->
       let lhs = mk_mterm (Mvar (id, Vstorevar)) v.type_ in
       let v = compute op lhs v.type_ v in
-      mk_mterm (Massign (ValueAssign, t, Avarstore id, v)) mt.type_
-    | Massign (op, t, Afield (an, fn, k), v) ->
+      mk_mterm (Massign (ValueAssign, Avarstore id, v)) mt.type_
+    | Massign (op, Afield (an, fn, k), v) ->
       let lhs = mk_mterm (Mdotassetfield (an, k, fn)) v.type_ in
       let v = compute op lhs v.type_ v in
-      mk_mterm (Massign (ValueAssign, t, Afield (an, fn, k), v)) mt.type_
+      mk_mterm (Massign (ValueAssign, Afield (an, fn, k), v)) mt.type_
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
@@ -2612,10 +2612,10 @@ let rename_shadow_variable (model : model) : model =
       let for_mterm _ctx mt : mterm =
         let rec aux (mt : mterm) : mterm =
           match mt.node with
-          | Massign (op, t, Avar id, b) when MapString.mem (unloc id) !map_ids -> begin
+          | Massign (op, Avar id, b) when MapString.mem (unloc id) !map_ids -> begin
               let newb = aux b in
               let newid : ident = MapString.find (unloc id) !map_ids in
-              { mt with node = Massign (op, t, Avarstore (dumloc newid), newb) }
+              { mt with node = Massign (op, Avarstore (dumloc newid), newb) }
             end
           | Mvar (id, Vlocal) when MapString.mem(unloc id) !map_ids -> begin
               let newid : ident = MapString.find (unloc id) !map_ids in
