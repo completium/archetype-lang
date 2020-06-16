@@ -279,20 +279,6 @@ let to_model (ast : A.model) : M.model =
       (* | A.Pcall (Some p, A.Cconst A.Cunmoved,   []) -> M.Msetunmoved   (f p)
          | A.Pcall (Some p, A.Cconst A.Cadded,     []) -> M.Msetadded     (f p)
          | A.Pcall (Some p, A.Cconst A.Cremoved,   []) -> M.Msetremoved   (f p) *)
-      (* | A.Pcall (Some p, A.Cconst A.Citerated,  []) ->
-        let fp =
-          let x = f p in
-          match x.type_ with
-          | M.Tlist _ -> M.ICKlist x
-          | _ -> M.ICKview x
-        in M.Msetiterated  (fp)
-      | A.Pcall (Some p, A.Cconst A.Ctoiterate, []) ->
-        let fp =
-          let x = f p in
-          match x.type_ with
-          | M.Tlist _ -> M.ICKlist x
-          | _ -> M.ICKview x
-        in M.Msettoiterate (fp) *)
 
       | A.Pcall (None, A.Cconst A.Cmin, [AExpr a; AExpr b]) ->
         let fa = f a in

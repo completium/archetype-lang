@@ -2580,6 +2580,32 @@ let replace_api_view_by_col (model : model) : model =
       let b = aux ctx b in
       mk_mterm (Mfor (i, ICKfield c, b, l)) mt.type_
 
+    | Msetiterated (ICKview c) when is_storcol c ->
+      let c = aux ctx c |> remove_cast in
+      let an =
+        match c.node with
+        | Mvar (an, Vstorecol) -> unloc an
+        | _ -> assert false
+      in
+      mk_mterm (Msetiterated (ICKcoll an)) c.type_
+
+    | Msetiterated (ICKview c) when is_field c ->
+      let c = aux ctx c |> remove_cast in
+      mk_mterm (Msetiterated (ICKfield c)) c.type_
+
+    | Msettoiterate (ICKview c) when is_storcol c ->
+      let c = aux ctx c |> remove_cast in
+      let an =
+        match c.node with
+        | Mvar (an, Vstorecol) -> unloc an
+        | _ -> assert false
+      in
+      mk_mterm (Msettoiterate (ICKcoll an)) c.type_
+
+    | Msettoiterate (ICKview c) when is_field c ->
+      let c = aux ctx c |> remove_cast in
+      mk_mterm (Msettoiterate (ICKfield c)) c.type_
+
     | _ -> map_mterm (aux ctx) mt
   in
   Model.map_mterm_model aux model
