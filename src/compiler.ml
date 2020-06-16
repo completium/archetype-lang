@@ -205,6 +205,7 @@ let generate_target model =
     |> replace_assignfield_by_update
     |> process_asset_state
     |> remove_add_update
+    |> remove_container_op_in_update
     |> merge_update
     |> remove_assign_operator
     |> process_internal_string

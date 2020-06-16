@@ -171,7 +171,7 @@ type ('id, 'term) mterm_node  =
   | Mdeclvar          of 'id list * type_ option * 'term
   | Mapp              of 'id * 'term list
   (* assign *)
-  | Massign           of (assignment_operator * ('id, 'term) assign_kind_gen * 'term) (* assignment _type kind value*)
+  | Massign           of (assignment_operator * ('id, 'term) assign_kind_gen * 'term) (* assignment kind value*)
   (* control *)
   | Mif               of ('term * 'term * 'term option)
   | Mmatchwith        of 'term * ('id pattern_gen * 'term) list
