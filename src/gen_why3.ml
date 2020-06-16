@@ -1556,12 +1556,24 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Msetunmoved _ -> error_not_translated "Msetunmoved"
     | Msetadded c ->  map_mterm m { ctx with lmod = Added } c |> Mlwtree.deloc
     | Msetremoved c -> map_mterm m { ctx with lmod = Removed } c |> Mlwtree.deloc
-    | Msetiterated        _ -> error_not_translated "Msetiterated"
-    | Msettoiterate c ->
+    | Msetiterated  container ->
       let n = M.Utils.get_asset_type mt |> with_dummy_loc in
-      Ttoiter (n, with_dummy_loc (Option.get(ctx.loop_id)), map_mterm m ctx c) (* TODO : should retrieve actual idx value *)
-
-
+      let iter_id = Option.get (ctx.loop_id) in
+      begin match container with
+        | ICKview c  -> Tvhead (n,loc_term (Tvar iter_id),map_mterm m ctx c)
+        | ICKcoll n  -> Tchead (with_dummy_loc n,loc_term (Tvar iter_id),mk_ac_ctx n ctx)
+        | ICKfield c -> Tvhead (n,loc_term (Tvar iter_id),map_mterm m ctx c)
+        | ICKlist _  -> error_not_translated "Msetiterated for list"
+      end
+    | Msettoiterate container ->
+      let n = M.Utils.get_asset_type mt |> with_dummy_loc in
+      let iter_id = Option.get (ctx.loop_id) in
+      begin match container with
+        | ICKview c  -> Tvtail (n,loc_term (Tvar iter_id),map_mterm m ctx c)
+        | ICKcoll n  -> Tctail (with_dummy_loc n,loc_term (Tvar iter_id),mk_ac_ctx n ctx)
+        | ICKfield c -> Tvtail (n,loc_term (Tvar iter_id),map_mterm m ctx c)
+        | ICKlist _  -> error_not_translated "Msettoiterate for list"
+      end
     (* formula asset collection methods *)
 
     (* | Mapifget (a, _c, k) -> Tapp (loc_term (Tvar ("get_" ^ a)),[map_mterm m ctx k])

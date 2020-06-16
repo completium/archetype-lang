@@ -171,7 +171,6 @@ type ('e,'t,'i) abstract_term =
   | Tdiff   of 'i * 'e * 'e
   | Tsubset of 'i * 'e * 'e
   | Tassert of 'i option * 'e
-  | Ttoiter of 'i * 'i * 'e
   (* set *)
   | Tmem    of 'i * 'e * 'e
   | Tvmem    of 'i * 'e * 'e
@@ -359,7 +358,6 @@ and map_abstract_term
                                 map_e b)
   | Ttry (b,l)         -> Ttry (map_e b, List.map (fun (exn,e) -> (exn,map_e e)) l)
   | Tassert (l,e)      -> Tassert (Option.map map_i l,map_e e)
-  | Ttoiter (a,i,e)    -> Ttoiter (map_i a, map_i i, map_e e)
   | Tvar i             -> Tvar (map_i i)
   | Ttuple l           -> Ttuple (List.map map_e l)
   | Trecord (e,l)      -> Trecord (Option.map map_e e, List.map (fun (i,v) ->
@@ -752,7 +750,6 @@ let compare_abstract_term
                                       compare_exn exn1 exn2 && cmpe e1 e2) l1 l2
   | Tassert (None,e1), Tassert (None,e2) -> cmpe e1 e2
   | Tassert (Some l1,e1), Tassert (Some l2,e2) -> cmpi l1 l2 && cmpe e1 e2
-  | Ttoiter (a1,i1,e1), Ttoiter (a2,i2,e2) -> cmpi a1 a2 && cmpi i1 i2 && cmpe e1 e2
   | Tvar i1, Tvar i2 -> cmpi i1 i2
   | Ttuple l1, Ttuple l2 -> List.for_all2 cmpe l1 l2
   | Trecord (None,l1), Trecord (None,l2) ->

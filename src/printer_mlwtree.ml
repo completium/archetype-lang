@@ -471,11 +471,6 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "assert { [@expl:%a] %a }"
       pp_str lbl
       (pp_term outer pos) e
-  | Ttoiter (a,i,e) ->
-    Format.fprintf fmt "%a.drop %a %a"
-      pp_str (String.capitalize_ascii a)
-      pp_str i
-      (pp_with_paren (pp_term outer pos)) e
   | Tccard (i,e) ->
     Format.fprintf fmt "%a.ccard %a"
       pp_str (String.capitalize_ascii i)
