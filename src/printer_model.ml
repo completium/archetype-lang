@@ -152,19 +152,19 @@ let pp_mterm fmt (mt : mterm) =
 
     (* assign *)
 
-    | Massign (op, _, l, r) ->
+    | Massign (op, _t, Avar k, v) ->
       Format.fprintf fmt "%a %a %a"
-        pp_id l
+        pp_id k
         pp_operator op
-        f r
+        f v
 
-    | Massignvarstore (op, _, l, r) ->
+    | Massign (op, _t, Avarstore l, r) ->
       Format.fprintf fmt "s.%a %a %a"
         pp_id l
         pp_operator op
         f r
 
-    | Massignfield (op, _t, an, fn, k, v) ->
+    | Massign (op, _t, Afield (an, fn, k), v) ->
       Format.fprintf fmt "%a[%a].%a %a %a"
         pp_id an
         f k
@@ -172,11 +172,11 @@ let pp_mterm fmt (mt : mterm) =
         pp_operator op
         f v
 
-    | Massignstate x ->
+    | Massign (_op, _t, Astate, x) ->
       Format.fprintf fmt "state = %a"
         f x
 
-    | Massignassetstate (an, k, v) ->
+    | Massign (_op, _t, Aassetstate (an, k), v) ->
       Format.fprintf fmt "state_%a(%a) = %a"
         pp_ident an
         f k

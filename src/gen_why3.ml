@@ -1057,19 +1057,19 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     (* assign *)
 
-    | Massign (ValueAssign, _, id, v) ->
+    | Massign (ValueAssign, _, Avar id, v) ->
       Tassign (with_dummy_loc (Tvar (map_lident id)),map_mterm m ctx v)
 
-    | Massign (MinusAssign, _, id, v) ->
+    | Massign (MinusAssign, _, Avar id, v) ->
       Tassign (with_dummy_loc (Tvar (map_lident id)),
                with_dummy_loc (
                  Tminus (with_dummy_loc Tyint,
                          with_dummy_loc (Tvar (map_lident id)),
                          map_mterm m ctx v)))
 
-    | Massign             _ -> error_not_translated "Massign"
+    | Massign (_, _, Avar _, _) -> error_not_translated "Massign (_, _, Avar _, _)"
 
-    | Massignvarstore (assignop, _, id, v) ->
+    | Massign (assignop, _, Avarstore id, v) ->
       let var = with_dummy_loc (Tdoti (with_dummy_loc gs,map_lident id)) in
       let value =
         begin
@@ -1105,7 +1105,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                    map_mterm m ctx v))
         end in
       Tassign (var,value)
-    | Massignfield (assignop, _, _id1, id2, k, v) ->
+    | Massign (assignop, _, Afield (_id1, id2, k), v) ->
 
       let id = with_dummy_loc (Tdot (map_mterm m ctx (* id1 *) k, (* FIXME *)
                                      with_dummy_loc (Tvar (map_lident id2)))) in
@@ -1138,9 +1138,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         end in
       Tassign (id,value)
 
-    | Massignstate v -> Tassign (loc_term (Tdoti (gs, "state")), map_mterm m ctx v)
+    | Massign (_, _, Astate, v) -> Tassign (loc_term (Tdoti (gs, "state")), map_mterm m ctx v)
 
-    | Massignassetstate _ -> error_not_translated "Massignassetstate"
+    | Massign (_, _, Aassetstate _, _) -> error_not_translated "Massign (_, _, Aassetstate _, _)"
 
 
     (* control *)

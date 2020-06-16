@@ -131,6 +131,14 @@ type sort_kind =
   | SKdesc
 [@@deriving show {with_path = false}]
 
+type ('id, 'term) assign_kind_gen =
+  | Avar        of 'id
+  | Avarstore   of 'id
+  | Afield      of 'id * 'id * 'term (* asset name * field name * key *)
+  | Astate
+  | Aassetstate of ident * 'term     (* asset name * key *)
+[@@deriving show {with_path = false}]
+
 type 'term var_kind_gen =
   | Vassetstate of 'term
   | Vstorevar
@@ -163,11 +171,7 @@ type ('id, 'term) mterm_node  =
   | Mdeclvar          of 'id list * type_ option * 'term
   | Mapp              of 'id * 'term list
   (* assign *)
-  | Massign           of (assignment_operator * type_ * 'id * 'term)
-  | Massignvarstore   of (assignment_operator * type_ * 'id * 'term)
-  | Massignfield      of (assignment_operator * type_ * 'id * 'id * 'term * 'term) (* assignment _type an fn key value*)
-  | Massignstate      of 'term
-  | Massignassetstate of ident * 'term * 'term (* asset name * key * value *)
+  | Massign           of (assignment_operator * type_ * ('id, 'term) assign_kind_gen * 'term) (* assignment _type kind value*)
   (* control *)
   | Mif               of ('term * 'term * 'term option)
   | Mmatchwith        of 'term * ('id pattern_gen * 'term) list
@@ -315,6 +319,8 @@ type ('id, 'term) mterm_node  =
   | Msubsetof         of ident * 'term * 'term
   | Misempty          of ident * 'term
 [@@deriving show {with_path = false}]
+
+and assign_kind = (lident, mterm) assign_kind_gen
 
 and var_kind = mterm var_kind_gen
 
@@ -947,6 +953,15 @@ let cmp_mterm_node
     (term1 : ('id, 'term) mterm_node)
     (term2 : ('id, 'term) mterm_node)
   : bool =
+  let cmp_assign_kind (lhs : assign_kind) (rhs : assign_kind) : bool =
+    match lhs, rhs with
+    | Avar id1, Avar id2                           -> cmpi id1 id2
+    | Avarstore id1, Avarstore id2                 -> cmpi id1 id2
+    | Afield (an1, fn1, k1), Afield (an2, fn2, k2) -> cmpi an1 an2 && cmpi fn1 fn2 && cmp k1 k2
+    | Astate, Astate                               -> true
+    | Aassetstate (id1, v1), Aassetstate (id2, v2) -> cmp_ident id1 id2 && cmp v1 v2
+    | _ -> false
+  in
   let cmp_var_kind (lhs : var_kind) (rhs : var_kind) : bool =
     match lhs, rhs with
     | Vassetstate v1, Vassetstate v2 -> cmp v1 v2
@@ -960,7 +975,7 @@ let cmp_mterm_node
     | Vthe, Vthe -> true
     | _ -> false
   in
-  let cmp_container_kind (lhs : 'term container_kind_gen) (rhs : 'term container_kind_gen) : bool =
+  let cmp_container_kind (lhs : container_kind) (rhs : container_kind) : bool =
     match lhs, rhs with
     | CKcoll, CKcoll -> true
     | CKview l, CKview r -> cmp l r
@@ -980,11 +995,7 @@ let cmp_mterm_node
     | Mdeclvar (i1, t1, v1), Mdeclvar (i2, t2, v2)                                     -> List.for_all2 cmpi i1 i2 && Option.cmp cmp_type t1 t2 && cmp v1 v2
     | Mapp (e1, args1), Mapp (e2, args2)                                               -> cmpi e1 e2 && List.for_all2 cmp args1 args2
     (* assign *)
-    | Massign (op1, t1, l1, r1), Massign (op2, t2, l2, r2)                             -> cmp_assign_op op1 op2 && cmp_type t1 t2 && cmpi l1 l2 && cmp r1 r2
-    | Massignvarstore (op1, t1, l1, r1), Massignvarstore (op2, t2, l2, r2)             -> cmp_assign_op op1 op2 && cmp_type t1 t2 && cmpi l1 l2 && cmp r1 r2
-    | Massignfield (op1, t1, an1, fn1, k1, v1), Massignfield (op2, t2, an2, fn2, k2, v2) -> cmp_assign_op op1 op2 && cmp_type t1 t2 && cmpi an1 an2 && cmpi fn1 fn2 && cmp k1 k2 && cmp v1 v2
-    | Massignstate x1, Massignstate x2                                                 -> cmp x1 x2
-    | Massignassetstate (an1, k1, v1), Massignassetstate (an2, k2, v2)                 -> cmp_ident an1 an2 && cmp k1 k2 && cmp v1 v2
+    | Massign (op1, t1, k1, v1), Massign (op2, t2, k2, v2)                             -> cmp_assign_op op1 op2 && cmp_type t1 t2 && cmp_assign_kind k1 k2 && cmp v1 v2
     (* control *)
     | Mif (c1, t1, e1), Mif (c2, t2, e2)                                               -> cmp c1 c2 && cmp t1 t2 && Option.cmp cmp e1 e2
     | Mmatchwith (e1, l1), Mmatchwith (e2, l2)                                         -> cmp e1 e2 && List.for_all2 (fun (p1, t1) (p2, t2) -> cmp_pattern p1 p2 && cmp t1 t2) l1 l2
@@ -1237,6 +1248,13 @@ let map_type (f : type_ -> type_) = function
 
 (* -------------------------------------------------------------------- *)
 
+let map_assign_kind (fi : ident -> ident) (g : 'id -> 'id) f = function
+  | Avar id             -> Avar (g id)
+  | Avarstore id        -> Avarstore (g id)
+  | Afield (an, fn, k)  -> Afield (g an, g fn, f k)
+  | Astate              -> Astate
+  | Aassetstate (id, v) -> Aassetstate (fi id, f v)
+
 let map_var_kind f = function
   | Vassetstate mt -> Vassetstate (f mt)
   | Vstorevar -> Vstorevar
@@ -1253,8 +1271,8 @@ let map_container_kind f = function
   | CKview  mt -> CKview  (f mt)
   | CKfield mt -> CKfield (f mt)
 
-let map_iter_container_kind f = function
-  | ICKcoll an  -> ICKcoll an
+let map_iter_container_kind (fi : ident -> ident) f = function
+  | ICKcoll an  -> ICKcoll (fi an)
   | ICKview mt  -> ICKview (f mt)
   | ICKfield mt -> ICKfield (f mt)
   | ICKlist mt  -> ICKlist (f mt)
@@ -1265,15 +1283,11 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mdeclvar (i, t, v)             -> Mdeclvar (List.map g i, Option.map ft t, f v)
   | Mapp (e, args)                 -> Mapp (g e, List.map f args)
   (* assign *)
-  | Massign (op, t, l, r)          -> Massign (op, ft t, g l, f r)
-  | Massignvarstore (op, t, l, r)  -> Massignvarstore (op, ft t, g l, f r)
-  | Massignfield (op, t, an, fn, k, v) -> Massignfield (op, ft t, g an, g fn, f k, f v)
-  | Massignstate x                 -> Massignstate (f x)
-  | Massignassetstate (an, k, v)   -> Massignassetstate (fi an, f k, f v)
+  | Massign (op, t, k, v)          -> Massign (op, ft t, map_assign_kind fi g f k, f v)
   (* control *)
   | Mif (c, t, e)                  -> Mif (f c, f t, Option.map f e)
   | Mmatchwith (e, l)              -> Mmatchwith (f e, List.map (fun (p, e) -> (p, f e)) l)
-  | Mfor (i, c, b, lbl)            -> Mfor (g i, map_iter_container_kind f c, f b, lbl)
+  | Mfor (i, c, b, lbl)            -> Mfor (g i, map_iter_container_kind fi f c, f b, lbl)
   | Miter (i, a, b, c, lbl)        -> Miter (g i, f a, f b, f c, lbl)
   | Mseq is                        -> Mseq (List.map f is)
   | Mreturn x                      -> Mreturn (f x)
@@ -1556,6 +1570,13 @@ let map_mterm_model_gen custom (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (
 let map_mterm_model (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (model : model) : model =
   map_mterm_model_gen () f model
 
+let fold_assign_kind f accu = function
+  | Avar _              -> accu
+  | Avarstore _         -> accu
+  | Afield (_, _, mt)   -> f accu mt
+  | Astate              -> accu
+  | Aassetstate (_, mt) -> f accu mt
+
 let fold_var_kind f accu = function
   | Vassetstate mt -> f accu mt
   | Vstorevar
@@ -1586,11 +1607,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mdeclvar (_, _, v)                    -> f accu v
   | Mapp (_, args)                        -> List.fold_left f accu args
   (* assign *)
-  | Massign (_, _, _, e)                  -> f accu e
-  | Massignvarstore (_, _, _, e)          -> f accu e
-  | Massignfield (_, _, _, _, k, v)       -> f (f accu k) v
-  | Massignstate x                        -> f accu x
-  | Massignassetstate (_, k, v)           -> f (f accu k) v
+  | Massign (_, _, k, e)                  -> f (fold_assign_kind f accu k) e
   (* control *)
   | Mif (c, t, e)                         -> opt f (f (f accu c) t) e
   | Mmatchwith (e, l)                     -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
@@ -1744,6 +1761,13 @@ let fold_map_term_list f acc l : 'term list * 'a =
        let p, accu = f accu x in
        pterms @ [p], accu) ([], acc) l
 
+let fold_map_assign_kind f accu = function
+  | Avar id             -> Avar id, accu
+  | Avarstore id        -> Avarstore id, accu
+  | Afield (an, fn, k)  -> let ke, ka = f accu k in Afield (an, fn, ke), ka
+  | Astate              -> Astate, accu
+  | Aassetstate (id, v) -> let ve, va = f accu v in Aassetstate (id, ve), va
+
 let fold_map_var_kind f accu = function
   | Vassetstate mt ->
     let mte, mta = f accu mt in
@@ -1812,27 +1836,10 @@ let fold_map_term
 
   (* assign *)
 
-  | Massign (op, t, id, x) ->
-    let xe, xa = f accu x in
-    g (Massign (op, t, id, xe)), xa
-
-  | Massignvarstore (op, t, id, x) ->
-    let xe, xa = f accu x in
-    g (Massignvarstore (op, t, id, xe)), xa
-
-  | Massignfield (op, t, an, fn, k, v) ->
-    let ke, ka = f accu k in
+  | Massign (op, t, k, v) ->
+    let ke, ka = fold_map_assign_kind f accu k in
     let ve, va = f ka v in
-    g (Massignfield(op, t, an, fn, ke, ve)), va
-
-  | Massignstate x ->
-    let xe, xa = f accu x in
-    g (Massignstate xe), xa
-
-  | Massignassetstate (an, k, v) ->
-    let ke, ka = f accu k in
-    let ve, va = f ka v in
-    g (Massignassetstate (an, ke, ve)), va
+    g (Massign (op, t, ke, ve)), va
 
 
   (* control *)
@@ -3323,7 +3330,7 @@ end = struct
   let is_local_assigned (id : ident) (b : mterm) =
     let rec rec_search_assign _ (t : mterm) =
       match t.node with
-      | Massign (_, _, i,_) when String.equal (unloc i) id -> raise FoundAssign
+      | Massign (_, _, Avar i,_) when String.equal (unloc i) id -> raise FoundAssign
       | _ -> fold_term rec_search_assign false t in
     try rec_search_assign false b
     with FoundAssign -> true
@@ -3746,7 +3753,6 @@ end = struct
       | Mdiv (_,_) -> raise FoundDiv
       | Mmodulo _ -> raise FoundDiv
       | Massign (DivAssign,_,_,_) -> raise FoundDiv
-      | Massignvarstore (DivAssign,_,_,_) -> raise FoundDiv
       | _ -> fold_term aux accu t in
     aux accu mt
 

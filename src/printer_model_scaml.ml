@@ -459,19 +459,19 @@ let pp_model fmt (model : model) =
 
       (* assign *)
 
-      | Massign (op, _, l, r) ->
+      | Massign (op, _, Avar l, r) ->
         Format.fprintf fmt "%a %a %a"
           pp_id l
           pp_operator op
           f r
 
-      | Massignvarstore (op, _, l, r) ->
+      | Massign (op, _, Avarstore l, r) ->
         Format.fprintf fmt "s.%a %a %a"
           pp_id l
           pp_operator op
           f r
 
-      | Massignfield (op, _t, an, fn, k, v) ->
+      | Massign (op, _t, Afield (an, fn, k), v) ->
         Format.fprintf fmt "%a[%a].%a %a %a"
           pp_id an
           f k
@@ -479,11 +479,11 @@ let pp_model fmt (model : model) =
           pp_operator op
           f v
 
-      | Massignstate x ->
+      | Massign (_op, _t, Astate, x) ->
         Format.fprintf fmt "state_ = %a"
           f x
 
-      | Massignassetstate (an, k, v) ->
+      | Massign (_op, _t, Aassetstate (an, k), v) ->
         Format.fprintf fmt "state_%a(%a) = %a"
           pp_ident an
           f k
@@ -1134,7 +1134,7 @@ let pp_model fmt (model : model) =
       | Msource        -> pp_str fmt "Global.get_source ()"
 
 
-      (* variables *)
+      (* variable *)
 
       | Mvar (an, Vassetstate k) -> Format.fprintf fmt "state_%a(%a)" pp_str (Location.unloc an) f k
       | Mvar (v, Vstorevar)      -> Format.fprintf fmt "%s.%a" const_storage pp_id v
