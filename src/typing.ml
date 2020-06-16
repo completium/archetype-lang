@@ -1584,13 +1584,18 @@ let for_literal (_env : env) (topv : PT.literal loced) : M.bval =
     end
 
 (* -------------------------------------------------------------------- *)
+type imode_t = [`Ghost | `Concrete]
+
 type emode_t = {
-  em_kind : [`Expr | `Formula];
+  em_kind : [`Expr of imode_t | `Formula];
   em_pred : bool;
 }
 
-let expr_mode = { em_kind = `Expr   ; em_pred = false; }
-let form_mode = { em_kind = `Formula; em_pred = false; }
+let is_expr_mode (kind : [`Expr of imode_t | `Formula]) =
+  match kind with `Expr _ -> true | _ -> false
+
+let expr_mode imode = { em_kind = `Expr imode; em_pred = false; }
+let form_mode       = { em_kind = `Formula   ; em_pred = false; }
 
 let rec for_xexpr
     (mode : emode_t) ?(capture = `Yes None) (env : env) ?(ety : M.ptyp option) (tope : PT.expr)
@@ -1642,7 +1647,7 @@ let rec for_xexpr
             Env.emit_error env (loc tope, VSetOnNonAsset)
         end;
 
-        if mode.em_kind = `Expr && Option.is_some vset then
+        if is_expr_mode mode.em_kind && Option.is_some vset then
           Env.emit_error env (loc tope, VSetInExpr);
 
         match lk with
@@ -2137,7 +2142,7 @@ let rec for_xexpr
         begin match place, mode.em_kind with
           | `OnlyExec, `Formula ->
             Env.emit_error env (loc tope, InvalidMethodInFormula)
-          | `OnlyFormula, `Expr ->
+          | `OnlyFormula, (`Expr _) ->
             Env.emit_error env (loc tope, InvalidMethodInExec)
           | _, _ ->
             ()
@@ -2825,20 +2830,24 @@ and for_role (env : env) (name : PT.lident) =
     else Some name
 
 (* -------------------------------------------------------------------- *)
-let for_expr (env : env) ?(ety : M.type_ option) (tope : PT.expr) : M.pterm =
-  for_xexpr expr_mode env ?ety tope
+let for_expr (kind : imode_t) (env : env) ?(ety : M.type_ option) (tope : PT.expr) : M.pterm =
+  for_xexpr (expr_mode kind) env ?ety tope
 
 (* -------------------------------------------------------------------- *)
-let for_lbl_expr (env : env) ?ety (topf : PT.label_expr) : env * (M.lident option * M.pterm) =
+let for_lbl_expr
+  ?ety (kind : imode_t) (env : env) (topf : PT.label_expr) : env * (M.lident option * M.pterm)
+=
   if check_and_emit_name_free env (fst (unloc topf)) then
     let env = Env.Label.push env (fst (unloc topf), `Plain) in
-    env, (Some (fst (unloc topf)), for_expr ?ety env (snd (unloc topf)))
+    env, (Some (fst (unloc topf)), for_expr kind env ?ety (snd (unloc topf)))
   else
-    env, (None, for_expr env ?ety (snd (unloc topf)))
+    env, (None, for_expr kind env ?ety (snd (unloc topf)))
 
 (* -------------------------------------------------------------------- *)
-let for_lbls_expr (env : env) ?ety (topf : PT.label_exprs) : env * (M.lident option * M.pterm) list =
-  List.fold_left_map (for_lbl_expr ?ety) env topf
+let for_lbls_expr
+  kind ?ety (env : env) (topf : PT.label_exprs) : env * (M.lident option * M.pterm) list
+=
+  List.fold_left_map (for_lbl_expr ?ety kind) env topf
 
 (* -------------------------------------------------------------------- *)
 let for_lbl_bexpr = for_lbl_expr ~ety:(M.Tbuiltin M.VTbool)
@@ -2879,7 +2888,7 @@ let for_args_decl (env : env) (xs : PT.args) =
   List.fold_left_map for_arg_decl env xs
 
 (* -------------------------------------------------------------------- *)
-let for_lvalue (env : env) (e : PT.expr) : (M.lvalue * M.ptyp) option =
+let for_lvalue kind (env : env) (e : PT.expr) : (M.lvalue * M.ptyp) option =
   match unloc e with
   | Eterm ((None, None), x) -> begin
       match Env.lookup_entry env (unloc x) with
@@ -2893,8 +2902,12 @@ let for_lvalue (env : env) (e : PT.expr) : (M.lvalue * M.ptyp) option =
         end
 
       | Some (`Global vd) ->
-        if vd.vr_kind <> `Variable then
-          Env.emit_error env (loc e, ReadOnlyGlobal (unloc x));
+        begin match vd.vr_kind, kind with
+          | `Variable, _
+          | `Ghost, `Ghost -> ()
+          | _, _ ->
+            Env.emit_error env (loc e, ReadOnlyGlobal (unloc x));
+        end;
         Some (`Var x, vd.vr_type)
 
       | _ ->
@@ -2915,7 +2928,7 @@ let for_lvalue (env : env) (e : PT.expr) : (M.lvalue * M.ptyp) option =
 
         | Some { fd_type = fty } ->
           let asset_key_type = (Option.get (get_field (unloc asset.as_pk) asset)).fd_type in
-          let k = for_expr ~ety:asset_key_type env pk in
+          let k = for_expr ~ety:asset_key_type kind env pk in
           Some (`Field (asset.as_name, k, x), fty)
       end
     end
@@ -2924,7 +2937,9 @@ let for_lvalue (env : env) (e : PT.expr) : (M.lvalue * M.ptyp) option =
     Env.emit_error env (loc e, InvalidLValue); None
 
 (* -------------------------------------------------------------------- *)
-let rec for_instruction_r (env : env) (i : PT.expr) : env * M.instruction =
+let rec for_instruction_r
+  (kind : imode_t) (env : env) (i : PT.expr) : env * M.instruction
+=
   let module E = struct exception Failure end in
 
   let bailout () = raise E.Failure in
@@ -2941,13 +2956,13 @@ let rec for_instruction_r (env : env) (i : PT.expr) : env * M.instruction =
   try
     match unloc i with
     | Emethod (pthe, m, args) -> begin
-        let the = for_expr env pthe in
+        let the = for_expr kind env pthe in
 
         match the.M.type_ with
         | Some ty -> begin
             match Type.as_asset_collection ty with
             | Some _ ->
-              let infos = for_gen_method_call expr_mode env (loc i) (`Typed the, m, args) in
+              let infos = for_gen_method_call (expr_mode kind) env (loc i) (`Typed the, m, args) in
               let the, (asset, c), method_, args, _ = Option.get_fdfl bailout infos in
 
               begin match c, method_.mth_purity with
@@ -2964,7 +2979,7 @@ let rec for_instruction_r (env : env) (i : PT.expr) : env * M.instruction =
               env, mki (M.Icall (Some the, M.Cconst method_.mth_name, args))
 
             | _ ->
-              let infos = for_api_call expr_mode env (loc i) (`Typed the, m, args) in
+              let infos = for_api_call (expr_mode kind) env (loc i) (`Typed the, m, args) in
               let the, method_, args = Option.get_fdfl bailout infos in
               env, mki (M.Icall (Some the, M.Cconst method_.mth_name, args))
           end
@@ -2973,12 +2988,12 @@ let rec for_instruction_r (env : env) (i : PT.expr) : env * M.instruction =
       end
 
     | Eseq (i1, i2) ->
-      let env, i1 = for_instruction_r env i1 in
-      let env, i2 = for_instruction_r env i2 in
+      let env, i1 = for_instruction_r kind env i1 in
+      let env, i2 = for_instruction_r kind env i2 in
       env, mkseq i1 i2
 
     | Eassign (op, plv, pe) -> begin
-        let lv = for_lvalue env plv in
+        let lv = for_lvalue kind env plv in
         let x  = Option.get_dfl
             (`Var (mkloc (loc plv) "<error>"))
             (Option.map fst lv) in
@@ -2987,10 +3002,10 @@ let rec for_instruction_r (env : env) (i : PT.expr) : env * M.instruction =
         let e  =
           match lv with
           | None ->
-            for_expr env pe
+            for_expr kind env pe
 
           | Some (_, fty) ->
-            for_assign_expr expr_mode env (loc plv) (op, fty, fty) pe
+            for_assign_expr (expr_mode kind) env (loc plv) (op, fty, fty) pe
         in
 
         let type_assigned = M.Tbuiltin (VTint) in (* TODO: replace by the var/field assigned type *)
@@ -2998,11 +3013,11 @@ let rec for_instruction_r (env : env) (i : PT.expr) : env * M.instruction =
       end
 
     | Etransfer (e, to_, c) ->
-      let e      = for_expr env ~ety:M.vtcurrency e in
+      let e      = for_expr kind env ~ety:M.vtcurrency e in
       let to_, c =
         match c with
         | None ->
-          (for_expr env ~ety:M.vtrole to_, None)
+          (for_expr kind env ~ety:M.vtrole to_, None)
 
         | Some (name, args) ->
           let for_ctt ctt =
@@ -3026,18 +3041,18 @@ let rec for_instruction_r (env : env) (i : PT.expr) : env * M.instruction =
                 None
               else
                 Some (name, List.map2
-                        (fun (_, ety) arg -> for_expr ~ety env arg)
+                        (fun (_, ety) arg -> for_expr ~ety kind env arg)
                         targs args)
           in
-          let to_, ctt = for_contract_expr expr_mode env to_ in
+          let to_, ctt = for_contract_expr (expr_mode kind) env to_ in
           (to_, Option.bind for_ctt ctt)
 
       in env, mki (Itransfer (e, to_, c))
 
     | Eif (c, bit, bif) ->
-      let c        = for_expr env ~ety:M.vtbool c in
-      let env, cit = for_instruction env bit in
-      let cif      = Option.map (for_instruction env) bif in
+      let c        = for_expr kind env ~ety:M.vtbool c in
+      let env, cit = for_instruction kind env bit in
+      let cif      = Option.map (for_instruction kind env) bif in
       let env, cif = Option.get_dfl (env, mki (Iseq [])) cif in
       env, mki (M.Iif (c, cit, cif))
 
@@ -3062,7 +3077,7 @@ let rec for_instruction_r (env : env) (i : PT.expr) : env * M.instruction =
       env, mki (M.Iletin (x, e, body)) *)
 
     | Efor (lbl, x, pe, i) ->
-      let e = for_expr env pe in
+      let e = for_expr kind env pe in
 
       let kty =
         match e.M.type_ with
@@ -3095,31 +3110,31 @@ let rec for_instruction_r (env : env) (i : PT.expr) : env * M.instruction =
                   if (check_and_emit_name_free env lbl) then
                     Env.Label.push env (lbl, `Loop lblty)
                   else env) env lbl
-          in for_instruction env i) in
+          in for_instruction kind env i) in
 
       env, mki (M.Ifor (x, e, i)) ?label:(Option.map unloc lbl)
 
     | Eiter (lbl, x, a, b, i) ->
       let zero_b = M.mk_sp (M.BVint Big_int.zero_big_int) ~type_:M.vtint in
       let zero : M.pterm = M.mk_sp (M.Plit zero_b) ~type_:M.vtint in
-      let a = Option.map_dfl (fun x -> for_expr env ~ety:M.vtint x) zero a in
-      let b = for_expr env ~ety:M.vtint b in
+      let a = Option.map_dfl (fun x -> for_expr kind env ~ety:M.vtint x) zero a in
+      let b = for_expr kind env ~ety:M.vtint b in
       let env, i = Env.inscope env (fun env ->
           let _ : bool = check_and_emit_name_free env x in
           let env = Env.Local.push env ~kind:`LoopIndex (x, M.vtint) in
-          for_instruction env i) in
+          for_instruction kind env i) in
       env, mki (M.Iiter (x, a, b, i)) ?label:(Option.map unloc lbl)
 
     | Erequire e ->
-      let e = for_expr env e in
+      let e = for_expr kind env e in
       env, mki (M.Irequire (true, e))
 
     | Efailif e ->
-      let e = for_expr env e in
+      let e = for_expr kind env e in
       env, mki (M.Irequire (false, e))
 
     | Efail e ->
-      let e = for_expr ~ety:M.vtstring env e in
+      let e = for_expr ~ety:M.vtstring kind env e in
       env, mki (M.Ifail e)
 
     | Eassert lbl ->
@@ -3130,10 +3145,10 @@ let rec for_instruction_r (env : env) (i : PT.expr) : env * M.instruction =
       env, mki (Ilabel lbl)
 
     | Ematchwith (e, bs) -> begin
-        match for_gen_matchwith expr_mode env (loc i) e bs with
+        match for_gen_matchwith (expr_mode kind) env (loc i) e bs with
         | None -> bailout () | Some (decl, me, (wd, bsm), is) ->
 
-          let env, is = List.fold_left_map for_instruction env is in
+          let env, is = List.fold_left_map (for_instruction kind) env is in
 
           let aout = List.pmap (fun (cname, _) ->
               let ctor = M.mk_sp (M.Mconst cname) in (* FIXME: loc ? *)
@@ -3166,11 +3181,11 @@ let rec for_instruction_r (env : env) (i : PT.expr) : env * M.instruction =
       env, mki (Iseq [])
 
     | Ereturn re ->
-      env, mki (Ireturn (for_expr env re)) (* FIXME *)
+      env, mki (Ireturn (for_expr kind env re)) (* FIXME *)
 
     | Evar (x, ty, v) ->
       let ty = Option.bind (for_type env) ty in
-      let v  = for_expr env ?ety:ty v in
+      let v  = for_expr kind env ?ety:ty v in
       let env =
         let _ : bool = check_and_emit_name_free env x in
         if Option.is_some v.M.type_ then
@@ -3187,13 +3202,13 @@ let rec for_instruction_r (env : env) (i : PT.expr) : env * M.instruction =
     env, mki (Iseq [])
 
 (* -------------------------------------------------------------------- *)
-and for_instruction (env : env) (i : PT.expr) : env * M.instruction =
-  Env.inscope env (fun env -> for_instruction_r env i)
+and for_instruction (kind : imode_t) (env : env) (i : PT.expr) : env * M.instruction =
+  Env.inscope env (fun env -> for_instruction_r kind env i)
 
 (* -------------------------------------------------------------------- *)
-let for_effect (env : env) (effect : PT.expr) =
+let for_effect (kind : imode_t) (env : env) (effect : PT.expr) =
   Env.inscope env (fun env ->
-      let env, i = for_instruction env effect in (env, (env, i)))
+      let env, i = for_instruction kind env effect in (env, (env, i)))
 
 (* -------------------------------------------------------------------- *)
 type spmode = [`Global | `Local]
@@ -3228,7 +3243,7 @@ let for_specification_item
         { df_name = x; df_arg = arg; df_asset = asset; df_body = f; }) def in
 
     let poenv =
-      if not (check_and_emit_name_free env x) then poenv else
+      if not (check_and_emit_name_free poenv x) then poenv else
         Option.fold (fun poenv decl ->
           Env.Definition.push poenv decl) poenv decl in
 
@@ -3238,10 +3253,20 @@ let for_specification_item
 
   | PT.Vvariable (x, ty, e) ->
     let ty = for_type env ty in
-    let e  = Option.map (for_expr env ?ety:ty) e in
-    let poenv =
-      if not (check_and_emit_name_free env x) then poenv else
-        Option.fold (fun poenv ty -> Env.Local.push poenv (x, ty)) poenv ty
+    let e  = Option.map (for_expr `Ghost env ?ety:ty) e in
+    let env, poenv =
+      if not (check_and_emit_name_free poenv x) then env, poenv else
+        Option.fold (fun (env, poenv) ty ->
+          let decl = {
+            vr_name =  x; vr_type =   ty; vr_kind =       `Ghost;
+            vr_invs = []; vr_def  = None; vr_tgt  = (None, None);
+            vr_core = None;
+          } in
+
+          let env   = if mode = `Global then Env.Var.push env decl else env in
+          let poenv = Env.Var.push poenv decl in
+
+         (env, poenv)) (env, poenv) ty
 
     in (env, poenv), [`Variable (x, e)]
 
@@ -3270,7 +3295,7 @@ let for_specification_item
     if mode = `Global then
       Env.emit_error env (loc i, EffectInGlobalSpec);
     (* FIXME: we are not properly tracking labels here *)
-    let _, ((poenv, _) as i) = for_effect poenv i in
+    let _, ((poenv, _) as i) = for_effect `Ghost poenv i in
     (env, poenv), [`Effect i]
 
   | PT.Vpostcondition (x, f, invs, uses, kind) -> begin
@@ -3472,7 +3497,7 @@ let for_function (env : env) (fdecl : PT.s_function loced) =
   Env.inscope env (fun env ->
       let env, args = for_args_decl env fdecl.args in
       let rty       = Option.bind (for_type env) fdecl.ret_t in
-      let env, body = for_instruction env fdecl.body in
+      let env, body = for_instruction `Concrete env fdecl.body in
       let env, spec =
         let poenv = rty |> Option.fold (fun poenv rty ->
             let decl = {
@@ -3507,13 +3532,13 @@ let rec for_callby (env : env) (cb : PT.expr) =
     (for_callby env e1) @ (for_callby env e2)
 
   | _ ->
-    [mkloc (loc cb) (Some (for_expr env ~ety:M.vtrole cb))]
+    [mkloc (loc cb) (Some (for_expr `Concrete env ~ety:M.vtrole cb))]
 
 (* -------------------------------------------------------------------- *)
 let for_action_properties (env, poenv : env * env) (act : PT.action_properties) =
   let calledby  = Option.map (fun (x, _) -> for_callby env x) act.calledby in
-  let env, req  = Option.foldmap for_lbls_bexpr env (Option.fst act.require) in
-  let env, fai  = Option.foldmap for_lbls_bexpr env (Option.fst act.failif) in
+  let env, req  = Option.foldmap (for_lbls_bexpr `Concrete) env (Option.fst act.require) in
+  let env, fai  = Option.foldmap (for_lbls_bexpr `Concrete) env (Option.fst act.failif) in
   let env, spec = Option.foldmap
       (fun env x -> for_specification `Local (env, poenv) x) env act.spec_fun in
   let env, funs = List.fold_left_map for_function env act.functions in
@@ -3526,7 +3551,7 @@ let for_transition ?enum (env : env) (state, when_, effect) =
   let tx_when   =
     Option.map (for_formula env) (Option.fst when_) in
   let env, tx_effect = snd_map (Option.map snd)
-      (Option.foldmap for_effect env (Option.fst effect)) in
+      (Option.foldmap (for_effect `Concrete) env (Option.fst effect)) in
 
   env, { tx_state; tx_when; tx_effect; }
 
@@ -3611,7 +3636,7 @@ let for_var_decl (env : env) (decl : PT.variable_decl loced) =
   let (x, ty, pe, tgt, ctt, invs, _) = unloc decl in
 
   let ty   = for_type env ty in
-  let e    = Option.map (for_expr env ?ety:ty) pe in
+  let e    = Option.map (for_expr `Concrete env ?ety:ty) pe in
   let dty  =
     if   Option.is_some ty
     then ty
@@ -3698,7 +3723,7 @@ let for_asset_decl ?(force = false) (env : env) (decl : PT.asset_decl loced) =
   let for_field field =
     let PT.Ffield (f, fty, init, _) = unloc field in
     let fty  = for_type env fty in
-    let init = Option.map (for_expr env ?ety:fty) init in
+    let init = Option.map (for_expr `Concrete env ?ety:fty) init in
 
     if   check_and_emit_name_free env f
     then Some (mkloc (loc f) (unloc f, fty, init))
@@ -3811,7 +3836,7 @@ let for_asset_decl ?(force = false) (env : env) (decl : PT.asset_decl loced) =
               end else
                 let init1 =
                   List.map2
-                    (fun { pldesc = (_, ety, _) } (_, ie) -> for_expr env ?ety ie)
+                    (fun { pldesc = (_, ety, _) } (_, ie) -> for_expr `Concrete env ?ety ie)
                     fields init1 in
                 Some init1
 
@@ -3834,7 +3859,7 @@ let for_asset_decl ?(force = false) (env : env) (decl : PT.asset_decl loced) =
                 List.fold_left (fun init1 ({pldesc = x; plloc = tloc}, e) ->
                     let {pldesc = _, fty, _} =
                       List.find (fun {pldesc = (y, _, _)} -> x = y) fields in
-                    let e = for_expr env ?ety:fty e in
+                    let e = for_expr `Concrete env ?ety:fty e in
                     Mid.update x (fun es -> Some ((e, tloc) :: (Option.get_dfl [] es))) init1
                   ) Mid.empty init1 in
 
@@ -3960,7 +3985,7 @@ let for_acttx_decl (env : env) (decl : acttx loced) =
         Env.inscope env (fun env ->
             let env, args = for_args_decl env args in
             let env, poeffect =
-              Option.foldmap for_effect env (Option.fst i_exts) in
+              Option.foldmap (for_effect `Concrete) env (Option.fst i_exts) in
             let effect = Option.map snd poeffect in
             let poenv  = Option.get_dfl env (Option.map fst poeffect) in
             let env, (callby, reqs, fais, spec, funs) =
@@ -4155,9 +4180,9 @@ let for_grouped_declarations (env : env) (toploc, g) =
   let env, enums     = for_enums_decl     env g.gr_enums     in
   let env, variables = for_vars_decl      env g.gr_vars      in
   let env, assets    = for_assets_decl    env g.gr_assets    in
+  let env, specs     = for_specs_decl     env g.gr_specs     in
   let env, functions = for_funs_decl      env g.gr_funs      in
   let env, acttxs    = for_acttxs_decl    env g.gr_acttxs    in
-  let env, specs     = for_specs_decl     env g.gr_specs     in
   let env, secspecs  = for_secs_decl      env g.gr_secs      in
 
   let output =
