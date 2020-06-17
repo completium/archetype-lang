@@ -2681,7 +2681,7 @@ let rename_shadow_variable (model : model) : model =
 let concat_shadown_effect_to_exec (model : model) : model =
   let set_storage_ident = ref SetString.empty in
   List.iter (fun (si : storage_item) -> set_storage_ident := SetString.add (unloc si.id) !set_storage_ident) model.storage;
-  let for_mterm (x : mterm) : mterm =
+  let for_mterm _ctx (x : mterm) : mterm =
     let rec aux (mt : mterm) : mterm =
       match mt.node with
       | Mvar (id, _) when SetString.mem (unloc id) !set_storage_ident -> { mt with node = Mvar (id, Vstorevar)}
@@ -2697,7 +2697,7 @@ let concat_shadown_effect_to_exec (model : model) : model =
     let shadow_effect_opt = Option.map (fun s -> s.effects) f__.spec in
     let shadow_effects =
       match shadow_effect_opt with
-      | Some l -> List.map for_mterm l
+      | Some l -> List.map (for_mterm ()) l
       | _ -> []
     in
     let for_function_node (fn : function_node) : function_node =
@@ -2711,7 +2711,14 @@ let concat_shadown_effect_to_exec (model : model) : model =
       | Function (fs, t) -> Function (for_function_struct fs, t)
       | Entry fs         -> Entry (for_function_struct fs)
     in
-    {f__ with node = for_function_node f__.node}
+    let remove_shadow_effect (spec : specification) : specification =
+    spec
+    |> map_specification (mk_ctx_model ()) for_mterm
+    |> (fun spec -> {spec with effects = [] })
+    in
+    { f__ with
+      node = for_function_node f__.node;
+      spec = Option.map remove_shadow_effect f__.spec}
   in
   { model with
     functions = List.map for_function__ model.functions;
