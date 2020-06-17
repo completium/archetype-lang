@@ -510,7 +510,7 @@ let check_and_replace_init_caller (model : model) : model =
   end;
   { model with decls = decls }
 
-let is_literal (mt : mterm) : bool =
+let rec is_literal (mt : mterm) : bool =
   match mt.node with
   | Mint       _
   | Muint      _
@@ -532,8 +532,8 @@ let is_literal (mt : mterm) : bool =
   | Mlitset    _
   | Mlitlist   _
   | Mlitmap    _
-  | Mlitrecord _
-    -> true
+  | Mlitrecord _ -> true
+  | Mcast (_, _, v) -> is_literal v
   | _ -> false
 
 let check_duplicated_keys_in_asset (model : model) : model =
