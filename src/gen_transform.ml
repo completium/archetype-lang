@@ -2680,7 +2680,11 @@ let rename_shadow_variable (model : model) : model =
 
 let concat_shadown_effect_to_exec (model : model) : model =
   let set_storage_ident = ref SetString.empty in
-  List.iter (fun (si : storage_item) -> set_storage_ident := SetString.add (unloc si.id) !set_storage_ident) model.storage;
+  List.iter (fun (si : storage_item) ->
+    match si.model_type with
+    | MTvar -> set_storage_ident := SetString.add (unloc si.id) !set_storage_ident
+    | _ -> ()
+    ) model.storage;
   let for_mterm _ctx (x : mterm) : mterm =
     let rec aux (mt : mterm) : mterm =
       match mt.node with
