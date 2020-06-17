@@ -2131,7 +2131,8 @@ let rec for_xexpr
                 let the, method_, args = Option.get_fdfl bailout infos in
                 let rty =
                   Option.map (fun ty -> let `T ty = ty in ty) (snd (method_.mth_sig)) in
-                (the, None, method_.mth_name, (method_.mth_place, method_.mth_purity, method_.mth_totality), args, rty)
+                (the, None, method_.mth_name,
+                 (method_.mth_place, method_.mth_purity, method_.mth_totality), args, rty)
             end
         in
 
@@ -3228,15 +3229,15 @@ let for_specification_item
     in (env, poenv), [`Predicate (x, args, f)]
 
   | PT.Vdefinition (x, ty, y, f) ->
-    let env, def =
-      Env.inscope env (fun env ->
-        let env, arg = for_arg_decl env (y, ty, None) in
+    let poenv, def =
+      Env.inscope poenv (fun poenv ->
+        let poenv, arg = for_arg_decl poenv (y, ty, None) in
 
         match arg with
         | Some ((_, M.Tasset asset) as arg) ->
-          let f = for_formula env f in (env, Some (asset, arg, f))
+          let f = for_formula poenv f in (poenv, Some (asset, arg, f))
 
-        | _ -> (env, None)) in
+        | _ -> (poenv, None)) in
 
     let decl =
       Option.map (fun (asset, arg, f) ->
