@@ -2713,7 +2713,7 @@ and for_gen_method_call mode env theloc (the, m, args)
         M.AEffect (Option.get_dfl [] (for_arg_effect mode env ~update asset arg))
 
       | `SubColl ->
-        let ty = M.Tcontainer (Tasset asset.as_name, M.Collection) in
+        let ty = M.Tcontainer (Tasset asset.as_name, M.View) in
         M.AExpr (for_xexpr mode env ~ety:ty arg)
 
       | `T ty ->
