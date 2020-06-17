@@ -14,8 +14,8 @@ entry exec () {
 }
 
 security {
-  g1 : only_by_role (anyaction, admin);
-  g2 : only_in_action (remove (myasset), [exec or exec]);
-  g3 : not_in_action (add (myasset), exec);
+  g1 : only_by_role (anyentry, admin);
+  g2 : only_in_entry (remove (myasset), [exec or exec]);
+  g3 : not_in_entry (add (myasset), exec);
   g4 : no_storage_fail (exec);
 }
