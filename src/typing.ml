@@ -17,6 +17,7 @@ module Type : sig
   val as_option           : M.ptyp -> M.ptyp option
   val as_list             : M.ptyp -> M.ptyp option
 
+  val is_asset     : M.ptyp -> bool
   val is_numeric   : M.ptyp -> bool
   val is_currency  : M.ptyp -> bool
   val is_primitive : M.ptyp -> bool
@@ -49,6 +50,9 @@ end = struct
   let as_asset_collection = function
     | M.Tcontainer (M.Tasset asset, c) -> Some (asset, c)
     | _ -> None
+
+  let is_asset = function
+    | M.Tasset _ -> true |  _ -> false
 
   let is_numeric = function
     | M.Tbuiltin (M.VTint | M.VTrational) -> true |  _ -> false
@@ -244,6 +248,7 @@ type error_desc =
   | CannotInitShadowField
   | CannotUpdatePKey
   | CollectionExpected
+  | ContainerOfNonAsset
   | ContractInvariantInLocalSpec
   | DoesNotSupportMethodCall
   | DivergentExpr
@@ -396,6 +401,7 @@ let pp_error_desc fmt e =
   | CannotInitShadowField              -> pp "Cannot initialize a shadow field"
   | CannotUpdatePKey                   -> pp "Cannot modify the primary key of asset"
   | CollectionExpected                 -> pp "Collection expected"
+  | ContainerOfNonAsset                -> pp "The base type of a container must be an asset type"
   | ContractInvariantInLocalSpec       -> pp "Contract invariants at local levl are forbidden"
   | DoesNotSupportMethodCall           -> pp "Cannot use method calls on this kind of objects"
   | DivergentExpr                      -> pp "Divergent expression"
@@ -1529,8 +1535,12 @@ let rec for_type_exn (env : env) (ty : PT.type_t) : M.ptyp =
     let decl = Env.Asset.lookup env (unloc x) in
     M.Tasset (Option.get_exn InvalidType decl).as_name
 
-  | Tcontainer (ty, ctn) ->
-    M.Tcontainer (for_type_exn env ty, for_container env ctn)
+  | Tcontainer (pty, ctn) ->
+    let ty = for_type_exn env pty in
+
+    if not (Type.is_asset ty) then
+      Env.emit_error env (loc pty, ContainerOfNonAsset);
+    M.Tcontainer (ty, for_container env ctn)
 
   | Tlist ty ->
     M.Tlist (for_type_exn env ty)
