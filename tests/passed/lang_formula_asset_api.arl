@@ -9,7 +9,7 @@ asset my_asset identified by id {
   {"id2"; 2}
 }
 
-entry exec (x : int) {
+entry exec (n : int) {
 
   specification {
     (* quantifiers *)
@@ -30,28 +30,26 @@ entry exec (x : int) {
     s5: removed.my_asset.isempty();      (* Msetremoved *)
 
     (* formula asset collection methods *)
-    f01: let some a = my_asset.get("id0") in true otherwise false;      (* Mapifget      *)
-    f02: my_asset.subsetof(my_asset);                                   (* Mapifsubsetof *)
-    f03: my_asset.isempty();                                            (* Mapifisempty  *)
-    f04: my_asset.select(the.value > 0).isempty();                      (* Mapifselect   *)
-    f05: my_asset.sort(value).isempty();                                (* Mapifsort     *)
-    f06: my_asset.contains("key");                                      (* Mapifcontains *)
-    f07: let some a = my_asset.nth(0) in a.value = 0 otherwise false;   (* Mapifnth      *)
-    f08: my_asset.count() = 0;                                          (* Mapifcount    *)
-    f09: my_asset.sum(the.value) = 0;                                   (* Mapifsum      *)
-    f10: let some a = my_asset.max(the.value) in a = 0 otherwise false; (* Mapifmax      *)
-    f11: let some a = my_asset.min(the.value) in a = 0 otherwise false; (* Mapifmin      *)
-    f12: my_asset.head(2).isempty();                                    (* Mapifhead     *)
-    f13: my_asset.tail(2).isempty();                                    (* Mapiftail     *)
-    f14: before.x = 0;
-    f15: at(lbl).x = 0;
+    f01: let some a = my_asset.get("id0") in true otherwise false;
+    f02: my_asset.subsetof(my_asset);
+    f03: my_asset.isempty();
+    f04: my_asset.select(the.value > 0).isempty();
+    f05: my_asset.sort(value).isempty();
+    f06: my_asset.contains("key");
+    f07: let some a = my_asset.nth(0) in a = "id0" otherwise false;
+    f08: my_asset.count() = 0;
+    f09: my_asset.sum(the.value) = 0;
+    f12: my_asset.head(2).isempty();
+    f13: my_asset.tail(2).isempty();
+    f14: before.n = 0;
+    f15: at(lbl).n = 0;
   }
 
   effect {
     my_asset.add({"id3"; 3});
     label lbl;
     my_asset.add({"id4"; 4});
-    require(x = 0)
+    require(n = 0)
   }
 }
 

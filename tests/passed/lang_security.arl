@@ -14,13 +14,13 @@ entry exec () {
 }
 
 security {
-  s00 : only_by_role (anyaction, admin);
-  s01 : only_in_action (anyaction, exec);
-  s02 : only_by_role_in_action (anyaction, admin, exec);
-  s03 : not_by_role (anyaction, admin);
-  s04 : not_in_action (anyaction, exec);
-  s05 : not_by_role_in_action (anyaction, admin, exec);
-  s06 : transferred_by (anyaction);
-  s07 : transferred_to (anyaction);
-  s08 : no_storage_fail (anyaction);
+  s00 : only_by_role (anyentry, admin);
+  s01 : only_in_entry (anyentry, exec);
+  s02 : only_by_role_in_entry (anyentry, admin, exec);
+  s03 : not_by_role (anyentry, admin);
+  s04 : not_in_entry (anyentry, exec);
+  s05 : not_by_role_in_entry (anyentry, admin, exec);
+  s06 : transferred_by (anyentry);
+  s07 : transferred_to (anyentry);
+  s08 : no_storage_fail (anyentry);
 }

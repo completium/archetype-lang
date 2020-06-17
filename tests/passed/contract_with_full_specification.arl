@@ -39,7 +39,7 @@ entry exec () {
     }
 
     postcondition s1 {
-      x = y
+      true
       invariant for myloop {
         x = 0;
         y = 0
