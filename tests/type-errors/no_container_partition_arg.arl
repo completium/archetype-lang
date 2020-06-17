@@ -1,13 +1,13 @@
-archetype no_arg_subset
+archetype no_container_partition_arg
 
 asset et identified by cid { cid: int; }
 
 asset e identified by eid {
 	eid			: string;
-	cells		: et subset;
+	cells		: et partition;
 }
 
-entry start (cl: et subset) {
+entry start (cl: et partition) {
 	effect {
 		var ev : e = { eid = "123"; cells = cl };
 	}
