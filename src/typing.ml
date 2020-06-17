@@ -1487,12 +1487,14 @@ let rec valid_var_or_arg_type (ty : M.ptyp) =
   | Tenum      _ -> true
   | Tcontract  _ -> true
   | Tbuiltin   _ -> true
-  | Tcontainer _ -> false
   | Tlist      ty -> valid_var_or_arg_type ty
   | Ttuple     ty -> List.for_all valid_var_or_arg_type ty
   | Toption    ty -> valid_var_or_arg_type ty
   | Tentry        -> false
   | Ttrace     _  -> false
+
+  | Tcontainer (_, M.View) -> true
+  | Tcontainer (_,      _) -> false
 
 (* -------------------------------------------------------------------- *)
 let for_container (_ : env) = function
@@ -1667,7 +1669,8 @@ let expr_mode imode = { em_kind = `Expr imode; em_pred = false; }
 let form_mode       = { em_kind = `Formula   ; em_pred = false; }
 
 let rec for_xexpr
-    (mode : emode_t) ?(capture = `Yes None) (env : env) ?(ety : M.ptyp option) (tope : PT.expr)
+    (mode : emode_t) ?(autoview = true) ?(capture = `Yes None)
+    (env : env) ?(ety : M.ptyp option) (tope : PT.expr)
   =
   let for_xexpr = for_xexpr mode ~capture in
 
@@ -2200,7 +2203,7 @@ let rec for_xexpr
           | `Pk      -> Some (Option.get (get_field (unloc asset.as_pk) asset)).fd_type
           | _        -> assert false in
 
-        let the = for_xexpr env the in
+        let the = for_xexpr ~autoview:false env the in
 
         let the, asset, mname, (place, purity, totality), args, rty =
           match the.M.type_ with
@@ -2216,9 +2219,9 @@ let rec for_xexpr
 
                 let the =
                   if c <> M.View && method_.mth_purity = `Pure then
-                    cast_expr env (Some (M.Tcontainer (M.Tasset asset.as_name, M.View))) the
+                    cast_expr ~autoview:true env
+                      (Some (M.Tcontainer (M.Tasset asset.as_name, M.View))) the
                   else the in
-
 
                 (the, Some (asset, c), method_.mth_name,
                  (method_.mth_place, method_.mth_purity, method_.mth_totality), args, rty)
@@ -2405,12 +2408,21 @@ let rec for_xexpr
   in
 
   try
-    cast_expr env ety (doit ())
+    cast_expr ~autoview env ety (doit ())
 
   with E.Bailout -> dummy ety
 
 (* -------------------------------------------------------------------- *)
-and cast_expr (env : env) (to_ : M.ptyp option) (e : M.pterm) =
+and cast_expr ~(autoview : bool) (env : env) (to_ : M.ptyp option) (e : M.pterm) =
+  let to_ =
+    if not autoview then to_ else begin
+      match e.M.type_, to_ with
+      | Some (M.Tcontainer (asset, ctn)), None when ctn <> M.View ->
+          Some (M.Tcontainer (asset, M.View))
+      | _, _ -> to_
+    end
+  in
+
   match to_, e with
   | Some to_, { type_ = Some from_ } ->
     if not (Type.compatible ~from_ ~to_) then
@@ -2425,14 +2437,14 @@ and cast_expr (env : env) (to_ : M.ptyp option) (e : M.pterm) =
 and join_expr (env : env) (ety : M.ptyp option) (es : M.pterm list) =
   match ety with
   | Some _ ->
-    (ety, List.map (cast_expr env ety) es)
+    (ety, List.map (cast_expr ~autoview:false env ety) es)
 
   | _ -> begin
       match Type.join (List.pmap (fun e -> e.M.type_) es) with
       | None ->
         (None, es)
       | Some _ as ty ->
-        (ty, List.map (cast_expr env ty) es)
+        (ty, List.map (cast_expr ~autoview:false env ty) es)
     end
 
 (* -------------------------------------------------------------------- *)
@@ -2780,7 +2792,9 @@ and for_arg_effect
             in
 
             let op  = for_assignment_operator op in
-            let e   = for_assign_expr ~asset:true mode env (loc x) (op, fty, rfty) e in
+            let e   = for_assign_expr
+                        ~autoview:false ~asset:true mode env
+                        (loc x) (op, fty, rfty) e in
 
             if Mid.mem (unloc x) map then begin
               Env.emit_error env (loc x, DuplicatedFieldInRecordLiteral (unloc x));
@@ -2809,7 +2823,7 @@ and for_arg_effect
             | None ->
               if Option.is_none field.fd_dfl then
                 Env.emit_error env (loc tope,
-                                    MissingFieldInRecordLiteral (unloc field.fd_name))
+                  MissingFieldInRecordLiteral (unloc field.fd_name))
 
             | Some (x, `Assign op, _) ->
               if op <> M.ValueAssign && Option.is_none field.fd_dfl then
@@ -2825,7 +2839,7 @@ and for_arg_effect
     None
 
 (* -------------------------------------------------------------------- *)
-and for_assign_expr ?(asset = false) mode env orloc (op, lfty, rfty) e =
+and for_assign_expr ?(autoview = true) ?(asset = false) mode env orloc (op, lfty, rfty) e =
   let op =
     match op with
     | ValueAssign -> None
@@ -2838,13 +2852,14 @@ and for_assign_expr ?(asset = false) mode env orloc (op, lfty, rfty) e =
   in
 
   let ety = if Option.is_none op then Some rfty else None in
-  let e = for_xexpr mode env ?ety e in
+  let e = for_xexpr ~autoview mode env ?ety e in
 
   Option.get_dfl e (
     op |> Option.bind (fun op  ->
       e.type_ |> Option.bind (fun ety ->
         select_operator env ~asset orloc (op, [lfty; ety])
-          |> Option.map (fun sig_ -> cast_expr env (Some (List.last sig_.osl_sig)) e))))
+          |> Option.map (fun sig_ ->
+                 cast_expr ~autoview env (Some (List.last sig_.osl_sig)) e))))
 
 (* -------------------------------------------------------------------- *)
 and for_formula (env : env) (topf : PT.expr) : M.pterm =
@@ -2928,8 +2943,11 @@ and for_role (env : env) (name : PT.lident) =
     else Some name
 
 (* -------------------------------------------------------------------- *)
-let for_expr (kind : imode_t) (env : env) ?(ety : M.type_ option) (tope : PT.expr) : M.pterm =
-  for_xexpr (expr_mode kind) env ?ety tope
+let for_expr
+  (kind : imode_t) ?autoview (env : env) ?(ety : M.type_ option)
+  (tope : PT.expr) : M.pterm
+=
+  for_xexpr (expr_mode kind) ?autoview env ?ety tope
 
 (* -------------------------------------------------------------------- *)
 let for_lbl_expr
@@ -3060,7 +3078,7 @@ let rec for_instruction_r
   try
     match unloc i with
     | Emethod (pthe, m, args) -> begin
-        let the = for_expr kind env pthe in
+        let the = for_expr ~autoview:false kind env pthe in
 
         match the.M.type_ with
         | Some ty -> begin
@@ -3077,7 +3095,8 @@ let rec for_instruction_r
 
               let the =
                 if c <> M.View && method_.mth_purity = `Pure then
-                  cast_expr env (Some (M.Tcontainer (M.Tasset asset.as_name, M.View))) the
+                  cast_expr ~autoview:false env
+                    (Some (M.Tcontainer (M.Tasset asset.as_name, M.View))) the
                 else the in
 
               env, mki (M.Icall (Some the, M.Cconst method_.mth_name, args))
@@ -3281,7 +3300,7 @@ let rec for_instruction_r
 
       Option.iter (fun ty ->
         if not (valid_var_or_arg_type ty) then
-          Env.emit_error env (loc x, InvalidVarOrArgType)) ty;
+          Env.emit_error env (loc x, InvalidVarOrArgType)) v.M.type_;
 
       env, mki (M.Ideclvar (x, v))
 
