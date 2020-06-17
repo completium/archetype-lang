@@ -241,6 +241,7 @@ type error_desc =
   | CannotInferAnonRecord
   | CannotInferCollectionType
   | CannotInfer
+  | CannotInitShadowField
   | CannotUpdatePKey
   | CollectionExpected
   | ContractInvariantInLocalSpec
@@ -280,6 +281,7 @@ type error_desc =
   | InvalidRoleExpression
   | InvalidSecurityAction
   | InvalidSecurityRole
+  | InvalidShadowFieldAccess
   | InvalidSortingExpression
   | InvalidStateExpression
   | InvalidTypeForPk
@@ -288,6 +290,7 @@ type error_desc =
   | LetInElseOnNonOption
   | MethodCallInPredicate
   | MissingFieldInRecordLiteral        of ident
+  | MissingInitValueForShadowField
   | MixedAnonInRecordLiteral
   | MixedFieldNamesInRecordLiteral     of ident list
   | MoreThanOneInitState               of ident list
@@ -390,6 +393,7 @@ let pp_error_desc fmt e =
   | CannotInferAnonRecord              -> pp "Cannot infer anonymous record"
   | CannotInferCollectionType          -> pp "Cannot infer collection type"
   | CannotInfer                        -> pp "Cannot infer type"
+  | CannotInitShadowField              -> pp "Cannot initialize a shadow field"
   | CannotUpdatePKey                   -> pp "Cannot modify the primary key of asset"
   | CollectionExpected                 -> pp "Collection expected"
   | ContractInvariantInLocalSpec       -> pp "Contract invariants at local levl are forbidden"
@@ -437,6 +441,7 @@ let pp_error_desc fmt e =
   | LetInElseOnNonOption               -> pp "Let in else on non-option type"
   | MethodCallInPredicate              -> pp "Cannot call methods in predicates"
   | MissingFieldInRecordLiteral i      -> pp "Missing field in record literal: %a" pp_ident i
+  | MissingInitValueForShadowField     -> pp "Shadow fields must have a default value"
   | MixedAnonInRecordLiteral           -> pp "Mixed anonymous in record literal"
   | MixedFieldNamesInRecordLiteral l   -> pp "Mixed field names in record literal: %a" (Printer_tools.pp_list "," pp_ident) l
   | MoreThanOneInitState l             -> pp "More than one initial state: %a" (Printer_tools.pp_list ", " pp_ident) l
@@ -467,6 +472,7 @@ let pp_error_desc fmt e =
   | PredicateCallInExpr                -> pp "Cannot access predicates in code"
   | ReadOnlyGlobal i                   -> pp "Global is read only: %a" pp_ident i
   | SecurityInExpr                     -> pp "Found securtiy predicate in expression"
+  | InvalidShadowFieldAccess           -> pp "Shadow field access in non-shadow code"
   | SpecOperatorInExpr                 -> pp "Specification operator in expression"
   | TransferWithoutDest                -> pp "Transfer without destination"
   | UninitializedVar                   -> pp "This variable declaration is missing an initializer"
@@ -1828,7 +1834,8 @@ let rec for_xexpr
 
           | Some (Some asset) ->
             let asset = Env.Asset.get env (unloc asset) in
-            let ne, ng = List.length fields, List.length asset.as_fields in
+            let ne    = List.length fields in
+            let ng    = List.count (fun f -> not f.fd_ghost) asset.as_fields in
 
             if ne <> ng then begin
               Env.emit_error env (loc tope, InvalidFieldsCountInRecordLiteral);
@@ -1849,10 +1856,15 @@ let rec for_xexpr
               Mid.update fname (function
                   | None -> begin
                       let asset = Env.Asset.byfield env fname in
-                      if Option.is_none asset then begin
-                        let err = UnknownFieldName fname in
-                        Env.emit_error env (loc tope, err)
-                      end; Some (asset, [e])
+
+                      begin match asset with
+                      | None ->
+                        Env.emit_error env (loc tope, UnknownFieldName fname)
+                      | Some (_, fd) ->
+                        if fd.fd_ghost then
+                          Env.emit_error env (loc tope, CannotInitShadowField)
+                      end;
+                      Some (asset, [e])
                     end
 
                   | Some (asset, es) ->
@@ -1960,7 +1972,9 @@ let rec for_xexpr
               let err = UnknownField (unloc asset.as_name, unloc x) in
               Env.emit_error env (loc x, err); bailout ()
 
-            | Some { fd_type = fty } ->
+            | Some { fd_type = fty; fd_ghost = ghost } ->
+              if ghost && mode.em_kind <> `Formula then
+                Env.emit_error env (loc x, InvalidShadowFieldAccess);
               mk_sp (Some fty) (M.Pdot (e, x))
           end
       end
@@ -2720,7 +2734,7 @@ and for_arg_effect
 
       | Some (op, x) -> begin
           match get_field (unloc x) asset with
-          | Some { fd_type = fty } ->
+          | Some { fd_type = fty; fd_ghost = fghost } ->
             let rfty =
               match fty with
               | M.Tcontainer (M.Tasset subasset, M.Subset) -> begin
@@ -2740,6 +2754,9 @@ and for_arg_effect
               map
             end else if (unloc x) = unloc asset.as_pk then begin
               Env.emit_error env (loc x, UpdateEffectOnPkey);
+              map
+            end else if mode.em_kind = `Expr `Concrete && fghost then begin
+              Env.emit_error env (loc x, InvalidShadowFieldAccess);
               map
             end else
               Mid.add (unloc x) (x, `Assign op, e) map
@@ -3762,27 +3779,38 @@ let for_funs_decl (env : env) (decls : PT.s_function loced list) =
 
 (* -------------------------------------------------------------------- *)
 let for_asset_decl ?(force = false) (env : env) (decl : PT.asset_decl loced) =
-  let (x, fields, shadow_fields, opts, postopts, _ (* FIXME *), _) = unloc decl in
+  let (x, cfields, sfields, opts, postopts, _ (* FIXME *), _) = unloc decl in
 
   let for_field field =
-    let PT.Ffield (f, fty, init, _) = unloc field in
+    let (f, fty, init, shadow) = field in
     let fty  = for_type env fty in
     let init = Option.map (for_expr `Concrete env ?ety:fty) init in
 
     if   check_and_emit_name_free env f
-    then Some (mkloc (loc f) (unloc f, fty, init))
+    then Some (mkloc (loc f) (unloc f, fty, init, shadow))
     else None in
 
-  let fields = List.pmap for_field (fields @ shadow_fields) in
+  let fields =
+    let cfields =
+      List.map
+        (fun { pldesc = PT.Ffield (x, ty, e, _) } -> (x, ty, e, false))
+        cfields in
+
+    let sfields =
+      List.map
+        (fun { pldesc = PT.Ffield (x, ty, e, _) } -> (x, ty, e,  true))
+        sfields in
+
+      List.pmap for_field (cfields @ sfields) in
 
   Option.iter
-    (fun (_, { plloc = lc; pldesc = (name, _, _) }) ->
+    (fun (_, { plloc = lc; pldesc = (name, _, _, _) }) ->
        Env.emit_error env (lc, DuplicatedFieldInAssetDecl name))
-    (List.find_dup (fun x -> proj3_1 (unloc x)) fields);
+    (List.find_dup (fun x -> proj4_1 (unloc x)) fields);
 
   let get_field name =
     List.Exn.find
-      (fun { pldesc = (x, _, _) } -> x = name)
+      (fun { pldesc = (x, _, _, _) } -> x = name)
       fields
   in
 
@@ -3812,12 +3840,12 @@ let for_asset_decl ?(force = false) (env : env) (decl : PT.asset_decl loced) =
     let pk =
       match pk with
       | None ->
-        Option.map (L.lmap proj3_1) (List.ohead fields)
+        Option.map (L.lmap proj4_1) (List.ohead fields)
       | Some _ -> pk in
 
     Option.iter (fun pk ->
         match Option.get (get_field (unloc pk)) with
-        | { pldesc = _, Some ty, _; plloc = loc; } ->
+        | { pldesc = _, Some ty, _, _; plloc = loc; } ->
           if not (Type.pktype ty) then
             Env.emit_error env (loc, InvalidTypeForPk)
         | _ -> ()
@@ -3831,7 +3859,7 @@ let for_asset_decl ?(force = false) (env : env) (decl : PT.asset_decl loced) =
       | PT.APOconstraints invs ->
         Env.inscope env (fun env ->
             let env =
-              List.fold_left (fun env { pldesc = (f, fty, _); plloc = loc; } ->
+              List.fold_left (fun env { pldesc = (f, fty, _, _); plloc = loc; } ->
                   Option.fold (fun env fty ->
                       Env.Local.push env (mkloc loc f, fty)) env fty)
                 env fields
@@ -3880,7 +3908,7 @@ let for_asset_decl ?(force = false) (env : env) (decl : PT.asset_decl loced) =
               end else
                 let init1 =
                   List.map2
-                    (fun { pldesc = (_, ety, _) } (_, ie) -> for_expr `Concrete env ?ety ie)
+                    (fun { pldesc = (_, ety, _, _) } (_, ie) -> for_expr `Concrete env ?ety ie)
                     fields init1 in
                 Some init1
 
@@ -3895,14 +3923,14 @@ let for_asset_decl ?(force = false) (env : env) (decl : PT.asset_decl loced) =
 
               let init1 =
                 List.filter (fun (x, _) ->
-                  if not (List.exists (fun {pldesc = (y, _, _)} -> unloc x = y) fields) then
+                  if not (List.exists (fun {pldesc = (y, _, _, _)} -> unloc x = y) fields) then
                     (Env.emit_error env (loc x, UnknownFieldName (unloc x)); false)
                   else true) init1 in
 
               let init1 =
                 List.fold_left (fun init1 ({pldesc = x; plloc = tloc}, e) ->
-                    let {pldesc = _, fty, _} =
-                      List.find (fun {pldesc = (y, _, _)} -> x = y) fields in
+                    let {pldesc = _, fty, _, _} =
+                      List.find (fun {pldesc = (y, _, _, _)} -> x = y) fields in
                     let e = for_expr `Concrete env ?ety:fty e in
                     Mid.update x (fun es -> Some ((e, tloc) :: (Option.get_dfl [] es))) init1
                   ) Mid.empty init1 in
@@ -3914,7 +3942,7 @@ let for_asset_decl ?(force = false) (env : env) (decl : PT.asset_decl loced) =
                     (List.chop (List.rev es))
                 ) init1;
 
-              let init1 = List.map (fun {pldesc = (x, _, e); plloc = lloc} ->
+              let init1 = List.map (fun {pldesc = (x, _, e, _); plloc = lloc} ->
                   match Mid.find_opt x init1 with
                   | None when Option.is_none e ->
                       Env.emit_error env (lloc, MissingFieldInRecordLiteral x);
@@ -3935,6 +3963,11 @@ let for_asset_decl ?(force = false) (env : env) (decl : PT.asset_decl loced) =
         None
     in List.flatten (List.pmap for1 postopts) in
 
+  List.iter (fun { pldesc = (_, _, init, shadow); plloc = xloc } ->
+    if shadow && Option.is_none init then
+      Env.emit_error env (xloc, MissingInitValueForShadowField))
+    fields;
+
   if not force && not (check_and_emit_name_free env x) then begin
     (env, None)
   end else
@@ -3946,20 +3979,20 @@ let for_asset_decl ?(force = false) (env : env) (decl : PT.asset_decl loced) =
         raise E.Bailout
       end;
 
-      let get_field_type { plloc = loc; pldesc = (x, ty, e) } =
+      let get_field_type { plloc = loc; pldesc = (x, ty, e, shadow) } =
         let ty =
           if   Option.is_some ty
           then ty
           else Option.bind (fun e -> e.M.type_) e
         in { fd_name = mkloc loc x; fd_type = Option.get ty;
-             fd_dfl = e; fd_ghost = false; }
+             fd_dfl = e; fd_ghost = shadow; }
       in
 
       let decl = {
         as_name   = x;
         as_fields = List.map get_field_type fields;
         as_pk     = Option.get_fdfl
-            (fun () -> L.lmap proj3_1 (List.hd fields))
+            (fun () -> L.lmap proj4_1 (List.hd fields))
             pk;
         as_sortk  = sortk;
         as_invs   = List.flatten invs;

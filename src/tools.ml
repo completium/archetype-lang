@@ -12,6 +12,11 @@ let proj3_1 (x, _, _) = x
 let proj3_2 (_, x, _) = x
 let proj3_3 (_, _, x) = x
 
+let proj4_1 (x, _, _, _) = x
+let proj4_2 (_, x, _, _) = x
+let proj4_3 (_, _, x, _) = x
+let proj4_4 (_, _, _, x) = x
+
 let fst_map f (x, y) = (f x, y)
 let snd_map f (x, y) = (x, f y)
 
@@ -209,6 +214,7 @@ module List : sig
   val dedup         : 'a list -> 'a list
   val last          : 'a list -> 'a
   val for_all2      : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
+  val count         : ('a -> bool) -> 'a list -> int
 
   module Exn : sig
     val assoc     : 'a -> ('a * 'b) list -> 'b option
@@ -341,6 +347,12 @@ end = struct
     if List.length l1 <> List.length l2
     then false
     else aux p l1 l2
+
+  let count (f : 'a -> bool) =
+    let rec doit acc = function
+      | []      -> acc 
+      | x :: xs -> doit (acc + if f x then 1 else 0) xs
+    in fun xs -> doit 0 xs
 
   module Exn = struct
     let assoc x xs =
