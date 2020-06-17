@@ -287,6 +287,7 @@ type error_desc =
   | InvalidSecurityAction
   | InvalidSecurityRole
   | InvalidShadowFieldAccess
+  | InvalidShadowVariableAccess
   | InvalidSortingExpression
   | InvalidStateExpression
   | InvalidTypeForPk
@@ -481,6 +482,7 @@ let pp_error_desc fmt e =
   | ReadOnlyGlobal i                   -> pp "Global is read only: %a" pp_ident i
   | SecurityInExpr                     -> pp "Found securtiy predicate in expression"
   | InvalidShadowFieldAccess           -> pp "Shadow field access in non-shadow code"
+  | InvalidShadowVariableAccess        -> pp "Shadow variable access in non-shadow code"
   | SpecOperatorInExpr                 -> pp "Specification operator in expression"
   | TransferWithoutDest                -> pp "Transfer without destination"
   | UninitializedVar                   -> pp "This variable declaration is missing an initializer"
@@ -1735,6 +1737,12 @@ let rec for_xexpr
           mk_sp (Some xty) (M.Pvar (vt, Vnone, x))
 
         | Some (`Global decl) -> begin
+            begin match mode.em_kind, decl.vr_kind with
+            | `Expr `Concrete, `Ghost ->
+                Env.emit_error env (loc tope, InvalidShadowVariableAccess)
+            | _, _ -> ()
+            end;
+
             match decl.vr_def with
             | Some (body, `Inline) ->
               body
