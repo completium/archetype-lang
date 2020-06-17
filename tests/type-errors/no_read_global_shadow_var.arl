@@ -1,0 +1,11 @@
+archetype shadow_read_global_var_effect
+
+entry exec () {
+  effect {
+    require(myvar = 0)
+  }
+}
+
+specification {
+  variable myvar : int = 1
+}
