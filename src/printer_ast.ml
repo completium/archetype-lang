@@ -767,13 +767,18 @@ let pp_security fmt (s : security) =
       (pp_no_empty_list pp_security_item) s.items
 
 let pp_variable fmt (v : lident variable) =
-  Format.fprintf fmt "%s %a : %a%a%a%a@\n"
+  Format.fprintf fmt "%s %a : %a%a%a%a%a@\n"
     (if v.constant then "constant" else "variable")
     pp_id v.decl.name
     pp_ptyp (Option.get v.decl.typ)
     (pp_option (pp_prefix " from " pp_qualid)) v.from
     (pp_option (pp_prefix " to " pp_qualid)) v.to_
     (pp_option (pp_prefix " = " pp_pterm)) v.decl.default
+    (fun fmt l ->
+       if List.is_empty l
+       then ()
+       else Format.fprintf fmt " { @[%a@] }" (pp_list ";@\n" pp_label_term) l
+    ) v.invs
 
 let pp_field fmt (f : lident decl_gen) =
   Format.fprintf fmt "%a : %a%a;"
