@@ -74,9 +74,9 @@ entry consume (a : address, quantity : int) {
   }
 
   effect {
-    let by_expiration = owner[a].miles.select(the.expiration > now) in
+    var by_expiration = owner[a].miles.select(the.expiration > now);
     require (by_expiration.sum(the.amount) >= quantity);
-    let remainder = quantity in
+    var remainder = quantity;
     for : loop m in by_expiration do
       if remainder > 0
       then (
@@ -113,15 +113,15 @@ entry clear_expired () {
 
   effect {
     for : loop2 o in owner do
-      owner[o].miles.removeif (the.expiration < now)
+      owner[o].miles.select(the.expiration < now).clear()
     done
   }
 }
 
 security {
-  (*  this ensures that any mile was added with the 'add' action *)
-  g1 : only_by_role (anyaction, admin);
-  g2 : only_in_action (remove (mile), [consume or clear_expired]);
-  g3 : not_in_action (add (mile), consume);
+  (*  this ensures that any mile was added with the 'add' entry *)
+  g1 : only_by_role (anyentry, admin);
+  g2 : only_in_entry (remove (mile), [consume or clear_expired]);
+  g3 : not_in_entry (add (mile), consume);
   g4 : no_storage_fail (add)
 }
