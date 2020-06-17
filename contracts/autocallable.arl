@@ -111,9 +111,26 @@ function compute_expected (d : date) : tez {
     (** expected is the sum of redemption nominal and interests *)
     postcondition p_expected {
         let expected : tez =
-          let some ftrigger = etrigger.nth(0) in
+          let some ftrigger_key = etrigger.nth(0) in
+          let some ftrigger = early[ftrigger_key] in
           (* early redemption *)
           ftrigger.value * nominal
+          otherwise
+          (* redemption *)
+          (let some f = fixing.get(gredemption) in
+          if     f.bac >= bac_strike
+             and f.sg  >= sg_strike
+             and f.ubs >= ubs_strike
+          then
+             nominal
+          else
+            let bac_trigger = f.bac / bac_strike in
+            let sg_trigger  = f.sg  / sg_strike  in
+            let ubs_trigger = f.ubs / ubs_strike in
+            let worst = min ((min (bac_trigger, sg_trigger)), ubs_trigger) in
+            worst * nominal
+          otherwise 0tz)
+
           otherwise
           (* redemption *)
           let some f = fixing.get(gredemption) in
@@ -128,18 +145,22 @@ function compute_expected (d : date) : tez {
             let ubs_trigger = f.ubs / ubs_strike in
             let worst = min ((min (bac_trigger, sg_trigger)), ubs_trigger) in
             worst * nominal
-          otherwise true
+          otherwise 0tz
         in
         (* interests *)
         let interests =
-          let some lbarrier = ibarrier.last(0) in
-            let v = fixing.get(lbarrier.iobservation) in
+        if expected = 0tz then 0tz else
+          (let some lbarrier_key = ibarrier.nth(ibarrier.count() - 1) in
+          let some lbarrier = interest[lbarrier_key] in
+            let some v = fixing[lbarrier.iobservation] in
             if    v.bac >= lbarrier.barrier * bac_initial
               and v.sg  >= lbarrier.barrier * sg_initial
               and v.ubs >= lbarrier.barrier * ubs_initial
             then lbarrier.rate * nominal
             else 0tz
           otherwise 0tz
+          otherwise 0tz
+          otherwise 0tz)
         in
          result = expected + interests
     }
@@ -179,7 +200,7 @@ function compute_expected (d : date) : tez {
          expected += worst * nominal
       );
     (* expected interests *)
-    var exp_interests = 0.0;
+    var exp_interests = 0tz;
     for : interestloop i in interest do
       if interest[i].iobservation <= redeem_date and interest[i].payment <= d
       then (
