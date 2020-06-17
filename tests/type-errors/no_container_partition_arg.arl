@@ -9,6 +9,6 @@ asset e identified by eid {
 
 entry start (cl: et partition) {
 	effect {
-		var ev : e = { eid = "123"; cells = cl };
+		()
 	}
 }
