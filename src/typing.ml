@@ -318,6 +318,7 @@ type error_desc =
   | PackUnpackOnNonPrimitive
   | PartialMatch                       of ident list
   | PostConditionInGlobalSpec
+  | PredicateCallInExpr
   | ReadOnlyGlobal                     of ident
   | SecurityInExpr
   | SpecOperatorInExpr
@@ -463,6 +464,7 @@ let pp_error_desc fmt e =
   | PackUnpackOnNonPrimitive           -> pp "Cannot pack / unpack non primitive types"
   | PartialMatch ps                    -> pp "Partial match (%a)" (Printer_tools.pp_list ", " pp_ident) ps
   | PostConditionInGlobalSpec          -> pp "Post-conditions at global level are forbidden"
+  | PredicateCallInExpr                -> pp "Cannot access predicates in code"
   | ReadOnlyGlobal i                   -> pp "Global is read only: %a" pp_ident i
   | SecurityInExpr                     -> pp "Found securtiy predicate in expression"
   | SpecOperatorInExpr                 -> pp "Specification operator in expression"
@@ -793,6 +795,13 @@ type 'env fundecl = {
 }
 
 (* -------------------------------------------------------------------- *)
+type preddecl = {
+  pr_name  : M.lident;
+  pr_args  : (M.lident * M.ptyp) list;
+  pr_body  : M.pterm;
+}
+
+(* -------------------------------------------------------------------- *)
 type txeffect = {
   tx_state  : M.lident;
   tx_when   : M.pterm option;
@@ -873,6 +882,7 @@ module Env : sig
     | `Asset       of assetdecl
     | `Action      of t tactiondecl
     | `Function    of t fundecl
+    | `Predicate   of preddecl
     | `Field       of ident
     | `Contract    of contractdecl
     | `Context     of assetdecl * ident option
@@ -932,6 +942,13 @@ module Env : sig
     val push   : t -> t fundecl -> t
   end
 
+  module Predicate : sig
+    val lookup : t -> ident -> preddecl option
+    val get    : t -> ident -> preddecl
+    val exists : t -> ident -> bool
+    val push   : t -> preddecl -> t
+  end
+
   module State : sig
     val lookup : t -> ident -> statedecl option
     val get    : t -> ident -> statedecl
@@ -982,6 +999,7 @@ end = struct
     | `Asset       of assetdecl
     | `Action      of t tactiondecl
     | `Function    of t fundecl
+    | `Predicate   of preddecl
     | `Field       of ident
     | `Contract    of contractdecl
     | `Context     of assetdecl * ident option
@@ -1212,6 +1230,22 @@ end = struct
 
     let push (env : t) (decl : t fundecl) =
       push env ~loc:(loc decl.fs_name) (unloc decl.fs_name) (`Function decl)
+  end
+
+  module Predicate = struct
+    let proj = function `Predicate x -> Some x | _ -> None
+
+    let lookup (env : t) (name : ident) =
+      lookup_gen proj env name
+
+    let exists (env : t) (name : ident) =
+      Option.is_some (lookup env name)
+
+    let get (env : t) (name : ident) =
+      Option.get (lookup env name)
+
+    let push (env : t) (decl : preddecl) =
+      push env ~loc:(loc decl.pr_name) (unloc decl.pr_name) (`Predicate decl)
   end
 
   module Asset = struct
@@ -2006,6 +2040,27 @@ let rec for_xexpr
 
         in mk_sp (Some (sig_.osl_ret)) aout
       end
+
+    | Eapp (Fident f, args) when Env.Predicate.exists env (unloc f) ->
+      if mode.em_kind <> `Formula then begin
+        Env.emit_error env (loc tope, PredicateCallInExpr);
+        bailout ()
+      end;
+
+      let pred = Env.Predicate.get env (unloc f) in
+      let args = match args with [{ pldesc = Etuple args }] -> args | _ -> args in
+
+      let tyargs =
+        if List.length args <> List.length pred.pr_args then begin
+          let na = List.length args and ne = List.length pred.pr_args in
+          Env.emit_error env (loc tope, InvalidNumberOfArguments (na, ne));
+          List.make (fun _ -> None) ne
+        end else List.map (fun (_, ty) -> Some ty) pred.pr_args in
+
+      let args = List.map2 (fun ety e -> for_xexpr env ?ety e) tyargs args in
+      let args = List.map  (fun x -> M.AExpr x) args in
+
+      mk_sp (Some M.vtbool) (M.Pcall (None, M.Cid f, args))
 
     | Eapp (Fident f, args) when Env.Function.exists env (unloc f) ->
       let fun_ = Env.Function.get env (unloc f) in
@@ -3217,8 +3272,15 @@ let for_specification_item
           let env, args = for_args_decl env args in
           let args = List.pmap id args in
           let f = for_formula env f in
-          (env, (args, f)))
-    in (env, poenv), [`Predicate (x, args, f)]
+          (env, (args, f))) in
+
+    let decl = { pr_name = x; pr_args = args; pr_body = f; } in
+
+    let poenv =
+      if not (check_and_emit_name_free poenv x) then poenv else
+        Env.Predicate.push poenv decl in
+
+    (env, poenv), [`Predicate (x, args, f)]
 
   | PT.Vdefinition (x, ty, y, f) ->
     let poenv, def =
@@ -4202,22 +4264,6 @@ let for_grouped_declarations (env : env) (toploc, g) =
          check_var_spec env
          (List.combine variables vspecs) in
 
-    (* FIXME: check in which env. checking invariants *)
-(*
-    let env, invs =
-      Env.inscope env (fun env ->
-          let env = Env.Local.push env (x, dty) in
-          for_lbls_formula env invs
-        ) in
-    let invs =
-      let for1 (label, term) =
-        M.{ label; term; loc = term.M.loc }
-      in List.map for1 invs in
-    let decl = { decl with vr_invs = invs; } in
-*)
-
-
-
   let state = List.hd enums in
   let enums = List.tl enums in
 
@@ -4362,8 +4408,9 @@ let specifications_of_ispecifications =
       assert (Option.is_none env.M.effect);
       { env with M.effect = Some i; }
 
-    | `Predicate _ ->
-      assert false
+    | `Predicate (defname, args, body) ->
+      let def = M.mk_predicate ~loc:(loc defname) defname ~args body in
+      { env with M.predicates = env.predicates @ [def] }
 
     | `Definition (defname, (x, xty), body) ->
       let def = M.mk_definition ~loc:(loc defname) defname xty x body in
