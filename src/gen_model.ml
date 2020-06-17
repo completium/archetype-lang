@@ -257,12 +257,20 @@ let to_model (ast : A.model) : M.model =
 
       | A.Pdot (e, fn) -> begin
           match e.node with
-          | Pcall (Some { node = Pvar (VTnone, Vnone, an) }, Cconst Cget, [AExpr k]) ->
-              M.Mdotassetfield (an, f k, fn)
+          | Pcall (Some { node = node }, Cconst Cget, [AExpr k]) ->
+            let an =
+              let rec aux = function
+                | A.Pvar (VTnone, Vnone, an) -> an
+                | A.Pcast (_, _, v) -> aux v.node
+                | _ -> assert false
+              in
+              aux node
+            in
+            M.Mdotassetfield (an, f k, fn)
 
           | _ ->
-              (* handle dot contract too *)
-              M.Mdot (f e, fn)
+            (* handle dot contract too *)
+            M.Mdot (f e, fn)
         end
 
       | A.Pconst Cstate                        -> M.Mvar(dumloc "", Vstate)

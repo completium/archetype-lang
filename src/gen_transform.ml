@@ -2469,9 +2469,10 @@ let replace_api_view_by_col (model : model) : model =
     | _ -> false
   in
 
-  let is_storcol (c : mterm) =
+  let rec is_storcol (c : mterm) =
     match c.node with
     | Mvar (_, Vstorecol) -> true
+    | Mcast (_, _, x) -> is_storcol x
     | _ -> false
   in
 
@@ -2575,9 +2576,13 @@ let replace_api_view_by_col (model : model) : model =
 
     | Mfor (i, ICKview c, b, l) when is_storcol c ->
       let an =
-        match c.node with
-        | Mvar (an, Vstorecol) -> unloc an
-        | _ -> assert false
+        let rec aux (c : mterm) =
+          match c.node with
+          | Mvar (an, Vstorecol) -> unloc an
+          | Mcast (_, _, x) -> aux x
+          | _ -> assert false
+        in
+        aux c
       in
       let b = aux ctx b in
       mk_mterm (Mfor (i, ICKcoll an, b, l)) mt.type_
@@ -2681,9 +2686,9 @@ let rename_shadow_variable (model : model) : model =
 let concat_shadown_effect_to_exec (model : model) : model =
   let set_storage_ident = ref SetString.empty in
   List.iter (fun (si : storage_item) ->
-    match si.model_type with
-    | MTvar -> set_storage_ident := SetString.add (unloc si.id) !set_storage_ident
-    | _ -> ()
+      match si.model_type with
+      | MTvar -> set_storage_ident := SetString.add (unloc si.id) !set_storage_ident
+      | _ -> ()
     ) model.storage;
   let for_mterm _ctx (x : mterm) : mterm =
     let rec aux (mt : mterm) : mterm =
@@ -2716,9 +2721,9 @@ let concat_shadown_effect_to_exec (model : model) : model =
       | Entry fs         -> Entry (for_function_struct fs)
     in
     let remove_shadow_effect (spec : specification) : specification =
-    spec
-    |> map_specification (mk_ctx_model ()) for_mterm
-    |> (fun spec -> {spec with effects = [] })
+      spec
+      |> map_specification (mk_ctx_model ()) for_mterm
+      |> (fun spec -> {spec with effects = [] })
     in
     { f__ with
       node = for_function_node f__.node;
