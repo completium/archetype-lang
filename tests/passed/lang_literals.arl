@@ -31,7 +31,7 @@ entry exec () {
     var mytuple : (int * int) = (1, 2);
     var op1 : int option = none;
     var op2 : int option = some(0);
-    var ma : my_asset = {id = "key"; value = 2};
+    my_asset.add({id = "key"; value = 2});
     var b : bytes = 0xff;
     require(true)
   }
