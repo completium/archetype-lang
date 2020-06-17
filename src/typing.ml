@@ -778,7 +778,7 @@ type 'env ispecification = [
   | `Predicate     of M.lident * (M.lident * M.ptyp) list * M.pterm
   | `Definition    of M.lident * (M.lident * M.ptyp) * M.pterm
   | `Variable      of M.lident * M.pterm option
-  | `Assert        of M.lident * M.pterm * (M.lident * M.pterm list) list * M.lident list
+  | `Asset         of M.lident * M.pterm * (M.lident * M.pterm list) list * M.lident list
   | `Effect        of 'env * M.instruction
   | `Postcondition of M.lident * M.pterm * (M.lident * M.pterm list) list * M.lident list
 ]
@@ -3288,7 +3288,7 @@ let for_specification_item
       let f    = for_formula env0 f in
       let invs = List.map for_inv invs in
 
-      (env, poenv), [`Assert (x, f, invs, uses)]
+      (env, poenv), [`Asset (x, f, invs, uses)]
     end
 
   | PT.Veffect i ->
@@ -3592,7 +3592,6 @@ let for_core_enum_decl (env : env) (enum : enum_core loced) =
 
     let for1 env ((cname : PT.lident), options) =
       let init, inv = for1 (cname, options) in
-      let env , inv = for_lbls_formula env inv in
 
       (env, (cname, init, inv)) in
 
@@ -3619,13 +3618,15 @@ let for_enum_decl (env : env) (decl : (PT.lident * PT.enum_decl) loced) =
   let (name, (ctors, _)) = unloc decl in
   let env, ctors = for_core_enum_decl env (mkloc (loc decl) ctors) in
   let env, decl =
-    Option.foldbind (fun env (sd_init, sd_ctors) ->
+    Option.foldbind (fun env (sd_init, ctors) ->
+        let sd_ctors = List.map (fun (x, _) -> (x, [])) ctors in
         let enum = { sd_name = name; sd_ctors; sd_init; sd_state = false; } in
         if   check_and_emit_name_free env name
         then Env.State.push env enum, Some enum
         else env, None) env ctors in
+  let inv = Option.map (fun (_, ctors) -> List.map snd ctors) ctors in
 
-  env, decl
+  env, (decl, inv)
 
 (* -------------------------------------------------------------------- *)
 let for_enums_decl (env : env) (decls : (PT.lident * PT.enum_decl) loced list) =
@@ -4151,7 +4152,7 @@ let for_grouped_declarations (env : env) (toploc, g) =
   if List.length g.gr_states > 1 then
     Env.emit_error env (toploc, MultipleStateDeclaration);
 
-  let state, env =
+  let state, stinv, env =
     let for1 { plloc = loc; pldesc = state } =
       match for_core_enum_decl env (mkloc loc (fst state)) with
       | env, Some state -> Some (env, loc, state)
@@ -4159,6 +4160,8 @@ let for_grouped_declarations (env : env) (toploc, g) =
 
     match List.pmap for1 g.gr_states with
     | (env, loc, (init, ctors)) :: _ ->
+      let stinv = List.map snd ctors in
+      let ctors = List.map (fun (x, _) -> (x, [])) ctors in
       let decl = { sd_name  = mkloc loc ("$" ^ statename);
                    sd_state = true;
                    sd_ctors = ctors;
@@ -4172,18 +4175,43 @@ let for_grouped_declarations (env : env) (toploc, g) =
                     vr_core = Some Cstate; } in
       let env = Env.State.push env decl in
       let env = Env.Var.push env vdecl in
-      (Some decl, env)
+      (Some decl, Some stinv, env)
     | _ ->
-      (None, env) in
+      (None, None, env) in
 
-  let env, contracts = for_contracts_decl env g.gr_externals in
-  let env, enums     = for_enums_decl     env g.gr_enums     in
-  let env, variables = for_vars_decl      env g.gr_vars      in
-  let env, assets    = for_assets_decl    env g.gr_assets    in
-  let env, specs     = for_specs_decl     env g.gr_specs     in
-  let env, functions = for_funs_decl      env g.gr_funs      in
-  let env, acttxs    = for_acttxs_decl    env g.gr_acttxs    in
-  let env, secspecs  = for_secs_decl      env g.gr_secs      in
+  let env, contracts       = for_contracts_decl env g.gr_externals in
+  let env, enums           = for_enums_decl     env g.gr_enums     in
+
+  let enums, especs = List.split enums in
+
+  let env, variables       = for_vars_decl      env g.gr_vars      in
+  let env, assets          = for_assets_decl    env g.gr_assets    in
+
+  let env, enums =
+    let check_enum_spec env (enum, spec) =
+      match spec with None -> env, enum | Some spec ->
+
+      let env, spec = List.fold_left_map for_lbls_formula env spec in
+
+      Option.foldmap (fun env enum ->
+        let sd_ctors =
+          List.map2 (fun (x, oinv) inv -> (x, oinv @ inv))
+            enum.sd_ctors spec in
+        let enum = { enum with sd_ctors } in
+        (Env.State.push env enum, enum)) env enum
+
+    in List.fold_left_map
+         check_enum_spec env
+         (List.combine (state :: enums) (stinv :: especs))
+  in
+
+  let state = List.hd enums in
+  let enums = List.tl enums in
+
+  let env, specs           = for_specs_decl     env g.gr_specs     in
+  let env, functions       = for_funs_decl      env g.gr_funs      in
+  let env, acttxs          = for_acttxs_decl    env g.gr_acttxs    in
+  let env, secspecs        = for_secs_decl      env g.gr_secs      in
 
   let output =
     { state    ; contracts; variables; enums   ; assets;
@@ -4296,7 +4324,7 @@ let specifications_of_ispecifications =
             uses       = uses; }
       in { env with M.specs = env.specs @ [spec] }
 
-    | `Assert (x, form, invs, uses) ->
+    | `Asset (x, form, invs, uses) ->
       let asst =
         let for_inv (lbl, inv) =
           M.{ label = lbl; formulas = inv }
