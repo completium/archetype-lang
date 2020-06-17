@@ -1,0 +1,12 @@
+archetype expr_arith_minus_date_date_neg
+
+variable res : duration = 0s
+
+entry exec () {
+  specification {
+    s0: res = 365d;
+  }
+  effect {
+    res := 2019-01-01 - 2020-01-01;
+  }
+}
