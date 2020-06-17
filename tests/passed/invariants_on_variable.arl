@@ -1,0 +1,13 @@
+archetype invariants_on_variable
+
+asset my_asset {
+  id : int
+}
+
+variable v : int = 0 with {s1: forall a in my_asset, a.id > v }
+
+entry exec () {
+  effect {
+    v := 1
+  }
+}
