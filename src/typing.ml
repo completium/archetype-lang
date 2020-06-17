@@ -291,6 +291,7 @@ type error_desc =
   | InvalidStateExpression
   | InvalidTypeForPk
   | InvalidTypeForVarWithFromTo
+  | InvalidVarOrArgType
   | LetInElseInInstruction
   | LetInElseOnNonOption
   | MethodCallInPredicate
@@ -443,6 +444,7 @@ let pp_error_desc fmt e =
   | InvalidStateExpression             -> pp "Invalid state expression"
   | InvalidTypeForPk                   -> pp "Invalid type for primary key"
   | InvalidTypeForVarWithFromTo        -> pp "A variable with a from/to declaration must be of type currency"
+  | InvalidVarOrArgType                -> pp "A variable / argument type cannot be an asset or a collection"
   | LetInElseInInstruction             -> pp "Let In else in instruction"
   | LetInElseOnNonOption               -> pp "Let in else on non-option type"
   | MethodCallInPredicate              -> pp "Cannot call methods in predicates"
@@ -1476,6 +1478,21 @@ let select_operator env ?(asset = false) loc (op, tys) =
     end
 
 (* -------------------------------------------------------------------- *)
+let rec valid_var_or_arg_type (ty : M.ptyp) =
+  match ty with
+  | Tnamed     _ -> assert false
+  | Tasset     _ -> false
+  | Tenum      _ -> true
+  | Tcontract  _ -> true
+  | Tbuiltin   _ -> true
+  | Tcontainer _ -> false
+  | Tlist      ty -> valid_var_or_arg_type ty
+  | Ttuple     ty -> List.for_all valid_var_or_arg_type ty
+  | Toption    ty -> valid_var_or_arg_type ty
+  | Tentry        -> false
+  | Ttrace     _  -> false
+
+(* -------------------------------------------------------------------- *)
 let for_container (_ : env) = function
   | PT.Subset     -> M.Subset
   | PT.Partition  -> M.Partition
@@ -2272,9 +2289,6 @@ let rec for_xexpr
 
       mk_sp body.M.type_ (M.Pletin (x, e, ty, body, oe))
 
-    | Evar (_lv, _t, _e1) ->
-      assert false
-
     | Eoption oe -> begin
         match oe with
         | ONone ->
@@ -2360,6 +2374,7 @@ let rec for_xexpr
           (Option.map (fun ty -> M.Toption ty) ty)
           (M.Pcall (None, M.Cconst M.Cunpack, [AExpr e]))
 
+    | Evar      _
     | Efail     _
     | Enothing
     | Eassert   _
@@ -2947,9 +2962,15 @@ let for_lbls_formula (env : env) (topf : PT.label_exprs) : env * (M.lident optio
   List.fold_left_map for_lbl_formula env topf
 
 (* -------------------------------------------------------------------- *)
-let for_arg_decl (env : env) ((x, ty, _) : PT.lident_typ) =
+let for_arg_decl ?(can_asset = false) (env : env) ((x, ty, _) : PT.lident_typ) =
   let ty = for_type env ty in
   let b  = check_and_emit_name_free env x in
+
+  if not can_asset then begin
+    ty |> Option.iter (fun ty ->
+      if not (valid_var_or_arg_type ty) then
+        Env.emit_error env (loc x, InvalidVarOrArgType))
+  end;
 
   match b, ty with
   | true, Some ty ->
@@ -2959,8 +2980,8 @@ let for_arg_decl (env : env) ((x, ty, _) : PT.lident_typ) =
     (env, None)
 
 (* -------------------------------------------------------------------- *)
-let for_args_decl (env : env) (xs : PT.args) =
-  List.fold_left_map for_arg_decl env xs
+let for_args_decl ?can_asset (env : env) (xs : PT.args) =
+  List.fold_left_map (for_arg_decl ?can_asset) env xs
 
 (* -------------------------------------------------------------------- *)
 let for_lvalue kind (env : env) (e : PT.expr) : (M.lvalue * M.ptyp) option =
@@ -3134,22 +3155,6 @@ let rec for_instruction_r
         Env.emit_error env (loc i, NoLetInInstruction);
         bailout ()
 
-    (* | Eletin (x, ty, e1, e2, eo) ->
-      if Option.is_some eo then
-        Env.emit_error env (loc i, LetInElseInInstruction);
-      let ty = Option.bind (for_type env) ty in
-      let e  = for_expr env ?ety:ty e1 in
-      let env, body =
-        Env.inscope env (fun env ->
-            let _ : bool = check_and_emit_name_free env x in
-            let env =
-              Option.fold (fun env ty ->
-                  Env.Local.push env (x, ty)
-                ) env e.M.type_
-            in for_instruction_r env e2) in
-
-      env, mki (M.Iletin (x, e, body)) *)
-
     | Efor (lbl, x, pe, i) ->
       let e = for_expr kind env pe in
 
@@ -3266,6 +3271,10 @@ let rec for_instruction_r
           Env.Local.push env (x, Option.get v.M.type_)
         else env in
 
+      Option.iter (fun ty ->
+        if not (valid_var_or_arg_type ty) then
+          Env.emit_error env (loc x, InvalidVarOrArgType)) ty;
+
       env, mki (M.Ideclvar (x, v))
 
     | _ ->
@@ -3295,7 +3304,7 @@ let for_specification_item
   | PT.Vpredicate (x, args, f) ->
     let env, (args, f) =
       Env.inscope env (fun env ->
-          let env, args = for_args_decl env args in
+          let env, args = for_args_decl ~can_asset:true env args in
           let args = List.pmap id args in
           let f = for_formula env f in
           (env, (args, f))) in
@@ -3311,7 +3320,7 @@ let for_specification_item
   | PT.Vdefinition (x, ty, y, f) ->
     let poenv, def =
       Env.inscope poenv (fun poenv ->
-        let poenv, arg = for_arg_decl poenv (y, ty, None) in
+        let poenv, arg = for_arg_decl ~can_asset:true poenv (y, ty, None) in
 
         match arg with
         | Some ((_, M.Tasset asset) as arg) ->
@@ -3335,6 +3344,11 @@ let for_specification_item
   | PT.Vvariable (x, ty, e) ->
     let ty = for_type env ty in
     let e  = Option.map (for_expr `Ghost env ?ety:ty) e in
+
+    ty |> Option.iter (fun ty ->
+      if not (valid_var_or_arg_type ty) then
+        Env.emit_error env (loc x, InvalidVarOrArgType));
+
     let env, poenv =
       if not (check_and_emit_name_free poenv x) then env, poenv else
         Option.fold (fun (env, poenv) ty ->
@@ -3723,6 +3737,11 @@ let for_var_decl (env : env) (decl : PT.variable_decl loced) =
     if   Option.is_some ty
     then ty
     else Option.bind (fun e -> e.M.type_) e in
+
+  dty |> Option.iter (fun ty ->
+    if not (valid_var_or_arg_type ty) then
+      Env.emit_error env (loc x, InvalidVarOrArgType));
+
   let ctt  = match ctt with
     | VKconstant -> `Constant
     | VKvariable -> `Variable in
