@@ -3667,7 +3667,7 @@ let for_var_decl (env : env) (decl : PT.variable_decl loced) =
 
   match dty with
   | None ->
-    (env, None)
+    (env, (None, None))
 
   | Some dty ->
     if tgtc <> (0, 0) then begin
@@ -3687,21 +3687,9 @@ let for_var_decl (env : env) (decl : PT.variable_decl loced) =
       vr_tgt  = (vtgt_tf, vtgt_tt);
       vr_def  = Option.map (fun e -> (e, `Std)) e; } in
 
-    (* FIXME: check in which env. checking invariants *)
-    let env, invs =
-      Env.inscope env (fun env ->
-          let env = Env.Local.push env (x, dty) in
-          for_lbls_formula env invs
-        ) in
-    let invs =
-      let for1 (label, term) =
-        M.{ label; term; loc = term.M.loc }
-      in List.map for1 invs in
-    let decl = { decl with vr_invs = invs; } in
-
     if   (check_and_emit_name_free env x)
-    then (Env.Var.push env decl, Some decl)
-    else (env, None)
+    then (Env.Var.push env decl, (Some decl, Some invs))
+    else (env, (None, Some invs))
 
 (* -------------------------------------------------------------------- *)
 let for_vars_decl (env : env) (decls : PT.variable_decl loced list) =
@@ -4179,13 +4167,12 @@ let for_grouped_declarations (env : env) (toploc, g) =
     | _ ->
       (None, None, env) in
 
-  let env, contracts       = for_contracts_decl env g.gr_externals in
-  let env, enums           = for_enums_decl     env g.gr_enums     in
-
-  let enums, especs = List.split enums in
-
-  let env, variables       = for_vars_decl      env g.gr_vars      in
-  let env, assets          = for_assets_decl    env g.gr_assets    in
+  let env, contracts    = for_contracts_decl env g.gr_externals in
+  let env, enums        = for_enums_decl     env g.gr_enums     in
+  let enums, especs     = List.split enums                      in
+  let env, variables    = for_vars_decl      env g.gr_vars      in
+  let variables, vspecs = List.split variables                  in
+  let env, assets       = for_assets_decl    env g.gr_assets    in
 
   let env, enums =
     let check_enum_spec env (enum, spec) =
@@ -4204,6 +4191,39 @@ let for_grouped_declarations (env : env) (toploc, g) =
          check_enum_spec env
          (List.combine (state :: enums) (stinv :: especs))
   in
+
+  let env, variables =
+    let check_var_spec env (var, spec) =
+      match spec with None -> env, var | Some spec ->
+
+      let env, spec = for_lbls_formula env spec in
+      let spec = List.map (fun (label, term) ->
+          M.{ label; term; loc = term.M.loc }
+        ) spec in
+
+      Option.foldmap (fun env var ->
+        let var = { var with vr_invs = var.vr_invs @ spec } in
+        (Env.Var.push env var, var)) env var
+
+    in List.fold_left_map
+         check_var_spec env
+         (List.combine variables vspecs) in
+
+    (* FIXME: check in which env. checking invariants *)
+(*
+    let env, invs =
+      Env.inscope env (fun env ->
+          let env = Env.Local.push env (x, dty) in
+          for_lbls_formula env invs
+        ) in
+    let invs =
+      let for1 (label, term) =
+        M.{ label; term; loc = term.M.loc }
+      in List.map for1 invs in
+    let decl = { decl with vr_invs = invs; } in
+*)
+
+
 
   let state = List.hd enums in
   let enums = List.tl enums in
