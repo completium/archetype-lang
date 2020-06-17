@@ -1890,28 +1890,21 @@ let rec for_xexpr
         mk_sp ty (M.Ptuple es)
       end
 
-    | Edot ({pldesc = Esqapp ({pldesc = Eterm (_, asset); _}, pk); _}, x) -> begin
-        begin
-          match mode.em_kind with
-          | `Formula ->
-            begin
-              Env.emit_error env (loc tope, InvalidFormula);
-              bailout ()
-            end
-          | _ -> ()
-        end;
+    | Esqapp (e, pk) -> begin
+        let e, asset = for_asset_collection_expr mode env (`Parsed e) in
+        let pkty = asset |> Option.map (fun (asset, _) ->
+          (Option.get (get_field (unloc asset.as_pk) asset)).fd_type) in
+        let pk = for_xexpr ?ety:pkty env pk in
 
-        let asset = Env.Asset.get env (unloc asset) in
+        let aoutty = Option.map (fun (asset, _) -> M.Tasset asset.as_name) asset in
+        let aoutty = aoutty |> Option.map (fun aoutty ->
+                         match mode.em_kind with
+                         | `Expr _  -> aoutty
+                         | `Formula -> M.Toption aoutty)in
 
-        match get_field (unloc x) asset with
-        | None ->
-          let err = UnknownField (unloc asset.as_name, unloc x) in
-          Env.emit_error env (loc x, err); bailout ()
-
-        | Some { fd_type = fty } ->
-          let asset_key_type = (Option.get (get_field (unloc asset.as_pk) asset)).fd_type in
-          let k = for_xexpr ~ety:asset_key_type env pk in
-          mk_sp (Some fty) (M.Pdotassetfield (asset.as_name, k, x))
+        mk_sp
+          aoutty
+          (M.Pcall (Some e, M.Cconst M.Cget, [M.AExpr pk]))
       end
 
     | Edot (pe, x) -> begin
@@ -2288,7 +2281,6 @@ let rec for_xexpr
           (Option.map (fun ty -> M.Toption ty) ty)
           (M.Pcall (None, M.Cconst M.Cunpack, [AExpr e]))
 
-    | Esqapp    _ (* TODO *)
     | Efail     _
     | Enothing
     | Eassert   _

@@ -377,6 +377,16 @@ let rec pp_pterm fmt (pterm : pterm) =
       in
       (pp_no_paren pp) fmt v
 
+    | Pdot ({ node = Pcall (Some { node = Pvar (VTnone, Vnone, an) },
+            Cconst Cget, [AExpr k]) }, fn)
+      ->
+        let pp fmt (an, k, fn) =
+          Format.fprintf fmt "%a[%a].%a"
+            pp_id an
+            pp_pterm k
+            pp_id fn
+        in (pp_with_paren pp) fmt (an, k, fn)
+
     | Pdot (e, i) ->
       let pp fmt (e, i) =
         Format.fprintf fmt "%a.%a"
@@ -384,15 +394,6 @@ let rec pp_pterm fmt (pterm : pterm) =
           pp_id i
       in
       (pp_with_paren pp) fmt (e, i)
-
-    | Pdotassetfield (an, k, fn) ->
-      let pp fmt (an, k, fn) =
-        Format.fprintf fmt "%a[%a].%a"
-          pp_id an
-          pp_pterm k
-          pp_id fn
-      in
-      (pp_with_paren pp) fmt (an, k, fn)
 
     | Pconst c ->
       let pp fmt c =

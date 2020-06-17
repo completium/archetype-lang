@@ -293,7 +293,6 @@ type 'id term_node  =
   | Parray of 'id term_gen list
   | Plit of bval
   | Pdot of 'id term_gen * 'id
-  | Pdotassetfield of 'id * 'id term_gen * 'id
   | Pconst of const
   | Ptuple of 'id term_gen list
   | Pnone

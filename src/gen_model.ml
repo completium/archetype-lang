@@ -254,10 +254,17 @@ let to_model (ast : A.model) : M.model =
       | A.Plit ({node = BVaddress s; _})       -> M.Maddress s
       | A.Plit ({node = BVduration d; _})      -> M.Mduration d
       | A.Plit ({node = BVbytes v; _})         -> M.Mbytes v
-      | A.Pdot (d, i) ->
-        (* handle dot contract too *)
-        M.Mdot (f d, i)
-      | A.Pdotassetfield (an, k, fn)           -> M.Mdotassetfield (an, f k, fn)
+
+      | A.Pdot (e, fn) -> begin
+          match e.node with
+          | Pcall (Some { node = Pvar (VTnone, Vnone, an) }, Cconst Cget, [AExpr k]) ->
+              M.Mdotassetfield (an, f k, fn)
+
+          | _ ->
+              (* handle dot contract too *)
+              M.Mdot (f e, fn)
+        end
+
       | A.Pconst Cstate                        -> M.Mvar(dumloc "", Vstate)
       | A.Pconst Cnow                          -> M.Mnow
       | A.Pconst Ctransferred                  -> M.Mtransferred
