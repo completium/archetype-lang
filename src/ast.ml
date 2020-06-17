@@ -338,7 +338,7 @@ and 'id instruction_node =
   | Ideclvar of 'id * 'id term_gen                                                  (* id * init *)
   | Iseq of 'id instruction_gen list                                                (* lhs ; rhs *)
   | Imatchwith of 'id term_gen * ('id pattern_gen * 'id instruction_gen) list       (* match term with ('pattern * 'id instruction_gen) list *)
-  | Iassign of (ptyp * assignment_operator * 'id lvalue_gen * 'id term_gen)         (* $2 assignment_operator $3 *)
+  | Iassign of (assignment_operator * 'id lvalue_gen * 'id term_gen)         (* $2 assignment_operator $3 *)
   | Irequire of (bool * 'id term_gen)                                               (* $1 ? require : failif *)
   | Itransfer of ('id term_gen * 'id term_gen * ('id * ('id term_gen) list) option) (* value * dest * call *)
   | Ibreak

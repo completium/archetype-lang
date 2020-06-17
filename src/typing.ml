@@ -3083,8 +3083,7 @@ let rec for_instruction_r
             for_assign_expr (expr_mode kind) env (loc plv) (op, fty, fty) pe
         in
 
-        let type_assigned = M.Tbuiltin (VTint) in (* TODO: replace by the var/field assigned type *)
-        env, mki (M.Iassign (type_assigned, op, x, e))
+        env, mki (M.Iassign (op, x, e))
       end
 
     | Etransfer (e, to_, c) ->

@@ -590,8 +590,8 @@ let to_model (ast : A.model) : M.model =
       | A.Ideclvar (i, v)         -> M.Mdeclvar ([i], Option.map ptyp_to_type v.type_, f v) (* TODO *)
       | A.Iseq l                  -> M.Mseq (List.map g l)
       | A.Imatchwith (m, l)       -> M.Mmatchwith (f m, List.map (fun (p, i) -> (to_pattern p, g i)) l)
-      | A.Iassign (_t, op, `Var x, e) -> M.Massign (to_assignment_operator op, Avar x, to_mterm e)
-      | A.Iassign (_t, op, `Field (an, k, fn), v) -> M.Massign (to_assignment_operator op, Afield (an, fn, to_mterm k), to_mterm v)
+      | A.Iassign (op, `Var x, e) -> M.Massign (to_assignment_operator op, Avar x, to_mterm e)
+      | A.Iassign (op, `Field (an, k, fn), v) -> M.Massign (to_assignment_operator op, Afield (an, fn, to_mterm k), to_mterm v)
       | A.Irequire (b, t)         ->
         let cond : M.mterm =
           if b

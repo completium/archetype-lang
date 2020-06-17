@@ -2,6 +2,7 @@ open Ident
 open Location
 open Model
 module MapString = Map.Make(String)
+module SetString = Set.Make(String)
 open Tools
 
 type error_desc =
@@ -2678,11 +2679,21 @@ let rename_shadow_variable (model : model) : model =
   }
 
 let concat_shadown_effect_to_exec (model : model) : model =
+  let set_storage_ident = ref SetString.empty in
+  List.iter (fun (si : storage_item) -> Format.printf "%s@\n" (unloc si.id); set_storage_ident := SetString.add (unloc si.id) !set_storage_ident) model.storage;
+  let for_mterm (x : mterm) : mterm =
+    let rec aux (mt : mterm) : mterm =
+      match mt.node with
+      | Mvar (id, _) when SetString.mem (unloc id) !set_storage_ident -> { mt with node = Mvar (id, Vstorevar)}
+      | _ -> map_mterm aux mt
+    in
+    aux x
+  in
   let for_function__ (f__ : function__) : function__ =
     let shadow_effect_opt = Option.map (fun s -> s.effects) f__.spec in
     let shadow_effects =
       match shadow_effect_opt with
-      | Some l -> l
+      | Some l -> List.map for_mterm l
       | _ -> []
     in
     let for_function_node (fn : function_node) : function_node =
