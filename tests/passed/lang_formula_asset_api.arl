@@ -9,7 +9,9 @@ asset my_asset identified by id {
   {"id2"; 2}
 }
 
-entry exec (n : int) {
+variable n : int = 0
+
+entry exec () {
 
   specification {
     (* quantifiers *)

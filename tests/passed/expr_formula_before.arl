@@ -1,6 +1,8 @@
 archetype expr_formula_before
 
-entry exec (x : int) {
+variable x : int = 0
+
+entry exec () {
 
   specification {
     s: before.x = 0;
