@@ -2702,6 +2702,7 @@ let transfer_shadow_variable_to_storage (model : model) : model =
   let storage_items : storage_item list =
     model.functions
     |> List.map (fun x -> x.spec)
+    |> (fun x -> Some(model.specification)::x)
     |> List.map (function | None -> [] | Some x -> x.variables)
     |> List.flatten
     |> List.map (fun v ->
