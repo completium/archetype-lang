@@ -1,8 +1,8 @@
 archetype autocallable
 
-constant issuer : role = @tz1KksC8RvjUWAbXYJuNrUbontHGor25Cztk
-constant owner  : role = @tz1uNrUbontHGor25CztkKksC8RvjUWAbXYJ
-constant oracle : role = @tz1r25CztkKksC8RvjuNrUWAbXYJUbontHGo (* exchange *)
+constant issuer : role = @tz1bfVgcJC4ukaQSHUe1EbrUd5SekXeP9CWk
+constant owner  : role = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
+constant oracle : role = @tz1iawHeddgggn6P5r5jtq2wDRqcJVksGVSa (* exchange *)
 
 constant nominal : tez = 1000tz
 
