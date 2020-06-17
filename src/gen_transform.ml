@@ -1372,7 +1372,8 @@ let replace_date_duration_by_timestamp (model : model) : model =
                            { ai with
                              type_   = ai.type_   |> process_type;
                              default = ai.default |> Option.map process_mterm;
-                           })
+                           });
+             init = List.map process_mterm a.init;
             }
         | Dcontract c ->
           Dcontract
