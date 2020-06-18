@@ -812,7 +812,9 @@ let pp_model fmt (model : model) =
         in
         pp fmt (l, r)
 
-      | Mdiv (l, r) ->
+      | Mdivrat _ -> emit_error (UnsupportedTerm ("div"))
+
+      | Mdiveuc (l, r) ->
         let pp fmt (l, r : mterm * mterm) =
           Format.fprintf fmt "%a / %a"
             (pp_cast Lhs l.type_ r.type_ f) l
@@ -1149,7 +1151,6 @@ let pp_model fmt (model : model) =
 
       (* rational *)
 
-      | Mdivrat _ -> emit_error (UnsupportedTerm ("div"))
       | Mrateq (l, r) ->
         let pp fmt (l, r) =
           Format.fprintf fmt "rat_eq (%a, %a)"

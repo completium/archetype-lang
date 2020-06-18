@@ -1,12 +1,12 @@
 archetype expr_control_if_else_rat_int
 
-variable res : rational = 0 div 1
+variable res : rational = 0.0
 
 entry exec () {
   specification {
-    s0: res = 1 div 2;
+    s0: res = 0.5;
   }
   effect {
-    res := (if true then 1 div 2 else 1)
+    res := (if true then 1 / 2 else 1)
   }
 }

@@ -81,7 +81,7 @@ let pp_bval fmt (bval : bval) =
     | BVuint v          -> pp_big_int fmt v
     | BVbool v          -> pp_str fmt (if v then "true" else "false")
     | BVenum v          -> pp_str fmt v
-    | BVrational (n, d) -> Format.fprintf fmt "(%a div %a)" pp_big_int n pp_big_int d
+    | BVrational (n, d) -> Format.fprintf fmt "(%a / %a)" pp_big_int n pp_big_int d
     | BVdate v          -> Core.pp_date fmt v
     | BVstring s        -> pp_str fmt s
     | BVcurrency (c, v) -> Format.fprintf fmt "%a%a" pp_big_int v pp_currency c
@@ -109,8 +109,8 @@ let pp_arithmetic_operator fmt = function
   | Plus   -> pp_str fmt "+"
   | Minus  -> pp_str fmt "-"
   | Mult   -> pp_str fmt "*"
-  | Div    -> pp_str fmt "/"
-  | DivRat -> pp_str fmt "div"
+  | DivEuc -> pp_str fmt "div"
+  | DivRat -> pp_str fmt "/"
   | Modulo -> pp_str fmt "%"
 
 let pp_unary_arithmetic_operator fmt = function

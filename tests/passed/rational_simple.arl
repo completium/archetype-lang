@@ -1,6 +1,6 @@
 archetype rational_simple
 
-constant r : rational = 1 div 2
+constant r : rational = 1 / 2
 
 entry exec () {
   effect {

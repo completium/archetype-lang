@@ -89,8 +89,8 @@ type arithmetic_operator =
   | Plus
   | Minus
   | Mult
-  | Div
   | DivRat
+  | DivEuc
   | Modulo
 [@@deriving show {with_path = false}]
 

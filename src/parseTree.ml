@@ -44,8 +44,8 @@ and arithmetic_operator =
   | Plus
   | Minus
   | Mult
-  | Div
   | DivRat
+  | DivEuc
   | Modulo
 
 and unary_operator =

@@ -129,7 +129,7 @@ let remove_add_update (model : model) : model =
                         | PlusAssign  -> mk_mterm (Mplus (dv, v)) type_
                         | MinusAssign -> mk_mterm (Mminus (dv, v)) type_
                         | MultAssign  -> mk_mterm (Mmult (dv, v)) type_
-                        | DivAssign   -> mk_mterm (Mdiv (dv, v)) type_
+                        | DivAssign   -> mk_mterm (Mdivrat (dv, v)) type_
                         | AndAssign   -> mk_mterm (Mand (dv, v)) type_
                         | OrAssign    -> mk_mterm (Mor (dv, v)) type_
                         | _ -> f_error lo an f_name; dummy_mterm
@@ -270,7 +270,7 @@ let replace_update_by_set (model : model) : model =
                   | PlusAssign  -> mk_mterm (Mplus (var, value)) type_
                   | MinusAssign -> mk_mterm (Mminus (var, value)) type_
                   | MultAssign  -> mk_mterm (Mmult (var, value)) type_
-                  | DivAssign   -> mk_mterm (Mdiv (var, value)) type_
+                  | DivAssign   -> mk_mterm (Mdivrat (var, value)) type_
                   | AndAssign   -> mk_mterm (Mand (var, value)) type_
                   | OrAssign    -> mk_mterm (Mor (var, value)) type_
                 ]
@@ -1049,8 +1049,11 @@ let remove_rational (model : model) : model =
       let is_int (x : mterm) = match x.type_ with | Tbuiltin Bint      -> true | _ -> false in
       let is_rat (x : mterm) = match x.type_ with | Tbuiltin Brational -> true | _ -> false in
       let is_cur (x : mterm) = match x.type_ with | Tbuiltin Bcurrency -> true | _ -> false in
+      let is_dur (x : mterm) = match x.type_ with | Tbuiltin Bduration -> true | _ -> false in
       let is_num (x : mterm) = is_rat x || is_int x in
       let is_rats (a, b) = is_rat a || is_rat b in
+      let is_ints (a, b) = is_int a && is_int b in
+      let is_durs (a, b) = is_dur a && is_dur b in
       let process_eq neg (a, b) =
         let lhs = (to_rat |@ aux) a in
         let rhs = (to_rat |@ aux) b in
@@ -1091,9 +1094,9 @@ let remove_rational (model : model) : model =
           | Mplus   (a, b) -> process_arith Rplus  (a, b)
           | Mminus  (a, b) -> process_arith Rminus (a, b)
           | Mmult   (a, b) -> process_arith Rmult  (a, b)
-          | Mdiv    (a, b) -> process_arith Rdiv   (a, b)
+          | Mdivrat (a, b) when is_ints (a, b) || is_durs (a, b) -> mk_rat a b
+          | Mdivrat (a, b) -> process_arith Rdiv   (a, b)
           | Muminus v      -> process_uminus v
-          | Mdivrat (a, b) -> mk_rat a b
           | Mmax    (a, b) when is_rats (a, b) -> let lhs, rhs = pair_sigle_map (to_rat |@ aux) (a, b) in mk_mterm (Mmax (lhs, rhs)) type_rational
           | Mmin    (a, b) when is_rats (a, b) -> let lhs, rhs = pair_sigle_map (to_rat |@ aux) (a, b) in mk_mterm (Mmin (lhs, rhs)) type_rational
           | _ ->
@@ -2350,7 +2353,7 @@ let remove_assign_operator (model : model) : model =
     | PlusAssign  -> mk_mterm (Mplus (lhs, v)) t
     | MinusAssign -> mk_mterm (Mminus (lhs, v)) t
     | MultAssign  -> mk_mterm (Mmult (lhs, v)) t
-    | DivAssign   -> mk_mterm (Mdiv (lhs, v)) t
+    | DivAssign   -> mk_mterm (Mdivrat (lhs, v)) t
     | AndAssign   -> mk_mterm (Mand (lhs, v)) t
     | OrAssign    -> mk_mterm (Mor (lhs, v)) t
   in

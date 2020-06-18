@@ -8,7 +8,7 @@ entry exec () {
     s0: r0 = 2 and r1 = -1;
   }
   effect {
-    r0 := ceil(5 div 3);
-    r1 := ceil(-5 div 3);
+    r0 := ceil(5 / 3);
+    r1 := ceil(-5 / 3);
   }
 }

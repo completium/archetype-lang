@@ -4,9 +4,9 @@ variable res : rational = 0
 
 entry exec () {
   specification {
-    s0: res = 1 div 2;
+    s0: res = 1 / 2;
   }
   effect {
-    res := (if true then 1 div 2 else 1 div 3)
+    res := (if true then 1 / 2 else 1 / 3)
   }
 }

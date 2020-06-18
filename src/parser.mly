@@ -900,11 +900,11 @@ record_item:
  | GREATEREQUAL { Ge }
 
 %inline arithmetic_operator:
- | PLUS    { Plus }
- | MINUS   { Minus }
- | MULT    { Mult }
- | SLASH   { Div }
- | DIV     { DivRat }
+ | PLUS    { Plus   }
+ | MINUS   { Minus  }
+ | MULT    { Mult   }
+ | SLASH   { DivRat }
+ | DIV     { DivEuc }
  | PERCENT { Modulo }
 
 %inline unary_operator:

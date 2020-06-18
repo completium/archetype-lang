@@ -743,7 +743,9 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (l, r)
 
-    | Mdiv (l, r) ->
+    | Mdivrat _ -> emit_error (UnsupportedTerm ("divrat"))
+
+    | Mdiveuc (l, r) ->
       let pp fmt (l, r : mterm * mterm) =
         Format.fprintf fmt "(%a) / (%a)"
           (pp_cast Lhs l.type_ r.type_ f) l
@@ -1200,8 +1202,6 @@ let pp_model_internal fmt (model : model) b =
     | Mvar (_, Vstate)    -> Format.fprintf fmt "%s.%s" const_storage const_state
 
     (* rational *)
-
-    | Mdivrat _ -> emit_error (UnsupportedTerm ("divrat"))
 
     | Mrateq (l, r) ->
       let pp fmt (l, r) =

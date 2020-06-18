@@ -1,9 +1,9 @@
 archetype rational_cmp
 
-constant r : rational = 1 div 2
+constant r : rational = 1 / 2
 
 entry exec () {
   effect {
-    require (r > 1 div 3)
+    require (r > 1 / 3)
   }
 }

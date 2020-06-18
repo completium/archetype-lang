@@ -89,7 +89,7 @@ entry pay_fee () {
     r5 : state = Running;
   }
   effect {
-    var nb_periods : int = (now - last_fee) / period;  (* div is euclidean *)
+    var nb_periods : int = (now - last_fee) div period;  (* div is euclidean *)
     var due = nb_periods * fee;
     var decrease : tez = min (transferred, due);
     transfer decrease to insurer;

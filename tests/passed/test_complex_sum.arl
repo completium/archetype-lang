@@ -17,6 +17,6 @@ entry exec () {
     s0: res = 3;
   }
   effect {
-    res := my_asset.sum(v1 + v2 / 2)
+    res := my_asset.sum(v1 + v2 div 2)
   }
 }

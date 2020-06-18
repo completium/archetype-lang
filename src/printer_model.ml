@@ -274,7 +274,7 @@ let pp_mterm fmt (mt : mterm) =
     | Mbool b -> pp_str fmt (if b then "true" else "false")
     | Menum v -> pp_str fmt v
     | Mrational (n, d) ->
-      Format.fprintf fmt "(%a div %a)"
+      Format.fprintf fmt "(%a / %a)"
         pp_big_int n
         pp_big_int d
     | Mstring v ->
@@ -488,9 +488,17 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (l, r)
 
-    | Mdiv (l, r) ->
+    | Mdivrat (l, r) ->
       let pp fmt (l, r) =
         Format.fprintf fmt "%a / %a"
+          f l
+          f r
+      in
+      pp fmt (l, r)
+
+    | Mdiveuc (l, r) ->
+      let pp fmt (l, r) =
+        Format.fprintf fmt "%a div %a"
           f l
           f r
       in
@@ -819,14 +827,6 @@ let pp_mterm fmt (mt : mterm) =
 
 
     (* rational *)
-
-    | Mdivrat (l, r) ->
-      let pp fmt (l, r) =
-        Format.fprintf fmt "%a div %a"
-          f l
-          f r
-      in
-      pp fmt (l, r)
 
     | Mrateq (l, r) ->
       let pp fmt (l, r) =

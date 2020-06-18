@@ -37,9 +37,9 @@ let e_le            =  (90,  Left)     (* <=  *)
 let e_plus          =  (100, Left)     (* +   *)
 let e_minus         =  (100, Left)     (* -   *)
 let e_mult          =  (110, Left)     (* *   *)
-let e_div           =  (110, Left)     (* /   *)
+let e_divrat        =  (110, Left)     (* /   *)
 let e_modulo        =  (110, Left)     (* %   *)
-let e_divrat        =  (115, Left)     (* div *)
+let e_diveuc        =  (115, Left)     (* div *)
 let e_not           =  (115, Right)    (* not *)
 let e_dot           =  (120, Right)    (* .   *)
 let e_coloncolon    =  (130, NonAssoc) (* ::  *)
@@ -67,8 +67,8 @@ let get_prec_from_operator (op : operator) =
   | Arith Plus      -> e_plus
   | Arith Minus     -> e_minus
   | Arith Mult      -> e_mult
-  | Arith Div       -> e_div
   | Arith DivRat    -> e_divrat
+  | Arith DivEuc    -> e_diveuc
   | Arith Modulo    -> e_modulo
   | Unary Uplus     -> e_plus
   | Unary Uminus    -> e_minus
@@ -162,8 +162,8 @@ let arithmetic_operator_to_str op =
   | Plus   -> "+"
   | Minus  -> "-"
   | Mult   -> "*"
-  | Div    -> "/"
-  | DivRat -> "div"
+  | DivRat -> "/"
+  | DivEuc -> "div"
   | Modulo -> "%"
 
 let unary_operator_to_str op =

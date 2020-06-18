@@ -231,7 +231,8 @@ type ('id, 'term) mterm_node  =
   | Mplus             of 'term * 'term
   | Mminus            of 'term * 'term
   | Mmult             of 'term * 'term
-  | Mdiv              of 'term * 'term
+  | Mdivrat           of 'term * 'term
+  | Mdiveuc           of 'term * 'term
   | Mmodulo           of 'term * 'term
   | Muplus            of 'term
   | Muminus           of 'term
@@ -290,7 +291,6 @@ type ('id, 'term) mterm_node  =
   (* variable *)
   | Mvar              of 'id * 'term var_kind_gen
   (* rational *)
-  | Mdivrat           of 'term * 'term
   | Mrateq            of 'term * 'term
   | Mratcmp           of comparison_operator * 'term * 'term
   | Mratarith         of rat_arith_op * 'term * 'term
@@ -1055,7 +1055,8 @@ let cmp_mterm_node
     | Mplus (l1, r1), Mplus (l2, r2)                                                   -> cmp l1 l2 && cmp r1 r2
     | Mminus (l1, r1), Mminus (l2, r2)                                                 -> cmp l1 l2 && cmp r1 r2
     | Mmult (l1, r1), Mmult (l2, r2)                                                   -> cmp l1 l2 && cmp r1 r2
-    | Mdiv (l1, r1), Mdiv (l2, r2)                                                     -> cmp l1 l2 && cmp r1 r2
+    | Mdivrat (l1, r1), Mdivrat (l2, r2)                                               -> cmp l1 l2 && cmp r1 r2
+    | Mdiveuc (l1, r1), Mdiveuc (l2, r2)                                               -> cmp l1 l2 && cmp r1 r2
     | Mmodulo (l1, r1), Mmodulo (l2, r2)                                               -> cmp l1 l2 && cmp r1 r2
     | Muplus e1, Muplus e2                                                             -> cmp e1 e2
     | Muminus e1, Muminus e2                                                           -> cmp e1 e2
@@ -1114,7 +1115,6 @@ let cmp_mterm_node
     (* variable *)
     | Mvar (id1, k1), Mvar (id2, k2)                                                   -> cmpi id1 id2 && cmp_var_kind k1 k2
     (* rational *)
-    | Mdivrat (l1, r1), Mdivrat (l2, r2)                                               -> cmp l1 l2 && cmp r1 r2
     | Mrateq (l1, r1), Mrateq (l2, r2)                                                 -> cmp l1 l2 && cmp r1 r2
     | Mratcmp (op1, l1, r1), Mratcmp (op2, l2, r2)                                     -> cmp_comparison_operator op1 op2 && cmp l1 l2 && cmp r1 r2
     | Mratarith (op1, l1, r1), Mratarith (op2, l2, r2)                                 -> cmp_rat_arith_op op1 op2 && cmp l1 l2 && cmp r1 r2
@@ -1343,7 +1343,8 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mplus (l, r)                   -> Mplus (f l, f r)
   | Mminus (l, r)                  -> Mminus (f l, f r)
   | Mmult (l, r)                   -> Mmult (f l, f r)
-  | Mdiv (l, r)                    -> Mdiv (f l, f r)
+  | Mdivrat (l, r)                 -> Mdivrat (f l, f r)
+  | Mdiveuc (l, r)                 -> Mdiveuc (f l, f r)
   | Mmodulo (l, r)                 -> Mmodulo (f l, f r)
   | Muplus e                       -> Muplus (f e)
   | Muminus e                      -> Muminus (f e)
@@ -1402,7 +1403,6 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   (* variable *)
   | Mvar (id, k)                   -> Mvar (g id, map_var_kind f k)
   (* rational *)
-  | Mdivrat (l, r)                 -> Mdivrat (f l, f r)
   | Mrateq (l, r)                  -> Mrateq (f l, f r)
   | Mratcmp (op, l, r)             -> Mratcmp (op, f l, f r)
   | Mratarith (op, l, r)           -> Mratarith (op, f l, f r)
@@ -1667,7 +1667,8 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mplus (l, r)                          -> f (f accu l) r
   | Mminus (l, r)                         -> f (f accu l) r
   | Mmult (l, r)                          -> f (f accu l) r
-  | Mdiv (l, r)                           -> f (f accu l) r
+  | Mdivrat (l, r)                        -> f (f accu l) r
+  | Mdiveuc (l, r)                        -> f (f accu l) r
   | Mmodulo (l, r)                        -> f (f accu l) r
   | Muplus e                              -> f accu e
   | Muminus e                             -> f accu e
@@ -1726,7 +1727,6 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   (* variable *)
   | Mvar (_, k)                           -> fold_var_kind f accu k
   (* rational *)
-  | Mdivrat (l, r)                        -> f (f accu l) r
   | Mrateq (l, r)                         -> f (f accu l) r
   | Mratcmp (_, l, r)                     -> f (f accu l) r
   | Mratarith (_, l, r)                   -> f (f accu l) r
@@ -2124,10 +2124,15 @@ let fold_map_term
     let re, ra = f la r in
     g (Mmult (le, re)), ra
 
-  | Mdiv (l, r) ->
+  | Mdivrat (l, r) ->
     let le, la = f accu l in
     let re, ra = f la r in
-    g (Mdiv (le, re)), ra
+    g (Mdivrat (le, re)), ra
+
+  | Mdiveuc (l, r) ->
+    let le, la = f accu l in
+    let re, ra = f la r in
+    g (Mdiveuc (le, re)), ra
 
   | Mmodulo (l, r) ->
     let le, la = f accu l in
@@ -2388,11 +2393,6 @@ let fold_map_term
 
 
   (* rational *)
-
-  | Mdivrat (l, r) ->
-    let le, la = f accu l in
-    let re, ra = f la r in
-    g (Mdivrat (le, re)), ra
 
   | Mrateq (l, r) ->
     let le, la = f accu l in
@@ -3644,10 +3644,10 @@ end = struct
 
         let res =
           match op with
-          | `Plus -> Big_int.add_big_int a b
-          | `Minus -> Big_int.sub_big_int a b
-          | `Mult -> Big_int.mult_big_int a b
-          | `Div -> Big_int.div_big_int a b
+          | `Plus   -> Big_int.add_big_int a b
+          | `Minus  -> Big_int.sub_big_int a b
+          | `Mult   -> Big_int.mult_big_int a b
+          | `DivEuc -> Big_int.div_big_int a b
           | `Modulo -> Big_int.mod_big_int a b
           | _ -> assert false
         in
@@ -3659,7 +3659,7 @@ end = struct
         | Mplus   (a, b) -> arith `Plus  (aux a, aux b)
         | Mminus  (a, b) -> arith `Minus (aux a, aux b)
         | Mmult   (a, b) -> arith `Mult  (aux a, aux b)
-        | Mdiv    (a, b) -> arith `Div   (aux a, aux b)
+        | Mdiveuc (a, b) -> arith `DivEuv   (aux a, aux b)
         | Mmodulo (a, b) -> arith `Modulo   (aux a, aux b)
         | Mnot     a     -> mk_mterm (Mbool (not (extract_bool (aux a)))) (Tbuiltin Bbool)
         | Mand    (a, b) -> mk_mterm (Mbool ((extract_bool (aux a)) && (extract_bool (aux b)))) (Tbuiltin Bbool)
@@ -3750,7 +3750,7 @@ end = struct
   let with_div_for_mterm_intern _ctx accu (mt : mterm) : bool =
     let rec aux accu (t : mterm) =
       match t.node with
-      | Mdiv (_,_) -> raise FoundDiv
+      | Mdivrat _ | Mdiveuc _ -> raise FoundDiv
       | Mmodulo _ -> raise FoundDiv
       | Massign (DivAssign,_,_) -> raise FoundDiv
       | _ -> fold_term aux accu t in

@@ -1,14 +1,14 @@
 archetype expr_fun_min_int_rat
 
-variable res : rational = 0 div 1
+variable res : rational = 0.0
 
 entry exec () {
   specification {
-    s0: res = 1 div 3;
+    s0: res = 1 / 3;
   }
   effect {
     var a : int = 1;
-    var b : rational = 1 div 3;
+    var b : rational = 1 / 3;
     res := min(a, b)
   }
 }

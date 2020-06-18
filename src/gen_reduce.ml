@@ -107,7 +107,7 @@ let rec process_non_empty_list_term (model : model) (ctx : ctx_red) (s : s_red) 
           | PlusAssign  -> mk_mterm (Mplus (var, value)) type_
           | MinusAssign -> mk_mterm (Mminus (var, value)) type_
           | MultAssign  -> mk_mterm (Mmult (var, value)) type_
-          | DivAssign   -> mk_mterm (Mdiv (var, value)) type_
+          | DivAssign   -> mk_mterm (Mdivrat (var, value)) type_
           | AndAssign   -> mk_mterm (Mand (var, value)) type_
           | OrAssign    -> mk_mterm (Mor (var, value)) type_
         in

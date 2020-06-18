@@ -7,7 +7,7 @@ enum t =
   | C4
   | C5
 
-variable res : rational = 0 div 1
+variable res : rational = 0.0
 
 entry exec () {
   specification {
@@ -17,9 +17,9 @@ entry exec () {
     var x : t = C3;
     res :=
       match x with
-      | C1 | C2 -> 0 div 1
+      | C1 | C2 -> 0 / 1
       | C3 -> 3
-      | _ -> 2 div 3
+      | _ -> 2 / 3
       end
   }
 }

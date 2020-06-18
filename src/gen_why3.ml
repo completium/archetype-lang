@@ -1277,7 +1277,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mplus (l, r)  -> Tplus  (with_dummy_loc Tyint, map_mterm m ctx l, map_mterm m ctx r)
     | Mminus (l, r) -> Tminus (with_dummy_loc Tyint, map_mterm m ctx l, map_mterm m ctx r)
     | Mmult (l, r) -> Tmult (with_dummy_loc Tyint, map_mterm m ctx l, map_mterm m ctx r)
-    | Mdiv (l, r) -> Tdiv (with_dummy_loc Tyint, map_mterm m ctx l, map_mterm m ctx r)
+    | Mdivrat _ -> error_not_translated "Mdivrat"
+    | Mdiveuc (l, r) -> Tdiv (with_dummy_loc Tyint, map_mterm m ctx l, map_mterm m ctx r)
     | Mmodulo (l, r) -> Tmod (with_dummy_loc Tyint, map_mterm m ctx l, map_mterm m ctx r)
     | Muplus _ -> error_not_translated "Muplus"
     | Muminus v -> Tuminus (with_dummy_loc Tyint, map_mterm m ctx v)
@@ -1493,7 +1494,6 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     (* rational *)
 
-    | Mdivrat             _ -> error_not_translated "Mdivrat"
     | Mrateq (r,t) -> Tapp (loc_term (Tvar "rat_eq"),[map_mterm m ctx r; map_mterm m ctx t])
     | Mratcmp (cop,r,t) ->
       let cop_to_mterm = function
