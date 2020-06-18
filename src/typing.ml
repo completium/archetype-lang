@@ -29,11 +29,11 @@ module Type : sig
   val equal     : M.ptyp -> M.ptyp -> bool
   val sig_equal : M.ptyp list -> M.ptyp list -> bool
 
-  val compatible     : from_:M.ptyp -> to_:M.ptyp -> bool
+  val compatible     : ?autoview:bool -> from_:M.ptyp -> to_:M.ptyp -> bool
   val distance       : from_:M.ptyp -> to_:M.ptyp -> int option
   val sig_compatible : from_:M.ptyp list -> to_:M.ptyp list -> bool
   val sig_distance   : from_:M.ptyp list -> to_:M.ptyp list -> int option
-  val join           : M.ptyp list -> M.ptyp option
+  val join           : ?autoview:bool -> M.ptyp list -> M.ptyp option
 
   val unify : ptn:M.ptyp -> tg:M.ptyp -> (M.ptyp Mint.t) option
   val subst : M.ptyp Mint.t -> M.ptyp -> M.ptyp
@@ -77,7 +77,7 @@ end = struct
 
   let equal = ((=) : M.ptyp -> M.ptyp -> bool)
 
-  let compatible ~(from_ : M.ptyp) ~(to_ : M.ptyp) =
+  let compatible ?(autoview = false) ~(from_ : M.ptyp) ~(to_ : M.ptyp) =
     match from_, to_ with
     | _, _ when from_ = to_ ->
       true
@@ -99,17 +99,18 @@ end = struct
 
 
     | M.Tcontainer (ty1, cf), M.Tcontainer (ty2, ct) ->
-      equal ty1 ty2 && (cf = ct || ct = M.View)
+      equal ty1 ty2 && (cf = ct || (autoview && ct = M.View))
 
     | _, _ ->
       false
 
-  let join (tys : M.ptyp list) =
+  let join ?autoview (tys : M.ptyp list) =
     let module E = struct exception Error end in
 
     let join2 ty1 ty2 =
-      if compatible ~from_:ty1 ~to_:ty2 then ty2 else
-      if compatible ~from_:ty2 ~to_:ty1 then ty1 else raise E.Error in
+      if compatible ?autoview ~from_:ty1 ~to_:ty2 then ty2 else
+      if compatible ?autoview ~from_:ty2 ~to_:ty1 then ty1 else
+        raise E.Error in
 
     try
       match tys with
@@ -121,11 +122,13 @@ end = struct
   let distance ~(from_ : M.ptyp) ~(to_ : M.ptyp) =
     if   equal from_ to_
     then Some 0
-    else (if compatible ~from_ ~to_ then Some 1 else None)
+    else (if compatible ~autoview:false ~from_ ~to_ then Some 1 else None)
 
   let sig_compatible ~(from_ : M.ptyp list) ~(to_ : M.ptyp list) =
     List.length from_ = List.length to_
-    && List.for_all2 (fun from_ to_ -> compatible ~from_ ~to_) from_ to_
+    && List.for_all2
+         (fun from_ to_ -> compatible ~autoview:false ~from_ ~to_)
+         from_ to_
 
   let sig_distance ~(from_ : M.ptyp list) ~(to_ : M.ptyp list) =
     if List.length from_ <> List.length to_ then None else
@@ -1405,8 +1408,8 @@ let select_operator env ?(asset = false) loc (op, tys) =
           if not (Type.support_eq t1) || not (Type.support_eq t2) then
             raise E.NoEq;
 
-          if not (Type.compatible ~from_:t1 ~to_:t2) &&
-             not (Type.compatible ~from_:t2 ~to_:t1) then
+          if not (Type.compatible ~autoview:false ~from_:t1 ~to_:t2) &&
+             not (Type.compatible ~autoview:false ~from_:t2 ~to_:t1) then
             raise E.NoEq;
 
           Some ({ osl_sig = [t1; t2]; osl_ret = M.Tbuiltin M.VTbool; })
@@ -1430,7 +1433,7 @@ let select_operator env ?(asset = false) loc (op, tys) =
           | true, PT.Arith PT.Plus,
             [Tcontainer ((Tasset _) as aty, Partition) as rty;
              Tcontainer ((Tasset _) as sty, Collection)]
-              when Type.compatible ~from_:sty ~to_:aty
+              when Type.compatible ~autoview:false ~from_:sty ~to_:aty
             -> [{ osl_sig = tys; osl_ret = rty }]
 
           | true, PT.Arith PT.Plus,
@@ -1442,7 +1445,7 @@ let select_operator env ?(asset = false) loc (op, tys) =
             let asset = Env.Asset.get env (unloc aty) in
             let pk    = Option.get (get_field (unloc asset.as_pk) asset) in
 
-            if Type.compatible ~from_:sty ~to_:pk.fd_type then
+            if Type.compatible ~autoview:false  ~from_:sty ~to_:pk.fd_type then
               [{ osl_sig = tys; osl_ret = rty }]
             else []
 
@@ -1692,7 +1695,7 @@ let expr_mode imode = { em_kind = `Expr imode; em_pred = false; }
 let form_mode       = { em_kind = `Formula   ; em_pred = false; }
 
 let rec for_xexpr
-    (mode : emode_t) ?(autoview = true) ?(capture = `Yes None)
+    (mode : emode_t) ?autoview ?(capture = `Yes None)
     (env : env) ?(ety : M.ptyp option) (tope : PT.expr)
   =
   let for_xexpr = for_xexpr mode ~capture in
@@ -2226,7 +2229,7 @@ let rec for_xexpr
           | `Pk      -> Some (Option.get (get_field (unloc asset.as_pk) asset)).fd_type
           | _        -> assert false in
 
-        let the = for_xexpr ~autoview:false env the in
+        let the = for_xexpr env the in
 
         let the, asset, mname, (place, purity, totality), args, rty =
           match the.M.type_ with
@@ -2239,12 +2242,6 @@ let rec for_xexpr
                 let infos = for_gen_method_call mode env (loc tope) (`Typed the, m, args) in
                 let the, (asset, c), method_, args, amap = Option.get_fdfl bailout infos in
                 let rty = Option.bind (type_of_mthtype asset amap) (snd method_.mth_sig) in
-
-                let the =
-                  if c <> M.View && method_.mth_purity = `Pure then
-                    cast_expr ~autoview:true env
-                      (Some (M.Tcontainer (M.Tasset asset.as_name, M.View))) the
-                  else the in
 
                 (the, Some (asset, c), method_.mth_name,
                  (method_.mth_place, method_.mth_purity, method_.mth_totality), args, rty)
@@ -2295,7 +2292,7 @@ let rec for_xexpr
       let c      = for_xexpr env ~ety:M.vtbool c in
       let et     = for_xexpr env et in
       let ef     = for_xexpr env ef in
-      let ty, es = join_expr env ety [et; ef] in
+      let ty, es = join_expr ?autoview env ety [et; ef] in
       let et, ef = Option.get (List.as_seq2 es) in
       mk_sp ty (M.Pif (c, et, ef))
 
@@ -2431,12 +2428,12 @@ let rec for_xexpr
   in
 
   try
-    cast_expr ~autoview env ety (doit ())
+    cast_expr ?autoview env ety (doit ())
 
   with E.Bailout -> dummy ety
 
 (* -------------------------------------------------------------------- *)
-and cast_expr ~(autoview : bool) (env : env) (to_ : M.ptyp option) (e : M.pterm) =
+and cast_expr ?(autoview = false) (env : env) (to_ : M.ptyp option) (e : M.pterm) =
   let to_ =
     if not autoview then to_ else begin
       match e.M.type_, to_ with
@@ -2448,7 +2445,7 @@ and cast_expr ~(autoview : bool) (env : env) (to_ : M.ptyp option) (e : M.pterm)
 
   match to_, e with
   | Some to_, { type_ = Some from_ } ->
-    if not (Type.compatible ~from_ ~to_) then
+    if not (Type.compatible ~autoview ~from_ ~to_) then
       Env.emit_error env (e.loc, IncompatibleTypes (from_, to_));
     if not (Type.equal from_ to_) then
       M.mk_sp ~loc:e.loc ~type_:to_ (M.Pcast (from_, to_, e))
@@ -2457,17 +2454,17 @@ and cast_expr ~(autoview : bool) (env : env) (to_ : M.ptyp option) (e : M.pterm)
     e
 
 (* -------------------------------------------------------------------- *)
-and join_expr (env : env) (ety : M.ptyp option) (es : M.pterm list) =
+and join_expr ?autoview (env : env) (ety : M.ptyp option) (es : M.pterm list) =
   match ety with
   | Some _ ->
-    (ety, List.map (cast_expr ~autoview:false env ety) es)
+    (ety, List.map (cast_expr ?autoview env ety) es)
 
   | _ -> begin
       match Type.join (List.pmap (fun e -> e.M.type_) es) with
       | None ->
         (None, es)
       | Some _ as ty ->
-        (ty, List.map (cast_expr ~autoview:false env ty) es)
+        (ty, List.map (cast_expr ?autoview env ty) es)
     end
 
 (* -------------------------------------------------------------------- *)
@@ -2737,7 +2734,7 @@ and for_gen_method_call mode env theloc (the, m, args)
 
       | `SubColl ->
         let ty = M.Tcontainer (Tasset asset.as_name, M.View) in
-        M.AExpr (for_xexpr mode env ~ety:ty arg)
+        M.AExpr (for_xexpr ~autoview:true mode env ~ety:ty arg)
 
       | `T ty ->
         M.AExpr (for_xexpr mode env ~ety:ty arg)
@@ -2862,7 +2859,7 @@ and for_arg_effect
     None
 
 (* -------------------------------------------------------------------- *)
-and for_assign_expr ?(autoview = true) ?(asset = false) mode env orloc (op, lfty, rfty) e =
+and for_assign_expr ?autoview ?(asset = false) mode env orloc (op, lfty, rfty) e =
   let op =
     match op with
     | ValueAssign -> None
@@ -2875,14 +2872,14 @@ and for_assign_expr ?(autoview = true) ?(asset = false) mode env orloc (op, lfty
   in
 
   let ety = if Option.is_none op then Some rfty else None in
-  let e = for_xexpr ~autoview mode env ?ety e in
+  let e = for_xexpr ?autoview mode env ?ety e in
 
   Option.get_dfl e (
     op |> Option.bind (fun op  ->
       e.type_ |> Option.bind (fun ety ->
         select_operator env ~asset orloc (op, [lfty; ety])
           |> Option.map (fun sig_ ->
-                 cast_expr ~autoview env (Some (List.last sig_.osl_sig)) e))))
+                 cast_expr ?autoview env (Some (List.last sig_.osl_sig)) e))))
 
 (* -------------------------------------------------------------------- *)
 and for_formula (env : env) (topf : PT.expr) : M.pterm =
@@ -2961,7 +2958,7 @@ and for_role (env : env) (name : PT.lident) =
     None
 
   | Some nty ->
-    if not (Type.compatible ~from_:nty.vr_type ~to_:M.vtrole) then
+    if not (Type.compatible ~autoview:false ~from_:nty.vr_type ~to_:M.vtrole) then
       (Env.emit_error env (loc name, NotARole (unloc name)); None)
     else Some name
 
@@ -3101,26 +3098,20 @@ let rec for_instruction_r
   try
     match unloc i with
     | Emethod (pthe, m, args) -> begin
-        let the = for_expr ~autoview:false kind env pthe in
+        let the = for_expr kind env pthe in
 
         match the.M.type_ with
         | Some ty -> begin
             match Type.as_asset_collection ty with
             | Some _ ->
               let infos = for_gen_method_call (expr_mode kind) env (loc i) (`Typed the, m, args) in
-              let the, (asset, c), method_, args, _ = Option.get_fdfl bailout infos in
+              let the, (_, c), method_, args, _ = Option.get_fdfl bailout infos in
 
               begin match c, method_.mth_purity with
                 | ctn, `Effect allowed when not (List.mem ctn allowed) ->
                   Env.emit_error env (loc i, InvalidEffectForCtn (ctn, allowed))
                 | _, _ ->
                   () end;
-
-              let the =
-                if c <> M.View && method_.mth_purity = `Pure then
-                  cast_expr ~autoview:false env
-                    (Some (M.Tcontainer (M.Tasset asset.as_name, M.View))) the
-                else the in
 
               env, mki (M.Icall (Some the, M.Cconst method_.mth_name, args))
 
@@ -3151,7 +3142,8 @@ let rec for_instruction_r
             for_expr kind env pe
 
           | Some (_, fty) ->
-            for_assign_expr (expr_mode kind) env (loc plv) (op, fty, fty) pe
+            for_assign_expr
+              (expr_mode kind) env (loc plv) (op, fty, fty) pe
         in
 
         env, mki (M.Iassign (op, x, e))
