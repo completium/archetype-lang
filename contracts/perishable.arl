@@ -37,7 +37,7 @@ asset shipment identified by ship_id {
   ship_id  : string;
   type     : productType;
   count    : int;
-  p_c      : p_contract
+  p_c      : pkey of p_contract;
 } with states shipmentStatus
 
 transition payOut (arrival : date) on (sk : pkey of shipment) {

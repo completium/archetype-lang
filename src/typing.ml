@@ -331,6 +331,8 @@ type error_desc =
   | PredicateCallInExpr
   | ReadOnlyGlobal                     of ident
   | SecurityInExpr
+  | ShadowPKey
+  | ShadowSKey
   | SpecOperatorInExpr
   | TransferWithoutDest
   | UninitializedVar
@@ -349,6 +351,7 @@ type error_desc =
   | UpdateEffectWithoutDefault
   | UpdateEffectOnPkey
   | UselessPattern
+  | UsePkeyOfInsteadOfAsset
   | VoidMethodInExpr
   | VSetInExpr
   | VSetOnNonAsset
@@ -481,6 +484,8 @@ let pp_error_desc fmt e =
   | PredicateCallInExpr                -> pp "Cannot access predicates in code"
   | ReadOnlyGlobal i                   -> pp "Global is read only: %a" pp_ident i
   | SecurityInExpr                     -> pp "Found securtiy predicate in expression"
+  | ShadowPKey                         -> pp "Primary key cannot be a shadow field"
+  | ShadowSKey                         -> pp "Sort key cannot be a shadow field"
   | InvalidShadowFieldAccess           -> pp "Shadow field access in non-shadow code"
   | InvalidShadowVariableAccess        -> pp "Shadow variable access in non-shadow code"
   | SpecOperatorInExpr                 -> pp "Specification operator in expression"
@@ -501,6 +506,7 @@ let pp_error_desc fmt e =
   | UpdateEffectWithoutDefault         -> pp "Update effect without default value for field"
   | UpdateEffectOnPkey                 -> pp "Cannot set/update the primary key in an effect"
   | UselessPattern                     -> pp "Useless match branch"
+  | UsePkeyOfInsteadOfAsset            -> pp "Cannot reference assets directly, use `pkey of` instead"
   | VoidMethodInExpr                   -> pp "Void method in non-void context"
   | VSetInExpr                         -> pp "Virtual set in expression"
   | VSetOnNonAsset                     -> pp "Virtual set modifier on non-asset"
@@ -1542,50 +1548,67 @@ let tt_cmp_operator (op : PT.comparison_operator) =
 (* -------------------------------------------------------------------- *)
 exception InvalidType
 
-let rec for_type_exn (env : env) (ty : PT.type_t) : M.ptyp =
-  match unloc ty with
-  | Tref x -> begin
-      match Env.Type.lookup env (unloc x) with
-      | None ->
-        Env.emit_error env (loc x, UnknownTypeName (unloc x));
+let for_type_exn ?pkey (env : env) =
+  let rec doit ?(canasset = false) (ty : PT.type_t) : M.ptyp =
+    match unloc ty with
+    | Tref x -> begin
+        match Env.Type.lookup env (unloc x) with
+        | None ->
+          Env.emit_error env (loc x, UnknownTypeName (unloc x));
+          raise InvalidType
+        | Some (M.Tasset _) when not canasset && Option.is_some pkey ->
+          Env.emit_error env (loc x, UsePkeyOfInsteadOfAsset);
+          raise InvalidType
+        | Some ty -> ty
+      end
+  
+    | Tasset x ->
+      if not canasset && Option.is_some pkey then begin
+        Env.emit_error env (loc x, UsePkeyOfInsteadOfAsset);
         raise InvalidType
-      | Some ty -> ty
-    end
+      end;
+      let decl = Env.Asset.lookup env (unloc x) in
+      M.Tasset (Option.get_exn InvalidType decl).as_name
+  
+    | Tcontainer (pty, ctn) ->
+      let ty = doit ~canasset:true pty in
+  
+      if not (Type.is_asset ty) then
+        Env.emit_error env (loc pty, ContainerOfNonAsset);
+      M.Tcontainer (ty, for_container env ctn)
+  
+    | Tlist ty ->
+      M.Tlist (doit ty)
+  
+    | Ttuple tys ->
+      M.Ttuple (List.map doit tys)
+  
+    | Toption ty ->
+      M.Toption (doit ty)
+  
+    | Tkeyof ty -> begin
+        match doit ~canasset:true ty with
+        | M.Tasset x -> begin
+          let decl = Env.Asset.get env (unloc x) in
 
-  | Tasset x ->
-    let decl = Env.Asset.lookup env (unloc x) in
-    M.Tasset (Option.get_exn InvalidType decl).as_name
+          match pkey with
+          | Some map when List.mem (unloc x) map ->
+              Tnamed (List.index_of ((=) (unloc x)) map)
 
-  | Tcontainer (pty, ctn) ->
-    let ty = for_type_exn env pty in
+          | _ ->
+            let ctor = Env.Asset.byfield env (unloc decl.as_pk) in
+            (snd (Option.get ctor)).fd_type
+        end
+  
+        | _ ->
+          Env.emit_error env (loc ty, NotAnAssetType);
+          raise InvalidType
+      end
 
-    if not (Type.is_asset ty) then
-      Env.emit_error env (loc pty, ContainerOfNonAsset);
-    M.Tcontainer (ty, for_container env ctn)
+  in fun ty -> doit ty
 
-  | Tlist ty ->
-    M.Tlist (for_type_exn env ty)
-
-  | Ttuple tys ->
-    M.Ttuple (List.map (for_type_exn env) tys)
-
-  | Toption ty ->
-    M.Toption (for_type_exn env ty)
-
-  | Tkeyof ty -> begin
-      match for_type_exn env ty with
-      | M.Tasset x ->
-        let decl = Env.Asset.get env (unloc x) in
-        let ctor = Env.Asset.byfield env (unloc decl.as_pk) in
-        (snd (Option.get ctor)).fd_type
-
-      | _ ->
-        Env.emit_error env (loc ty, NotAnAssetType);
-        raise InvalidType
-    end
-
-let for_type (env : env) (ty : PT.type_t) : M.ptyp option =
-  try Some (for_type_exn env ty) with InvalidType -> None
+let for_type ?pkey (env : env) (ty : PT.type_t) : M.ptyp option =
+  try Some (for_type_exn ?pkey env ty) with InvalidType -> None
 
 (* -------------------------------------------------------------------- *)
 let for_asset_type (env : env) (ty : PT.type_t) : M.lident option =
@@ -3833,16 +3856,25 @@ let for_funs_decl (env : env) (decls : PT.s_function loced list) =
   List.fold_left_map for_fun_decl env decls
 
 (* -------------------------------------------------------------------- *)
-let for_asset_decl ?(force = false) (env : env) (decl : PT.asset_decl loced) =
+type pre_assetdecl = {
+  pas_name   : M.lident;
+  pas_fields : (string * M.ptyp * PT.expr option * bool) loced list;
+  pas_pk     : M.lident;
+  pas_sortk  : M.lident list;
+  pas_invs   : PT.label_exprs list;
+  pas_state  : statedecl option;
+  pas_init   : PT.expr list;
+}
+
+let for_asset_decl pkey (env : env) ((adecl, decl) : assetdecl * PT.asset_decl loced) =
   let (x, cfields, sfields, opts, postopts, _ (* FIXME *), _) = unloc decl in
 
   let for_field field =
     let (f, fty, init, shadow) = field in
-    let fty  = for_type env fty in
-    let init = Option.map (for_expr `Concrete env ?ety:fty) init in
+    let fty  = for_type ~pkey env fty in
 
-    if   check_and_emit_name_free env f
-    then Some (mkloc (loc f) (unloc f, fty, init, shadow))
+    if  check_and_emit_name_free env f
+    then Option.map (fun fty -> mkloc (loc f) (unloc f, fty, init, shadow)) fty
     else None in
 
   let fields =
@@ -3869,124 +3901,234 @@ let for_asset_decl ?(force = false) (env : env) (decl : PT.asset_decl loced) =
       fields
   in
 
-  (* FIXME: check for duplicated type name? *)
+  let pks    = List.pmap (function PT.AOidentifiedby pk -> Some pk | _ -> None)     opts in
+  let sortks = List.pmap (function PT.AOsortedby     sk -> Some sk | _ -> None)     opts in
+  let invs   = List.pmap (function PT.APOconstraints fi -> Some fi | _ -> None) postopts in
+  let state  = List.pmap (function PT.APOstates      st -> Some st | _ -> None) postopts in
+  let inits  = List.pmap (function PT.APOinit        it -> Some it | _ -> None) postopts in
 
-  let pk, sortk =
-    let dokey key =
-      if Option.is_none (get_field (unloc key)) then begin
-        Env.emit_error env (loc key, UnknownFieldName (unloc key));
-        None
-      end else Some key in
-
-    let do1 (pk, sortk) = function
-      | PT.AOidentifiedby newpk ->
-        if Option.is_some pk then
-          Env.emit_error env (loc newpk, DuplicatedPKey);
-        let newpk = dokey newpk in
-        ((if Option.is_some pk then pk else newpk), sortk)
-
-      | PT.AOsortedby newsortk ->
-        let newsortk = dokey newsortk in
-        (pk, Option.fold (fun sortk newsortk -> newsortk :: sortk) sortk newsortk)
-
-    in List.fold_left do1 (None, []) opts in
-
-  begin
-    let pk =
-      match pk with
-      | None ->
+  let pks =
+    match pks with
+    | [] ->
         Option.map (L.lmap proj4_1) (List.ohead fields)
-      | Some _ -> pk in
-
-    Option.iter (fun pk ->
-        match Option.get (get_field (unloc pk)) with
-        | { pldesc = _, Some ty, _, _; plloc = loc; } ->
-          if not (Type.pktype ty) then
-            Env.emit_error env (loc, InvalidTypeForPk)
-        | _ -> ()
-      ) pk
-  end;
-
-  let sortk = List.rev sortk in
-
-  let env, invs =
-    let for1 env = function
-      | PT.APOconstraints invs ->
-        Env.inscope env (fun env ->
-            let env =
-              List.fold_left (fun env { pldesc = (f, fty, _, _); plloc = loc; } ->
-                  Option.fold (fun env fty ->
-                      Env.Local.push env (mkloc loc f, fty)) env fty)
-                env fields
-            in for_xlbls_formula env invs)
-
-      | _ ->
-        env, []
-
-    in List.fold_left_map for1 env postopts in
-
-  let state =
-    let for1 = function
-      | PT.APOstates x ->
-        let aout =
-          match Env.State.lookup env (unloc x) with
+  
+    | (_ :: subpks) as pks ->
+        let dokey key =
+          match get_field (unloc key) with
           | None ->
-            Env.emit_error env (loc x, UnknownEnum (unloc x));
-            None
-          | Some _ ->
-            Some x
-        in Some aout
-
-      | _ ->
-        None in
-
-    match List.pmap for1 postopts with
-    | _ :: _ :: _ ->
-      Env.emit_error env (loc decl, MultipleAssetStateDeclaration);
-      None
-    | [] | [None] ->
-      None
-    | [Some st] ->
-      Some st
+              Env.emit_error env (loc key, UnknownFieldName (unloc key));
+              None
+          | Some { pldesc = (_, _, _, true) } ->
+              Env.emit_error env (loc key, ShadowPKey);
+              None
+          | Some _ -> Some key in
+        
+        List.iter (fun newpk -> Env.emit_error env (loc newpk, DuplicatedPKey)) subpks;
+        List.hd (List.map dokey pks)
   in
 
-  let init =
-    let for1 = function
-      | PT.APOinit l ->
-        Some (List.pmap (fun r ->
-            match unloc r with
-            | PT.Erecord init1
-              when List.for_all (fun (x, _) -> Option.is_none x) init1
-              ->
-              if List.length init1 <> List.length fields then begin
-                Env.emit_error env (loc r, InvalidAssetExpression); None
-              end else
-                let init1 =
-                  List.map2
-                    (fun { pldesc = (_, ety, _, _) } (_, ie) -> for_expr `Concrete env ?ety ie)
-                    fields init1 in
-                Some init1
+  pks |> Option.iter (fun pk ->
+    match Option.get (get_field (unloc pk)) with
+    | { pldesc = _, ty, _, _; plloc = loc; } ->
+      if not (Type.pktype ty) then
+        Env.emit_error env (loc, InvalidTypeForPk)
+  );
 
-            | PT.Erecord init1
+  let sortks =
+    let dokey key =
+      match get_field (unloc key) with
+      | None ->
+          Env.emit_error env (loc key, UnknownFieldName (unloc key));
+          None
+      | Some { pldesc = (_, _, _, true) } ->
+          Env.emit_error env (loc key, ShadowSKey);
+          None
+      | Some _ -> Some key in
+
+    List.pmap dokey sortks in
+
+  let state =
+    let for1 x =
+      let state = Env.State.lookup env (unloc x) in
+      if Option.is_none state then
+          Env.emit_error env (loc x, UnknownEnum (unloc x));
+      state in
+
+    if List.length state > 1 then
+      Env.emit_error env (loc decl, MultipleAssetStateDeclaration);
+
+    let state = List.map for1 state in
+    Option.bind (fun x -> x) (List.ohead state) in
+
+  let env, adecl =
+    let for_ctor { pldesc = (fd, fdty, fdinit, shadow); plloc = fdloc; } =
+      let fddfl =
+        fdinit |> Option.map (fun fdinit ->
+          M.mk_sp ~type_:fdty ~loc:(loc fdinit)
+            (M.Pvar (VTnone, Vnone, mkloc (loc fdinit) "<init>"))) in
+      { fd_name  = mkloc fdloc fd;
+        fd_type  = fdty;
+        fd_dfl   = fddfl;
+        fd_ghost = shadow; } in
+
+    let adecl = { adecl with as_fields = List.map for_ctor fields } in
+    let env   = Env.Asset.push env adecl in
+
+    (env, adecl) in
+
+  let module E = struct exception Bailout end in
+
+  try
+    if List.is_empty adecl.as_fields then begin
+      Env.emit_error env (loc decl, AssetWithoutFields);
+      raise E.Bailout
+    end;
+
+    env, pks |> Option.map (fun pks ->
+      { pas_name   = x;
+        pas_fields = fields;
+        pas_pk     = pks;
+        pas_sortk  = sortks;
+        pas_invs   = invs;
+        pas_state  = state;
+        pas_init   = List.flatten inits; } )
+
+  with E.Bailout -> env, None
+
+(* -------------------------------------------------------------------- *)
+let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) =
+  let (b, env), adecls = List.fold_left_map (fun (b, env) decl ->
+      let (name, _, _, _, _, _, _) = unloc decl in
+      let b = b && check_and_emit_name_free env name in
+      let d = { as_name   = name;
+                as_fields = [];
+                as_pk     = mkloc Location.dummy "";
+                as_sortk  = [];
+                as_invs   = [];
+                as_state  = None;
+                as_init   = []; } in
+      ((b, Env.Asset.push env d), d)) (true, env) decls in
+
+  let module E = struct exception Bailout end in
+
+  try
+    if not b then
+      raise E.Bailout;
+
+    let pkey = List.map (fun { pldesc = (x, _, _, _, _, _, _) } -> unloc x) decls in
+
+    let _, decls =
+      List.fold_left_map
+        (for_asset_decl pkey) env (List.combine adecls decls) in
+
+    if not (List.for_all Option.is_some decls) then
+      raise E.Bailout;
+
+    let decls = List.map Option.get decls in
+    let pksty =
+      let for1 decl =
+        let field =
+          List.Exn.find
+            (fun fd -> unloc decl.pas_pk = proj4_1 (L.unloc fd))
+            decl.pas_fields |> Option.get in
+
+        proj4_2 (unloc field) in
+
+      List.map for1 decls in
+
+    let pksty = Mint.of_list (List.mapi (fun i x -> (i, x)) pksty) in
+
+    let adecls =
+      let for1 decl =
+        let for_ctor { pldesc = (fd, fdty, fdinit, shadow); plloc = fdloc; } =
+          let fdty  = Type.subst pksty fdty in
+          let fddfl =
+            fdinit |> Option.map (fun fdinit ->
+              M.mk_sp ~type_:fdty ~loc:(loc fdinit)
+                (M.Pvar (VTnone, Vnone, mkloc (loc fdinit) "<init>"))) in
+  
+          { fd_name  = mkloc fdloc fd;
+            fd_type  = fdty;
+            fd_dfl   = fddfl;
+            fd_ghost = shadow; }
+        in
+  
+        { as_name   = decl.pas_name;
+          as_fields = List.map for_ctor decl.pas_fields;
+          as_pk     = decl.pas_pk;
+          as_sortk  = decl.pas_sortk;
+          as_invs   = [];
+          as_state  = Option.map (fun x -> x.sd_name) decl.pas_state;
+          as_init   = []; }
+
+      in List.map for1 decls in
+
+    let env = List.fold_left Env.Asset.push env0 adecls in
+
+    let adecls =
+      let for1 adecl decl =
+        let for_ctor ctor { pldesc = (_, _, dfl, shadow); plloc = xloc; } =
+          if shadow && Option.is_none dfl then
+            Env.emit_error env (xloc, MissingInitValueForShadowField);
+          let fd_dfl =
+            dfl |> Option.map
+              (for_expr `Concrete env ~ety:ctor.fd_type) in
+          { ctor with fd_dfl }
+        in
+  
+        { adecl with
+            as_fields = List.map2 for_ctor adecl.as_fields decl.pas_fields; }
+
+      in List.map2 for1 adecls decls in
+
+    let env, adecls =
+      let for1 env (adecl, decl) =
+        let env, as_invs =
+          Env.inscope env (fun env ->
+            let env =
+              List.fold_left (fun env field ->
+                Env.Local.push env (field.fd_name, field.fd_type)
+              ) env adecl.as_fields
+            in List.fold_left_map for_xlbls_formula env decl.pas_invs)
+
+        in (env, { adecl with as_invs = List.flatten as_invs }) in
+
+      List.fold_left_map for1 env (List.combine adecls decls)
+    in
+
+    let adecls =
+      let for1 adecl decl =
+        let forinit = function
+          | { pldesc = PT.Erecord init1; plloc = thisloc }
+              when List.for_all (fun (x, _) -> Option.is_none x) init1
+          -> 
+            if List.length init1 <> List.length adecl.as_fields then begin
+              Env.emit_error env (thisloc, InvalidAssetExpression); None
+            end else
+              let init1 =
+                List.map2
+                  (fun field (_, ie) -> for_expr `Concrete env ~ety:field.fd_type ie)
+                  adecl.as_fields init1 in
+              Some init1
+
+          | { pldesc = PT.Erecord init1; plloc = _; }
               when List.for_all
                      (function (Some (PT.ValueAssign, _), _) -> true | _ -> false)
                      init1
-              ->
-
+          ->
               let init1 =
                 List.pmap (function (Some (_, x), e) -> Some (x, e) | _ -> None) init1 in
 
               let init1 =
                 List.filter (fun (x, _) ->
-                  if not (List.exists (fun {pldesc = (y, _, _, _)} -> unloc x = y) fields) then
+                  if Option.is_none (get_field (unloc x) adecl) then
                     (Env.emit_error env (loc x, UnknownFieldName (unloc x)); false)
                   else true) init1 in
 
               let init1 =
                 List.fold_left (fun init1 ({pldesc = x; plloc = tloc}, e) ->
-                    let {pldesc = _, fty, _, _} =
-                      List.find (fun {pldesc = (y, _, _, _)} -> x = y) fields in
-                    let e = for_expr `Concrete env ?ety:fty e in
+                    let { fd_type = fty } = Option.get (get_field x adecl) in
+                    let e = for_expr `Concrete env ~ety:fty e in
                     Mid.update x (fun es -> Some ((e, tloc) :: (Option.get_dfl [] es))) init1
                   ) Mid.empty init1 in
 
@@ -3997,82 +4139,37 @@ let for_asset_decl ?(force = false) (env : env) (decl : PT.asset_decl loced) =
                     (List.chop (List.rev es))
                 ) init1;
 
-              let init1 = List.map (fun {pldesc = (x, _, e, _); plloc = lloc} ->
-                  match Mid.find_opt x init1 with
-                  | None when Option.is_none e ->
-                      Env.emit_error env (lloc, MissingFieldInRecordLiteral x);
+              let init1 = List.map (fun fd ->
+                  match Mid.find_opt (unloc fd.fd_name) init1 with
+                  | None when Option.is_none fd.fd_dfl ->
+                      Env.emit_error env
+                        (loc fd.fd_name, MissingFieldInRecordLiteral (unloc fd.fd_name));
                       None
                   | None ->
-                      e
+                      fd.fd_dfl
                   | Some es ->
                       Some (fst (Option.get (List.ohead (List.rev es))))
-                ) fields in
+                ) adecl.as_fields in
 
               if   List.for_all Option.is_some init1
               then Some (List.pmap (fun x -> x) init1)
               else None
 
 
-            | _ -> Env.emit_error env (loc r, InvalidAssetExpression); None) l)
-      | _ ->
-        None
-    in List.flatten (List.pmap for1 postopts) in
+            | { plloc = thisloc } ->
+                Env.emit_error env (thisloc, InvalidAssetExpression); None in
 
-  List.iter (fun { pldesc = (_, _, init, shadow); plloc = xloc } ->
-    if shadow && Option.is_none init then
-      Env.emit_error env (xloc, MissingInitValueForShadowField))
-    fields;
+        { adecl with as_init = List.pmap forinit decl.pas_init } in
 
-  if not force && not (check_and_emit_name_free env x) then begin
-    (env, None)
-  end else
-    let module E = struct exception Bailout end in
+      List.map2 for1 adecls decls in
 
-    try
-      if List.is_empty fields then begin
-        Env.emit_error env (loc decl, AssetWithoutFields);
-        raise E.Bailout
-      end;
+    (* Bind in working environment so that we keep labels *)
+    let env = List.fold_left Env.Asset.push env adecls in
 
-      let get_field_type { plloc = loc; pldesc = (x, ty, e, shadow) } =
-        let ty =
-          if   Option.is_some ty
-          then ty
-          else Option.bind (fun e -> e.M.type_) e
-        in { fd_name = mkloc loc x; fd_type = Option.get ty;
-             fd_dfl = e; fd_ghost = shadow; }
-      in
+    (env, List.map Option.some adecls)
 
-      let decl = {
-        as_name   = x;
-        as_fields = List.map get_field_type fields;
-        as_pk     = Option.get_fdfl
-            (fun () -> L.lmap proj4_1 (List.hd fields))
-            pk;
-        as_sortk  = sortk;
-        as_invs   = List.flatten invs;
-        as_state  = state;
-        as_init   = init;
-      } in (Env.Asset.push env decl, Some decl)
-    with E.Bailout -> (env, None)
-
-(* -------------------------------------------------------------------- *)
-let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) =
-  let b, env = List.fold_left (fun (b, env) decl ->
-      let (name, _, _, _, _, _, _) = unloc decl in
-      let b = b && check_and_emit_name_free env name in
-      let d = { as_name   = name;
-                as_fields = [];
-                as_pk     = mkloc Location.dummy "";
-                as_sortk  = [];
-                as_invs   = [];
-                as_state  = None;
-                as_init   = []; } in
-      (b, Env.Asset.push env d)) (true, env) decls in
-
-  if b then
-    List.fold_left_map (for_asset_decl ~force:true) env decls
-  else (env0, List.map (fun _ -> None)  decls)
+  with E.Bailout ->
+    (env0, List.map (fun _ -> None) decls)
 
 (* -------------------------------------------------------------------- *)
 let for_contract_decl (env : env) (decl : PT.contract_decl loced) =
