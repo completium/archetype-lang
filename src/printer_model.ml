@@ -686,7 +686,7 @@ let pp_mterm fmt (mt : mterm) =
 
     | Mcast (src, dst, v) ->
       let pp fmt (src, dst, v) =
-        Format.fprintf fmt "cast_%a_%a(%a)"
+        Format.fprintf fmt "cast(%a, %a, %a)"
           pp_type src
           pp_type dst
           f v
@@ -1166,7 +1166,8 @@ let pp_use fmt u =
   (pp_do_if (match u with | [] -> false | _ -> true) (fun fmt -> Format.fprintf fmt "@\n  @[use: %a;@]" (pp_list "@ " pp_id))) fmt u
 
 let pp_postcondition fmt (postcondition : postcondition) =
-  Format.fprintf fmt "postcondition %a {@\n  @[%a@]%a%a@\n}@\n"
+  Format.fprintf fmt "%s %a {@\n  @[%a@]%a%a@\n}@\n"
+    (match postcondition.mode with | Post -> "postcondition" | Assert -> "assert" )
     pp_id postcondition.name
     pp_mterm postcondition.formula
     pp_invariants postcondition.invariants
@@ -1181,12 +1182,81 @@ let pp_assert_ fmt (s : assert_) =
     pp_use s.uses
 
 let pp_specification fmt (v : specification) =
-  let empty = List.is_empty v.postconditions in
+  let pp_predicate fmt (p : predicate) =
+    Format.fprintf fmt "predicate %a (%a) {@\n  @[%a@]@\n}@\n"
+      pp_id p.name
+      (pp_list ", " (fun fmt (id, typ) -> Format.fprintf fmt "%a : %a" pp_id id pp_type typ)) p.args
+      pp_mterm p.body
+  in
+  let pp_definitions fmt (d : definition) =
+    Format.fprintf fmt "definition %a {@\n  @[%a : %a |@\n  %a @]@\n}@\n"
+      pp_id d.name
+      pp_id d.var
+      pp_type d.typ
+      pp_mterm d.body
+  in
+  let pp_variable_spec fmt (v : variable) =
+    let id, type_, dv = v.decl in
+    Format.fprintf fmt "%s %a : %a%a@\n"
+      (if v.constant then "constant" else "variable")
+      pp_id id
+      pp_type type_
+      (pp_option (pp_prefix " = " pp_mterm)) dv
+  in
+  let pp_shadow_effect fmt (instrs : mterm list) =
+    match instrs with
+    | [] -> ()
+    | _ ->
+      Format.fprintf fmt "shadow effect {@\n  @[%a@]@\n}@\n@\n" (pp_list ";@\n" pp_mterm) instrs
+  in
+  (*let pp_invariant fmt (i : lident invariant) =
+    Format.fprintf fmt "invariant for %a {@\n  @[%a@]@\n}"
+      pp_id i.label
+      (pp_list ";@\n" pp_pterm) i.formulas
+    in
+    let pp_invariants fmt is =
+    (pp_do_if (match is with | [] -> false | _ -> true) (fun fmt -> Format.fprintf fmt "@\n  @[%a@]" (pp_list "@\n" pp_invariant))) fmt is
+    in
+    let pp_use fmt u =
+    (pp_do_if (match u with | [] -> false | _ -> true) (fun fmt -> Format.fprintf fmt "@\n  @[use: %a;@]" (pp_list "@ " pp_id))) fmt u
+    in
+    let pp_assert fmt (s : lident assert_) : unit =
+    Format.fprintf fmt "assert %a {@\n  @[%a@]%a%a@\n}"
+      pp_id s.name
+      pp_pterm s.formula
+      pp_invariants s.invariants
+      pp_use s.uses
+    in *)
+  let pp_main fmt (v : specification) =
+    (pp_no_empty_list2 pp_predicate) fmt v.predicates;
+    (pp_no_empty_list2 pp_definitions) fmt v.definitions;
+    (* (pp_no_empty_list2 (fun fmt -> Format.fprintf fmt "axioms:@\n  @[%a@]@\n" pp_label_term)) v.lemmas *)
+    (* (pp_no_empty_list2 (fun fmt -> Format.fprintf fmt "theorems:@\n  @[%a@]@\n" pp_label_term)) v.theorems *)
+    (pp_no_empty_list2 pp_variable_spec) fmt v.variables;
+    (* (pp_no_empty_list2 (fun fmt (id, l : lident * lident label_term list) ->
+         Format.fprintf fmt "invariants:@\n  @[%a@]@\n"
+           (pp_list "@\n" (fun fmt (lt : lident label_term) ->
+                Format.fprintf fmt "%a : %a"
+                  pp_id id
+                  pp_label_term lt
+              )) l)) v.invariants *)
+    (* (pp_option (fun fmt -> Format.fprintf fmt "shadow effect {@\n  @[%a@]@\n}@\n" pp_instruction)) v.effect *)
+    pp_shadow_effect fmt v.effects;
+    (pp_no_empty_list2 pp_postcondition) fmt v.postconditions
+  in
+  let empty =
+    List.is_empty v.predicates     &&
+    List.is_empty v.definitions    &&
+    List.is_empty v.lemmas         &&
+    List.is_empty v.theorems       &&
+    List.is_empty v.variables      &&
+    List.is_empty v.invariants     &&
+    List.is_empty v.effects        &&
+    List.is_empty v.postconditions
+  in
   if empty
   then ()
-  else
-    Format.fprintf fmt "specification {@\n  @[%a@]@\n}@\n"
-      (pp_list "@\n" pp_postcondition) v.postconditions
+  else Format.fprintf fmt "specification {@\n  @[%a@]@\n}@\n" pp_main v
 
 let pp_security fmt (s : security) =
   let pp_security_action fmt (a : security_action)=
