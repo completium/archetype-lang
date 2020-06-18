@@ -1,6 +1,7 @@
 #! /bin/bash
 
 RET_CONTRACTS="\
+animal_tracking.arl \
 auction_lazy.arl \
 auction_no_memory.arl \
 auction_zilliqa.arl \
@@ -39,11 +40,11 @@ zero_coupon_bond_with_insurance.arl \
 zero_coupon_bond.arl \
 "
 
-REMAINED_RET_CONTRACTS="
-animal_tracking.arl \
+REMAINED_RET_CONTRACTS="\
 "
 
 EXEC_CONTRACTS="\
+animal_tracking.arl \
 auction_lazy.arl \
 auction_no_memory.arl \
 auction_zilliqa.arl \
@@ -83,10 +84,10 @@ zero_coupon_bond.arl \
 "
 
 REMAINED_EXEC_CONTRACTS="\
-animal_tracking.arl \
 "
 
 VERIF_CONTRACTS="\
+animal_tracking.arl \
 auction_no_memory.arl \
 bond.arl \
 c3n.arl \
@@ -116,7 +117,6 @@ zero_coupon_bond.arl \
 "
 
 REMAINED_VERIF_CONTRACTS="\
-animal_tracking.arl \
 auction_lazy.arl \
 auction_zilliqa.arl \
 auction.arl \
