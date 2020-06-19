@@ -550,6 +550,7 @@ let cmptypes =
     M.VTdate           ;
     M.VTduration       ;
     M.VTstring         ;
+    M.VTaddress        ;
     M.VTcurrency       ;
     M.VTbytes          ]
 
