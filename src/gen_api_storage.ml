@@ -58,7 +58,7 @@ let generate_api_storage ?(verif=false) (model : model) : model =
             let asset = Utils.get_asset model asset_name in
             List.fold_left (fun accu (x : asset_item) ->
                 match x.original_type with
-                | Tcontainer (Tasset an, Partition) -> (unloc an)::accu
+              | Tcontainer (Tasset an, Partition) -> (unloc an)::accu
                 | _ -> accu
               ) [] asset.values
           end
@@ -70,8 +70,15 @@ let generate_api_storage ?(verif=false) (model : model) : model =
       | Mremoveall (asset_name, field_name, _) ->
         let (pa,_,_) = Utils.get_container_asset_key model asset_name field_name in
         [APIAsset (Get asset_name); APIAsset (Remove pa); APIAsset (FieldRemove (asset_name, field_name)); APIAsset (RemoveAll (asset_name, field_name))]
-      | Mremoveif (asset_name, c, la, lb, _) ->
-        [APIAsset (Get asset_name); APIAsset (RemoveIf (asset_name, to_ck c, la, lb))]
+      | Mremoveif (asset_name, (CKcoll as c), la, lb, _) ->
+        [APIAsset (Get asset_name); APIAsset (Remove asset_name); APIAsset (RemoveIf (asset_name, to_ck c, la, lb))]
+      | Mremoveif (asset_name, ((CKfield ({node = Mdot ({type_ = Tasset aan}, fn)})) as c), la, lb, _) ->
+        Format.printf "mt: %a@." pp_mterm term;
+        let fn = unloc fn in
+        let aan = unloc aan in
+        (* let (pa,_,_) = Utils.get_container_asset_key model (unloc aan) fn in *)
+        (* APIAsset (Remove aan);  *)
+        [APIAsset (Get asset_name); APIAsset (FieldRemove (aan, fn)); APIAsset (RemoveIf (aan, to_ck c, la, lb))]
       | Mclear (an , c) ->
         [APIAsset (Clear (an, to_ck c))]
       | Mselect (asset_name, c, la, lb, _) ->
