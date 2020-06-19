@@ -61,5 +61,9 @@ entry exec () {
 
     res := "a" =  "b";
     res := "a" <> "b";
+    res := "a" < "b";
+    res := "a" <= "b";
+    res := "a" > "b";
+    res := "a" >= "b";
   }
 }
