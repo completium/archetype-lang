@@ -1317,6 +1317,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Mremoveall (a, f, v) -> Tapp (loc_term (Tvar ("removeall_" ^ a ^ "_" ^ f)),[map_mterm m ctx v])
 
+    | Mremoveif (_an, _, _la, _lb, _a) -> error_not_translated "Mremoveif"
+
     | Mclear (n, CKcoll) -> Tapp (loc_term (Tvar ("clear_"^(n))),[])
     | Mclear (n, CKview v) -> Tapp (loc_term (Tvar ("clear_view_"^(n))),[map_mterm m ctx v])
     | Mclear (n, CKfield v) -> Tapp (loc_term (Tvar ("clear_view_"^(n))),[map_mterm m ctx v])

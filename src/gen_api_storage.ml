@@ -70,6 +70,8 @@ let generate_api_storage ?(verif=false) (model : model) : model =
       | Mremoveall (asset_name, field_name, _) ->
         let (pa,_,_) = Utils.get_container_asset_key model asset_name field_name in
         [APIAsset (Get asset_name); APIAsset (Remove pa); APIAsset (FieldRemove (asset_name, field_name)); APIAsset (RemoveAll (asset_name, field_name))]
+      | Mremoveif (asset_name, c, la, lb, _) ->
+        [APIAsset (Get asset_name); APIAsset (RemoveIf (asset_name, to_ck c, la, lb))]
       | Mclear (an , c) ->
         [APIAsset (Clear (an, to_ck c))]
       | Mselect (asset_name, c, la, lb, _) ->
@@ -151,7 +153,8 @@ let generate_api_storage ?(verif=false) (model : model) : model =
                    | APIAsset (Update       (an, _))     -> an
                    | APIAsset (FieldAdd    (an, _))      -> an
                    | APIAsset (FieldRemove (an, _))      -> an
-                   | APIAsset (RemoveAll    (an, _))     -> an
+                   | APIAsset (RemoveAll  (an, _))       -> an
+                   | APIAsset (RemoveIf   (an, _, _, _)) -> an
                    | APIList _                           -> default
                    | APIBuiltin _                        -> default
                    | APIInternal _                       -> default
@@ -192,28 +195,29 @@ let generate_api_storage ?(verif=false) (model : model) : model =
                    | APIAsset   (FieldAdd      _) -> 13
                    | APIAsset   (FieldRemove   _) -> 14
                    | APIAsset   (RemoveAll     _) -> 15
-                   | APIAsset   (Contains      _) -> 16
-                   | APIAsset   (Select        _) -> 17
-                   | APIAsset   (Sort          _) -> 18
-                   | APIAsset   (Count         _) -> 19
-                   | APIAsset   (Sum           _) -> 20
-                   | APIAsset   (Head          _) -> 21
-                   | APIAsset   (Tail          _) -> 22
-                   | APIList    (Lprepend      _) -> 23
-                   | APIList    (Lcontains     _) -> 24
-                   | APIList    (Lcount        _) -> 25
-                   | APIList    (Lnth          _) -> 26
-                   | APIBuiltin (Bmin          _) -> 27
-                   | APIBuiltin (Bmax          _) -> 28
-                   | APIBuiltin (Babs          _) -> 29
-                   | APIBuiltin (Bconcat       _) -> 30
-                   | APIBuiltin (Bslice        _) -> 31
-                   | APIBuiltin (Blength       _) -> 32
-                   | APIBuiltin (Bisnone       _) -> 33
-                   | APIBuiltin (Bissome       _) -> 34
-                   | APIBuiltin (Bgetopt       _) -> 35
-                   | APIBuiltin (Bfloor         ) -> 36
-                   | APIBuiltin (Bceil          ) -> 37
+                   | APIAsset   (RemoveIf      _) -> 16
+                   | APIAsset   (Contains      _) -> 17
+                   | APIAsset   (Select        _) -> 18
+                   | APIAsset   (Sort          _) -> 19
+                   | APIAsset   (Count         _) -> 20
+                   | APIAsset   (Sum           _) -> 21
+                   | APIAsset   (Head          _) -> 22
+                   | APIAsset   (Tail          _) -> 23
+                   | APIList    (Lprepend      _) -> 24
+                   | APIList    (Lcontains     _) -> 25
+                   | APIList    (Lcount        _) -> 26
+                   | APIList    (Lnth          _) -> 27
+                   | APIBuiltin (Bmin          _) -> 28
+                   | APIBuiltin (Bmax          _) -> 29
+                   | APIBuiltin (Babs          _) -> 30
+                   | APIBuiltin (Bconcat       _) -> 31
+                   | APIBuiltin (Bslice        _) -> 32
+                   | APIBuiltin (Blength       _) -> 33
+                   | APIBuiltin (Bisnone       _) -> 34
+                   | APIBuiltin (Bissome       _) -> 35
+                   | APIBuiltin (Bgetopt       _) -> 36
+                   | APIBuiltin (Bfloor         ) -> 37
+                   | APIBuiltin (Bceil          ) -> 38
                  in
                  let idx1 = get_kind i1.node_item in
                  let idx2 = get_kind i2.node_item in

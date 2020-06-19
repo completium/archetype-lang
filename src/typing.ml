@@ -701,6 +701,7 @@ let methods : (string * method_) list =
     ("add"         , mk M.Cadd          `Both        (`Effect csp ) `Total   (`Fixed [`ThePkForSubset ], None));
     ("remove"      , mk M.Cremove       `Both        (`Effect csp ) `Total   (`Fixed [`Pk             ], None));
     ("clear"       , mk M.Cclear        `Both        (`Effect cspv) `Total   (`Fixed [                ], None));
+    ("removeif"    , mk M.Cremoveif     `Both        (`Effect csp ) `Total   (`Fixed [`Pred true      ], None));
     ("removeall"   , mk M.Cremoveall    `Both        (`Effect  sp ) `Total   (`Fixed [                ], None));
     ("update"      , mk M.Cupdate       `Both        (`Effect c   ) `Total   (`Fixed [`Pk; `Ef true   ], None));
     ("addupdate"   , mk M.Caddupdate    `Both        (`Effect cp  ) `Total   (`Fixed [`Pk; `Ef false  ], None));

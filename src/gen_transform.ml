@@ -1859,6 +1859,19 @@ let extract_term_from_instruction f (model : model) : model =
       in
       process (mk_mterm (Mclear (an, ve)) mt.type_) va
 
+    | Mremoveif (an, v, la, b, a) ->
+      let ve, va =
+        match v with
+        | CKcoll -> CKcoll, []
+        | CKview v  -> let ve, va = f v in CKview ve, va
+        | CKfield v -> let ve, va = f v in CKfield ve, va
+      in
+      let be, ba = f b in
+      let ae, aa = List.fold_right (fun v (xe, xa) ->
+          let ve, va = f v in
+          (ve::xe, va @ xa)) a ([], []) in
+      process (mk_mterm (Mremoveif (an, ve, la, be, ae)) mt.type_) (va @ ba @ aa)
+
     | Mset (an, l, k, v) ->
       let ke, ka = f k in
       let ve, va = f v in
@@ -2101,6 +2114,17 @@ let add_contain_on_get (model : model) : model =
       | Mremovefield (_an, _fn, c, i) ->
         let accu = f accu c in
         let accu = f accu i in
+        gg accu mt
+
+      | Mremoveif (_an, v, _la, b, a) ->
+        let accu =
+          match v with
+          | CKcoll     -> accu
+          | CKview c   -> f accu c
+          | CKfield c  -> f accu c
+        in
+        let accu = f accu b in
+        let accu = List.fold_right (fun v accu -> f accu v) a accu in
         gg accu mt
 
       | Mclear (_an, v) ->
@@ -2498,6 +2522,12 @@ let replace_api_view_by_col (model : model) : model =
     | Mclear (an, CKview c) when is_field c ->
       let c = aux ctx c |> remove_cast in
       mk_mterm (Mclear (an, CKfield c)) mt.type_
+
+    | Mremoveif (an, CKview c, la, lb, a) when is_storcol c ->
+      mk_mterm (Mremoveif (an, CKcoll, la, lb, a)) mt.type_
+
+    | Mremoveif (an, CKview c, la, lb, a) when is_field c ->
+      mk_mterm (Mremoveif (an, CKfield c, la, lb, a)) mt.type_
 
     | Mget (an, CKview c, k) when is_col c->
       let k = aux ctx k in

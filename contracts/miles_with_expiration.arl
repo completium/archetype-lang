@@ -113,9 +113,7 @@ entry clear_expired () {
 
   effect {
     for : loop2 o in owner do
-      for r in owner[o].miles.select(the.expiration < now) do
-        owner[o].miles.remove(r)
-      done
+      owner[o].miles.removeif(the.expiration < now)
     done
   }
 }

@@ -24,12 +24,13 @@ type env = {
   update_preds: (ident * assignment_operator * mterm) list list;
   select_preds: mterm list;
   sum_preds: mterm list;
+  removeif_preds: mterm list;
   consts: (ident * mterm) list;
 }
 [@@deriving show {with_path = false}]
 
-let mk_env ?f ?(update_preds=[]) ?(select_preds=[]) ?(sum_preds=[]) ?(consts=[]) () : env =
-  { f; update_preds; select_preds; sum_preds; consts }
+let mk_env ?f ?(update_preds=[]) ?(select_preds=[]) ?(sum_preds=[]) ?(removeif_preds=[]) ?(consts=[]) () : env =
+  { f; update_preds; select_preds; sum_preds; removeif_preds; consts }
 
 let cmp_update l1 l2 = List.for_all2 (fun (i1, op1, v1) (i2, op2, v2) -> Model.cmp_ident i1 i2 && Model.cmp_assign_op op1 op2 && Model.cmp_mterm v1 v2) l1 l2
 
@@ -64,13 +65,23 @@ let compute_env model =
         | _ -> accu
       ) model.api_items []
   in
+  let removeif_preds =
+    List.fold_right (fun x accu ->
+        match x.api_loc, x.node_item with
+        | (OnlyExec | ExecFormula), APIAsset (RemoveIf (_, _, _, pred)) ->
+          if not (List.exists (Model.cmp_mterm pred) accu)
+          then pred::accu
+          else accu
+        | _ -> accu
+      ) model.api_items []
+  in
   let consts =
     List.fold_right (fun (x : decl_node) accu ->
         match x with
         | Dvar v when v.constant -> (unloc v.name, Option.get v.default)::accu
         | _ -> accu
       ) model.decls [] in
-  mk_env ~update_preds:update_preds ~select_preds:select_preds ~sum_preds:sum_preds ~consts:consts ()
+  mk_env ~update_preds:update_preds ~select_preds:select_preds ~sum_preds:sum_preds ~removeif_preds:removeif_preds ~consts:consts ()
 
 (* -------------------------------------------------------------------------- *)
 

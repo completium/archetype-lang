@@ -125,33 +125,34 @@ type const =
   | Canyaction
   | Cresult
   (* function *)
-  | Cisempty
-  | Cget
   | Cadd
-  | Cremove
-  | Cclear
-  | Cremoveall
-  | Cupdate
   | Caddupdate
-  | Ccontains
-  | Cnth
-  | Cselect
-  | Csort
-  | Ccount
-  | Csum
-  | Cmax
-  | Cmin
-  | Csubsetof
-  | Cslice
+  | Cceil
+  | Cclear
   | Cconcat
-  | Clength
+  | Ccontains
+  | Ccount
+  | Cfloor
+  | Cget
+  | Cgetopt
+  | Cisempty
   | Cisnone
   | Cissome
-  | Cgetopt
-  | Cfloor
-  | Cceil
+  | Clength
+  | Cmax
+  | Cmin
+  | Cnth
   | Cpack
+  | Cremove
+  | Cremoveall
+  | Cremoveif
+  | Cselect
+  | Cslice
+  | Csort
+  | Csubsetof
+  | Csum
   | Cunpack
+  | Cupdate
   (* list *)
   | Chead
   | Ctail

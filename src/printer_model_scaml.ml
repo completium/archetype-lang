@@ -219,6 +219,12 @@ let pp_model fmt (model : model) =
          s (*TODO*)@\n"
         an fn
 
+    | RemoveIf (an, _, _, _) ->
+      Format.fprintf fmt
+        "let removeif_%s (s : storage) : storage =@\n  \
+         s (*TODO*)@\n"
+        an
+
     | Contains (an, _) ->
       let _, t = Utils.get_asset_key model an in
       Format.fprintf fmt
@@ -912,6 +918,16 @@ let pp_model fmt (model : model) =
             (pp_do_if cond pp_str) str
         in
         pp fmt (an, fn, c, i)
+
+      | Mremoveif (an, c, la, lb, a) ->
+        let pp fmt (an, c, _la, lb, _a) =
+          Format.fprintf fmt "removeif_%a (%s, %a, fun the -> %a)"
+            pp_str an
+            const_storage
+            (pp_container_kind f) c
+            f lb
+        in
+        pp fmt (an, c, la, lb, a)
 
       | Mclear (an, v) ->
         let pp fmt (an, v) =

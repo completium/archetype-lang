@@ -31,6 +31,7 @@ miles_with_expiration.arl \
 miles.arl \
 mini_dao.arl \
 mwe_medium.arl \
+oraclesetvalue.arl \
 perishable.arl \
 register_candidate.arl \
 register_vote.arl \
@@ -74,6 +75,7 @@ miles_with_expiration.arl \
 miles.arl \
 mini_dao.arl \
 mwe_medium.arl \
+oraclesetvalue.arl \
 perishable.arl \
 register_candidate.arl \
 register_vote.arl \
@@ -126,6 +128,7 @@ erc20.arl \
 miles_with_expiration_simple.arl \
 miles_with_expiration.arl \
 mwe_medium.arl \
+oraclesetvalue.arl \
 voting_process.arl \
 "
 
