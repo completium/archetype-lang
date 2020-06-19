@@ -1281,6 +1281,14 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (c, t)
 
+    | Mdivtez (c, t) ->
+      let pp fmt (c, t) =
+        Format.fprintf fmt "div_tez (%a, %a)"
+          f c
+          f t
+      in
+      pp fmt (c, t)
+
     | Minttorat e ->
       let pp fmt e =
         Format.fprintf fmt "((%a), 1)"
@@ -2364,6 +2372,12 @@ let pp_model_internal fmt (model : model) b =
         "function rat_tez (const c : (int * int); const t : tez) : tez is@\n\
          begin@\n  \
          const r : tez = abs(c.0) * t / abs(c.1);@\n  \
+         end with r@\n"
+    | DivTez ->
+      Format.fprintf fmt
+        "function div_tez (const a : tez; const b : tez) : int is@\n\
+         begin@\n  \
+         const r : int = int(a / b);@\n  \
          end with r@\n"
   in
 

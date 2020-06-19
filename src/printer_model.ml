@@ -900,6 +900,14 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (c, t)
 
+    | Mdivtez (c, t) ->
+      let pp fmt (c, t) =
+        Format.fprintf fmt "div_tez (%a, %a)"
+          f c
+          f t
+      in
+      pp fmt (c, t)
+
     | Minttorat e ->
       let pp fmt e =
         Format.fprintf fmt "int_to_rat (%a)"
@@ -1081,6 +1089,7 @@ let pp_api_internal fmt = function
   | RatArith     -> Format.fprintf fmt "rat_arith"
   | RatUminus    -> Format.fprintf fmt "rat_uminus"
   | RatTez       -> Format.fprintf fmt "rat_to_tez"
+  | DivTez       -> Format.fprintf fmt "divtez"
 
 let pp_api_item_node fmt = function
   | APIAsset      v -> pp_api_asset    fmt v

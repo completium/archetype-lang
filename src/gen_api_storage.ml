@@ -58,7 +58,7 @@ let generate_api_storage ?(verif=false) (model : model) : model =
             let asset = Utils.get_asset model asset_name in
             List.fold_left (fun accu (x : asset_item) ->
                 match x.original_type with
-              | Tcontainer (Tasset an, Partition) -> (unloc an)::accu
+                | Tcontainer (Tasset an, Partition) -> (unloc an)::accu
                 | _ -> accu
               ) [] asset.values
           end
@@ -141,6 +141,8 @@ let generate_api_storage ?(verif=false) (model : model) : model =
         [APIInternal (RatUminus)]
       | Mrattez _ ->
         [APIInternal (RatTez)]
+      | Mdivtez _ ->
+        [APIInternal (DivTez)]
       | _ -> []
     in
     let accu = List.fold_left (fun accu v -> add ctx accu (Model.mk_api_item v  (match ctx.formula with | true -> OnlyFormula | false -> OnlyExec))) accu api_items in
@@ -192,39 +194,40 @@ let generate_api_storage ?(verif=false) (model : model) : model =
                    | APIInternal (RatArith      ) ->  3
                    | APIInternal (RatUminus     ) ->  4
                    | APIInternal (RatTez        ) ->  5
-                   | APIAsset   (Nth           _) -> if verif then 6 else 7
-                   | APIAsset   (Get           _) -> if verif then 7 else 6
-                   | APIAsset   (Set           _) -> 8
-                   | APIAsset   (Add           _) -> 9
-                   | APIAsset   (Remove        _) -> 10
-                   | APIAsset   (Clear         _) -> 11
-                   | APIAsset   (Update        _) -> 12
-                   | APIAsset   (FieldAdd      _) -> 13
-                   | APIAsset   (FieldRemove   _) -> 14
-                   | APIAsset   (RemoveAll     _) -> 15
-                   | APIAsset   (RemoveIf      _) -> 16
-                   | APIAsset   (Contains      _) -> 17
-                   | APIAsset   (Select        _) -> 18
-                   | APIAsset   (Sort          _) -> 19
-                   | APIAsset   (Count         _) -> 20
-                   | APIAsset   (Sum           _) -> 21
-                   | APIAsset   (Head          _) -> 22
-                   | APIAsset   (Tail          _) -> 23
-                   | APIList    (Lprepend      _) -> 24
-                   | APIList    (Lcontains     _) -> 25
-                   | APIList    (Lcount        _) -> 26
-                   | APIList    (Lnth          _) -> 27
-                   | APIBuiltin (Bmin          _) -> 28
-                   | APIBuiltin (Bmax          _) -> 29
-                   | APIBuiltin (Babs          _) -> 30
-                   | APIBuiltin (Bconcat       _) -> 31
-                   | APIBuiltin (Bslice        _) -> 32
-                   | APIBuiltin (Blength       _) -> 33
-                   | APIBuiltin (Bisnone       _) -> 34
-                   | APIBuiltin (Bissome       _) -> 35
-                   | APIBuiltin (Bgetopt       _) -> 36
-                   | APIBuiltin (Bfloor         ) -> 37
-                   | APIBuiltin (Bceil          ) -> 38
+                   | APIInternal (DivTez        ) ->  6
+                   | APIAsset   (Nth           _) -> if verif then 7 else 8
+                   | APIAsset   (Get           _) -> if verif then 8 else 7
+                   | APIAsset   (Set           _) -> 9
+                   | APIAsset   (Add           _) -> 10
+                   | APIAsset   (Remove        _) -> 11
+                   | APIAsset   (Clear         _) -> 12
+                   | APIAsset   (Update        _) -> 13
+                   | APIAsset   (FieldAdd      _) -> 14
+                   | APIAsset   (FieldRemove   _) -> 15
+                   | APIAsset   (RemoveAll     _) -> 16
+                   | APIAsset   (RemoveIf      _) -> 17
+                   | APIAsset   (Contains      _) -> 18
+                   | APIAsset   (Select        _) -> 19
+                   | APIAsset   (Sort          _) -> 20
+                   | APIAsset   (Count         _) -> 21
+                   | APIAsset   (Sum           _) -> 22
+                   | APIAsset   (Head          _) -> 23
+                   | APIAsset   (Tail          _) -> 24
+                   | APIList    (Lprepend      _) -> 25
+                   | APIList    (Lcontains     _) -> 26
+                   | APIList    (Lcount        _) -> 27
+                   | APIList    (Lnth          _) -> 28
+                   | APIBuiltin (Bmin          _) -> 29
+                   | APIBuiltin (Bmax          _) -> 30
+                   | APIBuiltin (Babs          _) -> 31
+                   | APIBuiltin (Bconcat       _) -> 32
+                   | APIBuiltin (Bslice        _) -> 33
+                   | APIBuiltin (Blength       _) -> 34
+                   | APIBuiltin (Bisnone       _) -> 35
+                   | APIBuiltin (Bissome       _) -> 36
+                   | APIBuiltin (Bgetopt       _) -> 37
+                   | APIBuiltin (Bfloor         ) -> 38
+                   | APIBuiltin (Bceil          ) -> 39
                  in
                  let idx1 = get_kind i1.node_item in
                  let idx2 = get_kind i2.node_item in

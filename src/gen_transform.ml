@@ -1053,6 +1053,7 @@ let remove_rational (model : model) : model =
       let is_num (x : mterm) = is_rat x || is_int x in
       let is_rats (a, b) = is_rat a || is_rat b in
       let is_ints (a, b) = is_int a && is_int b in
+      let is_curs (a, b) = is_cur a && is_cur b in
       let is_durs (a, b) = is_dur a && is_dur b in
       let process_eq neg (a, b) =
         let lhs = (to_rat |@ aux) a in
@@ -1080,6 +1081,11 @@ let remove_rational (model : model) : model =
         let coef = (to_rat |@ aux) n in
         let t = aux t in
         mk_mterm (Mrattez (coef, t)) type_cur
+      in
+      let process_divtez (n : mterm) (t : mterm) : mterm =
+        let n = aux n in
+        let t = aux t in
+        mk_mterm (Mdivtez (n, t)) type_int
       in
       match mt.node, mt.type_ with
       | _ as node, Tbuiltin Brational ->
@@ -1111,6 +1117,7 @@ let remove_rational (model : model) : model =
           | Mmult  (a, b) when is_num a && is_cur b -> process_rattez a b
           | _ -> map_mterm aux mt
         end
+      | Mdiveuc (a, b), _ when is_curs (a, b) -> process_divtez a b
       | Mequal  (a, b), _ when is_rats (a, b) -> process_eq  false (a, b)
       | Mnequal (a, b), _ when is_rats (a, b) -> process_eq  true  (a, b)
       | Mlt     (a, b), _ when is_rats (a, b) -> process_cmp Lt    (a, b)
@@ -1577,6 +1584,7 @@ let replace_ligo_ident (model : model) : model =
   let f _env id =
     match id with
     | "type" -> "type_"
+    | "emount" -> "amount_"
     | _ -> id
   in
   replace_ident_model f model

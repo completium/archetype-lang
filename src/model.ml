@@ -299,6 +299,7 @@ type ('id, 'term) mterm_node  =
   | Mratarith         of rat_arith_op * 'term * 'term
   | Mratuminus        of 'term
   | Mrattez           of 'term * 'term
+  | Mdivtez           of 'term * 'term
   | Minttorat         of 'term
   (* functional *)
   | Mfold             of ('id * 'id list * 'term * 'term) (* ident list * collection * body *)
@@ -408,6 +409,7 @@ and api_internal =
   | RatArith
   | RatUminus
   | RatTez
+  | DivTez
 [@@deriving show {with_path = false}]
 
 and api_storage_node =
@@ -1125,6 +1127,7 @@ let cmp_mterm_node
     | Mratarith (op1, l1, r1), Mratarith (op2, l2, r2)                                 -> cmp_rat_arith_op op1 op2 && cmp l1 l2 && cmp r1 r2
     | Mratuminus v1, Mratuminus v2                                                     -> cmp v1 v2
     | Mrattez (c1, t1), Mrattez (c2, t2)                                               -> cmp c1 c2 && cmp t1 t2
+    | Mdivtez (c1, t1), Mdivtez (c2, t2)                                               -> cmp c1 c2 && cmp t1 t2
     | Minttorat e1, Minttorat e2                                                       -> cmp e1 e2
     (* functional *)
     | Mfold (i1, is1, c1, b1), Mfold (i2, is2, c2, b2)                                 -> cmpi i1 i2 && List.for_all2 cmpi is1 is2 && cmp c1 c2 && cmp b1 b2
@@ -1214,6 +1217,7 @@ let cmp_api_item_node (a1 : api_storage_node) (a2 : api_storage_node) : bool =
     | RatArith,  RatArith  -> true
     | RatUminus, RatUminus -> true
     | RatTez,    RatTez    -> true
+    | DivTez,    DivTez    -> true
     | _ -> false
   in
   match a1, a2 with
@@ -1416,6 +1420,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mratarith (op, l, r)           -> Mratarith (op, f l, f r)
   | Mratuminus v                   -> Mratuminus (f v)
   | Mrattez (c, t)                 -> Mrattez (f c, f t)
+  | Mdivtez (c, t)                 -> Mdivtez (f c, f t)
   | Minttorat e                    -> Minttorat (f e)
   (* functional *)
   | Mfold (i, is, c, b)            -> Mfold (g i, List.map g is, f c, f b)
@@ -1742,6 +1747,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mratarith (_, l, r)                   -> f (f accu l) r
   | Mratuminus v                          -> f accu v
   | Mrattez (c, t)                        -> f (f accu c) t
+  | Mdivtez (c, t)                        -> f (f accu c) t
   | Minttorat e                           -> f accu e
   (* functional *)
   | Mfold (_, _, c, b)                    -> f (f accu c) b
@@ -2444,6 +2450,11 @@ let fold_map_term
     let te, ta = f ca t in
     g (Mrattez (ce, te)), ta
 
+  | Mdivtez (c, t) ->
+    let ce, ca = f accu c in
+    let te, ta = f ca t in
+    g (Mdivtez (ce, te)), ta
+
   | Minttorat e ->
     let ee, ea = f accu e in
     g (Minttorat ee), ea
@@ -2730,6 +2741,7 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
         | RatArith  -> RatArith
         | RatUminus -> RatUminus
         | RatTez    -> RatTez
+        | DivTez    -> DivTez
       in
       match asn with
       | APIAsset    aasset    -> APIAsset    (for_api_asset aasset)
