@@ -1296,6 +1296,14 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt e
 
+    | Mratdur (c, t) ->
+      let pp fmt (c, t) =
+        Format.fprintf fmt "rat_dur (%a, %a)"
+          f c
+          f t
+      in
+      pp fmt (c, t)
+
 
     (* functional *)
 
@@ -2379,6 +2387,12 @@ let pp_model_internal fmt (model : model) b =
          begin@\n  \
          const r : int = int(a / b);@\n  \
          end with r@\n"
+    | RatDur ->
+      Format.fprintf fmt
+        "function rat_dur (const c : (int * int); const d : int) : int is@\n\
+         begin@\n  \
+         skip;@\n  \
+         end with (c.0 * d / c.1)@\n"
   in
 
   let pp_api_item_node (env : env) fmt = function

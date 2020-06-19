@@ -143,6 +143,8 @@ let generate_api_storage ?(verif=false) (model : model) : model =
         [APIInternal (RatTez)]
       | Mdivtez _ ->
         [APIInternal (DivTez)]
+      | Mratdur _ ->
+        [APIInternal (RatDur)]
       | _ -> []
     in
     let accu = List.fold_left (fun accu v -> add ctx accu (Model.mk_api_item v  (match ctx.formula with | true -> OnlyFormula | false -> OnlyExec))) accu api_items in
@@ -195,39 +197,40 @@ let generate_api_storage ?(verif=false) (model : model) : model =
                    | APIInternal (RatUminus     ) ->  4
                    | APIInternal (RatTez        ) ->  5
                    | APIInternal (DivTez        ) ->  6
-                   | APIAsset   (Nth           _) -> if verif then 7 else 8
-                   | APIAsset   (Get           _) -> if verif then 8 else 7
-                   | APIAsset   (Set           _) -> 9
-                   | APIAsset   (Add           _) -> 10
-                   | APIAsset   (Remove        _) -> 11
-                   | APIAsset   (Clear         _) -> 12
-                   | APIAsset   (Update        _) -> 13
-                   | APIAsset   (FieldAdd      _) -> 14
-                   | APIAsset   (FieldRemove   _) -> 15
-                   | APIAsset   (RemoveAll     _) -> 16
-                   | APIAsset   (RemoveIf      _) -> 17
-                   | APIAsset   (Contains      _) -> 18
-                   | APIAsset   (Select        _) -> 19
-                   | APIAsset   (Sort          _) -> 20
-                   | APIAsset   (Count         _) -> 21
-                   | APIAsset   (Sum           _) -> 22
-                   | APIAsset   (Head          _) -> 23
-                   | APIAsset   (Tail          _) -> 24
-                   | APIList    (Lprepend      _) -> 25
-                   | APIList    (Lcontains     _) -> 26
-                   | APIList    (Lcount        _) -> 27
-                   | APIList    (Lnth          _) -> 28
-                   | APIBuiltin (Bmin          _) -> 29
-                   | APIBuiltin (Bmax          _) -> 30
-                   | APIBuiltin (Babs          _) -> 31
-                   | APIBuiltin (Bconcat       _) -> 32
-                   | APIBuiltin (Bslice        _) -> 33
-                   | APIBuiltin (Blength       _) -> 34
-                   | APIBuiltin (Bisnone       _) -> 35
-                   | APIBuiltin (Bissome       _) -> 36
-                   | APIBuiltin (Bgetopt       _) -> 37
-                   | APIBuiltin (Bfloor         ) -> 38
-                   | APIBuiltin (Bceil          ) -> 39
+                   | APIInternal (RatDur        ) ->  7
+                   | APIAsset   (Nth           _) -> if verif then 8 else 9
+                   | APIAsset   (Get           _) -> if verif then 9 else 8
+                   | APIAsset   (Set           _) -> 10
+                   | APIAsset   (Add           _) -> 11
+                   | APIAsset   (Remove        _) -> 12
+                   | APIAsset   (Clear         _) -> 13
+                   | APIAsset   (Update        _) -> 14
+                   | APIAsset   (FieldAdd      _) -> 15
+                   | APIAsset   (FieldRemove   _) -> 16
+                   | APIAsset   (RemoveAll     _) -> 17
+                   | APIAsset   (RemoveIf      _) -> 18
+                   | APIAsset   (Contains      _) -> 19
+                   | APIAsset   (Select        _) -> 20
+                   | APIAsset   (Sort          _) -> 21
+                   | APIAsset   (Count         _) -> 22
+                   | APIAsset   (Sum           _) -> 23
+                   | APIAsset   (Head          _) -> 24
+                   | APIAsset   (Tail          _) -> 25
+                   | APIList    (Lprepend      _) -> 26
+                   | APIList    (Lcontains     _) -> 27
+                   | APIList    (Lcount        _) -> 28
+                   | APIList    (Lnth          _) -> 29
+                   | APIBuiltin (Bmin          _) -> 30
+                   | APIBuiltin (Bmax          _) -> 31
+                   | APIBuiltin (Babs          _) -> 32
+                   | APIBuiltin (Bconcat       _) -> 33
+                   | APIBuiltin (Bslice        _) -> 34
+                   | APIBuiltin (Blength       _) -> 35
+                   | APIBuiltin (Bisnone       _) -> 36
+                   | APIBuiltin (Bissome       _) -> 37
+                   | APIBuiltin (Bgetopt       _) -> 38
+                   | APIBuiltin (Bfloor         ) -> 39
+                   | APIBuiltin (Bceil          ) -> 40
                  in
                  let idx1 = get_kind i1.node_item in
                  let idx2 = get_kind i2.node_item in

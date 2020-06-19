@@ -915,6 +915,14 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt e
 
+    | Mratdur (c, t) ->
+      let pp fmt (c, t) =
+        Format.fprintf fmt "rat_dur (%a, %a)"
+          f c
+          f t
+      in
+      pp fmt (c, t)
+
 
     (* functional *)
 
@@ -1090,6 +1098,7 @@ let pp_api_internal fmt = function
   | RatUminus    -> Format.fprintf fmt "rat_uminus"
   | RatTez       -> Format.fprintf fmt "rat_to_tez"
   | DivTez       -> Format.fprintf fmt "divtez"
+  | RatDur       -> Format.fprintf fmt "ratdur"
 
 let pp_api_item_node fmt = function
   | APIAsset      v -> pp_api_asset    fmt v

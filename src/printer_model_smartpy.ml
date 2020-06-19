@@ -267,6 +267,7 @@ let pp_model fmt (model : model) =
     | RatUminus    -> Format.fprintf fmt "rat_uminus"
     | RatTez       -> Format.fprintf fmt "rat_to_tez"
     | DivTez       -> Format.fprintf fmt "divtez"
+    | RatDur       -> Format.fprintf fmt "ratdur"
   in
 
   let pp_api_item_node fmt = function
@@ -1105,6 +1106,14 @@ let pp_model fmt (model : model) =
             f e
         in
         pp fmt e
+
+      | Mratdur (c, t) ->
+        let pp fmt (c, t) =
+          Format.fprintf fmt "rat_dur (%a, %a)"
+            f c
+            f t
+        in
+        pp fmt (c, t)
 
 
       (* functional *)

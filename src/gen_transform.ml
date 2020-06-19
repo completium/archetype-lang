@@ -1295,6 +1295,7 @@ let remove_rational (model : model) : model =
 let replace_date_duration_by_timestamp (model : model) : model =
   let type_timestamp = Tbuiltin Btimestamp in
   let type_int = Tbuiltin Bint in
+  let is_rat      = function | Ttuple [Tbuiltin Bint; Tbuiltin Bint] -> true     | _ -> false in
   let is_date     = function | Tbuiltin Bdate -> true     | _ -> false in
   let is_duration = function | Tbuiltin Bduration -> true | _ -> false in
   let process_type t : type_ =
@@ -1329,6 +1330,10 @@ let replace_date_duration_by_timestamp (model : model) : model =
         let b = aux b in
         let mt = mk_mterm (Mminus (a, b)) type_int in
         mk_mterm (Mabs(mt)) type_int
+      | Mmult (a, b), t when is_duration t && is_rat a.type_ && is_duration b.type_ ->
+        let a = aux a in
+        let b = aux b in
+        mk_mterm (Mratdur (a, b)) type_timestamp
       | Mmax (a, b), t when is_duration t || is_date t ->
         let a = aux a in
         let b = aux b in

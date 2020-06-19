@@ -7,6 +7,6 @@ entry exec () {
     s0: res = 500mtz;
   }
   effect {
-    res := 1 div 2 * 1tz
+    res := 0.5 * 1tz
   }
 }
