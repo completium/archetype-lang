@@ -30,6 +30,7 @@ type vtyp =
   | VTrole
   | VTcurrency
   | VTkey
+  | VTkeyhash
   | VTsignature
   | VTbytes
 [@@deriving show {with_path = false}]
@@ -161,6 +162,7 @@ type const =
   | Csha256
   | Csha512
   | Cchecksignature
+  | Chashkey
   (* vset *)
   | Cbefore
   | Citerated
@@ -623,6 +625,7 @@ let vtrole       = Tbuiltin (VTrole      )
 let vtcurrency   = Tbuiltin (VTcurrency  )
 let vtsignature  = Tbuiltin (VTsignature )
 let vtkey        = Tbuiltin (VTkey       )
+let vtkeyhash    = Tbuiltin (VTkeyhash   )
 let vtbytes      = Tbuiltin (VTbytes     )
 
 (* mk functions *)

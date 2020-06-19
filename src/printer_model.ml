@@ -24,6 +24,7 @@ let pp_btyp fmt = function
   | Bcurrency   -> Format.fprintf fmt "tez"
   | Bsignature  -> Format.fprintf fmt "signature"
   | Bkey        -> Format.fprintf fmt "key"
+  | Bkeyhash    -> Format.fprintf fmt "key_hash"
   | Bbytes      -> Format.fprintf fmt "bytes"
   | Bnat        -> Format.fprintf fmt "nat"
 
@@ -795,6 +796,10 @@ let pp_mterm fmt (mt : mterm) =
 
     | Msha512 x ->
       Format.fprintf fmt "sha512 (%a)"
+        f x
+
+    | Mhashkey x ->
+      Format.fprintf fmt "hash_key (%a)"
         f x
 
     | Mchecksignature (k, s, x) ->

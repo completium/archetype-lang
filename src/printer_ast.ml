@@ -29,6 +29,7 @@ let pp_vtyp fmt = function
   | VTcurrency   -> Format.fprintf fmt "tez"
   | VTsignature  -> Format.fprintf fmt "signature"
   | VTkey        -> Format.fprintf fmt "key"
+  | VTkeyhash    -> Format.fprintf fmt "key_hash"
   | VTbytes      -> Format.fprintf fmt "bytes"
 
 let pp_container fmt = function
@@ -208,6 +209,7 @@ let to_const = function
   | Csha256         -> "sha256"
   | Csha512         -> "sha512"
   | Cchecksignature -> "check_signature"
+  | Chashkey        -> "hash_key"
   (* vset *)
   | Cbefore         -> "before"
   | Citerated       -> "iterated"

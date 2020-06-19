@@ -31,6 +31,7 @@ type btyp =
   | Bcurrency
   | Bsignature
   | Bkey
+  | Bkeyhash
   | Bbytes
   | Bnat
 [@@deriving show {with_path = false}]
@@ -281,6 +282,7 @@ type ('id, 'term) mterm_node  =
   | Mblake2b          of 'term
   | Msha256           of 'term
   | Msha512           of 'term
+  | Mhashkey          of 'term
   | Mchecksignature   of 'term * 'term * 'term
   (* constants *)
   | Mnow
@@ -1105,6 +1107,7 @@ let cmp_mterm_node
     | Mblake2b x1, Mblake2b x2                                                         -> cmp x1 x2
     | Msha256  x1, Msha256  x2                                                         -> cmp x1 x2
     | Msha512  x1, Msha512  x2                                                         -> cmp x1 x2
+    | Mhashkey x1, Mhashkey  x2                                                        -> cmp x1 x2
     | Mchecksignature (k1, s1, x1), Mchecksignature (k2, s2, x2)                       -> cmp k1 k2 && cmp s1 s2 && cmp x1 x2
     (* constants *)
     | Mnow, Mnow                                                                       -> true
@@ -1393,6 +1396,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mblake2b x                     -> Mblake2b (f x)
   | Msha256 x                      -> Msha256 (f x)
   | Msha512 x                      -> Msha512 (f x)
+  | Mhashkey x                     -> Mhashkey (f x)
   | Mchecksignature (k, s, x)      -> Mchecksignature (f k, f s, f x)
   (* constants *)
   | Mnow                           -> Mnow
@@ -1717,6 +1721,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mblake2b x                            -> f accu x
   | Msha256  x                            -> f accu x
   | Msha512  x                            -> f accu x
+  | Mhashkey  x                           -> f accu x
   | Mchecksignature (k, s, x)             -> f (f (f accu k) s) x
   (* constants *)
   | Mnow                                  -> accu
@@ -2359,6 +2364,10 @@ let fold_map_term
   | Msha512 x ->
     let xe, xa = f accu x in
     g (Msha512 xe), xa
+
+  | Mhashkey x ->
+    let xe, xa = f accu x in
+    g (Mhashkey xe), xa
 
   | Mchecksignature (k, s, x) ->
     let ke, ka = f accu k in
@@ -3566,6 +3575,7 @@ end = struct
       | Tbuiltin Brole       -> Maddress "tz1_default"
       | Tbuiltin Bcurrency   -> Mcurrency (Big_int.zero_big_int, Tz)
       | Tbuiltin Bkey        -> Maddress "tz1_default"
+      | Tbuiltin Bkeyhash    -> Maddress "tz1_default"
       | Tbuiltin Bbytes      -> Mbytes "0x0"
       | Tasset asset_name    ->
         begin

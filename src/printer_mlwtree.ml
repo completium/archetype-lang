@@ -155,6 +155,7 @@ let pp_type fmt typ =
       | Tyduration    -> "duration"
       | Tysignature   -> "signature"
       | Tykey         -> "key"
+      | Tykeyhash     -> "key_hash"
       | Tystate       -> "state"
       | Tytuple l     -> "(" ^ (String.concat ", " (List.map typ_str l)) ^ ")"
     in

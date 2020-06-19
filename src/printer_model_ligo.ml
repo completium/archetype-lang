@@ -130,6 +130,7 @@ let pp_model_internal fmt (model : model) b =
     | Bcurrency   -> Format.fprintf fmt "tez"
     | Bsignature  -> Format.fprintf fmt "signature"
     | Bkey        -> Format.fprintf fmt "key"
+    | Bkeyhash    -> Format.fprintf fmt "key_hash"
     | Bbytes      -> Format.fprintf fmt "bytes"
     | Bnat        -> Format.fprintf fmt "nat"
   in
@@ -1150,6 +1151,10 @@ let pp_model_internal fmt (model : model) b =
 
     | Msha512 x ->
       Format.fprintf fmt "Crypto.sha512 (%a)"
+        f x
+
+    | Mhashkey x ->
+      Format.fprintf fmt "Crypto.hash_key (%a)"
         f x
 
     | Mchecksignature (k, s, x) ->

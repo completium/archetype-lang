@@ -57,6 +57,7 @@ let to_model (ast : A.model) : M.model =
     | A.VTcurrency   -> M.Bcurrency
     | A.VTsignature  -> M.Bsignature
     | A.VTkey        -> M.Bkey
+    | A.VTkeyhash    -> M.Bkeyhash
     | A.VTbytes      -> M.Bbytes
   in
 
@@ -368,6 +369,10 @@ let to_model (ast : A.model) : M.model =
       | A.Pcall (None, A.Cconst A.Csha512, [AExpr x]) ->
         let fx = f x in
         M.Msha512 (fx)
+
+      | A.Pcall (None, A.Cconst A.Chashkey, [AExpr x]) ->
+        let fx = f x in
+        M.Mhashkey (fx)
 
       | A.Pcall (None, A.Cconst A.Cchecksignature, [AExpr k; AExpr s; AExpr x]) ->
         let fk = f k in

@@ -31,6 +31,7 @@ type 'i abstract_type =
   | Tyaddr
   | Tyrole
   | Tykey
+  | Tykeyhash
   | Tydate
   | Tyduration
   | Tytez
@@ -297,14 +298,15 @@ let rec map_abstract_type (map_i : 'i1 -> 'i2) = function
   | Tyenum i      -> Tyenum (map_i i)
   | Tyoption t    -> Tyoption (map_abstract_type map_i t)
   | Tylist t      -> Tylist (map_abstract_type map_i t)
-  | Tycontract i   -> Tycontract (map_i i)
+  | Tycontract i  -> Tycontract (map_i i)
   | Tybool        -> Tybool
   | Tyuint        -> Tyuint
   | Tyrational    -> Tyrational
   | Tyduration    -> Tyduration
   | Tysignature   -> Tysignature
   | Tykey         -> Tykey
-  | Tystate        -> Tystate
+  | Tykeyhash     -> Tykeyhash
+  | Tystate       -> Tystate
   | Tytuple l     -> Tytuple (List.map (map_abstract_type map_i) l)
 
 let map_abstract_univ_decl

@@ -757,7 +757,9 @@ let listops =
 let cryptoops =
   List.map (fun (x, y) -> x, y, `Total, None, [M.vtbytes], M.vtbytes)
     ["blake2b", M.Cblake2b; "sha256", M.Csha256; "sha512", M.Csha512]
-  @ ["check_signature", M.Cchecksignature,
+  @ ["hash_key", M.Chashkey,
+     `Total, None, [M.vtkey], M.vtkeyhash;
+     "check_signature", M.Cchecksignature,
      `Total, None, [M.vtkey; M.vtsignature; M.vtbytes], M.vtbool]
 
 (* -------------------------------------------------------------------- *)
@@ -889,6 +891,7 @@ let core_types = [
   ("duration" , M.vtduration       );
   ("signature", M.vtsignature      );
   ("key"      , M.vtkey            );
+  ("key_hash" , M.vtkeyhash        );
   ("bytes"    , M.vtbytes          );
 ]
 

@@ -3,13 +3,14 @@ theory Types
   use int.Int
 
   (* default type mapping *)
-  type key     = int
-  type role    = int
-  type address = int
-  type tez     = int
-  type date    = int
-  type astring = int
-  type bytes   = int
+  type key       = int
+  type key_hash  = int
+  type role      = int
+  type address   = int
+  type tez       = int
+  type date      = int
+  type astring   = int
+  type bytes     = int
   type signature = int
 
   exception Break
@@ -215,6 +216,7 @@ module Utils
   let function blake2b (b : bytes) : bytes = b
   let function sha256 (b : bytes) : bytes = b
   let function sha512 (b : bytes) : bytes = b
+  let function hash_key (_k : key) : bytes = 0
   let check_signature (_k : key) (_s : signature) (_b : bytes) = true
 
   (* ----------------------------------------------------------------------- *)
