@@ -1333,7 +1333,7 @@ let replace_date_duration_by_timestamp (model : model) : model =
       | Mmult (a, b), t when is_duration t && is_rat a.type_ && is_duration b.type_ ->
         let a = aux a in
         let b = aux b in
-        mk_mterm (Mratdur (a, b)) type_timestamp
+        mk_mterm (Mratdur (a, b)) type_int
       | Mmax (a, b), t when is_duration t || is_date t ->
         let a = aux a in
         let b = aux b in
