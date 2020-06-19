@@ -577,7 +577,7 @@ let opsigs =
     @ (List.mappdt (fun op sig_ -> (op, sig_)) uops usig) in
 
   let rgtypes : (PT.operator * (M.vtyp list * M.vtyp)) list =
-    let bops = (List.map (fun x -> PT.Arith x) [PT.Plus; PT.Minus; PT.Mult(* ; PT.DivRat *) ]) in
+    let bops = (List.map (fun x -> PT.Arith x) [PT.Plus; PT.Minus; PT.Mult]) in
     let uops = (List.map (fun x -> PT.Unary x) [PT.Uplus; PT.Uminus]) in
     let bsig = List.map (fun ty -> ([ty; ty], ty)) rgtypes in
     let usig = List.map (fun ty -> ([ty], ty)) rgtypes in
@@ -586,9 +586,6 @@ let opsigs =
 
   let ariths : (PT.operator * (M.vtyp list * M.vtyp)) list =
     [ PT.Arith PT.Modulo, ([M.VTint; M.VTint],           M.VTint);
-      PT.Arith PT.DivRat, ([M.VTint; M.VTint],           M.VTrational);
-      PT.Arith PT.DivRat, ([M.VTint; M.VTrational],      M.VTrational);
-      PT.Arith PT.DivRat, ([M.VTrational; M.VTint],      M.VTrational);
       PT.Arith PT.DivRat, ([M.VTrational; M.VTrational], M.VTrational);
       PT.Arith PT.DivEuc, ([M.VTint; M.VTint],           M.VTint) ] in
 
