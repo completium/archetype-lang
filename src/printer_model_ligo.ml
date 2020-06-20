@@ -841,7 +841,7 @@ let pp_model_internal fmt (model : model) b =
           match c with
           | CKcoll -> pp_str fmt const_storage
           | CKview mt
-          | CKfield mt -> Format.fprintf fmt "%s, %a" const_storage f mt
+          | CKfield (_, _, mt) -> Format.fprintf fmt "%s, %a" const_storage f mt
         in
         Format.fprintf fmt "%s := removeif_%a_%i (%a%a)"
           const_storage
@@ -857,7 +857,7 @@ let pp_model_internal fmt (model : model) b =
           match v with
           | CKcoll    -> Format.fprintf fmt  "%s" const_storage
           | CKview c  -> Format.fprintf fmt  "%s, %a" const_storage f c
-          | CKfield c -> Format.fprintf fmt  "%s, %a" const_storage f c
+          | CKfield (_, _, c) -> Format.fprintf fmt  "%s, %a" const_storage f c
         in
         Format.fprintf fmt "%s := clear_%a (%a)"
           const_storage
@@ -942,7 +942,7 @@ let pp_model_internal fmt (model : model) b =
           match c with
           | CKcoll -> pp_str fmt const_storage
           | CKview mt
-          | CKfield mt -> Format.fprintf fmt "%s, %a" const_storage f mt
+          | CKfield (_, _, mt) -> Format.fprintf fmt "%s, %a" const_storage f mt
         in
         Format.fprintf fmt "select_%a_%i (%a%a)"
           (pp_prefix_container_kind an) c index
@@ -957,7 +957,7 @@ let pp_model_internal fmt (model : model) b =
           match c with
           | CKcoll -> pp_str fmt const_storage
           | CKview mt
-          | CKfield mt -> Format.fprintf fmt "%s, %a" const_storage f mt
+          | CKfield (_, _, mt) -> Format.fprintf fmt "%s, %a" const_storage f mt
         in
         Format.fprintf fmt "sort_%a_%a (%a)"
           (pp_prefix_container_kind an) c
@@ -972,7 +972,7 @@ let pp_model_internal fmt (model : model) b =
           match c with
           | CKcoll          -> (fun fmt _ -> pp_str fmt const_storage)
           | CKview mt
-          | CKfield mt -> (fun fmt _ -> f fmt mt)
+          | CKfield (_, _, mt) -> (fun fmt _ -> f fmt mt)
         in
         Format.fprintf fmt "contains_%a (%a, %a)"
           (pp_prefix_container_kind an) c
@@ -987,7 +987,7 @@ let pp_model_internal fmt (model : model) b =
           match c with
           | CKcoll     -> (fun fmt _ -> Format.fprintf fmt "%s" const_storage)
           | CKview mt
-          | CKfield mt -> (fun fmt _ -> Format.fprintf fmt "%s, %a" const_storage f mt)
+          | CKfield (_, _, mt) -> (fun fmt _ -> Format.fprintf fmt "%s, %a" const_storage f mt)
         in
         Format.fprintf fmt "nth_%a (%a, %a)"
           (pp_prefix_container_kind an) c
@@ -1004,7 +1004,7 @@ let pp_model_internal fmt (model : model) b =
              match c with
              | CKcoll -> pp_str fmt const_storage
              | CKview mt
-             | CKfield mt -> f fmt mt) ()
+             | CKfield (_, _, mt) -> f fmt mt) ()
       in
       pp fmt (an, c)
 
@@ -1015,7 +1015,7 @@ let pp_model_internal fmt (model : model) b =
           match c with
           | CKcoll     -> pp_str fmt const_storage
           | CKview  mt
-          | CKfield mt -> Format.fprintf fmt "%s, %a" const_storage f mt
+          | CKfield (_, _, mt) -> Format.fprintf fmt "%s, %a" const_storage f mt
         in
         Format.fprintf fmt "sum_%a_%i (%a)"
           (pp_prefix_container_kind an) c index
@@ -1030,7 +1030,7 @@ let pp_model_internal fmt (model : model) b =
           (fun fmt c ->
              match c with
              | CKcoll -> pp_str fmt const_storage
-             | CKview mt | CKfield mt -> f fmt mt) c
+             | CKview mt | CKfield (_, _, mt) -> f fmt mt) c
           f i
       end
 
@@ -1041,7 +1041,7 @@ let pp_model_internal fmt (model : model) b =
           (fun fmt c ->
              match c with
              | CKcoll -> pp_str fmt const_storage
-             | CKview mt | CKfield mt -> f fmt mt) c
+             | CKview mt | CKfield (_, _, mt) -> f fmt mt) c
           f i
       end
 

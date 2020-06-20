@@ -425,7 +425,7 @@ let pp_model fmt (model : model) =
   let pp_container_kind f fmt = function
     | CKcoll     -> pp_str fmt "_Coll_"
     | CKview mt  -> f fmt mt
-    | CKfield mt -> f fmt mt
+    | CKfield (an, fn, mt) -> Format.fprintf fmt "CKfield (%s, %s, %a)" an fn f mt
   in
 
 

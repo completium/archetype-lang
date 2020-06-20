@@ -72,7 +72,7 @@ let generate_api_storage ?(verif=false) (model : model) : model =
         [APIAsset (Get asset_name); APIAsset (Remove pa); APIAsset (FieldRemove (asset_name, field_name)); APIAsset (RemoveAll (asset_name, field_name))]
       | Mremoveif (asset_name, (CKcoll as c), la, lb, _) ->
         [APIAsset (Get asset_name); APIAsset (Remove asset_name); APIAsset (RemoveIf (asset_name, to_ck c, la, lb))]
-      | Mremoveif (asset_name, ((CKfield ({node = Mdot ({type_ = Tasset aan}, fn)})) as c), la, lb, _) ->
+      | Mremoveif (asset_name, ((CKfield (_, _, {node = Mdot ({type_ = Tasset aan}, fn)})) as c), la, lb, _) ->
         Format.printf "mt: %a@." pp_mterm term;
         let fn = unloc fn in
         let aan = unloc aan in

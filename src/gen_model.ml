@@ -696,9 +696,9 @@ let to_model (ast : A.model) : M.model =
         let fk = f k in
         let fe = List.map (fun (id, op, c) -> (id, to_op op, f c)) e in
         let (an, c) : ident * M.container_kind =
-          match fp.type_ with
-          | Tcontainer (Tasset an, M.Collection) -> unloc an, M.CKcoll
-          | Tcontainer (Tasset an, M.Partition)  -> unloc an, M.CKfield fp
+          match fp.node, fp.type_ with
+          | _, Tcontainer (Tasset an, M.Collection) -> unloc an, M.CKcoll
+          | M.Mdotassetfield (_, _, fn), Tcontainer (Tasset an, M.Partition)  -> unloc an, M.CKfield (unloc an, unloc fn, fp)
           | _ -> assert false
         in
         M.Maddupdate (an, c, fk, fe)

@@ -115,7 +115,7 @@ let pp_action_description fmt ad =
 let pp_container_kind f fmt = function
   | CKcoll     -> pp_str fmt "_Coll_"
   | CKview mt  -> f fmt mt
-  | CKfield mt -> f fmt mt
+  | CKfield (an, fn, mt) -> Format.fprintf fmt "CKfield (%s, %s, %a)" an fn f mt
 
 let pp_iter_container_kind f fmt = function
   | ICKcoll  an -> Format.fprintf fmt "%a" pp_str an

@@ -142,7 +142,7 @@ let remove_add_update (model : model) : model =
         let asset  = mk_asset (an, k, l) in
         let add    = mk_mterm (
             match c with
-            | CKfield {node = Mdotassetfield (an, k, fn)} -> Maddfield (unloc an, unloc fn, k, asset)
+            | CKfield (_, _, {node = Mdotassetfield (an, k, fn)}) -> Maddfield (unloc an, unloc fn, k, asset)
             | CKcoll -> Maddasset (an, asset)
             | _ -> assert false) Tunit in
         let update = mk_mterm (Mupdate (an, k, l)) Tunit in
@@ -1868,7 +1868,7 @@ let extract_term_from_instruction f (model : model) : model =
         match v with
         | CKcoll -> CKcoll, []
         | CKview v  -> let ve, va = f v in CKview ve, va
-        | CKfield v -> let ve, va = f v in CKfield ve, va
+        | CKfield (an, fn, v) -> let ve, va = f v in CKfield (an, fn, ve), va
       in
       process (mk_mterm (Mclear (an, ve)) mt.type_) va
 
@@ -1877,7 +1877,7 @@ let extract_term_from_instruction f (model : model) : model =
         match v with
         | CKcoll -> CKcoll, []
         | CKview v  -> let ve, va = f v in CKview ve, va
-        | CKfield v -> let ve, va = f v in CKfield ve, va
+        | CKfield (an, fn, v) -> let ve, va = f v in CKfield (an, fn, ve), va
       in
       let be, ba = f b in
       let ae, aa = List.fold_right (fun v (xe, xa) ->
@@ -1902,7 +1902,7 @@ let extract_term_from_instruction f (model : model) : model =
         match c with
         | CKcoll    -> CKcoll, []
         | CKview c  -> let ce, ca = f c in CKview ce, ca
-        | CKfield c -> let ce, ca = f c in CKfield ce, ca
+        | CKfield (an, fn, c) -> let ce, ca = f c in CKfield (an, fn, ce), ca
       in
       let ke, ka = f k in
       let le, la = List.fold_right (fun (id, op, v) (xe, xa) ->
@@ -2134,7 +2134,7 @@ let add_contain_on_get (model : model) : model =
           match v with
           | CKcoll     -> accu
           | CKview c   -> f accu c
-          | CKfield c  -> f accu c
+          | CKfield (_, _, c)  -> f accu c
         in
         let accu = f accu b in
         let accu = List.fold_right (fun v accu -> f accu v) a accu in
@@ -2145,7 +2145,7 @@ let add_contain_on_get (model : model) : model =
           match v with
           | CKcoll     -> accu
           | CKview c   -> f accu c
-          | CKfield c  -> f accu c
+          | CKfield (_, _, c)  -> f accu c
         in
         gg accu mt
 
@@ -2164,7 +2164,7 @@ let add_contain_on_get (model : model) : model =
           match c with
           | CKcoll     -> accu
           | CKview c   -> f accu c
-          | CKfield c  -> f accu c
+          | CKfield (_, _, c)  -> f accu c
         in
         let accu = f accu k in
         let accu = List.fold_right (fun (_, _, v) accu -> f accu v) l accu in
@@ -2311,7 +2311,7 @@ let replace_for_to_iter (model : model) : model =
         begin match col with
           | ICKcoll _ -> CKcoll
           | ICKview x -> CKview x
-          | ICKfield x -> CKfield x
+          | ICKfield (x) -> CKfield (an, an, x) (* FIXME fn *)
           | _ -> assert false
         end in
       let idx_id = "_i_" ^ lbl in
@@ -2496,6 +2496,20 @@ let replace_api_view_by_col (model : model) : model =
     | _ -> false
   in
 
+  let rec extract_field (c : mterm) : ident =
+    match c with
+    | { node = Mcast (
+        (Tcontainer ((Tasset _), (Subset | Partition))),
+        (Tcontainer ((Tasset _), View)),
+        ({ node = _;
+           type_ = Tcontainer ((Tasset _), (Subset | Partition)); _} as v));
+        type_ = Tcontainer ((Tasset _), View);
+        _} -> extract_field v
+    | { node = Mdot (_, fn) | Mdotassetfield (_, _, fn);
+        type_ = Tcontainer ((Tasset _), (Subset | Partition)); _} -> unloc fn
+    | _ -> assert false
+  in
+
   let is_col (c : mterm) =
     match c with
     | { node = Mcast (
@@ -2534,13 +2548,15 @@ let replace_api_view_by_col (model : model) : model =
 
     | Mclear (an, CKview c) when is_field c ->
       let c = aux ctx c |> remove_cast in
-      mk_mterm (Mclear (an, CKfield c)) mt.type_
+      let fn = extract_field c in
+      mk_mterm (Mclear (an, CKfield (an, fn, c))) mt.type_
 
     | Mremoveif (an, CKview c, la, lb, a) when is_storcol c ->
       mk_mterm (Mremoveif (an, CKcoll, la, lb, a)) mt.type_
 
     | Mremoveif (an, CKview c, la, lb, a) when is_field c ->
-      mk_mterm (Mremoveif (an, CKfield c, la, lb, a)) mt.type_
+      let fn = extract_field c in
+      mk_mterm (Mremoveif (an, CKfield (an, fn, c), la, lb, a)) mt.type_
 
     | Mget (an, CKview c, k) when is_col c->
       let k = aux ctx k in
@@ -2549,7 +2565,8 @@ let replace_api_view_by_col (model : model) : model =
     | Mget (an, CKview c, k) when is_field c ->
       let c = aux ctx c |> remove_cast in
       let k = aux ctx k in
-      mk_mterm (Mget (an, CKfield c, k)) mt.type_
+      let fn = extract_field c in
+      mk_mterm (Mget (an, CKfield (an, fn, c), k)) mt.type_
 
     | Mselect (an, CKview c, args, body, vs) when is_col c ->
       let body = aux ctx body in
@@ -2560,14 +2577,16 @@ let replace_api_view_by_col (model : model) : model =
       let c = aux ctx c |> remove_cast in
       let body = aux ctx body in
       let vs = List.map (aux ctx) vs in
-      mk_mterm (Mselect (an, CKfield c, args, body, vs)) mt.type_
+      let fn = extract_field c in
+      mk_mterm (Mselect (an, CKfield (an, fn, c), args, body, vs)) mt.type_
 
     | Msort (an, CKview c, l) when is_col c ->
       mk_mterm (Msort (an, CKcoll, l)) mt.type_
 
     | Msort (an, CKview c, l) when is_field c ->
       let c = aux ctx c |> remove_cast in
-      mk_mterm (Msort (an, CKfield c, l)) mt.type_
+      let fn = extract_field c in
+      mk_mterm (Msort (an, CKfield (an, fn, c), l)) mt.type_
 
     | Mcontains (an, CKview c, k) when is_col c->
       let k = aux ctx k in
@@ -2576,7 +2595,8 @@ let replace_api_view_by_col (model : model) : model =
     | Mcontains (an, CKview c, k) when is_field c ->
       let c = aux ctx c |> remove_cast in
       let k = aux ctx k in
-      mk_mterm (Mcontains (an, CKfield c, k)) mt.type_
+      let fn = extract_field c in
+      mk_mterm (Mcontains (an, CKfield (an, fn, c), k)) mt.type_
 
     | Mnth (an, CKview c, i) when is_col c ->
       let i = aux ctx i in
@@ -2585,14 +2605,16 @@ let replace_api_view_by_col (model : model) : model =
     | Mnth (an, CKview c, i) when is_field c ->
       let c = aux ctx c |> remove_cast in
       let i = aux ctx i in
-      mk_mterm (Mnth (an, CKfield c, i)) mt.type_
+      let fn = extract_field c in
+      mk_mterm (Mnth (an, CKfield (an, fn, c), i)) mt.type_
 
     | Mcount (an, CKview c) when is_col c ->
       mk_mterm (Mcount (an, CKcoll)) mt.type_
 
     | Mcount (an, CKview c) when is_field c ->
       let c = aux ctx c |> remove_cast in
-      mk_mterm (Mcount (an, CKfield c)) mt.type_
+      let fn = extract_field c in
+      mk_mterm (Mcount (an, CKfield (an, fn, c))) mt.type_
 
     | Msum (an, CKview c, v) when is_col c ->
       let v = aux ctx v in
@@ -2601,7 +2623,8 @@ let replace_api_view_by_col (model : model) : model =
     | Msum (an, CKview c, v) when is_field c ->
       let c = aux ctx c |> remove_cast in
       let v = aux ctx v in
-      mk_mterm (Msum (an, CKfield c, v)) mt.type_
+      let fn = extract_field c in
+      mk_mterm (Msum (an, CKfield (an, fn, c), v)) mt.type_
 
     | Mhead (an, CKview c, n) when is_col c ->
       let n = aux ctx n in
@@ -2610,7 +2633,8 @@ let replace_api_view_by_col (model : model) : model =
     | Mhead (an, CKview c, n) when is_field c ->
       let c = aux ctx c |> remove_cast in
       let n = aux ctx n in
-      mk_mterm (Mhead (an, CKfield c, n)) mt.type_
+      let fn = extract_field c in
+      mk_mterm (Mhead (an, CKfield (an, fn, c), n)) mt.type_
 
     | Mtail (an, CKview c, n) when is_col c ->
       let n = aux ctx n in
@@ -2619,7 +2643,8 @@ let replace_api_view_by_col (model : model) : model =
     | Mtail (an, CKview c, n) when is_field c ->
       let c = aux ctx c |> remove_cast in
       let n = aux ctx n in
-      mk_mterm (Mtail (an, CKfield c, n)) mt.type_
+      let fn = extract_field c in
+      mk_mterm (Mtail (an, CKfield (an, fn, c), n)) mt.type_
 
     | Mfor (i, ICKview c, b, l) when is_storcol c ->
       let an =

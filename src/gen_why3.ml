@@ -1321,7 +1321,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Mclear (n, CKcoll) -> Tapp (loc_term (Tvar ("clear_"^(n))),[])
     | Mclear (n, CKview v) -> Tapp (loc_term (Tvar ("clear_view_"^(n))),[map_mterm m ctx v])
-    | Mclear (n, CKfield v) -> Tapp (loc_term (Tvar ("clear_view_"^(n))),[map_mterm m ctx v])
+    | Mclear (n, CKfield (_, _, v)) -> Tapp (loc_term (Tvar ("clear_view_"^(n))),[map_mterm m ctx v])
 
     | Mset (a, l, k, v) ->
       mk_trace_seq m
@@ -1340,7 +1340,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Mget (an, _c, k) -> Tapp (loc_term (Tvar ("get_" ^ an)), [map_mterm m ctx k])
 
-    | Mselect (a, (CKview l | CKfield l), la, lb, _a) ->
+    | Mselect (a, (CKview l | CKfield (_, _, l)), la, lb, _a) ->
       let args = extract_args lb in
       let id = mk_select_name "v" m a lb in
       let argids = args |> List.map (fun (e, _, _) -> e) |> List.map (map_mterm m ctx) in
@@ -1352,16 +1352,16 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let argids = args |> List.map (fun (e, _, _) -> e) |> List.map (map_mterm m ctx) in
       let args = List.map (fun (i,_) -> loc_term (Tvar i)) la in
       Tapp (loc_term (Tvar id), argids @ args @ [mk_ac_ctx a ctx])
-    | Msort (a, (CKview c | CKfield c),l) -> Tvsort (with_dummy_loc (mk_sort_clone_id a l),map_mterm m ctx c,mk_ac_ctx a ctx)
+    | Msort (a, (CKview c | CKfield (_, _, c)),l) -> Tvsort (with_dummy_loc (mk_sort_clone_id a l),map_mterm m ctx c,mk_ac_ctx a ctx)
     | Msort (a, CKcoll,l) -> Tcsort (with_dummy_loc (mk_sort_clone_id a l), mk_ac_ctx a ctx)
-    | Mcontains (a, (CKview v | CKfield v), r) -> Tvcontains (with_dummy_loc a, map_mterm m ctx r, map_mterm m ctx v)
+    | Mcontains (a, (CKview v | CKfield (_, _, v)), r) -> Tvcontains (with_dummy_loc a, map_mterm m ctx r, map_mterm m ctx v)
     | Mcontains (a, CKcoll, r) -> Tccontains (with_dummy_loc a, map_mterm m ctx r,  mk_ac_ctx a ctx )
 
-    | Mnth (n, (CKview c | CKfield c),k) -> Tapp (loc_term (Tvar ("vnth_" ^ n)),[map_mterm m ctx c; map_mterm m ctx k])
+    | Mnth (n, (CKview c | CKfield (_, _, c)),k) -> Tapp (loc_term (Tvar ("vnth_" ^ n)),[map_mterm m ctx c; map_mterm m ctx k])
     | Mnth (n, CKcoll,k) -> Tapp (loc_term (Tvar ("cnth_" ^ n)),[ mk_ac_ctx n ctx; map_mterm m ctx k])
-    | Mcount (a, (CKview t | CKfield t)) -> Tvcard (with_dummy_loc a, map_mterm m ctx t)
+    | Mcount (a, (CKview t | CKfield (_, _, t))) -> Tvcard (with_dummy_loc a, map_mterm m ctx t)
     | Mcount (a, CKcoll) -> Tccard (with_dummy_loc a, mk_ac_ctx a ctx)
-    | Msum          (a, (CKview v | CKfield v),f) ->
+    | Msum          (a, (CKview v | CKfield (_, _, v)),f) ->
       let cloneid = mk_sum_clone_id m a f in
       let col = mk_ac_ctx a ctx in
       Tvsum(with_dummy_loc cloneid,map_mterm m ctx v,col)
@@ -1369,9 +1369,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let cloneid = mk_sum_clone_id m a f in
       let col = mk_ac_ctx a ctx in
       Tcsum(with_dummy_loc cloneid,col)
-    | Mhead (n, (CKview c | CKfield c), v) -> Tvhead(with_dummy_loc n, map_mterm m ctx v, map_mterm m ctx c)
+    | Mhead (n, (CKview c | CKfield (_, _, c)), v) -> Tvhead(with_dummy_loc n, map_mterm m ctx v, map_mterm m ctx c)
     | Mhead (n, CKcoll, v) -> Tchead(with_dummy_loc n, map_mterm m ctx v, mk_ac_ctx n ctx)
-    | Mtail  (n, (CKview c | CKfield c), v) -> Tvtail(with_dummy_loc n, map_mterm m ctx v, map_mterm m ctx c)
+    | Mtail  (n, (CKview c | CKfield (_, _, c)), v) -> Tvtail(with_dummy_loc n, map_mterm m ctx v, map_mterm m ctx c)
     | Mtail  (n, CKcoll, v) -> Tctail(with_dummy_loc n, map_mterm m ctx v, mk_ac_ctx n ctx)
 
     (* utils *)

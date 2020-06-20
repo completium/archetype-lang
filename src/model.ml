@@ -155,7 +155,7 @@ type 'term var_kind_gen =
 type 'term container_kind_gen =
   | CKcoll
   | CKview  of 'term
-  | CKfield of 'term
+  | CKfield of (ident * ident * 'term)
 [@@deriving show {with_path = false}]
 
 type 'term iter_container_kind_gen =
@@ -1280,10 +1280,10 @@ let map_var_kind f = function
   | Vstate -> Vstate
   | Vthe -> Vthe
 
-let map_container_kind f = function
+let map_container_kind (fi : ident -> ident) f = function
   | CKcoll     -> CKcoll
   | CKview  mt -> CKview  (f mt)
-  | CKfield mt -> CKfield (f mt)
+  | CKfield (an, fn, mt) -> CKfield (fi an, fi fn, f mt)
 
 let map_iter_container_kind (fi : ident -> ident) f = function
   | ICKcoll an  -> ICKcoll (fi an)
@@ -1368,21 +1368,21 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mremoveasset (an, i)           -> Mremoveasset (fi an, f i)
   | Mremovefield (an, fn, c, i)    -> Mremovefield (fi an, fi fn, f c, f i)
   | Mremoveall (an, fn, a)         -> Mremoveall (fi an, fi fn, f a)
-  | Mremoveif (an, c, la, lb, a)   -> Mremoveif (fi an, map_container_kind f c, List.map (fun (i, t) -> (fi i, ft t)) la, f lb, List.map f a)
-  | Mclear (an, v)                 -> Mclear (fi an, map_container_kind f v)
+  | Mremoveif (an, c, la, lb, a)   -> Mremoveif (fi an, map_container_kind fi f c, List.map (fun (i, t) -> (fi i, ft t)) la, f lb, List.map f a)
+  | Mclear (an, v)                 -> Mclear (fi an, map_container_kind fi f v)
   | Mset (an, l, k, v)             -> Mset (fi an, List.map fi l, f k, f v)
   | Mupdate (an, k, l)             -> Mupdate (fi an, f k, List.map (fun (id, op, v) -> (g id, op, f v)) l)
-  | Maddupdate (an, c, k, l)       -> Maddupdate (fi an, map_container_kind f c, f k, List.map (fun (id, op, v) -> (g id, op, f v)) l)
+  | Maddupdate (an, c, k, l)       -> Maddupdate (fi an, map_container_kind fi f c, f k, List.map (fun (id, op, v) -> (g id, op, f v)) l)
   (* asset api expression *)
-  | Mget (an, c, k)                -> Mget (fi an, map_container_kind f c, f k)
-  | Mselect (an, c, la, lb, a)     -> Mselect (fi an, map_container_kind f c, List.map (fun (i, t) -> (fi i, ft t)) la, f lb, List.map f a)
-  | Msort (an, c, l)               -> Msort (fi an, map_container_kind f c, l)
-  | Mcontains (an, c, i)           -> Mcontains (fi an, map_container_kind f c, f i)
-  | Mnth (an, c, i)                -> Mnth (fi an, map_container_kind f c, f i)
-  | Mcount (an, c)                 -> Mcount (fi an, map_container_kind f c)
-  | Msum (an, c, p)                -> Msum (fi an, map_container_kind f c, f p)
-  | Mhead (an, c, i)               -> Mhead (fi an, map_container_kind f c, f i)
-  | Mtail (an, c, i)               -> Mtail (fi an, map_container_kind f c, f i)
+  | Mget (an, c, k)                -> Mget (fi an, map_container_kind fi f c, f k)
+  | Mselect (an, c, la, lb, a)     -> Mselect (fi an, map_container_kind fi f c, List.map (fun (i, t) -> (fi i, ft t)) la, f lb, List.map f a)
+  | Msort (an, c, l)               -> Msort (fi an, map_container_kind fi f c, l)
+  | Mcontains (an, c, i)           -> Mcontains (fi an, map_container_kind fi f c, f i)
+  | Mnth (an, c, i)                -> Mnth (fi an, map_container_kind fi f c, f i)
+  | Mcount (an, c)                 -> Mcount (fi an, map_container_kind fi f c)
+  | Msum (an, c, p)                -> Msum (fi an, map_container_kind fi f c, f p)
+  | Mhead (an, c, i)               -> Mhead (fi an, map_container_kind fi f c, f i)
+  | Mtail (an, c, i)               -> Mtail (fi an, map_container_kind fi f c, f i)
   (* utils *)
   | Mcast (src, dst, v)            -> Mcast (ft src, ft dst, f v)
   (* list api expression *)
@@ -1609,7 +1609,7 @@ let fold_var_kind f accu = function
 let fold_container_kind f accu = function
   | CKcoll          -> accu
   | CKview mt       -> f accu mt
-  | CKfield mt      -> f accu mt
+  | CKfield (_, _, mt)      -> f accu mt
 
 let fold_iter_container_kind f accu = function
   | ICKcoll _   -> accu
@@ -1808,9 +1808,9 @@ let fold_map_container_kind f accu = function
   | CKview mt ->
     let mte, mta = f accu mt in
     CKview mte, mta
-  | CKfield mt ->
+  | CKfield (an, fn, mt) ->
     let mte, mta = f accu mt in
-    CKfield mte, mta
+    CKfield (an, fn, mte), mta
 
 let fold_map_iter_container_kind f accu = function
   | ICKcoll an -> ICKcoll an, accu
