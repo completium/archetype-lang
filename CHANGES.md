@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Introduce `container_kind` in model
  - `pack`, `unpack` functions
+ - `removeif` for collection, subset and partition
 
 ### Changed
  - Replace `collection` by `subset`

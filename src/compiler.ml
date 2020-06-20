@@ -98,29 +98,11 @@ let generate_api_storage      = Gen_api_storage.generate_api_storage
 
 let generate_target model =
 
-  let cont c a = if c then a else (fun x -> x) in
-
   match !Options.target with
   | None ->
     model
-    |> cont !Options.opt_pas  process_asset_state
-    |> cont !Options.opt_raf  replace_assignfield_by_update
-    |> cont !Options.opt_rau  remove_add_update
-    |> cont !Options.opt_mu   merge_update
-    |> cont !Options.opt_ru   replace_update_by_set
-    |> cont !Options.opt_nr   remove_rational
-    |> cont !Options.opt_ndd  replace_date_duration_by_timestamp
-    |> cont !Options.opt_ne   remove_enum_matchwith
-    |> cont !Options.opt_rfd  remove_fun_dotasset
-    |> cont !Options.opt_ws   generate_storage
     |> raise_if_error post_model_error prune_properties
     |> replace_declvar_by_letin
-    |> cont !Options.opt_aes add_explicit_sort
-    |> cont !Options.opt_skv split_key_values
-    |> cont !Options.opt_rcb remove_cmp_bool
-    |> cont !Options.opt_nse remove_side_effect
-    |> cont !Options.opt_evi eval_variable_initial_value
-    |> cont !Options.opt_d check_if_asset_in_function
     |> generate_api_storage
     |> output
 
@@ -303,36 +285,6 @@ let main () =
       "--typed", Arg.Set Options.opt_typed, " Display type in ast output";
       "-ap", Arg.Set Options.opt_all_parenthesis, " Display all parenthesis in printer";
       "--typed", Arg.Set Options.opt_all_parenthesis, " Same as -ap";
-      "-ws", Arg.Set Options.opt_ws, " With storage";
-      "--with-storage", Arg.Set Options.opt_ws, " Same as -ws";
-      "-skv", Arg.Set Options.opt_skv, " Split key value of collection of asset";
-      "--split-key-values", Arg.Set Options.opt_skv, " Same as -skv";
-      "-rcb", Arg.Set Options.opt_rcb, " Remove arithmetic operators for boolean";
-      "--remove-cmp-bool", Arg.Set Options.opt_rcb, " Same as -rcb";
-      "-nse", Arg.Set Options.opt_nse, " Transform to no side effect";
-      "--no-side-effect", Arg.Set Options.opt_nse, " Same as -nse";
-      "-nr", Arg.Set Options.opt_nr, " Remove rational";
-      "--no-rational", Arg.Set Options.opt_nse, " Same as -nr";
-      "-ndd", Arg.Set Options.opt_ndd, " Remove date and duration";
-      "--no-date-duration", Arg.Set Options.opt_nse, " Same as -ndd";
-      "-pas", Arg.Set Options.opt_pas, " Process asset state";
-      "--process-asset-state", Arg.Set Options.opt_pas, " Same as -pas";
-      "-raf", Arg.Set Options.opt_raf, " Replace field by update";
-      "--remove-assignfield", Arg.Set Options.opt_raf, " Same as -raf";
-      "-rau", Arg.Set Options.opt_rau, " Remove add_update method";
-      "--remove-add-update", Arg.Set Options.opt_rau, " Same as -rau";
-      "-ru", Arg.Set Options.opt_ru, " Remove update method";
-      "--remove-update", Arg.Set Options.opt_ru, " Same as -ru";
-      "-mu", Arg.Set Options.opt_mu, " Merge update";
-      "--merge-update", Arg.Set Options.opt_mu, " Same as -mu";
-      "-ne", Arg.Set Options.opt_ne, " Remove enum and match with";
-      "--no-enum", Arg.Set Options.opt_ne, " Same as -ne";
-      "-rfd", Arg.Set Options.opt_rfd, " Remove function of left value from dot access field asset";
-      "--remove-fun-dotasset", Arg.Set Options.opt_rfd, " Same as -rfd";
-      "-evi", Arg.Set Options.opt_evi, " Evaluate initial value";
-      "--eval-initial-value", Arg.Set Options.opt_evi, " Same as -evi";
-      "-aes", Arg.Set Options.opt_aes, " Add explicit sort";
-      "--add-explicit-sort", Arg.Set Options.opt_aes, " Same as -aes";
       "-fp", Arg.String (fun s -> Options.opt_property_focused := s), " Focus property (with whyml target only)";
       "--focus-property", Arg.String (fun s -> Options.opt_property_focused := s), " Same as -fp";
       "-sci", Arg.String (fun s -> Options.opt_caller := s), " Set caller address for initialization";
@@ -360,7 +312,6 @@ let main () =
       "--raw", Arg.Set Options.opt_raw, " Same as -r";
       "-ry", Arg.Set Options.opt_raw_whytree, " Print raw model tree";
       "--raw-whytree", Arg.Set Options.opt_raw_whytree, " Same as -r";
-      "-d", Arg.Set Options.opt_d, " Nothing";
       "-json", Arg.Set Options.opt_json, " Print JSON format";
       "-V", Arg.String (fun s -> Options.add_vids s), "<id> process specication identifiers";
       "-v", Arg.Unit (fun () -> print_version ()), " Show version number and exit";
