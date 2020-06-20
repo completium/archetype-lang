@@ -2678,7 +2678,7 @@ let mk_storage_api_before_storage (m : M.model) _records =
         acc @ [ (*mk_get_sum_value_from_pos asset id mlw_formula;*)
                 mk_get_sum_value asset id mlw_formula;
                 mk_sum_clone m asset key formula ]
-      | M.APIAsset (Select (asset, (View | Field), args, test)) ->
+      | M.APIAsset (Select (asset, (View | Field _), args, test)) ->
         if not !gselectgen then (
           gselectgen := true;
           let mlw_test = map_mterm m init_ctx test in
@@ -2703,7 +2703,7 @@ let mk_storage_api (m : M.model) records =
         acc @ [mk_get_asset n k (kt |> map_btype)]
       | M.APIAsset (Nth (n, Coll)) ->
         acc @ [mk_cnth_asset n]
-      | M.APIAsset (Nth (n, (View | Field))) ->
+      | M.APIAsset (Nth (n, (View | Field _))) ->
         if not !gnthgen then (
           gnthgen := true;
           acc @ [mk_vnth_asset n])
@@ -2738,7 +2738,7 @@ let mk_storage_api (m : M.model) records =
         acc @ [ mk_cmp_function m asset field; mk_sort_clone m asset field]
       | M.APIAsset (Clear (n, Coll)) ->
         acc @ [mk_clear_coll m n]
-      | M.APIAsset (Clear (n, (View | Field))) ->
+      | M.APIAsset (Clear (n, (View | Field _))) ->
         if not !gcleargen then (
           gcleargen := true;
           acc @ [mk_rm_asset m n;mk_clear_view m n])

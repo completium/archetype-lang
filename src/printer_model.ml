@@ -1050,7 +1050,7 @@ let pp_label_term fmt (lt : label_term) =
 let pp_ck fmt = function
   | Coll  -> Format.fprintf fmt "collection"
   | View  -> Format.fprintf fmt "view"
-  | Field -> Format.fprintf fmt "field"
+  | Field (an, fn) -> Format.fprintf fmt "field(%s, %s)" an fn
 
 let pp_api_asset fmt = function
   | Get an -> pp_str fmt ("get\t " ^ an)

@@ -242,7 +242,7 @@ let pp_model_internal fmt (model : model) b =
   let pp_prefix_container_kind an fmt = function
     | CKcoll    -> Format.fprintf fmt "c_%s" an
     | CKview _  -> Format.fprintf fmt "v_%s" an
-    | CKfield _ -> Format.fprintf fmt "f_%s" an
+    | CKfield (an, fn, _) -> Format.fprintf fmt "f_%s_%s" an fn
   in
 
   let pp_mterm_gen (env : env) f fmt (mtt : mterm) =
@@ -1505,7 +1505,7 @@ let pp_model_internal fmt (model : model) b =
   let pp_prefix_api_container_kind an fmt = function
     | Coll  -> Format.fprintf fmt "c_%s" an
     | View  -> Format.fprintf fmt "v_%s" an
-    | Field -> Format.fprintf fmt "f_%s" an
+    | Field (an, fn) -> Format.fprintf fmt "f_%s_%s" an fn
   in
 
   let pp_api_asset (env : env) fmt = function
@@ -1643,7 +1643,7 @@ let pp_model_internal fmt (model : model) b =
             an pp_btyp t
             (if Utils.is_asset_single_field model an then "set" else "map")
             an
-        | Field ->
+        | Field _ ->
           Format.fprintf fmt
             "function clear_%a (const s : storage_type; const l : set(%a)) : storage_type is@\n  \
              begin@\n  \
@@ -1757,13 +1757,13 @@ let pp_model_internal fmt (model : model) b =
         match c with
         | Coll  -> ()
         | View  -> Format.fprintf fmt "; const l : list(%a)" pp_btyp t
-        | Field -> Format.fprintf fmt "; const l : set(%a)" pp_btyp t
+        | Field _ -> Format.fprintf fmt "; const l : set(%a)" pp_btyp t
       in
       let pp_remove fmt () =
         match c with
         | Coll  -> Format.fprintf fmt "remove_%s (accu, i.0)" an
         | View
-        | Field -> Format.fprintf fmt "remove_%s (accu, i.0)" an
+        | Field _ -> Format.fprintf fmt "remove_%s (accu, i.0)" an
       in
       let container, src, iter_type, iter_val =
         match c with
@@ -1773,7 +1773,7 @@ let pp_model_internal fmt (model : model) b =
           "map", "s." ^ an ^ "_assets", " * " ^ an ^ "_storage", ".0"
         | View ->
           "list", "l", "", ""
-        | Field ->
+        | Field _ ->
           "set", "l", "", ""
       in
       Format.fprintf fmt
@@ -1800,18 +1800,18 @@ let pp_model_internal fmt (model : model) b =
              match c with
              | Coll  -> Format.fprintf fmt "const s : storage_type"
              | View  -> Format.fprintf fmt "const l : list(%a)" pp_btyp t
-             | Field -> Format.fprintf fmt "const l : set(%a)" pp_btyp t) c
+             | Field _ -> Format.fprintf fmt "const l : set(%a)" pp_btyp t) c
           pp_btyp t
           (fun fmt c ->
              match c with
              | Coll  -> Format.fprintf fmt " skip "
              | View  -> Format.fprintf fmt "@\n  function aggregate (const accu : bool; const v : %a) : bool is block { skip } with (accu or v = key);@\n" pp_btyp t
-             | Field -> Format.fprintf fmt " skip ") c
+             | Field _ -> Format.fprintf fmt " skip ") c
           (fun fmt c ->
              match c with
              | Coll  -> Format.fprintf fmt "%s.mem (key, s.%s_assets)" (if Utils.is_asset_single_field model an then "Set" else "Map") an
              | View  -> Format.fprintf fmt "list_fold(aggregate, l, False)"
-             | Field -> Format.fprintf fmt "Set.mem(key, l)" ) c
+             | Field _ -> Format.fprintf fmt "Set.mem(key, l)" ) c
       end
 
     | Nth (an, c) ->
@@ -1821,7 +1821,7 @@ let pp_model_internal fmt (model : model) b =
         match c with
         | Coll -> ()
         | View -> Format.fprintf fmt "; const l : list(%a)" pp_btyp t
-        | Field -> Format.fprintf fmt "; const l : set(%a)" pp_btyp t
+        | Field _ -> Format.fprintf fmt "; const l : set(%a)" pp_btyp t
       in
       let container, src, iter_type, iter_val =
         match c with
@@ -1831,7 +1831,7 @@ let pp_model_internal fmt (model : model) b =
           "map", "s." ^ an ^ "_assets", " * " ^ an ^ "_storage", ".0"
         | View ->
           "list", "l", "", ""
-        | Field ->
+        | Field _ ->
           "set", "l", "", ""
       in
       Format.fprintf fmt
@@ -1862,7 +1862,7 @@ let pp_model_internal fmt (model : model) b =
         match c with
         | Coll  -> ()
         | View  -> Format.fprintf fmt "; const l : list(%a)" pp_btyp t
-        | Field -> Format.fprintf fmt "; const l : set(%a)" pp_btyp t
+        | Field _ -> Format.fprintf fmt "; const l : set(%a)" pp_btyp t
       in
       let container, src, iter_type, iter_val =
         match c with
@@ -1872,7 +1872,7 @@ let pp_model_internal fmt (model : model) b =
           "map", "s." ^ an ^ "_assets", " * " ^ an ^ "_storage", ".0"
         | View ->
           "list", "l", "", ""
-        | Field ->
+        | Field _ ->
           "set", "l", "", ""
       in
       Format.fprintf fmt
@@ -1897,7 +1897,7 @@ let pp_model_internal fmt (model : model) b =
         match c with
         | Coll  -> ()
         | View  -> Format.fprintf fmt "; const l : list(%a)" pp_btyp t
-        | Field -> Format.fprintf fmt "; const l : set(%a)" pp_btyp t
+        | Field _ -> Format.fprintf fmt "; const l : set(%a)" pp_btyp t
       in
       let container, src, iter_type, iter_val =
         match c with
@@ -1907,7 +1907,7 @@ let pp_model_internal fmt (model : model) b =
           "map", "s." ^ an ^ "_assets", " * " ^ an ^ "_storage", ".0"
         | View ->
           "list", "l", "", ""
-        | Field ->
+        | Field _ ->
           "set", "l", "", ""
       in
 
@@ -2007,7 +2007,7 @@ let pp_model_internal fmt (model : model) b =
              match c with
              | Coll -> Format.fprintf fmt "const s : storage_type"
              | View -> Format.fprintf fmt "const l : list(%a)" pp_btyp t
-             | Field -> Format.fprintf fmt "const l : set(%a)" pp_btyp t) c
+             | Field _ -> Format.fprintf fmt "const l : set(%a)" pp_btyp t) c
           (fun fmt c ->
              match c with
              | Coll ->
@@ -2015,7 +2015,7 @@ let pp_model_internal fmt (model : model) b =
                let size = if Model.Utils.is_asset_single_field model an then "Set.size" else "Map.size" in
                Format.fprintf fmt "int(%s(%s))" size src
              | View -> Format.fprintf fmt "int(size(l))"
-             | Field -> Format.fprintf fmt "int(Set.size(l))") c
+             | Field _ -> Format.fprintf fmt "int(Set.size(l))") c
       end
 
     | Sum (an, c, t, p) ->
@@ -2038,7 +2038,7 @@ let pp_model_internal fmt (model : model) b =
         match c with
         | Coll  -> ()
         | View  -> Format.fprintf fmt "; const l : list(%a)" pp_btyp tk
-        | Field -> Format.fprintf fmt "; const l : set(%a)" pp_btyp tk
+        | Field _ -> Format.fprintf fmt "; const l : set(%a)" pp_btyp tk
       in
       let pp_formula fmt _ =
         match t with
@@ -2053,7 +2053,7 @@ let pp_model_internal fmt (model : model) b =
           "map", "s." ^ an ^ "_assets", " * " ^ an ^ "_storage", ".0"
         | View ->
           "list", "l", "", ""
-        | Field ->
+        | Field _ ->
           "set", "l", "", ""
       in
       Format.fprintf fmt
@@ -2079,7 +2079,7 @@ let pp_model_internal fmt (model : model) b =
         match c with
         | Coll  -> Format.fprintf fmt "const s : storage_type"
         | View  -> Format.fprintf fmt "const l : list(%a)" pp_btyp t
-        | Field -> Format.fprintf fmt "const l : set(%a)" pp_btyp t
+        | Field _ -> Format.fprintf fmt "const l : set(%a)" pp_btyp t
       in
       let size, container, src, iter_type, iter_val =
         match c with
@@ -2089,7 +2089,7 @@ let pp_model_internal fmt (model : model) b =
           "Map.size", "map", "s." ^ an ^ "_assets", " * " ^ an ^ "_storage", ".0"
         | View ->
           "size", "list", "l", "", ""
-        | Field ->
+        | Field _ ->
           "Set.size", "set", "l", "", ""
       in
       Format.fprintf fmt
@@ -2124,7 +2124,7 @@ let pp_model_internal fmt (model : model) b =
         match c with
         | Coll  -> Format.fprintf fmt "const s : storage_type"
         | View  -> Format.fprintf fmt "const l : list(%a)" pp_btyp t
-        | Field -> Format.fprintf fmt "const l : set(%a)" pp_btyp t
+        | Field _ -> Format.fprintf fmt "const l : set(%a)" pp_btyp t
       in
       let size, container, src, iter_type, iter_val =
         match c with
@@ -2134,7 +2134,7 @@ let pp_model_internal fmt (model : model) b =
           "Map.size", "map", "s." ^ an ^ "_assets", " * " ^ an ^ "_storage", ".0"
         | View ->
           "size", "list", "l", "", ""
-        | Field ->
+        | Field _ ->
           "Set.size", "set", "l", "", ""
       in
       Format.fprintf fmt

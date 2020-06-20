@@ -360,7 +360,7 @@ and fail_type = lident fail_type_gen
 and api_container_kind =
   | Coll
   | View
-  | Field
+  | Field of ident * ident
 
 and api_asset =
   | Get              of ident
