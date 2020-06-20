@@ -432,7 +432,7 @@ let pp_model fmt (model : model) =
   let pp_iter_container_kind f fmt = function
     | ICKcoll an  -> Format.fprintf fmt "%a" pp_str an
     | ICKview mt  -> Format.fprintf fmt "%a" f mt
-    | ICKfield mt -> Format.fprintf fmt "%a" f mt
+    | ICKfield (_, _, mt) -> Format.fprintf fmt "%a" f mt
     | ICKlist mt  -> Format.fprintf fmt "%a" f mt
   in
 

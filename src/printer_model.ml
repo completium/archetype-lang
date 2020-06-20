@@ -120,7 +120,7 @@ let pp_container_kind f fmt = function
 let pp_iter_container_kind f fmt = function
   | ICKcoll  an -> Format.fprintf fmt "%a" pp_str an
   | ICKview  mt -> Format.fprintf fmt "%a" f mt
-  | ICKfield mt -> Format.fprintf fmt "%a" f mt
+  | ICKfield (_, _, mt) -> Format.fprintf fmt "%a" f mt
   | ICKlist  mt -> Format.fprintf fmt "%a" f mt
 
 let pp_mterm fmt (mt : mterm) =

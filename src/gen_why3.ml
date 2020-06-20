@@ -1568,7 +1568,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       begin match container with
         | ICKview c  -> Tvhead (n,loc_term (Tvar iter_id),map_mterm m ctx c)
         | ICKcoll n  -> Tchead (with_dummy_loc n,loc_term (Tvar iter_id),mk_ac_ctx n ctx)
-        | ICKfield c -> Tvhead (n,loc_term (Tvar iter_id),map_mterm m ctx c)
+        | ICKfield (_, _, c) -> Tvhead (n,loc_term (Tvar iter_id),map_mterm m ctx c)
         | ICKlist _  -> error_not_translated "Msetiterated for list"
       end
     | Msettoiterate container ->
@@ -1577,7 +1577,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       begin match container with
         | ICKview c  -> Tvtail (n,loc_term (Tvar iter_id),map_mterm m ctx c)
         | ICKcoll n  -> Tctail (with_dummy_loc n,loc_term (Tvar iter_id),mk_ac_ctx n ctx)
-        | ICKfield c -> Tvtail (n,loc_term (Tvar iter_id),map_mterm m ctx c)
+        | ICKfield (_, _, c) -> Tvtail (n,loc_term (Tvar iter_id),map_mterm m ctx c)
         | ICKlist _  -> error_not_translated "Msettoiterate for list"
       end
     (* formula asset collection methods *)

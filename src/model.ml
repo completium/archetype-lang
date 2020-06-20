@@ -161,7 +161,7 @@ type 'term container_kind_gen =
 type 'term iter_container_kind_gen =
   | ICKcoll  of ident
   | ICKview  of 'term
-  | ICKfield of 'term
+  | ICKfield of (ident * ident * 'term)
   | ICKlist  of 'term
 [@@deriving show {with_path = false}]
 
@@ -993,6 +993,7 @@ let cmp_mterm_node
     match lhs, rhs with
     | ICKcoll an1, ICKcoll an2 -> String.equal an1 an2
     | ICKview l, ICKview r -> cmp l r
+    | ICKfield (an1, fn1, l1), ICKfield (an2, fn2, l2) -> String.equal an1 an2 && String.equal fn1 fn2 && cmp l1 l2
     | ICKlist l, ICKlist r -> cmp l r
     | _ -> false
   in
@@ -1289,7 +1290,7 @@ let map_container_kind (fi : ident -> ident) f = function
 let map_iter_container_kind (fi : ident -> ident) f = function
   | ICKcoll an  -> ICKcoll (fi an)
   | ICKview mt  -> ICKview (f mt)
-  | ICKfield mt -> ICKfield (f mt)
+  | ICKfield (an, fn, mt) -> ICKfield (an, fn, f mt)
   | ICKlist mt  -> ICKlist (f mt)
 
 let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ -> type_) (f : 'id mterm_gen -> 'id mterm_gen) = function
@@ -1615,7 +1616,7 @@ let fold_container_kind f accu = function
 let fold_iter_container_kind f accu = function
   | ICKcoll _   -> accu
   | ICKview mt  -> f accu mt
-  | ICKfield mt -> f accu mt
+  | ICKfield (_, _, mt) -> f accu mt
   | ICKlist mt  -> f accu mt
 
 let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_gen) : 'a =
@@ -1818,9 +1819,9 @@ let fold_map_iter_container_kind f accu = function
   | ICKview mt ->
     let mte, mta = f accu mt in
     ICKview mte, mta
-  | ICKfield mt ->
+  | ICKfield (an, fn, mt) ->
     let mte, mta = f accu mt in
-    ICKfield mte, mta
+    ICKfield (an, fn, mte), mta
   | ICKlist mt ->
     let mte, mta = f accu mt in
     ICKlist mte, mta

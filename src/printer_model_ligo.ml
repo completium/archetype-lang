@@ -387,7 +387,7 @@ let pp_model_internal fmt (model : model) b =
             const_storage
             an
         | ICKview mt -> Format.fprintf fmt "list (%a)" f mt
-        | ICKfield mt -> Format.fprintf fmt "set (%a)" f mt
+        | ICKfield (_, _, mt) -> Format.fprintf fmt "set (%a)" f mt
         | ICKlist mt -> Format.fprintf fmt "list (%a)" f mt
       in
 
