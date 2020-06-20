@@ -834,14 +834,14 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (an, fn, c, i)
 
-    | Mremoveif (an, c, la, lb, a) ->
+    | Mremoveif (an, c, x, la, lb, a) ->
       let index : int = get_preds_index env.removeif_preds lb in
-      let pp fmt (an, c, _la, _lb, a) =
+      let pp fmt (an, c, x, _la, _lb, a) =
         let pp fmt _ =
           match c with
           | CKcoll -> pp_str fmt const_storage
-          | CKview mt
-          | CKfield (_, _, mt) -> Format.fprintf fmt "%s, %a" const_storage f mt
+          | CKview _ -> assert false
+          | CKfield _ -> Format.fprintf fmt "%s, %a" const_storage f x
         in
         Format.fprintf fmt "%s := removeif_%a_%i (%a%a)"
           const_storage
@@ -849,7 +849,7 @@ let pp_model_internal fmt (model : model) b =
           pp ()
           (pp_list "" (pp_prefix ", " f)) a
       in
-      pp fmt (an, c, la, lb, a)
+      pp fmt (an, c, x, la, lb, a)
 
     | Mclear (an, v) ->
       let pp fmt (an, v) =
@@ -1753,42 +1753,48 @@ let pp_model_internal fmt (model : model) b =
       let _k, t = Utils.get_asset_key model an in
       let i = get_preds_index env.removeif_preds f in
       let is_one_field = Model.Utils.is_asset_single_field model an in
-      let pp_fun_arg fmt () =
+      begin
         match c with
-        | Coll  -> ()
-        | View  -> Format.fprintf fmt "; const l : list(%a)" pp_btyp t
-        | Field _ -> Format.fprintf fmt "; const l : set(%a)" pp_btyp t
-      in
-      let pp_remove fmt () =
-        match c with
-        | Coll  -> Format.fprintf fmt "remove_%s (accu, i.0)" an
-        | View
-        | Field _ -> Format.fprintf fmt "remove_%s (accu, i.0)" an
-      in
-      let container, src, iter_type, iter_val =
-        match c with
-        | Coll when is_one_field ->
-          "set", "s." ^ an ^ "_assets", "", ""
-        | Coll ->
-          "map", "s." ^ an ^ "_assets", " * " ^ an ^ "_storage", ".0"
-        | View ->
-          "list", "l", "", ""
-        | Field _ ->
-          "set", "l", "", ""
-      in
-      Format.fprintf fmt
-        "function removeif_%a_%i (const s : storage_type%a%a) : storage_type is@\n  \
-         begin@\n    \
-         function aggregate (const accu : storage_type; const i : %a%s) : storage_type is@\n      \
-         begin@\n        \
-         const the : %s = get_%s(s, i%s);@\n        \
-         end with (if (%a) then %a else accu);@\n    \
-         end with (%s_fold(aggregate, %s, s))@\n"
-        (pp_prefix_api_container_kind an) c i pp_fun_arg () (pp_list "" pp_arg) args
-        pp_btyp t iter_type
-        an an iter_val
-        (pp_mterm (mk_env ())) f pp_remove ()
-        container src
+        | Coll -> begin
+            let container, iter_type, iter_val =
+              if is_one_field
+              then "set", "", ""
+              else "map", " * " ^ an ^ "_storage", ".0"
+            in
+            Format.fprintf fmt
+              "function removeif_%a_%i (const s : storage_type%a) : storage_type is@\n  \
+               begin@\n    \
+               function aggregate (const accu : storage_type; const i : %a%s) : storage_type is@\n      \
+               begin@\n        \
+               const the : %s = get_%s(s, i%s);@\n        \
+               end with (if (%a) then remove_%s (accu, i%s) else accu);@\n    \
+               end with (%s_fold(aggregate, s.%s_assets, s))@\n"
+              (pp_prefix_api_container_kind an) c i (pp_list "" pp_arg) args
+              pp_btyp t iter_type
+              an an iter_val
+              (pp_mterm (mk_env ())) f an iter_val
+              container an
+          end
+        | Field (an , fn) -> begin
+            let aan, _ = Utils.get_field_container model an fn in
+            let _kk, tt = Utils.get_asset_key model aan in
+
+            Format.fprintf fmt
+              "function removeif_%a_%i (const s : storage_type; const key : %a%a) : storage_type is@\n  \
+               begin@\n    \
+               function aggregate (const accu : storage_type; const i : %a) : storage_type is@\n      \
+               begin@\n          \
+               const the : %s = get_%s(s, i);@\n      \
+               end with (if (%a) then remove_%s_%s (accu, key, i) else accu);@\n  \
+               end with (case s.%s_assets[key] of None -> s | Some(a) -> set_fold(aggregate, a.%s, s) end)"
+              (pp_prefix_api_container_kind an) c i pp_btyp t (pp_list "" pp_arg) args
+              pp_btyp tt
+              aan aan
+              (pp_mterm (mk_env ())) f an fn
+              an fn
+          end
+        | _ -> assert false
+      end
 
     | Contains (an, c) ->
       begin

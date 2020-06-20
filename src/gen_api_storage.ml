@@ -70,15 +70,17 @@ let generate_api_storage ?(verif=false) (model : model) : model =
       | Mremoveall (asset_name, field_name, _) ->
         let (pa,_,_) = Utils.get_container_asset_key model asset_name field_name in
         [APIAsset (Get asset_name); APIAsset (Remove pa); APIAsset (FieldRemove (asset_name, field_name)); APIAsset (RemoveAll (asset_name, field_name))]
-      | Mremoveif (asset_name, (CKcoll as c), la, lb, _) ->
+      | Mremoveif (asset_name, (CKcoll as c), _, la, lb, _) ->
         [APIAsset (Get asset_name); APIAsset (Remove asset_name); APIAsset (RemoveIf (asset_name, to_ck c, la, lb))]
-      | Mremoveif (asset_name, ((CKfield (_, _, {node = Mdot ({type_ = Tasset aan}, fn)})) as c), la, lb, _) ->
-        Format.printf "mt: %a@." pp_mterm term;
-        let fn = unloc fn in
-        let aan = unloc aan in
-        (* let (pa,_,_) = Utils.get_container_asset_key model (unloc aan) fn in *)
-        (* APIAsset (Remove aan);  *)
-        [APIAsset (Get asset_name); APIAsset (FieldRemove (aan, fn)); APIAsset (RemoveIf (aan, to_ck c, la, lb))]
+      | Mremoveif (_, ((CKfield (an, fn, _)) as c), _, la, lb, _) ->
+        let _, t, _ = Utils.get_asset_field model (an, fn) in
+        let aan, l =
+          match t with
+          | Tcontainer (Tasset aan, Subset)    -> unloc aan, []
+          | Tcontainer (Tasset aan, Partition) -> unloc aan, [APIAsset (Remove (unloc aan))]
+          | _ -> assert false
+        in
+        [APIAsset (Get aan); APIAsset (FieldRemove (an, fn)); APIAsset (RemoveIf (an, to_ck c, la, lb))] @ l
       | Mclear (an , c) ->
         [APIAsset (Clear (an, to_ck c))]
       | Mselect (asset_name, c, la, lb, _) ->

@@ -671,9 +671,13 @@ let to_model (ast : A.model) : M.model =
       | A.Icall (Some p, A.Cconst (A.Cremoveif), [AFun (_id, _type, l, q)]) ->
         let fp = f p in
         let lambda_body = f q in
-        let asset_name = extract_asset_name fp in
         let lambda_args, args = List.fold_right (fun (x, y, z) (l1, l2) -> ((unloc x, ptyp_to_type y)::l1, (f z)::l2)) l ([], []) in
-        M.Mremoveif (asset_name, CKview fp, lambda_args, lambda_body, args)
+        begin
+          match fp.node, fp.type_ with
+          | Mdotassetfield (an, k, fn), _ -> M.Mremoveif (unloc an, CKfield (unloc an, unloc fn, fp), k, lambda_args, lambda_body, args)
+          | _, Tcontainer (Tasset an, _) -> M.Mremoveif (unloc an, CKcoll, fp, lambda_args, lambda_body, args)
+          | _ -> assert false
+        end
 
       | A.Icall (Some p, A.Cconst (A.Cclear), []) -> (
           let fp = f p in

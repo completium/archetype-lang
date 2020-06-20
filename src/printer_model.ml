@@ -575,16 +575,17 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (an, fn, a)
 
-    | Mremoveif (an, c, la, lb, a) ->
-      let pp fmt (an, c, la, lb, a) =
-        Format.fprintf fmt "removeif_%a (%a, (%a) -> %a)(%a)"
+    | Mremoveif (an, c, x, la, lb, a) ->
+      let pp fmt (an, c, x, la, lb, a) =
+        Format.fprintf fmt "removeif_%a (%a, %a, (%a) -> %a)(%a)"
           pp_str an
           (pp_container_kind f) c
+          f x
           (pp_list ", " (fun fmt (id, t) -> Format.fprintf fmt "%s : %a" id pp_type t)) la
           f lb
           (pp_list ", " f) a
       in
-      pp fmt (an, c, la, lb, a)
+      pp fmt (an, c, x, la, lb, a)
 
     | Mclear (an, v) ->
       let pp fmt (an, v) =
