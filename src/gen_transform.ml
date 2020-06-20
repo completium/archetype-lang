@@ -1114,7 +1114,9 @@ let remove_rational (model : model) : model =
           match node with
           | Mcurrency (v, Tz)  -> { mt with node = Mcurrency  (Big_int.mult_int_big_int 1000000 v, Utz) }
           | Mcurrency (v, Mtz) -> { mt with node = Mcurrency  (Big_int.mult_int_big_int    1000 v, Utz) }
-          | Mmult  (a, b) when is_num a && is_cur b -> process_rattez a b
+          | Mmult    (a, b) when is_num a && is_cur b -> process_rattez a b
+          | Mmult    (a, b) when is_cur a && is_num b -> process_rattez b a
+          | Mdiveuc  (a, b) when is_cur a && is_int b -> process_rattez (mk_rat one b) a
           | _ -> map_mterm aux mt
         end
       | Mdiveuc (a, b), _ when is_curs (a, b) -> process_divtez a b

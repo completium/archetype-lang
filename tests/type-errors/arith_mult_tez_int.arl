@@ -1,7 +1,0 @@
-archetype arith_mult_tez_int
-
-entry main () {
-  effect {
-    var v = 1tz * 1
-  }
-}

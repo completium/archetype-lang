@@ -94,7 +94,7 @@ entry pay_fee () {
     var decrease : tez = min (transferred, due);
     transfer decrease to insurer;
     transfer (transferred - decrease) to patient;
-    last_fee += period * nb_periods     (* last_fee <> now because div is euclidean *)
+    last_fee += nb_periods * period     (* last_fee <> now because div is euclidean *)
   }
 }
 

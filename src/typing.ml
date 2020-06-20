@@ -84,11 +84,14 @@ end = struct
 
     | M.Tbuiltin bfrom, M.Tbuiltin bto -> begin
         match bfrom, bto with
-        | M.VTaddress, M.VTrole
-        | M.VTrole   , M.VTaddress
-        | M.VTint    , M.VTrational
-        | M.VTstring , M.VTkey
-        | M.VTstring , M.VTsignature -> true
+        | M.VTaddress  , M.VTrole
+        | M.VTrole     , M.VTaddress
+        | M.VTint      , M.VTrational
+        | M.VTstring   , M.VTkey
+        | M.VTstring   , M.VTsignature
+        | M.VTcurrency , M.VTint
+        | M.VTduration , M.VTint
+          -> true
 
         | _, _ -> false
       end
@@ -606,12 +609,16 @@ let opsigs =
       PT.Arith PT.Minus  , ([M.VTduration; M.VTint           ], M.VTduration)  ;
       PT.Arith PT.Minus  , ([M.VTdate    ; M.VTduration      ], M.VTdate    )  ;
       PT.Arith PT.Minus  , ([M.VTdate    ; M.VTdate          ], M.VTduration)  ;
+      PT.Arith PT.Mult   , ([M.VTint     ; M.VTcurrency      ], M.VTcurrency)  ;
+      PT.Arith PT.Mult   , ([M.VTcurrency; M.VTint           ], M.VTcurrency)  ;
       PT.Arith PT.Mult   , ([M.VTrational; M.VTcurrency      ], M.VTcurrency)  ;
+      PT.Arith PT.Mult   , ([M.VTint     ; M.VTduration      ], M.VTduration)  ;
       PT.Arith PT.Mult   , ([M.VTrational; M.VTduration      ], M.VTduration)  ;
       PT.Arith PT.Mult   , ([M.VTduration; M.VTrational      ], M.VTduration)  ;
       PT.Arith PT.DivRat , ([M.VTduration; M.VTduration      ], M.VTrational)  ;
       PT.Arith PT.DivEuc , ([M.VTcurrency; M.VTcurrency      ], M.VTint     )  ;
       PT.Arith PT.DivEuc , ([M.VTduration; M.VTduration      ], M.VTint     )  ;
+      PT.Arith PT.DivEuc , ([M.VTcurrency; M.VTint           ], M.VTcurrency)  ;
       PT.Arith PT.DivEuc , ([M.VTduration; M.VTint           ], M.VTduration)  ;
       PT.Arith PT.Plus   , ([M.VTstring  ; M.VTstring        ], M.VTstring  )  ;
     ] in
