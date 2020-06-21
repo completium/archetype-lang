@@ -1004,7 +1004,7 @@ let pp_model_internal fmt (model : model) b =
              match c with
              | CKcoll -> pp_str fmt const_storage
              | CKview mt
-             | CKfield (_, _, mt) -> f fmt mt) ()
+             | CKfield (_, _, mt) -> Format.fprintf fmt "%s, %a" const_storage f mt) ()
       in
       pp fmt (an, c)
 
@@ -2007,13 +2007,18 @@ let pp_model_internal fmt (model : model) b =
       begin
         let _, t = Utils.get_asset_key model an in
         Format.fprintf fmt
-          "function count_%a (%a) : int is block { skip } with %a@\n"
+          "function count_%a (%a) : int is block { %a} with %a@\n"
           (pp_prefix_api_container_kind an) c
           (fun fmt c ->
              match c with
              | Coll -> Format.fprintf fmt "const s : storage_type"
              | View -> Format.fprintf fmt "const l : list(%a)" pp_btyp t
-             | Field _ -> Format.fprintf fmt "const l : set(%a)" pp_btyp t) c
+             | Field (an, _) -> Format.fprintf fmt "const s : storage_type; const k : %a" pp_btyp (Utils.get_asset_key model an |> snd)) c
+          (fun fmt c ->
+             match c with
+             | Coll -> Format.fprintf fmt "skip "
+             | View -> Format.fprintf fmt "skip "
+             | Field (an, fn) -> Format.fprintf fmt "@\n  const a : %s_storage = get_force(k, s.%s_assets);@\n  const l : set(%a) = a.%s;@\n" an an pp_btyp t fn) c
           (fun fmt c ->
              match c with
              | Coll ->
