@@ -834,14 +834,14 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (an, fn, c, i)
 
-    | Mremoveif (an, c, x, la, lb, a) ->
+    | Mremoveif (an, c, la, lb, a) ->
       let index : int = get_preds_index env.removeif_preds lb in
-      let pp fmt (an, c, x, _la, _lb, a) =
+      let pp fmt (an, c, _la, _lb, a) =
         let pp fmt _ =
           match c with
           | CKcoll -> pp_str fmt const_storage
           | CKview _ -> assert false
-          | CKfield _ -> Format.fprintf fmt "%s, %a" const_storage f x
+          | CKfield (_, _, x) -> Format.fprintf fmt "%s, %a" const_storage f x
         in
         Format.fprintf fmt "%s := removeif_%a_%i (%a%a)"
           const_storage
@@ -849,7 +849,7 @@ let pp_model_internal fmt (model : model) b =
           pp ()
           (pp_list "" (pp_prefix ", " f)) a
       in
-      pp fmt (an, c, x, la, lb, a)
+      pp fmt (an, c, la, lb, a)
 
     | Mclear (an, v) ->
       let pp fmt (an, v) =
@@ -1004,7 +1004,7 @@ let pp_model_internal fmt (model : model) b =
              match c with
              | CKcoll -> pp_str fmt const_storage
              | CKview mt
-             | CKfield (_, _, mt) -> f fmt mt) ()
+             | CKfield (_, _, mt) -> Format.fprintf fmt "%s, %a" const_storage f mt) ()
       in
       pp fmt (an, c)
 
@@ -2007,13 +2007,18 @@ let pp_model_internal fmt (model : model) b =
       begin
         let _, t = Utils.get_asset_key model an in
         Format.fprintf fmt
-          "function count_%a (%a) : int is block { skip } with %a@\n"
+          "function count_%a (%a) : int is block { %a} with %a@\n"
           (pp_prefix_api_container_kind an) c
           (fun fmt c ->
              match c with
              | Coll -> Format.fprintf fmt "const s : storage_type"
              | View -> Format.fprintf fmt "const l : list(%a)" pp_btyp t
-             | Field _ -> Format.fprintf fmt "const l : set(%a)" pp_btyp t) c
+             | Field (an, _) -> Format.fprintf fmt "const s : storage_type; const k : %a" pp_btyp (Utils.get_asset_key model an |> snd)) c
+          (fun fmt c ->
+             match c with
+             | Coll -> Format.fprintf fmt "skip "
+             | View -> Format.fprintf fmt "skip "
+             | Field (an, fn) -> Format.fprintf fmt "@\n  const a : %s_storage = get_force(k, s.%s_assets);@\n  const l : set(%a) = a.%s;@\n" an an pp_btyp t fn) c
           (fun fmt c ->
              match c with
              | Coll ->

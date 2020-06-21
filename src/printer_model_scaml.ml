@@ -921,16 +921,15 @@ let pp_model fmt (model : model) =
         in
         pp fmt (an, fn, c, i)
 
-      | Mremoveif (an, c, x, la, lb, a) ->
-        let pp fmt (an, c, x, _la, lb, _a) =
-          Format.fprintf fmt "removeif_%a (%s, %a, %a, fun the -> %a)"
+      | Mremoveif (an, c, la, lb, a) ->
+        let pp fmt (an, c, _la, lb, _a) =
+          Format.fprintf fmt "removeif_%a (%s, %a, fun the -> %a)"
             pp_str an
             const_storage
-            f x
             (pp_container_kind f) c
             f lb
         in
-        pp fmt (an, c, x, la, lb, a)
+        pp fmt (an, c, la, lb, a)
 
       | Mclear (an, v) ->
         let pp fmt (an, v) =

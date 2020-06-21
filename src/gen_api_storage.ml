@@ -70,9 +70,9 @@ let generate_api_storage ?(verif=false) (model : model) : model =
       | Mremoveall (asset_name, field_name, _) ->
         let (pa,_,_) = Utils.get_container_asset_key model asset_name field_name in
         [APIAsset (Get asset_name); APIAsset (Remove pa); APIAsset (FieldRemove (asset_name, field_name)); APIAsset (RemoveAll (asset_name, field_name))]
-      | Mremoveif (asset_name, (CKcoll as c), _, la, lb, _) ->
+      | Mremoveif (asset_name, (CKcoll as c), la, lb, _) ->
         [APIAsset (Get asset_name); APIAsset (Remove asset_name); APIAsset (RemoveIf (asset_name, to_ck c, la, lb))]
-      | Mremoveif (_, ((CKfield (an, fn, _)) as c), _, la, lb, _) ->
+      | Mremoveif (_, ((CKfield (an, fn, _)) as c), la, lb, _) ->
         let _, t, _ = Utils.get_asset_field model (an, fn) in
         let aan, l =
           match t with

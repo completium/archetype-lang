@@ -243,7 +243,7 @@ type ('id, 'term) mterm_node  =
   | Mremoveasset      of ident * 'term
   | Mremovefield      of ident * ident * 'term * 'term
   | Mremoveall        of ident * ident * 'term
-  | Mremoveif         of ident * 'term container_kind_gen * 'term * (ident * type_) list * 'term * 'term list (* asset_name, view, lambda (args, body, apply_args) *)
+  | Mremoveif         of ident * 'term container_kind_gen * (ident * type_) list * 'term * 'term list (* asset_name, view, lambda (args, body, apply_args) *)
   | Mclear            of ident * 'term container_kind_gen
   | Mset              of ident * ident list * 'term * 'term (*asset_name * field_name modified * ... *)
   | Mupdate           of ident * 'term * ('id * assignment_operator * 'term) list
@@ -1075,7 +1075,7 @@ let cmp_mterm_node
     | Mremoveasset (an1, i1), Mremoveasset (an2, i2)                                   -> cmp_ident an1 an2 && cmp i1 i2
     | Mremovefield (an1, fn1, c1, i1), Mremovefield (an2, fn2, c2, i2)                 -> cmp_ident an1 an2 && cmp_ident fn1 fn2 && cmp c1 c2 && cmp i1 i2
     | Mremoveall (an1, fn1, a1), Mremoveall (an2, fn2, a2)                             -> cmp_ident an1 an2 && cmp_ident fn1 fn2 && cmp a1 a2
-    | Mremoveif (an1, c1, x1, la1, lb1, a1), Mremoveif (an2, c2, x2, la2, lb2, a2)     -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && cmp x1 x2 && List.for_all2 (fun (i1, t1) (i2, t2) -> cmp_ident i1 i2 && cmp_type t1 t2) la1 la2 && cmp lb1 lb2 && List.for_all2 cmp a1 a2
+    | Mremoveif (an1, c1, la1, lb1, a1), Mremoveif (an2, c2, la2, lb2, a2)             -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && List.for_all2 (fun (i1, t1) (i2, t2) -> cmp_ident i1 i2 && cmp_type t1 t2) la1 la2 && cmp lb1 lb2 && List.for_all2 cmp a1 a2
     | Mclear (an1, v1), Mclear (an2, v2)                                               -> cmp_ident an1 an2 && cmp_container_kind v1 v2
     | Mset (c1, l1, k1, v1), Mset (c2, l2, k2, v2)                                     -> cmp_ident c1 c2 && List.for_all2 cmp_ident l1 l2 && cmp k1 k2 && cmp v1 v2
     | Mupdate (an1, k1, l1), Mupdate (an2, k2, l2)                                     -> cmp_ident an1 an2 && cmp k1 k2 && List.for_all2 (fun (id1, op1, v1) (id2, op2, v2) -> cmpi id1 id2 && cmp_assign_op op1 op2 && cmp v1 v2) l1 l2
@@ -1370,7 +1370,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mremoveasset (an, i)           -> Mremoveasset (fi an, f i)
   | Mremovefield (an, fn, c, i)    -> Mremovefield (fi an, fi fn, f c, f i)
   | Mremoveall (an, fn, a)         -> Mremoveall (fi an, fi fn, f a)
-  | Mremoveif (an, c, x, la, lb, a)-> Mremoveif (fi an, map_container_kind fi f c, f x, List.map (fun (i, t) -> (fi i, ft t)) la, f lb, List.map f a)
+  | Mremoveif (an, c, la, lb, a)   -> Mremoveif (fi an, map_container_kind fi f c, List.map (fun (i, t) -> (fi i, ft t)) la, f lb, List.map f a)
   | Mclear (an, v)                 -> Mclear (fi an, map_container_kind fi f v)
   | Mset (an, l, k, v)             -> Mset (fi an, List.map fi l, f k, f v)
   | Mupdate (an, k, l)             -> Mupdate (fi an, f k, List.map (fun (id, op, v) -> (g id, op, f v)) l)
@@ -1698,7 +1698,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mremoveasset (_, i)                   -> f accu i
   | Mremovefield (_, _, c, i)             -> f (f accu c) i
   | Mremoveall (_, _, a)                  -> f accu a
-  | Mremoveif (_, c, x, _, lb, a)         -> List.fold_left (fun accu x -> f accu x) (f (f (fold_container_kind f accu c) x) lb) a
+  | Mremoveif (_, c, _, lb, a)         -> List.fold_left (fun accu x -> f accu x) (f (fold_container_kind f accu c) lb) a
   | Mclear (_, v)                         -> fold_container_kind f accu v
   | Mset (_, _, k, v)                     -> f (f accu v) k
   | Mupdate (_, k, l)                     -> List.fold_left (fun accu (_, _, v) -> f accu v) (f accu k) l
@@ -2196,10 +2196,9 @@ let fold_map_term
     let ae, aa = f accu a in
     g (Mremoveall (an, fn, ae)), aa
 
-  | Mremoveif (an, c, x, la, lb, a) ->
+  | Mremoveif (an, c, la, lb, a) ->
     let ce, ca = fold_map_container_kind f accu c in
-    let xe, xa = f ca x in
-    let lbe, lba = f xa lb in
+    let lbe, lba = f ca lb in
     let ae, aa =
       List.fold_left
         (fun (ae, accu) x ->
@@ -2207,7 +2206,7 @@ let fold_map_term
            xa::ae, accu) ([], lba) a
       |> (fun (x, y) -> (List.rev x, y))
     in
-    g (Mremoveif (an, ce, xe, la, lbe, ae)), aa
+    g (Mremoveif (an, ce, la, lbe, ae)), aa
 
   | Mclear (an, v) ->
     let ve, va = fold_map_container_kind f accu v in
