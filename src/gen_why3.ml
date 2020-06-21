@@ -1049,6 +1049,14 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
           Tpsome (map_lident id), map_mterm m ctx b;
           Twild, map_mterm m ctx e
       ])
+
+    | Mletin ([id], v, _, b, Some o) ->
+          let ctx = ctx in
+      Tmatch (map_mterm m ctx v,[
+        Tpsome (map_lident id), map_mterm m ctx b;
+        Twild, map_mterm m ctx o
+      ])
+
     | Mletin              _ -> error_not_translated "Mletin"
     | Mdeclvar            _ -> error_not_translated "Mdeclvar"
 
