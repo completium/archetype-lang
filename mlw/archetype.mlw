@@ -123,6 +123,8 @@ module Utils
      | OpArithDiv -> ((fst lhs) * (snd rhs) , (snd lhs) * (fst rhs))
      end
 
+  let function div_tez (a : tez) (b : tez) : tez = div a b
+
   let function rat_tez (c : (int, int)) (t : tez) : tez
   requires { not (snd c) = 0 }
   =  div ((abs (fst c)) * t) (abs (snd c))
@@ -227,6 +229,11 @@ module Utils
   (* ----------------------------------------------------------------------- *)
   (* bool *)
   let function neq_bool (a : bool) (b : bool) : bool = not (a && b)
+
+  (* ------------------------------------------------------------------------ *)
+  axiom inv_pack_unpack: forall x : bytes. exists a : 'a. unpack(x) = Some(a) -> pack(a) = x
+
+  axiom inv_unpack_pack: forall x : 'a. exists b : bytes. pack(x) = b -> unpack(b) = Some(x)
 
 end
 
