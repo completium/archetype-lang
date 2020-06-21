@@ -220,6 +220,11 @@ module Utils
   let check_signature (_k : key) (_s : signature) (_b : bytes) = true
 
   (* ----------------------------------------------------------------------- *)
+  (* serialization *)
+  let function pack (_x : 'a) : bytes = 0
+  (*let function unpack (b : bytes) : 'a = 0*)
+
+  (* ----------------------------------------------------------------------- *)
   (* bool *)
   let function neq_bool (a : bool) (b : bool) : bool = not (a && b)
 
