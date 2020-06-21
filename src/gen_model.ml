@@ -197,7 +197,7 @@ let to_model (ast : A.model) : M.model =
 
   let to_ck (fp : M.mterm) : M.container_kind =
     match fp.node, fp.type_ with
-    | M.Mdotassetfield (an, k, fn), Tcontainer ((Tasset _), (Subset | Partition)) -> M.CKfield (unloc an, unloc fn, k)
+    | M.Mdotassetfield (an, _k, fn), Tcontainer ((Tasset _), (Subset | Partition)) -> M.CKfield (unloc an, unloc fn, fp)
     | _, Tcontainer ((Tasset _), Collection) -> M.CKcoll
     | _ -> M.CKview fp
   in
@@ -611,7 +611,7 @@ let to_model (ast : A.model) : M.model =
             match x.node, x.type_ with
             | _, M.Tlist _ -> M.ICKlist x
             | _, M.Tcontainer ((Tasset an), Collection) -> M.ICKcoll (unloc an)
-            | M.Mdotassetfield (an, k, fn), M.Tcontainer ((Tasset _), (Subset | Partition)) -> M.ICKfield (unloc an, unloc fn, k)
+            | M.Mdotassetfield (an, _k, fn), M.Tcontainer ((Tasset _), (Subset | Partition)) -> M.ICKfield (unloc an, unloc fn, x)
             | _ -> M.ICKview x
           in
           M.Mfor (i, ncol, g body, instr.label)

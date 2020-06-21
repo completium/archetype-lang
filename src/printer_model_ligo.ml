@@ -1003,7 +1003,7 @@ let pp_model_internal fmt (model : model) b =
           (fun fmt _ ->
              match c with
              | CKcoll -> pp_str fmt const_storage
-             | CKview mt
+             | CKview mt -> f fmt mt
              | CKfield (_, _, mt) -> Format.fprintf fmt "%s, %a" const_storage f mt) ()
       in
       pp fmt (an, c)

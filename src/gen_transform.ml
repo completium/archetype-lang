@@ -2631,3 +2631,12 @@ let create_var_before_for (model : model) : model =
     | _ -> map_mterm (aux ctx) mt
   in
   Model.map_mterm_model aux model
+
+
+let replace_col_by_key_for_ckfield (model : model) =
+  let rec aux ctx (mt : mterm) : mterm =
+    match mt.node with
+    | Mcount (an, CKfield (fan, ffn, {node = Mdotassetfield (_, k, _)})) -> {mt with node = Mcount (an, CKfield (fan, ffn, k))}
+    | _ -> map_mterm (aux ctx) mt
+  in
+  Model.map_mterm_model aux model
