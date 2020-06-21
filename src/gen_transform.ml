@@ -138,7 +138,11 @@ let remove_add_update (model : model) : model =
             ) asset.values in
           mk_mterm (Masset l) type_asset
         in
-        let cond   = mk_mterm (Mcontains (an, c, k)) Tunit in
+        let cond   = mk_mterm (
+            match c with
+            | CKfield (_, _, {node = Mdotassetfield (andat, kdat, fn)}) -> Mcontains (an, CKfield(unloc andat, unloc fn, kdat), k)
+            | CKcoll -> Mcontains (an, c, k)
+            | _ -> assert false) Tunit in
         let asset  = mk_asset (an, k, l) in
         let add    = mk_mterm (
             match c with
@@ -2636,7 +2640,20 @@ let create_var_before_for (model : model) : model =
 let replace_col_by_key_for_ckfield (model : model) =
   let rec aux ctx (mt : mterm) : mterm =
     match mt.node with
-    | Mcount (an, CKfield (fan, ffn, {node = Mdotassetfield (_, k, _)})) -> {mt with node = Mcount (an, CKfield (fan, ffn, k))}
+    (* asset api effect *)
+    | Mclear (an, CKfield (fan, ffn, {node = Mdotassetfield (_, kdat, _)}))             -> { mt with node = Mclear (an, CKfield (fan, ffn, kdat)) }
+    (* | Maddupdate (an, CKfield (fan, ffn, {node = Mdotassetfield (_, kdat, _)}), k, l)   -> { mt with node = Maddupdate (an, CKfield (fan, ffn, kdat), k, l) } *)
+    (* asset api expression *)
+    | Mget (an, CKfield (fan, ffn, {node = Mdotassetfield (_, kdat, _)}), k)            -> { mt with node = Mget (an, CKfield (fan, ffn, kdat), k) }
+    | Mselect (an, CKfield (fan, ffn, {node = Mdotassetfield (_, kdat, _)}), la, lb, a) -> { mt with node = Mselect (an, CKfield (fan, ffn, kdat), la, lb, a) }
+    | Msort (an, CKfield (fan, ffn, {node = Mdotassetfield (_, kdat, _)}), l)           -> { mt with node = Msort (an, CKfield (fan, ffn, kdat), l) }
+    | Mcontains (an, CKfield (fan, ffn, {node = Mdotassetfield (_, kdat, _)}), i)       -> { mt with node = Mcontains (an, CKfield (fan, ffn, kdat), i) }
+    | Mnth (an, CKfield (fan, ffn, {node = Mdotassetfield (_, kdat, _)}), i)            -> { mt with node = Mnth (an, CKfield (fan, ffn, kdat), i) }
+    | Mcount (an, CKfield (fan, ffn, {node = Mdotassetfield (_, kdat, _)}))             -> { mt with node = Mcount (an, CKfield (fan, ffn, kdat)) }
+    | Msum (an, CKfield (fan, ffn, {node = Mdotassetfield (_, kdat, _)}), p)            -> { mt with node = Msum (an, CKfield (fan, ffn, kdat), p) }
+    | Mhead (an, CKfield (fan, ffn, {node = Mdotassetfield (_, kdat, _)}), i)           -> { mt with node = Mhead (an, CKfield (fan, ffn, kdat), i) }
+    | Mtail (an, CKfield (fan, ffn, {node = Mdotassetfield (_, kdat, _)}), i)           -> { mt with node = Mtail (an, CKfield (fan, ffn, kdat), i) }
+    (* default *)
     | _ -> map_mterm (aux ctx) mt
   in
   Model.map_mterm_model aux model

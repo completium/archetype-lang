@@ -717,13 +717,12 @@ let to_model (ast : A.model) : M.model =
         let fp = f p in
         let fk = f k in
         let fe = List.map (fun (id, op, c) -> (id, to_op op, f c)) e in
-        let (an, c) : ident * M.container_kind =
+        begin
           match fp.node, fp.type_ with
-          | _, Tcontainer (Tasset an, M.Collection) -> unloc an, M.CKcoll
-          | M.Mdotassetfield (_, _, fn), Tcontainer (Tasset an, M.Partition)  -> unloc an, M.CKfield (unloc an, unloc fn, fp)
+          | Mdotassetfield (_, _k, fn), Tcontainer (Tasset an, (Subset | Partition)) -> M.Maddupdate (unloc an, CKfield (unloc an, unloc fn, fp), fk, fe)
+          | _, Tcontainer (Tasset an, Collection)  -> M.Maddupdate (unloc an, CKcoll, fk, fe)
           | _ -> assert false
-        in
-        M.Maddupdate (an, c, fk, fe)
+        end
 
       | A.Icall (Some p, A.Cconst (A.Cupdate), [AExpr k; AEffect e]) when is_asset_container p ->
         let to_op = function

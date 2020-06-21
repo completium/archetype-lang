@@ -855,8 +855,8 @@ let pp_model_internal fmt (model : model) b =
       let pp fmt (an, v) =
         let pp_arg fmt _ =
           match v with
-          | CKcoll    -> Format.fprintf fmt  "%s" const_storage
-          | CKview c  -> Format.fprintf fmt  "%s, %a" const_storage f c
+          | CKcoll            -> Format.fprintf fmt  "%s" const_storage
+          | CKview c          -> Format.fprintf fmt  "%s, %a" const_storage f c
           | CKfield (_, _, c) -> Format.fprintf fmt  "%s, %a" const_storage f c
         in
         Format.fprintf fmt "%s := clear_%a (%a)"
@@ -968,15 +968,13 @@ let pp_model_internal fmt (model : model) b =
 
     | Mcontains (an, c, i) ->
       let pp fmt (an, c, i) =
-        let pp =
-          match c with
-          | CKcoll          -> (fun fmt _ -> pp_str fmt const_storage)
-          | CKview mt
-          | CKfield (_, _, mt) -> (fun fmt _ -> f fmt mt)
-        in
         Format.fprintf fmt "contains_%a (%a, %a)"
           (pp_prefix_container_kind an) c
-          pp ()
+          (fun fmt c ->
+             match c with
+             | CKcoll             -> (pp_str fmt const_storage)
+             | CKview mt          -> f fmt mt
+             | CKfield (_, _, mt) -> Format.fprintf fmt "%s, %a" const_storage f mt) c
           f i
       in
       pp fmt (an, c, i)
@@ -1030,7 +1028,8 @@ let pp_model_internal fmt (model : model) b =
           (fun fmt c ->
              match c with
              | CKcoll -> pp_str fmt const_storage
-             | CKview mt | CKfield (_, _, mt) -> f fmt mt) c
+             | CKview mt -> f fmt mt
+             | CKfield (_, _, mt) -> Format.fprintf fmt "%s, %a" const_storage f mt) c
           f i
       end
 
@@ -1041,7 +1040,8 @@ let pp_model_internal fmt (model : model) b =
           (fun fmt c ->
              match c with
              | CKcoll -> pp_str fmt const_storage
-             | CKview mt | CKfield (_, _, mt) -> f fmt mt) c
+             | CKview mt -> f fmt mt
+             | CKfield (_, _, mt) -> Format.fprintf fmt "%s, %a" const_storage f mt) c
           f i
       end
 
@@ -1643,15 +1643,18 @@ let pp_model_internal fmt (model : model) b =
             an pp_btyp t
             (if Utils.is_asset_single_field model an then "set" else "map")
             an
-        | Field _ ->
+        | Field (an, fn) ->
           Format.fprintf fmt
-            "function clear_%a (const s : storage_type; const l : set(%a)) : storage_type is@\n  \
+            "function clear_%a (const s : storage_type; const k : %a) : storage_type is@\n  \
              begin@\n  \
-             for i in set (l) block {@\n  \
+             const a : %s_storage = get_force(k, s.%s_assets);@\n  \
+             for i in set (a.%s) block {@\n  \
              remove i from %s s.%s_assets@\n  \
              }@\n  \
              end with (s)@\n"
-            (pp_prefix_api_container_kind an) c pp_btyp t
+            (pp_prefix_api_container_kind an) c pp_btyp (Utils.get_asset_key model an |> snd)
+            an an
+            fn
             (if Utils.is_asset_single_field model an then "set" else "map")
             an
       end
@@ -1806,13 +1809,13 @@ let pp_model_internal fmt (model : model) b =
              match c with
              | Coll  -> Format.fprintf fmt "const s : storage_type"
              | View  -> Format.fprintf fmt "const l : list(%a)" pp_btyp t
-             | Field _ -> Format.fprintf fmt "const l : set(%a)" pp_btyp t) c
+             | Field (an, _) -> Format.fprintf fmt "const s : storage_type; const k : %a" pp_btyp (Utils.get_asset_key model an |> snd)) c
           pp_btyp t
           (fun fmt c ->
              match c with
              | Coll  -> Format.fprintf fmt " skip "
              | View  -> Format.fprintf fmt "@\n  function aggregate (const accu : bool; const v : %a) : bool is block { skip } with (accu or v = key);@\n" pp_btyp t
-             | Field _ -> Format.fprintf fmt " skip ") c
+             | Field (an, fn) -> Format.fprintf fmt "@\n  const a : %s_storage = get_force(k, s.%s_assets);@\n  const l : set(%a) = a.%s;@\n" an an pp_btyp t fn) c
           (fun fmt c ->
              match c with
              | Coll  -> Format.fprintf fmt "%s.mem (key, s.%s_assets)" (if Utils.is_asset_single_field model an then "Set" else "Map") an
@@ -2090,22 +2093,24 @@ let pp_model_internal fmt (model : model) b =
         match c with
         | Coll  -> Format.fprintf fmt "const s : storage_type"
         | View  -> Format.fprintf fmt "const l : list(%a)" pp_btyp t
-        | Field _ -> Format.fprintf fmt "const l : set(%a)" pp_btyp t
+        | Field (an, _) -> Format.fprintf fmt "const s : storage_type; const k : %a" pp_btyp (Utils.get_asset_key model an |> snd)
       in
-      let size, container, src, iter_type, iter_val =
+      let size, container, src, iter_type, iter_val, pp_src =
         match c with
         | Coll when is_one_field ->
-          "Set.size", "set", "s." ^ an ^ "_assets", "", ""
+          "Set.size", "set", "s." ^ an ^ "_assets", "", "", (fun _ _ -> ())
         | Coll ->
-          "Map.size", "map", "s." ^ an ^ "_assets", " * " ^ an ^ "_storage", ".0"
+          "Map.size", "map", "s." ^ an ^ "_assets", " * " ^ an ^ "_storage", ".0", (fun _ _ -> ())
         | View ->
-          "size", "list", "l", "", ""
-        | Field _ ->
-          "Set.size", "set", "l", "", ""
+          "size", "list", "l", "", "", (fun _ _ -> ())
+        | Field (an, fn) ->
+          "Set.size", "set", "a." ^ fn, "", "",
+           (fun fmt _ -> Format.fprintf fmt "const a : %s_storage = get_force(k, s.%s_assets);@\n    " an an)
       in
       Format.fprintf fmt
         "function head_%a (%a; const i : int) : list(%a) is@\n  \
          block {@\n    \
+         %a\
          const length : int = int(%s(%s));@\n    \
          const bound : int = if i < length then i else length;@\n    \
          if (i < 0) then failwith(\"head_%s: index out of bound\") else skip;@\n    \
@@ -2119,6 +2124,7 @@ let pp_model_internal fmt (model : model) b =
          const res  : list(%a) = list_fold (rev, ltmp.1, ((list [] : list(%a))));@\n  \
          } with res@\n"
         (pp_prefix_api_container_kind an) c pp_first_arg () pp_btyp t
+        pp_src ()
         size src
         an
         pp_btyp t pp_btyp t pp_btyp t
@@ -2135,22 +2141,24 @@ let pp_model_internal fmt (model : model) b =
         match c with
         | Coll  -> Format.fprintf fmt "const s : storage_type"
         | View  -> Format.fprintf fmt "const l : list(%a)" pp_btyp t
-        | Field _ -> Format.fprintf fmt "const l : set(%a)" pp_btyp t
+        | Field (an, _) -> Format.fprintf fmt "const s : storage_type; const k : %a" pp_btyp (Utils.get_asset_key model an |> snd)
       in
-      let size, container, src, iter_type, iter_val =
+      let size, container, src, iter_type, iter_val, pp_src =
         match c with
         | Coll when is_one_field ->
-          "Set.size", "set", "s." ^ an ^ "_assets", "", ""
+          "Set.size", "set", "s." ^ an ^ "_assets", "", "", (fun _ _ -> ())
         | Coll ->
-          "Map.size", "map", "s." ^ an ^ "_assets", " * " ^ an ^ "_storage", ".0"
+          "Map.size", "map", "s." ^ an ^ "_assets", " * " ^ an ^ "_storage", ".0", (fun _ _ -> ())
         | View ->
-          "size", "list", "l", "", ""
-        | Field _ ->
-          "Set.size", "set", "l", "", ""
+          "size", "list", "l", "", "", (fun _ _ -> ())
+        | Field (an, fn) ->
+          "Set.size", "set", "a." ^ fn, "", "",
+           (fun fmt _ -> Format.fprintf fmt "const a : %s_storage = get_force(k, s.%s_assets);@\n    " an an)
       in
       Format.fprintf fmt
         "function tail_%a (%a; const i : int) : list(%a) is@\n  \
          block {@\n    \
+         %a\
          const length : int = int(%s(%s));@\n    \
          const bound : int = if i < length then i else length;@\n    \
          if (i < 0) then failwith(\"tail_%s: index out of bound\") else skip;@\n    \
@@ -2165,6 +2173,7 @@ let pp_model_internal fmt (model : model) b =
          const res  : list(%a) = list_fold (rev, ltmp.1, ((list [] : list(%a))));@\n  \
          } with res@\n"
         (pp_prefix_api_container_kind an) c pp_first_arg () pp_btyp t
+        pp_src ()
         size src
         an
         pp_btyp t pp_btyp t pp_btyp t
