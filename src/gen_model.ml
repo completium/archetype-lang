@@ -195,6 +195,13 @@ let to_model (ast : A.model) : M.model =
     | _ -> assert false
   in
 
+  let to_ck (fp : M.mterm) : M.container_kind =
+    match fp.node, fp.type_ with
+    | M.Mdotassetfield (an, _, fn), Tcontainer ((Tasset _), (Subset | Partition)) -> M.CKfield (unloc an, unloc fn, fp)
+    | _, Tcontainer ((Tasset _), Collection) -> M.CKcoll
+    | _ -> M.CKview fp
+  in
+
   let rec to_mterm ?(formula=false) (pterm : A.pterm) : M.mterm =
     let process_before vt e =
       match vt with
@@ -409,14 +416,14 @@ let to_model (ast : A.model) : M.model =
         let fp = f p in
         let fq = f q in
         let asset_name = extract_asset_name fp in
-        M.Mget (asset_name, CKview fp, fq)
+        M.Mget (asset_name, to_ck fp, fq)
 
       | A.Pcall (Some p, A.Cconst (A.Cselect), [AFun (_id, _type, l, q)]) when is_asset_container p ->
         let fp = f p in
         let lambda_body = f q in
         let asset_name = extract_asset_name fp in
         let lambda_args, args = List.fold_right (fun (x, y, z) (l1, l2) -> ((unloc x, ptyp_to_type y)::l1, (f z)::l2)) l ([], []) in
-        M.Mselect (asset_name, CKview fp, lambda_args, lambda_body, args)
+        M.Mselect (asset_name, to_ck fp, lambda_args, lambda_body, args)
 
       | A.Pcall (Some p, A.Cconst (A.Csort), args) when is_asset_container p ->
         let fp = f p in
@@ -430,42 +437,42 @@ let to_model (ast : A.model) : M.model =
                 end
               | _ -> assert false) args
         in
-        M.Msort (asset_name, CKview fp, args)
+        M.Msort (asset_name, to_ck fp, args)
 
       | A.Pcall (Some p, A.Cconst (A.Ccontains), [AExpr q]) when is_asset_container p ->
         let fp = f p in
         let fq = f q in
         let asset_name = extract_asset_name fp in
-        M.Mcontains (asset_name, CKview fp, fq)
+        M.Mcontains (asset_name, to_ck fp, fq)
 
       | A.Pcall (Some p, A.Cconst (A.Cnth), [AExpr q]) when is_asset_container p ->
         let fp = f p in
         let fq = f q in
         let asset_name = extract_asset_name fp in
-        M.Mnth (asset_name, CKview fp, fq)
+        M.Mnth (asset_name, to_ck fp, fq)
 
       | A.Pcall (Some p, A.Cconst (A.Ccount), []) when is_asset_container p ->
         let fp = f p in
         let asset_name = extract_asset_name fp in
-        M.Mcount (asset_name, CKview fp)
+        M.Mcount (asset_name, to_ck fp)
 
       | A.Pcall (Some p, A.Cconst (A.Csum), [AFun (_qi, _qt, _l, q)]) when is_asset_container p ->
         let fp = f p in
         let fq = f q in
         let asset_name = extract_asset_name fp in
-        M.Msum (asset_name, CKview fp, fq)
+        M.Msum (asset_name, to_ck fp, fq)
 
       | A.Pcall (Some p, A.Cconst (A.Chead), [AExpr e]) when is_asset_container p ->
         let fp = f p in
         let fe = f e in
         let asset_name = extract_asset_name fp in
-        M.Mhead (asset_name, CKview fp, fe)
+        M.Mhead (asset_name, to_ck fp, fe)
 
       | A.Pcall (Some p, A.Cconst (A.Ctail), [AExpr e]) when is_asset_container p ->
         let fp = f p in
         let fe = f e in
         let asset_name = extract_asset_name fp in
-        M.Mtail (asset_name, CKview fp, fe)
+        M.Mtail (asset_name, to_ck fp, fe)
 
       (* List*)
 
@@ -601,8 +608,10 @@ let to_model (ast : A.model) : M.model =
         begin
           let ncol =
             let x = f col in
-            match x.type_ with
-            | M.Tlist _ -> M.ICKlist x
+            match x.node, x.type_ with
+            | _, M.Tlist _ -> M.ICKlist x
+            | _, M.Tcontainer ((Tasset an), Collection) -> M.ICKcoll (unloc an)
+            | M.Mdotassetfield (an, _, fn), M.Tcontainer ((Tasset _), (Subset | Partition)) -> M.ICKfield (unloc an, unloc fn, x)
             | _ -> M.ICKview x
           in
           M.Mfor (i, ncol, g body, instr.label)
@@ -697,7 +706,7 @@ let to_model (ast : A.model) : M.model =
               | _ -> assert false
             end
           in
-          M.Mclear (an, CKview fp)
+          M.Mclear (an, to_ck fp)
         )
 
       | A.Icall (Some p, A.Cconst (A.Caddupdate), [AExpr k; AEffect e]) when is_asset_container p ->

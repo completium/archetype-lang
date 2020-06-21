@@ -110,7 +110,6 @@ let generate_target model =
   | LigoStorage ->
     model
     |> replace_ligo_ident
-    |> replace_api_view_by_col
     |> process_asset_state
     |> replace_assignfield_by_update
     |> remove_add_update
@@ -184,7 +183,6 @@ let generate_target model =
   | Whyml ->
     model
     |> replace_whyml_ident
-    |> replace_api_view_by_col
     |> replace_assignfield_by_update
     |> process_asset_state
     |> remove_add_update

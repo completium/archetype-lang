@@ -2486,7 +2486,7 @@ let check_if_asset_in_function (model : model) : model =
   List.iter for_function model.functions;
   model
 
-let replace_api_view_by_col (model : model) : model =
+(* let replace_api_view_by_col (model : model) : model =
   let is_field (c : mterm) =
     match c with
     | { node = Mcast (
@@ -2606,14 +2606,6 @@ let replace_api_view_by_col (model : model) : model =
       let _, fn = extract_field c in
       mk_mterm (Mnth (an, CKfield (an, fn, c), i)) mt.type_
 
-    | Mcount (an, CKview c) when is_col c ->
-      mk_mterm (Mcount (an, CKcoll)) mt.type_
-
-    | Mcount (an, CKview c) when is_field c ->
-      let c = aux ctx c |> remove_cast in
-      let _, fn = extract_field c in
-      mk_mterm (Mcount (an, CKfield (an, fn, c))) mt.type_
-
     | Msum (an, CKview c, v) when is_col c ->
       let v = aux ctx v in
       mk_mterm (Msum (an, CKcoll, v)) mt.type_
@@ -2695,6 +2687,7 @@ let replace_api_view_by_col (model : model) : model =
   in
   Model.map_mterm_model aux model
 
+ *)
 let replace_instr_verif (model : model) : model =
   let rec aux ctx (mt : mterm) : mterm =
     match mt.node with
