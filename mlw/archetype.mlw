@@ -222,7 +222,7 @@ module Utils
   (* ----------------------------------------------------------------------- *)
   (* serialization *)
   let function pack (_x : 'a) : bytes = 0
-  (*let function unpack (b : bytes) : 'a = 0*)
+  let function unpack (b : bytes) : option 'a = None
 
   (* ----------------------------------------------------------------------- *)
   (* bool *)

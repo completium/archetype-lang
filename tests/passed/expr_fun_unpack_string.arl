@@ -8,6 +8,7 @@ entry exec () {
     s1: let some str = getopt(res) in str = "archetype" otherwise false;
   }
   effect {
-    res := unpack<string>(0x050100000009617263686574797065)
+    res := unpack<string>(0x050100000009617263686574797065);
+    require (getopt(res) = "archetype")
   }
 }
