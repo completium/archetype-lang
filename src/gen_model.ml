@@ -692,8 +692,8 @@ let to_model (ast : A.model) : M.model =
         let lambda_args, args = List.fold_right (fun (x, y, z) (l1, l2) -> ((unloc x, ptyp_to_type y)::l1, (f z)::l2)) l ([], []) in
         begin
           match fp.node, fp.type_ with
-          | Mdotassetfield (an, k, fn), _ -> M.Mremoveif (unloc an, CKfield (unloc an, unloc fn, fp), k, lambda_args, lambda_body, args)
-          | _, Tcontainer (Tasset an, _) -> M.Mremoveif (unloc an, CKcoll, fp, lambda_args, lambda_body, args)
+          | Mdotassetfield (an, k, fn), _ -> M.Mremoveif (unloc an, CKfield (unloc an, unloc fn, k), lambda_args, lambda_body, args)
+          | _, Tcontainer (Tasset an, _) -> M.Mremoveif (unloc an, CKcoll, lambda_args, lambda_body, args)
           | _ -> assert false
         end
 

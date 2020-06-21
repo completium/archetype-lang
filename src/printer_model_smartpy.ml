@@ -781,15 +781,14 @@ let pp_model fmt (model : model) =
         in
         pp fmt (an, fn, a)
 
-      | Mremoveif (an, c, x, la, lb, a) ->
-        let pp fmt (an, c, x, _la, lb, _a) =
-          Format.fprintf fmt "self.removeif_%a (%a, %a, fun the -> %a)"
+      | Mremoveif (an, c, la, lb, a) ->
+        let pp fmt (an, c, _la, lb, _a) =
+          Format.fprintf fmt "self.removeif_%a (%a, fun the -> %a)"
             pp_str an
             (pp_container_kind f) c
-            f x
             f lb
         in
-        pp fmt (an, c, x, la, lb, a)
+        pp fmt (an, c, la, lb, a)
 
       | Mclear (an, v) ->
         let pp fmt (an, v) =

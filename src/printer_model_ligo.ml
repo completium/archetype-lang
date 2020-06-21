@@ -834,14 +834,14 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (an, fn, c, i)
 
-    | Mremoveif (an, c, x, la, lb, a) ->
+    | Mremoveif (an, c, la, lb, a) ->
       let index : int = get_preds_index env.removeif_preds lb in
-      let pp fmt (an, c, x, _la, _lb, a) =
+      let pp fmt (an, c, _la, _lb, a) =
         let pp fmt _ =
           match c with
           | CKcoll -> pp_str fmt const_storage
           | CKview _ -> assert false
-          | CKfield _ -> Format.fprintf fmt "%s, %a" const_storage f x
+          | CKfield (_, _, k) -> Format.fprintf fmt "%s, %a" const_storage f k
         in
         Format.fprintf fmt "%s := removeif_%a_%i (%a%a)"
           const_storage
@@ -849,7 +849,7 @@ let pp_model_internal fmt (model : model) b =
           pp ()
           (pp_list "" (pp_prefix ", " f)) a
       in
-      pp fmt (an, c, x, la, lb, a)
+      pp fmt (an, c, la, lb, a)
 
     | Mclear (an, v) ->
       let pp fmt (an, v) =
