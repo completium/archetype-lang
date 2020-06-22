@@ -1,0 +1,11 @@
+archetype lang_arith
+
+entry exec () {
+  effect {
+    var tez_to_int : int = 1tz; // convert to mutez (1000000)
+    require (tez_to_int = tez_to_int);
+
+    var dur_to_int : int = 1h; // convert to second (3600)
+    require (dur_to_int = dur_to_int);
+  }
+}
