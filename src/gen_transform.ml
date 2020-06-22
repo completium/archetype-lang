@@ -1331,11 +1331,6 @@ let replace_date_duration_by_timestamp (model : model) : model =
       | Mdate d,_      -> mk_mterm (Mtimestamp (Core.date_to_timestamp d)) type_timestamp
       | Mduration d, _ -> mk_mterm (Mint (Core.duration_to_timestamp d)) type_int
       | Mnow, _        -> mk_mterm (Mnow) type_timestamp
-      | Mminus (a, b), t when is_duration t && is_date a.type_ && is_date b.type_ ->
-        let a = aux a in
-        let b = aux b in
-        let mt = mk_mterm (Mminus (a, b)) type_int in
-        mk_mterm (Mabs(mt)) type_int
       | Mmult (a, b), t when is_duration t && is_rat a.type_ && is_duration b.type_ ->
         let a = aux a in
         let b = aux b in
