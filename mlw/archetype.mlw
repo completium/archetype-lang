@@ -223,8 +223,8 @@ module Utils
 
   (* ----------------------------------------------------------------------- *)
   (* serialization *)
-  let function pack (_x : 'a) : bytes = 0
-  let function unpack (b : bytes) : option 'a = None
+  function pack : 'a -> bytes
+  function unpack : bytes -> option 'a
 
   (* ----------------------------------------------------------------------- *)
   (* bool *)
@@ -233,7 +233,7 @@ module Utils
   (* ------------------------------------------------------------------------ *)
   axiom inv_pack_unpack: forall x : bytes. exists a : 'a. unpack(x) = Some(a) -> pack(a) = x
 
-  axiom inv_unpack_pack: forall x : 'a. exists b : bytes. pack(x) = b -> unpack(b) = Some(x)
+  axiom inv_unpack_pack: forall x : 'a. unpack(pack(x)) = Some(x)
 
 end
 
