@@ -1552,7 +1552,20 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                                                      map_mterm m ctx coll)),
                                map_mterm m ctx b)))
 
-    | Mexists             _ -> error_not_translated "Mexists"
+    | Mexists (i, t, None, b) ->
+      let typ = map_mtype t in
+      Texists (
+        [[i |> map_lident],typ],
+        map_mterm m ctx b)
+
+    | Mexists (i, t, Some coll, b) ->
+      let asset = M.Utils.get_asset_type (M.mk_mterm (M.Mbool false) t) in
+      Texists (
+        [[i |> map_lident],loc_type (Tyasset asset)],
+        with_dummy_loc (Timpl (with_dummy_loc (Tmem (with_dummy_loc asset,
+                                                     loc_term (Tvar (unloc i)),
+                                                     map_mterm m ctx coll)),
+                               map_mterm m ctx b)))
 
 
     (* formula operators *)
