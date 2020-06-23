@@ -1,4 +1,4 @@
-archetype expr_formula_asset_method_subset
+archetype expr_formula_asset_method_subsetof
 
 asset my_asset identified by id {
   id : string;

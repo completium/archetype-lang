@@ -2652,3 +2652,13 @@ let replace_col_by_key_for_ckfield (model : model) =
     | _ -> map_mterm (aux ctx) mt
   in
   Model.map_mterm_model aux model
+
+let optimize (model : model) =
+  let rec aux ctx (mt : mterm) : mterm =
+    match mt.node with
+    (* asset api effect *)
+    | Mnot ({node = Mnot x; _}) -> aux ctx x
+    (* default *)
+    | _ -> map_mterm (aux ctx) mt
+  in
+  Model.map_mterm_model aux model

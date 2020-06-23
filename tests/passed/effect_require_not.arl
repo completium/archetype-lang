@@ -1,0 +1,7 @@
+archetype effect_require_not
+
+entry exec () {
+  effect {
+    require (not false)
+  }
+}

@@ -136,6 +136,7 @@ let generate_target model =
     |> assign_loop_label
     |> remove_letin_from_expr
     |> remove_fun_dotasset
+    |> optimize
     |> generate_api_storage
     |> output
 
@@ -162,6 +163,7 @@ let generate_target model =
     |> remove_cmp_bool
     |> split_key_values
     |> Gen_transform.assign_loop_label
+    |> optimize
     |> generate_api_storage
     |> output
 
@@ -178,6 +180,7 @@ let generate_target model =
     |> process_single_field_storage
     |> split_key_values
     |> remove_side_effect
+    |> optimize
     |> generate_api_storage
     |> output
 
@@ -217,6 +220,7 @@ let generate_target model =
     |> replace_dotassetfield_by_dot
     |> transfer_shadow_variable_to_storage
     (* |> replace_instr_verif *)
+    |> optimize
     |> generate_api_storage ~verif:true
     |> output
 
