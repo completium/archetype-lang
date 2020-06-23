@@ -223,8 +223,8 @@ module Utils
 
   (* ----------------------------------------------------------------------- *)
   (* serialization *)
-  function pack : 'a -> bytes
-  function unpack : bytes -> option 'a
+  function pack (_x : 'a) : bytes = 0
+  function unpack (b : bytes) : option 'a = Some 0
 
   (* ----------------------------------------------------------------------- *)
   (* bool *)
