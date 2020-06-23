@@ -449,12 +449,12 @@ let mk_sort_clone _m asset fields =
 (* Select --------------------------------------------------------------------*)
 
 (* TODO : complete mapping *)
-let rec mk_select_test = function
+let rec mk_afun_test = function
   | Tdot (Tvar v,f) when compare v "the" = 0 -> Tdot (Tvar "a",f)
   | Tnow _ -> Tvar (mk_id "now")
   | Tcaller _ -> Tvar (mk_id "caller")
   | Tsender _ -> Tvar (mk_id "source")
-  | _ as t -> map_abstract_term mk_select_test id id t
+  | _ as t -> map_abstract_term mk_afun_test id id t
 
 (* internal select is a local defintion *)
 let mk_select_body forcoll asset mlw_test : term =
@@ -475,7 +475,7 @@ let mk_select_body forcoll asset mlw_test : term =
                         Tvar "c",
                         Tvar "k"), [
                     Tpsome "a",
-                    Tif(mk_select_test mlw_test,
+                    Tif(mk_afun_test mlw_test,
                         Tcons (gListLib, Tvar "k",Tapp (Tvar ("internal_select"),[Tvar "tl"])),
                         Some (Tapp (Tvar ("internal_select"),[Tvar "tl"])));
                     Twild, Tapp (Tvar ("internal_select"),[Tvar "tl"])
@@ -525,7 +525,7 @@ let mk_vselect m asset test mlw_test only_formula args =
                                 Teq (Tyint, Tdoti("a",key), Tvar "k"),
                                 Tand (
                                   Tmem (asset, Tvar "a",Tvar "c"),
-                                  mk_select_test mlw_test
+                                  mk_afun_test mlw_test
                                 )
                               )
                              ))
@@ -567,7 +567,7 @@ let mk_cselect m asset test mlw_test only_formula args =
                                 Teq (Tyint, Tdoti("a",key), Tvar "k"),
                                 Tand (
                                   Tmem (asset, Tvar "a",Tvar "c"),
-                                  mk_select_test mlw_test
+                                  mk_afun_test mlw_test
                                 )
                               )
                              ))
@@ -584,6 +584,80 @@ let mk_cselect m asset test mlw_test only_formula args =
         }
       ];
       body     = mk_select_body true asset mlw_test;
+    } in
+  decl
+
+(* Removeif --------------------------------------------------------------------*)
+
+(* internal removeif is a local defintion *)
+let mk_removeif_body m forcoll asset mlw_test : term =
+  (* let capa = String.capitalize_ascii asset in *)
+  let (key,_) = M.Utils.get_asset_key m asset in
+  Tletfun (
+    {
+      name     = "internal_removeif";
+      logic    = Rec;
+      args     = ["l",Tylist Tyint];
+      returns  = Tyunit;
+      raises   = [];
+      variants = [Tvar "l"];
+      requires = [];
+      ensures  = [];
+      body     =
+        let some =
+          Tmatch (Tget (asset,
+                        Tvar "c",
+                        Tvar "k"), [
+                    Tpsome "a",
+                    Tif(mk_afun_test mlw_test,
+                    Tapp (Tvar ("remove_" ^ asset),[Tdoti ("a", key)])
+                        (* Tremove (asset, mk_ac asset, Tvar ("a")) *),
+                        Some (Tapp (Tvar ("internal_removeif"),[Tvar "tl"])));
+                    Twild, Tapp (Tvar ("internal_removeif"),[Tvar "tl"])
+                  ]) in
+        Tmlist (gListLib,Tunit,"l","k","tl",some);
+    },
+
+    (Tapp (Tvar "internal_removeif",
+                          [if forcoll then
+                             Tapp(Tdoti(String.capitalize_ascii asset,"internal_list_to_view"),
+                                  [Tcontent (asset,Tvar "c")])
+                           else Tvcontent (asset,Tvar "v")]))
+  )
+
+let mk_removeif_name prefix m asset test = prefix^"removeif_" ^ asset ^ "_" ^ (string_of_int (M.Utils.get_select_idx m asset test))
+
+let mk_vremoveif m asset test mlw_test only_formula args =
+  let id =  mk_removeif_name "v" m asset test in
+  let (_key,_) = M.Utils.get_asset_key m asset in
+  let args : (string * string abstract_type) list = List.map (fun (i,t) -> (i, (map_mtype t|> unloc_type))) args in
+  let decl = Dfun {
+      name     = id;
+      logic    = if only_formula then Logic else NoMod;
+      args     = (extract_args test |> List.map (fun (_,a,b) -> a,b)) @ args @ ["v",Tyview asset; "c", Tycoll asset];
+      returns  = Tyunit;
+      raises   = [];
+      variants = [];
+      requires = [];
+      ensures  = [];
+      body     = mk_removeif_body m false asset mlw_test;
+    } in
+  decl
+
+let mk_cremoveif m asset test mlw_test only_formula args =
+  let id =  mk_removeif_name "c" m asset test in
+  let (_key,_) = M.Utils.get_asset_key m asset in
+  let args = List.map (fun (i,t) -> (i, map_mtype t |> unloc_type)) args in
+  let decl = Dfun {
+      name     = id;
+      logic    = if only_formula then Logic else NoMod;
+      args     = (extract_args test |> List.map (fun (_,a,b) -> a,b)) @ args @ ["c", Tycoll asset];
+      returns  = Tyunit;
+      raises   = [];
+      variants = [];
+      requires = [];
+      ensures  = [];
+      body     = mk_removeif_body m true asset mlw_test;
     } in
   decl
 
@@ -1058,9 +1132,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Mletin ([id], { node = M.Mgetopt v; type_ = _ }, _, b, Some e) ->
       Tmatch (map_mterm m ctx v,[
-                Tpsome (map_lident id), map_mterm m ctx b;
-                Twild, map_mterm m ctx e
-              ])
+          Tpsome (map_lident id), map_mterm m ctx b;
+          Twild, map_mterm m ctx e
+        ])
 
     | Mletin ([id], v, _, b, Some o) ->
       let ctx = ctx in
@@ -1337,7 +1411,19 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Mremoveall (a, f, v) -> Tapp (loc_term (Tvar ("removeall_" ^ a ^ "_" ^ f)),[map_mterm m ctx v])
 
-    | Mremoveif (_an, _, _la, _lb, _a) -> error_not_translated "Mremoveif"
+    | Mremoveif (a, (CKview l | CKfield (_, _, l)), la, lb, _a) ->
+      let args = extract_args lb in
+      let id = mk_removeif_name "v" m a lb in
+      let argids = args |> List.map (fun (e, _, _) -> e) |> List.map (map_mterm m ctx) in
+      let args = List.map (fun (i,_) -> loc_term (Tvar i)) la in
+      Tapp (loc_term (Tvar id), argids @ args @ [map_mterm m ctx l; mk_ac_ctx a ctx])
+
+    | Mremoveif (a, CKcoll, la, lb, _a) ->
+      let args = extract_args lb in
+      let id = mk_removeif_name "c" m a lb in
+      let argids = args |> List.map (fun (e, _, _) -> e) |> List.map (map_mterm m ctx) in
+      let args = List.map (fun (i,_) -> loc_term (Tvar i)) la in
+      Tapp (loc_term (Tvar id), argids @ args @ [mk_ac_ctx a ctx])
 
     | Mclear (n, CKcoll) -> Tapp (loc_term (Tvar ("clear_"^(n))),[])
     | Mclear (n, CKview v) -> Tapp (loc_term (Tvar ("clear_view_"^(n))),[map_mterm m ctx v])
@@ -2697,6 +2783,7 @@ let mk_removeall _m part asset field rm_asset =
 
 let gnthgen = ref false
 let gselectgen = ref false
+let gremoveifgen = ref false
 let gcleargen = ref false
 
 let mk_storage_api_before_storage (m : M.model) _records =
@@ -2784,6 +2871,15 @@ let mk_storage_api (m : M.model) records =
         let (pa,_,_) = M.Utils.get_container_asset_key m a f in
         let ispart = is_partition m a f in
         acc @ (if ispart then [mk_clear_view m pa] else []) @ [mk_removeall m ispart a f pa]
+      | M.APIAsset (RemoveIf (asset, (View | Field _), args, test)) ->
+        if not !gremoveifgen then (
+          gremoveifgen := true;
+          let mlw_test = map_mterm m init_ctx test in
+          acc @ [ mk_vremoveif m asset test (mlw_test |> unloc_term) (match sc.api_loc with | OnlyFormula -> true | ExecFormula | OnlyExec -> false) args ])
+        else acc
+      | M.APIAsset (RemoveIf (asset, Coll, args, test)) ->
+        let mlw_test = map_mterm m init_ctx test in
+        acc @ [ mk_cremoveif m asset test (mlw_test |> unloc_term) (match sc.api_loc with | OnlyFormula -> true | ExecFormula | OnlyExec -> false) args ]
       | _ -> acc
     ) [] |> loc_decl |> deloc
 
