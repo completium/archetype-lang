@@ -224,7 +224,7 @@ module Utils
   (* ----------------------------------------------------------------------- *)
   (* serialization *)
   let function pack (_x : 'a) : bytes = 0
-  let function unpack (b : bytes) : option 'a = Some 0
+  let function unpack (b : bytes) : option int = Some 0
 
   (* ----------------------------------------------------------------------- *)
   (* bool *)
