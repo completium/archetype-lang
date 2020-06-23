@@ -162,8 +162,9 @@ type ('e,'t,'i) abstract_term =
   | Texists of (('t,'i) abstract_univ_decl list) * 'e
   | Tresult
   | Timpl   of 'e * 'e
+  | Tequiv  of 'e * 'e
   | Tand    of 'e * 'e
-  | Tor    of 'e * 'e
+  | Tor     of 'e * 'e
   | Told    of 'e
   | Tfalse
   | Ttrue
@@ -437,6 +438,7 @@ and map_abstract_term
   | Tforall (l,e)      -> Tforall (List.map (map_abstract_univ_decl map_t map_i) l, map_e e)
   | Texists (l,e)      -> Texists (List.map (map_abstract_univ_decl map_t map_i) l, map_e e)
   | Timpl (e1,e2)      -> Timpl (map_e e1, map_e e2)
+  | Tequiv (e1,e2)     -> Tequiv (map_e e1, map_e e2)
   | Tor (e1,e2)        -> Tor (map_e e1, map_e e2)
   | Tand (e1,e2)       -> Tand (map_e e1, map_e e2)
   | Told e             -> Told (map_e e)

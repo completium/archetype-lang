@@ -1,0 +1,11 @@
+archetype expr_formula_equiv
+entry exec () {
+
+  specification {
+    s: true <-> true;
+  }
+
+  effect {
+    require(true)
+  }
+}

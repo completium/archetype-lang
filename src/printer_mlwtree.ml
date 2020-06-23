@@ -369,6 +369,10 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "@[%a ->@\n%a @]"
       (pp_term e_default PRight) e1
       (pp_term e_default PRight) e2
+  | Tequiv (e1,e2) ->
+    Format.fprintf fmt "@[%a <->@\n%a @]"
+      (pp_term e_default PRight) e1
+      (pp_term e_default PRight) e2
   | Tand (e1,e2) ->
     Format.fprintf fmt "%a /\\ %a"
       (pp_term e_default PRight) e1

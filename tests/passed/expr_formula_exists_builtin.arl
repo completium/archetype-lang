@@ -1,0 +1,12 @@
+archetype expr_formula_exists_builtin
+
+entry exec () {
+
+  specification {
+    s: exists x : int, x = x;
+  }
+
+  effect {
+    require(true)
+  }
+}

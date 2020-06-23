@@ -1557,8 +1557,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     (* formula operators *)
 
-    | Mimply (a, b) -> Timpl (map_mterm m ctx a, map_mterm m ctx b)
-    | Mequiv              _ -> error_not_translated "Mequiv"
+    | Mimply (a, b) -> Timpl  (map_mterm m ctx a, map_mterm m ctx b)
+    | Mequiv (a, b) -> Tequiv (map_mterm m ctx a, map_mterm m ctx b)
 
 
     (* formula asset collection *)
