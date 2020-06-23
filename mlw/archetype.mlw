@@ -150,6 +150,10 @@ module Utils
   let function rat_max (a : (int, int)) (b : (int, int)) : (int, int)
   = if rat_cmp OpCmpLe a b then b else a
 
+  let function rat_dur (a : (int, int)) (b : int) : int
+  = div ((fst a) * b) (snd a)
+
+
   (* ----------------------------------------------------------------------- *)
   (* String *)
 
