@@ -19,8 +19,7 @@ enum my_enums =
 | InProgress
 | Completed
 
-asset[%myextension%] [@add @remove @update owner (args)]
-my_asset_all identified by id sorted by k {
+asset my_asset_all identified by id {
   id : role;
   k : int;
   b : bool;
