@@ -13,7 +13,7 @@
     let pos : Position.t list = [Tools.location_to_position loc] in
     Error.error_alert pos str (fun _ -> ())
 
-  let dummy_action_properties = {
+  let dummy_entry_properties = {
       accept_transfer = true;
       calledby        = None;
       require         = None;
@@ -256,7 +256,7 @@ declaration_r:
  | x=variable           { x }
  | x=enum               { x }
  | x=asset              { x }
- | x=action             { x }
+ | x=entry             { x }
  | x=transition         { x }
  | x=dextension         { x }
  | x=namespace          { x }
@@ -541,10 +541,10 @@ field_r:
 %inline ident:
 | x=loc(IDENT) { x }
 
-action:
+entry:
   ENTRY exts=option(extensions) x=ident
     args=function_args xs=transitems_eq
-      { let a, b = xs in Daction (x, args, a, b, exts) }
+      { let a, b = xs in Dentry (x, args, a, b, exts) }
 
 transition_to_item:
 | TO x=ident y=require_value? z=with_effect? { (x, y, z) }
@@ -557,19 +557,19 @@ on_value:
 
 transition:
   TRANSITION exts=option(extensions) x=ident
-    args=function_args on=on_value? LBRACE xs=action_properties FROM f=expr trs=transitions RBRACE
+    args=function_args on=on_value? LBRACE xs=entry_properties FROM f=expr trs=transitions RBRACE
       { Dtransition (x, args, on, f, xs, trs, exts) }
 
 %inline transitems_eq:
-| { (dummy_action_properties, None) }
-| LBRACE xs=action_properties e=effect? RBRACE { (xs, e) }
+| { (dummy_entry_properties, None) }
+| LBRACE xs=entry_properties e=effect? RBRACE { (xs, e) }
 
 %inline accept_transfer:
 | /* empty */     { true }
 | REFUSE_TRANSFER { false }
 | ACCEPT_TRANSFER { true }
 
-action_properties:
+entry_properties:
   sp=specification_fun? at=accept_transfer cb=calledby? cs=require? fi=failif? fs=function_item*
   {
     {

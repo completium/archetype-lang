@@ -166,10 +166,10 @@ let to_const = function
   | Cbalance        -> "balance"
   | Csource         -> "source"
   | Cconditions     -> "conditions"
-  | Cactions        -> "actions"
+  | Centries        -> "entries"
   | Cnone           -> "none"
   | Cany            -> "any"
-  | Canyaction      -> "anyaction"
+  | Canyentry       -> "anyentry"
   | Cresult         -> "result"
   (* function *)
   | Cadd            -> "add"
@@ -222,8 +222,8 @@ let pp_call_kind fmt = function
 
 let pp_security_role = pp_lident
 
-let pp_action_description fmt = function
-  | ADAny -> pp_str fmt "anyaction"
+let pp_entry_description fmt = function
+  | ADAny -> pp_str fmt "anyentry"
   | ADOp (a, b) -> Format.fprintf fmt "%s (%a)" a pp_id b
 
 let rec pp_pterm fmt (pterm : pterm) =
@@ -696,7 +696,7 @@ let pp_specification fmt (v : lident specification) =
       (pp_no_empty_list2 pp_postcondition) v.specs
 
 let pp_security fmt (s : security) =
-  let pp_security_action fmt (a : security_action)=
+  let pp_security_entry fmt (a : security_entry)=
     match a with
     | Sany -> Format.fprintf fmt "any"
     | Sentry l ->
@@ -714,47 +714,47 @@ let pp_security fmt (s : security) =
     match sp.s_node with
     | SonlyByRole (ad, roles) ->
       Format.fprintf fmt "only_by_role (%a, %a)"
-        pp_action_description ad
+        pp_entry_description ad
         pp_security_roles roles
 
-    | SonlyInAction (ad, action) ->
-      Format.fprintf fmt "only_in_action (%a, %a)"
-        pp_action_description ad
-        pp_security_action action
+    | SonlyInEntry (ad, entry) ->
+      Format.fprintf fmt "only_in_entry (%a, %a)"
+        pp_entry_description ad
+        pp_security_entry entry
 
-    | SonlyByRoleInAction (ad, roles, action) ->
-      Format.fprintf fmt "only_by_role_in_action (%a, %a, %a)"
-        pp_action_description ad
+    | SonlyByRoleInEntry (ad, roles, entry) ->
+      Format.fprintf fmt "only_by_role_in_entry (%a, %a, %a)"
+        pp_entry_description ad
         pp_security_roles roles
-        pp_security_action action
+        pp_security_entry entry
 
     | SnotByRole (ad, roles) ->
       Format.fprintf fmt "not_by_role (%a, %a)"
-        pp_action_description ad
+        pp_entry_description ad
         pp_security_roles roles
 
-    | SnotInAction (ad, action) ->
-      Format.fprintf fmt "not_in_action (%a, %a)"
-        pp_action_description ad
-        pp_security_action action
+    | SnotInEntry (ad, entry) ->
+      Format.fprintf fmt "not_in_entry (%a, %a)"
+        pp_entry_description ad
+        pp_security_entry entry
 
-    | SnotByRoleInAction (ad, roles, action) ->
-      Format.fprintf fmt "not_by_role_in_action (%a, %a, %a)"
-        pp_action_description ad
+    | SnotByRoleInEntry (ad, roles, entry) ->
+      Format.fprintf fmt "not_by_role_in_entry (%a, %a, %a)"
+        pp_entry_description ad
         pp_security_roles roles
-        pp_security_action action
+        pp_security_entry entry
 
     | StransferredBy ad ->
       Format.fprintf fmt "transferred_by (%a)"
-        pp_action_description ad
+        pp_entry_description ad
 
     | StransferredTo ad ->
       Format.fprintf fmt "transferred_to (%a)"
-        pp_action_description ad
+        pp_entry_description ad
 
-    | SnoStorageFail action ->
+    | SnoStorageFail entry ->
       Format.fprintf fmt "no_storage_fail (%a)"
-        pp_security_action action
+        pp_security_entry entry
   in
 
   let pp_security_item fmt (si : security_item) =
@@ -883,8 +883,8 @@ let pp_function fmt (f : function_) =
     (pp_option pp_specification) f.specification
     pp_instruction f.body
 
-let pp_transaction_action fmt (t : transaction) =
-  Format.fprintf fmt "action %a%a {@\n  @[%a%a%a%a%a%a%a@]@\n}@\n"
+let pp_transaction_entry fmt (t : transaction) =
+  Format.fprintf fmt "entry %a%a {@\n  @[%a%a%a%a%a%a%a@]@\n}@\n"
     pp_id t.name
     pp_fun_args t.args
     (pp_option pp_specification) t.specification
@@ -914,17 +914,17 @@ let pp_transaction_transition fmt (t : transaction) (tr : lident transition) =
     (fun fmt from -> Format.fprintf fmt " from %a@\n"
         pp_sexpr from
     ) tr.from
-    (pp_list "@\n" (fun fmt (to_, cond, action) ->
+    (pp_list "@\n" (fun fmt (to_, cond, entry) ->
          Format.fprintf fmt "to %a%a@\n%a@\n"
            pp_id to_
            (pp_option (fun fmt x -> (Format.fprintf fmt " when %a" pp_pterm x))) cond
-           (pp_option (fun fmt x -> (Format.fprintf fmt "with effect {@\n  @[%a@]}@\n" pp_instruction x))) action
+           (pp_option (fun fmt x -> (Format.fprintf fmt "with effect {@\n  @[%a@]}@\n" pp_instruction x))) entry
        )) tr.trs
 
 let pp_transaction fmt (t : transaction) =
   match t.transition with
   | Some tr -> pp_transaction_transition fmt t tr
-  | None -> pp_transaction_action fmt t
+  | None -> pp_transaction_entry fmt t
 
 let pp_decl_ fmt = function
   | Dvariable v -> pp_variable fmt v

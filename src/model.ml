@@ -435,7 +435,7 @@ and api_storage = {
 and api_verif =
   | StorageInvariant of (ident * ident * mterm)
 
-and action_description =
+and entry_description =
   | ADany
   | ADadd      of ident
   | ADremove   of ident
@@ -449,7 +449,7 @@ and action_description =
 and security_role   = lident
 [@@deriving show {with_path = false}]
 
-and security_action =
+and security_entry =
   | Sany
   | Sentry of lident list
 [@@deriving show {with_path = false}]
@@ -716,15 +716,15 @@ type 'id specification_gen = {
 [@@deriving show {with_path = false}]
 
 type security_node =
-  | SonlyByRole         of action_description * security_role list
-  | SonlyInAction       of action_description * security_action
-  | SonlyByRoleInAction of action_description * security_role list * security_action
-  | SnotByRole          of action_description * security_role list
-  | SnotInAction        of action_description * security_action
-  | SnotByRoleInAction  of action_description * security_role list * security_action
-  | StransferredBy      of action_description
-  | StransferredTo      of action_description
-  | SnoStorageFail      of security_action
+  | SonlyByRole         of entry_description * security_role list
+  | SonlyInEntry        of entry_description * security_entry
+  | SonlyByRoleInEntry  of entry_description * security_role list * security_entry
+  | SnotByRole          of entry_description * security_role list
+  | SnotInEntry         of entry_description * security_entry
+  | SnotByRoleInEntry   of entry_description * security_role list * security_entry
+  | StransferredBy      of entry_description
+  | StransferredTo      of entry_description
+  | SnoStorageFail      of security_entry
 [@@deriving show {with_path = false}]
 
 type security_predicate = {
@@ -884,9 +884,9 @@ let cmp_vset (v1 : vset) (v2 : vset) : bool = v1 = v2
 let cmp_trtyp (t1 : trtyp) (t2 : trtyp) : bool = t1 = t2
 let cmp_comparison_operator (op1 : comparison_operator) (op2 : comparison_operator) : bool = op1 = op2
 let cmp_rat_arith_op (op1 : rat_arith_op) (op2 : rat_arith_op) : bool = op1 = op2
-let cmp_action_description (ad1 : action_description) (ad2 : action_description) : bool = ad1 = ad2
+let cmp_entry_description (ad1 : entry_description) (ad2 : entry_description) : bool = ad1 = ad2
 let cmp_security_role = cmp_lident
-let cmp_security_action s1 s2 =
+let cmp_security_entry s1 s2 =
   match s1, s2 with
   | Sany, Sany -> true
   | Sentry e1, Sentry e2 -> List.for_all2 cmp_lident e1 e2
@@ -2629,7 +2629,7 @@ let fold_model (f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (m : '
     | _ -> accu
   ) in
 
-  let fold_action (ctx : ('id, 't) ctx_model_gen) (f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (a : 'id function__gen) (accu : 'a) : 'a = (
+  let fold_entry (ctx : ('id, 't) ctx_model_gen) (f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (a : 'id function__gen) (accu : 'a) : 'a = (
     let accu : 'a = (
       match a.node with
       | Function (fs, _)
@@ -2642,7 +2642,7 @@ let fold_model (f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (m : '
 
   accu
   |> fold_left (fold_decl ctx f) m.decls
-  |> fold_left (fold_action ctx f) m.functions
+  |> fold_left (fold_entry ctx f) m.functions
   |> fold_specification ctx f m.specification
 
 type kind_ident =
@@ -2658,7 +2658,7 @@ type kind_ident =
   | KIcontractname
   | KIcontractentry
   | KIstoragefield
-  | KIaction
+  | KIentry
   | KIfunction
   | KIargument
   | KIlocalvar
@@ -2671,7 +2671,7 @@ type kind_ident =
   | KIpostconditionuse
   | KIsecurityad
   | KIsecurityrole
-  | KIsecurityaction
+  | KIsecurityentry
   | KImterm (* mterm *)
 
 let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : model =
@@ -2943,7 +2943,7 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
           g KIargument a, for_type b, Option.map for_mterm c
         in
         {
-          name = g (match fn with | Function _ -> KIfunction | Entry _ -> KIaction) fs.name;
+          name = g (match fn with | Function _ -> KIfunction | Entry _ -> KIentry) fs.name;
           args = List.map for_argument fs.args;
           body = for_mterm fs.body;
           loc  = fs.loc;
@@ -2962,7 +2962,7 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
     let for_security_item (si : security_item) : security_item =
       let for_security_predicate (sp : security_predicate) : security_predicate =
         let for_security_node (sn : security_node) : security_node =
-          let for_action_description (ad : action_description) =
+          let for_entry_description (ad : entry_description) =
             match ad with
             | ADany         -> ADany
             | ADadd      id -> ADadd      (f KIsecurityad id)
@@ -2974,21 +2974,21 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
             | ADcall     id -> ADcall     (f KIsecurityad id)
           in
           let for_security_role (sr : security_role) : security_role = g KIsecurityrole sr in
-          let for_security_action (sa : security_action) =
+          let for_security_entry (sa : security_entry) =
             match sa with
             | Sany     -> Sany
-            | Sentry l -> Sentry (List.map (g KIsecurityaction) l)
+            | Sentry l -> Sentry (List.map (g KIsecurityentry) l)
           in
           match sn with
-          | SonlyByRole         (ad, srl)     -> SonlyByRole         (for_action_description ad, List.map for_security_role srl)
-          | SonlyInAction       (ad, sa)      -> SonlyInAction       (for_action_description ad, for_security_action sa)
-          | SonlyByRoleInAction (ad, srl, sa) -> SonlyByRoleInAction (for_action_description ad, List.map for_security_role srl, for_security_action sa)
-          | SnotByRole          (ad, srl)     -> SnotByRole          (for_action_description ad, List.map for_security_role srl)
-          | SnotInAction        (ad, sa)      -> SnotInAction        (for_action_description ad, for_security_action sa)
-          | SnotByRoleInAction  (ad, srl, sa) -> SnotByRoleInAction  (for_action_description ad, List.map for_security_role srl, for_security_action sa)
-          | StransferredBy      (ad)          -> StransferredBy      (for_action_description ad)
-          | StransferredTo      (ad)          -> StransferredTo      (for_action_description ad)
-          | SnoStorageFail      sa            -> SnoStorageFail      (for_security_action sa)
+          | SonlyByRole         (ad, srl)     -> SonlyByRole         (for_entry_description ad, List.map for_security_role srl)
+          | SonlyInEntry       (ad, sa)      -> SonlyInEntry       (for_entry_description ad, for_security_entry sa)
+          | SonlyByRoleInEntry (ad, srl, sa) -> SonlyByRoleInEntry (for_entry_description ad, List.map for_security_role srl, for_security_entry sa)
+          | SnotByRole          (ad, srl)     -> SnotByRole          (for_entry_description ad, List.map for_security_role srl)
+          | SnotInEntry        (ad, sa)      -> SnotInEntry        (for_entry_description ad, for_security_entry sa)
+          | SnotByRoleInEntry  (ad, srl, sa) -> SnotByRoleInEntry  (for_entry_description ad, List.map for_security_role srl, for_security_entry sa)
+          | StransferredBy      (ad)          -> StransferredBy      (for_entry_description ad)
+          | StransferredTo      (ad)          -> StransferredTo      (for_entry_description ad)
+          | SnoStorageFail      sa            -> SnoStorageFail      (for_security_entry sa)
         in
         {
           s_node = for_security_node sp.s_node;

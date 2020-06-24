@@ -101,9 +101,9 @@ let pp_sort_kind fmt = function
   | SKasc -> pp_str fmt "asc"
   | SKdesc -> pp_str fmt "desc"
 
-let pp_action_description fmt ad =
+let pp_entry_description fmt ad =
   match ad with
-  | ADany         -> pp_str fmt "anyaction"
+  | ADany         -> pp_str fmt "anyentry"
   | ADadd      id -> Format.fprintf fmt "add (%a)" pp_ident id
   | ADremove   id -> Format.fprintf fmt "remove (%a)" pp_ident id
   | ADupdate   id -> Format.fprintf fmt "update (%a)" pp_ident id
@@ -1293,7 +1293,7 @@ let pp_specification fmt (v : specification) =
   else Format.fprintf fmt "specification {@\n  @[%a@]@\n}@\n" pp_main v
 
 let pp_security fmt (s : security) =
-  let pp_security_action fmt (a : security_action)=
+  let pp_security_entry fmt (a : security_entry)=
     match a with
     | Sany -> Format.fprintf fmt "any"
     | Sentry l ->
@@ -1311,47 +1311,47 @@ let pp_security fmt (s : security) =
     match sp.s_node with
     | SonlyByRole (ad, roles) ->
       Format.fprintf fmt "only_by_role (%a, %a)"
-        pp_action_description ad
+        pp_entry_description ad
         pp_security_roles roles
 
-    | SonlyInAction (ad, action) ->
-      Format.fprintf fmt "only_in_action (%a, %a)"
-        pp_action_description ad
-        pp_security_action action
+    | SonlyInEntry (ad, entry) ->
+      Format.fprintf fmt "only_in_entry (%a, %a)"
+        pp_entry_description ad
+        pp_security_entry entry
 
-    | SonlyByRoleInAction (ad, roles, action) ->
-      Format.fprintf fmt "only_by_role_in_action (%a, %a, %a)"
-        pp_action_description ad
+    | SonlyByRoleInEntry (ad, roles, entry) ->
+      Format.fprintf fmt "only_by_role_in_entry (%a, %a, %a)"
+        pp_entry_description ad
         pp_security_roles roles
-        pp_security_action action
+        pp_security_entry entry
 
     | SnotByRole (ad, roles) ->
       Format.fprintf fmt "not_by_role (%a, %a)"
-        pp_action_description ad
+        pp_entry_description ad
         pp_security_roles roles
 
-    | SnotInAction (ad, action) ->
-      Format.fprintf fmt "not_in_action (%a, %a)"
-        pp_action_description ad
-        pp_security_action action
+    | SnotInEntry (ad, entry) ->
+      Format.fprintf fmt "not_in_entry (%a, %a)"
+        pp_entry_description ad
+        pp_security_entry entry
 
-    | SnotByRoleInAction (ad, roles, action) ->
-      Format.fprintf fmt "not_by_role_in_action (%a, %a, %a)"
-        pp_action_description ad
+    | SnotByRoleInEntry (ad, roles, entry) ->
+      Format.fprintf fmt "not_by_role_in_entry (%a, %a, %a)"
+        pp_entry_description ad
         pp_security_roles roles
-        pp_security_action action
+        pp_security_entry entry
 
     | StransferredBy ad ->
       Format.fprintf fmt "transferred_by (%a)"
-        pp_action_description ad
+        pp_entry_description ad
 
     | StransferredTo ad ->
       Format.fprintf fmt "transferred_to (%a)"
-        pp_action_description ad
+        pp_entry_description ad
 
-    | SnoStorageFail action ->
+    | SnoStorageFail entry ->
       Format.fprintf fmt "no_storage_fail (%a)"
-        pp_security_action action
+        pp_security_entry entry
   in
 
   let pp_security_item fmt (si : security_item) =

@@ -243,23 +243,22 @@ type error_desc =
   | AssertInGlobalSpec
   | AssetExpected                      of M.ptyp
   | AssetWithoutFields
-  | BeforeOrLabelInExpr
-  | LabelInNonInvariant
   | BeforeIrrelevant                   of [`Local | `State]
+  | BeforeOrLabelInExpr
   | BindingInExpr
   | CannotAssignArgument               of ident
   | CannotAssignLoopIndex              of ident
   | CannotCaptureLocal
+  | CannotInfer
   | CannotInferAnonRecord
   | CannotInferCollectionType
-  | CannotInfer
   | CannotInitShadowField
   | CannotUpdatePKey
   | CollectionExpected
   | ContainerOfNonAsset
   | ContractInvariantInLocalSpec
-  | DoesNotSupportMethodCall
   | DivergentExpr
+  | DoesNotSupportMethodCall
   | DuplicatedArgName                  of ident
   | DuplicatedContractEntryName        of ident
   | DuplicatedCtorName                 of ident
@@ -274,25 +273,25 @@ type error_desc =
   | ForeignState                       of ident option * ident option
   | FormulaExpected
   | IncompatibleTypes                  of M.ptyp * M.ptyp
-  | InvalidActionDescription
-  | InvalidActionExpression
   | InvalidArcheTypeDecl
   | InvalidAssetCollectionExpr         of M.ptyp
   | InvalidAssetExpression
   | InvalidCallByExpression
   | InvalidContractExpression
   | InvalidEffectForCtn                of M.container * M.container list
-  | InvalidExpressionForEffect
+  | InvalidEntryDescription
+  | InvalidEntryExpression
   | InvalidExpression
+  | InvalidExpressionForEffect
   | InvalidFieldsCountInRecordLiteral
-  | InvalidLValue
   | InvalidFormula
   | InvalidInstruction
+  | InvalidLValue
   | InvalidMethodInExec
   | InvalidMethodInFormula
   | InvalidNumberOfArguments           of int * int
   | InvalidRoleExpression
-  | InvalidSecurityAction
+  | InvalidSecurityEntry
   | InvalidSecurityRole
   | InvalidShadowFieldAccess
   | InvalidShadowVariableAccess
@@ -301,6 +300,7 @@ type error_desc =
   | InvalidTypeForPk
   | InvalidTypeForVarWithFromTo
   | InvalidVarOrArgType
+  | LabelInNonInvariant
   | LetInElseInInstruction
   | LetInElseOnNonOption
   | MethodCallInPredicate
@@ -310,20 +310,20 @@ type error_desc =
   | MixedFieldNamesInRecordLiteral     of ident list
   | MoreThanOneInitState               of ident list
   | MultipleAssetStateDeclaration
-  | MultipleInitialMarker
-  | MultipleMatchingOperator           of PT.operator * M.ptyp list * opsig list
-  | MultipleMatchingFunction           of ident * M.ptyp list * (M.ptyp list * M.ptyp) list
   | MultipleFromToInVarDecl
+  | MultipleInitialMarker
+  | MultipleMatchingFunction           of ident * M.ptyp list * (M.ptyp list * M.ptyp) list
+  | MultipleMatchingOperator           of PT.operator * M.ptyp list * opsig list
   | MultipleStateDeclaration
   | NameIsAlreadyBound                 of ident * Location.t option
-  | NoMatchingOperator                 of PT.operator * M.ptyp list
-  | NoMatchingFunction                 of ident * M.ptyp list
-  | NoSuchMethod                       of ident
-  | NoSuchSecurityPredicate            of ident
-  | NonCodeLabel                       of ident
   | NoLetInInstruction
+  | NoMatchingFunction                 of ident * M.ptyp list
+  | NoMatchingOperator                 of PT.operator * M.ptyp list
+  | NonCodeLabel                       of ident
   | NonIterable
   | NonLoopLabel                       of ident
+  | NoSuchMethod                       of ident
+  | NoSuchSecurityPredicate            of ident
   | NotAKeyOfType
   | NotAnAssetType
   | NotAnEnumType
@@ -344,9 +344,9 @@ type error_desc =
   | SpecOperatorInExpr
   | TransferWithoutDest
   | UninitializedVar
-  | UnknownAction                      of ident
   | UnknownAsset                       of ident
   | UnknownContractEntryPoint          of ident * ident
+  | UnknownEntry                      of ident
   | UnknownEnum                        of ident
   | UnknownField                       of ident * ident
   | UnknownFieldName                   of ident
@@ -356,8 +356,8 @@ type error_desc =
   | UnknownState                       of ident
   | UnknownTypeName                    of ident
   | UnpureInFormula
-  | UpdateEffectWithoutDefault
   | UpdateEffectOnPkey
+  | UpdateEffectWithoutDefault
   | UselessPattern
   | UsePkeyOfInsteadOfAsset
   | VoidMethodInExpr
@@ -405,21 +405,20 @@ let pp_error_desc fmt e =
   | BeforeIrrelevant `Local            -> pp "The `before' modifier cannot be used on local variables"
   | BeforeIrrelevant `State            -> pp "The `before' modifier cannot be used on state constructors"
   | BeforeOrLabelInExpr                -> pp "The `before' or label modifiers can only be used in formulas"
-  | LabelInNonInvariant                -> pp "The label modifier can only be used in invariants"
   | BindingInExpr                      -> pp "Binding in expression"
   | CannotAssignArgument  x            -> pp "Cannot assign argument `%s'" x
   | CannotAssignLoopIndex x            -> pp "Cannot assign loop index `%s'" x
   | CannotCaptureLocal                 -> pp "Cannot capture local variables in this context"
+  | CannotInfer                        -> pp "Cannot infer type"
   | CannotInferAnonRecord              -> pp "Cannot infer anonymous record"
   | CannotInferCollectionType          -> pp "Cannot infer collection type"
-  | CannotInfer                        -> pp "Cannot infer type"
   | CannotInitShadowField              -> pp "Cannot initialize a shadow field"
   | CannotUpdatePKey                   -> pp "Cannot modify the primary key of asset"
   | CollectionExpected                 -> pp "Collection expected"
   | ContainerOfNonAsset                -> pp "The base type of a container must be an asset type"
   | ContractInvariantInLocalSpec       -> pp "Contract invariants at local levl are forbidden"
-  | DoesNotSupportMethodCall           -> pp "Cannot use method calls on this kind of objects"
   | DivergentExpr                      -> pp "Divergent expression"
+  | DoesNotSupportMethodCall           -> pp "Cannot use method calls on this kind of objects"
   | DuplicatedArgName x                -> pp "Duplicated argument name: %s" x
   | DuplicatedContractEntryName i      -> pp "Duplicated contract entry name: %a" pp_ident i
   | DuplicatedCtorName i               -> pp "Duplicated constructor name: %a" pp_ident i
@@ -434,31 +433,34 @@ let pp_error_desc fmt e =
   | ForeignState (i1, i2)              -> pp "Expecting a state of %a, not %a" pp_ident (Option.get_dfl "<global>" i1) pp_ident (Option.get_dfl "<global>" i2)
   | FormulaExpected                    -> pp "Formula expected"
   | IncompatibleTypes (t1, t2)         -> pp "Incompatible types: found '%a' but expected '%a'" Printer_ast.pp_ptyp t1 Printer_ast.pp_ptyp t2
-  | InvalidActionDescription           -> pp "Invalid entry description"
-  | InvalidActionExpression            -> pp "Invalid entry expression"
   | InvalidArcheTypeDecl               -> pp "Invalid Archetype declaration"
   | InvalidAssetCollectionExpr ty      -> pp "Invalid asset collection expression: %a" M.pp_ptyp ty
   | InvalidAssetExpression             -> pp "Invalid asset expression"
   | InvalidCallByExpression            -> pp "Invalid 'Calledby' expression"
   | InvalidContractExpression          -> pp "Invalid contract expression"
   | InvalidEffectForCtn _              -> pp "Invalid effect for this container kind"
-  | InvalidExpressionForEffect         -> pp "Invalid expression for effect"
+  | InvalidEntryDescription            -> pp "Invalid entry description"
+  | InvalidEntryExpression             -> pp "Invalid entry expression"
   | InvalidExpression                  -> pp "Invalid expression"
+  | InvalidExpressionForEffect         -> pp "Invalid expression for effect"
   | InvalidFieldsCountInRecordLiteral  -> pp "Invalid fields count in record literal"
-  | InvalidLValue                      -> pp "Invalid left-value"
   | InvalidFormula                     -> pp "Invalid formula"
   | InvalidInstruction                 -> pp "Invalid instruction"
+  | InvalidLValue                      -> pp "Invalid left-value"
   | InvalidMethodInExec                -> pp "Invalid method in execution"
   | InvalidMethodInFormula             -> pp "Invalid method in formula"
   | InvalidNumberOfArguments (n1, n2)  -> pp "Invalid number of arguments: found '%i', but expected '%i'" n1 n2
   | InvalidRoleExpression              -> pp "Invalid role expression"
-  | InvalidSecurityAction              -> pp "Invalid security entry"
+  | InvalidSecurityEntry              -> pp "Invalid security entry"
   | InvalidSecurityRole                -> pp "Invalid security role"
+  | InvalidShadowFieldAccess           -> pp "Shadow field access in non-shadow code"
+  | InvalidShadowVariableAccess        -> pp "Shadow variable access in non-shadow code"
   | InvalidSortingExpression           -> pp "Invalid sorting expression"
   | InvalidStateExpression             -> pp "Invalid state expression"
   | InvalidTypeForPk                   -> pp "Invalid type for primary key"
   | InvalidTypeForVarWithFromTo        -> pp "A variable with a from/to declaration must be of type currency"
   | InvalidVarOrArgType                -> pp "A variable / argument type cannot be an asset or a collection"
+  | LabelInNonInvariant                -> pp "The label modifier can only be used in invariants"
   | LetInElseInInstruction             -> pp "Let In else in instruction"
   | LetInElseOnNonOption               -> pp "Let in else on non-option type"
   | MethodCallInPredicate              -> pp "Cannot call methods in predicates"
@@ -468,17 +470,17 @@ let pp_error_desc fmt e =
   | MixedFieldNamesInRecordLiteral l   -> pp "Mixed field names in record literal: %a" (Printer_tools.pp_list "," pp_ident) l
   | MoreThanOneInitState l             -> pp "More than one initial state: %a" (Printer_tools.pp_list ", " pp_ident) l
   | MultipleAssetStateDeclaration      -> pp "Multiple asset states declaration"
-  | MultipleInitialMarker              -> pp "Multiple 'initial' marker"
   | MultipleFromToInVarDecl            -> pp "Variable declaration must have at most one from/to specification"
+  | MultipleInitialMarker              -> pp "Multiple 'initial' marker"
   | MultipleStateDeclaration           -> pp "Multiple state declaration"
   | NameIsAlreadyBound (i, None)       -> pp "Name is already bound: %a" pp_ident i
   | NameIsAlreadyBound (i, Some l)     -> pp "Name is already bound: %a (previous definition: %s)" pp_ident i (Location.tostring l)
-  | NoSuchMethod i                     -> pp "No such method: %a" pp_ident i
-  | NoSuchSecurityPredicate i          -> pp "No such security predicate: %a" pp_ident i
   | NoLetInInstruction                 -> pp "No Let In in instruction"
   | NonCodeLabel i                     -> pp "Not a code label: %a" pp_ident i
   | NonIterable                        -> pp "Cannot iterate over"
   | NonLoopLabel i                     -> pp "Not a loop label: %a" pp_ident i
+  | NoSuchMethod i                     -> pp "No such method: %a" pp_ident i
+  | NoSuchSecurityPredicate i          -> pp "No such security predicate: %a" pp_ident i
   | NotAKeyOfType                      -> pp "pkey-of type expected"
   | NotAnAssetType                     -> pp "Asset type expected"
   | NotAnEnumType                      -> pp "Enumeration type expected"
@@ -496,14 +498,12 @@ let pp_error_desc fmt e =
   | SecurityInExpr                     -> pp "Found securtiy predicate in expression"
   | ShadowPKey                         -> pp "Primary key cannot be a shadow field"
   | ShadowSKey                         -> pp "Sort key cannot be a shadow field"
-  | InvalidShadowFieldAccess           -> pp "Shadow field access in non-shadow code"
-  | InvalidShadowVariableAccess        -> pp "Shadow variable access in non-shadow code"
   | SpecOperatorInExpr                 -> pp "Specification operator in expression"
   | TransferWithoutDest                -> pp "Transfer without destination"
   | UninitializedVar                   -> pp "This variable declaration is missing an initializer"
-  | UnknownAction i                    -> pp "Unknown entry: %a" pp_ident i
   | UnknownAsset i                     -> pp "Unknown asset: %a" pp_ident i
   | UnknownContractEntryPoint (c, m)   -> pp "Unknown contract entry point: %s.%s" c m
+  | UnknownEntry i                    -> pp "Unknown entry: %a" pp_ident i
   | UnknownEnum i                      -> pp "Unknown enum: %a" pp_ident i
   | UnknownField (i1, i2)              -> pp "Unknown field: asset %a does not have a field %a" pp_ident i1 pp_ident i2
   | UnknownFieldName i                 -> pp "Unknown field name: %a" pp_ident i
@@ -513,8 +513,8 @@ let pp_error_desc fmt e =
   | UnknownState i                     -> pp "Unknown state: %a" pp_ident i
   | UnknownTypeName i                  -> pp "Unknown type: %a" pp_ident i
   | UnpureInFormula                    -> pp "Cannot use expression with side effect"
-  | UpdateEffectWithoutDefault         -> pp "Update effect without default value for field"
   | UpdateEffectOnPkey                 -> pp "Cannot set/update the primary key in an effect"
+  | UpdateEffectWithoutDefault         -> pp "Update effect without default value for field"
   | UselessPattern                     -> pp "Useless match branch"
   | UsePkeyOfInsteadOfAsset            -> pp "Cannot reference assets directly, use `pkey of` instead"
   | VoidMethodInExpr                   -> pp "Void method in non-void context"
@@ -637,7 +637,7 @@ let opsigs =
 
 (* -------------------------------------------------------------------- *)
 type acttx = [
-  | `Action     of PT.action_decl
+  | `Entry      of PT.entry_decl
   | `Transition of PT.transition_decl
 ]
 
@@ -851,7 +851,7 @@ type txeffect = {
   tx_effect : M.instruction option;
 }
 
-type 'env tactiondecl = {
+type 'env tentrydecl = {
   ad_name   : M.lident;
   ad_args   : (M.lident * M.ptyp) list;
   ad_callby : (M.pterm option) loced list;
@@ -924,7 +924,7 @@ module Env : sig
     | `Global      of vardecl
     | `Definition  of definitiondecl
     | `Asset       of assetdecl
-    | `Action      of t tactiondecl
+    | `Entry       of t tentrydecl
     | `Function    of t fundecl
     | `Predicate   of preddecl
     | `Field       of ident
@@ -1009,11 +1009,11 @@ module Env : sig
     val push    : t -> assetdecl -> t
   end
 
-  module TAction : sig
-    val lookup  : t -> ident -> t tactiondecl option
-    val get     : t -> ident -> t tactiondecl
+  module Tentry : sig
+    val lookup  : t -> ident -> t tentrydecl option
+    val get     : t -> ident -> t tentrydecl
     val exists  : t -> ident -> bool
-    val push    : t -> t tactiondecl -> t
+    val push    : t -> t tentrydecl -> t
   end
 
   module Contract : sig
@@ -1041,7 +1041,7 @@ end = struct
     | `Global      of vardecl
     | `Definition  of definitiondecl
     | `Asset       of assetdecl
-    | `Action      of t tactiondecl
+    | `Entry      of t tentrydecl
     | `Function    of t fundecl
     | `Predicate   of preddecl
     | `Field       of ident
@@ -1322,8 +1322,8 @@ end = struct
         env decl.as_fields
   end
 
-  module TAction = struct
-    let proj = function `Action x -> Some x | _ -> None
+  module Tentry = struct
+    let proj = function `Entry x -> Some x | _ -> None
 
     let lookup (env : t) (name : ident) =
       lookup_gen proj env name
@@ -1334,8 +1334,8 @@ end = struct
     let get (env : t) (name : ident) =
       Option.get (lookup env name)
 
-    let push (env : t) (act : t tactiondecl) =
-      push env ~loc:(loc act.ad_name) (unloc act.ad_name) (`Action act)
+    let push (env : t) (act : t tentrydecl) =
+      push env ~loc:(loc act.ad_name) (unloc act.ad_name) (`Entry act)
   end
 
   module Contract = struct
@@ -2925,7 +2925,7 @@ and for_formula ?(invariant = false) (env : env) (topf : PT.expr) : M.pterm =
     e.type_; e
 
 (* -------------------------------------------------------------------- *)
-and for_action_description (env : env) (sa : PT.security_arg) : M.action_description =
+and for_entry_description (env : env) (sa : PT.security_arg) : M.entry_description =
   match unloc sa with
   | Sident { pldesc = "anyentry" } ->
     M.ADAny
@@ -2944,21 +2944,21 @@ and for_action_description (env : env) (sa : PT.security_arg) : M.action_descrip
     end
 
   | _ ->
-    Env.emit_error env (loc sa, InvalidActionDescription);
+    Env.emit_error env (loc sa, InvalidEntryDescription);
     M.ADAny
 
 (* -------------------------------------------------------------------- *)
-and for_security_action (env : env) (sa : PT.security_arg) : M.security_action =
+and for_security_entry (env : env) (sa : PT.security_arg) : M.security_entry =
   match unloc sa with
   | Sident id ->
     begin
       match unloc id with
       | "anyentry" -> Sany
       | _           ->
-        let ad = Env.TAction.lookup env (unloc id) in
+        let ad = Env.Tentry.lookup env (unloc id) in
 
         if Option.is_none ad then
-          Env.emit_error env (loc id, UnknownAction (unloc id));
+          Env.emit_error env (loc id, UnknownEntry (unloc id));
 
         Sentry [id]
     end
@@ -2966,13 +2966,13 @@ and for_security_action (env : env) (sa : PT.security_arg) : M.security_action =
   | Slist sas ->
     M.Sentry (List.flatten (List.map (
         fun x ->
-          let a = for_security_action env x in
+          let a = for_security_entry env x in
           match a with
           | Sentry ids -> ids
           | _ -> assert false) sas))
 
   | _ ->
-    Env.emit_error env (loc sa, InvalidSecurityAction);
+    Env.emit_error env (loc sa, InvalidSecurityEntry);
     Sentry []
 
 (* -------------------------------------------------------------------- *)
@@ -3512,15 +3512,15 @@ let for_specification mode ((env, poenv) : env * env) (v : PT.specification) =
 (* -------------------------------------------------------------------- *)
 module SecurityPred = struct
   type _ mode =
-    | ActionDesc : M.action_description mode
-    | Role       : M.lident list        mode
-    | Action     : M.security_action    mode
+    | EntryDesc : M.entry_description mode
+    | Role      : M.lident list       mode
+    | Entry     : M.security_entry    mode
 
   let validate1 (type a) (env : env) (mode : a mode) (v : PT.security_arg) : a =
     match mode with
-    | ActionDesc -> for_action_description env v
-    | Role       -> for_security_role      env v
-    | Action     -> for_security_action    env v
+    | EntryDesc -> for_entry_description env v
+    | Role      -> for_security_role     env v
+    | Entry     -> for_security_entry    env v
 
   type _ validator =
     | V0 : unit validator
@@ -3569,15 +3569,15 @@ module SecurityPred = struct
     f (validate env (vd, args))
 
   let preds = [
-    "only_by_role",           vd2 (fun x y   -> M.SonlyByRole         (x, y)   ) ActionDesc Role;
-    "only_in_entry",          vd2 (fun x y   -> M.SonlyInAction       (x, y)   ) ActionDesc Action;
-    "only_by_role_in_entry",  vd3 (fun x y z -> M.SonlyByRoleInAction (x, y, z)) ActionDesc Role Action;
-    "not_by_role",            vd2 (fun x y   -> M.SnotByRole          (x, y)   ) ActionDesc Role;
-    "not_in_entry",           vd2 (fun x y   -> M.SnotInAction        (x, y)   ) ActionDesc Action;
-    "not_by_role_in_entry",   vd3 (fun x y z -> M.SnotByRoleInAction  (x, y, z)) ActionDesc Role Action;
-    "transferred_by",         vd1 (fun x     -> M.StransferredBy      (x)      ) ActionDesc;
-    "transferred_to",         vd1 (fun x     -> M.StransferredTo      (x)      ) ActionDesc;
-    "no_storage_fail",        vd1 (fun x     -> M.SnoStorageFail      (x)      ) Action;
+    "only_by_role",           vd2 (fun x y   -> M.SonlyByRole        (x, y)   ) EntryDesc Role;
+    "only_in_entry",          vd2 (fun x y   -> M.SonlyInEntry       (x, y)   ) EntryDesc Entry;
+    "only_by_role_in_entry",  vd3 (fun x y z -> M.SonlyByRoleInEntry (x, y, z)) EntryDesc Role Entry;
+    "not_by_role",            vd2 (fun x y   -> M.SnotByRole         (x, y)   ) EntryDesc Role;
+    "not_in_entry",           vd2 (fun x y   -> M.SnotInEntry        (x, y)   ) EntryDesc Entry;
+    "not_by_role_in_entry",   vd3 (fun x y z -> M.SnotByRoleInEntry  (x, y, z)) EntryDesc Role Entry;
+    "transferred_by",         vd1 (fun x     -> M.StransferredBy     (x)      ) EntryDesc;
+    "transferred_to",         vd1 (fun x     -> M.StransferredTo     (x)      ) EntryDesc;
+    "no_storage_fail",        vd1 (fun x     -> M.SnoStorageFail     (x)      ) Entry;
   ]
 
   let preds = Mid.of_list preds
@@ -3710,7 +3710,7 @@ let rec for_callby (env : env) (cb : PT.expr) =
     [mkloc (loc cb) (Some (for_expr `Concrete env ~ety:M.vtrole cb))]
 
 (* -------------------------------------------------------------------- *)
-let for_action_properties (env, poenv : env * env) (act : PT.action_properties) =
+let for_entry_properties (env, poenv : env * env) (act : PT.entry_properties) =
   let calledby  = Option.map (fun (x, _) -> for_callby env x) act.calledby in
   let env, req  = Option.foldmap (for_lbls_bexpr `Concrete) env (Option.fst act.require) in
   let env, fai  = Option.foldmap (for_lbls_bexpr `Concrete) env (Option.fst act.failif) in
@@ -4239,7 +4239,7 @@ let for_contracts_decl (env : env) (decls : PT.contract_decl loced list) =
 (* -------------------------------------------------------------------- *)
 let for_acttx_decl (env : env) (decl : acttx loced) =
   match unloc decl with
-  | `Action (x, args, pt, i_exts, _exts) -> begin
+  | `Entry (x, args, pt, i_exts, _exts) -> begin
       let env, decl =
         Env.inscope env (fun env ->
             let env, args = for_args_decl env args in
@@ -4248,7 +4248,7 @@ let for_acttx_decl (env : env) (decl : acttx loced) =
             let effect = Option.map snd poeffect in
             let poenv  = Option.get_dfl env (Option.map fst poeffect) in
             let env, (callby, reqs, fais, spec, funs) =
-              for_action_properties (env, poenv) pt in
+              for_entry_properties (env, poenv) pt in
 
             let decl =
               { ad_name   = x;
@@ -4266,11 +4266,11 @@ let for_acttx_decl (env : env) (decl : acttx loced) =
       in
 
       if check_and_emit_name_free env x then
-        (Env.TAction.push env decl, Some decl)
+        (Env.Tentry.push env decl, Some decl)
       else (env, None)
     end
 
-  | `Transition (x, args, tgt, from_, actions, tx, _exts) ->
+  | `Transition (x, args, tgt, from_, entrys, tx, _exts) ->
     let env, decl =
       Env.inscope env (fun env ->
           let env, args = for_args_decl env args in
@@ -4293,7 +4293,7 @@ let for_acttx_decl (env : env) (decl : acttx loced) =
 
           let from_ = for_state_formula ?enum env from_ in
           let env, (callby, reqs, fais, spec, funs) =
-            for_action_properties (env, env) actions in
+            for_entry_properties (env, env) entrys in
           let env, tx =
             List.fold_left_map (for_transition ?enum) env tx in
 
@@ -4306,14 +4306,14 @@ let for_acttx_decl (env : env) (decl : acttx loced) =
               ad_reqs   = Option.get_dfl [] reqs;
               ad_fais   = Option.get_dfl [] fais;
               ad_spec   = Option.get_dfl [] spec;
-              ad_actfs  = actions.accept_transfer; }
+              ad_actfs  = entrys.accept_transfer; }
 
           in (env, decl))
 
     in
 
     if check_and_emit_name_free env x then
-      (Env.TAction.push env decl, Some decl)
+      (Env.Tentry.push env decl, Some decl)
     else (env, None)
 
 (* -------------------------------------------------------------------- *)
@@ -4366,8 +4366,8 @@ let group_declarations (decls : (PT.declaration list)) =
     | PT.Dasset infos ->
       { g with gr_assets = mk infos :: g.gr_assets }
 
-    | PT.Daction infos ->
-      { g with gr_acttxs = mk (`Action infos) :: g.gr_acttxs }
+    | PT.Dentry infos ->
+      { g with gr_acttxs = mk (`Entry infos) :: g.gr_acttxs }
 
     | PT.Dtransition infos ->
       { g with gr_acttxs = mk (`Transition infos) :: g.gr_acttxs }
@@ -4398,7 +4398,7 @@ type decls = {
   enums     : statedecl option list;
   assets    : assetdecl option list;
   functions : env fundecl option list;
-  acttxs    : env tactiondecl option list;
+  acttxs    : env tentrydecl option list;
   specs     : env ispecification list list;
   secspecs  : M.security list;
 }
@@ -4652,7 +4652,7 @@ let functions_of_fdecls fdecls =
   in List.map for1 (List.pmap (fun x -> x) fdecls)
 
 (* -------------------------------------------------------------------- *)
-let transactions_of_tdecls tdecls =
+let transentrys_of_tdecls tdecls =
   let for_calledby cb : M.rexpr option =
     match cb with [] -> None | c :: cb ->
 
@@ -4724,7 +4724,7 @@ let for_declarations (env : env) (decls : (PT.declaration list) loced) : M.model
       )
       ~funs:(
         List.map (fun x -> M.Ffunction x)    (functions_of_fdecls decls.functions) @
-        List.map (fun x -> M.Ftransaction x) (transactions_of_tdecls decls.acttxs)
+        List.map (fun x -> M.Ftransaction x) (transentrys_of_tdecls decls.acttxs)
       )
       ~specifications:(List.map specifications_of_ispecifications decls.specs)
       ~securities:(decls.secspecs)

@@ -222,7 +222,7 @@ and s_function = {
   body  : expr;
 }
 
-and action_properties = {
+and entry_properties = {
   accept_transfer : bool;
   calledby        : (expr * exts) option;
   require         : (label_exprs * exts) option;
@@ -248,7 +248,7 @@ and declaration_unloc =
   | Dvariable      of variable_decl
   | Denum          of enum_kind * enum_decl
   | Dasset         of asset_decl
-  | Daction        of action_decl
+  | Dentry         of entry_decl
   | Dtransition    of transition_decl
   | Dcontract      of contract_decl
   | Dextension     of extension_decl
@@ -279,10 +279,10 @@ and asset_decl =
   * asset_operation option
   * exts
 
-and action_decl =
+and entry_decl =
   lident
   * args
-  * action_properties
+  * entry_properties
   * (expr * exts) option
   * exts
 
@@ -291,7 +291,7 @@ and transition_decl =
   * args
   * (lident * type_t) option
   * expr
-  * action_properties
+  * entry_properties
   * transition
   * exts
 

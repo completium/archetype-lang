@@ -368,6 +368,8 @@ let string_of_symbol = function
   | X (N N_enum) -> "an enum"
   | X (N N_enum_values) -> "enum values"
   | X (N N_enum_option) -> "an enum option"
+  | X (N N_entry) -> "an entry"
+  | X (N N_entry_properties) -> "entry properties"
   | X (N N_effect) -> "an effect"
   | X (N N_dextension) -> "a extension declaration"
   | X (N N_declaration_r) -> "a declaration"
@@ -382,8 +384,6 @@ let string_of_symbol = function
   | X (N N_archetype) -> "archetype"
   | X (N N_archetype_r) -> "archetype"
   | X (N N_archetype_extension) -> "an extension"
-  | X (N N_action) -> "an action"
-  | X (N N_action_properties) -> "action properties"
 
 let string_of_item (p, i) =
   string_of_symbol (lhs p) ^ " -> "

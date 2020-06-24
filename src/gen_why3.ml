@@ -720,8 +720,8 @@ let adds_asset m an b =
 let is_only_security (s : M.security_predicate) =
   match s.s_node with
   | M.SonlyByRole _ -> true
-  | M.SonlyInAction _ -> true
-  | M.SonlyByRoleInAction _ -> true
+  | M.SonlyInEntry _ -> true
+  | M.SonlyByRoleInEntry _ -> true
   | _ -> false
 
 let map_action_to_change = function
@@ -796,20 +796,20 @@ let map_security_pred loc (t : M.security_predicate) =
   match t.M.s_node with
   | M.SonlyByRole (ADany,roles)     ->
     mk_performed_by caller (roles |> List.map unloc) false
-  | M.SonlyInAction (ADany,Sentry entries) ->
+  | M.SonlyInEntry (ADany,Sentry entries) ->
     mk_performed_by entry (entries |> List.map unloc |> List.map (mk_trace_id Entry)) true
   | M.SonlyByRole (a,roles)         ->
     mk_changes_performed_by caller a (roles |> List.map unloc) false
-  | M.SonlyInAction (a,Sentry entries)     ->
+  | M.SonlyInEntry (a,Sentry entries)     ->
     mk_changes_performed_by entry
       a
       (entries |> List.map unloc |> List.map (mk_trace_id Entry))
       true
-  | M.SonlyByRoleInAction (ADany,roles,Sentry entries) ->
+  | M.SonlyByRoleInEntry (ADany,roles,Sentry entries) ->
     mk_performed_by_2 caller entry
       (roles |> List.map unloc)
       (entries |> List.map unloc |> List.map (mk_trace_id Entry))
-  | M.SonlyByRoleInAction (a,roles,Sentry entries) ->
+  | M.SonlyByRoleInEntry (a,roles,Sentry entries) ->
     mk_changes_performed_by_2 caller entry a
       (roles |> List.map unloc)
       (entries |> List.map unloc |> List.map (mk_trace_id Entry))

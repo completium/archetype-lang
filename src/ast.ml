@@ -119,10 +119,10 @@ type const =
   | Cbalance
   | Csource
   | Cconditions
-  | Cactions
+  | Centries
   | Cnone
   | Cany
-  | Canyaction
+  | Canyentry
   | Cresult
   (* function *)
   | Cadd
@@ -444,7 +444,7 @@ type 'id specification = {
 }
 [@@deriving show {with_path = false}]
 
-type action_description =
+type entry_description =
   | ADAny
   | ADOp  of string * lident
 [@@deriving show {with_path = false}]
@@ -452,21 +452,21 @@ type action_description =
 type security_role   = lident
 [@@deriving show {with_path = false}]
 
-type security_action =
+type security_entry =
   | Sany
   | Sentry of lident list
 [@@deriving show {with_path = false}]
 
 type security_node =
-  | SonlyByRole         of action_description * security_role list
-  | SonlyInAction       of action_description * security_action
-  | SonlyByRoleInAction of action_description * security_role list * security_action
-  | SnotByRole          of action_description * security_role list
-  | SnotInAction        of action_description * security_action
-  | SnotByRoleInAction  of action_description * security_role list * security_action
-  | StransferredBy      of action_description
-  | StransferredTo      of action_description
-  | SnoStorageFail      of security_action
+  | SonlyByRole         of entry_description * security_role list
+  | SonlyInEntry        of entry_description * security_entry
+  | SonlyByRoleInEntry  of entry_description * security_role list * security_entry
+  | SnotByRole          of entry_description * security_role list
+  | SnotInEntry         of entry_description * security_entry
+  | SnotByRoleInEntry   of entry_description * security_role list * security_entry
+  | StransferredBy      of entry_description
+  | StransferredTo      of entry_description
+  | SnoStorageFail      of security_entry
 [@@deriving show {with_path = false}]
 
 type security_predicate = {
@@ -520,7 +520,7 @@ type rexpr = lident rexpr_gen
 type 'id transition = {
   from : 'id sexpr_gen;
   on   : ('id * ptyp * 'id * ptyp) option; (* key ident * key type * asset name * asset state type *)
-  trs  : ('id * 'id term_gen option * 'id instruction_gen option) list; (* to * condition * action*)
+  trs  : ('id * 'id term_gen option * 'id instruction_gen option) list; (* to * condition * entry*)
 }
 [@@deriving show {with_path = false}]
 

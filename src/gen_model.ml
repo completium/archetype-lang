@@ -182,7 +182,7 @@ let to_model (ast : A.model) : M.model =
     | _ -> assert false
   in
 
-  let to_action_description (ad : A.action_description) : M.action_description=
+  let to_entry_description (ad : A.entry_description) : M.entry_description =
     match ad with
     | ADAny -> M.ADany
     | ADOp ("add", id)      -> M.ADadd (unloc id)
@@ -505,13 +505,13 @@ let to_model (ast : A.model) : M.model =
          M.MsecMayBePerformedOnlyByRole (f l, f r)
 
          | A.Pcall (None, A.Cconst (A.Cmaybeperformedonlybyaction), [AExpr l; AExpr r]) ->
-         M.MsecMayBePerformedOnlyByAction (f l, f r)
+         M.MsecMayBePerformedOnlyByEntry (f l, f r)
 
          | A.Pcall (None, A.Cconst (A.Cmaybeperformedbyrole), [AExpr l; AExpr r]) ->
          M.MsecMayBePerformedByRole (f l, f r)
 
          | A.Pcall (None, A.Cconst (A.Cmaybeperformedbyaction), [AExpr l; AExpr r]) ->
-         M.MsecMayBePerformedByAction (f l, f r) *)
+         M.MsecMayBePerformedByEntry (f l, f r) *)
 
       | A.Pcall (aux, A.Cconst c, args) ->
         Format.eprintf "expr const unkown: %a with nb args: %d [%a] %s@."
@@ -820,21 +820,21 @@ let to_model (ast : A.model) : M.model =
     let to_security_item (si : A.security_item) : M.security_item =
       let to_security_predicate (sn : A.security_predicate) : M.security_predicate =
         let to_security_node (sn : A.security_node) : M.security_node =
-          let to_security_action (sa : A.security_action) : M.security_action =
+          let to_security_entry (sa : A.security_entry) : M.security_entry =
             match sa with
             | Sany -> Sany
             | Sentry l -> Sentry l
           in
           match sn with
-          | SonlyByRole         (ad, roles)         -> SonlyByRole         (to_action_description ad, roles)
-          | SonlyInAction       (ad, action)        -> SonlyInAction       (to_action_description ad, to_security_action action)
-          | SonlyByRoleInAction (ad, roles, action) -> SonlyByRoleInAction (to_action_description ad, roles, to_security_action action)
-          | SnotByRole          (ad, roles)         -> SnotByRole          (to_action_description ad, roles)
-          | SnotInAction        (ad, action)        -> SnotInAction        (to_action_description ad, to_security_action action)
-          | SnotByRoleInAction  (ad, roles, action) -> SnotByRoleInAction  (to_action_description ad, roles, to_security_action action)
-          | StransferredBy      (ad)                -> StransferredBy      (to_action_description ad)
-          | StransferredTo      (ad)                -> StransferredTo      (to_action_description ad)
-          | SnoStorageFail      (action)            -> SnoStorageFail      (to_security_action action)
+          | SonlyByRole         (ad, roles)         -> SonlyByRole         (to_entry_description ad, roles)
+          | SonlyInEntry        (ad, action)        -> SonlyInEntry       (to_entry_description ad, to_security_entry action)
+          | SonlyByRoleInEntry  (ad, roles, action) -> SonlyByRoleInEntry (to_entry_description ad, roles, to_security_entry action)
+          | SnotByRole          (ad, roles)         -> SnotByRole          (to_entry_description ad, roles)
+          | SnotInEntry         (ad, action)        -> SnotInEntry        (to_entry_description ad, to_security_entry action)
+          | SnotByRoleInEntry   (ad, roles, action) -> SnotByRoleInEntry  (to_entry_description ad, roles, to_security_entry action)
+          | StransferredBy      (ad)                -> StransferredBy      (to_entry_description ad)
+          | StransferredTo      (ad)                -> StransferredTo      (to_entry_description ad)
+          | SnoStorageFail      (action)            -> SnoStorageFail      (to_security_entry action)
         in
         M.mk_security_predicate (to_security_node sn.s_node) ~loc:sn.loc
       in
