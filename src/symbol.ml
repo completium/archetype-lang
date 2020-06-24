@@ -17,7 +17,6 @@ let string_of_token = function
   | TRANSFER        -> "TRANSFER"
   | TO              -> "TO"
   | THEN            -> "THEN"
-  | SUBSET          -> "SUBSET"
   | STRING s        -> Printf.sprintf "STRING(%s)" s
   | STATES          -> "STATES"
   | SPECIFICATION   -> "SPECIFICATION"
@@ -132,6 +131,7 @@ let string_of_token = function
   | ARCHETYPE       -> "ARCHETYPE"
   | ANY             -> "ANY"
   | AND             -> "AND"
+  | AGGREGATE       -> "AGGREGATE"
   | ADDRESS s       -> Printf.sprintf "DURATION(%s)" s
   | ADDED           -> "ADDED"
   | ACCEPT_TRANSFER -> "ACCEPT_TRANSFER"
@@ -152,7 +152,6 @@ let string_of_symbol = function
   | X (T T_TRANSFER) -> "transfer"
   | X (T T_TO) -> "to"
   | X (T T_THEN) -> "then"
-  | X (T T_SUBSET) -> "subset"
   | X (T T_STRING) -> "a string"
   | X (T T_STATES) -> "states"
   | X (T T_SPECIFICATION) -> "postcondition"
@@ -268,6 +267,7 @@ let string_of_symbol = function
   | X (T T_ARCHETYPE) -> "archetype"
   | X (T T_ANY) -> "any"
   | X (T T_AND) -> "and"
+  | X (T T_AGGREGATE) -> "aggregate"
   | X (T T_ADDRESS) -> "an address"
   | X (T T_ADDED) -> "added"
   | X (T T_ACCEPT_TRANSFER) -> "accept address"

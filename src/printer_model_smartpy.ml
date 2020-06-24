@@ -48,7 +48,7 @@ let pp_model fmt (model : model) =
 
   let pp_container fmt = function
     | Collection
-    | Subset
+    | Aggregate
     | Partition
     | View  -> Format.fprintf fmt "list"
   in

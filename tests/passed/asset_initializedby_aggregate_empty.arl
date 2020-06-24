@@ -1,0 +1,18 @@
+archetype asset_initializedby_aggregate_empty
+
+asset o_asset {
+  oid: int;
+}
+
+asset my_asset identified by id {
+  id : string;
+  o  : o_asset aggregate;
+} initialized by {
+  {"my_id"; []}
+}
+
+entry exec () {
+  effect {
+    fail ("nothing")
+  }
+}

@@ -47,7 +47,7 @@ type 'i abstract_type =
   | Tymap of 'i
   | Tyasset of 'i
   | Typartition of 'i
-  | Tysubset of 'i
+  | Tyaggregate of 'i
   | Tystate
   | Tyenum of 'i
   | Tyoption of 'i abstract_type
@@ -295,7 +295,7 @@ let rec map_abstract_type (map_i : 'i1 -> 'i2) = function
   | Tymap i       -> Tymap (map_i i)
   | Tyasset i     -> Tyasset (map_i i)
   | Typartition i -> Typartition (map_i i)
-  | Tysubset i    -> Tysubset (map_i i)
+  | Tyaggregate i -> Tyaggregate (map_i i)
   | Tyenum i      -> Tyenum (map_i i)
   | Tyoption t    -> Tyoption (map_abstract_type map_i t)
   | Tylist t      -> Tylist (map_abstract_type map_i t)

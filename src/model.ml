@@ -13,7 +13,7 @@ type currency =
 
 type container =
   | Collection
-  | Subset
+  | Aggregate
   | Partition
   | View
 [@@deriving show {with_path = false}]
@@ -2981,11 +2981,11 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
           in
           match sn with
           | SonlyByRole         (ad, srl)     -> SonlyByRole         (for_entry_description ad, List.map for_security_role srl)
-          | SonlyInEntry       (ad, sa)      -> SonlyInEntry       (for_entry_description ad, for_security_entry sa)
-          | SonlyByRoleInEntry (ad, srl, sa) -> SonlyByRoleInEntry (for_entry_description ad, List.map for_security_role srl, for_security_entry sa)
+          | SonlyInEntry       (ad, sa)       -> SonlyInEntry       (for_entry_description ad, for_security_entry sa)
+          | SonlyByRoleInEntry (ad, srl, sa)  -> SonlyByRoleInEntry (for_entry_description ad, List.map for_security_role srl, for_security_entry sa)
           | SnotByRole          (ad, srl)     -> SnotByRole          (for_entry_description ad, List.map for_security_role srl)
-          | SnotInEntry        (ad, sa)      -> SnotInEntry        (for_entry_description ad, for_security_entry sa)
-          | SnotByRoleInEntry  (ad, srl, sa) -> SnotByRoleInEntry  (for_entry_description ad, List.map for_security_role srl, for_security_entry sa)
+          | SnotInEntry        (ad, sa)       -> SnotInEntry        (for_entry_description ad, for_security_entry sa)
+          | SnotByRoleInEntry  (ad, srl, sa)  -> SnotByRoleInEntry  (for_entry_description ad, List.map for_security_role srl, for_security_entry sa)
           | StransferredBy      (ad)          -> StransferredBy      (for_entry_description ad)
           | StransferredTo      (ad)          -> StransferredTo      (for_entry_description ad)
           | SnoStorageFail      sa            -> SnoStorageFail      (for_security_entry sa)
@@ -3267,7 +3267,7 @@ end = struct
       ) []
 
   let get_containers m : (ident * ident * type_) list =
-    get_containers_internal (function | Tcontainer (Tasset _, (Partition | Subset)) -> true | _ -> false ) m
+    get_containers_internal (function | Tcontainer (Tasset _, (Partition | Aggregate)) -> true | _ -> false ) m
 
   let get_partitions m : (ident * ident * type_) list =
     get_containers_internal (function | Tcontainer (Tasset _, Partition) -> true | _ -> false ) m
@@ -3277,7 +3277,7 @@ end = struct
       let asset = get_asset m asset in
       List.fold_left (fun acc v ->
           match v.type_ with
-          | Tcontainer (Tasset _, (Partition | Subset)) -> true
+          | Tcontainer (Tasset _, (Partition | Aggregate)) -> true
           | _ -> acc
         ) false asset.values
     with
@@ -3288,14 +3288,14 @@ end = struct
       let asset = get_asset m asset in
       List.fold_left (fun acc v ->
           match v.type_ with
-          | Tcontainer (Tasset _, (Partition | Subset)) -> acc @ [unloc v.name, v.type_, v.default]
+          | Tcontainer (Tasset _, (Partition | Aggregate)) -> acc @ [unloc v.name, v.type_, v.default]
           | _ -> acc
         ) [] asset.values
     with
     | Not_found -> []
 
   let dest_container = function
-    | Tcontainer (Tasset p,(Partition | Subset)) -> unloc p
+    | Tcontainer (Tasset p,(Partition | Aggregate)) -> unloc p
     | _ -> assert false
 
   let get_asset_field (m : model) (asset_name, field_name : ident * ident) : ident * type_ * mterm option =

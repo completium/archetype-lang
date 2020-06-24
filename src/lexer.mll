@@ -19,6 +19,7 @@
   let keywords_ =
     [
       "added"               , ADDED          ;
+      "aggregate"           , AGGREGATE      ;
       "and"                 , AND            ;
       "any"                 , ANY            ;
       "archetype"           , ARCHETYPE      ;
@@ -85,7 +86,6 @@
       "sorted"              , SORTED         ;
       "specification"       , SPECIFICATION  ;
       "states"              , STATES         ;
-      "subset"              , SUBSET         ;
       "then"                , THEN           ;
       "to"                  , TO             ;
       "transfer"            , TRANSFER       ;

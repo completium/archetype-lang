@@ -31,6 +31,7 @@
 
 %token ACCEPT_TRANSFER
 %token ADDED
+%token AGGREGATE
 %token AND
 %token ANY
 %token ARCHETYPE
@@ -133,7 +134,6 @@
 %token SORTED
 %token SPECIFICATION
 %token STATES
-%token SUBSET
 %token THEN
 %token TO
 %token TRANSFER
@@ -484,7 +484,7 @@ type_s_unloc:
 | MULT x=type_s { x }
 
 %inline container:
-| SUBSET     { Subset }
+| AGGREGATE  { Aggregate }
 | PARTITION  { Partition }
 
 %inline shadow_asset_fields:

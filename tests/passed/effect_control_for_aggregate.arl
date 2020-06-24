@@ -1,0 +1,28 @@
+archetype effect_control_for_aggregate
+
+asset o_asset identified by oid {
+  oid : int;
+}
+
+asset my_asset identified by id {
+  id     : string;
+  col    : o_asset aggregate;
+} initialized by {
+  {"id0"; []};
+  {"id1"; []};
+  {"id2"; []}
+}
+
+variable res : int = 0
+
+entry exec () {
+  specification {
+    s0: res = 5;
+  }
+  effect {
+    res := 0;
+    for i in my_asset["id0"].col do
+      res += i;
+    done
+  }
+}

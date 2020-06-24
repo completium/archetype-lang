@@ -33,7 +33,7 @@ let to_model (ast : A.model) : M.model =
   let to_container c =
     match c with
     | A.Collection -> M.Collection
-    | A.Subset     -> M.Subset
+    | A.Aggregate     -> M.Aggregate
     | A.Partition  -> M.Partition
     | A.View       -> M.View
     (* | _            -> emit_error (NotSupportedContainer (Format.asprintf "%a@." A.pp_container c)) *)
@@ -197,7 +197,7 @@ let to_model (ast : A.model) : M.model =
 
   let to_ck (fp : M.mterm) : M.container_kind =
     match fp.node, fp.type_ with
-    | M.Mdotassetfield (an, _k, fn), Tcontainer ((Tasset _), (Subset | Partition)) -> M.CKfield (unloc an, unloc fn, fp)
+    | M.Mdotassetfield (an, _k, fn), Tcontainer ((Tasset _), (Aggregate | Partition)) -> M.CKfield (unloc an, unloc fn, fp)
     | _, Tcontainer ((Tasset _), Collection) -> M.CKcoll
     | _ -> M.CKview fp
   in
@@ -611,7 +611,7 @@ let to_model (ast : A.model) : M.model =
             match x.node, x.type_ with
             | _, M.Tlist _ -> M.ICKlist x
             | _, M.Tcontainer ((Tasset an), Collection) -> M.ICKcoll (unloc an)
-            | M.Mdotassetfield (an, _k, fn), M.Tcontainer ((Tasset _), (Subset | Partition)) -> M.ICKfield (unloc an, unloc fn, x)
+            | M.Mdotassetfield (an, _k, fn), M.Tcontainer ((Tasset _), (Aggregate | Partition)) -> M.ICKfield (unloc an, unloc fn, x)
             | _ -> M.ICKview x
           in
           M.Mfor (i, ncol, g body, instr.label)
@@ -719,7 +719,7 @@ let to_model (ast : A.model) : M.model =
         let fe = List.map (fun (id, op, c) -> (id, to_op op, f c)) e in
         begin
           match fp.node, fp.type_ with
-          | Mdotassetfield (_, _k, fn), Tcontainer (Tasset an, (Subset | Partition)) -> M.Maddupdate (unloc an, CKfield (unloc an, unloc fn, fp), fk, fe)
+          | Mdotassetfield (_, _k, fn), Tcontainer (Tasset an, (Aggregate | Partition)) -> M.Maddupdate (unloc an, CKfield (unloc an, unloc fn, fp), fk, fe)
           | _, Tcontainer (Tasset an, Collection)  -> M.Maddupdate (unloc an, CKcoll, fk, fe)
           | _ -> assert false
         end

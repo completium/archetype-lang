@@ -1,0 +1,26 @@
+archetype expr_method_asset_contains_aggregate
+
+asset o_asset identified by oid {
+  oid : int;
+}
+
+asset my_asset identified by id {
+  id     : string;
+  col    : o_asset aggregate;
+} initialized by {
+  {"id0"; []};
+  {"id1"; []};
+  {"id2"; []}
+}
+
+variable res : bool = true
+
+entry exec () {
+  specification {
+    s0: not res;
+  }
+  effect {
+    res := my_asset["id0"].col.contains(0);
+    require (not res)
+  }
+}

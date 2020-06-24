@@ -1,9 +1,0 @@
-archetype no_builtin_for_subset
-
-variable res : int subset = []
-
-entry exec () {
-  effect {
-    res := [1; 2; 3]
-  }
-}

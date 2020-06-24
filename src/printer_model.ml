@@ -30,7 +30,7 @@ let pp_btyp fmt = function
 
 let pp_container fmt = function
   | Collection -> Format.fprintf fmt "collection"
-  | Subset     -> Format.fprintf fmt "subset"
+  | Aggregate  -> Format.fprintf fmt "aggregate"
   | Partition  -> Format.fprintf fmt "partition"
   | View       -> Format.fprintf fmt "view"
 

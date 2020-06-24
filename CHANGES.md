@@ -8,11 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Introduce `container_kind` in model
  - `pack`, `unpack` functions
- - `removeif` for collection, subset and partition
+ - `removeif` for collection, aggregate and partition
 
 ### Changed
- - Replace `collection` by `subset`
- - Replace `list` by `set` container for asset container fields (Subset | Partition).
+ - Replace `collection` by `aggregate`
+ - Replace `list` by `set` container for asset container fields (Aggregate | Partition).
  - Rename `action` by `entry`
 
 ## [0.1.14] - 2020-04-25

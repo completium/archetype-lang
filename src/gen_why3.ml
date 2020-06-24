@@ -82,7 +82,7 @@ let rec map_mtype (t : M.type_) : loc_typ =
       | M.Tenum id                            -> Tyenum (map_lident id)
       | M.Tbuiltin v                          -> map_btype v
       | M.Tcontainer (Tasset id,M.Partition)  -> Typartition (map_lident id)
-      | M.Tcontainer (Tasset id,M.Subset)     -> Tysubset (map_lident id)
+      | M.Tcontainer (Tasset id,M.Aggregate)  -> Tyaggregate (map_lident id)
       | M.Tcontainer (Tasset id,M.View)       -> Tyview (map_lident id)
       | M.Tcontainer (Tasset id,M.Collection) -> Tycoll (map_lident id)
       | M.Tcontainer (t,M.Collection)         -> Tylist (map_mtype t).obj
@@ -957,7 +957,7 @@ let mk_eq_asset _m (r : M.asset) =
       | Tasset a -> Tapp (Tvar ("eq_"^(unloc a)),[f1;f2])
       | Tcontainer (Tasset a, Collection) -> Teqview(unloc a,f1,f2)
       | Tcontainer (Tasset a, Partition) -> Teqview(unloc a,f1,f2)
-      | Tcontainer (Tasset a, Subset) -> Teqview(unloc a,f1,f2)
+      | Tcontainer (Tasset a, Aggregate) -> Teqview(unloc a,f1,f2)
       | Tbuiltin Bbool -> (* a = b is (a && b) || (not a && not b) *)
         Tor (Tpand (f1,f2),Tpand(Tnot f1, Tnot f2))
       | Tbuiltin Brational ->
@@ -2967,7 +2967,7 @@ let mk_preconds m args body : ((loc_term,loc_ident) abstract_formula) list =
               acc
           ) []
       | M.Tcontainer (Tasset n, Collection)
-      | M.Tcontainer (Tasset n, Subset)
+      | M.Tcontainer (Tasset n, Aggregate)
       | M.Tcontainer (Tasset n, Partition) ->
         let n = unloc n in
         M.Utils.get_storage_invariants m (Some n)

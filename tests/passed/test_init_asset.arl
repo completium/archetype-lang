@@ -7,7 +7,7 @@ asset my_asset_simple identified by str {
 asset my_asset identified by id {
   id : string;
   value : int;
-  mysubset : my_asset_simple subset;
+  myaggregate : my_asset_simple aggregate;
 } initialized by {
   { "my_id"; 0; [] }
 }

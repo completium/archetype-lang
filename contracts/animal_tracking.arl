@@ -18,7 +18,7 @@ asset animal_a identified by ida {
 
 asset business_a identified by id {
   id        : string;
-  incomings : animal_a subset;
+  incomings : animal_a aggregate;
 }
 
 asset field_a identified by name {

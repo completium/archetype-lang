@@ -137,14 +137,14 @@ let pp_model_internal fmt (model : model) b =
 
   let pp_container fmt = function
     | Collection -> Format.fprintf fmt "list"
-    | Subset     -> Format.fprintf fmt "set"
+    | Aggregate     -> Format.fprintf fmt "set"
     | Partition  -> Format.fprintf fmt "set"
     | View       -> Format.fprintf fmt "list"
   in
 
   let pp_pretty_container fmt = function
     | Collection -> Format.fprintf fmt "collection"
-    | Subset     -> Format.fprintf fmt "subset"
+    | Aggregate     -> Format.fprintf fmt "Aggregate"
     | Partition  -> Format.fprintf fmt "partition"
     | View       -> Format.fprintf fmt "view"
   in
@@ -159,7 +159,7 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt "%a" pp_id en
     | Tcontract _ -> pp_type fmt (Tbuiltin Baddress)
     | Tbuiltin b -> pp_btyp fmt b
-    | Tcontainer (Tasset an, (Subset | Partition)) -> pp_type fmt (Tset ((Utils.get_asset_key model (unloc an) |> snd)))
+    | Tcontainer (Tasset an, (Aggregate | Partition)) -> pp_type fmt (Tset ((Utils.get_asset_key model (unloc an) |> snd)))
     | Tcontainer (Tasset an, _) -> pp_type fmt (Tlist (Tbuiltin (Utils.get_asset_key model (unloc an) |> snd)))
     | Tlist (Tasset an) -> pp_type fmt (Tlist (Tbuiltin (Utils.get_asset_key model (unloc an) |> snd)))
     | Tcontainer (t, c) ->
@@ -1347,7 +1347,7 @@ let pp_model_internal fmt (model : model) b =
 
     (* formula asset collection methods *)
 
-    | Msubsetof  _ -> emit_error (UnsupportedTerm ("subsetof"))
+    | Msubsetof  _ -> emit_error (UnsupportedTerm ("Aggregateof"))
     | Misempty   _ -> emit_error (UnsupportedTerm ("isempty"))
 
   in
@@ -1668,13 +1668,13 @@ let pp_model_internal fmt (model : model) b =
       let single = Utils.is_asset_single_field model ft in
       let bkey =
         match c with
-        | Subset    -> "b"
+        | Aggregate    -> "b"
         | Partition -> "b." ^ kk
         | _ -> assert false
       in
       let pp_instr, pp_b_arg_type =
         match c with
-        | Subset ->
+        | Aggregate ->
           (fun fmt _ ->
              Format.fprintf fmt
                "if not %s.mem(%s, s.%s_assets) then failwith (\"key does not exist\") else skip;@\n      "

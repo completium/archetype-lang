@@ -76,7 +76,7 @@ let generate_api_storage ?(verif=false) (model : model) : model =
         let _, t, _ = Utils.get_asset_field model (an, fn) in
         let aan, l =
           match t with
-          | Tcontainer (Tasset aan, Subset)    -> unloc aan, []
+          | Tcontainer (Tasset aan, Aggregate) -> unloc aan, []
           | Tcontainer (Tasset aan, Partition) -> unloc aan, [APIAsset (Remove (unloc aan))]
           | _ -> assert false
         in

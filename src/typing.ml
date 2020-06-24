@@ -682,7 +682,7 @@ type mthtyp = [
   | mthstyp
   | `The
   | `Pk
-  | `ThePkForSubset
+  | `ThePkForAggregate
   | `Asset
   | `SubColl
   | `Cmp
@@ -698,33 +698,33 @@ type smethod_ = (mthstyp list, mthstyp) gmethod_
 type method_  = (mthatyp     , mthtyp ) gmethod_
 
 let methods : (string * method_) list =
-  let csp  = [M.Collection; Subset; Partition]  in
-  let cspv = [M.Collection; Subset; Partition; View]  in
-  let sp   = [M.Subset; Partition] in
+  let csp  = [M.Collection; Aggregate; Partition]  in
+  let cspv = [M.Collection; Aggregate; Partition; View]  in
+  let sp   = [M.Aggregate; Partition] in
   let c    = [M.Collection] in
   let cp   = [M.Collection; Partition] in
 
   let mk mth_name mth_place mth_purity mth_totality mth_sig =
     { mth_name; mth_place; mth_purity; mth_totality; mth_sig; }
   in [
-    ("isempty"     , mk M.Cisempty      `OnlyFormula (`Pure       ) `Total   (`Fixed [                ], Some (`T M.vtbool)));
-    ("get"         , mk M.Cget          `OnlyFormula (`Pure       ) `Partial (`Fixed [`Pk             ], Some `The));
-    ("subsetof"    , mk M.Csubsetof     `OnlyFormula (`Pure       ) `Total   (`Fixed [`SubColl        ], Some (`T M.vtbool)));
-    ("add"         , mk M.Cadd          `Both        (`Effect csp ) `Total   (`Fixed [`ThePkForSubset ], None));
-    ("remove"      , mk M.Cremove       `Both        (`Effect csp ) `Total   (`Fixed [`Pk             ], None));
-    ("clear"       , mk M.Cclear        `Both        (`Effect cspv) `Total   (`Fixed [                ], None));
-    ("removeif"    , mk M.Cremoveif     `Both        (`Effect csp ) `Total   (`Fixed [`Pred true      ], None));
-    ("removeall"   , mk M.Cremoveall    `Both        (`Effect  sp ) `Total   (`Fixed [                ], None));
-    ("update"      , mk M.Cupdate       `Both        (`Effect c   ) `Total   (`Fixed [`Pk; `Ef true   ], None));
-    ("addupdate"   , mk M.Caddupdate    `Both        (`Effect cp  ) `Total   (`Fixed [`Pk; `Ef false  ], None));
-    ("contains"    , mk M.Ccontains     `Both        (`Pure       ) `Total   (`Fixed [`Pk             ], Some (`T M.vtbool)));
-    ("nth"         , mk M.Cnth          `Both        (`Pure       ) `Partial (`Fixed [`T M.vtint      ], Some (`Pk)));
-    ("select"      , mk M.Cselect       `Both        (`Pure       ) `Total   (`Fixed [`Pred true      ], Some (`SubColl)));
-    ("sort"        , mk M.Csort         `Both        (`Pure       ) `Total   (`Multi (`Cmp            ), Some (`SubColl)));
-    ("count"       , mk M.Ccount        `Both        (`Pure       ) `Total   (`Fixed [                ], Some (`T M.vtint)));
-    ("sum"         , mk M.Csum          `Both        (`Pure       ) `Total   (`Fixed [`RExpr false    ], Some (`Ref 0)));
-    ("head"        , mk M.Chead         `Both        (`Pure       ) `Total   (`Fixed [`T M.vtint      ], Some (`SubColl)));
-    ("tail"        , mk M.Ctail         `Both        (`Pure       ) `Total   (`Fixed [`T M.vtint      ], Some (`SubColl)));
+    ("isempty"     , mk M.Cisempty      `OnlyFormula (`Pure       ) `Total   (`Fixed [                   ], Some (`T M.vtbool)));
+    ("get"         , mk M.Cget          `OnlyFormula (`Pure       ) `Partial (`Fixed [`Pk                ], Some `The));
+    ("subsetof"    , mk M.Csubsetof     `OnlyFormula (`Pure       ) `Total   (`Fixed [`SubColl           ], Some (`T M.vtbool)));
+    ("add"         , mk M.Cadd          `Both        (`Effect csp ) `Total   (`Fixed [`ThePkForAggregate ], None));
+    ("remove"      , mk M.Cremove       `Both        (`Effect csp ) `Total   (`Fixed [`Pk                ], None));
+    ("clear"       , mk M.Cclear        `Both        (`Effect cspv) `Total   (`Fixed [                   ], None));
+    ("removeif"    , mk M.Cremoveif     `Both        (`Effect csp ) `Total   (`Fixed [`Pred true         ], None));
+    ("removeall"   , mk M.Cremoveall    `Both        (`Effect  sp ) `Total   (`Fixed [                   ], None));
+    ("update"      , mk M.Cupdate       `Both        (`Effect c   ) `Total   (`Fixed [`Pk; `Ef true      ], None));
+    ("addupdate"   , mk M.Caddupdate    `Both        (`Effect cp  ) `Total   (`Fixed [`Pk; `Ef false     ], None));
+    ("contains"    , mk M.Ccontains     `Both        (`Pure       ) `Total   (`Fixed [`Pk                ], Some (`T M.vtbool)));
+    ("nth"         , mk M.Cnth          `Both        (`Pure       ) `Partial (`Fixed [`T M.vtint         ], Some (`Pk)));
+    ("select"      , mk M.Cselect       `Both        (`Pure       ) `Total   (`Fixed [`Pred true         ], Some (`SubColl)));
+    ("sort"        , mk M.Csort         `Both        (`Pure       ) `Total   (`Multi (`Cmp               ), Some (`SubColl)));
+    ("count"       , mk M.Ccount        `Both        (`Pure       ) `Total   (`Fixed [                   ], Some (`T M.vtint)));
+    ("sum"         , mk M.Csum          `Both        (`Pure       ) `Total   (`Fixed [`RExpr false       ], Some (`Ref 0)));
+    ("head"        , mk M.Chead         `Both        (`Pure       ) `Total   (`Fixed [`T M.vtint         ], Some (`SubColl)));
+    ("tail"        , mk M.Ctail         `Both        (`Pure       ) `Total   (`Fixed [`T M.vtint         ], Some (`SubColl)));
   ]
 
 let methods = Mid.of_list methods
@@ -1456,10 +1456,10 @@ let select_operator env ?(asset = false) loc (op, tys) =
             -> [{ osl_sig = tys; osl_ret = rty }]
 
           | true, PT.Arith PT.Plus,
-            [Tcontainer (Tasset aty, Subset) as rty; Tlist sty]
+            [Tcontainer (Tasset aty, Aggregate) as rty; Tlist sty]
 
           | true, PT.Arith PT.Minus,
-            [Tcontainer (Tasset aty, (Subset | Partition)) as rty; Tlist sty] ->
+            [Tcontainer (Tasset aty, (Aggregate | Partition)) as rty; Tlist sty] ->
 
             let asset = Env.Asset.get env (unloc aty) in
             let pk    = Option.get (get_field (unloc asset.as_pk) asset) in
@@ -1526,7 +1526,7 @@ let rec valid_var_or_arg_type (ty : M.ptyp) =
 
 (* -------------------------------------------------------------------- *)
 let for_container (_ : env) = function
-  | PT.Subset     -> M.Subset
+  | PT.Aggregate     -> M.Aggregate
   | PT.Partition  -> M.Partition
 
 (* -------------------------------------------------------------------- *)
@@ -2731,9 +2731,9 @@ and for_gen_method_call mode env theloc (the, m, args)
       | `The ->
         M.AExpr (for_xexpr mode env ~ety:(Tasset asset.as_name) arg)
 
-      | `ThePkForSubset -> begin
+      | `ThePkForAggregate -> begin
           match the.type_ with
-          | Some (M.Tcontainer(_, Subset)) ->  doarg arg `Pk
+          | Some (M.Tcontainer(_, Aggregate)) ->  doarg arg `Pk
           | _ -> doarg arg `The
         end
 
@@ -2837,7 +2837,7 @@ and for_arg_effect
           | Some { fd_type = fty; fd_ghost = fghost } ->
             let rfty =
               match fty with
-              | M.Tcontainer (M.Tasset subasset, M.Subset) -> begin
+              | M.Tcontainer (M.Tasset subasset, M.Aggregate) -> begin
                   let subasset = Env.Asset.get env (unloc subasset) in
                   match get_field (unloc subasset.as_pk) subasset with
                   | Some fd -> M.Tlist fd.fd_type

@@ -23,7 +23,7 @@ asset vote {
   vid : string;
   vcandidate : address;
   vcount : int = 0; // no error if names 'count'
-  voters : voter subset = [];
+  voters : voter aggregate = [];
 } with {
   i0 : vcount > 0;
 }

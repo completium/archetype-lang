@@ -1,0 +1,9 @@
+archetype no_builtin_for_aggregate
+
+variable res : int aggregate = []
+
+entry exec () {
+  effect {
+    res := [1; 2; 3]
+  }
+}
