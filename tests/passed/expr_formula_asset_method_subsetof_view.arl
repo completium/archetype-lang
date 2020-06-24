@@ -1,4 +1,4 @@
-archetype expr_formula_asset_method_subsetof
+archetype expr_formula_asset_method_subsetof_view
 
 asset my_asset identified by id {
   id : string;
@@ -12,7 +12,7 @@ asset my_asset identified by id {
 entry exec () {
 
   specification {
-    s: my_asset.subsetof(my_asset);
+    s: my_asset.select(the.id <> "").subsetof(my_asset);
   }
 
   effect {

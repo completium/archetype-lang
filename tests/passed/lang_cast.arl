@@ -1,4 +1,4 @@
-archetype lang_arith
+archetype lang_cast
 
 entry exec () {
   effect {

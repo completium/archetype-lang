@@ -1,0 +1,21 @@
+archetype expr_formula_asset_method_subsetof_collection
+
+asset my_asset identified by id {
+  id : string;
+  value : int;
+} initialized by {
+  {"id0"; 0};
+  {"id1"; 1};
+  {"id2"; 2}
+}
+
+entry exec () {
+
+  specification {
+    s: my_asset.subsetof(my_asset);
+  }
+
+  effect {
+    require (true)
+  }
+}

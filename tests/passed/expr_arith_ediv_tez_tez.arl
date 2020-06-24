@@ -1,4 +1,4 @@
-archetype expr_arith_ediv_dur_dur
+archetype expr_arith_ediv_tez_tez
 
 variable res : int = 0
 

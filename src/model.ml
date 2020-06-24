@@ -321,7 +321,7 @@ type ('id, 'term) mterm_node  =
   | Msetiterated      of 'term iter_container_kind_gen
   | Msettoiterate     of 'term iter_container_kind_gen
   (* formula asset collection methods *)
-  | Msubsetof         of ident * 'term * 'term
+  | Msubsetof         of ident * 'term container_kind_gen * 'term
   | Misempty          of ident * 'term
 [@@deriving show {with_path = false}]
 
@@ -1153,7 +1153,7 @@ let cmp_mterm_node
     | Msetiterated e1, Msetiterated  e2                                                -> cmp_iter_container_kind e1 e2
     | Msettoiterate e1, Msettoiterate e2                                               -> cmp_iter_container_kind e1 e2
     (* formula asset collection methods *)
-    | Msubsetof (an1, c1, i1), Msubsetof (an2, c2, i2)                                 -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
+    | Msubsetof (an1, c1, i1), Msubsetof (an2, c2, i2)                                 -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && cmp i1 i2
     | Misempty (l1, r1), Misempty (l2, r2)                                             -> cmp_ident l1 l2 && cmp r1 r2
     (* *)
     | _ -> false
@@ -1448,7 +1448,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Msetiterated  e                -> Msetiterated  (map_iter_container_kind fi f e)
   | Msettoiterate e                -> Msettoiterate (map_iter_container_kind fi f e)
   (* formula asset collection methods *)
-  | Msubsetof (an, c, i)           -> Msubsetof (fi an, f c, f i)
+  | Msubsetof (an, c, i)           -> Msubsetof (fi an, map_container_kind fi f c, f i)
   | Misempty (an, r)               -> Misempty  (fi an, f r)
 
 let map_gen_mterm g f (i : 'id mterm_gen) : 'id mterm_gen =
@@ -1776,7 +1776,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Msetiterated  e                       -> fold_iter_container_kind f accu e
   | Msettoiterate e                       -> fold_iter_container_kind f accu e
   (* formula asset collection methods *)
-  | Msubsetof (_, c, i)                   -> f (f accu c) i
+  | Msubsetof (_, c, i)                   -> f (fold_container_kind f accu c) i
   | Misempty  (_, r)                      -> f accu r
 
 let fold_map_term_list f acc l : 'term list * 'a =
@@ -2555,7 +2555,7 @@ let fold_map_term
   (* formula asset collection methods *)
 
   | Msubsetof (an, c, i) ->
-    let ce, ca = f accu c in
+    let ce, ca = fold_map_container_kind f accu c in
     let ie, ia = f ca i in
     g (Msubsetof (an, ce, ie)), ia
 

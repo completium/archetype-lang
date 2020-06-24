@@ -516,6 +516,12 @@ module AssetCollection
   predicate subset (c1 c2 : collection) = F.fsubset c1.content c2.content
 
   (* ------------------------------------------------------------------------ *)
+  predicate vsubset (v1 v2 : view) = forall k. vmem k v1 -> vmem k v2
+
+  (* ------------------------------------------------------------------------ *)
+  predicate csubset (c1 : collection) (v2 : view) = forall a. mem a c1 -> vmem (fkey a) v2
+
+  (* ------------------------------------------------------------------------ *)
   function diff (c1 c2 : collection) : collection
   = mk (F.fsetD c1.content c2.content)
 

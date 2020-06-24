@@ -405,7 +405,7 @@ let to_model (ast : A.model) : M.model =
         let fp = f p in
         let fq = f q in
         let asset_name = extract_asset_name fp in
-        M.Msubsetof (asset_name, fp, fq)
+        M.Msubsetof (asset_name, to_ck fp, fq)
 
       | A.Pcall (Some p, A.Cconst (A.Cisempty), []) when is_asset_container p ->
         let fp = f p in

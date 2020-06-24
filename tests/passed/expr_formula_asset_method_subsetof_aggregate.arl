@@ -1,8 +1,7 @@
-archetype effect_method_asset_removeif_aggregate
+archetype expr_formula_asset_method_subsetof_aggregate
 
 asset o_asset identified by oid {
   oid : int;
-  val : int = 0;
 }
 
 asset my_asset identified by id {
@@ -14,8 +13,13 @@ asset my_asset identified by id {
   {"id2"; []}
 }
 
-entry exec () {
+entry exec (k : string) {
+
+  specification {
+    s: let some a = my_asset[k] in a.col.subsetof(o_asset) otherwise true;
+  }
+
   effect {
-    my_asset["id0"].col.removeif(the.val = 0)
+    require (true)
   }
 }

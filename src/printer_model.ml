@@ -1025,7 +1025,7 @@ let pp_mterm fmt (mt : mterm) =
       let pp fmt (an, c, i) =
         Format.fprintf fmt "subset_%a (%a, %a)"
           pp_str an
-          f c
+          (pp_container_kind f) c
           f i
       in
       pp fmt (an, c, i)
