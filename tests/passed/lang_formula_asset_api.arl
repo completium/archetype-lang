@@ -26,10 +26,9 @@ entry exec () {
 
     (* formula asset collection *)
     s1: before.my_asset.isempty();       (* Msetbefore *)
-    s2: at(lbl).my_asset.isempty();      (* Msetat *)
-    s3: unmoved.my_asset.isempty();      (* Msetunmoved *)
-    s4: added.my_asset.isempty();        (* Msetadded *)
-    s5: removed.my_asset.isempty();      (* Msetremoved *)
+    s2: unmoved.my_asset.isempty();      (* Msetunmoved *)
+    s3: added.my_asset.isempty();        (* Msetadded *)
+    s4: removed.my_asset.isempty();      (* Msetremoved *)
 
     (* formula asset collection methods *)
     f01: let some a = my_asset.get("id0") in true otherwise false;
@@ -44,19 +43,35 @@ entry exec () {
     f12: my_asset.head(2).isempty();
     f13: my_asset.tail(2).isempty();
     f14: before.n = 0;
-    f15: at(lbl).n = 0;
   }
 
   effect {
     my_asset.add({"id3"; 3});
-    label lbl;
     my_asset.add({"id4"; 4});
     require(n = 0)
   }
 }
 
-
 entry exec2 () {
+  specification {
+    postcondition e0 {
+      true
+      invariant for L {
+        at(lbl).x = 0
+      }
+    }
+  }
+  effect {
+    var x = 0;
+    label lbl;
+    for:L i in my_asset do
+      ()
+    done;
+    require(x = 0)
+  }
+}
+
+entry exec3 () {
   specification {
     postcondition p1 {
       true
