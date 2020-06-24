@@ -244,6 +244,7 @@ type error_desc =
   | AssetExpected                      of M.ptyp
   | AssetWithoutFields
   | BeforeOrLabelInExpr
+  | LabelInNonInvariant
   | BeforeIrrelevant                   of [`Local | `State]
   | BindingInExpr
   | CannotAssignArgument               of ident
@@ -404,6 +405,7 @@ let pp_error_desc fmt e =
   | BeforeIrrelevant `Local            -> pp "The `before' modifier cannot be used on local variables"
   | BeforeIrrelevant `State            -> pp "The `before' modifier cannot be used on state constructors"
   | BeforeOrLabelInExpr                -> pp "The `before' or label modifiers can only be used in formulas"
+  | LabelInNonInvariant                -> pp "The label modifier can only be used in invariants"
   | BindingInExpr                      -> pp "Binding in expression"
   | CannotAssignArgument  x            -> pp "Cannot assign argument `%s'" x
   | CannotAssignLoopIndex x            -> pp "Cannot assign loop index `%s'" x
@@ -1699,17 +1701,24 @@ let for_literal (_env : env) (topv : PT.literal loced) : M.bval =
 
 (* -------------------------------------------------------------------- *)
 type imode_t = [`Ghost | `Concrete]
+type ekind   = [`Expr of imode_t | `Formula of bool]
 
 type emode_t = {
-  em_kind : [`Expr of imode_t | `Formula];
+  em_kind : ekind;
   em_pred : bool;
 }
 
-let is_expr_mode (kind : [`Expr of imode_t | `Formula]) =
+let is_expr_kind (kind : ekind) =
   match kind with `Expr _ -> true | _ -> false
 
-let expr_mode imode = { em_kind = `Expr imode; em_pred = false; }
-let form_mode       = { em_kind = `Formula   ; em_pred = false; }
+let is_form_kind (kind : ekind) =
+  match kind with `Formula _ -> true | _ -> false
+
+let expr_mode imode =
+  { em_kind = `Expr imode; em_pred = false; }
+
+let form_mode (invariant : bool) =
+  { em_kind = `Formula  invariant ; em_pred = false; }
 
 let rec for_xexpr
     (mode : emode_t) ?autoview ?(capture = `Yes None)
@@ -1749,10 +1758,19 @@ let rec for_xexpr
         in
 
         let vt =
-          let hasvt = Option.is_some pvt in
-          if hasvt && mode.em_kind <> `Formula then begin
-            Env.emit_error env (loc tope, BeforeOrLabelInExpr); M.VTnone
-          end else vt in
+          match vt, mode.em_kind with
+          | M.VTnone  , _
+          | M.VTat _  , `Formula true
+          | M.VTbefore, `Formula _    -> vt
+
+          | _, `Expr _ ->
+              Env.emit_error env (loc tope, BeforeOrLabelInExpr);
+              M.VTnone
+
+          | _, `Formula _ ->
+              Env.emit_error env (loc tope, LabelInNonInvariant);
+              M.VTnone
+        in
 
         let lk = Env.lookup_entry subenv (unloc x) in
 
@@ -1762,7 +1780,7 @@ let rec for_xexpr
             Env.emit_error env (loc tope, VSetOnNonAsset)
         end;
 
-        if is_expr_mode mode.em_kind && Option.is_some vset then
+        if is_expr_kind mode.em_kind && Option.is_some vset then
           Env.emit_error env (loc tope, VSetInExpr);
 
         match lk with
@@ -2026,8 +2044,8 @@ let rec for_xexpr
         let aoutty = Option.map (fun (asset, _) -> M.Tasset asset.as_name) asset in
         let aoutty = aoutty |> Option.map (fun aoutty ->
             match mode.em_kind with
-            | `Expr _  -> aoutty
-            | `Formula -> M.Toption aoutty)in
+            | `Expr    _ -> aoutty
+            | `Formula _ -> M.Toption aoutty)in
 
         mk_sp
           aoutty
@@ -2054,7 +2072,7 @@ let rec for_xexpr
               Env.emit_error env (loc x, err); bailout ()
 
             | Some { fd_type = fty; fd_ghost = ghost } ->
-              if ghost && mode.em_kind <> `Formula then
+              if ghost && not (is_form_kind mode.em_kind) then
                 Env.emit_error env (loc x, InvalidShadowFieldAccess);
               mk_sp (Some fty) (M.Pdot (e, x))
           end
@@ -2137,7 +2155,7 @@ let rec for_xexpr
       end
 
     | Eapp (Fident f, args) when Env.Predicate.exists env (unloc f) ->
-      if mode.em_kind <> `Formula then begin
+      if not (is_form_kind mode.em_kind) then begin
         Env.emit_error env (loc tope, PredicateCallInExpr);
         bailout ()
       end;
@@ -2207,7 +2225,7 @@ let rec for_xexpr
 
             let rty =
               match totality, mode.em_kind with
-              | `Partial, `Formula -> M.Toption rty
+              | `Partial, `Formula _ -> M.Toption rty
               | _, _ -> rty in
 
             if unloc f <> name then raise E.Reject;
@@ -2278,7 +2296,7 @@ let rec for_xexpr
         end;
 
         begin match place, mode.em_kind with
-          | `OnlyExec, `Formula ->
+          | `OnlyExec, `Formula _ ->
             Env.emit_error env (loc tope, InvalidMethodInFormula)
           | `OnlyFormula, (`Expr _) ->
             Env.emit_error env (loc tope, InvalidMethodInExec)
@@ -2287,7 +2305,7 @@ let rec for_xexpr
         end;
 
         begin match asset, purity, mode.em_kind with
-          | _, `Effect _, `Formula ->
+          | _, `Effect _, `Formula _ ->
             Env.emit_error env (loc tope, UnpureInFormula)
           | Some (_, ctn), `Effect allowed, _ when not (List.mem ctn allowed) ->
             Env.emit_error env (loc tope, InvalidEffectForCtn (ctn, allowed))
@@ -2297,7 +2315,7 @@ let rec for_xexpr
 
         let rty =
           match totality, mode.em_kind with
-          | `Partial, `Formula ->
+          | `Partial, `Formula _ ->
             Option.map (fun x -> M.Toption x) rty
           | _, _ ->
             rty in
@@ -2381,7 +2399,7 @@ let rec for_xexpr
       end
 
     | Equantifier (qt, x, xty, body) -> begin
-        if mode.em_kind <> `Formula then begin
+        if not (is_form_kind mode.em_kind) then begin
           Env.emit_error env (loc tope, BindingInExpr);
           bailout ()
         end else
@@ -2899,8 +2917,8 @@ and for_assign_expr ?autoview ?(asset = false) mode env orloc (op, lfty, rfty) e
                 cast_expr ?autoview env (Some (List.last sig_.osl_sig)) e))))
 
 (* -------------------------------------------------------------------- *)
-and for_formula (env : env) (topf : PT.expr) : M.pterm =
-  let e = for_xexpr form_mode ~ety:(M.Tbuiltin M.VTbool) env topf in
+and for_formula ?(invariant = false) (env : env) (topf : PT.expr) : M.pterm =
+  let e = for_xexpr (form_mode invariant) ~ety:(M.Tbuiltin M.VTbool) env topf in
   Option.iter (fun ety ->
       if ety <> M.vtbool then
         Env.emit_error env (loc topf, FormulaExpected))
@@ -2913,7 +2931,7 @@ and for_action_description (env : env) (sa : PT.security_arg) : M.action_descrip
     M.ADAny
 
   | Sapp (act, [{ pldesc = PT.Sident asset }]) -> begin
-      let mode  = { em_kind = `Formula; em_pred = false; } in
+      let mode  = { em_kind = `Formula false; em_pred = false; } in
       let asset = mkloc (loc asset) (PT.Eterm ((None, None), asset)) in
       let asset = for_asset_collection_expr mode env (`Parsed asset) in
 
@@ -3479,7 +3497,7 @@ let for_specification_item
           | Some (_, _) ->
             Env.emit_error env (loc lbl, NonLoopLabel (unloc lbl));
             env
-        in (lbl, List.map (for_formula env0) linvs) in
+        in (lbl, List.map (for_formula ~invariant:true env0) linvs) in
       let f    = for_formula poenv f in
       let invs = List.map for_inv invs in
       (env, poenv), [`Postcondition (x, f, invs, uses)]
