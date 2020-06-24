@@ -1,0 +1,26 @@
+archetype state_in_effect
+
+states =
+  | S1
+  | S2
+  | S3
+  | S4
+  | S5
+
+variable res : int = 0
+
+entry exec () {
+  specification {
+    s0: res = 1;
+  }
+  effect {
+    if (state = S2)
+    then ();
+
+    match state with
+    | S1 | S2 -> res := 0
+    | S3 -> res := 1
+    | _ -> res := 2
+    end
+  }
+}
