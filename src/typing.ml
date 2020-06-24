@@ -246,6 +246,7 @@ type error_desc =
   | BeforeOrLabelInExpr
   | BeforeIrrelevant                   of [`Local | `State]
   | BindingInExpr
+  | CannotAssignArgument               of ident
   | CannotAssignLoopIndex              of ident
   | CannotCaptureLocal
   | CannotInferAnonRecord
@@ -404,6 +405,7 @@ let pp_error_desc fmt e =
   | BeforeIrrelevant `State            -> pp "The `before' modifier cannot be used on state constructors"
   | BeforeOrLabelInExpr                -> pp "The `before' or label modifiers can only be used in formulas"
   | BindingInExpr                      -> pp "Binding in expression"
+  | CannotAssignArgument  x            -> pp "Cannot assign argument `%s'" x
   | CannotAssignLoopIndex x            -> pp "Cannot assign loop index `%s'" x
   | CannotCaptureLocal                 -> pp "Cannot capture local variables in this context"
   | CannotInferAnonRecord              -> pp "Cannot infer anonymous record"
@@ -928,7 +930,7 @@ module Env : sig
     | `Context     of assetdecl * ident option
   ]
 
-  and locvarkind = [`Standard | `LoopIndex]
+  and locvarkind = [`Standard | `Argument | `LoopIndex]
 
   type ecallback = error -> unit
 
@@ -1045,7 +1047,7 @@ end = struct
     | `Context     of assetdecl * ident option
   ]
 
-  and locvarkind = [`Standard | `LoopIndex]
+  and locvarkind = [`Standard | `Argument | `LoopIndex]
 
   and t = {
     env_error    : ecallback;
@@ -3035,7 +3037,7 @@ let for_arg_decl ?(can_asset = false) (env : env) ((x, ty, _) : PT.lident_typ) =
 
   match b, ty with
   | true, Some ty ->
-    (Env.Local.push env (x, ty), Some (x, ty))
+    (Env.Local.push ~kind:`Argument env (x, ty), Some (x, ty))
 
   | _, _ ->
     (env, None)
@@ -3053,6 +3055,9 @@ let for_lvalue kind (env : env) (e : PT.expr) : (M.lvalue * M.ptyp) option =
           match kind with
           | `LoopIndex ->
             Env.emit_error env (loc e, CannotAssignLoopIndex (unloc x));
+            None
+          | `Argument ->
+            Env.emit_error env (loc e, CannotAssignArgument (unloc x));
             None
           | `Standard ->
             Some (`Var x, xty)
