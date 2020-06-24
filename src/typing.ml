@@ -708,7 +708,6 @@ let methods : (string * method_) list =
     { mth_name; mth_place; mth_purity; mth_totality; mth_sig; }
   in [
     ("isempty"     , mk M.Cisempty      `OnlyFormula (`Pure       ) `Total   (`Fixed [                   ], Some (`T M.vtbool)));
-    ("get"         , mk M.Cget          `OnlyFormula (`Pure       ) `Partial (`Fixed [`Pk                ], Some `The));
     ("subsetof"    , mk M.Csubsetof     `OnlyFormula (`Pure       ) `Total   (`Fixed [`SubColl           ], Some (`T M.vtbool)));
     ("add"         , mk M.Cadd          `Both        (`Effect csp ) `Total   (`Fixed [`ThePkForAggregate ], None));
     ("remove"      , mk M.Cremove       `Both        (`Effect csp ) `Total   (`Fixed [`Pk                ], None));

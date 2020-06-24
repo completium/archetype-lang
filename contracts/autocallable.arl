@@ -96,7 +96,7 @@ function compute_expected (d : date) : tez {
       forall f in fixing,
         (* retrieving the first element of etrigger *)
         let some key_efirst = etrigger.nth(0) in
-        let some efirst = etrigger.get(key_efirst) in
+        let some efirst = etrigger[key_efirst] in
           if i.iobservation = f.fobservation and i.iobservation <= efirst.eobservation
           then (* barrier condition *)
                     f.bac >= bac_strike
@@ -117,7 +117,7 @@ function compute_expected (d : date) : tez {
           ftrigger.value * nominal
           otherwise
           (* redemption *)
-          (let some f = fixing.get(gredemption) in
+          (let some f = fixing[gredemption] in
           if     f.bac >= bac_strike
              and f.sg  >= sg_strike
              and f.ubs >= ubs_strike
@@ -133,7 +133,7 @@ function compute_expected (d : date) : tez {
 
           otherwise
           (* redemption *)
-          let some f = fixing.get(gredemption) in
+          let some f = fixing[gredemption] in
           if     f.bac >= bac_strike
              and f.sg  >= sg_strike
              and f.ubs >= ubs_strike

@@ -89,7 +89,7 @@ specification {
   contract invariant s5 {
     forall w in winner,
            forall b in ballot,
-             let some wb = ballot.get(w.winvalue) in
+             let some wb = ballot[w.winvalue] in
              b.nbvotes <= wb.nbvotes
              otherwise false
   }

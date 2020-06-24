@@ -31,7 +31,7 @@ entry exec () {
     s4: removed.my_asset.isempty();      (* Msetremoved *)
 
     (* formula asset collection methods *)
-    f01: let some a = my_asset.get("id0") in true otherwise false;
+    f01: let some a = my_asset["id0"] in true otherwise false;
     f02: my_asset.subsetof(my_asset);
     f03: my_asset.isempty();
     f04: my_asset.select(the.value > 0).isempty();

@@ -18,7 +18,7 @@ entry exec (ow : address) {
     specification {
 
       assert a0 {
-        let some p = before.owner.get(ow) in
+        let some p = before.owner[ow] in
         let some pp = owner[ow] in
           pp.addr = p.addr
         otherwise true
@@ -28,7 +28,7 @@ entry exec (ow : address) {
       postcondition p0 {
           true
           invariant for loop {
-              let some before_o = before.owner.get(ow) in
+              let some before_o = before.owner[ow] in
               let some pp = owner[ow] in
                   pp.miles.sum(the.quantity) = before_o.miles.sum(the.quantity)
               otherwise true

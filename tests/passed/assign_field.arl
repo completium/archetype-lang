@@ -9,7 +9,7 @@ asset myasset identified by id {
 
 entry exec () {
   specification {
-    s0: let some v = myasset.get(0) in v.str = "mystr" otherwise false;
+    s0: let some v = myasset[0] in v.str = "mystr" otherwise false;
   }
   effect {
     myasset[0].str := "mystr";

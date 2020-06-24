@@ -20,8 +20,8 @@ entry add (ow : role, value : int) {
 entry consume (ow : role, value : int) {
   specification {
     postcondition s1 {
-      let some ba = before.account.get(ow) in
-      let some a = account.get(ow) in
+      let some ba = before.account[ow] in
+      let some a = account[ow] in
       ba.amount = a.amount + value
       otherwise true
       otherwise true
