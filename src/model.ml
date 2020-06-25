@@ -1233,6 +1233,16 @@ let cmp_api_item_node (a1 : api_storage_node) (a2 : api_storage_node) : bool =
   | APIInternal i1, APIInternal i2 -> cmp_api_internal i1 i2
   | _ -> false
 
+let cmp_api_loc x1 x2 =
+  match x1, x2 with
+  | OnlyFormula, OnlyFormula
+  | OnlyExec, OnlyExec
+  | ExecFormula, ExecFormula -> true
+  | _, _ -> false
+
+let cmp_api_storage (c1 : api_storage) (c2 : api_storage) =
+  cmp_api_item_node c1.node_item c2.node_item && cmp_api_loc c1.api_loc c2.api_loc
+
 (* -------------------------------------------------------------------- *)
 
 let cmp_api_verif (v1 : api_verif) (v2 : api_verif) : bool =

@@ -724,7 +724,7 @@ let mk_cremoveif m asset test mlw_test only_formula args =
 
           (Tapp (Tvar "internal_removeif",
                  [Tapp(Tdoti(String.capitalize_ascii asset,"internal_list_to_view"),
-                  [Tcontent (asset, Tvar "c")])]))
+                       [Tcontent (asset, Tvar "c")])]))
         )
       end;
     } in

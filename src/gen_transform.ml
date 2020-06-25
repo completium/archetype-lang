@@ -2662,3 +2662,22 @@ let optimize (model : model) =
     | _ -> map_mterm (aux ctx) mt
   in
   Model.map_mterm_model aux model
+
+let filter_api_storage (model : model) =
+  let filter (l : api_storage list) =
+    let cmp c1 c2 =
+      match c1.node_item, c2.node_item with
+      | APIAsset (Sum (an1, Coll , t1, p1)), APIAsset (Sum (an2, View, t2, p2)) -> cmp_ident an1 an2 && cmp_type t1 t2 && cmp_mterm p1 p2
+      | APIAsset (Sum (an1, View , t1, p1)), APIAsset (Sum (an2, Coll, t2, p2)) -> cmp_ident an1 an2 && cmp_type t1 t2 && cmp_mterm p1 p2
+      | _, _ -> cmp_api_item_node c1.node_item c2.node_item
+    in
+
+    List.fold_right (fun (x : api_storage) accu ->
+        if List.exists (cmp x) accu
+        then accu
+        else x::accu) l []
+  in
+
+  { model with
+    api_items = filter model.api_items
+  }

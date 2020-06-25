@@ -222,6 +222,7 @@ let generate_target model =
     (* |> replace_instr_verif *)
     |> optimize
     |> generate_api_storage ~verif:true
+    |> filter_api_storage
     |> output
 
   | _ -> ()
