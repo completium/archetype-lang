@@ -2146,11 +2146,17 @@ let mk_vnth_asset asset = Dfun {
               ])
   }
 
-let exists_asset a body =
-  Texists ([["asset"],Tyasset a],
+let gen_exists_asset at asset_id asset a body =
+  Texists ([[asset],Tyasset a],
            Tand (
-             Teq(Tyint, Tget (a,mk_ac a, Tvar "asset_id"),Tsome (Tvar "asset")),
+             Teq(Tyint, Tget (a,begin match at with | `Curr -> mk_ac a | `Old -> mk_ac_old a end, Tvar asset_id),Tsome (Tvar asset)),
              body))
+
+let exists_asset = gen_exists_asset `Curr "asset_id" "asset"
+
+let exists_old_asset = gen_exists_asset `Old "asset_id" "old_asset"
+
+let exists_rm_asset = gen_exists_asset `Curr "rm_asset_id" "rm_asset"
 
 let mk_set_sum_ensures m a =
   List.fold_left (fun acc idx ->
@@ -2636,9 +2642,9 @@ let mk_add_field_ensures m partition a _ak field prefix adda elem =
       acc @ [{
           id = "add_" ^ adda ^ "_field_sum_post";
           form = exists_asset a (Teq (Tyint,
-                                      mk_sum_from_col adda idx assetcollfield,
+                                      mk_sum adda idx collfield (mk_ac adda),
                                       Tplus (Tyint,
-                                             mk_sum_from_col adda idx oldassetcollfield,
+                                             mk_sum adda idx collfield (mk_ac_old adda),
                                              Tapp(
                                                Tvar (mk_get_sum_value_id adda idx),
                                                [Tvar elem]))))
@@ -2720,8 +2726,7 @@ let mk_add_field m part a ak field adda addak : decl =
 
 let mk_rm_field_ensures m part asset elem _ak field prefix rm_asset rm_elem =
   let collfield = Tapp (Tvar field, [Tvar ("asset")]) in
-  let assetcollfield = collfield in
-  let oldassetcollfield = Ttocoll (rm_asset,collfield,mk_ac_old rm_asset) in (* TODO *)
+  let oldcollfield = Tapp (Tvar field, [Tvar "old_asset"]) in
   let add_conditions b =
     Timpl (
       mk_key_found_cond `Curr asset (Tvar elem),
@@ -2734,29 +2739,31 @@ let mk_rm_field_ensures m part asset elem _ak field prefix rm_asset rm_elem =
     { id   = prefix ^ "_field_post1";
       form = add_conditions (exists_asset asset (Tnot (Tvcontains (rm_asset,
                                                                    Tvar (rm_elem),
-                                                                   assetcollfield))))
+                                                                   collfield))))
     };
   ] @
     List.fold_left (fun acc idx ->
         acc @ [{
             id = "remove_" ^ rm_asset ^ "_field_sum_post";
-            form = exists_asset asset (Teq (Tyint,
-                                            mk_sum_from_col rm_asset idx assetcollfield,
+            form = exists_asset asset (
+                exists_rm_asset rm_asset (Teq (Tyint,
+                                            mk_sum rm_asset idx collfield (mk_ac rm_asset),
                                             Tminus (Tyint,
-                                                    mk_sum_from_col rm_asset idx oldassetcollfield,
+                                                    mk_sum rm_asset idx collfield (mk_ac_old rm_asset),
                                                     Tapp(
                                                       Tvar (mk_get_sum_value_id rm_asset idx),
-                                                      [Tvar rm_elem]))))
+                                                      [Tvar "rm_asset"])))))
           }]) [] (M.Utils.get_sum_idxs m rm_asset) @
     (if M.Utils.with_count m rm_asset then [{
          id = "rm_" ^ rm_asset ^ "_field_ccount";
-         form = exists_asset asset (Teq (Tyint,
-                                         Tccard (rm_asset, assetcollfield),
+         form = exists_asset asset (
+           exists_old_asset asset (Teq (Tyint,
+                                         Tvcard (rm_asset, collfield),
                                          Tminus (Tyint,
-                                                 Tccard (rm_asset, oldassetcollfield),
+                                                 Tvcard (rm_asset, oldcollfield),
                                                  Tint (Big_int.big_int_of_int 1)
                                                 )
-                                        ))
+                                        )))
        }]
      else [])
   in
