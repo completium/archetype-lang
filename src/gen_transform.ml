@@ -1695,6 +1695,7 @@ let merge_update (model : model) : model =
 let process_asset_state (model : model) : model =
   let get_state_lident an = dumloc ("state_" ^ an) in
 
+  let map = ref MapString.empty in
   let for_decl (d : decl_node) : decl_node =
     let for_asset (a : asset) =
       match a.state with
@@ -1706,6 +1707,7 @@ let process_asset_state (model : model) : model =
           let e_val   = enum.initial in
           let default = mk_mterm (Mvar (e_val, Venumval)) typ in
 
+          map := MapString.add (unloc a.name) default !map;
           let item = mk_asset_item name typ typ ~default:default in
           let init_items = List.map (fun (x : mterm) ->
               match x.node with
@@ -1723,16 +1725,22 @@ let process_asset_state (model : model) : model =
   let model = { model with decls = List.map for_decl model.decls} in
 
   let rec aux ctx (mt : mterm) : mterm =
-    match mt.node with
-    | Mvar (an, Vassetstate k) ->
+    match mt.node, mt.type_ with
+    | Mvar (an, Vassetstate k), _ ->
       begin
         let an = unloc an in
         let i = get_state_lident an in
         mk_mterm (Mdotassetfield (dumloc an, k, i)) mt.type_
       end
-    | Massign (op, Aassetstate (an, k), v) ->
+    | Massign (op, Aassetstate (an, k), v), _ ->
       let i = get_state_lident an in
       mk_mterm (Mupdate (an, k, [(i, op, v) ])) Tunit
+
+    | Masset l, Tasset an when MapString.mem (unloc an) !map ->
+      let default : mterm = MapString.find (unloc an) !map in
+      let l = List.map (aux ctx) l in
+      {mt with node = Masset (l @ [default]) }
+
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
@@ -1921,6 +1929,7 @@ let replace_dotassetfield_by_dot (model : model) : model =
     match mt.node with
     | Mdotassetfield (an, k, fn) ->
       begin
+        let k = aux ctx k in
         let get = build_get (unloc an) k in
         mk_mterm (Mdot (get, fn)) mt.type_
       end
@@ -1942,11 +1951,12 @@ let remove_fun_dotasset (model : model) : model =
       match mt.node with
       | Mdot (l, r) when is_fun l ->
         begin
+          let l, accu = efd_aux accu l in
           let var_id = prefix ^ string_of_int (!cpt) in
           cpt := !cpt + 1;
           let var = mk_mterm (Mvar (dumloc var_id, Vlocal)) l.type_ in
           let nmt = mk_mterm (Mdot (var, r)) mt.type_ in
-          nmt, (dumloc var_id, l)::accu
+          nmt, accu @ [(dumloc var_id, l)]
         end
       | _ ->
         let g (x : mterm__node) : mterm = { mt with node = x; } in
