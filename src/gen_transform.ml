@@ -86,7 +86,7 @@ let flat_sequence (model : model) : model =
   in
   map_mterm_model aux model
 
-let remove_add_update (model : model) : model =
+let remove_add_update ?(isformula = false) (model : model) : model =
   let error = ref false in
   let f_error (l : Location.t) (an : string) (fn : string) = emit_error(l, CannotBuildAsset (an, fn)); error := true in
   let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
@@ -140,7 +140,8 @@ let remove_add_update (model : model) : model =
         in
         let cond   = mk_mterm (
             match c with
-            | CKfield (_, _, {node = Mdotassetfield (andat, kdat, fn)}) -> Mcontains (an, CKfield(unloc andat, unloc fn, kdat), k)
+            | CKfield (_, _, ({node = Mdotassetfield (andat, kdat, fn)} as a)) ->
+              let c = (if isformula then a else kdat) in Mcontains (an, CKfield(unloc andat, unloc fn, c), k)
             | CKcoll -> Mcontains (an, c, k)
             | _ -> assert false) Tunit in
         let asset  = mk_asset (an, k, l) in
