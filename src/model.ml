@@ -3205,56 +3205,6 @@ end = struct
                                                        |> List.map (fun (v : enum_item) -> unloc (v.name))
   let get_asset m id : asset = get_assets m |> List.find (fun (x : asset) -> cmp_ident id (unloc x.name))
 
-  (* let get_partitions m : (ident * ident * type_) list=
-     get_info_assets m |> List.fold_left (fun acc (info : info_asset) ->
-        acc @ (List.fold_left (fun acc (i,t,_) ->
-            match t with
-            | Tcontainer (Tasset _, Partition) ->
-              acc @ [info.name,i,t]
-            | _ -> acc
-          ) [] info.values)
-      ) [] *)
-
-  (* let rec pp_type fmt t =
-     match t with
-     | Tasset an ->
-      Format.fprintf fmt "%a" Printer_tools.pp_id an
-     | Tstate ->
-      Format.fprintf fmt "state"
-     | Tenum en ->
-      Format.fprintf fmt "%a" Printer_tools.pp_id en
-     | Tcontract cn ->
-      Format.fprintf fmt "%a" Printer_tools.pp_id cn
-     | Tbuiltin b -> pp_btyp fmt b
-     | Tcontainer (t, c) ->
-      Format.fprintf fmt "%a %a"
-        pp_type t
-        pp_container c
-     | Tlist t ->
-      Format.fprintf fmt "%a list"
-        pp_type t
-     | Toption t ->
-      Format.fprintf fmt "%a option"
-        pp_type t
-     | Ttuple ts ->
-      Format.fprintf fmt "%a"
-        (Printer_tools.pp_list " * " pp_type) ts
-     | Tassoc (k, v) ->
-      Format.fprintf fmt "(%a, %a) map"
-        pp_btyp k
-        pp_type v
-     | Tunit ->
-      Format.fprintf fmt "unit"
-     | Tstorage ->
-      Format.fprintf fmt "storage"
-     | Toperation ->
-      Format.fprintf fmt "operation"
-     | Tentry ->
-      Format.fprintf fmt "entry"
-     | Tprog _
-     | Tvset _
-     | Ttrace _ -> Format.fprintf fmt "todo" *)
-
   let get_containers_internal f m : (ident * ident * type_) list =
     get_assets m |> List.fold_left (fun acc (asset : asset) ->
         acc @ (List.fold_left (fun acc (v : asset_item) ->
