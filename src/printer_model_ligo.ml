@@ -1677,26 +1677,21 @@ let pp_model_internal fmt (model : model) b =
         | Aggregate ->
           (fun fmt _ ->
              Format.fprintf fmt
-               "if not %s.mem(%s, s.%s_assets) then failwith (\"key does not exist\") else skip;@\n      "
+               "if not %s.mem(%s, s.%s_assets) then failwith (\"key does not exist\") else skip;@\n    "
                (if single then "Set" else "Map") bkey ft),
           (fun fmt _ -> pp_btyp fmt kt)
         | Partition ->
           (fun fmt _ ->
-             Format.fprintf fmt "s := add_%s(s, b);@\n      " ft),
+             Format.fprintf fmt "s := add_%s(s, b);@\n    " ft),
           (fun fmt _ -> pp_str fmt ft)
         | _ -> assert false
       in
       Format.fprintf fmt
         "function add_%s_%s (const s : storage_type; const asset_key : %a; const b : %a) : storage_type is@\n  \
          begin@\n    \
-         const asset_val_opt : option(%s_storage) = s.%s_assets[asset_key];@\n    \
-         case asset_val_opt of@\n      \
-         None -> skip@\n    \
-         | Some (asset_val) -> block {@\n      \
+         const asset_val : %s_storage = get_force(asset_key, s.%s_assets);@\n    \
          %a\
-         s.%s_assets[asset_key] := asset_val with record[%s = Set.add(%s, asset_val.%s)];@\n    \
-         }@\n  \
-         end;@\n\
+         s.%s_assets[asset_key] := asset_val with record[%s = Set.add(%s, asset_val.%s)];@\n  \
          end with (s)@\n"
         an fn pp_btyp t pp_b_arg_type ()
         an
@@ -1711,20 +1706,15 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt
         "function remove_%s_%s (const s : storage_type; const asset_key : %a; const removed_key : %a) : storage_type is@\n  \
          begin@\n    \
-         const asset_val_opt : option(%s_storage) = s.%s_assets[asset_key];@\n    \
-         case asset_val_opt of@\n      \
-         None -> skip@\n    \
-         | Some (asset_val) -> block {@\n      \
-         remove removed_key from set asset_val.%s;@\n      \
-         s.%s_assets[asset_key] := asset_val;@\n    \
+         const asset_val : %s_storage = get_force(asset_key, s.%s_assets);@\n    \
+         remove removed_key from set asset_val.%s;@\n    \
+         s.%s_assets[asset_key] := asset_val;@\n  \
          %a\
-         }@\n\
-         end;@\n\
          end with (s)@\n"
         an fn pp_btyp t pp_btyp tt
         an an
         fn an
-        (pp_do_if (match c with | Partition -> true | _ -> false) (fun fmt -> Format.fprintf fmt "  s := remove_%s(s, removed_key);@\n")) ft
+        (pp_do_if (match c with | Partition -> true | _ -> false) (fun fmt -> Format.fprintf fmt "  s := remove_%s(s, removed_key);@\n  ")) ft
 
     | RemoveAll (an, fn) ->
       let _, t = Utils.get_asset_key model an in
