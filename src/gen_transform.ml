@@ -126,6 +126,11 @@ let remove_add_update ?(isformula = false) (model : model) : model =
                         in
                         let type_ = dv.type_ in
                         match op with
+                        | PlusAssign when (match type_ with | Tcontainer (Tasset _, _) -> true | _ -> false) -> begin
+                          match v.node with
+                          | Mlitlist l -> mk_mterm (Mlitset l) (Tset (match type_ with | Tcontainer (Tasset an, _) -> Utils.get_asset_key model (unloc an) |> snd | _ -> assert false))
+                          | _ -> v
+                         end
                         | PlusAssign  -> mk_mterm (Mplus (dv, v)) type_
                         | MinusAssign -> mk_mterm (Mminus (dv, v)) type_
                         | MultAssign  -> mk_mterm (Mmult (dv, v)) type_
