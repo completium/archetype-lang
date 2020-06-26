@@ -1723,16 +1723,11 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt
         "function removeall_%s_%s (const s : storage_type; const k : %a) : storage_type is@\n  \
          begin@\n    \
-         const asset_val_opt : option(%s_storage) = s.%s_assets[k];@\n    \
-         case asset_val_opt of@\n      \
-         None -> skip@\n    \
-         | Some (asset_val) -> block {@\n        \
-         const l : set(%a) = asset_val.%s;@\n        \
-         for i in set (l) block {@\n          \
-         s := remove_%s_%s(s, k, i)@\n        \
-         }@\n      \
-         }@\n    \
-         end;@\n  \
+         const asset_val : %s_storage = get_force(k, s.%s_assets);@\n    \
+         const l : set(%a) = asset_val.%s;@\n    \
+         for i in set (l) block {@\n      \
+         s := remove_%s_%s(s, k, i)@\n    \
+         }@\n  \
          end with (s)@\n"
         an fn pp_btyp t
         an an
