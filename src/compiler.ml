@@ -193,7 +193,7 @@ let generate_target model =
     |> remove_container_op_in_update
     |> merge_update
     |> remove_assign_operator
-    |> extract_item_collection_from_add_asset ~formula:true
+    |> extract_item_collection_from_add_asset ~isformula:true
     |> process_internal_string
     |> remove_rational
     |> replace_date_duration_by_timestamp

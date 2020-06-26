@@ -2434,7 +2434,7 @@ let remove_assign_operator (model : model) : model =
   map_mterm_model aux model
 
 
-let extract_item_collection_from_add_asset ?(formula = false) (model : model) : model =
+let extract_item_collection_from_add_asset ?(isformula = false) (model : model) : model =
   let extract_item_collection_from_add_asset (an : ident) (l : mterm list) =
     let asset = Utils.get_asset model an in
     List.fold_right2
@@ -2446,7 +2446,7 @@ let extract_item_collection_from_add_asset ?(formula = false) (model : model) : 
              let assets = [unloc ai.name, unloc ann, l] in
              (mas::add_fields, assets @ items)
            end
-         | Tcontainer (Tasset ann, Aggregate), Mlitset l when not (List.is_empty l) && formula ->
+         | Tcontainer (Tasset ann, Aggregate), Mlitset l when not (List.is_empty l) && isformula ->
            begin
              let mas = mk_mterm (Massets []) ai.type_ in
              let assets = [unloc ai.name, unloc ann, l] in
