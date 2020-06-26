@@ -2446,7 +2446,7 @@ let extract_item_collection_from_add_asset ?(formula = false) (model : model) : 
              let assets = [unloc ai.name, unloc ann, l] in
              (mas::add_fields, assets @ items)
            end
-         | Tcontainer (Tasset ann, Aggregate), Mlitlist l when not (List.is_empty l) && formula ->
+         | Tcontainer (Tasset ann, Aggregate), Mlitset l when not (List.is_empty l) && formula ->
            begin
              let mas = mk_mterm (Massets []) ai.type_ in
              let assets = [unloc ai.name, unloc ann, l] in
