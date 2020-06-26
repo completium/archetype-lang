@@ -116,7 +116,11 @@ let remove_add_update ?(isformula = false) (model : model) : model =
                         end
                     in
                     match op with
-                    | ValueAssign -> v
+                    | ValueAssign -> begin
+                        match v.node, v.type_ with
+                        | Mlitlist l, Tlist (Tbuiltin t) -> mk_mterm (Mlitset l) (Tset t)
+                        | _ -> v
+                      end
                     | _ ->
                       begin
                         let dv =
@@ -127,10 +131,10 @@ let remove_add_update ?(isformula = false) (model : model) : model =
                         let type_ = dv.type_ in
                         match op with
                         | PlusAssign when (match type_ with | Tcontainer (Tasset _, _) -> true | _ -> false) -> begin
-                          match v.node with
-                          | Mlitlist l -> mk_mterm (Mlitset l) (Tset (match type_ with | Tcontainer (Tasset an, _) -> Utils.get_asset_key model (unloc an) |> snd | _ -> assert false))
-                          | _ -> v
-                         end
+                            match v.node with
+                            | Mlitlist l -> mk_mterm (Mlitset l) (Tset (match type_ with | Tcontainer (Tasset an, _) -> Utils.get_asset_key model (unloc an) |> snd | _ -> assert false))
+                            | _ -> v
+                          end
                         | PlusAssign  -> mk_mterm (Mplus (dv, v)) type_
                         | MinusAssign -> mk_mterm (Mminus (dv, v)) type_
                         | MultAssign  -> mk_mterm (Mmult (dv, v)) type_
@@ -2430,13 +2434,19 @@ let remove_assign_operator (model : model) : model =
   map_mterm_model aux model
 
 
-let extract_item_collection_from_add_asset (model : model) : model =
+let extract_item_collection_from_add_asset ?(formula = false) (model : model) : model =
   let extract_item_collection_from_add_asset (an : ident) (l : mterm list) =
     let asset = Utils.get_asset model an in
     List.fold_right2
       (fun (ai : asset_item) (mt : mterm) (add_fields, items) ->
          match ai.type_, mt.node with
-         | Tcontainer (Tasset ann, _), Massets l when not (List.is_empty l) ->
+         | Tcontainer (Tasset ann, Partition), Massets l when not (List.is_empty l) ->
+           begin
+             let mas = mk_mterm (Massets []) ai.type_ in
+             let assets = [unloc ai.name, unloc ann, l] in
+             (mas::add_fields, assets @ items)
+           end
+         | Tcontainer (Tasset ann, Aggregate), Mlitlist l when not (List.is_empty l) && formula ->
            begin
              let mas = mk_mterm (Massets []) ai.type_ in
              let assets = [unloc ai.name, unloc ann, l] in
