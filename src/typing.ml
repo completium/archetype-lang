@@ -1763,12 +1763,12 @@ let rec for_xexpr
           | M.VTbefore, `Formula _    -> vt
 
           | _, `Expr _ ->
-              Env.emit_error env (loc tope, BeforeOrLabelInExpr);
-              M.VTnone
+            Env.emit_error env (loc tope, BeforeOrLabelInExpr);
+            M.VTnone
 
           | _, `Formula _ ->
-              Env.emit_error env (loc tope, LabelInNonInvariant);
-              M.VTnone
+            Env.emit_error env (loc tope, LabelInNonInvariant);
+            M.VTnone
         in
 
         let lk = Env.lookup_entry subenv (unloc x) in
@@ -1916,6 +1916,15 @@ let rec for_xexpr
                 anon      = state.anon || Option.is_none fname; })
             E.state0 fields in
 
+        let get_target_field_type = function
+          | M.Tcontainer (Tasset an, Aggregate) -> begin
+              let asset = Env.Asset.get env (unloc an) in
+              let pk = Option.get (get_field (unloc asset.as_pk) asset) in
+              M.Tlist (pk.fd_type)
+            end
+          | t -> t
+        in
+
         if infos.E.hasupdate then
           Env.emit_error env (loc tope, OpInRecordLiteral);
 
@@ -1942,7 +1951,7 @@ let rec for_xexpr
 
             let fields =
               List.map2 (fun (_, fe) fd ->
-                  for_xexpr env ~ety:fd.fd_type fe
+                  for_xexpr env ~ety:(get_target_field_type fd.fd_type) fe
                 ) fields asset.as_fields;
             in mk_sp ety (M.Precord fields)
 
@@ -1985,7 +1994,7 @@ let rec for_xexpr
           let fields =
             Mid.map (fun (asset, es) ->
                 let aty = Option.map (fun (_, fd) -> fd.fd_type) asset in
-                List.map (fun e -> for_xexpr env ?ety:aty e) es
+                List.map (fun e -> for_xexpr env ?ety:(Option.map get_target_field_type aty) e) es
               ) fmap in
 
           let record =
