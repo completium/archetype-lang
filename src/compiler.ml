@@ -2,7 +2,7 @@
 open Archetype
 open Core
 open Gen_transform
-open Trans_solidity
+(* open Trans_solidity *)
 
 exception Compiler_error
 exception E_arg
@@ -45,7 +45,7 @@ let output (model : Model.model) =
       let printer =
         match !Options.target with
         | None         -> Printer_model.pp_model
-        | Solidity     -> Printer_model_solidity.pp_model
+        (* | Solidity     -> Printer_model_solidity.pp_model *)
         | Ligo         -> Printer_model_ligo.pp_model
         | LigoStorage  -> Printer_model_ligo.pp_storage
         | SmartPy      -> Printer_model_smartpy.pp_model
@@ -108,29 +108,64 @@ let generate_target model =
     |> generate_api_storage
     |> output
 
-  | Solidity ->
-    model
-    |> replace_add_update_by_update
-    |> remove_add_update
-    |> replace_update_by_assignment
-    |> replace_declvar_by_letin
-    |> exec_process
-    |> generate_api_storage
-    |> add_bool_asset
-    |> make_asset_var
-    |> output
+  (* | Solidity ->
+     model
+     |> replace_add_update_by_update
+     |> remove_add_update
+     |> replace_update_by_assignment
+     |> replace_declvar_by_letin
+     |> exec_process
+     |> generate_api_storage
+     |> add_bool_asset
+     |> make_asset_var
+     |> output
+
+     | Liquidity
+     | LiquidityUrl ->
+     model
+     |> replace_update_by_set
+     |> generate_storage
+     |> replace_declvar_by_letin
+     |> exec_process
+     |> process_single_field_storage
+     |> shallow_asset
+     |> split_key_values
+     |> remove_side_effect
+     |> generate_api_storage
+     |> output *)
 
   | Liquidity
-  | LiquidityUrl ->
+  | LiquidityUrl
+  | Solidity ->
     model
-    |> replace_update_by_set
+    |> replace_ligo_ident
+    |> replace_col_by_key_for_ckfield
+    |> process_asset_state
+    |> replace_assignfield_by_update
+    |> remove_add_update
+    |> remove_container_op_in_update
+    |> merge_update
+    |> remove_assign_operator
+    |> extract_item_collection_from_add_asset
+    |> process_internal_string
+    |> remove_rational
+    |> abs_tez
+    |> replace_date_duration_by_timestamp
+    |> eval_variable_initial_value
+    |> replace_dotassetfield_by_dot
     |> generate_storage
     |> replace_declvar_by_letin
-    |> exec_process
-    |> process_single_field_storage
-    |> shallow_asset
+    |> remove_enum_matchwith
+    |> replace_lit_address_by_role
+    |> remove_label
+    |> flat_sequence
+    |> remove_cmp_bool
     |> split_key_values
-    |> remove_side_effect
+    |> remove_duplicate_key
+    |> assign_loop_label
+    |> remove_letin_from_expr
+    |> remove_fun_dotasset
+    |> optimize
     |> generate_api_storage
     |> output
 

@@ -16,6 +16,7 @@
   printer_model gen_storage gen_api_storage gen_reduce
   printer_model_tools printer_model_ligo printer_model_smartpy printer_model_scaml
   gen_why3 mlwtree printer_mlwtree
+##  printer_model_liquidity trans_solidity printer_model_solidity
   )
   (libraries menhirLib digestif num str ppx_deriving yojson ppx_deriving_yojson.runtime uri)
  (flags :standard -w -30  ; Allow sharing of record labels between distinct types.
