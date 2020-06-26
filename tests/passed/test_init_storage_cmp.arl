@@ -1,0 +1,73 @@
+archetype test_init_storage_cmp
+
+variable eq_int_int : bool = 1 =  2
+variable ne_int_int : bool = 1 <> 2
+variable gt_int_int : bool = 1 <  2
+variable ge_int_int : bool = 1 <= 2
+variable lt_int_int : bool = 1 >  2
+variable le_int_int : bool = 1 >= 2
+
+variable eq_rat_int : bool = 0.5 =  2
+variable ne_rat_int : bool = 0.5 <> 2
+variable gt_rat_int : bool = 0.5 <  2
+variable ge_rat_int : bool = 0.5 <= 2
+variable lt_rat_int : bool = 0.5 >  2
+variable le_rat_int : bool = 0.5 >= 2
+
+variable eq_int_rat : bool = 1 =  1.5
+variable ne_int_rat : bool = 1 <> 1.5
+variable gt_int_rat : bool = 1 <  1.5
+variable ge_int_rat : bool = 1 <= 1.5
+variable lt_int_rat : bool = 1 >  1.5
+variable le_int_rat : bool = 1 >= 1.5
+
+variable eq_rat_rat : bool = 0.5 =  1.5
+variable ne_rat_rat : bool = 0.5 <> 1.5
+variable gt_rat_rat : bool = 0.5 <  1.5
+variable ge_rat_rat : bool = 0.5 <= 1.5
+variable lt_rat_rat : bool = 0.5 >  1.5
+variable le_rat_rat : bool = 0.5 >= 1.5
+
+variable eq_tez_tez : bool = 1tz =  2tz
+variable ne_tez_tez : bool = 1tz <> 2tz
+variable gt_tez_tez : bool = 1tz <  2tz
+variable ge_tez_tez : bool = 1tz <= 2tz
+variable lt_tez_tez : bool = 1tz >  2tz
+variable le_tez_tez : bool = 1tz >= 2tz
+
+variable eq_dur_dur : bool = 1h =  2h
+variable ne_dur_dur : bool = 1h <> 2h
+variable gt_dur_dur : bool = 1h <  2h
+variable ge_dur_dur : bool = 1h <= 2h
+variable lt_dur_dur : bool = 1h >  2h
+variable le_dur_dur : bool = 1h >= 2h
+
+variable eq_dat_dat : bool = 2020-01-01 =  2020-12-31
+variable ne_dat_dat : bool = 2020-01-01 <> 2020-12-31
+variable gt_dat_dat : bool = 2020-01-01 <  2020-12-31
+variable ge_dat_dat : bool = 2020-01-01 <= 2020-12-31
+variable lt_dat_dat : bool = 2020-01-01 >  2020-12-31
+variable le_dat_dat : bool = 2020-01-01 >= 2020-12-31
+
+variable eq_addr_addr : bool = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg =  @tz1bfVgcJC4ukaQSHUe1EbrUd5SekXeP9CWk
+variable ne_addr_addr : bool = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg <> @tz1bfVgcJC4ukaQSHUe1EbrUd5SekXeP9CWk
+variable gt_addr_addr : bool = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg <  @tz1bfVgcJC4ukaQSHUe1EbrUd5SekXeP9CWk
+variable ge_addr_addr : bool = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg <= @tz1bfVgcJC4ukaQSHUe1EbrUd5SekXeP9CWk
+variable lt_addr_addr : bool = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg >  @tz1bfVgcJC4ukaQSHUe1EbrUd5SekXeP9CWk
+variable le_addr_addr : bool = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg >= @tz1bfVgcJC4ukaQSHUe1EbrUd5SekXeP9CWk
+
+variable eq_str_str : bool = "a" =  "b"
+variable ne_str_str : bool = "a" <> "b"
+variable gt_str_str : bool = "a" <  "b"
+variable ge_str_str : bool = "a" <= "b"
+variable lt_str_str : bool = "a" >  "b"
+variable le_str_str : bool = "a" >= "b"
+
+variable eq_bool_bool : bool = true =  false
+variable ne_bool_bool : bool = true <> false
+
+entry exec () {
+  effect {
+    ()
+  }
+}

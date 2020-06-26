@@ -1,0 +1,41 @@
+archetype test_init_storage_funs
+
+variable min_int_int : int = min(1, 2)
+variable max_int_int : int = max(1, 2)
+
+variable min_rat_int : rational = min(1 / 2, 1)
+variable max_rat_int : rational = max(1 / 2, 1)
+
+variable min_int_rat : rational = min(2, 1 / 3)
+variable max_int_rat : rational = max(2, 1 / 3)
+
+variable min_rat_rat : rational = min(1 / 2, 1 / 3)
+variable max_rat_rat : rational = max(1 / 2, 1 / 3)
+
+// variable min_dat_dat : date     = min(2020-01-01, 2020-12-31)
+// variable max_dat_dat : date     = max(2020-01-01, 2020-12-31)
+
+variable min_dur_dur : duration = min(1h, 1s)
+variable max_dur_dur : duration = max(1h, 1s)
+
+variable min_tez_tez : tez      = min(1tz, 2tz)
+variable max_tez_tez : tez      = max(1tz, 2tz)
+
+variable floor_rat   : int      = floor(5 / 3)
+variable ceil_rat    : int      = ceil(5 / 3)
+
+variable abs_int : int          = abs(-1)
+variable abs_rat : rational     = abs(-1 / 2)
+
+variable concat_str : string   = concat("abc", "def")
+variable slice_str  : string   = slice("abcdef", 1, 2)
+variable length_str : int      = length("abcdef")
+
+variable concat_byt : bytes = concat(0x12, 0xef)
+variable slice_byt  : bytes = slice(0xabcdef01, 1, 2)
+
+entry exec () {
+  effect {
+    ()
+  }
+}
