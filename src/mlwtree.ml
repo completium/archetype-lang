@@ -8,6 +8,7 @@ type exn =
   | Einvalidstate
   | Enotransfer
   | Ebreak
+  | Einvalid of string option
 [@@deriving show {with_path = false}]
 
 type fmod =
@@ -30,9 +31,11 @@ type 'i abstract_type =
   | Tyaddr
   | Tyrole
   | Tykey
+  | Tykeyhash
   | Tydate
   | Tyduration
   | Tytez
+  | Tysignature
   | Tybytes
   | Tystorage
   | Tytransfers
@@ -40,9 +43,11 @@ type 'i abstract_type =
   | Tycontract of 'i
   | Tyrecord of 'i
   | Tycoll  of 'i
+  | Tyview of 'i
   | Tymap of 'i
   | Tyasset of 'i
   | Typartition of 'i
+  | Tyaggregate of 'i
   | Tystate
   | Tyenum of 'i
   | Tyoption of 'i abstract_type
@@ -57,6 +62,8 @@ type ('t,'i) abstract_univ_decl = 'i list * 't
 type 'i pattern_node =
   | Twild
   | Tconst of 'i
+  | Tpatt_tuple of 'i pattern_node list
+  | Tpsome of 'i
 [@@deriving show {with_path = false}]
 
 type ('e,'t,'i) abstract_term =
@@ -66,9 +73,10 @@ type ('e,'t,'i) abstract_term =
   | Tif     of 'e * 'e * 'e option
   | Tmatch  of 'e * ('i pattern_node * 'e) list
   | Tapp    of 'e * 'e list
-  | Tfor    of 'i * 'e * ('e,'i) abstract_formula list * 'e
+  | Tfor    of 'i * 'e * 'e * ('e,'i) abstract_formula list * 'e (* id, from, to, invariants *)
   | Ttry    of 'e * (exn * 'e) list
   | Tvar    of 'i
+  | Ttuple  of 'e list
   (* record *)
   | Trecord of 'e option * ('i * 'e) list (* { 'e with 'i = 'e; } *)
   | Tdot    of 'e * 'e
@@ -76,32 +84,49 @@ type ('e,'t,'i) abstract_term =
   (* storage fields *)
   | Tename
   | Tcaller of 'i
+  | Tsender of 'i
   | Ttransferred of 'i
   | Tnow    of 'i
   | Tadded  of 'i
   | Trmed   of 'i
   (* list *)
   | Tlist   of 'e list
-  | Tnil
+  | Tnil    of 'i
   | Temptycoll of 'i
-  | Tcard   of 'i * 'e
-  | Tunshallow  of 'i * 'e * 'e
+  | Temptyview of 'i
+  | Tccard   of 'i * 'e
+  | Tvcard   of 'i * 'e
+  | Ttocoll  of 'i * 'e * 'e
+  | Ttoview of 'i * 'e
   | Tshallow  of 'i * 'e * 'e
-  | Tmlist  of 'e * 'i * 'i * 'i * 'e (* match list *)
-  | Tcons   of 'e * 'e
+  | Tmlist  of 'i * 'e * 'i * 'i * 'i * 'e (* match list *)
+  | Tcons   of 'i * 'e * 'e
   | Tmkcoll of 'i * 'e
+  | Tmkview of 'i * 'e
   | Tcontent of 'i * 'e
+  | Tvcontent of 'i * 'e
   (* archetype lib *)
   | Tadd    of 'i * 'e * 'e
+  | Tvadd    of 'i * 'e * 'e
   | Tremove of 'i * 'e * 'e
-  | Tlistremove of 'i * 'e * 'e
+  | Tvremove of 'i * 'e * 'e
   | Tget    of 'i * 'e * 'e
+  | Tfget of 'i * 'e * 'e (* logical pure get; no fail *)
   | Tset    of 'i * 'e * 'e * 'e
+  | Tvsum    of 'i * 'e * 'e
+  | Tcsum    of 'i * 'e
+  | Tcsort   of 'i * 'e
+  | Tvsort   of 'i * 'e * 'e
   | Tcoll   of 'i * 'e
   | Tassign of 'e * 'e
   | Traise  of exn
   | Texn    of exn
   | Tconcat of 'e * 'e
+  | Ttransfer of 'e * 'e
+  | Tcall of 'e
+  | Tfst of 'e
+  | Tsnd of 'e
+  | Tabs of 'e
   (* trace *)
   | Tmktr   of 'e * 'e
   | Ttradd  of 'i
@@ -117,6 +142,7 @@ type ('e,'t,'i) abstract_term =
   | Tpand   of 'e * 'e
   (* comp *)
   | Teq     of 't * 'e * 'e
+  | Teqview of 'i * 'e * 'e
   | Tneq    of 't * 'e * 'e
   | Tlt     of 't * 'e * 'e
   | Tle     of 't * 'e * 'e
@@ -136,10 +162,10 @@ type ('e,'t,'i) abstract_term =
   | Texists of (('t,'i) abstract_univ_decl list) * 'e
   | Tresult
   | Timpl   of 'e * 'e
+  | Tequiv  of 'e * 'e
   | Tand    of 'e * 'e
-  | Tor    of 'e * 'e
+  | Tor     of 'e * 'e
   | Told    of 'e
-  | Tat     of 'e
   | Tfalse
   | Ttrue
   | Tunion  of 'i * 'e * 'e
@@ -147,21 +173,31 @@ type ('e,'t,'i) abstract_term =
   | Tdiff   of 'i * 'e * 'e
   | Tsubset of 'i * 'e * 'e
   | Tassert of 'i option * 'e
-  | Ttoiter of 'i * 'i * 'e
   (* set *)
   | Tmem    of 'i * 'e * 'e
+  | Tvmem    of 'i * 'e * 'e
   | Tlmem    of 'i * 'e * 'e
-  | Tcontains of 'i * 'e * 'e
+  | Tccontains of 'i * 'e * 'e
+  | Tvcontains of 'i * 'e * 'e
   | Tempty  of 'i * 'e
+  | Tvempty  of 'i * 'e
   | Tsingl  of 'i * 'e
-  | Thead   of 'e * 'e
-  | Ttail   of 'e * 'e
-  | Tnth    of 'i * 'e * 'e
+  | Tchead   of 'i * 'e * 'e
+  | Tvhead   of 'i * 'e * 'e
+  | Tctail   of 'i * 'e * 'e
+  | Tvtail   of 'i * 'e * 'e
+  | Tcnth    of 'i * 'e * 'e
+  | Tvnth    of 'i * 'e * 'e
+  | Tlnth   of 'i * 'e * 'e
   | Twitness of 'i
   (* option *)
   | Tnone
   | Tsome   of 'e
   | Tenum   of 'i
+  | Tmark   of 'i * 'e
+  | Tat of 'i * 'e
+  | Tunit
+  (* escape node *)
   | Ttobereplaced
   | Tnottranslated
   (* ... *)
@@ -213,7 +249,7 @@ type theotyp =
 [@@deriving show {with_path = false}]
 
 type ('e,'t,'i) abstract_decl =
-  | Duse     of 'i abstract_qualid
+  | Duse     of bool * 'i abstract_qualid * string option
   | Dval     of 'i * 't
   | Dclone   of 'i abstract_qualid * 'i * ('i abstract_clone_subst) list
   | Denum    of 'i * 'i list
@@ -255,19 +291,23 @@ let rec map_abstract_type (map_i : 'i1 -> 'i2) = function
   | Tytransfers   -> Tytransfers
   | Tyrecord i    -> Tyrecord (map_i i)
   | Tycoll i      -> Tycoll (map_i i)
+  | Tyview i      -> Tyview (map_i i)
   | Tymap i       -> Tymap (map_i i)
   | Tyasset i     -> Tyasset (map_i i)
   | Typartition i -> Typartition (map_i i)
-  | Tyenum i      -> Typartition (map_i i)
+  | Tyaggregate i -> Tyaggregate (map_i i)
+  | Tyenum i      -> Tyenum (map_i i)
   | Tyoption t    -> Tyoption (map_abstract_type map_i t)
   | Tylist t      -> Tylist (map_abstract_type map_i t)
-  | Tycontract i   -> Tycontract (map_i i)
+  | Tycontract i  -> Tycontract (map_i i)
   | Tybool        -> Tybool
   | Tyuint        -> Tyuint
   | Tyrational    -> Tyrational
   | Tyduration    -> Tyduration
+  | Tysignature   -> Tysignature
   | Tykey         -> Tykey
-  | Tystate        -> Tystate
+  | Tykeyhash     -> Tykeyhash
+  | Tystate       -> Tystate
   | Tytuple l     -> Tytuple (List.map (map_abstract_type map_i) l)
 
 let map_abstract_univ_decl
@@ -276,9 +316,11 @@ let map_abstract_univ_decl
     (ids,t : ('t1,'i1) abstract_univ_decl) : ('t2,'i2) abstract_univ_decl =
   (List.map map_i ids, map_t t)
 
-let map_pattern map = function
+let rec map_pattern map = function
   | Twild -> Twild
   | Tconst i -> Tconst (map i)
+  | Tpatt_tuple l -> Tpatt_tuple (List.map (map_pattern map) l)
+  | Tpsome i -> Tpsome (map i)
 
 let rec map_abstract_formula
     (map_e : 'e1 -> 'e2)
@@ -312,44 +354,62 @@ and map_abstract_term
   | Tif (i,t,e)        -> Tif (map_e i, map_e t, Option.map map_e e)
   | Tmatch (t,l)       -> Tmatch (map_e t, List.map (fun (p,t) -> (map_pattern map_i p,map_e t)) l)
   | Tapp (f,a)         -> Tapp (map_e f, List.map map_e a)
-  | Tfor (i,s,l,b)     -> Tfor (map_i i,
+  | Tfor (i,f,s,l,b)   -> Tfor (map_i i,
+                                map_e f,
                                 map_e s,
                                 List.map (map_abstract_formula map_e map_i) l,
                                 map_e b)
-  | Ttry (b,l)       -> Ttry (map_e b, List.map (fun (exn,e) -> (exn,map_e e)) l)
+  | Ttry (b,l)         -> Ttry (map_e b, List.map (fun (exn,e) -> (exn,map_e e)) l)
   | Tassert (l,e)      -> Tassert (Option.map map_i l,map_e e)
-  | Ttoiter (a,i,e)    -> Ttoiter (map_i a, map_i i, map_e e)
   | Tvar i             -> Tvar (map_i i)
+  | Ttuple l           -> Ttuple (List.map map_e l)
   | Trecord (e,l)      -> Trecord (Option.map map_e e, List.map (fun (i,v) ->
       (map_i i,map_e v)) l)
   | Tdot (e1,e2)       -> Tdot (map_e e1, map_e e2)
   | Tdoti (i1,i2)      -> Tdoti (map_i i1, map_i i2)
   | Tename             -> Tename
   | Tcaller i          -> Tcaller (map_i i)
+  | Tsender i          -> Tsender (map_i i)
   | Ttransferred i     -> Ttransferred (map_i i)
+  | Tfst e             -> Tfst (map_e e)
+  | Tsnd e             -> Tsnd (map_e e)
+  | Tabs e             -> Tabs (map_e e)
   | Tnow i             -> Tnow (map_i i)
   | Tadded a           -> Tadded (map_i a)
   | Trmed  a           -> Trmed (map_i a)
   | Tlist l            -> Tlist (List.map map_e l)
-  | Tnil               -> Tnil
+  | Tnil i             -> Tnil (map_i i)
   | Temptycoll i       -> Temptycoll (map_i i)
-  | Tcard (i,e)        -> Tcard (map_i i, map_e e)
+  | Temptyview i       -> Temptyview (map_i i)
+  | Tccard (i,e)        -> Tccard (map_i i, map_e e)
+  | Tvcard (i,e)        -> Tvcard (map_i i, map_e e)
   | Tmkcoll (i,e)      -> Tmkcoll (map_i i, map_e e)
+  | Tmkview (i,e)      -> Tmkview (map_i i, map_e e)
   | Tcontent (i,e)     -> Tcontent (map_i i, map_e e)
-  | Tunshallow (i,e1,e2) -> Tunshallow (map_i i, map_e e1, map_e e2)
+  | Tvcontent (i,e)    -> Tvcontent (map_i i, map_e e)
+  | Ttocoll (i,e1,e2) -> Ttocoll (map_i i, map_e e1, map_e e2)
+  | Ttoview (i,e)      -> Ttoview (map_i i, map_e e)
   | Tshallow (i,e1,e2) -> Tshallow (map_i i, map_e e1, map_e e2)
-  | Tmlist (e1,i1,i2,i3,e2) -> Tmlist (map_e e1, map_i i1, map_i i2, map_i i3, map_e e2)
-  | Tcons (e1,e2)      -> Tcons (map_e e1, map_e e2)
-  | Tadd (i1,e1,e2)       -> Tadd (map_i i1, map_e e1, map_e e2)
-  | Tremove (i,e1,e2)    -> Tremove (map_i i,map_e e1, map_e e2)
-  | Tlistremove (i,e1,e2) -> Tlistremove (map_i i,map_e e1, map_e e2)
-  | Tget (i,e1,e2)       -> Tget (map_i i, map_e e1, map_e e2)
-  | Tset (i, e1,e2,e3)    -> Tset (map_i i, map_e e1, map_e e2, map_e e3)
+  | Tmlist (l,e1,i1,i2,i3,e2) -> Tmlist (map_i l,map_e e1, map_i i1, map_i i2, map_i i3, map_e e2)
+  | Tcons (i,e1,e2)    -> Tcons (map_i i, map_e e1, map_e e2)
+  | Tadd (i1,e1,e2)    -> Tadd (map_i i1, map_e e1, map_e e2)
+  | Tvadd (i1,e1,e2)    -> Tvadd (map_i i1, map_e e1, map_e e2)
+  | Tremove (i,e1,e2)  -> Tremove (map_i i,map_e e1, map_e e2)
+  | Tvremove (i,e1,e2) -> Tvremove (map_i i,map_e e1, map_e e2)
+  | Tget (i,e1,e2)     -> Tget (map_i i, map_e e1, map_e e2)
+  | Tfget (i,e1,e2)    -> Tfget (map_i i, map_e e1, map_e e2)
+  | Tset (i, e1,e2,e3) -> Tset (map_i i, map_e e1, map_e e2, map_e e3)
+  | Tvsum (i,e1,e2)    -> Tvsum (map_i i, map_e e1, map_e e2)
+  | Tcsum (i,e1)     -> Tcsum (map_i i, map_e e1)
+  | Tcsort (i,e1)    -> Tcsort (map_i i, map_e e1)
+  | Tvsort (i,e1,e2)    -> Tvsort (map_i i, map_e e1, map_e e2)
   | Tcoll (i, e)       -> Tcoll (map_i i, map_e e)
   | Tassign (e1,e2)    -> Tassign (map_e e1, map_e e2)
   | Traise e           -> Traise e
   | Texn e             -> Texn e
   | Tconcat (e1,e2)    -> Tconcat (map_e e1, map_e e2)
+  | Ttransfer (e1,e2)  -> Ttransfer (map_e e1, map_e e2)
+  | Tcall e            -> Tcall (map_e e)
   | Tmktr (e1,e2)      -> Tmktr (map_e e1, map_e e2)
   | Ttradd i           -> Ttradd (map_i i)
   | Ttrrm  i           -> Ttrrm (map_i i)
@@ -362,6 +422,7 @@ and map_abstract_term
   | Tnot e             -> Tnot (map_e e)
   | Tpand (e1,e2)      -> Tpand (map_e e1,map_e e2)
   | Teq (t,l,r)        -> Teq (map_t t, map_e l, map_e r)
+  | Teqview (i,l,r)    -> Teqview (map_i i, map_e l, map_e r)
   | Tneq (t,l,r)       -> Tneq (map_t t, map_e l, map_e r)
   | Tlt (t,l,r)        -> Tlt (map_t t, map_e l, map_e r)
   | Tle (t,l,r)        -> Tle (map_t t, map_e l, map_e r)
@@ -377,27 +438,37 @@ and map_abstract_term
   | Tforall (l,e)      -> Tforall (List.map (map_abstract_univ_decl map_t map_i) l, map_e e)
   | Texists (l,e)      -> Texists (List.map (map_abstract_univ_decl map_t map_i) l, map_e e)
   | Timpl (e1,e2)      -> Timpl (map_e e1, map_e e2)
+  | Tequiv (e1,e2)     -> Tequiv (map_e e1, map_e e2)
   | Tor (e1,e2)        -> Tor (map_e e1, map_e e2)
   | Tand (e1,e2)       -> Tand (map_e e1, map_e e2)
   | Told e             -> Told (map_e e)
-  | Tat e              -> Tat (map_e e)
   | Tunion (i,e1,e2)     -> Tunion (map_i i, map_e e1, map_e e2)
   | Tinter (i,e1,e2)     -> Tinter (map_i i, map_e e1, map_e e2)
   | Tdiff (i,e1,e2)      -> Tdiff (map_i i, map_e e1, map_e e2)
   | Tsubset (i,e1,e2)    -> Tsubset (map_i i, map_e e1, map_e e2)
   | Tresult            -> Tresult
   | Tmem (t,e1,e2)     -> Tmem (map_i t, map_e e1, map_e e2)
+  | Tvmem (t,e1,e2)     -> Tvmem (map_i t, map_e e1, map_e e2)
   | Tlmem (t,e1,e2)     -> Tlmem (map_i t, map_e e1, map_e e2)
-  | Tcontains (t,e1,e2) -> Tcontains (map_i t, map_e e1, map_e e2)
+  | Tccontains (t,e1,e2) -> Tccontains (map_i t, map_e e1, map_e e2)
+  | Tvcontains (t,e1,e2) -> Tvcontains (map_i t, map_e e1, map_e e2)
   | Tempty (i,e)       -> Tempty (map_i i, map_e e)
+  | Tvempty (i,e)       -> Tvempty (map_i i, map_e e)
   | Tsingl (i,e)       -> Tsingl (map_i i, map_e e)
-  | Thead (e1,e2)      -> Thead (map_e e1, map_e e2)
-  | Ttail (e1,e2)      -> Ttail (map_e e1, map_e e2)
-  | Tnth (i,e1,e2)     -> Tnth (map_i i, map_e e1, map_e e2)
+  | Tvhead (i,e1,e2)      -> Tvhead (map_i i,map_e e1, map_e e2)
+  | Tchead (i,e1,e2)      -> Tchead (map_i i,map_e e1, map_e e2)
+  | Tctail (i,e1,e2)      -> Tctail (map_i i,map_e e1, map_e e2)
+  | Tvtail (i,e1,e2)      -> Tvtail (map_i i,map_e e1, map_e e2)
+  | Tcnth (i,e1,e2)     -> Tcnth (map_i i, map_e e1, map_e e2)
+  | Tvnth (i,e1,e2)     -> Tvnth (map_i i, map_e e1, map_e e2)
+  | Tlnth (i,e1,e2)    -> Tlnth (map_i i, map_e e1, map_e e2)
   | Twitness i         -> Twitness (map_i i)
   | Tnone              -> Tnone
   | Tsome e            -> Tsome (map_e e)
   | Tenum i            -> Tenum (map_i i)
+  | Tmark (i,e)        -> Tmark (map_i i, map_e e)
+  | Tat (i,e)          -> Tat (map_i i, map_e e)
+  | Tunit              -> Tunit
   | Ttobereplaced      -> Ttobereplaced
   | Tnottranslated     -> Tnottranslated
   | Ttrue              -> Ttrue
@@ -433,7 +504,7 @@ let map_abstract_decl
     (map_e : 'e1 -> 'e2)
     (map_t : 't1 -> 't2)
     (map_i : 'i1 -> 'i2) = function
-  | Duse i          -> Duse (map_abstract_qualid map_i i)
+  | Duse (b,i,l)    -> Duse (b,map_abstract_qualid map_i i,l)
   | Dval (i,t)      -> Dval (map_i i, map_t t)
   | Dclone (q,i,l)  -> Dclone (map_abstract_qualid map_i q,
                                map_i i,
@@ -579,7 +650,7 @@ let compare_exn e1 e2 =
   | Ekeyexist, Ekeyexist -> true
   | Einvalidcaller, Einvalidcaller -> true
   | Einvalidcondition, Einvalidcondition -> true
-   | Einvalidstate, Einvalidstate -> true
+  | Einvalidstate, Einvalidstate -> true
   | Ebreak, Ebreak -> true
   | _ -> false
 
@@ -614,6 +685,7 @@ let rec compare_abstract_type
   | Tycontract i1, Tycontract i2 -> cmpi i1 i2
   | Tyrecord i1, Tyrecord i2 -> cmpi i1 i2
   | Tycoll i1, Tycoll i2 -> cmpi i1 i2
+  | Tyview i1, Tyview i2 -> cmpi i1 i2
   | Tymap i1, Tymap i2 -> cmpi i1 i2
   | Tyasset i1, Tyasset i2 -> cmpi i1 i2
   | Typartition i1, Typartition i2 -> cmpi i1 i2
@@ -648,10 +720,12 @@ let compare_abstract_fun_struct
   List.for_all2 (compare_abstract_formula cmpe cmpi) s1.ensures s2.ensures &&
   cmpe s1.body s2.body
 
-let compare_pattern cmp p1 p2 =
+let rec compare_pattern cmp p1 p2 =
   match p1,p2 with
   | Twild, Twild -> true
   | Tconst i1, Tconst i2 -> cmp i1 i2
+  | Tpatt_tuple l1, Tpatt_tuple l2 -> List.for_all2 (compare_pattern cmp) l1 l2
+  | Tpsome i1, Tpsome i2 -> cmp i1 i2
   | _,_ -> false
 
 let compare_abstract_term
@@ -672,16 +746,16 @@ let compare_abstract_term
       cmpe e1 e2 && compare_pattern cmpi p1 p2
     ) l1 l2
   | Tapp (f1,a1), Tapp (f2,a2) -> cmpe f1 f2 && List.for_all2 cmpe a1 a2
-  | Tfor (i1,s1,l1,b1), Tfor (i2,s2,l2,b2) ->
-    cmpi i1 i2 && cmpe s1 s2 &&
+  | Tfor (i1,f1,s1,l1,b1), Tfor (i2,f2,s2,l2,b2) ->
+    cmpi i1 i2 && cmpe f1 f2 && cmpe s1 s2 &&
     List.for_all2 (compare_abstract_formula cmpe cmpi) l1 l2 && cmpe b1 b2
   | Ttry (b1,l1), Ttry (b2,l2) -> cmpe b1 b2 &&
                                   List.for_all2 (fun (exn1,e1) (exn2,e2) ->
                                       compare_exn exn1 exn2 && cmpe e1 e2) l1 l2
   | Tassert (None,e1), Tassert (None,e2) -> cmpe e1 e2
   | Tassert (Some l1,e1), Tassert (Some l2,e2) -> cmpi l1 l2 && cmpe e1 e2
-  | Ttoiter (a1,i1,e1), Ttoiter (a2,i2,e2) -> cmpi a1 a2 && cmpi i1 i2 && cmpe e1 e2
   | Tvar i1, Tvar i2 -> cmpi i1 i2
+  | Ttuple l1, Ttuple l2 -> List.for_all2 cmpe l1 l2
   | Trecord (None,l1), Trecord (None,l2) ->
     List.for_all2 (fun (i1,j1) (i2,j2) ->
         cmpi i1 i2 && cmpe j1 j2) l1 l2
@@ -692,26 +766,42 @@ let compare_abstract_term
   | Tdoti (l1,r1), Tdoti (l2,r2) -> cmpi r1 r2 && cmpi l1 l2
   | Tename,Tename -> true
   | Tcaller i1, Tcaller i2 -> cmpi i1 i2
+  | Tsender i1, Tsender i2 -> cmpi i1 i2
   | Ttransferred i1, Ttransferred i2 -> cmpi i1 i2
+  | Ttransfer (f1,t1), Ttransfer (f2,t2) -> cmpe f1 f2 && cmpe t1 t2
+  | Tcall e1, Tcall e2 -> cmpe e1 e2
+  | Tfst e1, Tfst e2 -> cmpe e1 e2
+  | Tsnd e1, Tsnd e2 -> cmpe e1 e2
+  | Tabs e1, Tabs e2 -> cmpe e1 e2
   | Tnow i1, Tnow i2 -> cmpi i1 i2
   | Tadded a1, Tadded a2 -> cmpi a1 a2
   | Trmed  a1, Trmed a2 -> cmpi a1 a2
   | Tlist l1, Tlist l2 -> List.for_all2 cmpe l1 l2
-  | Tnil, Tnil -> true
+  | Tnil i1, Tnil i2 -> cmpi i1 i2
   | Temptycoll i1, Temptycoll i2 -> cmpi i1 i2
-  | Tcard (i1,e1), Tcard (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
+  | Temptyview i1, Temptyview i2 -> cmpi i1 i2
+  | Tccard (i1,e1), Tccard (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
+  | Tvcard (i1,e1), Tvcard (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tmkcoll (i1,e1), Tmkcoll (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
+  | Tmkview (i1,e1), Tmkview (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tcontent (i1,e1), Tcontent (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
-  | Tunshallow (i1,e1,f1), Tunshallow (i2,e2,f2) -> cmpi i1 i2 && cmpe e1 e2 && cmpe f1 f2
+  | Tvcontent (i1,e1), Tvcontent (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
+  | Ttocoll (i1,e1,f1), Ttocoll (i2,e2,f2) -> cmpi i1 i2 && cmpe e1 e2 && cmpe f1 f2
+  | Ttoview (i1,e1), Ttoview (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tshallow (i1,e1,f1), Tshallow (i2,e2,f2) -> cmpi i1 i2 && cmpe e1 e2 && cmpe f1 f2
-  | Tmlist (e11,i11,i21,i31,e21), Tmlist (e12,i12,i22,i32,e22) ->
-    cmpe e11 e12 && cmpi i11 i12 && cmpi i21 i22 && cmpi i31 i32 && cmpe e21 e22
-  | Tcons (e1,e2), Tcons (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
+  | Tmlist (l1,e11,i11,i21,i31,e21), Tmlist (l2,e12,i12,i22,i32,e22) ->
+    cmpi l1 l2 && cmpe e11 e12 && cmpi i11 i12 && cmpi i21 i22 && cmpi i31 i32 && cmpe e21 e22
+  | Tcons (i1,e1,e2), Tcons (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tadd (i1,e1,e2), Tadd (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
+  | Tvadd (i1,e1,e2), Tvadd (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tremove (i1,e1,e2), Tremove (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
-  | Tlistremove (i1,e1,e2), Tlistremove (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
-  | Tget (i1,e1,e2), Tget (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
+  | Tvremove (i1,e1,e2), Tvremove (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
+  | Tfget (i1,e1,e2), Tfget (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tset (i1,e1,e2,e3), Tset (i2,f1,f2,f3) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2 && cmpe e3 f3
+  | Tcsum (i1,e1), Tcsum (i2,f1) -> cmpi i1 i2 && cmpe e1 f1
+  | Tvsum (i1,e1,e2), Tvsum (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
+  | Tcsort (i1,e1), Tcsort (i2,f1) -> cmpi i1 i2 && cmpe e1 f1
+  | Tvsort (i1,e1,e2), Tvsort (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tcoll (i1,e1), Tcoll (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tassign (e1,e2), Tassign (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
   | Traise e1, Traise e2 -> compare_exn e1 e2
@@ -728,7 +818,8 @@ let compare_abstract_term
   | Tmod (t1,l1,r1), Tmod (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
   | Tnot e1, Tnot e2 -> cmpe e1 e2
   | Tpand (e1,e2), Tpand (e3,e4) -> cmpe e1 e3 && cmpe e2 e4
-  | Teq (t1,l1,r1), Teq (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
+  | Teq (i1,l1,r1), Teq (i2,l2,r2) -> cmpt i1 i2 && cmpe l1 l2 && cmpe r1 r2
+  | Teqview (i1,l1,r1), Teqview (i2,l2,r2) -> cmpi i1 i2 && cmpe l1 l2 && cmpe r1 r2
   | Tneq (t1,l1,r1), Tneq (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
   | Tlt (t1,l1,r1), Tlt (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
   | Tle (t1,l1,r1), Tle (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
@@ -751,7 +842,6 @@ let compare_abstract_term
   | Tor (e1,e2), Tor (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
   | Tand (e1,e2), Tand (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
   | Told e1, Told e2 -> cmpe e1 e2
-  | Tat e1, Tat e2 -> cmpe e1 e2
   | Tfalse, Tfalse -> true
   | Ttrue, Ttrue -> true
   | Tunion (i1,e1,e2), Tunion (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
@@ -760,17 +850,26 @@ let compare_abstract_term
   | Tsubset (i1,e1,e2), Tsubset (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tresult, Tresult -> true
   | Tmem (t1,e1,e2), Tmem (t2,f1,f2) -> cmpi t1 t2 && cmpe e1 f1 && cmpe e2 f2
+  | Tvmem (t1,e1,e2), Tvmem (t2,f1,f2) -> cmpi t1 t2 && cmpe e1 f1 && cmpe e2 f2
   | Tlmem (t1,e1,e2), Tlmem (t2,f1,f2) -> cmpi t1 t2 && cmpe e1 f1 && cmpe e2 f2
-  | Tcontains (t1,e1,e2), Tcontains (t2,f1,f2) -> cmpi t1 t2 && cmpe e1 f1 && cmpe e2 f2
+  | Tccontains (t1,e1,e2), Tccontains (t2,f1,f2) -> cmpi t1 t2 && cmpe e1 f1 && cmpe e2 f2
+  | Tvcontains (t1,e1,e2), Tvcontains (t2,f1,f2) -> cmpi t1 t2 && cmpe e1 f1 && cmpe e2 f2
   | Tempty (i1,e1), Tempty (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
+  | Tvempty (i1,e1), Tvempty (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tsingl (i1,e1), Tsingl (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
-  | Thead (e1,e2), Thead (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
-  | Ttail (e1,e2), Ttail (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
-  | Tnth (i1,e1,e2), Tnth (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
+  | Tvhead (i1,e1,e2), Tvhead (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
+  | Tchead (i1,e1,e2), Tchead (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
+  | Tctail (i1,e1,e2), Tctail (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
+  | Tvtail (i1,e1,e2), Tvtail (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
+  | Tcnth (i1,e1,e2), Tcnth (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
+  | Tvnth (i1,e1,e2), Tvnth (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Twitness i1, Twitness i2 -> cmpi i1 i2
   | Tnone, Tnone -> true
   | Tsome e1, Tsome e2 -> cmpe e1 e2
   | Tenum i1, Tenum i2 -> cmpi i1 i2
+  | Tmark (i1,e1), Tmark (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
+  | Tat (i1,e1), Tat (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
+  | Tunit, Tunit -> true
   | Tnottranslated, Tnottranslated -> true
   | Ttobereplaced, Ttobereplaced -> true
   | _ -> false (* TODO : compare exception ? *)

@@ -6,12 +6,11 @@ variable da : date = 2020-01-01
 variable du : duration = 0s
 variable tz : tez = 0tz
 
-action exec () {
+entry exec () {
   effect {
     i += 1;
     i -= 1;
     i *= 1;
-    i /= 1;
 
     ra += 1.0;
     ra -= 1.0;

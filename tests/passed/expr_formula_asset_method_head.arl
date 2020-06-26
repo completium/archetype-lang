@@ -1,0 +1,21 @@
+archetype expr_formula_asset_method_head
+
+asset my_asset identified by id {
+  id : string;
+  value : int;
+} initialized by {
+  {"id0"; 0};
+  {"id1"; 1};
+  {"id2"; 2}
+}
+
+entry exec () {
+
+  specification {
+    s: not my_asset.head(2).isempty();
+  }
+
+  effect {
+    require (true)
+  }
+}

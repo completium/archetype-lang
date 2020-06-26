@@ -1,0 +1,18 @@
+archetype effect_method_asset_clear_view
+
+asset my_asset identified by id {
+  id : string;
+  value : int = 0;
+} initialized by {
+  {"id0"; 0};
+  {"id1"; 1};
+  {"id2"; 2}
+}
+
+variable res : int = 0
+
+entry exec () {
+  effect {
+    my_asset.select(value % 2 = 0).clear()
+  }
+}

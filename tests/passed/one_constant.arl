@@ -1,3 +1,9 @@
 archetype one_constant
 
 constant myconstant : string = ""
+
+entry exec() {
+  effect {
+    require(true)
+  }
+}

@@ -1,0 +1,22 @@
+archetype asset_collect_to_view
+
+asset my_asset identified by id {
+  id : string;
+  value : int = 0;
+} initialized by {
+  {"id0"; 0};
+  {"id1"; 1};
+  {"id2"; 2}
+}
+
+variable res : int = 0
+
+entry exec () {
+  specification {
+    s0: res = 1
+  }
+  effect {
+    var l = my_asset; (* implicit cast to view *)
+    res := l.select(value = 0).count()
+  }
+}

@@ -18,8 +18,10 @@
 
   let keywords_ =
     [
-      "action"              , ACTION         ;
+      "added"               , ADDED          ;
+      "aggregate"           , AGGREGATE      ;
       "and"                 , AND            ;
+      "any"                 , ANY            ;
       "archetype"           , ARCHETYPE      ;
       "assert"              , ASSERT         ;
       "asset"               , ASSET          ;
@@ -30,7 +32,6 @@
       "by"                  , BY             ;
       "call"                , CALL           ;
       "called"              , CALLED         ;
-      "collection"          , COLLECTION     ;
       "constant"            , CONSTANT       ;
       "contract"            , CONTRACT       ;
       "definition"          , DEFINITION     ;
@@ -40,9 +41,11 @@
       "effect"              , EFFECT         ;
       "else"                , ELSE           ;
       "end"                 , END            ;
+      "entry"               , ENTRY          ;
       "enum"                , ENUM           ;
       "exists"              , EXISTS         ;
       "extension"           , EXTENSION      ;
+      "fail"                , FAIL           ;
       "failif"              , FAILIF         ;
       "false"               , FALSE          ;
       "for"                 , FOR            ;
@@ -56,7 +59,6 @@
       "initialized"         , INITIALIZED    ;
       "invariant"           , INVARIANT      ;
       "iter"                , ITER           ;
-      "pkey"                , PKEY           ;
       "label"               , LABEL          ;
       "let"                 , LET            ;
       "list"                , LIST           ;
@@ -70,16 +72,18 @@
       "or"                  , OR             ;
       "otherwise"           , OTHERWISE      ;
       "partition"           , PARTITION      ;
-      "predicate"           , PREDICATE      ;
+      "pkey"                , PKEY           ;
       "postcondition"       , POSTCONDITION  ;
+      "predicate"           , PREDICATE      ;
       "record"              , RECORD         ;
       "ref"                 , REF            ;
+      "removed"             , REMOVED        ;
       "require"             , REQUIRE        ;
       "return"              , RETURN         ;
       "security"            , SECURITY       ;
       "shadow"              , SHADOW         ;
-      "sorted"              , SORTED         ;
       "some"                , SOME           ;
+      "sorted"              , SORTED         ;
       "specification"       , SPECIFICATION  ;
       "states"              , STATES         ;
       "then"                , THEN           ;
@@ -87,6 +91,8 @@
       "transfer"            , TRANSFER       ;
       "transition"          , TRANSITION     ;
       "true"                , TRUE           ;
+      "unmoved"             , UNMOVED        ;
+      "unpack"              , UNPACK         ;
       "use"                 , USE            ;
       "var"                 , VAR            ;
       "variable"            , VARIABLE       ;
@@ -118,6 +124,7 @@ let date     = day ('T' hour ( timezone )?)?
 let accept_transfer = "accept" blank+ "transfer"
 let refuse_transfer = "refuse" blank+ "transfer"
 let bytes    = "0x" ['0'-'9' 'a'-'f' 'A'-'F']+
+let percent  = digit+ "%"
 
 (* -------------------------------------------------------------------- *)
 rule token = parse
@@ -139,6 +146,7 @@ rule token = parse
   | duration as d         { DURATION (d) }
   | date as d             { DATE (d) }
   | bytes as v            { BYTES (String.sub v 2 ((String.length v) - 2)) }
+  | percent as v          { PERCENT_LIT (Big_int.big_int_of_string (String.sub v 0 ((String.length v) - 1))) }
 
 
   | "//"                  { comment_line lexbuf; token lexbuf }

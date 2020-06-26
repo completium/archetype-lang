@@ -1,7 +1,7 @@
 archetype health_care
 
-constant insurer : role = @tz1KksC8RvjUWAbXYJuNrUbontHGor25Cztk
-constant patient : role = @tz1KksC8RvjUWAbXYJuNrUbontHGor25Cztk
+constant insurer : role = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
+constant patient : role = @tz1bfVgcJC4ukaQSHUe1EbrUd5SekXeP9CWk
 
 constant fee : tez = 100tz
 constant deductible : tez = 500tz
@@ -21,7 +21,7 @@ states =
 | Running
 | Canceled
 
-transition[%signedbyall [patient; insurer]%] confirm () {
+transition confirm () {
   from Created
   (*signed by [insrurer; patient]*)
   to Running
@@ -36,7 +36,7 @@ transition cancel () {
   to Canceled
 }
 
-action[%signedbyall [patient; insurer]%] register_doctor (docid : address) {
+entry register_doctor (docid : address) {
   (*signed by [insurer; patient]*)
   require {
      r1 : state = Running;
@@ -46,7 +46,7 @@ action[%signedbyall [patient; insurer]%] register_doctor (docid : address) {
   }
 }
 
-action declare_consultation (v : tez) {
+entry declare_consultation (v : tez) {
   require {
      r2 : state = Running;
      r3 : doctor.contains(caller);
@@ -57,7 +57,7 @@ action declare_consultation (v : tez) {
   }
 }
 
-action pay_doctor (docid : address) {
+entry pay_doctor (docid : address) {
   specification {
     postcondition idem_balance_pay_doctor {
       balance = before.balance
@@ -69,7 +69,7 @@ action pay_doctor (docid : address) {
     r4 : state = Running;
   }
   effect {
-    var ldebt = doctor.get(docid).debt;
+    var ldebt = doctor[docid].debt;
     var decrease : tez = min (transferred, ldebt);
     transfer decrease to docid;
     transfer (transferred - decrease) to insurer;
@@ -77,7 +77,7 @@ action pay_doctor (docid : address) {
   }
 }
 
-action pay_fee () {
+entry pay_fee () {
   specification {
     postcondition idem_balance_pay_fee {
       balance = before.balance
@@ -89,16 +89,16 @@ action pay_fee () {
     r5 : state = Running;
   }
   effect {
-    let nb_periods : int = (now - last_fee) / period in  (* div is euclidean *)
-    let due = nb_periods * fee in
-    let decrease : tez = min (transferred, due) in
+    var nb_periods : int = (now - last_fee) div period;  (* div is euclidean *)
+    var due = nb_periods * fee;
+    var decrease : tez = min (transferred, due);
     transfer decrease to insurer;
     transfer (transferred - decrease) to patient;
-    last_fee += period * nb_periods     (* last_fee <> now because div is euclidean *)
+    last_fee += nb_periods * period     (* last_fee <> now because div is euclidean *)
   }
 }
 
-action pay_consulation () {
+entry pay_consulation () {
   specification {
     idem_balance_pay_consultation : balance = before.balance;
   }
@@ -108,7 +108,7 @@ action pay_consulation () {
     r6 : state = Running;
   }
   effect {
-    let decrease : tez = min (transferred, consultation_debt) in
+    var decrease : tez = min (transferred, consultation_debt);
     transfer decrease to insurer;
     transfer (transferred - decrease) to patient;
     consultation_debt -= decrease

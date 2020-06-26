@@ -1,6 +1,6 @@
 archetype empty
 
-action myaction () {
+entry myaction () {
   specification {
   }
   accept transfer

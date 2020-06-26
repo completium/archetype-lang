@@ -177,7 +177,7 @@ let mk_outline_from_specification (spec : PT.specification) =
       let l, v = Location.deloc i in
       match v with
       | Vassert (id, _, ivs, _)
-      | Vpostcondition (id, _, ivs, _) ->
+      | Vpostcondition (id, _, ivs, _, Some PKPost) ->
         [(mk_outline (Location.unloc id, symbol_kind_to_int Property, l))]
         @ mk_outline_from_invariants ivs
         @ accu
@@ -208,7 +208,7 @@ let make_outline_from_decl (d : PT.declaration) gl =
   | Dvariable (id, _, _, _, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Variable, l)]
   | Denum (ek, (li, _)) -> make_outline_from_enum (ek, li, l)
   | Dasset (id, _, _, _, post_options, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Struct, l)] @ mk_outline_post_options post_options
-  | Daction (id, _, ap, _, _) -> mk_outline (Location.unloc id, symbol_kind_to_int Function, l) :: (Option.map_dfl mk_outline_from_specification [] ap.spec_fun)
+  | Dentry (id, _, ap, _, _) -> mk_outline (Location.unloc id, symbol_kind_to_int Function, l) :: (Option.map_dfl mk_outline_from_specification [] ap.spec_fun)
   | Dtransition (id, _, _, _, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Function, l)]
   | Dcontract (id, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Object, l)]
   | Dfunction s -> [mk_outline (Location.unloc s.name, symbol_kind_to_int Function, l)]
@@ -265,7 +265,12 @@ let process (filename, channel) =
           let _ = ast
                   |> Gen_model.to_model
                   |> Gen_transform.check_partition_access
-                  |> Gen_transform.remove_add_update in
+                  |> Gen_transform.check_number_entrypoint
+                  |> Gen_transform.check_containers_asset
+                  |> Gen_transform.check_empty_container_on_initializedby
+                  |> Gen_transform.remove_add_update
+                  |> Gen_transform.check_duplicated_keys_in_asset
+          in
           ();
           process_errors ()
         else

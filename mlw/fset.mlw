@@ -45,11 +45,11 @@ function filter (p : 'a -> bool) (xs : list 'a) : list 'a =
   | Cons y ys ->
       if p y then Cons y (filter p ys) else filter p ys
   end
-  
+
 lemma length_filter :
   forall p. forall xs [@induction] : list 'a.
     length (filter p xs) <= length xs
-    
+
 lemma mem_filter :
   forall p. forall xs [@induction] : list 'a. forall x.
     mem x (filter p xs) <-> (mem x xs /\ p x)
@@ -83,6 +83,9 @@ predicate normed (xs : list t) =
   norm xs = xs
 
 (* ------------------------------------------------------------------------ *)
+lemma normed_is_distinct : forall xs. normed xs -> distinct xs
+
+(* ------------------------------------------------------------------------ *)
 axiom normP : forall xs. permut (undup xs) (norm xs)
 axiom normK : forall xs. norm (norm xs) = norm xs
 axiom normI : forall xs ys. permut (undup xs) (undup ys) -> norm xs = norm ys
@@ -107,8 +110,12 @@ let function mk (xs : list t) : fset =
   { content = norm xs; }
 
 (* ------------------------------------------------------------------------ *)
-lemma mem_mk :
-  forall xs x. fmem x (mk xs) <-> mem x xs
+lemma fcontent_mk :
+  forall xs. [@rewrite] content (mk xs) = norm xs
+
+(* ------------------------------------------------------------------------ *)
+lemma mem_norm :
+  forall xs x. [@rewrite] mem x (norm xs) <-> mem x xs
 
 (* ------------------------------------------------------------------------ *)
 let function fset0 : fset =
@@ -127,8 +134,16 @@ function fsetD (s1 s2 : fset) : fset =
   mk (filter (fun x -> not (Quant.mem eqt x s2.content)) s1.content)
 
 (* ------------------------------------------------------------------------ *)
+lemma fsetD_mem :
+  forall x s1 s2. fmem x (fsetD s1 s2) <-> fmem x s1 /\ not (fmem x s2)
+
+(* ------------------------------------------------------------------------ *)
 let function fcard (s : fset) : int =
   length s.content
+
+(* ------------------------------------------------------------------------ *)
+lemma card_mk :
+  forall xs. distinct xs -> fcard (mk xs) = length xs
 
 (* ------------------------------------------------------------------------ *)
 predicate fsubset (s1 s2 : fset) =
@@ -194,7 +209,7 @@ lemma fsubsetIr : forall s1 s2. fsubset (fsetI s1 s2) s2
 lemma fsubsetD : forall s1 s2. fsubset (fsetD s1 s2) s1
 
 (* ------------------------------------------------------------------------ *)
-lemma fsubset_trans : forall s1 s2 s3. 
+lemma fsubset_trans : forall s1 s2 s3.
   fsubset s1 s2 -> fsubset s2 s3 -> fsubset s1 s3
 
 (* ------------------------------------------------------------------------ *)

@@ -1,0 +1,25 @@
+archetype expr_formula_asset_method_subsetof_partition
+
+asset o_asset identified by oid {
+  oid : int;
+}
+
+asset my_asset identified by id {
+  id     : string;
+  col    : o_asset partition;
+} initialized by {
+  {"id0"; []};
+  {"id1"; []};
+  {"id2"; []}
+}
+
+entry exec (k : string) {
+
+  specification {
+    s: let some a = my_asset[k] in a.col.subsetof(o_asset) otherwise true;
+  }
+
+  effect {
+    require (true)
+  }
+}

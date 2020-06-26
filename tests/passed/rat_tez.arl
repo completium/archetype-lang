@@ -1,0 +1,10 @@
+archetype rat_tez
+
+entry exec (r : role) {
+  accept transfer
+  effect {
+    var a : tez = (1 div 3) * 1tz;
+
+    transfer a to r
+  }
+}

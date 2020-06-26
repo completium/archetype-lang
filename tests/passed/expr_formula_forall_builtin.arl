@@ -1,0 +1,12 @@
+archetype expr_formula_forall_builtin
+
+entry exec () {
+
+  specification {
+    s: forall x : int, x = x;
+  }
+
+  effect {
+    require(true)
+  }
+}

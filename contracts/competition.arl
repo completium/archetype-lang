@@ -1,14 +1,14 @@
 archetype competition
 
-variable[%transferable%] organizer : role = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
+variable organizer : role = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 
 (* start date *)
-variable[%mutable organiser (instate (Created))%] startdate : date = 2019-11-12T00:00:00
+variable startdate : date = 2019-11-12T00:00:00
 
 (* deadline *)
-variable[%mutable organiser (instate (Created))%] deadline : date = 2020-11-12T00:00:00
+variable deadline : date = 2020-11-12T00:00:00
 
-variable[%traceable%] prize : tez = 3500tz
+variable prize : tez = 3500tz
 
 variable oracle : role = @tz1bfVgcJC4ukaQSHUe1EbrUd5SekXeP9CWk
 
@@ -30,7 +30,7 @@ transition confirm () {
   to InProgress when { now > startdate }
 }
 
-action submit (ckey : pkey of submission, pscore[%signedby oracle%] : int) {
+entry submit (ckey : pkey of submission, pscore : int) {
   require {
     c1 : state = InProgress;
   }
@@ -49,31 +49,31 @@ transition decide () {
   from InProgress
   to Done
   with effect {
-    let submissions = submission.sort(timestamp).sort(desc(score)) in
+    var submissions = submission.sort(desc(score), timestamp);
       if submissions.count() >= 3
       then (
-        let first = submissions.nth(0).competitor in
-        let second = submissions.nth(1).competitor in
-        let third = submissions.nth(2).competitor in
-        let q1 = 0.5 * prize in
-        let q2 = 0.3 * prize in
-        let q3 = 0.2 * prize in
+        var first  = submissions.nth(0);
+        var second = submissions.nth(1);
+        var third  = submissions.nth(2);
+        var q1 = 0.5 * prize;
+        var q2 = 0.3 * prize;
+        var q3 = 0.2 * prize;
         transfer q1 to first;
         transfer q2 to second;
         transfer q3 to third;
         transfer (prize - q1 - q2 - q3) to organizer)
         else if (submissions.count() >= 2)
              then (
-               let first = submissions.nth(0).competitor in
-               let second = submissions.nth(1).competitor in
-               let q1 = 0.6 * prize in
-               let q2 = 0.4 * prize in
+               var first  = submissions.nth(0);
+               var second = submissions.nth(1);
+               var q1 = 0.6 * prize;
+               var q2 = 0.4 * prize;
                transfer q1 to first;
                transfer q2 to second;
                transfer (prize - q1 - q2) to organizer)
              else if (submissions.count() >= 1)
                then (
-                 let first = submissions.nth(0).competitor in
+                 var first = submissions.nth(0);
                  transfer prize to first)
                else transfer prize to organizer
   }

@@ -1,0 +1,13 @@
+archetype expr_arith_ediv_dur_int
+
+variable res : duration = 0s
+
+entry exec () {
+  specification {
+    s0: res = 1h;
+  }
+  effect {
+    res := 4h div 4;
+    require(res = 1h)
+  }
+}

@@ -1,0 +1,14 @@
+archetype expr_fun_unpack_bool
+
+variable res : bool option = none
+
+entry exec () {
+  specification {
+    s0: issome(res);
+    s1: let some r = getopt(res) in r otherwise false;
+  }
+  effect {
+    res := unpack<bool>(0x05030a);
+    require (getopt(res))
+  }
+}

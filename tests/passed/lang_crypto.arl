@@ -1,0 +1,22 @@
+archetype lang_crypto
+
+entry exec () {
+  effect {
+    var b : bytes = 0x050100000009617263686574797065;
+
+    var h1 : bytes = blake2b(b);
+    require (h1 = h1);
+    var h2 : bytes = sha256(b);
+    require (h2 = h2);
+    var h3 : bytes = sha512(b);
+    require (h3 = h3);
+
+    var k   : key       = "edpkurLzuFFL1XyP3fed4u7MsgeywQoQmHM45Bz91PBzDvUjQ9bvdn";
+    var sig : signature = "edsigtqrQGP5wwzZhYDr1WcDrh7YdEH9JecM6BD1scrmYHP4aJ98izGUeQT5MmqSk9gtgTZvBacAncxgCyBnX9UjJCokUYYaapq";
+    var cs  : bool      = check_signature(k, sig, b);
+    require (cs);
+
+    var kh : key_hash = hash_key(k);
+    require (kh = kh)
+  }
+}

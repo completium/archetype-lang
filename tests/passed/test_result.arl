@@ -11,9 +11,9 @@ function f (i : int) : int {
   }
 }
 
-action exec () {
+entry exec () {
   effect {
-    let res : int = f(0) in
+    var res : int = f(0);
     ()
   }
 }

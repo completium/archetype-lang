@@ -1,0 +1,7 @@
+archetype no_assignment_for_argument
+
+entry exec (x : int) {
+  effect {
+    x := 0;
+  }
+}

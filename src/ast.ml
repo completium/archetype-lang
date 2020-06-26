@@ -1,6 +1,5 @@
 open Location
 open Ident
-open Tools
 
 type lident = ident loced
 
@@ -9,9 +8,9 @@ let pp_lident fmt i = Format.fprintf fmt "%s" (unloc i)
 
 type container =
   | Collection
-  | Subset
+  | Aggregate
   | Partition
-  | List
+  | View
 [@@deriving show {with_path = false}]
 
 type currency =
@@ -31,6 +30,8 @@ type vtyp =
   | VTrole
   | VTcurrency
   | VTkey
+  | VTkeyhash
+  | VTsignature
   | VTbytes
 [@@deriving show {with_path = false}]
 
@@ -42,11 +43,13 @@ type trtyp =
 [@@deriving show {with_path = false}]
 
 type ptyp =
+  | Tnamed of int
   | Tasset of lident
   | Tenum of lident
   | Tcontract of lident
   | Tbuiltin of vtyp
   | Tcontainer of ptyp * container
+  | Tlist of ptyp
   | Ttuple of ptyp list
   | Toption of ptyp
   | Tentry (* entry of external contract *)
@@ -87,8 +90,8 @@ type arithmetic_operator =
   | Plus
   | Minus
   | Mult
-  | Div
   | DivRat
+  | DivEuc
   | Modulo
 [@@deriving show {with_path = false}]
 
@@ -116,38 +119,53 @@ type const =
   | Cbalance
   | Csource
   | Cconditions
-  | Cactions
+  | Centries
   | Cnone
   | Cany
-  | Canyaction
+  | Canyentry
   | Cresult
   (* function *)
-  | Cisempty
-  | Cget
   | Cadd
-  | Cremove
-  | Cremoveif
-  | Cclear
-  | Cupdate
   | Caddupdate
+  | Cceil
+  | Cclear
+  | Cconcat
   | Ccontains
-  | Cnth
-  | Cselect
-  | Csort
   | Ccount
-  | Csum
+  | Cfloor
+  | Cget
+  | Cgetopt
+  | Cisempty
+  | Cisnone
+  | Cissome
+  | Clength
   | Cmax
   | Cmin
+  | Cnth
+  | Cpack
+  | Cremove
+  | Cremoveall
+  | Cremoveif
+  | Cselect
+  | Cslice
+  | Csort
   | Csubsetof
+  | Csum
+  | Cunpack
+  | Cupdate
+  (* list *)
   | Chead
   | Ctail
   | Cabs
   | Cprepend
+  (* crypto *)
+  | Cblake2b
+  | Csha256
+  | Csha512
+  | Cchecksignature
+  | Chashkey
   (* vset *)
   | Cbefore
-  | Cunmoved
-  | Cadded
-  | Cremoved
   | Citerated
   | Ctoiterate
 [@@deriving show {with_path = false}]
@@ -172,22 +190,6 @@ and 'id qualid_node =
 
 type qualid = lident qualid_gen
 [@@deriving show {with_path = false}]
-
-(* -------------------------------------------------------------------- *)
-
-type 'id rexpr_gen = ('id rexpr_node) struct_poly
-[@@deriving show {with_path = false}]
-
-and 'id rexpr_node =
-  | Rany
-  | Rqualid of 'id qualid_gen
-  | Ror of 'id rexpr_gen * 'id rexpr_gen
-  | Raddress of 'id
-[@@deriving show {with_path = false}]
-
-type rexpr = lident rexpr_gen
-[@@deriving show {with_path = false}]
-
 
 (* -------------------------------------------------------------------- *)
 
@@ -269,6 +271,13 @@ type var_temporality =
   | VTnone
 [@@deriving show {with_path = false}]
 
+type vset =
+  | Vadded
+  | Vremoved
+  | Vunmoved
+  | Vnone
+[@@deriving show {with_path = false}]
+
 type 'id term_node  =
   | Pquantifer of quantifier * 'id * ('id term_gen option * type_) * 'id term_gen
   | Pif of ('id term_gen * 'id term_gen * 'id term_gen)
@@ -283,17 +292,20 @@ type 'id term_node  =
   | Precord of 'id term_gen list
   | Pletin of 'id * 'id term_gen * ptyp option * 'id term_gen * 'id term_gen option (* ident * init * type * body * otherwise *)
   | Pdeclvar of 'id * ptyp option * 'id term_gen
-  | Pvar of var_temporality * 'id
+  | Pvar of var_temporality * vset * 'id
   | Parray of 'id term_gen list
   | Plit of bval
   | Pdot of 'id term_gen * 'id
   | Pconst of const
   | Ptuple of 'id term_gen list
+  | Pnone
+  | Psome of 'id term_gen
+  | Pcast of ptyp * ptyp * 'id term_gen
 [@@deriving show {with_path = false}]
 
 and 'id term_arg =
   | AExpr    of 'id term_gen
-  | AFun     of 'id * ptyp * 'id term_gen
+  | AFun     of 'id * ptyp * ('id * ptyp * 'id term_gen) list * 'id term_gen
   | AEffect  of ('id * operator * 'id term_gen) list
   | ASorting of bool * 'id
 [@@deriving show {with_path = false}]
@@ -322,18 +334,17 @@ type 'id instruction_poly = {
 [@@deriving show {with_path = false}]
 
 and 'id instruction_node =
-  | Iif of ('id term_gen * 'id instruction_gen * 'id instruction_gen)         (* condition * then_ * else_ *)
-  | Ifor of ('id * 'id term_gen * 'id instruction_gen)                        (* id * collection * body *)
-  | Iiter of ('id * 'id term_gen* 'id term_gen * 'id instruction_gen)         (* id * bound_min * bound_max * body *)
-  | Iletin of ('id * 'id term_gen * 'id instruction_gen)                      (* id * init * body *)
-  | Ideclvar of 'id * 'id term_gen                                            (* id * init *)
-  | Iseq of 'id instruction_gen list                                          (* lhs ; rhs *)
-  | Imatchwith of 'id term_gen * ('id pattern_gen * 'id instruction_gen) list (* match term with ('pattern * 'id instruction_gen) list *)
-  | Iassign of (ptyp * assignment_operator * 'id lvalue_gen * 'id term_gen)   (* $2 assignment_operator $3 *)
-  | Irequire of (bool * 'id term_gen)                                         (* $1 ? require : failif *)
-  | Itransfer of ('id term_gen * 'id term_gen)                                (* value * dest *)
+  | Iif of ('id term_gen * 'id instruction_gen * 'id instruction_gen)               (* condition * then_ * else_ *)
+  | Ifor of ('id * 'id term_gen * 'id instruction_gen)                              (* id * collection * body *)
+  | Iiter of ('id * 'id term_gen* 'id term_gen * 'id instruction_gen)               (* id * bound_min * bound_max * body *)
+  | Iletin of ('id * 'id term_gen * 'id instruction_gen)                            (* id * init * body *)
+  | Ideclvar of 'id * 'id term_gen                                                  (* id * init *)
+  | Iseq of 'id instruction_gen list                                                (* lhs ; rhs *)
+  | Imatchwith of 'id term_gen * ('id pattern_gen * 'id instruction_gen) list       (* match term with ('pattern * 'id instruction_gen) list *)
+  | Iassign of (assignment_operator * 'id lvalue_gen * 'id term_gen)         (* $2 assignment_operator $3 *)
+  | Irequire of (bool * 'id term_gen)                                               (* $1 ? require : failif *)
+  | Itransfer of ('id term_gen * 'id term_gen * ('id * ('id term_gen) list) option) (* value * dest * call *)
   | Ibreak
-  | Iassert of 'id term_gen
   | Icall of ('id term_gen option * 'id call_kind * ('id term_arg) list)
   | Ireturn of 'id term_gen
   | Ilabel of 'id
@@ -346,7 +357,7 @@ and instruction = lident instruction_poly
 
 and 'id lvalue_gen = [
   | `Var   of 'id
-  | `Field of 'id term_gen * 'id
+  | `Field of 'id * 'id term_gen * 'id
 ]
 
 and lvalue = lident lvalue_gen
@@ -433,7 +444,7 @@ type 'id specification = {
 }
 [@@deriving show {with_path = false}]
 
-type action_description =
+type entry_description =
   | ADAny
   | ADOp  of string * lident
 [@@deriving show {with_path = false}]
@@ -441,21 +452,21 @@ type action_description =
 type security_role   = lident
 [@@deriving show {with_path = false}]
 
-type security_action =
+type security_entry =
   | Sany
   | Sentry of lident list
 [@@deriving show {with_path = false}]
 
 type security_node =
-  | SonlyByRole         of action_description * security_role list
-  | SonlyInAction       of action_description * security_action
-  | SonlyByRoleInAction of action_description * security_role list * security_action
-  | SnotByRole          of action_description * security_role list
-  | SnotInAction        of action_description * security_action
-  | SnotByRoleInAction  of action_description * security_role list * security_action
-  | StransferredBy      of action_description
-  | StransferredTo      of action_description
-  | SnoStorageFail      of security_action
+  | SonlyByRole         of entry_description * security_role list
+  | SonlyInEntry        of entry_description * security_entry
+  | SonlyByRoleInEntry  of entry_description * security_role list * security_entry
+  | SnotByRole          of entry_description * security_role list
+  | SnotInEntry         of entry_description * security_entry
+  | SnotByRoleInEntry   of entry_description * security_role list * security_entry
+  | StransferredBy      of entry_description
+  | StransferredTo      of entry_description
+  | SnoStorageFail      of security_entry
 [@@deriving show {with_path = false}]
 
 type security_predicate = {
@@ -490,10 +501,26 @@ type 'id function_struct = {
 type function_ = lident function_struct
 [@@deriving show {with_path = false}]
 
+(* -------------------------------------------------------------------- *)
+
+type 'id rexpr_gen = ('id rexpr_node) struct_poly
+[@@deriving show {with_path = false}]
+
+and 'id rexpr_node =
+  | Rany
+  | Rexpr of 'id term_gen
+  | Ror of 'id rexpr_gen * 'id rexpr_gen
+[@@deriving show {with_path = false}]
+
+type rexpr = lident rexpr_gen
+[@@deriving show {with_path = false}]
+
+(* -------------------------------------------------------------------- *)
+
 type 'id transition = {
   from : 'id sexpr_gen;
-  on   : ('id * 'id) option;
-  trs  : ('id * 'id term_gen option * 'id instruction_gen option) list; (* to * condition * action*)
+  on   : ('id * ptyp * 'id * ptyp) option; (* key ident * key type * asset name * asset state type *)
+  trs  : ('id * 'id term_gen option * 'id instruction_gen option) list; (* to * condition * entry*)
 }
 [@@deriving show {with_path = false}]
 
@@ -545,7 +572,7 @@ type 'id asset_struct = {
   key     : 'id option;   (* TODO: option ? *)
   sort    : 'id list;
   state   : 'id option;
-  init    : 'id term_gen option;
+  init    : 'id term_gen list list;
   specs   : 'id label_term list;
   loc     : Location.t [@opaque];
 }
@@ -563,17 +590,25 @@ type 'id contract_struct = {
 
 and contract = lident contract_struct
 
+type 'id decl_ =
+  | Dvariable of 'id variable
+  | Dasset    of 'id asset_struct
+  | Denum     of 'id enum_struct
+  | Dcontract of 'id contract_struct
+[@@deriving show {with_path = false}]
+
+type 'id fun_ =
+  | Ffunction    of 'id function_struct
+  | Ftransaction of 'id transaction_struct
+[@@deriving show {with_path = false}]
+
 type 'id model_struct = {
-  name          : 'id;
-  variables     : 'id variable list;
-  assets        : 'id asset_struct list;
-  functions     : 'id function_struct list;
-  transactions  : 'id transaction_struct list;
-  enums         : 'id enum_struct list;
-  contracts     : 'id contract_struct list;
+  name           : 'id;
+  decls          : 'id decl_ list;
+  funs           : 'id fun_ list;
   specifications : 'id specification list;
-  securities    : security list;
-  loc           : Location.t [@opaque];
+  securities     : security list;
+  loc            : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
@@ -589,7 +624,9 @@ let vtstring     = Tbuiltin (VTstring    )
 let vtaddress    = Tbuiltin (VTaddress   )
 let vtrole       = Tbuiltin (VTrole      )
 let vtcurrency   = Tbuiltin (VTcurrency  )
+let vtsignature  = Tbuiltin (VTsignature )
 let vtkey        = Tbuiltin (VTkey       )
+let vtkeyhash    = Tbuiltin (VTkeyhash   )
 let vtbytes      = Tbuiltin (VTbytes     )
 
 (* mk functions *)
@@ -643,364 +680,20 @@ let mk_enum ?(items = []) ?(loc = Location.dummy) kind =
 let mk_decl ?typ ?default ?(shadow=false) ?(loc = Location.dummy) name =
   { name; typ; default; shadow; loc }
 
-let mk_asset ?(fields = []) ?key ?(sort = []) ?state ?init ?(specs = []) ?(loc = Location.dummy) name   =
+let mk_asset ?(fields = []) ?key ?(sort = []) ?state ?(init = []) ?(specs = []) ?(loc = Location.dummy) name   =
   { name; fields; key; sort; state; init; specs; loc }
 
 let mk_contract ?(signatures = []) ?init ?(loc = Location.dummy) name =
   { name; signatures; init; loc }
 
-let mk_model ?(variables = []) ?(assets = []) ?(functions = []) ?(transactions = []) ?(enums = []) ?(contracts = []) ?(specifications = []) ?(securities = []) ?(loc = Location.dummy) name =
-  { name; variables; assets; functions; transactions; enums; contracts; specifications; securities; loc }
+let mk_model ?(decls = []) ?(funs = []) ?(specifications = []) ?(securities = []) ?(loc = Location.dummy) name =
+  { name; decls; funs; specifications; securities; loc }
 
 let mk_id type_ id : qualid =
   { type_ = Some type_;
     loc   = loc id;
     node  = Qident id;
     label = None; }
-
-let map_term_node (f : 'id term_gen -> 'id term_gen) = function
-  | Pquantifer (q, i, t, e) -> Pquantifer (q, i, t, f e)
-  | Pif (c, t, e)           -> Pif (f c, f t, f e)
-  | Pmatchwith (e, l)       -> Pmatchwith (e, List.map (fun (p, e) -> (p, f e)) l)
-  | Pcall (i, e, args)      ->
-    Pcall (i, e, List.map (fun (arg : 'id term_arg) -> match arg with
-        | AExpr e -> AExpr (f e)
-        | AFun (x, xty, e) -> AFun (x, xty, f e)
-        | AEffect l -> AEffect (List.map (fun (id, op, e) -> (id, op, f e)) l)
-        | ASorting (b, f) -> ASorting (b, f))
-        args)
-  | Plogical (op, l, r)     -> Plogical (op, f l, f r)
-  | Pnot e                  -> Pnot (f e)
-  | Pmulticomp (e, l)       -> Pmulticomp (f e, List.map (fun (op, e) -> (op, f e)) l)
-  | Pcomp (c, l, r)         -> Pcomp (c, f l, f r)
-  | Parith (op, l, r)       -> Parith (op, f l, f r)
-  | Puarith (op, e)         -> Puarith (op, f e)
-  | Precord l               -> Precord (List.map f l)
-  | Pletin (i, a, t, b, o)     -> Pletin (i, f a, t, f b, Option.map f o)
-  | Pdeclvar (i, t, v)      -> Pdeclvar (i, t, f v)
-  | Pvar (b, v)             -> Pvar (b, v)
-  | Parray l                -> Parray (List.map f l)
-  | Plit l                  -> Plit l
-  | Pdot (e, i)             -> Pdot (f e, i)
-  | Pconst c                -> Pconst c
-  | Ptuple l                -> Ptuple (List.map f l)
-
-let map_instr_node f = function
-  | Iif (c, t, e)       -> Iif (c, f t, f e)
-  | Ifor (i, c, b)      -> Ifor (i, c, f b)
-  | Iiter (i, a, b, c)  -> Iiter (i, a, b, f c)
-  | Iletin (i, c, b)    -> Iletin (i, c, f b)
-  | Ideclvar (i, v)     -> Ideclvar (i, v)
-  | Iseq is             -> Iseq (List.map f is)
-  | Imatchwith (a, ps)  -> Imatchwith (a, ps)
-  | Iassign (t, op, l, r)-> Iassign (t, op, l, r)
-  | Irequire (b, x)     -> Irequire (b, x)
-  | Itransfer x         -> Itransfer x
-  | Ibreak              -> Ibreak
-  | Iassert x           -> Iassert x
-  | Icall (x, id, args) -> Icall (x, id, args)
-  | Ireturn x           -> Ireturn x
-  | Ilabel x            -> Ilabel x
-  | Ifail m             -> Ifail m
-
-let map_gen_poly g f (i : 'id struct_poly) : 'id struct_poly =
-  {
-    i with
-    node = g f i.node
-  }
-
-let map_gen g f i =
-  {
-    i with
-    node = g f i.node
-  }
-
-let map_term  f t = map_gen_poly map_term_node  f t
-let map_instr f i = map_gen map_instr_node f i
-
-let fold_term_arg (f : 'id term_gen -> 'a -> 'a) (accu : 'a) (arg : 'id term_arg) =
-  match arg with
-  | AExpr e -> f accu e
-  | AFun (_, _, e) -> f accu e
-  | AEffect l -> List.fold_left (fun accu (_, _, e) -> f accu e) accu l
-  | ASorting _ -> accu
-
-let fold_term (f: 'a -> 't -> 'a) (accu : 'a) (term : 'id term_gen) =
-  match term.node with
-  | Pquantifer (_, _, _, e) -> f accu e
-  | Pif (c, t, e)           -> f (f (f accu c) t) e
-  | Pmatchwith (e, l)       -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
-  | Pcall (_, _, args)      -> List.fold_left (fold_term_arg f) accu args
-  | Plogical (_, l, r)      -> f (f accu l) r
-  | Pnot e                  -> f accu e
-  | Pmulticomp (e, l)       -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
-  | Pcomp (_, l, r)         -> f (f accu l) r
-  | Parith (_, l, r)        -> f (f accu l) r
-  | Puarith (_, e)          -> f accu e
-  | Precord l               -> List.fold_left f accu l
-  | Pletin (_, a, _, b, o)  -> let tmp = f (f accu a) b in Option.map_dfl (f tmp) tmp o
-  | Pdeclvar (_, _, v)      -> f accu v
-  | Pvar _                  -> accu
-  | Parray l                -> List.fold_left f accu l
-  | Plit _                  -> accu
-  | Pdot (e, _)             -> f accu e
-  | Pconst _                -> accu
-  | Ptuple l                -> List.fold_left f accu l
-
-let fold_instr f accu instr =
-  match instr.node with
-  | Iif (_, t, e)      -> f (f accu t) e
-  | Ifor (_, _, b)     -> f accu b
-  | Iiter (_, _, _, c) -> f accu c
-  | Iletin (_, _, b)   -> f accu b
-  | Ideclvar (_, _)    -> accu
-  | Iseq is            -> List.fold_left f accu is
-  | Imatchwith _       -> accu
-  | Iassign _          -> accu
-  | Irequire _         -> accu
-  | Itransfer _        -> accu
-  | Ibreak             -> accu
-  | Iassert _          -> accu
-  | Icall _            -> accu
-  | Ireturn _          -> accu
-  | Ilabel _           -> accu
-  | Ifail _            -> accu
-
-let fold_instr_expr fi fe accu instr =
-  match instr.node with
-  | Iif (c, t, e)       -> fi (fi (fe accu c) t) e
-  | Ifor (_, c, b)      -> fi (fe accu c) b
-  | Iiter (_, a, b, c)  -> fi (fe (fe accu a) b) c
-  | Iletin (_, j, b)    -> fi (fe accu j) b
-  | Ideclvar (_, v)     -> fe accu v
-  | Iseq is             -> List.fold_left fi accu is
-  | Imatchwith (a, ps)  -> List.fold_left (fun accu (_, i) -> fi accu i) (fe accu a) ps
-  | Iassign (_, _, _, e)-> fe accu e
-  | Irequire (_, x)     -> fe accu x
-  | Itransfer (v, d)    -> fe (fe accu v) d
-  | Ibreak              -> accu
-  | Iassert x           -> fe accu x
-  | Icall (x, _, args)  -> let accu = Option.map_dfl (fe accu) accu x in List.fold_left (fold_term_arg fe) accu args
-  | Ireturn x           -> fe accu x
-  | Ilabel x            -> fi accu x
-  | Ifail m             -> fe accu m
-
-let fold_map_term g f (accu : 'a) (term : 'id term_gen) : 'term * 'a =
-  match term.node with
-  | Pquantifer (q, id, t, e) ->
-    let ee, ea = f accu e in
-    g (Pquantifer (q, id, t, ee)), ea
-
-  | Pif (c, t, e) ->
-    let ce, ca = f accu c in
-    let ti, ta = f ca t in
-    let ei, ea = f ta e in
-    g (Pif (ce, ti, ei)), ea
-
-  | Pmatchwith (e, l) ->
-    let ee, ea = f accu e in
-    let (pse, psa) =
-      List.fold_left
-        (fun (ps, accu) (p, i) ->
-           let ia, accu = f accu i in
-           [(p, ia)] @ ps, accu) ([], ea) l
-    in
-
-    g (Pmatchwith (ee, pse)), psa
-
-  | Pcall (a, id, args) ->
-    let ((argss, argsa) : 'c list * 'a) =
-      List.fold_left
-        (fun (pterms, accu) (x : 'id term_arg) ->
-           let p, accu =
-             match x with
-             | AExpr a -> f accu a |> fun (x, acc) -> (Some (AExpr x), acc)
-             | _ -> None, accu in
-           let x = match p with | Some a -> a | None -> x in
-           pterms @ [x], accu) ([], accu) args
-    in
-    g (Pcall (a, id, argss)), argsa
-
-  | Plogical (op, l, r) ->
-    let le, la = f accu l in
-    let re, ra = f la r in
-    g (Plogical (op, le, re)), ra
-
-  | Pnot e ->
-    let ee, ea = f accu e in
-    g (Pnot ee), ea
-
-  | Pmulticomp (e, l) ->
-    let ee, ea = f accu e in
-    let (le, la) =
-      List.fold_left
-        (fun (ps, accu) (p, i) ->
-           let ia, accu = f accu i in
-           [(p, ia)] @ ps, accu) ([], ea) l
-    in
-
-    g (Pmulticomp (ee, le)), la
-
-  | Pcomp (op, l, r) ->
-    let le, la = f accu l in
-    let re, ra = f la r in
-    g (Pcomp (op, le, re)), ra
-
-  | Parith (op, l, r) ->
-    let le, la = f accu l in
-    let re, ra = f la r in
-    g (Parith (op, le, re)), ra
-
-  | Puarith (op, e) ->
-    let ee, ea = f accu e in
-    g (Puarith (op, ee)), ea
-
-  | Precord l ->
-    let (lp, la) = List.fold_left
-        (fun (pterms, accu) x ->
-           let p, accu = f accu x in
-           pterms @ [p], accu) ([], accu) l in
-    g (Precord lp), la
-
-  | Pletin (id, i, t, b, o) ->
-    let ie, ia = f accu i in
-    let be, ba = f ia b in
-    let oe, oa =
-      match o with
-      | Some o -> f ba o |> (fun (x, y) -> (Some x, y))
-      | None -> (None, ba) in
-    g (Pletin (id, ie, t, be, oe)), oa
-
-  | Pdeclvar (i, t, v) ->
-    let ve, va = f accu v in
-    g (Pdeclvar (i, t, ve)), va
-
-  | Pvar (b, id) ->
-    g (Pvar (b, id)), accu
-
-  | Parray l ->
-    let (lp, la) = List.fold_left
-        (fun (pterms, accu) x ->
-           let p, accu = f accu x in
-           pterms @ [p], accu) ([], accu) l in
-    g (Parray lp), la
-
-  | Plit l ->
-    g (Plit l), accu
-
-  | Pdot (e, id) ->
-    let ee, ea = f accu e in
-    g (Pdot (ee, id)), ea
-
-  | Pconst c ->
-    g (Pconst c), accu
-
-  | Ptuple l ->
-    let (lp, la) = List.fold_left
-        (fun (pterms, accu) x ->
-           let p, accu = f accu x in
-           pterms @ [p], accu) ([], accu) l in
-    g (Ptuple lp), la
-
-let fold_map_instr_term gi _ge fi fe (accu : 'a) instr : 'id instruction_gen * 'a =
-  match instr.node with
-  | Iif (c, t, e) ->
-    let ce, ca = fe accu c in
-    let ti, ta = fi ca t in
-    let ei, ea = fi ta e in
-    gi (Iif (ce, ti, ei)), ea
-
-  | Ifor (i, c, b) ->
-    let ce, ca = fe accu c in
-    let bi, ba = fi ca b in
-    gi (Ifor (i, ce, bi)), ba
-
-  | Iiter (i, a, b, c) ->
-    let ae, aa = fe accu a in
-    let be, ba = fe aa b in
-    let ce, ca = fi ba c in
-    gi (Iiter (i, ae, be, ce)), ca
-
-  | Iletin (i, j, b) ->
-    let je, ja = fe accu j in
-    let bi, ba = fi ja b in
-    gi (Iletin (i, je, bi)), ba
-
-  | Ideclvar (i, v) ->
-    let ve, va = fe accu v in
-    gi (Ideclvar (i, ve)), va
-
-  | Iseq is ->
-    let (isi, isa) : ('id instruction_gen list * 'a) =
-      List.fold_left
-        (fun ((instrs, accu) : ('b list * 'c)) x ->
-           let bi, accu = fi accu x in
-           instrs @ [bi], accu) ([], accu) is
-    in
-    gi (Iseq isi), isa
-
-  | Imatchwith (a, ps) ->
-    let ae, aa = fe accu a in
-
-    let (pse, psa) =
-      List.fold_left
-        (fun (ps, accu) (p, i) ->
-           let ia, accu = fi accu i in
-           [(p, ia)] @ ps, accu) ([], aa) ps
-    in
-
-    gi (Imatchwith (ae, pse)), psa
-
-  | Iassign (t, op, id, x) ->
-    let xe, xa = fe accu x in
-    gi (Iassign (t, op, id, xe)), xa
-
-  | Irequire (b, x) ->
-    let xe, xa = fe accu x in
-    gi (Irequire (b, xe)), xa
-
-  | Itransfer (v, d) ->
-    let ve, va = fe accu v in
-    let de, da = fe va d in
-    gi (Itransfer (ve, de)), da
-
-  | Ibreak ->
-    gi (Ibreak), accu
-
-  | Iassert x ->
-    let xe, xa = fe accu x in
-    gi (Iassert xe), xa
-
-  | Icall (x, id, args) ->
-    let xe, xa =
-      match x with
-      | Some x -> fe accu x |> (fun (a, b) -> (Some a, b))
-      | None -> None, accu in
-
-    let (argss, argsa) =
-      List.fold_left
-        (fun (pterms, accu) arg ->
-           match arg with
-           | AExpr x ->
-             let p, accu = fe accu x in
-             pterms @ [AExpr p], accu
-           | _ ->
-             pterms, accu
-        ) ([], xa) args
-    in
-    gi (Icall (xe, id, argss)), argsa
-
-  | Ireturn x ->
-    let xe, xa = fe accu x in
-    gi (Ireturn xe), xa
-
-  | Ilabel x ->
-    gi (Ilabel x), accu
-
-  | Ifail m ->
-    let me, ma = fe accu m in
-    gi (Ilabel me), ma
-(* -------------------------------------------------------------------- *)
 
 module Utils : sig
 
@@ -1035,9 +728,14 @@ end = struct
     let str = Format.asprintf "%a@." pp_error_desc desc in
     raise (Anomaly str)
 
+  let get_variables ast = List.fold_right (fun (x : 'id decl_) accu -> match x with Dvariable x ->  x::accu | _ -> accu ) ast.decls []
+  let get_assets ast    = List.fold_right (fun (x : 'id decl_) accu -> match x with Dasset x    ->  x::accu | _ -> accu ) ast.decls []
+  let get_enums ast     = List.fold_right (fun (x : 'id decl_) accu -> match x with Denum x     ->  x::accu | _ -> accu ) ast.decls []
+  let get_contracts ast = List.fold_right (fun (x : 'id decl_) accu -> match x with Dcontract x ->  x::accu | _ -> accu ) ast.decls []
+
   let get_asset_opt ast asset_name : asset option =
     let id = unloc asset_name in
-    List.fold_left (fun accu (x : asset) -> if String.equal id (unloc x.name) then Some x else accu ) None ast.assets
+    List.fold_left (fun accu (x : asset) -> if String.equal id (unloc x.name) then Some x else accu ) None (get_assets ast)
 
   let get_asset ast asset_name : asset =
     let res = get_asset_opt ast asset_name in
@@ -1045,7 +743,7 @@ end = struct
     | Some v -> v
     | _ -> emit_error (AssetNotFound (unloc asset_name))
 
-  let get_asset_field ast (asset_name, field_name) : 'id decl_gen=
+  let get_asset_field ast (asset_name, field_name) : 'id decl_gen =
     let asset = get_asset ast asset_name in
     let res = List.fold_left (fun accu (x : 'id decl_gen) -> if String.equal (unloc field_name) (unloc x.name) then Some x else accu) None asset.fields in
     match res with
@@ -1088,21 +786,21 @@ end = struct
         if (Location.unloc (get_enum_name x)) = (Location.unloc ident)
         then Some x
         else accu
-      ) None ast.enums
+      ) None (get_enums ast)
 
   let get_asset_opt ast ident =
     List.fold_left (fun accu (x : 'id asset_struct) ->
         if (Location.unloc x.name) = (Location.unloc ident)
         then Some x
         else accu
-      ) None ast.assets
+      ) None (get_assets ast)
 
   let get_contract_opt ast ident =
     List.fold_left (fun accu (x : 'id contract_struct) ->
         if (Location.unloc x.name) = (Location.unloc ident)
         then Some x
         else accu
-      ) None ast.contracts
+      ) None (get_contracts ast)
 
   let get_enum_values ast ident =
     List.fold_left (
@@ -1110,7 +808,7 @@ end = struct
         if List.fold_left (fun accu (x : 'id enum_item_struct) -> accu || (Location.unloc x.name) = (Location.unloc ident)) false x.items
         then (Some (get_enum_name x))
         else accu
-    ) None ast.enums
+    ) None (get_enums ast)
 
   let get_variable_opt ast ident : 'id variable option =
     List.fold_left (
@@ -1118,9 +816,9 @@ end = struct
         if (String.equal (Location.unloc x.decl.name) (Location.unloc ident))
         then Some x
         else accu
-    ) None ast.variables
+    ) None (get_variables ast)
 
-  let is_variable ast ident =
+  let is_variable ast ident : bool =
     match get_variable_opt ast ident with
     | Some _ -> true
     | None   -> false
@@ -1142,7 +840,7 @@ end = struct
           if (String.equal (Location.unloc x.decl.name) (Location.unloc ident))
           then x.decl.typ
           else accu
-      ) None ast.variables in
+      ) None (get_variables ast) in
     match var with
     | Some v -> v
     | None -> emit_error VariableNotFound

@@ -8,7 +8,7 @@ asset admins {
 
 variable hash : string = "initialvalue"
 
-action register (newadmins : admins collection option, oldhash : string, newhash : string) {
+entry register (newadmins : ((pkey of admins) list) option, oldhash : string, newhash : string) {
     specification {
         postcondition p1 {
             before.hash = oldhash
@@ -26,14 +26,16 @@ action register (newadmins : admins collection option, oldhash : string, newhash
     effect {
         var test = false;
         for admin in admins do
-            if admin.addr = caller then
+            if admins[admin].addr = caller then
             test := true
         done;
         require (test = true);
-        hash := newhash(* ;
-        match newadmins with
-        | Some c -> admins := c
-        | None -> ()
-        end *)
+        hash := newhash;
+        if issome(newadmins) then (
+            admins.clear();
+            for a in getopt(newadmins) do
+                admins.add ({ a })
+            done
+        )
     }
 }

@@ -11,9 +11,9 @@ let emit_error msg =
   raise (Error.Stop 7)
 
 let pp_archetype fmt (decls : declaration list) =
-  let pp_action fmt (id, args) =
+  let pp_entry fmt (id, args) =
   Format.fprintf fmt
-    "action %a(%a)"
+    "entry %a(%a)"
     pp_str id
     (pp_list ", " (fun fmt (x, t) -> Format.fprintf fmt "%a : %a" pp_str x Printer_pt.pp_type t)) args
    in
@@ -24,21 +24,21 @@ let pp_archetype fmt (decls : declaration list) =
     | _ -> emit_error "Error: no id found"
   in
 
-  let extract_action () =
+  let extract_entry () =
     let to_arg ((a, b, _) : lident_typ) = (unloc a, b) in
     List.fold_right (fun x accu ->
         match unloc x with
-        | Daction (id, args, _, _, _)
+        | Dentry (id, args, _, _, _)
         | Dtransition (id, args, _, _, _, _, _) -> (unloc id, List.map to_arg args)::accu
         | _ -> accu) decls []
   in
   let id   = get_id () in
-  let acts = extract_action () in
+  let acts = extract_entry () in
 
   Format.fprintf fmt
     "contract %a {@\n  @[%a@]@\n}"
     pp_id id
-    (pp_list "@\n" pp_action) acts
+    (pp_list "@\n" pp_entry) acts
 
 let pp_archetype fmt pt =
   match unloc pt with

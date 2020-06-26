@@ -6,18 +6,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+ - Introduce `container_kind` in model
+ - `pack`, `unpack` functions
+ - `removeif` for collection, aggregate and partition
+
+### Changed
+ - Replace `collection` by `aggregate`
+ - Replace `list` by `set` container for asset container fields (Aggregate | Partition).
+ - Rename `action` by `entry`
+
+## [0.1.14] - 2020-04-25
+### Added
+ - Crypto functions
+ - `slice`, `concat` and `length` functions
+ - `isnone`, `issome`, `getopt` option functions
+ - `floor` and `ceil` functions
+ - add percent literal
+
+### Update
+ - Remove key asset for execution generation
+ - Mlw support for new view type
+
+## [0.1.13] - 2020-03-05
+### Added
  - Contract calls
  - Handle rational type
  - Handle date and duration type
  - Add list container
  - Add print-type-contract command (-ptc)
- - Add `add_update` method for asset
+ - Add `addupdate` method for asset
  - Add `bytes` type
 
 ### Changed
  - Add guard condition in `Add` and `UpdateAdd` api storage
  - Syntax : add identifier on signature of contract argument
  - Refactor and update syntax for transition
+ - Verification api for asset
+ - Syntax : extension arguments are enclosed by parentheses
 
 ## [0.1.12] - 2020-01-09
 ### Added

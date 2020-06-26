@@ -8,25 +8,20 @@ asset myasset {
   a1: s >= 0
 }
 
-action exec (k : pkey of myasset) {
+entry exec (k : pkey of myasset) {
   specification {
     shadow effect {
       myasset.update(k, {s += 1});
-      m.s += 1
     }
     postcondition s1 {
       forall a in myasset, a.s = 2
-    }
-    postcondition s2 {
-      m.s = 2
     }
   }
   failif {
     f1: not (myasset.contains(k));
   }
   effect {
-    var m : myasset = {id = k};
-    myasset.add(m)
+    myasset.add({id = k})
   }
 }
 

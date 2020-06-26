@@ -10,7 +10,7 @@ asset bid identified by incumbent {
 variable deadline : date = 2019-01-01T00:00:00
 
 
-action place_bid () {
+entry place_bid () {
 
   require {
     c1 : now < deadline
@@ -24,15 +24,15 @@ action place_bid () {
 
 
 (* Users need to exhibit proof they are not the winner to reclaim their bid *)
-action reclaim () {
+entry reclaim () {
 
   require {
     c2 : now < deadline;
-    c3 : bid.get(caller).value < max_bid;
+    c3 : bid[caller].value < max_bid;
   }
 
   effect {
-    transfer bid.get(caller).value to caller
+    transfer bid[caller].value to caller
   }
 }
 

@@ -1,0 +1,12 @@
+archetype expr_arith_ediv_int_int
+
+variable res : int = 0
+
+entry exec () {
+  specification {
+    s0: res = 2;
+  }
+  effect {
+    res := 4 div 2
+  }
+}

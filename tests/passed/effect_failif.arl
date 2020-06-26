@@ -1,0 +1,7 @@
+archetype effect_failif
+
+entry exec () {
+  effect {
+    failif (false)
+  }
+}

@@ -27,6 +27,9 @@ depends: [
   "dune" {>= "1.10.0"}
   "menhir"
   "digestif"
+  "{>="
+  "0.7.2"
+  "}"
   "num"
   "yojson"
   "ppx_deriving"

@@ -13,7 +13,7 @@
     let pos : Position.t list = [Tools.location_to_position loc] in
     Error.error_alert pos str (fun _ -> ())
 
-  let dummy_action_properties = {
+  let dummy_entry_properties = {
       accept_transfer = true;
       calledby        = None;
       require         = None;
@@ -30,8 +30,10 @@
 %}
 
 %token ACCEPT_TRANSFER
-%token ACTION
+%token ADDED
+%token AGGREGATE
 %token AND
+%token ANY
 %token ARCHETYPE
 %token ASSERT
 %token ASSET
@@ -45,7 +47,6 @@
 %token BY
 %token CALL
 %token CALLED
-%token COLLECTION
 %token COLON
 %token COLONEQUAL
 %token COMMA
@@ -60,12 +61,14 @@
 %token EFFECT
 %token ELSE
 %token END
+%token ENTRY
 %token ENUM
 %token EOF
 %token EQUAL
 %token EQUIV
 %token EXISTS
 %token EXTENSION
+%token FAIL
 %token FAILIF
 %token FALSE
 %token FOR
@@ -108,8 +111,8 @@
 %token PARTITION
 %token PERCENT
 %token PERCENTRBRACKET
-%token PKEY
 %token PIPE
+%token PKEY
 %token PLUS
 %token PLUSEQUAL
 %token POSTCONDITION
@@ -119,6 +122,7 @@
 %token RECORD
 %token REF
 %token REFUSE_TRANSFER
+%token REMOVED
 %token REQUIRE
 %token RETURN
 %token RPAREN
@@ -135,8 +139,10 @@
 %token TRANSFER
 %token TRANSITION
 %token TRUE
-%token USE
 %token UNDERSCORE
+%token UNMOVED
+%token UNPACK
+%token USE
 %token VAR
 %token VARIABLE
 %token WHEN
@@ -157,6 +163,7 @@
 %token <string> DURATION
 %token <string> DATE
 %token <string> BYTES
+%token <Big_int.big_int> PERCENT_LIT
 
 %nonassoc IN
 
@@ -165,6 +172,7 @@
 %right OTHERWISE
 %right THEN ELSE
 
+%nonassoc prec_var
 %nonassoc COLONEQUAL PLUSEQUAL MINUSEQUAL MULTEQUAL DIVEQUAL
 
 %right IMPLY
@@ -248,7 +256,7 @@ declaration_r:
  | x=variable           { x }
  | x=enum               { x }
  | x=asset              { x }
- | x=action             { x }
+ | x=entry             { x }
  | x=transition         { x }
  | x=dextension         { x }
  | x=namespace          { x }
@@ -280,8 +288,12 @@ variable:
 %inline default_value:
 | EQUAL x=expr { x }
 
+%inline ext_args:
+ |                                           { [] }
+ | LPAREN xs=snl(COMMA, simple_expr) RPAREN  { xs }
+
 dextension:
-| PERCENT x=ident arg=option(simple_expr) { Dextension (x, arg) }
+| PERCENT x=ident args=ext_args { Dextension (x, args) }
 
 %inline extensions:
 | xs=extension+ { xs }
@@ -290,7 +302,7 @@ dextension:
 | e=loc(extension_r) { e }
 
 extension_r:
-| LBRACKETPERCENT x=ident arg=option(simple_expr) PERCENTRBRACKET { Eextension (x, arg) }
+| LBRACKETPERCENT x=ident args=ext_args PERCENTRBRACKET { Eextension (x, args) }
 
 namespace:
 | NAMESPACE x=ident xs=braced(declarations) { Dnamespace (x, xs) }
@@ -311,7 +323,7 @@ contract:
 | LPAREN xs=sl(COMMA, sig_arg) RPAREN { xs }
 
 %inline signature:
-| ACTION x=ident xs=sig_args { Ssignature (x, xs) }
+| ENTRY x=ident xs=sig_args { Ssignature (x, xs) }
 
 %inline fun_body:
 | e=expr { (None, e) }
@@ -368,11 +380,11 @@ function_decl:
 
 %inline spec_postcondition:
 | POSTCONDITION id=ident sp=braced(spec_body)
-    { let e, xs, u = sp in Vpostcondition (id, e, xs, u) }
+    { let e, xs, u = sp in Vpostcondition (id, e, xs, u, Some PKPost) }
 
 %inline spec_contract_invariant:
 | CONTRACT INVARIANT id=ident sp=braced(spec_body)
-    { let e, xs, u = sp in Vcontractinvariant (id, e, xs, u) }
+    { let e, xs, u = sp in Vpostcondition (id, e, xs, u, Some PKInv) }
 
 spec_items:
 | ds=loc(spec_definition)*
@@ -393,7 +405,7 @@ spec_items:
     xs=label_exprs_non_empty RBRACE
         { let ll = List.map (fun x ->
             let loc, (lbl, e) = Location.deloc x in
-            mkloc loc (Vpostcondition (lbl, e, [], []))) xs in
+            mkloc loc (Vpostcondition (lbl, e, [], [], None))) xs in
             (ll, exts) }
 
 specification_fun:
@@ -472,7 +484,7 @@ type_s_unloc:
 | MULT x=type_s { x }
 
 %inline container:
-| COLLECTION { Collection }
+| AGGREGATE  { Aggregate }
 | PARTITION  { Partition }
 
 %inline shadow_asset_fields:
@@ -490,9 +502,16 @@ asset:
                          Dasset (x, fs, sfields, os, apo, ops, exts) }
 
 asset_post_option:
-| WITH STATES x=ident           { APOstates x }
-| WITH xs=braced(label_exprs)   { APOconstraints (xs) }
-| INITIALIZED BY e=simple_expr  { APOinit e }
+| WITH STATES x=ident                                               { APOstates x }
+| WITH xs=braced(label_exprs)                                       { APOconstraints (xs) }
+| INITIALIZED BY LBRACE l=separated_nonempty_list(SEMI_COLON, record_expr) RBRACE { APOinit l }
+
+%inline record_expr:
+ | x=loc(record_expr_unloc) { x }
+
+%inline record_expr_unloc:
+ | LBRACE xs=separated_nonempty_list(SEMI_COLON, record_item) RBRACE
+     { Erecord xs }
 
 %inline asset_post_options:
  | xs=asset_post_option* { xs }
@@ -522,10 +541,10 @@ field_r:
 %inline ident:
 | x=loc(IDENT) { x }
 
-action:
-  ACTION exts=option(extensions) x=ident
+entry:
+  ENTRY exts=option(extensions) x=ident
     args=function_args xs=transitems_eq
-      { let a, b = xs in Daction (x, args, a, b, exts) }
+      { let a, b = xs in Dentry (x, args, a, b, exts) }
 
 transition_to_item:
 | TO x=ident y=require_value? z=with_effect? { (x, y, z) }
@@ -538,19 +557,19 @@ on_value:
 
 transition:
   TRANSITION exts=option(extensions) x=ident
-    args=function_args on=on_value? LBRACE xs=action_properties FROM f=expr trs=transitions RBRACE
+    args=function_args on=on_value? LBRACE xs=entry_properties FROM f=expr trs=transitions RBRACE
       { Dtransition (x, args, on, f, xs, trs, exts) }
 
 %inline transitems_eq:
-| { (dummy_action_properties, None) }
-| LBRACE xs=action_properties e=effect? RBRACE { (xs, e) }
+| { (dummy_entry_properties, None) }
+| LBRACE xs=entry_properties e=effect? RBRACE { (xs, e) }
 
 %inline accept_transfer:
 | /* empty */     { true }
 | REFUSE_TRANSFER { false }
 | ACCEPT_TRANSFER { true }
 
-action_properties:
+entry_properties:
   sp=specification_fun? at=accept_transfer cb=calledby? cs=require? fi=failif? fs=function_item*
   {
     {
@@ -662,7 +681,7 @@ expr_r:
  | LET i=ident t=colon_type_opt EQUAL e=expr IN y=expr
      { Eletin (i, t, e, y, None) }
 
- | VAR i=ident t=colon_type_opt EQUAL e=expr
+ | VAR i=ident t=colon_type_opt EQUAL e=expr %prec prec_var
      { Evar (i, t, e) }
 
  | e1=expr SEMI_COLON e2=expr
@@ -689,7 +708,7 @@ expr_r:
  | IF c=expr THEN t=expr ELSE e=expr
      { Eif (c, t, Some e) }
 
- | xs=snl2(COMMA, simple_expr)
+ | xs=paren(snl2(COMMA, simple_expr))
      { Etuple xs }
 
  | x=expr op=assignment_operator_expr y=expr
@@ -704,6 +723,9 @@ expr_r:
  | FAILIF x=simple_expr
      { Efailif x }
 
+ | FAIL e=paren(simple_expr)
+     { Efail e }
+
  | RETURN x=simple_expr
      { Ereturn x }
 
@@ -712,6 +734,9 @@ expr_r:
 
  | NONE
      { Eoption ONone }
+
+ | UNPACK LESS t=type_t GREATER x=paren(expr)
+     { Eunpack (t, x) }
 
  | x=order_operations %prec prec_order { x }
 
@@ -752,7 +777,7 @@ order_operations:
 
 %inline app_args:
  | LPAREN RPAREN         { [] }
- | LPAREN x=expr RPAREN  { [x] }
+ | LPAREN xs=snl(COMMA, expr) RPAREN  { xs }
 
 %inline simple_expr:
  | x=loc(simple_expr_r) { x }
@@ -767,6 +792,9 @@ simple_expr_r:
  | x=simple_expr DOT y=ident
      { Edot (x, y) }
 
+ | i=simple_expr LBRACKET e=expr RBRACKET
+     { Esqapp (i, e) }
+
  | x=simple_expr DOT id=ident a=app_args
      { Emethod (x, id, a) }
 
@@ -776,14 +804,17 @@ simple_expr_r:
  | LBRACKET e=expr RBRACKET
      { Earray (split_seq e) }
 
- | LBRACE xs=separated_nonempty_list(SEMI_COLON, record_item) RBRACE
+ | LBRACE xs=separated_list(SEMI_COLON, record_item) RBRACE
      { Erecord xs }
 
  | x=literal
      { Eliteral x }
 
- | vt=vt_dot x=ident
-     { let st = { before = fst vt; label = snd vt; } in Eterm (st, x) }
+ | vt=vt x=ident
+     { Eterm (vt, x) }
+
+ | ANY
+     { Eany }
 
  | INVALID_EXPR
      { Einvalid }
@@ -791,10 +822,22 @@ simple_expr_r:
  | x=paren(block_r)
      { x }
 
-%inline vt_dot:
- |            { false, None }
- | BEFORE DOT { true, None }
- | AT LPAREN l=ident RPAREN DOT { false, Some l }
+%inline vt_vset:
+| ADDED   { (VSAdded   : var_vset) }
+| UNMOVED { (VSUnmoved : var_vset) }
+| REMOVED { (VSRemoved : var_vset) }
+
+%inline vt_lbl:
+| BEFORE
+   { VLBefore }
+
+| AT LPAREN l=ident RPAREN
+   { VLIdent l }
+
+%inline vt:
+| vset=ioption(postfix(vt_vset, DOT))
+   lbl=ioption(postfix(vt_lbl , DOT))
+   { (vset, lbl) }
 
 %inline label_exprs:
 | /* empty */   { [] }
@@ -814,17 +857,18 @@ label_expr_unloc:
 | IN    e=simple_expr { Qcollection e }
 
 literal:
- | x=NUMBER     { Lnumber   x }
- | x=DECIMAL    { Ldecimal  x }
- | x=TZ         { Ltz       x }
- | x=MTZ        { Lmtz      x }
- | x=UTZ        { Lutz      x }
- | x=STRING     { Lstring   x }
- | x=ADDRESS    { Laddress  x }
- | x=bool_value { Lbool     x }
- | x=DURATION   { Lduration x }
- | x=DATE       { Ldate     x }
- | x=BYTES      { Lbytes    x }
+ | x=NUMBER      { Lnumber   x }
+ | x=DECIMAL     { Ldecimal  x }
+ | x=TZ          { Ltz       x }
+ | x=MTZ         { Lmtz      x }
+ | x=UTZ         { Lutz      x }
+ | x=STRING      { Lstring   x }
+ | x=ADDRESS     { Laddress  x }
+ | x=bool_value  { Lbool     x }
+ | x=DURATION    { Lduration x }
+ | x=DATE        { Ldate     x }
+ | x=BYTES       { Lbytes    x }
+ | x=PERCENT_LIT { Lpercent  x }
 
 %inline bool_value:
  | TRUE  { true }
@@ -856,11 +900,11 @@ record_item:
  | GREATEREQUAL { Ge }
 
 %inline arithmetic_operator:
- | PLUS    { Plus }
- | MINUS   { Minus }
- | MULT    { Mult }
- | SLASH   { Div }
- | DIV     { DivRat }
+ | PLUS    { Plus   }
+ | MINUS   { Minus  }
+ | MULT    { Mult   }
+ | SLASH   { DivRat }
+ | DIV     { DivEuc }
  | PERCENT { Modulo }
 
 %inline unary_operator:

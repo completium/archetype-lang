@@ -1,0 +1,12 @@
+archetype expr_fun_pack_string
+
+variable res : bytes = 0x00
+
+entry exec () {
+  specification {
+    s0: res = 0x050100000009617263686574797065;
+  }
+  effect {
+    res := pack("archetype")
+  }
+}

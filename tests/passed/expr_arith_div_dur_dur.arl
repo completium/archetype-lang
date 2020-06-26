@@ -1,0 +1,12 @@
+archetype expr_arith_div_dur_dur
+
+variable res : rational = 0.0
+
+entry exec () {
+  specification {
+    s0: res = 1 / 2;
+  }
+  effect {
+    res := 1h / 30m
+  }
+}

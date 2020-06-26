@@ -2,11 +2,11 @@ archetype arith_tez
 
 constant a : tez = 1tz
 
-action exec (r : role) {
+entry exec (r : role) {
   accept transfer
   effect {
-    let c : int = 0 in
-    let b : tez = a * c in
+    var c : int = 0;
+    var b : tez = c * a;
 
     transfer b to r
   }

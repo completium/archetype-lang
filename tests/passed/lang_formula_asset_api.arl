@@ -1,0 +1,97 @@
+archetype lang_formula_asset_api
+
+asset my_asset identified by id {
+  id : string;
+  value : int;
+} initialized by {
+  {"id0"; 0};
+  {"id1"; 1};
+  {"id2"; 2}
+}
+
+variable n : int = 0
+
+entry exec () {
+
+  specification {
+    (* quantifiers *)
+    q1: forall x : int, x = x;
+    q2: forall x in my_asset, x.value = x.value;
+    q3: exists x : int, x = x;
+    q4: exists x in my_asset, x.value = x.value;
+
+    (* formula operators *)
+    o1: true -> true;  (* Mimply *)
+    o2: true <-> true; (* Mequiv *)
+
+    (* formula asset collection *)
+    s1: before.my_asset.isempty();       (* Msetbefore *)
+    s2: unmoved.my_asset.isempty();      (* Msetunmoved *)
+    s3: added.my_asset.isempty();        (* Msetadded *)
+    s4: removed.my_asset.isempty();      (* Msetremoved *)
+
+    (* formula asset collection methods *)
+    f01: let some a = my_asset["id0"] in true otherwise false;
+    f02: my_asset.subsetof(my_asset);
+    f03: my_asset.isempty();
+    f04: my_asset.select(the.value > 0).isempty();
+    f05: my_asset.sort(value).isempty();
+    f06: my_asset.contains("key");
+    f07: let some a = my_asset.nth(0) in a = "id0" otherwise false;
+    f08: my_asset.count() = 0;
+    f09: my_asset.sum(the.value) = 0;
+    f12: my_asset.head(2).isempty();
+    f13: my_asset.tail(2).isempty();
+    f14: before.n = 0;
+  }
+
+  effect {
+    my_asset.add({"id3"; 3});
+    my_asset.add({"id4"; 4});
+    require(n = 0)
+  }
+}
+
+entry exec2 () {
+  specification {
+    postcondition e0 {
+      true
+      invariant for L {
+        at(lbl).x = 0
+      }
+    }
+  }
+  effect {
+    var x = 0;
+    label lbl;
+    for:L i in my_asset do
+      ()
+    done;
+    require(x = 0)
+  }
+}
+
+entry exec3 () {
+  specification {
+    postcondition p1 {
+      true
+      invariant for loop {
+         iterated.isempty() (* Msetiterated *)
+      }
+    }
+
+    postcondition p1 {
+      true
+      invariant for loop {
+         toiterate.isempty() (* Msettoiterate *)
+      }
+    }
+  }
+
+  effect {
+    var res : int = 0;
+    for:loop i in my_asset do
+      res += 1;
+    done
+  }
+}

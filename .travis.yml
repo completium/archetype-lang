@@ -27,11 +27,12 @@ before_install:
   - sudo apt-get -y install opam ocaml-nox
   # Initialize the switch.
   - opam init -a --disable-sandboxing --compiler="${OCAML_VERSION}"
+  - opam update
   - opam install depext
   - opam pin add -n archetype .
   - opam depext archetype
   - opam install --deps-only archetype
-  - opam install why3.1.2.1
+  - opam install why3.1.3.1
 
 script:
   - opam config exec make all

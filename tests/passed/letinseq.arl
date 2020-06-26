@@ -1,9 +1,0 @@
-archetype letinseq
-
-action exec () {
-  effect {
-    let x = 0 in
-      x := 1;
-      x := 2
-  }
-}

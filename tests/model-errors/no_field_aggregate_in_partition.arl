@@ -1,0 +1,21 @@
+archetype no_field_aggregate_in_partition
+
+asset a {
+  aid : int;
+}
+
+asset b {
+  bid : int;
+  bc : a aggregate;
+}
+
+asset c {
+  cid : int;
+  cc : b partition;
+}
+
+entry exec () {
+  effect {
+    require(true)
+  }
+}

@@ -1,0 +1,9 @@
+archetype expr_arith_mult_tez_int
+
+variable v : tez = 0tz
+
+entry main () {
+  effect {
+    v := 1tz * 2
+  }
+}

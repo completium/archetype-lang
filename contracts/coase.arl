@@ -22,47 +22,45 @@ asset card identified by card_id {
 variable next_id : int = 0
 with {
   n1: next_id >= 0;
-  n2: forall c in card, next_id <> c.card_id
+  n2: forall c in card, next_id <> c.card_id;
 }
 
-action transfer_single (card_to_transfer : pkey of card, destination : address) {
+entry transfer_single (card_to_transfer : pkey of card, destination : address) {
   require {
-    ts1: caller = card.get(card_to_transfer).card_owner;
+    ts1: caller = card[card_to_transfer].card_owner;
   }
   effect {
     card.update(card_to_transfer, {card_owner = destination})
   }
 }
 
-action sell_single (card_to_sell : pkey of card) {
+entry sell_single (card_to_sell : pkey of card) {
   specification {
     shadow effect {
-      var c = card.get(card_to_sell);
-      card_pattern.update(c.card_pattern_card, {sellcount += 1})
+      card_pattern.update(card[card_to_sell].card_pattern_card, {sellcount += 1})
     }
   }
   require {
-    ss1: caller = card.get(card_to_sell).card_owner;
+    ss1: caller = card[card_to_sell].card_owner;
   }
   effect {
-    var card_ : card = card.get(card_to_sell);
-    card_pattern.update(card_.card_pattern_card, {quantity -= 1});
-    var card_pattern_ = card_pattern.get(card_.card_pattern_card);
+    var cpc = card[card_to_sell].card_pattern_card;
+    card_pattern.update(cpc, {quantity -= 1});
     card.remove(card_to_sell);
-    var price : tez = card_pattern_.coefficient * card_pattern_.quantity;
+    var price : tez = card_pattern[cpc].quantity * card_pattern[cpc].coefficient;
     var receiver = caller;
     transfer price to receiver
   }
 }
 
-action buy_single (card_to_buy : pkey of card_pattern) {
+entry buy_single (card_to_buy : pkey of card_pattern) {
   specification {
     postcondition bs1 {
       card.count() = before.card.count() + 1
     }
     postcondition bs2 {
-      let some cp = card_pattern.get(card_to_buy) in
-      balance = before.balance + cp.coefficient * cp.quantity
+      let some cp = card_pattern[card_to_buy] in
+      balance = before.balance + cp.quantity * cp.coefficient
       otherwise true
     }
     postcondition bs3 {
@@ -71,8 +69,7 @@ action buy_single (card_to_buy : pkey of card_pattern) {
   }
   accept transfer
   effect {
-    var card_pattern_ : card_pattern = card_pattern.get(card_to_buy);
-    var price : tez = card_pattern_.coefficient * (card_pattern_.quantity + 1);
+    var price : tez = (card_pattern[card_to_buy].quantity + 1) * card_pattern[card_to_buy].coefficient;
     failif (price > transferred);
     card_pattern.update(card_to_buy, {quantity += 1});
     card.add({card_id = next_id; card_owner = caller; card_pattern_card = card_to_buy});
@@ -81,5 +78,5 @@ action buy_single (card_to_buy : pkey of card_pattern) {
 }
 
 specification {
-  g1: balance = card_pattern.sum(coefficient * ((quantity * (quantity + 1)) / 2 + sellcount))
+  g1: balance = card_pattern.sum(((quantity * (quantity + 1)) / 2 + sellcount) * coefficient)
 }

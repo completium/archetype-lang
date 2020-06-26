@@ -9,17 +9,17 @@ asset my_asset_simple identified by str {
 
 asset my_asset identified by j {
   j : int;
-  mycollection : my_asset_simple collection;
-} initialized by [ { 0; [] } ]
-
+  myaggregate : my_asset_simple aggregate;
+} initialized by {
+  { 0; [] }
+}
 
 enum my_enums =
 | Init initial
 | InProgress
 | Completed
 
-asset[%myextension%] [@add @remove @update owner (args)]
-my_asset_all identified by id sorted by k {
+asset my_asset_all identified by id {
   id : role;
   k : int;
   b : bool;
@@ -28,13 +28,13 @@ with states my_enums
 with {
   a2 : k >= 1;
   a3 : k <= 10;
-} initialized by [
-  { @toto; Init; 9 };
-  { @tata; InProgress; 8 }
-]
+} initialized by {
+  { @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg; 4; true };
+  { @tz1bfVgcJC4ukaQSHUe1EbrUd5SekXeP9CWk; 8; false }
+}
 
-action exec (a : my_asset_all) {
+entry exec () {
   effect {
-    require(a.b)
+    require(my_asset_all[@tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg].b)
   }
 }

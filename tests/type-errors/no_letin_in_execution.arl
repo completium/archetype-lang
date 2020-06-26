@@ -1,0 +1,9 @@
+archetype no_letin_in_execution
+
+entry exec () {
+  effect {
+    let x = 0 in
+      x := 1;
+      x := 2
+  }
+}

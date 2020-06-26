@@ -1,0 +1,15 @@
+archetype duplicate_key_in_init_asset
+
+asset my_asset {
+  id: int;
+  v: string;
+} initialized by {
+  {0; "str0"};
+  {0; "str1"}
+}
+
+entry exec () {
+  effect {
+    ()
+  }
+}

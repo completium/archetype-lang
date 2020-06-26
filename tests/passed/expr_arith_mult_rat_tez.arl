@@ -2,11 +2,11 @@ archetype expr_arith_mult_rat_tez
 
 variable res : tez = 0tz
 
-action exec () {
+entry exec () {
   specification {
     s0: res = 500mtz;
   }
   effect {
-    res := 1 div 2 * 1tz
+    res := 0.5 * 1tz
   }
 }

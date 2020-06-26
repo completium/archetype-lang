@@ -1,0 +1,30 @@
+archetype effect_method_asset_update_with_remove_aggregate
+
+asset my_asset_simple identified by oid {
+  oid : int;
+} initialized by {
+  {oid = 1};
+  {oid = 2};
+  {oid = 3}
+}
+
+asset my_asset identified by id {
+  id : string;
+  value : int;
+  myaggregate : my_asset_simple aggregate;
+} initialized by {
+  { "my_id"; 0; [] }
+}
+
+entry exec () {
+  effect {
+    my_asset.update ("my_id", {value = 3; myaggregate -= [1; 2; 3] });
+    (*
+    sugar for
+    my_asset.update ("my_id", {value = 3});
+    my_asset["my_id"].myaggregate.remove(1);
+    my_asset["my_id"].myaggregate.remove(2);
+    my_asset["my_id"].myaggregate.remove(3)
+    *)
+  }
+}

@@ -20,6 +20,7 @@ let pp_literal fmt (l : literal) =
   | Lduration d -> Format.fprintf fmt "%s" d
   | Ldate     d -> Format.fprintf fmt "%s" d
   | Lbytes    s -> Format.fprintf fmt "0x%s" s
+  | Lpercent  n -> Format.fprintf fmt "%s%%"  (Big_int.string_of_big_int n)
 
 let pp_expr fmt e =
   match unloc e with
@@ -121,8 +122,8 @@ let pp_archetype fmt pt =
     in
 
     let pp_called_by = (pp_option (fun fmt (x, _) -> Format.fprintf fmt "`called by ` %a@\n" pp_expr x)) in
-    let pp_actions fmt _ =
-      let pp_action_decl fmt ((name, args, action_properties, _ , _exts) : action_decl) =
+    let pp_entries fmt _ =
+      let pp_entry_decl fmt ((name, args, entry_properties, _ , _exts) : entry_decl) =
         let pp_formula fmt (label, f : ident * expr) =
           Format.fprintf fmt "##### %a@\n`%a`"
             pp_str label
@@ -150,7 +151,7 @@ let pp_archetype fmt pt =
               (pp_list "@\n" pp_formula) l
         in
         let formulas : (ident * expr) list =
-          action_properties.spec_fun
+          entry_properties.spec_fun
           |> Option.get_as_list
           |> List.map unloc
           |> List.map fst
@@ -158,7 +159,7 @@ let pp_archetype fmt pt =
           |> List.map unloc
           |>  (fun l -> List.fold_right (fun x accu ->
               match x with
-              | Vpostcondition (l, e, _, _) -> (unloc l, e)::accu
+              | Vpostcondition (l, e, _, _, _) -> (unloc l, e)::accu
               | _ -> accu
             ) l [])
         in
@@ -179,26 +180,26 @@ let pp_archetype fmt pt =
               (pp_list "@\n" pp_formula) l
         in
         Format.fprintf fmt "### %a@\n" pp_id name;
-        pp_called_by fmt action_properties.calledby;
+        pp_called_by fmt entry_properties.calledby;
         pp_args fmt args;
-        (pp_rf "require") fmt action_properties.require;
-        (pp_rf "failif") fmt action_properties.failif;
+        (pp_rf "require") fmt entry_properties.require;
+        (pp_rf "failif") fmt entry_properties.failif;
         pp_formulas fmt formulas;
       in
-      let actions : action_decl list =
-        List.fold_right (fun x accu -> x |> unloc |> function | Daction a -> a::accu | _ -> accu) es []
+      let entries : entry_decl list =
+        List.fold_right (fun x accu -> x |> unloc |> function | Dentry a -> a::accu | _ -> accu) es []
       in
-      match actions with
+      match entries with
       | [] -> ()
       | _ ->
-        Format.fprintf fmt "## Actions@\n@\n%a"
-          (pp_list "@\n" pp_action_decl) actions
+        Format.fprintf fmt "## entries@\n@\n%a"
+          (pp_list "@\n" pp_entry_decl) entries
     in
 
     let pp_transitions fmt _ =
-      let pp_transition_decl fmt (name, _args, _, _, action_properties, _transitions, _exts : transition_decl) =
+      let pp_transition_decl fmt (name, _args, _, _, entry_properties, _transitions, _exts : transition_decl) =
         Format.fprintf fmt "### %a@\n" pp_id name;
-        pp_called_by fmt action_properties.calledby;
+        pp_called_by fmt entry_properties.calledby;
       in
       let transitions : transition_decl list =
         List.fold_right (fun x accu -> x |> unloc |> function | Dtransition a -> a::accu | _ -> accu) es []
@@ -270,7 +271,7 @@ let pp_archetype fmt pt =
     pp_roles fmt ();
     pp_assets fmt ();
     pp_transitions fmt ();
-    pp_actions fmt ();
+    pp_entries fmt ();
     pp_sec_preds fmt ()
   in
 

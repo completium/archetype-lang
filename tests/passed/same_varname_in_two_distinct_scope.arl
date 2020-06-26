@@ -1,0 +1,13 @@
+archetype same_varname_in_two_distinct_scope
+
+entry exec() {
+  effect {
+    if true then (
+      var v = 0;
+      require (v = v)
+    ) else (
+      var v = 1;
+      require (v = v)
+    )
+  }
+}

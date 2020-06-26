@@ -3,12 +3,15 @@ theory Types
   use int.Int
 
   (* default type mapping *)
-  type key     = int
-  type role    = int
-  type address = int
-  type tez     = int
-  type date    = int
-  type string  = int
+  type key       = int
+  type key_hash  = int
+  type role      = int
+  type address   = int
+  type tez       = int
+  type date      = int
+  type astring   = int
+  type bytes     = int
+  type signature = int
 
   exception Break
   exception NotFound
@@ -17,6 +20,222 @@ theory Types
   exception InvalidCondition
   exception NoTransfer
   exception InvalidState
+  exception Invalid string
+end
+
+module Utils
+  use int.Int
+  use Types
+
+  (* ------------------------------------------------------------------------ *)
+  (* Tuples *)
+
+  let function fst (a : (int, int)) : int
+  =
+  match a with
+  | (l,_) -> l
+  end
+
+  let function snd (a: (int, int)) : int
+  =
+  match a with
+  | (_,r) -> r
+  end
+
+  (* ------------------------------------------------------------------------ *)
+  (* Math *)
+
+  let function abs (a : int) : int
+  ensures { result >= 0 }
+  =
+  if a >= 0 then a else -a
+
+  use int.EuclideanDivision
+
+  let function floor (a : (int,int)) : int
+  requires { not (snd a) = 0 }
+  =
+  match a with
+  | (n,d) ->
+   if d > 0 then
+     div n d
+   else
+     (div n d) - 1
+  end
+
+  let function ceil (a : (int,int)) : int
+  requires { not (snd a) = 0 }
+  =
+  match a with
+  | (n,d) ->
+   if d > 0 then
+     (div n d) + 1
+   else
+     div n d
+  end
+
+  (* ------------------------------------------------------------------------ *)
+  (* Rational *)
+
+  type op_cmp =
+   | OpCmpLt
+   | OpCmpLe
+   | OpCmpGt
+   | OpCmpGe
+
+  let function rat_cmp (op : op_cmp) (lhs : (int, int)) (rhs : (int, int)) : bool
+  =  let a = (fst lhs) * (snd rhs) in
+     let b = (snd lhs) * (fst rhs) in
+     let pos = (fst lhs) * (fst rhs) > 0 in
+     match op with
+     | OpCmpLt -> if pos then
+                    a < b
+                  else
+                    a > b
+     |OpCmpLe -> if pos then
+                   a <= b
+                 else
+                   a >= b
+     |OpCmpGt -> if pos then
+                   a > b
+                 else
+                   a < b
+     |OpCmpGe -> if pos then
+                   a >= b
+                 else
+                   a <= b
+     end
+
+  let function rat_eq (lhs : (int, int)) (rhs : (int, int)) : bool
+  = fst lhs * snd rhs = fst rhs * snd lhs
+
+  type op_arith =
+   | OpArithPlus
+   | OpArithMinus
+   | OpArithMult
+   | OpArithDiv
+
+  let function rat_arith (op : op_arith) (lhs : (int, int)) (rhs : (int, int)) : (int, int)
+  =  match op with
+     | OpArithPlus -> (((fst lhs) * (snd rhs)) + ((snd rhs) * (snd lhs)) , (snd lhs) * (snd rhs))
+     | OpArithMinus -> (((fst lhs) * (snd rhs)) - ((snd rhs) * (snd lhs)) , (snd lhs) * (snd rhs))
+     | OpArithMult -> ((fst lhs) * (fst rhs) , (snd lhs) * (snd rhs))
+     | OpArithDiv -> ((fst lhs) * (snd rhs) , (snd lhs) * (fst rhs))
+     end
+
+  let function div_tez (a : tez) (b : tez) : tez = div a b
+
+  let function rat_tez (c : (int, int)) (t : tez) : tez
+  requires { not (snd c) = 0 }
+  =  div ((abs (fst c)) * t) (abs (snd c))
+
+  let function abs_rat (a : (int, int)) : (int, int)
+  =
+  match a with
+  | (l,r) -> (abs l, abs r)
+  end
+
+  let function int_to_rat (a : int) : (int, int)
+  = (a,1)
+
+  let function rat_uminus (r : (int, int)) : (int, int)
+  =
+  match r with
+  | (l,r) -> (-l,r)
+  end
+
+  let function rat_min (a : (int, int)) (b : (int, int)) : (int, int)
+  = if rat_cmp OpCmpLe a b then a else b
+
+  let function rat_max (a : (int, int)) (b : (int, int)) : (int, int)
+  = if rat_cmp OpCmpLe a b then b else a
+
+  let function rat_dur (a : (int, int)) (b : int) : int
+  = div ((fst a) * b) (snd a)
+
+
+  (* ----------------------------------------------------------------------- *)
+  (* String *)
+
+  let function str_concat (s1 : astring) (s2 : astring) : astring = s1 + s2
+
+  let function substring  (_ : astring) (_ : int) (_ : int) = 0
+
+  let function str_length (_ : astring) : int = 0
+
+  let function byt_concat (b1 : bytes) (b2 : bytes) : bytes = b1 + b2
+
+  (* ----------------------------------------------------------------------- *)
+  (* Option *)
+  use option.Option
+
+  let function issome (v : option 'a) : bool
+  =
+  match v with
+  | Some _ -> true
+  | None -> false
+  end
+
+  let function isnone (v : option 'a) : bool
+  =
+  match v with
+  | Some _ -> false
+  | None -> true
+  end
+
+  let getopt (o : option 'a) : 'a
+  raises { NotFound }
+  =
+  match o with
+  | Some v -> v
+  | None -> raise NotFound
+  end
+
+  (* ----------------------------------------------------------------------- *)
+  (* List *)
+  use list.List as A
+  use list.Length as L
+  use list.Nth as N
+
+  let function lcard l = L.length l
+
+  let lnth l n
+  raises { NotFound }
+  =
+  match N.nth l n with
+  | Some e -> e
+  | None -> raise NotFound
+  end
+
+  let rec function lcontains l a
+  =
+  match l with
+  | A.Nil -> false
+  | A.Cons e tl -> a = e || lcontains tl a
+  end
+
+  let function lprepend l a
+  = A.Cons a l
+
+  (* ----------------------------------------------------------------------- *)
+  (* crypto *)
+  let function blake2b (b : bytes) : bytes = b
+  let function sha256 (b : bytes) : bytes = b
+  let function sha512 (b : bytes) : bytes = b
+  let function hash_key (_k : key) : bytes = 0
+  let check_signature (_k : key) (_s : signature) (_b : bytes) = true
+
+  (* ----------------------------------------------------------------------- *)
+  (* serialization *)
+  let function pack (_x : 'a) : bytes = 0
+  let function unpack (b : bytes) : option 'a = None
+
+  (* ----------------------------------------------------------------------- *)
+  (* bool *)
+  let function neq_bool (a : bool) (b : bool) : bool = not (a && b)
+
+  (* ------------------------------------------------------------------------ *)
+  axiom inv_pack_unpack: forall x : bytes. exists a : int. unpack(x) = Some(a) -> pack(a) = x
 
 end
 
@@ -31,7 +250,7 @@ module Trace
   type _entry
   type _field
 
-  type _action = 
+  type _action =
   | TrRm_ _asset
   | TrAdd_ _asset
   | TrUpdate_ _field
@@ -42,13 +261,13 @@ module Trace
 
   type _traces = list _action
 
-  predicate changes_performed_by (changes : _traces) (tr : _traces) (p : bool) = 
+  predicate changes_performed_by (changes : _traces) (tr : _traces) (p : bool) =
   forall x : _action.
   mem x tr ->
   mem x changes ->
   p
 
-  predicate performed_by  (tr : _traces) (p : bool) = 
+  predicate performed_by  (tr : _traces) (p : bool) =
   forall x : _action.
   mem x tr ->
   p
@@ -76,104 +295,45 @@ theory Contract
 
   let no_transfer : transfers = Nil
 
+  let mk_call (c : address) : transfer = {
+    destination_ = c;
+    amount_ = 0;
+  }
+
 end
 
-module ListUtils
+(* source : http://toccata.lri.fr/gallery/insertion_sort_list.fr.html *)
+module InsertionSort
+
+  type elt
+  val predicate le elt elt
+
+  clone relations.TotalPreOrder with
+    type t = elt, predicate rel = le, axiom .
+  clone export list.Sorted with
+    type t = elt, predicate le  = le, goal Transitive.Trans
 
   use list.List
+  use list.Permut
 
-  type t = abstract {}
-
-  val eqt t t : bool 
-
-  let rec function mem (x: t) (l: list t) : bool 
-  variant { l }
-  =
-  match l with
-    | Nil      -> false
-    | Cons e tl ->
-    if eqt x e 
-    then true
-    else mem x tl
+  let rec function insert (x: elt) (l: list elt) : list elt
+    requires { sorted l }
+    ensures  { sorted result }
+    ensures  { permut (Cons x l) result }
+    variant  { l }
+  = match l with
+    | Nil -> Cons x Nil
+    | Cons y r -> if le x y then Cons x l else Cons y (insert x r)
     end
 
-  let rec remove (x : t) (l : list t) : list t
-  variant { l }
-  = 
-  match l with
-  | Cons e tl ->
-    if eqt e x
-    then remove x tl
-    else Cons e (remove x tl)
-  | Nil -> Nil
-  end
-  
-  let rec function eql (l1 l2 : list t) : bool
-  variant { l1, l2 }
-  =
-  match l1, l2 with
-  | Cons e1 tl1, Cons e2 tl2 ->
-    if eqt e1 e2 then
-      eql tl1 tl2
-    else false
-  | Nil, Nil -> true
-  | _ -> false
-  end
-
-end
-
-module KeyListUtils
-
-  use Types
-  use list.List
-
-  clone ListUtils as LU   with type t   = key,
-                                          val  eqt = Int.(=)
-
-  let function mem_key (k : key) (l : list key) = LU.mem k l
-
-  let function eq_keyl (l1 l2 : list key) = LU.eql l1 l2
-
-  let function remove_key (k : key) (l : list key) = LU.remove k l
-
-end
-
-module ListInsertSort
-
-  use list.List
-  use int.Int
-  use KeyListUtils
-
-  type t = abstract {}
-
-  val function sortf t : int  (* asset sort function *)
-
-  predicate lt (a b : t) = sortf a <= sortf b
-
-  clone list.Sorted as S with type t       = t, 
-                              predicate le = lt,
-                              goal Transitive.Trans
-
-  let rec function insert (a : t) (l : list t) : list t
-  variant { l }
-  =
-  match l with
-  | Cons e tl ->
-    if sortf a <= sortf e then
-      Cons a l
-    else
-      Cons e (insert a tl)
-  | Nil -> Cons a Nil
-  end
-
-  let rec function sort (l : list t) : list t
-  variant { l }
-  ensures { S.sorted result }
-  =
-  match l with
-  | Cons e tl -> insert e (sort tl)
-  | Nil -> Nil
-  end
+  let rec function insertion_sort (l: list elt) : list elt
+    ensures { sorted result }
+    ensures { permut l result }
+    variant { l }
+  = match l with
+    | Nil -> Nil
+    | Cons x r -> insert x (insertion_sort r)
+    end
 
 end
 
@@ -182,360 +342,706 @@ module AssetCollection
   use Types
   use int.Int
   use list.List
+  use list.Length as L
+  use list.Append as A
+  use list.Distinct as D
   use list.Mem as M
   use option.Option
-  use KeyListUtils
+  use fset.Undup
+  use fset.ListFilter
 
+  (* ------------------------------------------------------------------------ *)
   type t = abstract {}        (* asset type           *)
-  val function sortf t : int  (* asset sort function  *)
-  val function keyf  t : int  (* asset key function   *)
-  val function eqf t t : bool (* asset equality *)
 
-  clone ListInsertSort as S with type t     = t,
-                                 val  sortf = sortf
+  (* ------------------------------------------------------------------------ *)
+  val function fkey  t : key  (* asset key function   *)
+
+  (* ------------------------------------------------------------------------ *)
+  val function feq t t : bool (* asset equality *)
+
+  (* ------------------------------------------------------------------------ *)
+  let predicate ple t1 t2 = fkey t1 <= fkey t2
+
+  (* ------------------------------------------------------------------------ *)
+  clone InsertionSort as IS with type elt = t,
+                                 val le = ple
+
+  let rec function fmem (a : t) (l : list t) : bool =
+    match l with
+    | Nil -> false
+    | Cons e tl -> feq a e || fmem a tl
+    end
+
+  let rec function undup (l : list t) : list t =
+    match l with
+    | Nil -> Nil
+    | Cons e tl ->
+        if fmem e tl then undup tl else Cons e (undup tl)
+    end
+
+  let function norm (l : list t) : list t =
+    IS.insertion_sort (undup l)
 
   clone fset.FSet      as F with type t     = t,
-                                 val  eqt   = eqf,
-                                 val  norm  = S.sort
+                                 val  eqt   = feq,
+                                 val  norm  = norm,
+                                 axiom .
 
-  clone ListUtils   as AU   with type t   = t,
-                                 val  eqt = eqf
-
-  val function witness : t
+  (* fkey is injective *)
+  predicate key_injective (l : list t) =
+    forall a1 a2.
+    mem a1 l -> mem a2 l ->
+    fkey a1 = fkey a2 -> feq a1 a2
 
   type collection = {
     content : F.fset
   } invariant {
-    forall a : t.
-    F.fmem a content -> a <> witness
+    key_injective (F.content content)
   } by {
     content = F.fset0;
-  } 
-
-  let function elts (c : collection) : list t = F.content c.content
-
-  let mk (l : list t) : collection = {
-      content = F.mk l
   }
 
-  let function from_fset (s : F.fset) : collection = { content = s }
+  (* ------------------------------------------------------------------------ *)
+  type view = {
+    vcontent : list key
+  } invariant {
+    D.distinct vcontent
+  } by {
+    vcontent = Nil;
+  }
 
-  let function internal_mem (a : t) (l : list t) : bool = AU.mem a l
+  (* ------------------------------------------------------------------------ *)
+  let function veq (v1 v2 : view) : bool
+  =
+  let rec internal_eq_view (l1 l2 : list key) : bool
+  variant { l1, l2 }
+  = match l1,l2 with
+  | Cons k1 tl1, Cons k2 tl2 ->
+    if k1 = k2 then
+      internal_eq_view tl1 tl2
+    else false
+  | Nil,Nil -> true
+  | _ -> false
+  end in
+  internal_eq_view v1.vcontent v2.vcontent
 
-  let rec function contains_key (k : key) (l : list t) : bool
-  requires { k <> keyf witness }
+  (* ------------------------------------------------------------------------ *)
+  let function vmk (l : list key) : view
+  requires { D.distinct l }
+  = { vcontent = l }
+
+  (* ------------------------------------------------------------------------ *)
+  let function velts (v : view) : list key
+  ensures { D.distinct result }
+  = vcontent v
+
+   (* ------------------------------------------------------------------------ *)
+  let function vempty = { vcontent = Nil }
+
+  (* ------------------------------------------------------------------------ *)
+  let function vmem (k: key) (v: view) : bool
+  ensures { result <-> M.mem k v.vcontent }
+  =
+  let rec internal_vmem (l : list key) : bool
   variant { l }
+  ensures { result <-> M.mem k l }
   =
   match l with
-  | Cons e tl ->
-    if keyf e = k
-    then true
-    else contains_key k tl
-  | Nil -> false
-  end
+    | Nil      -> false
+    | Cons e tl -> k = e || internal_vmem tl
+  end in
+  internal_vmem v.vcontent
 
-  let function contains (k : key) (c : collection) : bool 
+  (* ------------------------------------------------------------------------ *)
+  predicate (==) (c1 c2 : collection) = F.(==) c1.content c2.content
+
+  (* ------------------------------------------------------------------------ *)
+  let function mk (s : F.fset) : collection
+  requires { key_injective (F.content s) }
+  ensures { F.(==) s (content result) }
+  ensures { content result = s }
+  = { content = s }
+
+  (* ------------------------------------------------------------------------ *)
+  lemma mk_content: forall c.
+  (mk (c.content)) == c
+
+  (* ------------------------------------------------------------------------ *)
+  lemma content_mk [@rewrite] :
+  forall s. key_injective (F.content s) -> (content (mk s)) = s
+
+  (* ------------------------------------------------------------------------ *)
+  let function elts (c : collection) : list t
+  ensures { IS.sorted result }
+  ensures { D.distinct result }
+  (* ensures { F.sorted result } *)
   =
-  contains_key k (F.content c.content)
+  F.content c.content
 
-  (* SET THEORY *)
-  let function empty : collection = from_fset F.fset0
+  (* Set theory ************************************************************* *)
 
+  (* ------------------------------------------------------------------------ *)
+  let function cempty : collection = mk F.fset0
+
+  (* ------------------------------------------------------------------------ *)
   predicate is_empty (c : collection) = is_nil (elts c)
 
+  (* ------------------------------------------------------------------------ *)
   predicate mem (a : t) (c : collection) = F.fmem a c.content
 
-  lemma mem_empty : is_empty empty
+  (* ------------------------------------------------------------------------ *)
+  lemma mem_empty : is_empty cempty
 
-  let function card (c : collection) : int 
+  (* ------------------------------------------------------------------------ *)
+  let function vcard (v : view) : int
+  ensures { result = L.length v.vcontent }
+  =
+  L.length v.vcontent
+
+  (* ------------------------------------------------------------------------ *)
+  let function ccard (c : collection) : int
   ensures { result >= 0 }
   = F.fcard c.content
 
-  predicate (==) (c1 c2 : collection) = F.(==) c1.content c2.content
+  (* ------------------------------------------------------------------------ *)
+  (* shall this be a lemma ? *)
+  axiom eqEquality : forall c1 c2. c1 == c2 <-> c1 = c2
 
+  (* ------------------------------------------------------------------------ *)
+  lemma mk_injective: forall s1 s2.
+  key_injective (F.content s1) -> key_injective (F.content s2) ->
+  mk s1 == mk s2 -> F.(==) s1 s2
+
+  (* ------------------------------------------------------------------------ *)
   predicate subset (c1 c2 : collection) = F.fsubset c1.content c2.content
 
-  function diff (c1 c2 : collection) : collection = from_fset  (F.fsetD c1.content c2.content)
+  (* ------------------------------------------------------------------------ *)
+  predicate vsubset (v1 v2 : view) = forall k. vmem k v1 -> vmem k v2
 
-  function inter (c1 c2 : collection) : collection = from_fset (F.fsetI c1.content c2.content)
+  (* ------------------------------------------------------------------------ *)
+  predicate csubset (c1 : collection) (v2 : view) = forall a. mem a c1 -> vmem (fkey a) v2
 
-  function union (c1 c2 : collection) : collection = from_fset (F.fsetU c1.content c2.content)
+  (* ------------------------------------------------------------------------ *)
+  function diff (c1 c2 : collection) : collection
+  = mk (F.fsetD c1.content c2.content)
 
-  (* singleton *)
-  let function singleton (a : t) : collection 
-  requires { a <> witness }
-  = mk (Cons a Nil)
+  (* ------------------------------------------------------------------------ *)
+  function inter (c1 c2 : collection) : collection
+  = mk (F.fsetI c1.content c2.content)
 
-  lemma mem_singleton: forall k1 k2 : t. mem k1 (singleton k2) -> k1 = k2
+  (* ------------------------------------------------------------------------ *)
+  function union (c1 c2 : collection) : collection
+  = mk (F.fsetU c1.content c2.content)
 
-  lemma card_singleton: forall a : t. a <> witness -> card (singleton a) = 1
+  (* Singleton ************************************************************** *)
 
+  (* ------------------------------------------------------------------------ *)
+  lemma one_unary_injective: forall a. key_injective (Cons a Nil)
+
+  (* ------------------------------------------------------------------------ *)
+  let function singleton (a : t) : collection = mk (F.mk (Cons a Nil))
+
+  (* ------------------------------------------------------------------------ *)
+  lemma mem_singleton: forall a1 a2 : t.
+  mem a1 (singleton a2) -> a1 = a2
+
+  (* ------------------------------------------------------------------------ *)
+  lemma card_singleton: forall a : t. ccard (singleton a) = 1
+
+  (* ------------------------------------------------------------------------ *)
   lemma subset_singleton: forall a : t, c : collection.
-  a <> witness ->
   subset (singleton a) c <-> mem a c
 
-  (* Storage API *)
+  (* Collection API ********************************************************* *)
 
-  let add (c : collection) (a : t)
-  requires { not (mem a c) } 
-  requires { a <> witness }
-  ensures { mem a result }
-  ensures { result = union (singleton a) c }
-  = mk (S.insert a (elts c))
-
-  let set (c : collection) (k : key) (a : t) : collection 
-  requires { a <> witness }
-  = 
-  let rec internal_set (l : list t) (k : key) (a : t) : list t 
+  (* ------------------------------------------------------------------------ *)
+  let rec function internal_list_to_view (l : list t) : list key
+  requires { D.distinct l }
+  requires { key_injective l }
   variant { l }
-  = 
-  match l with
-  | Cons e tl ->
-    if keyf e = k 
-    then Cons a tl
-    else Cons e (internal_set tl k a)
-  | Nil -> Nil
-  end in
-  mk (internal_set (elts c) k a)
-
-  let remove (c : collection) (k : key) : collection 
-  =
-  let rec internal_remove (l : list t) (k : key) : list t
-  variant { l }
+  ensures { D.distinct result }
+  ensures { forall k. M.mem k result <-> exists e. M.mem e l /\ fkey e = k }
+  ensures { L.length result = L.length l }
   =
   match l with
-  | Cons e tl ->
-    if keyf e = k
-    then tl
-    else Cons e (internal_remove tl k)
+  | Cons e tl -> Cons (fkey e) (internal_list_to_view tl)
   | Nil -> Nil
-  end in
-  mk (internal_remove (elts c) k)
+  end
 
-  let function oget (c : collection) (k : key) : option t 
-  ensures { 
-      match result with
-      | None   -> not (contains k c)
-      | Some a -> mem a c
-      end
+  (* ------------------------------------------------------------------------ *)
+  lemma cons_key_injective : forall a l.
+  key_injective l ->
+  (forall e. M.mem e l -> fkey e <> fkey a) ->
+  key_injective (Cons a l)
+
+  (* ------------------------------------------------------------------------ *)
+  let function list_to_view (l : list t) : view
+  requires { D.distinct l }
+  requires { key_injective l }
+  ensures { forall k. vmem k result <-> exists e. M.mem e l /\ fkey e = k }
+  ensures { vcard result = L.length l }
+  = vmk (internal_list_to_view l)
+
+  (* ------------------------------------------------------------------------ *)
+  let rec function to_view (c : collection) : view
+  ensures { forall k. vmem k result <-> exists e. mem e c /\ fkey e = k }
+  ensures { vcard result = ccard c }
+  =
+  list_to_view (elts c)
+
+  (* ------------------------------------------------------------------------ *)
+  let function ccontains (k : key) (c : collection)
+  ensures { result <-> exists e. mem e c /\ fkey e = k }
+  = vmem k (to_view c)
+
+  (* ------------------------------------------------------------------------ *)
+  let function vcontains (k : key) (v : view)
+  ensures { result <-> M.mem k v.vcontent }
+  = vmem k v
+
+  (* ------------------------------------------------------------------------ *)
+  let rec function internal_get (l : list t) (k : key) : option t
+  requires { D.distinct l }
+  requires { key_injective l }
+  variant { l }
+  ensures { vmem k (list_to_view l) ->
+    exists e. result = Some e  /\ fkey e = k
   }
   =
-  let rec function internal_get (l : list t) (k : key) : option t
-  variant { l }
-  =
   match l with
-  | Cons e tl -> 
-    if keyf e = k
+  | Cons e tl ->
+    if fkey e = k
     then Some e
     else internal_get tl k
   | Nil -> None
-  end in 
-  internal_get (elts c) k 
-
-  let function get (c : collection) (k : key) : t 
-  ensures { mem result c \/ not (contains k c) }
-  =
-  match oget c k with
-  | Some a -> a
-  | None -> witness
-  end 
-
- let rec function to_ids (l : list t) : list key 
-  variant { l }
-  =
-  match l with
-  | Cons e tl -> Cons (keyf e) (to_ids tl)
-  | Nil -> Nil
-  end 
-
-  let function unshallow (c : collection) (keys : list int) : collection
-  = 
-  let rec function internal_unshallow (l : list t) (keys : list int) : list t
-  variant { l }
-  =
-  match l with
-  | Cons e tl -> 
-    if mem_key (keyf e) keys
-    then Cons e (internal_unshallow tl keys)
-    else internal_unshallow tl keys
-  | Nil -> Nil  
-  end in
-  mk (internal_unshallow (elts c) keys)
-
-  let rec function internal_nth (i : int) (l : list t) : t
-  variant { l }
-  = 
-  match l with
-  | Cons e tl -> if i = 0 then e else internal_nth (i - 1) tl
-  | Nil -> witness
   end
 
-  let function onth (i : int) (c : collection) : option t 
-  ensures { 
-    0 <= i < card c -> 
-    match result with
-    | Some a -> mem a c
-    | None -> false
-    end 
-  }
-  = 
-  let rec function internal_onth (i : int) (l : list t) : option t
-  variant { l }
-  = 
-  match l with
-  | Cons e tl -> if i = 0 then Some e else internal_onth (i - 1) tl
-  | Nil -> None
-  end in
-  internal_onth i (elts c)
+  (* ------------------------------------------------------------------------ *)
+  lemma cons_internal_get : forall k x a l.
+  D.distinct l ->
+  key_injective l ->
+  fkey x <> k ->
+  internal_get l k = Some a ->
+  internal_get (Cons x l) k = Some a
 
-  let function nth (i : int) (c : collection) : t 
-  ensures { 0 <= i < card c -> mem result c /\ result <> witness}
-  = 
-  internal_nth i (elts c)
+  (* ------------------------------------------------------------------------ *)
+  let function get (c : collection) (k : key) : option t
+  requires { ccontains k c }
+  ensures { exists e. result = Some e /\ fkey e = k }
+  = internal_get (elts c) k
 
-  lemma nth_singleton: forall a : t. a <> witness -> nth 0 (singleton a) = a
+  (* ------------------------------------------------------------------------ *)
+  function fget collection key : t
 
-  let function proj (c : collection) (projf : t -> int) : list int 
-  = 
-   let rec internal_proj (l : list t) (projf : t -> int) : list int
-  variant { l }
-  = 
-  match l with 
-  | Cons e tl -> Cons (projf e) (internal_proj tl projf)
-  | Nil -> Nil
-  end in
-  internal_proj (elts c) projf
+  (* ------------------------------------------------------------------------ *)
+  axiom fget_require_ensure: forall c k.
+    ccontains k c -> mem (fget c k) c
 
-  (*use int.MinMax
+  (* ------------------------------------------------------------------------ *)
+  predicate list_subset (l1 : list t) (l2 : list t) = forall e. M.mem e l1 -> M.mem e l2
 
-  let function head (i : int) (c : collection) : collection
-  ensures { card result = min i (card c) }
-  ensures { subset result c }
-  ensures { i >= card c - 1 -> result  = c }
-  ensures { i < 0 -> result = empty }
+  let function view_to_list (v : view) (c : collection) : list t
+  ensures { D.distinct result }
+  ensures { key_injective result }
   =
-  let rec function internal_head (l : list t) (k : int) 
+  let rec function internal_view_to_list (l : list t) : list t
+  requires { D.distinct l }
+  requires { key_injective l }
+  variant { l }
+  ensures { list_subset result l }
+  ensures { D.distinct result }
+  ensures { key_injective result }
   =
   match l with
   | Cons e tl ->
-    if k <= i then
-      Cons e (internal_head tl (k+1))
+    if vmem (fkey e) v then
+      Cons e (internal_view_to_list tl)
     else
-      Nil
-  | Nil -> Nil 
+      internal_view_to_list tl
+  | Nil -> Nil
   end in
-  { content = internal_head c.content 0 } 
+  internal_view_to_list (elts c)
 
-  lemma head_add: forall c : collection, i : int. 
-  0 <= i < card c - 1 ->
-  head (i+1) c = union (head i c) (singleton (nth i c))
-  
-  lemma head_nth: forall c : collection, i j : int.
-  0 <= i < j < card c ->
-  nth i (head j c) = nth i c*)
+  (* ------------------------------------------------------------------------ *)
+  let function to_coll (v : view) (c : collection) : collection
+  =
+  mk (F.mk (view_to_list v c))
 
-  let function tail (i : int) (c : collection) : collection  
-  ensures { subset result c }
-  ensures { 0 <= i < card c -> card result = card c - i }
-  ensures { i >= card c ->  result = empty }
-  ensures { 
-    forall j: int. 0<= i <= j < card c ->
-    mem (nth j c) result 
+  (* ------------------------------------------------------------------------ *)
+  lemma union_insert: forall a s.
+  F.fmem a (F.fsetU (F.mk (Cons a Nil)) s)
+
+  lemma eq_col_set: forall s1 s2.
+  key_injective (F.content s1) ->
+  key_injective (F.content s2) ->
+  F.(==) s1 s2 <-> mk s1 == mk s2
+
+  let add (c : collection) (a : t)
+  requires { not (ccontains (fkey a) c) }
+  ensures { mem a result }
+  ensures { result == union (singleton a) c }
+  = mk (F.mk (Cons a (elts c)))
+
+  (* ------------------------------------------------------------------------ *)
+  lemma mem_coll : forall a l.
+  key_injective l ->
+  M.mem a (elts (mk (F.mk l))) <-> M.mem a l
+
+  (* ------------------------------------------------------------------------ *)
+  let remove (c : collection) (k : key) : collection
+  requires { ccontains k c }
+  ensures { ccard result = ccard c - 1 }
+  ensures { exists e. get c k = Some e /\ result == diff c (singleton e) }
+  =
+  let rec internal_remove (l : list t) : list t
+  requires { D.distinct l }
+  requires { key_injective l }
+  variant { l }
+  ensures { D.distinct result }
+  ensures { key_injective result }
+  ensures { (exists e. fkey e  = k /\ M.mem e l) -> L.length result = L.length l - 1 }
+  ensures { forall a. M.mem a result <-> M.mem a (filter (fun x -> fkey x <> k) l) }
+  = match l with
+  | Cons e tl ->
+    if fkey e = k then tl
+    else Cons e (internal_remove tl)
+  | Nil -> Nil
+  end in
+  mk (F.mk (internal_remove (F.content (content c))))
+
+(* let remove (c : collection) (a : t) : collection
+  requires { mem a c }
+  ensures { card result = card c - 1 }
+  ensures { result == (diff c (singleton a)) }
+  =
+  let rec internal_remove (l : list t) : list t
+  requires { D.distinct l }
+  requires { key_injective l }
+  variant { l }
+  ensures { D.distinct result }
+  ensures { key_injective result }
+  ensures { M.mem a l -> L.length result = L.length l - 1 }
+  ensures { forall e. M.mem e result <-> M.mem e (filter (fun x -> not (M.mem x (Cons a Nil))) l) }
+  = match l with
+  | Cons e tl ->
+    if feq e a then tl
+    else Cons e (internal_remove tl)
+  | Nil -> Nil
+  end in
+  mk (F.mk (internal_remove (F.content (content c)))) *)
+
+  (* ------------------------------------------------------------------------ *)
+  let set (c : collection) (k : key) (a : t) : collection
+  requires { ccontains k c }
+  requires { fkey a = k }
+  ensures { get result k = Some a }
+  =
+  let rec internal_set (l : list t) : list t
+  requires { key_injective l }
+  variant { l }
+  ensures { key_injective result }
+  ensures { internal_get result k = Some a }
+  =
+  match l with
+  | Cons e tl ->
+    if fkey e = k
+    then Cons a (internal_set tl)
+    else Cons e (internal_set tl)
+  | Nil -> Nil
+  end in
+  mk (F.mk (internal_set (elts c)))
+
+ (*  let set (c : collection) (r : t) (a : t) : collection
+  requires { ccontains (fkey r) c }
+  requires { fkey a = fkey r }
+  ensures { get result (fkey r) = Some a }
+  =
+  let rec internal_set (l : list t) : list t
+  requires { D.distinct l }
+  requires { key_injective l }
+  variant { l }
+  ensures { D.distinct result }
+  ensures { key_injective result }
+  ensures { forall e. fkey e <> fkey r -> M.mem e result <-> M.mem e l }
+  ensures {  M.mem r result -> internal_get result (fkey r) = Some a }
+  =
+  match l with
+  | Cons e tl ->
+    if feq e r
+    then Cons a tl
+    else Cons e (internal_set tl)
+  | Nil -> Nil
+  end in
+  mk (F.mk (internal_set (elts c))) *)
+
+  (* ------------------------------------------------------------------------ *)
+  predicate view_is_empty (v : view) = v.vcontent = Nil
+
+  (* ------------------------------------------------------------------------ *)
+  let function vadd (k : int) (v : view) : view
+  requires { not (vmem k v) }
+  =
+  vmk (Cons k (v.vcontent))
+
+  (* ------------------------------------------------------------------------ *)
+  let function vremove (k : int) (v : view) : view
+  =
+  let rec internal_vremove l : list key
+  requires { D.distinct l }
+  variant { v }
+  ensures { D.distinct result }
+  =
+  match l with
+  | Cons i tl ->
+    if i = k then
+      internal_vremove tl
+    else
+      Cons i (internal_vremove tl)
+  | Nil -> Nil
+  end in
+  vmk (internal_vremove v.vcontent)
+
+  (* ------------------------------------------------------------------------ *)
+  let function vnth (i : int) (v : view) : option key
+  ensures {
+    0 <= i < vcard v ->
+    exists k. result = Some k /\ vmem k v
   }
-  = 
-  let rec function internal_tail (l : list t) (k : int) (i : int) 
-  = 
+  =
+  let rec internal_nth (i : int) (l : list key) : option key
+  variant { l }
+  ensures {
+    0 <= i < L.length l ->
+    exists k. result = Some k /\ M.mem k l
+  }
+  =
+  match l with
+  | Cons k tl -> if i = 0 then Some k else internal_nth (i - 1) tl
+  | Nil -> None
+  end in
+  internal_nth i v.vcontent
+
+  (* ------------------------------------------------------------------------ *)
+  let function cnth (i : int) (c : collection) : option key
+  ensures {
+    0 <= i < ccard c ->
+    exists k. result = Some k /\ ccontains k c
+  }
+  =
+  vnth i (to_view c)
+
+  (* ------------------------------------------------------------------------ *)
+  lemma nth_singleton: forall k. vnth 0 (vmk (Cons k Nil)) = Some k
+
+  (* ------------------------------------------------------------------------ *)
+   (* keep first i elements *)
+  let function vkeep (i : int) (v : view) : view
+  ensures { forall k. vmem k result -> vmem k v }
+  ensures {
+    0 <= i <= vcard v ->
+    vcard result = i
+  }
+  =
+  let rec function internal_vkeep (k : int) (l : list key) : list key
+  requires { D.distinct l }
+  variant { v }
+  ensures { D.distinct result }
+  ensures { forall k. M.mem k result -> M.mem k l }
+  ensures {
+    0 <= i <= L.length l ->
+    L.length result = i
+  }
+  =
   match l with
   | Cons e tl ->
     if k < i then
-      internal_tail tl (k+1) i
-    else Cons e (internal_tail tl (k+1) i)
+      Cons e (internal_vkeep (k+1) tl)
+    else Nil
   | Nil -> Nil
   end in
-  mk (internal_tail (elts c) 0 i)
+  vmk (internal_vkeep 0 v.vcontent)
 
-  lemma tail_all: forall c : collection. tail 0 c = c 
+  (* ------------------------------------------------------------------------ *)
+   (* keep first i elements *)
+  let function ckeep (i : int) (c : collection) : view
+  ensures { forall k. vmem k result -> ccontains k c }
+  ensures {
+    0 <= i <= ccard c ->
+    vcard result = i
+  }
+  = vkeep i (to_view c)
 
-  lemma tail_add: forall c : collection, i : int. 
-  0 <= i < card c ->
-  tail (i+1) c = diff (tail i c) (singleton (nth i c))
+  (* ------------------------------------------------------------------------ *)
+  lemma keep_none: forall v. vkeep 0 v = vempty
 
-  lemma tail_nth: forall c : collection, i j : int.
-  0 <= j < card c ->
-  0 <= i < card c - j ->
-  nth i (tail j c) = nth (i+j) c
-  
-  let function to_coll (l : list t) 
-  (*ensures { S.sorted result <-> S.sorted l }*)
-  ensures { forall k : key. contains k result <-> contains_key k l }
-  ensures { forall a : t. mem a result <-> M.mem a l }
-  ensures { forall i : int. eqf (nth i result) (internal_nth i l) }
-  = mk l
+  (* ------------------------------------------------------------------------ *)
+  lemma keep_all: forall v : view, i : int.
+  i >= vcard v -> vkeep i v = v
+
+  (* ------------------------------------------------------------------------ *)
+  (* vdrop first i elements *)
+  let function vdrop (i : int) (v : view) : view
+  ensures { forall k. vmem k result -> vmem k v }
+  ensures {
+    0 <= i <= vcard v ->
+    vcard result = vcard v - i
+  }
+  =
+  let rec function internal_vdrop (k : int) (l : list key) : list key
+  requires { D.distinct l }
+  variant { v }
+  ensures { D.distinct result }
+  ensures { forall k. M.mem k result -> M.mem k l }
+  ensures {
+    0 <= i <= L.length l ->
+    L.length result = i
+  }
+  =
+  match l with
+  | Cons e tl ->
+    if k < i then
+      internal_vdrop (k+1) tl
+    else
+      Cons e (internal_vdrop (k+1) tl)
+  | Nil -> Nil
+  end in
+  vmk (internal_vdrop 0 v.vcontent)
+
+  (* ------------------------------------------------------------------------ *)
+  (* drop first i elements *)
+  let function cdrop (i : int) (c : collection) : view
+  ensures { forall k. vmem k result -> ccontains k c }
+  ensures {
+    0 <= i <= ccard c ->
+    vcard result = ccard c - i
+  }
+  = vdrop i (to_view c)
+
+  (* ------------------------------------------------------------------------ *)
+  lemma drop_none: forall v. vdrop 0 v = v
+
+  (* (* ------------------------------------------------------------------------ *)
+  lemma drop_next: forall v, i : int.
+  0 <= i < L.length v ->
+  exists e. drop i v = Cons e (drop (i+1) v) *)
+
+  (* ------------------------------------------------------------------------ *)
+  lemma drop_all: forall v. vdrop (vcard v) v = vempty
 
   goal sanity_check : false
 
 end
 
-module Sum 
+module Sort
+  use list.List
+  use int.Int
 
-  use  int.Int
-  type container
+  (* ------------------------------------------------------------------------ *)
+  type collection
+
+  (* ------------------------------------------------------------------------ *)
   type t
 
-  val function f container int : int
-  val function field t : int
-  val function nth int container : t
-  val function card container : int
-  function inter container container : container
-  function union container container : container
-  function diff  container container : container
-  predicate subset container container
-  predicate is_empty container
-  val function singleton t : container
-  val function witness : t
-  val function keyf t : int
+  (* ------------------------------------------------------------------------ *)
+  type view
 
-  let function sum (c : container) : int = 
-    let ref res = 0 in
-    for i = 0 to card c - 1 do
-      res <- res + f c i
-    done;
-    res
+  (* ------------------------------------------------------------------------ *)
+  val function cmp (a b : t) : bool
 
-  (* sum over empty is zero *)
-  lemma sum_empty:
-    forall c : container. card c = 0 -> sum c = 0
+  (* ------------------------------------------------------------------------ *)
+  val function view_to_list (v : view) (c : collection) : list t
 
-  lemma sum_ge_zero:
-    forall c : container.
-    not (is_empty c) ->
-    (forall i : int. 0 <= i < card c -> f c i >= 0) ->
-    sum c >= 0
-  
-  lemma sum_singleton: forall a : t.
-  a <> witness ->
-  sum (singleton a) = field a
-  
-  lemma sum_union:
-    forall c1 c2 : container.
-    sum (union c1 c2) = sum c1 + sum c2 - sum (inter c1 c2)
+  (* ------------------------------------------------------------------------ *)
+  val function list_to_view (l : list t) : view
 
-  lemma sum_diff:
-    forall c1 c2 : container.
-    subset c2 c1 ->
-    sum (diff c1 c2) = sum c1 - sum c2 
+  (* ------------------------------------------------------------------------ *)
+  val function elts (c : collection) : list t
+
+  (* ------------------------------------------------------------------------ *)
+  let predicate ple (a b : t) = cmp a b
+
+  (* ------------------------------------------------------------------------ *)
+  clone InsertionSort as IS with type elt = t,
+                                 val le = ple
+
+  let function vsort (v : view) (c : collection)
+  =
+  list_to_view (IS.insertion_sort (view_to_list v c))
+
+  let function csort (c : collection)
+  =
+  list_to_view (IS.insertion_sort (elts c))
 
 end
 
+module Sum
+
+  use  int.Int
+  use  list.List
+  use  option.Option
+
+  (* ------------------------------------------------------------------------ *)
+  type collection
+
+  (* ------------------------------------------------------------------------ *)
+  type t
+
+  (* ------------------------------------------------------------------------ *)
+  type view
+
+  (* ------------------------------------------------------------------------ *)
+  val function field t : int
+  (* ------------------------------------------------------------------------ *)
+  val function get collection int : option t
+  (* ------------------------------------------------------------------------ *)
+  val function velts view : list int
+  (* ------------------------------------------------------------------------ *)
+  val function vcard view : int
+  (* ------------------------------------------------------------------------ *)
+  val function vmk (list int) : view
+  (* ------------------------------------------------------------------------ *)
+  val function to_view collection : view
+  (* ------------------------------------------------------------------------ *)
+  let function vsum (v : view) (c : collection) : int
+  =
+  let rec function internal_vsum (l : list int) (acc : int) : int
+  variant { l }
+  =
+    match l with
+     | Cons k tl ->
+      match get c k with
+      | Some e -> internal_vsum tl (acc + field e)
+      | None -> internal_vsum tl acc
+      end
+     | Nil -> acc
+    end
+  in
+  internal_vsum (velts v) 0
+  (* ------------------------------------------------------------------------ *)
+  let function csum (c : collection) : int
+  =
+  vsum (to_view c) c
+
+  (* ------------------------------------------------------------------------ *)
+  lemma sum_empty:
+    forall v : view, c : collection. vcard v = 0 -> vsum v c = 0
+
+  (* ------------------------------------------------------------------------ *)
+  lemma sum_singleton: forall k : int, a : t, c : collection.
+  get c k = Some a ->
+  vsum (vmk (Cons k Nil)) c = field a
+
+end
+
+
 theory Lib
-  
+
   use export int.Int
-  use export list.List
   use export option.Option
+  use export Utils
   use export Types
   use export Contract
   use export AssetCollection
-  use export KeyListUtils
   use export Trace
 
 end

@@ -1,0 +1,13 @@
+archetype expr_list_count
+
+variable res : int = 0
+
+entry exec () {
+  specification {
+    s0: res = 3;
+  }
+  effect {
+    var l : string list = ["1"; "2"; "3"];
+    res := count(l)
+  }
+}

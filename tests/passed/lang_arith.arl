@@ -1,6 +1,6 @@
 archetype lang_arith
 
-action exec () {
+entry exec () {
   effect {
     var bool_bool_and : bool = true and false;
     var bool_bool_or  : bool = true or false;
@@ -9,7 +9,7 @@ action exec () {
     var int_int_plus   : int = 1 + 2;
     var int_int_minus  : int = 1 - 2;
     var int_int_mult   : int = 1 * 2;
-    var int_int_div    : int = 1 / 2;
+    var int_int_ediv   : int = 1 div 2;
     var int_int_modulo : int = 1 % 2;
 
     var rat_rat_plus   : rational = 1.1 + 1.2;
@@ -27,13 +27,15 @@ action exec () {
     var rat_int_mult   : rational = 1.1 * 2;
     var rat_int_div    : rational = 1.1 / 2;
 
-    var date_date_minus : duration = 2020-01-01 - 2019-12-31; (* absolute value *)
+    var date_date_minus : duration = 2020-01-01 - 2019-12-31;
 
     var dur_dur_plus   : duration = 1h + 2s;
-    var dur_dur_minus  : duration = 1h - 2s; (* absolute value *)
+    var dur_dur_minus  : duration = 1h - 2s;
+    var dur_dur_div    : rational = 4h / 30m;
+    var dur_dur_ediv   : int      = 4h div 30m;
 
     var int_dur_mult   : duration = 2 * 1h;
-    var dur_int_div    : duration = 1h / 2;
+    var dur_int_ediv   : duration = 1h div 2;
 
     var date_dur_plus  : date     = 2020-01-01 + 1d;
     var date_dur_minus : date     = 2020-01-01 - 1d;
@@ -47,6 +49,7 @@ action exec () {
 
     var int_tez_mult   : tez      = 1 * 1tz;
     var rat_tez_mult   : tez      = 1.1 * 1tz;
+    var int_tez_ediv   : tez      = 1tz div 2;
 
     require (true)
   }

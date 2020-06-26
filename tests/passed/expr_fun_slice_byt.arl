@@ -1,0 +1,12 @@
+archetype expr_fun_slice_byt
+
+variable res : bytes = 0x00
+
+entry exec () {
+  specification {
+    s0: res = 0xcdef;
+  }
+  effect {
+    res := slice(0xabcdef01, 1, 2)
+  }
+}

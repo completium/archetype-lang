@@ -2,7 +2,7 @@ archetype expr_cmp_eq_dur_dur
 
 variable res : bool = false
 
-action exec () {
+entry exec () {
   specification {
     s0: res = true;
   }

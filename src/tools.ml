@@ -12,10 +12,17 @@ let proj3_1 (x, _, _) = x
 let proj3_2 (_, x, _) = x
 let proj3_3 (_, _, x) = x
 
+let proj4_1 (x, _, _, _) = x
+let proj4_2 (_, x, _, _) = x
+let proj4_3 (_, _, x, _) = x
+let proj4_4 (_, _, _, x) = x
+
 let fst_map f (x, y) = (f x, y)
 let snd_map f (x, y) = (x, f y)
 
 let pair_map f g (x, y) = (f x, g y)
+
+let pair_sigle_map f (x, y) = pair_map f f (x, y)
 
 let swap = fun (x, y) -> (y, x)
 
@@ -29,7 +36,8 @@ module String : sig
 
   val starts : pattern:string -> string -> bool
   val ends   : pattern:string -> string -> bool
-  val up_firstcase : string -> string
+  val up_firstcase_lower : string -> string
+  val up_firstcase_only : string -> string
 end = struct
   include String
 
@@ -67,9 +75,16 @@ end = struct
 
     with E.No -> false
 
-  let up_firstcase str =
+  let up_firstcase_lower str =
     match str with
     | "" -> ""
+    | _ when String.length str = 1 -> Stdlib.String.uppercase_ascii str
+    | _ -> (Stdlib.String.uppercase_ascii (String.sub str 0 1)) ^ String.sub str 1 (String.length str - 1)
+
+  let up_firstcase_only str =
+    match str with
+    | "" -> ""
+    | _ when String.length str = 1 -> Stdlib.String.uppercase_ascii str
     | _ -> (Stdlib.String.uppercase_ascii (String.sub str 0 1)) ^ String.sub str 1 (String.length str - 1)
 end
 
@@ -182,6 +197,7 @@ module List : sig
   val is_empty      : 'a list -> bool
   val is_not_empty  : 'a list -> bool
   val ohead         : 'a list -> 'a option
+  val chop          : 'a list -> 'a list
   val as_seq1       : 'a list -> 'a option
   val as_seq2       : 'a list -> ('a * 'a) option
   val make          : (int -> 'a) -> int -> 'a list
@@ -197,6 +213,8 @@ module List : sig
   val index_of      : ('a -> bool) -> 'a list -> int
   val dedup         : 'a list -> 'a list
   val last          : 'a list -> 'a
+  val for_all2      : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
+  val count         : ('a -> bool) -> 'a list -> int
 
   module Exn : sig
     val assoc     : 'a -> ('a * 'b) list -> 'b option
@@ -213,6 +231,8 @@ end = struct
   let as_seq2 = function [x; y] -> Some (x, y) | _ -> None
 
   let ohead = function [] -> None | x :: _ -> Some x
+
+  let chop = function [] -> [] | _ :: xs -> xs
 
   let make f =
     let rec doit acc n =
@@ -316,6 +336,23 @@ end = struct
     | [] -> raise Not_found
     | [e] -> e
     | _::t -> last t
+
+  let for_all2 p l1 l2 =
+    let rec aux p l1 l2 =
+      match (l1, l2) with
+        ([], []) -> true
+      | (a1::l1, a2::l2) -> p a1 a2 && aux p l1 l2
+      | (_, _) -> invalid_arg "List.for_all2"
+    in
+    if List.length l1 <> List.length l2
+    then false
+    else aux p l1 l2
+
+  let count (f : 'a -> bool) =
+    let rec doit acc = function
+      | []      -> acc 
+      | x :: xs -> doit (acc + if f x then 1 else 0) xs
+    in fun xs -> doit 0 xs
 
   module Exn = struct
     let assoc x xs =

@@ -2,7 +2,7 @@ archetype expr_fun_max_dur
 
 variable res : duration = 0s
 
-action exec () {
+entry exec () {
   specification {
     s0: res = 1h;
   }

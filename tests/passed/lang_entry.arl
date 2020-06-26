@@ -1,0 +1,23 @@
+archetype lang_entry
+
+constant admin : role = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
+
+entry exec () {
+  specification {
+    postcondition c1 {
+      true -> true
+    }
+  }
+  accept transfer
+  called by admin
+  require {
+    r1: true;
+  }
+  failif {
+    f1: false;
+  }
+  effect {
+    var a : int = 0;
+    a := 1
+  }
+}

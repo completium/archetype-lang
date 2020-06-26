@@ -11,11 +11,13 @@ asset my_asset identified by id {
 
 variable res : int = 0
 
-action exec () {
+entry exec () {
   specification {
     s0: res = 2;
   }
   effect {
-    res := my_asset.select(the.id = "id2").nth(0).value
+    var l = my_asset.select(the.id = "id2");
+    var k = l.nth(0);
+    res := my_asset[k].value
   }
 }

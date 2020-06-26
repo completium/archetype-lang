@@ -4,12 +4,12 @@ asset myasset {
   id: string;
 }
 
-action anaction () {
+entry anaction () {
   specification {
     s1 : let ma = myasset.get("myid") in "myid" = ma.id
   }
   effect {
-    let a : int = 0 in
+    var a : int = 0;
     a := 1
   }
 }

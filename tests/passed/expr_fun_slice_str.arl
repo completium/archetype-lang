@@ -1,0 +1,12 @@
+archetype expr_fun_slice_str
+
+variable res : string = ""
+
+entry exec () {
+  specification {
+    s0: res = "bc";
+  }
+  effect {
+    res := slice("abcde", 1, 2)
+  }
+}

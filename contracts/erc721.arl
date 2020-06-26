@@ -6,12 +6,12 @@ constant symbol : string = "my_token"
 
 asset token {
   id : string;
-  owner[%delegable%] : role;
+  owner : role;
 }
 
-action transfer_ (k : role, tk : token) {
-  called by tk.owner
+entry transfer_ (k : role, tk : pkey of token) {
+  called by token[tk].owner
   effect {
-    tk.owner := k
+    token.update(tk, {owner = k} )
   }
 }

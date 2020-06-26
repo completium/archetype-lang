@@ -7,12 +7,12 @@ asset my_asset identified by id {
   value : int;
 }
 
-action exec () {
+entry exec () {
   effect {
     require true
   }
 }
 
 security {
-  s0 : no_storage_fail (anyaction);
+  s0 : no_storage_fail (anyentry);
 }

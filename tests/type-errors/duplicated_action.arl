@@ -1,12 +1,12 @@
 archetype duplicated_action
 
-action main () {
+entry main () {
   effect {
     require (true)
   }
 }
 
-action main () {
+entry main () {
   effect {
     require (true)
   }

@@ -2,21 +2,19 @@ archetype escrow_penalty
 
 variable buyer : role = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 
-variable[%transferable%] debitor : role = buyer
+variable debitor : role = buyer
 
 variable seller : role = @tz1bfVgcJC4ukaQSHUe1EbrUd5SekXeP9CWk
 
-variable[%transferable%] creditor : role = seller
+variable creditor : role = seller
 
 variable oracle : role = @tz1iawHeddgggn6P5r5jtq2wDRqcJVksGVSa
 
-variable[%traceable%] price : tez = 10tz
+variable price : tez = 10tz
 
-variable[%traceable%] [%mutable_signed ([{buyer}; {debitor}], (state = Created))%]
-     penalty : tez = 0.1 * price
+variable penalty : tez = 0.1 * price
 
-(* action deadline *)
-variable[%mutable ((buyer or seller), (instate (Created)))%] deadline : date = 2020-06-28T00:00:00
+variable deadline : date = 2020-06-28T00:00:00
 
 (* state machine *)
 states =
@@ -33,7 +31,7 @@ transition abort () {
   to Aborted
 }
 
-transition[%signedbyall [buyer; seller]%] confirm () {
+transition confirm () {
   from Created
   to Confirmed when { balance = price + penalty }
 }

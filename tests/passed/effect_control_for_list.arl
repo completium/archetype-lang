@@ -1,0 +1,16 @@
+archetype effect_control_for_list
+
+variable res : int = 0
+
+entry exec () {
+  specification {
+    s0: res = 6;
+  }
+  effect {
+    var l : int list = [1; 2; 3];
+    res := 0;
+    for i in l do
+      res += i;
+    done;
+  }
+}

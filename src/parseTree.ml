@@ -11,7 +11,7 @@ type lident = ident loced
 
 (* -------------------------------------------------------------------- *)
 and container =
-  | Collection
+  | Aggregate
   | Partition
 
 and type_r =
@@ -44,8 +44,8 @@ and arithmetic_operator =
   | Plus
   | Minus
   | Mult
-  | Div
   | DivRat
+  | DivEuc
   | Modulo
 
 and unary_operator =
@@ -78,24 +78,25 @@ type pattern_unloc =
 
 and pattern = pattern_unloc loced
 
-and s_term = {
-  before: bool;
-  label: lident option;
-}
+and var_label = VLBefore | VLIdent of lident
+
+and var_vset  = VSAdded | VSUnmoved | VSRemoved
 
 and expr_unloc =
-  | Eterm         of s_term * lident
+  | Eterm         of (var_vset option * var_label option) * lident
   | Eliteral      of literal
   | Earray        of expr list
   | Erecord       of record_item list
   | Etuple        of expr list
   | Edot          of expr * lident
+  | Esqapp        of expr * expr
   | Emulticomp    of expr * (comparison_operator loced * expr) list
   | Eapp          of function_ * expr list
   | Emethod       of expr * lident * expr list
   | Etransfer     of expr * expr * (lident * expr list) option
   | Erequire      of expr
   | Efailif       of expr
+  | Efail         of expr
   | Eassign       of assignment_operator * expr * expr
   | Eif           of expr * expr * expr option
   | Ebreak
@@ -110,6 +111,8 @@ and expr_unloc =
   | Elabel        of lident
   | Ereturn       of expr
   | Eoption       of option_
+  | Eunpack       of type_t * expr
+  | Eany
   | Enothing
   | Einvalid
 
@@ -147,6 +150,7 @@ and literal =
   | Lduration of string
   | Ldate     of string
   | Lbytes    of string
+  | Lpercent  of Core.big_int
 
 and record_item = (assignment_operator * lident) option * expr
 
@@ -160,7 +164,7 @@ and label_exprs = label_expr list
 
 (* -------------------------------------------------------------------- *)
 and extension_unloc =
-  | Eextension of lident * expr option (** extension *)
+  | Eextension of lident * expr list (** extension *)
 
 and extension = extension_unloc loced
 
@@ -182,8 +186,9 @@ and specification_item_unloc =
   | Vvariable of lident * type_t * expr option
   | Veffect of expr
   | Vassert of (lident * expr * invariants * lident list)
-  | Vpostcondition of (lident * expr * invariants * lident list)
-  | Vcontractinvariant of (lident * expr * invariants * lident list)
+  | Vpostcondition of (lident * expr * invariants * lident list * postkind option)
+
+and postkind = PKPost | PKInv
 
 and specification_item = specification_item_unloc loced
 
@@ -217,7 +222,7 @@ and s_function = {
   body  : expr;
 }
 
-and action_properties = {
+and entry_properties = {
   accept_transfer : bool;
   calledby        : (expr * exts) option;
   require         : (label_exprs * exts) option;
@@ -243,7 +248,7 @@ and declaration_unloc =
   | Dvariable      of variable_decl
   | Denum          of enum_kind * enum_decl
   | Dasset         of asset_decl
-  | Daction        of action_decl
+  | Dentry         of entry_decl
   | Dtransition    of transition_decl
   | Dcontract      of contract_decl
   | Dextension     of extension_decl
@@ -274,10 +279,10 @@ and asset_decl =
   * asset_operation option
   * exts
 
-and action_decl =
+and entry_decl =
   lident
   * args
-  * action_properties
+  * entry_properties
   * (expr * exts) option
   * exts
 
@@ -286,7 +291,7 @@ and transition_decl =
   * args
   * (lident * type_t) option
   * expr
-  * action_properties
+  * entry_properties
   * transition
   * exts
 
@@ -294,7 +299,7 @@ and contract_decl =
   lident * signature list * exts
 
 and extension_decl =
-  lident * expr option
+  lident * expr list
 
 and namespace_decl =
   lident * declaration list
@@ -310,7 +315,7 @@ and asset_option =
 and asset_post_option =
   | APOstates of lident
   | APOconstraints of label_exprs
-  | APOinit of expr
+  | APOinit of expr list
 
 and enum_option =
   | EOinitial
@@ -342,9 +347,5 @@ and archetype = archetype_unloc loced
  visitors { variety = "reduce2"; ancestors = ["location_reduce2"; "ident_reduce2"] }
 ]
 
-
 let mk_archetype ?(decls=[]) ?(loc=dummy) () =
   mkloc loc (Marchetype decls)
-
-let mk_s_term ?(before=false) ?label () : s_term =
-  { before = before; label = label }

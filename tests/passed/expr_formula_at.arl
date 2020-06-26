@@ -1,0 +1,24 @@
+archetype expr_formula_at
+
+asset my_asset {
+  id : int;
+}
+
+entry exec () {
+  specification {
+    postcondition s0 {
+      true
+      invariant for lbl {
+        at(for_lbl).x = 0
+      }
+    }
+  }
+
+  effect {
+    var x : int = 0;
+    label for_lbl;
+    for:lbl i in my_asset do
+      x := 3
+    done
+  }
+}

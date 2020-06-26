@@ -4,7 +4,7 @@ asset myasset {
   id : string;
 }
 
-action anaction (k : string) {
+entry anaction (k : string) {
   effect {
     myasset.get(k).id := "mykey"
   }

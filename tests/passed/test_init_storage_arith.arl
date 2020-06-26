@@ -1,0 +1,56 @@
+archetype test_init_storage_arith
+
+variable bool_bool_and : bool = true and false
+variable bool_bool_or  : bool = true or false
+variable bool_bool_not : bool = not true
+
+variable int_int_plus   : int = 1 + 2
+variable int_int_minus  : int = 1 - 2
+variable int_int_mult   : int = 1 * 2
+variable int_int_ediv   : int = 1 div 2
+variable int_int_modulo : int = 1 % 2
+
+variable rat_rat_plus   : rational = 1.1 + 1.2
+variable rat_rat_minus  : rational = 1.1 - 1.2
+variable rat_rat_mult   : rational = 1.1 * 1.2
+variable rat_rat_div    : rational = 1.1 / 1.2
+
+variable int_rat_plus   : rational = 1 + 1.2
+variable int_rat_minus  : rational = 1 - 1.2
+variable int_rat_mult   : rational = 1 * 1.2
+variable int_rat_div    : rational = 1 / 1.2
+
+variable rat_int_plus   : rational = 1.1 + 2
+variable rat_int_minus  : rational = 1.1 - 2
+variable rat_int_mult   : rational = 1.1 * 2
+variable rat_int_div    : rational = 1.1 / 2
+
+variable date_date_minus : duration = 2020-01-01 - 2019-12-31
+
+variable dur_dur_plus   : duration = 1h + 2s
+variable dur_dur_minus  : duration = 1h - 2s
+variable dur_dur_div    : rational = 4h / 30m
+variable dur_dur_ediv   : int      = 4h div 30m
+
+variable int_dur_mult   : duration = 2 * 1h
+variable dur_int_ediv   : duration = 1h div 2
+
+// variable date_dur_plus  : date     = 2020-01-01 + 1d
+// variable date_dur_minus : date     = 2020-01-01 - 1d
+
+// variable dur_date_plus  : date     = 1d + 2020-01-01
+
+variable str_str_plus   : string   = "str1" + "str2"
+
+variable tez_tez_plus   : tez      = 2tz + 1tz
+variable tez_tez_minus  : tez      = 2tz - 1tz
+
+variable int_tez_mult   : tez      = 2 * 1tz
+variable rat_tez_mult   : tez      = 1.1 * 1tz
+variable int_tez_ediv   : tez      = 1tz div 2
+
+entry exec () {
+  effect {
+    ()
+  }
+}

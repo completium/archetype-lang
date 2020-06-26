@@ -1,0 +1,19 @@
+archetype invariants_on_states
+
+asset my_asset {
+  id : string
+}
+
+variable v : int = 0
+
+states =
+ | One initial with { s1: my_asset.isempty(); }
+ | Two         with { s2: v > 0}
+
+transition exec () {
+  from One
+  to Two
+  with effect {
+    v := 1
+  }
+}

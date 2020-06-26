@@ -1,8 +1,8 @@
 archetype expr_fun_abs_rat
 
-variable res : int = 0
+variable res : rational = 0
 
-action exec () {
+entry exec () {
   specification {
     s0: res = 1 div 2;
   }

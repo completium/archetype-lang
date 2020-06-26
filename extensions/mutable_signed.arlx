@@ -4,7 +4,7 @@ archetype extension mutable_signed (
 
 ) {
 
-  action[%signedbyall roles%] set_<%avariable> (newvariable : type) {
+  entry[%signedbyall (roles)%] set_<%avariable> (newvariable : type) {
     require {
       set_<%avariable>_c1 : cond;
     }

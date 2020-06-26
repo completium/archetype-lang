@@ -1,0 +1,20 @@
+archetype expr_method_asset_contains_one_field
+
+asset my_asset identified by id {
+  id : string;
+} initialized by {
+  {"id0"};
+  {"id1"};
+  {"id2"}
+}
+
+variable res : bool = false
+
+entry exec () {
+  specification {
+    s0: res = true;
+  }
+  effect {
+    res := my_asset.contains("id0")
+  }
+}

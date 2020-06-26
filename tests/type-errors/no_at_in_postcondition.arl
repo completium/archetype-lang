@@ -1,0 +1,16 @@
+archetype no_at_in_postcondition
+
+entry exec () {
+  specification {
+
+    postcondition p1 {
+      at(lbl).x = 0
+    }
+  }
+
+  effect {
+    var x = 0;
+    label lbl;
+    x := 0;
+  }
+}

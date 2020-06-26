@@ -10,9 +10,9 @@ asset asset2 {
   id: string;
 }
 
-action anaction () {
+entry anaction () {
   effect {
-    let a : int = 0 in
+    var a : int = 0;
     a := 1
   }
 }

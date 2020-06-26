@@ -20,12 +20,18 @@ variable x2 : int = a * b + c
 variable y2 : int = (a * b) + c
 variable z2 : int = a * (b + c)
 
+entry exec() {
+  effect {
+    require(true)
+  }
+}
+
 specification {
-  postcondition s1 {
+  contract invariant s1 {
     i -> j -> k
   }
 
-  postcondition s2 {
+  contract invariant s2 {
     (i -> j) -> k
   }
 }

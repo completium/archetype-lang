@@ -7,12 +7,12 @@ asset my_asset identified by id {
   value : int;
 }
 
-action exec () {
+entry exec () {
   effect {
     require true
   }
 }
 
 security {
-  s0 : not_by_role (anyaction, admin);
+  s0 : not_by_role (anyentry, admin);
 }

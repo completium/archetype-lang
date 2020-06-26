@@ -8,8 +8,8 @@ variable threshold : rational = 0.5
 
 contract contract_sig {
   // generate signature here
-  action set_contact(cc : address)
-  action register_candidate (candidate : address)
+  entry set_contact(cc : address)
+  entry register_candidate (candidate : address)
 }
 
 // set called contract address here
@@ -23,50 +23,47 @@ asset vote {
   vid : string;
   vcandidate : address;
   vcount : int = 0; // no error if names 'count'
-  voters : voter collection = [];
+  voters : voter aggregate = [];
 } with {
   i0 : vcount > 0;
 }
 
-action add_voters (addrs : voter collection) {
+entry addvoter (voter_id : pkey of voter) {
   called by admin
   effect {
-    for vter in addrs do
-      voter.add(vter)
-    done
+    voter.add({voter_id})
   }
 }
 
-action add_vote (id : string, candidate : address) {
+entry addvote (id : string, candidate : address) {
   called by admin
   effect {
     vote.add({ vid = id; vcandidate = candidate })
   }
 }
 
-action do_vote (id : string, decision : bool) { // cannot name this 'vote'
+entry do_vote (id : string, decision : bool) { // cannot name this 'vote'
   require {
     r1 : voter.contains(caller);
   }
   failif {
-    f1 : vote.get(id).voters.contains(caller);
+    f1 : vote[id].voters.contains(caller);
   }
   effect {
-    var v = vote.get(id);
-    v.voters.add({ vaddr = caller });
-    if decision then v.vcount += 1
+    voter.add({caller});
+    vote[id].voters.add(caller);
+    if decision then vote[id].vcount += 1
   }
 }
 
-action execute (id : string) {
+entry execute (id : string) {
   called by admin
   effect {
-    var v = vote.get(id);
-    var nbvoters = v.voters.count();
-    var count = v.vcount;
+    var nbvoters = vote[id].voters.count();
+    var count = vote[id].vcount;
     if nbvoters >= quorum * voter.count() and count >= threshold * nbvoters then (
       // call contract action here
-      contract_instance.register_candidate(v.vcandidate)
+      transfer 0tz to contract_instance call register_candidate(vote[id].vcandidate)
     )
   }
 }

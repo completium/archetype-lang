@@ -7,12 +7,12 @@ asset my_asset identified by id {
   value : int;
 }
 
-action exec () {
+entry exec () {
   effect {
     require true
   }
 }
 
 security {
-  s0 : transferred_to (anyaction);
+  s0 : transferred_to (anyentry);
 }

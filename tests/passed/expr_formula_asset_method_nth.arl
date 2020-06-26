@@ -1,0 +1,25 @@
+archetype expr_formula_asset_method_nth
+
+asset my_asset identified by id {
+  id : string;
+  value : int;
+} initialized by {
+  {"id0"; 0};
+  {"id1"; 1};
+  {"id2"; 2}
+}
+
+entry exec () {
+
+  specification {
+    s0: let some k = my_asset.nth(0) in
+        let some a = my_asset[k] in
+          a.value = 0
+        otherwise false
+        otherwise false;
+  }
+
+  effect {
+    require (true)
+  }
+}

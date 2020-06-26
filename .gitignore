@@ -31,3 +31,4 @@ contracts/*.cm*
 contracts/*.tz
 contracts/*.md
 attic/
+.history

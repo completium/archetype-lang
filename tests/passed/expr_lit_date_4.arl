@@ -2,7 +2,7 @@ archetype expr_lit_date_4
 
 variable res : date = 1970-01-01
 
-action exec () {
+entry exec () {
   specification {
     s0: res = 2019-01-01T00:00:00-05:30;
   }

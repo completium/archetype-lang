@@ -6,7 +6,7 @@ asset my_asset {
 
 variable a : my_asset = {id = "id"}
 
-action exec() {
+entry exec() {
   effect {
     require (true)
   }

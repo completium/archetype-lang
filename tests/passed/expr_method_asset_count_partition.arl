@@ -1,0 +1,25 @@
+archetype expr_method_asset_count_partition
+
+asset o_asset identified by oid {
+  oid : int;
+}
+
+asset my_asset identified by id {
+  id     : string;
+  col    : o_asset partition;
+} initialized by {
+  {"id0"; []};
+  {"id1"; []};
+  {"id2"; []}
+}
+
+variable res : int = -1
+
+entry exec () {
+  specification {
+    s0: res = 0;
+  }
+  effect {
+    res := my_asset["id0"].col.count();
+  }
+}

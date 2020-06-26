@@ -1,6 +1,6 @@
 archetype shadow_global_var_effect
 
-action exec () {
+entry exec () {
   specification {
     shadow effect {
       myvar += 2

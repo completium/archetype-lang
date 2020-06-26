@@ -1,0 +1,14 @@
+archetype no_container_partition_arg
+
+asset et identified by cid { cid: int; }
+
+asset e identified by eid {
+	eid			: string;
+	cells		: et partition;
+}
+
+entry start (cl: et partition) {
+	effect {
+		()
+	}
+}

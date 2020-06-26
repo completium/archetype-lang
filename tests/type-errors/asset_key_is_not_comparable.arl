@@ -1,0 +1,13 @@
+archetype asset_key_is_not_comparable
+
+asset myasset {
+  t1 : int * int list;
+  t2 : string;
+  t3 : int;
+}
+
+entry exec() {
+  effect {
+    require(true)
+  }
+}

@@ -1,0 +1,17 @@
+archetype effect_add_asset_with_complex_partition
+
+asset o_asset identified by oid {
+    oid : string;
+    v : int
+}
+
+asset my_asset identified by id {
+  id : int;
+  o_assets : o_asset partition;
+}
+
+entry add () {
+	effect {
+    my_asset.add({ id = 1; o_assets = [{"my_id1"; 42}; {"my_id2"; 43}; {"my_id3"; 44}] })
+	}
+}

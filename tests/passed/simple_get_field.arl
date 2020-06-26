@@ -1,0 +1,16 @@
+archetype simple_get_field
+
+asset my_asset {
+  id: int;
+  value: string;
+} initialized by {
+  {0; "str"}
+}
+
+variable res : string = ""
+
+entry exec() {
+  effect {
+    res := my_asset[0].value
+  }
+}

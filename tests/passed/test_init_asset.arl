@@ -7,10 +7,12 @@ asset my_asset_simple identified by str {
 asset my_asset identified by id {
   id : string;
   value : int;
-  mycollection : my_asset_simple collection;
-} initialized by [ { "my_id"; 0; [] } ]
+  myaggregate : my_asset_simple aggregate;
+} initialized by {
+  { "my_id"; 0; [] }
+}
 
-action exec () {
+entry exec () {
   effect {
     my_asset.remove ("my_id")
   }

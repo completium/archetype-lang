@@ -19,7 +19,7 @@ let generate_storage (model : model) : model =
       asset_name
       (MTasset (unloc asset_name))
       typ_
-      (mk_mterm (Marray []) typ_)
+      (mk_mterm (Massets asset.init) typ_)
   in
 
   let state_to_storage_items (e : enum) : storage_item list =
@@ -27,7 +27,7 @@ let generate_storage (model : model) : model =
     | _ when String.equal (unloc e.name) "state" ->
       begin
         let iv = e.initial in
-        let dv = mk_mterm (Mvarlocal iv) (Tstate) in
+        let dv = mk_mterm (Mvar (iv, Vlocal)) (Tstate) in
         [ mk_storage_item e.name MTstate Tstate dv ]
       end
     | _ -> []
@@ -48,18 +48,24 @@ let generate_storage (model : model) : model =
       | Brole       -> emit_error (NoInitExprFor "role")
       | Bcurrency   -> mk_mterm (Mcurrency (Big_int.zero_big_int, Tz)) (Tbuiltin b)
       | Bkey        -> emit_error (NoInitExprFor "key")
+      | Bkeyhash    -> emit_error (NoInitExprFor "key_hash")
+      | Bsignature  -> emit_error (NoInitExprFor "signature")
       | Bbytes      -> mk_mterm (Mbytes ("0x0")) (Tbuiltin b)
+      | Bnat        -> mk_mterm (Mint (Big_int.zero_big_int)) (Tbuiltin b)
     in
 
     let init_default_value = function
       | Tbuiltin b        -> init_ b
-      | Tcontainer (t, _) -> mk_mterm (Marray []) (Tcontainer(t, Collection))
+      | Tcontainer (t, _) -> mk_mterm (Massets []) (Tcontainer(t, Collection))
+      | Tlist t           -> mk_mterm (Mlitlist []) (Tlist t)
       | Toption t         -> mk_mterm (Mnone) (Toption t)
       | Tasset v
       | Tenum v
       | Tcontract v       -> emit_error (NoInitExprFor (unloc v))
       | Ttuple _          -> emit_error (NoInitExprFor "tuple")
-      | Tassoc _          -> emit_error (NoInitExprFor "tassoc")
+      | Tset k            -> mk_mterm   (Mlitset []) (Tset k)
+      | Tmap (k, v)       -> mk_mterm   (Mlitmap []) (Tmap (k, v))
+      | Trecord _         -> emit_error (NoInitExprFor "record")
       | Tunit             -> emit_error (NoInitExprFor "unit")
       | Tstorage          -> emit_error (NoInitExprFor "storage")
       | Toperation        -> emit_error (NoInitExprFor "operation")
@@ -82,9 +88,9 @@ let generate_storage (model : model) : model =
 
   let process_storage_item d : storage_item list =
     match d with
-    | Dvar v -> [variable_to_storage_items v]
-    | Denum e -> state_to_storage_items e
-    | Dasset a -> [asset_to_storage_items a]
+    | Dvar v      -> [variable_to_storage_items v]
+    | Denum e     -> state_to_storage_items e
+    | Dasset a    -> [asset_to_storage_items a]
     | Dcontract _ -> []
   in
 
@@ -93,11 +99,13 @@ let generate_storage (model : model) : model =
   let process_mterm (model : model) : model =
     let rec aux c (mt : mterm) : mterm =
       match mt.node with
-      | Massign (op, t, id, v) when Model.Utils.is_field_storage model (unloc id) ->
+      | Massign (op, Avar id, v) when Model.Utils.is_field_storage model (unloc id) ->
         begin
           let vv = aux c v in
-          mk_mterm (Massignvarstore (op, t, id, vv)) Tunit
+          mk_mterm (Massign (op, Avarstore id, vv)) Tunit
         end
+      | Mvar (id, Vlocal) when Model.Utils.is_field_storage model (unloc id) ->
+        mk_mterm (Mvar (id, Vstorevar)) mt.type_
       | _ -> map_mterm (aux c) mt
     in
     Model.map_mterm_model aux model

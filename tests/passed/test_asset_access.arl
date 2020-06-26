@@ -1,0 +1,22 @@
+archetype test_asset_access
+
+asset one_asset {
+  oid : int;
+} initialized by {
+  {8}
+}
+
+asset my_asset {
+  id : int;
+  v  : string;
+} initialized by {
+  {1; "mystr"}
+}
+
+entry exec() {
+  effect {
+    require (my_asset[0].id = 0);
+    var str = my_asset[0].v;
+    fail(str)
+  }
+}

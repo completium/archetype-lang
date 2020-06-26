@@ -1,8 +1,8 @@
 archetype autocallable
 
-constant issuer : role = @tz1KksC8RvjUWAbXYJuNrUbontHGor25Cztk
-constant owner  : role = @tz1uNrUbontHGor25CztkKksC8RvjUWAbXYJ
-constant oracle : role = @tz1r25CztkKksC8RvjuNrUWAbXYJUbontHGo (* exchange *)
+constant issuer : role = @tz1bfVgcJC4ukaQSHUe1EbrUd5SekXeP9CWk
+constant owner  : role = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
+constant oracle : role = @tz1iawHeddgggn6P5r5jtq2wDRqcJVksGVSa (* exchange *)
 
 constant nominal : tez = 1000tz
 
@@ -30,7 +30,7 @@ asset early identified by eobservation {
 } with {
   i1 : 0 <= trigger <= 1;
   i2 : 0 <= value   <= 1;
-} initialized by [
+} initialized by {
   { 2018-03-14T00:00:00; 2018-03-28T00:00:00; 0.95; 1 };
   { 2018-06-14T00:00:00; 2018-06-28T00:00:00; 0.95; 1 };
   { 2018-09-14T00:00:00; 2018-09-28T00:00:00; 0.95; 1 };
@@ -40,7 +40,7 @@ asset early identified by eobservation {
   { 2019-09-16T00:00:00; 2020-09-30T00:00:00; 0.70; 1 };
   { 2019-12-16T00:00:00; 2020-01-02T00:00:00; 0.70; 1 };
   { 2020-03-16T00:00:00; 2020-03-30T00:00:00; 0.70; 1 }
-]
+}
 
 asset interest identified by iobservation {
   iobservation : date;
@@ -49,7 +49,7 @@ asset interest identified by iobservation {
   rate        : rational;
 } with {
   i3 : 0 <= barrier <= 1;
-} initialized by [
+} initialized by {
   { 2017-06-14T00:00:00; 2017-06-28T00:00:00; 0.5; 2.025  };
   { 2017-09-14T00:00:00; 2017-09-28T00:00:00; 0.5; 4.05   };
   { 2017-12-14T00:00:00; 2018-01-02T00:00:00; 0.5; 6.075  };
@@ -62,7 +62,7 @@ asset interest identified by iobservation {
   { 2019-09-16T00:00:00; 2019-09-30T00:00:00; 0.5; 20.25  };
   { 2019-12-16T00:00:00; 2020-01-02T00:00:00; 0.5; 22.275 };
   { 2020-03-16T00:00:00; 2020-03-30T00:00:00; 0.5; 24.3   }
-]
+}
 
 (* underlyings values *)
 asset fixing identified by fobservation {
@@ -95,7 +95,8 @@ function compute_expected (d : date) : tez {
     definition ibarrier { i : interest |
       forall f in fixing,
         (* retrieving the first element of etrigger *)
-        let some efirst = etrigger.nth(0) in
+        let some key_efirst = etrigger.nth(0) in
+        let some efirst = etrigger[key_efirst] in
           if i.iobservation = f.fobservation and i.iobservation <= efirst.eobservation
           then (* barrier condition *)
                     f.bac >= bac_strike
@@ -103,18 +104,20 @@ function compute_expected (d : date) : tez {
                 and f.ubs >= ubs_strike
           else false
         otherwise false
+        otherwise false
     }
 
     (* TODO finish specs *)
     (** expected is the sum of redemption nominal and interests *)
     postcondition p_expected {
         let expected : tez =
-          let some ftrigger = etrigger.nth(0) in
+          let some ftrigger_key = etrigger.nth(0) in
+          let some ftrigger = early[ftrigger_key] in
           (* early redemption *)
           ftrigger.value * nominal
           otherwise
           (* redemption *)
-          let some f = fixing.get(gredemption) in
+          (let some f = fixing[gredemption] in
           if     f.bac >= bac_strike
              and f.sg  >= sg_strike
              and f.ubs >= ubs_strike
@@ -126,66 +129,87 @@ function compute_expected (d : date) : tez {
             let ubs_trigger = f.ubs / ubs_strike in
             let worst = min ((min (bac_trigger, sg_trigger)), ubs_trigger) in
             worst * nominal
-          otherwise true
+          otherwise 0tz)
+
+          otherwise
+          (* redemption *)
+          let some f = fixing[gredemption] in
+          if     f.bac >= bac_strike
+             and f.sg  >= sg_strike
+             and f.ubs >= ubs_strike
+          then
+             nominal
+          else
+            let bac_trigger = f.bac / bac_strike in
+            let sg_trigger  = f.sg  / sg_strike  in
+            let ubs_trigger = f.ubs / ubs_strike in
+            let worst = min ((min (bac_trigger, sg_trigger)), ubs_trigger) in
+            worst * nominal
+          otherwise 0tz
         in
         (* interests *)
         let interests =
-          let some lbarrier = ibarrier.last(0) in
-            let v = fixing.get(lbarrier.iobservation) in
+        if expected = 0tz then 0tz else
+          (let some lbarrier_key = ibarrier.nth(ibarrier.count() - 1) in
+          let some lbarrier = interest[lbarrier_key] in
+            let some v = fixing[lbarrier.iobservation] in
             if    v.bac >= lbarrier.barrier * bac_initial
               and v.sg  >= lbarrier.barrier * sg_initial
               and v.ubs >= lbarrier.barrier * ubs_initial
             then lbarrier.rate * nominal
             else 0tz
           otherwise 0tz
+          otherwise 0tz
+          otherwise 0tz)
         in
          result = expected + interests
     }
   }
 
   effect {
-    let expected = 0tz in
-    let terminated = false in
-    let redeem_date = final in
+    var expected = 0tz;
+    var terminated = false;
+    var redeem_date = final;
     (* early redemption *)
     for : redeemloop e in early do
-      if e.redemption <= d
-      then (* is there early redemption ? *)
-        let v = fixing.get(e.eobservation) in
-        if     v.bac >= e.trigger * bac_initial
-           and v.sg  >= e.trigger * sg_initial
-           and v.ubs >= e.trigger * ubs_initial
+      if early[e].redemption <= d
+      then ( (* is there early redemption ? *)
+        var ee = early[e].eobservation;
+        if     fixing[ee].bac >= early[e].trigger * bac_initial
+           and fixing[ee].sg  >= early[e].trigger * sg_initial
+           and fixing[ee].ubs >= early[e].trigger * ubs_initial
         then (
-           expected += e.value * nominal;
-           redeem_date := e.eobservation;
+           expected += early[e].value * nominal;
+           redeem_date := early[e].eobservation;
            terminated := true
-        )
+        ))
     done;
     (* redemption *)
     if not terminated and gredemption <= d
     then
-      let f = fixing.get(gredemption) in
-      if     f.bac >= bac_strike
-         and f.sg  >= sg_strike
-         and f.ubs >= ubs_strike
+      if     fixing[gredemption].bac >= bac_strike
+         and fixing[gredemption].sg  >= sg_strike
+         and fixing[gredemption].ubs >= ubs_strike
       then
          expected += nominal
-      else
-         let bac_trigger = f.bac / bac_strike in
-         let sg_trigger  = f.sg  / sg_strike  in
-         let ubs_trigger = f.ubs / ubs_strike in
-         let worst = min ((min (bac_trigger, sg_trigger)), ubs_trigger) in
-         expected += worst * nominal;
+      else (
+         var bac_trigger = fixing[gredemption].bac / bac_strike;
+         var sg_trigger  = fixing[gredemption].sg  / sg_strike;
+         var ubs_trigger = fixing[gredemption].ubs / ubs_strike;
+         var worst = min ((min (bac_trigger, sg_trigger)), ubs_trigger);
+         expected += worst * nominal
+      );
     (* expected interests *)
-    let exp_interests = 0.0 in
+    var exp_interests = 0tz;
     for : interestloop i in interest do
-      if i.iobservation <= redeem_date and i.payment <= d
-      then
-        let v = fixing.get(i.iobservation) in
-        if     v.bac >= i.barrier * bac_initial
-           and v.sg  >= i.barrier * sg_initial
-           and v.ubs >= i.barrier * ubs_initial
-        then exp_interests := i.rate * nominal
+      if interest[i].iobservation <= redeem_date and interest[i].payment <= d
+      then (
+        var ii = interest[i].iobservation;
+        if     fixing[ii].bac >= interest[i].barrier * bac_initial
+           and fixing[ii].sg  >= interest[i].barrier * sg_initial
+           and fixing[ii].ubs >= interest[i].barrier * ubs_initial
+        then exp_interests := interest[i].rate * nominal
+      )
     done;
     expected += exp_interests;
     return expected
@@ -195,16 +219,16 @@ function compute_expected (d : date) : tez {
 (* PAYMENT action *)
 variable actual_payment : tez = 0tz
 
-action pay_note () {
+entry pay_note () {
    called by issuer
    effect {
       actual_payment += transferred
    }
 }
 
-action add_fixing (f[%signedby oracle%] : fixing) {
+entry add_fixing (ffobservation : date, fbac : rational, fsg : rational, fubs : rational) {
   effect {
-    fixing.add(f)
+    fixing.add({ffobservation; fbac; fsg; fubs})
   }
 }
 

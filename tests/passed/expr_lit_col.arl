@@ -1,9 +1,0 @@
-archetype expr_lit_col
-
-variable res : int collection = []
-
-action exec () {
-  effect {
-    res := [1; 2; 3]
-  }
-}

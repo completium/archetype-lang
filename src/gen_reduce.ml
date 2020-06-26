@@ -16,26 +16,26 @@ let emit_error (desc : error_desc) =
   raise (Anomaly str)
 
 let storage_lident : lident = dumloc "_s"
-let storage_var : mterm = mk_mterm (Mvarlocal storage_lident) Tstorage
+let storage_var : mterm = mk_mterm (Mvar (storage_lident, Vlocal)) Tstorage
 
 let operations_lident : lident = dumloc "_ops"
 let operations_type : type_ = Tcontainer (Toperation, Collection)
-let operations_var : mterm = mk_mterm (Mvarlocal operations_lident) operations_type
-let operations_init : mterm = mk_mterm (Marray []) operations_type
+let operations_var : mterm = mk_mterm (Mvar (operations_lident, Vlocal)) operations_type
+let operations_init : mterm = mk_mterm (Massets []) operations_type
 
 let operations_storage_type : type_ = Ttuple [Tcontainer (Toperation, Collection); Tstorage]
 let operations_storage_var : mterm = mk_mterm (Mtuple [operations_var; storage_var]) operations_storage_type
 
 let rec simplify (mt : mterm) : mterm =
   match mt.node with
-  | Mletin ([let_id], init, _, {node = (Mvarlocal var_id); _}, _)
-  | Mletin ([let_id], init, _, {node = (Mtuple [{node = Mvarlocal var_id; _}]); _}, _) when String.equal (unloc let_id) (unloc var_id) -> simplify init
+  | Mletin ([let_id], init, _, {node = (Mvar (var_id, Vlocal)); _}, _)
+  | Mletin ([let_id], init, _, {node = (Mtuple [{node = Mvar (var_id, Vlocal); _}]); _}, _) when String.equal (unloc let_id) (unloc var_id) -> simplify init
   | Mletin (ids, init, _, {node = (Mtuple tuples); _}, _) when
       (
         let cmp_lidents (ids1 : lident list) (ids2 : lident list) : bool = List.fold_left2 (fun accu x y -> accu && String.equal (unloc x) (unloc y)) true ids1 ids2 in
         let tuples_ids, continue = List.fold_right (fun (x : mterm) (tuples_ids, continue) ->
             match x.node with
-            | Mvarlocal id -> id::tuples_ids, continue
+            | Mvar (id, Vlocal) -> id::tuples_ids, continue
             | _ -> tuples_ids, false) tuples ([], true) in
         if (not continue) || List.compare_lengths ids tuples_ids <> 0
         then false
@@ -61,7 +61,7 @@ type ctx_red = {
 
 let rec compute_side_effect_aux (ctx : ctx_red)(accu : (ident * type_) list) (mt : mterm) : (ident * type_) list =
   match mt.node with
-  | Massign (_, _, a, _b) ->
+  | Massign (_, Avar a, _b) ->
     let id : ident = unloc a in
     let type_ = List.assoc_opt id ctx.vars in
     (match type_ with
@@ -98,16 +98,16 @@ let rec process_non_empty_list_term (model : model) (ctx : ctx_red) (s : s_red) 
   List.fold_right (fun x (accu, s) ->
       let x, s = process_mtern model ctx s x in
       match x with
-      | { node = Massign (op, _, id, value); _} ->
+      | { node = Massign (op, Avar id, value); _} ->
         let type_ = value.type_ in
         let value =
-          let var = mk_mterm (Mvarlocal id) type_ in
+          let var = mk_mterm (Mvar (id, Vlocal)) type_ in
           match op with
           | ValueAssign -> value
           | PlusAssign  -> mk_mterm (Mplus (var, value)) type_
           | MinusAssign -> mk_mterm (Mminus (var, value)) type_
           | MultAssign  -> mk_mterm (Mmult (var, value)) type_
-          | DivAssign   -> mk_mterm (Mdiv (var, value)) type_
+          | DivAssign   -> mk_mterm (Mdivrat (var, value)) type_
           | AndAssign   -> mk_mterm (Mand (var, value)) type_
           | OrAssign    -> mk_mterm (Mor (var, value)) type_
         in
@@ -117,7 +117,8 @@ let rec process_non_empty_list_term (model : model) (ctx : ctx_red) (s : s_red) 
           then
             begin
               (* let _s = _s.owner <- new_owner in *)
-              let n : mterm__node = Massignfield(ValueAssign, Tstorage, storage_var, id, value) in
+              (* let n : mterm__node = Massignfield(ValueAssign, Tstorage, storage_var, id, value) in *)
+              let n : mterm__node = assert false in (* FIXME *)
               let af : mterm = mk_mterm n Tunit in
               storage_lident, af, Tstorage
             end
@@ -174,9 +175,6 @@ and process_mtern (model : model) (ctx : ctx_red) (s : s_red) (mt : mterm) : mte
   (* | Mremovelocal  of 'term * 'term *)
   (* | Mreverselocal of 'term *)
 
-  | Maddshallow (an, args) ->
-    mk_mterm (Maddshallow (an, storage_var::args)) Tstorage, s
-
   (* app local *)
   | Mapp (id, args) ->
     let type_ = get_type ctx (unloc id) in
@@ -229,7 +227,7 @@ and process_mtern (model : model) (ctx : ctx_red) (s : s_red) (mt : mterm) : mte
       (match ctx.target with
        | Some {node = (Mtuple _l); _} ->
          let subs : (ident * type_) list = compute_side_effect_for_list ctx ([t] @ (Option.map_dfl (fun x -> [x]) [] e)) in
-         mk_mterm (Mtuple (storage_var::(List.map (fun (x, y : ident * type_) -> mk_mterm (Mvarlocal (dumloc x)) y) subs)))
+         mk_mterm (Mtuple (storage_var::(List.map (fun (x, y : ident * type_) -> mk_mterm (Mvar (dumloc x, Vlocal)) y) subs)))
            (Ttuple (Tstorage::(List.map (fun (_x, y : ident * type_) -> y) subs))), subs
        | _ -> storage_var, [])
     in
@@ -246,11 +244,6 @@ and process_mtern (model : model) (ctx : ctx_red) (s : s_red) (mt : mterm) : mte
     mk_mterm (Mif (c, t, e)) target.type_, {s with subs = subs}
 
   | Mseq l ->
-    let l : mterm list = List.filter (fun (x : mterm) ->
-        match x.node with
-        | Massert _ -> false
-        | _ -> true) l in
-
     begin
       match l with
       | [] -> mt, s
@@ -262,7 +255,7 @@ and process_mtern (model : model) (ctx : ctx_red) (s : s_red) (mt : mterm) : mte
           match subs with
           | [] -> l
           | _ ->
-            let target = mk_mterm (Mtuple (storage_var::(List.map (fun (x, y : ident * type_) -> mk_mterm (Mvarlocal (dumloc x)) y) subs)))
+            let target = mk_mterm (Mtuple (storage_var::(List.map (fun (x, y : ident * type_) -> mk_mterm (Mvar (dumloc x, Vlocal)) y) subs)))
                 (Ttuple (Tstorage::(List.map (fun (_x, y : ident * type_) -> y) subs))) in
             l @ [target]
         ) in
@@ -270,12 +263,12 @@ and process_mtern (model : model) (ctx : ctx_red) (s : s_red) (mt : mterm) : mte
         process_non_empty_list_term model ctx s l
     end
 
-  | Mfor (a, col, body, _) ->
+  | Mfor (a, ICKview col, body, _) ->
     let col, s = process_mtern model ctx s col in
     let subs : (ident * type_) list = compute_side_effect ctx body in
     let is = [storage_lident] @ (List.map (fun (x, _y) -> dumloc x) subs) in
     let type_tuple = Ttuple ([Tstorage] @ List.map snd subs) in
-    let tuple : mterm = mk_mterm (Mtuple ([storage_var] @ List.map (fun (x, y) -> mk_mterm (Mvarlocal (dumloc x)) y) subs)) type_tuple in
+    let tuple : mterm = mk_mterm (Mtuple ([storage_var] @ List.map (fun (x, y) -> mk_mterm (Mvar (dumloc x, Vlocal)) y) subs)) type_tuple in
     let ctx = {
       ctx with
       target = Some tuple;

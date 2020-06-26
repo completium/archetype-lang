@@ -1,0 +1,22 @@
+archetype expr_method_asset_sort_one_field
+
+asset my_asset identified by id {
+  id : string;
+} initialized by {
+  {"id0"};
+  {"id1"};
+  {"id2"}
+}
+
+variable res : string = "id2"
+
+entry exec () {
+  specification {
+    s0: res = "id2";
+  }
+  effect {
+    var l = my_asset.sort(desc(id));
+    var k = l.nth(0);
+    res := my_asset[k].id
+  }
+}

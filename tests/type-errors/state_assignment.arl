@@ -3,7 +3,7 @@ archetype state_assignment
 states =
 | Created initial
 
-action myaction () {
+entry myaction () {
   effect {
     state := Created
   }

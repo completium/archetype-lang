@@ -1,0 +1,12 @@
+archetype expr_arith_uminus_int
+
+variable res : int = 0
+
+entry exec () {
+  specification {
+    s0: res = -1
+  }
+  effect {
+    res := -1
+  }
+}

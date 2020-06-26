@@ -1,16 +1,14 @@
 archetype lang_list
 
-action exec () {
+entry exec () {
   effect {
     var l : string list = ["1"; "2"; "3"];
 
-    (* effect *)
-    l.prepend("2");
-
     (* expr *)
-    var c : bool   = l.contains("2");
-    var l : int    = l.count();
-    var n : string = l.nth(0);
+    var a : string list  = prepend(l, "2");
+    var c : bool         = contains(l, "2");
+    var k : int          = count(l);
+    var n : string       = nth(l, 0);
 
   }
 }

@@ -1,0 +1,17 @@
+archetype no_asset_effect_on_view_addupdate
+
+asset my_asset identified by id {
+  id : string;
+  value : int = 0;
+} initialized by {
+  {"id0"; 0};
+  {"id1"; 1};
+  {"id2"; 2}
+}
+
+entry exec() {
+  effect {
+    var l = my_asset.select(value = 0);
+    l.addupdate("key", {value = 1})
+  }
+}

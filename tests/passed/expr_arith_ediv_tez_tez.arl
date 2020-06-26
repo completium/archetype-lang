@@ -1,0 +1,13 @@
+archetype expr_arith_ediv_tez_tez
+
+variable res : int = 0
+
+entry exec () {
+  specification {
+    s0: res = 1000000;
+  }
+  effect {
+    res := 1tz div 1utz;
+    require(res = 1000000)
+  }
+}

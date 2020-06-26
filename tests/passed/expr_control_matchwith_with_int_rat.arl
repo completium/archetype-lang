@@ -1,0 +1,25 @@
+archetype expr_control_matchwith_with_int_rat
+
+enum t =
+  | C1
+  | C2
+  | C3
+  | C4
+  | C5
+
+variable res : rational = 0.0
+
+entry exec () {
+  specification {
+    s0: res = 1;
+  }
+  effect {
+    var x : t = C3;
+    res :=
+      match x with
+      | C1 | C2 -> 0 / 1
+      | C3 -> 3
+      | _ -> 2 / 3
+      end
+  }
+}

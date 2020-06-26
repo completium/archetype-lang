@@ -1,0 +1,12 @@
+archetype expr_formula_implication
+
+entry exec () {
+
+  specification {
+    s: true -> true;
+  }
+
+  effect {
+    require(true)
+  }
+}

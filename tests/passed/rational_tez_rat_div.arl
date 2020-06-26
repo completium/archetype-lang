@@ -1,8 +1,0 @@
-archetype rational_tez_rat_div
-
-action exec (dest : address) {
-  effect {
-    var m = 1tz * 1;
-    transfer m to dest
-  }
-}

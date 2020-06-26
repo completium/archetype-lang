@@ -26,7 +26,7 @@ on the Tezos blockchain, with a specific focus on contract security
    (ocaml (>= 4.07.0))
    (dune  (>= 1.10.0))
     menhir
-    digestif
+    digestif {>= "0.7.2"}
     num
     yojson
     ppx_deriving

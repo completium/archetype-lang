@@ -5,7 +5,7 @@ asset myasset {
   value: int;
 }
 
-action exec () {
+entry exec () {
 
   effect {
     var l = myasset.select(value = 0);

@@ -1,0 +1,12 @@
+archetype literal_in_argument
+
+variable res : rational = 0.0
+
+entry exec () {
+  specification {
+    s0: res = 1 / 2;
+  }
+  effect {
+    res := max(1 / 2, 1 / 3)
+  }
+}

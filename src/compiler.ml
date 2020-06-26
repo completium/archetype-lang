@@ -37,35 +37,29 @@ let output_tast (ast : Ast.model) =
   else Format.printf "%a@." Printer_ast.pp_ast ast
 
 let output (model : Model.model) =
-  if !Options.opt_raw
-  then Format.printf "%a@." Model.pp_model model
-  else
-    let printer =
-      match !Options.target with
-      | None         -> Printer_model.pp_model
-      | Solidity     -> Printer_model_solidity.pp_model
-      | Liquidity    -> Printer_model_liquidity.pp_model
-      | LiquidityUrl ->
-        fun fmt model ->
-          let str = Printer_model_liquidity.show_model model in
-          let encoded_src = Uri.pct_encode str in
-          let encoded_src = Str.global_replace (Str.regexp "\\+") "%2B" encoded_src in
-          let url = "http://www.liquidity-lang.org/edit/?source=" ^ encoded_src in
-          Format.fprintf fmt "%s@\n" url
-      | Ligo         -> Printer_model_ligo.pp_model
-      | LigoStorage  -> Printer_model_ligo.pp_storage
-      | SmartPy      -> Printer_model_smartpy.pp_model
-      | Scaml        -> Printer_model_scaml.pp_model
-      | Whyml        ->
-        fun fmt model ->
-          let mlw = raise_if_error gen_output_error Gen_why3.to_whyml model in
-          if !Options.opt_raw_whytree
-          then Format.fprintf fmt "%a@." Mlwtree.pp_mlw_tree mlw
-          else Format.fprintf fmt "%a@." Printer_mlwtree.pp_mlw_tree mlw
-      | _            -> fun _fmt _ -> ()
-    in
-    Format.printf "%a@." printer model
-
+  match !Options.opt_raw, !Options.opt_m with
+  | true, _ -> Format.printf "%a@." Model.pp_model model
+  | _, true -> Format.printf "%a@." Printer_model.pp_model model
+  | _ ->
+    begin
+      let printer =
+        match !Options.target with
+        | None         -> Printer_model.pp_model
+        | Solidity     -> Printer_model_solidity.pp_model
+        | Ligo         -> Printer_model_ligo.pp_model
+        | LigoStorage  -> Printer_model_ligo.pp_storage
+        | SmartPy      -> Printer_model_smartpy.pp_model
+        | Scaml        -> Printer_model_scaml.pp_model
+        | Whyml        ->
+          fun fmt model ->
+            let mlw = raise_if_error gen_output_error Gen_why3.to_whyml model in
+            if !Options.opt_raw_whytree
+            then Format.fprintf fmt "%a@." Mlwtree.pp_mlw_tree mlw
+            else Format.fprintf fmt "%a@." Printer_mlwtree.pp_mlw_tree mlw
+        | _            -> fun _fmt _ -> ()
+      in
+      Format.printf "%a@." printer model
+    end
 
 let parse (filename, channel) =
   Io.parse_archetype ~name:filename channel
@@ -101,29 +95,16 @@ let generate_target_pt (pt : ParseTree.archetype) : ParseTree.archetype =
 
 let generate_model            = Gen_model.to_model
 let generate_storage          = Gen_storage.generate_storage
-let shallow_asset             = Gen_shallow_asset.shallow_asset
-let split_key_values          = Gen_split_key_values.split_key_values
 let remove_side_effect        = Gen_reduce.reduce
 let generate_api_storage      = Gen_api_storage.generate_api_storage
 
 let generate_target model =
 
-  let cont c a = if c then a else (fun x -> x) in
-
   match !Options.target with
   | None ->
     model
-    |> cont !Options.opt_rau remove_add_update
-    |> cont !Options.opt_ru  replace_update_by_set
-    |> cont !Options.opt_nr  remove_rational
-    |> cont !Options.opt_ndd replace_date_duration_by_timestamp
-    |> cont !Options.opt_ne  remove_enum_matchwith
-    |> cont !Options.opt_ws  generate_storage
     |> raise_if_error post_model_error prune_properties
     |> replace_declvar_by_letin
-    |> cont !Options.opt_sa  shallow_asset
-    |> cont !Options.opt_skv split_key_values
-    |> cont !Options.opt_nse remove_side_effect
     |> generate_api_storage
     |> output
 
@@ -156,27 +137,61 @@ let generate_target model =
   | Ligo
   | LigoStorage ->
     model
+    |> replace_ligo_ident
+    |> replace_col_by_key_for_ckfield
+    |> process_asset_state
+    |> replace_assignfield_by_update
     |> remove_add_update
-    |> replace_update_by_set
+    |> remove_container_op_in_update
+    |> merge_update
+    |> remove_assign_operator
+    |> extract_item_collection_from_add_asset
+    |> process_internal_string
     |> remove_rational
+    |> abs_tez
     |> replace_date_duration_by_timestamp
+    |> eval_variable_initial_value
+    |> replace_dotassetfield_by_dot
     |> generate_storage
     |> replace_declvar_by_letin
     |> remove_enum_matchwith
-    |> remove_get_dot
-    |> exec_process
-    |> shallow_asset
+    |> replace_lit_address_by_role
+    |> remove_label
+    |> flat_sequence
+    |> remove_cmp_bool
     |> split_key_values
-    |> Gen_transform.assign_loop_label
-    |> Gen_transform.ligo_move_get_in_condition
+    |> remove_duplicate_key
+    |> assign_loop_label
+    |> remove_letin_from_expr
+    |> remove_fun_dotasset
+    |> optimize
     |> generate_api_storage
     |> output
 
   | SmartPy ->
     model
+    |> process_asset_state
+    |> replace_assignfield_by_update
+    |> remove_add_update
+    |> merge_update
+    |> replace_update_by_set
+    |> process_internal_string
+    |> remove_rational
+    |> abs_tez
+    |> replace_date_duration_by_timestamp
+    |> eval_variable_initial_value
     |> generate_storage
-    |> exec_process
-    |> shallow_asset
+    |> replace_declvar_by_letin
+    |> remove_enum_matchwith
+    |> remove_letin_from_expr
+    (* |> remove_fun_dotasset *)
+    |> replace_lit_address_by_role
+    |> remove_label
+    |> flat_sequence
+    |> remove_cmp_bool
+    |> split_key_values
+    |> Gen_transform.assign_loop_label
+    |> optimize
     |> generate_api_storage
     |> output
 
@@ -186,33 +201,56 @@ let generate_target model =
     |> replace_update_by_set
     |> generate_storage
     |> replace_declvar_by_letin
-    |> exec_process
+    |> replace_lit_address_by_role
+    |> remove_label
+    |> flat_sequence
+    |> remove_cmp_bool
     |> process_single_field_storage
-    |> shallow_asset
     |> split_key_values
     |> remove_side_effect
+    |> optimize
     |> generate_api_storage
     |> output
 
   | Whyml ->
     model
-    |> remove_add_update
-    |> replace_update_by_set
+    |> replace_whyml_ident
+    |> replace_assignfield_by_update
+    |> process_asset_state
+    |> remove_add_update ~isformula:true
+    |> remove_container_op_in_update
+    |> merge_update
+    |> remove_assign_operator
+    |> process_internal_string
     |> remove_rational
     |> replace_date_duration_by_timestamp
+    |> eval_variable_initial_value
     |> generate_storage
     |> replace_declvar_by_letin
+    (* |> add_explicit_sort *)
     (* |> remove_enum_matchwith *)
-    |> remove_get_dot
-    |> exec_process
+    (* |> remove_fun_dotasset *)
+    |> replace_lit_address_by_role
+    |> replace_label_by_mark
+    |> flat_sequence
+    |> remove_cmp_bool
     |> prune_properties
-    |> extend_loop_iter
-    |> shallow_asset
+    (* |> shallow_asset_verif *)
     (* |> split_key_values *)
     |> Gen_transform.assign_loop_label
-    |> Gen_transform.ligo_move_get_in_condition
+    |> create_var_before_for
+    |> extend_loop_iter
+    |> replace_for_to_iter
+    |> replace_assignfield_by_update
+    |> replace_update_by_set
+    |> remove_cmp_enum
     |> remove_cmp_bool
-    |> generate_api_storage
+    |> replace_dotassetfield_by_dot
+    |> transfer_shadow_variable_to_storage
+    (* |> replace_instr_verif *)
+    |> optimize
+    |> generate_api_storage ~verif:true
+    |> filter_api_storage
     |> output
 
   | _ -> ()
@@ -231,8 +269,12 @@ let compile (filename, channel) =
   |> raise_if_error type_error type_
   |> cont !Options.opt_ast output_tast
   |> raise_if_error model_error generate_model
+  |> raise_if_error post_model_error check_number_entrypoint
   |> raise_if_error post_model_error check_partition_access
-  |> raise_if_error post_model_error extend_removeif
+  |> raise_if_error post_model_error check_containers_asset
+  |> raise_if_error post_model_error check_empty_container_on_initializedby
+  |> raise_if_error post_model_error check_and_replace_init_caller
+  |> raise_if_error post_model_error check_duplicated_keys_in_asset
   |> generate_target
 
 let close dispose channel =
@@ -268,15 +310,7 @@ let main () =
   let arg_list = Arg.align [
       "-t", Arg.String f, "<lang> Transcode to <lang> language";
       "--target", Arg.String f, " Same as -t";
-      "--list-target", Arg.Unit (fun _ -> Format.printf "target available:@\n  solidity@\n  liquidity@\n  ligo@\n  scaml@\n  whyml@\n  markdown@\n"; exit 0), " List available target languages";
-      (* "--storage-policy", Arg.String (fun s -> match s with
-          | "flat" -> Options.storage_policy := Flat
-          | "record" -> Options.storage_policy := Record
-          |  s ->
-            Format.eprintf
-              "Unknown policy %s (use record, flat)@." s;
-            exit 2), "<policy> Set storage policy";
-         "--list-storage-policy", Arg.Unit (fun _ -> Format.printf "storage policy available:@\n  record@\n  flat@\n"; exit 0), " List storage policy"; *)
+      "--list-target", Arg.Unit (fun _ -> Format.printf "target available:@\n  ligo@\n  scaml@\n  whyml@\n"; exit 0), " List available target languages";
       "-pt", Arg.Set Options.opt_pt, " Generate parse tree";
       "--parse-tree", Arg.Set Options.opt_pt, " Same as -pt";
       "-ext", Arg.Set Options.opt_ext, " Process extensions";
@@ -286,26 +320,10 @@ let main () =
       "--typed", Arg.Set Options.opt_typed, " Display type in ast output";
       "-ap", Arg.Set Options.opt_all_parenthesis, " Display all parenthesis in printer";
       "--typed", Arg.Set Options.opt_all_parenthesis, " Same as -ap";
-      "-ws", Arg.Set Options.opt_ws, " With storage";
-      "--with-storage", Arg.Set Options.opt_ws, " Same as -ws";
-      "-sa", Arg.Set Options.opt_sa, " Transform to shallow asset";
-      "--shallow-asset", Arg.Set Options.opt_sa, " Same as -sa";
-      "-skv", Arg.Set Options.opt_skv, " Split key value of collection of asset";
-      "--split-key-values", Arg.Set Options.opt_skv, " Same as -skv";
-      "-nse", Arg.Set Options.opt_nse, " Transform to no side effect";
-      "--no-side-effect", Arg.Set Options.opt_nse, " Same as -nse";
-      "-nr", Arg.Set Options.opt_nr, " Remove rational";
-      "--no-rational", Arg.Set Options.opt_nse, " Same as -nr";
-      "-ndd", Arg.Set Options.opt_ndd, " Remove date and duration";
-      "--no-date-duration", Arg.Set Options.opt_nse, " Same as -ndd";
-      "-rau", Arg.Set Options.opt_rau, " Remove add_update method";
-      "--remove-add-update", Arg.Set Options.opt_rau, " Same as -rau";
-      "-ru", Arg.Set Options.opt_ru, " Remove update method";
-      "--remove-update", Arg.Set Options.opt_ru, " Same as -ru";
-      "-ne", Arg.Set Options.opt_ne, " Remove enum and match with";
-      "--no-enum", Arg.Set Options.opt_ne, " Same as -ne";
       "-fp", Arg.String (fun s -> Options.opt_property_focused := s), " Focus property (with whyml target only)";
       "--focus-property", Arg.String (fun s -> Options.opt_property_focused := s), " Same as -fp";
+      "-sci", Arg.String (fun s -> Options.opt_caller := s), " Set caller address for initialization";
+      "--set-caller-init", Arg.String (fun s -> Options.opt_caller := s), " Same as -sci";
       "-ptc", Arg.Set Options.opt_ptc, " Print type contract in archetype syntax";
       "--print-type-contract", Arg.Set Options.opt_ptc, " Same as -ptc";
       "-lsp", Arg.String (fun s -> match s with
@@ -323,6 +341,8 @@ let main () =
               "Unknown service %s (--list-services to view all services)@." s;
             exit 2), "<service> Generate service response to <service>";
       "--list-services", Arg.Unit (fun _ -> Format.printf "services available:@\n  get_properties@\n"; exit 0), " List available services";
+      "-m", Arg.Set Options.opt_m, " Pretty print model tree";
+      "--model", Arg.Set Options.opt_m, " Same as -m";
       "-r", Arg.Set Options.opt_raw, " Print raw model tree";
       "--raw", Arg.Set Options.opt_raw, " Same as -r";
       "-ry", Arg.Set Options.opt_raw_whytree, " Print raw model tree";
@@ -338,26 +358,6 @@ let main () =
       "Available options:";
     ]  in
 
-  let check_flags_consistency () =
-    match !Options.target with
-    | None -> ()
-    | _ ->
-      if !Options.opt_nse
-      then Format.printf "Error: side effect removing is not compatible with language: %a.@\n"
-          Options.pp_target_lang !Options.target;
-
-      if !Options.opt_sa
-      then Format.printf "Error: asset shallowing is not compatible with language: %a.@\n"
-          Options.pp_target_lang !Options.target;
-
-      if !Options.opt_skv
-      then Format.printf "Error: key values spliting of asset collection is not compatible with language: %a.@\n"
-          Options.pp_target_lang !Options.target;
-
-      if !Options.opt_nse || !Options.opt_sa || !Options.opt_skv
-      then exit 1
-  in
-
   let ofilename = ref "" in
   let ochannel : in_channel option ref = ref None  in
   Arg.parse arg_list (fun s -> (ofilename := s;
@@ -368,8 +368,6 @@ let main () =
      List.iter (fun x -> Format.printf "%s@\n" x) !Options.opt_vids;
      exit 1
      ); *)
-
-  check_flags_consistency();
 
   let filename, channel, dispose =
     match !ochannel with

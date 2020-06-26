@@ -1,0 +1,14 @@
+archetype expr_fun_unpack_string
+
+variable res : string option = none
+
+entry exec () {
+  specification {
+    s0: issome(res);
+    s1: let some str = getopt(res) in str = "archetype" otherwise false;
+  }
+  effect {
+    res := unpack<string>(0x050100000009617263686574797065);
+    require (getopt(res) = "archetype")
+  }
+}

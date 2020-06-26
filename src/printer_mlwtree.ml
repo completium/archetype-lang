@@ -89,7 +89,7 @@ let needs_paren = function
   | Tdot _   -> false
   | Tvar _   -> false
   | Tenum _  -> false
-  | Tnil     -> false
+  | Tnil _   -> false
   | Tint _   -> false
   | Tnone    -> false
   | Tletin _ -> false
@@ -129,7 +129,7 @@ let pp_type fmt typ =
     let str =
       match t with
       | Tyint         -> "int"
-      | Tystring      -> "string"
+      | Tystring      -> "astring"
       | Tydate        -> "date"
       | Tyaddr        -> "address"
       | Tyrole        -> "role"
@@ -139,19 +139,23 @@ let pp_type fmt typ =
       | Tyunit        -> "unit"
       | Tytransfers   -> "transfers"
       | Tycoll i      -> (String.capitalize_ascii i) ^ ".collection"
-      | Typartition i -> (String.capitalize_ascii i) ^ ".collection"
+      | Tyview i      -> (String.capitalize_ascii i) ^ ".view"
+      | Typartition i -> (String.capitalize_ascii i) ^ ".view"
+      | Tyaggregate i -> (String.capitalize_ascii i) ^ ".view"
       | Tymap i       -> "map " ^ i
       | Tyrecord i    -> i
       | Tyasset i     -> i
       | Tyenum i      -> i
-      | Tyoption tt   -> "option " ^ (typ_str tt)
-      | Tylist tt     -> "list " ^ (typ_str ~pparen:(true) tt)
+      | Tyoption tt   -> "option " ^ (typ_str ~pparen:(true) tt)
+      | Tylist tt     -> "L.list " ^ (typ_str ~pparen:(true) tt)
       | Tybool        -> "bool"
       | Tyuint        -> "uint"
       | Tycontract i  -> i
       | Tyrational    -> "rational"
       | Tyduration    -> "duration"
+      | Tysignature   -> "signature"
       | Tykey         -> "key"
+      | Tykeyhash     -> "key_hash"
       | Tystate       -> "state"
       | Tytuple l     -> "(" ^ (String.concat ", " (List.map typ_str l)) ^ ")"
     in
@@ -166,13 +170,15 @@ let pp_type fmt typ =
 let pp_exn fmt e =
   let e_str =
     match e with
-    | Ekeyexist         -> "KeyExist"
-    | Enotfound         -> "NotFound"
-    | Einvalidcaller    -> "InvalidCaller"
-    | Einvalidcondition -> "InvalidCondition"
-    | Einvalidstate     -> "InvalidState"
-    | Enotransfer       -> "NoTransfer"
-    | Ebreak            -> "Break"
+    | Ekeyexist           -> "KeyExist"
+    | Enotfound           -> "NotFound"
+    | Einvalidcaller      -> "InvalidCaller"
+    | Einvalidcondition   -> "InvalidCondition"
+    | Einvalidstate       -> "InvalidState"
+    | Enotransfer         -> "NoTransfer"
+    | Ebreak              -> "Break"
+    | Einvalid (Some msg) -> "(Invalid \""^msg^"\")"
+    | Einvalid None       -> "Invalid"
   in
   pp_str fmt e_str
 
@@ -207,9 +213,11 @@ let pp_args fmt l =
 
 (* -------------------------------------------------------------------------- *)
 
-let pp_pattern fmt = function
-  | Twild -> pp_str fmt "_"
+let rec pp_pattern fmt = function
+  | Twild -> pp_str fmt " _"
   | Tconst a -> pp_id fmt a
+  | Tpatt_tuple l -> Format.fprintf fmt "%a" (pp_list "," (pp_pattern)) l
+  | Tpsome a -> Format.fprintf fmt "Some %a" pp_id a
 
 (* -------------------------------------------------------------------------- *)
 
@@ -230,15 +238,28 @@ let rec pp_term outer pos fmt = function
       pp_str (String.capitalize_ascii t)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
-  | Tcontains (t,e1,e2) ->
-    Format.fprintf fmt "%a.contains %a %a"
+  | Tvmem (t,e1,e2) ->
+    Format.fprintf fmt "%a.vmem %a %a"
       pp_str (String.capitalize_ascii t)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
-  | Tlmem (_i,e1,e2) ->
-    Format.fprintf fmt "mem_key %a %a"
+  | Tvcontains (t,e1,e2) ->
+    Format.fprintf fmt "%a.vcontains %a %a"
+      pp_str (String.capitalize_ascii t)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
+  | Tccontains (t,e1,e2) ->
+    Format.fprintf fmt "%a.ccontains %a %a"
+      pp_str (String.capitalize_ascii t)
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
+  | Tlmem (i,e1,e2) ->
+    Format.fprintf fmt "%a.mem %a %a"
+      pp_str i
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
+  | Ttuple l ->
+    Format.fprintf fmt "(%a)" (pp_list " , " (pp_term outer pos)) l
   | Tvar i -> pp_str fmt i
   | Tdoti (i1,i2) -> Format.fprintf fmt "%a.%a" pp_str i1 pp_str i2
   | Tdot (e1,e2) ->
@@ -254,12 +275,35 @@ let rec pp_term outer pos fmt = function
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
+  | Tvadd (i,e1,e2) ->
+    Format.fprintf fmt "%a.vadd %a %a"
+      pp_str (String.capitalize_ascii i)
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
   | Tset (i,e1,e2,e3) ->
     Format.fprintf fmt "%a.set %a %a %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
       (pp_with_paren (pp_term outer pos)) e3
+  | Tvsum (i,e1,e2) ->
+    Format.fprintf fmt "%a.vsum %a %a"
+      pp_str (String.capitalize_ascii i)
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
+  | Tcsum (i,e1) ->
+    Format.fprintf fmt "%a.csum %a"
+      pp_str (String.capitalize_ascii i)
+      (pp_with_paren (pp_term outer pos)) e1
+  | Tcsort (i,e1) ->
+    Format.fprintf fmt "%a.csort %a"
+      pp_str (String.capitalize_ascii i)
+      (pp_with_paren (pp_term outer pos)) e1
+  | Tvsort (i,e1,e2) ->
+    Format.fprintf fmt "%a.vsort %a %a"
+      pp_str (String.capitalize_ascii i)
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
   | Tcoll (i,e) ->
     Format.fprintf fmt "%a.to_coll %a"
       pp_str (String.capitalize_ascii i)
@@ -269,8 +313,17 @@ let rec pp_term outer pos fmt = function
       pp_str (String.capitalize_ascii a)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
+   | Teqview (a, e1, e2) ->
+    Format.fprintf fmt "%a.veq %a %a"
+      pp_str (String.capitalize_ascii a)
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
+  | Teq (Tybool, e1, e2) ->
+    Format.fprintf fmt "%a && %a" (pp_term outer pos) e1 (pp_term outer pos) e2
   | Teq (_, e1, e2) ->
     Format.fprintf fmt "%a = %a" (pp_term outer pos) e1 (pp_term outer pos) e2
+  | Tneq (Tybool, e1, e2) ->
+    Format.fprintf fmt "not (%a && %a)" (pp_term outer pos) e1 (pp_term outer pos) e2
   | Tneq (_, e1, e2) ->
     Format.fprintf fmt "%a <> %a" (pp_term outer pos) e1 (pp_term outer pos) e2
   | Tunion (i, e1, e2) ->
@@ -299,6 +352,10 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "%a.is_empty %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e
+  | Tvempty (i,e) ->
+    Format.fprintf fmt "%a.view_is_empty %a"
+      pp_str (String.capitalize_ascii i)
+      (pp_with_paren (pp_term outer pos)) e
   | Tint i -> pp_str fmt (Big_int.string_of_big_int i)
   | Tforall (ud,b) ->
     Format.fprintf fmt "@[forall %a.@\n%a@]"
@@ -310,6 +367,10 @@ let rec pp_term outer pos fmt = function
       (pp_term e_default PRight) b
   | Timpl (e1,e2) ->
     Format.fprintf fmt "@[%a ->@\n%a @]"
+      (pp_term e_default PRight) e1
+      (pp_term e_default PRight) e2
+  | Tequiv (e1,e2) ->
+    Format.fprintf fmt "@[%a <->@\n%a @]"
       (pp_term e_default PRight) e1
       (pp_term e_default PRight) e2
   | Tand (e1,e2) ->
@@ -350,6 +411,11 @@ let rec pp_term outer pos fmt = function
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
+  | Tfget (i,e1,e2) ->
+    Format.fprintf fmt "%a.fget %a %a"
+      pp_str (String.capitalize_ascii i)
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
   | Trecord (None,l) ->
     Format.fprintf fmt "{@\n  @[%a@]@\n}"
       (pp_list ";@\n" pp_recfield) l
@@ -359,16 +425,28 @@ let rec pp_term outer pos fmt = function
       (pp_list ";@\n" pp_recfield) l
   | Tnone -> pp_str fmt "None"
   | Tenum i -> pp_str fmt i
+  | Tmark (i,e) -> Format.fprintf fmt "label %a in %a"
+    pp_str (String.capitalize_ascii i)
+    (pp_with_paren (pp_term outer pos)) e
+  | Tat (i,e) -> Format.fprintf fmt "(%a at %a)"
+    (pp_with_paren (pp_term outer pos)) e
+    pp_str (String.capitalize_ascii i)
+  | Tunit -> pp_str fmt "()"
   | Tsome e -> Format.fprintf fmt "Some %a" (pp_with_paren (pp_term e_default PRight)) e
   | Tnot e -> Format.fprintf fmt "not %a" (pp_with_paren (pp_term outer pos)) e
   | Tpand (e1,e2) -> Format.fprintf fmt "(%a && %a)"
                        (pp_with_paren (pp_term outer pos)) e1
                        (pp_with_paren (pp_term outer pos)) e2
   | Tlist l -> pp_tlist outer pos fmt l
-  | Tnil -> pp_str fmt "Nil"
-  | Temptycoll i -> Format.fprintf fmt "%a.empty" pp_str (String.capitalize_ascii i)
+  | Tnil i -> Format.fprintf fmt "%a.Nil" pp_str i
+  | Temptycoll i -> Format.fprintf fmt "%a.cempty" pp_str (String.capitalize_ascii i)
+  | Temptyview i -> Format.fprintf fmt "%a.vempty" pp_str (String.capitalize_ascii i)
   | Tcaller i -> Format.fprintf fmt "%a._caller" pp_str i
+  | Tsender i -> Format.fprintf fmt "%a._source" pp_str i
   | Ttransferred i -> Format.fprintf fmt "%a._transferred" pp_str i
+  | Tfst e -> Format.fprintf fmt "fst %a" (pp_with_paren (pp_term outer pos)) e
+  | Tsnd e -> Format.fprintf fmt "snd %a" (pp_with_paren (pp_term outer pos)) e
+  | Tabs e -> Format.fprintf fmt "abs %a" (pp_with_paren (pp_term outer pos)) e
   | Tletin (r,i,t,b,e) ->
     Format.fprintf fmt "let%a %a%a = %a in@\n%a"
       pp_ref r
@@ -380,9 +458,10 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "@[%a@] in@\n%a"
       pp_fun s
       (pp_term outer pos) e
-  | Tfor (i,s,l,b) ->
-    Format.fprintf fmt "for %a = 0 to %a do@\n@[%a@]@\n  @[%a@]@\ndone"
+  | Tfor (i,f,s,l,b) ->
+    Format.fprintf fmt "for %a = %a to %a do@\n@[%a@]@\n  @[%a@]@\ndone"
       pp_str i
+      (pp_term outer pos) f
       (pp_term outer pos) s
       (pp_invariants false) l
       (pp_term outer pos) b
@@ -397,28 +476,40 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "assert { [@expl:%a] %a }"
       pp_str lbl
       (pp_term outer pos) e
-  | Ttoiter (a,i,e) ->
-    Format.fprintf fmt "%a.tail %a %a"
-      pp_str (String.capitalize_ascii a)
-      pp_str i
-      (pp_with_paren (pp_term outer pos)) e
-  | Tcard (i,e) ->
-    Format.fprintf fmt "%a.card %a"
+  | Tccard (i,e) ->
+    Format.fprintf fmt "%a.ccard %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e
+  | Tvcard (i,e) ->
+    Format.fprintf fmt "%a.vcard %a"
+      pp_str (String.capitalize_ascii i)
+      (pp_with_paren (pp_term outer pos)) e
+
   | Tmkcoll (i,e) ->
     Format.fprintf fmt "%a.mk %a"
+      pp_str (String.capitalize_ascii i)
+      (pp_with_paren (pp_term outer pos)) e
+  | Tmkview (i,e) ->
+    Format.fprintf fmt "%a.vmk %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e
   | Tcontent (i,e) ->
     Format.fprintf fmt "%a.elts %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e
-  | Tunshallow (i,e1,e2) ->
-    Format.fprintf fmt "%a.unshallow %a %a"
+  | Tvcontent (i,e) ->
+    Format.fprintf fmt "%a.vcontent %a"
+      pp_str (String.capitalize_ascii i)
+      (pp_with_paren (pp_term outer pos)) e
+  | Ttocoll (i,e1,e2) ->
+    Format.fprintf fmt "%a.to_coll %a %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
+  | Ttoview (i,e) ->
+    Format.fprintf fmt "%a.to_view %a"
+      pp_str (String.capitalize_ascii i)
+      (pp_with_paren (pp_term outer pos)) e
   | Tshallow (i,e1,e2) ->
     Format.fprintf fmt "%a.shallow %a %a"
       pp_str (String.capitalize_ascii i)
@@ -437,18 +528,24 @@ let rec pp_term outer pos fmt = function
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
   | Tdiv (_,e1,e2) ->
-    Format.fprintf fmt "%a / %a"
+    Format.fprintf fmt "div %a %a"
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
   | Tmod (_,e1,e2) ->
-    Format.fprintf fmt "%a %% %a"
+    Format.fprintf fmt "mod %a %a"
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
-  | Tnth (i,e1,e2) ->
-    Format.fprintf fmt "%a.nth %a %a"
+  | Tcnth (i,e1,e2) ->
+    Format.fprintf fmt "%a.cnth %a %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
+  | Tvnth (i,e1,e2) ->
+    Format.fprintf fmt "%a.vnth %a %a"
+      pp_str (String.capitalize_ascii i)
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
+  | Tlnth _ -> pp_str fmt "TODO_Tlnth"
   | Twitness i ->
     Format.fprintf fmt "%a.witness"
       pp_str (String.capitalize_ascii i)
@@ -463,15 +560,23 @@ let rec pp_term outer pos fmt = function
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
-  | Ttail (e1,e2) ->
-    Format.fprintf fmt "tail %a %a"
+  | Tctail (i,e1,e2) ->
+    Format.fprintf fmt "%a.cdrop %a %a"
+      pp_str (String.capitalize_ascii i)
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
+  | Tvtail (i,e1,e2) ->
+    Format.fprintf fmt "%a.vdrop %a %a"
+      pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
   | Tnow i -> Format.fprintf fmt "%a._now" pp_str i
-  | Tmlist (e1,i1,i2,i3,e2) ->
-    Format.fprintf fmt "@[match %a with@\n| Nil -> %a@\n| Cons %a %a -> @\n  @[%a@]@\nend@]"
+  | Tmlist (l,e1,i1,i2,i3,e2) ->
+    Format.fprintf fmt "@[match %a with@\n| %a.Nil -> %a@\n| %a.Cons %a %a -> @\n  @[%a@]@\nend@]"
       pp_str i1
+      pp_str l
       (pp_term outer pos) e1
+      pp_str l
       pp_str i2
       pp_str i3
       (pp_term outer pos) e2
@@ -479,8 +584,9 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "@[match %a with@\n| %a @\nend@]"
       (pp_term outer pos) t
       (pp_list "@\n|" pp_case) l
-  | Tcons (e1,e2) ->
-    Format.fprintf fmt "Cons %a %a"
+  | Tcons (i,e1,e2) ->
+    Format.fprintf fmt "%a.Cons %a %a"
+      pp_str i
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
   | Tremove (i,e1,e2) ->
@@ -488,8 +594,8 @@ let rec pp_term outer pos fmt = function
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
-  | Tlistremove (i,e1,e2) ->
-    Format.fprintf fmt "%a.remove_key %a %a"
+  | Tvremove (i,e1,e2) ->
+    Format.fprintf fmt "%a.vremove %a %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
@@ -500,24 +606,39 @@ let rec pp_term outer pos fmt = function
   | Tadded _ -> pp_str fmt "TODO_Tadded"
   | Trmed _ -> pp_str fmt "TODO_Trmed"
   | Tconcat (_, _) -> pp_str fmt "TODO_Tconcat"
+  | Ttransfer (e1,e2) ->
+    Format.fprintf fmt "transfer %a %a"
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
+  | Tcall e ->
+    Format.fprintf fmt "call %a"
+      (pp_with_paren (pp_term outer pos)) e
   | Tmktr (_, _) -> pp_str fmt "TODO_Tmktr"
   | Ttradd _ -> pp_str fmt "TODO_Ttradd"
   | Ttrrm _ -> pp_str fmt "TODO_Ttrrm"
-  | Tuminus (_, _) -> pp_str fmt "TODO_Tuminus"
+  | Tuminus (_, v) -> Format.fprintf fmt "- %a" (pp_with_paren (pp_term outer pos)) v
   | Tdlt (_, _, _, _) -> pp_str fmt "TODO_Tdlt"
   | Tdlet (_, _, _, _) -> pp_str fmt "TODO_Tdlet"
   | Tdlte (_, _, _, _) -> pp_str fmt "TODO_Tdlte"
   | Taddr _ -> pp_str fmt "TODO_Taddr"
   | Tbytes _ -> pp_str fmt "TODO_Tbytes"
-  | Tat _ -> pp_str fmt "TODO_Tat"
-  | Thead (_, _) -> pp_str fmt "TODO_Thead"
+  | Tvhead (i,e1,e2) ->
+    Format.fprintf fmt "%a.vkeep %a %a"
+      pp_str (String.capitalize_ascii i)
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
+  | Tchead (i,e1,e2) ->
+    Format.fprintf fmt "%a.ckeep %a %a"
+      pp_str (String.capitalize_ascii i)
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
 and pp_recfield fmt (n,t) =
   Format.fprintf fmt "%a = %a"
     pp_str n
     (pp_term e_default PRight) t
 and pp_tlist outer pos fmt = function
-  | []    -> pp_str fmt "Nil"
-  | e::tl -> Format.fprintf fmt "Cons %a %a"
+  | []    -> pp_str fmt "L.Nil"
+  | e::tl -> Format.fprintf fmt "L.Cons %a (%a)"
                (pp_with_paren (pp_term outer pos)) e
                (pp_tlist outer pos) tl
 and pp_formula fmt f =
@@ -658,7 +779,10 @@ let pp_val fmt (i,t) =
 (* -------------------------------------------------------------------------- *)
 
 let pp_decl fmt = function
-  | Duse l           -> Format.fprintf fmt "use %a" pp_qualid l
+  | Duse (true, l, None)    -> Format.fprintf fmt "use export %a" pp_qualid l
+  | Duse (true, l, Some _)  -> Format.fprintf fmt "use export %a" pp_qualid l
+  | Duse (false, l, None)   -> Format.fprintf fmt "use %a" pp_qualid l
+  | Duse (false, l, Some a) -> Format.fprintf fmt "use %a as %a" pp_qualid l pp_str a
   | Dval (i,t)       -> pp_val fmt (i,t)
   | Dclone (i,j,l)   -> pp_clone fmt (i,j,l)
   | Denum (i,l)      -> pp_enum fmt (i,l)
