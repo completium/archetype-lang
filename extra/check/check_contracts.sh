@@ -1,5 +1,9 @@
 #! /bin/bash
 
+BIN_RET=./extra/check/check_ret.sh
+BIN_EXEC=./extra/check/check_exec.sh
+BIN_VERIF=./extra/check/check_verif.sh
+
 RET_CONTRACTS="\
 animal_tracking.arl \
 auction_lazy.arl \
@@ -138,7 +142,7 @@ echo "Check return"
 echo ""
 echo "                                                             AST RET"
 for i in $RET_CONTRACTS; do
-    ./check_ret.sh ./contracts/$i
+    ${BIN_RET} ./contracts/$i
     if [ $? -ne 0 ]; then
         RET=1
     fi
@@ -147,7 +151,7 @@ done
 echo ""
 echo "(not pass)                                                   AST RET"
 for i in $REMAINED_RET_CONTRACTS; do
-    ./check_ret.sh ./contracts/$i
+    ${BIN_RET} ./contracts/$i
 done
 
 echo ""
@@ -157,7 +161,7 @@ echo "Check exec"
 echo ""
 echo "                                                             RET LP  LG  LS"
 for i in $EXEC_CONTRACTS; do
-    ./check_exec.sh ./contracts/$i
+    ${BIN_EXEC} ./contracts/$i
     if [ $? -ne 0 ]; then
         RET=1
     fi
@@ -166,7 +170,7 @@ done
 echo ""
 echo "(not pass)                                                   RET LP  LG  LS"
 for i in $REMAINED_EXEC_CONTRACTS; do
-    ./check_exec.sh ./contracts/$i
+    ${BIN_EXEC} ./contracts/$i
 done
 
 echo ""
@@ -176,7 +180,7 @@ echo "Check verif"
 echo ""
 echo "                                                             RET OUT PROVE"
 for i in $VERIF_CONTRACTS; do
-    ./check_verif.sh ./contracts/$i
+    ${BIN_VERIF} ./contracts/$i
     if [ $? -ne 0 ]; then
         RET=1
     fi
@@ -184,7 +188,7 @@ done
 echo ""
 echo "(not pass)                                                   RET OUT PROVE"
 for i in $REMAINED_VERIF_CONTRACTS; do
-    ./check_verif.sh ./contracts/$i
+    ${BIN_VERIF} ./contracts/$i
 done
 
 exit $RET
