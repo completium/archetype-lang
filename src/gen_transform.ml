@@ -1322,7 +1322,7 @@ let replace_date_duration_by_timestamp (model : model) : model =
     | Mtimestamp _ -> x
     | _ ->
       begin
-        Format.eprintf "cannot transform to timestamp: %a" Printer_model.pp_mterm x;
+        Format.eprintf "cannot transform to timestamp: %a@.%a@." Printer_model.pp_mterm x pp_mterm x;
         assert false
       end
   in

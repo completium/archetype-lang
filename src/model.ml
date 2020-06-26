@@ -3122,11 +3122,17 @@ end = struct
     | NotaRecord of mterm
     | NotanAssetType
     | NotFound
+    | CurrencyValueCannotBeNegative
   [@@deriving show {with_path = false}]
 
   let emit_error (desc : error_desc) =
     let str = Format.asprintf "%a@." pp_error_desc desc in
     raise (Anomaly str)
+
+  let emit_error2 (lc, error : Location.t * error_desc) =
+    let str : string = Format.asprintf "%a@." pp_error_desc error in
+    let pos : Position.t list = [location_to_position lc] in
+    Error.error_alert pos str (fun _ -> ())
 
   let lident_to_string lident = Location.unloc lident
 
@@ -3632,58 +3638,148 @@ end = struct
       in
       aux mt
     in
-    let eval_expr mt : mterm =
-      let extract_int (i : mterm) : Big_int.big_int =
-        match i.node with
-        | Mint v -> v
-        | _ -> assert false
-      in
 
-      let extract_rat (rat : mterm) : Big_int.big_int * Big_int.big_int =
-        match rat.node with
-        | Mrational (num, denom)
-        | Mtuple [{node = Mint num; _}; {node = Mint denom; _}] -> (num, denom)
-        | _ -> assert false
-      in
+    let mk_rat a b =
+      let a, b = Core.compute_irr_fract (a, b) in
+      let num   = mk_mterm (Mint a) (Tbuiltin Bint) in
+      let denom = mk_mterm (Mint b) (Tbuiltin Bint) in
+      mk_mterm (Mtuple [num; denom]) (Ttuple [Tbuiltin Bint; Tbuiltin Bint])
+    in
 
-      let extract_bool (b : mterm) : bool =
-        match b.node with
-        | Mbool v -> v
-        | _ -> assert false
-      in
+    let is_int (mt : mterm) =
+      match mt.type_ with
+      | Tbuiltin Bint -> true
+      | _ -> false
+    in
 
-      let arith op (a, b) : mterm =
-        let a = extract_int a in
-        let b = extract_int b in
+    let is_tez (mt : mterm) =
+      match mt.type_ with
+      | Tbuiltin Bcurrency -> true
+      | _ -> false
+    in
 
-        let res =
-          match op with
-          | `Plus   -> Big_int.add_big_int a b
-          | `Minus  -> Big_int.sub_big_int a b
-          | `Mult   -> Big_int.mult_big_int a b
-          | `DivEuc -> Big_int.div_big_int a b
-          | `Modulo -> Big_int.mod_big_int a b
+    let is_timestamp (mt : mterm) =
+      match mt.type_ with
+      | Tbuiltin Btimestamp -> true
+      | _ -> false
+    in
+
+
+    let eval_expr mt :
+      mterm =
+      let rec aux (mt : mterm) : mterm =
+        let extract_int (i : mterm) : Big_int.big_int =
+          let i = aux i in
+          match i.node with
+          | Mint v -> v
           | _ -> assert false
         in
-        mk_mterm (Mint res) (Tbuiltin Bint)
-      in
 
-      let rec aux (mt : mterm) : mterm =
-        match mt.node with
-        | Mplus   (a, b) -> arith `Plus  (aux a, aux b)
-        | Mminus  (a, b) -> arith `Minus (aux a, aux b)
-        | Mmult   (a, b) -> arith `Mult  (aux a, aux b)
-        | Mdiveuc (a, b) -> arith `DivEuv   (aux a, aux b)
-        | Mmodulo (a, b) -> arith `Modulo   (aux a, aux b)
-        | Mnot     a     -> mk_mterm (Mbool (not (extract_bool (aux a)))) (Tbuiltin Bbool)
-        | Mand    (a, b) -> mk_mterm (Mbool ((extract_bool (aux a)) && (extract_bool (aux b)))) (Tbuiltin Bbool)
-        | Mor     (a, b) -> mk_mterm (Mbool ((extract_bool (aux a)) || (extract_bool (aux b)))) (Tbuiltin Bbool)
-        | Mrateq  (a, b) ->
-          begin
+        let extract_bool (b : mterm) : bool =
+          let b = aux b in
+          match b.node with
+          | Mbool v -> v
+          | _ -> assert false
+        in
+
+        let extract_string (b : mterm) : string =
+          let b = aux b in
+          match b.node with
+          | Mstring v -> v
+          | _ -> assert false
+        in
+
+        let extract_rat (rat : mterm) : Big_int.big_int * Big_int.big_int =
+          let rat = aux rat in
+          match rat.node with
+          | Mrational (num, denom)
+          | Mtuple [{node = Mint num; _}; {node = Mint denom; _}] -> (num, denom)
+          | _ -> assert false
+        in
+
+        let extract_tez (b : mterm) : Big_int.big_int =
+          let b = aux b in
+          match b.node with
+          | Mcurrency (v, Utz) -> v
+          | Mcurrency (v, Mtz) -> Big_int.mult_int_big_int 1000 v
+          | Mcurrency (v, Tz)  -> Big_int.mult_int_big_int 1000000 v
+          | _ -> assert false
+        in
+
+        let extract_timestamp (b : mterm) : Big_int.big_int =
+          let b = aux b in
+          match b.node with
+          | Mtimestamp v -> v
+          | _ -> assert false
+        in
+
+        let arith op (a, b) : mterm =
+          let a = extract_int a in
+          let b = extract_int b in
+
+          let res =
+            match op with
+            | `Plus   -> Big_int.add_big_int a b
+            | `Minus  -> Big_int.sub_big_int a b
+            | `Mult   -> Big_int.mult_big_int a b
+            | `Ediv   -> Big_int.div_big_int a b
+            | `Modulo -> Big_int.mod_big_int a b
+            | _ -> assert false
+          in
+          mk_mterm (Mint res) (Tbuiltin Bint)
+        in
+
+        match mt.node, mt.type_ with
+        | Mplus   (a, b), Tbuiltin Bstring -> begin
+            let a = extract_string a in
+            let b = extract_string b in
+            mk_mterm (Mstring (a ^ b)) (Tbuiltin Bstring)
+          end
+        | Mplus   (a, b), Tbuiltin Bcurrency when is_tez a && is_tez b -> begin
+            let a = extract_tez a in
+            let b = extract_tez b in
+            mk_mterm (Mcurrency (Big_int.add_big_int a b, Utz)) (Tbuiltin Bcurrency)
+          end
+        | Mplus   (a, b), _ when is_timestamp a && is_int b -> begin
+            let a = extract_timestamp a in
+            let b = extract_int b in
+            mk_mterm (Mtimestamp (Big_int.add_big_int a b)) (Tbuiltin Btimestamp)
+          end
+        | Mplus   (a, b), _ -> arith `Plus  (aux a, aux b)
+        | Mminus  (a, b), Tbuiltin Bcurrency when is_tez a && is_tez b -> begin
+            let a = extract_tez a in
+            let b = extract_tez b in
+            let res = Big_int.sub_big_int a b in
+            if Big_int.sign_big_int res < 0 then emit_error2(mt.loc, CurrencyValueCannotBeNegative);
+            mk_mterm (Mcurrency (res, Utz)) (Tbuiltin Bcurrency)
+          end
+        | Mminus  (a, b), _ when is_timestamp a && is_timestamp b -> begin
+            let a = extract_timestamp a in
+            let b = extract_timestamp b in
+            let res = Big_int.sub_big_int a b in
+            mk_mterm (Mint res) (Tbuiltin Bint)
+          end
+        | Mminus  (a, b), _ -> arith `Minus (aux a, aux b)
+        | Mmult   (a, b), _ -> arith `Mult  (aux a, aux b)
+        | Mdiveuc (a, b), _ -> arith `Ediv  (aux a, aux b)
+        | Mmodulo (a, b), _ -> arith `Modulo   (aux a, aux b)
+        | Mnot     a    , _ -> mk_mterm (Mbool (not (extract_bool (aux a)))) (Tbuiltin Bbool)
+        | Mand    (a, b), _ -> mk_mterm (Mbool ((extract_bool (aux a)) && (extract_bool (aux b)))) (Tbuiltin Bbool)
+        | Mor     (a, b), _ -> mk_mterm (Mbool ((extract_bool (aux a)) || (extract_bool (aux b)))) (Tbuiltin Bbool)
+        | Mrateq  (a, b), _ -> begin
             let num1, denom1 = extract_rat (aux a) in
             let num2, denom2 = extract_rat (aux b) in
             let res = Big_int.eq_big_int (Big_int.mult_big_int num1 denom2) (Big_int.mult_big_int num2 denom1) in
             mk_mterm (Mbool res) (Tbuiltin Bbool)
+          end
+        | Mratarith (op, a, b), _ -> begin
+            let num1, denom1 = extract_rat (aux a) in
+            let num2, denom2 = extract_rat (aux b) in
+            match op with
+            | Rplus  -> mk_rat (Big_int.add_big_int (Big_int.mult_big_int num1 denom2) (Big_int.mult_big_int num2 denom1)) (Big_int.mult_big_int denom1 denom2)
+            | Rminus -> mk_rat (Big_int.sub_big_int (Big_int.mult_big_int num1 denom2) (Big_int.mult_big_int num2 denom1)) (Big_int.mult_big_int denom1 denom2)
+            | Rmult  -> mk_rat (Big_int.mult_big_int num1 num2) (Big_int.mult_big_int denom1 denom2)
+            | Rdiv   -> mk_rat (Big_int.mult_big_int num1 denom2) (Big_int.mult_big_int num2 denom1)
           end
         (* | Mratcmp (op, _a, _b) ->
            begin
@@ -3700,7 +3796,7 @@ end = struct
             in
             mk_mterm (Mbool res) (Tbuiltin Bbool)
            end *)
-        | Mrattez (coef, c) ->
+        | Mrattez (coef, c), _ ->
           begin
             let coef = aux coef in
             let c    = aux c    in
@@ -3711,7 +3807,10 @@ end = struct
                 let res = Big_int.div_big_int (Big_int.mult_big_int num v) denom in
                 mk_mterm (Mcurrency (res, cur)) (Tbuiltin Bcurrency)
               end
-            | _ -> assert false
+            | _ -> begin
+                Format.eprintf "%a@." pp_mterm mt;
+                assert false
+              end
           end
         | _ -> map_mterm aux mt
       in
