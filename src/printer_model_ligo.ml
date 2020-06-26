@@ -1877,17 +1877,19 @@ let pp_model_internal fmt (model : model) b =
         "function select_%a_%i (const s : storage_type%a%a) : list(%a) is@\n  \
          begin@\n    \
          %a\
+         function rev (const accu: list(%a); const x: %a) : list(%a) is x # accu;@\n    \
          function aggregate (const accu : list(%a); const i : %a%s) : list(%a) is@\n      \
          begin@\n        \
-         const the : %s = get_%s(s, i%s);@\n        \
-         end with (if (%a) then cons(the.%s, accu) else accu);@\n    \
-         end with (%s_fold(aggregate, %s, (nil : list(%a))))@\n"
+         const the : %s = get_%s(s, i%s);@\n      \
+         end with (if (%a) then cons(the.%s, accu) else accu);@\n  \
+         end with (list_fold (rev, %s_fold(aggregate, %s, (nil : list(%a))), (list [] : list(%a))))@\n"
         (pp_prefix_api_container_kind an) c i pp_fun_arg () (pp_list "" pp_arg) args pp_btyp t
         pp_src ()
+        pp_btyp t pp_btyp t pp_btyp t
         pp_btyp t pp_btyp t iter_type pp_btyp t
         an an iter_val
         (pp_mterm (mk_env ())) f k
-        container src pp_btyp t
+        container src pp_btyp t pp_btyp t
 
     | Sort (an, c, l) ->
       let _, t = Utils.get_asset_key model an in
