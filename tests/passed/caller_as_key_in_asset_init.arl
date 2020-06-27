@@ -1,0 +1,13 @@
+archetype caller_as_key_in_asset_init
+
+asset my_asset {
+  id: address;
+} initialized by {
+  {caller}
+}
+
+entry exec () {
+  effect {
+    ()
+  }
+}
