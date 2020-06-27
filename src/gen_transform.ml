@@ -10,6 +10,7 @@ type error_desc =
   | CannotBuildAsset of string * string
   | ContainersInAssetContainers of string * string * string
   | NoEmptyContainerForInitAsset of string * string * container
+  | NoEmptyContainerForDefaultValue of string * string * container
   | NoClearForPartitionAsset of ident
   | CallerNotSetInInit
   | DuplicatedKeyAsset of ident
@@ -30,7 +31,12 @@ let pp_error_desc fmt = function
       an fn an2
 
   | NoEmptyContainerForInitAsset (an, fn, c) ->
-    Format.fprintf fmt "Field '%s' of '%s' asset is a %a, which must be initialized by an empty collection."
+    Format.fprintf fmt "Field '%s' of '%s' asset is a %a, which must be initialized by an empty container."
+      fn an
+      Printer_model.pp_container c
+
+  | NoEmptyContainerForDefaultValue (an, fn, c) ->
+    Format.fprintf fmt "Field '%s' of '%s' asset is a %a, which must be initialized by an empty container."
       fn an
       Printer_model.pp_container c
 
@@ -474,6 +480,27 @@ let check_empty_container_on_initializedby (model : model) : model =
   List.iter (fun (an, fn, c, l) -> emit_error (l, (NoEmptyContainerForInitAsset (an, fn, c)))) l;
   if List.is_not_empty l then raise (Error.Stop 5);
   model
+
+let check_empty_container_on_asset_default_value (model : model) : model =
+  let assets = Utils.get_assets model in
+  let is_emtpy_container (omt : mterm) =
+    match omt with
+    | {node = ((Mlitlist [] | Massets []))} -> true
+    | _ -> false
+  in
+  let l : (ident * ident * container * Location.t) list =
+    List.fold_left (fun accu (a : asset) ->
+        List.fold_left (fun accu (item : asset_item) ->
+            match item.type_, item.default with
+            | Tcontainer (Tasset an, c), Some dv when not (is_emtpy_container dv) -> (unloc an, unloc a.name, c, dv.loc)::accu
+            | _ -> accu
+          ) accu a.values
+      ) [] assets
+  in
+  List.iter (fun (an, fn, c, l) -> emit_error (l, NoEmptyContainerForDefaultValue (an, fn, c))) l;
+  if List.is_not_empty l then raise (Error.Stop 5);
+  model
+
 
 let check_and_replace_init_caller (model : model) : model =
   let caller = !Options.opt_caller in

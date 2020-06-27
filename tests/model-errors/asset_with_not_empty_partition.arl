@@ -1,0 +1,18 @@
+archetype asset_with_not_empty_partition
+
+asset o_asset {
+  oid : int;
+}
+
+asset my_asset identified by id {
+  id : string;
+  anaggregate : o_asset partition = [{1}; {2}; {3}];
+}
+
+variable res : int = 0
+
+entry exec () {
+  effect {
+    ()
+  }
+}

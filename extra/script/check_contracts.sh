@@ -1,8 +1,8 @@
 #! /bin/bash
 
-BIN_RET=./extra/check/check_ret.sh
-BIN_EXEC=./extra/check/check_exec.sh
-BIN_VERIF=./extra/check/check_verif.sh
+BIN_RET=./extra/script/check_ret.sh
+BIN_EXEC=./extra/script/check_exec.sh
+BIN_VERIF=./extra/script/check_verif.sh
 
 RET_CONTRACTS="\
 animal_tracking.arl \
