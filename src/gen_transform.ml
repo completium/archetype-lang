@@ -565,7 +565,9 @@ let rec is_literal (mt : mterm) : bool =
   | Mlitset    _
   | Mlitlist   _
   | Mlitmap    _
-  | Mlitrecord _ -> true
+  | Mlitrecord _
+  | Mcaller
+    -> true
   | Mcast (_, _, v) -> is_literal v
   | _ -> false
 
