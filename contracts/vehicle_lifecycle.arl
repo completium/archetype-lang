@@ -14,7 +14,7 @@ enum order_state =
   | Delivered
 
 asset vehicledetail {
-  idv : string;
+  idv    : string;
   dcolor : string;
 }
 
