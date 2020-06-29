@@ -1,0 +1,9 @@
+archetype expr_cst_chain_id
+
+variable res : chain_id option = none
+
+entry exec () {
+  effect {
+    res := some(chainid)
+  }
+}

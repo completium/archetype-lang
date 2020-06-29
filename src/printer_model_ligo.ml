@@ -133,6 +133,7 @@ let pp_model_internal fmt (model : model) b =
     | Bkeyhash    -> Format.fprintf fmt "key_hash"
     | Bbytes      -> Format.fprintf fmt "bytes"
     | Bnat        -> Format.fprintf fmt "nat"
+    | Bchainid    -> Format.fprintf fmt "chain_id"
   in
 
   let pp_container fmt = function
@@ -1195,6 +1196,7 @@ let pp_model_internal fmt (model : model) b =
     | Mcaller        -> pp_str fmt "sender"
     | Mbalance       -> pp_str fmt "balance"
     | Msource        -> pp_str fmt "source"
+    | Mchainid       -> pp_str fmt "chain_id"
 
 
     (* variable *)

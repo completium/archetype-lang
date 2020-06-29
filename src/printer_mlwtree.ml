@@ -135,6 +135,7 @@ let pp_type fmt typ =
       | Tyrole        -> "role"
       | Tytez         -> "tez"
       | Tybytes       -> "bytes"
+      | Tychainid     -> "chain_id"
       | Tystorage     -> "_storage"
       | Tyunit        -> "unit"
       | Tytransfers   -> "transfers"
@@ -571,6 +572,7 @@ let rec pp_term outer pos fmt = function
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
   | Tnow i -> Format.fprintf fmt "%a._now" pp_str i
+  | Tchainid i -> Format.fprintf fmt "%a._chainid" pp_str i
   | Tmlist (l,e1,i1,i2,i3,e2) ->
     Format.fprintf fmt "@[match %a with@\n| %a.Nil -> %a@\n| %a.Cons %a %a -> @\n  @[%a@]@\nend@]"
       pp_str i1

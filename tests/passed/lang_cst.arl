@@ -2,15 +2,17 @@ archetype lang_cst
 
 entry exec () {
   effect {
-    var a : tez     = balance;      (* BALANCE *)
+    var a : tez      = balance;      (* BALANCE *)
     require(a = a);
-    var b : address = caller;       (* SENDER *)
+    var b : address  = caller;       (* SENDER *)
     require(b = b);
-    var c : date    = now;          (* NOW *)
+    var c : date     = now;          (* NOW *)
     require(c = c);
-    var d : address = source;       (* SOURCE *)
+    var d : address  = source;       (* SOURCE *)
     require(d = d);
-    var e : tez     = transferred;  (* AMOUNT *)
+    var e : tez      = transferred;  (* AMOUNT *)
     require(e = e);
+    var f : chain_id = chainid;     (* CHAIN_ID *)
+    // require(f = f);               // not comparable
   }
 }

@@ -33,6 +33,7 @@ type vtyp =
   | VTkeyhash
   | VTsignature
   | VTbytes
+  | VTchainid
 [@@deriving show {with_path = false}]
 
 type trtyp =
@@ -124,6 +125,7 @@ type const =
   | Cany
   | Canyentry
   | Cresult
+  | Cchainid
   (* function *)
   | Cadd
   | Caddupdate
@@ -629,6 +631,7 @@ let vtsignature  = Tbuiltin (VTsignature )
 let vtkey        = Tbuiltin (VTkey       )
 let vtkeyhash    = Tbuiltin (VTkeyhash   )
 let vtbytes      = Tbuiltin (VTbytes     )
+let vtchainid    = Tbuiltin (VTchainid   )
 
 (* mk functions *)
 

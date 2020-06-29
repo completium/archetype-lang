@@ -31,6 +31,7 @@ let pp_vtyp fmt = function
   | VTkey        -> Format.fprintf fmt "key"
   | VTkeyhash    -> Format.fprintf fmt "key_hash"
   | VTbytes      -> Format.fprintf fmt "bytes"
+  | VTchainid    -> Format.fprintf fmt "chain_id"
 
 let pp_container fmt = function
   | Collection -> Format.fprintf fmt "collection"
@@ -171,6 +172,7 @@ let to_const = function
   | Cany            -> "any"
   | Canyentry       -> "anyentry"
   | Cresult         -> "result"
+  | Cchainid        -> "chain_id"
   (* function *)
   | Cadd            -> "add"
   | Caddupdate      -> "addupdate"

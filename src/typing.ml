@@ -70,6 +70,7 @@ end = struct
     | M.Tlist _ -> true | _ -> false
 
   let rec support_eq = function
+    | M.Tbuiltin VTchainid -> false
     | M.Tbuiltin _ -> true
     | M.Tenum _ -> true
     | M.Ttuple tys -> List.for_all support_eq tys
@@ -348,7 +349,7 @@ type error_desc =
   | UninitializedVar
   | UnknownAsset                       of ident
   | UnknownContractEntryPoint          of ident * ident
-  | UnknownEntry                      of ident
+  | UnknownEntry                       of ident
   | UnknownEnum                        of ident
   | UnknownField                       of ident * ident
   | UnknownFieldName                   of ident
@@ -507,7 +508,7 @@ let pp_error_desc fmt e =
   | UninitializedVar                   -> pp "This variable declaration is missing an initializer"
   | UnknownAsset i                     -> pp "Unknown asset: %a" pp_ident i
   | UnknownContractEntryPoint (c, m)   -> pp "Unknown contract entry point: %s.%s" c m
-  | UnknownEntry i                    -> pp "Unknown entry: %a" pp_ident i
+  | UnknownEntry i                     -> pp "Unknown entry: %a" pp_ident i
   | UnknownEnum i                      -> pp "Unknown enum: %a" pp_ident i
   | UnknownField (i1, i2)              -> pp "Unknown field: asset %a does not have a field %a" pp_ident i1 pp_ident i2
   | UnknownFieldName i                 -> pp "Unknown field name: %a" pp_ident i
@@ -665,6 +666,7 @@ let globals = [
   ("now"         , M.Cnow         , M.vtdate);
   ("source"      , M.Csource      , M.vtaddress);
   ("transferred" , M.Ctransferred , M.vtcurrency);
+  ("chainid"    , M.Cchainid     , M.vtchainid);
 ]
 
 let statename = "state"
@@ -910,6 +912,7 @@ let core_types = [
   ("key"      , M.vtkey            );
   ("key_hash" , M.vtkeyhash        );
   ("bytes"    , M.vtbytes          );
+  ("chain_id" , M.vtchainid        );
 ]
 
 (* -------------------------------------------------------------------- *)
@@ -1044,7 +1047,7 @@ end = struct
     | `Global      of vardecl
     | `Definition  of definitiondecl
     | `Asset       of assetdecl
-    | `Entry      of t tentrydecl
+    | `Entry       of t tentrydecl
     | `Function    of t fundecl
     | `Predicate   of preddecl
     | `Field       of ident

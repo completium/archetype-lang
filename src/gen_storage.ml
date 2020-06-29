@@ -52,6 +52,7 @@ let generate_storage (model : model) : model =
       | Bsignature  -> emit_error (NoInitExprFor "signature")
       | Bbytes      -> mk_mterm (Mbytes ("0x0")) (Tbuiltin b)
       | Bnat        -> mk_mterm (Mint (Big_int.zero_big_int)) (Tbuiltin b)
+      | Bchainid    -> emit_error (NoInitExprFor "chainid")
     in
 
     let init_default_value = function

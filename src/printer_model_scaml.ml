@@ -77,6 +77,7 @@ let pp_model fmt (model : model) =
     | Bkeyhash    -> Format.fprintf fmt "key_hash"
     | Bbytes      -> Format.fprintf fmt "bytes"
     | Bnat        -> Format.fprintf fmt "nat"
+    | Bchainid    -> Format.fprintf fmt "chain_id"
   in
 
   let pp_container fmt = function
@@ -1165,6 +1166,7 @@ let pp_model fmt (model : model) =
       | Mcaller        -> pp_str fmt "Global.get_sender ()"
       | Mbalance       -> pp_str fmt "Global.get_balance ()"
       | Msource        -> pp_str fmt "Global.get_source ()"
+      | Mchainid       -> pp_str fmt "Global.get_chain_id ()"
 
 
       (* variable *)

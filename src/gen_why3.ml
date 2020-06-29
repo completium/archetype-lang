@@ -75,6 +75,7 @@ let map_btype = function
   | M.Bkeyhash       -> Tykeyhash
   | M.Bbytes         -> Tybytes
   | M.Bnat           -> Tyuint
+  | M.Bchainid       -> Tychainid
 
 let rec map_mtype (t : M.type_) : loc_typ =
   with_dummy_loc (match t with
@@ -1630,7 +1631,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       end
 
     | Msource               -> Tsender (with_dummy_loc gs)
-
+    | Mchainid              -> Tchainid (with_dummy_loc gs)
 
     (* variables *)
 

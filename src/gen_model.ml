@@ -59,6 +59,7 @@ let to_model (ast : A.model) : M.model =
     | A.VTkey        -> M.Bkey
     | A.VTkeyhash    -> M.Bkeyhash
     | A.VTbytes      -> M.Bbytes
+    | A.VTchainid    -> M.Bchainid
   in
 
   let to_trtyp = function
@@ -287,6 +288,7 @@ let to_model (ast : A.model) : M.model =
       | A.Pconst Ccaller                       -> M.Mcaller
       | A.Pconst Cbalance                      -> M.Mbalance
       | A.Pconst Csource                       -> M.Msource
+      | A.Pconst Cchainid                      -> M.Mchainid
       | A.Pconst c                             ->
         Format.eprintf "expr const unkown: %a@." A.pp_const c;
         assert false

@@ -44,6 +44,7 @@ let pp_model fmt (model : model) =
     | Bkeyhash    -> Format.fprintf fmt "sp.TKeyHash"
     | Bbytes      -> Format.fprintf fmt "sp.TBytes"
     | Bnat        -> Format.fprintf fmt "sp.TNat"
+    | Bchainid    -> Format.fprintf fmt "sp.TChainId"
   in
 
   let pp_container fmt = function
@@ -1021,6 +1022,7 @@ let pp_model fmt (model : model) =
       | Mcaller        -> pp_str fmt "sp.sender"
       | Mbalance       -> pp_str fmt "sp.balance"
       | Msource        -> pp_str fmt "sp.source"
+      | Mchainid       -> pp_str fmt "sp.chain_id"
 
 
       (* variable *)

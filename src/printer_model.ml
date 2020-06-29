@@ -27,6 +27,7 @@ let pp_btyp fmt = function
   | Bkeyhash    -> Format.fprintf fmt "key_hash"
   | Bbytes      -> Format.fprintf fmt "bytes"
   | Bnat        -> Format.fprintf fmt "nat"
+  | Bchainid    -> Format.fprintf fmt "chain_id"
 
 let pp_container fmt = function
   | Collection -> Format.fprintf fmt "collection"
@@ -835,6 +836,7 @@ let pp_mterm fmt (mt : mterm) =
     | Mcaller        -> pp_str fmt "caller"
     | Mbalance       -> pp_str fmt "balance"
     | Msource        -> pp_str fmt "source"
+    | Mchainid       -> pp_str fmt "chain_id"
 
 
     (* variable *)

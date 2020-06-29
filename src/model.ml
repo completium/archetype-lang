@@ -34,6 +34,7 @@ type btyp =
   | Bkeyhash
   | Bbytes
   | Bnat
+  | Bchainid
 [@@deriving show {with_path = false}]
 
 type vset =
@@ -292,6 +293,7 @@ type ('id, 'term) mterm_node  =
   | Mcaller
   | Mbalance
   | Msource
+  | Mchainid
   (* variable *)
   | Mvar              of 'id * 'term var_kind_gen
   (* rational *)
@@ -1125,6 +1127,7 @@ let cmp_mterm_node
     | Mcaller, Mcaller                                                                 -> true
     | Mbalance, Mbalance                                                               -> true
     | Msource, Msource                                                                 -> true
+    | Mchainid, Mchainid                                                               -> true
     (* variable *)
     | Mvar (id1, k1), Mvar (id2, k2)                                                   -> cmpi id1 id2 && cmp_var_kind k1 k2
     (* rational *)
@@ -1431,6 +1434,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mcaller                        -> Mcaller
   | Mbalance                       -> Mbalance
   | Msource                        -> Msource
+  | Mchainid                       -> Mchainid
   (* variable *)
   | Mvar (id, k)                   -> Mvar (g id, map_var_kind f k)
   (* rational *)
@@ -1760,6 +1764,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mcaller                               -> accu
   | Mbalance                              -> accu
   | Msource                               -> accu
+  | Mchainid                              -> accu
   (* variable *)
   | Mvar (_, k)                           -> fold_var_kind f accu k
   (* rational *)
@@ -2440,6 +2445,9 @@ let fold_map_term
 
   | Msource ->
     g Msource, accu
+
+  | Mchainid ->
+    g Mchainid, accu
 
 
   (* variable *)
