@@ -292,6 +292,7 @@ let to_model (ast : A.model) : M.model =
         assert false
 
       | A.Ptuple l                             -> M.Mtuple (List.map f l)
+      | A.Ptupleaccess (p, idx)                -> M.Mtupleaccess (f p, idx)
       | A.Pnone                                -> M.Mnone
       | A.Psome a                              -> M.Msome (f a)
       | A.Pcast (src, dst, v)                  -> begin

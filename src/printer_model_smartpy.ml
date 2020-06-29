@@ -898,6 +898,14 @@ let pp_model fmt (model : model) =
          in
          pp fmt (src, dst, v) *)
 
+      | Mtupleaccess (x, k) ->
+        let pp fmt (x, k) =
+          Format.fprintf fmt "%a[%a]"
+            f x
+            pp_big_int k
+        in
+        pp fmt (x, k)
+
 
       (* list api expression *)
 

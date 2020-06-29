@@ -411,6 +411,14 @@ let rec pp_pterm fmt (pterm : pterm) =
       in
       (pp_no_paren pp) fmt l
 
+    | Ptupleaccess (x, k) ->
+      let pp fmt (x, k) =
+        Format.fprintf fmt "%a[%a]"
+          pp_pterm x
+          pp_big_int k
+      in
+      (pp_no_paren pp) fmt (x, k)
+
     | Pnone -> pp_str fmt "none"
 
     | Psome a ->

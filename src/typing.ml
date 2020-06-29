@@ -273,6 +273,7 @@ type error_desc =
   | ForeignState                       of ident option * ident option
   | FormulaExpected
   | IncompatibleTypes                  of M.ptyp * M.ptyp
+  | IndexOutOfBoundForTuple
   | InvalidArcheTypeDecl
   | InvalidAssetCollectionExpr         of M.ptyp
   | InvalidAssetExpression
@@ -283,6 +284,7 @@ type error_desc =
   | InvalidEntryExpression
   | InvalidExpression
   | InvalidExpressionForEffect
+  | InvalidExprressionForTupleAccess
   | InvalidFieldsCountInRecordLiteral
   | InvalidFormula
   | InvalidInstruction
@@ -432,6 +434,7 @@ let pp_error_desc fmt e =
   | ExpressionExpected                 -> pp "Expression expected"
   | ForeignState (i1, i2)              -> pp "Expecting a state of %a, not %a" pp_ident (Option.get_dfl "<global>" i1) pp_ident (Option.get_dfl "<global>" i2)
   | FormulaExpected                    -> pp "Formula expected"
+  | IndexOutOfBoundForTuple            -> pp "Index out of bounds for tuple"
   | IncompatibleTypes (t1, t2)         -> pp "Incompatible types: found '%a' but expected '%a'" Printer_ast.pp_ptyp t1 Printer_ast.pp_ptyp t2
   | InvalidArcheTypeDecl               -> pp "Invalid Archetype declaration"
   | InvalidAssetCollectionExpr ty      -> pp "Invalid asset collection expression: %a" M.pp_ptyp ty
@@ -443,6 +446,7 @@ let pp_error_desc fmt e =
   | InvalidEntryExpression             -> pp "Invalid entry expression"
   | InvalidExpression                  -> pp "Invalid expression"
   | InvalidExpressionForEffect         -> pp "Invalid expression for effect"
+  | InvalidExprressionForTupleAccess   -> pp "Invalid expression for tuple access, only int literals are allowed"
   | InvalidFieldsCountInRecordLiteral  -> pp "Invalid fields count in record literal"
   | InvalidFormula                     -> pp "Invalid formula"
   | InvalidInstruction                 -> pp "Invalid instruction"
@@ -698,24 +702,24 @@ type smethod_ = (mthstyp list, mthstyp) gmethod_
 type method_  = (mthatyp     , mthtyp ) gmethod_
 
 let methods : (string * method_) list =
-  let csp  = [M.Collection; Aggregate; Partition]  in
-  let cspv = [M.Collection; Aggregate; Partition; View]  in
-  let sp   = [M.Aggregate; Partition] in
+  let cap  = [M.Collection; Aggregate; Partition]  in
+  let capv = [M.Collection; Aggregate; Partition; View]  in
+  let  ap  = [M.Aggregate; Partition] in
   let c    = [M.Collection] in
-  let cp   = [M.Collection; Partition] in
+  let c_p  = [M.Collection; Partition] in
 
   let mk mth_name mth_place mth_purity mth_totality mth_sig =
     { mth_name; mth_place; mth_purity; mth_totality; mth_sig; }
   in [
     ("isempty"     , mk M.Cisempty      `OnlyFormula (`Pure       ) `Total   (`Fixed [                   ], Some (`T M.vtbool)));
     ("subsetof"    , mk M.Csubsetof     `OnlyFormula (`Pure       ) `Total   (`Fixed [`SubColl           ], Some (`T M.vtbool)));
-    ("add"         , mk M.Cadd          `Both        (`Effect csp ) `Total   (`Fixed [`ThePkForAggregate ], None));
-    ("remove"      , mk M.Cremove       `Both        (`Effect csp ) `Total   (`Fixed [`Pk                ], None));
-    ("clear"       , mk M.Cclear        `Both        (`Effect cspv) `Total   (`Fixed [                   ], None));
-    ("removeif"    , mk M.Cremoveif     `Both        (`Effect csp ) `Total   (`Fixed [`Pred true         ], None));
-    ("removeall"   , mk M.Cremoveall    `Both        (`Effect  sp ) `Total   (`Fixed [                   ], None));
+    ("add"         , mk M.Cadd          `Both        (`Effect cap ) `Total   (`Fixed [`ThePkForAggregate ], None));
+    ("remove"      , mk M.Cremove       `Both        (`Effect cap ) `Total   (`Fixed [`Pk                ], None));
+    ("clear"       , mk M.Cclear        `Both        (`Effect capv) `Total   (`Fixed [                   ], None));
+    ("removeif"    , mk M.Cremoveif     `Both        (`Effect cap ) `Total   (`Fixed [`Pred true         ], None));
+    ("removeall"   , mk M.Cremoveall    `Both        (`Effect  ap ) `Total   (`Fixed [                   ], None));
     ("update"      , mk M.Cupdate       `Both        (`Effect c   ) `Total   (`Fixed [`Pk; `Ef true      ], None));
-    ("addupdate"   , mk M.Caddupdate    `Both        (`Effect cp  ) `Total   (`Fixed [`Pk; `Ef false     ], None));
+    ("addupdate"   , mk M.Caddupdate    `Both        (`Effect c_p ) `Total   (`Fixed [`Pk; `Ef false     ], None));
     ("contains"    , mk M.Ccontains     `Both        (`Pure       ) `Total   (`Fixed [`Pk                ], Some (`T M.vtbool)));
     ("nth"         , mk M.Cnth          `Both        (`Pure       ) `Partial (`Fixed [`T M.vtint         ], Some (`Pk)));
     ("select"      , mk M.Cselect       `Both        (`Pure       ) `Total   (`Fixed [`Pred true         ], Some (`SubColl)));
@@ -2044,20 +2048,38 @@ let rec for_xexpr
       end
 
     | Esqapp (e, pk) -> begin
-        let e, asset = for_asset_collection_expr mode env (`Parsed e) in
-        let pkty = asset |> Option.map (fun (asset, _) ->
-            (Option.get (get_field (unloc asset.as_pk) asset)).fd_type) in
-        let pk = for_xexpr ?ety:pkty env pk in
+        let ee = for_xexpr env e in
+        match ee.type_ with
+        | Some (M.Ttuple lt) -> begin
+            let pk = for_xexpr ?ety:(Some M.vtint) env pk in
+            let idx : Core.big_int =
+              match pk.node with
+              | M.Plit ({node = M.BVint idx}) -> idx
+              | _ -> Env.emit_error env (pk.loc, InvalidExprressionForTupleAccess); Big_int.zero_big_int
+            in
+            let i =
+              if (Big_int.lt_big_int idx Big_int.zero_big_int || Big_int.ge_big_int idx (Big_int.big_int_of_int (List.length lt)))
+              then (Env.emit_error env (pk.loc, IndexOutOfBoundForTuple); 0)
+              else (Big_int.int_of_big_int idx)
+            in
+            mk_sp (Some (List.nth lt i)) (M.Ptupleaccess (ee, idx))
+          end
+        | _ -> begin
+            let e, asset = for_asset_collection_expr mode env (`Parsed e) in
+            let pkty = asset |> Option.map (fun (asset, _) ->
+                (Option.get (get_field (unloc asset.as_pk) asset)).fd_type) in
+            let pk = for_xexpr ?ety:pkty env pk in
 
-        let aoutty = Option.map (fun (asset, _) -> M.Tasset asset.as_name) asset in
-        let aoutty = aoutty |> Option.map (fun aoutty ->
-            match mode.em_kind with
-            | `Expr    _ -> aoutty
-            | `Formula _ -> M.Toption aoutty)in
+            let aoutty = Option.map (fun (asset, _) -> M.Tasset asset.as_name) asset in
+            let aoutty = aoutty |> Option.map (fun aoutty ->
+                match mode.em_kind with
+                | `Expr    _ -> aoutty
+                | `Formula _ -> M.Toption aoutty)in
 
-        mk_sp
-          aoutty
-          (M.Pcall (Some e, M.Cconst M.Cget, [M.AExpr pk]))
+            mk_sp
+              aoutty
+              (M.Pcall (Some e, M.Cconst M.Cget, [M.AExpr pk]))
+          end
       end
 
     | Edot (pe, x) -> begin

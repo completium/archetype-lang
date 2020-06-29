@@ -1389,7 +1389,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mnone -> Tnone
     | Msome v -> Tsome (map_mterm m ctx v)
 
-    | Mtuple              l -> Ttuple (List.map (map_mterm m ctx) l)
+    | Mtuple l              -> Ttuple (List.map (map_mterm m ctx) l)
+    | Mtupleaccess (_x, _k) -> error_not_translated "Mtupleaccess"
 
     | Masset l ->
       let asset = M.Utils.get_asset_type mt in
