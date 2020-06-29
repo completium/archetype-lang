@@ -12,6 +12,7 @@ theory Types
   type astring   = int
   type bytes     = int
   type signature = int
+  type chain_id  = int
 
   exception Break
   exception NotFound
@@ -192,6 +193,31 @@ module Utils
   end
 
   (* ----------------------------------------------------------------------- *)
+  (* Set *)
+  use list.List as S
+  use list.Length as SL
+
+  let rec function set_add s a =
+  match s with
+  | S.Nil -> S.Cons a s
+  | S.Cons e ts -> if a = e then ts else S.Cons e (set_add ts a)
+  end
+
+  let rec function set_remove s a =
+  match s with
+  | S.Nil -> S.Nil
+  | S.Cons e ts -> if a = e then (set_remove ts a) else S.Cons e (set_remove ts a)
+  end
+
+  let rec function set_contains s a =
+  match s with
+  | S.Nil -> false
+  | S.Cons e ts -> a = e || set_contains ts a
+  end
+
+  let function set_length l = SL.length l
+
+  (* ----------------------------------------------------------------------- *)
   (* List *)
   use list.List as A
   use list.Length as L
@@ -228,7 +254,7 @@ module Utils
   (* ----------------------------------------------------------------------- *)
   (* serialization *)
   let function pack (_x : 'a) : bytes = 0
-  let function unpack (b : bytes) : option 'a = None
+  let function unpack (_b : bytes) : option 'a = None
 
   (* ----------------------------------------------------------------------- *)
   (* bool *)

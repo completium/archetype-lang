@@ -128,6 +128,7 @@
 %token RPAREN
 %token SECURITY
 %token SEMI_COLON
+%token SET
 %token SHADOW
 %token SLASH
 %token SOME
@@ -475,6 +476,7 @@ type_s_unloc:
 | x=type_s c=container    { Tcontainer (x, c) }
 | x=type_s OPTION         { Toption x }
 | x=type_s LIST           { Tlist x }
+| x=type_s SET            { Tset x }
 | x=paren(type_r)         { x }
 
 %inline type_tuples:

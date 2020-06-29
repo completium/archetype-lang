@@ -50,6 +50,7 @@ type ptyp =
   | Tcontract of lident
   | Tbuiltin of vtyp
   | Tcontainer of ptyp * container
+  | Tset of ptyp
   | Tlist of ptyp
   | Ttuple of ptyp list
   | Toption of ptyp
@@ -155,6 +156,11 @@ type const =
   | Csum
   | Cunpack
   | Cupdate
+  (* set *)
+  | Csadd
+  | Csremove
+  | Cscontains
+  | Cslength
   (* list *)
   | Chead
   | Ctail

@@ -99,6 +99,7 @@ let rec map_mtype (t : M.type_) : loc_typ =
       | M.Tvset _                             -> Tyunit (* TODO: replace by the right type *)
       | M.Ttrace _                            -> Tyunit (* TODO: replace by the right type *)
       | M.Tcontract _                         -> Tyint
+      | M.Tset t                              -> Tyset (map_mtype (Tbuiltin t)).obj
       | M.Tlist t                             -> Tylist (map_mtype t).obj
       | _ -> print_endline (Format.asprintf "%a@." M.pp_type_ t); assert false)
 
@@ -230,12 +231,13 @@ let mk_collection_field asset to_id = {
 }
 
 let mk_const_fields m = [
-  { name = mk_id "ops"   ; typ = Tyrecord "transfers" ; init = Tnil gListLib; mutable_ = true; };
-  { name = mk_id "balance" ;     typ = Tytez; init = Tint Big_int.zero_big_int; mutable_ = true; };
-  { name = mk_id "transferred" ; typ = Tytez; init = Tint Big_int.zero_big_int; mutable_ = false; };
-  { name = mk_id "caller"    ; typ = Tyaddr;  init = Tint Big_int.zero_big_int; mutable_ = false; };
-  { name = mk_id "source"    ; typ = Tyaddr;  init = Tint Big_int.zero_big_int; mutable_ = false; };
-  { name = mk_id "now"       ; typ = Tydate;  init = Tint Big_int.zero_big_int; mutable_ = false; }
+  { name = mk_id "ops"         ; typ = Tyrecord "transfers" ; init = Tnil gListLib; mutable_ = true; };
+  { name = mk_id "balance"     ; typ = Tytez;      init = Tint Big_int.zero_big_int; mutable_ = true; };
+  { name = mk_id "transferred" ; typ = Tytez;      init = Tint Big_int.zero_big_int; mutable_ = false; };
+  { name = mk_id "caller"      ; typ = Tyaddr;     init = Tint Big_int.zero_big_int; mutable_ = false; };
+  { name = mk_id "source"      ; typ = Tyaddr;     init = Tint Big_int.zero_big_int; mutable_ = false; };
+  { name = mk_id "now"         ; typ = Tydate;     init = Tint Big_int.zero_big_int; mutable_ = false; };
+  { name = mk_id "chainid"     ; typ = Tychainid;  init = Tint Big_int.zero_big_int; mutable_ = false; }
 ] @
   if M.Utils.with_trace m then
     [
@@ -1405,8 +1407,11 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | _ -> assert false
       end
 
-    | Mlitset  _   -> error_not_translated "Mlitset"
-    | Mlitlist l   ->
+    | Mlitset  l ->
+      List.fold_left(fun acc e ->
+          with_dummy_loc (Tcons(with_dummy_loc gListLib, map_mterm m ctx e, acc))
+        ) (loc_term (Tnil gListLib)) l |> Mlwtree.deloc
+    | Mlitlist l ->
       List.fold_left(fun acc e ->
           with_dummy_loc (Tcons(with_dummy_loc gListLib, map_mterm m ctx e, acc))
         ) (loc_term (Tnil gListLib)) l |> Mlwtree.deloc
@@ -1564,6 +1569,13 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | _ -> Ttoview (map_lident a,map_mterm m ctx v)
       end
     | Mcast (_, _, v)       -> map_mterm m ctx v |> Mlwtree.deloc
+
+
+    (* set api expression *)
+    | Msetadd (_, s, e)      -> Tapp (loc_term (Tvar "set_add")      , [ map_mterm m ctx s; map_mterm m ctx e ])
+    | Msetremove (_, s, e)   -> Tapp (loc_term (Tvar "set_remove")   , [ map_mterm m ctx s; map_mterm m ctx e ])
+    | Msetcontains (_, s, e) -> Tapp (loc_term (Tvar "set_contains") , [ map_mterm m ctx s; map_mterm m ctx e ])
+    | Msetlength (_, s)      -> Tapp (loc_term (Tvar "set_length")   , [ map_mterm m ctx s ])
 
 
     (* list api expression *)
@@ -1758,6 +1770,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | ICKview c  -> Tvhead (n,loc_term (Tvar iter_id),map_mterm m ctx c)
         | ICKcoll n  -> Tchead (with_dummy_loc n,loc_term (Tvar iter_id),mk_ac_ctx n ctx)
         | ICKfield (_, _, c) -> Tvhead (n,loc_term (Tvar iter_id),map_mterm m ctx c)
+        | ICKset  _  -> error_not_translated "Msetiterated for set"
         | ICKlist _  -> error_not_translated "Msetiterated for list"
       end
     | Msettoiterate container ->
@@ -1767,6 +1780,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | ICKview c  -> Tvtail (n,loc_term (Tvar iter_id),map_mterm m ctx c)
         | ICKcoll n  -> Tctail (with_dummy_loc n,loc_term (Tvar iter_id),mk_ac_ctx n ctx)
         | ICKfield (_, _, c) -> Tvtail (n,loc_term (Tvar iter_id),map_mterm m ctx c)
+        | ICKset _  -> error_not_translated "Msettoiterate for set"
         | ICKlist _  -> error_not_translated "Msettoiterate for list"
       end
     (* formula asset collection methods *)
@@ -2749,23 +2763,23 @@ let mk_rm_field_ensures m part asset elem _ak field prefix rm_asset rm_elem =
             id = "remove_" ^ rm_asset ^ "_field_sum_post";
             form = exists_asset asset (
                 exists_rm_asset rm_asset (Teq (Tyint,
-                                            mk_sum rm_asset idx collfield (mk_ac rm_asset),
-                                            Tminus (Tyint,
-                                                    mk_sum rm_asset idx collfield (mk_ac_old rm_asset),
-                                                    Tapp(
-                                                      Tvar (mk_get_sum_value_id rm_asset idx),
-                                                      [Tvar "rm_asset"])))))
+                                               mk_sum rm_asset idx collfield (mk_ac rm_asset),
+                                               Tminus (Tyint,
+                                                       mk_sum rm_asset idx collfield (mk_ac_old rm_asset),
+                                                       Tapp(
+                                                         Tvar (mk_get_sum_value_id rm_asset idx),
+                                                         [Tvar "rm_asset"])))))
           }]) [] (M.Utils.get_sum_idxs m rm_asset) @
     (if M.Utils.with_count m rm_asset then [{
          id = "rm_" ^ rm_asset ^ "_field_ccount";
          form = exists_asset asset (
-           exists_old_asset asset (Teq (Tyint,
-                                         Tvcard (rm_asset, collfield),
-                                         Tminus (Tyint,
-                                                 Tvcard (rm_asset, oldcollfield),
-                                                 Tint (Big_int.big_int_of_int 1)
-                                                )
-                                        )))
+             exists_old_asset asset (Teq (Tyint,
+                                          Tvcard (rm_asset, collfield),
+                                          Tminus (Tyint,
+                                                  Tvcard (rm_asset, oldcollfield),
+                                                  Tint (Big_int.big_int_of_int 1)
+                                                 )
+                                         )))
        }]
      else [])
   in

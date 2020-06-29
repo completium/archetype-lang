@@ -15,6 +15,7 @@ module Type : sig
   val as_contract         : M.ptyp -> M.lident option
   val as_tuple            : M.ptyp -> (M.ptyp list) option
   val as_option           : M.ptyp -> M.ptyp option
+  val as_set              : M.ptyp -> M.ptyp option
   val as_list             : M.ptyp -> M.ptyp option
 
   val is_asset     : M.ptyp -> bool
@@ -23,6 +24,7 @@ module Type : sig
   val is_primitive : M.ptyp -> bool
   val is_option    : M.ptyp -> bool
   val is_list      : M.ptyp -> bool
+  val is_michelson_comparable : M.ptyp -> bool
 
   val support_eq : M.ptyp -> bool
 
@@ -45,6 +47,7 @@ end = struct
   let as_tuple     = function M.Ttuple     ts      -> Some ts      | _ -> None
   let as_contract  = function M.Tcontract  x       -> Some x       | _ -> None
   let as_option    = function M.Toption    t       -> Some t       | _ -> None
+  let as_set       = function M.Tset       t       -> Some t       | _ -> None
   let as_list      = function M.Tlist      t       -> Some t       | _ -> None
 
   let as_asset_collection = function
@@ -68,6 +71,11 @@ end = struct
 
   let is_list = function
     | M.Tlist _ -> true | _ -> false
+
+  let is_michelson_comparable = function
+    | M.Tbuiltin VTchainid -> false
+    | M.Tbuiltin _ -> true
+    | _ -> false
 
   let rec support_eq = function
     | M.Tbuiltin VTchainid -> false
@@ -177,6 +185,7 @@ end = struct
         | Tbuiltin x, Tbuiltin y ->
           if x <> y then raise E.Error
 
+        | Tset    ptn, Tset   tg
         | Tlist   ptn, Tlist   tg
         | Toption ptn, Toption tg ->
           doit ptn tg
@@ -203,8 +212,8 @@ end = struct
       | Tcontract _
       | Ttrace    _
       | Tbuiltin  _ -> ty
-
       | Tcontainer (ty, c) -> Tcontainer (doit ty, c)
+      | Tset        ty     -> Tset (doit ty)
       | Tlist       ty     -> Tlist (doit ty)
       | Ttuple      ty     -> Ttuple (List.map doit ty)
       | Toption     ty     -> Toption (doit ty)
@@ -301,6 +310,7 @@ type error_desc =
   | InvalidSortingExpression
   | InvalidStateExpression
   | InvalidTypeForPk
+  | InvalidTypeForSet
   | InvalidTypeForVarWithFromTo
   | InvalidVarOrArgType
   | LabelInNonInvariant
@@ -456,13 +466,14 @@ let pp_error_desc fmt e =
   | InvalidMethodInFormula             -> pp "Invalid method in formula"
   | InvalidNumberOfArguments (n1, n2)  -> pp "Invalid number of arguments: found '%i', but expected '%i'" n1 n2
   | InvalidRoleExpression              -> pp "Invalid role expression"
-  | InvalidSecurityEntry              -> pp "Invalid security entry"
+  | InvalidSecurityEntry               -> pp "Invalid security entry"
   | InvalidSecurityRole                -> pp "Invalid security role"
   | InvalidShadowFieldAccess           -> pp "Shadow field access in non-shadow code"
   | InvalidShadowVariableAccess        -> pp "Shadow variable access in non-shadow code"
   | InvalidSortingExpression           -> pp "Invalid sorting expression"
   | InvalidStateExpression             -> pp "Invalid state expression"
   | InvalidTypeForPk                   -> pp "Invalid type for primary key"
+  | InvalidTypeForSet                  -> pp "Invalid type for set"
   | InvalidTypeForVarWithFromTo        -> pp "A variable with a from/to declaration must be of type currency"
   | InvalidVarOrArgType                -> pp "A variable / argument type cannot be an asset or a collection"
   | LabelInNonInvariant                -> pp "The label modifier can only be used in invariants"
@@ -763,6 +774,16 @@ let optionops = [
 ]
 
 (* -------------------------------------------------------------------- *)
+let setops =
+  let elemt = M.Tnamed 0 in
+  let set   = M.Tset elemt in [
+    ("set_add"      , M.Csadd      , `Total , Some set, [ elemt ], set      );
+    ("set_remove"   , M.Csremove   , `Total , Some set, [ elemt ], set      );
+    ("set_contains" , M.Cscontains , `Total , Some set, [ elemt ], M.vtbool );
+    ("set_length"   , M.Cslength   , `Total , Some set, [       ], M.vtint  );
+  ]
+
+(* -------------------------------------------------------------------- *)
 let listops =
   let elemt = M.Tnamed 0 in
   let lst   = M.Tlist elemt in [
@@ -788,7 +809,7 @@ let packops =
     [M.vtbool; M.vtint; M.vtrational; M.vtdate; M.vtduration; M.vtstring]
 
 (* -------------------------------------------------------------------- *)
-let allops = coreops @ optionops @ listops @ cryptoops @ packops
+let allops = coreops @ optionops @ setops @ listops @ cryptoops @ packops
 
 (* -------------------------------------------------------------------- *)
 type assetdecl = {
@@ -1521,6 +1542,7 @@ let rec valid_var_or_arg_type (ty : M.ptyp) =
   | Tenum      _ -> true
   | Tcontract  _ -> true
   | Tbuiltin   _ -> true
+  | Tset       ty -> valid_var_or_arg_type ty
   | Tlist      ty -> valid_var_or_arg_type ty
   | Ttuple     ty -> List.for_all valid_var_or_arg_type ty
   | Toption    ty -> valid_var_or_arg_type ty
@@ -1604,6 +1626,14 @@ let for_type_exn ?pkey (env : env) =
       if not (Type.is_asset ty) then
         Env.emit_error env (loc pty, ContainerOfNonAsset);
       M.Tcontainer (ty, for_container env ctn)
+
+    | Tset ty ->
+      let t = doit ty in
+
+      if not (Type.is_michelson_comparable t)
+      then Env.emit_error env (loc ty, InvalidTypeForSet);
+
+      M.Tset (doit ty)
 
     | Tlist ty ->
       M.Tlist (doit ty)
@@ -1869,7 +1899,7 @@ let rec for_xexpr
     | Earray [] -> begin
         match ety with
         | Some (M.Tcontainer (_, _))
-        | Some (M.Tlist _) ->
+        | Some (M.Tset _ | M.Tlist _) ->
           mk_sp ety (M.Parray [])
 
         | _ ->
@@ -1889,6 +1919,9 @@ let rec for_xexpr
 
         | None, Some ((M.Tasset _) as ty) ->
           mk_sp (Some (M.Tcontainer (ty, M.Collection))) (M.Parray (e :: es))
+
+        | Some Tset _, Some ty ->
+          mk_sp (Some (M.Tset ty)) (M.Parray (e :: es))
 
         | _, Some ty ->
           mk_sp (Some (M.Tlist ty)) (M.Parray (e :: es))
@@ -3278,7 +3311,7 @@ let rec for_instruction_r
           let pk = Option.get (get_field (unloc asset.as_pk) asset) in
           Some pk.fd_type
 
-        | Some (M.Tlist ty) ->
+        | Some (M.Tset ty | M.Tlist ty) ->
           Some ty
 
         | Some _ ->

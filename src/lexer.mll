@@ -81,6 +81,7 @@
       "require"             , REQUIRE        ;
       "return"              , RETURN         ;
       "security"            , SECURITY       ;
+      "set"                 , SET            ;
       "shadow"              , SHADOW         ;
       "some"                , SOME           ;
       "sorted"              , SORTED         ;

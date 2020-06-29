@@ -1,0 +1,13 @@
+archetype expr_set_add
+
+variable res : string set = []
+
+entry exec () {
+  specification {
+    s0: set_length(res) = 4;
+  }
+  effect {
+    var l : string set = ["1"; "2"; "3"];
+    res := set_add(l, "0");
+  }
+}

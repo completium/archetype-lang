@@ -148,6 +148,7 @@ let pp_type fmt typ =
       | Tyasset i     -> i
       | Tyenum i      -> i
       | Tyoption tt   -> "option " ^ (typ_str ~pparen:(true) tt)
+      | Tyset tt      -> "L.list " ^ (typ_str ~pparen:(true) tt)
       | Tylist tt     -> "L.list " ^ (typ_str ~pparen:(true) tt)
       | Tybool        -> "bool"
       | Tyuint        -> "uint"

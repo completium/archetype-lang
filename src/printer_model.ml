@@ -122,6 +122,7 @@ let pp_iter_container_kind f fmt = function
   | ICKcoll  an -> Format.fprintf fmt "%a" pp_str an
   | ICKview  mt -> Format.fprintf fmt "%a" f mt
   | ICKfield (_, _, mt) -> Format.fprintf fmt "%a" f mt
+  | ICKset  mt -> Format.fprintf fmt "%a" f mt
   | ICKlist  mt -> Format.fprintf fmt "%a" f mt
 
 let pp_mterm fmt (mt : mterm) =
@@ -721,6 +722,32 @@ let pp_mterm fmt (mt : mterm) =
           pp_big_int k
       in
       pp fmt (x, k)
+
+
+    (* set api expression *)
+
+    | Msetadd (t, c, a) ->
+      Format.fprintf fmt "set_%a_add (%a, %a)"
+        pp_type t
+        f c
+        f a
+
+    | Msetremove (t, c, a) ->
+      Format.fprintf fmt "set_%a_remove (%a, %a)"
+        pp_type t
+        f c
+        f a
+
+    | Msetcontains (t, c, a) ->
+      Format.fprintf fmt "set_%a_contains (%a, %a)"
+        pp_type t
+        f c
+        f a
+
+    | Msetlength (t, c) ->
+      Format.fprintf fmt "set_%a_length (%a)"
+        pp_type t
+        f c
 
 
     (* list api expression *)

@@ -77,6 +77,7 @@ let to_model (ast : A.model) : M.model =
     | A.Tcontract id       -> M.Tcontract id
     | A.Tbuiltin b         -> M.Tbuiltin (vtyp_to_btyp b)
     | A.Tcontainer (t, c)  -> M.Tcontainer (ptyp_to_type t, to_container c)
+    | A.Tset t             -> M.Tset (match ptyp_to_type t with | Tbuiltin v -> v | _ -> assert false)
     | A.Tlist t            -> M.Tlist (ptyp_to_type t)
     | A.Ttuple l           -> M.Ttuple (List.map ptyp_to_type l)
     | A.Tentry             -> M.Tentry
@@ -183,6 +184,12 @@ let to_model (ast : A.model) : M.model =
     | _ -> assert false
   in
 
+  let extract_builtin_type_set (v : M.mterm) : M.type_ =
+    match v with
+    | {type_ = Tset t; _} -> Tbuiltin t
+    | _ -> assert false
+  in
+
   let to_entry_description (ad : A.entry_description) : M.entry_description =
     match ad with
     | ADAny -> M.ADany
@@ -250,6 +257,7 @@ let to_model (ast : A.model) : M.model =
           let l = List.map f l in
           match type_ with
           | Tcontainer (Tasset _, _)   -> M.Massets l
+          | Tset _ -> M.Mlitset l
           | _ -> M.Mlitlist l
         end
       | A.Plit ({node = BVint i; _})           -> M.Mint i
@@ -477,6 +485,33 @@ let to_model (ast : A.model) : M.model =
         let asset_name = extract_asset_name fp in
         M.Mtail (asset_name, to_ck fp, fe)
 
+
+      (* Set*)
+
+      | A.Pcall (None, A.Cconst (A.Csadd), [AExpr p; AExpr q]) ->
+        let fp = f p in
+        let fq = f q in
+        let t = extract_builtin_type_set fp in
+        M.Msetadd (t, fp, fq)
+
+      | A.Pcall (None, A.Cconst (A.Csremove), [AExpr p; AExpr q]) ->
+        let fp = f p in
+        let fq = f q in
+        let t = extract_builtin_type_set fp in
+        M.Msetremove (t, fp, fq)
+
+      | A.Pcall (None, A.Cconst (A.Cscontains), [AExpr p; AExpr q]) ->
+        let fp = f p in
+        let fq = f q in
+        let t = extract_builtin_type_set fp in
+        M.Msetcontains (t, fp, fq)
+
+      | A.Pcall (None, A.Cconst (A.Cslength), [AExpr p]) ->
+        let fp = f p in
+        let t = extract_builtin_type_set fp in
+        M.Msetlength (t, fp)
+
+
       (* List*)
 
       | A.Pcall (None, A.Cconst (A.Cprepend), [AExpr p; AExpr q]) when is_list p -> (
@@ -612,6 +647,7 @@ let to_model (ast : A.model) : M.model =
           let ncol =
             let x = f col in
             match x.node, x.type_ with
+            | _, M.Tset _ -> M.ICKset x
             | _, M.Tlist _ -> M.ICKlist x
             | _, M.Tcontainer ((Tasset an), Collection) -> M.ICKcoll (unloc an)
             | M.Mdotassetfield (an, _k, fn), M.Tcontainer ((Tasset _), (Aggregate | Partition)) -> M.ICKfield (unloc an, unloc fn, x)

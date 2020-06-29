@@ -163,6 +163,7 @@ type 'term iter_container_kind_gen =
   | ICKcoll  of ident
   | ICKview  of 'term
   | ICKfield of (ident * ident * 'term)
+  | ICKset  of 'term
   | ICKlist  of 'term
 [@@deriving show {with_path = false}]
 
@@ -262,6 +263,11 @@ type ('id, 'term) mterm_node  =
   (* utils *)
   | Mcast             of type_ * type_ * 'term
   | Mtupleaccess      of 'term * Core.big_int
+  (* set api expression *)
+  | Msetadd           of type_ * 'term * 'term
+  | Msetremove        of type_ * 'term * 'term
+  | Msetcontains      of type_ * 'term * 'term
+  | Msetlength        of type_ * 'term
   (* list api expression *)
   | Mlistprepend      of type_ * 'term * 'term
   | Mlistcontains     of type_ * 'term * 'term
@@ -997,6 +1003,7 @@ let cmp_mterm_node
     | ICKcoll an1, ICKcoll an2 -> String.equal an1 an2
     | ICKview l, ICKview r -> cmp l r
     | ICKfield (an1, fn1, l1), ICKfield (an2, fn2, l2) -> String.equal an1 an2 && String.equal fn1 fn2 && cmp l1 l2
+    | ICKset l,  ICKset r -> cmp l r
     | ICKlist l, ICKlist r -> cmp l r
     | _ -> false
   in
@@ -1096,6 +1103,11 @@ let cmp_mterm_node
     (* utils *)
     | Mcast (src1, dst1, v1), Mcast (src2, dst2, v2)                                   -> cmp_type src1 src2 && cmp_type dst1 dst2 && cmp v1 v2
     | Mtupleaccess (x1, k1), Mtupleaccess (x2, k2)                                     -> cmp x1 x2 && Big_int.eq_big_int k1 k2
+    (* set api expression *)
+    | Msetadd (t1, c1, a1), Msetadd (t2, c2, a2)                                       -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
+    | Msetremove (t1, c1, a1), Msetremove (t2, c2, a2)                                 -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
+    | Msetcontains (t1, c1, a1), Msetcontains (t2, c2, a2)                             -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
+    | Msetlength (t1, c1), Msetlength (t2, c2)                                         -> cmp_type t1 t2 && cmp c1 c2
     (* list api expression *)
     | Mlistprepend (t1, c1, a1), Mlistprepend (t2, c2, a2)                             -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
     | Mlistcontains (t1, c1, a1), Mlistcontains (t2, c2, a2)                           -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
@@ -1306,6 +1318,7 @@ let map_iter_container_kind (fi : ident -> ident) f = function
   | ICKcoll an  -> ICKcoll (fi an)
   | ICKview mt  -> ICKview (f mt)
   | ICKfield (an, fn, mt) -> ICKfield (an, fn, f mt)
+  | ICKset mt   -> ICKset (f mt)
   | ICKlist mt  -> ICKlist (f mt)
 
 let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ -> type_) (f : 'id mterm_gen -> 'id mterm_gen) = function
@@ -1403,6 +1416,11 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   (* utils *)
   | Mcast (src, dst, v)            -> Mcast (ft src, ft dst, f v)
   | Mtupleaccess (x, k)            -> Mtupleaccess (f x, k)
+  (* set api expression *)
+  | Msetadd (t, c, a)              -> Msetadd (ft t, f c, f a)
+  | Msetremove (t, c, a)           -> Msetremove (ft t, f c, f a)
+  | Msetcontains (t, c, a)         -> Msetcontains (ft t, f c, f a)
+  | Msetlength (t, c)              -> Msetlength (ft t, f c)
   (* list api expression *)
   | Mlistprepend (t, c, a)         -> Mlistprepend (ft t, f c, f a)
   | Mlistcontains (t, c, a)        -> Mlistcontains (t, f c, f a)
@@ -1634,6 +1652,7 @@ let fold_iter_container_kind f accu = function
   | ICKcoll _   -> accu
   | ICKview mt  -> f accu mt
   | ICKfield (_, _, mt) -> f accu mt
+  | ICKset mt  -> f accu mt
   | ICKlist mt  -> f accu mt
 
 let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_gen) : 'a =
@@ -1733,6 +1752,11 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   (* utils *)
   | Mcast (_ , _, v)                      -> f accu v
   | Mtupleaccess (x, _)                   -> f accu x
+    (* set api expression *)
+  | Msetadd (_, c, a)                     -> f (f accu c) a
+  | Msetremove (_, c, a)                  -> f (f accu c) a
+  | Msetcontains (_, c, a)                -> f (f accu c) a
+  | Msetlength (_, c)                     -> f accu c
   (* list api expression *)
   | Mlistprepend (_, c, a)                -> f (f accu c) a
   | Mlistcontains (_, c, a)               -> f (f accu c) a
@@ -1841,6 +1865,9 @@ let fold_map_iter_container_kind f accu = function
   | ICKfield (an, fn, mt) ->
     let mte, mta = f accu mt in
     ICKfield (an, fn, mte), mta
+  | ICKset mt ->
+    let mte, mta = f accu mt in
+    ICKset mte, mta
   | ICKlist mt ->
     let mte, mta = f accu mt in
     ICKlist mte, mta
@@ -2322,6 +2349,29 @@ let fold_map_term
   | Mtupleaccess (x, k) ->
     let xe, xa = f accu x in
     g (Mtupleaccess (xe, k)), xa
+
+
+  (* set api expression *)
+
+  | Msetadd (t, c, a) ->
+    let ce, ca = f accu c in
+    let ae, aa = f ca a in
+    g (Msetadd (t, ce, ae)), aa
+
+  | Msetremove (t, c, a) ->
+    let ce, ca = f accu c in
+    let ae, aa = f ca a in
+    g (Msetremove (t, ce, ae)), aa
+
+  | Msetcontains (t, c, a) ->
+    let ce, ca = f accu c in
+    let ae, aa = f ca a in
+    g (Msetcontains (t, ce, ae)), aa
+
+  | Msetlength (t, c) ->
+    let ce, ca = f accu c in
+    g (Msetlength (t, ce)), ca
+
 
   (* list api expression *)
 

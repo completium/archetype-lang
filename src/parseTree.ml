@@ -20,6 +20,7 @@ and type_r =
   | Tcontainer of type_t * container
   | Ttuple     of type_t list
   | Toption    of type_t
+  | Tset       of type_t
   | Tlist      of type_t
   | Tkeyof     of type_t
 

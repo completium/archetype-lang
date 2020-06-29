@@ -389,6 +389,7 @@ let pp_model_internal fmt (model : model) b =
             an
         | ICKview mt -> Format.fprintf fmt "list (%a)" f mt
         | ICKfield (_, _, mt) -> Format.fprintf fmt "set (%a)" f mt
+        | ICKset mt -> Format.fprintf fmt "set (%a)" f mt
         | ICKlist mt -> Format.fprintf fmt "list (%a)" f mt
       in
 
@@ -1063,6 +1064,28 @@ let pp_model_internal fmt (model : model) b =
           pp_big_int k
       in
       pp fmt (x, k)
+
+    (* set api expression *)
+
+    | Msetadd (_, c, a) ->
+      Format.fprintf fmt "Set.add (%a, %a)"
+        f a
+        f c
+
+    | Msetremove (_, c, a) ->
+      Format.fprintf fmt "Set.remove (%a, %a)"
+        f a
+        f c
+
+    | Msetcontains (_, c, a) ->
+      Format.fprintf fmt "Set.mem (%a, %a)"
+        f a
+        f c
+
+    | Msetlength (_, c) ->
+      Format.fprintf fmt "int(Set.size (%a))"
+        f c
+
 
     (* list api expression *)
 

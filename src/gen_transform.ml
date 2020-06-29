@@ -369,6 +369,7 @@ let extend_loop_iter (model : model) : model =
             | ICKcoll an -> Tcontainer (Tasset (dumloc an), View)
             | ICKview c  -> Tcontainer (Tasset (f c.type_), View)
             | ICKfield (_, _, c) -> Tcontainer (Tasset (f c.type_), View)
+            | ICKset c  -> c.type_
             | ICKlist c  -> c.type_
           in
           match const with
@@ -777,6 +778,7 @@ let assign_loop_label (model : model) : model =
                 | ICKcoll an -> mk_mterm (Mvar (dumloc an, Vstorecol)) (Tcontainer (Tasset (dumloc an), Collection))
                 | ICKview c
                 | ICKfield (_, _, c)
+                | ICKset c
                 | ICKlist c -> c
               in
               let accu = aux ctx accu col in
@@ -1571,6 +1573,11 @@ let add_explicit_sort (model : model) : model =
       let an = extract_asset_name c in
       mk_mterm (Mfor (a, ICKview (create_sort an c), body, lbl)) Tunit
 
+    | Mfor (a, ICKset c, body, lbl) when is_implicit_sort env c ->
+      let body = aux env ctx body in
+      let an = extract_asset_name c in
+      mk_mterm (Mfor (a, ICKset (create_sort an c), body, lbl)) Tunit
+
     | Mfor (a, ICKlist c, body, lbl) when is_implicit_sort env c ->
       let body = aux env ctx body in
       let an = extract_asset_name c in
@@ -1842,6 +1849,7 @@ let extract_term_from_instruction f (model : model) : model =
         | ICKcoll  an -> ICKcoll an, []
         | ICKview  v -> let ve, va = f v in ICKview  ve, va
         | ICKfield (an, fn, v) -> let ve, va = f v in ICKfield (an, fn, ve), va
+        | ICKset  v -> let ve, va = f v in ICKset  ve, va
         | ICKlist  v -> let ve, va = f v in ICKlist  ve, va
       in
       let be = aux ctx b in
@@ -2114,6 +2122,7 @@ let add_contain_on_get (model : model) : model =
           | ICKcoll _ -> accu
           | ICKview c -> f accu c
           | ICKfield (_, _, c) -> f accu c
+          | ICKset c -> f accu c
           | ICKlist c -> f accu c
         in
         let be = aux b in
@@ -2333,6 +2342,19 @@ let replace_for_to_iter (model : model) : model =
 
   let rec aux ctx (mt : mterm) : mterm =
     match mt.node with
+    | Mfor (id, ICKset ({node = _; type_ = Tset t} as col), body, Some lbl) ->
+      let t = Tbuiltin t in
+      let nbody = aux ctx body in
+
+      let idx_id = "_i_" ^ lbl in
+      let idx = mk_mterm (Mvar (dumloc idx_id, Vlocal)) (Tbuiltin Bint) in
+      let nth = mk_mterm (Mlistnth(t, col, idx)) t in
+      let letin = mk_mterm (Mletin ([id], nth, Some t, nbody, None)) Tunit in
+      let bound_min = mk_mterm (Mint Big_int.zero_big_int) (Tbuiltin Bint) in
+      let bound_max = mk_mterm (Msetlength (t, col)) (Tbuiltin Bint) in
+      let iter = Miter (dumloc idx_id, bound_min, bound_max, letin, Some lbl) in
+      mk_mterm iter mt.type_
+
     | Mfor (id, ICKlist ({node = _; type_ = Tlist t} as col), body, Some lbl) ->
       let nbody = aux ctx body in
 

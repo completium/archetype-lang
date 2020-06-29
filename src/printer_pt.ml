@@ -127,6 +127,11 @@ let rec pp_type outer pos fmt e =
       "(%a) option"
       pp_type_default x
 
+  | Tset x ->
+    Format.fprintf fmt
+      "(%a) set"
+      pp_type_default x
+
   | Tlist x ->
     Format.fprintf fmt
       "(%a) list"

@@ -1,0 +1,20 @@
+archetype lang_set
+
+entry exec () {
+  effect {
+    var my_set : int set = [0; 1 ; 2; 3];
+
+    (* expr *)
+    var new_set2 : int set = set_add (my_set, 4);
+    var new_set3 : int set = set_remove(my_set, 0);
+    var set_c    : bool    = set_contains(my_set, 2);
+    var c        : int     = set_length(my_set);
+
+    // (* control *)
+    var res : int = 0;
+    for v in my_set do
+      res += v;
+    done;
+    require (res = 6)
+  }
+}

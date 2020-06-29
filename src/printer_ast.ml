@@ -54,6 +54,9 @@ let rec pp_ptyp fmt (t : ptyp) =
     Format.fprintf fmt "%a %a"
       pp_ptyp t
       pp_container c
+  | Tset t ->
+    Format.fprintf fmt "%a set"
+      pp_ptyp t
   | Tlist t ->
     Format.fprintf fmt "%a list"
       pp_type_ t
@@ -202,6 +205,11 @@ let to_const = function
   | Csum            -> "sum"
   | Cunpack         -> "unpack"
   | Cupdate         -> "update"
+  (* list *)
+  | Csadd           -> "set_add"
+  | Csremove        -> "set_remove"
+  | Cscontains      -> "set_contains"
+  | Cslength        -> "set_length"
   (* list *)
   | Chead           -> "head"
   | Ctail           -> "tail"
