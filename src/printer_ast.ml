@@ -59,10 +59,14 @@ let rec pp_ptyp fmt (t : ptyp) =
       pp_ptyp t
   | Tlist t ->
     Format.fprintf fmt "%a list"
-      pp_type_ t
+      pp_ptyp t
+  | Tmap (k, v) ->
+    Format.fprintf fmt "(%a * %a) map"
+      pp_ptyp k
+      pp_ptyp v
   | Toption t ->
     Format.fprintf fmt "%a option"
-      pp_type_ t
+      pp_ptyp t
   | Ttuple ts ->
     Format.fprintf fmt "%a"
       (pp_list " * " pp_ptyp) ts
@@ -205,7 +209,7 @@ let to_const = function
   | Csum            -> "sum"
   | Cunpack         -> "unpack"
   | Cupdate         -> "update"
-  (* list *)
+  (* set *)
   | Csadd           -> "set_add"
   | Csremove        -> "set_remove"
   | Cscontains      -> "set_contains"
@@ -215,6 +219,13 @@ let to_const = function
   | Ctail           -> "tail"
   | Cabs            -> "abs"
   | Cprepend        -> "prepend"
+  (* map *)
+  | Cmput           -> "put"
+  | Cmremove        -> "remove"
+  | Cmget           -> "get"
+  | Cmgetopt        -> "getopt"
+  | Cmcontains      -> "contains"
+  | Cmlength        -> "length"
   (* crypto *)
   | Cblake2b        -> "blake2b"
   | Csha256         -> "sha256"
@@ -391,14 +402,14 @@ let rec pp_pterm fmt (pterm : pterm) =
       (pp_no_paren pp) fmt v
 
     | Pdot ({ node = Pcall (Some { node = Pvar (VTnone, Vnone, an) },
-            Cconst Cget, [AExpr k]) }, fn)
+                            Cconst Cget, [AExpr k]) }, fn)
       ->
-        let pp fmt (an, k, fn) =
-          Format.fprintf fmt "%a[%a].%a"
-            pp_id an
-            pp_pterm k
-            pp_id fn
-        in (pp_with_paren pp) fmt (an, k, fn)
+      let pp fmt (an, k, fn) =
+        Format.fprintf fmt "%a[%a].%a"
+          pp_id an
+          pp_pterm k
+          pp_id fn
+      in (pp_with_paren pp) fmt (an, k, fn)
 
     | Pdot (e, i) ->
       let pp fmt (e, i) =

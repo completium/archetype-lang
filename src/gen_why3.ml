@@ -1580,10 +1580,20 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     (* list api expression *)
 
-    | Mlistprepend (_, l, e) -> Tapp (loc_term (Tvar "lprepend"),[map_mterm m ctx l; map_mterm m ctx e])
-    | Mlistcontains (_,l,e) -> Tapp (loc_term (Tvar "lcontains"),[map_mterm m ctx l; map_mterm m ctx e])
-    | Mlistcount (_, l) -> Tapp (loc_term (Tvar "lcard"),[map_mterm m ctx l])
-    | Mlistnth (_,n,l) -> Tapp (loc_term (Tvar "lnth"),[map_mterm m ctx l;map_mterm m ctx n])
+    | Mlistprepend (_, l, e)  -> Tapp (loc_term (Tvar "lprepend"),[map_mterm m ctx l; map_mterm m ctx e])
+    | Mlistcontains (_, l, e) -> Tapp (loc_term (Tvar "lcontains"),[map_mterm m ctx l; map_mterm m ctx e])
+    | Mlistcount (_, l)       -> Tapp (loc_term (Tvar "lcard"),[map_mterm m ctx l])
+    | Mlistnth (_, n, l)      -> Tapp (loc_term (Tvar "lnth"),[map_mterm m ctx l;map_mterm m ctx n])
+
+
+    (* map api expression *)
+
+    | Mmapput (_, _, c, k, v)   -> Tapp (loc_term (Tvar "map_put")      , [ map_mterm m ctx c; map_mterm m ctx k; map_mterm m ctx v ])
+    | Mmapremove (_, _, c, k)   -> Tapp (loc_term (Tvar "map_remove")   , [ map_mterm m ctx c; map_mterm m ctx k ])
+    | Mmapget (_, _, c, k)      -> Tapp (loc_term (Tvar "map_get")      , [ map_mterm m ctx c; map_mterm m ctx k ])
+    | Mmapgetopt (_, _, c, k)   -> Tapp (loc_term (Tvar "map_getopt")   , [ map_mterm m ctx c; map_mterm m ctx k ])
+    | Mmapcontains (_, _, c, k) -> Tapp (loc_term (Tvar "map_contains") , [ map_mterm m ctx c; map_mterm m ctx k ])
+    | Mmaplength (_, _, c)      -> Tapp (loc_term (Tvar "map_length")   , [ map_mterm m ctx c ])
 
 
     (* builtin functions *)

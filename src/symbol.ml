@@ -61,6 +61,7 @@ let string_of_token = function
   | MTZ n           -> Printf.sprintf "MTZ(%s)" (Big_int.string_of_big_int n)
   | MINUSEQUAL      -> "MINUSEQUAL"
   | MINUS           -> "MINUS"
+  | MAP             -> "MAP"
   | MATCH           -> "MATCH"
   | LPAREN          -> "LPAREN"
   | LIST            -> "LIST"
@@ -197,6 +198,7 @@ let string_of_symbol = function
   | X (T T_MTZ) -> "a mtz"
   | X (T T_MINUSEQUAL) -> "-="
   | X (T T_MINUS) -> "-"
+  | X (T T_MAP) -> "map"
   | X (T T_MATCH) -> "match"
   | X (T T_LPAREN) -> "("
   | X (T T_LIST) -> "list"

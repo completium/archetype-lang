@@ -52,6 +52,7 @@ type ptyp =
   | Tcontainer of ptyp * container
   | Tset of ptyp
   | Tlist of ptyp
+  | Tmap of ptyp * ptyp
   | Ttuple of ptyp list
   | Toption of ptyp
   | Tentry (* entry of external contract *)
@@ -166,6 +167,13 @@ type const =
   | Ctail
   | Cabs
   | Cprepend
+  (* map *)
+  | Cmput
+  | Cmremove
+  | Cmget
+  | Cmgetopt
+  | Cmcontains
+  | Cmlength
   (* crypto *)
   | Cblake2b
   | Csha256

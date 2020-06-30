@@ -137,6 +137,11 @@ let rec pp_type outer pos fmt e =
       "(%a) list"
       pp_type_default x
 
+  | Tmap x ->
+    Format.fprintf fmt
+      "(%a) map"
+      pp_type_default x
+
   | Tkeyof t ->
     Format.fprintf fmt
       "pkey of %a"

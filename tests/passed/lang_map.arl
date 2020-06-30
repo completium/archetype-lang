@@ -1,0 +1,30 @@
+archetype lang_map
+
+entry exec () {
+  effect {
+    // var my_map : (string * int) map = [ ("mystr0", 0) ;
+    //                                     ("mystr1", 1) ;
+    //                                     ("mystr2", 2) ;
+    //                                     ("mystr3", 3) ];
+
+    var my_map : (int * string) map = [ ];
+    var my_map_int : (int * int) map = [ ];
+
+    (* expr *)
+    // var new_map0 : (int * int) map    = map_put(my_map_int, 0, 4);
+    // var new_map1 : (string * int) map = map_put(my_map, 4, "mystr4");
+    // var new_map2 : (string * int) map = map_remove(my_map, "mystr0");
+    // var new_map3 : int option         = my_map["mystr0"];
+    // var new_map4 : int                = map_getopt(my_map, "mystr0");
+    // var map_c    : bool               = map_contains(my_map, "mystr0");
+    // var map_l    : int                = map_length(my_map);
+
+    // (* control *)
+    // var res : int = 0;
+    // for (k, v) in my_map do
+    //   if (string_length v > 0)
+    //   then res += k;
+    // done;
+    // require (res = 6)
+  }
+}

@@ -62,6 +62,7 @@
       "label"               , LABEL          ;
       "let"                 , LET            ;
       "list"                , LIST           ;
+      "map"                 , MAP            ;
       "match"               , MATCH          ;
       "namespace"           , NAMESPACE      ;
       "none"                , NONE           ;

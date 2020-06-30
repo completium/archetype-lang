@@ -17,13 +17,16 @@ module Type : sig
   val as_option           : M.ptyp -> M.ptyp option
   val as_set              : M.ptyp -> M.ptyp option
   val as_list             : M.ptyp -> M.ptyp option
+  val as_map              : M.ptyp -> (M.ptyp * M.ptyp) option
 
   val is_asset     : M.ptyp -> bool
   val is_numeric   : M.ptyp -> bool
   val is_currency  : M.ptyp -> bool
   val is_primitive : M.ptyp -> bool
   val is_option    : M.ptyp -> bool
+  val is_set       : M.ptyp -> bool
   val is_list      : M.ptyp -> bool
+  val is_map       : M.ptyp -> bool
   val is_michelson_comparable : M.ptyp -> bool
 
   val support_eq : M.ptyp -> bool
@@ -49,6 +52,7 @@ end = struct
   let as_option    = function M.Toption    t       -> Some t       | _ -> None
   let as_set       = function M.Tset       t       -> Some t       | _ -> None
   let as_list      = function M.Tlist      t       -> Some t       | _ -> None
+  let as_map       = function M.Tmap       (k, v)  -> Some (k, v)       | _ -> None
 
   let as_asset_collection = function
     | M.Tcontainer (M.Tasset asset, c) -> Some (asset, c)
@@ -69,8 +73,14 @@ end = struct
   let is_option = function
     | M.Toption _ -> true | _ -> false
 
+  let is_set = function
+    | M.Tset _ -> true | _ -> false
+
   let is_list = function
     | M.Tlist _ -> true | _ -> false
+
+  let is_map = function
+    | M.Tmap _ -> true | _ -> false
 
   let is_michelson_comparable = function
     | M.Tbuiltin VTchainid -> false
@@ -168,7 +178,7 @@ end = struct
         | M.Tnamed i, _ -> begin
             map := !map |> Mint.update i (function
                 | None    -> Some tg
-                | Some ty -> if equal tg ty then Some ty else raise E.Error)
+                | Some ty -> if equal tg ty then Some ty else ((* Format.printf "error0: %a | %a@." M.pp_type_ ptn M.pp_type_ tg;  *)raise E.Error))
           end
 
         | Tentry, Tentry ->
@@ -190,13 +200,18 @@ end = struct
         | Toption ptn, Toption tg ->
           doit ptn tg
 
+        | Tmap (kptn, vptn), Tmap (ktg, vtg) ->
+          List.iter2 doit [kptn; vptn] [ktg; vtg]
+
         | Tcontainer (ptn, x), Tcontainer (tg, y) when x = y ->
           doit ptn tg
 
         | Ttuple ptn, Ttuple tg when List.length ptn = List.length tg ->
           List.iter2 doit ptn tg
 
-        | _, _ -> raise E.Error
+        | _, _ ->
+          (* Format.printf "error: %a | %a@." M.pp_type_ ptn M.pp_type_ tg; *)
+        raise E.Error
 
       in doit ptn tg; Some !map
 
@@ -213,8 +228,9 @@ end = struct
       | Ttrace    _
       | Tbuiltin  _ -> ty
       | Tcontainer (ty, c) -> Tcontainer (doit ty, c)
-      | Tset        ty     -> Tset (doit ty)
+      | Tset        ty     -> Tset  (doit ty)
       | Tlist       ty     -> Tlist (doit ty)
+      | Tmap       (k, v)  -> Tmap  (doit k, doit v)
       | Ttuple      ty     -> Ttuple (List.map doit ty)
       | Toption     ty     -> Toption (doit ty)
 
@@ -311,6 +327,7 @@ type error_desc =
   | InvalidStateExpression
   | InvalidTypeForPk
   | InvalidTypeForSet
+  | InvalidTypeForMap
   | InvalidTypeForVarWithFromTo
   | InvalidVarOrArgType
   | LabelInNonInvariant
@@ -474,6 +491,7 @@ let pp_error_desc fmt e =
   | InvalidStateExpression             -> pp "Invalid state expression"
   | InvalidTypeForPk                   -> pp "Invalid type for primary key"
   | InvalidTypeForSet                  -> pp "Invalid type for set"
+  | InvalidTypeForMap                  -> pp "Invalid type for map"
   | InvalidTypeForVarWithFromTo        -> pp "A variable with a from/to declaration must be of type currency"
   | InvalidVarOrArgType                -> pp "A variable / argument type cannot be an asset or a collection"
   | LabelInNonInvariant                -> pp "The label modifier can only be used in invariants"
@@ -791,6 +809,18 @@ let listops =
     ("prepend" , M.Cprepend , `Total  , Some lst, [elemt  ], lst     );
     ("count"   , M.Ccount   , `Total  , Some lst, [       ], M.vtint );
     ("nth"     , M.Cnth     , `Partial, Some lst, [M.vtint], elemt   );
+  ]
+
+(* -------------------------------------------------------------------- *)
+let mapops =
+  let tkey = M.Tnamed 0 in
+  let tval = M.Tnamed 1 in
+  let map  = M.Tmap (tkey, tval) in [
+    ("map_put"      , M.Cmput      , `Total   , Some map, [ tkey; tval ], map);
+    ("map_remove"   , M.Cmremove   , `Total   , Some map, [ tkey       ], map);
+    ("map_getopt"   , M.Cmgetopt   , `Partial , Some map, [ tkey       ], tval);
+    ("map_contains" , M.Cmcontains , `Total   , Some map, [ tkey       ], M.vtbool);
+    ("map_length"   , M.Cmlength   , `Total   , Some map, [            ], M.vtint);
   ]
 
 (* -------------------------------------------------------------------- *)
@@ -1537,13 +1567,14 @@ let select_operator env ?(asset = false) loc (op, tys) =
 (* -------------------------------------------------------------------- *)
 let rec valid_var_or_arg_type (ty : M.ptyp) =
   match ty with
-  | Tnamed     _ -> assert false
-  | Tasset     _ -> false
-  | Tenum      _ -> true
-  | Tcontract  _ -> true
-  | Tbuiltin   _ -> true
+  | Tnamed     _  -> assert false
+  | Tasset     _  -> false
+  | Tenum      _  -> true
+  | Tcontract  _  -> true
+  | Tbuiltin   _  -> true
   | Tset       ty -> valid_var_or_arg_type ty
   | Tlist      ty -> valid_var_or_arg_type ty
+  | Tmap   (k, v) -> List.for_all valid_var_or_arg_type [k; v]
   | Ttuple     ty -> List.for_all valid_var_or_arg_type ty
   | Toption    ty -> valid_var_or_arg_type ty
   | Tentry        -> false
@@ -1637,6 +1668,14 @@ let for_type_exn ?pkey (env : env) =
 
     | Tlist ty ->
       M.Tlist (doit ty)
+
+    | Tmap ty ->
+      let k, v =
+        match doit ty with
+        | Ttuple [k; v] -> (k, v)
+        | _ -> Env.emit_error env (loc ty, InvalidTypeForMap); raise InvalidType
+      in
+      M.Tmap (k, v)
 
     | Ttuple tys ->
       M.Ttuple (List.map doit tys)
@@ -1899,7 +1938,7 @@ let rec for_xexpr
     | Earray [] -> begin
         match ety with
         | Some (M.Tcontainer (_, _))
-        | Some (M.Tset _ | M.Tlist _) ->
+        | Some (M.Tset _ | M.Tlist _ | M.Tmap _) ->
           mk_sp ety (M.Parray [])
 
         | _ ->
@@ -1922,6 +1961,10 @@ let rec for_xexpr
 
         | Some Tset _, Some ty ->
           mk_sp (Some (M.Tset ty)) (M.Parray (e :: es))
+
+        (* | Some Tmap _, Some ty ->
+          let k, v  = (match ty with | Ttuple [k; v] -> (k, v) | _ -> assert false) in
+          mk_sp (Some (M.Tmap (k, v))) (M.Parray (e :: es)) *)
 
         | _, Some ty ->
           mk_sp (Some (M.Tlist ty)) (M.Parray (e :: es))

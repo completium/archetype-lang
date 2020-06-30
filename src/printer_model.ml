@@ -772,6 +772,39 @@ let pp_mterm fmt (mt : mterm) =
         f a
 
 
+    (* map api expression *)
+
+    | Mmapput (_, _, c, k, v) ->
+      Format.fprintf fmt "map_put (%a, %a, %a)"
+        f c
+        f k
+        f v
+
+    | Mmapremove (_, _, c, k) ->
+      Format.fprintf fmt "map_remove (%a, %a)"
+        f c
+        f k
+
+    | Mmapget (_, _, c, k) ->
+      Format.fprintf fmt "map_get (%a, %a)"
+        f c
+        f k
+
+    | Mmapgetopt (_, _, c, k) ->
+      Format.fprintf fmt "map_getopt (%a, %a)"
+        f c
+        f k
+
+    | Mmapcontains (_, _, c, k) ->
+      Format.fprintf fmt "map_contains (%a, %a)"
+        f c
+        f k
+
+    | Mmaplength (_, _, c) ->
+      Format.fprintf fmt "map_length (%a)"
+        f c
+
+
     (* builtin functions *)
 
     | Mmax (l, r) ->

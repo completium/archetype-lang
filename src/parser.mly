@@ -94,6 +94,7 @@
 %token LET
 %token LIST
 %token LPAREN
+%token MAP
 %token MATCH
 %token MINUS
 %token MINUSEQUAL
@@ -477,6 +478,7 @@ type_s_unloc:
 | x=type_s OPTION         { Toption x }
 | x=type_s LIST           { Tlist x }
 | x=type_s SET            { Tset x }
+| x=type_s MAP            { Tmap x }
 | x=paren(type_r)         { x }
 
 %inline type_tuples:

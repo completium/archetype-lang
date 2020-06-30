@@ -1113,6 +1113,39 @@ let pp_model_internal fmt (model : model) b =
         f a
 
 
+    (* map api expression *)
+
+    | Mmapput (_, _, c, k, v) ->
+      Format.fprintf fmt "map_update (%a, %a, Some (%a))"
+        f c
+        f k
+        f v
+
+    | Mmapremove (_, _, c, k) ->
+      Format.fprintf fmt "map_update (%a, %a, None)"
+        f c
+        f k
+
+    | Mmapget (_, _, c, k) ->
+      Format.fprintf fmt "%a[%a]"
+        f c
+        f k
+
+    | Mmapgetopt (_, _, c, k) ->
+      Format.fprintf fmt "get_force (%a, %a)"
+        f k
+        f c
+
+    | Mmapcontains (_, _, c, k) ->
+      Format.fprintf fmt "map_mem(%a, %a)"
+        f k
+        f c
+
+    | Mmaplength (_, _, c) ->
+      Format.fprintf fmt "int(Map.size(%a))"
+        f c
+
+
     (* builtin functions *)
 
     | Mmax (l, r) ->

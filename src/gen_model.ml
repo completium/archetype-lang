@@ -79,6 +79,7 @@ let to_model (ast : A.model) : M.model =
     | A.Tcontainer (t, c)  -> M.Tcontainer (ptyp_to_type t, to_container c)
     | A.Tset t             -> M.Tset (match ptyp_to_type t with | Tbuiltin v -> v | _ -> assert false)
     | A.Tlist t            -> M.Tlist (ptyp_to_type t)
+    | A.Tmap (k, v)        -> M.Tmap ((match ptyp_to_type k with | Tbuiltin v -> v | _ -> assert false), ptyp_to_type v)
     | A.Ttuple l           -> M.Ttuple (List.map ptyp_to_type l)
     | A.Tentry             -> M.Tentry
     | A.Toption t          -> M.Toption (ptyp_to_type t)
@@ -258,6 +259,7 @@ let to_model (ast : A.model) : M.model =
           match type_ with
           | Tcontainer (Tasset _, _)   -> M.Massets l
           | Tset _ -> M.Mlitset l
+          | Tmap _ -> M.Mlitmap (List.map (fun (x : M.mterm) -> match x.node with | M.Mtuple [k; v] -> (k, v)  | _ -> assert false) l)
           | _ -> M.Mlitlist l
         end
       | A.Plit ({node = BVint i; _})           -> M.Mint i
