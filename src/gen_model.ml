@@ -191,6 +191,12 @@ let to_model (ast : A.model) : M.model =
     | _ -> assert false
   in
 
+  let extract_builtin_type_map (v : M.mterm) : M.type_ * M.type_ =
+    match v with
+    | {type_ = Tmap (k, v); _} -> Tbuiltin k, v
+    | _ -> assert false
+  in
+
   let to_entry_description (ad : A.entry_description) : M.entry_description =
     match ad with
     | ADAny -> M.ADany
@@ -539,6 +545,45 @@ let to_model (ast : A.model) : M.model =
         let fq = f q in
         let t = extract_builtin_type_list fp in
         M.Mlistnth (t, fp, fq)
+
+
+      (* Map *)
+
+      | A.Pcall (None, A.Cconst (A.Cmput), [AExpr p; AExpr q; AExpr r]) ->
+        let fp = f p in
+        let fq = f q in
+        let fr = f r in
+        let kt, vt = extract_builtin_type_map fp in
+        M.Mmapput (kt, vt, fp, fq, fr)
+
+      | A.Pcall (None, A.Cconst (A.Cmremove), [AExpr p; AExpr q]) ->
+        let fp = f p in
+        let fq = f q in
+        let kt, vt = extract_builtin_type_map fp in
+        M.Mmapremove (kt, vt, fp, fq)
+
+      | A.Pcall (None, A.Cconst (A.Cmget), [AExpr p; AExpr q]) ->
+        let fp = f p in
+        let fq = f q in
+        let kt, vt = extract_builtin_type_map fp in
+        M.Mmapget (kt, vt, fp, fq)
+
+      | A.Pcall (None, A.Cconst (A.Cmgetopt), [AExpr p; AExpr q]) ->
+        let fp = f p in
+        let fq = f q in
+        let kt, vt = extract_builtin_type_map fp in
+        M.Mmapgetopt (kt, vt, fp, fq)
+
+      | A.Pcall (None, A.Cconst (A.Cmcontains), [AExpr p; AExpr q]) ->
+        let fp = f p in
+        let fq = f q in
+        let kt, vt = extract_builtin_type_map fp in
+        M.Mmapcontains (kt, vt, fp, fq)
+
+      | A.Pcall (None, A.Cconst (A.Cmlength), [AExpr p]) ->
+        let fp = f p in
+        let kt, vt = extract_builtin_type_map fp in
+        M.Mmaplength (kt, vt, fp)
 
 
       (* | A.Pcall (None, A.Cconst (A.Cmaybeperformedonlybyrole), [AExpr l; AExpr r]) ->

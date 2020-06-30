@@ -52,7 +52,7 @@ end = struct
   let as_option    = function A.Toption    t       -> Some t       | _ -> None
   let as_set       = function A.Tset       t       -> Some t       | _ -> None
   let as_list      = function A.Tlist      t       -> Some t       | _ -> None
-  let as_map       = function A.Tmap       (k, v)  -> Some (k, v)       | _ -> None
+  let as_map       = function A.Tmap       (k, v)  -> Some (k, v)  | _ -> None
 
   let as_asset_collection = function
     | A.Tcontainer (A.Tasset asset, c) -> Some (asset, c)
@@ -178,7 +178,7 @@ end = struct
         | A.Tnamed i, _ -> begin
             map := !map |> Mint.update i (function
                 | None    -> Some tg
-                | Some ty -> if equal tg ty then Some ty else ((* Format.printf "error0: %a | %a@." A.pp_type_ ptn A.pp_type_ tg;  *)raise E.Error))
+                | Some ty -> if equal tg ty then Some ty else raise E.Error)
           end
 
         | Tentry, Tentry ->
@@ -210,8 +210,7 @@ end = struct
           List.iter2 doit ptn tg
 
         | _, _ ->
-          (* Format.printf "error: %a | %a@." A.pp_type_ ptn A.pp_type_ tg; *)
-        raise E.Error
+          raise E.Error
 
       in doit ptn tg; Some !map
 
@@ -1962,9 +1961,10 @@ let rec for_xexpr
         | Some Tset _, Some ty ->
           mk_sp (Some (A.Tset ty)) (A.Parray (e :: es))
 
+        (* TODO *)
         (* | Some Tmap _, Some ty ->
-          let k, v  = (match ty with | Ttuple [k; v] -> (k, v) | _ -> assert false) in
-          mk_sp (Some (A.Tmap (k, v))) (A.Parray (e :: es)) *)
+           let k, v  = (match ty with | Ttuple [k; v] -> (k, v) | _ -> assert false) in
+           mk_sp (Some (A.Tmap (k, v))) (A.Parray (e :: es)) *)
 
         | _, Some ty ->
           mk_sp (Some (A.Tlist ty)) (A.Parray (e :: es))
@@ -2142,6 +2142,12 @@ let rec for_xexpr
               else (Big_int.int_of_big_int idx)
             in
             mk_sp (Some (List.nth lt i)) (A.Ptupleaccess (ee, idx))
+          end
+        | Some (A.Tmap (kt, vt)) -> begin
+            let pk = for_xexpr ?ety:(Some kt) env pk in
+            mk_sp
+              (Some (A.Toption vt))
+              (A.Pcall (None, A.Cconst A.Cmget, [A.AExpr ee; A.AExpr pk]))
           end
         | _ -> begin
             let e, asset = for_asset_collection_expr mode env (`Parsed e) in
