@@ -46,6 +46,7 @@ type trtyp =
 type ptyp =
   | Tnamed of int
   | Tasset of lident
+  | Trecord of lident
   | Tenum of lident
   | Tcontract of lident
   | Tbuiltin of vtyp
@@ -358,7 +359,7 @@ and 'id instruction_node =
   | Ideclvar of 'id * 'id term_gen                                                  (* id * init *)
   | Iseq of 'id instruction_gen list                                                (* lhs ; rhs *)
   | Imatchwith of 'id term_gen * ('id pattern_gen * 'id instruction_gen) list       (* match term with ('pattern * 'id instruction_gen) list *)
-  | Iassign of (assignment_operator * 'id lvalue_gen * 'id term_gen)         (* $2 assignment_operator $3 *)
+  | Iassign of (assignment_operator * 'id lvalue_gen * 'id term_gen)                (* $2 assignment_operator $3 *)
   | Irequire of (bool * 'id term_gen)                                               (* $1 ? require : failif *)
   | Itransfer of ('id term_gen * 'id term_gen * ('id * ('id term_gen) list) option) (* value * dest * call *)
   | Ibreak
@@ -599,6 +600,15 @@ type 'id asset_struct = {
 
 type asset = lident asset_struct
 
+type 'id record_struct = {
+  name    : 'id;
+  fields  : 'id decl_gen list;
+  loc     : Location.t [@opaque];
+}
+[@@deriving show {with_path = false}]
+
+type record = lident record_struct
+
 type 'id contract_struct = {
   name       : 'id;
   signatures : 'id signature list;
@@ -612,6 +622,7 @@ and contract = lident contract_struct
 type 'id decl_ =
   | Dvariable of 'id variable
   | Dasset    of 'id asset_struct
+  | Drecord   of 'id record_struct
   | Denum     of 'id enum_struct
   | Dcontract of 'id contract_struct
 [@@deriving show {with_path = false}]

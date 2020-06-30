@@ -258,7 +258,8 @@ declaration_r:
  | x=variable           { x }
  | x=enum               { x }
  | x=asset              { x }
- | x=entry             { x }
+ | x=record             { x }
+ | x=entry              { x }
  | x=transition         { x }
  | x=dextension         { x }
  | x=namespace          { x }
@@ -473,7 +474,6 @@ type_r:
 
 type_s_unloc:
 | x=ident                 { Tref x }
-| x=ident RECORD          { Tasset x }
 | x=type_s c=container    { Tcontainer (x, c) }
 | x=type_s OPTION         { Toption x }
 | x=type_s LIST           { Tlist x }
@@ -494,6 +494,12 @@ type_s_unloc:
 %inline shadow_asset_fields:
 | /* empty */ { [] }
 | SHADOW x=asset_fields { x }
+
+
+record:
+| RECORD exts=extensions? x=ident fields=asset_fields?
+{ let fs = match fields with | None -> [] | Some x -> x in
+  Drecord (x, fs, exts) }
 
 asset:
 | ASSET exts=extensions? ops=bracket(asset_operation)? x=ident opts=asset_options?

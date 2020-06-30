@@ -253,6 +253,7 @@ and declaration_unloc =
   | Dvariable      of variable_decl
   | Denum          of enum_kind * enum_decl
   | Dasset         of asset_decl
+  | Drecord        of record_decl
   | Dentry         of entry_decl
   | Dtransition    of transition_decl
   | Dcontract      of contract_decl
@@ -282,6 +283,11 @@ and asset_decl =
   * asset_option list
   * asset_post_option list
   * asset_operation option
+  * exts
+
+and record_decl =
+  lident
+  * field list
   * exts
 
 and entry_decl =

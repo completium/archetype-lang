@@ -45,6 +45,8 @@ let rec pp_ptyp fmt (t : ptyp) =
     Format.fprintf fmt "#%d" i
   | Tasset an ->
     Format.fprintf fmt "%a" pp_id an
+  | Trecord i ->
+    Format.fprintf fmt "%a" pp_id i
   | Tenum en ->
     Format.fprintf fmt "%a" pp_id en
   | Tcontract cn ->
@@ -848,6 +850,11 @@ let pp_asset fmt (a : lident asset_struct) =
           Format.fprintf fmt " with {@\n  @[%a@]@\n}"
             (pp_list ";@\n" pp_label_term))) a.specs
 
+let pp_record fmt (r : record) =
+  Format.fprintf fmt "record %a {@\n  @[%a@]@\n}@\n"
+    pp_id r.name
+    (pp_list "@\n" pp_field) r.fields
+
 let pp_enum_item fmt (ei : lident enum_item_struct) =
   Format.fprintf fmt "| %a%a%a"
     pp_id ei.name
@@ -961,6 +968,7 @@ let pp_transaction fmt (t : transaction) =
 let pp_decl_ fmt = function
   | Dvariable v -> pp_variable fmt v
   | Dasset    a -> pp_asset fmt a
+  | Drecord   r -> pp_record fmt r
   | Denum     e -> pp_enum fmt e
   | Dcontract c -> pp_contract fmt c
 

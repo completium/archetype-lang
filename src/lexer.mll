@@ -78,6 +78,7 @@
       "predicate"           , PREDICATE      ;
       "record"              , RECORD         ;
       "ref"                 , REF            ;
+      "record"              , RECORD         ;
       "removed"             , REMOVED        ;
       "require"             , REQUIRE        ;
       "return"              , RETURN         ;

@@ -73,6 +73,7 @@ let to_model (ast : A.model) : M.model =
     match t with
     | A.Tnamed _           -> assert false
     | A.Tasset id          -> M.Tasset id
+    | A.Trecord id         -> M.Tasset id
     | A.Tenum id           -> M.Tenum id
     | A.Tcontract id       -> M.Tcontract id
     | A.Tbuiltin b         -> M.Tbuiltin (vtyp_to_btyp b)
@@ -651,6 +652,12 @@ let to_model (ast : A.model) : M.model =
     M.Dasset r
   in
 
+  let process_record (r : A.record) : M.decl_node =
+  (* FIXME *)
+    let r : M.asset = M.mk_asset r.name "" ~loc:r.loc in
+    M.Dasset r
+  in
+
   let to_contract_signature (s : A.lident A.signature) : M.contract_signature =
     let name = s.name in
     M.mk_contract_signature name ~args:(List.map (fun (id, typ) -> (id, ptyp_to_type typ)) s.args) ~loc:s.loc
@@ -1150,6 +1157,7 @@ let to_model (ast : A.model) : M.model =
   let process_decl_ = function
     | A.Dvariable v -> process_var v
     | A.Dasset    a -> process_asset a
+    | A.Drecord   r -> process_record r
     | A.Denum     e -> process_enum e
     | A.Dcontract c -> M.Dcontract (to_contract c)
   in

@@ -310,6 +310,7 @@ let string_of_symbol = function
   | X (N N_security_decl_unloc) -> "a security declaration"
   | X (N N_security_arg_unloc) -> "a security argument"
   | X (N N_require) -> "a require"
+  | X (N N_record) -> "a record"
   | X (N N_record_item) -> "a record item"
   | X (N N_pattern) -> "a pattern"
   | X (N N_order_operations) -> "order operations"

@@ -222,6 +222,7 @@ end = struct
       | Tnamed i -> Option.get (Mint.find_opt i subst)
       | Tentry
       | Tasset    _
+      | Trecord   _
       | Tenum     _
       | Tcontract _
       | Ttrace    _
@@ -1574,6 +1575,7 @@ let rec valid_var_or_arg_type (ty : A.ptyp) =
   match ty with
   | Tnamed     _  -> assert false
   | Tasset     _  -> false
+  | Trecord    _  -> true
   | Tenum      _  -> true
   | Tcontract  _  -> true
   | Tbuiltin   _  -> true
@@ -4507,6 +4509,9 @@ let group_declarations (decls : (PT.declaration list)) =
 
     | PT.Dasset infos ->
       { g with gr_assets = mk infos :: g.gr_assets }
+
+    | PT.Drecord _infos -> (* TODO *)
+      { g with gr_assets = [] }
 
     | PT.Dentry infos ->
       { g with gr_acttxs = mk (`Entry infos) :: g.gr_acttxs }
