@@ -661,6 +661,13 @@ ident_typ_q:
 |                { None }
 | COLON i=ident  { Some i }
 
+%inline for_ident_unloc:
+| i=ident                             { FIsimple i }
+| LPAREN x=ident COMMA y=ident RPAREN { FIdouble (x, y) }
+
+%inline for_ident:
+ | e=loc(for_ident_unloc) { e }
+
 %inline from_expr:
 |                { None }
 | FROM e=expr    { Some e }
@@ -700,7 +707,7 @@ expr_r:
  | BREAK
      { Ebreak }
 
- | FOR lbl=colon_ident x=ident IN y=expr DO body=block DONE
+ | FOR lbl=colon_ident x=for_ident IN y=expr DO body=block DONE
      { Efor (lbl, x, y, body) }
 
  | ITER lbl=colon_ident x=ident a=from_expr TO b=expr DO body=block DONE

@@ -1,0 +1,10 @@
+archetype for_ident_double_map
+
+entry exec () {
+  effect {
+    var m : (int * string) map = [];
+    for i in m do
+      ()
+    done
+  }
+}

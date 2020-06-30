@@ -436,6 +436,7 @@ let pp_model fmt (model : model) =
     | ICKfield (_, _, mt) -> Format.fprintf fmt "%a" f mt
     | ICKset mt  -> Format.fprintf fmt "%a" f mt
     | ICKlist mt  -> Format.fprintf fmt "%a" f mt
+    | ICKmap mt  -> Format.fprintf fmt "%a" f mt
   in
 
   let pp_mterm fmt (mt : mterm) =
@@ -528,7 +529,7 @@ let pp_model fmt (model : model) =
 
       | Mfor (i, c, b, _) ->
         Format.fprintf fmt "for (%a in %a) (@\n  @[%a@])@\n"
-          pp_id i
+          (fun fmt i -> match i with FIsimple x -> pp_id fmt x | FIdouble (x, y) -> Format.fprintf fmt "(%a, %a)" pp_id x pp_id y) i
           (pp_iter_container_kind f) c
           f b
 

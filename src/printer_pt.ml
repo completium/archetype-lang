@@ -473,16 +473,19 @@ let rec pp_expr outer pos fmt a =
     pp fmt
 
 
-  | Efor (lbl, id, expr, body) ->
+  | Efor (lbl, fid, expr, body) ->
 
-    let pp fmt (lbl, id, expr, body) =
+    let pp fmt (lbl, fid, expr, body) =
       Format.fprintf fmt "for %a%a in %a do@\n  @[%a@]@\ndone"
         (pp_option (fun fmt -> Format.fprintf fmt ": %a " pp_id)) lbl
-        pp_id id
+        (fun fmt fid ->
+         match unloc fid with
+          | FIsimple i -> pp_id fmt i
+          | FIdouble (x, y) -> Format.fprintf fmt "(%a, %a)" pp_id x pp_id y) fid
         (pp_expr e_default PNone) expr
         (pp_expr e_for PNone) body
     in
-    (maybe_paren outer e_default pos pp) fmt (lbl, id, expr, body)
+    (maybe_paren outer e_default pos pp) fmt (lbl, fid, expr, body)
 
   | Eiter (lbl, id, a, b, body) ->
 

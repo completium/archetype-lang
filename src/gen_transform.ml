@@ -369,8 +369,9 @@ let extend_loop_iter (model : model) : model =
             | ICKcoll an -> Tcontainer (Tasset (dumloc an), View)
             | ICKview c  -> Tcontainer (Tasset (f c.type_), View)
             | ICKfield (_, _, c) -> Tcontainer (Tasset (f c.type_), View)
-            | ICKset c  -> c.type_
+            | ICKset  c  -> c.type_
             | ICKlist c  -> c.type_
+            | ICKmap  c  -> c.type_
           in
           match const with
           | `Toiterate -> mk_mterm (Msettoiterate coll) tcoll
@@ -778,8 +779,9 @@ let assign_loop_label (model : model) : model =
                 | ICKcoll an -> mk_mterm (Mvar (dumloc an, Vstorecol)) (Tcontainer (Tasset (dumloc an), Collection))
                 | ICKview c
                 | ICKfield (_, _, c)
-                | ICKset c
-                | ICKlist c -> c
+                | ICKset  c
+                | ICKlist c
+                | ICKmap  c -> c
               in
               let accu = aux ctx accu col in
               let accu = aux ctx accu body in
@@ -1846,11 +1848,12 @@ let extract_term_from_instruction f (model : model) : model =
     | Mfor (i, c, b, lbl) ->
       let ce, ca =
         match c with
-        | ICKcoll  an -> ICKcoll an, []
-        | ICKview  v -> let ve, va = f v in ICKview  ve, va
+        | ICKcoll  an          -> ICKcoll an, []
+        | ICKview  v           -> let ve, va = f v in ICKview  ve, va
         | ICKfield (an, fn, v) -> let ve, va = f v in ICKfield (an, fn, ve), va
-        | ICKset  v -> let ve, va = f v in ICKset  ve, va
-        | ICKlist  v -> let ve, va = f v in ICKlist  ve, va
+        | ICKset   v           -> let ve, va = f v in ICKset   ve, va
+        | ICKlist  v           -> let ve, va = f v in ICKlist  ve, va
+        | ICKmap   v           -> let ve, va = f v in ICKmap   ve, va
       in
       let be = aux ctx b in
       process (mk_mterm (Mfor (i, ce, be, lbl)) mt.type_) ca
@@ -2119,11 +2122,12 @@ let add_contain_on_get (model : model) : model =
       | Mfor (i, c, b, lbl) ->
         let accu =
           match c with
-          | ICKcoll _ -> accu
-          | ICKview c -> f accu c
-          | ICKfield (_, _, c) -> f accu c
-          | ICKset c -> f accu c
-          | ICKlist c -> f accu c
+          | ICKcoll  _          -> accu
+          | ICKview  c          -> f accu c
+          | ICKfield (_, _, c)  -> f accu c
+          | ICKset   c          -> f accu c
+          | ICKlist  c          -> f accu c
+          | ICKmap   c          -> f accu c
         in
         let be = aux b in
         gg accu (mk_mterm (Mfor (i, c, be, lbl)) mt.type_)
@@ -2342,7 +2346,7 @@ let replace_for_to_iter (model : model) : model =
 
   let rec aux ctx (mt : mterm) : mterm =
     match mt.node with
-    | Mfor (id, ICKset ({node = _; type_ = Tset t} as col), body, Some lbl) ->
+    | Mfor (FIsimple id, ICKset ({node = _; type_ = Tset t} as col), body, Some lbl) ->
       let t = Tbuiltin t in
       let nbody = aux ctx body in
 
@@ -2355,7 +2359,7 @@ let replace_for_to_iter (model : model) : model =
       let iter = Miter (dumloc idx_id, bound_min, bound_max, letin, Some lbl) in
       mk_mterm iter mt.type_
 
-    | Mfor (id, ICKlist ({node = _; type_ = Tlist t} as col), body, Some lbl) ->
+    | Mfor (FIsimple id, ICKlist ({node = _; type_ = Tlist t} as col), body, Some lbl) ->
       let nbody = aux ctx body in
 
       let idx_id = "_i_" ^ lbl in
@@ -2367,7 +2371,7 @@ let replace_for_to_iter (model : model) : model =
       let iter = Miter (dumloc idx_id, bound_min, bound_max, letin, Some lbl) in
       mk_mterm iter mt.type_
 
-    | Mfor (id, col, body, Some lbl) ->
+    | Mfor (FIsimple id, col, body, Some lbl) ->
       let nbody = aux ctx body in
       let an = extract_asset col in
       let type_asset = Tasset (dumloc an) in

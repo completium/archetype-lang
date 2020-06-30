@@ -694,11 +694,17 @@ let to_model (ast : A.model) : M.model =
           let ncol =
             let x = f col in
             match x.node, x.type_ with
-            | _, M.Tset _ -> M.ICKset x
+            | _, M.Tset  _ -> M.ICKset x
             | _, M.Tlist _ -> M.ICKlist x
+            | _, M.Tmap  _ -> M.ICKmap x
             | _, M.Tcontainer ((Tasset an), Collection) -> M.ICKcoll (unloc an)
             | M.Mdotassetfield (an, _k, fn), M.Tcontainer ((Tasset _), (Aggregate | Partition)) -> M.ICKfield (unloc an, unloc fn, x)
             | _ -> M.ICKview x
+          in
+          let i =
+            match i with
+            | A.FIsimple x      -> M.FIsimple x
+            | A.FIdouble (x, y) -> M.FIdouble (x, y)
           in
           M.Mfor (i, ncol, g body, instr.label)
         end

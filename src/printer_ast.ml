@@ -509,15 +509,18 @@ let rec pp_instruction fmt (i : instruction) =
       in
       (pp_with_paren pp) fmt (c, t, e)
 
-    | Ifor (id, c, body) ->
-      let pp fmt (id, c, body) =
+    | Ifor (fid, c, body) ->
+      let pp fmt (fid, c, body) =
         Format.fprintf fmt "for %a%a in %a do@\n  @[%a@]@\ndone"
           (fun fmt x -> match x with Some v -> (Format.fprintf fmt ": %a " pp_str v) | _ -> ()) i.label
-          pp_id id
+          (fun fmt fid ->
+             match fid with
+             | FIsimple i -> pp_id fmt i
+             | FIdouble (x, y) -> Format.fprintf fmt "(%a, %a)" pp_id x pp_id y) fid
           pp_pterm c
           pp_instruction body
       in
-      (pp_with_paren pp) fmt (id, c, body)
+      (pp_with_paren pp) fmt (fid, c, body)
 
     | Iiter (id, a, b, body) ->
       let pp fmt (id, a, b, body) =

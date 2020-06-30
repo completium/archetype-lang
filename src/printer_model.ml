@@ -119,11 +119,12 @@ let pp_container_kind f fmt = function
   | CKfield (an, fn, mt) -> Format.fprintf fmt "CKfield (%s, %s, %a)" an fn f mt
 
 let pp_iter_container_kind f fmt = function
-  | ICKcoll  an -> Format.fprintf fmt "%a" pp_str an
-  | ICKview  mt -> Format.fprintf fmt "%a" f mt
+  | ICKcoll  an         -> Format.fprintf fmt "%a" pp_str an
+  | ICKview  mt         -> Format.fprintf fmt "%a" f mt
   | ICKfield (_, _, mt) -> Format.fprintf fmt "%a" f mt
-  | ICKset  mt -> Format.fprintf fmt "%a" f mt
-  | ICKlist  mt -> Format.fprintf fmt "%a" f mt
+  | ICKset   mt         -> Format.fprintf fmt "%a" f mt
+  | ICKlist  mt         -> Format.fprintf fmt "%a" f mt
+  | ICKmap   mt         -> Format.fprintf fmt "%a" f mt
 
 let pp_mterm fmt (mt : mterm) =
   let rec f fmt (mtt : mterm) =
@@ -209,7 +210,7 @@ let pp_mterm fmt (mt : mterm) =
     | Mfor (i, c, b, l) ->
       Format.fprintf fmt "for %a%a in %a do@\n  @[%a@]@\ndone"
         (pp_option (fun fmt -> Format.fprintf fmt ": %a " pp_str)) l
-        pp_id i
+        (fun fmt i -> match i with FIsimple x -> pp_id fmt x | FIdouble (x, y) -> Format.fprintf fmt "(%a, %a)" pp_id x pp_id y) i
         (pp_iter_container_kind f) c
         f b
 

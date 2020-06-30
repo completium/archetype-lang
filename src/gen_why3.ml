@@ -1782,6 +1782,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | ICKfield (_, _, c) -> Tvhead (n,loc_term (Tvar iter_id),map_mterm m ctx c)
         | ICKset  _  -> error_not_translated "Msetiterated for set"
         | ICKlist _  -> error_not_translated "Msetiterated for list"
+        | ICKmap  _  -> error_not_translated "Msetiterated for map"
       end
     | Msettoiterate container ->
       let n = M.Utils.get_asset_type mt |> with_dummy_loc in
@@ -1790,8 +1791,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | ICKview c  -> Tvtail (n,loc_term (Tvar iter_id),map_mterm m ctx c)
         | ICKcoll n  -> Tctail (with_dummy_loc n,loc_term (Tvar iter_id),mk_ac_ctx n ctx)
         | ICKfield (_, _, c) -> Tvtail (n,loc_term (Tvar iter_id),map_mterm m ctx c)
-        | ICKset _  -> error_not_translated "Msettoiterate for set"
+        | ICKset  _  -> error_not_translated "Msettoiterate for set"
         | ICKlist _  -> error_not_translated "Msettoiterate for list"
+        | ICKmap  _  -> error_not_translated "Msettoiterate for map"
       end
     (* formula asset collection methods *)
 

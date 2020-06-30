@@ -311,6 +311,8 @@ type error_desc =
   | InvalidExpressionForEffect
   | InvalidExprressionForTupleAccess
   | InvalidFieldsCountInRecordLiteral
+  | InvalidForIdentMap
+  | InvalidForIdentSimple
   | InvalidFormula
   | InvalidInstruction
   | InvalidLValue
@@ -475,6 +477,8 @@ let pp_error_desc fmt e =
   | InvalidExpressionForEffect         -> pp "Invalid expression for effect"
   | InvalidExprressionForTupleAccess   -> pp "Invalid expression for tuple access, only int literals are allowed"
   | InvalidFieldsCountInRecordLiteral  -> pp "Invalid fields count in record literal"
+  | InvalidForIdentMap                 -> pp "Invalid identifier for map iteration, must specify two identifiers like (x, y) instead of x"
+  | InvalidForIdentSimple              -> pp "Invalid identifiers for iteration, excpted only one identifier"
   | InvalidFormula                     -> pp "Invalid formula"
   | InvalidInstruction                 -> pp "Invalid instruction"
   | InvalidLValue                      -> pp "Invalid left-value"
@@ -3354,14 +3358,29 @@ let rec for_instruction_r
       let e = for_expr kind env pe in
 
       let kty =
+        let is_for_ident k =
+          match k, unloc x with
+          | `Simple, PT.FIsimple _
+          | `Double, PT.FIdouble _ -> true
+          | _ -> false
+        in
         match e.A.type_ with
         | Some (A.Tcontainer (A.Tasset asset, _)) ->
           let asset = Env.Asset.get env (unloc asset) in
           let pk = Option.get (get_field (unloc asset.as_pk) asset) in
-          Some pk.fd_type
+          if (is_for_ident `Double)
+          then (Env.emit_error env (loc x, InvalidForIdentSimple); None)
+          else Some [pk.fd_type]
+
+        | Some (A.Tmap (kt, vt)) ->
+          if (is_for_ident `Simple)
+          then (Env.emit_error env (loc x, InvalidForIdentMap); None)
+          else Some [kt; vt]
 
         | Some (A.Tset ty | A.Tlist ty) ->
-          Some ty
+          if (is_for_ident `Double)
+          then (Env.emit_error env (loc x, InvalidForIdentSimple); None)
+          else Some [ty]
 
         | Some _ ->
           Env.emit_error env (loc pe, NonIterable); None
@@ -3370,11 +3389,10 @@ let rec for_instruction_r
           None in
 
       let env, i = Env.inscope env (fun env ->
-          let _ : bool = check_and_emit_name_free env x in
-          let env =
-            Option.fold (fun env kty ->
-                Env.Local.push env ~kind:`LoopIndex (x, kty)) env kty in
+          let idents = match unloc x with PT.FIsimple i -> [i] | PT.FIdouble (x, y) -> [x; y] in
+          let _ : bool = List.for_all (check_and_emit_name_free env) idents in
 
+          let env = Option.map_dfl (List.fold_left2 (fun accu x y ->  Env.Local.push accu ~kind:`LoopIndex (x, y)) env idents) env kty in
           let env =
             match e.A.type_ with
             | None ->
@@ -3385,7 +3403,11 @@ let rec for_instruction_r
                     Env.Label.push env (lbl, `Loop lblty)
                   else env) env lbl
           in for_instruction kind env i) in
-
+      let x : A.lident A.for_ident =
+        match unloc x with
+        | PT.FIsimple  i     -> A.FIsimple i
+        | PT.FIdouble (x, y) -> A.FIdouble (x, y)
+      in
       env, mki (A.Ifor (x, e, i)) ?label:(Option.map unloc lbl)
 
     | Eiter (lbl, x, a, b, i) ->

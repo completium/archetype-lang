@@ -84,6 +84,9 @@ and var_label = VLBefore | VLIdent of lident
 
 and var_vset  = VSAdded | VSUnmoved | VSRemoved
 
+and for_ident_unloc = FIsimple of lident | FIdouble of lident * lident
+and for_ident = for_ident_unloc loced
+
 and expr_unloc =
   | Eterm         of (var_vset option * var_label option) * lident
   | Eliteral      of literal
@@ -102,7 +105,7 @@ and expr_unloc =
   | Eassign       of assignment_operator * expr * expr
   | Eif           of expr * expr * expr option
   | Ebreak
-  | Efor          of lident option * lident * expr * expr
+  | Efor          of lident option * for_ident * expr * expr
   | Eiter         of lident option * lident * expr option * expr * expr
   | Eseq          of expr * expr
   | Eletin        of lident * type_t option * expr * expr * expr option

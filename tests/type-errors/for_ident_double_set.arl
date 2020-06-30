@@ -1,0 +1,10 @@
+archetype for_ident_double_set
+
+entry exec () {
+  effect {
+    var l : int set = [1; 2; 3];
+    for (k, v) in l do
+      ()
+    done
+  }
+}

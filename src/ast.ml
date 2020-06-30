@@ -352,7 +352,7 @@ type 'id instruction_poly = {
 
 and 'id instruction_node =
   | Iif of ('id term_gen * 'id instruction_gen * 'id instruction_gen)               (* condition * then_ * else_ *)
-  | Ifor of ('id * 'id term_gen * 'id instruction_gen)                              (* id * collection * body *)
+  | Ifor of ('id for_ident * 'id term_gen * 'id instruction_gen)                              (* id * collection * body *)
   | Iiter of ('id * 'id term_gen* 'id term_gen * 'id instruction_gen)               (* id * bound_min * bound_max * body *)
   | Iletin of ('id * 'id term_gen * 'id instruction_gen)                            (* id * init * body *)
   | Ideclvar of 'id * 'id term_gen                                                  (* id * init *)
@@ -367,6 +367,8 @@ and 'id instruction_node =
   | Ilabel of 'id
   | Ifail of 'id term_gen
 [@@deriving show {with_path = false}]
+
+and 'id for_ident = FIsimple of 'id | FIdouble of 'id * 'id
 
 and 'id instruction_gen = 'id instruction_poly
 

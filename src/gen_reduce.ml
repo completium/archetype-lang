@@ -263,7 +263,7 @@ and process_mtern (model : model) (ctx : ctx_red) (s : s_red) (mt : mterm) : mte
         process_non_empty_list_term model ctx s l
     end
 
-  | Mfor (a, ICKview col, body, _) ->
+  | Mfor (FIsimple a, ICKview col, body, _) ->
     let col, s = process_mtern model ctx s col in
     let subs : (ident * type_) list = compute_side_effect ctx body in
     let is = [storage_lident] @ (List.map (fun (x, _y) -> dumloc x) subs) in

@@ -89,6 +89,14 @@ type 'id pattern_gen = {
 type pattern = lident pattern_gen
 [@@deriving show {with_path = false}]
 
+type 'id for_ident_gen =
+| FIsimple of 'id
+| FIdouble of 'id * 'id
+[@@deriving show {with_path = false}]
+
+type for_ident = lident for_ident_gen
+[@@deriving show {with_path = false}]
+
 type comparison_operator =
   | Gt
   | Ge
@@ -163,8 +171,9 @@ type 'term iter_container_kind_gen =
   | ICKcoll  of ident
   | ICKview  of 'term
   | ICKfield of (ident * ident * 'term)
-  | ICKset  of 'term
+  | ICKset   of 'term
   | ICKlist  of 'term
+  | ICKmap   of 'term
 [@@deriving show {with_path = false}]
 
 
@@ -178,7 +187,7 @@ type ('id, 'term) mterm_node  =
   (* control *)
   | Mif               of ('term * 'term * 'term option)
   | Mmatchwith        of 'term * ('id pattern_gen * 'term) list
-  | Mfor              of ('id * 'term iter_container_kind_gen * 'term * ident option)
+  | Mfor              of ('id for_ident_gen * 'term iter_container_kind_gen * 'term * ident option)
   | Miter             of ('id * 'term * 'term * 'term * ident option)
   | Mseq              of 'term list
   | Mreturn           of 'term
@@ -954,6 +963,16 @@ let cmp_pattern
   : bool =
   cmp_pattern_node cmp_lident p1.node p2.node
 
+let cmp_for_ident
+    (cmpi  : 'id -> 'id -> bool)
+    (fi1 : 'id for_ident_gen)
+    (fi2 : 'id for_ident_gen)
+  : bool =
+  match fi1, fi2 with
+  | FIsimple i1, FIsimple i2 -> cmpi i1 i2
+  | FIdouble (x1, y1), FIdouble (x2, y2) -> cmpi x1 x2 && cmpi y1 y2
+  | _ -> false
+
 let cmp_qualid_node
     (cmp  : 'q -> 'q -> bool)
     (cmpi : 'id -> 'id -> bool)
@@ -1012,6 +1031,7 @@ let cmp_mterm_node
     | ICKfield (an1, fn1, l1), ICKfield (an2, fn2, l2) -> String.equal an1 an2 && String.equal fn1 fn2 && cmp l1 l2
     | ICKset l,  ICKset r -> cmp l r
     | ICKlist l, ICKlist r -> cmp l r
+    | ICKmap l, ICKmap r -> cmp l r
     | _ -> false
   in
   try
@@ -1025,7 +1045,7 @@ let cmp_mterm_node
     (* control *)
     | Mif (c1, t1, e1), Mif (c2, t2, e2)                                               -> cmp c1 c2 && cmp t1 t2 && Option.cmp cmp e1 e2
     | Mmatchwith (e1, l1), Mmatchwith (e2, l2)                                         -> cmp e1 e2 && List.for_all2 (fun (p1, t1) (p2, t2) -> cmp_pattern p1 p2 && cmp t1 t2) l1 l2
-    | Mfor (i1, c1, b1, lbl1), Mfor (i2, c2, b2, lbl2)                                 -> cmpi i1 i2 && cmp_iter_container_kind c1 c2 && cmp b1 b2 && Option.cmp cmp_ident lbl1 lbl2
+    | Mfor (i1, c1, b1, lbl1), Mfor (i2, c2, b2, lbl2)                                 -> cmp_for_ident cmpi i1 i2 && cmp_iter_container_kind c1 c2 && cmp b1 b2 && Option.cmp cmp_ident lbl1 lbl2
     | Miter (i1, a1, b1, c1, lbl1), Miter (i2, a2, b2, c2, lbl2)                       -> cmpi i1 i2 && cmp a1 a2 && cmp b1 b2 && cmp c1 c2 && Option.cmp cmp_ident lbl1 lbl2
     | Mseq is1, Mseq is2                                                               -> List.for_all2 cmp is1 is2
     | Mreturn x1, Mreturn x2                                                           -> cmp x1 x2
@@ -1305,6 +1325,10 @@ let map_type (f : type_ -> type_) = function
 
 (* -------------------------------------------------------------------- *)
 
+let map_for_ident (g : 'id -> 'id) = function
+  | FIsimple i             -> FIsimple (g i)
+  | FIdouble (x, y)        -> FIdouble (g x, g y)
+
 let map_assign_kind (fi : ident -> ident) (g : 'id -> 'id) f = function
   | Avar id             -> Avar (g id)
   | Avarstore id        -> Avarstore (g id)
@@ -1324,16 +1348,17 @@ let map_var_kind f = function
   | Vthe -> Vthe
 
 let map_container_kind (fi : ident -> ident) f = function
-  | CKcoll     -> CKcoll
-  | CKview  mt -> CKview  (f mt)
+  | CKcoll               -> CKcoll
+  | CKview  mt           -> CKview  (f mt)
   | CKfield (an, fn, mt) -> CKfield (fi an, fi fn, f mt)
 
 let map_iter_container_kind (fi : ident -> ident) f = function
-  | ICKcoll an  -> ICKcoll (fi an)
-  | ICKview mt  -> ICKview (f mt)
+  | ICKcoll  an           -> ICKcoll  (fi an)
+  | ICKview  mt           -> ICKview  (f mt)
   | ICKfield (an, fn, mt) -> ICKfield (an, fn, f mt)
-  | ICKset mt   -> ICKset (f mt)
-  | ICKlist mt  -> ICKlist (f mt)
+  | ICKset   mt           -> ICKset   (f mt)
+  | ICKlist  mt           -> ICKlist  (f mt)
+  | ICKmap   mt           -> ICKmap   (f mt)
 
 let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ -> type_) (f : 'id mterm_gen -> 'id mterm_gen) = function
   (* lambda *)
@@ -1345,7 +1370,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   (* control *)
   | Mif (c, t, e)                  -> Mif (f c, f t, Option.map f e)
   | Mmatchwith (e, l)              -> Mmatchwith (f e, List.map (fun (p, e) -> (p, f e)) l)
-  | Mfor (i, c, b, lbl)            -> Mfor (g i, map_iter_container_kind fi f c, f b, lbl)
+  | Mfor (i, c, b, lbl)            -> Mfor (map_for_ident g i, map_iter_container_kind fi f c, f b, lbl)
   | Miter (i, a, b, c, lbl)        -> Miter (g i, f a, f b, f c, lbl)
   | Mseq is                        -> Mseq (List.map f is)
   | Mreturn x                      -> Mreturn (f x)
@@ -1670,11 +1695,12 @@ let fold_container_kind f accu = function
   | CKfield (_, _, mt)      -> f accu mt
 
 let fold_iter_container_kind f accu = function
-  | ICKcoll _   -> accu
-  | ICKview mt  -> f accu mt
+  | ICKcoll  _          -> accu
+  | ICKview  mt         -> f accu mt
   | ICKfield (_, _, mt) -> f accu mt
-  | ICKset mt  -> f accu mt
-  | ICKlist mt  -> f accu mt
+  | ICKset   mt         -> f accu mt
+  | ICKlist  mt         -> f accu mt
+  | ICKmap   mt         -> f accu mt
 
 let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_gen) : 'a =
   let opt f accu x = match x with | Some v -> f accu v | None -> accu in
@@ -1899,6 +1925,9 @@ let fold_map_iter_container_kind f accu = function
   | ICKlist mt ->
     let mte, mta = f accu mt in
     ICKlist mte, mta
+  | ICKmap mt ->
+    let mte, mta = f accu mt in
+    ICKmap mte, mta
 
 let fold_map_term
     (g : ('id, 'id mterm_gen) mterm_node -> 'id mterm_gen)
@@ -1965,10 +1994,10 @@ let fold_map_term
     in
     g (Mmatchwith (ee, pse)), psa
 
-  | Mfor (i, c, b, lbl) ->
+  | Mfor (fi, c, b, lbl) ->
     let ce, ca = fold_map_iter_container_kind f accu c in
-    let bi, ba = f ca b in
-    g (Mfor (i, ce, bi, lbl)), ba
+    let be, ba = f ca b in
+    g (Mfor (fi, ce, be, lbl)), ba
 
   | Miter (i, a, b, c, lbl) ->
     let ae, aa = f accu a in

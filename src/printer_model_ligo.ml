@@ -387,15 +387,16 @@ let pp_model_internal fmt (model : model) b =
             (if is_asset_single_field then "set" else "map")
             const_storage
             an
-        | ICKview mt -> Format.fprintf fmt "list (%a)" f mt
-        | ICKfield (_, _, mt) -> Format.fprintf fmt "set (%a)" f mt
-        | ICKset mt -> Format.fprintf fmt "set (%a)" f mt
-        | ICKlist mt -> Format.fprintf fmt "list (%a)" f mt
+        | ICKview  mt         -> Format.fprintf fmt "list (%a)" f mt
+        | ICKfield (_, _, mt) -> Format.fprintf fmt "set (%a)"  f mt
+        | ICKset   mt         -> Format.fprintf fmt "set (%a)"  f mt
+        | ICKlist  mt         -> Format.fprintf fmt "list (%a)" f mt
+        | ICKmap   mt         -> Format.fprintf fmt "map (%a)"  f mt
       in
 
       Format.fprintf fmt
         "for %a%s in %a block {@\n  @[%a@] }@\n"
-        pp_id id
+        (fun fmt i -> match i with FIsimple x -> pp_id fmt x | FIdouble (x, y) -> Format.fprintf fmt "%a -> %a" pp_id x pp_id y) id
         (postvar col)
         (pp_iter_container_kind f) col
         f body
