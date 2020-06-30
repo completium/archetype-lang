@@ -316,6 +316,7 @@ type error_desc =
   | InvalidFormula
   | InvalidInstruction
   | InvalidLValue
+  | InvalidMapType
   | InvalidMethodInExec
   | InvalidMethodInFormula
   | InvalidNumberOfArguments           of int * int
@@ -482,6 +483,7 @@ let pp_error_desc fmt e =
   | InvalidFormula                     -> pp "Invalid formula"
   | InvalidInstruction                 -> pp "Invalid instruction"
   | InvalidLValue                      -> pp "Invalid left-value"
+  | InvalidMapType                     -> pp "Invalid map type"
   | InvalidMethodInExec                -> pp "Invalid method in execution"
   | InvalidMethodInFormula             -> pp "Invalid method in formula"
   | InvalidNumberOfArguments (n1, n2)  -> pp "Invalid number of arguments: found '%i', but expected '%i'" n1 n2
@@ -1965,10 +1967,13 @@ let rec for_xexpr
         | Some Tset _, Some ty ->
           mk_sp (Some (A.Tset ty)) (A.Parray (e :: es))
 
-        (* TODO *)
-        (* | Some Tmap _, Some ty ->
-           let k, v  = (match ty with | Ttuple [k; v] -> (k, v) | _ -> assert false) in
-           mk_sp (Some (A.Tmap (k, v))) (A.Parray (e :: es)) *)
+        | Some Tmap _, Some ty ->
+          let k, v  =
+            match ty with
+            | Ttuple [k; v] -> (k, v)
+            | _ -> (Env.emit_error env (loc tope, InvalidMapType); bailout ())
+          in
+          mk_sp (Some (A.Tmap (k, v))) (A.Parray (e :: es))
 
         | _, Some ty ->
           mk_sp (Some (A.Tlist ty)) (A.Parray (e :: es))
