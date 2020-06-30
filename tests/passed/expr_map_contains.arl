@@ -1,0 +1,13 @@
+archetype expr_map_contains
+
+variable res : bool = false
+
+entry exec () {
+  specification {
+    s0: res;
+  }
+  effect {
+    var m : (int * string) map = [(0, "0")];
+    res := map_contains(m, 0);
+  }
+}

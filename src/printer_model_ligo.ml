@@ -1117,15 +1117,16 @@ let pp_model_internal fmt (model : model) b =
     (* map api expression *)
 
     | Mmapput (_, _, c, k, v) ->
-      Format.fprintf fmt "map_update (%a, %a, Some (%a))"
-        f c
+      Format.fprintf fmt "map_update (%a, Some (%a), %a)"
         f k
         f v
-
-    | Mmapremove (_, _, c, k) ->
-      Format.fprintf fmt "map_update (%a, %a, None)"
         f c
+
+    | Mmapremove (_, tv, c, k) ->
+      Format.fprintf fmt "map_update (%a, (None : option(%a)), %a)"
         f k
+        pp_type tv
+        f c
 
     | Mmapget (_, _, c, k) ->
       Format.fprintf fmt "%a[%a]"

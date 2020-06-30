@@ -1,4 +1,4 @@
-archetype for_ident_double_map
+archetype for_ident_simple_map
 
 entry exec () {
   effect {
