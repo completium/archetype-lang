@@ -844,7 +844,7 @@ let packops =
     [A.vtbool; A.vtint; A.vtrational; A.vtdate; A.vtduration; A.vtstring]
 
 (* -------------------------------------------------------------------- *)
-let allops = coreops @ optionops @ setops @ listops @ cryptoops @ packops
+let allops = coreops @ optionops @ setops @ listops @ mapops @ cryptoops @ packops
 
 (* -------------------------------------------------------------------- *)
 type assetdecl = {
