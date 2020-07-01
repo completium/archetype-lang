@@ -102,11 +102,6 @@ let rec pp_type outer pos fmt e =
       "%a"
       pp_id x
 
-  | Tasset x ->
-    Format.fprintf fmt
-      "%a record"
-      pp_id x
-
   | Tcontainer (x, y) ->
     Format.fprintf fmt
       "%a %a"

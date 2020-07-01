@@ -16,7 +16,6 @@ and container =
 
 and type_r =
   | Tref       of lident
-  | Tasset     of lident
   | Tcontainer of type_t * container
   | Ttuple     of type_t list
   | Toption    of type_t

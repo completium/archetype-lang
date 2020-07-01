@@ -268,6 +268,7 @@ type error_desc =
   | AnonymousFieldInEffect
   | AssertInGlobalSpec
   | AssetExpected                      of A.ptyp
+  | AssetOrRecordExpected              of A.ptyp
   | AssetWithoutFields
   | BeforeIrrelevant                   of [`Local | `State]
   | BeforeOrLabelInExpr
@@ -276,7 +277,7 @@ type error_desc =
   | CannotAssignLoopIndex              of ident
   | CannotCaptureLocal
   | CannotInfer
-  | CannotInferAnonRecord
+  | CannotInferAnonAssetOrRecord
   | CannotInferCollectionType
   | CannotInitShadowField
   | CannotUpdatePKey
@@ -289,7 +290,8 @@ type error_desc =
   | DuplicatedContractEntryName        of ident
   | DuplicatedCtorName                 of ident
   | DuplicatedFieldInAssetDecl         of ident
-  | DuplicatedFieldInRecordLiteral     of ident
+  | DuplicatedFieldInRecordDecl        of ident
+  | DuplicatedFieldInAssetOrRecordLiteral of ident
   | DuplicatedInitMarkForCtor
   | DuplicatedPKey
   | DuplicatedVarDecl                  of ident
@@ -311,7 +313,7 @@ type error_desc =
   | InvalidExpression
   | InvalidExpressionForEffect
   | InvalidExprressionForTupleAccess
-  | InvalidFieldsCountInRecordLiteral
+  | InvalidFieldsCountInAssetOrRecordLiteral
   | InvalidForIdentMap
   | InvalidForIdentSimple
   | InvalidFormula
@@ -337,10 +339,10 @@ type error_desc =
   | LetInElseInInstruction
   | LetInElseOnNonOption
   | MethodCallInPredicate
-  | MissingFieldInRecordLiteral        of ident
+  | MissingFieldInAssetOrRecordLiteral of ident
   | MissingInitValueForShadowField
-  | MixedAnonInRecordLiteral
-  | MixedFieldNamesInRecordLiteral     of ident list
+  | MixedAnonInAssetOrRecordLiteral
+  | MixedFieldNamesInAssetOrRecordLiteral of ident list
   | MoreThanOneInitState               of ident list
   | MultipleAssetStateDeclaration
   | MultipleFromToInVarDecl
@@ -371,6 +373,7 @@ type error_desc =
   | PostConditionInGlobalSpec
   | PredicateCallInExpr
   | ReadOnlyGlobal                     of ident
+  | RecordExpected
   | SecurityInExpr
   | ShadowPKey
   | ShadowSKey
@@ -434,6 +437,7 @@ let pp_error_desc fmt e =
   | AnonymousFieldInEffect             -> pp "Anonymous field in effect"
   | AssertInGlobalSpec                 -> pp "Assertions specification at global level are forbidden"
   | AssetExpected ty                   -> pp "Asset expected (found a %a)" Printer_ast.pp_ptyp ty
+  | AssetOrRecordExpected ty           -> pp "Asset or record expected (found a %a)" Printer_ast.pp_ptyp ty
   | AssetWithoutFields                 -> pp "Asset without fields"
   | BeforeIrrelevant `Local            -> pp "The `before' modifier cannot be used on local variables"
   | BeforeIrrelevant `State            -> pp "The `before' modifier cannot be used on state constructors"
@@ -443,7 +447,7 @@ let pp_error_desc fmt e =
   | CannotAssignLoopIndex x            -> pp "Cannot assign loop index `%s'" x
   | CannotCaptureLocal                 -> pp "Cannot capture local variables in this context"
   | CannotInfer                        -> pp "Cannot infer type"
-  | CannotInferAnonRecord              -> pp "Cannot infer anonymous record"
+  | CannotInferAnonAssetOrRecord       -> pp "Cannot infer anonymous asset or record"
   | CannotInferCollectionType          -> pp "Cannot infer collection type"
   | CannotInitShadowField              -> pp "Cannot initialize a shadow field"
   | CannotUpdatePKey                   -> pp "Cannot modify the primary key of asset"
@@ -456,7 +460,9 @@ let pp_error_desc fmt e =
   | DuplicatedContractEntryName i      -> pp "Duplicated contract entry name: %a" pp_ident i
   | DuplicatedCtorName i               -> pp "Duplicated constructor name: %a" pp_ident i
   | DuplicatedFieldInAssetDecl i       -> pp "Duplicated field in asset declaration: %a" pp_ident i
-  | DuplicatedFieldInRecordLiteral i   -> pp "Duplicated field in record literal: %a" pp_ident i
+  | DuplicatedFieldInRecordDecl i      -> pp "Duplicated field in record declaration: %a" pp_ident i
+  | DuplicatedFieldInAssetOrRecordLiteral i
+                                       -> pp "Duplicated field in asset or record literal: %a" pp_ident i
   | DuplicatedInitMarkForCtor          -> pp "Duplicated 'initialized by' section for asset"
   | DuplicatedPKey                     -> pp "Duplicated key"
   | DuplicatedVarDecl i                -> pp "Duplicated variable declaration: %a" pp_ident i
@@ -478,7 +484,8 @@ let pp_error_desc fmt e =
   | InvalidExpression                  -> pp "Invalid expression"
   | InvalidExpressionForEffect         -> pp "Invalid expression for effect"
   | InvalidExprressionForTupleAccess   -> pp "Invalid expression for tuple access, only int literals are allowed"
-  | InvalidFieldsCountInRecordLiteral  -> pp "Invalid fields count in record literal"
+  | InvalidFieldsCountInAssetOrRecordLiteral
+                                       -> pp "Invalid fields count in asset or record literal"
   | InvalidForIdentMap                 -> pp "Invalid identifier for map iteration, must specify two identifiers like (x, y) instead of x"
   | InvalidForIdentSimple              -> pp "Invalid identifiers for iteration, excpted only one identifier"
   | InvalidFormula                     -> pp "Invalid formula"
@@ -504,10 +511,12 @@ let pp_error_desc fmt e =
   | LetInElseInInstruction             -> pp "Let In else in instruction"
   | LetInElseOnNonOption               -> pp "Let in else on non-option type"
   | MethodCallInPredicate              -> pp "Cannot call methods in predicates"
-  | MissingFieldInRecordLiteral i      -> pp "Missing field in record literal: %a" pp_ident i
+  | MissingFieldInAssetOrRecordLiteral i
+                                       -> pp "Missing field in asset or record literal: %a" pp_ident i
   | MissingInitValueForShadowField     -> pp "Shadow fields must have a default value"
-  | MixedAnonInRecordLiteral           -> pp "Mixed anonymous in record literal"
-  | MixedFieldNamesInRecordLiteral l   -> pp "Mixed field names in record literal: %a" (Printer_tools.pp_list "," pp_ident) l
+  | MixedAnonInAssetOrRecordLiteral    -> pp "Mixed anonymous in asset or record literal"
+  | MixedFieldNamesInAssetOrRecordLiteral l
+                                       -> pp "Mixed field names in asset or record literal: %a" (Printer_tools.pp_list "," pp_ident) l
   | MoreThanOneInitState l             -> pp "More than one initial state: %a" (Printer_tools.pp_list ", " pp_ident) l
   | MultipleAssetStateDeclaration      -> pp "Multiple asset states declaration"
   | MultipleFromToInVarDecl            -> pp "Variable declaration must have at most one from/to specification"
@@ -535,6 +544,7 @@ let pp_error_desc fmt e =
   | PostConditionInGlobalSpec          -> pp "Post-conditions at global level are forbidden"
   | PredicateCallInExpr                -> pp "Cannot access predicates in code"
   | ReadOnlyGlobal i                   -> pp "Global is read only: %a" pp_ident i
+  | RecordExpected                     -> pp "Record expected"
   | SecurityInExpr                     -> pp "Found securtiy predicate in expression"
   | ShadowPKey                         -> pp "Primary key cannot be a shadow field"
   | ShadowSKey                         -> pp "Sort key cannot be a shadow field"
@@ -686,6 +696,7 @@ type groups = {
   gr_states      : PT.enum_decl               loced list;
   gr_enums       : (PT.lident * PT.enum_decl) loced list;
   gr_assets      : PT.asset_decl              loced list;
+  gr_records     : PT.record_decl             loced list;
   gr_vars        : PT.variable_decl           loced list;
   gr_funs        : PT.s_function              loced list;
   gr_acttxs      : acttx                      loced list;
@@ -870,6 +881,22 @@ let get_field (x : ident) (decl : assetdecl) =
   List.Exn.find (fun fd -> x = L.unloc fd.fd_name) decl.as_fields
 
 (* -------------------------------------------------------------------- *)
+type recorddecl = {
+  rd_name   : A.lident;
+  rd_fields : rfielddecl list;
+}
+[@@deriving show {with_path = false}]
+
+and rfielddecl = {
+  rfd_name  : A.lident;
+  rfd_type  : A.ptyp;
+  rfd_dfl   : A.pterm option;
+}
+
+let get_rfield (x : ident) (decl : recorddecl) =
+  List.Exn.find (fun fd -> x = L.unloc fd.rfd_name) decl.rd_fields
+
+(* -------------------------------------------------------------------- *)
 type vardecl = {
   vr_name   : A.lident;
   vr_type   : A.ptyp;
@@ -987,10 +1014,11 @@ module Env : sig
     | `Global      of vardecl
     | `Definition  of definitiondecl
     | `Asset       of assetdecl
+    | `Record      of recorddecl
     | `Entry       of t tentrydecl
     | `Function    of t fundecl
     | `Predicate   of preddecl
-    | `Field       of ident
+    | `Field       of ident * [`Asset | `Record]
     | `Contract    of contractdecl
     | `Context     of assetdecl * ident option
   ]
@@ -1064,6 +1092,14 @@ module Env : sig
     val push   : t -> statedecl -> t
   end
 
+  module Record : sig
+    val lookup  : t -> ident -> recorddecl option
+    val get     : t -> ident -> recorddecl
+    val exists  : t -> ident -> bool
+    val byfield : t -> ident -> (recorddecl * rfielddecl) option
+    val push    : t -> recorddecl -> t
+  end
+
   module Asset : sig
     val lookup  : t -> ident -> assetdecl option
     val get     : t -> ident -> assetdecl
@@ -1104,10 +1140,11 @@ end = struct
     | `Global      of vardecl
     | `Definition  of definitiondecl
     | `Asset       of assetdecl
+    | `Record      of recorddecl
     | `Entry       of t tentrydecl
     | `Function    of t fundecl
     | `Predicate   of preddecl
-    | `Field       of ident
+    | `Field       of ident * [`Asset | `Record]
     | `Contract    of contractdecl
     | `Context     of assetdecl * ident option
   ]
@@ -1200,6 +1237,7 @@ end = struct
       | `Asset decl    -> Some (A.Tasset decl.as_name)
       | `State decl    -> Some (A.Tenum decl.sd_name)
       | `Contract decl -> Some (A.Tcontract decl.ct_name)
+      | `Record decl   -> Some (A.Trecord decl.rd_name)
       | _              -> None
 
     let lookup (env : t) (name : ident) =
@@ -1370,7 +1408,7 @@ end = struct
     let byfield (env : t) (fname : ident) =
       Option.bind
         (function
-          | `Field nm ->
+          | `Field (nm, `Asset) ->
             let decl  = get env nm in
             let field = get_field fname decl in
             Some (decl, Option.get field)
@@ -1381,8 +1419,38 @@ end = struct
       let env = push env ~loc:(loc nm) (unloc nm) (`Asset decl) in
       List.fold_left
         (fun env fd -> push env ~loc:(loc fd.fd_name)
-            (unloc fd.fd_name) (`Field (unloc nm)))
+            (unloc fd.fd_name) (`Field (unloc nm, `Asset)))
         env decl.as_fields
+  end
+
+  module Record = struct
+    let proj = function `Record x -> Some x | _ -> None
+
+    let lookup (env : t) (name : ident) =
+      lookup_gen proj env name
+
+    let exists (env : t) (name : ident) =
+      Option.is_some (lookup env name)
+
+    let get (env : t) (name : ident) =
+      Option.get (lookup env name)
+
+    let byfield (env : t) (fname : ident) =
+      Option.bind
+        (function
+          | `Field (nm, `Record) ->
+            let decl  = get env nm in
+            let field = get_rfield fname decl in
+            Some (decl, Option.get field)
+          | _ -> None)
+        (lookup_entry env fname)
+
+    let push (env : t) ({ rd_name = nm } as decl : recorddecl) : t =
+      let env = push env ~loc:(loc nm) (unloc nm) (`Record decl) in
+      List.fold_left
+        (fun env fd -> push env ~loc:(loc fd.rfd_name)
+            (unloc fd.rfd_name) (`Field (unloc nm, `Record)))
+        env decl.rd_fields
   end
 
   module Tentry = struct
@@ -1649,14 +1717,6 @@ let for_type_exn ?pkey (env : env) =
           raise InvalidType
         | Some ty -> ty
       end
-
-    | Tasset x ->
-      if not canasset && Option.is_some pkey then begin
-        Env.emit_error env (loc x, UsePkeyOfInsteadOfAsset);
-        raise InvalidType
-      end;
-      let decl = Env.Asset.lookup env (unloc x) in
-      A.Tasset (Option.get_exn InvalidType decl).as_name
 
     | Tcontainer (pty, ctn) ->
       let ty = doit ~canasset:true pty in
@@ -2023,100 +2083,127 @@ let rec for_xexpr
           Env.emit_error env (loc tope, OpInRecordLiteral);
 
         if infos.E.anon && not (List.is_empty (infos.E.fields)) then begin
-          Env.emit_error env (loc tope, MixedAnonInRecordLiteral);
+          Env.emit_error env (loc tope, MixedAnonInAssetOrRecordLiteral);
           bailout ()
         end;
 
         if infos.E.anon || List.is_empty fields then
-          match Option.map Type.as_asset ety with
-          | None | Some None ->
-            Env.emit_error env (loc tope, CannotInferAnonRecord);
-            bailout ()
+          let dfields =
+            match ety with
+            | Some (A.Tasset asset) ->
+              let asset = Env.Asset.get env (unloc asset) in
+              List.pmap
+                (fun fd -> if fd.fd_ghost then None else Some fd.fd_type)
+                asset.as_fields
 
-          | Some (Some asset) ->
-            let asset = Env.Asset.get env (unloc asset) in
-            let ne    = List.length fields in
-            let ng    = List.count (fun f -> not f.fd_ghost) asset.as_fields in
+            | Some (A.Trecord record) ->
+              let record = Env.Record.get env (unloc record) in
+              List.map (fun fd -> fd.rfd_type) record.rd_fields
 
-            if ne <> ng then begin
-              Env.emit_error env (loc tope, InvalidFieldsCountInRecordLiteral);
+            | _ ->
+              Env.emit_error env (loc tope, CannotInferAnonAssetOrRecord);
+              bailout () in
+
+          let ne = List.length fields in
+          let ng = List.length dfields in
+  
+          if ne <> ng then begin
+              Env.emit_error env (loc tope, InvalidFieldsCountInAssetOrRecordLiteral);
               bailout ()
-            end;
+          end;
 
-            let fields =
-              List.map2 (fun (_, fe) fd ->
-                  for_xexpr env ~ety:(get_target_field_type fd.fd_type) fe
-                ) fields asset.as_fields;
-            in mk_sp ety (A.Precord fields)
+          let fields =
+            List.map2 (fun (_, fe) ty ->
+                for_xexpr env ~ety:(get_target_field_type ty) fe
+              ) fields dfields;
+          in mk_sp ety (A.Precord fields)
 
         else begin
           let fmap =
             List.fold_left (fun fmap (fname, e) ->
-                let fname = unloc (snd (Option.get fname)) in
+              let fname = unloc (snd (Option.get fname)) in
 
-                Mid.update fname (function
-                    | None -> begin
-                        let asset = Env.Asset.byfield env fname in
+              Mid.update fname (function
+                  | None when Option.is_some (Env.Asset.byfield env fname) -> begin
+                      let asset, fd = Option.get (Env.Asset.byfield env fname) in
+                      if fd.fd_ghost then
+                        Env.emit_error env (loc tope, CannotInitShadowField);
+                      Some ((Some (`Asset (unloc asset.as_name), fd.fd_type), [e]))
+                    end
 
-                        begin match asset with
-                          | None ->
-                            Env.emit_error env (loc tope, UnknownFieldName fname)
-                          | Some (_, fd) ->
-                            if fd.fd_ghost then
-                              Env.emit_error env (loc tope, CannotInitShadowField)
-                        end;
-                        Some (asset, [e])
-                      end
+                  | None when Option.is_some (Env.Record.byfield env fname) -> begin
+                      let record, fd = Option.get (Env.Record.byfield env fname) in
+                      Some ((Some (`Record (unloc record.rd_name), fd.rfd_type), [e]))
+                    end
 
-                    | Some (asset, es) ->
-                      if List.length es = 1 then begin
-                        let err = DuplicatedFieldInRecordLiteral fname in
-                        Env.emit_error env (loc tope, err)
-                      end; Some (asset, e :: es)) fmap
+                  | None ->
+                      Env.emit_error env (loc tope, UnknownFieldName fname);
+                      Some (None, [e])
+
+                  | Some (src, es) ->
+                    if List.length es = 1 then begin
+                      let err = DuplicatedFieldInAssetOrRecordLiteral fname in
+                      Env.emit_error env (loc tope, err)
+                    end; Some (src, e :: es)) fmap
               ) Mid.empty fields
           in
 
-          let assets =
-            List.undup id (Mid.fold (fun _ (asset, _) assets ->
-                Option.fold
-                  (fun assets (asset, _) -> asset :: assets)
-                  assets asset
-              ) fmap []) in
-
-          let assets = List.sort Stdlib.compare assets in
+          let sources =
+            List.pmap
+              (fun (_, (src, _)) -> Option.map fst src)
+              (Mid.bindings fmap) in
+          let sources = List.undup (fun x -> x) sources in
 
           let fields =
-            Mid.map (fun (asset, es) ->
-                let aty = Option.map (fun (_, fd) -> fd.fd_type) asset in
-                List.map (fun e -> for_xexpr env ?ety:(Option.map get_target_field_type aty) e) es
-              ) fmap in
+            fmap |> Mid.map (fun (src, es) ->
+              let ety = Option.map (snd %> get_target_field_type) src in
+              es |> List.map (fun e -> for_xexpr env ?ety e)) in
 
           let record =
-            match assets with
+            match sources with
             | [] ->
               bailout ()
 
             | _ :: _ :: _ ->
               let err =
-                MixedFieldNamesInRecordLiteral
-                  (List.map (fun x -> unloc x.as_name) assets)
-              in Env.emit_error env (loc tope, err); bailout ()
+                let for1 = function `Record x | `Asset x -> x in
+                MixedFieldNamesInAssetOrRecordLiteral (List.map for1 sources) in
+              Env.emit_error env (loc tope, err); bailout ()
 
-            | [asset] ->
+            | [src] ->
+              let sfields, rty =
+                match src with
+                | `Asset aname ->
+                    let asset   = Env.Asset.get env aname in
+                    let sfields =
+                      List.map
+                        (fun fd -> fd.fd_name, fd.fd_type, fd.fd_dfl)
+                         asset.as_fields
+                    in (sfields, A.Tasset asset.as_name)
+
+                | `Record rname ->
+                    let record = Env.Record.get env rname in
+                    let sfields =
+                      List.map
+                        (fun fd -> fd.rfd_name, fd.rfd_type, fd.rfd_dfl)
+                         record.rd_fields
+                    in (sfields, A.Trecord record.rd_name)
+              in
+
               let fields =
-                List.map (fun ({ fd_name = { pldesc = fname } } as fd) ->
-                    match fd.fd_dfl with
-                    | None -> begin
-                        match Mid.find_opt fname fields with
-                        | None ->
-                          let err = MissingFieldInRecordLiteral fname in
-                          Env.emit_error env (loc tope, err); dummy (Some fd.fd_type)
-                        | Some thisf ->
-                          List.hd (List.rev thisf)
-                      end
-                    | Some dfl -> dfl
-                  ) asset.as_fields
-              in mk_sp (Some (A.Tasset asset.as_name)) (A.Precord fields)
+                List.map (fun ({ pldesc = fd_name }, fd_type, fd_dfl) ->
+                  match Mid.find_opt fd_name fields with
+                  | None -> begin
+                      match fd_dfl with
+                      | None ->
+                          let err = MissingFieldInAssetOrRecordLiteral fd_name in
+                          Env.emit_error env (loc tope, err); dummy (Some fd_type)
+                      | Some dfl -> dfl
+                  end
+                  | Some thisf ->
+                      List.hd (List.rev thisf)
+                ) sfields
+              in mk_sp (Some rty) (A.Precord fields)
 
           in record
         end
@@ -2181,15 +2268,11 @@ let rec for_xexpr
     | Edot (pe, x) -> begin
         let e = for_xexpr env pe in
 
-        match Option.map Type.as_asset e.A.type_ with
+        match e.A.type_ with
         | None ->
           bailout ()
 
-        | Some None ->
-          Env.emit_error env (loc pe, AssetExpected (Option.get e.A.type_));
-          bailout ()
-
-        | Some (Some asset) -> begin
+        | Some (A.Tasset asset) -> begin
             let asset = Env.Asset.get env (unloc asset) in
 
             match get_field (unloc x) asset with
@@ -2202,6 +2285,22 @@ let rec for_xexpr
                 Env.emit_error env (loc x, InvalidShadowFieldAccess);
               mk_sp (Some fty) (A.Pdot (e, x))
           end
+
+        | Some (A.Trecord record) -> begin
+            let record = Env.Record.get env (unloc record) in
+
+            match get_rfield (unloc x) record with
+            | None ->
+              let err = UnknownField (unloc record.rd_name, unloc x) in
+              Env.emit_error env (loc x, err); bailout ()
+
+            | Some { rfd_type = fty } ->
+              mk_sp (Some fty) (A.Pdot (e, x))
+          end
+
+        | Some ty ->
+          Env.emit_error env (loc pe, AssetOrRecordExpected ty);
+          bailout ()
       end
 
     | Emulticomp (e, l) ->
@@ -2978,7 +3077,7 @@ and for_arg_effect
                 (loc x) (op, fty, rfty) e in
 
             if Mid.mem (unloc x) map then begin
-              Env.emit_error env (loc x, DuplicatedFieldInRecordLiteral (unloc x));
+              Env.emit_error env (loc x, DuplicatedFieldInAssetOrRecordLiteral (unloc x));
               map
             end else if (unloc x) = unloc asset.as_pk then begin
               Env.emit_error env (loc x, UpdateEffectOnPkey);
@@ -3004,7 +3103,7 @@ and for_arg_effect
             | None ->
               if Option.is_none field.fd_dfl then
                 Env.emit_error env (loc tope,
-                                    MissingFieldInRecordLiteral (unloc field.fd_name))
+                  MissingFieldInAssetOrRecordLiteral (unloc field.fd_name))
 
             | Some (x, `Assign op, _) ->
               if op <> A.ValueAssign && Option.is_none field.fd_dfl then
@@ -3221,7 +3320,7 @@ let for_lvalue kind (env : env) (e : PT.expr) : (A.lvalue * A.ptyp) option =
         None
     end
 
-  | Edot ({pldesc = Esqapp ({pldesc = Eterm (_, asset); _}, pk); _}, x) -> begin
+  | Edot ({pldesc = Esqapp ({pldesc = Eterm ((None, None), asset)}, key)}, x) -> begin
       let asset = Env.Asset.get env (unloc asset) in
       if unloc x = unloc asset.as_pk then begin
         Env.emit_error env (loc x, CannotUpdatePKey);
@@ -3233,10 +3332,33 @@ let for_lvalue kind (env : env) (e : PT.expr) : (A.lvalue * A.ptyp) option =
           Env.emit_error env (loc x, err); None
 
         | Some { fd_type = fty } ->
-          let asset_key_type = (Option.get (get_field (unloc asset.as_pk) asset)).fd_type in
-          let k = for_expr ~ety:asset_key_type kind env pk in
-          Some (`Field (asset.as_name, k, x), fty)
+          let ktype = (Option.get (get_field (unloc asset.as_pk) asset)).fd_type in
+          let key = for_expr ~ety:ktype kind env key in
+          Some (`Field (asset.as_name, key, x), fty)
       end
+    end
+
+  | Edot (ptg, x) -> begin
+      let tg = for_expr kind env ptg in
+
+      match tg.A.type_ with
+      | Some (Trecord record) -> begin
+          let record = Env.Record.get env (unloc record) in
+          let field  = get_rfield (unloc x) record in
+
+          match field with
+          | None ->
+              Env.emit_error env (loc x, UnknownFieldName (unloc x)); None
+
+          | Some field ->
+              Some (`Field (record.rd_name, tg, x), field.rfd_type)
+        end
+
+      | Some _ ->
+          Env.emit_error env (loc ptg, RecordExpected); None
+
+      | None ->
+          None
     end
 
   | _ ->
@@ -4047,7 +4169,7 @@ let for_asset_decl pkey (env : env) ((adecl, decl) : assetdecl * PT.asset_decl l
     let (f, fty, init, shadow) = field in
     let fty  = for_type ~pkey env fty in
 
-    if  check_and_emit_name_free env f
+    if   check_and_emit_name_free env f
     then Option.map (fun fty -> mkloc (loc f) (unloc f, fty, init, shadow)) fty
     else None in
 
@@ -4309,7 +4431,7 @@ let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) =
             Mid.iter (fun x es ->
                 List.iter
                   (fun (_, lloc) ->
-                     Env.emit_error env (lloc, DuplicatedFieldInRecordLiteral x))
+                     Env.emit_error env (lloc, DuplicatedFieldInAssetOrRecordLiteral x))
                   (List.chop (List.rev es))
               ) init1;
 
@@ -4317,7 +4439,7 @@ let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) =
                 match Mid.find_opt (unloc fd.fd_name) init1 with
                 | None when Option.is_none fd.fd_dfl ->
                   Env.emit_error env
-                    (loc fd.fd_name, MissingFieldInRecordLiteral (unloc fd.fd_name));
+                    (loc fd.fd_name, MissingFieldInAssetOrRecordLiteral (unloc fd.fd_name));
                   None
                 | None ->
                   fd.fd_dfl
@@ -4344,6 +4466,45 @@ let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) =
 
   with E.Bailout ->
     (env0, List.map (fun _ -> None) decls)
+
+(* -------------------------------------------------------------------- *)
+let for_record_decl (env : env) (decl : PT.record_decl loced) =
+  let name, fields, _ = unloc decl in
+
+  let fields =
+    let get_field { pldesc = PT.Ffield (x, ty, e, _) } = (x, ty, e) in
+    List.map get_field fields in
+
+  let fields =
+    let for1 (x, ty, e) =
+      let ty = for_type env ty in
+      let e  = e |> Option.map (for_expr `Concrete env ?ety:ty) in
+      (x, ty, e) in
+    List.map for1 fields in
+
+  let _, fields = List.fold_left_map (fun seen (x, ty, e) ->
+    if Sid.mem (unloc x) seen then begin
+       Env.emit_error env (loc x, DuplicatedFieldInRecordDecl (unloc x));
+       (seen, None)
+    end else (Sid.add (unloc x) seen, Some (x, ty, e))) Sid.empty fields in
+
+  let fields = List.pmap (fun x -> x) fields in
+
+  let fields =
+    let for1 (x, ty, e) =
+      match check_and_emit_name_free env x, ty with
+      | true, Some ty -> Some { rfd_name = x; rfd_type = ty; rfd_dfl = e }
+      | _   , _       -> None in
+    List.pmap for1 fields in
+
+  if check_and_emit_name_free env name then
+    let rdecl = { rd_name = name; rd_fields = fields; } in
+    Env.Record.push env rdecl, Some rdecl
+  else (env, None)
+
+(* -------------------------------------------------------------------- *)
+let for_records_decl (env : env) (decls : PT.record_decl loced list) =
+  List.fold_left_map for_record_decl env decls
 
 (* -------------------------------------------------------------------- *)
 let for_contract_decl (env : env) (decl : PT.contract_decl loced) =
@@ -4483,6 +4644,7 @@ let group_declarations (decls : (PT.declaration list)) =
     gr_states     = [];
     gr_enums      = [];
     gr_assets     = [];
+    gr_records    = [];
     gr_vars       = [];
     gr_funs       = [];
     gr_acttxs     = [];
@@ -4510,8 +4672,8 @@ let group_declarations (decls : (PT.declaration list)) =
     | PT.Dasset infos ->
       { g with gr_assets = mk infos :: g.gr_assets }
 
-    | PT.Drecord _infos -> (* TODO *)
-      { g with gr_assets = [] }
+    | PT.Drecord infos ->
+      { g with gr_records = mk infos :: g.gr_records }
 
     | PT.Dentry infos ->
       { g with gr_acttxs = mk (`Entry infos) :: g.gr_acttxs }
@@ -4585,6 +4747,7 @@ let for_grouped_declarations (env : env) (toploc, g) =
       (None, None, env) in
 
   let env, contracts    = for_contracts_decl env g.gr_externals in
+  let env, _records     = for_records_decl   env g.gr_records   in
   let env, enums        = for_enums_decl     env g.gr_enums     in
   let enums, especs     = List.split enums                      in
   let env, variables    = for_vars_decl      env g.gr_vars      in
