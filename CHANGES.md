@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
  - `caller` as asset key in `initialized by` section
+ - `-ptc` command does not display `pkey of` type anymore
 
 ## [1.0.0] - 2020-06-27
 ### Added
