@@ -65,7 +65,7 @@ type type_ =
   | Ttuple of type_ list
   | Tset of btyp
   | Tmap of btyp * type_
-  | Trecord of (ident * type_) list
+  | Trecord of lident
   | Tunit
   | Tstorage
   | Toperation
@@ -90,8 +90,8 @@ type pattern = lident pattern_gen
 [@@deriving show {with_path = false}]
 
 type 'id for_ident_gen =
-| FIsimple of 'id
-| FIdouble of 'id * 'id
+  | FIsimple of 'id
+  | FIdouble of 'id * 'id
 [@@deriving show {with_path = false}]
 
 type for_ident = lident for_ident_gen
@@ -142,9 +142,9 @@ type sort_kind =
 [@@deriving show {with_path = false}]
 
 type ('id, 'term) assign_kind_gen =
-  | Avar        of 'id
-  | Avarstore   of 'id
-  | Afield      of 'id * 'id * 'term (* asset name * field name * key *)
+  | Avar         of 'id
+  | Avarstore    of 'id
+  | Afield       of 'id * 'id * 'term (* asset name * field name * key *)
   | Astate
   | Aassetstate of ident * 'term     (* asset name * key *)
 [@@deriving show {with_path = false}]
@@ -586,6 +586,26 @@ type 'id asset_gen = {
 type asset = lident asset_gen
 [@@deriving show {with_path = false}]
 
+type 'id record_field_gen = {
+  name: 'id;
+  type_: type_;
+  loc: Location.t [@opaque];
+}
+[@@deriving show {with_path = false}]
+
+type record_field = lident record_field_gen
+[@@deriving show {with_path = false}]
+
+type 'id record_gen = {
+  name: 'id;
+  fields: 'id record_field_gen list;
+  loc: Location.t [@opaque];
+}
+[@@deriving show {with_path = false}]
+
+type record = lident record_gen
+[@@deriving show {with_path = false}]
+
 type 'id contract_signature_gen = {
   name : 'id;
   args: (lident * type_) list;
@@ -787,6 +807,7 @@ type 'id decl_node_gen =
   | Dvar of 'id var_gen
   | Denum of 'id enum_gen
   | Dasset of 'id asset_gen
+  | Drecord of 'id record_gen
   | Dcontract of 'id contract_gen
 [@@deriving show {with_path = false}]
 
@@ -871,6 +892,12 @@ let mk_asset ?(values = []) ?(sort=[]) ?state ?(invariants = []) ?(init = []) ?(
 
 let mk_asset_item ?default ?(shadow=false) ?(loc = Location.dummy) name type_ original_type : 'id asset_item_gen =
   { name; type_; original_type; default; shadow; loc }
+
+let mk_record ?(fields = []) ?(loc = Location.dummy) name : 'id record_gen =
+  { name; fields; loc }
+
+let mk_record_field ?(loc = Location.dummy) name type_ : 'id record_field_gen =
+  { name; type_; loc }
 
 let mk_contract_signature ?(args=[]) ?(loc=Location.dummy) name : 'id contract_signature_gen =
   { name; args; loc }
@@ -1314,7 +1341,7 @@ let map_type (f : type_ -> type_) = function
   | Ttuple l          -> Ttuple (List.map f l)
   | Tset k            -> Tset k
   | Tmap (k, v)       -> Tmap (k, f v)
-  | Trecord l         -> Trecord (List.map (fun (lbl, x) -> (lbl, f x)) l)
+  | Trecord id        -> Trecord id
   | Tunit             -> Tunit
   | Tstorage          -> Tstorage
   | Toperation        -> Toperation
@@ -2817,6 +2844,8 @@ type kind_ident =
   | KIassetfield
   | KIassetstate
   | KIassetinit
+  | KIrecordname
+  | KIrecordfield
   | KIparamlambda
   | KIenumname
   | KIenumvalue
@@ -2854,7 +2883,7 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
     | Ttuple l          -> Ttuple (List.map for_type l)
     | Tset k            -> Tset k
     | Tmap (k, v)       -> Tmap (k, for_type v)
-    | Trecord l         -> Trecord (List.map (fun (lbl, x) -> (lbl, for_type x)) l)
+    | Trecord id        -> Trecord (g KIrecordname id)
     | Tunit             -> t
     | Tstorage          -> t
     | Toperation        -> t
@@ -2991,6 +3020,20 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
         loc           = a.loc;
       }
     in
+    let for_record (r : record) : record =
+      let for_record_field (rf : record_field) =
+        {
+          name        = g KIrecordname rf.name;
+          type_       = for_type rf.type_;
+          loc         = rf.loc;
+        }
+      in
+      {
+        name          = g KIrecordname r.name;
+        fields        = List.map for_record_field r.fields;
+        loc           = r.loc;
+      }
+    in
     let for_contract (c : contract) : contract =
       let for_contract_signature (cs : contract_signature) : contract_signature = {
         name          = g KIcontractentry cs.name;
@@ -3009,6 +3052,7 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
     | Dvar v      -> Dvar      (for_var v)
     | Denum e     -> Denum     (for_enum e)
     | Dasset a    -> Dasset    (for_asset a)
+    | Drecord r   -> Drecord   (for_record r)
     | Dcontract c -> Dcontract (for_contract c)
   in
   let for_storage_item (si : storage_item) : storage_item =
@@ -3396,7 +3440,7 @@ end = struct
   let has_container (m : model) (asset : ident) : bool =
     try
       let asset = get_asset m asset in
-      List.fold_left (fun acc v ->
+      List.fold_left (fun acc (v : asset_item) ->
           match v.type_ with
           | Tcontainer (Tasset _, (Partition | Aggregate)) -> true
           | _ -> acc
@@ -3407,7 +3451,7 @@ end = struct
   let get_asset_containers (m : model) (asset : ident) : (ident * type_ * (lident mterm_gen option)) list =
     try
       let asset = get_asset m asset in
-      List.fold_left (fun acc v ->
+      List.fold_left (fun acc (v : asset_item) ->
           match v.type_ with
           | Tcontainer (Tasset _, (Partition | Aggregate)) -> acc @ [unloc v.name, v.type_, v.default]
           | _ -> acc

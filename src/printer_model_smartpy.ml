@@ -90,9 +90,8 @@ let pp_model fmt (model : model) =
       Format.fprintf fmt "(%a, %a) map"
         pp_btyp k
         pp_type_ v
-    | Trecord l ->
-      Format.fprintf fmt "(%a) record"
-        (pp_list "; " (fun fmt (lbl, x) -> Format.fprintf fmt "(%s, %a)" lbl  pp_type x)) l
+    | Trecord id ->
+      Format.fprintf fmt "%a" pp_id id
     | Tunit ->
       Format.fprintf fmt "unit"
     | Tstorage ->
@@ -1245,7 +1244,8 @@ let pp_model fmt (model : model) =
     match decl with
     | Dvar v       -> pp_var env fmt v
     | Denum _e     -> ()
-    | Dasset _r    -> ()
+    | Dasset _a    -> ()
+    | Drecord _r   -> ()
     | Dcontract _c -> ()
   in
 

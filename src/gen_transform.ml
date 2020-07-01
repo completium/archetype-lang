@@ -449,7 +449,7 @@ let check_containers_asset (model : model) : model =
   let is_asset_with_container (an : lident) : bool =
     let an = unloc an in
     let a = Utils.get_asset model an in
-    List.exists (fun item -> is_container item.type_) a.values
+    List.exists (fun (item : asset_item) -> is_container item.type_) a.values
   in
   let l : (string * string * string * Location.t) list =
     List.fold_left (fun accu (a : asset) ->

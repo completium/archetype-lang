@@ -11,6 +11,7 @@ type error_desc =
   | CannotExtractBody
   | AnyNotAuthorizedInTransitionTo
   | NoRemoveAllOnCollection
+  | RecordNotFound of ident
 [@@deriving show {with_path = false}]
 
 type error = Location.t * error_desc
@@ -20,6 +21,7 @@ let pp_error_desc fmt = function
   | CannotExtractBody              -> Format.fprintf fmt "cannot extract body"
   | AnyNotAuthorizedInTransitionTo -> Format.fprintf fmt "any not authorized in transition to"
   | NoRemoveAllOnCollection        -> Format.fprintf fmt "remove all cannot be called for a collection of asset"
+  | RecordNotFound id              -> Format.fprintf fmt "record not found: %s" id
 
 let emit_error (lc, error : Location.t * error_desc) =
   let str : string = Format.asprintf "%a@." pp_error_desc error in
@@ -73,7 +75,7 @@ let to_model (ast : A.model) : M.model =
     match t with
     | A.Tnamed _           -> assert false
     | A.Tasset id          -> M.Tasset id
-    | A.Trecord id         -> M.Tasset id
+    | A.Trecord id         -> M.Trecord id
     | A.Tenum id           -> M.Tenum id
     | A.Tcontract id       -> M.Tcontract id
     | A.Tbuiltin b         -> M.Tbuiltin (vtyp_to_btyp b)
@@ -225,6 +227,7 @@ let to_model (ast : A.model) : M.model =
       | A.VTat lbl -> M.Msetat (lbl, M.mk_mterm e (ptyp_to_type (Option.get pterm.type_)) ~loc:pterm.loc)
       | A.VTnone -> e
     in
+    let is_record = function | M.Trecord _ -> true | _ -> false in
     let type_ = ptyp_to_type (Option.get pterm.type_) in
     let f x = to_mterm x ~formula:formula in
     let node =
@@ -251,6 +254,18 @@ let to_model (ast : A.model) : M.model =
       | A.Parith (A.Modulo, l, r)         -> M.Mmodulo        (f l, f r)
       | A.Puarith (A.Uplus, e)            -> M.Muplus         (f e)
       | A.Puarith (A.Uminus, e)           -> M.Muminus        (f e)
+      | A.Precord l when is_record type_  -> begin
+          let record_name =  match type_ with | M.Trecord name -> unloc name | _ -> assert false in
+          let ids : ident list =
+            List.fold_left (fun accu (x : A.lident A.decl_) ->
+                match x with
+                | A.Drecord r when String.equal (unloc r.name) record_name -> List.map (fun (x : A.lident A.decl_gen) -> unloc x.name) r.fields
+                | _ -> accu) [] ast.decls
+          in
+          if List.length ids <> List.length l
+          then (emit_error (pterm.loc, RecordNotFound record_name); bailout ());
+          M.Mlitrecord (List.map2 (fun x y -> x, f y) ids l)
+        end
       | A.Precord l                       -> M.Masset         (List.map f l)
       | A.Pcall (Some p, A.Cconst A.Cbefore,    []) -> M.Msetbefore    (f p)
       | A.Pletin (id, init, typ, body, o) -> M.Mletin         ([id], f init, Option.map ptyp_to_type typ, f body, Option.map f o)
@@ -653,9 +668,12 @@ let to_model (ast : A.model) : M.model =
   in
 
   let process_record (r : A.record) : M.decl_node =
-  (* FIXME *)
-    let r : M.asset = M.mk_asset r.name "" ~loc:r.loc in
-    M.Dasset r
+    let fs : M.record_field list =
+      List.map (fun (x : A.lident A.decl_gen) ->
+          let typ = Option.get (Option.map ptyp_to_type x.typ) in
+          M.mk_record_field x.name typ ~loc:x.loc) r.fields
+    in
+    M.Drecord (M.mk_record r.name ~fields:fs ~loc:r.loc)
   in
 
   let to_contract_signature (s : A.lident A.signature) : M.contract_signature =
