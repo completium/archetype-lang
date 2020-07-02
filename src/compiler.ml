@@ -80,10 +80,6 @@ let type_ (pt : ParseTree.archetype) : Ast.model =
   Typing.typing Typing.empty pt
 
 let generate_target_pt (pt : ParseTree.archetype) : ParseTree.archetype =
-  if (!Options.opt_ptc) then (
-    Format.printf "%a@." Printer_pt_type_contract.pp_archetype pt;
-    raise Stop
-  );
   match !Options.target with
   | Markdown  -> (
       Format.printf "%a@." Printer_pt_markdown.pp_archetype pt;
@@ -247,6 +243,7 @@ let compile (filename, channel) =
   |> raise_if_error post_model_error check_containers_asset
   |> raise_if_error post_model_error check_empty_container_on_initializedby
   |> raise_if_error post_model_error check_empty_container_on_asset_default_value
+  |> cont !Options.opt_ptc (Format.printf "%a@." Printer_model_type_contract.pp_ptc_model)
   |> raise_if_error post_model_error check_and_replace_init_caller
   |> raise_if_error post_model_error check_duplicated_keys_in_asset
   |> generate_target

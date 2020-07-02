@@ -66,9 +66,8 @@ let rec pp_type fmt t =
     Format.fprintf fmt "(%a, %a) map"
       pp_btyp k
       pp_type v
-  | Trecord l ->
-    Format.fprintf fmt "(%a) record"
-      (pp_list "; " (fun fmt (lbl, x) -> Format.fprintf fmt "(%s, %a)" lbl  pp_type x)) l
+  | Trecord id ->
+    Format.fprintf fmt "%a" pp_id id
   | Tunit ->
     Format.fprintf fmt "unit"
   | Tstorage ->
@@ -1227,6 +1226,16 @@ let pp_asset fmt (asset : asset) =
     (pp_do_if (not (List.is_empty asset.invariants)) (fun fmt xs -> Format.fprintf fmt "@\nwith {@\n  @[%a@]@\n}@\n" (pp_list ";@\n" pp_label_term) xs)) asset.invariants
     (pp_option (fun fmt id -> Format.fprintf fmt "@\nwith states %a@\n" pp_id id)) asset.state
 
+let pp_record fmt (r : record) =
+  let pp_record_field fmt (rf : record_field) =
+    Format.fprintf fmt "%a : %a;"
+      pp_id rf.name
+      pp_type rf.type_
+  in
+  Format.fprintf fmt "record %a {@\n  @[%a@]@\n}@\n"
+    pp_id r.name
+    (pp_list "@\n" pp_record_field) r.fields
+
 let pp_contract_signature fmt (cs : contract_signature) =
   Format.fprintf fmt "%a (%a)"
     pp_id cs.name
@@ -1241,7 +1250,8 @@ let pp_contract fmt (contract : contract) =
 let pp_decl fmt = function
   | Dvar v -> pp_var fmt v
   | Denum e -> pp_enum fmt e
-  | Dasset r -> pp_asset fmt r
+  | Dasset a -> pp_asset fmt a
+  | Drecord r -> pp_record fmt r
   | Dcontract c -> pp_contract fmt c
 
 let pp_storage_item fmt (si : storage_item) =

@@ -183,9 +183,8 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt "map(%a, %a)"
         pp_btyp k
         pp_type v
-    | Trecord l ->
-      Format.fprintf fmt "(%a) record"
-        (pp_list "; " (fun fmt (lbl, x) -> Format.fprintf fmt "(%s, %a)" lbl  pp_type x)) l
+    | Trecord id ->
+      Format.fprintf fmt "%a" pp_id id
     | Tunit ->
       Format.fprintf fmt "unit"
     | Tstorage ->
@@ -1117,15 +1116,16 @@ let pp_model_internal fmt (model : model) b =
     (* map api expression *)
 
     | Mmapput (_, _, c, k, v) ->
-      Format.fprintf fmt "map_update (%a, %a, Some (%a))"
-        f c
+      Format.fprintf fmt "map_update (%a, Some (%a), %a)"
         f k
         f v
-
-    | Mmapremove (_, _, c, k) ->
-      Format.fprintf fmt "map_update (%a, %a, None)"
         f c
+
+    | Mmapremove (_, tv, c, k) ->
+      Format.fprintf fmt "map_update (%a, (None : option(%a)), %a)"
         f k
+        pp_type tv
+        f c
 
     | Mmapget (_, _, c, k) ->
       Format.fprintf fmt "%a[%a]"
@@ -1507,11 +1507,25 @@ let pp_model_internal fmt (model : model) b =
       end
   in
 
+  let pp_record (fmt : Format.formatter) (r : record) =
+    let pp_record_field (fmt : Format.formatter) (rf : record_field) =
+      Format.fprintf fmt
+        "%a : %a;"
+        pp_id rf.name
+        pp_type rf.type_
+    in
+    Format.fprintf fmt
+      "type %a is record [@\n  @[%a@]@\n]@\n"
+      pp_id r.name
+      (pp_list "@\n" pp_record_field) r.fields;
+  in
+
   let pp_decl env (fmt : Format.formatter) (decl : decl_node) =
     match decl with
-    | Dvar v -> pp_var env fmt v
-    | Denum e -> pp_enum fmt e
-    | Dasset r -> pp_asset fmt r
+    | Dvar v    -> pp_var env fmt v
+    | Denum e   -> pp_enum    fmt e
+    | Dasset a  -> pp_asset   fmt a
+    | Drecord r -> pp_record  fmt r
     | Dcontract _c -> ()
   in
 

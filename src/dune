@@ -11,9 +11,9 @@
   )
   (library_flags (-linkall))
   (modules tools core ident options location parseTree parser lexer symbol
-  error position pureLexer parseError io printer_tools printer_pt printer_pt_type_contract
+  error position pureLexer parseError io printer_tools printer_pt
   printer_pt_markdown ast typing printer_ast model gen_transform gen_model
-  printer_model gen_storage gen_api_storage gen_reduce
+  printer_model printer_model_type_contract gen_storage gen_api_storage gen_reduce
   printer_model_tools printer_model_ligo printer_model_smartpy printer_model_scaml
   gen_why3 mlwtree printer_mlwtree
   )
