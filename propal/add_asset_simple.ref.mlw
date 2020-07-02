@@ -1,0 +1,67 @@
+module Add_asset_simple_storage
+  use archetype.Lib
+
+  type _asset =
+   | AMy_asset
+
+  type _field =
+   | FId
+   | FValue
+
+  type my_asset = {
+    id : astring;
+    value : int
+  }
+
+  clone archetype.AssetCollection as My_asset with type t = my_asset,
+                                                   val fkey = id,
+                                                   val feq = eq_my_asset
+
+  type _storage = {
+    mutable _my_asset_assets : My_asset.collection;
+    mutable _my_asset_assets_added : My_asset.collection;
+    mutable _my_asset_assets_removed : My_asset.collection;
+  } by {
+    _my_asset_assets = My_asset.cempty;
+    _my_asset_assets_added = My_asset.cempty;
+    _my_asset_assets_removed = My_asset.cempty;
+  }
+
+  val _s : _storage
+
+  let add_my_asset (new_asset : my_asset) : unit
+  raises { KeyExist ->
+           not (My_asset.ccontains new_asset.id (old _s)._my_asset_assets)  }
+  ensures {
+    [@expl:add_my_asset_post_1]
+    (* not before.coll.contains(record.key) *)
+    not (My_asset.mem ((old _s)._my_asset_assets) new_asset.id)
+  }
+  ensures {
+    [@expl:add_my_asset_post_2]
+    (* forall k. k <> record.key → get(coll,k) = get(before.coll,k) *)
+    forall k. k <> new_asset.id -> My_asset.get (_s._my_asset_assets) k = My_asset.get ((old _s)._my_asset_assets) k
+  }
+  ensures {
+    [@expl:add_my_asset_post_3]
+    (* get(coll,record.key) = some record  *)
+    My_asset.get (_s._my_asset_assets) new_asset.id = Some new_asset
+  }
+  =  if not (My_asset.ccontains new_asset.id _s._my_asset_assets) then
+       raise KeyExist
+     else
+       (_s._my_asset_assets <- My_asset.add _s._my_asset_assets new_asset;
+        _s._my_asset_assets_added <- My_asset.add _s._my_asset_assets_added new_asset)
+end
+module Add_asset_simple
+  use archetype.Lib
+
+  use Add_asset_simple_storage
+
+  let exec () : unit
+  =  add_my_asset ({
+       id = 13019642077549963975028773147685517457208368882068988097481483079557092531807775484910379759111446632988683978193398216277992419215866750843867301094004870;
+       value = 3
+     })
+end
+

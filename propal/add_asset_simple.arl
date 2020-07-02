@@ -1,0 +1,12 @@
+archetype add_asset_simple
+
+asset my_asset {
+  id : string;
+  value : int;
+}
+
+entry exec () {
+  effect {
+    my_asset.add({id = "id3"; value = 3})
+  }
+}
