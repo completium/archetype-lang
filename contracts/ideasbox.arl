@@ -42,20 +42,19 @@ entry vote(n : int, weight : int) {
     require {
         r1 : voter.contains(caller);
         r2 : expiration - 2d < now <= expiration;
+        r3 : voter[caller].remaining >= weight;
     }
     effect {
-       if voter[caller].remaining >= weight then (
-            voter[caller].remaining -= weight;
-            idea[n].nbvotes += weight
-        )
+        voter[caller].remaining -= weight;
+        idea[n].nbvotes += weight;
     }
 }
 
 entry finalize() {
     called by chairman
     require {
-        r3 : now > expiration;
-        r4 : selected.count() = 0; /* cannot finalize twice */
+        r4 : now > expiration;
+        r5 : selected.count() = 0; /* cannot finalize twice */
     }
     effect {
         for i in idea.select(the.nbvotes >= 5).sort(desc(nbvotes)).head(3) do
