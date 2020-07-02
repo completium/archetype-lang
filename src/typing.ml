@@ -4705,6 +4705,7 @@ type decls = {
   contracts : contractdecl option list;
   variables : vardecl option list;
   enums     : statedecl option list;
+  records   : recorddecl option list;
   assets    : assetdecl option list;
   functions : env fundecl option list;
   acttxs    : env tentrydecl option list;
@@ -4747,7 +4748,7 @@ let for_grouped_declarations (env : env) (toploc, g) =
       (None, None, env) in
 
   let env, contracts    = for_contracts_decl env g.gr_externals in
-  let env, _records     = for_records_decl   env g.gr_records   in
+  let env, records      = for_records_decl   env g.gr_records   in
   let env, enums        = for_enums_decl     env g.gr_enums     in
   let enums, especs     = List.split enums                      in
   let env, variables    = for_vars_decl      env g.gr_vars      in
@@ -4798,8 +4799,8 @@ let for_grouped_declarations (env : env) (toploc, g) =
   let env, secspecs        = for_secs_decl      env g.gr_secs      in
 
   let output =
-    { state    ; contracts; variables; enums   ; assets;
-      functions; acttxs   ; specs    ; secspecs;       }
+    { state    ; contracts; variables; enums   ; assets ;
+      functions; acttxs   ; specs    ; secspecs; records}
 
   in (env, output)
 
@@ -4845,6 +4846,23 @@ let assets_of_adecls adecls =
         loc    = loc decl.as_name; }
 
   in List.map for1 (List.pmap (fun x -> x) adecls)
+
+(* -------------------------------------------------------------------- *)
+let records_of_rdecls rdecls =
+  let for1 (decl : recorddecl) =
+    let for_field fd =
+      A.{ name    = fd.rfd_name;
+          typ     = Some fd.rfd_type;
+          default = fd.rfd_dfl;
+          shadow  = false;
+          loc     = loc fd.rfd_name; }
+    in
+
+    A.{ name   = decl.rd_name;
+        fields = List.map for_field decl.rd_fields;
+        loc    = loc decl.rd_name; }
+
+  in List.map for1 rdecls
 
 (* -------------------------------------------------------------------- *)
 let variables_of_vdecls fdecls =
@@ -5029,6 +5047,7 @@ let for_declarations (env : env) (decls : (PT.declaration list) loced) : A.model
       ~decls:(
         List.map (fun x -> A.Dvariable x) (variables_of_vdecls decls.variables)                            @
         List.map (fun x -> A.Denum x)     (enums_of_statedecl (List.pmap id (decls.state :: decls.enums))) @
+        List.map (fun x -> A.Drecord x)   (records_of_rdecls (List.pmap id decls.records))                 @
         List.map (fun x -> A.Dasset x)    (assets_of_adecls decls.assets)                                  @
         List.map (fun x -> A.Dcontract x) (contracts_of_cdecls decls.contracts)
       )
