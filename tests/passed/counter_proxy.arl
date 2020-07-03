@@ -1,0 +1,14 @@
+archetype counter_proxy
+
+contract counter_sig {
+  entry incr(v : int)
+  entry decr(v : int)
+  entry reset(v : int)
+}
+variable c : counter_sig = @KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm
+
+entry exec(v : int) {
+  effect {
+    transfer 0tz to c call incr(v)
+  }
+}
