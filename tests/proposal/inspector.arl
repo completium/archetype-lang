@@ -9,6 +9,6 @@ entrysig getbalancesig <balanceInquiry>
 entry balanceInquiry(v : nat) { total := v }
 
 entry exec () {
-  var gb : getbalancesig = token.entrypoint("getBalance");
+  var gb : getbalancesig = entrypoint(token, "getBalance");
   transfer 0tz call gb(self.balanceInquiry);
 }
