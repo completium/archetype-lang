@@ -1,0 +1,9 @@
+archetype token
+
+variable nbtokens : nat = 0
+
+entrysig callback <nat>
+
+entry getBalance(cb : callback) { transfer 0 tz call cb(nbtokens) }
+
+entry setBalance(v : nat) { nbtokens := v }

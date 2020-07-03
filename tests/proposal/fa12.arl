@@ -1,0 +1,29 @@
+archetype fa12
+
+variable res : nat = 0
+
+entry balanceInquiry(v : nat) {
+  effect {
+    total := v;
+  }
+}
+
+variable token : address = @KT1Nt4mkc3p5gqykuBbFyWiz7d7nmJNhkT8V
+
+entrysig balanceInquirysig <nat>
+
+entrysig getbalancesig <balanceInquiry>
+
+entry balanceInquiry(v : nat) {
+  effect {
+    res := v
+  }
+}
+
+entry exec () {
+  effect {
+    var gb : getbalancesig = token.entrypoint("getBalance");
+    var callback = self.balanceInquiry;
+    transfer 0tz call gb(callback);
+  }
+}

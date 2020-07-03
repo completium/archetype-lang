@@ -1,0 +1,16 @@
+archetype inspector
+
+variable total : nat = 0
+
+variable token : address = @KT1Nt4mkc3p5gqykuBbFyWiz7d7nmJNhkT8V
+
+entrysig balanceInquirysig <nat>
+
+entrysig getbalancesig <balanceInquiry>
+
+entry balanceInquiry(v : nat) { total := v }
+
+entry exec () {
+  var gb : getbalancesig = token.entrypoint("getBalance");
+  transfer 0tz call gb(self.balanceInquiry);
+}
