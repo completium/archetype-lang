@@ -6,9 +6,9 @@ variable token : address = @KT1Nt4mkc3p5gqykuBbFyWiz7d7nmJNhkT8V
 
 entrysig getbalancesig <balanceInquiry>
 
-entry balanceInquiry(v : nat) { total := v }
+entry and balanceInquiry(v : nat) { total := v }
 
-entry exec () {
+entry and exec () {
   var gb : getbalancesig = entrypoint(token, "getBalance");
   transfer 0tz call gb(self.balanceInquiry);
 }

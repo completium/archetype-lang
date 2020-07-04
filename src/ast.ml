@@ -21,6 +21,7 @@ type currency =
 
 type vtyp =
   | VTbool
+  | VTnat
   | VTint
   | VTrational
   | VTdate
@@ -620,12 +621,22 @@ type 'id contract_struct = {
 
 and contract = lident contract_struct
 
+type 'id entrysig_struct = {
+  name       : 'id;
+  ctype      : ptyp;
+  loc        : Location.t [@opaque];
+}
+[@@deriving show {with_path = false}]
+
+and entrysig = lident entrysig_struct
+
 type 'id decl_ =
   | Dvariable of 'id variable
   | Dasset    of 'id asset_struct
   | Drecord   of 'id record_struct
   | Denum     of 'id enum_struct
   | Dcontract of 'id contract_struct
+  | Dentrysig of 'id entrysig_struct
 [@@deriving show {with_path = false}]
 
 type 'id fun_ =
@@ -647,6 +658,7 @@ and model = lident model_struct
 
 (* vtyp -> ptyp *)
 let vtbool       = Tbuiltin (VTbool      )
+let vtnat        = Tbuiltin (VTnat       )
 let vtint        = Tbuiltin (VTint       )
 let vtrational   = Tbuiltin (VTrational  )
 let vtdate       = Tbuiltin (VTdate      )

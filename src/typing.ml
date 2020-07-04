@@ -110,6 +110,7 @@ end = struct
         | A.VTstring   , A.VTsignature
         | A.VTcurrency , A.VTint
         | A.VTduration , A.VTint
+        | A.VTnat      , A.VTint
           -> true
 
         | _, _ -> false
@@ -264,6 +265,7 @@ type opsig = {
 
 (* -------------------------------------------------------------------- *)
 type error_desc =
+  | TODO
   | AlienPattern
   | AnonymousFieldInEffect
   | AssertInGlobalSpec
@@ -330,6 +332,7 @@ type error_desc =
   | InvalidShadowVariableAccess
   | InvalidSortingExpression
   | InvalidStateExpression
+  | InvalidTypeForEntrysig
   | InvalidTypeForPk
   | InvalidTypeForSet
   | InvalidTypeForMap
@@ -433,6 +436,7 @@ let pp_error_desc fmt e =
   let pp s = Format.fprintf fmt s in
 
   match e with
+  | TODO                               -> pp "TODO"
   | AlienPattern                       -> pp "This pattern does not belong to the enumeration"
   | AnonymousFieldInEffect             -> pp "Anonymous field in effect"
   | AssertInGlobalSpec                 -> pp "Assertions specification at global level are forbidden"
@@ -462,7 +466,7 @@ let pp_error_desc fmt e =
   | DuplicatedFieldInAssetDecl i       -> pp "Duplicated field in asset declaration: %a" pp_ident i
   | DuplicatedFieldInRecordDecl i      -> pp "Duplicated field in record declaration: %a" pp_ident i
   | DuplicatedFieldInAssetOrRecordLiteral i
-                                       -> pp "Duplicated field in asset or record literal: %a" pp_ident i
+    -> pp "Duplicated field in asset or record literal: %a" pp_ident i
   | DuplicatedInitMarkForCtor          -> pp "Duplicated 'initialized by' section for asset"
   | DuplicatedPKey                     -> pp "Duplicated key"
   | DuplicatedVarDecl i                -> pp "Duplicated variable declaration: %a" pp_ident i
@@ -485,7 +489,7 @@ let pp_error_desc fmt e =
   | InvalidExpressionForEffect         -> pp "Invalid expression for effect"
   | InvalidExprressionForTupleAccess   -> pp "Invalid expression for tuple access, only int literals are allowed"
   | InvalidFieldsCountInAssetOrRecordLiteral
-                                       -> pp "Invalid fields count in asset or record literal"
+    -> pp "Invalid fields count in asset or record literal"
   | InvalidForIdentMap                 -> pp "Invalid identifier for map iteration, must specify two identifiers like (x, y) instead of x"
   | InvalidForIdentSimple              -> pp "Invalid identifiers for iteration, excpted only one identifier"
   | InvalidFormula                     -> pp "Invalid formula"
@@ -502,6 +506,7 @@ let pp_error_desc fmt e =
   | InvalidShadowVariableAccess        -> pp "Shadow variable access in non-shadow code"
   | InvalidSortingExpression           -> pp "Invalid sorting expression"
   | InvalidStateExpression             -> pp "Invalid state expression"
+  | InvalidTypeForEntrysig             -> pp "Invalid type for entrysig"
   | InvalidTypeForPk                   -> pp "Invalid type for primary key"
   | InvalidTypeForSet                  -> pp "Invalid type for set"
   | InvalidTypeForMap                  -> pp "Invalid type for map"
@@ -512,11 +517,11 @@ let pp_error_desc fmt e =
   | LetInElseOnNonOption               -> pp "Let in else on non-option type"
   | MethodCallInPredicate              -> pp "Cannot call methods in predicates"
   | MissingFieldInAssetOrRecordLiteral i
-                                       -> pp "Missing field in asset or record literal: %a" pp_ident i
+    -> pp "Missing field in asset or record literal: %a" pp_ident i
   | MissingInitValueForShadowField     -> pp "Shadow fields must have a default value"
   | MixedAnonInAssetOrRecordLiteral    -> pp "Mixed anonymous in asset or record literal"
   | MixedFieldNamesInAssetOrRecordLiteral l
-                                       -> pp "Mixed field names in asset or record literal: %a" (Printer_tools.pp_list "," pp_ident) l
+    -> pp "Mixed field names in asset or record literal: %a" (Printer_tools.pp_list "," pp_ident) l
   | MoreThanOneInitState l             -> pp "More than one initial state: %a" (Printer_tools.pp_list ", " pp_ident) l
   | MultipleAssetStateDeclaration      -> pp "Multiple asset states declaration"
   | MultipleFromToInVarDecl            -> pp "Variable declaration must have at most one from/to specification"
@@ -603,6 +608,7 @@ type argtype = [`Type of A.type_ | `Effect of ident]
 (* -------------------------------------------------------------------- *)
 let cmptypes =
   [ A.VTint            ;
+    A.VTnat            ;
     A.VTrational       ;
     A.VTdate           ;
     A.VTduration       ;
@@ -703,6 +709,7 @@ type groups = {
   gr_specs       : PT.specification           loced list;
   gr_secs        : PT.security                loced list;
   gr_externals   : PT.contract_decl           loced list;
+  gr_entrysigs   : PT.entrysig_decl           loced list;
 }
 
 (* -------------------------------------------------------------------- *)
@@ -972,6 +979,12 @@ type contractdecl = {
 }
 
 (* -------------------------------------------------------------------- *)
+type entrysigdecl = {
+  es_name : A.lident;
+  es_type : A.ptyp;
+}
+
+(* -------------------------------------------------------------------- *)
 type definitiondecl = {
   df_name  : A.lident;
   df_arg   : A.lident * A.ptyp;
@@ -985,6 +998,7 @@ let pterm_arg_as_pterm = function A.AExpr e -> Some e | _ -> None
 (* -------------------------------------------------------------------- *)
 let core_types = [
   ("string"   , A.vtstring         );
+  ("nat"      , A.vtnat            );
   ("int"      , A.vtint            );
   ("rational" , A.vtrational       );
   ("bool"     , A.vtbool           );
@@ -1796,15 +1810,18 @@ let for_asset_keyof_type (env : env) (ty : PT.type_t) : A.lident option =
     None
 
 (* -------------------------------------------------------------------- *)
-let for_literal (_env : env) (topv : PT.literal loced) : A.bval =
+let for_literal (_env : env) (ety : A.type_ option) (topv : PT.literal loced) : A.bval =
   let mk_sp type_ node = A.mk_sp ~loc:(loc topv) ~type_ node in
 
   match unloc topv with
   | Lbool b ->
     mk_sp A.vtbool (A.BVbool b)
 
-  | Lnumber i ->
-    mk_sp A.vtint (A.BVint i)
+  | Lnumber i -> begin
+      match ety with
+      | Some (A.Tbuiltin (VTnat)) -> mk_sp A.vtnat (A.BVuint i)
+      | _                         -> mk_sp A.vtint (A.BVint i)
+    end
 
   | Ldecimal str ->
     begin
@@ -2000,7 +2017,7 @@ let rec for_xexpr
       end
 
     | Eliteral v ->
-      let v = for_literal env (mkloc (loc tope) v) in
+      let v = for_literal env ety (mkloc (loc tope) v) in
       mk_sp v.A.type_ (A.Plit v)
 
     | Earray [] -> begin
@@ -2109,8 +2126,8 @@ let rec for_xexpr
           let ng = List.length dfields in
 
           if ne <> ng then begin
-              Env.emit_error env (loc tope, InvalidFieldsCountInAssetOrRecordLiteral);
-              bailout ()
+            Env.emit_error env (loc tope, InvalidFieldsCountInAssetOrRecordLiteral);
+            bailout ()
           end;
 
           let fields =
@@ -2122,30 +2139,30 @@ let rec for_xexpr
         else begin
           let fmap =
             List.fold_left (fun fmap (fname, e) ->
-              let fname = unloc (snd (Option.get fname)) in
+                let fname = unloc (snd (Option.get fname)) in
 
-              Mid.update fname (function
-                  | None when Option.is_some (Env.Asset.byfield env fname) -> begin
-                      let asset, fd = Option.get (Env.Asset.byfield env fname) in
-                      if fd.fd_ghost then
-                        Env.emit_error env (loc tope, CannotInitShadowField);
-                      Some ((Some (`Asset (unloc asset.as_name), fd.fd_type), [e]))
-                    end
+                Mid.update fname (function
+                    | None when Option.is_some (Env.Asset.byfield env fname) -> begin
+                        let asset, fd = Option.get (Env.Asset.byfield env fname) in
+                        if fd.fd_ghost then
+                          Env.emit_error env (loc tope, CannotInitShadowField);
+                        Some ((Some (`Asset (unloc asset.as_name), fd.fd_type), [e]))
+                      end
 
-                  | None when Option.is_some (Env.Record.byfield env fname) -> begin
-                      let record, fd = Option.get (Env.Record.byfield env fname) in
-                      Some ((Some (`Record (unloc record.rd_name), fd.rfd_type), [e]))
-                    end
+                    | None when Option.is_some (Env.Record.byfield env fname) -> begin
+                        let record, fd = Option.get (Env.Record.byfield env fname) in
+                        Some ((Some (`Record (unloc record.rd_name), fd.rfd_type), [e]))
+                      end
 
-                  | None ->
+                    | None ->
                       Env.emit_error env (loc tope, UnknownFieldName fname);
                       Some (None, [e])
 
-                  | Some (src, es) ->
-                    if List.length es = 1 then begin
-                      let err = DuplicatedFieldInAssetOrRecordLiteral fname in
-                      Env.emit_error env (loc tope, err)
-                    end; Some (src, e :: es)) fmap
+                    | Some (src, es) ->
+                      if List.length es = 1 then begin
+                        let err = DuplicatedFieldInAssetOrRecordLiteral fname in
+                        Env.emit_error env (loc tope, err)
+                      end; Some (src, e :: es)) fmap
               ) Mid.empty fields
           in
 
@@ -2157,8 +2174,8 @@ let rec for_xexpr
 
           let fields =
             fmap |> Mid.map (fun (src, es) ->
-              let ety = Option.map (snd %> get_target_field_type) src in
-              es |> List.map (fun e -> for_xexpr env ?ety e)) in
+                let ety = Option.map (snd %> get_target_field_type) src in
+                es |> List.map (fun e -> for_xexpr env ?ety e)) in
 
           let record =
             match sources with
@@ -2175,35 +2192,35 @@ let rec for_xexpr
               let sfields, rty =
                 match src with
                 | `Asset aname ->
-                    let asset   = Env.Asset.get env aname in
-                    let sfields =
-                      List.map
-                        (fun fd -> fd.fd_name, fd.fd_type, fd.fd_dfl)
-                         asset.as_fields
-                    in (sfields, A.Tasset asset.as_name)
+                  let asset   = Env.Asset.get env aname in
+                  let sfields =
+                    List.map
+                      (fun fd -> fd.fd_name, fd.fd_type, fd.fd_dfl)
+                      asset.as_fields
+                  in (sfields, A.Tasset asset.as_name)
 
                 | `Record rname ->
-                    let record = Env.Record.get env rname in
-                    let sfields =
-                      List.map
-                        (fun fd -> fd.rfd_name, fd.rfd_type, fd.rfd_dfl)
-                         record.rd_fields
-                    in (sfields, A.Trecord record.rd_name)
+                  let record = Env.Record.get env rname in
+                  let sfields =
+                    List.map
+                      (fun fd -> fd.rfd_name, fd.rfd_type, fd.rfd_dfl)
+                      record.rd_fields
+                  in (sfields, A.Trecord record.rd_name)
               in
 
               let fields =
                 List.map (fun ({ pldesc = fd_name }, fd_type, fd_dfl) ->
-                  match Mid.find_opt fd_name fields with
-                  | None -> begin
-                      match fd_dfl with
-                      | None ->
+                    match Mid.find_opt fd_name fields with
+                    | None -> begin
+                        match fd_dfl with
+                        | None ->
                           let err = MissingFieldInAssetOrRecordLiteral fd_name in
                           Env.emit_error env (loc tope, err); dummy (Some fd_type)
-                      | Some dfl -> dfl
-                  end
-                  | Some thisf ->
+                        | Some dfl -> dfl
+                      end
+                    | Some thisf ->
                       List.hd (List.rev thisf)
-                ) sfields
+                  ) sfields
               in mk_sp (Some rty) (A.Precord fields)
 
           in record
@@ -3104,7 +3121,7 @@ and for_arg_effect
             | None ->
               if Option.is_none field.fd_dfl then
                 Env.emit_error env (loc tope,
-                  MissingFieldInAssetOrRecordLiteral (unloc field.fd_name))
+                                    MissingFieldInAssetOrRecordLiteral (unloc field.fd_name))
 
             | Some (x, `Assign op, _) ->
               if op <> A.ValueAssign && Option.is_none field.fd_dfl then
@@ -3349,17 +3366,17 @@ let for_lvalue kind (env : env) (e : PT.expr) : (A.lvalue * A.ptyp) option =
 
           match field with
           | None ->
-              Env.emit_error env (loc x, UnknownFieldName (unloc x)); None
+            Env.emit_error env (loc x, UnknownFieldName (unloc x)); None
 
           | Some field ->
-              Some (`Field (record.rd_name, tg, x), field.rfd_type)
+            Some (`Field (record.rd_name, tg, x), field.rfd_type)
         end
 
       | Some _ ->
-          Env.emit_error env (loc ptg, RecordExpected); None
+        Env.emit_error env (loc ptg, RecordExpected); None
 
       | None ->
-          None
+        None
     end
 
   | _ ->
@@ -3439,11 +3456,11 @@ let rec for_instruction_r
     | Etransfer (e, to_, c) ->
       let e      = for_expr kind env ~ety:A.vtcurrency e in
       let to_, c =
-        match c with
-        | None ->
+        match to_, c with
+        | Some to_, None ->
           (for_expr kind env ~ety:A.vtrole to_, None)
 
-        | Some (name, args) ->
+        | Some to_, Some (name, args) ->
           let for_ctt ctt =
             let entry =
               List.find_opt
@@ -3470,6 +3487,8 @@ let rec for_instruction_r
           in
           let to_, ctt = for_contract_expr (expr_mode kind) env to_ in
           (to_, Option.bind for_ctt ctt)
+
+        | _ -> Env.emit_error env (loc i, TODO); bailout ()
 
       in env, mki (Itransfer (e, to_, c))
 
@@ -4484,10 +4503,10 @@ let for_record_decl (env : env) (decl : PT.record_decl loced) =
     List.map for1 fields in
 
   let _, fields = List.fold_left_map (fun seen (x, ty, e) ->
-    if Sid.mem (unloc x) seen then begin
-       Env.emit_error env (loc x, DuplicatedFieldInRecordDecl (unloc x));
-       (seen, None)
-    end else (Sid.add (unloc x) seen, Some (x, ty, e))) Sid.empty fields in
+      if Sid.mem (unloc x) seen then begin
+        Env.emit_error env (loc x, DuplicatedFieldInRecordDecl (unloc x));
+        (seen, None)
+      end else (Sid.add (unloc x) seen, Some (x, ty, e))) Sid.empty fields in
 
   let fields = List.pmap (fun x -> x) fields in
 
@@ -4541,6 +4560,23 @@ let for_contract_decl (env : env) (decl : PT.contract_decl loced) =
 (* -------------------------------------------------------------------- *)
 let for_contracts_decl (env : env) (decls : PT.contract_decl loced list) =
   List.fold_left_map for_contract_decl env decls
+
+(* -------------------------------------------------------------------- *)
+let for_entrysig_decl (env : env) (decl : PT.entrysig_decl loced) =
+  let name, ctype, _ = unloc decl in
+  match for_type env ctype with
+  | Some typ ->
+    let esdecl = { es_name = name; es_type = typ; } in
+    (env, Some esdecl)
+  | _ -> begin
+      Env.emit_error env (loc ctype, InvalidTypeForEntrysig);
+      (env, None)
+    end
+
+
+(* -------------------------------------------------------------------- *)
+let for_entrysigs_decl (env : env) (decls : PT.entrysig_decl loced list) =
+  List.fold_left_map for_entrysig_decl env decls
 
 (* -------------------------------------------------------------------- *)
 let for_acttx_decl (env : env) (decl : acttx loced) =
@@ -4652,6 +4688,7 @@ let group_declarations (decls : (PT.declaration list)) =
     gr_specs      = [];
     gr_secs       = [];
     gr_externals  = [];
+    gr_entrysigs  = [];
   } in
 
   let for1 { plloc = loc; pldesc = decl } (g : groups) =
@@ -4694,6 +4731,9 @@ let group_declarations (decls : (PT.declaration list)) =
     | PT.Dcontract infos ->
       { g with gr_externals = mk infos :: g.gr_externals }
 
+    | PT.Dentrysig infos ->
+      { g with gr_entrysigs = mk infos :: g.gr_entrysigs }
+
     | Dnamespace _  -> assert false
     | Dextension _  -> assert false
     | Dinvalid      -> assert false
@@ -4704,6 +4744,7 @@ let group_declarations (decls : (PT.declaration list)) =
 type decls = {
   state     : statedecl option;
   contracts : contractdecl option list;
+  entrysigs : entrysigdecl option list;
   variables : vardecl option list;
   enums     : statedecl option list;
   records   : recorddecl option list;
@@ -4755,6 +4796,7 @@ let for_grouped_declarations (env : env) (toploc, g) =
   let env, variables    = for_vars_decl      env g.gr_vars      in
   let variables, vspecs = List.split variables                  in
   let env, assets       = for_assets_decl    env g.gr_assets    in
+  let env, entrysigs    = for_entrysigs_decl env g.gr_entrysigs in
 
   let env, enums =
     let check_enum_spec env (enum, spec) =
@@ -4801,7 +4843,8 @@ let for_grouped_declarations (env : env) (toploc, g) =
 
   let output =
     { state    ; contracts; variables; enums   ; assets ;
-      functions; acttxs   ; specs    ; secspecs; records}
+      functions; acttxs   ; specs    ; secspecs; records;
+      entrysigs }
 
   in (env, output)
 
@@ -4897,6 +4940,15 @@ let contracts_of_cdecls (decls : contractdecl option list) =
         signatures = List.map for_sig decl.ct_entries;
         loc        = loc decl.ct_name;
         init       = None; }
+
+  in List.map for1 (List.pmap id decls)
+
+let entrysig_of_edecls (decls : entrysigdecl option list) =
+  let for1 (decl : entrysigdecl) =
+    A.{ name    = decl.es_name;
+        ctype   = decl.es_type;
+        loc     = loc decl.es_name;
+      }
 
   in List.map for1 (List.pmap id decls)
 
@@ -5050,7 +5102,8 @@ let for_declarations (env : env) (decls : (PT.declaration list) loced) : A.model
         List.map (fun x -> A.Denum x)     (enums_of_statedecl (List.pmap id (decls.state :: decls.enums))) @
         List.map (fun x -> A.Drecord x)   (records_of_rdecls (List.pmap id decls.records))                 @
         List.map (fun x -> A.Dasset x)    (assets_of_adecls decls.assets)                                  @
-        List.map (fun x -> A.Dcontract x) (contracts_of_cdecls decls.contracts)
+        List.map (fun x -> A.Dcontract x) (contracts_of_cdecls decls.contracts)                            @
+        List.map (fun x -> A.Dentrysig x) (entrysig_of_edecls decls.entrysigs)
       )
       ~funs:(
         List.map (fun x -> A.Ffunction x)    (functions_of_fdecls decls.functions) @

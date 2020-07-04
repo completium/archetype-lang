@@ -62,6 +62,7 @@
 %token ELSE
 %token END
 %token ENTRY
+%token ENTRYSIG
 %token ENUM
 %token EOF
 %token EQUAL
@@ -259,6 +260,7 @@ declaration_r:
  | x=enum               { x }
  | x=asset              { x }
  | x=record             { x }
+ | x=entrysig           { x }
  | x=entry              { x }
  | x=entry_simple       { x }
  | x=transition         { x }
@@ -502,6 +504,10 @@ record:
 { let fs = match fields with | None -> [] | Some x -> x in
   Drecord (x, fs, exts) }
 
+entrysig:
+| ENTRYSIG exts=extensions? x=ident LESS t=type_t GREATER
+{ Dentrysig (x, t, exts)}
+
 asset:
 | ASSET exts=extensions? ops=bracket(asset_operation)? x=ident opts=asset_options?
         fields=asset_fields?
@@ -738,7 +744,10 @@ expr_r:
      { Eassign (op, x, y) }
 
  | TRANSFER x=simple_expr TO y=simple_expr c=with_call_r
-     { Etransfer (x, y, c) }
+     { Etransfer (x, Some y, c) }
+
+ | TRANSFER x=simple_expr CALL id=ident xs=paren(sl(COMMA, simple_expr))
+     { Etransfer (x, None, Some (id, xs)) }
 
  | REQUIRE x=simple_expr
      { Erequire x }

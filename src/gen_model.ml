@@ -49,6 +49,7 @@ let to_model (ast : A.model) : M.model =
 
   let vtyp_to_btyp = function
     | A.VTbool       -> M.Bbool
+    | A.VTnat        -> M.Bnat
     | A.VTint        -> M.Bint
     | A.VTrational   -> M.Brational
     | A.VTdate       -> M.Bdate
@@ -1179,6 +1180,7 @@ let to_model (ast : A.model) : M.model =
     | A.Drecord   r -> process_record r
     | A.Denum     e -> process_enum e
     | A.Dcontract c -> M.Dcontract (to_contract c)
+    | A.Dentrysig _e -> assert false
   in
 
   let process_fun_ = function

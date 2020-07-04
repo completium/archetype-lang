@@ -42,6 +42,7 @@
       "else"                , ELSE           ;
       "end"                 , END            ;
       "entry"               , ENTRY          ;
+      "entrysig"            , ENTRYSIG       ;
       "enum"                , ENUM           ;
       "exists"              , EXISTS         ;
       "extension"           , EXTENSION      ;

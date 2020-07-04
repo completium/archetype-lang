@@ -97,7 +97,7 @@ and expr_unloc =
   | Emulticomp    of expr * (comparison_operator loced * expr) list
   | Eapp          of function_ * expr list
   | Emethod       of expr * lident * expr list
-  | Etransfer     of expr * expr * (lident * expr list) option
+  | Etransfer     of expr * expr option * (lident * expr list) option
   | Erequire      of expr
   | Efailif       of expr
   | Efail         of expr
@@ -253,6 +253,7 @@ and declaration_unloc =
   | Denum          of enum_kind * enum_decl
   | Dasset         of asset_decl
   | Drecord        of record_decl
+  | Dentrysig      of entrysig_decl
   | Dentry         of entry_decl
   | Dtransition    of transition_decl
   | Dcontract      of contract_decl
@@ -287,6 +288,11 @@ and asset_decl =
 and record_decl =
   lident
   * field list
+  * exts
+
+and entrysig_decl =
+  lident
+  * type_t
   * exts
 
 and entry_decl =

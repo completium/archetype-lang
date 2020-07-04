@@ -9,6 +9,7 @@ entry exec () {
   effect {
     var x : bool = true;
     var y : bool = false;
+    var n : nat = 1;
     var i : int = 1;
     var j : int = -1;
     var f : rational = 1.1;

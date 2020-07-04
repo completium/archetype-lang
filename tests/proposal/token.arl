@@ -4,6 +4,6 @@ variable nbtokens : nat = 0
 
 entrysig callback <nat>
 
-entry getBalance(cb : callback) { transfer 0 tz call cb(nbtokens) }
+entry and getBalance(cb : callback) { transfer 0tz call cb(nbtokens) }
 
-entry setBalance(v : nat) { nbtokens := v }
+entry and setBalance(v : nat) { nbtokens := v }

@@ -19,6 +19,7 @@ let pp_currency fmt = function
 
 let pp_vtyp fmt = function
   | VTbool       -> Format.fprintf fmt "bool"
+  | VTnat        -> Format.fprintf fmt "nat"
   | VTint        -> Format.fprintf fmt "int"
   | VTrational   -> Format.fprintf fmt "rational"
   | VTdate       -> Format.fprintf fmt "date"
@@ -884,6 +885,11 @@ let pp_contract fmt (c : contract) =
     pp_id c.name
     (pp_list "@\n" pp_signature) c.signatures
 
+let pp_entrysig fmt (c : entrysig) =
+  Format.fprintf fmt "entrysig %a <%a>@\n"
+    pp_id c.name
+    pp_ptyp c.ctype
+
 let rec pp_rexpr fmt (r : rexpr) =
   let pp_node fmt = function
     | Rany -> pp_str fmt "any"
@@ -972,6 +978,7 @@ let pp_decl_ fmt = function
   | Drecord   r -> pp_record fmt r
   | Denum     e -> pp_enum fmt e
   | Dcontract c -> pp_contract fmt c
+  | Dentrysig e -> pp_entrysig fmt e
 
 let pp_fun_ fmt = function
   | Ffunction f    -> pp_function fmt f
