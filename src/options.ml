@@ -25,7 +25,7 @@ type sorting_policy =
   | None
 [@@deriving show {with_path = false}]
 
-let version = "1.0.1"
+let version = "1.1.0"
 let url = "https://archetype-lang.org/"
 
 let target = ref (None : target_lang)

@@ -260,6 +260,7 @@ declaration_r:
  | x=asset              { x }
  | x=record             { x }
  | x=entry              { x }
+ | x=entry_simple       { x }
  | x=transition         { x }
  | x=dextension         { x }
  | x=namespace          { x }
@@ -556,6 +557,11 @@ entry:
     args=function_args xs=transitems_eq
       { let a, b = xs in Dentry (x, args, a, b, exts) }
 
+entry_simple:
+  ENTRY AND exts=option(extensions) x=ident
+    args=function_args e=braced(block)
+      { Dentry (x, args, dummy_entry_properties, Some (e, None), exts) }
+
 transition_to_item:
 | TO x=ident y=require_value? z=with_effect? { (x, y, z) }
 
@@ -595,11 +601,11 @@ entry_properties:
 calledby:
  | CALLED BY exts=option(extensions) x=expr { (x, exts) }
 
-require:
+%inline require:
  | REQUIRE exts=option(extensions) xs=braced(label_exprs)
        { (xs, exts) }
 
-failif:
+%inline failif:
  | FAILIF exts=option(extensions) xs=braced(label_exprs)
        { (xs, exts) }
 
