@@ -75,6 +75,8 @@ let rec pp_ptyp fmt (t : ptyp) =
       (pp_list " * " pp_ptyp) ts
   | Tentry ->
     Format.fprintf fmt "entry"
+  | Tentrysig et ->
+    Format.fprintf fmt "entrysig<%a>" pp_ptyp et
   | Ttrace t ->
     Format.fprintf fmt "%a"
       pp_trtyp t

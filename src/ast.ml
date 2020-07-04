@@ -58,6 +58,7 @@ type ptyp =
   | Ttuple of ptyp list
   | Toption of ptyp
   | Tentry (* entry of external contract *)
+  | Tentrysig of ptyp
   | Ttrace of trtyp
 [@@deriving show {with_path = false}]
 

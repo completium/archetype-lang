@@ -234,6 +234,7 @@ end = struct
       | Tmap       (k, v)  -> Tmap  (doit k, doit v)
       | Ttuple      ty     -> Ttuple (List.map doit ty)
       | Toption     ty     -> Toption (doit ty)
+      | Tentrysig   ty     -> Tentrysig (doit ty)
 
     in doit ty
 
@@ -1668,6 +1669,7 @@ let rec valid_var_or_arg_type (ty : A.ptyp) =
   | Ttuple     ty -> List.for_all valid_var_or_arg_type ty
   | Toption    ty -> valid_var_or_arg_type ty
   | Tentry        -> false
+  | Tentrysig  _  -> true
   | Ttrace     _  -> false
 
   | Tcontainer (_, A.View) -> true

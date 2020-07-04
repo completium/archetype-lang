@@ -70,6 +70,7 @@ type type_ =
   | Tstorage
   | Toperation
   | Tentry
+  | Tentrysig of type_
   | Tprog of type_
   | Tvset of vset * type_
   | Ttrace of trtyp
@@ -970,6 +971,7 @@ let rec cmp_type
   | Ttuple l1, Ttuple l2                     -> List.for_all2 cmp_type l1 l2
   | Tunit, Tunit                             -> true
   | Tentry, Tentry                           -> true
+  | Tentrysig t1, Tentrysig t2               -> cmp_type t1 t2
   | Tprog t1, Tprog t2                       -> cmp_type t1 t2
   | Tvset (v1, t1), Tvset (v2, t2)           -> cmp_vset v1 v2 && cmp_type t1 t2
   | Ttrace t1, Ttrace t2                     -> cmp_trtyp t1 t2
@@ -1348,6 +1350,7 @@ let map_type (f : type_ -> type_) = function
   | Tstorage          -> Tstorage
   | Toperation        -> Toperation
   | Tentry            -> Tentry
+  | Tentrysig t       -> Tentrysig (f t)
   | Tprog t           -> Tprog (f t)
   | Tvset (v, t)      -> Tvset (v, t)
   | Ttrace t          -> Ttrace t
@@ -2895,6 +2898,7 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
     | Tstorage          -> t
     | Toperation        -> t
     | Tentry            -> t
+    | Tentrysig t       -> Tentrysig (for_type t)
     | Tprog a           -> Tprog (for_type a)
     | Tvset (v, a)      -> Tvset (v, for_type a)
     | Ttrace _          -> t

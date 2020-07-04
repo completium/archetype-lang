@@ -86,6 +86,7 @@ let to_model (ast : A.model) : M.model =
     | A.Tmap (k, v)        -> M.Tmap ((match ptyp_to_type k with | Tbuiltin v -> v | _ -> assert false), ptyp_to_type v)
     | A.Ttuple l           -> M.Ttuple (List.map ptyp_to_type l)
     | A.Tentry             -> M.Tentry
+    | A.Tentrysig t        -> M.Tentrysig (ptyp_to_type t)
     | A.Toption t          -> M.Toption (ptyp_to_type t)
     | A.Ttrace tr          -> M.Ttrace (to_trtyp tr)
   in

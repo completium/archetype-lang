@@ -71,6 +71,7 @@ let generate_storage (model : model) : model =
       | Tstorage          -> emit_error (NoInitExprFor "storage")
       | Toperation        -> emit_error (NoInitExprFor "operation")
       | Tentry            -> emit_error (NoInitExprFor "entry")
+      | Tentrysig _       -> emit_error (NoInitExprFor "entrysig")
       | Tprog _           -> emit_error (NoInitExprFor "prog")
       | Tvset _           -> emit_error (NoInitExprFor "vset")
       | Ttrace _          -> emit_error (NoInitExprFor "trace")

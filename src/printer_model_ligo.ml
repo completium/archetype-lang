@@ -193,6 +193,8 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt "operation"
     | Tentry ->
       Format.fprintf fmt "entry"
+    | Tentrysig t ->
+      Format.fprintf fmt "contract(%a)" pp_type t
     | Tprog _
     | Tvset _
     | Ttrace _ -> Format.fprintf fmt "todo"
