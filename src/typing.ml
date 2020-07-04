@@ -711,8 +711,9 @@ let globals = [
   ("caller"      , A.Ccaller      , A.vtaddress);
   ("now"         , A.Cnow         , A.vtdate);
   ("source"      , A.Csource      , A.vtaddress);
+  ("selfaddress" , A.Cselfaddress , A.vtaddress);
   ("transferred" , A.Ctransferred , A.vtcurrency);
-  ("chainid"    , A.Cchainid     , A.vtchainid);
+  ("chainid"     , A.Cchainid     , A.vtchainid);
 ]
 
 let statename = "state"
@@ -2106,7 +2107,7 @@ let rec for_xexpr
 
           let ne = List.length fields in
           let ng = List.length dfields in
-  
+
           if ne <> ng then begin
               Env.emit_error env (loc tope, InvalidFieldsCountInAssetOrRecordLiteral);
               bailout ()

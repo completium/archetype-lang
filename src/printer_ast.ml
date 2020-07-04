@@ -175,6 +175,7 @@ let to_const = function
   | Cfail           -> "fail"
   | Cbalance        -> "balance"
   | Csource         -> "source"
+  | Cselfaddress    -> "selfaddress"
   | Cconditions     -> "conditions"
   | Centries        -> "entries"
   | Cnone           -> "none"

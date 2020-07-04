@@ -1226,6 +1226,7 @@ let pp_model fmt (model : model) =
       | Mcaller        -> pp_str fmt "Global.get_sender ()"
       | Mbalance       -> pp_str fmt "Global.get_balance ()"
       | Msource        -> pp_str fmt "Global.get_source ()"
+      | Mselfaddress   -> pp_str fmt "Global.get_self_address()"
       | Mchainid       -> pp_str fmt "Global.get_chain_id ()"
 
 

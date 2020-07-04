@@ -122,6 +122,7 @@ type const =
   | Cfail
   | Cbalance
   | Csource
+  | Cselfaddress
   | Cconditions
   | Centries
   | Cnone

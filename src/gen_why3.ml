@@ -1653,6 +1653,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       end
 
     | Msource               -> Tsender (with_dummy_loc gs)
+    | Mselfaddress          -> error_not_translated "selfaddress"
     | Mchainid              -> Tchainid (with_dummy_loc gs)
 
     (* variables *)

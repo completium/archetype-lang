@@ -320,6 +320,7 @@ let to_model (ast : A.model) : M.model =
       | A.Pconst Ccaller                       -> M.Mcaller
       | A.Pconst Cbalance                      -> M.Mbalance
       | A.Pconst Csource                       -> M.Msource
+      | A.Pconst Cselfaddress                  -> M.Mselfaddress
       | A.Pconst Cchainid                      -> M.Mchainid
       | A.Pconst c                             ->
         Format.eprintf "expr const unkown: %a@." A.pp_const c;

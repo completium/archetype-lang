@@ -14,5 +14,7 @@ entry exec () {
     require(e = e);
     var f : chain_id = chainid;     (* CHAIN_ID *)
     // require(f = f);               // not comparable
+    var g : address  = selfaddress;   (* SELF; ADDRESS *)
+    require(g = g);
   }
 }

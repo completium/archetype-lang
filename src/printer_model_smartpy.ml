@@ -1082,6 +1082,7 @@ let pp_model fmt (model : model) =
       | Mcaller        -> pp_str fmt "sp.sender"
       | Mbalance       -> pp_str fmt "sp.balance"
       | Msource        -> pp_str fmt "sp.source"
+      | Mselfaddress   -> pp_str fmt "sp.selfaddress"
       | Mchainid       -> pp_str fmt "sp.chain_id"
 
 

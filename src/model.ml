@@ -315,6 +315,7 @@ type ('id, 'term) mterm_node  =
   | Mcaller
   | Mbalance
   | Msource
+  | Mselfaddress
   | Mchainid
   (* variable *)
   | Mvar              of 'id * 'term var_kind_gen
@@ -1200,6 +1201,7 @@ let cmp_mterm_node
     | Mcaller, Mcaller                                                                 -> true
     | Mbalance, Mbalance                                                               -> true
     | Msource, Msource                                                                 -> true
+    | Mselfaddress, Mselfaddress                                                       -> true
     | Mchainid, Mchainid                                                               -> true
     (* variable *)
     | Mvar (id1, k1), Mvar (id2, k2)                                                   -> cmpi id1 id2 && cmp_var_kind k1 k2
@@ -1526,6 +1528,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mbalance                       -> Mbalance
   | Msource                        -> Msource
   | Mchainid                       -> Mchainid
+  | Mselfaddress                   -> Mselfaddress
   (* variable *)
   | Mvar (id, k)                   -> Mvar (g id, map_var_kind f k)
   (* rational *)
@@ -1869,6 +1872,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mcaller                               -> accu
   | Mbalance                              -> accu
   | Msource                               -> accu
+  | Mselfaddress                          -> accu
   | Mchainid                              -> accu
   (* variable *)
   | Mvar (_, k)                           -> fold_var_kind f accu k
@@ -2612,6 +2616,9 @@ let fold_map_term
 
   | Msource ->
     g Msource, accu
+
+  | Mselfaddress ->
+    g Mselfaddress, accu
 
   | Mchainid ->
     g Mchainid, accu

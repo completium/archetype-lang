@@ -1253,6 +1253,7 @@ let pp_model_internal fmt (model : model) b =
     | Mcaller        -> pp_str fmt "sender"
     | Mbalance       -> pp_str fmt "balance"
     | Msource        -> pp_str fmt "source"
+    | Mselfaddress   -> pp_str fmt "Tezos.self_address"
     | Mchainid       -> pp_str fmt "chain_id"
 
 
