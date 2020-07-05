@@ -1,0 +1,15 @@
+archetype shadow_field_errors_3
+
+asset myasset {
+  id: string;
+} shadow {
+  s: int; (* must be initialized *)
+} with {
+  a1: s >= 0;
+}
+
+entry main (k : pkey of myasset) {
+  effect {
+    if (myasset[""].s = 2) then ("") (* cannot read shadow field here *)
+  }
+}

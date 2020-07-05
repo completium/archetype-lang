@@ -1,4 +1,4 @@
-archetype shadow_field_errors
+archetype shadow_field_errors_2
 
 asset myasset {
   id: string;
@@ -10,8 +10,6 @@ asset myasset {
 
 entry main (k : pkey of myasset) {
   effect {
-    myasset.add({id = k; s = 1}); (* cannot assign shadow field in execution instruction *)
     myasset.update(k, {s = 2}); (* cannot update shadow field in execution instruction *)
-    require (myasset[""].s = 2) (* cannot read shadow field here *)
   }
 }

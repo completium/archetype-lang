@@ -80,11 +80,13 @@
 %token GREATEREQUAL
 %token IDENTIFIED
 %token IF
+%token IFAILIF
 %token IMPLY
 %token IN
 %token INITIAL
 %token INITIALIZED
 %token INVARIANT
+%token IREQUIRE
 %token ITER
 %token LABEL
 %token LBRACE
@@ -564,7 +566,7 @@ entry:
       { let a, b = xs in Dentry (x, args, a, b, exts) }
 
 entry_simple:
-  ENTRY AND exts=option(extensions) x=ident
+  ENTRY exts=option(extensions) x=ident
     args=function_args e=braced(block)
       { Dentry (x, args, dummy_entry_properties, Some (e, None), exts) }
 
@@ -749,10 +751,10 @@ expr_r:
  | TRANSFER x=simple_expr CALL id=ident xs=paren(sl(COMMA, simple_expr))
      { Etransfer (x, None, Some (id, xs)) }
 
- | REQUIRE x=simple_expr
+ | IREQUIRE x=simple_expr
      { Erequire x }
 
- | FAILIF x=simple_expr
+ | IFAILIF x=simple_expr
      { Efailif x }
 
  | FAIL e=paren(simple_expr)

@@ -55,10 +55,12 @@
       "function"            , FUNCTION       ;
       "identified"          , IDENTIFIED     ;
       "if"                  , IF             ;
+      "ifailif"             , IFAILIF        ;
       "in"                  , IN             ;
       "initial"             , INITIAL        ;
       "initialized"         , INITIALIZED    ;
       "invariant"           , INVARIANT      ;
+      "irequire"            , IREQUIRE       ;
       "iter"                , ITER           ;
       "label"               , LABEL          ;
       "let"                 , LET            ;
