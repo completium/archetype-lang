@@ -1,0 +1,7 @@
+archetype expr_fun_unpack_complex
+
+variable res : option<(nat * string * chain_id)> = none
+
+entry exec (b : bytes) {
+  res := unpack<(nat * string * chain_id)>(b);
+}

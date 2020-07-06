@@ -27,7 +27,9 @@ module Type : sig
   val is_set       : A.ptyp -> bool
   val is_list      : A.ptyp -> bool
   val is_map       : A.ptyp -> bool
-  val is_michelson_comparable : A.ptyp -> bool
+  val is_michelson_type                   : A.ptyp -> bool
+  val is_michelson_comparable_type        : A.ptyp -> bool
+  val is_michelson_simple_comparable_type : A.ptyp -> bool
 
   val support_eq : A.ptyp -> bool
 
@@ -82,9 +84,42 @@ end = struct
   let is_map = function
     | A.Tmap _ -> true | _ -> false
 
-  let is_michelson_comparable = function
-    | A.Tbuiltin VTchainid -> false
-    | A.Tbuiltin _ -> true
+  let is_michelson_simple_comparable_type = function
+    | A.Tbuiltin VTint
+    | A.Tbuiltin VTnat
+    | A.Tbuiltin VTstring
+    | A.Tbuiltin VTbytes
+    | A.Tbuiltin VTcurrency
+    | A.Tbuiltin VTbool
+    | A.Tbuiltin VTkeyhash
+    | A.Tbuiltin VTdate
+    | A.Tbuiltin VTduration
+    | A.Tbuiltin VTaddress
+    | A.Tbuiltin VTrole
+      -> true
+    | _ -> false
+
+  let is_michelson_comparable_type = function
+    | t when is_michelson_simple_comparable_type t -> true
+    | A.Trecord _ -> true
+    | _ -> false
+
+  let rec is_michelson_type = function
+    | t when is_michelson_comparable_type t -> true
+    | A.Tbuiltin VTkey -> true
+    (* | A.Tbuiltin VTunit *)
+    | A.Tbuiltin VTsignature -> true
+    | A.Toption t when is_michelson_type t -> true
+    | A.Tlist t when is_michelson_type t -> true
+    | A.Tset t when is_michelson_type t -> true
+    (* | A.Toperation *)
+    | A.Tentrysig _ -> true
+    | A.Trecord _ -> true
+    | A.Ttuple l when List.for_all is_michelson_type l -> true
+    (* | A.Tor <type> <type> *)
+    (* | lambda <type> <type> *)
+    | A.Tmap (tk, tv) when is_michelson_comparable_type tk && is_michelson_type tv -> true
+    | A.Tbuiltin VTchainid -> true
     | _ -> false
 
   let rec support_eq = function
@@ -337,6 +372,7 @@ type error_desc =
   | InvalidTypeForPk
   | InvalidTypeForSet
   | InvalidTypeForMapKey
+  | InvalidTypeForMapValue
   | InvalidTypeForVarWithFromTo
   | InvalidVarOrArgType
   | LabelInNonInvariant
@@ -511,6 +547,7 @@ let pp_error_desc fmt e =
   | InvalidTypeForPk                   -> pp "Invalid type for primary key"
   | InvalidTypeForSet                  -> pp "Invalid type for set"
   | InvalidTypeForMapKey               -> pp "Invalid type for map key"
+  | InvalidTypeForMapValue             -> pp "Invalid type for map value"
   | InvalidTypeForVarWithFromTo        -> pp "A variable with a from/to declaration must be of type currency"
   | InvalidVarOrArgType                -> pp "A variable / argument type cannot be an asset or a collection"
   | LabelInNonInvariant                -> pp "The label modifier can only be used in invariants"
@@ -1738,7 +1775,7 @@ let for_type_exn ?pkey (env : env) =
     | Tset ty ->
       let t = doit ty in
 
-      if not (Type.is_michelson_comparable t)
+      if not (Type.is_michelson_comparable_type t)
       then Env.emit_error env (loc ty, InvalidTypeForSet);
 
       A.Tset (doit ty)
@@ -1749,8 +1786,11 @@ let for_type_exn ?pkey (env : env) =
     | Tmap (k, v) ->
       let nk, nv = doit k, doit v in
 
-      if not (Type.is_michelson_comparable nk)
+      if not (Type.is_michelson_comparable_type nk)
       then Env.emit_error env (loc k, InvalidTypeForMapKey);
+
+      if not (Type.is_michelson_type nk)
+      then Env.emit_error env (loc k, InvalidTypeForMapValue);
 
       A.Tmap (nk, nv)
 
@@ -2671,7 +2711,7 @@ let rec for_xexpr
       let e  = for_xexpr env ~ety:A.vtbytes e in
 
       Option.iter (fun ty ->
-          if not (Type.is_primitive ty) then
+          if not (Type.is_michelson_type ty) then
             Env.emit_error env (loc tope, PackUnpackOnNonPrimitive)) ty;
 
       mk_sp
