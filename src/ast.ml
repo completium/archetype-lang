@@ -161,6 +161,7 @@ type const =
   | Csum
   | Cunpack
   | Cupdate
+  | Centrypoint
   (* set *)
   | Csadd
   | Csremove
@@ -322,6 +323,7 @@ type 'id term_node  =
   | Pnone
   | Psome of 'id term_gen
   | Pcast of ptyp * ptyp * 'id term_gen
+  | Pself of 'id
 [@@deriving show {with_path = false}]
 
 and 'id term_arg =
@@ -354,6 +356,11 @@ type 'id instruction_poly = {
 }
 [@@deriving show {with_path = false}]
 
+and 'id transfer_t =
+  | TTsimple   of 'id term_gen
+  | TTcontract of 'id term_gen * 'id * 'id term_gen list
+  | TTentry    of 'id * 'id term_gen list
+
 and 'id instruction_node =
   | Iif of ('id term_gen * 'id instruction_gen * 'id instruction_gen)               (* condition * then_ * else_ *)
   | Ifor of ('id for_ident * 'id term_gen * 'id instruction_gen)                              (* id * collection * body *)
@@ -364,7 +371,7 @@ and 'id instruction_node =
   | Imatchwith of 'id term_gen * ('id pattern_gen * 'id instruction_gen) list       (* match term with ('pattern * 'id instruction_gen) list *)
   | Iassign of (assignment_operator * 'id lvalue_gen * 'id term_gen)                (* $2 assignment_operator $3 *)
   | Irequire of (bool * 'id term_gen)                                               (* $1 ? require : failif *)
-  | Itransfer of ('id term_gen * 'id term_gen * ('id * ('id term_gen) list) option) (* value * dest * call *)
+  | Itransfer of ('id term_gen * 'id transfer_t)                                    (* value * dest * call *)
   | Ibreak
   | Icall of ('id term_gen option * 'id call_kind * ('id term_arg) list)
   | Ireturn of 'id term_gen

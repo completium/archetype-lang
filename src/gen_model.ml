@@ -345,6 +345,8 @@ let to_model (ast : A.model) : M.model =
       | A.Pquantifer (Forall, i, (coll, typ), term)    -> M.Mforall (i, ptyp_to_type typ, Option.map f coll, f term)
       | A.Pquantifer (Exists, i, (coll, typ), term)    -> M.Mexists (i, ptyp_to_type typ, Option.map f coll, f term)
 
+      | A.Pself _ -> assert false (* TODO *)
+
       (* | A.Pcall (Some p, A.Cconst A.Cbefore,    []) -> M.Msetbefore    (f p) *)
       (* | A.Pcall (Some p, A.Cconst A.Cunmoved,   []) -> M.Msetunmoved   (f p)
          | A.Pcall (Some p, A.Cconst A.Cadded,     []) -> M.Msetadded     (f p)
@@ -433,6 +435,12 @@ let to_model (ast : A.model) : M.model =
         let fs = f s in
         let fx = f x in
         M.Mchecksignature (fk, fs, fx)
+
+      | A.Pcall (None, A.Cconst A.Centrypoint, [AExpr _a; AExpr _b]) ->
+        (* let fa = f a in
+           let fb = f b in *)
+        (* TODO *)
+        assert false
 
       | A.Pcall (_, A.Cid id, args) ->
         M.Mapp (id, List.map (fun x -> term_arg_to_expr f x) args)
@@ -751,8 +759,8 @@ let to_model (ast : A.model) : M.model =
         in
         M.Mif (cond, fail (InvalidCondition None), None)
 
-      | A.Itransfer (v, d, None) -> M.Mtransfer (f v, f d)
-      | A.Itransfer (v, d, Some (id, args))   ->
+      | A.Itransfer (v, TTsimple d) -> M.Mtransfer (f v, f d)
+      | A.Itransfer (v, TTcontract (d, id, args))   ->
         begin
           let contract_id = extract_contract_type_id d in
           let d = f d in
@@ -762,6 +770,7 @@ let to_model (ast : A.model) : M.model =
           let args = List.map2 (fun x y -> (x, y)) ids vs in
           M.Mentrycall (v, d, contract_id, id, args)
         end
+      | A.Itransfer (_v, TTentry (_id, _args))   -> assert false
       | A.Ibreak                  -> M.Mbreak
       | A.Ireturn e               -> M.Mreturn (f e)
       | A.Ilabel i                -> M.Mlabel i

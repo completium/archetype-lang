@@ -475,15 +475,15 @@ type_r:
 | x=loc(type_s_unloc)     { x }
 
 type_s_unloc:
-| x=ident                                          { Tref x }
+| x=ident                                          { Tref x            }
 | c=container LESS x=type_s GREATER                { Tcontainer (x, c) }
-| PKEY        LESS x=type_s GREATER                { Tkeyof x  }
-| OPTION      LESS x=type_s GREATER                { Toption x }
-| LIST        LESS x=type_s GREATER                { Tlist x   }
-| SET         LESS x=type_s GREATER                { Tset x    }
-| MAP         LESS k=type_s COMMA v=type_s GREATER { Tmap (k, v) }
-| ENTRYSIG    LESS x=type_s GREATER                { Tset x    }
-| x=paren(type_r)                                  { x }
+| PKEY        LESS x=type_s GREATER                { Tkeyof x          }
+| OPTION      LESS x=type_s GREATER                { Toption x         }
+| LIST        LESS x=type_s GREATER                { Tlist x           }
+| SET         LESS x=type_s GREATER                { Tset x            }
+| MAP         LESS k=type_s COMMA v=type_s GREATER { Tmap (k, v)       }
+| ENTRYSIG    LESS x=type_s GREATER                { Tentrysig x       }
+| x=paren(type_r)                                  { x                 }
 
 %inline type_tuples:
 | xs=type_tuple+ { xs }
@@ -739,11 +739,14 @@ expr_r:
  | x=expr op=assignment_operator_expr y=expr
      { Eassign (op, x, y) }
 
- | TRANSFER x=simple_expr TO y=simple_expr c=with_call_r
-     { Etransfer (x, Some y, c) }
+ | TRANSFER x=simple_expr TO y=simple_expr
+     { Etransfer (x, TTsimple y) }
 
- | TRANSFER x=simple_expr CALL id=ident xs=paren(sl(COMMA, simple_expr))
-     { Etransfer (x, None, Some (id, xs)) }
+ | TRANSFER x=simple_expr TO y=simple_expr CALL id=ident args=paren(sl(COMMA, simple_expr))
+     { Etransfer (x, TTcontract (y, id, args)) }
+
+ | TRANSFER x=simple_expr TO ENTRY id=ident args=paren(sl(COMMA, simple_expr))
+     { Etransfer (x, TTentry (id, args)) }
 
  | DOREQUIRE x=simple_expr
      { Erequire x }
@@ -786,10 +789,6 @@ expr_r:
 order_operation:
  | e1=expr op=loc(ord_operator) e2=expr
      { Eapp ( Foperator op, [e1; e2]) }
-
-%inline with_call_r:
-| { None }
-| CALL id=ident xs=paren(sl(COMMA, simple_expr)) { Some (id, xs) }
 
 order_operations:
   | e=order_operation { e }

@@ -138,6 +138,11 @@ let rec pp_type outer pos fmt e =
       pp_type_default k
       pp_type_default v
 
+  | Tentrysig t ->
+    Format.fprintf fmt
+      "entrysig<%a>"
+      pp_type_default t
+
   | Tkeyof t ->
     Format.fprintf fmt
       "pkey<%a>"
@@ -370,15 +375,17 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_app pos pp) fmt (e, id, args)
 
-  | Etransfer (x, y, c) ->
-
-    let pp fmt (x, y, c) =
-      Format.fprintf fmt "transfer %a%a%a"
+  | Etransfer (x, tr) ->
+    let pp fmt (x, tr) =
+      Format.fprintf fmt "transfer %a%a"
         pp_simple_expr x
-        (pp_option (fun fmt y -> Format.fprintf fmt " to %a" pp_simple_expr y)) y
-        (pp_option (fun fmt (id, args) -> Format.fprintf fmt " call %a(%a)" pp_id id (pp_list "," pp_simple_expr) args)) c
+        (fun fmt -> function
+           | TTsimple dst               -> Format.fprintf fmt " to %a" pp_simple_expr dst
+           | TTcontract (dst, id, args) -> Format.fprintf fmt " to %a call %a(%a)" pp_simple_expr dst pp_id id (pp_list "," pp_simple_expr) args
+           | TTentry (id, args)         -> Format.fprintf fmt " to entry %a(%a)" pp_id id (pp_list "," pp_simple_expr) args
+        ) tr
     in
-    (maybe_paren outer e_default pos pp) fmt (x, y, c)
+    (maybe_paren outer e_default pos pp) fmt (x, tr)
 
   | Erequire x ->
 
@@ -475,9 +482,9 @@ let rec pp_expr outer pos fmt a =
       Format.fprintf fmt "for %a%a in %a do@\n  @[%a@]@\ndone"
         (pp_option (fun fmt -> Format.fprintf fmt ": %a " pp_id)) lbl
         (fun fmt fid ->
-         match unloc fid with
-          | FIsimple i -> pp_id fmt i
-          | FIdouble (x, y) -> Format.fprintf fmt "(%a, %a)" pp_id x pp_id y) fid
+           match unloc fid with
+           | FIsimple i -> pp_id fmt i
+           | FIdouble (x, y) -> Format.fprintf fmt "(%a, %a)" pp_id x pp_id y) fid
         (pp_expr e_default PNone) expr
         (pp_expr e_for PNone) body
     in

@@ -1,0 +1,29 @@
+archetype lang_entrysig
+
+contract my_contract {
+  entry an_entry(i : int)
+}
+
+variable res : int = 0
+
+entry otherentry(i : int) {
+  res := i;
+}
+
+entry exec () {
+  var c : my_contract = @KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm;
+
+  // from a contract type
+  var e1 : entrysig<int> = c.an_entry;
+  transfer 0tz to entry e1(1);
+
+  // dynamycally from an address and string
+  var a : address = @KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm;
+  var e2_opt : option<entrysig<int>> = entrypoint(a, "an_entry");
+  var e2 = getopt(e2_opt);
+  transfer 0tz to entry e2(2);
+
+  // from
+  var e3 : entrysig<int> = self.otherentry;
+  transfer 0tz to entry e3(3);
+}

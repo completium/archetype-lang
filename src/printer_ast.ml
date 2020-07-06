@@ -215,6 +215,7 @@ let to_const = function
   | Csum            -> "sum"
   | Cunpack         -> "unpack"
   | Cupdate         -> "update"
+  | Centrypoint     -> "entrypoint"
   (* set *)
   | Csadd           -> "set_add"
   | Csremove        -> "set_remove"
@@ -464,6 +465,13 @@ let rec pp_pterm fmt (pterm : pterm) =
       in
       (pp_no_paren pp) fmt (src, dst, a)
 
+    | Pself id ->
+      let pp fmt id =
+        Format.fprintf fmt "self.%a"
+          pp_id id
+      in
+      (pp_no_paren pp) fmt id
+
   in
   pp_struct_poly pp_node fmt pterm
 
@@ -605,14 +613,17 @@ let rec pp_instruction fmt (i : instruction) =
       in
       (pp_with_paren pp) fmt (k, pt)
 
-    | Itransfer (value, dest, call) ->
-      let pp fmt (value, dest) =
-        Format.fprintf fmt "transfer %a to %a%a"
+    | Itransfer (value, tr) ->
+      let pp fmt (value, tr) =
+        Format.fprintf fmt "transfer %a%a"
           pp_pterm value
-          pp_pterm dest
-          (pp_option (fun fmt (id, args) -> Format.fprintf fmt " call %a(%a)" pp_id id (pp_list ", " pp_pterm) args)) call
+          (fun fmt -> function
+             | TTsimple dst               -> Format.fprintf fmt " to %a" pp_pterm dst
+             | TTcontract (dst, id, args) -> Format.fprintf fmt " to %a call %a(%a)" pp_pterm dst pp_id id (pp_list "," pp_pterm) args
+             | TTentry (id, args)         -> Format.fprintf fmt " to entry %a(%a)" pp_id id (pp_list "," pp_pterm) args
+          ) tr
       in
-      (pp_with_paren pp) fmt (value, dest)
+      (pp_with_paren pp) fmt (value, tr)
 
     | Ibreak ->
       let pp fmt () =

@@ -1800,6 +1800,9 @@ let for_type_exn ?pkey (env : env) =
     | Toption ty ->
       A.Toption (doit ty)
 
+    | Tentrysig ty ->
+      A.Tentrysig (doit ty)
+
     | Tkeyof ty -> begin
         match doit ~canasset:true ty with
         | A.Tasset x -> begin
@@ -3488,44 +3491,50 @@ let rec for_instruction_r
         env, mki (A.Iassign (op, x, e))
       end
 
-    | Etransfer (e, to_, c) ->
+    | Etransfer (e, tr) ->
       let e      = for_expr kind env ~ety:A.vtcurrency e in
-      let to_, c =
-        match to_, c with
-        | Some to_, None ->
-          (for_expr kind env ~ety:A.vtrole to_, None)
+      let tr =
+        match tr with
+        | TTsimple to_ ->
+          A.TTsimple (for_expr kind env ~ety:A.vtrole to_)
 
-        | Some to_, Some (name, args) ->
-          let for_ctt ctt =
-            let entry =
-              List.find_opt
-                (fun (x, _) -> unloc name = unloc x)
-                ctt.ct_entries
+        | TTcontract (to_, name, args) -> begin
+            let for_ctt ctt =
+              let entry =
+                List.find_opt
+                  (fun (x, _) -> unloc name = unloc x)
+                  ctt.ct_entries
+              in
+
+              match entry  with
+              | None ->
+                let err =
+                  UnknownContractEntryPoint (unloc ctt.ct_name, unloc name)
+                in Env.emit_error env (loc name, err); None
+
+              | Some (_, targs) ->
+                if List.length targs <> List.length args then
+                  let n = List.length targs in
+                  let c = List.length  args in
+                  Env.emit_error env (loc name, InvalidNumberOfArguments (n, c));
+                  None
+                else
+                  Some (name, List.map2
+                          (fun (_, ety) arg -> for_expr ~ety kind env arg)
+                          targs args)
             in
-
-            match entry  with
-            | None ->
-              let err =
-                UnknownContractEntryPoint (unloc ctt.ct_name, unloc name)
-              in Env.emit_error env (loc name, err); None
-
-            | Some (_, targs) ->
-              if List.length targs <> List.length args then
-                let n = List.length targs in
-                let c = List.length  args in
-                Env.emit_error env (loc name, InvalidNumberOfArguments (n, c));
-                None
-              else
-                Some (name, List.map2
-                        (fun (_, ety) arg -> for_expr ~ety kind env arg)
-                        targs args)
-          in
-          let to_, ctt = for_contract_expr (expr_mode kind) env to_ in
-          (to_, Option.bind for_ctt ctt)
+            let to_, ctt = for_contract_expr (expr_mode kind) env to_ in
+            let id, args =
+              match Option.bind for_ctt ctt with
+              | Some v -> v
+              | _ -> Env.emit_error env (loc i, TODO); bailout ()
+            in
+            A.TTcontract (to_, id, args)
+          end
 
         | _ -> Env.emit_error env (loc i, TODO); bailout ()
 
-      in env, mki (Itransfer (e, to_, c))
+      in env, mki (Itransfer (e, tr))
 
     | Eif (c, bit, bif) ->
       let c        = for_expr kind env ~ety:A.vtbool c in

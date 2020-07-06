@@ -22,6 +22,7 @@ and type_r =
   | Tset       of type_t
   | Tlist      of type_t
   | Tmap       of type_t * type_t
+  | Tentrysig  of type_t
   | Tkeyof     of type_t
 
 and type_t = type_r loced
@@ -86,6 +87,11 @@ and var_vset  = VSAdded | VSUnmoved | VSRemoved
 and for_ident_unloc = FIsimple of lident | FIdouble of lident * lident
 and for_ident = for_ident_unloc loced
 
+and transfer_t =
+  | TTsimple   of expr
+  | TTcontract of expr * lident * expr list
+  | TTentry    of lident * expr list
+
 and expr_unloc =
   | Eterm         of (var_vset option * var_label option) * lident
   | Eliteral      of literal
@@ -97,7 +103,7 @@ and expr_unloc =
   | Emulticomp    of expr * (comparison_operator loced * expr) list
   | Eapp          of function_ * expr list
   | Emethod       of expr * lident * expr list
-  | Etransfer     of expr * expr option * (lident * expr list) option
+  | Etransfer     of expr * transfer_t
   | Erequire      of expr
   | Efailif       of expr
   | Efail         of expr
@@ -351,10 +357,10 @@ and archetype_unloc =
 
 and archetype = archetype_unloc loced
 [@@deriving yojson, show {with_path = false},
- visitors { variety = "map"; ancestors = ["location_map"; "ident_map"] },
- visitors { variety = "iter"; ancestors = ["location_iter"; "ident_iter"] },
- visitors { variety = "reduce"; ancestors = ["location_reduce"; "ident_reduce"] },
- visitors { variety = "reduce2"; ancestors = ["location_reduce2"; "ident_reduce2"] }
+            visitors { variety = "map"; ancestors = ["location_map"; "ident_map"] },
+            visitors { variety = "iter"; ancestors = ["location_iter"; "ident_iter"] },
+            visitors { variety = "reduce"; ancestors = ["location_reduce"; "ident_reduce"] },
+            visitors { variety = "reduce2"; ancestors = ["location_reduce2"; "ident_reduce2"] }
 ]
 
 let mk_archetype ?(decls=[]) ?(loc=dummy) () =
