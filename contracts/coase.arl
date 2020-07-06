@@ -14,7 +14,7 @@ asset card_pattern identified by card_pattern_id {
 asset card identified by card_id {
   card_id: int;
   card_owner: address;
-  card_pattern_card: pkey of card_pattern;
+  card_pattern_card: pkey<card_pattern>;
 } with {
   c1: card_id >= 0;
 }
@@ -25,7 +25,7 @@ with {
   n2: forall c in card, next_id <> c.card_id;
 }
 
-entry transfer_single (card_to_transfer : pkey of card, destination : address) {
+entry transfer_single (card_to_transfer : pkey<card>, destination : address) {
   require {
     ts1: caller = card[card_to_transfer].card_owner;
   }
@@ -34,7 +34,7 @@ entry transfer_single (card_to_transfer : pkey of card, destination : address) {
   }
 }
 
-entry sell_single (card_to_sell : pkey of card) {
+entry sell_single (card_to_sell : pkey<card>) {
   specification {
     shadow effect {
       card_pattern.update(card[card_to_sell].card_pattern_card, {sellcount += 1})
@@ -53,7 +53,7 @@ entry sell_single (card_to_sell : pkey of card) {
   }
 }
 
-entry buy_single (card_to_buy : pkey of card_pattern) {
+entry buy_single (card_to_buy : pkey<card_pattern>) {
   specification {
     postcondition bs1 {
       card.count() = before.card.count() + 1

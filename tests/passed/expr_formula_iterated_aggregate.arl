@@ -6,7 +6,7 @@ asset o_asset identified by oid {
 
 asset my_asset identified by id {
   id : string;
-  s : o_asset aggregate;
+  s : aggregate<o_asset>;
 }
 
 entry exec () {

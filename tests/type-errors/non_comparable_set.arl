@@ -2,6 +2,6 @@ archetype non_comparable_set
 
 entry exec () {
   effect {
-    var s : (int * int) set = [];
+    var s : set<(int * int)>  = [];
   }
 }

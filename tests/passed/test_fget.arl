@@ -10,7 +10,7 @@ asset mile identified by id {
 
 asset owner identified by addr {
     addr : address;
-    miles : mile partition;
+    miles : partition<mile>;
 }
 
 

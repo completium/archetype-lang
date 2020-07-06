@@ -8,7 +8,7 @@ asset myasset {
   a1: s >= 0
 }
 
-entry exec (k : pkey of myasset) {
+entry exec (k : pkey<myasset>) {
   specification {
     postcondition s1 {
       m.s = 2

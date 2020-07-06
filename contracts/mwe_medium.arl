@@ -12,7 +12,7 @@ asset mile identified by id {
 
 asset owner identified by addr {
     addr : address;
-    miles : mile partition;
+    miles : partition<mile>;
 }
 
 entry add (ow : address, newmile_id : string, newmile_expiration : date, newmile_quantity : int) {

@@ -8,7 +8,7 @@ asset my_asset identified by id {
 asset other_asset identified by id_other {
   id_other : string;
   value_other : int;
-  mypartition : my_asset partition;
+  mypartition : partition<my_asset>;
 }
 
 entry main () {

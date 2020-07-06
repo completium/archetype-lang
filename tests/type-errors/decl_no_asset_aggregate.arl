@@ -4,7 +4,7 @@ asset my_asset {
   id : string;
 }
 
-variable a : my_asset aggregate = []
+variable a : aggregate<my_asset> = []
 
 entry exec() {
   effect {

@@ -1,6 +1,6 @@
 archetype oraclesetvalue
 
-variable outcome : int option = none
+variable outcome : option<int> = none
 
 // oracle's public key
 constant oracle : key = "edpkurLzuFFL1XyP3fed4u7MsgeywQoQmHM45Bz91PBzDvUjQ9bvdn"

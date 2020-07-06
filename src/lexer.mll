@@ -70,7 +70,6 @@
       "namespace"           , NAMESPACE      ;
       "none"                , NONE           ;
       "not"                 , NOT            ;
-      "of"                  , OF             ;
       "on"                  , ON             ;
       "option"              , OPTION         ;
       "or"                  , OR             ;

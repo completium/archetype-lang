@@ -7,7 +7,7 @@ asset my_asset_simple identified by oid {
 asset my_asset identified by id {
   id : string;
   value : int;
-  mypartition : my_asset_simple partition;
+  mypartition : partition<my_asset_simple>;
 } initialized by {
   { "my_id"; 0; [] }
 }

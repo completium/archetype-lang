@@ -22,7 +22,7 @@ asset insurance {
 
 asset flight identified by id {
   id         : string;
-  insurances : insurance partition;
+  insurances : partition<insurance>;
 }
 
 entry addflightinsurance (fi : string, iproductid : string, ilimit : date, ipremium : tez, iindemnity : tez, iproduct : string, istat : status) {

@@ -336,7 +336,7 @@ type error_desc =
   | InvalidTypeForEntrysig
   | InvalidTypeForPk
   | InvalidTypeForSet
-  | InvalidTypeForMap
+  | InvalidTypeForMapKey
   | InvalidTypeForVarWithFromTo
   | InvalidVarOrArgType
   | LabelInNonInvariant
@@ -510,7 +510,7 @@ let pp_error_desc fmt e =
   | InvalidTypeForEntrysig             -> pp "Invalid type for entrysig"
   | InvalidTypeForPk                   -> pp "Invalid type for primary key"
   | InvalidTypeForSet                  -> pp "Invalid type for set"
-  | InvalidTypeForMap                  -> pp "Invalid type for map"
+  | InvalidTypeForMapKey               -> pp "Invalid type for map key"
   | InvalidTypeForVarWithFromTo        -> pp "A variable with a from/to declaration must be of type currency"
   | InvalidVarOrArgType                -> pp "A variable / argument type cannot be an asset or a collection"
   | LabelInNonInvariant                -> pp "The label modifier can only be used in invariants"
@@ -1753,13 +1753,13 @@ let for_type_exn ?pkey (env : env) =
     | Tlist ty ->
       A.Tlist (doit ty)
 
-    | Tmap ty ->
-      let k, v =
-        match doit ty with
-        | Ttuple [k; v] -> (k, v)
-        | _ -> Env.emit_error env (loc ty, InvalidTypeForMap); raise InvalidType
-      in
-      A.Tmap (k, v)
+    | Tmap (k, v) ->
+      let nk, nv = doit k, doit v in
+
+      if not (Type.is_michelson_comparable nk)
+      then Env.emit_error env (loc k, InvalidTypeForMapKey);
+
+      A.Tmap (nk, nv)
 
     | Ttuple tys ->
       A.Ttuple (List.map doit tys)

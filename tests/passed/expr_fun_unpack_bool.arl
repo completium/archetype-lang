@@ -1,6 +1,6 @@
 archetype expr_fun_unpack_bool
 
-variable res : bool option = none
+variable res : option<bool> = none
 
 entry exec () {
   specification {

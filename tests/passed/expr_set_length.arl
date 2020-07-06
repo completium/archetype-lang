@@ -7,7 +7,7 @@ entry exec () {
     s0: res = 3;
   }
   effect {
-    var l : string set = ["1"; "2"; "3"];
+    var l : set<string> = ["1"; "2"; "3"];
     res := set_length(l);
   }
 }

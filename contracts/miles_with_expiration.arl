@@ -14,7 +14,7 @@ asset mile identified by id {
 (* a partition ensures there is no direct access to mile collection *)
 asset owner identified by addr {
   addr  : role;
-  miles : mile partition = [] (* injective (owner x mile) *)
+  miles : partition<mile> = [] (* injective (owner x mile) *)
 }
 
 entry add (ow : address, newmile_id : string, newmile_amount : int, newmile_expiration : date) {

@@ -8,7 +8,7 @@ asset admins {
 
 variable hash : string = "initialvalue"
 
-entry register (newadmins : ((pkey of admins) list) option, oldhash : string, newhash : string) {
+entry register (newadmins : option<list<pkey<admins>>> , oldhash : string, newhash : string) {
     specification {
         postcondition p1 {
             before.hash = oldhash

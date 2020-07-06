@@ -2,7 +2,7 @@ archetype for_ident_double_list
 
 entry exec () {
   effect {
-    var l : int list = [1; 2; 3];
+    var l : list<int> = [1; 2; 3];
     for (k, v) in l do
       ()
     done

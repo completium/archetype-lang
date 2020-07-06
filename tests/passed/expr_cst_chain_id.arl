@@ -1,6 +1,6 @@
 archetype expr_cst_chain_id
 
-variable res : chain_id option = none
+variable res : option<chain_id> = none
 
 entry exec () {
   effect {

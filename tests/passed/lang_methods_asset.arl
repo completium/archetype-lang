@@ -8,7 +8,7 @@ asset asset_0 identified by id0 {
 asset my_asset identified by id {
   id : string;
   value : int = 0;
-  col : asset_0 partition = [];
+  col : partition<asset_0> = [];
 }
 
 entry exec () {

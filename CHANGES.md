@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
  - `chain_id` constant
+### Changed
+ - syntax of composite type (i.e. `list<string>` instead of `string list`)
 
 ### Fixed
  - `caller` as asset key in `initialized by` section

@@ -107,7 +107,6 @@
 %token NEQUAL
 %token NONE
 %token NOT
-%token OF
 %token ON
 %token OPTION
 %token OR
@@ -472,19 +471,19 @@ enum_option:
 type_r:
 | x=type_s xs=type_tuples { Ttuple (x::xs) }
 | x=type_s_unloc          { x }
-| PKEY OF ty=type_s       { Tkeyof ty }
 
 %inline type_s:
 | x=loc(type_s_unloc)     { x }
 
 type_s_unloc:
-| x=ident                 { Tref x }
-| x=type_s c=container    { Tcontainer (x, c) }
-| x=type_s OPTION         { Toption x }
-| x=type_s LIST           { Tlist x }
-| x=type_s SET            { Tset x }
-| x=type_s MAP            { Tmap x }
-| x=paren(type_r)         { x }
+| x=ident                                          { Tref x }
+| c=container LESS x=type_s GREATER                { Tcontainer (x, c) }
+| PKEY        LESS x=type_s GREATER                { Tkeyof x  }
+| OPTION      LESS x=type_s GREATER                { Toption x }
+| LIST        LESS x=type_s GREATER                { Tlist x   }
+| SET         LESS x=type_s GREATER                { Tset x    }
+| MAP         LESS k=type_s COMMA v=type_s GREATER { Tmap (k, v) }
+| x=paren(type_r)                                  { x }
 
 %inline type_tuples:
 | xs=type_tuple+ { xs }

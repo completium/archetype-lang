@@ -1,6 +1,6 @@
 archetype expr_map_remove
 
-variable res : (int * string) map = [(0, "0")]
+variable res : map<int, string> = [(0, "0")]
 
 entry exec () {
   specification {

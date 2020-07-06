@@ -10,7 +10,7 @@ asset o_asset {
 
 asset my_asset identified by id {
   id : string;
-  anaggregate : o_asset aggregate;
+  anaggregate : aggregate<o_asset>;
 }
 
 variable res : int = 0

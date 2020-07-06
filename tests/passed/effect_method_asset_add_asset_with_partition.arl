@@ -6,7 +6,7 @@ asset o_asset {
 
 asset my_asset identified by id {
   id : string;
-  anaggregate : o_asset partition;
+  anaggregate : partition<o_asset>;
 }
 
 variable res : int = 0

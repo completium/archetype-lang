@@ -45,7 +45,7 @@ transition start () {
   to Voting when { now > startDate }
 }
 
-entry vote (val : pkey of ballot) {
+entry vote (val : pkey<ballot>) {
    require {
      c2 : voter.contains(caller);
      c3 : state = Voting;

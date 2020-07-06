@@ -104,42 +104,43 @@ let rec pp_type outer pos fmt e =
 
   | Tcontainer (x, y) ->
     Format.fprintf fmt
-      "%a %a"
-      pp_type_default x
+      "%a<%a>"
       pp_container y
+      pp_type_default x
 
   | Ttuple l ->
 
     let pp fmt l =
       Format.fprintf fmt
-        "%a"
+        "(%a)"
         (pp_list " * " (pp_type e_tuple PInfix)) l
     in
     (maybe_paren outer e_tuple pos pp) fmt l
 
   | Toption x ->
     Format.fprintf fmt
-      "(%a) option"
+      "option<%a>"
       pp_type_default x
 
   | Tset x ->
     Format.fprintf fmt
-      "(%a) set"
+      "set<%a>"
       pp_type_default x
 
   | Tlist x ->
     Format.fprintf fmt
-      "(%a) list"
+      "list<%a>"
       pp_type_default x
 
-  | Tmap x ->
+  | Tmap (k, v) ->
     Format.fprintf fmt
-      "(%a) map"
-      pp_type_default x
+      "map<%a, %a>"
+      pp_type_default k
+      pp_type_default v
 
   | Tkeyof t ->
     Format.fprintf fmt
-      "pkey of %a"
+      "pkey<%a>"
       pp_type_default t
 
 let pp_type fmt e = pp_type e_default PNone fmt e
@@ -897,13 +898,6 @@ let pp_spec fmt (items, exts) =
         pp_extensions exts
         pp_specification_items items
     end
-
-
-(* | l when List.fold_left (fun accu x -> match x with | Vassert _ | Vspecification _ -> accu | _ -> false) true l ->
-   begin
-   Format.fprintf fmt "%a@\n" pp_specification_items items
-   end
-       | _ -> *)
 
 let rec pp_security_arg fmt arg =
   let arg = unloc arg in

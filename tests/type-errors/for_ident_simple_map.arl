@@ -2,7 +2,7 @@ archetype for_ident_simple_map
 
 entry exec () {
   effect {
-    var m : (int * string) map = [];
+    var m : map<int, string> = [];
     for i in m do
       ()
     done

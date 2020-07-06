@@ -1,6 +1,6 @@
 archetype expr_fun_unpack_string
 
-variable res : string option = none
+variable res : option<string> = none
 
 entry exec () {
   specification {

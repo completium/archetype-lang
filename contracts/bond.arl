@@ -23,11 +23,11 @@ asset paymentFrequency {
 asset bond {
   bid                : string;
   couponType_v       : couponType;
-  paymentFrequency_v : pkey of paymentFrequency;
-  issuer_v           : pkey of issuer;
+  paymentFrequency_v : pkey<paymentFrequency>;
+  issuer_v           : pkey<issuer>;
 }
 
-entry publish (bond_bid : string, bond_couponType_v : couponType, bond_paymentFrequency_v : pkey of paymentFrequency, bond_issuer_v : pkey of issuer) {
+entry publish (bond_bid : string, bond_couponType_v : couponType, bond_paymentFrequency_v : pkey<paymentFrequency>, bond_issuer_v : pkey<issuer>) {
   called by bond_issuer_v
   effect {
     bond.add({bond_bid; bond_couponType_v; bond_paymentFrequency_v; bond_issuer_v})

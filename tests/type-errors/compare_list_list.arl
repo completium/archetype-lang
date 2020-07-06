@@ -2,8 +2,8 @@ archetype compare_list_list
 
 entry exec() {
   effect {
-    var a : int list = [0];
-    var b : int list = [1];
+    var a : list<int> = [0];
+    var b : list<int> = [1];
     dorequire (a = b)
   }
 }

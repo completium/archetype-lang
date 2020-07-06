@@ -2,10 +2,10 @@ archetype lang_list
 
 entry exec () {
   effect {
-    var l : string list = ["1"; "2"; "3"];
+    var l : list<string> = ["1"; "2"; "3"];
 
     (* expr *)
-    var a : string list  = prepend(l, "2");
+    var a : list<string> = prepend(l, "2");
     var c : bool         = contains(l, "2");
     var k : int          = count(l);
     var n : string       = nth(l, 0);

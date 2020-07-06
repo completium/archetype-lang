@@ -6,12 +6,12 @@ asset a {
 
 asset b {
   bid : int;
-  bc : a aggregate;
+  bc : aggregate<a>;
 }
 
 asset c {
   cid : int;
-  cc : b partition;
+  cc : partition<b>;
 }
 
 entry exec () {

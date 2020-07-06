@@ -7,7 +7,7 @@ entry exec () {
     s0: res = 6;
   }
   effect {
-    var l : int list = [1; 2; 3];
+    var l : list<int> = [1; 2; 3];
     res := 0;
     for i in l do
       res += i;

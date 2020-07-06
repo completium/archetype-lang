@@ -1,13 +1,13 @@
 archetype expr_list_prepend
 
-variable res : string list = []
+variable res : list<string> = []
 
 entry exec () {
   specification {
     s0: count(res) = 4;
   }
   effect {
-    var l : string list = ["1"; "2"; "3"];
+    var l : list<string> = ["1"; "2"; "3"];
     res := prepend(l, "0");
   }
 }

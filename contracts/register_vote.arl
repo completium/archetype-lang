@@ -23,12 +23,12 @@ asset vote {
   vid : string;
   vcandidate : address;
   vcount : int = 0; // no error if names 'count'
-  voters : voter aggregate = [];
+  voters : aggregate<voter> = [];
 } with {
   i0 : vcount > 0;
 }
 
-entry addvoter (voter_id : pkey of voter) {
+entry addvoter (voter_id : pkey<voter>) {
   called by admin
   effect {
     voter.add({voter_id})

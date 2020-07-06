@@ -7,7 +7,7 @@ entry exec () {
     s0: res = true;
   }
   effect {
-    var i_opt : int option = some(1);
+    var i_opt : option<int> = some(1);
     var i = getopt(i_opt);
     res := i = 1
   }

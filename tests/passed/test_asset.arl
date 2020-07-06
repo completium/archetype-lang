@@ -9,7 +9,7 @@ asset my_asset_simple identified by str {
 
 asset my_asset identified by j {
   j : int;
-  myaggregate : my_asset_simple aggregate;
+  myaggregate : aggregate<my_asset_simple>;
 } initialized by {
   { 0; [] }
 }

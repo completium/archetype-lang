@@ -21,7 +21,7 @@ and type_r =
   | Toption    of type_t
   | Tset       of type_t
   | Tlist      of type_t
-  | Tmap       of type_t
+  | Tmap       of type_t * type_t
   | Tkeyof     of type_t
 
 and type_t = type_r loced
