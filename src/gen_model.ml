@@ -1181,7 +1181,6 @@ let to_model (ast : A.model) : M.model =
     | A.Drecord   r -> process_record r
     | A.Denum     e -> process_enum e
     | A.Dcontract c -> M.Dcontract (to_contract c)
-    | A.Dentrysig _e -> assert false
   in
 
   let process_fun_ = function

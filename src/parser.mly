@@ -261,7 +261,6 @@ declaration_r:
  | x=enum               { x }
  | x=asset              { x }
  | x=record             { x }
- | x=entrysig           { x }
  | x=entry              { x }
  | x=entry_simple       { x }
  | x=transition         { x }
@@ -483,6 +482,7 @@ type_s_unloc:
 | LIST        LESS x=type_s GREATER                { Tlist x   }
 | SET         LESS x=type_s GREATER                { Tset x    }
 | MAP         LESS k=type_s COMMA v=type_s GREATER { Tmap (k, v) }
+| ENTRYSIG    LESS x=type_s GREATER                { Tset x    }
 | x=paren(type_r)                                  { x }
 
 %inline type_tuples:
@@ -499,15 +499,10 @@ type_s_unloc:
 | /* empty */ { [] }
 | SHADOW x=asset_fields { x }
 
-
 record:
 | RECORD exts=extensions? x=ident fields=asset_fields?
 { let fs = match fields with | None -> [] | Some x -> x in
   Drecord (x, fs, exts) }
-
-entrysig:
-| ENTRYSIG exts=extensions? x=ident LESS t=type_t GREATER
-{ Dentrysig (x, t, exts)}
 
 asset:
 | ASSET exts=extensions? ops=bracket(asset_operation)? x=ident opts=asset_options?

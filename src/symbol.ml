@@ -375,7 +375,6 @@ let string_of_symbol = function
   | X (N N_enum) -> "an enum"
   | X (N N_enum_values) -> "enum values"
   | X (N N_enum_option) -> "an enum option"
-  | X (N N_entrysig) -> "an entrysig"
   | X (N N_entry) -> "an entry"
   | X (N N_entry_simple) -> "an entry simple"
   | X (N N_entry_properties) -> "entry properties"

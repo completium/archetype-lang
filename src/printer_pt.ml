@@ -1024,12 +1024,6 @@ let rec pp_declaration fmt { pldesc = e; _ } =
       pp_id id
       (pp_do_if (List.length fields > 0) ((fun fmt -> Format.fprintf fmt " {@\n  @[%a@]@\n}" (pp_list ";@\n" pp_field)))) fields
 
-  | Dentrysig (id, type_, exts) ->
-    Format.fprintf fmt "entrysig%a %a <%a>@\n"
-      pp_extensions exts
-      pp_id id
-      pp_type_t type_
-
   | Dentry (id, args, props, code, exts) ->
     Format.fprintf fmt "entry%a %a%a%a"
       pp_extensions exts

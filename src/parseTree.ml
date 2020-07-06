@@ -253,7 +253,6 @@ and declaration_unloc =
   | Denum          of enum_kind * enum_decl
   | Dasset         of asset_decl
   | Drecord        of record_decl
-  | Dentrysig      of entrysig_decl
   | Dentry         of entry_decl
   | Dtransition    of transition_decl
   | Dcontract      of contract_decl
@@ -288,11 +287,6 @@ and asset_decl =
 and record_decl =
   lident
   * field list
-  * exts
-
-and entrysig_decl =
-  lident
-  * type_t
   * exts
 
 and entry_decl =
