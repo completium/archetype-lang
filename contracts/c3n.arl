@@ -29,7 +29,7 @@ entry register (newadmins : ((pkey of admins) list) option, oldhash : string, ne
             if admins[admin].addr = caller then
             test := true
         done;
-        require (test = true);
+        dorequire (test = true);
         hash := newhash;
         if issome(newadmins) then (
             admins.clear();

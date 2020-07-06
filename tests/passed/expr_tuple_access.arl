@@ -4,6 +4,6 @@ variable res : int * int = (1, 2)
 
 entry exec () {
   effect {
-    require (res[0] = 1 and res[1] = 2)
+    dorequire (res[0] = 1 and res[1] = 2)
   }
 }

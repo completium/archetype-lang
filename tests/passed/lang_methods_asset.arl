@@ -32,6 +32,6 @@ entry exec () {
     var v7 = my_asset.sum(the.value);
     var v8 = my_asset.head(2);
     var v9 = my_asset.tail(2);
-    require (true)
+    dorequire (true)
   }
 }

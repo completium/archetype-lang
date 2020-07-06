@@ -9,7 +9,7 @@ entry a1 () {
     c3 : 1 + 3 = 4;
   }
   effect {
-    require(true)
+    ()
   }
 }
 

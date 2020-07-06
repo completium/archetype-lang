@@ -21,6 +21,6 @@ entry exec () {
       if (k <> "")
       then res += v;
     done;
-    require (res = 6)
+    dorequire (res = 6)
   }
 }

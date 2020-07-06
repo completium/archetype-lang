@@ -21,6 +21,6 @@ entry exec () {
   }
   effect {
     res := my_asset["id0"].col.contains(0);
-    require (not res)
+    dorequire (not res)
   }
 }

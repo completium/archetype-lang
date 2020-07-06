@@ -21,7 +21,7 @@ entry exec (r3 : rational) {
   effect {
     var dest = anasset[@tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg].id;
     var r4 = 1 / 4;
-    require (r1 + (1 / 3) * f(r4) > r3 - anasset[@tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg].r2 - r4);
+    dorequire (r1 + (1 / 3) * f(r4) > r3 - anasset[@tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg].r2 - r4);
     var m = 0.3 * 1tz;
     transfer m to dest
   }

@@ -8,6 +8,6 @@ variable a : my_asset = {id = "id"}
 
 entry exec() {
   effect {
-    require (true)
+    ()
   }
 }

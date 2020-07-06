@@ -12,7 +12,7 @@ asset asset2 {
 
 entry exec() {
   effect {
-    require(true)
+    ()
   }
 }
 

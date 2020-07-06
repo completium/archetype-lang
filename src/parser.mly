@@ -56,7 +56,9 @@
 %token DIV
 %token DIVEQUAL
 %token DO
+%token DOFAILIF
 %token DONE
+%token DOREQUIRE
 %token DOT
 %token EFFECT
 %token ELSE
@@ -80,13 +82,11 @@
 %token GREATEREQUAL
 %token IDENTIFIED
 %token IF
-%token IFAILIF
 %token IMPLY
 %token IN
 %token INITIAL
 %token INITIALIZED
 %token INVARIANT
-%token IREQUIRE
 %token ITER
 %token LABEL
 %token LBRACE
@@ -751,10 +751,10 @@ expr_r:
  | TRANSFER x=simple_expr CALL id=ident xs=paren(sl(COMMA, simple_expr))
      { Etransfer (x, None, Some (id, xs)) }
 
- | IREQUIRE x=simple_expr
+ | DOREQUIRE x=simple_expr
      { Erequire x }
 
- | IFAILIF x=simple_expr
+ | DOFAILIF x=simple_expr
      { Efailif x }
 
  | FAIL e=paren(simple_expr)

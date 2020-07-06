@@ -2,7 +2,7 @@ archetype no_postcondition_in_global_spec
 
 entry main () {
   effect {
-    require(true)
+    ()
   }
 }
 

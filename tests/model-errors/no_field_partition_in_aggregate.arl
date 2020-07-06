@@ -16,6 +16,6 @@ asset c {
 
 entry exec () {
   effect {
-    require(true)
+    ()
   }
 }

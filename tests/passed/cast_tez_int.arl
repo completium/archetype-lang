@@ -3,6 +3,6 @@ archetype cast_tez_int
 entry exec () {
   effect {
     var a : int = 1tz;
-    require(a = 1)
+    dorequire(a = 1)
   }
 }

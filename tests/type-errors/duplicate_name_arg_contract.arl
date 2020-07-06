@@ -6,6 +6,6 @@ contract my_contract {
 
 entry exec () {
   effect {
-    require (true)
+    ()
   }
 }

@@ -35,6 +35,6 @@ with {
 
 entry exec () {
   effect {
-    require(my_asset_all[@tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg].b)
+    dorequire(my_asset_all[@tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg].b)
   }
 }

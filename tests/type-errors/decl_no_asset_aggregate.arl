@@ -8,6 +8,6 @@ variable a : my_asset aggregate = []
 
 entry exec() {
   effect {
-    require (true)
+    ()
   }
 }

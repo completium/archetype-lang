@@ -2,7 +2,7 @@ archetype no_read_global_shadow_var
 
 entry exec () {
   effect {
-    require(myvar = 0)
+    ()
   }
 }
 

@@ -8,6 +8,6 @@ variable a : my_asset option = none
 
 entry exec() {
   effect {
-    require (true)
+    ()
   }
 }

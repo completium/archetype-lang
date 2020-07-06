@@ -1,7 +1,0 @@
-archetype effect_require
-
-entry exec () {
-  effect {
-    require (true)
-  }
-}

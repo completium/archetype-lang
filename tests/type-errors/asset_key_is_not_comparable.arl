@@ -8,6 +8,6 @@ asset myasset {
 
 entry exec() {
   effect {
-    require(true)
+    ()
   }
 }

@@ -4,6 +4,6 @@ entry exec () {
   effect {
     var r1 : rational = 1;
 
-    require (true)
+    ()
   }
 }

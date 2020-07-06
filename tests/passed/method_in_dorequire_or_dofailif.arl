@@ -1,4 +1,4 @@
-archetype method_in_require_or_failif
+archetype method_in_dorequire_or_dofailif
 
 asset my_asset identified by id {
   id : string;
@@ -13,7 +13,7 @@ variable res : int = 0
 
 entry exec (str : string) {
   effect {
-    require(my_asset["id0"].value = 1);
-    failif(my_asset["id0"].value = 1);
+    dorequire(my_asset["id0"].value = 1);
+    dofailif(my_asset["id0"].value = 1);
   }
 }

@@ -14,7 +14,7 @@ entry exec () {
   effect {
     for a in my_asset do
       my_asset.update(my_asset[a].id, {v = 0});
-      require(my_asset[a].v = 0)
+      dorequire(my_asset[a].v = 0)
     done
   }
 }

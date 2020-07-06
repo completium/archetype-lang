@@ -11,6 +11,6 @@ asset asset2 {
 
 entry anaction () {
   effect {
-    require (true)
+    ()
   }
 }

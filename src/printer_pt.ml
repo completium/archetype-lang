@@ -382,7 +382,7 @@ let rec pp_expr outer pos fmt a =
   | Erequire x ->
 
     let pp fmt x =
-      Format.fprintf fmt "irequire %a"
+      Format.fprintf fmt "dorequire (%a)"
         pp_simple_expr x
     in
     (maybe_paren outer e_default pos pp) fmt x
@@ -390,7 +390,7 @@ let rec pp_expr outer pos fmt a =
   | Efailif x ->
 
     let pp fmt x =
-      Format.fprintf fmt "ifailif %a"
+      Format.fprintf fmt "dofailif (%a)"
         pp_simple_expr x
     in
     (maybe_paren outer e_default pos pp) fmt x

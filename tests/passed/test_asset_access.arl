@@ -15,7 +15,7 @@ asset my_asset {
 
 entry exec() {
   effect {
-    require (my_asset[0].id = 0);
+    dorequire (my_asset[0].id = 0);
     var str = my_asset[0].v;
     fail(str)
   }

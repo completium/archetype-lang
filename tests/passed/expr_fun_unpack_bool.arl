@@ -9,6 +9,6 @@ entry exec () {
   }
   effect {
     res := unpack<bool>(0x05030a);
-    require (getopt(res))
+    dorequire (getopt(res))
   }
 }

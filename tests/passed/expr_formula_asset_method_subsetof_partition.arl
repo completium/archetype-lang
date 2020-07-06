@@ -20,6 +20,6 @@ entry exec (k : string) {
   }
 
   effect {
-    require (true)
+    ()
   }
 }

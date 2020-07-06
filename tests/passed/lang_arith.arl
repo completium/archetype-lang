@@ -50,7 +50,5 @@ entry exec () {
     var int_tez_mult   : tez      = 1 * 1tz;
     var rat_tez_mult   : tez      = 1.1 * 1tz;
     var int_tez_ediv   : tez      = 1tz div 2;
-
-    require (true)
   }
 }
