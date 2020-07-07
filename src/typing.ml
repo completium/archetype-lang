@@ -27,9 +27,11 @@ module Type : sig
   val is_set       : A.ptyp -> bool
   val is_list      : A.ptyp -> bool
   val is_map       : A.ptyp -> bool
-  val is_michelson_type                   : A.ptyp -> bool
-  val is_michelson_comparable_type        : A.ptyp -> bool
-  val is_michelson_simple_comparable_type : A.ptyp -> bool
+
+  module Michelson : sig
+    val is_type       : A.ptyp -> bool
+    val is_comparable : ?simple:bool -> A.ptyp -> bool
+  end 
 
   val support_eq : A.ptyp -> bool
 
@@ -84,43 +86,42 @@ end = struct
   let is_map = function
     | A.Tmap _ -> true | _ -> false
 
-  let is_michelson_simple_comparable_type = function
-    | A.Tbuiltin VTint
-    | A.Tbuiltin VTnat
-    | A.Tbuiltin VTstring
-    | A.Tbuiltin VTbytes
-    | A.Tbuiltin VTcurrency
-    | A.Tbuiltin VTbool
-    | A.Tbuiltin VTkeyhash
-    | A.Tbuiltin VTdate
-    | A.Tbuiltin VTduration
-    | A.Tbuiltin VTaddress
-    | A.Tbuiltin VTrole
-      -> true
-    | _ -> false
+  module Michelson = struct
+    let is_comparable ?(simple = false) = function
+      | A.Tbuiltin VTint
+      | A.Tbuiltin VTnat
+      | A.Tbuiltin VTstring
+      | A.Tbuiltin VTbytes
+      | A.Tbuiltin VTcurrency
+      | A.Tbuiltin VTbool
+      | A.Tbuiltin VTkeyhash
+      | A.Tbuiltin VTdate
+      | A.Tbuiltin VTduration
+      | A.Tbuiltin VTaddress
+      | A.Tbuiltin VTrole
+          -> true
 
-  let is_michelson_comparable_type = function
-    | t when is_michelson_simple_comparable_type t -> true
-    | A.Trecord _ -> true
-    | _ -> false
+      | A.Trecord _ when not simple -> true
+      | _ -> false
 
-  let rec is_michelson_type = function
-    | t when is_michelson_comparable_type t -> true
-    | A.Tbuiltin VTkey -> true
-    (* | A.Tbuiltin VTunit *)
-    | A.Tbuiltin VTsignature -> true
-    | A.Toption t when is_michelson_type t -> true
-    | A.Tlist t when is_michelson_type t -> true
-    | A.Tset t when is_michelson_type t -> true
-    (* | A.Toperation *)
-    | A.Tentrysig _ -> true
-    | A.Trecord _ -> true
-    | A.Ttuple l when List.for_all is_michelson_type l -> true
-    (* | A.Tor <type> <type> *)
-    (* | lambda <type> <type> *)
-    | A.Tmap (tk, tv) when is_michelson_comparable_type tk && is_michelson_type tv -> true
-    | A.Tbuiltin VTchainid -> true
-    | _ -> false
+    let rec is_type = function
+      | t when is_comparable t -> true
+
+      | A.Tbuiltin VTkey       -> true
+      | A.Tbuiltin VTsignature -> true
+      | A.Tbuiltin VTchainid   -> true
+
+      | A.Toption t      -> is_type t
+      | A.Tlist   t      -> is_type t
+      | A.Tset    t      -> is_type t
+      | A.Ttuple  ts     -> List.for_all is_type ts
+      | A.Tmap    (k, t) -> is_comparable k && is_type t
+
+      | A.Tentrysig _ -> true
+      | A.Trecord   _ -> true
+
+      | _ -> false
+  end
 
   let rec support_eq = function
     | A.Tbuiltin VTchainid -> false
@@ -1775,8 +1776,8 @@ let for_type_exn ?pkey (env : env) =
     | Tset ty ->
       let t = doit ty in
 
-      if not (Type.is_michelson_comparable_type t)
-      then Env.emit_error env (loc ty, InvalidTypeForSet);
+      if not (Type.Michelson.is_comparable ~simple:true t) then
+        Env.emit_error env (loc ty, InvalidTypeForSet);
 
       A.Tset (doit ty)
 
@@ -1786,11 +1787,11 @@ let for_type_exn ?pkey (env : env) =
     | Tmap (k, v) ->
       let nk, nv = doit k, doit v in
 
-      if not (Type.is_michelson_comparable_type nk)
-      then Env.emit_error env (loc k, InvalidTypeForMapKey);
+      if not (Type.Michelson.is_comparable nk) then
+        Env.emit_error env (loc k, InvalidTypeForMapKey);
 
-      if not (Type.is_michelson_type nk)
-      then Env.emit_error env (loc k, InvalidTypeForMapValue);
+      if not (Type.Michelson.is_type nk) then
+        Env.emit_error env (loc k, InvalidTypeForMapValue);
 
       A.Tmap (nk, nv)
 
@@ -2714,7 +2715,7 @@ let rec for_xexpr
       let e  = for_xexpr env ~ety:A.vtbytes e in
 
       Option.iter (fun ty ->
-          if not (Type.is_michelson_type ty) then
+          if not (Type.Michelson.is_type ty) then
             Env.emit_error env (loc tope, PackUnpackOnNonPrimitive)) ty;
 
       mk_sp
