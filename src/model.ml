@@ -145,7 +145,8 @@ type sort_kind =
 type ('id, 'term) assign_kind_gen =
   | Avar         of 'id
   | Avarstore    of 'id
-  | Afield       of 'id * 'id * 'term (* asset name * field name * key *)
+  | Aasset       of 'id * 'id * 'term (* asset name * field name * key *)
+  | Arecord      of 'id * 'id * 'term (* record name * field name * record *)
   | Astate
   | Aassetstate of ident * 'term     (* asset name * key *)
 [@@deriving show {with_path = false}]
@@ -1028,11 +1029,12 @@ let cmp_mterm_node
   : bool =
   let cmp_assign_kind (lhs : assign_kind) (rhs : assign_kind) : bool =
     match lhs, rhs with
-    | Avar id1, Avar id2                           -> cmpi id1 id2
-    | Avarstore id1, Avarstore id2                 -> cmpi id1 id2
-    | Afield (an1, fn1, k1), Afield (an2, fn2, k2) -> cmpi an1 an2 && cmpi fn1 fn2 && cmp k1 k2
-    | Astate, Astate                               -> true
-    | Aassetstate (id1, v1), Aassetstate (id2, v2) -> cmp_ident id1 id2 && cmp v1 v2
+    | Avar id1, Avar id2                             -> cmpi id1 id2
+    | Avarstore id1, Avarstore id2                   -> cmpi id1 id2
+    | Aasset (an1, fn1, k1), Aasset (an2, fn2, k2)   -> cmpi an1 an2 && cmpi fn1 fn2 && cmp k1 k2
+    | Arecord (rn1, fn1, r1), Arecord (rn2, fn2, r2) -> cmpi rn1 rn2 && cmpi fn1 fn2 && cmp r1 r2
+    | Astate, Astate                                 -> true
+    | Aassetstate (id1, v1), Aassetstate (id2, v2)   -> cmp_ident id1 id2 && cmp v1 v2
     | _ -> false
   in
   let cmp_var_kind (lhs : var_kind) (rhs : var_kind) : bool =
@@ -1364,7 +1366,8 @@ let map_for_ident (g : 'id -> 'id) = function
 let map_assign_kind (fi : ident -> ident) (g : 'id -> 'id) f = function
   | Avar id             -> Avar (g id)
   | Avarstore id        -> Avarstore (g id)
-  | Afield (an, fn, k)  -> Afield (g an, g fn, f k)
+  | Aasset (an, fn, k)  -> Aasset (g an, g fn, f k)
+  | Arecord (rn, fn, r) -> Arecord (g rn, g fn, f r)
   | Astate              -> Astate
   | Aassetstate (id, v) -> Aassetstate (fi id, f v)
 
@@ -1707,7 +1710,8 @@ let map_mterm_model (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (model : mod
 let fold_assign_kind f accu = function
   | Avar _              -> accu
   | Avarstore _         -> accu
-  | Afield (_, _, mt)   -> f accu mt
+  | Aasset  (_, _, mt)  -> f accu mt
+  | Arecord (_, _, mt)  -> f accu mt
   | Astate              -> accu
   | Aassetstate (_, mt) -> f accu mt
 
@@ -1919,7 +1923,8 @@ let fold_map_term_list f acc l : 'term list * 'a =
 let fold_map_assign_kind f accu = function
   | Avar id             -> Avar id, accu
   | Avarstore id        -> Avarstore id, accu
-  | Afield (an, fn, k)  -> let ke, ka = f accu k in Afield (an, fn, ke), ka
+  | Aasset (an, fn, k)  -> let ke, ka = f accu k in Aasset  (an, fn, ke), ka
+  | Arecord (rn, fn, r) -> let re, ra = f accu r in Arecord (rn, fn, re), ra
   | Astate              -> Astate, accu
   | Aassetstate (id, v) -> let ve, va = f accu v in Aassetstate (id, ve), va
 

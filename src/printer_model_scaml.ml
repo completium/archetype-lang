@@ -484,10 +484,17 @@ let pp_model fmt (model : model) =
           pp_operator op
           f r
 
-      | Massign (op, Afield (an, fn, k), v) ->
+      | Massign (op, Aasset (an, fn, k), v) ->
         Format.fprintf fmt "%a[%a].%a %a %a"
           pp_id an
           f k
+          pp_id fn
+          pp_operator op
+          f v
+
+      | Massign (op, Arecord (_rn, fn, r), v) ->
+        Format.fprintf fmt "%a.%a %a %a"
+          f r
           pp_id fn
           pp_operator op
           f v

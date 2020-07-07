@@ -1189,9 +1189,13 @@ let remove_rational (model : model) : model =
         { mt with
           node = Massign (op, Avarstore i, (int_to_rat |@ aux) v)
         }
-      | Massign (op, Afield (an, fn, k), v), _ when is_int v && is_t_rat v.type_ ->
+      | Massign (op, Aasset (an, fn, k), v), _ when is_int v && is_t_rat v.type_ ->
         { mt with
-          node = Massign (op, Afield (an, fn, (int_to_rat |@ aux) k), (int_to_rat |@ aux) v)
+          node = Massign (op, Aasset (an, fn, (int_to_rat |@ aux) k), (int_to_rat |@ aux) v)
+        }
+      | Massign (op, Arecord (rn, fn, r), v), _ when is_int v && is_t_rat v.type_ ->
+        { mt with
+          node = Massign (op, Arecord (rn, fn, (int_to_rat |@ aux) r), (int_to_rat |@ aux) v)
         }
       | Mforall (id, t, a, b), _ ->
         { mt with
@@ -1484,7 +1488,7 @@ let abs_tez model : model =
 let replace_assignfield_by_update (model : model) : model =
   let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
     match mt.node with
-    | Massign (op, Afield (an, fn, key), v) ->
+    | Massign (op, Aasset (an, fn, key), v) ->
       let an = unloc an in
       let l = [(fn, op, v)] in
       mk_mterm (Mupdate (an, key, l)) Tunit
@@ -1817,10 +1821,15 @@ let extract_term_from_instruction f (model : model) : model =
       let re, ra = f r in
       process (mk_mterm (Massign (op, Avarstore l, re)) mt.type_) ra
 
-    | Massign (op, Afield (an, fn, k), v) ->
+    | Massign (op, Aasset (an, fn, k), v) ->
       let ke, ka = f k in
       let ve, va = f v in
-      process (mk_mterm (Massign (op, Afield (an, fn, ke), ve)) mt.type_) (ka @ va)
+      process (mk_mterm (Massign (op, Aasset (an, fn, ke), ve)) mt.type_) (ka @ va)
+
+    | Massign (op, Arecord (rn, fn, r), v) ->
+      let re, ra = f r in
+      let ve, va = f v in
+      process (mk_mterm (Massign (op, Arecord (rn, fn, re), ve)) mt.type_) (ra @ va)
 
     | Massign (op, Astate, x) ->
       let xe, xa = f x in
@@ -2086,8 +2095,13 @@ let add_contain_on_get (model : model) : model =
         let accu = f accu r in
         gg accu mt
 
-      | Massign (_op, Afield (_an, _fn, k), v) ->
+      | Massign (_op, Aasset (_an, _fn, k), v) ->
         let accu = f accu k in
+        let accu = f accu v in
+        gg accu mt
+
+      | Massign (_op, Arecord (_rn, _fn, r), v) ->
+        let accu = f accu r in
         let accu = f accu v in
         gg accu mt
 
@@ -2472,10 +2486,13 @@ let remove_assign_operator (model : model) : model =
       let lhs = mk_mterm (Mvar (id, Vstorevar)) v.type_ in
       let v = compute op lhs v.type_ v in
       mk_mterm (Massign (ValueAssign, Avarstore id, v)) mt.type_
-    | Massign (op, Afield (an, fn, k), v) ->
+    | Massign (op, Aasset (an, fn, k), v) ->
       let lhs = mk_mterm (Mdotassetfield (an, k, fn)) v.type_ in
       let v = compute op lhs v.type_ v in
-      mk_mterm (Massign (ValueAssign, Afield (an, fn, k), v)) mt.type_
+      mk_mterm (Massign (ValueAssign, Aasset (an, fn, k), v)) mt.type_
+    | Massign (op, Arecord (rn, fn, r), v) ->
+      let v = compute op r v.type_ v in
+      mk_mterm (Massign (ValueAssign, Arecord (rn, fn, r), v)) mt.type_
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model

@@ -325,10 +325,17 @@ let pp_model_internal fmt (model : model) b =
             | OrAssign    -> Format.fprintf fmt "%s.%a or (%a)"  const_storage pp_id lhs f r
         ) r
 
-    | Massign (op, Afield (an, fn, k), v) ->
+    | Massign (op, Aasset (an, fn, k), v) ->
       Format.fprintf fmt "%a[%a].%a %a %a"
         pp_id an
         f k
+        pp_id fn
+        pp_operator op
+        f v
+
+    | Massign (op, Arecord (_rn, fn, r), v) ->
+      Format.fprintf fmt "%a.%a %a %a"
+        f r
         pp_id fn
         pp_operator op
         f v

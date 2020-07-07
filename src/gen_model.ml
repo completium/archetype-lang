@@ -750,8 +750,15 @@ let to_model (ast : A.model) : M.model =
       | A.Iseq l                  -> M.Mseq (List.map g l)
       | A.Imatchwith (m, l)       -> M.Mmatchwith (f m, List.map (fun (p, i) -> (to_pattern p, g i)) l)
       | A.Iassign (op, `Var x, e) -> M.Massign (to_assignment_operator op, Avar x, to_mterm e)
-      | A.Iassign (op, `Field (an, k, fn), v) -> M.Massign (to_assignment_operator op, Afield (an, fn, to_mterm k), to_mterm v)
-      | A.Irequire (b, t)         ->
+      | A.Iassign (op, `Field (an, o, fn), v) -> begin
+          let ak =
+            match o.type_ with
+            | Some (A.Trecord rn) -> M.Arecord(rn, fn, to_mterm o)
+            | _ -> M.Aasset (an, fn, to_mterm o)
+          in
+          M.Massign (to_assignment_operator op, ak, to_mterm v)
+        end
+      | A.Irequire (b, t) ->
         let cond : M.mterm =
           if b
           then term_not (f t)

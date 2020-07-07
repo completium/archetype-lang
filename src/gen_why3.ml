@@ -1272,7 +1272,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                    map_mterm m ctx v))
         end in
       Tassign (var,value)
-    | Massign (assignop, Afield (_id1, id2, k), v) ->
+    | Massign (assignop, Aasset (_id1, id2, k), v) ->
 
       let id = with_dummy_loc (Tdot (map_mterm m ctx (* id1 *) k, (* FIXME *)
                                      with_dummy_loc (Tvar (map_lident id2)))) in
@@ -1304,6 +1304,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                      map_mterm m ctx v))
         end in
       Tassign (id,value)
+
+
+    | Massign (_op, Arecord (_rn, _fn, _r), _v) -> error_not_translated "Massign (op, Arecord (_rn, fn, r), v)"
 
     | Massign (_, Astate, v) -> Tassign (loc_term (Tdoti (gs, "state")), map_mterm m ctx v)
 
