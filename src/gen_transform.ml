@@ -1894,14 +1894,20 @@ let extract_term_from_instruction f (model : model) : model =
       let de, da = f d in
       process (mk_mterm (Mtransfer (ve, de)) mt.type_) (va @ da)
 
-    | Mentrycall (v, d, t, func, args) ->
+    | Mcallcontract (v, d, t, func, args) ->
       let ve, va = f v in
       let de, da = f d in
       let ae, aa = List.fold_right (fun (t, i) (xe, xa) ->
           let ie, ia = f i in
           ((t, ie)::xe, ia @ xa)) args ([], []) in
-      process (mk_mterm (Mentrycall (ve, de, t, func, ae)) mt.type_) (va @ da @ aa)
+      process (mk_mterm (Mcallcontract (ve, de, t, func, ae)) mt.type_) (va @ da @ aa)
 
+    | Mcallentry (v, e, args) ->
+      let ve, va = f v in
+      let ae, aa = List.fold_right (fun i (xe, xa) ->
+          let ie, ia = f i in
+          (ie::xe, ia @ xa)) args ([], []) in
+      process (mk_mterm (Mcallentry (ve, e, ae)) mt.type_) (va @ aa)
 
     (* asset api effect *)
 
@@ -2171,7 +2177,7 @@ let add_contain_on_get (model : model) : model =
         let accu = f accu d in
         gg accu mt
 
-      | Mentrycall (v, d, _t, _func, args) ->
+      | Mcallcontract (v, d, _t, _func, args) ->
         let accu = f accu v in
         let accu = f accu d in
         let accu = List.fold_right (fun (_, x) accu -> f accu x) args accu in

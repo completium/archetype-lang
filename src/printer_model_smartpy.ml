@@ -463,7 +463,7 @@ let pp_model fmt (model : model) =
           f d
           f v
 
-      | Mentrycall (v, d, _, fid, args) ->
+      | Mcallcontract (v, d, _, fid, args) ->
         let pp fmt (v, d, fid, args) =
           Format.fprintf fmt "sp.transfer(%a(%a), %a, %a)"
             pp_id fid
@@ -472,6 +472,33 @@ let pp_model fmt (model : model) =
             f d
         in
         pp fmt (v, d, fid, args)
+
+      | Mcallentry (v, e, args) ->
+        let pp fmt (v, e, args) =
+          Format.fprintf fmt "transfer %a to entry %a(%a)"
+            f v
+            pp_id e
+            (pp_list ", " f) args
+        in
+        pp fmt (v, e, args)
+
+
+      (* entrypoint *)
+
+      | Mentrycontract (c, id) ->
+        Format.fprintf fmt "%a.%a"
+          f c
+          pp_id id
+
+      | Mentrypoint (a, s) ->
+        Format.fprintf fmt "entrypoint(%a, %a)"
+          f a
+          f s
+
+      | Mself id ->
+        Format.fprintf fmt "self.%a"
+          pp_id id
+
 
       (* literals *)
 

@@ -298,9 +298,9 @@ let to_model (ast : A.model) : M.model =
       | A.Plit ({node = BVduration d; _})      -> M.Mduration d
       | A.Plit ({node = BVbytes v; _})         -> M.Mbytes v
 
-      | A.Pdot (e, fn) -> begin
-          match e.node with
-          | Pcall (Some { node = node }, Cconst Cget, [AExpr k]) ->
+      | A.Pdot (e, id) -> begin
+          match e with
+          | {node = Pcall (Some { node = node }, Cconst Cget, [AExpr k])} ->
             let an =
               let rec aux = function
                 | A.Pvar (VTnone, Vnone, an) -> an
@@ -309,11 +309,14 @@ let to_model (ast : A.model) : M.model =
               in
               aux node
             in
-            M.Mdotassetfield (an, f k, fn)
+            M.Mdotassetfield (an, f k, id)
+
+          | {type_ = Some (A.Tentrysig _)} ->
+            M.Mentrycontract (f e, id)
 
           | _ ->
             (* handle dot contract too *)
-            M.Mdot (f e, fn)
+            M.Mdot (f e, id)
         end
 
       | A.Pconst Cstate                        -> M.Mvar(dumloc "", Vstate)
@@ -345,7 +348,7 @@ let to_model (ast : A.model) : M.model =
       | A.Pquantifer (Forall, i, (coll, typ), term)    -> M.Mforall (i, ptyp_to_type typ, Option.map f coll, f term)
       | A.Pquantifer (Exists, i, (coll, typ), term)    -> M.Mexists (i, ptyp_to_type typ, Option.map f coll, f term)
 
-      | A.Pself _ -> assert false (* TODO *)
+      | A.Pself id -> M.Mself id
 
       (* | A.Pcall (Some p, A.Cconst A.Cbefore,    []) -> M.Msetbefore    (f p) *)
       (* | A.Pcall (Some p, A.Cconst A.Cunmoved,   []) -> M.Msetunmoved   (f p)
@@ -436,11 +439,10 @@ let to_model (ast : A.model) : M.model =
         let fx = f x in
         M.Mchecksignature (fk, fs, fx)
 
-      | A.Pcall (None, A.Cconst A.Centrypoint, [AExpr _a; AExpr _b]) ->
-        (* let fa = f a in
-           let fb = f b in *)
-        (* TODO *)
-        assert false
+      | A.Pcall (None, A.Cconst A.Centrypoint, [AExpr a; AExpr b]) ->
+        let fa = f a in
+        let fb = f b in
+        M.Mentrypoint (fa, fb)
 
       | A.Pcall (_, A.Cid id, args) ->
         M.Mapp (id, List.map (fun x -> term_arg_to_expr f x) args)
@@ -767,17 +769,20 @@ let to_model (ast : A.model) : M.model =
         M.Mif (cond, fail (InvalidCondition None), None)
 
       | A.Itransfer (v, TTsimple d) -> M.Mtransfer (f v, f d)
-      | A.Itransfer (v, TTcontract (d, id, args))   ->
-        begin
+      | A.Itransfer (v, TTcontract (d, id, args)) -> begin
           let contract_id = extract_contract_type_id d in
           let d = f d in
           let v = f v in
           let ids = A.Utils.get_contract_sig_ids ast contract_id (unloc id) in
           let vs = List.map f args in
           let args = List.map2 (fun x y -> (x, y)) ids vs in
-          M.Mentrycall (v, d, contract_id, id, args)
+          M.Mcallcontract (v, d, contract_id, id, args)
         end
-      | A.Itransfer (_v, TTentry (_id, _args))   -> assert false
+      | A.Itransfer (v, TTentry (e, args)) -> begin
+          let v = f v in
+          let args = List.map f args in
+          M.Mcallentry (v, e, args)
+        end
       | A.Ibreak                  -> M.Mbreak
       | A.Ireturn e               -> M.Mreturn (f e)
       | A.Ilabel i                -> M.Mlabel i

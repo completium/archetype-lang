@@ -259,7 +259,7 @@ let pp_model_internal fmt (model : model) b =
       | { node = Mletin _; _} as a ->
         Format.fprintf fmt " block {@\n   @[%a@]@\n}"
           f a
-      | { node = (Mentrycall _ | Mupdate _); _} as a ->
+      | { node = (Mcallcontract _ | Mcallentry _ | Mupdate _); _} as a ->
         Format.fprintf fmt " block {@\n   @[%a@]@\n}"
           f a
       | _ ->
@@ -488,7 +488,7 @@ let pp_model_internal fmt (model : model) b =
         f d
         const_operations
 
-    | Mentrycall (v, d, t, fid, args) ->
+    | Mcallcontract (v, d, t, fid, args) ->
       let pp fmt (v, d, t, fid, args) =
         let fid = fid |> unloc |> String.up_firstcase_lower in
 
@@ -506,6 +506,29 @@ let pp_model_internal fmt (model : model) b =
           const_operations const_operations
       in
       pp fmt (v, d, t, fid, args)
+
+    | Mcallentry (v, e, args) ->
+      let pp _fmt (_v, _e, _args) =
+        ()
+      in
+      pp fmt (v, e, args)
+
+
+    (* entrypoint *)
+
+    | Mentrycontract (c, id) ->
+      Format.fprintf fmt "%a.%a"
+        f c
+        pp_id id
+
+    | Mentrypoint (a, s) ->
+      Format.fprintf fmt "entrypoint(%a, %a)"
+        f a
+        f s
+
+    | Mself id ->
+      Format.fprintf fmt "self.%a"
+        pp_id id
 
 
     (* literals *)

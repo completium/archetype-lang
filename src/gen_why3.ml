@@ -1357,7 +1357,15 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mfail (Invalid { node = M.Mvar (n, Vlocal); type_=_ }) -> Traise (Einvalid (Some (unloc n)))
     | Mfail               _ -> error_not_translated "Mfail"
     | Mtransfer (a, t) -> Ttransfer(map_mterm m ctx a, map_mterm m ctx t)
-    | Mentrycall (_, d, _, _, _) -> Tcall (map_mterm m ctx d)
+    | Mcallcontract (_, d, _, _, _) -> Tcall (map_mterm m ctx d)
+    | Mcallentry (_, _e, _) -> error_not_translated "Mcallentry"
+
+
+    (* entrypoint *)
+
+    | Mentrycontract (_c, _id) -> error_not_translated "Mentrycontract"
+    | Mentrypoint (_a, _s)     -> error_not_translated "Mentrypoint"
+    | Mself _id                -> error_not_translated "Mself"
 
 
     (* literals *)
