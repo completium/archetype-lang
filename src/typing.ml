@@ -362,6 +362,7 @@ type error_desc =
   | InvalidMethodInExec
   | InvalidMethodInFormula
   | InvalidNumberOfArguments           of int * int
+  | InvalidRecordFieldType
   | InvalidRoleExpression
   | InvalidSecurityEntry
   | InvalidSecurityRole
@@ -537,6 +538,7 @@ let pp_error_desc fmt e =
   | InvalidMethodInExec                -> pp "Invalid method in execution"
   | InvalidMethodInFormula             -> pp "Invalid method in formula"
   | InvalidNumberOfArguments (n1, n2)  -> pp "Invalid number of arguments: found '%i', but expected '%i'" n1 n2
+  | InvalidRecordFieldType             -> pp "Invalid record field's type"
   | InvalidRoleExpression              -> pp "Invalid role expression"
   | InvalidSecurityEntry               -> pp "Invalid security entry"
   | InvalidSecurityRole                -> pp "Invalid security role"
@@ -4541,8 +4543,12 @@ let for_record_decl (env : env) (decl : PT.record_decl loced) =
     List.map get_field fields in
 
   let fields =
-    let for1 (x, ty, e) =
-      let ty = for_type env ty in
+    let for1 (x, pty, e) =
+      let ty = for_type env pty in
+
+      ty |> Option.iter (fun ty ->
+        if not (Type.Michelson.is_type ty) then
+          Env.emit_error env (loc pty, InvalidRecordFieldType));
       let e  = e |> Option.map (for_expr `Concrete env ?ety:ty) in
       (x, ty, e) in
     List.map for1 fields in
