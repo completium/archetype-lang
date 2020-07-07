@@ -1,0 +1,11 @@
+archetype bad_fields_type_record
+
+record my_record {
+  id: chain_id;
+}
+
+entry exec () {
+  effect {
+    ()
+  }
+}
