@@ -509,7 +509,13 @@ let pp_model_internal fmt (model : model) b =
 
     | Mcallentry (v, e, args) ->
       let pp _fmt (_v, _e, _args) =
-        ()
+        Format.fprintf fmt
+          "const op_: operation = transaction(%a, %a, %a);@\n  \
+           %s := cons(op_, %s)@\n"
+          (pp_paren (pp_list "," f)) args
+          f v
+          pp_id e
+          const_operations const_operations
       in
       pp fmt (v, e, args)
 
@@ -522,9 +528,9 @@ let pp_model_internal fmt (model : model) b =
         pp_id id
 
     | Mentrypoint (a, s) ->
-      Format.fprintf fmt "entrypoint(%a, %a)"
-        f a
+      Format.fprintf fmt "Tezos.get_entrypoint_opt(\"%%%a\", %a)"
         f s
+        f a
 
     | Mself id ->
       Format.fprintf fmt "self.%a"
