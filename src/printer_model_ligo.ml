@@ -507,7 +507,19 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (v, d, t, fid, args)
 
-    | Mcallentry (v, e, args) ->
+    | Mcallentry (v, e, arg) ->
+      let pp _fmt (v, e, arg) =
+        Format.fprintf fmt
+          "const op_: operation = transaction(%a, %a, %a);@\n  \
+           %s := cons(op_, %s)@\n"
+          f arg
+          f v
+          pp_id e
+          const_operations const_operations
+      in
+      pp fmt (v, e, arg)
+
+    | Mcallself (v, e, args) ->
       let pp _fmt (_v, _e, _args) =
         Format.fprintf fmt
           "const op_: operation = transaction(%a, %a, %a);@\n  \

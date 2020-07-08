@@ -1902,12 +1902,18 @@ let extract_term_from_instruction f (model : model) : model =
           ((t, ie)::xe, ia @ xa)) args ([], []) in
       process (mk_mterm (Mcallcontract (ve, de, t, func, ae)) mt.type_) (va @ da @ aa)
 
-    | Mcallentry (v, e, args) ->
+    | Mcallentry (v, e, arg) ->
+      let ve, va = f v in
+      let ae, aa = f arg in
+      process (mk_mterm (Mcallentry (ve, e, ae)) mt.type_) (va @ aa)
+
+    | Mcallself (v, e, args) ->
       let ve, va = f v in
       let ae, aa = List.fold_right (fun i (xe, xa) ->
           let ie, ia = f i in
           (ie::xe, ia @ xa)) args ([], []) in
-      process (mk_mterm (Mcallentry (ve, e, ae)) mt.type_) (va @ aa)
+      process (mk_mterm (Mcallself (ve, e, ae)) mt.type_) (va @ aa)
+
 
     (* asset api effect *)
 

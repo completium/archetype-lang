@@ -1359,6 +1359,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mtransfer (a, t) -> Ttransfer(map_mterm m ctx a, map_mterm m ctx t)
     | Mcallcontract (_, d, _, _, _) -> Tcall (map_mterm m ctx d)
     | Mcallentry (_, _e, _) -> error_not_translated "Mcallentry"
+    | Mcallself (_, _e, _)  -> error_not_translated "Mcallself"
 
 
     (* entrypoint *)

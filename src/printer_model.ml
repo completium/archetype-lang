@@ -278,9 +278,18 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (v, d, fid, args)
 
-    | Mcallentry (v, e, args) ->
-      let pp fmt (v, e, args) =
+    | Mcallentry (v, e, arg) ->
+      let pp fmt (v, e, arg) =
         Format.fprintf fmt "transfer %a to entry %a(%a)"
+          f v
+          pp_id e
+          f arg
+      in
+      pp fmt (v, e, arg)
+
+    | Mcallself (v, e, args) ->
+      let pp fmt (v, e, args) =
+        Format.fprintf fmt "transfer %a to entry self.%a(%a)"
           f v
           pp_id e
           (pp_list ", " f) args

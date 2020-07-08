@@ -199,7 +199,8 @@ type ('id, 'term) mterm_node  =
   | Mfail             of 'id fail_type_gen
   | Mtransfer         of ('term * 'term)                                   (* value * dest *)
   | Mcallcontract     of 'term  * 'term * ident * 'id * ('id * 'term) list (* value * dest  * contract_id * id * args *)
-  | Mcallentry        of 'term * 'id * 'term list                          (* value * entry * args *)
+  | Mcallentry        of 'term * 'id * 'term                               (* value * entry * arg *)
+  | Mcallself         of 'term * 'id * 'term list                          (* value * entry * args *)
   (* entrypoint *)
   | Mentrycontract    of 'term * 'id   (* contract * ident *)
   | Mentrypoint       of 'term * 'term (* address * string *)
@@ -1092,7 +1093,8 @@ let cmp_mterm_node
     | Mfail ft1, Mfail ft2                                                             -> cmp_fail_type cmp ft1 ft2
     | Mtransfer (v1, d1), Mtransfer (v2, d2)                                           -> cmp v1 v2 && cmp d1 d2
     | Mcallcontract(v1, d1, t1, func1, args1), Mcallcontract(v2, d2, t2, func2, args2) -> cmp v1 v2 && cmp d1 d2 && cmp_ident t1 t2 && cmpi func1 func2 && List.for_all2 (fun (id1, t1) (id2, t2) -> cmpi id1 id2 && cmp t1 t2) args1 args2
-    | Mcallentry (v1, e1, args1), Mcallentry(v2, e2, args2)                            -> cmp v1 v2 && cmpi e1 e2 && List.for_all2 cmp args1 args2
+    | Mcallentry (v1, e1, arg1), Mcallentry(v2, e2, arg2)                              -> cmp v1 v2 && cmpi e1 e2 && cmp arg1 arg2
+    | Mcallself (v1, e1, args1), Mcallself(v2, e2, args2)                              -> cmp v1 v2 && cmpi e1 e2 && List.for_all2 cmp args1 args2
     (* entrypoint *)
     | Mentrycontract (c1, id1), Mentrycontract (c2, id2)                               -> cmp c1 c2 && cmpi id1 id2
     | Mentrypoint (a1, s1), Mentrypoint (a2, s2)                                       -> cmp a1 a2 && cmp s1 s2
@@ -1425,7 +1427,8 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mfail v                        -> Mfail (match v with | Invalid v -> Invalid (f v) | _ -> v)
   | Mtransfer (v, d)               -> Mtransfer (f v, f d)
   | Mcallcontract (v, d, t, func, args) -> Mcallcontract(f v, f d, fi t, func, List.map (fun (id, t) -> (g id, f t)) args)
-  | Mcallentry (v, e, args)        -> Mcallentry(f v, g e, (List.map f args))
+  | Mcallentry (v, e, arg)         -> Mcallentry(f v, g e, f arg)
+  | Mcallself (v, e, args)         -> Mcallself(f v, g e, (List.map f args))
   (* entrypoint *)
   | Mentrycontract (c, id)         -> Mentrycontract (f c, g id)
   | Mentrypoint (a, s)             -> Mentrypoint (f a, f s)
@@ -1776,7 +1779,8 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mfail v                               -> (match v with | Invalid v -> f accu v | _ -> accu)
   | Mtransfer (v, d)                      -> f (f accu v) d
   | Mcallcontract (v, d, _, _, args)      -> List.fold_left (fun accu (_, t) -> f accu t) (f (f accu v) d) args
-  | Mcallentry (v, _, args)               -> List.fold_left (fun accu x -> f accu x) (f accu v) args
+  | Mcallentry (v, _, arg)                -> f (f accu v) arg
+  | Mcallself (v, _, args)                -> List.fold_left (fun accu x -> f accu x) (f accu v) args
   (* entrypoint *)
   | Mentrycontract (c, _)                 -> f accu c
   | Mentrypoint (a, s)                    -> f (f accu a) s
@@ -2109,13 +2113,18 @@ let fold_map_term
            pterms @ [id, p], accu) ([], da) args in
     g (Mcallcontract(ve, de, t, func, lp)), la
 
-  | Mcallentry(v, e, args) ->
+  | Mcallentry(v, e, arg) ->
+    let ve, va = f accu v in
+    let ae, aa = f va arg in
+    g (Mcallentry(ve, e, ae)), aa
+
+  | Mcallself(v, e, args) ->
     let ve, va = f accu v in
     let (lp, la) = List.fold_left
         (fun (pterms, accu) x ->
            let p, accu = f accu x in
            pterms @ [p], accu) ([], va) args in
-    g (Mcallentry(ve, e, lp)), la
+    g (Mcallself(ve, e, lp)), la
 
 
   (* entrypoint *)
