@@ -10,18 +10,21 @@ entry exec () {
     var nat_nat_mult   : nat = a * b;
     var nat_nat_ediv   : nat = a div b;
     var nat_nat_modulo : nat = a % b;
+    var nat_nat_div    : rational = a / b;
 
     var nat_int_plus   : int = a + 2;
     var nat_int_minus  : int = a - 2;
     var nat_int_mult   : int = a * 2;
-    var nat_int_div    : int = a / 2;
+    var nat_int_ediv   : int = a div 2;
     var nat_int_modulo : nat = a % 2;
+    var nat_int_div    : rational = a / 2;
 
-    var int_nat_plus   : int = 1 + 1.2;
-    var int_nat_minus  : int = 1 - 1.2;
-    var int_nat_mult   : int = 1 * 1.2;
-    var int_nat_div    : int = 1 / 1.2;
+    var int_nat_plus   : int = 1 + b;
+    var int_nat_minus  : int = 1 - b;
+    var int_nat_mult   : int = 1 * b;
+    var int_nat_ediv   : int = 1 div b;
     var int_nat_modulo : nat = a % b;
+    var int_nat_div    : rational = 1 / b;
 
     var int_int_modulo : nat = 1 % 2;
 
