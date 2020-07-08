@@ -3627,9 +3627,10 @@ end = struct
   let with_operations_for_mterm_intern _ctx accu (mt : mterm) : bool =
     let rec aux accu (t : mterm) =
       match t.node with
-      | Mtransfer  _ -> raise FoundOperations
-      | Mcallcontract _ -> raise FoundOperations
-      | Mcallentry _ -> raise FoundOperations
+      | Mtransfer  _
+      | Mcallcontract _
+      | Mcallentry _
+      | Mcallself _ -> raise FoundOperations
       | _ -> fold_term aux accu t in
     aux accu mt
 
