@@ -779,7 +779,12 @@ let to_model (ast : A.model) : M.model =
           let args = List.map2 (fun x y -> (x, y)) ids vs in
           M.Mcallcontract (v, d, contract_id, id, args)
         end
-      | A.Itransfer (v, TTentry (e, args)) -> begin
+      | A.Itransfer (v, TTentry (e, arg)) -> begin
+          let v = f v in
+          let args = [f arg] in
+          M.Mcallentry (v, e, args)
+        end
+      | A.Itransfer (v, TTself (e, args)) -> begin
           let v = f v in
           let args = List.map f args in
           M.Mcallentry (v, e, args)

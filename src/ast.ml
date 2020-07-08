@@ -360,7 +360,8 @@ type 'id instruction_poly = {
 and 'id transfer_t =
   | TTsimple   of 'id term_gen
   | TTcontract of 'id term_gen * 'id * 'id term_gen list
-  | TTentry    of 'id * 'id term_gen list
+  | TTentry    of 'id * 'id term_gen
+  | TTself     of 'id * 'id term_gen list
 
 and 'id instruction_node =
   | Iif of ('id term_gen * 'id instruction_gen * 'id instruction_gen)               (* condition * then_ * else_ *)
