@@ -10,7 +10,7 @@ entry exec () {
 
     transfer 0tz to @KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm call an_entry(1);
 
-    var eopt : option<entrysig<int>> = entrypoint();
+    var eopt : option<entrysig<int>> = entrypoint(@KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm, "an_entry");
     var e = getopt(eopt);
     transfer 0tz to entry e(1);
 
