@@ -9,10 +9,6 @@ asset anasset {
   {@tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg; 0.5}
 }
 
-contract mc {
-  entry b(c : rational)
-}
-
 function f (r : rational) : rational {
   return r
 }

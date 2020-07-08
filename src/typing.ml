@@ -749,7 +749,6 @@ type groups = {
   gr_acttxs      : acttx                      loced list;
   gr_specs       : PT.specification           loced list;
   gr_secs        : PT.security                loced list;
-  gr_externals   : PT.contract_decl           loced list;
 }
 
 (* -------------------------------------------------------------------- *)
@@ -1031,6 +1030,7 @@ let pterm_arg_as_pterm = function A.AExpr e -> Some e | _ -> None
 
 (* -------------------------------------------------------------------- *)
 let core_types = [
+  ("unit"     , A.vtunit           );
   ("string"   , A.vtstring         );
   ("nat"      , A.vtnat            );
   ("int"      , A.vtint            );
@@ -4579,7 +4579,7 @@ let for_records_decl (env : env) (decls : PT.record_decl loced list) =
   List.fold_left_map for_record_decl env decls
 
 (* -------------------------------------------------------------------- *)
-let for_contract_decl (env : env) (decl : PT.contract_decl loced) =
+(* let for_contract_decl (env : env) (decl : PT.contract_decl loced) =
   let name, sigs, _ = unloc decl in
   let entries =
     List.pmap (fun (PT.Ssignature (ename, psig)) ->
@@ -4607,11 +4607,11 @@ let for_contract_decl (env : env) (decl : PT.contract_decl loced) =
 
   if check_and_emit_name_free env name then
     (Env.Contract.push env cdecl, Some cdecl)
-  else (env, None)
+  else (env, None) *)
 
 (* -------------------------------------------------------------------- *)
-let for_contracts_decl (env : env) (decls : PT.contract_decl loced list) =
-  List.fold_left_map for_contract_decl env decls
+(* let for_contracts_decl (env : env) (decls : PT.contract_decl loced list) =
+  List.fold_left_map for_contract_decl env decls *)
 
 (* -------------------------------------------------------------------- *)
 let for_acttx_decl (env : env) (decl : acttx loced) =
@@ -4722,7 +4722,6 @@ let group_declarations (decls : (PT.declaration list)) =
     gr_acttxs     = [];
     gr_specs      = [];
     gr_secs       = [];
-    gr_externals  = [];
   } in
 
   let for1 { plloc = loc; pldesc = decl } (g : groups) =
@@ -4764,9 +4763,6 @@ let group_declarations (decls : (PT.declaration list)) =
     | PT.Dsecurity infos ->
       { g with gr_secs = mk infos :: g.gr_secs }
 
-    | PT.Dcontract infos ->
-      { g with gr_externals = mk infos :: g.gr_externals }
-
     | Dnamespace _  -> assert false
     | Dextension _  -> assert false
     | Dinvalid      -> assert false
@@ -4776,7 +4772,6 @@ let group_declarations (decls : (PT.declaration list)) =
 (* -------------------------------------------------------------------- *)
 type decls = {
   state     : statedecl option;
-  contracts : contractdecl option list;
   variables : vardecl option list;
   enums     : statedecl option list;
   records   : recorddecl option list;
@@ -4821,7 +4816,6 @@ let for_grouped_declarations (env : env) (toploc, g) =
     | _ ->
       (None, None, env) in
 
-  let env, contracts    = for_contracts_decl env g.gr_externals in
   let env, records      = for_records_decl   env g.gr_records   in
   let env, enums        = for_enums_decl     env g.gr_enums     in
   let enums, especs     = List.split enums                      in
@@ -4873,8 +4867,7 @@ let for_grouped_declarations (env : env) (toploc, g) =
   let env, secspecs        = for_secs_decl      env g.gr_secs      in
 
   let output =
-    { state    ; contracts; variables; enums   ; assets ;
-      functions; acttxs   ; specs    ; secspecs; records }
+    { state    ; variables; enums   ; assets ; functions; acttxs   ; specs    ; secspecs; records }
 
   in (env, output)
 
@@ -5122,8 +5115,7 @@ let for_declarations (env : env) (decls : (PT.declaration list) loced) : A.model
         List.map (fun x -> A.Dvariable x) (variables_of_vdecls decls.variables)                            @
         List.map (fun x -> A.Denum x)     (enums_of_statedecl (List.pmap id (decls.state :: decls.enums))) @
         List.map (fun x -> A.Drecord x)   (records_of_rdecls (List.pmap id decls.records))                 @
-        List.map (fun x -> A.Dasset x)    (assets_of_adecls decls.assets)                                  @
-        List.map (fun x -> A.Dcontract x) (contracts_of_cdecls decls.contracts)
+        List.map (fun x -> A.Dasset x)    (assets_of_adecls decls.assets)
       )
       ~funs:(
         List.map (fun x -> A.Ffunction x)    (functions_of_fdecls decls.functions) @

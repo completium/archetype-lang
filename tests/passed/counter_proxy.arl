@@ -1,11 +1,11 @@
 archetype counter_proxy
 
-contract counter_sig {
-  entry incr(v : int)
-  entry decr(v : int)
-  entry reset(v : int)
+entries {
+  <int> incr
+  <int> decr
+  <int> reset
 }
-variable c : counter_sig = @KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm
+variable c : address = @KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm
 
 entry exec(v : int) {
   effect {

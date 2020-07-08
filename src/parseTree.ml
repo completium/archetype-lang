@@ -263,7 +263,6 @@ and declaration_unloc =
   | Drecord        of record_decl
   | Dentry         of entry_decl
   | Dtransition    of transition_decl
-  | Dcontract      of contract_decl
   | Dentries       of entries_decl
   | Dextension     of extension_decl
   | Dnamespace     of namespace_decl
@@ -314,9 +313,6 @@ and transition_decl =
   * transition
   * exts
 
-and contract_decl =
-  lident * signature list * exts
-
 and entries_decl =
   (type_t * lident) list * exts
 
@@ -342,9 +338,6 @@ and asset_post_option =
 and enum_option =
   | EOinitial
   | EOspecification of label_exprs
-
-and signature =
-  | Ssignature of lident * (lident * type_t) list
 
 and declaration = declaration_unloc loced
 

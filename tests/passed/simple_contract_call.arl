@@ -1,10 +1,10 @@
 archetype simple_contract_call
 
-contract mycontract {
-  entry an_entry (str : string)
+entries {
+  <string> an_entry
 }
 
-variable contract_i : mycontract = @KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm
+variable contract_i : address = @KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm
 
 entry exec () {
   effect {

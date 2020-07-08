@@ -6,14 +6,14 @@ constant admin : role = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 variable quorum : rational = 0.2
 variable threshold : rational = 0.5
 
-contract contract_sig {
+entries {
   // generate signature here
-  entry set_contact(cc : address)
-  entry register_candidate (candidate : address)
+  <address> set_contact
+  <address> register_candidate
 }
 
 // set called contract address here
-variable contract_instance : contract_sig = @KT1QwpAGX68z6XtnXBWQVdJ56AQtzPGrAKKv
+variable contract_instance : address = @KT1QwpAGX68z6XtnXBWQVdJ56AQtzPGrAKKv
 
 asset voter {
   vaddr : address;

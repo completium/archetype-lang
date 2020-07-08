@@ -1,10 +1,11 @@
 archetype effect_transfer_contract
 
-contract contract_called_sig {
-   entry set_value (n : int)
-   entry add_value (a : int, b : int)
+entries {
+   <int> set_value
+   <int * int> add_value
 }
-variable c : contract_called_sig = @KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm
+
+variable c : address = @KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm
 
 entry exec() {
   effect {

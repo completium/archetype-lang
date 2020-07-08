@@ -1,0 +1,14 @@
+archetype bad_entries_calling_arg
+
+entries {
+   <int> set_value
+}
+
+variable c : address = @KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm
+
+
+entry exec(n : int) {
+  effect {
+    transfer 0tz to c call set_value("mystr")
+  }
+}

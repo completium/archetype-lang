@@ -722,13 +722,6 @@ let pp_asset_option fmt opt =
   | AOidentifiedby id -> Format.fprintf fmt "identified by %a" pp_id id
   | AOsortedby id  -> Format.fprintf fmt "sorted by %a" pp_id id
 
-let pp_signature fmt s =
-  match s with
-  | Ssignature (id, xs) ->
-    Format.fprintf fmt "entry %a (%a)"
-      pp_id id
-      (pp_list ", " (fun fmt (id, type_) -> Format.fprintf fmt "%a : %a" pp_id id pp_type type_)) xs
-
 let operation_enum_to_str e =
   match e with
   | AOadd    -> "@add"
@@ -1075,12 +1068,6 @@ let rec pp_declaration fmt { pldesc = e; _ } =
     Format.fprintf fmt "namespace %a {@\n  @[%a@]@\n}"
       pp_id id
       (pp_list "\n" pp_declaration) ds
-
-  | Dcontract (id, xs, exts) ->
-    Format.fprintf fmt "contract%a %a {@\n  @[%a@]@\n}"
-      pp_extensions exts
-      pp_id id
-      (pp_list "@\n" pp_signature) xs
 
   | Dentries (l, exts) ->
     Format.fprintf fmt "entries%a {@\n  @[%a@]@\n}"

@@ -18,6 +18,7 @@ let pp_currency fmt = function
   | Utz  -> Format.fprintf fmt "utz"
 
 let pp_vtyp fmt = function
+  | VTunit       -> Format.fprintf fmt "unit"
   | VTbool       -> Format.fprintf fmt "bool"
   | VTnat        -> Format.fprintf fmt "nat"
   | VTint        -> Format.fprintf fmt "int"

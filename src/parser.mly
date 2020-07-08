@@ -268,7 +268,6 @@ declaration_r:
  | x=transition         { x }
  | x=dextension         { x }
  | x=namespace          { x }
- | x=contract           { x }
  | x=entries            { x }
  | x=function_decl      { x }
  | x=specification_decl { x }
@@ -316,11 +315,6 @@ extension_r:
 namespace:
 | NAMESPACE x=ident xs=braced(declarations) { Dnamespace (x, xs) }
 
-contract:
-| CONTRACT exts=option(extensions) x=ident
-    xs=braced(signatures)
-         { Dcontract (x, xs, exts) }
-
 entries_item:
 | LESS t=type_t GREATER id=ident
  { (t, id) }
@@ -332,19 +326,6 @@ entries:
 | ENTRIES exts=option(extensions)
     xs=braced(entries_items)
          { Dentries (xs, exts) }
-
-%inline signatures:
-| xs=signature+ { xs }
-
-%inline sig_arg:
- | id=ident COLON ty=type_t
-     { (id, ty) }
-
-%inline sig_args:
-| LPAREN xs=sl(COMMA, sig_arg) RPAREN { xs }
-
-%inline signature:
-| ENTRY x=ident xs=sig_args { Ssignature (x, xs) }
 
 %inline fun_body:
 | e=expr { (None, e) }
