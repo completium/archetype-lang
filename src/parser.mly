@@ -63,6 +63,7 @@
 %token EFFECT
 %token ELSE
 %token END
+%token ENTRIES
 %token ENTRY
 %token ENTRYSIG
 %token ENUM
@@ -132,6 +133,7 @@
 %token SECURITY
 %token SEMI_COLON
 %token SET
+%token SELF
 %token SHADOW
 %token SLASH
 %token SOME
@@ -267,6 +269,7 @@ declaration_r:
  | x=dextension         { x }
  | x=namespace          { x }
  | x=contract           { x }
+ | x=entries            { x }
  | x=function_decl      { x }
  | x=specification_decl { x }
  | x=security_decl      { x }
@@ -317,6 +320,18 @@ contract:
 | CONTRACT exts=option(extensions) x=ident
     xs=braced(signatures)
          { Dcontract (x, xs, exts) }
+
+entries_item:
+| LESS t=type_t GREATER id=ident
+ { (t, id) }
+
+entries_items:
+| xs=entries_item* {xs}
+
+entries:
+| ENTRIES exts=option(extensions)
+    xs=braced(entries_items)
+         { Dentries (xs, exts) }
 
 %inline signatures:
 | xs=signature+ { xs }
@@ -745,8 +760,11 @@ expr_r:
  | TRANSFER x=simple_expr TO y=simple_expr CALL id=ident args=paren(sl(COMMA, simple_expr))
      { Etransfer (x, TTcontract (y, id, args)) }
 
- | TRANSFER x=simple_expr TO ENTRY id=ident args=paren(sl(COMMA, simple_expr))
-     { Etransfer (x, TTentry (id, args)) }
+ | TRANSFER x=simple_expr TO ENTRY id=ident arg=simple_expr
+     { Etransfer (x, TTentry (id, arg)) }
+
+ | TRANSFER x=simple_expr TO ENTRY SELF DOT id=ident args=paren(sl(COMMA, simple_expr))
+     { Etransfer (x, TTself (id, args)) }
 
  | DOREQUIRE x=simple_expr
      { Erequire x }
@@ -768,6 +786,9 @@ expr_r:
 
  | UNPACK LESS t=type_t GREATER x=paren(expr)
      { Eunpack (t, x) }
+
+ | SELF DOT x=ident
+     { Eself x }
 
  | x=order_operations %prec prec_order { x }
 

@@ -90,7 +90,8 @@ and for_ident = for_ident_unloc loced
 and transfer_t =
   | TTsimple   of expr
   | TTcontract of expr * lident * expr list
-  | TTentry    of lident * expr list
+  | TTentry    of lident * expr
+  | TTself     of lident * expr list
 
 and expr_unloc =
   | Eterm         of (var_vset option * var_label option) * lident
@@ -122,6 +123,7 @@ and expr_unloc =
   | Ereturn       of expr
   | Eoption       of option_
   | Eunpack       of type_t * expr
+  | Eself         of lident
   | Eany
   | Enothing
   | Einvalid
@@ -262,6 +264,7 @@ and declaration_unloc =
   | Dentry         of entry_decl
   | Dtransition    of transition_decl
   | Dcontract      of contract_decl
+  | Dentries       of entries_decl
   | Dextension     of extension_decl
   | Dnamespace     of namespace_decl
   | Dfunction      of s_function
@@ -313,6 +316,9 @@ and transition_decl =
 
 and contract_decl =
   lident * signature list * exts
+
+and entries_decl =
+  (type_t * lident) list * exts
 
 and extension_decl =
   lident * expr list

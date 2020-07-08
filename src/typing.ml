@@ -31,7 +31,7 @@ module Type : sig
   module Michelson : sig
     val is_type       : A.ptyp -> bool
     val is_comparable : ?simple:bool -> A.ptyp -> bool
-  end 
+  end
 
   val support_eq : A.ptyp -> bool
 
@@ -2724,6 +2724,7 @@ let rec for_xexpr
         (Option.map (fun ty -> A.Toption ty) ty)
         (A.Pcall (None, A.Cconst A.Cunpack, [AExpr e]))
 
+    | Eself     _
     | Evar      _
     | Efail     _
     | Enothing
@@ -4745,6 +4746,8 @@ let group_declarations (decls : (PT.declaration list)) =
 
     | PT.Drecord infos ->
       { g with gr_records = mk infos :: g.gr_records }
+
+    | PT.Dentries _infos -> g (* TODO *)
 
     | PT.Dentry infos ->
       { g with gr_acttxs = mk (`Entry infos) :: g.gr_acttxs }

@@ -43,6 +43,7 @@
       "effect"              , EFFECT         ;
       "else"                , ELSE           ;
       "end"                 , END            ;
+      "entries"             , ENTRIES        ;
       "entry"               , ENTRY          ;
       "entrysig"            , ENTRYSIG       ;
       "enum"                , ENUM           ;
@@ -86,6 +87,7 @@
       "return"              , RETURN         ;
       "security"            , SECURITY       ;
       "set"                 , SET            ;
+      "self"                , SELF           ;
       "shadow"              , SHADOW         ;
       "some"                , SOME           ;
       "sorted"              , SORTED         ;

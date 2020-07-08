@@ -382,7 +382,8 @@ let rec pp_expr outer pos fmt a =
         (fun fmt -> function
            | TTsimple dst               -> Format.fprintf fmt " to %a" pp_simple_expr dst
            | TTcontract (dst, id, args) -> Format.fprintf fmt " to %a call %a(%a)" pp_simple_expr dst pp_id id (pp_list "," pp_simple_expr) args
-           | TTentry (id, args)         -> Format.fprintf fmt " to entry %a(%a)" pp_id id (pp_list "," pp_simple_expr) args
+           | TTentry (id, arg)          -> Format.fprintf fmt " to entry %a(%a)" pp_id id pp_simple_expr arg
+           | TTself (id, args)          -> Format.fprintf fmt " to entry self.%a(%a)" pp_id id (pp_list "," pp_simple_expr) args
         ) tr
     in
     (maybe_paren outer e_default pos pp) fmt (x, tr)
@@ -587,6 +588,8 @@ let rec pp_expr outer pos fmt a =
         (pp_expr e_default PNone) arg
     in
     (maybe_paren outer e_colon pos pp) fmt (t, arg)
+
+  | Eself x -> Format.fprintf fmt "self.%a" pp_id x
 
   | Eany -> Format.fprintf fmt "any"
 
@@ -1078,6 +1081,11 @@ let rec pp_declaration fmt { pldesc = e; _ } =
       pp_extensions exts
       pp_id id
       (pp_list "@\n" pp_signature) xs
+
+  | Dentries (l, exts) ->
+    Format.fprintf fmt "entries%a {@\n  @[%a@]@\n}"
+      pp_extensions exts
+      (pp_list "@\n" (fun fmt (t, x) -> Format.fprintf fmt "<%a> %a" pp_type t pp_id x)) l
 
   | Dfunction f ->
     Format.fprintf fmt "%a"

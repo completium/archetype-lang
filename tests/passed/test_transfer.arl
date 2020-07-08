@@ -1,0 +1,19 @@
+archetype test_transfer
+
+entries {
+  <int> set_value
+}
+
+entry exec () {
+  effect {
+    transfer 1tz to @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg;
+
+    transfer 0tz to @KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm call an_entry(1);
+
+    var eopt : option<entrysig<int>> = entrypoint();
+    var e = getopt(eopt);
+    transfer 0tz to entry e(1);
+
+    transfer 0tz to entry self.f(1);
+  }
+}
