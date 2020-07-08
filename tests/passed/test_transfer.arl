@@ -4,6 +4,12 @@ entries {
   <int> set_value
 }
 
+variable res : int = 0
+
+entry f(i : int) {
+  res := 0
+}
+
 entry exec () {
   effect {
     transfer 1tz to @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg;
