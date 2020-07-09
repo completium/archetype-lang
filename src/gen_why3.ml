@@ -60,6 +60,7 @@ let map_lident (i : M.lident) : loc_ident = {
 }
 
 let map_btype = function
+  | M.Bunit          -> Tyunit
   | M.Bbool          -> Tybool
   | M.Bint           -> Tyint
   | M.Brational      -> Tyrational
@@ -1386,7 +1387,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mduration v -> Tint (Core.duration_to_timestamp v)
     | Mtimestamp v -> Tint v
     | Mbytes v -> Tint (sha v)
-
+    | Munit -> Tunit
 
     (* control expression *)
 

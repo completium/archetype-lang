@@ -37,6 +37,7 @@ let generate_storage (model : model) : model =
 
     let init_ b =
       match b with
+      | Bunit       -> mk_mterm (Munit) (Tbuiltin Bunit)
       | Bbool       -> mk_mterm (Mbool false) (Tbuiltin b)
       | Bint        -> mk_mterm (Mint (Big_int.zero_big_int)) (Tbuiltin b)
       | Brational   -> mk_mterm (Mrational (Big_int.zero_big_int, Big_int.unit_big_int)) (Tbuiltin b)

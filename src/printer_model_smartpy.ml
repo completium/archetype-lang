@@ -29,6 +29,7 @@ let pp_model fmt (model : model) =
   in
 
   let pp_btyp fmt = function
+    | Bunit       -> Format.fprintf fmt "sp.TUnit"
     | Bbool       -> Format.fprintf fmt "sp.TBool"
     | Bint        -> Format.fprintf fmt "sp.TInt"
     | Brational   -> Format.fprintf fmt "rational"
@@ -532,6 +533,7 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "sp.timestamp(%a)"
           pp_big_int v
       | Mbytes v -> Format.fprintf fmt "sp.bytes('0x%s')" v
+      | Munit -> Format.fprintf fmt "Unit"
 
 
       (* control expression *)

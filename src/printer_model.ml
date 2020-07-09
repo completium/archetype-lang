@@ -12,6 +12,7 @@ let pp_currency fmt = function
   | Utz -> Format.fprintf fmt "utz"
 
 let pp_btyp fmt = function
+  | Bunit       -> Format.fprintf fmt "unit"
   | Bbool       -> Format.fprintf fmt "bool"
   | Bint        -> Format.fprintf fmt "int"
   | Brational   -> Format.fprintf fmt "rational"
@@ -336,6 +337,7 @@ let pp_mterm fmt (mt : mterm) =
     | Mduration v -> Core.pp_duration_for_printer fmt v
     | Mtimestamp v -> pp_big_int fmt v
     | Mbytes v -> Format.fprintf fmt "0x%s" v
+    | Munit -> Format.fprintf fmt "Unit"
 
 
     (* control expression *)
