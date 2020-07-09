@@ -298,6 +298,7 @@ let to_model (ast : A.model) : M.model =
       | A.Plit ({node = BVaddress s; _})       -> M.Maddress s
       | A.Plit ({node = BVduration d; _})      -> M.Mduration d
       | A.Plit ({node = BVbytes v; _})         -> M.Mbytes v
+      | A.Plit ({node = BVunit; _})            -> M.Munit
 
       | A.Pdot (e, id) -> begin
           match e with
