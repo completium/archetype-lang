@@ -208,7 +208,7 @@ type ('id, 'term) mterm_node  =
   | Mself             of 'id           (* entryname *)
   (* literals *)
   | Mint              of Core.big_int
-  | Muint             of Core.big_int
+  | Mnat             of Core.big_int
   | Mbool             of bool
   | Menum             of string
   | Mrational         of Core.big_int * Core.big_int
@@ -1103,7 +1103,7 @@ let cmp_mterm_node
     | Mself id1, Mself id2                                                             -> cmpi id1 id2
     (* literals *)
     | Mint v1, Mint v2                                                                 -> Big_int.eq_big_int v1 v2
-    | Muint v1, Muint v2                                                               -> Big_int.eq_big_int v1 v2
+    | Mnat v1, Mnat v2                                                                 -> Big_int.eq_big_int v1 v2
     | Mbool v1, Mbool v2                                                               -> cmp_bool v1 v2
     | Menum v1, Menum v2                                                               -> cmp_ident v1 v2
     | Mrational (n1, d1), Mrational (n2, d2)                                           -> Big_int.eq_big_int n1 n2 && Big_int.eq_big_int d1 d2
@@ -1438,7 +1438,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mself id                       -> Mself (g id)
   (* literals *)
   | Mint v                         -> Mint v
-  | Muint v                        -> Muint v
+  | Mnat v                         -> Mnat v
   | Mbool v                        -> Mbool v
   | Menum v                        -> Menum (fi v)
   | Mrational (n, d)               -> Mrational (n, d)
@@ -1791,7 +1791,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mself _                               -> accu
   (* literals *)
   | Mint _                                -> accu
-  | Muint _                               -> accu
+  | Mnat _                                -> accu
   | Mbool _                               -> accu
   | Menum _                               -> accu
   | Mrational _                           -> accu
@@ -2152,8 +2152,8 @@ let fold_map_term
   | Mint v ->
     g (Mint v), accu
 
-  | Muint v ->
-    g (Muint v), accu
+  | Mnat v ->
+    g (Mnat v), accu
 
   | Mbool v ->
     g (Mbool v), accu

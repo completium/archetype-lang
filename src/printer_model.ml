@@ -318,7 +318,7 @@ let pp_mterm fmt (mt : mterm) =
     (* literals *)
 
     | Mint v -> pp_big_int fmt v
-    | Muint v -> pp_big_int fmt v
+    | Mnat v -> pp_big_int fmt v
     | Mbool b -> pp_str fmt (if b then "true" else "false")
     | Menum v -> pp_str fmt v
     | Mrational (n, d) ->

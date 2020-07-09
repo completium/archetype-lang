@@ -10,7 +10,7 @@ entry exec () {
     var set_c    : bool     = set_contains(my_set, 2);
     var c        : int      = set_length(my_set);
 
-    // (* control *)
+    (* control *)
     var res : int = 0;
     for v in my_set do
       res += v;

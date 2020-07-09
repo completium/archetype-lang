@@ -288,7 +288,7 @@ let to_model (ast : A.model) : M.model =
           | _ -> M.Mlitlist l
         end
       | A.Plit ({node = BVint i; _})           -> M.Mint i
-      | A.Plit ({node = BVuint i; _})          -> M.Muint i
+      | A.Plit ({node = BVuint i; _})          -> M.Mnat i
       | A.Plit ({node = BVbool b; _})          -> M.Mbool b
       | A.Plit ({node = BVenum s; _})          -> M.Menum s
       | A.Plit ({node = BVrational (d, n); _}) -> M.Mrational (d, n)

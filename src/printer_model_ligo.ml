@@ -553,7 +553,7 @@ let pp_model_internal fmt (model : model) b =
     (* literals *)
 
     | Mint v -> pp_big_int fmt v
-    | Muint v -> Format.fprintf fmt "%an" pp_big_int v
+    | Mnat v -> Format.fprintf fmt "%an" pp_big_int v
     | Mbool b -> pp_str fmt (if b then "True" else "False")
     | Menum v -> pp_str fmt v
     | Mrational (n, d) ->

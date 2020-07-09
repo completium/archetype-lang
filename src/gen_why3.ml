@@ -1373,7 +1373,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     (* literals *)
 
     | Mint v -> Tint v
-    | Muint v -> Tint v
+    | Mnat v -> Tint v
     | Mbool false -> Tfalse
     | Mbool true -> Ttrue
     | Menum               _ -> error_not_supported "Menum"

@@ -513,7 +513,7 @@ let pp_model fmt (model : model) =
       (* literals *)
 
       | Mint v -> pp_big_int fmt v
-      | Muint v -> pp_big_int fmt v
+      | Mnat v -> pp_big_int fmt v
       | Mbool b -> Format.fprintf fmt "sp.bool(%s)" (if b then "True" else "False")
       | Menum v -> pp_str fmt v
       | Mrational _ -> assert false

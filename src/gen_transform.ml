@@ -548,8 +548,7 @@ let check_and_replace_init_caller (model : model) : model =
 let rec is_literal (mt : mterm) : bool =
   match mt.node with
   | Mint       _
-  | Muint      _
-  | Mbool      _
+  | Mnat       _
   | Menum      _
   | Mrational  _
   | Mstring    _
