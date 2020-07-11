@@ -63,6 +63,7 @@ type ('t,'i) abstract_univ_decl = 'i list * 't
 
 type 'i pattern_node =
   | Twild
+  | Tpignore
   | Tconst of 'i
   | Tpatt_tuple of 'i pattern_node list
   | Tpsome of 'i
@@ -324,6 +325,7 @@ let map_abstract_univ_decl
 
 let rec map_pattern map = function
   | Twild -> Twild
+  | Tpignore -> Tpignore
   | Tconst i -> Tconst (map i)
   | Tpatt_tuple l -> Tpatt_tuple (List.map (map_pattern map) l)
   | Tpsome i -> Tpsome (map i)

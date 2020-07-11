@@ -452,8 +452,9 @@ module NormedSet
 
   (* GET -------------------------------------------------------------------- *)
   let function get (k : int) (s : nset) : option t
-  ensures { forall e. result = Some e -> proj e = k }
   ensures { result = None -> forall e. F.fmem e s -> proj e <> k }
+  ensures { forall e. result = Some e -> proj e = k }
+  ensures { forall e. result = Some e -> F.fmem e s }
   = internal_get k (F.content s)
 
   (* ADD -------------------------------------------------------------------- *)

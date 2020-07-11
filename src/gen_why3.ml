@@ -302,8 +302,8 @@ let mk_keys_eq_axiom n f ktyp : decl =
                             Teq (Tyint,
                                  Tapp (Tvar f,
                                        [Tget (n,
-                                              Tdoti ("s",n ^ "_assets"),
-                                              Tvar "k")]),
+                                              Tvar "k",
+                                              Tdoti ("s",n ^ "_assets"))]),
                                  Tvar "k"))))
 
 (* asset is the asset name
@@ -484,8 +484,8 @@ let mk_select_body forcoll asset mlw_test : term =
       body     =
         let some =
           Tmatch (Tget (asset,
-                        Tvar "c",
-                        Tvar "k"), [
+                        Tvar "k",
+                        Tvar "c"), [
                     Tpsome "a",
                     Tif(mk_afun_test mlw_test,
                         Tcons (gListLib, Tvar "k",Tapp (Tvar ("internal_select"),[Tvar "tl"])),
@@ -618,8 +618,8 @@ let mk_removeif_body m forcoll asset mlw_test : term =
       body     =
         let some =
           Tmatch (Tget (asset,
-                        Tvar "c",
-                        Tvar "k"), [
+                        Tvar "k",
+                        Tvar "c"), [
                     Tpsome "a",
                     Tif(mk_afun_test mlw_test,
                         Tapp (Tvar ("remove_" ^ asset),[Tdoti ("a", key)])
@@ -674,8 +674,8 @@ let mk_vremoveif m asset fn test mlw_test only_formula args =
             body     =
               let some =
                 Tmatch (Tget (oan,
-                              mk_ac oan,
-                              Tvar "k"), [
+                              Tvar "k",
+                              mk_ac oan), [
                           Tpsome "a",
                           Tseq [Tif(mk_afun_test mlw_test, Tapp (Tvar ("remove_" ^ asset ^ "_" ^ fn),[Tvar "k"; Tdoti ("a", okey)]), None);
                                 Tapp (Tvar ("internal_removeif"),[Tvar "tl"])];
@@ -683,7 +683,7 @@ let mk_vremoveif m asset fn test mlw_test only_formula args =
                         ]) in
               Tmlist (gListLib,Tunit,"l","k","tl",some);
           },
-          (Tmatch (Tget (asset, Tvar "c", Tvar "k"),
+          (Tmatch (Tget (asset, Tvar "k", Tvar "c"),
                    [ Tpsome "a",
                      Tapp (Tvar ("internal_removeif"), [Tapp(Tdoti(String.capitalize_ascii oan, "velts"),[Tdoti ("a", fn)])]);
                      Twild, Tunit
@@ -723,8 +723,8 @@ let mk_cremoveif m asset test mlw_test only_formula args =
             body     =
               let some =
                 Tmatch (Tget (asset,
-                              Tvar "c",
-                              Tvar "k"), [
+                              Tvar "k",
+                              Tvar "c"), [
                           Tpsome "a",
                           Tif(mk_afun_test mlw_test,
                               Tapp (Tvar ("remove_" ^ asset),[Tdoti ("a", key)]),
@@ -1182,8 +1182,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mletin ([id], { node = M.Mget (a, _, k); type_ = _ }, _, b, Some e) -> (* logical *)
       let ctx = ctx in
       Tmatch (Tget (loc_ident a,
-                    mk_ac_ctx a ctx,
-                    map_mterm m ctx k) |> with_dummy_loc,[
+                    map_mterm m ctx k,
+                    mk_ac_ctx a ctx) |> with_dummy_loc,[
                 Tpsome (map_lident id), map_mterm m ctx b;
                 Twild, map_mterm m ctx e
               ])
@@ -2044,7 +2044,12 @@ let mk_key_found_cond old asset var =
               | `Old -> mk_ac_old asset
               | `Curr -> mk_ac asset)
 
-let mk_not_found_cond old asset var = Tnot (mk_key_found_cond old asset var)
+let mk_not_found_cond old asset var =
+  let coll =
+  match old with
+  | `Curr -> mk_ac asset
+  | `Old -> mk_ac_old asset in
+  Teq(Tyint, Tget(asset, var, coll), Tnone)
 
 (* formula is in mlw tree *)
 let mk_get_sum_value_from_pos asset id formula =
@@ -2065,8 +2070,8 @@ let mk_get_sum_value_from_pos asset id formula =
                    Tvar "i",
                    Tvar "v"), [
               Tpsome "k",(Tmatch (Tget(asset,
-                                       Tvar "c",
-                                       Tvar "k"),[
+                                       Tvar "k",
+                                       Tvar "c"),[
                                     Tpsome "e", Tapp (f,[Tvar "e"]);
                                     Twild, Tint (Big_int.zero_big_int)
                                   ]));
@@ -2102,14 +2107,14 @@ let mk_get_asset asset key ktyp = Dfun {
     args = ["k",ktyp];
     returns = Tyasset asset;
     raises = [ Timpl (Texn Enotfound,
-                      mk_not_found_cond `Old asset (Tvar "k"))];
+                      mk_not_found_cond `Curr asset (Tvar "k"))];
     variants = [];
     requires = [];
     ensures = [
       { id   = "get_" ^ asset ^ "_post_1";
-        form = Tmem (asset,
-                     Tresult,
-                     mk_ac asset);
+        form = Teq(Tyint,
+                   Tget(asset, Tvar "k", mk_ac asset),
+                   Tsome Tresult);
       };
       { id   = "get_" ^ asset ^ "_post_2";
         form = Teq(Tyint,
@@ -2125,8 +2130,8 @@ let mk_get_asset asset key ktyp = Dfun {
                             Tvar "k"))); *)
 
     body = Tmatch (Tget (asset,
-                         mk_ac asset,
-                         Tvar "k"),[
+                         Tvar "k",
+                         mk_ac asset),[
                      Tpsome "e", Tvar "e";
                      Twild, Traise Enotfound])
   }
@@ -2190,7 +2195,7 @@ let mk_vnth_asset asset = Dfun {
 let gen_exists_asset at asset_id asset a body =
   Texists ([[asset],Tyasset a],
            Tand (
-             Teq(Tyint, Tget (a,begin match at with | `Curr -> mk_ac a | `Old -> mk_ac_old a end, Tvar asset_id),Tsome (Tvar asset)),
+             Teq(Tyint, Tget (a,Tvar asset_id,begin match at with | `Curr -> mk_ac a | `Old -> mk_ac_old a end),Tsome (Tvar asset)),
              body))
 
 let exists_asset = gen_exists_asset `Curr "asset_id" "asset"
@@ -2230,21 +2235,17 @@ let mk_set_ensures m n key fields =
       if compare f.name key = 0 then
         (i,acc)
       else
-        (succ i,acc@[{
+        (succ (succ i),acc@[{
              id   = "set_" ^ n ^ "_post" ^ (string_of_int i);
-             form =
-               let eq =
-                 Teq (Tyint,
-                      Tapp (Tvar f.name,
-                            [Tvar "e"]),
-                      Tapp (Tvar f.name,
-                            [Tvar ("new_asset")])) in
-               Tmatch (Tget (n,
-                             mk_ac n,
-                             Tvar "asset_id"),[
-                         Tpsome "e",eq;
-                         Twild, Tfalse
-                       ])
+             form = Teq(Tyint,
+                        Tget(n, Tvar "asset_id", mk_ac n),
+                        Tsome (Tvar "new_asset"))
+
+           }; {
+             id   = "set_" ^ n ^ "_post" ^ (string_of_int (succ i));
+             form = Tforall ([["k"],Tykey],
+                              Timpl(Tneq(Tyint,Tvar "k",Tvar "asset_id"),
+                              Teq(Tyint,Tget(n,Tvar "k",mk_ac n),Tget(n,Tvar "k",mk_ac_old n))))
            }])
     ) (1,[]) fields) @ (mk_set_sum_ensures m n) @ (mk_set_count_ensures m n)
 
@@ -2257,19 +2258,18 @@ let mk_set_asset m key = function
       args = ["asset_id", Tykey; "new_asset", Tyasset asset];
       returns = Tyunit;
       raises = [ Timpl (Texn Enotfound,
-                        mk_not_found_cond `Old asset (Tvar "asset_id"))];
+                        mk_not_found_cond `Curr asset (Tvar "asset_id"))];
       variants = [];
       requires = mk_set_asset_precond m ("set_" ^ asset) asset "new_asset";
       ensures = mk_set_ensures m asset key fields;
-      body = Tif (mk_not_found_cond `Curr asset (Tvar "asset_id"),
-                  Traise Enotfound,
-                  Some (
-                    Tassign (mk_ac asset,
+      body = Tmatch (Tget(asset, Tvar "asset_id", mk_ac asset),[
+        Tpignore, Tassign (mk_ac asset,
                              Tset (asset,
-                                   mk_ac asset,
                                    Tvar "asset_id",
-                                   Tvar ("new_asset")))
-                  ))
+                                   Tvar ("new_asset"),
+                                   mk_ac asset));
+        Twild, Traise Enotfound
+      ])
     }
   | _ -> assert false
 
@@ -2467,7 +2467,7 @@ let mk_rm_ensures m p a e =
         [["asset"],Tyasset a],
         Tand (
           Teq (Tyint,
-               Tget (a, mk_ac_old a, Tvar e),
+               Tget (a, Tvar e, mk_ac_old a),
                Tsome (Tvar "asset")
               ),
           body
@@ -2519,8 +2519,8 @@ let mk_rm_asset m asset : decl =
     ensures  = mk_rm_ensures m ("remove_" ^ asset) asset "a";
     body =
       let get = Tget(asset,
-                     mk_ac asset,
-                     Tvar ("a")) in
+                     Tvar ("a"),
+                     mk_ac asset) in
       Tmatch (get,[
           Tpsome "e",
           Tseq [
@@ -2736,8 +2736,8 @@ let mk_add_field m part a ak field adda addak : decl =
     ensures  = mk_add_field_ensures m part a ak field ("add_" ^ a ^ "_" ^ field) adda "new_asset";
     body     =
       Tmatch (Tget(a,
-                   mk_ac a,
-                   Tvar "asset_id"),[
+                   Tvar "asset_id",
+                   mk_ac a),[
                 Tpsome "asset",
                 (let addfield =
                    Tletin (false, a ^ "_" ^ field,None,
@@ -2831,7 +2831,7 @@ let mk_rm_field m part asset keyf field rmed_asset _rmkey : decl =
     requires = [];
     ensures  = mk_rm_field_ensures m part asset "asset_id" keyf field ("remove_" ^ asset ^ "_" ^ field) rmed_asset "rm_asset_id";
     body     =
-      Tmatch (Tget(asset, mk_ac asset, Tvar "asset_id"),[
+      Tmatch (Tget(asset, Tvar "asset_id", mk_ac asset),[
           Tpsome "asset",
           Tletin (false,
                   asset ^ "_" ^ field,
@@ -2883,7 +2883,7 @@ let mk_removeall _m part asset field rm_asset =
     requires = [];
     ensures  = []; (* TODO *)
     body     =  Tmatch (
-        Tget(asset, mk_ac asset, Tvar "asset_id"),[
+        Tget(asset, Tvar "asset_id", mk_ac asset),[
           Tpsome "asset",
           Tletin (false,
                   "new_" ^ asset ^ "_asset",

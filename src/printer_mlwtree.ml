@@ -217,6 +217,7 @@ let pp_args fmt l =
 
 let rec pp_pattern fmt = function
   | Twild -> pp_str fmt " _"
+  | Tpignore -> pp_str fmt "Some _"
   | Tconst a -> pp_id fmt a
   | Tpatt_tuple l -> Format.fprintf fmt "%a" (pp_list "," (pp_pattern)) l
   | Tpsome a -> Format.fprintf fmt "Some %a" pp_id a
