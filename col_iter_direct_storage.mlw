@@ -1,0 +1,156 @@
+module Col_iter_direct_storage_storage
+  use archetype.Lib
+  
+  use list.List as L
+  
+  use archetype.Field as F
+  
+  use archetype.View as V
+  
+  type _asset =
+   | AMyasset
+  
+  type _entry =
+   | EExec
+  
+  type _field =
+   | FId
+   | FV
+  
+  clone archetype.Trace as Tr with type _asset = _asset,
+                                   type _entry = _entry,
+                                   type _field = _field
+  
+  type myasset = {
+    id : int;
+    v : astring 
+  }
+  
+  let function eq_myasset (a1 : myasset) (a2 : myasset) : bool
+  =  ((a1.id = a2.id) && (a1.v = a2.v))
+  
+  let mk_default_myasset () : myasset
+  =  {
+       id = 0;
+       v = 0
+     }
+  
+  clone archetype.Collection as Myasset with type t = myasset,
+                                             val keyt = id,
+                                             val eqt = eq_myasset
+  
+  lemma myasset_extensionality:
+    forall a1 a2 : myasset.
+    eq_myasset a1 a2 ->
+    a1 = a2 
+  
+  type _storage = {
+    mutable _myasset_assets : Myasset.collection;
+    mutable _myasset_assets_added : Myasset.collection;
+    mutable _myasset_assets_removed : Myasset.collection;
+    mutable _ops : transfers;
+    mutable _balance : tez;
+    _transferred : tez;
+    _caller : address;
+    _source : address;
+    _now : date;
+    _chainid : chain_id;
+    _entry : option _entry;
+    mutable _tr : Tr._traces 
+  } by {
+    _myasset_assets = Myasset.empty;
+    _myasset_assets_added = Myasset.empty;
+    _myasset_assets_removed = Myasset.empty;
+    _ops = L.Nil;
+    _balance = 0;
+    _transferred = 0;
+    _caller = 0;
+    _source = 0;
+    _now = 0;
+    _chainid = 0;
+    _entry = None;
+    _tr = L.Nil 
+  }
+  
+  val _s : _storage
+  
+  let nth_myasset (i : int) (v : V.view) : key
+  raises { NotFound }
+  ensures {
+    [@expl:nth_myasset_post_1]
+    V.contains result v  
+  }
+  =  match V.nth i v with
+     | Some k -> k
+     | _ -> raise NotFound 
+     end
+  
+  let get_myasset (k : int) : myasset
+  raises { NotFound ->
+           Myasset.get k _s._myasset_assets = None  }
+  ensures {
+    [@expl:get_myasset_post_1]
+    Myasset.get k _s._myasset_assets = Some result 
+  }
+  ensures {
+    [@expl:get_myasset_post_2]
+    result.id = k  
+  }
+  =  match Myasset.get k _s._myasset_assets with
+     | Some e -> e
+     | _ -> raise NotFound 
+     end
+  
+  let set_myasset (asset_id : key) (new_asset : myasset) : unit
+  raises { NotFound ->
+           Myasset.get asset_id _s._myasset_assets = None  }
+  ensures {
+    [@expl:set_myasset_post1]
+    Myasset.get asset_id _s._myasset_assets = Some new_asset 
+  }
+  ensures {
+    [@expl:set_myasset_post2]
+    forall k : key.
+    k <> asset_id ->
+    Myasset.get k _s._myasset_assets = Myasset.get k (old _s)._myasset_assets  
+  }
+  ensures {
+    [@expl:set_myasset_count]
+    V.card (Myasset.to_view _s._myasset_assets) = V.card (Myasset.to_view (old _s)._myasset_assets)  
+  }
+  =  match Myasset.get asset_id _s._myasset_assets with
+     | Some _ -> _s._myasset_assets <- Myasset.set asset_id new_asset _s._myasset_assets
+     | _ -> raise NotFound 
+     end
+end
+module Col_iter_direct_storage
+  use archetype.Lib
+  
+  use list.List as L
+  
+  use Col_iter_direct_storage_storage
+  
+  let exec () : unit
+  raises { NotFound }
+  requires {
+    [@expl:entry_require]
+    _s._entry = Some EExec 
+  }
+  requires {
+   [@expl:empty_trace]
+   _s._tr = L.Nil  
+  }
+  =  for _i_loop_exec_0 = 0 to V.card (Myasset.to_view _s._myasset_assets) do
+     
+       let c = nth_myasset _i_loop_exec_0 (Myasset.to_view _s._myasset_assets) in
+       let k_ = c in
+       let myasset_ = get_myasset c in
+       let myasset_ = {
+         id = (get_myasset c).id;
+         v = 420092500118609863009393073782231086639745301634218717858469012615877479597492380738800618744328949285687191308474647889516393059554029750632529003581853
+       } in
+       (set_myasset c myasset_;
+        _s._tr <- L.Cons (Tr.TrUpdate_ FV) _s._tr)
+     done
+end
+

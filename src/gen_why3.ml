@@ -1554,9 +1554,11 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                                               with_dummy_loc (Ttoview(with_dummy_loc a, mk_ac_ctx a ctx)))
 
     | Mnth (n, (CKview c | CKfield (_, _, c)),k) -> Tapp (loc_term (Tvar ("vnth_" ^ n)),[map_mterm m ctx c; map_mterm m ctx k])
-    | Mnth (n, CKcoll,k) -> Tapp (loc_term (Tvar ("cnth_" ^ n)),[ mk_ac_ctx n ctx; map_mterm m ctx k])
+    | Mnth (n, CKcoll,k) -> Tapp (loc_term (Tvar ("nth_" ^ n)), [
+        map_mterm m ctx k;
+        with_dummy_loc (Ttoview (with_dummy_loc n, mk_ac_ctx n ctx)) ])
     | Mcount (a, (CKview t | CKfield (_, _, t))) -> Tvcard (with_dummy_loc a, map_mterm m ctx t)
-    | Mcount (a, CKcoll) -> Tccard (with_dummy_loc a, mk_ac_ctx a ctx)
+    | Mcount (a, CKcoll) -> Tvcard (with_dummy_loc a, with_dummy_loc (Ttoview(with_dummy_loc a, mk_ac_ctx a ctx)))
     | Msum          (a, (CKview v | CKfield (_, _, v)),f) ->
       let cloneid = mk_sum_clone_id m a f in
       let col = mk_ac_ctx a ctx in
@@ -2138,58 +2140,24 @@ let mk_get_asset asset key ktyp = Dfun {
                      Twild, Traise Enotfound])
   }
 
-let mk_cnth_asset asset = Dfun {
-    name = "cnth_" ^ asset;
+let mk_nth_asset asset = Dfun {
+    name = "nth_" ^ asset;
     logic = NoMod;
-    args = ["c",Tycoll asset;"i",Tyint];
+    args = ["i",Tyint;"v",Tyview asset];
     returns = Tykey;
     raises = [ Texn Enotfound ];
     variants = [];
     requires = [];
-    ensures = [{ id   = "cnth_" ^ asset ^ "_post_1";
-                 form = Tccontains (asset,
-                                    Tresult,
-                                    Tvar "c");
-               }];
-    body =
-      Tmatch (Tcnth (asset,
-                     Tvar "i",
-                     Tvar "c"),[
-                Tpsome "k", (Tvar "k"
-                (* Tmatch (Tget (asset,
-                              mk_ac asset,
-                              Tvar "k"),[
-                   Tpsome "v", Tvar "v";
-                   Twild, Traise Enotfound
-                   ]) *));
-                Twild, Traise Enotfound
-              ])
-  }
-
-let mk_vnth_asset asset = Dfun {
-    name = "vnth_" ^ asset;
-    logic = NoMod;
-    args = ["v",Tyview asset;"i",Tyint];
-    returns = Tykey;
-    raises = [ Texn Enotfound ];
-    variants = [];
-    requires = [];
-    ensures = [{ id   = "vnth_" ^ asset ^ "_post_1";
-                 form = Tvmem (asset,
+    ensures = [{ id   = "nth_" ^ asset ^ "_post_1";
+                 form = Tvcontains (asset,
                                Tresult,
                                Tvar "v");
                }];
     body =
-      Tmatch (Tvnth (asset,
+      Tmatch (Tnth (asset,
                      Tvar "i",
                      Tvar "v"),[
-                Tpsome "k", (Tvar "k"
-                (* Tmatch (Tget (asset,
-                              mk_ac asset,
-                              Tvar "k"),[
-                   Tpsome "v", Tvar "v";
-                   Twild, Traise Enotfound
-                   ]) *));
+                Tpsome "k", (Tvar "k");
                 Twild, Traise Enotfound
               ])
   }
@@ -2226,8 +2194,8 @@ let mk_set_count_ensures m a =
   if M.Utils.with_count m a then [{
       id = "set_" ^ a ^ "_count";
       form = Teq (Tyint,
-                  Tccard (a,mk_ac a),
-                  Tccard (a,mk_ac_old a)
+                  Tvcard (a,Ttoview (a,mk_ac a)),
+                  Tvcard (a,Ttoview (a,mk_ac_old a))
                  );
     }]
   else []
@@ -2950,18 +2918,18 @@ let mk_storage_api (m : M.model) records =
       | M.APIAsset (Get n) ->
         let k,kt = M.Utils.get_asset_key m n in
         acc @ [mk_get_asset n k (kt |> map_btype)]
-      | M.APIAsset (Nth (n, Coll)) ->
-        acc @ [mk_cnth_asset n]
-      | M.APIAsset (Nth (n, (View | Field _))) ->
-        if not !gnthgen then (
-          gnthgen := true;
-          acc @ [mk_vnth_asset n])
-        else acc
       | M.APIAsset (Add n) ->
         let k = M.Utils.get_asset_key m n |> fst in
         acc @ [mk_add_asset m n k]
       | M.APIAsset (Remove n) ->
         acc @ [mk_rm_asset m n]
+      | M.APIAsset (Nth (n, Coll)) ->
+        acc @ [mk_nth_asset n]
+      | M.APIAsset (Nth (n, (View | Field _))) ->
+        if not !gnthgen then (
+          gnthgen := true;
+          acc @ [mk_nth_asset n])
+        else acc
       | M.APIAsset (Set n) ->
         let record = get_record n (records |> unloc_decl) in
         let k      = M.Utils.get_asset_key m (get_record_name record) |> fst in

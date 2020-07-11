@@ -810,7 +810,7 @@ module Collection
 
   (* ------------------------------------------------------------------------ *)
   let rec function to_view (c : collection) : V.view
-  ensures { forall k. V.contains k result <-> forall e. get k c = Some e -> keyt e = k }
+  ensures { forall k. V.contains k result <-> forall e. get k c = Some e <-> keyt e = k }
   =
   list_to_view (N.elts c.content)
 
