@@ -780,6 +780,7 @@ module Collection
 
   (* ------------------------------------------------------------------------ *)
   let function view_to_list (v : V.view) (c : collection) : list t
+  (* TODO : adds postcondition: this is used in 'select' storage API *)
   =
   let rec function internal_view_to_list (l : list t) : list t
   variant { l }

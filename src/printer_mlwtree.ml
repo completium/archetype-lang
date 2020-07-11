@@ -494,9 +494,8 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "%a.mk %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e
-  | Tmkview (i,e) ->
-    Format.fprintf fmt "%a.vmk %a"
-      pp_str (String.capitalize_ascii i)
+  | Tmkview (_,e) ->
+    Format.fprintf fmt "V.mk %a"
       (pp_with_paren (pp_term outer pos)) e
   | Tcontent (i,e) ->
     Format.fprintf fmt "%a.elts %a"
@@ -515,6 +514,11 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "%a.to_view %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e
+  | Tviewtolist (i,e1,e2) ->
+    Format.fprintf fmt "%a.view_to_list %a %a"
+      pp_str (String.capitalize_ascii i)
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
   | Tshallow (i,e1,e2) ->
     Format.fprintf fmt "%a.shallow %a %a"
       pp_str (String.capitalize_ascii i)

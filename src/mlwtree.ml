@@ -103,6 +103,7 @@ type ('e,'t,'i) abstract_term =
   | Tvcard   of 'i * 'e
   | Ttocoll  of 'i * 'e * 'e
   | Ttoview of 'i * 'e
+  | Tviewtolist of 'i * 'e *'e
   | Tshallow  of 'i * 'e * 'e
   | Tmlist  of 'i * 'e * 'i * 'i * 'i * 'e (* match list *)
   | Tcons   of 'i * 'e * 'e
@@ -400,6 +401,7 @@ and map_abstract_term
   | Tvcontent (i,e)    -> Tvcontent (map_i i, map_e e)
   | Ttocoll (i,e1,e2)  -> Ttocoll (map_i i, map_e e1, map_e e2)
   | Ttoview (i,e)      -> Ttoview (map_i i, map_e e)
+  | Tviewtolist (i,e1,e2) -> Tviewtolist (map_i i, map_e e1, map_e e2)
   | Tshallow (i,e1,e2) -> Tshallow (map_i i, map_e e1, map_e e2)
   | Tmlist (l,e1,i1,i2,i3,e2) -> Tmlist (map_i l,map_e e1, map_i i1, map_i i2, map_i i3, map_e e2)
   | Tcons (i,e1,e2)    -> Tcons (map_i i, map_e e1, map_e e2)
@@ -802,6 +804,7 @@ let compare_abstract_term
   | Tvcontent (i1,e1), Tvcontent (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Ttocoll (i1,e1,f1), Ttocoll (i2,e2,f2) -> cmpi i1 i2 && cmpe e1 e2 && cmpe f1 f2
   | Ttoview (i1,e1), Ttoview (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
+  | Tviewtolist (i1,e1,f1), Tviewtolist (i2,e2,f2) -> cmpi i1 i2 && cmpe e1 e2 && cmpe f1 f2
   | Tshallow (i1,e1,f1), Tshallow (i2,e2,f2) -> cmpi i1 i2 && cmpe e1 e2 && cmpe f1 f2
   | Tmlist (l1,e11,i11,i21,i31,e21), Tmlist (l2,e12,i12,i22,i32,e22) ->
     cmpi l1 l2 && cmpe e11 e12 && cmpi i11 i12 && cmpi i21 i22 && cmpi i31 i32 && cmpe e21 e22

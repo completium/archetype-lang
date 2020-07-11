@@ -469,37 +469,25 @@ let rec mk_afun_test = function
   | _ as t -> map_abstract_term mk_afun_test id id t
 
 (* internal select is a local defintion *)
-let mk_select_body forcoll asset mlw_test : term =
+let mk_select_body asset key mlw_test : term =
   (* let capa = String.capitalize_ascii asset in *)
   Tletfun (
     {
       name     = "internal_select";
       logic    = Rec;
-      args     = ["l",Tylist Tyint];
+      args     = ["l",Tylist (Tyasset asset)];
       returns  = Tylist Tyint;
       raises   = [];
       variants = [Tvar "l"];
       requires = [];
       ensures  = [];
       body     =
-        let some =
-          Tmatch (Tget (asset,
-                        Tvar "k",
-                        Tvar "c"), [
-                    Tpsome "a",
-                    Tif(mk_afun_test mlw_test,
-                        Tcons (gListLib, Tvar "k",Tapp (Tvar ("internal_select"),[Tvar "tl"])),
-                        Some (Tapp (Tvar ("internal_select"),[Tvar "tl"])));
-                    Twild, Tapp (Tvar ("internal_select"),[Tvar "tl"])
-                  ]) in
-        Tmlist (gListLib,Tnil gListLib,"l","k","tl",some);
+        let some = Tif(mk_afun_test mlw_test,
+                      Tcons (gListLib, Tdoti ("a",key),Tapp (Tvar ("internal_select"),[Tvar "tl"])),
+                      Some (Tapp (Tvar ("internal_select"),[Tvar "tl"]))) in
+        Tmlist (gListLib,Tnil gListLib,"l","a","tl",some);
     },
-
-    Tmkview (asset,(Tapp (Tvar "internal_select",
-                          [if forcoll then
-                             Tapp(Tdoti(String.capitalize_ascii asset,"internal_list_to_view"),
-                                  [Tcontent (asset,Tvar "c")])
-                           else Tvcontent (asset,Tvar "v")])))
+    Tmkview (asset,(Tapp (Tvar "internal_select",[Tviewtolist(asset, Tvar "v", Tvar "c")])))
   )
 
 (* TODO : complete mapping
@@ -513,10 +501,10 @@ let extract_args test =
     | _ -> M.fold_term internal_extract_args acc term in
   internal_extract_args [] test
 
-let mk_select_name prefix m asset test = prefix^"select_" ^ asset ^ "_" ^ (string_of_int (M.Utils.get_select_idx m asset test))
+let mk_select_name m asset test = "select_" ^ asset ^ "_" ^ (string_of_int (M.Utils.get_select_idx m asset test))
 
-let mk_vselect m asset test mlw_test only_formula args =
-  let id =  mk_select_name "v" m asset test in
+let mk_select m asset test mlw_test only_formula args =
+  let id =  mk_select_name m asset test in
   let (key,_) = M.Utils.get_asset_key m asset in
   let args : (string * string abstract_type) list = List.map (fun (i,t) -> (i, (map_mtype t|> unloc_type))) args in
   let decl = Dfun {
@@ -529,73 +517,22 @@ let mk_vselect m asset test mlw_test only_formula args =
       requires = [];
       ensures  = [
         { id   = id ^ "_post_1";
-          form = Tforall (
-              [["k"],Tykey],
-              Timpl (Tvmem (asset,Tvar "k",Tresult),
-                     Texists ([["a"],Tyasset asset],
-                              Tand (
-                                Teq (Tyint, Tdoti("a",key), Tvar "k"),
-                                Tand (
-                                  Tmem (asset, Tvar "a",Tvar "c"),
-                                  mk_afun_test mlw_test
-                                )
-                              )
-                             ))
-            );
+          form = Tforall ([["k"],Tykey],
+              Timpl (Tvcontains (asset,Tvar "k",Tresult),
+                     Tforall ([["a"],Tyasset asset],
+                              Timpl (
+                                Teq (Tyint, Tget(asset,Tvar "k",Tvar "c"), Tsome (Tvar "a")),
+                                  mk_afun_test mlw_test))));
         };
         { id   = id ^ "_post_2";
-          form = Tforall(
-              [["k"],Tykey],
-              Timpl (
-                Tvmem(asset,Tvar "k",Tresult),
-                Tvmem(asset,Tvar "k",Tvar "v")
-              )
-            );
+          form = Tforall ([["k"],Tykey],
+              Timpl (Tvcontains (asset,Tvar "k",Tresult),
+                              Timpl (
+                                Teq (Tyint, Tget(asset,Tvar "k",Tvar "c"), Tnone),
+                                  Tfalse)));
         }
       ];
-      body     = mk_select_body false asset mlw_test;
-    } in
-  decl
-
-let mk_cselect m asset test mlw_test only_formula args =
-  let id =  mk_select_name "c" m asset test in
-  let (key,_) = M.Utils.get_asset_key m asset in
-  let args = List.map (fun (i,t) -> (i, map_mtype t |> unloc_type)) args in
-  let decl = Dfun {
-      name     = id;
-      logic    = if only_formula then Logic else NoMod;
-      args     = (extract_args test |> List.map (fun (_,a,b) -> a,b)) @ args @ ["c", Tycoll asset];
-      returns  = Tyview asset;
-      raises   = [];
-      variants = [];
-      requires = [];
-      ensures  = [
-        { id   = id ^ "_post_1";
-          form = Tforall (
-              [["k"],Tykey],
-              Timpl (Tvmem (asset,Tvar "k",Tresult),
-                     Texists ([["a"],Tyasset asset],
-                              Tand (
-                                Teq (Tyint, Tdoti("a",key), Tvar "k"),
-                                Tand (
-                                  Tmem (asset, Tvar "a",Tvar "c"),
-                                  mk_afun_test mlw_test
-                                )
-                              )
-                             ))
-            );
-        };
-        { id   = id ^ "_post_2";
-          form = Tforall(
-              [["k"],Tykey],
-              Timpl (
-                Tvmem(asset,Tvar "k",Tresult),
-                Tccontains(asset,Tvar "k",Tvar "c")
-              )
-            );
-        }
-      ];
-      body     = mk_select_body true asset mlw_test;
+      body     = mk_select_body asset key mlw_test;
     } in
   decl
 
@@ -1536,16 +1473,18 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Mselect (a, (CKview l | CKfield (_, _, l)), la, lb, _a) ->
       let args = extract_args lb in
-      let id = mk_select_name "v" m a lb in
+      let id = mk_select_name m a lb in
       let argids = args |> List.map (fun (e, _, _) -> e) |> List.map (map_mterm m ctx) in
       let args = List.map (fun (i,_) -> loc_term (Tvar i)) la in
       Tapp (loc_term (Tvar id), argids @ args @ [map_mterm m ctx l; mk_ac_ctx a ctx])
     | Mselect (a, CKcoll, la, lb, _a) ->
       let args = extract_args lb in
-      let id = mk_select_name "c" m a lb in
+      let id = mk_select_name m a lb in
       let argids = args |> List.map (fun (e, _, _) -> e) |> List.map (map_mterm m ctx) in
       let args = List.map (fun (i,_) -> loc_term (Tvar i)) la in
-      Tapp (loc_term (Tvar id), argids @ args @ [mk_ac_ctx a ctx])
+      let coll = mk_ac_ctx a ctx in
+      let view = with_dummy_loc (Ttoview (with_dummy_loc a, coll)) in
+      Tapp (loc_term (Tvar id), argids @ args @ [view;coll])
     | Msort (a, (CKview c | CKfield (_, _, c)),l) -> Tvsort (with_dummy_loc (mk_sort_clone_id a l),map_mterm m ctx c,mk_ac_ctx a ctx)
     | Msort (a, CKcoll,l) -> Tcsort (with_dummy_loc (mk_sort_clone_id a l), mk_ac_ctx a ctx)
     | Mcontains (a, (CKview v | CKfield (_, _, v)), r) -> Tvcontains (with_dummy_loc a, map_mterm m ctx r, map_mterm m ctx v)
@@ -1553,7 +1492,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                                               map_mterm m ctx r,
                                               with_dummy_loc (Ttoview(with_dummy_loc a, mk_ac_ctx a ctx)))
 
-    | Mnth (n, (CKview c | CKfield (_, _, c)),k) -> Tapp (loc_term (Tvar ("vnth_" ^ n)),[map_mterm m ctx c; map_mterm m ctx k])
+    | Mnth (n, (CKview c | CKfield (_, _, c)),k) -> Tapp (loc_term (Tvar ("nth_" ^ n)),[map_mterm m ctx k; map_mterm m ctx c])
     | Mnth (n, CKcoll,k) -> Tapp (loc_term (Tvar ("nth_" ^ n)), [
         map_mterm m ctx k;
         with_dummy_loc (Ttoview (with_dummy_loc n, mk_ac_ctx n ctx)) ])
@@ -2899,11 +2838,11 @@ let mk_storage_api_before_storage (m : M.model) _records =
         if not !gselectgen then (
           gselectgen := true;
           let mlw_test = map_mterm m init_ctx test in
-          acc @ [ mk_vselect m asset test (mlw_test |> unloc_term) (match sc.api_loc with | OnlyFormula -> true | ExecFormula | OnlyExec -> false) args ])
+          acc @ [ mk_select m asset test (mlw_test |> unloc_term) (match sc.api_loc with | OnlyFormula -> true | ExecFormula | OnlyExec -> false) args ])
         else acc
       | M.APIAsset (Select (asset, Coll, args, test)) ->
         let mlw_test = map_mterm m init_ctx test in
-        acc @ [ mk_cselect m asset test (mlw_test |> unloc_term) (match sc.api_loc with | OnlyFormula -> true | ExecFormula | OnlyExec -> false) args ]
+        acc @ [ mk_select m asset test (mlw_test |> unloc_term) (match sc.api_loc with | OnlyFormula -> true | ExecFormula | OnlyExec -> false) args ]
       | _ -> acc
     ) [] |> loc_decl |> deloc
 
