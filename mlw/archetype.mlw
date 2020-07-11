@@ -737,6 +737,9 @@ module Collection
   = N.get k c.content
 
   (* ------------------------------------------------------------------------ *)
+  let function empty = mk N.empty
+
+  (* ------------------------------------------------------------------------ *)
   lemma cons_key_injective : forall a l.
   key_injective l -> (forall e. M.mem e l -> keyt e <> keyt a) ->
   key_injective (Cons a l)

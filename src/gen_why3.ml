@@ -28,7 +28,9 @@ let emit_error (lc, error) =
 
 let gArchetypeDir   = "archetype"
 let gArchetypeLib   = "Lib"
-let gArchetypeColl  = "AssetCollection"
+let gArchetypeField = "Field"
+let gArchetypeView  = "View"
+let gArchetypeColl  = "Collection"
 let gArchetypeSum   = "Sum"
 let gArchetypeSort  = "Sort"
 let gListLib        = "L"
@@ -52,6 +54,27 @@ let mk_ac_rmed a      = Tdoti (gs, mk_ac_rmed_id a)
 let mk_ac_old_rmed a  = Tdot (Told (Tvar gs), Tvar (mk_ac_rmed_id a))
 
 let mk_ac_sv s a      = Tdoti (s, mk_ac_id a)
+
+(* Use ---------------------------------------------------------------------------*)
+
+let mk_use_list = Duse (false,["list";"List"],Some "L") |> loc_decl |> deloc
+
+let mk_use = Duse (false,[gArchetypeDir;gArchetypeLib],None) |> loc_decl |> deloc
+
+let mk_use_field = Duse (false,[gArchetypeDir;gArchetypeField],Some "F") |> loc_decl |> deloc
+
+let mk_use_view = Duse (false,[gArchetypeDir;gArchetypeView],Some "V") |> loc_decl |> deloc
+
+let mk_use_module m = Duse (false,[deloc m],None) |> loc_decl |> deloc
+
+let mk_use_euclidean_div m =
+  if M.Utils.with_division m then
+    [Duse (true,["int";"EuclideanDivision"],None)  |> loc_decl |> deloc]
+  else []
+let mk_use_min_max m =
+  if M.Utils.with_min_max m then
+    [Duse (true,["int";"MinMax"],None) |> loc_decl |> deloc]
+  else []
 
 (* ---------------------------------------------------------------------------- *)
 let map_lident (i : M.lident) : loc_ident = {
@@ -104,22 +127,7 @@ let rec map_mtype (t : M.type_) : loc_typ =
       | M.Tlist t                             -> Tylist (map_mtype t).obj
       | _ -> print_endline (Format.asprintf "%a@." M.pp_type_ t); assert false)
 
-(* Use ---------------------------------------------------------------------------*)
-
-let mk_use = Duse (false,[gArchetypeDir;gArchetypeLib],None) |> loc_decl |> deloc
-let mk_use_list = Duse (false,["list";"List"],Some "L") |> loc_decl |> deloc
-let mk_use_module m = Duse (false,[deloc m],None) |> loc_decl |> deloc
-let mk_use_euclidean_div m =
-  if M.Utils.with_division m then
-    [Duse (true,["int";"EuclideanDivision"],None)  |> loc_decl |> deloc]
-  else []
-let mk_use_min_max m =
-  if M.Utils.with_min_max m then
-    [Duse (true,["int";"MinMax"],None) |> loc_decl |> deloc]
-  else []
-
 (* Trace -------------------------------------------------------------------------*)
-
 type change =
   | CAdd of ident
   | CRm of ident
@@ -756,7 +764,8 @@ let map_lidents = List.map map_lident
 let rec type_to_init m (typ : loc_typ) : loc_term =
   mk_loc typ.loc (match typ.obj with
       | Tyasset i     -> Tapp (loc_term (Tvar ("mk_default_"^i.obj)),[])
-      | Typartition i -> Temptyview i
+      | Typartition i -> Temptyfield i
+      | Tyaggregate i -> Temptyfield i
       | Tycoll i      -> Temptycoll i
       | Tylist _      -> Tnil (with_dummy_loc gListLib)
       | Tyview i      -> Temptyview i
@@ -765,11 +774,6 @@ let rec type_to_init m (typ : loc_typ) : loc_term =
       | Tytuple l     -> Ttuple (List.map (type_to_init m) (List.map with_dummy_loc l))
       | Tybool        -> Ttrue
       | _             -> Tint Big_int.zero_big_int)
-
-let map_record_field_type (t : M.type_) : loc_typ =
-  match t with
-  | M.Tcontainer (Tasset id, _) -> map_mtype (M.Tcontainer (Tasset id,M.View))
-  | _ -> map_mtype t
 
 let is_local_invariant _m an t =
   let rec internal_is_local acc (term : M.mterm) =
@@ -1028,9 +1032,9 @@ let mk_eq_asset _m (r : M.asset) =
       let f2 = Tdoti("a2",unloc item.name) in
       match item.type_ with
       | Tasset a -> Tapp (Tvar ("eq_"^(unloc a)),[f1;f2])
-      | Tcontainer (Tasset a, Collection) -> Teqview(unloc a,f1,f2)
-      | Tcontainer (Tasset a, Partition) -> Teqview(unloc a,f1,f2)
-      | Tcontainer (Tasset a, Aggregate) -> Teqview(unloc a,f1,f2)
+      | Tcontainer (Tasset a, Collection) -> Teqfield(unloc a,f1,f2)
+      | Tcontainer (Tasset a, Partition) -> Teqfield(unloc a,f1,f2)
+      | Tcontainer (Tasset a, Aggregate) -> Teqfield(unloc a,f1,f2)
       | Tbuiltin Bbool -> (* a = b is (a && b) || (not a && not b) *)
         Tor (Tpand (f1,f2),Tpand(Tnot f1, Tnot f2))
       | Tbuiltin Brational ->
@@ -1070,16 +1074,11 @@ let map_enum _m (e : M.enum) : (loc_term,loc_typ,loc_ident) abstract_decl =
 
 let record_to_clone m (r : M.asset) =
   let (key,_) = M.Utils.get_asset_key m (unloc r.name) in
-  (* let sort =
-     if List.length r.sort > 0 then
-      List.hd r.sort
-     else key in *) (* asset are sorted on key be default *)
   Dclone ([gArchetypeDir;gArchetypeColl] |> wdl,
           String.capitalize_ascii (unloc r.name) |> with_dummy_loc,
           [Ctype ("t" |> with_dummy_loc, (unloc r.name) |> with_dummy_loc);
-           Cval  ("fkey" |> with_dummy_loc, key |> with_dummy_loc);
-           (* Cval  ("sortf" |> with_dummy_loc, sort |> with_dummy_loc); *)
-           Cval  ("feq" |> with_dummy_loc, "eq_" ^ (unloc r.name) |> with_dummy_loc)])
+           Cval  ("keyt" |> with_dummy_loc, key |> with_dummy_loc);
+           Cval  ("eqt" |> with_dummy_loc, "eq_" ^ (unloc r.name) |> with_dummy_loc)])
 
 let mk_partition_axioms (m : M.model) =
   M.Utils.get_containers m |> List.map (fun (n,i,_) ->
@@ -1908,7 +1907,7 @@ and mk_invariants (m : M.model) ctx id (lbl : ident option) lbody =
 
 let map_record_values m (values : M.asset_item list) =
   List.map (fun (value : M.asset_item) ->
-      let typ_ = map_record_field_type value.type_ in
+      let typ_ = map_mtype value.type_ in
       let init_value = type_to_init m typ_ in {
         name     = map_lident value.name;
         typ      = typ_;
@@ -3244,6 +3243,7 @@ let to_whyml (m : M.model) : mlw_tree  =
   let storage_module   = with_dummy_loc (String.capitalize_ascii (m.name.pldesc ^ "_storage")) in
   let uselib           = mk_use in
   let uselist          = mk_use_list in
+  let uses             = [mk_use; mk_use_list; mk_use_field; mk_use_view] in
   let useEuclDiv       = mk_use_euclidean_div m in
   let useMinMax        = mk_use_min_max m in
   let traceutils       = mk_trace_utils m |> deloc in
@@ -3267,7 +3267,7 @@ let to_whyml (m : M.model) : mlw_tree  =
   let usestorage       = mk_use_module storage_module in
   let loct : loc_mlw_tree = [{
       name  = storage_module;
-      decls = [uselib;uselist]       @
+      decls = uses                   @
               useEuclDiv             @
               useMinMax              @
               traceutils             @

@@ -140,9 +140,9 @@ let pp_type fmt typ =
       | Tyunit        -> "unit"
       | Tytransfers   -> "transfers"
       | Tycoll i      -> (String.capitalize_ascii i) ^ ".collection"
-      | Tyview i      -> (String.capitalize_ascii i) ^ ".view"
-      | Typartition i -> (String.capitalize_ascii i) ^ ".view"
-      | Tyaggregate i -> (String.capitalize_ascii i) ^ ".view"
+      | Tyview _      -> "V.view"
+      | Typartition _ -> "F.field"
+      | Tyaggregate _ -> "F.field"
       | Tymap i       -> "map " ^ i
       | Tyrecord i    -> i
       | Tyasset i     -> i
@@ -315,9 +315,8 @@ let rec pp_term outer pos fmt = function
       pp_str (String.capitalize_ascii a)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
-   | Teqview (a, e1, e2) ->
-    Format.fprintf fmt "%a.veq %a %a"
-      pp_str (String.capitalize_ascii a)
+   | Teqfield (_, e1, e2) ->
+    Format.fprintf fmt "F.eq %a %a"
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
   | Teq (Tybool, e1, e2) ->
@@ -441,8 +440,9 @@ let rec pp_term outer pos fmt = function
                        (pp_with_paren (pp_term outer pos)) e2
   | Tlist l -> pp_tlist outer pos fmt l
   | Tnil i -> Format.fprintf fmt "%a.Nil" pp_str i
-  | Temptycoll i -> Format.fprintf fmt "%a.cempty" pp_str (String.capitalize_ascii i)
-  | Temptyview i -> Format.fprintf fmt "%a.vempty" pp_str (String.capitalize_ascii i)
+  | Temptycoll i -> Format.fprintf fmt "%a.empty" pp_str (String.capitalize_ascii i)
+  | Temptyview _ -> Format.fprintf fmt "V.empty"
+  | Temptyfield _ -> Format.fprintf fmt "F.empty"
   | Tcaller i -> Format.fprintf fmt "%a._caller" pp_str i
   | Tsender i -> Format.fprintf fmt "%a._source" pp_str i
   | Ttransferred i -> Format.fprintf fmt "%a._transferred" pp_str i

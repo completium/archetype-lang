@@ -97,6 +97,7 @@ type ('e,'t,'i) abstract_term =
   | Tnil    of 'i
   | Temptycoll of 'i
   | Temptyview of 'i
+  | Temptyfield of 'i
   | Tccard   of 'i * 'e
   | Tvcard   of 'i * 'e
   | Ttocoll  of 'i * 'e * 'e
@@ -145,7 +146,7 @@ type ('e,'t,'i) abstract_term =
   | Tpand   of 'e * 'e
   (* comp *)
   | Teq     of 't * 'e * 'e
-  | Teqview of 'i * 'e * 'e
+  | Teqfield of 'i * 'e * 'e
   | Tneq    of 't * 'e * 'e
   | Tlt     of 't * 'e * 'e
   | Tle     of 't * 'e * 'e
@@ -387,6 +388,7 @@ and map_abstract_term
   | Tnil i             -> Tnil (map_i i)
   | Temptycoll i       -> Temptycoll (map_i i)
   | Temptyview i       -> Temptyview (map_i i)
+  | Temptyfield i      -> Temptyfield (map_i i)
   | Tccard (i,e)       -> Tccard (map_i i, map_e e)
   | Tvcard (i,e)       -> Tvcard (map_i i, map_e e)
   | Tmkcoll (i,e)      -> Tmkcoll (map_i i, map_e e)
@@ -428,7 +430,7 @@ and map_abstract_term
   | Tnot e             -> Tnot (map_e e)
   | Tpand (e1,e2)      -> Tpand (map_e e1,map_e e2)
   | Teq (t,l,r)        -> Teq (map_t t, map_e l, map_e r)
-  | Teqview (i,l,r)    -> Teqview (map_i i, map_e l, map_e r)
+  | Teqfield (i,l,r)    -> Teqfield (map_i i, map_e l, map_e r)
   | Tneq (t,l,r)       -> Tneq (map_t t, map_e l, map_e r)
   | Tlt (t,l,r)        -> Tlt (map_t t, map_e l, map_e r)
   | Tle (t,l,r)        -> Tle (map_t t, map_e l, map_e r)
@@ -787,6 +789,7 @@ let compare_abstract_term
   | Tnil i1, Tnil i2 -> cmpi i1 i2
   | Temptycoll i1, Temptycoll i2 -> cmpi i1 i2
   | Temptyview i1, Temptyview i2 -> cmpi i1 i2
+  | Temptyfield i1, Temptyfield i2 -> cmpi i1 i2
   | Tccard (i1,e1), Tccard (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tvcard (i1,e1), Tvcard (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tmkcoll (i1,e1), Tmkcoll (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
@@ -826,7 +829,7 @@ let compare_abstract_term
   | Tnot e1, Tnot e2 -> cmpe e1 e2
   | Tpand (e1,e2), Tpand (e3,e4) -> cmpe e1 e3 && cmpe e2 e4
   | Teq (i1,l1,r1), Teq (i2,l2,r2) -> cmpt i1 i2 && cmpe l1 l2 && cmpe r1 r2
-  | Teqview (i1,l1,r1), Teqview (i2,l2,r2) -> cmpi i1 i2 && cmpe l1 l2 && cmpe r1 r2
+  | Teqfield (i1,l1,r1), Teqfield (i2,l2,r2) -> cmpi i1 i2 && cmpe l1 l2 && cmpe r1 r2
   | Tneq (t1,l1,r1), Tneq (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
   | Tlt (t1,l1,r1), Tlt (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
   | Tle (t1,l1,r1), Tle (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
