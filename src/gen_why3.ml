@@ -1549,7 +1549,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Msort (a, (CKview c | CKfield (_, _, c)),l) -> Tvsort (with_dummy_loc (mk_sort_clone_id a l),map_mterm m ctx c,mk_ac_ctx a ctx)
     | Msort (a, CKcoll,l) -> Tcsort (with_dummy_loc (mk_sort_clone_id a l), mk_ac_ctx a ctx)
     | Mcontains (a, (CKview v | CKfield (_, _, v)), r) -> Tvcontains (with_dummy_loc a, map_mterm m ctx r, map_mterm m ctx v)
-    | Mcontains (a, CKcoll, r) -> Tccontains (with_dummy_loc a, map_mterm m ctx r,  mk_ac_ctx a ctx )
+    | Mcontains (a, CKcoll, r) -> Tvcontains (with_dummy_loc a,
+                                              map_mterm m ctx r,
+                                              with_dummy_loc (Ttoview(with_dummy_loc a, mk_ac_ctx a ctx)))
 
     | Mnth (n, (CKview c | CKfield (_, _, c)),k) -> Tapp (loc_term (Tvar ("vnth_" ^ n)),[map_mterm m ctx c; map_mterm m ctx k])
     | Mnth (n, CKcoll,k) -> Tapp (loc_term (Tvar ("cnth_" ^ n)),[ mk_ac_ctx n ctx; map_mterm m ctx k])

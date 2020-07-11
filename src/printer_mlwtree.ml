@@ -246,9 +246,8 @@ let rec pp_term outer pos fmt = function
       pp_str (String.capitalize_ascii t)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
-  | Tvcontains (t,e1,e2) ->
-    Format.fprintf fmt "%a.vcontains %a %a"
-      pp_str (String.capitalize_ascii t)
+  | Tvcontains (_,e1,e2) ->
+    Format.fprintf fmt "V.contains %a %a"
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
   | Tccontains (t,e1,e2) ->
