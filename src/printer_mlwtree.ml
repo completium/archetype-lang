@@ -289,7 +289,7 @@ let rec pp_term outer pos fmt = function
       (pp_with_paren (pp_term outer pos)) e2
       (pp_with_paren (pp_term outer pos)) e3
   | Tvsum (i,e1,e2) ->
-    Format.fprintf fmt "%a.vsum %a %a"
+    Format.fprintf fmt "%a.sum %a %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2

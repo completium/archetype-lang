@@ -877,7 +877,7 @@ module Sum
   (* ------------------------------------------------------------------------ *)
   val function field t : int
   (* ------------------------------------------------------------------------ *)
-  val function get collection int : option t
+  val function get int collection : option t
 
   (* ------------------------------------------------------------------------ *)
   let function sum (v : V.view) (c : collection) : int
@@ -887,7 +887,7 @@ module Sum
   =
     match l with
      | Cons k tl ->
-      match get c k with
+      match get k c with
       | Some e -> internal_sum tl (acc + field e)
       | None -> internal_sum tl acc
       end
@@ -902,7 +902,7 @@ module Sum
 
   (* ------------------------------------------------------------------------ *)
   lemma sum_singleton: forall k : int, a : t, c : collection.
-  get c k = Some a ->
+  get k c = Some a ->
   sum (V.mk (Cons k Nil)) c = field a
 
 end

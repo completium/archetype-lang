@@ -276,18 +276,18 @@ let mk_sum_clone m asset _key formula =
                   cap_asset ^ ".collection");
            Ctype ("t",
                   asset);
-           Ctype ("view",
-                  cap_asset ^ ".view");
+           (* Ctype ("view",
+                  cap_asset ^ ".view"); *)
            Cval ("field",
                  mk_get_sum_value_id asset id);
            Cval ("get",
                  cap_asset ^ ".get");
-           Cval ("velts",
+           (* Cval ("velts",
                  cap_asset ^ ".velts");
            Cval ("vcard",
                  cap_asset ^ ".vcard");
            Cval ("vmk",
-                 cap_asset ^ ".vmk")
+                 cap_asset ^ ".vmk") *)
           ])
 
 
@@ -1453,10 +1453,15 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let args = List.map (fun (i,_) -> loc_term (Tvar i)) la in
       Tapp (loc_term (Tvar id), argids @ args @ [mk_ac_ctx a ctx])
 
-    | Mclear (n, CKcoll) -> Tapp (loc_term (Tvar ("clear_"^(n))),[])
+    | Mclear (n, CKcoll) ->
+      Tapp (loc_term (Tvar ("clear_view_"^(n))), [
+        with_dummy_loc(Ttoview(with_dummy_loc n,mk_ac_ctx n ctx))
+      ])
     | Mclear (n, CKview v) -> Tapp (loc_term (Tvar ("clear_view_"^(n))),[map_mterm m ctx v])
-    | Mclear (n, CKfield (_, _, v)) -> Tapp (loc_term (Tvar ("clear_view_"^(n))),[map_mterm m ctx v])
-
+    | Mclear (n, CKfield (_, _, v)) ->
+      Tapp (loc_term (Tvar ("clear_view_"^(n))), [
+        with_dummy_loc(Ttoview(with_dummy_loc gFieldAs,map_mterm m ctx v ))
+      ])
     | Mset (a, l, k, v) ->
       mk_trace_seq m
         (Tapp (loc_term (Tvar ("set_" ^ a)),
@@ -1510,14 +1515,19 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mcount (_, (CKfield (_, _, t))) ->
       Tvcard (with_dummy_loc gViewAs, with_dummy_loc (Ttoview (with_dummy_loc gFieldAs, map_mterm m ctx t)))
     | Mcount (a, CKcoll) -> Tvcard (with_dummy_loc a, with_dummy_loc (Ttoview(with_dummy_loc a, mk_ac_ctx a ctx)))
-    | Msum          (a, (CKview v | CKfield (_, _, v)),f) ->
+    | Msum          (a, (CKview v),f) ->
       let cloneid = mk_sum_clone_id m a f in
       let col = mk_ac_ctx a ctx in
       Tvsum(with_dummy_loc cloneid,map_mterm m ctx v,col)
+    | Msum          (a, CKfield (_, _, v),f) ->
+      let cloneid = mk_sum_clone_id m a f in
+      let col = mk_ac_ctx a ctx in
+      Tvsum(with_dummy_loc cloneid,
+        with_dummy_loc (Ttoview(with_dummy_loc gFieldAs, map_mterm m ctx v)) ,col)
     | Msum (a, CKcoll,f) ->
       let cloneid = mk_sum_clone_id m a f in
       let col = mk_ac_ctx a ctx in
-      Tcsum(with_dummy_loc cloneid,col)
+      Tvsum(with_dummy_loc cloneid, with_dummy_loc (Ttoview(with_dummy_loc a, col)), col)
     | Mhead (n, (CKview c | CKfield (_, _, c)), v) -> Tvhead(with_dummy_loc n, map_mterm m ctx v, map_mterm m ctx c)
     | Mhead (n, CKcoll, v) -> Tchead(with_dummy_loc n, map_mterm m ctx v, mk_ac_ctx n ctx)
     | Mtail  (n, (CKview c | CKfield (_, _, c)), v) -> Tvtail(with_dummy_loc n, map_mterm m ctx v, map_mterm m ctx c)
@@ -2370,8 +2380,8 @@ let mk_clear_count_ensures m a =
     }]
   else []
 
-let mk_rm_ensures m p a e =
-  let mk_cond body =
+let mk_rm_ensures _m p a e =
+  (* let mk_cond body =
     Timpl (
       Tccontains (a, Tvar e, mk_ac_old a),
       Texists (
@@ -2384,7 +2394,7 @@ let mk_rm_ensures m p a e =
           body
         )
       )
-    ) in
+    ) in *)
   [
     { id   = p ^ "_post1";
       form = Tforall (
@@ -2416,7 +2426,7 @@ let mk_rm_ensures m p a e =
           Teq(Tyint, Tget(a, Tvar e, mk_ac_rmed a), Tsome (Tvar "r"))
         ))
     }
-  ] @ (mk_rm_sum_ensures m mk_cond a e) @ (mk_rm_count_ensures m a)
+  ] (*@ (mk_rm_sum_ensures m mk_cond a e) @ (mk_rm_count_ensures m a) *)
 
 let mk_clear_ensures m p a =
   [
