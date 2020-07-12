@@ -2274,27 +2274,29 @@ let mk_add_count_ensures m a =
     }]
   else []
 
-let mk_add_ensures m p a k e =
-  let get_ensures i mkac mkacold = [
-    { id   = p ^ "_post_" ^ (string_of_int i);
-      form = Teq(Tyint, Tget (a, Tdoti(e, k), mkacold a), Tnone)
+let mk_add_ensures_basic prefix i a asset key mkac mkacold = [
+    { id   = prefix ^ "_post_" ^ (string_of_int i);
+      form = Teq(Tyint, Tget (a, key, mkacold a), Tnone)
     };
-    { id   = p ^ "_post_" ^ (string_of_int (i+1));
+    { id   = prefix ^ "_post_" ^ (string_of_int (i+1));
       form = Tforall (
         [["k"],Tykey],
-        Timpl(Tneq(Tyint, Tvar "k", Tdoti(e, k)),
-              Teq(Tyint,Tget (a, Tdoti(e, k), mkac a),
-                        Tget (a, Tdoti(e, k), mkacold a))
+        Timpl(Tneq(Tyint, Tvar "k", key),
+              Teq(Tyint,Tget (a, key, mkac a),
+                        Tget (a, key, mkacold a))
         )
       )
     };
-    { id   = p ^ "_post_" ^ (string_of_int (i+2));
+    { id   = prefix ^ "_post_" ^ (string_of_int (i+2));
       form = Teq (Tyint,
-                  Tget (a, Tdoti(e, k), mkac a),
-                  Tsome (Tvar e))
+                  Tget (a, key, mkac a),
+                  Tsome (Tvar asset))
     }
-  ] in
-  (get_ensures 1 mk_ac mk_ac_old) @ (get_ensures 4 mk_ac_added mk_ac_old_added)
+]
+
+let mk_add_ensures m p a k e =
+  (mk_add_ensures_basic p 1 a e (Tdoti(e, k)) mk_ac mk_ac_old) @
+  (mk_add_ensures_basic p 4 a e (Tdoti(e, k)) mk_ac_added mk_ac_old_added)
    @ (mk_add_sum_ensures m a e) @ (mk_add_count_ensures m a)
 
 let mk_add_asset m asset key : decl = Dfun {
@@ -2385,27 +2387,34 @@ let mk_rm_ensures m p a e =
     ) in
   [
     { id   = p ^ "_post1";
-      form = Tnot (Tccontains (a,
-                               Tvar (e),
-                               mk_ac a))
+      form = Tforall (
+        [["k"],Tykey],
+        Timpl(Tneq(Tyint, Tvar "k", Tvar e),
+              Teq(Tyint,Tget (a, Tvar e, mk_ac a),
+                        Tget (a, Tvar e, mk_ac_old a))
+        )
+      )
     };
     { id   = p ^ "_post2";
-      form = mk_cond
-          (Teq (Tycoll a,
-                mk_ac a,
-                Tdiff (a,
-                       mk_ac_old a,
-                       Tsingl (a,
-                               Tvar "asset"))))
+      form = Teq (Tyint,
+                  Tget (a, Tvar e, mk_ac a),
+                  Tnone)
     };
     { id   = p ^ "_post3";
-      form = mk_cond
-          (Teq (Tycoll a,
-                mk_ac_rmed a,
-                Tunion (a,
-                        mk_ac_old_rmed a,
-                        Tsingl (a,
-                                Tvar "asset"))))
+      form = Tforall (
+        [["k"],Tykey],
+        Timpl(Tneq(Tyint, Tvar "k", Tvar e),
+              Teq(Tyint,Tget (a, Tvar e, mk_ac_rmed a),
+                        Tget (a, Tvar e, mk_ac_old_rmed a))
+        )
+      )
+    };
+    { id   = p ^ "_post4";
+      form = Tforall ([["r"], Tyasset a],
+        Timpl(
+          Teq(Tyint, Tget(a, Tvar e, mk_ac_old a), Tsome (Tvar "r")),
+          Teq(Tyint, Tget(a, Tvar e, mk_ac_rmed a), Tsome (Tvar "r"))
+        ))
     }
   ] @ (mk_rm_sum_ensures m mk_cond a e) @ (mk_rm_count_ensures m a)
 
@@ -2439,8 +2448,8 @@ let mk_rm_asset m asset : decl =
                            mk_ac_rmed asset));
             Tassign (mk_ac asset,
                      Tremove (asset,
-                              mk_ac asset,
-                              Tvar ("a")))
+                              Tvar ("a"),
+                              mk_ac asset))
           ];
           Twild, Tunit
         ]);
@@ -2582,6 +2591,14 @@ let mk_add_field_ensures m partition a _ak field prefix adda elem elemkey =
   let oldassetcollfield = Ttocoll (adda,collfield,mk_ac_old adda) in
   let add_field_ensures = [
     { id   = prefix ^ "_field_post1";
+      form = Tforall ([["k"],Tykey],
+        Timpl(
+          Tneq(Tyint, Tvar "k", Tvar "asset_id"),
+          Teq(Tyint,
+              Tget(a, Tvar "k", mk_ac_old a),
+              Tget(a, Tvar "k", mk_ac a)
+        )))
+    }; { id   = prefix ^ "_field_post2";
       form = Tforall ([["r"],Tyasset a],
         Timpl(
           Teq(Tyint, Tget(a, Tvar "asset_id", mk_ac_old a), Tsome (Tvar "r")),
@@ -2595,7 +2612,7 @@ let mk_add_field_ensures m partition a _ak field prefix adda elem elemkey =
                              Tvar field))]
               ))
         )))
-    };
+    }
   ] @ List.fold_left (fun acc idx ->
       acc @ [{
           id = "add_" ^ adda ^ "_field_sum_post";
@@ -2687,28 +2704,38 @@ let mk_add_field m part a ak field adda addak : decl =
       ;
   }
 
-let mk_rm_field_ensures m part asset elem _ak field prefix rm_asset rm_elem =
+let mk_rm_field_ensures m part a _elem _ak field prefix rm_asset rm_elem =
   let collfield = Tapp (Tvar field, [Tvar ("asset")]) in
   let oldcollfield = Tapp (Tvar field, [Tvar "old_asset"]) in
-  let add_conditions b =
-    Timpl (
-      mk_key_found_cond `Curr asset (Tvar elem),
-      Timpl (
-        mk_key_found_cond `Old rm_asset (Tvar rm_elem),
-        b
-      )
-    ) in
   let rm_field_ensures = [
     { id   = prefix ^ "_field_post1";
-      form = add_conditions (exists_asset asset (Tnot (Tvcontains (rm_asset,
-                                                                   Tvar (rm_elem),
-                                                                   collfield))))
-    };
+      form = Tforall ([["k"],Tykey],
+        Timpl(
+          Tneq(Tyint, Tvar "k", Tvar "asset_id"),
+          Teq(Tyint,
+              Tget(a, Tvar "k", mk_ac_old a),
+              Tget(a, Tvar "k", mk_ac a)
+        )))
+    }; { id   = prefix ^ "_field_post2";
+      form = Tforall ([["r"],Tyasset a],
+        Timpl(
+          Teq(Tyint, Tget(a, Tvar "asset_id", mk_ac_old a), Tsome (Tvar "r")),
+          Teq(Tyint,
+              Tget(a, Tvar "asset_id", mk_ac a),
+              Tsome (Trecord (
+                Some (Tvar "r"),
+                [field, Tremove(gFieldAs,
+                                Tvar rm_elem,
+                                Tdot(Tvar "r",
+                                Tvar field))]
+              ))
+        )))
+    }
   ] @
     List.fold_left (fun acc idx ->
         acc @ [{
             id = "remove_" ^ rm_asset ^ "_field_sum_post";
-            form = exists_asset asset (
+            form = exists_asset a (
                 exists_rm_asset rm_asset (Teq (Tyint,
                                                mk_sum rm_asset idx collfield (mk_ac rm_asset),
                                                Tminus (Tyint,
@@ -2719,8 +2746,8 @@ let mk_rm_field_ensures m part asset elem _ak field prefix rm_asset rm_elem =
           }]) [] (M.Utils.get_sum_idxs m rm_asset) @
     (if M.Utils.with_count m rm_asset then [{
          id = "rm_" ^ rm_asset ^ "_field_ccount";
-         form = exists_asset asset (
-             exists_old_asset asset (Teq (Tyint,
+         form = exists_asset a (
+             exists_old_asset a (Teq (Tyint,
                                           Tvcard (rm_asset, collfield),
                                           Tminus (Tyint,
                                                   Tvcard (rm_asset, oldcollfield),
@@ -2731,7 +2758,7 @@ let mk_rm_field_ensures m part asset elem _ak field prefix rm_asset rm_elem =
      else [])
   in
   if part then
-    (mk_rm_ensures m prefix rm_asset rm_elem)@rm_field_ensures
+    rm_field_ensures @ (mk_rm_ensures m prefix rm_asset rm_elem)@rm_field_ensures
   else
     rm_field_ensures
 
@@ -2748,7 +2775,10 @@ let mk_rm_field m part asset keyf field rmed_asset _rmkey : decl =
     logic    = NoMod;
     args     = ["asset_id",Tykey; "rm_asset_id",Tykey];
     returns  = Tyunit;
-    raises   = [];
+    raises   = [
+      Timpl (Texn Enotfound,
+        Teq(Tyint, Tget(asset, Tvar "asset_id", mk_ac asset), Tnone))
+    ];
     variants = [];
     requires = [];
     ensures  = mk_rm_field_ensures m part asset "asset_id" keyf field ("remove_" ^ asset ^ "_" ^ field) rmed_asset "rm_asset_id";
@@ -2763,9 +2793,9 @@ let mk_rm_field m part asset keyf field rmed_asset _rmkey : decl =
                   Tletin (false,
                           "new_" ^ asset ^ "_" ^ field,
                           None,
-                          Tvremove (rmed_asset,
-                                    Tvar ("rm_asset_id"),
-                                    Tvar (asset ^ "_" ^ field)),
+                          Tremove (gFieldAs,
+                                  Tvar ("rm_asset_id"),
+                                  Tvar (asset ^ "_" ^ field)),
                           Tletin (false,
                                   "new_" ^ asset ^ "_asset",
                                   None,
@@ -2774,9 +2804,9 @@ let mk_rm_field m part asset keyf field rmed_asset _rmkey : decl =
                                   let assign =
                                     Tassign (mk_ac asset,
                                              Tset (asset,
-                                                   mk_ac asset,
                                                    Tvar ("asset_id"),
-                                                   Tvar ("new_" ^ asset ^ "_asset"))) in
+                                                   Tvar ("new_" ^ asset ^ "_asset"),
+                                                   mk_ac asset)) in
                                   if part then
                                     Tseq [
                                       assign;
@@ -2785,10 +2815,61 @@ let mk_rm_field m part asset keyf field rmed_asset _rmkey : decl =
                                     ] else assign
                                  )))
           ;
-          Twild, Tunit
+          Twild, Traise Enotfound
         ])
     ;
   }
+
+let mk_removeall_ensures p part a field rmda k = [
+  { id   = p ^ "_post1";
+      form = Tforall ([["k"],Tykey],
+        Timpl(
+          Tneq(Tyint, Tvar "k", Tvar k),
+          Teq(Tyint,
+              Tget(a, Tvar "k", mk_ac_old a),
+              Tget(a, Tvar "k", mk_ac a)
+        )))
+  };
+  { id   = p ^ "_post2";
+      form = Tforall ([["r"],Tyasset a],
+        Timpl(
+          Teq(Tyint, Tget(a, Tvar "asset_id", mk_ac_old a), Tsome (Tvar "r")),
+          Teq(Tyint,
+              Tget(a, Tvar "asset_id", mk_ac a),
+              Tsome (Trecord (
+                Some (Tvar "r"),
+                [field, Temptyfield gFieldAs]
+              ))
+        )))
+  }
+] @ if part then [
+  { id = p ^ "_post3";
+    form = Tforall ([["r"], Tyasset a],
+      Timpl(
+        Teq(Tyint, Tget(a, Tvar "asset_id", mk_ac_old a), Tsome (Tvar "r")),
+        Tforall ([["k"], Tykey],
+          Timpl(
+            Teq(Tyint, Tget(gFieldAs, Tvar "k", Tdot(Tvar "r",Tvar field)), Tsome (Tvar "k")),
+            Teq(Tyint, Tget(rmda, Tvar "k", mk_ac rmda), Tnone)
+          )
+        )
+      )
+    )
+  };
+  { id = p ^ "_post4";
+    form = Tforall ([["r"], Tyasset a],
+      Timpl(
+        Teq(Tyint, Tget(a, Tvar "asset_id", mk_ac_old a), Tsome (Tvar "r")),
+        Tforall ([["k"], Tykey],
+          Timpl(
+            Teq(Tyint, Tget(gFieldAs, Tvar "k", Tdot(Tvar "r",Tvar field)), Tnone),
+            Teq(Tyint, Tget(rmda, Tvar "k", mk_ac rmda), Tget(rmda, Tvar "k", mk_ac_old rmda))
+          )
+        )
+      )
+    )
+  }
+] else []
 
 (* calls clear_view_asset if partition for now;
    NB : when container field are implemented with dedicated types
@@ -2800,10 +2881,10 @@ let mk_removeall _m part asset field rm_asset =
     logic    = NoMod;
     args     = ["asset_id",Tykey];
     returns  = Tyunit;
-    raises   = [];
+    raises   = [ Timpl(Texn Enotfound, Teq(Tyint,Tget(asset, Tvar "asset_id", mk_ac asset),Tnone)) ];
     variants = [];
     requires = [];
-    ensures  = []; (* TODO *)
+    ensures  = mk_removeall_ensures ("removeall_" ^ asset ^ "_" ^ field) part asset field rm_asset "asset_id";
     body     =  Tmatch (
         Tget(asset, Tvar "asset_id", mk_ac asset),[
           Tpsome "asset",
@@ -2815,9 +2896,9 @@ let mk_removeall _m part asset field rm_asset =
                   let assign =
                     Tassign (mk_ac asset,
                              Tset (asset,
-                                   mk_ac asset,
                                    Tvar ("asset_id"),
-                                   Tvar ("new_" ^ asset ^ "_asset"))) in
+                                   Tvar ("new_" ^ asset ^ "_asset"),
+                                   mk_ac asset)) in
                   if part then
                     Tseq [
                       assign;
@@ -2827,7 +2908,7 @@ let mk_removeall _m part asset field rm_asset =
                     ] else assign
                  )
           ;
-          Twild, Tunit
+          Twild, Traise Enotfound
         ])
     ;
   }

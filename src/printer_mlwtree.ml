@@ -605,7 +605,7 @@ let rec pp_term outer pos fmt = function
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
   | Tvremove (i,e1,e2) ->
-    Format.fprintf fmt "%a.vremove %a %a"
+    Format.fprintf fmt "%a.remove %a %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
