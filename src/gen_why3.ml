@@ -3027,6 +3027,7 @@ let fold_exns m body : term list =
                             else [Texn Enotfound ]) c) i
     | M.Mremovefield (_,_,k,v) -> internal_fold_exn
       (internal_fold_exn (acc @ [Texn Enotfound]) k) v
+    | M.Mremoveall (_,_,v) -> internal_fold_exn (acc @ [Texn Enotfound]) v
     | M.Mgetopt _ -> acc @ [Texn Enotfound]
     | M.Mfail InvalidCaller -> acc @ [Texn Einvalidcaller]
     | M.Mfail NoTransfer -> acc @ [Texn Enotransfer]
