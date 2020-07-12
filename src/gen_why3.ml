@@ -2262,9 +2262,9 @@ let mk_add_count_ensures m a =
   if M.Utils.with_count m a then [{
       id = "add_" ^ a ^ "_count";
       form = Teq (Tyint,
-                  Tccard (a, mk_ac a),
+                  Tvcard (a, Ttoview (a, mk_ac a)),
                   Tplus (Tyint,
-                         Tccard (a, mk_ac_old a),
+                         Tvcard (a, Ttoview(a, mk_ac_old a)),
                          Tint (Big_int.big_int_of_int 1)
                         )
                  )
