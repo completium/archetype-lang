@@ -1490,7 +1490,10 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       Tapp (loc_term (Tvar id), argids @ args @ [view;coll])
     | Msort (a, (CKview c | CKfield (_, _, c)),l) -> Tvsort (with_dummy_loc (mk_sort_clone_id a l),map_mterm m ctx c,mk_ac_ctx a ctx)
     | Msort (a, CKcoll,l) -> Tcsort (with_dummy_loc (mk_sort_clone_id a l), mk_ac_ctx a ctx)
-    | Mcontains (a, (CKview v | CKfield (_, _, v)), r) -> Tvcontains (with_dummy_loc a, map_mterm m ctx r, map_mterm m ctx v)
+    | Mcontains (a, (CKview v), r) -> Tvcontains (with_dummy_loc a, map_mterm m ctx r, map_mterm m ctx v)
+    | Mcontains (a, CKfield (_, _, v), r) -> Tvcontains (with_dummy_loc a,
+                                                         map_mterm m ctx r,
+                                                         with_dummy_loc (Ttoview(with_dummy_loc gFieldAs, map_mterm m ctx v)))
     | Mcontains (a, CKcoll, r) -> Tvcontains (with_dummy_loc a,
                                               map_mterm m ctx r,
                                               with_dummy_loc (Ttoview(with_dummy_loc a, mk_ac_ctx a ctx)))
