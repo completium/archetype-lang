@@ -2465,18 +2465,6 @@ let mk_rm_asset m asset : decl =
         ]);
   }
 
-let mk_clear_coll m asset : decl = Dfun {
-    name     = "clear_" ^ asset;
-    logic    = NoMod;
-    args     = [];
-    returns  = Tyunit;
-    raises   = [];
-    variants = [];
-    requires = [];
-    ensures  = mk_clear_ensures m ("clear_" ^ asset) asset;
-    body = Tassign (mk_ac asset, Temptycoll asset);
-  }
-
 let mk_clear_view _m asset : decl = Dfun {
     name     = "clear_view_" ^ asset;
     logic    = NoMod;
@@ -2996,9 +2984,7 @@ let mk_storage_api (m : M.model) records =
          acc @ [ mk_contains n t ] *)
       | M.APIAsset (Sort (asset, _, field)) ->
         acc @ [ mk_cmp_function m asset field; mk_sort_clone m asset field]
-      | M.APIAsset (Clear (n, Coll)) ->
-        acc @ [mk_clear_coll m n]
-      | M.APIAsset (Clear (n, (View | Field _))) ->
+      | M.APIAsset (Clear (n, (Coll | View | Field _))) ->
         if not !gcleargen then (
           gcleargen := true;
           acc @ [mk_rm_asset m n;mk_clear_view m n])
