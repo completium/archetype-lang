@@ -2619,7 +2619,7 @@ let mk_add_field_ensures m partition a _ak field prefix adda elem elemkey =
   if partition then
     add_field_ensures @ (mk_add_ensures m prefix adda key elem)
   else
-    []
+    add_field_ensures
 
 (* part    : is field a partition
    a       : asset name
@@ -2630,7 +2630,7 @@ let mk_add_field_ensures m partition a _ak field prefix adda elem elemkey =
 *)
 let mk_add_field m part a ak field adda addak : decl =
   (* let akey  = Tapp (Tvar ak,[Tvar "asset"]) in *)
-  let addak = Tdoti ("new_asset",addak) in
+  let addak = if part then Tdoti ("new_asset",addak) else Tvar "new_asset" in
   let test,exn =
     if part then
       (fun mode -> mk_key_found_cond mode adda addak), Ekeyexist
@@ -2650,34 +2650,38 @@ let mk_add_field m part a ak field adda addak : decl =
     requires = mk_add_asset_precond m ("add_" ^ a ^ "_" ^ field) adda "new_asset";
     ensures  = mk_add_field_ensures m part a ak field ("add_" ^ a ^ "_" ^ field) adda "new_asset" addak;
     body     =
-      Tmatch (Tget(a,
-                   Tvar "asset_id",
-                   mk_ac a),[
-                Tpsome "asset",
-                (let addfield =
-                   Tletin (false, a ^ "_" ^ field,None,
-                           Tapp (Tvar field,[Tvar "asset"]),
-                           Tletin (false,"new_" ^ a ^ "_" ^ field,None,
-                                   Tadd (gFieldAs, addak, Tvar (a ^ "_" ^ field)),
-                                   Tletin (false,"new_asset",None,
-                                           Trecord (Some (Tvar "asset"),
-                                                    [field,Tvar ("new_" ^ a ^ "_" ^ field)]),
-                                           Tassign (mk_ac a,
-                                                    Tset (a,
-                                                          Tvar "asset_id",
-                                                          Tvar ("new_asset"),
-                                                          mk_ac a))
-                                          ))) in
-                 if part then
-                   Tseq [
-                     Tapp (Tvar ("add_" ^ adda),
-                           [Tvar "new_asset"]);
-                     addfield ]
-                 else
-                   addfield)
-                ;
-                Twild, Traise Enotfound
-              ]);
+      let addfield =
+        Tletin (false, a ^ "_" ^ field,None,
+          Tapp (Tvar field,[Tvar "asset"]),
+          Tletin (false,"new_" ^ a ^ "_" ^ field,None,
+            Tadd (gFieldAs, addak, Tvar (a ^ "_" ^ field)),
+            Tletin (false,"new_asset",None,
+              Trecord (Some (Tvar "asset"),
+                [field,Tvar ("new_" ^ a ^ "_" ^ field)]),
+                  Tassign (mk_ac a,
+                    Tset (a,
+                    Tvar "asset_id",
+                    Tvar ("new_asset"),
+                      mk_ac a))))) in
+      let body =
+        Tmatch (
+          Tget(a, Tvar "asset_id", mk_ac a),[
+            Tpsome "asset",
+              if part then Tseq [
+                  Tapp (Tvar ("add_" ^ adda),
+                    [Tvar "new_asset"]);
+                  addfield
+              ] else addfield;
+            Twild, Traise Enotfound
+          ]
+        ) in
+      if part then body else
+        Tmatch (
+          Tget (adda, Tvar "new_asset", mk_ac adda), [
+            Tpignore, body;
+            Twild, Traise Enotfound
+          ])
+      ;
   }
 
 let mk_rm_field_ensures m part asset elem _ak field prefix rm_asset rm_elem =
