@@ -401,7 +401,7 @@ end
 module NormedSet
   use int.Int
   use list.List
-  use list.Mem
+  use list.Mem as M
   use option.Option
 
   (* ------------------------------------------------------------------------ *)
@@ -425,6 +425,9 @@ module NormedSet
   type nset = F.fset
 
   (* ------------------------------------------------------------------------ *)
+  predicate mem (e : t) (s : nset) = F.fmem e s
+
+  (* ------------------------------------------------------------------------ *)
   let function elts (s : nset) = F.content s
 
   (* ------------------------------------------------------------------------ *)
@@ -440,7 +443,7 @@ module NormedSet
   let rec function internal_get (k : int) (l : list t) : option t
   variant { l }
   ensures { forall e. result = Some e -> proj e = k }
-  ensures { result = None -> forall e. mem e l -> proj e <> k }
+  ensures { result = None -> forall e. M.mem e l -> proj e <> k }
   =
   match l with
   | Cons e tl ->
@@ -458,14 +461,14 @@ module NormedSet
   = internal_get k (F.content s)
 
   (* ADD -------------------------------------------------------------------- *)
-  let add (a : t) (s : nset) : nset
+  let function add (a : t) (s : nset) : nset
   ensures { F.fmem a result }
   ensures { forall k. k <> proj a -> get k s = get k result }
   ensures { get (proj a) result = Some a }
   = F.mk (Cons a (F.content s))  (* normalisation is done by F.mk *)
 
   (* REMOVE ----------------------------------------------------------------- *)
-  let remove (k : int) (s : nset) : nset
+  let function remove (k : int) (s : nset) : nset
   ensures { forall i. i <> k -> get i s = get i result }
   ensures { get k result = None }
   =
@@ -668,6 +671,12 @@ module Field
   internal_eq (N.elts f1) (N.elts f2)
 
   (* ------------------------------------------------------------------------ *)
+  let function add (k : key) (f : field) = N.add k f
+
+  (* ------------------------------------------------------------------------ *)
+  let function remove (k : key) (f : field) = N.remove k f
+
+  (* ------------------------------------------------------------------------ *)
   let function to_view (f : field) : V.view
   ensures { S.sorted (V.elts result) }
   ensures { forall k. V.contains k result <-> M.mem k (N.elts f) }
@@ -727,6 +736,9 @@ module Collection
   } by {
     content = N.empty;
   }
+
+  (* ------------------------------------------------------------------------ *)
+  predicate mem (a : t) (c : collection) = N.mem a c.content
 
   (* ------------------------------------------------------------------------ *)
   let function mk (s : N.nset) : collection

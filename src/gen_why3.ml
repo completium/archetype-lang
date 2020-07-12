@@ -33,8 +33,11 @@ let gArchetypeView  = "View"
 let gArchetypeColl  = "Collection"
 let gArchetypeSum   = "Sum"
 let gArchetypeSort  = "Sort"
-let gListLib        = "L"
 let gArchetypeTrace = "Trace"
+
+let gListAs         = "L"
+let gFieldAs        = "F"
+let gViewAs         = "V"
 
 let mk_id i          = "_" ^ i
 
@@ -57,13 +60,13 @@ let mk_ac_sv s a      = Tdoti (s, mk_ac_id a)
 
 (* Use ---------------------------------------------------------------------------*)
 
-let mk_use_list = Duse (false,["list";"List"],Some "L") |> loc_decl |> deloc
+let mk_use_list = Duse (false,["list";"List"],Some gListAs) |> loc_decl |> deloc
 
 let mk_use = Duse (false,[gArchetypeDir;gArchetypeLib],None) |> loc_decl |> deloc
 
-let mk_use_field = Duse (false,[gArchetypeDir;gArchetypeField],Some "F") |> loc_decl |> deloc
+let mk_use_field = Duse (false,[gArchetypeDir;gArchetypeField],Some gFieldAs) |> loc_decl |> deloc
 
-let mk_use_view = Duse (false,[gArchetypeDir;gArchetypeView],Some "V") |> loc_decl |> deloc
+let mk_use_view = Duse (false,[gArchetypeDir;gArchetypeView],Some gViewAs) |> loc_decl |> deloc
 
 let mk_use_module m = Duse (false,[deloc m],None) |> loc_decl |> deloc
 
@@ -166,7 +169,7 @@ let mk_trace tr =
   let gstr = Tdoti(gs,
                    mk_id "tr") in
   Tassign (gstr,
-           Tcons (gListLib, mk_change_term tr,
+           Tcons (gListAs, mk_change_term tr,
                   gstr)
           ) |> loc_term
 
@@ -240,7 +243,7 @@ let mk_collection_field asset to_id = {
 }
 
 let mk_const_fields m = [
-  { name = mk_id "ops"         ; typ = Tyrecord "transfers" ; init = Tnil gListLib; mutable_ = true; };
+  { name = mk_id "ops"         ; typ = Tyrecord "transfers" ; init = Tnil gListAs; mutable_ = true; };
   { name = mk_id "balance"     ; typ = Tytez;      init = Tint Big_int.zero_big_int; mutable_ = true; };
   { name = mk_id "transferred" ; typ = Tytez;      init = Tint Big_int.zero_big_int; mutable_ = false; };
   { name = mk_id "caller"      ; typ = Tyaddr;     init = Tint Big_int.zero_big_int; mutable_ = false; };
@@ -251,7 +254,7 @@ let mk_const_fields m = [
   if M.Utils.with_trace m then
     [
       { name = mk_id "entry"     ; typ = Tyoption (Tyasset "_entry"); init = Tnone; mutable_ = false; };
-      { name = mk_id "tr"        ; typ = Tyasset ("Tr._traces"); init = Tnil gListLib; mutable_ = true; }
+      { name = mk_id "tr"        ; typ = Tyasset ("Tr._traces"); init = Tnil gListAs; mutable_ = true; }
     ]
   else []
 
@@ -319,7 +322,7 @@ let mk_partition_axiom asset f _kt pa kpt : decl =
                      Timpl (Tmem (asset,
                                   Tvar("a"),
                                   mk_ac_sv "s" asset),
-                            Timpl (Tlmem (gListLib,
+                            Timpl (Tlmem (gListAs,
                                           Tvar "k",
                                           Tapp (Tvar f,
                                                 [Tvar "a"])),
@@ -350,7 +353,7 @@ let mk_transfer () =
       body     = Tseq[
           Tassign (
             Tdoti(gs,"_ops"),
-            Tcons ( gListLib,
+            Tcons ( gListAs,
                     Tapp(Tvar "mk_transfer",[Tvar "t";Tvar "a"]),
                     Tdoti(gs,"_ops")
                   ));
@@ -378,7 +381,7 @@ let mk_call () =
       body     =
         Tassign (
           Tdoti(gs,"_ops"),
-          Tcons (gListLib,
+          Tcons (gListAs,
                  Tapp(Tvar "mk_call",[Tvar "t"]),
                  Tdoti(gs,"_ops")
                 ))
@@ -483,9 +486,9 @@ let mk_select_body asset key mlw_test : term =
       ensures  = [];
       body     =
         let some = Tif(mk_afun_test mlw_test,
-                      Tcons (gListLib, Tdoti ("a",key),Tapp (Tvar ("internal_select"),[Tvar "tl"])),
+                      Tcons (gListAs, Tdoti ("a",key),Tapp (Tvar ("internal_select"),[Tvar "tl"])),
                       Some (Tapp (Tvar ("internal_select"),[Tvar "tl"]))) in
-        Tmlist (gListLib,Tnil gListLib,"l","a","tl",some);
+        Tmlist (gListAs,Tnil gListAs,"l","a","tl",some);
     },
     Tmkview (asset,(Tapp (Tvar "internal_select",[Tviewtolist(asset, Tvar "v", Tvar "c")])))
   )
@@ -564,7 +567,7 @@ let mk_removeif_body m forcoll asset mlw_test : term =
                         Some (Tapp (Tvar ("internal_removeif"),[Tvar "tl"])));
                     Twild, Tapp (Tvar ("internal_removeif"),[Tvar "tl"])
                   ]) in
-        Tmlist (gListLib,Tunit,"l","k","tl",some);
+        Tmlist (gListAs,Tunit,"l","k","tl",some);
     },
 
     (Tapp (Tvar "internal_removeif",
@@ -618,7 +621,7 @@ let mk_vremoveif m asset fn test mlw_test only_formula args =
                                 Tapp (Tvar ("internal_removeif"),[Tvar "tl"])];
                           Twild, Tapp (Tvar ("internal_removeif"),[Tvar "tl"])
                         ]) in
-              Tmlist (gListLib,Tunit,"l","k","tl",some);
+              Tmlist (gListAs,Tunit,"l","k","tl",some);
           },
           (Tmatch (Tget (asset, Tvar "k", Tvar "c"),
                    [ Tpsome "a",
@@ -668,7 +671,7 @@ let mk_cremoveif m asset test mlw_test only_formula args =
                               Some (Tapp (Tvar ("internal_removeif"),[Tvar "tl"])));
                           Twild, Tapp (Tvar ("internal_removeif"),[Tvar "tl"])
                         ]) in
-              Tmlist (gListLib,Tunit,"l","k","tl",some);
+              Tmlist (gListAs,Tunit,"l","k","tl",some);
           },
 
           (Tapp (Tvar "internal_removeif",
@@ -701,11 +704,11 @@ let map_lidents = List.map map_lident
 let rec type_to_init m (typ : loc_typ) : loc_term =
   mk_loc typ.loc (match typ.obj with
       | Tyasset i     -> Tapp (loc_term (Tvar ("mk_default_"^i.obj)),[])
-      | Typartition i -> Temptyfield i
-      | Tyaggregate i -> Temptyfield i
+      | Typartition _ -> Temptyfield (with_dummy_loc gFieldAs)
+      | Tyaggregate _ -> Temptyfield (with_dummy_loc gFieldAs)
       | Tycoll i      -> Temptycoll i
-      | Tylist _      -> Tnil (with_dummy_loc gListLib)
-      | Tyview i      -> Temptyview i
+      | Tylist _      -> Tnil (with_dummy_loc gListAs)
+      | Tyview _      -> Temptyview (with_dummy_loc gViewAs)
       | Tymap i       -> Tvar (mk_loc typ.loc ("const (mk_default_" ^ i.obj ^ " ())"))
       | Tyenum i      -> Tvar (mk_loc typ.loc (unloc (M.Utils.get_enum m i.obj).initial))
       | Tytuple l     -> Ttuple (List.map (type_to_init m) (List.map with_dummy_loc l))
@@ -779,7 +782,7 @@ let map_security_pred loc (t : M.security_predicate) =
   let mk_changes_performed_by t a l opt =
     Tapp (Tvar "Tr.changes_performed_by",
           [tr;
-           Tcons (gListLib, map_action_to_change a |> mk_change_term,Tnil gListLib);
+           Tcons (gListAs, map_action_to_change a |> mk_change_term,Tnil gListAs);
            List.fold_left (fun acc r ->
                Tor (acc,mk_eq t r opt)
              ) (mk_eq t (List.hd l) opt) (List.tl l) ])
@@ -798,7 +801,7 @@ let map_security_pred loc (t : M.security_predicate) =
   let mk_changes_performed_by_2 t1 t2 a l1 l2 =
     Tapp (Tvar "Tr.performed_by",
           [tr;
-           Tcons (gListLib, map_action_to_change a |> mk_change_term,Tnil gListLib);
+           Tcons (gListAs, map_action_to_change a |> mk_change_term,Tnil gListAs);
            Tand (
              List.fold_left (fun acc r ->
                  Tor (acc,mk_eq t1 r false)
@@ -1352,18 +1355,18 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Massets _ ->
       begin
         match mt.type_ with
-        | Tcontainer (Tasset a,_) -> (* Tlist (l |> List.map (map_mterm m ctx)) *) Temptyview (map_lident a)
+        | Tcontainer (Tasset _,_) -> Temptyfield (with_dummy_loc gFieldAs)
         | _ -> assert false
       end
 
     | Mlitset  l ->
       List.fold_left(fun acc e ->
-          with_dummy_loc (Tcons(with_dummy_loc gListLib, map_mterm m ctx e, acc))
-        ) (loc_term (Tnil gListLib)) l |> Mlwtree.deloc
+          with_dummy_loc (Tcons(with_dummy_loc gListAs, map_mterm m ctx e, acc))
+        ) (loc_term (Tnil gListAs)) l |> Mlwtree.deloc
     | Mlitlist l ->
       List.fold_left(fun acc e ->
-          with_dummy_loc (Tcons(with_dummy_loc gListLib, map_mterm m ctx e, acc))
-        ) (loc_term (Tnil gListLib)) l |> Mlwtree.deloc
+          with_dummy_loc (Tcons(with_dummy_loc gListAs, map_mterm m ctx e, acc))
+        ) (loc_term (Tnil gListAs)) l |> Mlwtree.deloc
     | Mlitmap  _   -> error_not_translated "Mlitmap"
     | Mlitrecord _ -> error_not_translated "Mlitrecord"
 
@@ -1981,11 +1984,10 @@ let mk_api_precond m apid a src =
     ) []
 
 let mk_key_found_cond old asset var =
-  Tccontains (asset,
-              var,
-              match old with
-              | `Old -> mk_ac_old asset
-              | `Curr -> mk_ac asset)
+  let coll = match old with
+        | `Old -> mk_ac_old asset
+        | `Curr -> mk_ac asset in
+  Tneq(Tyint, Tget (asset, var, coll), Tnone)
 
 let mk_not_found_cond old asset var =
   let coll =
@@ -2263,38 +2265,28 @@ let mk_add_count_ensures m a =
     }]
   else []
 
-let mk_add_ensures m p a e =
-  [
-    { id   = p ^ "_post_1";
-      form = Tmem (a,
-                   Tvar e,
-                   mk_ac a)
+let mk_add_ensures m p a k e =
+  let get_ensures i mkac mkacold = [
+    { id   = p ^ "_post_" ^ (string_of_int i);
+      form = Teq(Tyint, Tget (a, Tdoti(e, k), mkacold a), Tnone)
     };
-    { id   = p ^ "_post_2";
-      form = Teq (Tycoll a,
-                  mk_ac a,
-                  Tunion (a,
-                          mk_ac_old a,
-                          Tsingl (a,
-                                  Tvar e)));
+    { id   = p ^ "_post_" ^ (string_of_int (i+1));
+      form = Tforall (
+        [["k"],Tykey],
+        Timpl(Tneq(Tyint, Tvar "k", Tdoti(e, k)),
+              Teq(Tyint,Tget (a, Tdoti(e, k), mkac a),
+                        Tget (a, Tdoti(e, k), mkacold a))
+        )
+      )
     };
-    { id   = p ^ "_post_3";
-      form = Teq (Tycoll a,
-                  mk_ac_added a,
-                  Tunion (a,
-                          mk_ac_old_added a,
-                          Tsingl (a,
-                                  Tvar e)));
-    };
-    { id   = p ^ "_post_4";
-      form = Tempty (a,
-                     Tinter (a,
-                             mk_ac_old_added a,
-                             Tsingl (a,
-                                     Tvar e)
-                            ));
-    };
-  ] @ (mk_add_sum_ensures m a e) @ (mk_add_count_ensures m a)
+    { id   = p ^ "_post_" ^ (string_of_int (i+2));
+      form = Teq (Tyint,
+                  Tget (a, Tdoti(e, k), mkac a),
+                  Tsome (Tvar e))
+    }
+  ] in
+  (get_ensures 1 mk_ac mk_ac_old) @ (get_ensures 4 mk_ac_added mk_ac_old_added)
+   @ (mk_add_sum_ensures m a e) @ (mk_add_count_ensures m a)
 
 let mk_add_asset m asset key : decl = Dfun {
     name     = "add_" ^ asset;
@@ -2305,22 +2297,21 @@ let mk_add_asset m asset key : decl = Dfun {
                         mk_not_found_cond `Old asset (Tdoti ("new_asset", key)))];
     variants = [];
     requires = mk_add_asset_precond m ("add_" ^ asset) asset "new_asset";
-    ensures  = mk_add_ensures m ("add_" ^ asset) asset "new_asset";
-    body     = Tseq [
-        Tif (mk_not_found_cond `Curr asset (Tdoti ("new_asset", key)),
-             Traise Ekeyexist, (* then *)
-             Some (Tseq [      (* else *)
+    ensures  = mk_add_ensures m ("add_" ^ asset) asset key "new_asset";
+    body     =
+      Tmatch (Tget(asset, Tdoti ("new_asset", key), mk_ac asset),[
+        Tpignore, Traise Ekeyexist;
+        Twild, Tseq [
                  Tassign (mk_ac asset,
                           Tadd (asset,
-                                mk_ac asset,
-                                Tvar "new_asset"));
+                                Tvar "new_asset",
+                                mk_ac asset));
                  Tassign (mk_ac_added asset,
                           Tadd (asset,
-                                mk_ac_added asset,
-                                Tvar "new_asset"))
+                                Tvar "new_asset",
+                                mk_ac_added asset))
                ]
-               ))
-      ];
+      ]);
   }
 
 let mk_rm_sum_ensures m prefix a _e =
@@ -2435,8 +2426,8 @@ let mk_rm_asset m asset : decl =
           Tseq [
             Tassign (mk_ac_rmed asset,
                      Tadd (asset,
-                           mk_ac_rmed asset,
-                           Tvar "e"));
+                           Tvar "e",
+                           mk_ac_rmed asset));
             Tassign (mk_ac asset,
                      Tremove (asset,
                               mk_ac asset,
@@ -2575,18 +2566,26 @@ let mk_clear_view _m asset : decl = Dfun {
       );
    } *)
 
-let mk_add_field_ensures m partition a _ak field prefix adda elem =
+let mk_add_field_ensures m partition a _ak field prefix adda elem elemkey =
   let collfield = Tapp (Tvar field, [Tvar ("asset")]) in
   let key      = M.Utils.get_asset_key m adda |> fst in
   let assetcollfield = Ttocoll (adda,collfield,mk_ac adda) in
   let oldassetcollfield = Ttocoll (adda,collfield,mk_ac_old adda) in
   let add_field_ensures = [
     { id   = prefix ^ "_field_post1";
-      form = exists_asset a
-          (Tvmem (adda,
-                  Tapp (Tvar key,[Tvar elem]),
-                  collfield))
-
+      form = Tforall ([["r"],Tyasset a],
+        Timpl(
+          Teq(Tyint, Tget(a, Tvar "asset_id", mk_ac_old a), Tsome (Tvar "r")),
+          Teq(Tyint,
+              Tget(a, Tvar "asset_id", mk_ac a),
+              Tsome (Trecord (
+                Some (Tvar "r"),
+                [field, Tadd(gFieldAs,
+                             elemkey,
+                             Tdot(Tvar "r",
+                             Tvar field))]
+              ))
+        )))
     };
   ] @ List.fold_left (fun acc idx ->
       acc @ [{
@@ -2612,7 +2611,7 @@ let mk_add_field_ensures m partition a _ak field prefix adda elem =
      else [])
   in
   if partition then
-    add_field_ensures @ (mk_add_ensures m prefix adda elem)
+    add_field_ensures @ (mk_add_ensures m prefix adda key elem)
   else
     []
 
@@ -2625,24 +2624,25 @@ let mk_add_field_ensures m partition a _ak field prefix adda elem =
 *)
 let mk_add_field m part a ak field adda addak : decl =
   (* let akey  = Tapp (Tvar ak,[Tvar "asset"]) in *)
-  let addak = if part then Tapp (Tvar addak,[Tvar "new_asset"]) else Tvar "new_asset" in
+  let addak = Tdoti ("new_asset",addak) in
   let test,exn =
     if part then
-      (fun mode -> mk_key_found_cond mode a (Tvar ("asset_id"))), Ekeyexist
+      (fun mode -> mk_key_found_cond mode adda addak), Ekeyexist
     else
-      (fun mode -> mk_not_found_cond mode a (Tvar ("asset_id"))), Enotfound
+      (fun mode -> mk_not_found_cond mode adda addak), Enotfound
   in
   Dfun {
     name     = "add_" ^ a ^ "_" ^ field;
     logic    = NoMod;
     args     = ["asset_id",Tykey; "new_asset", if part then Tyasset adda else Tykey];
     returns  = Tyunit;
-    raises   = [Timpl (Texn exn,
-                       test `Old);
-               ];
+    raises   = [
+      Timpl (Texn Enotfound, mk_not_found_cond `Curr a (Tvar "asset_id"));
+      Timpl (Texn exn, test `Old);
+    ];
     variants = [];
     requires = mk_add_asset_precond m ("add_" ^ a ^ "_" ^ field) adda "new_asset";
-    ensures  = mk_add_field_ensures m part a ak field ("add_" ^ a ^ "_" ^ field) adda "new_asset";
+    ensures  = mk_add_field_ensures m part a ak field ("add_" ^ a ^ "_" ^ field) adda "new_asset" addak;
     body     =
       Tmatch (Tget(a,
                    Tvar "asset_id",
@@ -2652,15 +2652,15 @@ let mk_add_field m part a ak field adda addak : decl =
                    Tletin (false, a ^ "_" ^ field,None,
                            Tapp (Tvar field,[Tvar "asset"]),
                            Tletin (false,"new_" ^ a ^ "_" ^ field,None,
-                                   Tvadd (adda, addak,Tvar (a ^ "_" ^ field)),
+                                   Tadd (gFieldAs, addak, Tvar (a ^ "_" ^ field)),
                                    Tletin (false,"new_asset",None,
                                            Trecord (Some (Tvar "asset"),
                                                     [field,Tvar ("new_" ^ a ^ "_" ^ field)]),
                                            Tassign (mk_ac a,
                                                     Tset (a,
-                                                          mk_ac a,
                                                           Tvar "asset_id",
-                                                          Tvar ("new_asset")))
+                                                          Tvar ("new_asset"),
+                                                          mk_ac a))
                                           ))) in
                  if part then
                    Tseq [
@@ -2670,7 +2670,7 @@ let mk_add_field m part a ak field adda addak : decl =
                  else
                    addfield)
                 ;
-                Twild, Traise exn
+                Twild, Traise Enotfound
               ]);
   }
 
@@ -2798,7 +2798,7 @@ let mk_removeall _m part asset field rm_asset =
                   "new_" ^ asset ^ "_asset",
                   None,
                   Trecord (Some (Tvar ("asset")),
-                           [field, Temptyview rm_asset]),
+                           [field, Temptyfield gFieldAs]),
                   let assign =
                     Tassign (mk_ac asset,
                              Tset (asset,
@@ -2933,7 +2933,7 @@ let fold_exns m body : term list =
     | M.Maddasset (_, i) -> internal_fold_exn (acc @ [Texn Ekeyexist]) i
     | M.Maddfield (a, f, c, i) ->
       internal_fold_exn
-        (internal_fold_exn (acc @ if (is_partition m a f) then [Texn Ekeyexist]
+        (internal_fold_exn (acc @ if (is_partition m a f) then [Texn Ekeyexist; Texn Enotfound]
                             else [Texn Enotfound ]) c) i
     | M.Mgetopt _ -> acc @ [Texn Enotfound]
     | M.Mfail InvalidCaller -> acc @ [Texn Einvalidcaller]
@@ -3040,7 +3040,7 @@ let mk_entry_require m idents =
         id = with_dummy_loc "empty_trace";
         form = Teq (Tyint,
                     Tdoti (gs, mk_id "tr"),
-                    Tnil gListLib)
+                    Tnil gListAs)
                |> loc_term
       }
     ]

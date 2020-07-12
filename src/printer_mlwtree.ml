@@ -445,8 +445,8 @@ let rec pp_term outer pos fmt = function
   | Tlist l -> pp_tlist outer pos fmt l
   | Tnil i -> Format.fprintf fmt "%a.Nil" pp_str i
   | Temptycoll i -> Format.fprintf fmt "%a.empty" pp_str (String.capitalize_ascii i)
-  | Temptyview _ -> Format.fprintf fmt "V.empty"
-  | Temptyfield _ -> Format.fprintf fmt "F.empty"
+  | Temptyview i -> Format.fprintf fmt "%a.empty" pp_str i
+  | Temptyfield i -> Format.fprintf fmt "%a.empty" pp_str i
   | Tcaller i -> Format.fprintf fmt "%a._caller" pp_str i
   | Tsender i -> Format.fprintf fmt "%a._source" pp_str i
   | Ttransferred i -> Format.fprintf fmt "%a._transferred" pp_str i
