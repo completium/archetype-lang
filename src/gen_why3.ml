@@ -1495,11 +1495,17 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                                               map_mterm m ctx r,
                                               with_dummy_loc (Ttoview(with_dummy_loc a, mk_ac_ctx a ctx)))
 
-    | Mnth (n, (CKview c | CKfield (_, _, c)),k) -> Tapp (loc_term (Tvar ("nth_" ^ n)),[map_mterm m ctx k; map_mterm m ctx c])
+    | Mnth (n, (CKview c),k) -> Tapp (loc_term (Tvar ("nth_" ^ n)),[map_mterm m ctx k; map_mterm m ctx c])
+    | Mnth (n, CKfield (_, _, c),k) ->
+      Tapp (loc_term (Tvar ("nth_" ^ n)), [
+        map_mterm m ctx k;
+        with_dummy_loc(Ttoview(with_dummy_loc gFieldAs,  map_mterm m ctx c))])
     | Mnth (n, CKcoll,k) -> Tapp (loc_term (Tvar ("nth_" ^ n)), [
         map_mterm m ctx k;
         with_dummy_loc (Ttoview (with_dummy_loc n, mk_ac_ctx n ctx)) ])
-    | Mcount (a, (CKview t | CKfield (_, _, t))) -> Tvcard (with_dummy_loc a, map_mterm m ctx t)
+    | Mcount (_, (CKview t)) -> Tvcard (with_dummy_loc gViewAs, map_mterm m ctx t)
+    | Mcount (_, (CKfield (_, _, t))) ->
+      Tvcard (with_dummy_loc gViewAs, with_dummy_loc (Ttoview (with_dummy_loc gFieldAs, map_mterm m ctx t)))
     | Mcount (a, CKcoll) -> Tvcard (with_dummy_loc a, with_dummy_loc (Ttoview(with_dummy_loc a, mk_ac_ctx a ctx)))
     | Msum          (a, (CKview v | CKfield (_, _, v)),f) ->
       let cloneid = mk_sum_clone_id m a f in
