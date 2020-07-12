@@ -1127,17 +1127,17 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                 Tpsome (map_lident id), map_mterm m ctx b;
                 Twild, map_mterm m ctx e
               ])
-    | Mletin ([id], { node = M.Mnth (n, CKview c,k); type_ = _ }, _, b, Some e) ->
-      Tmatch (Tvnth (loc_ident n,
+    | Mletin ([id], { node = M.Mnth (_n, CKview c,k); type_ = _ }, _, b, Some e) ->
+      Tmatch (Tnth (with_dummy_loc gViewAs,
                      map_mterm m ctx k,
                      map_mterm m ctx c) |> with_dummy_loc,[
                 Tpsome (map_lident id),  map_mterm m ctx b;
                 Twild, map_mterm m ctx e
               ])
     | Mletin ([id], { node = M.Mnth (n, CKcoll,k); type_ = _ }, _, b, Some e) ->
-      Tmatch (Tcnth (loc_ident n,
+      Tmatch (Tnth (with_dummy_loc gViewAs,
                      map_mterm m ctx k,
-                     mk_ac_ctx n ctx) |> with_dummy_loc,[
+                     with_dummy_loc(Ttoview (with_dummy_loc n,mk_ac_ctx n ctx)) ) |> with_dummy_loc,[
                 Tpsome (map_lident id), map_mterm m ctx b;
                 Twild, map_mterm m ctx e
               ])
@@ -2485,8 +2485,8 @@ let mk_clear_view _m asset : decl = Dfun {
           Tvar "v"),
         [], (* TODO : add invariant for storage api verification *)
         Tmatch (
-          Tvnth (
-            asset,
+          Tnth (
+            gViewAs,
             Tvar "i",
             Tvar "v"
           ), [
@@ -2849,7 +2849,7 @@ let mk_removeall_ensures p part a field rmda k = [
         Teq(Tyint, Tget(a, Tvar "asset_id", mk_ac_old a), Tsome (Tvar "r")),
         Tforall ([["k"], Tykey],
           Timpl(
-            Teq(Tyint, Tget(gFieldAs, Tvar "k", Tdot(Tvar "r",Tvar field)), Tsome (Tvar "k")),
+            Tmem (gFieldAs, Tvar "k", Tdot(Tvar "r",Tvar field)),
             Teq(Tyint, Tget(rmda, Tvar "k", mk_ac rmda), Tnone)
           )
         )
@@ -2862,7 +2862,7 @@ let mk_removeall_ensures p part a field rmda k = [
         Teq(Tyint, Tget(a, Tvar "asset_id", mk_ac_old a), Tsome (Tvar "r")),
         Tforall ([["k"], Tykey],
           Timpl(
-            Teq(Tyint, Tget(gFieldAs, Tvar "k", Tdot(Tvar "r",Tvar field)), Tnone),
+            Tnot (Tmem (gFieldAs, Tvar "k", Tdot(Tvar "r",Tvar field))),
             Teq(Tyint, Tget(rmda, Tvar "k", mk_ac rmda), Tget(rmda, Tvar "k", mk_ac_old rmda))
           )
         )
@@ -2904,7 +2904,7 @@ let mk_removeall _m part asset field rm_asset =
                       assign;
                       Tapp (
                         Tvar ("clear_view_"^rm_asset),
-                        [Tdoti ("asset",field)])
+                        [Ttoview (gFieldAs, Tdoti ("asset",field))])
                     ] else assign
                  )
           ;
