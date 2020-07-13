@@ -10,25 +10,6 @@ type error_desc =
 
 let generate_api_storage ?(verif=false) (model : model) : model =
 
-  let add (_ctx : ctx_model) (l : api_storage list) (i :  api_storage) =
-    let res, l = List.fold_left (fun (res, accu) (x : api_storage) ->
-        if cmp_api_item_node x.node_item i.node_item
-        then (true,
-              { i with api_loc =
-                         match x.api_loc, i.api_loc with
-                         | _, ExecFormula
-                         | ExecFormula, _
-                         | OnlyExec, OnlyFormula
-                         | OnlyFormula, OnlyExec -> ExecFormula
-                         | _ -> i.api_loc
-              }::accu)
-        else (res, x::accu)) (false, []) l in
-    if res then
-      l
-    else
-      i::l
-  in
-
   let to_ck = function
     | CKcoll              -> Coll
     | CKview _            -> View
@@ -149,7 +130,7 @@ let generate_api_storage ?(verif=false) (model : model) : model =
         [APIInternal (RatDur)]
       | _ -> []
     in
-    let accu = List.fold_left (fun accu v -> add ctx accu (Model.mk_api_item v  (match ctx.formula with | true -> OnlyFormula | false -> OnlyExec))) accu api_items in
+    let accu = List.fold_left (fun accu v -> Utils.add_api_storage_in_list accu (Model.mk_api_item v  (match ctx.formula with | true -> OnlyFormula | false -> OnlyExec))) accu api_items in
     fold_term (f ctx) accu term
   in
   let l = fold_model f model []

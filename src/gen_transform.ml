@@ -2821,14 +2821,14 @@ let filter_api_storage (model : model) =
 
     let cmp (a : api_storage) (b : api_storage) =
       match a.node_item, b.node_item with
-        | APIAsset (Nth _), APIAsset (Nth _) -> cmp_api_storage a b
-        | _ -> cmp_api_item_node a.node_item b.node_item
+      | APIAsset (Nth _), APIAsset (Nth _) -> cmp_api_storage a b
+      | _ -> cmp_api_item_node a.node_item b.node_item
     in
 
     List.fold_right (fun (x : api_storage) accu ->
         if List.exists (cmp x) accu
         then accu
-        else x::accu) l []
+        else Utils.add_api_storage_in_list accu x) l []
   in
 
   { model with
