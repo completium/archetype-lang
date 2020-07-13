@@ -1765,9 +1765,15 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let n = M.Utils.get_asset_type mt |> with_dummy_loc in
       let iter_id = Option.get (ctx.loop_id) in
       begin match container with
-        | ICKview c  -> Tvhead (n,loc_term (Tvar iter_id),map_mterm m ctx c)
-        | ICKcoll n  -> Tchead (with_dummy_loc n,loc_term (Tvar iter_id),mk_ac_ctx n ctx)
-        | ICKfield (_, _, c) -> Tvhead (n,loc_term (Tvar iter_id),map_mterm m ctx c)
+        | ICKview c  -> Tvhead (with_dummy_loc gViewAs,loc_term (Tvar iter_id),map_mterm m ctx c)
+        | ICKcoll n  ->
+          Tvhead (with_dummy_loc gViewAs,
+                  loc_term (Tvar iter_id),
+                  with_dummy_loc (Ttoview (with_dummy_loc n, mk_ac_ctx n ctx)))
+        | ICKfield (_, _, c) ->
+          Tvhead (with_dummy_loc gViewAs,
+                  loc_term (Tvar iter_id),
+                  with_dummy_loc (Ttoview (with_dummy_loc gFieldAs, map_mterm m ctx c)))
         | ICKset  _  -> error_not_translated "Msetiterated for set"
         | ICKlist _  -> error_not_translated "Msetiterated for list"
         | ICKmap  _  -> error_not_translated "Msetiterated for map"
