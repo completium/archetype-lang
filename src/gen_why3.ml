@@ -451,8 +451,6 @@ let mk_sort_clone _m asset fields =
                   cap_asset ^ ".collection");
            Ctype ("t",
                   asset);
-           Ctype ("view",
-                  cap_asset ^ ".view");
            Cval ("cmp",
                  mk_cmp_function_id asset fields);
            Cval ("view_to_list",
@@ -1484,8 +1482,15 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let coll = mk_ac_ctx a ctx in
       let view = with_dummy_loc (Ttoview (with_dummy_loc a, coll)) in
       Tapp (loc_term (Tvar id), argids @ args @ [view;coll])
-    | Msort (a, (CKview c | CKfield (_, _, c)),l) -> Tvsort (with_dummy_loc (mk_sort_clone_id a l),map_mterm m ctx c,mk_ac_ctx a ctx)
-    | Msort (a, CKcoll,l) -> Tcsort (with_dummy_loc (mk_sort_clone_id a l), mk_ac_ctx a ctx)
+    | Msort (a, (CKview c),l) -> Tvsort (with_dummy_loc (mk_sort_clone_id a l),map_mterm m ctx c,mk_ac_ctx a ctx)
+    | Msort (a, CKfield (_, _, c),l) ->
+      Tvsort (with_dummy_loc (mk_sort_clone_id a l),
+              with_dummy_loc (Ttoview (with_dummy_loc gFieldAs, map_mterm m ctx c)),
+              mk_ac_ctx a ctx)
+    | Msort (a, CKcoll,l) ->
+      Tvsort (with_dummy_loc (mk_sort_clone_id a l),
+                              with_dummy_loc (Ttoview(with_dummy_loc a, mk_ac_ctx a ctx)),
+                              mk_ac_ctx a ctx)
     | Mcontains (a, (CKview v), r) -> Tvcontains (with_dummy_loc a, map_mterm m ctx r, map_mterm m ctx v)
     | Mcontains (a, CKfield (_, _, v), r) -> Tvcontains (with_dummy_loc a,
                                                          map_mterm m ctx r,

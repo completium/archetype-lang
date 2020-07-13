@@ -855,11 +855,11 @@ module Sort
   (* ------------------------------------------------------------------------ *)
   type collection
   (* ------------------------------------------------------------------------ *)
-  val function cmp : t -> t -> bool
+  val function cmp t t : bool
   (* ------------------------------------------------------------------------ *)
-  val function view_to_list : V.view -> collection -> list t
+  val function view_to_list V.view collection : list t
   (* ------------------------------------------------------------------------ *)
-  val function list_to_view : list t -> V.view
+  val function list_to_view (list t) : V.view
 
   (* ------------------------------------------------------------------------ *)
   let predicate ple (a b : t) = cmp a b
