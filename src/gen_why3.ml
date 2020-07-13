@@ -1334,8 +1334,11 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Msome v -> Tsome (map_mterm m ctx v)
 
     | Mtuple l              -> Ttuple (List.map (map_mterm m ctx) l)
-    | Mtupleaccess (_x, _k) -> error_not_translated "Mtupleaccess"
-
+    | Mtupleaccess (x, k) ->
+      let card = begin match x.type_ with
+        | Ttuple l -> List.length l
+        | _ -> assert false
+      end in Ttupleaccess (map_mterm m ctx x, (Big_int.int_of_big_int k)+1, card)
     | Masset l ->
       let asset = M.Utils.get_asset_type mt in
       let fns = M.Utils.get_field_list m asset |> wdl in
@@ -1480,7 +1483,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let argids = args |> List.map (fun (e, _, _) -> e) |> List.map (map_mterm m ctx) in
       let args = List.map (fun (i,_) -> loc_term (Tvar i)) la in
       Tapp (loc_term (Tvar id), argids @ args @ [
-        with_dummy_loc (Ttoview(with_dummy_loc gFieldAsm, map_mterm m ctx l));
+        with_dummy_loc (Ttoview(with_dummy_loc gFieldAs, map_mterm m ctx l));
         mk_ac_ctx a ctx
       ])
     | Mselect (a, CKcoll, la, lb, _a) ->

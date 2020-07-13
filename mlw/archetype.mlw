@@ -43,6 +43,25 @@ module Utils
   | (_,r) -> r
   end
 
+  let function nth1_of_2 (a: ('t1,'t2))     : 't1 = match a with | (v,_) -> v end
+  let function nth1_of_3 (a: ('t1,'t2,'t3)) : 't1 = match a with | (v,_,_) -> v end
+  let function nth1_of_4 (a: ('t1,'t2,'t3,'t4)) : 't1 = match a with | (v,_,_,_) -> v end
+  let function nth1_of_5 (a: ('t1,'t2,'t3,'t4,'t5)) : 't1 = match a with | (v,_,_,_,_) -> v end
+
+  let function nth2_of_2 (a: ('t1,'t2))     : 't2 = match a with | (_,v) -> v end
+  let function nth2_of_3 (a: ('t1,'t2,'t3)) : 't2 = match a with | (_,v,_) -> v end
+  let function nth2_of_4 (a: ('t1,'t2,'t3,'t4)) : 't2 = match a with | (_,v,_,_) -> v end
+  let function nth2_of_5 (a: ('t1,'t2,'t3,'t4,'t5)) : 't2 = match a with | (_,v,_,_,_) -> v end
+
+  let function nth3_of_3 (a: ('t1,'t2,'t3)) : 't3 = match a with | (_,_,v) -> v end
+  let function nth3_of_4 (a: ('t1,'t2,'t3,'t4)) : 't3 = match a with | (_,_,v,_) -> v end
+  let function nth3_of_5 (a: ('t1,'t2,'t3,'t4,'t5)) : 't3 = match a with | (_,_,v,_,_) -> v end
+
+  let function nth4_of_4 (a: ('t1,'t2,'t3,'t4)) : 't4 = match a with | (_,_,_,v) -> v end
+  let function nth4_of_5 (a: ('t1,'t2,'t3,'t4,'t5)) : 't4 = match a with | (_,_,_,v,_) -> v end
+
+  let function nth5_of_5 (a: ('t1,'t2,'t3,'t4,'t5)) : 't5 = match a with | (_,_,_,_,v) -> v end
+
   (* ------------------------------------------------------------------------ *)
   (* Math *)
 

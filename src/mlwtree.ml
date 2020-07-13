@@ -80,6 +80,7 @@ type ('e,'t,'i) abstract_term =
   | Ttry    of 'e * (exn * 'e) list
   | Tvar    of 'i
   | Ttuple  of 'e list
+  | Ttupleaccess of 'e * int * int
   (* record *)
   | Trecord of 'e option * ('i * 'e) list (* { 'e with 'i = 'e; } *)
   | Tdot    of 'e * 'e
@@ -374,6 +375,7 @@ and map_abstract_term
   | Tassert (l,e)      -> Tassert (Option.map map_i l,map_e e)
   | Tvar i             -> Tvar (map_i i)
   | Ttuple l           -> Ttuple (List.map map_e l)
+  | Ttupleaccess (e1,e2,e3) -> Ttupleaccess (map_e e1, e2, e3)
   | Trecord (e,l)      -> Trecord (Option.map map_e e, List.map (fun (i,v) ->
       (map_i i,map_e v)) l)
   | Tdot (e1,e2)       -> Tdot (map_e e1, map_e e2)
@@ -772,6 +774,7 @@ let compare_abstract_term
   | Tassert (Some l1,e1), Tassert (Some l2,e2) -> cmpi l1 l2 && cmpe e1 e2
   | Tvar i1, Tvar i2 -> cmpi i1 i2
   | Ttuple l1, Ttuple l2 -> List.for_all2 cmpe l1 l2
+  | Ttupleaccess (e1,f1,g1), Ttupleaccess (e2,f2,g2) -> cmpe e1 e2 && f1 = f2 && g1 = g2
   | Trecord (None,l1), Trecord (None,l2) ->
     List.for_all2 (fun (i1,j1) (i2,j2) ->
         cmpi i1 i2 && cmpe j1 j2) l1 l2
