@@ -2832,5 +2832,5 @@ let filter_api_storage (model : model) =
   in
 
   { model with
-    api_items = filter model.api_items
+    api_items = filter model.api_items |> Utils.sort_api_storage model true
   }
