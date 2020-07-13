@@ -1036,7 +1036,7 @@ let get_for_fun = function
   | _ -> assert false
 
 type logical_mod = Nomod | Added | Removed
-type lctx = Inv | Other
+type lctx = Inv | Logic | Other
 
 type logical_context = {
   lctx : lctx;
@@ -1512,14 +1512,29 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                                               map_mterm m ctx r,
                                               with_dummy_loc (Ttoview(with_dummy_loc a, mk_ac_ctx a ctx)))
 
-    | Mnth (n, (CKview c),k) -> Tapp (loc_term (Tvar ("nth_" ^ n)),[map_mterm m ctx k; map_mterm m ctx c])
+    | Mnth (n, (CKview c),k) ->
+      begin match ctx.lctx with
+        | Logic -> Tvnth(with_dummy_loc gViewAs,map_mterm m ctx k, map_mterm m ctx c)
+        | _ ->  Tapp (loc_term (Tvar ("nth_" ^ n)),[map_mterm m ctx k; map_mterm m ctx c])
+      end
     | Mnth (n, CKfield (_, _, c),k) ->
-      Tapp (loc_term (Tvar ("nth_" ^ n)), [
+      begin match ctx.lctx with
+      | Logic -> Tvnth(with_dummy_loc gViewAs,
+        map_mterm m ctx k,
+        with_dummy_loc(Ttoview(with_dummy_loc gFieldAs,  map_mterm m ctx c)) )
+      | _ -> Tapp (loc_term (Tvar ("nth_" ^ n)), [
         map_mterm m ctx k;
         with_dummy_loc(Ttoview(with_dummy_loc gFieldAs,  map_mterm m ctx c))])
-    | Mnth (n, CKcoll,k) -> Tapp (loc_term (Tvar ("nth_" ^ n)), [
+      end
+    | Mnth (n, CKcoll,k) ->
+      begin match ctx.lctx with
+      | Logic -> Tvnth(with_dummy_loc gViewAs,
+        map_mterm m ctx k,
+        with_dummy_loc (Ttoview (with_dummy_loc n, mk_ac_ctx n ctx)))
+      | _ -> Tapp (loc_term (Tvar ("nth_" ^ n)), [
         map_mterm m ctx k;
         with_dummy_loc (Ttoview (with_dummy_loc n, mk_ac_ctx n ctx)) ])
+      end
     | Mcount (_, (CKview t)) -> Tvcard (with_dummy_loc gViewAs, map_mterm m ctx t)
     | Mcount (_, (CKfield (_, _, t))) ->
       Tvcard (with_dummy_loc gViewAs, with_dummy_loc (Ttoview (with_dummy_loc gFieldAs, map_mterm m ctx t)))
@@ -2946,30 +2961,28 @@ let mk_removeall _m part asset field rm_asset =
     ;
   }
 
-let gnthgen = ref false
-let gselectgen = ref false
-let gremoveifgen = ref false
-let gcleargen = ref false
-
 let mk_storage_api_before_storage (m : M.model) _records =
   m.api_items |> List.fold_left (fun acc (sc : M.api_storage) ->
-      match sc.node_item with
-      | M.APIAsset (Sum (asset,_,_,formula)) when compare asset "todo" <> 0 ->
+      match sc.node_item, sc.api_loc with
+      | M.APIAsset (Sum (asset,_,_,formula)), _ when compare asset "todo" <> 0 ->
         let key      = M.Utils.get_asset_key m asset |> fst in
         let mlw_formula = map_mterm m init_ctx formula |> unloc_term in
         let id = M.Utils.get_sum_idx m asset formula in
         acc @ [ (*mk_get_sum_value_from_pos asset id mlw_formula;*)
           mk_get_sum_value asset id mlw_formula;
           mk_sum_clone m asset key formula ]
-      | M.APIAsset (Select (asset, (View | Field _), args, test)) ->
-        if not !gselectgen then (
-          gselectgen := true;
+      | M.APIAsset (Select (asset, (View | Field _), args, test)), OnlyFormula ->
           let mlw_test = map_mterm m init_ctx test in
-          acc @ [ mk_select m asset test (mlw_test |> unloc_term) (match sc.api_loc with | OnlyFormula -> true | ExecFormula | OnlyExec -> false) args ])
-        else acc
-      | M.APIAsset (Select (asset, Coll, args, test)) ->
+          acc @ [ mk_select m asset test (mlw_test |> unloc_term) true args ]
+      | M.APIAsset (Select (asset, (View | Field _), args, test)), (ExecFormula | OnlyExec) ->
+          let mlw_test = map_mterm m init_ctx test in
+          acc @ [ mk_select m asset test (mlw_test |> unloc_term) false args ]
+      | M.APIAsset (Select (asset, Coll, args, test)), OnlyFormula ->
         let mlw_test = map_mterm m init_ctx test in
-        acc @ [ mk_select m asset test (mlw_test |> unloc_term) (match sc.api_loc with | OnlyFormula -> true | ExecFormula | OnlyExec -> false) args ]
+        acc @ [ mk_select m asset test (mlw_test |> unloc_term) true args ]
+      | M.APIAsset (Select (asset, Coll, args, test)), (ExecFormula | OnlyExec) ->
+        let mlw_test = map_mterm m init_ctx test in
+        acc @ [ mk_select m asset test (mlw_test |> unloc_term) false args ]
       | _ -> acc
     ) [] |> loc_decl |> deloc
 
@@ -2980,34 +2993,29 @@ let is_partition m n f =
 
 let mk_storage_api (m : M.model) records =
   m.api_items |> List.fold_left (fun acc (sc : M.api_storage) ->
-      match sc.node_item with
-      | M.APIAsset (Get n) ->
+      match sc.node_item, sc.api_loc with
+      | M.APIAsset (Get n), _ ->
         let k,kt = M.Utils.get_asset_key m n in
         acc @ [mk_get_asset n k (kt |> map_btype)]
-      | M.APIAsset (Add n) ->
+      | M.APIAsset (Add n), _ ->
         let k = M.Utils.get_asset_key m n |> fst in
         acc @ [mk_add_asset m n k]
-      | M.APIAsset (Remove n) ->
+      | M.APIAsset (Remove n), _ ->
         acc @ [mk_rm_asset m n]
-      | M.APIAsset (Nth (n, Coll)) ->
+      | M.APIAsset (Nth (n, _)), _ ->
         acc @ [mk_nth_asset n]
-      | M.APIAsset (Nth (n, (View | Field _))) ->
-        if not !gnthgen then (
-          gnthgen := true;
-          acc @ [mk_nth_asset n])
-        else acc
-      | M.APIAsset (Set n) ->
+      | M.APIAsset (Set n), _ ->
         let record = get_record n (records |> unloc_decl) in
         let k      = M.Utils.get_asset_key m (get_record_name record) |> fst in
         acc @ [mk_set_asset m k record]
-      | M.APIAsset (FieldAdd (a,pf)) ->
+      | M.APIAsset (FieldAdd (a,pf)), _ ->
         let k            = M.Utils.get_asset_key m a |> fst in
         let (pa,addak,_) = M.Utils.get_container_asset_key m a pf in
         acc @ [
           (*mk_add_asset           pa.pldesc addak.pldesc;*)
           mk_add_field m (is_partition m a pf) a k pf pa addak
         ]
-      | M.APIAsset (FieldRemove (n,f)) ->
+      | M.APIAsset (FieldRemove (n,f)), _ ->
         let t         = M.Utils.get_asset_key m n |> fst in
         let (pa,pk,_) = M.Utils.get_container_asset_key m n f in
         acc @ [
@@ -3017,32 +3025,32 @@ let mk_storage_api (m : M.model) records =
       (* | M.APIAsset (Contains (n, _)) ->
          let t         =  M.Utils.get_asset_key m n |> snd |> map_btype in
          acc @ [ mk_contains n t ] *)
-      | M.APIAsset (Sort (asset, _, field)) ->
+      | M.APIAsset (Sort (asset, _, field)), _ ->
         acc @ [ mk_cmp_function m asset field; mk_sort_clone m asset field]
-      | M.APIAsset (Clear (n, (Coll | View | Field _))) ->
-        if not !gcleargen then (
-          gcleargen := true;
-          acc @ [mk_rm_asset m n;mk_clear_view m n])
-        else acc
+      | M.APIAsset (Clear (n, (Coll | View | Field _))), _ ->
+          acc @ [mk_rm_asset m n;mk_clear_view m n]
       (*       | M.APIAsset (RemoveAll (n,f)) ->
                let (key,_) = M.Utils.get_asset_key m n in
                let (clearedasset,_,_) = M.Utils.get_container_asset_key m n f in
                acc @ [mk_clear_field_coll m (is_partition m n f) n f key clearedasset] *)
-      | M.APIBuiltin(Babs (M.Tbuiltin M.Bint)) ->
+      | M.APIBuiltin(Babs (M.Tbuiltin M.Bint)), _ ->
         acc @ [Duse (true,["int";"Abs"],None)]
-      | M.APIAsset (RemoveAll (a,f)) ->
+      | M.APIAsset (RemoveAll (a,f)), _ ->
         let (pa,_,_) = M.Utils.get_container_asset_key m a f in
         let ispart = is_partition m a f in
         acc @ (if ispart then [mk_clear_view m pa] else []) @ [mk_removeall m ispart a f pa]
-      | M.APIAsset (RemoveIf (asset, Field (_, fn), args, test)) ->
-        if not !gremoveifgen then (
-          gremoveifgen := true;
+      | M.APIAsset (RemoveIf (asset, Field (_, fn), args, test)), OnlyFormula ->
           let mlw_test = map_mterm m init_ctx test in
-          acc @ [ mk_fremoveif m asset fn test (mlw_test |> unloc_term) (match sc.api_loc with | OnlyFormula -> true | ExecFormula | OnlyExec -> false) args ])
-        else acc
-      | M.APIAsset (RemoveIf (asset, Coll, args, test)) ->
+          acc @ [ mk_fremoveif m asset fn test (mlw_test |> unloc_term) true args ]
+      | M.APIAsset (RemoveIf (asset, Field (_, fn), args, test)), (ExecFormula | OnlyExec) ->
+          let mlw_test = map_mterm m init_ctx test in
+          acc @ [ mk_fremoveif m asset fn test (mlw_test |> unloc_term) false args ]
+      | M.APIAsset (RemoveIf (asset, Coll, args, test)), OnlyFormula ->
         let mlw_test = map_mterm m init_ctx test in
-        acc @ [ mk_cremoveif m asset test (mlw_test |> unloc_term) (match sc.api_loc with | OnlyFormula -> true | ExecFormula | OnlyExec -> false) args ]
+        acc @ [ mk_cremoveif m asset test (mlw_test |> unloc_term) true args ]
+      | M.APIAsset (RemoveIf (asset, Coll, args, test)), (ExecFormula | OnlyExec) ->
+        let mlw_test = map_mterm m init_ctx test in
+        acc @ [ mk_cremoveif m asset test (mlw_test |> unloc_term) false args ]
       | _ -> acc
     ) [] |> loc_decl |> deloc
 
@@ -3089,7 +3097,7 @@ let flatten_if_fail m (t : M.mterm) : loc_term =
 let mk_ensures m acc (v : M.specification) =
   acc @ (List.map (fun (spec : M.postcondition) -> {
         id = spec.name |> map_lident;
-        form = map_mterm m init_ctx spec.formula
+        form = map_mterm m { init_ctx with lctx = Logic } spec.formula
       }) (v.postconditions |> List.filter M.Utils.is_post))
 
 let mk_require n i t = {
