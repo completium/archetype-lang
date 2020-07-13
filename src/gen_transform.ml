@@ -2764,13 +2764,65 @@ let optimize (model : model) =
   in
   Model.map_mterm_model aux model
 
-let filter_api_storage (model : model) =
-  let filter (l : api_storage list) =
+(* let filter_api_storage (model : model) =
+   let filter (l : api_storage list) =
     let cmp c1 c2 =
       match c1.node_item, c2.node_item with
-      | APIAsset (Sum (an1, Coll , t1, p1)), APIAsset (Sum (an2, View, t2, p2)) -> cmp_ident an1 an2 && cmp_type t1 t2 && cmp_mterm p1 p2
-      | APIAsset (Sum (an1, View , t1, p1)), APIAsset (Sum (an2, Coll, t2, p2)) -> cmp_ident an1 an2 && cmp_type t1 t2 && cmp_mterm p1 p2
+      | APIAsset (Clear (an1, c1))           , APIAsset (Clear (an2, c2))             -> cmp_ident an1 an2 && cmp_container_kind c1 c2
+      | APIAsset (Update (an1, l1))          , APIAsset (Update (an2, l2))            -> cmp_ident an1 an2 && List.for_all2 (fun (i1, op1, v1) (i2, op2, v2) -> cmp_ident i1 i2 && cmp_assign_op op1 op2 && cmp_mterm v1 v2) l1 l2
+      | APIAsset (FieldAdd (an1, fn1))       , APIAsset (FieldAdd (an2, fn2))         -> cmp_ident an1 an2 && cmp_ident fn1 fn2
+      | APIAsset (FieldRemove (an1, fn1))    , APIAsset (FieldRemove (an2, fn2))      -> cmp_ident an1 an2 && cmp_ident fn1 fn2
+      | APIAsset (RemoveAll (an1, fn1))      , APIAsset (RemoveAll (an2, fn2))        -> cmp_ident an1 an2 && cmp_ident fn1 fn2
+      | APIAsset (RemoveIf (an1, c1, l1, p1)), APIAsset (RemoveIf (an2, c2, l2, p2))  -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && List.for_all2 (fun (i1, t1) (i2, t2) -> cmp_ident i1 i2 && cmp_type t1 t2) l1 l2 && cmp_mterm p1 p2
+      | APIAsset (Contains (an1, c1))        , APIAsset (Contains (an2, c2))          -> cmp_ident an1 an2 && cmp_container_kind c1 c2
+      | APIAsset (Nth (an1, c1))             , APIAsset (Nth (an2, c2))               -> cmp_ident an1 an2 && cmp_container_kind c1 c2
+      | APIAsset (Select (an1, c1, l1, p1))  , APIAsset (Select (an2, c2, l2, p2))    -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && List.for_all2 (fun (i1, t1) (i2, t2) -> cmp_ident i1 i2 && cmp_type t1 t2) l1 l2 && cmp_mterm p1 p2
+      | APIAsset (Sort (an1, c1, l1))        , APIAsset (Sort (an2, c2, l2))          -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && List.for_all2 (fun (fn1, k1) (fn2, k2) -> cmp_ident fn1 fn2 && k1 = k2) l1 l2
+      | APIAsset (Count (an1, c1))           , APIAsset (Count (an2, c2))             -> cmp_ident an1 an2 && cmp_container_kind c1 c2
+      | APIAsset (Sum (an1, c1, t1, p1))     , APIAsset (Sum (an2, c2, t2, p2))       -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && cmp_type t1 t2 && cmp_mterm p1 p2
+      | APIAsset (Head (an1, c1))            , APIAsset (Head (an2, c2))              -> cmp_ident an1 an2 && cmp_container_kind c1 c2
+      | APIAsset (Tail (an1, c1))            , APIAsset (Tail (an2, c2))              -> cmp_ident an1 an2 && cmp_container_kind c1 c2
+      (* | APIAsset (Sum (an1, Coll , t1, p1)), APIAsset (Sum (an2, View, t2, p2)) -> cmp_ident an1 an2 && cmp_type t1 t2 && cmp_mterm p1 p2
+      | APIAsset (Sum (an1, View , t1, p1)), APIAsset (Sum (an2, Coll, t2, p2)) -> cmp_ident an1 an2 && cmp_type t1 t2 && cmp_mterm p1 p2 *)
       | _, _ -> cmp_api_item_node c1.node_item c2.node_item
+    in
+
+    List.fold_right (fun (x : api_storage) accu ->
+        if List.exists (cmp x) accu
+        then accu
+        else x::accu) l []
+   in
+
+   { model with
+    api_items = filter model.api_items
+   } *)
+
+
+let filter_api_storage (model : model) =
+  let filter (l : api_storage list) =
+    let l = List.map (
+        fun (x : api_storage) ->
+          let node =
+            match x.node_item with
+            | APIAsset (Clear (an, _))            -> APIAsset (Clear (an, View))
+            | APIAsset (RemoveIf (an, _, l, p))   -> APIAsset (RemoveIf (an, View, l, p))
+            | APIAsset (Contains (an, _))         -> APIAsset (Contains (an, View))
+            | APIAsset (Nth (an, _))              -> APIAsset (Nth (an, View))
+            | APIAsset (Select (an, _, l, p))     -> APIAsset (Select (an, View, l, p))
+            | APIAsset (Sort (an, _, l))          -> APIAsset (Sort (an, View, l))
+            | APIAsset (Count (an, _))            -> APIAsset (Count (an, View))
+            | APIAsset (Sum (an, _, t, p))        -> APIAsset (Sum (an, View, t, p))
+            | APIAsset (Head (an, _))             -> APIAsset (Head (an, View))
+            | APIAsset (Tail (an, _))             -> APIAsset (Tail (an, View))
+            | z -> z
+          in
+          {x with node_item = node}
+      ) l in
+
+    let cmp (a : api_storage) (b : api_storage) =
+      match a.node_item, b.node_item with
+        | APIAsset (Nth _), APIAsset (Nth _) -> cmp_api_storage a b
+        | _ -> cmp_api_item_node a.node_item b.node_item
     in
 
     List.fold_right (fun (x : api_storage) accu ->
