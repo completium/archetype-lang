@@ -2805,7 +2805,6 @@ let filter_api_storage (model : model) =
           let node =
             match x.node_item with
             | APIAsset (Clear (an, _))            -> APIAsset (Clear (an, View))
-            | APIAsset (RemoveIf (an, _, l, p))   -> APIAsset (RemoveIf (an, View, l, p))
             | APIAsset (Contains (an, _))         -> APIAsset (Contains (an, View))
             | APIAsset (Nth (an, _))              -> APIAsset (Nth (an, View))
             | APIAsset (Select (an, _, l, p))     -> APIAsset (Select (an, View, l, p))
