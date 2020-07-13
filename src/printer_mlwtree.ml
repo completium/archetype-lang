@@ -358,7 +358,7 @@ let rec pp_term outer pos fmt = function
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e
   | Tvempty (i,e) ->
-    Format.fprintf fmt "%a.view_is_empty %a"
+    Format.fprintf fmt "%a.is_empty %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e
   | Tint i -> pp_str fmt (Big_int.string_of_big_int i)
@@ -574,12 +574,12 @@ let rec pp_term outer pos fmt = function
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
   | Tctail (i,e1,e2) ->
-    Format.fprintf fmt "%a.cdrop %a %a"
+    Format.fprintf fmt "%a.tail %a %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
   | Tvtail (i,e1,e2) ->
-    Format.fprintf fmt "%a.vdrop %a %a"
+    Format.fprintf fmt "%a.tail %a %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
@@ -637,12 +637,12 @@ let rec pp_term outer pos fmt = function
   | Taddr _ -> pp_str fmt "TODO_Taddr"
   | Tbytes _ -> pp_str fmt "TODO_Tbytes"
   | Tvhead (i,e1,e2) ->
-    Format.fprintf fmt "%a.vkeep %a %a"
+    Format.fprintf fmt "%a.head %a %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
   | Tchead (i,e1,e2) ->
-    Format.fprintf fmt "%a.ckeep %a %a"
+    Format.fprintf fmt "%a.head %a %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2

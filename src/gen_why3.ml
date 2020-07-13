@@ -641,7 +641,7 @@ let mk_cremoveif m asset test mlw_test only_formula args =
   let decl = Dfun {
       name     = id;
       logic    = if only_formula then Logic else NoMod;
-      args     = (extract_args test |> List.map (fun (_,a,b) -> a,b)) @ args @ ["c", Tycoll asset];
+      args     = (extract_args test |> List.map (fun (_,a,b) -> a,b)) @ args;
       returns  = Tyunit;
       raises   = [];
       variants = [];
@@ -654,29 +654,20 @@ let mk_cremoveif m asset test mlw_test only_formula args =
           {
             name     = "internal_removeif";
             logic    = Rec;
-            args     = ["l",Tylist Tyint];
+            args     = ["l",Tylist (Tyasset asset)];
             returns  = Tyunit;
             raises   = [];
             variants = [Tvar "l"];
             requires = [];
             ensures  = [];
             body     =
-              let some =
-                Tmatch (Tget (asset,
-                              Tvar "k",
-                              Tvar "c"), [
-                          Tpsome "a",
-                          Tif(mk_afun_test mlw_test,
-                              Tapp (Tvar ("remove_" ^ asset),[Tdoti ("a", key)]),
-                              Some (Tapp (Tvar ("internal_removeif"),[Tvar "tl"])));
-                          Twild, Tapp (Tvar ("internal_removeif"),[Tvar "tl"])
-                        ]) in
-              Tmlist (gListAs,Tunit,"l","k","tl",some);
+              let some = Tif(mk_afun_test mlw_test,
+                Tapp (Tvar ("remove_" ^ asset),[Tdoti ("a", key)]),
+                Some (Tapp (Tvar ("internal_removeif"),[Tvar "tl"]))) in
+              Tmlist (gListAs,Tunit,"l","a","tl",some);
           },
-
           (Tapp (Tvar "internal_removeif",
-                 [Tapp(Tdoti(String.capitalize_ascii asset,"internal_list_to_view"),
-                       [Tcontent (asset, Tvar "c")])]))
+                 [Tviewtolist(asset, Ttoview (asset, mk_ac asset), mk_ac asset)]))
         )
       end;
     } in
@@ -1451,7 +1442,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let id = mk_removeif_name "c" m a lb in
       let argids = args |> List.map (fun (e, _, _) -> e) |> List.map (map_mterm m ctx) in
       let args = List.map (fun (i,_) -> loc_term (Tvar i)) la in
-      Tapp (loc_term (Tvar id), argids @ args @ [mk_ac_ctx a ctx])
+      Tapp (loc_term (Tvar id), argids @ args)
 
     | Mclear (n, CKcoll) ->
       Tapp (loc_term (Tvar ("clear_view_"^(n))), [
@@ -1528,10 +1519,24 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let cloneid = mk_sum_clone_id m a f in
       let col = mk_ac_ctx a ctx in
       Tvsum(with_dummy_loc cloneid, with_dummy_loc (Ttoview(with_dummy_loc a, col)), col)
-    | Mhead (n, (CKview c | CKfield (_, _, c)), v) -> Tvhead(with_dummy_loc n, map_mterm m ctx v, map_mterm m ctx c)
-    | Mhead (n, CKcoll, v) -> Tchead(with_dummy_loc n, map_mterm m ctx v, mk_ac_ctx n ctx)
-    | Mtail  (n, (CKview c | CKfield (_, _, c)), v) -> Tvtail(with_dummy_loc n, map_mterm m ctx v, map_mterm m ctx c)
-    | Mtail  (n, CKcoll, v) -> Tctail(with_dummy_loc n, map_mterm m ctx v, mk_ac_ctx n ctx)
+    | Mhead (_n, (CKview c), v) -> Tvhead(with_dummy_loc gViewAs, map_mterm m ctx v, map_mterm m ctx c)
+    | Mhead (_n, CKfield (_, _, c), v) ->
+      Tvhead(with_dummy_loc gViewAs,
+             map_mterm m ctx v,
+             with_dummy_loc (Ttoview (with_dummy_loc gFieldAs, map_mterm m ctx c)))
+    | Mhead (n, CKcoll, v) ->
+      Tvhead(with_dummy_loc gViewAs,
+             map_mterm m ctx v,
+             with_dummy_loc (Ttoview (with_dummy_loc n, mk_ac_ctx n ctx)))
+    | Mtail  (_n, (CKview c), v) -> Tvtail(with_dummy_loc gViewAs, map_mterm m ctx v, map_mterm m ctx c)
+    | Mtail  (_n, CKfield (_, _, c), v) ->
+      Tvtail(with_dummy_loc gViewAs,
+             map_mterm m ctx v,
+             with_dummy_loc (Ttoview (with_dummy_loc gFieldAs, map_mterm m ctx c)))
+    | Mtail  (n, CKcoll, v) ->
+      Tvtail(with_dummy_loc gViewAs,
+             map_mterm m ctx v,
+             with_dummy_loc (Ttoview (with_dummy_loc gFieldAs, mk_ac_ctx n ctx)))
 
     (* utils *)
     | Mcast (Tcontainer (Tasset a,Collection),Tcontainer (Tasset _, View), v) ->
@@ -1795,7 +1800,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       end
     | Misempty (l, r) ->
       begin match r.type_ with
-        | M.Tcontainer (_,View) -> Tvempty (with_dummy_loc l, map_mterm m ctx r)
+        | M.Tcontainer (_,View) -> Tvempty (with_dummy_loc gViewAs, map_mterm m ctx r)
         | _ -> Tempty (with_dummy_loc l, map_mterm m ctx r)
       end
       (* | Mapifselect (a, l, _, r, _) ->  let args = extract_args r in
