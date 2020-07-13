@@ -1795,13 +1795,13 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
        end *)
 
     | Msubsetof (an, c, x) -> begin
-        let prefix, arg =
+        let arg =
           match c with
-          | CKcoll -> "c", mk_ac_ctx an ctx
-          | CKview c
-          | CKfield (_, _, c) -> "v", map_mterm m ctx c
+          | CKview c -> map_mterm m ctx c
+          | CKfield (_, _, c) -> with_dummy_loc (Ttoview (with_dummy_loc gFieldAs, map_mterm m ctx c))
+          | CKcoll -> with_dummy_loc (Ttoview (with_dummy_loc an, mk_ac_ctx an ctx))
         in
-        Tapp (loc_term (Tdoti (String.capitalize_ascii an, prefix ^ "subset")), [arg; map_mterm m ctx x])
+        Tsubset(with_dummy_loc gViewAs, arg, map_mterm m ctx x)
       end
     | Misempty (l, r) ->
       begin match r.type_ with
