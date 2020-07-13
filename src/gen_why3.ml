@@ -1541,7 +1541,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mtail  (n, CKcoll, v) ->
       Tvtail(with_dummy_loc gViewAs,
              map_mterm m ctx v,
-             with_dummy_loc (Ttoview (with_dummy_loc gFieldAs, mk_ac_ctx n ctx)))
+             with_dummy_loc (Ttoview (with_dummy_loc n, mk_ac_ctx n ctx)))
 
     (* utils *)
     | Mcast (Tcontainer (Tasset a,Collection),Tcontainer (Tasset _, View), v) ->
