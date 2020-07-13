@@ -1,0 +1,9 @@
+archetype expr_effect_option_eq
+
+entry exec () {
+  effect {
+    var a : option<string> = none;
+    var b : option<string> = none;
+    dorequire (a = b)
+  }
+}
