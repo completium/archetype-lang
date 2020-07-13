@@ -13,6 +13,7 @@ theory Types
   type bytes     = int
   type signature = int
   type chain_id  = int
+  type uint      = int
 
   exception Break
   exception NotFound
