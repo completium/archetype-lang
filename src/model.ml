@@ -3385,6 +3385,7 @@ module Utils : sig
   val get_asset_collection               : ident -> mterm
   val is_asset_single_field              : model -> ident -> bool
   val get_labeled_value_from             : model -> ident -> mterm list -> (ident * mterm) list
+  val add_api_storage_in_list            : api_storage list -> api_storage -> api_storage list
 end = struct
 
   open Tools
@@ -4190,4 +4191,22 @@ end = struct
   let get_labeled_value_from (model : model) (an : ident) (values : mterm list) : (ident * mterm) list =
     let asset = get_asset model an in
     List.map2 (fun (x : asset_item) (y : mterm) -> unloc x.name, y) asset.values values
+
+  let add_api_storage_in_list (l : api_storage list) (i :  api_storage) =
+    let res, l = List.fold_left (fun (res, accu) (x : api_storage) ->
+        if cmp_api_item_node x.node_item i.node_item
+        then (true,
+              { i with api_loc =
+                         match x.api_loc, i.api_loc with
+                         | _, ExecFormula
+                         | ExecFormula, _
+                         | OnlyExec, OnlyFormula
+                         | OnlyFormula, OnlyExec -> ExecFormula
+                         | _ -> i.api_loc
+              }::accu)
+        else (res, x::accu)) (false, []) l in
+    if res then
+      l
+    else
+      i::l
 end
