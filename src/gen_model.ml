@@ -219,6 +219,7 @@ let to_model (ast : A.model) : M.model =
   let to_ck (fp : M.mterm) : M.container_kind =
     match fp.node, fp.type_ with
     | M.Mdotassetfield (an, _k, fn), Tcontainer ((Tasset _), (Aggregate | Partition)) -> M.CKfield (unloc an, unloc fn, fp)
+    | M.Mdot ({type_ = Tasset an}, fn), Tcontainer ((Tasset _), (Aggregate | Partition)) -> M.CKfield (unloc an, unloc fn, fp)
     | _, Tcontainer ((Tasset _), Collection) -> M.CKcoll
     | _ -> M.CKview fp
   in
@@ -298,6 +299,7 @@ let to_model (ast : A.model) : M.model =
       | A.Plit ({node = BVaddress s; _})       -> M.Maddress s
       | A.Plit ({node = BVduration d; _})      -> M.Mduration d
       | A.Plit ({node = BVbytes v; _})         -> M.Mbytes v
+      | A.Plit ({node = BVunit; _})            -> M.Munit
 
       | A.Pdot (e, id) -> begin
           match e with

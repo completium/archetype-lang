@@ -103,6 +103,7 @@ let pp_bval fmt (bval : bval) =
     | BVaddress v       -> Format.fprintf fmt "@@%a" pp_str v
     | BVduration v      -> Core.pp_duration_for_printer fmt v
     | BVbytes s         -> Format.fprintf fmt "0x%a" pp_str s
+    | BVunit            -> Format.fprintf fmt "()"
   in
   pp_struct_poly pp_node fmt bval
 

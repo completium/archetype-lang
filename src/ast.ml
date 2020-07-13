@@ -245,6 +245,7 @@ and bval_node =
   | BVaddress      of string
   | BVduration     of Core.duration
   | BVbytes        of string
+  | BVunit
 [@@deriving show {with_path = false}]
 
 type bval = bval_gen
