@@ -1468,12 +1468,21 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Mget (an, _c, k) -> Tapp (loc_term (Tvar ("get_" ^ an)), [map_mterm m ctx k])
 
-    | Mselect (a, (CKview l | CKfield (_, _, l)), la, lb, _a) ->
+    | Mselect (a, (CKview l), la, lb, _a) ->
       let args = extract_args lb in
       let id = mk_select_name m a lb in
       let argids = args |> List.map (fun (e, _, _) -> e) |> List.map (map_mterm m ctx) in
       let args = List.map (fun (i,_) -> loc_term (Tvar i)) la in
       Tapp (loc_term (Tvar id), argids @ args @ [map_mterm m ctx l; mk_ac_ctx a ctx])
+     | Mselect (a, CKfield (_, _, l), la, lb, _a) ->
+      let args = extract_args lb in
+      let id = mk_select_name m a lb in
+      let argids = args |> List.map (fun (e, _, _) -> e) |> List.map (map_mterm m ctx) in
+      let args = List.map (fun (i,_) -> loc_term (Tvar i)) la in
+      Tapp (loc_term (Tvar id), argids @ args @ [
+        with_dummy_loc (Ttoview(with_dummy_loc gFieldAsm, map_mterm m ctx l));
+        mk_ac_ctx a ctx
+      ])
     | Mselect (a, CKcoll, la, lb, _a) ->
       let args = extract_args lb in
       let id = mk_select_name m a lb in
@@ -1779,7 +1788,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | ICKmap  _  -> error_not_translated "Msetiterated for map"
       end
     | Msettoiterate container ->
-      let n = M.Utils.get_asset_type mt |> with_dummy_loc in
+      let _n = M.Utils.get_asset_type mt |> with_dummy_loc in
       let iter_id = Option.get (ctx.loop_id) in
       begin match container with
         | ICKview c  -> Tvtail (with_dummy_loc gViewAs,loc_term (Tvar iter_id),map_mterm m ctx c)
