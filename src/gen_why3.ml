@@ -266,7 +266,7 @@ let mk_get_sum_value_id asset id = "get_" ^ asset ^ "_sum" ^ (string_of_int id)
 let mk_get_sum_value_from_pos_id asset id = (mk_get_sum_value_id asset id)^"_from_pos"
 
 let mk_sum a i v c = Tvsum (mk_sum_clone_from_id a i, v, c)
-let mk_sum_from_col a i c = Tcsum (mk_sum_clone_from_id a i, c)
+let mk_sum_from_col a i c = Tvsum (mk_sum_clone_from_id a i, Ttoview(a,c), c)
 
 let mk_sum_clone m asset _key formula =
   let cap_asset = String.capitalize_ascii asset in
