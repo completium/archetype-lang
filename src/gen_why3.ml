@@ -249,7 +249,8 @@ let mk_const_fields m = [
   { name = mk_id "caller"      ; typ = Tyaddr;     init = Tint Big_int.zero_big_int; mutable_ = false; };
   { name = mk_id "source"      ; typ = Tyaddr;     init = Tint Big_int.zero_big_int; mutable_ = false; };
   { name = mk_id "now"         ; typ = Tydate;     init = Tint Big_int.zero_big_int; mutable_ = false; };
-  { name = mk_id "chainid"     ; typ = Tychainid;  init = Tint Big_int.zero_big_int; mutable_ = false; }
+  { name = mk_id "chainid"     ; typ = Tychainid;  init = Tint Big_int.zero_big_int; mutable_ = false; };
+  { name = mk_id "selfaddress" ; typ = Tyaddr;     init = Tint Big_int.zero_big_int; mutable_ = false; };
 ] @
   if M.Utils.with_trace m then
     [
@@ -1652,7 +1653,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       end
 
     | Msource               -> Tsender (with_dummy_loc gs)
-    | Mselfaddress          -> error_not_translated "selfaddress"
+    | Mselfaddress          -> Tdoti(with_dummy_loc gs, with_dummy_loc (mk_id "selfaddress"))
     | Mchainid              -> Tchainid (with_dummy_loc gs)
 
     (* variables *)
