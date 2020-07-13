@@ -1266,6 +1266,7 @@ let cmp_container_kind lhs rhs =
   match lhs, rhs with
   | Coll, Coll
   | View, View -> true
+  | Field (an1, fn1), Field (an2, fn2) -> cmp_ident an1 an2 && cmp_ident fn1 fn2
   | _ -> false
 
 let cmp_api_item_node (a1 : api_storage_node) (a2 : api_storage_node) : bool =
