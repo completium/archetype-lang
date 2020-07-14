@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
  - `chain_id` constant
+ - `union` `inter` and `diff` operator for view in formula
+
 ### Changed
  - syntax of composite type (i.e. `list<string>` instead of `string list`)
 

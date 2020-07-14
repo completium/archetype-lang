@@ -1138,6 +1138,21 @@ let pp_mterm fmt (mt : mterm) =
 
     (* formula asset collection methods *)
 
+    | Mempty an ->
+      let pp fmt an =
+        Format.fprintf fmt "empty_%a"
+          pp_str an
+      in
+      pp fmt an
+
+    | Msingleton (an, k) ->
+      let pp fmt (an, k) =
+        Format.fprintf fmt "singleton_%a (%a)"
+          pp_str an
+          f k
+      in
+      pp fmt (an, k)
+
     | Msubsetof (an, c, i) ->
       let pp fmt (an, c, i) =
         Format.fprintf fmt "subset_%a (%a, %a)"
@@ -1155,6 +1170,32 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (l, r)
 
+    | Munion (an, l, r) ->
+      let pp fmt (an, l, r) =
+        Format.fprintf fmt "union_%a (%a, %a)"
+          pp_str an
+          f l
+          f r
+      in
+      pp fmt (an, l, r)
+
+    | Minter (an, l, r) ->
+      let pp fmt (an, l, r) =
+        Format.fprintf fmt "inter_%a (%a, %a)"
+          pp_str an
+          f l
+          f r
+      in
+      pp fmt (an, l, r)
+
+    | Mdiff (an, l, r) ->
+      let pp fmt (an, l, r) =
+        Format.fprintf fmt "diff_%a (%a, %a)"
+          pp_str an
+          f l
+          f r
+      in
+      pp fmt (an, l, r)
 
   in
   f fmt mt

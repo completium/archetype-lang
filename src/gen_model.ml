@@ -467,17 +467,6 @@ let to_model (ast : A.model) : M.model =
 
       (* Asset *)
 
-      | A.Pcall (Some p, A.Cconst (A.Csubsetof), [AExpr q]) when is_asset_container p ->
-        let fp = f p in
-        let fq = f q in
-        let asset_name = extract_asset_name fp in
-        M.Msubsetof (asset_name, to_ck env fp, fq)
-
-      | A.Pcall (Some p, A.Cconst (A.Cisempty), []) when is_asset_container p ->
-        let fp = f p in
-        let asset_name = extract_asset_name fp in
-        M.Misempty (asset_name, fp)
-
       | A.Pcall (Some p, A.Cconst (A.Cget), [AExpr q]) when is_asset_container p ->
         let fp = f p in
         let fq = f q in
@@ -632,6 +621,48 @@ let to_model (ast : A.model) : M.model =
         let kt, vt = extract_builtin_type_map fp in
         M.Mmaplength (kt, vt, fp)
 
+
+      (* Formula *)
+
+      | A.Pcall (Some p, A.Cconst (A.Cempty), []) when is_asset_container p ->
+        let fp = f p in
+        let asset_name = extract_asset_name fp in
+        M.Mempty (asset_name)
+
+      | A.Pcall (Some p, A.Cconst (A.Csingleton), [AExpr q]) when is_asset_container p ->
+        let fp = f p in
+        let fq = f q in
+        let asset_name = extract_asset_name fp in
+        M.Msingleton (asset_name, fq)
+
+      | A.Pcall (Some p, A.Cconst (A.Csubsetof), [AExpr q]) when is_asset_container p ->
+        let fp = f p in
+        let fq = f q in
+        let asset_name = extract_asset_name fp in
+        M.Msubsetof (asset_name, to_ck env fp, fq)
+
+      | A.Pcall (Some p, A.Cconst (A.Cisempty), []) when is_asset_container p ->
+        let fp = f p in
+        let asset_name = extract_asset_name fp in
+        M.Misempty (asset_name, fp)
+
+      | A.Pcall (Some p, A.Cconst (A.Cunion), [AExpr q]) when is_asset_container p ->
+        let fp = f p in
+        let fq = f q in
+        let asset_name = extract_asset_name fp in
+        M.Munion (asset_name, fp, fq)
+
+      | A.Pcall (Some p, A.Cconst (A.Cinter), [AExpr q]) when is_asset_container p ->
+        let fp = f p in
+        let fq = f q in
+        let asset_name = extract_asset_name fp in
+        M.Minter (asset_name, fp, fq)
+
+      | A.Pcall (Some p, A.Cconst (A.Cdiff), [AExpr q]) when is_asset_container p ->
+        let fp = f p in
+        let fq = f q in
+        let asset_name = extract_asset_name fp in
+        M.Mdiff (asset_name, fp, fq)
 
       (* | A.Pcall (None, A.Cconst (A.Cmaybeperformedonlybyrole), [AExpr l; AExpr r]) ->
          M.MsecMayBePerformedOnlyByRole (f l, f r)

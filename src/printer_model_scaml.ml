@@ -1411,8 +1411,13 @@ let pp_model fmt (model : model) =
 
       (* formula asset collection methods *)
 
+      | Mempty     _ -> emit_error (UnsupportedTerm ("empty"))
+      | Msingleton _ -> emit_error (UnsupportedTerm ("singleton"))
       | Msubsetof  _ -> emit_error (UnsupportedTerm ("subsetof"))
       | Misempty   _ -> emit_error (UnsupportedTerm ("isempty"))
+      | Munion     _ -> emit_error (UnsupportedTerm ("union"))
+      | Minter     _ -> emit_error (UnsupportedTerm ("inter"))
+      | Mdiff      _ -> emit_error (UnsupportedTerm ("diff"))
 
     in
     f fmt mt

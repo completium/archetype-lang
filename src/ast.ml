@@ -144,7 +144,6 @@ type const =
   | Cfloor
   | Cget
   | Cgetopt
-  | Cisempty
   | Cisnone
   | Cissome
   | Clength
@@ -158,7 +157,6 @@ type const =
   | Cselect
   | Cslice
   | Csort
-  | Csubsetof
   | Csum
   | Cunpack
   | Cupdate
@@ -190,6 +188,14 @@ type const =
   | Cbefore
   | Citerated
   | Ctoiterate
+  (* formula *)
+  | Cempty
+  | Cisempty
+  | Csingleton
+  | Csubsetof
+  | Cunion
+  | Cinter
+  | Cdiff
 [@@deriving show {with_path = false}]
 
 type ('node) struct_poly = {

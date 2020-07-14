@@ -1466,8 +1466,13 @@ let pp_model_internal fmt (model : model) b =
 
     (* formula asset collection methods *)
 
-    | Msubsetof  _ -> emit_error (UnsupportedTerm ("Aggregateof"))
+    | Mempty     _ -> emit_error (UnsupportedTerm ("empty"))
+    | Msingleton _ -> emit_error (UnsupportedTerm ("singleton"))
+    | Msubsetof  _ -> emit_error (UnsupportedTerm ("subsetof"))
     | Misempty   _ -> emit_error (UnsupportedTerm ("isempty"))
+    | Munion     _ -> emit_error (UnsupportedTerm ("union"))
+    | Minter     _ -> emit_error (UnsupportedTerm ("inter"))
+    | Mdiff      _ -> emit_error (UnsupportedTerm ("diff"))
 
   in
 

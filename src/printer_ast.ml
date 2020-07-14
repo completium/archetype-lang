@@ -199,7 +199,6 @@ let to_const = function
   | Cfloor          -> "floor"
   | Cget            -> "get"
   | Cgetopt         -> "getopt"
-  | Cisempty        -> "isempty"
   | Cisnone         -> "isnone"
   | Cissome         -> "issome"
   | Clength         -> "length"
@@ -213,7 +212,6 @@ let to_const = function
   | Cselect         -> "select"
   | Cslice          -> "slice"
   | Csort           -> "sort"
-  | Csubsetof       -> "subsetof"
   | Csum            -> "sum"
   | Cunpack         -> "unpack"
   | Cupdate         -> "update"
@@ -245,6 +243,14 @@ let to_const = function
   | Cbefore         -> "before"
   | Citerated       -> "iterated"
   | Ctoiterate      -> "toiterate"
+  (* formula *)
+  | Cempty          -> "empty"
+  | Cisempty        -> "isempty"
+  | Csingleton      -> "singleton"
+  | Csubsetof       -> "subsetof"
+  | Cunion          -> "union"
+  | Cinter          -> "inter"
+  | Cdiff           -> "diff"
 
 let pp_call_kind fmt = function
   | Cid id -> pp_id fmt id

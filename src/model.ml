@@ -357,8 +357,13 @@ type ('id, 'term) mterm_node  =
   | Msetiterated      of 'term iter_container_kind_gen
   | Msettoiterate     of 'term iter_container_kind_gen
   (* formula asset collection methods *)
+  | Mempty            of ident
+  | Msingleton        of ident * 'term
   | Msubsetof         of ident * 'term container_kind_gen * 'term
   | Misempty          of ident * 'term
+  | Munion            of ident * 'term * 'term
+  | Minter            of ident * 'term * 'term
+  | Mdiff             of ident * 'term * 'term
 [@@deriving show {with_path = false}]
 
 and assign_kind = (lident, mterm) assign_kind_gen
@@ -1252,8 +1257,13 @@ let cmp_mterm_node
     | Msetiterated e1, Msetiterated  e2                                                -> cmp_iter_container_kind e1 e2
     | Msettoiterate e1, Msettoiterate e2                                               -> cmp_iter_container_kind e1 e2
     (* formula asset collection methods *)
+    | Mempty an1, Mempty an2                                                           -> cmp_ident an1 an2
+    | Msingleton (an1, k1), Msingleton (an2, k2)                                       -> cmp_ident an1 an2 && cmp k1 k2
     | Msubsetof (an1, c1, i1), Msubsetof (an2, c2, i2)                                 -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && cmp i1 i2
-    | Misempty (l1, r1), Misempty (l2, r2)                                             -> cmp_ident l1 l2 && cmp r1 r2
+    | Misempty (an1, r1), Misempty (an2, r2)                                           -> cmp_ident an1 an2 && cmp r1 r2
+    | Munion (an1, l1, r1), Munion (an2, l2, r2)                                       -> cmp_ident an1 an2 && cmp l1 l2 && cmp r1 r2
+    | Minter (an1, l1, r1), Minter (an2, l2, r2)                                       -> cmp_ident an1 an2 && cmp l1 l2 && cmp r1 r2
+    | Mdiff (an1, l1, r1), Mdiff (an2, l2, r2)                                         -> cmp_ident an1 an2 && cmp l1 l2 && cmp r1 r2
     (* *)
     | _ -> false
   with
@@ -1589,8 +1599,13 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Msetiterated  e                -> Msetiterated  (map_iter_container_kind fi f e)
   | Msettoiterate e                -> Msettoiterate (map_iter_container_kind fi f e)
   (* formula asset collection methods *)
-  | Msubsetof (an, c, i)           -> Msubsetof (fi an, map_container_kind fi f c, f i)
-  | Misempty (an, r)               -> Misempty  (fi an, f r)
+  | Mempty an                      -> Mempty     (fi an)
+  | Msingleton (an, k)             -> Msingleton (fi an, k)
+  | Msubsetof (an, c, i)           -> Msubsetof  (fi an, map_container_kind fi f c, f i)
+  | Misempty (an, r)               -> Misempty   (fi an, f r)
+  | Munion (an, l, r)              -> Munion     (fi an, f l, f r)
+  | Minter (an, l, r)              -> Minter     (fi an, f l, f r)
+  | Mdiff (an, l, r)               -> Mdiff      (fi an, f l, f r)
 
 let map_gen_mterm g f (i : 'id mterm_gen) : 'id mterm_gen =
   {
@@ -1942,8 +1957,14 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Msetiterated  e                       -> fold_iter_container_kind f accu e
   | Msettoiterate e                       -> fold_iter_container_kind f accu e
   (* formula asset collection methods *)
+  | Mempty _                              -> accu
+  | Msingleton (_, k)                     -> f accu k
   | Msubsetof (_, c, i)                   -> f (fold_container_kind f accu c) i
   | Misempty  (_, r)                      -> f accu r
+  | Munion (_, l, r)                      -> f (f accu l) r
+  | Minter (_, l, r)                      -> f (f accu l) r
+  | Mdiff  (_, l, r)                      -> f (f accu l) r
+
 
 let fold_map_term_list f acc l : 'term list * 'a =
   List.fold_left
@@ -2823,6 +2844,13 @@ let fold_map_term
 
   (* formula asset collection methods *)
 
+  | Mempty an ->
+    g (Mempty an), accu
+
+  | Msingleton (an, k) ->
+    let ke, ka = f accu k in
+    g (Msingleton (an, ke)), ka
+
   | Msubsetof (an, c, i) ->
     let ce, ca = fold_map_container_kind f accu c in
     let ie, ia = f ca i in
@@ -2831,6 +2859,21 @@ let fold_map_term
   | Misempty  (l, r) ->
     let re, ra = f accu r in
     g (Misempty (l, re)), ra
+
+  | Munion (an, l, r) ->
+    let le, la = f accu l in
+    let re, ra = f la r in
+    g (Munion (an, le, re)), ra
+
+  | Minter (an, l, r) ->
+    let le, la = f accu l in
+    let re, ra = f la r in
+    g (Minter (an, le, re)), ra
+
+  | Mdiff  (an, l, r) ->
+    let le, la = f accu l in
+    let re, ra = f la r in
+    g (Mdiff (an, le, re)), ra
 
 
 let fold_left g l accu = List.fold_left (fun accu x -> g x accu) accu l

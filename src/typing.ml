@@ -806,8 +806,13 @@ let methods : (string * method_) list =
   let mk mth_name mth_place mth_purity mth_totality mth_sig =
     { mth_name; mth_place; mth_purity; mth_totality; mth_sig; }
   in [
+    ("empty"       , mk A.Cempty        `OnlyFormula (`Pure       ) `Total   (`Fixed [                   ], Some (`SubColl)));
+    ("singleton"   , mk A.Csingleton    `OnlyFormula (`Pure       ) `Total   (`Fixed [`Pk                ], Some (`SubColl)));
     ("isempty"     , mk A.Cisempty      `OnlyFormula (`Pure       ) `Total   (`Fixed [                   ], Some (`T A.vtbool)));
     ("subsetof"    , mk A.Csubsetof     `OnlyFormula (`Pure       ) `Total   (`Fixed [`SubColl           ], Some (`T A.vtbool)));
+    ("union"       , mk A.Cunion        `OnlyFormula (`Pure       ) `Total   (`Fixed [`SubColl           ], Some (`SubColl)));
+    ("inter"       , mk A.Cinter        `OnlyFormula (`Pure       ) `Total   (`Fixed [`SubColl           ], Some (`SubColl)));
+    ("diff"        , mk A.Cdiff         `OnlyFormula (`Pure       ) `Total   (`Fixed [`SubColl           ], Some (`SubColl)));
     ("add"         , mk A.Cadd          `Both        (`Effect cap ) `Total   (`Fixed [`ThePkForAggregate ], None));
     ("remove"      , mk A.Cremove       `Both        (`Effect cap ) `Total   (`Fixed [`Pk                ], None));
     ("clear"       , mk A.Cclear        `Both        (`Effect capv) `Total   (`Fixed [                   ], None));
