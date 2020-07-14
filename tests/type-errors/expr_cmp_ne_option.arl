@@ -1,9 +1,9 @@
-archetype expr_effect_option_eq
+archetype expr_cmp_ne_option
 
 entry exec () {
   effect {
     var a : option<string> = none;
     var b : option<string> = none;
-    dorequire (a = b)
+    dorequire (a <> b)
   }
 }
