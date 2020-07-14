@@ -1,0 +1,26 @@
+(* Fset with 'strong' normalisation (ie. normalisation makes it unique) --- *)
+theory Nfset
+
+(* ------------------------------------------------------------------------ *)
+use list.List
+use Undup
+
+(* ------------------------------------------------------------------------ *)
+type t
+
+(* ------------------------------------------------------------------------ *)
+val function eqt t t : bool
+
+(* ------------------------------------------------------------------------ *)
+val function norm (xs : list t) : list t
+
+(* ------------------------------------------------------------------------ *)
+axiom normI : forall xs ys. permut (undup xs) (undup ys) -> norm xs = norm ys
+
+(* ------------------------------------------------------------------------ *)
+clone export Fset with type t = t,
+                  val eqt = eqt,
+                  val norm = norm,
+                  axiom .
+
+end

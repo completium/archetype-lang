@@ -265,7 +265,7 @@ let mk_sum_clone_from_id asset id = (String.capitalize_ascii asset) ^"Sum" ^ (st
 let mk_get_sum_value_id asset id = "get_" ^ asset ^ "_sum" ^ (string_of_int id)
 let mk_get_sum_value_from_pos_id asset id = (mk_get_sum_value_id asset id)^"_from_pos"
 
-let mk_sum a i v c = Tvsum (mk_sum_clone_from_id a i, v, c)
+let mk_sum a i v c = Tvsum ( mk_sum_clone_from_id a i, v, c)
 let mk_sum_from_col a i c = Tvsum (mk_sum_clone_from_id a i, Ttoview(a,c), c)
 
 let mk_sum_clone m asset _key formula =
@@ -1514,12 +1514,12 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Mnth (n, (CKview c),k) ->
       begin match ctx.lctx with
-        | Logic -> Tvnth(with_dummy_loc gViewAs,map_mterm m ctx k, map_mterm m ctx c)
+        | Logic | Inv -> Tvnth(with_dummy_loc gViewAs,map_mterm m ctx k, map_mterm m ctx c)
         | _ ->  Tapp (loc_term (Tvar ("nth_" ^ n)),[map_mterm m ctx k; map_mterm m ctx c])
       end
     | Mnth (n, CKfield (_, _, c),k) ->
       begin match ctx.lctx with
-      | Logic -> Tvnth(with_dummy_loc gViewAs,
+      | Logic | Inv -> Tvnth(with_dummy_loc gViewAs,
         map_mterm m ctx k,
         with_dummy_loc(Ttoview(with_dummy_loc gFieldAs,  map_mterm m ctx c)) )
       | _ -> Tapp (loc_term (Tvar ("nth_" ^ n)), [
@@ -1542,7 +1542,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Msum          (a, (CKview v),f) ->
       let cloneid = mk_sum_clone_id m a f in
       let col = mk_ac_ctx a ctx in
-      Tvsum(with_dummy_loc cloneid,map_mterm m ctx v,col)
+      Tvsum(with_dummy_loc cloneid , map_mterm m ctx v, col)
     | Msum          (a, CKfield (_, _, v),f) ->
       let cloneid = mk_sum_clone_id m a f in
       let col = mk_ac_ctx a ctx in
@@ -2633,10 +2633,10 @@ let mk_clear_view _m asset : decl = Dfun {
    } *)
 
 let mk_add_field_ensures m partition a _ak field prefix adda elem elemkey =
-  let collfield = Tapp (Tvar field, [Tvar ("asset")]) in
+  let collfield = Tapp (Tvar field, [Tvar "r"]) in
   let key      = M.Utils.get_asset_key m adda |> fst in
-  let assetcollfield = Ttocoll (adda,collfield,mk_ac adda) in
-  let oldassetcollfield = Ttocoll (adda,collfield,mk_ac_old adda) in
+  let assetcollfield = Ttoview (gFieldAs,collfield) in
+  let oldassetcollfield = Ttoview (gFieldAs,collfield) in
   let add_field_ensures = [
     { id   = prefix ^ "_field_post1";
       form = Tforall ([["k"],Tykey],
@@ -2673,14 +2673,23 @@ let mk_add_field_ensures m partition a _ak field prefix adda elem elemkey =
                                                [Tvar elem]))))
         }]) [] (M.Utils.get_sum_idxs m adda) @
     (if M.Utils.with_count m adda then [{
-         id = "add_" ^ adda ^ "_field_ccount";
-         form = exists_asset a (Teq (Tyint,
-                                     Tccard (adda, assetcollfield),
-                                     Tplus (Tyint,
-                                            Tccard (adda, oldassetcollfield),
-                                            Tint (Big_int.big_int_of_int 1)
-                                           )
-                                    ))
+         id = "add_" ^ adda ^ "_field_count";
+         form =
+         let cardformula =
+          (Teq (Tyint,
+                Tvcard (gViewAs, assetcollfield),
+                Tplus (Tyint,
+                       Tvcard (gViewAs, oldassetcollfield),
+                       Tint (Big_int.big_int_of_int 1)
+                )
+          )
+        ) in
+         Tforall ([["r"], Tyasset a],
+          Timpl(
+            Teq(Tyint, Tget(a,Tvar "asset_id",mk_ac a), Tsome (Tvar "r")),
+            cardformula
+           )
+          );
        }]
      else [])
   in
