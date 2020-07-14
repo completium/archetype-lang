@@ -1,0 +1,34 @@
+archetype aggregate_remove
+
+asset o_asset identified by oid {
+  oid : string;
+} initialized by {
+  {"oid"}
+}
+
+asset my_asset identified by id {
+  id     : string;
+  value  : int;
+  col    : aggregate<o_asset>;
+} initialized by {
+  {"id0"; 0; []};
+  {"id1"; 1; []};
+  {"id2"; 2; []}
+}
+
+variable res : int = 0
+
+entry pre_exec () {
+  effect {
+    my_asset["id0"].col.add("oid")
+  }
+}
+
+entry exec () {
+  specification {
+
+  }
+  effect {
+    my_asset["id0"].col.remove("oid")
+  }
+}

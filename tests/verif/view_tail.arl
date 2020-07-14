@@ -1,0 +1,25 @@
+archetype view_tail
+
+asset my_asset identified by id {
+  id : string;
+  value : int;
+} initialized by {
+  {"id0"; 0};
+  {"id1"; 1};
+  {"id2"; 2}
+}
+
+variable res : list<string> = []
+
+entry exec () {
+  specification {
+    s0: count(res) = 2;
+  }
+  effect {
+    var l = my_asset.tail(2);
+
+    for i in l do
+      res := prepend(res, i)
+    done
+  }
+}

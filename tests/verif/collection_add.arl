@@ -1,4 +1,4 @@
-archetype add
+archetype collection_add
 
 asset my_asset identified by id {
   id : string;
