@@ -2180,10 +2180,10 @@ let gen_exists_asset at asset_id asset a body =
 
 let exists_asset = gen_exists_asset `Curr "asset_id" "asset"
 
-let exists_old_asset = gen_exists_asset `Old "asset_id" "old_asset"
-
-let exists_rm_asset = gen_exists_asset `Curr "rm_asset_id" "rm_asset"
-
+(* let exists_old_asset = gen_exists_asset `Old "asset_id" "old_asset"
+ *)
+(* let exists_rm_asset = gen_exists_asset `Curr "rm_asset_id" "rm_asset"
+ *)
 let mk_set_sum_ensures m a =
   List.fold_left (fun acc idx ->
       acc @ [{
@@ -2664,13 +2664,20 @@ let mk_add_field_ensures m partition a _ak field prefix adda elem elemkey =
   ] @ List.fold_left (fun acc idx ->
       acc @ [{
           id = "add_" ^ adda ^ "_field_sum_post";
-          form = exists_asset a (Teq (Tyint,
-                                      mk_sum adda idx collfield (mk_ac adda),
-                                      Tplus (Tyint,
-                                             mk_sum adda idx collfield (mk_ac_old adda),
-                                             Tapp(
-                                               Tvar (mk_get_sum_value_id adda idx),
-                                               [Tvar elem]))))
+          form =
+          let sumformula = (Teq (Tyint,
+            mk_sum adda idx assetcollfield (mk_ac adda),
+            Tplus (Tyint,
+                   mk_sum adda idx oldassetcollfield (mk_ac_old adda),
+                   Tapp(
+                      Tvar (mk_get_sum_value_id adda idx),
+                      [Tvar elem])))) in
+          Tforall ([["r"], Tyasset a],
+          Timpl(
+            Teq(Tyint, Tget(a,Tvar "asset_id",mk_ac a), Tsome (Tvar "r")),
+            sumformula
+           )
+          );
         }]) [] (M.Utils.get_sum_idxs m adda) @
     (if M.Utils.with_count m adda then [{
          id = "add_" ^ adda ^ "_field_count";
@@ -2762,8 +2769,9 @@ let mk_add_field m part a ak field adda addak : decl =
   }
 
 let mk_rm_field_ensures m part a _elem _ak field prefix rm_asset rm_elem =
-  let collfield = Tapp (Tvar field, [Tvar ("asset")]) in
-  let oldcollfield = Tapp (Tvar field, [Tvar "old_asset"]) in
+  let collfield = Tapp (Tvar field, [Tvar ("r")]) in
+  let assetcollfield = Ttoview (gFieldAs,collfield) in
+  let oldassetcollfield = Ttoview (gFieldAs,collfield) in
   let rm_field_ensures = [
     { id   = prefix ^ "_field_post1";
       form = Tforall ([["k"],Tykey],
@@ -2792,25 +2800,39 @@ let mk_rm_field_ensures m part a _elem _ak field prefix rm_asset rm_elem =
     List.fold_left (fun acc idx ->
         acc @ [{
             id = "remove_" ^ rm_asset ^ "_field_sum_post";
-            form = exists_asset a (
-                exists_rm_asset rm_asset (Teq (Tyint,
-                                               mk_sum rm_asset idx collfield (mk_ac rm_asset),
-                                               Tminus (Tyint,
-                                                       mk_sum rm_asset idx collfield (mk_ac_old rm_asset),
-                                                       Tapp(
-                                                         Tvar (mk_get_sum_value_id rm_asset idx),
-                                                         [Tvar "rm_asset"])))))
+            form = let sumformula = (Teq (Tyint,
+            mk_sum rm_asset idx assetcollfield (mk_ac rm_asset),
+            Tminus (Tyint,
+                   mk_sum rm_asset idx oldassetcollfield (mk_ac_old rm_asset),
+                   Tapp(
+                      Tvar (mk_get_sum_value_id rm_asset idx),
+                      [Tvar "rm_asset"])))) in
+          Tforall ([["rm_asset"], Tyasset rm_asset],
+            Timpl(Teq(Tyint,Tget(rm_asset,Tvar rm_elem,mk_ac_old rm_asset),Tsome (Tvar "rm_asset")),
+            Tforall ([["r"], Tyasset a],
+              Timpl(
+                Teq(Tyint, Tget(a,Tvar "asset_id",mk_ac a), Tsome (Tvar "r")),
+                sumformula
+              )
+          )))
           }]) [] (M.Utils.get_sum_idxs m rm_asset) @
     (if M.Utils.with_count m rm_asset then [{
-         id = "rm_" ^ rm_asset ^ "_field_ccount";
-         form = exists_asset a (
-             exists_old_asset a (Teq (Tyint,
-                                          Tvcard (rm_asset, collfield),
-                                          Tminus (Tyint,
-                                                  Tvcard (rm_asset, oldcollfield),
-                                                  Tint (Big_int.big_int_of_int 1)
-                                                 )
-                                         )))
+         id = "rm_" ^ rm_asset ^ "_field_count";
+         form = let cardformula =
+          (Teq (Tyint,
+                Tvcard (gViewAs, assetcollfield),
+                Tminus (Tyint,
+                       Tvcard (gViewAs, oldassetcollfield),
+                       Tint (Big_int.big_int_of_int 1)
+                )
+          )
+        ) in
+         Tforall ([["r"], Tyasset a],
+          Timpl(
+            Teq(Tyint, Tget(a,Tvar "asset_id",mk_ac a), Tsome (Tvar "r")),
+            cardformula
+           )
+          );
        }]
      else [])
   in
