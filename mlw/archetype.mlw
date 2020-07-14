@@ -437,10 +437,10 @@ module NormedSet
   val function norm (list t) : list t
 
   (* ------------------------------------------------------------------------ *)
-  clone fset.FSet as F  with  type t     = t,
-                              val  eqt   = eqt,
-                              val  norm  = norm,
-                              axiom .
+  clone nfset.NFSet as F  with  type t     = t,
+                                val  eqt   = eqt,
+                                val  norm  = norm,
+                                axiom .
   (* ------------------------------------------------------------------------ *)
   type nset = F.fset
 
@@ -529,10 +529,10 @@ module View
   let function norm (l : list key) = U.undup l
 
   (* ------------------------------------------------------------------------ *)
-  clone nfset.NFSet as N with type t     = key,
-                              val  eqt   = eqt,
-                              val  norm  = norm,
-                              axiom .
+  clone fset.FSet as N with type t     = key,
+                            val  eqt   = eqt,
+                            val  norm  = norm,
+                            axiom .
 
   (* ------------------------------------------------------------------------ *)
   type view = N.fset
