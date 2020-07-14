@@ -519,9 +519,6 @@ module View
   use Types
 
   (* ------------------------------------------------------------------------ *)
-  let function proj (x : key) = x
-
-  (* ------------------------------------------------------------------------ *)
   let function eqt (x1 : key) (x2 : key) = x1 = x2
 
   (* ------------------------------------------------------------------------ *)
@@ -532,63 +529,59 @@ module View
   let function norm (l : list key) = U.undup l
 
   (* ------------------------------------------------------------------------ *)
-  clone NormedSet as N with type t     = key,
-                            val proj   = proj,
-                            val  eqt   = eqt,
-                            val  norm  = norm,
-                            axiom .
+  clone nfset.NFSet as N with type t     = key,
+                              val  eqt   = eqt,
+                              val  norm  = norm,
+                              axiom .
 
   (* ------------------------------------------------------------------------ *)
-  type view = N.nset
+  type view = N.fset
 
   (* ------------------------------------------------------------------------ *)
   let function mk (l: list key) = N.mk l
 
   (* ------------------------------------------------------------------------ *)
-  let function empty = N.empty
+  let function empty = N.fset0
 
   (* ------------------------------------------------------------------------ *)
-  predicate is_empty (v : view) = N.is_empty v
+  predicate is_empty (v : view) = v = mk Nil
 
   (* ------------------------------------------------------------------------ *)
-  let function elts (v : view) = N.elts v
+  let function elts (v : view) = N.content v
 
   (* ------------------------------------------------------------------------ *)
-  predicate subset (v1 v2 : view) = N.subset v1 v2
+  predicate subset (v1 v2 : view) = N.fsubset v1 v2
 
   (* ------------------------------------------------------------------------ *)
   let function contains (k : key) (v:view) : bool
-  ensures { result <-> M.mem k (N.elts v) }
+  ensures { result <-> M.mem k (elts v) }
   =
-  match N.get k v with
-  | None -> false
-  | Some _ -> true
-  end
+  U.mem k (elts v)
 
   (* ------------------------------------------------------------------------ *)
   let function card (v : view) : int
-  ensures { result = L.length (N.elts v) }
+  ensures { result = L.length (elts v) }
   =
-  L.length (N.elts v)
+  L.length (elts v)
 
   (* ------------------------------------------------------------------------ *)
   let function nth (i : int) (v : view) : option key
-  ensures { 0 <= i < card v -> forall k. result = Some k -> result = N.get k v }
+  ensures { 0 <= i < card v -> forall k. result = Some k -> contains k v }
   ensures { not (0 <= i < card v) -> result = None }
   =
   let rec internal_nth (i : int) (l : list key) : option key
   variant { l }
-  ensures { 0 <= i < L.length l -> forall k. result = Some k -> result = N.internal_get k l }
+  ensures { 0 <= i < L.length l -> forall k. result = Some k -> U.mem k l }
   ensures { not (0 <= i < L.length l) -> result = None }
   =
   match l with
   | Cons k tl -> if i = 0 then Some k else internal_nth (i - 1) tl
   | Nil -> None
   end in
-  internal_nth i (N.elts v)
+  internal_nth i (elts v)
 
   (* ------------------------------------------------------------------------ *)
-  lemma nth_singleton: forall k. nth 0 (N.mk (Cons k Nil)) = Some k
+  lemma nth_singleton: forall k. nth 0 (mk (Cons k Nil)) = Some k
 
   (* KEEP first i elements -------------------------------------------------- *)
   let function head (i : int) (v : view) : view
@@ -608,10 +601,10 @@ module View
     else Nil
   | Nil -> Nil
   end in
-  N.mk (internal_head 0 (N.elts v))
+  mk (internal_head 0 (elts v))
 
   (* ------------------------------------------------------------------------ *)
-  lemma keep_none: forall v. head 0 v = N.mk Nil
+  lemma keep_none: forall v. head 0 v = mk Nil
 
   (* ------------------------------------------------------------------------ *)
   (* keeps last i elements *)
@@ -633,10 +626,10 @@ module View
       Cons e (internal_tail (k+1) tl)
   | Nil -> Nil
   end in
-  N.mk (internal_tail 0 (N.elts v))
+  mk (internal_tail 0 (elts v))
 
   (* ------------------------------------------------------------------------ *)
-  lemma drop_none: forall v. tail 0 v = N.mk Nil
+  lemma drop_none: forall v. tail 0 v = mk Nil
 
   (* ------------------------------------------------------------------------ *)
   lemma drop_all: forall v. tail (card v) v = v
