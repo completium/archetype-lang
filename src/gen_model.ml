@@ -31,11 +31,12 @@ let emit_error (lc, error : Location.t * error_desc) =
 let bailout = fun () -> raise (Error.Stop 5)
 
 type env = {
-  asset_name: ident option
+  formula: bool;
+  asset_name: ident option;
 }
 
-let mk_env ?asset_name () =
-  { asset_name }
+let mk_env ?(formula=false) ?asset_name () =
+  { formula; asset_name }
 
 let to_model (ast : A.model) : M.model =
 
@@ -238,7 +239,7 @@ let to_model (ast : A.model) : M.model =
     | _ -> M.CKview fp
   in
 
-  let rec to_mterm ?(formula=false) (env : env) (pterm : A.pterm) : M.mterm =
+  let rec to_mterm (env : env) (pterm : A.pterm) : M.mterm =
     let process_before vt e =
       match vt with
       | A.VTbefore -> M.Msetbefore (M.mk_mterm e (ptyp_to_type (Option.get pterm.type_)) ~loc:pterm.loc)
@@ -247,7 +248,7 @@ let to_model (ast : A.model) : M.model =
     in
     let is_record = function | M.Trecord _ -> true | _ -> false in
     let type_ = ptyp_to_type (Option.get pterm.type_) in
-    let f x = to_mterm env x ~formula:formula in
+    let f x = to_mterm env x in
     let node =
       match pterm.node with
       | A.Pif (c, t, e)                   -> M.Mexprif        (f c, f t, f e)
@@ -658,7 +659,7 @@ let to_model (ast : A.model) : M.model =
   in
 
   let to_label_lterm (env : env) (x : A.lident A.label_term) : M.label_term =
-    M.mk_label_term (to_mterm env x.term ~formula:true) (Option.get x.label) ~loc:x.loc
+    M.mk_label_term (to_mterm { env with formula = true } x.term) (Option.get x.label) ~loc:x.loc
   in
 
 
@@ -913,11 +914,11 @@ let to_model (ast : A.model) : M.model =
   in
 
   let to_predicate (env : env) (p : A.lident A.predicate) : M.predicate =
-    M.mk_predicate p.name (to_mterm env p.body ~formula:true) ~args:(List.map (fun (id, type_) -> (id, ptyp_to_type type_)) p.args) ~loc:p.loc
+    M.mk_predicate p.name (to_mterm { env with formula = true } p.body) ~args:(List.map (fun (id, type_) -> (id, ptyp_to_type type_)) p.args) ~loc:p.loc
   in
 
   let to_definition (env : env) (d : A.lident A.definition ): M.definition =
-    M.mk_definition d.name (ptyp_to_type d.typ) d.var (to_mterm env d.body ~formula:true) ~loc:d.loc
+    M.mk_definition d.name (ptyp_to_type d.typ) d.var (to_mterm { env with formula = true } d.body) ~loc:d.loc
   in
 
   let to_variable (env : env) (v : A.lident A.variable) : M.variable =
@@ -931,11 +932,11 @@ let to_model (ast : A.model) : M.model =
   in
 
   let to_invariant (env : env) (i : A.lident A.invariant) :M.invariant  =
-    M.mk_invariant i.label ~formulas:(List.map (to_mterm ~formula:true env) i.formulas)
+    M.mk_invariant i.label ~formulas:(List.map (to_mterm { env with formula = true }) i.formulas)
   in
 
   let to_postcondition (env : env) (s : A.lident A.postcondition) : M.postcondition  =
-    M.mk_postcondition s.name Post (to_mterm ~formula:true env s.formula)
+    M.mk_postcondition s.name Post (to_mterm { env with formula = true } s.formula)
       ~invariants:(List.map (to_invariant env) s.invariants) ~uses:s.uses
   in
 
