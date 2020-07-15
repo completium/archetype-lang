@@ -1,0 +1,77 @@
+archetype asset_api_specifications
+
+asset assetA {
+  ida : string;
+  vala : int;
+} initialized by {
+  {"a1"; 0};
+  {"a2"; 1};
+  {"a3"; 2}
+}
+
+asset assetB {
+  idb : string;
+  valb : int;
+} initialized by {
+  {"b1"; 0};
+  {"b2"; 1};
+  {"b3"; 2}
+}
+
+asset assetPart {
+  idp : string;
+  part : partition<assetB>;
+}
+
+asset assetAgg {
+  idag : string;
+  agg : aggregate<assetB>;
+}
+
+/* ------------------------------------------------------------------------- */
+entry addA (id : string, val : int) {
+  specification {
+    /* API specification --------------------------------------------------- */
+    s0add: forall k : string, k <> id -> assetA[k] = before.assetA[k];
+    s1add: assetA[id] = some({id; val});
+    /* set theory specification -------------------------------------------- */
+    s2add: (assetA = before.assetA.union(assetA.singleton({id; val})));
+    s3add: (before.assetA = assetA.diff(assetA.singleton({id; val})));
+    s4add: added.assetA = assetA.singleton({id; val});
+    s5add: removed.assetA = assetA.empty;
+    s3add: assetA.count() = before.assetA.count() + 1;
+  }
+  effect {
+    assetA.add({id;val});
+  }
+}
+
+/* ------------------------------------------------------------------------- */
+entry updateA (id : string, val : int) {
+  specification {
+    /* API specification --------------------------------------------------- */
+    s0add: forall k : string, k <> id -> assetA[k] = before.assetA[k];
+    s1add: assetA[id] = some({id; val});
+    /* set theory specification -------------------------------------------- */
+    s2add: assetA = before.assetA;
+    s3add: assetA.count() = before.assetA.count();
+  }
+  effect {
+    assetA.update(id, {vala = val});
+  }
+}
+
+/* ------------------------------------------------------------------------- */
+entry rmA (id : string) {
+  specification {
+    /* API specification --------------------------------------------------- */
+    s0rm: forall k : string, k <> id -> assetA[k] = before.assetA[k];
+    s1rm: assetA[id] = none;
+    /* set theory specification -------------------------------------------- */
+    s2rm: (assetA = before.assetA.diff(assetA.singleton(id)));
+    s3rm: assetA.count() = before.assetA.count() - 1;
+  }
+  effect {
+    assetA.remove(id);
+  }
+}
