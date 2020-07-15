@@ -1600,7 +1600,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Msettoiterate e                -> Msettoiterate (map_iter_container_kind fi f e)
   (* formula asset collection methods *)
   | Mempty an                      -> Mempty     (fi an)
-  | Msingleton (an, k)             -> Msingleton (fi an, k)
+  | Msingleton (an, k)             -> Msingleton (fi an, f k)
   | Msubsetof (an, c, i)           -> Msubsetof  (fi an, map_container_kind fi f c, f i)
   | Misempty (an, r)               -> Misempty   (fi an, f r)
   | Munion (an, l, r)              -> Munion     (fi an, f l, f r)
