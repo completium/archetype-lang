@@ -259,8 +259,8 @@ let to_model (ast : A.model) : M.model =
       | A.Plogical (A.Equiv, l, r)        -> M.Mequiv         (f l, f r)
       | A.Pnot e                          -> M.Mnot           (f e)
       | A.Pmulticomp (e, l)               -> M.Mmulticomp     (f e, List.map (fun (op, e) -> (to_comparison op, f e)) l)
-      | A.Pcomp (A.Equal, l, r)           -> M.Mequal         (f l, f r)
-      | A.Pcomp (A.Nequal, l, r)          -> M.Mnequal        (f l, f r)
+      | A.Pcomp (A.Equal, l, r)           -> let l = f l in M.Mequal  (l.type_, l, f r)
+      | A.Pcomp (A.Nequal, l, r)          -> let l = f l in M.Mnequal (l.type_, l, f r)
       | A.Pcomp (A.Gt, l, r)              -> M.Mgt            (f l, f r)
       | A.Pcomp (A.Ge, l, r)              -> M.Mge            (f l, f r)
       | A.Pcomp (A.Lt, l, r)              -> M.Mlt            (f l, f r)
@@ -1096,7 +1096,7 @@ let to_model (ast : A.model) : M.model =
           | Rexpr e ->
             begin
               let mt = to_mterm env e in
-              Some (M.mk_mterm (M.Mequal (caller, mt)) (M.Tbuiltin Bbool) ~loc:rq.loc)
+              Some (M.mk_mterm (M.Mequal (M.Tbuiltin Baddress, caller, mt)) (M.Tbuiltin Bbool) ~loc:rq.loc)
             end
           | Ror (l, r) ->
             let l = Option.get (process_rexpr l) in
@@ -1146,7 +1146,7 @@ let to_model (ast : A.model) : M.model =
         let type_currency = M.Tbuiltin Bcurrency in
         let lhs : M.mterm = M.mk_mterm (M.Mtransferred) type_currency in
         let rhs : M.mterm = M.mk_mterm (M.Mcurrency (Big_int.zero_big_int, Tz)) type_currency in
-        let eq : M.mterm = M.mk_mterm (M.Mequal (lhs, rhs)) (M.Tbuiltin Bbool) in
+        let eq : M.mterm = M.mk_mterm (M.Mequal (type_currency, lhs, rhs)) (M.Tbuiltin Bbool) in
         let cond : M.mterm = M.mk_mterm (M.Mnot eq) (M.Tbuiltin Bbool) in
         let cond_if : M.mterm = M.mk_mterm (M.Mif (cond, fail (NoTransfer), None)) M.Tunit in
         add_seq cond_if body

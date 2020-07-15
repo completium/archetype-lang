@@ -1376,8 +1376,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     (* comparison operators *)
 
-    | Mequal (l, r) -> Teq (map_mtype l.type_,map_mterm m ctx l,map_mterm m ctx r)
-    | Mnequal (l, r) -> Tneq (map_mtype l.type_,map_mterm m ctx l,map_mterm m ctx r)
+    | Mequal (t, l, r)  -> Teq  (map_mtype t, map_mterm m ctx l, map_mterm m ctx r)
+    | Mnequal (t, l, r) -> Tneq (map_mtype t, map_mterm m ctx l, map_mterm m ctx r)
     | Mgt (l, r) -> Tgt (with_dummy_loc Tyint, map_mterm m ctx l, map_mterm m ctx r)
     | Mge (l, r) -> Tge (with_dummy_loc Tyint, map_mterm m ctx l, map_mterm m ctx r)
     | Mlt (l, r) -> Tlt (with_dummy_loc Tyint, map_mterm m ctx l, map_mterm m ctx r)
@@ -1852,8 +1852,6 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Munion     (_an, _l, _r) -> error_not_translated "Munion"
     | Minter     (_an, _l, _r) -> error_not_translated "Minter"
     | Mdiff      (_an, _l, _r) -> error_not_translated "Mdiff"
-    | Meqassets  (_an, _l, _r) -> error_not_translated "Meqassets"
-    | Mneassets  (_an, _l, _r) -> error_not_translated "Mneassets"
       (* | Mapifselect (a, l, _, r, _) ->  let args = extract_args r in
          let id = mk_select_name "c" m a r in *)
       (* | Mapifselect (a, l, _, r, _) ->  let args = extract_args r in

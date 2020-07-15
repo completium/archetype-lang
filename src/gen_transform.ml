@@ -922,7 +922,7 @@ let remove_enum_matchwith (model : model) : model =
             let mk_cond id =
               begin
                 let val_enum id = mk_mterm (Mvar (mk_id val_v id, Vlocal)) type_v in
-                mk_mterm (Mequal (v, val_enum id)) type_bool
+                mk_mterm (Mequal (type_v, v, val_enum id)) type_bool
               end
             in
             let mk_if cond then_ else_ = mk_mterm (Mif (cond, then_, Some else_)) mt.type_ in
@@ -1035,25 +1035,25 @@ let remove_cmp_bool (model : model) : model =
     let vtrue = mk_mterm (Mbool true) (Tbuiltin Bbool) in
     let vfalse = mk_mterm (Mbool false) (Tbuiltin Bbool) in
     match mt.node with
-    | Mequal ({node = Mbool false; _}, {node = Mbool false; _})  -> vtrue
-    | Mequal ({node = Mbool false; _}, {node = Mbool true; _})   -> vfalse
-    | Mequal ({node = Mbool true; _},  {node = Mbool false; _})  -> vfalse
-    | Mequal ({node = Mbool true; _},  {node = Mbool true; _})   -> vtrue
+    | Mequal (_, {node = Mbool false; _}, {node = Mbool false; _})  -> vtrue
+    | Mequal (_, {node = Mbool false; _}, {node = Mbool true; _})   -> vfalse
+    | Mequal (_, {node = Mbool true; _},  {node = Mbool false; _})  -> vfalse
+    | Mequal (_, {node = Mbool true; _},  {node = Mbool true; _})   -> vtrue
 
-    | Mnequal ({node = Mbool false; _}, {node = Mbool false; _}) -> vfalse
-    | Mnequal ({node = Mbool false; _}, {node = Mbool true; _})  -> vtrue
-    | Mnequal ({node = Mbool true; _},  {node = Mbool false; _}) -> vtrue
-    | Mnequal ({node = Mbool true; _},  {node = Mbool true; _})  -> vfalse
+    | Mnequal (_, {node = Mbool false; _}, {node = Mbool false; _}) -> vfalse
+    | Mnequal (_, {node = Mbool false; _}, {node = Mbool true; _})  -> vtrue
+    | Mnequal (_, {node = Mbool true; _},  {node = Mbool false; _}) -> vtrue
+    | Mnequal (_, {node = Mbool true; _},  {node = Mbool true; _})  -> vfalse
 
-    | Mequal (lhs, {node = Mbool true; _})  -> f lhs
-    | Mequal (lhs, {node = Mbool false; _}) -> not (f lhs)
-    | Mequal ({node = Mbool true; _}, rhs)  -> f rhs
-    | Mequal ({node = Mbool false; _}, rhs) -> not (f rhs)
+    | Mequal (_, lhs, {node = Mbool true; _})  -> f lhs
+    | Mequal (_, lhs, {node = Mbool false; _}) -> not (f lhs)
+    | Mequal (_, {node = Mbool true; _}, rhs)  -> f rhs
+    | Mequal (_, {node = Mbool false; _}, rhs) -> not (f rhs)
 
-    | Mnequal (lhs, {node = Mbool true; _})  -> not (f lhs)
-    | Mnequal (lhs, {node = Mbool false; _}) -> f lhs
-    | Mnequal ({node = Mbool true; _}, rhs)  -> not (f rhs)
-    | Mnequal ({node = Mbool false; _}, rhs) -> f rhs
+    | Mnequal (_, lhs, {node = Mbool true; _})  -> not (f lhs)
+    | Mnequal (_, lhs, {node = Mbool false; _}) -> f lhs
+    | Mnequal (_, {node = Mbool true; _}, rhs)  -> not (f rhs)
+    | Mnequal (_, {node = Mbool false; _}, rhs) -> f rhs
 
     | _ -> map_mterm (aux c) mt
   in
@@ -1158,8 +1158,8 @@ let remove_rational (model : model) : model =
           | _ -> map_mterm aux mt
         end
       | Mdiveuc (a, b), _ when is_curs (a, b) -> process_divtez a b
-      | Mequal  (a, b), _ when is_rats (a, b) -> process_eq  false (a, b)
-      | Mnequal (a, b), _ when is_rats (a, b) -> process_eq  true  (a, b)
+      | Mequal  (_, a, b), _ when is_rats (a, b) -> process_eq  false (a, b)
+      | Mnequal (_, a, b), _ when is_rats (a, b) -> process_eq  true  (a, b)
       | Mlt     (a, b), _ when is_rats (a, b) -> process_cmp Lt    (a, b)
       | Mle     (a, b), _ when is_rats (a, b) -> process_cmp Le    (a, b)
       | Mgt     (a, b), _ when is_rats (a, b) -> process_cmp Gt    (a, b)
@@ -1611,10 +1611,10 @@ let remove_cmp_enum (model : model) : model =
   in
   let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
     match mt.node with
-    | Mequal ({type_ = (Tstate | Tenum _)} as v, {node = Mvar (id, Venumval)})    -> mk_exprmatchwith `Pos v id
-    | Mequal ({node = Mvar (id, Venumval)}, ({type_ = (Tstate | Tenum _)} as v))  -> mk_exprmatchwith `Pos v id
-    | Mnequal ({type_ = (Tstate | Tenum _)} as v, {node = Mvar (id, Venumval)})   -> mk_exprmatchwith `Neg v id
-    | Mnequal ({node = Mvar (id, Venumval)}, ({type_ = (Tstate | Tenum _)} as v)) -> mk_exprmatchwith `Neg v id
+    | Mequal  (_, ({type_ = (Tstate | Tenum _)} as v), {node = Mvar (id, Venumval)}) -> mk_exprmatchwith `Pos v id
+    | Mequal  (_, {node = Mvar (id, Venumval)}, ({type_ = (Tstate | Tenum _)} as v)) -> mk_exprmatchwith `Pos v id
+    | Mnequal (_, ({type_ = (Tstate | Tenum _)} as v), {node = Mvar (id, Venumval)}) -> mk_exprmatchwith `Neg v id
+    | Mnequal (_, {node = Mvar (id, Venumval)}, ({type_ = (Tstate | Tenum _)} as v)) -> mk_exprmatchwith `Neg v id
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
@@ -2833,26 +2833,3 @@ let filter_api_storage (model : model) =
   { model with
     api_items = filter model.api_items |> Utils.sort_api_storage model true
   }
-
-let map_assets (model : model) =
-  let extract_an_opt = function
-    | Tcontainer (Tasset an, _) -> Some an
-    | _ -> None
-  in
-  let is_container (mt : mterm) = mt.type_ |> extract_an_opt |> Option.is_some in
-  let extract_an (mt : mterm) = mt.type_ |> extract_an_opt |> Option.get |> unloc in
-  let rec aux ctx (mt : mterm) : mterm =
-    match mt.node with
-    | Mequal (lhs, rhs) when is_container lhs ->
-      begin
-        let an = extract_an lhs in
-        { mt with node = Meqassets (an, lhs, rhs)}
-      end
-    | Mnequal (lhs, rhs) when is_container lhs ->
-      begin
-        let an = extract_an lhs in
-        { mt with node = Mneassets (an, lhs, rhs)}
-      end
-    | _ -> map_mterm (aux ctx) mt
-  in
-  Model.map_mterm_model aux model

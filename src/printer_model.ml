@@ -426,21 +426,21 @@ let pp_mterm fmt (mt : mterm) =
 
     (* comparison operators *)
 
-    | Mequal (l, r) ->
-      let pp fmt (l, r) =
+    | Mequal (t, l, r) ->
+      let pp fmt (_t, l, r) =
         Format.fprintf fmt "%a = %a"
           f l
           f r
       in
-      pp fmt (l, r)
+      pp fmt (t, l, r)
 
-    | Mnequal (l, r) ->
-      let pp fmt (l, r) =
+    | Mnequal (t, l, r) ->
+      let pp fmt (_t, l, r) =
         Format.fprintf fmt "%a <> %a"
           f l
           f r
       in
-      pp fmt (l, r)
+      pp fmt (t, l, r)
 
     | Mgt (l, r) ->
       let pp fmt (l, r) =
@@ -1197,23 +1197,6 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (an, l, r)
 
-    | Meqassets (an, l, r) ->
-      let pp fmt (an, l, r) =
-        Format.fprintf fmt "eqassets_%a (%a, %a)"
-          pp_str an
-          f l
-          f r
-      in
-      pp fmt (an, l, r)
-
-    | Mneassets (an, l, r) ->
-      let pp fmt (an, l, r) =
-        Format.fprintf fmt "neassets_%a (%a, %a)"
-          pp_str an
-          f l
-          f r
-      in
-      pp fmt (an, l, r)
   in
   f fmt mt
 

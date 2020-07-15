@@ -768,7 +768,7 @@ let pp_model fmt (model : model) =
 
       (* comparison operators *)
 
-      | Mequal (l, r) ->
+      | Mequal (_, l, r) ->
         let pp fmt (l, r : mterm * mterm) =
           Format.fprintf fmt "%a = %a"
             (pp_cast Lhs l.type_ r.type_ f) l
@@ -776,7 +776,7 @@ let pp_model fmt (model : model) =
         in
         pp fmt (l, r)
 
-      | Mnequal (l, r) ->
+      | Mnequal (_, l, r) ->
         let pp fmt (l, r : mterm * mterm) =
           Format.fprintf fmt "%a <> %a"
             (pp_cast Lhs l.type_ r.type_ f) l
@@ -1418,8 +1418,6 @@ let pp_model fmt (model : model) =
       | Munion     _ -> emit_error (UnsupportedTerm ("union"))
       | Minter     _ -> emit_error (UnsupportedTerm ("inter"))
       | Mdiff      _ -> emit_error (UnsupportedTerm ("diff"))
-      | Meqassets  _ -> emit_error (UnsupportedTerm ("eqassets"))
-      | Mneassets  _ -> emit_error (UnsupportedTerm ("neassets"))
 
     in
     f fmt mt

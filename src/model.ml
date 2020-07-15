@@ -239,8 +239,8 @@ type ('id, 'term) mterm_node  =
   | Mdotcontract      of 'term * 'id
   | Maccestuple       of 'term * Core.big_int
   (* comparison operators *)
-  | Mequal            of 'term * 'term
-  | Mnequal           of 'term * 'term
+  | Mequal            of type_ * 'term * 'term
+  | Mnequal           of type_ * 'term * 'term
   | Mgt               of 'term * 'term
   | Mge               of 'term * 'term
   | Mlt               of 'term * 'term
@@ -364,8 +364,6 @@ type ('id, 'term) mterm_node  =
   | Munion            of ident * 'term * 'term
   | Minter            of ident * 'term * 'term
   | Mdiff             of ident * 'term * 'term
-  | Meqassets         of ident * 'term * 'term
-  | Mneassets         of ident * 'term * 'term
 [@@deriving show {with_path = false}]
 
 and assign_kind = (lident, mterm) assign_kind_gen
@@ -1141,8 +1139,8 @@ let cmp_mterm_node
     | Mdotcontract (e1, i1), Mdotcontract (e2, i2)                                     -> cmp e1 e2 && cmpi i1 i2
     | Maccestuple (e1, i1), Maccestuple (e2, i2)                                       -> cmp e1 e2 && Big_int.eq_big_int i1 i2
     (* comparison operators *)
-    | Mequal (l1, r1), Mequal (l2, r2)                                                 -> cmp l1 l2 && cmp r1 r2
-    | Mnequal (l1, r1), Mnequal (l2, r2)                                               -> cmp l1 l2 && cmp r1 r2
+    | Mequal (t1, l1, r1), Mequal (t2, l2, r2)                                         -> cmp_type t1 t2 && cmp l1 l2 && cmp r1 r2
+    | Mnequal (t1, l1, r1), Mnequal (t2, l2, r2)                                       -> cmp_type t1 t2 && cmp l1 l2 && cmp r1 r2
     | Mgt (l1, r1), Mgt (l2, r2)                                                       -> cmp l1 l2 && cmp r1 r2
     | Mge (l1, r1), Mge (l2, r2)                                                       -> cmp l1 l2 && cmp r1 r2
     | Mlt (l1, r1), Mlt (l2, r2)                                                       -> cmp l1 l2 && cmp r1 r2
@@ -1266,8 +1264,6 @@ let cmp_mterm_node
     | Munion (an1, l1, r1), Munion (an2, l2, r2)                                       -> cmp_ident an1 an2 && cmp l1 l2 && cmp r1 r2
     | Minter (an1, l1, r1), Minter (an2, l2, r2)                                       -> cmp_ident an1 an2 && cmp l1 l2 && cmp r1 r2
     | Mdiff (an1, l1, r1), Mdiff (an2, l2, r2)                                         -> cmp_ident an1 an2 && cmp l1 l2 && cmp r1 r2
-    | Meqassets (an1, l1, r1), Meqassets (an2, l2, r2)                                 -> cmp_ident an1 an2 && cmp l1 l2 && cmp r1 r2
-    | Mneassets (an1, l1, r1), Mneassets (an2, l2, r2)                                 -> cmp_ident an1 an2 && cmp l1 l2 && cmp r1 r2
     (* *)
     | _ -> false
   with
@@ -1485,8 +1481,8 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mdotcontract (e, i)            -> Mdotcontract (f e, g i)
   | Maccestuple (e, i)             -> Maccestuple (f e, i)
   (* comparison operators *)
-  | Mequal (l, r)                  -> Mequal (f l, f r)
-  | Mnequal (l, r)                 -> Mnequal (f l, f r)
+  | Mequal (t, l, r)               -> Mequal (ft t, f l, f r)
+  | Mnequal (t, l, r)              -> Mnequal (ft t, f l, f r)
   | Mgt (l, r)                     -> Mgt (f l, f r)
   | Mge (l, r)                     -> Mge (f l, f r)
   | Mlt (l, r)                     -> Mlt (f l, f r)
@@ -1610,8 +1606,6 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Munion (an, l, r)              -> Munion     (fi an, f l, f r)
   | Minter (an, l, r)              -> Minter     (fi an, f l, f r)
   | Mdiff (an, l, r)               -> Mdiff      (fi an, f l, f r)
-  | Meqassets (an, l, r)           -> Meqassets  (fi an, f l, f r)
-  | Mneassets (an, l, r)           -> Mneassets  (fi an, f l, f r)
 
 let map_gen_mterm g f (i : 'id mterm_gen) : 'id mterm_gen =
   {
@@ -1845,8 +1839,8 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mdotcontract (e, _)                   -> f accu e
   | Maccestuple (e, _)                    -> f accu e
   (* comparison operators *)
-  | Mequal (l, r)                         -> f (f accu l) r
-  | Mnequal (l, r)                        -> f (f accu l) r
+  | Mequal (_, l, r)                         -> f (f accu l) r
+  | Mnequal (_, l, r)                        -> f (f accu l) r
   | Mgt (l, r)                            -> f (f accu l) r
   | Mge (l, r)                            -> f (f accu l) r
   | Mlt (l, r)                            -> f (f accu l) r
@@ -1970,8 +1964,6 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Munion (_, l, r)                      -> f (f accu l) r
   | Minter (_, l, r)                      -> f (f accu l) r
   | Mdiff  (_, l, r)                      -> f (f accu l) r
-  | Meqassets  (_, l, r)                  -> f (f accu l) r
-  | Mneassets  (_, l, r)                  -> f (f accu l) r
 
 
 let fold_map_term_list f acc l : 'term list * 'a =
@@ -2309,15 +2301,15 @@ let fold_map_term
 
   (* comparison operators *)
 
-  | Mequal (l, r) ->
+  | Mequal (t, l, r) ->
     let le, la = f accu l in
     let re, ra = f la r in
-    g (Mequal (le, re)), ra
+    g (Mequal (t, le, re)), ra
 
-  | Mnequal (l, r) ->
+  | Mnequal (t, l, r) ->
     let le, la = f accu l in
     let re, ra = f la r in
-    g (Mnequal (le, re)), ra
+    g (Mnequal (t, le, re)), ra
 
   | Mgt (l, r) ->
     let le, la = f accu l in
@@ -2882,16 +2874,6 @@ let fold_map_term
     let le, la = f accu l in
     let re, ra = f la r in
     g (Mdiff (an, le, re)), ra
-
-  | Meqassets  (an, l, r) ->
-    let le, la = f accu l in
-    let re, ra = f la r in
-    g (Meqassets (an, le, re)), ra
-
-  | Mneassets  (an, l, r) ->
-    let le, la = f accu l in
-    let re, ra = f la r in
-    g (Mneassets (an, le, re)), ra
 
 let fold_left g l accu = List.fold_left (fun accu x -> g x accu) accu l
 
