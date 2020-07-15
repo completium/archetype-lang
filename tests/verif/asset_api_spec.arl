@@ -50,11 +50,13 @@ entry addA (id : string, val : int) {
 entry updateA (id : string, val : int) {
   specification {
     /* API specification --------------------------------------------------- */
-    s0add: forall k : string, k <> id -> assetA[k] = before.assetA[k];
-    s1add: assetA[id] = some({ida = id; vala = val});
+    s0upd: forall k : string, k <> id -> assetA[k] = before.assetA[k];
+    s1upd: assetA[id] = some({ida = id; vala = val});
     /* set theory specification -------------------------------------------- */
-    s2add: assetA = before.assetA;
-    s3add: assetA.count() = before.assetA.count();
+    s2upd: let some a = before.assetA[id] in
+           assetA = before.assetA.diff(assetA.singleton(a)).union(assetA.singleton({ ida = id;vala = val}))
+           otherwise true;
+    s3upd: assetA.count() = before.assetA.count();
   }
   effect {
     assetA.update(id, {vala = val});
@@ -71,7 +73,11 @@ entry rmA (id : string) {
     s2rm: let some a = before.assetA[id] in
             assetA = before.assetA.diff(assetA.singleton(a))
           otherwise true;
-    s3rm: assetA.count() = before.assetA.count() - 1;
+    s3rm: let some a = before.assetA[id] in
+            removed.assetA = assetA.singleton(a)
+          otherwise true;
+    s4rm: added.assetA = assetA.empty();
+    s5rm: assetA.count() = before.assetA.count() - 1;
   }
   effect {
     assetA.remove(id);
