@@ -585,7 +585,7 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt "(%a : timestamp)"
         pp_big_int v
     | Mbytes v -> Format.fprintf fmt "0x%s" v
-    | Munit -> Format.fprintf fmt "Unit"
+    | Munit -> Format.fprintf fmt "unit"
 
 
     (* control expression *)

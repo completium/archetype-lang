@@ -56,7 +56,7 @@ let to_model (ast : A.model) : M.model =
   in
 
   let vtyp_to_btyp = function
-    | A.VTunit       -> M.Bbool
+    | A.VTunit       -> M.Bunit
     | A.VTbool       -> M.Bbool
     | A.VTnat        -> M.Bnat
     | A.VTint        -> M.Bint

@@ -2731,10 +2731,13 @@ let rec for_xexpr
         (Option.map (fun ty -> A.Toption ty) ty)
         (A.Pcall (None, A.Cconst A.Cunpack, [AExpr e]))
 
+    | Enothing ->
+      let lit = A.mk_sp ~type_:A.vtunit ~loc:(loc tope) (A.BVunit) in
+      mk_sp (Some A.vtunit) (A.Plit lit)
+
     | Eself     _
     | Evar      _
     | Efail     _
-    | Enothing
     | Eassert   _
     | Elabel    _
     | Eassign   _
