@@ -318,16 +318,12 @@ let to_model (ast : A.model) : M.model =
 
       | A.Pdot (e, id) -> begin
           match e with
-          | {node = Pcall (Some { node = node }, Cconst Cget, [AExpr k])} ->
-            let an =
-              let rec aux = function
-                | A.Pvar (VTnone, Vnone, an) -> an
-                | A.Pcast (_, _, v) -> aux v.node
-                | _ -> assert false
-              in
-              aux node
-            in
-            M.Mdotassetfield (an, f k, id)
+          | {node = Pcall (Some a, Cconst Cget, [AExpr k])} -> begin
+              let b = f a in
+              match b.type_ with
+              | M.Tcontainer (Tasset an, Collection) -> M.Mdotassetfield (an, f k, id)
+              | _ -> M.Mdot (f e, id)
+            end
 
           | {type_ = Some (A.Tentrysig _)} ->
             M.Mentrycontract (f e, id)
