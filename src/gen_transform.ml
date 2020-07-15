@@ -253,15 +253,15 @@ let replace_update_by_set (model : model) : model =
       begin
         let asset = Utils.get_asset model an in
 
-        let _, t = Utils.get_asset_key model an in
+        (* let _, t = Utils.get_asset_key model an in *)
 
         let type_asset = Tasset (dumloc an) in
 
         let var_name = dumloc (an ^ "_") in
         let var_mterm : mterm = mk_mterm (Mvar (var_name, Vlocal)) type_asset in
 
-        let key_name = "k_" in
-        let key_loced : lident = dumloc (key_name) in
+        (* let key_name = "k_" in *)
+        (* let key_loced : lident = dumloc (key_name) in *)
         (* let asset_col : mterm = mk_mterm (Mvarstorecol (dumloc an)) type_asset in *)
         let key_mterm : mterm = k in
 
@@ -272,7 +272,7 @@ let replace_update_by_set (model : model) : model =
           List.fold_left (fun accu (x : asset_item) ->
               let v = List.assoc_opt (unloc x.name) lref in
               let type_ = x.type_ in
-              let var = mk_mterm (Mdotassetfield (dumloc an, key_mterm, x.name)) type_ in
+              let var = mk_mterm (Mdot (var_mterm, x.name)) type_ in
               match v with
               | Some y ->
                 accu @ [
@@ -314,7 +314,9 @@ let replace_update_by_set (model : model) : model =
                                                   ))
             Tunit in
 
-        let res : mterm__node =
+letinasset
+
+        (* let res : mterm__node =
           Mletin ([key_loced],
                   k,
                   Some (Tbuiltin t),
@@ -322,7 +324,7 @@ let replace_update_by_set (model : model) : model =
                   None
                  ) in
 
-        mk_mterm res Tunit
+        mk_mterm res Tunit *)
       end
     | _ -> map_mterm (aux ctx) mt
   in
