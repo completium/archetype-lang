@@ -3,5 +3,6 @@
  (files
   (archetype.mlw as mlw/archetype.mlw)
   (fset.mlw as mlw/fset.mlw)
+  (nfset.mlw as mlw/nfset.mlw)
  )
 )
