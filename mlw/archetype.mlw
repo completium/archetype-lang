@@ -144,7 +144,9 @@ module Utils
      | OpArithDiv -> ((fst lhs) * (snd rhs) , (snd lhs) * (fst rhs))
      end
 
-  let function div_tez (a : tez) (b : tez) : tez = div a b
+  let function div_tez (a : tez) (b : tez) : tez
+  requires { not b = 0 }
+   = div a b
 
   let function rat_tez (c : (int, int)) (t : tez) : tez
   requires { not (snd c) = 0 }
@@ -172,8 +174,8 @@ module Utils
   = if rat_cmp OpCmpLe a b then b else a
 
   let function rat_dur (a : (int, int)) (b : int) : int
+  requires { not (snd a) = 0 }
   = div ((fst a) * b) (snd a)
-
 
   (* ----------------------------------------------------------------------- *)
   (* String *)
@@ -391,8 +393,12 @@ module Undup
 
   (* ------------------------------------------------------------------------ *)
   type t
+
   (* ------------------------------------------------------------------------ *)
   val function eqt t t : bool
+
+  (* ------------------------------------------------------------------------ *)
+  axiom eqP : forall x y. eqt x y <-> x = y
 
   (* ------------------------------------------------------------------------ *)
   let rec function mem (a : t) (l : list t) : bool
@@ -434,6 +440,9 @@ module NormedSet
   val function eqt t t : bool
 
   (* ------------------------------------------------------------------------ *)
+  axiom eqP : forall x y. eqt x y <-> x = y
+
+  (* ------------------------------------------------------------------------ *)
   val function norm (list t) : list t
 
   (* ------------------------------------------------------------------------ *)
@@ -471,8 +480,10 @@ module NormedSet
   let function get (k : int) (s : nset) : option t
   ensures { result = None -> forall e. F.fmem e s -> proj e <> k }
   ensures { forall e. result = Some e -> proj e = k }
-  ensures { forall e. result = Some e -> F.fmem e s }
   = internal_get k (F.content s)
+
+  (* ------------------------------------------------------------------------ *)
+  axiom get_mem : forall e s. get (proj e) s = Some e <-> mem e s
 
   (* ADD -------------------------------------------------------------------- *)
   let function add (a : t) (s : nset) : nset
@@ -973,7 +984,6 @@ module Sum
   sum (V.mk (Cons k Nil)) c = field a
 
 end
-
 
 theory Lib
 
