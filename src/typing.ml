@@ -99,7 +99,7 @@ end = struct
       | A.Tbuiltin VTduration
       | A.Tbuiltin VTaddress
       | A.Tbuiltin VTrole
-          -> true
+        -> true
 
       | A.Trecord _ when not simple -> true
       | _ -> false
@@ -783,6 +783,7 @@ type mthtyp = [
   | `Pk
   | `ThePkForAggregate
   | `Asset
+  | `Coll
   | `SubColl
   | `Cmp
   | `Pred  of bool
@@ -806,13 +807,13 @@ let methods : (string * method_) list =
   let mk mth_name mth_place mth_purity mth_totality mth_sig =
     { mth_name; mth_place; mth_purity; mth_totality; mth_sig; }
   in [
-    ("empty"       , mk A.Cempty        `OnlyFormula (`Pure       ) `Total   (`Fixed [                   ], Some (`SubColl)));
-    ("singleton"   , mk A.Csingleton    `OnlyFormula (`Pure       ) `Total   (`Fixed [`Pk                ], Some (`SubColl)));
+    ("empty"       , mk A.Cempty        `OnlyFormula (`Pure       ) `Total   (`Fixed [                   ], Some (`Coll)));
+    ("singleton"   , mk A.Csingleton    `OnlyFormula (`Pure       ) `Total   (`Fixed [`The               ], Some (`Coll)));
     ("isempty"     , mk A.Cisempty      `OnlyFormula (`Pure       ) `Total   (`Fixed [                   ], Some (`T A.vtbool)));
     ("subsetof"    , mk A.Csubsetof     `OnlyFormula (`Pure       ) `Total   (`Fixed [`SubColl           ], Some (`T A.vtbool)));
-    ("union"       , mk A.Cunion        `OnlyFormula (`Pure       ) `Total   (`Fixed [`SubColl           ], Some (`SubColl)));
-    ("inter"       , mk A.Cinter        `OnlyFormula (`Pure       ) `Total   (`Fixed [`SubColl           ], Some (`SubColl)));
-    ("diff"        , mk A.Cdiff         `OnlyFormula (`Pure       ) `Total   (`Fixed [`SubColl           ], Some (`SubColl)));
+    ("union"       , mk A.Cunion        `OnlyFormula (`Pure       ) `Total   (`Fixed [`Coll              ], Some (`Coll)));
+    ("inter"       , mk A.Cinter        `OnlyFormula (`Pure       ) `Total   (`Fixed [`Coll              ], Some (`Coll)));
+    ("diff"        , mk A.Cdiff         `OnlyFormula (`Pure       ) `Total   (`Fixed [`Coll              ], Some (`Coll)));
     ("add"         , mk A.Cadd          `Both        (`Effect cap ) `Total   (`Fixed [`ThePkForAggregate ], None));
     ("remove"      , mk A.Cremove       `Both        (`Effect cap ) `Total   (`Fixed [`Pk                ], None));
     ("clear"       , mk A.Cclear        `Both        (`Effect capv) `Total   (`Fixed [                   ], None));
@@ -1601,7 +1602,7 @@ let check_and_emit_name_free (env : env) (x : A.lident) =
     false
 
 (* --------------------------------------------------------------------- *)
-let select_operator env ?(asset = false) loc (op, tys) =
+let select_operator env ?(formula = false) ?(asset = false) loc (op, tys) =
   match op with
   | PT.Cmp (PT.Equal | PT.Nequal) -> begin
       let module E = struct exception NoEq end in
@@ -1609,7 +1610,7 @@ let select_operator env ?(asset = false) loc (op, tys) =
       try
         match tys with
         | [t1; t2] ->
-          if not (Type.support_eq t1) || not (Type.support_eq t2) then
+          if not formula && (not (Type.support_eq t1) || not (Type.support_eq t2)) then
             raise E.NoEq;
 
           if not (Type.compatible ~autoview:false ~from_:t1 ~to_:t2) &&
@@ -2379,7 +2380,7 @@ let rec for_xexpr
                   Option.map (fun sig_ ->
                       let term = A.Pcomp (tt_cmp_operator op, e, e') in
                       mk_sp (Some sig_.osl_ret) term
-                    ) (select_operator env (loc tope) (PT.Cmp op, [ty; ty']))
+                    ) (select_operator env (loc tope) (PT.Cmp op, [ty; ty']) ~formula:(is_form_kind mode.em_kind))
                 in (e', aout)
               end
 
@@ -2408,7 +2409,7 @@ let rec for_xexpr
         let sig_ =
           Option.get_fdfl
             (fun () -> bailout ())
-            (select_operator env (loc tope) (op, aty)) in
+            (select_operator env (loc tope) (op, aty) ~formula:(is_form_kind mode.em_kind)) in
 
         let aout =
           match op with
@@ -2548,6 +2549,7 @@ let rec for_xexpr
           | `T typ   -> Some typ
           | `The     -> Some (A.Tasset asset.as_name)
           | `Asset   -> Some (A.Tasset asset.as_name)
+          | `Coll    -> Some (A.Tcontainer (A.Tasset asset.as_name, A.Collection))
           | `SubColl -> Some (A.Tcontainer (A.Tasset asset.as_name, A.View))
           | `Ref i   -> Mint.find_opt i amap
           | `Pk      -> Some (Option.get (get_field (unloc asset.as_pk) asset)).fd_type
@@ -3057,6 +3059,10 @@ and for_gen_method_call mode env theloc (the, m, args)
       | `Ef update ->
         A.AEffect (Option.get_dfl [] (for_arg_effect mode env ~update asset arg))
 
+      | `Coll ->
+        let ty = A.Tcontainer (Tasset asset.as_name, A.Collection) in
+        A.AExpr (for_xexpr ~autoview:true mode env ~ety:ty arg)
+
       | `SubColl ->
         let ty = A.Tcontainer (Tasset asset.as_name, A.View) in
         A.AExpr (for_xexpr ~autoview:true mode env ~ety:ty arg)
@@ -3202,7 +3208,7 @@ and for_assign_expr ?autoview ?(asset = false) mode env orloc (op, lfty, rfty) e
   Option.get_dfl e (
     op |> Option.bind (fun op  ->
         e.type_ |> Option.bind (fun ety ->
-            select_operator env ~asset orloc (op, [lfty; ety])
+            select_operator env ~asset orloc (op, [lfty; ety]) ~formula:(is_form_kind mode.em_kind)
             |> Option.map (fun sig_ ->
                 cast_expr ?autoview env (Some (List.last sig_.osl_sig)) e))))
 
@@ -4553,8 +4559,8 @@ let for_record_decl (env : env) (decl : PT.record_decl loced) =
       let ty = for_type env pty in
 
       ty |> Option.iter (fun ty ->
-        if not (Type.Michelson.is_type ty) then
-          Env.emit_error env (loc pty, InvalidRecordFieldType));
+          if not (Type.Michelson.is_type ty) then
+            Env.emit_error env (loc pty, InvalidRecordFieldType));
       let e  = e |> Option.map (for_expr `Concrete env ?ety:ty) in
       (x, ty, e) in
     List.map for1 fields in
@@ -4585,8 +4591,8 @@ let for_records_decl (env : env) (decls : PT.record_decl loced list) =
 
 (* -------------------------------------------------------------------- *)
 (* let for_contract_decl (env : env) (decl : PT.contract_decl loced) =
-  let name, sigs, _ = unloc decl in
-  let entries =
+   let name, sigs, _ = unloc decl in
+   let entries =
     List.pmap (fun (PT.Ssignature (ename, psig)) ->
         List.find_dup (fun (id, _) -> unloc id) psig |>
         Option.iter (fun (_, (x, _)) ->
@@ -4608,15 +4614,15 @@ let for_records_decl (env : env) (decls : PT.record_decl loced list) =
         else None
       ) sigs in
 
-  let cdecl = { ct_name = name; ct_entries = entries; } in
+   let cdecl = { ct_name = name; ct_entries = entries; } in
 
-  if check_and_emit_name_free env name then
+   if check_and_emit_name_free env name then
     (Env.Contract.push env cdecl, Some cdecl)
-  else (env, None) *)
+   else (env, None) *)
 
 (* -------------------------------------------------------------------- *)
 (* let for_contracts_decl (env : env) (decls : PT.contract_decl loced list) =
-  List.fold_left_map for_contract_decl env decls *)
+   List.fold_left_map for_contract_decl env decls *)
 
 (* -------------------------------------------------------------------- *)
 let for_acttx_decl (env : env) (decl : acttx loced) =
