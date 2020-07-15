@@ -502,7 +502,10 @@ module NormedSet
   function union (s1 s2 : nset) : nset = F.fsetU s1 s2
 
   (* ------------------------------------------------------------------------ *)
-  function inter (s1 s2 : nset) : nset = F.fsetD s1 s2
+  function inter (s1 s2 : nset) : nset = F.fsetI s1 s2
+
+  (* ------------------------------------------------------------------------ *)
+  function diff (s1 s2 : nset) : nset = F.fsetD s1 s2
 
   (* ------------------------------------------------------------------------ *)
   function singleton (a : t) : nset = F.mk (Cons a Nil)
@@ -515,6 +518,9 @@ module NormedSet
 
   (* ------------------------------------------------------------------------ *)
   predicate subset (s1 s2 : nset) = F.fsubset s1 s2
+
+  (* ------------------------------------------------------------------------ *)
+  predicate (==) (s1 s2 : nset) = F.(==) s1 s2
 
 end
 
@@ -873,6 +879,10 @@ module Collection
   = mk (N.inter c1.content c2.content)
 
   (* ------------------------------------------------------------------------ *)
+  function diff (c1 c2 : collection) : collection
+  = mk (N.diff c1.content c2.content)
+
+  (* ------------------------------------------------------------------------ *)
   function singleton (a : t) : collection = mk (N.singleton a)
 
    (* ------------------------------------------------------------------------ *)
@@ -883,6 +893,9 @@ module Collection
 
   (* ------------------------------------------------------------------------ *)
   predicate subset (c1 c2 : collection) = N.subset c1.content c2.content
+
+  (* ------------------------------------------------------------------------ *)
+  predicate (==) (c1 c2 : collection) = N.(==) c1.content c2.content
 
 end
 

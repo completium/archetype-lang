@@ -1470,8 +1470,11 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     (* asset api expression *)
 
-    | Mget (an, _c, k) -> Tapp (loc_term (Tvar ("get_" ^ an)), [map_mterm m ctx k])
-
+    | Mget (an, _c, k) ->
+      begin match ctx.lctx with
+       | Inv | Logic -> Tget(with_dummy_loc an, map_mterm m ctx k,mk_ac_ctx an ctx)
+       | _ -> Tapp (loc_term (Tvar ("get_" ^ an)), [map_mterm m ctx k])
+      end
     | Mselect (a, (CKview l), la, lb, _a) ->
       let args = extract_args lb in
       let id = mk_select_name m a lb in
