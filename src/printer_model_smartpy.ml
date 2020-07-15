@@ -1276,7 +1276,8 @@ let pp_model fmt (model : model) =
       | Munion     _ -> emit_error (UnsupportedTerm ("Munion"))
       | Minter     _ -> emit_error (UnsupportedTerm ("Minter"))
       | Mdiff      _ -> emit_error (UnsupportedTerm ("Mdiff"))
-
+      | Meqassets  _ -> emit_error (UnsupportedTerm ("Meqassets"))
+      | Mneassets  _ -> emit_error (UnsupportedTerm ("Mneassets"))
     in
     f fmt mt
   in

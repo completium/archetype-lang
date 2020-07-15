@@ -364,6 +364,8 @@ type ('id, 'term) mterm_node  =
   | Munion            of ident * 'term * 'term
   | Minter            of ident * 'term * 'term
   | Mdiff             of ident * 'term * 'term
+  | Meqassets         of ident * 'term * 'term
+  | Mneassets         of ident * 'term * 'term
 [@@deriving show {with_path = false}]
 
 and assign_kind = (lident, mterm) assign_kind_gen
@@ -1264,6 +1266,8 @@ let cmp_mterm_node
     | Munion (an1, l1, r1), Munion (an2, l2, r2)                                       -> cmp_ident an1 an2 && cmp l1 l2 && cmp r1 r2
     | Minter (an1, l1, r1), Minter (an2, l2, r2)                                       -> cmp_ident an1 an2 && cmp l1 l2 && cmp r1 r2
     | Mdiff (an1, l1, r1), Mdiff (an2, l2, r2)                                         -> cmp_ident an1 an2 && cmp l1 l2 && cmp r1 r2
+    | Meqassets (an1, l1, r1), Meqassets (an2, l2, r2)                                 -> cmp_ident an1 an2 && cmp l1 l2 && cmp r1 r2
+    | Mneassets (an1, l1, r1), Mneassets (an2, l2, r2)                                 -> cmp_ident an1 an2 && cmp l1 l2 && cmp r1 r2
     (* *)
     | _ -> false
   with
@@ -1606,6 +1610,8 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Munion (an, l, r)              -> Munion     (fi an, f l, f r)
   | Minter (an, l, r)              -> Minter     (fi an, f l, f r)
   | Mdiff (an, l, r)               -> Mdiff      (fi an, f l, f r)
+  | Meqassets (an, l, r)           -> Meqassets  (fi an, f l, f r)
+  | Mneassets (an, l, r)           -> Mneassets  (fi an, f l, f r)
 
 let map_gen_mterm g f (i : 'id mterm_gen) : 'id mterm_gen =
   {
@@ -1964,6 +1970,8 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Munion (_, l, r)                      -> f (f accu l) r
   | Minter (_, l, r)                      -> f (f accu l) r
   | Mdiff  (_, l, r)                      -> f (f accu l) r
+  | Meqassets  (_, l, r)                  -> f (f accu l) r
+  | Mneassets  (_, l, r)                  -> f (f accu l) r
 
 
 let fold_map_term_list f acc l : 'term list * 'a =
@@ -2875,6 +2883,15 @@ let fold_map_term
     let re, ra = f la r in
     g (Mdiff (an, le, re)), ra
 
+  | Meqassets  (an, l, r) ->
+    let le, la = f accu l in
+    let re, ra = f la r in
+    g (Meqassets (an, le, re)), ra
+
+  | Mneassets  (an, l, r) ->
+    let le, la = f accu l in
+    let re, ra = f la r in
+    g (Mneassets (an, le, re)), ra
 
 let fold_left g l accu = List.fold_left (fun accu x -> g x accu) accu l
 
