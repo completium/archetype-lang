@@ -453,15 +453,6 @@ module NormedSet
   (* ------------------------------------------------------------------------ *)
   let function mk (l : list t) = F.mk l
 
-  (* ------------------------------------------------------------------------ *)
-  let function empty = F.fset0
-
-  (* ------------------------------------------------------------------------ *)
-  predicate is_empty (s : nset) = F.content s = Nil
-
-  (* ------------------------------------------------------------------------ *)
-  predicate subset (s1 s2 : nset) = F.fsubset s1 s2
-
   (* GET INTERNAL ----------------------------------------------------------- *)
   let rec function internal_get (k : int) (l : list t) : option t
   variant { l }
@@ -506,6 +497,24 @@ module NormedSet
   | Nil -> Nil
   end in
   F.mk (internal_remove (F.content s))
+
+  (* ------------------------------------------------------------------------ *)
+  function union (s1 s2 : nset) : nset = F.fsetU s1 s2
+
+  (* ------------------------------------------------------------------------ *)
+  function inter (s1 s2 : nset) : nset = F.fsetD s1 s2
+
+  (* ------------------------------------------------------------------------ *)
+  function singleton (a : t) : nset = F.mk (Cons a Nil)
+
+  (* ------------------------------------------------------------------------ *)
+  let function empty = F.fset0
+
+  (* ------------------------------------------------------------------------ *)
+  predicate is_empty (s : nset) = F.content s = Nil
+
+  (* ------------------------------------------------------------------------ *)
+  predicate subset (s1 s2 : nset) = F.fsubset s1 s2
 
 end
 
@@ -781,12 +790,6 @@ module Collection
   = N.get k c.content
 
   (* ------------------------------------------------------------------------ *)
-  let function empty = mk N.empty
-
-  (* ------------------------------------------------------------------------ *)
-  predicate is_empty (c : collection) = N.is_empty c.content
-
-  (* ------------------------------------------------------------------------ *)
   lemma cons_key_injective : forall a l.
   key_injective l -> (forall e. M.mem e l -> keyt e <> keyt a) ->
   key_injective (Cons a l)
@@ -860,6 +863,26 @@ module Collection
   ensures { forall k. V.contains k result <-> forall e. get k c = Some e <-> keyt e = k }
   =
   list_to_view (N.elts c.content)
+
+  (* ------------------------------------------------------------------------ *)
+  function union (c1 c2 : collection) : collection
+  = mk (N.union c1.content c2.content)
+
+  (* ------------------------------------------------------------------------ *)
+  function inter (c1 c2 : collection) : collection
+  = mk (N.inter c1.content c2.content)
+
+  (* ------------------------------------------------------------------------ *)
+  function singleton (a : t) : collection = mk (N.singleton a)
+
+   (* ------------------------------------------------------------------------ *)
+  let function empty = mk N.empty
+
+  (* ------------------------------------------------------------------------ *)
+  predicate is_empty (c : collection) = N.is_empty c.content
+
+  (* ------------------------------------------------------------------------ *)
+  predicate subset (c1 c2 : collection) = N.subset c1.content c2.content
 
 end
 

@@ -1833,8 +1833,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | { node = Mcast(_,_,c); type_ = _ } -> Tsubset (with_dummy_loc n, map_mterm m ctx c, map_mterm m ctx r)
            | _ -> Tsubset (with_dummy_loc n, map_mterm m ctx l, map_mterm m ctx r)
        end *)
-    | Mempty _an -> error_not_translated "Mempty"
-    | Msingleton (_an, _k) -> error_not_translated "Msingleton"
+    | Mempty an -> Temptycoll(with_dummy_loc an)
+    | Msingleton (an, k) -> Tsingl(with_dummy_loc an, map_mterm m ctx k)
     | Msubsetof (an, c, x) -> begin
         let arg =
           match c with
@@ -1849,9 +1849,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | M.Tcontainer (_,View) -> Tvempty (with_dummy_loc gViewAs, map_mterm m ctx r)
         | _ -> Tempty (with_dummy_loc l, map_mterm m ctx r)
       end
-    | Munion     (_an, _l, _r) -> error_not_translated "Munion"
-    | Minter     (_an, _l, _r) -> error_not_translated "Minter"
-    | Mdiff      (_an, _l, _r) -> error_not_translated "Mdiff"
+    | Munion     (an, l, r) -> Tunion(with_dummy_loc an, map_mterm m ctx l, map_mterm m ctx r)
+    | Minter     (an, l, r) -> Tinter(with_dummy_loc an, map_mterm m ctx l, map_mterm m ctx r)
+    | Mdiff      (an, l, r) -> Tdiff(with_dummy_loc an, map_mterm m ctx l, map_mterm m ctx r)
       (* | Mapifselect (a, l, _, r, _) ->  let args = extract_args r in
          let id = mk_select_name "c" m a r in *)
       (* | Mapifselect (a, l, _, r, _) ->  let args = extract_args r in
