@@ -1197,6 +1197,23 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (an, l, r)
 
+    | Meqassets (an, l, r) ->
+      let pp fmt (an, l, r) =
+        Format.fprintf fmt "eqassets_%a (%a, %a)"
+          pp_str an
+          f l
+          f r
+      in
+      pp fmt (an, l, r)
+
+    | Mneassets (an, l, r) ->
+      let pp fmt (an, l, r) =
+        Format.fprintf fmt "neassets_%a (%a, %a)"
+          pp_str an
+          f l
+          f r
+      in
+      pp fmt (an, l, r)
   in
   f fmt mt
 

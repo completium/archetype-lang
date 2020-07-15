@@ -1849,9 +1849,11 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | M.Tcontainer (_,View) -> Tvempty (with_dummy_loc gViewAs, map_mterm m ctx r)
         | _ -> Tempty (with_dummy_loc l, map_mterm m ctx r)
       end
-    | Munion (_an, _l, _r) -> error_not_translated "Munion"
-    | Minter (_an, _l, _r) -> error_not_translated "Minter"
-    | Mdiff  (_an, _l, _r) -> error_not_translated "Mdiff"
+    | Munion     (_an, _l, _r) -> error_not_translated "Munion"
+    | Minter     (_an, _l, _r) -> error_not_translated "Minter"
+    | Mdiff      (_an, _l, _r) -> error_not_translated "Mdiff"
+    | Meqassets  (_an, _l, _r) -> error_not_translated "Meqassets"
+    | Mneassets  (_an, _l, _r) -> error_not_translated "Mneassets"
       (* | Mapifselect (a, l, _, r, _) ->  let args = extract_args r in
          let id = mk_select_name "c" m a r in *)
       (* | Mapifselect (a, l, _, r, _) ->  let args = extract_args r in

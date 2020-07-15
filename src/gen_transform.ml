@@ -2833,3 +2833,26 @@ let filter_api_storage (model : model) =
   { model with
     api_items = filter model.api_items |> Utils.sort_api_storage model true
   }
+
+let map_assets (model : model) =
+  let extract_an_opt = function
+    | Tcontainer (Tasset an, _) -> Some an
+    | _ -> None
+  in
+  let is_container (mt : mterm) = mt.type_ |> extract_an_opt |> Option.is_some in
+  let extract_an (mt : mterm) = mt.type_ |> extract_an_opt |> Option.get |> unloc in
+  let rec aux ctx (mt : mterm) : mterm =
+    match mt.node with
+    | Mequal (lhs, rhs) when is_container lhs ->
+      begin
+        let an = extract_an lhs in
+        { mt with node = Meqassets (an, lhs, rhs)}
+      end
+    | Mnequal (lhs, rhs) when is_container lhs ->
+      begin
+        let an = extract_an lhs in
+        { mt with node = Mneassets (an, lhs, rhs)}
+      end
+    | _ -> map_mterm (aux ctx) mt
+  in
+  Model.map_mterm_model aux model

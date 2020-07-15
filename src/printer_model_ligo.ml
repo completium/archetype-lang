@@ -1473,6 +1473,8 @@ let pp_model_internal fmt (model : model) b =
     | Munion     _ -> emit_error (UnsupportedTerm ("union"))
     | Minter     _ -> emit_error (UnsupportedTerm ("inter"))
     | Mdiff      _ -> emit_error (UnsupportedTerm ("diff"))
+    | Meqassets  _ -> emit_error (UnsupportedTerm ("eqassets"))
+    | Mneassets  _ -> emit_error (UnsupportedTerm ("neassets"))
 
   in
 
