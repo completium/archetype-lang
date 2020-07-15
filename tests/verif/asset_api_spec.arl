@@ -37,7 +37,6 @@ entry addA (id : string, val : int) {
     /* set theory specification -------------------------------------------- */
     s2add: assetA = before.assetA.union(assetA.singleton({id; val}));
     s3add: before.assetA = assetA.diff(assetA.singleton({id; val}));
-
     s4add: added.assetA = assetA.singleton({id; val});
     s5add: removed.assetA = assetA.empty();
     s3add: assetA.count() = before.assetA.count() + 1;
@@ -69,7 +68,9 @@ entry rmA (id : string) {
     s0rm: forall k : string, k <> id -> assetA[k] = before.assetA[k];
     // s1rm: assetA[id] = none;
     /* set theory specification -------------------------------------------- */
-    // s2rm: (assetA = before.assetA.diff(assetA.singleton(id)));
+    s2rm: let some a = before.assetA[id] in
+            assetA = before.assetA.diff(assetA.singleton(a))
+          otherwise true;
     s3rm: assetA.count() = before.assetA.count() - 1;
   }
   effect {
