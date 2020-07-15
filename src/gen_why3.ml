@@ -1787,7 +1787,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     (* formula asset collection *)
 
     (* | Msetbefore c -> map_mterm m { ctx with old = true } c |> Mlwtree.deloc *)
-    | Msetbefore c -> Told (map_mterm m { ctx with old = true } c)
+    | Msetbefore c -> map_mterm m { ctx with old = true } c |> Mlwtree.deloc
     | Msetat (label,t) -> Tat (with_dummy_loc label, map_mterm m ctx t)
     | Msetunmoved _ -> error_not_translated "Msetunmoved"
     | Msetadded c ->  map_mterm m { ctx with lmod = Added } c |> Mlwtree.deloc
