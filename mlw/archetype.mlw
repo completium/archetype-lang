@@ -578,6 +578,7 @@ module View
   use list.List
   use list.Mem as M
   use list.Length as L
+  use list.Distinct
   use option.Option
   use Types
   use IntListUtils as I
@@ -595,6 +596,12 @@ module View
   } invariant {
     content = U.undup content
   } by { content = Nil }
+
+  (* ------------------------------------------------------------------------ *)
+  lemma undup_is_distinct : forall l. U.undup l = l -> distinct l
+
+  (* ------------------------------------------------------------------------ *)
+  lemma invol_undup : forall l [@induction]. U.undup (U.undup l) = U.undup l
 
   (* ------------------------------------------------------------------------ *)
   let function mk (l: list key)
