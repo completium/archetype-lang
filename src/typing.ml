@@ -218,6 +218,7 @@ end = struct
                 | Some ty -> if equal tg ty then Some ty else raise E.Error)
           end
 
+        | Toperation, Toperation
         | Tentry, Tentry ->
           ()
 
