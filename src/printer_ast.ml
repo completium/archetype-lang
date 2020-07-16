@@ -74,6 +74,8 @@ let rec pp_ptyp fmt (t : ptyp) =
   | Ttuple ts ->
     Format.fprintf fmt "%a"
       (pp_list " * " pp_ptyp) ts
+  | Toperation ->
+    Format.fprintf fmt "operation"
   | Tentry ->
     Format.fprintf fmt "entry"
   | Tentrysig et ->
@@ -188,6 +190,7 @@ let to_const = function
   | Canyentry       -> "anyentry"
   | Cresult         -> "result"
   | Cchainid        -> "chain_id"
+  | Coperations     -> "operations"
   (* function *)
   | Cadd            -> "add"
   | Caddupdate      -> "addupdate"
@@ -216,6 +219,7 @@ let to_const = function
   | Cunpack         -> "unpack"
   | Cupdate         -> "update"
   | Centrypoint     -> "entrypoint"
+  | Cmktransaction  -> "mktransaction"
   (* set *)
   | Csadd           -> "set_add"
   | Csremove        -> "set_remove"

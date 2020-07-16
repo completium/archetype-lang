@@ -58,6 +58,7 @@ type ptyp =
   | Tmap of ptyp * ptyp
   | Ttuple of ptyp list
   | Toption of ptyp
+  | Toperation
   | Tentry (* entry of external contract *)
   | Tentrysig of ptyp
   | Ttrace of trtyp
@@ -133,6 +134,7 @@ type const =
   | Canyentry
   | Cresult
   | Cchainid
+  | Coperations
   (* function *)
   | Cadd
   | Caddupdate
@@ -161,6 +163,7 @@ type const =
   | Cunpack
   | Cupdate
   | Centrypoint
+  | Cmktransaction
   (* set *)
   | Csadd
   | Csremove

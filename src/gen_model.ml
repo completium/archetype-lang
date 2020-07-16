@@ -94,6 +94,7 @@ let to_model (ast : A.ast) : M.model =
     | A.Tlist t            -> M.Tlist (ptyp_to_type t)
     | A.Tmap (k, v)        -> M.Tmap ((match ptyp_to_type k with | Tbuiltin v -> v | _ -> assert false), ptyp_to_type v)
     | A.Ttuple l           -> M.Ttuple (List.map ptyp_to_type l)
+    | A.Toperation         -> M.Toperation
     | A.Tentry             -> M.Tentry
     | A.Tentrysig t        -> M.Tentrysig (ptyp_to_type t)
     | A.Toption t          -> M.Toption (ptyp_to_type t)
@@ -341,6 +342,7 @@ let to_model (ast : A.ast) : M.model =
       | A.Pconst Csource                       -> M.Msource
       | A.Pconst Cselfaddress                  -> M.Mselfaddress
       | A.Pconst Cchainid                      -> M.Mchainid
+      | A.Pconst Coperations                   -> M.Moperations
       | A.Pconst c                             ->
         Format.eprintf "expr const unkown: %a@." A.pp_const c;
         assert false

@@ -550,6 +550,17 @@ let pp_model_internal fmt (model : model) b =
         pp_id id
 
 
+    (* operation *)
+
+    | Moperations -> pp_str fmt const_operations
+
+    | Mmktransaction (v, d, a) ->
+      Format.fprintf fmt "Tezos.transaction(%a, %a, %a)"
+        f d
+        f v
+        f a
+
+
     (* literals *)
 
     | Mint v -> pp_big_int fmt v

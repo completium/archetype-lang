@@ -262,6 +262,7 @@ end = struct
       | Trecord   _
       | Tenum     _
       | Tcontract _
+      | Toperation
       | Ttrace    _
       | Tbuiltin  _ -> ty
       | Tcontainer (ty, c) -> Tcontainer (doit ty, c)
@@ -760,6 +761,7 @@ let globals = [
   ("selfaddress" , A.Cselfaddress , A.vtaddress);
   ("transferred" , A.Ctransferred , A.vtcurrency);
   ("chainid"     , A.Cchainid     , A.vtchainid);
+  ("operations"  , A.Coperations  , A.Tlist (A.Toperation));
 ]
 
 let statename = "state"
@@ -1052,6 +1054,7 @@ let core_types = [
   ("key_hash" , A.vtkeyhash        );
   ("bytes"    , A.vtbytes          );
   ("chain_id" , A.vtchainid        );
+  ("operation", A.Toperation       );
 ]
 
 (* -------------------------------------------------------------------- *)
@@ -1709,6 +1712,7 @@ let rec valid_var_or_arg_type (ty : A.ptyp) =
   | Toption    ty -> valid_var_or_arg_type ty
   | Tentry        -> false
   | Tentrysig  _  -> true
+  | Toperation    -> false
   | Ttrace     _  -> false
 
   | Tcontainer (_, A.View) -> true

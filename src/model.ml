@@ -206,9 +206,12 @@ type ('id, 'term) mterm_node  =
   | Mentrycontract    of 'term * 'id   (* contract * ident *)
   | Mentrypoint       of 'term * 'term (* address * string *)
   | Mself             of 'id           (* entryname *)
+  (* operation *)
+  | Moperations
+  | Mmktransaction    of 'term * 'term * 'term  (* value * address * args *)
   (* literals *)
   | Mint              of Core.big_int
-  | Mnat             of Core.big_int
+  | Mnat              of Core.big_int
   | Mbool             of bool
   | Menum             of string
   | Mrational         of Core.big_int * Core.big_int
@@ -1106,6 +1109,9 @@ let cmp_mterm_node
     | Mentrycontract (c1, id1), Mentrycontract (c2, id2)                               -> cmp c1 c2 && cmpi id1 id2
     | Mentrypoint (a1, s1), Mentrypoint (a2, s2)                                       -> cmp a1 a2 && cmp s1 s2
     | Mself id1, Mself id2                                                             -> cmpi id1 id2
+    (* operation *)
+    | Moperations, Moperations                                                         -> true
+    | Mmktransaction (v1, d1, a1), Mmktransaction (v2, d2, a2)                         -> cmp v1 v2 && cmp d1 d2 && cmp a1 a2
     (* literals *)
     | Mint v1, Mint v2                                                                 -> Big_int.eq_big_int v1 v2
     | Mnat v1, Mnat v2                                                                 -> Big_int.eq_big_int v1 v2
@@ -1448,6 +1454,9 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mentrycontract (c, id)         -> Mentrycontract (f c, g id)
   | Mentrypoint (a, s)             -> Mentrypoint (f a, f s)
   | Mself id                       -> Mself (g id)
+  (* operation *)
+  | Moperations                    -> Moperations
+  | Mmktransaction (v, d, a)       -> Mmktransaction (f v, f d, f a)
   (* literals *)
   | Mint v                         -> Mint v
   | Mnat v                         -> Mnat v
@@ -1806,6 +1815,9 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mentrycontract (c, _)                 -> f accu c
   | Mentrypoint (a, s)                    -> f (f accu a) s
   | Mself _                               -> accu
+  (* operation *)
+  | Moperations                           -> accu
+  | Mmktransaction (v, d, a)              -> f (f (f accu v) d) a
   (* literals *)
   | Mint _                                -> accu
   | Mnat _                                -> accu
@@ -2168,6 +2180,18 @@ let fold_map_term
 
   | Mself id ->
     g (Mself id), accu
+
+
+  (* operation *)
+
+  | Moperations ->
+    g (Moperations), accu
+
+  | Mmktransaction (v, d, a) ->
+    let ve, va = f accu v in
+    let de, da = f va d in
+    let ae, aa = f da a in
+    g (Mmktransaction (ve, de, ae)), aa
 
 
   (* literals *)
@@ -3684,7 +3708,10 @@ end = struct
       | Mtransfer  _
       | Mcallcontract _
       | Mcallentry _
-      | Mcallself _ -> raise FoundOperations
+      | Mcallself _
+      | Moperations
+      | Mmktransaction _
+        -> raise FoundOperations
       | _ -> fold_term aux accu t in
     aux accu mt
 

@@ -622,6 +622,18 @@ let pp_model fmt (model : model) =
           pp_id id
 
 
+      (* operation *)
+
+      | Moperations ->
+        Format.fprintf fmt "operations"
+
+      | Mmktransaction (v, d, a) ->
+        Format.fprintf fmt "mktransaction(%a, %a, %a)"
+          f v
+          f d
+          f a
+
+
       (* literals *)
 
       | Mint v -> Format.fprintf fmt "(Int %a)" pp_big_int v
