@@ -156,6 +156,8 @@ end = struct
     | A.Tbuiltin (A.VTaddress | A.VTrole), A.Tcontract _ ->
       true
 
+    | A.Tbuiltin (A.VTaddress | A.VTrole), A.Tentrysig Tbuiltin (VTunit) ->
+      true
 
     | A.Tcontainer (ty1, cf), A.Tcontainer (ty2, ct) ->
       equal ty1 ty2 && (cf = ct || (autoview && ct = A.View))
