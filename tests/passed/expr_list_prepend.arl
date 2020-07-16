@@ -4,7 +4,7 @@ variable res : list<string> = []
 
 entry exec () {
   specification {
-    s0: count(res) = 4;
+    s0: length(res) = 4;
   }
   effect {
     var l : list<string> = ["1"; "2"; "3"];

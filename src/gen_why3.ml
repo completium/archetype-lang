@@ -1599,7 +1599,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Mlistprepend (_, l, e)  -> Tapp (loc_term (Tvar "lprepend"),[map_mterm m ctx l; map_mterm m ctx e])
     | Mlistcontains (_, l, e) -> Tapp (loc_term (Tvar "lcontains"),[map_mterm m ctx l; map_mterm m ctx e])
-    | Mlistcount (_, l)       -> Tapp (loc_term (Tvar "lcard"),[map_mterm m ctx l])
+    | Mlistlength (_, l)      -> Tapp (loc_term (Tvar "lcard"),[map_mterm m ctx l])
     | Mlistnth (_, n, l)      -> Tapp (loc_term (Tvar "lnth"),[map_mterm m ctx l;map_mterm m ctx n])
 
 

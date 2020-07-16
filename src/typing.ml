@@ -883,7 +883,7 @@ let listops =
   let lst   = A.Tlist elemt in [
     ("contains", A.Ccontains, `Total  , Some lst, [elemt  ], A.vtbool);
     ("prepend" , A.Cprepend , `Total  , Some lst, [elemt  ], lst     );
-    ("count"   , A.Ccount   , `Total  , Some lst, [       ], A.vtint );
+    ("length"  , A.Clength  , `Total  , Some lst, [       ], A.vtint );
     ("nth"     , A.Cnth     , `Partial, Some lst, [A.vtint], elemt   );
   ]
 

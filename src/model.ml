@@ -293,7 +293,7 @@ type ('id, 'term) mterm_node  =
   (* list api expression *)
   | Mlistprepend      of type_ * 'term * 'term
   | Mlistcontains     of type_ * 'term * 'term
-  | Mlistcount        of type_ * 'term
+  | Mlistlength       of type_ * 'term
   | Mlistnth          of type_ * 'term * 'term
   (* map api expression *)
   | Mmapput           of type_ * type_ * 'term * 'term * 'term
@@ -430,7 +430,7 @@ and api_asset =
 and api_list =
   | Lprepend         of type_
   | Lcontains        of type_
-  | Lcount           of type_
+  | Llength          of type_
   | Lnth             of type_
 [@@deriving show {with_path = false}]
 
@@ -1196,7 +1196,7 @@ let cmp_mterm_node
     (* list api expression *)
     | Mlistprepend (t1, c1, a1), Mlistprepend (t2, c2, a2)                             -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
     | Mlistcontains (t1, c1, a1), Mlistcontains (t2, c2, a2)                           -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
-    | Mlistcount (t1, c1), Mlistcount (t2, c2)                                         -> cmp_type t1 t2 && cmp c1 c2
+    | Mlistlength (t1, c1), Mlistlength (t2, c2)                                       -> cmp_type t1 t2 && cmp c1 c2
     | Mlistnth (t1, c1, a1), Mlistnth (t2, c2, a2)                                     -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
     (* map api expression *)
     | Mmapput (tk1, tv1, c1, k1, v1), Mmapput (tk2, tv2, c2, k2, v2)                   -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2 && cmp v1 v2
@@ -1313,7 +1313,7 @@ let cmp_api_item_node (a1 : api_storage_node) (a2 : api_storage_node) : bool =
     match c1, c2 with
     | Lprepend  t1, Lprepend  t2 -> cmp_type t1 t2
     | Lcontains t1, Lcontains t2 -> cmp_type t1 t2
-    | Lcount    t1, Lcount    t2 -> cmp_type t1 t2
+    | Llength   t1, Llength   t2 -> cmp_type t1 t2
     | Lnth      t1, Lnth      t2 -> cmp_type t1 t2
     | _ -> false
   in
@@ -1541,7 +1541,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   (* list api expression *)
   | Mlistprepend (t, c, a)         -> Mlistprepend (ft t, f c, f a)
   | Mlistcontains (t, c, a)        -> Mlistcontains (t, f c, f a)
-  | Mlistcount (t, c)              -> Mlistcount (t, f c)
+  | Mlistlength(t, c)              -> Mlistlength(t, f c)
   | Mlistnth (t, c, a)             -> Mlistnth (t, f c, f a)
   (* map api expression *)
   | Mmapput (tk, tv, c, k, v)      -> Mmapput (ft tk, ft tv, f c, f k, f v)
@@ -1902,7 +1902,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   (* list api expression *)
   | Mlistprepend (_, c, a)                -> f (f accu c) a
   | Mlistcontains (_, c, a)               -> f (f accu c) a
-  | Mlistcount (_, c)                     -> f accu c
+  | Mlistlength (_, c)                    -> f accu c
   | Mlistnth (_, c, a)                    -> f (f accu c) a
   (* map api expression *)
   | Mmapput (_, _, c, k, v)               -> f (f (f accu c) k) v
@@ -2588,9 +2588,9 @@ let fold_map_term
     let ae, aa = f ca a in
     g (Mlistcontains (t, ce, ae)), aa
 
-  | Mlistcount (t, c) ->
+  | Mlistlength (t, c) ->
     let ce, ca = f accu c in
-    g (Mlistcount (t, ce)), ca
+    g (Mlistlength (t, ce)), ca
 
   | Mlistnth (t, c, a) ->
     let ce, ca = f accu c in
@@ -3068,7 +3068,7 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
         match alist with
         | Lprepend  t -> Lprepend  (for_type t)
         | Lcontains t -> Lcontains (for_type t)
-        | Lcount    t -> Lcount    (for_type t)
+        | Llength   t -> Llength   (for_type t)
         | Lnth      t -> Lnth      (for_type t)
       in
       let for_api_builtin (abuiltin : api_builtin) : api_builtin =
@@ -4349,7 +4349,7 @@ end = struct
              | APIAsset   (Tail          _) -> 25
              | APIList    (Lprepend      _) -> 26
              | APIList    (Lcontains     _) -> 27
-             | APIList    (Lcount        _) -> 28
+             | APIList    (Llength       _) -> 28
              | APIList    (Lnth          _) -> 29
              | APIBuiltin (Bmin          _) -> 30
              | APIBuiltin (Bmax          _) -> 31

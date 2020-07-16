@@ -820,8 +820,8 @@ let pp_mterm fmt (mt : mterm) =
         f c
         f a
 
-    | Mlistcount (_, c) ->
-      Format.fprintf fmt "list_count (%a)"
+    | Mlistlength (_, c) ->
+      Format.fprintf fmt "list_length (%a)"
         f c
 
     | Mlistnth (_, c, a) ->
@@ -1245,7 +1245,7 @@ let pp_api_asset fmt = function
 let pp_api_list fmt = function
   | Lprepend t  -> Format.fprintf fmt "list_prepend\t %a" pp_type t
   | Lcontains t -> Format.fprintf fmt "list_contains\t %a" pp_type t
-  | Lcount t    -> Format.fprintf fmt "list_count\t %a" pp_type t
+  | Llength t   -> Format.fprintf fmt "list_length\t %a" pp_type t
   | Lnth t      -> Format.fprintf fmt "list_nth\t %a" pp_type t
 
 let pp_api_builtin fmt = function

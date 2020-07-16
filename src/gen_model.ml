@@ -371,97 +371,6 @@ let to_model (ast : A.ast) : M.model =
          | A.Pcall (Some p, A.Cconst A.Cadded,     []) -> M.Msetadded     (f p)
          | A.Pcall (Some p, A.Cconst A.Cremoved,   []) -> M.Msetremoved   (f p) *)
 
-      | A.Pcall (None, A.Cconst A.Cmin, [AExpr a; AExpr b]) ->
-        let fa = f a in
-        let fb = f b in
-        M.Mmin (fa, fb)
-
-      | A.Pcall (None, A.Cconst A.Cmax, [AExpr a; AExpr b]) ->
-        let fa = f a in
-        let fb = f b in
-        M.Mmax (fa, fb)
-
-      | A.Pcall (None, A.Cconst A.Cabs, [AExpr a]) ->
-        let fa = f a in
-        M.Mabs (fa)
-
-      | A.Pcall (None, A.Cconst A.Cconcat, [AExpr x; AExpr y]) ->
-        let fx = f x in
-        let fy = f y in
-        M.Mconcat (fx, fy)
-
-      | A.Pcall (None, A.Cconst A.Cslice, [AExpr x; AExpr s; AExpr e]) ->
-        let fx = f x in
-        let fs = f s in
-        let fe = f e in
-        M.Mslice (fx, fs, fe)
-
-      | A.Pcall (None, A.Cconst A.Clength, [AExpr x]) ->
-        let fx = f x in
-        M.Mlength (fx)
-
-      | A.Pcall (None, A.Cconst A.Cisnone, [AExpr x]) ->
-        let fx = f x in
-        M.Misnone (fx)
-
-      | A.Pcall (None, A.Cconst A.Cissome, [AExpr x]) ->
-        let fx = f x in
-        M.Missome (fx)
-
-      | A.Pcall (None, A.Cconst A.Cgetopt, [AExpr x]) ->
-        let fx = f x in
-        M.Mgetopt (fx)
-
-      | A.Pcall (None, A.Cconst A.Cfloor, [AExpr x]) ->
-        let fx = f x in
-        M.Mfloor (fx)
-
-      | A.Pcall (None, A.Cconst A.Cceil, [AExpr x]) ->
-        let fx = f x in
-        M.Mceil (fx)
-
-      | A.Pcall (None, A.Cconst A.Cpack, [AExpr x]) ->
-        let fx = f x in
-        M.Mpack (fx)
-
-      | A.Pcall (None, A.Cconst A.Cunpack, [AExpr x]) ->
-        let fx = f x in
-        let t =
-          match type_ with
-          | Toption t -> t
-          | _ -> assert false
-        in
-        M.Munpack (t, fx)
-
-      | A.Pcall (None, A.Cconst A.Cblake2b, [AExpr x]) ->
-        let fx = f x in
-        M.Mblake2b (fx)
-
-      | A.Pcall (None, A.Cconst A.Csha256, [AExpr x]) ->
-        let fx = f x in
-        M.Msha256 (fx)
-
-      | A.Pcall (None, A.Cconst A.Csha512, [AExpr x]) ->
-        let fx = f x in
-        M.Msha512 (fx)
-
-      | A.Pcall (None, A.Cconst A.Chashkey, [AExpr x]) ->
-        let fx = f x in
-        M.Mhashkey (fx)
-
-      | A.Pcall (None, A.Cconst A.Cchecksignature, [AExpr k; AExpr s; AExpr x]) ->
-        let fk = f k in
-        let fs = f s in
-        let fx = f x in
-        M.Mchecksignature (fk, fs, fx)
-
-      | A.Pcall (None, A.Cconst A.Centrypoint, [AExpr a; AExpr b]) ->
-        let fa = f a in
-        let fb = f b in
-        M.Mentrypoint (fa, fb)
-
-      | A.Pcall (_, A.Cid id, args) ->
-        M.Mapp (id, List.map (fun x -> term_arg_to_expr f x) args)
 
       (* Asset *)
 
@@ -569,10 +478,10 @@ let to_model (ast : A.ast) : M.model =
         let t = extract_builtin_type_list fp in
         M.Mlistcontains (t, fp, fq)
 
-      | A.Pcall (None, A.Cconst (A.Ccount), [AExpr p]) when is_list p ->
+      | A.Pcall (None, A.Cconst (A.Clength), [AExpr p]) when is_list p ->
         let fp = f p in
         let t = extract_builtin_type_list fp in
-        M.Mlistcount (t, fp)
+        M.Mlistlength (t, fp)
 
       | A.Pcall (None, A.Cconst (A.Cnth), [AExpr p; AExpr q]) when is_list p ->
         let fp = f p in
@@ -661,6 +570,102 @@ let to_model (ast : A.ast) : M.model =
         let fq = f q in
         let asset_name = extract_asset_name fp in
         M.Mdiff (asset_name, fp, fq)
+
+
+      (* Builtin functions*)
+
+      | A.Pcall (None, A.Cconst A.Cmin, [AExpr a; AExpr b]) ->
+        let fa = f a in
+        let fb = f b in
+        M.Mmin (fa, fb)
+
+      | A.Pcall (None, A.Cconst A.Cmax, [AExpr a; AExpr b]) ->
+        let fa = f a in
+        let fb = f b in
+        M.Mmax (fa, fb)
+
+      | A.Pcall (None, A.Cconst A.Cabs, [AExpr a]) ->
+        let fa = f a in
+        M.Mabs (fa)
+
+      | A.Pcall (None, A.Cconst A.Cconcat, [AExpr x; AExpr y]) ->
+        let fx = f x in
+        let fy = f y in
+        M.Mconcat (fx, fy)
+
+      | A.Pcall (None, A.Cconst A.Cslice, [AExpr x; AExpr s; AExpr e]) ->
+        let fx = f x in
+        let fs = f s in
+        let fe = f e in
+        M.Mslice (fx, fs, fe)
+
+      | A.Pcall (None, A.Cconst A.Clength, [AExpr x]) ->
+        let fx = f x in
+        M.Mlength (fx)
+
+      | A.Pcall (None, A.Cconst A.Cisnone, [AExpr x]) ->
+        let fx = f x in
+        M.Misnone (fx)
+
+      | A.Pcall (None, A.Cconst A.Cissome, [AExpr x]) ->
+        let fx = f x in
+        M.Missome (fx)
+
+      | A.Pcall (None, A.Cconst A.Cgetopt, [AExpr x]) ->
+        let fx = f x in
+        M.Mgetopt (fx)
+
+      | A.Pcall (None, A.Cconst A.Cfloor, [AExpr x]) ->
+        let fx = f x in
+        M.Mfloor (fx)
+
+      | A.Pcall (None, A.Cconst A.Cceil, [AExpr x]) ->
+        let fx = f x in
+        M.Mceil (fx)
+
+      | A.Pcall (None, A.Cconst A.Cpack, [AExpr x]) ->
+        let fx = f x in
+        M.Mpack (fx)
+
+      | A.Pcall (None, A.Cconst A.Cunpack, [AExpr x]) ->
+        let fx = f x in
+        let t =
+          match type_ with
+          | Toption t -> t
+          | _ -> assert false
+        in
+        M.Munpack (t, fx)
+
+      | A.Pcall (None, A.Cconst A.Cblake2b, [AExpr x]) ->
+        let fx = f x in
+        M.Mblake2b (fx)
+
+      | A.Pcall (None, A.Cconst A.Csha256, [AExpr x]) ->
+        let fx = f x in
+        M.Msha256 (fx)
+
+      | A.Pcall (None, A.Cconst A.Csha512, [AExpr x]) ->
+        let fx = f x in
+        M.Msha512 (fx)
+
+      | A.Pcall (None, A.Cconst A.Chashkey, [AExpr x]) ->
+        let fx = f x in
+        M.Mhashkey (fx)
+
+      | A.Pcall (None, A.Cconst A.Cchecksignature, [AExpr k; AExpr s; AExpr x]) ->
+        let fk = f k in
+        let fs = f s in
+        let fx = f x in
+        M.Mchecksignature (fk, fs, fx)
+
+      | A.Pcall (None, A.Cconst A.Centrypoint, [AExpr a; AExpr b]) ->
+        let fa = f a in
+        let fb = f b in
+        M.Mentrypoint (fa, fb)
+
+      | A.Pcall (_, A.Cid id, args) ->
+        M.Mapp (id, List.map (fun x -> term_arg_to_expr f x) args)
+
 
       (* | A.Pcall (None, A.Cconst (A.Cmaybeperformedonlybyrole), [AExpr l; AExpr r]) ->
          M.MsecMayBePerformedOnlyByRole (f l, f r)
