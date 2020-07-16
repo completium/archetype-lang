@@ -329,23 +329,23 @@ theory Contract
   use list.List
   use list.Mem as L
 
-  type transfer = {
-     destination_ : address;
-     amount_      : tez;
+  type operation = {
+     _destination_ : address;
+     _amount_      : tez;
   }
 
-  let mk_transfer (d : address) (a : tez) : transfer = {
-    destination_ = d;
-    amount_ = a;
+  let _mk_operation (d : address) (a : tez) : operation = {
+    _destination_ = d;
+    _amount_ = a;
   }
 
-  type transfers = list transfer
+  type operations = list operation
 
-  let no_transfer : transfers = Nil
+  let no_operation : operations = Nil
 
-  let mk_call (c : address) : transfer = {
-    destination_ = c;
-    amount_ = 0;
+  let mk_call (c : address) : operation = {
+    _destination_ = c;
+    _amount_ = 0;
   }
 
 end

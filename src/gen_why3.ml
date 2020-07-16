@@ -243,7 +243,7 @@ let mk_collection_field asset to_id = {
 }
 
 let mk_const_fields m = [
-  { name = mk_id "ops"         ; typ = Tyrecord "transfers" ; init = Tnil gListAs; mutable_ = true; };
+  { name = mk_id "ops"         ; typ = Tyrecord "operations" ; init = Tnil gListAs; mutable_ = true; };
   { name = mk_id "balance"     ; typ = Tytez;      init = Tint Big_int.zero_big_int; mutable_ = true; };
   { name = mk_id "transferred" ; typ = Tytez;      init = Tint Big_int.zero_big_int; mutable_ = false; };
   { name = mk_id "caller"      ; typ = Tyaddr;     init = Tint Big_int.zero_big_int; mutable_ = false; };
@@ -355,7 +355,7 @@ let mk_transfer () =
           Tassign (
             Tdoti(gs,"_ops"),
             Tcons ( gListAs,
-                    Tapp(Tvar "mk_transfer",[Tvar "t";Tvar "a"]),
+                    Tapp(Tvar "_mk_operation",[Tvar "t";Tvar "a"]),
                     Tdoti(gs,"_ops")
                   ));
           Tassign (
