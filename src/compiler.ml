@@ -30,9 +30,9 @@ let output_pt (pt : ParseTree.archetype) =
   then Format.printf "%a@." ParseTree.pp_archetype pt
   else Format.printf "%a@." Printer_pt.pp_archetype pt
 
-let output_tast (ast : Ast.model) =
+let output_tast (ast : Ast.ast) =
   if !Options.opt_raw
-  then Format.printf "%a@." Ast.pp_model ast
+  then Format.printf "%a@." Ast.pp_ast ast
   else Format.printf "%a@." Printer_ast.pp_ast ast
 
 let output (model : Model.model) =
@@ -76,7 +76,7 @@ let preprocess_ext (pt : ParseTree.archetype) : ParseTree.archetype =
    then Ast.create_test_shallow_ast ()
    else Typing.typing Typing.empty pt *)
 
-let type_ (pt : ParseTree.archetype) : Ast.model =
+let type_ (pt : ParseTree.archetype) : Ast.ast =
   Typing.typing Typing.empty pt
 
 let generate_target_pt (pt : ParseTree.archetype) : ParseTree.archetype =

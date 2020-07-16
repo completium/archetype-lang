@@ -38,7 +38,7 @@ type env = {
 let mk_env ?(formula=false) ?asset_name () =
   { formula; asset_name }
 
-let to_model (ast : A.model) : M.model =
+let to_model (ast : A.ast) : M.model =
 
   let to_container c =
     match c with

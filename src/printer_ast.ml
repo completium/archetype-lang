@@ -1000,7 +1000,7 @@ let pp_fun_ fmt = function
   | Ffunction f    -> pp_function fmt f
   | Ftransaction t -> pp_transaction fmt t
 
-let pp_ast fmt (ast : model) =
+let pp_ast fmt (ast : ast) =
   Format.fprintf fmt "archetype %a@\n@\n@." pp_id ast.name;
   (pp_no_empty_list2 pp_decl_) fmt ast.decls;
   (pp_no_empty_list2 pp_fun_) fmt ast.funs;
@@ -1012,4 +1012,4 @@ let pp_ast fmt (ast : model) =
 let string_of__of_pp pp x =
   Format.asprintf "%a@." pp x
 
-let show_model (x : model) = string_of__of_pp pp_model x
+let show_ast (x : ast) = string_of__of_pp pp_ast x

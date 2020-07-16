@@ -651,7 +651,7 @@ type 'id fun_ =
   | Ftransaction of 'id transaction_struct
 [@@deriving show {with_path = false}]
 
-type 'id model_struct = {
+type 'id ast_struct = {
   name           : 'id;
   decls          : 'id decl_ list;
   ext_entries    : ('id * ptyp) list;
@@ -662,7 +662,7 @@ type 'id model_struct = {
 }
 [@@deriving show {with_path = false}]
 
-and model = lident model_struct
+and ast = lident ast_struct
 
 (* vtyp -> ptyp *)
 let vtunit       = Tbuiltin (VTunit      )
@@ -750,19 +750,19 @@ let mk_id type_ id : qualid =
 
 module Utils : sig
 
-  val get_asset                 : model -> lident -> asset
-  val get_asset_field           : model -> (lident * lident ) -> lident decl_gen
-  val get_asset_key             : model -> lident -> (lident * vtyp)
-  val get_container_asset_field : model -> (lident * lident ) -> container
-  val get_named_field_list      : model -> lident -> pterm list -> (lident * pterm) list
-  val get_field_list            : model -> lident -> lident list
-  val get_enum_values           : model -> lident -> lident option
-  val is_variable               : model -> lident -> bool
-  val is_asset                  : model -> lident -> bool
-  val is_enum_value             : model -> lident -> bool
-  val get_var_type              : model -> lident -> type_
+  val get_asset                 : ast -> lident -> asset
+  val get_asset_field           : ast -> (lident * lident ) -> lident decl_gen
+  val get_asset_key             : ast -> lident -> (lident * vtyp)
+  val get_container_asset_field : ast -> (lident * lident ) -> container
+  val get_named_field_list      : ast -> lident -> pterm list -> (lident * pterm) list
+  val get_field_list            : ast -> lident -> lident list
+  val get_enum_values           : ast -> lident -> lident option
+  val is_variable               : ast -> lident -> bool
+  val is_asset                  : ast -> lident -> bool
+  val is_enum_value             : ast -> lident -> bool
+  val get_var_type              : ast -> lident -> type_
   val get_enum_name             : lident enum_struct -> lident
-  val get_contract_sig_ids      : model -> ident -> ident -> lident list
+  val get_contract_sig_ids      : ast -> ident -> ident -> lident list
 
 end = struct
   open Tools
@@ -886,7 +886,7 @@ end = struct
     | Some _ -> true
     | None   -> false
 
-  let get_var_type (ast : model) (ident : lident) : type_ =
+  let get_var_type (ast : ast) (ident : lident) : type_ =
     let var : type_ option =
       List.fold_left (
         fun accu (x : 'id variable) ->
@@ -898,7 +898,7 @@ end = struct
     | Some v -> v
     | None -> emit_error VariableNotFound
 
-  let get_contract_sig_ids (ast : model) (contract_id : ident) (fun_id : ident) : lident list =
+  let get_contract_sig_ids (ast : ast) (contract_id : ident) (fun_id : ident) : lident list =
     let get_signature signatures ident : ((lident * ptyp) list) option =
       List.fold_left (fun accu (x : 'id signature) ->
           if (Location.unloc x.name) = ident

@@ -5116,7 +5116,7 @@ let transentrys_of_tdecls tdecls =
   in List.map for1 (List.pmap id tdecls)
 
 (* -------------------------------------------------------------------- *)
-let for_declarations (env : env) (decls : (PT.declaration list) loced) : A.model =
+let for_declarations (env : env) (decls : (PT.declaration list) loced) : A.ast =
   let toploc = loc decls in
 
   match unloc decls with
