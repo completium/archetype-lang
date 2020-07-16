@@ -1028,13 +1028,6 @@ let get_record_name = function
 
 let mk_var (i : ident) = Tvar i
 
-let get_for_fun = function
-  | M.Tcontainer (Tasset a,_) ->
-    let toview = (fun t -> Ttoview (unloc a, t)) in
-    ((fun (t1,t2) -> loc_term (Tcnth  (unloc a,t1,t2))),
-     (fun t ->       loc_term (Tvcard (unloc a, toview t))))
-  | _ -> assert false
-
 type logical_mod = Nomod | Added | Removed
 type lctx = Inv | Logic | Other
 
@@ -1538,10 +1531,11 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         map_mterm m ctx k;
         with_dummy_loc (Ttoview (with_dummy_loc n, mk_ac_ctx n ctx)) ])
       end
-    | Mcount (_, (CKview t)) -> Tvcard (with_dummy_loc gViewAs, map_mterm m ctx t)
+    | Mcount (_, (CKview t)) -> Tcard (with_dummy_loc gViewAs, map_mterm m ctx t)
     | Mcount (_, (CKfield (_, _, t))) ->
-      Tvcard (with_dummy_loc gViewAs, with_dummy_loc (Ttoview (with_dummy_loc gFieldAs, map_mterm m ctx t)))
-    | Mcount (a, CKcoll) -> Tvcard (with_dummy_loc a, with_dummy_loc (Ttoview(with_dummy_loc a, mk_ac_ctx a ctx)))
+      Tcard (with_dummy_loc gViewAs, with_dummy_loc (Ttoview (with_dummy_loc gFieldAs, map_mterm m ctx t)))
+    | Mcount (a, CKcoll) ->
+      Tcard (with_dummy_loc gViewAs, with_dummy_loc (Ttoview(with_dummy_loc a, mk_ac_ctx a ctx)))
     | Msum          (a, (CKview v),f) ->
       let cloneid = mk_sum_clone_id m a f in
       let col = mk_ac_ctx a ctx in
@@ -1875,7 +1869,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
          end
          | Mapifnth       _ -> error_not_translated "Mapifnth"
          | Mapifcount     (a,{ node=Mcast (_,_,c); type_=_ }) -> Tccard (with_dummy_loc a, map_mterm m ctx c)
-         | Mapifcount     (a,t) -> Tvcard (with_dummy_loc a, map_mterm m ctx t)
+         | Mapifcount     (a,t) -> Tcard (with_dummy_loc a, map_mterm m ctx t)
          | Mapifsum       (a,v,f) ->
          let cloneid = mk_sum_clone_id m a f in
          Tvsum(with_dummy_loc cloneid,map_mterm m ctx v,mk_ac_ctx a ctx)
@@ -2211,8 +2205,8 @@ let mk_set_count_ensures m a =
   if M.Utils.with_count m a then [{
       id = "set_" ^ a ^ "_count";
       form = Teq (Tyint,
-                  Tvcard (a,Ttoview (a,mk_ac a)),
-                  Tvcard (a,Ttoview (a,mk_ac_old a))
+                  Tcard (gViewAs, Ttoview(a,mk_ac a)),
+                  Tcard (gViewAs, Ttoview(a,mk_ac_old a))
                  );
     }]
   else []
@@ -2332,9 +2326,9 @@ let mk_add_count_ensures m a =
   if M.Utils.with_count m a then [{
       id = "add_" ^ a ^ "_count";
       form = Teq (Tyint,
-                  Tvcard (a, Ttoview (a, mk_ac a)),
+                  Tcard (gViewAs, Ttoview (a, mk_ac a)),
                   Tplus (Tyint,
-                         Tvcard (a, Ttoview(a, mk_ac_old a)),
+                         Tcard (gViewAs, Ttoview(a, mk_ac_old a)),
                          Tint (Big_int.big_int_of_int 1)
                         )
                  )
@@ -2418,9 +2412,9 @@ let mk_rm_count_ensures m a =
   if M.Utils.with_count m a then [{
       id = "rm_" ^ a ^ "_count";
       form = Teq (Tyint,
-                  Tccard (a, mk_ac a),
+                  Tcard (gViewAs, Ttoview(a, mk_ac a)),
                   Tminus (Tyint,
-                          Tccard (a, mk_ac_old a),
+                          Tcard (gViewAs, Ttoview (a, mk_ac_old a)),
                           Tint (Big_int.big_int_of_int 1)
                          )
                  )
@@ -2431,7 +2425,7 @@ let mk_clear_count_ensures m a =
   if M.Utils.with_count m a then [{
       id = "clear_" ^ a ^ "_count";
       form = Teq (Tyint,
-                  Tccard (a, mk_ac a),
+                  Tcard (gViewAs, Ttoview(a, mk_ac a)),
                   Tint (Big_int.zero_big_int)
                  )
     }]
@@ -2535,8 +2529,8 @@ let mk_clear_view _m asset : decl = Dfun {
       Tfor (
         "i",
         Tint Big_int.zero_big_int,
-        Tvcard (
-          asset,
+        Tcard (
+          gViewAs,
           Tvar "v"),
         [], (* TODO : add invariant for storage api verification *)
         Tmatch (
@@ -2570,7 +2564,7 @@ let mk_clear_view _m asset : decl = Dfun {
     (if M.Utils.with_count m asset then [{
          id = p ^ "_count";
          form = Teq (Tyint,
-                     Tvcard (asset, collfield),
+                     Tcard (asset, collfield),
                      Tint (Big_int.zero_big_int)
                     )
        }]
@@ -2691,9 +2685,9 @@ let mk_add_field_ensures m partition a _ak field prefix adda elem elemkey =
          form =
          let cardformula =
           (Teq (Tyint,
-                Tvcard (gViewAs, assetcollfield),
+                Tcard (gViewAs, assetcollfield),
                 Tplus (Tyint,
-                       Tvcard (gViewAs, oldassetcollfield),
+                       Tcard (gViewAs, oldassetcollfield),
                        Tint (Big_int.big_int_of_int 1)
                 )
           )
@@ -2827,9 +2821,9 @@ let mk_rm_field_ensures m part a _elem _ak field prefix rm_asset rm_elem =
          id = "rm_" ^ rm_asset ^ "_field_count";
          form = let cardformula =
           (Teq (Tyint,
-                Tvcard (gViewAs, assetcollfield),
+                Tcard (gViewAs, assetcollfield),
                 Tminus (Tyint,
-                       Tvcard (gViewAs, oldassetcollfield),
+                       Tcard (gViewAs, oldassetcollfield),
                        Tint (Big_int.big_int_of_int 1)
                 )
           )

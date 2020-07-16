@@ -88,6 +88,7 @@ lemma normed_is_distinct : forall xs. normed xs -> distinct xs
 (* ------------------------------------------------------------------------ *)
 axiom normP : forall xs. permut (undup xs) (norm xs)
 axiom normK : forall xs. norm (norm xs) = norm xs
+axiom normI : forall xs ys. permut (undup xs) (undup ys) -> norm xs = norm ys
 
 (* ------------------------------------------------------------------------ *)
 type fset = {

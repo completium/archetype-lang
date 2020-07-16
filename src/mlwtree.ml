@@ -100,8 +100,7 @@ type ('e,'t,'i) abstract_term =
   | Temptycoll of 'i
   | Temptyview of 'i
   | Temptyfield of 'i
-  | Tccard   of 'i * 'e
-  | Tvcard   of 'i * 'e
+  | Tcard   of 'i * 'e
   | Ttocoll  of 'i * 'e * 'e
   | Ttoview of 'i * 'e
   | Tviewtolist of 'i * 'e *'e
@@ -396,8 +395,7 @@ and map_abstract_term
   | Temptycoll i       -> Temptycoll (map_i i)
   | Temptyview i       -> Temptyview (map_i i)
   | Temptyfield i      -> Temptyfield (map_i i)
-  | Tccard (i,e)       -> Tccard (map_i i, map_e e)
-  | Tvcard (i,e)       -> Tvcard (map_i i, map_e e)
+  | Tcard (i,e)        -> Tcard (map_i i, map_e e)
   | Tmkcoll (i,e)      -> Tmkcoll (map_i i, map_e e)
   | Tmkview (i,e)      -> Tmkview (map_i i, map_e e)
   | Tcontent (i,e)     -> Tcontent (map_i i, map_e e)
@@ -801,8 +799,7 @@ let compare_abstract_term
   | Temptycoll i1, Temptycoll i2 -> cmpi i1 i2
   | Temptyview i1, Temptyview i2 -> cmpi i1 i2
   | Temptyfield i1, Temptyfield i2 -> cmpi i1 i2
-  | Tccard (i1,e1), Tccard (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
-  | Tvcard (i1,e1), Tvcard (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
+  | Tcard (i1,e1), Tcard (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tmkcoll (i1,e1), Tmkcoll (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tmkview (i1,e1), Tmkview (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tcontent (i1,e1), Tcontent (i2,e2) -> cmpi i1 i2 && cmpe e1 e2

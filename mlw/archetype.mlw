@@ -423,8 +423,59 @@ module Undup
 
 end
 
-(* Normest Set is a fset with get, add and remove --------------------------- *)
-module NormedSet
+module IntListUtils
+  use int.Int
+  use list.List
+  use list.Mem
+  use list.Nth
+  use list.Length
+  use option.Option
+
+  (* ------------------------------------------------------------------------ *)
+  let rec nth (i : int) (l : list int) : option int
+  variant { l }
+  ensures { 0 <= i < length l -> forall k. result = Some k -> mem k l }
+  ensures { not (0 <= i < length l) -> result = None }
+  ensures { result = nth i l }
+  =
+  match l with
+  | Cons k tl -> if i = 0 then Some k else nth (i - 1) tl
+  | Nil -> None
+  end
+
+  (* ------------------------------------------------------------------------ *)
+  let rec function head (n k : int) (l : list int) : list int
+  variant { l }
+  ensures { forall k. mem k result -> mem k l }
+  ensures { 0 <= n <= length l -> length result = n }
+  =
+  match l with
+  | Cons e tl ->
+    if k < n then
+      Cons e (head n (k+1) tl)
+    else Nil
+  | Nil -> Nil
+  end
+
+  (* ------------------------------------------------------------------------ *)
+  let rec function tail (n k : int) (l : list int) : list int
+  variant { l }
+  ensures { forall k. mem k result -> mem k l }
+  ensures { 0 <= n <= length l -> length result = n }
+  =
+  match l with
+  | Cons e tl ->
+    if k < n then
+      tail n (k+1) tl
+    else
+      Cons e (tail n (k+1) tl)
+  | Nil -> Nil
+  end
+
+end
+
+(* Collection Set is a fset with get, add and remove ------------------------ *)
+module CollectionSet
   use int.Int
   use list.List
   use list.Mem as M
@@ -446,18 +497,18 @@ module NormedSet
   val function norm (list t) : list t
 
   (* ------------------------------------------------------------------------ *)
-  clone nfset.NFSet as F  with  type t     = t,
-                                val  eqt   = eqt,
-                                val  norm  = norm,
-                                axiom .
+  clone fset.FSet as F  with  type t     = t,
+                              val  eqt   = eqt,
+                              val  norm  = norm,
+                              axiom .
   (* ------------------------------------------------------------------------ *)
-  type nset = F.fset
+  type cset = F.fset
 
   (* ------------------------------------------------------------------------ *)
-  predicate mem (e : t) (s : nset) = F.fmem e s
+  predicate mem (e : t) (s : cset) = F.fmem e s
 
   (* ------------------------------------------------------------------------ *)
-  let function elts (s : nset) = F.content s
+  let function elts (s : cset) = F.content s
 
   (* ------------------------------------------------------------------------ *)
   let function mk (l : list t) = F.mk l
@@ -477,23 +528,19 @@ module NormedSet
   end
 
   (* GET -------------------------------------------------------------------- *)
-  let function get (k : int) (s : nset) : option t
+  let function get (k : int) (s : cset) : option t
   ensures { result = None -> forall e. F.fmem e s -> proj e <> k }
   ensures { forall e. result = Some e -> proj e = k }
   = internal_get k (F.content s)
 
-  (* ------------------------------------------------------------------------ *)
-  axiom get_mem : forall e s. get (proj e) s = Some e <-> mem e s
-
   (* ADD -------------------------------------------------------------------- *)
-  let function add (a : t) (s : nset) : nset
+  let function add (a : t) (s : cset) : cset
   ensures { F.fmem a result }
   ensures { forall k. k <> proj a -> get k s = get k result }
-  ensures { get (proj a) result = Some a }
   = F.mk (Cons a (F.content s))  (* normalisation is done by F.mk *)
 
   (* REMOVE ----------------------------------------------------------------- *)
-  let function remove (k : int) (s : nset) : nset
+  let function remove (k : int) (s : cset) : cset
   ensures { forall i. i <> k -> get i s = get i result }
   ensures { get k result = None }
   =
@@ -510,28 +557,31 @@ module NormedSet
   F.mk (internal_remove (F.content s))
 
   (* ------------------------------------------------------------------------ *)
-  function union (s1 s2 : nset) : nset = F.fsetU s1 s2
+  function union (s1 s2 : cset) : cset = F.fsetU s1 s2
 
   (* ------------------------------------------------------------------------ *)
-  function inter (s1 s2 : nset) : nset = F.fsetI s1 s2
+  function inter (s1 s2 : cset) : cset = F.fsetI s1 s2
 
   (* ------------------------------------------------------------------------ *)
-  function diff (s1 s2 : nset) : nset = F.fsetD s1 s2
+  function diff (s1 s2 : cset) : cset = F.fsetD s1 s2
 
   (* ------------------------------------------------------------------------ *)
-  function singleton (a : t) : nset = F.mk (Cons a Nil)
+  function singleton (a : t) : cset = F.mk (Cons a Nil)
 
   (* ------------------------------------------------------------------------ *)
   let function empty = F.fset0
 
   (* ------------------------------------------------------------------------ *)
-  predicate is_empty (s : nset) = F.content s = Nil
+  predicate is_empty (s : cset) = F.content s = Nil
 
   (* ------------------------------------------------------------------------ *)
-  predicate subset (s1 s2 : nset) = F.fsubset s1 s2
+  predicate subset (s1 s2 : cset) = F.fsubset s1 s2
 
   (* ------------------------------------------------------------------------ *)
-  predicate (==) (s1 s2 : nset) = F.(==) s1 s2
+  predicate (==) (s1 s2 : cset) = F.(==) s1 s2
+
+  (* ------------------------------------------------------------------------ *)
+  let function card (s : cset) = F.fcard s
 
 end
 
@@ -543,46 +593,38 @@ module View
   use list.Length as L
   use option.Option
   use Types
+  use IntListUtils as I
 
   (* ------------------------------------------------------------------------ *)
-  let function eqt (x1 : key) (x2 : key) = x1 = x2
+  let function eqk (k1 k2: key) : bool = k1 = k2
 
   (* ------------------------------------------------------------------------ *)
   clone Undup as U with type t = key,
-                        val eqt = eqt
+                        val eqt = eqk
 
   (* ------------------------------------------------------------------------ *)
-  let function norm (l : list key) = U.undup l
+  type view = {
+    content : list key
+  } invariant {
+    content = U.undup content
+  } by { content = Nil }
 
   (* ------------------------------------------------------------------------ *)
-  clone fset.FSet as N with type t     = key,
-                            val  eqt   = eqt,
-                            val  norm  = norm,
-                            axiom .
+  let function mk (l: list key) = { content = l }
 
   (* ------------------------------------------------------------------------ *)
-  type view = N.fset
+  let function empty = mk Nil
 
   (* ------------------------------------------------------------------------ *)
-  let function mk (l: list key) = N.mk l
+  predicate is_empty (v : view) = v = empty
 
   (* ------------------------------------------------------------------------ *)
-  let function empty = N.fset0
-
-  (* ------------------------------------------------------------------------ *)
-  predicate is_empty (v : view) = v = mk Nil
-
-  (* ------------------------------------------------------------------------ *)
-  let function elts (v : view) = N.content v
-
-  (* ------------------------------------------------------------------------ *)
-  predicate subset (v1 v2 : view) = N.fsubset v1 v2
+  let function elts (v : view) = content v
 
   (* ------------------------------------------------------------------------ *)
   let function contains (k : key) (v:view) : bool
   ensures { result <-> M.mem k (elts v) }
-  =
-  U.mem k (elts v)
+  = U.mem k (elts v)
 
   (* ------------------------------------------------------------------------ *)
   let function card (v : view) : int
@@ -594,17 +636,7 @@ module View
   let function nth (i : int) (v : view) : option key
   ensures { 0 <= i < card v -> forall k. result = Some k -> contains k v }
   ensures { not (0 <= i < card v) -> result = None }
-  =
-  let rec internal_nth (i : int) (l : list key) : option key
-  variant { l }
-  ensures { 0 <= i < L.length l -> forall k. result = Some k -> U.mem k l }
-  ensures { not (0 <= i < L.length l) -> result = None }
-  =
-  match l with
-  | Cons k tl -> if i = 0 then Some k else internal_nth (i - 1) tl
-  | Nil -> None
-  end in
-  internal_nth i (elts v)
+  = I.nth i (elts v)
 
   (* ------------------------------------------------------------------------ *)
   lemma nth_singleton: forall k. nth 0 (mk (Cons k Nil)) = Some k
@@ -614,20 +646,7 @@ module View
   ensures { forall k. contains k result -> contains k v }
   ensures { 0 <= i <= card v -> card result = i }
   ensures { i >= card v -> result = v }
-  =
-  let rec function internal_head (k : int) (l : list key) : list key
-  variant { v }
-  ensures { forall k. M.mem k result -> M.mem k l }
-  ensures { 0 <= i <= L.length l -> L.length result = i }
-  =
-  match l with
-  | Cons e tl ->
-    if k < i then
-      Cons e (internal_head (k+1) tl)
-    else Nil
-  | Nil -> Nil
-  end in
-  mk (internal_head 0 (elts v))
+  = mk (I.head i 0 (elts v))
 
   (* ------------------------------------------------------------------------ *)
   lemma keep_none: forall v. head 0 v = mk Nil
@@ -637,22 +656,7 @@ module View
   let function tail (i : int) (v : view) : view
   ensures { forall k. contains k result -> contains k v }
   ensures { 0 <= i <= card v -> card result = i }
-  =
-  let m = card v - i in
-  let rec function internal_tail (k : int) (l : list key) : list key
-  variant { v }
-  ensures { forall k. M.mem k result -> M.mem k l }
-  ensures { 0 <= i <= L.length l -> L.length result = i }
-  =
-  match l with
-  | Cons e tl ->
-    if k < m then
-      internal_tail (k+1) tl
-    else
-      Cons e (internal_tail (k+1) tl)
-  | Nil -> Nil
-  end in
-  mk (internal_tail 0 (elts v))
+  = mk (I.tail (card v - i ) 0 (elts v))
 
   (* ------------------------------------------------------------------------ *)
   lemma drop_none: forall v. tail 0 v = mk Nil
@@ -691,14 +695,14 @@ module Field
   let function norm (l : list key) = S.insertion_sort (U.undup l)
 
   (* ------------------------------------------------------------------------ *)
-  clone NormedSet as N with type t     = key,
-                            val proj   = proj,
-                            val  eqt   = eqt,
-                            val  norm  = norm,
-                            axiom .
+  clone CollectionSet as N with type t     = key,
+                                val proj   = proj,
+                                val  eqt   = eqt,
+                                val  norm  = norm,
+                                axiom .
 
   (* ------------------------------------------------------------------------ *)
-  type field = N.nset
+  type field = N.cset
 
   (* ------------------------------------------------------------------------ *)
   predicate mem (k : key) (f : field) = N.mem k f
@@ -775,11 +779,11 @@ module Collection
   let function norm (l : list t) = S.insertion_sort (U.undup l)
 
   (* ------------------------------------------------------------------------ *)
-  clone NormedSet as N with type t     = t,
-                            val proj   = keyt,
-                            val eqt    = eqt,
-                            val norm   = norm,
-                            axiom .
+  clone CollectionSet as N with type t     = t,
+                                val proj   = keyt,
+                                val eqt    = eqt,
+                                val norm   = norm,
+                                axiom .
 
   (* ------------------------------------------------------------------------ *)
   predicate key_injective (l : list t) = forall a1 a2.
@@ -787,7 +791,7 @@ module Collection
 
   (* ------------------------------------------------------------------------ *)
   type collection = {
-    content : N.nset
+    content : N.cset
   } invariant {
     key_injective (N.elts content)
   } by {
@@ -798,13 +802,27 @@ module Collection
   predicate mem (a : t) (c : collection) = N.mem a c.content
 
   (* ------------------------------------------------------------------------ *)
-  let function mk (s : N.nset) : collection
+  let function mk (s : N.cset) : collection
   requires { key_injective (N.elts s) }
   = { content = s }
 
   (* ------------------------------------------------------------------------ *)
   let function get (k : key) (c : collection) : option t
+  ensures { result = None -> forall e. mem e c -> keyt e <> k }
+  ensures { forall e. result = Some e -> keyt e = k }
+  ensures { forall e. result = Some e <-> mem e c }
   = N.get k c.content
+
+  (* ------------------------------------------------------------------------ *)
+  lemma cont_mk [@rewrite] : forall l. N.elts (N.mk l) = norm l
+
+  (* ------------------------------------------------------------------------ *)
+  lemma intget_norm [@rewrite] : forall l [@induction].
+    forall k. N.internal_get k (norm l) = N.internal_get k l
+
+  (* ------------------------------------------------------------------------ *)
+  lemma intget_cons [@rewrite] : forall l [@induction].
+    forall e k. keyt e <> k -> N.internal_get k (Cons e l) = N.internal_get k l
 
   (* ------------------------------------------------------------------------ *)
   lemma cons_key_injective : forall a l.
@@ -813,6 +831,9 @@ module Collection
 
   (* ------------------------------------------------------------------------ *)
   let function add (a : t) (c : collection) : collection
+  ensures { mem a result }
+  ensures { forall k. k <> keyt a -> get k c = get k result }
+  ensures { get (keyt a) result = Some a }
   =
   mk (N.add a c.content)
 
@@ -907,6 +928,9 @@ module Collection
 
   (* ------------------------------------------------------------------------ *)
   predicate (==) (c1 c2 : collection) = N.(==) c1.content c2.content
+
+  (* ------------------------------------------------------------------------ *)
+  let function card (c : collection) = N.card c.content
 
 end
 

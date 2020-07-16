@@ -487,12 +487,9 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "assert { [@expl:%a] %a }"
       pp_str lbl
       (pp_term outer pos) e
-  | Tccard (i,e) ->
-    Format.fprintf fmt "%a.ccard %a"
+  | Tcard (i,e) ->
+    Format.fprintf fmt "%a.card %a"
       pp_str (String.capitalize_ascii i)
-      (pp_with_paren (pp_term outer pos)) e
-  | Tvcard (_,e) ->
-    Format.fprintf fmt "V.card %a"
       (pp_with_paren (pp_term outer pos)) e
 
   | Tmkcoll (i,e) ->
