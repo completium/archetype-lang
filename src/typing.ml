@@ -912,7 +912,7 @@ let packops =
 
 let opsops =
   [
-    "mkoperation", A.Cmkoperation, `Total, None, [ A.vtcurrency; A.vtaddress; A.vtunit ], A.Toperation
+    "mkoperation", A.Cmkoperation, `Total, None, [ A.vtcurrency; A.Tentrysig (A.Tnamed 0); A.Tnamed 0 ], A.Toperation
   ]
 
 (* -------------------------------------------------------------------- *)

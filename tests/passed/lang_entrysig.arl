@@ -7,6 +7,10 @@ entry otherentry(i : int) {
 }
 
 entry exec () {
+  // simple
+  var e1 : entrysig<unit> = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg;
+  transfer 0tz to entry e1(());
+
   // dynamically from an address and string
   var a : address = @KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm;
   var e2_opt : option<entrysig<int>> = entrypoint(a, "an_entry");
