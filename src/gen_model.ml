@@ -674,6 +674,18 @@ let to_model (ast : A.ast) : M.model =
          | A.Pcall (None, A.Cconst (A.Cmaybeperformedbyaction), [AExpr l; AExpr r]) ->
          M.MsecMayBePerformedByEntry (f l, f r) *)
 
+
+      (* Operation *)
+
+      | A.Pcall (None, A.Cconst (A.Cmkoperation), [AExpr a; AExpr b; AExpr c]) ->
+        let fa = f a in
+        let fb = f b in
+        let fc = f c in
+        M.Mmkoperation (fa, fb, fc)
+
+
+      (* Fail *)
+
       | A.Pcall (aux, A.Cconst c, args) ->
         Format.eprintf "expr const unkown: %a with nb args: %d [%a] %s@."
           A.pp_const c

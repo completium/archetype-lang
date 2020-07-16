@@ -556,10 +556,9 @@ let pp_model_internal fmt (model : model) b =
 
     | Mmkoperation (v, d, a) ->
       Format.fprintf fmt "Tezos.transaction(%a, %a, %a)"
-        f d
-        f v
         f a
-
+        f v
+        f d
 
     (* literals *)
 
@@ -1113,9 +1112,13 @@ let pp_model_internal fmt (model : model) b =
     (* utils *)
 
     | Mcast (src, dst, v) ->
-      let pp fmt (_src, dst, v) =
+      let pp fmt (src, dst, v) =
         Format.fprintf fmt "(%a : %a)"
-          f v
+          (fun fmt x -> begin
+               match src, dst with
+               | Tbuiltin (Baddress | Brole), Tentrysig _ -> Format.fprintf fmt "get_contract(%a)" f x
+               | _ -> f fmt x
+             end) v
           pp_type dst
       in
       pp fmt (src, dst, v)

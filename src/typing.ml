@@ -156,6 +156,8 @@ end = struct
     | A.Tbuiltin (A.VTaddress | A.VTrole), A.Tcontract _ ->
       true
 
+    | A.Tbuiltin (A.VTaddress | A.VTrole), A.Tentrysig Tbuiltin (VTunit) ->
+      true
 
     | A.Tcontainer (ty1, cf), A.Tcontainer (ty2, ct) ->
       equal ty1 ty2 && (cf = ct || (autoview && ct = A.View))
@@ -218,6 +220,7 @@ end = struct
                 | Some ty -> if equal tg ty then Some ty else raise E.Error)
           end
 
+        | Toperation, Toperation
         | Tentry, Tentry ->
           ()
 
@@ -234,7 +237,8 @@ end = struct
 
         | Tset    ptn, Tset   tg
         | Tlist   ptn, Tlist   tg
-        | Toption ptn, Toption tg ->
+        | Toption ptn, Toption tg
+        | Tentrysig ptn, Tentrysig tg ->
           doit ptn tg
 
         | Tmap (kptn, vptn), Tmap (ktg, vtg) ->
@@ -910,8 +914,13 @@ let packops =
     (fun ty -> ("pack", A.Cpack, `Total, None, [ty], A.vtbytes))
     [A.vtbool; A.vtint; A.vtrational; A.vtdate; A.vtduration; A.vtstring]
 
+let opsops =
+  [
+    "mkoperation", A.Cmkoperation, `Total, None, [ A.vtcurrency; A.Tentrysig (A.Tnamed 0); A.Tnamed 0 ], A.Toperation
+  ]
+
 (* -------------------------------------------------------------------- *)
-let allops = coreops @ optionops @ setops @ listops @ mapops @ cryptoops @ packops
+let allops = coreops @ optionops @ setops @ listops @ mapops @ cryptoops @ packops @ opsops
 
 (* -------------------------------------------------------------------- *)
 type assetdecl = {
@@ -1712,7 +1721,7 @@ let rec valid_var_or_arg_type (ty : A.ptyp) =
   | Toption    ty -> valid_var_or_arg_type ty
   | Tentry        -> false
   | Tentrysig  _  -> true
-  | Toperation    -> false
+  | Toperation    -> true
   | Ttrace     _  -> false
 
   | Tcontainer (_, A.View) -> true
@@ -3385,10 +3394,11 @@ let for_lvalue kind (env : env) (e : PT.expr) : (A.lvalue * A.ptyp) option =
         end
 
       | Some (`Global vd) ->
-        begin match vd.vr_kind, kind with
-          | `Variable, `Concrete
-          | `Ghost, `Ghost -> ()
-          | _, _ ->
+        begin match vd.vr_kind, kind, vd.vr_core with
+          | `Variable, `Concrete, _
+          | `Ghost, `Ghost, _
+          | _, _, Some A.Coperations -> ()
+          | _, _, _ ->
             Env.emit_error env (loc e, ReadOnlyGlobal (unloc x));
         end;
         Some (`Var x, vd.vr_type)
