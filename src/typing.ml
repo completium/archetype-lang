@@ -235,7 +235,8 @@ end = struct
 
         | Tset    ptn, Tset   tg
         | Tlist   ptn, Tlist   tg
-        | Toption ptn, Toption tg ->
+        | Toption ptn, Toption tg
+        | Tentrysig ptn, Tentrysig tg ->
           doit ptn tg
 
         | Tmap (kptn, vptn), Tmap (ktg, vtg) ->
