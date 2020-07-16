@@ -555,11 +555,11 @@ let pp_model_internal fmt (model : model) b =
     | Moperations -> pp_str fmt const_operations
 
     | Mmkoperation (v, d, a) ->
-      Format.fprintf fmt "Tezos.transaction(%a, %a, %a)"
-        f d
-        f v
+      Format.fprintf fmt "Tezos.transaction(%a, %a, (get_contract(%a) : contract(%a)))"
         f a
-
+        f v
+        f d
+        pp_type a.type_
 
     (* literals *)
 

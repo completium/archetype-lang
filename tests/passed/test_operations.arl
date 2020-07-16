@@ -4,5 +4,5 @@ entry exec() {
   var res : int = count(operations);
   var op : operation = mkoperation(0tz, @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg, ());
   operations := prepend(operations, op);
-  dorequire(res = 0)
+  dorequire(res = 1)
 }

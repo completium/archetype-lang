@@ -910,8 +910,13 @@ let packops =
     (fun ty -> ("pack", A.Cpack, `Total, None, [ty], A.vtbytes))
     [A.vtbool; A.vtint; A.vtrational; A.vtdate; A.vtduration; A.vtstring]
 
+let opsops =
+  [
+    "mkoperation", A.Cmkoperation, `Total, None, [ A.vtcurrency; A.vtaddress; A.vtunit ], A.Toperation
+  ]
+
 (* -------------------------------------------------------------------- *)
-let allops = coreops @ optionops @ setops @ listops @ mapops @ cryptoops @ packops
+let allops = coreops @ optionops @ setops @ listops @ mapops @ cryptoops @ packops @ opsops
 
 (* -------------------------------------------------------------------- *)
 type assetdecl = {
@@ -1712,7 +1717,7 @@ let rec valid_var_or_arg_type (ty : A.ptyp) =
   | Toption    ty -> valid_var_or_arg_type ty
   | Tentry        -> false
   | Tentrysig  _  -> true
-  | Toperation    -> false
+  | Toperation    -> true
   | Ttrace     _  -> false
 
   | Tcontainer (_, A.View) -> true
@@ -3385,10 +3390,11 @@ let for_lvalue kind (env : env) (e : PT.expr) : (A.lvalue * A.ptyp) option =
         end
 
       | Some (`Global vd) ->
-        begin match vd.vr_kind, kind with
-          | `Variable, `Concrete
-          | `Ghost, `Ghost -> ()
-          | _, _ ->
+        begin match vd.vr_kind, kind, vd.vr_core with
+          | `Variable, `Concrete, _
+          | `Ghost, `Ghost, _
+          | _, _, Some A.Coperations -> ()
+          | _, _, _ ->
             Env.emit_error env (loc e, ReadOnlyGlobal (unloc x));
         end;
         Some (`Var x, vd.vr_type)
