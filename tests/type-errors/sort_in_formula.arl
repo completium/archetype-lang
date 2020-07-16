@@ -1,0 +1,17 @@
+archetype sort_in_formula
+
+asset my_asset identified by id {
+  id : string;
+  value : int;
+}
+
+entry exec () {
+
+  specification {
+    s: my_asset.sort(value).isempty();
+  }
+
+  effect {
+    ()
+  }
+}

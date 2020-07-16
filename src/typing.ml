@@ -830,7 +830,7 @@ let methods : (string * method_) list =
     ("contains"    , mk A.Ccontains     `Both        (`Pure       ) `Total   (`Fixed [`Pk                ], Some (`T A.vtbool)));
     ("nth"         , mk A.Cnth          `Both        (`Pure       ) `Partial (`Fixed [`T A.vtint         ], Some (`Pk)));
     ("select"      , mk A.Cselect       `Both        (`Pure       ) `Total   (`Fixed [`Pred true         ], Some (`SubColl)));
-    ("sort"        , mk A.Csort         `Both        (`Pure       ) `Total   (`Multi (`Cmp               ), Some (`SubColl)));
+    ("sort"        , mk A.Csort         `OnlyExec    (`Pure       ) `Total   (`Multi (`Cmp               ), Some (`SubColl)));
     ("count"       , mk A.Ccount        `Both        (`Pure       ) `Total   (`Fixed [                   ], Some (`T A.vtint)));
     ("sum"         , mk A.Csum          `Both        (`Pure       ) `Total   (`Fixed [`RExpr false       ], Some (`Ref 0)));
     ("head"        , mk A.Chead         `Both        (`Pure       ) `Total   (`Fixed [`T A.vtint         ], Some (`SubColl)));

@@ -35,7 +35,7 @@ entry exec () {
     f02: my_asset.subsetof(my_asset);
     f03: my_asset.isempty();
     f04: my_asset.select(the.value > 0).isempty();
-    f05: my_asset.sort(value).isempty();
+    // f05: my_asset.sort(value).isempty();
     f06: my_asset.contains("key");
     f07: let some a = my_asset.nth(0) in a = "id0" otherwise false;
     f08: my_asset.count() = 0;
