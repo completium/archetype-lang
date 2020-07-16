@@ -68,7 +68,7 @@ entry rmA (id : string) {
   specification {
     /* API specification --------------------------------------------------- */
     s0rm: forall k : string, k <> id -> assetA[k] = before.assetA[k];
-    // s1rm: assetA[id] = none;
+    s1rm: (let noneA : option<assetA> = none in assetA[id] = noneA);
     /* set theory specification -------------------------------------------- */
     s2rm: let some a = before.assetA[id] in
             assetA = before.assetA.diff(assetA.singleton(a))
