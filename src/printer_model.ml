@@ -320,8 +320,8 @@ let pp_mterm fmt (mt : mterm) =
     | Moperations ->
       Format.fprintf fmt "operations"
 
-    | Mmktransaction (v, d, a) ->
-      Format.fprintf fmt "mktransaction(%a, %a, %a)"
+    | Mmkoperation (v, d, a) ->
+      Format.fprintf fmt "mkoperation(%a, %a, %a)"
         f v
         f d
         f a

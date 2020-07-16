@@ -163,7 +163,7 @@ type const =
   | Cunpack
   | Cupdate
   | Centrypoint
-  | Cmktransaction
+  | Cmkoperation
   (* set *)
   | Csadd
   | Csremove

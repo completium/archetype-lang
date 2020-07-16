@@ -1295,7 +1295,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     (* operation *)
 
     | Moperations                 -> error_not_translated "Mself"
-    | Mmktransaction (_v, _d, _a) -> error_not_translated "Mmktransaction"
+    | Mmkoperation (_v, _d, _a)   -> error_not_translated "Mmkoperation"
 
     (* literals *)
 

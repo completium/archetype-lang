@@ -219,7 +219,7 @@ let to_const = function
   | Cunpack         -> "unpack"
   | Cupdate         -> "update"
   | Centrypoint     -> "entrypoint"
-  | Cmktransaction  -> "mktransaction"
+  | Cmkoperation    -> "mkoperation"
   (* set *)
   | Csadd           -> "set_add"
   | Csremove        -> "set_remove"

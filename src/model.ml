@@ -208,7 +208,7 @@ type ('id, 'term) mterm_node  =
   | Mself             of 'id           (* entryname *)
   (* operation *)
   | Moperations
-  | Mmktransaction    of 'term * 'term * 'term  (* value * address * args *)
+  | Mmkoperation      of 'term * 'term * 'term  (* value * address * args *)
   (* literals *)
   | Mint              of Core.big_int
   | Mnat              of Core.big_int
@@ -1111,7 +1111,7 @@ let cmp_mterm_node
     | Mself id1, Mself id2                                                             -> cmpi id1 id2
     (* operation *)
     | Moperations, Moperations                                                         -> true
-    | Mmktransaction (v1, d1, a1), Mmktransaction (v2, d2, a2)                         -> cmp v1 v2 && cmp d1 d2 && cmp a1 a2
+    | Mmkoperation (v1, d1, a1), Mmkoperation (v2, d2, a2)                             -> cmp v1 v2 && cmp d1 d2 && cmp a1 a2
     (* literals *)
     | Mint v1, Mint v2                                                                 -> Big_int.eq_big_int v1 v2
     | Mnat v1, Mnat v2                                                                 -> Big_int.eq_big_int v1 v2
@@ -1456,7 +1456,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mself id                       -> Mself (g id)
   (* operation *)
   | Moperations                    -> Moperations
-  | Mmktransaction (v, d, a)       -> Mmktransaction (f v, f d, f a)
+  | Mmkoperation (v, d, a)         -> Mmkoperation (f v, f d, f a)
   (* literals *)
   | Mint v                         -> Mint v
   | Mnat v                         -> Mnat v
@@ -1817,7 +1817,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mself _                               -> accu
   (* operation *)
   | Moperations                           -> accu
-  | Mmktransaction (v, d, a)              -> f (f (f accu v) d) a
+  | Mmkoperation (v, d, a)                -> f (f (f accu v) d) a
   (* literals *)
   | Mint _                                -> accu
   | Mnat _                                -> accu
@@ -2187,11 +2187,11 @@ let fold_map_term
   | Moperations ->
     g (Moperations), accu
 
-  | Mmktransaction (v, d, a) ->
+  | Mmkoperation (v, d, a) ->
     let ve, va = f accu v in
     let de, da = f va d in
     let ae, aa = f da a in
-    g (Mmktransaction (ve, de, ae)), aa
+    g (Mmkoperation (ve, de, ae)), aa
 
 
   (* literals *)
@@ -3710,7 +3710,7 @@ end = struct
       | Mcallentry _
       | Mcallself _
       | Moperations
-      | Mmktransaction _
+      | Mmkoperation _
         -> raise FoundOperations
       | _ -> fold_term aux accu t in
     aux accu mt
