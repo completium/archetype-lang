@@ -77,7 +77,7 @@ entry rmA (id : string) {
             removed.assetA = assetA.singleton(a)
           otherwise true;
     s4rm: added.assetA = assetA.empty();
-    s5rm: assetA.count() = before.assetA.count() - 1;
+    s5rm: not before.assetA.contains(id) -> assetA.count() = before.assetA.count() - 1;
   }
   effect {
     assetA.remove(id);
