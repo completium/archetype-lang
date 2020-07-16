@@ -429,6 +429,7 @@ module IntListUtils
   use list.Mem
   use list.Nth
   use list.Length
+  use list.Reverse
   use option.Option
 
   (* ------------------------------------------------------------------------ *)
@@ -444,33 +445,25 @@ module IntListUtils
   end
 
   (* ------------------------------------------------------------------------ *)
-  let rec function head (n k : int) (l : list int) : list int
+  let rec function head (n : int) (l : list int) : list int
   variant { l }
   ensures { forall k. mem k result -> mem k l }
   ensures { 0 <= n <= length l -> length result = n }
   =
   match l with
   | Cons e tl ->
-    if k < n then
-      Cons e (head n (k+1) tl)
+    if 0 < n then
+      Cons e (head (n-1) tl)
     else Nil
   | Nil -> Nil
   end
 
   (* ------------------------------------------------------------------------ *)
-  let rec function tail (n k : int) (l : list int) : list int
+  let rec function tail (n : int) (l : list int) : list int
   variant { l }
   ensures { forall k. mem k result -> mem k l }
   ensures { 0 <= n <= length l -> length result = n }
-  =
-  match l with
-  | Cons e tl ->
-    if k < n then
-      tail n (k+1) tl
-    else
-      Cons e (tail n (k+1) tl)
-  | Nil -> Nil
-  end
+  = reverse (head n (reverse l))
 
 end
 
@@ -535,19 +528,13 @@ module CollectionSet
 
   (* ADD -------------------------------------------------------------------- *)
   let function add (a : t) (s : cset) : cset
-  ensures { F.fmem a result }
-  ensures { forall k. k <> proj a -> get k s = get k result }
   = F.mk (Cons a (F.content s))  (* normalisation is done by F.mk *)
 
   (* REMOVE ----------------------------------------------------------------- *)
   let function remove (k : int) (s : cset) : cset
-  ensures { forall i. i <> k -> get i s = get i result }
-  ensures { get k result = None }
   =
   let rec internal_remove (l : list t) : list t
   variant { l }
-  ensures { forall i. i <> k -> internal_get i l = internal_get i result }
-  ensures { internal_get k result = None }
   = match l with
   | Cons e tl ->
     if proj e = k then tl
@@ -610,7 +597,8 @@ module View
   } by { content = Nil }
 
   (* ------------------------------------------------------------------------ *)
-  let function mk (l: list key) = { content = l }
+  let function mk (l: list key)
+  = { content = U.undup l }
 
   (* ------------------------------------------------------------------------ *)
   let function empty = mk Nil
@@ -646,7 +634,7 @@ module View
   ensures { forall k. contains k result -> contains k v }
   ensures { 0 <= i <= card v -> card result = i }
   ensures { i >= card v -> result = v }
-  = mk (I.head i 0 (elts v))
+  = mk (I.head i (elts v))
 
   (* ------------------------------------------------------------------------ *)
   lemma keep_none: forall v. head 0 v = mk Nil
@@ -656,7 +644,7 @@ module View
   let function tail (i : int) (v : view) : view
   ensures { forall k. contains k result -> contains k v }
   ensures { 0 <= i <= card v -> card result = i }
-  = mk (I.tail (card v - i ) 0 (elts v))
+  = mk (I.tail i (elts v))
 
   (* ------------------------------------------------------------------------ *)
   lemma drop_none: forall v. tail 0 v = mk Nil
@@ -817,10 +805,6 @@ module Collection
   lemma cont_mk [@rewrite] : forall l. N.elts (N.mk l) = norm l
 
   (* ------------------------------------------------------------------------ *)
-  lemma intget_norm [@rewrite] : forall l [@induction].
-    forall k. N.internal_get k (norm l) = N.internal_get k l
-
-  (* ------------------------------------------------------------------------ *)
   lemma intget_cons [@rewrite] : forall l [@induction].
     forall e k. keyt e <> k -> N.internal_get k (Cons e l) = N.internal_get k l
 
@@ -839,6 +823,8 @@ module Collection
 
   (* ------------------------------------------------------------------------ *)
   let function remove (k : key) (c : collection) : collection
+  ensures { forall i. i <> k -> get i c = get i result }
+  ensures { get k result = None }
   =
   mk (N.remove k c.content)
 
