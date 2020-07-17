@@ -7,7 +7,7 @@ entry exec () {
     (* expr *)
     var a : list<string> = prepend(l, "2");
     var c : bool         = contains(l, "2");
-    var k : int          = count(l);
+    var k : int          = length(l);
     var n : string       = nth(l, 0);
 
   }

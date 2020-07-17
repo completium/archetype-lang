@@ -1,4 +1,4 @@
-archetype expr_list_count
+archetype expr_list_length
 
 variable res : int = 0
 
@@ -8,6 +8,6 @@ entry exec () {
   }
   effect {
     var l : list<string> = ["1"; "2"; "3"];
-    res := count(l)
+    res := length(l)
   }
 }

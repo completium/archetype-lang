@@ -1167,8 +1167,8 @@ let pp_model_internal fmt (model : model) b =
         f c
         f a
 
-    | Mlistcount (t, c) ->
-      Format.fprintf fmt "list_%a_count (%a)"
+    | Mlistlength (t, c) ->
+      Format.fprintf fmt "list_%a_length (%a)"
         pp_type t
         f c
 
@@ -2355,9 +2355,9 @@ let pp_model_internal fmt (model : model) b =
            match t with
            | _ -> Format.fprintf fmt "item = x") t
 
-    | Lcount t ->
+    | Llength t ->
       Format.fprintf fmt
-        "function list_%a_count (const l : list(%a)) : int is@\n  \
+        "function list_%a_length (const l : list(%a)) : int is@\n  \
          block { skip }@\n  \
          with int(size(l))@\n"
         pp_type t pp_type t

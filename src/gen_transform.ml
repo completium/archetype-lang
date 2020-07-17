@@ -2394,7 +2394,7 @@ let replace_for_to_iter (model : model) : model =
       let nth = mk_mterm (Mlistnth(t, col, idx)) t in
       let letin = mk_mterm (Mletin ([id], nth, Some t, nbody, None)) Tunit in
       let bound_min = mk_mterm (Mint Big_int.zero_big_int) (Tbuiltin Bint) in
-      let bound_max = mk_mterm (Mlistcount (t, col)) (Tbuiltin Bint) in
+      let bound_max = mk_mterm (Mlistlength (t, col)) (Tbuiltin Bint) in
       let iter = Miter (dumloc idx_id, bound_min, bound_max, letin, Some lbl) in
       mk_mterm iter mt.type_
 

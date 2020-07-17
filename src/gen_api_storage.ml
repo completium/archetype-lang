@@ -84,8 +84,8 @@ let generate_api_storage ?(verif=false) (model : model) : model =
         [APIList (Lprepend t)]
       | Mlistcontains (t, _, _) ->
         [APIList (Lcontains t)]
-      | Mlistcount (t, _) ->
-        [APIList (Lcount t)]
+      | Mlistlength (t, _) ->
+        [APIList (Llength t)]
       | Mlistnth (t, _, _) ->
         [APIList (Lnth t)]
       | Mmax _ when is_rat ->
