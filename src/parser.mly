@@ -32,6 +32,7 @@
 %token ACCEPT_TRANSFER
 %token ADDED
 %token AGGREGATE
+%token AMPEQUAL
 %token AND
 %token ANY
 %token ARCHETYPE
@@ -116,6 +117,7 @@
 %token PERCENT
 %token PERCENTRBRACKET
 %token PIPE
+%token PIPEEQUAL
 %token PKEY
 %token PLUS
 %token PLUSEQUAL
@@ -131,9 +133,9 @@
 %token RETURN
 %token RPAREN
 %token SECURITY
+%token SELF
 %token SEMI_COLON
 %token SET
-%token SELF
 %token SHADOW
 %token SLASH
 %token SOME
@@ -151,6 +153,7 @@
 %token USE
 %token VAR
 %token VARIABLE
+%token VIEW
 %token WHEN
 %token WITH
 
@@ -179,7 +182,7 @@
 %right THEN ELSE
 
 %nonassoc prec_var
-%nonassoc COLONEQUAL PLUSEQUAL MINUSEQUAL MULTEQUAL DIVEQUAL
+%nonassoc COLONEQUAL PLUSEQUAL MINUSEQUAL MULTEQUAL DIVEQUAL AMPEQUAL PIPEEQUAL
 
 %right IMPLY
 %nonassoc EQUIV
@@ -490,6 +493,7 @@ type_s_unloc:
 %inline container:
 | AGGREGATE  { Aggregate }
 | PARTITION  { Partition }
+| VIEW       { View      }
 
 %inline shadow_asset_fields:
 | /* empty */ { [] }
@@ -640,6 +644,8 @@ effect:
  | MINUSEQUAL  { MinusAssign }
  | MULTEQUAL   { MultAssign }
  | DIVEQUAL    { DivAssign }
+ | AMPEQUAL    { AndAssign }
+ | PIPEEQUAL   { OrAssign }
 
 %inline branchs:
  | xs=branch+ { xs }

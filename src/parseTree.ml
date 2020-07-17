@@ -13,6 +13,7 @@ type lident = ident loced
 and container =
   | Aggregate
   | Partition
+  | View
 
 and type_r =
   | Tref       of lident

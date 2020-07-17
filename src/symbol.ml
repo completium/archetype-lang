@@ -4,6 +4,7 @@ open Parser.MenhirInterpreter
 let string_of_token = function
   | WITH            -> "WITH"
   | WHEN            -> "WHEN"
+  | VIEW            -> "VIEW"
   | VARIABLE        -> "VARIABLE"
   | VAR             -> "VAR"
   | UTZ n           -> Printf.sprintf "UTZ(%s)" (Big_int.string_of_big_int n)
@@ -42,6 +43,7 @@ let string_of_token = function
   | PLUSEQUAL       -> "PLUSEQUAL"
   | PLUS            -> "PLUS"
   | PKEY            -> "PKEY"
+  | PIPEEQUAL       -> "OREQUAL"
   | PIPE            -> "PIPE"
   | PERCENTRBRACKET -> "PERCENTRBRACKET"
   | PERCENT_LIT n   -> Printf.sprintf "PERCENT_LIT(%s)" (Big_int.string_of_big_int n)
@@ -61,8 +63,8 @@ let string_of_token = function
   | MTZ n           -> Printf.sprintf "MTZ(%s)" (Big_int.string_of_big_int n)
   | MINUSEQUAL      -> "MINUSEQUAL"
   | MINUS           -> "MINUS"
-  | MAP             -> "MAP"
   | MATCH           -> "MATCH"
+  | MAP             -> "MAP"
   | LPAREN          -> "LPAREN"
   | LIST            -> "LIST"
   | LET             -> "LET"
@@ -137,6 +139,7 @@ let string_of_token = function
   | ARCHETYPE       -> "ARCHETYPE"
   | ANY             -> "ANY"
   | AND             -> "AND"
+  | AMPEQUAL        -> "AMPEQUAL"
   | AGGREGATE       -> "AGGREGATE"
   | ADDRESS s       -> Printf.sprintf "DURATION(%s)" s
   | ADDED           -> "ADDED"
@@ -145,6 +148,7 @@ let string_of_token = function
 let string_of_symbol = function
   | X (T T_WITH) -> "with"
   | X (T T_WHEN) -> "when"
+  | X (T T_VIEW) -> "view"
   | X (T T_VARIABLE) -> "variable"
   | X (T T_VAR) -> "var"
   | X (T T_UTZ) -> "a utz"
@@ -183,6 +187,7 @@ let string_of_symbol = function
   | X (T T_PLUSEQUAL) -> "+="
   | X (T T_PLUS) -> "+"
   | X (T T_PKEY) -> "pkey"
+  | X (T T_PIPEEQUAL) -> "|="
   | X (T T_PIPE) -> "|"
   | X (T T_PERCENTRBRACKET) -> "%]"
   | X (T T_PERCENT) -> "%"
@@ -279,6 +284,7 @@ let string_of_symbol = function
   | X (T T_ARCHETYPE) -> "archetype"
   | X (T T_ANY) -> "any"
   | X (T T_AND) -> "and"
+  | X (T T_AMPEQUAL) -> "%="
   | X (T T_AGGREGATE) -> "aggregate"
   | X (T T_ADDRESS) -> "an address"
   | X (T T_ADDED) -> "added"

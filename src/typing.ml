@@ -1729,8 +1729,9 @@ let rec valid_var_or_arg_type (ty : A.ptyp) =
 
 (* -------------------------------------------------------------------- *)
 let for_container (_ : env) = function
-  | PT.Aggregate     -> A.Aggregate
-  | PT.Partition  -> A.Partition
+  | PT.Aggregate -> A.Aggregate
+  | PT.Partition -> A.Partition
+  | PT.View      -> A.View
 
 (* -------------------------------------------------------------------- *)
 let for_assignment_operator = function

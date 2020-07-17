@@ -102,6 +102,7 @@
       "unpack"              , UNPACK         ;
       "use"                 , USE            ;
       "var"                 , VAR            ;
+      "view"                , VIEW           ;
       "variable"            , VARIABLE       ;
       "when"                , WHEN           ;
       "with"                , WITH           ;
@@ -179,6 +180,8 @@ rule token = parse
   | "-="                  { MINUSEQUAL }
   | "*="                  { MULTEQUAL }
   | "/="                  { DIVEQUAL }
+  | "&="                  { AMPEQUAL }
+  | "|="                  { PIPEEQUAL }
   | "->"                  { IMPLY }
   | "<->"                 { EQUIV }
   | "="                   { EQUAL }

@@ -89,6 +89,7 @@ let container_to_str c =
   match c with
   | Aggregate  -> "aggregate"
   | Partition  -> "partition"
+  | View       -> "view"
 
 let pp_container fmt c =
   Format.fprintf fmt "%s" (container_to_str c)
