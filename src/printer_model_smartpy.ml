@@ -33,8 +33,8 @@ let pp_model fmt (model : model) =
     | Bbool       -> Format.fprintf fmt "sp.TBool"
     | Bint        -> Format.fprintf fmt "sp.TInt"
     | Brational   -> Format.fprintf fmt "rational"
-    | Bdate       -> Format.fprintf fmt "date"
-    | Bduration   -> Format.fprintf fmt "duration"
+    | Bdate       -> Format.fprintf fmt "sp.TTimestamp"
+    | Bduration   -> Format.fprintf fmt "sp.Tint"
     | Btimestamp  -> Format.fprintf fmt "sp.TTimestamp"
     | Bstring     -> Format.fprintf fmt "sp.TString"
     | Baddress    -> Format.fprintf fmt "sp.TAddress"
@@ -376,7 +376,7 @@ let pp_model fmt (model : model) =
           f r
 
       | Massign (op, Avarstore l, r) ->
-        Format.fprintf fmt "self.%a %a %a"
+        Format.fprintf fmt "self.data.%a %a %a"
           pp_id l
           pp_operator op
           f r
@@ -601,18 +601,21 @@ let pp_model fmt (model : model) =
 
       | Mlitmap l ->
         Format.fprintf fmt "%a"
-          (fun fmt _ ->
-             match l with
-             | [] ->
-               begin
-                 let k, v =
-                   match mtt.type_ with
-                   | Tmap (k, v) -> k, v
-                   | _ -> assert false
-                 in
-                 Format.fprintf fmt "sp.map(tkey=%a, tvalue= %a)" pp_btyp k pp_type v
-               end
-             | _  -> emit_error (TODO ("Mlitmap : handle map with data")))
+          (fun fmt _ -> begin
+               let k, v =
+                 match mtt.type_ with
+                 | Tmap (k, v) -> k, v
+                 | _ -> assert false
+               in
+               Format.fprintf fmt "sp.map(%atkey=%a, tvalue= %a)"
+                 (fun fmt _ -> begin
+                      match l with
+                      | [] -> ()
+                      | _  -> Format.fprintf fmt "l = {%a}," (pp_list ", " (fun fmt (k, v) -> Format.fprintf fmt "%a : %a" f k f v)) l
+                    end) l
+                 pp_btyp k
+                 pp_type v
+             end)
           ()
 
       | Mlitrecord l ->

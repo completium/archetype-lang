@@ -138,27 +138,32 @@ let generate_target model =
 
   | SmartPy ->
     model
+    |> replace_col_by_key_for_ckfield
     |> process_asset_state
     |> replace_assignfield_by_update
     |> remove_add_update
+    |> remove_container_op_in_update
     |> merge_update
-    |> replace_update_by_set
+    |> remove_assign_operator
+    |> extract_item_collection_from_add_asset
     |> process_internal_string
     |> remove_rational
     |> abs_tez
     |> replace_date_duration_by_timestamp
     |> eval_variable_initial_value
+    |> replace_dotassetfield_by_dot
     |> generate_storage
     |> replace_declvar_by_letin
     |> remove_enum_matchwith
-    |> remove_letin_from_expr
-    (* |> remove_fun_dotasset *)
     |> replace_lit_address_by_role
     |> remove_label
     |> flat_sequence
     |> remove_cmp_bool
     |> split_key_values
-    |> Gen_transform.assign_loop_label
+    (* |> remove_duplicate_key *)
+    |> assign_loop_label
+    |> remove_letin_from_expr
+    (* |> remove_fun_dotasset *)
     |> optimize
     |> generate_api_storage
     |> output
