@@ -449,6 +449,9 @@ module IntListUtils
   end
 
   (* ------------------------------------------------------------------------ *)
+  lemma nth_con : forall k : int. nth 0 (Cons k Nil) = Some k
+
+  (* ------------------------------------------------------------------------ *)
   let rec function head (n : int) (l : list int) : list int
   variant { l }
   ensures { forall k. mem k result -> mem k l }
