@@ -1157,24 +1157,24 @@ let pp_model_internal fmt (model : model) b =
 
     | Mlistprepend (t, c, a) ->
       Format.fprintf fmt "list_%a_prepend (%a, %a)"
-        pp_type t
+        pp_pretty_type t
         f c
         f a
 
     | Mlistcontains (t, c, a) ->
       Format.fprintf fmt "list_%a_contains (%a, %a)"
-        pp_type t
+        pp_pretty_type t
         f c
         f a
 
     | Mlistlength (t, c) ->
       Format.fprintf fmt "list_%a_length (%a)"
-        pp_type t
+        pp_pretty_type t
         f c
 
     | Mlistnth (t, c, a) ->
       Format.fprintf fmt "list_%a_nth (%a, %a)"
-        pp_type t
+        pp_pretty_type t
         f c
         f a
 
@@ -2341,7 +2341,7 @@ let pp_model_internal fmt (model : model) b =
         "function list_%a_prepend (const l : list(%a); const i : %a) : list(%a) is@\n  \
          block { skip }@\n  \
          with i # l@\n"
-        pp_type t pp_type t pp_type t pp_type t
+        pp_pretty_type t pp_type t pp_type t pp_type t
 
     | Lcontains t ->
       Format.fprintf fmt
@@ -2349,7 +2349,7 @@ let pp_model_internal fmt (model : model) b =
          block {@\n  \
          function aggregate (const accu: bool; const x: %a) : bool is (%a) or accu @\n  \
          } with list_fold (aggregate, l, False)@\n"
-        pp_type t pp_type t pp_type t
+        pp_pretty_type t pp_type t pp_type t
         pp_type t
         (fun fmt t ->
            match t with
@@ -2360,7 +2360,7 @@ let pp_model_internal fmt (model : model) b =
         "function list_%a_length (const l : list(%a)) : int is@\n  \
          block { skip }@\n  \
          with int(size(l))@\n"
-        pp_type t pp_type t
+        pp_pretty_type t pp_type t
 
     | Lnth t ->
       Format.fprintf fmt
@@ -2378,7 +2378,7 @@ let pp_model_internal fmt (model : model) b =
          | None -> failwith(\"list_%a_nth failed\")@\n\
          end@\n\
          } with res@\n"
-        pp_type t pp_type t pp_type t
+        pp_pretty_type t pp_type t pp_type t
         pp_type t pp_type t pp_type t
         pp_type t pp_type t
         pp_type t
