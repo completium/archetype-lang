@@ -389,6 +389,7 @@ module Undup
 
   use list.List
   use list.Mem as M
+  use list.Length as L
   use fset.Undup as U
 
   (* ------------------------------------------------------------------------ *)
@@ -421,6 +422,9 @@ module Undup
         if mem e tl then undup tl else Cons e (undup tl)
     end
 
+  (* ------------------------------------------------------------------------ *)
+  predicate unduped (l : list t) = undup l = l
+
 end
 
 module IntListUtils
@@ -449,6 +453,8 @@ module IntListUtils
   variant { l }
   ensures { forall k. mem k result -> mem k l }
   ensures { 0 <= n <= length l -> length result = n }
+  ensures { n > length l -> result = l }
+  ensures { n < 0 -> result = Nil }
   =
   match l with
   | Cons e tl ->
@@ -464,6 +470,21 @@ module IntListUtils
   ensures { forall k. mem k result -> mem k l }
   ensures { 0 <= n <= length l -> length result = n }
   = reverse (head n (reverse l))
+
+  (* ------------------------------------------------------------------------ *)
+  let rec function eql l1 l2 : bool
+  variant { l1, l2 }
+  ensures { result <-> l1 = l2 }
+  =
+  match l1, l2 with
+  | Cons e1 tl1, Cons e2 tl2 ->
+    if e1 = e2 then eql tl1 tl2 else false
+  | Nil, Nil -> true
+  | _ -> false
+  end
+
+  (* ------------------------------------------------------------------------ *)
+  lemma eqP : forall l1 l2. eql l1 l2 <-> l1 = l2
 
 end
 
@@ -587,34 +608,26 @@ module View
   let function eqk (k1 k2: key) : bool = k1 = k2
 
   (* ------------------------------------------------------------------------ *)
+  lemma eqP : forall k1 k2: key. eqk k1 k2 <-> k1 = k2
+
+  (* ------------------------------------------------------------------------ *)
   clone Undup as U with type t = key,
                         val eqt = eqk
+
+  (* ------------------------------------------------------------------------ *)
+  predicate unduped (l : list key) = l = U.undup l
 
   (* ------------------------------------------------------------------------ *)
   type view = {
     content : list key
   } invariant {
-    content = U.undup content
+    unduped content
   } by { content = Nil }
 
   (* ------------------------------------------------------------------------ *)
-  lemma undup_is_distinct : forall l. U.undup l = l -> distinct l
-
-  (* ------------------------------------------------------------------------ *)
-  lemma invol_undup : forall l [@induction]. U.undup (U.undup l) = U.undup l
-
-  (* ------------------------------------------------------------------------ *)
-  let function mk (l: list key)
-  = { content = U.undup l }
-
-  (* ------------------------------------------------------------------------ *)
-  let function empty = mk Nil
-
-  (* ------------------------------------------------------------------------ *)
-  predicate is_empty (v : view) = v = empty
-
-  (* ------------------------------------------------------------------------ *)
-  let function elts (v : view) = content v
+  let function elts (v : view)
+  ensures { unduped result }
+  = content v
 
   (* ------------------------------------------------------------------------ *)
   let function contains (k : key) (v:view) : bool
@@ -628,6 +641,19 @@ module View
   L.length (elts v)
 
   (* ------------------------------------------------------------------------ *)
+  lemma undupI : forall l. U.unduped (U.undup l)
+
+  (* ------------------------------------------------------------------------ *)
+  let function mk (l: list key)
+  = { content = U.undup l }
+
+  (* ------------------------------------------------------------------------ *)
+  let function empty = mk Nil
+
+  (* ------------------------------------------------------------------------ *)
+  predicate is_empty (v : view) = v = empty
+
+  (* ------------------------------------------------------------------------ *)
   let function nth (i : int) (v : view) : option key
   ensures { 0 <= i < card v -> forall k. result = Some k -> contains k v }
   ensures { not (0 <= i < card v) -> result = None }
@@ -636,15 +662,24 @@ module View
   (* ------------------------------------------------------------------------ *)
   lemma nth_singleton: forall k. nth 0 (mk (Cons k Nil)) = Some k
 
+  (* ------------------------------------------------------------------------ *)
+  lemma undup_head : forall k l. U.unduped l -> U.unduped (I.head k l)
+
+  (* ------------------------------------------------------------------------ *)
+  lemma eqview : forall v1 v2. content v1 = content v2 -> v1 = v2
+
   (* KEEP first i elements -------------------------------------------------- *)
   let function head (i : int) (v : view) : view
   ensures { forall k. contains k result -> contains k v }
   ensures { 0 <= i <= card v -> card result = i }
-  ensures { i >= card v -> result = v }
+  ensures { i > card v -> result = v }
   = mk (I.head i (elts v))
 
   (* ------------------------------------------------------------------------ *)
   lemma keep_none: forall v. head 0 v = mk Nil
+
+  (* ------------------------------------------------------------------------ *)
+  lemma undup_tail : forall k l. U.unduped l -> U.unduped (I.tail k l)
 
   (* ------------------------------------------------------------------------ *)
   (* keeps last i elements *)
@@ -655,9 +690,6 @@ module View
 
   (* ------------------------------------------------------------------------ *)
   lemma drop_none: forall v. tail 0 v = mk Nil
-
-  (* ------------------------------------------------------------------------ *)
-  lemma drop_all: forall v. tail (card v) v = v
 
 end
 
