@@ -164,6 +164,7 @@ let generate_target model =
     |> assign_loop_label
     |> remove_letin_from_expr
     (* |> remove_fun_dotasset *)
+    |> remove_asset
     |> optimize
     |> generate_api_storage
     |> output

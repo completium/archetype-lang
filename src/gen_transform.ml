@@ -314,17 +314,17 @@ let replace_update_by_set (model : model) : model =
                                                   ))
             Tunit in
 
-letinasset
+        letinasset
 
         (* let res : mterm__node =
-          Mletin ([key_loced],
+           Mletin ([key_loced],
                   k,
                   Some (Tbuiltin t),
                   letinasset,
                   None
                  ) in
 
-        mk_mterm res Tunit *)
+           mk_mterm res Tunit *)
       end
     | _ -> map_mterm (aux ctx) mt
   in
@@ -2834,4 +2834,24 @@ let filter_api_storage (model : model) =
 
   { model with
     api_items = filter model.api_items |> Utils.sort_api_storage model true
+  }
+
+
+let remove_asset (model : model) : model =
+  let for_storage_item (si : storage_item) : storage_item =
+    let rec remove_assets x =
+      let aux mt =
+        match mt with
+        | {node = Massets []; type_ = Tcontainer (Tbuiltin tk, (Aggregate | Partition))} ->
+          mk_mterm (Mlitset []) (Tset tk)
+        | _ -> map_mterm remove_assets mt
+      in
+      aux x
+    in
+    { si with
+      default = remove_assets si.default
+    }
+  in
+  { model with
+    storage = List.map for_storage_item model.storage
   }
