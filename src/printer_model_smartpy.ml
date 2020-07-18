@@ -257,14 +257,20 @@ let pp_model fmt (model : model) =
 
     | Count (an, ck) ->
       Format.fprintf fmt
-        "def count_%a (self):@\n  \
+        "def count_%a (self%a):@\n  \
          %a@\n"
         (pp_prefix_api_container_kind an) ck
         (fun fmt _ ->
            match ck with
+           | Coll -> ()
+           | View -> Format.fprintf fmt ", v"
+           | Field (_an, _fn) -> Format.fprintf fmt ", ka"
+        ) ()
+        (fun fmt _ ->
+           match ck with
            | Coll -> Format.fprintf fmt "return sp.len(self.data.%s_assets)" an
-           | View -> Format.fprintf fmt "#TODO"
-           | Field (_an, _fn) -> Format.fprintf fmt "#TODO") ()
+           | View -> Format.fprintf fmt "return sp.to_int(sp.len(v))"
+           | Field (an, fn) -> Format.fprintf fmt "return sp.to_int(sp.len(self.data.%s_assets[ka].%s))" an fn) ()
 
     | Sum (an, ck, _, _) ->
       Format.fprintf fmt
@@ -1014,7 +1020,7 @@ let pp_model fmt (model : model) =
                match c with
                | CKcoll -> ()
                | CKview mt -> f fmt mt
-               | CKfield (_an, _fn, _) -> ()) ()
+               | CKfield (_an, _fn, k) -> f fmt k) ()
         in
         pp fmt (an, c)
 
