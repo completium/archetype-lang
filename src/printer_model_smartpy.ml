@@ -242,11 +242,12 @@ let pp_model fmt (model : model) =
         an
   in
 
-  let pp_api_list fmt = function
-    | Lprepend t  -> Format.fprintf fmt "list_prepend\t %a" pp_type t
-    | Lcontains t -> Format.fprintf fmt "list_contains\t %a" pp_type t
-    | Llength t   -> Format.fprintf fmt "list_length\t %a" pp_type t
-    | Lnth t      -> Format.fprintf fmt "list_nth\t %a" pp_type t
+  let pp_api_list _fmt = function
+    | Lprepend  _ -> ()
+    | Lcontains _ -> ()
+    | Llength   _ -> ()
+    | Lnth      _ -> ()
+
   in
 
   let pp_api_builtin fmt = function
@@ -592,12 +593,24 @@ let pp_model fmt (model : model) =
           (pp_list "; " f) l
 
       | Mlitset l ->
-        Format.fprintf fmt "[%a]"
-          (pp_list "; " f) l
+        let t =
+          match mtt.type_ with
+          | Tset t -> t
+          | _ -> assert false
+        in
+        Format.fprintf fmt "sp.set(l=[%a], t= %a)"
+          (pp_list ", " f) l
+          pp_btyp t
 
       | Mlitlist l ->
-        Format.fprintf fmt "[%a]"
-          (pp_list "; " f) l
+        let t =
+          match mtt.type_ with
+          | Tlist t -> t
+          | _ -> assert false
+        in
+        Format.fprintf fmt "sp.list(l=[%a], t= %a)"
+          (pp_list ", " f) l
+          pp_type t
 
       | Mlitmap l ->
         Format.fprintf fmt "%a"
@@ -611,7 +624,7 @@ let pp_model fmt (model : model) =
                  (fun fmt _ -> begin
                       match l with
                       | [] -> ()
-                      | _  -> Format.fprintf fmt "l = {%a}," (pp_list ", " (fun fmt (k, v) -> Format.fprintf fmt "%a : %a" f k f v)) l
+                      | _  -> Format.fprintf fmt "l = {%a}, " (pp_list ", " (fun fmt (k, v) -> Format.fprintf fmt "%a : %a" f k f v)) l
                     end) l
                  pp_btyp k
                  pp_type v
@@ -985,15 +998,15 @@ let pp_model fmt (model : model) =
           f c
           f a
 
-      | Msetcontains (t, c, a) ->
-        Format.fprintf fmt "set_%a_contains (%a, %a)"
-          pp_type t
+      | Msetcontains (_t, c, a) ->
+        Format.fprintf fmt "%a.contains (%a)"
+          (* pp_type t *)
           f c
           f a
 
-      | Msetlength (t, c) ->
-        Format.fprintf fmt "set_%a_length (%a)"
-          pp_type t
+      | Msetlength (_t, c) ->
+        Format.fprintf fmt "sp.len (%a)"
+          (* pp_type t *)
           f c
 
 
@@ -1010,7 +1023,7 @@ let pp_model fmt (model : model) =
           f a
 
       | Mlistlength (_, c) ->
-        Format.fprintf fmt "list_length (%a)"
+        Format.fprintf fmt "sp.len (%a)"
           f c
 
       | Mlistnth (_, c, a) ->
@@ -1033,22 +1046,22 @@ let pp_model fmt (model : model) =
           f k
 
       | Mmapget (_, _, c, k) ->
-        Format.fprintf fmt "map_get (%a, %a)"
+        Format.fprintf fmt "%a.get(%a, defaultValue = None)"
           f c
           f k
 
       | Mmapgetopt (_, _, c, k) ->
-        Format.fprintf fmt "map_getopt (%a, %a)"
+        Format.fprintf fmt "%a.get(%a)"
           f c
           f k
 
       | Mmapcontains (_, _, c, k) ->
-        Format.fprintf fmt "map_contains (%a, %a)"
+        Format.fprintf fmt "%a.contains(%a)"
           f c
           f k
 
       | Mmaplength (_, _, c) ->
-        Format.fprintf fmt "map_length (%a)"
+        Format.fprintf fmt "sp.len(%a)"
           f c
 
 
@@ -1069,7 +1082,7 @@ let pp_model fmt (model : model) =
           f a
 
       | Mconcat (x, y) ->
-        Format.fprintf fmt "concat (%a, %a)"
+        Format.fprintf fmt "sp.concat (%a, %a)"
           f x
           f y
 
