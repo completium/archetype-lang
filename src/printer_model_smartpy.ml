@@ -181,13 +181,13 @@ let pp_model fmt (model : model) =
     | RemoveAll (an, fn) ->
       Format.fprintf fmt
         "def remove_all_%s_%s (self, s : storage) : unit =@\n  \
-         #TODO@\n"
+         sp.failwith(\"TODO\")@\n"
         an fn
 
     | RemoveIf (an, _, _, _) ->
       Format.fprintf fmt
         "def removeif_%s (self, s : storage) : unit =@\n  \
-         #TODO@\n"
+         sp.failwith(\"TODO\")@\n"
         an
 
     | Contains (an, ck) ->
@@ -206,17 +206,28 @@ let pp_model fmt (model : model) =
            | Coll -> Format.fprintf fmt "return self.data.%s_assets.contains(key)" an
            | View ->
              Format.fprintf fmt
-               "res = False@\n  \
+               "res = sp.bool(False)@\n  \
                 sp.for x in v:@\n    \
-                res |= True #(x == key)@\n  \
+                res.value |= x == key@\n  \
                 return res"
-           | Field (an, fn) -> Format.fprintf fmt "self.data.%s_assets[ka].%s.contains(key)" an fn) ()
+           | Field (an, fn) -> Format.fprintf fmt "return self.data.%s_assets[ka].%s.contains(key)" an fn) ()
 
     | Select (an, ck, _, _) ->
+      let _, tk = Utils.get_asset_key model an in
       Format.fprintf fmt
-        "def select_%a (self):@\n  \
-         return []@\n"
+        "def select_%a (self%a):@\n  \
+         l = sp.local(\"l\", sp.list(t = %a))@\n  \
+         sp.for k in self.data.my_asset_assets.keys():@\n    \
+         l.value.push(k)@\n  \
+         return l@\n"
         (pp_prefix_api_container_kind an) ck
+        (fun fmt _ ->
+           match ck with
+           | Coll -> ()
+           | View -> Format.fprintf fmt ", v"
+           | Field (_an, _fn) -> Format.fprintf fmt ", ka"
+        ) ()
+        pp_btyp tk
     (* Format.fprintf fmt
        "def select_%a (self, c, p):@\n  \
        reduce(@\n  \
@@ -240,20 +251,37 @@ let pp_model fmt (model : model) =
         (pp_prefix_api_container_kind an) ck
         (fun fmt _ ->
            match ck with
-           | Coll -> Format.fprintf fmt "#TODO"
-           | View -> Format.fprintf fmt "#TODO"
-           | Field (_an, _fn) -> Format.fprintf fmt "#TODO") ()
+           | Coll -> Format.fprintf fmt "sp.failwith(\"TODO\")"
+           | View -> Format.fprintf fmt "sp.failwith(\"TODO\")"
+           | Field (_an, _fn) -> Format.fprintf fmt "sp.failwith(\"TODO\")") ()
 
     | Nth (an, ck) ->
+      let _, tk = Utils.get_asset_key model an in
       Format.fprintf fmt
-        "def nth_%a (self):@\n  \
+        "def nth_%a (self%a, idx):@\n  \
          %a@\n"
         (pp_prefix_api_container_kind an) ck
         (fun fmt _ ->
            match ck with
-           | Coll -> Format.fprintf fmt "#TODO"
-           | View -> Format.fprintf fmt "#TODO"
-           | Field (_an, _fn) -> Format.fprintf fmt "#TODO") ()
+           | Coll -> ()
+           | View -> Format.fprintf fmt ", v"
+           | Field (_an, _fn) -> Format.fprintf fmt ", ka"
+        ) ()
+        (fun fmt _ ->
+           match ck with
+           | Coll ->
+             Format.fprintf fmt
+               "m = sp.map(tkey=sp.TInt, tvalue=%a)@\n  \
+                i = 0@\n  \
+                sp.for x in self.data.%s_assets.keys():@\n    \
+                #m[i] = x@\n    \
+                i += 1@\n  \
+                return m[idx]"
+               pp_btyp tk
+               an
+
+           | View -> Format.fprintf fmt "sp.failwith(\"TODO\")"
+           | Field (_an, _fn) -> Format.fprintf fmt "sp.failwith(\"TODO\")") ()
 
     | Count (an, ck) ->
       Format.fprintf fmt
@@ -289,9 +317,9 @@ let pp_model fmt (model : model) =
         (pp_prefix_api_container_kind an) ck
         (fun fmt _ ->
            match ck with
-           | Coll -> Format.fprintf fmt "#TODO"
-           | View -> Format.fprintf fmt "#TODO"
-           | Field (_an, _fn) -> Format.fprintf fmt "#TODO") ()
+           | Coll -> Format.fprintf fmt "sp.failwith(\"TODO\")"
+           | View -> Format.fprintf fmt "sp.failwith(\"TODO\")"
+           | Field (_an, _fn) -> Format.fprintf fmt "sp.failwith(\"TODO\")") ()
 
     | Tail (an, ck) ->
       Format.fprintf fmt
@@ -300,9 +328,9 @@ let pp_model fmt (model : model) =
         (pp_prefix_api_container_kind an) ck
         (fun fmt _ ->
            match ck with
-           | Coll -> Format.fprintf fmt "#TODO"
-           | View -> Format.fprintf fmt "#TODO"
-           | Field (_an, _fn) -> Format.fprintf fmt "#TODO") ()
+           | Coll -> Format.fprintf fmt "sp.failwith(\"TODO\")"
+           | View -> Format.fprintf fmt "sp.failwith(\"TODO\")"
+           | Field (_an, _fn) -> Format.fprintf fmt "sp.failwith(\"TODO\")") ()
   in
 
   let pp_api_list _fmt = function
@@ -970,8 +998,13 @@ let pp_model fmt (model : model) =
 
       | Mselect (an, c, la, lb, a) ->
         let pp fmt (an, c, _la, _lb, _a) =
-          Format.fprintf fmt "self.select_%a ()"
+          Format.fprintf fmt "self.select_%a (%a)"
             (pp_prefix_container_kind an) c
+            (fun fmt _ ->
+               match c with
+               | CKcoll -> ()
+               | CKview mt -> f fmt mt
+               | CKfield (_an, _fn, k) -> f fmt k) ()
         in
         pp fmt (an, c, la, lb, a)
 
