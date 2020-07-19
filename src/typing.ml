@@ -912,7 +912,7 @@ let cryptoops =
 let packops =
   List.map
     (fun ty -> ("pack", A.Cpack, `Total, None, [ty], A.vtbytes))
-    [A.vtbool; A.vtint; A.vtrational; A.vtdate; A.vtduration; A.vtstring]
+    [A.vtbool; A.vtint; A.vtrational; A.vtdate; A.vtduration; A.vtstring; A.vtaddress]
 
 let opsops =
   [
