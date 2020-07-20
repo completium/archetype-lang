@@ -980,13 +980,19 @@ let rec cmp_type
   match t1, t2 with
   | Tasset i1, Tasset i2                     -> cmp_lident i1 i2
   | Tenum i1, Tenum i2                       -> cmp_lident i1 i2
+  | Tstate, Tstate                           -> true
   | Tcontract i1, Tcontract i2               -> cmp_lident i1 i2
   | Tbuiltin b1, Tbuiltin b2                 -> cmp_btyp b1 b2
   | Tcontainer (t1, c1), Tcontainer (t2, c2) -> cmp_type t1 t2 && cmp_container c1 c2
   | Tlist t1, Tlist t2                       -> cmp_type t1 t2
   | Toption t1, Toption t2                   -> cmp_type t1 t2
   | Ttuple l1, Ttuple l2                     -> List.for_all2 cmp_type l1 l2
+  | Tset b1, Tset b2                         -> cmp_btyp b1 b2
+  | Tmap (k1, v1), Tmap (k2, v2)             -> cmp_btyp k1 k2 && cmp_type v1 v2
+  | Trecord i1, Trecord i2                   -> cmp_lident i1 i2
   | Tunit, Tunit                             -> true
+  | Tstorage, Tstorage                       -> true
+  | Toperation, Toperation                   -> true
   | Tentry, Tentry                           -> true
   | Tentrysig t1, Tentrysig t2               -> cmp_type t1 t2
   | Tprog t1, Tprog t2                       -> cmp_type t1 t2
