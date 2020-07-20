@@ -3453,6 +3453,8 @@ module Utils : sig
   val get_labeled_value_from             : model -> ident -> mterm list -> (ident * mterm) list
   val add_api_storage_in_list            : api_storage list -> api_storage -> api_storage list
   val sort_api_storage                   : model -> bool -> api_storage list -> api_storage list
+  val get_all_set_types                  : model -> type_ list
+  val get_all_map_types                  : model -> type_ list
 end = struct
 
   open Tools
@@ -4373,4 +4375,179 @@ end = struct
          then criteria_kind ()
          else c1
       )
+
+  let get_all_gen_type for_type (model : model) =
+    let for_mterm (accu : 'a) (mt : mterm) : 'a =
+      let rec aux accu (mt : mterm) =
+        match mt.node with
+        | Mletin (_, x, ot, b, o) -> begin
+            accu
+            |> (fun accu -> aux accu x)
+            |> (fun accu -> Option.map_dfl (for_type accu) accu ot)
+            |> (fun accu -> aux accu b)
+            |> (fun accu -> Option.map_dfl (aux accu) accu o)
+          end
+        | Mdeclvar (_, Some t, v) -> begin
+            accu
+            |> (fun accu -> for_type accu t)
+            |> (fun accu -> aux accu v)
+          end
+        | _ -> fold_term aux accu mt
+      in
+      aux accu mt
+    in
+    let for_label_term accu (lt : label_term) = for_mterm accu lt.term in
+    let for_decl_node accu (d : decl_node) =
+      let for_var accu (v : var) =
+        accu
+        |> (fun accu -> for_type accu v.type_)
+        |> (fun accu -> Option.map_dfl (for_mterm accu) accu v.default)
+        |> (fun accu -> List.fold_left for_label_term accu v.invariants)
+      in
+      let for_enum accu (e : enum) =
+        let for_enum_item accu (ei : enum_item) =
+          List.fold_left for_label_term accu ei.invariants
+        in
+        List.fold_left for_enum_item accu e.values
+      in
+      let for_asset accu (a : asset) =
+        let for_asset_item accu (ai : asset_item) =
+          accu
+          |> (fun accu -> for_type accu ai.type_)
+          |> (fun accu -> Option.map_dfl (for_mterm accu) accu ai.default)
+        in
+        accu
+        |> (fun accu -> List.fold_left for_asset_item accu a.values)
+        |> (fun accu -> List.fold_left for_label_term accu a.invariants)
+        |> (fun accu -> List.fold_left for_mterm accu a.init)
+      in
+      let for_record accu (r : record) =
+        let for_record_field accu (rf : record_field) =
+          for_type accu rf.type_
+        in
+        List.fold_left for_record_field accu r.fields;
+      in
+      match d with
+      | Dvar v      -> for_var    accu v
+      | Denum e     -> for_enum   accu e
+      | Dasset a    -> for_asset  accu a
+      | Drecord r   -> for_record accu r
+      | _ -> accu
+    in
+    let for_storage_item accu (si : storage_item) =
+      accu
+      |> (fun accu -> for_type accu si.typ;)
+      |> (fun accu -> for_mterm accu si.default;)
+    in
+    let for_specification accu (spec : specification) =
+      let for_predicate accu (p : predicate) =
+        accu
+        |> (fun accu -> List.fold_left (fun accu (_, t) -> for_type accu t) accu p.args)
+        |> (fun accu -> for_mterm accu p.body)
+      in
+      let for_definition accu (d : definition) =
+        accu
+        |> (fun accu -> for_type accu d.typ)
+        |> (fun accu -> for_mterm accu d.body)
+      in
+      let for_variable accu (v : variable) =
+        let for_argument accu (arg : argument) =
+          let _, b, c = arg in
+          accu
+          |> (fun accu -> for_type accu b)
+          |> (fun accu -> Option.map_dfl (for_mterm accu) accu c)
+        in
+        let for_qualid accu (q : qualid) =
+          for_type accu q.type_
+        in
+        accu
+        |> (fun accu -> for_argument accu v.decl)
+        |> (fun accu -> Option.map_dfl (for_qualid accu) accu v.from)
+        |> (fun accu -> Option.map_dfl (for_qualid accu) accu v.to_)
+      in
+      let for_invariant accu (i : invariant) =
+        List.fold_left for_mterm accu i.formulas
+      in
+      let for_postcondition accu (p : postcondition) =
+        accu
+        |> (fun accu -> for_mterm accu p.formula)
+        |> (fun accu -> List.fold_left for_invariant accu p.invariants)
+      in
+      accu
+      |> (fun accu -> List.fold_left for_predicate  accu spec.predicates)
+      |> (fun accu -> List.fold_left for_definition accu spec.definitions)
+      |> (fun accu -> List.fold_left for_label_term accu spec.lemmas)
+      |> (fun accu -> List.fold_left for_label_term accu spec.theorems)
+      |> (fun accu -> List.fold_left for_variable   accu spec.variables)
+      |> (fun accu -> List.fold_left (fun accu (_, xs) -> List.fold_left for_label_term accu xs) accu spec.invariants)
+      |> (fun accu -> List.fold_left for_mterm           accu spec.effects)
+      |> (fun accu -> List.fold_left for_postcondition   accu spec.postconditions)
+    in
+    let for_function__ accu (f__ : function__) =
+      let for_function_node accu (fn : function_node) =
+        let for_function_struct accu (fs : function_struct) =
+          let for_argument accu (arg : argument) =
+            let _, b, c = arg in
+            accu
+            |> (fun accu -> for_type accu b)
+            |> (fun accu -> Option.map_dfl (for_mterm accu) accu c)
+          in
+          accu
+          |> (fun accu -> List.fold_left for_argument accu fs.args)
+          |> (fun accu -> for_mterm accu fs.body)
+        in
+        let fs, t =
+          match fn with
+          | Function (fs, t) -> fs, Some t
+          | Entry fs -> fs, None
+        in
+        accu
+        |> (fun accu -> for_function_struct accu fs)
+        |> (fun accu -> Option.map_dfl (for_type accu) accu t)
+
+      in
+      accu
+      |> (fun accu -> for_function_node                       accu f__.node)
+      |> (fun accu -> Option.map_dfl (for_specification accu) accu f__.spec)
+    in
+    []
+    |> (fun accu -> List.fold_left for_decl_node    accu model.decls)
+    |> (fun accu -> List.fold_left for_storage_item accu model.storage)
+    |> (fun accu -> List.fold_left for_function__   accu model.functions)
+    |> (fun accu -> for_specification               accu model.specification)
+
+  let add_type (l : type_ list) (x : type_) =
+    if List.exists (cmp_type x) l
+    then l
+    else x::l
+
+  let get_all_set_types (model : model) : type_ list =
+    let rec for_type accu t =
+      match t with
+      | Tset _       -> add_type accu t
+      | Tlist   t    -> for_type accu t
+      | Toption t    -> for_type accu t
+      | Ttuple  ts   -> List.fold_left (for_type) accu ts
+      | Tmap (_, t)  -> for_type accu t
+      | Tentrysig t  -> for_type accu t
+      | Tprog t      -> for_type accu t
+      | Tvset (_, t) -> for_type accu t
+      | _ -> accu
+    in
+    get_all_gen_type for_type model
+
+  let get_all_map_types (model : model) : type_ list =
+    let rec for_type accu t =
+      match t with
+      | Tlist     t       -> for_type accu t
+      | Toption   t       -> for_type accu t
+      | Ttuple    ts      -> List.fold_left (for_type) accu ts
+      | Tmap      (_, tv) -> add_type (for_type accu tv) t
+      | Tentrysig t       -> for_type accu t
+      | Tprog     t       -> for_type accu t
+      | Tvset     (_, t)  -> for_type accu t
+      | _ -> accu
+    in
+    get_all_gen_type for_type model
+
 end
