@@ -7,7 +7,7 @@ entry exec () {
     }
   }
   effect {
-    require (true)
+    ()
   }
 }
 

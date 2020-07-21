@@ -6,16 +6,16 @@ asset a {
 
 asset b {
   bid : int;
-  bc : a partition;
+  bc : partition<a>;
 }
 
 asset c {
   cid : int;
-  cc : b partition;
+  cc : partition<b>;
 }
 
 entry exec () {
   effect {
-    require(true)
+    ()
   }
 }

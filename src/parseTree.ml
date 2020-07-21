@@ -13,14 +13,17 @@ type lident = ident loced
 and container =
   | Aggregate
   | Partition
+  | View
 
 and type_r =
   | Tref       of lident
-  | Tasset     of lident
   | Tcontainer of type_t * container
   | Ttuple     of type_t list
   | Toption    of type_t
+  | Tset       of type_t
   | Tlist      of type_t
+  | Tmap       of type_t * type_t
+  | Tentrysig  of type_t
   | Tkeyof     of type_t
 
 and type_t = type_r loced
@@ -82,6 +85,15 @@ and var_label = VLBefore | VLIdent of lident
 
 and var_vset  = VSAdded | VSUnmoved | VSRemoved
 
+and for_ident_unloc = FIsimple of lident | FIdouble of lident * lident
+and for_ident = for_ident_unloc loced
+
+and transfer_t =
+  | TTsimple   of expr
+  | TTcontract of expr * lident * expr list
+  | TTentry    of lident * expr
+  | TTself     of lident * expr list
+
 and expr_unloc =
   | Eterm         of (var_vset option * var_label option) * lident
   | Eliteral      of literal
@@ -93,14 +105,14 @@ and expr_unloc =
   | Emulticomp    of expr * (comparison_operator loced * expr) list
   | Eapp          of function_ * expr list
   | Emethod       of expr * lident * expr list
-  | Etransfer     of expr * expr * (lident * expr list) option
+  | Etransfer     of expr * transfer_t
   | Erequire      of expr
   | Efailif       of expr
   | Efail         of expr
   | Eassign       of assignment_operator * expr * expr
   | Eif           of expr * expr * expr option
   | Ebreak
-  | Efor          of lident option * lident * expr * expr
+  | Efor          of lident option * for_ident * expr * expr
   | Eiter         of lident option * lident * expr option * expr * expr
   | Eseq          of expr * expr
   | Eletin        of lident * type_t option * expr * expr * expr option
@@ -112,6 +124,7 @@ and expr_unloc =
   | Ereturn       of expr
   | Eoption       of option_
   | Eunpack       of type_t * expr
+  | Eself         of lident
   | Eany
   | Enothing
   | Einvalid
@@ -248,9 +261,10 @@ and declaration_unloc =
   | Dvariable      of variable_decl
   | Denum          of enum_kind * enum_decl
   | Dasset         of asset_decl
+  | Drecord        of record_decl
   | Dentry         of entry_decl
   | Dtransition    of transition_decl
-  | Dcontract      of contract_decl
+  | Dentries       of entries_decl
   | Dextension     of extension_decl
   | Dnamespace     of namespace_decl
   | Dfunction      of s_function
@@ -279,6 +293,11 @@ and asset_decl =
   * asset_operation option
   * exts
 
+and record_decl =
+  lident
+  * field list
+  * exts
+
 and entry_decl =
   lident
   * args
@@ -295,8 +314,8 @@ and transition_decl =
   * transition
   * exts
 
-and contract_decl =
-  lident * signature list * exts
+and entries_decl =
+  (type_t * lident) list * exts
 
 and extension_decl =
   lident * expr list
@@ -321,9 +340,6 @@ and enum_option =
   | EOinitial
   | EOspecification of label_exprs
 
-and signature =
-  | Ssignature of lident * (lident * type_t) list
-
 and declaration = declaration_unloc loced
 
 and asset_operation_enum =
@@ -341,10 +357,10 @@ and archetype_unloc =
 
 and archetype = archetype_unloc loced
 [@@deriving yojson, show {with_path = false},
- visitors { variety = "map"; ancestors = ["location_map"; "ident_map"] },
- visitors { variety = "iter"; ancestors = ["location_iter"; "ident_iter"] },
- visitors { variety = "reduce"; ancestors = ["location_reduce"; "ident_reduce"] },
- visitors { variety = "reduce2"; ancestors = ["location_reduce2"; "ident_reduce2"] }
+            visitors { variety = "map"; ancestors = ["location_map"; "ident_map"] },
+            visitors { variety = "iter"; ancestors = ["location_iter"; "ident_iter"] },
+            visitors { variety = "reduce"; ancestors = ["location_reduce"; "ident_reduce"] },
+            visitors { variety = "reduce2"; ancestors = ["location_reduce2"; "ident_reduce2"] }
 ]
 
 let mk_archetype ?(decls=[]) ?(loc=dummy) () =

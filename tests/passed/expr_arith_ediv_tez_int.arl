@@ -8,6 +8,6 @@ entry exec () {
   }
   effect {
     res := 1tz div 1000;
-    require(res = 1000utz)
+    dorequire(res = 1000utz)
   }
 }

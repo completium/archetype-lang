@@ -8,7 +8,7 @@ asset learner {
 asset institution {
   iid : address;
   itokens : int = 0;
-  ilearners : learner aggregate = [];
+  ilearners : aggregate<learner> = [];
 }
 
 asset certifier {
@@ -19,9 +19,9 @@ asset certification {
   cid : string;
   cdate : date;
   ccer : string;
-  clea : pkey of learner;
-  cins : pkey of institution;
-  ccertifier: pkey of certifier;
+  clea : pkey<learner>;
+  cins : pkey<institution>;
+  ccertifier: pkey<certifier>;
 }
 
 constant dtkl : int = 1
@@ -33,12 +33,12 @@ entry register_learner (do_add : bool) {
    (if (not learner.contains(caller)) then
      learner.add({lid= caller})
    else
-     require (false))
+     fail ("learner does not contain caller"))
    else
    (if (learner.contains(caller)) then
     learner.remove(caller)
    else
-     require (false))
+     fail ("learner does not contain caller"))
   }
 }
 
@@ -58,27 +58,27 @@ entry register_institution (do_add : bool) {
    (if (not institution.contains(caller)) then
      institution.add({iid= caller})
    else
-     require (false))
+     fail ("institution does not contain caller"))
    else
    (if (institution.contains(caller)) then
     institution.remove(caller)
    else
-     require (false))
+     fail ("leainstitutionrner does not contain caller"))
   }
 }
 
 entry register_certifier (do_add : bool) {
   effect {
-   if (do_add) then
-   (if (not certifier.contains(caller)) then
-     certifier.add({ccid= caller})
-   else
-     require (false))
-   else
-   (if (certifier.contains(caller)) then
-    certifier.remove(caller)
-   else
-     require (false))
+    if (do_add) then
+    (if (not certifier.contains(caller)) then
+      certifier.add({ccid= caller})
+    else
+      fail ("certifier does not contain caller"))
+    else
+    (if (certifier.contains(caller)) then
+      certifier.remove(caller)
+    else
+      fail ("certifier does not contain caller"))
   }
 }
 
@@ -86,9 +86,9 @@ entry certify (
   cert_cid : string,
   cert_cdate : date,
   cert_ccer : string,
-  cert_clea : pkey of learner,
-  cert_cins : pkey of institution,
-  cert_ccertifier: pkey of certifier) {
+  cert_clea : pkey<learner>,
+  cert_cins : pkey<institution>,
+  cert_ccertifier: pkey<certifier>) {
   require {
     r1: certifier.contains(caller);
   }

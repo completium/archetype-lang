@@ -1,0 +1,47 @@
+archetype lang_arith_nat
+
+entry exec () {
+  effect {
+    var a : nat = 1;
+    var b : nat = 2;
+
+    var nat_nat_plus   : nat = a + b;
+    var nat_nat_minus  : int = a - b;
+    var nat_nat_mult   : nat = a * b;
+    var nat_nat_ediv   : nat = a div b;
+    var nat_nat_modulo : nat = a % b;
+    var nat_nat_div    : rational = a / b;
+
+    var nat_int_plus   : int = a + 2;
+    var nat_int_minus  : int = a - 2;
+    var nat_int_mult   : int = a * 2;
+    var nat_int_ediv   : int = a div 2;
+    var nat_int_modulo : nat = a % 2;
+    var nat_int_div    : rational = a / 2;
+
+    var int_nat_plus   : int = 1 + b;
+    var int_nat_minus  : int = 1 - b;
+    var int_nat_mult   : int = 1 * b;
+    var int_nat_ediv   : int = 1 div b;
+    var int_nat_modulo : nat = a % b;
+    var int_nat_div    : rational = 1 / b;
+
+    var int_int_modulo : nat = 1 % 2;
+
+    var nat_rat_plus   : rational = a + 1.2;
+    var nat_rat_minus  : rational = a - 1.2;
+    var nat_rat_mult   : rational = a * 1.2;
+    var nat_rat_div    : rational = a / 1.2;
+
+    var rat_nat_plus   : rational = 1.1 + b;
+    var rat_nat_minus  : rational = 1.1 - b;
+    var rat_nat_mult   : rational = 1.1 * b;
+    var rat_nat_div    : rational = 1.1 / b;
+
+    var nat_dur_mult   : duration = a * 1h;
+    var dur_nat_ediv   : duration = 1h div b;
+
+    var nat_tez_mult   : tez      = a * 1tz;
+    var tez_nat_ediv   : tez      = 1tz div b
+  }
+}

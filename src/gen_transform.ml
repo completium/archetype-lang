@@ -10,6 +10,7 @@ type error_desc =
   | CannotBuildAsset of string * string
   | ContainersInAssetContainers of string * string * string
   | NoEmptyContainerForInitAsset of string * string * container
+  | NoEmptyContainerForDefaultValue of string * string * container
   | NoClearForPartitionAsset of ident
   | CallerNotSetInInit
   | DuplicatedKeyAsset of ident
@@ -30,7 +31,12 @@ let pp_error_desc fmt = function
       an fn an2
 
   | NoEmptyContainerForInitAsset (an, fn, c) ->
-    Format.fprintf fmt "Field '%s' of '%s' asset is a %a, which must be initialized by an empty collection."
+    Format.fprintf fmt "Field '%s' of '%s' asset is a %a, which must be initialized by an empty container."
+      fn an
+      Printer_model.pp_container c
+
+  | NoEmptyContainerForDefaultValue (an, fn, c) ->
+    Format.fprintf fmt "Field '%s' of '%s' asset is a %a, which must be initialized by an empty container."
       fn an
       Printer_model.pp_container c
 
@@ -126,11 +132,7 @@ let remove_add_update ?(isformula = false) (model : model) : model =
                         in
                         let type_ = dv.type_ in
                         match op with
-                        | PlusAssign when (match type_ with | Tcontainer (Tasset _, _) -> true | _ -> false) -> begin
-                          match v.node with
-                          | Mlitlist l -> mk_mterm (Mlitset l) (Tset (match type_ with | Tcontainer (Tasset an, _) -> Utils.get_asset_key model (unloc an) |> snd | _ -> assert false))
-                          | _ -> v
-                         end
+                        | PlusAssign when (match type_ with | Tcontainer (Tasset _, _) -> true | _ -> false) -> v
                         | PlusAssign  -> mk_mterm (Mplus (dv, v)) type_
                         | MinusAssign -> mk_mterm (Mminus (dv, v)) type_
                         | MultAssign  -> mk_mterm (Mmult (dv, v)) type_
@@ -251,15 +253,15 @@ let replace_update_by_set (model : model) : model =
       begin
         let asset = Utils.get_asset model an in
 
-        let _, t = Utils.get_asset_key model an in
+        (* let _, t = Utils.get_asset_key model an in *)
 
         let type_asset = Tasset (dumloc an) in
 
         let var_name = dumloc (an ^ "_") in
         let var_mterm : mterm = mk_mterm (Mvar (var_name, Vlocal)) type_asset in
 
-        let key_name = "k_" in
-        let key_loced : lident = dumloc (key_name) in
+        (* let key_name = "k_" in *)
+        (* let key_loced : lident = dumloc (key_name) in *)
         (* let asset_col : mterm = mk_mterm (Mvarstorecol (dumloc an)) type_asset in *)
         let key_mterm : mterm = k in
 
@@ -270,7 +272,7 @@ let replace_update_by_set (model : model) : model =
           List.fold_left (fun accu (x : asset_item) ->
               let v = List.assoc_opt (unloc x.name) lref in
               let type_ = x.type_ in
-              let var = mk_mterm (Mdotassetfield (dumloc an, key_mterm, x.name)) type_ in
+              let var = mk_mterm (Mdot (var_mterm, x.name)) type_ in
               match v with
               | Some y ->
                 accu @ [
@@ -312,15 +314,17 @@ let replace_update_by_set (model : model) : model =
                                                   ))
             Tunit in
 
-        let res : mterm__node =
-          Mletin ([key_loced],
+        letinasset
+
+        (* let res : mterm__node =
+           Mletin ([key_loced],
                   k,
                   Some (Tbuiltin t),
                   letinasset,
                   None
                  ) in
 
-        mk_mterm res Tunit
+           mk_mterm res Tunit *)
       end
     | _ -> map_mterm (aux ctx) mt
   in
@@ -367,7 +371,9 @@ let extend_loop_iter (model : model) : model =
             | ICKcoll an -> Tcontainer (Tasset (dumloc an), View)
             | ICKview c  -> Tcontainer (Tasset (f c.type_), View)
             | ICKfield (_, _, c) -> Tcontainer (Tasset (f c.type_), View)
+            | ICKset  c  -> c.type_
             | ICKlist c  -> c.type_
+            | ICKmap  c  -> c.type_
           in
           match const with
           | `Toiterate -> mk_mterm (Msettoiterate coll) tcoll
@@ -445,7 +451,7 @@ let check_containers_asset (model : model) : model =
   let is_asset_with_container (an : lident) : bool =
     let an = unloc an in
     let a = Utils.get_asset model an in
-    List.exists (fun item -> is_container item.type_) a.values
+    List.exists (fun (item : asset_item) -> is_container item.type_) a.values
   in
   let l : (string * string * string * Location.t) list =
     List.fold_left (fun accu (a : asset) ->
@@ -478,6 +484,27 @@ let check_empty_container_on_initializedby (model : model) : model =
   List.iter (fun (an, fn, c, l) -> emit_error (l, (NoEmptyContainerForInitAsset (an, fn, c)))) l;
   if List.is_not_empty l then raise (Error.Stop 5);
   model
+
+let check_empty_container_on_asset_default_value (model : model) : model =
+  let assets = Utils.get_assets model in
+  let is_emtpy_container (omt : mterm) =
+    match omt with
+    | {node = ((Mlitlist [] | Massets []))} -> true
+    | _ -> false
+  in
+  let l : (ident * ident * container * Location.t) list =
+    List.fold_left (fun accu (a : asset) ->
+        List.fold_left (fun accu (item : asset_item) ->
+            match item.type_, item.default with
+            | Tcontainer (Tasset an, c), Some dv when not (is_emtpy_container dv) -> (unloc an, unloc a.name, c, dv.loc)::accu
+            | _ -> accu
+          ) accu a.values
+      ) [] assets
+  in
+  List.iter (fun (an, fn, c, l) -> emit_error (l, NoEmptyContainerForDefaultValue (an, fn, c))) l;
+  if List.is_not_empty l then raise (Error.Stop 5);
+  model
+
 
 let check_and_replace_init_caller (model : model) : model =
   let caller = !Options.opt_caller in
@@ -523,8 +550,7 @@ let check_and_replace_init_caller (model : model) : model =
 let rec is_literal (mt : mterm) : bool =
   match mt.node with
   | Mint       _
-  | Muint      _
-  | Mbool      _
+  | Mnat       _
   | Menum      _
   | Mrational  _
   | Mstring    _
@@ -542,7 +568,9 @@ let rec is_literal (mt : mterm) : bool =
   | Mlitset    _
   | Mlitlist   _
   | Mlitmap    _
-  | Mlitrecord _ -> true
+  | Mlitrecord _
+  | Mcaller
+    -> true
   | Mcast (_, _, v) -> is_literal v
   | _ -> false
 
@@ -752,7 +780,9 @@ let assign_loop_label (model : model) : model =
                 | ICKcoll an -> mk_mterm (Mvar (dumloc an, Vstorecol)) (Tcontainer (Tasset (dumloc an), Collection))
                 | ICKview c
                 | ICKfield (_, _, c)
-                | ICKlist c -> c
+                | ICKset  c
+                | ICKlist c
+                | ICKmap  c -> c
               in
               let accu = aux ctx accu col in
               let accu = aux ctx accu body in
@@ -894,7 +924,7 @@ let remove_enum_matchwith (model : model) : model =
             let mk_cond id =
               begin
                 let val_enum id = mk_mterm (Mvar (mk_id val_v id, Vlocal)) type_v in
-                mk_mterm (Mequal (v, val_enum id)) type_bool
+                mk_mterm (Mequal (type_v, v, val_enum id)) type_bool
               end
             in
             let mk_if cond then_ else_ = mk_mterm (Mif (cond, then_, Some else_)) mt.type_ in
@@ -1007,25 +1037,25 @@ let remove_cmp_bool (model : model) : model =
     let vtrue = mk_mterm (Mbool true) (Tbuiltin Bbool) in
     let vfalse = mk_mterm (Mbool false) (Tbuiltin Bbool) in
     match mt.node with
-    | Mequal ({node = Mbool false; _}, {node = Mbool false; _})  -> vtrue
-    | Mequal ({node = Mbool false; _}, {node = Mbool true; _})   -> vfalse
-    | Mequal ({node = Mbool true; _},  {node = Mbool false; _})  -> vfalse
-    | Mequal ({node = Mbool true; _},  {node = Mbool true; _})   -> vtrue
+    | Mequal (_, {node = Mbool false; _}, {node = Mbool false; _})  -> vtrue
+    | Mequal (_, {node = Mbool false; _}, {node = Mbool true; _})   -> vfalse
+    | Mequal (_, {node = Mbool true; _},  {node = Mbool false; _})  -> vfalse
+    | Mequal (_, {node = Mbool true; _},  {node = Mbool true; _})   -> vtrue
 
-    | Mnequal ({node = Mbool false; _}, {node = Mbool false; _}) -> vfalse
-    | Mnequal ({node = Mbool false; _}, {node = Mbool true; _})  -> vtrue
-    | Mnequal ({node = Mbool true; _},  {node = Mbool false; _}) -> vtrue
-    | Mnequal ({node = Mbool true; _},  {node = Mbool true; _})  -> vfalse
+    | Mnequal (_, {node = Mbool false; _}, {node = Mbool false; _}) -> vfalse
+    | Mnequal (_, {node = Mbool false; _}, {node = Mbool true; _})  -> vtrue
+    | Mnequal (_, {node = Mbool true; _},  {node = Mbool false; _}) -> vtrue
+    | Mnequal (_, {node = Mbool true; _},  {node = Mbool true; _})  -> vfalse
 
-    | Mequal (lhs, {node = Mbool true; _})  -> f lhs
-    | Mequal (lhs, {node = Mbool false; _}) -> not (f lhs)
-    | Mequal ({node = Mbool true; _}, rhs)  -> f rhs
-    | Mequal ({node = Mbool false; _}, rhs) -> not (f rhs)
+    | Mequal (_, lhs, {node = Mbool true; _})  -> f lhs
+    | Mequal (_, lhs, {node = Mbool false; _}) -> not (f lhs)
+    | Mequal (_, {node = Mbool true; _}, rhs)  -> f rhs
+    | Mequal (_, {node = Mbool false; _}, rhs) -> not (f rhs)
 
-    | Mnequal (lhs, {node = Mbool true; _})  -> not (f lhs)
-    | Mnequal (lhs, {node = Mbool false; _}) -> f lhs
-    | Mnequal ({node = Mbool true; _}, rhs)  -> not (f rhs)
-    | Mnequal ({node = Mbool false; _}, rhs) -> f rhs
+    | Mnequal (_, lhs, {node = Mbool true; _})  -> not (f lhs)
+    | Mnequal (_, lhs, {node = Mbool false; _}) -> f lhs
+    | Mnequal (_, {node = Mbool true; _}, rhs)  -> not (f rhs)
+    | Mnequal (_, {node = Mbool false; _}, rhs) -> f rhs
 
     | _ -> map_mterm (aux c) mt
   in
@@ -1130,8 +1160,8 @@ let remove_rational (model : model) : model =
           | _ -> map_mterm aux mt
         end
       | Mdiveuc (a, b), _ when is_curs (a, b) -> process_divtez a b
-      | Mequal  (a, b), _ when is_rats (a, b) -> process_eq  false (a, b)
-      | Mnequal (a, b), _ when is_rats (a, b) -> process_eq  true  (a, b)
+      | Mequal  (_, a, b), _ when is_rats (a, b) -> process_eq  false (a, b)
+      | Mnequal (_, a, b), _ when is_rats (a, b) -> process_eq  true  (a, b)
       | Mlt     (a, b), _ when is_rats (a, b) -> process_cmp Lt    (a, b)
       | Mle     (a, b), _ when is_rats (a, b) -> process_cmp Le    (a, b)
       | Mgt     (a, b), _ when is_rats (a, b) -> process_cmp Gt    (a, b)
@@ -1160,9 +1190,13 @@ let remove_rational (model : model) : model =
         { mt with
           node = Massign (op, Avarstore i, (int_to_rat |@ aux) v)
         }
-      | Massign (op, Afield (an, fn, k), v), _ when is_int v && is_t_rat v.type_ ->
+      | Massign (op, Aasset (an, fn, k), v), _ when is_int v && is_t_rat v.type_ ->
         { mt with
-          node = Massign (op, Afield (an, fn, (int_to_rat |@ aux) k), (int_to_rat |@ aux) v)
+          node = Massign (op, Aasset (an, fn, (int_to_rat |@ aux) k), (int_to_rat |@ aux) v)
+        }
+      | Massign (op, Arecord (rn, fn, r), v), _ when is_int v && is_t_rat v.type_ ->
+        { mt with
+          node = Massign (op, Arecord (rn, fn, (int_to_rat |@ aux) r), (int_to_rat |@ aux) v)
         }
       | Mforall (id, t, a, b), _ ->
         { mt with
@@ -1455,7 +1489,7 @@ let abs_tez model : model =
 let replace_assignfield_by_update (model : model) : model =
   let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
     match mt.node with
-    | Massign (op, Afield (an, fn, key), v) ->
+    | Massign (op, Aasset (an, fn, key), v) ->
       let an = unloc an in
       let l = [(fn, op, v)] in
       mk_mterm (Mupdate (an, key, l)) Tunit
@@ -1546,6 +1580,11 @@ let add_explicit_sort (model : model) : model =
       let an = extract_asset_name c in
       mk_mterm (Mfor (a, ICKview (create_sort an c), body, lbl)) Tunit
 
+    | Mfor (a, ICKset c, body, lbl) when is_implicit_sort env c ->
+      let body = aux env ctx body in
+      let an = extract_asset_name c in
+      mk_mterm (Mfor (a, ICKset (create_sort an c), body, lbl)) Tunit
+
     | Mfor (a, ICKlist c, body, lbl) when is_implicit_sort env c ->
       let body = aux env ctx body in
       let an = extract_asset_name c in
@@ -1574,10 +1613,10 @@ let remove_cmp_enum (model : model) : model =
   in
   let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
     match mt.node with
-    | Mequal ({type_ = (Tstate | Tenum _)} as v, {node = Mvar (id, Venumval)})    -> mk_exprmatchwith `Pos v id
-    | Mequal ({node = Mvar (id, Venumval)}, ({type_ = (Tstate | Tenum _)} as v))  -> mk_exprmatchwith `Pos v id
-    | Mnequal ({type_ = (Tstate | Tenum _)} as v, {node = Mvar (id, Venumval)})   -> mk_exprmatchwith `Neg v id
-    | Mnequal ({node = Mvar (id, Venumval)}, ({type_ = (Tstate | Tenum _)} as v)) -> mk_exprmatchwith `Neg v id
+    | Mequal  (_, ({type_ = (Tstate | Tenum _)} as v), {node = Mvar (id, Venumval)}) -> mk_exprmatchwith `Pos v id
+    | Mequal  (_, {node = Mvar (id, Venumval)}, ({type_ = (Tstate | Tenum _)} as v)) -> mk_exprmatchwith `Pos v id
+    | Mnequal (_, ({type_ = (Tstate | Tenum _)} as v), {node = Mvar (id, Venumval)}) -> mk_exprmatchwith `Neg v id
+    | Mnequal (_, {node = Mvar (id, Venumval)}, ({type_ = (Tstate | Tenum _)} as v)) -> mk_exprmatchwith `Neg v id
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
@@ -1783,10 +1822,15 @@ let extract_term_from_instruction f (model : model) : model =
       let re, ra = f r in
       process (mk_mterm (Massign (op, Avarstore l, re)) mt.type_) ra
 
-    | Massign (op, Afield (an, fn, k), v) ->
+    | Massign (op, Aasset (an, fn, k), v) ->
       let ke, ka = f k in
       let ve, va = f v in
-      process (mk_mterm (Massign (op, Afield (an, fn, ke), ve)) mt.type_) (ka @ va)
+      process (mk_mterm (Massign (op, Aasset (an, fn, ke), ve)) mt.type_) (ka @ va)
+
+    | Massign (op, Arecord (rn, fn, r), v) ->
+      let re, ra = f r in
+      let ve, va = f v in
+      process (mk_mterm (Massign (op, Arecord (rn, fn, re), ve)) mt.type_) (ra @ va)
 
     | Massign (op, Astate, x) ->
       let xe, xa = f x in
@@ -1814,10 +1858,12 @@ let extract_term_from_instruction f (model : model) : model =
     | Mfor (i, c, b, lbl) ->
       let ce, ca =
         match c with
-        | ICKcoll  an -> ICKcoll an, []
-        | ICKview  v -> let ve, va = f v in ICKview  ve, va
+        | ICKcoll  an          -> ICKcoll an, []
+        | ICKview  v           -> let ve, va = f v in ICKview  ve, va
         | ICKfield (an, fn, v) -> let ve, va = f v in ICKfield (an, fn, ve), va
-        | ICKlist  v -> let ve, va = f v in ICKlist  ve, va
+        | ICKset   v           -> let ve, va = f v in ICKset   ve, va
+        | ICKlist  v           -> let ve, va = f v in ICKlist  ve, va
+        | ICKmap   v           -> let ve, va = f v in ICKmap   ve, va
       in
       let be = aux ctx b in
       process (mk_mterm (Mfor (i, ce, be, lbl)) mt.type_) ca
@@ -1849,13 +1895,25 @@ let extract_term_from_instruction f (model : model) : model =
       let de, da = f d in
       process (mk_mterm (Mtransfer (ve, de)) mt.type_) (va @ da)
 
-    | Mentrycall (v, d, t, func, args) ->
+    | Mcallcontract (v, d, t, func, args) ->
       let ve, va = f v in
       let de, da = f d in
       let ae, aa = List.fold_right (fun (t, i) (xe, xa) ->
           let ie, ia = f i in
           ((t, ie)::xe, ia @ xa)) args ([], []) in
-      process (mk_mterm (Mentrycall (ve, de, t, func, ae)) mt.type_) (va @ da @ aa)
+      process (mk_mterm (Mcallcontract (ve, de, t, func, ae)) mt.type_) (va @ da @ aa)
+
+    | Mcallentry (v, e, arg) ->
+      let ve, va = f v in
+      let ae, aa = f arg in
+      process (mk_mterm (Mcallentry (ve, e, ae)) mt.type_) (va @ aa)
+
+    | Mcallself (v, e, args) ->
+      let ve, va = f v in
+      let ae, aa = List.fold_right (fun i (xe, xa) ->
+          let ie, ia = f i in
+          (ie::xe, ia @ xa)) args ([], []) in
+      process (mk_mterm (Mcallself (ve, e, ae)) mt.type_) (va @ aa)
 
 
     (* asset api effect *)
@@ -2050,8 +2108,13 @@ let add_contain_on_get (model : model) : model =
         let accu = f accu r in
         gg accu mt
 
-      | Massign (_op, Afield (_an, _fn, k), v) ->
+      | Massign (_op, Aasset (_an, _fn, k), v) ->
         let accu = f accu k in
+        let accu = f accu v in
+        gg accu mt
+
+      | Massign (_op, Arecord (_rn, _fn, r), v) ->
+        let accu = f accu r in
         let accu = f accu v in
         gg accu mt
 
@@ -2086,10 +2149,12 @@ let add_contain_on_get (model : model) : model =
       | Mfor (i, c, b, lbl) ->
         let accu =
           match c with
-          | ICKcoll _ -> accu
-          | ICKview c -> f accu c
-          | ICKfield (_, _, c) -> f accu c
-          | ICKlist c -> f accu c
+          | ICKcoll  _          -> accu
+          | ICKview  c          -> f accu c
+          | ICKfield (_, _, c)  -> f accu c
+          | ICKset   c          -> f accu c
+          | ICKlist  c          -> f accu c
+          | ICKmap   c          -> f accu c
         in
         let be = aux b in
         gg accu (mk_mterm (Mfor (i, c, be, lbl)) mt.type_)
@@ -2119,7 +2184,7 @@ let add_contain_on_get (model : model) : model =
         let accu = f accu d in
         gg accu mt
 
-      | Mentrycall (v, d, _t, _func, args) ->
+      | Mcallcontract (v, d, _t, _func, args) ->
         let accu = f accu v in
         let accu = f accu d in
         let accu = List.fold_right (fun (_, x) accu -> f accu x) args accu in
@@ -2308,7 +2373,8 @@ let replace_for_to_iter (model : model) : model =
 
   let rec aux ctx (mt : mterm) : mterm =
     match mt.node with
-    | Mfor (id, ICKlist ({node = _; type_ = Tlist t} as col), body, Some lbl) ->
+    | Mfor (FIsimple id, ICKset ({node = _; type_ = Tset t} as col), body, Some lbl) ->
+      let t = Tbuiltin t in
       let nbody = aux ctx body in
 
       let idx_id = "_i_" ^ lbl in
@@ -2316,11 +2382,23 @@ let replace_for_to_iter (model : model) : model =
       let nth = mk_mterm (Mlistnth(t, col, idx)) t in
       let letin = mk_mterm (Mletin ([id], nth, Some t, nbody, None)) Tunit in
       let bound_min = mk_mterm (Mint Big_int.zero_big_int) (Tbuiltin Bint) in
-      let bound_max = mk_mterm (Mlistcount (t, col)) (Tbuiltin Bint) in
+      let bound_max = mk_mterm (Msetlength (t, col)) (Tbuiltin Bint) in
       let iter = Miter (dumloc idx_id, bound_min, bound_max, letin, Some lbl) in
       mk_mterm iter mt.type_
 
-    | Mfor (id, col, body, Some lbl) ->
+    | Mfor (FIsimple id, ICKlist ({node = _; type_ = Tlist t} as col), body, Some lbl) ->
+      let nbody = aux ctx body in
+
+      let idx_id = "_i_" ^ lbl in
+      let idx = mk_mterm (Mvar (dumloc idx_id, Vlocal)) (Tbuiltin Bint) in
+      let nth = mk_mterm (Mlistnth(t, col, idx)) t in
+      let letin = mk_mterm (Mletin ([id], nth, Some t, nbody, None)) Tunit in
+      let bound_min = mk_mterm (Mint Big_int.zero_big_int) (Tbuiltin Bint) in
+      let bound_max = mk_mterm (Mlistlength (t, col)) (Tbuiltin Bint) in
+      let iter = Miter (dumloc idx_id, bound_min, bound_max, letin, Some lbl) in
+      mk_mterm iter mt.type_
+
+    | Mfor (FIsimple id, col, body, Some lbl) ->
       let nbody = aux ctx body in
       let an = extract_asset col in
       let type_asset = Tasset (dumloc an) in
@@ -2421,10 +2499,13 @@ let remove_assign_operator (model : model) : model =
       let lhs = mk_mterm (Mvar (id, Vstorevar)) v.type_ in
       let v = compute op lhs v.type_ v in
       mk_mterm (Massign (ValueAssign, Avarstore id, v)) mt.type_
-    | Massign (op, Afield (an, fn, k), v) ->
+    | Massign (op, Aasset (an, fn, k), v) ->
       let lhs = mk_mterm (Mdotassetfield (an, k, fn)) v.type_ in
       let v = compute op lhs v.type_ v in
-      mk_mterm (Massign (ValueAssign, Afield (an, fn, k), v)) mt.type_
+      mk_mterm (Massign (ValueAssign, Aasset (an, fn, k), v)) mt.type_
+    | Massign (op, Arecord (rn, fn, r), v) ->
+      let v = compute op r v.type_ v in
+      mk_mterm (Massign (ValueAssign, Arecord (rn, fn, r), v)) mt.type_
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
@@ -2436,7 +2517,13 @@ let extract_item_collection_from_add_asset (model : model) : model =
     List.fold_right2
       (fun (ai : asset_item) (mt : mterm) (add_fields, items) ->
          match ai.type_, mt.node with
-         | Tcontainer (Tasset ann, _), Massets l when not (List.is_empty l) ->
+         | Tcontainer (Tasset ann, Partition), Massets l when not (List.is_empty l) ->
+           begin
+             let mas = mk_mterm (Massets []) ai.type_ in
+             let assets = [unloc ai.name, unloc ann, l] in
+             (mas::add_fields, assets @ items)
+           end
+         | Tcontainer (Tasset ann, Aggregate), Mlitlist l when not (List.is_empty l) ->
            begin
              let mas = mk_mterm (Massets []) ai.type_ in
              let assets = [unloc ai.name, unloc ann, l] in
@@ -2679,12 +2766,26 @@ let optimize (model : model) =
   in
   Model.map_mterm_model aux model
 
-let filter_api_storage (model : model) =
-  let filter (l : api_storage list) =
+(* let filter_api_storage (model : model) =
+   let filter (l : api_storage list) =
     let cmp c1 c2 =
       match c1.node_item, c2.node_item with
-      | APIAsset (Sum (an1, Coll , t1, p1)), APIAsset (Sum (an2, View, t2, p2)) -> cmp_ident an1 an2 && cmp_type t1 t2 && cmp_mterm p1 p2
-      | APIAsset (Sum (an1, View , t1, p1)), APIAsset (Sum (an2, Coll, t2, p2)) -> cmp_ident an1 an2 && cmp_type t1 t2 && cmp_mterm p1 p2
+      | APIAsset (Clear (an1, c1))           , APIAsset (Clear (an2, c2))             -> cmp_ident an1 an2 && cmp_container_kind c1 c2
+      | APIAsset (Update (an1, l1))          , APIAsset (Update (an2, l2))            -> cmp_ident an1 an2 && List.for_all2 (fun (i1, op1, v1) (i2, op2, v2) -> cmp_ident i1 i2 && cmp_assign_op op1 op2 && cmp_mterm v1 v2) l1 l2
+      | APIAsset (FieldAdd (an1, fn1))       , APIAsset (FieldAdd (an2, fn2))         -> cmp_ident an1 an2 && cmp_ident fn1 fn2
+      | APIAsset (FieldRemove (an1, fn1))    , APIAsset (FieldRemove (an2, fn2))      -> cmp_ident an1 an2 && cmp_ident fn1 fn2
+      | APIAsset (RemoveAll (an1, fn1))      , APIAsset (RemoveAll (an2, fn2))        -> cmp_ident an1 an2 && cmp_ident fn1 fn2
+      | APIAsset (RemoveIf (an1, c1, l1, p1)), APIAsset (RemoveIf (an2, c2, l2, p2))  -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && List.for_all2 (fun (i1, t1) (i2, t2) -> cmp_ident i1 i2 && cmp_type t1 t2) l1 l2 && cmp_mterm p1 p2
+      | APIAsset (Contains (an1, c1))        , APIAsset (Contains (an2, c2))          -> cmp_ident an1 an2 && cmp_container_kind c1 c2
+      | APIAsset (Nth (an1, c1))             , APIAsset (Nth (an2, c2))               -> cmp_ident an1 an2 && cmp_container_kind c1 c2
+      | APIAsset (Select (an1, c1, l1, p1))  , APIAsset (Select (an2, c2, l2, p2))    -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && List.for_all2 (fun (i1, t1) (i2, t2) -> cmp_ident i1 i2 && cmp_type t1 t2) l1 l2 && cmp_mterm p1 p2
+      | APIAsset (Sort (an1, c1, l1))        , APIAsset (Sort (an2, c2, l2))          -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && List.for_all2 (fun (fn1, k1) (fn2, k2) -> cmp_ident fn1 fn2 && k1 = k2) l1 l2
+      | APIAsset (Count (an1, c1))           , APIAsset (Count (an2, c2))             -> cmp_ident an1 an2 && cmp_container_kind c1 c2
+      | APIAsset (Sum (an1, c1, t1, p1))     , APIAsset (Sum (an2, c2, t2, p2))       -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && cmp_type t1 t2 && cmp_mterm p1 p2
+      | APIAsset (Head (an1, c1))            , APIAsset (Head (an2, c2))              -> cmp_ident an1 an2 && cmp_container_kind c1 c2
+      | APIAsset (Tail (an1, c1))            , APIAsset (Tail (an2, c2))              -> cmp_ident an1 an2 && cmp_container_kind c1 c2
+      (* | APIAsset (Sum (an1, Coll , t1, p1)), APIAsset (Sum (an2, View, t2, p2)) -> cmp_ident an1 an2 && cmp_type t1 t2 && cmp_mterm p1 p2
+      | APIAsset (Sum (an1, View , t1, p1)), APIAsset (Sum (an2, Coll, t2, p2)) -> cmp_ident an1 an2 && cmp_type t1 t2 && cmp_mterm p1 p2 *)
       | _, _ -> cmp_api_item_node c1.node_item c2.node_item
     in
 
@@ -2692,8 +2793,65 @@ let filter_api_storage (model : model) =
         if List.exists (cmp x) accu
         then accu
         else x::accu) l []
+   in
+
+   { model with
+    api_items = filter model.api_items
+   } *)
+
+
+let filter_api_storage (model : model) =
+  let filter (l : api_storage list) =
+    let l = List.map (
+        fun (x : api_storage) ->
+          let node =
+            match x.node_item with
+            | APIAsset (Clear (an, _))            -> APIAsset (Clear (an, View))
+            | APIAsset (Contains (an, _))         -> APIAsset (Contains (an, View))
+            | APIAsset (Nth (an, _))              -> APIAsset (Nth (an, View))
+            | APIAsset (Select (an, _, l, p))     -> APIAsset (Select (an, View, l, p))
+            | APIAsset (Sort (an, _, l))          -> APIAsset (Sort (an, View, l))
+            | APIAsset (Count (an, _))            -> APIAsset (Count (an, View))
+            | APIAsset (Sum (an, _, t, p))        -> APIAsset (Sum (an, View, t, p))
+            | APIAsset (Head (an, _))             -> APIAsset (Head (an, View))
+            | APIAsset (Tail (an, _))             -> APIAsset (Tail (an, View))
+            | z -> z
+          in
+          {x with node_item = node}
+      ) l in
+
+    let cmp (a : api_storage) (b : api_storage) =
+      match a.node_item, b.node_item with
+      | APIAsset (Nth _), APIAsset (Nth _) -> cmp_api_storage a b
+      | _ -> cmp_api_item_node a.node_item b.node_item
+    in
+
+    List.fold_right (fun (x : api_storage) accu ->
+        if List.exists (cmp x) accu
+        then accu
+        else Utils.add_api_storage_in_list accu x) l []
   in
 
   { model with
-    api_items = filter model.api_items
+    api_items = filter model.api_items |> Utils.sort_api_storage model true
+  }
+
+
+let remove_asset (model : model) : model =
+  let for_storage_item (si : storage_item) : storage_item =
+    let rec remove_assets x =
+      let aux mt =
+        match mt with
+        | {node = Massets []; type_ = Tcontainer (Tbuiltin tk, (Aggregate | Partition))} ->
+          mk_mterm (Mlitset []) (Tset tk)
+        | _ -> map_mterm remove_assets mt
+      in
+      aux x
+    in
+    { si with
+      default = remove_assets si.default
+    }
+  in
+  { model with
+    storage = List.map for_storage_item model.storage
   }

@@ -1,0 +1,9 @@
+archetype expr_tuple_access
+
+variable res : int * int = (1, 2)
+
+entry exec () {
+  effect {
+    dorequire (res[0] = 1 and res[1] = 2)
+  }
+}

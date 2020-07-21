@@ -11,7 +11,7 @@ asset my_asset {
 } with states my_enum
 
 
-transition exec (v : int) on (a : pkey of my_asset) {
+transition exec (v : int) on (a : pkey<my_asset>) {
   from First
   to Second
   when { true }

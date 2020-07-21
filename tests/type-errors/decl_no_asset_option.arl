@@ -4,10 +4,10 @@ asset my_asset {
   id : string;
 }
 
-variable a : my_asset option = none
+variable a : option<my_asset> = none
 
 entry exec() {
   effect {
-    require (true)
+    ()
   }
 }

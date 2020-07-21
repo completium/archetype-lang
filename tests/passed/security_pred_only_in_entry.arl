@@ -9,7 +9,7 @@ asset my_asset identified by id {
 
 entry exec () {
   effect {
-    require true
+    ()
   }
 }
 

@@ -1,0 +1,18 @@
+archetype test_record
+
+record my_record {
+  id : string;
+  v  : int;
+}
+
+entry exec () {
+  effect {
+    var lit1 : my_record = {id = "mystr"; v = 0};
+    var lit2 : my_record = {"mystr"; 0};
+
+    lit1.v := 2;
+
+    var i = lit1.id;
+    dorequire (i = lit2.id)
+  }
+}

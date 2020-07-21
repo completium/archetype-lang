@@ -7,7 +7,7 @@ entry exec () {
     s0: res = true;
   }
   effect {
-    var l : string list = ["1"; "2"; "3"];
+    var l : list<string> = ["1"; "2"; "3"];
     res := contains(l, "2")
   }
 }

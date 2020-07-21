@@ -4,10 +4,10 @@ entry exec() {
   effect {
     if true then (
       var v = 0;
-      require (v = v)
+      dorequire (v = v)
     ) else (
       var v = 1;
-      require (v = v)
+      dorequire (v = v)
     )
   }
 }

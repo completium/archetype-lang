@@ -7,7 +7,7 @@ entry exec () {
     s0: res = "2";
   }
   effect {
-    var l : string list = ["1"; "2"; "3"];
+    var l : list<string> = ["1"; "2"; "3"];
     res := nth(l, 1)
   }
 }

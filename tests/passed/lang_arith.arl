@@ -10,7 +10,7 @@ entry exec () {
     var int_int_minus  : int = 1 - 2;
     var int_int_mult   : int = 1 * 2;
     var int_int_ediv   : int = 1 div 2;
-    var int_int_modulo : int = 1 % 2;
+    // var int_int_modulo : int = 1 % 2;
 
     var rat_rat_plus   : rational = 1.1 + 1.2;
     var rat_rat_minus  : rational = 1.1 - 1.2;
@@ -50,7 +50,5 @@ entry exec () {
     var int_tez_mult   : tez      = 1 * 1tz;
     var rat_tez_mult   : tez      = 1.1 * 1tz;
     var int_tez_ediv   : tez      = 1tz div 2;
-
-    require (true)
   }
 }

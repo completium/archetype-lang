@@ -6,7 +6,7 @@ asset o_asset {
 
 asset my_asset identified by id {
   id : string;
-  o  : o_asset aggregate;
+  o  : aggregate<o_asset>;
 } initialized by {
   {"my_id"; []}
 }

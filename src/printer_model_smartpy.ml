@@ -29,11 +29,12 @@ let pp_model fmt (model : model) =
   in
 
   let pp_btyp fmt = function
+    | Bunit       -> Format.fprintf fmt "sp.TUnit"
     | Bbool       -> Format.fprintf fmt "sp.TBool"
     | Bint        -> Format.fprintf fmt "sp.TInt"
     | Brational   -> Format.fprintf fmt "rational"
-    | Bdate       -> Format.fprintf fmt "date"
-    | Bduration   -> Format.fprintf fmt "duration"
+    | Bdate       -> Format.fprintf fmt "sp.TTimestamp"
+    | Bduration   -> Format.fprintf fmt "sp.Tint"
     | Btimestamp  -> Format.fprintf fmt "sp.TTimestamp"
     | Bstring     -> Format.fprintf fmt "sp.TString"
     | Baddress    -> Format.fprintf fmt "sp.TAddress"
@@ -44,6 +45,7 @@ let pp_model fmt (model : model) =
     | Bkeyhash    -> Format.fprintf fmt "sp.TKeyHash"
     | Bbytes      -> Format.fprintf fmt "sp.TBytes"
     | Bnat        -> Format.fprintf fmt "sp.TNat"
+    | Bchainid    -> Format.fprintf fmt "sp.TChainId"
   in
 
   let pp_container fmt = function
@@ -69,6 +71,10 @@ let pp_model fmt (model : model) =
     | Tcontract cn ->
       Format.fprintf fmt "%a" pp_id cn
     | Tbuiltin b -> pp_btyp fmt b
+    | Tcontainer (Tasset an, (Aggregate | Partition)) ->
+      let _, ak = Utils.get_asset_key model (unloc an) in
+      Format.fprintf fmt "sp.TSet(%a)"
+        pp_btyp ak
     | Tcontainer (t, c) ->
       Format.fprintf fmt "%a %a"
         pp_type t
@@ -89,9 +95,8 @@ let pp_model fmt (model : model) =
       Format.fprintf fmt "(%a, %a) map"
         pp_btyp k
         pp_type_ v
-    | Trecord l ->
-      Format.fprintf fmt "(%a) record"
-        (pp_list "; " (fun fmt (lbl, x) -> Format.fprintf fmt "(%s, %a)" lbl  pp_type x)) l
+    | Trecord id ->
+      Format.fprintf fmt "%a" pp_id id
     | Tunit ->
       Format.fprintf fmt "unit"
     | Tstorage ->
@@ -100,11 +105,19 @@ let pp_model fmt (model : model) =
       Format.fprintf fmt "operation"
     | Tentry ->
       Format.fprintf fmt "entry"
+    | Tentrysig t ->
+      Format.fprintf fmt "entrysig<%a>" pp_type t
     | Tprog _
     | Tvset _
     | Ttrace _ -> Format.fprintf fmt "todo"
   in
 
+
+  let pp_prefix_api_container_kind an fmt = function
+    | Coll  -> Format.fprintf fmt "c_%s" an
+    | View  -> Format.fprintf fmt "v_%s" an
+    | Field (an, fn) -> Format.fprintf fmt "f_%s_%s" an fn
+  in
 
   let pp_api_asset fmt = function
     | Get _ -> ()
@@ -168,82 +181,164 @@ let pp_model fmt (model : model) =
     | RemoveAll (an, fn) ->
       Format.fprintf fmt
         "def remove_all_%s_%s (self, s : storage) : unit =@\n  \
-         #TODO@\n"
+         sp.failwith(\"TODO\")@\n"
         an fn
 
     | RemoveIf (an, _, _, _) ->
       Format.fprintf fmt
         "def removeif_%s (self, s : storage) : unit =@\n  \
-         #TODO@\n"
+         sp.failwith(\"TODO\")@\n"
         an
 
-    | Contains (an, _) ->
+    | Contains (an, ck) ->
       Format.fprintf fmt
-        "def contains_%s (self, l, key):@\n  \
-         key in l@\n"
-        an
+        "def contains_%a (self, %akey):@\n  \
+         %a@\n"
+        (pp_prefix_api_container_kind an) ck
+        (fun fmt _ ->
+           match ck with
+           | Coll -> ()
+           | View -> Format.fprintf fmt "v, "
+           | Field (_an, _fn) -> Format.fprintf fmt "ka, "
+        ) ()
+        (fun fmt _ ->
+           match ck with
+           | Coll -> Format.fprintf fmt "return self.data.%s_assets.contains(key)" an
+           | View ->
+             Format.fprintf fmt
+               "res = sp.bool(False)@\n  \
+                sp.for x in v:@\n    \
+                res.value |= x == key@\n  \
+                return res"
+           | Field (an, fn) -> Format.fprintf fmt "return self.data.%s_assets[ka].%s.contains(key)" an fn) ()
 
-    | Select (an, _, _, _) ->
+    | Select (an, ck, _, _) ->
+      let _, tk = Utils.get_asset_key model an in
       Format.fprintf fmt
-        "def select_%s (self, c, p):@\n  \
-         reduce(@\n  \
-         (lambda x, key:@\n  \
-         item = get_%s(self, key)@\n  \
-         if (p item):@\n  \
-         x.insert (key)@\n  \
-         x@\n  \
-         else:@\n  \
-         x@\n  \
-         ),@\n  \
-         self.%s_keys,@\n  \
-         [])@\n"
-        an an an
+        "def select_%a (self%a):@\n  \
+         l = sp.local(\"l\", sp.list(t = %a))@\n  \
+         sp.for k in self.data.my_asset_assets.keys():@\n    \
+         l.value.push(k)@\n  \
+         return l@\n"
+        (pp_prefix_api_container_kind an) ck
+        (fun fmt _ ->
+           match ck with
+           | Coll -> ()
+           | View -> Format.fprintf fmt ", v"
+           | Field (_an, _fn) -> Format.fprintf fmt ", ka"
+        ) ()
+        pp_btyp tk
+    (* Format.fprintf fmt
+       "def select_%a (self, c, p):@\n  \
+       reduce(@\n  \
+       (lambda x, key:@\n  \
+       item = get_%s(self, key)@\n  \
+       if (p item):@\n  \
+       x.insert (key)@\n  \
+       x@\n  \
+       else:@\n  \
+       x@\n  \
+       ),@\n  \
+       self.%s_keys,@\n  \
+       [])@\n"
+       (pp_prefix_api_container_kind an) ck
+       an an *)
 
-    | Sort (an, _, _l) ->
+    | Sort (an, ck, _l) ->
       Format.fprintf fmt
-        "def sort_%s (self, s : storage) : unit =@\n  \
-         #TODO@\n"
-        an
+        "def sort_%a (self):@\n  \
+         %a@\n"
+        (pp_prefix_api_container_kind an) ck
+        (fun fmt _ ->
+           match ck with
+           | Coll -> Format.fprintf fmt "sp.failwith(\"TODO\")"
+           | View -> Format.fprintf fmt "sp.failwith(\"TODO\")"
+           | Field (_an, _fn) -> Format.fprintf fmt "sp.failwith(\"TODO\")") ()
 
-    | Nth (an, _) ->
+    | Nth (an, ck) ->
+      let _, tk = Utils.get_asset_key model an in
       Format.fprintf fmt
-        "def nth_%s (self):@\n  \
-         #TODO@\n"
-        an
+        "def nth_%a (self%a, idx):@\n  \
+         %a@\n"
+        (pp_prefix_api_container_kind an) ck
+        (fun fmt _ ->
+           match ck with
+           | Coll -> ()
+           | View -> Format.fprintf fmt ", v"
+           | Field (_an, _fn) -> Format.fprintf fmt ", ka"
+        ) ()
+        (fun fmt _ ->
+           match ck with
+           | Coll ->
+             Format.fprintf fmt
+               "m = sp.map(tkey=sp.TInt, tvalue=%a)@\n  \
+                i = 0@\n  \
+                sp.for x in self.data.%s_assets.keys():@\n    \
+                #m[i] = x@\n    \
+                i += 1@\n  \
+                return m[idx]"
+               pp_btyp tk
+               an
 
-    | Count (an, _) ->
-      Format.fprintf fmt
-        "def count_%s (self):@\n  \
-         #TODO@\n"
-        an
+           | View -> Format.fprintf fmt "sp.failwith(\"TODO\")"
+           | Field (_an, _fn) -> Format.fprintf fmt "sp.failwith(\"TODO\")") ()
 
-    | Sum (an, _, _, _) -> (* TODO *)
+    | Count (an, ck) ->
       Format.fprintf fmt
-        "def sum_%s (self, p):@\n  \
+        "def count_%a (self%a):@\n  \
+         %a@\n"
+        (pp_prefix_api_container_kind an) ck
+        (fun fmt _ ->
+           match ck with
+           | Coll -> ()
+           | View -> Format.fprintf fmt ", v"
+           | Field (_an, _fn) -> Format.fprintf fmt ", ka"
+        ) ()
+        (fun fmt _ ->
+           match ck with
+           | Coll -> Format.fprintf fmt "return sp.len(self.data.%s_assets)" an
+           | View -> Format.fprintf fmt "return sp.to_int(sp.len(v))"
+           | Field (an, fn) -> Format.fprintf fmt "return sp.to_int(sp.len(self.data.%s_assets[ka].%s))" an fn) ()
+
+    | Sum (an, ck, _, _) ->
+      Format.fprintf fmt
+        "def sum_%a (self, p):@\n  \
          reduce(@\n  \
          (lambda x, key: p(self.data.%s_assets[key]) + x),@\n  \
          self.data.%s_keys,@\n  \
          0)@\n"
-        an an an
+        (pp_prefix_api_container_kind an) ck
+        an an
 
-    | Head (an, _) ->
+    | Head (an, ck) ->
       Format.fprintf fmt
-        "def head_%s (self):@\n  \
-         #TODO@\n"
-        an
+        "def head_%a (self, n):@\n  \
+         %a@\n"
+        (pp_prefix_api_container_kind an) ck
+        (fun fmt _ ->
+           match ck with
+           | Coll -> Format.fprintf fmt "sp.failwith(\"TODO\")"
+           | View -> Format.fprintf fmt "sp.failwith(\"TODO\")"
+           | Field (_an, _fn) -> Format.fprintf fmt "sp.failwith(\"TODO\")") ()
 
-    | Tail (an, _) ->
+    | Tail (an, ck) ->
       Format.fprintf fmt
-        "def tail_%s (self):@\n  \
-         #TODO@\n"
-        an
+        "def tail_%a (self):@\n  \
+         %a@\n"
+        (pp_prefix_api_container_kind an) ck
+        (fun fmt _ ->
+           match ck with
+           | Coll -> Format.fprintf fmt "sp.failwith(\"TODO\")"
+           | View -> Format.fprintf fmt "sp.failwith(\"TODO\")"
+           | Field (_an, _fn) -> Format.fprintf fmt "sp.failwith(\"TODO\")") ()
   in
 
-  let pp_api_list fmt = function
-    | Lprepend t  -> Format.fprintf fmt "list_prepend\t %a" pp_type t
-    | Lcontains t -> Format.fprintf fmt "list_contains\t %a" pp_type t
-    | Lcount t    -> Format.fprintf fmt "list_count\t %a" pp_type t
-    | Lnth t      -> Format.fprintf fmt "list_nth\t %a" pp_type t
+  let pp_api_list _fmt = function
+    | Lprepend  _ -> ()
+    | Lcontains _ -> ()
+    | Llength   _ -> ()
+    | Lnth      _ -> ()
+
   in
 
   let pp_api_builtin fmt = function
@@ -316,17 +411,19 @@ let pp_model fmt (model : model) =
     pp_str fmt (to_str op)
   in
 
-  let pp_container_kind f fmt = function
-    | CKcoll     -> pp_str fmt "_Coll_"
-    | CKview mt  -> f fmt mt
-    | CKfield (an, fn, mt) -> Format.fprintf fmt "CKfield (%s, %s, %a)" an fn f mt
-  in
-
   let pp_iter_container_kind f fmt = function
     | ICKcoll an  -> Format.fprintf fmt "%a" pp_str an
     | ICKview mt  -> Format.fprintf fmt "%a" f mt
     | ICKfield (_, _, mt) -> Format.fprintf fmt "%a" f mt
+    | ICKset mt  -> Format.fprintf fmt "%a" f mt
     | ICKlist mt  -> Format.fprintf fmt "%a" f mt
+    | ICKmap mt  -> Format.fprintf fmt "%a" f mt
+  in
+
+  let pp_prefix_container_kind an fmt = function
+    | CKcoll    -> Format.fprintf fmt "c_%s" an
+    | CKview _  -> Format.fprintf fmt "v_%s" an
+    | CKfield (an, fn, _) -> Format.fprintf fmt "f_%s_%s" an fn
   in
 
   let pp_mterm (env : Printer_model_tools.env) fmt (mt : mterm) =
@@ -371,15 +468,22 @@ let pp_model fmt (model : model) =
           f r
 
       | Massign (op, Avarstore l, r) ->
-        Format.fprintf fmt "self.%a %a %a"
+        Format.fprintf fmt "self.data.%a %a %a"
           pp_id l
           pp_operator op
           f r
 
-      | Massign (op, Afield (an, fn, k), v) ->
+      | Massign (op, Aasset (an, fn, k), v) ->
         Format.fprintf fmt "%a[%a].%a %a %a"
           pp_id an
           f k
+          pp_id fn
+          pp_operator op
+          f v
+
+      | Massign (op, Arecord (_rn, fn, r), v) ->
+        Format.fprintf fmt "%a.%a %a %a"
+          f r
           pp_id fn
           pp_operator op
           f v
@@ -413,7 +517,7 @@ let pp_model fmt (model : model) =
 
       | Mfor (i, c, b, _) ->
         Format.fprintf fmt "sp.for %a in %a:@\n  @[%a@]@\n"
-          pp_id i
+          (fun fmt i -> match i with FIsimple x -> pp_id fmt x | FIdouble (x, y) -> Format.fprintf fmt "(%a, %a)" pp_id x pp_id y) i
           (pp_iter_container_kind f) c
           f b
 
@@ -452,7 +556,7 @@ let pp_model fmt (model : model) =
           f d
           f v
 
-      | Mentrycall (v, d, _, fid, args) ->
+      | Mcallcontract (v, d, _, fid, args) ->
         let pp fmt (v, d, fid, args) =
           Format.fprintf fmt "sp.transfer(%a(%a), %a, %a)"
             pp_id fid
@@ -462,10 +566,58 @@ let pp_model fmt (model : model) =
         in
         pp fmt (v, d, fid, args)
 
+      | Mcallentry (v, e, arg) ->
+        let pp fmt (v, e, arg) =
+          Format.fprintf fmt "transfer %a to entry %a(%a)"
+            f v
+            pp_id e
+            f arg
+        in
+        pp fmt (v, e, arg)
+
+      | Mcallself (v, e, args) ->
+        let pp fmt (v, e, args) =
+          Format.fprintf fmt "transfer %a to entry self.%a(%a)"
+            f v
+            pp_id e
+            (pp_list ", " f) args
+        in
+        pp fmt (v, e, args)
+
+
+      (* entrypoint *)
+
+      | Mentrycontract (c, id) ->
+        Format.fprintf fmt "%a.%a"
+          f c
+          pp_id id
+
+      | Mentrypoint (a, s) ->
+        Format.fprintf fmt "entrypoint(%a, %a)"
+          f a
+          f s
+
+      | Mself id ->
+        Format.fprintf fmt "self.%a"
+          pp_id id
+
+
+      (* operation *)
+
+      | Moperations ->
+        Format.fprintf fmt "operations"
+
+      | Mmkoperation (v, d, a) ->
+        Format.fprintf fmt "mkoperation(%a, %a, %a)"
+          f v
+          f d
+          f a
+
+
       (* literals *)
 
       | Mint v -> pp_big_int fmt v
-      | Muint v -> pp_big_int fmt v
+      | Mnat v -> pp_big_int fmt v
       | Mbool b -> Format.fprintf fmt "sp.bool(%s)" (if b then "True" else "False")
       | Menum v -> pp_str fmt v
       | Mrational _ -> assert false
@@ -485,6 +637,7 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "sp.timestamp(%a)"
           pp_big_int v
       | Mbytes v -> Format.fprintf fmt "sp.bytes('0x%s')" v
+      | Munit -> Format.fprintf fmt "Unit"
 
 
       (* control expression *)
@@ -531,27 +684,42 @@ let pp_model fmt (model : model) =
           (pp_list "; " f) l
 
       | Mlitset l ->
-        Format.fprintf fmt "[%a]"
-          (pp_list "; " f) l
+        let t =
+          match mtt.type_ with
+          | Tset t -> t
+          | _ -> assert false
+        in
+        Format.fprintf fmt "sp.set(l=[%a], t= %a)"
+          (pp_list ", " f) l
+          pp_btyp t
 
       | Mlitlist l ->
-        Format.fprintf fmt "[%a]"
-          (pp_list "; " f) l
+        let t =
+          match mtt.type_ with
+          | Tlist t -> t
+          | _ -> assert false
+        in
+        Format.fprintf fmt "sp.list(l=[%a], t= %a)"
+          (pp_list ", " f) l
+          pp_type t
 
       | Mlitmap l ->
         Format.fprintf fmt "%a"
-          (fun fmt _ ->
-             match l with
-             | [] ->
-               begin
-                 let k, v =
-                   match mtt.type_ with
-                   | Tmap (k, v) -> k, v
-                   | _ -> assert false
-                 in
-                 Format.fprintf fmt "sp.map(tkey=%a, tvalue= %a)" pp_btyp k pp_type v
-               end
-             | _  -> emit_error (TODO ("Mlitmap : handle map with data")))
+          (fun fmt _ -> begin
+               let k, v =
+                 match mtt.type_ with
+                 | Tmap (k, v) -> k, v
+                 | _ -> assert false
+               in
+               Format.fprintf fmt "sp.map(%atkey=%a, tvalue= %a)"
+                 (fun fmt _ -> begin
+                      match l with
+                      | [] -> ()
+                      | _  -> Format.fprintf fmt "l = {%a}, " (pp_list ", " (fun fmt (k, v) -> Format.fprintf fmt "%a : %a" f k f v)) l
+                    end) l
+                 pp_btyp k
+                 pp_type v
+             end)
           ()
 
       | Mlitrecord l ->
@@ -585,7 +753,7 @@ let pp_model fmt (model : model) =
 
       (* comparison operators *)
 
-      | Mequal (l, r) ->
+      | Mequal (_, l, r) ->
         let pp fmt (l, r : mterm * mterm) =
           Format.fprintf fmt "(%a) == (%a)"
             f l
@@ -593,7 +761,7 @@ let pp_model fmt (model : model) =
         in
         pp fmt (l, r)
 
-      | Mnequal (l, r) ->
+      | Mnequal (_, l, r) ->
         let pp fmt (l, r : mterm * mterm) =
           Format.fprintf fmt "(%a) != (%a)"
             f l
@@ -782,21 +950,28 @@ let pp_model fmt (model : model) =
         pp fmt (an, fn, a)
 
       | Mremoveif (an, c, la, lb, a) ->
-        let pp fmt (an, c, _la, lb, _a) =
-          Format.fprintf fmt "self.removeif_%a (%a, fun the -> %a)"
-            pp_str an
-            (pp_container_kind f) c
-            f lb
+        let pp fmt (an, c, _la, _lb, _a) =
+          Format.fprintf fmt "self.removeif_%s (%a)"
+            an
+            (fun fmt _ ->
+               match c with
+               | CKcoll -> ()
+               | CKview mt -> f fmt mt
+               | CKfield (_an, _fn, _k) -> ()) ()
         in
         pp fmt (an, c, la, lb, a)
 
-      | Mclear (an, v) ->
-        let pp fmt (an, v) =
-          Format.fprintf fmt "self.clear_%a (%a)"
-            pp_str an
-            (pp_container_kind f) v
+      | Mclear (an, c) ->
+        let pp fmt (an, c) =
+          Format.fprintf fmt "self.clear_%s (%a)"
+            an
+            (fun fmt _ ->
+               match c with
+               | CKcoll -> ()
+               | CKview mt -> f fmt mt
+               | CKfield (_an, _fn, _k) -> ()) ()
         in
-        pp fmt (an, v)
+        pp fmt (an, c)
 
       | Mset (c, l, k, v) ->
         let pp fmt (c, _l, k, v) =
@@ -822,11 +997,14 @@ let pp_model fmt (model : model) =
         pp fmt (an, c, k)
 
       | Mselect (an, c, la, lb, a) ->
-        let pp fmt (an, c, _la, lb, _a) =
-          Format.fprintf fmt "self.select_%a (%a, fun the -> %a)"
-            pp_str an
-            (pp_container_kind f) c
-            f lb
+        let pp fmt (an, c, _la, _lb, _a) =
+          Format.fprintf fmt "self.select_%a (%a)"
+            (pp_prefix_container_kind an) c
+            (fun fmt _ ->
+               match c with
+               | CKcoll -> ()
+               | CKview mt -> f fmt mt
+               | CKfield (_an, _fn, k) -> f fmt k) ()
         in
         pp fmt (an, c, la, lb, a)
 
@@ -834,57 +1012,80 @@ let pp_model fmt (model : model) =
         let pp fmt (an, c, l) =
           Format.fprintf fmt "self.sort_%a (%a, %a)"
             pp_str an
-            (pp_container_kind f) c
+            (fun fmt _ ->
+               match c with
+               | CKcoll -> ()
+               | CKview mt -> f fmt mt
+               | CKfield (_an, _fn, k) -> f fmt k) ()
             (pp_list ", " (fun fmt (a, b) -> Format.fprintf fmt "%a %a" pp_ident a pp_sort_kind b)) l
         in
         pp fmt (an, c, l)
 
       | Mcontains (an, c, i) ->
         let pp fmt (an, c, i) =
-          Format.fprintf fmt "self.contains_%a (%a, %a)"
-            pp_str an
-            (pp_container_kind f) c
-            f i
+          Format.fprintf fmt "self.contains_%a (%a)"
+            (pp_prefix_container_kind an) c
+            (fun fmt _ ->
+               match c with
+               | CKcoll -> f fmt i
+               | CKview mt -> Format.fprintf fmt "%a, %a" f mt f i
+               | CKfield (_an, _fn, k) -> Format.fprintf fmt "%a, %a" f k f i) ()
         in
         pp fmt (an, c, i)
 
       | Mnth (an, c, i) ->
         let pp fmt (an, c, i) =
-          Format.fprintf fmt "self.nth_%a (%a, %a)"
-            pp_str an
-            (pp_container_kind f) c
-            f i
+          Format.fprintf fmt "self.nth_%a (%a)"
+            (pp_prefix_container_kind an) c
+            (fun fmt _ ->
+               match c with
+               | CKcoll -> f fmt i
+               | CKview _mt -> ()
+               | CKfield (_an, _fn, _) -> ()) ()
         in
         pp fmt (an, c, i)
 
       | Mcount (an, c) ->
         let pp fmt (an, c) =
           Format.fprintf fmt "self.count_%a (%a)"
-            pp_str an
-            (pp_container_kind f) c
+            (pp_prefix_container_kind an) c
+            (fun fmt _ ->
+               match c with
+               | CKcoll -> ()
+               | CKview mt -> f fmt mt
+               | CKfield (_an, _fn, k) -> f fmt k) ()
         in
         pp fmt (an, c)
 
       | Msum (an, c, p) ->
-        let pp fmt (an, c, p) =
-          Format.fprintf fmt "self.sum_%a (%a, fun the -> %a)"
+        let pp fmt (an, c, _p) =
+          Format.fprintf fmt "self.sum_%a (%a)"
             pp_str an
-            (pp_container_kind f) c
-            f p
+            (fun fmt _ ->
+               match c with
+               | CKcoll -> ()
+               | CKview mt -> f fmt mt
+               | CKfield (_an, _fn, _k) -> ()) ()
         in
         pp fmt (an, c, p)
 
       | Mhead (an, c, i) ->
-        Format.fprintf fmt "self.head_%a (%a, %a)"
-          pp_str an
-          (pp_container_kind f) c
-          f i
+        Format.fprintf fmt "self.head_%a (%a)"
+          (pp_prefix_container_kind an) c
+          (fun fmt _ ->
+             match c with
+             | CKcoll -> f fmt i
+             | CKview _mt -> ()
+             | CKfield (_an, _fn, _) -> ()) ()
 
       | Mtail (an, c, i) ->
-        Format.fprintf fmt "self.tail_%a (%a, %a)"
-          pp_str an
-          (pp_container_kind f) c
-          f i
+        Format.fprintf fmt "self.tail_%a (%a)"
+          (pp_prefix_container_kind an) c
+          (fun fmt _ ->
+             match c with
+             | CKcoll -> f fmt i
+             | CKview _mt -> ()
+             | CKfield (_an, _fn, _) -> ()) ()
 
 
       (* utils *)
@@ -897,6 +1098,40 @@ let pp_model fmt (model : model) =
           f v
          in
          pp fmt (src, dst, v) *)
+
+      | Mtupleaccess (x, k) ->
+        let pp fmt (x, k) =
+          Format.fprintf fmt "%a[%a]"
+            f x
+            pp_big_int k
+        in
+        pp fmt (x, k)
+
+
+      (* set api expression *)
+
+      | Msetadd (t, c, a) ->
+        Format.fprintf fmt "set_%a_add (%a, %a)"
+          pp_type t
+          f c
+          f a
+
+      | Msetremove (t, c, a) ->
+        Format.fprintf fmt "set_%a_remove (%a, %a)"
+          pp_type t
+          f c
+          f a
+
+      | Msetcontains (_t, c, a) ->
+        Format.fprintf fmt "%a.contains (%a)"
+          (* pp_type t *)
+          f c
+          f a
+
+      | Msetlength (_t, c) ->
+        Format.fprintf fmt "sp.len (%a)"
+          (* pp_type t *)
+          f c
 
 
       (* list api expression *)
@@ -911,14 +1146,47 @@ let pp_model fmt (model : model) =
           f c
           f a
 
-      | Mlistcount (_, c) ->
-        Format.fprintf fmt "list_count (%a)"
+      | Mlistlength (_, c) ->
+        Format.fprintf fmt "sp.len (%a)"
           f c
 
       | Mlistnth (_, c, a) ->
         Format.fprintf fmt "list_nth (%a, %a)"
           f c
           f a
+
+
+      (* map api expression *)
+
+      | Mmapput (_, _, c, k, v) ->
+        Format.fprintf fmt "map_put (%a, %a, %a)"
+          f c
+          f k
+          f v
+
+      | Mmapremove (_, _, c, k) ->
+        Format.fprintf fmt "map_remove (%a, %a)"
+          f c
+          f k
+
+      | Mmapget (_, _, c, k) ->
+        Format.fprintf fmt "%a.get(%a, defaultValue = None)"
+          f c
+          f k
+
+      | Mmapgetopt (_, _, c, k) ->
+        Format.fprintf fmt "%a.get(%a)"
+          f c
+          f k
+
+      | Mmapcontains (_, _, c, k) ->
+        Format.fprintf fmt "%a.contains(%a)"
+          f c
+          f k
+
+      | Mmaplength (_, _, c) ->
+        Format.fprintf fmt "sp.len(%a)"
+          f c
 
 
       (* builtin functions *)
@@ -938,7 +1206,7 @@ let pp_model fmt (model : model) =
           f a
 
       | Mconcat (x, y) ->
-        Format.fprintf fmt "concat (%a, %a)"
+        Format.fprintf fmt "sp.concat (%a, %a)"
           f x
           f y
 
@@ -1013,6 +1281,8 @@ let pp_model fmt (model : model) =
       | Mcaller        -> pp_str fmt "sp.sender"
       | Mbalance       -> pp_str fmt "sp.balance"
       | Msource        -> pp_str fmt "sp.source"
+      | Mselfaddress   -> pp_str fmt "sp.selfaddress"
+      | Mchainid       -> pp_str fmt "sp.chain_id"
 
 
       (* variable *)
@@ -1151,9 +1421,13 @@ let pp_model fmt (model : model) =
 
       (* formula asset collection methods *)
 
+      | Mempty     _ -> emit_error (UnsupportedTerm ("Mempty"))
+      | Msingleton _ -> emit_error (UnsupportedTerm ("Msingleton"))
       | Msubsetof  _ -> emit_error (UnsupportedTerm ("Msubsetof"))
       | Misempty   _ -> emit_error (UnsupportedTerm ("Misempty"))
-
+      | Munion     _ -> emit_error (UnsupportedTerm ("Munion"))
+      | Minter     _ -> emit_error (UnsupportedTerm ("Minter"))
+      | Mdiff      _ -> emit_error (UnsupportedTerm ("Mdiff"))
     in
     f fmt mt
   in
@@ -1174,7 +1448,8 @@ let pp_model fmt (model : model) =
     match decl with
     | Dvar v       -> pp_var env fmt v
     | Denum _e     -> ()
-    | Dasset _r    -> ()
+    | Dasset _a    -> ()
+    | Drecord _r   -> ()
     | Dcontract _c -> ()
   in
 

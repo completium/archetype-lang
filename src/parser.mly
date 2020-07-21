@@ -32,6 +32,7 @@
 %token ACCEPT_TRANSFER
 %token ADDED
 %token AGGREGATE
+%token AMPEQUAL
 %token AND
 %token ANY
 %token ARCHETYPE
@@ -56,12 +57,16 @@
 %token DIV
 %token DIVEQUAL
 %token DO
+%token DOFAILIF
 %token DONE
+%token DOREQUIRE
 %token DOT
 %token EFFECT
 %token ELSE
 %token END
+%token ENTRIES
 %token ENTRY
+%token ENTRYSIG
 %token ENUM
 %token EOF
 %token EQUAL
@@ -94,6 +99,7 @@
 %token LET
 %token LIST
 %token LPAREN
+%token MAP
 %token MATCH
 %token MINUS
 %token MINUSEQUAL
@@ -103,7 +109,6 @@
 %token NEQUAL
 %token NONE
 %token NOT
-%token OF
 %token ON
 %token OPTION
 %token OR
@@ -112,6 +117,7 @@
 %token PERCENT
 %token PERCENTRBRACKET
 %token PIPE
+%token PIPEEQUAL
 %token PKEY
 %token PLUS
 %token PLUSEQUAL
@@ -127,7 +133,9 @@
 %token RETURN
 %token RPAREN
 %token SECURITY
+%token SELF
 %token SEMI_COLON
+%token SET
 %token SHADOW
 %token SLASH
 %token SOME
@@ -145,6 +153,7 @@
 %token USE
 %token VAR
 %token VARIABLE
+%token VIEW
 %token WHEN
 %token WITH
 
@@ -173,7 +182,7 @@
 %right THEN ELSE
 
 %nonassoc prec_var
-%nonassoc COLONEQUAL PLUSEQUAL MINUSEQUAL MULTEQUAL DIVEQUAL
+%nonassoc COLONEQUAL PLUSEQUAL MINUSEQUAL MULTEQUAL DIVEQUAL AMPEQUAL PIPEEQUAL
 
 %right IMPLY
 %nonassoc EQUIV
@@ -256,11 +265,13 @@ declaration_r:
  | x=variable           { x }
  | x=enum               { x }
  | x=asset              { x }
- | x=entry             { x }
+ | x=record             { x }
+ | x=entry              { x }
+ | x=entry_simple       { x }
  | x=transition         { x }
  | x=dextension         { x }
  | x=namespace          { x }
- | x=contract           { x }
+ | x=entries            { x }
  | x=function_decl      { x }
  | x=specification_decl { x }
  | x=security_decl      { x }
@@ -307,23 +318,17 @@ extension_r:
 namespace:
 | NAMESPACE x=ident xs=braced(declarations) { Dnamespace (x, xs) }
 
-contract:
-| CONTRACT exts=option(extensions) x=ident
-    xs=braced(signatures)
-         { Dcontract (x, xs, exts) }
+entries_item:
+| LESS t=type_t GREATER id=ident
+ { (t, id) }
 
-%inline signatures:
-| xs=signature+ { xs }
+entries_items:
+| xs=entries_item* {xs}
 
-%inline sig_arg:
- | id=ident COLON ty=type_t
-     { (id, ty) }
-
-%inline sig_args:
-| LPAREN xs=sl(COMMA, sig_arg) RPAREN { xs }
-
-%inline signature:
-| ENTRY x=ident xs=sig_args { Ssignature (x, xs) }
+entries:
+| ENTRIES exts=option(extensions)
+    xs=braced(entries_items)
+         { Dentries (xs, exts) }
 
 %inline fun_body:
 | e=expr { (None, e) }
@@ -464,18 +469,20 @@ enum_option:
 type_r:
 | x=type_s xs=type_tuples { Ttuple (x::xs) }
 | x=type_s_unloc          { x }
-| PKEY OF ty=type_s       { Tkeyof ty }
 
 %inline type_s:
 | x=loc(type_s_unloc)     { x }
 
 type_s_unloc:
-| x=ident                 { Tref x }
-| x=ident RECORD          { Tasset x }
-| x=type_s c=container    { Tcontainer (x, c) }
-| x=type_s OPTION         { Toption x }
-| x=type_s LIST           { Tlist x }
-| x=paren(type_r)         { x }
+| x=ident                                          { Tref x            }
+| c=container LESS x=type_t GREATER                { Tcontainer (x, c) }
+| PKEY        LESS x=type_t GREATER                { Tkeyof x          }
+| OPTION      LESS x=type_t GREATER                { Toption x         }
+| LIST        LESS x=type_t GREATER                { Tlist x           }
+| SET         LESS x=type_t GREATER                { Tset x            }
+| MAP         LESS k=type_t COMMA v=type_s GREATER { Tmap (k, v)       }
+| ENTRYSIG    LESS x=type_t GREATER                { Tentrysig x       }
+| x=paren(type_r)                                  { x                 }
 
 %inline type_tuples:
 | xs=type_tuple+ { xs }
@@ -486,10 +493,16 @@ type_s_unloc:
 %inline container:
 | AGGREGATE  { Aggregate }
 | PARTITION  { Partition }
+| VIEW       { View      }
 
 %inline shadow_asset_fields:
 | /* empty */ { [] }
 | SHADOW x=asset_fields { x }
+
+record:
+| RECORD exts=extensions? x=ident fields=asset_fields?
+{ let fs = match fields with | None -> [] | Some x -> x in
+  Drecord (x, fs, exts) }
 
 asset:
 | ASSET exts=extensions? ops=bracket(asset_operation)? x=ident opts=asset_options?
@@ -546,6 +559,11 @@ entry:
     args=function_args xs=transitems_eq
       { let a, b = xs in Dentry (x, args, a, b, exts) }
 
+entry_simple:
+  ENTRY exts=option(extensions) x=ident
+    args=function_args e=braced(block)
+      { Dentry (x, args, dummy_entry_properties, Some (e, None), exts) }
+
 transition_to_item:
 | TO x=ident y=require_value? z=with_effect? { (x, y, z) }
 
@@ -585,11 +603,11 @@ entry_properties:
 calledby:
  | CALLED BY exts=option(extensions) x=expr { (x, exts) }
 
-require:
+%inline require:
  | REQUIRE exts=option(extensions) xs=braced(label_exprs)
        { (xs, exts) }
 
-failif:
+%inline failif:
  | FAILIF exts=option(extensions) xs=braced(label_exprs)
        { (xs, exts) }
 
@@ -626,6 +644,8 @@ effect:
  | MINUSEQUAL  { MinusAssign }
  | MULTEQUAL   { MultAssign }
  | DIVEQUAL    { DivAssign }
+ | AMPEQUAL    { AndAssign }
+ | PIPEEQUAL   { OrAssign }
 
 %inline branchs:
  | xs=branch+ { xs }
@@ -656,6 +676,13 @@ ident_typ_q:
 %inline colon_ident:
 |                { None }
 | COLON i=ident  { Some i }
+
+%inline for_ident_unloc:
+| i=ident                             { FIsimple i }
+| LPAREN x=ident COMMA y=ident RPAREN { FIdouble (x, y) }
+
+%inline for_ident:
+ | e=loc(for_ident_unloc) { e }
 
 %inline from_expr:
 |                { None }
@@ -696,7 +723,7 @@ expr_r:
  | BREAK
      { Ebreak }
 
- | FOR lbl=colon_ident x=ident IN y=expr DO body=block DONE
+ | FOR lbl=colon_ident x=for_ident IN y=expr DO body=block DONE
      { Efor (lbl, x, y, body) }
 
  | ITER lbl=colon_ident x=ident a=from_expr TO b=expr DO body=block DONE
@@ -714,13 +741,22 @@ expr_r:
  | x=expr op=assignment_operator_expr y=expr
      { Eassign (op, x, y) }
 
- | TRANSFER x=simple_expr TO y=simple_expr c=with_call_r
-     { Etransfer (x, y, c) }
+ | TRANSFER x=simple_expr TO y=simple_expr
+     { Etransfer (x, TTsimple y) }
 
- | REQUIRE x=simple_expr
+ | TRANSFER x=simple_expr TO y=simple_expr CALL id=ident args=paren(sl(COMMA, simple_expr))
+     { Etransfer (x, TTcontract (y, id, args)) }
+
+ | TRANSFER x=simple_expr TO ENTRY id=ident arg=simple_expr
+     { Etransfer (x, TTentry (id, arg)) }
+
+ | TRANSFER x=simple_expr TO ENTRY SELF DOT id=ident args=paren(sl(COMMA, simple_expr))
+     { Etransfer (x, TTself (id, args)) }
+
+ | DOREQUIRE x=simple_expr
      { Erequire x }
 
- | FAILIF x=simple_expr
+ | DOFAILIF x=simple_expr
      { Efailif x }
 
  | FAIL e=paren(simple_expr)
@@ -737,6 +773,9 @@ expr_r:
 
  | UNPACK LESS t=type_t GREATER x=paren(expr)
      { Eunpack (t, x) }
+
+ | SELF DOT x=ident
+     { Eself x }
 
  | x=order_operations %prec prec_order { x }
 
@@ -758,10 +797,6 @@ expr_r:
 order_operation:
  | e1=expr op=loc(ord_operator) e2=expr
      { Eapp ( Foperator op, [e1; e2]) }
-
-%inline with_call_r:
-| { None }
-| CALL id=ident xs=paren(sl(COMMA, simple_expr)) { Some (id, xs) }
 
 order_operations:
   | e=order_operation { e }

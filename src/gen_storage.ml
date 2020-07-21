@@ -37,6 +37,7 @@ let generate_storage (model : model) : model =
 
     let init_ b =
       match b with
+      | Bunit       -> mk_mterm (Munit) (Tbuiltin Bunit)
       | Bbool       -> mk_mterm (Mbool false) (Tbuiltin b)
       | Bint        -> mk_mterm (Mint (Big_int.zero_big_int)) (Tbuiltin b)
       | Brational   -> mk_mterm (Mrational (Big_int.zero_big_int, Big_int.unit_big_int)) (Tbuiltin b)
@@ -52,6 +53,7 @@ let generate_storage (model : model) : model =
       | Bsignature  -> emit_error (NoInitExprFor "signature")
       | Bbytes      -> mk_mterm (Mbytes ("0x0")) (Tbuiltin b)
       | Bnat        -> mk_mterm (Mint (Big_int.zero_big_int)) (Tbuiltin b)
+      | Bchainid    -> emit_error (NoInitExprFor "chainid")
     in
 
     let init_default_value = function
@@ -70,6 +72,7 @@ let generate_storage (model : model) : model =
       | Tstorage          -> emit_error (NoInitExprFor "storage")
       | Toperation        -> emit_error (NoInitExprFor "operation")
       | Tentry            -> emit_error (NoInitExprFor "entry")
+      | Tentrysig _       -> emit_error (NoInitExprFor "entrysig")
       | Tprog _           -> emit_error (NoInitExprFor "prog")
       | Tvset _           -> emit_error (NoInitExprFor "vset")
       | Ttrace _          -> emit_error (NoInitExprFor "trace")
@@ -91,6 +94,7 @@ let generate_storage (model : model) : model =
     | Dvar v      -> [variable_to_storage_items v]
     | Denum e     -> state_to_storage_items e
     | Dasset a    -> [asset_to_storage_items a]
+    | Drecord _   -> []
     | Dcontract _ -> []
   in
 

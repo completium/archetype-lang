@@ -9,12 +9,13 @@ entry exec () {
   effect {
     var x : bool = true;
     var y : bool = false;
+    var n : nat = 1;
     var i : int = 1;
     var j : int = -1;
     var f : rational = 1.1;
     var g : rational = -1.1;
-    var r : rational = 2 div 6;
-    var t : rational = -2 div 6;
+    var r : rational = 2 / 6;
+    var t : rational = -2 / 6;
     var u : rational = 80%;
     var s : string = "str";
     var ctz  : tez = 1tz;
@@ -27,12 +28,16 @@ entry exec () {
     var date2 : date = 2019-01-01T01:02:03Z;      (* iso 8601 *)
     var date3 : date = 2019-01-01T00:00:00+01:00; (* iso 8601 *)
     var date4 : date = 2019-01-01T00:00:00-05:30; (* iso 8601 *)
-    var mylist : int list = [1; 2; 3];
+    var myset : set<int> = [1; 2; 3];
+    var mylist : list<int> = [1; 2; 3];
+    var mymap  : map<int, string> = [(1, "mystr1"); (2, "mystr2"); (3, "mystr3")];
     var mytuple : (int * int) = (1, 2);
-    var op1 : int option = none;
-    var op2 : int option = some(0);
+    var op1 : option<int> = none;
+    var op2 : option<int> = some(0);
     my_asset.add({id = "key"; value = 2});
     var b : bytes = 0xff;
-    require(true)
+    var vchain : chain_id = chainid;
+    var vunit : unit = ();
+    dorequire(true)
   }
 }

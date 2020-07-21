@@ -8,6 +8,6 @@ entry exec () {
   }
   effect {
     res := 4h div 4;
-    require(res = 1h)
+    dorequire(res = 1h)
   }
 }

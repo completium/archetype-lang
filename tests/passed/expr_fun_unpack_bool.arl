@@ -1,6 +1,6 @@
 archetype expr_fun_unpack_bool
 
-variable res : bool option = none
+variable res : option<bool> = none
 
 entry exec () {
   specification {
@@ -9,6 +9,6 @@ entry exec () {
   }
   effect {
     res := unpack<bool>(0x05030a);
-    require (getopt(res))
+    dorequire (getopt(res))
   }
 }

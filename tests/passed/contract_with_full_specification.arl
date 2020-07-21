@@ -51,7 +51,7 @@ entry exec () {
     var x : int = 0;
     var y : int = 0;
     for : myloop c in col1 do
-      require(true)
+      dorequire(true)
     done;
     assert a1
   }

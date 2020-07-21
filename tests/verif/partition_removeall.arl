@@ -1,0 +1,31 @@
+archetype partition_removeall
+
+asset o_asset identified by oid {
+  oid : int;
+}
+
+asset my_asset identified by id {
+  id     : string;
+  col    : partition<o_asset>;
+} initialized by {
+  {"id0"; []};
+  {"id1"; []};
+  {"id2"; []}
+}
+
+variable res : int = 0
+
+entry pre_exec () {
+  effect {
+    my_asset["id0"].col.add({1})
+  }
+}
+
+entry exec () {
+  specification {
+    s0: let some a = my_asset["id0"] in a.col.count() = 0 otherwise false;
+  }
+  effect {
+    my_asset["id0"].col.removeall()
+  }
+}

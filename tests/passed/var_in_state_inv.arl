@@ -9,6 +9,6 @@ states =
 
 entry exec () {
   effect {
-    require(true)
+    ()
   }
 }

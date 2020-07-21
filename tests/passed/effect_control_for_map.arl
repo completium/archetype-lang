@@ -1,0 +1,13 @@
+archetype effect_control_for_map
+
+variable res : int = 0
+
+entry exec () {
+  effect {
+    var m : map<string, int> = [];
+    res := 0;
+    for (k, v) in m do
+      res += v;
+    done
+  }
+}

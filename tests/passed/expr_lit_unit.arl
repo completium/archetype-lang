@@ -1,0 +1,9 @@
+archetype expr_lit_unit
+
+variable res : unit = ()
+
+entry exec () {
+  effect {
+    res := ()
+  }
+}

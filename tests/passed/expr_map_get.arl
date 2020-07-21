@@ -1,0 +1,13 @@
+archetype expr_map_get
+
+variable res : option<string> = none
+
+entry exec () {
+  specification {
+    s0: issome(res);
+  }
+  effect {
+    var m : map<int, string> = [(0, "0")];
+    res := m[0]
+  }
+}

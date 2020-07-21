@@ -12,7 +12,7 @@ asset mile identified by id {
 
 asset owner identified by addr {
     addr : address;
-    miles : mile partition;
+    miles : partition<mile>;
 }
 
 entry add (ow : address, newmile_id : string, newmile_expiration : date, newmile_quantity : int) {
@@ -46,7 +46,7 @@ entry consume (ow : address, qty : int) {
     }
     effect {
         var valid_miles = owner[ow].miles.select(the.expiration > now);
-        require ( valid_miles.sum(the.quantity) >= qty );
+        dorequire ( valid_miles.sum(the.quantity) >= qty );
         var remainder = qty;
         for:loop m in valid_miles do
             if remainder > 0 then (

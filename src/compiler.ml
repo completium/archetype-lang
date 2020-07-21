@@ -31,9 +31,9 @@ let output_pt (pt : ParseTree.archetype) =
   then Format.printf "%a@." ParseTree.pp_archetype pt
   else Format.printf "%a@." Printer_pt.pp_archetype pt
 
-let output_tast (ast : Ast.model) =
+let output_tast (ast : Ast.ast) =
   if !Options.opt_raw
-  then Format.printf "%a@." Ast.pp_model ast
+  then Format.printf "%a@." Ast.pp_ast ast
   else Format.printf "%a@." Printer_ast.pp_ast ast
 
 let output (model : Model.model) =
@@ -78,14 +78,10 @@ let preprocess_ext (pt : ParseTree.archetype) : ParseTree.archetype =
    then Ast.create_test_shallow_ast ()
    else Typing.typing Typing.empty pt *)
 
-let type_ (pt : ParseTree.archetype) : Ast.model =
+let type_ (pt : ParseTree.archetype) : Ast.ast =
   Typing.typing Typing.empty pt
 
 let generate_target_pt (pt : ParseTree.archetype) : ParseTree.archetype =
-  if (!Options.opt_ptc) then (
-    Format.printf "%a@." Printer_pt_type_contract.pp_archetype pt;
-    raise Stop
-  );
   match !Options.target with
   | Markdown  -> (
       Format.printf "%a@." Printer_pt_markdown.pp_archetype pt;
@@ -205,27 +201,33 @@ let generate_target model =
 
   | SmartPy ->
     model
+    |> replace_col_by_key_for_ckfield
     |> process_asset_state
     |> replace_assignfield_by_update
     |> remove_add_update
+    |> remove_container_op_in_update
     |> merge_update
-    |> replace_update_by_set
+    |> remove_assign_operator
+    |> extract_item_collection_from_add_asset
     |> process_internal_string
     |> remove_rational
     |> abs_tez
     |> replace_date_duration_by_timestamp
     |> eval_variable_initial_value
+    |> replace_dotassetfield_by_dot
     |> generate_storage
     |> replace_declvar_by_letin
     |> remove_enum_matchwith
-    |> remove_letin_from_expr
-    (* |> remove_fun_dotasset *)
     |> replace_lit_address_by_role
     |> remove_label
     |> flat_sequence
     |> remove_cmp_bool
     |> split_key_values
-    |> Gen_transform.assign_loop_label
+    (* |> remove_duplicate_key *)
+    |> assign_loop_label
+    |> remove_letin_from_expr
+    (* |> remove_fun_dotasset *)
+    |> remove_asset
     |> optimize
     |> generate_api_storage
     |> output
@@ -256,6 +258,7 @@ let generate_target model =
     |> remove_container_op_in_update
     |> merge_update
     |> remove_assign_operator
+    |> extract_item_collection_from_add_asset
     |> process_internal_string
     |> remove_rational
     |> replace_date_duration_by_timestamp
@@ -308,6 +311,8 @@ let compile (filename, channel) =
   |> raise_if_error post_model_error check_partition_access
   |> raise_if_error post_model_error check_containers_asset
   |> raise_if_error post_model_error check_empty_container_on_initializedby
+  |> raise_if_error post_model_error check_empty_container_on_asset_default_value
+  |> cont !Options.opt_ptc (Format.printf "%a@." Printer_model_type_contract.pp_ptc_model)
   |> raise_if_error post_model_error check_and_replace_init_caller
   |> raise_if_error post_model_error check_duplicated_keys_in_asset
   |> generate_target
@@ -345,7 +350,7 @@ let main () =
   let arg_list = Arg.align [
       "-t", Arg.String f, "<lang> Transcode to <lang> language";
       "--target", Arg.String f, " Same as -t";
-      "--list-target", Arg.Unit (fun _ -> Format.printf "target available:@\n  ligo@\n  scaml@\n  whyml@\n"; exit 0), " List available target languages";
+      "--list-target", Arg.Unit (fun _ -> Format.printf "target available:@\n  ligo@\n  scaml (beta)@\n  whyml@\n"; exit 0), " List available target languages";
       "-pt", Arg.Set Options.opt_pt, " Generate parse tree";
       "--parse-tree", Arg.Set Options.opt_pt, " Same as -pt";
       "-ext", Arg.Set Options.opt_ext, " Process extensions";

@@ -8,7 +8,7 @@ asset asset_0 identified by id0 {
 asset my_asset identified by id {
   id : string;
   value : int = 0;
-  col : asset_0 partition = [];
+  col : partition<asset_0> = [];
 }
 
 entry exec () {
@@ -32,6 +32,6 @@ entry exec () {
     var v7 = my_asset.sum(the.value);
     var v8 = my_asset.head(2);
     var v9 = my_asset.tail(2);
-    require (true)
+    dorequire (true)
   }
 }

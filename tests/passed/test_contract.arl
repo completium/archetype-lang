@@ -1,12 +1,12 @@
 archetype test_contract
 
-contract mycontract {
-  entry myaction1 (a : address, b : tez)
-  entry myaction2 (str : string)
-  entry pay ()
+entries {
+  <address * tez> myaction1
+  <string>        myaction2
+  <unit>          pay
 }
 
-variable contract_i : mycontract = @KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm
+variable contract_i : address = @KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm
 
 entry exec (a : address) {
   effect {

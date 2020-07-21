@@ -37,11 +37,15 @@
       "definition"          , DEFINITION     ;
       "div"                 , DIV            ;
       "do"                  , DO             ;
+      "dofailif"            , DOFAILIF       ;
       "done"                , DONE           ;
+      "dorequire"           , DOREQUIRE      ;
       "effect"              , EFFECT         ;
       "else"                , ELSE           ;
       "end"                 , END            ;
+      "entries"             , ENTRIES        ;
       "entry"               , ENTRY          ;
+      "entrysig"            , ENTRYSIG       ;
       "enum"                , ENUM           ;
       "exists"              , EXISTS         ;
       "extension"           , EXTENSION      ;
@@ -62,11 +66,11 @@
       "label"               , LABEL          ;
       "let"                 , LET            ;
       "list"                , LIST           ;
+      "map"                 , MAP            ;
       "match"               , MATCH          ;
       "namespace"           , NAMESPACE      ;
       "none"                , NONE           ;
       "not"                 , NOT            ;
-      "of"                  , OF             ;
       "on"                  , ON             ;
       "option"              , OPTION         ;
       "or"                  , OR             ;
@@ -77,10 +81,13 @@
       "predicate"           , PREDICATE      ;
       "record"              , RECORD         ;
       "ref"                 , REF            ;
+      "record"              , RECORD         ;
       "removed"             , REMOVED        ;
       "require"             , REQUIRE        ;
       "return"              , RETURN         ;
       "security"            , SECURITY       ;
+      "set"                 , SET            ;
+      "self"                , SELF           ;
       "shadow"              , SHADOW         ;
       "some"                , SOME           ;
       "sorted"              , SORTED         ;
@@ -95,6 +102,7 @@
       "unpack"              , UNPACK         ;
       "use"                 , USE            ;
       "var"                 , VAR            ;
+      "view"                , VIEW           ;
       "variable"            , VARIABLE       ;
       "when"                , WHEN           ;
       "with"                , WITH           ;
@@ -172,6 +180,8 @@ rule token = parse
   | "-="                  { MINUSEQUAL }
   | "*="                  { MULTEQUAL }
   | "/="                  { DIVEQUAL }
+  | "&="                  { AMPEQUAL }
+  | "|="                  { PIPEEQUAL }
   | "->"                  { IMPLY }
   | "<->"                 { EQUIV }
   | "="                   { EQUAL }

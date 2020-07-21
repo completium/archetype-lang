@@ -1,0 +1,14 @@
+archetype expr_formula_option_eq
+
+asset my_asset identified by id {
+  id : string;
+}
+
+entry exec () {
+  specification {
+    s0: my_asset["k"] = my_asset["k"];
+  }
+  effect {
+    ()
+  }
+}

@@ -13,7 +13,6 @@ function f (i : int) : int {
 
 entry exec () {
   effect {
-    var res : int = f(0);
-    ()
+    var res : int = f(0)
   }
 }

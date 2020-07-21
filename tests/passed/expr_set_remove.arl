@@ -1,0 +1,13 @@
+archetype expr_set_remove
+
+variable res : set<string> = []
+
+entry exec () {
+  specification {
+    s0: set_length(res) = 2;
+  }
+  effect {
+    var l : set<string> = ["1"; "2"; "3"];
+    res := set_remove(l, "1");
+  }
+}

@@ -6,7 +6,7 @@ asset o_asset identified by oid {
 
 asset my_asset identified by id {
   id     : string;
-  col    : o_asset partition;
+  col    : partition<o_asset>;
 } initialized by {
   {"id0"; []};
   {"id1"; []};
@@ -20,6 +20,6 @@ entry exec (k : string) {
   }
 
   effect {
-    require (true)
+    ()
   }
 }

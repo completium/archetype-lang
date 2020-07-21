@@ -1,0 +1,8 @@
+archetype expr_fun_pack_complex
+
+variable res : bytes = 0x00
+
+entry exec () {
+  var p : (nat * string * chain_id) = (1, "test", chainid);
+  res := pack(p)
+}

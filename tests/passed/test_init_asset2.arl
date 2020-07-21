@@ -16,6 +16,6 @@ asset my_asset {
 
 entry exec() {
   effect {
-    require(true)
+    ()
   }
 }

@@ -1,0 +1,14 @@
+archetype for_ident_double_asset_container
+
+asset my_asset {
+  id : string;
+  value : int;
+}
+
+entry exec () {
+  effect {
+    for (k, v) in my_asset do
+      ()
+    done
+  }
+}

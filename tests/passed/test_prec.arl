@@ -22,7 +22,7 @@ variable z2 : int = a * (b + c)
 
 entry exec() {
   effect {
-    require(true)
+    ()
   }
 }
 

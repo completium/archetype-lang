@@ -89,6 +89,7 @@ let container_to_str c =
   match c with
   | Aggregate  -> "aggregate"
   | Partition  -> "partition"
+  | View       -> "view"
 
 let pp_container fmt c =
   Format.fprintf fmt "%s" (container_to_str c)
@@ -102,39 +103,50 @@ let rec pp_type outer pos fmt e =
       "%a"
       pp_id x
 
-  | Tasset x ->
-    Format.fprintf fmt
-      "%a record"
-      pp_id x
-
   | Tcontainer (x, y) ->
     Format.fprintf fmt
-      "%a %a"
-      pp_type_default x
+      "%a<%a>"
       pp_container y
+      pp_type_default x
 
   | Ttuple l ->
 
     let pp fmt l =
       Format.fprintf fmt
-        "%a"
+        "(%a)"
         (pp_list " * " (pp_type e_tuple PInfix)) l
     in
     (maybe_paren outer e_tuple pos pp) fmt l
 
   | Toption x ->
     Format.fprintf fmt
-      "(%a) option"
+      "option<%a>"
+      pp_type_default x
+
+  | Tset x ->
+    Format.fprintf fmt
+      "set<%a>"
       pp_type_default x
 
   | Tlist x ->
     Format.fprintf fmt
-      "(%a) list"
+      "list<%a>"
       pp_type_default x
+
+  | Tmap (k, v) ->
+    Format.fprintf fmt
+      "map<%a, %a>"
+      pp_type_default k
+      pp_type_default v
+
+  | Tentrysig t ->
+    Format.fprintf fmt
+      "entrysig<%a>"
+      pp_type_default t
 
   | Tkeyof t ->
     Format.fprintf fmt
-      "pkey of %a"
+      "pkey<%a>"
       pp_type_default t
 
 let pp_type fmt e = pp_type e_default PNone fmt e
@@ -364,20 +376,23 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_app pos pp) fmt (e, id, args)
 
-  | Etransfer (x, y, c) ->
-
-    let pp fmt (x, y, c) =
-      Format.fprintf fmt "transfer %a to %a%a"
+  | Etransfer (x, tr) ->
+    let pp fmt (x, tr) =
+      Format.fprintf fmt "transfer %a%a"
         pp_simple_expr x
-        pp_simple_expr y
-        (pp_option (fun fmt (id, args) -> Format.fprintf fmt " call %a(%a)" pp_id id (pp_list "," pp_simple_expr) args)) c
+        (fun fmt -> function
+           | TTsimple dst               -> Format.fprintf fmt " to %a" pp_simple_expr dst
+           | TTcontract (dst, id, args) -> Format.fprintf fmt " to %a call %a(%a)" pp_simple_expr dst pp_id id (pp_list "," pp_simple_expr) args
+           | TTentry (id, arg)          -> Format.fprintf fmt " to entry %a(%a)" pp_id id pp_simple_expr arg
+           | TTself (id, args)          -> Format.fprintf fmt " to entry self.%a(%a)" pp_id id (pp_list "," pp_simple_expr) args
+        ) tr
     in
-    (maybe_paren outer e_default pos pp) fmt (x, y, c)
+    (maybe_paren outer e_default pos pp) fmt (x, tr)
 
   | Erequire x ->
 
     let pp fmt x =
-      Format.fprintf fmt "require %a"
+      Format.fprintf fmt "dorequire (%a)"
         pp_simple_expr x
     in
     (maybe_paren outer e_default pos pp) fmt x
@@ -385,7 +400,7 @@ let rec pp_expr outer pos fmt a =
   | Efailif x ->
 
     let pp fmt x =
-      Format.fprintf fmt "failif %a"
+      Format.fprintf fmt "dofailif (%a)"
         pp_simple_expr x
     in
     (maybe_paren outer e_default pos pp) fmt x
@@ -463,16 +478,19 @@ let rec pp_expr outer pos fmt a =
     pp fmt
 
 
-  | Efor (lbl, id, expr, body) ->
+  | Efor (lbl, fid, expr, body) ->
 
-    let pp fmt (lbl, id, expr, body) =
+    let pp fmt (lbl, fid, expr, body) =
       Format.fprintf fmt "for %a%a in %a do@\n  @[%a@]@\ndone"
         (pp_option (fun fmt -> Format.fprintf fmt ": %a " pp_id)) lbl
-        pp_id id
+        (fun fmt fid ->
+           match unloc fid with
+           | FIsimple i -> pp_id fmt i
+           | FIdouble (x, y) -> Format.fprintf fmt "(%a, %a)" pp_id x pp_id y) fid
         (pp_expr e_default PNone) expr
         (pp_expr e_for PNone) body
     in
-    (maybe_paren outer e_default pos pp) fmt (lbl, id, expr, body)
+    (maybe_paren outer e_default pos pp) fmt (lbl, fid, expr, body)
 
   | Eiter (lbl, id, a, b, body) ->
 
@@ -571,6 +589,8 @@ let rec pp_expr outer pos fmt a =
         (pp_expr e_default PNone) arg
     in
     (maybe_paren outer e_colon pos pp) fmt (t, arg)
+
+  | Eself x -> Format.fprintf fmt "self.%a" pp_id x
 
   | Eany -> Format.fprintf fmt "any"
 
@@ -702,13 +722,6 @@ let pp_asset_option fmt opt =
   match opt with
   | AOidentifiedby id -> Format.fprintf fmt "identified by %a" pp_id id
   | AOsortedby id  -> Format.fprintf fmt "sorted by %a" pp_id id
-
-let pp_signature fmt s =
-  match s with
-  | Ssignature (id, xs) ->
-    Format.fprintf fmt "entry %a (%a)"
-      pp_id id
-      (pp_list ", " (fun fmt (id, type_) -> Format.fprintf fmt "%a : %a" pp_id id pp_type type_)) xs
 
 let operation_enum_to_str e =
   match e with
@@ -890,13 +903,6 @@ let pp_spec fmt (items, exts) =
         pp_specification_items items
     end
 
-
-(* | l when List.fold_left (fun accu x -> match x with | Vassert _ | Vspecification _ -> accu | _ -> false) true l ->
-   begin
-   Format.fprintf fmt "%a@\n" pp_specification_items items
-   end
-       | _ -> *)
-
 let rec pp_security_arg fmt arg =
   let arg = unloc arg in
   match arg with
@@ -1016,6 +1022,12 @@ let rec pp_declaration fmt { pldesc = e; _ } =
       (pp_do_if (List.length shadow_fields > 0) ((fun fmt -> Format.fprintf fmt "shadow {@\n  @[%a@]@\n}" (pp_list ";@\n" pp_field)))) shadow_fields
       (pp_list " " pp_asset_post_option) apo
 
+  | Drecord (id, fields, exts) ->
+    Format.fprintf fmt "record%a %a %a@\n"
+      pp_extensions exts
+      pp_id id
+      (pp_do_if (List.length fields > 0) ((fun fmt -> Format.fprintf fmt " {@\n  @[%a@]@\n}" (pp_list ";@\n" pp_field)))) fields
+
   | Dentry (id, args, props, code, exts) ->
     Format.fprintf fmt "entry%a %a%a%a"
       pp_extensions exts
@@ -1058,11 +1070,10 @@ let rec pp_declaration fmt { pldesc = e; _ } =
       pp_id id
       (pp_list "\n" pp_declaration) ds
 
-  | Dcontract (id, xs, exts) ->
-    Format.fprintf fmt "contract%a %a {@\n  @[%a@]@\n}"
+  | Dentries (l, exts) ->
+    Format.fprintf fmt "entries%a {@\n  @[%a@]@\n}"
       pp_extensions exts
-      pp_id id
-      (pp_list "@\n" pp_signature) xs
+      (pp_list "@\n" (fun fmt (t, x) -> Format.fprintf fmt "<%a> %a" pp_type t pp_id x)) l
 
   | Dfunction f ->
     Format.fprintf fmt "%a"

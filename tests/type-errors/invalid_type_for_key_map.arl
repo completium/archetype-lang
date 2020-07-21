@@ -1,0 +1,7 @@
+archetype invalid_type_for_key_map
+
+entry ident () {
+  effect {
+    var m : map<list<string>, int> = [];
+  }
+}

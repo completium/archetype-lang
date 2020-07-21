@@ -38,7 +38,7 @@ clean:
 	$(MAKE) -C src clean
 
 check:
-	./extra/check/check_pp.sh && ./extra/check/check_contracts.sh
+	./extra/script/check_pp.sh && ./extra/script/check_contracts.sh
 
 build-deps:
 	opam install dune.1.10.0 menhir.20190620 digestif.0.7.3 num ppx_deriving ppx_deriving_yojson visitors

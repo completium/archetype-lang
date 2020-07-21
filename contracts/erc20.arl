@@ -18,7 +18,7 @@ asset allowance {
 asset tokenHolder identified by holder {
     holder     : address;
     tokens     : int;
-    allowances : allowance aggregate;
+    allowances : aggregate<allowance>;
 } with {
     i1: tokens >= 0;
     i3: allowances.sum(the.amount) <= tokens;
@@ -26,7 +26,7 @@ asset tokenHolder identified by holder {
   { holder = caller; tokens = total; allowances = [] }
 }
 
-entry dotransfer (dest : pkey of tokenHolder, value : int) {
+entry dotransfer (dest : pkey<tokenHolder>, value : int) {
 
   specification {
     p1 : before.tokenHolder.sum(tokens) = tokenHolder.sum(tokens);

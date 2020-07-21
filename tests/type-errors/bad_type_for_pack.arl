@@ -1,0 +1,16 @@
+archetype bad_type_for_pack
+
+asset o_asset {
+  oid: string;
+}
+
+asset my_asset {
+  id: int;
+  c: aggregate<o_asset>
+}
+
+entry exec () {
+  effect {
+    var b = pack(my_asset[0].c);
+  }
+}

@@ -18,7 +18,9 @@ let pp_currency fmt = function
   | Utz  -> Format.fprintf fmt "utz"
 
 let pp_vtyp fmt = function
+  | VTunit       -> Format.fprintf fmt "unit"
   | VTbool       -> Format.fprintf fmt "bool"
+  | VTnat        -> Format.fprintf fmt "nat"
   | VTint        -> Format.fprintf fmt "int"
   | VTrational   -> Format.fprintf fmt "rational"
   | VTdate       -> Format.fprintf fmt "date"
@@ -31,6 +33,7 @@ let pp_vtyp fmt = function
   | VTkey        -> Format.fprintf fmt "key"
   | VTkeyhash    -> Format.fprintf fmt "key_hash"
   | VTbytes      -> Format.fprintf fmt "bytes"
+  | VTchainid    -> Format.fprintf fmt "chain_id"
 
 let pp_container fmt = function
   | Collection -> Format.fprintf fmt "collection"
@@ -44,6 +47,8 @@ let rec pp_ptyp fmt (t : ptyp) =
     Format.fprintf fmt "#%d" i
   | Tasset an ->
     Format.fprintf fmt "%a" pp_id an
+  | Trecord i ->
+    Format.fprintf fmt "%a" pp_id i
   | Tenum en ->
     Format.fprintf fmt "%a" pp_id en
   | Tcontract cn ->
@@ -53,17 +58,28 @@ let rec pp_ptyp fmt (t : ptyp) =
     Format.fprintf fmt "%a %a"
       pp_ptyp t
       pp_container c
+  | Tset t ->
+    Format.fprintf fmt "%a set"
+      pp_ptyp t
   | Tlist t ->
     Format.fprintf fmt "%a list"
-      pp_type_ t
+      pp_ptyp t
+  | Tmap (k, v) ->
+    Format.fprintf fmt "(%a * %a) map"
+      pp_ptyp k
+      pp_ptyp v
   | Toption t ->
     Format.fprintf fmt "%a option"
-      pp_type_ t
+      pp_ptyp t
   | Ttuple ts ->
     Format.fprintf fmt "%a"
       (pp_list " * " pp_ptyp) ts
+  | Toperation ->
+    Format.fprintf fmt "operation"
   | Tentry ->
     Format.fprintf fmt "entry"
+  | Tentrysig et ->
+    Format.fprintf fmt "entrysig<%a>" pp_ptyp et
   | Ttrace t ->
     Format.fprintf fmt "%a"
       pp_trtyp t
@@ -89,6 +105,7 @@ let pp_bval fmt (bval : bval) =
     | BVaddress v       -> Format.fprintf fmt "@@%a" pp_str v
     | BVduration v      -> Core.pp_duration_for_printer fmt v
     | BVbytes s         -> Format.fprintf fmt "0x%a" pp_str s
+    | BVunit            -> Format.fprintf fmt "()"
   in
   pp_struct_poly pp_node fmt bval
 
@@ -165,12 +182,15 @@ let to_const = function
   | Cfail           -> "fail"
   | Cbalance        -> "balance"
   | Csource         -> "source"
+  | Cselfaddress    -> "selfaddress"
   | Cconditions     -> "conditions"
   | Centries        -> "entries"
   | Cnone           -> "none"
   | Cany            -> "any"
   | Canyentry       -> "anyentry"
   | Cresult         -> "result"
+  | Cchainid        -> "chain_id"
+  | Coperations     -> "operations"
   (* function *)
   | Cadd            -> "add"
   | Caddupdate      -> "addupdate"
@@ -182,7 +202,6 @@ let to_const = function
   | Cfloor          -> "floor"
   | Cget            -> "get"
   | Cgetopt         -> "getopt"
-  | Cisempty        -> "isempty"
   | Cisnone         -> "isnone"
   | Cissome         -> "issome"
   | Clength         -> "length"
@@ -196,15 +215,28 @@ let to_const = function
   | Cselect         -> "select"
   | Cslice          -> "slice"
   | Csort           -> "sort"
-  | Csubsetof       -> "subsetof"
   | Csum            -> "sum"
   | Cunpack         -> "unpack"
   | Cupdate         -> "update"
+  | Centrypoint     -> "entrypoint"
+  | Cmkoperation    -> "mkoperation"
+  (* set *)
+  | Csadd           -> "set_add"
+  | Csremove        -> "set_remove"
+  | Cscontains      -> "set_contains"
+  | Cslength        -> "set_length"
   (* list *)
   | Chead           -> "head"
   | Ctail           -> "tail"
   | Cabs            -> "abs"
   | Cprepend        -> "prepend"
+  (* map *)
+  | Cmput           -> "put"
+  | Cmremove        -> "remove"
+  | Cmget           -> "get"
+  | Cmgetopt        -> "getopt"
+  | Cmcontains      -> "contains"
+  | Cmlength        -> "length"
   (* crypto *)
   | Cblake2b        -> "blake2b"
   | Csha256         -> "sha256"
@@ -215,6 +247,14 @@ let to_const = function
   | Cbefore         -> "before"
   | Citerated       -> "iterated"
   | Ctoiterate      -> "toiterate"
+  (* formula *)
+  | Cempty          -> "empty"
+  | Cisempty        -> "isempty"
+  | Csingleton      -> "singleton"
+  | Csubsetof       -> "subsetof"
+  | Cunion          -> "union"
+  | Cinter          -> "inter"
+  | Cdiff           -> "diff"
 
 let pp_call_kind fmt = function
   | Cid id -> pp_id fmt id
@@ -381,14 +421,14 @@ let rec pp_pterm fmt (pterm : pterm) =
       (pp_no_paren pp) fmt v
 
     | Pdot ({ node = Pcall (Some { node = Pvar (VTnone, Vnone, an) },
-            Cconst Cget, [AExpr k]) }, fn)
+                            Cconst Cget, [AExpr k]) }, fn)
       ->
-        let pp fmt (an, k, fn) =
-          Format.fprintf fmt "%a[%a].%a"
-            pp_id an
-            pp_pterm k
-            pp_id fn
-        in (pp_with_paren pp) fmt (an, k, fn)
+      let pp fmt (an, k, fn) =
+        Format.fprintf fmt "%a[%a].%a"
+          pp_id an
+          pp_pterm k
+          pp_id fn
+      in (pp_with_paren pp) fmt (an, k, fn)
 
     | Pdot (e, i) ->
       let pp fmt (e, i) =
@@ -411,6 +451,14 @@ let rec pp_pterm fmt (pterm : pterm) =
       in
       (pp_no_paren pp) fmt l
 
+    | Ptupleaccess (x, k) ->
+      let pp fmt (x, k) =
+        Format.fprintf fmt "%a[%a]"
+          pp_pterm x
+          pp_big_int k
+      in
+      (pp_no_paren pp) fmt (x, k)
+
     | Pnone -> pp_str fmt "none"
 
     | Psome a ->
@@ -428,6 +476,13 @@ let rec pp_pterm fmt (pterm : pterm) =
           pp_pterm a
       in
       (pp_no_paren pp) fmt (src, dst, a)
+
+    | Pself id ->
+      let pp fmt id =
+        Format.fprintf fmt "self.%a"
+          pp_id id
+      in
+      (pp_no_paren pp) fmt id
 
   in
   pp_struct_poly pp_node fmt pterm
@@ -480,15 +535,18 @@ let rec pp_instruction fmt (i : instruction) =
       in
       (pp_with_paren pp) fmt (c, t, e)
 
-    | Ifor (id, c, body) ->
-      let pp fmt (id, c, body) =
+    | Ifor (fid, c, body) ->
+      let pp fmt (fid, c, body) =
         Format.fprintf fmt "for %a%a in %a do@\n  @[%a@]@\ndone"
           (fun fmt x -> match x with Some v -> (Format.fprintf fmt ": %a " pp_str v) | _ -> ()) i.label
-          pp_id id
+          (fun fmt fid ->
+             match fid with
+             | FIsimple i -> pp_id fmt i
+             | FIdouble (x, y) -> Format.fprintf fmt "(%a, %a)" pp_id x pp_id y) fid
           pp_pterm c
           pp_instruction body
       in
-      (pp_with_paren pp) fmt (id, c, body)
+      (pp_with_paren pp) fmt (fid, c, body)
 
     | Iiter (id, a, b, body) ->
       let pp fmt (id, a, b, body) =
@@ -567,14 +625,18 @@ let rec pp_instruction fmt (i : instruction) =
       in
       (pp_with_paren pp) fmt (k, pt)
 
-    | Itransfer (value, dest, call) ->
-      let pp fmt (value, dest) =
-        Format.fprintf fmt "transfer %a to %a%a"
+    | Itransfer (value, tr) ->
+      let pp fmt (value, tr) =
+        Format.fprintf fmt "transfer %a%a"
           pp_pterm value
-          pp_pterm dest
-          (pp_option (fun fmt (id, args) -> Format.fprintf fmt " call %a(%a)" pp_id id (pp_list ", " pp_pterm) args)) call
+          (fun fmt -> function
+             | TTsimple dst               -> Format.fprintf fmt " to %a" pp_pterm dst
+             | TTcontract (dst, id, args) -> Format.fprintf fmt " to %a call %a(%a)" pp_pterm dst pp_id id (pp_list "," pp_pterm) args
+             | TTentry (id, arg)          -> Format.fprintf fmt " to entry %a(%a)" pp_id id pp_pterm arg
+             | TTself (id, args)          -> Format.fprintf fmt " to entry self.%a(%a)" pp_id id (pp_list "," pp_pterm) args
+          ) tr
       in
-      (pp_with_paren pp) fmt (value, dest)
+      (pp_with_paren pp) fmt (value, tr)
 
     | Ibreak ->
       let pp fmt () =
@@ -816,6 +878,11 @@ let pp_asset fmt (a : lident asset_struct) =
           Format.fprintf fmt " with {@\n  @[%a@]@\n}"
             (pp_list ";@\n" pp_label_term))) a.specs
 
+let pp_record fmt (r : record) =
+  Format.fprintf fmt "record %a {@\n  @[%a@]@\n}@\n"
+    pp_id r.name
+    (pp_list "@\n" pp_field) r.fields
+
 let pp_enum_item fmt (ei : lident enum_item_struct) =
   Format.fprintf fmt "| %a%a%a"
     pp_id ei.name
@@ -929,6 +996,7 @@ let pp_transaction fmt (t : transaction) =
 let pp_decl_ fmt = function
   | Dvariable v -> pp_variable fmt v
   | Dasset    a -> pp_asset fmt a
+  | Drecord   r -> pp_record fmt r
   | Denum     e -> pp_enum fmt e
   | Dcontract c -> pp_contract fmt c
 
@@ -936,7 +1004,7 @@ let pp_fun_ fmt = function
   | Ffunction f    -> pp_function fmt f
   | Ftransaction t -> pp_transaction fmt t
 
-let pp_ast fmt (ast : model) =
+let pp_ast fmt (ast : ast) =
   Format.fprintf fmt "archetype %a@\n@\n@." pp_id ast.name;
   (pp_no_empty_list2 pp_decl_) fmt ast.decls;
   (pp_no_empty_list2 pp_fun_) fmt ast.funs;
@@ -948,4 +1016,4 @@ let pp_ast fmt (ast : model) =
 let string_of__of_pp pp x =
   Format.asprintf "%a@." pp x
 
-let show_model (x : model) = string_of__of_pp pp_model x
+let show_ast (x : ast) = string_of__of_pp pp_ast x

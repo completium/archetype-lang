@@ -1,0 +1,9 @@
+archetype expr_cst_selfaddress
+
+variable res : address = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
+
+entry exec () {
+  effect {
+    res := selfaddress
+  }
+}

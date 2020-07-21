@@ -26,6 +26,7 @@ process_files "./tests/syntax-errors"
 process_files "./tests/type-errors"
 process_files "./tests/model-errors"
 process_files "./tests/passed"
+process_files "./tests/verif"
 process_files "./contracts"
 
 RET=0

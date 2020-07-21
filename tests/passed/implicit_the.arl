@@ -8,7 +8,6 @@ asset myasset {
 entry exec () {
 
   effect {
-    var l = myasset.select(value = 0);
-    require (true)
+    var l = myasset.select(value = 0)
   }
 }

@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+ - `chain_id` constant
+ - `union` `inter` and `diff` operator for view in formula
+
+### Changed
+ - syntax of composite type (i.e. `list<string>` instead of `string list`)
+
+### Fixed
+ - `caller` as asset key in `initialized by` section
+ - `-ptc` command does not display `pkey of` type anymore
+
+## [1.0.0] - 2020-06-27
+### Added
  - Introduce `container_kind` in model
  - `pack`, `unpack` functions
  - `removeif` for collection, aggregate and partition

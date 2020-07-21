@@ -7,7 +7,7 @@ asset o_asset identified by oid {
 
 asset my_asset identified by id {
   id : int;
-  o_assets : o_asset partition;
+  o_assets : partition<o_asset>;
 }
 
 entry add () {

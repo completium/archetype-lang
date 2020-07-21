@@ -1,0 +1,27 @@
+archetype partition_add
+
+asset o_asset identified by oid {
+  oid : string;
+  v : int;
+}
+
+asset my_asset identified by id {
+  id     : string;
+  value  : int;
+  col    : partition<o_asset>;
+} initialized by {
+  {"id0"; 0; []};
+  {"id1"; 1; []};
+  {"id2"; 2; []}
+}
+
+variable res : int = 0
+
+entry exec () {
+  specification {
+
+  }
+  effect {
+    my_asset["id0"].col.add({"oid"; 1})
+  }
+}

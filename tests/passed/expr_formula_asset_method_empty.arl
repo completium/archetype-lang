@@ -1,0 +1,21 @@
+archetype expr_formula_asset_method_empty
+
+asset my_asset identified by id {
+  id : string;
+  value : int;
+} initialized by {
+  {"id0"; 0};
+  {"id1"; 1};
+  {"id2"; 2}
+}
+
+entry exec () {
+
+  specification {
+    s0: (let v = my_asset.empty() in true /* v = v */);
+  }
+
+  effect {
+    ()
+  }
+}

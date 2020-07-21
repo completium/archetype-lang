@@ -1,0 +1,6 @@
+archetype entrysig_cannot_infer_entrypoint
+
+entry exec () {
+  var a : address = @KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm;
+  var e = entrypoint(a, "an_entry");
+}

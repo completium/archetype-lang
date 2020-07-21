@@ -12,6 +12,7 @@ let pp_currency fmt = function
   | Utz -> Format.fprintf fmt "utz"
 
 let pp_btyp fmt = function
+  | Bunit       -> Format.fprintf fmt "unit"
   | Bbool       -> Format.fprintf fmt "bool"
   | Bint        -> Format.fprintf fmt "int"
   | Brational   -> Format.fprintf fmt "rational"
@@ -27,6 +28,7 @@ let pp_btyp fmt = function
   | Bkeyhash    -> Format.fprintf fmt "key_hash"
   | Bbytes      -> Format.fprintf fmt "bytes"
   | Bnat        -> Format.fprintf fmt "nat"
+  | Bchainid    -> Format.fprintf fmt "chain_id"
 
 let pp_container fmt = function
   | Collection -> Format.fprintf fmt "collection"
@@ -65,9 +67,8 @@ let rec pp_type fmt t =
     Format.fprintf fmt "(%a, %a) map"
       pp_btyp k
       pp_type v
-  | Trecord l ->
-    Format.fprintf fmt "(%a) record"
-      (pp_list "; " (fun fmt (lbl, x) -> Format.fprintf fmt "(%s, %a)" lbl  pp_type x)) l
+  | Trecord id ->
+    Format.fprintf fmt "%a" pp_id id
   | Tunit ->
     Format.fprintf fmt "unit"
   | Tstorage ->
@@ -76,6 +77,8 @@ let rec pp_type fmt t =
     Format.fprintf fmt "operation"
   | Tentry ->
     Format.fprintf fmt "entry"
+  | Tentrysig t ->
+    Format.fprintf fmt "entrysig<%a>" pp_type t
   | Tprog _
   | Tvset _
   | Ttrace _ -> Format.fprintf fmt "todo"
@@ -118,10 +121,12 @@ let pp_container_kind f fmt = function
   | CKfield (an, fn, mt) -> Format.fprintf fmt "CKfield (%s, %s, %a)" an fn f mt
 
 let pp_iter_container_kind f fmt = function
-  | ICKcoll  an -> Format.fprintf fmt "%a" pp_str an
-  | ICKview  mt -> Format.fprintf fmt "%a" f mt
+  | ICKcoll  an         -> Format.fprintf fmt "%a" pp_str an
+  | ICKview  mt         -> Format.fprintf fmt "%a" f mt
   | ICKfield (_, _, mt) -> Format.fprintf fmt "%a" f mt
-  | ICKlist  mt -> Format.fprintf fmt "%a" f mt
+  | ICKset   mt         -> Format.fprintf fmt "%a" f mt
+  | ICKlist  mt         -> Format.fprintf fmt "%a" f mt
+  | ICKmap   mt         -> Format.fprintf fmt "%a" f mt
 
 let pp_mterm fmt (mt : mterm) =
   let rec f fmt (mtt : mterm) =
@@ -165,10 +170,17 @@ let pp_mterm fmt (mt : mterm) =
         pp_operator op
         f r
 
-    | Massign (op, Afield (an, fn, k), v) ->
+    | Massign (op, Aasset (an, fn, k), v) ->
       Format.fprintf fmt "%a[%a].%a %a %a"
         pp_id an
         f k
+        pp_id fn
+        pp_operator op
+        f v
+
+    | Massign (op, Arecord (_rn, fn, r), v) ->
+      Format.fprintf fmt "%a.%a %a %a"
+        f r
         pp_id fn
         pp_operator op
         f v
@@ -207,7 +219,7 @@ let pp_mterm fmt (mt : mterm) =
     | Mfor (i, c, b, l) ->
       Format.fprintf fmt "for %a%a in %a do@\n  @[%a@]@\ndone"
         (pp_option (fun fmt -> Format.fprintf fmt ": %a " pp_str)) l
-        pp_id i
+        (fun fmt i -> match i with FIsimple x -> pp_id fmt x | FIdouble (x, y) -> Format.fprintf fmt "(%a, %a)" pp_id x pp_id y) i
         (pp_iter_container_kind f) c
         f b
 
@@ -257,7 +269,7 @@ let pp_mterm fmt (mt : mterm) =
         f v
         f d
 
-    | Mentrycall (v, d, _, fid, args) ->
+    | Mcallcontract (v, d, _, fid, args) ->
       let pp fmt (v, d, fid, args) =
         Format.fprintf fmt "transfer %a to %a call %a (%a)"
           f v
@@ -267,11 +279,58 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (v, d, fid, args)
 
+    | Mcallentry (v, e, arg) ->
+      let pp fmt (v, e, arg) =
+        Format.fprintf fmt "transfer %a to entry %a(%a)"
+          f v
+          pp_id e
+          f arg
+      in
+      pp fmt (v, e, arg)
+
+    | Mcallself (v, e, args) ->
+      let pp fmt (v, e, args) =
+        Format.fprintf fmt "transfer %a to entry self.%a(%a)"
+          f v
+          pp_id e
+          (pp_list ", " f) args
+      in
+      pp fmt (v, e, args)
+
+
+    (* entrypoint *)
+
+    | Mentrycontract (c, id) ->
+      Format.fprintf fmt "%a.%a"
+        f c
+        pp_id id
+
+    | Mentrypoint (a, s) ->
+      Format.fprintf fmt "entrypoint(%a, %a)"
+        f a
+        f s
+
+    | Mself id ->
+      Format.fprintf fmt "self.%a"
+        pp_id id
+
+
+    (* operation *)
+
+    | Moperations ->
+      Format.fprintf fmt "operations"
+
+    | Mmkoperation (v, d, a) ->
+      Format.fprintf fmt "mkoperation(%a, %a, %a)"
+        f v
+        f d
+        f a
+
 
     (* literals *)
 
     | Mint v -> pp_big_int fmt v
-    | Muint v -> pp_big_int fmt v
+    | Mnat v -> pp_big_int fmt v
     | Mbool b -> pp_str fmt (if b then "true" else "false")
     | Menum v -> pp_str fmt v
     | Mrational (n, d) ->
@@ -290,6 +349,7 @@ let pp_mterm fmt (mt : mterm) =
     | Mduration v -> Core.pp_duration_for_printer fmt v
     | Mtimestamp v -> pp_big_int fmt v
     | Mbytes v -> Format.fprintf fmt "0x%s" v
+    | Munit -> Format.fprintf fmt "Unit"
 
 
     (* control expression *)
@@ -378,21 +438,21 @@ let pp_mterm fmt (mt : mterm) =
 
     (* comparison operators *)
 
-    | Mequal (l, r) ->
-      let pp fmt (l, r) =
+    | Mequal (t, l, r) ->
+      let pp fmt (_t, l, r) =
         Format.fprintf fmt "%a = %a"
           f l
           f r
       in
-      pp fmt (l, r)
+      pp fmt (t, l, r)
 
-    | Mnequal (l, r) ->
-      let pp fmt (l, r) =
+    | Mnequal (t, l, r) ->
+      let pp fmt (_t, l, r) =
         Format.fprintf fmt "%a <> %a"
           f l
           f r
       in
-      pp fmt (l, r)
+      pp fmt (t, l, r)
 
     | Mgt (l, r) ->
       let pp fmt (l, r) =
@@ -713,6 +773,40 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (src, dst, v)
 
+    | Mtupleaccess (x, k) ->
+      let pp fmt (x, k) =
+        Format.fprintf fmt "%a[%a]"
+          f x
+          pp_big_int k
+      in
+      pp fmt (x, k)
+
+
+    (* set api expression *)
+
+    | Msetadd (t, c, a) ->
+      Format.fprintf fmt "set_%a_add (%a, %a)"
+        pp_type t
+        f c
+        f a
+
+    | Msetremove (t, c, a) ->
+      Format.fprintf fmt "set_%a_remove (%a, %a)"
+        pp_type t
+        f c
+        f a
+
+    | Msetcontains (t, c, a) ->
+      Format.fprintf fmt "set_%a_contains (%a, %a)"
+        pp_type t
+        f c
+        f a
+
+    | Msetlength (t, c) ->
+      Format.fprintf fmt "set_%a_length (%a)"
+        pp_type t
+        f c
+
 
     (* list api expression *)
 
@@ -726,14 +820,47 @@ let pp_mterm fmt (mt : mterm) =
         f c
         f a
 
-    | Mlistcount (_, c) ->
-      Format.fprintf fmt "list_count (%a)"
+    | Mlistlength (_, c) ->
+      Format.fprintf fmt "list_length (%a)"
         f c
 
     | Mlistnth (_, c, a) ->
       Format.fprintf fmt "list_nth (%a, %a)"
         f c
         f a
+
+
+    (* map api expression *)
+
+    | Mmapput (_, _, c, k, v) ->
+      Format.fprintf fmt "map_put (%a, %a, %a)"
+        f c
+        f k
+        f v
+
+    | Mmapremove (_, _, c, k) ->
+      Format.fprintf fmt "map_remove (%a, %a)"
+        f c
+        f k
+
+    | Mmapget (_, _, c, k) ->
+      Format.fprintf fmt "map_get (%a, %a)"
+        f c
+        f k
+
+    | Mmapgetopt (_, _, c, k) ->
+      Format.fprintf fmt "map_getopt (%a, %a)"
+        f c
+        f k
+
+    | Mmapcontains (_, _, c, k) ->
+      Format.fprintf fmt "map_contains (%a, %a)"
+        f c
+        f k
+
+    | Mmaplength (_, _, c) ->
+      Format.fprintf fmt "map_length (%a)"
+        f c
 
 
     (* builtin functions *)
@@ -827,6 +954,8 @@ let pp_mterm fmt (mt : mterm) =
     | Mcaller        -> pp_str fmt "caller"
     | Mbalance       -> pp_str fmt "balance"
     | Msource        -> pp_str fmt "source"
+    | Mselfaddress   -> pp_str fmt "selfaddress"
+    | Mchainid       -> pp_str fmt "chain_id"
 
 
     (* variable *)
@@ -1021,6 +1150,21 @@ let pp_mterm fmt (mt : mterm) =
 
     (* formula asset collection methods *)
 
+    | Mempty an ->
+      let pp fmt an =
+        Format.fprintf fmt "empty_%a"
+          pp_str an
+      in
+      pp fmt an
+
+    | Msingleton (an, k) ->
+      let pp fmt (an, k) =
+        Format.fprintf fmt "singleton_%a (%a)"
+          pp_str an
+          f k
+      in
+      pp fmt (an, k)
+
     | Msubsetof (an, c, i) ->
       let pp fmt (an, c, i) =
         Format.fprintf fmt "subset_%a (%a, %a)"
@@ -1038,6 +1182,32 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (l, r)
 
+    | Munion (an, l, r) ->
+      let pp fmt (an, l, r) =
+        Format.fprintf fmt "union_%a (%a, %a)"
+          pp_str an
+          f l
+          f r
+      in
+      pp fmt (an, l, r)
+
+    | Minter (an, l, r) ->
+      let pp fmt (an, l, r) =
+        Format.fprintf fmt "inter_%a (%a, %a)"
+          pp_str an
+          f l
+          f r
+      in
+      pp fmt (an, l, r)
+
+    | Mdiff (an, l, r) ->
+      let pp fmt (an, l, r) =
+        Format.fprintf fmt "diff_%a (%a, %a)"
+          pp_str an
+          f l
+          f r
+      in
+      pp fmt (an, l, r)
 
   in
   f fmt mt
@@ -1075,7 +1245,7 @@ let pp_api_asset fmt = function
 let pp_api_list fmt = function
   | Lprepend t  -> Format.fprintf fmt "list_prepend\t %a" pp_type t
   | Lcontains t -> Format.fprintf fmt "list_contains\t %a" pp_type t
-  | Lcount t    -> Format.fprintf fmt "list_count\t %a" pp_type t
+  | Llength t   -> Format.fprintf fmt "list_length\t %a" pp_type t
   | Lnth t      -> Format.fprintf fmt "list_nth\t %a" pp_type t
 
 let pp_api_builtin fmt = function
@@ -1156,6 +1326,16 @@ let pp_asset fmt (asset : asset) =
     (pp_do_if (not (List.is_empty asset.invariants)) (fun fmt xs -> Format.fprintf fmt "@\nwith {@\n  @[%a@]@\n}@\n" (pp_list ";@\n" pp_label_term) xs)) asset.invariants
     (pp_option (fun fmt id -> Format.fprintf fmt "@\nwith states %a@\n" pp_id id)) asset.state
 
+let pp_record fmt (r : record) =
+  let pp_record_field fmt (rf : record_field) =
+    Format.fprintf fmt "%a : %a;"
+      pp_id rf.name
+      pp_type rf.type_
+  in
+  Format.fprintf fmt "record %a {@\n  @[%a@]@\n}@\n"
+    pp_id r.name
+    (pp_list "@\n" pp_record_field) r.fields
+
 let pp_contract_signature fmt (cs : contract_signature) =
   Format.fprintf fmt "%a (%a)"
     pp_id cs.name
@@ -1170,7 +1350,8 @@ let pp_contract fmt (contract : contract) =
 let pp_decl fmt = function
   | Dvar v -> pp_var fmt v
   | Denum e -> pp_enum fmt e
-  | Dasset r -> pp_asset fmt r
+  | Dasset a -> pp_asset fmt a
+  | Drecord r -> pp_record fmt r
   | Dcontract c -> pp_contract fmt c
 
 let pp_storage_item fmt (si : storage_item) =

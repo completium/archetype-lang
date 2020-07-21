@@ -9,7 +9,7 @@ asset token {
   owner : role;
 }
 
-entry transfer_ (k : role, tk : pkey of token) {
+entry transfer_ (k : role, tk : pkey<token>) {
   called by token[tk].owner
   effect {
     token.update(tk, {owner = k} )

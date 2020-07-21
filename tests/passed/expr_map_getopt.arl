@@ -1,0 +1,13 @@
+archetype expr_map_getopt
+
+variable res : string = ""
+
+entry exec () {
+  specification {
+    s0: res = "0";
+  }
+  effect {
+    var m : map<int, string> = [(0, "0")];
+    res := map_getopt(m, 0)
+  }
+}

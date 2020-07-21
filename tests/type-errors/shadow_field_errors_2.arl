@@ -1,0 +1,15 @@
+archetype shadow_field_errors_2
+
+asset myasset {
+  id: string;
+} shadow {
+  s: int; (* must be initialized *)
+} with {
+  a1: s >= 0;
+}
+
+entry main (k : pkey<myasset>) {
+  effect {
+    myasset.update(k, {s = 2}); (* cannot update shadow field in execution instruction *)
+  }
+}

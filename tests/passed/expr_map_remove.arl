@@ -1,0 +1,12 @@
+archetype expr_map_remove
+
+variable res : map<int, string> = [(0, "0")]
+
+entry exec () {
+  specification {
+    s0: map_length(res) = 0;
+  }
+  effect {
+    res := map_remove(res, 0);
+  }
+}

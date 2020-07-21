@@ -1,0 +1,14 @@
+archetype counter_proxy
+
+entries {
+  <int> incr
+  <int> decr
+  <int> reset
+}
+variable c : address = @KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm
+
+entry exec(v : int) {
+  effect {
+    transfer 0tz to c call incr(v)
+  }
+}

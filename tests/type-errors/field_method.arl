@@ -7,6 +7,5 @@ asset an_asset {
 entry a () {
   effect {
     var l = an_asset.count;
-    require (true)
   }
 }

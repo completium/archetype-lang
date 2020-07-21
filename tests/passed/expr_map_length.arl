@@ -1,0 +1,13 @@
+archetype expr_map_length
+
+variable res : int = 0
+
+entry exec () {
+  specification {
+    s0: res = 1;
+  }
+  effect {
+    var m : map<int, string> = [(0, "0")];
+    res := map_length(m);
+  }
+}

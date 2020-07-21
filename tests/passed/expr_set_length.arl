@@ -1,0 +1,13 @@
+archetype expr_set_length
+
+variable res : int = -1
+
+entry exec () {
+  specification {
+    s0: res = 3;
+  }
+  effect {
+    var l : set<string> = ["1"; "2"; "3"];
+    res := set_length(l);
+  }
+}

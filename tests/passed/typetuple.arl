@@ -4,6 +4,6 @@ variable v : (int * string) = (1, "")
 
 entry exec() {
   effect {
-    require(true)
+    ()
   }
 }

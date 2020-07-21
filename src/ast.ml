@@ -20,7 +20,9 @@ type currency =
 [@@deriving show {with_path = false}]
 
 type vtyp =
+  | VTunit
   | VTbool
+  | VTnat
   | VTint
   | VTrational
   | VTdate
@@ -33,6 +35,7 @@ type vtyp =
   | VTkeyhash
   | VTsignature
   | VTbytes
+  | VTchainid
 [@@deriving show {with_path = false}]
 
 type trtyp =
@@ -45,14 +48,19 @@ type trtyp =
 type ptyp =
   | Tnamed of int
   | Tasset of lident
+  | Trecord of lident
   | Tenum of lident
   | Tcontract of lident
   | Tbuiltin of vtyp
   | Tcontainer of ptyp * container
+  | Tset of ptyp
   | Tlist of ptyp
+  | Tmap of ptyp * ptyp
   | Ttuple of ptyp list
   | Toption of ptyp
+  | Toperation
   | Tentry (* entry of external contract *)
+  | Tentrysig of ptyp
   | Ttrace of trtyp
 [@@deriving show {with_path = false}]
 
@@ -118,12 +126,15 @@ type const =
   | Cfail
   | Cbalance
   | Csource
+  | Cselfaddress
   | Cconditions
   | Centries
   | Cnone
   | Cany
   | Canyentry
   | Cresult
+  | Cchainid
+  | Coperations
   (* function *)
   | Cadd
   | Caddupdate
@@ -135,7 +146,6 @@ type const =
   | Cfloor
   | Cget
   | Cgetopt
-  | Cisempty
   | Cisnone
   | Cissome
   | Clength
@@ -149,15 +159,28 @@ type const =
   | Cselect
   | Cslice
   | Csort
-  | Csubsetof
   | Csum
   | Cunpack
   | Cupdate
+  | Centrypoint
+  | Cmkoperation
+  (* set *)
+  | Csadd
+  | Csremove
+  | Cscontains
+  | Cslength
   (* list *)
   | Chead
   | Ctail
   | Cabs
   | Cprepend
+  (* map *)
+  | Cmput
+  | Cmremove
+  | Cmget
+  | Cmgetopt
+  | Cmcontains
+  | Cmlength
   (* crypto *)
   | Cblake2b
   | Csha256
@@ -168,6 +191,14 @@ type const =
   | Cbefore
   | Citerated
   | Ctoiterate
+  (* formula *)
+  | Cempty
+  | Cisempty
+  | Csingleton
+  | Csubsetof
+  | Cunion
+  | Cinter
+  | Cdiff
 [@@deriving show {with_path = false}]
 
 type ('node) struct_poly = {
@@ -223,6 +254,7 @@ and bval_node =
   | BVaddress      of string
   | BVduration     of Core.duration
   | BVbytes        of string
+  | BVunit
 [@@deriving show {with_path = false}]
 
 type bval = bval_gen
@@ -298,9 +330,11 @@ type 'id term_node  =
   | Pdot of 'id term_gen * 'id
   | Pconst of const
   | Ptuple of 'id term_gen list
+  | Ptupleaccess of 'id term_gen * Core.big_int
   | Pnone
   | Psome of 'id term_gen
   | Pcast of ptyp * ptyp * 'id term_gen
+  | Pself of 'id
 [@@deriving show {with_path = false}]
 
 and 'id term_arg =
@@ -333,23 +367,31 @@ type 'id instruction_poly = {
 }
 [@@deriving show {with_path = false}]
 
+and 'id transfer_t =
+  | TTsimple   of 'id term_gen
+  | TTcontract of 'id term_gen * 'id * 'id term_gen list
+  | TTentry    of 'id * 'id term_gen
+  | TTself     of 'id * 'id term_gen list
+
 and 'id instruction_node =
   | Iif of ('id term_gen * 'id instruction_gen * 'id instruction_gen)               (* condition * then_ * else_ *)
-  | Ifor of ('id * 'id term_gen * 'id instruction_gen)                              (* id * collection * body *)
+  | Ifor of ('id for_ident * 'id term_gen * 'id instruction_gen)                              (* id * collection * body *)
   | Iiter of ('id * 'id term_gen* 'id term_gen * 'id instruction_gen)               (* id * bound_min * bound_max * body *)
   | Iletin of ('id * 'id term_gen * 'id instruction_gen)                            (* id * init * body *)
   | Ideclvar of 'id * 'id term_gen                                                  (* id * init *)
   | Iseq of 'id instruction_gen list                                                (* lhs ; rhs *)
   | Imatchwith of 'id term_gen * ('id pattern_gen * 'id instruction_gen) list       (* match term with ('pattern * 'id instruction_gen) list *)
-  | Iassign of (assignment_operator * 'id lvalue_gen * 'id term_gen)         (* $2 assignment_operator $3 *)
+  | Iassign of (assignment_operator * 'id lvalue_gen * 'id term_gen)                (* $2 assignment_operator $3 *)
   | Irequire of (bool * 'id term_gen)                                               (* $1 ? require : failif *)
-  | Itransfer of ('id term_gen * 'id term_gen * ('id * ('id term_gen) list) option) (* value * dest * call *)
+  | Itransfer of ('id term_gen * 'id transfer_t)
   | Ibreak
   | Icall of ('id term_gen option * 'id call_kind * ('id term_arg) list)
   | Ireturn of 'id term_gen
   | Ilabel of 'id
   | Ifail of 'id term_gen
 [@@deriving show {with_path = false}]
+
+and 'id for_ident = FIsimple of 'id | FIdouble of 'id * 'id
 
 and 'id instruction_gen = 'id instruction_poly
 
@@ -580,6 +622,15 @@ type 'id asset_struct = {
 
 type asset = lident asset_struct
 
+type 'id record_struct = {
+  name    : 'id;
+  fields  : 'id decl_gen list;
+  loc     : Location.t [@opaque];
+}
+[@@deriving show {with_path = false}]
+
+type record = lident record_struct
+
 type 'id contract_struct = {
   name       : 'id;
   signatures : 'id signature list;
@@ -593,6 +644,7 @@ and contract = lident contract_struct
 type 'id decl_ =
   | Dvariable of 'id variable
   | Dasset    of 'id asset_struct
+  | Drecord   of 'id record_struct
   | Denum     of 'id enum_struct
   | Dcontract of 'id contract_struct
 [@@deriving show {with_path = false}]
@@ -602,9 +654,10 @@ type 'id fun_ =
   | Ftransaction of 'id transaction_struct
 [@@deriving show {with_path = false}]
 
-type 'id model_struct = {
+type 'id ast_struct = {
   name           : 'id;
   decls          : 'id decl_ list;
+  ext_entries    : ('id * ptyp) list;
   funs           : 'id fun_ list;
   specifications : 'id specification list;
   securities     : security list;
@@ -612,10 +665,12 @@ type 'id model_struct = {
 }
 [@@deriving show {with_path = false}]
 
-and model = lident model_struct
+and ast = lident ast_struct
 
 (* vtyp -> ptyp *)
+let vtunit       = Tbuiltin (VTunit      )
 let vtbool       = Tbuiltin (VTbool      )
+let vtnat        = Tbuiltin (VTnat       )
 let vtint        = Tbuiltin (VTint       )
 let vtrational   = Tbuiltin (VTrational  )
 let vtdate       = Tbuiltin (VTdate      )
@@ -628,6 +683,7 @@ let vtsignature  = Tbuiltin (VTsignature )
 let vtkey        = Tbuiltin (VTkey       )
 let vtkeyhash    = Tbuiltin (VTkeyhash   )
 let vtbytes      = Tbuiltin (VTbytes     )
+let vtchainid    = Tbuiltin (VTchainid   )
 
 (* mk functions *)
 
@@ -686,8 +742,8 @@ let mk_asset ?(fields = []) ?key ?(sort = []) ?state ?(init = []) ?(specs = []) 
 let mk_contract ?(signatures = []) ?init ?(loc = Location.dummy) name =
   { name; signatures; init; loc }
 
-let mk_model ?(decls = []) ?(funs = []) ?(specifications = []) ?(securities = []) ?(loc = Location.dummy) name =
-  { name; decls; funs; specifications; securities; loc }
+let mk_model ?(decls = []) ?(ext_entries = []) ?(funs = []) ?(specifications = []) ?(securities = []) ?(loc = Location.dummy) name =
+  { name; decls; ext_entries; funs; specifications; securities; loc }
 
 let mk_id type_ id : qualid =
   { type_ = Some type_;
@@ -697,19 +753,19 @@ let mk_id type_ id : qualid =
 
 module Utils : sig
 
-  val get_asset                 : model -> lident -> asset
-  val get_asset_field           : model -> (lident * lident ) -> lident decl_gen
-  val get_asset_key             : model -> lident -> (lident * vtyp)
-  val get_container_asset_field : model -> (lident * lident ) -> container
-  val get_named_field_list      : model -> lident -> pterm list -> (lident * pterm) list
-  val get_field_list            : model -> lident -> lident list
-  val get_enum_values           : model -> lident -> lident option
-  val is_variable               : model -> lident -> bool
-  val is_asset                  : model -> lident -> bool
-  val is_enum_value             : model -> lident -> bool
-  val get_var_type              : model -> lident -> type_
+  val get_asset                 : ast -> lident -> asset
+  val get_asset_field           : ast -> (lident * lident ) -> lident decl_gen
+  val get_asset_key             : ast -> lident -> (lident * vtyp)
+  val get_container_asset_field : ast -> (lident * lident ) -> container
+  val get_named_field_list      : ast -> lident -> pterm list -> (lident * pterm) list
+  val get_field_list            : ast -> lident -> lident list
+  val get_enum_values           : ast -> lident -> lident option
+  val is_variable               : ast -> lident -> bool
+  val is_asset                  : ast -> lident -> bool
+  val is_enum_value             : ast -> lident -> bool
+  val get_var_type              : ast -> lident -> type_
   val get_enum_name             : lident enum_struct -> lident
-  val get_contract_sig_ids      : model -> ident -> ident -> lident list
+  val get_contract_sig_ids      : ast -> ident -> ident -> lident list
 
 end = struct
   open Tools
@@ -833,7 +889,7 @@ end = struct
     | Some _ -> true
     | None   -> false
 
-  let get_var_type (ast : model) (ident : lident) : type_ =
+  let get_var_type (ast : ast) (ident : lident) : type_ =
     let var : type_ option =
       List.fold_left (
         fun accu (x : 'id variable) ->
@@ -845,7 +901,7 @@ end = struct
     | Some v -> v
     | None -> emit_error VariableNotFound
 
-  let get_contract_sig_ids (ast : model) (contract_id : ident) (fun_id : ident) : lident list =
+  let get_contract_sig_ids (ast : ast) (contract_id : ident) (fun_id : ident) : lident list =
     let get_signature signatures ident : ((lident * ptyp) list) option =
       List.fold_left (fun accu (x : 'id signature) ->
           if (Location.unloc x.name) = ident

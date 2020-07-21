@@ -1,0 +1,12 @@
+archetype expr_map_put
+
+variable res : map<int, string> = []
+
+entry exec () {
+  specification {
+    s0: map_length(res) = 1;
+  }
+  effect {
+    res := map_put(res, 0, "0");
+  }
+}

@@ -7,6 +7,6 @@ entry main () {
     }
   }
   effect {
-    require(true)
+    ()
   }
 }

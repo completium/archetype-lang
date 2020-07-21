@@ -118,6 +118,7 @@ let pp_model_internal fmt (model : model) b =
   in
 
   let pp_btyp fmt = function
+    | Bunit       -> Format.fprintf fmt "unit"
     | Bbool       -> Format.fprintf fmt "bool"
     | Bint        -> Format.fprintf fmt "int"
     | Brational   -> Format.fprintf fmt "rational"
@@ -133,6 +134,7 @@ let pp_model_internal fmt (model : model) b =
     | Bkeyhash    -> Format.fprintf fmt "key_hash"
     | Bbytes      -> Format.fprintf fmt "bytes"
     | Bnat        -> Format.fprintf fmt "nat"
+    | Bchainid    -> Format.fprintf fmt "chain_id"
   in
 
   let pp_container fmt = function
@@ -182,9 +184,8 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt "map(%a, %a)"
         pp_btyp k
         pp_type v
-    | Trecord l ->
-      Format.fprintf fmt "(%a) record"
-        (pp_list "; " (fun fmt (lbl, x) -> Format.fprintf fmt "(%s, %a)" lbl  pp_type x)) l
+    | Trecord id ->
+      Format.fprintf fmt "%a" pp_id id
     | Tunit ->
       Format.fprintf fmt "unit"
     | Tstorage ->
@@ -193,6 +194,8 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt "operation"
     | Tentry ->
       Format.fprintf fmt "entry"
+    | Tentrysig t ->
+      Format.fprintf fmt "contract(%a)" pp_type t
     | Tprog _
     | Tvset _
     | Ttrace _ -> Format.fprintf fmt "todo"
@@ -257,7 +260,7 @@ let pp_model_internal fmt (model : model) b =
       | { node = Mletin _; _} as a ->
         Format.fprintf fmt " block {@\n   @[%a@]@\n}"
           f a
-      | { node = (Mentrycall _ | Mupdate _); _} as a ->
+      | { node = (Mcallcontract _ | Mcallentry _ | Mupdate _); _} as a ->
         Format.fprintf fmt " block {@\n   @[%a@]@\n}"
           f a
       | _ ->
@@ -323,10 +326,17 @@ let pp_model_internal fmt (model : model) b =
             | OrAssign    -> Format.fprintf fmt "%s.%a or (%a)"  const_storage pp_id lhs f r
         ) r
 
-    | Massign (op, Afield (an, fn, k), v) ->
+    | Massign (op, Aasset (an, fn, k), v) ->
       Format.fprintf fmt "%a[%a].%a %a %a"
         pp_id an
         f k
+        pp_id fn
+        pp_operator op
+        f v
+
+    | Massign (op, Arecord (_rn, fn, r), v) ->
+      Format.fprintf fmt "%a.%a %a %a"
+        f r
         pp_id fn
         pp_operator op
         f v
@@ -386,14 +396,16 @@ let pp_model_internal fmt (model : model) b =
             (if is_asset_single_field then "set" else "map")
             const_storage
             an
-        | ICKview mt -> Format.fprintf fmt "list (%a)" f mt
-        | ICKfield (_, _, mt) -> Format.fprintf fmt "set (%a)" f mt
-        | ICKlist mt -> Format.fprintf fmt "list (%a)" f mt
+        | ICKview  mt         -> Format.fprintf fmt "list (%a)" f mt
+        | ICKfield (_, _, mt) -> Format.fprintf fmt "set (%a)"  f mt
+        | ICKset   mt         -> Format.fprintf fmt "set (%a)"  f mt
+        | ICKlist  mt         -> Format.fprintf fmt "list (%a)" f mt
+        | ICKmap   mt         -> Format.fprintf fmt "map (%a)"  f mt
       in
 
       Format.fprintf fmt
         "for %a%s in %a block {@\n  @[%a@] }@\n"
-        pp_id id
+        (fun fmt i -> match i with FIsimple x -> pp_id fmt x | FIdouble (x, y) -> Format.fprintf fmt "%a -> %a" pp_id x pp_id y) id
         (postvar col)
         (pp_iter_container_kind f) col
         f body
@@ -477,7 +489,7 @@ let pp_model_internal fmt (model : model) b =
         f d
         const_operations
 
-    | Mentrycall (v, d, t, fid, args) ->
+    | Mcallcontract (v, d, t, fid, args) ->
       let pp fmt (v, d, t, fid, args) =
         let fid = fid |> unloc |> String.up_firstcase_lower in
 
@@ -496,11 +508,62 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (v, d, t, fid, args)
 
+    | Mcallentry (v, e, arg) ->
+      let pp _fmt (v, e, arg) =
+        Format.fprintf fmt
+          "const op_: operation = transaction(%a, %a, %a);@\n  \
+           %s := cons(op_, %s)@\n"
+          f arg
+          f v
+          pp_id e
+          const_operations const_operations
+      in
+      pp fmt (v, e, arg)
+
+    | Mcallself (v, e, args) ->
+      let pp _fmt (_v, _e, _args) =
+        Format.fprintf fmt
+          "const op_: operation = transaction(%a, %a, %a);@\n  \
+           %s := cons(op_, %s)@\n"
+          (pp_paren (pp_list "," f)) args
+          f v
+          pp_id e
+          const_operations const_operations
+      in
+      pp fmt (v, e, args)
+
+
+    (* entrypoint *)
+
+    | Mentrycontract (c, id) ->
+      Format.fprintf fmt "%a.%a"
+        f c
+        pp_id id
+
+    | Mentrypoint (a, s) ->
+      Format.fprintf fmt "Tezos.get_entrypoint_opt(\"%%%a\", %a)"
+        f s
+        f a
+
+    | Mself id ->
+      Format.fprintf fmt "self.%a"
+        pp_id id
+
+
+    (* operation *)
+
+    | Moperations -> pp_str fmt const_operations
+
+    | Mmkoperation (v, d, a) ->
+      Format.fprintf fmt "Tezos.transaction(%a, %a, %a)"
+        f a
+        f v
+        f d
 
     (* literals *)
 
     | Mint v -> pp_big_int fmt v
-    | Muint v -> pp_big_int fmt v
+    | Mnat v -> Format.fprintf fmt "%an" pp_big_int v
     | Mbool b -> pp_str fmt (if b then "True" else "False")
     | Menum v -> pp_str fmt v
     | Mrational (n, d) ->
@@ -532,6 +595,7 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt "(%a : timestamp)"
         pp_big_int v
     | Mbytes v -> Format.fprintf fmt "0x%s" v
+    | Munit -> Format.fprintf fmt "unit"
 
 
     (* control expression *)
@@ -643,7 +707,7 @@ let pp_model_internal fmt (model : model) b =
 
     (* comparison operators *)
 
-    | Mequal (l, r) ->
+    | Mequal (_, l, r) ->
       let pp fmt (l, r : mterm * mterm) =
         Format.fprintf fmt "%a = %a"
           (pp_cast Lhs l.type_ r.type_ f) l
@@ -651,7 +715,7 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (l, r)
 
-    | Mnequal (l, r) ->
+    | Mnequal (_, l, r) ->
       let pp fmt (l, r : mterm * mterm) =
         Format.fprintf fmt "%a =/= %a"
           (pp_cast Lhs l.type_ r.type_ f) l
@@ -1048,38 +1112,105 @@ let pp_model_internal fmt (model : model) b =
     (* utils *)
 
     | Mcast (src, dst, v) ->
-      let pp fmt (_src, dst, v) =
+      let pp fmt (src, dst, v) =
         Format.fprintf fmt "(%a : %a)"
-          f v
+          (fun fmt x -> begin
+               match src, dst with
+               | Tbuiltin (Baddress | Brole), Tentrysig _ -> Format.fprintf fmt "get_contract(%a)" f x
+               | _ -> f fmt x
+             end) v
           pp_type dst
       in
       pp fmt (src, dst, v)
+
+    | Mtupleaccess (x, k) ->
+      let pp fmt (x, k) =
+        Format.fprintf fmt "%a.%a"
+          f x
+          pp_big_int k
+      in
+      pp fmt (x, k)
+
+    (* set api expression *)
+
+    | Msetadd (_, c, a) ->
+      Format.fprintf fmt "Set.add (%a, %a)"
+        f a
+        f c
+
+    | Msetremove (_, c, a) ->
+      Format.fprintf fmt "Set.remove (%a, %a)"
+        f a
+        f c
+
+    | Msetcontains (_, c, a) ->
+      Format.fprintf fmt "Set.mem (%a, %a)"
+        f a
+        f c
+
+    | Msetlength (_, c) ->
+      Format.fprintf fmt "int(Set.size (%a))"
+        f c
 
 
     (* list api expression *)
 
     | Mlistprepend (t, c, a) ->
       Format.fprintf fmt "list_%a_prepend (%a, %a)"
-        pp_type t
+        pp_pretty_type t
         f c
         f a
 
     | Mlistcontains (t, c, a) ->
       Format.fprintf fmt "list_%a_contains (%a, %a)"
-        pp_type t
+        pp_pretty_type t
         f c
         f a
 
-    | Mlistcount (t, c) ->
-      Format.fprintf fmt "list_%a_count (%a)"
-        pp_type t
+    | Mlistlength (t, c) ->
+      Format.fprintf fmt "list_%a_length (%a)"
+        pp_pretty_type t
         f c
 
     | Mlistnth (t, c, a) ->
       Format.fprintf fmt "list_%a_nth (%a, %a)"
-        pp_type t
+        pp_pretty_type t
         f c
         f a
+
+
+    (* map api expression *)
+
+    | Mmapput (_, _, c, k, v) ->
+      Format.fprintf fmt "map_update (%a, Some (%a), %a)"
+        f k
+        f v
+        f c
+
+    | Mmapremove (_, tv, c, k) ->
+      Format.fprintf fmt "map_update (%a, (None : option(%a)), %a)"
+        f k
+        pp_type tv
+        f c
+
+    | Mmapget (_, _, c, k) ->
+      Format.fprintf fmt "%a[%a]"
+        f c
+        f k
+
+    | Mmapgetopt (_, _, c, k) ->
+      Format.fprintf fmt "get_force (%a, %a)"
+        f k
+        f c
+
+    | Mmapcontains (_, _, c, k) ->
+      Format.fprintf fmt "map_mem(%a, %a)"
+        f k
+        f c
+
+    | Mmaplength (_, _, c) ->
+      Format.fprintf fmt "int(Map.size(%a))"
+        f c
 
 
     (* builtin functions *)
@@ -1188,6 +1319,8 @@ let pp_model_internal fmt (model : model) b =
     | Mcaller        -> pp_str fmt "sender"
     | Mbalance       -> pp_str fmt "balance"
     | Msource        -> pp_str fmt "source"
+    | Mselfaddress   -> pp_str fmt "Tezos.self_address"
+    | Mchainid       -> pp_str fmt "chain_id"
 
 
     (* variable *)
@@ -1347,8 +1480,13 @@ let pp_model_internal fmt (model : model) b =
 
     (* formula asset collection methods *)
 
-    | Msubsetof  _ -> emit_error (UnsupportedTerm ("Aggregateof"))
+    | Mempty     _ -> emit_error (UnsupportedTerm ("empty"))
+    | Msingleton _ -> emit_error (UnsupportedTerm ("singleton"))
+    | Msubsetof  _ -> emit_error (UnsupportedTerm ("subsetof"))
     | Misempty   _ -> emit_error (UnsupportedTerm ("isempty"))
+    | Munion     _ -> emit_error (UnsupportedTerm ("union"))
+    | Minter     _ -> emit_error (UnsupportedTerm ("inter"))
+    | Mdiff      _ -> emit_error (UnsupportedTerm ("diff"))
 
   in
 
@@ -1441,11 +1579,25 @@ let pp_model_internal fmt (model : model) b =
       end
   in
 
+  let pp_record (fmt : Format.formatter) (r : record) =
+    let pp_record_field (fmt : Format.formatter) (rf : record_field) =
+      Format.fprintf fmt
+        "%a : %a;"
+        pp_id rf.name
+        pp_type rf.type_
+    in
+    Format.fprintf fmt
+      "type %a is record [@\n  @[%a@]@\n]@\n"
+      pp_id r.name
+      (pp_list "@\n" pp_record_field) r.fields;
+  in
+
   let pp_decl env (fmt : Format.formatter) (decl : decl_node) =
     match decl with
-    | Dvar v -> pp_var env fmt v
-    | Denum e -> pp_enum fmt e
-    | Dasset r -> pp_asset fmt r
+    | Dvar v    -> pp_var env fmt v
+    | Denum e   -> pp_enum    fmt e
+    | Dasset a  -> pp_asset   fmt a
+    | Drecord r -> pp_record  fmt r
     | Dcontract _c -> ()
   in
 
@@ -2189,7 +2341,7 @@ let pp_model_internal fmt (model : model) b =
         "function list_%a_prepend (const l : list(%a); const i : %a) : list(%a) is@\n  \
          block { skip }@\n  \
          with i # l@\n"
-        pp_type t pp_type t pp_type t pp_type t
+        pp_pretty_type t pp_type t pp_type t pp_type t
 
     | Lcontains t ->
       Format.fprintf fmt
@@ -2197,18 +2349,18 @@ let pp_model_internal fmt (model : model) b =
          block {@\n  \
          function aggregate (const accu: bool; const x: %a) : bool is (%a) or accu @\n  \
          } with list_fold (aggregate, l, False)@\n"
-        pp_type t pp_type t pp_type t
+        pp_pretty_type t pp_type t pp_type t
         pp_type t
         (fun fmt t ->
            match t with
            | _ -> Format.fprintf fmt "item = x") t
 
-    | Lcount t ->
+    | Llength t ->
       Format.fprintf fmt
-        "function list_%a_count (const l : list(%a)) : int is@\n  \
+        "function list_%a_length (const l : list(%a)) : int is@\n  \
          block { skip }@\n  \
          with int(size(l))@\n"
-        pp_type t pp_type t
+        pp_pretty_type t pp_type t
 
     | Lnth t ->
       Format.fprintf fmt
@@ -2226,7 +2378,7 @@ let pp_model_internal fmt (model : model) b =
          | None -> failwith(\"list_%a_nth failed\")@\n\
          end@\n\
          } with res@\n"
-        pp_type t pp_type t pp_type t
+        pp_pretty_type t pp_type t pp_type t
         pp_type t pp_type t pp_type t
         pp_type t pp_type t
         pp_type t

@@ -10,6 +10,6 @@ variable a : address = caller
 
 entry exec () {
   effect {
-    require(true)
+    ()
   }
 }
