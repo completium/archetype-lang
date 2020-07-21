@@ -8,6 +8,8 @@ type target_lang =
   | Whyml
   | Markdown
   | Scaml
+  | Michelson
+  | MichelsonStorage
   | None
 [@@deriving show {with_path = false}]
 
