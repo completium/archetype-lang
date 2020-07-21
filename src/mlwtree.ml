@@ -680,8 +680,8 @@ let compare_fmod m1 m2 =
 let compare_abstract_type
     (cmpi : 'i -> 'i -> bool)
     (cmpt : 't -> 't -> bool)
-    (typ1 : 't)
-    (typ2 : 't) =
+    (typ1 : ('i,'t) abstract_type)
+    (typ2 : ('i,'t) abstract_type) =
   match typ1,typ2 with
   | Tyint, Tyint -> true
   | Tyuint, Tyunit -> true
