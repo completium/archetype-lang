@@ -202,9 +202,9 @@ let mk_trace_field m =
 
 let mk_trace_clone () =
   Dclone ([gArchetypeDir;gArchetypeTrace], "Tr",
-          [Ctype ("_asset","_asset");
-           Ctype ("_entry","_entry");
-           Ctype ("_field","_field")])
+          [Ctype ("_asset", Tyasset "_asset");
+           Ctype ("_entry", Tyasset "_entry");
+           Ctype ("_field", Tyasset "_field")])
   |> loc_decl
 
 let mk_trace_utils m =
@@ -274,9 +274,9 @@ let mk_sum_clone m asset _key formula =
   Dclone ([gArchetypeDir;gArchetypeSum],
           mk_sum_clone_from_id asset id,
           [Ctype ("collection",
-                  cap_asset ^ ".collection");
+                  Tyasset (cap_asset ^ ".collection"));
            Ctype ("t",
-                  asset);
+                  Tyasset asset);
            (* Ctype ("view",
                   cap_asset ^ ".view"); *)
            Cval ("field",
@@ -449,9 +449,9 @@ let mk_sort_clone _m asset fields =
   Dclone ([gArchetypeDir;gArchetypeSort],
           mk_sort_clone_id asset fields,
           [Ctype ("collection",
-                  cap_asset ^ ".collection");
+                  Tyasset (cap_asset ^ ".collection"));
            Ctype ("t",
-                  asset);
+                  Tyasset asset);
            Cval ("cmp",
                  mk_cmp_function_id asset fields);
            Cval ("view_to_list",
@@ -686,6 +686,26 @@ let rec zip l1 l2 l3 l4 =
   | _ -> []
 
 let cap s = mk_loc s.loc (String.capitalize_ascii s.obj)
+
+(* Map type -------------------------------------------------------------------*)
+let get_map_idx m t = List.fold_left (fun i mt ->
+  if M.cmp_type t mt then i
+  else succ i
+) 1 (M.Utils.get_all_map_types m)
+
+let mk_map_name m t = "map"^(string_of_int (get_map_idx m t))
+
+let mk_map_type m (t : M.type_) =
+  match t with
+  | Tmap (k,v) ->
+    let map_name = mk_map_name m t in
+    let typ : loc_typ = (Tytuple [map_btype k; map_mtype v]) in
+    Dclone ([gArchetypeDir;gArchetypeColl] |> wdl,
+            String.capitalize_ascii map_name |> with_dummy_loc,
+            [Ctype ("t" |> with_dummy_loc, typ);
+             Cval  ("keyt" |> with_dummy_loc, "fst" |> with_dummy_loc);
+             Cval  ("eqt" |> with_dummy_loc, "eq_" ^ map_name |> with_dummy_loc)])
+  | _ -> assert false
 
 (* Map model term -------------------------------------------------------------*)
 
@@ -1006,7 +1026,7 @@ let record_to_clone m (r : M.asset) =
   let (key,_) = M.Utils.get_asset_key m (unloc r.name) in
   Dclone ([gArchetypeDir;gArchetypeColl] |> wdl,
           String.capitalize_ascii (unloc r.name) |> with_dummy_loc,
-          [Ctype ("t" |> with_dummy_loc, (unloc r.name) |> with_dummy_loc);
+          [Ctype ("t" |> with_dummy_loc, Tyasset (with_dummy_loc (unloc r.name)) |> with_dummy_loc);
            Cval  ("keyt" |> with_dummy_loc, key |> with_dummy_loc);
            Cval  ("eqt" |> with_dummy_loc, "eq_" ^ (unloc r.name) |> with_dummy_loc)])
 
@@ -3330,6 +3350,7 @@ let to_whyml (m : M.model) : mlw_tree  =
   let useMinMax        = mk_use_min_max m in
   let traceutils       = mk_trace_utils m |> deloc in
   let enums            = M.Utils.get_enums m |> List.map (map_enum m) in
+  let maps             = M.Utils.get_all_map_types m |> List.map (mk_map_type m) |> wdl in
   let records          = M.Utils.get_assets m |> List.map (map_record m) |> wdl in
   let cmp_enums        = M.Utils.get_assets m |> List.map (mk_cmp_enums m) |> List.flatten in
   let eq_assets        = M.Utils.get_assets m |> List.map (mk_eq_asset m) |> wdl in
@@ -3355,6 +3376,7 @@ let to_whyml (m : M.model) : mlw_tree  =
               traceutils             @
               enums                  @
               cmp_enums              @
+              maps                   @
               records                @
               eq_exten               @
               storage_api_bs         @

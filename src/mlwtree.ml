@@ -22,7 +22,7 @@ type fmod =
 type 'i abstract_qualid = 'i list
 [@@deriving show {with_path = false}]
 
-type 'i abstract_type =
+type ('i,'t) abstract_type =
   | Tyint
   | Tyuint
   | Tybool
@@ -51,10 +51,10 @@ type 'i abstract_type =
   | Tyaggregate of 'i
   | Tystate
   | Tyenum of 'i
-  | Tyoption of 'i abstract_type
-  | Tyset of 'i abstract_type
-  | Tylist of 'i abstract_type
-  | Tytuple of 'i abstract_type list
+  | Tyoption of 't
+  | Tyset of 't
+  | Tylist of 't
+  | Tytuple of 't list
   (* ... *)
 [@@deriving show {with_path = false}]
 
@@ -242,8 +242,8 @@ type ('e,'t,'i) abstract_storage_struct = {
 }
 [@@deriving show {with_path = false}]
 
-type 'i abstract_clone_subst =
-  | Ctype  of 'i * 'i
+type ('i,'t) abstract_clone_subst =
+  | Ctype  of 'i * 't
   | Cval   of 'i * 'i
   | Cfun   of 'i * 'i
   | Cpred  of 'i * 'i
@@ -259,7 +259,7 @@ type theotyp =
 type ('e,'t,'i) abstract_decl =
   | Duse     of bool * 'i abstract_qualid * string option
   | Dval     of 'i * 't
-  | Dclone   of 'i abstract_qualid * 'i * ('i abstract_clone_subst) list
+  | Dclone   of 'i abstract_qualid * 'i * (('i,'t) abstract_clone_subst) list
   | Denum    of 'i * 'i list
   | Drecord  of 'i * (('e,'t,'i) abstract_field) list
   | Dstorage of ('e,'t,'i) abstract_storage_struct
@@ -286,7 +286,7 @@ type ('e,'t,'i) abstract_mlw_tree = ('e,'t,'i) abstract_module list
 let map_abstract_qualid (map_i : 'i1 -> 'i2) (q1 : 'i1 abstract_qualid)
   = List.map map_i q1
 
-let rec map_abstract_type (map_i : 'i1 -> 'i2) = function
+let map_abstract_type (map_i : 'i1 -> 'i2) (map_t : 't1 -> 't2) = function
   | Tyint         -> Tyint
   | Tystring      -> Tystring
   | Tyaddr        -> Tyaddr
@@ -306,9 +306,9 @@ let rec map_abstract_type (map_i : 'i1 -> 'i2) = function
   | Typartition i -> Typartition (map_i i)
   | Tyaggregate i -> Tyaggregate (map_i i)
   | Tyenum i      -> Tyenum (map_i i)
-  | Tyoption t    -> Tyoption (map_abstract_type map_i t)
-  | Tyset t       -> Tyset (map_abstract_type map_i t)
-  | Tylist t      -> Tylist (map_abstract_type map_i t)
+  | Tyoption t    -> Tyoption (map_t t)
+  | Tyset t       -> Tyset (map_t t)
+  | Tylist t      -> Tylist (map_t t)
   | Tycontract i  -> Tycontract (map_i i)
   | Tybool        -> Tybool
   | Tyuint        -> Tyuint
@@ -318,7 +318,7 @@ let rec map_abstract_type (map_i : 'i1 -> 'i2) = function
   | Tykey         -> Tykey
   | Tykeyhash     -> Tykeyhash
   | Tystate       -> Tystate
-  | Tytuple l     -> Tytuple (List.map (map_abstract_type map_i) l)
+  | Tytuple l     -> Tytuple (List.map map_t l)
 
 let map_abstract_univ_decl
     (map_t : 't1 -> 't2)
@@ -510,8 +510,8 @@ let map_abstract_storage_struct
   invariants = List.map (map_abstract_formula map_e map_i) s.invariants;
 }
 
-let map_abstract_clone_subst (map_i : 'i1 -> 'i2) = function
-  | Ctype (i1,i2) -> Ctype (map_i i1, map_i i2)
+let map_abstract_clone_subst (map_i : 'i1 -> 'i2) (map_t : 't1 -> 't2) = function
+  | Ctype (i1,i2) -> Ctype (map_i i1, map_t i2)
   | Cval  (i1,i2) -> Cval  (map_i i1, map_i i2)
   | Cfun  (i1,i2) -> Cfun  (map_i i1, map_i i2)
   | Cpred  (i1,i2) -> Cpred  (map_i i1, map_i i2)
@@ -524,7 +524,7 @@ let map_abstract_decl
   | Dval (i,t)      -> Dval (map_i i, map_t t)
   | Dclone (q,i,l)  -> Dclone (map_abstract_qualid map_i q,
                                map_i i,
-                               List.map (map_abstract_clone_subst map_i) l)
+                               List.map (map_abstract_clone_subst map_i map_t) l)
   | Denum (i,l)      -> Denum (map_i i, List.map map_i l)
   | Drecord (i,l)    -> Drecord (map_i i, List.map (map_abstract_field map_e map_t map_i) l)
   | Dstorage s       -> Dstorage (map_abstract_storage_struct map_e map_t map_i s)
@@ -556,7 +556,7 @@ type ident             = string
 type qualid            = ident abstract_qualid
 [@@deriving show {with_path = false}]
 
-type typ               = ident abstract_type
+type typ               = (ident, typ) abstract_type
 [@@deriving show {with_path = false}]
 
 type univ_decl         = (typ,ident) abstract_univ_decl
@@ -577,7 +577,7 @@ type fun_struct        = (term,typ,ident) abstract_fun_struct
 type storage_struct    = (term,typ,ident) abstract_storage_struct
 [@@deriving show {with_path = false}]
 
-type clone_subst       = ident abstract_clone_subst
+type clone_subst       = (ident,typ) abstract_clone_subst
 [@@deriving show {with_path = false}]
 
 type decl              = (term,typ,ident) abstract_decl
@@ -603,7 +603,7 @@ type loc_ident         = string with_loc
 type loc_qualid        = (loc_ident abstract_qualid) with_loc
 [@@deriving show {with_path = false}]
 
-type loc_typ           = (loc_ident abstract_type) with_loc
+type loc_typ           = ((loc_ident, loc_typ) abstract_type) with_loc
 [@@deriving show {with_path = false}]
 
 type loc_univ_decl         = ((loc_typ,loc_ident) abstract_univ_decl) with_loc
@@ -624,7 +624,7 @@ type loc_fun_struct    = ((loc_term,loc_typ,loc_ident) abstract_fun_struct) with
 type loc_storage_struct= ((loc_term,loc_typ,loc_ident) abstract_storage_struct) with_loc
 [@@deriving show {with_path = false}]
 
-type loc_clone_subst   = (loc_ident abstract_clone_subst) with_loc
+type loc_clone_subst   = ((loc_ident,loc_typ) abstract_clone_subst) with_loc
 [@@deriving show {with_path = false}]
 
 type loc_decl          = ((loc_term,loc_typ,loc_ident) abstract_decl) with_loc
@@ -640,7 +640,7 @@ type loc_mlw_tree      = (loc_term,loc_typ,loc_ident) abstract_mlw_tree
 
 let rec unloc_tree (lt : loc_mlw_tree) : mlw_tree = map_abstract_mlw_tree unloc_term unloc_type unloc_ident lt
 and unloc_term (t : loc_term) : term = map_abstract_term unloc_term unloc_type unloc_ident t.obj
-and unloc_type (t : loc_typ) : typ = map_abstract_type unloc_ident t.obj
+and unloc_type (t : loc_typ) : typ = map_abstract_type unloc_ident unloc_type t.obj
 and unloc_ident (i : loc_ident) : ident = i.obj
 
 let unloc_decl (d : loc_decl) = map_abstract_decl unloc_term unloc_type unloc_ident d.obj
@@ -650,7 +650,7 @@ let mk_loc l o = { obj = o; loc = l; }
 
 let rec loc_tree (t : mlw_tree) : loc_mlw_tree = map_abstract_mlw_tree loc_term loc_type loc_ident t
 and loc_term (t : term) : loc_term = with_dummy_loc (map_abstract_term loc_term loc_type loc_ident t)
-and loc_type (t : typ) : loc_typ = with_dummy_loc (map_abstract_type loc_ident t)
+and loc_type (t : typ) : loc_typ = with_dummy_loc (map_abstract_type loc_ident loc_type t)
 and loc_ident (i : ident) : loc_ident = with_dummy_loc i
 
 let loc_decl (d : decl) = with_dummy_loc (map_abstract_decl loc_term loc_type loc_ident d)
@@ -677,10 +677,11 @@ let compare_fmod m1 m2 =
   | NoMod,NoMod -> true
   | _ -> false
 
-let rec compare_abstract_type
+let compare_abstract_type
     (cmpi : 'i -> 'i -> bool)
-    (typ1 : 'i abstract_type)
-    (typ2 : 'i abstract_type) =
+    (cmpt : 't -> 't -> bool)
+    (typ1 : 't)
+    (typ2 : 't) =
   match typ1,typ2 with
   | Tyint, Tyint -> true
   | Tyuint, Tyunit -> true
@@ -706,9 +707,9 @@ let rec compare_abstract_type
   | Tyasset i1, Tyasset i2 -> cmpi i1 i2
   | Typartition i1, Typartition i2 -> cmpi i1 i2
   | Tyenum i1, Tyenum i2 -> cmpi i1 i2
-  | Tyoption t1, Tyoption t2 -> compare_abstract_type cmpi t1 t2
-  | Tylist t1, Tylist t2 -> compare_abstract_type cmpi t1 t2
-  | Tytuple l1, Tytuple l2 -> List.for_all2 (compare_abstract_type cmpi) l1 l2
+  | Tyoption t1, Tyoption t2 -> cmpt t1 t2
+  | Tylist t1, Tylist t2 -> cmpt t1 t2
+  | Tytuple l1, Tytuple l2 -> List.for_all2 cmpt l1 l2
   | _ -> false
 
 let compare_abstract_formula
@@ -899,14 +900,15 @@ let compare_abstract_term
 
 let cmp_loc_ident (i1 : loc_ident) (i2 : loc_ident) = compare i1.obj i2.obj = 0
 
-let cmp_loc_type (t1 : loc_typ) (t2 : loc_typ) = compare_abstract_type cmp_loc_ident t1.obj t2.obj
+let rec cmp_loc_type (t1 : loc_typ) (t2 : loc_typ) : bool =
+  compare_abstract_type cmp_loc_ident cmp_loc_type t1.obj t2.obj
 
 let rec cmp_loc_term (e1 : loc_term) (e2 : loc_term) : bool =
   compare_abstract_term cmp_loc_term cmp_loc_type cmp_loc_ident e1.obj e2.obj
 
 let cmp_ident (i1 : ident) (i2 : ident) = compare i1 i2 = 0
 
-let cmp_type (t1 : typ) (t2 : typ) = compare_abstract_type cmp_ident t1 t2
+let rec cmp_type (t1 : typ) (t2 : typ) = compare_abstract_type cmp_ident cmp_type t1 t2
 
 let rec cmp_term (e1 : term) (e2 : term) : bool =
   compare_abstract_term cmp_term cmp_type cmp_ident e1 e2

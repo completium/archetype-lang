@@ -775,7 +775,7 @@ module Field
 
 end
 
-(* COLLECTION is a a unduped fset of asset
+(* COLLECTION is an unduped fset of asset
    plus an invariant on key injectivity ------------------------------------- *)
 module Collection
   use Types
@@ -959,6 +959,69 @@ module Collection
 
   (* ------------------------------------------------------------------------ *)
   let function card (c : collection) = N.card c.content
+
+end
+
+module Set
+
+  (* ------------------------------------------------------------------------ *)
+  type t
+
+  (* ------------------------------------------------------------------------ *)
+  val function eqt t t : bool
+
+  (* ------------------------------------------------------------------------ *)
+  let predicate le t1 t2 = keyt t1 <= keyt t2
+
+  (* ------------------------------------------------------------------------ *)
+  clone InsertionSort as S with type elt = t,
+                                val le = le
+
+  (* ------------------------------------------------------------------------ *)
+  clone Undup as U with type t = t,
+                        val eqt = eqt
+
+  (* ------------------------------------------------------------------------ *)
+  let function norm (l : list t) = S.insertion_sort (U.undup l)
+
+  (* ------------------------------------------------------------------------ *)
+  clone fset.FSet as F with type t     = t,
+                            val eqt    = eqt,
+                            val norm   = norm,
+                            axiom .
+
+  (* ------------------------------------------------------------------------ *)
+  type set = F.fset
+
+  (* ------------------------------------------------------------------------ *)
+  let function put (e : t) (s : set) : set = F.mk (Cons e (F.content s))
+
+  (* ------------------------------------------------------------------------ *)
+  let function contains (e : t) (s : set) : bool
+  =
+  let rec function internal_contains (l : list t) : bool
+  variant { l }
+  = match l with
+  | Cons x tl ->
+    if eqt e x then true else internal_contains tl
+  | Nil -> false
+  end in
+  internal_contains (F.content s)
+
+  (* ------------------------------------------------------------------------ *)
+  let function remove (e : t) (s : set) : set
+  =
+  let rec function internal_remove (l : list t) : set
+  variant { l }
+  = match l with
+  | Cons x tl ->
+    if eqt e x then tl else internal_remove tl
+  | Nil -> Nil
+  end in
+  internal_remove (F.content s)
+
+  (* ------------------------------------------------------------------------ *)
+  let function length (s : set) : int = F.fcard s
 
 end
 
