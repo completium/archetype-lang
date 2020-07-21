@@ -1871,18 +1871,16 @@ let for_asset_keyof_type (env : env) (ty : PT.type_t) : A.lident option =
     None
 
 (* -------------------------------------------------------------------- *)
-let for_literal (_env : env) (ety : A.type_ option) (topv : PT.literal loced) : A.bval =
+let for_literal (_env : env) (_ety : A.type_ option) (topv : PT.literal loced) : A.bval =
   let mk_sp type_ node = A.mk_sp ~loc:(loc topv) ~type_ node in
 
   match unloc topv with
   | Lbool b ->
     mk_sp A.vtbool (A.BVbool b)
 
-  | Lnumber i -> begin
-      match ety with
-      | Some (A.Tbuiltin (VTnat)) -> mk_sp A.vtnat (A.BVuint i)
-      | _                         -> mk_sp A.vtint (A.BVint i)
-    end
+  | Lnat i -> mk_sp A.vtnat (A.BVuint i)
+
+  | Lnumber i -> mk_sp A.vtint (A.BVint i)
 
   | Ldecimal str ->
     begin

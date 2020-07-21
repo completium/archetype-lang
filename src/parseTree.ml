@@ -153,6 +153,7 @@ and function_ =
 
 and literal =
   | Lnumber   of Core.big_int
+  | Lnat      of Core.big_int
   | Ldecimal  of string
   | Ltz       of Core.big_int
   | Lmtz      of Core.big_int

@@ -10,6 +10,7 @@ let cmp_lident i1 i2 : bool = String.equal (unloc i1) (unloc i2)
 let pp_literal fmt (l : literal) =
   match l with
   | Lnumber   n -> Format.fprintf fmt "%s" (Big_int.string_of_big_int n)
+  | Lnat      n -> Format.fprintf fmt "%sn" (Big_int.string_of_big_int n)
   | Ldecimal  n -> Format.fprintf fmt "%s" n
   | Ltz       n -> Format.fprintf fmt "%stz"   (Big_int.string_of_big_int n)
   | Lmtz      n -> Format.fprintf fmt "%smtz"  (Big_int.string_of_big_int n)

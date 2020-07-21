@@ -164,6 +164,7 @@
 %token <string> IDENT
 %token <string> STRING
 %token <Big_int.big_int> NUMBER
+%token <Big_int.big_int> NUMBERNAT
 %token <string> DECIMAL
 %token <Big_int.big_int> TZ
 %token <Big_int.big_int> MTZ
@@ -893,6 +894,7 @@ label_expr_unloc:
 
 literal:
  | x=NUMBER      { Lnumber   x }
+ | x=NUMBERNAT   { Lnat      x }
  | x=DECIMAL     { Ldecimal  x }
  | x=TZ          { Ltz       x }
  | x=MTZ         { Lmtz      x }
