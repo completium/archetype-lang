@@ -3033,35 +3033,8 @@ type kind_ident =
   | KIsecurityentry
   | KImterm (* mterm *)
 
-let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : model =
+let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (for_mterm : mterm -> mterm) (model : model) : model =
   let g k (id : lident) = {id with pldesc=(f k id.pldesc)} in
-  let rec for_type (t : type_) : type_ =
-    match t with
-    | Tasset id         -> Tasset (g KIassetname id)
-    | Tenum id          -> Tenum (g KIenumname id)
-    | Tstate            -> t
-    | Tcontract id      -> Tcontract (g KIcontractname id)
-    | Tbuiltin _        -> t
-    | Tcontainer (a, c) -> Tcontainer (for_type a, c)
-    | Tlist a           -> Tlist (for_type a)
-    | Toption a         -> Toption (for_type a)
-    | Ttuple l          -> Ttuple (List.map for_type l)
-    | Tset k            -> Tset k
-    | Tmap (k, v)       -> Tmap (k, for_type v)
-    | Trecord id        -> Trecord (g KIrecordname id)
-    | Tunit             -> t
-    | Tstorage          -> t
-    | Toperation        -> t
-    | Tentry            -> t
-    | Tentrysig t       -> Tentrysig (for_type t)
-    | Tprog a           -> Tprog (for_type a)
-    | Tvset (v, a)      -> Tvset (v, for_type a)
-    | Ttrace _          -> t
-  in
-  let rec for_mterm (mt : mterm) : mterm =
-    let node : mterm__node = map_term_node_internal (f KImterm) (g KImterm) for_type for_mterm mt.node in
-    mk_mterm node (for_type mt.type_)
-  in
   let for_api_item (ai : api_storage) : api_storage =
     let for_node_item (asn : api_storage_node) : api_storage_node =
       let for_api_asset (aasset : api_asset) : api_asset =
@@ -3356,11 +3329,11 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
           in
           match sn with
           | SonlyByRole         (ad, srl)     -> SonlyByRole         (for_entry_description ad, List.map for_security_role srl)
-          | SonlyInEntry       (ad, sa)       -> SonlyInEntry       (for_entry_description ad, for_security_entry sa)
-          | SonlyByRoleInEntry (ad, srl, sa)  -> SonlyByRoleInEntry (for_entry_description ad, List.map for_security_role srl, for_security_entry sa)
+          | SonlyInEntry       (ad, sa)       -> SonlyInEntry        (for_entry_description ad, for_security_entry sa)
+          | SonlyByRoleInEntry (ad, srl, sa)  -> SonlyByRoleInEntry  (for_entry_description ad, List.map for_security_role srl, for_security_entry sa)
           | SnotByRole          (ad, srl)     -> SnotByRole          (for_entry_description ad, List.map for_security_role srl)
-          | SnotInEntry        (ad, sa)       -> SnotInEntry        (for_entry_description ad, for_security_entry sa)
-          | SnotByRoleInEntry  (ad, srl, sa)  -> SnotByRoleInEntry  (for_entry_description ad, List.map for_security_role srl, for_security_entry sa)
+          | SnotInEntry        (ad, sa)       -> SnotInEntry         (for_entry_description ad, for_security_entry sa)
+          | SnotByRoleInEntry  (ad, srl, sa)  -> SnotByRoleInEntry   (for_entry_description ad, List.map for_security_role srl, for_security_entry sa)
           | StransferredBy      (ad)          -> StransferredBy      (for_entry_description ad)
           | StransferredTo      (ad)          -> StransferredTo      (for_entry_description ad)
           | SnoStorageFail      sa            -> SnoStorageFail      (for_security_entry sa)
@@ -3392,6 +3365,37 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
     security      = for_security model.security;
     loc           = model.loc;
   }
+
+let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : model =
+  let g k (id : lident) = {id with pldesc=(f k id.pldesc)} in
+  let rec for_type (t : type_) : type_ =
+    match t with
+    | Tasset id         -> Tasset (g KIassetname id)
+    | Tenum id          -> Tenum (g KIenumname id)
+    | Tstate            -> t
+    | Tcontract id      -> Tcontract (g KIcontractname id)
+    | Tbuiltin _        -> t
+    | Tcontainer (a, c) -> Tcontainer (for_type a, c)
+    | Tlist a           -> Tlist (for_type a)
+    | Toption a         -> Toption (for_type a)
+    | Ttuple l          -> Ttuple (List.map for_type l)
+    | Tset k            -> Tset k
+    | Tmap (k, v)       -> Tmap (k, for_type v)
+    | Trecord id        -> Trecord (g KIrecordname id)
+    | Tunit             -> t
+    | Tstorage          -> t
+    | Toperation        -> t
+    | Tentry            -> t
+    | Tentrysig t       -> Tentrysig (for_type t)
+    | Tprog a           -> Tprog (for_type a)
+    | Tvset (v, a)      -> Tvset (v, for_type a)
+    | Ttrace _          -> t
+  in
+  let rec for_mterm (mt : mterm) : mterm =
+    let node : mterm__node = map_term_node_internal (f KImterm) (g KImterm) for_type for_mterm mt.node in
+    mk_mterm node (for_type mt.type_)
+  in
+  map_model f for_type for_mterm model
 
 (* -------------------------------------------------------------------- *)
 

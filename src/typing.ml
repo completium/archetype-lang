@@ -861,7 +861,7 @@ let coreops =
   @ (List.flatten (List.map (fun (name, cname) -> (
         List.map
           (fun x -> (name, cname, `Total, None, [x; x], x))
-          [A.vtint; A.vtrational; A.vtdate; A.vtduration; A.vtcurrency]))
+          [A.vtnat; A.vtint; A.vtrational; A.vtdate; A.vtduration; A.vtcurrency]))
       [("min", A.Cmin); ("max", A.Cmax)]))
   @ (List.map
        (fun x -> ("concat", A.Cconcat, `Total, None, [x; x], x))
