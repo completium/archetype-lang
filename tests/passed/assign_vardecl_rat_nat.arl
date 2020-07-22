@@ -1,9 +1,9 @@
-archetype assign_vardecl_rat_int
+archetype assign_vardecl_rat_nat
 
 variable res : rational = 0
 
 entry exec () {
   effect {
-    res := 1i
+    res := 1
   }
 }

@@ -1422,6 +1422,20 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (c, t)
 
+    | Mnattoint e ->
+      let pp fmt e =
+        Format.fprintf fmt "int(%a)"
+          f e
+      in
+      pp fmt e
+
+    | Mnattorat e ->
+      let pp fmt e =
+        Format.fprintf fmt "(int(%a), 1)"
+          f e
+      in
+      pp fmt e
+
     | Minttorat e ->
       let pp fmt e =
         Format.fprintf fmt "((%a), 1)"

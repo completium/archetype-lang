@@ -1037,6 +1037,20 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (c, t)
 
+    | Mnattoint e ->
+      let pp fmt e =
+        Format.fprintf fmt "nat_to_int (%a)"
+          f e
+      in
+      pp fmt e
+
+    | Mnattorat e ->
+      let pp fmt e =
+        Format.fprintf fmt "nat_to_rat (%a)"
+          f e
+      in
+      pp fmt e
+
     | Minttorat e ->
       let pp fmt e =
         Format.fprintf fmt "int_to_rat (%a)"

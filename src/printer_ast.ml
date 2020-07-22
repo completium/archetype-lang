@@ -94,7 +94,7 @@ let pp_struct_poly pp_node fmt (s : 'a struct_poly) =
 
 let pp_bval fmt (bval : bval) =
   let pp_node fmt = function
-    | BVint v           -> pp_big_int fmt v
+    | BVint v           -> Format.fprintf fmt "%ai" pp_big_int v
     | BVnat v           -> pp_big_int fmt v
     | BVbool v          -> pp_str fmt (if v then "true" else "false")
     | BVenum v          -> pp_str fmt v

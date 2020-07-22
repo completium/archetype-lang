@@ -1061,6 +1061,15 @@ let remove_cmp_bool (model : model) : model =
   in
   Model.map_mterm_model aux model
 
+let update_nat_int_rat (model : model) : model =
+  let rec aux c (mt : mterm) : mterm =
+    match mt.node with
+    | Mnattoint {node = Mnat n; _} -> {mt with node = Mint n}
+    | Mnattorat {node = Mnat n; _} -> {mt with node = Minttorat (mk_mterm (Mint n) (Tbuiltin Bint))}
+    | _ -> map_mterm (aux c) mt
+  in
+  Model.map_mterm_model aux model
+
 let remove_rational (model : model) : model =
   let type_int = Tbuiltin Bint in
   let type_bool= Tbuiltin Bbool in
@@ -1068,6 +1077,7 @@ let remove_rational (model : model) : model =
   let type_rational = Ttuple [type_int; type_int] in
   let one = mk_mterm (Mint (Big_int.unit_big_int)) type_int in
   let mk_rat n d = mk_mterm (Mtuple [n ; d]) type_rational in
+  let nat_to_rat e = mk_mterm (Mnattorat e) type_rational in
   let int_to_rat e = mk_mterm (Minttorat e) type_rational in
   let process_type t : type_ =
     let rec aux t =
@@ -1079,6 +1089,7 @@ let remove_rational (model : model) : model =
   in
   let to_rat (x : mterm) =
     match x.type_ with
+    | Tbuiltin Bnat -> mk_rat x one
     | Tbuiltin Bint -> mk_rat x one
     | Ttuple [Tbuiltin Bint; Tbuiltin Bint] -> x
     | _ -> assert false
@@ -1131,6 +1142,9 @@ let remove_rational (model : model) : model =
       | _ as node, Tbuiltin Brational ->
         begin
           match node with
+          | Mcast (Tbuiltin Bnat, Tbuiltin Brational, v) ->
+            let nv = aux v in
+            nat_to_rat nv
           | Mcast (Tbuiltin Bint, Tbuiltin Brational, v) ->
             let nv = aux v in
             int_to_rat nv
@@ -1336,6 +1350,7 @@ let remove_rational (model : model) : model =
         });
     specification = process_specification model.specification;
   }
+  |> update_nat_int_rat
 
 
 let replace_date_duration_by_timestamp (model : model) : model =

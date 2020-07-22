@@ -339,6 +339,8 @@ type ('id, 'term) mterm_node  =
   | Mratuminus        of 'term
   | Mrattez           of 'term * 'term
   | Mdivtez           of 'term * 'term
+  | Mnattoint         of 'term
+  | Mnattorat         of 'term
   | Minttorat         of 'term
   | Mratdur           of 'term * 'term
   (* functional *)
@@ -1248,6 +1250,8 @@ let cmp_mterm_node
     | Mratuminus v1, Mratuminus v2                                                     -> cmp v1 v2
     | Mrattez (c1, t1), Mrattez (c2, t2)                                               -> cmp c1 c2 && cmp t1 t2
     | Mdivtez (c1, t1), Mdivtez (c2, t2)                                               -> cmp c1 c2 && cmp t1 t2
+    | Mnattoint e1, Mnattoint e2                                                       -> cmp e1 e2
+    | Mnattorat e1, Mnattorat e2                                                       -> cmp e1 e2
     | Minttorat e1, Minttorat e2                                                       -> cmp e1 e2
     | Mratdur (c1, t1), Mratdur (c2, t2)                                               -> cmp c1 c2 && cmp t1 t2
     (* functional *)
@@ -1593,6 +1597,8 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mratuminus v                   -> Mratuminus (f v)
   | Mrattez (c, t)                 -> Mrattez (f c, f t)
   | Mdivtez (c, t)                 -> Mdivtez (f c, f t)
+  | Mnattoint e                    -> Mnattoint (f e)
+  | Mnattorat e                    -> Mnattorat (f e)
   | Minttorat e                    -> Minttorat (f e)
   | Mratdur (c, t)                 -> Mratdur (f c, f t)
   (* functional *)
@@ -1954,6 +1960,8 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mratuminus v                          -> f accu v
   | Mrattez (c, t)                        -> f (f accu c) t
   | Mdivtez (c, t)                        -> f (f accu c) t
+  | Mnattoint e                           -> f accu e
+  | Mnattorat e                           -> f accu e
   | Minttorat e                           -> f accu e
   | Mratdur (c, t)                        -> f (f accu c) t
   (* functional *)
@@ -2782,6 +2790,14 @@ let fold_map_term
     let ce, ca = f accu c in
     let te, ta = f ca t in
     g (Mdivtez (ce, te)), ta
+
+  | Mnattoint e ->
+    let ee, ea = f accu e in
+    g (Mnattoint ee), ea
+
+  | Mnattorat e ->
+    let ee, ea = f accu e in
+    g (Mnattorat ee), ea
 
   | Minttorat e ->
     let ee, ea = f accu e in

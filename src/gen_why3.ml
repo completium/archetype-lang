@@ -1731,6 +1731,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mratuminus v -> Tapp (loc_term (Tvar "rat_uminus"),[map_mterm m ctx v])
     | Mrattez (r,t) -> Tapp (loc_term (Tvar "rat_tez"),[map_mterm m ctx r; map_mterm m ctx t])
     | Mdivtez (r,t) -> Tapp (loc_term (Tvar "div_tez"),[map_mterm m ctx r; map_mterm m ctx t])
+    | Mnattoint _v ->  error_not_translated "Mnattoint" (* map_mterm m ctx v *)
+    | Mnattorat v -> Ttuple ([map_mterm m ctx v; loc_term (Tint (Big_int.big_int_of_int 1))])
     | Minttorat v -> Ttuple ([map_mterm m ctx v; loc_term (Tint (Big_int.big_int_of_int 1))])
     | Mratdur (r,t) -> Tapp (loc_term (Tvar "rat_dur"),[map_mterm m ctx r; map_mterm m ctx t])
 
