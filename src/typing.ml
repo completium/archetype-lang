@@ -66,7 +66,7 @@ end = struct
     | A.Tasset _ -> true |  _ -> false
 
   let is_numeric = function
-    | A.Tbuiltin (A.VTint | A.VTrational) -> true |  _ -> false
+    | A.Tbuiltin (A.VTnat | A.VTint | A.VTrational) -> true |  _ -> false
 
   let is_currency = function
     | A.Tbuiltin (A.VTcurrency) -> true | _ -> false
@@ -88,8 +88,8 @@ end = struct
 
   module Michelson = struct
     let is_comparable ?(simple = false) = function
-      | A.Tbuiltin VTint
       | A.Tbuiltin VTnat
+      | A.Tbuiltin VTint
       | A.Tbuiltin VTstring
       | A.Tbuiltin VTbytes
       | A.Tbuiltin VTcurrency
@@ -132,38 +132,43 @@ end = struct
 
   let equal = ((=) : A.ptyp -> A.ptyp -> bool)
 
-  let compatible ?(autoview = false) ~(from_ : A.ptyp) ~(to_ : A.ptyp) =
+  let distance ?(autoview = false) ~(from_ : A.ptyp) ~(to_ : A.ptyp) =
     match from_, to_ with
     | _, _ when from_ = to_ ->
-      true
+      Some 0
 
     | A.Tbuiltin bfrom, A.Tbuiltin bto -> begin
         match bfrom, bto with
-        | A.VTaddress  , A.VTrole
-        | A.VTrole     , A.VTaddress
-        | A.VTint      , A.VTrational
-        | A.VTstring   , A.VTkey
-        | A.VTstring   , A.VTsignature
-        | A.VTcurrency , A.VTint
-        | A.VTduration , A.VTint
-        | A.VTnat      , A.VTint
-          -> true
+        | A.VTaddress  , A.VTrole       -> Some 1
+        | A.VTrole     , A.VTaddress    -> Some 1
+        | A.VTnat      , A.VTint        -> Some 1
+        | A.VTnat      , A.VTrational   -> Some 2
+        | A.VTint      , A.VTrational   -> Some 1
+        | A.VTstring   , A.VTkey        -> Some 1
+        | A.VTstring   , A.VTsignature  -> Some 1
+        | A.VTcurrency , A.VTint        -> Some 1
+        | A.VTduration , A.VTint        -> Some 1
 
-        | _, _ -> false
+        | _, _ -> None
       end
 
     | A.Tcontract _, A.Tbuiltin (A.VTaddress | A.VTrole) (* FIXME *)
     | A.Tbuiltin (A.VTaddress | A.VTrole), A.Tcontract _ ->
-      true
+      Some 1
 
     | A.Tbuiltin (A.VTaddress | A.VTrole), A.Tentrysig Tbuiltin (VTunit) ->
-      true
+      Some 1
 
     | A.Tcontainer (ty1, cf), A.Tcontainer (ty2, ct) ->
-      equal ty1 ty2 && (cf = ct || (autoview && ct = A.View))
+      if   equal ty1 ty2 && (cf = ct || (autoview && ct = A.View))
+      then Some 0
+      else None
 
     | _, _ ->
-      false
+      None
+
+  let compatible ?autoview ~(from_ : A.ptyp) ~(to_ : A.ptyp) =
+    Option.is_some (distance ?autoview ~from_ ~to_)
 
   let join ?autoview (tys : A.ptyp list) =
     let module E = struct exception Error end in
@@ -181,9 +186,7 @@ end = struct
     with E.Error -> None
 
   let distance ~(from_ : A.ptyp) ~(to_ : A.ptyp) =
-    if   equal from_ to_
-    then Some 0
-    else (if compatible ~autoview:false ~from_ ~to_ then Some 1 else None)
+    distance ~autoview:false ~from_ ~to_
 
   let sig_compatible ~(from_ : A.ptyp list) ~(to_ : A.ptyp list) =
     List.length from_ = List.length to_
@@ -197,9 +200,11 @@ end = struct
       let module E = struct exception Reject end in
 
       try
-        Some (List.fold_left2 (fun d from_ to_ ->
+        let i =
+          List.fold_left2 (fun d from_ to_ ->
             d + Option.get_exn E.Reject (distance ~from_ ~to_)
-          ) 0 from_ to_)
+          ) 0 from_ to_
+        in Some i
       with E.Reject -> None
 
   let sig_equal tys1 tys2 =
@@ -287,6 +292,7 @@ end = struct
   and pktype_simpl = function
     | Tbuiltin (
         VTbool
+      | VTnat
       | VTint
       | VTdate
       | VTstring
@@ -653,15 +659,15 @@ type argtype = [`Type of A.type_ | `Effect of ident]
 
 (* -------------------------------------------------------------------- *)
 let cmptypes =
-  [ A.VTint            ;
-    A.VTnat            ;
-    A.VTrational       ;
-    A.VTdate           ;
-    A.VTduration       ;
-    A.VTstring         ;
-    A.VTaddress        ;
-    A.VTcurrency       ;
-    A.VTbytes          ]
+  [ A.VTnat     ;
+    A.VTint     ;
+    A.VTrational;
+    A.VTdate    ;
+    A.VTduration;
+    A.VTstring  ;
+    A.VTaddress ;
+    A.VTcurrency;
+    A.VTbytes   ]
 
 let grptypes =
   [ A.VTduration       ;
@@ -695,9 +701,14 @@ let opsigs =
     @ (List.mappdt (fun op sig_ -> (op, sig_)) uops usig) in
 
   let ariths : (PT.operator * (A.vtyp list * A.vtyp)) list =
-    [ PT.Arith PT.Modulo, ([A.VTint; A.VTint],           A.VTint);
+    [ PT.Arith PT.Modulo, ([A.VTint; A.VTint],           A.VTnat);
       PT.Arith PT.DivRat, ([A.VTrational; A.VTrational], A.VTrational);
       PT.Arith PT.DivEuc, ([A.VTint; A.VTint],           A.VTint) ] in
+
+  let nat : (PT.operator * (A.vtyp list * A.vtyp)) list =
+    [ PT.Arith PT.Plus  , ([A.VTnat; A.VTnat], A.VTnat) ;
+      PT.Arith PT.Mult  , ([A.VTnat; A.VTnat], A.VTnat) ;
+      PT.Arith PT.DivEuc, ([A.VTnat; A.VTnat], A.VTnat) ] in
 
   let bools : (PT.operator * (A.vtyp list * A.vtyp)) list =
     let unas = List.map (fun x -> PT.Unary   x) [PT.Not] in
@@ -729,7 +740,7 @@ let opsigs =
       PT.Arith PT.Plus   , ([A.VTstring  ; A.VTstring        ], A.VTstring  )  ;
     ] in
 
-  cmpsigs @ grptypes @ rgtypes @ ariths @ bools @ others
+  cmpsigs @ grptypes @ rgtypes @ ariths @ nat @ bools @ others
 
 let opsigs =
   let doit (args, ret) =
@@ -1680,18 +1691,25 @@ let select_operator env ?(formula = false) ?(asset = false) loc (op, tys) =
       | _::_::_ as sigs -> begin
           let module E = struct exception Bailout end in
 
+          let mind =
+            let ds =
+              List.pmap (fun sig_ -> Type.sig_distance ~to_:sig_.osl_sig ~from_:tys) ops
+            in if List.is_empty ds then None else Some (List.fold_left min max_int ds) in
+
+          let ops =
+            List.filter
+              (fun sig_ ->
+                let d = Type.sig_distance ~to_:sig_.osl_sig ~from_:tys in
+                d = mind || Option.is_none d)
+              ops in
+
           try
-            let sig_ =
-              match
-                List.filter
-                  (fun sig_ -> Type.sig_equal sig_.osl_sig tys)
-                  sigs
-              with [sig_] -> sig_ | _ -> raise E.Bailout in
+            let sig_ = match ops with [sig_] -> sig_ | _ -> raise E.Bailout in
 
             List.iter (fun sig2 ->
-                if not (Type.sig_compatible ~from_:sig_.osl_sig ~to_:sig2.osl_sig) then
-                  raise E.Bailout
-              ) sigs;
+              if not (Type.sig_compatible ~from_:sig_.osl_sig ~to_:sig2.osl_sig) then
+                raise E.Bailout
+            ) sigs;
 
             Some sig_
 
@@ -1882,8 +1900,7 @@ let for_literal (_env : env) (_ety : A.type_ option) (topv : PT.literal loced) :
 
   | Lnumber i -> mk_sp A.vtint (A.BVint i)
 
-  | Ldecimal str ->
-    begin
+  | Ldecimal str -> begin
       let n, d = Core.decimal_string_to_rational str in
       mk_sp A.vtrational (A.BVrational (n, d))
     end
@@ -1912,8 +1929,7 @@ let for_literal (_env : env) (_ety : A.type_ option) (topv : PT.literal loced) :
   | Lbytes s ->
     mk_sp A.vtbytes (A.BVbytes (s))
 
-  | Lpercent n ->
-    begin
+  | Lpercent n -> begin
       let n, d = Core.compute_irr_fract (n, Big_int.big_int_of_int 100) in
       mk_sp A.vtrational (A.BVrational (n, d))
     end
@@ -2312,7 +2328,8 @@ let rec for_xexpr
               | _ -> Env.emit_error env (pk.loc, InvalidExprressionForTupleAccess); Big_int.zero_big_int
             in
             let i =
-              if (Big_int.lt_big_int idx Big_int.zero_big_int || Big_int.ge_big_int idx (Big_int.big_int_of_int (List.length lt)))
+              if      Big_int.lt_big_int idx Big_int.zero_big_int
+                   || Big_int.ge_big_int idx (Big_int.big_int_of_int (List.length lt))
               then (Env.emit_error env (pk.loc, IndexOutOfBoundForTuple); 0)
               else (Big_int.int_of_big_int idx)
             in

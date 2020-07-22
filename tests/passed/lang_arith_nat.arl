@@ -2,8 +2,8 @@ archetype lang_arith_nat
 
 entry exec () {
   effect {
-    var a : nat = 1;
-    var b : nat = 2;
+    var a : nat = 1n;
+    var b : nat = 2n;
 
     var nat_nat_plus   : nat = a + b;
     var nat_nat_minus  : int = a - b;
