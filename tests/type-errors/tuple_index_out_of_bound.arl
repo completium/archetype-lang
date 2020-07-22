@@ -1,6 +1,6 @@
 archetype tuple_index_out_of_bound
 
-variable res : int * int = (1, 2)
+variable res : nat * nat = (1, 2)
 
 entry exec () {
   effect {

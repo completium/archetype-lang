@@ -1,8 +1,8 @@
 archetype expr_formula_cmp_eq_list
 
-constant a : list<int> = [1; 2; 3]
+constant a : list<nat> = [1; 2; 3]
 
-constant b : list<int> = [1; 2; 3]
+constant b : list<nat> = [1; 2; 3]
 
 entry exec () {
   specification {

@@ -1,4 +1,4 @@
-archetype cast_nat_int
+archetype cast_nat_int_lit
 
 entry exec () {
   effect {

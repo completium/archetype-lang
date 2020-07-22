@@ -7,7 +7,7 @@ entry exec () {
     s0: res = "0";
   }
   effect {
-    var m : map<int, string> = [(0, "0")];
+    var m : map<nat, string> = [(0, "0")];
     res := map_getopt(m, 0)
   }
 }

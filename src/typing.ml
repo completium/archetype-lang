@@ -2321,10 +2321,10 @@ let rec for_xexpr
         let ee = for_xexpr env e in
         match ee.type_ with
         | Some (A.Ttuple lt) -> begin
-            let pk = for_xexpr ?ety:(Some A.vtint) env pk in
+            let pk = for_xexpr ?ety:(Some A.vtnat) env pk in
             let idx : Core.big_int =
               match pk.node with
-              | A.Plit ({node = A.BVint idx}) -> idx
+              | A.Plit ({node = A.BVnat idx}) -> idx
               | _ -> Env.emit_error env (pk.loc, InvalidExprressionForTupleAccess); Big_int.zero_big_int
             in
             let i =

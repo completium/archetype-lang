@@ -1,4 +1,4 @@
-archetype expr_fun_min_int_rat
+archetype expr_fun_min_nat_rat
 
 variable res : rational = 0.0
 
@@ -7,6 +7,6 @@ entry exec () {
     s0: res = 0.5;
   }
   effect {
-    res := min(1i, 0.5)
+    res := min(1, 0.5)
   }
 }

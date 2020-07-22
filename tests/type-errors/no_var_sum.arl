@@ -2,8 +2,8 @@ archetype no_var_sum
 
 asset my_asset identified by id {
   id : string;
-  v1 : int;
-  v2 : int;
+  v1 : nat;
+  v2 : nat;
 } initialized by {
   {"id0"; 0};
   {"id1"; 1};
@@ -17,7 +17,7 @@ entry exec () {
     s0: res = 3;
   }
   effect {
-    var n : int = 1;
+    var n : nat = 1;
     res := my_asset.sum(v1 + n)
   }
 }

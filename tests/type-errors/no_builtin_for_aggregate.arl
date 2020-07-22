@@ -1,6 +1,6 @@
 archetype no_builtin_for_aggregate
 
-variable res : aggregate<int> = []
+variable res : aggregate<nat> = []
 
 entry exec () {
   effect {

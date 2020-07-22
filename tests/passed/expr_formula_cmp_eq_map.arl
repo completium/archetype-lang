@@ -1,8 +1,8 @@
 archetype expr_formula_cmp_eq_map
 
-constant a : map<int, string> = [(1, "1"); (2, "2"); (3, "3")]
+constant a : map<nat, string> = [(1, "1"); (2, "2"); (3, "3")]
 
-constant b : map<int, string> = [(1, "1"); (2, "2"); (3, "3")]
+constant b : map<nat, string> = [(1, "1"); (2, "2"); (3, "3")]
 
 entry exec () {
   specification {

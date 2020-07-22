@@ -1,12 +1,12 @@
-archetype expr_fun_min_int_rat
+archetype expr_fun_max_rat_nat
 
 variable res : rational = 0.0
 
 entry exec () {
   specification {
-    s0: res = 0.5;
+    s0: res = 1.0;
   }
   effect {
-    res := min(1i, 0.5)
+    res := max(0.5, 1)
   }
 }

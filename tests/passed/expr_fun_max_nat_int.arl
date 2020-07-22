@@ -1,12 +1,12 @@
-archetype expr_fun_min_int_int
+archetype expr_fun_max_nat_int
 
 variable res : int = 0i
 
 entry exec () {
   specification {
-    s0: res = 1i;
+    s0: res = 2i;
   }
   effect {
-    res := min(1i, 2i)
+    res := max(2, 1i)
   }
 }

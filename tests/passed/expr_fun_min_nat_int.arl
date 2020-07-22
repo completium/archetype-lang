@@ -1,4 +1,4 @@
-archetype expr_fun_min_int_int
+archetype expr_fun_min_nat_int
 
 variable res : int = 0i
 
@@ -7,6 +7,6 @@ entry exec () {
     s0: res = 1i;
   }
   effect {
-    res := min(1i, 2i)
+    res := min(1, 2i)
   }
 }

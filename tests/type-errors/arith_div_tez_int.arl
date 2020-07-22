@@ -2,6 +2,6 @@ archetype arith_div_tez_int
 
 entry main () {
   effect {
-    var v = 1tz / 1
+    var v = 1tz / 1i
   }
 }

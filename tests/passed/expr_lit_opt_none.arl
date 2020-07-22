@@ -1,6 +1,6 @@
 archetype expr_lit_opt_none
 
-variable res : option<int> = none
+variable res : option<nat> = none
 
 entry exec () {
   effect {
