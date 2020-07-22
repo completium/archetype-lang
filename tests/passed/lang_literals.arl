@@ -9,8 +9,8 @@ entry exec () {
   effect {
     var x : bool = true;
     var y : bool = false;
-    var n : nat = 1n;
-    var i : int = 1;
+    var n : nat = 1;
+    var i : int = 1i;
     var j : int = -1;
     var f : rational = 1.1;
     var g : rational = -1.1;
@@ -28,12 +28,12 @@ entry exec () {
     var date2 : date = 2019-01-01T01:02:03Z;      (* iso 8601 *)
     var date3 : date = 2019-01-01T00:00:00+01:00; (* iso 8601 *)
     var date4 : date = 2019-01-01T00:00:00-05:30; (* iso 8601 *)
-    var myset : set<int> = [1; 2; 3];
-    var mylist : list<int> = [1; 2; 3];
-    var mymap  : map<int, string> = [(1, "mystr1"); (2, "mystr2"); (3, "mystr3")];
+    var myset : set<nat> = [1; 2; 3];
+    var mylist : list<nat> = [1; 2; 3];
+    var mymap  : map<nat, string> = [(1, "mystr1"); (2, "mystr2"); (3, "mystr3")];
     var mytuple : (int * int) = (1, 2);
     var op1 : option<int> = none;
-    var op2 : option<int> = some(0);
+    var op2 : option<nat> = some(0);
     my_asset.add({id = "key"; value = 2});
     var b : bytes = 0xff;
     var vchain : chain_id = chainid;

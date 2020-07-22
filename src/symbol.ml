@@ -53,8 +53,8 @@ let string_of_token = function
   | OR              -> "OR"
   | OPTION          -> "OPTION"
   | ON              -> "ON"
+  | NUMBERINT n     -> Printf.sprintf "NUMBERINT(%s)" (Big_int.string_of_big_int n)
   | NUMBERNAT n     -> Printf.sprintf "NUMBERNAT(%s)" (Big_int.string_of_big_int n)
-  | NUMBER n        -> Printf.sprintf "NUMBER(%s)" (Big_int.string_of_big_int n)
   | NOT             -> "NOT"
   | NONE            -> "NONE"
   | NEQUAL          -> "NEQUAL"
@@ -198,7 +198,7 @@ let string_of_symbol = function
   | X (T T_OR) -> "or"
   | X (T T_OPTION) -> "option"
   | X (T T_ON) -> "on"
-  | X (T T_NUMBER) -> "a number"
+  | X (T T_NUMBERINT) -> "a int number"
   | X (T T_NUMBERNAT) -> "a nat number"
   | X (T T_NOT) -> "not"
   | X (T T_NONE) -> "none"

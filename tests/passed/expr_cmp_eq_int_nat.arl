@@ -7,6 +7,6 @@ entry exec () {
     s0: res = true;
   }
   effect {
-    res := 1 = 1n
+    res := 1i = 1
   }
 }

@@ -6,26 +6,79 @@ entry exec () {
     var bool_bool_or  : bool = true or false;
     var bool_bool_not : bool = not true;
 
-    var int_int_plus   : int = 1 + 2;
-    var int_int_minus  : int = 1 - 2;
-    var int_int_mult   : int = 1 * 2;
-    var int_int_ediv   : int = 1 div 2;
-    // var int_int_modulo : int = 1 % 2;
+    /* nat nat */
+    var nat_nat_plus   : nat      = 1 +   2;
+    var nat_nat_minus  : int      = 1 -   2;
+    var nat_nat_mult   : nat      = 1 *   2;
+    var nat_nat_ediv   : nat      = 1 div 2;
+    var nat_nat_modulo : nat      = 1 %   2;
+    var nat_nat_div    : rational = 1 /   2;
 
+    /* int int */
+    var int_int_plus   : int = 1i +   2i;
+    var int_int_minus  : int = 1i -   2i;
+    var int_int_mult   : int = 1i *   2i;
+    var int_int_ediv   : int = 1i div 2i;
+    var int_int_modulo : nat = 1i %   2i;
+
+    /* rat rat */
     var rat_rat_plus   : rational = 1.1 + 1.2;
     var rat_rat_minus  : rational = 1.1 - 1.2;
     var rat_rat_mult   : rational = 1.1 * 1.2;
     var rat_rat_div    : rational = 1.1 / 1.2;
 
-    var int_rat_plus   : rational = 1 + 1.2;
-    var int_rat_minus  : rational = 1 - 1.2;
-    var int_rat_mult   : rational = 1 * 1.2;
-    var int_rat_div    : rational = 1 / 1.2;
+    /* nat int */
+    var nat_int_plus   : int      = 1 +   2i;
+    var nat_int_minus  : int      = 1 -   2i;
+    var nat_int_mult   : int      = 1 *   2i;
+    var nat_int_ediv   : int      = 1 div 2i;
+    var nat_int_modulo : nat      = 1 %   2i;
+    var nat_int_div    : rational = 1 /   2i;
 
-    var rat_int_plus   : rational = 1.1 + 2;
-    var rat_int_minus  : rational = 1.1 - 2;
-    var rat_int_mult   : rational = 1.1 * 2;
-    var rat_int_div    : rational = 1.1 / 2;
+    /* int nat */
+    var int_nat_plus   : int      = 1i +   2;
+    var int_nat_minus  : int      = 1i -   2;
+    var int_nat_mult   : int      = 1i *   2;
+    var int_nat_ediv   : int      = 1i div 2;
+    var int_nat_modulo : nat      = 1i %   2;
+    var int_nat_div    : rational = 1i /   2;
+
+    /* int rat */
+    var int_rat_plus   : rational = 1i + 1.2;
+    var int_rat_minus  : rational = 1i - 1.2;
+    var int_rat_mult   : rational = 1i * 1.2;
+    var int_rat_div    : rational = 1i / 1.2;
+
+    /* rat int */
+    var rat_int_plus   : rational = 1.1 + 2i;
+    var rat_int_minus  : rational = 1.1 - 2i;
+    var rat_int_mult   : rational = 1.1 * 2i;
+    var rat_int_div    : rational = 1.1 / 2i;
+
+    /* nat rat */
+    var nat_rat_plus   : rational = 1 + 1.2;
+    var nat_rat_minus  : rational = 1 - 1.2;
+    var nat_rat_mult   : rational = 1 * 1.2;
+    var nat_rat_div    : rational = 1 / 1.2;
+
+    /* rat nat */
+    var rat_nat_plus   : rational = 1.1 + 2;
+    var rat_nat_minus  : rational = 1.1 - 2;
+    var rat_nat_mult   : rational = 1.1 * 2;
+    var rat_nat_div    : rational = 1.1 / 2;
+
+    /* duration */
+    var nat_dur_mult   : duration = 1 * 1h;
+    var int_dur_mult   : duration = 2i * 1h;
+    var dur_nat_ediv   : duration = 1h div 2;
+    var dur_int_ediv   : duration = 1h div 2i;
+
+    /* tez */
+    var nat_tez_mult   : tez      = 1 * 1tz;
+    var int_tez_mult   : tez      = 1i * 1tz;
+    var rat_tez_mult   : tez      = 1.1 * 1tz;
+    var tez_nat_ediv   : tez      = 1tz div 2;
+    var tez_int_ediv   : tez      = 1tz div 2i;
 
     var date_date_minus : duration = 2020-01-01 - 2019-12-31;
 
@@ -33,9 +86,6 @@ entry exec () {
     var dur_dur_minus  : duration = 1h - 2s;
     var dur_dur_div    : rational = 4h / 30m;
     var dur_dur_ediv   : int      = 4h div 30m;
-
-    var int_dur_mult   : duration = 2 * 1h;
-    var dur_int_ediv   : duration = 1h div 2;
 
     var date_dur_plus  : date     = 2020-01-01 + 1d;
     var date_dur_minus : date     = 2020-01-01 - 1d;
@@ -46,9 +96,5 @@ entry exec () {
 
     var tez_tez_plus   : tez      = 2tz + 1tz;
     var tez_tez_minus  : tez      = 2tz - 1tz;
-
-    var int_tez_mult   : tez      = 1 * 1tz;
-    var rat_tez_mult   : tez      = 1.1 * 1tz;
-    var int_tez_ediv   : tez      = 1tz div 2;
   }
 }

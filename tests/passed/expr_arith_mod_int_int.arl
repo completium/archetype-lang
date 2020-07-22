@@ -1,12 +1,12 @@
 archetype expr_arith_mod_int_int
 
-variable res : nat = 0n
+variable res : nat = 0
 
 entry exec () {
   specification {
     s0: res = 1;
   }
   effect {
-    res := 4 % 3
+    res := 4i % 3i
   }
 }

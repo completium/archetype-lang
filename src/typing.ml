@@ -1896,9 +1896,9 @@ let for_literal (_env : env) (_ety : A.type_ option) (topv : PT.literal loced) :
   | Lbool b ->
     mk_sp A.vtbool (A.BVbool b)
 
-  | Lnat i -> mk_sp A.vtnat (A.BVuint i)
+  | Lint i -> mk_sp A.vtint (A.BVint i)
 
-  | Lnumber i -> mk_sp A.vtint (A.BVint i)
+  | Lnat i -> mk_sp A.vtnat (A.BVnat i)
 
   | Ldecimal str -> begin
       let n, d = Core.decimal_string_to_rational str in

@@ -95,7 +95,7 @@ let pp_struct_poly pp_node fmt (s : 'a struct_poly) =
 let pp_bval fmt (bval : bval) =
   let pp_node fmt = function
     | BVint v           -> pp_big_int fmt v
-    | BVuint v          -> pp_big_int fmt v
+    | BVnat v           -> pp_big_int fmt v
     | BVbool v          -> pp_str fmt (if v then "true" else "false")
     | BVenum v          -> pp_str fmt v
     | BVrational (n, d) -> Format.fprintf fmt "(%a / %a)" pp_big_int n pp_big_int d

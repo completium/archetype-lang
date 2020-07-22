@@ -606,8 +606,8 @@ and pp_else fmt (e : expr option) =
 
 and pp_literal fmt lit =
   match lit with
-  | Lnumber   n -> Format.fprintf fmt "%s" (Big_int.string_of_big_int n)
-  | Lnat      n -> Format.fprintf fmt "%sn" (Big_int.string_of_big_int n)
+  | Lint      n -> Format.fprintf fmt "%si" (Big_int.string_of_big_int n)
+  | Lnat      n -> Format.fprintf fmt "%s" (Big_int.string_of_big_int n)
   | Ldecimal  n -> Format.fprintf fmt "%s" n
   (* | Lrational (d, n) -> Format.fprintf fmt "%s div %s"
                           (Big_int.string_of_big_int d)

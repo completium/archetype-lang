@@ -5,7 +5,7 @@ variable res : bool = false
 entry exec () {
   effect {
 
-    /* int int */
+    /* nat nat */
     res := 1 =  2;
     res := 1 <> 2;
     res := 1 <  2;
@@ -13,13 +13,13 @@ entry exec () {
     res := 1 >  2;
     res := 1 >= 2;
 
-    /* nat nat */
-    res := 1n =  2n;
-    res := 1n <> 2n;
-    res := 1n <  2n;
-    res := 1n <= 2n;
-    res := 1n >  2n;
-    res := 1n >= 2n;
+    /* int int */
+    res := 1i =  2i;
+    res := 1i <> 2i;
+    res := 1i <  2i;
+    res := 1i <= 2i;
+    res := 1i >  2i;
+    res := 1i >= 2i;
 
     /* rat rat */
     res := 0.5 =  1.5;
@@ -30,22 +30,22 @@ entry exec () {
     res := 0.5 >= 1.5;
 
     /* nat int */
-    res := 1n =  2;
-    res := 1n <> 2;
-    res := 1n <  2;
-    res := 1n <= 2;
-    res := 1n >  2;
-    res := 1n >= 2;
+    res := 1 =  2i;
+    res := 1 <> 2i;
+    res := 1 <  2i;
+    res := 1 <= 2i;
+    res := 1 >  2i;
+    res := 1 >= 2i;
 
     /* int nat */
-    res := 1 =  2n;
-    res := 1 <> 2n;
-    res := 1 <  2n;
-    res := 1 <= 2n;
-    res := 1 >  2n;
-    res := 1 >= 2n;
+    res := 1i =  2;
+    res := 1i <> 2;
+    res := 1i <  2;
+    res := 1i <= 2;
+    res := 1i >  2;
+    res := 1i >= 2;
 
-    /* rat int */
+    /* rat nat */
     res := 0.5 =  2;
     res := 0.5 <> 2;
     res := 0.5 <  2;
@@ -53,7 +53,7 @@ entry exec () {
     res := 0.5 >  2;
     res := 0.5 >= 2;
 
-    /* int rat */
+    /* nat rat */
     res := 1 =  1.5;
     res := 1 <> 1.5;
     res := 1 <  1.5;
@@ -61,21 +61,21 @@ entry exec () {
     res := 1 >  1.5;
     res := 1 >= 1.5;
 
-    /* rat nat */
-    res := 0.5 =  2n;
-    res := 0.5 <> 2n;
-    res := 0.5 <  2n;
-    res := 0.5 <= 2n;
-    res := 0.5 >  2n;
-    res := 0.5 >= 2n;
+    /* rat int */
+    res := 0.5 =  2i;
+    res := 0.5 <> 2i;
+    res := 0.5 <  2i;
+    res := 0.5 <= 2i;
+    res := 0.5 >  2i;
+    res := 0.5 >= 2i;
 
-    /* nat rat */
-    res := 1n =  1.5;
-    res := 1n <> 1.5;
-    res := 1n <  1.5;
-    res := 1n <= 1.5;
-    res := 1n >  1.5;
-    res := 1n >= 1.5;
+    /* int rat */
+    res := 1i =  1.5;
+    res := 1i <> 1.5;
+    res := 1i <  1.5;
+    res := 1i <= 1.5;
+    res := 1i >  1.5;
+    res := 1i >= 1.5;
 
     /* tez tez */
     res := 1tz =  2tz;
