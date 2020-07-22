@@ -1,4 +1,4 @@
-archetype expr_arith_ediv_tez_int
+archetype expr_arith_ediv_tez_nat
 
 variable res : tez = 0tz
 
@@ -7,7 +7,7 @@ entry exec () {
     s0: res = 1000utz;
   }
   effect {
-    res := 1tz div 1000i;
+    res := 1tz div 1000;
     dorequire(res = 1000utz)
   }
 }

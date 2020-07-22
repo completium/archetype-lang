@@ -43,18 +43,6 @@ entry exec () {
     var int_nat_modulo : nat      = 1i %   2;
     var int_nat_div    : rational = 1i /   2;
 
-    /* int rat */
-    var int_rat_plus   : rational = 1i + 1.2;
-    var int_rat_minus  : rational = 1i - 1.2;
-    var int_rat_mult   : rational = 1i * 1.2;
-    var int_rat_div    : rational = 1i / 1.2;
-
-    /* rat int */
-    var rat_int_plus   : rational = 1.1 + 2i;
-    var rat_int_minus  : rational = 1.1 - 2i;
-    var rat_int_mult   : rational = 1.1 * 2i;
-    var rat_int_div    : rational = 1.1 / 2i;
-
     /* nat rat */
     var nat_rat_plus   : rational = 1 + 1.2;
     var nat_rat_minus  : rational = 1 - 1.2;
@@ -66,6 +54,18 @@ entry exec () {
     var rat_nat_minus  : rational = 1.1 - 2;
     var rat_nat_mult   : rational = 1.1 * 2;
     var rat_nat_div    : rational = 1.1 / 2;
+
+    /* int rat */
+    var int_rat_plus   : rational = 1i + 1.2;
+    var int_rat_minus  : rational = 1i - 1.2;
+    var int_rat_mult   : rational = 1i * 1.2;
+    var int_rat_div    : rational = 1i / 1.2;
+
+    /* rat int */
+    var rat_int_plus   : rational = 1.1 + 2i;
+    var rat_int_minus  : rational = 1.1 - 2i;
+    var rat_int_mult   : rational = 1.1 * 2i;
+    var rat_int_div    : rational = 1.1 / 2i;
 
     /* duration */
     var nat_dur_mult   : duration = 1 * 1h;

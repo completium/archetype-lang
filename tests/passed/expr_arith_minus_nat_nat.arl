@@ -1,4 +1,4 @@
-archetype expr_arith_ediv_int_int
+archetype expr_arith_minus_nat_nat
 
 variable res : int = 0i
 
@@ -7,6 +7,6 @@ entry exec () {
     s0: res = 2i;
   }
   effect {
-    res := 4i div 2i
+    res := 4 - 2
   }
 }

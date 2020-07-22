@@ -7,6 +7,6 @@ entry exec () {
     s0: res = 2.0;
   }
   effect {
-    res := 4 / 2
+    res := 4i / 2i
   }
 }

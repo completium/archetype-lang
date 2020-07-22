@@ -4,9 +4,9 @@ variable res : rational = 0.0
 
 entry exec () {
   specification {
-    s0: res = 3 / 2;
+    s0: res = 1.5;
   }
   effect {
-    res := 1 / 2 * 3
+    res := 0.5 * 3i
   }
 }

@@ -1,4 +1,4 @@
-archetype expr_arith_mult_int_tez
+archetype expr_arith_mult_nat_tez
 
 variable res : tez = 0tz
 
@@ -7,6 +7,6 @@ entry exec () {
     s0: res = 2tz;
   }
   effect {
-    res := 2i * 1tz
+    res := 2 * 1tz
   }
 }

@@ -1,4 +1,4 @@
-archetype expr_arith_mult_int_dur
+archetype expr_arith_mult_nat_dur
 
 variable res : duration = 0s
 
@@ -7,6 +7,6 @@ entry exec () {
     s0: res = 16h;
   }
   effect {
-    res := 4i * 4h
+    res := 4 * 4h
   }
 }

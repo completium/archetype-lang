@@ -1,4 +1,4 @@
-archetype expr_arith_ediv_dur_int
+archetype expr_arith_ediv_dur_nat
 
 variable res : duration = 0s
 
@@ -7,7 +7,7 @@ entry exec () {
     s0: res = 1h;
   }
   effect {
-    res := 4h div 4i;
+    res := 4h div 4;
     dorequire(res = 1h)
   }
 }
