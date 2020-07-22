@@ -1,4 +1,4 @@
-archetype expr_cmp_ne_set
+archetype expr_formula_cmp_ne_set
 
 constant a : set<int> = [1; 2; 3]
 

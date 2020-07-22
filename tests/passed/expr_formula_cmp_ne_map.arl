@@ -1,4 +1,4 @@
-archetype expr_cmp_ne_set
+archetype expr_formula_cmp_ne_map
 
 constant a : map<int, string> = [(1, "1"); (2, "2"); (3, "3")]
 

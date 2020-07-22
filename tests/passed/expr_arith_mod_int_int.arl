@@ -1,6 +1,6 @@
 archetype expr_arith_mod_int_int
 
-variable res : nat = 0
+variable res : nat = 0n
 
 entry exec () {
   specification {

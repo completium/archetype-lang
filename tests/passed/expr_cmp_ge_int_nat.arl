@@ -1,4 +1,4 @@
-archetype expr_cmp_lt_rat_int
+archetype expr_cmp_ge_int_nat
 
 variable res : bool = false
 
@@ -7,6 +7,6 @@ entry exec () {
     s0: res = true;
   }
   effect {
-    res := 0.5 < 3
+    res := 2 >= 1n
   }
 }

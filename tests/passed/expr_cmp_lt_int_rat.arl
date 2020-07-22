@@ -7,6 +7,6 @@ entry exec () {
     s0: res = true;
   }
   effect {
-    res := 2 < 11 div 3
+    res := 2 < 4.0
   }
 }

@@ -1,4 +1,4 @@
-archetype expr_cmp_eq_list
+archetype expr_formula_cmp_eq_list
 
 constant a : list<int> = [1; 2; 3]
 

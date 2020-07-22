@@ -4,6 +4,8 @@ variable res : bool = false
 
 entry exec () {
   effect {
+
+    /* int int */
     res := 1 =  2;
     res := 1 <> 2;
     res := 1 <  2;
@@ -11,20 +13,15 @@ entry exec () {
     res := 1 >  2;
     res := 1 >= 2;
 
-    res := 0.5 =  2;
-    res := 0.5 <> 2;
-    res := 0.5 <  2;
-    res := 0.5 <= 2;
-    res := 0.5 >  2;
-    res := 0.5 >= 2;
+    /* nat nat */
+    res := 1n =  2n;
+    res := 1n <> 2n;
+    res := 1n <  2n;
+    res := 1n <= 2n;
+    res := 1n >  2n;
+    res := 1n >= 2n;
 
-    res := 1 =  1.5;
-    res := 1 <> 1.5;
-    res := 1 <  1.5;
-    res := 1 <= 1.5;
-    res := 1 >  1.5;
-    res := 1 >= 1.5;
-
+    /* rat rat */
     res := 0.5 =  1.5;
     res := 0.5 <> 1.5;
     res := 0.5 <  1.5;
@@ -32,6 +29,55 @@ entry exec () {
     res := 0.5 >  1.5;
     res := 0.5 >= 1.5;
 
+    /* nat int */
+    res := 1n =  2;
+    res := 1n <> 2;
+    res := 1n <  2;
+    res := 1n <= 2;
+    res := 1n >  2;
+    res := 1n >= 2;
+
+    /* int nat */
+    res := 1 =  2n;
+    res := 1 <> 2n;
+    res := 1 <  2n;
+    res := 1 <= 2n;
+    res := 1 >  2n;
+    res := 1 >= 2n;
+
+    /* rat int */
+    res := 0.5 =  2;
+    res := 0.5 <> 2;
+    res := 0.5 <  2;
+    res := 0.5 <= 2;
+    res := 0.5 >  2;
+    res := 0.5 >= 2;
+
+    /* int rat */
+    res := 1 =  1.5;
+    res := 1 <> 1.5;
+    res := 1 <  1.5;
+    res := 1 <= 1.5;
+    res := 1 >  1.5;
+    res := 1 >= 1.5;
+
+    /* rat nat */
+    res := 0.5 =  2n;
+    res := 0.5 <> 2n;
+    res := 0.5 <  2n;
+    res := 0.5 <= 2n;
+    res := 0.5 >  2n;
+    res := 0.5 >= 2n;
+
+    /* nat rat */
+    res := 1n =  1.5;
+    res := 1n <> 1.5;
+    res := 1n <  1.5;
+    res := 1n <= 1.5;
+    res := 1n >  1.5;
+    res := 1n >= 1.5;
+
+    /* tez tez */
     res := 1tz =  2tz;
     res := 1tz <> 2tz;
     res := 1tz <  2tz;
@@ -39,6 +85,7 @@ entry exec () {
     res := 1tz >  2tz;
     res := 1tz >= 2tz;
 
+    /* dur dur */
     res := 1h =  2h;
     res := 1h <> 2h;
     res := 1h <  2h;
@@ -46,6 +93,7 @@ entry exec () {
     res := 1h >  2h;
     res := 1h >= 2h;
 
+    /* date date */
     res := 2020-01-01 =  2020-12-31;
     res := 2020-01-01 <> 2020-12-31;
     res := 2020-01-01 <  2020-12-31;
@@ -53,6 +101,7 @@ entry exec () {
     res := 2020-01-01 >  2020-12-31;
     res := 2020-01-01 >= 2020-12-31;
 
+    /* address address */
     res := @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg =  @tz1bfVgcJC4ukaQSHUe1EbrUd5SekXeP9CWk;
     res := @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg <> @tz1bfVgcJC4ukaQSHUe1EbrUd5SekXeP9CWk;
     res := @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg <  @tz1bfVgcJC4ukaQSHUe1EbrUd5SekXeP9CWk;
@@ -60,6 +109,7 @@ entry exec () {
     res := @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg >  @tz1bfVgcJC4ukaQSHUe1EbrUd5SekXeP9CWk;
     res := @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg >= @tz1bfVgcJC4ukaQSHUe1EbrUd5SekXeP9CWk;
 
+    /* string string */
     res := "a" =  "b";
     res := "a" <> "b";
     res := "a" <  "b";
@@ -67,6 +117,7 @@ entry exec () {
     res := "a" >  "b";
     res := "a" >= "b";
 
+    /* bool bool */
     res := true =  false;
     res := true <> false;
   }
