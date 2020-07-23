@@ -334,7 +334,7 @@ let pp_mterm fmt (mt : mterm) =
     | Mbool b -> pp_str fmt (if b then "true" else "false")
     | Menum v -> pp_str fmt v
     | Mrational (n, d) ->
-      Format.fprintf fmt "(%a / %a)"
+      Format.fprintf fmt "rat(%a, %a)"
         pp_big_int n
         pp_big_int d
     | Mstring v ->
