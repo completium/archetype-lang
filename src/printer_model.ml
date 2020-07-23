@@ -52,19 +52,19 @@ let rec pp_type fmt t =
       pp_type t
       pp_container c
   | Tlist t ->
-    Format.fprintf fmt "%a list"
+    Format.fprintf fmt "list<%a>"
       pp_type t
   | Toption t ->
-    Format.fprintf fmt "%a option"
+    Format.fprintf fmt "option<%a>"
       pp_type t
   | Ttuple ts ->
     Format.fprintf fmt "%a"
       (pp_list " * " pp_type) ts
   | Tset k ->
-    Format.fprintf fmt "%a set"
+    Format.fprintf fmt "set<%a>"
       pp_btyp k
   | Tmap (k, v) ->
-    Format.fprintf fmt "(%a, %a) map"
+    Format.fprintf fmt "map<%a, %a>"
       pp_btyp k
       pp_type v
   | Trecord id ->

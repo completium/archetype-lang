@@ -1062,9 +1062,36 @@ let remove_cmp_bool (model : model) : model =
   Model.map_mterm_model aux model
 
 let update_nat_int_rat (model : model) : model =
+  let get_number_lit_opt (x : mterm) =
+    match x.node with
+    | Mint x -> Some x
+    | Mnattoint {node = Mnat x} -> Some x
+    | _ -> None
+  in
+  let is_number_lit  (x : mterm) = x |> get_number_lit_opt |> Option.is_some in
+  let get_number_lit (x : mterm) = x |> get_number_lit_opt |> Option.get in
   let rec aux c (mt : mterm) : mterm =
     match mt.node with
     | Mnattoint {node = Mnat n; _} -> {mt with node = Mint n}
+    | Mratarith (op, {node = Mtuple [a; b]}, {node = Mtuple [c; d]}) when List.for_all is_number_lit [a; b; c; d] -> begin
+        let an = get_number_lit a in
+        let ad = get_number_lit b in
+        let bn = get_number_lit c in
+        let bd = get_number_lit d in
+        let mk_int i = mk_mterm (Mint i) (Tbuiltin Bint) in
+        let mk_rat n d = mk_mterm (Mtuple [mk_int n ; mk_int d]) (Ttuple [Tbuiltin Bint; Tbuiltin Bint]) in
+        let (+) a b   = Big_int.add_big_int a b in
+        let (-) a b   = Big_int.sub_big_int a b in
+        let ( * ) a b = Big_int.mult_big_int a b in
+        let x, y =
+          match op with
+          | Rplus  -> ((an * bd) + (bn * ad), ad * bd)
+          | Rminus -> ((an * bd) - (bn * ad), ad * bd)
+          | Rmult  -> (an * bn, ad * bd)
+          | Rdiv   -> (an * bd, ad * bn)
+        in
+        mk_rat x y
+      end
     | _ -> map_mterm (aux c) mt
   in
   Model.map_mterm_model aux model
@@ -1100,7 +1127,7 @@ let remove_rational (model : model) : model =
 
       let for_unary op (v : mterm) =
         match op, ret, v.type_ with
-        | `Unary, (Tbuiltin Brational | Ttuple [Tbuiltin Bint; Tbuiltin Bint]), Tbuiltin Brational ->
+        | `Uminus, (Tbuiltin Brational | Ttuple [Tbuiltin Bint; Tbuiltin Bint]), Tbuiltin Brational ->
           let v = v |> aux |> to_rat in
           mk_mterm (Mratuminus v) type_rational
         | _ -> map_mterm aux mt
@@ -1129,32 +1156,12 @@ let remove_rational (model : model) : model =
               end
           end
         | Tbuiltin Bint -> begin
-            let f =
-              match op, a.type_, b.type_ with
-              | `Plus, Tbuiltin Bnat, Tbuiltin Bint
-              | `Plus, Tbuiltin Bint, Tbuiltin Bnat ->
-                Some (fun x y -> mk_mterm (Mplus (x, y)) type_int)
-
-              | `Minus, Tbuiltin Bnat, Tbuiltin Bint
-              | `Minus, Tbuiltin Bint, Tbuiltin Bnat ->
-                Some (fun x y -> mk_mterm (Mminus (x, y)) type_int)
-
-              | `Mult, Tbuiltin Bnat, Tbuiltin Bint
-              | `Mult, Tbuiltin Bint, Tbuiltin Bnat ->
-                Some (fun x y -> mk_mterm (Mmult (x, y)) type_int)
-
-              | `Diveuc, Tbuiltin Bnat, Tbuiltin Bint
-              | `Diveuc, Tbuiltin Bint, Tbuiltin Bnat ->
-                Some (fun x y -> mk_mterm (Mdiveuc (x, y)) type_int)
-
-              | _  -> None
-            in
-            match f with
-            | Some f ->
-              let lhs = a |> aux |> to_int in
-              let rhs = b |> aux |> to_int in
-              f lhs rhs
-            | None -> map_mterm aux mt
+            match op, a.type_, b.type_ with
+            | `Diveuc, Tbuiltin Bcurrency, Tbuiltin Bcurrency ->
+              let lhs = a |> aux in
+              let rhs = b |> aux in
+              mk_mterm (Mdivtez (lhs, rhs)) type_int
+            | _ -> map_mterm aux mt
           end
         | Tbuiltin Bcurrency -> begin
             match op, a.type_, b.type_ with
@@ -1167,9 +1174,10 @@ let remove_rational (model : model) : model =
               end
             | `Diveuc, Tbuiltin Bcurrency, Tbuiltin Bnat
             | `Diveuc, Tbuiltin Bcurrency, Tbuiltin Bint -> begin
-                let lhs = a |> aux in
-                let rhs = b |> aux |> to_int in
-                mk_mterm (Mdivtez (lhs, rhs)) type_cur
+                let inv_rat v = mk_mterm (Mratarith (Rdiv, to_rat one, v)) type_rational in
+                let lhs = b |> aux |> to_rat |> inv_rat in
+                let rhs = a |> aux in
+                mk_mterm (Mrattez (lhs, rhs)) type_cur
               end
             | _ -> map_mterm aux mt
           end
@@ -1186,16 +1194,24 @@ let remove_rational (model : model) : model =
         | _ -> map_mterm aux mt
       in
 
-      let for_fun (f : mterm list -> mterm) (l : mterm list) : mterm =
+      let for_fun (f : mterm list -> type_ -> mterm) (l : mterm list) : mterm =
         let l = List.map (fun (x : mterm) ->
             match ret with
             | Tbuiltin Brational
             | Ttuple [Tbuiltin Bint; Tbuiltin Bint] -> begin
                 x |> aux |> to_rat
               end
-            | _ -> x) l
+            | Tbuiltin Bint -> begin
+                x |> aux |> to_int
+              end
+            | _ -> x |> aux) l
         in
-        f l
+        let ret =
+          match ret with
+          |  Tbuiltin Brational -> type_rational
+          | _ -> ret
+        in
+        f l ret
       in
 
       let for_cmp op (a, b : mterm * mterm) =
@@ -1249,8 +1265,8 @@ let remove_rational (model : model) : model =
       | Mdiveuc   (a, b)   -> for_arith `Diveuc (a, b)
       | Mmodulo   (a, b)   -> for_arith `Modulo (a, b)
       | Muminus    v       -> for_unary `Uminus v
-      | Mmax      (a, b)   -> for_fun (fun l -> mk_mterm (Mmax(List.nth l 0, List.nth l 1)) ret) [a; b]
-      | Mmin      (a, b)   -> for_fun (fun l -> mk_mterm (Mmin(List.nth l 0, List.nth l 1)) ret) [a; b]
+      | Mmax      (a, b)   -> for_fun (fun l ret -> mk_mterm (Mmax(List.nth l 0, List.nth l 1)) ret) [a; b]
+      | Mmin      (a, b)   -> for_fun (fun l ret -> mk_mterm (Mmin(List.nth l 0, List.nth l 1)) ret) [a; b]
       | Mequal  (_, a, b)  -> for_cmp `Eq (a, b)
       | Mnequal (_, a, b)  -> for_cmp `Ne (a, b)
       | Mlt     (a, b)     -> for_cmp `Lt (a, b)

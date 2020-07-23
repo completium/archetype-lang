@@ -1645,29 +1645,6 @@ let pp_model_internal fmt (model : model) b =
         (pp_list "@\n" pp_storage_item) l
   in
 
-  let rec pp_default fmt t =
-    let pp = pp_mterm (mk_env ()) fmt in
-    match t with
-    | Tlist _              -> pp (mk_mterm (Mlitlist []) t)
-    | Toption _            -> pp (mk_mterm (Mnone) t)
-    | Ttuple l             -> Format.fprintf fmt "(%a)" (pp_list ", " pp_default) l
-    | Tset _               -> pp (mk_mterm (Mlitset []) t)
-    | Tmap _               -> pp (mk_mterm (Mlitmap []) t)
-    | Tbuiltin Bbool       -> pp (mk_mterm (Mbool false) t)
-    | Tbuiltin Bint        -> Format.fprintf fmt "0"
-    | Tbuiltin Brational   -> Format.fprintf fmt "0"
-    | Tbuiltin Bdate       -> Format.fprintf fmt "0"
-    | Tbuiltin Bduration   -> Format.fprintf fmt "0"
-    | Tbuiltin Btimestamp  -> Format.fprintf fmt "(0 : timestamp)"
-    | Tbuiltin Bstring     -> Format.fprintf fmt "\"\""
-    | Tbuiltin Baddress    -> Format.fprintf fmt "(\"tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg\" : address)"
-    | Tbuiltin Brole       -> Format.fprintf fmt "(\"tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg\" : address)"
-    | Tbuiltin Bcurrency   -> Format.fprintf fmt "0tz"
-    | Tbuiltin Bkey        -> Format.fprintf fmt "0x00"
-    | Tbuiltin Bbytes      -> Format.fprintf fmt "0x00"
-    | _ -> assert false
-  in
-
   let pp_prefix_api_container_kind an fmt = function
     | Coll  -> Format.fprintf fmt "c_%s" an
     | View  -> Format.fprintf fmt "v_%s" an
@@ -2386,18 +2363,18 @@ let pp_model_internal fmt (model : model) b =
          else (accu.0 + 1, accu.1);@\n\
          const init : int * option(%a) = (0, (None : option(%a)));@\n\
          const res_opt : int * option(%a) = list_fold (aggregate, l, init);@\n\
-         var res : %a := %a;@\n\
+         const res : %a = @\n\
          case res_opt.1 of@\n\
-         | Some(v) -> res := v@\n\
-         | None -> failwith(\"list_%a_nth failed\")@\n\
+         | Some(v) -> v@\n\
+         | None -> (failwith(\"list_%a_nth failed\") : %a)@\n\
          end@\n\
          } with res@\n"
         pp_pretty_type t pp_type t pp_type t
         pp_type t pp_type t pp_type t
         pp_type t pp_type t
         pp_type t
-        pp_type t pp_default t
         pp_type t
+        pp_type t pp_type t
   in
 
   let pp_api_builtin (_env : env) fmt = function
@@ -2496,16 +2473,12 @@ let pp_model_internal fmt (model : model) b =
     | Bgetopt t ->
       Format.fprintf fmt
         "function getopt_%a (const a : option(%a)) : %a is@\n  \
-         block {@\n    \
-         var res : %a := %a;@\n    \
-         case a of@\n      \
-         None -> failwith (\"getopt_%a: argument is none\")@\n      \
-         | Some (s) -> res := s@\n    \
-         end@\n  \
-         } with res@\n"
+         block { skip } with (case a of@\n      \
+         None -> (failwith (\"getopt_%a: argument is none\") : %a)@\n      \
+         | Some (s) -> s@\n    \
+         end)@\n"
         pp_pretty_type t pp_type t pp_type t
-        pp_type t pp_default t
-        pp_pretty_type t
+        pp_pretty_type t pp_type t
 
     | Bfloor    -> Format.fprintf fmt "function floor (const r : (int * int)) : int is block {skip} with r.0 / r.1@\n"
     | Bceil     -> Format.fprintf fmt "function ceil (const r : (int * int)) : int is block {skip} with r.0 / r.1 + (if r.0 mod r.1 = 0n then 0 else 1)@\n"
