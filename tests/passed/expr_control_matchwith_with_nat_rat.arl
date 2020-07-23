@@ -1,4 +1,4 @@
-archetype expr_control_matchwith_with_int_rat
+archetype expr_control_matchwith_with_nat_rat
 
 enum t =
   | C1
@@ -18,7 +18,7 @@ entry exec () {
     res :=
       match x with
       | C1 | C2 -> 1.0
-      | C3 -> 3i
+      | C3 -> 3
       | _ -> 2.0
       end
   }

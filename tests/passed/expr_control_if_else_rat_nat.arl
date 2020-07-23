@@ -1,4 +1,4 @@
-archetype expr_control_if_else_rat_int
+archetype expr_control_if_else_rat_nat
 
 variable res : rational = 0.0
 
@@ -7,6 +7,6 @@ entry exec () {
     s0: res = 0.5;
   }
   effect {
-    res := (if true then 0.5 else 1i)
+    res := (if true then 0.5 else 1)
   }
 }

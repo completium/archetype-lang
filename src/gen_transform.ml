@@ -1125,7 +1125,7 @@ let remove_rational (model : model) : model =
             | `Mult, Tbuiltin Bnat,      Tbuiltin Bcurrency
             | `Mult, Tbuiltin Bint,      Tbuiltin Bcurrency
             | `Mult, Tbuiltin Brational, Tbuiltin Bcurrency -> begin
-                let lhs = a |> aux |> to_int in
+                let lhs = a |> aux |> to_rat in
                 let rhs = b |> aux in
                 mk_mterm (Mrattez (lhs, rhs)) type_cur
               end
@@ -1135,9 +1135,9 @@ let remove_rational (model : model) : model =
                 let rhs = b |> aux |> to_int in
                 mk_mterm (Mdivtez (lhs, rhs)) type_cur
               end
-            | _ -> mt
+            | _ -> map_mterm aux mt
           end
-        | _ -> mt
+        | _ -> map_mterm aux mt
       in
 
       let for_fun (f : mterm list -> mterm) (l : mterm list) : mterm =
@@ -1152,10 +1152,12 @@ let remove_rational (model : model) : model =
         f l
       in
 
-      let for_cmp op (a, b) =
-        match ret with
-        | Tbuiltin Brational
-        | Ttuple [Tbuiltin Bint; Tbuiltin Bint] -> begin
+      let for_cmp op (a, b : mterm * mterm) =
+        match a.type_, b.type_ with
+        | Tbuiltin Brational, _
+        | Ttuple [Tbuiltin Bint; Tbuiltin Bint], _
+        | _, Tbuiltin Brational
+        | _, Ttuple [Tbuiltin Bint; Tbuiltin Bint] -> begin
             let f =
               match op with
               | `Eq -> (fun x y -> mk_mterm (Mrateq  (x, y)) type_bool)
@@ -1169,7 +1171,7 @@ let remove_rational (model : model) : model =
             let rhs = b |> aux |> to_rat in
             f lhs rhs
           end
-        | _ -> mt
+        | _ -> map_mterm aux mt
       in
 
       match mt.node with
