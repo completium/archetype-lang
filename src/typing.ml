@@ -2407,9 +2407,15 @@ let rec for_xexpr
             | Some ty, Some ty' -> begin
                 let aout =
                   Option.map (fun sig_ ->
+                      let e, e' =
+                        Option.get
+                          (List.as_seq2
+                             (List.map2
+                                (fun ty e -> cast_expr env (Some ty) e)
+                                sig_.osl_sig [e; e'])) in
                       let term = A.Pcomp (tt_cmp_operator op, e, e') in
                       mk_sp (Some sig_.osl_ret) term
-                    ) (select_operator env (loc tope) (PT.Cmp op, [ty; ty']) ~formula:(is_form_kind mode.em_kind))
+                  ) (select_operator env (loc tope) (PT.Cmp op, [ty; ty']) ~formula:(is_form_kind mode.em_kind))
                 in (e', aout)
               end
 
@@ -2439,6 +2445,11 @@ let rec for_xexpr
           Option.get_fdfl
             (fun () -> bailout ())
             (select_operator env (loc tope) (op, aty) ~formula:(is_form_kind mode.em_kind)) in
+
+        let args =
+          List.map2
+            (fun ty e -> cast_expr ~autoview:false env (Some ty) e)
+            sig_.osl_sig args in
 
         let aout =
           match op with
