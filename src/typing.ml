@@ -839,13 +839,13 @@ let methods : (string * method_) list =
     ("update"      , mk A.Cupdate       `Both        (`Effect c   ) `Total   (`Fixed [`Pk; `Ef true      ], None));
     ("addupdate"   , mk A.Caddupdate    `Both        (`Effect c_p ) `Total   (`Fixed [`Pk; `Ef false     ], None));
     ("contains"    , mk A.Ccontains     `Both        (`Pure       ) `Total   (`Fixed [`Pk                ], Some (`T A.vtbool)));
-    ("nth"         , mk A.Cnth          `Both        (`Pure       ) `Partial (`Fixed [`T A.vtint         ], Some (`Pk)));
+    ("nth"         , mk A.Cnth          `Both        (`Pure       ) `Partial (`Fixed [`T A.vtnat         ], Some (`Pk)));
     ("select"      , mk A.Cselect       `Both        (`Pure       ) `Total   (`Fixed [`Pred true         ], Some (`SubColl)));
     ("sort"        , mk A.Csort         `OnlyExec    (`Pure       ) `Total   (`Multi (`Cmp               ), Some (`SubColl)));
-    ("count"       , mk A.Ccount        `Both        (`Pure       ) `Total   (`Fixed [                   ], Some (`T A.vtint)));
+    ("count"       , mk A.Ccount        `Both        (`Pure       ) `Total   (`Fixed [                   ], Some (`T A.vtnat)));
     ("sum"         , mk A.Csum          `Both        (`Pure       ) `Total   (`Fixed [`RExpr false       ], Some (`Ref 0)));
-    ("head"        , mk A.Chead         `Both        (`Pure       ) `Total   (`Fixed [`T A.vtint         ], Some (`SubColl)));
-    ("tail"        , mk A.Ctail         `Both        (`Pure       ) `Total   (`Fixed [`T A.vtint         ], Some (`SubColl)));
+    ("head"        , mk A.Chead         `Both        (`Pure       ) `Total   (`Fixed [`T A.vtnat         ], Some (`SubColl)));
+    ("tail"        , mk A.Ctail         `Both        (`Pure       ) `Total   (`Fixed [`T A.vtnat         ], Some (`SubColl)));
   ]
 
 let methods = Mid.of_list methods
@@ -853,8 +853,8 @@ let methods = Mid.of_list methods
 (* -------------------------------------------------------------------- *)
 let coreops =
   (List.map
-     (fun x -> ("abs", A.Cabs, `Total, None, [x], x))
-     [A.vtint; A.vtrational])
+     (fun (x, y) -> ("abs", A.Cabs, `Total, None, [x], y))
+     [A.vtint, A.vtnat; A.vtrational, A.vtrational])
   @ (List.map
        (fun (x, y) -> (x, y, `Total, None, [A.vtrational], A.vtint))
        ["floor", A.Cfloor ; "ceil", A.Cceil])
@@ -867,9 +867,10 @@ let coreops =
        (fun x -> ("concat", A.Cconcat, `Total, None, [x; x], x))
        [A.vtbytes; A.vtstring])
   @ (List.map
-       (fun x -> ("slice", A.Cslice, `Total, None, [x; A.vtint; A.vtint], x))
+       (fun x -> ("slice", A.Cslice, `Total, None, [x; A.vtnat; A.vtnat], x))
        [A.vtbytes; A.vtstring])
-  @ ["length", A.Clength, `Total, None, [A.vtstring], A.vtint]
+  @ (List.map
+          (fun x -> ("length", A.Clength, `Total, None, [x], A.vtnat)) [A.vtstring; A.vtbytes])
 
 (* -------------------------------------------------------------------- *)
 let optionops = [
@@ -885,7 +886,7 @@ let setops =
     ("set_add"      , A.Csadd      , `Total , Some set, [ elemt ], set      );
     ("set_remove"   , A.Csremove   , `Total , Some set, [ elemt ], set      );
     ("set_contains" , A.Cscontains , `Total , Some set, [ elemt ], A.vtbool );
-    ("set_length"   , A.Cslength   , `Total , Some set, [       ], A.vtint  );
+    ("set_length"   , A.Cslength   , `Total , Some set, [       ], A.vtnat  );
   ]
 
 (* -------------------------------------------------------------------- *)
@@ -894,8 +895,8 @@ let listops =
   let lst   = A.Tlist elemt in [
     ("contains", A.Ccontains, `Total  , Some lst, [elemt  ], A.vtbool);
     ("prepend" , A.Cprepend , `Total  , Some lst, [elemt  ], lst     );
-    ("length"  , A.Clength  , `Total  , Some lst, [       ], A.vtint );
-    ("nth"     , A.Cnth     , `Partial, Some lst, [A.vtint], elemt   );
+    ("length"  , A.Clength  , `Total  , Some lst, [       ], A.vtnat );
+    ("nth"     , A.Cnth     , `Partial, Some lst, [A.vtnat], elemt   );
   ]
 
 (* -------------------------------------------------------------------- *)
@@ -907,7 +908,7 @@ let mapops =
     ("map_remove"   , A.Cmremove   , `Total   , Some map, [ tkey       ], map);
     ("map_getopt"   , A.Cmgetopt   , `Partial , Some map, [ tkey       ], tval);
     ("map_contains" , A.Cmcontains , `Total   , Some map, [ tkey       ], A.vtbool);
-    ("map_length"   , A.Cmlength   , `Total   , Some map, [            ], A.vtint);
+    ("map_length"   , A.Cmlength   , `Total   , Some map, [            ], A.vtnat);
   ]
 
 (* -------------------------------------------------------------------- *)

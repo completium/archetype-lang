@@ -1,0 +1,13 @@
+archetype bad_type_return
+
+variable res : int = 0
+
+function f () : int {
+  return "mystr"
+}
+
+entry exec () {
+  effect {
+    res := f();
+  }
+}

@@ -1106,6 +1106,15 @@ let remove_rational (model : model) : model =
   let mk_rat n d    = mk_mterm (Mtuple [n ; d]) type_rational in
   let nat_to_int e  = mk_mterm (Mnattoint e) type_int in
 
+  let for_type t =
+    let rec aux t =
+      match t with
+      | Tbuiltin Brational -> type_rational
+      | _ -> map_type aux t
+    in
+    aux t
+  in
+
   let to_int (x : mterm) =
     match x.type_ with
     | Tbuiltin Bnat -> mk_mterm (Mnattoint x) type_int
@@ -1273,18 +1282,9 @@ let remove_rational (model : model) : model =
       | Mle     (a, b)     -> for_cmp `Le (a, b)
       | Mgt     (a, b)     -> for_cmp `Gt (a, b)
       | Mge     (a, b)     -> for_cmp `Ge (a, b)
-      | _                  -> map_mterm aux mt
+      | _                  -> map_mterm aux mt ~ft:for_type
     in
     aux mt
-  in
-
-  let for_type t =
-    let rec aux t =
-      match t with
-      | Tbuiltin Brational -> type_rational
-      | _ -> map_type aux t
-    in
-    aux t
   in
 
   model

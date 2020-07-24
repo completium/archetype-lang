@@ -1,12 +1,12 @@
-archetype expr_fun_length_str
+archetype expr_fun_length_bytes
 
 variable res : nat = 0
 
 entry exec () {
   specification {
-    s0: res = 5;
+    s0: res = 4;
   }
   effect {
-    res := length("abcdef")
+    res := length(0xabcdef01)
   }
 }

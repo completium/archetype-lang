@@ -1628,18 +1628,15 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Minter (an, l, r)              -> Minter     (fi an, f l, f r)
   | Mdiff (an, l, r)               -> Mdiff      (fi an, f l, f r)
 
-let map_gen_mterm g f (i : 'id mterm_gen) : 'id mterm_gen =
+let map_gen_mterm g f (ft : type_ -> type_) (mt : 'id mterm_gen) : 'id mterm_gen =
   {
-    i with
-    node = g f i.node
+    mt with
+    node  = g f mt.node;
+    type_ = ft mt.type_;
   }
 
-let map_term_node =
-  let id x = x in
-  map_term_node_internal id id id
-
-let map_mterm f t =
-  map_gen_mterm map_term_node f t
+let map_mterm f ?(ft = id) (mt : mterm)  =
+  map_gen_mterm (map_term_node_internal id id ft) f ft mt
 
 type ('id, 't) ctx_model_gen = {
   formula: bool;
@@ -4046,9 +4043,11 @@ end = struct
     let eval_expr mt :
       mterm =
       let rec aux (mt : mterm) : mterm =
-        let extract_int (i : mterm) : Big_int.big_int =
+        let rec extract_big_int (i : mterm) : Big_int.big_int =
           let i = aux i in
           match i.node with
+          | Mnattoint x -> extract_big_int x
+          | Mnat v
           | Mint v -> v
           | _ -> assert false
         in
@@ -4067,11 +4066,15 @@ end = struct
           | _ -> assert false
         in
 
-        let extract_rat (rat : mterm) : Big_int.big_int * Big_int.big_int =
+        let rec extract_rat (rat : mterm) : Big_int.big_int * Big_int.big_int =
           let rat = aux rat in
           match rat.node with
-          | Mrational (num, denom)
-          | Mtuple [{node = Mint num; _}; {node = Mint denom; _}] -> (num, denom)
+          | Mnat n                 -> (n, Big_int.unit_big_int)
+          | Mint n                 -> (n, Big_int.unit_big_int)
+          | Mnattorat x            -> extract_rat x
+          | Minttorat x            -> extract_rat x
+          | Mrational (num, denom) -> (num, denom)
+          | Mtuple [num; denom]    -> (extract_big_int num, extract_big_int denom)
           | _ -> assert false
         in
 
@@ -4091,20 +4094,23 @@ end = struct
           | _ -> assert false
         in
 
-        let arith op (a, b) : mterm =
-          let a = extract_int a in
-          let b = extract_int b in
+        let arith t op (a, b) : mterm =
+          let a = extract_big_int a in
+          let b = extract_big_int b in
 
-          let res =
+          let is_nat = function Tbuiltin Bnat -> true | _ -> false in
+          let res, nat =
             match op with
-            | `Plus   -> Big_int.add_big_int a b
-            | `Minus  -> Big_int.sub_big_int a b
-            | `Mult   -> Big_int.mult_big_int a b
-            | `Ediv   -> Big_int.div_big_int a b
-            | `Modulo -> Big_int.mod_big_int a b
+            | `Plus   -> Big_int.add_big_int a b,  is_nat t
+            | `Minus  -> Big_int.sub_big_int a b,  false
+            | `Mult   -> Big_int.mult_big_int a b, is_nat t
+            | `Ediv   -> Big_int.div_big_int a b,  is_nat t
+            | `Modulo -> Big_int.mod_big_int a b,  true
             | _ -> assert false
           in
-          mk_mterm (Mint res) (Tbuiltin Bint)
+          match nat with
+          | true  -> mk_mterm (Mnat res) (Tbuiltin Bnat)
+          | false -> mk_mterm (Mint res) (Tbuiltin Bint)
         in
 
         match mt.node, mt.type_ with
@@ -4120,10 +4126,10 @@ end = struct
           end
         | Mplus   (a, b), _ when is_timestamp a && is_int b -> begin
             let a = extract_timestamp a in
-            let b = extract_int b in
+            let b = extract_big_int b in
             mk_mterm (Mtimestamp (Big_int.add_big_int a b)) (Tbuiltin Btimestamp)
           end
-        | Mplus   (a, b), _ -> arith `Plus  (aux a, aux b)
+        | Mplus   (a, b), t -> arith t `Plus  (aux a, aux b)
         | Mminus  (a, b), Tbuiltin Bcurrency when is_tez a && is_tez b -> begin
             let a = extract_tez a in
             let b = extract_tez b in
@@ -4137,10 +4143,10 @@ end = struct
             let res = Big_int.sub_big_int a b in
             mk_mterm (Mint res) (Tbuiltin Bint)
           end
-        | Mminus  (a, b), _ -> arith `Minus (aux a, aux b)
-        | Mmult   (a, b), _ -> arith `Mult  (aux a, aux b)
-        | Mdiveuc (a, b), _ -> arith `Ediv  (aux a, aux b)
-        | Mmodulo (a, b), _ -> arith `Modulo   (aux a, aux b)
+        | Mminus  (a, b), t -> arith t `Minus (aux a, aux b)
+        | Mmult   (a, b), t -> arith t `Mult  (aux a, aux b)
+        | Mdiveuc (a, b), t -> arith t `Ediv  (aux a, aux b)
+        | Mmodulo (a, b), t -> arith t `Modulo   (aux a, aux b)
         | Mnot     a    , _ -> mk_mterm (Mbool (not (extract_bool (aux a)))) (Tbuiltin Bbool)
         | Mand    (a, b), _ -> mk_mterm (Mbool ((extract_bool (aux a)) && (extract_bool (aux b)))) (Tbuiltin Bbool)
         | Mor     (a, b), _ -> mk_mterm (Mbool ((extract_bool (aux a)) || (extract_bool (aux b)))) (Tbuiltin Bbool)
@@ -4178,12 +4184,17 @@ end = struct
           begin
             let coef = aux coef in
             let c    = aux c    in
+            let f num denom v cur =
+              let res = Big_int.div_big_int (Big_int.mult_big_int num v) denom in
+              mk_mterm (Mcurrency (res, cur)) (Tbuiltin Bcurrency)
+            in
             match coef.node, c.node with
-            | Mrational (num, denom), Mcurrency (v, cur)
-            | Mtuple [{node = Mint num; _}; {node = Mint denom; _}], Mcurrency (v, cur) ->
+            | Mrational (num, denom), Mcurrency (v, cur) -> f num denom v cur
+            | Mtuple [num; denom], Mcurrency (v, cur) ->
               begin
-                let res = Big_int.div_big_int (Big_int.mult_big_int num v) denom in
-                mk_mterm (Mcurrency (res, cur)) (Tbuiltin Bcurrency)
+                let num = extract_big_int num in
+                let denom = extract_big_int denom in
+                f num denom v cur
               end
             | _ -> begin
                 Format.eprintf "%a@." pp_mterm mt;

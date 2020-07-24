@@ -1149,7 +1149,7 @@ let pp_model_internal fmt (model : model) b =
         f c
 
     | Msetlength (_, c) ->
-      Format.fprintf fmt "int(Set.size (%a))"
+      Format.fprintf fmt "Set.size (%a)"
         f c
 
 
@@ -1167,9 +1167,8 @@ let pp_model_internal fmt (model : model) b =
         f c
         f a
 
-    | Mlistlength (t, c) ->
-      Format.fprintf fmt "list_%a_length (%a)"
-        pp_pretty_type t
+    | Mlistlength (_t, c) ->
+      Format.fprintf fmt "size (%a)"
         f c
 
     | Mlistnth (t, c, a) ->
@@ -1209,7 +1208,7 @@ let pp_model_internal fmt (model : model) b =
         f c
 
     | Mmaplength (_, _, c) ->
-      Format.fprintf fmt "int(Map.size(%a))"
+      Format.fprintf fmt "Map.size(%a)"
         f c
 
 
@@ -1244,15 +1243,20 @@ let pp_model_internal fmt (model : model) b =
         f y
 
     | Mslice (x, s, e) ->
-      Format.fprintf fmt "slice_%a (%a, %a, %a)"
-        pp_pretty_type mtt.type_
-        f x
+      let prefix =
+        match mtt.type_ with
+        | Tbuiltin Bstring -> "string"
+        | Tbuiltin Bbytes -> "bytes"
+        | _ -> assert false
+      in
+      Format.fprintf fmt "%s_slice (%a, %a, %a)"
+        prefix
         f s
         f e
+        f x
 
     | Mlength x ->
-      Format.fprintf fmt "length_%a (%a)"
-        pp_pretty_type x.type_
+      Format.fprintf fmt "size(%a)"
         f x
 
     | Misnone x ->
@@ -1973,15 +1977,15 @@ let pp_model_internal fmt (model : model) b =
           (fun fmt _ -> Format.fprintf fmt "const a : %s_storage = get_force(k, s.%s_assets);@\n    " an an)
       in
       Format.fprintf fmt
-        "function nth_%a (const s : storage_type%a; const index : int) : %a is@\n  \
+        "function nth_%a (const s : storage_type%a; const index : nat) : %a is@\n  \
          block {@\n  \
          %a\
-         function aggregate (const accu: map(int, %a); const x: %a%s) : map(int, %a) is@\n  \
+         function aggregate (const accu: map(nat, %a); const x: %a%s) : map(nat, %a) is@\n  \
          block {@\n  \
-         const le : int = int(Map.size(accu));@\n  \
+         const le : nat = Map.size(accu);@\n  \
          accu[le] := x%s;@\n  \
          } with accu;@\n  \
-         const map_ : map(int, %a) = %s_fold(aggregate, %s, (map [] : map(int, %a)));@\n  \
+         const map_ : map(nat, %a) = %s_fold(aggregate, %s, (map [] : map(nat, %a)));@\n  \
          const res : %a = get_force(index, map_);@\n  \
          } with res@\n"
         (pp_prefix_api_container_kind an) c pp_fun_arg () pp_btyp t
@@ -2149,7 +2153,7 @@ let pp_model_internal fmt (model : model) b =
       begin
         let _, t = Utils.get_asset_key model an in
         Format.fprintf fmt
-          "function count_%a (%a) : int is block { %a} with %a@\n"
+          "function count_%a (%a) : nat is block { %a} with %a@\n"
           (pp_prefix_api_container_kind an) c
           (fun fmt c ->
              match c with
@@ -2166,9 +2170,9 @@ let pp_model_internal fmt (model : model) b =
              | Coll ->
                let src = "s." ^ an ^ "_assets" in
                let size = if Model.Utils.is_asset_single_field model an then "Set.size" else "Map.size" in
-               Format.fprintf fmt "int(%s(%s))" size src
-             | View -> Format.fprintf fmt "int(size(l))"
-             | Field _ -> Format.fprintf fmt "int(Set.size(l))") c
+               Format.fprintf fmt "%s(%s)" size src
+             | View -> Format.fprintf fmt "size(l)"
+             | Field _ -> Format.fprintf fmt "Set.size(l)") c
       end
 
     | Sum (an, c, t, p) ->
@@ -2182,6 +2186,7 @@ let pp_model_internal fmt (model : model) b =
       let get_zero _ =
         match t with
         | Ttuple [(Tbuiltin Bint); (Tbuiltin Bint)] -> "(0, 0)"
+        | Tbuiltin Bnat -> "0n"
         | _ -> "0"
       in
       let _, tk = Utils.get_asset_key model an in
@@ -2249,25 +2254,23 @@ let pp_model_internal fmt (model : model) b =
           (fun fmt _ -> Format.fprintf fmt "const a : %s_storage = get_force(k, s.%s_assets);@\n    " an an)
       in
       Format.fprintf fmt
-        "function head_%a (%a; const i : int) : list(%a) is@\n  \
+        "function head_%a (%a; const i : nat) : list(%a) is@\n  \
          block {@\n    \
          %a\
-         const length : int = int(%s(%s));@\n    \
-         const bound : int = if i < length then i else length;@\n    \
-         if (i < 0) then failwith(\"head_%s: index out of bound\") else skip;@\n    \
+         const length : nat = %s(%s);@\n    \
+         const bound : nat = if i < length then i else length;@\n    \
          function rev (const accu: list(%a); const x: %a) : list(%a) is x # accu;@\n    \
-         function aggregate (const accu: int * list(%a); const x: %a%s) : int * list(%a) is@\n    \
+         function aggregate (const accu: nat * list(%a); const x: %a%s) : nat * list(%a) is@\n    \
          if accu.0 < bound@\n    \
-         then (accu.0 + 1, x%s # accu.1 );@\n    \
-         else (accu.0 + 1, accu.1 );@\n    \
-         const init : int * list(%a) = (0, ((list [] : list(%a))));@\n    \
-         const ltmp : int * list(%a) = %s_fold (aggregate, %s, init);@\n    \
+         then (accu.0 + 1n, x%s # accu.1 );@\n    \
+         else (accu.0 + 1n, accu.1 );@\n    \
+         const init : nat * list(%a) = (0n, ((list [] : list(%a))));@\n    \
+         const ltmp : nat * list(%a) = %s_fold (aggregate, %s, init);@\n    \
          const res  : list(%a) = list_fold (rev, ltmp.1, ((list [] : list(%a))));@\n  \
          } with res@\n"
         (pp_prefix_api_container_kind an) c pp_first_arg () pp_btyp t
         pp_src ()
         size src
-        an
         pp_btyp t pp_btyp t pp_btyp t
         pp_btyp t pp_btyp t iter_type pp_btyp t
         iter_val
@@ -2297,26 +2300,23 @@ let pp_model_internal fmt (model : model) b =
           (fun fmt _ -> Format.fprintf fmt "const a : %s_storage = get_force(k, s.%s_assets);@\n    " an an)
       in
       Format.fprintf fmt
-        "function tail_%a (%a; const i : int) : list(%a) is@\n  \
+        "function tail_%a (%a; const i : nat) : list(%a) is@\n  \
          block {@\n    \
          %a\
-         const length : int = int(%s(%s));@\n    \
-         const bound : int = if i < length then i else length;@\n    \
-         if (i < 0) then failwith(\"tail_%s: index out of bound\") else skip;@\n    \
-         const p : int = bound - i;@\n    \
+         const length : nat = %s(%s);@\n    \
+         const p : nat = if (length - i) >= 0 then abs(length - i) else 0n;@\n    \
          function rev (const accu: list(%a); const x: %a) : list(%a) is x # accu;@\n    \
-         function aggregate (const accu: int * list(%a); const x: %a%s) : int * list(%a) is@\n    \
+         function aggregate (const accu: nat * list(%a); const x: %a%s) : nat * list(%a) is@\n    \
          if accu.0 >= p@\n    \
-         then (accu.0 + 1, x%s # accu.1 );@\n    \
-         else (accu.0 + 1, accu.1 );@\n    \
-         const init : int * list(%a) = (0, ((list [] : list(%a))));@\n    \
-         const ltmp : int * list(%a) = %s_fold (aggregate, %s, init);@\n    \
+         then (accu.0 + 1n, x%s # accu.1 );@\n    \
+         else (accu.0 + 1n, accu.1 );@\n    \
+         const init : nat * list(%a) = (0n, ((list [] : list(%a))));@\n    \
+         const ltmp : nat * list(%a) = %s_fold (aggregate, %s, init);@\n    \
          const res  : list(%a) = list_fold (rev, ltmp.1, ((list [] : list(%a))));@\n  \
          } with res@\n"
         (pp_prefix_api_container_kind an) c pp_first_arg () pp_btyp t
         pp_src ()
         size src
-        an
         pp_btyp t pp_btyp t pp_btyp t
         pp_btyp t pp_btyp t iter_type pp_btyp t
         iter_val
@@ -2346,23 +2346,18 @@ let pp_model_internal fmt (model : model) b =
            match t with
            | _ -> Format.fprintf fmt "item = x") t
 
-    | Llength t ->
-      Format.fprintf fmt
-        "function list_%a_length (const l : list(%a)) : int is@\n  \
-         block { skip }@\n  \
-         with int(size(l))@\n"
-        pp_pretty_type t pp_type t
+    | Llength _ -> ()
 
     | Lnth t ->
       Format.fprintf fmt
-        "function list_%a_nth (const l : list(%a); const index : int) : %a is@\n  \
+        "function list_%a_nth (const l : list(%a); const index : nat) : %a is@\n  \
          block {@\n\
-         function aggregate (const accu: int * option(%a); const x: %a) : int * option(%a) is@\n\
+         function aggregate (const accu: nat * option(%a); const x: %a) : nat * option(%a) is@\n\
          if accu.0 = index@\n\
-         then (accu.0 + 1, Some(x));@\n\
-         else (accu.0 + 1, accu.1);@\n\
-         const init : int * option(%a) = (0, (None : option(%a)));@\n\
-         const res_opt : int * option(%a) = list_fold (aggregate, l, init);@\n\
+         then (accu.0 + 1n, Some(x));@\n\
+         else (accu.0 + 1n, accu.1);@\n\
+         const init : nat * option(%a) = (0n, (None : option(%a)));@\n\
+         const res_opt : nat * option(%a) = list_fold (aggregate, l, init);@\n\
          const res : %a = @\n\
          case res_opt.1 of@\n\
          | Some(v) -> v@\n\
@@ -2430,23 +2425,9 @@ let pp_model_internal fmt (model : model) b =
         pp_type t
         body
 
-    | Bslice  t ->
-      let body =
-        match t with
-        | Tbuiltin Bstring -> "string_slice(abs(s), abs(e), a)"
-        | Tbuiltin Bbytes -> "bytes_slice(abs(s), abs(e), a)"
-        | _ -> assert false
-      in
-      Format.fprintf fmt "function slice_%a (const a : %a; const s : int; const e : int) : %a is %s@\n"
-        pp_pretty_type t
-        pp_type t
-        pp_type t
-        body
+    | Bslice  _ -> ()
 
-    | Blength t ->
-      Format.fprintf fmt "function length_%a (const a : %a) : int is int(size(a))@\n"
-        pp_pretty_type t
-        pp_type t
+    | Blength _ -> ()
 
     | Bisnone t ->
       Format.fprintf fmt "function isnone_%a (const a : option(%a)) : bool is @\n  \

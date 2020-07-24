@@ -1,6 +1,6 @@
 archetype expr_set_length
 
-variable res : int = -1
+variable res : nat = 0
 
 entry exec () {
   specification {

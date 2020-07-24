@@ -50,14 +50,15 @@ entry exec () {
     i := floor(1.6); // 1
     i := ceil(1.6);  // 2
 
-    i := abs(-1);
+    n := abs(-1);
     r := abs(-0.5);
 
     s := concat("abc", "def");
     s := slice("abcdef", 1, 2);
-    i := length("abcdef");
+    n := length("abcdef");
 
     b := concat(0x12, 0xef);
     b := slice(0xabcdef01, 1, 2);
+    n := length(0xabcdef01);
   }
 }
