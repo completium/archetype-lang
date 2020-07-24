@@ -906,7 +906,7 @@ let mapops =
   let map  = A.Tmap (tkey, tval) in [
     ("map_put"      , A.Cmput      , `Total   , Some map, [ tkey; tval ], map);
     ("map_remove"   , A.Cmremove   , `Total   , Some map, [ tkey       ], map);
-    ("map_getopt"   , A.Cmgetopt   , `Partial , Some map, [ tkey       ], tval);
+    ("map_getopt"   , A.Cmgetopt   , `Partial , Some map, [ tkey       ], A.Toption tval);
     ("map_contains" , A.Cmcontains , `Total   , Some map, [ tkey       ], A.vtbool);
     ("map_length"   , A.Cmlength   , `Total   , Some map, [            ], A.vtnat);
   ]
@@ -2339,7 +2339,7 @@ let rec for_xexpr
         | Some (A.Tmap (kt, vt)) -> begin
             let pk = for_xexpr ?ety:(Some kt) env pk in
             mk_sp
-              (Some (A.Toption vt))
+              (Some vt)
               (A.Pcall (None, A.Cconst A.Cmget, [A.AExpr ee; A.AExpr pk]))
           end
         | _ -> begin
