@@ -1269,7 +1269,7 @@ let pp_model_internal fmt (model : model) b =
         pp_pretty_type (extract_option_type x.type_)
         f x
 
-    | Mgetopt x ->
+    | Moptget x ->
       Format.fprintf fmt "getopt_%a (%a)"
         pp_pretty_type (extract_option_type x.type_)
         f x
@@ -2451,7 +2451,7 @@ let pp_model_internal fmt (model : model) b =
                           } with res@\n"
         pp_pretty_type t pp_type t
 
-    | Bgetopt t ->
+    | Boptget t ->
       Format.fprintf fmt
         "function getopt_%a (const a : option(%a)) : %a is@\n  \
          block { skip } with (case a of@\n      \

@@ -14,7 +14,7 @@ entry exec () {
   // dynamically from an address and string
   var a : address = @KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm;
   var e2_opt : option<entrysig<int>> = entrypoint(a, "an_entry");
-  var e2 = getopt(e2_opt);
+  var e2 = opt_get(e2_opt);
   transfer 0tz to entry e2(2);
 
   // from

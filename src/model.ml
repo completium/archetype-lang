@@ -311,7 +311,7 @@ type ('id, 'term) mterm_node  =
   | Mlength           of 'term
   | Misnone           of 'term
   | Missome           of 'term
-  | Mgetopt           of 'term
+  | Moptget           of 'term
   | Mfloor            of 'term
   | Mceil             of 'term
   | Mpack             of 'term
@@ -445,7 +445,7 @@ and api_builtin =
   | Blength of type_
   | Bisnone of type_
   | Bissome of type_
-  | Bgetopt of type_
+  | Boptget of type_
   | Bfloor
   | Bceil
 [@@deriving show {with_path = false}]
@@ -1222,7 +1222,7 @@ let cmp_mterm_node
     | Mlength x1, Mlength x2                                                           -> cmp x1 x2
     | Misnone x1, Misnone x2                                                           -> cmp x1 x2
     | Missome x1, Missome x2                                                           -> cmp x1 x2
-    | Mgetopt x1, Mgetopt x2                                                           -> cmp x1 x2
+    | Moptget x1, Moptget x2                                                           -> cmp x1 x2
     | Mfloor x1, Mfloor x2                                                             -> cmp x1 x2
     | Mceil x1, Mceil x2                                                               -> cmp x1 x2
     | Mpack x1, Mpack x2                                                               -> cmp x1 x2
@@ -1337,7 +1337,7 @@ let cmp_api_item_node (a1 : api_storage_node) (a2 : api_storage_node) : bool =
     | Blength t1, Blength t2 -> cmp_type t1 t2
     | Bisnone t1, Bisnone t2 -> cmp_type t1 t2
     | Bissome t1, Bissome t2 -> cmp_type t1 t2
-    | Bgetopt t1, Bgetopt t2 -> cmp_type t1 t2
+    | Boptget t1, Boptget t2 -> cmp_type t1 t2
     | Bfloor    , Bfloor     -> true
     | Bceil     , Bceil      -> true
     | _ -> false
@@ -1569,7 +1569,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mlength x                      -> Mlength (f x)
   | Misnone x                      -> Misnone (f x)
   | Missome x                      -> Missome (f x)
-  | Mgetopt x                      -> Mgetopt (f x)
+  | Moptget x                      -> Moptget (f x)
   | Mfloor x                       -> Mfloor (f x)
   | Mceil x                        -> Mceil (f x)
   | Mpack x                        -> Mpack (f x)
@@ -1929,7 +1929,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mlength x                             -> f accu x
   | Misnone x                             -> f accu x
   | Missome x                             -> f accu x
-  | Mgetopt x                             -> f accu x
+  | Moptget x                             -> f accu x
   | Mfloor x                              -> f accu x
   | Mceil x                               -> f accu x
   | Mpack x                               -> f accu x
@@ -2681,9 +2681,9 @@ let fold_map_term
     let xe, xa = f accu x in
     g (Misnone xe), xa
 
-  | Mgetopt x ->
+  | Moptget x ->
     let xe, xa = f accu x in
-    g (Mgetopt xe), xa
+    g (Moptget xe), xa
 
   | Mfloor x ->
     let xe, xa = f accu x in
@@ -3073,7 +3073,7 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
         | Blength t -> Blength (for_type t)
         | Bisnone t -> Bisnone (for_type t)
         | Bissome t -> Bissome (for_type t)
-        | Bgetopt t -> Bgetopt (for_type t)
+        | Boptget t -> Boptget (for_type t)
         | Bfloor    -> Bfloor
         | Bceil     -> Bceil
       in
@@ -4398,7 +4398,7 @@ end = struct
              | APIBuiltin (Blength       _) -> 35
              | APIBuiltin (Bisnone       _) -> 36
              | APIBuiltin (Bissome       _) -> 37
-             | APIBuiltin (Bgetopt       _) -> 38
+             | APIBuiltin (Boptget       _) -> 38
              | APIBuiltin (Bfloor         ) -> 39
              | APIBuiltin (Bceil          ) -> 40
            in

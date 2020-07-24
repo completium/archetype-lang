@@ -616,7 +616,7 @@ let to_model (ast : A.ast) : M.model =
 
       | A.Pcall (None, A.Cconst A.Cgetopt, [AExpr x]) ->
         let fx = f x in
-        M.Mgetopt (fx)
+        M.Moptget (fx)
 
       | A.Pcall (None, A.Cconst A.Cfloor, [AExpr x]) ->
         let fx = f x in

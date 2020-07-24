@@ -901,7 +901,7 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "issome (%a)"
         f x
 
-    | Mgetopt x ->
+    | Moptget x ->
       Format.fprintf fmt "getopt (%a)"
         f x
 
@@ -1271,7 +1271,7 @@ let pp_api_builtin fmt = function
   | Blength t -> Format.fprintf fmt "length on %a" pp_type t
   | Bisnone t -> Format.fprintf fmt "isnone on %a" pp_type t
   | Bissome t -> Format.fprintf fmt "issome on %a" pp_type t
-  | Bgetopt t -> Format.fprintf fmt "getopt on %a" pp_type t
+  | Boptget t -> Format.fprintf fmt "getopt on %a" pp_type t
   | Bfloor    -> pp_str fmt "floor"
   | Bceil     -> pp_str fmt "ceil"
 

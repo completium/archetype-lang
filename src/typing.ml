@@ -874,9 +874,9 @@ let coreops =
 
 (* -------------------------------------------------------------------- *)
 let optionops = [
-  ("isnone", A.Cisnone, `Total  , Some (A.Toption (A.Tnamed 0)), [], A.vtbool);
-  ("issome", A.Cissome, `Total  , Some (A.Toption (A.Tnamed 0)), [], A.vtbool);
-  ("getopt", A.Cgetopt, `Partial, Some (A.Toption (A.Tnamed 0)), [], A.Tnamed 0);
+  ("isnone",  A.Cisnone, `Total  , Some (A.Toption (A.Tnamed 0)), [], A.vtbool);
+  ("issome",  A.Cissome, `Total  , Some (A.Toption (A.Tnamed 0)), [], A.vtbool);
+  ("opt_get", A.Cgetopt, `Partial, Some (A.Toption (A.Tnamed 0)), [], A.Tnamed 0);
 ]
 
 (* -------------------------------------------------------------------- *)

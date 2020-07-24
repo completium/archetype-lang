@@ -1,4 +1,4 @@
-archetype expr_fun_opt_getopt
+archetype expr_fun_opt_optget
 
 variable res : bool = false
 
@@ -8,7 +8,7 @@ entry exec () {
   }
   effect {
     var i_opt : option<nat> = some(1);
-    var i = getopt(i_opt);
+    var i = opt_get(i_opt);
     res := i = 1
   }
 }
