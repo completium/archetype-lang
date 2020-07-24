@@ -1193,14 +1193,14 @@ let pp_model_internal fmt (model : model) b =
         f c
 
     | Mmapget (_, _, c, k) ->
-      Format.fprintf fmt "%a[%a]"
-        f c
-        f k
-
-    | Mmapgetopt (_, _, c, k) ->
       Format.fprintf fmt "get_force (%a, %a)"
         f k
         f c
+
+    | Mmapgetopt (_, _, c, k) ->
+      Format.fprintf fmt "%a[%a]"
+        f c
+        f k
 
     | Mmapcontains (_, _, c, k) ->
       Format.fprintf fmt "map_mem(%a, %a)"
