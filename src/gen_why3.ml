@@ -113,9 +113,9 @@ let rec map_mtype (t : M.type_) : loc_typ =
       | M.Tcontainer (Tasset id,M.Aggregate)  -> Tyaggregate (map_lident id)
       | M.Tcontainer (Tasset id,M.View)       -> Tyview (map_lident id)
       | M.Tcontainer (Tasset id,M.Collection) -> Tycoll (map_lident id)
-      | M.Tcontainer (t,M.Collection)         -> Tylist (map_mtype t).obj
-      | M.Toption t                           -> Tyoption (map_mtype t).obj
-      | M.Ttuple l                            -> Tytuple (l |> List.map map_mtype |> List.map deloc)
+      | M.Tcontainer (t,M.Collection)         -> Tylist (map_mtype t)
+      | M.Toption t                           -> Tyoption (map_mtype t)
+      | M.Ttuple l                            -> Tytuple (l |> List.map map_mtype)
       | M.Tunit                               -> Tyunit
       | M.Tstate                              -> Tystate
       | M.Tmap (_, _)                         -> Tyunit (* TODO: replace by the right type *)
@@ -126,8 +126,8 @@ let rec map_mtype (t : M.type_) : loc_typ =
       | M.Tvset _                             -> Tyunit (* TODO: replace by the right type *)
       | M.Ttrace _                            -> Tyunit (* TODO: replace by the right type *)
       | M.Tcontract _                         -> Tyint
-      | M.Tset t                              -> Tyset (map_mtype (Tbuiltin t)).obj
-      | M.Tlist t                             -> Tylist (map_mtype t).obj
+      | M.Tset t                              -> Tyset (map_mtype (Tbuiltin t))
+      | M.Tlist t                             -> Tylist (map_mtype t)
       | _ -> print_endline (Format.asprintf "%a@." M.pp_type_ t); assert false)
 
 (* Trace -------------------------------------------------------------------------*)
@@ -508,7 +508,7 @@ let mk_select_name m asset test = "select_" ^ asset ^ "_" ^ (string_of_int (M.Ut
 let mk_select m asset test mlw_test only_formula args =
   let id =  mk_select_name m asset test in
   let (key,_) = M.Utils.get_asset_key m asset in
-  let args : (string * string abstract_type) list = List.map (fun (i,t) -> (i, (map_mtype t|> unloc_type))) args in
+  let args : (string * typ) list = List.map (fun (i,t) -> (i, (map_mtype t|> unloc_type))) args in
   let decl = Dfun {
       name     = id;
       logic    = if only_formula then Logic else NoMod;
@@ -581,7 +581,7 @@ let mk_removeif_name prefix m asset test = prefix^"removeif_" ^ asset ^ "_" ^ (s
 let mk_fremoveif m asset fn test mlw_test only_formula args =
   let id =  mk_removeif_name "f" m asset test in
   let (_key,_) = M.Utils.get_asset_key m asset in
-  let args : (string * string abstract_type) list =
+  let args : (string * typ) list =
     List.map (fun (i,t) -> (i, (map_mtype t|> unloc_type))) args in
   let decl = Dfun {
       name     = id;
@@ -695,16 +695,48 @@ let get_map_idx m t = List.fold_left (fun i mt ->
 
 let mk_map_name m t = "map"^(string_of_int (get_map_idx m t))
 
+let mk_tuple_typ k v = with_dummy_loc (Tytuple [with_dummy_loc (map_btype k); map_mtype v])
+
+let mk_eq_pair id typ = Dfun {
+  name = "eq_" ^ id |> with_dummy_loc;
+  logic = Logic;
+  args = [
+    with_dummy_loc "e1", typ;
+    with_dummy_loc "e2", typ
+  ];
+  returns = Tybool |> with_dummy_loc;
+  raises = [];
+  variants = [];
+  requires = [];
+  ensures = [];
+  body = loc_term (Tmatch (
+    Ttuple [Tvar "e1"; Tvar "e2"], [
+      Tpatt_tuple [
+        Tpatt_tuple [Tconst "e1f"; Tconst "e1s"];
+        Tpatt_tuple [Tconst "e2f"; Tconst "e2s"]
+      ], Tif (Tpand(Teq(Tyint,Tvar "e1f",Tvar "e2f"),Teq(Tyint, Tvar "e1s",Tvar "e2s")), Ttrue, Some Tfalse);
+      Tpatt_tuple [Twild;Twild], Tfalse
+    ]
+  ));
+}
+
+let mk_map_clone id typ =
+  Dclone ([gArchetypeDir;gArchetypeColl] |> wdl,
+    String.capitalize_ascii id |> with_dummy_loc, [
+      Ctype ("t" |> with_dummy_loc, typ);
+      Cval  ("keyt" |> with_dummy_loc, "fst" |> with_dummy_loc);
+      Cval  ("eqt" |> with_dummy_loc, "eq_" ^ id |> with_dummy_loc)
+    ]
+  )
+
 let mk_map_type m (t : M.type_) =
   match t with
   | Tmap (k,v) ->
     let map_name = mk_map_name m t in
-    let typ : loc_typ = (Tytuple [map_btype k; map_mtype v]) in
-    Dclone ([gArchetypeDir;gArchetypeColl] |> wdl,
-            String.capitalize_ascii map_name |> with_dummy_loc,
-            [Ctype ("t" |> with_dummy_loc, typ);
-             Cval  ("keyt" |> with_dummy_loc, "fst" |> with_dummy_loc);
-             Cval  ("eqt" |> with_dummy_loc, "eq_" ^ map_name |> with_dummy_loc)])
+    let typ : loc_typ = mk_tuple_typ k v in [
+      mk_eq_pair map_name typ;
+      mk_map_clone map_name typ
+    ]
   | _ -> assert false
 
 (* Map model term -------------------------------------------------------------*)
@@ -721,7 +753,7 @@ let rec type_to_init m (typ : loc_typ) : loc_term =
       | Tyview _      -> Temptyview (with_dummy_loc gViewAs)
       | Tymap i       -> Tvar (mk_loc typ.loc ("const (mk_default_" ^ i.obj ^ " ())"))
       | Tyenum i      -> Tvar (mk_loc typ.loc (unloc (M.Utils.get_enum m i.obj).initial))
-      | Tytuple l     -> Ttuple (List.map (type_to_init m) (List.map with_dummy_loc l))
+      | Tytuple l     -> Ttuple (List.map (type_to_init m) l)
       | Tybool        -> Ttrue
       | _             -> Tint Big_int.zero_big_int)
 
@@ -1378,9 +1410,13 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       List.fold_left(fun acc e ->
           with_dummy_loc (Tcons(with_dummy_loc gListAs, map_mterm m ctx e, acc))
         ) (loc_term (Tnil gListAs)) l |> Mlwtree.deloc
-    | Mlitmap  _   -> error_not_translated "Mlitmap"
+    | Mlitmap  l   ->
+      let map = mk_map_name m mt.type_ in
+      Tmkcoll (with_dummy_loc map,
+               List.fold_left (fun acc (k,v) ->
+                acc @ [with_dummy_loc (Ttuple [map_mterm m ctx k; map_mterm m ctx v])]
+               ) ([] : loc_term list) l)
     | Mlitrecord _ -> error_not_translated "Mlitrecord"
-
 
     (* access *)
 
@@ -1630,8 +1666,11 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mmapget (_, _, c, k)      -> Tapp (loc_term (Tvar "map_get")      , [ map_mterm m ctx c; map_mterm m ctx k ])
     | Mmapgetopt (_, _, c, k)   -> Tapp (loc_term (Tvar "map_getopt")   , [ map_mterm m ctx c; map_mterm m ctx k ])
     | Mmapcontains (_, _, c, k) -> Tapp (loc_term (Tvar "map_contains") , [ map_mterm m ctx c; map_mterm m ctx k ])
-    | Mmaplength (_, _, c)      -> Tapp (loc_term (Tvar "map_length")   , [ map_mterm m ctx c ])
-
+    | Mmaplength (k, v, c)      ->
+      begin match k with
+      | M.Tbuiltin bt -> let tmap = mk_map_name m (M.Tmap (bt,v)) in Tcard (with_dummy_loc tmap,map_mterm m ctx c)
+      | _ -> assert false
+      end
 
     (* builtin functions *)
     | Mmax (l,r) ->
@@ -3350,7 +3389,7 @@ let to_whyml (m : M.model) : mlw_tree  =
   let useMinMax        = mk_use_min_max m in
   let traceutils       = mk_trace_utils m |> deloc in
   let enums            = M.Utils.get_enums m |> List.map (map_enum m) in
-  let maps             = M.Utils.get_all_map_types m |> List.map (mk_map_type m) |> wdl in
+  let maps             = M.Utils.get_all_map_types m |> List.map (mk_map_type m) |> List.flatten in
   let records          = M.Utils.get_assets m |> List.map (map_record m) |> wdl in
   let cmp_enums        = M.Utils.get_assets m |> List.map (mk_cmp_enums m) |> List.flatten in
   let eq_assets        = M.Utils.get_assets m |> List.map (mk_eq_asset m) |> wdl in

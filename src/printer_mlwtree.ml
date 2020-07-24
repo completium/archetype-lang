@@ -219,7 +219,7 @@ let rec pp_pattern fmt = function
   | Twild -> pp_str fmt " _"
   | Tpignore -> pp_str fmt "Some _"
   | Tconst a -> pp_id fmt a
-  | Tpatt_tuple l -> Format.fprintf fmt "%a" (pp_list "," (pp_pattern)) l
+  | Tpatt_tuple l -> Format.fprintf fmt "(%a)" (pp_list "),(" (pp_pattern)) l
   | Tpsome a -> Format.fprintf fmt "Some %a" pp_id a
 
 (* -------------------------------------------------------------------------- *)
@@ -492,10 +492,10 @@ let rec pp_term outer pos fmt = function
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e
 
-  | Tmkcoll (i,e) ->
-    Format.fprintf fmt "%a.mk %a"
+  | Tmkcoll (i,l) ->
+    Format.fprintf fmt "%a.from_list (%a)"
       pp_str (String.capitalize_ascii i)
-      (pp_with_paren (pp_term outer pos)) e
+      (pp_tlist outer pos) l
   | Tmkview (_,e) ->
     Format.fprintf fmt "V.mk %a"
       (pp_with_paren (pp_term outer pos)) e

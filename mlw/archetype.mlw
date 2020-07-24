@@ -837,11 +837,26 @@ module Collection
   = { content = s }
 
   (* ------------------------------------------------------------------------ *)
+  let function from_list (l : list t) : collection
+  requires { key_injective l }
+  = { content = N.mk l }
+
+  (* ------------------------------------------------------------------------ *)
   let function get (k : key) (c : collection) : option t
   ensures { result = None -> forall e. mem e c -> keyt e <> k }
   ensures { forall e. result = Some e -> keyt e = k }
   ensures { forall e. result = Some e <-> mem e c }
   = N.get k c.content
+
+  (* ------------------------------------------------------------------------ *)
+  let get_force (k : key) (c : collection) : t
+  raises { NotFound }
+  ensures { keyt result = k }
+  ensures { mem result c }
+  = match get k c with
+    | Some v -> v
+    | None -> raise NotFound
+    end
 
   (* ------------------------------------------------------------------------ *)
   lemma cont_mk [@rewrite] : forall l. N.elts (N.mk l) = norm l
@@ -962,7 +977,7 @@ module Collection
 
 end
 
-module Set
+(* module Set
 
   (* ------------------------------------------------------------------------ *)
   type t
@@ -1023,7 +1038,7 @@ module Set
   (* ------------------------------------------------------------------------ *)
   let function length (s : set) : int = F.fcard s
 
-end
+end *)
 
 module Sort
   use list.List

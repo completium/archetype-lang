@@ -108,7 +108,7 @@ type ('e,'t,'i) abstract_term =
   | Tshallow  of 'i * 'e * 'e
   | Tmlist  of 'i * 'e * 'i * 'i * 'i * 'e (* match list *)
   | Tcons   of 'i * 'e * 'e
-  | Tmkcoll of 'i * 'e
+  | Tmkcoll of 'i * 'e list
   | Tmkview of 'i * 'e
   | Tcontent of 'i * 'e
   | Tvcontent of 'i * 'e
@@ -396,7 +396,7 @@ and map_abstract_term
   | Temptyview i       -> Temptyview (map_i i)
   | Temptyfield i      -> Temptyfield (map_i i)
   | Tcard (i,e)        -> Tcard (map_i i, map_e e)
-  | Tmkcoll (i,e)      -> Tmkcoll (map_i i, map_e e)
+  | Tmkcoll (i,e)      -> Tmkcoll (map_i i, List.map map_e e)
   | Tmkview (i,e)      -> Tmkview (map_i i, map_e e)
   | Tcontent (i,e)     -> Tcontent (map_i i, map_e e)
   | Tvcontent (i,e)    -> Tvcontent (map_i i, map_e e)
@@ -801,7 +801,7 @@ let compare_abstract_term
   | Temptyview i1, Temptyview i2 -> cmpi i1 i2
   | Temptyfield i1, Temptyfield i2 -> cmpi i1 i2
   | Tcard (i1,e1), Tcard (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
-  | Tmkcoll (i1,e1), Tmkcoll (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
+  | Tmkcoll (i1,e1), Tmkcoll (i2,e2) -> cmpi i1 i2 && List.for_all2 cmpe e1 e2
   | Tmkview (i1,e1), Tmkview (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tcontent (i1,e1), Tcontent (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tvcontent (i1,e1), Tvcontent (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
