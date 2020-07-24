@@ -1061,15 +1061,52 @@ let remove_cmp_bool (model : model) : model =
   in
   Model.map_mterm_model aux model
 
+let update_nat_int_rat (model : model) : model =
+  let get_number_lit_opt (x : mterm) =
+    match x.node with
+    | Mint x -> Some x
+    | Mnattoint {node = Mnat x} -> Some x
+    | _ -> None
+  in
+  let is_number_lit  (x : mterm) = x |> get_number_lit_opt |> Option.is_some in
+  let get_number_lit (x : mterm) = x |> get_number_lit_opt |> Option.get in
+  let rec aux c (mt : mterm) : mterm =
+    match mt.node with
+    | Mnattoint {node = Mnat n; _} -> {mt with node = Mint n}
+    | Mratarith (op, {node = Mtuple [a; b]}, {node = Mtuple [c; d]}) when List.for_all is_number_lit [a; b; c; d] -> begin
+        let an = get_number_lit a in
+        let ad = get_number_lit b in
+        let bn = get_number_lit c in
+        let bd = get_number_lit d in
+        let mk_int i = mk_mterm (Mint i) (Tbuiltin Bint) in
+        let mk_rat n d = mk_mterm (Mtuple [mk_int n ; mk_int d]) (Ttuple [Tbuiltin Bint; Tbuiltin Bint]) in
+        let (+) a b   = Big_int.add_big_int a b in
+        let (-) a b   = Big_int.sub_big_int a b in
+        let ( * ) a b = Big_int.mult_big_int a b in
+        let x, y =
+          match op with
+          | Rplus  -> ((an * bd) + (bn * ad), ad * bd)
+          | Rminus -> ((an * bd) - (bn * ad), ad * bd)
+          | Rmult  -> (an * bn, ad * bd)
+          | Rdiv   -> (an * bd, ad * bn)
+        in
+        mk_rat x y
+      end
+    | _ -> map_mterm (aux c) mt
+  in
+  Model.map_mterm_model aux model
+
 let remove_rational (model : model) : model =
-  let type_int = Tbuiltin Bint in
-  let type_bool= Tbuiltin Bbool in
-  let type_cur = Tbuiltin Bcurrency in
+  let type_int      = Tbuiltin Bint in
+  let type_bool     = Tbuiltin Bbool in
+  let type_cur      = Tbuiltin Bcurrency in
+  let type_dur      = Tbuiltin Bduration in
   let type_rational = Ttuple [type_int; type_int] in
-  let one = mk_mterm (Mint (Big_int.unit_big_int)) type_int in
-  let mk_rat n d = mk_mterm (Mtuple [n ; d]) type_rational in
-  let int_to_rat e = mk_mterm (Minttorat e) type_rational in
-  let process_type t : type_ =
+  let one           = mk_mterm (Mint (Big_int.unit_big_int)) type_int in
+  let mk_rat n d    = mk_mterm (Mtuple [n ; d]) type_rational in
+  let nat_to_int e  = mk_mterm (Mnattoint e) type_int in
+
+  let for_type t =
     let rec aux t =
       match t with
       | Tbuiltin Brational -> type_rational
@@ -1077,265 +1114,182 @@ let remove_rational (model : model) : model =
     in
     aux t
   in
+
+  let to_int (x : mterm) =
+    match x.type_ with
+    | Tbuiltin Bnat -> mk_mterm (Mnattoint x) type_int
+    | Tbuiltin Bint -> x
+    | _ -> assert false
+  in
   let to_rat (x : mterm) =
     match x.type_ with
+    | Tbuiltin Bnat -> mk_rat (nat_to_int x) one
+    | Tbuiltin Bduration
     | Tbuiltin Bint -> mk_rat x one
+    | Tbuiltin Brational
     | Ttuple [Tbuiltin Bint; Tbuiltin Bint] -> x
     | _ -> assert false
   in
-  let process_mterm mt =
+  let for_mterm mt =
     let rec aux (mt : mterm) : mterm =
-      let is_t_rat (x : type_) = match x with     | Tbuiltin Brational -> true | _ -> false in
-      let is_int (x : mterm) = match x.type_ with | Tbuiltin Bint      -> true | _ -> false in
-      let is_rat (x : mterm) = match x.type_ with | Tbuiltin Brational -> true | _ -> false in
-      let is_cur (x : mterm) = match x.type_ with | Tbuiltin Bcurrency -> true | _ -> false in
-      let is_dur (x : mterm) = match x.type_ with | Tbuiltin Bduration -> true | _ -> false in
-      let is_num (x : mterm) = is_rat x || is_int x in
-      let is_rats (a, b) = is_rat a || is_rat b in
-      let is_ints (a, b) = is_int a && is_int b in
-      let is_curs (a, b) = is_cur a && is_cur b in
-      let is_durs (a, b) = is_dur a && is_dur b in
-      let process_eq neg (a, b) =
-        let lhs = (to_rat |@ aux) a in
-        let rhs = (to_rat |@ aux) b in
-        let res = mk_mterm (Mrateq (lhs, rhs)) type_bool in
-        if neg
-        then mk_mterm (Mnot res) type_bool
-        else res
+      let ret = mt.type_ in
+
+      let for_unary op (v : mterm) =
+        match op, ret, v.type_ with
+        | `Uminus, (Tbuiltin Brational | Ttuple [Tbuiltin Bint; Tbuiltin Bint]), Tbuiltin Brational ->
+          let v = v |> aux |> to_rat in
+          mk_mterm (Mratuminus v) type_rational
+        | _ -> map_mterm aux mt
       in
-      let process_cmp op (a, b) =
-        let lhs = (to_rat |@ aux) a in
-        let rhs = (to_rat |@ aux) b in
-        mk_mterm (Mratcmp (op, lhs, rhs)) type_bool
+
+      let for_arith op (a, b : mterm * mterm) =
+        match ret with
+        | Tbuiltin Brational
+        | Ttuple [Tbuiltin Bint; Tbuiltin Bint] -> begin
+            match op, a.type_, b.type_ with
+            | _ -> begin
+                let f =
+                  match op with
+                  | `Plus   -> Some (fun x y -> mk_mterm (Mratarith (Rplus,  x, y)) type_rational)
+                  | `Minus  -> Some (fun x y -> mk_mterm (Mratarith (Rminus, x, y)) type_rational)
+                  | `Mult   -> Some (fun x y -> mk_mterm (Mratarith (Rmult,  x, y)) type_rational)
+                  | `Divrat -> Some (fun x y -> mk_mterm (Mratarith (Rdiv,   x, y)) type_rational)
+                  | _       -> None
+                in
+                match f with
+                | Some f ->
+                  let lhs = a |> aux |> to_rat in
+                  let rhs = b |> aux |> to_rat in
+                  f lhs rhs
+                | None -> map_mterm aux mt
+              end
+          end
+        | Tbuiltin Bint -> begin
+            match op, a.type_, b.type_ with
+            | `Diveuc, Tbuiltin Bcurrency, Tbuiltin Bcurrency ->
+              let lhs = a |> aux in
+              let rhs = b |> aux in
+              mk_mterm (Mdivtez (lhs, rhs)) type_int
+            | _ -> map_mterm aux mt
+          end
+        | Tbuiltin Bcurrency -> begin
+            match op, a.type_, b.type_ with
+            | `Mult, Tbuiltin Bnat,      Tbuiltin Bcurrency
+            | `Mult, Tbuiltin Bint,      Tbuiltin Bcurrency
+            | `Mult, Tbuiltin Brational, Tbuiltin Bcurrency -> begin
+                let lhs = a |> aux |> to_rat in
+                let rhs = b |> aux in
+                mk_mterm (Mrattez (lhs, rhs)) type_cur
+              end
+            | `Diveuc, Tbuiltin Bcurrency, Tbuiltin Bnat
+            | `Diveuc, Tbuiltin Bcurrency, Tbuiltin Bint -> begin
+                let inv_rat v = mk_mterm (Mratarith (Rdiv, to_rat one, v)) type_rational in
+                let lhs = b |> aux |> to_rat |> inv_rat in
+                let rhs = a |> aux in
+                mk_mterm (Mrattez (lhs, rhs)) type_cur
+              end
+            | _ -> map_mterm aux mt
+          end
+        | Tbuiltin Bduration -> begin
+            match op, a.type_, b.type_ with
+            | `Mult, Tbuiltin Bnat,      Tbuiltin Bduration
+            | `Mult, Tbuiltin Bint,      Tbuiltin Bduration -> begin
+                let lhs = a |> aux |> to_rat in
+                let rhs = b |> aux in
+                mk_mterm (Mmult (lhs, rhs)) type_dur
+              end
+            | _ -> map_mterm aux mt
+          end
+        | _ -> map_mterm aux mt
       in
-      let process_arith op (a, b) =
-        let lhs = (to_rat |@ aux) a in
-        let rhs = (to_rat |@ aux) b in
-        mk_mterm (Mratarith (op, lhs, rhs)) type_rational
+
+      let for_fun (f : mterm list -> type_ -> mterm) (l : mterm list) : mterm =
+        let l = List.map (fun (x : mterm) ->
+            match ret with
+            | Tbuiltin Brational
+            | Ttuple [Tbuiltin Bint; Tbuiltin Bint] -> begin
+                x |> aux |> to_rat
+              end
+            | Tbuiltin Bint -> begin
+                x |> aux |> to_int
+              end
+            | _ -> x |> aux) l
+        in
+        let ret =
+          match ret with
+          |  Tbuiltin Brational -> type_rational
+          | _ -> ret
+        in
+        f l ret
       in
-      let process_uminus v =
-        let v = (to_rat |@ aux) v in
-        mk_mterm (Mratuminus v) type_rational
+
+      let for_cmp op (a, b : mterm * mterm) =
+        match a.type_, b.type_ with
+        | Tbuiltin Bint, Tbuiltin Bnat
+        | Tbuiltin Bnat, Tbuiltin Bint ->
+          let f =
+            match op with
+            | `Eq -> (fun x y -> mk_mterm (Mequal  (type_int, x, y)) type_bool)
+            | `Ne -> (fun x y -> mk_mterm (Mnequal (type_int, x, y)) type_bool)
+            | `Le -> (fun x y -> mk_mterm (Mle     (x, y))           type_bool)
+            | `Lt -> (fun x y -> mk_mterm (Mlt     (x, y))           type_bool)
+            | `Ge -> (fun x y -> mk_mterm (Mge     (x, y))           type_bool)
+            | `Gt -> (fun x y -> mk_mterm (Mgt     (x, y))           type_bool)
+          in
+          let lhs = a |> aux |> to_int in
+          let rhs = b |> aux |> to_int in
+          f lhs rhs
+
+        | Tbuiltin Brational, _
+        | Ttuple [Tbuiltin Bint; Tbuiltin Bint], _
+        | _, Tbuiltin Brational
+        | _, Ttuple [Tbuiltin Bint; Tbuiltin Bint] -> begin
+            let f =
+              match op with
+              | `Eq -> (fun x y -> mk_mterm (Mrateq  (x, y)) type_bool)
+              | `Ne -> (fun x y -> mk_mterm (Mrateq  (x, y)) type_bool |> (fun x -> mk_mterm (Mnot x) type_bool))
+              | `Le -> (fun x y -> mk_mterm (Mratcmp (Le,  x, y)) type_bool)
+              | `Lt -> (fun x y -> mk_mterm (Mratcmp (Lt,  x, y)) type_bool)
+              | `Ge -> (fun x y -> mk_mterm (Mratcmp (Ge,  x, y)) type_bool)
+              | `Gt -> (fun x y -> mk_mterm (Mratcmp (Gt,  x, y)) type_bool)
+            in
+            let lhs = a |> aux |> to_rat in
+            let rhs = b |> aux |> to_rat in
+            f lhs rhs
+          end
+        | _ -> map_mterm aux mt
       in
-      let process_rattez (n : mterm) (t : mterm) : mterm =
-        let coef = (to_rat |@ aux) n in
-        let t = aux t in
-        mk_mterm (Mrattez (coef, t)) type_cur
-      in
-      let process_divtez (n : mterm) (t : mterm) : mterm =
-        let n = aux n in
-        let t = aux t in
-        mk_mterm (Mdivtez (n, t)) type_int
-      in
-      match mt.node, mt.type_ with
-      | _ as node, Tbuiltin Brational ->
-        begin
-          match node with
-          | Mcast (Tbuiltin Bint, Tbuiltin Brational, v) ->
-            let nv = aux v in
-            int_to_rat nv
-          | Mrational (a, b) ->
-            let make_int (x : Core.big_int) = mk_mterm (Mint x) type_int in
-            mk_mterm (Mtuple [make_int a; make_int b]) type_rational
-          | Mplus   (a, b) -> process_arith Rplus  (a, b)
-          | Mminus  (a, b) -> process_arith Rminus (a, b)
-          | Mmult   (a, b) -> process_arith Rmult  (a, b)
-          | Mdivrat (a, b) when is_ints (a, b) || is_durs (a, b) -> mk_rat a b
-          | Mdivrat (a, b) -> process_arith Rdiv   (a, b)
-          | Muminus v      -> process_uminus v
-          | Mmax    (a, b) when is_rats (a, b) -> let lhs, rhs = pair_sigle_map (to_rat |@ aux) (a, b) in mk_mterm (Mmax (lhs, rhs)) type_rational
-          | Mmin    (a, b) when is_rats (a, b) -> let lhs, rhs = pair_sigle_map (to_rat |@ aux) (a, b) in mk_mterm (Mmin (lhs, rhs)) type_rational
-          | _ ->
-            let mt = map_mterm aux mt in
-            { mt with type_ = type_rational }
+
+      match mt.node with
+      | Mrational (a, b) -> begin
+          let make_int (x : Core.big_int) = mk_mterm (Mint x) type_int in
+          mk_mterm (Mtuple [make_int a; make_int b]) type_rational
         end
-      | _ as node, Tbuiltin Bcurrency ->
-        begin
-          match node with
-          | Mcurrency (v, Tz)  -> { mt with node = Mcurrency  (Big_int.mult_int_big_int 1000000 v, Utz) }
-          | Mcurrency (v, Mtz) -> { mt with node = Mcurrency  (Big_int.mult_int_big_int    1000 v, Utz) }
-          | Mmult    (a, b) when is_num a && is_cur b -> process_rattez a b
-          | Mmult    (a, b) when is_cur a && is_num b -> process_rattez b a
-          | Mdiveuc  (a, b) when is_cur a && is_int b -> process_rattez (mk_rat one b) a
-          | _ -> map_mterm aux mt
-        end
-      | Mdiveuc (a, b), _ when is_curs (a, b) -> process_divtez a b
-      | Mequal  (_, a, b), _ when is_rats (a, b) -> process_eq  false (a, b)
-      | Mnequal (_, a, b), _ when is_rats (a, b) -> process_eq  true  (a, b)
-      | Mlt     (a, b), _ when is_rats (a, b) -> process_cmp Lt    (a, b)
-      | Mle     (a, b), _ when is_rats (a, b) -> process_cmp Le    (a, b)
-      | Mgt     (a, b), _ when is_rats (a, b) -> process_cmp Gt    (a, b)
-      | Mge     (a, b), _ when is_rats (a, b) -> process_cmp Ge    (a, b)
-      | Mletin (ids, v, t, body, o), _ when is_int v && Option.map_dfl is_t_rat false t ->
-        { mt with
-          node = Mletin (ids, (int_to_rat |@ aux) v, Option.map process_type t, aux body, Option.map aux o)
-        }
-      | Mletin (ids, v, t, body, o), _ ->
-        { mt with
-          node = Mletin (ids, aux v, Option.map process_type t, aux body, Option.map aux o)
-        }
-      | Mdeclvar (ids, t, v), _ when is_int v && Option.map_dfl is_t_rat false t ->
-        { mt with
-          node = Mdeclvar (ids, Option.map process_type t, (int_to_rat |@ aux) v)
-        }
-      | Mdeclvar (ids, t, v), _ ->
-        { mt with
-          node = Mdeclvar (ids, Option.map process_type t, aux v)
-        }
-      | Massign (op, Avar i, v), _ when is_int v && is_t_rat v.type_ ->
-        { mt with
-          node = Massign (op, Avar i, (int_to_rat |@ aux) v)
-        }
-      | Massign (op, Avarstore i, v), _  when is_int v && is_t_rat v.type_ ->
-        { mt with
-          node = Massign (op, Avarstore i, (int_to_rat |@ aux) v)
-        }
-      | Massign (op, Aasset (an, fn, k), v), _ when is_int v && is_t_rat v.type_ ->
-        { mt with
-          node = Massign (op, Aasset (an, fn, (int_to_rat |@ aux) k), (int_to_rat |@ aux) v)
-        }
-      | Massign (op, Arecord (rn, fn, r), v), _ when is_int v && is_t_rat v.type_ ->
-        { mt with
-          node = Massign (op, Arecord (rn, fn, (int_to_rat |@ aux) r), (int_to_rat |@ aux) v)
-        }
-      | Mforall (id, t, a, b), _ ->
-        { mt with
-          node = Mforall (id, process_type t, Option.map aux a, aux b)
-        }
-      | Mexists (id, t, a, b), _ ->
-        { mt with
-          node = Mexists (id, process_type t, Option.map aux a, aux b)
-        }
-      | _ -> map_mterm aux mt
+      | Mcurrency (v, Tz)  -> { mt with node = Mcurrency  (Big_int.mult_int_big_int 1000000 v, Utz) }
+      | Mcurrency (v, Mtz) -> { mt with node = Mcurrency  (Big_int.mult_int_big_int    1000 v, Utz) }
+      | Mplus     (a, b)   -> for_arith `Plus   (a, b)
+      | Mminus    (a, b)   -> for_arith `Minus  (a, b)
+      | Mmult     (a, b)   -> for_arith `Mult   (a, b)
+      | Mdivrat   (a, b)   -> for_arith `Divrat (a, b)
+      | Mdiveuc   (a, b)   -> for_arith `Diveuc (a, b)
+      | Mmodulo   (a, b)   -> for_arith `Modulo (a, b)
+      | Muminus    v       -> for_unary `Uminus v
+      | Mmax      (a, b)   -> for_fun (fun l ret -> mk_mterm (Mmax(List.nth l 0, List.nth l 1)) ret) [a; b]
+      | Mmin      (a, b)   -> for_fun (fun l ret -> mk_mterm (Mmin(List.nth l 0, List.nth l 1)) ret) [a; b]
+      | Mequal  (_, a, b)  -> for_cmp `Eq (a, b)
+      | Mnequal (_, a, b)  -> for_cmp `Ne (a, b)
+      | Mlt     (a, b)     -> for_cmp `Lt (a, b)
+      | Mle     (a, b)     -> for_cmp `Le (a, b)
+      | Mgt     (a, b)     -> for_cmp `Gt (a, b)
+      | Mge     (a, b)     -> for_cmp `Ge (a, b)
+      | _                  -> map_mterm aux mt ~ft:for_type
     in
     aux mt
   in
-  let process_arg (type_ : type_) (default_value : mterm option) : (type_ * mterm option) =
-    let t = process_type type_ in
-    t, Option.map ((fun dv ->
-        match t with
-        | Ttuple [Tbuiltin Bint; Tbuiltin Bint] -> to_rat dv
-        | _ -> dv
-      ) |@ process_mterm) default_value
-  in
-  let for_label_term (lt : label_term) : label_term =
-    {
-      lt with
-      term  = process_mterm lt.term;
-    }
-  in
-  let process_specification (spec : specification) : specification =
-    let for_predicate (p : predicate) : predicate =
-      {
-        p with
-        args = List.map (fun (x, y) -> x, process_type y) p.args;
-        body = process_mterm p.body;
-      }
-    in
-    let for_definition (d : definition) : definition =
-      {
-        d with
-        typ  = process_type d.typ;
-        body = process_mterm d.body;
-      }
-    in
-    let for_variable (v : variable) : variable =
-      let for_argument (arg : argument) : argument =
-        let a, b, c = arg in
-        a, process_type b, Option.map process_mterm c
-      in
-      let for_qualid (q : qualid) : qualid =
-        {
-          q with
-          type_ = process_type q.type_;
-        }
-      in
-      {
-        decl         = for_argument v.decl;
-        constant     = v.constant;
-        from         = Option.map for_qualid v.from;
-        to_          = Option.map for_qualid v.to_;
-        loc          = v.loc;
-      }
-    in
-    let for_invariant (i : invariant) : invariant =
-      {
-        i with
-        formulas = List.map process_mterm i.formulas;
-      }
-    in
-    let for_postcondition (p : postcondition) : postcondition =
-      {
-        p with
-        formula    = process_mterm p.formula;
-        invariants = List.map for_invariant p.invariants;
-      }
-    in
-    {
-      predicates     = List.map for_predicate     spec.predicates;
-      definitions    = List.map for_definition    spec.definitions;
-      lemmas         = List.map for_label_term    spec.lemmas;
-      theorems       = List.map for_label_term    spec.theorems;
-      variables      = List.map for_variable      spec.variables;
-      invariants     = List.map (fun (x, y) -> x, List.map for_label_term y) spec.invariants;
-      effects        = List.map process_mterm     spec.effects;
-      postconditions = List.map for_postcondition spec.postconditions;
-      loc            = spec.loc;
-    }
-  in
-  let process_decls = List.map (function
-      | Dvar v ->
-        let t, dv = process_arg v.type_ v.default in
-        Dvar
-          { v with
-            type_   = t;
-            default = dv;
-          }
-      | Dasset a ->
-        Dasset
-          {a with
-           values = a.values |> List.map
-                      (fun (ai : asset_item) ->
-                         { ai with
-                           type_   = ai.type_   |> process_type;
-                           default = ai.default |> Option.map process_mterm;
-                         });
-           init = List.map process_mterm a.init;
-           invariants = List.map for_label_term a.invariants;
-          }
-      | Dcontract c ->
-        Dcontract
-          {c with
-           signatures = c.signatures |> List.map
-                          (fun (cs : contract_signature) ->
-                             {
-                               cs with
-                               args = cs.args |> List.map (fun (a, b) -> (a, process_type b))
-                             }
-                          );
-           init = c.init |> Option.map process_mterm
-          }
-      | _ as x -> x)
-  in
-  { model with
-    decls     = model.decls     |> process_decls;
-    functions = model.functions |> List.map (fun f ->
-        {f with
-         node = (
-           let process_fs (fs : function_struct) =
-             {fs with
-              args = fs.args |> List.map (fun (id, t, dv) -> (id, process_type t, Option.map process_mterm dv));
-              body = fs.body |> process_mterm;
-             }
-           in
-           match f.node with
-           | Function (fs, ret) -> Function (process_fs fs, process_type ret)
-           | Entry fs           -> Entry (process_fs fs)
-         );
-         spec = Option.map process_specification f.spec;
-        });
-    specification = process_specification model.specification;
-  }
+
+  model
+  |> map_model (fun _ x -> x) for_type for_mterm
+  |> update_nat_int_rat
 
 
 let replace_date_duration_by_timestamp (model : model) : model =
@@ -1462,6 +1416,7 @@ let replace_date_duration_by_timestamp (model : model) : model =
          );
         })
   }
+  |> update_nat_int_rat
 
 let abs_tez model : model =
   let is_cur (mt : mterm) =

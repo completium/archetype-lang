@@ -66,7 +66,7 @@ end = struct
     | A.Tasset _ -> true |  _ -> false
 
   let is_numeric = function
-    | A.Tbuiltin (A.VTint | A.VTrational) -> true |  _ -> false
+    | A.Tbuiltin (A.VTnat | A.VTint | A.VTrational) -> true |  _ -> false
 
   let is_currency = function
     | A.Tbuiltin (A.VTcurrency) -> true | _ -> false
@@ -88,8 +88,8 @@ end = struct
 
   module Michelson = struct
     let is_comparable ?(simple = false) = function
-      | A.Tbuiltin VTint
       | A.Tbuiltin VTnat
+      | A.Tbuiltin VTint
       | A.Tbuiltin VTstring
       | A.Tbuiltin VTbytes
       | A.Tbuiltin VTcurrency
@@ -132,38 +132,43 @@ end = struct
 
   let equal = ((=) : A.ptyp -> A.ptyp -> bool)
 
-  let compatible ?(autoview = false) ~(from_ : A.ptyp) ~(to_ : A.ptyp) =
+  let distance ?(autoview = false) ~(from_ : A.ptyp) ~(to_ : A.ptyp) =
     match from_, to_ with
     | _, _ when from_ = to_ ->
-      true
+      Some 0
 
     | A.Tbuiltin bfrom, A.Tbuiltin bto -> begin
         match bfrom, bto with
-        | A.VTaddress  , A.VTrole
-        | A.VTrole     , A.VTaddress
-        | A.VTint      , A.VTrational
-        | A.VTstring   , A.VTkey
-        | A.VTstring   , A.VTsignature
-        | A.VTcurrency , A.VTint
-        | A.VTduration , A.VTint
-        | A.VTnat      , A.VTint
-          -> true
+        | A.VTaddress  , A.VTrole       -> Some 1
+        | A.VTrole     , A.VTaddress    -> Some 1
+        | A.VTnat      , A.VTint        -> Some 1
+        | A.VTnat      , A.VTrational   -> Some 2
+        | A.VTint      , A.VTrational   -> Some 1
+        | A.VTstring   , A.VTkey        -> Some 1
+        | A.VTstring   , A.VTsignature  -> Some 1
+        | A.VTcurrency , A.VTint        -> Some 1
+        | A.VTduration , A.VTint        -> Some 1
 
-        | _, _ -> false
+        | _, _ -> None
       end
 
     | A.Tcontract _, A.Tbuiltin (A.VTaddress | A.VTrole) (* FIXME *)
     | A.Tbuiltin (A.VTaddress | A.VTrole), A.Tcontract _ ->
-      true
+      Some 1
 
     | A.Tbuiltin (A.VTaddress | A.VTrole), A.Tentrysig Tbuiltin (VTunit) ->
-      true
+      Some 1
 
     | A.Tcontainer (ty1, cf), A.Tcontainer (ty2, ct) ->
-      equal ty1 ty2 && (cf = ct || (autoview && ct = A.View))
+      if   equal ty1 ty2 && (cf = ct || (autoview && ct = A.View))
+      then Some 0
+      else None
 
     | _, _ ->
-      false
+      None
+
+  let compatible ?autoview ~(from_ : A.ptyp) ~(to_ : A.ptyp) =
+    Option.is_some (distance ?autoview ~from_ ~to_)
 
   let join ?autoview (tys : A.ptyp list) =
     let module E = struct exception Error end in
@@ -181,9 +186,7 @@ end = struct
     with E.Error -> None
 
   let distance ~(from_ : A.ptyp) ~(to_ : A.ptyp) =
-    if   equal from_ to_
-    then Some 0
-    else (if compatible ~autoview:false ~from_ ~to_ then Some 1 else None)
+    distance ~autoview:false ~from_ ~to_
 
   let sig_compatible ~(from_ : A.ptyp list) ~(to_ : A.ptyp list) =
     List.length from_ = List.length to_
@@ -197,9 +200,11 @@ end = struct
       let module E = struct exception Reject end in
 
       try
-        Some (List.fold_left2 (fun d from_ to_ ->
+        let i =
+          List.fold_left2 (fun d from_ to_ ->
             d + Option.get_exn E.Reject (distance ~from_ ~to_)
-          ) 0 from_ to_)
+          ) 0 from_ to_
+        in Some i
       with E.Reject -> None
 
   let sig_equal tys1 tys2 =
@@ -287,6 +292,7 @@ end = struct
   and pktype_simpl = function
     | Tbuiltin (
         VTbool
+      | VTnat
       | VTint
       | VTdate
       | VTstring
@@ -653,15 +659,15 @@ type argtype = [`Type of A.type_ | `Effect of ident]
 
 (* -------------------------------------------------------------------- *)
 let cmptypes =
-  [ A.VTint            ;
-    A.VTnat            ;
-    A.VTrational       ;
-    A.VTdate           ;
-    A.VTduration       ;
-    A.VTstring         ;
-    A.VTaddress        ;
-    A.VTcurrency       ;
-    A.VTbytes          ]
+  [ A.VTnat     ;
+    A.VTint     ;
+    A.VTrational;
+    A.VTdate    ;
+    A.VTduration;
+    A.VTstring  ;
+    A.VTaddress ;
+    A.VTcurrency;
+    A.VTbytes   ]
 
 let grptypes =
   [ A.VTduration       ;
@@ -695,9 +701,14 @@ let opsigs =
     @ (List.mappdt (fun op sig_ -> (op, sig_)) uops usig) in
 
   let ariths : (PT.operator * (A.vtyp list * A.vtyp)) list =
-    [ PT.Arith PT.Modulo, ([A.VTint; A.VTint],           A.VTint);
+    [ PT.Arith PT.Modulo, ([A.VTint; A.VTint],           A.VTnat);
       PT.Arith PT.DivRat, ([A.VTrational; A.VTrational], A.VTrational);
       PT.Arith PT.DivEuc, ([A.VTint; A.VTint],           A.VTint) ] in
+
+  let nat : (PT.operator * (A.vtyp list * A.vtyp)) list =
+    [ PT.Arith PT.Plus  , ([A.VTnat; A.VTnat], A.VTnat) ;
+      PT.Arith PT.Mult  , ([A.VTnat; A.VTnat], A.VTnat) ;
+      PT.Arith PT.DivEuc, ([A.VTnat; A.VTnat], A.VTnat) ] in
 
   let bools : (PT.operator * (A.vtyp list * A.vtyp)) list =
     let unas = List.map (fun x -> PT.Unary   x) [PT.Not] in
@@ -729,7 +740,7 @@ let opsigs =
       PT.Arith PT.Plus   , ([A.VTstring  ; A.VTstring        ], A.VTstring  )  ;
     ] in
 
-  cmpsigs @ grptypes @ rgtypes @ ariths @ bools @ others
+  cmpsigs @ grptypes @ rgtypes @ ariths @ nat @ bools @ others
 
 let opsigs =
   let doit (args, ret) =
@@ -828,13 +839,13 @@ let methods : (string * method_) list =
     ("update"      , mk A.Cupdate       `Both        (`Effect c   ) `Total   (`Fixed [`Pk; `Ef true      ], None));
     ("addupdate"   , mk A.Caddupdate    `Both        (`Effect c_p ) `Total   (`Fixed [`Pk; `Ef false     ], None));
     ("contains"    , mk A.Ccontains     `Both        (`Pure       ) `Total   (`Fixed [`Pk                ], Some (`T A.vtbool)));
-    ("nth"         , mk A.Cnth          `Both        (`Pure       ) `Partial (`Fixed [`T A.vtint         ], Some (`Pk)));
+    ("nth"         , mk A.Cnth          `Both        (`Pure       ) `Partial (`Fixed [`T A.vtnat         ], Some (`Pk)));
     ("select"      , mk A.Cselect       `Both        (`Pure       ) `Total   (`Fixed [`Pred true         ], Some (`SubColl)));
     ("sort"        , mk A.Csort         `OnlyExec    (`Pure       ) `Total   (`Multi (`Cmp               ), Some (`SubColl)));
-    ("count"       , mk A.Ccount        `Both        (`Pure       ) `Total   (`Fixed [                   ], Some (`T A.vtint)));
+    ("count"       , mk A.Ccount        `Both        (`Pure       ) `Total   (`Fixed [                   ], Some (`T A.vtnat)));
     ("sum"         , mk A.Csum          `Both        (`Pure       ) `Total   (`Fixed [`RExpr false       ], Some (`Ref 0)));
-    ("head"        , mk A.Chead         `Both        (`Pure       ) `Total   (`Fixed [`T A.vtint         ], Some (`SubColl)));
-    ("tail"        , mk A.Ctail         `Both        (`Pure       ) `Total   (`Fixed [`T A.vtint         ], Some (`SubColl)));
+    ("head"        , mk A.Chead         `Both        (`Pure       ) `Total   (`Fixed [`T A.vtnat         ], Some (`SubColl)));
+    ("tail"        , mk A.Ctail         `Both        (`Pure       ) `Total   (`Fixed [`T A.vtnat         ], Some (`SubColl)));
   ]
 
 let methods = Mid.of_list methods
@@ -842,29 +853,30 @@ let methods = Mid.of_list methods
 (* -------------------------------------------------------------------- *)
 let coreops =
   (List.map
-     (fun x -> ("abs", A.Cabs, `Total, None, [x], x))
-     [A.vtint; A.vtrational])
+     (fun (x, y) -> ("abs", A.Cabs, `Total, None, [x], y))
+     [A.vtint, A.vtnat; A.vtrational, A.vtrational])
   @ (List.map
        (fun (x, y) -> (x, y, `Total, None, [A.vtrational], A.vtint))
        ["floor", A.Cfloor ; "ceil", A.Cceil])
   @ (List.flatten (List.map (fun (name, cname) -> (
         List.map
           (fun x -> (name, cname, `Total, None, [x; x], x))
-          [A.vtint; A.vtrational; A.vtdate; A.vtduration; A.vtcurrency]))
+          [A.vtnat; A.vtint; A.vtrational; A.vtdate; A.vtduration; A.vtcurrency]))
       [("min", A.Cmin); ("max", A.Cmax)]))
   @ (List.map
        (fun x -> ("concat", A.Cconcat, `Total, None, [x; x], x))
        [A.vtbytes; A.vtstring])
   @ (List.map
-       (fun x -> ("slice", A.Cslice, `Total, None, [x; A.vtint; A.vtint], x))
+       (fun x -> ("slice", A.Cslice, `Total, None, [x; A.vtnat; A.vtnat], x))
        [A.vtbytes; A.vtstring])
-  @ ["length", A.Clength, `Total, None, [A.vtstring], A.vtint]
+  @ (List.map
+          (fun x -> ("length", A.Clength, `Total, None, [x], A.vtnat)) [A.vtstring; A.vtbytes])
 
 (* -------------------------------------------------------------------- *)
 let optionops = [
-  ("isnone", A.Cisnone, `Total  , Some (A.Toption (A.Tnamed 0)), [], A.vtbool);
-  ("issome", A.Cissome, `Total  , Some (A.Toption (A.Tnamed 0)), [], A.vtbool);
-  ("getopt", A.Cgetopt, `Partial, Some (A.Toption (A.Tnamed 0)), [], A.Tnamed 0);
+  ("isnone",  A.Cisnone, `Total  , Some (A.Toption (A.Tnamed 0)), [], A.vtbool);
+  ("issome",  A.Cissome, `Total  , Some (A.Toption (A.Tnamed 0)), [], A.vtbool);
+  ("opt_get", A.Cgetopt, `Partial, Some (A.Toption (A.Tnamed 0)), [], A.Tnamed 0);
 ]
 
 (* -------------------------------------------------------------------- *)
@@ -874,7 +886,7 @@ let setops =
     ("set_add"      , A.Csadd      , `Total , Some set, [ elemt ], set      );
     ("set_remove"   , A.Csremove   , `Total , Some set, [ elemt ], set      );
     ("set_contains" , A.Cscontains , `Total , Some set, [ elemt ], A.vtbool );
-    ("set_length"   , A.Cslength   , `Total , Some set, [       ], A.vtint  );
+    ("set_length"   , A.Cslength   , `Total , Some set, [       ], A.vtnat  );
   ]
 
 (* -------------------------------------------------------------------- *)
@@ -883,8 +895,8 @@ let listops =
   let lst   = A.Tlist elemt in [
     ("contains", A.Ccontains, `Total  , Some lst, [elemt  ], A.vtbool);
     ("prepend" , A.Cprepend , `Total  , Some lst, [elemt  ], lst     );
-    ("length"  , A.Clength  , `Total  , Some lst, [       ], A.vtint );
-    ("nth"     , A.Cnth     , `Partial, Some lst, [A.vtint], elemt   );
+    ("length"  , A.Clength  , `Total  , Some lst, [       ], A.vtnat );
+    ("nth"     , A.Cnth     , `Partial, Some lst, [A.vtnat], elemt   );
   ]
 
 (* -------------------------------------------------------------------- *)
@@ -894,9 +906,9 @@ let mapops =
   let map  = A.Tmap (tkey, tval) in [
     ("map_put"      , A.Cmput      , `Total   , Some map, [ tkey; tval ], map);
     ("map_remove"   , A.Cmremove   , `Total   , Some map, [ tkey       ], map);
-    ("map_getopt"   , A.Cmgetopt   , `Partial , Some map, [ tkey       ], tval);
+    ("map_getopt"   , A.Cmgetopt   , `Partial , Some map, [ tkey       ], A.Toption tval);
     ("map_contains" , A.Cmcontains , `Total   , Some map, [ tkey       ], A.vtbool);
-    ("map_length"   , A.Cmlength   , `Total   , Some map, [            ], A.vtint);
+    ("map_length"   , A.Cmlength   , `Total   , Some map, [            ], A.vtnat);
   ]
 
 (* -------------------------------------------------------------------- *)
@@ -1680,18 +1692,25 @@ let select_operator env ?(formula = false) ?(asset = false) loc (op, tys) =
       | _::_::_ as sigs -> begin
           let module E = struct exception Bailout end in
 
+          let mind =
+            let ds =
+              List.pmap (fun sig_ -> Type.sig_distance ~to_:sig_.osl_sig ~from_:tys) ops
+            in if List.is_empty ds then None else Some (List.fold_left min max_int ds) in
+
+          let ops =
+            List.filter
+              (fun sig_ ->
+                let d = Type.sig_distance ~to_:sig_.osl_sig ~from_:tys in
+                d = mind || Option.is_none d)
+              ops in
+
           try
-            let sig_ =
-              match
-                List.filter
-                  (fun sig_ -> Type.sig_equal sig_.osl_sig tys)
-                  sigs
-              with [sig_] -> sig_ | _ -> raise E.Bailout in
+            let sig_ = match ops with [sig_] -> sig_ | _ -> raise E.Bailout in
 
             List.iter (fun sig2 ->
-                if not (Type.sig_compatible ~from_:sig_.osl_sig ~to_:sig2.osl_sig) then
-                  raise E.Bailout
-              ) sigs;
+              if not (Type.sig_compatible ~from_:sig_.osl_sig ~to_:sig2.osl_sig) then
+                raise E.Bailout
+            ) sigs;
 
             Some sig_
 
@@ -1871,21 +1890,18 @@ let for_asset_keyof_type (env : env) (ty : PT.type_t) : A.lident option =
     None
 
 (* -------------------------------------------------------------------- *)
-let for_literal (_env : env) (ety : A.type_ option) (topv : PT.literal loced) : A.bval =
+let for_literal (_env : env) (_ety : A.type_ option) (topv : PT.literal loced) : A.bval =
   let mk_sp type_ node = A.mk_sp ~loc:(loc topv) ~type_ node in
 
   match unloc topv with
   | Lbool b ->
     mk_sp A.vtbool (A.BVbool b)
 
-  | Lnumber i -> begin
-      match ety with
-      | Some (A.Tbuiltin (VTnat)) -> mk_sp A.vtnat (A.BVuint i)
-      | _                         -> mk_sp A.vtint (A.BVint i)
-    end
+  | Lint i -> mk_sp A.vtint (A.BVint i)
 
-  | Ldecimal str ->
-    begin
+  | Lnat i -> mk_sp A.vtnat (A.BVnat i)
+
+  | Ldecimal str -> begin
       let n, d = Core.decimal_string_to_rational str in
       mk_sp A.vtrational (A.BVrational (n, d))
     end
@@ -1914,8 +1930,7 @@ let for_literal (_env : env) (ety : A.type_ option) (topv : PT.literal loced) : 
   | Lbytes s ->
     mk_sp A.vtbytes (A.BVbytes (s))
 
-  | Lpercent n ->
-    begin
+  | Lpercent n -> begin
       let n, d = Core.compute_irr_fract (n, Big_int.big_int_of_int 100) in
       mk_sp A.vtrational (A.BVrational (n, d))
     end
@@ -2307,14 +2322,15 @@ let rec for_xexpr
         let ee = for_xexpr env e in
         match ee.type_ with
         | Some (A.Ttuple lt) -> begin
-            let pk = for_xexpr ?ety:(Some A.vtint) env pk in
+            let pk = for_xexpr ?ety:(Some A.vtnat) env pk in
             let idx : Core.big_int =
               match pk.node with
-              | A.Plit ({node = A.BVint idx}) -> idx
+              | A.Plit ({node = A.BVnat idx}) -> idx
               | _ -> Env.emit_error env (pk.loc, InvalidExprressionForTupleAccess); Big_int.zero_big_int
             in
             let i =
-              if (Big_int.lt_big_int idx Big_int.zero_big_int || Big_int.ge_big_int idx (Big_int.big_int_of_int (List.length lt)))
+              if      Big_int.lt_big_int idx Big_int.zero_big_int
+                   || Big_int.ge_big_int idx (Big_int.big_int_of_int (List.length lt))
               then (Env.emit_error env (pk.loc, IndexOutOfBoundForTuple); 0)
               else (Big_int.int_of_big_int idx)
             in
@@ -2323,7 +2339,7 @@ let rec for_xexpr
         | Some (A.Tmap (kt, vt)) -> begin
             let pk = for_xexpr ?ety:(Some kt) env pk in
             mk_sp
-              (Some (A.Toption vt))
+              (Some vt)
               (A.Pcall (None, A.Cconst A.Cmget, [A.AExpr ee; A.AExpr pk]))
           end
         | _ -> begin
@@ -2392,9 +2408,15 @@ let rec for_xexpr
             | Some ty, Some ty' -> begin
                 let aout =
                   Option.map (fun sig_ ->
+                      let e, e' =
+                        Option.get
+                          (List.as_seq2
+                             (List.map2
+                                (fun ty e -> cast_expr env (Some ty) e)
+                                sig_.osl_sig [e; e'])) in
                       let term = A.Pcomp (tt_cmp_operator op, e, e') in
                       mk_sp (Some sig_.osl_ret) term
-                    ) (select_operator env (loc tope) (PT.Cmp op, [ty; ty']) ~formula:(is_form_kind mode.em_kind))
+                  ) (select_operator env (loc tope) (PT.Cmp op, [ty; ty']) ~formula:(is_form_kind mode.em_kind))
                 in (e', aout)
               end
 
@@ -2424,6 +2446,11 @@ let rec for_xexpr
           Option.get_fdfl
             (fun () -> bailout ())
             (select_operator env (loc tope) (op, aty) ~formula:(is_form_kind mode.em_kind)) in
+
+        let args =
+          List.map2
+            (fun ty e -> cast_expr ~autoview:false env (Some ty) e)
+            sig_.osl_sig args in
 
         let aout =
           match op with

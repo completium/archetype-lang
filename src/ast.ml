@@ -244,7 +244,7 @@ type bval_gen = bval_node struct_poly
 
 and bval_node =
   | BVint          of Core.big_int
-  | BVuint         of Core.big_int
+  | BVnat          of Core.big_int
   | BVbool         of bool
   | BVenum         of string
   | BVrational     of Core.big_int * Core.big_int

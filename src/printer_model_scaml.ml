@@ -345,7 +345,7 @@ let pp_model fmt (model : model) =
     | Blength t -> Format.fprintf fmt "length on %a" pp_type t
     | Bisnone t -> Format.fprintf fmt "isnone on %a" pp_type t
     | Bissome t -> Format.fprintf fmt "issome on %a" pp_type t
-    | Bgetopt t -> Format.fprintf fmt "getopt on %a" pp_type t
+    | Boptget t -> Format.fprintf fmt "getopt on %a" pp_type t
     | Bfloor    -> pp_str fmt "floor"
     | Bceil     -> pp_str fmt "ceil"
   in
@@ -1231,7 +1231,7 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "issome (%a)"
           f x
 
-      | Mgetopt x ->
+      | Moptget x ->
         Format.fprintf fmt "getopt (%a)"
           f x
 
@@ -1366,6 +1366,20 @@ let pp_model fmt (model : model) =
             f t
         in
         pp fmt (c, t)
+
+      | Mnattoint e ->
+        let pp fmt e =
+          Format.fprintf fmt "nat_to_int (%a)"
+            f e
+        in
+        pp fmt e
+
+      | Mnattorat e ->
+        let pp fmt e =
+          Format.fprintf fmt "nat_to_rat (%a)"
+            f e
+        in
+        pp fmt e
 
       | Minttorat e ->
         let pp fmt e =

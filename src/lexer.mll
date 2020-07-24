@@ -149,7 +149,8 @@ rule token = parse
   | mtz as t              { MTZ  (Big_int.big_int_of_string (String.sub t 0 ((String.length t) - 3))) }
   | utz as t              { UTZ  (Big_int.big_int_of_string (String.sub t 0 ((String.length t) - 3))) }
   | dec as input          { DECIMAL (input) }
-  | digit+ as n           { NUMBER (Big_int.big_int_of_string n) }
+  | (digit+ as n) 'i'     { NUMBERINT (Big_int.big_int_of_string n) }
+  | (digit+ as n)         { NUMBERNAT (Big_int.big_int_of_string n) }
   | address as a          { ADDRESS (String.sub a 1 ((String.length a) - 1)) }
   | duration as d         { DURATION (d) }
   | date as d             { DATE (d) }

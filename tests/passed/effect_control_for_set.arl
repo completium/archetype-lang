@@ -7,7 +7,7 @@ entry exec () {
     s0: res = 6;
   }
   effect {
-    var l : set<int> = [1; 2; 3];
+    var l : set<nat> = [1; 2; 3];
     res := 0;
     for i in l do
       res += i;

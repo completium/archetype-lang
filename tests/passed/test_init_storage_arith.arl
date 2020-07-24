@@ -4,11 +4,17 @@ variable bool_bool_and : bool = true and false
 variable bool_bool_or  : bool = true or false
 variable bool_bool_not : bool = not true
 
-variable int_int_plus   : int = 1 + 2
-variable int_int_minus  : int = 1 - 2
-variable int_int_mult   : int = 1 * 2
-variable int_int_ediv   : int = 1 div 2
-variable int_int_modulo : int = 1 % 2
+variable nat_nat_plus   : nat = 1 + 2
+variable nat_nat_minus  : int = 1 - 2
+variable nat_nat_mult   : nat = 1 * 2
+variable nat_nat_ediv   : nat = 1 div 2
+variable nat_nat_modulo : nat = 1 % 2
+
+variable int_int_plus   : int = 1i + 2i
+variable int_int_minus  : int = 1i - 2i
+variable int_int_mult   : int = 1i * 2i
+variable int_int_ediv   : int = 1i div 2i
+variable int_int_modulo : nat = 1i % 2i
 
 variable rat_rat_plus   : rational = 1.1 + 1.2
 variable rat_rat_minus  : rational = 1.1 - 1.2

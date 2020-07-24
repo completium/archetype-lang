@@ -1,0 +1,12 @@
+archetype expr_arith_div_nat_rat
+
+variable res : rational = 0.0
+
+entry exec () {
+  specification {
+    s0: res = 6.0;
+  }
+  effect {
+    res := 3i / 0.5
+  }
+}

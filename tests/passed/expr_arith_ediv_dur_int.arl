@@ -7,7 +7,7 @@ entry exec () {
     s0: res = 1h;
   }
   effect {
-    res := 4h div 4;
+    res := 4h div 4i;
     dorequire(res = 1h)
   }
 }

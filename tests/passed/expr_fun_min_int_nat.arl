@@ -1,0 +1,12 @@
+archetype expr_fun_min_int_nat
+
+variable res : int = 0i
+
+entry exec () {
+  specification {
+    s0: res = 1i;
+  }
+  effect {
+    res := min(2i, 1)
+  }
+}

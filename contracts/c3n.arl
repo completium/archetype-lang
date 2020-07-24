@@ -33,7 +33,7 @@ entry register (newadmins : option<list<pkey<admins>>> , oldhash : string, newha
         hash := newhash;
         if issome(newadmins) then (
             admins.clear();
-            for a in getopt(newadmins) do
+            for a in opt_get(newadmins) do
                 admins.add ({ a })
             done
         )

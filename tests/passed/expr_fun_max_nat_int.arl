@@ -1,0 +1,12 @@
+archetype expr_fun_max_nat_int
+
+variable res : int = 0i
+
+entry exec () {
+  specification {
+    s0: res = 2i;
+  }
+  effect {
+    res := max(2, 1i)
+  }
+}

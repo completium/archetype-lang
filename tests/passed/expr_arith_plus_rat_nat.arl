@@ -1,0 +1,12 @@
+archetype expr_arith_plus_rat_nat
+
+variable res : rational = 0.0
+
+entry exec () {
+  specification {
+    s0: res = 3.5;
+  }
+  effect {
+    res := 0.5 + 3
+  }
+}

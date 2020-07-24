@@ -12,7 +12,7 @@ asset my_asset identified by id {
 entry exec () {
 
   specification {
-    s0: (let v = my_asset.singleton("key") in true /* v = v */);
+    s0: (let v = my_asset.singleton({"key"; 2i}) in true /* v = v */);
   }
 
   effect {

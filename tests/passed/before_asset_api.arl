@@ -1,7 +1,7 @@
 archetype before_asset_api
 
 asset myasset identified by id {
-  id : int;
+  id : nat;
   v: string;
 } initialized by {
   {1; "str1"};

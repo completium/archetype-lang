@@ -1,6 +1,6 @@
 archetype tuple_with_no_literals_access
 
-variable res : int * int = (1, 2)
+variable res : nat * nat = (1, 2)
 
 entry exec () {
   effect {

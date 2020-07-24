@@ -311,7 +311,7 @@ type ('id, 'term) mterm_node  =
   | Mlength           of 'term
   | Misnone           of 'term
   | Missome           of 'term
-  | Mgetopt           of 'term
+  | Moptget           of 'term
   | Mfloor            of 'term
   | Mceil             of 'term
   | Mpack             of 'term
@@ -339,6 +339,8 @@ type ('id, 'term) mterm_node  =
   | Mratuminus        of 'term
   | Mrattez           of 'term * 'term
   | Mdivtez           of 'term * 'term
+  | Mnattoint         of 'term
+  | Mnattorat         of 'term
   | Minttorat         of 'term
   | Mratdur           of 'term * 'term
   (* functional *)
@@ -443,7 +445,7 @@ and api_builtin =
   | Blength of type_
   | Bisnone of type_
   | Bissome of type_
-  | Bgetopt of type_
+  | Boptget of type_
   | Bfloor
   | Bceil
 [@@deriving show {with_path = false}]
@@ -1220,7 +1222,7 @@ let cmp_mterm_node
     | Mlength x1, Mlength x2                                                           -> cmp x1 x2
     | Misnone x1, Misnone x2                                                           -> cmp x1 x2
     | Missome x1, Missome x2                                                           -> cmp x1 x2
-    | Mgetopt x1, Mgetopt x2                                                           -> cmp x1 x2
+    | Moptget x1, Moptget x2                                                           -> cmp x1 x2
     | Mfloor x1, Mfloor x2                                                             -> cmp x1 x2
     | Mceil x1, Mceil x2                                                               -> cmp x1 x2
     | Mpack x1, Mpack x2                                                               -> cmp x1 x2
@@ -1248,6 +1250,8 @@ let cmp_mterm_node
     | Mratuminus v1, Mratuminus v2                                                     -> cmp v1 v2
     | Mrattez (c1, t1), Mrattez (c2, t2)                                               -> cmp c1 c2 && cmp t1 t2
     | Mdivtez (c1, t1), Mdivtez (c2, t2)                                               -> cmp c1 c2 && cmp t1 t2
+    | Mnattoint e1, Mnattoint e2                                                       -> cmp e1 e2
+    | Mnattorat e1, Mnattorat e2                                                       -> cmp e1 e2
     | Minttorat e1, Minttorat e2                                                       -> cmp e1 e2
     | Mratdur (c1, t1), Mratdur (c2, t2)                                               -> cmp c1 c2 && cmp t1 t2
     (* functional *)
@@ -1333,7 +1337,7 @@ let cmp_api_item_node (a1 : api_storage_node) (a2 : api_storage_node) : bool =
     | Blength t1, Blength t2 -> cmp_type t1 t2
     | Bisnone t1, Bisnone t2 -> cmp_type t1 t2
     | Bissome t1, Bissome t2 -> cmp_type t1 t2
-    | Bgetopt t1, Bgetopt t2 -> cmp_type t1 t2
+    | Boptget t1, Boptget t2 -> cmp_type t1 t2
     | Bfloor    , Bfloor     -> true
     | Bceil     , Bceil      -> true
     | _ -> false
@@ -1565,7 +1569,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mlength x                      -> Mlength (f x)
   | Misnone x                      -> Misnone (f x)
   | Missome x                      -> Missome (f x)
-  | Mgetopt x                      -> Mgetopt (f x)
+  | Moptget x                      -> Moptget (f x)
   | Mfloor x                       -> Mfloor (f x)
   | Mceil x                        -> Mceil (f x)
   | Mpack x                        -> Mpack (f x)
@@ -1593,6 +1597,8 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mratuminus v                   -> Mratuminus (f v)
   | Mrattez (c, t)                 -> Mrattez (f c, f t)
   | Mdivtez (c, t)                 -> Mdivtez (f c, f t)
+  | Mnattoint e                    -> Mnattoint (f e)
+  | Mnattorat e                    -> Mnattorat (f e)
   | Minttorat e                    -> Minttorat (f e)
   | Mratdur (c, t)                 -> Mratdur (f c, f t)
   (* functional *)
@@ -1622,18 +1628,15 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Minter (an, l, r)              -> Minter     (fi an, f l, f r)
   | Mdiff (an, l, r)               -> Mdiff      (fi an, f l, f r)
 
-let map_gen_mterm g f (i : 'id mterm_gen) : 'id mterm_gen =
+let map_gen_mterm g f (ft : type_ -> type_) (mt : 'id mterm_gen) : 'id mterm_gen =
   {
-    i with
-    node = g f i.node
+    mt with
+    node  = g f mt.node;
+    type_ = ft mt.type_;
   }
 
-let map_term_node =
-  let id x = x in
-  map_term_node_internal id id id
-
-let map_mterm f t =
-  map_gen_mterm map_term_node f t
+let map_mterm f ?(ft = id) (mt : mterm)  =
+  map_gen_mterm (map_term_node_internal id id ft) f ft mt
 
 type ('id, 't) ctx_model_gen = {
   formula: bool;
@@ -1926,7 +1929,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mlength x                             -> f accu x
   | Misnone x                             -> f accu x
   | Missome x                             -> f accu x
-  | Mgetopt x                             -> f accu x
+  | Moptget x                             -> f accu x
   | Mfloor x                              -> f accu x
   | Mceil x                               -> f accu x
   | Mpack x                               -> f accu x
@@ -1954,6 +1957,8 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mratuminus v                          -> f accu v
   | Mrattez (c, t)                        -> f (f accu c) t
   | Mdivtez (c, t)                        -> f (f accu c) t
+  | Mnattoint e                           -> f accu e
+  | Mnattorat e                           -> f accu e
   | Minttorat e                           -> f accu e
   | Mratdur (c, t)                        -> f (f accu c) t
   (* functional *)
@@ -2676,9 +2681,9 @@ let fold_map_term
     let xe, xa = f accu x in
     g (Misnone xe), xa
 
-  | Mgetopt x ->
+  | Moptget x ->
     let xe, xa = f accu x in
-    g (Mgetopt xe), xa
+    g (Moptget xe), xa
 
   | Mfloor x ->
     let xe, xa = f accu x in
@@ -2782,6 +2787,14 @@ let fold_map_term
     let ce, ca = f accu c in
     let te, ta = f ca t in
     g (Mdivtez (ce, te)), ta
+
+  | Mnattoint e ->
+    let ee, ea = f accu e in
+    g (Mnattoint ee), ea
+
+  | Mnattorat e ->
+    let ee, ea = f accu e in
+    g (Mnattorat ee), ea
 
   | Minttorat e ->
     let ee, ea = f accu e in
@@ -3017,35 +3030,8 @@ type kind_ident =
   | KIsecurityentry
   | KImterm (* mterm *)
 
-let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : model =
+let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (for_mterm : mterm -> mterm) (model : model) : model =
   let g k (id : lident) = {id with pldesc=(f k id.pldesc)} in
-  let rec for_type (t : type_) : type_ =
-    match t with
-    | Tasset id         -> Tasset (g KIassetname id)
-    | Tenum id          -> Tenum (g KIenumname id)
-    | Tstate            -> t
-    | Tcontract id      -> Tcontract (g KIcontractname id)
-    | Tbuiltin _        -> t
-    | Tcontainer (a, c) -> Tcontainer (for_type a, c)
-    | Tlist a           -> Tlist (for_type a)
-    | Toption a         -> Toption (for_type a)
-    | Ttuple l          -> Ttuple (List.map for_type l)
-    | Tset k            -> Tset k
-    | Tmap (k, v)       -> Tmap (k, for_type v)
-    | Trecord id        -> Trecord (g KIrecordname id)
-    | Tunit             -> t
-    | Tstorage          -> t
-    | Toperation        -> t
-    | Tentry            -> t
-    | Tentrysig t       -> Tentrysig (for_type t)
-    | Tprog a           -> Tprog (for_type a)
-    | Tvset (v, a)      -> Tvset (v, for_type a)
-    | Ttrace _          -> t
-  in
-  let rec for_mterm (mt : mterm) : mterm =
-    let node : mterm__node = map_term_node_internal (f KImterm) (g KImterm) for_type for_mterm mt.node in
-    mk_mterm node (for_type mt.type_)
-  in
   let for_api_item (ai : api_storage) : api_storage =
     let for_node_item (asn : api_storage_node) : api_storage_node =
       let for_api_asset (aasset : api_asset) : api_asset =
@@ -3087,7 +3073,7 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
         | Blength t -> Blength (for_type t)
         | Bisnone t -> Bisnone (for_type t)
         | Bissome t -> Bissome (for_type t)
-        | Bgetopt t -> Bgetopt (for_type t)
+        | Boptget t -> Boptget (for_type t)
         | Bfloor    -> Bfloor
         | Bceil     -> Bceil
       in
@@ -3340,11 +3326,11 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
           in
           match sn with
           | SonlyByRole         (ad, srl)     -> SonlyByRole         (for_entry_description ad, List.map for_security_role srl)
-          | SonlyInEntry       (ad, sa)       -> SonlyInEntry       (for_entry_description ad, for_security_entry sa)
-          | SonlyByRoleInEntry (ad, srl, sa)  -> SonlyByRoleInEntry (for_entry_description ad, List.map for_security_role srl, for_security_entry sa)
+          | SonlyInEntry       (ad, sa)       -> SonlyInEntry        (for_entry_description ad, for_security_entry sa)
+          | SonlyByRoleInEntry (ad, srl, sa)  -> SonlyByRoleInEntry  (for_entry_description ad, List.map for_security_role srl, for_security_entry sa)
           | SnotByRole          (ad, srl)     -> SnotByRole          (for_entry_description ad, List.map for_security_role srl)
-          | SnotInEntry        (ad, sa)       -> SnotInEntry        (for_entry_description ad, for_security_entry sa)
-          | SnotByRoleInEntry  (ad, srl, sa)  -> SnotByRoleInEntry  (for_entry_description ad, List.map for_security_role srl, for_security_entry sa)
+          | SnotInEntry        (ad, sa)       -> SnotInEntry         (for_entry_description ad, for_security_entry sa)
+          | SnotByRoleInEntry  (ad, srl, sa)  -> SnotByRoleInEntry   (for_entry_description ad, List.map for_security_role srl, for_security_entry sa)
           | StransferredBy      (ad)          -> StransferredBy      (for_entry_description ad)
           | StransferredTo      (ad)          -> StransferredTo      (for_entry_description ad)
           | SnoStorageFail      sa            -> SnoStorageFail      (for_security_entry sa)
@@ -3376,6 +3362,37 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
     security      = for_security model.security;
     loc           = model.loc;
   }
+
+let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : model =
+  let g k (id : lident) = {id with pldesc=(f k id.pldesc)} in
+  let rec for_type (t : type_) : type_ =
+    match t with
+    | Tasset id         -> Tasset (g KIassetname id)
+    | Tenum id          -> Tenum (g KIenumname id)
+    | Tstate            -> t
+    | Tcontract id      -> Tcontract (g KIcontractname id)
+    | Tbuiltin _        -> t
+    | Tcontainer (a, c) -> Tcontainer (for_type a, c)
+    | Tlist a           -> Tlist (for_type a)
+    | Toption a         -> Toption (for_type a)
+    | Ttuple l          -> Ttuple (List.map for_type l)
+    | Tset k            -> Tset k
+    | Tmap (k, v)       -> Tmap (k, for_type v)
+    | Trecord id        -> Trecord (g KIrecordname id)
+    | Tunit             -> t
+    | Tstorage          -> t
+    | Toperation        -> t
+    | Tentry            -> t
+    | Tentrysig t       -> Tentrysig (for_type t)
+    | Tprog a           -> Tprog (for_type a)
+    | Tvset (v, a)      -> Tvset (v, for_type a)
+    | Ttrace _          -> t
+  in
+  let rec for_mterm (mt : mterm) : mterm =
+    let node : mterm__node = map_term_node_internal (f KImterm) (g KImterm) for_type for_mterm mt.node in
+    mk_mterm node (for_type mt.type_)
+  in
+  map_model f for_type for_mterm model
 
 (* -------------------------------------------------------------------- *)
 
@@ -4026,9 +4043,11 @@ end = struct
     let eval_expr mt :
       mterm =
       let rec aux (mt : mterm) : mterm =
-        let extract_int (i : mterm) : Big_int.big_int =
+        let rec extract_big_int (i : mterm) : Big_int.big_int =
           let i = aux i in
           match i.node with
+          | Mnattoint x -> extract_big_int x
+          | Mnat v
           | Mint v -> v
           | _ -> assert false
         in
@@ -4047,11 +4066,15 @@ end = struct
           | _ -> assert false
         in
 
-        let extract_rat (rat : mterm) : Big_int.big_int * Big_int.big_int =
+        let rec extract_rat (rat : mterm) : Big_int.big_int * Big_int.big_int =
           let rat = aux rat in
           match rat.node with
-          | Mrational (num, denom)
-          | Mtuple [{node = Mint num; _}; {node = Mint denom; _}] -> (num, denom)
+          | Mnat n                 -> (n, Big_int.unit_big_int)
+          | Mint n                 -> (n, Big_int.unit_big_int)
+          | Mnattorat x            -> extract_rat x
+          | Minttorat x            -> extract_rat x
+          | Mrational (num, denom) -> (num, denom)
+          | Mtuple [num; denom]    -> (extract_big_int num, extract_big_int denom)
           | _ -> assert false
         in
 
@@ -4071,20 +4094,23 @@ end = struct
           | _ -> assert false
         in
 
-        let arith op (a, b) : mterm =
-          let a = extract_int a in
-          let b = extract_int b in
+        let arith t op (a, b) : mterm =
+          let a = extract_big_int a in
+          let b = extract_big_int b in
 
-          let res =
+          let is_nat = function Tbuiltin Bnat -> true | _ -> false in
+          let res, nat =
             match op with
-            | `Plus   -> Big_int.add_big_int a b
-            | `Minus  -> Big_int.sub_big_int a b
-            | `Mult   -> Big_int.mult_big_int a b
-            | `Ediv   -> Big_int.div_big_int a b
-            | `Modulo -> Big_int.mod_big_int a b
+            | `Plus   -> Big_int.add_big_int a b,  is_nat t
+            | `Minus  -> Big_int.sub_big_int a b,  false
+            | `Mult   -> Big_int.mult_big_int a b, is_nat t
+            | `Ediv   -> Big_int.div_big_int a b,  is_nat t
+            | `Modulo -> Big_int.mod_big_int a b,  true
             | _ -> assert false
           in
-          mk_mterm (Mint res) (Tbuiltin Bint)
+          match nat with
+          | true  -> mk_mterm (Mnat res) (Tbuiltin Bnat)
+          | false -> mk_mterm (Mint res) (Tbuiltin Bint)
         in
 
         match mt.node, mt.type_ with
@@ -4100,10 +4126,10 @@ end = struct
           end
         | Mplus   (a, b), _ when is_timestamp a && is_int b -> begin
             let a = extract_timestamp a in
-            let b = extract_int b in
+            let b = extract_big_int b in
             mk_mterm (Mtimestamp (Big_int.add_big_int a b)) (Tbuiltin Btimestamp)
           end
-        | Mplus   (a, b), _ -> arith `Plus  (aux a, aux b)
+        | Mplus   (a, b), t -> arith t `Plus  (aux a, aux b)
         | Mminus  (a, b), Tbuiltin Bcurrency when is_tez a && is_tez b -> begin
             let a = extract_tez a in
             let b = extract_tez b in
@@ -4117,10 +4143,10 @@ end = struct
             let res = Big_int.sub_big_int a b in
             mk_mterm (Mint res) (Tbuiltin Bint)
           end
-        | Mminus  (a, b), _ -> arith `Minus (aux a, aux b)
-        | Mmult   (a, b), _ -> arith `Mult  (aux a, aux b)
-        | Mdiveuc (a, b), _ -> arith `Ediv  (aux a, aux b)
-        | Mmodulo (a, b), _ -> arith `Modulo   (aux a, aux b)
+        | Mminus  (a, b), t -> arith t `Minus (aux a, aux b)
+        | Mmult   (a, b), t -> arith t `Mult  (aux a, aux b)
+        | Mdiveuc (a, b), t -> arith t `Ediv  (aux a, aux b)
+        | Mmodulo (a, b), t -> arith t `Modulo   (aux a, aux b)
         | Mnot     a    , _ -> mk_mterm (Mbool (not (extract_bool (aux a)))) (Tbuiltin Bbool)
         | Mand    (a, b), _ -> mk_mterm (Mbool ((extract_bool (aux a)) && (extract_bool (aux b)))) (Tbuiltin Bbool)
         | Mor     (a, b), _ -> mk_mterm (Mbool ((extract_bool (aux a)) || (extract_bool (aux b)))) (Tbuiltin Bbool)
@@ -4158,12 +4184,17 @@ end = struct
           begin
             let coef = aux coef in
             let c    = aux c    in
+            let f num denom v cur =
+              let res = Big_int.div_big_int (Big_int.mult_big_int num v) denom in
+              mk_mterm (Mcurrency (res, cur)) (Tbuiltin Bcurrency)
+            in
             match coef.node, c.node with
-            | Mrational (num, denom), Mcurrency (v, cur)
-            | Mtuple [{node = Mint num; _}; {node = Mint denom; _}], Mcurrency (v, cur) ->
+            | Mrational (num, denom), Mcurrency (v, cur) -> f num denom v cur
+            | Mtuple [num; denom], Mcurrency (v, cur) ->
               begin
-                let res = Big_int.div_big_int (Big_int.mult_big_int num v) denom in
-                mk_mterm (Mcurrency (res, cur)) (Tbuiltin Bcurrency)
+                let num = extract_big_int num in
+                let denom = extract_big_int denom in
+                f num denom v cur
               end
             | _ -> begin
                 Format.eprintf "%a@." pp_mterm mt;
@@ -4367,7 +4398,7 @@ end = struct
              | APIBuiltin (Blength       _) -> 35
              | APIBuiltin (Bisnone       _) -> 36
              | APIBuiltin (Bissome       _) -> 37
-             | APIBuiltin (Bgetopt       _) -> 38
+             | APIBuiltin (Boptget       _) -> 38
              | APIBuiltin (Bfloor         ) -> 39
              | APIBuiltin (Bceil          ) -> 40
            in

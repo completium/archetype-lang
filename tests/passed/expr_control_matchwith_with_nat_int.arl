@@ -1,0 +1,25 @@
+archetype expr_control_matchwith_with_nat_int
+
+enum t =
+  | C1
+  | C2
+  | C3
+  | C4
+  | C5
+
+variable res : int = 0i
+
+entry exec () {
+  specification {
+    s0: res = 3i;
+  }
+  effect {
+    var x : t = C3;
+    res :=
+      match x with
+      | C1 | C2 -> 1i
+      | C3 -> 3
+      | _ -> 2i
+      end
+  }
+}

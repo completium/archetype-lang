@@ -1,4 +1,4 @@
-archetype expr_formula_option_eq
+archetype expr_formula_cmp_eq_option
 
 asset my_asset identified by id {
   id : string;

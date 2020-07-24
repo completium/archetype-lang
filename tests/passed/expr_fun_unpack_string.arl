@@ -5,10 +5,10 @@ variable res : option<string> = none
 entry exec () {
   specification {
     s0: issome(res);
-    s1: let some str = getopt(res) in str = "archetype" otherwise false;
+    s1: let some str = opt_get(res) in str = "archetype" otherwise false;
   }
   effect {
     res := unpack<string>(0x050100000009617263686574797065);
-    dorequire (getopt(res) = "archetype")
+    dorequire (opt_get(res) = "archetype")
   }
 }

@@ -1,0 +1,12 @@
+archetype expr_arith_plus_int_nat
+
+variable res : int = 0i
+
+entry exec () {
+  specification {
+    s0: res = 6i;
+  }
+  effect {
+    res := 4i + 2
+  }
+}

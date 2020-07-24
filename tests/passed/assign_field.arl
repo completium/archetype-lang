@@ -1,7 +1,7 @@
 archetype assign_field
 
 asset myasset identified by id {
-  id : int;
+  id : nat;
   str : string;
 } initialized by {
   {0; ""}

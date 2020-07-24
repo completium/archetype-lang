@@ -152,7 +152,8 @@ and function_ =
   | Foperator of operator loced
 
 and literal =
-  | Lnumber   of Core.big_int
+  | Lint      of Core.big_int
+  | Lnat      of Core.big_int
   | Ldecimal  of string
   | Ltz       of Core.big_int
   | Lmtz      of Core.big_int

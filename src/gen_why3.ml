@@ -1177,7 +1177,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                 Twild, map_mterm m ctx e
               ])
 
-    | Mletin ([id], { node = M.Mgetopt v; type_ = _ }, _, b, Some e) ->
+    | Mletin ([id], { node = M.Moptget v; type_ = _ }, _, b, Some e) ->
       Tmatch (map_mterm m ctx v,[
           Tpsome (map_lident id), map_mterm m ctx b;
           Twild, map_mterm m ctx e
@@ -1702,7 +1702,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mlength s -> Tapp (loc_term (Tvar "str_length"),[map_mterm m ctx s])
     | Misnone s -> Tapp (loc_term (Tvar "isnone"),[map_mterm m ctx s])
     | Missome s -> Tapp (loc_term (Tvar "issome"),[map_mterm m ctx s])
-    | Mgetopt s -> Tapp (loc_term (Tvar "getopt"),[map_mterm m ctx s])
+    | Moptget s -> Tapp (loc_term (Tvar "getopt"),[map_mterm m ctx s])
     | Mfloor  s -> Tapp (loc_term (Tvar "floor"),[map_mterm m ctx s])
     | Mceil   s -> Tapp (loc_term (Tvar "ceil"),[map_mterm m ctx s])
     | Mpack   s -> Tapp (loc_term (Tvar "pack"),[map_mterm m ctx s])
@@ -1790,6 +1790,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mratuminus v -> Tapp (loc_term (Tvar "rat_uminus"),[map_mterm m ctx v])
     | Mrattez (r,t) -> Tapp (loc_term (Tvar "rat_tez"),[map_mterm m ctx r; map_mterm m ctx t])
     | Mdivtez (r,t) -> Tapp (loc_term (Tvar "div_tez"),[map_mterm m ctx r; map_mterm m ctx t])
+    | Mnattoint _v ->  error_not_translated "Mnattoint" (* map_mterm m ctx v *)
+    | Mnattorat v -> Ttuple ([map_mterm m ctx v; loc_term (Tint (Big_int.big_int_of_int 1))])
     | Minttorat v -> Ttuple ([map_mterm m ctx v; loc_term (Tint (Big_int.big_int_of_int 1))])
     | Mratdur (r,t) -> Tapp (loc_term (Tvar "rat_dur"),[map_mterm m ctx r; map_mterm m ctx t])
 
@@ -3167,7 +3169,7 @@ let fold_exns m body : term list =
     | M.Mremovefield (_,_,k,v) -> internal_fold_exn
       (internal_fold_exn (acc @ [Texn Enotfound]) k) v
     | M.Mremoveall (_,_,v) -> internal_fold_exn (acc @ [Texn Enotfound]) v
-    | M.Mgetopt _ -> acc @ [Texn Enotfound]
+    | M.Moptget _ -> acc @ [Texn Enotfound]
     | M.Mfail InvalidCaller -> acc @ [Texn Einvalidcaller]
     | M.Mfail NoTransfer -> acc @ [Texn Enotransfer]
     | M.Mfail (InvalidCondition _) -> acc @ [Texn Einvalidcondition]

@@ -52,19 +52,19 @@ let rec pp_type fmt t =
       pp_type t
       pp_container c
   | Tlist t ->
-    Format.fprintf fmt "%a list"
+    Format.fprintf fmt "list<%a>"
       pp_type t
   | Toption t ->
-    Format.fprintf fmt "%a option"
+    Format.fprintf fmt "option<%a>"
       pp_type t
   | Ttuple ts ->
     Format.fprintf fmt "%a"
       (pp_list " * " pp_type) ts
   | Tset k ->
-    Format.fprintf fmt "%a set"
+    Format.fprintf fmt "set<%a>"
       pp_btyp k
   | Tmap (k, v) ->
-    Format.fprintf fmt "(%a, %a) map"
+    Format.fprintf fmt "map<%a, %a>"
       pp_btyp k
       pp_type v
   | Trecord id ->
@@ -334,7 +334,7 @@ let pp_mterm fmt (mt : mterm) =
     | Mbool b -> pp_str fmt (if b then "true" else "false")
     | Menum v -> pp_str fmt v
     | Mrational (n, d) ->
-      Format.fprintf fmt "(%a / %a)"
+      Format.fprintf fmt "rat(%a, %a)"
         pp_big_int n
         pp_big_int d
     | Mstring v ->
@@ -901,7 +901,7 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "issome (%a)"
         f x
 
-    | Mgetopt x ->
+    | Moptget x ->
       Format.fprintf fmt "getopt (%a)"
         f x
 
@@ -1036,6 +1036,20 @@ let pp_mterm fmt (mt : mterm) =
           f t
       in
       pp fmt (c, t)
+
+    | Mnattoint e ->
+      let pp fmt e =
+        Format.fprintf fmt "nat_to_int (%a)"
+          f e
+      in
+      pp fmt e
+
+    | Mnattorat e ->
+      let pp fmt e =
+        Format.fprintf fmt "nat_to_rat (%a)"
+          f e
+      in
+      pp fmt e
 
     | Minttorat e ->
       let pp fmt e =
@@ -1257,7 +1271,7 @@ let pp_api_builtin fmt = function
   | Blength t -> Format.fprintf fmt "length on %a" pp_type t
   | Bisnone t -> Format.fprintf fmt "isnone on %a" pp_type t
   | Bissome t -> Format.fprintf fmt "issome on %a" pp_type t
-  | Bgetopt t -> Format.fprintf fmt "getopt on %a" pp_type t
+  | Boptget t -> Format.fprintf fmt "getopt on %a" pp_type t
   | Bfloor    -> pp_str fmt "floor"
   | Bceil     -> pp_str fmt "ceil"
 

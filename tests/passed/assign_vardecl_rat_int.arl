@@ -4,6 +4,6 @@ variable res : rational = 0
 
 entry exec () {
   effect {
-    res := 1
+    res := 1i
   }
 }

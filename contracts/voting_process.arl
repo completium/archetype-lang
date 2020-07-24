@@ -68,7 +68,7 @@ transition bury () {
   from Voting
   to Buried
   with effect {
-    var nbvotesMax = 0;
+    var nbvotesMax : int = 0;
     for b in ballot do
       nbvotesMax := max(nbvotesMax, ballot[b].nbvotes)
     done;
