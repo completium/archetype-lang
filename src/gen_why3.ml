@@ -696,7 +696,7 @@ let cap s = mk_loc s.loc (String.capitalize_ascii s.obj)
 
 (* Map type -------------------------------------------------------------------*)
 
-let mk_tuple_typ m k v = with_dummy_loc (Tytuple [with_dummy_loc (map_btype k); map_mtype m v])
+let mk_tuple_typ m k v = with_dummy_loc (Tytuple [map_mtype m k; map_mtype m v])
 
 let mk_eq_pair id typ = Dfun {
   name = "eq_" ^ id |> with_dummy_loc;
@@ -1067,7 +1067,7 @@ let mk_partition_axioms (m : M.model) =
   M.Utils.get_containers m |> List.map (fun (n,i,_) ->
       let kt     = M.Utils.get_asset_key m n |> snd in
       let pa,_,pkt  = M.Utils.get_container_asset_key m n i in
-      mk_partition_axiom n i kt pa (pkt |> map_mtype |> unloc_type)
+      mk_partition_axiom n i kt pa (pkt |> map_mtype m |> unloc_type)
     ) |> loc_decl |> deloc
 
 let rec get_record id = function
@@ -1664,27 +1664,14 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Mmapput (_, _, c, k, v)   -> Tapp (loc_term (Tvar "map_put")      , [ map_mterm m ctx c; map_mterm m ctx k; map_mterm m ctx v ])
     | Mmapremove (kt, vt, c, k)   ->
-      begin match kt with
-      | M.Tbuiltin bt ->  Tremove (with_dummy_loc (mk_map_name m (M.Tmap (bt, vt))),map_mterm m ctx k, map_mterm m ctx c)
-      | _ -> assert false
-      end
+      Tremove (with_dummy_loc (mk_map_name m (M.Tmap (kt, vt))),map_mterm m ctx k, map_mterm m ctx c)
     | Mmapget (kt, vt, c, k)      -> Tsnd(
-      begin match kt with
-      | M.Tbuiltin bt -> with_dummy_loc (Tgetforce (with_dummy_loc (mk_map_name m (M.Tmap (bt, vt))),map_mterm m ctx k, map_mterm m ctx c))
-      | _ -> assert false
-      end)
+      with_dummy_loc (Tgetforce (with_dummy_loc (mk_map_name m (M.Tmap (kt, vt))),map_mterm m ctx k, map_mterm m ctx c)))
     | Mmapgetopt (_, _, c, k)   -> Tapp (loc_term (Tvar "map_getopt")   , [ map_mterm m ctx c; map_mterm m ctx k ])
     | Mmapcontains (kt, kv, c, k) ->
-      begin match kt with
-      | M.Tbuiltin bt -> Tcontains (with_dummy_loc (mk_map_name m (M.Tmap (bt, kv))),map_mterm m ctx k, map_mterm m ctx c)
-      | _ -> assert false
-      end
+      Tcontains (with_dummy_loc (mk_map_name m (M.Tmap (kt, kv))),map_mterm m ctx k, map_mterm m ctx c)
     | Mmaplength (k, v, c)      ->
-      begin match k with
-      | M.Tbuiltin bt -> let tmap = mk_map_name m (M.Tmap (bt,v)) in Tcard (with_dummy_loc tmap,map_mterm m ctx c)
-      | _ -> assert false
-      end
-
+      let tmap = mk_map_name m (M.Tmap (k,v)) in Tcard (with_dummy_loc tmap,map_mterm m ctx c)
     (* builtin functions *)
     | Mmax (l,r) ->
       begin match mt.type_ with
@@ -3107,7 +3094,7 @@ let mk_storage_api (m : M.model) records =
       match sc.node_item, sc.api_loc with
       | M.APIAsset (Get n), _ ->
         let k,kt = M.Utils.get_asset_key m n in
-        acc @ [mk_get_asset n k (kt |> map_mtype |> unloc_type)]
+        acc @ [mk_get_asset n k (kt |> map_mtype m |> unloc_type)]
       | M.APIAsset (Add n), _ ->
         let k = M.Utils.get_asset_key m n |> fst in
         acc @ [mk_add_asset m n k]
