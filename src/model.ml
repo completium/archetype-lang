@@ -3466,6 +3466,7 @@ module Utils : sig
   val with_operations                    : model -> bool
   val get_source_for                     : model -> ctx_model -> mterm -> mterm option
   val eval                               : (ident * mterm) list -> mterm -> mterm
+  val mk_rat                             : Core.big_int -> Core.big_int -> mterm
   val get_select_idx                     : model -> ident -> mterm -> int
   val get_sum_idx                        : model -> ident -> mterm -> int
   val with_division                      : model -> bool
@@ -3997,6 +3998,18 @@ end = struct
       end
     | _ -> None
 
+  let mk_rat (n : Core.big_int) (d : Core.big_int) : mterm =
+    let mk_int i = mk_mterm (Mint i) (Tbuiltin Bint) in
+    let pos x = Big_int.sign_big_int x >= 0 in
+    let abs x = Big_int.abs_big_int x in
+    let neg x = Big_int.sub_big_int Big_int.zero_big_int x in
+    let mk n d = mk_mterm (Mtuple [mk_int n ; mk_int d]) (Ttuple [Tbuiltin Bint; Tbuiltin Bint]) in
+    let x, y = Core.compute_irr_fract (n, d) in
+    match pos x, pos y with
+    | _ , true     -> mk x y
+    | true, false  -> mk (neg x) (abs y)
+    | false, false -> mk (abs x) (abs y)
+
   let eval (map_const_value : (ident * mterm) list) (mt : mterm) : mterm =
     let get_value (id : ident) : mterm = List.assoc id map_const_value in
     let is_const (id : ident) : bool = List.assoc_opt id map_const_value |> Option.is_some in
@@ -4010,13 +4023,6 @@ end = struct
         | _ -> map_mterm aux mt
       in
       aux mt
-    in
-
-    let mk_rat a b =
-      let a, b = Core.compute_irr_fract (a, b) in
-      let num   = mk_mterm (Mint a) (Tbuiltin Bint) in
-      let denom = mk_mterm (Mint b) (Tbuiltin Bint) in
-      mk_mterm (Mtuple [num; denom]) (Ttuple [Tbuiltin Bint; Tbuiltin Bint])
     in
 
     let is_int (mt : mterm) =
@@ -4064,16 +4070,20 @@ end = struct
           | _ -> assert false
         in
 
+        let neg x = Big_int.sub_big_int Big_int.zero_big_int x in
+
         let rec extract_rat (rat : mterm) : Big_int.big_int * Big_int.big_int =
           let rat = aux rat in
           match rat.node with
           | Mnat n                 -> (n, Big_int.unit_big_int)
           | Mint n                 -> (n, Big_int.unit_big_int)
+          | Mnattoint x            -> extract_rat x
           | Mnattorat x            -> extract_rat x
           | Minttorat x            -> extract_rat x
           | Mrational (num, denom) -> (num, denom)
           | Mtuple [num; denom]    -> (extract_big_int num, extract_big_int denom)
-          | _ -> assert false
+          | Muminus x              -> extract_rat x |> (fun (x, y) -> (neg x, y))
+          | _ -> Format.printf "%a@." pp_mterm rat; assert false
         in
 
         let extract_tez (b : mterm) : Big_int.big_int =
@@ -4163,6 +4173,11 @@ end = struct
             | Rmult  -> mk_rat (Big_int.mult_big_int num1 num2) (Big_int.mult_big_int denom1 denom2)
             | Rdiv   -> mk_rat (Big_int.mult_big_int num1 denom2) (Big_int.mult_big_int num2 denom1)
           end
+        | Mratuminus x, _ -> begin
+            let num, denom = extract_rat (aux x) in
+            mk_rat (neg num) denom
+          end
+
         (* | Mratcmp (op, _a, _b) ->
            begin
             (* let num1, denom1 = extract_rat a in

@@ -1062,35 +1062,66 @@ let remove_cmp_bool (model : model) : model =
   Model.map_mterm_model aux model
 
 let update_nat_int_rat (model : model) : model =
-  let get_number_lit_opt (x : mterm) =
+  let lit_num_some (x : mterm) =
     match x.node with
-    | Mint x -> Some x
-    | Mnattoint {node = Mnat x} -> Some x
+    | Mint n
+    | Mnat n -> Some n
     | _ -> None
   in
-  let is_number_lit  (x : mterm) = x |> get_number_lit_opt |> Option.is_some in
-  let get_number_lit (x : mterm) = x |> get_number_lit_opt |> Option.get in
+  let is_lit_num      (x : mterm) = x |> lit_num_some |> Option.is_some in
+  let extract_lit_num (x : mterm) = x |> lit_num_some |> Option.get in
+
+  let lit_rat_some (x : mterm) =
+    match x.node with
+    | Mtuple [{node = Mint n}; {node = Mint d}] -> Some (n, d)
+    | _ -> None
+  in
+  let is_lit_rat      (x : mterm) = x |> lit_rat_some |> Option.is_some in
+  let extract_lit_rat (x : mterm) = x |> lit_rat_some |> Option.get in
+
+  let neg x = Big_int.sub_big_int Big_int.zero_big_int x in
+
   let rec aux c (mt : mterm) : mterm =
     match mt.node with
     | Mnattoint {node = Mnat n; _} -> {mt with node = Mint n}
-    | Mratarith (op, {node = Mtuple [a; b]}, {node = Mtuple [c; d]}) when List.for_all is_number_lit [a; b; c; d] -> begin
-        let an = get_number_lit a in
-        let ad = get_number_lit b in
-        let bn = get_number_lit c in
-        let bd = get_number_lit d in
-        let mk_int i = mk_mterm (Mint i) (Tbuiltin Bint) in
-        let mk_rat n d = mk_mterm (Mtuple [mk_int n ; mk_int d]) (Ttuple [Tbuiltin Bint; Tbuiltin Bint]) in
-        let (+) a b   = Big_int.add_big_int a b in
-        let (-) a b   = Big_int.sub_big_int a b in
-        let ( * ) a b = Big_int.mult_big_int a b in
-        let x, y =
-          match op with
-          | Rplus  -> ((an * bd) + (bn * ad), ad * bd)
-          | Rminus -> ((an * bd) - (bn * ad), ad * bd)
-          | Rmult  -> (an * bn, ad * bd)
-          | Rdiv   -> (an * bd, ad * bn)
-        in
-        mk_rat x y
+    | Mnattorat {node = Mnat n; _} -> Utils.mk_rat n (Big_int.unit_big_int)
+    | Minttorat x -> begin
+        let x = aux c x in
+        if is_lit_num x
+        then x |> extract_lit_num |> (fun x -> Utils.mk_rat x (Big_int.unit_big_int))
+        else mt
+      end
+    | Muminus x -> begin
+        let x = aux c x in
+        if is_lit_num x
+        then x |> extract_lit_num |> neg |> (fun x -> mk_mterm (Mint x) (Tbuiltin Bint))
+        else mt
+      end
+    | Mratuminus x -> begin
+        let x = aux c x in
+        if is_lit_rat x
+        then x |> extract_lit_rat |> (fun (x, y) -> (neg x, y)) |> (fun (x, y) -> Utils.mk_rat x y)
+        else mt
+      end
+    | Mratarith (op, lhs, rhs) -> begin
+        let lhs, rhs = (aux c lhs), (aux c rhs) in
+        if (is_lit_rat lhs) && (is_lit_rat rhs)
+        then begin
+          let an, ad = extract_lit_rat lhs in
+          let bn, bd = extract_lit_rat rhs in
+          let (+) a b   = Big_int.add_big_int a b in
+          let (-) a b   = Big_int.sub_big_int a b in
+          let ( * ) a b = Big_int.mult_big_int a b in
+          let x, y =
+            match op with
+            | Rplus  -> ((an * bd) + (bn * ad), ad * bd)
+            | Rminus -> ((an * bd) - (bn * ad), ad * bd)
+            | Rmult  -> (an * bn, ad * bd)
+            | Rdiv   -> (an * bd, ad * bn)
+          in
+          Utils.mk_rat x y
+        end
+        else mt
       end
     | _ -> map_mterm (aux c) mt
   in
