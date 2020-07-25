@@ -427,6 +427,7 @@ type error_desc =
   | PredicateCallInExpr
   | ReadOnlyGlobal                     of ident
   | RecordExpected
+  | ReturnInVoidContext
   | SecurityInExpr
   | ShadowPKey
   | ShadowSKey
@@ -602,6 +603,7 @@ let pp_error_desc fmt e =
   | PredicateCallInExpr                -> pp "Cannot access predicates in code"
   | ReadOnlyGlobal i                   -> pp "Global is read only: %a" pp_ident i
   | RecordExpected                     -> pp "Record expected"
+  | ReturnInVoidContext                -> pp "Unexpected return in void context"
   | SecurityInExpr                     -> pp "Found securtiy predicate in expression"
   | ShadowPKey                         -> pp "Primary key cannot be a shadow field"
   | ShadowSKey                         -> pp "Sort key cannot be a shadow field"
@@ -3482,7 +3484,7 @@ let for_lvalue kind (env : env) (e : PT.expr) : (A.lvalue * A.ptyp) option =
 
 (* -------------------------------------------------------------------- *)
 let rec for_instruction_r
-    (kind : imode_t) (env : env) (i : PT.expr) : env * A.instruction
+    ~(ret : A.type_ option) (kind : imode_t) (env : env) (i : PT.expr) : env * A.instruction
   =
   let module E = struct exception Failure end in
 
@@ -3527,8 +3529,8 @@ let rec for_instruction_r
       end
 
     | Eseq (i1, i2) ->
-      let env, i1 = for_instruction_r kind env i1 in
-      let env, i2 = for_instruction_r kind env i2 in
+      let env, i1 = for_instruction_r ~ret kind env i1 in
+      let env, i2 = for_instruction_r ~ret kind env i2 in
       env, mkseq i1 i2
 
     | Eassign (op, plv, pe) -> begin
@@ -3598,8 +3600,8 @@ let rec for_instruction_r
 
     | Eif (c, bit, bif) ->
       let c        = for_expr kind env ~ety:A.vtbool c in
-      let env, cit = for_instruction kind env bit in
-      let cif      = Option.map (for_instruction kind env) bif in
+      let env, cit = for_instruction ~ret kind env bit in
+      let cif      = Option.map (for_instruction ~ret kind env) bif in
       let env, cif = Option.get_dfl (env, mki (Iseq [])) cif in
       env, mki (A.Iif (c, cit, cif))
 
@@ -3645,7 +3647,13 @@ let rec for_instruction_r
           let idents = match unloc x with PT.FIsimple i -> [i] | PT.FIdouble (x, y) -> [x; y] in
           let _ : bool = List.for_all (check_and_emit_name_free env) idents in
 
-          let env = Option.map_dfl (List.fold_left2 (fun accu x y ->  Env.Local.push accu ~kind:`LoopIndex (x, y)) env idents) env kty in
+          let env =
+            Option.map_dfl
+              (List.fold_left2
+                 (fun accu x y ->  Env.Local.push accu ~kind:`LoopIndex (x, y))
+                 env idents)
+              env kty in
+
           let env =
             match e.A.type_ with
             | None ->
@@ -3655,13 +3663,14 @@ let rec for_instruction_r
                   if (check_and_emit_name_free env lbl) then
                     Env.Label.push env (lbl, `Loop lblty)
                   else env) env lbl
-          in for_instruction kind env i) in
+          in for_instruction ~ret kind env i) in
+
       let x : A.lident A.for_ident =
         match unloc x with
         | PT.FIsimple  i     -> A.FIsimple i
         | PT.FIdouble (x, y) -> A.FIdouble (x, y)
-      in
-      env, mki (A.Ifor (x, e, i)) ?label:(Option.map unloc lbl)
+
+      in env, mki (A.Ifor (x, e, i)) ?label:(Option.map unloc lbl)
 
     | Eiter (lbl, x, a, b, i) ->
       let zero_b = A.mk_sp (A.BVint Big_int.zero_big_int) ~type_:A.vtint in
@@ -3671,7 +3680,7 @@ let rec for_instruction_r
       let env, i = Env.inscope env (fun env ->
           let _ : bool = check_and_emit_name_free env x in
           let env = Env.Local.push env ~kind:`LoopIndex (x, A.vtint) in
-          for_instruction kind env i) in
+          for_instruction ~ret kind env i) in
       env, mki (A.Iiter (x, a, b, i)) ?label:(Option.map unloc lbl)
 
     | Erequire e ->
@@ -3697,7 +3706,7 @@ let rec for_instruction_r
         match for_gen_matchwith (expr_mode kind) env (loc i) e bs with
         | None -> bailout () | Some (decl, me, (wd, bsm), is) ->
 
-          let env, is = List.fold_left_map (for_instruction kind) env is in
+          let env, is = List.fold_left_map (for_instruction ~ret kind) env is in
 
           let aout = List.pmap (fun (cname, _) ->
               let ctor = A.mk_sp (A.Mconst cname) in (* FIXME: loc ? *)
@@ -3730,7 +3739,9 @@ let rec for_instruction_r
       env, mki (Iseq [])
 
     | Ereturn re ->
-      env, mki (Ireturn (for_expr kind env re)) (* FIXME *)
+      if Option.is_none ret then
+        Env.emit_error env (loc re, ReturnInVoidContext);
+      env, mki (Ireturn (for_expr ?ety:ret  kind env re))
 
     | Evar (x, ty, v) ->
       let ty = Option.bind (for_type env) ty in
@@ -3755,13 +3766,13 @@ let rec for_instruction_r
     env, mki (Iseq [])
 
 (* -------------------------------------------------------------------- *)
-and for_instruction (kind : imode_t) (env : env) (i : PT.expr) : env * A.instruction =
-  Env.inscope env (fun env -> for_instruction_r kind env i)
+and for_instruction ~(ret : A.type_ option) (kind : imode_t) (env : env) (i : PT.expr) : env * A.instruction =
+  Env.inscope env (fun env -> for_instruction_r ~ret kind env i)
 
 (* -------------------------------------------------------------------- *)
 let for_effect (kind : imode_t) (env : env) (effect : PT.expr) =
   Env.inscope env (fun env ->
-      let env, i = for_instruction kind env effect in (env, (env, i)))
+      let env, i = for_instruction ~ret:None kind env effect in (env, (env, i)))
 
 (* -------------------------------------------------------------------- *)
 type spmode = [`Global | `Local]
@@ -4062,7 +4073,8 @@ let for_function (env : env) (fdecl : PT.s_function loced) =
   Env.inscope env (fun env ->
       let env, args = for_args_decl env fdecl.args in
       let rty       = Option.bind (for_type env) fdecl.ret_t in
-      let env, body = for_instruction `Concrete env fdecl.body in
+        Format.eprintf "%b@." (Option.is_some rty);
+      let env, body = for_instruction ~ret:rty `Concrete env fdecl.body in
       let env, spec =
         let poenv = rty |> Option.fold (fun poenv rty ->
             let decl = {
