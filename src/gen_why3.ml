@@ -126,7 +126,7 @@ let rec map_mtype (t : M.type_) : loc_typ =
       | M.Tvset _                             -> Tyunit (* TODO: replace by the right type *)
       | M.Ttrace _                            -> Tyunit (* TODO: replace by the right type *)
       | M.Tcontract _                         -> Tyint
-      | M.Tset t                              -> Tyset (map_mtype (Tbuiltin t)).obj
+      | M.Tset t                              -> Tyset (map_mtype t).obj
       | M.Tlist t                             -> Tylist (map_mtype t).obj
       | _ -> print_endline (Format.asprintf "%a@." M.pp_type_ t); assert false)
 
@@ -1012,9 +1012,9 @@ let record_to_clone m (r : M.asset) =
 
 let mk_partition_axioms (m : M.model) =
   M.Utils.get_containers m |> List.map (fun (n,i,_) ->
-      let kt     = M.Utils.get_asset_key m n |> snd |> map_btype in
+      let kt     = M.Utils.get_asset_key m n |> snd in
       let pa,_,pkt  = M.Utils.get_container_asset_key m n i in
-      mk_partition_axiom n i kt pa (pkt |> map_btype)
+      mk_partition_axiom n i kt pa (pkt |> map_mtype |> unloc_type)
     ) |> loc_decl |> deloc
 
 let rec get_record id = function
@@ -3035,7 +3035,7 @@ let mk_storage_api (m : M.model) records =
       match sc.node_item, sc.api_loc with
       | M.APIAsset (Get n), _ ->
         let k,kt = M.Utils.get_asset_key m n in
-        acc @ [mk_get_asset n k (kt |> map_btype)]
+        acc @ [mk_get_asset n k (kt |> map_mtype |> unloc_type)]
       | M.APIAsset (Add n), _ ->
         let k = M.Utils.get_asset_key m n |> fst in
         acc @ [mk_add_asset m n k]

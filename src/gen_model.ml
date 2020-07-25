@@ -90,9 +90,9 @@ let to_model (ast : A.ast) : M.model =
     | A.Tcontract id       -> M.Tcontract id
     | A.Tbuiltin b         -> M.Tbuiltin (vtyp_to_btyp b)
     | A.Tcontainer (t, c)  -> M.Tcontainer (ptyp_to_type t, to_container c)
-    | A.Tset t             -> M.Tset (match ptyp_to_type t with | Tbuiltin v -> v | _ -> assert false)
+    | A.Tset t             -> M.Tset (ptyp_to_type t)
     | A.Tlist t            -> M.Tlist (ptyp_to_type t)
-    | A.Tmap (k, v)        -> M.Tmap ((match ptyp_to_type k with | Tbuiltin v -> v | _ -> assert false), ptyp_to_type v)
+    | A.Tmap (k, v)        -> M.Tmap (ptyp_to_type k, ptyp_to_type v)
     | A.Ttuple l           -> M.Ttuple (List.map ptyp_to_type l)
     | A.Toperation         -> M.Toperation
     | A.Tentry             -> M.Tentry
@@ -202,13 +202,13 @@ let to_model (ast : A.ast) : M.model =
 
   let extract_builtin_type_set (v : M.mterm) : M.type_ =
     match v with
-    | {type_ = Tset t; _} -> Tbuiltin t
+    | {type_ = Tset t; _} -> t
     | _ -> assert false
   in
 
   let extract_builtin_type_map (v : M.mterm) : M.type_ * M.type_ =
     match v with
-    | {type_ = Tmap (k, v); _} -> Tbuiltin k, v
+    | {type_ = Tmap (k, v); _} -> k, v
     | _ -> assert false
   in
 

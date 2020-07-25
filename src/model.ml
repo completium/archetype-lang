@@ -64,8 +64,8 @@ type type_ =
   | Tlist of type_
   | Toption of type_
   | Ttuple of type_ list
-  | Tset of btyp
-  | Tmap of btyp * type_
+  | Tset of type_
+  | Tmap of type_ * type_
   | Trecord of lident
   | Tunit
   | Tstorage
@@ -989,8 +989,8 @@ let rec cmp_type
   | Tlist t1, Tlist t2                       -> cmp_type t1 t2
   | Toption t1, Toption t2                   -> cmp_type t1 t2
   | Ttuple l1, Ttuple l2                     -> List.for_all2 cmp_type l1 l2
-  | Tset b1, Tset b2                         -> cmp_btyp b1 b2
-  | Tmap (k1, v1), Tmap (k2, v2)             -> cmp_btyp k1 k2 && cmp_type v1 v2
+  | Tset b1, Tset b2                         -> cmp_type b1 b2
+  | Tmap (k1, v1), Tmap (k2, v2)             -> cmp_type k1 k2 && cmp_type v1 v2
   | Trecord i1, Trecord i2                   -> cmp_lident i1 i2
   | Tunit, Tunit                             -> true
   | Tstorage, Tstorage                       -> true
@@ -3421,14 +3421,14 @@ module Utils : sig
   val get_asset                          : model -> ident -> asset
   val get_storage                        : model -> storage
   val get_asset_field                    : model -> (ident * ident) -> (ident * type_ * mterm option)
-  val get_asset_key                      : model -> ident -> (ident * btyp)
+  val get_asset_key                      : model -> ident -> (ident * type_)
   val get_field_container                : model -> ident -> ident -> (ident * container)
   val is_storage_attribute               : model -> ident -> bool
   val get_named_field_list               : model -> ident -> 'a list -> (ident * 'a) list
   val get_containers                     : model -> (ident * ident * type_) list (* asset id, asset item *)
   val get_partitions                     : model -> (ident * ident * type_) list (* asset id, asset item *)
   val dest_container                     : type_ -> ident
-  val get_container_asset_key            : model -> ident -> ident -> (ident * ident * btyp)
+  val get_container_asset_key            : model -> ident -> ident -> (ident * ident * type_)
   val get_container_assets               : model -> ident -> ident list
   val get_entries                        : model -> (specification option * function_struct) list
   val get_functions                      : model -> (specification option * function_struct* type_) list
@@ -3642,14 +3642,12 @@ end = struct
     with
     | Not_found -> emit_error (AssetFieldNotFound (asset_name, field_name))
 
-  let get_asset_key (m : model) (asset_name : ident) : (ident * btyp) =
+  let get_asset_key (m : model) (asset_name : ident) : (ident * type_) =
     try
       let asset = get_asset m asset_name in
       let key_id = asset.key in
       let (_,key_typ,_) = get_asset_field m (asset_name, key_id) in
-      match key_typ with
-      | Tbuiltin v -> (key_id, v)
-      | _ -> raise Not_found
+      (key_id, key_typ)
     with
     | Not_found -> emit_error (AssetKeyTypeNotFound (asset_name))
 
@@ -3673,7 +3671,7 @@ end = struct
     |> List.map (fun (_,_,t) -> type_to_asset t)
 
   (* returns : asset name, key name, key type *)
-  let get_container_asset_key model asset field : (ident * ident * btyp) =
+  let get_container_asset_key model asset field : (ident * ident * type_) =
     let containers = get_containers model in
     let rec rec_get = function
       | (r,i,t) :: _tl when String.equal r asset &&
@@ -3983,7 +3981,7 @@ end = struct
       | Tcontainer (Tasset an, c) ->
         begin
           let _, t = get_asset_key m (unloc an) in
-          Tcontainer (Tbuiltin t, c)
+          Tcontainer (t, c)
         end
       | _ -> t
     in
@@ -3995,7 +3993,7 @@ end = struct
       begin
         let l, an = deloc an in
         let idparam = mkloc l (an ^ "_values") in
-        Some (mk_mterm (Mvar(idparam, Vparam) ) (Tmap(Bint, Tasset (dumloc "myasset"))))
+        Some (mk_mterm (Mvar(idparam, Vparam) ) (Tmap(Tbuiltin Bint, Tasset (dumloc "myasset"))))
       end
     | _ -> None
 

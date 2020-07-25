@@ -62,10 +62,10 @@ let rec pp_type fmt t =
       (pp_list " * " pp_type) ts
   | Tset k ->
     Format.fprintf fmt "set<%a>"
-      pp_btyp k
+      pp_type k
   | Tmap (k, v) ->
     Format.fprintf fmt "map<%a, %a>"
-      pp_btyp k
+      pp_type k
       pp_type v
   | Trecord id ->
     Format.fprintf fmt "%a" pp_id id

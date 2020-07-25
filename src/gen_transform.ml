@@ -2023,7 +2023,7 @@ let change_type_of_nth (model : model) : model =
   let rec aux ctx (mt : mterm) : mterm =
     match mt.node with
     | Mnth (an, CKview c, i) ->
-      build_get an (mk_mterm (Mnth (an, CKview (aux ctx c), aux ctx i)) (Tbuiltin (Utils.get_asset_key model an |> snd)))
+      build_get an (mk_mterm (Mnth (an, CKview (aux ctx c), aux ctx i)) ((Utils.get_asset_key model an |> snd)))
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
@@ -2272,7 +2272,7 @@ let split_key_values (model : model) : model =
         { asset_value with
           node = Masset (List.map (fun (x : mterm) ->
               match x with
-              | { type_ = Tcontainer (Tasset an, c); _} -> { x with type_ = let k = Utils.get_asset_key model (unloc an) |> snd in Tcontainer (Tbuiltin k, c) }
+              | { type_ = Tcontainer (Tasset an, c); _} -> { x with type_ = let k = Utils.get_asset_key model (unloc an) |> snd in Tcontainer (k, c) }
               | _ -> x) l)
         }
       end
@@ -2329,7 +2329,6 @@ let replace_for_to_iter (model : model) : model =
   let rec aux ctx (mt : mterm) : mterm =
     match mt.node with
     | Mfor (FIsimple id, ICKset ({node = _; type_ = Tset t} as col), body, Some lbl) ->
-      let t = Tbuiltin t in
       let nbody = aux ctx body in
 
       let idx_id = "_i_" ^ lbl in
@@ -2797,7 +2796,7 @@ let remove_asset (model : model) : model =
     let rec remove_assets x =
       let aux mt =
         match mt with
-        | {node = Massets []; type_ = Tcontainer (Tbuiltin tk, (Aggregate | Partition))} ->
+        | {node = Massets []; type_ = Tcontainer (tk, (Aggregate | Partition))} ->
           mk_mterm (Mlitset []) (Tset tk)
         | _ -> map_mterm remove_assets mt
       in
