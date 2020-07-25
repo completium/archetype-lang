@@ -111,6 +111,7 @@ type ('e,'t,'i) abstract_term =
   | Tmkcoll of 'i * 'e list
   | Tmkview of 'i * 'e
   | Tcontent of 'i * 'e
+  | Tcontains of 'i * 'e * 'e
   | Tvcontent of 'i * 'e
   (* archetype lib *)
   | Tadd    of 'i * 'e * 'e
@@ -118,6 +119,7 @@ type ('e,'t,'i) abstract_term =
   | Tremove of 'i * 'e * 'e
   | Tvremove of 'i * 'e * 'e
   | Tget    of 'i * 'e * 'e
+  | Tgetforce    of 'i * 'e * 'e
   | Tfget of 'i * 'e * 'e (* logical pure get; no fail *)
   | Tset    of 'i * 'e * 'e * 'e
   | Tvsum    of 'i * 'e * 'e
@@ -399,6 +401,7 @@ and map_abstract_term
   | Tmkcoll (i,e)      -> Tmkcoll (map_i i, List.map map_e e)
   | Tmkview (i,e)      -> Tmkview (map_i i, map_e e)
   | Tcontent (i,e)     -> Tcontent (map_i i, map_e e)
+  | Tcontains (i,e1,e2)-> Tcontains (map_i i, map_e e1, map_e e2)
   | Tvcontent (i,e)    -> Tvcontent (map_i i, map_e e)
   | Ttocoll (i,e1,e2)  -> Ttocoll (map_i i, map_e e1, map_e e2)
   | Ttoview (i,e)      -> Ttoview (map_i i, map_e e)
@@ -412,6 +415,7 @@ and map_abstract_term
   | Tremove (i,e1,e2)  -> Tremove (map_i i,map_e e1, map_e e2)
   | Tvremove (i,e1,e2) -> Tvremove (map_i i,map_e e1, map_e e2)
   | Tget (i,e1,e2)     -> Tget (map_i i, map_e e1, map_e e2)
+  | Tgetforce (i,e1,e2)     -> Tgetforce (map_i i, map_e e1, map_e e2)
   | Tfget (i,e1,e2)    -> Tfget (map_i i, map_e e1, map_e e2)
   | Tset (i, e1,e2,e3) -> Tset (map_i i, map_e e1, map_e e2, map_e e3)
   | Tvsum (i,e1,e2)    -> Tvsum (map_i i, map_e e1, map_e e2)
@@ -804,6 +808,7 @@ let compare_abstract_term
   | Tmkcoll (i1,e1), Tmkcoll (i2,e2) -> cmpi i1 i2 && List.for_all2 cmpe e1 e2
   | Tmkview (i1,e1), Tmkview (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tcontent (i1,e1), Tcontent (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
+  | Tcontains (i1,e1,e3), Tcontains (i2,e2,e4) -> cmpi i1 i2 && cmpe e1 e2 && cmpe e3 e4
   | Tvcontent (i1,e1), Tvcontent (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Ttocoll (i1,e1,f1), Ttocoll (i2,e2,f2) -> cmpi i1 i2 && cmpe e1 e2 && cmpe f1 f2
   | Ttoview (i1,e1), Ttoview (i2,e2) -> cmpi i1 i2 && cmpe e1 e2

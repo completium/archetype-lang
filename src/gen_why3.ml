@@ -104,7 +104,14 @@ let map_btype = function
   | M.Bnat           -> Tyuint
   | M.Bchainid       -> Tychainid
 
-let rec map_mtype (t : M.type_) : loc_typ =
+let get_map_idx m t = List.fold_left (fun i mt ->
+  if M.cmp_type t mt then i
+  else succ i
+) 1 (M.Utils.get_all_map_types m)
+
+let mk_map_name m t = "map"^(string_of_int (get_map_idx m t))
+
+let rec map_mtype m (t : M.type_) : loc_typ =
   with_dummy_loc (match t with
       | M.Tasset id                           -> Tyasset (map_lident id)
       | M.Tenum id                            -> Tyenum (map_lident id)
@@ -113,12 +120,12 @@ let rec map_mtype (t : M.type_) : loc_typ =
       | M.Tcontainer (Tasset id,M.Aggregate)  -> Tyaggregate (map_lident id)
       | M.Tcontainer (Tasset id,M.View)       -> Tyview (map_lident id)
       | M.Tcontainer (Tasset id,M.Collection) -> Tycoll (map_lident id)
-      | M.Tcontainer (t,M.Collection)         -> Tylist (map_mtype t)
-      | M.Toption t                           -> Tyoption (map_mtype t)
-      | M.Ttuple l                            -> Tytuple (l |> List.map map_mtype)
+      | M.Tcontainer (t,M.Collection)         -> Tylist (map_mtype m t)
+      | M.Toption t                           -> Tyoption (map_mtype m t)
+      | M.Ttuple l                            -> Tytuple (l |> List.map (map_mtype m))
       | M.Tunit                               -> Tyunit
       | M.Tstate                              -> Tystate
-      | M.Tmap (_, _)                         -> Tyunit (* TODO: replace by the right type *)
+      | M.Tmap (_, _)                         -> Tycoll (with_dummy_loc (mk_map_name m t))
       | M.Tstorage                            -> Tystorage
       | M.Toperation                          -> Tyunit (* TODO: replace by the right type *)
       | M.Tentry                              -> Tyunit (* TODO: replace by the right type *)
@@ -126,8 +133,8 @@ let rec map_mtype (t : M.type_) : loc_typ =
       | M.Tvset _                             -> Tyunit (* TODO: replace by the right type *)
       | M.Ttrace _                            -> Tyunit (* TODO: replace by the right type *)
       | M.Tcontract _                         -> Tyint
-      | M.Tset t                              -> Tyset (map_mtype (Tbuiltin t))
-      | M.Tlist t                             -> Tylist (map_mtype t)
+      | M.Tset t                              -> Tyset (map_mtype m (Tbuiltin t))
+      | M.Tlist t                             -> Tylist (map_mtype m t)
       | _ -> print_endline (Format.asprintf "%a@." M.pp_type_ t); assert false)
 
 (* Trace -------------------------------------------------------------------------*)
@@ -508,7 +515,7 @@ let mk_select_name m asset test = "select_" ^ asset ^ "_" ^ (string_of_int (M.Ut
 let mk_select m asset test mlw_test only_formula args =
   let id =  mk_select_name m asset test in
   let (key,_) = M.Utils.get_asset_key m asset in
-  let args : (string * typ) list = List.map (fun (i,t) -> (i, (map_mtype t|> unloc_type))) args in
+  let args : (string * typ) list = List.map (fun (i,t) -> (i, (map_mtype m t|> unloc_type))) args in
   let decl = Dfun {
       name     = id;
       logic    = if only_formula then Logic else NoMod;
@@ -582,7 +589,7 @@ let mk_fremoveif m asset fn test mlw_test only_formula args =
   let id =  mk_removeif_name "f" m asset test in
   let (_key,_) = M.Utils.get_asset_key m asset in
   let args : (string * typ) list =
-    List.map (fun (i,t) -> (i, (map_mtype t|> unloc_type))) args in
+    List.map (fun (i,t) -> (i, (map_mtype m t|> unloc_type))) args in
   let decl = Dfun {
       name     = id;
       logic    = if only_formula then Logic else NoMod;
@@ -636,7 +643,7 @@ let mk_fremoveif m asset fn test mlw_test only_formula args =
 let mk_cremoveif m asset test mlw_test only_formula args =
   let id =  mk_removeif_name "c" m asset test in
   let (_key,_) = M.Utils.get_asset_key m asset in
-  let args = List.map (fun (i,t) -> (i, map_mtype t |> unloc_type)) args in
+  let args = List.map (fun (i,t) -> (i, map_mtype m t |> unloc_type)) args in
   let decl = Dfun {
       name     = id;
       logic    = if only_formula then Logic else NoMod;
@@ -688,14 +695,8 @@ let rec zip l1 l2 l3 l4 =
 let cap s = mk_loc s.loc (String.capitalize_ascii s.obj)
 
 (* Map type -------------------------------------------------------------------*)
-let get_map_idx m t = List.fold_left (fun i mt ->
-  if M.cmp_type t mt then i
-  else succ i
-) 1 (M.Utils.get_all_map_types m)
 
-let mk_map_name m t = "map"^(string_of_int (get_map_idx m t))
-
-let mk_tuple_typ k v = with_dummy_loc (Tytuple [with_dummy_loc (map_btype k); map_mtype v])
+let mk_tuple_typ m k v = with_dummy_loc (Tytuple [with_dummy_loc (map_btype k); map_mtype m v])
 
 let mk_eq_pair id typ = Dfun {
   name = "eq_" ^ id |> with_dummy_loc;
@@ -733,7 +734,7 @@ let mk_map_type m (t : M.type_) =
   match t with
   | Tmap (k,v) ->
     let map_name = mk_map_name m t in
-    let typ : loc_typ = mk_tuple_typ k v in [
+    let typ : loc_typ = mk_tuple_typ m k v in [
       mk_eq_pair map_name typ;
       mk_map_clone map_name typ
     ]
@@ -1430,8 +1431,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     (* comparison operators *)
 
-    | Mequal (t, l, r)  -> Teq  (map_mtype t, map_mterm m ctx l, map_mterm m ctx r)
-    | Mnequal (t, l, r) -> Tneq (map_mtype t, map_mterm m ctx l, map_mterm m ctx r)
+    | Mequal (t, l, r)  -> Teq  (map_mtype m t, map_mterm m ctx l, map_mterm m ctx r)
+    | Mnequal (t, l, r) -> Tneq (map_mtype m t, map_mterm m ctx l, map_mterm m ctx r)
     | Mgt (l, r) -> Tgt (with_dummy_loc Tyint, map_mterm m ctx l, map_mterm m ctx r)
     | Mge (l, r) -> Tge (with_dummy_loc Tyint, map_mterm m ctx l, map_mterm m ctx r)
     | Mlt (l, r) -> Tlt (with_dummy_loc Tyint, map_mterm m ctx l, map_mterm m ctx r)
@@ -1662,10 +1663,22 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     (* map api expression *)
 
     | Mmapput (_, _, c, k, v)   -> Tapp (loc_term (Tvar "map_put")      , [ map_mterm m ctx c; map_mterm m ctx k; map_mterm m ctx v ])
-    | Mmapremove (_, _, c, k)   -> Tapp (loc_term (Tvar "map_remove")   , [ map_mterm m ctx c; map_mterm m ctx k ])
-    | Mmapget (_, _, c, k)      -> Tapp (loc_term (Tvar "map_get")      , [ map_mterm m ctx c; map_mterm m ctx k ])
+    | Mmapremove (kt, vt, c, k)   ->
+      begin match kt with
+      | M.Tbuiltin bt ->  Tremove (with_dummy_loc (mk_map_name m (M.Tmap (bt, vt))),map_mterm m ctx k, map_mterm m ctx c)
+      | _ -> assert false
+      end
+    | Mmapget (kt, vt, c, k)      -> Tsnd(
+      begin match kt with
+      | M.Tbuiltin bt -> with_dummy_loc (Tgetforce (with_dummy_loc (mk_map_name m (M.Tmap (bt, vt))),map_mterm m ctx k, map_mterm m ctx c))
+      | _ -> assert false
+      end)
     | Mmapgetopt (_, _, c, k)   -> Tapp (loc_term (Tvar "map_getopt")   , [ map_mterm m ctx c; map_mterm m ctx k ])
-    | Mmapcontains (_, _, c, k) -> Tapp (loc_term (Tvar "map_contains") , [ map_mterm m ctx c; map_mterm m ctx k ])
+    | Mmapcontains (kt, kv, c, k) ->
+      begin match kt with
+      | M.Tbuiltin bt -> Tcontains (with_dummy_loc (mk_map_name m (M.Tmap (bt, kv))),map_mterm m ctx k, map_mterm m ctx c)
+      | _ -> assert false
+      end
     | Mmaplength (k, v, c)      ->
       begin match k with
       | M.Tbuiltin bt -> let tmap = mk_map_name m (M.Tmap (bt,v)) in Tcard (with_dummy_loc tmap,map_mterm m ctx c)
@@ -1808,7 +1821,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     (* quantifiers *)
 
     | Mforall (i, t, None, b) ->
-      let typ = map_mtype t in
+      let typ = map_mtype m t in
       Tforall (
         [[i |> map_lident],typ],
         map_mterm m ctx b)
@@ -1823,7 +1836,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                                map_mterm m ctx b)))
 
     | Mexists (i, t, None, b) ->
-      let typ = map_mtype t in
+      let typ = map_mtype m t in
       Texists (
         [[i |> map_lident],typ],
         map_mterm m ctx b)
@@ -1989,7 +2002,7 @@ and mk_invariants (m : M.model) ctx id (lbl : ident option) lbody =
 
 let map_record_values m (values : M.asset_item list) =
   List.map (fun (value : M.asset_item) ->
-      let typ_ = map_mtype value.type_ in
+      let typ_ = map_mtype m value.type_ in
       let init_value = type_to_init m typ_ in {
         name     = map_lident value.name;
         typ      = typ_;
@@ -2022,7 +2035,7 @@ let map_storage_items m = List.fold_left (fun acc (item : M.storage_item) ->
         mk_collection_field id mk_ac_rmed_id
       ]
     | _ ->
-      let typ_ = map_mtype item.typ in
+      let typ_ = map_mtype m item.typ in
       (* let init_value = type_to_init typ_ in *)
       [{
         name     = unloc item.id |> with_dummy_loc;
@@ -3158,6 +3171,7 @@ let fold_exns m body : term list =
   let rec internal_fold_exn acc (term : M.mterm) =
     match term.M.node with
     | M.Mget (_, _, k) -> internal_fold_exn (acc @ [Texn Enotfound]) k
+    | M.Mmapget (_ , _, c, k) -> internal_fold_exn (internal_fold_exn (acc @ [Texn Enotfound]) k) c
     | M.Mnth (_, CKview c, k) -> internal_fold_exn (internal_fold_exn (acc @ [Texn Enotfound]) c) k
     | M.Mnth (_, CKcoll, k) -> internal_fold_exn ((acc @ [Texn Enotfound])) k
     | M.Mset (_, _, k, v) -> internal_fold_exn (internal_fold_exn (acc @ [Texn Enotfound]) k) v
@@ -3320,13 +3334,13 @@ let mk_functions m =
          (s : M.function_struct),
          (t : M.type_)) ->
       let args = (List.map (fun (i, t, _) ->
-          (map_lident i, map_mtype t)
+          (map_lident i, map_mtype m t)
         ) s.args) in
       Dfun {
         name     = map_lident s.name;
         logic    = NoMod;
         args     = args;
-        returns  = map_mtype t;
+        returns  = map_mtype m t;
         raises   = fold_exns m s.body (* |> List.map (add_raise_ctx args src m) *) |> List.map loc_term;
         variants = [];
         requires =
@@ -3346,7 +3360,7 @@ let mk_entries m =
         name     = map_lident s.name;
         logic    = NoMod;
         args     = (List.map (fun (i,t,_) ->
-            (map_lident i, map_mtype t)
+            (map_lident i, map_mtype m t)
           ) s.args);
         returns  = with_dummy_loc Tyunit;
         raises   = fold_exns m s.body |> List.map loc_term;

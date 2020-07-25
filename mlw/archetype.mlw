@@ -849,6 +849,14 @@ module Collection
   = N.get k c.content
 
   (* ------------------------------------------------------------------------ *)
+  let function contains (k : key) (c : collection) : bool
+  =
+  match get k c with
+  | Some _ -> true
+  | None -> false
+  end
+
+  (* ------------------------------------------------------------------------ *)
   let get_force (k : key) (c : collection) : t
   raises { NotFound }
   ensures { keyt result = k }

@@ -421,6 +421,11 @@ let rec pp_term outer pos fmt = function
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
+  | Tgetforce (i,e1,e2) ->
+    Format.fprintf fmt "%a.get_force %a %a"
+      pp_str (String.capitalize_ascii i)
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
   | Tfget (i,e1,e2) ->
     Format.fprintf fmt "%a.fget %a %a"
       pp_str (String.capitalize_ascii i)
@@ -503,6 +508,11 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "%a.elts %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e
+  | Tcontains (i,e1,e2) ->
+    Format.fprintf fmt "%a.contains %a %a"
+      pp_str (String.capitalize_ascii i)
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
   | Tvcontent (i,e) ->
     Format.fprintf fmt "%a.vcontent %a"
       pp_str (String.capitalize_ascii i)
