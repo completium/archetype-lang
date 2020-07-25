@@ -64,8 +64,8 @@ type type_ =
   | Tlist of type_
   | Toption of type_
   | Ttuple of type_ list
-  | Tset of btyp
-  | Tmap of btyp * type_
+  | Tset of type_
+  | Tmap of type_ * type_
   | Trecord of lident
   | Tunit
   | Tstorage
@@ -989,8 +989,8 @@ let rec cmp_type
   | Tlist t1, Tlist t2                       -> cmp_type t1 t2
   | Toption t1, Toption t2                   -> cmp_type t1 t2
   | Ttuple l1, Ttuple l2                     -> List.for_all2 cmp_type l1 l2
-  | Tset b1, Tset b2                         -> cmp_btyp b1 b2
-  | Tmap (k1, v1), Tmap (k2, v2)             -> cmp_btyp k1 k2 && cmp_type v1 v2
+  | Tset b1, Tset b2                         -> cmp_type b1 b2
+  | Tmap (k1, v1), Tmap (k2, v2)             -> cmp_type k1 k2 && cmp_type v1 v2
   | Trecord i1, Trecord i2                   -> cmp_lident i1 i2
   | Tunit, Tunit                             -> true
   | Tstorage, Tstorage                       -> true
@@ -3421,14 +3421,14 @@ module Utils : sig
   val get_asset                          : model -> ident -> asset
   val get_storage                        : model -> storage
   val get_asset_field                    : model -> (ident * ident) -> (ident * type_ * mterm option)
-  val get_asset_key                      : model -> ident -> (ident * btyp)
+  val get_asset_key                      : model -> ident -> (ident * type_)
   val get_field_container                : model -> ident -> ident -> (ident * container)
   val is_storage_attribute               : model -> ident -> bool
   val get_named_field_list               : model -> ident -> 'a list -> (ident * 'a) list
   val get_containers                     : model -> (ident * ident * type_) list (* asset id, asset item *)
   val get_partitions                     : model -> (ident * ident * type_) list (* asset id, asset item *)
   val dest_container                     : type_ -> ident
-  val get_container_asset_key            : model -> ident -> ident -> (ident * ident * btyp)
+  val get_container_asset_key            : model -> ident -> ident -> (ident * ident * type_)
   val get_container_assets               : model -> ident -> ident list
   val get_entries                        : model -> (specification option * function_struct) list
   val get_functions                      : model -> (specification option * function_struct* type_) list
@@ -3466,6 +3466,7 @@ module Utils : sig
   val with_operations                    : model -> bool
   val get_source_for                     : model -> ctx_model -> mterm -> mterm option
   val eval                               : (ident * mterm) list -> mterm -> mterm
+  val mk_rat                             : Core.big_int -> Core.big_int -> mterm
   val get_select_idx                     : model -> ident -> mterm -> int
   val get_sum_idx                        : model -> ident -> mterm -> int
   val with_division                      : model -> bool
@@ -3642,14 +3643,12 @@ end = struct
     with
     | Not_found -> emit_error (AssetFieldNotFound (asset_name, field_name))
 
-  let get_asset_key (m : model) (asset_name : ident) : (ident * btyp) =
+  let get_asset_key (m : model) (asset_name : ident) : (ident * type_) =
     try
       let asset = get_asset m asset_name in
       let key_id = asset.key in
       let (_,key_typ,_) = get_asset_field m (asset_name, key_id) in
-      match key_typ with
-      | Tbuiltin v -> (key_id, v)
-      | _ -> raise Not_found
+      (key_id, key_typ)
     with
     | Not_found -> emit_error (AssetKeyTypeNotFound (asset_name))
 
@@ -3673,7 +3672,7 @@ end = struct
     |> List.map (fun (_,_,t) -> type_to_asset t)
 
   (* returns : asset name, key name, key type *)
-  let get_container_asset_key model asset field : (ident * ident * btyp) =
+  let get_container_asset_key model asset field : (ident * ident * type_) =
     let containers = get_containers model in
     let rec rec_get = function
       | (r,i,t) :: _tl when String.equal r asset &&
@@ -3983,7 +3982,7 @@ end = struct
       | Tcontainer (Tasset an, c) ->
         begin
           let _, t = get_asset_key m (unloc an) in
-          Tcontainer (Tbuiltin t, c)
+          Tcontainer (t, c)
         end
       | _ -> t
     in
@@ -3995,9 +3994,21 @@ end = struct
       begin
         let l, an = deloc an in
         let idparam = mkloc l (an ^ "_values") in
-        Some (mk_mterm (Mvar(idparam, Vparam) ) (Tmap(Bint, Tasset (dumloc "myasset"))))
+        Some (mk_mterm (Mvar(idparam, Vparam) ) (Tmap(Tbuiltin Bint, Tasset (dumloc "myasset"))))
       end
     | _ -> None
+
+  let mk_rat (n : Core.big_int) (d : Core.big_int) : mterm =
+    let mk_int i = mk_mterm (Mint i) (Tbuiltin Bint) in
+    let pos x = Big_int.sign_big_int x >= 0 in
+    let abs x = Big_int.abs_big_int x in
+    let neg x = Big_int.sub_big_int Big_int.zero_big_int x in
+    let mk n d = mk_mterm (Mtuple [mk_int n ; mk_int d]) (Ttuple [Tbuiltin Bint; Tbuiltin Bint]) in
+    let x, y = Core.compute_irr_fract (n, d) in
+    match pos x, pos y with
+    | _ , true     -> mk x y
+    | true, false  -> mk (neg x) (abs y)
+    | false, false -> mk (abs x) (abs y)
 
   let eval (map_const_value : (ident * mterm) list) (mt : mterm) : mterm =
     let get_value (id : ident) : mterm = List.assoc id map_const_value in
@@ -4012,13 +4023,6 @@ end = struct
         | _ -> map_mterm aux mt
       in
       aux mt
-    in
-
-    let mk_rat a b =
-      let a, b = Core.compute_irr_fract (a, b) in
-      let num   = mk_mterm (Mint a) (Tbuiltin Bint) in
-      let denom = mk_mterm (Mint b) (Tbuiltin Bint) in
-      mk_mterm (Mtuple [num; denom]) (Ttuple [Tbuiltin Bint; Tbuiltin Bint])
     in
 
     let is_int (mt : mterm) =
@@ -4066,16 +4070,20 @@ end = struct
           | _ -> assert false
         in
 
+        let neg x = Big_int.sub_big_int Big_int.zero_big_int x in
+
         let rec extract_rat (rat : mterm) : Big_int.big_int * Big_int.big_int =
           let rat = aux rat in
           match rat.node with
           | Mnat n                 -> (n, Big_int.unit_big_int)
           | Mint n                 -> (n, Big_int.unit_big_int)
+          | Mnattoint x            -> extract_rat x
           | Mnattorat x            -> extract_rat x
           | Minttorat x            -> extract_rat x
           | Mrational (num, denom) -> (num, denom)
           | Mtuple [num; denom]    -> (extract_big_int num, extract_big_int denom)
-          | _ -> assert false
+          | Muminus x              -> extract_rat x |> (fun (x, y) -> (neg x, y))
+          | _ -> Format.printf "%a@." pp_mterm rat; assert false
         in
 
         let extract_tez (b : mterm) : Big_int.big_int =
@@ -4165,6 +4173,11 @@ end = struct
             | Rmult  -> mk_rat (Big_int.mult_big_int num1 num2) (Big_int.mult_big_int denom1 denom2)
             | Rdiv   -> mk_rat (Big_int.mult_big_int num1 denom2) (Big_int.mult_big_int num2 denom1)
           end
+        | Mratuminus x, _ -> begin
+            let num, denom = extract_rat (aux x) in
+            mk_rat (neg num) denom
+          end
+
         (* | Mratcmp (op, _a, _b) ->
            begin
             (* let num1, denom1 = extract_rat a in

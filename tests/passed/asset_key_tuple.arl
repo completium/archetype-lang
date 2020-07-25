@@ -1,0 +1,13 @@
+archetype asset_key_tuple
+
+asset my_asset {
+  a : int * nat;
+  v : string;
+} initialized by {
+  {((3i, 4)); "value"}
+}
+
+entry exec () {
+  var str = my_asset[(3i, 4)].v;
+  dorequire(str = "value")
+}

@@ -74,7 +74,7 @@ let pp_model fmt (model : model) =
     | Tcontainer (Tasset an, (Aggregate | Partition)) ->
       let _, ak = Utils.get_asset_key model (unloc an) in
       Format.fprintf fmt "sp.TSet(%a)"
-        pp_btyp ak
+        pp_type ak
     | Tcontainer (t, c) ->
       Format.fprintf fmt "%a %a"
         pp_type t
@@ -90,10 +90,10 @@ let pp_model fmt (model : model) =
         (pp_list " * " pp_type) ts
     | Tset k ->
       Format.fprintf fmt "%a set"
-        pp_btyp k
+        pp_type k
     | Tmap (k, v) ->
       Format.fprintf fmt "(%a, %a) map"
-        pp_btyp k
+        pp_type k
         pp_type_ v
     | Trecord id ->
       Format.fprintf fmt "%a" pp_id id
@@ -227,7 +227,7 @@ let pp_model fmt (model : model) =
            | View -> Format.fprintf fmt ", v"
            | Field (_an, _fn) -> Format.fprintf fmt ", ka"
         ) ()
-        pp_btyp tk
+        pp_type tk
     (* Format.fprintf fmt
        "def select_%a (self, c, p):@\n  \
        reduce(@\n  \
@@ -277,7 +277,7 @@ let pp_model fmt (model : model) =
                 #m[i] = x@\n    \
                 i += 1@\n  \
                 return m[idx]"
-               pp_btyp tk
+               pp_type tk
                an
 
            | View -> Format.fprintf fmt "sp.failwith(\"TODO\")"
@@ -691,7 +691,7 @@ let pp_model fmt (model : model) =
         in
         Format.fprintf fmt "sp.set(l=[%a], t= %a)"
           (pp_list ", " f) l
-          pp_btyp t
+          pp_type t
 
       | Mlitlist l ->
         let t =
@@ -717,7 +717,7 @@ let pp_model fmt (model : model) =
                       | [] -> ()
                       | _  -> Format.fprintf fmt "l = {%a}, " (pp_list ", " (fun fmt (k, v) -> Format.fprintf fmt "%a : %a" f k f v)) l
                     end) l
-                 pp_btyp k
+                 pp_type k
                  pp_type v
              end)
           ()

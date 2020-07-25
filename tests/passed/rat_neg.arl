@@ -1,0 +1,26 @@
+archetype rat_neg
+
+variable a : rational = 1 / 2
+variable b : rational = 1 / (-2)
+variable c : rational = (-1) / 2
+variable d : rational = (-1) / (-2)
+
+variable na : rational = -(1 / 2)
+variable nb : rational = -(1 / (-2))
+variable nc : rational = -((-1) / 2)
+variable nd : rational = -((-1) / (-2))
+
+
+entry exec () {
+  var va : rational = 1 / 2;
+  var vb : rational = 1 / -2;
+  var vc : rational = -1 / 2;
+  var vd : rational = -1 / -2;
+
+  var ca = a + va;
+  var cb = b + vb;
+  var cc = c + vc;
+  var cd = d + vd;
+
+  dorequire( 2 / 4 = 1 / 2)
+}

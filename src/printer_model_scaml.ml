@@ -105,7 +105,7 @@ let pp_model fmt (model : model) =
         pp_container c
     | Tset k ->
       Format.fprintf fmt "%a set"
-        pp_btyp k
+        pp_type k
     | Tlist t ->
       Format.fprintf fmt "%a list"
         pp_type t
@@ -117,7 +117,7 @@ let pp_model fmt (model : model) =
         (pp_list " * " pp_type) ts
     | Tmap (k, v) ->
       Format.fprintf fmt "(%a, %a) map"
-        pp_btyp k
+        pp_type k
         pp_type v
     | Trecord id ->
       Format.fprintf fmt "%a" pp_id id
@@ -148,7 +148,7 @@ let pp_model fmt (model : model) =
          match Map.get key s.%s_assets with@\n  \
          | Some v -> v@\n  \
          | _ -> failwith \"not_found\"@\n"
-        an pp_btyp t an an
+        an pp_type t an an
 
     | Set an ->
       let _, t = Utils.get_asset_key model an in
@@ -156,7 +156,7 @@ let pp_model fmt (model : model) =
         "let set_%s (s, key, asset : storage * %a * %s) : storage =@\n  \
          { s with@\n    \
          %s_assets = Map.update key (Some asset) s.%s_assets; }@\n"
-        an pp_btyp t an
+        an pp_type t an
         an an
 
     | Add an ->
@@ -178,7 +178,7 @@ let pp_model fmt (model : model) =
         "let remove_%s (s, key : storage * %a) : storage =@\n  \
          { s with@\n    \
          %s_assets = Map.update key None s.%s_assets; }@\n"
-        an pp_btyp t
+        an pp_type t
         an an
 
     | Clear _ -> Format.fprintf fmt "// TODO api storage: clear"
@@ -211,7 +211,7 @@ let pp_model fmt (model : model) =
          let asset = { a with %s = List.rev (List.fold_left (fun accu k -> if k = key then accu else k::accu) [] a.%s) } in@\n  \
          %a
          { s with %s_assets = Map.update a.%a (Some asset) s.%s_assets }@\n"
-        an fn an pp_btyp tt
+        an fn an pp_type tt
         fn fn
         (pp_do_if (match c with | Partition -> true | _ -> false) (fun fmt -> Format.fprintf fmt "let s = remove_%s(s, key) in@\n")) ft
         an pp_str k an
@@ -236,8 +236,8 @@ let pp_model fmt (model : model) =
          accu || x = key@\n    \
          ) false l@\n"
         an
-        pp_btyp t
-        pp_btyp t
+        pp_type t
+        pp_type t
 
     | Nth (an, _) ->
       let _, t = Utils.get_asset_key model an in
@@ -259,7 +259,7 @@ let pp_model fmt (model : model) =
          | None -> failwith \"index out of bounds\"@\n  \
          | Some k -> get_%s (s, k)@\n  \
          end@\n"
-        an pp_btyp t an
+        an pp_type t an
         an
 
     | Select (an, _, _, _) ->
@@ -272,7 +272,7 @@ let pp_model fmt (model : model) =
          then a.%s::accu@\n      \
          else accu@\n    \
          ) [] l@\n"
-        an pp_btyp t an pp_btyp t
+        an pp_type t an pp_type t
         an
         k
 
@@ -288,7 +288,7 @@ let pp_model fmt (model : model) =
         "let count_%s (l : %a list) : int =@\n  \
          List.length l@\n"
         an
-        pp_btyp t
+        pp_type t
 
     | Sum (an, _, t, _p) -> (* TODO *)
       let _, tk = Utils.get_asset_key model an in
@@ -302,7 +302,7 @@ let pp_model fmt (model : model) =
          in@\n      \
          accu + x@\n    \
          ) %s l@\n"
-        an pp_btyp tk pp_type t
+        an pp_type tk pp_type t
         an
         (show_zero t)
 
@@ -314,8 +314,8 @@ let pp_model fmt (model : model) =
          accu@\n  \
          ) l []@\n"
         an
-        pp_btyp t
-        pp_btyp t
+        pp_type t
+        pp_type t
 
     | Tail (an, _) ->
       let _, t = Utils.get_asset_key model an in
@@ -325,8 +325,8 @@ let pp_model fmt (model : model) =
          accu@\n  \
          ) l []@\n"
         an
-        pp_btyp t
-        pp_btyp t
+        pp_type t
+        pp_type t
   in
 
   let pp_api_list fmt = function
@@ -1466,7 +1466,7 @@ let pp_model fmt (model : model) =
       | Tcontainer (Tasset an, _) ->
         let _, t = Utils.get_asset_key model (unloc an) in
         Format.fprintf fmt "%a list"
-          pp_btyp t
+          pp_type t
       | _ -> pp_type fmt t
     in
     Format.fprintf fmt "%a : %a;"
