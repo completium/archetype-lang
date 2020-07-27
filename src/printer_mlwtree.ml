@@ -91,6 +91,7 @@ let needs_paren = function
   | Tenum _  -> false
   | Tnil _   -> false
   | Tint _   -> false
+  | Tstring _ -> false
   | Tnone    -> false
   | Tletin _ -> false
   | Tif _    -> false
@@ -129,7 +130,7 @@ let pp_type fmt typ =
     let str =
       match t with
       | Tyint         -> "int"
-      | Tystring      -> "astring"
+      | Tystring      -> "string"
       | Tydate        -> "date"
       | Tyaddr        -> "address"
       | Tyrole        -> "role"
@@ -367,6 +368,7 @@ let rec pp_term outer pos fmt = function
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e
   | Tint i -> pp_str fmt (Big_int.string_of_big_int i)
+  | Tstring s -> Format.fprintf fmt "\"%a\"" pp_str s
   | Tforall (ud,b) ->
     Format.fprintf fmt "@[forall %a.@\n%a@]"
       (pp_list ", " pp_univ_decl) ud

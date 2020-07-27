@@ -165,6 +165,7 @@ type ('e,'t,'i) abstract_term =
   | Tdlte   of 't * 'e * 'e * 'e (* _ < _ <= _ *)
   (* literals *)
   | Tint    of Core.big_int
+  | Tstring of string
   | Taddr   of string
   | Tbytes  of string
   (* spec *)
@@ -453,6 +454,7 @@ and map_abstract_term
   | Tdlet (t,e1,e2,e3) -> Tdlet (map_t t,map_e e1,map_e e2,map_e e3)
   | Tdlte (t,e1,e2,e3) -> Tdlte (map_t t,map_e e1,map_e e2,map_e e3)
   | Tint i             -> Tint i
+  | Tstring s             -> Tstring s
   | Taddr s            -> Taddr s
   | Tbytes s           -> Tbytes s
   | Tforall (l,e)      -> Tforall (List.map (map_abstract_univ_decl map_t map_i) l, map_e e)
@@ -857,6 +859,7 @@ let compare_abstract_term
   | Tdlet (t1,e1,e2,e3), Tdlet (t2,f1,f2,f3) -> cmpt t1 t2 && cmpe e1 f1 && cmpe e2 f2 && cmpe e3 f3
   | Tdlte (t1,e1,e2,e3), Tdlte (t2,f1,f2,f3) -> cmpt t1 t2 && cmpe e1 f1 && cmpe e2 f2 && cmpe e3 f3
   | Tint i1, Tint i2 -> compare i1 i2 = 0
+  | Tstring s1, Tstring s2 -> compare s1 s2 = 0
   | Taddr s1, Taddr s2 -> compare s1 s2 = 0
   | Tbytes s1, Tbytes s2 -> compare s1 s2 = 0
   | Tforall (l1,e1), Tforall (l2,e2) -> List.for_all2 (fun (i1,t1) (i2,t2) ->

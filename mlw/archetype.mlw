@@ -9,7 +9,6 @@ theory Types
   type address   = int
   type tez       = int
   type date      = int
-  type astring   = int
   type bytes     = int
   type signature = int
   type chain_id  = int
@@ -32,13 +31,13 @@ module Utils
   (* ------------------------------------------------------------------------ *)
   (* Tuples *)
 
-  let function fst (a : (int, int)) : int
+  let function fst (a : ('t1, 't2)) : 't1
   =
   match a with
   | (l,_) -> l
   end
 
-  let function snd (a: (int, int)) : int
+  let function snd (a: ('t1, 't2)) : 't2
   =
   match a with
   | (_,r) -> r
@@ -179,12 +178,27 @@ module Utils
 
   (* ----------------------------------------------------------------------- *)
   (* String *)
+  use string.String as S
 
-  let function str_concat (s1 : astring) (s2 : astring) : astring = s1 + s2
+  val function str_concat string string : string
 
-  let function substring  (_ : astring) (_ : int) (_ : int) = 0
+  axiom str_concat_spec : forall s1 s2.
+  str_concat s1 s2 = S.concat s1 s2
 
-  let function str_length (_ : astring) : int = 0
+  val function substring string int : string
+
+  axiom substring_spec : forall s i.
+  substring s i = S.substring s 0 i
+
+  val function str_length string : int
+
+  axiom str_length_spec : forall s.
+  str_length s = S.length s
+
+  val function str_eq (_ : string) (_ : string) : bool
+
+  axiom str_eq_spec : forall s1 s2.
+  str_eq s1 s1 <-> s1 = s2
 
   let function byt_concat (b1 : bytes) (b2 : bytes) : bytes = b1 + b2
 
@@ -427,7 +441,7 @@ module Undup
 
 end
 
-module IntListUtils
+module ListUtils
   use int.Int
   use list.List
   use list.Mem
@@ -437,7 +451,7 @@ module IntListUtils
   use option.Option
 
   (* ------------------------------------------------------------------------ *)
-  let rec nth (i : int) (l : list int) : option int
+  let rec nth (i : int) (l : list 't) : option 't
   variant { l }
   ensures { 0 <= i < length l -> forall k. result = Some k -> mem k l }
   ensures { not (0 <= i < length l) -> result = None }
@@ -452,7 +466,7 @@ module IntListUtils
   lemma nth_con : forall k : int. nth 0 (Cons k Nil) = Some k
 
   (* ------------------------------------------------------------------------ *)
-  let rec function head (n : int) (l : list int) : list int
+  let rec function head (n : int) (l : list 't) : list 't
   variant { l }
   ensures { forall k. mem k result -> mem k l }
   ensures { 0 <= n <= length l -> length result = n }
@@ -468,26 +482,11 @@ module IntListUtils
   end
 
   (* ------------------------------------------------------------------------ *)
-  let rec function tail (n : int) (l : list int) : list int
+  let rec function tail (n : int) (l : list 't) : list 't
   variant { l }
   ensures { forall k. mem k result -> mem k l }
   ensures { 0 <= n <= length l -> length result = n }
   = reverse (head n (reverse l))
-
-  (* ------------------------------------------------------------------------ *)
-  let rec function eql l1 l2 : bool
-  variant { l1, l2 }
-  ensures { result <-> l1 = l2 }
-  =
-  match l1, l2 with
-  | Cons e1 tl1, Cons e2 tl2 ->
-    if e1 = e2 then eql tl1 tl2 else false
-  | Nil, Nil -> true
-  | _ -> false
-  end
-
-  (* ------------------------------------------------------------------------ *)
-  lemma eqP : forall l1 l2. eql l1 l2 <-> l1 = l2
 
 end
 
@@ -499,16 +498,25 @@ module CollectionSet
   use option.Option
 
   (* ------------------------------------------------------------------------ *)
-  type t
+  type t (* asset *)
 
   (* ------------------------------------------------------------------------ *)
-  val function proj t : int
+  type tk (* key *)
+
+  (* ------------------------------------------------------------------------ *)
+  val function proj t : tk
 
   (* ------------------------------------------------------------------------ *)
   val function eqt t t : bool
 
   (* ------------------------------------------------------------------------ *)
+  val function eqk tk tk : bool
+
+  (* ------------------------------------------------------------------------ *)
   axiom eqP : forall x y. eqt x y <-> x = y
+
+  (* ------------------------------------------------------------------------ *)
+  axiom eqkP : forall x y. eqk x y <-> x = y
 
   (* ------------------------------------------------------------------------ *)
   val function norm (list t) : list t
@@ -531,21 +539,21 @@ module CollectionSet
   let function mk (l : list t) = F.mk l
 
   (* GET INTERNAL ----------------------------------------------------------- *)
-  let rec function internal_get (k : int) (l : list t) : option t
+  let rec function internal_get (k : tk) (l : list t) : option t
   variant { l }
   ensures { forall e. result = Some e -> proj e = k }
   ensures { result = None -> forall e. M.mem e l -> proj e <> k }
   =
   match l with
   | Cons e tl ->
-    if proj e = k
+    if eqk (proj e) k
     then Some e
     else internal_get k tl
   | Nil -> None
   end
 
   (* GET -------------------------------------------------------------------- *)
-  let function get (k : int) (s : cset) : option t
+  let function get (k : tk) (s : cset) : option t
   ensures { result = None -> forall e. F.fmem e s -> proj e <> k }
   ensures { forall e. result = Some e -> proj e = k }
   = internal_get k (F.content s)
@@ -555,13 +563,13 @@ module CollectionSet
   = F.mk (Cons a (F.content s))  (* normalisation is done by F.mk *)
 
   (* REMOVE ----------------------------------------------------------------- *)
-  let function remove (k : int) (s : cset) : cset
+  let function remove (k : tk) (s : cset) : cset
   =
   let rec internal_remove (l : list t) : list t
   variant { l }
   = match l with
   | Cons e tl ->
-    if proj e = k then tl
+    if eqk (proj e) k then tl
     else Cons e (internal_remove tl)
   | Nil -> Nil
   end in
@@ -605,24 +613,27 @@ module View
   use list.Distinct
   use option.Option
   use Types
-  use IntListUtils as I
+  use ListUtils as I
 
   (* ------------------------------------------------------------------------ *)
-  let function eqk (k1 k2: key) : bool = k1 = k2
+  type tk
 
   (* ------------------------------------------------------------------------ *)
-  lemma eqP : forall k1 k2: key. eqk k1 k2 <-> k1 = k2
+  val function eqk tk tk : bool
 
   (* ------------------------------------------------------------------------ *)
-  clone Undup as U with type t = key,
+  lemma eqP : forall k1 k2: tk. eqk k1 k2 <-> k1 = k2
+
+  (* ------------------------------------------------------------------------ *)
+  clone Undup as U with type t = tk,
                         val eqt = eqk
 
   (* ------------------------------------------------------------------------ *)
-  predicate unduped (l : list key) = l = U.undup l
+  predicate unduped (l : list tk) = l = U.undup l
 
   (* ------------------------------------------------------------------------ *)
   type view = {
-    content : list key
+    content : list tk
   } invariant {
     unduped content
   } by { content = Nil }
@@ -633,7 +644,7 @@ module View
   = content v
 
   (* ------------------------------------------------------------------------ *)
-  let function contains (k : key) (v:view) : bool
+  let function contains (k : tk) (v:view) : bool
   ensures { result <-> M.mem k (elts v) }
   = U.mem k (elts v)
 
@@ -647,7 +658,7 @@ module View
   lemma undupI : forall l. U.unduped (U.undup l)
 
   (* ------------------------------------------------------------------------ *)
-  let function mk (l: list key)
+  let function mk (l: list tk)
   = { content = U.undup l }
 
   (* ------------------------------------------------------------------------ *)
@@ -657,7 +668,7 @@ module View
   predicate is_empty (v : view) = v = empty
 
   (* ------------------------------------------------------------------------ *)
-  let function nth (i : int) (v : view) : option key
+  let function nth (i : int) (v : view) : option tk
   ensures { 0 <= i < card v -> forall k. result = Some k -> contains k v }
   ensures { not (0 <= i < card v) -> result = None }
   = I.nth i (elts v)
@@ -694,6 +705,24 @@ module View
   (* ------------------------------------------------------------------------ *)
   lemma drop_none: forall v. tail 0 v = mk Nil
 
+  (* ------------------------------------------------------------------------ *)
+  let function eq (v1 v2 : view) : bool
+  =
+  let rec function eql l1 l2 : bool
+  variant { l1, l2 }
+  ensures { result <-> l1 = l2 }
+  =
+  match l1, l2 with
+  | Cons e1 tl1, Cons e2 tl2 ->
+    if eqk e1 e2 then eql tl1 tl2 else false
+  | Nil, Nil -> true
+  | _ -> false
+  end in
+  eql v1.content v2.content
+
+  (* ------------------------------------------------------------------------ *)
+  lemma eqvP : forall v1 v2. eq v1 v2 <-> v1 = v2
+
 end
 
 (* FIELD is a sorted and unduped fset of key -------------------------------- *)
@@ -705,29 +734,36 @@ module Field
   use View as V
 
   (* ------------------------------------------------------------------------ *)
-  let function proj (x : key) = x
+  type tk
 
   (* ------------------------------------------------------------------------ *)
-  let function eqt (x1 : key) (x2 : key) = x1 = x2
+  val function eqk tk tk : bool
 
   (* ------------------------------------------------------------------------ *)
-  let predicate le k1 k2 = k1 <= k2
+  let function proj (x : tk) = x
 
   (* ------------------------------------------------------------------------ *)
-  clone InsertionSort as S with type elt = key,
+  val function cmp tk tk : bool
+
+  (* ------------------------------------------------------------------------ *)
+  let predicate le k1 k2 = cmp k1 k2
+
+  (* ------------------------------------------------------------------------ *)
+  clone InsertionSort as S with type elt = tk,
                                 val le = le
 
   (* ------------------------------------------------------------------------ *)
-  clone Undup as U with type t = key,
-                        val eqt = eqt
+  clone Undup as U with type t = tk,
+                        val eqt = eqk
 
   (* ------------------------------------------------------------------------ *)
-  let function norm (l : list key) = S.insertion_sort (U.undup l)
+  let function norm (l : list tk) = S.insertion_sort (U.undup l)
 
   (* ------------------------------------------------------------------------ *)
-  clone CollectionSet as N with type t     = key,
+  clone CollectionSet as N with type t     = tk,
+                                type tk    = tk,
                                 val proj   = proj,
-                                val  eqt   = eqt,
+                                val  eqt   = eqk,
                                 val  norm  = norm,
                                 axiom .
 
@@ -735,7 +771,7 @@ module Field
   type field = N.cset
 
   (* ------------------------------------------------------------------------ *)
-  predicate mem (k : key) (f : field) = N.mem k f
+  predicate mem (k : tk) (f : field) = N.mem k f
 
   (* ------------------------------------------------------------------------ *)
   let function elts (f : field) = N.elts f
@@ -749,11 +785,11 @@ module Field
   (* ------------------------------------------------------------------------ *)
   let function eq (f1 f2 : field) : bool
   =
-  let rec internal_eq (l1 l2 : list key) : bool
+  let rec internal_eq (l1 l2 : list tk) : bool
   variant { l1, l2 }
   = match l1,l2 with
   | Cons k1 tl1, Cons k2 tl2 ->
-    if k1 = k2 then
+    if eqk k1 k2 then
       internal_eq tl1 tl2
     else false
   | Nil,Nil -> true
@@ -762,16 +798,16 @@ module Field
   internal_eq (N.elts f1) (N.elts f2)
 
   (* ------------------------------------------------------------------------ *)
-  let function add (k : key) (f : field) = N.add k f
+  let function add (k : tk) (f : field) = N.add k f
 
   (* ------------------------------------------------------------------------ *)
-  let function remove (k : key) (f : field) = N.remove k f
+  let function remove (k : tk) (f : field) = N.remove k f
 
-  (* ------------------------------------------------------------------------ *)
+  (* (* ------------------------------------------------------------------------ *)
   let function to_view (f : field) : V.view
   ensures { S.sorted (V.elts result) }
   ensures { forall k. V.contains k result <-> M.mem k (N.elts f) }
-  = V.mk (N.elts f)
+  = V.mk (N.elts f) *)
 
 end
 
@@ -786,16 +822,25 @@ module Collection
   use View as V
 
   (* ------------------------------------------------------------------------ *)
+  type tk
+
+  (* ------------------------------------------------------------------------ *)
+  val function eqk tk tk : bool
+
+  (* ------------------------------------------------------------------------ *)
+  val function cmpk tk tk : bool
+
+  (* ------------------------------------------------------------------------ *)
   type t
 
   (* ------------------------------------------------------------------------ *)
-  val function keyt t : key
+  val function keyt t : tk
 
   (* ------------------------------------------------------------------------ *)
   val function eqt t t : bool
 
   (* ------------------------------------------------------------------------ *)
-  let predicate le t1 t2 = keyt t1 <= keyt t2
+  let predicate le t1 t2 = cmpk (keyt t1) (keyt t2)
 
   (* ------------------------------------------------------------------------ *)
   clone InsertionSort as S with type elt = t,
@@ -809,9 +854,11 @@ module Collection
   let function norm (l : list t) = S.insertion_sort (U.undup l)
 
   (* ------------------------------------------------------------------------ *)
-  clone CollectionSet as N with type t     = t,
+  clone CollectionSet as N with type tk    = tk,
+                                type t     = t,
                                 val proj   = keyt,
                                 val eqt    = eqt,
+                                val eqk    = eqk,
                                 val norm   = norm,
                                 axiom .
 
@@ -842,14 +889,14 @@ module Collection
   = { content = N.mk l }
 
   (* ------------------------------------------------------------------------ *)
-  let function get (k : key) (c : collection) : option t
+  let function get (k : tk) (c : collection) : option t
   ensures { result = None -> forall e. mem e c -> keyt e <> k }
   ensures { forall e. result = Some e -> keyt e = k }
   ensures { forall e. result = Some e <-> mem e c }
   = N.get k c.content
 
   (* ------------------------------------------------------------------------ *)
-  let function contains (k : key) (c : collection) : bool
+  let function contains (k : tk) (c : collection) : bool
   =
   match get k c with
   | Some _ -> true
@@ -857,7 +904,7 @@ module Collection
   end
 
   (* ------------------------------------------------------------------------ *)
-  let get_force (k : key) (c : collection) : t
+  let get_force (k : tk) (c : collection) : t
   raises { NotFound }
   ensures { keyt result = k }
   ensures { mem result c }
@@ -887,14 +934,14 @@ module Collection
   mk (N.add a c.content)
 
   (* ------------------------------------------------------------------------ *)
-  let function remove (k : key) (c : collection) : collection
-  ensures { forall i. i <> k -> get i c = get i result }
+  let function remove (k : tk) (c : collection) : collection
+  ensures { forall i. not (eqk i k) -> get i c = get i result }
   ensures { get k result = None }
   =
   mk (N.remove k c.content)
 
   (* ------------------------------------------------------------------------ *)
-  let function set (k : key) (a : t) (c : collection) : collection
+  let function set (k : tk) (a : t) (c : collection) : collection
   requires { keyt a = k }
   requires { get k c <> None }
   ensures { get k result = Some a }
@@ -909,14 +956,14 @@ module Collection
   =
   match l with
   | Cons e tl ->
-    if keyt e = k
+    if eqk (keyt e) k
     then Cons a (internal_set tl)
     else Cons e (internal_set tl)
   | Nil -> Nil
   end in
   mk (N.mk (internal_set (N.elts c.content)))
 
-  (* ------------------------------------------------------------------------ *)
+  (* (* ------------------------------------------------------------------------ *)
   let function view_to_list (v : V.view) (c : collection) : list t
   (* TODO : adds postcondition: this is used in 'select' storage API *)
   =
@@ -951,7 +998,7 @@ module Collection
   let rec function to_view (c : collection) : V.view
   ensures { forall k. V.contains k result <-> forall e. get k c = Some e <-> keyt e = k }
   =
-  list_to_view (N.elts c.content)
+  list_to_view (N.elts c.content) *)
 
   (* ------------------------------------------------------------------------ *)
   function union (c1 c2 : collection) : collection
@@ -1087,18 +1134,35 @@ module Sum
 
   (* ------------------------------------------------------------------------ *)
   type t
+
+  (* ------------------------------------------------------------------------ *)
+  type tk
+
   (* ------------------------------------------------------------------------ *)
   type collection
 
   (* ------------------------------------------------------------------------ *)
-  val function field t : int
-  (* ------------------------------------------------------------------------ *)
-  val function get int collection : option t
+  type view
 
   (* ------------------------------------------------------------------------ *)
-  let function sum (v : V.view) (c : collection) : int
+  val function field t : int
+
+  (* ------------------------------------------------------------------------ *)
+  val function get tk collection : option t
+
+  (* ------------------------------------------------------------------------ *)
+  val function elts view : list tk
+
+  (* ------------------------------------------------------------------------ *)
+  val function mk (list tk) : view
+
+  (* ------------------------------------------------------------------------ *)
+  val function card view : int
+
+  (* ------------------------------------------------------------------------ *)
+  let function sum (v : view) (c : collection) : int
   =
-  let rec function internal_sum (l : list int) (acc : int) : int
+  let rec function internal_sum (l : list tk) (acc : int) : int
   variant { l }
   =
     match l with
@@ -1110,16 +1174,16 @@ module Sum
      | Nil -> acc
     end
   in
-  internal_sum (V.elts v) 0
+  internal_sum (elts v) 0
 
   (* ------------------------------------------------------------------------ *)
   lemma sum_empty:
-    forall v : V.view, c : collection. V.card v = 0 -> sum v c = 0
+    forall v : view, c : collection. card v = 0 -> sum v c = 0
 
   (* ------------------------------------------------------------------------ *)
-  lemma sum_singleton: forall k : int, a : t, c : collection.
+  lemma sum_singleton: forall k : tk, a : t, c : collection.
   get k c = Some a ->
-  sum (V.mk (Cons k Nil)) c = field a
+  sum (mk (Cons k Nil)) c = field a
 
 end
 

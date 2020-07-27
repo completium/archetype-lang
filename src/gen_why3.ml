@@ -137,6 +137,37 @@ let rec map_mtype m (t : M.type_) : loc_typ =
       | M.Tlist t                             -> Tylist (map_mtype m t)
       | _ -> print_endline (Format.asprintf "%a@." M.pp_type_ t); assert false)
 
+let rec mk_eq_type e1 e2 = function
+| Tyunit -> Ttrue
+| Tybool -> Tor (Tpand (Tvar e1,Tvar e2),Tpand(Tnot (Tvar e1), Tnot (Tvar e2)))
+| Tyrational -> Tapp (Tvar "rat_eq",[Tvar e1; Tvar e2])
+| Tystring -> Tapp (Tvar "str_eq", [Tvar e1; Tvar e2])
+| Tyasset a -> Tapp (Tvar ("eq_"^a),[Tvar e1; Tvar e2])
+| Typartition a -> Teqfield(a, Tvar e1, Tvar e2)
+| Tyaggregate a -> Teqfield(a, Tvar e1, Tvar e2)
+| Tyenum i -> Tapp (Tvar ("cmp_"^i),[Tvar e1; Tvar e2])
+| Tyoption t -> Tmatch (
+  Ttuple [Tvar e1; Tvar e2], [
+    Tpatt_tuple [Tpsome (e1^"v1"); Tpsome (e2^"v2")], mk_eq_type (e1^"v1") (e2^"v2") t;
+    Tpatt_tuple [Twild;Twild], Tfalse
+  ])
+| Tytuple l ->
+  let cmps = List.mapi (fun i t ->
+    let e1i = e1^(string_of_int i) in
+    let e2i = e2^(string_of_int i) in
+    mk_eq_type e1i e2i t
+  ) l in
+  let cmp = List.fold_left (fun acc cmp -> Tpand (acc,cmp)) (List.hd cmps) (List.tl cmps) in
+  Tmatch (
+    Ttuple [Tvar e1; Tvar e2], [
+      Tpatt_tuple [
+        Tpatt_tuple (List.mapi (fun i _ -> Tconst (e1^(string_of_int i)))l);
+        Tpatt_tuple (List.mapi (fun i _ -> Tconst (e2^(string_of_int i)))l)
+      ], Tif (cmp, Ttrue, Some Tfalse);
+      Tpatt_tuple [Twild;Twild], Tfalse
+    ])
+| _ -> Teq (Tyint, Tvar e1, Tvar e2)
+
 (* Trace -------------------------------------------------------------------------*)
 type change =
   | CAdd of ident
@@ -696,35 +727,25 @@ let cap s = mk_loc s.loc (String.capitalize_ascii s.obj)
 
 (* Map type -------------------------------------------------------------------*)
 
-let mk_tuple_typ m k v = with_dummy_loc (Tytuple [map_mtype m k; map_mtype m v])
-
-let mk_eq_pair id typ = Dfun {
+let mk_eq_tuple id t = Dfun {
   name = "eq_" ^ id |> with_dummy_loc;
   logic = Logic;
   args = [
-    with_dummy_loc "e1", typ;
-    with_dummy_loc "e2", typ
+    with_dummy_loc "e1", t;
+    with_dummy_loc "e2", t
   ];
   returns = Tybool |> with_dummy_loc;
   raises = [];
   variants = [];
   requires = [];
   ensures = [];
-  body = loc_term (Tmatch (
-    Ttuple [Tvar "e1"; Tvar "e2"], [
-      Tpatt_tuple [
-        Tpatt_tuple [Tconst "e1f"; Tconst "e1s"];
-        Tpatt_tuple [Tconst "e2f"; Tconst "e2s"]
-      ], Tif (Tpand(Teq(Tyint,Tvar "e1f",Tvar "e2f"),Teq(Tyint, Tvar "e1s",Tvar "e2s")), Ttrue, Some Tfalse);
-      Tpatt_tuple [Twild;Twild], Tfalse
-    ]
-  ));
+  body = loc_term (mk_eq_type "e1" "e2" (unloc_type t));
 }
 
-let mk_map_clone id typ =
+let mk_map_clone id t =
   Dclone ([gArchetypeDir;gArchetypeColl] |> wdl,
     String.capitalize_ascii id |> with_dummy_loc, [
-      Ctype ("t" |> with_dummy_loc, typ);
+      Ctype ("t" |> with_dummy_loc, t);
       Cval  ("keyt" |> with_dummy_loc, "fst" |> with_dummy_loc);
       Cval  ("eqt" |> with_dummy_loc, "eq_" ^ id |> with_dummy_loc)
     ]
@@ -733,9 +754,10 @@ let mk_map_clone id typ =
 let mk_map_type m (t : M.type_) =
   match t with
   | Tmap (k,v) ->
+    let t = M.Ttuple [k;v] in
     let map_name = mk_map_name m t in
-    let typ : loc_typ = mk_tuple_typ m k v in [
-      mk_eq_pair map_name typ;
+    let typ = map_mtype m t in [
+      mk_eq_tuple map_name typ;
       mk_map_clone map_name typ
     ]
   | _ -> assert false
@@ -1009,23 +1031,15 @@ let mk_cmp_enums m (r : M.asset) =
           ));
       })
 
-let mk_eq_asset _m (r : M.asset) =
+let mk_eq_asset m (r : M.asset) =
   let cmps = List.map (fun (item : M.asset_item) ->
-      let f1 = Tdoti("a1",unloc item.name) in
-      let f2 = Tdoti("a2",unloc item.name) in
-      match item.type_ with
-      | Tasset a -> Tapp (Tvar ("eq_"^(unloc a)),[f1;f2])
-      | Tcontainer (Tasset a, Collection) -> Teqfield(unloc a,f1,f2)
-      | Tcontainer (Tasset a, Partition) -> Teqfield(unloc a,f1,f2)
-      | Tcontainer (Tasset a, Aggregate) -> Teqfield(unloc a,f1,f2)
-      | Tbuiltin Bbool -> (* a = b is (a && b) || (not a && not b) *)
-        Tor (Tpand (f1,f2),Tpand(Tnot f1, Tnot f2))
-      | Tbuiltin Brational ->
-        Tpand (Teq (Tyint,Tfst f1,Tfst f2), Teq(Tyint,Tsnd f1, Tsnd f2))
-      | Ttuple [Tbuiltin Bint;Tbuiltin Bint] ->
-        Tpand (Teq (Tyint,Tfst f1,Tfst f2), Teq(Tyint,Tsnd f1, Tsnd f2))
-      | Tenum lid -> Tapp (Tvar ("cmp_"^(unloc lid)),[f1;f2])
-      | _ -> Teq (Tyint,f1,f2)
+      let id1 = (unloc item.name)^"1" in
+      let id2 = (unloc item.name)^"2" in
+      Tletin (false, id1, None, Tdoti("a1",unloc item.name),
+        Tletin (false, id2, None, Tdoti ("a2",unloc item.name),
+          mk_eq_type id1 id2 (unloc_type (map_mtype m item.type_))
+        )
+      )
     ) r.values in
   Dfun  {
     name = "eq_" ^ (unloc r.name) |> with_dummy_loc;
@@ -1358,7 +1372,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mbool true -> Ttrue
     | Menum               _ -> error_not_supported "Menum"
     | Mrational (l,r) -> Ttuple([ loc_term (Tint l); loc_term (Tint r)])
-    | Mstring v -> Tint (sha v)
+    | Mstring v -> Tstring v
     | Mcurrency (i, Tz)   -> Tint (Big_int.mult_int_big_int 1000000 i)
     | Mcurrency (i, Mtz)  -> Tint (Big_int.mult_int_big_int 1000 i)
     | Mcurrency (i, Utz)  -> Tint i
