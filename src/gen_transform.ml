@@ -571,6 +571,9 @@ let rec is_literal (mt : mterm) : bool =
   | Mlitrecord _
   | Mcaller
     -> true
+  | Mnattoint v
+  | Mnattorat v
+  | Minttorat v
   | Mcast (_, _, v) -> is_literal v
   | _ -> false
 
