@@ -252,6 +252,7 @@ let compile (filename, channel) =
   |> cont !Options.opt_ptc (Format.printf "%a@." Printer_model_type_contract.pp_ptc_model)
   |> raise_if_error post_model_error check_and_replace_init_caller
   |> raise_if_error post_model_error check_duplicated_keys_in_asset
+  |> raise_if_error post_model_error check_no_dv_for_asset_key
   |> generate_target
 
 let close dispose channel =

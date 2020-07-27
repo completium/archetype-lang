@@ -12,6 +12,7 @@ type error_desc =
   | NoEmptyContainerForInitAsset of string * string * container
   | NoEmptyContainerForDefaultValue of string * string * container
   | NoClearForPartitionAsset of ident
+  | DefaultValueOnKeyAsset of ident
   | CallerNotSetInInit
   | DuplicatedKeyAsset of ident
   | OnlyLiteralInAssetInit
@@ -51,6 +52,9 @@ let pp_error_desc fmt = function
 
   | OnlyLiteralInAssetInit ->
     Format.fprintf fmt "only literal is allowed for asset field initialisation"
+
+  | DefaultValueOnKeyAsset an ->
+    Format.fprintf fmt "default value on key for asset \"%s\"" an
 
   | NoEntrypoint -> Format.fprintf fmt "No entrypoint found (action or transtion)"
 
@@ -505,6 +509,23 @@ let check_empty_container_on_asset_default_value (model : model) : model =
   if List.is_not_empty l then raise (Error.Stop 5);
   model
 
+let check_no_dv_for_asset_key (model : model) : model =
+  let errors : (Location.t * error_desc) list ref = ref [] in
+  List.iter
+    (fun d ->
+       match d with
+       | Dasset dasset -> begin
+           let key = dasset.key in
+           try
+             let field = List.find (fun (x : asset_item) -> String.equal (unloc x.name) key) dasset.values in
+             match field.default with
+             | Some dv -> errors := (dv.loc, DefaultValueOnKeyAsset (unloc dasset.name))::!errors
+             | _ -> ()
+           with Not_found -> assert false
+         end
+       | _ -> ()) model.decls;
+  List.iter emit_error !errors;
+  model
 
 let check_and_replace_init_caller (model : model) : model =
   let caller = !Options.opt_caller in
