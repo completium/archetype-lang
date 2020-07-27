@@ -500,6 +500,8 @@ let mk_sort_clone _m asset fields =
 
 (* Select --------------------------------------------------------------------*)
 
+let match_get asset collection key do_ neutral = Tmatch (Tget (asset, collection, key), [Tpsome "a", do_; Twild, neutral])
+
 (* TODO : complete mapping *)
 let rec mk_afun_test = function
   | Tdot (Tvar v,f) when compare v "the" = 0 -> Tdot (Tvar "a",f)
@@ -522,12 +524,16 @@ let mk_select_body asset key mlw_test : term =
       requires = [];
       ensures  = [];
       body     =
-        let some = Tif(mk_afun_test mlw_test,
-                      Tcons (gListAs, Tdoti ("a",key),Tapp (Tvar ("internal_select"),[Tvar "tl"])),
-                      Some (Tapp (Tvar ("internal_select"),[Tvar "tl"]))) in
-        Tmlist (gListAs,Tnil gListAs,"l","a","tl",some);
+        let collection = Tvar "c" in
+        let key_ = Tvar "i" in
+        let neutral = Tapp (Tvar ("internal_select"), [Tvar "tl"]) in
+        let do_ = Tif(mk_afun_test mlw_test,
+                       Tcons (gListAs, Tdoti ("i",key),Tapp (Tvar ("internal_select"), [Tvar "tl"])),
+                       Some (neutral)) in
+        let ll = match_get asset collection key_ do_ neutral in
+        Tmlist (gListAs, Tnil gListAs, "l", "i", "tl", ll);
     },
-    Tmkview (asset,(Tapp (Tvar "internal_select",[Tviewtolist(asset, Tvar "v", Tvar "c")])))
+    Tmkview (asset, (Tapp (Tvar "internal_select", [Ttoview (asset, Tvar "v")])))
   )
 
 (* TODO : complete mapping
