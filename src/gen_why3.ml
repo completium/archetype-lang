@@ -528,7 +528,7 @@ let mk_select_body asset key mlw_test : term =
         let key_ = Tvar "i" in
         let neutral = Tapp (Tvar ("internal_select"), [Tvar "tl"]) in
         let do_ = Tif(mk_afun_test mlw_test,
-                       Tcons (gListAs, Tdoti ("i",key),Tapp (Tvar ("internal_select"), [Tvar "tl"])),
+                       Tcons (gListAs, Tdoti ("i", key),Tapp (Tvar ("internal_select"), [Tvar "tl"])),
                        Some (neutral)) in
         let ll = match_get asset collection key_ do_ neutral in
         Tmlist (gListAs, Tnil gListAs, "l", "i", "tl", ll);
@@ -658,19 +658,21 @@ let mk_fremoveif m asset fn test mlw_test only_formula args =
             requires = [];
             ensures  = [];
             body     =
+              let collection = Tvar "c" in
+              let key_ = Tvar "i" in
               let remove = Tapp (Tvar ("remove_" ^ asset ^ "_" ^ fn),
                                  [Tvar "k"; Tdoti ("a", okey)]) in
+              let neutral = Tapp (Tvar ("internal_removeif"),[Tvar "tl"]) in
+              let do_ = Tif(mk_afun_test mlw_test, Ttry(remove,[Enotfound,Tunit]), None) in
               let some =
                 Tseq [
-                  Tif(mk_afun_test mlw_test,
-                      Ttry(remove,[Enotfound,Tunit]), None);
-                  Tapp (Tvar ("internal_removeif"),[Tvar "tl"])
+                  match_get asset collection key_ do_ neutral
                 ] in
-              Tmlist (gListAs,Tunit,"l","a","tl",some);
+              Tmlist (gListAs,Tunit,"l","i","tl",some);
           },
           (Tmatch (Tget (asset, Tvar "k", mk_ac asset),
                    [ Tpsome "a",
-                     Tapp (Tvar ("internal_removeif"), [Tviewtolist(oan,Ttoview(gFieldAs,Tdoti ("a", fn)),mk_ac oan)]);
+                     Tapp (Tvar ("internal_removeif"), [Ttoview(gFieldAs,Tdoti ("a", fn))]);
                      Twild, Tunit
                    ]))
         )
@@ -699,20 +701,21 @@ let mk_cremoveif m asset test mlw_test only_formula args =
           {
             name     = "internal_removeif";
             logic    = Rec;
-            args     = ["l",Tylist (Tyasset asset)];
+            args     = ["v", Tylist (Tyasset asset)];
             returns  = Tyunit;
             raises   = [];
             variants = [Tvar "l"];
             requires = [];
             ensures  = [];
             body     =
-              let some = Tif(mk_afun_test mlw_test,
-                Tapp (Tvar ("remove_" ^ asset),[Tdoti ("a", key)]),
-                Some (Tapp (Tvar ("internal_removeif"),[Tvar "tl"]))) in
-              Tmlist (gListAs,Tunit,"l","a","tl",some);
+              let collection = Tvar "c" in
+              let key_ = Tvar "i" in
+              let neutral = Tapp (Tvar ("internal_removeif"), [Tvar "tl"]) in
+              let do_ = Tif(mk_afun_test mlw_test, Tapp (Tvar ("remove_" ^ asset), [Tdoti ("a", key)]), Some (neutral)) in
+              let ll = match_get asset collection key_ do_ neutral in
+                    Tmlist (gListAs, Tunit, "l", "i", "tl", ll);
           },
-          (Tapp (Tvar "internal_removeif",
-                 [Tviewtolist(asset, Ttoview (asset, mk_ac asset), mk_ac asset)]))
+          (Tapp (Tvar "internal_removeif", [Ttoview (asset, mk_ac asset)]))
         )
       end;
     } in
