@@ -3466,6 +3466,7 @@ module Utils : sig
   val with_operations                    : model -> bool
   val get_source_for                     : model -> ctx_model -> mterm -> mterm option
   val eval                               : (ident * mterm) list -> mterm -> mterm
+  val type_rational                      : type_
   val mk_rat                             : Core.big_int -> Core.big_int -> mterm
   val get_select_idx                     : model -> ident -> mterm -> int
   val get_sum_idx                        : model -> ident -> mterm -> int
@@ -3998,12 +3999,15 @@ end = struct
       end
     | _ -> None
 
+  let type_rational = Ttuple [Tbuiltin Bint; Tbuiltin Bnat]
+
   let mk_rat (n : Core.big_int) (d : Core.big_int) : mterm =
-    let mk_int i = mk_mterm (Mint i) (Tbuiltin Bint) in
     let pos x = Big_int.sign_big_int x >= 0 in
     let abs x = Big_int.abs_big_int x in
     let neg x = Big_int.sub_big_int Big_int.zero_big_int x in
-    let mk n d = mk_mterm (Mtuple [mk_int n ; mk_int d]) (Ttuple [Tbuiltin Bint; Tbuiltin Bint]) in
+    let mk_int i = mk_mterm (Mint i) (Tbuiltin Bint) in
+    let mk_nat i = if not (pos i) then assert false; mk_mterm (Mnat i) (Tbuiltin Bnat) in
+    let mk n d = mk_mterm (Mtuple [mk_int n ; mk_nat d]) type_rational in
     let x, y = Core.compute_irr_fract (n, d) in
     match pos x, pos y with
     | _ , true     -> mk x y

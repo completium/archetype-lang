@@ -19,7 +19,7 @@ let generate_api_storage ?(verif=false) (model : model) : model =
   let rec f (ctx : ctx_model) (accu : api_storage list) (term : mterm) : api_storage list =
     let api_items : api_storage_node list =
       let mt_type = term.type_ in
-      let is_rat = match mt_type with | Tbuiltin Brational | Ttuple [Tbuiltin Bint; Tbuiltin Bint] -> true | _ -> false in
+      let is_rat = match mt_type with | Tbuiltin Brational | Ttuple [Tbuiltin Bint; Tbuiltin Bnat] -> true | _ -> false in
       let extract_option_type = function | Toption x -> x | _ -> assert false in
       match term.node with
       | Mget (asset_name, _, _) ->

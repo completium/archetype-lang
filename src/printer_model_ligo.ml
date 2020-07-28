@@ -1435,14 +1435,14 @@ let pp_model_internal fmt (model : model) b =
 
     | Mnattorat e ->
       let pp fmt e =
-        Format.fprintf fmt "(int(%a), 1)"
+        Format.fprintf fmt "(int(%a), 1n)"
           f e
       in
       pp fmt e
 
     | Minttorat e ->
       let pp fmt e =
-        Format.fprintf fmt "((%a), 1)"
+        Format.fprintf fmt "((%a), 1n)"
           f e
       in
       pp fmt e
@@ -2185,7 +2185,7 @@ let pp_model_internal fmt (model : model) b =
       in
       let get_zero _ =
         match t with
-        | Ttuple [(Tbuiltin Bint); (Tbuiltin Bint)] -> "(0, 0)"
+        | Ttuple [Tbuiltin Bint; Tbuiltin Bnat] -> "(0, 1n)"
         | Tbuiltin Bnat -> "0n"
         | _ -> "0"
       in
@@ -2200,7 +2200,7 @@ let pp_model_internal fmt (model : model) b =
       in
       let pp_formula fmt _ =
         match t with
-        | Ttuple [(Tbuiltin Bint); (Tbuiltin Bint)] -> pp_str fmt "e.0 * accu.1 + accu.0 * e.1, e.1 * accu.1"
+        | Ttuple [Tbuiltin Bint; Tbuiltin Bnat] -> pp_str fmt "e.0 * int(accu.1) + accu.0 * int(e.1), e.1 * accu.1"
         | _ -> pp_str fmt "accu + e"
       in
       let container, src, iter_type, iter_val, pp_src =
@@ -2376,7 +2376,7 @@ let pp_model_internal fmt (model : model) b =
     | Bmin t ->
       let cond =
         match t with
-        | Tbuiltin Brational | Ttuple [Tbuiltin Bint; Tbuiltin Bint] -> "rat_cmp(OpCmpLt(unit), a, b)"
+        | Tbuiltin Brational | Ttuple [Tbuiltin Bint; Tbuiltin Bnat] -> "rat_cmp(OpCmpLt(unit), a, b)"
         | _ -> "a < b"
       in
       Format.fprintf fmt
@@ -2386,7 +2386,7 @@ let pp_model_internal fmt (model : model) b =
     | Bmax t ->
       let cond =
         match t with
-        | Tbuiltin Brational | Ttuple [Tbuiltin Bint; Tbuiltin Bint] -> "rat_cmp(OpCmpGt(unit), a, b)"
+        | Tbuiltin Brational | Ttuple [Tbuiltin Bint; Tbuiltin Bnat] -> "rat_cmp(OpCmpGt(unit), a, b)"
         | _ -> "a > b"
       in
       Format.fprintf fmt
@@ -2402,7 +2402,7 @@ let pp_model_internal fmt (model : model) b =
             let pp_body fmt _ =
               match t with
               | Tbuiltin Bint -> Format.fprintf fmt "int(abs(a))"
-              | Ttuple [Tbuiltin Bint; Tbuiltin Bint] -> Format.fprintf fmt "(int(abs(a.0)),int(abs(a.1)))"
+              | Ttuple [Tbuiltin Bint; Tbuiltin Bnat] -> Format.fprintf fmt "(int(abs(a.0)),a.1)"
               | _ -> assert false
             in
             Format.fprintf fmt
@@ -2461,16 +2461,18 @@ let pp_model_internal fmt (model : model) b =
         pp_pretty_type t pp_type t pp_type t
         pp_pretty_type t pp_type t
 
-    | Bfloor    -> Format.fprintf fmt "function floor (const r : (int * int)) : int is block {skip} with r.0 / r.1@\n"
-    | Bceil     -> Format.fprintf fmt "function ceil (const r : (int * int)) : int is block {skip} with r.0 / r.1 + (if r.0 mod r.1 = 0n then 0 else 1)@\n"
+    | Bfloor    -> Format.fprintf fmt "function floor (const r : %a) : int is block {skip} with r.0 / int(r.1)@\n" pp_type Utils.type_rational
+    | Bceil     -> Format.fprintf fmt "function ceil (const r : %a) : int is block {skip} with r.0 / int(r.1) + (if r.0 mod r.1 = 0n then 0n else 1n)@\n" pp_type Utils.type_rational
   in
 
   let pp_api_internal (_env : env) fmt = function
     | RatEq        ->
       Format.fprintf fmt
-        "function rat_eq (const lhs : (int * int); const rhs : (int * int)) : bool is@\n  \
+        "function rat_eq (const lhs : %a; const rhs : %a) : bool is@\n  \
          block {skip} with@\n  \
-         lhs.0 * rhs.1 = rhs.0 * lhs.1 @\n"
+         lhs.0 * int(rhs.1) = rhs.0 * int(lhs.1) @\n"
+         pp_type Utils.type_rational
+         pp_type Utils.type_rational
     | RatCmp       ->
       Format.fprintf fmt
         "type op_cmp is@\n\
@@ -2479,11 +2481,11 @@ let pp_model_internal fmt (model : model) b =
          | OpCmpGt of unit@\n\
          | OpCmpGe of unit@\n\
          @\n\
-         function rat_cmp (const op : op_cmp; const lhs : (int * int); const rhs : (int * int)) : bool is@\n  \
+         function rat_cmp (const op : op_cmp; const lhs : %a; const rhs : %a) : bool is@\n  \
          begin@\n    \
-         const a : int = lhs.0 * rhs.1;@\n    \
-         const b : int = lhs.1 * rhs.0;@\n    \
-         const pos : bool = lhs.1 * rhs.1 > 0;@\n    \
+         const a : int = lhs.0 * int(rhs.1);@\n    \
+         const b : int = int(lhs.1) * rhs.0;@\n    \
+         const pos : bool = lhs.0 * rhs.0 > 0;@\n    \
          var r : bool := False;@\n    \
          case op of@\n    \
          | OpCmpLt -> if pos then r := a <  b else r := a >  b@\n    \
@@ -2492,6 +2494,8 @@ let pp_model_internal fmt (model : model) b =
          | OpCmpGe -> if pos then r := a >= b else r := a <= b@\n    \
          end@\n  \
          end with r@\n"
+         pp_type Utils.type_rational
+         pp_type Utils.type_rational
     | RatArith     ->
       Format.fprintf fmt
         "type op_arith is@\n\
@@ -2500,25 +2504,32 @@ let pp_model_internal fmt (model : model) b =
          | OpArithMult  of unit@\n\
          | OpArithDiv   of unit@\n\
          @\n\
-         function rat_arith (const op : op_arith; const lhs : (int * int); const rhs : (int * int)) : (int * int) is@\n  \
+         function rat_arith (const op : op_arith; const lhs : %a; const rhs : %a) : %a is@\n  \
          begin@\n    \
-         const r : (int * int) =@\n    \
+         const r : %a =@\n    \
          case op of@\n    \
-         | OpArithPlus  -> (lhs.0 * rhs.1 + rhs.0 * lhs.1, lhs.1 * rhs.1)@\n    \
-         | OpArithMinus -> (lhs.0 * rhs.1 - rhs.0 * lhs.1, lhs.1 * rhs.1)@\n    \
+         | OpArithPlus  -> (lhs.0 * int(rhs.1) + rhs.0 * int(lhs.1), lhs.1 * rhs.1)@\n    \
+         | OpArithMinus -> (lhs.0 * int(rhs.1) - rhs.0 * int(lhs.1), lhs.1 * rhs.1)@\n    \
          | OpArithMult  -> (lhs.0 * rhs.0, lhs.1 * rhs.1)@\n    \
-         | OpArithDiv   -> (lhs.0 * rhs.1, lhs.1 * rhs.0)@\n    \
+         | OpArithDiv   -> (lhs.0 * int(rhs.1), lhs.1 * abs(rhs.0))@\n    \
          end@\n  \
          end with r@\n"
+         pp_type Utils.type_rational
+         pp_type Utils.type_rational
+         pp_type Utils.type_rational
+         pp_type Utils.type_rational
     | RatUminus ->
       Format.fprintf fmt
-        "function rat_uminus (const x : (int * int)) : (int * int) is (- x.0, x.1)@\n"
+        "function rat_uminus (const x : %a) : %a is (- x.0, x.1)@\n"
+        pp_type Utils.type_rational
+        pp_type Utils.type_rational
     | RatTez ->
       Format.fprintf fmt
-        "function rat_tez (const c : (int * int); const t : tez) : tez is@\n\
+        "function rat_tez (const c : %a; const t : tez) : tez is@\n\
          begin@\n  \
-         const r : tez = abs(c.0) * t / abs(c.1);@\n  \
+         const r : tez = abs(c.0) * t / c.1;@\n  \
          end with r@\n"
+         pp_type Utils.type_rational
     | DivTez ->
       Format.fprintf fmt
         "function div_tez (const a : tez; const b : tez) : int is@\n\
@@ -2527,10 +2538,11 @@ let pp_model_internal fmt (model : model) b =
          end with r@\n"
     | RatDur ->
       Format.fprintf fmt
-        "function rat_dur (const c : (int * int); const d : int) : int is@\n\
+        "function rat_dur (const c : %a; const d : int) : int is@\n\
          begin@\n  \
          skip;@\n  \
-         end with (c.0 * d / c.1)@\n"
+         end with (c.0 * d / int(c.1))@\n"
+         pp_type Utils.type_rational
   in
 
   let pp_api_item_node (env : env) fmt = function
