@@ -141,7 +141,7 @@ let pp_type fmt typ =
       | Tyunit        -> "unit"
       | Tytransfers   -> "transfers"
       | Tycoll i      -> (String.capitalize_ascii i) ^ ".collection"
-      | Tyview _      -> "V.view"
+      | Tyview i      -> (String.capitalize_ascii i) ^ ".view"
       | Typartition _ -> "F.field"
       | Tyaggregate _ -> "F.field"
       | Tymap i       -> "map " ^ i

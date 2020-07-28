@@ -743,10 +743,7 @@ module Field
   let function proj (x : tk) = x
 
   (* ------------------------------------------------------------------------ *)
-  val function cmp tk tk : bool
-
-  (* ------------------------------------------------------------------------ *)
-  let predicate le k1 k2 = cmp k1 k2
+  let predicate le k1 k2 = eqk k1 k2
 
   (* ------------------------------------------------------------------------ *)
   clone InsertionSort as S with type elt = tk,
@@ -803,11 +800,23 @@ module Field
   (* ------------------------------------------------------------------------ *)
   let function remove (k : tk) (f : field) = N.remove k f
 
-  (* (* ------------------------------------------------------------------------ *)
-  let function to_view (f : field) : V.view
-  ensures { S.sorted (V.elts result) }
-  ensures { forall k. V.contains k result <-> M.mem k (N.elts f) }
-  = V.mk (N.elts f) *)
+  (* ------------------------------------------------------------------------ *)
+  type view
+
+  (* ------------------------------------------------------------------------ *)
+  val function vmk (list tk) : view
+
+  (* ------------------------------------------------------------------------ *)
+  val function velts view : list tk
+
+  (* ------------------------------------------------------------------------ *)
+  val function vcontains tk view : bool
+
+  (* ------------------------------------------------------------------------ *)
+  let function to_view (f : field) : view
+  ensures { S.sorted (velts result) }
+  ensures { forall k. vcontains k result <-> M.mem k (N.elts f) }
+  = vmk (N.elts f)
 
 end
 
@@ -828,9 +837,6 @@ module Collection
   val function eqk tk tk : bool
 
   (* ------------------------------------------------------------------------ *)
-  val function cmpk tk tk : bool
-
-  (* ------------------------------------------------------------------------ *)
   type t
 
   (* ------------------------------------------------------------------------ *)
@@ -840,7 +846,7 @@ module Collection
   val function eqt t t : bool
 
   (* ------------------------------------------------------------------------ *)
-  let predicate le t1 t2 = cmpk (keyt t1) (keyt t2)
+  let predicate le t1 t2 = eqk (keyt t1) (keyt t2)
 
   (* ------------------------------------------------------------------------ *)
   clone InsertionSort as S with type elt = t,
@@ -963,28 +969,23 @@ module Collection
   end in
   mk (N.mk (internal_set (N.elts c.content)))
 
-  (* (* ------------------------------------------------------------------------ *)
-  let function view_to_list (v : V.view) (c : collection) : list t
-  (* TODO : adds postcondition: this is used in 'select' storage API *)
-  =
-  let rec function internal_view_to_list (l : list t) : list t
-  variant { l }
-  =
-  match l with
-  | Cons e tl ->
-    if V.contains (keyt e) v then
-      Cons e (internal_view_to_list tl)
-    else
-      internal_view_to_list tl
-  | Nil -> Nil
-  end in
-  internal_view_to_list (N.elts c.content)
+  (* ------------------------------------------------------------------------ *)
+  type view
 
   (* ------------------------------------------------------------------------ *)
-  let function list_to_view (l : list t) : V.view
-  ensures { forall k. V.contains k result <-> forall e. M.mem e l -> keyt e = k }
+  val function vmk (list tk) : view
+
+  (* ------------------------------------------------------------------------ *)
+  val function velts view : list tk
+
+  (* ------------------------------------------------------------------------ *)
+  val function vcontains tk view : bool
+
+  (* ------------------------------------------------------------------------ *)
+  let function list_to_view (l : list t) : view
+  ensures { forall k. vcontains k result <-> forall e. M.mem e l -> keyt e = k }
   =
-  let rec function internal_list_to_view (il : list t) : list key
+  let rec function internal_list_to_view (il : list t) : list tk
   variant { l }
   ensures { forall k. M.mem k result <-> forall e. M.mem e l -> keyt e = k }
     =
@@ -992,13 +993,21 @@ module Collection
   | Cons e tl -> Cons (keyt e) (internal_list_to_view tl)
   | Nil -> Nil
   end in
-  V.mk (internal_list_to_view l)
+  vmk (internal_list_to_view l)
 
   (* ------------------------------------------------------------------------ *)
-  let rec function to_view (c : collection) : V.view
-  ensures { forall k. V.contains k result <-> forall e. get k c = Some e <-> keyt e = k }
+  let predicate lek k1 k2 = eqk k1 k2
+
+  (* ------------------------------------------------------------------------ *)
+  clone InsertionSort as K with type elt = tk,
+                                val le = lek
+
+  (* ------------------------------------------------------------------------ *)
+  let rec function to_view (c : collection) : view
+  ensures { K.sorted (velts result) }
+  ensures { forall k. vcontains k result <-> forall e. get k c = Some e <-> keyt e = k }
   =
-  list_to_view (N.elts c.content) *)
+  list_to_view (N.elts c.content)
 
   (* ------------------------------------------------------------------------ *)
   function union (c1 c2 : collection) : collection

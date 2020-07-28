@@ -58,6 +58,9 @@ let mk_ac_old_rmed a  = Tdot (Told (Tvar gs), Tvar (mk_ac_rmed_id a))
 
 let mk_ac_sv s a      = Tdoti (s, mk_ac_id a)
 
+let mk_field_id a     = gArchetypeField^ "_" ^ a
+let mk_view_id a      = gArchetypeView ^ "_" ^ a
+
 (* Use ---------------------------------------------------------------------------*)
 
 let mk_use_list = Duse (false,["list";"List"],Some gListAs) |> loc_decl |> deloc
@@ -273,10 +276,13 @@ let mk_default_init = function
   | _ -> assert false
 
 
-let mk_collection_field asset to_id = {
+let mk_collection_field asset to_id init = {
   name     = with_dummy_loc (to_id asset);
   typ      = loc_type (Tycoll asset);
-  init     = loc_term (Temptycoll asset);
+  init     = begin match init with
+   | Some l -> with_dummy_loc (Tmkcoll (with_dummy_loc asset, l))
+   | None -> loc_term (Temptycoll asset);
+  end;
   mutable_ = true;
 }
 
@@ -729,9 +735,10 @@ let loc_decl   = List.map loc_decl
 let loc_field  = List.map loc_field
 let deloc (l : 'a list) = List.map deloc l
 
-let rec zip l1 l2 l3 l4 =
-  match l1,l2,l3,l4 with
-  | e1::tl1,e2::tl2,e3::tl3,e4::tl4 -> e1::e2::e3::e4::(zip tl1 tl2 tl3 tl4)
+let rec zip l1 l2 l3 l4 l5 l6 l7 =
+  match l1,l2,l3,l4,l5,l6,l7 with
+  | e1::tl1,e2::tl2,e3::tl3,e4::tl4,e5::tl5,e6::tl6,e7::tl7 ->
+    e1::e2::e3::e4::e5::e6::e7::(zip tl1 tl2 tl3 tl4 tl5 tl6 tl7)
   | _ -> []
 
 let cap s = mk_loc s.loc (String.capitalize_ascii s.obj)
@@ -789,6 +796,7 @@ let rec type_to_init m (typ : loc_typ) : loc_term =
       | Tyenum i      -> Tvar (mk_loc typ.loc (unloc (M.Utils.get_enum m i.obj).initial))
       | Tytuple l     -> Ttuple (List.map (type_to_init m) l)
       | Tybool        -> Ttrue
+      | Tystring      -> Tstring ""
       | _             -> Tint Big_int.zero_big_int)
 
 let is_local_invariant _m an t =
@@ -1042,6 +1050,25 @@ let mk_cmp_enums m (r : M.asset) =
           ));
       })
 
+let mk_eq_key m (r : M.asset) =
+  let asset = unloc r.name in
+  let (_key, tkey) = M.Utils.get_asset_key m asset in
+  let tkey = map_mtype m tkey in
+  Dfun {
+    name = "eq_"^asset^"_key" |> with_dummy_loc;
+    logic = Logic;
+    args = [
+      "k1" |> with_dummy_loc, tkey;
+      "k2" |> with_dummy_loc, tkey;
+    ];
+    returns = Tybool |> with_dummy_loc;
+    raises = [];
+    variants = [];
+    requires = [];
+    ensures = [];
+    body = loc_term (mk_eq_type "k1" "k2" (unloc_type tkey));
+  }
+
 let mk_eq_asset m (r : M.asset) =
   let cmps = List.map (fun (item : M.asset_item) ->
       let id1 = (unloc item.name)^"1" in
@@ -1080,13 +1107,44 @@ let mk_eq_extensionality _m (r : M.asset) : loc_decl =
 let map_enum _m (e : M.enum) : (loc_term,loc_typ,loc_ident) abstract_decl =
   Denum (map_lident e.name, List.map (fun (item : M.enum_item) -> map_lident item.name) e.values)
 
-let record_to_clone m (r : M.asset) =
-  let (key,_) = M.Utils.get_asset_key m (unloc r.name) in
+let mk_field m (r : M.asset) =
+  let asset = unloc r.name in
+  let (_key, tkey) = M.Utils.get_asset_key m asset in
+  let tkey = map_mtype m tkey in
+  Dclone ([gArchetypeDir; gArchetypeField] |> wdl,
+          String.capitalize_ascii (mk_field_id asset) |> with_dummy_loc,
+          [Ctype ("tk" |> with_dummy_loc, tkey);
+           Cval  ("eqk" |> with_dummy_loc, "eq_" ^ asset ^ "_key" |> with_dummy_loc);
+           Ctype ("view" |> with_dummy_loc, loc_type (Tyview (mk_view_id asset)));
+           Cval  ("vmk" |> with_dummy_loc, (String.capitalize_ascii (mk_view_id asset))^".mk" |> with_dummy_loc);
+           Cval  ("velts" |> with_dummy_loc, (String.capitalize_ascii (mk_view_id asset))^".elts" |> with_dummy_loc);
+           Cval  ("vcontains" |> with_dummy_loc, (String.capitalize_ascii (mk_view_id asset))^".contains" |> with_dummy_loc)])
+
+let mk_view m (r : M.asset) =
+  let asset = unloc r.name in
+  let (_key, tkey) = M.Utils.get_asset_key m asset in
+  let tkey = map_mtype m tkey in
+  Dclone ([gArchetypeDir; gArchetypeView] |> wdl,
+          String.capitalize_ascii (mk_view_id asset) |> with_dummy_loc,
+          [Ctype ("tk" |> with_dummy_loc, tkey);
+           Cval  ("eqk" |> with_dummy_loc, "eq_" ^ asset ^ "_key" |> with_dummy_loc)])
+
+let mk_coll m (r : M.asset) =
+  let asset = unloc r.name in
+  let (key, tkey) = M.Utils.get_asset_key m asset in
+  let tkey = map_mtype m tkey in
   Dclone ([gArchetypeDir;gArchetypeColl] |> wdl,
-          String.capitalize_ascii (unloc r.name) |> with_dummy_loc,
-          [Ctype ("t" |> with_dummy_loc, Tyasset (with_dummy_loc (unloc r.name)) |> with_dummy_loc);
+          String.capitalize_ascii asset |> with_dummy_loc,
+          [Ctype ("tk" |> with_dummy_loc, tkey);
+           Cval  ("eqk" |> with_dummy_loc, "eq_" ^ asset ^ "_key" |> with_dummy_loc);
+           Ctype ("t" |> with_dummy_loc, Tyasset (with_dummy_loc asset) |> with_dummy_loc);
            Cval  ("keyt" |> with_dummy_loc, key |> with_dummy_loc);
-           Cval  ("eqt" |> with_dummy_loc, "eq_" ^ (unloc r.name) |> with_dummy_loc)])
+           Cval  ("eqt" |> with_dummy_loc, "eq_" ^ asset |> with_dummy_loc);
+           Ctype ("view" |> with_dummy_loc, loc_type (Tyview (mk_view_id asset)));
+           Cval  ("vmk" |> with_dummy_loc, (String.capitalize_ascii (mk_view_id asset))^".mk" |> with_dummy_loc);
+           Cval  ("velts" |> with_dummy_loc, (String.capitalize_ascii (mk_view_id asset))^".elts" |> with_dummy_loc);
+           Cval  ("vcontains" |> with_dummy_loc, (String.capitalize_ascii (mk_view_id asset))^".contains" |> with_dummy_loc)
+           ])
 
 let mk_partition_axioms (m : M.model) =
   M.Utils.get_containers m |> List.map (fun (n,i,_) ->
@@ -1618,11 +1676,11 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         map_mterm m ctx k;
         with_dummy_loc (Ttoview (with_dummy_loc n, mk_ac_ctx n ctx)) ])
       end
-    | Mcount (_, (CKview t)) -> Tcard (with_dummy_loc gViewAs, map_mterm m ctx t)
-    | Mcount (_, (CKfield (_, _, t))) ->
-      Tcard (with_dummy_loc gViewAs, with_dummy_loc (Ttoview (with_dummy_loc gFieldAs, map_mterm m ctx t)))
+    | Mcount (a, (CKview t)) -> Tcard (with_dummy_loc (mk_view_id a), map_mterm m ctx t)
+    | Mcount (a, (CKfield (_, _, t))) ->
+      Tcard (with_dummy_loc (mk_view_id a), with_dummy_loc (Ttoview (with_dummy_loc (mk_field_id a), map_mterm m ctx t)))
     | Mcount (a, CKcoll) ->
-      Tcard (with_dummy_loc gViewAs, with_dummy_loc (Ttoview(with_dummy_loc a, mk_ac_ctx a ctx)))
+      Tcard (with_dummy_loc (mk_view_id a), with_dummy_loc (Ttoview(with_dummy_loc a, mk_ac_ctx a ctx)))
     | Msum          (a, (CKview v),f) ->
       let cloneid = mk_sum_clone_id m a f in
       let col = mk_ac_ctx a ctx in
@@ -2023,7 +2081,7 @@ let map_record_values m (values : M.asset_item list) =
       }
     ) values
 
-let map_record m (r : M.asset) =
+let mk_record m (r : M.asset) =
   Drecord (map_lident r.name, map_record_values m r.values)
 
 let map_init_mterm m ctx (t : M.mterm) =
@@ -2035,16 +2093,17 @@ let map_storage_items m = List.fold_left (fun acc (item : M.storage_item) ->
     acc @
     match item.typ with
     | M.Tcontainer (Tasset id, Collection) ->
+      let asset : M.asset = M.Utils.get_asset m (unloc id) in
       let id = unloc id in [
-        mk_collection_field id mk_ac_id;
-        mk_collection_field id mk_ac_added_id;
-        mk_collection_field id mk_ac_rmed_id
+        mk_collection_field id mk_ac_id (Some (List.map (map_mterm m init_ctx) asset.init));
+        mk_collection_field id mk_ac_added_id None;
+        mk_collection_field id mk_ac_rmed_id None
       ]
     | M.Tcontainer (Tasset id, View) ->
       let id = unloc id in [
-        mk_collection_field id mk_ac_id;
-        mk_collection_field id mk_ac_added_id;
-        mk_collection_field id mk_ac_rmed_id
+        mk_collection_field id mk_ac_id None;
+        mk_collection_field id mk_ac_added_id None;
+        mk_collection_field id mk_ac_rmed_id None
       ]
     | _ ->
       let typ_ = map_mtype m item.typ in
@@ -3437,6 +3496,7 @@ let process_no_fail m (d : (loc_term, loc_typ, loc_ident) abstract_decl) =
 (* ----------------------------------------------------------------------------*)
 
 let to_whyml (m : M.model) : mlw_tree  =
+  let assets           = M.Utils.get_assets m in
   let storage_module   = with_dummy_loc (String.capitalize_ascii (m.name.pldesc ^ "_storage")) in
   let uselib           = mk_use in
   let uselist          = mk_use_list in
@@ -3446,13 +3506,16 @@ let to_whyml (m : M.model) : mlw_tree  =
   let traceutils       = mk_trace_utils m |> deloc in
   let enums            = M.Utils.get_enums m |> List.map (map_enum m) in
   let maps             = M.Utils.get_all_map_types m |> List.map (mk_map_type m) |> List.flatten in
-  let records          = M.Utils.get_assets m |> List.map (map_record m) |> wdl in
-  let cmp_enums        = M.Utils.get_assets m |> List.map (mk_cmp_enums m) |> List.flatten in
-  let eq_assets        = M.Utils.get_assets m |> List.map (mk_eq_asset m) |> wdl in
-  let eq_exten         = M.Utils.get_assets m |> List.map (mk_eq_extensionality m) |> deloc in
-  let clones           = M.Utils.get_assets m  |> List.map (record_to_clone m) |> wdl in
+  let records          = assets |> List.map (mk_record m) |> wdl in
+  let cmp_enums        = assets |> List.map (mk_cmp_enums m) |> List.flatten in
+  let eq_keys          = assets |> List.map (mk_eq_key m) |> wdl in
+  let eq_assets        = assets |> List.map (mk_eq_asset m) |> wdl in
+  let eq_exten         = assets |> List.map (mk_eq_extensionality m) |> deloc in
+  let colls            = assets |> List.map (mk_coll m) |> wdl in
+  let fields           = assets |> List.map (mk_field m) |> wdl in
+  let views            = assets |> List.map (mk_view m) |> wdl in
   let init_records     = records |> unloc_decl |> List.map mk_default_init |> loc_decl in
-  let records          = zip records eq_assets init_records clones |> deloc in
+  let records          = zip records eq_keys eq_assets init_records views colls fields |> deloc in
   let storage_api_bs   = mk_storage_api_before_storage m (records |> wdl) in
   let storage          = M.Utils.get_storage m |> map_storage m in
   let storageval       = Dval (with_dummy_loc gs, with_dummy_loc Tystorage) in
