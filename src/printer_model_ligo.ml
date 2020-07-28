@@ -2511,7 +2511,7 @@ let pp_model_internal fmt (model : model) b =
          | OpArithPlus  -> (lhs.0 * int(rhs.1) + rhs.0 * int(lhs.1), lhs.1 * rhs.1)@\n    \
          | OpArithMinus -> (lhs.0 * int(rhs.1) - rhs.0 * int(lhs.1), lhs.1 * rhs.1)@\n    \
          | OpArithMult  -> (lhs.0 * rhs.0, lhs.1 * rhs.1)@\n    \
-         | OpArithDiv   -> (lhs.0 * int(rhs.1), lhs.1 * abs(rhs.0))@\n    \
+         | OpArithDiv   -> (lhs.0 * (if rhs.0 >= 0 then int(rhs.1) else -(int(rhs.1))), lhs.1 * abs(rhs.0))@\n    \
          end@\n  \
          end with r@\n"
          pp_type Utils.type_rational
