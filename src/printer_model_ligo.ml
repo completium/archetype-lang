@@ -2484,16 +2484,13 @@ let pp_model_internal fmt (model : model) b =
          function rat_cmp (const op : op_cmp; const lhs : %a; const rhs : %a) : bool is@\n  \
          begin@\n    \
          const a : int = lhs.0 * int(rhs.1);@\n    \
-         const b : int = int(lhs.1) * rhs.0;@\n    \
-         const pos : bool = lhs.0 * rhs.0 > 0;@\n    \
-         var r : bool := False;@\n    \
-         case op of@\n    \
-         | OpCmpLt -> if pos then r := a <  b else r := a >  b@\n    \
-         | OpCmpLe -> if pos then r := a <= b else r := a >= b@\n    \
-         | OpCmpGt -> if pos then r := a >  b else r := a <  b@\n    \
-         | OpCmpGe -> if pos then r := a >= b else r := a <= b@\n    \
-         end@\n  \
-         end with r@\n"
+         const b : int = rhs.0 * int(lhs.1);@\n  \
+         end with (case op of@\n    \
+         | OpCmpLt -> a <  b@\n    \
+         | OpCmpLe -> a <= b@\n    \
+         | OpCmpGt -> a >  b@\n    \
+         | OpCmpGe -> a >= b@\n    \
+         end)@\n"
          pp_type Utils.type_rational
          pp_type Utils.type_rational
     | RatArith     ->
