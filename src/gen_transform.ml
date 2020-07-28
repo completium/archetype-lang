@@ -1097,7 +1097,7 @@ let update_nat_int_rat (model : model) : model =
 
   let lit_rat_some (x : mterm) =
     match x.node with
-    | Mtuple [{node = Mint n}; {node = Mint d}] -> Some (n, d)
+    | Mtuple [{node = Mint n}; {node = Mnat d}] -> Some (n, d)
     | _ -> None
   in
   let is_lit_rat      (x : mterm) = x |> lit_rat_some |> Option.is_some in
@@ -1108,7 +1108,7 @@ let update_nat_int_rat (model : model) : model =
   let rec aux c (mt : mterm) : mterm =
     match mt.node with
     | Mnattoint {node = Mnat n; _} -> {mt with node = Mint n}
-    | Mnattorat {node = Mnat n; _} -> Utils.mk_rat n (Big_int.unit_big_int)
+    | Mnattorat x
     | Minttorat x -> begin
         let x = aux c x in
         if is_lit_num x
@@ -1152,13 +1152,14 @@ let update_nat_int_rat (model : model) : model =
   Model.map_mterm_model aux model
 
 let remove_rational (model : model) : model =
+  let type_nat      = Tbuiltin Bnat in
   let type_int      = Tbuiltin Bint in
   let type_bool     = Tbuiltin Bbool in
   let type_cur      = Tbuiltin Bcurrency in
   let type_dur      = Tbuiltin Bduration in
-  let type_rational = Ttuple [type_int; type_int] in
-  let one           = mk_mterm (Mint (Big_int.unit_big_int)) type_int in
-  let mk_rat n d    = mk_mterm (Mtuple [n ; d]) type_rational in
+  let type_rational = Utils.type_rational in
+  let one           = mk_mterm (Mnat (Big_int.unit_big_int)) type_nat in
+  let mk_rat_one x  = mk_mterm (Mtuple [x ; one]) type_rational in
   let nat_to_int e  = mk_mterm (Mnattoint e) type_int in
 
   let for_type t =
@@ -1178,12 +1179,12 @@ let remove_rational (model : model) : model =
   in
   let to_rat (x : mterm) =
     match x.type_ with
-    | Tbuiltin Bnat -> mk_rat (nat_to_int x) one
+    | Tbuiltin Bnat -> mk_rat_one (nat_to_int x)
     | Tbuiltin Bduration
-    | Tbuiltin Bint -> mk_rat x one
+    | Tbuiltin Bint -> mk_rat_one x
     | Tbuiltin Brational
-    | Ttuple [Tbuiltin Bint; Tbuiltin Bint] -> x
-    | _ -> assert false
+    | Ttuple [Tbuiltin Bint; Tbuiltin Bnat] -> x
+    | _ -> Format.printf "%a@." pp_type_ x.type_; assert false
   in
   let for_mterm mt =
     let rec aux (mt : mterm) : mterm =
@@ -1191,7 +1192,7 @@ let remove_rational (model : model) : model =
 
       let for_unary op (v : mterm) =
         match op, ret, v.type_ with
-        | `Uminus, (Tbuiltin Brational | Ttuple [Tbuiltin Bint; Tbuiltin Bint]), Tbuiltin Brational ->
+        | `Uminus, (Tbuiltin Brational | Ttuple [Tbuiltin Bint; Tbuiltin Bnat]), Tbuiltin Brational ->
           let v = v |> aux |> to_rat in
           mk_mterm (Mratuminus v) type_rational
         | _ -> map_mterm aux mt
@@ -1200,7 +1201,7 @@ let remove_rational (model : model) : model =
       let for_arith op (a, b : mterm * mterm) =
         match ret with
         | Tbuiltin Brational
-        | Ttuple [Tbuiltin Bint; Tbuiltin Bint] -> begin
+        | Ttuple [Tbuiltin Bint; Tbuiltin Bnat] -> begin
             match op, a.type_, b.type_ with
             | _ -> begin
                 let f =
@@ -1262,7 +1263,7 @@ let remove_rational (model : model) : model =
         let l = List.map (fun (x : mterm) ->
             match ret with
             | Tbuiltin Brational
-            | Ttuple [Tbuiltin Bint; Tbuiltin Bint] -> begin
+            | Ttuple [Tbuiltin Bint; Tbuiltin Bnat] -> begin
                 x |> aux |> to_rat
               end
             | Tbuiltin Bint -> begin
@@ -1296,9 +1297,9 @@ let remove_rational (model : model) : model =
           f lhs rhs
 
         | Tbuiltin Brational, _
-        | Ttuple [Tbuiltin Bint; Tbuiltin Bint], _
+        | Ttuple [Tbuiltin Bint; Tbuiltin Bnat], _
         | _, Tbuiltin Brational
-        | _, Ttuple [Tbuiltin Bint; Tbuiltin Bint] -> begin
+        | _, Ttuple [Tbuiltin Bint; Tbuiltin Bnat] -> begin
             let f =
               match op with
               | `Eq -> (fun x y -> mk_mterm (Mrateq  (x, y)) type_bool)
@@ -1316,10 +1317,7 @@ let remove_rational (model : model) : model =
       in
 
       match mt.node with
-      | Mrational (a, b) -> begin
-          let make_int (x : Core.big_int) = mk_mterm (Mint x) type_int in
-          mk_mterm (Mtuple [make_int a; make_int b]) type_rational
-        end
+      | Mrational (n, d)   -> Utils.mk_rat n d
       | Mcurrency (v, Tz)  -> { mt with node = Mcurrency  (Big_int.mult_int_big_int 1000000 v, Utz) }
       | Mcurrency (v, Mtz) -> { mt with node = Mcurrency  (Big_int.mult_int_big_int    1000 v, Utz) }
       | Mplus     (a, b)   -> for_arith `Plus   (a, b)
@@ -1350,7 +1348,7 @@ let remove_rational (model : model) : model =
 let replace_date_duration_by_timestamp (model : model) : model =
   let type_timestamp = Tbuiltin Btimestamp in
   let type_int = Tbuiltin Bint in
-  let is_rat      = function | Ttuple [Tbuiltin Bint; Tbuiltin Bint] -> true     | _ -> false in
+  let is_rat      = function | Ttuple [Tbuiltin Bint; Tbuiltin Bnat] -> true     | _ -> false in
   let is_date     = function | Tbuiltin Bdate -> true     | _ -> false in
   let is_duration = function | Tbuiltin Bduration -> true | _ -> false in
   let process_type t : type_ =
