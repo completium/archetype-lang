@@ -200,6 +200,26 @@ module Utils
   axiom str_eq_spec : forall s1 s2.
   str_eq s1 s1 <-> s1 = s2
 
+  val function str_le string string : bool
+
+  axiom str_le_spec : forall s1 s2.
+  str_le s1 s2 = S.le s1 s2
+
+  val function str_ge string string : bool
+
+  axiom str_ge_spec : forall s1 s2.
+  str_ge s1 s2 = not (S.le s1 s2) \/ s1 = s2
+
+  val function str_lt string string : bool
+
+  axiom str_lt_spec : forall s1 s2.
+  str_lt s1 s2 = S.lt s1 s2
+
+  val function str_gt string string : bool
+
+  axiom str_gt_spec : forall s1 s2.
+  str_gt s1 s2 = not (S.lt s1 s2) /\ not (s1 = s2)
+
   let function byt_concat (b1 : bytes) (b2 : bytes) : bytes = b1 + b2
 
   (* ----------------------------------------------------------------------- *)

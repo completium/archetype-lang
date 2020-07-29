@@ -142,8 +142,8 @@ let pp_type fmt typ =
       | Tytransfers   -> "transfers"
       | Tycoll i      -> (String.capitalize_ascii i) ^ ".collection"
       | Tyview i      -> (String.capitalize_ascii i) ^ ".view"
-      | Typartition _ -> "F.field"
-      | Tyaggregate _ -> "F.field"
+      | Typartition i -> (String.capitalize_ascii i) ^ ".field"
+      | Tyaggregate i -> (String.capitalize_ascii i) ^ ".field"
       | Tymap i       -> "map " ^ i
       | Tyrecord i    -> i
       | Tyasset i     -> i
@@ -247,8 +247,9 @@ let rec pp_term outer pos fmt = function
       pp_str (String.capitalize_ascii t)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
-  | Tvcontains (_,e1,e2) ->
-    Format.fprintf fmt "V.contains %a %a"
+  | Tvcontains (t,e1,e2) ->
+    Format.fprintf fmt "%a.contains %a %a"
+      pp_str (String.capitalize_ascii t)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
   | Tccontains (t,e1,e2) ->
@@ -312,8 +313,9 @@ let rec pp_term outer pos fmt = function
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
-  | Tnth (_,e1,e2) ->
-    Format.fprintf fmt "V.nth %a %a"
+  | Tnth (i,e1,e2) ->
+    Format.fprintf fmt "%a.nth %a %a"
+      pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
   | Tcoll (i,e) ->
@@ -325,16 +327,21 @@ let rec pp_term outer pos fmt = function
       pp_str (String.capitalize_ascii a)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
-   | Teqfield (_, e1, e2) ->
-    Format.fprintf fmt "F.eq %a %a"
+   | Teqfield (i, e1, e2) ->
+    Format.fprintf fmt "%a.eq %a %a"
+      pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
   | Teq (Tybool, e1, e2) ->
     Format.fprintf fmt "%a && %a" (pp_term outer pos) e1 (pp_term outer pos) e2
+  | Teq (Tystring, e1, e2) ->
+    Format.fprintf fmt "str_eq %a %a" (pp_term outer pos) e1 (pp_term outer pos) e2
   | Teq (_, e1, e2) ->
     Format.fprintf fmt "%a = %a" (pp_term outer pos) e1 (pp_term outer pos) e2
   | Tneq (Tybool, e1, e2) ->
     Format.fprintf fmt "not (%a && %a)" (pp_term outer pos) e1 (pp_term outer pos) e2
+  | Tneq (Tystring, e1, e2) ->
+    Format.fprintf fmt "not (str_eq %a %a)" (pp_term outer pos) e1 (pp_term outer pos) e2
   | Tneq (_, e1, e2) ->
     Format.fprintf fmt "%a <> %a" (pp_term outer pos) e1 (pp_term outer pos) e2
   | Tunion (i, e1, e2) ->
@@ -395,16 +402,32 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "%a || %a"
       (pp_term e_default PRight) e1
       (pp_term e_default PRight) e2
+  | Tgt (Tystring,e1,e2) ->
+    Format.fprintf fmt "str_gt %a %a"
+      (pp_term e_default PRight) e1
+      (pp_term e_default PRight) e2
   | Tgt (_,e1,e2) ->
     Format.fprintf fmt "%a > %a"
+      (pp_term e_default PRight) e1
+      (pp_term e_default PRight) e2
+  | Tge (Tystring,e1,e2) ->
+    Format.fprintf fmt "str_ge %a %a"
       (pp_term e_default PRight) e1
       (pp_term e_default PRight) e2
   | Tge (_,e1,e2) ->
     Format.fprintf fmt "%a >= %a"
       (pp_term e_default PRight) e1
       (pp_term e_default PRight) e2
+  | Tlt (Tystring,e1,e2) ->
+    Format.fprintf fmt "str_lt %a %a"
+      (pp_term e_default PRight) e1
+      (pp_term e_default PRight) e2
   | Tlt (_,e1,e2) ->
     Format.fprintf fmt "%a < %a"
+      (pp_term e_default PRight) e1
+      (pp_term e_default PRight) e2
+  | Tle (Tystring,e1,e2) ->
+    Format.fprintf fmt "str_le %a %a"
       (pp_term e_default PRight) e1
       (pp_term e_default PRight) e2
   | Tle (_,e1,e2) ->
@@ -503,8 +526,9 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "%a.from_list (%a)"
       pp_str (String.capitalize_ascii i)
       (pp_tlist outer pos) l
-  | Tmkview (_,e) ->
-    Format.fprintf fmt "V.mk %a"
+  | Tmkview (i,e) ->
+    Format.fprintf fmt "%a.mk %a"
+      pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e
   | Tcontent (i,e) ->
     Format.fprintf fmt "%a.elts %a"
