@@ -12,7 +12,7 @@ module Type : sig
   val as_container        : A.ptyp -> (A.ptyp * A.container) option
   val as_asset            : A.ptyp -> A.lident option
   val as_asset_collection : A.ptyp -> (A.lident * A.container) option
-  val as_contract         : A.ptyp -> A.lident option
+  val as_entrysig         : A.ptyp -> A.ptyp option
   val as_tuple            : A.ptyp -> (A.ptyp list) option
   val as_option           : A.ptyp -> A.ptyp option
   val as_set              : A.ptyp -> A.ptyp option
@@ -23,6 +23,7 @@ module Type : sig
   val is_numeric   : A.ptyp -> bool
   val is_currency  : A.ptyp -> bool
   val is_primitive : A.ptyp -> bool
+  val is_entrysig  : A.ptyp -> bool
   val is_option    : A.ptyp -> bool
   val is_set       : A.ptyp -> bool
   val is_list      : A.ptyp -> bool
@@ -44,7 +45,11 @@ module Type : sig
   val sig_distance   : from_:A.ptyp list -> to_:A.ptyp list -> int option
   val join           : ?autoview:bool -> A.ptyp list -> A.ptyp option
 
-  val unify : ptn:A.ptyp -> tg:A.ptyp -> (A.ptyp Mint.t) option
+  type trestr = [`Michelson]
+
+  exception UnificationFailure
+
+  val unify : ?restr:trestr Mint.t -> ptn:A.ptyp -> tg:A.ptyp -> A.ptyp Mint.t ref -> unit
   val subst : A.ptyp Mint.t -> A.ptyp -> A.ptyp
 
   val pktype : A.ptyp -> bool
@@ -52,7 +57,7 @@ end = struct
   let as_container = function A.Tcontainer (ty, c) -> Some (ty, c) | _ -> None
   let as_asset     = function A.Tasset     x       -> Some x       | _ -> None
   let as_tuple     = function A.Ttuple     ts      -> Some ts      | _ -> None
-  let as_contract  = function A.Tcontract  x       -> Some x       | _ -> None
+  let as_entrysig  = function A.Tentrysig  x       -> Some x       | _ -> None
   let as_option    = function A.Toption    t       -> Some t       | _ -> None
   let as_set       = function A.Tset       t       -> Some t       | _ -> None
   let as_list      = function A.Tlist      t       -> Some t       | _ -> None
@@ -73,6 +78,9 @@ end = struct
 
   let is_primitive = function
     | A.Tbuiltin _ -> true | _ -> false
+
+  let is_entrysig = function
+    | A.Tentrysig _ -> true | _ -> false
 
   let is_option = function
     | A.Toption _ -> true | _ -> false
@@ -211,18 +219,29 @@ end = struct
     List.length tys1 = List.length tys2
     && List.for_all2 equal tys1 tys2
 
-  let unify ~(ptn : A.ptyp) ~(tg : A.ptyp): (A.ptyp Mint.t) option =
+  type trestr = [`Michelson]
+
+  exception UnificationFailure
+
+  let unify ?(restr = Mint.empty) ~(ptn : A.ptyp) ~(tg : A.ptyp) (map : A.ptyp Mint.t ref) =
     let module E = struct exception Error end in
 
     try
-      let map = ref Mint.empty in
-
       let rec doit (ptn : A.ptyp) (tg : A.ptyp) =
         match ptn, tg with
         | A.Tnamed i, _ -> begin
+            begin match Mint.find_opt i restr with
+            | Some `Michelson ->
+                if not (Michelson.is_type tg) then
+                  raise E.Error;
+            | None -> () end;
+
             map := !map |> Mint.update i (function
-                | None    -> Some tg
-                | Some ty -> if equal tg ty then Some ty else raise E.Error)
+             | None    -> Some tg
+             | Some ty ->
+                 if   compatible ~autoview:false ~to_:ty ~from_:tg
+                 then Some ty
+                 else raise E.Error)
           end
 
         | Toperation, Toperation
@@ -240,9 +259,9 @@ end = struct
         | Tbuiltin x, Tbuiltin y ->
           if x <> y then raise E.Error
 
-        | Tset    ptn, Tset   tg
-        | Tlist   ptn, Tlist   tg
-        | Toption ptn, Toption tg
+        | Tset      ptn, Tset      tg
+        | Tlist     ptn, Tlist     tg
+        | Toption   ptn, Toption   tg
         | Tentrysig ptn, Tentrysig tg ->
           doit ptn tg
 
@@ -258,9 +277,12 @@ end = struct
         | _, _ ->
           raise E.Error
 
-      in doit ptn tg; Some !map
+      in
 
-    with E.Error -> None
+      if not (compatible ~autoview:false ~to_:ptn ~from_:tg) then
+        doit ptn tg
+
+    with E.Error -> raise UnificationFailure
 
   let subst (subst : A.ptyp Mint.t) (ty : A.ptyp) : A.ptyp =
     let rec doit (ty : A.ptyp) =
@@ -314,6 +336,7 @@ type opsig = {
 (* -------------------------------------------------------------------- *)
 type error_desc =
   | TODO
+  | AEntryExpected                     of A.ptyp
   | AlienPattern
   | AnonymousFieldInEffect
   | AssertInGlobalSpec
@@ -337,7 +360,6 @@ type error_desc =
   | DivergentExpr
   | DoesNotSupportMethodCall
   | DuplicatedArgName                  of ident
-  | DuplicatedContractEntryName        of ident
   | DuplicatedCtorName                 of ident
   | DuplicatedFieldInAssetDecl         of ident
   | DuplicatedFieldInRecordDecl        of ident
@@ -356,7 +378,6 @@ type error_desc =
   | InvalidAssetCollectionExpr         of A.ptyp
   | InvalidAssetExpression
   | InvalidCallByExpression
-  | InvalidContractExpression
   | InvalidEffectForCtn                of A.container * A.container list
   | InvalidEntryDescription
   | InvalidEntryExpression
@@ -432,10 +453,11 @@ type error_desc =
   | ShadowPKey
   | ShadowSKey
   | SpecOperatorInExpr
+  | StringLiteralExpected
   | TransferWithoutDest
   | UninitializedVar
+  | UnknownAEntry                      of ident
   | UnknownAsset                       of ident
-  | UnknownContractEntryPoint          of ident * ident
   | UnknownEntry                       of ident
   | UnknownEnum                        of ident
   | UnknownField                       of ident * ident
@@ -488,6 +510,7 @@ let pp_error_desc fmt e =
 
   match e with
   | TODO                               -> pp "TODO"
+  | AEntryExpected ty                  -> pp "Expecting an entry point, not a `%a'" Printer_ast.pp_ptyp ty
   | AlienPattern                       -> pp "This pattern does not belong to the enumeration"
   | AnonymousFieldInEffect             -> pp "Anonymous field in effect"
   | AssertInGlobalSpec                 -> pp "Assertions specification at global level are forbidden"
@@ -512,7 +535,6 @@ let pp_error_desc fmt e =
   | DivergentExpr                      -> pp "Divergent expression"
   | DoesNotSupportMethodCall           -> pp "Cannot use method calls on this kind of objects"
   | DuplicatedArgName x                -> pp "Duplicated argument name: %s" x
-  | DuplicatedContractEntryName i      -> pp "Duplicated contract entry name: %a" pp_ident i
   | DuplicatedCtorName i               -> pp "Duplicated constructor name: %a" pp_ident i
   | DuplicatedFieldInAssetDecl i       -> pp "Duplicated field in asset declaration: %a" pp_ident i
   | DuplicatedFieldInRecordDecl i      -> pp "Duplicated field in record declaration: %a" pp_ident i
@@ -532,7 +554,6 @@ let pp_error_desc fmt e =
   | InvalidAssetCollectionExpr ty      -> pp "Invalid asset collection expression: %a" A.pp_ptyp ty
   | InvalidAssetExpression             -> pp "Invalid asset expression"
   | InvalidCallByExpression            -> pp "Invalid 'Calledby' expression"
-  | InvalidContractExpression          -> pp "Invalid contract expression"
   | InvalidEffectForCtn _              -> pp "Invalid effect for this container kind"
   | InvalidEntryDescription            -> pp "Invalid entry description"
   | InvalidEntryExpression             -> pp "Invalid entry expression"
@@ -608,10 +629,11 @@ let pp_error_desc fmt e =
   | ShadowPKey                         -> pp "Primary key cannot be a shadow field"
   | ShadowSKey                         -> pp "Sort key cannot be a shadow field"
   | SpecOperatorInExpr                 -> pp "Specification operator in expression"
+  | StringLiteralExpected              -> pp "Expecting a string literal"
   | TransferWithoutDest                -> pp "Transfer without destination"
   | UninitializedVar                   -> pp "This variable declaration is missing an initializer"
+  | UnknownAEntry i                    -> pp "Unknown entry point: %a" pp_ident i
   | UnknownAsset i                     -> pp "Unknown asset: %a" pp_ident i
-  | UnknownContractEntryPoint (c, m)   -> pp "Unknown contract entry point: %s.%s" c m
   | UnknownEntry i                     -> pp "Unknown entry: %a" pp_ident i
   | UnknownEnum i                      -> pp "Unknown enum: %a" pp_ident i
   | UnknownField (i1, i2)              -> pp "Unknown field: asset %a does not have a field %a" pp_ident i1 pp_ident i2
@@ -762,6 +784,7 @@ type groups = {
   gr_enums       : (PT.lident * PT.enum_decl) loced list;
   gr_assets      : PT.asset_decl              loced list;
   gr_records     : PT.record_decl             loced list;
+  gr_entries     : PT.entries_decl            loced list;
   gr_vars        : PT.variable_decl           loced list;
   gr_funs        : PT.s_function              loced list;
   gr_acttxs      : acttx                      loced list;
@@ -853,88 +876,99 @@ let methods : (string * method_) list =
 let methods = Mid.of_list methods
 
 (* -------------------------------------------------------------------- *)
-let coreops =
+type opinfo =
+    string
+  * A.const
+  * [`Partial | `Total]
+  * A.type_ option
+  * A.type_ list
+  * A.type_
+  * Type.trestr Mint.t
+
+(* -------------------------------------------------------------------- *)
+let coreops : opinfo list =
   (List.map
-     (fun (x, y) -> ("abs", A.Cabs, `Total, None, [x], y))
-     [A.vtint, A.vtnat; A.vtrational, A.vtrational])
+     (fun (x, y) -> ("abs", A.Cabs, `Total, None, [x], y, Mint.empty))
+     [(A.vtint, A.vtnat); (A.vtrational, A.vtrational)])
   @ (List.map
-       (fun (x, y) -> (x, y, `Total, None, [A.vtrational], A.vtint))
+       (fun (x, y) -> (x, y, `Total, None, [A.vtrational], A.vtint, Mint.empty))
        ["floor", A.Cfloor ; "ceil", A.Cceil])
   @ (List.flatten (List.map (fun (name, cname) -> (
         List.map
-          (fun x -> (name, cname, `Total, None, [x; x], x))
+          (fun x -> (name, cname, `Total, None, [x; x], x, Mint.empty))
           [A.vtnat; A.vtint; A.vtrational; A.vtdate; A.vtduration; A.vtcurrency]))
       [("min", A.Cmin); ("max", A.Cmax)]))
   @ (List.map
-       (fun x -> ("concat", A.Cconcat, `Total, None, [x; x], x))
+       (fun x -> ("concat", A.Cconcat, `Total, None, [x; x], x, Mint.empty))
        [A.vtbytes; A.vtstring])
   @ (List.map
-       (fun x -> ("slice", A.Cslice, `Total, None, [x; A.vtnat; A.vtnat], x))
+       (fun x -> ("slice", A.Cslice, `Total, None, [x; A.vtnat; A.vtnat], x, Mint.empty))
        [A.vtbytes; A.vtstring])
   @ (List.map
-          (fun x -> ("length", A.Clength, `Total, None, [x], A.vtnat)) [A.vtstring; A.vtbytes])
+       (fun x -> ("length", A.Clength, `Total, None, [x], A.vtnat, Mint.empty))
+       [A.vtstring; A.vtbytes])
 
 (* -------------------------------------------------------------------- *)
-let optionops = [
-  ("isnone",  A.Cisnone, `Total  , Some (A.Toption (A.Tnamed 0)), [], A.vtbool);
-  ("issome",  A.Cissome, `Total  , Some (A.Toption (A.Tnamed 0)), [], A.vtbool);
-  ("opt_get", A.Cgetopt, `Partial, Some (A.Toption (A.Tnamed 0)), [], A.Tnamed 0);
+let optionops : opinfo list = [
+  ("isnone",  A.Cisnone, `Total  , Some (A.Toption (A.Tnamed 0)), [], A.vtbool  , Mint.empty);
+  ("issome",  A.Cissome, `Total  , Some (A.Toption (A.Tnamed 0)), [], A.vtbool  , Mint.empty);
+  ("opt_get", A.Cgetopt, `Partial, Some (A.Toption (A.Tnamed 0)), [], A.Tnamed 0, Mint.empty);
 ]
 
 (* -------------------------------------------------------------------- *)
-let setops =
+let setops : opinfo list =
   let elemt = A.Tnamed 0 in
   let set   = A.Tset elemt in [
-    ("set_add"      , A.Csadd      , `Total , Some set, [ elemt ], set      );
-    ("set_remove"   , A.Csremove   , `Total , Some set, [ elemt ], set      );
-    ("set_contains" , A.Cscontains , `Total , Some set, [ elemt ], A.vtbool );
-    ("set_length"   , A.Cslength   , `Total , Some set, [       ], A.vtnat  );
+    ("set_add"      , A.Csadd      , `Total , Some set, [ elemt ], set     , Mint.empty);
+    ("set_remove"   , A.Csremove   , `Total , Some set, [ elemt ], set     , Mint.empty);
+    ("set_contains" , A.Cscontains , `Total , Some set, [ elemt ], A.vtbool, Mint.empty);
+    ("set_length"   , A.Cslength   , `Total , Some set, [       ], A.vtnat , Mint.empty);
   ]
 
 (* -------------------------------------------------------------------- *)
-let listops =
+let listops : opinfo list =
   let elemt = A.Tnamed 0 in
   let lst   = A.Tlist elemt in [
-    ("contains", A.Ccontains, `Total  , Some lst, [elemt  ], A.vtbool);
-    ("prepend" , A.Cprepend , `Total  , Some lst, [elemt  ], lst     );
-    ("length"  , A.Clength  , `Total  , Some lst, [       ], A.vtnat );
-    ("nth"     , A.Cnth     , `Partial, Some lst, [A.vtnat], elemt   );
+    ("contains", A.Ccontains, `Total  , Some lst, [elemt  ], A.vtbool, Mint.empty);
+    ("prepend" , A.Cprepend , `Total  , Some lst, [elemt  ], lst     , Mint.empty);
+    ("length"  , A.Clength  , `Total  , Some lst, [       ], A.vtnat , Mint.empty);
+    ("nth"     , A.Cnth     , `Partial, Some lst, [A.vtnat], elemt   , Mint.empty);
   ]
 
 (* -------------------------------------------------------------------- *)
-let mapops =
+let mapops : opinfo list =
   let tkey = A.Tnamed 0 in
   let tval = A.Tnamed 1 in
   let map  = A.Tmap (tkey, tval) in [
-    ("map_put"      , A.Cmput      , `Total   , Some map, [ tkey; tval ], map);
-    ("map_remove"   , A.Cmremove   , `Total   , Some map, [ tkey       ], map);
-    ("map_getopt"   , A.Cmgetopt   , `Partial , Some map, [ tkey       ], A.Toption tval);
-    ("map_contains" , A.Cmcontains , `Total   , Some map, [ tkey       ], A.vtbool);
-    ("map_length"   , A.Cmlength   , `Total   , Some map, [            ], A.vtnat);
+    ("map_put"      , A.Cmput      , `Total   , Some map, [ tkey; tval ], map           , Mint.empty);
+    ("map_remove"   , A.Cmremove   , `Total   , Some map, [ tkey       ], map           , Mint.empty);
+    ("map_getopt"   , A.Cmgetopt   , `Partial , Some map, [ tkey       ], A.Toption tval, Mint.empty);
+    ("map_contains" , A.Cmcontains , `Total   , Some map, [ tkey       ], A.vtbool      , Mint.empty);
+    ("map_length"   , A.Cmlength   , `Total   , Some map, [            ], A.vtnat       , Mint.empty);
   ]
 
 (* -------------------------------------------------------------------- *)
-let cryptoops =
-  List.map (fun (x, y) -> x, y, `Total, None, [A.vtbytes], A.vtbytes)
-    ["blake2b", A.Cblake2b; "sha256", A.Csha256; "sha512", A.Csha512]
-  @ ["hash_key", A.Chashkey,
-     `Total, None, [A.vtkey], A.vtkeyhash;
-     "check_signature", A.Cchecksignature,
-     `Total, None, [A.vtkey; A.vtsignature; A.vtbytes], A.vtbool]
+let cryptoops : opinfo list =
+  List.map (fun (x, y) -> x, y, `Total, None, [A.vtbytes], A.vtbytes, Mint.empty)
+    [("blake2b", A.Cblake2b);
+     ("sha256" , A.Csha256 );
+     ("sha512" , A.Csha512 )]
+
+  @ [("hash_key"       , A.Chashkey       , `Total, None, [A.vtkey]                          , A.vtkeyhash, Mint.empty);
+     ("check_signature", A.Cchecksignature, `Total, None, [A.vtkey; A.vtsignature; A.vtbytes], A.vtbool   , Mint.empty)]
 
 (* -------------------------------------------------------------------- *)
-let packops =
-  List.map
-    (fun ty -> ("pack", A.Cpack, `Total, None, [ty], A.vtbytes))
-    [A.vtbool; A.vtint; A.vtrational; A.vtdate; A.vtduration; A.vtstring; A.vtaddress]
-
-let opsops =
-  [
-    "mkoperation", A.Cmkoperation, `Total, None, [ A.vtcurrency; A.Tentrysig (A.Tnamed 0); A.Tnamed 0 ], A.Toperation
-  ]
+let packops : opinfo list =
+  ["pack", A.Cpack, `Total, None, [A.Tnamed 0], A.vtbytes, Mint.of_list [0, `Michelson]]
 
 (* -------------------------------------------------------------------- *)
-let allops = coreops @ optionops @ setops @ listops @ mapops @ cryptoops @ packops @ opsops
+let opsops : opinfo list =
+  [  "mkoperation", A.Cmkoperation, `Total, None,
+       [A.vtcurrency; A.Tentrysig (A.Tnamed 0); A.Tnamed 0], A.Toperation, Mint.empty ]
+
+(* -------------------------------------------------------------------- *)
+let allops : opinfo list =
+  coreops @ optionops @ setops @ listops @ mapops @ cryptoops @ packops @ opsops
 
 (* -------------------------------------------------------------------- *)
 type assetdecl = {
@@ -1043,9 +1077,9 @@ type statedecl = {
 and ctordecl = A.lident * (A.lident option * A.pterm) list
 
 (* -------------------------------------------------------------------- *)
-type contractdecl = {
-  ct_name    : A.lident;
-  ct_entries : (A.lident * (A.lident * A.ptyp) list) list;
+type aentrydecl = {
+  aet_name : A.lident;
+  aet_type : A.type_;
 }
 
 (* -------------------------------------------------------------------- *)
@@ -1096,11 +1130,11 @@ module Env : sig
     | `Definition  of definitiondecl
     | `Asset       of assetdecl
     | `Record      of recorddecl
+    | `AEntry      of aentrydecl
     | `Entry       of t tentrydecl
     | `Function    of t fundecl
     | `Predicate   of preddecl
     | `Field       of ident * [`Asset | `Record]
-    | `Contract    of contractdecl
     | `Context     of assetdecl * ident option
   ]
 
@@ -1181,6 +1215,13 @@ module Env : sig
     val push    : t -> recorddecl -> t
   end
 
+  module AEntry : sig
+    val lookup  : t -> ident -> aentrydecl option
+    val get     : t -> ident -> aentrydecl
+    val exists  : t -> ident -> bool
+    val push    : t -> aentrydecl -> t
+  end
+
   module Asset : sig
     val lookup  : t -> ident -> assetdecl option
     val get     : t -> ident -> assetdecl
@@ -1194,13 +1235,6 @@ module Env : sig
     val get     : t -> ident -> t tentrydecl
     val exists  : t -> ident -> bool
     val push    : t -> t tentrydecl -> t
-  end
-
-  module Contract : sig
-    val lookup  : t -> ident -> contractdecl option
-    val get     : t -> ident -> contractdecl
-    val exists  : t -> ident -> bool
-    val push    : t -> contractdecl -> t
   end
 
   module Context : sig
@@ -1222,11 +1256,11 @@ end = struct
     | `Definition  of definitiondecl
     | `Asset       of assetdecl
     | `Record      of recorddecl
+    | `AEntry      of aentrydecl
     | `Entry       of t tentrydecl
     | `Function    of t fundecl
     | `Predicate   of preddecl
     | `Field       of ident * [`Asset | `Record]
-    | `Contract    of contractdecl
     | `Context     of assetdecl * ident option
   ]
 
@@ -1314,12 +1348,11 @@ end = struct
   module Type = struct
     let proj (entry : entry) =
       match entry with
-      | `Type  x       -> Some x
-      | `Asset decl    -> Some (A.Tasset decl.as_name)
-      | `State decl    -> Some (A.Tenum decl.sd_name)
-      | `Contract decl -> Some (A.Tcontract decl.ct_name)
-      | `Record decl   -> Some (A.Trecord decl.rd_name)
-      | _              -> None
+      | `Type  x      -> Some x
+      | `Asset decl   -> Some (A.Tasset decl.as_name)
+      | `State decl   -> Some (A.Tenum decl.sd_name)
+      | `Record decl  -> Some (A.Trecord decl.rd_name)
+      | _             -> None
 
     let lookup (env : t) (name : ident) =
       lookup_gen proj env name
@@ -1534,6 +1567,22 @@ end = struct
         env decl.rd_fields
   end
 
+  module AEntry = struct
+    let proj = function `AEntry x -> Some x | _ -> None
+
+    let lookup (env : t) (name : ident) =
+      lookup_gen proj env name
+
+    let exists (env : t) (name : ident) =
+      Option.is_some (lookup env name)
+
+    let get (env : t) (name : ident) =
+      Option.get (lookup env name)
+
+    let push (env : t) (entry : aentrydecl) =
+      push env ~loc:(loc entry.aet_name) (unloc entry.aet_name) (`AEntry entry)
+  end
+
   module Tentry = struct
     let proj = function `Entry x -> Some x | _ -> None
 
@@ -1548,22 +1597,6 @@ end = struct
 
     let push (env : t) (act : t tentrydecl) =
       push env ~loc:(loc act.ad_name) (unloc act.ad_name) (`Entry act)
-  end
-
-  module Contract = struct
-    let proj = function `Contract x -> Some x | _ -> None
-
-    let lookup (env : t) (name : ident) =
-      lookup_gen proj env name
-
-    let exists (env : t) (name : ident) =
-      Option.is_some (lookup env name)
-
-    let get (env : t) (name : ident) =
-      Option.get (lookup env name)
-
-    let push (env : t) (ctt : contractdecl) =
-      push env ~loc:(loc ctt.ct_name) (unloc ctt.ct_name) (`Contract ctt)
   end
 
   module Context = struct
@@ -2524,6 +2557,42 @@ let rec for_xexpr
 
       mk_sp (Some fun_.fs_retty) (A.Pcall (None, A.Cid f, args))
 
+    | Eapp (Fident ({ pldesc = "entrypoint" } as f), args) -> begin
+      let args = match args with [{ pldesc = Etuple args }] -> args | _ -> args in
+      let args = List.map (for_xexpr env) args in
+
+      if List.exists (fun arg -> Option.is_none arg.A.type_) args then
+        bailout ();
+
+      let aty = List.map (fun a -> Option.get a.A.type_) args in
+
+      if not (Type.sig_compatible ~from_:aty ~to_:[A.vtaddress; A.vtstring]) then begin
+        Env.emit_error env (loc f, NoMatchingFunction (unloc f, aty));
+        bailout ();
+      end;
+
+      let _address, entry = Option.get (List.as_seq2 args) in
+
+      let ename =
+        match entry.node with
+        | Plit { node = (A.BVstring entry) } -> entry
+        | _ ->
+            Env.emit_error env (entry.loc, StringLiteralExpected);
+            bailout () in
+
+      let decl =
+        match Env.AEntry.lookup env ename with
+        | None ->
+            Env.emit_error env (entry.loc, UnknownAEntry ename);
+            bailout ()
+
+        | Some decl -> decl in
+
+      let rty  = A.Toption (A.Tentrysig decl.aet_type) in
+      let args = List.map (fun x -> A.AExpr x) args in
+      mk_sp (Some rty) (A.Pcall (None, A.Cconst A.Centrypoint, args))
+    end
+
     | Eapp (Fident f, args) -> begin
         let args = match args with [{ pldesc = Etuple args }] -> args | _ -> args in
         let args = List.map (for_xexpr env) args in
@@ -2533,39 +2602,37 @@ let rec for_xexpr
 
         let aty = List.map (fun a -> Option.get a.A.type_) args in
 
-        let select (name, cname, totality, thety, ety, rty) =
+        let select (name, cname, totality, thety, ety, rty, restr) =
           let module E = struct exception Reject end in
 
           try
-            let cty =
-              thety |> Option.bind (fun thety ->
-                  Option.bind
-                    (fun ty -> Type.unify ~ptn:thety ~tg:ty)
-                    (List.ohead aty)) in
-
-            if Option.is_some thety && Option.is_none cty then
+            if unloc f <> name then
               raise E.Reject;
 
-            let ety =
-              Option.fold
-                (fun ety map -> List.map (Type.subst map) (Option.get thety :: ety))
-                ety cty in
+            let ety = Option.get_as_list thety @ ety in
 
-            let rty =
-              Option.fold
-                (fun rty map -> Type.subst map rty)
-                rty cty in
+            if List.length aty <> List.length ety then
+              raise E.Reject;
+
+            let map = ref Mint.empty in
+
+            List.iter2
+              (fun ety aty -> Type.unify ~restr ~ptn:ety ~tg:aty map)
+              ety aty;
+
+            let ety = List.map (Type.subst !map) ety in
+            let rty = Type.subst !map rty in
 
             let rty =
               match totality, mode.em_kind with
               | `Partial, `Formula _ -> A.Toption rty
               | _, _ -> rty in
 
-            if unloc f <> name then raise E.Reject;
             let d = Type.sig_distance ~from_:aty ~to_:ety in
+
             Some (Option.get_exn E.Reject d, (cname, (ety, rty)))
 
-          with E.Reject -> None in
+          with E.Reject | Type.UnificationFailure -> None in
 
         let cd = List.pmap select allops in
         let cd = List.sort (fun (i, _) (j, _) -> compare i j) cd in
@@ -2948,24 +3015,6 @@ and for_asset_collection_expr mode (env : env) tope =
       Some (Env.Asset.get env (unloc asset), c)
 
   in (ast, typ)
-
-(* -------------------------------------------------------------------- *)
-and for_contract_expr mode (env : env) (tope : PT.expr) =
-  let ast = for_xexpr mode env tope in
-  let typ =
-    match Option.map Type.as_contract ast.A.type_ with
-    | None ->
-      None
-
-    | Some None ->
-      Env.emit_error env (loc tope, InvalidContractExpression);
-      None
-
-    | Some (Some ctt) ->
-      Some (Env.Contract.get env (unloc ctt))
-
-  in (ast, typ)
-
 
 (* -------------------------------------------------------------------- *)
 and for_api_call mode env theloc (the, m, args)
@@ -3554,47 +3603,89 @@ let rec for_instruction_r
       end
 
     | Etransfer (e, tr) ->
-      let e      = for_expr kind env ~ety:A.vtcurrency e in
+      let e  = for_expr kind env ~ety:A.vtcurrency e in
       let tr =
         match tr with
         | TTsimple to_ ->
           A.TTsimple (for_expr kind env ~ety:A.vtrole to_)
 
         | TTcontract (to_, name, args) -> begin
-            let for_ctt ctt =
-              let entry =
-                List.find_opt
-                  (fun (x, _) -> unloc name = unloc x)
-                  ctt.ct_entries
-              in
+            let to_ = for_expr ~ety:A.vtaddress kind env to_ in
 
-              match entry  with
+            let decl =
+              match Env.AEntry.lookup env (unloc name) with
               | None ->
-                let err =
-                  UnknownContractEntryPoint (unloc ctt.ct_name, unloc name)
-                in Env.emit_error env (loc name, err); None
+                  Env.emit_error env (loc name, UnknownAEntry (unloc name));
+                  bailout ()
+              | Some decl -> decl in
 
-              | Some (_, targs) ->
-                if List.length targs <> List.length args then
-                  let n = List.length targs in
-                  let c = List.length  args in
-                  Env.emit_error env (loc name, InvalidNumberOfArguments (n, c));
-                  None
-                else
-                  Some (name, List.map2
-                          (fun (_, ety) arg -> for_expr ~ety kind env arg)
-                          targs args)
-            in
-            let to_, ctt = for_contract_expr (expr_mode kind) env to_ in
-            let id, args =
-              match Option.bind for_ctt ctt with
-              | Some v -> v
-              | _ -> Env.emit_error env (loc i, TODO); bailout ()
-            in
-            A.TTcontract (to_, id, args)
+            let targs =
+              match decl.aet_type with
+              | A.Ttuple sig_ -> sig_
+              | A.Tbuiltin A.VTunit -> []
+              | ty -> [ty] in
+
+            if List.length targs <> List.length args then begin
+              let n = List.length targs in
+              let c = List.length  args in
+              Env.emit_error env (loc name, InvalidNumberOfArguments (n, c));
+              bailout ()
+            end;
+
+            let args =
+              List.map2
+                (fun ety arg -> for_expr ~ety kind env arg)
+                targs args in
+
+            A.TTcontract (to_, name, args)
           end
 
-        | _ -> Env.emit_error env (loc i, TODO); bailout ()
+        | TTentry (name, arg) -> begin
+            let nty =
+              match Env.lookup_entry env (unloc name) with
+              | Some (`Local (nty, `Standard)) ->
+                  nty
+
+              | Some (`Global { vr_type = nty; vr_kind = `Variable }) ->
+                  nty
+
+              | _ ->
+                  Env.emit_error env (loc name, UnknownLocalOrVariable (unloc name));
+                  bailout () in
+
+            if not (Type.is_entrysig nty) then begin
+              Env.emit_error env (loc name, AEntryExpected nty);
+              bailout ();
+            end;
+
+            let aty = Option.get (Type.as_entrysig nty) in 
+            let arg = for_expr kind env ~ety:aty arg in
+
+            A.TTentry (name, arg)
+          end
+
+        | TTself (name, args) -> begin
+          let entry =
+            match Env.Tentry.lookup env (unloc name) with
+            | None ->
+                Env.emit_error env (loc name, UnknownEntry (unloc name));
+                bailout ()
+            | Some entry -> entry in
+
+            if List.length entry.ad_args <> List.length args then begin
+              let n = List.length entry.ad_args in
+              let c = List.length args in
+              Env.emit_error env (loc name, InvalidNumberOfArguments (n, c));
+              bailout ()
+            end;
+
+            let args = 
+              List.map2
+                (fun (_, ety) arg -> for_expr ~ety kind env arg)
+                entry.ad_args args in
+
+            A.TTself (name, args)
+        end
 
       in env, mki (Itransfer (e, tr))
 
@@ -4647,39 +4738,23 @@ let for_records_decl (env : env) (decls : PT.record_decl loced list) =
   List.fold_left_map for_record_decl env decls
 
 (* -------------------------------------------------------------------- *)
-(* let for_contract_decl (env : env) (decl : PT.contract_decl loced) =
-   let name, sigs, _ = unloc decl in
-   let entries =
-    List.pmap (fun (PT.Ssignature (ename, psig)) ->
-        List.find_dup (fun (id, _) -> unloc id) psig |>
-        Option.iter (fun (_, (x, _)) ->
-            Env.emit_error env (loc x, DuplicatedArgName (unloc x)));
+let for_entry_decl (env : env) (decl : PT.entries_decl loced) =
+  let for1 (env : env) (ty, name) =
+    let env, _ =
+      for_type env ty |> Option.foldbind (fun env ty ->
+        if check_and_emit_name_free env name then
+          let decl = { aet_name = name; aet_type = ty; } in
+          let env = Env.AEntry.push env decl in
+          env, Some decl
+        else env, None) env
+    in env, None
 
-        let for1 (arg_id, pty) =
-          let ty =
-            for_type env pty |>Option.bind (fun ty ->
-                if not (Type.is_primitive ty) then begin
-                  Env.emit_error env (loc pty, NotAPrimitiveType);
-                  None
-                end else Some ty)
-          in ty |> Option.map (fun ty -> (arg_id, ty)) in
-
-        let sig_ = List.pmap for1 psig in
-
-        if List.length sig_ = List.length psig then
-          Some (ename, sig_)
-        else None
-      ) sigs in
-
-   let cdecl = { ct_name = name; ct_entries = entries; } in
-
-   if check_and_emit_name_free env name then
-    (Env.Contract.push env cdecl, Some cdecl)
-   else (env, None) *)
+  in List.fold_left_map for1 env (fst (unloc decl))
 
 (* -------------------------------------------------------------------- *)
-(* let for_contracts_decl (env : env) (decls : PT.contract_decl loced list) =
-   List.fold_left_map for_contract_decl env decls *)
+let for_entries_decl (env : env) (decls : PT.entries_decl loced list) =
+  let env, decls = List.fold_left_map for_entry_decl env decls in
+  env, List.flatten decls
 
 (* -------------------------------------------------------------------- *)
 let for_acttx_decl (env : env) (decl : acttx loced) =
@@ -4785,6 +4860,7 @@ let group_declarations (decls : (PT.declaration list)) =
     gr_enums      = [];
     gr_assets     = [];
     gr_records    = [];
+    gr_entries    = [];
     gr_vars       = [];
     gr_funs       = [];
     gr_acttxs     = [];
@@ -4814,7 +4890,8 @@ let group_declarations (decls : (PT.declaration list)) =
     | PT.Drecord infos ->
       { g with gr_records = mk infos :: g.gr_records }
 
-    | PT.Dentries _infos -> g (* TODO *)
+    | PT.Dentries infos ->
+      { g with gr_entries = mk infos :: g.gr_entries }
 
     | PT.Dentry infos ->
       { g with gr_acttxs = mk (`Entry infos) :: g.gr_acttxs }
@@ -4843,6 +4920,7 @@ type decls = {
   variables : vardecl option list;
   enums     : statedecl option list;
   records   : recorddecl option list;
+  entries   : aentrydecl option list;
   assets    : assetdecl option list;
   functions : env fundecl option list;
   acttxs    : env tentrydecl option list;
@@ -4885,6 +4963,7 @@ let for_grouped_declarations (env : env) (toploc, g) =
       (None, None, env) in
 
   let env, records      = for_records_decl   env g.gr_records   in
+  let env, entries      = for_entries_decl   env g.gr_entries   in
   let env, enums        = for_enums_decl     env g.gr_enums     in
   let enums, especs     = List.split enums                      in
   let env, variables    = for_vars_decl      env g.gr_vars      in
@@ -4935,7 +5014,8 @@ let for_grouped_declarations (env : env) (toploc, g) =
   let env, secspecs        = for_secs_decl      env g.gr_secs      in
 
   let output =
-    { state    ; variables; enums   ; assets ; functions; acttxs   ; specs    ; secspecs; records }
+    { state    ; variables; enums   ; assets ; functions;
+      acttxs   ; specs    ; secspecs; records; entries  ; }
 
   in (env, output)
 
@@ -5022,17 +5102,8 @@ let variables_of_vdecls fdecls =
   in List.map for1 (List.pmap (fun x -> x) fdecls)
 
 (* -------------------------------------------------------------------- *)
-let contracts_of_cdecls (decls : contractdecl option list) =
-  let for1 (decl : contractdecl) =
-    let for_sig ((name, args) : A.lident * (A.lident * A.ptyp) list) =
-      A.{ name; args; loc = loc name; } in
-
-    A.{ name       = decl.ct_name;
-        signatures = List.map for_sig decl.ct_entries;
-        loc        = loc decl.ct_name;
-        init       = None; }
-
-  in List.map for1 (List.pmap id decls)
+let aentries_of_entrydecl decls =
+  List.map (fun x -> (x.aet_name, x.aet_type)) (List.pmap id decls)
 
 (* -------------------------------------------------------------------- *)
 let specifications_of_ispecifications =
@@ -5191,6 +5262,7 @@ let for_declarations (env : env) (decls : (PT.declaration list) loced) : A.ast =
       )
       ~specifications:(List.map specifications_of_ispecifications decls.specs)
       ~securities:(decls.secspecs)
+      ~ext_entries:(aentries_of_entrydecl decls.entries)
       ~loc:toploc
       x
 
