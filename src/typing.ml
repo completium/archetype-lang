@@ -2910,12 +2910,23 @@ and cast_expr ?(autoview = false) (env : env) (to_ : A.ptyp option) (e : A.pterm
   in
 
   match to_, e with
+  | Some (A.Tlist xty as to_),
+    { type_ = Some (A.Tcontainer (A.Tasset asset, A.View) as from_) } ->
+
+    let decl = Env.Asset.get env (unloc asset) in
+    let pkey = Option.get (get_field (unloc decl.as_pk) decl) in
+
+    if not (Type.equal xty pkey.fd_type) then
+      Env.emit_error env (e.loc, IncompatibleTypes (from_, to_));
+    A.mk_sp ~loc:e.loc ~type_:to_ (A.Pcast (from_, to_, e))
+
   | Some to_, { type_ = Some from_ } ->
     if not (Type.compatible ~autoview ~from_ ~to_) then
       Env.emit_error env (e.loc, IncompatibleTypes (from_, to_));
     if not (Type.equal from_ to_) then
       A.mk_sp ~loc:e.loc ~type_:to_ (A.Pcast (from_, to_, e))
     else e
+
   | _, _ ->
     e
 
