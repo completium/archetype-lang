@@ -9,6 +9,7 @@ module A  = Ast
 
 (* -------------------------------------------------------------------- *)
 module Type : sig
+  val as_builtin          : A.ptyp -> A.vtyp option
   val as_container        : A.ptyp -> (A.ptyp * A.container) option
   val as_asset            : A.ptyp -> A.lident option
   val as_asset_collection : A.ptyp -> (A.lident * A.container) option
@@ -54,6 +55,7 @@ module Type : sig
 
   val pktype : A.ptyp -> bool
 end = struct
+  let as_builtin   = function A.Tbuiltin   ty      -> Some ty      | _ -> None
   let as_container = function A.Tcontainer (ty, c) -> Some (ty, c) | _ -> None
   let as_asset     = function A.Tasset     x       -> Some x       | _ -> None
   let as_tuple     = function A.Ttuple     ts      -> Some ts      | _ -> None
@@ -142,7 +144,7 @@ end = struct
 
   let distance ?(autoview = false) ~(from_ : A.ptyp) ~(to_ : A.ptyp) =
     match from_, to_ with
-    | _, _ when from_ = to_ ->
+    | _, _ when equal from_ to_ ->
       Some 0
 
     | A.Tbuiltin bfrom, A.Tbuiltin bto -> begin
@@ -2845,6 +2847,23 @@ let rec for_xexpr
       let lit = A.mk_sp ~type_:A.vtunit ~loc:(loc tope) (A.BVunit) in
       mk_sp (Some A.vtunit) (A.Plit lit)
 
+    | Eself name when is_expr_kind mode.em_kind -> begin
+        let decl =
+          match Env.Tentry.lookup env (unloc name) with
+          | None ->
+              Env.emit_error env (loc name, UnknownEntry (unloc name));
+              bailout ()
+          | Some decl -> decl in
+
+        let rty =
+          match List.map snd decl.ad_args with
+          | []   -> A.vtunit
+          | [ty] -> ty
+          | tys  -> A.Ttuple tys in
+
+        mk_sp (Some (A.Tentrysig rty)) (A.Pself name)
+      end
+        
     | Eself     _
     | Evar      _
     | Efail     _
