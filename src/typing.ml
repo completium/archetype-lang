@@ -2573,6 +2573,7 @@ let rec for_xexpr
         bailout ();
       end;
 
+(*
       let _address, entry = Option.get (List.as_seq2 args) in
 
       let ename =
@@ -2589,10 +2590,16 @@ let rec for_xexpr
             bailout ()
 
         | Some decl -> decl in
+*)
 
-      let rty  = A.Toption (A.Tentrysig decl.aet_type) in
-      let args = List.map (fun x -> A.AExpr x) args in
-      mk_sp (Some rty) (A.Pcall (None, A.Cconst A.Centrypoint, args))
+      match ety |> Option.bind Type.as_option |> Option.bind Type.as_entrysig with
+      | None ->
+          Env.emit_error env (loc tope, CannotInfer); bailout ()
+
+      | Some rty ->
+          let rty  = A.Toption (A.Tentrysig rty) in
+          let args = List.map (fun x -> A.AExpr x) args in
+          mk_sp (Some rty) (A.Pcall (None, A.Cconst A.Centrypoint, args))
     end
 
     | Eapp (Fident f, args) -> begin
