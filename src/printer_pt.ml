@@ -590,6 +590,15 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_colon pos pp) fmt (t, arg)
 
+  | Eentrypoint (t, a, b) ->
+    let pp fmt (t, a, b) =
+      Format.fprintf fmt "entrypoint<%a>(%a, %a)"
+        pp_type t
+        (pp_expr e_default PNone) a
+        (pp_expr e_default PNone) b
+    in
+    (maybe_paren outer e_colon pos pp) fmt (t, a, b)
+
   | Eself x -> Format.fprintf fmt "self.%a" pp_id x
 
   | Eany -> Format.fprintf fmt "any"

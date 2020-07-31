@@ -396,6 +396,7 @@ type error_desc =
   | InvalidShadowVariableAccess
   | InvalidSortingExpression
   | InvalidStateExpression
+  | InvalidTypeForEntrypoint
   | InvalidTypeForEntrysig
   | InvalidTypeForPk
   | InvalidTypeForSet
@@ -573,6 +574,7 @@ let pp_error_desc fmt e =
   | InvalidShadowVariableAccess        -> pp "Shadow variable access in non-shadow code"
   | InvalidSortingExpression           -> pp "Invalid sorting expression"
   | InvalidStateExpression             -> pp "Invalid state expression"
+  | InvalidTypeForEntrypoint           -> pp "Invalid type for entrypoint"
   | InvalidTypeForEntrysig             -> pp "Invalid type for entrysig"
   | InvalidTypeForPk                   -> pp "Invalid type for primary key"
   | InvalidTypeForSet                  -> pp "Invalid type for set"
@@ -2549,49 +2551,6 @@ let rec for_xexpr
 
       mk_sp (Some fun_.fs_retty) (A.Pcall (None, A.Cid f, args))
 
-    | Eapp (Fident ({ pldesc = "entrypoint" } as f), args) -> begin
-        let args = match args with [{ pldesc = Etuple args }] -> args | _ -> args in
-        let args = List.map (for_xexpr env) args in
-
-        if List.exists (fun arg -> Option.is_none arg.A.type_) args then
-          bailout ();
-
-        let aty = List.map (fun a -> Option.get a.A.type_) args in
-
-        if not (Type.sig_compatible ~from_:aty ~to_:[A.vtaddress; A.vtstring]) then begin
-          Env.emit_error env (loc f, NoMatchingFunction (unloc f, aty));
-          bailout ();
-        end;
-
-(*
-      let _address, entry = Option.get (List.as_seq2 args) in
-
-      let ename =
-        match entry.node with
-        | Plit { node = (A.BVstring entry) } -> entry
-        | _ ->
-            Env.emit_error env (entry.loc, StringLiteralExpected);
-            bailout () in
-
-      let decl =
-        match Env.AEntry.lookup env ename with
-        | None ->
-            Env.emit_error env (entry.loc, UnknownAEntry ename);
-            bailout ()
-
-        | Some decl -> decl in
-*)
-
-        match ety |> Option.bind Type.as_option |> Option.bind Type.as_entrysig with
-        | None ->
-          Env.emit_error env (loc tope, CannotInfer); bailout ()
-
-        | Some rty ->
-          let rty  = A.Toption (A.Tentrysig rty) in
-          let args = List.map (fun x -> A.AExpr x) args in
-          mk_sp (Some rty) (A.Pcall (None, A.Cconst A.Centrypoint, args))
-      end
-
     | Eapp (Fident f, args) -> begin
         let args = match args with [{ pldesc = Etuple args }] -> args | _ -> args in
         let args = List.map (for_xexpr env) args in
@@ -2859,6 +2818,25 @@ let rec for_xexpr
           | tys  -> A.Ttuple tys in
 
         mk_sp (Some (A.Tentrysig rty)) (A.Pself name)
+      end
+
+    | Eentrypoint (ty, a, b) -> begin
+        let ty = for_type_exn env ty in
+        let a  = for_xexpr env ~ety:A.vtstring a in
+        let b  = for_xexpr env ~ety:A.vtaddress b in
+
+        if not (Type.Michelson.is_type ty) then
+          Env.emit_error env (loc tope, InvalidTypeForEntrypoint);
+
+        let id =
+          match a.node with
+          | A.Plit { node = (BVstring str); _ } -> mkloc a.loc str
+          | _ -> (Env.emit_error env (a.loc, StringLiteralExpected); bailout ())
+        in
+
+        mk_sp
+          (Some (A.Toption (A.Tentrysig ty)))
+          (A.Pentrypoint (ty, id, b))
       end
 
     | Eself     _

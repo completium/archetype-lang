@@ -214,7 +214,6 @@ let to_const = function
   | Csum            -> "sum"
   | Cunpack         -> "unpack"
   | Cupdate         -> "update"
-  | Centrypoint     -> "entrypoint"
   | Cmkoperation    -> "mkoperation"
   (* set *)
   | Csadd           -> "set_add"
@@ -480,6 +479,14 @@ let rec pp_pterm fmt (pterm : pterm) =
       in
       (pp_no_paren pp) fmt id
 
+    | Pentrypoint (t, a, b) ->
+      let pp fmt (t, a, b) =
+        Format.fprintf fmt "entrypoint<%a>(%a, %a)"
+          pp_ptyp  t
+          pp_id a
+          pp_pterm b
+      in
+      (pp_no_paren pp) fmt (t, a, b)
   in
   pp_struct_poly pp_node fmt pterm
 

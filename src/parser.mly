@@ -66,6 +66,7 @@
 %token END
 %token ENTRIES
 %token ENTRY
+%token ENTRYPOINT
 %token ENTRYSIG
 %token ENUM
 %token EOF
@@ -777,6 +778,9 @@ expr_r:
 
  | SELF DOT x=ident
      { Eself x }
+
+ | ENTRYPOINT LESS t=type_t GREATER LPAREN a=expr COMMA b=expr RPAREN
+     { Eentrypoint (t, a, b) }
 
  | x=order_operations %prec prec_order { x }
 

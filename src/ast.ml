@@ -160,7 +160,6 @@ type const =
   | Csum
   | Cunpack
   | Cupdate
-  | Centrypoint
   | Cmkoperation
   (* set *)
   | Csadd
@@ -333,6 +332,7 @@ type 'id term_node  =
   | Psome of 'id term_gen
   | Pcast of ptyp * ptyp * 'id term_gen
   | Pself of 'id
+  | Pentrypoint of ptyp * 'id * 'id term_gen
 [@@deriving show {with_path = false}]
 
 and 'id term_arg =

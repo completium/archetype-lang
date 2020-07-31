@@ -587,9 +587,9 @@ let pp_model fmt (model : model) =
           f c
           pp_id id
 
-      | Mentrypoint (a, s) ->
-        Format.fprintf fmt "entrypoint(%a, %a)"
-          f a
+      | Mentrypoint (_, a, s) ->
+        Format.fprintf fmt "entrypoint(\"%a\", %a)"
+          pp_id a
           f s
 
       | Mself id ->

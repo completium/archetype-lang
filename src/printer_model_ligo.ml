@@ -532,10 +532,10 @@ let pp_model_internal fmt (model : model) b =
         f c
         pp_id id
 
-    | Mentrypoint (a, s) ->
-      Format.fprintf fmt "Tezos.get_entrypoint_opt(%a, %a)"
+    | Mentrypoint (_, a, s) ->
+      Format.fprintf fmt "Tezos.get_entrypoint_opt(\"%a\", %a)"
+        pp_id a
         f s
-        f a
 
     | Mself id ->
       let t = mtt.type_ in

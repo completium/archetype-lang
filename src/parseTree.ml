@@ -123,6 +123,7 @@ and expr_unloc =
   | Elabel        of lident
   | Ereturn       of expr
   | Eoption       of option_
+  | Eentrypoint   of type_t * expr * expr
   | Eunpack       of type_t * expr
   | Eself         of lident
   | Eany

@@ -279,9 +279,10 @@ let pp_mterm fmt (mt : mterm) =
         f c
         pp_id id
 
-    | Mentrypoint (a, s) ->
-      Format.fprintf fmt "entrypoint(%a, %a)"
-        f a
+    | Mentrypoint (t, a, s) ->
+      Format.fprintf fmt "entrypoint<%a>(%a, %a)"
+        pp_type t
+        pp_id a
         f s
 
     | Mself id ->

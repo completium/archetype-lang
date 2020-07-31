@@ -367,6 +367,9 @@ let to_model (ast : A.ast) : M.model =
 
       | A.Pself id -> M.Mself id
 
+
+      | A.Pentrypoint (t, a, b) -> M.Mentrypoint (ptyp_to_type t, a, f b)
+
       (* | A.Pcall (Some p, A.Cconst A.Cbefore,    []) -> M.Msetbefore    (f p) *)
       (* | A.Pcall (Some p, A.Cconst A.Cunmoved,   []) -> M.Msetunmoved   (f p)
          | A.Pcall (Some p, A.Cconst A.Cadded,     []) -> M.Msetadded     (f p)
@@ -658,11 +661,6 @@ let to_model (ast : A.ast) : M.model =
         let fs = f s in
         let fx = f x in
         M.Mchecksignature (fk, fs, fx)
-
-      | A.Pcall (None, A.Cconst A.Centrypoint, [AExpr a; AExpr b]) ->
-        let fa = f a in
-        let fb = f b in
-        M.Mentrypoint (fa, fb)
 
       | A.Pcall (_, A.Cid id, args) ->
         M.Mapp (id, List.map (fun x -> term_arg_to_expr f x) args)
