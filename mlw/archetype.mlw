@@ -849,6 +849,7 @@ module Collection
   use list.Mem as M
   use option.Option
   use View as V
+  use fset.ListFilter as F
 
   (* ------------------------------------------------------------------------ *)
   type tk
@@ -1058,6 +1059,14 @@ module Collection
 
   (* ------------------------------------------------------------------------ *)
   let function card (c : collection) = N.card c.content
+
+  (* ------------------------------------------------------------------------ *)
+  function select (p : t -> bool) (c : collection) : collection
+  = mk (N.mk (F.filter p ((N.elts (content c)))))
+
+  (* ------------------------------------------------------------------------ *)
+  lemma mem_select : forall e c p.
+  mem e (select p c) <-> mem e c /\ p e
 
 end
 

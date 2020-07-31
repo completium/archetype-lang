@@ -597,6 +597,11 @@ let rec pp_term outer pos fmt = function
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
   | Tlnth _ -> pp_str fmt "TODO_Tlnth"
+  | Tselect (i1,i2,e) ->
+    Format.fprintf fmt "%a.select %a %a"
+    pp_str (String.capitalize_ascii i1)
+    pp_str i2
+    (pp_with_paren (pp_term outer pos)) e
   | Twitness i ->
     Format.fprintf fmt "%a.witness"
       pp_str (String.capitalize_ascii i)

@@ -567,6 +567,19 @@ let extract_args test =
 
 let mk_select_name m asset test = "select_" ^ asset ^ "_" ^ (string_of_int (M.Utils.get_select_idx m asset test))
 
+let mk_select_formula m asset test filter = Dfun {
+  name     = (mk_select_name m asset test)^"_f";
+  logic    = Logic;
+  args     = ["a", Tyasset asset];
+  returns  = Tybool;
+  raises   = [];
+  variants = [];
+  requires = [];
+  ensures  = [];
+  body     = mk_afun_test filter;
+}
+
+
 let mk_select m asset test mlw_test only_formula args =
   let id =  mk_select_name m asset test in
   let (key, tkey) = M.Utils.get_asset_key m asset in
@@ -1636,13 +1649,18 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         mk_ac_ctx a ctx
       ])
     | Mselect (a, CKcoll, la, lb, _a) ->
-      let args = extract_args lb in
-      let id = mk_select_name m a lb in
-      let argids = args |> List.map (fun (e, _, _) -> e) |> List.map (map_mterm m ctx) in
-      let args = List.map (fun (i,_) -> loc_term (Tvar i)) la in
-      let coll = mk_ac_ctx a ctx in
-      let view = dl (Ttoview (dl a, coll)) in
-      Tapp (loc_term (Tvar id), argids @ args @ [view;coll])
+      begin match ctx.lctx with
+      | Inv | Logic ->
+        Tselect (dl a, dl ((mk_select_name m a lb)^"_f"), mk_ac_ctx a ctx)
+      | _ ->
+        let args = extract_args lb in
+        let id = mk_select_name m a lb in
+        let argids = args |> List.map (fun (e, _, _) -> e) |> List.map (map_mterm m ctx) in
+        let args = List.map (fun (i,_) -> loc_term (Tvar i)) la in
+        let coll = mk_ac_ctx a ctx in
+        let view = dl (Ttoview (dl a, coll)) in
+        Tapp (loc_term (Tvar id), argids @ args @ [view;coll])
+      end
     | Msort (a, (CKview c),l) -> Tvsort (dl (mk_sort_clone_id a l),map_mterm m ctx c,mk_ac_ctx a ctx)
     | Msort (a, CKfield (_, _, c),l) ->
       Tvsort (dl (mk_sort_clone_id a l),
@@ -1732,6 +1750,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
           map_mterm m ctx v |> Mlwtree.deloc
         | _ -> Ttoview (map_lident a,map_mterm m ctx v)
       end
+    | Mcast (Tcontainer (Tasset a,View),Tlist _, v) -> Telts(dl (mk_view_id (unloc a)), map_mterm m ctx v)
     | Mcast (_, _, v)       -> map_mterm m ctx v |> Mlwtree.deloc
 
 
@@ -1997,11 +2016,10 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         in
         Tsubset(dl (mk_view_id n), arg, map_mterm m ctx x)
       end
-    | Misempty (l, r) ->
-      let n = M.Utils.get_asset_type mt in
+    | Misempty (n, r) ->
       begin match r.type_ with
         | M.Tcontainer (_,View) -> Tvempty (dl (mk_view_id n), map_mterm m ctx r)
-        | _ -> Tempty (dl l, map_mterm m ctx r)
+        | _ -> Tempty (dl n, map_mterm m ctx r)
       end
     | Munion     (an, l, r) -> Tunion(dl an, map_mterm m ctx l, map_mterm m ctx r)
     | Minter     (an, l, r) -> Tinter(dl an, map_mterm m ctx l, map_mterm m ctx r)
@@ -3195,18 +3213,21 @@ let mk_storage_api_before_storage (m : M.model) _records =
         acc @ [ (*mk_get_sum_value_from_pos asset id mlw_formula;*)
           mk_get_sum_value asset id mlw_formula;
           mk_sum_clone m asset key tkey formula ]
-      | M.APIAsset (Select (asset, (View | Field _), args, test)), OnlyFormula ->
-          let mlw_test = map_mterm m init_ctx test in
-          acc @ [ mk_select m asset test (mlw_test |> unloc_term) true args ]
+      | M.APIAsset (Select (asset, (View | Field _), _args, test)), OnlyFormula ->
+        let mlw_test = map_mterm m init_ctx test in
+        acc @ [ mk_select_formula m asset test (mlw_test |> unloc_term) ]
       | M.APIAsset (Select (asset, (View | Field _), args, test)), (ExecFormula | OnlyExec) ->
-          let mlw_test = map_mterm m init_ctx test in
-          acc @ [ mk_select m asset test (mlw_test |> unloc_term) false args ]
+        let mlw_test = map_mterm m init_ctx test in
+        acc @ [ mk_select m asset test (mlw_test |> unloc_term) false args ]
       | M.APIAsset (Select (asset, Coll, args, test)), OnlyFormula ->
         let mlw_test = map_mterm m init_ctx test in
         acc @ [ mk_select m asset test (mlw_test |> unloc_term) true args ]
       | M.APIAsset (Select (asset, Coll, args, test)), (ExecFormula | OnlyExec) ->
-        let mlw_test = map_mterm m init_ctx test in
-        acc @ [ mk_select m asset test (mlw_test |> unloc_term) false args ]
+        let mlw_test = map_mterm m init_ctx test  |> unloc_term in
+        acc @ [
+          mk_select m asset test mlw_test false args;
+          mk_select_formula m asset test mlw_test
+        ]
       | _ -> acc
     ) [] |> loc_decl |> deloc
 

@@ -200,6 +200,7 @@ type ('e,'t,'i) abstract_term =
   | Tcnth    of 'i * 'e * 'e
   | Tvnth    of 'i * 'e * 'e
   | Tlnth   of 'i * 'e * 'e
+  | Tselect of 'i * 'i * 'e
   | Twitness of 'i
   (* option *)
   | Tnone
@@ -484,6 +485,7 @@ and map_abstract_term
   | Tcnth (i,e1,e2)    -> Tcnth (map_i i, map_e e1, map_e e2)
   | Tvnth (i,e1,e2)    -> Tvnth (map_i i, map_e e1, map_e e2)
   | Tlnth (i,e1,e2)    -> Tlnth (map_i i, map_e e1, map_e e2)
+  | Tselect (i1,i2,e)  -> Tselect (map_i i1, map_i i2, map_e e)
   | Twitness i         -> Twitness (map_i i)
   | Tnone              -> Tnone
   | Tsome e            -> Tsome (map_e e)
@@ -893,6 +895,7 @@ let compare_abstract_term
   | Tvtail (i1,e1,e2), Tvtail (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tcnth (i1,e1,e2), Tcnth (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tvnth (i1,e1,e2), Tvnth (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
+  | Tselect (i1,i2,e1), Tselect (i3,i4,e2) -> cmpi i1 i3 && cmpi i2 i4 && cmpe e1 e2
   | Twitness i1, Twitness i2 -> cmpi i1 i2
   | Tnone, Tnone -> true
   | Tsome e1, Tsome e2 -> cmpe e1 e2
