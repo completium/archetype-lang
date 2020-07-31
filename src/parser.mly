@@ -746,8 +746,8 @@ expr_r:
  | TRANSFER x=simple_expr TO y=simple_expr
      { Etransfer (x, TTsimple y) }
 
- | TRANSFER x=simple_expr TO y=simple_expr CALL id=ident args=paren(sl(COMMA, simple_expr))
-     { Etransfer (x, TTcontract (y, id, args)) }
+ | TRANSFER x=simple_expr TO y=simple_expr CALL id=ident LESS t=type_t GREATER args=paren(expr)
+     { Etransfer (x, TTcontract (y, id, t, args)) }
 
  | TRANSFER x=simple_expr TO ENTRY id=ident arg=simple_expr
      { Etransfer (x, TTentry (id, arg)) }

@@ -12,5 +12,5 @@ entry f(n : nat) {
 
 entry exec () {
   var n : nat = res + 2;
-  transfer 0tz to @KT1UZ512pdDcD36GjXLJEkVifeQz3TduZ9uw call set_value(n);
+  transfer 0tz to @KT1UZ512pdDcD36GjXLJEkVifeQz3TduZ9uw call set_value<nat>(n);
 }

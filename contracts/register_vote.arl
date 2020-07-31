@@ -63,7 +63,7 @@ entry execute (id : string) {
     var count = vote[id].vcount;
     if nbvoters >= quorum * voter.count() and count >= threshold * nbvoters then (
       // call contract action here
-      transfer 0tz to contract_instance call register_candidate(vote[id].vcandidate)
+      transfer 0tz to contract_instance call register_candidate<address>(vote[id].vcandidate)
     )
   }
 }

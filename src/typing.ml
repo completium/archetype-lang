@@ -3614,42 +3614,12 @@ let rec for_instruction_r
         | TTsimple to_ ->
           A.TTsimple (for_expr kind env ~ety:A.vtrole to_)
 
-        | TTcontract (to_, name, args) -> begin
+        | TTcontract (to_, name, ty, arg) -> begin
+            let ty  = for_type_exn env ty in
             let to_ = for_expr ~ety:A.vtaddress kind env to_ in
+            let arg = for_expr ~ety:ty kind env arg in
 
-            let decl =
-              match Env.AEntry.lookup env (unloc name) with
-              | None ->
-                Env.emit_error env (loc name, UnknownAEntry (unloc name));
-                bailout ()
-              | Some decl -> decl in
-
-            let targs =
-              match decl.aet_type with
-              | A.Ttuple sig_ -> sig_
-              | A.Tbuiltin A.VTunit -> []
-              | ty -> [ty] in
-
-            if List.length targs <> List.length args then begin
-              let n = List.length targs in
-              let c = List.length  args in
-              Env.emit_error env (loc name, InvalidNumberOfArguments (n, c));
-              bailout ()
-            end;
-
-            let args =
-              List.map2
-                (fun ety arg -> for_expr ~ety kind env arg)
-                targs args in
-
-            let arg =
-              match args with
-              | [] -> let lit = A.mk_sp ~type_:A.vtunit (A.BVunit) in A.mk_sp ~type_:A.vtunit (A.Plit lit)
-              | [x] -> x
-              | _ ->  A.mk_sp ~type_:(A.Ttuple targs) (A.Ptuple args)
-            in
-
-            A.TTcontract (to_, name, arg)
+            A.TTcontract (to_, name, ty, arg)
           end
 
         | TTentry (name, arg) -> begin

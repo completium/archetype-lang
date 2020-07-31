@@ -90,7 +90,7 @@ and for_ident = for_ident_unloc loced
 
 and transfer_t =
   | TTsimple   of expr
-  | TTcontract of expr * lident * expr list
+  | TTcontract of expr * lident * type_t * expr
   | TTentry    of lident * expr
   | TTself     of lident * expr list
 

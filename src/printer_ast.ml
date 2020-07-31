@@ -633,10 +633,10 @@ let rec pp_instruction fmt (i : instruction) =
         Format.fprintf fmt "transfer %a%a"
           pp_pterm value
           (fun fmt -> function
-             | TTsimple dst               -> Format.fprintf fmt " to %a" pp_pterm dst
-             | TTcontract (dst, id, arg)  -> Format.fprintf fmt " to %a call %a(%a)" pp_pterm dst pp_id id pp_pterm arg
-             | TTentry (e, arg)           -> Format.fprintf fmt " to entry %a(%a)" pp_pterm e pp_pterm arg
-             | TTself (id, args)          -> Format.fprintf fmt " to entry self.%a(%a)" pp_id id (pp_list "," (fun fmt (id, v) ->  Format.fprintf fmt "%a = %a" pp_id id pp_pterm v)) args
+             | TTsimple dst                 -> Format.fprintf fmt " to %a" pp_pterm dst
+             | TTcontract (dst, id, t, arg) -> Format.fprintf fmt " to %a call %a<%a>(%a)" pp_pterm dst pp_id id pp_ptyp t pp_pterm arg
+             | TTentry (e, arg)             -> Format.fprintf fmt " to entry %a(%a)" pp_pterm e pp_pterm arg
+             | TTself (id, args)            -> Format.fprintf fmt " to entry self.%a(%a)" pp_id id (pp_list "," (fun fmt (id, v) ->  Format.fprintf fmt "%a = %a" pp_id id pp_pterm v)) args
           ) tr
       in
       (pp_with_paren pp) fmt (value, tr)

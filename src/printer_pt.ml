@@ -381,10 +381,10 @@ let rec pp_expr outer pos fmt a =
       Format.fprintf fmt "transfer %a%a"
         pp_simple_expr x
         (fun fmt -> function
-           | TTsimple dst               -> Format.fprintf fmt " to %a" pp_simple_expr dst
-           | TTcontract (dst, id, args) -> Format.fprintf fmt " to %a call %a(%a)" pp_simple_expr dst pp_id id (pp_list "," pp_simple_expr) args
-           | TTentry (id, arg)          -> Format.fprintf fmt " to entry %a(%a)" pp_id id pp_simple_expr arg
-           | TTself (id, args)          -> Format.fprintf fmt " to entry self.%a(%a)" pp_id id (pp_list "," pp_simple_expr) args
+           | TTsimple dst                 -> Format.fprintf fmt " to %a" pp_simple_expr dst
+           | TTcontract (dst, id, t, arg) -> Format.fprintf fmt " to %a call %a<%a>(%a)" pp_simple_expr dst pp_id id pp_type t pp_simple_expr arg
+           | TTentry (id, arg)            -> Format.fprintf fmt " to entry %a(%a)" pp_id id pp_simple_expr arg
+           | TTself (id, args)            -> Format.fprintf fmt " to entry self.%a(%a)" pp_id id (pp_list "," pp_simple_expr) args
         ) tr
     in
     (maybe_paren outer e_default pos pp) fmt (x, tr)
