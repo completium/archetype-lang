@@ -212,8 +212,8 @@ end = struct
       try
         let i =
           List.fold_left2 (fun d from_ to_ ->
-            d + Option.get_exn E.Reject (distance ~from_ ~to_)
-          ) 0 from_ to_
+              d + Option.get_exn E.Reject (distance ~from_ ~to_)
+            ) 0 from_ to_
         in Some i
       with E.Reject -> None
 
@@ -233,17 +233,17 @@ end = struct
         match ptn, tg with
         | A.Tnamed i, _ -> begin
             begin match Mint.find_opt i restr with
-            | Some `Michelson ->
+              | Some `Michelson ->
                 if not (Michelson.is_type tg) then
                   raise E.Error;
-            | None -> () end;
+              | None -> () end;
 
             map := !map |> Mint.update i (function
-             | None    -> Some tg
-             | Some ty ->
-                 if   compatible ~autoview:false ~to_:ty ~from_:tg
-                 then Some ty
-                 else raise E.Error)
+                | None    -> Some tg
+                | Some ty ->
+                  if   compatible ~autoview:false ~to_:ty ~from_:tg
+                  then Some ty
+                  else raise E.Error)
           end
 
         | Toperation, Toperation
@@ -879,7 +879,7 @@ let methods = Mid.of_list methods
 
 (* -------------------------------------------------------------------- *)
 type opinfo =
-    string
+  string
   * A.const
   * [`Partial | `Total]
   * A.type_ option
@@ -966,7 +966,7 @@ let packops : opinfo list =
 (* -------------------------------------------------------------------- *)
 let opsops : opinfo list =
   [  "mkoperation", A.Cmkoperation, `Total, None,
-       [A.vtcurrency; A.Tentrysig (A.Tnamed 0); A.Tnamed 0], A.Toperation, Mint.empty ]
+     [A.vtcurrency; A.Tentrysig (A.Tnamed 0); A.Tnamed 0], A.Toperation, Mint.empty ]
 
 (* -------------------------------------------------------------------- *)
 let allops : opinfo list =
@@ -1737,17 +1737,17 @@ let select_operator env ?(formula = false) ?(asset = false) loc (op, tys) =
           let ops =
             List.filter
               (fun sig_ ->
-                let d = Type.sig_distance ~to_:sig_.osl_sig ~from_:tys in
-                d = mind || Option.is_none d)
+                 let d = Type.sig_distance ~to_:sig_.osl_sig ~from_:tys in
+                 d = mind || Option.is_none d)
               ops in
 
           try
             let sig_ = match ops with [sig_] -> sig_ | _ -> raise E.Bailout in
 
             List.iter (fun sig2 ->
-              if not (Type.sig_compatible ~from_:sig_.osl_sig ~to_:sig2.osl_sig) then
-                raise E.Bailout
-            ) sigs;
+                if not (Type.sig_compatible ~from_:sig_.osl_sig ~to_:sig2.osl_sig) then
+                  raise E.Bailout
+              ) sigs;
 
             Some sig_
 
@@ -2453,7 +2453,7 @@ let rec for_xexpr
                                 sig_.osl_sig [e; e'])) in
                       let term = A.Pcomp (tt_cmp_operator op, e, e') in
                       mk_sp (Some sig_.osl_ret) term
-                  ) (select_operator env (loc tope) (PT.Cmp op, [ty; ty']) ~formula:(is_form_kind mode.em_kind))
+                    ) (select_operator env (loc tope) (PT.Cmp op, [ty; ty']) ~formula:(is_form_kind mode.em_kind))
                 in (e', aout)
               end
 
@@ -2560,18 +2560,18 @@ let rec for_xexpr
       mk_sp (Some fun_.fs_retty) (A.Pcall (None, A.Cid f, args))
 
     | Eapp (Fident ({ pldesc = "entrypoint" } as f), args) -> begin
-      let args = match args with [{ pldesc = Etuple args }] -> args | _ -> args in
-      let args = List.map (for_xexpr env) args in
+        let args = match args with [{ pldesc = Etuple args }] -> args | _ -> args in
+        let args = List.map (for_xexpr env) args in
 
-      if List.exists (fun arg -> Option.is_none arg.A.type_) args then
-        bailout ();
+        if List.exists (fun arg -> Option.is_none arg.A.type_) args then
+          bailout ();
 
-      let aty = List.map (fun a -> Option.get a.A.type_) args in
+        let aty = List.map (fun a -> Option.get a.A.type_) args in
 
-      if not (Type.sig_compatible ~from_:aty ~to_:[A.vtaddress; A.vtstring]) then begin
-        Env.emit_error env (loc f, NoMatchingFunction (unloc f, aty));
-        bailout ();
-      end;
+        if not (Type.sig_compatible ~from_:aty ~to_:[A.vtaddress; A.vtstring]) then begin
+          Env.emit_error env (loc f, NoMatchingFunction (unloc f, aty));
+          bailout ();
+        end;
 
 (*
       let _address, entry = Option.get (List.as_seq2 args) in
@@ -2592,15 +2592,15 @@ let rec for_xexpr
         | Some decl -> decl in
 *)
 
-      match ety |> Option.bind Type.as_option |> Option.bind Type.as_entrysig with
-      | None ->
+        match ety |> Option.bind Type.as_option |> Option.bind Type.as_entrysig with
+        | None ->
           Env.emit_error env (loc tope, CannotInfer); bailout ()
 
-      | Some rty ->
+        | Some rty ->
           let rty  = A.Toption (A.Tentrysig rty) in
           let args = List.map (fun x -> A.AExpr x) args in
           mk_sp (Some rty) (A.Pcall (None, A.Cconst A.Centrypoint, args))
-    end
+      end
 
     | Eapp (Fident f, args) -> begin
         let args = match args with [{ pldesc = Etuple args }] -> args | _ -> args in
@@ -2858,8 +2858,8 @@ let rec for_xexpr
         let decl =
           match Env.Tentry.lookup env (unloc name) with
           | None ->
-              Env.emit_error env (loc name, UnknownEntry (unloc name));
-              bailout ()
+            Env.emit_error env (loc name, UnknownEntry (unloc name));
+            bailout ()
           | Some decl -> decl in
 
         let rty =
@@ -3652,8 +3652,8 @@ let rec for_instruction_r
             let decl =
               match Env.AEntry.lookup env (unloc name) with
               | None ->
-                  Env.emit_error env (loc name, UnknownAEntry (unloc name));
-                  bailout ()
+                Env.emit_error env (loc name, UnknownAEntry (unloc name));
+                bailout ()
               | Some decl -> decl in
 
             let targs =
@@ -3674,21 +3674,28 @@ let rec for_instruction_r
                 (fun ety arg -> for_expr ~ety kind env arg)
                 targs args in
 
-            A.TTcontract (to_, name, args)
+            let arg =
+              match args with
+              | [] -> let lit = A.mk_sp ~type_:A.vtunit (A.BVunit) in A.mk_sp ~type_:A.vtunit (A.Plit lit)
+              | [x] -> x
+              | _ ->  A.mk_sp ~type_:(A.Ttuple targs) (A.Ptuple args)
+            in
+
+            A.TTcontract (to_, name, arg)
           end
 
         | TTentry (name, arg) -> begin
             let nty =
               match Env.lookup_entry env (unloc name) with
               | Some (`Local (nty, (`Standard | `Argument))) ->
-                  nty
+                nty
 
               | Some (`Global { vr_type = nty; vr_kind = `Variable }) ->
-                  nty
+                nty
 
               | _ ->
-                  Env.emit_error env (loc name, UnknownLocalOrVariable (unloc name));
-                  bailout () in
+                Env.emit_error env (loc name, UnknownLocalOrVariable (unloc name));
+                bailout () in
 
             if not (Type.is_entrysig nty) then begin
               Env.emit_error env (loc name, AEntryExpected nty);
@@ -3704,12 +3711,12 @@ let rec for_instruction_r
           end
 
         | TTself (name, args) -> begin
-          let entry =
-            match Env.Tentry.lookup env (unloc name) with
-            | None ->
+            let entry =
+              match Env.Tentry.lookup env (unloc name) with
+              | None ->
                 Env.emit_error env (loc name, UnknownEntry (unloc name));
                 bailout ()
-            | Some entry -> entry in
+              | Some entry -> entry in
 
             if List.length entry.ad_args <> List.length args then begin
               let n = List.length entry.ad_args in
@@ -3724,7 +3731,7 @@ let rec for_instruction_r
                 entry.ad_args args in
 
             A.TTself (name, args)
-        end
+          end
 
       in env, mki (Itransfer (e, tr))
 
@@ -4203,7 +4210,6 @@ let for_function (env : env) (fdecl : PT.s_function loced) =
   Env.inscope env (fun env ->
       let env, args = for_args_decl env fdecl.args in
       let rty       = Option.bind (for_type env) fdecl.ret_t in
-        Format.eprintf "%b@." (Option.is_some rty);
       let env, body = for_instruction ~ret:rty `Concrete env fdecl.body in
       let env, spec =
         let poenv = rty |> Option.fold (fun poenv rty ->
@@ -4781,11 +4787,11 @@ let for_entry_decl (env : env) (decl : PT.entries_decl loced) =
   let for1 (env : env) (ty, name) =
     let env, _ =
       for_type env ty |> Option.foldbind (fun env ty ->
-        if check_and_emit_name_free env name then
-          let decl = { aet_name = name; aet_type = ty; } in
-          let env = Env.AEntry.push env decl in
-          env, Some decl
-        else env, None) env
+          if check_and_emit_name_free env name then
+            let decl = { aet_name = name; aet_type = ty; } in
+            let env = Env.AEntry.push env decl in
+            env, Some decl
+          else env, None) env
     in env, None
 
   in List.fold_left_map for1 env (fst (unloc decl))

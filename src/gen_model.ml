@@ -828,7 +828,7 @@ let to_model (ast : A.ast) : M.model =
           let k =
             match k with
             | TTsimple d                -> M.TKsimple (f d)
-            | TTcontract (d, _id, [{type_ = Some t; _} as arg]) -> M.TKcall (ptyp_to_type t, f d, f arg)
+            | TTcontract (d, _id, ({type_ = Some t; _} as arg)) -> M.TKcall (ptyp_to_type t, f d, f arg)
             | TTentry (e, arg)          -> M.TKentry (f e, f arg)
             | TTself (id, args)         -> M.TKself (unloc id, List.map (fun (id, v) -> unloc id, f v) args)
             | _ -> assert false
