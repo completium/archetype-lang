@@ -1906,10 +1906,10 @@ let extract_term_from_instruction f (model : model) : model =
       let ve, va = f v in
       let ke, ka =
         match k with
-        | TKsimple d        -> let de, da = f d in TKsimple de, da
-        | TKcall (t, d, a)  -> let de, da = f d in let ae, aa = f a in TKcall (t, de, ae), da @ aa
-        | TKentry (e, a)    -> let ee, ea = f e in let ae, aa = f a in TKentry (ee, ae), ea @ aa
-        | TKself (id, args) -> let args, accu = List.fold_left (fun (args, accu) (id, a) -> let ae, aa = f a in (args @ [id, ae], accu @ aa)) ([], []) args  in TKself (id, args), accu
+        | TKsimple d           -> let de, da = f d in TKsimple de, da
+        | TKcall (id, t, d, a) -> let de, da = f d in let ae, aa = f a in TKcall (id, t, de, ae), da @ aa
+        | TKentry (e, a)       -> let ee, ea = f e in let ae, aa = f a in TKentry (ee, ae), ea @ aa
+        | TKself (id, args)    -> let args, accu = List.fold_left (fun (args, accu) (id, a) -> let ae, aa = f a in (args @ [id, ae], accu @ aa)) ([], []) args  in TKself (id, args), accu
       in
       process (mk_mterm (Mtransfer (ve, ke)) mt.type_) (va @ ka)
 

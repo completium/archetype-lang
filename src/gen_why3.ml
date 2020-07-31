@@ -1426,10 +1426,10 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mtransfer (v, k) ->
       let e =
         match k with
-        | TKsimple d          -> d
-        | TKcall (_, d, _a)   -> d
-        | TKentry (e, _a)     -> e
-        | TKself (_id, _args) -> assert false
+        | TKsimple d             -> d
+        | TKcall (_id, _, d, _a) -> d
+        | TKentry (e, _a)        -> e
+        | TKself (_id, _args)    -> assert false
       in
       Ttransfer(map_mterm m ctx v, map_mterm m ctx e)
 

@@ -491,13 +491,16 @@ let pp_model_internal fmt (model : model) b =
             f v
             f d
             const_operations
-        | TKcall (t, d, a) ->
-          Format.fprintf fmt "%s := cons(transaction(%a, %a, (get_contract(%a) : contract(%a))), %s)"
+        | TKcall (id, t, d, a) ->
+          let pp_self fmt _ =
+            Format.fprintf fmt "case (Tezos.get_entrypoint_opt(\"%%%s\", %a) : option(contract(%a))) of Some (v) -> v | None -> (failwith(\"error self\") : contract(%a)) end"
+              id f d pp_type t pp_type t
+          in
+          Format.fprintf fmt "%s := cons(transaction(%a, %a, %a), %s)"
             const_operations
             f a
             f v
-            f d
-            pp_type t
+            pp_self ()
             const_operations
 
         | TKentry (e, a) ->
@@ -509,15 +512,19 @@ let pp_model_internal fmt (model : model) b =
             const_operations
 
         | TKself (id, args) ->
+          let pp_self fmt _ =
+            Format.fprintf fmt "case (Tezos.get_entrypoint_opt(\"%%%s\", Tezos.self_address) : option(contract(action_%s))) of Some (v) -> v | None -> (failwith(\"error self\") : contract(action_%s)) end"
+              id id id
+          in
           Format.fprintf fmt
-            "%s := cons(transaction((%a : action_%s), %a, (get_contract(Tezos.self_address) : contract(action_%s))), %s)@\n"
+            "%s := cons(transaction((%a : action_%s), %a, %a), %s)@\n"
             const_operations
             (fun fmt l ->
                match l with
                | [] -> pp_str fmt "unit"
                | _  -> Format.fprintf fmt "record %a end" (pp_list "; " (fun fmt (id, v) -> Format.fprintf fmt "%s = %a" id f v)) l) args
             id
-            f v id const_operations
+            f v pp_self () const_operations
       end
 
 

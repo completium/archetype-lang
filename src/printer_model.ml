@@ -129,10 +129,10 @@ let pp_iter_container_kind f fmt = function
   | ICKmap   mt         -> Format.fprintf fmt "%a" f mt
 
 let pp_transfer_kind f fmt = function
-  | TKsimple d        -> Format.fprintf fmt "to %a" f d
-  | TKcall (_, d, a)  -> Format.fprintf fmt "to entry %a(%a)" f d f a
-  | TKentry (e, a)    -> Format.fprintf fmt "to entry %a(%a)" f e f a
-  | TKself (id, args) -> Format.fprintf fmt "to entry self.%a(%a)" pp_str id (pp_list ", " (fun fmt (id, x) -> Format.fprintf fmt "%s = %a" id f x)) args
+  | TKsimple d           -> Format.fprintf fmt "to %a" f d
+  | TKcall (id, _, d, a) -> Format.fprintf fmt "to %a call %s(%a)" f d id f a
+  | TKentry (e, a)       -> Format.fprintf fmt "to entry %a(%a)" f e f a
+  | TKself (id, args)    -> Format.fprintf fmt "to entry self.%a(%a)" pp_str id (pp_list ", " (fun fmt (id, x) -> Format.fprintf fmt "%s = %a" id f x)) args
 
 let pp_mterm fmt (mt : mterm) =
   let rec f fmt (mtt : mterm) =
