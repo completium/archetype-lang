@@ -338,12 +338,6 @@ let main () =
   Arg.parse arg_list (fun s -> (ofilename := s;
                                 ochannel := Some (open_in s))) arg_usage;
 
-  (* if List.length !Options.opt_vids > 0
-     then (
-     List.iter (fun x -> Format.printf "%s@\n" x) !Options.opt_vids;
-     exit 1
-     ); *)
-
   let filename, channel, dispose =
     match !ochannel with
     | Some c -> (!ofilename, c, true)
@@ -371,21 +365,11 @@ let main () =
     exit 1
   | Error.ParseError _ ->
     close dispose channel;
-    (* List.map (fun (_ps, _s) -> ()) l; *)
-    (* Format.eprintf "%s.\n" s *)
     exit 1
   | Error.Stop i
   | Stop_error i ->
     close dispose channel;
     exit i
-(* | Reduce.ReduceError (msg, l) ->
-   close dispose channel;
-   Printf.eprintf "%s%s.\n" msg (match l with | None -> "" | Some l -> (Location.tostring l));
-   exit 1
-   | Reduce.ErrorAcceptTransfer (str, loc, locs) ->
-   close dispose channel;
-   Printf.eprintf "Error: accept transfer must be set to '%s' at %s because 'transferred' is read at %s.\n" str (Location.tostring loc) (List.fold_right (fun i accu -> (Location.tostring i) ^ accu) locs "");
-   exit 1 *)
 
 (* -------------------------------------------------------------------- *)
 let _ = main ()

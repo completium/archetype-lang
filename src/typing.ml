@@ -2870,7 +2870,7 @@ let rec for_xexpr
 
         mk_sp (Some (A.Tentrysig rty)) (A.Pself name)
       end
-        
+
     | Eself     _
     | Evar      _
     | Efail     _
@@ -3695,10 +3695,12 @@ let rec for_instruction_r
               bailout ();
             end;
 
-            let aty = Option.get (Type.as_entrysig nty) in 
+            let aty = Option.get (Type.as_entrysig nty) in
             let arg = for_expr kind env ~ety:aty arg in
 
-            A.TTentry (name, arg)
+            let e = A.mk_sp ~type_:nty (A.Pvar (VTnone, Vnone, name)) in
+
+            A.TTentry (e, arg)
           end
 
         | TTself (name, args) -> begin
@@ -3716,9 +3718,9 @@ let rec for_instruction_r
               bailout ()
             end;
 
-            let args = 
+            let args =
               List.map2
-                (fun (_, ety) arg -> for_expr ~ety kind env arg)
+                (fun (id, ety) arg -> id, for_expr ~ety kind env arg)
                 entry.ad_args args in
 
             A.TTself (name, args)

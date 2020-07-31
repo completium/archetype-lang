@@ -1,23 +1,23 @@
 archetype test_transfer
 
 entries {
-  <int> set_value
+  <nat> set_value
 }
 
-variable res : int = 0
+variable res : nat = 0
 
-entry f(i : int) {
+entry f(n : nat) {
   res := 0
 }
 
 entry exec () {
-  transfer 1tz to @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg;
+  // transfer 1tz to @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg;
 
-  transfer 0tz to @KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm call set_value(1);
+  // transfer 0tz to @KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm call set_value(1)
 
-  var eopt : option<entrysig<int>> = entrypoint(@KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm, "set_value");
-  var e = opt_get(eopt);
-  transfer 0tz to entry e(1);
+  // var eopt : option<entrysig<nat>> = entrypoint(@KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm, "%set_value");
+  // var e = opt_get(eopt);
+  // transfer 0tz to entry e(1);
 
   transfer 0tz to entry self.f(1);
 }

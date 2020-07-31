@@ -211,6 +211,7 @@ let pp_model_internal fmt (model : model) b =
     | Ttuple l          -> Format.fprintf fmt "tuple_%a" (pp_list "_" pp_type) l
     | Tset t            -> Format.fprintf fmt "set_%a" pp_type t
     | Tmap (k, v)       -> Format.fprintf fmt "map_%a_%a" pp_type k pp_type v
+    | Tentrysig t       -> Format.fprintf fmt "entrysig_%a" pp_type t
     | _ -> pp_type fmt t
   in
 
@@ -260,7 +261,7 @@ let pp_model_internal fmt (model : model) b =
       | { node = Mletin _; _} as a ->
         Format.fprintf fmt " block {@\n   @[%a@]@\n}"
           f a
-      | { node = (Mcallcontract _ | Mcallentry _ | Mupdate _); _} as a ->
+      | { node = (Mupdate _); _} as a ->
         Format.fprintf fmt " block {@\n   @[%a@]@\n}"
           f a
       | _ ->
@@ -482,55 +483,42 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt "failwith (%a)"
         pp_fail_type ft
 
-    | Mtransfer (v, d) ->
-      Format.fprintf fmt "%s := cons(transaction(unit, %a, (get_contract(%a) : contract(unit))), %s)"
-        const_operations
-        f v
-        f d
-        const_operations
+    | Mtransfer (v, k) -> begin
+        match k with
+        | TKsimple d ->
+          Format.fprintf fmt "%s := cons(transaction(unit, %a, (get_contract(%a) : contract(unit))), %s)"
+            const_operations
+            f v
+            f d
+            const_operations
+        | TKcall (t, d, a) ->
+          Format.fprintf fmt "%s := cons(transaction(%a, %a, (get_contract(%a) : contract(%a))), %s)"
+            const_operations
+            f a
+            f v
+            f d
+            pp_type t
+            const_operations
 
-    | Mcallcontract (v, d, t, fid, args) ->
-      let pp fmt (v, d, t, fid, args) =
-        let fid = fid |> unloc |> String.up_firstcase_lower in
+        | TKentry (e, a) ->
+          Format.fprintf fmt "%s := cons(transaction(%a, %a, %a), %s)"
+            const_operations
+            f a
+            f v
+            f e
+            const_operations
 
-        Format.fprintf fmt
-          "const c_ : contract(action_%s) = get_contract(%a);@\n  \
-           const param_ : action_%s = %s (%a);@\n  \
-           const op_: operation = transaction(param_, %a, c_);@\n  \
-           %s := cons(op_, %s)@\n"
-          t f d
-          t fid (fun fmt l ->
-              match l with
-              | [] -> pp_str fmt "unit"
-              | _  -> Format.fprintf fmt "record %a end" (pp_list "; " (fun fmt (id, v) -> Format.fprintf fmt "%a = %a" pp_id id f v)) l) args
-          f v
-          const_operations const_operations
-      in
-      pp fmt (v, d, t, fid, args)
-
-    | Mcallentry (v, e, arg) ->
-      let pp _fmt (v, e, arg) =
-        Format.fprintf fmt
-          "const op_: operation = transaction(%a, %a, %a);@\n  \
-           %s := cons(op_, %s)@\n"
-          f arg
-          f v
-          pp_id e
-          const_operations const_operations
-      in
-      pp fmt (v, e, arg)
-
-    | Mcallself (v, e, args) ->
-      let pp _fmt (_v, _e, _args) =
-        Format.fprintf fmt
-          "const op_: operation = transaction(%a, %a, %a);@\n  \
-           %s := cons(op_, %s)@\n"
-          (pp_paren (pp_list "," f)) args
-          f v
-          pp_id e
-          const_operations const_operations
-      in
-      pp fmt (v, e, args)
+        | TKself (id, args) ->
+          Format.fprintf fmt
+            "%s := cons(transaction((%a : action_%s), %a, (get_contract(Tezos.self_address) : contract(action_%s))), %s)@\n"
+            const_operations
+            (fun fmt l ->
+               match l with
+               | [] -> pp_str fmt "unit"
+               | _  -> Format.fprintf fmt "record %a end" (pp_list "; " (fun fmt (id, v) -> Format.fprintf fmt "%s = %a" id f v)) l) args
+            id
+            f v id const_operations
+      end
 
 
     (* entrypoint *)
@@ -541,7 +529,7 @@ let pp_model_internal fmt (model : model) b =
         pp_id id
 
     | Mentrypoint (a, s) ->
-      Format.fprintf fmt "Tezos.get_entrypoint_opt(\"%%%a\", %a)"
+      Format.fprintf fmt "Tezos.get_entrypoint_opt(%a, %a)"
         f s
         f a
 
@@ -2471,8 +2459,8 @@ let pp_model_internal fmt (model : model) b =
         "function rat_eq (const lhs : %a; const rhs : %a) : bool is@\n  \
          block {skip} with@\n  \
          lhs.0 * int(rhs.1) = rhs.0 * int(lhs.1) @\n"
-         pp_type Utils.type_rational
-         pp_type Utils.type_rational
+        pp_type Utils.type_rational
+        pp_type Utils.type_rational
     | RatCmp       ->
       Format.fprintf fmt
         "type op_cmp is@\n\
@@ -2491,8 +2479,8 @@ let pp_model_internal fmt (model : model) b =
          | OpCmpGt -> a >  b@\n    \
          | OpCmpGe -> a >= b@\n    \
          end)@\n"
-         pp_type Utils.type_rational
-         pp_type Utils.type_rational
+        pp_type Utils.type_rational
+        pp_type Utils.type_rational
     | RatArith     ->
       Format.fprintf fmt
         "type op_arith is@\n\
@@ -2511,10 +2499,10 @@ let pp_model_internal fmt (model : model) b =
          | OpArithDiv   -> (lhs.0 * (if rhs.0 >= 0 then int(rhs.1) else -(int(rhs.1))), lhs.1 * abs(rhs.0))@\n    \
          end@\n  \
          end with r@\n"
-         pp_type Utils.type_rational
-         pp_type Utils.type_rational
-         pp_type Utils.type_rational
-         pp_type Utils.type_rational
+        pp_type Utils.type_rational
+        pp_type Utils.type_rational
+        pp_type Utils.type_rational
+        pp_type Utils.type_rational
     | RatUminus ->
       Format.fprintf fmt
         "function rat_uminus (const x : %a) : %a is (- x.0, x.1)@\n"
@@ -2526,7 +2514,7 @@ let pp_model_internal fmt (model : model) b =
          begin@\n  \
          const r : tez = abs(c.0) * t / c.1;@\n  \
          end with r@\n"
-         pp_type Utils.type_rational
+        pp_type Utils.type_rational
     | DivTez ->
       Format.fprintf fmt
         "function div_tez (const a : tez; const b : tez) : int is@\n\
@@ -2539,7 +2527,7 @@ let pp_model_internal fmt (model : model) b =
          begin@\n  \
          skip;@\n  \
          end with (c.0 * d / int(c.1))@\n"
-         pp_type Utils.type_rational
+        pp_type Utils.type_rational
   in
 
   let pp_api_item_node (env : env) fmt = function

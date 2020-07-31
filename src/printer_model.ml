@@ -128,6 +128,12 @@ let pp_iter_container_kind f fmt = function
   | ICKlist  mt         -> Format.fprintf fmt "%a" f mt
   | ICKmap   mt         -> Format.fprintf fmt "%a" f mt
 
+let pp_transfer_kind f fmt = function
+  | TKsimple d        -> Format.fprintf fmt "to %a" f d
+  | TKcall (_, d, a)  -> Format.fprintf fmt "to entry %a(%a)" f d f a
+  | TKentry (e, a)    -> Format.fprintf fmt "to entry %a(%a)" f e f a
+  | TKself (id, args) -> Format.fprintf fmt "to entry self.%a(%a)" pp_str id (pp_list ", " (fun fmt (id, x) -> Format.fprintf fmt "%s = %a" id f x)) args
+
 let pp_mterm fmt (mt : mterm) =
   let rec f fmt (mtt : mterm) =
     match mtt.node with
@@ -264,38 +270,10 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "fail (%a)"
         pp_fail_type ft
 
-    | Mtransfer (v, d) ->
-      Format.fprintf fmt "transfer %a to %a"
+    | Mtransfer (v, k) ->
+      Format.fprintf fmt "transfer %a %a"
         f v
-        f d
-
-    | Mcallcontract (v, d, _, fid, args) ->
-      let pp fmt (v, d, fid, args) =
-        Format.fprintf fmt "transfer %a to %a call %a (%a)"
-          f v
-          f d
-          pp_id fid
-          (pp_list ", " (fun fmt (_, x) -> f fmt x)) args
-      in
-      pp fmt (v, d, fid, args)
-
-    | Mcallentry (v, e, arg) ->
-      let pp fmt (v, e, arg) =
-        Format.fprintf fmt "transfer %a to entry %a(%a)"
-          f v
-          pp_id e
-          f arg
-      in
-      pp fmt (v, e, arg)
-
-    | Mcallself (v, e, args) ->
-      let pp fmt (v, e, args) =
-        Format.fprintf fmt "transfer %a to entry self.%a(%a)"
-          f v
-          pp_id e
-          (pp_list ", " f) args
-      in
-      pp fmt (v, e, args)
+        (pp_transfer_kind f) k
 
 
     (* entrypoint *)
@@ -902,7 +880,7 @@ let pp_mterm fmt (mt : mterm) =
         f x
 
     | Moptget x ->
-      Format.fprintf fmt "getopt (%a)"
+      Format.fprintf fmt "opt_get (%a)"
         f x
 
     | Mfloor x ->
@@ -1368,6 +1346,11 @@ let pp_decl fmt = function
   | Drecord r -> pp_record fmt r
   | Dcontract c -> pp_contract fmt c
 
+let pp_ext_entries fmt l =
+  match l with
+  | [] -> ()
+  | _ -> Format.fprintf fmt "ext_entries {@\n  @[%a@]@\n}@\n" (pp_list "@\n" (fun fmt (id, t) -> Format.fprintf fmt "%s -> %a" id pp_type t)) l
+
 let pp_storage_item fmt (si : storage_item) =
   Format.fprintf fmt "%a : %a%a"
     pp_id si.id
@@ -1590,11 +1573,13 @@ let pp_model fmt (model : model) =
                       @\n@\n%a\
                       @\n@\n%a\
                       @\n@\n%a\
+                      @\n@\n%a\
                       @."
     pp_id model.name
     pp_api_items model.api_items
     (pp_list "@\n" pp_api_verif) model.api_verif
     (pp_list "@\n" pp_decl) model.decls
+    pp_ext_entries model.ext_entries
     pp_storage model.storage
     (pp_list "@\n" pp_function) model.functions
     pp_specification model.specification
