@@ -64,7 +64,6 @@
 %token EFFECT
 %token ELSE
 %token END
-%token ENTRIES
 %token ENTRY
 %token ENTRYPOINT
 %token ENTRYSIG
@@ -273,7 +272,6 @@ declaration_r:
  | x=transition         { x }
  | x=dextension         { x }
  | x=namespace          { x }
- | x=entries            { x }
  | x=function_decl      { x }
  | x=specification_decl { x }
  | x=security_decl      { x }
@@ -319,18 +317,6 @@ extension_r:
 
 namespace:
 | NAMESPACE x=ident xs=braced(declarations) { Dnamespace (x, xs) }
-
-entries_item:
-| LESS t=type_t GREATER id=ident
- { (t, id) }
-
-entries_items:
-| xs=entries_item* {xs}
-
-entries:
-| ENTRIES exts=option(extensions)
-    xs=braced(entries_items)
-         { Dentries (xs, exts) }
 
 %inline fun_body:
 | e=expr { (None, e) }

@@ -1080,11 +1080,6 @@ let rec pp_declaration fmt { pldesc = e; _ } =
       pp_id id
       (pp_list "\n" pp_declaration) ds
 
-  | Dentries (l, exts) ->
-    Format.fprintf fmt "entries%a {@\n  @[%a@]@\n}"
-      pp_extensions exts
-      (pp_list "@\n" (fun fmt (t, x) -> Format.fprintf fmt "<%a> %a" pp_type t pp_id x)) l
-
   | Dfunction f ->
     Format.fprintf fmt "%a"
       pp_function f

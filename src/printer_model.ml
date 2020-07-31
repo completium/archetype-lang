@@ -1343,11 +1343,6 @@ let pp_decl fmt = function
   | Drecord r -> pp_record fmt r
   | Dcontract c -> pp_contract fmt c
 
-let pp_ext_entries fmt l =
-  match l with
-  | [] -> ()
-  | _ -> Format.fprintf fmt "ext_entries {@\n  @[%a@]@\n}@\n" (pp_list "@\n" (fun fmt (id, t) -> Format.fprintf fmt "%s -> %a" id pp_type t)) l
-
 let pp_storage_item fmt (si : storage_item) =
   Format.fprintf fmt "%a : %a%a"
     pp_id si.id
@@ -1570,13 +1565,11 @@ let pp_model fmt (model : model) =
                       @\n@\n%a\
                       @\n@\n%a\
                       @\n@\n%a\
-                      @\n@\n%a\
                       @."
     pp_id model.name
     pp_api_items model.api_items
     (pp_list "@\n" pp_api_verif) model.api_verif
     (pp_list "@\n" pp_decl) model.decls
-    pp_ext_entries model.ext_entries
     pp_storage model.storage
     (pp_list "@\n" pp_function) model.functions
     pp_specification model.specification

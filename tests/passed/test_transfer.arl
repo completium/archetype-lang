@@ -1,9 +1,5 @@
 archetype test_transfer
 
-entries {
-  <nat> set_value
-}
-
 variable res : nat = 0
 
 entry f(n : nat) {

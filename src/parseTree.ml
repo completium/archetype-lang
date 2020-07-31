@@ -266,7 +266,6 @@ and declaration_unloc =
   | Drecord        of record_decl
   | Dentry         of entry_decl
   | Dtransition    of transition_decl
-  | Dentries       of entries_decl
   | Dextension     of extension_decl
   | Dnamespace     of namespace_decl
   | Dfunction      of s_function
@@ -315,9 +314,6 @@ and transition_decl =
   * entry_properties
   * transition
   * exts
-
-and entries_decl =
-  (type_t * lident) list * exts
 
 and extension_decl =
   lident * expr list

@@ -1,10 +1,5 @@
 archetype effect_transfer_contract
 
-entries {
-   <int> set_value
-   <int * int> add_value
-}
-
 variable c : address = @KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm
 
 entry exec() {

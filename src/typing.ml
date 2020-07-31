@@ -780,7 +780,6 @@ type groups = {
   gr_enums       : (PT.lident * PT.enum_decl) loced list;
   gr_assets      : PT.asset_decl              loced list;
   gr_records     : PT.record_decl             loced list;
-  gr_entries     : PT.entries_decl            loced list;
   gr_vars        : PT.variable_decl           loced list;
   gr_funs        : PT.s_function              loced list;
   gr_acttxs      : acttx                      loced list;
@@ -4721,25 +4720,6 @@ let for_records_decl (env : env) (decls : PT.record_decl loced list) =
   List.fold_left_map for_record_decl env decls
 
 (* -------------------------------------------------------------------- *)
-let for_entry_decl (env : env) (decl : PT.entries_decl loced) =
-  let for1 (env : env) (ty, name) =
-    let env, _ =
-      for_type env ty |> Option.foldbind (fun env ty ->
-          if check_and_emit_name_free env name then
-            let decl = { aet_name = name; aet_type = ty; } in
-            let env = Env.AEntry.push env decl in
-            env, Some decl
-          else env, None) env
-    in env, None
-
-  in List.fold_left_map for1 env (fst (unloc decl))
-
-(* -------------------------------------------------------------------- *)
-let for_entries_decl (env : env) (decls : PT.entries_decl loced list) =
-  let env, decls = List.fold_left_map for_entry_decl env decls in
-  env, List.flatten decls
-
-(* -------------------------------------------------------------------- *)
 let for_acttx_decl (env : env) (decl : acttx loced) =
   match unloc decl with
   | `Entry (x, args, pt, i_exts, _exts) -> begin
@@ -4843,7 +4823,6 @@ let group_declarations (decls : (PT.declaration list)) =
     gr_enums      = [];
     gr_assets     = [];
     gr_records    = [];
-    gr_entries    = [];
     gr_vars       = [];
     gr_funs       = [];
     gr_acttxs     = [];
@@ -4873,9 +4852,6 @@ let group_declarations (decls : (PT.declaration list)) =
     | PT.Drecord infos ->
       { g with gr_records = mk infos :: g.gr_records }
 
-    | PT.Dentries infos ->
-      { g with gr_entries = mk infos :: g.gr_entries }
-
     | PT.Dentry infos ->
       { g with gr_acttxs = mk (`Entry infos) :: g.gr_acttxs }
 
@@ -4903,7 +4879,6 @@ type decls = {
   variables : vardecl option list;
   enums     : statedecl option list;
   records   : recorddecl option list;
-  entries   : aentrydecl option list;
   assets    : assetdecl option list;
   functions : env fundecl option list;
   acttxs    : env tentrydecl option list;
@@ -4946,7 +4921,6 @@ let for_grouped_declarations (env : env) (toploc, g) =
       (None, None, env) in
 
   let env, records      = for_records_decl   env g.gr_records   in
-  let env, entries      = for_entries_decl   env g.gr_entries   in
   let env, enums        = for_enums_decl     env g.gr_enums     in
   let enums, especs     = List.split enums                      in
   let env, variables    = for_vars_decl      env g.gr_vars      in
@@ -4998,7 +4972,7 @@ let for_grouped_declarations (env : env) (toploc, g) =
 
   let output =
     { state    ; variables; enums   ; assets ; functions;
-      acttxs   ; specs    ; secspecs; records; entries  ; }
+      acttxs   ; specs    ; secspecs; records; }
 
   in (env, output)
 
@@ -5245,7 +5219,6 @@ let for_declarations (env : env) (decls : (PT.declaration list) loced) : A.ast =
       )
       ~specifications:(List.map specifications_of_ispecifications decls.specs)
       ~securities:(decls.secspecs)
-      ~ext_entries:(aentries_of_entrydecl decls.entries)
       ~loc:toploc
       x
 

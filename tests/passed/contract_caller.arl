@@ -1,9 +1,5 @@
 archetype contract_caller
 
-entries {
-   <int> set_value
-   <int * int> add_value
-}
 variable c : address = @KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm
 
 

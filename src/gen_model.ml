@@ -1265,6 +1265,4 @@ let to_model (ast : A.ast) : M.model =
     |> (fun sec -> List.fold_left (fun accu x -> cont_security x accu) sec ast.securities)
   in
 
-  let ext_entries = List.map (fun (i, t) -> (unloc i, ptyp_to_type t)) ast.ext_entries in
-
-  M.mk_model ~decls:decls ~ext_entries:ext_entries ~functions:functions ~specification:specification ~security:security ~loc:ast.loc name
+  M.mk_model ~decls:decls ~functions:functions ~specification:specification ~security:security ~loc:ast.loc name

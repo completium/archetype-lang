@@ -1,11 +1,5 @@
 archetype test_contract
 
-entries {
-  <address * tez> myaction1
-  <string>        myaction2
-  <unit>          pay
-}
-
 variable contract_i : address = @KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm
 
 entry exec (a : address) {

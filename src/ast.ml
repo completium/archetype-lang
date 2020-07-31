@@ -655,7 +655,6 @@ type 'id fun_ =
 type 'id ast_struct = {
   name           : 'id;
   decls          : 'id decl_ list;
-  ext_entries    : ('id * ptyp) list;
   funs           : 'id fun_ list;
   specifications : 'id specification list;
   securities     : security list;
@@ -740,8 +739,8 @@ let mk_asset ?(fields = []) ?key ?(sort = []) ?state ?(init = []) ?(specs = []) 
 let mk_contract ?(signatures = []) ?init ?(loc = Location.dummy) name =
   { name; signatures; init; loc }
 
-let mk_model ?(decls = []) ?(ext_entries = []) ?(funs = []) ?(specifications = []) ?(securities = []) ?(loc = Location.dummy) name =
-  { name; decls; ext_entries; funs; specifications; securities; loc }
+let mk_model ?(decls = []) ?(funs = []) ?(specifications = []) ?(securities = []) ?(loc = Location.dummy) name =
+  { name; decls; funs; specifications; securities; loc }
 
 let mk_id type_ id : qualid =
   { type_ = Some type_;

@@ -843,7 +843,6 @@ type 'id model_gen = {
   api_items     : api_storage list;
   api_verif     : api_verif list;
   decls         : 'id decl_node_gen list;
-  ext_entries   : (ident * type_) list;
   storage       : 'id storage_gen;
   functions     : 'id function__gen list;
   specification : 'id specification_gen;
@@ -945,8 +944,8 @@ let mk_signature ?(args = []) ?ret name : 'id signature_gen =
 let mk_api_item node_item api_loc =
   { node_item; api_loc }
 
-let mk_model ?(api_items = []) ?(api_verif = []) ?(decls = []) ?(ext_entries = []) ?(functions = []) ?(storage = []) ?(specification = mk_specification ()) ?(security = mk_security ()) ?(loc = Location.dummy) name : model =
-  { name; api_items; api_verif; storage; decls; ext_entries; functions; specification; security; loc }
+let mk_model ?(api_items = []) ?(api_verif = []) ?(decls = []) ?(functions = []) ?(storage = []) ?(specification = mk_specification ()) ?(security = mk_security ()) ?(loc = Location.dummy) name : model =
+  { name; api_items; api_verif; storage; decls; functions; specification; security; loc }
 
 (* -------------------------------------------------------------------- *)
 
@@ -3020,7 +3019,6 @@ type kind_ident =
   | KIenumvalue
   | KIcontractname
   | KIcontractentry
-  | KIextEntries
   | KIstoragefield
   | KIentry
   | KIfunction
@@ -3364,7 +3362,6 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
     api_items     = List.map for_api_item  model.api_items;
     api_verif     = List.map for_api_verif model.api_verif;
     decls         = List.map for_decl_node model.decls;
-    ext_entries   = List.map (fun (id, t) -> (f KIextEntries id, for_type t)) model.ext_entries;
     storage       = List.map for_storage_item model.storage;
     functions     = List.map for_function__ model.functions;
     specification = for_specification model.specification;
