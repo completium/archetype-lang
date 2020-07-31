@@ -768,19 +768,6 @@ let to_model (ast : A.ast) : M.model =
       ~loc:c.loc
   in
 
-
-  let extract_contract_type_id (c : A.lident A.term_poly) =
-    let aux (t : A.ptyp) =
-      match t with
-      | A.Tcontract v -> unloc v
-      | _ -> assert false
-    in
-    match c.node, c.type_ with
-    | A.Pcast (d, _, _), _ -> aux d
-    | _, Some t -> aux t
-    | _ -> assert false
-  in
-
   let rec to_instruction (env : env) (instr : A.instruction) : M.mterm =
     let is_empty_seq (instr : A.instruction) =
       match instr.node with
@@ -836,38 +823,23 @@ let to_model (ast : A.ast) : M.model =
         in
         M.Mif (cond, fail (InvalidCondition None), None)
 
-      | A.Itransfer (v, TTsimple d) -> M.Mtransfer (f v, f d)
-      | A.Itransfer (v, TTcontract (d, id, args)) -> begin
-          let contract_id = extract_contract_type_id d in
-          let d = f d in
+      | A.Itransfer (v, k) -> begin
           let v = f v in
-          let ids = A.Utils.get_contract_sig_ids ast contract_id (unloc id) in
-          let vs = List.map f args in
-          let args = List.map2 (fun x y -> (x, y)) ids vs in
-          M.Mcallcontract (v, d, contract_id, id, args)
+          let k =
+            match k with
+            | TTsimple d                -> M.TKsimple (f d)
+            | TTcontract (d, id, ({type_ = Some t; _} as arg)) -> M.TKcall (unloc id, ptyp_to_type t, f d, f arg)
+            | TTentry (e, arg)          -> M.TKentry (f e, f arg)
+            | TTself (id, args)         -> M.TKself (unloc id, List.map (fun (id, v) -> unloc id, f v) args)
+            | _ -> assert false
+          in
+          M.Mtransfer (v, k)
         end
-      | A.Itransfer (v, TTentry (e, arg)) -> begin
-          let v = f v in
-          let arg = f arg in
-          M.Mcallentry (v, e, arg)
-        end
-      | A.Itransfer (v, TTself (e, args)) -> begin
-          let v = f v in
-          let args = List.map f args in
-          M.Mcallentry (v, e, List.nth args 0)
-        end
-      | A.Ibreak                  -> M.Mbreak
-      | A.Ireturn e               -> M.Mreturn (f e)
-      | A.Ilabel i                -> M.Mlabel i
-      | A.Ifail m                 -> M.Mfail (Invalid (f m))
-      (* | A.Icall (Some c, Cid id, args) when (match c.type_ with | Some (A.Tcontract _) -> true | _ -> false) -> (* TODO: delete this case *)
-         let contract_id = extract_contract_type_id c in
-         let c = f c in
-         let ids = A.Utils.get_contract_sig_ids ast contract_id (unloc id) in
-         let vs = List.map (term_arg_to_expr f) args in
-         let args = List.map2 (fun x y -> (x, y)) ids vs in
-         let zerotz : M.mterm = M.mk_mterm (Mcurrency (Big_int.zero_big_int, Tz)) (Tbuiltin Bcurrency) in
-         M.Mentrycall (zerotz, c, contract_id, id, args) *)
+
+      | A.Ibreak    -> M.Mbreak
+      | A.Ireturn e -> M.Mreturn (f e)
+      | A.Ilabel  i -> M.Mlabel i
+      | A.Ifail   m -> M.Mfail (Invalid (f m))
 
       | A.Icall (i, Cid id, args) -> M.Mapp (id, Option.map_dfl (fun v -> [f v]) [] i @ List.map (term_arg_to_expr f) args)
 
@@ -1298,4 +1270,6 @@ let to_model (ast : A.ast) : M.model =
     |> (fun sec -> List.fold_left (fun accu x -> cont_security x accu) sec ast.securities)
   in
 
-  M.mk_model ~decls:decls ~functions:functions ~specification:specification ~security:security ~loc:ast.loc name
+  let ext_entries = List.map (fun (i, t) -> (unloc i, ptyp_to_type t)) ast.ext_entries in
+
+  M.mk_model ~decls:decls ~ext_entries:ext_entries ~functions:functions ~specification:specification ~security:security ~loc:ast.loc name

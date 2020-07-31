@@ -426,6 +426,13 @@ let pp_model fmt (model : model) =
     | CKfield (an, fn, _) -> Format.fprintf fmt "f_%s_%s" an fn
   in
 
+  let pp_transfer_kind f fmt = function
+    | TKsimple d        -> Format.fprintf fmt "to %a" f d
+    | TKcall (id, _, d, a) -> Format.fprintf fmt "to %a call %s(%a)" f d id f a
+    | TKentry (e, a)    -> Format.fprintf fmt "to entry %a(%a)" f e f a
+    | TKself (id, args) -> Format.fprintf fmt "to entry self.%a(%a)" pp_str id (pp_list ", " (fun fmt (id, x) -> Format.fprintf fmt "%s = %a" id f x)) args
+  in
+
   let pp_mterm (env : Printer_model_tools.env) fmt (mt : mterm) =
     let rec f fmt (mtt : mterm) =
       match mtt.node with
@@ -551,38 +558,14 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "sp.failwith (\"%a\")"
           pp_fail_type ft
 
-      | Mtransfer (v, d) ->
-        Format.fprintf fmt "sp.send(%a, %a)"
-          f d
+      | Mtransfer (v, k) ->
+
+        Format.fprintf fmt "transfer %a %a"
           f v
-
-      | Mcallcontract (v, d, _, fid, args) ->
-        let pp fmt (v, d, fid, args) =
-          Format.fprintf fmt "sp.transfer(%a(%a), %a, %a)"
-            pp_id fid
-            (pp_list ", " (fun fmt (_, x) -> f fmt x)) args
-            f v
-            f d
-        in
-        pp fmt (v, d, fid, args)
-
-      | Mcallentry (v, e, arg) ->
-        let pp fmt (v, e, arg) =
-          Format.fprintf fmt "transfer %a to entry %a(%a)"
-            f v
-            pp_id e
-            f arg
-        in
-        pp fmt (v, e, arg)
-
-      | Mcallself (v, e, args) ->
-        let pp fmt (v, e, args) =
-          Format.fprintf fmt "transfer %a to entry self.%a(%a)"
-            f v
-            pp_id e
-            (pp_list ", " f) args
-        in
-        pp fmt (v, e, args)
+          (pp_transfer_kind f) k
+          (* Format.fprintf fmt "sp.send(%a, %a)"
+          f d
+          f v *)
 
 
       (* entrypoint *)

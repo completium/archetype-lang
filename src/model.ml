@@ -179,6 +179,12 @@ type 'term iter_container_kind_gen =
   | ICKmap   of 'term
 [@@deriving show {with_path = false}]
 
+type 'term transfer_kind_gen =
+  | TKsimple of 'term                         (* dest *)
+  | TKcall   of ident * type_ * 'term * 'term (* entry_id * type_entry * dest * args *)
+  | TKentry  of 'term * 'term                 (* entry * arg *)
+  | TKself   of ident * (ident * 'term) list  (* entry_id * args *)
+[@@deriving show {with_path = false}]
 
 type ('id, 'term) mterm_node  =
   (* lambda *)
@@ -198,10 +204,7 @@ type ('id, 'term) mterm_node  =
   | Mmark             of 'id * 'term
   (* effect *)
   | Mfail             of 'id fail_type_gen
-  | Mtransfer         of ('term * 'term)                                   (* value * dest *)
-  | Mcallcontract     of 'term  * 'term * ident * 'id * ('id * 'term) list (* value * dest  * contract_id * id * args *)
-  | Mcallentry        of 'term * 'id * 'term                               (* value * entry * arg *)
-  | Mcallself         of 'term * 'id * 'term list                          (* value * entry * args *)
+  | Mtransfer         of 'term * 'term transfer_kind_gen
   (* entrypoint *)
   | Mentrycontract    of 'term * 'id   (* contract * ident *)
   | Mentrypoint       of 'term * 'term (* address * string *)
@@ -378,6 +381,8 @@ and var_kind = mterm var_kind_gen
 and container_kind = mterm container_kind_gen
 
 and iter_container_kind = mterm iter_container_kind_gen
+
+and transfer_kind = mterm transfer_kind_gen
 
 and 'id mterm_gen = {
   node: ('id, 'id mterm_gen) mterm_node;
@@ -840,6 +845,7 @@ type 'id model_gen = {
   api_items     : api_storage list;
   api_verif     : api_verif list;
   decls         : 'id decl_node_gen list;
+  ext_entries   : (ident * type_) list;
   storage       : 'id storage_gen;
   functions     : 'id function__gen list;
   specification : 'id specification_gen;
@@ -941,8 +947,8 @@ let mk_signature ?(args = []) ?ret name : 'id signature_gen =
 let mk_api_item node_item api_loc =
   { node_item; api_loc }
 
-let mk_model ?(api_items = []) ?(api_verif = []) ?(decls = []) ?(functions = []) ?(storage = []) ?(specification = mk_specification ()) ?(security = mk_security ()) ?(loc = Location.dummy) name : model =
-  { name; api_items; api_verif; storage; decls; functions; specification; security; loc }
+let mk_model ?(api_items = []) ?(api_verif = []) ?(decls = []) ?(ext_entries = []) ?(functions = []) ?(storage = []) ?(specification = mk_specification ()) ?(security = mk_security ()) ?(loc = Location.dummy) name : model =
+  { name; api_items; api_verif; storage; decls; ext_entries; functions; specification; security; loc }
 
 (* -------------------------------------------------------------------- *)
 
@@ -1090,6 +1096,14 @@ let cmp_mterm_node
     | ICKmap l, ICKmap r -> cmp l r
     | _ -> false
   in
+  let cmp_transfer_kind (lhs : transfer_kind) (rhs : transfer_kind) : bool =
+    match lhs, rhs with
+    | TKsimple d1, TKsimple d2                         -> cmp d1 d2
+    | TKcall (i1, t1, d1, a1), TKcall (i2, t2, d2, a2) -> cmp_ident i1 i2 && cmp_type t1 t2 && cmp d1 d2 && cmp a1 a2
+    | TKentry (e1, a1), TKentry (e2, a2)               -> cmp e1 e2 && cmp a1 a2
+    | TKself (i1, as1), TKself (i2, as2)               -> cmp_ident i1 i2 && List.for_all2 (fun (id1, v1) (id2, v2) -> cmp_ident id1 id2 && cmp v1 v2) as1 as2
+    | _ -> false
+  in
   try
     match term1, term2 with
     (* lambda *)
@@ -1109,10 +1123,7 @@ let cmp_mterm_node
     | Mmark (i1, x1), Mmark (i2, x2)                                                   -> cmpi i1 i2 && cmp x1 x2
     (* effect *)
     | Mfail ft1, Mfail ft2                                                             -> cmp_fail_type cmp ft1 ft2
-    | Mtransfer (v1, d1), Mtransfer (v2, d2)                                           -> cmp v1 v2 && cmp d1 d2
-    | Mcallcontract(v1, d1, t1, func1, args1), Mcallcontract(v2, d2, t2, func2, args2) -> cmp v1 v2 && cmp d1 d2 && cmp_ident t1 t2 && cmpi func1 func2 && List.for_all2 (fun (id1, t1) (id2, t2) -> cmpi id1 id2 && cmp t1 t2) args1 args2
-    | Mcallentry (v1, e1, arg1), Mcallentry(v2, e2, arg2)                              -> cmp v1 v2 && cmpi e1 e2 && cmp arg1 arg2
-    | Mcallself (v1, e1, args1), Mcallself(v2, e2, args2)                              -> cmp v1 v2 && cmpi e1 e2 && List.for_all2 cmp args1 args2
+    | Mtransfer (v1, k1), Mtransfer (v2, k2)                                           -> cmp v1 v2 && cmp_transfer_kind k1 k2
     (* entrypoint *)
     | Mentrycontract (c1, id1), Mentrycontract (c2, id2)                               -> cmp c1 c2 && cmpi id1 id2
     | Mentrypoint (a1, s1), Mentrypoint (a2, s2)                                       -> cmp a1 a2 && cmp s1 s2
@@ -1438,6 +1449,12 @@ let map_iter_container_kind (fi : ident -> ident) f = function
   | ICKlist  mt           -> ICKlist  (f mt)
   | ICKmap   mt           -> ICKmap   (f mt)
 
+let map_transfer_kind (fi : ident -> ident) (ft : type_ -> type_) f = function
+  | TKsimple d           -> TKsimple (f d)
+  | TKcall (id, t, d, a) -> TKcall (fi id, ft t, f d, f a)
+  | TKentry (e, a)       -> TKentry (f e, f a)
+  | TKself (id, args)    -> TKself (fi id, List.map (fun (id, v) -> fi id, f v) args)
+
 let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ -> type_) (f : 'id mterm_gen -> 'id mterm_gen) = function
   (* lambda *)
   | Mletin (i, a, t, b, o)         -> Mletin (List.map g i, f a, Option.map ft t, f b, Option.map f o)
@@ -1456,10 +1473,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mmark (i, x)                   -> Mmark (g i, f x)
   (* effect *)
   | Mfail v                        -> Mfail (match v with | Invalid v -> Invalid (f v) | _ -> v)
-  | Mtransfer (v, d)               -> Mtransfer (f v, f d)
-  | Mcallcontract (v, d, t, func, args) -> Mcallcontract(f v, f d, fi t, func, List.map (fun (id, t) -> (g id, f t)) args)
-  | Mcallentry (v, e, arg)         -> Mcallentry(f v, g e, f arg)
-  | Mcallself (v, e, args)         -> Mcallself(f v, g e, (List.map f args))
+  | Mtransfer (v, k)               -> Mtransfer (f v, map_transfer_kind fi ft f k)
   (* entrypoint *)
   | Mentrycontract (c, id)         -> Mentrycontract (f c, g id)
   | Mentrypoint (a, s)             -> Mentrypoint (f a, f s)
@@ -1796,6 +1810,12 @@ let fold_iter_container_kind f accu = function
   | ICKlist  mt         -> f accu mt
   | ICKmap   mt         -> f accu mt
 
+let fold_transfer_kind f accu = function
+  | TKsimple d          -> f accu d
+  | TKcall (_, _, d, a) -> f (f accu d) a
+  | TKentry (e, a)      -> f (f accu e) a
+  | TKself (_, args)    -> List.fold_left f accu (List.map snd args)
+
 let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_gen) : 'a =
   let opt f accu x = match x with | Some v -> f accu v | None -> accu in
   match term.node with
@@ -1816,10 +1836,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mmark (_, x)                          -> f accu x
   (* effect *)
   | Mfail v                               -> (match v with | Invalid v -> f accu v | _ -> accu)
-  | Mtransfer (v, d)                      -> f (f accu v) d
-  | Mcallcontract (v, d, _, _, args)      -> List.fold_left (fun accu (_, t) -> f accu t) (f (f accu v) d) args
-  | Mcallentry (v, _, arg)                -> f (f accu v) arg
-  | Mcallself (v, _, args)                -> List.fold_left (fun accu x -> f accu x) (f accu v) args
+  | Mtransfer (v, k)                      -> fold_transfer_kind f (f accu v) k
   (* entrypoint *)
   | Mentrycontract (c, _)                 -> f accu c
   | Mentrypoint (a, s)                    -> f (f accu a) s
@@ -2043,6 +2060,25 @@ let fold_map_iter_container_kind f accu = function
     let mte, mta = f accu mt in
     ICKmap mte, mta
 
+let fold_map_transfer_kind f accu = function
+  | TKsimple d ->
+    let de, da = f accu d in
+    TKsimple de, da
+  | TKcall (id, t, d, a) ->
+    let de, da = f accu d in
+    let ae, aa = f da a in
+    TKcall (id, t, de, ae), aa
+  | TKentry (e, a) ->
+    let ee, ea = f accu e in
+    let ae, aa = f ea a in
+    TKentry (ee, ae), aa
+  | TKself (id, args)->
+    let args, accu =
+      List.fold_left (fun (args, accu) (id, a) ->
+          let ae, aa = f accu a in
+          (args @ [id, ae], aa)) ([], accu) args in
+    TKself (id, args), accu
+
 let fold_map_term
     (g : ('id, 'id mterm_gen) mterm_node -> 'id mterm_gen)
     (f : 'a -> 'id mterm_gen -> 'id mterm_gen * 'a)
@@ -2150,32 +2186,10 @@ let fold_map_term
     in
     g (Mfail fte), fta
 
-  | Mtransfer (v, d) ->
+  | Mtransfer (v, k) ->
     let ve, va = f accu v in
-    let de, da = f va d in
-    g (Mtransfer (ve, de)), da
-
-  | Mcallcontract(v, d, t, func, args) ->
-    let ve, va = f accu v in
-    let de, da = f va d in
-    let (lp, la) = List.fold_left
-        (fun (pterms, accu) (id, x) ->
-           let p, accu = f accu x in
-           pterms @ [id, p], accu) ([], da) args in
-    g (Mcallcontract(ve, de, t, func, lp)), la
-
-  | Mcallentry(v, e, arg) ->
-    let ve, va = f accu v in
-    let ae, aa = f va arg in
-    g (Mcallentry(ve, e, ae)), aa
-
-  | Mcallself(v, e, args) ->
-    let ve, va = f accu v in
-    let (lp, la) = List.fold_left
-        (fun (pterms, accu) x ->
-           let p, accu = f accu x in
-           pterms @ [p], accu) ([], va) args in
-    g (Mcallself(ve, e, lp)), la
+    let ke, ka = fold_map_transfer_kind f va k in
+    g (Mtransfer (ve, ke)), ka
 
 
   (* entrypoint *)
@@ -3013,6 +3027,7 @@ type kind_ident =
   | KIenumvalue
   | KIcontractname
   | KIcontractentry
+  | KIextEntries
   | KIstoragefield
   | KIentry
   | KIfunction
@@ -3356,6 +3371,7 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
     api_items     = List.map for_api_item  model.api_items;
     api_verif     = List.map for_api_verif model.api_verif;
     decls         = List.map for_decl_node model.decls;
+    ext_entries   = List.map (fun (id, t) -> (f KIextEntries id, for_type t)) model.ext_entries;
     storage       = List.map for_storage_item model.storage;
     functions     = List.map for_function__ model.functions;
     specification = for_specification model.specification;
@@ -3730,10 +3746,7 @@ end = struct
   let with_operations_for_mterm_intern _ctx accu (mt : mterm) : bool =
     let rec aux accu (t : mterm) =
       match t.node with
-      | Mtransfer  _
-      | Mcallcontract _
-      | Mcallentry _
-      | Mcallself _
+      | Mtransfer _
       | Moperations
       | Mmkoperation _
         -> raise FoundOperations

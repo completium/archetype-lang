@@ -17,6 +17,7 @@ type error_desc =
   | DuplicatedKeyAsset of ident
   | OnlyLiteralInAssetInit
   | NoEntrypoint
+  | UnknownEntrysig of ident
 
 let pp_error_desc fmt = function
   | AssetPartitionnedby (i, l)         ->
@@ -55,6 +56,9 @@ let pp_error_desc fmt = function
 
   | DefaultValueOnKeyAsset an ->
     Format.fprintf fmt "default value on key for asset \"%s\"" an
+
+  | UnknownEntrysig id ->
+    Format.fprintf fmt "cannot find type for '%s'" id
 
   | NoEntrypoint -> Format.fprintf fmt "No entrypoint found (action or transtion)"
 
@@ -1898,30 +1902,16 @@ let extract_term_from_instruction f (model : model) : model =
       in
       process (mk_mterm (Mfail (ve)) mt.type_) va
 
-    | Mtransfer (v, d) ->
+    | Mtransfer (v, k) ->
       let ve, va = f v in
-      let de, da = f d in
-      process (mk_mterm (Mtransfer (ve, de)) mt.type_) (va @ da)
-
-    | Mcallcontract (v, d, t, func, args) ->
-      let ve, va = f v in
-      let de, da = f d in
-      let ae, aa = List.fold_right (fun (t, i) (xe, xa) ->
-          let ie, ia = f i in
-          ((t, ie)::xe, ia @ xa)) args ([], []) in
-      process (mk_mterm (Mcallcontract (ve, de, t, func, ae)) mt.type_) (va @ da @ aa)
-
-    | Mcallentry (v, e, arg) ->
-      let ve, va = f v in
-      let ae, aa = f arg in
-      process (mk_mterm (Mcallentry (ve, e, ae)) mt.type_) (va @ aa)
-
-    | Mcallself (v, e, args) ->
-      let ve, va = f v in
-      let ae, aa = List.fold_right (fun i (xe, xa) ->
-          let ie, ia = f i in
-          (ie::xe, ia @ xa)) args ([], []) in
-      process (mk_mterm (Mcallself (ve, e, ae)) mt.type_) (va @ aa)
+      let ke, ka =
+        match k with
+        | TKsimple d           -> let de, da = f d in TKsimple de, da
+        | TKcall (id, t, d, a) -> let de, da = f d in let ae, aa = f a in TKcall (id, t, de, ae), da @ aa
+        | TKentry (e, a)       -> let ee, ea = f e in let ae, aa = f a in TKentry (ee, ae), ea @ aa
+        | TKself (id, args)    -> let args, accu = List.fold_left (fun (args, accu) (id, a) -> let ae, aa = f a in (args @ [id, ae], accu @ aa)) ([], []) args  in TKself (id, args), accu
+      in
+      process (mk_mterm (Mtransfer (ve, ke)) mt.type_) (va @ ka)
 
 
     (* asset api effect *)
@@ -2155,15 +2145,7 @@ let add_contain_on_get (model : model) : model =
         gg accu (mk_mterm (Mmatchwith (e, ll)) mt.type_)
 
       | Mfor (i, c, b, lbl) ->
-        let accu =
-          match c with
-          | ICKcoll  _          -> accu
-          | ICKview  c          -> f accu c
-          | ICKfield (_, _, c)  -> f accu c
-          | ICKset   c          -> f accu c
-          | ICKlist  c          -> f accu c
-          | ICKmap   c          -> f accu c
-        in
+        let accu = fold_iter_container_kind f accu c in
         let be = aux b in
         gg accu (mk_mterm (Mfor (i, c, be, lbl)) mt.type_)
 
@@ -2187,15 +2169,9 @@ let add_contain_on_get (model : model) : model =
         in
         gg accu mt
 
-      | Mtransfer (v, d) ->
+      | Mtransfer (v, k) ->
         let accu = f accu v in
-        let accu = f accu d in
-        gg accu mt
-
-      | Mcallcontract (v, d, _t, _func, args) ->
-        let accu = f accu v in
-        let accu = f accu d in
-        let accu = List.fold_right (fun (_, x) accu -> f accu x) args accu in
+        let accu = fold_transfer_kind f accu k in
         gg accu mt
 
 
