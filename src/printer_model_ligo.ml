@@ -202,16 +202,16 @@ let pp_model_internal fmt (model : model) b =
   in
   (* const operations : list(operation) = nil ; *)
 
-  let pp_pretty_type fmt t =
+  let rec pp_pretty_type fmt t =
     match t with
     | Ttuple[Tbuiltin Bint; Tbuiltin Bint] -> pp_type fmt (Tbuiltin Brational)
-    | Tlist t           -> Format.fprintf fmt "list_%a" pp_type t
-    | Tcontainer (t, c) -> Format.fprintf fmt "container_%a_%a" pp_type t pp_pretty_container c
-    | Toption t         -> Format.fprintf fmt "option_%a" pp_type t
-    | Ttuple l          -> Format.fprintf fmt "tuple_%a" (pp_list "_" pp_type) l
-    | Tset t            -> Format.fprintf fmt "set_%a" pp_type t
-    | Tmap (k, v)       -> Format.fprintf fmt "map_%a_%a" pp_type k pp_type v
-    | Tentrysig t       -> Format.fprintf fmt "entrysig_%a" pp_type t
+    | Tlist t           -> Format.fprintf fmt "list_%a" pp_pretty_type t
+    | Tcontainer (t, c) -> Format.fprintf fmt "container_%a_%a" pp_pretty_type t pp_pretty_container c
+    | Toption t         -> Format.fprintf fmt "option_%a" pp_pretty_type t
+    | Ttuple l          -> Format.fprintf fmt "tuple_%a" (pp_list "_" pp_pretty_type) l
+    | Tset t            -> Format.fprintf fmt "set_%a" pp_pretty_type t
+    | Tmap (k, v)       -> Format.fprintf fmt "map_%a_%a" pp_pretty_type k pp_pretty_type v
+    | Tentrysig t       -> Format.fprintf fmt "entrysig_%a" pp_pretty_type t
     | _ -> pp_type fmt t
   in
 
@@ -534,8 +534,11 @@ let pp_model_internal fmt (model : model) b =
         f a
 
     | Mself id ->
-      Format.fprintf fmt "self.%a"
+      let t = mtt.type_ in
+      Format.fprintf fmt "case (Tezos.get_entrypoint_opt(\"%%%a\", Tezos.self_address) : option(%a)) of Some (v) -> v | None -> (failwith(\"error self\") : %a) end"
         pp_id id
+        pp_type t
+        pp_type t
 
 
     (* operation *)
