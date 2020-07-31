@@ -4417,7 +4417,7 @@ let for_asset_decl pkey (env : env) ((adecl, decl) : assetdecl * PT.asset_decl l
     | [] ->
       Option.map (L.lmap proj4_1) (List.ohead fields)
 
-    | (_ :: subpks) as pks ->
+    | [(_ :: subpks) as pks] ->
       let dokey key =
         match get_field (unloc key) with
         | None ->
@@ -4430,6 +4430,8 @@ let for_asset_decl pkey (env : env) ((adecl, decl) : assetdecl * PT.asset_decl l
 
       List.iter (fun newpk -> Env.emit_error env (loc newpk, DuplicatedPKey)) subpks;
       List.hd (List.map dokey pks)
+
+    | (_ :: _) -> assert false (* TODO *)
   in
 
   pks |> Option.iter (fun pk ->

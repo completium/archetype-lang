@@ -524,8 +524,8 @@ asset_post_option:
 | xs=asset_option+ { xs }
 
 asset_option:
-| IDENTIFIED BY x=ident { AOidentifiedby x }
-| SORTED BY x=ident     { AOsortedby x }
+| IDENTIFIED BY xs=ident+ { AOidentifiedby xs }
+| SORTED BY x=ident       { AOsortedby x }
 
 %inline fields:
 | xs=sl(SEMI_COLON, field) { xs }

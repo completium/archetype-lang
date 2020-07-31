@@ -2,7 +2,7 @@ archetype entry_inspector
 
 variable total : nat = 0
 
-variable token : address = @KT1Nt4mkc3p5gqykuBbFyWiz7d7nmJNhkT8V
+variable token : address = @KT1TsdGVD11MBAULJJvaxKmS4YKe88mn3c87
 
 entry balanceInquiry(v : nat) { total := v }
 

@@ -1,0 +1,15 @@
+archetype asset_multi_key_bad_order
+
+asset my_asset identified by s i {
+  i : nat;
+  s : string;
+  v : bool;
+} initialized by {
+  { 0; "mystr_0"; true }
+}
+
+entry exec () {
+  var val = my_asset[("mystr_0", 0)].v;
+  dorequire(val);
+  my_asset.update(("mystr_0", 0), { v = false})
+}

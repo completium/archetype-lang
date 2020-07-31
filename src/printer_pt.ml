@@ -730,7 +730,7 @@ let pp_value_option fmt opt =
 
 let pp_asset_option fmt opt =
   match opt with
-  | AOidentifiedby id -> Format.fprintf fmt "identified by %a" pp_id id
+  | AOidentifiedby ids -> Format.fprintf fmt "identified by %a" (pp_list " " pp_id) ids
   | AOsortedby id  -> Format.fprintf fmt "sorted by %a" pp_id id
 
 let operation_enum_to_str e =

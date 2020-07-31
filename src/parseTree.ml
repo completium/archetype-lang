@@ -326,7 +326,7 @@ and value_option =
   | VOto of lident
 
 and asset_option =
-  | AOidentifiedby of lident
+  | AOidentifiedby of lident list
   | AOsortedby of lident
 
 and asset_post_option =
