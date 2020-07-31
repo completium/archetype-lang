@@ -492,7 +492,7 @@ let pp_model_internal fmt (model : model) b =
             f d
             const_operations
         | TKcall (id, t, d, a) ->
-          let pp_self fmt _ =
+          let pp_entrypoint fmt _ =
             Format.fprintf fmt "case (Tezos.get_entrypoint_opt(\"%%%s\", %a) : option(contract(%a))) of Some (v) -> v | None -> (failwith(\"error self\") : contract(%a)) end"
               id f d pp_type t pp_type t
           in
@@ -500,7 +500,7 @@ let pp_model_internal fmt (model : model) b =
             const_operations
             f a
             f v
-            pp_self ()
+            pp_entrypoint ()
             const_operations
 
         | TKentry (e, a) ->
@@ -512,7 +512,7 @@ let pp_model_internal fmt (model : model) b =
             const_operations
 
         | TKself (id, args) ->
-          let pp_self fmt _ =
+          let pp_entrypoint fmt _ =
             Format.fprintf fmt "case (Tezos.get_entrypoint_opt(\"%%%s\", Tezos.self_address) : option(contract(action_%s))) of Some (v) -> v | None -> (failwith(\"error self\") : contract(action_%s)) end"
               id id id
           in
@@ -524,7 +524,7 @@ let pp_model_internal fmt (model : model) b =
                | [] -> pp_str fmt "unit"
                | _  -> Format.fprintf fmt "record %a end" (pp_list "; " (fun fmt (id, v) -> Format.fprintf fmt "%s = %a" id f v)) l) args
             id
-            f v pp_self () const_operations
+            f v pp_entrypoint () const_operations
       end
 
 
