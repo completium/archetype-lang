@@ -87,7 +87,6 @@ let to_model (ast : A.ast) : M.model =
     | A.Tasset id          -> M.Tasset id
     | A.Trecord id         -> M.Trecord id
     | A.Tenum id           -> M.Tenum id
-    | A.Tcontract id       -> M.Tcontract id
     | A.Tbuiltin b         -> M.Tbuiltin (vtyp_to_btyp b)
     | A.Tcontainer (t, c)  -> M.Tcontainer (ptyp_to_type t, to_container c)
     | A.Tset t             -> M.Tset (ptyp_to_type t)
@@ -95,7 +94,6 @@ let to_model (ast : A.ast) : M.model =
     | A.Tmap (k, v)        -> M.Tmap (ptyp_to_type k, ptyp_to_type v)
     | A.Ttuple l           -> M.Ttuple (List.map ptyp_to_type l)
     | A.Toperation         -> M.Toperation
-    | A.Tentry             -> M.Tentry
     | A.Tentrysig t        -> M.Tentrysig (ptyp_to_type t)
     | A.Toption t          -> M.Toption (ptyp_to_type t)
     | A.Ttrace tr          -> M.Ttrace (to_trtyp tr)

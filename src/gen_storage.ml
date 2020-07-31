@@ -62,8 +62,7 @@ let generate_storage (model : model) : model =
       | Tlist t           -> mk_mterm (Mlitlist []) (Tlist t)
       | Toption t         -> mk_mterm (Mnone) (Toption t)
       | Tasset v
-      | Tenum v
-      | Tcontract v       -> emit_error (NoInitExprFor (unloc v))
+      | Tenum v           -> emit_error (NoInitExprFor (unloc v))
       | Ttuple _          -> emit_error (NoInitExprFor "tuple")
       | Tset k            -> mk_mterm   (Mlitset []) (Tset k)
       | Tmap (k, v)       -> mk_mterm   (Mlitmap []) (Tmap (k, v))
@@ -71,7 +70,6 @@ let generate_storage (model : model) : model =
       | Tunit             -> emit_error (NoInitExprFor "unit")
       | Tstorage          -> emit_error (NoInitExprFor "storage")
       | Toperation        -> emit_error (NoInitExprFor "operation")
-      | Tentry            -> emit_error (NoInitExprFor "entry")
       | Tentrysig _       -> emit_error (NoInitExprFor "entrysig")
       | Tprog _           -> emit_error (NoInitExprFor "prog")
       | Tvset _           -> emit_error (NoInitExprFor "vset")

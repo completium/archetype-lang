@@ -51,8 +51,6 @@ let rec pp_ptyp fmt (t : ptyp) =
     Format.fprintf fmt "%a" pp_id i
   | Tenum en ->
     Format.fprintf fmt "%a" pp_id en
-  | Tcontract cn ->
-    Format.fprintf fmt "%a" pp_id cn
   | Tbuiltin b -> pp_vtyp fmt b
   | Tcontainer (t, c) ->
     Format.fprintf fmt "%a %a"
@@ -76,8 +74,6 @@ let rec pp_ptyp fmt (t : ptyp) =
       (pp_list " * " pp_ptyp) ts
   | Toperation ->
     Format.fprintf fmt "operation"
-  | Tentry ->
-    Format.fprintf fmt "entry"
   | Tentrysig et ->
     Format.fprintf fmt "entrysig<%a>" pp_ptyp et
   | Ttrace t ->

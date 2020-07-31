@@ -162,10 +162,6 @@ end = struct
         | _, _ -> None
       end
 
-    | A.Tcontract _, A.Tbuiltin (A.VTaddress | A.VTrole) (* FIXME *)
-    | A.Tbuiltin (A.VTaddress | A.VTrole), A.Tcontract _ ->
-      Some 1
-
     | A.Tbuiltin (A.VTaddress | A.VTrole), A.Tentrysig Tbuiltin (VTunit) ->
       Some 1
 
@@ -246,13 +242,11 @@ end = struct
                   else raise E.Error)
           end
 
-        | Toperation, Toperation
-        | Tentry, Tentry ->
+        | Toperation, Toperation ->
           ()
 
         | Tasset    x, Tasset    y
-        | Tenum     x, Tenum     y
-        | Tcontract x, Tcontract y ->
+        | Tenum     x, Tenum     y ->
           if unloc x <> unloc y then raise E.Error
 
         | Ttrace x, Ttrace y ->
@@ -290,11 +284,9 @@ end = struct
     let rec doit (ty : A.ptyp) =
       match ty with
       | Tnamed i -> Option.get (Mint.find_opt i subst)
-      | Tentry
       | Tasset    _
       | Trecord   _
       | Tenum     _
-      | Tcontract _
       | Toperation
       | Ttrace    _
       | Tbuiltin  _ -> ty
@@ -1768,14 +1760,12 @@ let rec valid_var_or_arg_type (ty : A.ptyp) =
   | Tasset     _  -> false
   | Trecord    _  -> true
   | Tenum      _  -> true
-  | Tcontract  _  -> true
   | Tbuiltin   _  -> true
   | Tset       ty -> valid_var_or_arg_type ty
   | Tlist      ty -> valid_var_or_arg_type ty
   | Tmap   (k, v) -> List.for_all valid_var_or_arg_type [k; v]
   | Ttuple     ty -> List.for_all valid_var_or_arg_type ty
   | Toption    ty -> valid_var_or_arg_type ty
-  | Tentry        -> false
   | Tentrysig  _  -> true
   | Toperation    -> true
   | Ttrace     _  -> false

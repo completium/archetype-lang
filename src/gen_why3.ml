@@ -133,11 +133,9 @@ let rec map_mtype m (t : M.type_) : loc_typ =
       | M.Tmap (_, _)                         -> Tycoll (dl (mk_map_name m t))
       | M.Tstorage                            -> Tystorage
       | M.Toperation                          -> Tyunit (* TODO: replace by the right type *)
-      | M.Tentry                              -> Tyunit (* TODO: replace by the right type *)
       | M.Tprog _                             -> Tyunit (* TODO: replace by the right type *)
       | M.Tvset _                             -> Tyunit (* TODO: replace by the right type *)
       | M.Ttrace _                            -> Tyunit (* TODO: replace by the right type *)
-      | M.Tcontract _                         -> Tyint
       | M.Tset t                              -> Tyset (map_mtype m t)
       | M.Tlist t                             -> Tylist (map_mtype m t)
       | _ -> print_endline (Format.asprintf "%a@." M.pp_type_ t); assert false)

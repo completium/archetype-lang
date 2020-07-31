@@ -58,7 +58,6 @@ type type_ =
   | Tasset of lident
   | Tenum of lident
   | Tstate
-  | Tcontract of lident
   | Tbuiltin of btyp
   | Tcontainer of type_ * container
   | Tlist of type_
@@ -70,7 +69,6 @@ type type_ =
   | Tunit
   | Tstorage
   | Toperation
-  | Tentry
   | Tentrysig of type_
   | Tprog of type_
   | Tvset of vset * type_
@@ -989,7 +987,6 @@ let rec cmp_type
   | Tasset i1, Tasset i2                     -> cmp_lident i1 i2
   | Tenum i1, Tenum i2                       -> cmp_lident i1 i2
   | Tstate, Tstate                           -> true
-  | Tcontract i1, Tcontract i2               -> cmp_lident i1 i2
   | Tbuiltin b1, Tbuiltin b2                 -> cmp_btyp b1 b2
   | Tcontainer (t1, c1), Tcontainer (t2, c2) -> cmp_type t1 t2 && cmp_container c1 c2
   | Tlist t1, Tlist t2                       -> cmp_type t1 t2
@@ -1001,7 +998,6 @@ let rec cmp_type
   | Tunit, Tunit                             -> true
   | Tstorage, Tstorage                       -> true
   | Toperation, Toperation                   -> true
-  | Tentry, Tentry                           -> true
   | Tentrysig t1, Tentrysig t2               -> cmp_type t1 t2
   | Tprog t1, Tprog t2                       -> cmp_type t1 t2
   | Tvset (v1, t1), Tvset (v2, t2)           -> cmp_vset v1 v2 && cmp_type t1 t2
@@ -1393,7 +1389,6 @@ let map_type (f : type_ -> type_) = function
   | Tasset id         -> Tasset id
   | Tenum id          -> Tenum id
   | Tstate            -> Tstate
-  | Tcontract id      -> Tcontract id
   | Tbuiltin b        -> Tbuiltin b
   | Tcontainer (t, c) -> Tcontainer (f t, c)
   | Tlist t           -> Tlist (f t)
@@ -1405,7 +1400,6 @@ let map_type (f : type_ -> type_) = function
   | Tunit             -> Tunit
   | Tstorage          -> Tstorage
   | Toperation        -> Toperation
-  | Tentry            -> Tentry
   | Tentrysig t       -> Tentrysig (f t)
   | Tprog t           -> Tprog (f t)
   | Tvset (v, t)      -> Tvset (v, t)
@@ -3386,7 +3380,6 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
     | Tasset id         -> Tasset (g KIassetname id)
     | Tenum id          -> Tenum (g KIenumname id)
     | Tstate            -> t
-    | Tcontract id      -> Tcontract (g KIcontractname id)
     | Tbuiltin _        -> t
     | Tcontainer (a, c) -> Tcontainer (for_type a, c)
     | Tlist a           -> Tlist (for_type a)
@@ -3398,7 +3391,6 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
     | Tunit             -> t
     | Tstorage          -> t
     | Toperation        -> t
-    | Tentry            -> t
     | Tentrysig t       -> Tentrysig (for_type t)
     | Tprog a           -> Tprog (for_type a)
     | Tvset (v, a)      -> Tvset (v, for_type a)

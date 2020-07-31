@@ -50,7 +50,6 @@ type ptyp =
   | Tasset of lident
   | Trecord of lident
   | Tenum of lident
-  | Tcontract of lident
   | Tbuiltin of vtyp
   | Tcontainer of ptyp * container
   | Tset of ptyp
@@ -59,7 +58,6 @@ type ptyp =
   | Ttuple of ptyp list
   | Toption of ptyp
   | Toperation
-  | Tentry (* entry of external contract *)
   | Tentrysig of ptyp
   | Ttrace of trtyp
 [@@deriving show {with_path = false}]

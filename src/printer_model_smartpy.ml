@@ -68,8 +68,6 @@ let pp_model fmt (model : model) =
       Format.fprintf fmt "state"
     | Tenum en ->
       Format.fprintf fmt "%a" pp_id en
-    | Tcontract cn ->
-      Format.fprintf fmt "%a" pp_id cn
     | Tbuiltin b -> pp_btyp fmt b
     | Tcontainer (Tasset an, (Aggregate | Partition)) ->
       let _, ak = Utils.get_asset_key model (unloc an) in
@@ -103,8 +101,6 @@ let pp_model fmt (model : model) =
       Format.fprintf fmt "storage"
     | Toperation ->
       Format.fprintf fmt "operation"
-    | Tentry ->
-      Format.fprintf fmt "entry"
     | Tentrysig t ->
       Format.fprintf fmt "entrysig<%a>" pp_type t
     | Tprog _
