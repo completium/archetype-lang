@@ -43,8 +43,8 @@
       "effect"              , EFFECT         ;
       "else"                , ELSE           ;
       "end"                 , END            ;
-      "entries"             , ENTRIES        ;
       "entry"               , ENTRY          ;
+      "entrypoint"          , ENTRYPOINT     ;
       "entrysig"            , ENTRYSIG       ;
       "enum"                , ENUM           ;
       "exists"              , EXISTS         ;

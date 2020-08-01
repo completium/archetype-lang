@@ -64,8 +64,8 @@
 %token EFFECT
 %token ELSE
 %token END
-%token ENTRIES
 %token ENTRY
+%token ENTRYPOINT
 %token ENTRYSIG
 %token ENUM
 %token EOF
@@ -272,7 +272,6 @@ declaration_r:
  | x=transition         { x }
  | x=dextension         { x }
  | x=namespace          { x }
- | x=entries            { x }
  | x=function_decl      { x }
  | x=specification_decl { x }
  | x=security_decl      { x }
@@ -318,18 +317,6 @@ extension_r:
 
 namespace:
 | NAMESPACE x=ident xs=braced(declarations) { Dnamespace (x, xs) }
-
-entries_item:
-| LESS t=type_t GREATER id=ident
- { (t, id) }
-
-entries_items:
-| xs=entries_item* {xs}
-
-entries:
-| ENTRIES exts=option(extensions)
-    xs=braced(entries_items)
-         { Dentries (xs, exts) }
 
 %inline fun_body:
 | e=expr { (None, e) }
@@ -537,8 +524,8 @@ asset_post_option:
 | xs=asset_option+ { xs }
 
 asset_option:
-| IDENTIFIED BY x=ident { AOidentifiedby x }
-| SORTED BY x=ident     { AOsortedby x }
+| IDENTIFIED BY xs=ident+ { AOidentifiedby xs }
+| SORTED BY x=ident       { AOsortedby x }
 
 %inline fields:
 | xs=sl(SEMI_COLON, field) { xs }
@@ -745,8 +732,8 @@ expr_r:
  | TRANSFER x=simple_expr TO y=simple_expr
      { Etransfer (x, TTsimple y) }
 
- | TRANSFER x=simple_expr TO y=simple_expr CALL id=ident args=paren(sl(COMMA, simple_expr))
-     { Etransfer (x, TTcontract (y, id, args)) }
+ | TRANSFER x=simple_expr TO y=simple_expr CALL id=ident LESS t=type_t GREATER args=paren(expr)
+     { Etransfer (x, TTcontract (y, id, t, args)) }
 
  | TRANSFER x=simple_expr TO ENTRY id=ident arg=simple_expr
      { Etransfer (x, TTentry (id, arg)) }
@@ -777,6 +764,9 @@ expr_r:
 
  | SELF DOT x=ident
      { Eself x }
+
+ | ENTRYPOINT LESS t=type_t GREATER LPAREN a=expr COMMA b=expr RPAREN
+     { Eentrypoint (t, a, b) }
 
  | x=order_operations %prec prec_order { x }
 

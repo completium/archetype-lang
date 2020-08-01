@@ -82,7 +82,7 @@ let pp_archetype fmt pt =
 
     let pp_assets fmt _ =
       let pp_asset_decl fmt ((name, fields, shadow_fields, aopts, _ , _, _) : asset_decl) =
-        let key : lident option = List.fold_left (fun accu x -> match x with AOidentifiedby k -> Some (k) | _ -> accu) None aopts in
+        let keys : lident list = List.fold_right (fun x accu -> match x with AOidentifiedby ks -> ks @ accu | _ -> accu) aopts [] in
         let orders : lident list = List.fold_left (fun accu x -> match x with AOsortedby s -> s::accu | _ -> accu) [] aopts in
         let fields = fields @ shadow_fields |> List.map unloc in
         let pp_asset_field fmt (f : field_unloc) =
@@ -96,7 +96,7 @@ let pp_archetype fmt pt =
                  then "order"::l
                  else l)
               |> (fun l ->
-                  if Option.cmp cmp_lident key (Some id)
+                  if List.exists (cmp_lident id) keys
                   then "__key__"::l
                   else l)
             in

@@ -159,7 +159,6 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt "int"
     | Tenum en ->
       Format.fprintf fmt "%a" pp_id en
-    | Tcontract _ -> pp_type fmt (Tbuiltin Baddress)
     | Tbuiltin b -> pp_btyp fmt b
     | Tcontainer (Tasset an, (Aggregate | Partition)) -> pp_type fmt (Tset ((Utils.get_asset_key model (unloc an) |> snd)))
     | Tcontainer (Tasset an, _) -> pp_type fmt (Tlist ((Utils.get_asset_key model (unloc an) |> snd)))
@@ -192,8 +191,6 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt "storage"
     | Toperation ->
       Format.fprintf fmt "operation"
-    | Tentry ->
-      Format.fprintf fmt "entry"
     | Tentrysig t ->
       Format.fprintf fmt "contract(%a)" pp_type t
     | Tprog _
@@ -535,10 +532,10 @@ let pp_model_internal fmt (model : model) b =
         f c
         pp_id id
 
-    | Mentrypoint (a, s) ->
-      Format.fprintf fmt "Tezos.get_entrypoint_opt(%a, %a)"
+    | Mentrypoint (_, a, s) ->
+      Format.fprintf fmt "Tezos.get_entrypoint_opt(\"%a\", %a)"
+        pp_id a
         f s
-        f a
 
     | Mself id ->
       let t = mtt.type_ in

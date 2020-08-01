@@ -2356,30 +2356,29 @@ let replace_for_to_iter (model : model) : model =
   in
 
   let rec aux ctx (mt : mterm) : mterm =
-    match mt.node with
-    | Mfor (FIsimple id, ICKset ({node = _; type_ = Tset t} as col), body, Some lbl) ->
+    let process ids col t body lbl =
       let nbody = aux ctx body in
-
       let idx_id = "_i_" ^ lbl in
       let idx = mk_mterm (Mvar (dumloc idx_id, Vlocal)) (Tbuiltin Bint) in
       let nth = mk_mterm (Mlistnth(t, col, idx)) t in
-      let letin = mk_mterm (Mletin ([id], nth, Some t, nbody, None)) Tunit in
-      let bound_min = mk_mterm (Mint Big_int.zero_big_int) (Tbuiltin Bint) in
-      let bound_max = mk_mterm (Msetlength (t, col)) (Tbuiltin Bint) in
-      let iter = Miter (dumloc idx_id, bound_min, bound_max, letin, Some lbl) in
-      mk_mterm iter mt.type_
-
-    | Mfor (FIsimple id, ICKlist ({node = _; type_ = Tlist t} as col), body, Some lbl) ->
-      let nbody = aux ctx body in
-
-      let idx_id = "_i_" ^ lbl in
-      let idx = mk_mterm (Mvar (dumloc idx_id, Vlocal)) (Tbuiltin Bint) in
-      let nth = mk_mterm (Mlistnth(t, col, idx)) t in
-      let letin = mk_mterm (Mletin ([id], nth, Some t, nbody, None)) Tunit in
+      let letin = mk_mterm (Mletin (ids, nth, Some t, nbody, None)) Tunit in
       let bound_min = mk_mterm (Mint Big_int.zero_big_int) (Tbuiltin Bint) in
       let bound_max = mk_mterm (Mlistlength (t, col)) (Tbuiltin Bint) in
       let iter = Miter (dumloc idx_id, bound_min, bound_max, letin, Some lbl) in
       mk_mterm iter mt.type_
+    in
+    match mt.node with
+    | Mfor (FIsimple id, ICKset ({node = _; type_ = Tset t} as col), body, Some lbl) ->
+      let col = mk_mterm (Mcast(Tset t, Tlist t, col)) (Tlist t) in
+      process [id] col t body lbl
+
+    | Mfor (FIsimple id, ICKlist ({node = _; type_ = Tlist t} as col), body, Some lbl) ->
+      process [id] col t body lbl
+
+    | Mfor (FIdouble (kid, vid), ICKmap ({node = _; type_ = Tmap (kt, vt)} as col), body, Some lbl) ->
+      let t = Ttuple [kt; vt] in
+      let col = mk_mterm (Mcast(Tmap (kt, vt), Tlist t, col)) (Tlist t) in
+      process [kid; vid] col t body lbl
 
     | Mfor (FIsimple id, col, body, Some lbl) ->
       let nbody = aux ctx body in

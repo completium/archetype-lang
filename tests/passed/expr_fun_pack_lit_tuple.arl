@@ -1,0 +1,7 @@
+archetype expr_fun_pack_lit_tuple
+
+variable res : bytes = 0x00
+
+entry exec () {
+  res := pack((1, "test"))
+}

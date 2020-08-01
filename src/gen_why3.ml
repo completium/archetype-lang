@@ -135,11 +135,9 @@ let rec map_mtype m (t : M.type_) : loc_typ =
       | M.Tmap (_, _)                         -> Tycoll (dl (mk_map_name m t))
       | M.Tstorage                            -> Tystorage
       | M.Toperation                          -> Tyunit (* TODO: replace by the right type *)
-      | M.Tentry                              -> Tyunit (* TODO: replace by the right type *)
       | M.Tprog _                             -> Tyunit (* TODO: replace bmy the right type *)
       | M.Tvset _                             -> Tyunit (* TODO: replace by the right type *)
       | M.Ttrace _                            -> Tyunit (* TODO: replace by the right type *)
-      | M.Tcontract _                         -> Tyint
       | M.Tset t                              -> Tyset (dl (mk_set_name m t))
       | M.Tlist t                             -> Tylist (map_mtype m t)
       | _ -> print_endline (Format.asprintf "%a@." M.pp_type_ t); assert false)
@@ -1475,7 +1473,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     (* entrypoint *)
 
     | Mentrycontract (_c, _id) -> error_not_translated "Mentrycontract"
-    | Mentrypoint (_a, _s)     -> error_not_translated "Mentrypoint"
+    | Mentrypoint (_t, _a, _s) -> error_not_translated "Mentrypoint"
     | Mself _id                -> error_not_translated "Mself"
 
 

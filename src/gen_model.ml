@@ -87,7 +87,6 @@ let to_model (ast : A.ast) : M.model =
     | A.Tasset id          -> M.Tasset id
     | A.Trecord id         -> M.Trecord id
     | A.Tenum id           -> M.Tenum id
-    | A.Tcontract id       -> M.Tcontract id
     | A.Tbuiltin b         -> M.Tbuiltin (vtyp_to_btyp b)
     | A.Tcontainer (t, c)  -> M.Tcontainer (ptyp_to_type t, to_container c)
     | A.Tset t             -> M.Tset (ptyp_to_type t)
@@ -95,7 +94,6 @@ let to_model (ast : A.ast) : M.model =
     | A.Tmap (k, v)        -> M.Tmap (ptyp_to_type k, ptyp_to_type v)
     | A.Ttuple l           -> M.Ttuple (List.map ptyp_to_type l)
     | A.Toperation         -> M.Toperation
-    | A.Tentry             -> M.Tentry
     | A.Tentrysig t        -> M.Tentrysig (ptyp_to_type t)
     | A.Toption t          -> M.Toption (ptyp_to_type t)
     | A.Ttrace tr          -> M.Ttrace (to_trtyp tr)
@@ -368,6 +366,9 @@ let to_model (ast : A.ast) : M.model =
       | A.Pquantifer (Exists, i, (coll, typ), term)    -> M.Mexists (i, ptyp_to_type typ, Option.map f coll, f term)
 
       | A.Pself id -> M.Mself id
+
+
+      | A.Pentrypoint (t, a, b) -> M.Mentrypoint (ptyp_to_type t, a, f b)
 
       (* | A.Pcall (Some p, A.Cconst A.Cbefore,    []) -> M.Msetbefore    (f p) *)
       (* | A.Pcall (Some p, A.Cconst A.Cunmoved,   []) -> M.Msetunmoved   (f p)
@@ -661,11 +662,6 @@ let to_model (ast : A.ast) : M.model =
         let fx = f x in
         M.Mchecksignature (fk, fs, fx)
 
-      | A.Pcall (None, A.Cconst A.Centrypoint, [AExpr a; AExpr b]) ->
-        let fa = f a in
-        let fb = f b in
-        M.Mentrypoint (fa, fb)
-
       | A.Pcall (_, A.Cid id, args) ->
         M.Mapp (id, List.map (fun x -> term_arg_to_expr f x) args)
 
@@ -827,11 +823,10 @@ let to_model (ast : A.ast) : M.model =
           let v = f v in
           let k =
             match k with
-            | TTsimple d                -> M.TKsimple (f d)
-            | TTcontract (d, id, ({type_ = Some t; _} as arg)) -> M.TKcall (unloc id, ptyp_to_type t, f d, f arg)
-            | TTentry (e, arg)          -> M.TKentry (f e, f arg)
-            | TTself (id, args)         -> M.TKself (unloc id, List.map (fun (id, v) -> unloc id, f v) args)
-            | _ -> assert false
+            | TTsimple d                 -> M.TKsimple (f d)
+            | TTcontract (d, id, t, arg) -> M.TKcall (unloc id, ptyp_to_type t, f d, f arg)
+            | TTentry (e, arg)           -> M.TKentry (f e, f arg)
+            | TTself (id, args)          -> M.TKself (unloc id, List.map (fun (id, v) -> unloc id, f v) args)
           in
           M.Mtransfer (v, k)
         end
@@ -1270,6 +1265,4 @@ let to_model (ast : A.ast) : M.model =
     |> (fun sec -> List.fold_left (fun accu x -> cont_security x accu) sec ast.securities)
   in
 
-  let ext_entries = List.map (fun (i, t) -> (unloc i, ptyp_to_type t)) ast.ext_entries in
-
-  M.mk_model ~decls:decls ~ext_entries:ext_entries ~functions:functions ~specification:specification ~security:security ~loc:ast.loc name
+  M.mk_model ~decls:decls ~functions:functions ~specification:specification ~security:security ~loc:ast.loc name

@@ -1,0 +1,15 @@
+archetype transfer_entrypoint
+
+variable res : nat = 0
+
+entry set_value(n : nat) {
+  res := n
+}
+
+entry exec () {
+  var n : nat = res + 1;
+
+  var eopt : option<entrysig<nat>> = entrypoint<nat>("%set_value", selfaddress);
+  var e = opt_get(eopt);
+  transfer 0tz to entry e(n);
+}

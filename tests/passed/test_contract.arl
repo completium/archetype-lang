@@ -1,17 +1,11 @@
 archetype test_contract
 
-entries {
-  <address * tez> myaction1
-  <string>        myaction2
-  <unit>          pay
-}
-
 variable contract_i : address = @KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm
 
 entry exec (a : address) {
   effect {
-    transfer 0tz to contract_i call myaction1(a, 1tz);
-    transfer 0tz to contract_i call myaction2("string");
-    transfer 1tz to contract_i call pay()
+    transfer 0tz to contract_i call myaction1<address * tez>((a, 1tz));
+    transfer 0tz to contract_i call myaction2<string>("string");
+    transfer 1tz to contract_i call pay<unit>(())
   }
 }

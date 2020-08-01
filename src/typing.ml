@@ -162,10 +162,6 @@ end = struct
         | _, _ -> None
       end
 
-    | A.Tcontract _, A.Tbuiltin (A.VTaddress | A.VTrole) (* FIXME *)
-    | A.Tbuiltin (A.VTaddress | A.VTrole), A.Tcontract _ ->
-      Some 1
-
     | A.Tbuiltin (A.VTaddress | A.VTrole), A.Tentrysig Tbuiltin (VTunit) ->
       Some 1
 
@@ -246,13 +242,11 @@ end = struct
                   else raise E.Error)
           end
 
-        | Toperation, Toperation
-        | Tentry, Tentry ->
+        | Toperation, Toperation ->
           ()
 
         | Tasset    x, Tasset    y
-        | Tenum     x, Tenum     y
-        | Tcontract x, Tcontract y ->
+        | Tenum     x, Tenum     y ->
           if unloc x <> unloc y then raise E.Error
 
         | Ttrace x, Ttrace y ->
@@ -290,11 +284,9 @@ end = struct
     let rec doit (ty : A.ptyp) =
       match ty with
       | Tnamed i -> Option.get (Mint.find_opt i subst)
-      | Tentry
       | Tasset    _
       | Trecord   _
       | Tenum     _
-      | Tcontract _
       | Toperation
       | Ttrace    _
       | Tbuiltin  _ -> ty
@@ -404,6 +396,7 @@ type error_desc =
   | InvalidShadowVariableAccess
   | InvalidSortingExpression
   | InvalidStateExpression
+  | InvalidTypeForEntrypoint
   | InvalidTypeForEntrysig
   | InvalidTypeForPk
   | InvalidTypeForSet
@@ -581,6 +574,7 @@ let pp_error_desc fmt e =
   | InvalidShadowVariableAccess        -> pp "Shadow variable access in non-shadow code"
   | InvalidSortingExpression           -> pp "Invalid sorting expression"
   | InvalidStateExpression             -> pp "Invalid state expression"
+  | InvalidTypeForEntrypoint           -> pp "Invalid type for entrypoint"
   | InvalidTypeForEntrysig             -> pp "Invalid type for entrysig"
   | InvalidTypeForPk                   -> pp "Invalid type for primary key"
   | InvalidTypeForSet                  -> pp "Invalid type for set"
@@ -786,7 +780,6 @@ type groups = {
   gr_enums       : (PT.lident * PT.enum_decl) loced list;
   gr_assets      : PT.asset_decl              loced list;
   gr_records     : PT.record_decl             loced list;
-  gr_entries     : PT.entries_decl            loced list;
   gr_vars        : PT.variable_decl           loced list;
   gr_funs        : PT.s_function              loced list;
   gr_acttxs      : acttx                      loced list;
@@ -1768,14 +1761,12 @@ let rec valid_var_or_arg_type (ty : A.ptyp) =
   | Tasset     _  -> false
   | Trecord    _  -> true
   | Tenum      _  -> true
-  | Tcontract  _  -> true
   | Tbuiltin   _  -> true
   | Tset       ty -> valid_var_or_arg_type ty
   | Tlist      ty -> valid_var_or_arg_type ty
   | Tmap   (k, v) -> List.for_all valid_var_or_arg_type [k; v]
   | Ttuple     ty -> List.for_all valid_var_or_arg_type ty
   | Toption    ty -> valid_var_or_arg_type ty
-  | Tentry        -> false
   | Tentrysig  _  -> true
   | Toperation    -> true
   | Ttrace     _  -> false
@@ -2559,49 +2550,6 @@ let rec for_xexpr
 
       mk_sp (Some fun_.fs_retty) (A.Pcall (None, A.Cid f, args))
 
-    | Eapp (Fident ({ pldesc = "entrypoint" } as f), args) -> begin
-        let args = match args with [{ pldesc = Etuple args }] -> args | _ -> args in
-        let args = List.map (for_xexpr env) args in
-
-        if List.exists (fun arg -> Option.is_none arg.A.type_) args then
-          bailout ();
-
-        let aty = List.map (fun a -> Option.get a.A.type_) args in
-
-        if not (Type.sig_compatible ~from_:aty ~to_:[A.vtaddress; A.vtstring]) then begin
-          Env.emit_error env (loc f, NoMatchingFunction (unloc f, aty));
-          bailout ();
-        end;
-
-(*
-      let _address, entry = Option.get (List.as_seq2 args) in
-
-      let ename =
-        match entry.node with
-        | Plit { node = (A.BVstring entry) } -> entry
-        | _ ->
-            Env.emit_error env (entry.loc, StringLiteralExpected);
-            bailout () in
-
-      let decl =
-        match Env.AEntry.lookup env ename with
-        | None ->
-            Env.emit_error env (entry.loc, UnknownAEntry ename);
-            bailout ()
-
-        | Some decl -> decl in
-*)
-
-        match ety |> Option.bind Type.as_option |> Option.bind Type.as_entrysig with
-        | None ->
-          Env.emit_error env (loc tope, CannotInfer); bailout ()
-
-        | Some rty ->
-          let rty  = A.Toption (A.Tentrysig rty) in
-          let args = List.map (fun x -> A.AExpr x) args in
-          mk_sp (Some rty) (A.Pcall (None, A.Cconst A.Centrypoint, args))
-      end
-
     | Eapp (Fident f, args) -> begin
         let args = match args with [{ pldesc = Etuple args }] -> args | _ -> args in
         let args = List.map (for_xexpr env) args in
@@ -2869,6 +2817,25 @@ let rec for_xexpr
           | tys  -> A.Ttuple tys in
 
         mk_sp (Some (A.Tentrysig rty)) (A.Pself name)
+      end
+
+    | Eentrypoint (ty, a, b) -> begin
+        let ty = for_type_exn env ty in
+        let a  = for_xexpr env ~ety:A.vtstring a in
+        let b  = for_xexpr env ~ety:A.vtaddress b in
+
+        if not (Type.Michelson.is_type ty) then
+          Env.emit_error env (loc tope, InvalidTypeForEntrypoint);
+
+        let id =
+          match a.node with
+          | A.Plit { node = (BVstring str); _ } -> mkloc a.loc str
+          | _ -> (Env.emit_error env (a.loc, StringLiteralExpected); bailout ())
+        in
+
+        mk_sp
+          (Some (A.Toption (A.Tentrysig ty)))
+          (A.Pentrypoint (ty, id, b))
       end
 
     | Eself     _
@@ -3646,42 +3613,12 @@ let rec for_instruction_r
         | TTsimple to_ ->
           A.TTsimple (for_expr kind env ~ety:A.vtrole to_)
 
-        | TTcontract (to_, name, args) -> begin
+        | TTcontract (to_, name, ty, arg) -> begin
+            let ty  = for_type_exn env ty in
             let to_ = for_expr ~ety:A.vtaddress kind env to_ in
+            let arg = for_expr ~ety:ty kind env arg in
 
-            let decl =
-              match Env.AEntry.lookup env (unloc name) with
-              | None ->
-                Env.emit_error env (loc name, UnknownAEntry (unloc name));
-                bailout ()
-              | Some decl -> decl in
-
-            let targs =
-              match decl.aet_type with
-              | A.Ttuple sig_ -> sig_
-              | A.Tbuiltin A.VTunit -> []
-              | ty -> [ty] in
-
-            if List.length targs <> List.length args then begin
-              let n = List.length targs in
-              let c = List.length  args in
-              Env.emit_error env (loc name, InvalidNumberOfArguments (n, c));
-              bailout ()
-            end;
-
-            let args =
-              List.map2
-                (fun ety arg -> for_expr ~ety kind env arg)
-                targs args in
-
-            let arg =
-              match args with
-              | [] -> let lit = A.mk_sp ~type_:A.vtunit (A.BVunit) in A.mk_sp ~type_:A.vtunit (A.Plit lit)
-              | [x] -> x
-              | _ ->  A.mk_sp ~type_:(A.Ttuple targs) (A.Ptuple args)
-            in
-
-            A.TTcontract (to_, name, arg)
+            A.TTcontract (to_, name, ty, arg)
           end
 
         | TTentry (name, arg) -> begin
@@ -4480,7 +4417,7 @@ let for_asset_decl pkey (env : env) ((adecl, decl) : assetdecl * PT.asset_decl l
     | [] ->
       Option.map (L.lmap proj4_1) (List.ohead fields)
 
-    | (_ :: subpks) as pks ->
+    | [(_ :: subpks) as pks] ->
       let dokey key =
         match get_field (unloc key) with
         | None ->
@@ -4493,6 +4430,8 @@ let for_asset_decl pkey (env : env) ((adecl, decl) : assetdecl * PT.asset_decl l
 
       List.iter (fun newpk -> Env.emit_error env (loc newpk, DuplicatedPKey)) subpks;
       List.hd (List.map dokey pks)
+
+    | (_ :: _) -> assert false (* TODO *)
   in
 
   pks |> Option.iter (fun pk ->
@@ -4783,25 +4722,6 @@ let for_records_decl (env : env) (decls : PT.record_decl loced list) =
   List.fold_left_map for_record_decl env decls
 
 (* -------------------------------------------------------------------- *)
-let for_entry_decl (env : env) (decl : PT.entries_decl loced) =
-  let for1 (env : env) (ty, name) =
-    let env, _ =
-      for_type env ty |> Option.foldbind (fun env ty ->
-          if check_and_emit_name_free env name then
-            let decl = { aet_name = name; aet_type = ty; } in
-            let env = Env.AEntry.push env decl in
-            env, Some decl
-          else env, None) env
-    in env, None
-
-  in List.fold_left_map for1 env (fst (unloc decl))
-
-(* -------------------------------------------------------------------- *)
-let for_entries_decl (env : env) (decls : PT.entries_decl loced list) =
-  let env, decls = List.fold_left_map for_entry_decl env decls in
-  env, List.flatten decls
-
-(* -------------------------------------------------------------------- *)
 let for_acttx_decl (env : env) (decl : acttx loced) =
   match unloc decl with
   | `Entry (x, args, pt, i_exts, _exts) -> begin
@@ -4905,7 +4825,6 @@ let group_declarations (decls : (PT.declaration list)) =
     gr_enums      = [];
     gr_assets     = [];
     gr_records    = [];
-    gr_entries    = [];
     gr_vars       = [];
     gr_funs       = [];
     gr_acttxs     = [];
@@ -4935,9 +4854,6 @@ let group_declarations (decls : (PT.declaration list)) =
     | PT.Drecord infos ->
       { g with gr_records = mk infos :: g.gr_records }
 
-    | PT.Dentries infos ->
-      { g with gr_entries = mk infos :: g.gr_entries }
-
     | PT.Dentry infos ->
       { g with gr_acttxs = mk (`Entry infos) :: g.gr_acttxs }
 
@@ -4965,7 +4881,6 @@ type decls = {
   variables : vardecl option list;
   enums     : statedecl option list;
   records   : recorddecl option list;
-  entries   : aentrydecl option list;
   assets    : assetdecl option list;
   functions : env fundecl option list;
   acttxs    : env tentrydecl option list;
@@ -5008,7 +4923,6 @@ let for_grouped_declarations (env : env) (toploc, g) =
       (None, None, env) in
 
   let env, records      = for_records_decl   env g.gr_records   in
-  let env, entries      = for_entries_decl   env g.gr_entries   in
   let env, enums        = for_enums_decl     env g.gr_enums     in
   let enums, especs     = List.split enums                      in
   let env, variables    = for_vars_decl      env g.gr_vars      in
@@ -5060,7 +4974,7 @@ let for_grouped_declarations (env : env) (toploc, g) =
 
   let output =
     { state    ; variables; enums   ; assets ; functions;
-      acttxs   ; specs    ; secspecs; records; entries  ; }
+      acttxs   ; specs    ; secspecs; records; }
 
   in (env, output)
 
@@ -5307,7 +5221,6 @@ let for_declarations (env : env) (decls : (PT.declaration list) loced) : A.ast =
       )
       ~specifications:(List.map specifications_of_ispecifications decls.specs)
       ~securities:(decls.secspecs)
-      ~ext_entries:(aentries_of_entrydecl decls.entries)
       ~loc:toploc
       x
 

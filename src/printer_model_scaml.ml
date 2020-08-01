@@ -96,8 +96,6 @@ let pp_model fmt (model : model) =
       Format.fprintf fmt "state"
     | Tenum en ->
       Format.fprintf fmt "%a" pp_id en
-    | Tcontract cn ->
-      Format.fprintf fmt "%a" pp_id cn
     | Tbuiltin b -> pp_btyp fmt b
     | Tcontainer (t, c) ->
       Format.fprintf fmt "%a %a"
@@ -127,8 +125,6 @@ let pp_model fmt (model : model) =
       Format.fprintf fmt "storage"
     | Toperation ->
       Format.fprintf fmt "operation"
-    | Tentry ->
-      Format.fprintf fmt "entry"
     | Tentrysig t ->
       Format.fprintf fmt "entrysig<%a>" pp_type t
     | Tprog _
@@ -591,9 +587,9 @@ let pp_model fmt (model : model) =
           f c
           pp_id id
 
-      | Mentrypoint (a, s) ->
-        Format.fprintf fmt "entrypoint(%a, %a)"
-          f a
+      | Mentrypoint (_, a, s) ->
+        Format.fprintf fmt "entrypoint(\"%a\", %a)"
+          pp_id a
           f s
 
       | Mself id ->

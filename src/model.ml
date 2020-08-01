@@ -58,7 +58,6 @@ type type_ =
   | Tasset of lident
   | Tenum of lident
   | Tstate
-  | Tcontract of lident
   | Tbuiltin of btyp
   | Tcontainer of type_ * container
   | Tlist of type_
@@ -70,7 +69,6 @@ type type_ =
   | Tunit
   | Tstorage
   | Toperation
-  | Tentry
   | Tentrysig of type_
   | Tprog of type_
   | Tvset of vset * type_
@@ -206,9 +204,9 @@ type ('id, 'term) mterm_node  =
   | Mfail             of 'id fail_type_gen
   | Mtransfer         of 'term * 'term transfer_kind_gen
   (* entrypoint *)
-  | Mentrycontract    of 'term * 'id   (* contract * ident *)
-  | Mentrypoint       of 'term * 'term (* address * string *)
-  | Mself             of 'id           (* entryname *)
+  | Mentrycontract    of 'term * 'id           (* contract * ident *)
+  | Mentrypoint       of type_ * 'id * 'term   (* type * address * string *)
+  | Mself             of 'id                   (* entryname *)
   (* operation *)
   | Moperations
   | Mmkoperation      of 'term * 'term * 'term  (* value * address * args *)
@@ -845,7 +843,6 @@ type 'id model_gen = {
   api_items     : api_storage list;
   api_verif     : api_verif list;
   decls         : 'id decl_node_gen list;
-  ext_entries   : (ident * type_) list;
   storage       : 'id storage_gen;
   functions     : 'id function__gen list;
   specification : 'id specification_gen;
@@ -947,8 +944,8 @@ let mk_signature ?(args = []) ?ret name : 'id signature_gen =
 let mk_api_item node_item api_loc =
   { node_item; api_loc }
 
-let mk_model ?(api_items = []) ?(api_verif = []) ?(decls = []) ?(ext_entries = []) ?(functions = []) ?(storage = []) ?(specification = mk_specification ()) ?(security = mk_security ()) ?(loc = Location.dummy) name : model =
-  { name; api_items; api_verif; storage; decls; ext_entries; functions; specification; security; loc }
+let mk_model ?(api_items = []) ?(api_verif = []) ?(decls = []) ?(functions = []) ?(storage = []) ?(specification = mk_specification ()) ?(security = mk_security ()) ?(loc = Location.dummy) name : model =
+  { name; api_items; api_verif; storage; decls; functions; specification; security; loc }
 
 (* -------------------------------------------------------------------- *)
 
@@ -989,7 +986,6 @@ let rec cmp_type
   | Tasset i1, Tasset i2                     -> cmp_lident i1 i2
   | Tenum i1, Tenum i2                       -> cmp_lident i1 i2
   | Tstate, Tstate                           -> true
-  | Tcontract i1, Tcontract i2               -> cmp_lident i1 i2
   | Tbuiltin b1, Tbuiltin b2                 -> cmp_btyp b1 b2
   | Tcontainer (t1, c1), Tcontainer (t2, c2) -> cmp_type t1 t2 && cmp_container c1 c2
   | Tlist t1, Tlist t2                       -> cmp_type t1 t2
@@ -1001,7 +997,6 @@ let rec cmp_type
   | Tunit, Tunit                             -> true
   | Tstorage, Tstorage                       -> true
   | Toperation, Toperation                   -> true
-  | Tentry, Tentry                           -> true
   | Tentrysig t1, Tentrysig t2               -> cmp_type t1 t2
   | Tprog t1, Tprog t2                       -> cmp_type t1 t2
   | Tvset (v1, t1), Tvset (v2, t2)           -> cmp_vset v1 v2 && cmp_type t1 t2
@@ -1126,7 +1121,7 @@ let cmp_mterm_node
     | Mtransfer (v1, k1), Mtransfer (v2, k2)                                           -> cmp v1 v2 && cmp_transfer_kind k1 k2
     (* entrypoint *)
     | Mentrycontract (c1, id1), Mentrycontract (c2, id2)                               -> cmp c1 c2 && cmpi id1 id2
-    | Mentrypoint (a1, s1), Mentrypoint (a2, s2)                                       -> cmp a1 a2 && cmp s1 s2
+    | Mentrypoint (t1, a1, s1), Mentrypoint (t2, a2, s2)                               -> cmp_type t1 t2 && cmpi a1 a2 && cmp s1 s2
     | Mself id1, Mself id2                                                             -> cmpi id1 id2
     (* operation *)
     | Moperations, Moperations                                                         -> true
@@ -1393,7 +1388,6 @@ let map_type (f : type_ -> type_) = function
   | Tasset id         -> Tasset id
   | Tenum id          -> Tenum id
   | Tstate            -> Tstate
-  | Tcontract id      -> Tcontract id
   | Tbuiltin b        -> Tbuiltin b
   | Tcontainer (t, c) -> Tcontainer (f t, c)
   | Tlist t           -> Tlist (f t)
@@ -1405,7 +1399,6 @@ let map_type (f : type_ -> type_) = function
   | Tunit             -> Tunit
   | Tstorage          -> Tstorage
   | Toperation        -> Toperation
-  | Tentry            -> Tentry
   | Tentrysig t       -> Tentrysig (f t)
   | Tprog t           -> Tprog (f t)
   | Tvset (v, t)      -> Tvset (v, t)
@@ -1476,7 +1469,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mtransfer (v, k)               -> Mtransfer (f v, map_transfer_kind fi ft f k)
   (* entrypoint *)
   | Mentrycontract (c, id)         -> Mentrycontract (f c, g id)
-  | Mentrypoint (a, s)             -> Mentrypoint (f a, f s)
+  | Mentrypoint (t, a, s)          -> Mentrypoint (ft t, g a, f s)
   | Mself id                       -> Mself (g id)
   (* operation *)
   | Moperations                    -> Moperations
@@ -1839,7 +1832,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mtransfer (v, k)                      -> fold_transfer_kind f (f accu v) k
   (* entrypoint *)
   | Mentrycontract (c, _)                 -> f accu c
-  | Mentrypoint (a, s)                    -> f (f accu a) s
+  | Mentrypoint (_, _, s)                 -> f accu s
   | Mself _                               -> accu
   (* operation *)
   | Moperations                           -> accu
@@ -2198,10 +2191,9 @@ let fold_map_term
     let ce, ca = f accu c in
     g (Mentrycontract (ce, id)), ca
 
-  | Mentrypoint (a, s) ->
-    let ae, aa = f accu a in
-    let se, sa = f aa s in
-    g (Mentrypoint (ae, se)), sa
+  | Mentrypoint (t, a, s) ->
+    let se, sa = f accu s in
+    g (Mentrypoint (t, a, se)), sa
 
   | Mself id ->
     g (Mself id), accu
@@ -3027,7 +3019,6 @@ type kind_ident =
   | KIenumvalue
   | KIcontractname
   | KIcontractentry
-  | KIextEntries
   | KIstoragefield
   | KIentry
   | KIfunction
@@ -3371,7 +3362,6 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
     api_items     = List.map for_api_item  model.api_items;
     api_verif     = List.map for_api_verif model.api_verif;
     decls         = List.map for_decl_node model.decls;
-    ext_entries   = List.map (fun (id, t) -> (f KIextEntries id, for_type t)) model.ext_entries;
     storage       = List.map for_storage_item model.storage;
     functions     = List.map for_function__ model.functions;
     specification = for_specification model.specification;
@@ -3386,7 +3376,6 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
     | Tasset id         -> Tasset (g KIassetname id)
     | Tenum id          -> Tenum (g KIenumname id)
     | Tstate            -> t
-    | Tcontract id      -> Tcontract (g KIcontractname id)
     | Tbuiltin _        -> t
     | Tcontainer (a, c) -> Tcontainer (for_type a, c)
     | Tlist a           -> Tlist (for_type a)
@@ -3398,7 +3387,6 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
     | Tunit             -> t
     | Tstorage          -> t
     | Toperation        -> t
-    | Tentry            -> t
     | Tentrysig t       -> Tentrysig (for_type t)
     | Tprog a           -> Tprog (for_type a)
     | Tvset (v, a)      -> Tvset (v, for_type a)

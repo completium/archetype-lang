@@ -50,7 +50,6 @@ type ptyp =
   | Tasset of lident
   | Trecord of lident
   | Tenum of lident
-  | Tcontract of lident
   | Tbuiltin of vtyp
   | Tcontainer of ptyp * container
   | Tset of ptyp
@@ -59,7 +58,6 @@ type ptyp =
   | Ttuple of ptyp list
   | Toption of ptyp
   | Toperation
-  | Tentry (* entry of external contract *)
   | Tentrysig of ptyp
   | Ttrace of trtyp
 [@@deriving show {with_path = false}]
@@ -162,7 +160,6 @@ type const =
   | Csum
   | Cunpack
   | Cupdate
-  | Centrypoint
   | Cmkoperation
   (* set *)
   | Csadd
@@ -335,6 +332,7 @@ type 'id term_node  =
   | Psome of 'id term_gen
   | Pcast of ptyp * ptyp * 'id term_gen
   | Pself of 'id
+  | Pentrypoint of ptyp * 'id * 'id term_gen
 [@@deriving show {with_path = false}]
 
 and 'id term_arg =
@@ -369,7 +367,7 @@ type 'id instruction_poly = {
 
 and 'id transfer_t =
   | TTsimple   of 'id term_gen
-  | TTcontract of 'id term_gen * 'id * 'id term_gen
+  | TTcontract of 'id term_gen * 'id * type_ * 'id term_gen
   | TTentry    of 'id term_gen * 'id term_gen
   | TTself     of 'id * ('id * 'id term_gen) list
 
@@ -657,7 +655,6 @@ type 'id fun_ =
 type 'id ast_struct = {
   name           : 'id;
   decls          : 'id decl_ list;
-  ext_entries    : ('id * ptyp) list;
   funs           : 'id fun_ list;
   specifications : 'id specification list;
   securities     : security list;
@@ -742,8 +739,8 @@ let mk_asset ?(fields = []) ?key ?(sort = []) ?state ?(init = []) ?(specs = []) 
 let mk_contract ?(signatures = []) ?init ?(loc = Location.dummy) name =
   { name; signatures; init; loc }
 
-let mk_model ?(decls = []) ?(ext_entries = []) ?(funs = []) ?(specifications = []) ?(securities = []) ?(loc = Location.dummy) name =
-  { name; decls; ext_entries; funs; specifications; securities; loc }
+let mk_model ?(decls = []) ?(funs = []) ?(specifications = []) ?(securities = []) ?(loc = Location.dummy) name =
+  { name; decls; funs; specifications; securities; loc }
 
 let mk_id type_ id : qualid =
   { type_ = Some type_;

@@ -90,7 +90,7 @@ and for_ident = for_ident_unloc loced
 
 and transfer_t =
   | TTsimple   of expr
-  | TTcontract of expr * lident * expr list
+  | TTcontract of expr * lident * type_t * expr
   | TTentry    of lident * expr
   | TTself     of lident * expr list
 
@@ -123,6 +123,7 @@ and expr_unloc =
   | Elabel        of lident
   | Ereturn       of expr
   | Eoption       of option_
+  | Eentrypoint   of type_t * expr * expr
   | Eunpack       of type_t * expr
   | Eself         of lident
   | Eany
@@ -265,7 +266,6 @@ and declaration_unloc =
   | Drecord        of record_decl
   | Dentry         of entry_decl
   | Dtransition    of transition_decl
-  | Dentries       of entries_decl
   | Dextension     of extension_decl
   | Dnamespace     of namespace_decl
   | Dfunction      of s_function
@@ -315,9 +315,6 @@ and transition_decl =
   * transition
   * exts
 
-and entries_decl =
-  (type_t * lident) list * exts
-
 and extension_decl =
   lident * expr list
 
@@ -329,7 +326,7 @@ and value_option =
   | VOto of lident
 
 and asset_option =
-  | AOidentifiedby of lident
+  | AOidentifiedby of lident list
   | AOsortedby of lident
 
 and asset_post_option =
