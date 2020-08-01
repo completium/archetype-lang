@@ -54,6 +54,8 @@ module Type : sig
   val subst : A.ptyp Mint.t -> A.ptyp -> A.ptyp
 
   val pktype : A.ptyp -> bool
+
+  val create_tuple : A.ptyp list -> A.ptyp
 end = struct
   let as_builtin   = function A.Tbuiltin   ty      -> Some ty      | _ -> None
   let as_container = function A.Tcontainer (ty, c) -> Some (ty, c) | _ -> None
@@ -319,6 +321,12 @@ end = struct
       ) -> true
     | _ -> false
 
+
+  let create_tuple (tys : A.ptyp list) =
+    match tys with
+    | []   -> A.vtunit
+    | [ty] -> ty
+    | tys  -> A.Ttuple tys
 end
 
 (* -------------------------------------------------------------------- *)
@@ -336,6 +344,7 @@ type error_desc =
   | AssertInGlobalSpec
   | AssetExpected                      of A.ptyp
   | AssetOrRecordExpected              of A.ptyp
+  | AssetWithoutPKey
   | AssetWithoutFields
   | BeforeIrrelevant                   of [`Local | `State]
   | BeforeOrLabelInExpr
@@ -359,7 +368,7 @@ type error_desc =
   | DuplicatedFieldInRecordDecl        of ident
   | DuplicatedFieldInAssetOrRecordLiteral of ident
   | DuplicatedInitMarkForCtor
-  | DuplicatedPKey
+  | DuplicatedPkeyField                of ident
   | DuplicatedVarDecl                  of ident
   | EffectInGlobalSpec
   | EmptyEnumDecl
@@ -408,6 +417,7 @@ type error_desc =
   | LetInElseInInstruction
   | LetInElseOnNonOption
   | MethodCallInPredicate
+  | MisorderedPkeyFields
   | MissingFieldInAssetOrRecordLiteral of ident
   | MissingInitValueForShadowField
   | MixedAnonInAssetOrRecordLiteral
@@ -510,7 +520,8 @@ let pp_error_desc fmt e =
   | AssertInGlobalSpec                 -> pp "Assertions specification at global level are forbidden"
   | AssetExpected ty                   -> pp "Asset expected (found a %a)" Printer_ast.pp_ptyp ty
   | AssetOrRecordExpected ty           -> pp "Asset or record expected (found a %a)" Printer_ast.pp_ptyp ty
-  | AssetWithoutFields                 -> pp "Asset without fields"
+  | AssetWithoutPKey                   -> pp "Asset declaration without a primary key"
+  | AssetWithoutFields                 -> pp "Asset declaration without fields"
   | BeforeIrrelevant `Local            -> pp "The `before' modifier cannot be used on local variables"
   | BeforeIrrelevant `State            -> pp "The `before' modifier cannot be used on state constructors"
   | BeforeOrLabelInExpr                -> pp "The `before' or label modifiers can only be used in formulas"
@@ -535,7 +546,7 @@ let pp_error_desc fmt e =
   | DuplicatedFieldInAssetOrRecordLiteral i
     -> pp "Duplicated field in asset or record literal: %a" pp_ident i
   | DuplicatedInitMarkForCtor          -> pp "Duplicated 'initialized by' section for asset"
-  | DuplicatedPKey                     -> pp "Duplicated key"
+  | DuplicatedPkeyField x              -> pp "Duplicated primary key field: %a" pp_ident x
   | DuplicatedVarDecl i                -> pp "Duplicated variable declaration: %a" pp_ident i
   | EffectInGlobalSpec                 -> pp "(Shadow) effects at global level are forbidden"
   | EmptyEnumDecl                      -> pp "Empty state/enum declaration"
@@ -585,12 +596,11 @@ let pp_error_desc fmt e =
   | LetInElseInInstruction             -> pp "Let In else in instruction"
   | LetInElseOnNonOption               -> pp "Let in else on non-option type"
   | MethodCallInPredicate              -> pp "Cannot call methods in predicates"
-  | MissingFieldInAssetOrRecordLiteral i
-    -> pp "Missing field in asset or record literal: %a" pp_ident i
+  | MisorderedPkeyFields               -> pp "Primary keys order should follow asset fields order"
+  | MissingFieldInAssetOrRecordLiteral i -> pp "Missing field in asset or record literal: %a" pp_ident i
   | MissingInitValueForShadowField     -> pp "Shadow fields must have a default value"
   | MixedAnonInAssetOrRecordLiteral    -> pp "Mixed anonymous in asset or record literal"
-  | MixedFieldNamesInAssetOrRecordLiteral l
-    -> pp "Mixed field names in asset or record literal: %a" (Printer_tools.pp_list "," pp_ident) l
+  | MixedFieldNamesInAssetOrRecordLiteral l -> pp "Mixed field names in asset or record literal: %a" (Printer_tools.pp_list "," pp_ident) l
   | MoreThanOneInitState l             -> pp "More than one initial state: %a" (Printer_tools.pp_list ", " pp_ident) l
   | MultipleAssetStateDeclaration      -> pp "Multiple asset states declaration"
   | MultipleFromToInVarDecl            -> pp "Variable declaration must have at most one from/to specification"
@@ -967,7 +977,8 @@ let allops : opinfo list =
 type assetdecl = {
   as_name   : A.lident;
   as_fields : fielddecl list;
-  as_pk     : A.lident;
+  as_pkty   : A.ptyp;
+  as_pk     : A.lident list;
   as_sortk  : A.lident list;
   as_invs   : (A.lident option * A.pterm) list;
   as_state  : A.lident option;
@@ -1669,9 +1680,8 @@ let select_operator env ?(formula = false) ?(asset = false) loc (op, tys) =
             [Tcontainer (Tasset aty, (Aggregate | Partition)) as rty; Tlist sty] ->
 
             let asset = Env.Asset.get env (unloc aty) in
-            let pk    = Option.get (get_field (unloc asset.as_pk) asset) in
 
-            if Type.compatible ~autoview:false  ~from_:sty ~to_:pk.fd_type then
+            if Type.compatible ~autoview:false  ~from_:sty ~to_:asset.as_pkty then
               [{ osl_sig = tys; osl_ret = rty }]
             else []
 
@@ -1850,8 +1860,7 @@ let for_type_exn ?pkey (env : env) =
               Tnamed (List.index_of ((=) (unloc x)) map)
 
             | _ ->
-              let ctor = Env.Asset.byfield env (unloc decl.as_pk) in
-              (snd (Option.get ctor)).fd_type
+              decl.as_pkty
           end
 
         | _ ->
@@ -2162,8 +2171,7 @@ let rec for_xexpr
         let get_target_field_type = function
           | A.Tcontainer (Tasset an, Aggregate) -> begin
               let asset = Env.Asset.get env (unloc an) in
-              let pk = Option.get (get_field (unloc asset.as_pk) asset) in
-              A.Tlist (pk.fd_type)
+              A.Tlist asset.as_pkty
             end
           | t -> t
         in
@@ -2339,8 +2347,7 @@ let rec for_xexpr
           end
         | _ -> begin
             let e, asset = for_asset_collection_expr mode env (`Parsed e) in
-            let pkty = asset |> Option.map (fun (asset, _) ->
-                (Option.get (get_field (unloc asset.as_pk) asset)).fd_type) in
+            let pkty = asset |> Option.map (fun (asset, _) -> asset.as_pkty) in
             let pk = for_xexpr ?ety:pkty env pk in
 
             let aoutty = Option.map (fun (asset, _) -> A.Tasset asset.as_name) asset in
@@ -2585,7 +2592,7 @@ let rec for_xexpr
           | `Coll    -> Some (A.Tcontainer (A.Tasset asset.as_name, A.Collection))
           | `SubColl -> Some (A.Tcontainer (A.Tasset asset.as_name, A.View))
           | `Ref i   -> Mint.find_opt i amap
-          | `Pk      -> Some (Option.get (get_field (unloc asset.as_pk) asset)).fd_type
+          | `Pk      -> Some (asset.as_pkty)
           | _        -> assert false in
 
         let the = for_xexpr env the in
@@ -2776,11 +2783,7 @@ let rec for_xexpr
             bailout ()
           | Some decl -> decl in
 
-        let rty =
-          match List.map snd decl.ad_args with
-          | []   -> A.vtunit
-          | [ty] -> ty
-          | tys  -> A.Ttuple tys in
+        let rty = Type.create_tuple (List.map snd decl.ad_args) in
 
         mk_sp (Some (A.Tentrysig rty)) (A.Pself name)
       end
@@ -2847,9 +2850,8 @@ and cast_expr ?(autoview = false) (env : env) (to_ : A.ptyp option) (e : A.pterm
     { type_ = Some (A.Tcontainer (A.Tasset asset, A.View) as from_) } ->
 
     let decl = Env.Asset.get env (unloc asset) in
-    let pkey = Option.get (get_field (unloc decl.as_pk) decl) in
 
-    if not (Type.equal xty pkey.fd_type) then
+    if not (Type.equal xty decl.as_pkty) then
       Env.emit_error env (e.loc, IncompatibleTypes (from_, to_));
     A.mk_sp ~loc:e.loc ~type_:to_ (A.Pcast (from_, to_, e))
 
@@ -3082,8 +3084,7 @@ and for_gen_method_call mode env theloc (the, m, args)
     let rec doarg arg (aty : mthtyp) =
       match aty with
       | `Pk ->
-        let pk = Option.get (get_field (unloc asset.as_pk) asset) in
-        A.AExpr (for_xexpr mode env ~ety:pk.fd_type arg)
+        A.AExpr (for_xexpr mode env ~ety:asset.as_pkty arg)
 
       | `The ->
         A.AExpr (for_xexpr mode env ~ety:(Tasset asset.as_name) arg)
@@ -3200,9 +3201,7 @@ and for_arg_effect
               match fty with
               | A.Tcontainer (A.Tasset subasset, A.Aggregate) -> begin
                   let subasset = Env.Asset.get env (unloc subasset) in
-                  match get_field (unloc subasset.as_pk) subasset with
-                  | Some fd -> A.Tlist fd.fd_type
-                  | _ -> fty
+                  A.Tlist subasset.as_pkty
                 end
               | _ -> fty
             in
@@ -3215,7 +3214,7 @@ and for_arg_effect
             if Mid.mem (unloc x) map then begin
               Env.emit_error env (loc x, DuplicatedFieldInAssetOrRecordLiteral (unloc x));
               map
-            end else if (unloc x) = unloc asset.as_pk then begin
+            end else if List.exists (fun f -> unloc x = unloc f) asset.as_pk then begin
               Env.emit_error env (loc x, UpdateEffectOnPkey);
               map
             end else if mode.em_kind = `Expr `Concrete && fghost then begin
@@ -3234,12 +3233,12 @@ and for_arg_effect
 
     if not update then begin
       List.iter (fun field ->
-          if unloc asset.as_pk <> unloc field.fd_name then begin
+          if List.for_all (fun f -> unloc f <> unloc field.fd_name) asset.as_pk then begin
             match Mid.find_opt (unloc field.fd_name) effects with
             | None ->
               if Option.is_none field.fd_dfl then
-                Env.emit_error env (loc tope,
-                                    MissingFieldInAssetOrRecordLiteral (unloc field.fd_name))
+                Env.emit_error env
+                  (loc tope, MissingFieldInAssetOrRecordLiteral (unloc field.fd_name))
 
             | Some (x, `Assign op, _) ->
               if op <> A.ValueAssign && Option.is_none field.fd_dfl then
@@ -3459,7 +3458,7 @@ let for_lvalue kind (env : env) (e : PT.expr) : (A.lvalue * A.ptyp) option =
 
   | Edot ({pldesc = Esqapp ({pldesc = Eterm ((None, None), asset)}, key)}, x) -> begin
       let asset = Env.Asset.get env (unloc asset) in
-      if unloc x = unloc asset.as_pk then begin
+      if List.exists (fun f -> unloc f = unloc x) asset.as_pk then begin
         Env.emit_error env (loc x, CannotUpdatePKey);
         None
       end else begin
@@ -3469,7 +3468,7 @@ let for_lvalue kind (env : env) (e : PT.expr) : (A.lvalue * A.ptyp) option =
           Env.emit_error env (loc x, err); None
 
         | Some { fd_type = fty } ->
-          let ktype = (Option.get (get_field (unloc asset.as_pk) asset)).fd_type in
+          let ktype = asset.as_pkty in
           let key = for_expr ~ety:ktype kind env key in
           Some (`Field (asset.as_name, key, x), fty)
       end
@@ -3662,18 +3661,17 @@ let rec for_instruction_r
         match e.A.type_ with
         | Some (A.Tcontainer (A.Tasset asset, _)) ->
           let asset = Env.Asset.get env (unloc asset) in
-          let pk = Option.get (get_field (unloc asset.as_pk) asset) in
-          if (is_for_ident `Double)
+          if   is_for_ident `Double
           then (Env.emit_error env (loc x, InvalidForIdentSimple); None)
-          else Some [pk.fd_type]
+          else Some [asset.as_pkty]
 
         | Some (A.Tmap (kt, vt)) ->
-          if (is_for_ident `Simple)
+          if   is_for_ident `Simple
           then (Env.emit_error env (loc x, InvalidForIdentMap); None)
           else Some [kt; vt]
 
         | Some (A.Tset ty | A.Tlist ty) ->
-          if (is_for_ident `Double)
+          if   is_for_ident `Double
           then (Env.emit_error env (loc x, InvalidForIdentSimple); None)
           else Some [ty]
 
@@ -4330,7 +4328,8 @@ let for_funs_decl (env : env) (decls : PT.s_function loced list) =
 type pre_assetdecl = {
   pas_name   : A.lident;
   pas_fields : (string * A.ptyp * PT.expr option * bool) loced list;
-  pas_pk     : A.lident;
+  pas_pkty   : A.ptyp;
+  pas_pk     : A.lident list;
   pas_sortk  : A.lident list;
   pas_invs   : PT.label_exprs list;
   pas_state  : statedecl option;
@@ -4379,33 +4378,51 @@ let for_asset_decl pkey (env : env) ((adecl, decl) : assetdecl * PT.asset_decl l
   let inits  = List.pmap (function PT.APOinit        it -> Some it | _ -> None) postopts in
 
   let pks =
-    match pks with
-    | [] ->
-      Option.map (L.lmap proj4_1) (List.ohead fields)
+    let dokey key =
+      match get_field (unloc key) with
+      | None ->
+        Env.emit_error env (loc key, UnknownFieldName (unloc key));
+        None
+      | Some { pldesc = (_, _, _, true) } ->
+        Env.emit_error env (loc key, ShadowPKey);
+        None
+      | Some _ -> Some key in
 
-    | [(_ :: subpks) as pks] ->
-      let dokey key =
-        match get_field (unloc key) with
-        | None ->
-          Env.emit_error env (loc key, UnknownFieldName (unloc key));
-          None
-        | Some { pldesc = (_, _, _, true) } ->
-          Env.emit_error env (loc key, ShadowPKey);
-          None
-        | Some _ -> Some key in
+    List.pmap dokey (List.flatten pks) in
 
-      List.iter (fun newpk -> Env.emit_error env (loc newpk, DuplicatedPKey)) subpks;
-      List.hd (List.map dokey pks)
-
-    | (_ :: _) -> assert false (* TODO *)
-  in
-
-  pks |> Option.iter (fun pk ->
+  let pks =
+    if   List.is_empty pks
+    then Option.get_as_list (Option.map (L.lmap proj4_1) (List.ohead fields))
+    else pks in
+    
+  pks |> List.iter (fun pk ->
       match Option.get (get_field (unloc pk)) with
       | { pldesc = _, ty, _, _; plloc = loc; } ->
         if not (Type.pktype ty) then
           Env.emit_error env (loc, InvalidTypeForPk)
     );
+
+  let _ : Sstr.t =
+    List.fold_left (fun seen pk ->
+      if Sstr.mem (unloc pk) seen then
+        Env.emit_error env (loc pk, DuplicatedPkeyField (unloc pk));
+      Sstr.add (unloc pk) seen) Sstr.empty pks in
+
+  begin
+    let opks =
+      List.filter
+        (fun { pldesc = (fd, _, _, _) } ->
+          List.exists (fun f -> unloc f = fd) pks)
+        fields in
+    let opks = List.map (unloc %> proj4_1) opks in
+
+    if opks <> List.map unloc pks then
+      Env.emit_error env (loc decl, MisorderedPkeyFields)
+  end;
+
+  let pkty =
+    Type.create_tuple
+      (List.map (fun pk -> proj4_2 (unloc (Option.get (get_field (unloc pk))))) pks) in
 
   let sortks =
     let dokey key =
@@ -4457,14 +4474,19 @@ let for_asset_decl pkey (env : env) ((adecl, decl) : assetdecl * PT.asset_decl l
       raise E.Bailout
     end;
 
-    env, pks |> Option.map (fun pks ->
-        { pas_name   = x;
-          pas_fields = fields;
-          pas_pk     = pks;
-          pas_sortk  = sortks;
-          pas_invs   = invs;
-          pas_state  = state;
-          pas_init   = List.flatten inits; } )
+    if List.is_empty pks then env, None else
+
+    let aout =
+      { pas_name   = x;
+        pas_fields = fields;
+        pas_pkty   = pkty;
+        pas_pk     = pks;
+        pas_sortk  = sortks;
+        pas_invs   = invs;
+        pas_state  = state;
+        pas_init   = List.flatten inits; }
+
+    in env, Some aout
 
   with E.Bailout -> env, None
 
@@ -4475,7 +4497,8 @@ let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) =
       let b = b && check_and_emit_name_free env name in
       let d = { as_name   = name;
                 as_fields = [];
-                as_pk     = mkloc Location.dummy "";
+                as_pkty   = A.vtunit;
+                as_pk     = [];
                 as_sortk  = [];
                 as_invs   = [];
                 as_state  = None;
@@ -4500,12 +4523,12 @@ let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) =
     let decls = List.map Option.get decls in
     let pksty =
       let for1 decl =
-        let field =
-          List.Exn.find
-            (fun fd -> unloc decl.pas_pk = proj4_1 (L.unloc fd))
-            decl.pas_fields |> Option.get in
+        let fields =
+          List.filter
+            (fun fd -> List.exists (fun f -> unloc f = proj4_1 (L.unloc fd)) decl.pas_pk)
+            decl.pas_fields in
 
-        proj4_2 (unloc field) in
+        Type.create_tuple (List.map (fun fd -> proj4_2 (unloc fd)) fields) in
 
       List.map for1 decls in
 
@@ -4528,6 +4551,7 @@ let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) =
 
         { as_name   = decl.pas_name;
           as_fields = List.map for_ctor decl.pas_fields;
+          as_pkty   = decl.pas_pkty;
           as_pk     = decl.pas_pk;
           as_sortk  = decl.pas_sortk;
           as_invs   = [];
@@ -4732,9 +4756,7 @@ let for_acttx_decl (env : env) (decl : acttx loced) =
                       let asset = Env.Asset.get env (unloc aname) in
                       let env =
                         if check_and_emit_name_free env vtg then
-                          let field = Env.Asset.byfield env (unloc asset.as_pk) in
-                          let field = Option.get field in
-                          Env.Local.push env (vtg, (snd field).fd_type)
+                          Env.Local.push env (vtg, asset.as_pkty)
                         else env in
                       let tgt = (vtg, asset) in
                       (env, Option.map (fun x -> (unloc x, tgt)) asset.as_state))
@@ -4978,7 +5000,7 @@ let assets_of_adecls adecls =
 
     A.{ name   = decl.as_name;
         fields = List.map for_field decl.as_fields;
-        keys    = [decl.as_pk];
+        keys   = decl.as_pk;
         sort   = decl.as_sortk;
         state  = decl.as_state;
         init   = decl.as_init;
@@ -5130,8 +5152,7 @@ let transentrys_of_tdecls tdecls =
       | Some (`Tx (from_, tgt, x)) ->
         let on =
           Option.map (fun (on, asset) ->
-              let pkty = Option.get (get_field (unloc asset.as_pk) asset) in
-              let pkty = pkty.fd_type in
+              let pkty = asset.as_pkty in
               let stty = A.Tenum (Option.get asset.as_state) in
               (on, pkty, asset.as_name, stty)
             ) tgt in
