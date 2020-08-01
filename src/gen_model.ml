@@ -740,7 +740,7 @@ let to_model (ast : A.ast) : M.model =
         M.mk_asset_item x.name typ typ ?default:default ~shadow:x.shadow ~loc:x.loc) a.fields
     in
     let mk_asset an l = M.mk_mterm (M.Masset (List.map (to_mterm env) l)) (M.Tasset an) in
-    let r : M.asset = M.mk_asset a.name (unloc (Option.get a.key)) ~values:values ~sort:(List.map unloc (a.sort)) ?state:a.state ~invariants:(List.map (fun x -> (to_label_lterm env) x) a.specs) ~init:(List.map (fun x -> (mk_asset a.name) x) a.init) ~loc:a.loc in
+    let r : M.asset = M.mk_asset a.name (match a.keys with | [k] -> unloc k | _ -> assert false) ~values:values ~sort:(List.map unloc (a.sort)) ?state:a.state ~invariants:(List.map (fun x -> (to_label_lterm env) x) a.specs) ~init:(List.map (fun x -> (mk_asset a.name) x) a.init) ~loc:a.loc in
     M.Dasset r
   in
 

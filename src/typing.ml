@@ -5012,7 +5012,7 @@ let assets_of_adecls adecls =
 
     A.{ name   = decl.as_name;
         fields = List.map for_field decl.as_fields;
-        key    = Some decl.as_pk;
+        keys    = [decl.as_pk];
         sort   = decl.as_sortk;
         state  = decl.as_state;
         init   = decl.as_init;

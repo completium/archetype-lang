@@ -860,7 +860,7 @@ let pp_asset fmt (a : lident asset_struct) =
   let shadow_fields = List.filter (fun f -> f.shadow) a.fields in
   Format.fprintf fmt "asset %a%a%a {@\n  @[%a@]@\n}%a%a%a%a@\n"
     pp_id a.name
-    (pp_option (pp_prefix " identified by " pp_id)) a.key
+    (pp_prefix " identified by " (pp_list " " pp_id)) a.keys
     (pp_do_if (not (List.is_empty a.sort)) (pp_prefix " sorted by " (pp_list ", " pp_id))) a.sort
     (pp_list "@\n" pp_field) fields
     (pp_do_if (not (List.is_empty shadow_fields)) (

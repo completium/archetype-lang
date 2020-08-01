@@ -609,7 +609,7 @@ type enum = lident enum_struct
 type 'id asset_struct = {
   name    : 'id;
   fields  : 'id decl_gen list;
-  key     : 'id option;   (* TODO: option ? *)
+  keys    : 'id list;   (* TODO: option ? *)
   sort    : 'id list;
   state   : 'id option;
   init    : 'id term_gen list list;
@@ -733,8 +733,8 @@ let mk_enum ?(items = []) ?(loc = Location.dummy) kind =
 let mk_decl ?typ ?default ?(shadow=false) ?(loc = Location.dummy) name =
   { name; typ; default; shadow; loc }
 
-let mk_asset ?(fields = []) ?key ?(sort = []) ?state ?(init = []) ?(specs = []) ?(loc = Location.dummy) name   =
-  { name; fields; key; sort; state; init; specs; loc }
+let mk_asset ?(fields = []) ?(keys = []) ?(sort = []) ?state ?(init = []) ?(specs = []) ?(loc = Location.dummy) name   =
+  { name; fields; keys; sort; state; init; specs; loc }
 
 let mk_contract ?(signatures = []) ?init ?(loc = Location.dummy) name =
   { name; signatures; init; loc }
@@ -805,7 +805,7 @@ end = struct
 
   let get_asset_key ast asset_name : (lident * vtyp) =
     let asset = get_asset ast asset_name in
-    let key_id = Option.get asset.key in
+    let key_id = match asset.keys with [k] -> k | _ -> assert false in (* TODO *)
     let key_field = get_asset_field ast (asset_name, key_id) in
     match key_field.typ with
     | Some (Tbuiltin v) -> (key_id, v)
