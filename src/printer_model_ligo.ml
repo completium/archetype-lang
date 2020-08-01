@@ -527,11 +527,6 @@ let pp_model_internal fmt (model : model) b =
 
     (* entrypoint *)
 
-    | Mentrycontract (c, id) ->
-      Format.fprintf fmt "%a.%a"
-        f c
-        pp_id id
-
     | Mentrypoint (_, a, s) ->
       Format.fprintf fmt "Tezos.get_entrypoint_opt(\"%a\", %a)"
         pp_id a

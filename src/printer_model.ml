@@ -274,11 +274,6 @@ let pp_mterm fmt (mt : mterm) =
 
     (* entrypoint *)
 
-    | Mentrycontract (c, id) ->
-      Format.fprintf fmt "%a.%a"
-        f c
-        pp_id id
-
     | Mentrypoint (t, a, s) ->
       Format.fprintf fmt "entrypoint<%a>(%a, %a)"
         pp_type t

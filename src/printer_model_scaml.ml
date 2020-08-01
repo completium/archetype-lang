@@ -582,11 +582,6 @@ let pp_model fmt (model : model) =
 
       (* entrypoint *)
 
-      | Mentrycontract (c, id) ->
-        Format.fprintf fmt "%a.%a"
-          f c
-          pp_id id
-
       | Mentrypoint (_, a, s) ->
         Format.fprintf fmt "entrypoint(\"%a\", %a)"
           pp_id a

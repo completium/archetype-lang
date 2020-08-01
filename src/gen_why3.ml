@@ -1470,7 +1470,6 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     (* entrypoint *)
 
-    | Mentrycontract (_c, _id) -> error_not_translated "Mentrycontract"
     | Mentrypoint (_t, _a, _s) -> error_not_translated "Mentrypoint"
     | Mself _id                -> error_not_translated "Mself"
 
