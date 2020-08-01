@@ -140,6 +140,7 @@ let rec map_mtype m (t : M.type_) : loc_typ =
       | M.Ttrace _                            -> Tyunit (* TODO: replace by the right type *)
       | M.Tset t                              -> Tyset (dl (mk_set_name m t))
       | M.Tlist t                             -> Tylist (map_mtype m t)
+      | M.Tentrysig _                         -> Tyentrysig
       | _ -> print_endline (Format.asprintf "%a@." M.pp_type_ t); assert false)
 
 let rec mk_eq_type e1 e2 = function
@@ -147,6 +148,8 @@ let rec mk_eq_type e1 e2 = function
   | Tybool -> Tor (Tpand (Tvar e1,Tvar e2),Tpand(Tnot (Tvar e1), Tnot (Tvar e2)))
   | Tyrational -> Tapp (Tvar "rat_eq",[Tvar e1; Tvar e2])
   | Tystring -> Tapp (Tvar "str_eq", [Tvar e1; Tvar e2])
+  | Tyaddr -> Tapp (Tvar "str_eq", [Tvar e1; Tvar e2])
+  | Tyrole -> Tapp (Tvar "str_eq", [Tvar e1; Tvar e2])
   | Tyasset a -> Tapp (Tvar ("eq_"^a),[Tvar e1; Tvar e2])
   | Typartition a -> Teqfield(a, Tvar e1, Tvar e2)
   | Tyaggregate a -> Teqfield(a, Tvar e1, Tvar e2)
@@ -292,11 +295,11 @@ let mk_const_fields m = [
   { name = mk_id "ops"         ; typ = Tyrecord "operations" ; init = Tnil gListAs; mutable_ = true; };
   { name = mk_id "balance"     ; typ = Tytez;      init = Tint Big_int.zero_big_int; mutable_ = true; };
   { name = mk_id "transferred" ; typ = Tytez;      init = Tint Big_int.zero_big_int; mutable_ = false; };
-  { name = mk_id "caller"      ; typ = Tyaddr;     init = Tint Big_int.zero_big_int; mutable_ = false; };
-  { name = mk_id "source"      ; typ = Tyaddr;     init = Tint Big_int.zero_big_int; mutable_ = false; };
+  { name = mk_id "caller"      ; typ = Tyaddr;     init = Tstring ""; mutable_ = false; };
+  { name = mk_id "source"      ; typ = Tyaddr;     init = Tstring ""; mutable_ = false; };
   { name = mk_id "now"         ; typ = Tydate;     init = Tint Big_int.zero_big_int; mutable_ = false; };
   { name = mk_id "chainid"     ; typ = Tychainid;  init = Tint Big_int.zero_big_int; mutable_ = false; };
-  { name = mk_id "selfaddress" ; typ = Tyaddr;     init = Tint Big_int.zero_big_int; mutable_ = false; };
+  { name = mk_id "selfaddress" ; typ = Tyaddr;     init = Tstring ""; mutable_ = false; };
 ] @
   if M.Utils.with_trace m then
     [
@@ -440,6 +443,26 @@ let mk_call () =
           Tdoti(gs,"_ops"),
           Tcons (gListAs,
                  Tapp(Tvar "_mk_call",[Tvar "t"; Tvar "a"; Tvar "n"; Tvar "l"]),
+                 Tdoti(gs,"_ops")
+                ))
+    } in
+  loc_decl decl |> deloc
+
+let mk_callentry () =
+  let decl : (term, typ, ident) abstract_decl = Dfun {
+      name     = "callentry";
+      logic    = NoMod;
+      args     = ["a", Tytez; "e", Tyentrysig; "l", Tylist Tystring];
+      returns  = Tyunit;
+      raises   = [];
+      variants = [];
+      requires = [];
+      ensures  = [];
+      body     =
+        Tassign (
+          Tdoti(gs,"_ops"),
+          Tcons (gListAs,
+                 Tapp(Tvar "_mk_call_entry",[Tvar "a"; Tvar "e"; Tvar "l"]),
                  Tdoti(gs,"_ops")
                 ))
     } in
@@ -838,6 +861,7 @@ let rec type_to_init m (typ : loc_typ) : loc_term =
       | Tytuple l     -> Ttuple (List.map (type_to_init m) l)
       | Tybool        -> Ttrue
       | Tystring      -> Tstring ""
+      | Tyaddr        -> Tstring ""
       | _             -> Tint Big_int.zero_big_int)
 
 let is_local_invariant _m an t =
@@ -1464,14 +1488,14 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         match k with
         | TKsimple d             -> Ttransfer(map_mterm m ctx v, map_mterm m ctx d)
         | TKcall (id, _, d, a)   -> Tcall(map_mterm m ctx v, map_mterm m ctx d, dl id, map_mterm m ctx a)
-        | TKentry (e, _a)        -> Ttransfer(map_mterm m ctx v, map_mterm m ctx e)
-        | TKself (id, a)    -> Tcall(map_mterm m ctx v, dl Tselfaddess, dl id, map_mterm m ctx a)
+        | TKentry (e, a)         -> Tcallentry (map_mterm m ctx v, map_mterm m ctx e, map_mterm m ctx a)
+        | TKself (id, _a)        -> Tcallentry(map_mterm m ctx v, dl (Tapp (loc_term (Tvar "getopt"), [loc_term (Tentrypoint (id, Tselfaddress gs))])), loc_term (Tnil gs))
       end
 
     (* entrypoint *)
 
-    | Mentrypoint (_t, _a, _s) -> error_not_translated "Mentrypoint"
-    | Mself _id                -> error_not_translated "Mself"
+    | Mentrypoint (_t, a, s) -> Tentrypoint (map_lident a, map_mterm m ctx s)
+    | Mself id               -> Tapp (loc_term (Tvar "getopt"), [loc_term (Tentrypoint (unloc id, Tstring ""))])
 
 
     (* operation *)
@@ -1491,7 +1515,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mcurrency (i, Tz)   -> Tint (Big_int.mult_int_big_int 1000000 i)
     | Mcurrency (i, Mtz)  -> Tint (Big_int.mult_int_big_int 1000 i)
     | Mcurrency (i, Utz)  -> Tint i
-    | Maddress v -> Tint (sha v)
+    | Maddress v -> Tstring v
     | Mdate s -> Tint (Core.date_to_timestamp s)
     | Mduration v -> Tint (Core.duration_to_timestamp v)
     | Mtimestamp v -> Tint v
@@ -1800,6 +1824,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | _ -> Ttoview (map_lident a,map_mterm m ctx v)
       end
     | Mcast (Tcontainer (Tasset a,View),Tlist _, v) -> Telts(dl (mk_view_id (unloc a)), map_mterm m ctx v)
+    | Mcast (Tbuiltin Baddress, Tentrysig _, v) -> Tapp (loc_term (Tvar "getopt"), [(dl (Tentrypoint (dl "", map_mterm m ctx v)))])
     | Mcast (_, _, v)       -> map_mterm m ctx v |> Mlwtree.deloc
 
 
@@ -3621,7 +3646,7 @@ let to_whyml (m : M.model) : mlw_tree  =
   let storageval       = Dval (dl gs, dl Tystorage) in
   let axioms           = mk_axioms m in
   (*let partition_axioms = mk_partition_axioms m in*)
-  let transfer         = if M.Utils.with_operations m then [mk_transfer ();mk_call()] else [] in
+  let transfer         = if M.Utils.with_operations m then [mk_transfer ();mk_call(); mk_callentry()] else [] in
   let storage_api      = mk_storage_api m (records |> wdl) in
   let functions        = mk_functions m in
   let entries          = mk_entries m |> List.map (process_no_fail m) in
