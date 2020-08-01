@@ -5,8 +5,8 @@ theory Types
   (* default type mapping *)
   type key       = string
   type key_hash  = int
-  type role      = int
-  type address   = int
+  type role      = string
+  type address   = string
   type tez       = int
   type date      = int
   type bytes     = string
@@ -254,62 +254,11 @@ module Utils
   end
 
   (* ----------------------------------------------------------------------- *)
-  (* Set *)
-  use list.List as S
-  use list.Length as SL
-
-  let rec function set_add s a =
-  match s with
-  | S.Nil -> S.Cons a s
-  | S.Cons e ts -> if a = e then ts else S.Cons e (set_add ts a)
-  end
-
-  let rec function set_remove s a =
-  match s with
-  | S.Nil -> S.Nil
-  | S.Cons e ts -> if a = e then (set_remove ts a) else S.Cons e (set_remove ts a)
-  end
-
-  let rec function set_contains s a =
-  match s with
-  | S.Nil -> false
-  | S.Cons e ts -> a = e || set_contains ts a
-  end
-
-  let function set_length l = SL.length l
-
-  (* ----------------------------------------------------------------------- *)
-  (* List *)
-  use list.List as A
-  use list.Length as L
-  use list.Nth as N
-
-  let function lcard l = L.length l
-
-  let lnth l n
-  raises { NotFound }
-  =
-  match N.nth l n with
-  | Some e -> e
-  | None -> raise NotFound
-  end
-
-  let rec function lcontains l a
-  =
-  match l with
-  | A.Nil -> false
-  | A.Cons e tl -> a = e || lcontains tl a
-  end
-
-  let function lprepend l a
-  = A.Cons a l
-
-  (* ----------------------------------------------------------------------- *)
   (* crypto *)
   let function blake2b (b : bytes) : bytes = b
   let function sha256 (b : bytes) : bytes = b
   let function sha512 (b : bytes) : bytes = b
-  let function hash_key (_k : key) : bytes = ""
+  let function hash_key (_k : key) : key_hash = 0
   let check_signature (_k : key) (_s : signature) (_b : bytes) = true
 
   (* ----------------------------------------------------------------------- *)
@@ -389,10 +338,26 @@ theory Operation
 
   let no_operation : operations = Nil
 
-  let _mk_call (c : address) (a : tez) (n : string) (l : list string) : operation = {
-    _destination_ = c;
-    _amount_ = 0;
+  let _mk_call (d : address) (a : tez) (n : string) (l : list string) : operation = {
+    _destination_ = d;
+    _amount_ = a;
     _call_ = Some { _name = n; _args = l };
+  }
+
+  type entrysig = {
+    _entry_name : string;
+    _entry_dest : address;
+  }
+
+  let function entrypoint (n : string) (d : address) : option entrysig = Some {
+    _entry_name = n;
+    _entry_dest = d;
+  }
+
+  let _mk_call_entry (a : tez) (e : entrysig) (l : list string) = {
+    _destination_ = e._entry_dest;
+    _amount_ = a;
+    _call_ = Some { _name = e._entry_name; _args = l };
   }
 
 end
@@ -1205,6 +1170,48 @@ module Set
 
   (* ------------------------------------------------------------------------ *)
   let function from_list (l : list t) = F.mk l
+
+end
+
+module List
+  use list.List
+  use list.Length as L
+  use list.Nth as N
+  use option.Option
+  use Types
+
+  (* ------------------------------------------------------------------------ *)
+  type t
+
+  (* ------------------------------------------------------------------------ *)
+  val function eqt t t : bool
+
+  (* ------------------------------------------------------------------------ *)
+  axiom eqP : forall x y. eqt x y <-> x = y
+
+  (* ------------------------------------------------------------------------ *)
+  let function card l = L.length l
+
+  (* ------------------------------------------------------------------------ *)
+  let nth n l
+  raises { NotFound }
+  =
+  match N.nth l n with
+  | Some e -> e
+  | None -> raise NotFound
+  end
+
+  (* ------------------------------------------------------------------------ *)
+  let rec function contains a l
+  =
+  match l with
+  | Nil -> false
+  | Cons e tl -> eqt a e || contains a tl
+  end
+
+  (* ------------------------------------------------------------------------ *)
+  let function prepend a l
+  = Cons a l
 
 end
 

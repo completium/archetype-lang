@@ -141,6 +141,7 @@ let pp_type fmt typ =
       | Tystorage     -> "_storage"
       | Tyunit        -> "unit"
       | Tytransfers   -> "transfers"
+      | Tyentrysig   -> "entrysig"
       | Tycoll i      -> (String.capitalize_ascii i) ^ ".collection"
       | Tyview i      -> (String.capitalize_ascii i) ^ ".view"
       | Typartition i -> (String.capitalize_ascii i) ^ ".field"
@@ -337,7 +338,7 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "%a && %a"
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
-  | Teq (Tystring, e1, e2) ->
+  | Teq ((Tystring | Tyaddr | Tyrole | Tykey | Tysignature | Tybytes), e1, e2) ->
     Format.fprintf fmt "str_eq %a %a"
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
@@ -349,7 +350,7 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "not (%a && %a)"
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
-  | Tneq (Tystring, e1, e2) ->
+  | Tneq ((Tystring | Tyaddr | Tyrole | Tykey | Tysignature | Tybytes), e1, e2) ->
     Format.fprintf fmt "not (str_eq %a %a)"
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
@@ -415,7 +416,7 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "%a || %a"
       (pp_term e_default PRight) e1
       (pp_term e_default PRight) e2
-  | Tgt (Tystring,e1,e2) ->
+  | Tgt ((Tystring | Tyaddr | Tyrole | Tykey | Tysignature | Tybytes),e1,e2) ->
     Format.fprintf fmt "str_gt %a %a"
       (pp_term e_default PRight) e1
       (pp_term e_default PRight) e2
@@ -423,7 +424,7 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "%a > %a"
       (pp_term e_default PRight) e1
       (pp_term e_default PRight) e2
-  | Tge (Tystring,e1,e2) ->
+  | Tge ((Tystring | Tyaddr | Tyrole | Tykey | Tysignature | Tybytes),e1,e2) ->
     Format.fprintf fmt "str_ge %a %a"
       (pp_term e_default PRight) e1
       (pp_term e_default PRight) e2
@@ -431,7 +432,7 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "%a >= %a"
       (pp_term e_default PRight) e1
       (pp_term e_default PRight) e2
-  | Tlt (Tystring,e1,e2) ->
+  | Tlt ((Tystring | Tyaddr | Tyrole | Tykey | Tysignature | Tybytes),e1,e2) ->
     Format.fprintf fmt "str_lt %a %a"
       (pp_term e_default PRight) e1
       (pp_term e_default PRight) e2
@@ -439,7 +440,7 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "%a < %a"
       (pp_term e_default PRight) e1
       (pp_term e_default PRight) e2
-  | Tle (Tystring,e1,e2) ->
+  | Tle ((Tystring | Tyaddr | Tyrole | Tykey | Tysignature | Tybytes),e1,e2) ->
     Format.fprintf fmt "str_le %a %a"
       (pp_term e_default PRight) e1
       (pp_term e_default PRight) e2
@@ -642,6 +643,7 @@ let rec pp_term outer pos fmt = function
       (pp_with_paren (pp_term outer pos)) e2
   | Tnow i -> Format.fprintf fmt "%a._now" pp_str i
   | Tchainid i -> Format.fprintf fmt "%a._chainid" pp_str i
+  | Tselfaddress i -> Format.fprintf fmt "%a._selfaddress" pp_str i
   | Tmlist (l,e1,i1,i2,i3,e2) ->
     Format.fprintf fmt "@[match %a with@\n| %a.Nil -> %a@\n| %a.Cons %a %a -> @\n  @[%a@]@\nend@]"
       pp_str i1
@@ -658,6 +660,11 @@ let rec pp_term outer pos fmt = function
   | Tcons (i,e1,e2) ->
     Format.fprintf fmt "%a.Cons %a %a"
       pp_str i
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
+  | Tprepend (i,e1,e2) ->
+    Format.fprintf fmt "%a.prepend %a %a"
+      pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
   | Tremove (i,e1,e2) ->
@@ -682,11 +689,20 @@ let rec pp_term outer pos fmt = function
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
   | Tcall (a,v,i,_l) ->
-    Format.fprintf fmt "call %a %a %a Nil"
-      (pp_with_paren (pp_term outer pos)) a
+    Format.fprintf fmt "call %a %a \"%a\" L.Nil"
       (pp_with_paren (pp_term outer pos)) v
+      (pp_with_paren (pp_term outer pos)) a
       pp_str i
       (* (pp_with_paren (pp_term outer pos)) l *)
+  | Tcallentry (a,v,_l) ->
+    Format.fprintf fmt "callentry %a %a L.Nil"
+      (pp_with_paren (pp_term outer pos)) a
+      (pp_with_paren (pp_term outer pos)) v
+      (* (pp_with_paren (pp_term outer pos)) l *)
+  | Tentrypoint (i,v) ->
+    Format.fprintf fmt "entrypoint \"%a\" %a"
+      pp_str i
+      (pp_with_paren (pp_term outer pos)) v
   | Tmktr (_, _) -> pp_str fmt "TODO_Tmktr"
   | Ttradd _ -> pp_str fmt "TODO_Ttradd"
   | Ttrrm _ -> pp_str fmt "TODO_Ttrrm"

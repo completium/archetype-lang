@@ -40,6 +40,7 @@ type ('i,'t) abstract_type =
   | Tychainid
   | Tystorage
   | Tytransfers
+  | Tyentrysig
   | Tyunit
   | Tycontract of 'i
   | Tyrecord of 'i
@@ -94,6 +95,7 @@ type ('e,'t,'i) abstract_term =
   | Tadded  of 'i
   | Trmed   of 'i
   | Tchainid of 'i
+  | Tselfaddress of 'i
   (* list *)
   | Tlist   of 'e list
   | Tnil    of 'i
@@ -108,6 +110,7 @@ type ('e,'t,'i) abstract_term =
   | Tshallow  of 'i * 'e * 'e
   | Tmlist  of 'i * 'e * 'i * 'i * 'i * 'e (* match list *)
   | Tcons   of 'i * 'e * 'e
+  | Tprepend of 'i * 'e * 'e
   | Tmkcoll of 'i * 'e list
   | Tmkview of 'i * 'e
   | Tcontent of 'i * 'e
@@ -134,6 +137,8 @@ type ('e,'t,'i) abstract_term =
   | Tconcat of 'e * 'e
   | Ttransfer of 'e * 'e
   | Tcall of 'e * 'e * 'i * 'e
+  | Tcallentry of 'e * 'e * 'e
+  | Tentrypoint of 'i * 'e
   | Tfst of 'e
   | Tsnd of 'e
   | Tsndopt of 'e
@@ -303,6 +308,7 @@ let map_abstract_type (map_i : 'i1 -> 'i2) (map_t : 't1 -> 't2) = function
   | Tystorage     -> Tystorage
   | Tyunit        -> Tyunit
   | Tytransfers   -> Tytransfers
+  | Tyentrysig   -> Tyentrysig
   | Tyrecord i    -> Tyrecord (map_i i)
   | Tycoll i      -> Tycoll (map_i i)
   | Tyview i      -> Tyview (map_i i)
@@ -386,6 +392,7 @@ and map_abstract_term
   | Tdoti (i1,i2)      -> Tdoti (map_i i1, map_i i2)
   | Tename             -> Tename
   | Tcaller i          -> Tcaller (map_i i)
+  | Tentrypoint (i,e)  -> Tentrypoint (map_i i, map_e e)
   | Tsender i          -> Tsender (map_i i)
   | Ttransferred i     -> Ttransferred (map_i i)
   | Tfst e             -> Tfst (map_e e)
@@ -394,6 +401,7 @@ and map_abstract_term
   | Tabs e             -> Tabs (map_e e)
   | Tnow i             -> Tnow (map_i i)
   | Tchainid i         -> Tchainid (map_i i)
+  | Tselfaddress i     -> Tselfaddress (map_i i)
   | Tadded a           -> Tadded (map_i a)
   | Trmed  a           -> Trmed (map_i a)
   | Tlist l            -> Tlist (List.map map_e l)
@@ -414,6 +422,7 @@ and map_abstract_term
   | Tshallow (i,e1,e2) -> Tshallow (map_i i, map_e e1, map_e e2)
   | Tmlist (l,e1,i1,i2,i3,e2) -> Tmlist (map_i l,map_e e1, map_i i1, map_i i2, map_i i3, map_e e2)
   | Tcons (i,e1,e2)    -> Tcons (map_i i, map_e e1, map_e e2)
+  | Tprepend (i,e1,e2) -> Tprepend (map_i i, map_e e1, map_e e2)
   | Tadd (i1,e1,e2)    -> Tadd (map_i i1, map_e e1, map_e e2)
   | Tvadd (i1,e1,e2)   -> Tvadd (map_i i1, map_e e1, map_e e2)
   | Tremove (i,e1,e2)  -> Tremove (map_i i,map_e e1, map_e e2)
@@ -434,6 +443,7 @@ and map_abstract_term
   | Tconcat (e1,e2)    -> Tconcat (map_e e1, map_e e2)
   | Ttransfer (e1,e2)  -> Ttransfer (map_e e1, map_e e2)
   | Tcall (a,c,n,l)    -> Tcall (map_e a,map_e c,map_i n,map_e l)
+  | Tcallentry (a,c,l)    -> Tcallentry (map_e a,map_e c,map_e l)
   | Tmktr (e1,e2)      -> Tmktr (map_e e1, map_e e2)
   | Ttradd i           -> Ttradd (map_i i)
   | Ttrrm  i           -> Ttrrm (map_i i)
@@ -707,6 +717,7 @@ let compare_abstract_type
   | Tybytes, Tybytes -> true
   | Tystorage, Tystorage -> true
   | Tytransfers, Tytransfers -> true
+  | Tyentrysig, Tyentrysig -> true
   | Tyunit, Tyunit -> true
   | Tystate, Tystate -> true
   | Tycontract i1, Tycontract i2 -> cmpi i1 i2
@@ -794,16 +805,19 @@ let compare_abstract_term
   | Tdoti (l1,r1), Tdoti (l2,r2) -> cmpi r1 r2 && cmpi l1 l2
   | Tename,Tename -> true
   | Tcaller i1, Tcaller i2 -> cmpi i1 i2
+  | Tentrypoint (i1,e1), Tentrypoint (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tsender i1, Tsender i2 -> cmpi i1 i2
   | Ttransferred i1, Ttransferred i2 -> cmpi i1 i2
   | Ttransfer (f1,t1), Ttransfer (f2,t2) -> cmpe f1 f2 && cmpe t1 t2
   | Tcall (a1,c1,n1,l1), Tcall (a2,c2,n2,l2) -> cmpe a1 a2 && cmpe c1 c2 && cmpi n1 n2 && cmpe l1 l2
+  | Tcallentry (a1,c1,l1), Tcallentry (a2,c2,l2) -> cmpe a1 a2 && cmpe c1 c2 && cmpe l1 l2
   | Tfst e1, Tfst e2 -> cmpe e1 e2
   | Tsnd e1, Tsnd e2 -> cmpe e1 e2
   | Tsndopt e1, Tsndopt e2 -> cmpe e1 e2
   | Tabs e1, Tabs e2 -> cmpe e1 e2
   | Tnow i1, Tnow i2 -> cmpi i1 i2
   | Tchainid i1, Tchainid i2 -> cmpi i1 i2
+  | Tselfaddress i1, Tselfaddress i2 -> cmpi i1 i2
   | Tadded a1, Tadded a2 -> cmpi a1 a2
   | Trmed  a1, Trmed a2 -> cmpi a1 a2
   | Tlist l1, Tlist l2 -> List.for_all2 cmpe l1 l2
@@ -825,6 +839,7 @@ let compare_abstract_term
   | Tmlist (l1,e11,i11,i21,i31,e21), Tmlist (l2,e12,i12,i22,i32,e22) ->
     cmpi l1 l2 && cmpe e11 e12 && cmpi i11 i12 && cmpi i21 i22 && cmpi i31 i32 && cmpe e21 e22
   | Tcons (i1,e1,e2), Tcons (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
+  | Tprepend (i1,e1,e2), Tprepend (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tadd (i1,e1,e2), Tadd (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tvadd (i1,e1,e2), Tvadd (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tremove (i1,e1,e2), Tremove (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2

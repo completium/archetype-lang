@@ -37,6 +37,7 @@ let gArchetypeSum   = "Sum"
 let gArchetypeSort  = "Sort"
 let gArchetypeTrace = "Trace"
 let gArchetypeSet   = "Set"
+let gArchetypeList  = "List"
 
 let gListAs         = "L"
 let gFieldAs        = "F"
@@ -117,6 +118,7 @@ let get_type_idx m t = List.fold_left (fun i mt ->
 
 let mk_map_name m t = "map"^(string_of_int (get_type_idx m t))
 let mk_set_name m t = "set"^(string_of_int (get_type_idx m t))
+let mk_list_name m t = "list"^(string_of_int (get_type_idx m t))
 
 let rec map_mtype m (t : M.type_) : loc_typ =
   dl (match t with
@@ -127,7 +129,6 @@ let rec map_mtype m (t : M.type_) : loc_typ =
       | M.Tcontainer (Tasset id,M.Aggregate)  -> Tyaggregate (dl (mk_field_id (unloc id)))
       | M.Tcontainer (Tasset id,M.View)       -> Tyview (dl (mk_view_id (unloc id)))
       | M.Tcontainer (Tasset id,M.Collection) -> Tycoll (map_lident id)
-      | M.Tcontainer (t,M.Collection)         -> Tylist (map_mtype m t)
       | M.Toption t                           -> Tyoption (map_mtype m t)
       | M.Ttuple l                            -> Tytuple (l |> List.map (map_mtype m))
       | M.Tunit                               -> Tyunit
@@ -140,6 +141,7 @@ let rec map_mtype m (t : M.type_) : loc_typ =
       | M.Ttrace _                            -> Tyunit (* TODO: replace by the right type *)
       | M.Tset t                              -> Tyset (dl (mk_set_name m t))
       | M.Tlist t                             -> Tylist (map_mtype m t)
+      | M.Tentrysig _                         -> Tyentrysig
       | _ -> print_endline (Format.asprintf "%a@." M.pp_type_ t); assert false)
 
 let rec mk_eq_type e1 e2 = function
@@ -147,6 +149,8 @@ let rec mk_eq_type e1 e2 = function
   | Tybool -> Tor (Tpand (Tvar e1,Tvar e2),Tpand(Tnot (Tvar e1), Tnot (Tvar e2)))
   | Tyrational -> Tapp (Tvar "rat_eq",[Tvar e1; Tvar e2])
   | Tystring -> Tapp (Tvar "str_eq", [Tvar e1; Tvar e2])
+  | Tyaddr -> Tapp (Tvar "str_eq", [Tvar e1; Tvar e2])
+  | Tyrole -> Tapp (Tvar "str_eq", [Tvar e1; Tvar e2])
   | Tyasset a -> Tapp (Tvar ("eq_"^a),[Tvar e1; Tvar e2])
   | Typartition a -> Teqfield(a, Tvar e1, Tvar e2)
   | Tyaggregate a -> Teqfield(a, Tvar e1, Tvar e2)
@@ -292,11 +296,11 @@ let mk_const_fields m = [
   { name = mk_id "ops"         ; typ = Tyrecord "operations" ; init = Tnil gListAs; mutable_ = true; };
   { name = mk_id "balance"     ; typ = Tytez;      init = Tint Big_int.zero_big_int; mutable_ = true; };
   { name = mk_id "transferred" ; typ = Tytez;      init = Tint Big_int.zero_big_int; mutable_ = false; };
-  { name = mk_id "caller"      ; typ = Tyaddr;     init = Tint Big_int.zero_big_int; mutable_ = false; };
-  { name = mk_id "source"      ; typ = Tyaddr;     init = Tint Big_int.zero_big_int; mutable_ = false; };
+  { name = mk_id "caller"      ; typ = Tyaddr;     init = Tstring ""; mutable_ = false; };
+  { name = mk_id "source"      ; typ = Tyaddr;     init = Tstring ""; mutable_ = false; };
   { name = mk_id "now"         ; typ = Tydate;     init = Tint Big_int.zero_big_int; mutable_ = false; };
   { name = mk_id "chainid"     ; typ = Tychainid;  init = Tint Big_int.zero_big_int; mutable_ = false; };
-  { name = mk_id "selfaddress" ; typ = Tyaddr;     init = Tint Big_int.zero_big_int; mutable_ = false; };
+  { name = mk_id "selfaddress" ; typ = Tyaddr;     init = Tstring ""; mutable_ = false; };
 ] @
   if M.Utils.with_trace m then
     [
@@ -440,6 +444,26 @@ let mk_call () =
           Tdoti(gs,"_ops"),
           Tcons (gListAs,
                  Tapp(Tvar "_mk_call",[Tvar "t"; Tvar "a"; Tvar "n"; Tvar "l"]),
+                 Tdoti(gs,"_ops")
+                ))
+    } in
+  loc_decl decl |> deloc
+
+let mk_callentry () =
+  let decl : (term, typ, ident) abstract_decl = Dfun {
+      name     = "callentry";
+      logic    = NoMod;
+      args     = ["a", Tytez; "e", Tyentrysig; "l", Tylist Tystring];
+      returns  = Tyunit;
+      raises   = [];
+      variants = [];
+      requires = [];
+      ensures  = [];
+      body     =
+        Tassign (
+          Tdoti(gs,"_ops"),
+          Tcons (gListAs,
+                 Tapp(Tvar "_mk_call_entry",[Tvar "a"; Tvar "e"; Tvar "l"]),
                  Tdoti(gs,"_ops")
                 ))
     } in
@@ -821,6 +845,26 @@ let mk_set_type m (t : M.type_) =
   ]
   | _ -> assert false
 
+(* List type -------------------------------------------------------------------*)
+
+let mk_list_clone id t =
+  Dclone ([gArchetypeDir;gArchetypeList] |> wdl,
+          String.capitalize_ascii id |> dl, [
+            Ctype (dl "t", t);
+            Cval  ("eqt" |> dl, "eq_" ^ id |> dl)
+          ]
+         )
+
+let mk_list_type m (t : M.type_) =
+ match t with
+ | Tlist t ->
+  let list_name = mk_list_name m t in
+  let t = map_mtype m t in [
+    mk_eq_type_fun list_name t;
+    mk_list_clone list_name t;
+  ]
+  | _ -> assert false
+
 (* Map model term -------------------------------------------------------------*)
 
 let map_lidents = List.map map_lident
@@ -838,6 +882,7 @@ let rec type_to_init m (typ : loc_typ) : loc_term =
       | Tytuple l     -> Ttuple (List.map (type_to_init m) l)
       | Tybool        -> Ttrue
       | Tystring      -> Tstring ""
+      | Tyaddr        -> Tstring ""
       | _             -> Tint Big_int.zero_big_int)
 
 let is_local_invariant _m an t =
@@ -1316,8 +1361,10 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
           Tpsome (map_lident id), map_mterm m ctx b;
           Twild, map_mterm m ctx o
         ])
-
-    | Mletin              _ -> error_not_translated "Mletin"
+    | Mletin (l, v, _, b, None) ->
+      let id = "("^(l |> List.map unloc |> String.concat ",")^")" in
+      Tletin (false, dl id , None, map_mterm m ctx v, map_mterm m ctx b)
+    | Mletin              _ -> Tvar (dl "TODO letin")
     | Mdeclvar            _ -> error_not_supported "Mdeclvar"
 
     | Mapp (f, args) ->
@@ -1464,19 +1511,19 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         match k with
         | TKsimple d             -> Ttransfer(map_mterm m ctx v, map_mterm m ctx d)
         | TKcall (id, _, d, a)   -> Tcall(map_mterm m ctx v, map_mterm m ctx d, dl id, map_mterm m ctx a)
-        | TKentry (e, _a)        -> Ttransfer(map_mterm m ctx v, map_mterm m ctx e)
-        | TKself (_id, _args)    -> assert false
+        | TKentry (e, a)         -> Tcallentry (map_mterm m ctx v, map_mterm m ctx e, map_mterm m ctx a)
+        | TKself (id, _a)        -> Tcallentry(map_mterm m ctx v, dl (Tapp (loc_term (Tvar "getopt"), [loc_term (Tentrypoint (id, Tselfaddress gs))])), loc_term (Tnil gs))
       end
 
     (* entrypoint *)
 
-    | Mentrypoint (_t, _a, _s) -> error_not_translated "Mentrypoint"
-    | Mself _id                -> error_not_translated "Mself"
+    | Mentrypoint (_t, a, s) -> Tentrypoint (map_lident a, map_mterm m ctx s)
+    | Mself id               -> Tapp (loc_term (Tvar "getopt"), [loc_term (Tentrypoint (unloc id, Tstring ""))])
 
 
     (* operation *)
 
-    | Moperations                 -> error_not_translated "Mself"
+    | Moperations                 -> error_not_translated "Moperations"
     | Mmkoperation (_v, _d, _a)   -> error_not_translated "Mmkoperation"
 
     (* literals *)
@@ -1491,7 +1538,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mcurrency (i, Tz)   -> Tint (Big_int.mult_int_big_int 1000000 i)
     | Mcurrency (i, Mtz)  -> Tint (Big_int.mult_int_big_int 1000 i)
     | Mcurrency (i, Utz)  -> Tint i
-    | Maddress v -> Tint (sha v)
+    | Maddress v -> Tstring v
     | Mdate s -> Tint (Core.date_to_timestamp s)
     | Mduration v -> Tint (Core.duration_to_timestamp v)
     | Mtimestamp v -> Tint v
@@ -1800,6 +1847,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | _ -> Ttoview (map_lident a,map_mterm m ctx v)
       end
     | Mcast (Tcontainer (Tasset a,View),Tlist _, v) -> Telts(dl (mk_view_id (unloc a)), map_mterm m ctx v)
+    | Mcast (Tbuiltin Baddress, Tentrysig _, v) -> Tapp (loc_term (Tvar "getopt"), [(dl (Tentrypoint (dl "", map_mterm m ctx v)))])
     | Mcast (_, _, v)       -> map_mterm m ctx v |> Mlwtree.deloc
 
 
@@ -1812,10 +1860,10 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     (* list api expression *)
 
-    | Mlistprepend (_, l, e)  -> Tapp (loc_term (Tvar "lprepend"),[map_mterm m ctx l; map_mterm m ctx e])
-    | Mlistcontains (_, l, e) -> Tapp (loc_term (Tvar "lcontains"),[map_mterm m ctx l; map_mterm m ctx e])
-    | Mlistlength (_, l)      -> Tapp (loc_term (Tvar "lcard"),[map_mterm m ctx l])
-    | Mlistnth (_, n, l)      -> Tapp (loc_term (Tvar "lnth"),[map_mterm m ctx l;map_mterm m ctx n])
+    | Mlistprepend (t, l, e)  -> Tprepend (dl (mk_list_name m t), map_mterm m ctx e, map_mterm m ctx l)
+    | Mlistcontains (t, l, e) -> Tcontains (dl (mk_list_name m t), map_mterm m ctx e, map_mterm m ctx l)
+    | Mlistlength (t, l)      -> Tcard (dl (mk_list_name m t), map_mterm m ctx l)
+    | Mlistnth (t, n, l)      -> Tnth (dl (mk_list_name m t), map_mterm m ctx n, map_mterm m ctx l)
 
 
     (* map api expression *)
@@ -3604,6 +3652,7 @@ let to_whyml (m : M.model) : mlw_tree  =
   let useMinMax        = mk_use_min_max m in
   let traceutils       = mk_trace_utils m |> deloc in
   let enums            = M.Utils.get_enums m |> List.map (map_enum m) in
+  let lists            = M.Utils.get_all_list_types m |> List.map (mk_list_type m) |> List.flatten in
   let maps             = M.Utils.get_all_map_types m |> List.map (mk_map_type m) |> List.flatten in
   let sets             = M.Utils.get_all_set_types m |> List.map (mk_set_type m) |> List.flatten in
   let records          = assets |> List.map (mk_record m) |> wdl in
@@ -3621,7 +3670,7 @@ let to_whyml (m : M.model) : mlw_tree  =
   let storageval       = Dval (dl gs, dl Tystorage) in
   let axioms           = mk_axioms m in
   (*let partition_axioms = mk_partition_axioms m in*)
-  let transfer         = if M.Utils.with_operations m then [mk_transfer ();mk_call()] else [] in
+  let transfer         = if M.Utils.with_operations m then [mk_transfer ();mk_call(); mk_callentry()] else [] in
   let storage_api      = mk_storage_api m (records |> wdl) in
   let functions        = mk_functions m in
   let entries          = mk_entries m |> List.map (process_no_fail m) in
@@ -3634,6 +3683,7 @@ let to_whyml (m : M.model) : mlw_tree  =
               traceutils             @
               enums                  @
               cmp_enums              @
+              lists                  @
               maps                   @
               sets                   @
               records                @
