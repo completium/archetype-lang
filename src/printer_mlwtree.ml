@@ -682,7 +682,7 @@ let rec pp_term outer pos fmt = function
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
   | Tcall (a,v,i,_l) ->
-    Format.fprintf fmt "call %a %a %a Nil"
+    Format.fprintf fmt "call %a %a \"%a\" L.Nil"
       (pp_with_paren (pp_term outer pos)) a
       (pp_with_paren (pp_term outer pos)) v
       pp_str i

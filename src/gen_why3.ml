@@ -1465,7 +1465,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | TKsimple d             -> Ttransfer(map_mterm m ctx v, map_mterm m ctx d)
         | TKcall (id, _, d, a)   -> Tcall(map_mterm m ctx v, map_mterm m ctx d, dl id, map_mterm m ctx a)
         | TKentry (e, _a)        -> Ttransfer(map_mterm m ctx v, map_mterm m ctx e)
-        | TKself (_id, _args)    -> assert false
+        | TKself (id, a)    -> Tcall(map_mterm m ctx v, dl Tselfaddess, dl id, map_mterm m ctx a)
       end
 
     (* entrypoint *)
@@ -1477,7 +1477,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     (* operation *)
 
-    | Moperations                 -> error_not_translated "Mself"
+    | Moperations                 -> error_not_translated "Moperations"
     | Mmkoperation (_v, _d, _a)   -> error_not_translated "Mmkoperation"
 
     (* literals *)

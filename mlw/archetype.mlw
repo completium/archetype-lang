@@ -389,10 +389,26 @@ theory Operation
 
   let no_operation : operations = Nil
 
-  let _mk_call (c : address) (a : tez) (n : string) (l : list string) : operation = {
+  let _mk_call (d : address) (a : tez) (n : string) (l : list string) : operation = {
     _destination_ = c;
-    _amount_ = 0;
+    _amount_ = a;
     _call_ = Some { _name = n; _args = l };
+  }
+
+  type entrysig = {
+    _entry_name : string;
+    _entry_dest : address;
+  }
+
+  let function entrypoint (n : string) (d : address) : option entrysig = Some {
+    _entry_name = n;
+    _entry_dest = d;
+  }
+
+  let _mk_call_entry (a : tez) (e : entrysig) (l : string) = {
+    _destination_ = e._entry_dest;
+    _amount_ = a;
+    _call_ = Some { _name = e._entry_name; _args = l };
   }
 
 end
