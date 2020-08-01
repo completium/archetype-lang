@@ -451,7 +451,6 @@ type error_desc =
   | StringLiteralExpected
   | TransferWithoutDest
   | UninitializedVar
-  | UnknownAEntry                      of ident
   | UnknownAsset                       of ident
   | UnknownEntry                       of ident
   | UnknownEnum                        of ident
@@ -628,7 +627,6 @@ let pp_error_desc fmt e =
   | StringLiteralExpected              -> pp "Expecting a string literal"
   | TransferWithoutDest                -> pp "Transfer without destination"
   | UninitializedVar                   -> pp "This variable declaration is missing an initializer"
-  | UnknownAEntry i                    -> pp "Unknown entry point: %a" pp_ident i
   | UnknownAsset i                     -> pp "Unknown asset: %a" pp_ident i
   | UnknownEntry i                     -> pp "Unknown entry: %a" pp_ident i
   | UnknownEnum i                      -> pp "Unknown enum: %a" pp_ident i
@@ -1072,12 +1070,6 @@ type statedecl = {
 and ctordecl = A.lident * (A.lident option * A.pterm) list
 
 (* -------------------------------------------------------------------- *)
-type aentrydecl = {
-  aet_name : A.lident;
-  aet_type : A.type_;
-}
-
-(* -------------------------------------------------------------------- *)
 type definitiondecl = {
   df_name  : A.lident;
   df_arg   : A.lident * A.ptyp;
@@ -1125,7 +1117,6 @@ module Env : sig
     | `Definition  of definitiondecl
     | `Asset       of assetdecl
     | `Record      of recorddecl
-    | `AEntry      of aentrydecl
     | `Entry       of t tentrydecl
     | `Function    of t fundecl
     | `Predicate   of preddecl
@@ -1210,13 +1201,6 @@ module Env : sig
     val push    : t -> recorddecl -> t
   end
 
-  module AEntry : sig
-    val lookup  : t -> ident -> aentrydecl option
-    val get     : t -> ident -> aentrydecl
-    val exists  : t -> ident -> bool
-    val push    : t -> aentrydecl -> t
-  end
-
   module Asset : sig
     val lookup  : t -> ident -> assetdecl option
     val get     : t -> ident -> assetdecl
@@ -1251,7 +1235,6 @@ end = struct
     | `Definition  of definitiondecl
     | `Asset       of assetdecl
     | `Record      of recorddecl
-    | `AEntry      of aentrydecl
     | `Entry       of t tentrydecl
     | `Function    of t fundecl
     | `Predicate   of preddecl
@@ -1560,22 +1543,6 @@ end = struct
         (fun env fd -> push env ~loc:(loc fd.rfd_name)
             (unloc fd.rfd_name) (`Field (unloc nm, `Record)))
         env decl.rd_fields
-  end
-
-  module AEntry = struct
-    let proj = function `AEntry x -> Some x | _ -> None
-
-    let lookup (env : t) (name : ident) =
-      lookup_gen proj env name
-
-    let exists (env : t) (name : ident) =
-      Option.is_some (lookup env name)
-
-    let get (env : t) (name : ident) =
-      Option.get (lookup env name)
-
-    let push (env : t) (entry : aentrydecl) =
-      push env ~loc:(loc entry.aet_name) (unloc entry.aet_name) (`AEntry entry)
   end
 
   module Tentry = struct
@@ -5059,10 +5026,6 @@ let variables_of_vdecls fdecls =
         loc      = loc decl.vr_name; }
 
   in List.map for1 (List.pmap (fun x -> x) fdecls)
-
-(* -------------------------------------------------------------------- *)
-let aentries_of_entrydecl decls =
-  List.map (fun x -> (x.aet_name, x.aet_type)) (List.pmap id decls)
 
 (* -------------------------------------------------------------------- *)
 let specifications_of_ispecifications =
