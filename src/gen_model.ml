@@ -324,9 +324,6 @@ let to_model (ast : A.ast) : M.model =
               | _ -> M.Mdot (f e, id)
             end
 
-          | {type_ = Some (A.Tentrysig _)} ->
-            M.Mentrycontract (f e, id)
-
           | _ ->
             (* handle dot contract too *)
             M.Mdot (f e, id)

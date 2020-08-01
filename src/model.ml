@@ -204,7 +204,6 @@ type ('id, 'term) mterm_node  =
   | Mfail             of 'id fail_type_gen
   | Mtransfer         of 'term * 'term transfer_kind_gen
   (* entrypoint *)
-  | Mentrycontract    of 'term * 'id           (* contract * ident *)
   | Mentrypoint       of type_ * 'id * 'term   (* type * address * string *)
   | Mself             of 'id                   (* entryname *)
   (* operation *)
@@ -1120,7 +1119,6 @@ let cmp_mterm_node
     | Mfail ft1, Mfail ft2                                                             -> cmp_fail_type cmp ft1 ft2
     | Mtransfer (v1, k1), Mtransfer (v2, k2)                                           -> cmp v1 v2 && cmp_transfer_kind k1 k2
     (* entrypoint *)
-    | Mentrycontract (c1, id1), Mentrycontract (c2, id2)                               -> cmp c1 c2 && cmpi id1 id2
     | Mentrypoint (t1, a1, s1), Mentrypoint (t2, a2, s2)                               -> cmp_type t1 t2 && cmpi a1 a2 && cmp s1 s2
     | Mself id1, Mself id2                                                             -> cmpi id1 id2
     (* operation *)
@@ -1468,7 +1466,6 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mfail v                        -> Mfail (match v with | Invalid v -> Invalid (f v) | _ -> v)
   | Mtransfer (v, k)               -> Mtransfer (f v, map_transfer_kind fi ft f k)
   (* entrypoint *)
-  | Mentrycontract (c, id)         -> Mentrycontract (f c, g id)
   | Mentrypoint (t, a, s)          -> Mentrypoint (ft t, g a, f s)
   | Mself id                       -> Mself (g id)
   (* operation *)
@@ -1831,7 +1828,6 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mfail v                               -> (match v with | Invalid v -> f accu v | _ -> accu)
   | Mtransfer (v, k)                      -> fold_transfer_kind f (f accu v) k
   (* entrypoint *)
-  | Mentrycontract (c, _)                 -> f accu c
   | Mentrypoint (_, _, s)                 -> f accu s
   | Mself _                               -> accu
   (* operation *)
@@ -2186,10 +2182,6 @@ let fold_map_term
 
 
   (* entrypoint *)
-
-  | Mentrycontract (c, id) ->
-    let ce, ca = f accu c in
-    g (Mentrycontract (ce, id)), ca
 
   | Mentrypoint (t, a, s) ->
     let se, sa = f accu s in
