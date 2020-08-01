@@ -597,7 +597,7 @@ type asset_item = lident asset_item_gen
 type 'id asset_gen = {
   name: 'id;
   values: 'id asset_item_gen list;
-  key: ident;
+  keys: ident list;
   sort: ident list;
   state: lident option;
   invariants  : lident label_term_gen list;
@@ -910,8 +910,8 @@ let mk_enum ?(values = []) name initial : 'id enum_gen =
 let mk_enum_item ?(invariants = []) name : 'id enum_item_gen =
   { name; invariants }
 
-let mk_asset ?(values = []) ?(sort=[]) ?state ?(invariants = []) ?(init = []) ?(loc = Location.dummy) name key : 'id asset_gen =
-  { name; values; sort; state; key; invariants; init; loc }
+let mk_asset ?(values = []) ?(sort=[]) ?state ?(keys = []) ?(invariants = []) ?(init = []) ?(loc = Location.dummy) name : 'id asset_gen =
+  { name; values; sort; state; keys; invariants; init; loc }
 
 let mk_asset_item ?default ?(shadow=false) ?(loc = Location.dummy) name type_ original_type : 'id asset_item_gen =
   { name; type_; original_type; default; shadow; loc }
@@ -3146,7 +3146,7 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
       {
         name          = g KIassetname a.name;
         values        = List.map for_asset_item a.values;
-        key           = f KIassetfield a.key;
+        keys          = List.map (f KIassetfield) a.keys;
         sort          = List.map (f KIassetfield) a.sort;
         state         = Option.map (g KIassetstate) a.state;
         invariants    = List.map for_label_term a.invariants;
@@ -3492,6 +3492,8 @@ end = struct
     | NotanAssetType
     | NotFound
     | CurrencyValueCannotBeNegative
+    | EmptyAssetKeys of string
+    | SeveralAssetKeys of string
   [@@deriving show {with_path = false}]
 
   let emit_error (desc : error_desc) =
@@ -3641,14 +3643,19 @@ end = struct
     with
     | Not_found -> emit_error (AssetFieldNotFound (asset_name, field_name))
 
-  let get_asset_key (m : model) (asset_name : ident) : (ident * type_) =
+  let get_asset_keys (m : model) (asset_name : ident) : (ident * type_) list =
     try
       let asset = get_asset m asset_name in
-      let key_id = asset.key in
-      let (_,key_typ,_) = get_asset_field m (asset_name, key_id) in
-      (key_id, key_typ)
+      let key_ids = asset.keys in
+      List.map (fun key_id -> key_id, (get_asset_field m (asset_name, key_id)|> fun (_, x, _) -> x)) key_ids
     with
     | Not_found -> emit_error (AssetKeyTypeNotFound (asset_name))
+
+  let get_asset_key (m : model) (asset_name : ident) : (ident * type_) =
+    match get_asset_keys m asset_name with
+    | []  -> emit_error (EmptyAssetKeys (asset_name))
+    | [x] -> x
+    | _ -> emit_error (SeveralAssetKeys (asset_name))
 
   let get_field_container model asset_name field_name : ident * container =
     let seek_original_type () : type_ =

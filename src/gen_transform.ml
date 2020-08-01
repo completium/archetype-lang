@@ -115,7 +115,7 @@ let remove_add_update ?(isformula = false) (model : model) : model =
           let l = List.map (
               fun (f : asset_item) ->
                 let f_name = (unloc f.name) in
-                if String.equal asset.key f_name
+                if List.exists (String.equal f_name) asset.keys
                 then k
                 else
                   begin
@@ -519,9 +519,9 @@ let check_no_dv_for_asset_key (model : model) : model =
     (fun d ->
        match d with
        | Dasset dasset -> begin
-           let key = dasset.key in
+           let keys = dasset.keys in
            try
-             let field = List.find (fun (x : asset_item) -> String.equal (unloc x.name) key) dasset.values in
+             let field = List.find (fun (x : asset_item) -> List.exists (String.equal (unloc x.name)) keys) dasset.values in
              match field.default with
              | Some dv -> errors := (dv.loc, DefaultValueOnKeyAsset (unloc dasset.name))::!errors
              | _ -> ()
@@ -614,9 +614,9 @@ let check_duplicated_keys_in_asset (model : model) : model =
                match value_asset.node with
                | Masset l -> begin
                    let asset : asset = Model.Utils.get_asset model an in
-                   let asset_key = dasset.key in
+                   let asset_keys = dasset.keys in
                    let assoc_fields = List.map2 (fun (ai : asset_item) (x : mterm) -> (unloc ai.name, x)) asset.values l in
-                   let value_key =  List.find (fun (id, _) -> String.equal asset_key id) assoc_fields |> snd in
+                   let value_key =  List.find (fun (id, _) -> List.exists (String.equal id) asset_keys) assoc_fields |> snd in
                    if not (is_literal value_key)
                    then errors := (value_key.loc, OnlyLiteralInAssetInit)::!errors
                    else (
@@ -2293,11 +2293,11 @@ let split_key_values (model : model) : model =
     | Masset l ->
       begin
         let asset : asset = Model.Utils.get_asset model asset_name in
-        let asset_key = asset.key in
+        let asset_keys = asset.keys in
 
         let assoc_fields = List.map2 (fun (ai : asset_item) (x : mterm) -> (unloc ai.name, x)) asset.values l in
 
-        List.find (fun (id, _) -> String.equal asset_key id) assoc_fields |> snd,
+        List.find (fun (id, _) -> List.exists (String.equal id) asset_keys) assoc_fields |> snd,
         { asset_value with
           node = Masset (List.map (fun (x : mterm) ->
               match x with
