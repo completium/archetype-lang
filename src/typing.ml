@@ -2518,7 +2518,6 @@ let rec for_xexpr
       mk_sp (Some fun_.fs_retty) (A.Pcall (None, A.Cid f, args))
 
     | Eapp (Fident f, args) -> begin
-        let args = match args with [{ pldesc = Etuple args }] -> args | _ -> args in
         let args = List.map (for_xexpr env) args in
 
         if List.exists (fun arg -> Option.is_none arg.A.type_) args then
