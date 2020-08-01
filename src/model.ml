@@ -4427,6 +4427,7 @@ end = struct
   let get_all_gen_type for_type (model : model) =
     let for_mterm (accu : 'a) (mt : mterm) : 'a =
       let rec aux accu (mt : mterm) =
+        let accu = for_type accu mt.type_ in
         match mt.node with
         | Mletin (_, x, ot, b, o) -> begin
             accu
