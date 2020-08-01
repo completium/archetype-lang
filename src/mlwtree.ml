@@ -110,6 +110,7 @@ type ('e,'t,'i) abstract_term =
   | Tshallow  of 'i * 'e * 'e
   | Tmlist  of 'i * 'e * 'i * 'i * 'i * 'e (* match list *)
   | Tcons   of 'i * 'e * 'e
+  | Tprepend of 'i * 'e * 'e
   | Tmkcoll of 'i * 'e list
   | Tmkview of 'i * 'e
   | Tcontent of 'i * 'e
@@ -421,6 +422,7 @@ and map_abstract_term
   | Tshallow (i,e1,e2) -> Tshallow (map_i i, map_e e1, map_e e2)
   | Tmlist (l,e1,i1,i2,i3,e2) -> Tmlist (map_i l,map_e e1, map_i i1, map_i i2, map_i i3, map_e e2)
   | Tcons (i,e1,e2)    -> Tcons (map_i i, map_e e1, map_e e2)
+  | Tprepend (i,e1,e2) -> Tprepend (map_i i, map_e e1, map_e e2)
   | Tadd (i1,e1,e2)    -> Tadd (map_i i1, map_e e1, map_e e2)
   | Tvadd (i1,e1,e2)   -> Tvadd (map_i i1, map_e e1, map_e e2)
   | Tremove (i,e1,e2)  -> Tremove (map_i i,map_e e1, map_e e2)
@@ -837,6 +839,7 @@ let compare_abstract_term
   | Tmlist (l1,e11,i11,i21,i31,e21), Tmlist (l2,e12,i12,i22,i32,e22) ->
     cmpi l1 l2 && cmpe e11 e12 && cmpi i11 i12 && cmpi i21 i22 && cmpi i31 i32 && cmpe e21 e22
   | Tcons (i1,e1,e2), Tcons (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
+  | Tprepend (i1,e1,e2), Tprepend (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tadd (i1,e1,e2), Tadd (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tvadd (i1,e1,e2), Tvadd (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tremove (i1,e1,e2), Tremove (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2

@@ -37,6 +37,7 @@ let gArchetypeSum   = "Sum"
 let gArchetypeSort  = "Sort"
 let gArchetypeTrace = "Trace"
 let gArchetypeSet   = "Set"
+let gArchetypeList  = "List"
 
 let gListAs         = "L"
 let gFieldAs        = "F"
@@ -117,6 +118,7 @@ let get_type_idx m t = List.fold_left (fun i mt ->
 
 let mk_map_name m t = "map"^(string_of_int (get_type_idx m t))
 let mk_set_name m t = "set"^(string_of_int (get_type_idx m t))
+let mk_list_name m t = "list"^(string_of_int (get_type_idx m t))
 
 let rec map_mtype m (t : M.type_) : loc_typ =
   dl (match t with
@@ -127,7 +129,6 @@ let rec map_mtype m (t : M.type_) : loc_typ =
       | M.Tcontainer (Tasset id,M.Aggregate)  -> Tyaggregate (dl (mk_field_id (unloc id)))
       | M.Tcontainer (Tasset id,M.View)       -> Tyview (dl (mk_view_id (unloc id)))
       | M.Tcontainer (Tasset id,M.Collection) -> Tycoll (map_lident id)
-      | M.Tcontainer (t,M.Collection)         -> Tylist (map_mtype m t)
       | M.Toption t                           -> Tyoption (map_mtype m t)
       | M.Ttuple l                            -> Tytuple (l |> List.map (map_mtype m))
       | M.Tunit                               -> Tyunit
@@ -844,6 +845,26 @@ let mk_set_type m (t : M.type_) =
   ]
   | _ -> assert false
 
+(* List type -------------------------------------------------------------------*)
+
+let mk_list_clone id t =
+  Dclone ([gArchetypeDir;gArchetypeList] |> wdl,
+          String.capitalize_ascii id |> dl, [
+            Ctype (dl "t", t);
+            Cval  ("eqt" |> dl, "eq_" ^ id |> dl)
+          ]
+         )
+
+let mk_list_type m (t : M.type_) =
+ match t with
+ | Tlist t ->
+  let list_name = mk_list_name m t in
+  let t = map_mtype m t in [
+    mk_eq_type_fun list_name t;
+    mk_list_clone list_name t;
+  ]
+  | _ -> assert false
+
 (* Map model term -------------------------------------------------------------*)
 
 let map_lidents = List.map map_lident
@@ -1340,8 +1361,10 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
           Tpsome (map_lident id), map_mterm m ctx b;
           Twild, map_mterm m ctx o
         ])
-
-    | Mletin              _ -> error_not_translated "Mletin"
+    | Mletin (l, v, _, b, None) ->
+      let id = "("^(l |> List.map unloc |> String.concat ",")^")" in
+      Tletin (false, dl id , None, map_mterm m ctx v, map_mterm m ctx b)
+    | Mletin              _ -> Tvar (dl "TODO letin")
     | Mdeclvar            _ -> error_not_supported "Mdeclvar"
 
     | Mapp (f, args) ->
@@ -1837,10 +1860,10 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     (* list api expression *)
 
-    | Mlistprepend (_, l, e)  -> Tapp (loc_term (Tvar "lprepend"),[map_mterm m ctx l; map_mterm m ctx e])
-    | Mlistcontains (_, l, e) -> Tapp (loc_term (Tvar "lcontains"),[map_mterm m ctx l; map_mterm m ctx e])
-    | Mlistlength (_, l)      -> Tapp (loc_term (Tvar "lcard"),[map_mterm m ctx l])
-    | Mlistnth (_, n, l)      -> Tapp (loc_term (Tvar "lnth"),[map_mterm m ctx l;map_mterm m ctx n])
+    | Mlistprepend (t, l, e)  -> Tprepend (dl (mk_list_name m t), map_mterm m ctx e, map_mterm m ctx l)
+    | Mlistcontains (t, l, e) -> Tcontains (dl (mk_list_name m t), map_mterm m ctx e, map_mterm m ctx l)
+    | Mlistlength (t, l)      -> Tcard (dl (mk_list_name m t), map_mterm m ctx l)
+    | Mlistnth (t, n, l)      -> Tnth (dl (mk_list_name m t), map_mterm m ctx n, map_mterm m ctx l)
 
 
     (* map api expression *)
@@ -3629,6 +3652,7 @@ let to_whyml (m : M.model) : mlw_tree  =
   let useMinMax        = mk_use_min_max m in
   let traceutils       = mk_trace_utils m |> deloc in
   let enums            = M.Utils.get_enums m |> List.map (map_enum m) in
+  let lists            = M.Utils.get_all_list_types m |> List.map (mk_list_type m) |> List.flatten in
   let maps             = M.Utils.get_all_map_types m |> List.map (mk_map_type m) |> List.flatten in
   let sets             = M.Utils.get_all_set_types m |> List.map (mk_set_type m) |> List.flatten in
   let records          = assets |> List.map (mk_record m) |> wdl in
@@ -3659,6 +3683,7 @@ let to_whyml (m : M.model) : mlw_tree  =
               traceutils             @
               enums                  @
               cmp_enums              @
+              lists                  @
               maps                   @
               sets                   @
               records                @

@@ -1177,6 +1177,8 @@ module List
   use list.List
   use list.Length as L
   use list.Nth as N
+  use option.Option
+  use Types
 
   (* ------------------------------------------------------------------------ *)
   type t
@@ -1188,10 +1190,10 @@ module List
   axiom eqP : forall x y. eqt x y <-> x = y
 
   (* ------------------------------------------------------------------------ *)
-  let function length l = L.length l
+  let function card l = L.length l
 
   (* ------------------------------------------------------------------------ *)
-  let nth l n
+  let nth n l
   raises { NotFound }
   =
   match N.nth l n with
@@ -1200,15 +1202,15 @@ module List
   end
 
   (* ------------------------------------------------------------------------ *)
-  let rec function contains l a
+  let rec function contains a l
   =
   match l with
-  | A.Nil -> false
-  | A.Cons e tl -> eqt a e || contains tl a
+  | Nil -> false
+  | Cons e tl -> eqt a e || contains a tl
   end
 
   (* ------------------------------------------------------------------------ *)
-  let function prepend l a
+  let function prepend a l
   = Cons a l
 
 end
