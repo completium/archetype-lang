@@ -52,7 +52,7 @@ type ('i,'t) abstract_type =
   | Tystate
   | Tyenum of 'i
   | Tyoption of 't
-  | Tyset of 't
+  | Tyset of 'i
   | Tylist of 't
   | Tytuple of 't list
   (* ... *)
@@ -136,6 +136,7 @@ type ('e,'t,'i) abstract_term =
   | Tcall of 'e
   | Tfst of 'e
   | Tsnd of 'e
+  | Tsndopt of 'e
   | Tabs of 'e
   (* trace *)
   | Tmktr   of 'e * 'e
@@ -311,7 +312,7 @@ let map_abstract_type (map_i : 'i1 -> 'i2) (map_t : 't1 -> 't2) = function
   | Tyaggregate i -> Tyaggregate (map_i i)
   | Tyenum i      -> Tyenum (map_i i)
   | Tyoption t    -> Tyoption (map_t t)
-  | Tyset t       -> Tyset (map_t t)
+  | Tyset i       -> Tyset (map_i i)
   | Tylist t      -> Tylist (map_t t)
   | Tycontract i  -> Tycontract (map_i i)
   | Tybool        -> Tybool
@@ -389,6 +390,7 @@ and map_abstract_term
   | Ttransferred i     -> Ttransferred (map_i i)
   | Tfst e             -> Tfst (map_e e)
   | Tsnd e             -> Tsnd (map_e e)
+  | Tsndopt e          -> Tsndopt (map_e e)
   | Tabs e             -> Tabs (map_e e)
   | Tnow i             -> Tnow (map_i i)
   | Tchainid i         -> Tchainid (map_i i)
@@ -798,6 +800,7 @@ let compare_abstract_term
   | Tcall e1, Tcall e2 -> cmpe e1 e2
   | Tfst e1, Tfst e2 -> cmpe e1 e2
   | Tsnd e1, Tsnd e2 -> cmpe e1 e2
+  | Tsndopt e1, Tsndopt e2 -> cmpe e1 e2
   | Tabs e1, Tabs e2 -> cmpe e1 e2
   | Tnow i1, Tnow i2 -> cmpi i1 i2
   | Tchainid i1, Tchainid i2 -> cmpi i1 i2

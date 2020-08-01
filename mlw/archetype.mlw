@@ -3,14 +3,14 @@ theory Types
   use int.Int
 
   (* default type mapping *)
-  type key       = int
+  type key       = string
   type key_hash  = int
   type role      = int
   type address   = int
   type tez       = int
   type date      = int
-  type bytes     = int
-  type signature = int
+  type bytes     = string
+  type signature = string
   type chain_id  = int
   type uint      = int
 
@@ -27,6 +27,7 @@ end
 module Utils
   use int.Int
   use Types
+  use option.Option
 
   (* ------------------------------------------------------------------------ *)
   (* Tuples *)
@@ -41,6 +42,13 @@ module Utils
   =
   match a with
   | (_,r) -> r
+  end
+
+  let function snd_opt (a: option ('t1, 't2)) : option 't2
+  =
+  match a with
+  | Some (_,r) -> Some r
+  | None -> None
   end
 
   let function nth1_of_2 (a: ('t1,'t2))     : 't1 = match a with | (v,_) -> v end
@@ -185,10 +193,10 @@ module Utils
   axiom str_concat_spec : forall s1 s2.
   str_concat s1 s2 = S.concat s1 s2
 
-  val function substring string int : string
+  val function substring string int int : string
 
-  axiom substring_spec : forall s i.
-  substring s i = S.substring s 0 i
+  axiom substring_spec : forall s i j.
+  substring s i j = S.substring s i j
 
   val function str_length string : int
 
@@ -220,11 +228,8 @@ module Utils
   axiom str_gt_spec : forall s1 s2.
   str_gt s1 s2 = not (S.lt s1 s2) /\ not (s1 = s2)
 
-  let function byt_concat (b1 : bytes) (b2 : bytes) : bytes = b1 + b2
-
   (* ----------------------------------------------------------------------- *)
   (* Option *)
-  use option.Option
 
   let function issome (v : option 'a) : bool
   =
@@ -310,7 +315,7 @@ module Utils
   (* ----------------------------------------------------------------------- *)
   (* serialization *)
   let function pack (_x : 'a) : bytes = 0
-  let function unpack (_b : bytes) : option 'a = None
+  val function unpack bytes : option 'a
 
   (* ----------------------------------------------------------------------- *)
   (* bool *)
@@ -356,30 +361,38 @@ module Trace
 
 end
 
-theory Contract
+theory Operation
 
   use Types
   use int.Int
   use list.List
-  use list.Mem as L
+  use option.Option
+
+  type call {
+    _name : string;
+    _args : list string;
+  }
 
   type operation = {
      _destination_ : address;
      _amount_      : tez;
+     _call_        : option call;
   }
 
   let _mk_operation (d : address) (a : tez) : operation = {
     _destination_ = d;
     _amount_ = a;
+    _call_   = None;
   }
 
   type operations = list operation
 
   let no_operation : operations = Nil
 
-  let mk_call (c : address) : operation = {
+  let _mk_call (c : address) (a : tez) (n : string) (l : list string) : operation = {
     _destination_ = c;
     _amount_ = 0;
+    _call_ = Some { _name = n; _args = l };
   }
 
 end
@@ -850,6 +863,7 @@ module Collection
   use option.Option
   use View as V
   use fset.ListFilter as F
+  use ListUtils as I
 
   (* ------------------------------------------------------------------------ *)
   type tk
@@ -1016,6 +1030,22 @@ module Collection
   end in
   vmk (internal_list_to_view l)
 
+  (* ----------------------------------------------------------------------- *)
+  let function view_to_list (v : view) (c : collection) : list t
+  =
+  let rec internal_view_to_list (l : list tk) : list t
+  variant { l }
+  =
+  match l with
+  | Cons k tl ->
+    match get k c with
+    | Some e -> Cons e (internal_view_to_list tl)
+    | None -> internal_view_to_list tl
+    end
+  | Nil -> Nil
+  end in
+  internal_view_to_list (velts v)
+
   (* ------------------------------------------------------------------------ *)
   let predicate lek k1 k2 = eqk k1 k2
 
@@ -1068,9 +1098,45 @@ module Collection
   lemma mem_select : forall e c p.
   mem e (select p c) <-> mem e c /\ p e
 
+  (* ------------------------------------------------------------------------ *)
+  let function head (i : int) (c : collection) : collection
+  ensures { forall e. mem e result -> mem e c }
+  ensures { 0 <= i <= card c -> card result = i }
+  ensures { i > card c -> result = c }
+  = mk (N.mk (I.head i (N.elts c.content)))
+
+  (* ------------------------------------------------------------------------ *)
+  let function tail (i : int) (c : collection) : collection
+  ensures { forall e. mem e result -> mem e c }
+  ensures { 0 <= i <= card c -> card result = i }
+  = mk (N.mk (I.tail i (N.elts c.content)))
+
+  (* ------------------------------------------------------------------------ *)
+  type field
+
+  (* ------------------------------------------------------------------------ *)
+  val function felts field : list tk
+
+  (* ------------------------------------------------------------------------ *)
+  let function from_field (f : field) (c : collection) : collection
+  =
+  let rec internal_from_field (l : list tk) : list t
+  variant { l }
+  =
+  match l with
+  | Cons k tl ->
+    match get k c with
+    | Some a -> Cons a (internal_from_field tl)
+    | None -> internal_from_field tl
+    end
+  | Nil -> Nil
+  end in
+  mk (N.mk (internal_from_field (felts f)))
+
 end
 
-(* module Set
+module Set
+  use list.List
 
   (* ------------------------------------------------------------------------ *)
   type t
@@ -1079,7 +1145,10 @@ end
   val function eqt t t : bool
 
   (* ------------------------------------------------------------------------ *)
-  let predicate le t1 t2 = keyt t1 <= keyt t2
+  axiom eqP : forall x y. eqt x y <-> x = y
+
+  (* ------------------------------------------------------------------------ *)
+  let predicate le t1 t2 = eqt t1 t2
 
   (* ------------------------------------------------------------------------ *)
   clone InsertionSort as S with type elt = t,
@@ -1102,7 +1171,7 @@ end
   type set = F.fset
 
   (* ------------------------------------------------------------------------ *)
-  let function put (e : t) (s : set) : set = F.mk (Cons e (F.content s))
+  let function add (e : t) (s : set) : set = F.mk (Cons e (F.content s))
 
   (* ------------------------------------------------------------------------ *)
   let function contains (e : t) (s : set) : bool
@@ -1119,19 +1188,25 @@ end
   (* ------------------------------------------------------------------------ *)
   let function remove (e : t) (s : set) : set
   =
-  let rec function internal_remove (l : list t) : set
+  let rec function internal_remove (l : list t) : list t
   variant { l }
   = match l with
   | Cons x tl ->
     if eqt e x then tl else internal_remove tl
   | Nil -> Nil
   end in
-  internal_remove (F.content s)
+  F.mk (internal_remove (F.content s))
 
   (* ------------------------------------------------------------------------ *)
-  let function length (s : set) : int = F.fcard s
+  let function card (s : set) : int = F.fcard s
 
-end *)
+  (* ------------------------------------------------------------------------ *)
+  let function empty = F.fset0
+
+  (* ------------------------------------------------------------------------ *)
+  let function from_list (l : list t) = F.mk l
+
+end
 
 module Sort
   use list.List
@@ -1142,13 +1217,15 @@ module Sort
   (* ------------------------------------------------------------------------ *)
   type t
   (* ------------------------------------------------------------------------ *)
+  type view
+  (* ------------------------------------------------------------------------ *)
   type collection
   (* ------------------------------------------------------------------------ *)
   val function cmp t t : bool
   (* ------------------------------------------------------------------------ *)
-  val function view_to_list V.view collection : list t
+  val function view_to_list view collection : list t
   (* ------------------------------------------------------------------------ *)
-  val function list_to_view (list t) : V.view
+  val function list_to_view (list t) : view
 
   (* ------------------------------------------------------------------------ *)
   let predicate ple (a b : t) = cmp a b
@@ -1157,7 +1234,7 @@ module Sort
   clone InsertionSort as IS with type elt = t,
                                  val le = ple
 
-  let function sort (v : V.view) (c : collection)
+  let function sort (v : view) (c : collection)
   =
   list_to_view (IS.insertion_sort (view_to_list v c))
 
@@ -1231,7 +1308,7 @@ theory Lib
   use export option.Option
   use export Utils
   use export Types
-  use export Contract
+  use export Operation
   use export Trace
 
 end

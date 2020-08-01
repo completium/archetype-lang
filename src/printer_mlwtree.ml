@@ -90,6 +90,7 @@ let needs_paren = function
   | Tvar _   -> false
   | Tenum _  -> false
   | Tnil _   -> false
+  | Tint i when Big_int.lt_big_int i Big_int.zero_big_int -> true
   | Tint _   -> false
   | Tstring _ -> false
   | Tnone    -> false
@@ -149,7 +150,7 @@ let pp_type fmt typ =
       | Tyasset i     -> i
       | Tyenum i      -> i
       | Tyoption tt   -> "option " ^ (typ_str ~pparen:(true) tt)
-      | Tyset tt      -> "L.list " ^ (typ_str ~pparen:(true) tt)
+      | Tyset i       -> (String.capitalize_ascii i) ^ ".set"
       | Tylist tt     -> "L.list " ^ (typ_str ~pparen:(true) tt)
       | Tybool        -> "bool"
       | Tyuint        -> "uint"
@@ -333,17 +334,29 @@ let rec pp_term outer pos fmt = function
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
   | Teq (Tybool, e1, e2) ->
-    Format.fprintf fmt "%a && %a" (pp_term outer pos) e1 (pp_term outer pos) e2
+    Format.fprintf fmt "%a && %a"
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
   | Teq (Tystring, e1, e2) ->
-    Format.fprintf fmt "str_eq %a %a" (pp_term outer pos) e1 (pp_term outer pos) e2
+    Format.fprintf fmt "str_eq %a %a"
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
   | Teq (_, e1, e2) ->
-    Format.fprintf fmt "%a = %a" (pp_term outer pos) e1 (pp_term outer pos) e2
+    Format.fprintf fmt "%a = %a"
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
   | Tneq (Tybool, e1, e2) ->
-    Format.fprintf fmt "not (%a && %a)" (pp_term outer pos) e1 (pp_term outer pos) e2
+    Format.fprintf fmt "not (%a && %a)"
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
   | Tneq (Tystring, e1, e2) ->
-    Format.fprintf fmt "not (str_eq %a %a)" (pp_term outer pos) e1 (pp_term outer pos) e2
+    Format.fprintf fmt "not (str_eq %a %a)"
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
   | Tneq (_, e1, e2) ->
-    Format.fprintf fmt "%a <> %a" (pp_term outer pos) e1 (pp_term outer pos) e2
+    Format.fprintf fmt "%a <> %a"
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
   | Tunion (i, e1, e2) ->
     Format.fprintf fmt "%a.union %a %a"
       pp_str (String.capitalize_ascii i)
@@ -487,7 +500,8 @@ let rec pp_term outer pos fmt = function
   | Ttransferred i -> Format.fprintf fmt "%a._transferred" pp_str i
   | Tfst e -> Format.fprintf fmt "fst %a" (pp_with_paren (pp_term outer pos)) e
   | Tsnd e -> Format.fprintf fmt "snd %a" (pp_with_paren (pp_term outer pos)) e
-  | Tabs e -> Format.fprintf fmt "abs %a" (pp_with_paren (pp_term outer pos)) e
+  | Tsndopt e -> Format.fprintf fmt "snd_opt %a" (pp_with_paren (pp_term outer pos)) e
+  | Tabs e -> Format.fprintf fmt "abs (%a)" (pp_with_paren (pp_term outer pos)) e
   | Tletin (r,i,t,b,e) ->
     Format.fprintf fmt "let%a %a%a = %a in@\n%a"
       pp_ref r
@@ -544,7 +558,7 @@ let rec pp_term outer pos fmt = function
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e
   | Ttocoll (i,e1,e2) ->
-    Format.fprintf fmt "%a.to_coll %a %a"
+    Format.fprintf fmt "%a.from_field %a %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
