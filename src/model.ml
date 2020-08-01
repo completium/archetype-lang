@@ -3475,6 +3475,7 @@ module Utils : sig
   val add_api_storage_in_list            : api_storage list -> api_storage -> api_storage list
   val sort_api_storage                   : model -> bool -> api_storage list -> api_storage list
   val get_all_set_types                  : model -> type_ list
+  val get_all_list_types                 : model -> type_ list
   val get_all_map_types                  : model -> type_ list
 end = struct
 
@@ -4573,6 +4574,20 @@ end = struct
       match t with
       | Tset _       -> add_type accu t
       | Tlist   t    -> for_type accu t
+      | Toption t    -> for_type accu t
+      | Ttuple  ts   -> List.fold_left (for_type) accu ts
+      | Tmap (_, t)  -> for_type accu t
+      | Tentrysig t  -> for_type accu t
+      | Tprog t      -> for_type accu t
+      | Tvset (_, t) -> for_type accu t
+      | _ -> accu
+    in
+    get_all_gen_type for_type model
+
+  let get_all_list_types (model : model) : type_ list =
+    let rec for_type accu t =
+      match t with
+      | Tlist   tv   -> add_type (for_type accu tv) t
       | Toption t    -> for_type accu t
       | Ttuple  ts   -> List.fold_left (for_type) accu ts
       | Tmap (_, t)  -> for_type accu t
