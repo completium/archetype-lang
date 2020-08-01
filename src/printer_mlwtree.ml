@@ -681,9 +681,12 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "transfer %a %a"
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
-  | Tcall e ->
-    Format.fprintf fmt "call %a"
-      (pp_with_paren (pp_term outer pos)) e
+  | Tcall (a,v,i,_l) ->
+    Format.fprintf fmt "call %a %a %a Nil"
+      (pp_with_paren (pp_term outer pos)) a
+      (pp_with_paren (pp_term outer pos)) v
+      pp_str i
+      (* (pp_with_paren (pp_term outer pos)) l *)
   | Tmktr (_, _) -> pp_str fmt "TODO_Tmktr"
   | Ttradd _ -> pp_str fmt "TODO_Ttradd"
   | Ttrrm _ -> pp_str fmt "TODO_Ttrrm"

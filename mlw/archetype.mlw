@@ -309,12 +309,12 @@ module Utils
   let function blake2b (b : bytes) : bytes = b
   let function sha256 (b : bytes) : bytes = b
   let function sha512 (b : bytes) : bytes = b
-  let function hash_key (_k : key) : bytes = 0
+  let function hash_key (_k : key) : bytes = ""
   let check_signature (_k : key) (_s : signature) (_b : bytes) = true
 
   (* ----------------------------------------------------------------------- *)
   (* serialization *)
-  let function pack (_x : 'a) : bytes = 0
+  val function pack (_x : 'a) : bytes
   val function unpack bytes : option 'a
 
   (* ----------------------------------------------------------------------- *)
@@ -368,7 +368,7 @@ theory Operation
   use list.List
   use option.Option
 
-  type call {
+  type call = {
     _name : string;
     _args : list string;
   }

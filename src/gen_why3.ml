@@ -429,7 +429,7 @@ let mk_call () =
   let decl : (term, typ, ident) abstract_decl = Dfun {
       name     = "call";
       logic    = NoMod;
-      args     = ["t", Tyaddr];
+      args     = ["t", Tyaddr; "a", Tytez; "n", Tystring; "l", Tylist Tystring];
       returns  = Tyunit;
       raises   = [];
       variants = [];
@@ -439,7 +439,7 @@ let mk_call () =
         Tassign (
           Tdoti(gs,"_ops"),
           Tcons (gListAs,
-                 Tapp(Tvar "mk_call",[Tvar "t"]),
+                 Tapp(Tvar "_mk_call",[Tvar "t"; Tvar "a"; Tvar "n"; Tvar "l"]),
                  Tdoti(gs,"_ops")
                 ))
     } in
@@ -1460,15 +1460,13 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mfail               _ -> error_not_translated "Mfail"
 
     | Mtransfer (v, k) ->
-      let e =
+      begin
         match k with
-        | TKsimple d             -> d
-        | TKcall (_id, _, d, _a) -> d
-        | TKentry (e, _a)        -> e
+        | TKsimple d             -> Ttransfer(map_mterm m ctx v, map_mterm m ctx d)
+        | TKcall (id, _, d, a)   -> Tcall(map_mterm m ctx v, map_mterm m ctx d, dl id, map_mterm m ctx a)
+        | TKentry (e, _a)        -> Ttransfer(map_mterm m ctx v, map_mterm m ctx e)
         | TKself (_id, _args)    -> assert false
-      in
-      Ttransfer(map_mterm m ctx v, map_mterm m ctx e)
-
+      end
 
     (* entrypoint *)
 
@@ -1849,7 +1847,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mabs v ->
       begin match v.type_ with
         | M.Tbuiltin (M.Bint) -> Tapp (loc_term (Tvar "abs"),[map_mterm m ctx v])
-        | M.Ttuple [M.Tbuiltin (M.Bint); M.Tbuiltin M.Bint] ->
+        | M.Ttuple [M.Tbuiltin (M.Bint); M.Tbuiltin M.Bnat] ->
           Tapp (loc_term (Tvar "abs_rat"),[map_mterm m ctx v])
         | _ -> error_not_translated "Mfunabs"
       end
