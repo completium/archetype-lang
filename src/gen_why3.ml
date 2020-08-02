@@ -296,7 +296,7 @@ let mk_collection_field asset to_id init = {
 }
 
 let mk_const_fields m = [
-  { name = mk_id gOperations   ; typ = Tyrecord "operations" ; init = Tnil gListAs; mutable_ = true; };
+  { name = mk_id gOperations   ; typ = Tylist Tyoperation ; init = Tnil gListAs; mutable_ = true; };
   { name = mk_id "balance"     ; typ = Tytez;      init = Tint Big_int.zero_big_int; mutable_ = true; };
   { name = mk_id "transferred" ; typ = Tytez;      init = Tint Big_int.zero_big_int; mutable_ = false; };
   { name = mk_id "caller"      ; typ = Tyaddr;     init = Tstring ""; mutable_ = false; };
@@ -868,6 +868,18 @@ let mk_list_type m (t : M.type_) =
   ]
   | _ -> assert false
 
+(* record type ----------------------------------------------------------------*)
+let map_record_fields m =
+List.map (fun (f : M.record_field) -> {
+  name     = map_lident f.name;
+  typ      = map_mtype m f.type_;
+  init     = loc_term Tnone;
+  mutable_ = false;
+})
+
+let mk_record m (r : M.record) : (loc_term, loc_typ, loc_ident) abstract_decl =
+  Drecord (map_lident r.name, map_record_fields m r.fields)
+
 (* Map model term -------------------------------------------------------------*)
 
 let map_lidents = List.map map_lident
@@ -1390,6 +1402,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                  Tminus (dl Tyint,
                          dl (Tvar (map_lident id)),
                          map_mterm m ctx v)))
+    | Massign (ValueAssign, Aoperations, v) -> Tassign (loc_term (Tdoti(gs,mk_id gOperations)), map_mterm m ctx v)
 
     | Massign (_, Avar _, _) -> error_not_translated "Massign (_, _, Avar _, _)"
 
@@ -1538,8 +1551,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       | Inv -> Tvar (dl (mk_id gOperations))
       | _ -> Tdoti (dl gs, dl (mk_id gOperations))
       end
-    | Mmkoperation (v, d, a)   ->
-      Tmkoperation (map_mterm m ctx v, map_mterm m ctx d, map_mterm m ctx a)
+    | Mmkoperation (v, d, _a)   ->
+      Tapp (loc_term (Tvar "_mk_operation"), [map_mterm m ctx v; map_mterm m ctx d; loc_term (Tnil gListAs)])
 
     (* literals *)
 
@@ -2226,7 +2239,7 @@ and mk_invariants (m : M.model) ctx id (lbl : ident option) lbody =
 
 (* Storage mapping -----------------------------------------------------------*)
 
-let map_record_values m (values : M.asset_item list) =
+let map_asset_values m (values : M.asset_item list) =
   let ctx = { init_ctx with lctx = Inv } in
   List.map (fun (value : M.asset_item) ->
       let typ_ = map_mtype m value.type_ in
@@ -2238,8 +2251,8 @@ let map_record_values m (values : M.asset_item list) =
       }
     ) values
 
-let mk_record m (r : M.asset) =
-  Drecord (map_lident r.name, map_record_values m r.values)
+let mk_asset m (r : M.asset) =
+  Drecord (map_lident r.name, map_asset_values m r.values)
 
 let map_init_mterm m ctx (t : M.mterm) =
   match t.node with
@@ -3455,6 +3468,9 @@ let fold_exns m body : term list =
     | M.Mfail InvalidState -> acc @ [Texn Einvalidstate]
     | M.Mfail (Invalid _) -> acc @ [Texn (Einvalid None)]
     | M.Mlistnth _ -> acc @ [Texn Enotfound]
+    | M.Mself _ -> acc @ [Texn Enotfound]
+    | M.Mcast (Tbuiltin Baddress, Tentrysig _, v) -> internal_fold_exn (acc @ [Texn Enotfound]) v
+    | M.Mtransfer (v, TKself _) -> internal_fold_exn (acc @ [Texn Enotfound]) v
     | _ -> M.fold_term internal_fold_exn acc term in
   Tools.List.dedup (internal_fold_exn [] body)
 
@@ -3671,10 +3687,11 @@ let to_whyml (m : M.model) : mlw_tree  =
   let useMinMax        = mk_use_min_max m in
   let traceutils       = mk_trace_utils m |> deloc in
   let enums            = M.Utils.get_enums m |> List.map (map_enum m) in
+  let records          = M.Utils.get_records m |> List.map (mk_record m) in
   let lists            = M.Utils.get_all_list_types m |> List.map (mk_list_type m) |> List.flatten in
   let maps             = M.Utils.get_all_map_types m |> List.map (mk_map_type m) |> List.flatten in
   let sets             = M.Utils.get_all_set_types m |> List.map (mk_set_type m) |> List.flatten in
-  let records          = assets |> List.map (mk_record m) |> wdl in
+  let mlwassets        = assets |> List.map (mk_asset m) |> wdl in
   let cmp_enums        = assets |> List.map (mk_cmp_enums m) |> List.flatten in
   let eq_keys          = assets |> List.map (mk_eq_key m) |> wdl in
   let eq_assets        = assets |> List.map (mk_eq_asset m) |> wdl in
@@ -3682,15 +3699,15 @@ let to_whyml (m : M.model) : mlw_tree  =
   let colls            = assets |> List.map (mk_coll m) |> wdl in
   let fields           = assets |> List.map (mk_field m) |> wdl in
   let views            = assets |> List.map (mk_view m) |> wdl in
-  let init_records     = records |> unloc_decl |> List.map mk_default_init |> loc_decl in
-  let records          = zip records eq_keys eq_assets init_records views fields colls |> deloc in
+  let init_records     = mlwassets |> unloc_decl |> List.map mk_default_init |> loc_decl in
+  let mlwassets        = zip mlwassets eq_keys eq_assets init_records views fields colls |> deloc in
   let storage_api_bs   = mk_storage_api_before_storage m (records |> wdl) in
   let storage          = M.Utils.get_storage m |> map_storage m in
   let storageval       = Dval (dl gs, dl Tystorage) in
   let axioms           = mk_axioms m in
   (*let partition_axioms = mk_partition_axioms m in*)
   let transfer         = if M.Utils.with_operations m then [mk_transfer ();mk_call(); mk_operation()] else [] in
-  let storage_api      = mk_storage_api m (records |> wdl) in
+  let storage_api      = mk_storage_api m (mlwassets |> wdl) in
   let functions        = mk_functions m in
   let entries          = mk_entries m |> List.map (process_no_fail m) in
   let usestorage       = mk_use_module storage_module in
@@ -3701,11 +3718,12 @@ let to_whyml (m : M.model) : mlw_tree  =
               useMinMax              @
               traceutils             @
               enums                  @
+              records                @
               cmp_enums              @
               lists                  @
               maps                   @
               sets                   @
-              records                @
+              mlwassets              @
               eq_exten               @
               storage_api_bs         @
               [storage;storageval]   @

@@ -1229,7 +1229,7 @@ module List
   end
 
   (* ------------------------------------------------------------------------ *)
-  let function prepend a l
+  let function prepend (a : t) (l : list t) : list t
   = Cons a l
 
 end

@@ -3416,6 +3416,7 @@ module Utils : sig
   val get_vars                           : model -> var list
   val get_enums                          : model -> enum list
   val get_assets                         : model -> asset list
+  val get_records                        : model -> record list
   val get_var                            : model -> ident -> var
   val get_enum                           : model -> ident -> enum
   val get_enum_values                    : model -> ident -> ident list
@@ -3558,6 +3559,15 @@ end = struct
 
   let get_asset_type (t : mterm) : ident = type_to_asset t.type_
 
+  let is_record (d : decl_node) : bool =
+    match d with
+    | Drecord _ -> true
+    | _         -> false
+
+  let dest_record = function
+    | Drecord r -> r
+    | _  -> emit_error NotFound
+
   let is_asset (d : decl_node) : bool =
     match d with
     | Dasset _ -> true
@@ -3585,9 +3595,10 @@ end = struct
     | Dvar v -> v
     | _ -> emit_error NotFound
 
-  let get_vars m   = m.decls |> List.filter is_var   |> List.map dest_var
-  let get_enums m  = m.decls |> List.filter is_enum  |> List.map dest_enum
-  let get_assets m = m.decls |> List.filter is_asset |> List.map dest_asset
+  let get_vars m    = m.decls |> List.filter is_var    |> List.map dest_var
+  let get_enums m   = m.decls |> List.filter is_enum   |> List.map dest_enum
+  let get_assets m  = m.decls |> List.filter is_asset  |> List.map dest_asset
+  let get_records m = m.decls |> List.filter is_record |> List.map dest_record
 
   let get_var   m id : var   = get_vars m   |> List.find (fun (x : var)   -> cmp_ident id (unloc x.name))
   let get_enum  m id : enum  = get_enums m  |> List.find (fun (x : enum)  -> cmp_ident id (unloc x.name))
