@@ -513,6 +513,9 @@ let pp_model fmt (model : model) =
           f k
           f v
 
+      | Massign (_op, Aoperations, v) ->
+        Format.fprintf fmt "operations = %a"
+          f v
 
       (* control *)
 

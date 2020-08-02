@@ -351,6 +351,11 @@ let pp_model_internal fmt (model : model) b =
         f k
         f v
 
+    | Massign (_op, Aoperations, v) ->
+      Format.fprintf fmt "%s := %a"
+        const_operations
+        f v
+
 
     (* control *)
 
