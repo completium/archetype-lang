@@ -501,6 +501,10 @@ let pp_model fmt (model : model) =
           f k
           f v
 
+      | Massign (_op, Aoperations, v) ->
+        Format.fprintf fmt "operations = %a"
+          f v
+
 
       (* control *)
 
@@ -559,9 +563,9 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "transfer %a %a"
           f v
           (pp_transfer_kind f) k
-          (* Format.fprintf fmt "sp.send(%a, %a)"
-          f d
-          f v *)
+      (* Format.fprintf fmt "sp.send(%a, %a)"
+         f d
+         f v *)
 
 
       (* entrypoint *)

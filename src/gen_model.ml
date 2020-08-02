@@ -799,7 +799,14 @@ let to_model (ast : A.ast) : M.model =
       | A.Ideclvar (i, v)         -> M.Mdeclvar ([i], Option.map ptyp_to_type v.type_, f v) (* TODO *)
       | A.Iseq l                  -> M.Mseq (List.map g l)
       | A.Imatchwith (m, l)       -> M.Mmatchwith (f m, List.map (fun (p, i) -> (to_pattern p, g i)) l)
-      | A.Iassign (op, `Var x, e) -> M.Massign (to_assignment_operator op, Avar x, f e)
+      | A.Iassign (op, `Var x, e) -> begin
+          let assign_kind =
+            match unloc x with
+            | "operations" -> M.Aoperations
+            | _            -> M.Avar x
+          in
+          M.Massign (to_assignment_operator op,assign_kind, f e)
+        end
       | A.Iassign (op, `Field (an, o, fn), v) -> begin
           let ak =
             match o.type_ with

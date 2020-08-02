@@ -148,6 +148,7 @@ type ('id, 'term) assign_kind_gen =
   | Arecord      of 'id * 'id * 'term (* record name * field name * record *)
   | Astate
   | Aassetstate of ident * 'term     (* asset name * key *)
+  | Aoperations
 [@@deriving show {with_path = false}]
 
 type 'term var_kind_gen =
@@ -1059,6 +1060,7 @@ let cmp_mterm_node
     | Arecord (rn1, fn1, r1), Arecord (rn2, fn2, r2) -> cmpi rn1 rn2 && cmpi fn1 fn2 && cmp r1 r2
     | Astate, Astate                                 -> true
     | Aassetstate (id1, v1), Aassetstate (id2, v2)   -> cmp_ident id1 id2 && cmp v1 v2
+    | Aoperations, Aoperations                       -> true
     | _ -> false
   in
   let cmp_var_kind (lhs : var_kind) (rhs : var_kind) : bool =
@@ -1415,6 +1417,7 @@ let map_assign_kind (fi : ident -> ident) (g : 'id -> 'id) f = function
   | Arecord (rn, fn, r) -> Arecord (g rn, g fn, f r)
   | Astate              -> Astate
   | Aassetstate (id, v) -> Aassetstate (fi id, f v)
+  | Aoperations         -> Aoperations
 
 let map_var_kind f = function
   | Vassetstate mt -> Vassetstate (f mt)
@@ -1775,6 +1778,7 @@ let fold_assign_kind f accu = function
   | Arecord (_, _, mt)  -> f accu mt
   | Astate              -> accu
   | Aassetstate (_, mt) -> f accu mt
+  | Aoperations         -> accu
 
 let fold_var_kind f accu = function
   | Vassetstate mt -> f accu mt
@@ -2008,6 +2012,7 @@ let fold_map_assign_kind f accu = function
   | Arecord (rn, fn, r) -> let re, ra = f accu r in Arecord (rn, fn, re), ra
   | Astate              -> Astate, accu
   | Aassetstate (id, v) -> let ve, va = f accu v in Aassetstate (id, ve), va
+  | Aoperations         -> Aoperations, accu
 
 let fold_map_var_kind f accu = function
   | Vassetstate mt ->

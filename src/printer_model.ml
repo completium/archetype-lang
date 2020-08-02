@@ -197,6 +197,11 @@ let pp_mterm fmt (mt : mterm) =
         f k
         f v
 
+    | Massign (_op, Aoperations, v) ->
+      Format.fprintf fmt "operations = %a"
+        f v
+
+
 
     (* control *)
 

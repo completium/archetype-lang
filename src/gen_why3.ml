@@ -1461,6 +1461,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Massign (_, Aassetstate _, _) -> error_not_translated "Massign (_, _, Aassetstate _, _)"
 
+    | Massign (_, Aoperations, _) -> error_not_translated "Massign (_, _, Aoperations, _)"
+
 
     (* control *)
 
