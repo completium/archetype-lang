@@ -1,4 +1,4 @@
-archetype test_asset_multi_key
+archetype test_asset_multi_key_complex
 
 asset my_asset identified by i s {
   i : nat;
