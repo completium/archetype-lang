@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - `chain_id` constant
  - `union` `inter` and `diff` operator for view in formula
+ - multi-keys asset : `identified by` can take several field name
 
 ### Changed
  - syntax of composite type (i.e. `list<string>` instead of `string list`)
