@@ -140,8 +140,8 @@ let pp_type fmt typ =
       | Tychainid     -> "chain_id"
       | Tystorage     -> "_storage"
       | Tyunit        -> "unit"
-      | Tytransfers   -> "transfers"
-      | Tyentrysig   -> "entrysig"
+      | Tyoperation   -> "operation"
+      | Tyentrysig    -> "entrysig"
       | Tycoll i      -> (String.capitalize_ascii i) ^ ".collection"
       | Tyview i      -> (String.capitalize_ascii i) ^ ".view"
       | Typartition i -> (String.capitalize_ascii i) ^ ".field"
@@ -320,6 +320,11 @@ let rec pp_term outer pos fmt = function
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
+  | Tnthtuple (i1,i2,e) ->
+    Format.fprintf fmt "nth%a_of_%a %a"
+      pp_str (string_of_int i1)
+      pp_str (string_of_int i2)
+      (pp_with_paren (pp_term outer pos)) e
   | Tcoll (i,e) ->
     Format.fprintf fmt "%a.to_coll %a"
       pp_str (String.capitalize_ascii i)
@@ -694,8 +699,8 @@ let rec pp_term outer pos fmt = function
       (pp_with_paren (pp_term outer pos)) a
       pp_str i
       (* (pp_with_paren (pp_term outer pos)) l *)
-  | Tcallentry (a,v,_l) ->
-    Format.fprintf fmt "callentry %a %a L.Nil"
+  | Tmkoperation (a,v,_l) ->
+    Format.fprintf fmt "mk_operation %a %a L.Nil"
       (pp_with_paren (pp_term outer pos)) a
       (pp_with_paren (pp_term outer pos)) v
       (* (pp_with_paren (pp_term outer pos)) l *)

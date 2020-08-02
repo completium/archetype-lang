@@ -39,7 +39,7 @@ type ('i,'t) abstract_type =
   | Tybytes
   | Tychainid
   | Tystorage
-  | Tytransfers
+  | Tyoperation
   | Tyentrysig
   | Tyunit
   | Tycontract of 'i
@@ -130,6 +130,7 @@ type ('e,'t,'i) abstract_term =
   | Tcsort   of 'i * 'e
   | Tvsort   of 'i * 'e * 'e
   | Tnth     of 'i * 'e * 'e
+  | Tnthtuple of int * int * 'e
   | Tcoll   of 'i * 'e
   | Tassign of 'e * 'e
   | Traise  of exn
@@ -137,7 +138,7 @@ type ('e,'t,'i) abstract_term =
   | Tconcat of 'e * 'e
   | Ttransfer of 'e * 'e
   | Tcall of 'e * 'e * 'i * 'e
-  | Tcallentry of 'e * 'e * 'e
+  | Tmkoperation of 'e * 'e * 'e
   | Tentrypoint of 'i * 'e
   | Tfst of 'e
   | Tsnd of 'e
@@ -307,8 +308,8 @@ let map_abstract_type (map_i : 'i1 -> 'i2) (map_t : 't1 -> 't2) = function
   | Tychainid     -> Tychainid
   | Tystorage     -> Tystorage
   | Tyunit        -> Tyunit
-  | Tytransfers   -> Tytransfers
-  | Tyentrysig   -> Tyentrysig
+  | Tyoperation   -> Tyoperation
+  | Tyentrysig    -> Tyentrysig
   | Tyrecord i    -> Tyrecord (map_i i)
   | Tycoll i      -> Tycoll (map_i i)
   | Tyview i      -> Tyview (map_i i)
@@ -436,6 +437,7 @@ and map_abstract_term
   | Tcsort (i,e1)      -> Tcsort (map_i i, map_e e1)
   | Tvsort (i,e1,e2)   -> Tvsort (map_i i, map_e e1, map_e e2)
   | Tnth (i,e1,e2)     -> Tnth (map_i i, map_e e1, map_e e2)
+  | Tnthtuple (i1,i2,e)-> Tnthtuple (i1, i2, map_e e)
   | Tcoll (i, e)       -> Tcoll (map_i i, map_e e)
   | Tassign (e1,e2)    -> Tassign (map_e e1, map_e e2)
   | Traise e           -> Traise e
@@ -443,7 +445,7 @@ and map_abstract_term
   | Tconcat (e1,e2)    -> Tconcat (map_e e1, map_e e2)
   | Ttransfer (e1,e2)  -> Ttransfer (map_e e1, map_e e2)
   | Tcall (a,c,n,l)    -> Tcall (map_e a,map_e c,map_i n,map_e l)
-  | Tcallentry (a,c,l)    -> Tcallentry (map_e a,map_e c,map_e l)
+  | Tmkoperation (a,c,l) -> Tmkoperation (map_e a,map_e c,map_e l)
   | Tmktr (e1,e2)      -> Tmktr (map_e e1, map_e e2)
   | Ttradd i           -> Ttradd (map_i i)
   | Ttrrm  i           -> Ttrrm (map_i i)
@@ -716,7 +718,7 @@ let compare_abstract_type
   | Tytez, Tytez -> true
   | Tybytes, Tybytes -> true
   | Tystorage, Tystorage -> true
-  | Tytransfers, Tytransfers -> true
+  | Tyoperation, Tyoperation -> true
   | Tyentrysig, Tyentrysig -> true
   | Tyunit, Tyunit -> true
   | Tystate, Tystate -> true
@@ -810,7 +812,7 @@ let compare_abstract_term
   | Ttransferred i1, Ttransferred i2 -> cmpi i1 i2
   | Ttransfer (f1,t1), Ttransfer (f2,t2) -> cmpe f1 f2 && cmpe t1 t2
   | Tcall (a1,c1,n1,l1), Tcall (a2,c2,n2,l2) -> cmpe a1 a2 && cmpe c1 c2 && cmpi n1 n2 && cmpe l1 l2
-  | Tcallentry (a1,c1,l1), Tcallentry (a2,c2,l2) -> cmpe a1 a2 && cmpe c1 c2 && cmpe l1 l2
+  | Tmkoperation (a1,c1,l1), Tmkoperation (a2,c2,l2) -> cmpe a1 a2 && cmpe c1 c2 && cmpe l1 l2
   | Tfst e1, Tfst e2 -> cmpe e1 e2
   | Tsnd e1, Tsnd e2 -> cmpe e1 e2
   | Tsndopt e1, Tsndopt e2 -> cmpe e1 e2
@@ -850,7 +852,7 @@ let compare_abstract_term
   | Tvsum (i1,e1,e2), Tvsum (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tcsort (i1,e1), Tcsort (i2,f1) -> cmpi i1 i2 && cmpe e1 f1
   | Tvsort (i1,e1,e2), Tvsort (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
-  | Tnth (i1,e1,e2), Tnth (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
+  | Tnthtuple (i1,i2,e1), Tnthtuple (i3,i4,e2) -> compare i1 i3 = 0 && compare i2 i4 = 0 && cmpe e1 e2
   | Tcoll (i1,e1), Tcoll (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tassign (e1,e2), Tassign (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
   | Traise e1, Traise e2 -> compare_exn e1 e2

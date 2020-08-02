@@ -39,6 +39,8 @@ let gArchetypeTrace = "Trace"
 let gArchetypeSet   = "Set"
 let gArchetypeList  = "List"
 
+let gOperations     = "ops"
+
 let gListAs         = "L"
 let gFieldAs        = "F"
 let gViewAs         = "V"
@@ -135,7 +137,7 @@ let rec map_mtype m (t : M.type_) : loc_typ =
       | M.Tstate                              -> Tystate
       | M.Tmap (_, _)                         -> Tycoll (dl (mk_map_name m t))
       | M.Tstorage                            -> Tystorage
-      | M.Toperation                          -> Tyunit (* TODO: replace by the right type *)
+      | M.Toperation                          -> Tyoperation (* TODO: replace by the right type *)
       | M.Tprog _                             -> Tyunit (* TODO: replace bmy the right type *)
       | M.Tvset _                             -> Tyunit (* TODO: replace by the right type *)
       | M.Ttrace _                            -> Tyunit (* TODO: replace by the right type *)
@@ -148,13 +150,14 @@ let rec mk_eq_type e1 e2 = function
   | Tyunit -> Ttrue
   | Tybool -> Tor (Tpand (Tvar e1,Tvar e2),Tpand(Tnot (Tvar e1), Tnot (Tvar e2)))
   | Tyrational -> Tapp (Tvar "rat_eq",[Tvar e1; Tvar e2])
-  | Tystring -> Tapp (Tvar "str_eq", [Tvar e1; Tvar e2])
-  | Tyaddr -> Tapp (Tvar "str_eq", [Tvar e1; Tvar e2])
-  | Tyrole -> Tapp (Tvar "str_eq", [Tvar e1; Tvar e2])
+  | Tystring -> Teq (Tystring, Tvar e1, Tvar e2)
+  | Tyaddr -> Teq (Tyaddr, Tvar e1, Tvar e2)
+  | Tyrole -> Teq (Tyrole, Tvar e1, Tvar e2)
   | Tyasset a -> Tapp (Tvar ("eq_"^a),[Tvar e1; Tvar e2])
   | Typartition a -> Teqfield(a, Tvar e1, Tvar e2)
   | Tyaggregate a -> Teqfield(a, Tvar e1, Tvar e2)
   | Tyenum i -> Tapp (Tvar ("cmp_"^i),[Tvar e1; Tvar e2])
+  | Tyoperation -> Tapp (Tvar "_eq_operation",[Tvar e1; Tvar e2])
   | Tyoption t -> Tmatch (
       Ttuple [Tvar e1; Tvar e2], [
         Tpatt_tuple [Tpsome (e1^"v1"); Tpsome (e2^"v2")], mk_eq_type (e1^"v1") (e2^"v2") t;
@@ -293,7 +296,7 @@ let mk_collection_field asset to_id init = {
 }
 
 let mk_const_fields m = [
-  { name = mk_id "ops"         ; typ = Tyrecord "operations" ; init = Tnil gListAs; mutable_ = true; };
+  { name = mk_id gOperations   ; typ = Tyrecord "operations" ; init = Tnil gListAs; mutable_ = true; };
   { name = mk_id "balance"     ; typ = Tytez;      init = Tint Big_int.zero_big_int; mutable_ = true; };
   { name = mk_id "transferred" ; typ = Tytez;      init = Tint Big_int.zero_big_int; mutable_ = false; };
   { name = mk_id "caller"      ; typ = Tyaddr;     init = Tstring ""; mutable_ = false; };
@@ -415,7 +418,7 @@ let mk_transfer () =
           Tassign (
             Tdoti(gs,"_ops"),
             Tcons ( gListAs,
-                    Tapp(Tvar "_mk_operation",[Tvar "t";Tvar "a"]),
+                    Tapp(Tvar "_mk_transfer",[Tvar "t";Tvar "a"]),
                     Tdoti(gs,"_ops")
                   ));
           Tassign (
@@ -449,9 +452,9 @@ let mk_call () =
     } in
   loc_decl decl |> deloc
 
-let mk_callentry () =
+let mk_operation () =
   let decl : (term, typ, ident) abstract_decl = Dfun {
-      name     = "callentry";
+      name     = "mk_operation";
       logic    = NoMod;
       args     = ["a", Tytez; "e", Tyentrysig; "l", Tylist Tystring];
       returns  = Tyunit;
@@ -463,7 +466,7 @@ let mk_callentry () =
         Tassign (
           Tdoti(gs,"_ops"),
           Tcons (gListAs,
-                 Tapp(Tvar "_mk_call_entry",[Tvar "a"; Tvar "e"; Tvar "l"]),
+                 Tapp(Tvar "_mk_operation",[Tvar "a"; Tvar "e"; Tvar "l"]),
                  Tdoti(gs,"_ops")
                 ))
     } in
@@ -882,6 +885,7 @@ let rec type_to_init m (typ : loc_typ) : loc_term =
       | Tytuple l     -> Ttuple (List.map (type_to_init m) l)
       | Tybool        -> Ttrue
       | Tystring      -> Tstring ""
+      | Tyrole        -> Tstring ""
       | Tyaddr        -> Tstring ""
       | _             -> Tint Big_int.zero_big_int)
 
@@ -1301,6 +1305,10 @@ let is_exec_divergent = function
     -> true
   | _ -> false
 
+let get_tuple_size = function
+| M.Ttuple l -> List.length l
+| _ -> assert false
+
 let rec map_mterm m ctx (mt : M.mterm) : loc_term =
   let error_internal desc = emit_error (mt.loc, desc); Tnottranslated in
   let error_not_translated (msg : string) = (* Tnottranslated in *) error_internal (TODONotTranslated msg) in
@@ -1511,8 +1519,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         match k with
         | TKsimple d             -> Ttransfer(map_mterm m ctx v, map_mterm m ctx d)
         | TKcall (id, _, d, a)   -> Tcall(map_mterm m ctx v, map_mterm m ctx d, dl id, map_mterm m ctx a)
-        | TKentry (e, a)         -> Tcallentry (map_mterm m ctx v, map_mterm m ctx e, map_mterm m ctx a)
-        | TKself (id, _a)        -> Tcallentry(map_mterm m ctx v, dl (Tapp (loc_term (Tvar "getopt"), [loc_term (Tentrypoint (id, Tselfaddress gs))])), loc_term (Tnil gs))
+        | TKentry (e, a)         -> Tmkoperation (map_mterm m ctx v, map_mterm m ctx e, map_mterm m ctx a)
+        | TKself (id, _a)        -> Tmkoperation(map_mterm m ctx v, dl (Tapp (loc_term (Tvar "getopt"), [loc_term (Tentrypoint (id, Tselfaddress gs))])), loc_term (Tnil gs))
       end
 
     (* entrypoint *)
@@ -1523,8 +1531,13 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     (* operation *)
 
-    | Moperations                 -> error_not_translated "Moperations"
-    | Mmkoperation (_v, _d, _a)   -> error_not_translated "Mmkoperation"
+    | Moperations                 ->
+      begin match ctx.lctx with
+      | Inv -> Tvar (dl (mk_id gOperations))
+      | _ -> Tdoti (dl gs, dl (mk_id gOperations))
+      end
+    | Mmkoperation (v, d, a)   ->
+      Tmkoperation (map_mterm m ctx v, map_mterm m ctx d, map_mterm m ctx a)
 
     (* literals *)
 
@@ -1609,7 +1622,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         dl (Tapp (loc_term (Tvar ("get_"^(unloc an))),[map_mterm m ctx k])),
         loc_term (Tvar (unloc fn)))
     | Mdotcontract       _ -> error_not_translated "Mdotcontract"
-    | Maccestuple        _ -> error_not_translated "Maccestuple"
+    | Maccestuple        (v,i) ->
+      let s = get_tuple_size v.type_ in Tnthtuple (succ (Big_int.int_of_big_int i),s,map_mterm m ctx v)
 
     (* comparison operators *)
 
@@ -1849,6 +1863,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mcast (Tcontainer (Tasset a,View),Tlist _, v) -> Telts(dl (mk_view_id (unloc a)), map_mterm m ctx v)
     | Mcast (Tbuiltin Baddress, Tentrysig _, v) -> Tapp (loc_term (Tvar "getopt"), [(dl (Tentrypoint (dl "", map_mterm m ctx v)))])
     | Mcast (Tmap _ as t, Tlist _, c) -> Telts (dl (mk_map_name m t), map_mterm m ctx c)
+    | Mcast (Tset _ as t, Tlist _, c) -> Telts (dl (mk_set_name m t), map_mterm m ctx c)
     | Mcast (_, _, v)       -> map_mterm m ctx v |> Mlwtree.deloc
 
 
@@ -2210,12 +2225,13 @@ and mk_invariants (m : M.model) ctx id (lbl : ident option) lbody =
 (* Storage mapping -----------------------------------------------------------*)
 
 let map_record_values m (values : M.asset_item list) =
+  let ctx = { init_ctx with lctx = Inv } in
   List.map (fun (value : M.asset_item) ->
       let typ_ = map_mtype m value.type_ in
       let init_value = type_to_init m typ_ in {
         name     = map_lident value.name;
         typ      = typ_;
-        init     = Option.fold (fun _ -> map_mterm m init_ctx) init_value value.default;
+        init     = Option.fold (fun _ -> map_mterm m ctx) init_value value.default;
         mutable_ = false;
       }
     ) values
@@ -2228,13 +2244,15 @@ let map_init_mterm m ctx (t : M.mterm) =
   | M.Mnow -> loc_term (Tint Big_int.zero_big_int)
   | _ -> map_mterm m ctx t
 
-let map_storage_items m = List.fold_left (fun acc (item : M.storage_item) ->
+let map_storage_items m =
+  let ctx = { init_ctx with lctx = Inv } in
+  List.fold_left (fun acc (item : M.storage_item) ->
     acc @
     match item.typ with
     | M.Tcontainer (Tasset id, Collection) ->
       let asset : M.asset = M.Utils.get_asset m (unloc id) in
       let id = unloc id in [
-        mk_collection_field id mk_ac_id (Some (List.map (map_mterm m init_ctx) asset.init));
+        mk_collection_field id mk_ac_id (Some (List.map (map_mterm m ctx) asset.init));
         mk_collection_field id mk_ac_added_id None;
         mk_collection_field id mk_ac_rmed_id None
       ]
@@ -2245,12 +2263,10 @@ let map_storage_items m = List.fold_left (fun acc (item : M.storage_item) ->
         mk_collection_field id mk_ac_rmed_id None
       ]
     | _ ->
-      let typ_ = map_mtype m item.typ in
-      (* let init_value = type_to_init typ_ in *)
-      [{
+      let typ_ = map_mtype m item.typ in [{
         name     = unloc item.id |> dl;
         typ      = typ_;
-        init     = map_init_mterm m init_ctx item.default;
+        init     = map_init_mterm m ctx item.default;
         mutable_ = true;
       }]
   ) []
@@ -3671,7 +3687,7 @@ let to_whyml (m : M.model) : mlw_tree  =
   let storageval       = Dval (dl gs, dl Tystorage) in
   let axioms           = mk_axioms m in
   (*let partition_axioms = mk_partition_axioms m in*)
-  let transfer         = if M.Utils.with_operations m then [mk_transfer ();mk_call(); mk_callentry()] else [] in
+  let transfer         = if M.Utils.with_operations m then [mk_transfer ();mk_call(); mk_operation()] else [] in
   let storage_api      = mk_storage_api m (records |> wdl) in
   let functions        = mk_functions m in
   let entries          = mk_entries m |> List.map (process_no_fail m) in

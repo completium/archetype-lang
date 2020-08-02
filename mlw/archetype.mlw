@@ -316,11 +316,15 @@ theory Operation
   use int.Int
   use list.List
   use option.Option
+  use Utils
 
   type call = {
     _name : string;
     _args : list string;
   }
+
+  let _eq_call (c1 : call) (c2 : call) : bool
+  =  str_eq c1._name c2._name (* TODO : complete *)
 
   type operation = {
      _destination_ : address;
@@ -328,15 +332,20 @@ theory Operation
      _call_        : option call;
   }
 
-  let _mk_operation (d : address) (a : tez) : operation = {
+  let function _eq_operation (o1 : operation) (o2 : operation)
+  = str_eq o1._destination_ o2._destination_ &&
+    o1._amount_ = o2._amount_ &&
+    match o1._call_, o2._call_ with
+    | Some c1, Some c2 -> _eq_call c1 c2
+    | _ -> false
+    end
+
+
+  let _mk_transfer (d : address) (a : tez) : operation = {
     _destination_ = d;
     _amount_ = a;
     _call_   = None;
   }
-
-  type operations = list operation
-
-  let no_operation : operations = Nil
 
   let _mk_call (d : address) (a : tez) (n : string) (l : list string) : operation = {
     _destination_ = d;
@@ -354,7 +363,7 @@ theory Operation
     _entry_dest = d;
   }
 
-  let _mk_call_entry (a : tez) (e : entrysig) (l : list string) = {
+  let _mk_operation (a : tez) (e : entrysig) (l : list string) : operation = {
     _destination_ = e._entry_dest;
     _amount_ = a;
     _call_ = Some { _name = e._entry_name; _args = l };
@@ -1172,6 +1181,11 @@ module Set
 
   (* ------------------------------------------------------------------------ *)
   let function empty = F.fset0
+
+  (* ------------------------------------------------------------------------ *)
+  let function elts (s : set) : list t
+  =
+  F.content s
 
   (* ------------------------------------------------------------------------ *)
   let function from_list (l : list t) = F.mk l
