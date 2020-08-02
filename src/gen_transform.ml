@@ -2923,3 +2923,29 @@ let process_multi_keys (model : model) : model =
   |> (fun decls -> List.fold_right (fun d accu -> match d with | Dasset d -> d::accu | _ -> accu) decls [])
   |> List.map (fun (asset : asset) -> unloc asset.name)
   |> List.fold_left fold model
+
+let eval_storage (model : model) : model =
+  let map : mterm MapString.t =
+    List.fold_left (fun (accu : mterm MapString.t) decl ->
+        match decl with
+        | Dvar v when Option.is_some v.default -> MapString.add (unloc v.name) (Option.get v.default) accu
+        | _ -> accu
+      ) MapString.empty model.decls
+  in
+
+  let for_storage_item (map : mterm MapString.t) (si : storage_item) : storage_item =
+    let for_mterm (mt : mterm) : mterm =
+      let rec aux (mt : mterm) : mterm =
+        match mt.node with
+        | Mvar (id, _) when MapString.mem (unloc id) map -> MapString.find (unloc id) map
+        | _ -> map_mterm aux mt
+      in
+      aux mt
+    in
+    { si with
+      default = for_mterm si.default
+    }
+  in
+  { model with
+    storage = List.map (for_storage_item map) model.storage;
+  }

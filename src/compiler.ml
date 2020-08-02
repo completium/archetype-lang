@@ -228,6 +228,7 @@ let generate_target model =
     |> replace_dotassetfield_by_dot
     |> transfer_shadow_variable_to_storage
     (* |> replace_instr_verif *)
+    |> eval_storage
     |> optimize
     |> generate_api_storage ~verif:true
     |> filter_api_storage
