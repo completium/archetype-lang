@@ -2265,9 +2265,10 @@ let map_storage_items m =
     acc @
     match item.typ with
     | M.Tcontainer (Tasset id, Collection) ->
-      let asset : M.asset = M.Utils.get_asset m (unloc id) in
+      (* let asset : M.asset = M.Utils.get_asset m (unloc id) in *)
       let id = unloc id in [
-        mk_collection_field id mk_ac_id (Some (List.map (map_mterm m ctx) asset.init));
+        (* mk_collection_field id mk_ac_id (Some (List.map (map_mterm m ctx) asset.init)); *)
+        mk_collection_field id mk_ac_id (Some (match item.default.node with | Massets l -> List.map (map_mterm m ctx) l | _ -> assert false));
         mk_collection_field id mk_ac_added_id None;
         mk_collection_field id mk_ac_rmed_id None
       ]
