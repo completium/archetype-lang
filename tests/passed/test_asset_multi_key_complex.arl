@@ -8,8 +8,19 @@ asset my_asset identified by i s {
   { 0; "mystr_0"; true }
 }
 
+
+
 entry exec () {
   var val = my_asset[(0, "mystr_0")].v;
   dorequire(val);
-  my_asset.update((0, "mystr_0"), { v = false })
+  my_asset.update((0, "mystr_0"), { v = false});
+
+  var k0 = my_asset[(0, "mystr_0")].i;
+  var k1 = my_asset[(0, "mystr_0")].s;
+
+  dorequire(k0 = 0);
+  dorequire(k1 = "mystr_0");
+
+  var v0 = my_asset.select(the.s <> "");
+
 }

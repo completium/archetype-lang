@@ -18,6 +18,7 @@ type error_desc =
   | OnlyLiteralInAssetInit
   | NoEntrypoint
   | UnknownEntrysig of ident
+  | NoSortOnKeyWithMultiKey of ident
 
 let pp_error_desc fmt = function
   | AssetPartitionnedby (i, l)         ->
@@ -61,6 +62,8 @@ let pp_error_desc fmt = function
     Format.fprintf fmt "cannot find type for '%s'" id
 
   | NoEntrypoint -> Format.fprintf fmt "No entrypoint found (action or transtion)"
+
+  | NoSortOnKeyWithMultiKey f -> Format.fprintf fmt "No sort on key with multi key: %s" f
 
 type error = Location.t * error_desc
 
@@ -513,15 +516,18 @@ let check_empty_container_on_asset_default_value (model : model) : model =
   if List.is_not_empty l then raise (Error.Stop 5);
   model
 
-let check_no_dv_for_asset_key (model : model) : model =
+let check_asset_key (model : model) : model =
   let errors : (Location.t * error_desc) list ref = ref [] in
   List.iter
     (fun d ->
        match d with
        | Dasset dasset -> begin
-           let keys = dasset.keys in
+           List.iter (fun s ->
+               if List.exists (String.equal (unloc s)) dasset.keys
+               then errors := ((loc s), NoSortOnKeyWithMultiKey (unloc s))::!errors
+             ) dasset.sort;
            try
-             let field = List.find (fun (x : asset_item) -> List.exists (String.equal (unloc x.name)) keys) dasset.values in
+             let field = List.find (fun (x : asset_item) -> List.exists (String.equal (unloc x.name)) dasset.keys) dasset.values in
              match field.default with
              | Some dv -> errors := (dv.loc, DefaultValueOnKeyAsset (unloc dasset.name))::!errors
              | _ -> ()
@@ -2837,3 +2843,83 @@ let remove_asset (model : model) : model =
   { model with
     storage = List.map for_storage_item model.storage
   }
+
+let process_multi_keys (model : model) : model =
+  let fold (model : model) (asset_name : ident) : model =
+    let r : (ident * type_ * (ident * int) list) ref = ref ("", Tunit, []) in
+    let for_decl_node (d : decl_node) : decl_node =
+      let for_asset (a : asset) : asset =
+        let keys = a.keys in
+        match keys with
+        | [] | [_] -> a
+        | _ -> begin
+            let new_key = List.fold_left (fun str x -> match str with | "" -> x | _ -> str ^ "_" ^ x) "" keys in
+            let keys_fields = List.map (fun x -> Utils.get_asset_field model (asset_name, x)) keys in
+            let new_key_type = Ttuple (List.map (fun (_, x, _) -> x) keys_fields) in
+            let new_key_field = mk_asset_item (dumloc new_key) new_key_type new_key_type in
+            let new_values = List.fold_right (fun (f : asset_item) accu -> if List.exists (String.equal (unloc f.name)) keys then accu else f::accu ) a.values [] in
+            let keys_index = List.fold_lefti (fun i accu (x : asset_item) ->
+                let id = unloc x.name in
+                if List.exists (String.equal id) keys
+                then accu @ [id, i]
+                else accu) [] a.values
+            in
+            let for_init (mt : mterm) =
+              let build_asset (l : mterm list) : mterm list =
+                let l0, l1 =
+                  List.fold_lefti (fun i (l0, l1) x ->
+                      if List.exists (fun (_, x) -> x = i) keys_index
+                      then (l0 @ [x], l1)
+                      else (l0, l1 @ [x])) ([], []) l
+                in
+                (mk_mterm (Mtuple l0) new_key_type)::l1
+              in
+              match mt.node with
+              | Masset l -> {mt with node = Masset (build_asset l)}
+              | _ -> mt
+            in
+            r := new_key, new_key_type, keys_index;
+            {
+              a with
+              values = new_key_field::new_values;
+              keys = [new_key];
+              init = List.map for_init a.init;
+            }
+          end
+      in
+      match d with
+      | Dasset a when String.equal (unloc a.name) asset_name -> Dasset (for_asset a)
+      | _ -> d
+    in
+    let rec aux ctx (mt : mterm) : mterm =
+      let new_key, new_key_type, ki = !r in
+      let check (an, fn) = String.equal (unloc an) asset_name && List.exists (fun (id, _) -> String.equal (unloc fn) id) ki in
+      let process fn node : mterm =
+        let fn = unloc fn in
+        let idx = List.assoc fn ki in
+        let x : mterm = mk_mterm node new_key_type in
+        let node = Maccestuple (x, Big_int.big_int_of_int idx) in
+        mk_mterm node mt.type_
+      in
+      match mt.node with
+      | Mdotassetfield (an, k, fn) when check (an, fn) -> begin
+          let k = aux ctx k in
+          let node = Mdotassetfield (an, k, dumloc new_key) in
+          process fn node
+        end
+      | Mdot (({type_ = Tasset an} as a), fn) when check (an, fn) -> begin
+          let a = aux ctx a in
+          let node = Mdot (a, dumloc new_key) in
+          process fn node
+        end
+      | _ -> map_mterm (aux ctx) mt
+    in
+    { model with
+      decls = List.map for_decl_node model.decls;
+    }
+    |> map_mterm_model aux
+  in
+  model.decls
+  |> (fun decls -> List.fold_right (fun d accu -> match d with | Dasset d -> d::accu | _ -> accu) decls [])
+  |> List.map (fun (asset : asset) -> unloc asset.name)
+  |> List.fold_left fold model

@@ -1303,7 +1303,7 @@ let pp_asset fmt (asset : asset) =
   Format.fprintf fmt "asset %a identified by %a%a {@\n  @[%a@]@\n}%a%a%a%a@\n"
     pp_id asset.name
     (pp_list " " pp_str) asset.keys
-    (pp_do_if (not (List.is_empty asset.sort)) (fun fmt xs -> Format.fprintf fmt " sorted by %a" (pp_list ";@\n" pp_str) xs)) asset.sort
+    (pp_do_if (not (List.is_empty asset.sort)) (fun fmt xs -> Format.fprintf fmt " sorted by %a" (pp_list ";@\n" pp_id) xs)) asset.sort
     (pp_list "@\n" pp_asset_item) fields
     (pp_do_if (not (List.is_empty shadow_fields)) (fun fmt xs -> Format.fprintf fmt "@\nshadow {@\n  @[%a@]@\n}@\n" (pp_list ";@\n" pp_asset_item) xs)) shadow_fields
     (pp_do_if (not (List.is_empty asset.init)) (fun fmt xs -> Format.fprintf fmt "@\ninitialized by {@\n  @[%a@]@\n}@\n" (pp_list ";@\n" pp_mterm) xs)) asset.init

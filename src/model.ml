@@ -598,7 +598,7 @@ type 'id asset_gen = {
   name: 'id;
   values: 'id asset_item_gen list;
   keys: ident list;
-  sort: ident list;
+  sort: 'id list;
   state: lident option;
   invariants  : lident label_term_gen list;
   init: 'id mterm_gen list;
@@ -3147,7 +3147,7 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
         name          = g KIassetname a.name;
         values        = List.map for_asset_item a.values;
         keys          = List.map (f KIassetfield) a.keys;
-        sort          = List.map (f KIassetfield) a.sort;
+        sort          = List.map (g KIassetfield) a.sort;
         state         = Option.map (g KIassetstate) a.state;
         invariants    = List.map for_label_term a.invariants;
         init          = List.map for_mterm a.init;

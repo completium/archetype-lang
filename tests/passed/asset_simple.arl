@@ -1,0 +1,14 @@
+archetype asset_simple
+
+asset my_asset {
+  id : nat;
+  v : string;
+} initialized by {
+  { 0; "mystr_0" };
+  { 1; "mystr_1" };
+  { 2; "mystr_2" }
+}
+
+entry exec () {
+  ()
+}

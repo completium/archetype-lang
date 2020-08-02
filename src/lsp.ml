@@ -270,7 +270,7 @@ let process (filename, channel) =
                   |> Gen_transform.check_empty_container_on_asset_default_value
                   |> Gen_transform.remove_add_update
                   |> Gen_transform.check_duplicated_keys_in_asset
-                  |> Gen_transform.check_no_dv_for_asset_key
+                  |> Gen_transform.check_asset_key
           in
           ();
           process_errors ()

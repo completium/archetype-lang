@@ -98,6 +98,7 @@ let generate_target model =
   | None ->
     model
     |> raise_if_error post_model_error prune_properties
+    |> process_multi_keys
     |> replace_declvar_by_letin
     |> generate_api_storage
     |> output
@@ -106,6 +107,7 @@ let generate_target model =
   | LigoStorage ->
     model
     |> replace_ligo_ident
+    |> process_multi_keys
     |> replace_col_by_key_for_ckfield
     |> process_asset_state
     |> replace_assignfield_by_update
@@ -139,6 +141,7 @@ let generate_target model =
   | SmartPy ->
     model
     |> replace_col_by_key_for_ckfield
+    |> process_multi_keys
     |> process_asset_state
     |> replace_assignfield_by_update
     |> remove_add_update
@@ -172,6 +175,7 @@ let generate_target model =
   | Scaml ->
     model
     |> remove_add_update
+    |> process_multi_keys
     |> replace_update_by_set
     |> generate_storage
     |> replace_declvar_by_letin
@@ -189,6 +193,7 @@ let generate_target model =
   | Whyml ->
     model
     |> replace_whyml_ident
+    |> process_multi_keys
     |> replace_assignfield_by_update
     |> process_asset_state
     |> remove_add_update ~isformula:true
@@ -252,7 +257,7 @@ let compile (filename, channel) =
   |> cont !Options.opt_ptc (Format.printf "%a@." Printer_model_type_contract.pp_ptc_model)
   |> raise_if_error post_model_error check_and_replace_init_caller
   |> raise_if_error post_model_error check_duplicated_keys_in_asset
-  |> raise_if_error post_model_error check_no_dv_for_asset_key
+  |> raise_if_error post_model_error check_asset_key
   |> generate_target
 
 let close dispose channel =
