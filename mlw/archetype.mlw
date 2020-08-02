@@ -882,6 +882,11 @@ module Collection
   }
 
   (* ------------------------------------------------------------------------ *)
+  let function elts (c : collection) : list t
+  (* TODO : add postconditions *)
+  =  N.elts c.content
+
+  (* ------------------------------------------------------------------------ *)
   predicate mem (a : t) (c : collection) = N.mem a c.content
 
   (* ------------------------------------------------------------------------ *)

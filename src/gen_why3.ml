@@ -1848,6 +1848,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       end
     | Mcast (Tcontainer (Tasset a,View),Tlist _, v) -> Telts(dl (mk_view_id (unloc a)), map_mterm m ctx v)
     | Mcast (Tbuiltin Baddress, Tentrysig _, v) -> Tapp (loc_term (Tvar "getopt"), [(dl (Tentrypoint (dl "", map_mterm m ctx v)))])
+    | Mcast (Tmap _ as t, Tlist _, c) -> Telts (dl (mk_map_name m t), map_mterm m ctx c)
     | Mcast (_, _, v)       -> map_mterm m ctx v |> Mlwtree.deloc
 
 
