@@ -256,7 +256,7 @@ let compile (filename, channel) =
   |> raise_if_error post_model_error check_empty_container_on_initializedby
   |> raise_if_error post_model_error check_empty_container_on_asset_default_value
   |> cont !Options.opt_ptc (Format.printf "%a@." Printer_model_type_contract.pp_ptc_model)
-  |> raise_if_error post_model_error check_and_replace_init_caller
+  |> raise_if_error post_model_error (check_and_replace_init_caller ~doit:!Options.with_init_caller)
   |> raise_if_error post_model_error check_duplicated_keys_in_asset
   |> raise_if_error post_model_error check_asset_key
   |> generate_target
@@ -316,7 +316,7 @@ let main () =
             exit 2), "<request> Generate language server protocol response to <resquest>";
       "--list-lsp-request", Arg.Unit (fun _ -> Format.printf "request available:@\n  errors@\n  outline@\n"; exit 0), " List available request for lsp";
       "--service", Arg.String (fun s -> match s with
-          | "get_properties" -> Options.opt_service := true; Services.service := GetProperties
+          | "get_properties" -> Options.opt_service := true; Options.with_init_caller := false; Services.service := GetProperties
           |  s ->
             Format.eprintf
               "Unknown service %s (--list-services to view all services)@." s;

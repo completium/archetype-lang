@@ -34,6 +34,7 @@ let storage_policy = ref Record
 let execution_mode = ref WithSideEffect
 let sorting_policy = ref OnTheFly
 
+let with_init_caller = ref true
 
 let opt_lsp     = ref false
 let opt_service = ref false
