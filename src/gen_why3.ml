@@ -1395,20 +1395,20 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     (* assign *)
 
-    | Massign (ValueAssign, Avar id, v) ->
+    | Massign (ValueAssign, _, Avar id, v) ->
       Tassign (dl (Tvar (map_lident id)),map_mterm m ctx v)
 
-    | Massign (MinusAssign, Avar id, v) ->
+    | Massign (MinusAssign, _, Avar id, v) ->
       Tassign (dl (Tvar (map_lident id)),
                dl (
                  Tminus (dl Tyint,
                          dl (Tvar (map_lident id)),
                          map_mterm m ctx v)))
-    | Massign (ValueAssign, Aoperations, v) -> Tassign (loc_term (Tdoti(gs,mk_id gOperations)), map_mterm m ctx v)
+    | Massign (ValueAssign, _, Aoperations, v) -> Tassign (loc_term (Tdoti(gs,mk_id gOperations)), map_mterm m ctx v)
 
-    | Massign (_, Avar _, _) -> error_not_translated "Massign (_, _, Avar _, _)"
+    | Massign (_, _, Avar _, _) -> error_not_translated "Massign (_, _, Avar _, _)"
 
-    | Massign (assignop, Avarstore id, v) ->
+    | Massign (assignop, _, Avarstore id, v) ->
       let var = dl (Tdoti (dl gs,map_lident id)) in
       let value =
         begin
@@ -1444,7 +1444,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                    map_mterm m ctx v))
         end in
       Tassign (var,value)
-    | Massign (assignop, Aasset (_id1, id2, k), v) ->
+    | Massign (assignop, _, Aasset (_id1, id2, k), v) ->
 
       let id = dl (Tdot (map_mterm m ctx (* id1 *) k, (* FIXME *)
                          dl (Tvar (map_lident id2)))) in
@@ -1477,7 +1477,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         end in
       Tassign (id,value)
 
-    | Massign (assignop, Arecord (_id1, id2, k), v) ->
+    | Massign (assignop, _, Arecord (_id1, id2, k), v) ->
 
       let id = dl (Tdot (map_mterm m ctx (* id1 *) k, (* FIXME *)
                          dl (Tvar (map_lident id2)))) in
@@ -1510,11 +1510,11 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         end in
       Tassign (id,value)
 
-    | Massign (_, Astate, v) -> Tassign (loc_term (Tdoti (gs, "state")), map_mterm m ctx v)
+    | Massign (_, _, Astate, v) -> Tassign (loc_term (Tdoti (gs, "state")), map_mterm m ctx v)
 
-    | Massign (_, Aassetstate _, _) -> error_not_translated "Massign (_, _, Aassetstate _, _)"
+    | Massign (_, _, Aassetstate _, _) -> error_not_translated "Massign (_, _, Aassetstate _, _)"
 
-    | Massign (_, Aoperations, _) -> error_not_translated "Massign (_, _, Aoperations, _)"
+    | Massign (_, _, Aoperations, _) -> error_not_translated "Massign (_, _, Aoperations, _)"
 
 
     (* control *)

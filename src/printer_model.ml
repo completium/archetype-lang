@@ -160,19 +160,19 @@ let pp_mterm fmt (mt : mterm) =
 
     (* assign *)
 
-    | Massign (op, Avar k, v) ->
+    | Massign (op, _, Avar k, v) ->
       Format.fprintf fmt "%a %a %a"
         pp_id k
         pp_operator op
         f v
 
-    | Massign (op, Avarstore l, r) ->
+    | Massign (op, _, Avarstore l, r) ->
       Format.fprintf fmt "s.%a %a %a"
         pp_id l
         pp_operator op
         f r
 
-    | Massign (op, Aasset (an, fn, k), v) ->
+    | Massign (op, _, Aasset (an, fn, k), v) ->
       Format.fprintf fmt "%a[%a].%a %a %a"
         pp_id an
         f k
@@ -180,24 +180,24 @@ let pp_mterm fmt (mt : mterm) =
         pp_operator op
         f v
 
-    | Massign (op, Arecord (_rn, fn, r), v) ->
+    | Massign (op, _, Arecord (_rn, fn, r), v) ->
       Format.fprintf fmt "%a.%a %a %a"
         f r
         pp_id fn
         pp_operator op
         f v
 
-    | Massign (_op, Astate, x) ->
+    | Massign (_op, _, Astate, x) ->
       Format.fprintf fmt "state = %a"
         f x
 
-    | Massign (_op, Aassetstate (an, k), v) ->
+    | Massign (_op, _, Aassetstate (an, k), v) ->
       Format.fprintf fmt "state_%a(%a) = %a"
         pp_ident an
         f k
         f v
 
-    | Massign (_op, Aoperations, v) ->
+    | Massign (_op, _, Aoperations, v) ->
       Format.fprintf fmt "operations = %a"
         f v
 

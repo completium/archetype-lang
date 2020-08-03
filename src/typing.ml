@@ -3553,9 +3553,9 @@ let rec for_instruction_r
 
     | Eassign (op, plv, pe) -> begin
         let lv = for_lvalue kind env plv in
-        let x  = Option.get_dfl
-            (`Var (mkloc (loc plv) "<error>"))
-            (Option.map fst lv) in
+        let x, t  = Option.get_dfl
+            (`Var (mkloc (loc plv) "<error>"), A.vtunit)
+            (Option.map id lv) in
         let op = for_assignment_operator op in
 
         let e  =
@@ -3568,7 +3568,7 @@ let rec for_instruction_r
               (expr_mode kind) env (loc plv) (op, fty, fty) pe
         in
 
-        env, mki (A.Iassign (op, x, e))
+        env, mki (A.Iassign (op, t, x, e))
       end
 
     | Etransfer (e, tr) ->
@@ -4394,7 +4394,7 @@ let for_asset_decl pkey (env : env) ((adecl, decl) : assetdecl * PT.asset_decl l
     if   List.is_empty pks
     then Option.get_as_list (Option.map (L.lmap proj4_1) (List.ohead fields))
     else pks in
-    
+
   pks |> List.iter (fun pk ->
       match Option.get (get_field (unloc pk)) with
       | { pldesc = _, ty, _, _; plloc = loc; } ->
