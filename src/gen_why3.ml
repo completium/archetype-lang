@@ -138,7 +138,7 @@ let rec map_mtype m (t : M.type_) : loc_typ =
       | M.Tprog _                             -> Tyunit (* TODO: replace bmy the right type *)
       | M.Tvset _                             -> Tyunit (* TODO: replace by the right type *)
       | M.Ttrace _                            -> Tyunit (* TODO: replace by the right type *)
-      | M.Tset t                              -> Tyset (dl (mk_set_name m t))
+      | M.Tset t                              -> Tyset (dl (mk_set_name m (Tset t)))
       | M.Tlist t                             -> Tylist (map_mtype m t)
       | M.Tentrysig _                         -> Tyentrysig
       | _ -> print_endline (Format.asprintf "%a@." M.pp_type_ t); assert false)
@@ -1923,18 +1923,18 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
 
     (* set api expression *)
-    | Msetadd (t, s, e)      -> Tadd (dl (mk_set_name m t), map_mterm m ctx e, map_mterm m ctx s)
-    | Msetremove (t, s, e)   -> Tremove (dl (mk_set_name m t), map_mterm m ctx e, map_mterm m ctx s)
-    | Msetcontains (t, s, e) -> Tcontains (dl (mk_set_name m t), map_mterm m ctx e, map_mterm m ctx s)
-    | Msetlength (t, s)      -> Tcard (dl (mk_set_name m t), map_mterm m ctx s)
+    | Msetadd (t, s, e)      -> Tadd (dl (mk_set_name m (Tset t)), map_mterm m ctx e, map_mterm m ctx s)
+    | Msetremove (t, s, e)   -> Tremove (dl (mk_set_name m (Tset t)), map_mterm m ctx e, map_mterm m ctx s)
+    | Msetcontains (t, s, e) -> Tcontains (dl (mk_set_name m (Tset t)), map_mterm m ctx e, map_mterm m ctx s)
+    | Msetlength (t, s)      -> Tcard (dl (mk_set_name m (Tset t)), map_mterm m ctx s)
 
 
     (* list api expression *)
 
-    | Mlistprepend (t, l, e)  -> Tprepend (dl (mk_list_name m t), map_mterm m ctx e, map_mterm m ctx l)
-    | Mlistcontains (t, l, e) -> Tcontains (dl (mk_list_name m t), map_mterm m ctx e, map_mterm m ctx l)
-    | Mlistlength (t, l)      -> Tcard (dl (mk_list_name m t), map_mterm m ctx l)
-    | Mlistnth (t, n, l)      -> Tnth (dl (mk_list_name m t), map_mterm m ctx n, map_mterm m ctx l)
+    | Mlistprepend (t, l, e)  -> Tprepend (dl (mk_list_name m (Tlist t)), map_mterm m ctx e, map_mterm m ctx l)
+    | Mlistcontains (t, l, e) -> Tcontains (dl (mk_list_name m (Tlist t)), map_mterm m ctx e, map_mterm m ctx l)
+    | Mlistlength (t, l)      -> Tcard (dl (mk_list_name m (Tlist t)), map_mterm m ctx l)
+    | Mlistnth (t, n, l)      -> Tnth (dl (mk_list_name m (Tlist t)), map_mterm m ctx n, map_mterm m ctx l)
 
 
     (* map api expression *)
@@ -3463,7 +3463,7 @@ let mk_storage_api (m : M.model) records =
       | M.APIAsset (Sort (asset, _, field)), _ ->
         acc @ [ mk_cmp_function m asset field; mk_sort_clone m asset field]
       | M.APIAsset (Clear (n, (Coll | View | Field _))), _ ->
-        acc @ [mk_rm_asset m n;mk_clear_view m n]
+        acc @ [mk_clear_view m n]
       (*       | M.APIAsset (RemoveAll (n,f)) ->
                let (key,_) = M.Utils.get_asset_key m n in
                let (clearedasset,_,_) = M.Utils.get_container_asset_key m n f in

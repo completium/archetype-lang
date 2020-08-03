@@ -1639,21 +1639,17 @@ let remove_cmp_enum (model : model) : model =
   in
   map_mterm_model aux model
 
+let is_whyml_keyword _id = false
 
 let replace_whyml_ident (model : model) : model =
-  let f _env id =
-    match id with
-    | "val" -> "_val"
-    | "type" -> "_type"
-    | _ -> id
-  in
+  let f _env id = if is_whyml_keyword id then ("_"^id) else id in
   replace_ident_model f model
 
 let replace_ligo_ident (model : model) : model =
   let f _env id =
     match id with
     | "type" -> "type_"
-    | "emount" -> "amount_"
+    | "amount" -> "amount_"
     | _ -> id
   in
   replace_ident_model f model
