@@ -113,14 +113,11 @@ let map_btype = function
   | M.Bnat           -> Tyuint
   | M.Bchainid       -> Tychainid
 
-let get_type_idx m t = List.fold_left (fun i mt ->
-    if M.cmp_type t mt then i
-    else succ i
-  ) 1 (M.Utils.get_all_map_types m)
+let get_type_idx t = List.index_of (M.cmp_type t)
 
-let mk_map_name m t = "map"^(string_of_int (get_type_idx m t))
-let mk_set_name m t = "set"^(string_of_int (get_type_idx m t))
-let mk_list_name m t = "list"^(string_of_int (get_type_idx m t))
+let mk_map_name m t = "map"^(string_of_int (get_type_idx t (M.Utils.get_all_map_types m)))
+let mk_set_name m t = "set"^(string_of_int (get_type_idx t (M.Utils.get_all_set_types m)))
+let mk_list_name m t = "list"^(string_of_int (get_type_idx t (M.Utils.get_all_list_types m)))
 
 let rec map_mtype m (t : M.type_) : loc_typ =
   dl (match t with
@@ -842,11 +839,11 @@ let mk_set_clone id t =
 
 let mk_set_type m (t : M.type_) =
  match t with
- | Tset t ->
+ | Tset et ->
   let set_name = mk_set_name m t in
-  let t = map_mtype m t in [
-    mk_eq_type_fun set_name t;
-    mk_set_clone set_name t;
+  let et = map_mtype m et in [
+    mk_eq_type_fun set_name et;
+    mk_set_clone set_name et;
   ]
   | _ -> assert false
 
@@ -862,11 +859,11 @@ let mk_list_clone id t =
 
 let mk_list_type m (t : M.type_) =
  match t with
- | Tlist t ->
+ | Tlist et ->
   let list_name = mk_list_name m t in
-  let t = map_mtype m t in [
-    mk_eq_type_fun list_name t;
-    mk_list_clone list_name t;
+  let et = map_mtype m et in [
+    mk_eq_type_fun list_name et;
+    mk_list_clone list_name et;
   ]
   | _ -> assert false
 
@@ -3520,6 +3517,7 @@ let fold_exns m body : term list =
     | M.Mself _ -> acc @ [Texn Enotfound]
     | M.Mcast (Tbuiltin Baddress, Tentrysig _, v) -> internal_fold_exn (acc @ [Texn Enotfound]) v
     | M.Mtransfer (v, TKself _) -> internal_fold_exn (acc @ [Texn Enotfound]) v
+    | M.Mtransfer (_, _) -> acc
     | _ -> M.fold_term internal_fold_exn acc term in
   Tools.List.dedup (internal_fold_exn [] body)
 
