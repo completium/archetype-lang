@@ -56,7 +56,7 @@ entry sign (spid : string, v : int) {
       r0 : contains(sig_spec[spid].signatories, caller);
    }
    effect {
-      sig_spec[spid].signatures.add({spid; caller; v });
+      // sig_spec[spid].signatures.add({id = spid; signatory = caller; value = v });
       if sig_spec[spid].signatures.count() = length (sig_spec[spid].signatories) then (
         var sigs = get_signatures(spid);
         var d = sig_spec[spid].dev;

@@ -24,6 +24,7 @@ escrow_basic.arl \
 escrow_penalty.arl \
 escrow_simple.arl \
 escrow_without_spec.arl \
+fa12.arl \
 fizzy.arl \
 guarantee_fund.arl \
 health_care.arl \
@@ -39,6 +40,7 @@ perishable.arl \
 register_candidate.arl \
 register_vote.arl \
 sig_challenge.arl \
+unanimity.arl \
 voting_process.arl \
 zero_coupon_bond_with_insurance.arl \
 zero_coupon_bond.arl \
@@ -67,6 +69,7 @@ escrow_basic.arl \
 escrow_penalty.arl \
 escrow_simple.arl \
 escrow_without_spec.arl \
+fa12.arl \
 fizzy.arl \
 guarantee_fund.arl \
 health_care.arl \
@@ -82,6 +85,7 @@ perishable.arl \
 register_candidate.arl \
 register_vote.arl \
 sig_challenge.arl \
+unanimity.arl \
 voting_process.arl \
 zero_coupon_bond_with_insurance.arl \
 zero_coupon_bond.arl \
@@ -109,6 +113,7 @@ escrow_basic.arl \
 escrow_penalty.arl \
 escrow_simple.arl \
 escrow_without_spec.arl \
+fa12.arl \
 fizzy.arl \
 guarantee_fund.arl \
 health_care.arl \
@@ -124,6 +129,7 @@ perishable.arl \
 register_candidate.arl \
 register_vote.arl \
 sig_challenge.arl \
+unanimity.arl \
 voting_process.arl \
 zero_coupon_bond_with_insurance.arl \
 zero_coupon_bond.arl \
