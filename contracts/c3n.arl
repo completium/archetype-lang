@@ -2,7 +2,7 @@ archetype c3n
 
 /* michelson source : https://better-call.dev/main/KT1Gbu1Gm2U47Pmq9VP7ZMy3ZLKecodquAh4/script */
 
-variable admins : list<address> = []
+variable admins : list<address> = [caller]
 
 variable hash : bytes = 0x050100000009617263686574797065
 
