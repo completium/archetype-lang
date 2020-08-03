@@ -980,6 +980,7 @@ type assetdecl = {
   as_pkty   : A.ptyp;
   as_pk     : A.lident list;
   as_sortk  : A.lident list;
+  as_bm     : bool;
   as_invs   : (A.lident option * A.pterm) list;
   as_state  : A.lident option;
   as_init   : (A.pterm list) list;
@@ -4331,6 +4332,7 @@ type pre_assetdecl = {
   pas_pkty   : A.ptyp;
   pas_pk     : A.lident list;
   pas_sortk  : A.lident list;
+  pas_bm     : bool;
   pas_invs   : PT.label_exprs list;
   pas_state  : statedecl option;
   pas_init   : PT.expr list;
@@ -4371,11 +4373,13 @@ let for_asset_decl pkey (env : env) ((adecl, decl) : assetdecl * PT.asset_decl l
       fields
   in
 
-  let pks    = List.pmap (function PT.AOidentifiedby pk -> Some pk | _ -> None)     opts in
-  let sortks = List.pmap (function PT.AOsortedby     sk -> Some sk | _ -> None)     opts in
-  let invs   = List.pmap (function PT.APOconstraints fi -> Some fi | _ -> None) postopts in
-  let state  = List.pmap (function PT.APOstates      st -> Some st | _ -> None) postopts in
-  let inits  = List.pmap (function PT.APOinit        it -> Some it | _ -> None) postopts in
+  let pks     = List.pmap (function PT.AOidentifiedby pk -> Some pk | _ -> None)     opts in
+  let sortks  = List.pmap (function PT.AOsortedby     sk -> Some sk | _ -> None)     opts in
+  let invs    = List.pmap (function PT.APOconstraints fi -> Some fi | _ -> None) postopts in
+  let state   = List.pmap (function PT.APOstates      st -> Some st | _ -> None) postopts in
+  let inits   = List.pmap (function PT.APOinit        it -> Some it | _ -> None) postopts in
+
+  let bigmaps = List.exists (function PT.AOto {pldesc = "big_map"} -> true | _ -> false) opts in
 
   let pks =
     let dokey key =
@@ -4482,6 +4486,7 @@ let for_asset_decl pkey (env : env) ((adecl, decl) : assetdecl * PT.asset_decl l
         pas_pkty   = pkty;
         pas_pk     = pks;
         pas_sortk  = sortks;
+        pas_bm     = bigmaps;
         pas_invs   = invs;
         pas_state  = state;
         pas_init   = List.flatten inits; }
@@ -4500,6 +4505,7 @@ let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) =
                 as_pkty   = A.vtunit;
                 as_pk     = [];
                 as_sortk  = [];
+                as_bm     = false;
                 as_invs   = [];
                 as_state  = None;
                 as_init   = []; } in
@@ -4554,6 +4560,7 @@ let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) =
           as_pkty   = decl.pas_pkty;
           as_pk     = decl.pas_pk;
           as_sortk  = decl.pas_sortk;
+          as_bm     = decl.pas_bm;
           as_invs   = [];
           as_state  = Option.map (fun x -> x.sd_name) decl.pas_state;
           as_init   = []; }
@@ -4998,14 +5005,15 @@ let assets_of_adecls adecls =
     let spec (l, f) =
       A.{ label = l; term = f; loc = f.loc } in
 
-    A.{ name   = decl.as_name;
-        fields = List.map for_field decl.as_fields;
-        keys   = decl.as_pk;
-        sort   = decl.as_sortk;
-        state  = decl.as_state;
-        init   = decl.as_init;
-        specs  = List.map spec decl.as_invs;
-        loc    = loc decl.as_name; }
+    A.{ name    = decl.as_name;
+        fields  = List.map for_field decl.as_fields;
+        keys    = decl.as_pk;
+        sort    = decl.as_sortk;
+        big_map = decl.as_bm;
+        state   = decl.as_state;
+        init    = decl.as_init;
+        specs   = List.map spec decl.as_invs;
+        loc     = loc decl.as_name; }
 
   in List.map for1 (List.pmap (fun x -> x) adecls)
 
