@@ -1,6 +1,6 @@
 archetype fa12
 
-constant totalsupply : nat = 1000000000000000
+constant totalsupply : nat = 10_000_000
 
 asset allowance identified by addr_owner addr_spender to big_map {
   addr_owner       : address;
@@ -43,4 +43,8 @@ entry getBalance (owner : address, cb : entrysig<nat>) {
 
 entry getTotalSupply (cb : entrysig<nat>) {
   transfer 0tz to entry cb(totalsupply);
+}
+
+specification {
+  s1 : ledger.sum(tokens) = totalsupply;
 }
