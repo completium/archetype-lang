@@ -9,14 +9,9 @@ variable hash : bytes = 0x050100000009617263686574797065
 entry register (newadmins : option<list<address>> , oldhash : bytes, newhash : bytes) {
     require {
         r1: oldhash = hash;
+        r2: contains(admins,caller);
     }
     effect {
-        var test = false;
-        iter i from 0 to length(admins) do
-            if nth(admins,abs(i)) = caller then
-            test := true
-        done;
-        dorequire (test = true);
         hash := newhash;
         if issome(newadmins) then admins := opt_get(newadmins)
     }
