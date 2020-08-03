@@ -32,3 +32,15 @@ entry dotransfer (from_ : address, to_ : address, value : nat) {
 entry approve(ispender : address, value : nat) {
     allowance.addupdate((caller, ispender), { amount = value });
 }
+
+entry getAllowance (o : address, s : address, cb : entrysig<nat>) {
+  transfer 0tz to entry cb(allowance[(o,s)].amount);
+}
+
+entry getBalance (o : address, cb : entrysig<nat>) {
+  transfer 0tz to entry cb(ledger[o].tokens);
+}
+
+entry getTotalSupply (cb : entrysig<nat>) {
+  transfer 0tz to entry cb(totalsupply);
+}
