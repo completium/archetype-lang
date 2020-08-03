@@ -1718,11 +1718,12 @@ let pp_model_internal fmt (model : model) b =
           an
           an an
       else
+        let big = asset.big_map in
         Format.fprintf fmt
           "function add_%s (const s : storage_type; const a : %s) : storage_type is@\n  \
            begin@\n    \
            const key : %a = a.%s;@\n    \
-           const map_local : map(%a, %s_storage) = s.%s_assets;@\n    \
+           const map_local : %amap(%a, %s_storage) = s.%s_assets;@\n    \
            if map_mem(key, map_local) then failwith (\"key already exists\") else skip;@\n    \
            const asset : %s_storage = record[%a];@\n    \
            map_local[key] := asset;@\n    \
@@ -1730,7 +1731,7 @@ let pp_model_internal fmt (model : model) b =
            end with (s)@\n"
           an an
           pp_type t k
-          pp_type t an an
+          (pp_do_if big pp_str) "big_" pp_type t an an
           an (pp_list "; " (fun fmt fn -> Format.fprintf fmt "%s = a.%s" fn fn)) fns
           an
 
