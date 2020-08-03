@@ -21,8 +21,8 @@ entry %transfer (from_ : address, to_ : address, value : nat) {
   }
   effect {
     if caller <> from_ then (
-      dorequire (allowance[(from_,caller)].amount >= value);
-      allowance.update((from_,caller), { amount -=  value });
+      dorequire (allowance[(from_, caller)].amount >= value);
+      allowance.update((from_, caller), { amount -=  value });
     );
     ledger.update(from_, { tokens -= value });
     ledger.addupdate(to_, { tokens += value });
@@ -30,7 +30,7 @@ entry %transfer (from_ : address, to_ : address, value : nat) {
 }
 
 entry approve(spender : address, value : nat) {
-    allowance.addupdate((caller, spender), { amount = value });
+  allowance.addupdate((caller, spender), { amount = value });
 }
 
 entry getAllowance (owner : address, spender : address, cb : entrysig<nat>) {
