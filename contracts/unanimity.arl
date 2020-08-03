@@ -60,10 +60,8 @@ entry sign (spid : string, v : int) {
       if sig_spec[spid].signatures.count() = length (sig_spec[spid].signatories) then (
         var sigs = get_signatures(spid);
         var d = sig_spec[spid].dev;
-        if check_sig_data (spid) then
-          transfer 0tz to entry self.unanimity(spid, sigs, d)
-        else
-          transfer 0tz to entry self.failed(spid, sigs, d);
+        var selfentry = if check_sig_data (spid) then self.unanimity else self.failed;
+        transfer 0tz to entry selfentry((spid, sigs, d));
         sig_spec.remove(spid);
       );
    }
