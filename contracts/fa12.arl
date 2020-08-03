@@ -15,7 +15,7 @@ asset ledger identified by holder {
   { holder = caller; tokens = totalsupply }
 }
 
-entry dotransfer (from_ : address, to_ : address, value : nat) {
+entry %transfer (from_ : address, to_ : address, value : nat) {
   require {
     d0 : ledger[from_].tokens >= value
   }

@@ -123,6 +123,7 @@ let mtz      = digit+ "mtz"
 let utz      = digit+ "utz"
 let var      = "<%" ['a'-'z' 'A'-'Z'] ['a'-'z' 'A'-'Z' '0'-'9' '_' ]* '>'
 let ident    = (['a'-'z' 'A'-'Z'] | var)  (['a'-'z' 'A'-'Z' '0'-'9' '_' ] | var)*
+let pident   = '%' ident
 let address  = '@'['a'-'z' 'A'-'Z' '0'-'9' '_' ]+
 let duration = (digit+ 'w')? (digit+ 'd')? (digit+ 'h')? (digit+ 'm')? (digit+ 's')?
 let day      = digit digit digit digit '-' digit digit '-' digit digit
@@ -145,6 +146,7 @@ rule token = parse
   | "@remove"             { AT_REMOVE }
   | "@update"             { AT_UPDATE }
   | ident as id           { try  Hashtbl.find keywords id with Not_found -> IDENT id }
+  | pident as id          { IDENT (String.sub id 1 ((String.length id) - 1)) }
   | tz as t               { TZ   (Big_int.big_int_of_string (String.sub t 0 ((String.length t) - 2))) }
   | mtz as t              { MTZ  (Big_int.big_int_of_string (String.sub t 0 ((String.length t) - 3))) }
   | utz as t              { UTZ  (Big_int.big_int_of_string (String.sub t 0 ((String.length t) - 3))) }
