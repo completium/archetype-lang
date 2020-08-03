@@ -1,7 +1,7 @@
 archetype extension action_delegation (
 
   entry aTransaction (anasset : anAsset) {
-    called by [%delegable%] anAsset.arole
+    called by [%%delegable%%] anAsset.arole
   }
 
 ) {

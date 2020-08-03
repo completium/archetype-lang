@@ -91,6 +91,10 @@ let container_to_str c =
   | Partition  -> "partition"
   | View       -> "view"
 
+let pp_id fmt (id : lident) =
+  let id = unloc id in
+  Format.fprintf fmt "%a%s" (fun fmt _ -> if is_keyword id then pp_str fmt "%" else ()) () id
+
 let pp_container fmt c =
   Format.fprintf fmt "%s" (container_to_str c)
 
@@ -694,7 +698,7 @@ and pp_field fmt { pldesc = f; _ } =
 and pp_extension fmt { pldesc = e; _ } =
   match e with
   | Eextension (id, args) ->
-    Format.fprintf fmt "[%%%a%a%%]"
+    Format.fprintf fmt "[%%%%%a%a%%%%]"
       pp_id id
       pp_ext_args args
 

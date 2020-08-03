@@ -81,7 +81,6 @@
       "predicate"           , PREDICATE      ;
       "record"              , RECORD         ;
       "ref"                 , REF            ;
-      "record"              , RECORD         ;
       "removed"             , REMOVED        ;
       "require"             , REQUIRE        ;
       "return"              , RETURN         ;
@@ -166,8 +165,8 @@ rule token = parse
   | "\""                  { STRING (Buffer.contents (string (Buffer.create 0) lexbuf)) }
   | "("                   { LPAREN }
   | ")"                   { RPAREN }
-  | "[%"                  { LBRACKETPERCENT }
-  | "%]"                  { PERCENTRBRACKET }
+  | "[%%"                 { LBRACKETPERCENT }
+  | "%%]"                 { PERCENTRBRACKET }
   | "["                   { LBRACKET }
   | "]"                   { RBRACKET }
   | "{"                   { LBRACE }
