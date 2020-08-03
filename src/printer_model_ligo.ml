@@ -293,7 +293,7 @@ let pp_model_internal fmt (model : model) b =
 
     (* assign *)
 
-    | Massign (op, Avar lhs, r) ->
+    | Massign (op, _, Avar lhs, r) ->
       Format.fprintf fmt "%a := %a"
         pp_id lhs
         (
@@ -308,7 +308,7 @@ let pp_model_internal fmt (model : model) b =
             | OrAssign    -> Format.fprintf fmt "%a or (%a)" pp_id lhs f r
         ) r
 
-    | Massign (op, Avarstore lhs, r) ->
+    | Massign (op, _, Avarstore lhs, r) ->
       Format.fprintf fmt "%s.%a := %a"
         const_storage
         pp_id lhs
@@ -324,7 +324,7 @@ let pp_model_internal fmt (model : model) b =
             | OrAssign    -> Format.fprintf fmt "%s.%a or (%a)"  const_storage pp_id lhs f r
         ) r
 
-    | Massign (op, Aasset (an, fn, k), v) ->
+    | Massign (op, _, Aasset (an, fn, k), v) ->
       Format.fprintf fmt "%a[%a].%a %a %a"
         pp_id an
         f k
@@ -332,26 +332,26 @@ let pp_model_internal fmt (model : model) b =
         pp_operator op
         f v
 
-    | Massign (op, Arecord (_rn, fn, r), v) ->
+    | Massign (op, _, Arecord (_rn, fn, r), v) ->
       Format.fprintf fmt "%a.%a %a %a"
         f r
         pp_id fn
         pp_operator op
         f v
 
-    | Massign (_op, Astate, x) ->
+    | Massign (_op, _, Astate, x) ->
       Format.fprintf fmt "%s.%s := %a"
         const_storage
         const_state
         f x
 
-    | Massign (_op, Aassetstate (an, k), v) ->
+    | Massign (_op, _, Aassetstate (an, k), v) ->
       Format.fprintf fmt "state_%a(%a) = %a"
         pp_ident an
         f k
         f v
 
-    | Massign (_op, Aoperations, v) ->
+    | Massign (_op, _, Aoperations, v) ->
       Format.fprintf fmt "%s := %a"
         const_operations
         f v
@@ -963,16 +963,18 @@ let pp_model_internal fmt (model : model) b =
                Format.fprintf fmt " with record [%a]"
                  (pp_list "; " (fun fmt (id, op, v) ->
                       let id = unloc id in
+                      let (_, type_, _) = Utils.get_asset_field model (an, id) in
                       Format.fprintf fmt "%s = %a" id
                         (fun fmt _ ->
-                           match op with
-                           | ValueAssign -> f fmt v
-                           | PlusAssign  -> Format.fprintf fmt "%s.%s + (%a)"   asset_val id f v
-                           | MinusAssign -> Format.fprintf fmt "%s.%s - (%a)"   asset_val id f v
-                           | MultAssign  -> Format.fprintf fmt "%s.%s * (%a)"   asset_val id f v
-                           | DivAssign   -> Format.fprintf fmt "%s.%s / (%a)"   asset_val id f v
-                           | AndAssign   -> Format.fprintf fmt "%s.%s and (%a)" asset_val id f v
-                           | OrAssign    -> Format.fprintf fmt "%s.%s or (%a)"  asset_val id f v
+                           match op, type_ with
+                           | ValueAssign, _ -> f fmt v
+                           | PlusAssign , _ -> Format.fprintf fmt "%s.%s + (%a)"   asset_val id f v
+                           | MinusAssign, Tbuiltin Bnat -> Format.fprintf fmt "abs(%s.%s - (%a))"   asset_val id f v
+                           | MinusAssign, _ -> Format.fprintf fmt "%s.%s - (%a)"   asset_val id f v
+                           | MultAssign , _ -> Format.fprintf fmt "%s.%s * (%a)"   asset_val id f v
+                           | DivAssign  , _ -> Format.fprintf fmt "%s.%s / (%a)"   asset_val id f v
+                           | AndAssign  , _ -> Format.fprintf fmt "%s.%s and (%a)" asset_val id f v
+                           | OrAssign   , _ -> Format.fprintf fmt "%s.%s or (%a)"  asset_val id f v
                         ) ()
                     )
                  ) l

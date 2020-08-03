@@ -20,7 +20,6 @@ coase.arl \
 competition.arl \
 empty.arl \
 erc20.arl \
-erc721.arl \
 escrow_basic.arl \
 escrow_penalty.arl \
 escrow_simple.arl \
@@ -64,7 +63,6 @@ coase.arl \
 competition.arl \
 empty.arl \
 erc20.arl \
-erc721.arl \
 escrow_basic.arl \
 escrow_penalty.arl \
 escrow_simple.arl \
@@ -107,7 +105,6 @@ coase.arl \
 competition.arl \
 empty.arl \
 erc20.arl \
-erc721.arl \
 escrow_basic.arl \
 escrow_penalty.arl \
 escrow_simple.arl \

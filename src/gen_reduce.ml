@@ -61,7 +61,7 @@ type ctx_red = {
 
 let rec compute_side_effect_aux (ctx : ctx_red)(accu : (ident * type_) list) (mt : mterm) : (ident * type_) list =
   match mt.node with
-  | Massign (_, Avar a, _b) ->
+  | Massign (_, _, Avar a, _b) ->
     let id : ident = unloc a in
     let type_ = List.assoc_opt id ctx.vars in
     (match type_ with
@@ -98,7 +98,7 @@ let rec process_non_empty_list_term (model : model) (ctx : ctx_red) (s : s_red) 
   List.fold_right (fun x (accu, s) ->
       let x, s = process_mtern model ctx s x in
       match x with
-      | { node = Massign (op, Avar id, value); _} ->
+      | { node = Massign (op, _, Avar id, value); _} ->
         let type_ = value.type_ in
         let value =
           let var = mk_mterm (Mvar (id, Vlocal)) type_ in

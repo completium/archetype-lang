@@ -799,21 +799,25 @@ let to_model (ast : A.ast) : M.model =
       | A.Ideclvar (i, v)         -> M.Mdeclvar ([i], Option.map ptyp_to_type v.type_, f v) (* TODO *)
       | A.Iseq l                  -> M.Mseq (List.map g l)
       | A.Imatchwith (m, l)       -> M.Mmatchwith (f m, List.map (fun (p, i) -> (to_pattern p, g i)) l)
-      | A.Iassign (op, `Var x, e) -> begin
+      | A.Iassign (op, t, `Var x, e) -> begin
+          let e = f e in
+          let t = ptyp_to_type t in
           let assign_kind =
             match unloc x with
             | "operations" -> M.Aoperations
             | _            -> M.Avar x
           in
-          M.Massign (to_assignment_operator op,assign_kind, f e)
+          M.Massign (to_assignment_operator op, t, assign_kind, e)
         end
-      | A.Iassign (op, `Field (an, o, fn), v) -> begin
+      | A.Iassign (op, t, `Field (an, o, fn), v) -> begin
+          let v = f v in
+          let t = ptyp_to_type t in
           let ak =
             match o.type_ with
             | Some (A.Trecord rn) -> M.Arecord(rn, fn, f o)
             | _ -> M.Aasset (an, fn, f o)
           in
-          M.Massign (to_assignment_operator op, ak, f v)
+          M.Massign (to_assignment_operator op, t, ak, v)
         end
       | A.Irequire (b, t) ->
         let cond : M.mterm =
@@ -1176,10 +1180,10 @@ let to_model (ast : A.ast) : M.model =
                  | Some (key_ident, key_type, an, enum_type) ->
                    let k : M.mterm = M.mk_mterm (M.Mvar (key_ident, Vlocal)) key_type ~loc:(Location.loc key_ident) in
                    let v : M.mterm = M.mk_mterm (M.Mvar (id, Venumval)) enum_type ~loc:(Location.loc id) in
-                   M.mk_mterm (M.Massign (ValueAssign, Aassetstate (an, k), v)) Tunit
+                   M.mk_mterm (M.Massign (ValueAssign, v.type_, Aassetstate (an, k), v)) Tunit
                  | _ ->
                    let v : M.mterm = M.mk_mterm (M.Mvar (id, Vlocal)) (M.Tstate) ~loc:(Location.loc id) in
-                   M.mk_mterm (M.Massign (ValueAssign, Astate, v)) Tunit
+                   M.mk_mterm (M.Massign (ValueAssign, v.type_, Astate, v)) Tunit
                in
                let code : M.mterm =
                  match effect with

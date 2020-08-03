@@ -600,7 +600,7 @@ let rec pp_instruction fmt (i : instruction) =
       in
       (pp_with_paren pp) fmt (m, ps)
 
-    | Iassign (op, `Var id, value) ->
+    | Iassign (op, _, `Var id, value) ->
       let pp fmt (op, id, value) =
         Format.fprintf fmt "%a %a %a"
           pp_id id
@@ -609,7 +609,7 @@ let rec pp_instruction fmt (i : instruction) =
       in
       (pp_with_paren pp) fmt (op, id, value)
 
-    | Iassign (op, `Field (an, k, fn), value) ->
+    | Iassign (op, _, `Field (an, k, fn), value) ->
       let pp fmt (op, an, k, fn, value) =
         Format.fprintf fmt "%a[%a].%a %a %a"
           pp_id an
