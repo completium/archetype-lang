@@ -2837,13 +2837,23 @@ let remove_asset (model : model) : model =
 
 let process_multi_keys (model : model) : model =
   let fold (model : model) (asset_name : ident) : model =
-    let r : (ident * type_ * (ident * int) list) ref = ref ("", Tunit, []) in
-    let for_decl_node (d : decl_node) : decl_node =
-      let for_asset (a : asset) : asset =
-        let keys = a.keys in
-        match keys with
-        | [] | [_] -> a
-        | _ -> begin
+    match (Utils.get_asset model asset_name).keys with
+    | [] | [_] -> model
+    | _ -> begin
+        let r : (ident * type_ * (ident * int) list) ref = ref ("", Tunit, []) in
+        let build_asset keys_index new_key_type (l : mterm list) : mterm list =
+          let l0, l1 =
+            List.fold_lefti (fun i (l0, l1) x ->
+                if List.exists (fun (_, x) -> x = i) keys_index
+                then (l0 @ [x], l1)
+                else (l0, l1 @ [x])) ([], []) l
+          in
+          (mk_mterm (Mtuple l0) new_key_type)::l1
+        in
+        let for_decl_node (d : decl_node) : decl_node =
+          let for_asset (a : asset) : asset =
+            r := ("", Tunit, []);
+            let keys = a.keys in
             let new_key = List.fold_left (fun str x -> match str with | "" -> x | _ -> str ^ "_" ^ x) "" keys in
             let keys_fields = List.map (fun x -> Utils.get_asset_field model (asset_name, x)) keys in
             let new_key_type = Ttuple (List.map (fun (_, x, _) -> x) keys_fields) in
@@ -2856,17 +2866,8 @@ let process_multi_keys (model : model) : model =
                 else accu) [] a.values
             in
             let for_init (mt : mterm) =
-              let build_asset (l : mterm list) : mterm list =
-                let l0, l1 =
-                  List.fold_lefti (fun i (l0, l1) x ->
-                      if List.exists (fun (_, x) -> x = i) keys_index
-                      then (l0 @ [x], l1)
-                      else (l0, l1 @ [x])) ([], []) l
-                in
-                (mk_mterm (Mtuple l0) new_key_type)::l1
-              in
               match mt.node with
-              | Masset l -> {mt with node = Masset (build_asset l)}
+              | Masset l -> {mt with node = Masset (build_asset keys_index new_key_type l)}
               | _ -> mt
             in
             r := new_key, new_key_type, keys_index;
@@ -2876,39 +2877,41 @@ let process_multi_keys (model : model) : model =
               keys = [new_key];
               init = List.map for_init a.init;
             }
-          end
-      in
-      match d with
-      | Dasset a when String.equal (unloc a.name) asset_name -> Dasset (for_asset a)
-      | _ -> d
-    in
-    let rec aux ctx (mt : mterm) : mterm =
-      let new_key, new_key_type, ki = !r in
-      let check (an, fn) = String.equal (unloc an) asset_name && List.exists (fun (id, _) -> String.equal (unloc fn) id) ki in
-      let process fn node : mterm =
-        let fn = unloc fn in
-        let idx = List.assoc fn ki in
-        let x : mterm = mk_mterm node new_key_type in
-        let node = Maccestuple (x, Big_int.big_int_of_int idx) in
-        mk_mterm node mt.type_
-      in
-      match mt.node with
-      | Mdotassetfield (an, k, fn) when check (an, fn) -> begin
-          let k = aux ctx k in
-          let node = Mdotassetfield (an, k, dumloc new_key) in
-          process fn node
-        end
-      | Mdot (({type_ = Tasset an} as a), fn) when check (an, fn) -> begin
-          let a = aux ctx a in
-          let node = Mdot (a, dumloc new_key) in
-          process fn node
-        end
-      | _ -> map_mterm (aux ctx) mt
-    in
-    { model with
-      decls = List.map for_decl_node model.decls;
-    }
-    |> map_mterm_model aux
+          in
+          match d with
+          | Dasset a when String.equal (unloc a.name) asset_name -> Dasset (for_asset a)
+          | _ -> d
+        in
+        let rec aux ctx (mt : mterm) : mterm =
+          let new_key, new_key_type, keys_index = !r in
+          let check (an, fn) = String.equal (unloc an) asset_name && List.exists (fun (id, _) -> String.equal (unloc fn) id) keys_index in
+          let process fn node : mterm =
+            let fn = unloc fn in
+            let idx = List.assoc fn keys_index in
+            let x : mterm = mk_mterm node new_key_type in
+            let node = Maccestuple (x, Big_int.big_int_of_int idx) in
+            mk_mterm node mt.type_
+          in
+          match mt with
+          | {node = Masset l; type_ = Tasset an} when String.equal (unloc an) asset_name ->
+            {mt with node = Masset (build_asset keys_index new_key_type l)}
+          | { node = Mdotassetfield (an, k, fn)} when check (an, fn) -> begin
+              let k = aux ctx k in
+              let node = Mdotassetfield (an, k, dumloc new_key) in
+              process fn node
+            end
+          | {node = Mdot (({type_ = Tasset an} as a), fn)} when check (an, fn) -> begin
+              let a = aux ctx a in
+              let node = Mdot (a, dumloc new_key) in
+              process fn node
+            end
+          | _ -> map_mterm (aux ctx) mt
+        in
+        { model with
+          decls = List.map for_decl_node model.decls;
+        }
+        |> map_mterm_model aux
+      end
   in
   model.decls
   |> (fun decls -> List.fold_right (fun d accu -> match d with | Dasset d -> d::accu | _ -> accu) decls [])

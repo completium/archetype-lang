@@ -8,9 +8,9 @@ asset my_asset identified by i s {
   { 0; "mystr_0"; true }
 }
 
-
-
 entry exec () {
+  my_asset.add({ 1; "mystr_1"; false });
+
   var val = my_asset[(0, "mystr_0")].v;
   dorequire(val);
   my_asset.update((0, "mystr_0"), { v = false});
