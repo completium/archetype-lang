@@ -120,6 +120,8 @@ let dec      = digit+ '.' digit+
 let tz       = digit+ "tz"
 let mtz      = digit+ "mtz"
 let utz      = digit+ "utz"
+let pep515_item = '_' digit digit digit
+let pep515   = digit? digit? digit pep515_item+
 let var      = "<%" ['a'-'z' 'A'-'Z'] ['a'-'z' 'A'-'Z' '0'-'9' '_' ]* '>'
 let ident    = (['a'-'z' 'A'-'Z'] | var)  (['a'-'z' 'A'-'Z' '0'-'9' '_' ] | var)*
 let pident   = '%' ident
@@ -152,6 +154,8 @@ rule token = parse
   | dec as input          { DECIMAL (input) }
   | (digit+ as n) 'i'     { NUMBERINT (Big_int.big_int_of_string n) }
   | (digit+ as n)         { NUMBERNAT (Big_int.big_int_of_string n) }
+  | (pep515 as input) 'i' { NUMBERINT (Big_int.big_int_of_string input) }
+  | pep515 as input       { NUMBERNAT (Big_int.big_int_of_string input) }
   | address as a          { ADDRESS (String.sub a 1 ((String.length a) - 1)) }
   | duration as d         { DURATION (d) }
   | date as d             { DATE (d) }

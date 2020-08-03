@@ -12,6 +12,8 @@ entry exec () {
     var n : nat = 1;
     var i : int = 1i;
     var j : int = -1;
+    var n_ : nat = 100_000;
+    var i_ : int = 100_000i;
     var f : rational = 1.1;
     var g : rational = -1.1;
     var r : rational = 2 / 6;
