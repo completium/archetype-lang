@@ -873,7 +873,7 @@ let methods : (string * method_) list =
     ("removeall"   , mk A.Cremoveall    `Both        (`Effect  ap ) `Total   `Standard (`Fixed [                   ], None));
     ("update"      , mk A.Cupdate       `Both        (`Effect c   ) `Total   `Standard (`Fixed [`Pk; `Ef true      ], None));
     ("addupdate"   , mk A.Caddupdate    `Both        (`Effect c_p ) `Total   `Standard (`Fixed [`Pk; `Ef false     ], None));
-    ("contains"    , mk A.Ccontains     `Both        (`Pure       ) `Total   `Standard (`Fixed [`Pk                ], Some (`T A.vtbool)));
+    ("contains"    , mk A.Ccontains     `Both        (`Pure       ) `Total   `Both     (`Fixed [`Pk                ], Some (`T A.vtbool)));
     ("nth"         , mk A.Cnth          `Both        (`Pure       ) `Partial `Standard (`Fixed [`T A.vtnat         ], Some (`Pk)));
     ("select"      , mk A.Cselect       `Both        (`Pure       ) `Total   `Standard (`Fixed [`Pred true         ], Some (`SubColl)));
     ("sort"        , mk A.Csort         `OnlyExec    (`Pure       ) `Total   `Standard (`Multi (`Cmp               ), Some (`SubColl)));

@@ -1,4 +1,4 @@
-archetype effect_control_for_collection
+archetype effect_control_for_collection_big_map
 
 asset myasset identified by str to big_map {
   str : string;

@@ -26,5 +26,8 @@ entry exec () {
 
     var v = my_asset[my_asset_id].value;
 
-    dorequire(v = 0i)
+    dorequire(v = 0i);
+
+    var b = my_asset.contains(my_asset_id);
+    dorequire(b)
 }
