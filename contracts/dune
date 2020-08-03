@@ -16,7 +16,6 @@
   (competition.arl as contracts/competition.arl)
   (empty.arl as contracts/empty.arl)
   (erc20.arl as contracts/erc20.arl)
-  (erc721.arl as contracts/erc721.arl)
   (escrow_basic.arl as contracts/escrow_basic.arl)
   (escrow_penalty.arl as contracts/escrow_penalty.arl)
   (escrow_simple.arl as contracts/escrow_simple.arl)
