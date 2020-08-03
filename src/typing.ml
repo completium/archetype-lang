@@ -396,6 +396,7 @@ type error_desc =
   | InvalidMapType
   | InvalidMethodInExec
   | InvalidMethodInFormula
+  | InvalidMethodWithBigMap            of ident
   | InvalidNumberOfArguments           of int * int
   | InvalidRecordFieldType
   | InvalidRoleExpression
@@ -407,10 +408,10 @@ type error_desc =
   | InvalidStateExpression
   | InvalidTypeForEntrypoint
   | InvalidTypeForEntrysig
-  | InvalidTypeForPk
-  | InvalidTypeForSet
   | InvalidTypeForMapKey
   | InvalidTypeForMapValue
+  | InvalidTypeForPk
+  | InvalidTypeForSet
   | InvalidTypeForVarWithFromTo
   | InvalidVarOrArgType
   | LabelInNonInvariant
@@ -435,6 +436,7 @@ type error_desc =
   | NoMatchingOperator                 of PT.operator * A.ptyp list
   | NonCodeLabel                       of ident
   | NonIterable
+  | NonIterableBigMapAsset             of ident
   | NonLoopLabel                       of ident
   | NoSuchMethod                       of ident
   | NoSuchSecurityPredicate            of ident
@@ -462,6 +464,7 @@ type error_desc =
   | TransferWithoutDest
   | UninitializedVar
   | UnknownAsset                       of ident
+  | UnknownAssetToProperty             of ident
   | UnknownEntry                       of ident
   | UnknownEnum                        of ident
   | UnknownField                       of ident * ident
@@ -575,6 +578,7 @@ let pp_error_desc fmt e =
   | InvalidMapType                     -> pp "Invalid map type"
   | InvalidMethodInExec                -> pp "Invalid method in execution"
   | InvalidMethodInFormula             -> pp "Invalid method in formula"
+  | InvalidMethodWithBigMap id         -> pp "Invalid method with big map asset: %s" id
   | InvalidNumberOfArguments (n1, n2)  -> pp "Invalid number of arguments: found '%i', but expected '%i'" n1 n2
   | InvalidRecordFieldType             -> pp "Invalid record field's type"
   | InvalidRoleExpression              -> pp "Invalid role expression"
@@ -611,6 +615,7 @@ let pp_error_desc fmt e =
   | NoLetInInstruction                 -> pp "No Let In in instruction"
   | NonCodeLabel i                     -> pp "Not a code label: %a" pp_ident i
   | NonIterable                        -> pp "Cannot iterate over"
+  | NonIterableBigMapAsset i           -> pp "Asset to big_map is not iterable: %s" i
   | NonLoopLabel i                     -> pp "Not a loop label: %a" pp_ident i
   | NoSuchMethod i                     -> pp "No such method: %a" pp_ident i
   | NoSuchSecurityPredicate i          -> pp "No such security predicate: %a" pp_ident i
@@ -638,6 +643,7 @@ let pp_error_desc fmt e =
   | TransferWithoutDest                -> pp "Transfer without destination"
   | UninitializedVar                   -> pp "This variable declaration is missing an initializer"
   | UnknownAsset i                     -> pp "Unknown asset: %a" pp_ident i
+  | UnknownAssetToProperty i           -> pp "Unknown asset to property: %a" pp_ident i
   | UnknownEntry i                     -> pp "Unknown entry: %a" pp_ident i
   | UnknownEnum i                      -> pp "Unknown enum: %a" pp_ident i
   | UnknownField (i1, i2)              -> pp "Unknown field: asset %a does not have a field %a" pp_ident i1 pp_ident i2
@@ -815,6 +821,7 @@ type ('args, 'rty) gmethod_ = {
   mth_place    : [`Both | `OnlyFormula | `OnlyExec ];
   mth_purity   : [`Pure | `Effect of A.container list];
   mth_totality : [`Total | `Partial];
+  mth_map_type : [`Both | `Standard ] ;
   mth_sig      : 'args * 'rty option;
 }
 
@@ -849,31 +856,31 @@ let methods : (string * method_) list =
   let c    = [A.Collection] in
   let c_p  = [A.Collection; Partition] in
 
-  let mk mth_name mth_place mth_purity mth_totality mth_sig =
-    { mth_name; mth_place; mth_purity; mth_totality; mth_sig; }
+  let mk mth_name mth_place mth_purity mth_totality mth_map_type mth_sig =
+    { mth_name; mth_place; mth_purity; mth_totality; mth_map_type; mth_sig; }
   in [
-    ("empty"       , mk A.Cempty        `OnlyFormula (`Pure       ) `Total   (`Fixed [                   ], Some (`Coll)));
-    ("singleton"   , mk A.Csingleton    `OnlyFormula (`Pure       ) `Total   (`Fixed [`The               ], Some (`Coll)));
-    ("isempty"     , mk A.Cisempty      `OnlyFormula (`Pure       ) `Total   (`Fixed [                   ], Some (`T A.vtbool)));
-    ("subsetof"    , mk A.Csubsetof     `OnlyFormula (`Pure       ) `Total   (`Fixed [`SubColl           ], Some (`T A.vtbool)));
-    ("union"       , mk A.Cunion        `OnlyFormula (`Pure       ) `Total   (`Fixed [`Coll              ], Some (`Coll)));
-    ("inter"       , mk A.Cinter        `OnlyFormula (`Pure       ) `Total   (`Fixed [`Coll              ], Some (`Coll)));
-    ("diff"        , mk A.Cdiff         `OnlyFormula (`Pure       ) `Total   (`Fixed [`Coll              ], Some (`Coll)));
-    ("add"         , mk A.Cadd          `Both        (`Effect cap ) `Total   (`Fixed [`ThePkForAggregate ], None));
-    ("remove"      , mk A.Cremove       `Both        (`Effect cap ) `Total   (`Fixed [`Pk                ], None));
-    ("clear"       , mk A.Cclear        `Both        (`Effect capv) `Total   (`Fixed [                   ], None));
-    ("removeif"    , mk A.Cremoveif     `Both        (`Effect cap ) `Total   (`Fixed [`Pred true         ], None));
-    ("removeall"   , mk A.Cremoveall    `Both        (`Effect  ap ) `Total   (`Fixed [                   ], None));
-    ("update"      , mk A.Cupdate       `Both        (`Effect c   ) `Total   (`Fixed [`Pk; `Ef true      ], None));
-    ("addupdate"   , mk A.Caddupdate    `Both        (`Effect c_p ) `Total   (`Fixed [`Pk; `Ef false     ], None));
-    ("contains"    , mk A.Ccontains     `Both        (`Pure       ) `Total   (`Fixed [`Pk                ], Some (`T A.vtbool)));
-    ("nth"         , mk A.Cnth          `Both        (`Pure       ) `Partial (`Fixed [`T A.vtnat         ], Some (`Pk)));
-    ("select"      , mk A.Cselect       `Both        (`Pure       ) `Total   (`Fixed [`Pred true         ], Some (`SubColl)));
-    ("sort"        , mk A.Csort         `OnlyExec    (`Pure       ) `Total   (`Multi (`Cmp               ), Some (`SubColl)));
-    ("count"       , mk A.Ccount        `Both        (`Pure       ) `Total   (`Fixed [                   ], Some (`T A.vtnat)));
-    ("sum"         , mk A.Csum          `Both        (`Pure       ) `Total   (`Fixed [`RExpr false       ], Some (`Ref 0)));
-    ("head"        , mk A.Chead         `Both        (`Pure       ) `Total   (`Fixed [`T A.vtnat         ], Some (`SubColl)));
-    ("tail"        , mk A.Ctail         `Both        (`Pure       ) `Total   (`Fixed [`T A.vtnat         ], Some (`SubColl)));
+    ("empty"       , mk A.Cempty        `OnlyFormula (`Pure       ) `Total   `Standard (`Fixed [                   ], Some (`Coll)));
+    ("singleton"   , mk A.Csingleton    `OnlyFormula (`Pure       ) `Total   `Standard (`Fixed [`The               ], Some (`Coll)));
+    ("isempty"     , mk A.Cisempty      `OnlyFormula (`Pure       ) `Total   `Standard (`Fixed [                   ], Some (`T A.vtbool)));
+    ("subsetof"    , mk A.Csubsetof     `OnlyFormula (`Pure       ) `Total   `Standard (`Fixed [`SubColl           ], Some (`T A.vtbool)));
+    ("union"       , mk A.Cunion        `OnlyFormula (`Pure       ) `Total   `Standard (`Fixed [`Coll              ], Some (`Coll)));
+    ("inter"       , mk A.Cinter        `OnlyFormula (`Pure       ) `Total   `Standard (`Fixed [`Coll              ], Some (`Coll)));
+    ("diff"        , mk A.Cdiff         `OnlyFormula (`Pure       ) `Total   `Standard (`Fixed [`Coll              ], Some (`Coll)));
+    ("add"         , mk A.Cadd          `Both        (`Effect cap ) `Total   `Both     (`Fixed [`ThePkForAggregate ], None));
+    ("remove"      , mk A.Cremove       `Both        (`Effect cap ) `Total   `Both     (`Fixed [`Pk                ], None));
+    ("clear"       , mk A.Cclear        `Both        (`Effect capv) `Total   `Standard (`Fixed [                   ], None));
+    ("removeif"    , mk A.Cremoveif     `Both        (`Effect cap ) `Total   `Standard (`Fixed [`Pred true         ], None));
+    ("removeall"   , mk A.Cremoveall    `Both        (`Effect  ap ) `Total   `Standard (`Fixed [                   ], None));
+    ("update"      , mk A.Cupdate       `Both        (`Effect c   ) `Total   `Standard (`Fixed [`Pk; `Ef true      ], None));
+    ("addupdate"   , mk A.Caddupdate    `Both        (`Effect c_p ) `Total   `Standard (`Fixed [`Pk; `Ef false     ], None));
+    ("contains"    , mk A.Ccontains     `Both        (`Pure       ) `Total   `Standard (`Fixed [`Pk                ], Some (`T A.vtbool)));
+    ("nth"         , mk A.Cnth          `Both        (`Pure       ) `Partial `Standard (`Fixed [`T A.vtnat         ], Some (`Pk)));
+    ("select"      , mk A.Cselect       `Both        (`Pure       ) `Total   `Standard (`Fixed [`Pred true         ], Some (`SubColl)));
+    ("sort"        , mk A.Csort         `OnlyExec    (`Pure       ) `Total   `Standard (`Multi (`Cmp               ), Some (`SubColl)));
+    ("count"       , mk A.Ccount        `Both        (`Pure       ) `Total   `Standard (`Fixed [                   ], Some (`T A.vtnat)));
+    ("sum"         , mk A.Csum          `Both        (`Pure       ) `Total   `Standard (`Fixed [`RExpr false       ], Some (`Ref 0)));
+    ("head"        , mk A.Chead         `Both        (`Pure       ) `Total   `Standard (`Fixed [`T A.vtnat         ], Some (`SubColl)));
+    ("tail"        , mk A.Ctail         `Both        (`Pure       ) `Total   `Standard (`Fixed [`T A.vtnat         ], Some (`SubColl)));
   ]
 
 let methods = Mid.of_list methods
@@ -2598,7 +2605,7 @@ let rec for_xexpr
 
         let the = for_xexpr env the in
 
-        let the, asset, mname, (place, purity, totality), args, rty =
+        let the, asset, mname, (place, map_type, purity, totality), args, rty =
           match the.A.type_ with
           | None ->
             bailout ()
@@ -2611,7 +2618,7 @@ let rec for_xexpr
                 let rty = Option.bind (type_of_mthtype asset amap) (snd method_.mth_sig) in
 
                 (the, Some (asset, c), method_.mth_name,
-                 (method_.mth_place, method_.mth_purity, method_.mth_totality), args, rty)
+                 (method_.mth_place, method_.mth_map_type, method_.mth_purity, method_.mth_totality), args, rty)
 
               | None ->
                 let infos = for_api_call mode env (loc tope) (`Typed the, m, args) in
@@ -2619,7 +2626,7 @@ let rec for_xexpr
                 let rty =
                   Option.map (fun ty -> let `T ty = ty in ty) (snd (method_.mth_sig)) in
                 (the, None, method_.mth_name,
-                 (method_.mth_place, method_.mth_purity, method_.mth_totality), args, rty)
+                 (method_.mth_place, method_.mth_map_type, method_.mth_purity, method_.mth_totality), args, rty)
             end
         in
 
@@ -2643,6 +2650,11 @@ let rec for_xexpr
             Env.emit_error env (loc tope, InvalidEffectForCtn (ctn, allowed))
           | _, _, _ ->
             ()
+        end;
+
+        begin match asset, map_type with
+          | Some (asset, _), `Standard when asset.as_bm -> Env.emit_error env (loc tope, InvalidMethodWithBigMap (unloc m))
+          | _ -> ()
         end;
 
         let rty =
@@ -3528,13 +3540,18 @@ let rec for_instruction_r
             match Type.as_asset_collection ty with
             | Some _ ->
               let infos = for_gen_method_call (expr_mode kind) env (loc i) (`Typed the, m, args) in
-              let the, (_, c), method_, args, _ = Option.get_fdfl bailout infos in
+              let the, (assetdecl , c), method_, args, _ = Option.get_fdfl bailout infos in
 
               begin match c, method_.mth_purity with
                 | ctn, `Effect allowed when not (List.mem ctn allowed) ->
                   Env.emit_error env (loc i, InvalidEffectForCtn (ctn, allowed))
                 | _, _ ->
                   () end;
+
+              begin match assetdecl.as_bm, method_.mth_map_type with
+                | true, `Standard -> Env.emit_error env (loc i, InvalidMethodWithBigMap (unloc m))
+                | _ -> ()
+              end;
 
               env, mki (A.Icall (Some the, A.Cconst method_.mth_name, args))
 
@@ -3662,6 +3679,7 @@ let rec for_instruction_r
         match e.A.type_ with
         | Some (A.Tcontainer (A.Tasset asset, _)) ->
           let asset = Env.Asset.get env (unloc asset) in
+          if asset.as_bm then Env.emit_error env (loc pe, NonIterableBigMapAsset (unloc asset.as_name));
           if   is_for_ident `Double
           then (Env.emit_error env (loc x, InvalidForIdentSimple); None)
           else Some [asset.as_pkty]
@@ -4379,6 +4397,8 @@ let for_asset_decl pkey (env : env) ((adecl, decl) : assetdecl * PT.asset_decl l
   let state   = List.pmap (function PT.APOstates      st -> Some st | _ -> None) postopts in
   let inits   = List.pmap (function PT.APOinit        it -> Some it | _ -> None) postopts in
 
+  let valid_to_type_values = ["big_map"] in
+  List.iter (function PT.AOto v when not (List.exists (String.equal (unloc v)) valid_to_type_values) -> Env.emit_error env (loc v, UnknownAssetToProperty (unloc v)) | _ -> () ) opts;
   let bigmaps = List.exists (function PT.AOto {pldesc = "big_map"} -> true | _ -> false) opts in
 
   let pks =
@@ -4408,15 +4428,15 @@ let for_asset_decl pkey (env : env) ((adecl, decl) : assetdecl * PT.asset_decl l
 
   let _ : Sstr.t =
     List.fold_left (fun seen pk ->
-      if Sstr.mem (unloc pk) seen then
-        Env.emit_error env (loc pk, DuplicatedPkeyField (unloc pk));
-      Sstr.add (unloc pk) seen) Sstr.empty pks in
+        if Sstr.mem (unloc pk) seen then
+          Env.emit_error env (loc pk, DuplicatedPkeyField (unloc pk));
+        Sstr.add (unloc pk) seen) Sstr.empty pks in
 
   begin
     let opks =
       List.filter
         (fun { pldesc = (fd, _, _, _) } ->
-          List.exists (fun f -> unloc f = fd) pks)
+           List.exists (fun f -> unloc f = fd) pks)
         fields in
     let opks = List.map (unloc %> proj4_1) opks in
 
@@ -4480,18 +4500,18 @@ let for_asset_decl pkey (env : env) ((adecl, decl) : assetdecl * PT.asset_decl l
 
     if List.is_empty pks then env, None else
 
-    let aout =
-      { pas_name   = x;
-        pas_fields = fields;
-        pas_pkty   = pkty;
-        pas_pk     = pks;
-        pas_sortk  = sortks;
-        pas_bm     = bigmaps;
-        pas_invs   = invs;
-        pas_state  = state;
-        pas_init   = List.flatten inits; }
+      let aout =
+        { pas_name   = x;
+          pas_fields = fields;
+          pas_pkty   = pkty;
+          pas_pk     = pks;
+          pas_sortk  = sortks;
+          pas_bm     = bigmaps;
+          pas_invs   = invs;
+          pas_state  = state;
+          pas_init   = List.flatten inits; }
 
-    in env, Some aout
+      in env, Some aout
 
   with E.Bailout -> env, None
 

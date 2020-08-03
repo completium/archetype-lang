@@ -1,0 +1,30 @@
+archetype asset_big_map
+
+asset o_asset identified by oid {
+  oid : int;
+  ovalue : string;
+}
+
+asset my_asset to big_map {
+  id : string;
+  value : int = 0;
+  col : partition<o_asset> = [];
+} initialized by {
+  { "id0"; 0i; [] };
+  { "id1"; 1i; [] };
+  { "id2"; 2i; [] }
+}
+
+entry exec () {
+    var my_asset_id = "id0";
+
+    my_asset.add({ id = my_asset_id; value = 0; col = [] });
+    my_asset.remove(my_asset_id);
+
+    my_asset[my_asset_id].col.add({ 0; "ovalue" });
+    my_asset[my_asset_id].col.remove(0);
+
+    var v = my_asset[my_asset_id].value;
+
+    dorequire(v = 0i)
+}
