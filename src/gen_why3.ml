@@ -3517,7 +3517,7 @@ let fold_exns m body : term list =
     | M.Mself _ -> acc @ [Texn Enotfound]
     | M.Mcast (Tbuiltin Baddress, Tentrysig _, v) -> internal_fold_exn (acc @ [Texn Enotfound]) v
     | M.Mtransfer (v, TKself _) -> internal_fold_exn (acc @ [Texn Enotfound]) v
-    | M.Mtransfer (_, _) -> acc
+    | M.Mtransfer (v, _) -> internal_fold_exn acc v
     | _ -> M.fold_term internal_fold_exn acc term in
   Tools.List.dedup (internal_fold_exn [] body)
 
