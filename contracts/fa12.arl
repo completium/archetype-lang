@@ -30,5 +30,5 @@ entry dotransfer (from_ : address, to_ : address, value : nat) {
 }
 
 entry approve(ispender : address, value : nat) {
-    allowance.addupdate((caller, ispender), { amount += value });
+    allowance.addupdate((caller, ispender), { amount = value });
 }
