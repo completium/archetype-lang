@@ -91,7 +91,7 @@ let extract_properties (pt : archetype) : property list =
     match unloc spi with
     | Vassert (label, formula, invs, _) ->
       f (label, formula, invs) Assert
-    | Vpostcondition (label, formula, invs, _, Some PKPost) ->
+    | Vpostcondition (label, formula, invs, _, _) ->
       f (label, formula, invs) PostCondition
     | _ -> None
   in
