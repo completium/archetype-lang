@@ -113,7 +113,11 @@ let pp_model fmt (model : model) =
     | Ttuple ts ->
       Format.fprintf fmt "%a"
         (pp_list " * " pp_type) ts
-    | Tmap (k, v) ->
+    | Tmap (true, k, v) ->
+      Format.fprintf fmt "(%a, %a) bigmap"
+        pp_type k
+        pp_type v
+    | Tmap (false, k, v) ->
       Format.fprintf fmt "(%a, %a) map"
         pp_type k
         pp_type v
@@ -695,7 +699,7 @@ let pp_model fmt (model : model) =
       | Massets l ->
         begin
           match mtt.type_ with
-          | Tmap (_k , _v) ->
+          | Tmap (_, _k , _v) ->
             begin
               match l with
               | [] -> Format.fprintf fmt "[]"

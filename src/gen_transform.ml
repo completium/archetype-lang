@@ -2319,8 +2319,9 @@ let split_key_values (model : model) : model =
         match x.model_type with
         | MTasset an ->
           let an = dumloc an in
+          let asset = Utils.get_asset model (unloc an) in
           let _k, t = Utils.get_asset_key model (unloc an) in
-          let type_asset = Tmap (t, Tasset an) in
+          let type_asset = Tmap (asset.big_map, t, Tasset an) in
           let default =
             match x.default.node with
             | Massets l -> mk_mterm (Mlitmap (List.map (fun x -> get_asset_assoc_key_value (unloc an) x) l)) type_asset
@@ -2381,9 +2382,9 @@ let replace_for_to_iter (model : model) : model =
     | Mfor (FIsimple id, ICKlist ({node = _; type_ = Tlist t} as col), body, Some lbl) ->
       process [id] col t body lbl
 
-    | Mfor (FIdouble (kid, vid), ICKmap ({node = _; type_ = Tmap (kt, vt)} as col), body, Some lbl) ->
+    | Mfor (FIdouble (kid, vid), ICKmap ({node = _; type_ = Tmap (b, kt, vt)} as col), body, Some lbl) ->
       let t = Ttuple [kt; vt] in
-      let col = mk_mterm (Mcast(Tmap (kt, vt), Tlist t, col)) (Tlist t) in
+      let col = mk_mterm (Mcast(Tmap (b, kt, vt), Tlist t, col)) (Tlist t) in
       process [kid; vid] col t body lbl
 
     | Mfor (FIsimple id, col, body, Some lbl) ->
@@ -2451,8 +2452,8 @@ let remove_duplicate_key (model : model) : model =
           else
             let default, typ =
               match x.default.node, x.typ with
-              | Mlitmap l, Tmap (b, Tasset an) ->
-                let t = Tmap (b, Tasset (dumloc ((unloc an) ^ "_storage"))) in
+              | Mlitmap l, Tmap (b, kt, Tasset an) ->
+                let t = Tmap (b, kt, Tasset (dumloc ((unloc an) ^ "_storage"))) in
                 let mt = mk_mterm (Mlitmap (List.map (fun (k, v) -> (k, remove_key_value_for_asset_node v)) l)) t in
                 mt, t
               | _ -> x.default, x.typ

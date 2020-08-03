@@ -135,7 +135,7 @@ let rec map_mtype m (t : M.type_) : loc_typ =
       | M.Ttuple l                            -> Tytuple (l |> List.map (map_mtype m))
       | M.Tunit                               -> Tyunit
       | M.Tstate                              -> Tystate
-      | M.Tmap (_, _)                         -> Tycoll (dl (mk_map_name m t))
+      | M.Tmap (_, _, _)                      -> Tycoll (dl (mk_map_name m t))
       | M.Tstorage                            -> Tystorage
       | M.Toperation                          -> Tyoperation (* TODO: replace by the right type *)
       | M.Tprog _                             -> Tyunit (* TODO: replace bmy the right type *)
@@ -820,7 +820,7 @@ let mk_map_clone id k t =
 
 let mk_map_type m (t : M.type_) =
   match t with
-  | Tmap (k,v) ->
+  | Tmap (_, k, v) ->
     let map_name = mk_map_name m t in
     let t = M.Ttuple [k;v] in
     let typ = map_mtype m t in
@@ -1943,17 +1943,17 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     (* map api expression *)
 
     | Mmapput (kt, vt, c, k, v)   ->
-      Tadd (dl (mk_map_name m (M.Tmap (kt, vt))), dl (Ttuple [ map_mterm m ctx k; map_mterm m ctx v]), map_mterm m ctx c)
+      Tadd (dl (mk_map_name m (M.Tmap (false, kt, vt))), dl (Ttuple [ map_mterm m ctx k; map_mterm m ctx v]), map_mterm m ctx c)
     | Mmapremove (kt, vt, c, k)   ->
-      Tremove (dl (mk_map_name m (M.Tmap (kt, vt))),map_mterm m ctx k, map_mterm m ctx c)
+      Tremove (dl (mk_map_name m (M.Tmap (false, kt, vt))),map_mterm m ctx k, map_mterm m ctx c)
     | Mmapget (kt, vt, c, k)      -> Tsnd(
-        dl (Tgetforce (dl (mk_map_name m (M.Tmap (kt, vt))),map_mterm m ctx k, map_mterm m ctx c)))
+        dl (Tgetforce (dl (mk_map_name m (M.Tmap (false, kt, vt))),map_mterm m ctx k, map_mterm m ctx c)))
     | Mmapgetopt (kt, vt, c, k)   -> Tsndopt(
-        dl (Tget (dl (mk_map_name m (M.Tmap (kt, vt))),map_mterm m ctx k, map_mterm m ctx c)))
+        dl (Tget (dl (mk_map_name m (M.Tmap (false, kt, vt))),map_mterm m ctx k, map_mterm m ctx c)))
     | Mmapcontains (kt, kv, c, k) ->
-      Tcontains (dl (mk_map_name m (M.Tmap (kt, kv))),map_mterm m ctx k, map_mterm m ctx c)
+      Tcontains (dl (mk_map_name m (M.Tmap (false, kt, kv))),map_mterm m ctx k, map_mterm m ctx c)
     | Mmaplength (k, v, c)      ->
-      let tmap = mk_map_name m (M.Tmap (k,v)) in Tcard (dl tmap,map_mterm m ctx c)
+      let tmap = mk_map_name m (M.Tmap (false, k,v)) in Tcard (dl tmap,map_mterm m ctx c)
     (* builtin functions *)
     | Mmax (l,r) ->
       begin match mt.type_ with

@@ -61,8 +61,12 @@ let rec pp_type fmt t =
   | Tset k ->
     Format.fprintf fmt "set<%a>"
       pp_type k
-  | Tmap (k, v) ->
+  | Tmap (false, k, v) ->
     Format.fprintf fmt "map<%a, %a>"
+      pp_type k
+      pp_type v
+  | Tmap (true, k, v) ->
+    Format.fprintf fmt "bigmap<%a, %a>"
       pp_type k
       pp_type v
   | Trecord id ->

@@ -91,7 +91,7 @@ let to_model (ast : A.ast) : M.model =
     | A.Tcontainer (t, c)  -> M.Tcontainer (ptyp_to_type t, to_container c)
     | A.Tset t             -> M.Tset (ptyp_to_type t)
     | A.Tlist t            -> M.Tlist (ptyp_to_type t)
-    | A.Tmap (k, v)        -> M.Tmap (ptyp_to_type k, ptyp_to_type v)
+    | A.Tmap (k, v)        -> M.Tmap (false, ptyp_to_type k, ptyp_to_type v)
     | A.Ttuple l           -> M.Ttuple (List.map ptyp_to_type l)
     | A.Toperation         -> M.Toperation
     | A.Tentrysig t        -> M.Tentrysig (ptyp_to_type t)
@@ -206,7 +206,7 @@ let to_model (ast : A.ast) : M.model =
 
   let extract_builtin_type_map (v : M.mterm) : M.type_ * M.type_ =
     match v with
-    | {type_ = Tmap (k, v); _} -> k, v
+    | {type_ = Tmap (_, k, v); _} -> k, v
     | _ -> assert false
   in
 

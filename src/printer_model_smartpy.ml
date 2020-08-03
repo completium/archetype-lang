@@ -89,7 +89,11 @@ let pp_model fmt (model : model) =
     | Tset k ->
       Format.fprintf fmt "%a set"
         pp_type k
-    | Tmap (k, v) ->
+    | Tmap (true, k, v) ->
+      Format.fprintf fmt "(%a, %a) bigmap"
+        pp_type k
+        pp_type_ v
+    | Tmap (false, k, v) ->
       Format.fprintf fmt "(%a, %a) map"
         pp_type k
         pp_type_ v
@@ -686,7 +690,7 @@ let pp_model fmt (model : model) =
           (fun fmt _ -> begin
                let k, v =
                  match mtt.type_ with
-                 | Tmap (k, v) -> k, v
+                 | Tmap (_, k, v) -> k, v
                  | _ -> assert false
                in
                Format.fprintf fmt "sp.map(%atkey=%a, tvalue= %a)"

@@ -179,7 +179,11 @@ let pp_model_internal fmt (model : model) b =
     | Tset k ->
       Format.fprintf fmt "set(%a)"
         pp_type k
-    | Tmap (k, v) ->
+    | Tmap (true, k, v) ->
+      Format.fprintf fmt "big_map(%a, %a)"
+        pp_type k
+        pp_type v
+    | Tmap (false, k, v) ->
       Format.fprintf fmt "map(%a, %a)"
         pp_type k
         pp_type v
@@ -202,13 +206,14 @@ let pp_model_internal fmt (model : model) b =
   let rec pp_pretty_type fmt t =
     match t with
     | Ttuple[Tbuiltin Bint; Tbuiltin Bint] -> pp_type fmt (Tbuiltin Brational)
-    | Tlist t           -> Format.fprintf fmt "list_%a" pp_pretty_type t
-    | Tcontainer (t, c) -> Format.fprintf fmt "container_%a_%a" pp_pretty_type t pp_pretty_container c
-    | Toption t         -> Format.fprintf fmt "option_%a" pp_pretty_type t
-    | Ttuple l          -> Format.fprintf fmt "tuple_%a" (pp_list "_" pp_pretty_type) l
-    | Tset t            -> Format.fprintf fmt "set_%a" pp_pretty_type t
-    | Tmap (k, v)       -> Format.fprintf fmt "map_%a_%a" pp_pretty_type k pp_pretty_type v
-    | Tentrysig t       -> Format.fprintf fmt "entrysig_%a" pp_pretty_type t
+    | Tlist t            -> Format.fprintf fmt "list_%a" pp_pretty_type t
+    | Tcontainer (t, c)  -> Format.fprintf fmt "container_%a_%a" pp_pretty_type t pp_pretty_container c
+    | Toption t          -> Format.fprintf fmt "option_%a" pp_pretty_type t
+    | Ttuple l           -> Format.fprintf fmt "tuple_%a" (pp_list "_" pp_pretty_type) l
+    | Tset t             -> Format.fprintf fmt "set_%a" pp_pretty_type t
+    | Tmap (true,  k, v) -> Format.fprintf fmt "bigmap_%a_%a" pp_pretty_type k pp_pretty_type v
+    | Tmap (false, k, v) -> Format.fprintf fmt "map_%a_%a" pp_pretty_type k pp_pretty_type v
+    | Tentrysig t        -> Format.fprintf fmt "entrysig_%a" pp_pretty_type t
     | _ -> pp_type fmt t
   in
 
@@ -645,8 +650,8 @@ let pp_model_internal fmt (model : model) b =
     | Massets l ->
       begin
         match l, mtt.type_ with
-        | [], Tmap (k , v) -> Format.fprintf fmt "(map end : map(%a, %a))" pp_type k pp_type v
-        | _, Tmap (k , v) -> Format.fprintf fmt "(map %a end : map(%a, %a))" (pp_list "; " f) l pp_type k pp_type v
+        | [], Tmap (_b, k , v) -> Format.fprintf fmt "(map end : map(%a, %a))" pp_type k pp_type v
+        | _, Tmap (_b, k , v) -> Format.fprintf fmt "(map %a end : map(%a, %a))" (pp_list "; " f) l pp_type k pp_type v
         | [], _ -> Format.fprintf fmt "(set[] : %a)" pp_type mtt.type_
         | _, _ -> Format.fprintf fmt "set@\n  @[%a@]@\nend"
                     (pp_list "@\n" (fun fmt -> Format.fprintf fmt "%a;" f)) l

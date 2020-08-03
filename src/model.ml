@@ -64,7 +64,7 @@ type type_ =
   | Toption of type_
   | Ttuple of type_ list
   | Tset of type_
-  | Tmap of type_ * type_
+  | Tmap of bool * type_ * type_
   | Trecord of lident
   | Tunit
   | Tstorage
@@ -993,7 +993,7 @@ let rec cmp_type
   | Toption t1, Toption t2                   -> cmp_type t1 t2
   | Ttuple l1, Ttuple l2                     -> List.for_all2 cmp_type l1 l2
   | Tset b1, Tset b2                         -> cmp_type b1 b2
-  | Tmap (k1, v1), Tmap (k2, v2)             -> cmp_type k1 k2 && cmp_type v1 v2
+  | Tmap (b1, k1, v1), Tmap (b2, k2, v2)     -> b1 = b2 && cmp_type k1 k2 && cmp_type v1 v2
   | Trecord i1, Trecord i2                   -> cmp_lident i1 i2
   | Tunit, Tunit                             -> true
   | Tstorage, Tstorage                       -> true
@@ -1395,7 +1395,7 @@ let map_type (f : type_ -> type_) = function
   | Toption t         -> Toption (f t)
   | Ttuple l          -> Ttuple (List.map f l)
   | Tset k            -> Tset k
-  | Tmap (k, v)       -> Tmap (k, f v)
+  | Tmap (b, k, v)    -> Tmap (b, k, f v)
   | Trecord id        -> Trecord id
   | Tunit             -> Tunit
   | Tstorage          -> Tstorage
@@ -3381,7 +3381,7 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
     | Toption a         -> Toption (for_type a)
     | Ttuple l          -> Ttuple (List.map for_type l)
     | Tset k            -> Tset k
-    | Tmap (k, v)       -> Tmap (k, for_type v)
+    | Tmap (b, k, v)    -> Tmap (b, k, for_type v)
     | Trecord id        -> Trecord (g KIrecordname id)
     | Tunit             -> t
     | Tstorage          -> t
@@ -4014,7 +4014,7 @@ end = struct
       begin
         let l, an = deloc an in
         let idparam = mkloc l (an ^ "_values") in
-        Some (mk_mterm (Mvar(idparam, Vparam) ) (Tmap(Tbuiltin Bint, Tasset (dumloc "myasset"))))
+        Some (mk_mterm (Mvar(idparam, Vparam) ) (Tmap(false, Tbuiltin Bint, Tasset (dumloc "myasset"))))
       end
     | _ -> None
 
@@ -4598,14 +4598,14 @@ end = struct
   let get_all_set_types (model : model) : type_ list =
     let rec for_type accu t =
       match t with
-      | Tset _       -> add_type accu t
-      | Tlist   t    -> for_type accu t
-      | Toption t    -> for_type accu t
-      | Ttuple  ts   -> List.fold_left (for_type) accu ts
-      | Tmap (_, t)  -> for_type accu t
-      | Tentrysig t  -> for_type accu t
-      | Tprog t      -> for_type accu t
-      | Tvset (_, t) -> for_type accu t
+      | Tset _         -> add_type accu t
+      | Tlist   t      -> for_type accu t
+      | Toption t      -> for_type accu t
+      | Ttuple  ts     -> List.fold_left (for_type) accu ts
+      | Tmap (_, _, t) -> for_type accu t
+      | Tentrysig t    -> for_type accu t
+      | Tprog t        -> for_type accu t
+      | Tvset (_, t)   -> for_type accu t
       | _ -> accu
     in
     get_all_gen_type for_type model
@@ -4613,13 +4613,13 @@ end = struct
   let get_all_list_types (model : model) : type_ list =
     let rec for_type accu t =
       match t with
-      | Tlist   tv   -> add_type (for_type accu tv) t
-      | Toption t    -> for_type accu t
-      | Ttuple  ts   -> List.fold_left (for_type) accu ts
-      | Tmap (_, t)  -> for_type accu t
-      | Tentrysig t  -> for_type accu t
-      | Tprog t      -> for_type accu t
-      | Tvset (_, t) -> for_type accu t
+      | Tlist   tv     -> add_type (for_type accu tv) t
+      | Toption t      -> for_type accu t
+      | Ttuple  ts     -> List.fold_left (for_type) accu ts
+      | Tmap (_, _, t) -> for_type accu t
+      | Tentrysig t    -> for_type accu t
+      | Tprog t        -> for_type accu t
+      | Tvset (_, t)   -> for_type accu t
       | _ -> accu
     in
     get_all_gen_type for_type model
@@ -4627,13 +4627,13 @@ end = struct
   let get_all_map_types (model : model) : type_ list =
     let rec for_type accu t =
       match t with
-      | Tlist     t       -> for_type accu t
-      | Toption   t       -> for_type accu t
-      | Ttuple    ts      -> List.fold_left (for_type) accu ts
-      | Tmap      (_, tv) -> add_type (for_type accu tv) t
-      | Tentrysig t       -> for_type accu t
-      | Tprog     t       -> for_type accu t
-      | Tvset     (_, t)  -> for_type accu t
+      | Tlist     t          -> for_type accu t
+      | Toption   t          -> for_type accu t
+      | Ttuple    ts         -> List.fold_left (for_type) accu ts
+      | Tmap      (_, _, tv) -> add_type (for_type accu tv) t
+      | Tentrysig t          -> for_type accu t
+      | Tprog     t          -> for_type accu t
+      | Tvset     (_, t)     -> for_type accu t
       | _ -> accu
     in
     get_all_gen_type for_type model
