@@ -234,7 +234,7 @@ let rec pp_term outer pos fmt = function
       (pp_term e_if PRight) i
       (pp_if_with_paren (pp_term e_then PRight)) t
   | Tif (i,t, Some e)    ->
-    Format.fprintf fmt "@[if %a then @\n  @[%a @]@\nelse @\n  @[%a @]@]"
+    Format.fprintf fmt "@[if %a then (@\n  @[%a @])@\nelse (@\n  @[%a @])@]"
       (pp_term e_if PRight) i
       (pp_if_with_paren (pp_term e_then PRight)) t
       (pp_if_with_paren (pp_term e_else PRight)) e
@@ -303,7 +303,7 @@ let rec pp_term outer pos fmt = function
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
   | Tcsum (i,e1) ->
-    Format.fprintf fmt "%a.csum %a"
+    Format.fprintf fmt "%a.sum_formula %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
   | Tcsort (i,e1) ->
@@ -563,8 +563,13 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "%a.vcontent %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e
-  | Ttocoll (i,e1,e2) ->
+  | Tfromfield (i,e1,e2) ->
     Format.fprintf fmt "%a.from_field %a %a"
+      pp_str (String.capitalize_ascii i)
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
+  | Tfromview (i,e1,e2) ->
+    Format.fprintf fmt "%a.from_view %a %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
@@ -617,10 +622,11 @@ let rec pp_term outer pos fmt = function
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
   | Tlnth _ -> pp_str fmt "TODO_Tlnth"
-  | Tselect (i1,i2,e) ->
-    Format.fprintf fmt "%a.select %a %a"
+  | Tselect (i1,i2,l,e) ->
+    Format.fprintf fmt "%a.select (%a %a) %a"
     pp_str (String.capitalize_ascii i1)
     pp_str i2
+    (pp_list " " (pp_term outer pos)) l
     (pp_with_paren (pp_term outer pos)) e
   | Twitness i ->
     Format.fprintf fmt "%a.witness"

@@ -1025,14 +1025,18 @@ module Collection
   end in
   internal_view_to_list (velts v)
 
-  (* ------------------------------------------------------------------------ *)
+  (* ----------------------------------------------------------------------- *)
+  let function from_view (v : view) (c : collection) : collection
+  = mk (N.mk (view_to_list v c))
+
+  (* ----------------------------------------------------------------------- *)
   let predicate lek k1 k2 = eqk k1 k2
 
-  (* ------------------------------------------------------------------------ *)
+  (* ----------------------------------------------------------------------- *)
   clone InsertionSort as K with type elt = tk,
                                 val le = lek
 
-  (* ------------------------------------------------------------------------ *)
+  (* ----------------------------------------------------------------------- *)
   let rec function to_view (c : collection) : view
   ensures { K.sorted (velts result) }
   ensures { forall k. vcontains k result <-> forall e. get k c = Some e <-> keyt e = k }
@@ -1316,6 +1320,10 @@ module Sum
     end
   in
   internal_sum (elts v) 0
+
+  (* ------------------------------------------------------------------------ *)
+  (* TODO : theory *)
+  function sum_formula (c : collection) : int
 
   (* ------------------------------------------------------------------------ *)
   lemma sum_empty:

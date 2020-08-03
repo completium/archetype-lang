@@ -103,7 +103,8 @@ type ('e,'t,'i) abstract_term =
   | Temptyview of 'i
   | Temptyfield of 'i
   | Tcard   of 'i * 'e
-  | Ttocoll  of 'i * 'e * 'e
+  | Tfromfield  of 'i * 'e * 'e
+  | Tfromview  of 'i * 'e * 'e
   | Ttoview of 'i * 'e
   | Tviewtolist of 'i * 'e *'e
   | Telts of 'i * 'e
@@ -207,7 +208,7 @@ type ('e,'t,'i) abstract_term =
   | Tcnth    of 'i * 'e * 'e
   | Tvnth    of 'i * 'e * 'e
   | Tlnth   of 'i * 'e * 'e
-  | Tselect of 'i * 'i * 'e
+  | Tselect of 'i * 'i * 'e list * 'e
   | Twitness of 'i
   (* option *)
   | Tnone
@@ -416,7 +417,8 @@ and map_abstract_term
   | Tcontent (i,e)     -> Tcontent (map_i i, map_e e)
   | Tcontains (i,e1,e2)-> Tcontains (map_i i, map_e e1, map_e e2)
   | Tvcontent (i,e)    -> Tvcontent (map_i i, map_e e)
-  | Ttocoll (i,e1,e2)  -> Ttocoll (map_i i, map_e e1, map_e e2)
+  | Tfromfield (i,e1,e2)  -> Tfromfield (map_i i, map_e e1, map_e e2)
+  | Tfromview (i,e1,e2)  -> Tfromview (map_i i, map_e e1, map_e e2)
   | Ttoview (i,e)      -> Ttoview (map_i i, map_e e)
   | Tviewtolist (i,e1,e2) -> Tviewtolist (map_i i, map_e e1, map_e e2)
   | Telts (i,e)        -> Telts (map_i i, map_e e)
@@ -499,7 +501,7 @@ and map_abstract_term
   | Tcnth (i,e1,e2)    -> Tcnth (map_i i, map_e e1, map_e e2)
   | Tvnth (i,e1,e2)    -> Tvnth (map_i i, map_e e1, map_e e2)
   | Tlnth (i,e1,e2)    -> Tlnth (map_i i, map_e e1, map_e e2)
-  | Tselect (i1,i2,e)  -> Tselect (map_i i1, map_i i2, map_e e)
+  | Tselect (i1,i2,l,e)-> Tselect (map_i i1, map_i i2, List.map map_e l, map_e e)
   | Twitness i         -> Twitness (map_i i)
   | Tnone              -> Tnone
   | Tsome e            -> Tsome (map_e e)
@@ -833,7 +835,8 @@ let compare_abstract_term
   | Tcontent (i1,e1), Tcontent (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tcontains (i1,e1,e3), Tcontains (i2,e2,e4) -> cmpi i1 i2 && cmpe e1 e2 && cmpe e3 e4
   | Tvcontent (i1,e1), Tvcontent (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
-  | Ttocoll (i1,e1,f1), Ttocoll (i2,e2,f2) -> cmpi i1 i2 && cmpe e1 e2 && cmpe f1 f2
+  | Tfromfield (i1,e1,f1), Tfromfield (i2,e2,f2) -> cmpi i1 i2 && cmpe e1 e2 && cmpe f1 f2
+  | Tfromview (i1,e1,f1), Tfromview (i2,e2,f2) -> cmpi i1 i2 && cmpe e1 e2 && cmpe f1 f2
   | Ttoview (i1,e1), Ttoview (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tviewtolist (i1,e1,f1), Tviewtolist (i2,e2,f2) -> cmpi i1 i2 && cmpe e1 e2 && cmpe f1 f2
   | Telts (i1,e1), Telts (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
@@ -910,12 +913,12 @@ let compare_abstract_term
   | Tvempty (i1,e1), Tvempty (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tsingl (i1,e1), Tsingl (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tvhead (i1,e1,e2), Tvhead (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
-  | Tchead (i1,e1,e2), Tchead (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
+  | Tchead (i1,e1,f1), Tchead (i2,e2,f2) -> cmpi i1 i2 && cmpe e1 e2 && cmpe f1 f2
   | Tctail (i1,e1,e2), Tctail (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tvtail (i1,e1,e2), Tvtail (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tcnth (i1,e1,e2), Tcnth (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tvnth (i1,e1,e2), Tvnth (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
-  | Tselect (i1,i2,e1), Tselect (i3,i4,e2) -> cmpi i1 i3 && cmpi i2 i4 && cmpe e1 e2
+  | Tselect (i1,i2,l1,e1), Tselect (i3,i4,l2,e2) -> cmpi i1 i3 && cmpi i2 i4 && List.for_all2 cmpe l1 l2 && cmpe e1 e2
   | Twitness i1, Twitness i2 -> cmpi i1 i2
   | Tnone, Tnone -> true
   | Tsome e1, Tsome e2 -> cmpe e1 e2
