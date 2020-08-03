@@ -1,53 +1,29 @@
 archetype erc20
 
-constant name : string = "mytoken"
-
-constant total : int = 1000
+constant total : int = 1000000000000000
+variable onetoken : int = 1000000
 with {
   i0: total > 0
 }
 
-asset allowance {
-    a_id    : int;
-    allowed : address;
-    amount  : int;
+asset allowance identified by allower spender {
+  allower     : address;
+  spender     : address;
+  amount      : int = 0;
 } with {
-    i2 : amount > 0;
+  i2 : amount > 0;
 }
 
 asset tokenHolder identified by holder {
-    holder     : address;
-    tokens     : int;
-    allowances : aggregate<allowance>;
+  holder     : address;
+  tokens     : int = 0;
 } with {
-    i1: tokens >= 0;
-    i3: allowances.sum(the.amount) <= tokens;
+  i1: tokens >= 0;
 } initialized by {
-  { holder = caller; tokens = total; allowances = [] }
+  { holder = caller; tokens = total }
 }
 
 entry dotransfer (dest : pkey<tokenHolder>, value : int) {
-
-  specification {
-    p1 : before.tokenHolder.sum(tokens) = tokenHolder.sum(tokens);
-    p2 : let some th = tokenHolder[dest] in
-         let some bth = before.tokenHolder[dest] in
-         th.tokens = bth.tokens + value
-         otherwise true
-         otherwise true;
-    p3 : let some thc = tokenHolder[caller] in
-         let some bthc = before.tokenHolder[caller] in
-         thc.tokens = bthc.tokens - value
-         otherwise true
-         otherwise true;
-    p4 : let some th = tokenHolder[dest] in
-         forall t in tokenHolder,
-         forall bt in before.tokenHolder,
-         t.holder <> th.holder ->
-         t.holder <> caller ->
-         t.tokens = bt.tokens
-         otherwise true;
-  }
 
   failif {
     f0 : value < 0;
@@ -55,7 +31,41 @@ entry dotransfer (dest : pkey<tokenHolder>, value : int) {
   }
 
   effect {
-    tokenHolder.update( tokenHolder[dest].holder, { tokens += value });
+    tokenHolder.addupdate( dest, { tokens += value });
     tokenHolder.update( caller, { tokens -= value })
+  }
+}
+
+entry approve(ispender : address, value : int) {
+  require {
+    d1 : tokenHolder[caller].tokens >= value;
+  }
+  failif {
+    f2 : value <= 0;
+  }
+  effect {
+    allowance.addupdate((caller, ispender), { amount += value });
+  }
+}
+
+entry transferFrom(from_ : address, to_ : address, value : int) {
+  require {
+    (* d1: allowance.contains(from_); *)
+    d2: allowance[(from_,to_)].spender = caller;
+    d3: allowance[(from_,to_)].amount >= value;
+  }
+
+  failif {
+    f3 : value < 0;
+    f4 : tokenHolder[from_].tokens < value
+  }
+
+  effect {
+    (* update allowance *)
+    allowance.update((from_,to_), { amount -=  value });
+
+    (* update token *)
+    tokenHolder.addupdate(to_,   { tokens += value });
+    tokenHolder.update(from_, { tokens -= value });
   }
 }
