@@ -6,7 +6,7 @@ variable onetoken : nat = 1000000
 asset allowance identified by owner spender {
   owner     : address;
   spender     : address;
-  amount      : nat = 0;
+  amount      : nat;
 }
 
 asset tokenHolder identified by holder {
@@ -31,7 +31,7 @@ entry approve(ispender : address, value : nat) {
     d1 : tokenHolder[caller].tokens >= value;
   }
   effect {
-    allowance.addupdate((caller, ispender), { amount += value });
+    allowance.addupdate((caller, ispender), { amount = value });
   }
 }
 

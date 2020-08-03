@@ -2,10 +2,10 @@ archetype fa12
 
 constant totalsupply : nat = 1000000000000000
 
-asset allowance identified by owner spender {
-  owner       : address;
-  spender     : address;
-  amount      : nat = 0;
+asset allowance identified by addr_owner addr_spender {
+  addr_owner       : address;
+  addr_spender     : address;
+  amount           : nat;
 }
 
 asset ledger identified by holder {
@@ -29,16 +29,16 @@ entry dotransfer (from_ : address, to_ : address, value : nat) {
   }
 }
 
-entry approve(ispender : address, value : nat) {
-    allowance.addupdate((caller, ispender), { amount = value });
+entry approve(spender : address, value : nat) {
+    allowance.addupdate((caller, spender), { amount = value });
 }
 
-entry getAllowance (o : address, s : address, cb : entrysig<nat>) {
-  transfer 0tz to entry cb(allowance[(o,s)].amount);
+entry getAllowance (owner : address, spender : address, cb : entrysig<nat>) {
+  transfer 0tz to entry cb(allowance[(owner,spender)].amount);
 }
 
-entry getBalance (o : address, cb : entrysig<nat>) {
-  transfer 0tz to entry cb(ledger[o].tokens);
+entry getBalance (owner : address, cb : entrysig<nat>) {
+  transfer 0tz to entry cb(ledger[owner].tokens);
 }
 
 entry getTotalSupply (cb : entrysig<nat>) {
