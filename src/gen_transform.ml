@@ -537,7 +537,7 @@ let check_asset_key (model : model) : model =
   List.iter emit_error !errors;
   model
 
-let check_and_replace_init_caller (model : model) : model =
+let check_and_replace_init_caller ?(doit=false) (model : model) : model =
   let caller = !Options.opt_caller in
   let for_decl accu (d : decl_node) : decl_node * bool =
     let for_mterm accu (mt : mterm) : mterm * bool =
@@ -572,8 +572,8 @@ let check_and_replace_init_caller (model : model) : model =
         (b || accu, d::decls)) model.decls (false, [])
   in
   begin
-    match b, caller with
-    | true, "" -> emit_error (model.loc, CallerNotSetInInit)
+    match doit, b, caller with
+    | true, true, "" -> emit_error (model.loc, CallerNotSetInInit)
     | _ -> ()
   end;
   { model with decls = decls }
