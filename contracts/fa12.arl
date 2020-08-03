@@ -1,0 +1,34 @@
+archetype fa12
+
+constant totalsupply : nat = 1000000000000000
+
+asset allowance identified by owner spender {
+  owner       : address;
+  spender     : address;
+  amount      : nat = 0;
+}
+
+asset ledger identified by holder {
+  holder     : address;
+  tokens     : nat = 0;
+} initialized by {
+  { holder = caller; tokens = totalsupply }
+}
+
+entry dotransfer (from_ : address, to_ : address, value : nat) {
+  require {
+    d0 : ledger[from_].tokens >= value
+  }
+  effect {
+    if caller <> from_ then (
+      dorequire (allowance[(from_,caller)].amount >= value);
+      allowance.update((from_,caller), { amount -=  value });
+    );
+    ledger.update(from_, { tokens -= value });
+    ledger.addupdate(to_, { tokens += value });
+  }
+}
+
+entry approve(ispender : address, value : nat) {
+    allowance.addupdate((caller, ispender), { amount += value });
+}
