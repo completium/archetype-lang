@@ -328,6 +328,7 @@ and value_option =
 and asset_option =
   | AOidentifiedby of lident list
   | AOsortedby of lident
+  | AOto of lident
 
 and asset_post_option =
   | APOstates of lident
