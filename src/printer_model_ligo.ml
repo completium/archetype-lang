@@ -671,12 +671,21 @@ let pp_model_internal fmt (model : model) b =
             (pp_list "; " f) l
       end
 
-    | Mlitmap l ->
-      Format.fprintf fmt "(map [%a] : %a)"
-        (pp_list "; " (fun fmt (k, v) -> Format.fprintf fmt "%a -> %a"
-                          f k
-                          f v)) l
-        pp_type mtt.type_
+    | Mlitmap l -> begin
+        match mtt.type_ with
+        | Tmap (true, _, _) ->
+          Format.fprintf fmt "(Big_map.literal (list [%a]) : %a)"
+            (pp_list "; " (fun fmt (k, v) -> Format.fprintf fmt "(%a, %a)"
+                              f k
+                              f v)) l
+            pp_type mtt.type_
+        | _ ->
+          Format.fprintf fmt "(map [%a] : %a)"
+            (pp_list "; " (fun fmt (k, v) -> Format.fprintf fmt "%a -> %a"
+                              f k
+                              f v)) l
+            pp_type mtt.type_
+      end
 
     | Mlitrecord l ->
       Format.fprintf fmt "(record[%a] : %a)"
