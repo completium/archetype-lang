@@ -567,13 +567,19 @@ module CollectionSet
 
   (* ADD -------------------------------------------------------------------- *)
   let function add (a : t) (s : cset) : cset
+  ensures { forall k. k <> proj a -> get k result = get k s }
+  ensures { get (proj a) result = Some a }
   = F.mk (Cons a (F.content s))  (* normalisation is done by F.mk *)
 
   (* REMOVE ----------------------------------------------------------------- *)
   let function remove (k : tk) (s : cset) : cset
+  ensures { forall e. e <> k -> get e result = get e s }
+  ensures { get k result = None }
   =
   let rec internal_remove (l : list t) : list t
   variant { l }
+  ensures { forall e. e <> k -> internal_get e result = internal_get e l }
+  ensures { internal_get k result = None }
   = match l with
   | Cons e tl ->
     if eqk (proj e) k then tl
