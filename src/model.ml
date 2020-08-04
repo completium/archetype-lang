@@ -3465,7 +3465,6 @@ module Utils : sig
   val get_map_function                   : model -> (ident * ident list) list
   val retrieve_all_properties            : model -> (ident * property) list
   val retrieve_property                  : model -> ident -> property
-  val get_default_value                  : model -> type_ -> mterm
   val with_operations_for_mterm          : mterm -> bool
   val with_operations                    : model -> bool
   val get_source_for                     : model -> ctx_model -> mterm -> mterm option
@@ -3965,48 +3964,6 @@ end = struct
   let retrieve_property (m : model) (id : ident) : property =
     let properties = retrieve_all_properties m in
     List.assoc id properties
-
-  let rec get_default_value (m : model) (t : type_) =
-    let aux = function
-      | Tbuiltin Bbool       -> Mbool false
-      | Tbuiltin Bint        -> Mint Big_int.zero_big_int
-      | Tbuiltin Brational   -> Mrational (Big_int.zero_big_int, Big_int.zero_big_int)
-      | Tbuiltin Bdate       -> Mdate (Core.mk_date ())
-      | Tbuiltin Bduration   -> Mduration (Core.mk_duration ())
-      | Tbuiltin Btimestamp  -> Mtimestamp (Big_int.zero_big_int)
-      | Tbuiltin Bstring     -> Mstring ""
-      | Tbuiltin Baddress    -> Maddress "tz1_default"
-      | Tbuiltin Brole       -> Maddress "tz1_default"
-      | Tbuiltin Bcurrency   -> Mcurrency (Big_int.zero_big_int, Tz)
-      | Tbuiltin Bkey        -> Maddress "tz1_default"
-      | Tbuiltin Bkeyhash    -> Maddress "tz1_default"
-      | Tbuiltin Bbytes      -> Mbytes "0x0"
-      | Tasset asset_name    ->
-        begin
-          let a = get_asset m (unloc asset_name) in
-          let l : mterm list =
-            List.map (
-              fun (v : asset_item) ->
-                match v.default with
-                | Some v -> v
-                | _ -> get_default_value m v.type_
-            ) a.values
-          in
-          Masset l
-        end
-      | Tcontainer _ -> Massets []
-      | _ -> Mstring "FIXME"
-    in
-    let tt =
-      match t with
-      | Tcontainer (Tasset an, c) ->
-        begin
-          let _, t = get_asset_key m (unloc an) in
-          Tcontainer (t, c)
-        end
-      | _ -> t
-    in
-    mk_mterm (aux t) tt
 
   let get_source_for (_m : model) (_ctx : ctx_model) (c : mterm) : mterm option =
     match c.node with
