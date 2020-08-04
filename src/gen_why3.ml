@@ -199,7 +199,15 @@ let rec mk_eq_type m e1 e2 = function
       let e2i = e2^(string_of_int i) in
       mk_le_type e1i e2i t
     ) l in
-    List.fold_left (fun acc cmp -> Tpand(cmp,acc)) (List.hd cmps) (List.tl cmps)
+    let cmp = List.fold_left (fun acc cmp -> Tpand(cmp,acc)) (List.hd cmps) (List.tl cmps) in
+    Tmatch (
+      Ttuple [Tvar e1; Tvar e2], [
+        Tpatt_tuple [
+          Tpatt_tuple (List.mapi (fun i _ -> Tconst (e1^(string_of_int i)))l);
+          Tpatt_tuple (List.mapi (fun i _ -> Tconst (e2^(string_of_int i)))l)
+        ], Tif (cmp, Ttrue, Some Tfalse);
+        Tpatt_tuple [Twild;Twild], Tfalse
+      ])
   | _ -> Tle (Tyint, Tvar e1, Tvar e2)
 
 (* Trace -------------------------------------------------------------------------*)
