@@ -871,8 +871,8 @@ let methods : (string * method_) list =
     ("clear"       , mk A.Cclear        `Both        (`Effect capv) `Total   `Standard (`Fixed [                   ], None));
     ("removeif"    , mk A.Cremoveif     `Both        (`Effect cap ) `Total   `Standard (`Fixed [`Pred true         ], None));
     ("removeall"   , mk A.Cremoveall    `Both        (`Effect  ap ) `Total   `Standard (`Fixed [                   ], None));
-    ("update"      , mk A.Cupdate       `Both        (`Effect c   ) `Total   `Standard (`Fixed [`Pk; `Ef true      ], None));
-    ("addupdate"   , mk A.Caddupdate    `Both        (`Effect c_p ) `Total   `Standard (`Fixed [`Pk; `Ef false     ], None));
+    ("update"      , mk A.Cupdate       `Both        (`Effect c   ) `Total   `Both     (`Fixed [`Pk; `Ef true      ], None));
+    ("addupdate"   , mk A.Caddupdate    `Both        (`Effect c_p ) `Total   `Both     (`Fixed [`Pk; `Ef false     ], None));
     ("contains"    , mk A.Ccontains     `Both        (`Pure       ) `Total   `Both     (`Fixed [`Pk                ], Some (`T A.vtbool)));
     ("nth"         , mk A.Cnth          `Both        (`Pure       ) `Partial `Standard (`Fixed [`T A.vtnat         ], Some (`Pk)));
     ("select"      , mk A.Cselect       `Both        (`Pure       ) `Total   `Standard (`Fixed [`Pred true         ], Some (`SubColl)));
@@ -2653,7 +2653,8 @@ let rec for_xexpr
         end;
 
         begin match asset, map_type with
-          | Some (asset, _), `Standard when asset.as_bm -> Env.emit_error env (loc tope, InvalidMethodWithBigMap (unloc m))
+          | Some (asset, _), `Standard when asset.as_bm && not (is_form_kind mode.em_kind) ->
+              Env.emit_error env (loc tope, InvalidMethodWithBigMap (unloc m))
           | _ -> ()
         end;
 
