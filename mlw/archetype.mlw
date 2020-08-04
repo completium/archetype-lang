@@ -186,6 +186,7 @@ module Utils
 
   (* ----------------------------------------------------------------------- *)
   (* String *)
+
   use string.String as S
 
   val function str_concat string string : string
@@ -226,7 +227,7 @@ module Utils
   val function str_gt string string : bool
 
   axiom str_gt_spec : forall s1 s2.
-  str_gt s1 s2 = not (S.lt s1 s2) /\ not (s1 = s2)
+  str_gt s1 s2 = not (S.le s1 s2)
 
   (* ----------------------------------------------------------------------- *)
   (* Option *)
