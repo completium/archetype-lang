@@ -21,6 +21,9 @@ entry exec () {
     my_asset.add({ id = my_asset_id; value = 0; col = [] });
     my_asset.remove(my_asset_id);
 
+    my_asset.update(my_asset_id, {value += 2});
+    my_asset.addupdate(my_asset_id, {value += 3});
+
     my_asset[my_asset_id].col.add({ 0; "ovalue" });
     my_asset[my_asset_id].col.remove(0);
 
