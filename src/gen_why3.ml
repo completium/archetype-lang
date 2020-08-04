@@ -143,7 +143,15 @@ let rec map_mtype m (t : M.type_) : loc_typ =
       | M.Tentrysig _                         -> Tyentrysig
       | _ -> print_endline (Format.asprintf "%a@." M.pp_type_ t); assert false)
 
-let rec mk_eq_type e1 e2 = function
+let mk_list_name_from_mlwtype m t =
+  let idx =
+        M.Utils.get_all_list_types m
+    |>  List.map (map_mtype m)
+    |>  List.map unloc_type
+    |> List.index_of (cmp_type (Tylist t)) in
+  "List"^(string_of_int idx)
+
+let rec mk_eq_type m e1 e2 = function
   | Tyunit -> Ttrue
   | Tybool -> Tor (Tpand (Tvar e1,Tvar e2),Tpand(Tnot (Tvar e1), Tnot (Tvar e2)))
   | Tyrational -> Tapp (Tvar "rat_eq",[Tvar e1; Tvar e2])
@@ -155,16 +163,17 @@ let rec mk_eq_type e1 e2 = function
   | Tyaggregate a -> Teqfield(a, Tvar e1, Tvar e2)
   | Tyenum i -> Tapp (Tvar ("cmp_"^i),[Tvar e1; Tvar e2])
   | Tyoperation -> Tapp (Tvar "_eq_operation",[Tvar e1; Tvar e2])
+  | Tylist t -> Tapp (Tdoti (mk_list_name_from_mlwtype m t,"eq_list"),[Tvar e1; Tvar e2])
   | Tyoption t -> Tmatch (
       Ttuple [Tvar e1; Tvar e2], [
-        Tpatt_tuple [Tpsome (e1^"v1"); Tpsome (e2^"v2")], mk_eq_type (e1^"v1") (e2^"v2") t;
+        Tpatt_tuple [Tpsome (e1^"v1"); Tpsome (e2^"v2")], mk_eq_type m (e1^"v1") (e2^"v2") t;
         Tpatt_tuple [Twild;Twild], Tfalse
       ])
   | Tytuple l ->
     let cmps = List.mapi (fun i t ->
         let e1i = e1^(string_of_int i) in
         let e2i = e2^(string_of_int i) in
-        mk_eq_type e1i e2i t
+        mk_eq_type m e1i e2i t
       ) l in
     let cmp = List.fold_left (fun acc cmp -> Tpand (acc,cmp)) (List.hd cmps) (List.tl cmps) in
     Tmatch (
@@ -790,7 +799,7 @@ let cap s = mk_loc s.loc (String.capitalize_ascii s.obj)
 
 (* Map type -------------------------------------------------------------------*)
 
-let mk_eq_type_fun id t = Dfun {
+let mk_eq_type_fun m id t = Dfun {
     name = "eq_" ^ id |> dl;
     logic = Logic;
     args = [
@@ -802,7 +811,7 @@ let mk_eq_type_fun id t = Dfun {
     variants = [];
     requires = [];
     ensures = [];
-    body = loc_term (mk_eq_type "e1" "e2" (unloc_type t));
+    body = loc_term (mk_eq_type m "e1" "e2" (unloc_type t));
   }
 
 let mk_map_clone id k t =
@@ -822,7 +831,7 @@ let mk_map_type m (t : M.type_) =
     let t = M.Ttuple [k;v] in
     let typ = map_mtype m t in
     let key = map_mtype m k in [
-      mk_eq_type_fun map_name typ;
+      mk_eq_type_fun m map_name typ;
       mk_map_clone map_name key typ
     ]
   | _ -> assert false
@@ -842,7 +851,7 @@ let mk_set_type m (t : M.type_) =
  | Tset et ->
   let set_name = mk_set_name m t in
   let et = map_mtype m et in [
-    mk_eq_type_fun set_name et;
+    mk_eq_type_fun m set_name et;
     mk_set_clone set_name et;
   ]
   | _ -> assert false
@@ -862,7 +871,7 @@ let mk_list_type m (t : M.type_) =
  | Tlist et ->
   let list_name = mk_list_name m t in
   let et = map_mtype m et in [
-    mk_eq_type_fun list_name et;
+    mk_eq_type_fun m list_name et;
     mk_list_clone list_name et;
   ]
   | _ -> assert false
@@ -1167,7 +1176,7 @@ let mk_eq_key m (r : M.asset) =
     variants = [];
     requires = [];
     ensures = [];
-    body = loc_term (mk_eq_type "k1" "k2" (unloc_type tkey));
+    body = loc_term (mk_eq_type m "k1" "k2" (unloc_type tkey));
   }
 
 let mk_eq_asset m (r : M.asset) =
@@ -1176,7 +1185,7 @@ let mk_eq_asset m (r : M.asset) =
       let id2 = "a2_"^(unloc item.name) in
       Tletin (false, id1, None, Tdoti("a1",unloc item.name),
               Tletin (false, id2, None, Tdoti ("a2",unloc item.name),
-                      mk_eq_type id1 id2 (unloc_type (map_mtype m item.type_))
+                      mk_eq_type m id1 id2 (unloc_type (map_mtype m item.type_))
                      )
              )
     ) r.values in

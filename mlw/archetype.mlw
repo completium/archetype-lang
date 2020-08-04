@@ -1236,6 +1236,19 @@ module List
   let function prepend (a : t) (l : list t) : list t
   = Cons a l
 
+  (* ------------------------------------------------------------------------ *)
+  let rec function eq_list (l1 : list t) (l2 : list t) : bool
+  variant { l1, l2 }
+  =
+  match l1, l2 with
+  | Cons e1 tl1, Cons e2 tl2 ->
+    if eqt e1 e2 then true else eq_list tl1 tl2
+  | _ -> false
+  end
+
+  (* ------------------------------------------------------------------------ *)
+  lemma eq_list_spec : forall l1 l2. eq_list l1 l2 <-> l1 = l2
+
 end
 
 module Sort
