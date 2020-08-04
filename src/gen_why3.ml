@@ -186,6 +186,22 @@ let rec mk_eq_type m e1 e2 = function
       ])
   | _ -> Teq (Tyint, Tvar e1, Tvar e2)
 
+  let rec mk_le_type e1 e2 = function
+  | Tyunit -> Ttrue
+  | Tybool -> Tor ((Tnot (Tvar e1), (Tvar e2)))
+  | Tyrational -> Tapp (Tvar "rat_cmp",[Tvar "OpCmpLe"; Tvar e1; Tvar e2])
+  | Tystring -> Tle (Tystring, Tvar e1, Tvar e2)
+  | Tyaddr -> Tle (Tyaddr, Tvar e1, Tvar e2)
+  | Tyrole -> Tle (Tyrole, Tvar e1, Tvar e2)
+  | Tytuple l ->
+    let cmps = List.mapi (fun i t ->
+      let e1i = e1^(string_of_int i) in
+      let e2i = e2^(string_of_int i) in
+      mk_le_type e1i e2i t
+    ) l in
+    List.fold_left (fun acc cmp -> Tpand(cmp,acc)) (List.hd cmps) (List.tl cmps)
+  | _ -> Tle (Tyint, Tvar e1, Tvar e2)
+
 (* Trace -------------------------------------------------------------------------*)
 type change =
   | CAdd of ident
@@ -777,10 +793,10 @@ let loc_decl   = List.map loc_decl
 let loc_field  = List.map loc_field
 let deloc (l : 'a list) = List.map deloc l
 
-let rec zip l1 l2 l3 l4 l5 l6 l7 =
-  match l1,l2,l3,l4,l5,l6,l7 with
-  | e1::tl1,e2::tl2,e3::tl3,e4::tl4,e5::tl5,e6::tl6,e7::tl7 ->
-    e1::e2::e3::e4::e5::e6::e7::(zip tl1 tl2 tl3 tl4 tl5 tl6 tl7)
+let rec zip l1 l2 l3 l4 l5 l6 l7 l8 =
+  match l1,l2,l3,l4,l5,l6,l7,l8 with
+  | e1::tl1,e2::tl2,e3::tl3,e4::tl4,e5::tl5,e6::tl6,e7::tl7,e8::tl8 ->
+    e1::e2::e3::e4::e5::e6::e7::e8::(zip tl1 tl2 tl3 tl4 tl5 tl6 tl7 tl8)
   | _ -> []
 
 let cap s = mk_loc s.loc (String.capitalize_ascii s.obj)
@@ -802,13 +818,29 @@ let mk_eq_type_fun m id t = Dfun {
     body = loc_term (mk_eq_type m "e1" "e2" (unloc_type t));
   }
 
+let mk_le_type_fun _m id t = Dfun {
+    name = "le_" ^ id |> dl;
+    logic = Logic;
+    args = [
+      dl "e1", t;
+      dl "e2", t
+    ];
+    returns = Tybool |> dl;
+    raises = [];
+    variants = [];
+    requires = [];
+    ensures = [];
+    body = loc_term (mk_le_type "e1" "e2" (unloc_type t));
+  }
+
 let mk_map_clone id k t =
   Dclone ([gArchetypeDir;gArchetypeColl] |> wdl,
           String.capitalize_ascii id |> dl, [
             Ctype (dl "t", t);
             Ctype (dl "tk", k);
             Cval  ("keyt" |> dl, "fst" |> dl);
-            Cval  ("eqt" |> dl, "eq_" ^ id |> dl)
+            Cval  ("eqt" |> dl, "eq_" ^ id |> dl);
+            Cval  ("lek" |> dl, "le_" ^ id |> dl);
           ]
          )
 
@@ -820,6 +852,7 @@ let mk_map_type m (t : M.type_) =
     let typ = map_mtype m t in
     let key = map_mtype m k in [
       mk_eq_type_fun m map_name typ;
+      mk_le_type_fun m map_name key;
       mk_map_clone map_name key typ
     ]
   | _ -> assert false
@@ -830,7 +863,8 @@ let mk_set_clone id t =
   Dclone ([gArchetypeDir;gArchetypeSet] |> wdl,
           String.capitalize_ascii id |> dl, [
             Ctype (dl "t", t);
-            Cval  ("eqt" |> dl, "eq_" ^ id |> dl)
+            Cval  ("eqt" |> dl, "eq_" ^ id |> dl);
+            Cval  ("le_t" |> dl, "le_" ^ id |> dl);
           ]
          )
 
@@ -840,6 +874,7 @@ let mk_set_type m (t : M.type_) =
   let set_name = mk_set_name m t in
   let et = map_mtype m et in [
     mk_eq_type_fun m set_name et;
+    mk_le_type_fun m set_name et;
     mk_set_clone set_name et;
   ]
   | _ -> assert false
@@ -1167,6 +1202,25 @@ let mk_eq_key m (r : M.asset) =
     body = loc_term (mk_eq_type m "k1" "k2" (unloc_type tkey));
   }
 
+let mk_le_key m (r : M.asset) =
+  let asset = unloc r.name in
+  let (_key, tkey) = M.Utils.get_asset_key m asset in
+  let tkey = map_mtype m tkey in
+  Dfun {
+    name = "le_"^asset^"_key" |> dl;
+    logic = Logic;
+    args = [
+      "k1" |> dl, tkey;
+      "k2" |> dl, tkey;
+    ];
+    returns = Tybool |> dl;
+    raises = [];
+    variants = [];
+    requires = [];
+    ensures = [];
+    body = loc_term (mk_le_type "k1" "k2" (unloc_type tkey));
+  }
+
 let mk_eq_asset m (r : M.asset) =
   let cmps = List.map (fun (item : M.asset_item) ->
       let id1 = "a1_"^(unloc item.name) in
@@ -1213,6 +1267,7 @@ let mk_field m (r : M.asset) =
           String.capitalize_ascii (mk_field_id asset) |> dl,
           [Ctype ("tk" |> dl, tkey);
            Cval  ("eqk" |> dl, "eq_" ^ asset ^ "_key" |> dl);
+           Cval  ("lek" |> dl, "le_" ^ asset ^ "_key" |> dl);
            Ctype ("view" |> dl, loc_type (Tyview (mk_view_id asset)));
            Cval  ("vmk" |> dl, (String.capitalize_ascii (mk_view_id asset))^".mk" |> dl);
            Cval  ("velts" |> dl, (String.capitalize_ascii (mk_view_id asset))^".elts" |> dl);
@@ -1235,6 +1290,7 @@ let mk_coll m (r : M.asset) =
           String.capitalize_ascii asset |> dl,
           [Ctype ("tk" |> dl, tkey);
            Cval  ("eqk" |> dl, "eq_" ^ asset ^ "_key" |> dl);
+           Cval  ("lek" |> dl, "le_" ^ asset ^ "_key" |> dl);
            Ctype ("t" |> dl, Tyasset (dl asset) |> dl);
            Cval  ("keyt" |> dl, key |> dl);
            Cval  ("eqt" |> dl, "eq_" ^ asset |> dl);
@@ -3738,13 +3794,14 @@ let to_whyml (m : M.model) : mlw_tree  =
   let mlwassets        = assets |> List.map (mk_asset m) |> wdl in
   let cmp_enums        = assets |> List.map (mk_cmp_enums m) |> List.flatten in
   let eq_keys          = assets |> List.map (mk_eq_key m) |> wdl in
+  let le_keys          = assets |> List.map (mk_le_key m) |> wdl in
   let eq_assets        = assets |> List.map (mk_eq_asset m) |> wdl in
   let eq_exten         = assets |> List.map (mk_eq_extensionality m) |> deloc in
   let colls            = assets |> List.map (mk_coll m) |> wdl in
   let fields           = assets |> List.map (mk_field m) |> wdl in
   let views            = assets |> List.map (mk_view m) |> wdl in
   let init_records     = mlwassets |> unloc_decl |> List.map mk_default_init |> loc_decl in
-  let mlwassets        = zip mlwassets eq_keys eq_assets init_records views fields colls |> deloc in
+  let mlwassets        = zip mlwassets eq_keys le_keys eq_assets init_records views fields colls |> deloc in
   let storage_api_bs   = mk_storage_api_before_storage m (records |> wdl) in
   let storage          = M.Utils.get_storage m |> map_storage m in
   let storageval       = Dval (dl gs, dl Tystorage) in

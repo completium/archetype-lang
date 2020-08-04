@@ -747,10 +747,16 @@ module Field
   val function eqk tk tk : bool
 
   (* ------------------------------------------------------------------------ *)
+  axiom eqP : forall k1 k2. eqk k1 k2 <-> k1 = k2
+
+  (* ------------------------------------------------------------------------ *)
+  val function lek tk tk : bool
+
+  (* ------------------------------------------------------------------------ *)
   let function proj (x : tk) = x
 
   (* ------------------------------------------------------------------------ *)
-  let predicate le k1 k2 = eqk k1 k2
+  let predicate le k1 k2 = lek k1 k2
 
   (* ------------------------------------------------------------------------ *)
   clone InsertionSort as S with type elt = tk,
@@ -846,6 +852,9 @@ module Collection
   val function eqk tk tk : bool
 
   (* ------------------------------------------------------------------------ *)
+  val function lek tk tk : bool
+
+  (* ------------------------------------------------------------------------ *)
   type t
 
   (* ------------------------------------------------------------------------ *)
@@ -855,7 +864,7 @@ module Collection
   val function eqt t t : bool
 
   (* ------------------------------------------------------------------------ *)
-  let predicate le t1 t2 = eqk (keyt t1) (keyt t2)
+  let predicate le t1 t2 = lek (keyt t1) (keyt t2)
 
   (* ------------------------------------------------------------------------ *)
   clone InsertionSort as S with type elt = t,
@@ -1030,11 +1039,11 @@ module Collection
   = mk (N.mk (view_to_list v c))
 
   (* ----------------------------------------------------------------------- *)
-  let predicate lek k1 k2 = eqk k1 k2
+  let predicate le_key k1 k2 = lek k1 k2
 
   (* ----------------------------------------------------------------------- *)
   clone InsertionSort as K with type elt = tk,
-                                val le = lek
+                                val le = le_key
 
   (* ----------------------------------------------------------------------- *)
   let rec function to_view (c : collection) : view
@@ -1128,10 +1137,13 @@ module Set
   val function eqt t t : bool
 
   (* ------------------------------------------------------------------------ *)
+  val function le_t t t : bool
+
+  (* ------------------------------------------------------------------------ *)
   axiom eqP : forall x y. eqt x y <-> x = y
 
   (* ------------------------------------------------------------------------ *)
-  let predicate le t1 t2 = eqt t1 t2
+  let predicate le t1 t2 = le_t t1 t2
 
   (* ------------------------------------------------------------------------ *)
   clone InsertionSort as S with type elt = t,
