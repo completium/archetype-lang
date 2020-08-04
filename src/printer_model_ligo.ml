@@ -1778,44 +1778,42 @@ let pp_model_internal fmt (model : model) b =
       begin
         let _, t = Utils.get_asset_key model an in
         match c with
-        | Coll ->
-          let pp_empty fmt _ =
-            if Model.Utils.is_asset_single_field model an
-            then Format.fprintf fmt "(set [] : set(%a))" pp_type t
-            else Format.fprintf fmt "(map [] : map(%a, %s_storage))" pp_type t an
-          in
-          Format.fprintf fmt
-            "function clear_c_%s (const s : storage_type) : storage_type is@\n  \
-             begin@\n  \
-             s.%s_assets := %a@\n  \
-             end with (s)@\n"
-            an
-            an pp_empty ()
+        | Coll -> begin
+            let single = Model.Utils.is_asset_single_field model an in
+            let i, a = if single then "i", "set" else "i -> v", "map" in
+            Format.fprintf fmt
+              "function clear_c_%s (const s : storage_type) : storage_type is@\n  \
+               begin@\n  \
+               for %s in %s (s.%s_assets) block {@\n    \
+               s := remove_%s(s, i)@\n  \
+               }@\n  \
+               end with (s)@\n"
+              an
+              i a an
+              an
+          end
         | View ->
           Format.fprintf fmt
             "function clear_v_%s (const s : storage_type; const l : list(%a)) : storage_type is@\n  \
              begin@\n  \
-             for i in list (l) block {@\n  \
-             remove i from %s s.%s_assets@\n  \
+             for i in list (l) block {@\n    \
+             s := remove_%s(s, i)@\n  \
              }@\n  \
              end with (s)@\n"
-            an pp_type t
-            (if Utils.is_asset_single_field model an then "set" else "map")
-            an
+            an pp_type t an
         | Field (an, fn) ->
           Format.fprintf fmt
             "function clear_%a (const s : storage_type; const k : %a) : storage_type is@\n  \
              begin@\n  \
              const a : %s_storage = get_force(k, s.%s_assets);@\n  \
-             for i in set (a.%s) block {@\n  \
-             remove i from %s s.%s_assets@\n  \
+             for i in set (a.%s) block {@\n    \
+             s := remove_%s_%s (s, k, i)@\n  \
              }@\n  \
              end with (s)@\n"
             (pp_prefix_api_container_kind an) c pp_type (Utils.get_asset_key model an |> snd)
             an an
             fn
-            (if Utils.is_asset_single_field model an then "set" else "map")
-            an
+            an fn
       end
 
     | Update _ -> ()

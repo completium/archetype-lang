@@ -4366,6 +4366,7 @@ end = struct
              | APIAsset (Set           an)         -> an
              | APIAsset (Add           an)         -> an
              | APIAsset (Remove        an)         -> an
+             | APIAsset (Clear (_, Field (an, _))) -> an
              | APIAsset (Clear        (an, _))     -> an
              | APIAsset (Update       (an, _))     -> an
              | APIAsset (FieldAdd    (an, _))      -> an
@@ -4409,12 +4410,12 @@ end = struct
              | APIAsset   (Set           _) -> 10
              | APIAsset   (Add           _) -> 11
              | APIAsset   (Remove        _) -> 12
-             | APIAsset   (Clear         _) -> 13
-             | APIAsset   (Update        _) -> 14
-             | APIAsset   (FieldAdd      _) -> 15
-             | APIAsset   (FieldRemove   _) -> 16
-             | APIAsset   (RemoveAll     _) -> 17
-             | APIAsset   (RemoveIf      _) -> 18
+             | APIAsset   (Update        _) -> 13
+             | APIAsset   (FieldAdd      _) -> 14
+             | APIAsset   (FieldRemove   _) -> 15
+             | APIAsset   (RemoveAll     _) -> 16
+             | APIAsset   (RemoveIf      _) -> 17
+             | APIAsset   (Clear         _) -> 18
              | APIAsset   (Contains      _) -> 19
              | APIAsset   (Select        _) -> 20
              | APIAsset   (Sort          _) -> 21
