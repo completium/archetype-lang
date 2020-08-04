@@ -325,7 +325,7 @@ let mk_get_sum_value_id asset id = "get_" ^ asset ^ "_sum" ^ (string_of_int id)
 let mk_get_sum_value_from_pos_id asset id = (mk_get_sum_value_id asset id)^"_from_pos"
 
 let mk_sum a i v c = Tvsum ( mk_sum_clone_from_id a i, v, c)
-let mk_sum_from_col a i c = Tvsum (mk_sum_clone_from_id a i, Ttoview(a,c), c)
+let mk_sum_from_col a i c = Tcsum (mk_sum_clone_from_id a i, c)
 
 let mk_sum_clone m asset _key tkey formula =
   let cap_asset = String.capitalize_ascii asset in
@@ -340,24 +340,12 @@ let mk_sum_clone m asset _key tkey formula =
                   Tyasset asset);
            Ctype ("tk",
                   tkey |> map_mtype m |> unloc_type);
-           (* Ctype ("view",
-                  cap_asset ^ ".view"); *)
            Cval ("field",
                  mk_get_sum_value_id asset id);
-           Cval ("get",
-                 cap_asset ^ ".get");
-           Cval ("elts",
-                 (String.capitalize_ascii (mk_view_id asset)) ^ ".elts");
-           Cval ("mk",
-                 (String.capitalize_ascii (mk_view_id asset)) ^ ".mk");
-           Cval ("card",
-                 (String.capitalize_ascii (mk_view_id asset)) ^ ".card");
-           (* Cval ("velts",
-                 cap_asset ^ ".velts");
-              Cval ("vcard",
-                 cap_asset ^ ".vcard");
-              Cval ("vmk",
-                 cap_asset ^ ".vmk") *)
+           Cval ("view_to_list",
+                 cap_asset ^ ".view_to_list");
+           Cval ("from_view",
+                 cap_asset ^ ".from_view")
           ])
 
 
@@ -2552,8 +2540,8 @@ let mk_nth_asset m asset =
   }
 
 let gen_exists_asset at asset_id asset a body =
-  Texists ([[asset],Tyasset a],
-           Tand (
+  Tforall ([[asset],Tyasset a],
+           Timpl (
              Teq(Tyint, Tget (a,Tvar asset_id,begin match at with | `Curr -> mk_ac a | `Old -> mk_ac_old a end),Tsome (Tvar asset)),
              body))
 
