@@ -2393,56 +2393,69 @@ let map_storage_items m =
       }]
   ) []
 
+let mk_asset_invariants m ctx =
+  List.concat (List.map (fun (item : M.storage_item) ->
+    let storage_id = item.id in
+    let invs : M.label_term list =
+      match item.model_type with
+      | MTasset asset_name ->
+        begin
+          try
+            let assets = M.Utils.get_assets m in
+            let asset = List.find (fun (x : M.asset) -> cmp_ident (unloc x.name) asset_name) assets in
+            asset.invariants
+          with
+          | Not_found -> assert false
+        end
+      | _ -> [] in
+    List.map (fun (inv : M.label_term) -> mk_storage_invariant m storage_id inv.label (map_mterm m ctx inv.term)) invs
+  ) m.storage)
+
+let mk_contract_invariants m ctx =
+  List.fold_left (fun acc (post : M.postcondition) ->
+    acc @ [{
+      id = map_lident post.name;
+      form = map_mterm m ctx post.formula;
+    }]
+  ) [] m.specification.postconditions
+
+let mk_variable_invariants m ctx =
+  List.fold_left (fun acc decl ->
+    match decl with
+    | M.Dvar var ->
+      acc @ (List.map (fun (inv : M.label_term) ->
+          { id = map_lident inv.label; form = map_mterm m ctx inv.term}
+        ) var.invariants)
+    | _ -> acc
+  ) [] m.decls
+
+let mk_security_invariants (m : M.model) _ctx =
+  List.fold_left (fun acc sec ->
+    acc @ (mk_spec_invariant `Storage sec)
+  ) [] m.security.items
+
+let mk_state_invariants m ctx =
+  List.fold_left (fun acc decl ->
+    match decl with
+    | M.Denum e ->
+      List.fold_left (fun acc (value : M.enum_item) ->
+          acc @ List.map (fun (inv : M.label_term) ->
+              mk_state_invariant m value.name inv.label (map_mterm m ctx inv.term)
+            ) value.invariants
+        ) acc e.values
+    | _ -> acc
+  ) [] m.decls
+
 let map_storage m (l : M.storage) =
   let ctx = { init_ctx with lctx = Inv } in
   Dstorage {
     fields     = (map_storage_items m l) @ (mk_const_fields m |> loc_field |> deloc);
-    invariants = (** collect all invariants : *)
-      (* -- asset invariants -- *)
-      List.concat (List.map (fun (item : M.storage_item) ->
-          let storage_id = item.id in
-          let invs : M.label_term list =
-            match item.model_type with
-            | MTasset asset_name ->
-              begin
-                try
-                  let assets = M.Utils.get_assets m in
-                  let asset = List.find (fun (x : M.asset) -> cmp_ident (unloc x.name) asset_name) assets in
-                  asset.invariants
-                with
-                | Not_found -> assert false
-              end
-            | _ -> [] in
-          List.map (fun (inv : M.label_term) -> mk_storage_invariant m storage_id inv.label (map_mterm m ctx inv.term)) invs) l) @
-      (* -- security predicates -- *)
-      (List.fold_left (fun acc sec ->
-           acc @ (mk_spec_invariant `Storage sec)) [] m.security.items) @
-      (List.fold_left (fun acc decl ->
-           match decl with
-           | M.Denum e ->
-             List.fold_left (fun acc (value : M.enum_item) ->
-                 acc @ List.map (fun (inv : M.label_term) ->
-                     mk_state_invariant m value.name inv.label (map_mterm m ctx inv.term)
-                   ) value.invariants
-               ) acc e.values
-           | _ -> acc
-         ) [] m.decls) @
-      (* -- contract invariants -- *)
-      (List.fold_left (fun acc (post : M.postcondition) ->
-           acc @ [{
-               id = map_lident post.name;
-               form = map_mterm m ctx post.formula;
-             }]
-         ) [] m.specification.postconditions) @
-      (* -- variable invariants -- *)
-      (List.fold_left (fun acc decl ->
-           match decl with
-           | M.Dvar var ->
-             acc @ (List.map (fun (inv : M.label_term) ->
-                 { id = map_lident inv.label; form = map_mterm m ctx inv.term}
-               ) var.invariants)
-           | _ -> acc
-         ) [] m.decls)
+    invariants =
+      mk_asset_invariants m ctx    @
+      mk_security_invariants m ctx @
+      mk_state_invariants m ctx    @
+     (* mk_contract_invariants m ctx @ *)
+      mk_variable_invariants m ctx
   }
 
 (* Verfication API -----------------------------------------------------------*)
@@ -2609,7 +2622,7 @@ let gen_exists_asset at asset_id asset a body =
              Teq(Tyint, Tget (a,Tvar asset_id,begin match at with | `Curr -> mk_ac a | `Old -> mk_ac_old a end),Tsome (Tvar asset)),
              body))
 
-let exists_asset = gen_exists_asset `Curr "asset_id" "asset"
+let exists_asset = gen_exists_asset `Old "asset_id" "asset"
 
 (* let exists_old_asset = gen_exists_asset `Old "asset_id" "old_asset"
 *)
@@ -3733,10 +3746,11 @@ let mk_functions m =
         raises   = fold_exns m s.body (* |> List.map (add_raise_ctx args src m) *) |> List.map loc_term;
         variants = [];
         requires =
+          (mk_contract_invariants m { init_ctx with lctx = Logic }) @
           (mk_entry_require m (M.Utils.get_callers m (unloc s.name))) @
           (mk_requires m (s.name |> unloc) v) @
           (mk_preconds m s.args s.body);
-        ensures  = Option.fold (mk_ensures m) [] v;
+        ensures  = Option.fold (mk_ensures m) (mk_contract_invariants m { init_ctx with lctx = Logic }) v;
         body     = flatten_if_fail m s.body;
       }
   )
@@ -3754,9 +3768,11 @@ let mk_entries m =
         returns  = dl Tyunit;
         raises   = fold_exns m s.body |> List.map loc_term;
         variants = [];
-        requires = (mk_entry_require m [unloc s.name]) @
-                   (mk_requires m (unloc s.name) v);
-        ensures  = Option.fold (mk_ensures m) [] v;
+        requires =
+          (mk_contract_invariants m { init_ctx with lctx = Logic }) @
+          (mk_entry_require m [unloc s.name]) @
+          (mk_requires m (unloc s.name) v);
+        ensures  = Option.fold (mk_ensures m) (mk_contract_invariants m { init_ctx with lctx = Logic }) v;
         body     = flatten_if_fail m s.body;
       }
   )
