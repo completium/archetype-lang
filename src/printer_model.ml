@@ -1321,23 +1321,11 @@ let pp_record fmt (r : record) =
     pp_id r.name
     (pp_list "@\n" pp_record_field) r.fields
 
-let pp_contract_signature fmt (cs : contract_signature) =
-  Format.fprintf fmt "%a (%a)"
-    pp_id cs.name
-    (pp_list ", " (fun fmt (id, type_) -> Format.fprintf fmt "%a : %a" pp_id id pp_type type_)) cs.args
-
-let pp_contract fmt (contract : contract) =
-  Format.fprintf fmt "contract %a {@\n@[<v 2>  %a@]@\n}%a@\n"
-    pp_id contract.name
-    (pp_list "@\n" pp_contract_signature) contract.signatures
-    (pp_option pp_mterm) contract.init
-
 let pp_decl fmt = function
   | Dvar v -> pp_var fmt v
   | Denum e -> pp_enum fmt e
   | Dasset a -> pp_asset fmt a
   | Drecord r -> pp_record fmt r
-  | Dcontract c -> pp_contract fmt c
 
 let pp_storage_item fmt (si : storage_item) =
   Format.fprintf fmt "%a : %a%a"

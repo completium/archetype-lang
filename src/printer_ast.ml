@@ -905,16 +905,6 @@ let pp_enum fmt (e : lident enum_struct) =
     ) e
     (pp_list "@\n" pp_enum_item) e.items
 
-let pp_signature fmt (s : lident signature) =
-  Format.fprintf fmt "entry %a (%a)"
-    pp_id s.name
-    (pp_list ", " (fun fmt (id, type_) -> Format.fprintf fmt "%a : %a" pp_id id pp_ptyp type_)) s.args
-
-let pp_contract fmt (c : contract) =
-  Format.fprintf fmt "contract %a =@\n  @[%a@]@\n"
-    pp_id c.name
-    (pp_list "@\n" pp_signature) c.signatures
-
 let rec pp_rexpr fmt (r : rexpr) =
   let pp_node fmt = function
     | Rany -> pp_str fmt "any"
@@ -1002,7 +992,6 @@ let pp_decl_ fmt = function
   | Dasset    a -> pp_asset fmt a
   | Drecord   r -> pp_record fmt r
   | Denum     e -> pp_enum fmt e
-  | Dcontract c -> pp_contract fmt c
 
 let pp_fun_ fmt = function
   | Ffunction f    -> pp_function fmt f

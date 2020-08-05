@@ -256,7 +256,6 @@ let compile (filename, channel) =
   |> raise_if_error post_model_error check_containers_asset
   |> raise_if_error post_model_error check_empty_container_on_initializedby
   |> raise_if_error post_model_error check_empty_container_on_asset_default_value
-  |> cont !Options.opt_ptc (Format.printf "%a@." Printer_model_type_contract.pp_ptc_model)
   |> raise_if_error post_model_error (check_and_replace_init_caller ~doit:!Options.with_init_caller)
   |> raise_if_error post_model_error check_duplicated_keys_in_asset
   |> raise_if_error post_model_error check_asset_key
@@ -306,8 +305,6 @@ let main () =
       "--focus-property", Arg.String (fun s -> Options.opt_property_focused := s), " Same as -fp";
       "-sci", Arg.String (fun s -> Options.opt_caller := s), " Set caller address for initialization";
       "--set-caller-init", Arg.String (fun s -> Options.opt_caller := s), " Same as -sci";
-      "-ptc", Arg.Set Options.opt_ptc, " Print type contract in archetype syntax";
-      "--print-type-contract", Arg.Set Options.opt_ptc, " Same as -ptc";
       "-lsp", Arg.String (fun s -> match s with
           | "errors" -> Options.opt_lsp := true; Lsp.kind := Errors
           | "outline" -> Options.opt_lsp := true; Lsp.kind := Outline

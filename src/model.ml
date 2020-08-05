@@ -632,27 +632,6 @@ type 'id record_gen = {
 type record = lident record_gen
 [@@deriving show {with_path = false}]
 
-type 'id contract_signature_gen = {
-  name : 'id;
-  args: (lident * type_) list;
-  loc: Location.t [@opaque];
-}
-[@@deriving show {with_path = false}]
-
-type contract_signature = lident contract_signature_gen
-[@@deriving show {with_path = false}]
-
-type 'id contract_gen = {
-  name       : 'id;
-  signatures : 'id contract_signature_gen list;
-  init       : 'id mterm_gen option;
-  loc        : Location.t [@opaque];
-}
-[@@deriving show {with_path = false}]
-
-type contract = lident contract_gen
-[@@deriving show {with_path = false}]
-
 type 'id function_ = {
   name: 'id;
 }
@@ -834,7 +813,6 @@ type 'id decl_node_gen =
   | Denum of 'id enum_gen
   | Dasset of 'id asset_gen
   | Drecord of 'id record_gen
-  | Dcontract of 'id contract_gen
 [@@deriving show {with_path = false}]
 
 type decl_node = lident decl_node_gen
@@ -924,12 +902,6 @@ let mk_record ?(fields = []) ?(loc = Location.dummy) name : 'id record_gen =
 
 let mk_record_field ?(loc = Location.dummy) name type_ : 'id record_field_gen =
   { name; type_; loc }
-
-let mk_contract_signature ?(args=[]) ?(loc=Location.dummy) name : 'id contract_signature_gen =
-  { name; args; loc }
-
-let mk_contract ?(signatures=[]) ?init ?(loc=Location.dummy) name : 'id contract_gen =
-  { name; signatures; init; loc }
 
 let mk_storage_item ?(const=false) ?(ghost = false) ?(loc = Location.dummy) id model_type typ default : 'id storage_item_gen =
   { id; model_type; typ; const; ghost; default; loc }
@@ -3176,26 +3148,11 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
         loc           = r.loc;
       }
     in
-    let for_contract (c : contract) : contract =
-      let for_contract_signature (cs : contract_signature) : contract_signature = {
-        name          = g KIcontractentry cs.name;
-        args          = List.map (fun (x, y) -> g KIargument x, for_type y) cs.args;
-        loc           = cs.loc;
-      }
-      in
-      {
-        name          = g KIcontractname c.name;
-        signatures    = List.map for_contract_signature c.signatures;
-        init          = Option.map for_mterm c.init;
-        loc           = c.loc;
-      }
-    in
     match d with
     | Dvar v      -> Dvar      (for_var v)
     | Denum e     -> Denum     (for_enum e)
     | Dasset a    -> Dasset    (for_asset a)
     | Drecord r   -> Drecord   (for_record r)
-    | Dcontract c -> Dcontract (for_contract c)
   in
   let for_storage_item (si : storage_item) : storage_item =
     let for_model_type (mt : model_type) : model_type =
@@ -4465,7 +4422,6 @@ end = struct
       | Denum e     -> for_enum   accu e
       | Dasset a    -> for_asset  accu a
       | Drecord r   -> for_record accu r
-      | _ -> accu
     in
     let for_storage_item accu (si : storage_item) =
       accu
