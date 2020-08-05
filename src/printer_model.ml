@@ -263,17 +263,8 @@ let pp_mterm fmt (mt : mterm) =
     (* effect *)
 
     | Mfail ft ->
-      let pp_fail_type fmt = function
-        | Invalid e -> f fmt e
-        | InvalidCaller -> Format.fprintf fmt "\"invalid caller\""
-        | InvalidCondition c ->
-          Format.fprintf fmt "\"require %afailed\""
-            (pp_option (pp_postfix " " pp_str)) c
-        | NoTransfer -> Format.fprintf fmt "\"no transfer\""
-        | InvalidState -> Format.fprintf fmt "\"invalid state\""
-      in
       Format.fprintf fmt "fail (%a)"
-        pp_fail_type ft
+        (pp_fail_type f) ft
 
     | Mtransfer (v, k) ->
       Format.fprintf fmt "transfer %a %a"
@@ -940,7 +931,7 @@ let pp_mterm fmt (mt : mterm) =
     (* variable *)
 
     | Mvar (an, Vassetstate k) -> Format.fprintf fmt "state_%a(%a)" pp_str (Location.unloc an) f k
-    | Mvar(v, Vstorevar) -> pp_id fmt v
+    | Mvar(v, Vstorevar) -> Format.fprintf fmt "s.%a" pp_id v
     | Mvar(v, Vstorecol) -> pp_id fmt v
     | Mvar(v, Venumval)  -> pp_id fmt v
     | Mvar(v, Vlocal)    -> pp_id fmt v

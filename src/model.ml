@@ -400,6 +400,7 @@ and 'id fail_type_gen =
   | InvalidCaller
   | InvalidCondition of ident option
   | NoTransfer
+  | AssignNat
   | InvalidState
 [@@deriving show {with_path = false}]
 

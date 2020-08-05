@@ -1,0 +1,13 @@
+archetype assign_minus_nat
+
+variable n : nat = 10
+
+entry exec () {
+  specification {
+    s1: n = 9;
+  }
+  effect {
+    n -= 1;
+    dorequire(n = 9)
+  }
+}

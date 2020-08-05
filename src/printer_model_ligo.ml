@@ -478,17 +478,8 @@ let pp_model_internal fmt (model : model) b =
     (* effect *)
 
     | Mfail ft ->
-      let pp_fail_type fmt = function
-        | Invalid e -> f fmt e
-        | InvalidCaller -> Format.fprintf fmt "\"invalid caller\""
-        | InvalidCondition c ->
-          Format.fprintf fmt "\"require %afailed\""
-            (pp_option (pp_postfix " " pp_str)) c
-        | NoTransfer -> Format.fprintf fmt "\"no transfer\""
-        | InvalidState -> Format.fprintf fmt "\"invalid state\""
-      in
       Format.fprintf fmt "failwith (%a)"
-        pp_fail_type ft
+        (pp_fail_type f) ft
 
     | Mtransfer (v, k) -> begin
         match k with

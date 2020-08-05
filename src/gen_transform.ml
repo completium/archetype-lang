@@ -110,7 +110,12 @@ let process_assign_op op (t : type_) (lhs : mterm) (v : mterm) : mterm =
   | PlusAssign  , _ -> mk_mterm (Mplus (lhs, v)) t
   | MinusAssign , Tbuiltin Bnat -> begin
       let a = mk_mterm (Mminus (lhs, v)) (Tbuiltin Bint) in
-      mk_mterm (Mabs a) (Tbuiltin Bnat)
+      let zero = mk_mterm (Mint Big_int.zero_big_int) (Tbuiltin Bint) in
+      let cond = mk_mterm (Mge (a, zero)) (Tbuiltin Bbool) in
+      let v = mk_mterm (Mabs a) (Tbuiltin Bnat) in
+      let f = mk_mterm (Mfail AssignNat) (Tunit) in
+      let c = mk_mterm (Mcast (Tunit, Tbuiltin Bnat, f)) (Tbuiltin Bnat) in
+      mk_mterm (Mexprif (cond, v, c)) (Tbuiltin Bnat)
     end
   | MinusAssign , _ -> mk_mterm (Mminus (lhs, v)) t
   | MultAssign  , _ -> mk_mterm (Mmult (lhs, v)) t

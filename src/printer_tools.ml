@@ -106,3 +106,13 @@ let maybe_paren outer inner pos pp =
 let pp_version fmt _ = pp_str fmt Options.version
 
 let pp_bin fmt _ = Format.fprintf fmt "archetype %a" pp_version ()
+
+let pp_fail_type f fmt = function
+  | Model.Invalid e -> f fmt e
+  | Model.InvalidCaller -> Format.fprintf fmt "\"invalid caller\""
+  | Model.InvalidCondition c ->
+    Format.fprintf fmt "\"require %afailed\""
+      (pp_option (pp_postfix " " pp_str)) c
+  | Model.NoTransfer -> Format.fprintf fmt "\"no transfer\""
+  | Model.AssignNat -> Format.fprintf fmt "\"cannot assign negative value to nat\""
+  | Model.InvalidState -> Format.fprintf fmt "\"invalid state\""
