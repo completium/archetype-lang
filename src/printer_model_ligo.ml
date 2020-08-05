@@ -974,7 +974,7 @@ let pp_model_internal fmt (model : model) b =
                            match op, type_ with
                            | ValueAssign, _ -> f fmt v
                            | PlusAssign , _ -> Format.fprintf fmt "%s.%s + (%a)"   asset_val id f v
-                           | MinusAssign, Tbuiltin Bnat -> Format.fprintf fmt "abs(%s.%s - (%a))"   asset_val id f v
+                           | MinusAssign, Tbuiltin Bnat -> Format.fprintf fmt "(if (%s.%s - (%a)) >= 0 then abs(%s.%s - (%a)) else (failwith (%a) : nat))"   asset_val id f v asset_val id f v (pp_fail_type f) AssignNat
                            | MinusAssign, _ -> Format.fprintf fmt "%s.%s - (%a)"   asset_val id f v
                            | MultAssign , _ -> Format.fprintf fmt "%s.%s * (%a)"   asset_val id f v
                            | DivAssign  , _ -> Format.fprintf fmt "%s.%s / (%a)"   asset_val id f v

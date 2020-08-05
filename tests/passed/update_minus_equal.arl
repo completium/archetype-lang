@@ -1,0 +1,18 @@
+archetype update_minus_equal
+
+asset my_asset identified by id {
+  id : string;
+  value : nat;
+} initialized by {
+  {"id0"; 10};
+  {"id1"; 11};
+  {"id2"; 12}
+}
+
+variable res : int = 0
+
+entry exec () {
+  effect {
+    my_asset.update("id1", {value -= 3})
+  }
+}
