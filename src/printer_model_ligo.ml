@@ -61,7 +61,6 @@ type action = {
 module LigoUtils : sig
   val get_actions : model -> action list
   val is_param : action -> ident -> bool
-  val get_contract_actions : model -> (ident * action list) list
 end = struct
   let mk_action_fs (fs : function_struct) =
     let fun_name = fs.name |> unloc in
@@ -73,16 +72,6 @@ end = struct
             | Tenum _ -> Tbuiltin Bint
             | _ -> t)) fs.args
     in
-    {
-      name = id;
-      fun_name = fun_name;
-      args = args;
-    }
-
-  let mk_action_contract_signature (cs : contract_signature) : action =
-    let fun_name = cs.name |> unloc in
-    let id = cs.name |> unloc |> String.up_firstcase_lower in
-    let args = List.map (fun (id, t) -> (unloc id, t)) cs.args in
     {
       name = id;
       fun_name = fun_name;
@@ -101,13 +90,6 @@ end = struct
     List.fold_left (fun accu (id, _) ->
         accu || String.equal id arg_id) false action.args
 
-  let get_contract_actions (model : model) : (ident * action list) list =
-    List.fold_right
-      (fun x accu ->
-         match x with
-         | Dcontract x -> (unloc x.name, List.map mk_action_contract_signature x.signatures)::accu
-         | _ -> accu
-      ) model.decls []
 end
 
 let pp_model_internal fmt (model : model) b =
@@ -1543,11 +1525,6 @@ let pp_model_internal fmt (model : model) b =
   in
 
   let pp_action_type (fmt : Format.formatter) _ =
-    List.iter
-      (fun (name, actions) ->
-         pp_actions fmt ("_" ^ name) actions;
-         Format.fprintf fmt "@\n";)
-      (LigoUtils.get_contract_actions model);
     pp_actions fmt "" (LigoUtils.get_actions model)
   in
 
@@ -1618,7 +1595,6 @@ let pp_model_internal fmt (model : model) b =
     | Denum e   -> pp_enum    fmt e
     | Dasset a  -> pp_asset   fmt a
     | Drecord r -> pp_record  fmt r
-    | Dcontract _c -> ()
   in
 
   let pp_decls env (fmt : Format.formatter) _ =

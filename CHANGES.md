@@ -9,13 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - `chain_id` constant
  - `union` `inter` and `diff` operator for view in formula
  - multi-keys asset : `identified by` can take several field name
+ - `nat` type (comparison and arithmetic operations)
+ - support for entrypoints with `entrysig` type, `entrypoint` function and `transfer` with `entrysig` and `self`
+ - `map` and `set` containers
+
+### Changed
+ - `contract` declaration
 
 ### Changed
  - syntax of composite type (i.e. `list<string>` instead of `string list`)
 
 ### Fixed
  - `caller` as asset key in `initialized by` section
- - `-ptc` command does not display `pkey of` type anymore
 
 ## [1.0.0] - 2020-06-27
 ### Added

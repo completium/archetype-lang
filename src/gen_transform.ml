@@ -1453,18 +1453,6 @@ let replace_date_duration_by_timestamp (model : model) : model =
                            });
              init = List.map process_mterm a.init;
             }
-        | Dcontract c ->
-          Dcontract
-            {c with
-             signatures = c.signatures |> List.map
-                            (fun (cs : contract_signature) ->
-                               {
-                                 cs with
-                                 args = cs.args |> List.map (fun (a, b) -> (a, process_type b))
-                               }
-                            );
-             init = c.init |> Option.map process_mterm
-            }
         | _ as x -> x)
   in
   { model with

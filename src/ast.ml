@@ -260,13 +260,6 @@ type bval = bval_gen
 
 (* -------------------------------------------------------------------- *)
 
-type 'id signature = {
-  name : 'id;
-  args: (lident * ptyp) list;
-  loc: Location.t [@opaque];
-}
-[@@deriving show {with_path = false}]
-
 type quantifier =
   | Forall
   | Exists
@@ -630,22 +623,11 @@ type 'id record_struct = {
 
 type record = lident record_struct
 
-type 'id contract_struct = {
-  name       : 'id;
-  signatures : 'id signature list;
-  init       : 'id term_gen option;
-  loc        : Location.t [@opaque];
-}
-[@@deriving show {with_path = false}]
-
-and contract = lident contract_struct
-
 type 'id decl_ =
   | Dvariable of 'id variable
   | Dasset    of 'id asset_struct
   | Drecord   of 'id record_struct
   | Denum     of 'id enum_struct
-  | Dcontract of 'id contract_struct
 [@@deriving show {with_path = false}]
 
 type 'id fun_ =
@@ -737,9 +719,6 @@ let mk_decl ?typ ?default ?(shadow=false) ?(loc = Location.dummy) name =
 let mk_asset ?(fields = []) ?(keys = []) ?(sort = []) ?(big_map = false) ?state ?(init = []) ?(specs = []) ?(loc = Location.dummy) name   =
   { name; fields; keys; sort; big_map; state; init; specs; loc }
 
-let mk_contract ?(signatures = []) ?init ?(loc = Location.dummy) name =
-  { name; signatures; init; loc }
-
 let mk_model ?(decls = []) ?(funs = []) ?(specifications = []) ?(securities = []) ?(loc = Location.dummy) name =
   { name; decls; funs; specifications; securities; loc }
 
@@ -763,7 +742,6 @@ module Utils : sig
   val is_enum_value             : ast -> lident -> bool
   val get_var_type              : ast -> lident -> type_
   val get_enum_name             : lident enum_struct -> lident
-  val get_contract_sig_ids      : ast -> ident -> ident -> lident list
 
 end = struct
   open Tools
@@ -785,7 +763,6 @@ end = struct
   let get_variables ast = List.fold_right (fun (x : 'id decl_) accu -> match x with Dvariable x ->  x::accu | _ -> accu ) ast.decls []
   let get_assets ast    = List.fold_right (fun (x : 'id decl_) accu -> match x with Dasset x    ->  x::accu | _ -> accu ) ast.decls []
   let get_enums ast     = List.fold_right (fun (x : 'id decl_) accu -> match x with Denum x     ->  x::accu | _ -> accu ) ast.decls []
-  let get_contracts ast = List.fold_right (fun (x : 'id decl_) accu -> match x with Dcontract x ->  x::accu | _ -> accu ) ast.decls []
 
   let get_asset_opt ast asset_name : asset option =
     let id = unloc asset_name in
@@ -849,13 +826,6 @@ end = struct
         else accu
       ) None (get_assets ast)
 
-  let get_contract_opt ast ident =
-    List.fold_left (fun accu (x : 'id contract_struct) ->
-        if (Location.unloc x.name) = (Location.unloc ident)
-        then Some x
-        else accu
-      ) None (get_contracts ast)
-
   let get_enum_values ast ident =
     List.fold_left (
       fun accu (x : 'id enum_struct) ->
@@ -899,17 +869,4 @@ end = struct
     | Some v -> v
     | None -> emit_error VariableNotFound
 
-  let get_contract_sig_ids (ast : ast) (contract_id : ident) (fun_id : ident) : lident list =
-    let get_signature signatures ident : ((lident * ptyp) list) option =
-      List.fold_left (fun accu (x : 'id signature) ->
-          if (Location.unloc x.name) = ident
-          then Some (x.args)
-          else accu
-        ) None signatures
-    in
-    let contract = get_contract_opt ast (dumloc contract_id) in
-    let contract = if (Option.is_none contract) then raise Not_found else Option.get contract in
-    let signatures = get_signature contract.signatures fun_id in
-    let signatures = if (Option.is_none signatures) then raise Not_found else Option.get signatures in
-    List.map fst signatures
 end

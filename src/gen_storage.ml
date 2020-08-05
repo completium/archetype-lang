@@ -93,7 +93,6 @@ let generate_storage (model : model) : model =
     | Denum e     -> state_to_storage_items e
     | Dasset a    -> [asset_to_storage_items a]
     | Drecord _   -> []
-    | Dcontract _ -> []
   in
 
   let storage = List.map process_storage_item model.decls |> List.flatten in

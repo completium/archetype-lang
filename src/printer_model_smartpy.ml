@@ -1437,7 +1437,6 @@ let pp_model fmt (model : model) =
     | Denum _e     -> ()
     | Dasset _a    -> ()
     | Drecord _r   -> ()
-    | Dcontract _c -> ()
   in
 
   let pp_decls (env : env) (fmt : Format.formatter) _ =

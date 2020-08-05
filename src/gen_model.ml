@@ -750,17 +750,6 @@ let to_model (ast : A.ast) : M.model =
     M.Drecord (M.mk_record r.name ~fields:fs ~loc:r.loc)
   in
 
-  let to_contract_signature (s : A.lident A.signature) : M.contract_signature =
-    let name = s.name in
-    M.mk_contract_signature name ~args:(List.map (fun (id, typ) -> (id, ptyp_to_type typ)) s.args) ~loc:s.loc
-  in
-  let to_contract (env : env) (c : A.contract) : M.contract =
-    M.mk_contract c.name
-      ~signatures:(List.map to_contract_signature c.signatures)
-      ?init:(Option.map (to_mterm env) c.init)
-      ~loc:c.loc
-  in
-
   let rec to_instruction (env : env) (instr : A.instruction) : M.mterm =
     let is_empty_seq (instr : A.instruction) =
       match instr.node with
@@ -1249,7 +1238,6 @@ let to_model (ast : A.ast) : M.model =
     | A.Dasset    a -> process_asset env a
     | A.Drecord   r -> process_record r
     | A.Denum     e -> process_enum env e
-    | A.Dcontract c -> M.Dcontract (to_contract env c)
   in
 
   let process_fun_ (env : env) = function
