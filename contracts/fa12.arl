@@ -33,8 +33,7 @@ entry approve(spender : address, value : nat) {
   var k = (caller, spender);
   if allowance.contains(k) then
     if allowance[k].amount > 0 and value > 0
-    then fail("Unsafe Allowance Change")
-    else allowance.update(k, { amount = value });
+    then fail("Unsafe Allowance Change");
   allowance.addupdate( k, { amount = value });
 }
 
