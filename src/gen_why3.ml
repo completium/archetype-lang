@@ -2367,7 +2367,7 @@ let map_init_mterm m ctx (t : M.mterm) =
   | M.Mnow -> loc_term (Tint Big_int.zero_big_int)
   | _ -> map_mterm m ctx t
 
-let map_storage_items m =
+let mk_storage_items m =
   let ctx = { init_ctx with lctx = Inv } in
   List.fold_left (fun acc (item : M.storage_item) ->
     acc @
@@ -2446,10 +2446,10 @@ let mk_state_invariants m ctx =
     | _ -> acc
   ) [] m.decls
 
-let map_storage m (l : M.storage) =
+let mk_storage m (l : M.storage) =
   let ctx = { init_ctx with lctx = Inv } in
   Dstorage {
-    fields     = (map_storage_items m l) @ (mk_const_fields m |> loc_field |> deloc);
+    fields     = (mk_storage_items m l) @ (mk_const_fields m |> loc_field |> deloc);
     invariants =
       mk_asset_invariants m ctx    @
       mk_security_invariants m ctx @
@@ -3827,7 +3827,7 @@ let to_whyml (m : M.model) : mlw_tree  =
   let init_records     = mlwassets |> unloc_decl |> List.map mk_default_init |> loc_decl in
   let mlwassets        = zip mlwassets eq_keys le_keys eq_assets init_records views fields colls |> deloc in
   let storage_api_bs   = mk_storage_api_before_storage m (records |> wdl) in
-  let storage          = M.Utils.get_storage m |> map_storage m in
+  let storage          = M.Utils.get_storage m |> mk_storage m in
   let storageval       = Dval (dl gs, dl Tystorage) in
   let axioms           = mk_axioms m in
   (*let partition_axioms = mk_partition_axioms m in*)
