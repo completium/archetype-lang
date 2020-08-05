@@ -178,6 +178,7 @@ let pp_exn fmt e =
     | Ekeyexist           -> "KeyExist"
     | Enotfound           -> "NotFound"
     | Einvalidcaller      -> "InvalidCaller"
+    | Enegassignnat       -> "NegAssignNat"
     | Einvalidcondition   -> "InvalidCondition"
     | Einvalidstate       -> "InvalidState"
     | Enotransfer         -> "NoTransfer"

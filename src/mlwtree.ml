@@ -3,6 +3,7 @@ open Tools
 type exn =
   | Enotfound
   | Ekeyexist
+  | Enegassignnat
   | Einvalidcaller
   | Einvalidcondition
   | Einvalidstate
@@ -689,6 +690,7 @@ let compare_exn e1 e2 =
   | Enotfound, Enotfound -> true
   | Ekeyexist, Ekeyexist -> true
   | Einvalidcaller, Einvalidcaller -> true
+  | Enegassignnat, Enegassignnat -> true
   | Einvalidcondition, Einvalidcondition -> true
   | Einvalidstate, Einvalidstate -> true
   | Ebreak, Ebreak -> true

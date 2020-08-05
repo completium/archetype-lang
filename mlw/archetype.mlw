@@ -17,6 +17,7 @@ theory Types
   exception Break
   exception NotFound
   exception KeyExist
+  exception NegAssignNat
   exception InvalidCaller
   exception InvalidCondition
   exception NoTransfer

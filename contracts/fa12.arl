@@ -46,5 +46,5 @@ entry getTotalSupply (cb : entrysig<nat>) {
 }
 
 specification {
-  s1 : ledger.sum(tokens) = totalsupply;
+  s1 :  ledger.sum(tokens) = totalsupply;
 }

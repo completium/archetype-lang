@@ -1381,6 +1381,24 @@ let get_tuple_size = function
 | M.Ttuple l -> List.length l
 | _ -> assert false
 
+let fail_if_neg_nat_value t left right op  =
+ match t with
+| M.Tbuiltin  Bnat -> dl (
+    Tif (dl (Tge(dl Tyint, left, right)), op, Some (loc_term (Traise Enegassignnat)))
+  )
+| _ -> op
+
+let get_assign_value t left right = function
+| M.ValueAssign -> right
+| M.MinusAssign ->
+  let op = dl (Tminus (dl Tyint, left, right)) in
+  fail_if_neg_nat_value t left right op
+| M.PlusAssign -> dl (Tplus (dl Tyint, left, right))
+| M.MultAssign -> dl (Tmult (dl Tyint, left, right))
+| M.DivAssign -> dl (Tdiv (dl Tyint, left, right))
+| M.AndAssign -> dl (Tand (left, right))
+| M.OrAssign -> dl (Tor (left, right))
+
 let rec map_mterm m ctx (mt : M.mterm) : loc_term =
   let error_internal desc = emit_error (mt.loc, desc); Tnottranslated in
   let error_not_translated (msg : string) = (* Tnottranslated in *) error_internal (TODONotTranslated msg) in
@@ -1466,107 +1484,22 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Massign (_, _, Avar _, _) -> error_not_translated "Massign (_, _, Avar _, _)"
 
-    | Massign (assignop, _, Avarstore id, v) ->
-      let var = dl (Tdoti (dl gs,map_lident id)) in
-      let value =
-        begin
-          match assignop with
-          | ValueAssign -> map_mterm m ctx v
-          | MinusAssign ->
-            dl (
-              Tminus (dl Tyint,
-                      var,
-                      map_mterm m ctx v))
-          | PlusAssign ->
-            dl (
-              Tplus (dl Tyint,
-                     var,
-                     map_mterm m ctx v))
-          | MultAssign ->
-            dl (
-              Tmult (dl Tyint,
-                     var,
-                     map_mterm m ctx v))
-          | DivAssign ->
-            dl (
-              Tdiv (dl Tyint,
-                    var,
-                    map_mterm m ctx v))
-          | AndAssign ->
-            dl (
-              Tand (var,
-                    map_mterm m ctx v))
-          | OrAssign ->
-            dl (
-              Tor (var,
-                   map_mterm m ctx v))
-        end in
-      Tassign (var,value)
-    | Massign (assignop, _, Aasset (_id1, id2, k), v) ->
+    | Massign (assignop, t, Avarstore id, v) ->
+      let left = dl (Tdoti (dl gs,map_lident id)) in
+      let right = map_mterm m ctx v in
+      Tassign (left,get_assign_value t left right assignop)
 
-      let id = dl (Tdot (map_mterm m ctx (* id1 *) k, (* FIXME *)
+    | Massign (assignop, t, Aasset (_id1, id2, k), v) ->
+      let left = dl (Tdot (map_mterm m ctx (* id1 *) k, (* FIXME *)
                          dl (Tvar (map_lident id2)))) in
-      let value =
-        begin
-          match assignop with
-          | ValueAssign -> map_mterm m ctx v
-          | MinusAssign -> dl (
-              Tminus (dl Tyint,
-                      id,
-                      map_mterm m ctx v))
-          | PlusAssign -> dl (
-              Tplus (dl Tyint,
-                     id,
-                     map_mterm m ctx v))
-          | MultAssign -> dl (
-              Tmult (dl Tyint,
-                     id,
-                     map_mterm m ctx v))
-          | DivAssign -> dl (
-              Tdiv (dl Tyint,
-                    id,
-                    map_mterm m ctx v))
-          | AndAssign -> dl (
-              Tand (  id,
-                      map_mterm m ctx v))
-          | OrAssign -> dl (
-              Tor (  id,
-                     map_mterm m ctx v))
-        end in
-      Tassign (id,value)
+      let right = map_mterm m ctx v in
+      Tassign (left,get_assign_value t left right assignop)
 
-    | Massign (assignop, _, Arecord (_id1, id2, k), v) ->
-
-      let id = dl (Tdot (map_mterm m ctx (* id1 *) k, (* FIXME *)
+    | Massign (assignop, t, Arecord (_id1, id2, k), v) ->
+      let left = dl (Tdot (map_mterm m ctx (* id1 *) k, (* FIXME *)
                          dl (Tvar (map_lident id2)))) in
-      let value =
-        begin
-          match assignop with
-          | ValueAssign -> map_mterm m ctx v
-          | MinusAssign -> dl (
-              Tminus (dl Tyint,
-                      id,
-                      map_mterm m ctx v))
-          | PlusAssign -> dl (
-              Tplus (dl Tyint,
-                     id,
-                     map_mterm m ctx v))
-          | MultAssign -> dl (
-              Tmult (dl Tyint,
-                     id,
-                     map_mterm m ctx v))
-          | DivAssign -> dl (
-              Tdiv (dl Tyint,
-                    id,
-                    map_mterm m ctx v))
-          | AndAssign -> dl (
-              Tand (  id,
-                      map_mterm m ctx v))
-          | OrAssign -> dl (
-              Tor (  id,
-                     map_mterm m ctx v))
-        end in
-      Tassign (id,value)
+      let right = map_mterm m ctx v in
+      Tassign (left,get_assign_value t left right assignop)
 
     | Massign (_, _, Astate, v) -> Tassign (loc_term (Tdoti (gs, "state")), map_mterm m ctx v)
 
@@ -1618,7 +1551,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mfail InvalidState         -> Traise Einvalidstate
     | Mfail (Invalid { node = M.Mstring msg; type_=_ }) -> Traise (Einvalid (Some msg))
     | Mfail (Invalid { node = M.Mvar (n, Vlocal); type_=_ }) -> Traise (Einvalid (Some (unloc n)))
-    | Mfail               _ -> error_not_translated "Mfail"
+    | Mfail AssignNat -> Traise Enegassignnat
+    | Mfail (Invalid _) -> Traise (Einvalid (Some ("error")))
 
     | Mtransfer (v, k) ->
       begin
@@ -3586,6 +3520,7 @@ let fold_exns m body : term list =
     | M.Mfail NoTransfer -> acc @ [Texn Enotransfer]
     | M.Mfail (InvalidCondition _) -> acc @ [Texn Einvalidcondition]
     | M.Mfail InvalidState -> acc @ [Texn Einvalidstate]
+    | M.Mfail AssignNat -> acc @ [Texn Enegassignnat]
     | M.Mfail (Invalid _) -> acc @ [Texn (Einvalid None)]
     | M.Mlistnth _ -> acc @ [Texn Enotfound]
     | M.Mself _ -> acc @ [Texn Enotfound]
