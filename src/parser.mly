@@ -286,15 +286,15 @@ archetype:
 
 vc_decl(X):
 | X exts=extensions? x=ident COLON t=type_t dv=default_value? invs=invariants
-    { (x, t, None, dv, invs, exts) }
+    { (x, t, dv, invs, exts) }
 
 constant:
-  | x=vc_decl(CONSTANT) { let x, t, z, dv, invs, exts = x in
-                          Dvariable (x, t, dv, z, VKconstant, invs, exts) }
+  | x=vc_decl(CONSTANT) { let x, t, dv, invs, exts = x in
+                          Dvariable (x, t, dv, VKconstant, invs, exts) }
 
 variable:
-  | x=vc_decl(VARIABLE) { let x, t, z, dv, invs, exts = x in
-                          Dvariable (x, t, dv, z, VKvariable, invs, exts) }
+  | x=vc_decl(VARIABLE) { let x, t, dv, invs, exts = x in
+                          Dvariable (x, t, dv, VKvariable, invs, exts) }
 
 %inline default_value:
 | EQUAL x=expr { x }

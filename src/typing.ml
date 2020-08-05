@@ -412,7 +412,6 @@ type error_desc =
   | InvalidTypeForMapValue
   | InvalidTypeForPk
   | InvalidTypeForSet
-  | InvalidTypeForVarWithFromTo
   | InvalidVarOrArgType
   | LabelInNonInvariant
   | LetInElseInInstruction
@@ -425,7 +424,6 @@ type error_desc =
   | MixedFieldNamesInAssetOrRecordLiteral of ident list
   | MoreThanOneInitState               of ident list
   | MultipleAssetStateDeclaration
-  | MultipleFromToInVarDecl
   | MultipleInitialMarker
   | MultipleMatchingFunction           of ident * A.ptyp list * (A.ptyp list * A.ptyp) list
   | MultipleMatchingOperator           of PT.operator * A.ptyp list * opsig list
@@ -594,7 +592,6 @@ let pp_error_desc fmt e =
   | InvalidTypeForSet                  -> pp "Invalid type for set"
   | InvalidTypeForMapKey               -> pp "Invalid type for map key"
   | InvalidTypeForMapValue             -> pp "Invalid type for map value"
-  | InvalidTypeForVarWithFromTo        -> pp "A variable with a from/to declaration must be of type currency"
   | InvalidVarOrArgType                -> pp "A variable / argument type cannot be an asset or a collection"
   | LabelInNonInvariant                -> pp "The label modifier can only be used in invariants"
   | LetInElseInInstruction             -> pp "Let In else in instruction"
@@ -607,7 +604,6 @@ let pp_error_desc fmt e =
   | MixedFieldNamesInAssetOrRecordLiteral l -> pp "Mixed field names in asset or record literal: %a" (Printer_tools.pp_list "," pp_ident) l
   | MoreThanOneInitState l             -> pp "More than one initial state: %a" (Printer_tools.pp_list ", " pp_ident) l
   | MultipleAssetStateDeclaration      -> pp "Multiple asset states declaration"
-  | MultipleFromToInVarDecl            -> pp "Variable declaration must have at most one from/to specification"
   | MultipleInitialMarker              -> pp "Multiple 'initial' marker"
   | MultipleStateDeclaration           -> pp "Multiple state declaration"
   | NameIsAlreadyBound (i, None)       -> pp "Name is already bound: %a" pp_ident i
@@ -1027,7 +1023,6 @@ type vardecl = {
   vr_kind   : [`Constant | `Variable | `Ghost | `Enum];
   vr_invs   : A.lident A.label_term list;
   vr_def    : (A.pterm * [`Inline | `Std]) option;
-  vr_tgt    : A.lident option * A.lident option;
   vr_core   : A.const option;
 }
 
@@ -1436,7 +1431,6 @@ end = struct
                vr_kind = `Constant;
                vr_invs = [];
                vr_core = None;
-               vr_tgt  = (None, None);
                vr_def  = None; }
 
       | `StateByCtor (enum, ctor) ->
@@ -1445,7 +1439,6 @@ end = struct
                vr_kind = `Enum;
                vr_invs = [];
                vr_core = None;
-               vr_tgt  = (None, None);
                vr_def  = None; }
 
       | `Definition def ->
@@ -1454,7 +1447,6 @@ end = struct
                vr_kind = `Ghost;
                vr_invs = [];
                vr_core = None;
-               vr_tgt  = (None, None);
                vr_def  = None; }
 
       | _ -> None
@@ -1618,7 +1610,6 @@ let empty : env =
       let def = A.mk_sp ~type_:vr_type  def in
 
       { vr_name; vr_type; vr_core = Some vr_core;
-        vr_tgt  = (None, None);
         vr_def  = Some (def, `Inline);
         vr_kind = `Constant;
         vr_invs = [];
@@ -3893,7 +3884,7 @@ let for_specification_item
         Option.fold (fun (env, poenv) ty ->
             let decl = {
               vr_name =  x; vr_type =   ty; vr_kind =       `Ghost;
-              vr_invs = []; vr_def  = None; vr_tgt  = (None, None);
+              vr_invs = []; vr_def  = None;
               vr_core = None;
             } in
 
@@ -4140,7 +4131,6 @@ let for_function (env : env) (fdecl : PT.s_function loced) =
               vr_kind = `Ghost;
               vr_invs = [];
               vr_def  = None;
-              vr_tgt  = None, None;
               vr_core = None;
             } in Env.Var.push poenv decl
           ) env in
@@ -4268,7 +4258,7 @@ let for_enums_decl (env : env) (decls : (PT.lident * PT.enum_decl) loced list) =
 
 (* -------------------------------------------------------------------- *)
 let for_var_decl (env : env) (decl : PT.variable_decl loced) =
-  let (x, ty, pe, tgt, ctt, invs, _) = unloc decl in
+  let (x, ty, pe, ctt, invs, _) = unloc decl in
 
   let ty   = for_type env ty in
   let e    = Option.map (for_expr `Concrete env ?ety:ty) pe in
@@ -4288,34 +4278,11 @@ let for_var_decl (env : env) (decl : PT.variable_decl loced) =
   if Option.is_none pe then
     Env.emit_error env (loc decl, UninitializedVar);
 
-  let tgt =
-    let for1 = function
-      | PT.VOfrom x -> (`From, for_role env x)
-      | PT.VOto   x -> (`To  , for_role env x)
-    in List.map for1 (Option.get_dfl [] tgt) in
-
-  let (tf, tt) =
-    let for1 (f, t) =
-      function (`From, x) -> (x :: f, t) | (`To, x) -> (f, x :: t)
-    in List.fold_left for1 ([], []) tgt in
-
-  let tgtc = (List.length tf, List.length tt) in
-
-  if tgtc <> (0, 0) && (fst tgtc > 1 || snd tgtc > 1) then
-    Env.emit_error env (loc decl, MultipleFromToInVarDecl);
-
   match dty with
   | None ->
     (env, (None, None))
 
   | Some dty ->
-    if tgtc <> (0, 0) then begin
-      if not (Type.is_currency dty) then
-        Env.emit_error env (loc decl, InvalidTypeForVarWithFromTo);
-    end;
-
-    let vtgt_tf = match tf with [Some tf] -> Some tf | _ -> None in
-    let vtgt_tt = match tt with [Some tt] -> Some tt | _ -> None in
 
     let decl = {
       vr_name = x;
@@ -4323,7 +4290,6 @@ let for_var_decl (env : env) (decl : PT.variable_decl loced) =
       vr_kind = ctt;
       vr_core = None;
       vr_invs = [];
-      vr_tgt  = (vtgt_tf, vtgt_tt);
       vr_def  = Option.map (fun e -> (e, `Std)) e; } in
 
     if   (check_and_emit_name_free env x)
@@ -4930,7 +4896,6 @@ let for_grouped_declarations (env : env) (toploc, g) =
                     vr_kind = `Constant;
                     vr_invs = [];
                     vr_def  = None;
-                    vr_tgt  = (None, None);
                     vr_core = Some Cstate; } in
       let env = Env.State.push env decl in
       let env = Env.Var.push env vdecl in
@@ -5057,11 +5022,6 @@ let records_of_rdecls rdecls =
 
 (* -------------------------------------------------------------------- *)
 let variables_of_vdecls fdecls =
-  let mktgt x =
-    A.mk_sp
-      ~loc:(loc x) ~type_:(A.Tbuiltin (A.VTrole))
-      (A.Qident x) in (* FIXME: type? *)
-
   let for1 (decl : vardecl) =
     A.{ decl =
           A.{ name    = decl.vr_name;
@@ -5070,8 +5030,6 @@ let variables_of_vdecls fdecls =
               shadow  = false;
               loc     = loc decl.vr_name; };
         constant = decl.vr_kind = `Constant;
-        from     = Option.map mktgt (fst decl.vr_tgt);
-        to_      = Option.map mktgt (snd decl.vr_tgt);
         invs     = decl.vr_invs;
         loc      = loc decl.vr_name; }
 

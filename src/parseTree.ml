@@ -277,7 +277,6 @@ and variable_decl =
   lident
   * type_t
   * expr option
-  * value_option list option
   * variable_kind
   * label_exprs
   * exts
@@ -320,10 +319,6 @@ and extension_decl =
 
 and namespace_decl =
   lident * declaration list
-
-and value_option =
-  | VOfrom of lident
-  | VOto of lident
 
 and asset_option =
   | AOidentifiedby of lident list

@@ -416,8 +416,6 @@ type 'id label_term = {
 type 'id variable = {
   decl         : 'id decl_gen; (* TODO *)
   constant     : bool;
-  from         : 'id qualid_gen option;
-  to_          : 'id qualid_gen option;
   invs         : 'id label_term list;
   loc          : Location.t [@opaque];
 }
@@ -677,8 +675,8 @@ let mk_instr ?label ?(loc = Location.dummy) node =
 let mk_label_term ?label ?(loc = Location.dummy) term =
   { label; term; loc }
 
-let mk_variable ?(constant = false) ?from ?to_ ?(invs = []) ?(loc = Location.dummy) decl =
-  { decl; constant; from; to_; invs; loc }
+let mk_variable ?(constant = false) ?(invs = []) ?(loc = Location.dummy) decl =
+  { decl; constant; invs; loc }
 
 let mk_predicate ?(args = []) ?(loc = Location.dummy) name body =
   { name; args; body; loc }

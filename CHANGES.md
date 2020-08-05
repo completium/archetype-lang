@@ -12,12 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - `nat` type (comparison and arithmetic operations)
  - support for entrypoints with `entrysig` type, `entrypoint` function and `transfer` with `entrysig` and `self`
  - `map` and `set` containers
+ - `record` structure
 
-### Changed
+### Removed
  - `contract` declaration
 
 ### Changed
  - syntax of composite type (i.e. `list<string>` instead of `string list`)
+ - `rational` are mapped to `int * nat`
 
 ### Fixed
  - `caller` as asset key in `initialized by` section

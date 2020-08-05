@@ -205,7 +205,7 @@ let make_outline_from_decl (d : PT.declaration) gl =
   let l, v = Location.deloc d in
   match v with
   | Darchetype (id, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Class, gl)]
-  | Dvariable (id, _, _, _, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Variable, l)]
+  | Dvariable (id, _, _, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Variable, l)]
   | Denum (ek, (li, _)) -> make_outline_from_enum (ek, li, l)
   | Dasset (id, _, _, _, post_options, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Struct, l)] @ mk_outline_post_options post_options
   | Dentry (id, _, ap, _, _) -> mk_outline (Location.unloc id, symbol_kind_to_int Function, l) :: (Option.map_dfl mk_outline_from_specification [] ap.spec_fun)

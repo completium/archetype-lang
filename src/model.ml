@@ -121,21 +121,6 @@ type assignment_operator =
   | OrAssign
 [@@deriving show {with_path = false}]
 
-type ('id, 'qualid) qualid_node =
-  | Qident of 'id
-  | Qdot of 'qualid * 'id
-[@@deriving show {with_path = false}]
-
-type 'id qualid_gen = {
-  node: ('id, 'id qualid_gen) qualid_node;
-  type_: type_;
-  loc : Location.t [@opaque];
-}
-[@@deriving show {with_path = false}]
-
-type qualid = lident qualid_gen
-[@@deriving show {with_path = false}]
-
 type sort_kind =
   | SKasc
   | SKdesc
@@ -680,8 +665,6 @@ type signature = lident signature_gen
 type 'id variable_gen = {
   decl         : 'id argument_gen;
   constant     : bool;
-  from         : 'id qualid_gen option;
-  to_          : 'id qualid_gen option;
   loc          : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -840,9 +823,6 @@ type property =
 type model = lident model_gen
 [@@deriving show {with_path = false}]
 
-let mk_qualid ?(loc = Location.dummy) node type_ : 'id qualid_gen =
-  { node; type_; loc}
-
 let mk_pattern ?(loc = Location.dummy) node : 'id pattern_gen =
   { node; loc}
 
@@ -852,8 +832,8 @@ let mk_mterm ?(loc = Location.dummy) node type_ : 'id mterm_gen =
 let mk_label_term ?(loc = Location.dummy) term label : 'id label_term_gen =
   { label; term; loc }
 
-let mk_variable ?(constant = false) ?from ?to_ ?(loc = Location.dummy) decl =
-  { decl; constant; from; to_; loc }
+let mk_variable ?(constant = false) ?(loc = Location.dummy) decl =
+  { decl; constant; loc }
 
 let mk_predicate ?(args = []) ?(loc = Location.dummy) name body =
   { name; args; body; loc }
@@ -1002,23 +982,6 @@ let cmp_for_ident
   | FIsimple i1, FIsimple i2 -> cmpi i1 i2
   | FIdouble (x1, y1), FIdouble (x2, y2) -> cmpi x1 x2 && cmpi y1 y2
   | _ -> false
-
-let cmp_qualid_node
-    (cmp  : 'q -> 'q -> bool)
-    (cmpi : 'id -> 'id -> bool)
-    (p1   : ('id, 'q) qualid_node)
-    (p2   : ('id, 'q) qualid_node)
-  : bool =
-  match p1, p2 with
-  | Qident i1, Qident i2 -> cmpi i1 i2
-  | Qdot (q1, i1), Qdot (q2, i2) -> cmp q1 q2 && cmpi i1 i2
-  | _ -> false
-
-let rec cmp_qualid
-    (q1 : 'id qualid_gen)
-    (q2 : 'id qualid_gen)
-  : bool =
-  cmp_qualid_node cmp_qualid cmp_lident q1.node q2.node
 
 let cmp_mterm_node
     (cmp   : 'term -> 'term -> bool)
@@ -3196,23 +3159,9 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
         let a, b, c = arg in
         g KIargument a, for_type b, Option.map for_mterm c
       in
-      let rec for_qualid (q : qualid) : qualid =
-        let for_qualid_node (qn : (lident, qualid) qualid_node) : (lident, qualid) qualid_node =
-          match qn with
-          | Qident id    -> Qident (g KImterm id)
-          | Qdot (q, id) -> Qdot (for_qualid q, g KImterm id)
-        in
-        {
-          node  = for_qualid_node q.node;
-          type_ = for_type q.type_;
-          loc   = q.loc;
-        }
-      in
       {
         decl         = for_argument v.decl;
         constant     = v.constant;
-        from         = Option.map for_qualid v.from;
-        to_          = Option.map for_qualid v.to_;
         loc          = v.loc;
       }
     in
@@ -4446,13 +4395,8 @@ end = struct
           |> (fun accu -> for_type accu b)
           |> (fun accu -> Option.map_dfl (for_mterm accu) accu c)
         in
-        let for_qualid accu (q : qualid) =
-          for_type accu q.type_
-        in
         accu
         |> (fun accu -> for_argument accu v.decl)
-        |> (fun accu -> Option.map_dfl (for_qualid accu) accu v.from)
-        |> (fun accu -> Option.map_dfl (for_qualid accu) accu v.to_)
       in
       let for_invariant accu (i : invariant) =
         List.fold_left for_mterm accu i.formulas

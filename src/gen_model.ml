@@ -109,17 +109,6 @@ let to_model (ast : A.ast) : M.model =
     | A.OrAssign     -> M.OrAssign
   in
 
-  let rec to_qualid_node (n : A.lident A.qualid_node) : ('id, 'qualid) M.qualid_node =
-    match n with
-    | A.Qident i    -> M.Qident i
-    | A.Qdot (d, i) -> M.Qdot (to_qualid_gen d, i)
-
-  and to_qualid_gen (q : A.qualid) : M.qualid =
-    let node = to_qualid_node q.node in
-    let type_ = ptyp_to_type (Option.get q.type_) in
-    M.mk_qualid node type_
-  in
-
   let to_pattern_node (n : A.lident A.pattern_node) : 'id M.pattern_node =
     match n with
     | A.Mconst id -> M.Pconst id
@@ -939,8 +928,6 @@ let to_model (ast : A.ast) : M.model =
       ((fun (arg : A.lident A.decl_gen) : (M.lident * M.type_ * M.mterm option) ->
           (arg.name, ptyp_to_type (Option.get arg.typ), Option.map (to_mterm env) arg.default)) v.decl)
       ~constant:v.constant
-      ?from:(Option.map to_qualid_gen v.from)
-      ?to_:(Option.map to_qualid_gen v.to_)
       ~loc:v.loc
   in
 
