@@ -1,4 +1,5 @@
 archetype unanimity
+
 variable admin : role = @tz1ZXf37ZNfVupt5GVyrPJ76q8kbjFuD2z7R
 
 asset sig identified by id signatory {
