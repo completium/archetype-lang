@@ -161,7 +161,7 @@ let rec mk_eq_type m e1 e2 = function
   | Tyasset a -> Tapp (Tvar ("eq_"^a),[Tvar e1; Tvar e2])
   | Typartition a -> Teqfield(a, Tvar e1, Tvar e2)
   | Tyaggregate a -> Teqfield(a, Tvar e1, Tvar e2)
-  | Tyenum i -> Tapp (Tvar ("cmp_"^i),[Tvar e1; Tvar e2])
+  | Tyenum i -> Tapp (Tvar ("eq_"^i),[Tvar e1; Tvar e2])
   | Tyoperation -> Tapp (Tvar "_eq_operation",[Tvar e1; Tvar e2])
   | Tylist t -> Tapp (Tdoti (mk_list_name_from_mlwtype m t,"eq_list"),[Tvar e1; Tvar e2])
   | Tyoption t -> Tmatch (
@@ -527,16 +527,16 @@ let mk_sort_clone_id asset fields =
 
 let mk_sort_clone _m asset fields =
   let cap_asset = String.capitalize_ascii asset in
-  Dclone ([gArchetypeDir;gArchetypeSort],
-          mk_sort_clone_id asset fields,
-          [
-           Ctype ("t", Tyasset asset);
-           Ctype ("view", Tyasset ((mk_view_id asset)^".view"));
-           Ctype ("collection", Tyasset (cap_asset ^ ".collection"));
-           Cval ("cmp", mk_cmp_function_id asset fields);
-           Cval ("view_to_list", cap_asset ^ ".view_to_list");
-           Cval ("list_to_view", cap_asset ^ ".list_to_view")
-          ])
+  Dclone (
+    [gArchetypeDir;gArchetypeSort],
+    mk_sort_clone_id asset fields, [
+       Ctype ("t", Tyasset asset);
+       Ctype ("view", Tyasset ((mk_view_id asset)^".view"));
+       Ctype ("collection", Tyasset (cap_asset ^ ".collection"));
+       Cval ("cmp", mk_cmp_function_id asset fields);
+       Cval ("view_to_list", cap_asset ^ ".view_to_list");
+       Cval ("list_to_view", cap_asset ^ ".list_to_view")
+    ])
 
 (* Select --------------------------------------------------------------------*)
 
@@ -602,7 +602,6 @@ let mk_select_formula m asset test filter args =
   ensures  = [];
   body     = mk_afun_test filter;
 }
-
 
 let mk_select m asset test mlw_test only_formula args =
   let id =  mk_select_name m asset test in
@@ -1142,7 +1141,7 @@ let mk_state_invariant _m _v (lbl : M.lident) (t : loc_term) = {
       t) |> dl
 }
 
-let mk_cmp_enums m (r : M.asset) =
+let mk_eq_enums m (r : M.asset) =
   List.fold_left (fun acc (item : M.asset_item) ->
       match item.type_ with
       | Tenum lid ->
@@ -1152,7 +1151,7 @@ let mk_cmp_enums m (r : M.asset) =
     ) [] r.values |>
   List.map (fun id ->
       Dfun  {
-        name = "cmp_" ^ id |> dl;
+        name = "eq_" ^ id |> dl;
         logic = Logic;
         args = ["e1" |> dl, loc_type (Tyenum id);
                 "e2" |> dl, loc_type (Tyenum id)];
@@ -3713,7 +3712,7 @@ let to_whyml (m : M.model) : mlw_tree  =
   let maps             = M.Utils.get_all_map_types m |> List.map (mk_map_type m) |> List.flatten in
   let sets             = M.Utils.get_all_set_types m |> List.map (mk_set_type m) |> List.flatten in
   let mlwassets        = assets |> List.map (mk_asset m) |> wdl in
-  let cmp_enums        = assets |> List.map (mk_cmp_enums m) |> List.flatten in
+  let eq_enums        = assets |> List.map (mk_eq_enums m) |> List.flatten in
   let eq_keys          = assets |> List.map (mk_eq_key m) |> wdl in
   let le_keys          = assets |> List.map (mk_le_key m) |> wdl in
   let eq_assets        = assets |> List.map (mk_eq_asset m) |> wdl in
@@ -3740,7 +3739,7 @@ let to_whyml (m : M.model) : mlw_tree  =
               traceutils             @
               enums                  @
               records                @
-              cmp_enums              @
+              eq_enums               @
               lists                  @
               maps                   @
               sets                   @

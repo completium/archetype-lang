@@ -462,7 +462,7 @@ module ListUtils
   (* ------------------------------------------------------------------------ *)
   let rec nth (i : int) (l : list 't) : option 't
   variant { l }
-  ensures { 0 <= i < length l -> forall k. result = Some k -> mem k l }
+  ensures { forall k. result = Some k -> mem k l }
   ensures { not (0 <= i < length l) -> result = None }
   ensures { result = nth i l }
   =
