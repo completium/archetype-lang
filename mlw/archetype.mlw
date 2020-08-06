@@ -841,6 +841,49 @@ module Field
 
 end
 
+module Aggregate
+
+  (* ------------------------------------------------------------------------ *)
+  type tA
+
+  (* ------------------------------------------------------------------------ *)
+  type tkA
+
+  (* ------------------------------------------------------------------------ *)
+  type fieldA
+
+  (* ------------------------------------------------------------------------ *)
+  type collectionA
+
+  (* ------------------------------------------------------------------------ *)
+  type tB
+
+  (* ------------------------------------------------------------------------ *)
+  type tkB
+
+  (* ------------------------------------------------------------------------ *)
+  type fieldB
+
+  let add (ka : tkA) (kb : tkB) (ca : collectionA) : collectionA
+  raises { NotFound }
+  ensures { true }
+  =
+  match getA tka collectionA with
+  | Some ea ->
+    let f = add kb (aggregate ea) in
+    let ea = set_field f ea in
+    set tka ea ca
+  | None -> raise NotFound
+  end
+
+  let remove = 0
+
+  let removeall = 0
+
+  let removeif = 0
+
+end
+
 (* COLLECTION is an unduped fset of asset
    plus an invariant on key injectivity ------------------------------------- *)
 module Collection
@@ -969,12 +1012,15 @@ module Collection
   key_injective (Cons a l)
 
   (* ------------------------------------------------------------------------ *)
-  let function add (a : t) (c : collection) : collection
+  let add (a : t) (c : collection) : collection
+  raises { KeyExist }
   ensures { mem a result }
   ensures { forall k. k <> keyt a -> get k c = get k result }
   ensures { get (keyt a) result = Some a }
   =
-  mk (N.add a c.content)
+  if contains (keyt a) c then
+  raise KeyExist
+  else mk (N.add a c.content)
 
   (* ------------------------------------------------------------------------ *)
   let function remove (k : tk) (c : collection) : collection
@@ -985,8 +1031,8 @@ module Collection
 
   (* ------------------------------------------------------------------------ *)
   let function set (k : tk) (a : t) (c : collection) : collection
+  raises { NotFound }
   requires { keyt a = k }
-  requires { get k c <> None }
   ensures { get k result = Some a }
   ensures { forall i. i <> k -> get i result = get i c }
   =
@@ -1004,7 +1050,9 @@ module Collection
     else Cons e (internal_set tl)
   | Nil -> Nil
   end in
+  if contains k c then
   mk (N.mk (internal_set (N.elts c.content)))
+  else raise NotFound
 
   (* ------------------------------------------------------------------------ *)
   type view
