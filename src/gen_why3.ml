@@ -161,7 +161,7 @@ let rec mk_eq_type m e1 e2 = function
   | Tyasset a -> Tapp (Tvar ("eq_"^a),[Tvar e1; Tvar e2])
   | Typartition a -> Teqfield(a, Tvar e1, Tvar e2)
   | Tyaggregate a -> Teqfield(a, Tvar e1, Tvar e2)
-  | Tyenum i -> Tapp (Tvar ("cmp_"^i),[Tvar e1; Tvar e2])
+  | Tyenum i -> Tapp (Tvar ("eq_"^i),[Tvar e1; Tvar e2])
   | Tyoperation -> Tapp (Tvar "_eq_operation",[Tvar e1; Tvar e2])
   | Tylist t -> Tapp (Tdoti (mk_list_name_from_mlwtype m t,"eq_list"),[Tvar e1; Tvar e2])
   | Tyoption t -> Tmatch (
@@ -281,10 +281,12 @@ let mk_trace_field m =
   |> loc_decl
 
 let mk_trace_clone () =
-  Dclone ([gArchetypeDir;gArchetypeTrace], "Tr",
-          [Ctype ("_asset", Tyasset "_asset");
-           Ctype ("_entry", Tyasset "_entry");
-           Ctype ("_field", Tyasset "_field")])
+  Dclone (
+    [gArchetypeDir;gArchetypeTrace], "Tr", [
+      Ctype ("_asset", Tyasset "_asset");
+      Ctype ("_entry", Tyasset "_entry");
+      Ctype ("_field", Tyasset "_field")
+    ])
   |> loc_decl
 
 let mk_trace_utils m =
@@ -354,42 +356,18 @@ let mk_sum_from_col a i c = Tcsum (mk_sum_clone_from_id a i, c)
 let mk_sum_clone m asset _key tkey formula =
   let cap_asset = String.capitalize_ascii asset in
   let id = M.Utils.get_sum_idx m asset formula in
-  Dclone ([gArchetypeDir;gArchetypeSum],
-          mk_sum_clone_from_id asset id,
-          [Ctype ("collection",
-                  Tyasset (cap_asset ^ ".collection"));
-           Ctype ("view",
-                  Tyasset ((String.capitalize_ascii (mk_view_id asset))^ ".view"));
-           Ctype ("t",
-                  Tyasset asset);
-           Ctype ("tk",
-                  tkey |> map_mtype m |> unloc_type);
-           Cval ("field",
-                 mk_get_sum_value_id asset id);
-           Cval ("view_to_list",
-                 cap_asset ^ ".view_to_list");
-           Cval ("from_view",
-                 cap_asset ^ ".from_view")
-          ])
-
-
-(* n is the asset name
-   f is the name of the key field
-   ktyp is the key type
-*)
-let mk_keys_eq_axiom n f ktyp : decl =
-  Dtheorem (Axiom,
-            "eq_" ^ n ^ "_keys",
-            Tforall ([["s"],Tystorage;["k"],ktyp],
-                     Timpl (Tmem (n,
-                                  Tvar "k",
-                                  Tdoti ("s",n ^ "_keys")),
-                            Teq (Tyint,
-                                 Tapp (Tvar f,
-                                       [Tget (n,
-                                              Tvar "k",
-                                              Tdoti ("s",n ^ "_assets"))]),
-                                 Tvar "k"))))
+  Dclone (
+    [gArchetypeDir;gArchetypeSum],
+    mk_sum_clone_from_id asset id, [
+      Ctype ("collection", Tyasset (cap_asset ^ ".collection"));
+      Ctype ("view", Tyasset ((String.capitalize_ascii (mk_view_id asset))^ ".view"));
+      Ctype ("t", Tyasset asset);
+      Ctype ("tk", tkey |> map_mtype m |> unloc_type);
+      Cval ("field", mk_get_sum_value_id asset id);
+      Cval ("view_to_list", cap_asset ^ ".view_to_list");
+      Cval ("from_view", cap_asset ^ ".from_view")
+    ]
+  )
 
 (* asset is the asset name
    f is the partition field name
@@ -549,16 +527,16 @@ let mk_sort_clone_id asset fields =
 
 let mk_sort_clone _m asset fields =
   let cap_asset = String.capitalize_ascii asset in
-  Dclone ([gArchetypeDir;gArchetypeSort],
-          mk_sort_clone_id asset fields,
-          [
-           Ctype ("t", Tyasset asset);
-           Ctype ("view", Tyasset ((mk_view_id asset)^".view"));
-           Ctype ("collection", Tyasset (cap_asset ^ ".collection"));
-           Cval ("cmp", mk_cmp_function_id asset fields);
-           Cval ("view_to_list", cap_asset ^ ".view_to_list");
-           Cval ("list_to_view", cap_asset ^ ".list_to_view")
-          ])
+  Dclone (
+    [gArchetypeDir;gArchetypeSort],
+    mk_sort_clone_id asset fields, [
+       Ctype ("t", Tyasset asset);
+       Ctype ("view", Tyasset ((mk_view_id asset)^".view"));
+       Ctype ("collection", Tyasset (cap_asset ^ ".collection"));
+       Cval ("cmp", mk_cmp_function_id asset fields);
+       Cval ("view_to_list", cap_asset ^ ".view_to_list");
+       Cval ("list_to_view", cap_asset ^ ".list_to_view")
+    ])
 
 (* Select --------------------------------------------------------------------*)
 
@@ -624,7 +602,6 @@ let mk_select_formula m asset test filter args =
   ensures  = [];
   body     = mk_afun_test filter;
 }
-
 
 let mk_select m asset test mlw_test only_formula args =
   let id =  mk_select_name m asset test in
@@ -1164,7 +1141,7 @@ let mk_state_invariant _m _v (lbl : M.lident) (t : loc_term) = {
       t) |> dl
 }
 
-let mk_cmp_enums m (r : M.asset) =
+let mk_eq_enums m (r : M.asset) =
   List.fold_left (fun acc (item : M.asset_item) ->
       match item.type_ with
       | Tenum lid ->
@@ -1174,7 +1151,7 @@ let mk_cmp_enums m (r : M.asset) =
     ) [] r.values |>
   List.map (fun id ->
       Dfun  {
-        name = "cmp_" ^ id |> dl;
+        name = "eq_" ^ id |> dl;
         logic = Logic;
         args = ["e1" |> dl, loc_type (Tyenum id);
                 "e2" |> dl, loc_type (Tyenum id)];
@@ -1253,16 +1230,6 @@ let mk_eq_asset m (r : M.asset) =
         Tpand (acc,cmp)
       ) (List.hd cmps) (List.tl cmps) |> loc_term;
   }
-
-let mk_eq_extensionality _m (r : M.asset) : loc_decl =
-  let asset = unloc r.name in
-  Dtheorem (Lemma,
-            asset ^ "_extensionality",
-            Tforall ([["a1";"a2"],Tyasset asset],
-                     Timpl (Tapp (Tvar ("eq_" ^ asset),
-                                  [Tvar "a1";Tvar "a2"]),
-                            Teq (Tyasset asset,Tvar "a1",Tvar "a2")
-                           ))) |> Mlwtree.loc_decl
 
 let map_enum _m (e : M.enum) : (loc_term,loc_typ,loc_ident) abstract_decl =
   Denum (map_lident e.name, List.map (fun (item : M.enum_item) -> map_lident item.name) e.values)
@@ -2407,12 +2374,6 @@ let mk_axioms (m : M.model) : (loc_term, loc_typ, loc_ident) abstract_decl list 
                     mk_axiom2_invariant m asset (map_mterm m init_ctx formula))]
 
     ) [] m.api_verif
-(*let records = M.Utils.get_assets m |> List.map (fun (r : M.info_asset) -> dumloc (r.name)) in
-  let keys    = records |> List.map (M.Utils.get_asset_key m) in
-  List.map2 (fun r (k,kt) ->
-    mk_keys_eq_axiom r.pldesc k (map_btype kt)
-  ) records keys |> loc_decl |> deloc*)
-
 
 (* Storage API templates -----------------------------------------------------*)
 
@@ -3751,11 +3712,10 @@ let to_whyml (m : M.model) : mlw_tree  =
   let maps             = M.Utils.get_all_map_types m |> List.map (mk_map_type m) |> List.flatten in
   let sets             = M.Utils.get_all_set_types m |> List.map (mk_set_type m) |> List.flatten in
   let mlwassets        = assets |> List.map (mk_asset m) |> wdl in
-  let cmp_enums        = assets |> List.map (mk_cmp_enums m) |> List.flatten in
+  let eq_enums        = assets |> List.map (mk_eq_enums m) |> List.flatten in
   let eq_keys          = assets |> List.map (mk_eq_key m) |> wdl in
   let le_keys          = assets |> List.map (mk_le_key m) |> wdl in
   let eq_assets        = assets |> List.map (mk_eq_asset m) |> wdl in
-  let eq_exten         = assets |> List.map (mk_eq_extensionality m) |> deloc in
   let colls            = assets |> List.map (mk_coll m) |> wdl in
   let fields           = assets |> List.map (mk_field m) |> wdl in
   let views            = assets |> List.map (mk_view m) |> wdl in
@@ -3779,12 +3739,11 @@ let to_whyml (m : M.model) : mlw_tree  =
               traceutils             @
               enums                  @
               records                @
-              cmp_enums              @
+              eq_enums               @
               lists                  @
               maps                   @
               sets                   @
               mlwassets              @
-              eq_exten               @
               storage_api_bs         @
               [storage;storageval]   @
               axioms                 @
