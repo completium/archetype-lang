@@ -1060,6 +1060,7 @@ module Collection
   raises { NotFound -> not (contains k c) }
   ensures { keyt result = k }
   ensures { mem result c }
+  ensures { get k c = Some result }
   ensures { contains (keyt result) c }
   = match get k c with
     | Some v -> v
@@ -1496,7 +1497,7 @@ module Sum
   axiom effect_set : forall k r a c.
   contains k c ->
   get k c = Some r ->
-  sum_formula (set k a c) = sum_formula c - field a + field r
+  [@rewrite] sum_formula (set k a c) = sum_formula c - field a + field r
 
 end
 
