@@ -3695,12 +3695,17 @@ let process_no_fail m (d : (loc_term, loc_typ, loc_ident) abstract_decl) =
       match M.Utils.no_fail m (Mlwtree.deloc f.name) with
       | Some id ->
         Dfun { f with
-               raises = rm_fail_exn f.raises;
-               body   = loc_term (Ttry (unloc_term f.body,
-                                        [Enotfound,Tassert (Some ("security_" ^ id),Tfalse);
-                                         Ekeyexist,Tassert (Some ("security_" ^ id),Tfalse)]));
-             }
-      | _ -> d
+          raises = rm_fail_exn f.raises;
+          body   = loc_term (Ttry (unloc_term f.body, [
+            Enotfound,Tassert (Some ("security_" ^ id),Tfalse);
+            Ekeyexist,Tassert (Some ("security_" ^ id),Tfalse)
+          ]));
+        }
+      | _ -> (* *)
+        Dfun { f with
+          body   = loc_term (
+            Tletin (false, "_s_init", None, Tvar gs, unloc_term f.body));
+        }
     end
   | _ -> d
 
