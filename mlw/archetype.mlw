@@ -1081,6 +1081,7 @@ module Collection
 
   (* ------------------------------------------------------------------------ *)
   let function add (a : t) (c : collection) : collection
+  requires { not (contains (keyt a) c) }
   ensures { mem a result }
   ensures { forall k. k <> keyt a -> get k c = get k result }
   ensures { get (keyt a) result = Some a }
@@ -1485,7 +1486,7 @@ module Sum
 
   (* ------------------------------------------------------------------------ *)
   axiom effect_add : forall a c.
-  contains (keyt a) c -> sum_formula (add a c) = sum_formula c + field a
+  not (contains (keyt a) c) -> sum_formula (add a c) = sum_formula c + field a
 
   (* ------------------------------------------------------------------------ *)
   axiom effect_remove : forall a c.
