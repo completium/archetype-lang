@@ -1057,7 +1057,7 @@ module Collection
 
   (* ------------------------------------------------------------------------ *)
   let get_force (k : tk) (c : collection) : t
-  raises { NotFound }
+  raises { NotFound -> not (contains k c) }
   ensures { keyt result = k }
   ensures { mem result c }
   = match get k c with
