@@ -841,7 +841,7 @@ module Field
 
 end
 
-module Aggregate
+(* module Aggregate
   use Types
   use option.Option
 
@@ -947,7 +947,7 @@ module Aggregate
 
   (*let removeif = 0 *)
 
-end
+end *)
 
 (* COLLECTION is an unduped fset of asset
    plus an invariant on key injectivity ------------------------------------- *)
@@ -1048,7 +1048,7 @@ module Collection
 
   (* ------------------------------------------------------------------------ *)
   let function contains (k : tk) (c : collection) : bool
-  ensures { forall e. keyt e = k -> get k c = Some e <-> mem e c }
+  ensures { forall e. get k c = Some e -> result <-> mem e c }
   =
   match get k c with
   | Some _ -> true
@@ -1060,7 +1060,6 @@ module Collection
   raises { NotFound }
   ensures { keyt result = k }
   ensures { mem result c }
-  ensures { contains k c }
   = match get k c with
     | Some v -> v
     | None -> raise NotFound
