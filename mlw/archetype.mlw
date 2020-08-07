@@ -842,6 +842,8 @@ module Field
 end
 
 module Aggregate
+  use Types
+  use option.Option
 
   (* ------------------------------------------------------------------------ *)
   type tA
@@ -862,25 +864,88 @@ module Aggregate
   type tkB
 
   (* ------------------------------------------------------------------------ *)
-  type fieldB
+  type collectionB
 
-  let add (ka : tkA) (kb : tkB) (ca : collectionA) : collectionA
+  (* ------------------------------------------------------------------------ *)
+  val function getA tkA collectionA : option tA
+
+  (* ------------------------------------------------------------------------ *)
+  val function containsFA tkB fieldA : bool
+
+  (* ------------------------------------------------------------------------ *)
+  val function containsB tkB collectionB : bool
+
+  (* ------------------------------------------------------------------------ *)
+  val function aggregate tA : fieldA
+
+  (* ------------------------------------------------------------------------ *)
+  val function addFA tkB fieldA : fieldA
+
+  (* ------------------------------------------------------------------------ *)
+  val function removeFA tkB fieldA : fieldA
+
+  (* ------------------------------------------------------------------------ *)
+  val function emptyFA : fieldA
+
+  (* ------------------------------------------------------------------------ *)
+  val function setF fieldA tA : tA
+
+  (* ------------------------------------------------------------------------ *)
+  val setA tkA tA collectionA : collectionA
+
+  let add (ka : tkA) (kb : tkB) (ca : collectionA) (cb : collectionB) : collectionA
   raises { NotFound }
-  ensures { true }
+  ensures { forall k. k <> ka -> getA k result = getA k ca }
+  ensures { forall ta oldta.
+    getA ka result = Some ta ->
+    getA ka ca = Some oldta ->
+    containsFA kb (aggregate oldta) ->
+    ta = setF (addFA kb (aggregate oldta)) oldta
+  }
   =
-  match getA tka collectionA with
+  match getA ka ca with
   | Some ea ->
-    let f = add kb (aggregate ea) in
-    let ea = set_field f ea in
-    set tka ea ca
+    if containsB kb cb then
+      let f = addFA kb (aggregate ea) in
+      let ea = setF f ea in
+      setA ka ea ca
+    else raise NotFound
   | None -> raise NotFound
   end
 
-  let remove = 0
+  let remove (ka : tkA) (kb : tkB) (ca : collectionA) : collectionA
+  raises { NotFound }
+  ensures { forall k. k <> ka -> getA k result = getA k ca }
+  ensures { forall ta oldta.
+    getA ka result = Some ta ->
+    getA ka ca = Some oldta ->
+    containsFA kb (aggregate oldta) ->
+    ta = setF (removeFA kb (aggregate oldta)) oldta
+  }
+  =
+  match getA ka ca with
+  | Some ea ->
+    let f = removeFA kb (aggregate ea) in
+    let ea = setF f ea in
+    setA ka ea ca
+  | None -> raise NotFound
+  end
 
-  let removeall = 0
+  let removeall (ka : tkA) (ca : collectionA) : collectionA
+  ensures { forall k. k <> ka -> getA k result = getA k ca }
+  ensures { forall ta oldta.
+    getA ka result = Some ta ->
+    getA ka ca = Some oldta ->
+    ta = setF emptyFA oldta
+  }
+  =
+  match getA ka ca with
+  | Some ea ->
+    let ea = setF emptyFA ea in
+    setA ka ea ca
+  end
 
-  let removeif = 0
+  (*let removeif = 0 *)
 
 end
 
@@ -983,6 +1048,7 @@ module Collection
 
   (* ------------------------------------------------------------------------ *)
   let function contains (k : tk) (c : collection) : bool
+  ensures { forall e. keyt e = k -> get k c = Some e <-> mem e c }
   =
   match get k c with
   | Some _ -> true
@@ -1012,15 +1078,12 @@ module Collection
   key_injective (Cons a l)
 
   (* ------------------------------------------------------------------------ *)
-  let add (a : t) (c : collection) : collection
-  raises { KeyExist }
+  let function add (a : t) (c : collection) : collection
+  requires { contains (keyt a) c }
   ensures { mem a result }
   ensures { forall k. k <> keyt a -> get k c = get k result }
   ensures { get (keyt a) result = Some a }
-  =
-  if contains (keyt a) c then
-  raise KeyExist
-  else mk (N.add a c.content)
+  = mk (N.add a c.content)
 
   (* ------------------------------------------------------------------------ *)
   let function remove (k : tk) (c : collection) : collection
@@ -1031,7 +1094,6 @@ module Collection
 
   (* ------------------------------------------------------------------------ *)
   let function set (k : tk) (a : t) (c : collection) : collection
-  raises { NotFound }
   requires { keyt a = k }
   ensures { get k result = Some a }
   ensures { forall i. i <> k -> get i result = get i c }
@@ -1050,9 +1112,7 @@ module Collection
     else Cons e (internal_set tl)
   | Nil -> Nil
   end in
-  if contains k c then
   mk (N.mk (internal_set (N.elts c.content)))
-  else raise NotFound
 
   (* ------------------------------------------------------------------------ *)
   type view
@@ -1403,6 +1463,9 @@ module Sum
 
   (* ------------------------------------------------------------------------ *)
   axiom sum_formula_spec : forall v c. sum v c = sum_formula (from_view v c)
+
+  (* ------------------------------------------------------------------------ *)
+
 
 end
 

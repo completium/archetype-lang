@@ -1661,8 +1661,12 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     (* asset api effect *)
 
     | Maddasset (n, i) ->
+      let (key, _) = M.Utils.get_asset_key m n in
       mk_trace_seq m
-        (Tapp (loc_term (Tvar ("add_" ^ n)),[map_mterm m ctx i ]))
+        (Tif(
+          dl (Tcontains(dl n, dl (Tapp(loc_term (Tvar key),[map_mterm m ctx i])),loc_term (mk_ac n))),
+          dl (Traise Ekeyexist),
+          Some (dl (Tassign (loc_term (Tdoti(gs,mk_ac_id n)),dl (Tadd(dl n,map_mterm m ctx i,loc_term (mk_ac n))))))))
         [CAdd n]
 
     | Maddfield (a, f, c, i) ->
@@ -1672,9 +1676,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                [map_mterm m ctx c; map_mterm m ctx i]))
         [CUpdate f; CAdd t]
 
-    | Mremoveasset (n, a) ->
+    | Mremoveasset (n, i) ->
       mk_trace_seq m
-        (Tapp (loc_term (Tvar ("remove_" ^ n)), [map_mterm m ctx a]))
+        (Tassign (loc_term (Tdoti(gs,mk_ac_id n)),dl (Tremove(dl n,map_mterm m ctx i,loc_term (mk_ac n)))))
         [CRm n]
 
     | Mremovefield (a, f, k, v) ->
@@ -1713,13 +1717,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       Tapp (loc_term (Tvar ("clear_view_"^(n))), [
           dl(Ttoview(dl (mk_field_id n),map_mterm m ctx v ))
         ])
-    | Mset (a, l, k, v) ->
+    | Mset (n, l, k, v) ->
       mk_trace_seq m
-        (Tapp (loc_term (Tvar ("set_" ^ a)),
-               [
-                 map_mterm m ctx k;
-                 map_mterm m ctx v
-               ]))
+        (Tassign (loc_term (Tdoti(gs,mk_ac_id n)),dl (Tset(dl n,map_mterm m ctx k, map_mterm m ctx v,loc_term (mk_ac n)))))
         (List.map (fun f -> CUpdate f) l)
 
     | Mupdate             _ -> error_not_translated "Mupdate"
@@ -1731,7 +1731,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mget (an, _c, k) ->
       begin match ctx.lctx with
         | Inv | Logic -> Tget(dl an, map_mterm m ctx k,mk_ac_ctx an ctx)
-        | _ -> Tapp (loc_term (Tvar ("get_" ^ an)), [map_mterm m ctx k])
+        | _ -> Tgetforce (dl an, map_mterm m ctx k,mk_ac_ctx an ctx)
       end
     | Mselect (a, (CKview l), la, lb, _a) ->
       let args = extract_args lb in
@@ -2355,7 +2355,7 @@ let mk_storage m (l : M.storage) =
       mk_asset_invariants m ctx    @
       mk_security_invariants m ctx @
       mk_state_invariants m ctx    @
-     (* mk_contract_invariants m ctx @ *)
+      mk_contract_invariants m ctx @
       mk_variable_invariants m ctx
   }
 
@@ -3395,23 +3395,23 @@ let is_partition m n f =
   | _,Partition -> true
   | _ -> false
 
-let mk_storage_api (m : M.model) records =
+let mk_storage_api (m : M.model) _records =
   m.api_items |> List.fold_left (fun acc (sc : M.api_storage) ->
       match sc.node_item, sc.api_loc with
-      | M.APIAsset (Get n), _ ->
+(*       | M.APIAsset (Get n), _ ->
         let k,kt = M.Utils.get_asset_key m n in
-        acc @ [mk_get_asset n k (kt |> map_mtype m |> unloc_type)]
-      | M.APIAsset (Add n), _ ->
+        acc @ [mk_get_asset n k (kt |> map_mtype m |> unloc_type)] *)
+(*       | M.APIAsset (Add n), _ ->
         let k = M.Utils.get_asset_key m n |> fst in
-        acc @ [mk_add_asset m n k]
-      | M.APIAsset (Remove n), _ ->
-        acc @ [mk_rm_asset m n]
+        acc @ [mk_add_asset m n k] *)
+(*       | M.APIAsset (Remove n), _ ->
+        acc @ [mk_rm_asset m n] *)
       | M.APIAsset (Nth (n, _)), _ ->
         acc @ [mk_nth_asset m n]
-      | M.APIAsset (Set n), _ ->
+ (*      | M.APIAsset (Set n), _ ->
         let record = get_record n (records |> unloc_decl) in
         let k      = M.Utils.get_asset_key m (get_record_name record) |> fst in
-        acc @ [mk_set_asset m k record]
+        acc @ [mk_set_asset m k record] *)
       | M.APIAsset (FieldAdd (a,pf)), _ ->
         let k            = M.Utils.get_asset_key m a |> fst in
         let (pa,addak,_) = M.Utils.get_container_asset_key m a pf in
@@ -3642,11 +3642,10 @@ let mk_functions m =
         raises   = fold_exns m s.body (* |> List.map (add_raise_ctx args src m) *) |> List.map loc_term;
         variants = [];
         requires =
-          (mk_contract_invariants m { init_ctx with lctx = Logic }) @
           (mk_entry_require m (M.Utils.get_callers m (unloc s.name))) @
           (mk_requires m (s.name |> unloc) v) @
           (mk_preconds m s.args s.body);
-        ensures  = Option.fold (mk_ensures m) (mk_contract_invariants m { init_ctx with lctx = Logic }) v;
+        ensures  = Option.fold (mk_ensures m) [] v;
         body     = flatten_if_fail m s.body;
       }
   )
@@ -3665,10 +3664,9 @@ let mk_entries m =
         raises   = fold_exns m s.body |> List.map loc_term;
         variants = [];
         requires =
-          (mk_contract_invariants m { init_ctx with lctx = Logic }) @
           (mk_entry_require m [unloc s.name]) @
           (mk_requires m (unloc s.name) v);
-        ensures  = Option.fold (mk_ensures m) (mk_contract_invariants m { init_ctx with lctx = Logic }) v;
+        ensures  = Option.fold (mk_ensures m) [] v;
         body     = flatten_if_fail m s.body;
       }
   )
