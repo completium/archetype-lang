@@ -3391,6 +3391,7 @@ module Utils : sig
   val get_all_set_types                  : model -> type_ list
   val get_all_list_types                 : model -> type_ list
   val get_all_map_types                  : model -> type_ list
+  val extract_key_value_from_masset      : model -> mterm -> mterm
 end = struct
 
   open Tools
@@ -4497,4 +4498,13 @@ end = struct
     in
     get_all_gen_type for_type model
 
+  let extract_key_value_from_masset (model : model) (v : mterm) : mterm =
+    match v with
+    | {node = (Masset l); type_ = Tasset an } ->
+      let an = unloc an in
+      let asset : asset = get_asset model an in
+      let asset_key = match asset.keys with [k] -> k | _ -> emit_error (SeveralAssetKeys an) in
+      let assoc_fields = List.map2 (fun (ai : asset_item) (x : mterm) -> (unloc ai.name, x)) asset.values l in
+      List.find (fun (id, _) -> (String.equal asset_key id)) assoc_fields |> snd
+    | _ -> raise Not_found
 end
