@@ -1786,9 +1786,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mcontains (a, CKfield (_, _, v), r) -> Tvcontains (dl (mk_view_id a),
                                                          map_mterm m ctx r,
                                                          dl (Ttoview(dl (mk_field_id a), map_mterm m ctx v)))
-    | Mcontains (a, CKcoll, r) -> Tvcontains (dl (mk_view_id a),
-                                              map_mterm m ctx r,
-                                              dl (Ttoview(dl a, mk_ac_ctx a ctx)))
+    | Mcontains (a, CKcoll, r) -> Tcontains (dl a,
+                                             map_mterm m ctx r,
+                                             mk_ac_ctx a ctx)
 
     | Mnth (n, (CKview c),k) ->
       begin match ctx.lctx with
