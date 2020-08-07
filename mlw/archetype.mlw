@@ -1496,7 +1496,7 @@ module Sum
   (* ------------------------------------------------------------------------ *)
   axiom effect_set : forall k a c.
   contains k c ->
-  [@rewrite] sum_formula (set k a c) = sum_formula c +
+  sum_formula (set k a c) = sum_formula c +
   match get k c with | Some r -> field a - field r | None -> 0 end
 
 end
