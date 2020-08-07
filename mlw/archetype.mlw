@@ -1060,6 +1060,7 @@ module Collection
   raises { NotFound -> not (contains k c) }
   ensures { keyt result = k }
   ensures { mem result c }
+  ensures { contains (keyt result) c }
   = match get k c with
     | Some v -> v
     | None -> raise NotFound
