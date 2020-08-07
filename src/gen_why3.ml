@@ -1661,10 +1661,15 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     (* asset api effect *)
 
     | Maddasset (n, i) ->
-      let (key, _) = M.Utils.get_asset_key m n in
+      let key = begin match i with
+      | { node = (Masset _); type_ = _ } -> map_mterm m ctx (M.Utils.extract_key_value_from_masset m i)
+      | _ ->
+        let (k, _) = M.Utils.get_asset_key m n in
+        dl (Tapp(loc_term (Tvar k),[map_mterm m ctx i]))
+      end in
       mk_trace_seq m
         (Tif(
-          dl (Tcontains(dl n, dl (Tapp(loc_term (Tvar key),[map_mterm m ctx i])),loc_term (mk_ac n))),
+          dl (Tcontains(dl n, key ,loc_term (mk_ac n))),
           dl (Traise Ekeyexist),
           Some (dl (Tassign (loc_term (Tdoti(gs,mk_ac_id n)),dl (Tadd(dl n,map_mterm m ctx i,loc_term (mk_ac n))))))))
         [CAdd n]

@@ -1060,6 +1060,7 @@ module Collection
   raises { NotFound }
   ensures { keyt result = k }
   ensures { mem result c }
+  ensures { contains k c }
   = match get k c with
     | Some v -> v
     | None -> raise NotFound
@@ -1095,6 +1096,7 @@ module Collection
   (* ------------------------------------------------------------------------ *)
   let function set (k : tk) (a : t) (c : collection) : collection
   requires { keyt a = k }
+  requires { contains k c }
   ensures { get k result = Some a }
   ensures { forall i. i <> k -> get i result = get i c }
   =
