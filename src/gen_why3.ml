@@ -1,5 +1,5 @@
-open Location
 
+open Location
 module M = Model
 open Tools
 open Mlwtree
@@ -353,7 +353,7 @@ let mk_get_sum_value_from_pos_id asset id = (mk_get_sum_value_id asset id)^"_fro
 let mk_sum a i v c = Tvsum ( mk_sum_clone_from_id a i, v, c)
 let mk_sum_from_col a i c = Tcsum (mk_sum_clone_from_id a i, c)
 
-let mk_sum_clone m asset _key tkey formula =
+let mk_sum_clone m asset key tkey formula =
   let cap_asset = String.capitalize_ascii asset in
   let id = M.Utils.get_sum_idx m asset formula in
   Dclone (
@@ -365,7 +365,13 @@ let mk_sum_clone m asset _key tkey formula =
       Ctype ("tk", tkey |> map_mtype m |> unloc_type);
       Cval ("field", mk_get_sum_value_id asset id);
       Cval ("view_to_list", cap_asset ^ ".view_to_list");
-      Cval ("from_view", cap_asset ^ ".from_view")
+      Cval ("from_view", cap_asset ^ ".from_view");
+      Cval ("add", cap_asset ^ ".add");
+      Cval ("remove", cap_asset ^ ".remove");
+      Cval ("set", cap_asset ^ ".set");
+      Cval ("contains", cap_asset ^ ".contains");
+      Cval ("get", cap_asset ^ ".get");
+      Cval ("keyt", key);
     ]
   )
 
