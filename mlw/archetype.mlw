@@ -1494,10 +1494,10 @@ module Sum
   contains (keyt a) c -> sum_formula (remove (keyt a) c) = sum_formula c - field a
 
   (* ------------------------------------------------------------------------ *)
-  axiom effect_set : forall k r a c.
+  axiom effect_set : forall k a c.
   contains k c ->
-  get k c = Some r ->
-  [@rewrite] sum_formula (set k a c) = sum_formula c - field a + field r
+  [@rewrite] sum_formula (set k a c) = sum_formula c +
+  match get k c with | Some r -> field a - field r | None -> 0 end
 
 end
 
