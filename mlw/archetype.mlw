@@ -1081,7 +1081,6 @@ module Collection
 
   (* ------------------------------------------------------------------------ *)
   let function add (a : t) (c : collection) : collection
-  requires { contains (keyt a) c }
   ensures { mem a result }
   ensures { forall k. k <> keyt a -> get k c = get k result }
   ensures { get (keyt a) result = Some a }
@@ -1097,8 +1096,7 @@ module Collection
   (* ------------------------------------------------------------------------ *)
   let function set (k : tk) (a : t) (c : collection) : collection
   requires { keyt a = k }
-  requires { contains k c }
-  ensures { get k result = Some a }
+  ensures { contains k c -> get k result = Some a }
   ensures { forall i. i <> k -> get i result = get i c }
   =
   let rec internal_set (l : list t) : list t
