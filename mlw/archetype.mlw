@@ -1448,6 +1448,24 @@ module Sum
   val function from_view view collection : collection
 
   (* ------------------------------------------------------------------------ *)
+  val function add t collection : collection
+
+  (* ------------------------------------------------------------------------ *)
+  val function remove tk collection : collection
+
+  (* ------------------------------------------------------------------------ *)
+  val function set tk t collection : collection
+
+  (* ------------------------------------------------------------------------ *)
+  val function contains tk collection : bool
+
+  (* ------------------------------------------------------------------------ *)
+  val function get tk collection : option t
+
+  (* ------------------------------------------------------------------------ *)
+  val function keyt t : tk
+
+  (* ------------------------------------------------------------------------ *)
   let function sum (v : view) (c : collection) : int
   =
   let rec function internal_sum (l : list t) : int
@@ -1467,7 +1485,18 @@ module Sum
   axiom sum_formula_spec : forall v c. sum v c = sum_formula (from_view v c)
 
   (* ------------------------------------------------------------------------ *)
+  axiom effect_add : forall a c.
+  contains (keyt a) c -> sum_formula (add a c) = sum_formula c + field a
 
+  (* ------------------------------------------------------------------------ *)
+  axiom effect_remove : forall a c.
+  contains (keyt a) c -> sum_formula (remove (keyt a) c) = sum_formula c - field a
+
+  (* ------------------------------------------------------------------------ *)
+  axiom effect_set : forall k r a c.
+  contains k c ->
+  get k c = Some r ->
+  sum_formula (set k a c) = sum_formula c - field a + field r
 
 end
 
