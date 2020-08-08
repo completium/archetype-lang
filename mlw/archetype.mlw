@@ -1052,7 +1052,7 @@ module Collection
   let function get (k : tk) (c : collection) : option t
   ensures { result = None -> forall e. mem e c -> keyt e <> k }
   ensures { forall e. result = Some e -> keyt e = k }
-  ensures { forall e. result = Some e <-> mem e c }
+  ensures { forall e. result = Some e -> mem e c }
   = N.get k c.content
 
   (* ------------------------------------------------------------------------ *)
