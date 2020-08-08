@@ -331,11 +331,11 @@ let mk_const_fields m = [
   { name = mk_id gOperations   ; typ = Tylist Tyoperation ; init = Tnil gListAs; mutable_ = true; };
   { name = mk_id "balance"     ; typ = Tytez;      init = Tint Big_int.zero_big_int; mutable_ = true; };
   { name = mk_id "transferred" ; typ = Tytez;      init = Tint Big_int.zero_big_int; mutable_ = false; };
-  { name = mk_id "caller"      ; typ = Tyaddr;     init = Tstring ""; mutable_ = false; };
-  { name = mk_id "source"      ; typ = Tyaddr;     init = Tstring ""; mutable_ = false; };
+  { name = mk_id "caller"      ; typ = Tyaddr;     init = Tdefaultaddr; mutable_ = false; };
+  { name = mk_id "source"      ; typ = Tyaddr;     init = Tdefaultaddr; mutable_ = false; };
   { name = mk_id "now"         ; typ = Tydate;     init = Tint Big_int.zero_big_int; mutable_ = false; };
   { name = mk_id "chainid"     ; typ = Tychainid;  init = Tint Big_int.zero_big_int; mutable_ = false; };
-  { name = mk_id "selfaddress" ; typ = Tyaddr;     init = Tstring ""; mutable_ = false; };
+  { name = mk_id "selfaddress" ; typ = Tyaddr;     init = Tdefaultaddr; mutable_ = false; };
 ] @
   if M.Utils.with_trace m then
     [
@@ -918,9 +918,9 @@ let rec type_to_init m (typ : loc_typ) : loc_term =
       | Tyenum i      -> Tvar (mk_loc typ.loc (unloc (M.Utils.get_enum m i.obj).initial))
       | Tytuple l     -> Ttuple (List.map (type_to_init m) l)
       | Tybool        -> Ttrue
-      | Tystring      -> Tstring ""
-      | Tyrole        -> Tstring ""
-      | Tyaddr        -> Tstring ""
+      | Tystring      -> Temptystr
+      | Tyrole        -> Tdefaultaddr
+      | Tyaddr        -> Tdefaultaddr
       | _             -> Tint Big_int.zero_big_int)
 
 let is_local_invariant _m an t =
@@ -1539,7 +1539,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     (* entrypoint *)
 
     | Mentrypoint (_t, a, s) -> Tentrypoint (map_lident a, map_mterm m ctx s)
-    | Mself id               -> Tapp (loc_term (Tvar "getopt"), [loc_term (Tentrypoint (unloc id, Tstring ""))])
+    | Mself id               -> Tapp (loc_term (Tvar "getopt"), [loc_term (Tentrypoint (unloc id, Tdefaultaddr))])
 
 
     (* operation *)
@@ -1560,15 +1560,15 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mbool true -> Ttrue
     | Menum               _ -> error_not_supported "Menum"
     | Mrational (l,r) -> Ttuple([ loc_term (Tint l); loc_term (Tint r)])
-    | Mstring v -> Tstring v
     | Mcurrency (i, Tz)   -> Tint (Big_int.mult_int_big_int 1000000 i)
     | Mcurrency (i, Mtz)  -> Tint (Big_int.mult_int_big_int 1000 i)
     | Mcurrency (i, Utz)  -> Tint i
-    | Maddress v -> Tstring v
+    | Mstring v ->  Tint (Tools.sha v) (* Tstring v *)
+    | Maddress v -> Tint (Tools.sha v) (* Tstring v *)
+    | Mbytes v ->   Tint (Tools.sha v) (* Tstring v *)
     | Mdate s -> Tint (Core.date_to_timestamp s)
     | Mduration v -> Tint (Core.duration_to_timestamp v)
     | Mtimestamp v -> Tint v
-    | Mbytes v -> Tstring v
     | Munit -> Tunit
 
     (* control expression *)

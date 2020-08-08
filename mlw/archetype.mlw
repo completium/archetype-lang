@@ -3,16 +3,19 @@ theory Types
   use int.Int
 
   (* default type mapping *)
-  type key       = string
+  type arstring  = int (* string *)
+
+  type key       = arstring
   type key_hash  = int
-  type role      = string
-  type address   = string
+  type role      = arstring
+  type address   = int
   type tez       = int
   type date      = int
-  type bytes     = string
-  type signature = string
+  type bytes     = arstring
+  type signature = arstring
   type chain_id  = int
   type uint      = int
+
 
   exception Break
   exception NotFound
@@ -188,29 +191,35 @@ module Utils
   (* ----------------------------------------------------------------------- *)
   (* String *)
 
-  use string.String as S
+  (* use string.String as S *)
 
-  val function str_concat string string : string
+  val function str_concat arstring arstring : arstring
 
-  axiom str_concat_spec : forall s1 s2.
-  str_concat s1 s2 = S.concat s1 s2
+  (* axiom str_concat_spec : forall s1 s2.
+  str_concat s1 s2 = S.concat s1 s2 *)
 
-  val function substring string int int : string
+  val function substring arstring int int : arstring
 
-  axiom substring_spec : forall s i j.
-  substring s i j = S.substring s i j
+  (* axiom substring_spec : forall s i j.
+  substring s i j = S.substring s i j *)
 
-  val function str_length string : int
+  val function str_length arstring : int
 
-  axiom str_length_spec : forall s.
-  str_length s = S.length s
+  (* axiom str_length_spec : forall s.
+  str_length s = S.length s *)
 
-  val function str_eq (_ : string) (_ : string) : bool
+  (* val function str_eq (_ : string) (_ : string) : bool *)
+  let function str_eq (s1 : arstring) (s2 : arstring) : bool = s1 = s2
 
-  axiom str_eq_spec : forall s1 s2.
-  str_eq s1 s1 <-> s1 = s2
+ (*  axiom str_eq_spec : forall s1 s2.
+  str_eq s1 s1 <-> s1 = s2 *)
 
-  val function str_le string string : bool
+  let function str_le (s1 : arstring) (s2 : arstring) : bool = s1 <= s2
+  let function str_ge (s1 : arstring) (s2 : arstring) : bool = s1 >= s2
+  let function str_lt (s1 : arstring) (s2 : arstring) : bool = s1 < s2
+  let function str_gt (s1 : arstring) (s2 : arstring) : bool = s1 > s2
+
+  (* val function str_le string string : bool
 
   axiom str_le_spec : forall s1 s2.
   str_le s1 s2 = S.le s1 s2
@@ -228,7 +237,7 @@ module Utils
   val function str_gt string string : bool
 
   axiom str_gt_spec : forall s1 s2.
-  str_gt s1 s2 = not (S.le s1 s2)
+  str_gt s1 s2 = not (S.le s1 s2) *)
 
   (* ----------------------------------------------------------------------- *)
   (* Option *)
@@ -321,8 +330,8 @@ theory Operation
   use Utils
 
   type call = {
-    _name : string;
-    _args : list string;
+    _name : arstring;
+    _args : list arstring;
   }
 
   let _eq_call (c1 : call) (c2 : call) : bool
@@ -349,23 +358,23 @@ theory Operation
     _call_   = None;
   }
 
-  let _mk_call (d : address) (a : tez) (n : string) (l : list string) : operation = {
+  let _mk_call (d : address) (a : tez) (n : arstring) (l : list arstring) : operation = {
     _destination_ = d;
     _amount_ = a;
     _call_ = Some { _name = n; _args = l };
   }
 
   type entrysig = {
-    _entry_name : string;
+    _entry_name : arstring;
     _entry_dest : address;
   }
 
-  let function entrypoint (n : string) (d : address) : option entrysig = Some {
+  let function entrypoint (n : arstring) (d : address) : option entrysig = Some {
     _entry_name = n;
     _entry_dest = d;
   }
 
-  let _mk_operation (a : tez) (e : entrysig) (l : list string) : operation = {
+  let _mk_operation (a : tez) (e : entrysig) (l : list arstring) : operation = {
     _destination_ = e._entry_dest;
     _amount_ = a;
     _call_ = Some { _name = e._entry_name; _args = l };

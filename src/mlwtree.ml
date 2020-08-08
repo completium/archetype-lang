@@ -97,6 +97,8 @@ type ('e,'t,'i) abstract_term =
   | Trmed   of 'i
   | Tchainid of 'i
   | Tselfaddress of 'i
+  | Tdefaultaddr
+  | Temptystr
   (* list *)
   | Tlist   of 'e list
   | Tnil    of 'i
@@ -405,6 +407,8 @@ and map_abstract_term
   | Tnow i             -> Tnow (map_i i)
   | Tchainid i         -> Tchainid (map_i i)
   | Tselfaddress i     -> Tselfaddress (map_i i)
+  | Tdefaultaddr       -> Tdefaultaddr
+  | Temptystr          -> Temptystr
   | Tadded a           -> Tadded (map_i a)
   | Trmed  a           -> Trmed (map_i a)
   | Tlist l            -> Tlist (List.map map_e l)
@@ -824,6 +828,8 @@ let compare_abstract_term
   | Tnow i1, Tnow i2 -> cmpi i1 i2
   | Tchainid i1, Tchainid i2 -> cmpi i1 i2
   | Tselfaddress i1, Tselfaddress i2 -> cmpi i1 i2
+  | Tdefaultaddr, Tdefaultaddr -> true
+  | Temptystr, Temptystr -> true
   | Tadded a1, Tadded a2 -> cmpi a1 a2
   | Trmed  a1, Trmed a2 -> cmpi a1 a2
   | Tlist l1, Tlist l2 -> List.for_all2 cmpe l1 l2

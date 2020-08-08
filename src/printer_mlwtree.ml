@@ -131,7 +131,7 @@ let pp_type fmt typ =
     let str =
       match t with
       | Tyint         -> "int"
-      | Tystring      -> "string"
+      | Tystring      -> "arstring"
       | Tydate        -> "date"
       | Tyaddr        -> "address"
       | Tyrole        -> "role"
@@ -654,6 +654,8 @@ let rec pp_term outer pos fmt = function
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
   | Tnow i -> Format.fprintf fmt "%a._now" pp_str i
+  | Temptystr -> Format.fprintf fmt "%s" "0"
+  | Tdefaultaddr -> Format.fprintf fmt "%s" "0"
   | Tchainid i -> Format.fprintf fmt "%a._chainid" pp_str i
   | Tselfaddress i -> Format.fprintf fmt "%a._selfaddress" pp_str i
   | Tmlist (l,e1,i1,i2,i3,e2) ->
