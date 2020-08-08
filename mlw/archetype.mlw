@@ -559,8 +559,8 @@ module CollectionSet
   (* GET INTERNAL ----------------------------------------------------------- *)
   let rec function internal_get (k : tk) (l : list t) : option t
   variant { l }
-  ensures { forall e. result = Some e -> proj e = k }
-  ensures { result = None -> forall e. M.mem e l -> proj e <> k }
+  (* ensures { forall e. result = Some e -> proj e = k }
+  ensures { result = None -> forall e. M.mem e l -> proj e <> k } *)
   =
   match l with
   | Cons e tl ->
@@ -572,25 +572,25 @@ module CollectionSet
 
   (* GET -------------------------------------------------------------------- *)
   let function get (k : tk) (s : cset) : option t
-  ensures { result = None -> forall e. F.fmem e s -> proj e <> k }
-  ensures { forall e. result = Some e -> proj e = k }
+ (*  ensures { result = None -> forall e. F.fmem e s -> proj e <> k }
+  ensures { forall e. result = Some e -> proj e = k } *)
   = internal_get k (F.content s)
 
   (* ADD -------------------------------------------------------------------- *)
   let function add (a : t) (s : cset) : cset
-  ensures { forall k. k <> proj a -> get k result = get k s }
-  ensures { get (proj a) result = Some a }
+  (* ensures { forall k. k <> proj a -> get k result = get k s }
+  ensures { not (mem a s) -> get (proj a) result = Some a } *)
   = F.mk (Cons a (F.content s))  (* normalisation is done by F.mk *)
 
   (* REMOVE ----------------------------------------------------------------- *)
   let function remove (k : tk) (s : cset) : cset
-  ensures { forall e. e <> k -> get e result = get e s }
-  ensures { get k result = None }
+  (* ensures { forall e. e <> k -> get e result = get e s }
+  ensures { get k result = None } *)
   =
   let rec internal_remove (l : list t) : list t
   variant { l }
-  ensures { forall e. e <> k -> internal_get e result = internal_get e l }
-  ensures { internal_get k result = None }
+  (* ensures { forall e. e <> k -> internal_get e result = internal_get e l }
+  ensures { internal_get k result = None } *)
   = match l with
   | Cons e tl ->
     if eqk (proj e) k then tl
@@ -1043,11 +1043,11 @@ module Collection
   requires { key_injective (N.elts s) }
   = { content = s }
 
-  (* ------------------------------------------------------------------------ *)
+(*   (* ------------------------------------------------------------------------ *)
   let function from_list (l : list t) : collection
   requires { key_injective l }
   = { content = N.mk l }
-
+ *)
   (* ------------------------------------------------------------------------ *)
   let function get (k : tk) (c : collection) : option t
   ensures { result = None -> forall e. mem e c -> keyt e <> k }
@@ -1076,7 +1076,7 @@ module Collection
     | None -> raise NotFound
     end
 
-  (* ------------------------------------------------------------------------ *)
+  (* (* ------------------------------------------------------------------------ *)
   lemma cont_mk [@rewrite] : forall l. N.elts (N.mk l) = norm l
 
   (* ------------------------------------------------------------------------ *)
@@ -1087,7 +1087,7 @@ module Collection
   lemma cons_key_injective : forall a l.
   key_injective l -> (forall e. M.mem e l -> keyt e <> keyt a) ->
   key_injective (Cons a l)
-
+ *)
   (* ------------------------------------------------------------------------ *)
   let function add (a : t) (c : collection) : collection
   requires { not (contains (keyt a) c) }
@@ -1127,7 +1127,7 @@ module Collection
   mk (N.mk (internal_set (N.elts c.content)))
 
   (* ------------------------------------------------------------------------ *)
-  type view
+  (* type view
 
   (* ------------------------------------------------------------------------ *)
   val function vmk (list tk) : view
@@ -1185,9 +1185,9 @@ module Collection
   ensures { forall k. vcontains k result <-> forall e. get k c = Some e <-> keyt e = k }
   =
   list_to_view (N.elts c.content)
-
+*)
   (* ------------------------------------------------------------------------ *)
-  function union (c1 c2 : collection) : collection
+  (* function union (c1 c2 : collection) : collection
   = mk (N.union c1.content c2.content)
 
   (* ------------------------------------------------------------------------ *)
@@ -1199,13 +1199,13 @@ module Collection
   = mk (N.diff c1.content c2.content)
 
   (* ------------------------------------------------------------------------ *)
-  function singleton (a : t) : collection = mk (N.singleton a)
+  function singleton (a : t) : collection = mk (N.singleton a) *)
 
    (* ------------------------------------------------------------------------ *)
   let function empty = mk N.empty
 
   (* ------------------------------------------------------------------------ *)
-  predicate is_empty (c : collection) = N.is_empty c.content
+ (*  predicate is_empty (c : collection) = N.is_empty c.content
 
   (* ------------------------------------------------------------------------ *)
   predicate subset (c1 c2 : collection) = N.subset c1.content c2.content
@@ -1219,13 +1219,13 @@ module Collection
   (* ------------------------------------------------------------------------ *)
   function select (p : t -> bool) (c : collection) : collection
   = mk (N.mk (F.filter p ((N.elts (content c)))))
-
-  (* ------------------------------------------------------------------------ *)
+ *)
+ (*  (* ------------------------------------------------------------------------ *)
   lemma mem_select : forall e c p.
   mem e (select p c) <-> mem e c /\ p e
-
+ *)
   (* ------------------------------------------------------------------------ *)
-  let function head (i : int) (c : collection) : collection
+  (* let function head (i : int) (c : collection) : collection
   ensures { forall e. mem e result -> mem e c }
   ensures { 0 <= i <= card c -> card result = i }
   ensures { i > card c -> result = c }
@@ -1235,8 +1235,8 @@ module Collection
   let function tail (i : int) (c : collection) : collection
   ensures { forall e. mem e result -> mem e c }
   ensures { 0 <= i <= card c -> card result = i }
-  = mk (N.mk (I.tail i (N.elts c.content)))
-
+  = mk (N.mk (I.tail i (N.elts c.content))) *)
+(*
   (* ------------------------------------------------------------------------ *)
   type field
 
@@ -1257,7 +1257,7 @@ module Collection
     end
   | Nil -> Nil
   end in
-  mk (N.mk (internal_from_field (felts f)))
+  mk (N.mk (internal_from_field (felts f))) *)
 
 end
 
@@ -1446,17 +1446,17 @@ module Sum
   type collection
 
   (* ------------------------------------------------------------------------ *)
-  type view
+  (* type view *)
 
   (* ------------------------------------------------------------------------ *)
   val function field t : int
 
-  (* ------------------------------------------------------------------------ *)
+ (*  (* ------------------------------------------------------------------------ *)
   val function view_to_list view collection : list t
 
   (* ------------------------------------------------------------------------ *)
   val function from_view view collection : collection
-
+ *)
   (* ------------------------------------------------------------------------ *)
   val function add t collection : collection
 
@@ -1475,7 +1475,7 @@ module Sum
   (* ------------------------------------------------------------------------ *)
   val function keyt t : tk
 
-  (* ------------------------------------------------------------------------ *)
+  (* (* ------------------------------------------------------------------------ *)
   let function sum (v : view) (c : collection) : int
   =
   let rec function internal_sum (l : list t) : int
@@ -1487,12 +1487,12 @@ module Sum
     end
   in
   internal_sum (view_to_list v c)
-
+ *)
   (* ------------------------------------------------------------------------ *)
   function sum_formula (c : collection) : int
 
   (* ------------------------------------------------------------------------ *)
-  axiom sum_formula_spec : forall v c. sum v c = sum_formula (from_view v c)
+  (* axiom sum_formula_spec : forall v c. sum v c = sum_formula (from_view v c) *)
 
   (* ------------------------------------------------------------------------ *)
   axiom effect_add : forall a c.
