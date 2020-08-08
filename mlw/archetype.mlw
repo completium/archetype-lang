@@ -1067,10 +1067,10 @@ module Collection
   (* ------------------------------------------------------------------------ *)
   let get_force (k : tk) (c : collection) : t
   raises { NotFound -> not (contains k c) }
-  ensures { keyt result = k }
-  ensures { mem result c }
-  ensures { get k c = Some result }
-  ensures { contains (keyt result) c }
+  ensures { contains k c -> keyt result = k }
+  ensures { contains k c -> mem result c }
+  ensures { contains k c -> get k c = Some result }
+  ensures { contains k c -> contains (keyt result) c }
   = match get k c with
     | Some v -> v
     | None -> raise NotFound

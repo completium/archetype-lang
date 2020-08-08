@@ -2,12 +2,6 @@ archetype fa12
 
 constant totalsupply : nat = 10_000_000
 
-asset allowance identified by addr_owner addr_spender to big_map {
-  addr_owner       : int;
-  addr_spender     : int;
-  amount           : nat;
-}
-
 asset ledger identified by holder to big_map {
   holder     : int;
   tokens     : nat = 0;
@@ -16,15 +10,10 @@ asset ledger identified by holder to big_map {
 }
 
 entry %transfer (from_ : int, to_ : int, value : nat) {
-  /* require {
-    d0 : ledger[from_].tokens >= value
-  } */
-  effect {
-    ledger.addupdate(to_, { tokens += value });
-    ledger.update(from_, { tokens -= value });
-  }
+  ledger.addupdate(to_, { tokens += value });
+  ledger.update(from_, { tokens -= value });
 }
 
 specification {
-  s1 :  ledger.sum(tokens) = totalsupply;
+  s1: ledger.sum(tokens) = totalsupply;
 }
