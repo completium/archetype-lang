@@ -1,4 +1,4 @@
-archetype fa12
+archetype fa12_simple
 
 constant totalsupply : nat = 10_000_000
 
