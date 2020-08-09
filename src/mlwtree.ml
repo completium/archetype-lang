@@ -273,7 +273,7 @@ type theotyp =
 
 type ('e,'t,'i) abstract_decl =
   | Duse     of bool * 'i abstract_qualid * string option
-  | Dval     of 'i * 't
+  | Dval     of bool * 'i * 't
   | Dclone   of 'i abstract_qualid * 'i * (('i,'t) abstract_clone_subst) list
   | Denum    of 'i * 'i list
   | Drecord  of 'i * (('e,'t,'i) abstract_field) list
@@ -550,7 +550,7 @@ let map_abstract_decl
     (map_t : 't1 -> 't2)
     (map_i : 'i1 -> 'i2) = function
   | Duse (b,i,l)    -> Duse (b,map_abstract_qualid map_i i,l)
-  | Dval (i,t)      -> Dval (map_i i, map_t t)
+  | Dval (r,i,t)    -> Dval (r,map_i i, map_t t)
   | Dclone (q,i,l)  -> Dclone (map_abstract_qualid map_i q,
                                map_i i,
                                List.map (map_abstract_clone_subst map_i map_t) l)

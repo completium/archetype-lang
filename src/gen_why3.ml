@@ -52,6 +52,7 @@ let mk_ac_added_id a  = mk_id (a ^ "_assets_added")
 let mk_ac_rmed_id a   = mk_id (a ^ "_assets_removed")
 
 let gs                = "_s"
+let gsinit            = "_s_init"
 
 let mk_ac a           = Tdoti (gs, mk_ac_id a)
 let mk_ac_old a       = Tdot (Told (Tvar gs), Tvar (mk_ac_id a))
@@ -1357,7 +1358,8 @@ let get_tuple_size = function
 let fail_if_neg_nat_value t left right op  =
  match t with
 | M.Tbuiltin  Bnat -> dl (
-    Tif (dl (Tge(dl Tyint, left, right)), op, Some (loc_term (Traise Enegassignnat)))
+    Tif (dl (Tge(dl Tyint, left, right)), op,
+    Some (loc_term (Tseq [Tassign (Tvar gs, Tvar gsinit); Traise Enegassignnat])))
   )
 | _ -> op
 
@@ -1374,7 +1376,7 @@ let get_assign_value t left right = function
 
 let mk_get_force n k c = Tmatch (dl (Tget(n,k,c)),[
   Tpsome (dl "v"), loc_term (Tvar "v");
-  Twild, dl (Traise Enotfound)
+  Twild, loc_term (Tseq [Tassign(Tvar gs, Tvar gsinit); Traise Enotfound])
 ])
 
 let rec map_mterm m ctx (mt : M.mterm) : loc_term =
@@ -1529,8 +1531,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mfail InvalidState         -> Traise Einvalidstate
     | Mfail (Invalid { node = M.Mstring msg; type_=_ }) -> Traise (Einvalid (Some msg))
     | Mfail (Invalid { node = M.Mvar (n, Vlocal); type_=_ }) -> Traise (Einvalid (Some (unloc n)))
-    | Mfail AssignNat -> Traise Enegassignnat
-    | Mfail (Invalid _) -> Traise (Einvalid (Some ("error")))
+    | Mfail AssignNat -> Tseq [loc_term (Tassign (Tvar gs, Tvar gsinit)); dl (Traise Enegassignnat)]
+    | Mfail (Invalid _) -> Tseq [loc_term (Tassign (Tvar gs, Tvar gsinit)); loc_term (Traise (Einvalid (Some "error")))]
 
     | Mtransfer (v, k) ->
       begin
@@ -1681,7 +1683,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       mk_trace_seq m
         (Tif(
           dl (Tcontains(dl n, key ,loc_term (mk_ac n))),
-          dl (Traise Ekeyexist),
+          loc_term (Tseq [Tassign (Tvar gs, Tvar gsinit); Traise Ekeyexist]),
           Some (dl (Tassign (loc_term (Tdoti(gs,mk_ac_id n)),dl (Tadd(dl n,map_mterm m ctx i,loc_term (mk_ac n))))))))
         [CAdd n]
 
@@ -2489,12 +2491,6 @@ let mk_get_asset asset key ktyp = Dfun {
                    Tvar "k")
       }
     ];
-    (* body = Tif (mk_not_found_cond `Curr asset (Tvar "k"),
-                Traise Enotfound,
-                Some (Tget (asset,
-                            mk_ac asset,
-                            Tvar "k"))); *)
-
     body = Tmatch (Tget (asset,
                          Tvar "k",
                          mk_ac asset),[
@@ -3709,7 +3705,7 @@ let process_no_fail m (d : (loc_term, loc_typ, loc_ident) abstract_decl) =
       | _ -> (* *)
         Dfun { f with
           body   = loc_term (
-            Tletin (false, "_s_init", None, Tvar gs, unloc_term f.body));
+            Tletin (false, gsinit, None, Tvar gs, unloc_term f.body));
         }
     end
   | _ -> d
@@ -3742,7 +3738,7 @@ let to_whyml (m : M.model) : mlw_tree  =
   let mlwassets        = zip mlwassets eq_keys le_keys eq_assets init_records views fields colls |> deloc in
   let storage_api_bs   = mk_storage_api_before_storage m (records |> wdl) in
   let storage          = M.Utils.get_storage m |> mk_storage m in
-  let storageval       = Dval (dl gs, dl Tystorage) in
+  let storageval       = Dval (true, dl gs, dl Tystorage) in
   let axioms           = mk_axioms m in
   (*let partition_axioms = mk_partition_axioms m in*)
   let transfer         = if M.Utils.with_operations m then [mk_transfer ();mk_call(); mk_operation()] else [] in

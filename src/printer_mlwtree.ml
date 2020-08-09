@@ -875,6 +875,11 @@ let pp_theorem fmt (t,i,e) =
 
 (* -------------------------------------------------------------------------- *)
 
+let pp_ref_val fmt (i,t) =
+  Format.fprintf fmt "val ref %a : %a"
+    pp_str i
+    pp_type t
+
 let pp_val fmt (i,t) =
   Format.fprintf fmt "val %a : %a"
     pp_str i
@@ -887,7 +892,8 @@ let pp_decl fmt = function
   | Duse (true, l, Some _)  -> Format.fprintf fmt "use export %a" pp_qualid l
   | Duse (false, l, None)   -> Format.fprintf fmt "use %a" pp_qualid l
   | Duse (false, l, Some a) -> Format.fprintf fmt "use %a as %a" pp_qualid l pp_str a
-  | Dval (i,t)       -> pp_val fmt (i,t)
+  | Dval (false,i,t) -> pp_val fmt (i,t)
+  | Dval (true,i,t)  -> pp_ref_val fmt (i,t)
   | Dclone (i,j,l)   -> pp_clone fmt (i,j,l)
   | Denum (i,l)      -> pp_enum fmt (i,l)
   | Drecord (i,l)    -> pp_record fmt (i,l)
