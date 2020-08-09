@@ -1070,7 +1070,7 @@ module Collection
   ensures { keyt result = k }
   ensures { mem result c }
   ensures { get k c = Some result }
-  (* ensures { contains (keyt result) c } *)
+  ensures { contains k c }
   = match get k c with
     | Some v -> v
     | None -> raise NotFound
@@ -1499,8 +1499,8 @@ module Sum
   not (contains (keyt a) c) -> sum_formula (add a c) = sum_formula c + field a
 
   (* ------------------------------------------------------------------------ *)
-  axiom effect_remove : forall a c.
-  contains (keyt a) c -> sum_formula (remove (keyt a) c) = sum_formula c - field a
+  (* axiom effect_remove : forall a c.
+  contains (keyt a) c -> sum_formula (remove (keyt a) c) = sum_formula c - field a *)
 
   (* ------------------------------------------------------------------------ *)
   axiom effect_set : forall k a c.
