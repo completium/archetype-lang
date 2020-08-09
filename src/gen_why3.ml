@@ -1355,11 +1355,13 @@ let get_tuple_size = function
 | M.Ttuple l -> List.length l
 | _ -> assert false
 
+let cp_storage id = Tapp (Tvar "_cp_storage",[Tvar id])
+
 let fail_if_neg_nat_value t left right op  =
  match t with
 | M.Tbuiltin  Bnat -> dl (
     Tif (dl (Tge(dl Tyint, left, right)), op,
-    Some (loc_term (Tseq [Tassign (Tvar gs, Tvar gsinit); Traise Enegassignnat])))
+    Some (loc_term (Tseq [Tassign (Tvar gs, cp_storage gsinit); Traise Enegassignnat])))
   )
 | _ -> op
 
@@ -1376,7 +1378,7 @@ let get_assign_value t left right = function
 
 let mk_get_force n k c = Tmatch (dl (Tget(n,k,c)),[
   Tpsome (dl "v"), loc_term (Tvar "v");
-  Twild, loc_term (Tseq [Tassign(Tvar gs, Tvar gsinit); Traise Enotfound])
+  Twild, loc_term (Tseq [Tassign(Tvar gs, cp_storage gsinit); Traise Enotfound])
 ])
 
 let rec map_mterm m ctx (mt : M.mterm) : loc_term =
@@ -1531,8 +1533,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mfail InvalidState         -> Traise Einvalidstate
     | Mfail (Invalid { node = M.Mstring msg; type_=_ }) -> Traise (Einvalid (Some msg))
     | Mfail (Invalid { node = M.Mvar (n, Vlocal); type_=_ }) -> Traise (Einvalid (Some (unloc n)))
-    | Mfail AssignNat -> Tseq [loc_term (Tassign (Tvar gs, Tvar gsinit)); dl (Traise Enegassignnat)]
-    | Mfail (Invalid _) -> Tseq [loc_term (Tassign (Tvar gs, Tvar gsinit)); loc_term (Traise (Einvalid (Some "error")))]
+    | Mfail AssignNat -> Tseq [loc_term (Tassign (Tvar gs, cp_storage gsinit)); dl (Traise Enegassignnat)]
+    | Mfail (Invalid _) -> Tseq [loc_term (Tassign (Tvar gs, cp_storage gsinit)); loc_term (Traise (Einvalid (Some "error")))]
 
     | Mtransfer (v, k) ->
       begin
@@ -1683,7 +1685,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       mk_trace_seq m
         (Tif(
           dl (Tcontains(dl n, key ,loc_term (mk_ac n))),
-          loc_term (Tseq [Tassign (Tvar gs, Tvar gsinit); Traise Ekeyexist]),
+          loc_term (Tseq [Tassign (Tvar gs, cp_storage gsinit); Traise Ekeyexist]),
           Some (dl (Tassign (loc_term (Tdoti(gs,mk_ac_id n)),dl (Tadd(dl n,map_mterm m ctx i,loc_term (mk_ac n))))))))
         [CAdd n]
 
@@ -2375,6 +2377,25 @@ let mk_storage m (l : M.storage) =
       mk_state_invariants m ctx    @
       mk_contract_invariants m ctx @
       mk_variable_invariants m ctx
+  }
+
+let mk_cp_storage m (l : M.storage) = Dfun  {
+    name = "_cp_storage" |> dl;
+    logic = Logic;
+    args = ["s" |> dl, Tystorage |> dl];
+    returns = Tystorage |> dl;
+    raises = [];
+    variants = [];
+    requires = [];
+    ensures = [{
+      id = dl "cp_1";
+      form = loc_term (Teq(Tyint,Tresult,Tvar "s"));
+    }];
+    body = dl (Trecord (None, (List.map (fun (f : ('a, loc_typ, ident with_loc) abstract_field) ->
+      f.name, dl (Tdoti(dl "s",f.name))
+    ) (mk_storage_items m l)) @ (List.map (fun (f : (('a, 'b, ident) abstract_term, (ident, (ident, 'c) abstract_type) abstract_type, ident) abstract_field) ->
+      dl f.name, dl (Tdoti (dl "s", dl f.name))
+    ) (mk_const_fields m))))
   }
 
 (* Verfication API -----------------------------------------------------------*)
@@ -3705,7 +3726,7 @@ let process_no_fail m (d : (loc_term, loc_typ, loc_ident) abstract_decl) =
       | _ -> (* *)
         Dfun { f with
           body   = loc_term (
-            Tletin (false, gsinit, None, Tvar gs, unloc_term f.body));
+            Tletin (false, gsinit, None, cp_storage gs, unloc_term f.body));
         }
     end
   | _ -> d
@@ -3738,6 +3759,7 @@ let to_whyml (m : M.model) : mlw_tree  =
   let mlwassets        = zip mlwassets eq_keys le_keys eq_assets init_records views fields colls |> deloc in
   let storage_api_bs   = mk_storage_api_before_storage m (records |> wdl) in
   let storage          = M.Utils.get_storage m |> mk_storage m in
+  let cp_storage       = M.Utils.get_storage m |> mk_cp_storage m in
   let storageval       = Dval (true, dl gs, dl Tystorage) in
   let axioms           = mk_axioms m in
   (*let partition_axioms = mk_partition_axioms m in*)
@@ -3760,7 +3782,7 @@ let to_whyml (m : M.model) : mlw_tree  =
               sets                   @
               mlwassets              @
               storage_api_bs         @
-              [storage;storageval]   @
+              [storage;cp_storage;storageval]   @
               axioms                 @
               (*partition_axioms       @*)
               transfer               @
