@@ -1572,9 +1572,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mcurrency (i, Tz)   -> Tint (Big_int.mult_int_big_int 1000000 i)
     | Mcurrency (i, Mtz)  -> Tint (Big_int.mult_int_big_int 1000 i)
     | Mcurrency (i, Utz)  -> Tint i
-    | Mstring v ->  Tint (Tools.sha v) (* Tstring v *)
-    | Maddress v -> Tint (Tools.sha v) (* Tstring v *)
-    | Mbytes v ->   Tint (Tools.sha v) (* Tstring v *)
+    | Mstring v ->  (* Tint (Tools.sha v) *) Tstring v
+    | Maddress v -> (* Tint (Tools.sha v) *) Tstring v
+    | Mbytes v ->   (* Tint (Tools.sha v) *) Tstring v
     | Mdate s -> Tint (Core.date_to_timestamp s)
     | Mduration v -> Tint (Core.duration_to_timestamp v)
     | Mtimestamp v -> Tint v
