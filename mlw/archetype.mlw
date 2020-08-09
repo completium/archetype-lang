@@ -1065,18 +1065,6 @@ module Collection
   end
 
   (* ------------------------------------------------------------------------ *)
-  let get_force (k : tk) (c : collection) : t
-  raises { NotFound -> not (contains k c) }
-  ensures { keyt result = k }
-  ensures { mem result c }
-  ensures { get k c = Some result }
-  ensures { contains k c }
-  = match get k c with
-    | Some v -> v
-    | None -> raise NotFound
-    end
-
-  (* ------------------------------------------------------------------------ *)
   lemma cont_mk [@rewrite] : forall l. N.elts (N.mk l) = norm l
 
   (* ------------------------------------------------------------------------ *)

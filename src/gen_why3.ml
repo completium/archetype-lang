@@ -1372,6 +1372,11 @@ let get_assign_value t left right = function
 | M.AndAssign -> dl (Tand (left, right))
 | M.OrAssign -> dl (Tor (left, right))
 
+let mk_get_force n k c = Tmatch (dl (Tget(n,k,c)),[
+  Tpsome (dl "v"), loc_term (Tvar "v");
+  Twild, dl (Traise Enotfound)
+])
+
 let rec map_mterm m ctx (mt : M.mterm) : loc_term =
   let error_internal desc = emit_error (mt.loc, desc); Tnottranslated in
   let error_not_translated (msg : string) = (* Tnottranslated in *) error_internal (TODONotTranslated msg) in
@@ -1742,7 +1747,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mget (an, _c, k) ->
       begin match ctx.lctx with
         | Inv | Logic -> Tget(dl an, map_mterm m ctx k,mk_ac_ctx an ctx)
-        | _ -> Tgetforce (dl an, map_mterm m ctx k,mk_ac_ctx an ctx)
+        | _ -> mk_get_force (dl an) (map_mterm m ctx k) (mk_ac_ctx an ctx)
       end
     | Mselect (a, (CKview l), la, lb, _a) ->
       let args = extract_args lb in
@@ -1917,7 +1922,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mmapremove (kt, vt, c, k)   ->
       Tremove (dl (mk_map_name m (M.Tmap (false, kt, vt))),map_mterm m ctx k, map_mterm m ctx c)
     | Mmapget (kt, vt, c, k)      -> Tsnd(
-        dl (Tgetforce (dl (mk_map_name m (M.Tmap (false, kt, vt))),map_mterm m ctx k, map_mterm m ctx c)))
+        dl (mk_get_force (dl (mk_map_name m (M.Tmap (false, kt, vt)))) (map_mterm m ctx k) (map_mterm m ctx c)))
     | Mmapgetopt (kt, vt, c, k)   -> Tsndopt(
         dl (Tget (dl (mk_map_name m (M.Tmap (false, kt, vt))),map_mterm m ctx k, map_mterm m ctx c)))
     | Mmapcontains (kt, kv, c, k) ->
