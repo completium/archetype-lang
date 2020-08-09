@@ -1057,7 +1057,8 @@ module Collection
 
   (* ------------------------------------------------------------------------ *)
   let function contains (k : tk) (c : collection) : bool
-  ensures { forall e. get k c = Some e -> result <-> mem e c }
+  ensures { result = true -> exists e. mem e c /\ keyt e = k }
+  ensures { result = false -> get k c = None }
   =
   match get k c with
   | Some _ -> true
@@ -1086,7 +1087,7 @@ module Collection
 
   (* ------------------------------------------------------------------------ *)
   let function remove (k : tk) (c : collection) : collection
-  ensures { forall i. not (eqk i k) -> get i c = get i result }
+  ensures { forall i. i <> k -> get i c = get i result }
   ensures { get k result = None }
   =
   mk (N.remove k c.content)
