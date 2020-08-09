@@ -883,6 +883,10 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "ceil (%a)"
         f x
 
+    | Mtostring (_, x) ->
+      Format.fprintf fmt "to_string (%a)"
+        f x
+
     | Mpack x ->
       Format.fprintf fmt "pack (%a)"
         f x
@@ -1233,17 +1237,18 @@ let pp_api_list fmt = function
   | Lnth t      -> Format.fprintf fmt "list_nth\t %a" pp_type t
 
 let pp_api_builtin fmt = function
-  | Bmin    t -> Format.fprintf fmt "min on %a"    pp_type t
-  | Bmax    t -> Format.fprintf fmt "max on %a"    pp_type t
-  | Babs    t -> Format.fprintf fmt "abs on %a"    pp_type t
-  | Bconcat t -> Format.fprintf fmt "concat on %a" pp_type t
-  | Bslice  t -> Format.fprintf fmt "slice on %a"  pp_type t
-  | Blength t -> Format.fprintf fmt "length on %a" pp_type t
-  | Bisnone t -> Format.fprintf fmt "isnone on %a" pp_type t
-  | Bissome t -> Format.fprintf fmt "issome on %a" pp_type t
-  | Boptget t -> Format.fprintf fmt "getopt on %a" pp_type t
-  | Bfloor    -> pp_str fmt "floor"
-  | Bceil     -> pp_str fmt "ceil"
+  | Bmin    t   -> Format.fprintf fmt "min on %a"    pp_type t
+  | Bmax    t   -> Format.fprintf fmt "max on %a"    pp_type t
+  | Babs    t   -> Format.fprintf fmt "abs on %a"    pp_type t
+  | Bconcat t   -> Format.fprintf fmt "concat on %a" pp_type t
+  | Bslice  t   -> Format.fprintf fmt "slice on %a"  pp_type t
+  | Blength t   -> Format.fprintf fmt "length on %a" pp_type t
+  | Bisnone t   -> Format.fprintf fmt "isnone on %a" pp_type t
+  | Bissome t   -> Format.fprintf fmt "issome on %a" pp_type t
+  | Boptget t   -> Format.fprintf fmt "getopt on %a" pp_type t
+  | Bfloor      -> pp_str fmt "floor"
+  | Bceil       -> pp_str fmt "ceil"
+  | Btostring t -> Format.fprintf fmt "to_string on %a" pp_type t
 
 let pp_api_internal fmt = function
   | RatEq        -> Format.fprintf fmt "rat_eq"

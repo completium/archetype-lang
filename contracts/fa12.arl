@@ -31,9 +31,10 @@ entry %transfer (from_ : address, to_ : address, value : nat) {
 
 entry approve(spender : address, value : nat) {
   var k = (caller, spender);
-  if allowance.contains(k) then
-    if allowance[k].amount > 0 and value > 0
-    then fail("Unsafe Allowance Change");
+  if allowance.contains(k) then (
+    var previous = allowance[k].amount;
+    if previous > 0 and value > 0
+    then (var error = ("UnsafeAllowanceChange", previous); fail("UnsafeAllowanceChange")));
   allowance.addupdate( k, { amount = value });
 }
 

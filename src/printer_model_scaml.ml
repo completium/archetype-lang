@@ -348,6 +348,7 @@ let pp_model fmt (model : model) =
     | Boptget t -> Format.fprintf fmt "getopt on %a" pp_type t
     | Bfloor    -> pp_str fmt "floor"
     | Bceil     -> pp_str fmt "ceil"
+    | Btostring t -> Format.fprintf fmt "to_string on %a" pp_type t
   in
 
   let pp_api_internal fmt = function
@@ -1209,6 +1210,10 @@ let pp_model fmt (model : model) =
 
       | Mceil x ->
         Format.fprintf fmt "ceil (%a)"
+          f x
+
+      | Mtostring (_, x) ->
+        Format.fprintf fmt "to_string (%a)"
           f x
 
       | Mpack x ->

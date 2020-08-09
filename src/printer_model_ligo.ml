@@ -1266,6 +1266,11 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt "ceil (%a)"
         f x
 
+    | Mtostring (t, x) ->
+      Format.fprintf fmt "to_string_%a (%a)"
+        pp_pretty_type t
+        f x
+
     | Mpack x ->
       Format.fprintf fmt "Bytes.pack (%a)"
         f x
@@ -2440,6 +2445,37 @@ let pp_model_internal fmt (model : model) b =
 
     | Bfloor    -> Format.fprintf fmt "function floor (const r : %a) : int is block {skip} with r.0 / int(r.1)@\n" pp_type Utils.type_rational
     | Bceil     -> Format.fprintf fmt "function ceil (const r : %a) : int is block {skip} with r.0 / int(r.1) + (if r.0 mod r.1 = 0n then 0n else 1n)@\n" pp_type Utils.type_rational
+    | Btostring t ->
+      Format.fprintf fmt
+        "function to_string_%a (const n : %a) : string is@\n  \
+         block {@\n    \
+         const res : string = \"0\";@\n    \
+         if (n > 0n) then block {@\n      \
+         var tmp : string := \"\";@\n      \
+         var v : nat := n;@\n      \
+         const m : map(nat, string) = (map [@\n        \
+         0n -> \"0\";@\n        \
+         1n -> \"1\";@\n        \
+         2n -> \"2\";@\n        \
+         3n -> \"3\";@\n        \
+         4n -> \"4\";@\n        \
+         5n -> \"5\";@\n        \
+         6n -> \"6\";@\n        \
+         7n -> \"7\";@\n        \
+         8n -> \"8\";@\n        \
+         9n -> \"9\";@\n        \
+         ] : map(nat, string));@\n      \
+         while (v > 0n) block {@\n        \
+         const i : nat = v mod 10n;@\n        \
+         const str : string = get_force(i, m);@\n        \
+         tmp := String.concat(str, tmp);@\n        \
+         v := v / 10n;@\n      \
+         };@\n    \
+         res := tmp;@\n    \
+         } else skip;@\n  \
+         } with res@\n"
+        pp_pretty_type t
+        pp_type t
   in
 
   let pp_api_internal (_env : env) fmt = function

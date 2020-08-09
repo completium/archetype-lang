@@ -230,6 +230,9 @@ module Utils
   axiom str_gt_spec : forall s1 s2.
   str_gt s1 s2 = not (S.le s1 s2)
 
+  val function int_to_string int : string
+  (* TODO: write axiom int_to_string_spec *)
+
   (* ----------------------------------------------------------------------- *)
   (* Option *)
 

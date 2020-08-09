@@ -300,8 +300,9 @@ type ('id, 'term) mterm_node  =
   | Moptget           of 'term
   | Mfloor            of 'term
   | Mceil             of 'term
+  | Mtostring         of type_ * 'term
   | Mpack             of 'term
-  | Munpack           of  type_ * 'term
+  | Munpack           of type_ * 'term
   (* crypto functions *)
   | Mblake2b          of 'term
   | Msha256           of 'term
@@ -437,6 +438,7 @@ and api_builtin =
   | Boptget of type_
   | Bfloor
   | Bceil
+  | Btostring of type_
 [@@deriving show {with_path = false}]
 
 and api_internal =
@@ -1168,8 +1170,10 @@ let cmp_mterm_node
     | Moptget x1, Moptget x2                                                           -> cmp x1 x2
     | Mfloor x1, Mfloor x2                                                             -> cmp x1 x2
     | Mceil x1, Mceil x2                                                               -> cmp x1 x2
+    | Mtostring(t1, x1), Mtostring (t2, x2)                                            -> cmp_type t1 t2 && cmp x1 x2
     | Mpack x1, Mpack x2                                                               -> cmp x1 x2
     | Munpack (t1, x1), Munpack (t2, x2)                                               -> cmp_type t1 t2 && cmp x1 x2
+
     (* crypto functions *)
     | Mblake2b x1, Mblake2b x2                                                         -> cmp x1 x2
     | Msha256  x1, Msha256  x2                                                         -> cmp x1 x2
@@ -1283,6 +1287,7 @@ let cmp_api_item_node (a1 : api_storage_node) (a2 : api_storage_node) : bool =
     | Boptget t1, Boptget t2 -> cmp_type t1 t2
     | Bfloor    , Bfloor     -> true
     | Bceil     , Bceil      -> true
+    | Btostring t1, Btostring t2 -> cmp_type t1 t2
     | _ -> false
   in
   let cmp_api_internal (i1 : api_internal) (i2 : api_internal) : bool =
@@ -1516,6 +1521,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Moptget x                      -> Moptget (f x)
   | Mfloor x                       -> Mfloor (f x)
   | Mceil x                        -> Mceil (f x)
+  | Mtostring (t, x)               -> Mtostring (ft t, f x)
   | Mpack x                        -> Mpack (f x)
   | Munpack (t, x)                 -> Munpack (ft t, f x)
   (* crypto functions *)
@@ -1879,6 +1885,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Moptget x                             -> f accu x
   | Mfloor x                              -> f accu x
   | Mceil x                               -> f accu x
+  | Mtostring (_, x)                      -> f accu x
   | Mpack x                               -> f accu x
   | Munpack (_, x)                        -> f accu x
   (* crypto functions *)
@@ -2633,6 +2640,10 @@ let fold_map_term
     let xe, xa = f accu x in
     g (Mceil xe), xa
 
+  | Mtostring (t, x) ->
+    let xe, xa = f accu x in
+    g (Mtostring (t, xe)), xa
+
   | Mpack x ->
     let xe, xa = f accu x in
     g (Mpack xe), xa
@@ -3016,6 +3027,7 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
         | Boptget t -> Boptget (for_type t)
         | Bfloor    -> Bfloor
         | Bceil     -> Bceil
+        | Btostring t -> Btostring (for_type t)
       in
       let for_api_internal (ainternal : api_internal) : api_internal =
         match ainternal with
@@ -4302,6 +4314,7 @@ end = struct
              | APIBuiltin (Boptget       _) -> 38
              | APIBuiltin (Bfloor         ) -> 39
              | APIBuiltin (Bceil          ) -> 40
+             | APIBuiltin (Btostring     _) -> 41
            in
            let idx1 = get_kind i1.node_item in
            let idx2 = get_kind i2.node_item in

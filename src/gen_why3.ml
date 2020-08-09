@@ -1954,6 +1954,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Moptget s -> Tapp (loc_term (Tvar "getopt"),[map_mterm m ctx s])
     | Mfloor  s -> Tapp (loc_term (Tvar "floor"),[map_mterm m ctx s])
     | Mceil   s -> Tapp (loc_term (Tvar "ceil"),[map_mterm m ctx s])
+    | Mtostring (_, s) -> Tapp (loc_term (Tvar "to_string"),[map_mterm m ctx s])
     | Mpack   s -> Tapp (loc_term (Tvar "pack"),[map_mterm m ctx s])
     | Munpack (_, s) -> Tapp (loc_term (Tvar "unpack"),[map_mterm m ctx s])
 

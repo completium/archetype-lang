@@ -913,6 +913,9 @@ let coreops : opinfo list =
   @ (List.map
        (fun x -> ("length", A.Clength, `Total, None, [x], A.vtnat, Mint.empty))
        [A.vtstring; A.vtbytes])
+  @ (List.map
+       (fun x -> ("to_string", A.Ctostring, `Total, None, [x], A.vtstring, Mint.empty))
+       [A.vtnat])
 
 (* -------------------------------------------------------------------- *)
 let optionops : opinfo list = [
