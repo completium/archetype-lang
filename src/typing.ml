@@ -577,7 +577,7 @@ let pp_error_desc fmt e =
   | InvalidMethodInExec                -> pp "Invalid method in execution"
   | InvalidMethodInFormula             -> pp "Invalid method in formula"
   | InvalidMethodWithBigMap id         -> pp "Invalid method with big map asset: %s" id
-  | InvalidNumberOfArguments (n1, n2)  -> pp "Invalid number of arguments: found '%i', but expected '%i'" n1 n2
+  | InvalidNumberOfArguments (n1, n2)  -> pp "Invalid number of arguments: found '%i', but expected '%i'" n2 n1
   | InvalidRecordFieldType             -> pp "Invalid record field's type"
   | InvalidRoleExpression              -> pp "Invalid role expression"
   | InvalidSecurityEntry               -> pp "Invalid security entry"
@@ -3070,12 +3070,6 @@ and for_gen_method_call mode env theloc (the, m, args)
         Env.emit_error env (loc m, NoSuchMethod (unloc m));
         raise E.Bailout
       | Some method_ -> method_
-    in
-
-    let args =
-      match args with
-      | [ { pldesc = Etuple l; _ } ] -> l
-      | _ -> args
     in
 
     let ne =
