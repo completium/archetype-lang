@@ -771,6 +771,7 @@ let compare_abstract_fun_struct
 let rec compare_pattern cmp p1 p2 =
   match p1,p2 with
   | Twild, Twild -> true
+  | Tpignore, Tpignore -> true
   | Tconst i1, Tconst i2 -> cmp i1 i2
   | Tpatt_tuple l1, Tpatt_tuple l2 -> List.for_all2 (compare_pattern cmp) l1 l2
   | Tpsome i1, Tpsome i2 -> cmp i1 i2

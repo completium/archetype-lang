@@ -756,6 +756,7 @@ module Field
   use int.Int
   use list.List
   use list.Mem as M
+  use option.Option
   use Types
   use View as V
 
@@ -804,6 +805,16 @@ module Field
 
   (* ------------------------------------------------------------------------ *)
   predicate mem (k : tk) (f : field) = N.mem k f
+
+  (* ------------------------------------------------------------------------ *)
+  let function contains (k : tk) (f : field) : bool
+  ensures { result = true -> exists e. mem e f /\ e = k }
+  ensures { result = false -> N.get k f = None }
+  =
+  match N.get k f with
+  | Some _ -> true
+  | None -> false
+  end
 
   (* ------------------------------------------------------------------------ *)
   let function elts (f : field) = N.elts f
@@ -1508,8 +1519,8 @@ module Sum
   not (contains (keyt a) c) -> sum_formula (add a c) = sum_formula c + field a
 
   (* ------------------------------------------------------------------------ *)
-  (* axiom effect_remove : forall a c.
-  contains (keyt a) c -> sum_formula (remove (keyt a) c) = sum_formula c - field a *)
+  axiom effect_remove : forall a c.
+  contains (keyt a) c -> sum_formula (remove (keyt a) c) = sum_formula c - field a
 
   (* ------------------------------------------------------------------------ *)
   axiom effect_set : forall k a c.

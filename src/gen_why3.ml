@@ -33,6 +33,7 @@ let gArchetypeLib   = "Lib"
 let gArchetypeField = "Field"
 let gArchetypeView  = "View"
 let gArchetypeColl  = "Collection"
+let gArchetypeAgg   = "Aggregate"
 let gArchetypeSum   = "Sum"
 let gArchetypeSort  = "Sort"
 let gArchetypeTrace = "Trace"
@@ -50,6 +51,8 @@ let mk_id i          = "_" ^ i
 let mk_ac_id a        = mk_id (a ^ "_assets")
 let mk_ac_added_id a  = mk_id (a ^ "_assets_added")
 let mk_ac_rmed_id a   = mk_id (a ^ "_assets_removed")
+
+let mk_aggregate_id aggid = gArchetypeAgg ^ "_" ^ aggid
 
 let gs                = "_s"
 let gsinit            = "_s_init"
@@ -1284,6 +1287,63 @@ let mk_coll m (r : M.asset) =
            Cval  ("felts" |> dl, (String.capitalize_ascii (mk_field_id asset))^".elts" |> dl)
           ])
 
+let mk_set_field_id fieldid = "set_" ^ fieldid
+
+let mk_set_field _m asset fieldid oasset =
+let name = mk_set_field_id fieldid in
+Dfun {
+  name = name |> dl;
+  logic = Logic;
+  args = [
+    dl "f", loc_type (Tyaggregate (mk_field_id oasset));
+    dl "a", loc_type (Tyasset asset)
+  ];
+  returns = loc_type (Tyasset asset);
+  raises = [];
+  variants = [];
+  requires = [];
+  ensures = [(* {
+    id = dl (name ^ "_post") ;
+    form = loc_term (Teq(Tyint,Tresult,Tvar "s"));
+  } *)];
+  body = dl (Trecord(Some (loc_term (Tvar "a")), [
+    dl fieldid, loc_term (Tvar "f")
+  ]))
+}
+
+let mk_aggregates m (r : M.asset) =
+  let asset = unloc r.name in
+  let capasset = String.capitalize_ascii asset in
+  let (_, tkey) = M.Utils.get_asset_key m asset in
+  let tkey = map_mtype m tkey in
+  let aggregates = M.Utils.get_asset_containers m asset in
+  List.fold_left (fun acc (agg_id, field_type, _) ->
+    let oasset = M.Utils.type_to_asset field_type in
+    let (_,oasset_key_type) = M.Utils.get_asset_key m oasset in
+    let agg_key_type = map_mtype m oasset_key_type in
+    let clone = Dclone (
+      [gArchetypeDir; gArchetypeAgg] |> wdl,
+      String.capitalize_ascii (mk_aggregate_id agg_id) |> dl, [
+        Ctype (dl "t", loc_type (Tyasset asset));
+        Ctype (dl "tk", tkey);
+        Ctype (dl "collection", loc_type (Tycoll capasset));
+        Cval  (dl "elts", dl (capasset ^ "." ^ "elts"));
+        Cval  (dl "get", dl (capasset ^ "." ^ "get"));
+        Cval  (dl "set", dl (capasset ^ "." ^ "set"));
+        Ctype (dl "field", loc_type (Tyaggregate (mk_field_id oasset)));
+        Cval  (dl "setF", dl (mk_set_field_id agg_id));
+        Cval  (dl "aggregate", dl agg_id);
+        Ctype (dl "tkF", agg_key_type);
+        Cval  (dl "containsF", dl ((mk_field_id oasset) ^ "." ^ "contains"));
+        Cval  (dl "mkF", dl ((mk_field_id oasset) ^ "." ^ "mk"));
+        Cval  (dl "eltsF", dl ((mk_field_id oasset) ^ "." ^ "elts"));
+        Cval  (dl "addF", dl ((mk_field_id oasset) ^ "." ^ "add"));
+        Cval  (dl "removeF", dl ((mk_field_id oasset) ^ "." ^ "remove"));
+        Cval  (dl "emptyF", dl ((mk_field_id oasset) ^ "." ^ "empty"))
+      ]) in
+      acc @ [mk_set_field m asset agg_id oasset; clone]
+    ) [] aggregates
+
 let mk_partition_axioms (m : M.model) =
   M.Utils.get_containers m |> List.map (fun (n,i,_) ->
       let kt     = M.Utils.get_asset_key m n |> snd in
@@ -1391,20 +1451,6 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Mletin ([id], v, _, b, None) ->
       Tletin (M.Utils.is_local_assigned (unloc id) b, map_lident id, None, map_mterm m ctx v, map_mterm m ctx b)
-
-    (* | Mletin ([id], { node = M.Mget (a, {node = M.Msetbefore _; _}, k); type_ = _ }, _, b, Some e) -> (* logical *)
-       let ctx = { ctx with (*old = true;*) localold = ctx.localold @ [unloc id] } in
-       Tletin (M.Utils.is_local_assigned (unloc id) b,
-              map_lident id,
-              None,
-              Tget (loc_ident a,
-                    loc_term (mk_ac_old a),
-                    map_mterm m ctx k) |> dl,
-              Tif (Tnot (Teq (Tyint,
-                              Tvar (unloc id),
-                              Twitness a)) |> loc_term,
-                   map_mterm m ctx b,
-                   Some (map_mterm m ctx e)) |> dl) *)
 
     | Mletin ([id], { node = M.Mget (a, _, k); type_ = _ }, _, b, Some e) -> (* logical *)
       let ctx = ctx in
@@ -1689,11 +1735,18 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
           Some (dl (Tassign (loc_term (Tdoti(gs,mk_ac_id n)),dl (Tadd(dl n,map_mterm m ctx i,loc_term (mk_ac n))))))))
         [CAdd n]
 
-    | Maddfield (a, f, c, i) ->
+    | Maddfield (a, f, k, kb) ->
       let t, _, _ = M.Utils.get_container_asset_key m a f in
+      let mk_add_id = loc_term (Tdoti (mk_aggregate_id f, "add")) in
       mk_trace_seq m
-        (Tapp (loc_term (Tvar ("add_" ^ a ^ "_" ^ f)),
-               [map_mterm m ctx c; map_mterm m ctx i]))
+        (Tmatch (dl (Tget (dl a, map_mterm m ctx k, loc_term (mk_ac a))), [
+          Tpignore, dl (Tassign (loc_term (mk_ac a), dl (Tapp(mk_add_id,[
+            map_mterm m ctx k;
+            map_mterm m ctx kb;
+            loc_term (mk_ac a)
+          ]))));
+          Twild, loc_term (Tseq [Tassign (Tvar gs, cp_storage gsinit); Traise Enotfound])
+        ]))
         [CUpdate f; CAdd t]
 
     | Mremoveasset (n, i) ->
@@ -2822,73 +2875,6 @@ let mk_add_field_ensures m partition a _ak field prefix adda elem elemkey =
   else
     add_field_ensures
 
-(* part    : is field a partition
-   a       : asset name
-   ak      : asset key field name
-   pf      : partition field name
-   adda    : added asset name
-   addktyp : removed asset key type
-*)
-let mk_add_field m part a ak field adda addak : decl =
-  (* let akey  = Tapp (Tvar ak,[Tvar "asset"]) in *)
-  let addak = if part then Tdoti ("new_asset",addak) else Tvar "new_asset" in
-  let (_,addtkey) = M.Utils.get_asset_key m adda in
-  let addtkey = addtkey |> map_mtype m |> unloc_type in
-  let test,exn =
-    if part then
-      (fun mode -> mk_key_found_cond mode adda addak), Ekeyexist
-    else
-      (fun mode -> mk_not_found_cond mode adda addak), Enotfound
-  in
-  let (_key, tkey) = M.Utils.get_asset_key m a in
-  let tykey = map_mtype m tkey |> unloc_type in
-  Dfun {
-    name     = "add_" ^ a ^ "_" ^ field;
-    logic    = NoMod;
-    args     = ["asset_id", tykey; "new_asset", if part then Tyasset adda else addtkey];
-    returns  = Tyunit;
-    raises   = [
-      Timpl (Texn Enotfound, mk_not_found_cond `Curr a (Tvar "asset_id"));
-      Timpl (Texn exn, test `Old);
-    ];
-    variants = [];
-    requires = mk_add_asset_precond m ("add_" ^ a ^ "_" ^ field) adda "new_asset";
-    ensures  = mk_add_field_ensures m part a ak field ("add_" ^ a ^ "_" ^ field) adda "new_asset" addak;
-    body     =
-      let addfield =
-        Tletin (false, a ^ "_" ^ field,None,
-                Tapp (Tvar field,[Tvar "asset"]),
-                Tletin (false,"new_" ^ a ^ "_" ^ field,None,
-                        Tadd (mk_field_id adda, addak, Tvar (a ^ "_" ^ field)),
-                        Tletin (false,"new_asset",None,
-                                Trecord (Some (Tvar "asset"),
-                                         [field,Tvar ("new_" ^ a ^ "_" ^ field)]),
-                                Tassign (mk_ac a,
-                                         Tset (a,
-                                               Tvar "asset_id",
-                                               Tvar ("new_asset"),
-                                               mk_ac a))))) in
-      let body =
-        Tmatch (
-          Tget(a, Tvar "asset_id", mk_ac a),[
-            Tpsome "asset",
-            if part then Tseq [
-                Tapp (Tvar ("add_" ^ adda),
-                      [Tvar "new_asset"]);
-                addfield
-              ] else addfield;
-            Twild, Traise Enotfound
-          ]
-        ) in
-      if part then body else
-        Tmatch (
-          Tget (adda, Tvar "new_asset", mk_ac adda), [
-            Tpignore, body;
-            Twild, Traise Enotfound
-          ])
-      ;
-  }
-
 let mk_rm_field_ensures m part a _elem _ak field prefix rm_asset rm_elem =
   let collfield = Tapp (Tvar field, [Tvar ("r")]) in
   let assetcollfield = Ttoview (mk_field_id rm_asset,collfield) in
@@ -3164,13 +3150,6 @@ let mk_storage_api (m : M.model) _records =
       match sc.node_item, sc.api_loc with
       | M.APIAsset (Nth (n, _)), _ ->
         acc @ [mk_nth_asset m n]
-      | M.APIAsset (FieldAdd (a,pf)), _ ->
-        let k            = M.Utils.get_asset_key m a |> fst in
-        let (pa,addak,_) = M.Utils.get_container_asset_key m a pf in
-        acc @ [
-          (*mk_add_asset           pa.pldesc addak.pldesc;*)
-          mk_add_field m (is_partition m a pf) a k pf pa addak
-        ]
       | M.APIAsset (FieldRemove (n,f)), _ ->
         let t         = M.Utils.get_asset_key m n |> fst in
         let (pa,pk,_) = M.Utils.get_container_asset_key m n f in
@@ -3465,6 +3444,7 @@ let to_whyml (m : M.model) : mlw_tree  =
   let colls            = assets |> List.map (mk_coll m) |> wdl in
   let fields           = assets |> List.map (mk_field m) |> wdl in
   let views            = assets |> List.map (mk_view m) |> wdl in
+  let aggregates       = assets |> List.map (mk_aggregates m) |> List.flatten in
   let init_records     = mlwassets |> unloc_decl |> List.map mk_default_init |> loc_decl in
   let mlwassets        = zip mlwassets eq_keys le_keys eq_assets init_records views fields colls |> deloc in
   let storage_api_bs   = mk_storage_api_before_storage m (records |> wdl) in
@@ -3491,6 +3471,7 @@ let to_whyml (m : M.model) : mlw_tree  =
               maps                   @
               sets                   @
               mlwassets              @
+              aggregates             @
               storage_api_bs         @
               [storage;cp_storage;storageval]   @
               axioms                 @
