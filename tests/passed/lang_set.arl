@@ -15,6 +15,6 @@ entry exec () {
     for v in my_set do
       res += v;
     done;
-    dorequire (res = 6)
+    dorequire (res = 6, "ko")
   }
 }

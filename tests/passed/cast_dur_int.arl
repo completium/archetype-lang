@@ -3,6 +3,6 @@ archetype cast_dur_int
 entry exec () {
   effect {
     var a : int = 1s;
-    dorequire(a = 1)
+    dorequire(a = 1, "ko")
   }
 }

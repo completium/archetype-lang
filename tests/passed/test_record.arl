@@ -13,6 +13,6 @@ entry exec () {
     lit1.v := 2;
 
     var i = lit1.id;
-    dorequire (i = lit2.id)
+    dorequire (i = lit2.id, "ko")
   }
 }

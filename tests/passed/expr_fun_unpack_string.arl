@@ -9,6 +9,6 @@ entry exec () {
   }
   effect {
     res := unpack<string>(0x050100000009617263686574797065);
-    dorequire (opt_get(res) = "archetype")
+    dorequire (opt_get(res) = "archetype", "ko")
   }
 }

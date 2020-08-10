@@ -40,6 +40,6 @@ entry exec () {
     var b : bytes = 0xff;
     var vchain : chain_id = chainid;
     var vunit : unit = ();
-    dorequire(true)
+    ()
   }
 }

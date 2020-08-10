@@ -9,6 +9,6 @@ entry exec () {
   }
 
   effect {
-    dorequire(x = 0)
+    dorequire(x = 0, "ko")
   }
 }

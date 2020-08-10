@@ -51,7 +51,7 @@ entry consume (ow : address, qty : int) {
     }
     effect {
         var valid_miles = owner[ow].miles.select(the.expiration > now);
-        dorequire ( valid_miles.sum(the.quantity) >= qty );
+        dorequire (valid_miles.sum(the.quantity) >= qty, "NotEnoughMiles");
         var remainder = qty;
         for:loop m in valid_miles do
             if remainder > 0 then (

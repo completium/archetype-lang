@@ -106,8 +106,8 @@ and expr_unloc =
   | Eapp          of function_ * expr list
   | Emethod       of expr * lident * expr list
   | Etransfer     of expr * transfer_t
-  | Erequire      of expr
-  | Efailif       of expr
+  | Edorequire    of expr * expr
+  | Edofailif     of expr * expr
   | Efail         of expr
   | Eassign       of assignment_operator * expr * expr
   | Eif           of expr * expr * expr option
@@ -240,8 +240,8 @@ and s_function = {
 and entry_properties = {
   accept_transfer : bool;
   calledby        : (expr * exts) option;
-  require         : (label_exprs * exts) option;
-  failif          : (label_exprs * exts) option;
+  require         : ((lident * expr * expr option) list * exts) option;
+  failif          : ((lident * expr * expr option) list * exts) option;
   spec_fun        : specification option;
   functions       : (s_function loced) list;
 }

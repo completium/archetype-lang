@@ -164,14 +164,13 @@ let pp_archetype fmt pt =
               | _ -> accu
             ) l [])
         in
-        let pp_rf name fmt (l : (label_exprs * exts) option) =
+        let pp_rf name fmt (l : ((lident * expr * expr option) list * exts) option) =
           let l =
             l
             |> Option.get_as_list
             |> List.map fst
             |> List.flatten
-            |> List.map unloc
-            |> List.map (fun (x, y) -> unloc x, y)
+            |> List.map (fun (x, y, _) -> unloc x, y)
           in
           if List.is_empty l
           then ()

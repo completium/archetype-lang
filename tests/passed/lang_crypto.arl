@@ -5,18 +5,18 @@ entry exec () {
     var b : bytes = 0x050100000009617263686574797065;
 
     var h1 : bytes = blake2b(b);
-    dorequire (h1 = h1);
+    dorequire (h1 = h1, "ko");
     var h2 : bytes = sha256(b);
-    dorequire (h2 = h2);
+    dorequire (h2 = h2, "ko");
     var h3 : bytes = sha512(b);
-    dorequire (h3 = h3);
+    dorequire (h3 = h3, "ko");
 
     var k   : key       = "edpkurLzuFFL1XyP3fed4u7MsgeywQoQmHM45Bz91PBzDvUjQ9bvdn";
     var sig : signature = "edsigtqrQGP5wwzZhYDr1WcDrh7YdEH9JecM6BD1scrmYHP4aJ98izGUeQT5MmqSk9gtgTZvBacAncxgCyBnX9UjJCokUYYaapq";
     var cs  : bool      = check_signature(k, sig, b);
-    dorequire (cs);
+    dorequire (cs, "ko");
 
     var kh : key_hash = hash_key(k);
-    dorequire (kh = kh)
+    dorequire (kh = kh, "ko")
   }
 }

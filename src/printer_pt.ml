@@ -393,21 +393,23 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_default pos pp) fmt (x, tr)
 
-  | Erequire x ->
+  | Edorequire (x, y) ->
 
-    let pp fmt x =
-      Format.fprintf fmt "dorequire (%a)"
+    let pp fmt (x, y) =
+      Format.fprintf fmt "dorequire (%a, %a)"
         pp_simple_expr x
+        pp_simple_expr y
     in
-    (maybe_paren outer e_default pos pp) fmt x
+    (maybe_paren outer e_default pos pp) fmt (x, y)
 
-  | Efailif x ->
+  | Edofailif (x, y) ->
 
-    let pp fmt x =
-      Format.fprintf fmt "dofailif (%a)"
+    let pp fmt (x, y) =
+      Format.fprintf fmt "dofailif (%a, %a)"
         pp_simple_expr x
+        pp_simple_expr y
     in
-    (maybe_paren outer e_default pos pp) fmt x
+    (maybe_paren outer e_default pos pp) fmt (x, y)
 
   | Efail x ->
 
@@ -965,14 +967,19 @@ let pp_entry_properties fmt (props : entry_properties) =
       Format.fprintf fmt "called by%a %a@\n"
         pp_extensions exts
         (pp_expr e_default PNone) e) props.calledby;
-  map_option (fun (cs, exts) ->
-      Format.fprintf fmt "require%a {@\n  @[%a@]@\n}@\n"
-        pp_extensions exts
-        pp_label_exprs cs) props.require;
-  map_option (fun (cs, exts) ->
-      Format.fprintf fmt "failif%a {@\n  @[%a@]@\n}@\n"
-        pp_extensions exts
-        pp_label_exprs cs) props.failif;
+  let pp_rf s1 s2 fmt (l, exts) =
+    Format.fprintf fmt "%s%a {@\n  @[%a@]@\n}@\n"
+      s1
+      pp_extensions exts
+      (pp_list ";@\n" (fun fmt (id, e, f) ->
+         Format.fprintf fmt "%a%a: %a"
+           pp_id id
+           (pp_option (fun fmt x -> Format.fprintf fmt " %s %a" s2 (pp_expr e_default PNone) x)) f
+           (pp_expr e_default PNone) e
+      )) l
+  in
+  pp_option (pp_rf "require" "otherwise") fmt props.require;
+  pp_option (pp_rf "failif" "with") fmt props.failif;
   (pp_list "@\n" pp_function) fmt (List.map unloc props.functions)
 
 let pp_transition fmt (to_, conditions, effect) =

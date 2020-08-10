@@ -3,6 +3,6 @@ archetype cast_nat_int_lit
 entry exec () {
   effect {
     var a : int = 1i;
-    dorequire(a = 1)
+    dorequire(a = 1, "ko")
   }
 }

@@ -621,13 +621,14 @@ let rec pp_instruction fmt (i : instruction) =
       in
       (pp_with_paren pp) fmt (op, an, k, fn, value)
 
-    | Irequire (k, pt) ->
-      let pp fmt (k, pt) =
-        Format.fprintf fmt "%a (%a)"
-          pp_str (if k then "require" else "failwith")
+    | Irequire (k, pt, f) ->
+      let pp fmt (k, pt, f) =
+        Format.fprintf fmt "%a (%a, %a)"
+          pp_str (if k then "dorequire" else "dofailif")
           pp_pterm pt
+          pp_pterm f
       in
-      (pp_with_paren pp) fmt (k, pt)
+      (pp_with_paren pp) fmt (k, pt, f)
 
     | Itransfer (value, tr) ->
       let pp fmt (value, tr) =

@@ -6,6 +6,6 @@ entry exec () {
   }
 
   effect {
-    dorequire(true)
+    ()
   }
 }

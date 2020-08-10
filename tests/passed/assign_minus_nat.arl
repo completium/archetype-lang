@@ -8,6 +8,6 @@ entry exec () {
   }
   effect {
     n -= 1;
-    dorequire(n = 9)
+    dorequire(n = 9, "ko")
   }
 }
