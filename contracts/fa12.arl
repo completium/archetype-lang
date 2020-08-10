@@ -16,24 +16,26 @@ asset ledger identified by holder to big_map {
 }
 
 entry %transfer (from_ : address, to_ : address, value : nat) {
-  if ledger[from_].tokens < value then
-    fail("NotEnoughBalance");
-  if caller <> from_ then (
-    var current = allowance[(from_, caller)].amount;
-    if current < value then
-      fail(("NotEnoughAllowance", ((value, current))));
-    allowance.update((from_, caller), { amount -=  value });
-  );
-  ledger.update(from_, { tokens -= value });
-  ledger.addupdate(to_, { tokens += value });
+  require {
+    r1 otherwise "NotEnoughBalance" : ledger[from_].tokens < value;
+  }
+  effect {
+    if caller <> from_ then (
+      var current = allowance[(from_, caller)].amount;
+      dofailif(current < value,("NotEnoughAllowance", ((value, current))));
+      allowance.update((from_, caller), { amount -=  value });
+    );
+    ledger.update(from_, { tokens -= value });
+    ledger.addupdate(to_, { tokens += value });
+  }
 }
 
 entry approve(spender : address, value : nat) {
   var k = (caller, spender);
   if allowance.contains(k) then (
     var previous = allowance[k].amount;
-    if previous > 0 and value > 0
-    then fail(("UnsafeAllowanceChange", previous)));
+    dofailif(previous > 0 and value > 0,(("UnsafeAllowanceChange", previous)));
+  );
   allowance.addupdate( k, { amount = value });
 }
 
