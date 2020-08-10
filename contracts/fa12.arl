@@ -21,7 +21,7 @@ entry %transfer (from_ : address, to_ : address, value : nat) {
   if caller <> from_ then (
     var current = allowance[(from_, caller)].amount;
     if current < value then
-      fail(("NotEnoughAllowance",((value,current))));
+      fail(("NotEnoughAllowance", ((value, current))));
     allowance.update((from_, caller), { amount -=  value });
   );
   ledger.update(from_, { tokens -= value });
@@ -38,7 +38,7 @@ entry approve(spender : address, value : nat) {
 }
 
 entry getAllowance (owner : address, spender : address, cb : entrysig<nat>) {
-  transfer 0tz to entry cb(allowance[(owner,spender)].amount);
+  transfer 0tz to entry cb(allowance[(owner, spender)].amount);
 }
 
 entry getBalance (owner : address, cb : entrysig<nat>) {
@@ -50,5 +50,5 @@ entry getTotalSupply (cb : entrysig<nat>) {
 }
 
 specification {
-  s1 :  ledger.sum(tokens) = totalsupply;
+  s1: ledger.sum(tokens) = totalsupply;
 }

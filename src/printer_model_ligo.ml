@@ -461,7 +461,8 @@ let pp_model_internal fmt (model : model) b =
 
     | Mfail (Invalid mt) when Utils.is_not_string_nat_int mt.type_ ->
       let t = mt.type_ in
-      Format.fprintf fmt "fail_%a (%a)"
+      Format.fprintf fmt "if True then fail_%a (%a) else skip;"
+        (* pp_type t *)
         pp_pretty_type t
         f mt
 
