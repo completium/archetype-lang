@@ -748,7 +748,7 @@ expr_r:
  | DOFAILIF x=simple_expr
      { Efailif x }
 
- | FAIL e=paren(simple_expr)
+ | FAIL e=paren(expr)
      { Efail e }
 
  | RETURN x=simple_expr

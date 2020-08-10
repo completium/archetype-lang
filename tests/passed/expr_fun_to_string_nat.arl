@@ -1,0 +1,12 @@
+archetype expr_fun_to_string_nat
+
+variable res : string = ""
+
+entry exec () {
+  specification {
+    s0: res = "42";
+  }
+  effect {
+    res := to_string(42)
+  }
+}

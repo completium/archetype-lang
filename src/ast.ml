@@ -161,6 +161,7 @@ type const =
   | Cunpack
   | Cupdate
   | Cmkoperation
+  | Ctostring
   (* set *)
   | Csadd
   | Csremove

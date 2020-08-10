@@ -1,0 +1,7 @@
+archetype fail_with_tuple_lit
+
+entry exec () {
+  if (true) then (
+    fail (("error", 0))
+  )
+}

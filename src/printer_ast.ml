@@ -215,6 +215,7 @@ let to_const = function
   | Cunpack         -> "unpack"
   | Cupdate         -> "update"
   | Cmkoperation    -> "mkoperation"
+  | Ctostring       -> "to_string"
   (* set *)
   | Csadd           -> "set_add"
   | Csremove        -> "set_remove"

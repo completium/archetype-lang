@@ -17,11 +17,12 @@ asset ledger identified by holder to big_map {
 
 entry %transfer (from_ : address, to_ : address, value : nat) {
   require {
-    d0 : ledger[from_].tokens >= value
+    r1 otherwise "NotEnoughBalance" : ledger[from_].tokens < value;
   }
   effect {
     if caller <> from_ then (
-      dorequire (allowance[(from_, caller)].amount >= value);
+      var current = allowance[(from_, caller)].amount;
+      dofailif(current < value, ("NotEnoughAllowance", ((value, current))));
       allowance.update((from_, caller), { amount -=  value });
     );
     ledger.update(from_, { tokens -= value });
@@ -31,14 +32,15 @@ entry %transfer (from_ : address, to_ : address, value : nat) {
 
 entry approve(spender : address, value : nat) {
   var k = (caller, spender);
-  if allowance.contains(k) then
-    if allowance[k].amount > 0 and value > 0
-    then fail("Unsafe Allowance Change");
+  if allowance.contains(k) then (
+    var previous = allowance[k].amount;
+    dofailif(previous > 0 and value > 0, (("UnsafeAllowanceChange", previous)));
+  );
   allowance.addupdate( k, { amount = value });
 }
 
 entry getAllowance (owner : address, spender : address, cb : entrysig<nat>) {
-  transfer 0tz to entry cb(allowance[(owner,spender)].amount);
+  transfer 0tz to entry cb(allowance[(owner, spender)].amount);
 }
 
 entry getBalance (owner : address, cb : entrysig<nat>) {
@@ -50,5 +52,5 @@ entry getTotalSupply (cb : entrysig<nat>) {
 }
 
 specification {
-  s1 :  ledger.sum(tokens) = totalsupply;
+  s1: ledger.sum(tokens) = totalsupply;
 }

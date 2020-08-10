@@ -613,6 +613,11 @@ let to_model (ast : A.ast) : M.model =
         let fx = f x in
         M.Mceil (fx)
 
+      | A.Pcall (None, A.Cconst A.Ctostring, [AExpr x]) ->
+        let fx = f x in
+        let t = fx.type_ in
+        M.Mtostring (t, fx)
+
       | A.Pcall (None, A.Cconst A.Cpack, [AExpr x]) ->
         let fx = f x in
         M.Mpack (fx)

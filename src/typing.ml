@@ -577,7 +577,7 @@ let pp_error_desc fmt e =
   | InvalidMethodInExec                -> pp "Invalid method in execution"
   | InvalidMethodInFormula             -> pp "Invalid method in formula"
   | InvalidMethodWithBigMap id         -> pp "Invalid method with big map asset: %s" id
-  | InvalidNumberOfArguments (n1, n2)  -> pp "Invalid number of arguments: found '%i', but expected '%i'" n1 n2
+  | InvalidNumberOfArguments (n1, n2)  -> pp "Invalid number of arguments: found '%i', but expected '%i'" n2 n1
   | InvalidRecordFieldType             -> pp "Invalid record field's type"
   | InvalidRoleExpression              -> pp "Invalid role expression"
   | InvalidSecurityEntry               -> pp "Invalid security entry"
@@ -913,6 +913,9 @@ let coreops : opinfo list =
   @ (List.map
        (fun x -> ("length", A.Clength, `Total, None, [x], A.vtnat, Mint.empty))
        [A.vtstring; A.vtbytes])
+  @ (List.map
+       (fun x -> ("to_string", A.Ctostring, `Total, None, [x], A.vtstring, Mint.empty))
+       [A.vtnat])
 
 (* -------------------------------------------------------------------- *)
 let optionops : opinfo list = [
@@ -3069,12 +3072,6 @@ and for_gen_method_call mode env theloc (the, m, args)
       | Some method_ -> method_
     in
 
-    let args =
-      match args with
-      | [ { pldesc = Etuple l; _ } ] -> l
-      | _ -> args
-    in
-
     let ne =
       match fst method_.mth_sig with
       | `Fixed sig_ -> List.length sig_
@@ -3741,7 +3738,7 @@ let rec for_instruction_r
       env, mki (A.Irequire (false, e))
 
     | Efail e ->
-      let e = for_expr ~ety:A.vtstring kind env e in
+      let e = for_expr kind env e in
       env, mki (A.Ifail e)
 
     | Eassert lbl ->
