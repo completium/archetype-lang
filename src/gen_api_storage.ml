@@ -134,6 +134,8 @@ let generate_api_storage ?(verif=false) (model : model) : model =
         [APIInternal (DivTez)]
       | Mratdur _ ->
         [APIInternal (RatDur)]
+      | Mfail (Invalid mt) when Utils.is_not_string_nat_int mt.type_ ->
+        [APIBuiltin (Bfail mt.type_)]
       | _ -> []
     in
     let accu = List.fold_left (fun accu v -> Utils.add_api_storage_in_list accu (Model.mk_api_item v  (match ctx.formula with | true -> OnlyFormula | false -> OnlyExec))) accu api_items in

@@ -1,0 +1,8 @@
+archetype effect_fail_complex
+
+entry exec () {
+  if (true) then (
+    var a : (string * nat) = ("error", 0);
+    fail (a)
+  )
+}

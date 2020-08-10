@@ -34,7 +34,7 @@ entry approve(spender : address, value : nat) {
   if allowance.contains(k) then (
     var previous = allowance[k].amount;
     if previous > 0 and value > 0
-    then (var error = ("UnsafeAllowanceChange", previous); fail("UnsafeAllowanceChange")));
+    then (var error = ("UnsafeAllowanceChange", previous); fail(error)));
   allowance.addupdate( k, { amount = value });
 }
 

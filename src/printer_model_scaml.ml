@@ -349,6 +349,7 @@ let pp_model fmt (model : model) =
     | Bfloor    -> pp_str fmt "floor"
     | Bceil     -> pp_str fmt "ceil"
     | Btostring t -> Format.fprintf fmt "to_string on %a" pp_type t
+    | Bfail t     -> Format.fprintf fmt "fail on %a" pp_type t
   in
 
   let pp_api_internal fmt = function

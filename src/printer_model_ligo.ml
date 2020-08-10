@@ -459,6 +459,12 @@ let pp_model_internal fmt (model : model) b =
 
     (* effect *)
 
+    | Mfail (Invalid mt) when Utils.is_not_string_nat_int mt.type_ ->
+      let t = mt.type_ in
+      Format.fprintf fmt "fail_%a (%a)"
+        pp_pretty_type t
+        f mt
+
     | Mfail ft ->
       Format.fprintf fmt "failwith (%a)"
         (pp_fail_type f) ft
@@ -2476,6 +2482,17 @@ let pp_model_internal fmt (model : model) b =
          } with res@\n"
         pp_pretty_type t
         pp_type t
+
+    | Bfail t ->
+      Format.fprintf fmt
+        "function fail_%a(const v : %a) : unit is@\n  \
+         block {@\n  \
+         const f : (%a -> unit) = [%%Michelson ({| { FAILWITH } |} : %a -> unit)];@\n  \
+         } with f(v)@\n"
+        pp_pretty_type t
+        pp_type t
+        pp_type t pp_type t
+
   in
 
   let pp_api_internal (_env : env) fmt = function
@@ -2483,7 +2500,7 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt
         "function rat_eq (const lhs : %a; const rhs : %a) : bool is@\n  \
          block {skip} with@\n  \
-         lhs.0 * int(rhs.1) = rhs.0 * int(lhs.1) @\n"
+         lhs.0 * int(rhs.1) = rhs.0 * int(lhs.1)@\n"
         pp_type Utils.type_rational
         pp_type Utils.type_rational
     | RatCmp       ->

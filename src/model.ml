@@ -439,6 +439,7 @@ and api_builtin =
   | Bfloor
   | Bceil
   | Btostring of type_
+  | Bfail of type_
 [@@deriving show {with_path = false}]
 
 and api_internal =
@@ -1288,6 +1289,7 @@ let cmp_api_item_node (a1 : api_storage_node) (a2 : api_storage_node) : bool =
     | Bfloor    , Bfloor     -> true
     | Bceil     , Bceil      -> true
     | Btostring t1, Btostring t2 -> cmp_type t1 t2
+    | Bfail t1, Bfail t2 -> cmp_type t1 t2
     | _ -> false
   in
   let cmp_api_internal (i1 : api_internal) (i2 : api_internal) : bool =
@@ -3028,6 +3030,7 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
         | Bfloor    -> Bfloor
         | Bceil     -> Bceil
         | Btostring t -> Btostring (for_type t)
+        | Bfail t -> Bfail (for_type t)
       in
       let for_api_internal (ainternal : api_internal) : api_internal =
         match ainternal with
@@ -3403,6 +3406,7 @@ module Utils : sig
   val get_all_set_types                  : model -> type_ list
   val get_all_list_types                 : model -> type_ list
   val get_all_map_types                  : model -> type_ list
+  val is_not_string_nat_int                  : type_ -> bool
 end = struct
 
   open Tools
@@ -4315,6 +4319,7 @@ end = struct
              | APIBuiltin (Bfloor         ) -> 39
              | APIBuiltin (Bceil          ) -> 40
              | APIBuiltin (Btostring     _) -> 41
+             | APIBuiltin (Bfail         _) -> 42
            in
            let idx1 = get_kind i1.node_item in
            let idx2 = get_kind i2.node_item in
@@ -4509,5 +4514,7 @@ end = struct
       | _ -> accu
     in
     get_all_gen_type for_type model
+
+  let is_not_string_nat_int = (function | Tbuiltin (Bstring | Bnat | Bint) -> false | _ -> true)
 
 end

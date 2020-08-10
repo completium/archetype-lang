@@ -3744,7 +3744,7 @@ let rec for_instruction_r
       env, mki (A.Irequire (false, e))
 
     | Efail e ->
-      let e = for_expr ~ety:A.vtstring kind env e in
+      let e = for_expr kind env e in
       env, mki (A.Ifail e)
 
     | Eassert lbl ->
