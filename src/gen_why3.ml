@@ -1728,10 +1728,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let args = List.map (fun (i,_) -> loc_term (Tvar i)) la in
       Tapp (loc_term (Tvar id), argids @ args)
 
-    | Mclear (n, CKcoll) ->
-      Tapp (loc_term (Tvar ("clear_view_"^(n))), [
-          dl(Ttoview(dl n,mk_ac_ctx n ctx))
-        ])
+    | Mclear (n, CKcoll) -> Tassign(loc_term (Tdoti(gs,mk_ac_id n)), loc_term (Temptycoll n))
     | Mclear (n, CKview v) -> Tapp (loc_term (Tvar ("clear_view_"^(n))),[map_mterm m ctx v])
     | Mclear (n, CKfield (_, _, v)) ->
       Tapp (loc_term (Tvar ("clear_view_"^(n))), [
@@ -3464,8 +3461,8 @@ let mk_storage_api (m : M.model) _records =
          acc @ [ mk_contains n t ] *)
       | M.APIAsset (Sort (asset, _, field)), _ ->
         acc @ [ mk_cmp_function m asset field; mk_sort_clone m asset field]
-      | M.APIAsset (Clear (n, (Coll | View | Field _))), _ ->
-        acc @ [mk_clear_view m n]
+      (* | M.APIAsset (Clear (n, (Coll | View | Field _))), _ ->
+        acc @ [mk_clear_view m n] *)
       (*       | M.APIAsset (RemoveAll (n,f)) ->
                let (key,_) = M.Utils.get_asset_key m n in
                let (clearedasset,_,_) = M.Utils.get_container_asset_key m n f in

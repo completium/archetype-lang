@@ -12,6 +12,10 @@ asset my_asset identified by id {
 variable res : int = 0
 
 entry exec () {
+  specification {
+    s1: my_asset.isempty();
+    s2: my_asset.count() = 0;
+  }
   effect {
     my_asset.clear()
   }
