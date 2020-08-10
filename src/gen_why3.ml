@@ -2160,16 +2160,6 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | ICKlist _  -> error_not_translated "Msettoiterate for list"
         | ICKmap  _  -> error_not_translated "Msettoiterate for map"
       end
-    (* formula asset collection methods *)
-
-    (* | Mapifget (a, _c, k) -> Tapp (loc_term (Tvar ("get_" ^ a)),[map_mterm m ctx k])
-       | Mapifpureget (a, k) -> Tfget(dl a, loc_term (mk_ac  a),map_mterm m ctx k) *)
-
-    (* | Msubsetof (n, l, r) ->
-       begin match l with
-        | { node = Mcast(_,_,c); type_ = _ } -> Tsubset (dl n, map_mterm m ctx c, map_mterm m ctx r)
-           | _ -> Tsubset (dl n, map_mterm m ctx l, map_mterm m ctx r)
-       end *)
     | Mempty an -> Temptycoll(dl an)
     | Msingleton (an, k) -> Tsingl(dl an, map_mterm m ctx k)
     | Msubsetof (n, c, x) -> begin
@@ -2194,35 +2184,6 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Munion     (an, l, r) -> Tunion(dl an, map_mterm m ctx l, map_mterm m ctx r)
     | Minter     (an, l, r) -> Tinter(dl an, map_mterm m ctx l, map_mterm m ctx r)
     | Mdiff      (an, l, r) -> Tdiff(dl an, map_mterm m ctx l, map_mterm m ctx r)
-    (* | Mapifselect (a, l, _, r, _) ->  let args = extract_args r in
-       let id = mk_select_name "c" m a r in *)
-    (* | Mapifselect (a, l, _, r, _) ->  let args = extract_args r in
-       let id = mk_select_name m a r in
-       let argids = args |> List.map (fun (e, _, _) -> e) |> List.map (map_mterm m ctx) in
-       Tapp (loc_term (Tvar id), argids @ [map_mterm m ctx l; loc_term (mk_ac a)])
-       | Mapifsort (a,c,l) -> Tvsort (dl (mk_sort_clone_id a l),map_mterm m ctx c,loc_term (mk_ac a))
-       | Mapifcontains  (a, _, r) ->
-       begin match ctx.lctx with
-        | Inv ->
-          Tccontains (dl a,
-                     map_mterm m ctx r,
-                     loc_term (Tvar (mk_ac_id a)))
-        | _ ->
-          Tccontains (dl a,
-                     map_mterm m ctx r,
-                     loc_term (mk_ac a))
-       end
-       | Mapifnth       _ -> error_not_translated "Mapifnth"
-       | Mapifcount     (a,{ node=Mcast (_,_,c); type_=_ }) -> Tccard (dl a, map_mterm m ctx c)
-       | Mapifcount     (a,t) -> Tcard (dl a, map_mterm m ctx t)
-       | Mapifsum       (a,v,f) ->
-       let cloneid = mk_sum_clone_id m a f in
-       Tvsum(dl cloneid,map_mterm m ctx v,mk_ac_ctx a ctx)
-       | Mapifhead (n,c,v) -> Tchead (dl n, map_mterm m ctx v, map_mterm m ctx c)
-       | Mapiftail (n,c,v) -> Tctail (dl n, map_mterm m ctx v, map_mterm m ctx c)
-       Tsum(dl cloneid,map_mterm m ctx v,mk_ac_ctx a ctx)
-       | Mapifhead (n,c,v) -> Thead (dl n, map_mterm m ctx v, map_mterm m ctx c)
-       | Mapiftail (n,c,v) -> Ttail (dl n, map_mterm m ctx v, map_mterm m ctx c) *)
   in
   mk_loc mt.loc t
 and mk_invariants (m : M.model) ctx id (lbl : ident option) lbody =
@@ -2542,91 +2503,7 @@ let mk_nth_asset m asset =
               ])
   }
 
-let gen_exists_asset at asset_id asset a body =
-  Tforall ([[asset],Tyasset a],
-           Timpl (
-             Teq(Tyint, Tget (a,Tvar asset_id,begin match at with | `Curr -> mk_ac a | `Old -> mk_ac_old a end),Tsome (Tvar asset)),
-             body))
-
-let exists_asset = gen_exists_asset `Old "asset_id" "asset"
-
-(* let exists_old_asset = gen_exists_asset `Old "asset_id" "old_asset"
-*)
-(* let exists_rm_asset = gen_exists_asset `Curr "rm_asset_id" "rm_asset"
-*)
-let mk_set_sum_ensures m a =
-  List.fold_left (fun acc idx ->
-      acc @ [{
-          id = "set_" ^ a ^ "_sum_post";
-          form = exists_asset a (Teq (Tyint,
-                                      mk_sum_from_col a idx (mk_ac_old a),
-                                      Tplus (Tyint,
-                                             Tminus (Tyint,
-                                                     mk_sum_from_col a idx (mk_ac a),
-                                                     Tapp(Tvar (mk_get_sum_value_id a idx),
-                                                          [Tvar "new_asset"])),
-                                             Tapp(
-                                               Tvar (mk_get_sum_value_id a idx),
-                                               [Tvar "asset"]))))
-        }]) [] (M.Utils.get_sum_idxs m a)
-
-let mk_set_count_ensures m a =
-  if M.Utils.with_count m a then [{
-      id = "set_" ^ a ^ "_count";
-      form = Teq (Tyint,
-                  Tcard (mk_view_id a, Ttoview(a,mk_ac a)),
-                  Tcard (mk_view_id a, Ttoview(a,mk_ac_old a))
-                 );
-    }]
-  else []
-
-let mk_set_ensures m n key fields =
-  let (_key, tkey) = M.Utils.get_asset_key m n in
-  let tykey = map_mtype m tkey |> unloc_type in
-  snd (List.fold_left (fun (i,acc) (f:field) ->
-      if compare f.name key = 0 then
-        (i,acc)
-      else
-        (succ (succ i),acc@[{
-             id   = "set_" ^ n ^ "_post" ^ (string_of_int i);
-             form = Teq(Tyint,
-                        Tget(n, Tvar "asset_id", mk_ac n),
-                        Tsome (Tvar "new_asset"))
-
-           }; {
-              id   = "set_" ^ n ^ "_post" ^ (string_of_int (succ i));
-              form = Tforall ([["k"], tykey],
-                              Timpl(Tneq(Tyint,Tvar "k",Tvar "asset_id"),
-                                    Teq(Tyint,Tget(n,Tvar "k",mk_ac n),Tget(n,Tvar "k",mk_ac_old n))))
-            }])
-    ) (1,[]) fields) @ (mk_set_sum_ensures m n) @ (mk_set_count_ensures m n)
-
 let mk_set_asset_precond m apid a id = mk_api_precond m apid a (`Preasset id)
-
-let mk_set_asset m key = function
-  | Drecord (asset, fields) ->
-    let (_key, tkey) = M.Utils.get_asset_key m asset in
-    let tykey = map_mtype m tkey |> unloc_type in
-    Dfun {
-      name = "set_" ^ asset;
-      logic = NoMod;
-      args = ["asset_id", tykey; "new_asset", Tyasset asset];
-      returns = Tyunit;
-      raises = [ Timpl (Texn Enotfound,
-                        mk_not_found_cond `Curr asset (Tvar "asset_id"))];
-      variants = [];
-      requires = mk_set_asset_precond m ("set_" ^ asset) asset "new_asset";
-      ensures = mk_set_ensures m asset key fields;
-      body = Tmatch (Tget(asset, Tvar "asset_id", mk_ac asset),[
-          Tpignore, Tassign (mk_ac asset,
-                             Tset (asset,
-                                   Tvar "asset_id",
-                                   Tvar ("new_asset"),
-                                   mk_ac asset));
-          Twild, Traise Enotfound
-        ])
-    }
-  | _ -> assert false
 
 let mk_contains asset keyt = Dfun {
     name     = "contains_" ^ asset;
@@ -2737,32 +2614,6 @@ let mk_add_ensures m p a k e =
   (mk_add_ensures_basic m p 4 a e (Tdoti(e, k)) mk_ac_added mk_ac_old_added)
   @ (mk_add_sum_ensures m a e) @ (mk_add_count_ensures m a)
 
-let mk_add_asset m asset key : decl = Dfun {
-    name     = "add_" ^ asset;
-    logic    = NoMod;
-    args     = ["new_asset", Tyasset asset];
-    returns  = Tyunit;
-    raises   = [ Timpl (Texn Ekeyexist,
-                        mk_not_found_cond `Old asset (Tdoti ("new_asset", key)))];
-    variants = [];
-    requires = mk_add_asset_precond m ("add_" ^ asset) asset "new_asset";
-    ensures  = mk_add_ensures m ("add_" ^ asset) asset key "new_asset";
-    body     =
-      Tmatch (Tget(asset, Tdoti ("new_asset", key), mk_ac asset),[
-          Tpignore, Traise Ekeyexist;
-          Twild, Tseq [
-            Tassign (mk_ac asset,
-                     Tadd (asset,
-                           Tvar "new_asset",
-                           mk_ac asset));
-            Tassign (mk_ac_added asset,
-                     Tadd (asset,
-                           Tvar "new_asset",
-                           mk_ac_added asset))
-          ]
-        ]);
-  }
-
 let mk_rm_sum_ensures m prefix a _e =
   List.fold_left (fun acc idx ->
       acc @ [{
@@ -2865,38 +2716,6 @@ let mk_clear_ensures m p a =
     };
   ] @ (mk_clear_sum_ensures m a) @ (mk_clear_count_ensures m a)
 
-let mk_rm_asset m asset : decl =
-  let (_key, tkey) = M.Utils.get_asset_key m asset in
-  let tykey = map_mtype m tkey |> unloc_type in
-  Dfun {
-    name     = "remove_" ^ asset;
-    logic    = NoMod;
-    args     = ["a", tykey];
-    returns  = Tyunit;
-    raises   = [];
-    variants = [];
-    requires = [];
-    ensures  = mk_rm_ensures m ("remove_" ^ asset) asset "a";
-    body =
-      let get = Tget(asset,
-                     Tvar ("a"),
-                     mk_ac asset) in
-      Tmatch (get,[
-          Tpsome "e",
-          Tseq [
-            Tassign (mk_ac_rmed asset,
-                     Tadd (asset,
-                           Tvar "e",
-                           mk_ac_rmed asset));
-            Tassign (mk_ac asset,
-                     Tremove (asset,
-                              Tvar ("a"),
-                              mk_ac asset))
-          ];
-          Twild, Tunit
-        ]);
-  }
-
 let mk_clear_view _m asset : decl = Dfun {
     name     = "clear_view_" ^ asset;
     logic    = NoMod;
@@ -2927,92 +2746,6 @@ let mk_clear_view _m asset : decl = Dfun {
         )
       );
   }
-
-(* let mk_clear_field_ensures m part p asset field _key =
-   let collfield = Tapp (Tvar field, [Tvar ("a")]) in
-   let oldassetcollfield = Ttocoll (asset,collfield,mk_ac_old asset) in
-   let clear_field_ensures = [
-    { id   = p ^ "_post1";
-      form = Tvempty (asset, Tapp (Tvar field,[Tvar "a"]))
-    }
-   ] @ List.fold_left (fun acc idx ->
-      acc @ [{
-          id = p ^ "_sum_post";
-          form = Teq (Tyint,
-                      mk_sum asset idx collfield (mk_ac asset),
-                      Tint (Big_int.zero_big_int))
-        }]) [] (M.Utils.get_sum_idxs m asset) @
-    (if M.Utils.with_count m asset then [{
-         id = p ^ "_count";
-         form = Teq (Tyint,
-                     Tcard (asset, collfield),
-                     Tint (Big_int.zero_big_int)
-                    )
-       }]
-     else [])
-   in
-   (* declare effect on base asset collections when partition *)
-   let clear_field_part_ensures = [
-    { id   = p ^ "_part_post1";
-      form = Teq (Tyasset asset,
-                  mk_ac asset,
-                  Tdiff (asset ,
-                         mk_ac_old asset,
-                         oldassetcollfield))
-    };
-   ] @ List.fold_left (fun acc idx ->
-      acc @ [{
-          id = p ^ "_sum_post";
-          form = Teq (Tyint,
-                      mk_sum_from_col asset idx (mk_ac asset),
-                      Tminus (Tyint,
-                              mk_sum_from_col asset idx (mk_ac_old asset),
-                              mk_sum_from_col asset idx (oldassetcollfield)))
-        }]) [] (M.Utils.get_sum_idxs m asset) @
-    (if M.Utils.with_count m asset then [{
-         id = p ^ "_ccount";
-         form = Teq (Tyint,
-                     Tccard (asset, mk_ac asset),
-                     Tminus (Tyint,
-                             Tccard (asset, mk_ac_old asset),
-                             Tccard (asset, oldassetcollfield)
-                            )
-                    )
-       }]
-     else [])
-   in
-   if part then
-    clear_field_ensures @ clear_field_part_ensures
-   else
-    clear_field_ensures
-
-   let mk_clear_field_coll _m _part asset field key clearedasset = Dfun {
-    name     = "clear_" ^ asset ^ "_" ^ field;
-    logic    = NoMod;
-    args     = ["a", Tyasset asset];
-    returns  = Tyunit;
-    raises   = [];
-    variants = [];
-    requires = [];
-    ensures  = mk_clear_field_ensures _m _part ("clear_"^asset^"_"^field) clearedasset field key;
-    body =
-      Tletin (
-        false,
-        "new_asset",
-        None,
-        Trecord (
-          Some (Tvar ("a")),
-          [field,Tnil gListLib]),
-        Tassign (
-          mk_ac asset,
-          Tset (
-            asset,
-            mk_ac asset,
-            Tdoti ("a",key),
-            Tvar ("new_asset"))
-        )
-      );
-   } *)
 
 let mk_add_field_ensures m partition a _ak field prefix adda elem elemkey =
   let collfield = Tapp (Tvar field, [Tvar "r"]) in
@@ -3429,20 +3162,8 @@ let is_partition m n f =
 let mk_storage_api (m : M.model) _records =
   m.api_items |> List.fold_left (fun acc (sc : M.api_storage) ->
       match sc.node_item, sc.api_loc with
-(*       | M.APIAsset (Get n), _ ->
-        let k,kt = M.Utils.get_asset_key m n in
-        acc @ [mk_get_asset n k (kt |> map_mtype m |> unloc_type)] *)
-(*       | M.APIAsset (Add n), _ ->
-        let k = M.Utils.get_asset_key m n |> fst in
-        acc @ [mk_add_asset m n k] *)
-(*       | M.APIAsset (Remove n), _ ->
-        acc @ [mk_rm_asset m n] *)
       | M.APIAsset (Nth (n, _)), _ ->
         acc @ [mk_nth_asset m n]
- (*      | M.APIAsset (Set n), _ ->
-        let record = get_record n (records |> unloc_decl) in
-        let k      = M.Utils.get_asset_key m (get_record_name record) |> fst in
-        acc @ [mk_set_asset m k record] *)
       | M.APIAsset (FieldAdd (a,pf)), _ ->
         let k            = M.Utils.get_asset_key m a |> fst in
         let (pa,addak,_) = M.Utils.get_container_asset_key m a pf in
@@ -3457,17 +3178,8 @@ let mk_storage_api (m : M.model) _records =
           (*mk_rm_asset           pa.pldesc (pt |> map_btype);*)
           mk_rm_field m (is_partition m n f) n t f pa pk
         ]
-      (* | M.APIAsset (Contains (n, _)) ->
-         let t         =  M.Utils.get_asset_key m n |> snd |> map_btype in
-         acc @ [ mk_contains n t ] *)
       | M.APIAsset (Sort (asset, _, field)), _ ->
         acc @ [ mk_cmp_function m asset field; mk_sort_clone m asset field]
-      (* | M.APIAsset (Clear (n, (Coll | View | Field _))), _ ->
-        acc @ [mk_clear_view m n] *)
-      (*       | M.APIAsset (RemoveAll (n,f)) ->
-               let (key,_) = M.Utils.get_asset_key m n in
-               let (clearedasset,_,_) = M.Utils.get_container_asset_key m n f in
-               acc @ [mk_clear_field_coll m (is_partition m n f) n f key clearedasset] *)
       | M.APIBuiltin(Babs (M.Tbuiltin M.Bint)), _ ->
         acc @ [Duse (true,["int";"Abs"],None)]
       | M.APIAsset (RemoveAll (a,f)), _ ->

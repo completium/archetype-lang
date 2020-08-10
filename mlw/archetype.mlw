@@ -800,6 +800,9 @@ module Field
   type field = N.cset
 
   (* ------------------------------------------------------------------------ *)
+  let function mk (l : list tk) = N.mk l
+
+  (* ------------------------------------------------------------------------ *)
   predicate mem (k : tk) (f : field) = N.mem k f
 
   (* ------------------------------------------------------------------------ *)
@@ -852,113 +855,114 @@ module Field
 
 end
 
-(* module Aggregate
-  use Types
+module Aggregate
+  use list.List
+  use list.Append
   use option.Option
+  use Types
 
   (* ------------------------------------------------------------------------ *)
-  type tA
+  type t
 
   (* ------------------------------------------------------------------------ *)
-  type tkA
+  type tk
 
   (* ------------------------------------------------------------------------ *)
-  type fieldA
+  type collection
 
   (* ------------------------------------------------------------------------ *)
-  type collectionA
+  val function elts collection : list t
 
   (* ------------------------------------------------------------------------ *)
-  type tB
+  val function get tk collection : option t
 
   (* ------------------------------------------------------------------------ *)
-  type tkB
+  val function set tk t collection : collection
 
   (* ------------------------------------------------------------------------ *)
-  type collectionB
+  type field
 
   (* ------------------------------------------------------------------------ *)
-  val function getA tkA collectionA : option tA
+  val function setF field t : t
 
   (* ------------------------------------------------------------------------ *)
-  val function containsFA tkB fieldA : bool
+  val function aggregate t : field
 
   (* ------------------------------------------------------------------------ *)
-  val function containsB tkB collectionB : bool
+  type tkF
 
   (* ------------------------------------------------------------------------ *)
-  val function aggregate tA : fieldA
+  val function containsF tkF field : bool
 
   (* ------------------------------------------------------------------------ *)
-  val function addFA tkB fieldA : fieldA
+  val function mkF (list tkF) : field
 
   (* ------------------------------------------------------------------------ *)
-  val function removeFA tkB fieldA : fieldA
+  val function eltsF field : list tkF
 
   (* ------------------------------------------------------------------------ *)
-  val function emptyFA : fieldA
+  val function addF tkF field : field
 
   (* ------------------------------------------------------------------------ *)
-  val function setF fieldA tA : tA
+  val function removeF tkF field : field
 
   (* ------------------------------------------------------------------------ *)
-  val setA tkA tA collectionA : collectionA
+  val function emptyF : field
 
-  let add (ka : tkA) (kb : tkB) (ca : collectionA) (cb : collectionB) : collectionA
-  raises { NotFound }
-  ensures { forall k. k <> ka -> getA k result = getA k ca }
+  (* ------------------------------------------------------------------------ *)
+  let function add (ka : tk) (kb : tkF) (c : collection) : collection
+  (* TODO : add requires *)
+  ensures { forall k. k <> ka -> get k result = get k c }
   ensures { forall ta oldta.
-    getA ka result = Some ta ->
-    getA ka ca = Some oldta ->
-    containsFA kb (aggregate oldta) ->
-    ta = setF (addFA kb (aggregate oldta)) oldta
+    get ka result = Some ta ->
+    get ka c = Some oldta ->
+    containsF kb (aggregate oldta) ->
+    ta = setF (addF kb (aggregate oldta)) oldta
   }
   =
-  match getA ka ca with
-  | Some ea ->
-    if containsB kb cb then
-      let f = addFA kb (aggregate ea) in
-      let ea = setF f ea in
-      setA ka ea ca
-    else raise NotFound
-  | None -> raise NotFound
+  match get ka c with
+  | Some a ->
+    let f = addF kb (aggregate a) in
+    set ka (setF f a) c
+  | None -> c
   end
 
-  let remove (ka : tkA) (kb : tkB) (ca : collectionA) : collectionA
-  raises { NotFound }
-  ensures { forall k. k <> ka -> getA k result = getA k ca }
+  (* ------------------------------------------------------------------------ *)
+  let function remove (ka : tk) (kb : tkF) (c : collection) : collection
+  ensures { forall k. k <> ka -> get k result = get k c }
   ensures { forall ta oldta.
-    getA ka result = Some ta ->
-    getA ka ca = Some oldta ->
-    containsFA kb (aggregate oldta) ->
-    ta = setF (removeFA kb (aggregate oldta)) oldta
+    get ka result = Some ta ->
+    get ka c = Some oldta ->
+    containsF kb (aggregate oldta) ->
+    ta = setF (removeF kb (aggregate oldta)) oldta
   }
   =
-  match getA ka ca with
-  | Some ea ->
-    let f = removeFA kb (aggregate ea) in
-    let ea = setF f ea in
-    setA ka ea ca
-  | None -> raise NotFound
+  match get ka c with
+  | Some a ->
+    let f = removeF kb (aggregate a) in
+    set ka (setF f a) c
+  | None -> c
   end
 
-  let removeall (ka : tkA) (ca : collectionA) : collectionA
-  ensures { forall k. k <> ka -> getA k result = getA k ca }
-  ensures { forall ta oldta.
-    getA ka result = Some ta ->
-    getA ka ca = Some oldta ->
-    ta = setF emptyFA oldta
+  (* ------------------------------------------------------------------------ *)
+  let union (c : collection) : field
+  ensures { forall ka a f kb.
+    get ka c = Some a ->
+    f = aggregate a ->
+    containsF kb f ->
+    containsF kb result
   }
   =
-  match getA ka ca with
-  | Some ea ->
-    let ea = setF emptyFA ea in
-    setA ka ea ca
-  end
+  let rec internal_union (l : list t) : list tkF =
+  match l with
+  | Nil -> Nil
+  | Cons e tl ->
+    let f = aggregate e in
+    (eltsF f) ++ (internal_union tl)
+  end in
+  mkF (internal_union (elts c))
 
-  (*let removeif = 0 *)
-
-end *)
+end
 
 (* COLLECTION is an unduped fset of asset
    plus an invariant on key injectivity ------------------------------------- *)
@@ -1227,6 +1231,20 @@ module Collection
   ensures { forall e. mem e result -> mem e c }
   ensures { 0 <= i <= card c -> card result = i }
   = mk (N.mk (I.tail i (N.elts c.content)))
+
+  (* ------------------------------------------------------------------------ *)
+  let function removeif (p : t -> bool) (c : collection) : collection
+  ensures { forall k e. get k c = Some e -> not (p e) -> get k result = None }
+  ensures { forall k e. get k c = Some e -> p e -> get k result = Some e }
+  ensures { forall k. get k c = None -> get k result = None }
+  =
+  let rec internal_removeif (l : list t) : list t
+  variant { l }
+  = match l with
+  | Nil -> Nil
+  | Cons e tl -> if p e then internal_removeif tl else Cons e (internal_removeif tl)
+  end in
+  mk (N.mk (internal_removeif (N.elts c.content)))
 
   (* ------------------------------------------------------------------------ *)
   type field
