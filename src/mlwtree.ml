@@ -212,6 +212,8 @@ type ('e,'t,'i) abstract_term =
   | Tvnth    of 'i * 'e * 'e
   | Tlnth   of 'i * 'e * 'e
   | Tselect of 'i * 'i * 'e list * 'e
+  | Tremoveif of 'i * 'i * 'e list * 'e
+  | Tfieldremoveif of 'i * 'i * 'e list * 'e * 'e * 'e
   | Twitness of 'i
   (* option *)
   | Tnone
@@ -507,6 +509,8 @@ and map_abstract_term
   | Tvnth (i,e1,e2)    -> Tvnth (map_i i, map_e e1, map_e e2)
   | Tlnth (i,e1,e2)    -> Tlnth (map_i i, map_e e1, map_e e2)
   | Tselect (i1,i2,l,e)-> Tselect (map_i i1, map_i i2, List.map map_e l, map_e e)
+  | Tremoveif (i1,i2,l,e)-> Tremoveif (map_i i1, map_i i2, List.map map_e l, map_e e)
+  | Tfieldremoveif (i1,i2,l,e1,e2,e3)-> Tfieldremoveif (map_i i1, map_i i2, List.map map_e l, map_e e1, map_e e2, map_e e3)
   | Twitness i         -> Twitness (map_i i)
   | Tnone              -> Tnone
   | Tsome e            -> Tsome (map_e e)
@@ -928,6 +932,8 @@ let compare_abstract_term
   | Tcnth (i1,e1,e2), Tcnth (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tvnth (i1,e1,e2), Tvnth (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tselect (i1,i2,l1,e1), Tselect (i3,i4,l2,e2) -> cmpi i1 i3 && cmpi i2 i4 && List.for_all2 cmpe l1 l2 && cmpe e1 e2
+  | Tremoveif (i1,i2,l1,e1), Tremoveif (i3,i4,l2,e2) -> cmpi i1 i3 && cmpi i2 i4 && List.for_all2 cmpe l1 l2 && cmpe e1 e2
+  | Tfieldremoveif (i1,i2,l1,e1,f1,j1), Tfieldremoveif (i3,i4,l2,e2,f2,j2) -> cmpi i1 i3 && cmpi i2 i4 && List.for_all2 cmpe l1 l2 && cmpe e1 e2 && cmpe f1 f2 && cmpe j1 j2
   | Twitness i1, Twitness i2 -> cmpi i1 i2
   | Tnone, Tnone -> true
   | Tsome e1, Tsome e2 -> cmpe e1 e2

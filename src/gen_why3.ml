@@ -548,9 +548,9 @@ let mk_sort_clone _m asset fields =
        Cval ("list_to_view", cap_asset ^ ".list_to_view")
     ])
 
-(* Select --------------------------------------------------------------------*)
+(* filter --------------------------------------------------------------------*)
 
-let match_get asset id collection key do_ neutral = Tmatch (Tget (asset, key, collection), [Tpsome id, do_; Twild, neutral])
+type filter = Select | Removeif
 
 (* TODO : complete mapping *)
 let rec mk_afun_test = function
@@ -559,6 +559,45 @@ let rec mk_afun_test = function
   | Tcaller _ -> Tvar (mk_id "caller")
   | Tsender _ -> Tvar (mk_id "source")
   | _ as t -> map_abstract_term mk_afun_test id id t
+
+(* TODO : complete mapping
+   argument extraction is done on model's term because it is typed *)
+let extract_args test =
+  let rec internal_extract_args acc (term : M.mterm) =
+    match term.M.node with
+    | M.Mnow -> acc @ [term,mk_id "now", Tydate]
+    | M.Mcaller -> acc @ [term,mk_id "caller", Tyaddr]
+    | M.Msource -> acc @ [term,mk_id "source", Tyaddr]
+    | _ -> M.fold_term internal_extract_args acc term in
+  internal_extract_args [] test
+
+let mk_filter_name m asset test = function
+| Select   -> "select_" ^ asset ^ "_" ^ (string_of_int (M.Utils.get_select_idx m asset test))
+| Removeif -> "removeif_" ^ asset ^ "_" ^ (string_of_int (M.Utils.get_removeif_idx m asset test))
+
+let mk_select_name m asset test = mk_filter_name m asset test Select
+let mk_removeif_name m asset test = mk_filter_name m asset test Removeif
+
+let mk_filter_predicate ftyp m asset test filter args =
+  let args : (string * typ) list = List.map (fun (i,t) -> (i, (map_mtype m t |> unloc_type))) args in
+  Dfun {
+  name     = mk_filter_name m asset test ftyp;
+  logic    = Logic;
+  args     = (extract_args test |> List.map (fun (_,a,b) -> a,b)) @ args @ ["a", Tyasset asset];
+  returns  = Tybool;
+  raises   = [];
+  variants = [];
+  requires = [];
+  ensures  = [];
+  body     = mk_afun_test filter;
+}
+
+let mk_select_predicate = mk_filter_predicate Select
+let mk_removeif_predicate = mk_filter_predicate Removeif
+
+(* --------------------------------------------------------------------------- *)
+
+let match_get asset id collection key do_ neutral = Tmatch (Tget (asset, key, collection), [Tpsome id, do_; Twild, neutral])
 
 (* internal select is a local defintion *)
 let mk_select_body asset key tykey mlw_test : term =
@@ -585,33 +624,6 @@ let mk_select_body asset key tykey mlw_test : term =
     },
     Tmkview (mk_view_id asset, (Tapp (Tvar "internal_select", [Telts (mk_view_id asset, Tvar "v")])))
   )
-
-(* TODO : complete mapping
-   argument extraction is done on model's term because it is typed *)
-let extract_args test =
-  let rec internal_extract_args acc (term : M.mterm) =
-    match term.M.node with
-    | M.Mnow -> acc @ [term,mk_id "now", Tydate]
-    | M.Mcaller -> acc @ [term,mk_id "caller", Tyaddr]
-    | M.Msource -> acc @ [term,mk_id "source", Tyaddr]
-    | _ -> M.fold_term internal_extract_args acc term in
-  internal_extract_args [] test
-
-let mk_select_name m asset test = "select_" ^ asset ^ "_" ^ (string_of_int (M.Utils.get_select_idx m asset test))
-
-let mk_select_formula m asset test filter args =
-  let args : (string * typ) list = List.map (fun (i,t) -> (i, (map_mtype m t |> unloc_type))) args in
-  Dfun {
-  name     = (mk_select_name m asset test)^"_f";
-  logic    = Logic;
-  args     = (extract_args test |> List.map (fun (_,a,b) -> a,b)) @ args @ ["a", Tyasset asset];
-  returns  = Tybool;
-  raises   = [];
-  variants = [];
-  requires = [];
-  ensures  = [];
-  body     = mk_afun_test filter;
-}
 
 let mk_select m asset test mlw_test only_formula args =
   let id =  mk_select_name m asset test in
@@ -685,10 +697,8 @@ let mk_removeif_body m forcoll asset mlw_test : term =
             else Tvcontent (asset,Tvar "v")]))
   )
 
-let mk_removeif_name prefix m asset test = prefix^"removeif_" ^ asset ^ "_" ^ (string_of_int (M.Utils.get_select_idx m asset test))
-
 let mk_fremoveif m asset fn test mlw_test only_formula args =
-  let id =  mk_removeif_name "f" m asset test in
+  let id =  mk_removeif_name m asset test in
   let (_, tkey) = M.Utils.get_asset_key m asset in
   let tkey = map_mtype m tkey |> unloc_type in
   let rmasset, _ = M.Utils.get_field_container m asset fn in
@@ -741,7 +751,7 @@ let mk_fremoveif m asset fn test mlw_test only_formula args =
   decl
 
 let mk_cremoveif m asset test mlw_test only_formula args =
-  let id =  mk_removeif_name "c" m asset test in
+  let id =  mk_removeif_name m asset test in
   let (_key,tkey) = M.Utils.get_asset_key m asset in
   let args = List.map (fun (i,t) -> (i, map_mtype m t |> unloc_type)) args in
   let decl = Dfun {
@@ -1339,7 +1349,10 @@ let mk_aggregates m (r : M.asset) =
         Cval  (dl "eltsF", dl ((mk_field_id oasset) ^ "." ^ "elts"));
         Cval  (dl "addF", dl ((mk_field_id oasset) ^ "." ^ "add"));
         Cval  (dl "removeF", dl ((mk_field_id oasset) ^ "." ^ "remove"));
-        Cval  (dl "emptyF", dl ((mk_field_id oasset) ^ "." ^ "empty"))
+        Cval  (dl "emptyF", dl ((mk_field_id oasset) ^ "." ^ "empty"));
+        Ctype (dl "tO", loc_type (Tyasset oasset));
+        Ctype (dl "collectionO", loc_type (Tycoll oasset));
+        Cval  (dl "getO", dl ((String.capitalize_ascii oasset) ^ "." ^ "get"));
       ]) in
       acc @ [mk_set_field m asset agg_id oasset; clone]
     ) [] aggregates
@@ -1754,29 +1767,43 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         (Tassign (loc_term (Tdoti(gs,mk_ac_id n)),dl (Tremove(dl n,map_mterm m ctx i,loc_term (mk_ac n)))))
         [CRm n]
 
-    | Mremovefield (a, f, k, v) ->
-      let t,_,_ = M.Utils.get_container_asset_key m a f in
+    | Mremovefield (a, f, k, kb) ->
+      let t, _, _ = M.Utils.get_container_asset_key m a f in
+      let mk_rm_id = loc_term (Tdoti (mk_aggregate_id f, "remove")) in
       mk_trace_seq m
-        (Tapp (loc_term (Tvar ("remove_" ^ a ^ "_" ^ f)),
-               [
-                 map_mterm m ctx k;
-                 map_mterm m ctx v
-               ]
-              ))
+        (Tmatch (dl (Tget (dl a, map_mterm m ctx k, loc_term (mk_ac a))), [
+          Tpignore, dl (Tassign (loc_term (mk_ac a), dl (Tapp(mk_rm_id,[
+            map_mterm m ctx k;
+            map_mterm m ctx kb;
+            loc_term (mk_ac a)
+          ]))));
+          Twild, loc_term (Tseq [Tassign (Tvar gs, cp_storage gsinit); Traise Enotfound])
+        ]))
         [CUpdate f; CRm t]
 
     | Mremoveall (a, f, v) -> Tapp (loc_term (Tvar ("removeall_" ^ a ^ "_" ^ f)),[map_mterm m ctx v])
 
-    | Mremoveif (a, (CKview l | CKfield (_, _, l)), la, lb, _a) ->
+    | Mremoveif (a, (CKview l), la, lb, _a) ->
       let args = extract_args lb in
-      let id = mk_removeif_name "f" m a lb in
+      let id = mk_removeif_name m a lb in
       let argids = args |> List.map (fun (e, _, _) -> e) |> List.map (map_mterm m ctx) in
       let args = List.map (fun (i,_) -> loc_term (Tvar i)) la in
       Tapp (loc_term (Tvar id), argids @ args @ [map_mterm m ctx l])
 
+    | Mremoveif (a, CKfield (_, field, k), _la, lb, _a) ->
+      let args = extract_args lb |> List.map (fun (e, _, _) -> e) |> List.map (map_mterm m ctx) in
+      let oasset, _ = M.Utils.get_field_container m a field in
+      Tmatch (dl (Tget(dl a, map_mterm m ctx k, mk_ac_ctx a ctx)), [
+        Tpignore, dl (Tassign(mk_ac_ctx a ctx, dl (Tfieldremoveif (dl (
+          mk_aggregate_id field),
+          dl (mk_removeif_name m oasset lb), args,
+          map_mterm m ctx k, mk_ac_ctx oasset ctx, mk_ac_ctx a ctx))));
+        Twild, loc_term (Tseq [Tassign (Tvar gs, cp_storage gsinit); Traise Enotfound])
+      ])
+
     | Mremoveif (a, CKcoll, la, lb, _a) ->
       let args = extract_args lb in
-      let id = mk_removeif_name "c" m a lb in
+      let id = mk_removeif_name m a lb in
       let argids = args |> List.map (fun (e, _, _) -> e) |> List.map (map_mterm m ctx) in
       let args = List.map (fun (i,_) -> loc_term (Tvar i)) la in
       Tapp (loc_term (Tvar id), argids @ args)
@@ -3122,21 +3149,34 @@ let mk_storage_api_before_storage (m : M.model) _records =
         acc @ [ (*mk_get_sum_value_from_pos asset id mlw_formula;*)
           mk_get_sum_value asset id mlw_formula;
           mk_sum_clone m asset key tkey formula ]
-      | M.APIAsset (Select (asset, (View | Field _), args, test)), OnlyFormula ->
+      | M.APIAsset (Select (asset, _, args, test)), _ ->
         let mlw_test = map_mterm m init_ctx test in
-        acc @ [ mk_select_formula m asset test (mlw_test |> unloc_term) args ]
-      | M.APIAsset (Select (asset, (View | Field _), args, test)), (ExecFormula | OnlyExec) ->
+        acc @ [ mk_select_predicate m asset test (mlw_test |> unloc_term) args ]
+      (* | M.APIAsset (Select (asset, (View | Field _), args, test)), (ExecFormula | OnlyExec) ->
         let mlw_test = map_mterm m init_ctx test in
-        acc @ [ mk_select m asset test (mlw_test |> unloc_term) false args ]
+        acc @ [ mk_select_redicate m asset test (mlw_test |> unloc_term) false args ]
       | M.APIAsset (Select (asset, Coll, args, test)), OnlyFormula ->
         let mlw_test = map_mterm m init_ctx test in
-        acc @ [ mk_select m asset test (mlw_test |> unloc_term) true args ]
+        acc @ [ mk_select_predicate m asset test (mlw_test |> unloc_term) true args ]
       | M.APIAsset (Select (asset, Coll, args, test)), (ExecFormula | OnlyExec) ->
         let mlw_test = map_mterm m init_ctx test  |> unloc_term in
         acc @ [
           mk_select m asset test mlw_test false args;
-          mk_select_formula m asset test mlw_test args
-        ]
+          mk_select_predicate m asset test mlw_test args
+        ] *)
+      | M.APIAsset (RemoveIf (asset, Field (_,field), args, test)), _ ->
+        let mlw_test = map_mterm m init_ctx test in
+        let oasset,_ = M.Utils.get_field_container m asset field in
+        acc @ [ mk_removeif_predicate m oasset test (mlw_test |> unloc_term) args ]
+      (* | M.APIAsset (RemoveIf (asset, Field (_, fn), args, test)), (ExecFormula | OnlyExec) ->
+        let mlw_test = map_mterm m init_ctx test in
+        acc @ [ mk_fremoveif m asset fn test (mlw_test |> unloc_term) false args ]
+      | M.APIAsset (RemoveIf (asset, Coll, args, test)), OnlyFormula ->
+        let mlw_test = map_mterm m init_ctx test in
+        acc @ [ mk_cremoveif m asset test (mlw_test |> unloc_term) true args ]
+      | M.APIAsset (RemoveIf (asset, Coll, args, test)), (ExecFormula | OnlyExec) ->
+        let mlw_test = map_mterm m init_ctx test in
+        acc @ [ mk_cremoveif m asset test (mlw_test |> unloc_term) false args ] *)
       | _ -> acc
     ) [] |> loc_decl |> deloc
 
@@ -3150,13 +3190,13 @@ let mk_storage_api (m : M.model) _records =
       match sc.node_item, sc.api_loc with
       | M.APIAsset (Nth (n, _)), _ ->
         acc @ [mk_nth_asset m n]
-      | M.APIAsset (FieldRemove (n,f)), _ ->
+ (*      | M.APIAsset (FieldRemove (n,f)), _ ->
         let t         = M.Utils.get_asset_key m n |> fst in
         let (pa,pk,_) = M.Utils.get_container_asset_key m n f in
         acc @ [
           (*mk_rm_asset           pa.pldesc (pt |> map_btype);*)
           mk_rm_field m (is_partition m n f) n t f pa pk
-        ]
+        ] *)
       | M.APIAsset (Sort (asset, _, field)), _ ->
         acc @ [ mk_cmp_function m asset field; mk_sort_clone m asset field]
       | M.APIBuiltin(Babs (M.Tbuiltin M.Bint)), _ ->
@@ -3165,18 +3205,6 @@ let mk_storage_api (m : M.model) _records =
         let (pa,_,_) = M.Utils.get_container_asset_key m a f in
         let ispart = is_partition m a f in
         acc @ (if ispart then [mk_clear_view m pa] else []) @ [mk_removeall m ispart a f pa]
-      | M.APIAsset (RemoveIf (asset, Field (_, fn), args, test)), OnlyFormula ->
-        let mlw_test = map_mterm m init_ctx test in
-        acc @ [ mk_fremoveif m asset fn test (mlw_test |> unloc_term) true args ]
-      | M.APIAsset (RemoveIf (asset, Field (_, fn), args, test)), (ExecFormula | OnlyExec) ->
-        let mlw_test = map_mterm m init_ctx test in
-        acc @ [ mk_fremoveif m asset fn test (mlw_test |> unloc_term) false args ]
-      | M.APIAsset (RemoveIf (asset, Coll, args, test)), OnlyFormula ->
-        let mlw_test = map_mterm m init_ctx test in
-        acc @ [ mk_cremoveif m asset test (mlw_test |> unloc_term) true args ]
-      | M.APIAsset (RemoveIf (asset, Coll, args, test)), (ExecFormula | OnlyExec) ->
-        let mlw_test = map_mterm m init_ctx test in
-        acc @ [ mk_cremoveif m asset test (mlw_test |> unloc_term) false args ]
       | _ -> acc
     ) [] |> loc_decl |> deloc
 
@@ -3198,6 +3226,7 @@ let fold_exns m body : term list =
     | M.Mremovefield (_,_,k,v) -> internal_fold_exn
                                     (internal_fold_exn (acc @ [Texn Enotfound]) k) v
     | M.Mremoveall (_,_,v) -> internal_fold_exn (acc @ [Texn Enotfound]) v
+    | M.Mremoveif (_, CKfield (_,_,k), _, _ ,_ ) -> internal_fold_exn (acc @ [Texn Enotfound]) k
     | M.Moptget _ -> acc @ [Texn Enotfound]
     | M.Mfail InvalidCaller -> acc @ [Texn Einvalidcaller]
     | M.Mfail NoTransfer -> acc @ [Texn Enotransfer]

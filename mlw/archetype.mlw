@@ -921,14 +921,29 @@ module Aggregate
   val function emptyF : field
 
   (* ------------------------------------------------------------------------ *)
+  type tO
+
+  (* ------------------------------------------------------------------------ *)
+  type collectionO
+
+  (* ------------------------------------------------------------------------ *)
+  val function getO tkF collectionO : option tO
+
+  (* ------------------------------------------------------------------------ *)
   let function add (ka : tk) (kb : tkF) (c : collection) : collection
   (* TODO : add requires *)
   ensures { forall k. k <> ka -> get k result = get k c }
   ensures { forall ta oldta.
     get ka result = Some ta ->
     get ka c = Some oldta ->
-    containsF kb (aggregate oldta) ->
+    not (containsF kb (aggregate oldta)) ->
     ta = setF (addF kb (aggregate oldta)) oldta
+  }
+  ensures { forall ta oldta.
+    get ka result = Some ta ->
+    get ka c = Some oldta ->
+    containsF kb (aggregate oldta) ->
+    ta = oldta
   }
   =
   match get ka c with
@@ -947,10 +962,56 @@ module Aggregate
     containsF kb (aggregate oldta) ->
     ta = setF (removeF kb (aggregate oldta)) oldta
   }
+  ensures { forall ta oldta.
+    get ka result = Some ta ->
+    get ka c = Some oldta ->
+    not (containsF kb (aggregate oldta)) ->
+    ta = oldta
+  }
   =
   match get ka c with
   | Some a ->
     let f = removeF kb (aggregate a) in
+    set ka (setF f a) c
+  | None -> c
+  end
+
+  (* ------------------------------------------------------------------------ *)
+  let function removeall (ka : tk) (c : collection) : collection
+  ensures { forall k. k <> ka -> get k result = get k c }
+  ensures { forall ta oldta.
+    get ka result = Some ta ->
+    get ka c = Some oldta ->
+    ta = setF emptyF oldta
+  }
+  =
+  match get ka c with
+  | Some a -> set ka (setF emptyF a) c
+  | None -> c
+  end
+
+  (* ------------------------------------------------------------------------ *)
+  let function removeif (ka : tk) (p : tO -> bool)
+    (cO : collectionO) (c : collection) : collection
+  ensures { forall k. k <> ka -> get k result = get k c }
+  (* TODO *)
+  =
+  let rec internal_removeif (l : list tkF)
+  variant { l }
+  =
+  match l with
+  | Cons k tl ->
+    match getO k cO with
+    | Some e ->
+      if p e then (Cons k (internal_removeif tl))
+      else internal_removeif tl
+    | None -> internal_removeif tl
+    end
+  | Nil -> Nil
+  end in
+  match get ka c with
+  | Some a ->
+    let f = mkF (internal_removeif (eltsF (aggregate a))) in
     set ka (setF f a) c
   | None -> c
   end

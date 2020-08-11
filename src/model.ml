@@ -3395,6 +3395,7 @@ module Utils : sig
   val mk_rat                             : Core.big_int -> Core.big_int -> mterm
   val get_select_idx                     : model -> ident -> mterm -> int
   val get_sum_idx                        : model -> ident -> mterm -> int
+  val get_removeif_idx                   : model -> ident -> mterm -> int
   val with_division                      : model -> bool
   val with_min_max                       : model -> bool
   val with_count                         : model -> ident -> bool
@@ -4130,6 +4131,7 @@ end = struct
   type searchfun =
     | SearchSelect
     | SearchSum
+    | SearchRemoveif
 
   let get_fun_idx typ (m : model) asset expr =
     let rec internal_get_fun_idx acc = function
@@ -4138,6 +4140,7 @@ end = struct
           match typ, sc.node_item with
           | SearchSelect, APIAsset (Select (a, _, _, t)) -> continue_internal_get_fun_idx tl acc a t
           | SearchSum, APIAsset (Sum (a, _, _, t)) -> continue_internal_get_fun_idx tl acc a t
+          | SearchRemoveif, APIAsset (RemoveIf (a, _, _, t)) -> continue_internal_get_fun_idx tl acc a t
           | _ -> internal_get_fun_idx acc tl
         end
       | [] -> acc
@@ -4155,6 +4158,8 @@ end = struct
   let get_select_idx = get_fun_idx SearchSelect
 
   let get_sum_idx = get_fun_idx SearchSum
+
+  let get_removeif_idx = get_fun_idx SearchRemoveif
 
   let get_sum_idxs m a = (* TODO *)
     List.fold_left (fun acc (ai : api_storage) ->
