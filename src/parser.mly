@@ -592,12 +592,25 @@ entry_properties:
 calledby:
  | CALLED BY exts=option(extensions) x=expr { (x, exts) }
 
+%inline rfs(X):
+| /* empty */   { [] }
+| l=rfs_non_empty(X) { l }
+
+%inline rfs_non_empty(X):
+| l=snl(SEMI_COLON, rf(X)) { l }
+
+rf(X):
+| id=ident f=rfi(X)? COLON e=expr %prec prec_labelexpr { (id, e, f) }
+
+%inline rfi(X):
+| X e=expr { e }
+
 %inline require:
- | REQUIRE exts=option(extensions) xs=braced(label_exprs)
+ | REQUIRE exts=option(extensions) xs=braced(rfs(OTHERWISE))
        { (xs, exts) }
 
 %inline failif:
- | FAILIF exts=option(extensions) xs=braced(label_exprs)
+ | FAILIF exts=option(extensions) xs=braced(rfs(WITH))
        { (xs, exts) }
 
 %inline require_value:
@@ -742,11 +755,11 @@ expr_r:
  | TRANSFER x=simple_expr TO ENTRY SELF DOT id=ident args=paren(sl(COMMA, simple_expr))
      { Etransfer (x, TTself (id, args)) }
 
- | DOREQUIRE x=simple_expr
-     { Erequire x }
+ | DOREQUIRE LPAREN x=expr COMMA y=expr RPAREN
+     { Edorequire (x, y) }
 
- | DOFAILIF x=simple_expr
-     { Efailif x }
+ | DOFAILIF LPAREN x=expr COMMA y=expr RPAREN
+     { Edofailif (x, y) }
 
  | FAIL e=paren(expr)
      { Efail e }

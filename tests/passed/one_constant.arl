@@ -4,6 +4,6 @@ constant myconstant : string = ""
 
 entry exec() {
   effect {
-    dorequire(true)
+    ()
   }
 }

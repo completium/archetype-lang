@@ -22,5 +22,5 @@ entry exec () {
   var cc = c + vc;
   var cd = d + vd;
 
-  dorequire( 2 / 4 = 1 / 2)
+  dorequire(2 / 4 = 1 / 2, "ko")
 }

@@ -6,10 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Added
+ - in `require` and `failif` section, add custom failed with respectivelly `otherwise` and `with`
  - `to_string` convert argument to a string (only avalaible for `nat` type for now)
 
 ### Changed
  - `fail` can take any type argument
+ - `dorequire` and `dofailif` take two arguments, the second is for `fail`
 
 ## [1.1.0] - 2020-08-05
 ### Added

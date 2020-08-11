@@ -48,7 +48,7 @@ entry exec () {
   effect {
     my_asset.add({"id3"; 3});
     my_asset.add({"id4"; 4});
-    dorequire(n = 0)
+    dorequire(n = 0, "ko")
   }
 }
 
@@ -67,7 +67,7 @@ entry exec2 () {
     for:L i in my_asset do
       ()
     done;
-    dorequire(x = 0)
+    dorequire(x = 0, "ko")
   }
 }
 

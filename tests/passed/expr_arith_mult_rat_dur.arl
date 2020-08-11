@@ -8,6 +8,6 @@ entry exec () {
   }
   effect {
     res := 0.5 * 1h;
-    dorequire(res = 30m)
+    dorequire(res = 30m, "ko")
   }
 }

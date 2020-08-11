@@ -344,8 +344,8 @@ type error_desc =
   | AssertInGlobalSpec
   | AssetExpected                      of A.ptyp
   | AssetOrRecordExpected              of A.ptyp
-  | AssetWithoutPKey
   | AssetWithoutFields
+  | AssetWithoutPKey
   | BeforeIrrelevant                   of [`Local | `State]
   | BeforeOrLabelInExpr
   | BindingInExpr
@@ -365,8 +365,8 @@ type error_desc =
   | DuplicatedArgName                  of ident
   | DuplicatedCtorName                 of ident
   | DuplicatedFieldInAssetDecl         of ident
-  | DuplicatedFieldInRecordDecl        of ident
   | DuplicatedFieldInAssetOrRecordLiteral of ident
+  | DuplicatedFieldInRecordDecl        of ident
   | DuplicatedInitMarkForCtor
   | DuplicatedPkeyField                of ident
   | DuplicatedVarDecl                  of ident
@@ -406,8 +406,11 @@ type error_desc =
   | InvalidShadowVariableAccess
   | InvalidSortingExpression
   | InvalidStateExpression
+  | InvalidTypeForDoFailIf
+  | InvalidTypeForDoRequire
   | InvalidTypeForEntrypoint
   | InvalidTypeForEntrysig
+  | InvalidTypeForFail
   | InvalidTypeForMapKey
   | InvalidTypeForMapValue
   | InvalidTypeForPk
@@ -521,8 +524,8 @@ let pp_error_desc fmt e =
   | AssertInGlobalSpec                 -> pp "Assertions specification at global level are forbidden"
   | AssetExpected ty                   -> pp "Asset expected (found a %a)" Printer_ast.pp_ptyp ty
   | AssetOrRecordExpected ty           -> pp "Asset or record expected (found a %a)" Printer_ast.pp_ptyp ty
-  | AssetWithoutPKey                   -> pp "Asset declaration without a primary key"
   | AssetWithoutFields                 -> pp "Asset declaration without fields"
+  | AssetWithoutPKey                   -> pp "Asset declaration without a primary key"
   | BeforeIrrelevant `Local            -> pp "The `before' modifier cannot be used on local variables"
   | BeforeIrrelevant `State            -> pp "The `before' modifier cannot be used on state constructors"
   | BeforeOrLabelInExpr                -> pp "The `before' or label modifiers can only be used in formulas"
@@ -543,9 +546,9 @@ let pp_error_desc fmt e =
   | DuplicatedArgName x                -> pp "Duplicated argument name: %s" x
   | DuplicatedCtorName i               -> pp "Duplicated constructor name: %a" pp_ident i
   | DuplicatedFieldInAssetDecl i       -> pp "Duplicated field in asset declaration: %a" pp_ident i
-  | DuplicatedFieldInRecordDecl i      -> pp "Duplicated field in record declaration: %a" pp_ident i
   | DuplicatedFieldInAssetOrRecordLiteral i
     -> pp "Duplicated field in asset or record literal: %a" pp_ident i
+  | DuplicatedFieldInRecordDecl i      -> pp "Duplicated field in record declaration: %a" pp_ident i
   | DuplicatedInitMarkForCtor          -> pp "Duplicated 'initialized by' section for asset"
   | DuplicatedPkeyField x              -> pp "Duplicated primary key field: %a" pp_ident x
   | DuplicatedVarDecl i                -> pp "Duplicated variable declaration: %a" pp_ident i
@@ -554,8 +557,8 @@ let pp_error_desc fmt e =
   | ExpressionExpected                 -> pp "Expression expected"
   | ForeignState (i1, i2)              -> pp "Expecting a state of %a, not %a" pp_ident (Option.get_dfl "<global>" i1) pp_ident (Option.get_dfl "<global>" i2)
   | FormulaExpected                    -> pp "Formula expected"
-  | IndexOutOfBoundForTuple            -> pp "Index out of bounds for tuple"
   | IncompatibleTypes (t1, t2)         -> pp "Incompatible types: found '%a' but expected '%a'" Printer_ast.pp_ptyp t1 Printer_ast.pp_ptyp t2
+  | IndexOutOfBoundForTuple            -> pp "Index out of bounds for tuple"
   | InvalidArcheTypeDecl               -> pp "Invalid Archetype declaration"
   | InvalidAssetCollectionExpr ty      -> pp "Invalid asset collection expression: %a" A.pp_ptyp ty
   | InvalidAssetExpression             -> pp "Invalid asset expression"
@@ -586,22 +589,27 @@ let pp_error_desc fmt e =
   | InvalidShadowVariableAccess        -> pp "Shadow variable access in non-shadow code"
   | InvalidSortingExpression           -> pp "Invalid sorting expression"
   | InvalidStateExpression             -> pp "Invalid state expression"
+  | InvalidTypeForDoFailIf             -> pp "Invalid type for dofailif"
+  | InvalidTypeForDoRequire            -> pp "Invalid type for dorequire"
   | InvalidTypeForEntrypoint           -> pp "Invalid type for entrypoint"
   | InvalidTypeForEntrysig             -> pp "Invalid type for entrysig"
-  | InvalidTypeForPk                   -> pp "Invalid type for primary key"
-  | InvalidTypeForSet                  -> pp "Invalid type for set"
+  | InvalidTypeForFail                 -> pp "Invalid type for fail"
   | InvalidTypeForMapKey               -> pp "Invalid type for map key"
   | InvalidTypeForMapValue             -> pp "Invalid type for map value"
+  | InvalidTypeForPk                   -> pp "Invalid type for primary key"
+  | InvalidTypeForSet                  -> pp "Invalid type for set"
   | InvalidVarOrArgType                -> pp "A variable / argument type cannot be an asset or a collection"
   | LabelInNonInvariant                -> pp "The label modifier can only be used in invariants"
   | LetInElseInInstruction             -> pp "Let In else in instruction"
   | LetInElseOnNonOption               -> pp "Let in else on non-option type"
   | MethodCallInPredicate              -> pp "Cannot call methods in predicates"
   | MisorderedPkeyFields               -> pp "Primary keys order should follow asset fields order"
-  | MissingFieldInAssetOrRecordLiteral i -> pp "Missing field in asset or record literal: %a" pp_ident i
+  | MissingFieldInAssetOrRecordLiteral i
+    -> pp "Missing field in asset or record literal: %a" pp_ident i
   | MissingInitValueForShadowField     -> pp "Shadow fields must have a default value"
   | MixedAnonInAssetOrRecordLiteral    -> pp "Mixed anonymous in asset or record literal"
-  | MixedFieldNamesInAssetOrRecordLiteral l -> pp "Mixed field names in asset or record literal: %a" (Printer_tools.pp_list "," pp_ident) l
+  | MixedFieldNamesInAssetOrRecordLiteral l
+    -> pp "Mixed field names in asset or record literal: %a" (Printer_tools.pp_list "," pp_ident) l
   | MoreThanOneInitState l             -> pp "More than one initial state: %a" (Printer_tools.pp_list ", " pp_ident) l
   | MultipleAssetStateDeclaration      -> pp "Multiple asset states declaration"
   | MultipleInitialMarker              -> pp "Multiple 'initial' marker"
@@ -1068,8 +1076,8 @@ type 'env tentrydecl = {
   ad_callby : (A.pterm option) loced list;
   ad_effect : [`Raw of A.instruction | `Tx of transition] option;
   ad_funs   : 'env fundecl option list;
-  ad_reqs   : (A.lident option * A.pterm) list;
-  ad_fais   : (A.lident option * A.pterm) list;
+  ad_reqs   : (A.lident option * A.pterm * A.pterm option) list;
+  ad_fais   : (A.lident option * A.pterm * A.pterm option) list;
   ad_spec   : 'env ispecification list;
   ad_actfs  : bool;
 }
@@ -2648,7 +2656,7 @@ let rec for_xexpr
 
         begin match asset, map_type with
           | Some (asset, _), `Standard when asset.as_bm && not (is_form_kind mode.em_kind) ->
-              Env.emit_error env (loc tope, InvalidMethodWithBigMap (unloc m))
+            Env.emit_error env (loc tope, InvalidMethodWithBigMap (unloc m))
           | _ -> ()
         end;
 
@@ -2815,21 +2823,21 @@ let rec for_xexpr
           (A.Pentrypoint (ty, id, b))
       end
 
-    | Eself     _
-    | Evar      _
-    | Efail     _
-    | Eassert   _
-    | Elabel    _
-    | Eassign   _
+    | Eself      _
+    | Evar       _
+    | Efail      _
+    | Eassert    _
+    | Elabel     _
+    | Eassign    _
     | Ebreak
-    | Efailif   _
-    | Efor      _
-    | Eiter     _
-    | Eif       _
-    | Erequire  _
-    | Ereturn   _
-    | Eseq      _
-    | Etransfer _
+    | Edofailif  _
+    | Efor       _
+    | Eiter      _
+    | Eif        _
+    | Edorequire _
+    | Ereturn    _
+    | Eseq       _
+    | Etransfer  _
     | Eany
     | Einvalid ->
       Env.emit_error env (loc tope, InvalidExpression);
@@ -3386,7 +3394,29 @@ let for_lbls_expr
 let for_lbl_bexpr = for_lbl_expr ~ety:(A.Tbuiltin A.VTbool)
 
 (* -------------------------------------------------------------------- *)
-let for_lbls_bexpr = for_lbls_expr ~ety:(A.Tbuiltin A.VTbool)
+let for_rf
+    kind ?ety (env : env) (topf : (PT.lident * PT.expr * PT.expr option) list) : env * (A.lident option * A.pterm * A.pterm option) list
+  =
+  let aux
+      ?ety (kind : imode_t) (env : env) (id, e, err : PT.lident * PT.expr * PT.expr option) : env * (A.lident option * A.pterm * A.pterm option)
+    =
+
+    let error = Option.map (for_expr kind env) err in
+    error
+    |> Option.iter (fun (x : A.pterm) ->
+        x.type_ |> Option.iter (fun ty ->
+            if (not (Type.Michelson.is_type ty))
+            then (Env.emit_error env (x.loc, InvalidTypeForFail))));
+
+    if check_and_emit_name_free env id then
+      let env = Env.Label.push env (id, `Plain) in
+      env, (Some id, for_expr kind env ?ety e, error)
+    else
+      env, (None, for_expr kind env ?ety e, error)
+  in
+  List.fold_left_map (aux ?ety kind) env topf
+
+let for_rfs = for_rf ~ety:(A.Tbuiltin A.VTbool)
 
 (* -------------------------------------------------------------------- *)
 let for_lbl_formula (env : env) (topf : PT.label_expr) : env * (A.lident option * A.pterm) =
@@ -3729,16 +3759,33 @@ let rec for_instruction_r
           for_instruction ~ret kind env i) in
       env, mki (A.Iiter (x, a, b, i)) ?label:(Option.map unloc lbl)
 
-    | Erequire e ->
+    | Edorequire (e, f) ->
       let e = for_expr kind env e in
-      env, mki (A.Irequire (true, e))
+      let f = for_expr kind env f in
+      let ty = Option.get f.type_ in
 
-    | Efailif e ->
+      if not (Type.Michelson.is_type ty) then
+        Env.emit_error env (f.loc, InvalidTypeForDoRequire);
+
+      env, mki (A.Irequire (true, e, f))
+
+    | Edofailif (e, f) ->
       let e = for_expr kind env e in
-      env, mki (A.Irequire (false, e))
+      let f = for_expr kind env f in
+      let ty = Option.get f.type_ in
+
+      if not (Type.Michelson.is_type ty) then
+        Env.emit_error env (f.loc, InvalidTypeForDoFailIf);
+
+      env, mki (A.Irequire (false, e, f))
 
     | Efail e ->
       let e = for_expr kind env e in
+
+      e.type_ |> Option.iter (fun ty ->
+          if (not (Type.Michelson.is_type ty))
+          then (Env.emit_error env (e.loc, InvalidTypeForFail)));
+
       env, mki (A.Ifail e)
 
     | Eassert lbl ->
@@ -4158,8 +4205,8 @@ let rec for_callby (env : env) (cb : PT.expr) =
 (* -------------------------------------------------------------------- *)
 let for_entry_properties (env, poenv : env * env) (act : PT.entry_properties) =
   let calledby  = Option.map (fun (x, _) -> for_callby env x) act.calledby in
-  let env, req  = Option.foldmap (for_lbls_bexpr `Concrete) env (Option.fst act.require) in
-  let env, fai  = Option.foldmap (for_lbls_bexpr `Concrete) env (Option.fst act.failif) in
+  let env, req  = Option.foldmap (for_rfs `Concrete) env (Option.fst act.require) in
+  let env, fai  = Option.foldmap (for_rfs `Concrete) env (Option.fst act.failif) in
   let env, spec = Option.foldmap
       (fun env x -> for_specification `Local (env, poenv) x) env act.spec_fun in
   let env, funs = List.fold_left_map for_function env act.functions in
@@ -4931,7 +4978,7 @@ let for_grouped_declarations (env : env) (toploc, g) =
 
         let env, spec = for_lbls_formula env spec in
         let spec = List.map (fun (label, term) ->
-            A.{ label; term; loc = term.A.loc }
+            A.{ label; term; error = None; loc = term.A.loc }
           ) spec in
 
         Option.foldmap (fun env var ->
@@ -4986,7 +5033,7 @@ let assets_of_adecls adecls =
           loc     = loc fd.fd_name; } in
 
     let spec (l, f) =
-      A.{ label = l; term = f; loc = f.loc } in
+      A.{ label = l; term = f; error = None; loc = f.loc } in
 
     A.{ name    = decl.as_name;
         fields  = List.map for_field decl.as_fields;
@@ -5129,7 +5176,7 @@ let transentrys_of_tdecls tdecls =
   in
 
   let for1 tdecl =
-    let mkl (x, c) =  A.{ label = x; term = c; loc = L.dummy; } in
+    let mkl (x, c, e) =  A.{ label = x; term = c; error = e; loc = L.dummy; } in
 
     let transition =
       match tdecl.ad_effect with

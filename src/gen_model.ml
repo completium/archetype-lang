@@ -802,13 +802,14 @@ let to_model (ast : A.ast) : M.model =
           in
           M.Massign (to_assignment_operator op, t, ak, v)
         end
-      | A.Irequire (b, t) ->
+      | A.Irequire (b, t, e) ->
         let cond : M.mterm =
           if b
           then term_not (f t)
           else (f t)
         in
-        M.Mif (cond, fail (InvalidCondition None), None)
+        let e : M.mterm = f e in
+        M.Mif (cond, fail (Invalid e), None)
 
       | A.Itransfer (v, k) -> begin
           let v = f v in
@@ -1103,7 +1104,14 @@ let to_model (ast : A.ast) : M.model =
         | `Require ->  M.mk_mterm (M.Mnot term) (Tbuiltin Bbool) ~loc:x.loc
         | `Failif -> term
       in
-      let fail_cond : M.mterm = fail (InvalidCondition (Option.map unloc x.label)) in
+      let fail_cond : M.mterm =
+        let a =
+          match x.error with
+          | Some v -> (M.Invalid (to_mterm env v))
+          | None   -> (M.InvalidCondition (Option.map unloc x.label))
+        in
+        fail a
+      in
       let cond_if = M.mk_mterm (M.Mif (cond, fail_cond, None)) M.Tunit ~loc:x.loc in
       add_seq cond_if body
     in

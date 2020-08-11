@@ -4,6 +4,6 @@ entry exec () {
   effect {
     var a : option<string> = none;
     var b : option<string> = none;
-    dorequire (a <> b)
+    dorequire (a <> b, "ko")
   }
 }

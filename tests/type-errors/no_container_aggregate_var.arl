@@ -10,6 +10,6 @@ asset e identified by eid {
 entry start () {
 	effect {
 		var ev : aggregate<et> = [];
-		dorequire (ev.count() = 0)
+		dorequire (ev.count() = 0, "ko")
 	}
 }

@@ -4,6 +4,6 @@ variable res : nat * nat = (1, 2)
 
 entry exec () {
   effect {
-    dorequire (res[2] = 0)
+    dorequire (res[2] = 0, "ko")
   }
 }

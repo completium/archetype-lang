@@ -21,6 +21,6 @@ entry exec () {
   }
   effect {
     res := my_asset["id0"].col.sum(oid);
-    dorequire (res = 0)
+    dorequire (res = 0, "ko")
   }
 }

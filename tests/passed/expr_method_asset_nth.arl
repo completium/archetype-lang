@@ -18,6 +18,6 @@ entry exec () {
   effect {
     var k = my_asset.nth(1);
     res := my_asset[k].value;
-    dorequire (res = 1)
+    dorequire (res = 1, "ko")
   }
 }

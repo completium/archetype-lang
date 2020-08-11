@@ -373,8 +373,8 @@ and 'id instruction_node =
   | Ideclvar of 'id * 'id term_gen                                                  (* id * init *)
   | Iseq of 'id instruction_gen list                                                (* lhs ; rhs *)
   | Imatchwith of 'id term_gen * ('id pattern_gen * 'id instruction_gen) list       (* match term with ('pattern * 'id instruction_gen) list *)
-  | Iassign of (assignment_operator * ptyp * 'id lvalue_gen * 'id term_gen)                (* $2 assignment_operator $3 *)
-  | Irequire of (bool * 'id term_gen)                                               (* $1 ? require : failif *)
+  | Iassign of (assignment_operator * ptyp * 'id lvalue_gen * 'id term_gen)         (* $2 assignment_operator $3 *)
+  | Irequire of (bool * 'id term_gen * 'id term_gen)                                               (* $1 ? require : failif *)
   | Itransfer of ('id term_gen * 'id transfer_t)
   | Ibreak
   | Icall of ('id term_gen option * 'id call_kind * ('id term_arg) list)
@@ -410,6 +410,7 @@ type 'id decl_gen = {
 type 'id label_term = {
   label : 'id option;
   term : 'id term_gen;
+  error: 'id term_gen option;
   loc  : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -673,8 +674,8 @@ let mk_sp ?label ?(loc = Location.dummy) ?type_ node =
 let mk_instr ?label ?(loc = Location.dummy) node =
   { node; label; loc }
 
-let mk_label_term ?label ?(loc = Location.dummy) term =
-  { label; term; loc }
+let mk_label_term ?label ?error ?(loc = Location.dummy) term =
+  { label; term; error; loc }
 
 let mk_variable ?(constant = false) ?(invs = []) ?(loc = Location.dummy) decl =
   { decl; constant; invs; loc }
