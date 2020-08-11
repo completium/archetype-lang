@@ -583,7 +583,7 @@ let mk_filter_predicate ftyp m asset test filter args =
   Dfun {
   name     = mk_filter_name m asset test ftyp;
   logic    = Logic;
-  args     = (extract_args test |> List.map (fun (_,a,b) -> a,b)) @ args @ ["a", Tyasset asset];
+  args     = args @ (extract_args test |> List.map (fun (_,a,b) -> a,b)) @ ["a", Tyasset asset];
   returns  = Tybool;
   raises   = [];
   variants = [];
@@ -1859,19 +1859,12 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
           dl (Ttoview(dl (mk_field_id a), map_mterm m ctx l));
           mk_ac_ctx a ctx
         ])
-    | Mselect (a, CKcoll, la, lb, _a) ->
+    | Mselect (a, CKcoll, args, tbody, _values) ->
+      let args = mk_filter_args m ctx args tbody in
+      let filterid = mk_select_name m a tbody in
       begin match ctx.lctx with
-      | Inv | Logic ->
-        let args = extract_args lb |> List.map (fun (e, _, _) -> e) |> List.map (map_mterm m ctx) in
-        Tselect (dl a, dl ((mk_select_name m a lb)^"_f"), args, mk_ac_ctx a ctx)
-      | _ ->
-        let args = extract_args lb in
-        let id = mk_select_name m a lb in
-        let argids = args |> List.map (fun (e, _, _) -> e) |> List.map (map_mterm m ctx) in
-        let args = List.map (fun (i,_) -> loc_term (Tvar i)) la in
-        let coll = mk_ac_ctx a ctx in
-        let view = dl (Ttoview (dl a, coll)) in
-        Tapp (loc_term (Tvar id), argids @ args @ [view;coll])
+      | Inv | Logic -> Tselect (dl a, dl filterid, args, mk_ac_ctx a ctx)
+      | _ ->           Tcselect (dl a, dl filterid, args, mk_ac_ctx a ctx)
       end
     | Msort (a, (CKview c),l) -> Tvsort (dl (mk_sort_clone_id a l),map_mterm m ctx c,mk_ac_ctx a ctx)
     | Msort (a, CKfield (_, _, c),l) ->
@@ -2318,6 +2311,13 @@ and mk_invariants (m : M.model) ctx id (lbl : ident option) lbody =
       )
   in
   loop_invariants @ storage_loop_invariants @ security_loop_invariants
+and mk_filter_args m ctx args tbody =
+  let globals =
+    extract_args tbody |>
+    List.map (fun (e, _, _) -> e) |>
+    List.map (map_mterm m ctx) in
+  let args = List.map (fun (i,_) -> loc_term (Tvar i)) args in
+  args @ globals
 
 (* Storage mapping -----------------------------------------------------------*)
 

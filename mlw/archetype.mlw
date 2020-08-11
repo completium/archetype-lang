@@ -11,6 +11,7 @@ theory Types
   type address   = arstring
   type tez       = int
   type date      = int
+  type duration  = int
   type bytes     = arstring
   type signature = arstring
   type chain_id  = int
@@ -1286,6 +1287,19 @@ module Collection
   (* ------------------------------------------------------------------------ *)
   function select (p : t -> bool) (c : collection) : collection
   = mk (N.mk (F.filter p ((N.elts (content c)))))
+
+  (* ------------------------------------------------------------------------ *)
+  let function select_to_view (p : t -> bool) (c : collection) : view
+  (* TODO : postconditions *)
+  =
+  let rec internal_select (l : list t) : list t
+  variant { l }
+  =
+  match l with
+  | Nil       -> Nil
+  | Cons e tl -> if p e then Cons e (internal_select tl) else (internal_select tl)
+  end in
+  to_view (mk (N.mk (internal_select ((N.elts (content c))))))
 
   (* ------------------------------------------------------------------------ *)
   lemma mem_select : forall e c p.
