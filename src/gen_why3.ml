@@ -1454,6 +1454,11 @@ let mk_get_force n k c = Tmatch (dl (Tget(n,k,c)),[
   Twild, loc_term (Tseq [Tassign(Tvar gs, cp_storage gsinit); Traise Enotfound])
 ])
 
+let is_partition m n f =
+  match M.Utils.get_field_container m n f with
+  | _,Partition -> true
+  | _ -> false
+
 let rec map_mterm m ctx (mt : M.mterm) : loc_term =
   let error_internal desc = emit_error (mt.loc, desc); Tnottranslated in
   let error_not_translated (msg : string) = (* Tnottranslated in *) error_internal (TODONotTranslated msg) in
@@ -1751,11 +1756,20 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Maddfield (a, f, k, kb) ->
       let t, _, _ = M.Utils.get_container_asset_key m a f in
       let mk_add_id = loc_term (Tdoti (mk_aggregate_id f, "add")) in
+      let v =
+        if is_partition m a f then
+          begin match kb with
+          | { M.node = (Masset _); type_ = _ } -> map_mterm m ctx (M.Utils.extract_key_value_from_masset m kb)
+          | _ ->
+            let (k, _) = M.Utils.get_asset_key m a in
+            dl (Tapp(loc_term (Tvar k),[map_mterm m ctx kb]))
+      end
+        else map_mterm m ctx kb in
       mk_trace_seq m
         (Tmatch (dl (Tget (dl a, map_mterm m ctx k, loc_term (mk_ac a))), [
           Tpignore, dl (Tassign (loc_term (mk_ac a), dl (Tapp(mk_add_id,[
             map_mterm m ctx k;
-            map_mterm m ctx kb;
+            v;
             loc_term (mk_ac a)
           ]))));
           Twild, loc_term (Tseq [Tassign (Tvar gs, cp_storage gsinit); Traise Enotfound])
@@ -3179,11 +3193,6 @@ let mk_storage_api_before_storage (m : M.model) _records =
         acc @ [ mk_cremoveif m asset test (mlw_test |> unloc_term) false args ] *)
       | _ -> acc
     ) [] |> loc_decl |> deloc
-
-let is_partition m n f =
-  match M.Utils.get_field_container m n f with
-  | _,Partition -> true
-  | _ -> false
 
 let mk_storage_api (m : M.model) _records =
   m.api_items |> List.fold_left (fun acc (sc : M.api_storage) ->
