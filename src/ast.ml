@@ -410,6 +410,7 @@ type 'id decl_gen = {
 type 'id label_term = {
   label : 'id option;
   term : 'id term_gen;
+  error: 'id term_gen option;
   loc  : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -673,8 +674,8 @@ let mk_sp ?label ?(loc = Location.dummy) ?type_ node =
 let mk_instr ?label ?(loc = Location.dummy) node =
   { node; label; loc }
 
-let mk_label_term ?label ?(loc = Location.dummy) term =
-  { label; term; loc }
+let mk_label_term ?label ?error ?(loc = Location.dummy) term =
+  { label; term; error; loc }
 
 let mk_variable ?(constant = false) ?(invs = []) ?(loc = Location.dummy) decl =
   { decl; constant; invs; loc }

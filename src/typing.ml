@@ -410,11 +410,10 @@ type error_desc =
   | InvalidTypeForDoRequire
   | InvalidTypeForEntrypoint
   | InvalidTypeForEntrysig
-  | InvalidTypeForFailIf
+  | InvalidTypeForFail
   | InvalidTypeForMapKey
   | InvalidTypeForMapValue
   | InvalidTypeForPk
-  | InvalidTypeForRequire
   | InvalidTypeForSet
   | InvalidVarOrArgType
   | LabelInNonInvariant
@@ -594,11 +593,10 @@ let pp_error_desc fmt e =
   | InvalidTypeForDoRequire            -> pp "Invalid type for dorequire"
   | InvalidTypeForEntrypoint           -> pp "Invalid type for entrypoint"
   | InvalidTypeForEntrysig             -> pp "Invalid type for entrysig"
-  | InvalidTypeForFailIf               -> pp "Invalid type for failif"
+  | InvalidTypeForFail                 -> pp "Invalid type for fail"
   | InvalidTypeForMapKey               -> pp "Invalid type for map key"
   | InvalidTypeForMapValue             -> pp "Invalid type for map value"
   | InvalidTypeForPk                   -> pp "Invalid type for primary key"
-  | InvalidTypeForRequire              -> pp "Invalid type for require"
   | InvalidTypeForSet                  -> pp "Invalid type for set"
   | InvalidVarOrArgType                -> pp "A variable / argument type cannot be an asset or a collection"
   | LabelInNonInvariant                -> pp "The label modifier can only be used in invariants"
@@ -1078,8 +1076,8 @@ type 'env tentrydecl = {
   ad_callby : (A.pterm option) loced list;
   ad_effect : [`Raw of A.instruction | `Tx of transition] option;
   ad_funs   : 'env fundecl option list;
-  ad_reqs   : (A.lident option * A.pterm) list;
-  ad_fais   : (A.lident option * A.pterm) list;
+  ad_reqs   : (A.lident option * A.pterm * A.pterm option) list;
+  ad_fais   : (A.lident option * A.pterm * A.pterm option) list;
   ad_spec   : 'env ispecification list;
   ad_actfs  : bool;
 }
@@ -3397,21 +3395,24 @@ let for_lbl_bexpr = for_lbl_expr ~ety:(A.Tbuiltin A.VTbool)
 
 (* -------------------------------------------------------------------- *)
 let for_rf
-    kind ?ety (env : env) (topf : (PT.lident * PT.expr * PT.expr option) list) : env * (A.lident option * A.pterm (* * A.pterm option *)) list
+    kind ?ety (env : env) (topf : (PT.lident * PT.expr * PT.expr option) list) : env * (A.lident option * A.pterm * A.pterm option) list
   =
   let aux
-      ?ety (kind : imode_t) (env : env) (id, e, _err : PT.lident * PT.expr * PT.expr option) : env * (A.lident option * A.pterm (* * A.pterm option *))
+      ?ety (kind : imode_t) (env : env) (id, e, err : PT.lident * PT.expr * PT.expr option) : env * (A.lident option * A.pterm * A.pterm option)
     =
 
-    (* let error = Option.map (for_expr kind env) err in
-    if (not (Type.Michelson.is_type error.type_))
-    then (); *)
+    let error = Option.map (for_expr kind env) err in
+    error
+    |> Option.iter (fun (x : A.pterm) ->
+        x.type_ |> Option.iter (fun ty ->
+            if (not (Type.Michelson.is_type ty))
+            then (Env.emit_error env (x.loc, InvalidTypeForFail))));
 
     if check_and_emit_name_free env id then
       let env = Env.Label.push env (id, `Plain) in
-      env, (Some id, for_expr kind env ?ety e(* , error *))
+      env, (Some id, for_expr kind env ?ety e, error)
     else
-      env, (None, for_expr kind env ?ety e(* , error *))
+      env, (None, for_expr kind env ?ety e, error)
   in
   List.fold_left_map (aux ?ety kind) env topf
 
@@ -3780,6 +3781,11 @@ let rec for_instruction_r
 
     | Efail e ->
       let e = for_expr kind env e in
+
+      e.type_ |> Option.iter (fun ty ->
+          if (not (Type.Michelson.is_type ty))
+          then (Env.emit_error env (e.loc, InvalidTypeForFail)));
+
       env, mki (A.Ifail e)
 
     | Eassert lbl ->
@@ -4972,7 +4978,7 @@ let for_grouped_declarations (env : env) (toploc, g) =
 
         let env, spec = for_lbls_formula env spec in
         let spec = List.map (fun (label, term) ->
-            A.{ label; term; loc = term.A.loc }
+            A.{ label; term; error = None; loc = term.A.loc }
           ) spec in
 
         Option.foldmap (fun env var ->
@@ -5027,7 +5033,7 @@ let assets_of_adecls adecls =
           loc     = loc fd.fd_name; } in
 
     let spec (l, f) =
-      A.{ label = l; term = f; loc = f.loc } in
+      A.{ label = l; term = f; error = None; loc = f.loc } in
 
     A.{ name    = decl.as_name;
         fields  = List.map for_field decl.as_fields;
@@ -5170,7 +5176,7 @@ let transentrys_of_tdecls tdecls =
   in
 
   let for1 tdecl =
-    let mkl (x, c) =  A.{ label = x; term = c; loc = L.dummy; } in
+    let mkl (x, c, e) =  A.{ label = x; term = c; error = e; loc = L.dummy; } in
 
     let transition =
       match tdecl.ad_effect with
