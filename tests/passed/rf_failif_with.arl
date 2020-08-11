@@ -1,0 +1,10 @@
+archetype rf_failif_with
+
+entry exec () {
+  failif {
+    r1 with (2, "fail"): false;
+  }
+  effect {
+    ()
+  }
+}

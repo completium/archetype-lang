@@ -1,0 +1,10 @@
+archetype rf_require_otherwise
+
+entry exec () {
+  require {
+    r1 otherwise "fail": true;
+  }
+  effect {
+    ()
+  }
+}
