@@ -624,11 +624,43 @@ let rec pp_term outer pos fmt = function
       (pp_with_paren (pp_term outer pos)) e2
   | Tlnth _ -> pp_str fmt "TODO_Tlnth"
   | Tselect (i1,i2,l,e) ->
-    Format.fprintf fmt "%a.select (%a %a) %a"
-    pp_str (String.capitalize_ascii i1)
-    pp_str i2
-    (pp_list " " (pp_term outer pos)) l
-    (pp_with_paren (pp_term outer pos)) e
+    if List.length l > 0 then
+      Format.fprintf fmt "%a.select_fun (%a %a) %a"
+      pp_str (String.capitalize_ascii i1)
+      pp_str i2
+      (pp_list " " (pp_term outer pos)) l
+      (pp_with_paren (pp_term outer pos)) e
+    else
+      Format.fprintf fmt "%a.select_fun %a %a"
+      pp_str (String.capitalize_ascii i1)
+      pp_str i2
+      (pp_with_paren (pp_term outer pos)) e
+  | Tcselect (i1,i2,l,e) ->
+    if List.length l > 0 then
+      Format.fprintf fmt "%a.select (%a %a) %a"
+      pp_str (String.capitalize_ascii i1)
+      pp_str i2
+      (pp_list " " (pp_term outer pos)) l
+      (pp_with_paren (pp_term outer pos)) e
+    else
+      Format.fprintf fmt "%a.select %a %a"
+      pp_str (String.capitalize_ascii i1)
+      pp_str i2
+      (pp_with_paren (pp_term outer pos)) e
+  | Tvselect (i1,i2,l,e1,e2) ->
+    if List.length l > 0 then
+      Format.fprintf fmt "%a.select_view (%a %a) %a %a"
+      pp_str (String.capitalize_ascii i1)
+      pp_str i2
+      (pp_list " " (pp_term outer pos)) l
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
+    else
+      Format.fprintf fmt "%a.select_view %a %a %a"
+      pp_str (String.capitalize_ascii i1)
+      pp_str i2
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
   | Tremoveif (i1,i2,l,e) ->
     if List.length l > 0 then
       Format.fprintf fmt "%a.removeif (%a %a) %a"
@@ -641,7 +673,7 @@ let rec pp_term outer pos fmt = function
       pp_str (String.capitalize_ascii i1)
       pp_str i2
       (pp_with_paren (pp_term outer pos)) e
-  | Tfieldremoveif (i1,i2,l,e0,e1,e2) ->
+  | Tfremoveif (i1,i2,l,e0,e1,e2) ->
     if List.length l > 0 then
       Format.fprintf fmt "%a.removeif %a (%a %a) %a %a"
       pp_str (String.capitalize_ascii i1)
