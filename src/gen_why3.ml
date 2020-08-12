@@ -2679,6 +2679,10 @@ let fold_exns m body : term list =
     | M.Mcast (Tbuiltin Baddress, Tentrysig _, v) -> internal_fold_exn (acc @ [Texn Enotfound]) v
     | M.Mtransfer (v, TKself _) -> internal_fold_exn (acc @ [Texn Enotfound]) v
     | M.Mtransfer (v, _) -> internal_fold_exn acc v
+    | M.Mapp (id, args) ->
+      let fun_struct = M.Utils.get_function m (unloc id) in
+      List.fold_left (fun acc arg ->
+        acc @ (internal_fold_exn [] arg)) (internal_fold_exn [] fun_struct.body) args
     | _ -> M.fold_term internal_fold_exn acc term in
   Tools.List.dedup (internal_fold_exn [] body)
 
@@ -2783,40 +2787,6 @@ let mk_entry_require m idents =
     ]
   else []
 
-(* let add_raise_ctx args src m exn =
-   match src with
-   | M.Endo ->
-    begin
-      match exn with
-      | Texn Ekeyexist ->
-        if List.length args > 0 then
-          let mk_ctx (id,t) =
-            let id = Mlwtree.deloc id in
-            match Mlwtree.deloc t with
-            | Tyasset a ->
-              let a = Mlwtree.deloc a in
-              let key,_ = M.Utils.get_asset_key m a in
-              mk_key_found_cond `Old a (Tdoti (a,key))
-            | Typartition a | Tycoll a ->
-              let a = Mlwtree.deloc a in
-              let key,_ = M.Utils.get_asset_key m a in
-              Texists ([["a"],Tyasset a],
-                       Tand (mk_key_found_cond `Old a (Tdoti("a",key)),
-                             Tcontains (a,
-                                        Tdoti ("a",key),
-                                        Tvar (id))))
-            | _ -> exn
-          in
-          let ctx = List.fold_left (fun acc arg ->
-              Tor (acc,mk_ctx arg)
-            ) (mk_ctx (List.hd args)) (List.tl args) in
-          Timpl (exn, ctx)
-        else exn
-      | _ -> exn
-    end
-   | _ -> exn *)
-
-(* for now (src = `Endo) means the function is 'add_shallow_xxx' *)
 let mk_functions m =
   M.Utils.get_functions m |> List.map (
     fun ((v : M.specification option),
