@@ -6,12 +6,6 @@ constant admin : role = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 variable quorum : rational = 0.2
 variable threshold : rational = 0.5
 
-entries {
-  // generate signature here
-  <address> set_contact
-  <address> register_candidate
-}
-
 // set called contract address here
 variable contract_instance : address = @KT1QwpAGX68z6XtnXBWQVdJ56AQtzPGrAKKv
 
@@ -63,7 +57,7 @@ entry execute (id : string) {
     var count = vote[id].vcount;
     if nbvoters >= quorum * voter.count() and count >= threshold * nbvoters then (
       // call contract action here
-      transfer 0tz to contract_instance call register_candidate(vote[id].vcandidate)
+      transfer 0tz to contract_instance call register_candidate<address>(vote[id].vcandidate)
     )
   }
 }

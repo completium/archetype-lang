@@ -1,0 +1,23 @@
+archetype effect_control_for_collection_big_map
+
+asset myasset identified by str to big_map {
+  str : string;
+  v   : int;
+} initialized by {
+  {"id0"; 1};
+  {"id1"; 2};
+  {"id2"; 3}
+}
+
+variable res : int = 0
+
+entry exec () {
+  specification {
+    s0: res = 6;
+  }
+  effect {
+    for i in myasset do
+      res += myasset[i].v;
+    done;
+  }
+}

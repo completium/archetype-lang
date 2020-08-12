@@ -1,7 +1,7 @@
 archetype expr_cmp_ne_set
 
 entry exec () {
-  var a : set<int> = [1; 2; 3];
-  var b : set<int> = [1; 2; 3];
-  dorequire (a <> b);
+  var a : set<nat> = [1; 2; 3];
+  var b : set<nat> = [1; 2; 3];
+  dorequire (a <> b, "ko");
 }

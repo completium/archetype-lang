@@ -1,7 +1,7 @@
 archetype effect_method_asset_addupdate_with_add_aggregate
 
 asset my_asset_simple identified by oid {
-  oid : int;
+  oid : nat;
 } initialized by {
   {oid = 1};
   {oid = 2};

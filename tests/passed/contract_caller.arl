@@ -1,20 +1,16 @@
 archetype contract_caller
 
-entries {
-   <int> set_value
-   <int * int> add_value
-}
 variable c : address = @KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm
 
 
 entry update_value(n : int) {
   effect {
-    transfer 0tz to c call set_value(n)
+    transfer 0tz to c call set_value<int>(n)
   }
 }
 
 entry add_one(n : int) {
   effect {
-    transfer 0tz to c call add_value(n, 2)
+    transfer 0tz to c call add_value<int * int>((n, 2))
   }
 }

@@ -1,6 +1,7 @@
 archetype lang_funs
 
-variable i : int      = 0
+variable n : nat      = 0
+variable i : int      = 0i
 variable r : rational = 0 / 1
 variable d : date     = 2020-01-01
 variable e : duration = 0s
@@ -10,17 +11,32 @@ variable b : bytes    = 0x00
 
 entry exec () {
   effect {
-    i := min(1, 2);
-    i := max(1, 2);
+    n := min(1, 2);
+    n := max(1, 2);
 
-    r := min(1 / 2, 1);
-    r := max(1 / 2, 1);
+    i := min(1, 2i);
+    i := max(1, 2i);
 
-    r := min(2, 1 / 3);
-    r := max(2, 1 / 3);
+    i := min(1i, 2);
+    i := max(1i, 2);
 
-    r := min(1 / 2, 1 / 3);
-    r := max(1 / 2, 1 / 3);
+    i := min(1i, 2i);
+    i := max(1i, 2i);
+
+    r := min(0.5, 1);
+    r := max(0.5, 1);
+
+    r := min(2, 0.3);
+    r := max(2, 0.3);
+
+    r := min(0.5, 1i);
+    r := max(0.5, 1i);
+
+    r := min(2i, 0.3);
+    r := max(2i, 0.3);
+
+    r := min(0.5, 0.3);
+    r := max(0.5, 0.3);
 
     d := min(2020-01-01, 2020-12-31);
     d := max(2020-01-01, 2020-12-31);
@@ -31,17 +47,20 @@ entry exec () {
     t := min(1tz, 2tz);
     t := max(1tz, 2tz);
 
-    i := floor(5 / 3);
-    i := ceil(5 / 3);
+    i := floor(1.6); // 1
+    i := ceil(1.6);  // 2
 
-    i := abs(-1);
-    r := abs(-1 / 2);
+    n := abs(-1);
+    r := abs(-0.5);
 
     s := concat("abc", "def");
     s := slice("abcdef", 1, 2);
-    i := length("abcdef");
+    n := length("abcdef");
 
     b := concat(0x12, 0xef);
     b := slice(0xabcdef01, 1, 2);
+    n := length(0xabcdef01);
+
+    s := to_string(42);
   }
 }

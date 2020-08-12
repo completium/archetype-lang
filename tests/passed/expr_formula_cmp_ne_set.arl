@@ -1,8 +1,8 @@
-archetype expr_cmp_ne_set
+archetype expr_formula_cmp_ne_set
 
-constant a : set<int> = [1; 2; 3]
+constant a : set<nat> = [1; 2; 3]
 
-constant b : set<int> = [1; 2; 3]
+constant b : set<nat> = [1; 2; 3]
 
 entry exec () {
   specification {

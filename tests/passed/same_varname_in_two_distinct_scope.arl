@@ -4,10 +4,10 @@ entry exec() {
   effect {
     if true then (
       var v = 0;
-      dorequire (v = v)
+      dorequire (v = v, "ko")
     ) else (
       var v = 1;
-      dorequire (v = v)
+      dorequire (v = v, "ko")
     )
   }
 }

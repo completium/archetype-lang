@@ -1,61 +1,51 @@
 archetype erc20
 
-constant name : string = "mytoken"
+constant total : nat = 1_000_000_000_000_000
+variable onetoken : nat = 1_000_000
 
-constant total : int = 1000
-with {
-  i0: total > 0
-}
-
-asset allowance {
-    a_id    : int;
-    allowed : address;
-    amount  : int;
-} with {
-    i2 : amount > 0;
+asset allowance identified by owner spender {
+  owner     : address;
+  spender     : address;
+  amount      : nat;
 }
 
 asset tokenHolder identified by holder {
-    holder     : address;
-    tokens     : int;
-    allowances : aggregate<allowance>;
-} with {
-    i1: tokens >= 0;
-    i3: allowances.sum(the.amount) <= tokens;
+  holder     : address;
+  tokens     : nat = 0;
 } initialized by {
-  { holder = caller; tokens = total; allowances = [] }
+  { holder = caller; tokens = total }
 }
 
-entry dotransfer (dest : pkey<tokenHolder>, value : int) {
-
-  specification {
-    p1 : before.tokenHolder.sum(tokens) = tokenHolder.sum(tokens);
-    p2 : let some th = tokenHolder[dest] in
-         let some bth = before.tokenHolder[dest] in
-         th.tokens = bth.tokens + value
-         otherwise true
-         otherwise true;
-    p3 : let some thc = tokenHolder[caller] in
-         let some bthc = before.tokenHolder[caller] in
-         thc.tokens = bthc.tokens - value
-         otherwise true
-         otherwise true;
-    p4 : let some th = tokenHolder[dest] in
-         forall t in tokenHolder,
-         forall bt in before.tokenHolder,
-         t.holder <> th.holder ->
-         t.holder <> caller ->
-         t.tokens = bt.tokens
-         otherwise true;
+entry dotransfer (dest : pkey<tokenHolder>, value : nat) {
+  require {
+    d0 : tokenHolder[caller].tokens >= value
   }
-
-  failif {
-    f0 : value < 0;
-    f1 : tokenHolder[caller].tokens < value
-  }
-
   effect {
-    tokenHolder.update( tokenHolder[dest].holder, { tokens += value });
+    tokenHolder.addupdate( dest, { tokens += value });
     tokenHolder.update( caller, { tokens -= value })
+  }
+}
+
+entry approve(ispender : address, value : nat) {
+  require {
+    d1 : tokenHolder[caller].tokens >= value;
+  }
+  effect {
+    allowance.addupdate((caller, ispender), { amount = value });
+  }
+}
+
+entry transferFrom(from_ : address, to_ : address, value : nat) {
+  require {
+    (* d1: allowance.contains(from_); *)
+    d3: allowance[(from_,caller)].amount >= value;
+    d4: tokenHolder[from_].tokens >= value
+  }
+  effect {
+    (* update allowance *)
+    allowance.update((from_,caller), { amount -=  value });
+    (* update token *)
+    tokenHolder.addupdate(to_,   { tokens += value });
+    tokenHolder.update(from_, { tokens -= value });
   }
 }

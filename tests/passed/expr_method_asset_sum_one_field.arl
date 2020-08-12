@@ -1,7 +1,7 @@
 archetype expr_method_asset_sum_one_field
 
 asset my_asset identified by id {
-  id : int;
+  id : nat;
 } initialized by {
   {1};
   {2};

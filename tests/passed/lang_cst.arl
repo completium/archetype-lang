@@ -3,18 +3,18 @@ archetype lang_cst
 entry exec () {
   effect {
     var a : tez      = balance;       (* BALANCE *)
-    dorequire(a = a);
+    dorequire(a = a, "ko");
     var b : address  = caller;        (* SENDER *)
-    dorequire(b = b);
+    dorequire(b = b, "ko");
     var c : date     = now;           (* NOW *)
-    dorequire(c = c);
+    dorequire(c = c, "ko");
     var d : address  = source;        (* SOURCE *)
-    dorequire(d = d);
+    dorequire(d = d, "ko");
     var e : tez      = transferred;   (* AMOUNT *)
-    dorequire(e = e);
+    dorequire(e = e, "ko");
     var f : chain_id = chainid;       (* CHAIN_ID *)
-    // require(f = f);                // not comparable
+    // dorequire(f = f, "ko");                // not comparable
     var g : address  = selfaddress;   (* SELF; ADDRESS *)
-    dorequire(g = g);
+    dorequire(g = g, "ko");
   }
 }

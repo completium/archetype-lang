@@ -1,0 +1,12 @@
+archetype expr_control_if_else_rat_nat
+
+variable res : rational = 0.0
+
+entry exec () {
+  specification {
+    s0: res = 0.5;
+  }
+  effect {
+    res := (if true then 0.5 else 1)
+  }
+}

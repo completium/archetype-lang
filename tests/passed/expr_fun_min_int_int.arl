@@ -1,12 +1,12 @@
 archetype expr_fun_min_int_int
 
-variable res : int = 0
+variable res : int = 0i
 
 entry exec () {
   specification {
-    s0: res = 1;
+    s0: res = 1i;
   }
   effect {
-    res := min(1, 2)
+    res := min(1i, 2i)
   }
 }

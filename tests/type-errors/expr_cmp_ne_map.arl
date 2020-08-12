@@ -1,7 +1,7 @@
 archetype expr_cmp_ne_map
 
 entry exec () {
-  var a : map<int, string> = [(1, "1"); (2, "2"); (3, "3")];
-  var b : map<int, string> = [(1, "1"); (2, "2"); (3, "3")];
-  dorequire (a <> b);
+  var a : map<nat, string> = [(1, "1"); (2, "2"); (3, "3")];
+  var b : map<nat, string> = [(1, "1"); (2, "2"); (3, "3")];
+  dorequire (a <> b, "ko");
 }

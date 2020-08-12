@@ -1,7 +1,7 @@
 archetype effect_method_asset_add_aggregate
 
 asset o_asset identified by oid {
-  oid : int;
+  oid : nat;
 } initialized by {
   {0};
   {1};

@@ -5,10 +5,10 @@ variable res : option<bool> = none
 entry exec () {
   specification {
     s0: issome(res);
-    s1: let some r = getopt(res) in r otherwise false;
+    s1: let some r = opt_get(res) in r otherwise false;
   }
   effect {
     res := unpack<bool>(0x05030a);
-    dorequire (getopt(res))
+    dorequire (opt_get(res), "ko")
   }
 }

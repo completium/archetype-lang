@@ -21,6 +21,6 @@ entry exec () {
   }
   effect {
     var k = my_asset["id0"].col.nth(0);
-    dorequire (res = 1)
+    dorequire (res = 1, "ko")
   }
 }

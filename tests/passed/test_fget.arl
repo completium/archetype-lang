@@ -40,7 +40,7 @@ entry exec (ow : address) {
     effect {
         var valid_miles = owner[ow].miles.select(the.expiration > now);
         for:loop m in owner[ow].miles do
-            dorequire (mile[m].quantity > 0)
+            dorequire (mile[m].quantity > 0, "ko")
         done;
         assert a0
     }

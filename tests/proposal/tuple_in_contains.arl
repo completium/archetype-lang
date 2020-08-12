@@ -1,0 +1,15 @@
+archetype tuple_in_contains
+
+asset my_asset identified by id0 id1 {
+  id0 : string;
+  id1 : int;
+  value : nat = 0;
+} initialized by {
+  {"id"; 0i; 0}
+}
+
+variable res : bool = false
+
+entry exec () {
+  res := my_asset.contains(("id", 0i));
+}

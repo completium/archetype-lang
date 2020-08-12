@@ -1,7 +1,7 @@
 archetype expr_cmp_eq_list
 
 entry exec () {
-  var a : list<int> = [1; 2; 3];
-  var b : list<int> = [1; 2; 3];
-  dorequire (a = b);
+  var a : list<nat> = [1; 2; 3];
+  var b : list<nat> = [1; 2; 3];
+  dorequire (a = b, "ko");
 }

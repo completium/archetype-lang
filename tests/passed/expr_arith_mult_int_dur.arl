@@ -7,6 +7,6 @@ entry exec () {
     s0: res = 16h;
   }
   effect {
-    res := 4 * 4h
+    res := 4i * 4h
   }
 }

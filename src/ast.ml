@@ -50,7 +50,6 @@ type ptyp =
   | Tasset of lident
   | Trecord of lident
   | Tenum of lident
-  | Tcontract of lident
   | Tbuiltin of vtyp
   | Tcontainer of ptyp * container
   | Tset of ptyp
@@ -59,7 +58,6 @@ type ptyp =
   | Ttuple of ptyp list
   | Toption of ptyp
   | Toperation
-  | Tentry (* entry of external contract *)
   | Tentrysig of ptyp
   | Ttrace of trtyp
 [@@deriving show {with_path = false}]
@@ -162,8 +160,8 @@ type const =
   | Csum
   | Cunpack
   | Cupdate
-  | Centrypoint
   | Cmkoperation
+  | Ctostring
   (* set *)
   | Csadd
   | Csremove
@@ -244,7 +242,7 @@ type bval_gen = bval_node struct_poly
 
 and bval_node =
   | BVint          of Core.big_int
-  | BVuint         of Core.big_int
+  | BVnat          of Core.big_int
   | BVbool         of bool
   | BVenum         of string
   | BVrational     of Core.big_int * Core.big_int
@@ -262,13 +260,6 @@ type bval = bval_gen
 
 
 (* -------------------------------------------------------------------- *)
-
-type 'id signature = {
-  name : 'id;
-  args: (lident * ptyp) list;
-  loc: Location.t [@opaque];
-}
-[@@deriving show {with_path = false}]
 
 type quantifier =
   | Forall
@@ -335,6 +326,7 @@ type 'id term_node  =
   | Psome of 'id term_gen
   | Pcast of ptyp * ptyp * 'id term_gen
   | Pself of 'id
+  | Pentrypoint of ptyp * 'id * 'id term_gen
 [@@deriving show {with_path = false}]
 
 and 'id term_arg =
@@ -369,9 +361,9 @@ type 'id instruction_poly = {
 
 and 'id transfer_t =
   | TTsimple   of 'id term_gen
-  | TTcontract of 'id term_gen * 'id * 'id term_gen list
-  | TTentry    of 'id * 'id term_gen
-  | TTself     of 'id * 'id term_gen list
+  | TTcontract of 'id term_gen * 'id * type_ * 'id term_gen
+  | TTentry    of 'id term_gen * 'id term_gen
+  | TTself     of 'id * ('id * 'id term_gen) list
 
 and 'id instruction_node =
   | Iif of ('id term_gen * 'id instruction_gen * 'id instruction_gen)               (* condition * then_ * else_ *)
@@ -381,8 +373,8 @@ and 'id instruction_node =
   | Ideclvar of 'id * 'id term_gen                                                  (* id * init *)
   | Iseq of 'id instruction_gen list                                                (* lhs ; rhs *)
   | Imatchwith of 'id term_gen * ('id pattern_gen * 'id instruction_gen) list       (* match term with ('pattern * 'id instruction_gen) list *)
-  | Iassign of (assignment_operator * 'id lvalue_gen * 'id term_gen)                (* $2 assignment_operator $3 *)
-  | Irequire of (bool * 'id term_gen)                                               (* $1 ? require : failif *)
+  | Iassign of (assignment_operator * ptyp * 'id lvalue_gen * 'id term_gen)         (* $2 assignment_operator $3 *)
+  | Irequire of (bool * 'id term_gen * 'id term_gen)                                               (* $1 ? require : failif *)
   | Itransfer of ('id term_gen * 'id transfer_t)
   | Ibreak
   | Icall of ('id term_gen option * 'id call_kind * ('id term_arg) list)
@@ -418,6 +410,7 @@ type 'id decl_gen = {
 type 'id label_term = {
   label : 'id option;
   term : 'id term_gen;
+  error: 'id term_gen option;
   loc  : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -425,8 +418,6 @@ type 'id label_term = {
 type 'id variable = {
   decl         : 'id decl_gen; (* TODO *)
   constant     : bool;
-  from         : 'id qualid_gen option;
-  to_          : 'id qualid_gen option;
   invs         : 'id label_term list;
   loc          : Location.t [@opaque];
 }
@@ -611,8 +602,9 @@ type enum = lident enum_struct
 type 'id asset_struct = {
   name    : 'id;
   fields  : 'id decl_gen list;
-  key     : 'id option;   (* TODO: option ? *)
+  keys    : 'id list;   (* TODO: option ? *)
   sort    : 'id list;
+  big_map : bool;
   state   : 'id option;
   init    : 'id term_gen list list;
   specs   : 'id label_term list;
@@ -631,22 +623,11 @@ type 'id record_struct = {
 
 type record = lident record_struct
 
-type 'id contract_struct = {
-  name       : 'id;
-  signatures : 'id signature list;
-  init       : 'id term_gen option;
-  loc        : Location.t [@opaque];
-}
-[@@deriving show {with_path = false}]
-
-and contract = lident contract_struct
-
 type 'id decl_ =
   | Dvariable of 'id variable
   | Dasset    of 'id asset_struct
   | Drecord   of 'id record_struct
   | Denum     of 'id enum_struct
-  | Dcontract of 'id contract_struct
 [@@deriving show {with_path = false}]
 
 type 'id fun_ =
@@ -657,7 +638,6 @@ type 'id fun_ =
 type 'id ast_struct = {
   name           : 'id;
   decls          : 'id decl_ list;
-  ext_entries    : ('id * ptyp) list;
   funs           : 'id fun_ list;
   specifications : 'id specification list;
   securities     : security list;
@@ -694,11 +674,11 @@ let mk_sp ?label ?(loc = Location.dummy) ?type_ node =
 let mk_instr ?label ?(loc = Location.dummy) node =
   { node; label; loc }
 
-let mk_label_term ?label ?(loc = Location.dummy) term =
-  { label; term; loc }
+let mk_label_term ?label ?error ?(loc = Location.dummy) term =
+  { label; term; error; loc }
 
-let mk_variable ?(constant = false) ?from ?to_ ?(invs = []) ?(loc = Location.dummy) decl =
-  { decl; constant; from; to_; invs; loc }
+let mk_variable ?(constant = false) ?(invs = []) ?(loc = Location.dummy) decl =
+  { decl; constant; invs; loc }
 
 let mk_predicate ?(args = []) ?(loc = Location.dummy) name body =
   { name; args; body; loc }
@@ -736,14 +716,11 @@ let mk_enum ?(items = []) ?(loc = Location.dummy) kind =
 let mk_decl ?typ ?default ?(shadow=false) ?(loc = Location.dummy) name =
   { name; typ; default; shadow; loc }
 
-let mk_asset ?(fields = []) ?key ?(sort = []) ?state ?(init = []) ?(specs = []) ?(loc = Location.dummy) name   =
-  { name; fields; key; sort; state; init; specs; loc }
+let mk_asset ?(fields = []) ?(keys = []) ?(sort = []) ?(big_map = false) ?state ?(init = []) ?(specs = []) ?(loc = Location.dummy) name   =
+  { name; fields; keys; sort; big_map; state; init; specs; loc }
 
-let mk_contract ?(signatures = []) ?init ?(loc = Location.dummy) name =
-  { name; signatures; init; loc }
-
-let mk_model ?(decls = []) ?(ext_entries = []) ?(funs = []) ?(specifications = []) ?(securities = []) ?(loc = Location.dummy) name =
-  { name; decls; ext_entries; funs; specifications; securities; loc }
+let mk_model ?(decls = []) ?(funs = []) ?(specifications = []) ?(securities = []) ?(loc = Location.dummy) name =
+  { name; decls; funs; specifications; securities; loc }
 
 let mk_id type_ id : qualid =
   { type_ = Some type_;
@@ -765,7 +742,6 @@ module Utils : sig
   val is_enum_value             : ast -> lident -> bool
   val get_var_type              : ast -> lident -> type_
   val get_enum_name             : lident enum_struct -> lident
-  val get_contract_sig_ids      : ast -> ident -> ident -> lident list
 
 end = struct
   open Tools
@@ -787,7 +763,6 @@ end = struct
   let get_variables ast = List.fold_right (fun (x : 'id decl_) accu -> match x with Dvariable x ->  x::accu | _ -> accu ) ast.decls []
   let get_assets ast    = List.fold_right (fun (x : 'id decl_) accu -> match x with Dasset x    ->  x::accu | _ -> accu ) ast.decls []
   let get_enums ast     = List.fold_right (fun (x : 'id decl_) accu -> match x with Denum x     ->  x::accu | _ -> accu ) ast.decls []
-  let get_contracts ast = List.fold_right (fun (x : 'id decl_) accu -> match x with Dcontract x ->  x::accu | _ -> accu ) ast.decls []
 
   let get_asset_opt ast asset_name : asset option =
     let id = unloc asset_name in
@@ -808,7 +783,7 @@ end = struct
 
   let get_asset_key ast asset_name : (lident * vtyp) =
     let asset = get_asset ast asset_name in
-    let key_id = Option.get asset.key in
+    let key_id = match asset.keys with [k] -> k | _ -> assert false in (* TODO *)
     let key_field = get_asset_field ast (asset_name, key_id) in
     match key_field.typ with
     | Some (Tbuiltin v) -> (key_id, v)
@@ -850,13 +825,6 @@ end = struct
         then Some x
         else accu
       ) None (get_assets ast)
-
-  let get_contract_opt ast ident =
-    List.fold_left (fun accu (x : 'id contract_struct) ->
-        if (Location.unloc x.name) = (Location.unloc ident)
-        then Some x
-        else accu
-      ) None (get_contracts ast)
 
   let get_enum_values ast ident =
     List.fold_left (
@@ -901,17 +869,4 @@ end = struct
     | Some v -> v
     | None -> emit_error VariableNotFound
 
-  let get_contract_sig_ids (ast : ast) (contract_id : ident) (fun_id : ident) : lident list =
-    let get_signature signatures ident : ((lident * ptyp) list) option =
-      List.fold_left (fun accu (x : 'id signature) ->
-          if (Location.unloc x.name) = ident
-          then Some (x.args)
-          else accu
-        ) None signatures
-    in
-    let contract = get_contract_opt ast (dumloc contract_id) in
-    let contract = if (Option.is_none contract) then raise Not_found else Option.get contract in
-    let signatures = get_signature contract.signatures fun_id in
-    let signatures = if (Option.is_none signatures) then raise Not_found else Option.get signatures in
-    List.map fst signatures
 end

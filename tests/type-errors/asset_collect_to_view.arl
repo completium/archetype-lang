@@ -16,7 +16,7 @@ entry exec () {
     s0: res = 1
   }
   effect {
-    var l = my_asset; (* implicit cast to view *)
+    var l : view<my_asset> = my_asset; (* implicit cast to view *)
     res := l.select(value = 0).count()
   }
 }

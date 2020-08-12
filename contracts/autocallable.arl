@@ -150,7 +150,7 @@ function compute_expected (d : date) : tez {
         (* interests *)
         let interests =
         if expected = 0tz then 0tz else
-          (let some lbarrier_key = ibarrier.nth(ibarrier.count() - 1) in
+          (let some lbarrier_key = ibarrier.nth(abs(ibarrier.count() - 1)) in
           let some lbarrier = interest[lbarrier_key] in
             let some v = fixing[lbarrier.iobservation] in
             if    v.bac >= lbarrier.barrier * bac_initial

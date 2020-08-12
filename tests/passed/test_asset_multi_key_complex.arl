@@ -1,0 +1,26 @@
+archetype test_asset_multi_key_complex
+
+asset my_asset identified by i s {
+  i : nat;
+  s : string;
+  v : bool;
+} initialized by {
+  { 0; "mystr_0"; true }
+}
+
+entry exec () {
+  my_asset.add({ 1; "mystr_1"; false });
+
+  var val = my_asset[(0, "mystr_0")].v;
+  dorequire(val, "ko");
+  my_asset.update((0, "mystr_0"), { v = false});
+
+  var k0 = my_asset[(0, "mystr_0")].i;
+  var k1 = my_asset[(0, "mystr_0")].s;
+
+  dorequire(k0 = 0, "ko");
+  dorequire(k1 = "mystr_0", "ko");
+
+  var v0 = my_asset.select(the.s <> "");
+
+}

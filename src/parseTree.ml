@@ -90,7 +90,7 @@ and for_ident = for_ident_unloc loced
 
 and transfer_t =
   | TTsimple   of expr
-  | TTcontract of expr * lident * expr list
+  | TTcontract of expr * lident * type_t * expr
   | TTentry    of lident * expr
   | TTself     of lident * expr list
 
@@ -106,8 +106,8 @@ and expr_unloc =
   | Eapp          of function_ * expr list
   | Emethod       of expr * lident * expr list
   | Etransfer     of expr * transfer_t
-  | Erequire      of expr
-  | Efailif       of expr
+  | Edorequire    of expr * expr
+  | Edofailif     of expr * expr
   | Efail         of expr
   | Eassign       of assignment_operator * expr * expr
   | Eif           of expr * expr * expr option
@@ -123,6 +123,7 @@ and expr_unloc =
   | Elabel        of lident
   | Ereturn       of expr
   | Eoption       of option_
+  | Eentrypoint   of type_t * expr * expr
   | Eunpack       of type_t * expr
   | Eself         of lident
   | Eany
@@ -152,7 +153,8 @@ and function_ =
   | Foperator of operator loced
 
 and literal =
-  | Lnumber   of Core.big_int
+  | Lint      of Core.big_int
+  | Lnat      of Core.big_int
   | Ldecimal  of string
   | Ltz       of Core.big_int
   | Lmtz      of Core.big_int
@@ -238,8 +240,8 @@ and s_function = {
 and entry_properties = {
   accept_transfer : bool;
   calledby        : (expr * exts) option;
-  require         : (label_exprs * exts) option;
-  failif          : (label_exprs * exts) option;
+  require         : ((lident * expr * expr option) list * exts) option;
+  failif          : ((lident * expr * expr option) list * exts) option;
   spec_fun        : specification option;
   functions       : (s_function loced) list;
 }
@@ -264,7 +266,6 @@ and declaration_unloc =
   | Drecord        of record_decl
   | Dentry         of entry_decl
   | Dtransition    of transition_decl
-  | Dentries       of entries_decl
   | Dextension     of extension_decl
   | Dnamespace     of namespace_decl
   | Dfunction      of s_function
@@ -276,7 +277,6 @@ and variable_decl =
   lident
   * type_t
   * expr option
-  * value_option list option
   * variable_kind
   * label_exprs
   * exts
@@ -314,22 +314,16 @@ and transition_decl =
   * transition
   * exts
 
-and entries_decl =
-  (type_t * lident) list * exts
-
 and extension_decl =
   lident * expr list
 
 and namespace_decl =
   lident * declaration list
 
-and value_option =
-  | VOfrom of lident
-  | VOto of lident
-
 and asset_option =
-  | AOidentifiedby of lident
+  | AOidentifiedby of lident list
   | AOsortedby of lident
+  | AOto of lident
 
 and asset_post_option =
   | APOstates of lident
@@ -361,7 +355,98 @@ and archetype = archetype_unloc loced
             visitors { variety = "iter"; ancestors = ["location_iter"; "ident_iter"] },
             visitors { variety = "reduce"; ancestors = ["location_reduce"; "ident_reduce"] },
             visitors { variety = "reduce2"; ancestors = ["location_reduce2"; "ident_reduce2"] }
-]
+    ]
 
 let mk_archetype ?(decls=[]) ?(loc=dummy) () =
   mkloc loc (Marchetype decls)
+
+let is_keyword = function
+  | "added"
+  | "aggregate"
+  | "and"
+  | "any"
+  | "archetype"
+  | "assert"
+  | "asset"
+  | "at"
+  | "before"
+  | "break"
+  | "but"
+  | "by"
+  | "call"
+  | "called"
+  | "constant"
+  | "contract"
+  | "definition"
+  | "div"
+  | "do"
+  | "dofailif"
+  | "done"
+  | "dorequire"
+  | "effect"
+  | "else"
+  | "end"
+  | "entry"
+  | "entrypoint"
+  | "entrysig"
+  | "enum"
+  | "exists"
+  | "extension"
+  | "fail"
+  | "failif"
+  | "false"
+  | "for"
+  | "forall"
+  | "from"
+  | "function"
+  | "identified"
+  | "if"
+  | "in"
+  | "initial"
+  | "initialized"
+  | "invariant"
+  | "iter"
+  | "label"
+  | "let"
+  | "list"
+  | "map"
+  | "match"
+  | "namespace"
+  | "none"
+  | "not"
+  | "on"
+  | "option"
+  | "or"
+  | "otherwise"
+  | "partition"
+  | "pkey"
+  | "postcondition"
+  | "predicate"
+  | "record"
+  | "ref"
+  | "removed"
+  | "require"
+  | "return"
+  | "security"
+  | "set"
+  | "self"
+  | "shadow"
+  | "some"
+  | "sorted"
+  | "specification"
+  | "states"
+  | "then"
+  | "to"
+  | "transfer"
+  | "transition"
+  | "true"
+  | "unmoved"
+  | "unpack"
+  | "use"
+  | "var"
+  | "view"
+  | "variable"
+  | "when"
+  | "with"
+    -> true
+  | _ -> false

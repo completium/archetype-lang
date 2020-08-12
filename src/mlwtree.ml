@@ -3,6 +3,7 @@ open Tools
 type exn =
   | Enotfound
   | Ekeyexist
+  | Enegassignnat
   | Einvalidcaller
   | Einvalidcondition
   | Einvalidstate
@@ -22,7 +23,7 @@ type fmod =
 type 'i abstract_qualid = 'i list
 [@@deriving show {with_path = false}]
 
-type 'i abstract_type =
+type ('i,'t) abstract_type =
   | Tyint
   | Tyuint
   | Tybool
@@ -39,7 +40,8 @@ type 'i abstract_type =
   | Tybytes
   | Tychainid
   | Tystorage
-  | Tytransfers
+  | Tyoperation
+  | Tyentrysig
   | Tyunit
   | Tycontract of 'i
   | Tyrecord of 'i
@@ -51,10 +53,10 @@ type 'i abstract_type =
   | Tyaggregate of 'i
   | Tystate
   | Tyenum of 'i
-  | Tyoption of 'i abstract_type
-  | Tyset of 'i abstract_type
-  | Tylist of 'i abstract_type
-  | Tytuple of 'i abstract_type list
+  | Tyoption of 't
+  | Tyset of 'i
+  | Tylist of 't
+  | Tytuple of 't list
   (* ... *)
 [@@deriving show {with_path = false}]
 
@@ -94,6 +96,7 @@ type ('e,'t,'i) abstract_term =
   | Tadded  of 'i
   | Trmed   of 'i
   | Tchainid of 'i
+  | Tselfaddress of 'i
   (* list *)
   | Tlist   of 'e list
   | Tnil    of 'i
@@ -101,16 +104,19 @@ type ('e,'t,'i) abstract_term =
   | Temptyview of 'i
   | Temptyfield of 'i
   | Tcard   of 'i * 'e
-  | Ttocoll  of 'i * 'e * 'e
+  | Tfromfield  of 'i * 'e * 'e
+  | Tfromview  of 'i * 'e * 'e
   | Ttoview of 'i * 'e
   | Tviewtolist of 'i * 'e *'e
   | Telts of 'i * 'e
   | Tshallow  of 'i * 'e * 'e
   | Tmlist  of 'i * 'e * 'i * 'i * 'i * 'e (* match list *)
   | Tcons   of 'i * 'e * 'e
-  | Tmkcoll of 'i * 'e
+  | Tprepend of 'i * 'e * 'e
+  | Tmkcoll of 'i * 'e list
   | Tmkview of 'i * 'e
   | Tcontent of 'i * 'e
+  | Tcontains of 'i * 'e * 'e
   | Tvcontent of 'i * 'e
   (* archetype lib *)
   | Tadd    of 'i * 'e * 'e
@@ -118,6 +124,7 @@ type ('e,'t,'i) abstract_term =
   | Tremove of 'i * 'e * 'e
   | Tvremove of 'i * 'e * 'e
   | Tget    of 'i * 'e * 'e
+  | Tgetforce    of 'i * 'e * 'e
   | Tfget of 'i * 'e * 'e (* logical pure get; no fail *)
   | Tset    of 'i * 'e * 'e * 'e
   | Tvsum    of 'i * 'e * 'e
@@ -125,15 +132,19 @@ type ('e,'t,'i) abstract_term =
   | Tcsort   of 'i * 'e
   | Tvsort   of 'i * 'e * 'e
   | Tnth     of 'i * 'e * 'e
+  | Tnthtuple of int * int * 'e
   | Tcoll   of 'i * 'e
   | Tassign of 'e * 'e
   | Traise  of exn
   | Texn    of exn
   | Tconcat of 'e * 'e
   | Ttransfer of 'e * 'e
-  | Tcall of 'e
+  | Tcall of 'e * 'e * 'i * 'e
+  | Tmkoperation of 'e * 'e * 'e
+  | Tentrypoint of 'i * 'e
   | Tfst of 'e
   | Tsnd of 'e
+  | Tsndopt of 'e
   | Tabs of 'e
   (* trace *)
   | Tmktr   of 'e * 'e
@@ -163,6 +174,7 @@ type ('e,'t,'i) abstract_term =
   | Tdlte   of 't * 'e * 'e * 'e (* _ < _ <= _ *)
   (* literals *)
   | Tint    of Core.big_int
+  | Tstring of string
   | Taddr   of string
   | Tbytes  of string
   (* spec *)
@@ -197,6 +209,7 @@ type ('e,'t,'i) abstract_term =
   | Tcnth    of 'i * 'e * 'e
   | Tvnth    of 'i * 'e * 'e
   | Tlnth   of 'i * 'e * 'e
+  | Tselect of 'i * 'i * 'e list * 'e
   | Twitness of 'i
   (* option *)
   | Tnone
@@ -242,8 +255,8 @@ type ('e,'t,'i) abstract_storage_struct = {
 }
 [@@deriving show {with_path = false}]
 
-type 'i abstract_clone_subst =
-  | Ctype  of 'i * 'i
+type ('i,'t) abstract_clone_subst =
+  | Ctype  of 'i * 't
   | Cval   of 'i * 'i
   | Cfun   of 'i * 'i
   | Cpred  of 'i * 'i
@@ -259,7 +272,7 @@ type theotyp =
 type ('e,'t,'i) abstract_decl =
   | Duse     of bool * 'i abstract_qualid * string option
   | Dval     of 'i * 't
-  | Dclone   of 'i abstract_qualid * 'i * ('i abstract_clone_subst) list
+  | Dclone   of 'i abstract_qualid * 'i * (('i,'t) abstract_clone_subst) list
   | Denum    of 'i * 'i list
   | Drecord  of 'i * (('e,'t,'i) abstract_field) list
   | Dstorage of ('e,'t,'i) abstract_storage_struct
@@ -286,7 +299,7 @@ type ('e,'t,'i) abstract_mlw_tree = ('e,'t,'i) abstract_module list
 let map_abstract_qualid (map_i : 'i1 -> 'i2) (q1 : 'i1 abstract_qualid)
   = List.map map_i q1
 
-let rec map_abstract_type (map_i : 'i1 -> 'i2) = function
+let map_abstract_type (map_i : 'i1 -> 'i2) (map_t : 't1 -> 't2) = function
   | Tyint         -> Tyint
   | Tystring      -> Tystring
   | Tyaddr        -> Tyaddr
@@ -297,7 +310,8 @@ let rec map_abstract_type (map_i : 'i1 -> 'i2) = function
   | Tychainid     -> Tychainid
   | Tystorage     -> Tystorage
   | Tyunit        -> Tyunit
-  | Tytransfers   -> Tytransfers
+  | Tyoperation   -> Tyoperation
+  | Tyentrysig    -> Tyentrysig
   | Tyrecord i    -> Tyrecord (map_i i)
   | Tycoll i      -> Tycoll (map_i i)
   | Tyview i      -> Tyview (map_i i)
@@ -306,9 +320,9 @@ let rec map_abstract_type (map_i : 'i1 -> 'i2) = function
   | Typartition i -> Typartition (map_i i)
   | Tyaggregate i -> Tyaggregate (map_i i)
   | Tyenum i      -> Tyenum (map_i i)
-  | Tyoption t    -> Tyoption (map_abstract_type map_i t)
-  | Tyset t       -> Tyset (map_abstract_type map_i t)
-  | Tylist t      -> Tylist (map_abstract_type map_i t)
+  | Tyoption t    -> Tyoption (map_t t)
+  | Tyset i       -> Tyset (map_i i)
+  | Tylist t      -> Tylist (map_t t)
   | Tycontract i  -> Tycontract (map_i i)
   | Tybool        -> Tybool
   | Tyuint        -> Tyuint
@@ -318,7 +332,7 @@ let rec map_abstract_type (map_i : 'i1 -> 'i2) = function
   | Tykey         -> Tykey
   | Tykeyhash     -> Tykeyhash
   | Tystate       -> Tystate
-  | Tytuple l     -> Tytuple (List.map (map_abstract_type map_i) l)
+  | Tytuple l     -> Tytuple (List.map map_t l)
 
 let map_abstract_univ_decl
     (map_t : 't1 -> 't2)
@@ -381,13 +395,16 @@ and map_abstract_term
   | Tdoti (i1,i2)      -> Tdoti (map_i i1, map_i i2)
   | Tename             -> Tename
   | Tcaller i          -> Tcaller (map_i i)
+  | Tentrypoint (i,e)  -> Tentrypoint (map_i i, map_e e)
   | Tsender i          -> Tsender (map_i i)
   | Ttransferred i     -> Ttransferred (map_i i)
   | Tfst e             -> Tfst (map_e e)
   | Tsnd e             -> Tsnd (map_e e)
+  | Tsndopt e          -> Tsndopt (map_e e)
   | Tabs e             -> Tabs (map_e e)
   | Tnow i             -> Tnow (map_i i)
   | Tchainid i         -> Tchainid (map_i i)
+  | Tselfaddress i     -> Tselfaddress (map_i i)
   | Tadded a           -> Tadded (map_i a)
   | Trmed  a           -> Trmed (map_i a)
   | Tlist l            -> Tlist (List.map map_e l)
@@ -396,22 +413,26 @@ and map_abstract_term
   | Temptyview i       -> Temptyview (map_i i)
   | Temptyfield i      -> Temptyfield (map_i i)
   | Tcard (i,e)        -> Tcard (map_i i, map_e e)
-  | Tmkcoll (i,e)      -> Tmkcoll (map_i i, map_e e)
+  | Tmkcoll (i,e)      -> Tmkcoll (map_i i, List.map map_e e)
   | Tmkview (i,e)      -> Tmkview (map_i i, map_e e)
   | Tcontent (i,e)     -> Tcontent (map_i i, map_e e)
+  | Tcontains (i,e1,e2)-> Tcontains (map_i i, map_e e1, map_e e2)
   | Tvcontent (i,e)    -> Tvcontent (map_i i, map_e e)
-  | Ttocoll (i,e1,e2)  -> Ttocoll (map_i i, map_e e1, map_e e2)
+  | Tfromfield (i,e1,e2)  -> Tfromfield (map_i i, map_e e1, map_e e2)
+  | Tfromview (i,e1,e2)  -> Tfromview (map_i i, map_e e1, map_e e2)
   | Ttoview (i,e)      -> Ttoview (map_i i, map_e e)
   | Tviewtolist (i,e1,e2) -> Tviewtolist (map_i i, map_e e1, map_e e2)
   | Telts (i,e)        -> Telts (map_i i, map_e e)
   | Tshallow (i,e1,e2) -> Tshallow (map_i i, map_e e1, map_e e2)
   | Tmlist (l,e1,i1,i2,i3,e2) -> Tmlist (map_i l,map_e e1, map_i i1, map_i i2, map_i i3, map_e e2)
   | Tcons (i,e1,e2)    -> Tcons (map_i i, map_e e1, map_e e2)
+  | Tprepend (i,e1,e2) -> Tprepend (map_i i, map_e e1, map_e e2)
   | Tadd (i1,e1,e2)    -> Tadd (map_i i1, map_e e1, map_e e2)
   | Tvadd (i1,e1,e2)   -> Tvadd (map_i i1, map_e e1, map_e e2)
   | Tremove (i,e1,e2)  -> Tremove (map_i i,map_e e1, map_e e2)
   | Tvremove (i,e1,e2) -> Tvremove (map_i i,map_e e1, map_e e2)
   | Tget (i,e1,e2)     -> Tget (map_i i, map_e e1, map_e e2)
+  | Tgetforce (i,e1,e2)     -> Tgetforce (map_i i, map_e e1, map_e e2)
   | Tfget (i,e1,e2)    -> Tfget (map_i i, map_e e1, map_e e2)
   | Tset (i, e1,e2,e3) -> Tset (map_i i, map_e e1, map_e e2, map_e e3)
   | Tvsum (i,e1,e2)    -> Tvsum (map_i i, map_e e1, map_e e2)
@@ -419,13 +440,15 @@ and map_abstract_term
   | Tcsort (i,e1)      -> Tcsort (map_i i, map_e e1)
   | Tvsort (i,e1,e2)   -> Tvsort (map_i i, map_e e1, map_e e2)
   | Tnth (i,e1,e2)     -> Tnth (map_i i, map_e e1, map_e e2)
+  | Tnthtuple (i1,i2,e)-> Tnthtuple (i1, i2, map_e e)
   | Tcoll (i, e)       -> Tcoll (map_i i, map_e e)
   | Tassign (e1,e2)    -> Tassign (map_e e1, map_e e2)
   | Traise e           -> Traise e
   | Texn e             -> Texn e
   | Tconcat (e1,e2)    -> Tconcat (map_e e1, map_e e2)
   | Ttransfer (e1,e2)  -> Ttransfer (map_e e1, map_e e2)
-  | Tcall e            -> Tcall (map_e e)
+  | Tcall (a,c,n,l)    -> Tcall (map_e a,map_e c,map_i n,map_e l)
+  | Tmkoperation (a,c,l) -> Tmkoperation (map_e a,map_e c,map_e l)
   | Tmktr (e1,e2)      -> Tmktr (map_e e1, map_e e2)
   | Ttradd i           -> Ttradd (map_i i)
   | Ttrrm  i           -> Ttrrm (map_i i)
@@ -449,6 +472,7 @@ and map_abstract_term
   | Tdlet (t,e1,e2,e3) -> Tdlet (map_t t,map_e e1,map_e e2,map_e e3)
   | Tdlte (t,e1,e2,e3) -> Tdlte (map_t t,map_e e1,map_e e2,map_e e3)
   | Tint i             -> Tint i
+  | Tstring s             -> Tstring s
   | Taddr s            -> Taddr s
   | Tbytes s           -> Tbytes s
   | Tforall (l,e)      -> Tforall (List.map (map_abstract_univ_decl map_t map_i) l, map_e e)
@@ -478,6 +502,7 @@ and map_abstract_term
   | Tcnth (i,e1,e2)    -> Tcnth (map_i i, map_e e1, map_e e2)
   | Tvnth (i,e1,e2)    -> Tvnth (map_i i, map_e e1, map_e e2)
   | Tlnth (i,e1,e2)    -> Tlnth (map_i i, map_e e1, map_e e2)
+  | Tselect (i1,i2,l,e)-> Tselect (map_i i1, map_i i2, List.map map_e l, map_e e)
   | Twitness i         -> Twitness (map_i i)
   | Tnone              -> Tnone
   | Tsome e            -> Tsome (map_e e)
@@ -510,8 +535,8 @@ let map_abstract_storage_struct
   invariants = List.map (map_abstract_formula map_e map_i) s.invariants;
 }
 
-let map_abstract_clone_subst (map_i : 'i1 -> 'i2) = function
-  | Ctype (i1,i2) -> Ctype (map_i i1, map_i i2)
+let map_abstract_clone_subst (map_i : 'i1 -> 'i2) (map_t : 't1 -> 't2) = function
+  | Ctype (i1,i2) -> Ctype (map_i i1, map_t i2)
   | Cval  (i1,i2) -> Cval  (map_i i1, map_i i2)
   | Cfun  (i1,i2) -> Cfun  (map_i i1, map_i i2)
   | Cpred  (i1,i2) -> Cpred  (map_i i1, map_i i2)
@@ -524,7 +549,7 @@ let map_abstract_decl
   | Dval (i,t)      -> Dval (map_i i, map_t t)
   | Dclone (q,i,l)  -> Dclone (map_abstract_qualid map_i q,
                                map_i i,
-                               List.map (map_abstract_clone_subst map_i) l)
+                               List.map (map_abstract_clone_subst map_i map_t) l)
   | Denum (i,l)      -> Denum (map_i i, List.map map_i l)
   | Drecord (i,l)    -> Drecord (map_i i, List.map (map_abstract_field map_e map_t map_i) l)
   | Dstorage s       -> Dstorage (map_abstract_storage_struct map_e map_t map_i s)
@@ -556,7 +581,7 @@ type ident             = string
 type qualid            = ident abstract_qualid
 [@@deriving show {with_path = false}]
 
-type typ               = ident abstract_type
+type typ               = (ident, typ) abstract_type
 [@@deriving show {with_path = false}]
 
 type univ_decl         = (typ,ident) abstract_univ_decl
@@ -577,7 +602,7 @@ type fun_struct        = (term,typ,ident) abstract_fun_struct
 type storage_struct    = (term,typ,ident) abstract_storage_struct
 [@@deriving show {with_path = false}]
 
-type clone_subst       = ident abstract_clone_subst
+type clone_subst       = (ident,typ) abstract_clone_subst
 [@@deriving show {with_path = false}]
 
 type decl              = (term,typ,ident) abstract_decl
@@ -603,7 +628,7 @@ type loc_ident         = string with_loc
 type loc_qualid        = (loc_ident abstract_qualid) with_loc
 [@@deriving show {with_path = false}]
 
-type loc_typ           = (loc_ident abstract_type) with_loc
+type loc_typ           = ((loc_ident, loc_typ) abstract_type) with_loc
 [@@deriving show {with_path = false}]
 
 type loc_univ_decl         = ((loc_typ,loc_ident) abstract_univ_decl) with_loc
@@ -624,7 +649,7 @@ type loc_fun_struct    = ((loc_term,loc_typ,loc_ident) abstract_fun_struct) with
 type loc_storage_struct= ((loc_term,loc_typ,loc_ident) abstract_storage_struct) with_loc
 [@@deriving show {with_path = false}]
 
-type loc_clone_subst   = (loc_ident abstract_clone_subst) with_loc
+type loc_clone_subst   = ((loc_ident,loc_typ) abstract_clone_subst) with_loc
 [@@deriving show {with_path = false}]
 
 type loc_decl          = ((loc_term,loc_typ,loc_ident) abstract_decl) with_loc
@@ -640,7 +665,7 @@ type loc_mlw_tree      = (loc_term,loc_typ,loc_ident) abstract_mlw_tree
 
 let rec unloc_tree (lt : loc_mlw_tree) : mlw_tree = map_abstract_mlw_tree unloc_term unloc_type unloc_ident lt
 and unloc_term (t : loc_term) : term = map_abstract_term unloc_term unloc_type unloc_ident t.obj
-and unloc_type (t : loc_typ) : typ = map_abstract_type unloc_ident t.obj
+and unloc_type (t : loc_typ) : typ = map_abstract_type unloc_ident unloc_type t.obj
 and unloc_ident (i : loc_ident) : ident = i.obj
 
 let unloc_decl (d : loc_decl) = map_abstract_decl unloc_term unloc_type unloc_ident d.obj
@@ -650,7 +675,7 @@ let mk_loc l o = { obj = o; loc = l; }
 
 let rec loc_tree (t : mlw_tree) : loc_mlw_tree = map_abstract_mlw_tree loc_term loc_type loc_ident t
 and loc_term (t : term) : loc_term = with_dummy_loc (map_abstract_term loc_term loc_type loc_ident t)
-and loc_type (t : typ) : loc_typ = with_dummy_loc (map_abstract_type loc_ident t)
+and loc_type (t : typ) : loc_typ = with_dummy_loc (map_abstract_type loc_ident loc_type t)
 and loc_ident (i : ident) : loc_ident = with_dummy_loc i
 
 let loc_decl (d : decl) = with_dummy_loc (map_abstract_decl loc_term loc_type loc_ident d)
@@ -665,6 +690,7 @@ let compare_exn e1 e2 =
   | Enotfound, Enotfound -> true
   | Ekeyexist, Ekeyexist -> true
   | Einvalidcaller, Einvalidcaller -> true
+  | Enegassignnat, Enegassignnat -> true
   | Einvalidcondition, Einvalidcondition -> true
   | Einvalidstate, Einvalidstate -> true
   | Ebreak, Ebreak -> true
@@ -677,10 +703,11 @@ let compare_fmod m1 m2 =
   | NoMod,NoMod -> true
   | _ -> false
 
-let rec compare_abstract_type
+let compare_abstract_type
     (cmpi : 'i -> 'i -> bool)
-    (typ1 : 'i abstract_type)
-    (typ2 : 'i abstract_type) =
+    (cmpt : 't -> 't -> bool)
+    (typ1 : ('i,'t) abstract_type)
+    (typ2 : ('i,'t) abstract_type) =
   match typ1,typ2 with
   | Tyint, Tyint -> true
   | Tyuint, Tyunit -> true
@@ -695,7 +722,8 @@ let rec compare_abstract_type
   | Tytez, Tytez -> true
   | Tybytes, Tybytes -> true
   | Tystorage, Tystorage -> true
-  | Tytransfers, Tytransfers -> true
+  | Tyoperation, Tyoperation -> true
+  | Tyentrysig, Tyentrysig -> true
   | Tyunit, Tyunit -> true
   | Tystate, Tystate -> true
   | Tycontract i1, Tycontract i2 -> cmpi i1 i2
@@ -706,9 +734,9 @@ let rec compare_abstract_type
   | Tyasset i1, Tyasset i2 -> cmpi i1 i2
   | Typartition i1, Typartition i2 -> cmpi i1 i2
   | Tyenum i1, Tyenum i2 -> cmpi i1 i2
-  | Tyoption t1, Tyoption t2 -> compare_abstract_type cmpi t1 t2
-  | Tylist t1, Tylist t2 -> compare_abstract_type cmpi t1 t2
-  | Tytuple l1, Tytuple l2 -> List.for_all2 (compare_abstract_type cmpi) l1 l2
+  | Tyoption t1, Tyoption t2 -> cmpt t1 t2
+  | Tylist t1, Tylist t2 -> cmpt t1 t2
+  | Tytuple l1, Tytuple l2 -> List.for_all2 cmpt l1 l2
   | _ -> false
 
 let compare_abstract_formula
@@ -783,15 +811,19 @@ let compare_abstract_term
   | Tdoti (l1,r1), Tdoti (l2,r2) -> cmpi r1 r2 && cmpi l1 l2
   | Tename,Tename -> true
   | Tcaller i1, Tcaller i2 -> cmpi i1 i2
+  | Tentrypoint (i1,e1), Tentrypoint (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tsender i1, Tsender i2 -> cmpi i1 i2
   | Ttransferred i1, Ttransferred i2 -> cmpi i1 i2
   | Ttransfer (f1,t1), Ttransfer (f2,t2) -> cmpe f1 f2 && cmpe t1 t2
-  | Tcall e1, Tcall e2 -> cmpe e1 e2
+  | Tcall (a1,c1,n1,l1), Tcall (a2,c2,n2,l2) -> cmpe a1 a2 && cmpe c1 c2 && cmpi n1 n2 && cmpe l1 l2
+  | Tmkoperation (a1,c1,l1), Tmkoperation (a2,c2,l2) -> cmpe a1 a2 && cmpe c1 c2 && cmpe l1 l2
   | Tfst e1, Tfst e2 -> cmpe e1 e2
   | Tsnd e1, Tsnd e2 -> cmpe e1 e2
+  | Tsndopt e1, Tsndopt e2 -> cmpe e1 e2
   | Tabs e1, Tabs e2 -> cmpe e1 e2
   | Tnow i1, Tnow i2 -> cmpi i1 i2
   | Tchainid i1, Tchainid i2 -> cmpi i1 i2
+  | Tselfaddress i1, Tselfaddress i2 -> cmpi i1 i2
   | Tadded a1, Tadded a2 -> cmpi a1 a2
   | Trmed  a1, Trmed a2 -> cmpi a1 a2
   | Tlist l1, Tlist l2 -> List.for_all2 cmpe l1 l2
@@ -800,11 +832,13 @@ let compare_abstract_term
   | Temptyview i1, Temptyview i2 -> cmpi i1 i2
   | Temptyfield i1, Temptyfield i2 -> cmpi i1 i2
   | Tcard (i1,e1), Tcard (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
-  | Tmkcoll (i1,e1), Tmkcoll (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
+  | Tmkcoll (i1,e1), Tmkcoll (i2,e2) -> cmpi i1 i2 && List.for_all2 cmpe e1 e2
   | Tmkview (i1,e1), Tmkview (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tcontent (i1,e1), Tcontent (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
+  | Tcontains (i1,e1,e3), Tcontains (i2,e2,e4) -> cmpi i1 i2 && cmpe e1 e2 && cmpe e3 e4
   | Tvcontent (i1,e1), Tvcontent (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
-  | Ttocoll (i1,e1,f1), Ttocoll (i2,e2,f2) -> cmpi i1 i2 && cmpe e1 e2 && cmpe f1 f2
+  | Tfromfield (i1,e1,f1), Tfromfield (i2,e2,f2) -> cmpi i1 i2 && cmpe e1 e2 && cmpe f1 f2
+  | Tfromview (i1,e1,f1), Tfromview (i2,e2,f2) -> cmpi i1 i2 && cmpe e1 e2 && cmpe f1 f2
   | Ttoview (i1,e1), Ttoview (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tviewtolist (i1,e1,f1), Tviewtolist (i2,e2,f2) -> cmpi i1 i2 && cmpe e1 e2 && cmpe f1 f2
   | Telts (i1,e1), Telts (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
@@ -812,6 +846,7 @@ let compare_abstract_term
   | Tmlist (l1,e11,i11,i21,i31,e21), Tmlist (l2,e12,i12,i22,i32,e22) ->
     cmpi l1 l2 && cmpe e11 e12 && cmpi i11 i12 && cmpi i21 i22 && cmpi i31 i32 && cmpe e21 e22
   | Tcons (i1,e1,e2), Tcons (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
+  | Tprepend (i1,e1,e2), Tprepend (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tadd (i1,e1,e2), Tadd (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tvadd (i1,e1,e2), Tvadd (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tremove (i1,e1,e2), Tremove (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
@@ -822,7 +857,7 @@ let compare_abstract_term
   | Tvsum (i1,e1,e2), Tvsum (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tcsort (i1,e1), Tcsort (i2,f1) -> cmpi i1 i2 && cmpe e1 f1
   | Tvsort (i1,e1,e2), Tvsort (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
-  | Tnth (i1,e1,e2), Tnth (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
+  | Tnthtuple (i1,i2,e1), Tnthtuple (i3,i4,e2) -> compare i1 i3 = 0 && compare i2 i4 = 0 && cmpe e1 e2
   | Tcoll (i1,e1), Tcoll (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tassign (e1,e2), Tassign (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
   | Traise e1, Traise e2 -> compare_exn e1 e2
@@ -851,6 +886,7 @@ let compare_abstract_term
   | Tdlet (t1,e1,e2,e3), Tdlet (t2,f1,f2,f3) -> cmpt t1 t2 && cmpe e1 f1 && cmpe e2 f2 && cmpe e3 f3
   | Tdlte (t1,e1,e2,e3), Tdlte (t2,f1,f2,f3) -> cmpt t1 t2 && cmpe e1 f1 && cmpe e2 f2 && cmpe e3 f3
   | Tint i1, Tint i2 -> compare i1 i2 = 0
+  | Tstring s1, Tstring s2 -> compare s1 s2 = 0
   | Taddr s1, Taddr s2 -> compare s1 s2 = 0
   | Tbytes s1, Tbytes s2 -> compare s1 s2 = 0
   | Tforall (l1,e1), Tforall (l2,e2) -> List.for_all2 (fun (i1,t1) (i2,t2) ->
@@ -879,11 +915,12 @@ let compare_abstract_term
   | Tvempty (i1,e1), Tvempty (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tsingl (i1,e1), Tsingl (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tvhead (i1,e1,e2), Tvhead (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
-  | Tchead (i1,e1,e2), Tchead (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
+  | Tchead (i1,e1,f1), Tchead (i2,e2,f2) -> cmpi i1 i2 && cmpe e1 e2 && cmpe f1 f2
   | Tctail (i1,e1,e2), Tctail (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tvtail (i1,e1,e2), Tvtail (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tcnth (i1,e1,e2), Tcnth (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tvnth (i1,e1,e2), Tvnth (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
+  | Tselect (i1,i2,l1,e1), Tselect (i3,i4,l2,e2) -> cmpi i1 i3 && cmpi i2 i4 && List.for_all2 cmpe l1 l2 && cmpe e1 e2
   | Twitness i1, Twitness i2 -> cmpi i1 i2
   | Tnone, Tnone -> true
   | Tsome e1, Tsome e2 -> cmpe e1 e2
@@ -899,14 +936,15 @@ let compare_abstract_term
 
 let cmp_loc_ident (i1 : loc_ident) (i2 : loc_ident) = compare i1.obj i2.obj = 0
 
-let cmp_loc_type (t1 : loc_typ) (t2 : loc_typ) = compare_abstract_type cmp_loc_ident t1.obj t2.obj
+let rec cmp_loc_type (t1 : loc_typ) (t2 : loc_typ) : bool =
+  compare_abstract_type cmp_loc_ident cmp_loc_type t1.obj t2.obj
 
 let rec cmp_loc_term (e1 : loc_term) (e2 : loc_term) : bool =
   compare_abstract_term cmp_loc_term cmp_loc_type cmp_loc_ident e1.obj e2.obj
 
 let cmp_ident (i1 : ident) (i2 : ident) = compare i1 i2 = 0
 
-let cmp_type (t1 : typ) (t2 : typ) = compare_abstract_type cmp_ident t1 t2
+let rec cmp_type (t1 : typ) (t2 : typ) = compare_abstract_type cmp_ident cmp_type t1 t2
 
 let rec cmp_term (e1 : term) (e2 : term) : bool =
   compare_abstract_term cmp_term cmp_type cmp_ident e1 e2

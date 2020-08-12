@@ -1,0 +1,12 @@
+archetype expr_cmp_lt_nat_rat
+
+variable res : bool = false
+
+entry exec () {
+  specification {
+    s0: res = true;
+  }
+  effect {
+    res := 1 < 2.0
+  }
+}

@@ -4,17 +4,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## Unreleased
+### Added
+ - Next feature
+
+## [1.1.1] - 2020-08-11
+### Added
+ - in `require` and `failif` section, add custom failed with respectivelly `otherwise` and `with`
+ - `to_string` convert argument to a string (only avalaible for `nat` type for now)
+
+### Changed
+ - `fail` can take any type argument
+ - `dorequire` and `dofailif` take two arguments, the second is for `fail`
+
+## [1.1.0] - 2020-08-05
 ### Added
  - `chain_id` constant
  - `union` `inter` and `diff` operator for view in formula
+ - multi-keys asset : `identified by` can take several field name
+ - `nat` type (comparison and arithmetic operations)
+ - support for entrypoints with `entrysig` type, `entrypoint` function and `transfer` with `entrysig` and `self`
+ - `map` and `set` containers
+ - `record` structure
+
+### Removed
+ - `contract` declaration
 
 ### Changed
  - syntax of composite type (i.e. `list<string>` instead of `string list`)
+ - `rational` are mapped to `int * nat`
 
 ### Fixed
  - `caller` as asset key in `initialized by` section
- - `-ptc` command does not display `pkey of` type anymore
 
 ## [1.0.0] - 2020-06-27
 ### Added

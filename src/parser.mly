@@ -64,8 +64,8 @@
 %token EFFECT
 %token ELSE
 %token END
-%token ENTRIES
 %token ENTRY
+%token ENTRYPOINT
 %token ENTRYSIG
 %token ENUM
 %token EOF
@@ -163,7 +163,8 @@
 
 %token <string> IDENT
 %token <string> STRING
-%token <Big_int.big_int> NUMBER
+%token <Big_int.big_int> NUMBERINT
+%token <Big_int.big_int> NUMBERNAT
 %token <string> DECIMAL
 %token <Big_int.big_int> TZ
 %token <Big_int.big_int> MTZ
@@ -271,7 +272,6 @@ declaration_r:
  | x=transition         { x }
  | x=dextension         { x }
  | x=namespace          { x }
- | x=entries            { x }
  | x=function_decl      { x }
  | x=specification_decl { x }
  | x=security_decl      { x }
@@ -286,15 +286,15 @@ archetype:
 
 vc_decl(X):
 | X exts=extensions? x=ident COLON t=type_t dv=default_value? invs=invariants
-    { (x, t, None, dv, invs, exts) }
+    { (x, t, dv, invs, exts) }
 
 constant:
-  | x=vc_decl(CONSTANT) { let x, t, z, dv, invs, exts = x in
-                          Dvariable (x, t, dv, z, VKconstant, invs, exts) }
+  | x=vc_decl(CONSTANT) { let x, t, dv, invs, exts = x in
+                          Dvariable (x, t, dv, VKconstant, invs, exts) }
 
 variable:
-  | x=vc_decl(VARIABLE) { let x, t, z, dv, invs, exts = x in
-                          Dvariable (x, t, dv, z, VKvariable, invs, exts) }
+  | x=vc_decl(VARIABLE) { let x, t, dv, invs, exts = x in
+                          Dvariable (x, t, dv, VKvariable, invs, exts) }
 
 %inline default_value:
 | EQUAL x=expr { x }
@@ -317,18 +317,6 @@ extension_r:
 
 namespace:
 | NAMESPACE x=ident xs=braced(declarations) { Dnamespace (x, xs) }
-
-entries_item:
-| LESS t=type_t GREATER id=ident
- { (t, id) }
-
-entries_items:
-| xs=entries_item* {xs}
-
-entries:
-| ENTRIES exts=option(extensions)
-    xs=braced(entries_items)
-         { Dentries (xs, exts) }
 
 %inline fun_body:
 | e=expr { (None, e) }
@@ -536,8 +524,9 @@ asset_post_option:
 | xs=asset_option+ { xs }
 
 asset_option:
-| IDENTIFIED BY x=ident { AOidentifiedby x }
-| SORTED BY x=ident     { AOsortedby x }
+| IDENTIFIED BY xs=ident+ { AOidentifiedby xs }
+| SORTED BY x=ident       { AOsortedby x }
+| TO i=ident              { AOto i }
 
 %inline fields:
 | xs=sl(SEMI_COLON, field) { xs }
@@ -603,12 +592,25 @@ entry_properties:
 calledby:
  | CALLED BY exts=option(extensions) x=expr { (x, exts) }
 
+%inline rfs(X):
+| /* empty */   { [] }
+| l=rfs_non_empty(X) { l }
+
+%inline rfs_non_empty(X):
+| l=snl(SEMI_COLON, rf(X)) { l }
+
+rf(X):
+| id=ident f=rfi(X)? COLON e=expr %prec prec_labelexpr { (id, e, f) }
+
+%inline rfi(X):
+| X e=expr { e }
+
 %inline require:
- | REQUIRE exts=option(extensions) xs=braced(label_exprs)
+ | REQUIRE exts=option(extensions) xs=braced(rfs(OTHERWISE))
        { (xs, exts) }
 
 %inline failif:
- | FAILIF exts=option(extensions) xs=braced(label_exprs)
+ | FAILIF exts=option(extensions) xs=braced(rfs(WITH))
        { (xs, exts) }
 
 %inline require_value:
@@ -744,8 +746,8 @@ expr_r:
  | TRANSFER x=simple_expr TO y=simple_expr
      { Etransfer (x, TTsimple y) }
 
- | TRANSFER x=simple_expr TO y=simple_expr CALL id=ident args=paren(sl(COMMA, simple_expr))
-     { Etransfer (x, TTcontract (y, id, args)) }
+ | TRANSFER x=simple_expr TO y=simple_expr CALL id=ident LESS t=type_t GREATER args=paren(expr)
+     { Etransfer (x, TTcontract (y, id, t, args)) }
 
  | TRANSFER x=simple_expr TO ENTRY id=ident arg=simple_expr
      { Etransfer (x, TTentry (id, arg)) }
@@ -753,13 +755,13 @@ expr_r:
  | TRANSFER x=simple_expr TO ENTRY SELF DOT id=ident args=paren(sl(COMMA, simple_expr))
      { Etransfer (x, TTself (id, args)) }
 
- | DOREQUIRE x=simple_expr
-     { Erequire x }
+ | DOREQUIRE LPAREN x=expr COMMA y=expr RPAREN
+     { Edorequire (x, y) }
 
- | DOFAILIF x=simple_expr
-     { Efailif x }
+ | DOFAILIF LPAREN x=expr COMMA y=expr RPAREN
+     { Edofailif (x, y) }
 
- | FAIL e=paren(simple_expr)
+ | FAIL e=paren(expr)
      { Efail e }
 
  | RETURN x=simple_expr
@@ -776,6 +778,9 @@ expr_r:
 
  | SELF DOT x=ident
      { Eself x }
+
+ | ENTRYPOINT LESS t=type_t GREATER LPAREN a=expr COMMA b=expr RPAREN
+     { Eentrypoint (t, a, b) }
 
  | x=order_operations %prec prec_order { x }
 
@@ -892,7 +897,8 @@ label_expr_unloc:
 | IN    e=simple_expr { Qcollection e }
 
 literal:
- | x=NUMBER      { Lnumber   x }
+ | x=NUMBERINT   { Lint      x }
+ | x=NUMBERNAT   { Lnat      x }
  | x=DECIMAL     { Ldecimal  x }
  | x=TZ          { Ltz       x }
  | x=MTZ         { Lmtz      x }

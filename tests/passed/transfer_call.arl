@@ -1,0 +1,12 @@
+archetype transfer_call
+
+variable res : nat = 0
+
+entry f(n : nat) {
+  res := n
+}
+
+entry exec () {
+  var n : nat = res + 2;
+  transfer 0tz to @KT1UZ512pdDcD36GjXLJEkVifeQz3TduZ9uw call set_value<nat>(n);
+}

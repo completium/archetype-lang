@@ -1,0 +1,12 @@
+archetype expr_arith_mult_nat_dur
+
+variable res : duration = 0s
+
+entry exec () {
+  specification {
+    s0: res = 16h;
+  }
+  effect {
+    res := 4 * 4h
+  }
+}

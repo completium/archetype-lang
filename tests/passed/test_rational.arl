@@ -1,0 +1,14 @@
+archetype test_rational
+
+variable res : bool = false
+
+entry exec () {
+  specification {
+    s0: res = true;
+  }
+  effect {
+    var a : rational = 0.1;
+    var b : rational = a + 0.3;
+    res := 0.1 < a <= 0.4
+  }
+}

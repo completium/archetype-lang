@@ -13,7 +13,7 @@ variable res : int = 0
 
 entry exec (str : string) {
   effect {
-    dorequire(my_asset["id0"].value = 1);
-    dofailif(my_asset["id0"].value = 1);
+    dorequire(my_asset["id0"].value = 1, "ko");
+    dofailif(my_asset["id0"].value = 1, "ko");
   }
 }

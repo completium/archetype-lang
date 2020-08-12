@@ -19,6 +19,8 @@ env:
   - OCAML_VERSION=4.08.0
   - OCAML_VERSION=4.08.1
   - OCAML_VERSION=4.09.0
+  - OCAML_VERSION=4.09.1
+  - OCAML_VERSION=4.10.0
 
 before_install:
   # Obtain and install opam locally.
@@ -33,6 +35,8 @@ before_install:
   - opam depext archetype
   - opam install --deps-only archetype
   - opam install why3.1.3.1
+  - curl -o ligo.deb https://ligolang.org/deb/ligo.deb
+  - sudo dpkg -i ligo.deb
 
 script:
   - opam config exec make all

@@ -1,9 +1,9 @@
 archetype tuple_with_no_literals_access
 
-variable res : int * int = (1, 2)
+variable res : nat * nat = (1, 2)
 
 entry exec () {
   effect {
-    dorequire (res[0 * 0] = 1 and res[1 + 0] = 2)
+    dorequire (res[0 * 0] = 1 and res[1 + 0] = 2, "ko")
   }
 }

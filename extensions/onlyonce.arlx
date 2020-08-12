@@ -1,6 +1,6 @@
 archetype extension onlyonce (
 
-  entry[%onlyonce%] tr ()
+  entry[%%onlyonce%%] tr ()
 
 ) {
 

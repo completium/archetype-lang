@@ -2,40 +2,17 @@ archetype c3n
 
 /* michelson source : https://better-call.dev/main/KT1Gbu1Gm2U47Pmq9VP7ZMy3ZLKecodquAh4/script */
 
-asset admins {
-    addr: address;
-}
+variable admins : list<address> = [caller]
 
-variable hash : string = "initialvalue"
+variable hash : bytes = 0x050100000009617263686574797065
 
-entry register (newadmins : option<list<pkey<admins>>> , oldhash : string, newhash : string) {
-    specification {
-        postcondition p1 {
-            before.hash = oldhash
-        }
-        postcondition p2 {
-            hash = newhash
-        }
-        postcondition p3 {
-            before.admins.contains(caller)
-        }
-    }
+entry register (newadmins : option<list<address>> , oldhash : bytes, newhash : bytes) {
     require {
         r1: oldhash = hash;
+        r2: contains(admins,caller);
     }
     effect {
-        var test = false;
-        for admin in admins do
-            if admins[admin].addr = caller then
-            test := true
-        done;
-        dorequire (test = true);
         hash := newhash;
-        if issome(newadmins) then (
-            admins.clear();
-            for a in getopt(newadmins) do
-                admins.add ({ a })
-            done
-        )
+        if issome(newadmins) then admins := opt_get(newadmins)
     }
 }

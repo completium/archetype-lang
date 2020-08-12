@@ -9,7 +9,8 @@ let cmp_lident i1 i2 : bool = String.equal (unloc i1) (unloc i2)
 
 let pp_literal fmt (l : literal) =
   match l with
-  | Lnumber   n -> Format.fprintf fmt "%s" (Big_int.string_of_big_int n)
+  | Lint      n -> Format.fprintf fmt "%s" (Big_int.string_of_big_int n)
+  | Lnat      n -> Format.fprintf fmt "%sn" (Big_int.string_of_big_int n)
   | Ldecimal  n -> Format.fprintf fmt "%s" n
   | Ltz       n -> Format.fprintf fmt "%stz"   (Big_int.string_of_big_int n)
   | Lmtz      n -> Format.fprintf fmt "%smtz"  (Big_int.string_of_big_int n)
@@ -46,7 +47,7 @@ let pp_archetype fmt pt =
     in
 
     let pp_roles fmt _ =
-      let pp_variable_decl fmt (id, _type_, dv, _vos, variable_kind, _invs, exts : variable_decl) =
+      let pp_variable_decl fmt (id, _type_, dv, variable_kind, _invs, exts : variable_decl) =
         Format.fprintf fmt
           "### %a@\n@\n\
            | Attribute              | Value  |@\n\
@@ -70,7 +71,7 @@ let pp_archetype fmt pt =
           ) exts
       in
       let roles : variable_decl list =
-        List.fold_right (fun x accu -> x |> unloc |> function | Dvariable ((_, {pldesc = Tref {pldesc = "role"}; _}, _, _, _, _, _) as a) -> a::accu | _ -> accu) es []
+        List.fold_right (fun x accu -> x |> unloc |> function | Dvariable ((_, {pldesc = Tref {pldesc = "role"}; _}, _, _, _, _) as a) -> a::accu | _ -> accu) es []
       in
       match roles with
       | [] -> ()
@@ -81,7 +82,7 @@ let pp_archetype fmt pt =
 
     let pp_assets fmt _ =
       let pp_asset_decl fmt ((name, fields, shadow_fields, aopts, _ , _, _) : asset_decl) =
-        let key : lident option = List.fold_left (fun accu x -> match x with AOidentifiedby k -> Some (k) | _ -> accu) None aopts in
+        let keys : lident list = List.fold_right (fun x accu -> match x with AOidentifiedby ks -> ks @ accu | _ -> accu) aopts [] in
         let orders : lident list = List.fold_left (fun accu x -> match x with AOsortedby s -> s::accu | _ -> accu) [] aopts in
         let fields = fields @ shadow_fields |> List.map unloc in
         let pp_asset_field fmt (f : field_unloc) =
@@ -95,7 +96,7 @@ let pp_archetype fmt pt =
                  then "order"::l
                  else l)
               |> (fun l ->
-                  if Option.cmp cmp_lident key (Some id)
+                  if List.exists (cmp_lident id) keys
                   then "__key__"::l
                   else l)
             in
@@ -163,14 +164,13 @@ let pp_archetype fmt pt =
               | _ -> accu
             ) l [])
         in
-        let pp_rf name fmt (l : (label_exprs * exts) option) =
+        let pp_rf name fmt (l : ((lident * expr * expr option) list * exts) option) =
           let l =
             l
             |> Option.get_as_list
             |> List.map fst
             |> List.flatten
-            |> List.map unloc
-            |> List.map (fun (x, y) -> unloc x, y)
+            |> List.map (fun (x, y, _) -> unloc x, y)
           in
           if List.is_empty l
           then ()

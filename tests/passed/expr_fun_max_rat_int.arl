@@ -4,11 +4,9 @@ variable res : rational = 0.0
 
 entry exec () {
   specification {
-    s0: res = 1;
+    s0: res = 1.0;
   }
   effect {
-    var a : rational = 1 / 2;
-    var b : int = 1;
-    res := max(a, b)
+    res := max(0.5, 1i)
   }
 }

@@ -43,8 +43,8 @@
       "effect"              , EFFECT         ;
       "else"                , ELSE           ;
       "end"                 , END            ;
-      "entries"             , ENTRIES        ;
       "entry"               , ENTRY          ;
+      "entrypoint"          , ENTRYPOINT     ;
       "entrysig"            , ENTRYSIG       ;
       "enum"                , ENUM           ;
       "exists"              , EXISTS         ;
@@ -81,7 +81,6 @@
       "predicate"           , PREDICATE      ;
       "record"              , RECORD         ;
       "ref"                 , REF            ;
-      "record"              , RECORD         ;
       "removed"             , REMOVED        ;
       "require"             , REQUIRE        ;
       "return"              , RETURN         ;
@@ -121,8 +120,11 @@ let dec      = digit+ '.' digit+
 let tz       = digit+ "tz"
 let mtz      = digit+ "mtz"
 let utz      = digit+ "utz"
+let pep515_item = '_' digit digit digit
+let pep515   = digit? digit? digit pep515_item+
 let var      = "<%" ['a'-'z' 'A'-'Z'] ['a'-'z' 'A'-'Z' '0'-'9' '_' ]* '>'
 let ident    = (['a'-'z' 'A'-'Z'] | var)  (['a'-'z' 'A'-'Z' '0'-'9' '_' ] | var)*
+let pident   = '%' ident
 let address  = '@'['a'-'z' 'A'-'Z' '0'-'9' '_' ]+
 let duration = (digit+ 'w')? (digit+ 'd')? (digit+ 'h')? (digit+ 'm')? (digit+ 's')?
 let day      = digit digit digit digit '-' digit digit '-' digit digit
@@ -145,11 +147,15 @@ rule token = parse
   | "@remove"             { AT_REMOVE }
   | "@update"             { AT_UPDATE }
   | ident as id           { try  Hashtbl.find keywords id with Not_found -> IDENT id }
+  | pident as id          { IDENT (String.sub id 1 ((String.length id) - 1)) }
   | tz as t               { TZ   (Big_int.big_int_of_string (String.sub t 0 ((String.length t) - 2))) }
   | mtz as t              { MTZ  (Big_int.big_int_of_string (String.sub t 0 ((String.length t) - 3))) }
   | utz as t              { UTZ  (Big_int.big_int_of_string (String.sub t 0 ((String.length t) - 3))) }
   | dec as input          { DECIMAL (input) }
-  | digit+ as n           { NUMBER (Big_int.big_int_of_string n) }
+  | (digit+ as n) 'i'     { NUMBERINT (Big_int.big_int_of_string n) }
+  | (digit+ as n)         { NUMBERNAT (Big_int.big_int_of_string n) }
+  | (pep515 as input) 'i' { NUMBERINT (Big_int.big_int_of_string input) }
+  | pep515 as input       { NUMBERNAT (Big_int.big_int_of_string input) }
   | address as a          { ADDRESS (String.sub a 1 ((String.length a) - 1)) }
   | duration as d         { DURATION (d) }
   | date as d             { DATE (d) }
@@ -163,8 +169,8 @@ rule token = parse
   | "\""                  { STRING (Buffer.contents (string (Buffer.create 0) lexbuf)) }
   | "("                   { LPAREN }
   | ")"                   { RPAREN }
-  | "[%"                  { LBRACKETPERCENT }
-  | "%]"                  { PERCENTRBRACKET }
+  | "[%%"                 { LBRACKETPERCENT }
+  | "%%]"                 { PERCENTRBRACKET }
   | "["                   { LBRACKET }
   | "]"                   { RBRACKET }
   | "{"                   { LBRACE }

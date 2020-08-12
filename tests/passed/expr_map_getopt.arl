@@ -1,13 +1,13 @@
 archetype expr_map_getopt
 
-variable res : string = ""
+variable res : option<string> = none
 
 entry exec () {
   specification {
-    s0: res = "0";
+    s0: res = some("0");
   }
   effect {
-    var m : map<int, string> = [(0, "0")];
+    var m : map<nat, string> = [(0, "0")];
     res := map_getopt(m, 0)
   }
 }

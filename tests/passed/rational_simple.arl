@@ -4,6 +4,6 @@ constant r : rational = 1 / 2
 
 entry exec () {
   effect {
-    dorequire (true)
+    ()
   }
 }

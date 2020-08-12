@@ -91,6 +91,10 @@ let container_to_str c =
   | Partition  -> "partition"
   | View       -> "view"
 
+let pp_id fmt (id : lident) =
+  let id = unloc id in
+  Format.fprintf fmt "%a%s" (fun fmt _ -> if is_keyword id then pp_str fmt "%" else ()) () id
+
 let pp_container fmt c =
   Format.fprintf fmt "%s" (container_to_str c)
 
@@ -381,29 +385,31 @@ let rec pp_expr outer pos fmt a =
       Format.fprintf fmt "transfer %a%a"
         pp_simple_expr x
         (fun fmt -> function
-           | TTsimple dst               -> Format.fprintf fmt " to %a" pp_simple_expr dst
-           | TTcontract (dst, id, args) -> Format.fprintf fmt " to %a call %a(%a)" pp_simple_expr dst pp_id id (pp_list "," pp_simple_expr) args
-           | TTentry (id, arg)          -> Format.fprintf fmt " to entry %a(%a)" pp_id id pp_simple_expr arg
-           | TTself (id, args)          -> Format.fprintf fmt " to entry self.%a(%a)" pp_id id (pp_list "," pp_simple_expr) args
+           | TTsimple dst                 -> Format.fprintf fmt " to %a" pp_simple_expr dst
+           | TTcontract (dst, id, t, arg) -> Format.fprintf fmt " to %a call %a<%a>(%a)" pp_simple_expr dst pp_id id pp_type t pp_simple_expr arg
+           | TTentry (id, arg)            -> Format.fprintf fmt " to entry %a(%a)" pp_id id pp_simple_expr arg
+           | TTself (id, args)            -> Format.fprintf fmt " to entry self.%a(%a)" pp_id id (pp_list "," pp_simple_expr) args
         ) tr
     in
     (maybe_paren outer e_default pos pp) fmt (x, tr)
 
-  | Erequire x ->
+  | Edorequire (x, y) ->
 
-    let pp fmt x =
-      Format.fprintf fmt "dorequire (%a)"
+    let pp fmt (x, y) =
+      Format.fprintf fmt "dorequire (%a, %a)"
         pp_simple_expr x
+        pp_simple_expr y
     in
-    (maybe_paren outer e_default pos pp) fmt x
+    (maybe_paren outer e_default pos pp) fmt (x, y)
 
-  | Efailif x ->
+  | Edofailif (x, y) ->
 
-    let pp fmt x =
-      Format.fprintf fmt "dofailif (%a)"
+    let pp fmt (x, y) =
+      Format.fprintf fmt "dofailif (%a, %a)"
         pp_simple_expr x
+        pp_simple_expr y
     in
-    (maybe_paren outer e_default pos pp) fmt x
+    (maybe_paren outer e_default pos pp) fmt (x, y)
 
   | Efail x ->
 
@@ -590,6 +596,15 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_colon pos pp) fmt (t, arg)
 
+  | Eentrypoint (t, a, b) ->
+    let pp fmt (t, a, b) =
+      Format.fprintf fmt "entrypoint<%a>(%a, %a)"
+        pp_type t
+        (pp_expr e_default PNone) a
+        (pp_expr e_default PNone) b
+    in
+    (maybe_paren outer e_colon pos pp) fmt (t, a, b)
+
   | Eself x -> Format.fprintf fmt "self.%a" pp_id x
 
   | Eany -> Format.fprintf fmt "any"
@@ -606,7 +621,8 @@ and pp_else fmt (e : expr option) =
 
 and pp_literal fmt lit =
   match lit with
-  | Lnumber   n -> Format.fprintf fmt "%s" (Big_int.string_of_big_int n)
+  | Lint      n -> Format.fprintf fmt "%si" (Big_int.string_of_big_int n)
+  | Lnat      n -> Format.fprintf fmt "%s" (Big_int.string_of_big_int n)
   | Ldecimal  n -> Format.fprintf fmt "%s" n
   (* | Lrational (d, n) -> Format.fprintf fmt "%s div %s"
                           (Big_int.string_of_big_int d)
@@ -684,7 +700,7 @@ and pp_field fmt { pldesc = f; _ } =
 and pp_extension fmt { pldesc = e; _ } =
   match e with
   | Eextension (id, args) ->
-    Format.fprintf fmt "[%%%a%a%%]"
+    Format.fprintf fmt "[%%%%%a%a%%%%]"
       pp_id id
       pp_ext_args args
 
@@ -713,15 +729,12 @@ let pp_specification_variable fmt (sv : (lident * type_t * expr option) loced) =
       (pp_option (pp_prefix " = " (pp_expr e_equal PRight))) dv
 
 (* -------------------------------------------------------------------------- *)
-let pp_value_option fmt opt =
-  match opt with
-  | VOfrom e -> Format.fprintf fmt "from %a" pp_id e
-  | VOto   e -> Format.fprintf fmt "to %a"   pp_id e
 
 let pp_asset_option fmt opt =
   match opt with
-  | AOidentifiedby id -> Format.fprintf fmt "identified by %a" pp_id id
-  | AOsortedby id  -> Format.fprintf fmt "sorted by %a" pp_id id
+  | AOidentifiedby ids -> Format.fprintf fmt "identified by %a" (pp_list " " pp_id) ids
+  | AOsortedby id      -> Format.fprintf fmt "sorted by %a" pp_id id
+  | AOto id            -> Format.fprintf fmt "to %a" pp_id id
 
 let operation_enum_to_str e =
   match e with
@@ -954,14 +967,19 @@ let pp_entry_properties fmt (props : entry_properties) =
       Format.fprintf fmt "called by%a %a@\n"
         pp_extensions exts
         (pp_expr e_default PNone) e) props.calledby;
-  map_option (fun (cs, exts) ->
-      Format.fprintf fmt "require%a {@\n  @[%a@]@\n}@\n"
-        pp_extensions exts
-        pp_label_exprs cs) props.require;
-  map_option (fun (cs, exts) ->
-      Format.fprintf fmt "failif%a {@\n  @[%a@]@\n}@\n"
-        pp_extensions exts
-        pp_label_exprs cs) props.failif;
+  let pp_rf s1 s2 fmt (l, exts) =
+    Format.fprintf fmt "%s%a {@\n  @[%a@]@\n}@\n"
+      s1
+      pp_extensions exts
+      (pp_list ";@\n" (fun fmt (id, e, f) ->
+         Format.fprintf fmt "%a%a: %a"
+           pp_id id
+           (pp_option (fun fmt x -> Format.fprintf fmt " %s %a" s2 (pp_expr e_default PNone) x)) f
+           (pp_expr e_default PNone) e
+      )) l
+  in
+  pp_option (pp_rf "require" "otherwise") fmt props.require;
+  pp_option (pp_rf "failif" "with") fmt props.failif;
   (pp_list "@\n" pp_function) fmt (List.map unloc props.functions)
 
 let pp_transition fmt (to_, conditions, effect) =
@@ -988,13 +1006,12 @@ let rec pp_declaration fmt { pldesc = e; _ } =
       pp_extensions exts
       pp_id id
 
-  | Dvariable (id, typ, dv, opts, kind, invs, exts) ->
-    Format.fprintf fmt "%a%a %a : %a%a%a%a"
+  | Dvariable (id, typ, dv, kind, invs, exts) ->
+    Format.fprintf fmt "%a%a %a : %a%a%a"
       pp_str (match kind with | VKvariable -> "variable" | VKconstant -> "constant")
       pp_extensions exts
       pp_id id
       pp_type typ
-      (pp_option (pp_prefix " " (pp_list " " pp_value_option))) opts
       (pp_option (pp_prefix " = " (pp_expr e_equal PRight))) dv
       (pp_do_if (List.length invs > 0) (fun fmt x -> Format.fprintf fmt "@\nwith {@\n  @[%a@]@\n}" pp_label_exprs x)) invs
 
@@ -1069,11 +1086,6 @@ let rec pp_declaration fmt { pldesc = e; _ } =
     Format.fprintf fmt "namespace %a {@\n  @[%a@]@\n}"
       pp_id id
       (pp_list "\n" pp_declaration) ds
-
-  | Dentries (l, exts) ->
-    Format.fprintf fmt "entries%a {@\n  @[%a@]@\n}"
-      pp_extensions exts
-      (pp_list "@\n" (fun fmt (t, x) -> Format.fprintf fmt "<%a> %a" pp_type t pp_id x)) l
 
   | Dfunction f ->
     Format.fprintf fmt "%a"

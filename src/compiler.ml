@@ -104,8 +104,10 @@ let generate_target model =
   | None ->
     model
     |> raise_if_error post_model_error prune_properties
+    |> process_multi_keys
     |> replace_declvar_by_letin
     |> generate_api_storage
+    (* |> (fun (model : Model.model) -> Format.printf "%a@." (Printer_tools.pp_list " " Printer_model.pp_type) (Model.Utils.get_all_list_types model)) *)
     |> output
 
   (* | Solidity ->
@@ -173,6 +175,7 @@ let generate_target model =
   | LigoStorage ->
     model
     |> replace_ligo_ident
+    |> process_multi_keys
     |> replace_col_by_key_for_ckfield
     |> process_asset_state
     |> replace_assignfield_by_update
@@ -206,6 +209,7 @@ let generate_target model =
   | SmartPy ->
     model
     |> replace_col_by_key_for_ckfield
+    |> process_multi_keys
     |> process_asset_state
     |> replace_assignfield_by_update
     |> remove_add_update
@@ -239,6 +243,7 @@ let generate_target model =
   | Scaml ->
     model
     |> remove_add_update
+    |> process_multi_keys
     |> replace_update_by_set
     |> generate_storage
     |> replace_declvar_by_letin
@@ -290,6 +295,7 @@ let generate_target model =
   | Whyml ->
     model
     |> replace_whyml_ident
+    |> process_multi_keys
     |> replace_assignfield_by_update
     |> process_asset_state
     |> remove_add_update ~isformula:true
@@ -324,6 +330,7 @@ let generate_target model =
     |> replace_dotassetfield_by_dot
     |> transfer_shadow_variable_to_storage
     (* |> replace_instr_verif *)
+    |> eval_storage
     |> optimize
     |> generate_api_storage ~verif:true
     |> filter_api_storage
@@ -350,9 +357,9 @@ let compile (filename, channel) =
   |> raise_if_error post_model_error check_containers_asset
   |> raise_if_error post_model_error check_empty_container_on_initializedby
   |> raise_if_error post_model_error check_empty_container_on_asset_default_value
-  |> cont !Options.opt_ptc (Format.printf "%a@." Printer_model_type_contract.pp_ptc_model)
-  |> raise_if_error post_model_error check_and_replace_init_caller
+  |> raise_if_error post_model_error (check_and_replace_init_caller ~doit:!Options.with_init_caller)
   |> raise_if_error post_model_error check_duplicated_keys_in_asset
+  |> raise_if_error post_model_error check_asset_key
   |> generate_target
 
 let close dispose channel =
@@ -404,8 +411,6 @@ let main () =
       "--focus-property", Arg.String (fun s -> Options.opt_property_focused := s), " Same as -fp";
       "-sci", Arg.String (fun s -> Options.opt_caller := s), " Set caller address for initialization";
       "--set-caller-init", Arg.String (fun s -> Options.opt_caller := s), " Same as -sci";
-      "-ptc", Arg.Set Options.opt_ptc, " Print type contract in archetype syntax";
-      "--print-type-contract", Arg.Set Options.opt_ptc, " Same as -ptc";
       "-lsp", Arg.String (fun s -> match s with
           | "errors" -> Options.opt_lsp := true; Lsp.kind := Errors
           | "outline" -> Options.opt_lsp := true; Lsp.kind := Outline
@@ -415,7 +420,7 @@ let main () =
             exit 2), "<request> Generate language server protocol response to <resquest>";
       "--list-lsp-request", Arg.Unit (fun _ -> Format.printf "request available:@\n  errors@\n  outline@\n"; exit 0), " List available request for lsp";
       "--service", Arg.String (fun s -> match s with
-          | "get_properties" -> Options.opt_service := true; Services.service := GetProperties
+          | "get_properties" -> Options.opt_service := true; Options.with_init_caller := false; Services.service := GetProperties
           |  s ->
             Format.eprintf
               "Unknown service %s (--list-services to view all services)@." s;
@@ -442,12 +447,6 @@ let main () =
   let ochannel : in_channel option ref = ref None  in
   Arg.parse arg_list (fun s -> (ofilename := s;
                                 ochannel := Some (open_in s))) arg_usage;
-
-  (* if List.length !Options.opt_vids > 0
-     then (
-     List.iter (fun x -> Format.printf "%s@\n" x) !Options.opt_vids;
-     exit 1
-     ); *)
 
   let filename, channel, dispose =
     match !ochannel with
@@ -476,21 +475,11 @@ let main () =
     exit 1
   | Error.ParseError _ ->
     close dispose channel;
-    (* List.map (fun (_ps, _s) -> ()) l; *)
-    (* Format.eprintf "%s.\n" s *)
     exit 1
   | Error.Stop i
   | Stop_error i ->
     close dispose channel;
     exit i
-(* | Reduce.ReduceError (msg, l) ->
-   close dispose channel;
-   Printf.eprintf "%s%s.\n" msg (match l with | None -> "" | Some l -> (Location.tostring l));
-   exit 1
-   | Reduce.ErrorAcceptTransfer (str, loc, locs) ->
-   close dispose channel;
-   Printf.eprintf "Error: accept transfer must be set to '%s' at %s because 'transferred' is read at %s.\n" str (Location.tostring loc) (List.fold_right (fun i accu -> (Location.tostring i) ^ accu) locs "");
-   exit 1 *)
 
 (* -------------------------------------------------------------------- *)
 let _ = main ()

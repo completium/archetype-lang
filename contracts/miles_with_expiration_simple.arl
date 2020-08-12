@@ -3,32 +3,26 @@ archetype miles_with_expiration_simple
 constant admin : role = @tz1aazS5ms5cbGkb6FN1wvWmN7yrMTTcr6wB
 
 asset mile identified by id {
-    id : string;
-    expiration : date;
-    quantity : int
+  id : string;
+  expiration : date;
+  quantity : int
 } with {
-    i0: quantity > 0;
+  i0: quantity > 0;
 }
 
 asset owner identified by addr {
-    addr : address;
-    miles : partition<mile> = [];
+  addr : address;
+  miles : partition<mile> = [];
 }
 
 entry add (ow : address, newmile_id : string, newmile_expiration : date, newmile_quantity : int) {
-    called by admin
-	failif {
-	    f1: mile.contains(newmile_id)
-	}
-	effect {
-	    if owner.contains(ow) then
-	        owner[ow].miles.add({newmile_id; newmile_expiration; newmile_quantity})
-	    else
-	        owner.add({ addr = ow; miles = [{newmile_id; newmile_expiration; newmile_quantity}] })
-
-        // TODO: replace it by:
-        // owner.addupdate(ow, { miles += [{newmile_id; newmile_expiration; newmile_quantity}] })
-	}
+  called by admin
+  failif {
+    f1: mile.contains(newmile_id)
+  }
+  effect {
+    owner.addupdate(ow, { miles += [{id = newmile_id; expiration = newmile_expiration; quantity = newmile_quantity}] })
+  }
 }
 
 entry consume (ow : address, qty : int) {
@@ -57,7 +51,7 @@ entry consume (ow : address, qty : int) {
     }
     effect {
         var valid_miles = owner[ow].miles.select(the.expiration > now);
-        dorequire ( valid_miles.sum(the.quantity) >= qty );
+        dorequire (valid_miles.sum(the.quantity) >= qty, "NotEnoughMiles");
         var remainder = qty;
         for:loop m in valid_miles do
             if remainder > 0 then (

@@ -1,0 +1,15 @@
+archetype no_sort_on_key_with_multi_key
+
+asset my_asset identified by id0 id1 sorted by id1 {
+  id0 : nat;
+  id1 : int;
+  v : string;
+} initialized by {
+  { 0; 0i; "mystr_0" };
+  { 1; 1i; "mystr_1" };
+  { 2; 2i; "mystr_2" }
+}
+
+entry exec () {
+  ()
+}

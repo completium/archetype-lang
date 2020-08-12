@@ -44,28 +44,30 @@ let rec pp_type fmt t =
     Format.fprintf fmt "state"
   | Tenum en ->
     Format.fprintf fmt "%a" pp_id en
-  | Tcontract cn ->
-    Format.fprintf fmt "%a" pp_id cn
   | Tbuiltin b -> pp_btyp fmt b
   | Tcontainer (t, c) ->
     Format.fprintf fmt "%a %a"
       pp_type t
       pp_container c
   | Tlist t ->
-    Format.fprintf fmt "%a list"
+    Format.fprintf fmt "list<%a>"
       pp_type t
   | Toption t ->
-    Format.fprintf fmt "%a option"
+    Format.fprintf fmt "option<%a>"
       pp_type t
   | Ttuple ts ->
     Format.fprintf fmt "%a"
       (pp_list " * " pp_type) ts
   | Tset k ->
-    Format.fprintf fmt "%a set"
-      pp_btyp k
-  | Tmap (k, v) ->
-    Format.fprintf fmt "(%a, %a) map"
-      pp_btyp k
+    Format.fprintf fmt "set<%a>"
+      pp_type k
+  | Tmap (false, k, v) ->
+    Format.fprintf fmt "map<%a, %a>"
+      pp_type k
+      pp_type v
+  | Tmap (true, k, v) ->
+    Format.fprintf fmt "bigmap<%a, %a>"
+      pp_type k
       pp_type v
   | Trecord id ->
     Format.fprintf fmt "%a" pp_id id
@@ -75,8 +77,6 @@ let rec pp_type fmt t =
     Format.fprintf fmt "storage"
   | Toperation ->
     Format.fprintf fmt "operation"
-  | Tentry ->
-    Format.fprintf fmt "entry"
   | Tentrysig t ->
     Format.fprintf fmt "entrysig<%a>" pp_type t
   | Tprog _
@@ -128,6 +128,12 @@ let pp_iter_container_kind f fmt = function
   | ICKlist  mt         -> Format.fprintf fmt "%a" f mt
   | ICKmap   mt         -> Format.fprintf fmt "%a" f mt
 
+let pp_transfer_kind f fmt = function
+  | TKsimple d           -> Format.fprintf fmt "to %a" f d
+  | TKcall (id, _, d, a) -> Format.fprintf fmt "to %a call %s(%a)" f d id f a
+  | TKentry (e, a)       -> Format.fprintf fmt "to entry %a(%a)" f e f a
+  | TKself (id, args)    -> Format.fprintf fmt "to entry self.%a(%a)" pp_str id (pp_list ", " (fun fmt (id, x) -> Format.fprintf fmt "%s = %a" id f x)) args
+
 let pp_mterm fmt (mt : mterm) =
   let rec f fmt (mtt : mterm) =
     match mtt.node with
@@ -158,19 +164,19 @@ let pp_mterm fmt (mt : mterm) =
 
     (* assign *)
 
-    | Massign (op, Avar k, v) ->
+    | Massign (op, _, Avar k, v) ->
       Format.fprintf fmt "%a %a %a"
         pp_id k
         pp_operator op
         f v
 
-    | Massign (op, Avarstore l, r) ->
+    | Massign (op, _, Avarstore l, r) ->
       Format.fprintf fmt "s.%a %a %a"
         pp_id l
         pp_operator op
         f r
 
-    | Massign (op, Aasset (an, fn, k), v) ->
+    | Massign (op, _, Aasset (an, fn, k), v) ->
       Format.fprintf fmt "%a[%a].%a %a %a"
         pp_id an
         f k
@@ -178,22 +184,27 @@ let pp_mterm fmt (mt : mterm) =
         pp_operator op
         f v
 
-    | Massign (op, Arecord (_rn, fn, r), v) ->
+    | Massign (op, _, Arecord (_rn, fn, r), v) ->
       Format.fprintf fmt "%a.%a %a %a"
         f r
         pp_id fn
         pp_operator op
         f v
 
-    | Massign (_op, Astate, x) ->
+    | Massign (_op, _, Astate, x) ->
       Format.fprintf fmt "state = %a"
         f x
 
-    | Massign (_op, Aassetstate (an, k), v) ->
+    | Massign (_op, _, Aassetstate (an, k), v) ->
       Format.fprintf fmt "state_%a(%a) = %a"
         pp_ident an
         f k
         f v
+
+    | Massign (_op, _, Aoperations, v) ->
+      Format.fprintf fmt "operations = %a"
+        f v
+
 
 
     (* control *)
@@ -252,62 +263,21 @@ let pp_mterm fmt (mt : mterm) =
     (* effect *)
 
     | Mfail ft ->
-      let pp_fail_type fmt = function
-        | Invalid e -> f fmt e
-        | InvalidCaller -> Format.fprintf fmt "\"invalid caller\""
-        | InvalidCondition c ->
-          Format.fprintf fmt "\"require %afailed\""
-            (pp_option (pp_postfix " " pp_str)) c
-        | NoTransfer -> Format.fprintf fmt "\"no transfer\""
-        | InvalidState -> Format.fprintf fmt "\"invalid state\""
-      in
       Format.fprintf fmt "fail (%a)"
-        pp_fail_type ft
+        (pp_fail_type f) ft
 
-    | Mtransfer (v, d) ->
-      Format.fprintf fmt "transfer %a to %a"
+    | Mtransfer (v, k) ->
+      Format.fprintf fmt "transfer %a %a"
         f v
-        f d
-
-    | Mcallcontract (v, d, _, fid, args) ->
-      let pp fmt (v, d, fid, args) =
-        Format.fprintf fmt "transfer %a to %a call %a (%a)"
-          f v
-          f d
-          pp_id fid
-          (pp_list ", " (fun fmt (_, x) -> f fmt x)) args
-      in
-      pp fmt (v, d, fid, args)
-
-    | Mcallentry (v, e, arg) ->
-      let pp fmt (v, e, arg) =
-        Format.fprintf fmt "transfer %a to entry %a(%a)"
-          f v
-          pp_id e
-          f arg
-      in
-      pp fmt (v, e, arg)
-
-    | Mcallself (v, e, args) ->
-      let pp fmt (v, e, args) =
-        Format.fprintf fmt "transfer %a to entry self.%a(%a)"
-          f v
-          pp_id e
-          (pp_list ", " f) args
-      in
-      pp fmt (v, e, args)
+        (pp_transfer_kind f) k
 
 
     (* entrypoint *)
 
-    | Mentrycontract (c, id) ->
-      Format.fprintf fmt "%a.%a"
-        f c
-        pp_id id
-
-    | Mentrypoint (a, s) ->
-      Format.fprintf fmt "entrypoint(%a, %a)"
-        f a
+    | Mentrypoint (t, a, s) ->
+      Format.fprintf fmt "entrypoint<%a>(%a, %a)"
+        pp_type t
+        pp_id a
         f s
 
     | Mself id ->
@@ -334,7 +304,7 @@ let pp_mterm fmt (mt : mterm) =
     | Mbool b -> pp_str fmt (if b then "true" else "false")
     | Menum v -> pp_str fmt v
     | Mrational (n, d) ->
-      Format.fprintf fmt "(%a / %a)"
+      Format.fprintf fmt "rat(%a, %a)"
         pp_big_int n
         pp_big_int d
     | Mstring v ->
@@ -901,8 +871,8 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "issome (%a)"
         f x
 
-    | Mgetopt x ->
-      Format.fprintf fmt "getopt (%a)"
+    | Moptget x ->
+      Format.fprintf fmt "opt_get (%a)"
         f x
 
     | Mfloor x ->
@@ -911,6 +881,10 @@ let pp_mterm fmt (mt : mterm) =
 
     | Mceil x ->
       Format.fprintf fmt "ceil (%a)"
+        f x
+
+    | Mtostring (_, x) ->
+      Format.fprintf fmt "to_string (%a)"
         f x
 
     | Mpack x ->
@@ -961,7 +935,7 @@ let pp_mterm fmt (mt : mterm) =
     (* variable *)
 
     | Mvar (an, Vassetstate k) -> Format.fprintf fmt "state_%a(%a)" pp_str (Location.unloc an) f k
-    | Mvar(v, Vstorevar) -> pp_id fmt v
+    | Mvar(v, Vstorevar) -> Format.fprintf fmt "s.%a" pp_id v
     | Mvar(v, Vstorecol) -> pp_id fmt v
     | Mvar(v, Venumval)  -> pp_id fmt v
     | Mvar(v, Vlocal)    -> pp_id fmt v
@@ -1036,6 +1010,20 @@ let pp_mterm fmt (mt : mterm) =
           f t
       in
       pp fmt (c, t)
+
+    | Mnattoint e ->
+      let pp fmt e =
+        Format.fprintf fmt "nat_to_int (%a)"
+          f e
+      in
+      pp fmt e
+
+    | Mnattorat e ->
+      let pp fmt e =
+        Format.fprintf fmt "nat_to_rat (%a)"
+          f e
+      in
+      pp fmt e
 
     | Minttorat e ->
       let pp fmt e =
@@ -1249,17 +1237,19 @@ let pp_api_list fmt = function
   | Lnth t      -> Format.fprintf fmt "list_nth\t %a" pp_type t
 
 let pp_api_builtin fmt = function
-  | Bmin    t -> Format.fprintf fmt "min on %a"    pp_type t
-  | Bmax    t -> Format.fprintf fmt "max on %a"    pp_type t
-  | Babs    t -> Format.fprintf fmt "abs on %a"    pp_type t
-  | Bconcat t -> Format.fprintf fmt "concat on %a" pp_type t
-  | Bslice  t -> Format.fprintf fmt "slice on %a"  pp_type t
-  | Blength t -> Format.fprintf fmt "length on %a" pp_type t
-  | Bisnone t -> Format.fprintf fmt "isnone on %a" pp_type t
-  | Bissome t -> Format.fprintf fmt "issome on %a" pp_type t
-  | Bgetopt t -> Format.fprintf fmt "getopt on %a" pp_type t
-  | Bfloor    -> pp_str fmt "floor"
-  | Bceil     -> pp_str fmt "ceil"
+  | Bmin    t   -> Format.fprintf fmt "min on %a"    pp_type t
+  | Bmax    t   -> Format.fprintf fmt "max on %a"    pp_type t
+  | Babs    t   -> Format.fprintf fmt "abs on %a"    pp_type t
+  | Bconcat t   -> Format.fprintf fmt "concat on %a" pp_type t
+  | Bslice  t   -> Format.fprintf fmt "slice on %a"  pp_type t
+  | Blength t   -> Format.fprintf fmt "length on %a" pp_type t
+  | Bisnone t   -> Format.fprintf fmt "isnone on %a" pp_type t
+  | Bissome t   -> Format.fprintf fmt "issome on %a" pp_type t
+  | Boptget t   -> Format.fprintf fmt "getopt on %a" pp_type t
+  | Bfloor      -> pp_str fmt "floor"
+  | Bceil       -> pp_str fmt "ceil"
+  | Btostring t -> Format.fprintf fmt "to_string on %a" pp_type t
+  | Bfail t     -> Format.fprintf fmt "fail on %a" pp_type t
 
 let pp_api_internal fmt = function
   | RatEq        -> Format.fprintf fmt "rat_eq"
@@ -1316,10 +1306,11 @@ let pp_asset_item fmt (item : asset_item) =
 let pp_asset fmt (asset : asset) =
   let fields = List.filter (fun f -> not f.shadow) asset.values in
   let shadow_fields = List.filter (fun f -> f.shadow) asset.values in
-  Format.fprintf fmt "asset %a identified by %a%a {@\n  @[%a@]@\n}%a%a%a%a@\n"
+  Format.fprintf fmt "asset %a identified by %a%a%a {@\n  @[%a@]@\n}%a%a%a%a@\n"
     pp_id asset.name
-    pp_str asset.key
-    (pp_do_if (not (List.is_empty asset.sort)) (fun fmt xs -> Format.fprintf fmt " sorted by %a" (pp_list ";@\n" pp_str) xs)) asset.sort
+    (pp_list " " pp_str) asset.keys
+    (pp_do_if (asset.big_map) (pp_str)) " to big_map"
+    (pp_do_if (not (List.is_empty asset.sort)) (fun fmt xs -> Format.fprintf fmt " sorted by %a" (pp_list ";@\n" pp_id) xs)) asset.sort
     (pp_list "@\n" pp_asset_item) fields
     (pp_do_if (not (List.is_empty shadow_fields)) (fun fmt xs -> Format.fprintf fmt "@\nshadow {@\n  @[%a@]@\n}@\n" (pp_list ";@\n" pp_asset_item) xs)) shadow_fields
     (pp_do_if (not (List.is_empty asset.init)) (fun fmt xs -> Format.fprintf fmt "@\ninitialized by {@\n  @[%a@]@\n}@\n" (pp_list ";@\n" pp_mterm) xs)) asset.init
@@ -1336,23 +1327,11 @@ let pp_record fmt (r : record) =
     pp_id r.name
     (pp_list "@\n" pp_record_field) r.fields
 
-let pp_contract_signature fmt (cs : contract_signature) =
-  Format.fprintf fmt "%a (%a)"
-    pp_id cs.name
-    (pp_list ", " (fun fmt (id, type_) -> Format.fprintf fmt "%a : %a" pp_id id pp_type type_)) cs.args
-
-let pp_contract fmt (contract : contract) =
-  Format.fprintf fmt "contract %a {@\n@[<v 2>  %a@]@\n}%a@\n"
-    pp_id contract.name
-    (pp_list "@\n" pp_contract_signature) contract.signatures
-    (pp_option pp_mterm) contract.init
-
 let pp_decl fmt = function
   | Dvar v -> pp_var fmt v
   | Denum e -> pp_enum fmt e
   | Dasset a -> pp_asset fmt a
   | Drecord r -> pp_record fmt r
-  | Dcontract c -> pp_contract fmt c
 
 let pp_storage_item fmt (si : storage_item) =
   Format.fprintf fmt "%a : %a%a"

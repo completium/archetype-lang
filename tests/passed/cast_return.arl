@@ -1,0 +1,16 @@
+archetype cast_return
+
+variable res : int = 0
+
+function f () : int {
+  return 2
+}
+
+entry exec () {
+  specification {
+    s0: res = 2;
+  }
+  effect {
+    res := f();
+  }
+}

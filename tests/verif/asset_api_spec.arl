@@ -1,4 +1,4 @@
-archetype asset_api_specifications
+archetype asset_api_spec
 
 asset assetA {
   ida : string;

@@ -68,13 +68,11 @@ let pp_model fmt (model : model) =
       Format.fprintf fmt "state"
     | Tenum en ->
       Format.fprintf fmt "%a" pp_id en
-    | Tcontract cn ->
-      Format.fprintf fmt "%a" pp_id cn
     | Tbuiltin b -> pp_btyp fmt b
     | Tcontainer (Tasset an, (Aggregate | Partition)) ->
       let _, ak = Utils.get_asset_key model (unloc an) in
       Format.fprintf fmt "sp.TSet(%a)"
-        pp_btyp ak
+        pp_type ak
     | Tcontainer (t, c) ->
       Format.fprintf fmt "%a %a"
         pp_type t
@@ -90,10 +88,14 @@ let pp_model fmt (model : model) =
         (pp_list " * " pp_type) ts
     | Tset k ->
       Format.fprintf fmt "%a set"
-        pp_btyp k
-    | Tmap (k, v) ->
+        pp_type k
+    | Tmap (true, k, v) ->
+      Format.fprintf fmt "(%a, %a) bigmap"
+        pp_type k
+        pp_type_ v
+    | Tmap (false, k, v) ->
       Format.fprintf fmt "(%a, %a) map"
-        pp_btyp k
+        pp_type k
         pp_type_ v
     | Trecord id ->
       Format.fprintf fmt "%a" pp_id id
@@ -103,8 +105,6 @@ let pp_model fmt (model : model) =
       Format.fprintf fmt "storage"
     | Toperation ->
       Format.fprintf fmt "operation"
-    | Tentry ->
-      Format.fprintf fmt "entry"
     | Tentrysig t ->
       Format.fprintf fmt "entrysig<%a>" pp_type t
     | Tprog _
@@ -227,7 +227,7 @@ let pp_model fmt (model : model) =
            | View -> Format.fprintf fmt ", v"
            | Field (_an, _fn) -> Format.fprintf fmt ", ka"
         ) ()
-        pp_btyp tk
+        pp_type tk
     (* Format.fprintf fmt
        "def select_%a (self, c, p):@\n  \
        reduce(@\n  \
@@ -277,7 +277,7 @@ let pp_model fmt (model : model) =
                 #m[i] = x@\n    \
                 i += 1@\n  \
                 return m[idx]"
-               pp_btyp tk
+               pp_type tk
                an
 
            | View -> Format.fprintf fmt "sp.failwith(\"TODO\")"
@@ -350,9 +350,11 @@ let pp_model fmt (model : model) =
     | Blength t -> Format.fprintf fmt "length on %a" pp_type t
     | Bisnone t -> Format.fprintf fmt "isnone on %a" pp_type t
     | Bissome t -> Format.fprintf fmt "issome on %a" pp_type t
-    | Bgetopt t -> Format.fprintf fmt "getopt on %a" pp_type t
+    | Boptget t -> Format.fprintf fmt "getopt on %a" pp_type t
     | Bfloor    -> pp_str fmt "floor"
     | Bceil     -> pp_str fmt "ceil"
+    | Btostring t -> Format.fprintf fmt "to_string on %a" pp_type t
+    | Bfail t     -> Format.fprintf fmt "fail on %a" pp_type t
   in
 
   let pp_api_internal fmt = function
@@ -426,6 +428,13 @@ let pp_model fmt (model : model) =
     | CKfield (an, fn, _) -> Format.fprintf fmt "f_%s_%s" an fn
   in
 
+  let pp_transfer_kind f fmt = function
+    | TKsimple d        -> Format.fprintf fmt "to %a" f d
+    | TKcall (id, _, d, a) -> Format.fprintf fmt "to %a call %s(%a)" f d id f a
+    | TKentry (e, a)    -> Format.fprintf fmt "to entry %a(%a)" f e f a
+    | TKself (id, args) -> Format.fprintf fmt "to entry self.%a(%a)" pp_str id (pp_list ", " (fun fmt (id, x) -> Format.fprintf fmt "%s = %a" id f x)) args
+  in
+
   let pp_mterm (env : Printer_model_tools.env) fmt (mt : mterm) =
     let rec f fmt (mtt : mterm) =
       match mtt.node with
@@ -461,19 +470,19 @@ let pp_model fmt (model : model) =
 
       (* assign *)
 
-      | Massign (op, Avar l, r) ->
+      | Massign (op, _, Avar l, r) ->
         Format.fprintf fmt "%a %a %a"
           pp_id l
           pp_operator op
           f r
 
-      | Massign (op, Avarstore l, r) ->
+      | Massign (op, _, Avarstore l, r) ->
         Format.fprintf fmt "self.data.%a %a %a"
           pp_id l
           pp_operator op
           f r
 
-      | Massign (op, Aasset (an, fn, k), v) ->
+      | Massign (op, _, Aasset (an, fn, k), v) ->
         Format.fprintf fmt "%a[%a].%a %a %a"
           pp_id an
           f k
@@ -481,21 +490,25 @@ let pp_model fmt (model : model) =
           pp_operator op
           f v
 
-      | Massign (op, Arecord (_rn, fn, r), v) ->
+      | Massign (op, _, Arecord (_rn, fn, r), v) ->
         Format.fprintf fmt "%a.%a %a %a"
           f r
           pp_id fn
           pp_operator op
           f v
 
-      | Massign (_op, Astate, x) ->
+      | Massign (_op, _, Astate, x) ->
         Format.fprintf fmt "self.data.state = %a"
           f x
 
-      | Massign (_op, Aassetstate (an, k), v) ->
+      | Massign (_op, _, Aassetstate (an, k), v) ->
         Format.fprintf fmt "state_%a(%a) = %a"
           pp_ident an
           f k
+          f v
+
+      | Massign (_op, _, Aoperations, v) ->
+        Format.fprintf fmt "operations = %a"
           f v
 
 
@@ -539,62 +552,24 @@ let pp_model fmt (model : model) =
       (* effect *)
 
       | Mfail ft ->
-        let pp_fail_type fmt = function
-          | Invalid e -> f fmt e
-          | InvalidCaller -> Format.fprintf fmt "invalid caller"
-          | InvalidCondition c ->
-            Format.fprintf fmt "require %afailed"
-              (pp_option (pp_postfix " " pp_str)) c
-          | NoTransfer -> Format.fprintf fmt "no transfer"
-          | InvalidState -> Format.fprintf fmt "invalid state"
-        in
         Format.fprintf fmt "sp.failwith (\"%a\")"
-          pp_fail_type ft
+          (pp_fail_type f) ft
 
-      | Mtransfer (v, d) ->
-        Format.fprintf fmt "sp.send(%a, %a)"
-          f d
+      | Mtransfer (v, k) ->
+
+        Format.fprintf fmt "transfer %a %a"
           f v
-
-      | Mcallcontract (v, d, _, fid, args) ->
-        let pp fmt (v, d, fid, args) =
-          Format.fprintf fmt "sp.transfer(%a(%a), %a, %a)"
-            pp_id fid
-            (pp_list ", " (fun fmt (_, x) -> f fmt x)) args
-            f v
-            f d
-        in
-        pp fmt (v, d, fid, args)
-
-      | Mcallentry (v, e, arg) ->
-        let pp fmt (v, e, arg) =
-          Format.fprintf fmt "transfer %a to entry %a(%a)"
-            f v
-            pp_id e
-            f arg
-        in
-        pp fmt (v, e, arg)
-
-      | Mcallself (v, e, args) ->
-        let pp fmt (v, e, args) =
-          Format.fprintf fmt "transfer %a to entry self.%a(%a)"
-            f v
-            pp_id e
-            (pp_list ", " f) args
-        in
-        pp fmt (v, e, args)
+          (pp_transfer_kind f) k
+      (* Format.fprintf fmt "sp.send(%a, %a)"
+         f d
+         f v *)
 
 
       (* entrypoint *)
 
-      | Mentrycontract (c, id) ->
-        Format.fprintf fmt "%a.%a"
-          f c
-          pp_id id
-
-      | Mentrypoint (a, s) ->
-        Format.fprintf fmt "entrypoint(%a, %a)"
-          f a
+      | Mentrypoint (_, a, s) ->
+        Format.fprintf fmt "entrypoint(\"%a\", %a)"
+          pp_id a
           f s
 
       | Mself id ->
@@ -691,7 +666,7 @@ let pp_model fmt (model : model) =
         in
         Format.fprintf fmt "sp.set(l=[%a], t= %a)"
           (pp_list ", " f) l
-          pp_btyp t
+          pp_type t
 
       | Mlitlist l ->
         let t =
@@ -708,7 +683,7 @@ let pp_model fmt (model : model) =
           (fun fmt _ -> begin
                let k, v =
                  match mtt.type_ with
-                 | Tmap (k, v) -> k, v
+                 | Tmap (_, k, v) -> k, v
                  | _ -> assert false
                in
                Format.fprintf fmt "sp.map(%atkey=%a, tvalue= %a)"
@@ -717,7 +692,7 @@ let pp_model fmt (model : model) =
                       | [] -> ()
                       | _  -> Format.fprintf fmt "l = {%a}, " (pp_list ", " (fun fmt (k, v) -> Format.fprintf fmt "%a : %a" f k f v)) l
                     end) l
-                 pp_btyp k
+                 pp_type k
                  pp_type v
              end)
           ()
@@ -1228,7 +1203,7 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "issome (%a)"
           f x
 
-      | Mgetopt x ->
+      | Moptget x ->
         Format.fprintf fmt "getopt (%a)"
           f x
 
@@ -1238,6 +1213,10 @@ let pp_model fmt (model : model) =
 
       | Mceil x ->
         Format.fprintf fmt "ceil (%a)"
+          f x
+
+      | Mtostring (_, x) ->
+        Format.fprintf fmt "to_string (%a)"
           f x
 
       | Mpack x ->
@@ -1370,6 +1349,20 @@ let pp_model fmt (model : model) =
         in
         pp fmt (c, t)
 
+      | Mnattoint e ->
+        let pp fmt e =
+          Format.fprintf fmt "nat_to_int (%a)"
+            f e
+        in
+        pp fmt e
+
+      | Mnattorat e ->
+        let pp fmt e =
+          Format.fprintf fmt "nat_to_rat (%a)"
+            f e
+        in
+        pp fmt e
+
       | Minttorat e ->
         let pp fmt e =
           Format.fprintf fmt "int_to_rat (%a)"
@@ -1450,7 +1443,6 @@ let pp_model fmt (model : model) =
     | Denum _e     -> ()
     | Dasset _a    -> ()
     | Drecord _r   -> ()
-    | Dcontract _c -> ()
   in
 
   let pp_decls (env : env) (fmt : Format.formatter) _ =

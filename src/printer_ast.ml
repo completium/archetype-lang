@@ -51,8 +51,6 @@ let rec pp_ptyp fmt (t : ptyp) =
     Format.fprintf fmt "%a" pp_id i
   | Tenum en ->
     Format.fprintf fmt "%a" pp_id en
-  | Tcontract cn ->
-    Format.fprintf fmt "%a" pp_id cn
   | Tbuiltin b -> pp_vtyp fmt b
   | Tcontainer (t, c) ->
     Format.fprintf fmt "%a %a"
@@ -76,8 +74,6 @@ let rec pp_ptyp fmt (t : ptyp) =
       (pp_list " * " pp_ptyp) ts
   | Toperation ->
     Format.fprintf fmt "operation"
-  | Tentry ->
-    Format.fprintf fmt "entry"
   | Tentrysig et ->
     Format.fprintf fmt "entrysig<%a>" pp_ptyp et
   | Ttrace t ->
@@ -94,8 +90,8 @@ let pp_struct_poly pp_node fmt (s : 'a struct_poly) =
 
 let pp_bval fmt (bval : bval) =
   let pp_node fmt = function
-    | BVint v           -> pp_big_int fmt v
-    | BVuint v          -> pp_big_int fmt v
+    | BVint v           -> Format.fprintf fmt "%ai" pp_big_int v
+    | BVnat v           -> pp_big_int fmt v
     | BVbool v          -> pp_str fmt (if v then "true" else "false")
     | BVenum v          -> pp_str fmt v
     | BVrational (n, d) -> Format.fprintf fmt "(%a / %a)" pp_big_int n pp_big_int d
@@ -218,8 +214,8 @@ let to_const = function
   | Csum            -> "sum"
   | Cunpack         -> "unpack"
   | Cupdate         -> "update"
-  | Centrypoint     -> "entrypoint"
   | Cmkoperation    -> "mkoperation"
+  | Ctostring       -> "to_string"
   (* set *)
   | Csadd           -> "set_add"
   | Csremove        -> "set_remove"
@@ -484,6 +480,14 @@ let rec pp_pterm fmt (pterm : pterm) =
       in
       (pp_no_paren pp) fmt id
 
+    | Pentrypoint (t, a, b) ->
+      let pp fmt (t, a, b) =
+        Format.fprintf fmt "entrypoint<%a>(%a, %a)"
+          pp_ptyp  t
+          pp_id a
+          pp_pterm b
+      in
+      (pp_no_paren pp) fmt (t, a, b)
   in
   pp_struct_poly pp_node fmt pterm
 
@@ -597,7 +601,7 @@ let rec pp_instruction fmt (i : instruction) =
       in
       (pp_with_paren pp) fmt (m, ps)
 
-    | Iassign (op, `Var id, value) ->
+    | Iassign (op, _, `Var id, value) ->
       let pp fmt (op, id, value) =
         Format.fprintf fmt "%a %a %a"
           pp_id id
@@ -606,7 +610,7 @@ let rec pp_instruction fmt (i : instruction) =
       in
       (pp_with_paren pp) fmt (op, id, value)
 
-    | Iassign (op, `Field (an, k, fn), value) ->
+    | Iassign (op, _, `Field (an, k, fn), value) ->
       let pp fmt (op, an, k, fn, value) =
         Format.fprintf fmt "%a[%a].%a %a %a"
           pp_id an
@@ -617,23 +621,24 @@ let rec pp_instruction fmt (i : instruction) =
       in
       (pp_with_paren pp) fmt (op, an, k, fn, value)
 
-    | Irequire (k, pt) ->
-      let pp fmt (k, pt) =
-        Format.fprintf fmt "%a (%a)"
-          pp_str (if k then "require" else "failwith")
+    | Irequire (k, pt, f) ->
+      let pp fmt (k, pt, f) =
+        Format.fprintf fmt "%a (%a, %a)"
+          pp_str (if k then "dorequire" else "dofailif")
           pp_pterm pt
+          pp_pterm f
       in
-      (pp_with_paren pp) fmt (k, pt)
+      (pp_with_paren pp) fmt (k, pt, f)
 
     | Itransfer (value, tr) ->
       let pp fmt (value, tr) =
         Format.fprintf fmt "transfer %a%a"
           pp_pterm value
           (fun fmt -> function
-             | TTsimple dst               -> Format.fprintf fmt " to %a" pp_pterm dst
-             | TTcontract (dst, id, args) -> Format.fprintf fmt " to %a call %a(%a)" pp_pterm dst pp_id id (pp_list "," pp_pterm) args
-             | TTentry (id, arg)          -> Format.fprintf fmt " to entry %a(%a)" pp_id id pp_pterm arg
-             | TTself (id, args)          -> Format.fprintf fmt " to entry self.%a(%a)" pp_id id (pp_list "," pp_pterm) args
+             | TTsimple dst                 -> Format.fprintf fmt " to %a" pp_pterm dst
+             | TTcontract (dst, id, t, arg) -> Format.fprintf fmt " to %a call %a<%a>(%a)" pp_pterm dst pp_id id pp_ptyp t pp_pterm arg
+             | TTentry (e, arg)             -> Format.fprintf fmt " to entry %a(%a)" pp_pterm e pp_pterm arg
+             | TTself (id, args)            -> Format.fprintf fmt " to entry self.%a(%a)" pp_id id (pp_list "," (fun fmt (id, v) ->  Format.fprintf fmt "%a = %a" pp_id id pp_pterm v)) args
           ) tr
       in
       (pp_with_paren pp) fmt (value, tr)
@@ -833,12 +838,10 @@ let pp_security fmt (s : security) =
       (pp_no_empty_list pp_security_item) s.items
 
 let pp_variable fmt (v : lident variable) =
-  Format.fprintf fmt "%s %a : %a%a%a%a%a@\n"
+  Format.fprintf fmt "%s %a : %a%a%a@\n"
     (if v.constant then "constant" else "variable")
     pp_id v.decl.name
     pp_ptyp (Option.get v.decl.typ)
-    (pp_option (pp_prefix " from " pp_qualid)) v.from
-    (pp_option (pp_prefix " to " pp_qualid)) v.to_
     (pp_option (pp_prefix " = " pp_pterm)) v.decl.default
     (fun fmt l ->
        if List.is_empty l
@@ -855,10 +858,11 @@ let pp_field fmt (f : lident decl_gen) =
 let pp_asset fmt (a : lident asset_struct) =
   let fields = List.filter (fun f -> not f.shadow) a.fields in
   let shadow_fields = List.filter (fun f -> f.shadow) a.fields in
-  Format.fprintf fmt "asset %a%a%a {@\n  @[%a@]@\n}%a%a%a%a@\n"
+  Format.fprintf fmt "asset %a%a%a%a {@\n  @[%a@]@\n}%a%a%a%a@\n"
     pp_id a.name
-    (pp_option (pp_prefix " identified by " pp_id)) a.key
+    (pp_prefix " identified by " (pp_list " " pp_id)) a.keys
     (pp_do_if (not (List.is_empty a.sort)) (pp_prefix " sorted by " (pp_list ", " pp_id))) a.sort
+    (pp_do_if (a.big_map) (fun fmt _ -> pp_str fmt " to big_map")) ()
     (pp_list "@\n" pp_field) fields
     (pp_do_if (not (List.is_empty shadow_fields)) (
         fun fmt fields ->
@@ -900,16 +904,6 @@ let pp_enum fmt (e : lident enum_struct) =
        | EKstate -> pp_str fmt "states"
     ) e
     (pp_list "@\n" pp_enum_item) e.items
-
-let pp_signature fmt (s : lident signature) =
-  Format.fprintf fmt "entry %a (%a)"
-    pp_id s.name
-    (pp_list ", " (fun fmt (id, type_) -> Format.fprintf fmt "%a : %a" pp_id id pp_ptyp type_)) s.args
-
-let pp_contract fmt (c : contract) =
-  Format.fprintf fmt "contract %a =@\n  @[%a@]@\n"
-    pp_id c.name
-    (pp_list "@\n" pp_signature) c.signatures
 
 let rec pp_rexpr fmt (r : rexpr) =
   let pp_node fmt = function
@@ -998,7 +992,6 @@ let pp_decl_ fmt = function
   | Dasset    a -> pp_asset fmt a
   | Drecord   r -> pp_record fmt r
   | Denum     e -> pp_enum fmt e
-  | Dcontract c -> pp_contract fmt c
 
 let pp_fun_ fmt = function
   | Ffunction f    -> pp_function fmt f

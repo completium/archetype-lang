@@ -1,12 +1,12 @@
 archetype expr_lit_int
 
-variable res : int = 0
+variable res : int = 0i
 
 entry exec () {
   specification {
-    s0: res = 1;
+    s0: res = 1i;
   }
   effect {
-    res := 1
+    res := 1i
   }
 }

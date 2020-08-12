@@ -16,10 +16,19 @@ let generate_api_storage ?(verif=false) (model : model) : model =
     | CKfield (an, fn, _) -> Field (an, fn)
   in
 
+  let get_asset_dependencies asset_name : ident list =
+    let asset = Utils.get_asset model asset_name in
+    List.fold_left (fun accu (x : asset_item) ->
+        match x.original_type with
+        | Tcontainer (Tasset an, Partition) -> (unloc an)::accu
+        | _ -> accu
+      ) [] asset.values
+  in
+
   let rec f (ctx : ctx_model) (accu : api_storage list) (term : mterm) : api_storage list =
     let api_items : api_storage_node list =
       let mt_type = term.type_ in
-      let is_rat = match mt_type with | Tbuiltin Brational | Ttuple [Tbuiltin Bint; Tbuiltin Bint] -> true | _ -> false in
+      let is_rat = match mt_type with | Tbuiltin Brational | Ttuple [Tbuiltin Bint; Tbuiltin Bnat] -> true | _ -> false in
       let extract_option_type = function | Toption x -> x | _ -> assert false in
       match term.node with
       | Mget (asset_name, _, _) ->
@@ -34,16 +43,7 @@ let generate_api_storage ?(verif=false) (model : model) : model =
         let (pa,_,_) = Utils.get_container_asset_key model asset_name field_name in
         [APIAsset (Add pa); APIAsset (FieldAdd (asset_name, field_name))]
       | Mremoveasset (asset_name, _) ->
-        let ans : ident list =
-          begin
-            let asset = Utils.get_asset model asset_name in
-            List.fold_left (fun accu (x : asset_item) ->
-                match x.original_type with
-                | Tcontainer (Tasset an, Partition) -> (unloc an)::accu
-                | _ -> accu
-              ) [] asset.values
-          end
-        in
+        let ans : ident list = get_asset_dependencies asset_name in
         List.map (fun x -> APIAsset (Remove x)) (asset_name::ans)
       | Mremovefield (asset_name, field_name, _, _) ->
         let (pa,_,_) = Utils.get_container_asset_key model asset_name field_name in
@@ -62,8 +62,12 @@ let generate_api_storage ?(verif=false) (model : model) : model =
           | _ -> assert false
         in
         [APIAsset (Get aan); APIAsset (FieldRemove (an, fn)); APIAsset (RemoveIf (an, to_ck c, la, lb))] @ l
-      | Mclear (an , c) ->
-        [APIAsset (Clear (an, to_ck c))]
+      | Mclear (an , ((CKcoll | CKview _) as c)) ->
+        let ans : ident list = get_asset_dependencies an in
+        List.map (fun x -> APIAsset (Remove x)) (an::ans) @ [APIAsset (Clear (an, to_ck c))]
+      | Mclear (an , ((CKfield (aan, fn, _)) as c)) ->
+        let (pa,_,_) = Utils.get_container_asset_key model aan fn in
+        [APIAsset (Remove pa); APIAsset (FieldRemove (aan, fn)); APIAsset (Clear (an, to_ck c))]
       | Mselect (asset_name, c, la, lb, _) ->
         [APIAsset (Get asset_name); APIAsset (Select (asset_name, to_ck c, la, lb))]
       | Msort (asset_name, c, l) ->
@@ -108,12 +112,14 @@ let generate_api_storage ?(verif=false) (model : model) : model =
         [APIBuiltin (Bisnone (extract_option_type x.type_))]
       | Missome x ->
         [APIBuiltin (Bissome (extract_option_type x.type_))]
-      | Mgetopt x ->
-        [APIBuiltin (Bgetopt (extract_option_type x.type_))]
+      | Moptget x ->
+        [APIBuiltin (Boptget (extract_option_type x.type_))]
       | Mfloor _ ->
         [APIBuiltin (Bfloor)]
       | Mceil _ ->
         [APIBuiltin (Bceil)]
+      | Mtostring (t, _) ->
+        [APIBuiltin (Btostring t)]
       | Mrateq _ ->
         [APIInternal (RatEq)]
       | Mratcmp _ ->
@@ -128,6 +134,8 @@ let generate_api_storage ?(verif=false) (model : model) : model =
         [APIInternal (DivTez)]
       | Mratdur _ ->
         [APIInternal (RatDur)]
+      | Mfail (Invalid mt) when Utils.is_not_string_nat_int mt.type_ ->
+        [APIBuiltin (Bfail mt.type_)]
       | _ -> []
     in
     let accu = List.fold_left (fun accu v -> Utils.add_api_storage_in_list accu (Model.mk_api_item v  (match ctx.formula with | true -> OnlyFormula | false -> OnlyExec))) accu api_items in

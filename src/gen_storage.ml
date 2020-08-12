@@ -62,16 +62,14 @@ let generate_storage (model : model) : model =
       | Tlist t           -> mk_mterm (Mlitlist []) (Tlist t)
       | Toption t         -> mk_mterm (Mnone) (Toption t)
       | Tasset v
-      | Tenum v
-      | Tcontract v       -> emit_error (NoInitExprFor (unloc v))
+      | Tenum v           -> emit_error (NoInitExprFor (unloc v))
       | Ttuple _          -> emit_error (NoInitExprFor "tuple")
       | Tset k            -> mk_mterm   (Mlitset []) (Tset k)
-      | Tmap (k, v)       -> mk_mterm   (Mlitmap []) (Tmap (k, v))
+      | Tmap (b, k, v)    -> mk_mterm   (Mlitmap []) (Tmap (b, k, v))
       | Trecord _         -> emit_error (NoInitExprFor "record")
       | Tunit             -> emit_error (NoInitExprFor "unit")
       | Tstorage          -> emit_error (NoInitExprFor "storage")
       | Toperation        -> emit_error (NoInitExprFor "operation")
-      | Tentry            -> emit_error (NoInitExprFor "entry")
       | Tentrysig _       -> emit_error (NoInitExprFor "entrysig")
       | Tprog _           -> emit_error (NoInitExprFor "prog")
       | Tvset _           -> emit_error (NoInitExprFor "vset")
@@ -95,7 +93,6 @@ let generate_storage (model : model) : model =
     | Denum e     -> state_to_storage_items e
     | Dasset a    -> [asset_to_storage_items a]
     | Drecord _   -> []
-    | Dcontract _ -> []
   in
 
   let storage = List.map process_storage_item model.decls |> List.flatten in
@@ -103,10 +100,10 @@ let generate_storage (model : model) : model =
   let process_mterm (model : model) : model =
     let rec aux c (mt : mterm) : mterm =
       match mt.node with
-      | Massign (op, Avar id, v) when Model.Utils.is_field_storage model (unloc id) ->
+      | Massign (op, t, Avar id, v) when Model.Utils.is_field_storage model (unloc id) ->
         begin
           let vv = aux c v in
-          mk_mterm (Massign (op, Avarstore id, vv)) Tunit
+          mk_mterm (Massign (op, t, Avarstore id, vv)) Tunit
         end
       | Mvar (id, Vlocal) when Model.Utils.is_field_storage model (unloc id) ->
         mk_mterm (Mvar (id, Vstorevar)) mt.type_

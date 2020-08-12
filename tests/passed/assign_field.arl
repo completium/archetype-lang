@@ -1,7 +1,7 @@
 archetype assign_field
 
 asset myasset identified by id {
-  id : int;
+  id : nat;
   str : string;
 } initialized by {
   {0; ""}
@@ -13,6 +13,6 @@ entry exec () {
   }
   effect {
     myasset[0].str := "mystr";
-    dorequire (myasset[0].str = "mystr")
+    dorequire (myasset[0].str = "mystr", "ko")
   }
 }

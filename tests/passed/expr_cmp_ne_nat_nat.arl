@@ -1,0 +1,12 @@
+archetype expr_cmp_ne_nat_nat
+
+variable res : bool = false
+
+entry exec () {
+  specification {
+    s0: res = true;
+  }
+  effect {
+    res := 1 <> 2
+  }
+}

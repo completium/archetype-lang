@@ -7,6 +7,6 @@ entry exec () {
     s0: res = 1.0;
   }
   effect {
-    res := (if true then 1 else 1 / 2)
+    res := (if true then 1i else 0.5)
   }
 }

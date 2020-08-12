@@ -1,0 +1,14 @@
+archetype asset_multi_key_doublon
+
+asset my_asset identified by i i {
+  i : nat;
+  v : bool;
+} initialized by {
+  { 0; 0; true }
+}
+
+entry exec () {
+  var val = my_asset[(0, 0)].v;
+  dorequire(val, "ko");
+  my_asset.update((0, 0), { v = false})
+}
