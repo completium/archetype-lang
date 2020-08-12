@@ -3409,6 +3409,7 @@ module Utils : sig
   val get_all_map_types                  : model -> type_ list
   val extract_key_value_from_masset      : model -> mterm -> mterm
   val is_not_string_nat_int              : type_ -> bool
+  val get_function                       : model -> ident -> function_struct
 end = struct
 
   open Tools
@@ -4534,4 +4535,8 @@ end = struct
 
   let is_not_string_nat_int = (function | Tbuiltin (Bstring | Bnat | Bint) -> false | _ -> true)
 
+  let get_function (model : model) (id : ident) : function_struct =
+    model.functions
+    |> List.map (fun x -> match x.node with | Function (fs, _) | Entry fs -> fs)
+    |> List.find (fun (x : function_struct) -> String.equal (unloc x.name) id)
 end
