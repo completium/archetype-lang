@@ -52,7 +52,9 @@ let generate_api_storage ?(verif=false) (model : model) : model =
         let (pa,_,_) = Utils.get_container_asset_key model asset_name field_name in
         [APIAsset (Get asset_name); APIAsset (Remove pa); APIAsset (FieldRemove (asset_name, field_name)); APIAsset (RemoveAll (asset_name, field_name))]
       | Mremoveif (asset_name, (CKcoll as c), la, lb, _) ->
-        [APIAsset (Get asset_name); APIAsset (Remove asset_name); APIAsset (RemoveIf (asset_name, to_ck c, la, lb))]
+        let ans : ident list = get_asset_dependencies asset_name in
+        let l = List.map (fun x -> APIAsset (Remove x)) (asset_name::ans) in
+        [APIAsset (Get asset_name); APIAsset (Remove asset_name); APIAsset (RemoveIf (asset_name, to_ck c, la, lb))] @ l
       | Mremoveif (_, ((CKfield (an, fn, _)) as c), la, lb, _) ->
         let _, t, _ = Utils.get_asset_field model (an, fn) in
         let aan, l =
