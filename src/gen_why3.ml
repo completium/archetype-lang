@@ -2513,7 +2513,7 @@ let fold_exns m body : term list =
                             else [Texn Enotfound ]) c) i
     | M.Mremovefield (_,_,k,v) -> internal_fold_exn
                                     (internal_fold_exn (acc @ [Texn Enotfound]) k) v
-    | M.Mremoveall (a,f,v) -> internal_fold_exn (acc @ if (is_partition m a f) then [Texn Enotfound] else []) v
+    | M.Mremoveall (_a,_f,v) -> internal_fold_exn (acc @ [Texn Enotfound]) v
     | M.Mremoveif (_, CKfield (_,_,k), _, _ ,_ ) -> internal_fold_exn (acc @ [Texn Enotfound]) k
     | M.Moptget _ -> acc @ [Texn Enotfound]
     | M.Mfail InvalidCaller -> acc @ [Texn Einvalidcaller]
