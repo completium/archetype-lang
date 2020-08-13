@@ -675,14 +675,14 @@ let rec pp_term outer pos fmt = function
       (pp_with_paren (pp_term outer pos)) e
   | Tpremoveif (i1,i2,l,e1,e2) ->
     if List.length l > 0 then
-      Format.fprintf fmt "%a.removeifinfieldandpred (%a %a) %a %a"
+      Format.fprintf fmt "%a.removeif_in_field_and_pred (%a %a) %a %a"
       pp_str (String.capitalize_ascii i1)
       pp_str i2
       (pp_list " " (pp_term outer pos)) l
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
     else
-      Format.fprintf fmt "%a.removeifinfieldandpred %a %a %a"
+      Format.fprintf fmt "%a.removeif_in_field_and_pred %a %a %a"
       pp_str (String.capitalize_ascii i1)
       pp_str i2
       (pp_with_paren (pp_term outer pos)) e1
@@ -703,6 +703,18 @@ let rec pp_term outer pos fmt = function
       pp_str i2
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
+  | Tunionpred (i1,i2,l,e) ->
+    if List.length l > 0 then
+      Format.fprintf fmt "%a.union_with_pred (%a %a) %a"
+      pp_str (String.capitalize_ascii i1)
+      pp_str i2
+      (pp_list " " (pp_term outer pos)) l
+      (pp_with_paren (pp_term outer pos)) e
+    else
+      Format.fprintf fmt "%a.union_with_pred %a %a"
+      pp_str (String.capitalize_ascii i1)
+      pp_str i2
+      (pp_with_paren (pp_term outer pos)) e
   | Twitness i ->
     Format.fprintf fmt "%a.witness"
       pp_str (String.capitalize_ascii i)

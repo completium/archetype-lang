@@ -217,6 +217,7 @@ type ('e,'t,'i) abstract_term =
   | Tremoveif of 'i * 'i * 'e list * 'e
   | Tpremoveif of 'i * 'i * 'e list * 'e * 'e
   | Tfremoveif of 'i * 'i * 'e list * 'e * 'e * 'e
+  | Tunionpred of 'i * 'i * 'e list * 'e
   | Twitness of 'i
   (* option *)
   | Tnone
@@ -517,6 +518,7 @@ and map_abstract_term
   | Tremoveif (i1,i2,l,e)-> Tremoveif (map_i i1, map_i i2, List.map map_e l, map_e e)
   | Tpremoveif (i1,i2,l,e1,e2)-> Tpremoveif (map_i i1, map_i i2, List.map map_e l, map_e e1, map_e e2)
   | Tfremoveif (i1,i2,l,e1,e2,e3)-> Tfremoveif (map_i i1, map_i i2, List.map map_e l, map_e e1, map_e e2, map_e e3)
+  | Tunionpred (i1,i2,l,e)-> Tunionpred (map_i i1, map_i i2, List.map map_e l, map_e e)
   | Twitness i         -> Twitness (map_i i)
   | Tnone              -> Tnone
   | Tsome e            -> Tsome (map_e e)
@@ -943,6 +945,7 @@ let compare_abstract_term
   | Tremoveif (i1,i2,l1,e1), Tremoveif (i3,i4,l2,e2) -> cmpi i1 i3 && cmpi i2 i4 && List.for_all2 cmpe l1 l2 && cmpe e1 e2
   | Tpremoveif (i1,i2,l1,e1,f1), Tpremoveif (i3,i4,l2,e2,f2) -> cmpi i1 i3 && cmpi i2 i4 && List.for_all2 cmpe l1 l2 && cmpe e1 e2 && cmpe f1 f2
   | Tfremoveif (i1,i2,l1,e1,f1,j1), Tfremoveif (i3,i4,l2,e2,f2,j2) -> cmpi i1 i3 && cmpi i2 i4 && List.for_all2 cmpe l1 l2 && cmpe e1 e2 && cmpe f1 f2 && cmpe j1 j2
+  | Tunionpred (i1,i2,l1,e1), Tunionpred (i3,i4,l2,e2) -> cmpi i1 i3 && cmpi i2 i4 && List.for_all2 cmpe l1 l2 && cmpe e1 e2
   | Twitness i1, Twitness i2 -> cmpi i1 i2
   | Tnone, Tnone -> true
   | Tsome e1, Tsome e2 -> cmpe e1 e2

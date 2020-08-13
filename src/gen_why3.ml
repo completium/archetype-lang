@@ -1608,7 +1608,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let remove = List.map (fun (f, oasset) ->
         let capoasset = String.capitalize_ascii oasset in
         let field = loc_term (Tdoti("_a", f)) in
-        let remove = dl (Tapp (loc_term (Tdoti(capoasset,"removeifinfield")), [field; loc_term (mk_ac oasset)])) in
+        let remove = dl (Tapp (loc_term (Tdoti(capoasset,"removeif_in_field")), [field; loc_term (mk_ac oasset)])) in
         dl (Tassign (loc_term (mk_ac oasset), remove))
       ) partitions in
       let tr_rm_oassets = List.map (fun (f,_) ->
@@ -1658,7 +1658,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       if is_partition m a f then
         let field = loc_term (Tdoti("_a", f)) in
         let capoasset = String.capitalize_ascii oasset in
-        let rmif = dl (Tapp (loc_term (Tdoti(capoasset, "removeifinfield")), [field; loc_term (mk_ac oasset)])) in
+        let rmif = dl (Tapp (loc_term (Tdoti(capoasset, "removeif_in_field")), [field; loc_term (mk_ac oasset)])) in
         let assign_rmif = dl (Tassign(loc_term (mk_ac oasset), rmif)) in
         mk_match_get_some_id (dl "_a") a (map_mterm m ctx v) (dl (Tseq [assign_rmif; assign_rm_field])) Enotfound
       else mk_match_get_some a (map_mterm m ctx v) assign_rm_field Enotfound in
@@ -1692,7 +1692,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         let capoasset = String.capitalize_ascii oasset in
         let coll = Tselect(a, mk_removeif_name m a tbody, args |> List.map unloc_term, mk_ac a) in
         let field = loc_term (Tapp (Tdoti(mk_aggregate_id f,"union"),[coll])) in
-        let remove = dl (Tapp (loc_term (Tdoti(capoasset,"removeifinfield")), [field; loc_term (mk_ac oasset)])) in
+        let remove = dl (Tapp (loc_term (Tdoti(capoasset,"removeif_in_field")), [field; loc_term (mk_ac oasset)])) in
         dl (Tassign (loc_term (mk_ac oasset), remove))
       ) partitions in
       let tr_rm_oassets = List.map (fun (f,_) ->
@@ -1715,7 +1715,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let remove = List.map (fun (f, oasset) ->
         let capoasset = String.capitalize_ascii oasset in
         let field = loc_term (Tapp (Tdoti(mk_aggregate_id f,"union"),[mk_ac n])) in
-        let remove = dl (Tapp (loc_term (Tdoti(capoasset,"removeifinfield")), [field; loc_term (mk_ac oasset)])) in
+        let remove = dl (Tapp (loc_term (Tdoti(capoasset,"removeif_in_field")), [field; loc_term (mk_ac oasset)])) in
         dl (Tassign (loc_term (mk_ac oasset), remove))
       ) partitions in
       let tr_rm_oassets = List.map (fun (f,_) ->
@@ -1727,17 +1727,33 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       else
         mk_trace_seq m (Tassign(loc_term (Tdoti(gs,mk_ac_id n)), loc_term (Temptycoll n))) [CRm n]
     | Mclear (n, CKview v) ->
+      let partitions = M.Utils.get_asset_partitions m n in
+      let remove = List.map (fun (f, oasset) ->
+        let capn = String.capitalize_ascii n in
+        let capoasset = String.capitalize_ascii oasset in
+        let viewvar = loc_term (Tvar "_view") in
+        let field = dl (Tunionpred (dl (mk_aggregate_id f), dl (capn^".is_in_view"), [viewvar], loc_term (mk_ac n))) in
+        let remove = dl (Tapp (loc_term (Tdoti(capoasset,"removeif_in_field")), [field; loc_term (mk_ac oasset)])) in
+        dl (Tletin(false, dl "_view",None,map_mterm m ctx v, dl (Tassign (loc_term (mk_ac oasset), remove))))
+      ) partitions in
+      let tr_rm_oassets = List.map (fun (f,_) ->
+        let oasset, _, _ = M.Utils.get_container_asset_key m n f in
+        CRm oasset) partitions in
       let field = map_mterm m ctx v in
       let capasset = String.capitalize_ascii n in
-      let clear = dl (Tapp (loc_term (Tdoti(capasset,"removeifinview")),[field; loc_term (mk_ac n)])) in
+      let clear = dl (Tapp (loc_term (Tdoti(capasset,"removeif_in_view")),[field; loc_term (mk_ac n)])) in
       let assign = Tassign (loc_term (mk_ac n), clear) in
-      mk_trace_seq m assign [CRm n]
+      if List.length partitions > 0 then
+        let instr = Tseq (remove @ [dl (assign)]) in
+        mk_trace_seq m instr ([CRm n] @ tr_rm_oassets)
+      else
+        mk_trace_seq m assign [CRm n]
     | Mclear (_n, CKfield (n, f, v)) ->
       let oasset,_ = M.Utils.get_field_container m n f in
       let asset = dl (mk_match_get_some_id (dl "_a") n (map_mterm m ctx v) (loc_term (Tvar "_a")) Enotfound) in
       let field = dl (Tdot(asset, loc_term (Tvar f))) in
       let capoasset = String.capitalize_ascii oasset in
-      let clear = dl (Tapp (loc_term (Tdoti(capoasset,"removeifinfield")),[field; loc_term (mk_ac oasset)])) in
+      let clear = dl (Tapp (loc_term (Tdoti(capoasset,"removeif_in_field")),[field; loc_term (mk_ac oasset)])) in
       let assign = dl (Tassign (loc_term (mk_ac oasset), clear)) in
       let rm_field = dl (Tapp (loc_term (Tdoti (mk_aggregate_id f,"removeall")),[map_mterm m ctx v; loc_term (mk_ac n)])) in
       let assign_rm_field = dl (Tassign (loc_term (mk_ac n), rm_field)) in

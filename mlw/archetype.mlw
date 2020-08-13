@@ -1020,7 +1020,24 @@ module Aggregate
   end
 
   (* ------------------------------------------------------------------------ *)
-  let union (c : collection) : field
+  let function union_with_pred (p : t -> bool) (c : collection) : field
+  (* TODO postconditions *)
+  =
+  let rec internal_union (l : list t) : list tkF =
+  variant { l }
+  match l with
+  | Nil -> Nil
+  | Cons e tl ->
+    if p e then
+      let f = aggregate e in
+      (eltsF f) ++ (internal_union tl)
+    else
+      internal_union tl
+  end in
+  mkF (internal_union (elts c))
+
+  (* ------------------------------------------------------------------------ *)
+  let function union (c : collection) : field
   ensures { forall ka a f kb.
     get ka c = Some a ->
     f = aggregate a ->
@@ -1028,14 +1045,7 @@ module Aggregate
     containsF kb result
   }
   =
-  let rec internal_union (l : list t) : list tkF =
-  match l with
-  | Nil -> Nil
-  | Cons e tl ->
-    let f = aggregate e in
-    (eltsF f) ++ (internal_union tl)
-  end in
-  mkF (internal_union (elts c))
+  union_with_pred (fun _ -> true) c
 
 end
 
@@ -1342,7 +1352,7 @@ module Collection
   end in
   mk (N.mk (internal_removeif (N.elts c.content)))
 
-  let function removeifinview (v : view) (c : collection) : collection
+  let function removeif_in_view (v : view) (c : collection) : collection
   (* TODO preconditions *)
   = removeif (fun x -> contains (keyt x) (from_view v c)) c
 
@@ -1369,13 +1379,17 @@ module Collection
   end in
   mk (N.mk (internal_from_field (felts f)))
 
-  let function removeifinfield (f : field) (c : collection) : collection
+  let function removeif_in_field (f : field) (c : collection) : collection
   (* TODO postconditions *)
   = removeif (fun x -> contains (keyt x) (from_field f c)) c
 
-  let function removeifinfieldandpred (p : t -> bool) (f : field) (c : collection) : collection
+  let function removeif_in_field_and_pred (p : t -> bool) (f : field) (c : collection) : collection
   (* TODO postconditions *)
   = removeif (fun x -> p x && contains (keyt x) (from_field f c)) c
+
+  let function is_in_view (v : view) (e : t) : bool
+  ensures { result = vcontains (keyt e) v }
+  = vcontains (keyt e) v
 
 end
 
