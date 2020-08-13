@@ -865,10 +865,17 @@ module Field
   internal_eq (N.elts f1) (N.elts f2)
 
   (* ------------------------------------------------------------------------ *)
-  let function add (k : tk) (f : field) = N.add k f
+  lemma eqP : forall f1 f2. eq f1 f2 <-> f1 = f2
 
   (* ------------------------------------------------------------------------ *)
-  let function remove (k : tk) (f : field) = N.remove k f
+  let function add (k : tk) (f : field)
+  (* TODO postconditions *)
+  = N.add k f
+
+  (* ------------------------------------------------------------------------ *)
+  let function remove (k : tk) (f : field)
+  (* TODO postcondition *)
+  = N.remove k f
 
   (* ------------------------------------------------------------------------ *)
   type view
@@ -884,8 +891,8 @@ module Field
 
   (* ------------------------------------------------------------------------ *)
   let function to_view (f : field) : view
-  ensures { S.sorted (velts result) }
-  ensures { forall k. vcontains k result <-> M.mem k (N.elts f) }
+  ensures { S.sorted (velts result) } (* shall there be a dedicated predicate ?*)
+  ensures { forall k. vcontains k result <-> contains k f }
   = vmk (N.elts f)
 
 end
@@ -955,7 +962,7 @@ module Aggregate
 
   (* ------------------------------------------------------------------------ *)
   let function add (ka : tk) (kb : tkF) (c : collection) : collection
-  (* TODO : add requires *)
+  (* TODO preconditions ? *)
   ensures { forall k. k <> ka -> get k result = get k c }
   ensures { forall ta oldta.
     get ka result = Some ta ->
@@ -1142,7 +1149,7 @@ module Collection
 
   (* ------------------------------------------------------------------------ *)
   let function elts (c : collection) : list t
-  (* TODO : add postconditions *)
+  (* TODO postconditions *)
   =  N.elts c.content
 
   (* ------------------------------------------------------------------------ *)
@@ -1151,11 +1158,13 @@ module Collection
   (* ------------------------------------------------------------------------ *)
   let function mk (s : N.cset) : collection
   requires { key_injective (N.elts s) }
+  (* TODO postconditions *)
   = { content = s }
 
   (* ------------------------------------------------------------------------ *)
   let function from_list (l : list t) : collection
   requires { key_injective l }
+  (* TODO postconditions *)
   = { content = N.mk l }
 
   (* ------------------------------------------------------------------------ *)
@@ -1239,6 +1248,7 @@ module Collection
 
   (* ------------------------------------------------------------------------ *)
   let function list_to_view (l : list t) : view
+  (* TODO fix *)
   ensures { forall k. vcontains k result <-> forall e. M.mem e l -> keyt e = k }
   =
   let rec function internal_list_to_view (il : list t) : list tk
@@ -1253,6 +1263,7 @@ module Collection
 
   (* ----------------------------------------------------------------------- *)
   let function view_to_list (v : view) (c : collection) : list t
+  (* TODO postconditions *)
   =
   let rec internal_view_to_list (l : list tk) : list t
   variant { l }
@@ -1269,6 +1280,7 @@ module Collection
 
   (* ----------------------------------------------------------------------- *)
   let function from_view (v : view) (c : collection) : collection
+  (* TODO postoncditions *)
   = mk (N.mk (view_to_list v c))
 
   (* ----------------------------------------------------------------------- *)
@@ -1280,7 +1292,8 @@ module Collection
 
   (* ----------------------------------------------------------------------- *)
   let rec function to_view (c : collection) : view
-  ensures { K.sorted (velts result) }
+  ensures { K.sorted (velts result) } (* dedicated sort predicate ? *)
+  (* TODO fix *)
   ensures { forall k. vcontains k result <-> forall e. get k c = Some e <-> keyt e = k }
   =
   list_to_view (N.elts c.content)
@@ -1330,13 +1343,13 @@ module Collection
 
   (* ------------------------------------------------------------------------ *)
   let function select (p : t -> bool) (c : collection) : view
-  (* TODO : postconditions *)
+  (* TODO postconditions *)
   =
   to_view (select_to_coll p c)
 
   (* ------------------------------------------------------------------------ *)
   let function select_view (p : t -> bool) (v : view) (c : collection) : view
-  (* TODO : postconditions *)
+  (* TODO postconditions *)
   =
   select (fun x -> p x && vcontains (keyt x) v) c
 
@@ -1456,10 +1469,13 @@ module Set
   type set = F.fset
 
   (* ------------------------------------------------------------------------ *)
-  let function add (e : t) (s : set) : set = F.mk (Cons e (F.content s))
+  let function add (e : t) (s : set) : set
+  (* TODO postconditions *)
+  = F.mk (Cons e (F.content s))
 
   (* ------------------------------------------------------------------------ *)
   let function contains (e : t) (s : set) : bool
+  (* TODO postconditions *)
   =
   let rec function internal_contains (l : list t) : bool
   variant { l }
@@ -1472,6 +1488,7 @@ module Set
 
   (* ------------------------------------------------------------------------ *)
   let function remove (e : t) (s : set) : set
+  (* TODO postconditions *)
   =
   let rec function internal_remove (l : list t) : list t
   variant { l }
@@ -1483,18 +1500,22 @@ module Set
   F.mk (internal_remove (F.content s))
 
   (* ------------------------------------------------------------------------ *)
-  let function card (s : set) : int = F.fcard s
+  let function card (s : set) : int
+  (* TODO postconditions ? *)
+  = F.fcard s
 
   (* ------------------------------------------------------------------------ *)
   let function empty = F.fset0
 
   (* ------------------------------------------------------------------------ *)
   let function elts (s : set) : list t
-  =
-  F.content s
+  (* TODO postconditions ? *)
+  = F.content s
 
   (* ------------------------------------------------------------------------ *)
-  let function from_list (l : list t) = F.mk l
+  let function from_list (l : list t)
+  (* TODO postconditions ? *)
+  = F.mk l
 
 end
 
@@ -1575,6 +1596,7 @@ module Sort
                                  val le = ple
 
   let function sort (v : view) (c : collection)
+  (* TODO postconditions *)
   =
   list_to_view (IS.insertion_sort (view_to_list v c))
 
