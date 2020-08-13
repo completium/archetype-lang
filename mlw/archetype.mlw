@@ -1544,6 +1544,7 @@ module List
 
   (* ------------------------------------------------------------------------ *)
   let rec function contains a l
+  (* TODO postcondition *)
   =
   match l with
   | Nil -> false
@@ -1552,6 +1553,7 @@ module List
 
   (* ------------------------------------------------------------------------ *)
   let function prepend (a : t) (l : list t) : list t
+  (* TODO postconditions *)
   = Cons a l
 
   (* ------------------------------------------------------------------------ *)
