@@ -1279,7 +1279,7 @@ Tmatch (dl (Tget (dl a, k, loc_term (mk_ac a))), [
 let mk_match_get_some_id_nil id a k instr =
 Tmatch (dl (Tget (dl a, k, loc_term (mk_ac a))), [
   Tpsome id, instr;
-  Twild, loc_term (Tseq [Tassign (Tvar gs, cp_storage gsinit); Tunit])
+  Twild, dl Tunit
 ])
 
 let mk_match_get_none a k instr excn =
@@ -1605,14 +1605,13 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Mremoveasset (n, i) ->
       let partitions = M.Utils.get_asset_partitions m n in
-      let remove = List.map (fun f ->
-        let oasset, _, _ = M.Utils.get_container_asset_key m n f in
+      let remove = List.map (fun (f, oasset) ->
         let capoasset = String.capitalize_ascii oasset in
         let field = loc_term (Tdoti("_a", f)) in
         let remove = dl (Tapp (loc_term (Tdoti(capoasset,"removeifinfield")), [field; loc_term (mk_ac oasset)])) in
         dl (Tassign (loc_term (mk_ac oasset), remove))
       ) partitions in
-      let tr_rm_oassets = List.map (fun f ->
+      let tr_rm_oassets = List.map (fun (f,_) ->
         let oasset, _, _ = M.Utils.get_container_asset_key m n f in
         CRm oasset) partitions in
       let remove =
