@@ -34,7 +34,7 @@ let generate_api_storage ?(verif=false) (model : model) : model =
         let (pa,_,_) = Utils.get_container_asset_key model asset_name field_name in
         [APIAsset (Add pa); APIAsset (FieldAdd (asset_name, field_name))]
       | Mremoveasset (asset_name, _) ->
-        let ans : ident list = Utils.get_asset_partitions model asset_name in
+        let ans : ident list = Utils.get_asset_partitions model asset_name |> List.map snd in
         List.map (fun x -> APIAsset (Remove x)) (asset_name::ans)
       | Mremovefield (asset_name, field_name, _, _) ->
         let (pa,_,_) = Utils.get_container_asset_key model asset_name field_name in
@@ -43,7 +43,7 @@ let generate_api_storage ?(verif=false) (model : model) : model =
         let (pa,_,_) = Utils.get_container_asset_key model asset_name field_name in
         [APIAsset (Get asset_name); APIAsset (Remove pa); APIAsset (FieldRemove (asset_name, field_name)); APIAsset (RemoveAll (asset_name, field_name))]
       | Mremoveif (asset_name, (CKcoll as c), la, lb, _) ->
-        let ans : ident list = Utils.get_asset_partitions model asset_name in
+        let ans : ident list = Utils.get_asset_partitions model asset_name |> List.map snd in
         let l = List.map (fun x -> APIAsset (Remove x)) (asset_name::ans) in
         [APIAsset (Get asset_name); APIAsset (Remove asset_name); APIAsset (RemoveIf (asset_name, to_ck c, la, lb))] @ l
       | Mremoveif (_, ((CKfield (an, fn, _)) as c), la, lb, _) ->
@@ -56,7 +56,7 @@ let generate_api_storage ?(verif=false) (model : model) : model =
         in
         [APIAsset (Get aan); APIAsset (FieldRemove (an, fn)); APIAsset (RemoveIf (an, to_ck c, la, lb))] @ l
       | Mclear (an , ((CKcoll | CKview _) as c)) ->
-        let ans : ident list = Utils.get_asset_partitions model an in
+        let ans : ident list = Utils.get_asset_partitions model an |> List.map snd in
         List.map (fun x -> APIAsset (Remove x)) (an::ans) @ [APIAsset (Clear (an, to_ck c))]
       | Mclear (an , ((CKfield (aan, fn, _)) as c)) ->
         let (pa,_,_) = Utils.get_container_asset_key model aan fn in
