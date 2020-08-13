@@ -1598,7 +1598,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
           let add = dl (Tadd (dl oasset, map_mterm m ctx kb, loc_term (mk_ac oasset))) in
           let add_assign = dl (Tassign (loc_term (mk_ac oasset), add)) in
           dl (Tseq [assign; dl (mk_match_get_none oasset v add_assign Ekeyexist)])
-        else assign in
+        else dl (mk_match_get_some oasset v assign Enotfound) in
       mk_trace_seq m
         (mk_match_get_some a (map_mterm m ctx k) instr Enotfound)
         ([CUpdate f] @ if is_partition m a f then [CAdd oasset] else [])
