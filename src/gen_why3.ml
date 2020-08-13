@@ -1664,23 +1664,24 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       else mk_match_get_some a (map_mterm m ctx v) assign_rm_field Enotfound in
       mk_trace_seq m instr ([CUpdate f] @ if is_partition m a f then [CRm oasset] else [])
 
-    | Mremoveif (a, (CKview l), la, lb, _a) ->
-      let args = extract_args lb in
-      let id = mk_removeif_name m a lb in
-      let argids = args |> List.map (fun (e, _, _) -> e) |> List.map (map_mterm m ctx) in
-      let args = List.map (fun (i,_) -> loc_term (Tvar i)) la in
-      Tapp (loc_term (Tvar id), argids @ args @ [map_mterm m ctx l])
+    | Mremoveif (_a, (CKview _l), _la, _lb, _) -> assert false
 
-    | Mremoveif (a, CKfield (_, field, k), _la, lb, _a) ->
-      let args = extract_args lb |> List.map (fun (e, _, _) -> e) |> List.map (map_mterm m ctx) in
+    | Mremoveif (a, CKfield (_, field, k), args, tbody, _a) ->
+      let args = mk_filter_args m ctx args tbody in
       let oasset, _ = M.Utils.get_field_container m a field in
-      Tmatch (dl (Tget(dl a, map_mterm m ctx k, mk_ac_ctx a ctx)), [
-        Tpignore, dl (Tassign(mk_ac_ctx a ctx, dl (Tfremoveif (dl (
+      let removeif_name = mk_removeif_name m oasset tbody in
+      let removeif = dl (Tfremoveif (dl (
           mk_aggregate_id field),
-          dl (mk_removeif_name m oasset lb), args,
-          map_mterm m ctx k, mk_ac_ctx oasset ctx, mk_ac_ctx a ctx))));
-        Twild, loc_term (Tseq [Tassign (Tvar gs, cp_storage gsinit); Traise Enotfound])
-      ])
+          dl removeif_name, args,
+          map_mterm m ctx k, mk_ac_ctx oasset ctx, mk_ac_ctx a ctx)) in
+      let assign = dl (Tassign(mk_ac_ctx a ctx, removeif)) in
+      if is_partition m a field then
+        let removecoll = loc_term (Tpremoveif(oasset, removeif_name, args |> List.map unloc_term, Tdoti("_a",field), mk_ac oasset)) in
+        let assign_rmcoll = dl (Tassign (loc_term (mk_ac oasset),removecoll)) in
+        let instr = dl (Tseq[assign_rmcoll; assign]) in
+        mk_trace_seq m (mk_match_get_some_id (dl "_a") a (map_mterm m ctx k) instr Enotfound) [CUpdate field; CRm oasset]
+      else
+        mk_trace_seq m (mk_match_get_some a (map_mterm m ctx k) assign Enotfound) [CUpdate field]
 
     | Mremoveif (a, CKcoll, args, tbody, _a) ->
 
@@ -1733,11 +1734,14 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       mk_trace_seq m assign [CRm n]
     | Mclear (_n, CKfield (n, f, v)) ->
       let oasset,_ = M.Utils.get_field_container m n f in
-      let field = map_mterm m ctx v in
+      let asset = dl (mk_match_get_some_id (dl "_a") n (map_mterm m ctx v) (loc_term (Tvar "_a")) Enotfound) in
+      let field = dl (Tdot(asset, loc_term (Tvar f))) in
       let capoasset = String.capitalize_ascii oasset in
       let clear = dl (Tapp (loc_term (Tdoti(capoasset,"removeifinfield")),[field; loc_term (mk_ac oasset)])) in
-      let assign = Tassign (loc_term (mk_ac oasset), clear) in
-      mk_trace_seq m assign [CRm oasset]
+      let assign = dl (Tassign (loc_term (mk_ac oasset), clear)) in
+      let rm_field = dl (Tapp (loc_term (Tdoti (mk_aggregate_id f,"removeall")),[map_mterm m ctx v; loc_term (mk_ac n)])) in
+      let assign_rm_field = dl (Tassign (loc_term (mk_ac n), rm_field)) in
+      mk_trace_seq m (Tseq [assign; assign_rm_field]) [CRm oasset]
     | Mset (n, l, k, v) ->
       mk_trace_seq m
         (Tassign (loc_term (Tdoti(gs,mk_ac_id n)),dl (Tset(dl n,map_mterm m ctx k, map_mterm m ctx v,loc_term (mk_ac n)))))
@@ -2515,6 +2519,7 @@ let fold_exns m body : term list =
                                     (internal_fold_exn (acc @ [Texn Enotfound]) k) v
     | M.Mremoveall (_a,_f,v) -> internal_fold_exn (acc @ [Texn Enotfound]) v
     | M.Mremoveif (_, CKfield (_,_,k), _, _ ,_ ) -> internal_fold_exn (acc @ [Texn Enotfound]) k
+    | M.Mclear (_a,CKfield (_,_,k)) -> internal_fold_exn (acc @ [Texn Enotfound]) k
     | M.Moptget _ -> acc @ [Texn Enotfound]
     | M.Mfail InvalidCaller -> acc @ [Texn Einvalidcaller]
     | M.Mfail NoTransfer -> acc @ [Texn Enotransfer]

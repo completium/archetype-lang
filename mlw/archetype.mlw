@@ -997,7 +997,7 @@ module Aggregate
   let function removeif (ka : tk) (p : tO -> bool)
     (cO : collectionO) (c : collection) : collection
   ensures { forall k. k <> ka -> get k result = get k c }
-  (* TODO *)
+  (* TODO postconditions *)
   =
   let rec internal_removeif (l : list tkF)
   variant { l }
@@ -1354,6 +1354,7 @@ module Collection
 
   (* ------------------------------------------------------------------------ *)
   let function from_field (f : field) (c : collection) : collection
+  (* TODO postconditions *)
   =
   let rec internal_from_field (l : list tk) : list t
   variant { l }
@@ -1369,8 +1370,12 @@ module Collection
   mk (N.mk (internal_from_field (felts f)))
 
   let function removeifinfield (f : field) (c : collection) : collection
-  (* TODO preconditions *)
+  (* TODO postconditions *)
   = removeif (fun x -> contains (keyt x) (from_field f c)) c
+
+  let function removeifinfieldandpred (p : t -> bool) (f : field) (c : collection) : collection
+  (* TODO postconditions *)
+  = removeif (fun x -> p x && contains (keyt x) (from_field f c)) c
 
 end
 
