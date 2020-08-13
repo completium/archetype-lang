@@ -1683,14 +1683,48 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       ])
 
     | Mremoveif (a, CKcoll, args, tbody, _a) ->
+
       let args = mk_filter_args m ctx args tbody in
+
+      let partitions = M.Utils.get_asset_partitions m a in
+      let remove = List.map (fun (f, oasset) ->
+        let capoasset = String.capitalize_ascii oasset in
+        let coll = Tselect(a, mk_removeif_name m a tbody, args |> List.map unloc_term, mk_ac a) in
+        let field = loc_term (Tapp (Tdoti(mk_aggregate_id f,"union"),[coll])) in
+        let remove = dl (Tapp (loc_term (Tdoti(capoasset,"removeifinfield")), [field; loc_term (mk_ac oasset)])) in
+        dl (Tassign (loc_term (mk_ac oasset), remove))
+      ) partitions in
+      let tr_rm_oassets = List.map (fun (f,_) ->
+        let oasset, _, _ = M.Utils.get_container_asset_key m a f in
+        CRm oasset) partitions in
+
       let removeif =
         dl (Tremoveif (dl a,
           dl (mk_removeif_name m a tbody), args,
           mk_ac_ctx a ctx)) in
-      mk_trace_seq m (Tassign (mk_ac_ctx a ctx, removeif)) [CRm a]
 
-    | Mclear (n, CKcoll) -> mk_trace_seq m (Tassign(loc_term (Tdoti(gs,mk_ac_id n)), loc_term (Temptycoll n))) [CRm n]
+      if List.length partitions > 0 then
+        let assign = dl (Tassign (mk_ac_ctx a ctx, removeif)) in
+        mk_trace_seq m (Tseq (remove @ [assign])) ([CRm a] @ tr_rm_oassets)
+      else
+        mk_trace_seq m (Tassign (mk_ac_ctx a ctx, removeif)) [CRm a]
+
+    | Mclear (n, CKcoll) ->
+      let partitions = M.Utils.get_asset_partitions m n in
+      let remove = List.map (fun (f, oasset) ->
+        let capoasset = String.capitalize_ascii oasset in
+        let field = loc_term (Tapp (Tdoti(mk_aggregate_id f,"union"),[mk_ac n])) in
+        let remove = dl (Tapp (loc_term (Tdoti(capoasset,"removeifinfield")), [field; loc_term (mk_ac oasset)])) in
+        dl (Tassign (loc_term (mk_ac oasset), remove))
+      ) partitions in
+      let tr_rm_oassets = List.map (fun (f,_) ->
+        let oasset, _, _ = M.Utils.get_container_asset_key m n f in
+        CRm oasset) partitions in
+      if List.length partitions > 0 then
+        let assign = dl (Tassign(loc_term (Tdoti(gs,mk_ac_id n)), loc_term (Temptycoll n))) in
+        mk_trace_seq m (Tseq (remove @ [assign])) ([CRm n] @ tr_rm_oassets)
+      else
+        mk_trace_seq m (Tassign(loc_term (Tdoti(gs,mk_ac_id n)), loc_term (Temptycoll n))) [CRm n]
     | Mclear (n, CKview v) ->
       let field = map_mterm m ctx v in
       let capasset = String.capitalize_ascii n in

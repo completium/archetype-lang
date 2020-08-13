@@ -1287,12 +1287,8 @@ module Collection
   let function card (c : collection) = N.card c.content
 
   (* ------------------------------------------------------------------------ *)
-  function select_fun (p : t -> bool) (c : collection) : collection
-  = mk (N.mk (F.filter p ((N.elts (content c)))))
-
-  (* ------------------------------------------------------------------------ *)
-  let function select (p : t -> bool) (c : collection) : view
-  (* TODO : postconditions *)
+  let function select_to_coll (p : t -> bool) (c : collection) : collection
+  (* TODO postconditions *)
   =
   let rec internal_select (l : list t) : list t
   variant { l }
@@ -1301,7 +1297,13 @@ module Collection
   | Nil       -> Nil
   | Cons e tl -> if p e then Cons e (internal_select tl) else (internal_select tl)
   end in
-  to_view (mk (N.mk (internal_select ((N.elts (content c))))))
+  mk (N.mk (internal_select ((N.elts (content c)))))
+
+  (* ------------------------------------------------------------------------ *)
+  let function select (p : t -> bool) (c : collection) : view
+  (* TODO : postconditions *)
+  =
+  to_view (select_to_coll p c)
 
   (* ------------------------------------------------------------------------ *)
   let function select_view (p : t -> bool) (v : view) (c : collection) : view
@@ -1311,7 +1313,7 @@ module Collection
 
   (* ------------------------------------------------------------------------ *)
   lemma mem_select : forall e c p.
-  mem e (select_fun p c) <-> mem e c /\ p e
+  mem e (select_to_coll p c) <-> mem e c /\ p e
 
   (* ------------------------------------------------------------------------ *)
   let function head (i : int) (c : collection) : collection
