@@ -834,6 +834,12 @@ let assign_loop_label (model : model) : model =
               let accu = aux ctx accu body in
               label::accu
             end
+          | Mwhile (cond, body, Some label) ->
+            begin
+              let accu = aux ctx accu cond in
+              let accu = aux ctx accu body in
+              label::accu
+            end
           | _ -> fold_term (aux ctx) accu mt
         in
         fold_model aux model []
@@ -877,6 +883,12 @@ let assign_loop_label (model : model) : model =
       let nbody = aux ctx body in
       let label = get_loop_label ctx in
       { mt with node = Miter (a, nmin, nmax, nbody, Some label)}
+
+    | Mwhile (cond, body, None) ->
+      let ncond = aux ctx cond in
+      let nbody = aux ctx body in
+      let label = get_loop_label ctx in
+      { mt with node = Mwhile (ncond, nbody, Some label)}
 
     | _ -> map_mterm (aux ctx) mt
   in
@@ -1961,6 +1973,11 @@ let extract_term_from_instruction f (model : model) : model =
       let ce = aux ctx c in
       process (mk_mterm (Miter (i, ae, be, ce, lbl)) mt.type_) (aa @ ba)
 
+    | Mwhile (c, b, lbl) ->
+      let ce, ca = f c in
+      let be = aux ctx b in
+      process (mk_mterm (Mwhile (ce, be, lbl)) mt.type_) ca
+
     | Mreturn x ->
       let xe, xa = f x in
       process (mk_mterm (Mreturn (xe)) mt.type_) xa
@@ -2229,6 +2246,11 @@ let add_contain_on_get (model : model) : model =
         let accu = f accu b in
         let ce = aux c in
         gg accu (mk_mterm (Miter (i, a, b, ce, lbl)) mt.type_)
+
+      | Mwhile (c, b, lbl) ->
+        let accu = f accu c in
+        let be = aux b in
+        gg accu (mk_mterm (Mwhile (c, be, lbl)) mt.type_)
 
       | Mreturn x ->
         let accu = f accu x in

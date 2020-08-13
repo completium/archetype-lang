@@ -242,6 +242,12 @@ let pp_mterm fmt (mt : mterm) =
         f b
         f c
 
+    | Mwhile (c, b, l) ->
+      Format.fprintf fmt "while %a%a do@\n  @[%a@]@\ndone"
+        (pp_option (fun fmt -> Format.fprintf fmt ": %a " pp_str)) l
+        f c
+        f b
+
     | Mseq is ->
       Format.fprintf fmt "%a"
         (pp_list ";@\n" f) is

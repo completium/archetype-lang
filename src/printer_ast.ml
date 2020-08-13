@@ -563,6 +563,14 @@ let rec pp_instruction fmt (i : instruction) =
       in
       (pp_with_paren pp) fmt (id, a, b, body)
 
+    | Iwhile (cond, body) ->
+      let pp fmt (cond, body) =
+        Format.fprintf fmt "while %a block{@\n  @[%a@]@\n}"
+          pp_pterm cond
+          pp_instruction body
+      in
+      (pp_with_paren pp) fmt (cond, body)
+
     | Iletin (id, init, body) ->
       let pp fmt (id, init, body) =
         Format.fprintf fmt "let %a%a = %a in@\n%a"

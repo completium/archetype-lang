@@ -114,6 +114,7 @@ and expr_unloc =
   | Ebreak
   | Efor          of lident option * for_ident * expr * expr
   | Eiter         of lident option * lident * expr option * expr * expr
+  | Ewhile        of lident option * expr * expr
   | Eseq          of expr * expr
   | Eletin        of lident * type_t option * expr * expr * expr option
   | Evar          of lident * type_t option * expr
@@ -447,6 +448,7 @@ let is_keyword = function
   | "view"
   | "variable"
   | "when"
+  | "while"
   | "with"
     -> true
   | _ -> false

@@ -2833,6 +2833,7 @@ let rec for_xexpr
     | Edofailif  _
     | Efor       _
     | Eiter      _
+    | Ewhile     _
     | Eif        _
     | Edorequire _
     | Ereturn    _
@@ -3758,6 +3759,11 @@ let rec for_instruction_r
           let env = Env.Local.push env ~kind:`LoopIndex (x, A.vtint) in
           for_instruction ~ret kind env i) in
       env, mki (A.Iiter (x, a, b, i)) ?label:(Option.map unloc lbl)
+
+    | Ewhile (lbl, c, i) ->
+      let c = for_expr kind env ~ety:A.vtbool c in
+      let env, i = for_instruction ~ret kind env i in
+      env, mki (A.Iwhile (c, i)) ?label:(Option.map unloc lbl)
 
     | Edorequire (e, f) ->
       let e = for_expr kind env e in

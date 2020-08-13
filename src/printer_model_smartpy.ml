@@ -534,6 +534,11 @@ let pp_model fmt (model : model) =
           (pp_iter_container_kind f) c
           f b
 
+      | Mwhile (c, b, _) ->
+        Format.fprintf fmt "sp.while (%a):@\n  @[%a@]@\ndone"
+          f c
+          f b
+
       | Miter (i, a, b, c, _) ->
         Format.fprintf fmt "sp.for %a in range(%a, %a):@\n  @[%a@]@\n"
           pp_id i

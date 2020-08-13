@@ -510,6 +510,16 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_default pos pp) fmt (lbl, id, a, b, body)
 
+  | Ewhile (lbl, cond, body) ->
+
+    let pp fmt (lbl, cond, body) =
+      Format.fprintf fmt "while %a%a do@\n  @[%a@]@\ndone"
+        (pp_option (fun fmt -> Format.fprintf fmt ": %a " pp_id)) lbl
+        (pp_expr e_default PNone) cond
+        (pp_expr e_for PNone) body
+    in
+    (maybe_paren outer e_default pos pp) fmt (lbl, cond, body)
+
   | Eseq (x, y) ->
 
     let pp fmt (x, y) =
