@@ -1276,6 +1276,12 @@ Tmatch (dl (Tget (dl a, k, loc_term (mk_ac a))), [
   Twild, loc_term (Tseq [Tassign (Tvar gs, cp_storage gsinit); Traise excn])
 ])
 
+let mk_match_get_some_id_nil id a k instr =
+Tmatch (dl (Tget (dl a, k, loc_term (mk_ac a))), [
+  Tpsome id, instr;
+  Twild, loc_term (Tseq [Tassign (Tvar gs, cp_storage gsinit); Tunit])
+])
+
 let mk_match_get_none a k instr excn =
 Tmatch (dl (Tget (dl a, k, loc_term (mk_ac a))), [
   Tpignore, loc_term (Tseq [Tassign (Tvar gs, cp_storage gsinit); Traise excn]);
@@ -1569,24 +1575,18 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     (* asset api effect *)
 
     | Maddasset (n, i) ->
-      let key = begin match i with
-      | { node = (Masset _); type_ = _ } -> map_mterm m ctx (M.Utils.extract_key_value_from_masset m i)
-      | _ ->
-        let (k, _) = M.Utils.get_asset_key m n in
-        dl (Tapp(loc_term (Tvar k),[map_mterm m ctx i]))
-      end in
+      let key_value = mk_asset_key_value m ctx n i in
+      let add = dl (Tadd (dl n, map_mterm m ctx i, loc_term (mk_ac n))) in
+      let assign = dl (Tassign (loc_term (mk_ac n), add)) in
       mk_trace_seq m
-        (Tif(
-          dl (Tcontains(dl n, key ,loc_term (mk_ac n))),
-          loc_term (Tseq [Tassign (Tvar gs, cp_storage gsinit); Traise Ekeyexist]),
-          Some (dl (Tassign (loc_term (Tdoti(gs,mk_ac_id n)),dl (Tadd(dl n,map_mterm m ctx i,loc_term (mk_ac n))))))))
+        (mk_match_get_none n key_value assign Ekeyexist)
         [CAdd n]
 
     | Maddfield (a, f, k, kb) ->
       let oasset, _, _ = M.Utils.get_container_asset_key m a f in
       let mk_add_id = loc_term (Tdoti (mk_aggregate_id f, "add")) in
       let v =
-        if is_partition m a f then mk_asset_key m ctx a kb
+        if is_partition m a f then mk_asset_key_value m ctx a kb
         else map_mterm m ctx kb in
       let assign = dl (Tassign (loc_term (mk_ac a), dl (Tapp(mk_add_id,[
             map_mterm m ctx k;
@@ -1604,9 +1604,33 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         ([CUpdate f] @ if is_partition m a f then [CAdd oasset] else [])
 
     | Mremoveasset (n, i) ->
-      mk_trace_seq m
-        (Tassign (loc_term (Tdoti(gs,mk_ac_id n)),dl (Tremove(dl n,map_mterm m ctx i,loc_term (mk_ac n)))))
-        [CRm n]
+      let partitions = M.Utils.get_asset_partitions m n in
+      let remove = List.map (fun f ->
+        let oasset, _, _ = M.Utils.get_container_asset_key m n f in
+        let capoasset = String.capitalize_ascii oasset in
+        let field = loc_term (Tdoti("_a", f)) in
+        let remove = dl (Tapp (loc_term (Tdoti(capoasset,"removeifinfield")), [field; loc_term (mk_ac oasset)])) in
+        dl (Tassign (loc_term (mk_ac oasset), remove))
+      ) partitions in
+      let tr_rm_oassets = List.map (fun f ->
+        let oasset, _, _ = M.Utils.get_container_asset_key m n f in
+        CRm oasset) partitions in
+      let remove =
+        if List.length remove > 1 then
+          dl (Tseq remove)
+        else if compare (List.length remove) 1 = 0 then
+          (List.hd remove)
+        else dl Tnone in
+      let remove_instr = dl (mk_match_get_some_id_nil (dl "_a") n (map_mterm m ctx i) remove) in
+      if List.length partitions > 0 then
+         let assign = dl (Tassign (loc_term (Tdoti(gs,mk_ac_id n)),dl (Tremove(dl n,map_mterm m ctx i,loc_term (mk_ac n))))) in
+         mk_trace_seq m
+          (Tseq [remove_instr; assign])
+          ([CRm n] @ tr_rm_oassets)
+      else
+        mk_trace_seq m
+          (Tassign (loc_term (Tdoti(gs,mk_ac_id n)),dl (Tremove(dl n,map_mterm m ctx i,loc_term (mk_ac n)))))
+          [CRm n]
 
     | Mremovefield (a, f, k, kb) ->
       let oasset, _, _ = M.Utils.get_container_asset_key m a f in
@@ -1639,7 +1663,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         let assign_rmif = dl (Tassign(loc_term (mk_ac oasset), rmif)) in
         mk_match_get_some_id (dl "_a") a (map_mterm m ctx v) (dl (Tseq [assign_rmif; assign_rm_field])) Enotfound
       else mk_match_get_some a (map_mterm m ctx v) assign_rm_field Enotfound in
-      mk_trace_seq m instr ([CRm a] @ if is_partition m a f then [CRm oasset] else [])
+      mk_trace_seq m instr ([CUpdate f] @ if is_partition m a f then [CRm oasset] else [])
 
     | Mremoveif (a, (CKview l), la, lb, _a) ->
       let args = extract_args lb in
@@ -1667,7 +1691,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
           mk_ac_ctx a ctx)) in
       mk_trace_seq m (Tassign (mk_ac_ctx a ctx, removeif)) [CRm a]
 
-    | Mclear (n, CKcoll) -> Tassign(loc_term (Tdoti(gs,mk_ac_id n)), loc_term (Temptycoll n))
+    | Mclear (n, CKcoll) -> mk_trace_seq m (Tassign(loc_term (Tdoti(gs,mk_ac_id n)), loc_term (Temptycoll n))) [CRm n]
     | Mclear (n, CKview v) ->
       let field = map_mterm m ctx v in
       let capasset = String.capitalize_ascii n in
@@ -2168,7 +2192,7 @@ and mk_filter_args m ctx args tbody =
     List.map (map_mterm m ctx) in
   let args = List.map (fun (i,_) -> loc_term (Tvar i)) args in
   args @ globals
-and mk_asset_key m ctx a r = begin
+and mk_asset_key_value m ctx a r = begin
   match r with
   | { M.node = (Masset _); type_ = _ } ->
     map_mterm m ctx (M.Utils.extract_key_value_from_masset m r)
@@ -2456,7 +2480,7 @@ let fold_exns m body : term list =
                             else [Texn Enotfound ]) c) i
     | M.Mremovefield (_,_,k,v) -> internal_fold_exn
                                     (internal_fold_exn (acc @ [Texn Enotfound]) k) v
-    | M.Mremoveall (_,_,v) -> internal_fold_exn (acc @ [Texn Enotfound]) v
+    | M.Mremoveall (a,f,v) -> internal_fold_exn (acc @ if (is_partition m a f) then [Texn Enotfound] else []) v
     | M.Mremoveif (_, CKfield (_,_,k), _, _ ,_ ) -> internal_fold_exn (acc @ [Texn Enotfound]) k
     | M.Moptget _ -> acc @ [Texn Enotfound]
     | M.Mfail InvalidCaller -> acc @ [Texn Einvalidcaller]
