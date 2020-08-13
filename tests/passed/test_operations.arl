@@ -1,8 +1,5 @@
 archetype test_operations
 
-variable e   : entrysig<unit> = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
-variable op  : operation = mkoperation(0tz, e, ())
-
 entry exec() {
   var res : int = length(operations);
   var e   : entrysig<unit> = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg;
