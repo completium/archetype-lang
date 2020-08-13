@@ -519,6 +519,7 @@ module CollectionSet
   use list.List
   use list.Mem as M
   use option.Option
+  use ListUtils as I
 
   (* ------------------------------------------------------------------------ *)
   type t (* asset *)
@@ -560,6 +561,9 @@ module CollectionSet
 
   (* ------------------------------------------------------------------------ *)
   let function mk (l : list t) = F.mk l
+
+  (* ------------------------------------------------------------------------ *)
+  let function card (s : cset) = F.fcard s
 
   (* GET INTERNAL ----------------------------------------------------------- *)
   let rec function internal_get (k : tk) (l : list t) : option t
@@ -604,6 +608,26 @@ module CollectionSet
   end in
   F.mk (internal_remove (F.content s))
 
+  (* HEAD ------------------------------------------------------------------- *)
+  let function head (i : int) (s : cset) : cset
+  ensures { forall e. mem e result -> mem e s }
+  ensures { 0 <= i <= card s -> card result = i }
+  ensures { i > card s -> result = s }
+  = F.mk (I.head i (F.content s))
+
+  (* TAIL ------------------------------------------------------------------- *)
+  let function tail (i : int) (s : cset) : cset
+  ensures { forall e. mem e result -> mem e s }
+  ensures { 0 <= i <= card s -> card result = i }
+  = F.mk (I.tail i (F.content s))
+
+  (* NTH -------------------------------------------------------------------- *)
+  let function nth (i : int) (s : cset) : option t
+  ensures { forall k. result = Some k -> mem k s }
+  ensures { not (0 <= i < card s) -> result = None }
+  (* ensures { result = nth i s } *)
+  = I.nth i (F.content s)
+
   (* ------------------------------------------------------------------------ *)
   function union (s1 s2 : cset) : cset = F.fsetU s1 s2
 
@@ -627,9 +651,6 @@ module CollectionSet
 
   (* ------------------------------------------------------------------------ *)
   predicate (==) (s1 s2 : cset) = F.(==) s1 s2
-
-  (* ------------------------------------------------------------------------ *)
-  let function card (s : cset) = F.fcard s
 
 end
 
@@ -1059,8 +1080,6 @@ module Collection
   use option.Option
   use View as V
   use fset.ListFilter as F
-  use ListUtils as I
-
   (* ------------------------------------------------------------------------ *)
   type tk
 
@@ -1330,13 +1349,18 @@ module Collection
   ensures { forall e. mem e result -> mem e c }
   ensures { 0 <= i <= card c -> card result = i }
   ensures { i > card c -> result = c }
-  = mk (N.mk (I.head i (N.elts c.content)))
+  = mk (N.head i c.content)
 
   (* ------------------------------------------------------------------------ *)
   let function tail (i : int) (c : collection) : collection
   ensures { forall e. mem e result -> mem e c }
   ensures { 0 <= i <= card c -> card result = i }
-  = mk (N.mk (I.tail i (N.elts c.content)))
+  = mk (N.tail i c.content)
+
+  (* ------------------------------------------------------------------------ *)
+  let function nth (i : int) (c : collection) : option t
+  (* TODO postconditions *)
+  = N.nth i c.content
 
   (* ------------------------------------------------------------------------ *)
   let function removeif (p : t -> bool) (c : collection) : collection
