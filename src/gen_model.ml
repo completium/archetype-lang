@@ -872,14 +872,12 @@ let to_model (ast : A.ast) : M.model =
 
       | A.Icall (Some p, A.Cconst (A.Cclear), []) -> (
           let fp = f p in
-          let an =
-            begin
-              match fp.type_ with
-              | Tcontainer (Tasset an, _) -> unloc an
-              | _ -> assert false
-            end
-          in
-          M.Mclear (an, to_ck env fp)
+          begin
+            match fp.node, fp.type_ with
+            | Mdotassetfield (an, k, fn), _ -> M.Mclear (unloc an, CKfield (unloc an, unloc fn, k))
+            | _, Tcontainer (Tasset an, _)  -> M.Mclear (unloc an, to_ck env fp)
+            | _ -> assert false
+          end
         )
 
       | A.Icall (Some p, A.Cconst (A.Caddupdate), [AExpr k; AEffect e]) when is_asset_container p ->
