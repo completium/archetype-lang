@@ -6,7 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Added
- - `while` loop
+ - Next feature
+
+## [1.1.2] - 2020-08-13
+### Changed
+ - Refactoring of whyml generation
 
 ## [1.1.1] - 2020-08-11
 ### Added
