@@ -155,6 +155,7 @@
 %token VARIABLE
 %token VIEW
 %token WHEN
+%token WHILE
 %token WITH
 
 %token INVALID_EXPR
@@ -730,6 +731,9 @@ expr_r:
 
  | ITER lbl=colon_ident x=ident a=from_expr TO b=expr DO body=block DONE
      { Eiter (lbl, x, a, b, body) }
+
+ | WHILE lbl=colon_ident c=expr DO body=block DONE
+     { Ewhile (lbl, c, body) }
 
  | IF c=expr THEN t=expr
      { Eif (c, t, None) }

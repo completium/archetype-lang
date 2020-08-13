@@ -3,6 +3,7 @@ open Parser.MenhirInterpreter
 
 let string_of_token = function
   | WITH            -> "WITH"
+  | WHILE           -> "WHILE"
   | WHEN            -> "WHEN"
   | VIEW            -> "VIEW"
   | VARIABLE        -> "VARIABLE"
@@ -148,6 +149,7 @@ let string_of_token = function
 
 let string_of_symbol = function
   | X (T T_WITH) -> "with"
+  | X (T T_WHILE) -> "while"
   | X (T T_WHEN) -> "when"
   | X (T T_VIEW) -> "view"
   | X (T T_VARIABLE) -> "variable"

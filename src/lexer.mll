@@ -104,6 +104,7 @@
       "view"                , VIEW           ;
       "variable"            , VARIABLE       ;
       "when"                , WHEN           ;
+      "while"               , WHILE          ;
       "with"                , WITH           ;
     ]
 

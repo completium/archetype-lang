@@ -556,6 +556,12 @@ let pp_model fmt (model : model) =
 
       | Miter (_i, _a, _b, _c, _) -> Format.fprintf fmt "TODO: iter@\n"
 
+      | Mwhile (c, b, l) ->
+        Format.fprintf fmt "while %a%a do@\n  @[%a@]@\ndone"
+          (pp_option (fun fmt -> Format.fprintf fmt ": %a " pp_str)) l
+          f c
+          f b
+
       | Mseq is ->
         Format.fprintf fmt "(@[%a@])"
           (pp_list ";@\n" f) is

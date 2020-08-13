@@ -778,6 +778,7 @@ let to_model (ast : A.ast) : M.model =
           M.Mfor (i, ncol, g body, instr.label)
         end
       | A.Iiter (i, a, b, body)   -> M.Miter (i, f a, f b, g body, instr.label)
+      | A.Iwhile (c, body)        -> M.Mwhile (f c, g body, instr.label)
       | A.Iletin (i, init, cont)  -> M.Mletin ([i], f init, Option.map ptyp_to_type init.type_, g cont, None) (* TODO *)
       | A.Ideclvar (i, v)         -> M.Mdeclvar ([i], Option.map ptyp_to_type v.type_, f v) (* TODO *)
       | A.Iseq l                  -> M.Mseq (List.map g l)

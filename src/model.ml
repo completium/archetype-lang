@@ -182,6 +182,7 @@ type ('id, 'term) mterm_node  =
   | Mmatchwith        of 'term * ('id pattern_gen * 'term) list
   | Mfor              of ('id for_ident_gen * 'term iter_container_kind_gen * 'term * ident option)
   | Miter             of ('id * 'term * 'term * 'term * ident option)
+  | Mwhile            of ('term * 'term * ident option)
   | Mseq              of 'term list
   | Mreturn           of 'term
   | Mlabel            of 'id
@@ -1053,6 +1054,7 @@ let cmp_mterm_node
     | Mmatchwith (e1, l1), Mmatchwith (e2, l2)                                         -> cmp e1 e2 && List.for_all2 (fun (p1, t1) (p2, t2) -> cmp_pattern p1 p2 && cmp t1 t2) l1 l2
     | Mfor (i1, c1, b1, lbl1), Mfor (i2, c2, b2, lbl2)                                 -> cmp_for_ident cmpi i1 i2 && cmp_iter_container_kind c1 c2 && cmp b1 b2 && Option.cmp cmp_ident lbl1 lbl2
     | Miter (i1, a1, b1, c1, lbl1), Miter (i2, a2, b2, c2, lbl2)                       -> cmpi i1 i2 && cmp a1 a2 && cmp b1 b2 && cmp c1 c2 && Option.cmp cmp_ident lbl1 lbl2
+    | Mwhile (c1, b1, lbl1), Mwhile (c2, b2, lbl2)                                     -> cmp c1 c2 && cmp b1 b2 && Option.cmp cmp_ident lbl1 lbl2
     | Mseq is1, Mseq is2                                                               -> List.for_all2 cmp is1 is2
     | Mreturn x1, Mreturn x2                                                           -> cmp x1 x2
     | Mlabel i1, Mlabel i2                                                             -> cmpi i1 i2
@@ -1405,6 +1407,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mmatchwith (e, l)              -> Mmatchwith (f e, List.map (fun (p, e) -> (p, f e)) l)
   | Mfor (i, c, b, lbl)            -> Mfor (map_for_ident g i, map_iter_container_kind fi f c, f b, lbl)
   | Miter (i, a, b, c, lbl)        -> Miter (g i, f a, f b, f c, lbl)
+  | Mwhile (c, b, lbl)             -> Mwhile (f c, f b, lbl)
   | Mseq is                        -> Mseq (List.map f is)
   | Mreturn x                      -> Mreturn (f x)
   | Mlabel i                       -> Mlabel (g i)
@@ -1769,6 +1772,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mmatchwith (e, l)                     -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
   | Mfor (_, c, b, _)                     -> f (fold_iter_container_kind f accu c) b
   | Miter (_, a, b, c, _)                 -> f (f (f accu a) b) c
+  | Mwhile (c, b, _)                      -> f (f accu c) b
   | Mseq is                               -> List.fold_left f accu is
   | Mreturn x                             -> f accu x
   | Mlabel _                              -> accu
@@ -2094,6 +2098,11 @@ let fold_map_term
     let be, ba = f aa b in
     let ce, ca = f ba c in
     g (Miter (i, ae, be, ce, lbl)), ca
+
+  | Mwhile (c, b, lbl) ->
+    let ce, ca = f accu c in
+    let be, ba = f ca b in
+    g (Mwhile (ce, be, lbl)), ba
 
   | Mseq is ->
     let (isi, isa) = List.fold_left

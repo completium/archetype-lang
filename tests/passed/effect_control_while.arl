@@ -1,0 +1,16 @@
+archetype effect_control_while
+
+variable res : int = 0
+
+entry exec () {
+  specification {
+    s0: res = 3;
+  }
+  effect {
+    res := 0;
+    while:loop res < 3 do
+      res += 1
+    done;
+    dorequire (res = 3, "ko")
+  }
+}

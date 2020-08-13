@@ -438,6 +438,11 @@ let pp_model_internal fmt (model : model) b =
         f b
         f c
 
+    | Mwhile (c, b, _) ->
+      Format.fprintf fmt "while (%a) block{@\n  @[%a@]@\n}"
+        f c
+        f b
+
     | Mseq is ->
       begin
         match is with
