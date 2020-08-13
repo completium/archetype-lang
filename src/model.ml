@@ -3410,6 +3410,7 @@ module Utils : sig
   val extract_key_value_from_masset      : model -> mterm -> mterm
   val is_not_string_nat_int              : type_ -> bool
   val get_function                       : model -> ident -> function_struct
+  val get_asset_partitions               : model -> ident -> ident list
 end = struct
 
   open Tools
@@ -4539,4 +4540,13 @@ end = struct
     model.functions
     |> List.map (fun x -> match x.node with | Function (fs, _) | Entry fs -> fs)
     |> List.find (fun (x : function_struct) -> String.equal (unloc x.name) id)
+
+  let get_asset_partitions (model : model) asset_name : ident list =
+    let asset = get_asset model asset_name in
+    List.fold_left (fun accu (x : asset_item) ->
+        match x.original_type with
+        | Tcontainer (Tasset an, Partition) -> (unloc an)::accu
+        | _ -> accu
+      ) [] asset.values
+
 end
