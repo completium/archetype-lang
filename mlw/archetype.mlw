@@ -834,6 +834,7 @@ module Field
   let function contains (k : tk) (f : field) : bool
   ensures { result = true -> exists e. mem e f /\ e = k }
   ensures { result = false -> N.get k f = None }
+  (* TODO is this valid ? result <-> mem e f *)
   =
   match N.get k f with
   | Some _ -> true
@@ -865,16 +866,19 @@ module Field
   internal_eq (N.elts f1) (N.elts f2)
 
   (* ------------------------------------------------------------------------ *)
-  lemma eqP : forall f1 f2. eq f1 f2 <-> f1 = f2
+  lemma eqfP : forall f1 f2. eq f1 f2 <-> f1 = f2
 
   (* ------------------------------------------------------------------------ *)
   let function add (k : tk) (f : field)
-  (* TODO postconditions *)
+  (* TODO add precondition ? get k f = None *)
+  ensures { forall i. i <> k -> N.get i result = N.get i f }
+  ensures { N.get k result = Some k }
   = N.add k f
 
   (* ------------------------------------------------------------------------ *)
   let function remove (k : tk) (f : field)
-  (* TODO postcondition *)
+  ensures { forall i. i  <> k -> N.get i result = N.get i f }
+  ensures { N.get k result = None }
   = N.remove k f
 
   (* ------------------------------------------------------------------------ *)
@@ -891,7 +895,8 @@ module Field
 
   (* ------------------------------------------------------------------------ *)
   let function to_view (f : field) : view
-  ensures { S.sorted (velts result) } (* shall there be a dedicated predicate ?*)
+  (* TODO shall there be a dedicated sort predicate ?*)
+  ensures { S.sorted (velts result) }
   ensures { forall k. vcontains k result <-> contains k f }
   = vmk (N.elts f)
 
@@ -967,7 +972,7 @@ module Aggregate
   ensures { forall ta oldta.
     get ka result = Some ta ->
     get ka c = Some oldta ->
-    not (containsF kb (aggregate oldta)) ->
+    (* TODO add this premise ? not (containsF kb (aggregate oldta)) -> *)
     ta = setF (addF kb (aggregate oldta)) oldta
   }
   ensures { forall ta oldta.
@@ -1015,6 +1020,8 @@ module Aggregate
     get ka c = Some oldta ->
     ta = setF emptyF oldta
   }
+  (* TODO shall we rather express setF postconditions ?
+     no because we can't express them on abstract type t *)
   =
   match get ka c with
   | Some a -> set ka (setF emptyF a) c
@@ -1025,7 +1032,24 @@ module Aggregate
   let function removeif (ka : tk) (p : tO -> bool)
     (cO : collectionO) (c : collection) : collection
   ensures { forall k. k <> ka -> get k result = get k c }
-  (* TODO postconditions *)
+  ensures { forall ta oldta.
+    get ka result = Some ta ->
+    get ka c = Some oldta ->
+    forall i o.
+      getO i cO = Some o ->
+      p o ->
+      containsF i (aggregate oldta) ->
+      not (containsF i (aggregate ta))
+  }
+  ensures { forall ta oldta.
+    get ka result = Some ta ->
+    get ka c = Some oldta ->
+    forall i o.
+      getO i cO = Some o ->
+      not (p o) ->
+      containsF i (aggregate oldta) <->
+      containsF i (aggregate ta)
+  }
   =
   let rec internal_removeif (l : list tkF)
   variant { l }
@@ -1049,7 +1073,17 @@ module Aggregate
 
   (* ------------------------------------------------------------------------ *)
   let function union_with_pred (p : t -> bool) (c : collection) : field
-  (* TODO postconditions *)
+  ensures {
+    forall k.
+    containsF k result ->
+    exists i a. get i c = Some a /\ p a /\ containsF k (aggregate a)
+  }
+  ensures {
+    forall k i a.
+    get i c = Some a ->
+    containsF k (aggregate a) ->
+    containsF k result
+  }
   =
   let rec internal_union (l : list t) : list tkF =
   variant { l }
@@ -1066,11 +1100,14 @@ module Aggregate
 
   (* ------------------------------------------------------------------------ *)
   let function union (c : collection) : field
-  ensures { forall ka a f kb.
-    get ka c = Some a ->
-    f = aggregate a ->
-    containsF kb f ->
-    containsF kb result
+  ensures { forall k.
+    containsF k result ->
+    exists i a. get i c = Some a /\ containsF k (aggregate a)
+  }
+  ensures { forall i a k.
+    get i c = Some a ->
+    containsF k (aggregate a) ->
+    containsF k result
   }
   =
   union_with_pred (fun _ -> true) c
@@ -1148,11 +1185,6 @@ module Collection
   }
 
   (* ------------------------------------------------------------------------ *)
-  let function elts (c : collection) : list t
-  (* TODO postconditions *)
-  =  N.elts c.content
-
-  (* ------------------------------------------------------------------------ *)
   predicate mem (a : t) (c : collection) = N.mem a c.content
 
   (* ------------------------------------------------------------------------ *)
@@ -1160,6 +1192,12 @@ module Collection
   requires { key_injective (N.elts s) }
   (* TODO postconditions *)
   = { content = s }
+
+  (* ------------------------------------------------------------------------ *)
+  let function elts (c : collection) : list t
+  ensures { norm result = result }
+  ensures { key_injective result }
+  =  N.elts c.content
 
   (* ------------------------------------------------------------------------ *)
   let function from_list (l : list t) : collection
@@ -1248,8 +1286,7 @@ module Collection
 
   (* ------------------------------------------------------------------------ *)
   let function list_to_view (l : list t) : view
-  (* TODO fix *)
-  ensures { forall k. vcontains k result <-> forall e. M.mem e l -> keyt e = k }
+  (* TODO postconditions *)
   =
   let rec function internal_list_to_view (il : list t) : list tk
   variant { l }
@@ -1280,7 +1317,8 @@ module Collection
 
   (* ----------------------------------------------------------------------- *)
   let function from_view (v : view) (c : collection) : collection
-  (* TODO postoncditions *)
+  ensures { forall e. mem e result -> mem e c }
+  ensures { forall e. mem e result <-> vcontains (keyt e) v }
   = mk (N.mk (view_to_list v c))
 
   (* ----------------------------------------------------------------------- *)
@@ -1292,9 +1330,9 @@ module Collection
 
   (* ----------------------------------------------------------------------- *)
   let rec function to_view (c : collection) : view
-  ensures { K.sorted (velts result) } (* dedicated sort predicate ? *)
-  (* TODO fix *)
-  ensures { forall k. vcontains k result <-> forall e. get k c = Some e <-> keyt e = k }
+  ensures { forall k. vcontains k result -> exists e. get k c = Some e }
+  ensures { K.sorted (velts result) }
+  (* TODO dedicated sort predicate that does not use velts ? *)
   =
   list_to_view (N.elts c.content)
 
@@ -1330,7 +1368,7 @@ module Collection
 
   (* ------------------------------------------------------------------------ *)
   let function select_to_coll (p : t -> bool) (c : collection) : collection
-  (* TODO postconditions *)
+  ensures { forall e. mem e result <-> p e /\ mem e c }
   =
   let rec internal_select (l : list t) : list t
   variant { l }
@@ -1343,13 +1381,17 @@ module Collection
 
   (* ------------------------------------------------------------------------ *)
   let function select (p : t -> bool) (c : collection) : view
-  (* TODO postconditions *)
+  ensures { forall k. vcontains k result -> exists e. get k c = Some e /\ p e }
+  ensures { forall e k. get k c = Some e -> p e <-> vcontains k result }
+  ensures { forall e k. get k c = Some e -> not (p e) -> not (vcontains k result) }
   =
   to_view (select_to_coll p c)
 
   (* ------------------------------------------------------------------------ *)
   let function select_view (p : t -> bool) (v : view) (c : collection) : view
-  (* TODO postconditions *)
+  ensures { forall k. vcontains k result -> vcontains k v }
+  ensures { forall k. vcontains k result -> forall e. get k c = Some e -> p e }
+  ensures { forall e k. get k c = Some e -> vcontains k v /\ p e <-> vcontains k result }
   =
   select (fun x -> p x && vcontains (keyt x) v) c
 
@@ -1390,7 +1432,7 @@ module Collection
   mk (N.mk (internal_removeif (N.elts c.content)))
 
   let function removeif_in_view (v : view) (c : collection) : collection
-  (* TODO preconditions *)
+  ensures { forall e. mem e result <-> vcontains (keyt e) v /\ mem e c }
   = removeif (fun x -> contains (keyt x) (from_view v c)) c
 
   (* ------------------------------------------------------------------------ *)
@@ -1400,8 +1442,11 @@ module Collection
   val function felts field : list tk
 
   (* ------------------------------------------------------------------------ *)
+  val function fcontains tk field : bool
+
+  (* ------------------------------------------------------------------------ *)
   let function from_field (f : field) (c : collection) : collection
-  (* TODO postconditions *)
+  ensures { forall e. mem e result <-> mem e c /\ fcontains (keyt e) f }
   =
   let rec internal_from_field (l : list tk) : list t
   variant { l }
@@ -1416,14 +1461,19 @@ module Collection
   end in
   mk (N.mk (internal_from_field (felts f)))
 
+  (* ------------------------------------------------------------------------ *)
   let function removeif_in_field (f : field) (c : collection) : collection
-  (* TODO postconditions *)
+  ensures { forall e. mem e result <-> not (fcontains (keyt e) f) /\ mem e c }
   = removeif (fun x -> contains (keyt x) (from_field f c)) c
 
+  (* ------------------------------------------------------------------------ *)
   let function removeif_in_field_and_pred (p : t -> bool) (f : field) (c : collection) : collection
-  (* TODO postconditions *)
+  ensures { forall e.
+    mem e result <-> (not (p e) \/ not (fcontains (keyt e) f)) /\ mem e c
+  }
   = removeif (fun x -> p x && contains (keyt x) (from_field f c)) c
 
+  (* ------------------------------------------------------------------------ *)
   let function is_in_view (v : view) (e : t) : bool
   ensures { result = vcontains (keyt e) v }
   = vcontains (keyt e) v
@@ -1432,6 +1482,7 @@ end
 
 module Set
   use list.List
+  use list.Mem
 
   (* ------------------------------------------------------------------------ *)
   type t
@@ -1469,13 +1520,8 @@ module Set
   type set = F.fset
 
   (* ------------------------------------------------------------------------ *)
-  let function add (e : t) (s : set) : set
-  (* TODO postconditions *)
-  = F.mk (Cons e (F.content s))
-
-  (* ------------------------------------------------------------------------ *)
   let function contains (e : t) (s : set) : bool
-  (* TODO postconditions *)
+  ensures { result <-> F.fmem e s }
   =
   let rec function internal_contains (l : list t) : bool
   variant { l }
@@ -1487,8 +1533,15 @@ module Set
   internal_contains (F.content s)
 
   (* ------------------------------------------------------------------------ *)
+  let function add (e : t) (s : set) : set
+  ensures { forall x. x <> e -> contains x result = contains x s}
+  ensures { contains e result }
+  = F.mk (Cons e (F.content s))
+
+  (* ------------------------------------------------------------------------ *)
   let function remove (e : t) (s : set) : set
-  (* TODO postconditions *)
+  ensures { forall x. x <> e -> contains x result = contains x s}
+  ensures { not (contains e s) -> not (contains e result) }
   =
   let rec function internal_remove (l : list t) : list t
   variant { l }
@@ -1509,12 +1562,14 @@ module Set
 
   (* ------------------------------------------------------------------------ *)
   let function elts (s : set) : list t
-  (* TODO postconditions ? *)
+  ensures { U.undup result = result }
+  (* ensures { } TODO : result is sorted *)
+  ensures { forall e. mem e result <-> contains e s }
   = F.content s
 
   (* ------------------------------------------------------------------------ *)
-  let function from_list (l : list t)
-  (* TODO postconditions ? *)
+  let function from_list (l : list t) : set
+  ensures { forall e. contains e result <-> mem e l }
   = F.mk l
 
 end
