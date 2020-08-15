@@ -2,9 +2,11 @@ type target_lang =
   | Ligo
   | LigoStorage
   | SmartPy
-  | Whyml
   | Markdown
   | Scaml
+  | Michelson
+  | MichelsonStorage
+  | Whyml
   | None
 [@@deriving show {with_path = false}]
 

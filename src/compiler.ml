@@ -48,6 +48,11 @@ let output (model : Model.model) =
         | LigoStorage  -> Printer_model_ligo.pp_storage
         | SmartPy      -> Printer_model_smartpy.pp_model
         | Scaml        -> Printer_model_scaml.pp_model
+        | Michelson
+        | MichelsonStorage ->
+          fun fmt model ->
+            let michelson = Gen_michelson.to_michelson model in
+            Format.fprintf fmt "%a@." Printer_michelson.pp_michelson michelson
         | Whyml        ->
           fun fmt model ->
             let mlw = raise_if_error gen_output_error Gen_why3.to_whyml model in
@@ -191,6 +196,40 @@ let generate_target model =
     |> generate_api_storage
     |> output
 
+  | Michelson
+  | MichelsonStorage ->
+    model
+    |> replace_ligo_ident
+    |> replace_col_by_key_for_ckfield
+    |> process_asset_state
+    |> replace_assignfield_by_update
+    |> remove_add_update
+    |> remove_container_op_in_update
+    |> merge_update
+    |> remove_assign_operator
+    |> extract_item_collection_from_add_asset
+    |> process_internal_string
+    |> remove_rational
+    |> abs_tez
+    |> replace_date_duration_by_timestamp
+    |> eval_variable_initial_value
+    |> replace_dotassetfield_by_dot
+    |> generate_storage
+    |> replace_declvar_by_letin
+    |> remove_enum_matchwith
+    |> replace_lit_address_by_role
+    |> remove_label
+    |> flat_sequence
+    |> remove_cmp_bool
+    |> split_key_values
+    |> remove_duplicate_key
+    |> assign_loop_label
+    |> remove_letin_from_expr
+    |> remove_fun_dotasset
+    |> optimize
+    |> generate_api_storage
+    |> output
+
   | Whyml ->
     model
     |> replace_whyml_ident
@@ -277,12 +316,14 @@ let print_version () =
 let main () =
   set_margin 300;
   let f = function
-    | "ligo"          -> Options.target := Ligo
-    | "ligo-storage"  -> Options.target := LigoStorage
-    | "smartpy"       -> Options.target := SmartPy
-    | "scaml"         -> Options.target := Scaml
-    | "whyml"         -> Options.target := Whyml
-    | "markdown"      -> Options.target := Markdown
+    | "ligo"              -> Options.target := Ligo
+    | "ligo-storage"      -> Options.target := LigoStorage
+    | "smartpy"           -> Options.target := SmartPy
+    | "scaml"             -> Options.target := Scaml
+    | "whyml"             -> Options.target := Whyml
+    | "michelson"         -> Options.target := Michelson
+    | "michelson-storage" -> Options.target := MichelsonStorage
+    | "markdown"          -> Options.target := Markdown
     |  s ->
       Format.eprintf
         "Unknown target %s (--list-target to see available target)@." s;
