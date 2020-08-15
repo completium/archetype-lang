@@ -1,0 +1,37 @@
+archetype test_init_storage_literals
+
+variable x : bool = true
+variable y : bool = false
+variable n : nat = 1
+variable i : int = 1i
+variable j : int = -1
+variable n_ : nat = 100_000
+variable i_ : int = 100_000i
+variable f : rational = 1.1
+variable g : rational = -1.1
+variable r : rational = 2 / 6
+variable t : rational = -2 / 6
+variable u : rational = 80%
+variable s : string = "str"
+variable ctz  : tez = 1tz
+variable cmtz : tez = 1mtz
+variable cutz : tez = 1utz
+variable a : address = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
+variable d : duration = 3w8d4h34m18s (* 3 weeks 8 days 4 hours 34 minutes 18 seconds *)
+variable date0 : date = 2019-01-01                (* iso 8601 *)
+variable date1 : date = 2019-01-01T01:02:03       (* iso 8601 *)
+variable date2 : date = 2019-01-01T01:02:03Z      (* iso 8601 *)
+variable date3 : date = 2019-01-01T00:00:00+01:00 (* iso 8601 *)
+variable date4 : date = 2019-01-01T00:00:00-05:30 (* iso 8601 *)
+variable myset : set<nat> = [1; 2; 3]
+variable mylist : list<nat> = [1; 2; 3]
+variable mymap  : map<nat, string> = [(1, "mystr1"); (2, "mystr2"); (3, "mystr3")]
+variable mytuple : (int * int) = (1, 2)
+variable op1 : option<int> = none
+variable op2 : option<nat> = some(0)
+variable b : bytes = 0xff
+variable vunit : unit = ()
+
+entry exec () {
+  ()
+}

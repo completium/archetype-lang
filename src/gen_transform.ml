@@ -585,6 +585,8 @@ let check_and_replace_init_caller ?(doit=false) (model : model) : model =
 
 let rec is_literal (mt : mterm) : bool =
   match mt.node with
+  | Munit
+  | Mbool      _
   | Mint       _
   | Mnat       _
   | Menum      _

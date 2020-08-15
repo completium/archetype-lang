@@ -1,0 +1,9 @@
+archetype test_init_storage_simple
+
+variable n : nat = 0
+variable i : int = 1i
+variable s : string = "str"
+
+entry exec () {
+  ()
+}

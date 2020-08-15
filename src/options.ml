@@ -49,6 +49,8 @@ let opt_all_parenthesis = ref false
 let opt_m     = ref false
 let opt_raw   = ref false
 let opt_raw_whytree = ref false
+let opt_raw_ir = ref false
+let opt_raw_michelson = ref false
 let opt_caller = ref ""
 
 let opt_property_focused = ref ""

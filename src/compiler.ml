@@ -49,10 +49,22 @@ let output (model : Model.model) =
         | SmartPy      -> Printer_model_smartpy.pp_model
         | Scaml        -> Printer_model_scaml.pp_model
         | Michelson
-        | MichelsonStorage ->
-          fun fmt model ->
-            let michelson = Gen_michelson.to_michelson model in
-            Format.fprintf fmt "%a@." Printer_michelson.pp_michelson michelson
+        | MichelsonStorage -> begin
+            fun fmt model ->
+              let ir = Gen_michelson.to_ir model in
+              if !Options.opt_raw_ir
+              then Format.fprintf fmt "%a@." Michelson.pp_ir ir
+              else begin
+                match !Options.target with
+                | MichelsonStorage -> Format.fprintf fmt "%a@." Printer_michelson.pp_data (snd ir.storage)
+                | Michelson ->
+                  let michelson = Gen_michelson.to_michelson ir in
+                  if !Options.opt_raw_michelson
+                  then Format.fprintf fmt "%a@." Michelson.pp_michelson michelson
+                  else Format.fprintf fmt "%a@." Printer_michelson.pp_michelson michelson
+                | _ -> assert false
+              end
+          end
         | Whyml        ->
           fun fmt model ->
             let mlw = raise_if_error gen_output_error Gen_why3.to_whyml model in
@@ -199,7 +211,7 @@ let generate_target model =
   | Michelson
   | MichelsonStorage ->
     model
-    |> replace_ligo_ident
+    |> process_multi_keys
     |> replace_col_by_key_for_ckfield
     |> process_asset_state
     |> replace_assignfield_by_update
@@ -225,7 +237,6 @@ let generate_target model =
     |> remove_duplicate_key
     |> assign_loop_label
     |> remove_letin_from_expr
-    |> remove_fun_dotasset
     |> optimize
     |> generate_api_storage
     |> output
@@ -367,6 +378,10 @@ let main () =
       "--raw", Arg.Set Options.opt_raw, " Same as -r";
       "-ry", Arg.Set Options.opt_raw_whytree, " Print raw model tree";
       "--raw-whytree", Arg.Set Options.opt_raw_whytree, " Same as -r";
+      "-ri", Arg.Set Options.opt_raw_ir, " Print raw intermediate representation";
+      "--raw-ir", Arg.Set Options.opt_raw_ir, " Same as -ri";
+      "-rm", Arg.Set Options.opt_raw_michelson, " Print raw michelson";
+      "--raw-michelson", Arg.Set Options.opt_raw_michelson, " Same as -rm";
       "-json", Arg.Set Options.opt_json, " Print JSON format";
       "-V", Arg.String (fun s -> Options.add_vids s), "<id> process specication identifiers";
       "-v", Arg.Unit (fun () -> print_version ()), " Show version number and exit";
