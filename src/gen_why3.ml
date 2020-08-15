@@ -585,16 +585,21 @@ let mk_removeif_name m asset test = mk_filter_name m asset test Removeif
 
 let mk_filter_predicate ftyp m asset test filter args =
   let args : (string * typ) list = List.map (fun (i,t) -> (i, (map_mtype m t |> unloc_type))) args in
+  let name = mk_filter_name m asset test ftyp in
+  let body = mk_afun_test filter in
   Dfun {
-  name     = mk_filter_name m asset test ftyp;
+  name     = name;
   logic    = Logic;
   args     = args @ (extract_args test |> List.map (fun (_,a,b) -> a,b)) @ ["a", Tyasset asset];
   returns  = Tybool;
   raises   = [];
   variants = [];
   requires = [];
-  ensures  = [];
-  body     = mk_afun_test filter;
+  ensures  = [{
+    id = name ^ "_post";
+    form = (Teq(Tyint,Tresult,body));
+  }];
+  body     = body;
 }
 
 let mk_select_predicate = mk_filter_predicate Select
