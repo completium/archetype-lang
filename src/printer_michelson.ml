@@ -3,40 +3,43 @@ open Printer_tools
 open Michelson
 
 let rec pp_type fmt (t : type_) =
-  let pp_type_node fmt = function
-    | Tkey                -> Format.fprintf fmt "key"
-    | Tunit               -> Format.fprintf fmt "unit"
-    | Tsignature          -> Format.fprintf fmt "signature"
-    | Toption    t        -> Format.fprintf fmt "(option %a)"     pp_type t
-    | Tlist      t        -> Format.fprintf fmt "(list %a)"       pp_type t
-    | Tset       t        -> Format.fprintf fmt "(set %a)"        pp_type t
-    | Toperation          -> Format.fprintf fmt "operation"
-    | Tcontract  t        -> Format.fprintf fmt "(contract %a)"   pp_type t
-    | Tpair      (lt, rt) -> Format.fprintf fmt "(pair %a %a)"    pp_type lt  pp_type rt
-    | Tor        (lt, rt) -> Format.fprintf fmt "(or %a %a)"      pp_type lt  pp_type rt
-    | Tlambda    (at, rt) -> Format.fprintf fmt "(lambda %a %a)"  pp_type at  pp_type rt
-    | Tmap       (kt, vt) -> Format.fprintf fmt "(map %a %a)"     pp_type kt  pp_type vt
-    | Tbig_map   (kt, vt) -> Format.fprintf fmt "(big_map %a %a)" pp_type kt  pp_type vt
-    | Tchain_id           -> Format.fprintf fmt "chain_id"
-    | Tint                -> Format.fprintf fmt "int"
-    | Tnat                -> Format.fprintf fmt "nat"
-    | Tstring             -> Format.fprintf fmt "string"
-    | Tbytes              -> Format.fprintf fmt "bytes"
-    | Tmutez              -> Format.fprintf fmt "mutez"
-    | Tbool               -> Format.fprintf fmt "bool"
-    | Tkey_hash           -> Format.fprintf fmt "key_hash"
-    | Ttimestamp          -> Format.fprintf fmt "timestamp"
-    | Taddress            -> Format.fprintf fmt "address"
+  let pp_annot fmt a = Format.fprintf fmt " %%%a" pp_str a in
+  let pp_annot_opt fmt _ = (pp_option pp_annot) fmt t.annotation in
+  let pp_simple_a str =
+    match t.annotation with
+    | Some a -> Format.fprintf fmt "(%a%a)" pp_str str pp_annot a
+    | _ -> pp_str fmt str
   in
-  match t.annotation with
-  | Some a -> Format.fprintf fmt "(%a %%%a)" pp_type_node t.node pp_str a
-  | _ -> pp_type_node fmt t.node
+  match t.node with
+  | Tkey                -> pp_simple_a "key"
+  | Tunit               -> pp_simple_a "unit"
+  | Tsignature          -> pp_simple_a "signature"
+  | Toption    t        -> Format.fprintf fmt "(option%a %a)"     pp_annot_opt () pp_type t
+  | Tlist      t        -> Format.fprintf fmt "(list%a %a)"       pp_annot_opt () pp_type t
+  | Tset       t        -> Format.fprintf fmt "(set%a %a)"        pp_annot_opt () pp_type t
+  | Toperation          -> pp_simple_a "operation"
+  | Tcontract  t        -> Format.fprintf fmt "(contract%a %a)"   pp_annot_opt () pp_type t
+  | Tpair      (lt, rt) -> Format.fprintf fmt "(pair%a %a %a)"    pp_annot_opt () pp_type lt  pp_type rt
+  | Tor        (lt, rt) -> Format.fprintf fmt "(or%a %a %a)"      pp_annot_opt () pp_type lt  pp_type rt
+  | Tlambda    (at, rt) -> Format.fprintf fmt "(lambda%a %a %a)"  pp_annot_opt () pp_type at  pp_type rt
+  | Tmap       (kt, vt) -> Format.fprintf fmt "(map%a %a %a)"     pp_annot_opt () pp_type kt  pp_type vt
+  | Tbig_map   (kt, vt) -> Format.fprintf fmt "(big_map%a %a %a)" pp_annot_opt () pp_type kt  pp_type vt
+  | Tchain_id           -> pp_simple_a "chain_id"
+  | Tint                -> pp_simple_a "int"
+  | Tnat                -> pp_simple_a "nat"
+  | Tstring             -> pp_simple_a "string"
+  | Tbytes              -> pp_simple_a "bytes"
+  | Tmutez              -> pp_simple_a "mutez"
+  | Tbool               -> pp_simple_a "bool"
+  | Tkey_hash           -> pp_simple_a "key_hash"
+  | Ttimestamp          -> pp_simple_a "timestamp"
+  | Taddress            -> pp_simple_a "address"
 
 let rec pp_data fmt (d : data) =
   match d with
   | Dint    v       -> pp_big_int fmt v
   | Dstring v       -> Format.fprintf fmt "\"%s\"" v
-  | Dbytes  v       -> Format.fprintf fmt "%s"     v
+  | Dbytes  v       -> Format.fprintf fmt "0x%s"     v
   | Dunit           -> Format.fprintf fmt "Unit"
   | Dtrue           -> Format.fprintf fmt "True"
   | Dfalse          -> Format.fprintf fmt "False"
@@ -46,7 +49,7 @@ let rec pp_data fmt (d : data) =
   | Dsome   d       -> Format.fprintf fmt "(Some %a)"      pp_data d
   | Dnone           -> Format.fprintf fmt "None"
   | Dlist l         -> Format.fprintf fmt "{ %a }" (pp_list "; " pp_data) l
-  | Dplist l        -> Format.fprintf fmt "{ %a }" (pp_list "; " (fun fmt (x, y) -> Format.fprintf fmt "(Elt %a %a)" pp_data x pp_data y)) l
+  | Dplist l        -> Format.fprintf fmt "{ %a }" (pp_list "; " (fun fmt (x, y) -> Format.fprintf fmt "Elt %a %a" pp_data x pp_data y)) l
 
 
 let rec pp_instruction fmt (i : instruction) =
