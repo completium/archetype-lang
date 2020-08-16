@@ -3,10 +3,8 @@ open Mlwtree
 let pp_str fmt str =
   Format.fprintf fmt "%s" str
 
-let pp_id = pp_str
-
-let pp_str fmt str =
-  Format.fprintf fmt "%s" str
+let pp_int fmt i =
+  Format.fprintf fmt "%i" i
 
 let pp_id = pp_str
 
@@ -172,24 +170,6 @@ let pp_type fmt typ =
 
 (* -------------------------------------------------------------------------- *)
 
-let pp_exn fmt e =
-  let e_str =
-    match e with
-    | Ekeyexist           -> "KeyExist"
-    | Enotfound           -> "NotFound"
-    | Einvalidcaller      -> "InvalidCaller"
-    | Enegassignnat       -> "NegAssignNat"
-    | Einvalidcondition   -> "InvalidCondition"
-    | Einvalidstate       -> "InvalidState"
-    | Enotransfer         -> "NoTransfer"
-    | Ebreak              -> "Break"
-    | Einvalid (Some msg) -> "(Invalid \""^msg^"\")"
-    | Einvalid None       -> "Invalid"
-  in
-  pp_str fmt e_str
-
-(* -------------------------------------------------------------------------- *)
-
 let pp_univ_decl fmt (i,t) =
   Format.fprintf fmt "%a : %a"
     (pp_list " " pp_str) i
@@ -239,7 +219,7 @@ let rec pp_term outer pos fmt = function
       (pp_term e_if PRight) i
       (pp_if_with_paren (pp_term e_then PRight)) t
       (pp_if_with_paren (pp_term e_else PRight)) e
-  | Traise e -> Format.fprintf fmt "raise %a" pp_exn e
+  | Traise e -> Format.fprintf fmt "raise %a" (pp_exn outer pos) e
   | Tmem (t,e1,e2) ->
     Format.fprintf fmt "%a.mem %a %a"
       pp_str (String.capitalize_ascii t)
@@ -530,7 +510,7 @@ let rec pp_term outer pos fmt = function
   | Ttry (b,l) ->
     Format.fprintf fmt "try@\n  @[%a@]@\nwith @\n@[%a@]@\nend"
       (pp_term outer pos) b
-      (pp_list "@\n" pp_catch) l
+      (pp_list "@\n" (pp_catch outer pos)) l
   | Tassert (None,e) ->
     Format.fprintf fmt "assert { %a }"
       (pp_term outer pos) e
@@ -777,7 +757,7 @@ let rec pp_term outer pos fmt = function
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
-  | Texn e -> Format.fprintf fmt "%a" pp_exn e
+  | Texn e -> Format.fprintf fmt "%a" (pp_exn outer pos) e
   | Tnottranslated -> pp_str fmt "NOT TRANSLATED"
   | Tename -> pp_str fmt "TODO_Tename"
   | Ttobereplaced -> pp_str fmt "TODO_Ttobereplaced"
@@ -877,14 +857,32 @@ and pp_raise outer pos fmt raises =
   else
     Format.fprintf fmt "@[raises { %a }@\n@]"
       (pp_list " }@\nraises { " (pp_term outer pos)) raises
-and pp_catch fmt (exn,e) =
+and pp_catch outer pos fmt (exn,e) =
   Format.fprintf fmt "| %a -> %a"
-    pp_exn exn
+    (pp_exn outer pos) exn
     (pp_term e_top PRight) e
 and pp_case fmt (p,t) =
   Format.fprintf fmt "%a -> %a"
     pp_pattern p
     (pp_term e_top PRight) t
+and pp_exn outer pos fmt = function
+| Ekeyexist           -> pp_str fmt "KeyExist"
+| Enotfound           -> pp_str fmt "NotFound"
+| Einvalidcaller      -> pp_str fmt "InvalidCaller"
+| Enegassignnat       -> pp_str fmt "NegAssignNat"
+| Einvalidcondition   -> pp_str fmt "InvalidCondition"
+| Einvalidstate       -> pp_str fmt "InvalidState"
+| Enotransfer         -> pp_str fmt "NoTransfer"
+| Ebreak              -> pp_str fmt "Break"
+| Einvalid (Some msg) -> Format.fprintf fmt "(Invalid \"%a\")" pp_str msg
+| Einvalid None       -> pp_str fmt "Invalid"
+| Efail (i,None)     -> Format.fprintf fmt "Fail%a" pp_int i
+| Efail (i,Some m)         -> Format.fprintf fmt "(Fail%a %a)" pp_int i (pp_term outer pos) m
+and pp_dexn fmt (i,t) =
+  Format.fprintf fmt "exception Fail%a %a"
+    pp_id i
+    pp_type t
+
 
 (* -------------------------------------------------------------------------- *)
 
@@ -986,6 +984,7 @@ let pp_decl fmt = function
   | Dstorage s       -> pp_storage fmt s
   | Dtheorem (t,i,e) -> pp_theorem fmt (t,i,e)
   | Dfun s           -> pp_fun fmt s
+  | Dexn (i,t)       -> pp_dexn fmt (i,t)
 
 let pp_module fmt (m : mlw_module) =
   Format.fprintf fmt "module %a@\n  @[%a@]@\nend"

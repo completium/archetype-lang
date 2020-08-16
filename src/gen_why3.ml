@@ -1055,8 +1055,14 @@ let mk_eq_asset m (r : M.asset) =
       ) (List.hd cmps) (List.tl cmps) |> loc_term;
   }
 
-let map_enum _m (e : M.enum) : (loc_term,loc_typ,loc_ident) abstract_decl =
+let mk_enum _m (e : M.enum) : (loc_term,loc_typ,loc_ident) abstract_decl =
   Denum (map_lident e.name, List.map (fun (item : M.enum_item) -> map_lident item.name) e.values)
+
+let get_fail_idx m t = succ (List.index_of (M.cmp_type t) (M.Utils.get_all_fail_types m))
+
+let mk_exn m i t : (loc_term, loc_typ, ident with_loc) abstract_decl =
+  let id = string_of_int (succ i) in
+  Dexn (dl id,map_mtype m t)
 
 let mk_field m (r : M.asset) =
   let asset = unloc r.name in
@@ -1437,10 +1443,10 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mfail NoTransfer           -> Traise Enotransfer
     | Mfail (InvalidCondition _) -> Traise Einvalidcondition
     | Mfail InvalidState         -> Traise Einvalidstate
-    | Mfail (Invalid { node = M.Mstring msg; type_=_ }) -> Traise (Einvalid (Some msg))
-    | Mfail (Invalid { node = M.Mvar (n, Vlocal); type_=_ }) -> Traise (Einvalid (Some (unloc n)))
     | Mfail AssignNat -> Tseq [loc_term (Tassign (Tvar gs, cp_storage gsinit)); dl (Traise Enegassignnat)]
-    | Mfail (Invalid _) -> Tseq [loc_term (Tassign (Tvar gs, cp_storage gsinit)); loc_term (Traise (Einvalid (Some "error")))]
+    | Mfail (Invalid v) ->
+      let idx = get_fail_idx m v.type_ in
+      Tseq [loc_term (Tassign (Tvar gs, cp_storage gsinit)); dl (Traise (Efail (idx,Some (map_mterm m ctx v))))]
 
     | Mtransfer (v, k) ->
       begin
@@ -2549,7 +2555,7 @@ let fold_exns m body : term list =
     | M.Mfail (InvalidCondition _) -> acc @ [Texn Einvalidcondition]
     | M.Mfail InvalidState -> acc @ [Texn Einvalidstate]
     | M.Mfail AssignNat -> acc @ [Texn Enegassignnat]
-    | M.Mfail (Invalid _) -> acc @ [Texn (Einvalid None)]
+    | M.Mfail (Invalid v) -> let idx = get_fail_idx m v.type_ in acc @ [Texn (Efail (idx,None))]
     | M.Mlistnth _ -> acc @ [Texn Enotfound]
     | M.Mself _ -> acc @ [Texn Enotfound]
     | M.Mcast (Tbuiltin Baddress, Tentrysig _, v) -> internal_fold_exn (acc @ [Texn Enotfound]) v
@@ -2750,7 +2756,8 @@ let to_whyml (m : M.model) : mlw_tree  =
   let useEuclDiv       = mk_use_euclidean_div m in
   let useMinMax        = mk_use_min_max m in
   let traceutils       = mk_trace_utils m |> deloc in
-  let enums            = M.Utils.get_enums m |> List.map (map_enum m) in
+  let enums            = M.Utils.get_enums m |> List.map (mk_enum m) in
+  let exns             = M.Utils.get_all_fail_types m |> List.mapi (mk_exn m) in
   let records          = M.Utils.get_records m |> List.map (mk_record m) in
   let lists            = M.Utils.get_all_list_types m |> List.map (mk_list_type m) |> List.flatten in
   let maps             = M.Utils.get_all_map_types m |> List.map (mk_map_type m) |> List.flatten in
@@ -2783,6 +2790,7 @@ let to_whyml (m : M.model) : mlw_tree  =
               useEuclDiv             @
               useMinMax              @
               traceutils             @
+              exns                   @
               enums                  @
               records                @
               eq_enums               @

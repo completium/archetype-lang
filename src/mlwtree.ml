@@ -1,6 +1,14 @@
 open Tools
 
-type exn =
+type fmod =
+  | Logic
+  | Rec
+  | NoMod
+[@@deriving show {with_path = false}]
+
+(* abstract types -------------------------------------------------------------*)
+
+type 'e exn =
   | Enotfound
   | Ekeyexist
   | Enegassignnat
@@ -10,17 +18,7 @@ type exn =
   | Enotransfer
   | Ebreak
   | Einvalid of string option
-[@@deriving show {with_path = false}]
-
-type fmod =
-  | Logic
-  | Rec
-  | NoMod
-[@@deriving show {with_path = false}]
-
-(* abstract types -------------------------------------------------------------*)
-
-type 'i abstract_qualid = 'i list
+  | Efail of int * 'e option
 [@@deriving show {with_path = false}]
 
 type ('i,'t) abstract_type =
@@ -79,7 +77,7 @@ type ('e,'t,'i) abstract_term =
   | Tmatch  of 'e * ('i pattern_node * 'e) list
   | Tapp    of 'e * 'e list
   | Tfor    of 'i * 'e * 'e * ('e,'i) abstract_formula list * 'e (* id, from, to, invariants *)
-  | Ttry    of 'e * (exn * 'e) list
+  | Ttry    of 'e * ('e exn * 'e) list
   | Tvar    of 'i
   | Ttuple  of 'e list
   | Ttupleaccess of 'e * int * int
@@ -137,8 +135,8 @@ type ('e,'t,'i) abstract_term =
   | Tnthtuple of int * int * 'e
   | Tcoll   of 'i * 'e
   | Tassign of 'e * 'e
-  | Traise  of exn
-  | Texn    of exn
+  | Traise  of 'e exn
+  | Texn    of 'e exn
   | Tconcat of 'e * 'e
   | Ttransfer of 'e * 'e
   | Tcall of 'e * 'e * 'i * 'e
@@ -278,14 +276,15 @@ type theotyp =
 [@@deriving show {with_path = false}]
 
 type ('e,'t,'i) abstract_decl =
-  | Duse     of bool * 'i abstract_qualid * string option
+  | Duse     of bool * 'i list * string option
   | Dval     of bool * 'i * 't
-  | Dclone   of 'i abstract_qualid * 'i * (('i,'t) abstract_clone_subst) list
+  | Dclone   of 'i list * 'i * (('i,'t) abstract_clone_subst) list
   | Denum    of 'i * 'i list
   | Drecord  of 'i * (('e,'t,'i) abstract_field) list
   | Dstorage of ('e,'t,'i) abstract_storage_struct
   | Dtheorem of theotyp * 'i * 'e
   | Dfun     of ('e,'t,'i) abstract_fun_struct
+  | Dexn     of 'i * 't
 [@@deriving show {with_path = false}]
 
 
@@ -304,7 +303,7 @@ type ('e,'t,'i) abstract_mlw_tree = ('e,'t,'i) abstract_module list
 
 (* abstract mappers ------------------------------------------------------------*)
 
-let map_abstract_qualid (map_i : 'i1 -> 'i2) (q1 : 'i1 abstract_qualid)
+let map_abstract_qualid (map_i : 'i1 -> 'i2) (q1 : 'i1 list)
   = List.map map_i q1
 
 let map_abstract_type (map_i : 'i1 -> 'i2) (map_t : 't1 -> 't2) = function
@@ -377,6 +376,18 @@ and map_abstract_fun_struct
   ensures  = List.map (map_abstract_formula map_e map_i) f.ensures;
   body     = map_e f.body;
 }
+and map_exn (map_e : 'e1 -> 'e2) = function
+  | Efail (i,None) -> Efail (i,None)
+  | Efail (i,Some t) -> Efail (i,Some (map_e t))
+  | Enotfound -> Enotfound
+  | Ekeyexist -> Ekeyexist
+  | Enegassignnat -> Enegassignnat
+  | Einvalidcaller -> Einvalidcaller
+  | Einvalidcondition -> Einvalidcondition
+  | Einvalidstate -> Einvalidstate
+  | Enotransfer -> Enotransfer
+  | Ebreak -> Ebreak
+  | Einvalid s -> Einvalid s
 and map_abstract_term
     (map_e : 'e1 -> 'e2)
     (map_t : 't1 -> 't2)
@@ -392,7 +403,7 @@ and map_abstract_term
                                 map_e s,
                                 List.map (map_abstract_formula map_e map_i) l,
                                 map_e b)
-  | Ttry (b,l)         -> Ttry (map_e b, List.map (fun (exn,e) -> (exn,map_e e)) l)
+  | Ttry (b,l)         -> Ttry (map_e b, List.map (fun (exn,e) -> (map_exn map_e exn,map_e e)) l)
   | Tassert (l,e)      -> Tassert (Option.map map_i l,map_e e)
   | Tvar i             -> Tvar (map_i i)
   | Ttuple l           -> Ttuple (List.map map_e l)
@@ -453,8 +464,8 @@ and map_abstract_term
   | Tnthtuple (i1,i2,e)-> Tnthtuple (i1, i2, map_e e)
   | Tcoll (i, e)       -> Tcoll (map_i i, map_e e)
   | Tassign (e1,e2)    -> Tassign (map_e e1, map_e e2)
-  | Traise e           -> Traise e
-  | Texn e             -> Texn e
+  | Traise e           -> Traise (map_exn map_e e)
+  | Texn e             -> Texn (map_exn map_e e)
   | Tconcat (e1,e2)    -> Tconcat (map_e e1, map_e e2)
   | Ttransfer (e1,e2)  -> Ttransfer (map_e e1, map_e e2)
   | Tcall (a,c,n,l)    -> Tcall (map_e a,map_e c,map_i n,map_e l)
@@ -571,6 +582,7 @@ let map_abstract_decl
   | Dstorage s       -> Dstorage (map_abstract_storage_struct map_e map_t map_i s)
   | Dtheorem (t,i,e) -> Dtheorem (t,map_i i, map_e e)
   | Dfun f           -> Dfun (map_abstract_fun_struct map_e map_t map_i f)
+  | Dexn (i,t)       -> Dexn (map_i i, map_t t)
 
 
 let map_abstract_module
@@ -594,7 +606,7 @@ let map_abstract_mlw_tree
 type ident             = string
 [@@deriving show {with_path = false}]
 
-type qualid            = ident abstract_qualid
+type qualid            = ident list
 [@@deriving show {with_path = false}]
 
 type typ               = (ident, typ) abstract_type
@@ -641,7 +653,7 @@ type 'o with_loc = {
 type loc_ident         = string with_loc
 [@@deriving show {with_path = false}]
 
-type loc_qualid        = (loc_ident abstract_qualid) with_loc
+type loc_qualid        = (loc_ident list) with_loc
 [@@deriving show {with_path = false}]
 
 type loc_typ           = ((loc_ident, loc_typ) abstract_type) with_loc
@@ -700,17 +712,6 @@ let loc_field (f : field) = with_dummy_loc (map_abstract_field loc_term loc_type
 let deloc x = x.obj
 
 (* compare -----------------------------------------------------------------------*)
-
-let compare_exn e1 e2 =
-  match e1,e2 with
-  | Enotfound, Enotfound -> true
-  | Ekeyexist, Ekeyexist -> true
-  | Einvalidcaller, Einvalidcaller -> true
-  | Enegassignnat, Enegassignnat -> true
-  | Einvalidcondition, Einvalidcondition -> true
-  | Einvalidstate, Einvalidstate -> true
-  | Ebreak, Ebreak -> true
-  | _ -> false
 
 let compare_fmod m1 m2 =
   match m1,m2 with
@@ -789,7 +790,7 @@ let rec compare_pattern cmp p1 p2 =
   | Tpsome i1, Tpsome i2 -> cmp i1 i2
   | _,_ -> false
 
-let compare_abstract_term
+let rec compare_abstract_term
     (cmpe : 'e -> 'e -> bool)
     (cmpt : 't -> 't -> bool)
     (cmpi : 'i -> 'i -> bool)
@@ -812,7 +813,7 @@ let compare_abstract_term
     List.for_all2 (compare_abstract_formula cmpe cmpi) l1 l2 && cmpe b1 b2
   | Ttry (b1,l1), Ttry (b2,l2) -> cmpe b1 b2 &&
                                   List.for_all2 (fun (exn1,e1) (exn2,e2) ->
-                                      compare_exn exn1 exn2 && cmpe e1 e2) l1 l2
+                                      compare_exn cmpe exn1 exn2 && cmpe e1 e2) l1 l2
   | Tassert (None,e1), Tassert (None,e2) -> cmpe e1 e2
   | Tassert (Some l1,e1), Tassert (Some l2,e2) -> cmpi l1 l2 && cmpe e1 e2
   | Tvar i1, Tvar i2 -> cmpi i1 i2
@@ -879,8 +880,8 @@ let compare_abstract_term
   | Tnthtuple (i1,i2,e1), Tnthtuple (i3,i4,e2) -> compare i1 i3 = 0 && compare i2 i4 = 0 && cmpe e1 e2
   | Tcoll (i1,e1), Tcoll (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tassign (e1,e2), Tassign (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
-  | Traise e1, Traise e2 -> compare_exn e1 e2
-  | Texn e1, Texn e2 -> compare_exn e1 e2
+  | Traise e1, Traise e2 -> compare_exn cmpe e1 e2
+  | Texn e1, Texn e2 -> compare_exn cmpe e1 e2
   | Tconcat (e1,e2), Tconcat (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
   | Tmktr (e1,e2), Tmktr (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
   | Ttradd i1, Ttradd i2 -> cmpi i1 i2
@@ -956,6 +957,18 @@ let compare_abstract_term
   | Tnottranslated, Tnottranslated -> true
   | Ttobereplaced, Ttobereplaced -> true
   | _ -> false (* TODO : compare exception ? *)
+and compare_exn cmpe e1 e2 =
+  match e1,e2 with
+  | Enotfound, Enotfound -> true
+  | Ekeyexist, Ekeyexist -> true
+  | Einvalidcaller, Einvalidcaller -> true
+  | Enegassignnat, Enegassignnat -> true
+  | Einvalidcondition, Einvalidcondition -> true
+  | Einvalidstate, Einvalidstate -> true
+  | Ebreak, Ebreak -> true
+  | Efail (i1,None), Efail (i2,None) -> compare i1 i2 = 0
+  | Efail (i1, Some v1), Efail (i2, Some v2) -> compare i1 i2 = 0 && cmpe v1 v2
+  | _ -> false
 
 (* replace --------------------------------------------------------------------*)
 
