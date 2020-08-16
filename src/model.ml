@@ -3416,6 +3416,7 @@ module Utils : sig
   val get_all_set_types                  : model -> type_ list
   val get_all_list_types                 : model -> type_ list
   val get_all_map_types                  : model -> type_ list
+  val get_all_fail_types                 : model -> type_ list
   val extract_key_value_from_masset      : model -> mterm -> mterm
   val is_not_string_nat_int              : type_ -> bool
   val get_function                       : model -> ident -> function_struct
@@ -4349,27 +4350,7 @@ end = struct
          else c1
       )
 
-  let get_all_gen_type for_type (model : model) =
-    let for_mterm (accu : 'a) (mt : mterm) : 'a =
-      let rec aux accu (mt : mterm) =
-        let accu = for_type accu mt.type_ in
-        match mt.node with
-        | Mletin (_, x, ot, b, o) -> begin
-            accu
-            |> (fun accu -> aux accu x)
-            |> (fun accu -> Option.map_dfl (for_type accu) accu ot)
-            |> (fun accu -> aux accu b)
-            |> (fun accu -> Option.map_dfl (aux accu) accu o)
-          end
-        | Mdeclvar (_, Some t, v) -> begin
-            accu
-            |> (fun accu -> for_type accu t)
-            |> (fun accu -> aux accu v)
-          end
-        | _ -> fold_term aux accu mt
-      in
-      aux accu mt
-    in
+  let get_all_gen_mterm_type for_mterm for_type (model : model) =
     let for_label_term accu (lt : label_term) = for_mterm accu lt.term in
     let for_decl_node accu (d : decl_node) =
       let for_var accu (v : var) =
@@ -4484,6 +4465,29 @@ end = struct
     |> (fun accu -> List.fold_left for_function__   accu model.functions)
     |> (fun accu -> for_specification               accu model.specification)
 
+  let get_all_gen_type for_type (model : model) =
+    let for_mterm (accu : 'a) (mt : mterm) : 'a =
+      let rec aux accu (mt : mterm) =
+        let accu = for_type accu mt.type_ in
+        match mt.node with
+        | Mletin (_, x, ot, b, o) -> begin
+            accu
+            |> (fun accu -> aux accu x)
+            |> (fun accu -> Option.map_dfl (for_type accu) accu ot)
+            |> (fun accu -> aux accu b)
+            |> (fun accu -> Option.map_dfl (aux accu) accu o)
+          end
+        | Mdeclvar (_, Some t, v) -> begin
+            accu
+            |> (fun accu -> for_type accu t)
+            |> (fun accu -> aux accu v)
+          end
+        | _ -> fold_term aux accu mt
+      in
+      aux accu mt
+    in
+    get_all_gen_mterm_type for_mterm for_type model
+
   let add_type (l : type_ list) (x : type_) =
     if List.exists (cmp_type x) l
     then l
@@ -4532,6 +4536,20 @@ end = struct
     in
     get_all_gen_type for_type model
 
+  let get_all_fail_types (model : model) : type_ list =
+    let for_type accu _ = accu in
+
+    let for_mterm (accu : 'a) (mt : mterm) : 'a =
+      let rec aux accu (mt : mterm) =
+        let accu = for_type accu mt.type_ in
+        match mt.node with
+        | Mfail (Invalid e) -> let t = e.type_ in add_type accu t
+        | _ -> fold_term aux accu mt
+      in
+      aux accu mt
+    in
+
+    get_all_gen_mterm_type for_mterm for_type model
 
   let extract_key_value_from_masset (model : model) (v : mterm) : mterm =
     match v with

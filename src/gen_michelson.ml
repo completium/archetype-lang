@@ -35,7 +35,7 @@ let to_ir (model : M.model) : T.ir =
           | Baddress   -> T.Taddress
           | Brole      -> T.Taddress
           | Bcurrency  -> T.Tmutez
-          | Bsignature -> assert false
+          | Bsignature -> T.Tsignature
           | Bkey       -> T.Tkey
           | Bkeyhash   -> T.Tkey_hash
           | Bbytes     -> T.Tbytes

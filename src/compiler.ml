@@ -118,7 +118,7 @@ let generate_target model =
     |> process_multi_keys
     |> replace_declvar_by_letin
     |> generate_api_storage
-    (* |> (fun (model : Model.model) -> Format.printf "%a@." (Printer_tools.pp_list " " Printer_model.pp_type) (Model.Utils.get_all_list_types model)) *)
+    (* |> (fun (model : Model.model) -> Format.printf "%a@." (Printer_tools.pp_list "@\n" Printer_model.pp_type) (Model.Utils.get_all_fail_types model)) *)
     |> output
 
   | Ligo
