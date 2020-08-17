@@ -1454,7 +1454,7 @@ end = struct
 
       | `Definition def ->
         Some { vr_name = def.df_name;
-               vr_type = A.Tcontainer (A.Tasset def.df_asset, A.View);
+               vr_type = A.Tcontainer (A.Tasset def.df_asset, A.Collection);
                vr_kind = `Ghost;
                vr_invs = [];
                vr_core = None;
