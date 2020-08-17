@@ -141,6 +141,7 @@ type 'term var_kind_gen =
   | Vstorevar
   | Vstorecol
   | Venumval
+  | Vdefinition
   | Vlocal
   | Vparam
   | Vfield
@@ -152,6 +153,7 @@ type 'term container_kind_gen =
   | CKcoll
   | CKview  of 'term
   | CKfield of (ident * ident * 'term)
+  | CKdef
 [@@deriving show {with_path = false}]
 
 type 'term iter_container_kind_gen =
@@ -1010,6 +1012,7 @@ let cmp_mterm_node
     | Vstorevar, Vstorevar
     | Vstorecol, Vstorecol
     | Venumval, Venumval
+    | Vdefinition, Vdefinition
     | Vlocal, Vlocal
     | Vparam, Vparam
     | Vfield, Vfield
@@ -1021,6 +1024,8 @@ let cmp_mterm_node
     match lhs, rhs with
     | CKcoll, CKcoll -> true
     | CKview l, CKview r -> cmp l r
+    | CKfield (an1, fn1, mt1), CKfield (an2, fn2, mt2) -> cmp_ident an1 an2 && cmp_ident fn1 fn2 && cmp mt1 mt2
+    | CKdef, CKdef -> true
     | _ -> false
   in
   let cmp_iter_container_kind (lhs : iter_container_kind) (rhs : iter_container_kind) : bool =
@@ -1370,6 +1375,7 @@ let map_var_kind f = function
   | Vstorevar -> Vstorevar
   | Vstorecol -> Vstorecol
   | Venumval -> Venumval
+  | Vdefinition -> Vdefinition
   | Vlocal -> Vlocal
   | Vparam -> Vparam
   | Vfield -> Vfield
@@ -1380,6 +1386,7 @@ let map_container_kind (fi : ident -> ident) f = function
   | CKcoll               -> CKcoll
   | CKview  mt           -> CKview  (f mt)
   | CKfield (an, fn, mt) -> CKfield (fi an, fi fn, f mt)
+  | CKdef                -> CKdef
 
 let map_iter_container_kind (fi : ident -> ident) f = function
   | ICKcoll  an           -> ICKcoll  (fi an)
@@ -1733,6 +1740,7 @@ let fold_var_kind f accu = function
   | Vstorevar
   | Vstorecol
   | Venumval
+  | Vdefinition
   | Vlocal
   | Vparam
   | Vfield
@@ -1740,9 +1748,10 @@ let fold_var_kind f accu = function
   | Vthe -> accu
 
 let fold_container_kind f accu = function
-  | CKcoll          -> accu
-  | CKview mt       -> f accu mt
-  | CKfield (_, _, mt)      -> f accu mt
+  | CKcoll             -> accu
+  | CKview mt          -> f accu mt
+  | CKfield (_, _, mt) -> f accu mt
+  | CKdef              -> accu
 
 let fold_iter_container_kind f accu = function
   | ICKcoll  _          -> accu
@@ -1971,6 +1980,7 @@ let fold_map_var_kind f accu = function
   | Vstorevar -> Vstorevar, accu
   | Vstorecol -> Vstorecol, accu
   | Venumval  -> Venumval,  accu
+  | Vdefinition -> Vdefinition, accu
   | Vlocal    -> Vlocal,    accu
   | Vparam    -> Vparam,    accu
   | Vfield    -> Vfield,    accu
@@ -1985,6 +1995,7 @@ let fold_map_container_kind f accu = function
   | CKfield (an, fn, mt) ->
     let mte, mta = f accu mt in
     CKfield (an, fn, mte), mta
+  | CKdef -> CKdef, accu
 
 let fold_map_iter_container_kind f accu = function
   | ICKcoll an -> ICKcoll an, accu

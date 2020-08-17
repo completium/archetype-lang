@@ -431,6 +431,7 @@ let pp_model fmt (model : model) =
     | CKcoll     -> pp_str fmt "_Coll_"
     | CKview mt  -> f fmt mt
     | CKfield (an, fn, mt) -> Format.fprintf fmt "CKfield (%s, %s, %a)" an fn f mt
+    | CKdef      -> pp_str fmt "_Def_"
   in
 
 
@@ -1274,6 +1275,7 @@ let pp_model fmt (model : model) =
       | Mvar (v, Vstorevar)      -> Format.fprintf fmt "%s.%a" const_storage pp_id v
       | Mvar (v, Vstorecol)      -> Format.fprintf fmt "%s.%a" const_storage pp_id v
       | Mvar (v, Venumval)       -> pp_id fmt v
+      | Mvar (v, Vdefinition)    -> pp_id fmt v
       | Mvar (v, Vlocal)         -> pp_id fmt v
       | Mvar (v, Vparam)         -> pp_id fmt v
       | Mvar (v, Vfield)         -> pp_id fmt v

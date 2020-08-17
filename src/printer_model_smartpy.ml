@@ -426,13 +426,14 @@ let pp_model fmt (model : model) =
     | CKcoll    -> Format.fprintf fmt "c_%s" an
     | CKview _  -> Format.fprintf fmt "v_%s" an
     | CKfield (an, fn, _) -> Format.fprintf fmt "f_%s_%s" an fn
+    | CKdef     -> assert false
   in
 
   let pp_transfer_kind f fmt = function
-    | TKsimple d        -> Format.fprintf fmt "to %a" f d
+    | TKsimple d           -> Format.fprintf fmt "to %a" f d
     | TKcall (id, _, d, a) -> Format.fprintf fmt "to %a call %s(%a)" f d id f a
-    | TKentry (e, a)    -> Format.fprintf fmt "to entry %a(%a)" f e f a
-    | TKself (id, args) -> Format.fprintf fmt "to entry self.%a(%a)" pp_str id (pp_list ", " (fun fmt (id, x) -> Format.fprintf fmt "%s = %a" id f x)) args
+    | TKentry (e, a)       -> Format.fprintf fmt "to entry %a(%a)" f e f a
+    | TKself (id, args)    -> Format.fprintf fmt "to entry self.%a(%a)" pp_str id (pp_list ", " (fun fmt (id, x) -> Format.fprintf fmt "%s = %a" id f x)) args
   in
 
   let pp_mterm (env : Printer_model_tools.env) fmt (mt : mterm) =
@@ -937,7 +938,8 @@ let pp_model fmt (model : model) =
                match c with
                | CKcoll -> ()
                | CKview mt -> f fmt mt
-               | CKfield (_an, _fn, _k) -> ()) ()
+               | CKfield (_an, _fn, _k) -> ()
+               | CKdef -> assert false) ()
         in
         pp fmt (an, c, la, lb, a)
 
@@ -949,7 +951,8 @@ let pp_model fmt (model : model) =
                match c with
                | CKcoll -> ()
                | CKview mt -> f fmt mt
-               | CKfield (_an, _fn, _k) -> ()) ()
+               | CKfield (_an, _fn, _k) -> ()
+               | CKdef -> assert false) ()
         in
         pp fmt (an, c)
 
@@ -984,7 +987,8 @@ let pp_model fmt (model : model) =
                match c with
                | CKcoll -> ()
                | CKview mt -> f fmt mt
-               | CKfield (_an, _fn, k) -> f fmt k) ()
+               | CKfield (_an, _fn, k) -> f fmt k
+               | CKdef -> assert false) ()
         in
         pp fmt (an, c, la, lb, a)
 
@@ -996,7 +1000,8 @@ let pp_model fmt (model : model) =
                match c with
                | CKcoll -> ()
                | CKview mt -> f fmt mt
-               | CKfield (_an, _fn, k) -> f fmt k) ()
+               | CKfield (_an, _fn, k) -> f fmt k
+               | CKdef -> assert false) ()
             (pp_list ", " (fun fmt (a, b) -> Format.fprintf fmt "%a %a" pp_ident a pp_sort_kind b)) l
         in
         pp fmt (an, c, l)
@@ -1009,7 +1014,8 @@ let pp_model fmt (model : model) =
                match c with
                | CKcoll -> f fmt i
                | CKview mt -> Format.fprintf fmt "%a, %a" f mt f i
-               | CKfield (_an, _fn, k) -> Format.fprintf fmt "%a, %a" f k f i) ()
+               | CKfield (_an, _fn, k) -> Format.fprintf fmt "%a, %a" f k f i
+               | CKdef -> assert false) ()
         in
         pp fmt (an, c, i)
 
@@ -1021,7 +1027,8 @@ let pp_model fmt (model : model) =
                match c with
                | CKcoll -> f fmt i
                | CKview _mt -> ()
-               | CKfield (_an, _fn, _) -> ()) ()
+               | CKfield (_an, _fn, _) -> ()
+               | CKdef -> assert false) ()
         in
         pp fmt (an, c, i)
 
@@ -1033,7 +1040,8 @@ let pp_model fmt (model : model) =
                match c with
                | CKcoll -> ()
                | CKview mt -> f fmt mt
-               | CKfield (_an, _fn, k) -> f fmt k) ()
+               | CKfield (_an, _fn, k) -> f fmt k
+               | CKdef -> assert false) ()
         in
         pp fmt (an, c)
 
@@ -1045,7 +1053,8 @@ let pp_model fmt (model : model) =
                match c with
                | CKcoll -> ()
                | CKview mt -> f fmt mt
-               | CKfield (_an, _fn, _k) -> ()) ()
+               | CKfield (_an, _fn, _k) -> ()
+               | CKdef -> assert false) ()
         in
         pp fmt (an, c, p)
 
@@ -1056,7 +1065,8 @@ let pp_model fmt (model : model) =
              match c with
              | CKcoll -> f fmt i
              | CKview _mt -> ()
-             | CKfield (_an, _fn, _) -> ()) ()
+             | CKfield (_an, _fn, _) -> ()
+             | CKdef -> assert false) ()
 
       | Mtail (an, c, i) ->
         Format.fprintf fmt "self.tail_%a (%a)"
@@ -1065,7 +1075,8 @@ let pp_model fmt (model : model) =
              match c with
              | CKcoll -> f fmt i
              | CKview _mt -> ()
-             | CKfield (_an, _fn, _) -> ()) ()
+             | CKfield (_an, _fn, _) -> ()
+             | CKdef -> assert false) ()
 
 
       (* utils *)
@@ -1278,6 +1289,7 @@ let pp_model fmt (model : model) =
           pp_id v
       | Mvar (v, Vstorecol) -> Format.fprintf fmt "self.data.%a" pp_id v
       | Mvar (v, Venumval)  -> pp_id fmt v
+      | Mvar (v, Vdefinition)  -> pp_id fmt v
       | Mvar (v, Vlocal)    ->
         Format.fprintf fmt "%a%a"
           (fun fmt b -> match b with true -> pp_str fmt "self." | _ -> ()) (is_const env v)

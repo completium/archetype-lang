@@ -14,6 +14,7 @@ let generate_api_storage ?(verif=false) (model : model) : model =
     | CKcoll              -> Coll
     | CKview _            -> View
     | CKfield (an, fn, _) -> Field (an, fn)
+    | CKdef               -> Coll
   in
 
   let rec f (ctx : ctx_model) (accu : api_storage list) (term : mterm) : api_storage list =

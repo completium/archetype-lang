@@ -741,6 +741,7 @@ module Utils : sig
   val is_variable               : ast -> lident -> bool
   val is_asset                  : ast -> lident -> bool
   val is_enum_value             : ast -> lident -> bool
+  val is_definition             : ast -> lident -> bool
   val get_var_type              : ast -> lident -> type_
   val get_enum_name             : lident enum_struct -> lident
 
@@ -764,6 +765,24 @@ end = struct
   let get_variables ast = List.fold_right (fun (x : 'id decl_) accu -> match x with Dvariable x ->  x::accu | _ -> accu ) ast.decls []
   let get_assets ast    = List.fold_right (fun (x : 'id decl_) accu -> match x with Dasset x    ->  x::accu | _ -> accu ) ast.decls []
   let get_enums ast     = List.fold_right (fun (x : 'id decl_) accu -> match x with Denum x     ->  x::accu | _ -> accu ) ast.decls []
+
+  let get_definitions (ast : ast) =
+    let for_spec s = s.definitions in
+    let for_spec_accu accu s =
+      accu @ for_spec s
+    in
+    let for_spec_accu_opt accu s =
+      Option.map_dfl (fun x -> for_spec_accu accu x) accu s
+    in
+    []
+    |> (fun acc -> List.fold_left (fun accu (fu : 'id fun_) ->
+        let s =
+          match fu with
+          | Ffunction fs -> fs.specification
+          | Ftransaction ts -> ts.specification
+        in
+        for_spec_accu_opt accu s) acc ast.funs)
+    |> fun acc -> List.fold_left (fun accu s -> for_spec_accu accu s) acc ast.specifications
 
   let get_asset_opt ast asset_name : asset option =
     let id = unloc asset_name in
@@ -835,6 +854,13 @@ end = struct
         else accu
     ) None (get_enums ast)
 
+  let get_definition ast ident =
+    List.fold_left (fun accu (x : 'id definition) ->
+        if (Location.unloc x.name) = (Location.unloc ident)
+        then Some x
+        else accu
+      ) None (get_definitions ast)
+
   let get_variable_opt ast ident : 'id variable option =
     List.fold_left (
       fun accu (x : 'id variable) ->
@@ -850,6 +876,11 @@ end = struct
 
   let is_asset ast ident =
     match get_asset_opt ast ident with
+    | Some _ -> true
+    | None   -> false
+
+  let is_definition ast ident =
+    match get_definition ast ident with
     | Some _ -> true
     | None   -> false
 
