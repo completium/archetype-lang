@@ -113,9 +113,10 @@ let pp_if_with_paren pp fmt x =
 let pp_logic fmt m =
   let mod_str =
     match m with
-    | Logic         -> " function"
-    | Rec           -> " rec"
-    | NoMod         -> "" in
+    | LogicOnly     -> "function"
+    | Logic         -> "let function"
+    | Rec           -> "let rec"
+    | NoMod         -> "let" in
   pp_str fmt mod_str
 
 (* -------------------------------------------------------------------------- *)
@@ -500,6 +501,10 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "@[%a@] in@\n%a"
       pp_fun s
       (pp_term outer pos) e
+  | Tlambda (l,e) ->
+    Format.fprintf fmt "fun %a -> @[%a@]"
+      (pp_list " " pp_str) l
+      (pp_term outer pos) e
   | Tfor (i,f,s,l,b) ->
     Format.fprintf fmt "for %a = %a to %a do@\n@[%a@]@\n  @[%a@]@\ndone"
       pp_str i
@@ -603,18 +608,24 @@ let rec pp_term outer pos fmt = function
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
   | Tlnth _ -> pp_str fmt "TODO_Tlnth"
-  | Tselect (i1,i2,l,e) ->
-    if List.length l > 0 then
-      Format.fprintf fmt "%a.select_to_coll (%a %a) %a"
-      pp_str (String.capitalize_ascii i1)
-      pp_str i2
-      (pp_list " " (pp_term outer pos)) l
-      (pp_with_paren (pp_term outer pos)) e
-    else
+  | Tselect (i1,e1,e2) ->
+    begin match e1 with
+    | Tapp (id,[]) ->
       Format.fprintf fmt "%a.select_to_coll %a %a"
       pp_str (String.capitalize_ascii i1)
-      pp_str i2
-      (pp_with_paren (pp_term outer pos)) e
+      (pp_with_paren (pp_term outer pos)) id
+      (pp_with_paren (pp_term outer pos)) e2
+    | Tvar _ ->
+      Format.fprintf fmt "%a.select_to_coll %a %a"
+      pp_str (String.capitalize_ascii i1)
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
+    | _ ->
+      Format.fprintf fmt "%a.select_to_coll (%a) %a"
+      pp_str (String.capitalize_ascii i1)
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
+    end
   | Tcselect (i1,i2,l,e) ->
     if List.length l > 0 then
       Format.fprintf fmt "%a.select (%a %a) %a"
@@ -841,7 +852,7 @@ and pp_variants fmt variants =
     Format.fprintf fmt "variant { %a }@\n"
       (pp_list ", " (pp_term e_default PRight)) variants
 and pp_fun fmt (s : fun_struct) =
-  Format.fprintf fmt "let%a %a %a : %a@\n%a%a%a%a=  @[%a@]"
+  Format.fprintf fmt "%a %a %a : %a@\n%a%a%a%a=  @[%a@]"
     pp_logic s.logic
     pp_id s.name
     pp_args s.args
