@@ -1,0 +1,14 @@
+archetype spec_asset
+
+asset my_asset {
+  id: int;
+  v : nat;
+}
+
+entry exec () {
+  ()
+}
+
+specification asset my_asset {
+  s1: v > 0;
+}

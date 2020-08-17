@@ -1,0 +1,13 @@
+archetype spec_entry
+
+function f () : nat {
+  return 1
+}
+
+entry exec () {
+  ()
+}
+
+specification function f () {
+  s1: true;
+}

@@ -1,0 +1,15 @@
+archetype spec_definition
+
+asset myasset {
+  id: int;
+}
+
+entry exec () {
+  fail ("error")
+}
+
+specification {
+  fails {
+    x : myasset | x.id = 0
+  }
+}

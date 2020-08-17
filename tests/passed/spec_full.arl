@@ -1,4 +1,4 @@
-archetype contract_with_full_specification
+archetype spec_full
 
 asset myasset {
   id: string;
@@ -53,6 +53,8 @@ entry exec () {
     for : myloop c in col1 do
       ()
     done;
-    assert a1
+    assert a1;
+    if x <> 0
+    then fail("error")
   }
 }

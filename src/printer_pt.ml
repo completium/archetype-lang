@@ -1105,10 +1105,22 @@ let rec pp_declaration fmt { pldesc = e; _ } =
     let items, exts = v |> unloc in
     pp_spec fmt (items, exts)
 
-  | Dspecasset (an, l) ->
+  | Dspecasset (id, l) ->
     Format.fprintf fmt "specification asset %a {@\n  @[%a@]@\n}"
-    pp_id an
-    (pp_list "@\n" (fun fmt (id, x) -> Format.fprintf fmt "%a: %a;" pp_id id pp_simple_expr x)) l
+    pp_id id
+    (pp_list "@\n" (fun fmt x -> let (id, x) = unloc x in Format.fprintf fmt "%a: %a;" pp_id id pp_simple_expr x)) l
+
+  | Dspecfun (b, id, args, s) ->
+    Format.fprintf fmt "specification %s %a%a {@\n  %a@\n}"
+    (if b then "entry" else "function")
+    pp_id id
+    pp_fun_args args
+    pp_specification s
+
+  | Dspecvariable (id, l) ->
+    Format.fprintf fmt "specification variable %a {@\n  @[%a@]@\n}"
+    pp_id id
+    (pp_list "@\n" (fun fmt x -> let (id, x) = unloc x in Format.fprintf fmt "%a: %a;" pp_id id pp_simple_expr x)) l
 
   | Dsecurity v ->
     let items, exts = v |> unloc in

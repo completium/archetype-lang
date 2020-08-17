@@ -275,6 +275,10 @@ declaration_r:
  | x=namespace          { x }
  | x=function_decl      { x }
  | x=specification_decl { x }
+ | x=specasset          { x }
+ | x=specfun            { x }
+ | x=specentry          { x }
+ | x=specvariable       { x }
  | x=security_decl      { x }
  | INVALID_DECL         { Dinvalid }
 
@@ -390,23 +394,48 @@ spec_items:
   cs=loc(spec_contract_invariant)*
    { ds @ ps @ vs @ es @ bs @ ss @ cs }
 
-%inline specification:
-| SPECIFICATION exts=option(extensions) LBRACE
-    xs=spec_items RBRACE
-        { (xs, exts) }
+%inline specification_unloc_c:
+| xs=spec_items { xs }
 
-| SPECIFICATION exts=option(extensions) LBRACE
-    xs=label_exprs_non_empty RBRACE
+| xs=label_exprs_non_empty
         { let ll = List.map (fun x ->
             let loc, (lbl, e) = Location.deloc x in
             mkloc loc (Vpostcondition (lbl, e, [], [], None))) xs in
-            (ll, exts) }
+            ll }
+
+%inline specification_with_exts_unloc_c:
+| x=specification_unloc_c { (x, None) }
+
+%inline specification_c:
+| x=loc(specification_with_exts_unloc_c) { x }
+
+%inline specification:
+| SPECIFICATION exts=option(extensions) LBRACE xs=specification_unloc_c RBRACE
+    { (xs, exts) }
 
 specification_fun:
 | x=loc(specification) { x }
 
 specification_decl:
 | x=loc(specification)      { Dspecification x }
+
+specasset:
+| SPECIFICATION ASSET id=ident LBRACE xs=label_exprs_non_empty RBRACE
+{ Dspecasset (id, xs) }
+
+specfun_gen(X):
+| SPECIFICATION X id=ident args=function_args LBRACE s=specification_c RBRACE
+{ (id, args, s) }
+
+specfun:
+| x=specfun_gen(FUNCTION) { let id, args, s = x in Dspecfun (false, id, args, s) }
+
+specentry:
+| x=specfun_gen(ENTRY)    { let id, args, s = x in Dspecfun (true, id, args, s) }
+
+specvariable:
+| SPECIFICATION VARIABLE id=ident LBRACE xs=label_exprs_non_empty RBRACE
+{ Dspecvariable (id, xs) }
 
 %inline security_item_unloc:
 | lbl=ident COLON id=ident args=security_args

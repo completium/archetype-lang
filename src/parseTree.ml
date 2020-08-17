@@ -215,10 +215,10 @@ and specification = specification_unloc loced
 and security_arg_unloc =
   | Sident of lident
   | Sdot   of lident * lident
-  | Slist of security_arg list
-  | Sapp of lident * security_arg list
-  | Sbut of lident * security_arg
-  | Sto of lident * security_arg
+  | Slist  of security_arg list
+  | Sapp   of lident * security_arg list
+  | Sbut   of lident * security_arg
+  | Sto    of lident * security_arg
 
 and security_arg = security_arg_unloc loced
 
@@ -234,7 +234,7 @@ and s_function = {
   name  : lident;
   args  : args;
   ret_t : type_t option;
-  spec : specification option;
+  spec  : specification option;
   body  : expr;
 }
 
@@ -271,7 +271,9 @@ and declaration_unloc =
   | Dnamespace     of namespace_decl
   | Dfunction      of s_function
   | Dspecification of specification
-  | Dspecasset     of lident * (lident * expr) list
+  | Dspecasset     of lident * label_exprs
+  | Dspecfun       of bool * lident * args * specification (* true = entry *)
+  | Dspecvariable  of lident * label_exprs
   | Dsecurity      of security
   | Dinvalid
 
