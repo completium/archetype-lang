@@ -841,6 +841,7 @@ type mthtyp = [
   | `Asset
   | `Coll
   | `SubColl
+  | `PkOrAsset
   | `Cmp
   | `Pred  of bool
   | `RExpr of bool
@@ -878,7 +879,7 @@ let methods : (string * method_) list =
     ("update"      , mk A.Cupdate       `Both        (`Effect c   ) `Total   `Both     (`Fixed [`Pk; `Ef true      ], None));
     ("addupdate"   , mk A.Caddupdate    `Both        (`Effect c_p ) `Total   `Both     (`Fixed [`Pk; `Ef false     ], None));
     ("contains"    , mk A.Ccontains     `Both        (`Pure       ) `Total   `Both     (`Fixed [`Pk                ], Some (`T A.vtbool)));
-    ("nth"         , mk A.Cnth          `Both        (`Pure       ) `Partial `Standard (`Fixed [`T A.vtnat         ], Some (`Pk)));
+    ("nth"         , mk A.Cnth          `Both        (`Pure       ) `Partial `Standard (`Fixed [`T A.vtnat         ], Some (`PkOrAsset)));
     ("select"      , mk A.Cselect       `Both        (`Pure       ) `Total   `Standard (`Fixed [`Pred true         ], Some (`SubColl)));
     ("sort"        , mk A.Csort         `OnlyExec    (`Pure       ) `Total   `Standard (`Multi (`Cmp               ), Some (`SubColl)));
     ("count"       , mk A.Ccount        `Both        (`Pure       ) `Total   `Standard (`Fixed [                   ], Some (`T A.vtnat)));
@@ -2603,6 +2604,7 @@ let rec for_xexpr
           | `SubColl -> Some (A.Tcontainer (A.Tasset asset.as_name, A.View))
           | `Ref i   -> Mint.find_opt i amap
           | `Pk      -> Some (asset.as_pkty)
+          | `PkOrAsset -> (match mode.em_kind with | `Formula _ -> Some ((A.Tasset asset.as_name)) | _ ->  Some (asset.as_pkty))
           | _        -> assert false in
 
         let the = for_xexpr env the in
@@ -4900,6 +4902,8 @@ let group_declarations (decls : (PT.declaration list)) =
 
     | PT.Dsecurity infos ->
       { g with gr_secs = mk infos :: g.gr_secs }
+
+    (* | PT.Dspecasset _ -> assert false *)
 
     | Dnamespace _  -> assert false
     | Dextension _  -> assert false
