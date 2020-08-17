@@ -4903,7 +4903,7 @@ let group_declarations (decls : (PT.declaration list)) =
     | PT.Dsecurity infos ->
       { g with gr_secs = mk infos :: g.gr_secs }
 
-    (* | PT.Dspecasset _ -> assert false *)
+    | PT.Dspecasset _ -> assert false
 
     | Dnamespace _  -> assert false
     | Dextension _  -> assert false

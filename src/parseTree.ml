@@ -271,6 +271,7 @@ and declaration_unloc =
   | Dnamespace     of namespace_decl
   | Dfunction      of s_function
   | Dspecification of specification
+  | Dspecasset     of lident * (lident * expr) list
   | Dsecurity      of security
   | Dinvalid
 

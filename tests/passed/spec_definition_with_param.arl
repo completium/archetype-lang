@@ -1,0 +1,19 @@
+archetype spec_definition_with_param
+
+asset myasset {
+  id: int;
+  v : nat;
+}
+
+entry exec (p : nat) {
+ specification {
+
+    definition mydef {
+      x : myasset | x.v = p
+    }
+  }
+
+  effect {
+    ()
+  }
+}

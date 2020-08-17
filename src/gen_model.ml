@@ -33,10 +33,12 @@ let bailout = fun () -> raise (Error.Stop 5)
 type env = {
   formula: bool;
   asset_name: ident option;
+  function_p: (M.lident * (M.lident * M.type_ * M.mterm option) list) option
 }
+[@@deriving show {with_path = false}]
 
-let mk_env ?(formula=false) ?asset_name () =
-  { formula; asset_name }
+let mk_env ?(formula=false) ?asset_name ?function_p () =
+  { formula; asset_name; function_p }
 
 let to_model (ast : A.ast) : M.model =
 
@@ -228,6 +230,12 @@ let to_model (ast : A.ast) : M.model =
     | _ -> M.CKview fp
   in
 
+  let is_param env id =
+    match env.function_p with
+    | Some (_, l) -> l |> List.map proj3_1 |> List.exists (fun x -> String.equal (unloc id) (unloc x))
+    | _ -> false
+  in
+
   let rec to_mterm (env : env) (pterm : A.pterm) : M.mterm =
     let process_before vt e =
       match vt with
@@ -279,6 +287,7 @@ let to_model (ast : A.ast) : M.model =
       | A.Pletin (id, init, typ, body, o) -> M.Mletin         ([id], f init, Option.map ptyp_to_type typ, f body, Option.map f o)
       | A.Pdeclvar (i, t, v)              -> M.Mdeclvar       ([i], Option.map ptyp_to_type t, f v)
       | A.Pvar (b, _vs, {pldesc = "state"; _})                -> let e = M.Mvar (dumloc "", Vstate) in process_before b e
+      | A.Pvar (b, _vs, id) when is_param env id              -> let e = M.Mvar (id, Vparam)        in process_before b e
       | A.Pvar (b, _vs, id) when A.Utils.is_variable ast id   -> let e = M.Mvar (id, Vstorevar)     in process_before b e
       | A.Pvar (b, _vs, id) when A.Utils.is_asset ast id      -> let e = M.Mvar (id, Vstorecol)     in process_before b e
       | A.Pvar (b, _vs, id) when A.Utils.is_enum_value ast id -> let e = M.Mvar (id, Venumval)      in process_before b e
@@ -927,7 +936,8 @@ let to_model (ast : A.ast) : M.model =
   in
 
   let to_definition (env : env) (d : A.lident A.definition ): M.definition =
-    M.mk_definition d.name (ptyp_to_type d.typ) d.var (to_mterm { env with formula = true } d.body) ~loc:d.loc
+    let env = { env with formula = true } in
+    M.mk_definition d.name (ptyp_to_type d.typ) d.var (to_mterm env d.body) ~loc:d.loc
   in
 
   let to_variable (env : env) (v : A.lident A.variable) : M.variable =
@@ -1031,22 +1041,11 @@ let to_model (ast : A.ast) : M.model =
     M.mk_function ?spec:spec node
   in
 
-
-  let replace_var_by_param (args : M.argument list) mt : M.mterm =
-    let ident_args : ident list = List.map (fun (id, _, _) -> unloc id) args in
-    let is_arg (id : M.lident) = List.mem (unloc id) ident_args in
-    let rec aux (mt : M.mterm) : M.mterm =
-      match mt.node with
-      | M.Mvar (id, Vlocal) when is_arg id -> {mt with node = M.Mvar (id, Vparam)}
-      | _ -> M.map_mterm aux mt
-    in
-    aux mt
-  in
-
   let process_function (env : env) (function_ : A.function_) : M.function__ =
     let name  = function_.name in
     let args  = List.map (fun (x : A.lident A.decl_gen) -> (x.name, (ptyp_to_type |@ Option.get) x.typ, None)) function_.args in
-    let body  = to_instruction env function_.body |> replace_var_by_param args in
+    let env   = {env with function_p = Some (name, args); } in
+    let body  = to_instruction env function_.body in
     let loc   = function_.loc in
     let ret   = ptyp_to_type function_.return in
     let spec : M.specification option = Option.map (to_specification env) function_.specification in
@@ -1226,9 +1225,9 @@ let to_model (ast : A.ast) : M.model =
       |> process_requires
       |> process_accept_transfer
       |> process_calledby
-      |> replace_var_by_param args
     in
     let loc   = transaction.loc in
+    let env   = {env with function_p = Some (name, args); } in
     let spec : M.specification option = Option.map (to_specification env) transaction.specification in
 
     process_fun_gen name args body loc spec (fun x -> M.Entry x)
@@ -1242,7 +1241,7 @@ let to_model (ast : A.ast) : M.model =
   in
 
   let process_fun_ (env : env) = function
-    | A.Ffunction f -> process_function env f
+    | A.Ffunction f    -> process_function env f
     | A.Ftransaction t -> process_transaction env t
   in
 
