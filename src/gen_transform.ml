@@ -2034,7 +2034,7 @@ let extract_term_from_instruction f (model : model) : model =
         | CKcoll -> CKcoll, []
         | CKview v  -> let ve, va = f v in CKview ve, va
         | CKfield (an, fn, v) -> let ve, va = f v in CKfield (an, fn, ve), va
-        | CKdef -> CKdef, []
+        | CKdef v -> CKdef v, []
       in
       process (mk_mterm (Mclear (an, ve)) mt.type_) va
 
@@ -2044,7 +2044,7 @@ let extract_term_from_instruction f (model : model) : model =
         | CKcoll -> CKcoll, []
         | CKview v  -> let ve, va = f v in CKview ve, va
         | CKfield (an, fn, v) -> let ve, va = f v in CKfield (an, fn, ve), va
-        | CKdef -> CKdef, []
+        | CKdef v -> CKdef v, []
       in
       let be, ba = f b in
       let ae, aa = List.fold_right (fun v (xe, xa) ->
@@ -2070,7 +2070,7 @@ let extract_term_from_instruction f (model : model) : model =
         | CKcoll    -> CKcoll, []
         | CKview c  -> let ce, ca = f c in CKview ce, ca
         | CKfield (an, fn, c) -> let ce, ca = f c in CKfield (an, fn, ce), ca
-        | CKdef -> CKdef, []
+        | CKdef v -> CKdef v, []
       in
       let ke, ka = f k in
       let le, la = List.fold_right (fun (id, op, v) (xe, xa) ->
@@ -2303,7 +2303,7 @@ let add_contain_on_get (model : model) : model =
           | CKcoll     -> accu
           | CKview c   -> f accu c
           | CKfield (_, _, c)  -> f accu c
-          | CKdef      -> accu
+          | CKdef _    -> accu
         in
         let accu = f accu b in
         let accu = List.fold_right (fun v accu -> f accu v) a accu in
@@ -2315,7 +2315,7 @@ let add_contain_on_get (model : model) : model =
           | CKcoll     -> accu
           | CKview c   -> f accu c
           | CKfield (_, _, c)  -> f accu c
-          | CKdef      -> accu
+          | CKdef _    -> accu
         in
         gg accu mt
 
@@ -2335,7 +2335,7 @@ let add_contain_on_get (model : model) : model =
           | CKcoll     -> accu
           | CKview c   -> f accu c
           | CKfield (_, _, c)  -> f accu c
-          | CKdef      -> accu
+          | CKdef _    -> accu
         in
         let accu = f accu k in
         let accu = List.fold_right (fun (_, _, v) accu -> f accu v) l accu in

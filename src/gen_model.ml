@@ -216,7 +216,7 @@ let to_model (ast : A.ast) : M.model =
     match fp.node, fp.type_ with
     | M.Mdotassetfield (an, _k, fn), Tcontainer ((Tasset _), (Aggregate | Partition)) -> M.CKfield (unloc an, unloc fn, fp)
     | M.Mdot ({type_ = Tasset an}, fn), Tcontainer ((Tasset _), (Aggregate | Partition)) -> M.CKfield (unloc an, unloc fn, fp)
-    | M.Mvar (_, Vdefinition), _ -> M.CKdef
+    | M.Mvar (v, Vdefinition), _ -> M.CKdef (unloc v)
     | M.Mvar (fn, _), Tcontainer ((Tasset _), (Aggregate | Partition)) -> begin
         let an = match env.asset_name with
           | Some v -> v

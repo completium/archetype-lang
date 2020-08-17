@@ -153,7 +153,7 @@ type 'term container_kind_gen =
   | CKcoll
   | CKview  of 'term
   | CKfield of (ident * ident * 'term)
-  | CKdef
+  | CKdef   of ident
 [@@deriving show {with_path = false}]
 
 type 'term iter_container_kind_gen =
@@ -1025,7 +1025,7 @@ let cmp_mterm_node
     | CKcoll, CKcoll -> true
     | CKview l, CKview r -> cmp l r
     | CKfield (an1, fn1, mt1), CKfield (an2, fn2, mt2) -> cmp_ident an1 an2 && cmp_ident fn1 fn2 && cmp mt1 mt2
-    | CKdef, CKdef -> true
+    | CKdef v1, CKdef v2 -> cmp_ident v1 v2
     | _ -> false
   in
   let cmp_iter_container_kind (lhs : iter_container_kind) (rhs : iter_container_kind) : bool =
@@ -1386,7 +1386,7 @@ let map_container_kind (fi : ident -> ident) f = function
   | CKcoll               -> CKcoll
   | CKview  mt           -> CKview  (f mt)
   | CKfield (an, fn, mt) -> CKfield (fi an, fi fn, f mt)
-  | CKdef                -> CKdef
+  | CKdef v              -> CKdef (fi v)
 
 let map_iter_container_kind (fi : ident -> ident) f = function
   | ICKcoll  an           -> ICKcoll  (fi an)
@@ -1751,7 +1751,7 @@ let fold_container_kind f accu = function
   | CKcoll             -> accu
   | CKview mt          -> f accu mt
   | CKfield (_, _, mt) -> f accu mt
-  | CKdef              -> accu
+  | CKdef _            -> accu
 
 let fold_iter_container_kind f accu = function
   | ICKcoll  _          -> accu
@@ -1995,7 +1995,7 @@ let fold_map_container_kind f accu = function
   | CKfield (an, fn, mt) ->
     let mte, mta = f accu mt in
     CKfield (an, fn, mte), mta
-  | CKdef -> CKdef, accu
+  | CKdef v -> CKdef v, accu
 
 let fold_map_iter_container_kind f accu = function
   | ICKcoll an -> ICKcoll an, accu

@@ -119,7 +119,7 @@ let pp_container_kind f fmt = function
   | CKcoll     -> pp_str fmt "_Coll_"
   | CKview mt  -> f fmt mt
   | CKfield (an, fn, mt) -> Format.fprintf fmt "CKfield (%s, %s, %a)" an fn f mt
-  | CKdef      -> pp_str fmt "_Def_"
+  | CKdef v      -> Format.fprintf fmt "_Def(%s)_" v
 
 let pp_iter_container_kind f fmt = function
   | ICKcoll  an         -> Format.fprintf fmt "%a" pp_str an

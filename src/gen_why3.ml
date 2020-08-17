@@ -1683,7 +1683,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       mk_trace_seq m instr ([CUpdate f] @ if is_partition m a f then [CRm oasset] else [])
 
     | Mremoveif (_a, (CKview _l), _la, _lb, _) -> assert false
-    | Mremoveif (_a, CKdef, _la, _lb, _) -> assert false
+    | Mremoveif (_a, CKdef _, _la, _lb, _) -> assert false
 
     | Mremoveif (a, CKfield (_, field, k), args, tbody, _a) ->
       let args = mk_filter_args m ctx args tbody in
@@ -1767,7 +1767,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         mk_trace_seq m instr ([CRm n] @ tr_rm_oassets)
       else
         mk_trace_seq m assign [CRm n]
-    | Mclear (_, CKdef) -> assert false
+    | Mclear (_, CKdef _) -> assert false
     | Mclear (_n, CKfield (n, f, v)) ->
       let oasset,_ = M.Utils.get_field_container m n f in
       let asset = dl (mk_match_get_some_id (dl "_a") n (map_mterm m ctx v) (loc_term (Tvar "_a")) Enotfound) in
@@ -1797,7 +1797,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mselect (a, (CKview v), args, tbody, _a) ->
       let args = mk_filter_args m ctx args tbody in
       Tvselect (dl a, dl (mk_select_name m a tbody), args, map_mterm m ctx v, mk_ac_ctx a ctx)
-    | Mselect (_a, CKdef, _args, _tbody, _) -> assert false
+    | Mselect (_a, CKdef _, _args, _tbody, _) -> assert false
     | Mselect (a, CKfield (_, _, v), args, tbody, _a) ->
       let args = mk_filter_args m ctx args tbody in
       let toview = dl (Ttoview(dl (mk_field_id a), map_mterm m ctx v)) in
@@ -1810,7 +1810,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       | _ ->           Tcselect (dl a, dl filterid, args, mk_ac_ctx a ctx)
       end
     | Msort (a, (CKview c),l) -> Tvsort (dl (mk_sort_clone_id a l),map_mterm m ctx c,mk_ac_ctx a ctx)
-    | Msort (_, CKdef, _) -> assert false
+    | Msort (_, CKdef _, _) -> assert false
     | Msort (a, CKfield (_, _, c),l) ->
       Tvsort (dl (mk_sort_clone_id a l),
               dl (Ttoview (dl (mk_field_id a), map_mterm m ctx c)),
@@ -1820,7 +1820,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
               dl (Ttoview(dl a, mk_ac_ctx a ctx)),
               mk_ac_ctx a ctx)
     | Mcontains (a, (CKview v), r) -> Tvcontains (dl (mk_view_id a), map_mterm m ctx r, map_mterm m ctx v)
-    | Mcontains (_, CKdef, _) -> assert false
+    | Mcontains (_, CKdef _, _) -> assert false
     | Mcontains (a, CKfield (_, _, v), r) -> Tvcontains (dl (mk_view_id a),
                                                          map_mterm m ctx r,
                                                          dl (Ttoview(dl (mk_field_id a), map_mterm m ctx v)))
@@ -1834,7 +1834,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | Logic | Inv -> nth
         | _ ->  mk_match (dl nth) "_a" (loc_term (Tvar "_a")) Enotfound
       end
-    | Mnth (_, CKdef, _) -> assert false
+    | Mnth (_, CKdef _, _) -> assert false
     | Mnth (n, CKfield (_, _, c),k) ->
       let nth =  Tnth(
           dl (mk_view_id n),
@@ -1858,7 +1858,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | Logic | Inv -> Tcard (dl a, map_mterm m ctx t)
         | _ -> Tcard (dl (mk_view_id a), map_mterm m ctx t)
       end
-    | Mcount (_, CKdef) -> assert false
+    | Mcount (_, CKdef _) -> assert false
     | Mcount (a, (CKfield (_, _, t))) ->
       Tcard (dl (mk_view_id a), dl (Ttoview (dl (mk_field_id a), map_mterm m ctx t)))
     | Mcount (a, CKcoll) ->
@@ -1870,7 +1870,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | Logic | Inv -> Tcsum (dl cloneid, map_mterm m ctx v)
         | _ -> Tvsum(dl cloneid , map_mterm m ctx v, col)
       end
-    | Msum (_, CKdef, _) -> assert false
+    | Msum (_, CKdef _, _) -> assert false
     | Msum          (a, CKfield (_, _, v),f) ->
       let cloneid = mk_sum_clone_id m a f in
       let col = mk_ac_ctx a ctx in
@@ -1887,7 +1887,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | Inv | Logic -> Tchead (dl n,  map_mterm m ctx v, map_mterm m ctx c)
         | _ -> Tvhead(dl (mk_view_id n), map_mterm m ctx v, map_mterm m ctx c)
       end
-    | Mhead (_, CKdef, _) -> assert false
+    | Mhead (_, CKdef _, _) -> assert false
     | Mhead (n, CKfield (_, _, c), v) ->
       Tvhead(dl (mk_view_id n),
              map_mterm m ctx v,
@@ -1906,7 +1906,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | Inv | Logic -> Tctail(dl n, map_mterm m ctx v, map_mterm m ctx c)
         | _ -> Tvtail(dl (mk_view_id n), map_mterm m ctx v, map_mterm m ctx c)
       end
-    | Mtail  (_, CKdef, _) -> assert false
+    | Mtail  (_, CKdef _, _) -> assert false
     | Mtail  (n, CKfield (_, _, c), v) ->
       Tvtail(dl (mk_view_id n),
              map_mterm m ctx v,
@@ -2213,7 +2213,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
           | CKfield (_, _, c), _ -> dl (Ttoview (dl (mk_field_id n), map_mterm m ctx c))
           | CKcoll, ( Logic | Inv ) -> mk_ac_ctx n ctx
           | CKcoll,_ -> dl (Ttoview (dl n, mk_ac_ctx n ctx))
-          | CKdef, _ -> assert false
+          | CKdef _, _ -> assert false
         in
         match ctx.lctx with
         | Logic | Inv -> Tsubset(dl n, arg, map_mterm m ctx x)

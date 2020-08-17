@@ -431,7 +431,7 @@ let pp_model fmt (model : model) =
     | CKcoll     -> pp_str fmt "_Coll_"
     | CKview mt  -> f fmt mt
     | CKfield (an, fn, mt) -> Format.fprintf fmt "CKfield (%s, %s, %a)" an fn f mt
-    | CKdef      -> pp_str fmt "_Def_"
+    | CKdef _    -> pp_str fmt "_Def_"
   in
 
 
