@@ -1454,7 +1454,7 @@ end = struct
 
       | `Definition def ->
         Some { vr_name = def.df_name;
-               vr_type = A.Tcontainer (A.Tasset def.df_asset, A.Collection);
+               vr_type = A.Tcontainer (A.Tasset def.df_asset, A.View);
                vr_kind = `Ghost;
                vr_invs = [];
                vr_core = None;
@@ -2069,7 +2069,7 @@ let rec for_xexpr
           mk_sp (Some typ) (A.Pvar (vt, Vnone, x))
 
         | Some (`Definition decl) ->
-          let typ = A.Tcontainer ((A.Tasset decl.df_asset), A.Collection) in
+          let typ = A.Tcontainer ((A.Tasset decl.df_asset), A.View) in
           mk_sp (Some typ) (A.Pvar (vt, Vnone, x))
 
         | Some (`StateByCtor (decl, _)) ->

@@ -119,6 +119,7 @@ let pp_container_kind f fmt = function
   | CKcoll     -> pp_str fmt "_Coll_"
   | CKview mt  -> f fmt mt
   | CKfield (an, fn, mt) -> Format.fprintf fmt "CKfield (%s, %s, %a)" an fn f mt
+  | CKdef      -> pp_str fmt "_Def_"
 
 let pp_iter_container_kind f fmt = function
   | ICKcoll  an         -> Format.fprintf fmt "%a" pp_str an
@@ -941,14 +942,15 @@ let pp_mterm fmt (mt : mterm) =
     (* variable *)
 
     | Mvar (an, Vassetstate k) -> Format.fprintf fmt "state_%a(%a)" pp_str (Location.unloc an) f k
-    | Mvar(v, Vstorevar) -> Format.fprintf fmt "s.%a" pp_id v
-    | Mvar(v, Vstorecol) -> pp_id fmt v
-    | Mvar(v, Venumval)  -> pp_id fmt v
-    | Mvar(v, Vlocal)    -> pp_id fmt v
-    | Mvar(v, Vparam)    -> pp_id fmt v
-    | Mvar(v, Vfield)    -> pp_id fmt v
-    | Mvar(_, Vthe)      -> pp_str fmt "the"
-    | Mvar(_, Vstate)    -> pp_str fmt "state"
+    | Mvar(v, Vstorevar)   -> Format.fprintf fmt "s.%a" pp_id v
+    | Mvar(v, Vstorecol)   -> pp_id fmt v
+    | Mvar(v, Venumval)    -> pp_id fmt v
+    | Mvar(v, Vdefinition) -> pp_id fmt v
+    | Mvar(v, Vlocal)      -> pp_id fmt v
+    | Mvar(v, Vparam)      -> pp_id fmt v
+    | Mvar(v, Vfield)      -> pp_id fmt v
+    | Mvar(_, Vthe)        -> pp_str fmt "the"
+    | Mvar(_, Vstate)      -> pp_str fmt "state"
 
 
     (* rational *)

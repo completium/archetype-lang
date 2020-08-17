@@ -281,6 +281,7 @@ let to_model (ast : A.ast) : M.model =
       | A.Pvar (b, _vs, id) when A.Utils.is_variable ast id   -> let e = M.Mvar (id, Vstorevar)     in process_before b e
       | A.Pvar (b, _vs, id) when A.Utils.is_asset ast id      -> let e = M.Mvar (id, Vstorecol)     in process_before b e
       | A.Pvar (b, _vs, id) when A.Utils.is_enum_value ast id -> let e = M.Mvar (id, Venumval)      in process_before b e
+      | A.Pvar (b, _vs, id) when A.Utils.is_definition ast id -> let e = M.Mvar (id, Vdefinition)   in process_before b e
       | A.Pvar (b, _vs, id)                                   -> let e = M.Mvar (id, Vlocal)        in process_before b e
       | A.Parray l                             ->
         begin

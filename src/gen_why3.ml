@@ -577,8 +577,8 @@ let extract_args test =
   internal_extract_args [] test
 
 let mk_filter_name m asset test = function
-| Select   -> "select_" ^ asset ^ "_" ^ (string_of_int (M.Utils.get_select_idx m asset test))
-| Removeif -> "removeif_" ^ asset ^ "_" ^ (string_of_int (M.Utils.get_removeif_idx m asset test))
+  | Select   -> "select_" ^ asset ^ "_" ^ (string_of_int (M.Utils.get_select_idx m asset test))
+  | Removeif -> "removeif_" ^ asset ^ "_" ^ (string_of_int (M.Utils.get_removeif_idx m asset test))
 
 let mk_select_name m asset test = mk_filter_name m asset test Select
 let mk_removeif_name m asset test = mk_filter_name m asset test Removeif
@@ -588,19 +588,19 @@ let mk_filter_predicate ftyp m asset test filter args =
   let name = mk_filter_name m asset test ftyp in
   let body = mk_afun_test filter in
   Dfun {
-  name     = name;
-  logic    = Logic;
-  args     = args @ (extract_args test |> List.map (fun (_,a,b) -> a,b)) @ ["a", Tyasset asset];
-  returns  = Tybool;
-  raises   = [];
-  variants = [];
-  requires = [];
-  ensures  = [{
-    id = name ^ "_post";
-    form = (Teq(Tyint,Tresult,body));
-  }];
-  body     = body;
-}
+    name     = name;
+    logic    = Logic;
+    args     = args @ (extract_args test |> List.map (fun (_,a,b) -> a,b)) @ ["a", Tyasset asset];
+    returns  = Tybool;
+    raises   = [];
+    variants = [];
+    requires = [];
+    ensures  = [{
+        id = name ^ "_post";
+        form = (Teq(Tyint,Tresult,body));
+      }];
+    body     = body;
+  }
 
 let mk_select_predicate = mk_filter_predicate Select
 let mk_removeif_predicate = mk_filter_predicate Removeif
@@ -1111,26 +1111,26 @@ let mk_coll m (r : M.asset) =
 let mk_set_field_id fieldid = "set_" ^ fieldid
 
 let mk_set_field _m asset fieldid oasset =
-let name = mk_set_field_id fieldid in
-Dfun {
-  name = name |> dl;
-  logic = Logic;
-  args = [
-    dl "f", loc_type (Tyaggregate (mk_field_id oasset));
-    dl "a", loc_type (Tyasset asset)
-  ];
-  returns = loc_type (Tyasset asset);
-  raises = [];
-  variants = [];
-  requires = [];
-  ensures = [(* {
-    id = dl (name ^ "_post") ;
-    form = loc_term (Teq(Tyint,Tresult,Tvar "s"));
-  } *)];
-  body = dl (Trecord(Some (loc_term (Tvar "a")), [
-    dl fieldid, loc_term (Tvar "f")
-  ]))
-}
+  let name = mk_set_field_id fieldid in
+  Dfun {
+    name = name |> dl;
+    logic = Logic;
+    args = [
+      dl "f", loc_type (Tyaggregate (mk_field_id oasset));
+      dl "a", loc_type (Tyasset asset)
+    ];
+    returns = loc_type (Tyasset asset);
+    raises = [];
+    variants = [];
+    requires = [];
+    ensures = [(* {
+                  id = dl (name ^ "_post") ;
+                  form = loc_term (Teq(Tyint,Tresult,Tvar "s"));
+                  } *)];
+    body = dl (Trecord(Some (loc_term (Tvar "a")), [
+        dl fieldid, loc_term (Tvar "f")
+      ]))
+  }
 
 let mk_aggregates m (r : M.asset) =
   let asset = unloc r.name in
@@ -1139,32 +1139,32 @@ let mk_aggregates m (r : M.asset) =
   let tkey = map_mtype m tkey in
   let aggregates = M.Utils.get_asset_containers m asset in
   List.fold_left (fun acc (agg_id, field_type, _) ->
-    let oasset = M.Utils.type_to_asset field_type in
-    let (_,oasset_key_type) = M.Utils.get_asset_key m oasset in
-    let agg_key_type = map_mtype m oasset_key_type in
-    let clone = Dclone (
-      [gArchetypeDir; gArchetypeAgg] |> wdl,
-      String.capitalize_ascii (mk_aggregate_id agg_id) |> dl, [
-        Ctype (dl "t", loc_type (Tyasset asset));
-        Ctype (dl "tk", tkey);
-        Ctype (dl "collection", loc_type (Tycoll capasset));
-        Cval  (dl "elts", dl (capasset ^ "." ^ "elts"));
-        Cval  (dl "get", dl (capasset ^ "." ^ "get"));
-        Cval  (dl "set", dl (capasset ^ "." ^ "set"));
-        Ctype (dl "field", loc_type (Tyaggregate (mk_field_id oasset)));
-        Cval  (dl "setF", dl (mk_set_field_id agg_id));
-        Cval  (dl "aggregate", dl agg_id);
-        Ctype (dl "tkF", agg_key_type);
-        Cval  (dl "containsF", dl ((mk_field_id oasset) ^ "." ^ "contains"));
-        Cval  (dl "mkF", dl ((mk_field_id oasset) ^ "." ^ "mk"));
-        Cval  (dl "eltsF", dl ((mk_field_id oasset) ^ "." ^ "elts"));
-        Cval  (dl "addF", dl ((mk_field_id oasset) ^ "." ^ "add"));
-        Cval  (dl "removeF", dl ((mk_field_id oasset) ^ "." ^ "remove"));
-        Cval  (dl "emptyF", dl ((mk_field_id oasset) ^ "." ^ "empty"));
-        Ctype (dl "tO", loc_type (Tyasset oasset));
-        Ctype (dl "collectionO", loc_type (Tycoll oasset));
-        Cval  (dl "getO", dl ((String.capitalize_ascii oasset) ^ "." ^ "get"));
-      ]) in
+      let oasset = M.Utils.type_to_asset field_type in
+      let (_,oasset_key_type) = M.Utils.get_asset_key m oasset in
+      let agg_key_type = map_mtype m oasset_key_type in
+      let clone = Dclone (
+          [gArchetypeDir; gArchetypeAgg] |> wdl,
+          String.capitalize_ascii (mk_aggregate_id agg_id) |> dl, [
+            Ctype (dl "t", loc_type (Tyasset asset));
+            Ctype (dl "tk", tkey);
+            Ctype (dl "collection", loc_type (Tycoll capasset));
+            Cval  (dl "elts", dl (capasset ^ "." ^ "elts"));
+            Cval  (dl "get", dl (capasset ^ "." ^ "get"));
+            Cval  (dl "set", dl (capasset ^ "." ^ "set"));
+            Ctype (dl "field", loc_type (Tyaggregate (mk_field_id oasset)));
+            Cval  (dl "setF", dl (mk_set_field_id agg_id));
+            Cval  (dl "aggregate", dl agg_id);
+            Ctype (dl "tkF", agg_key_type);
+            Cval  (dl "containsF", dl ((mk_field_id oasset) ^ "." ^ "contains"));
+            Cval  (dl "mkF", dl ((mk_field_id oasset) ^ "." ^ "mk"));
+            Cval  (dl "eltsF", dl ((mk_field_id oasset) ^ "." ^ "elts"));
+            Cval  (dl "addF", dl ((mk_field_id oasset) ^ "." ^ "add"));
+            Cval  (dl "removeF", dl ((mk_field_id oasset) ^ "." ^ "remove"));
+            Cval  (dl "emptyF", dl ((mk_field_id oasset) ^ "." ^ "empty"));
+            Ctype (dl "tO", loc_type (Tyasset oasset));
+            Ctype (dl "collectionO", loc_type (Tycoll oasset));
+            Cval  (dl "getO", dl ((String.capitalize_ascii oasset) ^ "." ^ "get"));
+          ]) in
       acc @ [mk_set_field m asset agg_id oasset; clone]
     ) [] aggregates
 
@@ -1248,12 +1248,12 @@ let get_tuple_size = function
 let cp_storage id = Tapp (Tvar "_cp_storage",[Tvar id])
 
 let fail_if_neg_nat_value t left right op  =
- match t with
-| M.Tbuiltin  Bnat -> dl (
-    Tif (dl (Tge(dl Tyint, left, right)), op,
-    Some (loc_term (Tseq [Tassign (Tvar gs, cp_storage gsinit); Traise Enegassignnat])))
-  )
-| _ -> op
+  match t with
+  | M.Tbuiltin  Bnat -> dl (
+      Tif (dl (Tge(dl Tyint, left, right)), op,
+           Some (loc_term (Tseq [Tassign (Tvar gs, cp_storage gsinit); Traise Enegassignnat])))
+    )
+  | _ -> op
 
 let get_assign_value t left right = function
   | M.ValueAssign -> right
@@ -1272,39 +1272,39 @@ let is_partition m n f =
   | _ -> false
 
 let mk_get_force n k c = Tmatch (dl (Tget(n,k,c)),[
-  Tpsome (dl "v"), loc_term (Tvar "v");
-  Twild, loc_term (Tseq [Tassign(Tvar gs, cp_storage gsinit); Traise Enotfound])
-])
+    Tpsome (dl "v"), loc_term (Tvar "v");
+    Twild, loc_term (Tseq [Tassign(Tvar gs, cp_storage gsinit); Traise Enotfound])
+  ])
 
 let mk_match_get_some a k instr excn =
-Tmatch (dl (Tget (dl a, k, loc_term (mk_ac a))), [
-  Tpignore, instr;
-  Twild, loc_term (Tseq [Tassign (Tvar gs, cp_storage gsinit); Traise excn])
-])
+  Tmatch (dl (Tget (dl a, k, loc_term (mk_ac a))), [
+      Tpignore, instr;
+      Twild, loc_term (Tseq [Tassign (Tvar gs, cp_storage gsinit); Traise excn])
+    ])
 
 let mk_match_get_some_id id a k instr excn =
-Tmatch (dl (Tget (dl a, k, loc_term (mk_ac a))), [
-  Tpsome id, instr;
-  Twild, loc_term (Tseq [Tassign (Tvar gs, cp_storage gsinit); Traise excn])
-])
+  Tmatch (dl (Tget (dl a, k, loc_term (mk_ac a))), [
+      Tpsome id, instr;
+      Twild, loc_term (Tseq [Tassign (Tvar gs, cp_storage gsinit); Traise excn])
+    ])
 
 let mk_match_get_some_id_nil id a k instr =
-Tmatch (dl (Tget (dl a, k, loc_term (mk_ac a))), [
-  Tpsome id, instr;
-  Twild, dl Tunit
-])
+  Tmatch (dl (Tget (dl a, k, loc_term (mk_ac a))), [
+      Tpsome id, instr;
+      Twild, dl Tunit
+    ])
 
 let mk_match_get_none a k instr excn =
-Tmatch (dl (Tget (dl a, k, loc_term (mk_ac a))), [
-  Tpignore, loc_term (Tseq [Tassign (Tvar gs, cp_storage gsinit); Traise excn]);
-  Twild, instr
-])
+  Tmatch (dl (Tget (dl a, k, loc_term (mk_ac a))), [
+      Tpignore, loc_term (Tseq [Tassign (Tvar gs, cp_storage gsinit); Traise excn]);
+      Twild, instr
+    ])
 
 let mk_match matched id instr excn =
-Tmatch (matched, [
-  Tpsome (dl id), instr;
-  Twild, loc_term (Tseq [Tassign (Tvar gs, cp_storage gsinit); Traise excn])
-])
+  Tmatch (matched, [
+      Tpsome (dl id), instr;
+      Twild, loc_term (Tseq [Tassign (Tvar gs, cp_storage gsinit); Traise excn])
+    ])
 
 let rec map_mterm m ctx (mt : M.mterm) : loc_term =
   let error_internal desc = emit_error (mt.loc, desc); Tnottranslated in
@@ -1602,10 +1602,10 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         if is_partition m a f then mk_asset_key_value m ctx a kb
         else map_mterm m ctx kb in
       let assign = dl (Tassign (loc_term (mk_ac a), dl (Tapp(mk_add_id,[
-            map_mterm m ctx k;
-            v;
-            loc_term (mk_ac a)
-          ])))) in
+          map_mterm m ctx k;
+          v;
+          loc_term (mk_ac a)
+        ])))) in
       let instr =
         if is_partition m a f then
           let add = dl (Tadd (dl oasset, map_mterm m ctx kb, loc_term (mk_ac oasset))) in
@@ -1619,14 +1619,14 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mremoveasset (n, i) ->
       let partitions = M.Utils.get_asset_partitions m n in
       let remove = List.map (fun (f, oasset) ->
-        let capoasset = String.capitalize_ascii oasset in
-        let field = loc_term (Tdoti("_a", f)) in
-        let remove = dl (Tapp (loc_term (Tdoti(capoasset,"removeif_in_field")), [field; loc_term (mk_ac oasset)])) in
-        dl (Tassign (loc_term (mk_ac oasset), remove))
-      ) partitions in
+          let capoasset = String.capitalize_ascii oasset in
+          let field = loc_term (Tdoti("_a", f)) in
+          let remove = dl (Tapp (loc_term (Tdoti(capoasset,"removeif_in_field")), [field; loc_term (mk_ac oasset)])) in
+          dl (Tassign (loc_term (mk_ac oasset), remove))
+        ) partitions in
       let tr_rm_oassets = List.map (fun (f,_) ->
-        let oasset, _, _ = M.Utils.get_container_asset_key m n f in
-        CRm oasset) partitions in
+          let oasset, _, _ = M.Utils.get_container_asset_key m n f in
+          CRm oasset) partitions in
       let remove =
         if List.length remove > 1 then
           dl (Tseq remove)
@@ -1635,8 +1635,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         else dl Tnone in
       let remove_instr = dl (mk_match_get_some_id_nil (dl "_a") n (map_mterm m ctx i) remove) in
       if List.length partitions > 0 then
-         let assign = dl (Tassign (loc_term (Tdoti(gs,mk_ac_id n)),dl (Tremove(dl n,map_mterm m ctx i,loc_term (mk_ac n))))) in
-         mk_trace_seq m
+        let assign = dl (Tassign (loc_term (Tdoti(gs,mk_ac_id n)),dl (Tremove(dl n,map_mterm m ctx i,loc_term (mk_ac n))))) in
+        mk_trace_seq m
           (Tseq [remove_instr; assign])
           ([CRm n] @ tr_rm_oassets)
       else
@@ -1649,10 +1649,10 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let t, _, _ = M.Utils.get_container_asset_key m a f in
       let mk_rm_id = loc_term (Tdoti (mk_aggregate_id f, "remove")) in
       let assign = dl (Tassign (loc_term (mk_ac a), dl (Tapp(mk_rm_id,[
-            map_mterm m ctx k;
-            map_mterm m ctx kb;
-            loc_term (mk_ac a)
-          ])))) in
+          map_mterm m ctx k;
+          map_mterm m ctx kb;
+          loc_term (mk_ac a)
+        ])))) in
       let instr =
         if is_partition m a f then
           let rm = dl (Tremove (dl oasset, map_mterm m ctx kb, loc_term (mk_ac oasset))) in
@@ -1668,16 +1668,17 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let assign_rm_field = dl (Tassign (loc_term (mk_ac a), rm_field)) in
       let oasset , _, _ = M.Utils.get_container_asset_key m a f in
       let instr =
-      if is_partition m a f then
-        let field = loc_term (Tdoti("_a", f)) in
-        let capoasset = String.capitalize_ascii oasset in
-        let rmif = dl (Tapp (loc_term (Tdoti(capoasset, "removeif_in_field")), [field; loc_term (mk_ac oasset)])) in
-        let assign_rmif = dl (Tassign(loc_term (mk_ac oasset), rmif)) in
-        mk_match_get_some_id (dl "_a") a (map_mterm m ctx v) (dl (Tseq [assign_rmif; assign_rm_field])) Enotfound
-      else mk_match_get_some a (map_mterm m ctx v) assign_rm_field Enotfound in
+        if is_partition m a f then
+          let field = loc_term (Tdoti("_a", f)) in
+          let capoasset = String.capitalize_ascii oasset in
+          let rmif = dl (Tapp (loc_term (Tdoti(capoasset, "removeif_in_field")), [field; loc_term (mk_ac oasset)])) in
+          let assign_rmif = dl (Tassign(loc_term (mk_ac oasset), rmif)) in
+          mk_match_get_some_id (dl "_a") a (map_mterm m ctx v) (dl (Tseq [assign_rmif; assign_rm_field])) Enotfound
+        else mk_match_get_some a (map_mterm m ctx v) assign_rm_field Enotfound in
       mk_trace_seq m instr ([CUpdate f] @ if is_partition m a f then [CRm oasset] else [])
 
     | Mremoveif (_a, (CKview _l), _la, _lb, _) -> assert false
+    | Mremoveif (_a, CKdef, _la, _lb, _) -> assert false
 
     | Mremoveif (a, CKfield (_, field, k), args, tbody, _a) ->
       let args = mk_filter_args m ctx args tbody in
@@ -1685,8 +1686,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let removeif_name = mk_removeif_name m oasset tbody in
       let removeif = dl (Tfremoveif (dl (
           mk_aggregate_id field),
-          dl removeif_name, args,
-          map_mterm m ctx k, mk_ac_ctx oasset ctx, mk_ac_ctx a ctx)) in
+                                     dl removeif_name, args,
+                                     map_mterm m ctx k, mk_ac_ctx oasset ctx, mk_ac_ctx a ctx)) in
       let assign = dl (Tassign(mk_ac_ctx a ctx, removeif)) in
       if is_partition m a field then
         let removecoll = loc_term (Tpremoveif(oasset, removeif_name, args |> List.map unloc_term, Tdoti("_a",field), mk_ac oasset)) in
@@ -1702,20 +1703,20 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
       let partitions = M.Utils.get_asset_partitions m a in
       let remove = List.map (fun (f, oasset) ->
-        let capoasset = String.capitalize_ascii oasset in
-        let coll = Tselect(a, mk_removeif_name m a tbody, args |> List.map unloc_term, mk_ac a) in
-        let field = loc_term (Tapp (Tdoti(mk_aggregate_id f,"union"),[coll])) in
-        let remove = dl (Tapp (loc_term (Tdoti(capoasset,"removeif_in_field")), [field; loc_term (mk_ac oasset)])) in
-        dl (Tassign (loc_term (mk_ac oasset), remove))
-      ) partitions in
+          let capoasset = String.capitalize_ascii oasset in
+          let coll = Tselect(a, mk_removeif_name m a tbody, args |> List.map unloc_term, mk_ac a) in
+          let field = loc_term (Tapp (Tdoti(mk_aggregate_id f,"union"),[coll])) in
+          let remove = dl (Tapp (loc_term (Tdoti(capoasset,"removeif_in_field")), [field; loc_term (mk_ac oasset)])) in
+          dl (Tassign (loc_term (mk_ac oasset), remove))
+        ) partitions in
       let tr_rm_oassets = List.map (fun (f,_) ->
-        let oasset, _, _ = M.Utils.get_container_asset_key m a f in
-        CRm oasset) partitions in
+          let oasset, _, _ = M.Utils.get_container_asset_key m a f in
+          CRm oasset) partitions in
 
       let removeif =
         dl (Tremoveif (dl a,
-          dl (mk_removeif_name m a tbody), args,
-          mk_ac_ctx a ctx)) in
+                       dl (mk_removeif_name m a tbody), args,
+                       mk_ac_ctx a ctx)) in
 
       if List.length partitions > 0 then
         let assign = dl (Tassign (mk_ac_ctx a ctx, removeif)) in
@@ -1726,14 +1727,14 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mclear (n, CKcoll) ->
       let partitions = M.Utils.get_asset_partitions m n in
       let remove = List.map (fun (f, oasset) ->
-        let capoasset = String.capitalize_ascii oasset in
-        let field = loc_term (Tapp (Tdoti(mk_aggregate_id f,"union"),[mk_ac n])) in
-        let remove = dl (Tapp (loc_term (Tdoti(capoasset,"removeif_in_field")), [field; loc_term (mk_ac oasset)])) in
-        dl (Tassign (loc_term (mk_ac oasset), remove))
-      ) partitions in
+          let capoasset = String.capitalize_ascii oasset in
+          let field = loc_term (Tapp (Tdoti(mk_aggregate_id f,"union"),[mk_ac n])) in
+          let remove = dl (Tapp (loc_term (Tdoti(capoasset,"removeif_in_field")), [field; loc_term (mk_ac oasset)])) in
+          dl (Tassign (loc_term (mk_ac oasset), remove))
+        ) partitions in
       let tr_rm_oassets = List.map (fun (f,_) ->
-        let oasset, _, _ = M.Utils.get_container_asset_key m n f in
-        CRm oasset) partitions in
+          let oasset, _, _ = M.Utils.get_container_asset_key m n f in
+          CRm oasset) partitions in
       if List.length partitions > 0 then
         let assign = dl (Tassign(loc_term (Tdoti(gs,mk_ac_id n)), loc_term (Temptycoll n))) in
         mk_trace_seq m (Tseq (remove @ [assign])) ([CRm n] @ tr_rm_oassets)
@@ -1742,16 +1743,16 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mclear (n, CKview v) ->
       let partitions = M.Utils.get_asset_partitions m n in
       let remove = List.map (fun (f, oasset) ->
-        let capn = String.capitalize_ascii n in
-        let capoasset = String.capitalize_ascii oasset in
-        let viewvar = loc_term (Tvar "_view") in
-        let field = dl (Tunionpred (dl (mk_aggregate_id f), dl (capn^".is_in_view"), [viewvar], loc_term (mk_ac n))) in
-        let remove = dl (Tapp (loc_term (Tdoti(capoasset,"removeif_in_field")), [field; loc_term (mk_ac oasset)])) in
-        dl (Tletin(false, dl "_view",None,map_mterm m ctx v, dl (Tassign (loc_term (mk_ac oasset), remove))))
-      ) partitions in
+          let capn = String.capitalize_ascii n in
+          let capoasset = String.capitalize_ascii oasset in
+          let viewvar = loc_term (Tvar "_view") in
+          let field = dl (Tunionpred (dl (mk_aggregate_id f), dl (capn^".is_in_view"), [viewvar], loc_term (mk_ac n))) in
+          let remove = dl (Tapp (loc_term (Tdoti(capoasset,"removeif_in_field")), [field; loc_term (mk_ac oasset)])) in
+          dl (Tletin(false, dl "_view",None,map_mterm m ctx v, dl (Tassign (loc_term (mk_ac oasset), remove))))
+        ) partitions in
       let tr_rm_oassets = List.map (fun (f,_) ->
-        let oasset, _, _ = M.Utils.get_container_asset_key m n f in
-        CRm oasset) partitions in
+          let oasset, _, _ = M.Utils.get_container_asset_key m n f in
+          CRm oasset) partitions in
       let field = map_mterm m ctx v in
       let capasset = String.capitalize_ascii n in
       let clear = dl (Tapp (loc_term (Tdoti(capasset,"removeif_in_view")),[field; loc_term (mk_ac n)])) in
@@ -1761,6 +1762,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         mk_trace_seq m instr ([CRm n] @ tr_rm_oassets)
       else
         mk_trace_seq m assign [CRm n]
+    | Mclear (_, CKdef) -> assert false
     | Mclear (_n, CKfield (n, f, v)) ->
       let oasset,_ = M.Utils.get_field_container m n f in
       let asset = dl (mk_match_get_some_id (dl "_a") n (map_mterm m ctx v) (loc_term (Tvar "_a")) Enotfound) in
@@ -1790,6 +1792,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mselect (a, (CKview v), args, tbody, _a) ->
       let args = mk_filter_args m ctx args tbody in
       Tvselect (dl a, dl (mk_select_name m a tbody), args, map_mterm m ctx v, mk_ac_ctx a ctx)
+    | Mselect (_a, CKdef, _args, _tbody, _) -> assert false
     | Mselect (a, CKfield (_, _, v), args, tbody, _a) ->
       let args = mk_filter_args m ctx args tbody in
       let toview = dl (Ttoview(dl (mk_field_id a), map_mterm m ctx v)) in
@@ -1798,10 +1801,11 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let args = mk_filter_args m ctx args tbody in
       let filterid = mk_select_name m a tbody in
       begin match ctx.lctx with
-      | Inv | Logic -> Tselect (dl a, dl filterid, args, mk_ac_ctx a ctx)
-      | _ ->           Tcselect (dl a, dl filterid, args, mk_ac_ctx a ctx)
+        | Inv | Logic -> Tselect (dl a, dl filterid, args, mk_ac_ctx a ctx)
+        | _ ->           Tcselect (dl a, dl filterid, args, mk_ac_ctx a ctx)
       end
     | Msort (a, (CKview c),l) -> Tvsort (dl (mk_sort_clone_id a l),map_mterm m ctx c,mk_ac_ctx a ctx)
+    | Msort (_, CKdef, _) -> assert false
     | Msort (a, CKfield (_, _, c),l) ->
       Tvsort (dl (mk_sort_clone_id a l),
               dl (Ttoview (dl (mk_field_id a), map_mterm m ctx c)),
@@ -1811,6 +1815,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
               dl (Ttoview(dl a, mk_ac_ctx a ctx)),
               mk_ac_ctx a ctx)
     | Mcontains (a, (CKview v), r) -> Tvcontains (dl (mk_view_id a), map_mterm m ctx r, map_mterm m ctx v)
+    | Mcontains (_, CKdef, _) -> assert false
     | Mcontains (a, CKfield (_, _, v), r) -> Tvcontains (dl (mk_view_id a),
                                                          map_mterm m ctx r,
                                                          dl (Ttoview(dl (mk_field_id a), map_mterm m ctx v)))
@@ -1824,29 +1829,31 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | Logic | Inv -> nth
         | _ ->  mk_match (dl nth) "_a" (loc_term (Tvar "_a")) Enotfound
       end
+    | Mnth (_, CKdef, _) -> assert false
     | Mnth (n, CKfield (_, _, c),k) ->
       let nth =  Tnth(
-        dl (mk_view_id n),
-        map_mterm m ctx k,
-        dl (Ttoview (dl (mk_field_id n), map_mterm m ctx c))) in
+          dl (mk_view_id n),
+          map_mterm m ctx k,
+          dl (Ttoview (dl (mk_field_id n), map_mterm m ctx c))) in
       begin match ctx.lctx with
         | Logic | Inv -> nth
         | _ -> mk_match (dl nth) "_a" (loc_term (Tvar "_a")) Enotfound
       end
     | Mnth (n, CKcoll,k) ->
       let nth =  Tnth(
-        dl (mk_view_id n),
-        map_mterm m ctx k,
-        dl (Ttoview (dl n, mk_ac_ctx n ctx))) in
+          dl (mk_view_id n),
+          map_mterm m ctx k,
+          dl (Ttoview (dl n, mk_ac_ctx n ctx))) in
       begin match ctx.lctx with
-      | Logic | Inv -> nth
-      | _ -> mk_match (dl nth) "_a" (loc_term (Tvar "_a")) Enotfound
+        | Logic | Inv -> nth
+        | _ -> mk_match (dl nth) "_a" (loc_term (Tvar "_a")) Enotfound
       end
     | Mcount (a, (CKview t)) ->
       begin match ctx.lctx with
         | Logic | Inv -> Tcard (dl a, map_mterm m ctx t)
         | _ -> Tcard (dl (mk_view_id a), map_mterm m ctx t)
       end
+    | Mcount (_, CKdef) -> assert false
     | Mcount (a, (CKfield (_, _, t))) ->
       Tcard (dl (mk_view_id a), dl (Ttoview (dl (mk_field_id a), map_mterm m ctx t)))
     | Mcount (a, CKcoll) ->
@@ -1858,6 +1865,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | Logic | Inv -> Tcsum (dl cloneid, map_mterm m ctx v)
         | _ -> Tvsum(dl cloneid , map_mterm m ctx v, col)
       end
+    | Msum (_, CKdef, _) -> assert false
     | Msum          (a, CKfield (_, _, v),f) ->
       let cloneid = mk_sum_clone_id m a f in
       let col = mk_ac_ctx a ctx in
@@ -1874,6 +1882,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | Inv | Logic -> Tchead (dl n,  map_mterm m ctx v, map_mterm m ctx c)
         | _ -> Tvhead(dl (mk_view_id n), map_mterm m ctx v, map_mterm m ctx c)
       end
+    | Mhead (_, CKdef, _) -> assert false
     | Mhead (n, CKfield (_, _, c), v) ->
       Tvhead(dl (mk_view_id n),
              map_mterm m ctx v,
@@ -1892,6 +1901,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | Inv | Logic -> Tctail(dl n, map_mterm m ctx v, map_mterm m ctx c)
         | _ -> Tvtail(dl (mk_view_id n), map_mterm m ctx v, map_mterm m ctx c)
       end
+    | Mtail  (_, CKdef, _) -> assert false
     | Mtail  (n, CKfield (_, _, c), v) ->
       Tvtail(dl (mk_view_id n),
              map_mterm m ctx v,
@@ -1939,8 +1949,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mlistnth (t, n, l)      ->
       let nth = Tnth (dl (mk_list_name m (Tlist t)), map_mterm m ctx n, map_mterm m ctx l) in
       begin match ctx.lctx with
-      | Logic | Inv -> nth
-      | _ -> mk_match (dl nth) "_a" (loc_term (Tvar "_a")) Enotfound
+        | Logic | Inv -> nth
+        | _ -> mk_match (dl nth) "_a" (loc_term (Tvar "_a")) Enotfound
       end
 
     (* map api expression *)
@@ -2051,6 +2061,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       loc_term coll |> Mlwtree.deloc
 
     | Mvar (v, Venumval) -> Tvar (map_lident v)
+    | Mvar (v, Vdefinition) -> Tvar (map_lident v)
     | Mvar (v, Vlocal) ->
       begin match ctx.lctx, mt.type_ with
         | Logic, M.Tcontainer ((Tasset a), View) ->
@@ -2197,6 +2208,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
           | CKfield (_, _, c), _ -> dl (Ttoview (dl (mk_field_id n), map_mterm m ctx c))
           | CKcoll, ( Logic | Inv ) -> mk_ac_ctx n ctx
           | CKcoll,_ -> dl (Ttoview (dl n, mk_ac_ctx n ctx))
+          | CKdef, _ -> assert false
         in
         match ctx.lctx with
         | Logic | Inv -> Tsubset(dl n, arg, map_mterm m ctx x)
@@ -2265,7 +2277,7 @@ and mk_asset_key_value m ctx a r = begin
   | _ ->
     let (k, _) = M.Utils.get_asset_key m a in
     dl (Tapp(loc_term (Tvar k),[map_mterm m ctx r]))
-  end
+end
 
 (* Storage mapping -----------------------------------------------------------*)
 
@@ -2381,25 +2393,25 @@ let mk_storage m (l : M.storage) =
   }
 
 let mk_cp_storage m (l : M.storage) =
-let arg = "_s_storage" in
-Dfun  {
-  name = "_cp_storage" |> dl;
-  logic = Logic;
-  args = [arg |> dl, Tystorage |> dl];
-  returns = Tystorage |> dl;
-  raises = [];
-  variants = [];
-  requires = [];
-  ensures = [{
-    id = dl "cp_1";
-    form = loc_term (Teq(Tyint,Tresult,Tvar arg));
-  }];
-  body = dl (Trecord (None, (List.map (fun (f : ('a, loc_typ, ident with_loc) abstract_field) ->
-    f.name, dl (Tdoti(dl arg,f.name))
-  ) (mk_storage_items m l)) @ (List.map (fun (f : (('a, 'b, ident) abstract_term, (ident, (ident, 'c) abstract_type) abstract_type, ident) abstract_field) ->
-    dl f.name, dl (Tdoti (dl arg, dl f.name))
-  ) (mk_const_fields m))))
-}
+  let arg = "_s_storage" in
+  Dfun  {
+    name = "_cp_storage" |> dl;
+    logic = Logic;
+    args = [arg |> dl, Tystorage |> dl];
+    returns = Tystorage |> dl;
+    raises = [];
+    variants = [];
+    requires = [];
+    ensures = [{
+        id = dl "cp_1";
+        form = loc_term (Teq(Tyint,Tresult,Tvar arg));
+      }];
+    body = dl (Trecord (None, (List.map (fun (f : ('a, loc_typ, ident with_loc) abstract_field) ->
+        f.name, dl (Tdoti(dl arg,f.name))
+      ) (mk_storage_items m l)) @ (List.map (fun (f : (('a, 'b, ident) abstract_term, (ident, (ident, 'c) abstract_type) abstract_type, ident) abstract_field) ->
+        dl f.name, dl (Tdoti (dl arg, dl f.name))
+      ) (mk_const_fields m))))
+  }
 
 (* Verfication API -----------------------------------------------------------*)
 
@@ -2520,8 +2532,8 @@ let mk_storage_api_before_storage (m : M.model) _records =
 let mk_storage_api (m : M.model) _records =
   m.api_items |> List.fold_left (fun acc (sc : M.api_storage) ->
       match sc.node_item, sc.api_loc with
-    (*   | M.APIAsset (Nth (n, _)), _ ->
-        acc @ [mk_nth_asset m n] *)
+      (*   | M.APIAsset (Nth (n, _)), _ ->
+           acc @ [mk_nth_asset m n] *)
       | M.APIAsset (Sort (asset, _, field)), _ ->
         acc @ [ mk_cmp_function m asset field; mk_sort_clone m asset field]
       | M.APIBuiltin(Babs (M.Tbuiltin M.Bint)), _ ->
@@ -2564,7 +2576,7 @@ let fold_exns m body : term list =
     | M.Mapp (id, args) ->
       let fun_struct = M.Utils.get_function m (unloc id) in
       List.fold_left (fun acc arg ->
-       internal_fold_exn acc arg) (internal_fold_exn acc fun_struct.body) args
+          internal_fold_exn acc arg) (internal_fold_exn acc fun_struct.body) args
     | _ -> M.fold_term internal_fold_exn acc term in
   Tools.List.dedup (internal_fold_exn [] body)
 
@@ -2727,21 +2739,21 @@ let process_no_fail m (d : (loc_term, loc_typ, loc_ident) abstract_decl) =
       match M.Utils.no_fail m (Mlwtree.deloc f.name) with
       | Some id ->
         Dfun { f with
-          raises = rm_fail_exn f.raises;
-          body   =
-            let body =
-            loc_term (Ttry (unloc_term f.body, [
-            Enotfound,Tassert (Some ("security_" ^ id),Tfalse);
-            Ekeyexist,Tassert (Some ("security_" ^ id),Tfalse)
-          ])) in
-          loc_term (
-            Tletin (false, gsinit, None, cp_storage gs, unloc_term body));
-        }
+               raises = rm_fail_exn f.raises;
+               body   =
+                 let body =
+                   loc_term (Ttry (unloc_term f.body, [
+                       Enotfound,Tassert (Some ("security_" ^ id),Tfalse);
+                       Ekeyexist,Tassert (Some ("security_" ^ id),Tfalse)
+                     ])) in
+                 loc_term (
+                   Tletin (false, gsinit, None, cp_storage gs, unloc_term body));
+             }
       | _ -> (* *)
         Dfun { f with
-          body   = loc_term (
-            Tletin (false, gsinit, None, cp_storage gs, unloc_term f.body));
-        }
+               body   = loc_term (
+                   Tletin (false, gsinit, None, cp_storage gs, unloc_term f.body));
+             }
     end
   | _ -> d
 
