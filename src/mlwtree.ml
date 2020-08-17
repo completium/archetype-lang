@@ -1,6 +1,7 @@
 open Tools
 
 type fmod =
+  | LogicOnly
   | Logic
   | Rec
   | NoMod
@@ -73,6 +74,7 @@ type ('e,'t,'i) abstract_term =
   | Tseq    of 'e list
   | Tletin  of bool * 'i * 't option * 'e * 'e
   | Tletfun of ('e,'t,'i) abstract_fun_struct * 'e
+  | Tlambda of 'i list * 'e
   | Tif     of 'e * 'e * 'e option
   | Tmatch  of 'e * ('i pattern_node * 'e) list
   | Tapp    of 'e * 'e list
@@ -209,7 +211,7 @@ type ('e,'t,'i) abstract_term =
   | Tcnth    of 'i * 'e * 'e
   | Tvnth    of 'i * 'e * 'e
   | Tlnth   of 'i * 'e * 'e
-  | Tselect of 'i * 'i * 'e list * 'e
+  | Tselect of 'i * 'e * 'e
   | Tcselect of 'i * 'i * 'e list * 'e
   | Tvselect of 'i * 'i * 'e list * 'e * 'e
   | Tremoveif of 'i * 'i * 'e list * 'e
@@ -395,6 +397,7 @@ and map_abstract_term
   | Tseq l             -> Tseq (List.map map_e l)
   | Tletin (r,i,t,b,e) -> Tletin (r,map_i i, Option.map map_t t, map_e b, map_e e)
   | Tletfun (s,e)      -> Tletfun (map_abstract_fun_struct map_e map_t map_i s, map_e e)
+  | Tlambda (l,b)      -> Tlambda (List.map map_i l, map_e b)
   | Tif (i,t,e)        -> Tif (map_e i, map_e t, Option.map map_e e)
   | Tmatch (t,l)       -> Tmatch (map_e t, List.map (fun (p,t) -> (map_pattern map_i p,map_e t)) l)
   | Tapp (f,a)         -> Tapp (map_e f, List.map map_e a)
@@ -523,7 +526,7 @@ and map_abstract_term
   | Tcnth (i,e1,e2)    -> Tcnth (map_i i, map_e e1, map_e e2)
   | Tvnth (i,e1,e2)    -> Tvnth (map_i i, map_e e1, map_e e2)
   | Tlnth (i,e1,e2)    -> Tlnth (map_i i, map_e e1, map_e e2)
-  | Tselect (i1,i2,l,e)-> Tselect (map_i i1, map_i i2, List.map map_e l, map_e e)
+  | Tselect (i1,e1,e2)-> Tselect (map_i i1, map_e e1, map_e e2)
   | Tcselect (i1,i2,l,e)-> Tcselect (map_i i1, map_i i2, List.map map_e l, map_e e)
   | Tvselect (i1,i2,l,e1,e2)-> Tvselect (map_i i1, map_i i2, List.map map_e l, map_e e1, map_e e2)
   | Tremoveif (i1,i2,l,e)-> Tremoveif (map_i i1, map_i i2, List.map map_e l, map_e e)
@@ -802,6 +805,7 @@ let rec compare_abstract_term
     r1 = r2 && cmpi i1 i2 && cmpe b1 b2 && cmpe e1 e2
   | Tletfun (s1,e1), Tletfun (s2,e2) ->
     compare_abstract_fun_struct cmpe cmpt cmpi s1 s2 && cmpe e1 e2
+  | Tlambda (l1,e1), Tlambda (l2,e2) -> List.for_all2 cmpi l1 l2 && cmpe e1 e2
   | Tif (i1,t1,None), Tif (i2,t2,None) -> cmpe i1 i2 && cmpe t1 t2
   | Tif (i1,t1,Some e1), Tif (i2,t2,Some e2) -> cmpe i1 i2 && cmpe t1 t2 && cmpe e1 e2
   | Tmatch (t1,l1), Tmatch (t2,l2) -> cmpe t1 t2 && List.for_all2 (fun (p1,e1) (p2,e2) ->
@@ -940,7 +944,7 @@ let rec compare_abstract_term
   | Tvtail (i1,e1,e2), Tvtail (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tcnth (i1,e1,e2), Tcnth (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tvnth (i1,e1,e2), Tvnth (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
-  | Tselect (i1,i2,l1,e1), Tselect (i3,i4,l2,e2) -> cmpi i1 i3 && cmpi i2 i4 && List.for_all2 cmpe l1 l2 && cmpe e1 e2
+  | Tselect (i1,e1,e2), Tselect (i3,f1,f2) -> cmpi i1 i3 && cmpe e1 f1 && cmpe e2 f2
   | Tcselect (i1,i2,l1,e1), Tcselect (i3,i4,l2,e2) -> cmpi i1 i3 && cmpi i2 i4 && List.for_all2 cmpe l1 l2 && cmpe e1 e2
   | Tvselect (i1,i2,l1,e1,f1), Tvselect (i3,i4,l2,e2,f2) -> cmpi i1 i3 && cmpi i2 i4 && List.for_all2 cmpe l1 l2 && cmpe e1 e2 && cmpe f1 f2
   | Tremoveif (i1,i2,l1,e1), Tremoveif (i3,i4,l2,e2) -> cmpi i1 i3 && cmpi i2 i4 && List.for_all2 cmpe l1 l2 && cmpe e1 e2

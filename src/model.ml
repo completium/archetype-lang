@@ -3421,6 +3421,7 @@ module Utils : sig
   val is_not_string_nat_int              : type_ -> bool
   val get_function                       : model -> ident -> function_struct
   val get_asset_partitions               : model -> ident -> (ident * ident) list
+  val get_specifications                 : model -> specification list
 end = struct
 
   open Tools
@@ -4575,5 +4576,10 @@ end = struct
         | Tcontainer (Tasset an, Partition) -> (unloc x.name, unloc an)::accu
         | _ -> accu
       ) [] asset.values
+
+  let get_specifications (model : model) =
+    [ model.specification ] @
+    (List.fold_left (fun acc (s,_) -> match s with Some v -> acc@[v] | None -> acc) [] (get_entries model)) @
+    ((List.fold_left (fun acc (s,_,_) -> match s with Some v -> acc@[v] | None -> acc)) [] (get_functions model))
 
 end

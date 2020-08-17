@@ -565,16 +565,21 @@ let rec mk_afun_test = function
   | Tsender _ -> Tvar (mk_id "source")
   | _ as t -> map_abstract_term mk_afun_test id id t
 
+let rec acc_has_id id = function
+| [] -> false
+| (_,i,_)::_ when compare id i = 0 -> true
+| (_,_,_)::tl -> acc_has_id id tl
+
 (* TODO : complete mapping
    argument extraction is done on model's term because it is typed *)
 let extract_args test =
   let rec internal_extract_args acc (term : M.mterm) =
     match term.M.node with
-    | M.Mnow -> acc @ [term,mk_id "now", Tydate]
-    | M.Mcaller -> acc @ [term,mk_id "caller", Tyaddr]
-    | M.Msource -> acc @ [term,mk_id "source", Tyaddr]
+    | M.Mnow -> if acc_has_id "now" acc then acc @ [term,mk_id "now", Tydate] else acc
+    | M.Mcaller -> if acc_has_id "caller" acc then acc else acc @ [term,mk_id "caller", Tyaddr]
+    | M.Msource -> if acc_has_id "source" acc then acc else acc @ [term,mk_id "source", Tyaddr]
     | _ -> M.fold_term internal_extract_args acc term in
-  internal_extract_args [] test
+ internal_extract_args [] test
 
 let mk_filter_name m asset test = function
 | Select   -> "select_" ^ asset ^ "_" ^ (string_of_int (M.Utils.get_select_idx m asset test))
@@ -1703,7 +1708,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let partitions = M.Utils.get_asset_partitions m a in
       let remove = List.map (fun (f, oasset) ->
         let capoasset = String.capitalize_ascii oasset in
-        let coll = Tselect(a, mk_removeif_name m a tbody, args |> List.map unloc_term, mk_ac a) in
+        let coll = Tselect(a, Tapp (Tvar (mk_removeif_name m a tbody), args |> List.map unloc_term), mk_ac a) in
         let field = loc_term (Tapp (Tdoti(mk_aggregate_id f,"union"),[coll])) in
         let remove = dl (Tapp (loc_term (Tdoti(capoasset,"removeif_in_field")), [field; loc_term (mk_ac oasset)])) in
         dl (Tassign (loc_term (mk_ac oasset), remove))
@@ -1798,7 +1803,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let args = mk_filter_args m ctx args tbody in
       let filterid = mk_select_name m a tbody in
       begin match ctx.lctx with
-      | Inv | Logic -> Tselect (dl a, dl filterid, args, mk_ac_ctx a ctx)
+      | Inv | Logic -> Tselect (dl a, dl (Tapp (loc_term (Tvar filterid), args)), mk_ac_ctx a ctx)
       | _ ->           Tcselect (dl a, dl filterid, args, mk_ac_ctx a ctx)
       end
     | Msort (a, (CKview c),l) -> Tvsort (dl (mk_sort_clone_id a l),map_mterm m ctx c,mk_ac_ctx a ctx)
@@ -2568,6 +2573,33 @@ let fold_exns m body : term list =
     | _ -> M.fold_term internal_fold_exn acc term in
   Tools.List.dedup (internal_fold_exn [] body)
 
+(* THEORY -------------------------------------------------------------------- *)
+
+let mk_theory m =
+  List.fold_left (fun acc (spec : M.specification) ->
+    let ctx = { init_ctx with lctx = Logic } in
+    let defs = List.map (fun (def : M.definition) ->
+      let t = map_mtype m (M.Tcontainer (def.typ,M.Collection)) in
+      Dfun {
+        name = map_lident def.name;
+        logic = LogicOnly;
+        args = [ dl "c", t ];
+        returns = t;
+        raises = [];
+        variants = [];
+        requires = [];
+        ensures = [];
+        body = dl (Tselect(
+          dl (M.Utils.type_to_asset def.typ),
+          dl (Tlambda ([map_lident def.var],map_mterm m ctx def.body)),
+          loc_term (Tvar "c")));
+      }
+    ) spec.definitions in
+    acc @ defs
+  ) [] (M.Utils.get_specifications m)
+
+(* ENTRIES & FUNCTIONS ------------------------------------------------------- *)
+
 let is_fail (t : M.mterm) =
   match t.node with
   | M.Mfail _ -> true
@@ -2780,6 +2812,7 @@ let to_whyml (m : M.model) : mlw_tree  =
   let axioms           = mk_axioms m in
   (*let partition_axioms = mk_partition_axioms m in*)
   let transfer         = if M.Utils.with_operations m then [mk_transfer ();mk_call(); mk_operation()] else [] in
+  let theory           = mk_theory m in
   let storage_api      = mk_storage_api m (mlwassets |> wdl) in
   let functions        = mk_functions m in
   let entries          = mk_entries m |> List.map (process_no_fail m) in
@@ -2804,7 +2837,8 @@ let to_whyml (m : M.model) : mlw_tree  =
               axioms                 @
               (*partition_axioms       @*)
               transfer               @
-              storage_api;
+              storage_api            @
+              theory;
     };{
        name = dl (mk_module_name (unloc m.name));
        decls = [uselib;uselist;usestorage] @
