@@ -2069,7 +2069,7 @@ let rec for_xexpr
           mk_sp (Some typ) (A.Pvar (vt, Vnone, x))
 
         | Some (`Definition decl) ->
-          let typ = A.Tcontainer ((A.Tasset decl.df_asset), A.View) in
+          let typ = A.Tcontainer ((A.Tasset decl.df_asset), A.Collection) in
           mk_sp (Some typ) (A.Pvar (vt, Vnone, x))
 
         | Some (`StateByCtor (decl, _)) ->
