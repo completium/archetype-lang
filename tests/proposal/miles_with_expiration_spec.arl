@@ -7,8 +7,6 @@ asset mile identified by id {
    id         : string;
    amount     : int;
    expiration : date
-} with {
-  m1 : amount > 0;
 }
 
 (* a partition ensures there is no direct access to mile collection *)
@@ -70,6 +68,9 @@ entry clear_expired () {
   }
 }
 
+specification mile {
+  m1 : amount > 0;
+}
 
 specification consume (a : address, quantity : int) {
   assert p1 {
