@@ -1483,10 +1483,15 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       Tfor (map_lident id,
             map_mterm m ctx from,
             map_mterm m ctx to_,
-            mk_invariants m inv_ctx id lbl body,
+            mk_invariants m inv_ctx (Some id) lbl body,
             map_mterm m ctx body
            )
-    | Mwhile (_c, _b, _lbl) -> error_not_supported "Mwhile"
+    | Mwhile (test, body, lbl) ->
+      let inv_ctx = { ctx with lctx = Logic } in
+      Twhile (map_mterm m ctx test,
+              mk_invariants m inv_ctx None lbl body,
+              map_mterm m ctx body
+      )
     | Mseq [] -> Tunit
     | Mseq l -> Tseq (List.map (map_mterm m ctx) l)
 
@@ -2305,7 +2310,7 @@ and mk_invariants (m : M.model) ctx id (lbl : ident option) lbody =
           match lbl,ilbl with
           | Some a, b -> b ^ "_" ^ a
           | None, b -> b in
-        let ctx = { ctx with loop_id = Some (unloc id) } in
+        let ctx = { ctx with loop_id = Option.map unloc id } in
         { id =  dl iid; form = map_mterm m ctx i }
       ) in
   let storage_loop_invariants = (* in storage invariants are strong :

@@ -78,7 +78,8 @@ type ('e,'t,'i) abstract_term =
   | Tif     of 'e * 'e * 'e option
   | Tmatch  of 'e * ('i pattern_node * 'e) list
   | Tapp    of 'e * 'e list
-  | Tfor    of 'i * 'e * 'e * ('e,'i) abstract_formula list * 'e (* id, from, to, invariants *)
+  | Tfor    of 'i * 'e * 'e * ('e,'i) abstract_formula list * 'e (* id, from, to, invariants, body *)
+  | Twhile  of 'e * ('e,'i) abstract_formula list * 'e (* test, invariants, body *)
   | Ttry    of 'e * ('e exn * 'e) list
   | Tvar    of 'i
   | Ttuple  of 'e list
@@ -406,6 +407,9 @@ and map_abstract_term
                                 map_e s,
                                 List.map (map_abstract_formula map_e map_i) l,
                                 map_e b)
+  | Twhile (t,l,b)   -> Twhile (map_e t,
+                              List.map (map_abstract_formula map_e map_i) l,
+                              map_e b)
   | Ttry (b,l)         -> Ttry (map_e b, List.map (fun (exn,e) -> (map_exn map_e exn,map_e e)) l)
   | Tassert (l,e)      -> Tassert (Option.map map_i l,map_e e)
   | Tvar i             -> Tvar (map_i i)
@@ -814,6 +818,9 @@ let rec compare_abstract_term
   | Tapp (f1,a1), Tapp (f2,a2) -> cmpe f1 f2 && List.for_all2 cmpe a1 a2
   | Tfor (i1,f1,s1,l1,b1), Tfor (i2,f2,s2,l2,b2) ->
     cmpi i1 i2 && cmpe f1 f2 && cmpe s1 s2 &&
+    List.for_all2 (compare_abstract_formula cmpe cmpi) l1 l2 && cmpe b1 b2
+  | Twhile (t1,l1,b1), Twhile (t2,l2,b2) ->
+    cmpe t1 t2 &&
     List.for_all2 (compare_abstract_formula cmpe cmpi) l1 l2 && cmpe b1 b2
   | Ttry (b1,l1), Ttry (b2,l2) -> cmpe b1 b2 &&
                                   List.for_all2 (fun (exn1,e1) (exn2,e2) ->

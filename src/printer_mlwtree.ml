@@ -512,6 +512,11 @@ let rec pp_term outer pos fmt = function
       (pp_term outer pos) s
       (pp_invariants false) l
       (pp_term outer pos) b
+  | Twhile (t,l,b) ->
+    Format.fprintf fmt "while %a do@\n@[%a@]@\n  @[%a@]@\ndone"
+      (pp_term outer pos) t
+      (pp_invariants false) l
+      (pp_term outer pos) b
   | Ttry (b,l) ->
     Format.fprintf fmt "try@\n  @[%a@]@\nwith @\n@[%a@]@\nend"
       (pp_term outer pos) b
