@@ -51,30 +51,26 @@ entry getTotalSupply (cb : entrysig<nat>) {
   transfer 0tz to entry cb(totalsupply);
 }
 
-specification %transfer (from_ : address, to_ : address, value : nat) {
+specification entry %transfer (from_ : address, to_ : address, value : nat) {
   fails {
     f0 with (s : string) :
          s = "NotEnoughBalance" and
          let some f = ledger[from_] in
-         f.value >= value
-         otherwise true
+         f.tokens >= value
+         otherwise true;
 
     f1 with (s : (string * (nat  * nat))) :
          caller <> from_ and
          let some a = allowance[(from_, caller)] in
-         a.current < value and
-         otherwise true
+         a.amount < value
+         otherwise true;
 
     f2 with (s : (string * (nat  * nat))) :
          let some a = allowance[(from_, caller)] in
-         s.1.0 = a.current and
-         s.0 = "NotEnoughAllowance" and
-         s.1.1 = value
-         otherwise true
-
-  }
-  postconditions {
-    p1 : true;
+         s[1][0] = a.amount and
+         s[0] = "NotEnoughAllowance" and
+         s[1][1] = value
+         otherwise true;
   }
 }
 

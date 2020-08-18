@@ -412,7 +412,7 @@ spec_items:
 | xs=label_exprs_non_empty
         { let ll = List.map (fun x ->
             let loc, (lbl, e) = Location.deloc x in
-            mkloc loc (Vpostcondition (lbl, e, [], [], Some PKPost))) xs in
+            mkloc loc (Vpostcondition (lbl, e, [], [], None))) xs in
             ll }
 
 %inline specification_with_exts_unloc_c:

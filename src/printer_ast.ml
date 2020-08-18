@@ -720,7 +720,7 @@ let pp_specification fmt (v : lident specification) =
       pp_pterm d.body
   in
   let pp_fail fmt (f : lident fail) =
-    Format.fprintf fmt "%a with (%a : %a):@\n  @[%a@];"
+    Format.fprintf fmt "%a with (%a : %a):@\n  @[%a@];@\n"
       pp_id f.label
       pp_id f.arg
       pp_ptyp f.atype
