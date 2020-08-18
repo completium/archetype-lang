@@ -297,7 +297,7 @@ let compile (filename, channel) =
   |> raise_if_error parse_error parse
   |> cont !Options.opt_pt output_pt
   |> raise_if_error parse_error preprocess_ext
-  |> raise_if_error parse_error remove_spec_decl
+  |> raise_if_error type_error remove_spec_decl
   |> cont !Options.opt_extpt output_pt
   |> raise_if_error parse_error generate_target_pt
   |> raise_if_error type_error type_
@@ -348,8 +348,8 @@ let main () =
       "--list-target", Arg.Unit (fun _ -> Format.printf "target available:@\n  ligo@\n  scaml (beta)@\n  whyml@\n"; exit 0), " List available target languages";
       "-pt", Arg.Set Options.opt_pt, " Generate parse tree";
       "--parse-tree", Arg.Set Options.opt_pt, " Same as -pt";
-      "-ept", Arg.Set Options.opt_pt, " Generate extended parse tree";
-      "--extended-parse-tree", Arg.Set Options.opt_pt, " Same as -ept";
+      "-ept", Arg.Set Options.opt_extpt, " Generate extended parse tree";
+      "--extended-parse-tree", Arg.Set Options.opt_extpt, " Same as -ept";
       "-ext", Arg.Set Options.opt_ext, " Process extensions";
       "--extensions", Arg.Set Options.opt_ext, " Same as -ext";
       "-ast", Arg.Set Options.opt_ast, " Generate typed ast";
