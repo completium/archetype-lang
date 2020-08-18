@@ -14,7 +14,7 @@ entry exec () {
     definition mydef2 {
       x : myasset |
       let some v = mydef.nth(0) in
-      x.id = v
+      x.id = v.id
       otherwise false
     }
 

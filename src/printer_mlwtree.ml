@@ -621,7 +621,7 @@ let rec pp_term outer pos fmt = function
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
     | _ ->
-      Format.fprintf fmt "%a.select_to_coll (%a) %a"
+      Format.fprintf fmt "%a.select_to_coll %a %a"
       pp_str (String.capitalize_ascii i1)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2

@@ -37,7 +37,7 @@ entry exec () {
     f04: my_asset.select(the.value > 0).isempty();
     // f05: my_asset.sort(value).isempty();
     f06: my_asset.contains("key");
-    f07: let some a = my_asset.nth(0) in a = "id0" otherwise false;
+    f07: let some a = my_asset.nth(0) in a.id = "id0" otherwise false;
     f08: my_asset.count() = 0;
     f09: my_asset.sum(the.value) = 0;
     f12: my_asset.head(2).isempty();
