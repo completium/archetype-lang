@@ -9,5 +9,7 @@ entry exec () {
 }
 
 specification function f () {
-  s1: true;
+  postcondition s1 {
+    true
+  }
 }

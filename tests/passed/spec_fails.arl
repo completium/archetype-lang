@@ -1,4 +1,4 @@
-archetype spec_definition
+archetype spec_fails
 
 asset myasset {
   id: int;
