@@ -898,6 +898,11 @@ and pp_dexn fmt (i,t) =
   Format.fprintf fmt "exception Fail%a %a"
     pp_id i
     pp_type t
+and pp_pred fmt (i,l,b) =
+  Format.fprintf fmt "predicate %a %a = @[%a@]"
+    pp_id i
+    pp_args l
+    (pp_term (0,Left) PLeft) b
 
 
 (* -------------------------------------------------------------------------- *)
@@ -1001,6 +1006,7 @@ let pp_decl fmt = function
   | Dtheorem (t,i,e) -> pp_theorem fmt (t,i,e)
   | Dfun s           -> pp_fun fmt s
   | Dexn (i,t)       -> pp_dexn fmt (i,t)
+  | Dpred (i,l,b)    -> pp_pred fmt (i,l,b)
 
 let pp_module fmt (m : mlw_module) =
   Format.fprintf fmt "module %a@\n  @[%a@]@\nend"

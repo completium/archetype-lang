@@ -1,10 +1,10 @@
 archetype spec_predicate
 
-entry exec () {
+entry exec (i : int) {
  specification {
 
     predicate mypredicate (x : int) {
-      exists n : int, x = n
+      exists n : int, x = n and x > i
     }
 
     postcondition s1 {

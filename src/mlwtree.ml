@@ -288,6 +288,7 @@ type ('e,'t,'i) abstract_decl =
   | Dtheorem of theotyp * 'i * 'e
   | Dfun     of ('e,'t,'i) abstract_fun_struct
   | Dexn     of 'i * 't
+  | Dpred    of 'i * ('i * 't) list * 'e
 [@@deriving show {with_path = false}]
 
 
@@ -590,7 +591,7 @@ let map_abstract_decl
   | Dtheorem (t,i,e) -> Dtheorem (t,map_i i, map_e e)
   | Dfun f           -> Dfun (map_abstract_fun_struct map_e map_t map_i f)
   | Dexn (i,t)       -> Dexn (map_i i, map_t t)
-
+  | Dpred (i,l,b)    -> Dpred (map_i i, List.map (fun (a,t) -> map_i a,map_t t) l, map_e b)
 
 let map_abstract_module
     (map_e : 'e1 -> 'e2)

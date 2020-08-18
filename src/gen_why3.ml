@@ -628,6 +628,34 @@ let get_definition_body m id =
     end in
   get_spec (M.Utils.get_specifications m)
 
+  let get_predicate_body m id =
+  let rec get_body = function
+  | [] -> None
+  | (def : M.predicate) :: _ when compare (unloc def.name) id = 0 -> Some def.body
+  | _ :: tl -> get_body tl in
+  let rec get_spec = function
+  | [] -> None
+  | spec :: tl ->
+    begin match get_body spec.M.predicates with
+    | Some b -> Some b
+    | None -> get_spec tl
+    end in
+  get_spec (M.Utils.get_specifications m)
+
+let is_predicate m id =
+  let rec search_pred = function
+  | [] -> false
+  | (def : M.predicate) :: _ when compare (unloc def.name) id = 0 -> true
+  | _ :: tl -> search_pred tl in
+  let rec search_spec = function
+  | [] -> false
+  | spec :: tl ->
+    if search_pred spec.M.predicates then
+    true
+    else search_spec tl
+  in
+  search_spec (M.Utils.get_specifications m)
+
 (* extracts entry's params for definitions *)
 let extract_def_args m body =
   let rec internal_extract_def_args acc (term : M.mterm) =
@@ -641,6 +669,11 @@ let extract_def_args m body =
 
 let get_def_params m id =
   match get_definition_body m id with
+  | Some b -> extract_def_args m b |> List.map (fun (p,_,_) -> p)
+  | None -> assert false
+
+let get_pred_params m id =
+  match get_predicate_body m id with
   | Some b -> extract_def_args m b |> List.map (fun (p,_,_) -> p)
   | None -> assert false
 
@@ -1422,8 +1455,13 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mdeclvar            _ -> error_not_supported "Mdeclvar"
 
     | Mapp (f, args) ->
-      Tapp (mk_loc (map_lident f).loc (Tvar (map_lident f)), [loc_term (Tvar gsinit)] @ List.map (map_mterm m ctx) args)
-
+      let args = args |> List.map (map_mterm m ctx) in
+      if is_predicate m (unloc f) then
+        let storage = loc_term (mk_def_storage ctx) in
+        let params = get_pred_params m (unloc f) |> List.map loc_term in
+        Tapp (mk_loc (map_lident f).loc (Tvar (map_lident f)), [storage] @ params @ args)
+      else
+        Tapp (mk_loc (map_lident f).loc (Tvar (map_lident f)), [loc_term (Tvar gsinit)] @ args)
 
     (* assign *)
 
@@ -2681,7 +2719,12 @@ let mk_theory m =
           loc_term (mk_ac_sv gsarg asset)));
       }
     ) spec.definitions in
-    acc @ defs
+    let preds = List.map (fun (pred : M.predicate) ->
+      let args = pred.args |> List.map (fun (i,t) -> map_lident i, map_mtype m t) in
+      let params = extract_def_args m pred.body |> List.map (fun (_,id,typ) -> (dl id,typ)) in
+      Dpred (map_lident pred.name, [dl gsarg, dl Tystorage] @ params @ args, map_mterm m ctx pred.body)
+    ) spec.predicates in
+    acc @ defs @ preds
   ) [] (M.Utils.get_specifications m)
 
 (* ENTRIES & FUNCTIONS ------------------------------------------------------- *)
