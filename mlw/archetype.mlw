@@ -15,7 +15,7 @@ theory Types
   type bytes     = arstring
   type signature = arstring
   type chain_id  = int
-  type uint      = int
+  type nat       = int
 
 
   exception Break

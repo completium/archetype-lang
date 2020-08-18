@@ -153,7 +153,7 @@ let pp_type fmt typ =
       | Tyset i       -> (String.capitalize_ascii i) ^ ".set"
       | Tylist tt     -> "L.list " ^ (typ_str ~pparen:(true) tt)
       | Tybool        -> "bool"
-      | Tyuint        -> "uint"
+      | Tyuint        -> "nat"
       | Tycontract i  -> i
       | Tyrational    -> "rational"
       | Tyduration    -> "duration"

@@ -612,7 +612,39 @@ let mk_filter_predicate ftyp m asset test filter args =
 let mk_select_predicate = mk_filter_predicate Select
 let mk_removeif_predicate = mk_filter_predicate Removeif
 
-(* Utils ----------------------------------------------------------------------*)
+(* Definitions Utils --------------------------------------------------------- *)
+
+let get_definition_body m id =
+  let rec get_body = function
+  | [] -> None
+  | (def : M.definition) :: _ when compare (unloc def.name) id = 0 -> Some def.body
+  | _ :: tl -> get_body tl in
+  let rec get_spec = function
+  | [] -> None
+  | spec :: tl ->
+    begin match get_body spec.M.definitions with
+    | Some b -> Some b
+    | None -> get_spec tl
+    end in
+  get_spec (M.Utils.get_specifications m)
+
+(* extracts entry's params for definitions *)
+let extract_def_args m body =
+  let rec internal_extract_def_args acc (term : M.mterm) =
+    match term.M.node with
+    | M.Mvar (id ,Vparam) ->
+      if acc_has_id (unloc id) acc
+      then acc
+      else acc @ [Tvar (unloc id), unloc id, map_mtype m term.type_]
+    | _ -> M.fold_term internal_extract_def_args acc term in
+  internal_extract_def_args [] body
+
+let get_def_params m id =
+  match get_definition_body m id with
+  | Some b -> extract_def_args m b |> List.map (fun (p,_,_) -> p)
+  | None -> assert false
+
+(* Utils --------------------------------------------------------------------- *)
 
 let wdl (l : 'a list)  = List.map dl l
 let unloc_decl = List.map unloc_decl
@@ -1330,6 +1362,15 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mletin ([id], v, _, b, None) ->
       Tletin (M.Utils.is_local_assigned (unloc id) b, map_lident id, None, map_mterm m ctx v, map_mterm m ctx b)
 
+    | Mletin ([id], { node = M.Mget (a, CKdef d, k); type_ = _ }, _, b, Some e) -> (* logical *)
+      let ctx = ctx in
+      let params = get_def_params m d in
+      Tmatch (Tget (loc_ident a,
+                    map_mterm m ctx k,
+                    loc_term (Tapp (Tvar d, [mk_def_storage ctx] @ params))) |> dl,[
+                Tpsome (map_lident id), map_mterm m ctx b;
+                Twild, map_mterm m ctx e
+              ])
     | Mletin ([id], { node = M.Mget (a, _, k); type_ = _ }, _, b, Some e) -> (* logical *)
       let ctx = ctx in
       Tmatch (Tget (loc_ident a,
@@ -1851,7 +1892,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | Logic | Inv | Def -> nth
         | _ ->  mk_match (dl nth) "_a" (loc_term (Tvar "_a")) Enotfound
       end
-    | Mnth (n, CKdef d, c) -> Tnth (dl n, map_mterm m ctx c, loc_term (Tapp(Tvar d, [mk_def_storage ctx])))
+    | Mnth (n, CKdef d, c) ->
+      let params = get_def_params m d in
+      Tnth (dl n, map_mterm m ctx c, loc_term (Tapp(Tvar d, [mk_def_storage ctx] @ params)))
     | Mnth (n, CKfield (_, _, c),k) ->
       begin match ctx.lctx with
         | Logic | Inv | Def -> Tnth (dl n, map_mterm m ctx c, mk_ac_ctx n ctx)
@@ -1876,7 +1919,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | Logic | Inv | Def -> Tcard (dl a, map_mterm m ctx t)
         | _ -> Tcard (dl (mk_view_id a), map_mterm m ctx t)
       end
-    | Mcount (a, CKdef d) -> Tcard (dl a, loc_term (Tapp (Tvar d, [mk_def_storage ctx])))
+    | Mcount (a, CKdef d) ->
+      let params = get_def_params m d in
+      Tcard (dl a, loc_term (Tapp (Tvar d, [mk_def_storage ctx] @ params)))
     | Mcount (a, (CKfield (_, _, t))) ->
       Tcard (dl (mk_view_id a), dl (Ttoview (dl (mk_field_id a), map_mterm m ctx t)))
     | Mcount (a, CKcoll) ->
@@ -2087,10 +2132,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Mvar (v, Venumval) -> Tvar (map_lident v)
     | Mvar (v, Vdefinition) ->
-      begin match ctx.lctx with
-      | Def -> Tapp (loc_term (Tvar (unloc v)), [loc_term (Tvar gsarg)])
-      | _ -> Tapp (loc_term (Tvar (unloc v)), [loc_term (Tvar gs)])
-      end
+      let params = get_def_params m (unloc v) |> List.map loc_term in
+      Tapp (loc_term (Tvar (unloc v)), [loc_term (mk_def_storage ctx)] @ params)
     | Mvar (v, Vlocal) ->
       begin match ctx.lctx, mt.type_ with
         | Logic, M.Tcontainer ((Tasset a), View) ->
@@ -2617,10 +2660,11 @@ let mk_theory m =
     let defs = List.map (fun (def : M.definition) ->
       let t = map_mtype m (M.Tcontainer (def.typ,M.Collection)) in
       let asset = M.Utils.type_to_asset def.typ in
+      let params = extract_def_args m def.body |> List.map (fun (_,id,typ) -> (dl id,typ)) in
       Dfun {
         name = map_lident def.name;
         logic = LogicOnly;
-        args = [ dl gsarg, dl Tystorage ];
+        args = [ dl gsarg, dl Tystorage ] @ params;
         returns = t;
         raises = [];
         variants = [];
