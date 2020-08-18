@@ -51,6 +51,7 @@
       "extension"           , EXTENSION      ;
       "fail"                , FAIL           ;
       "failif"              , FAILIF         ;
+      "fails"               , FAILS          ;
       "false"               , FALSE          ;
       "for"                 , FOR            ;
       "forall"              , FORALL         ;

@@ -197,11 +197,12 @@ and args = lident_typ list
 and invariants = (lident * expr list) list
 
 and specification_item_unloc =
-  | Vpredicate of lident * args * expr
-  | Vdefinition of lident * type_t * lident * expr
-  | Vvariable of lident * type_t * expr option
-  | Veffect of expr
-  | Vassert of (lident * expr * invariants * lident list)
+  | Vpredicate     of lident * args * expr
+  | Vdefinition    of lident * type_t * lident * expr
+  | Vvariable      of lident * type_t * expr option
+  | Veffect        of expr
+  | Vassert        of (lident * expr * invariants * lident list)
+  | Vfails         of (lident * lident * type_t * expr) list
   | Vpostcondition of (lident * expr * invariants * lident list * postkind option)
 
 and postkind = PKPost | PKInv
@@ -398,6 +399,7 @@ let is_keyword = function
   | "extension"
   | "fail"
   | "failif"
+  | "fails"
   | "false"
   | "for"
   | "forall"

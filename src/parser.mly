@@ -75,6 +75,7 @@
 %token EXTENSION
 %token FAIL
 %token FAILIF
+%token FAILS
 %token FALSE
 %token FOR
 %token FORALL
@@ -353,6 +354,16 @@ function_decl:
 %inline spec_predicate:
 | PREDICATE id=ident xs=function_args e=braced(expr) { Vpredicate (id, xs, e) }
 
+%inline spec_fail_item:
+| lbl=ident WITH LPAREN arg=ident COLON t=type_t RPAREN COLON f=expr SEMI_COLON
+{ (lbl, arg, t, f) }
+
+%inline spec_fail_items:
+| xs=spec_fail_item+ { xs }
+
+%inline spec_fails:
+| FAILS xs=braced(spec_fail_items) { Vfails xs }
+
 %inline spec_definition:
 | DEFINITION id=ident LBRACE a=ident COLON t=type_t PIPE e=expr RBRACE { Vdefinition (id, t, a, e) }
 
@@ -387,12 +398,13 @@ function_decl:
 spec_items:
 | ds=loc(spec_definition)*
   ps=loc(spec_predicate)*
+  fs=loc(spec_fails)*
   vs=loc(spec_variable)*
   es=loc(spec_effect)*
   bs=loc(spec_assert)*
   ss=loc(spec_postcondition)*
   cs=loc(spec_contract_invariant)*
-   { ds @ ps @ vs @ es @ bs @ ss @ cs }
+   { ds @ ps @ fs @ vs @ es @ bs @ ss @ cs }
 
 %inline specification_unloc_c:
 | xs=spec_items { xs }

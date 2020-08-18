@@ -940,6 +940,10 @@ let to_model (ast : A.ast) : M.model =
     M.mk_definition d.name (ptyp_to_type d.typ) d.var (to_mterm env d.body) ~loc:d.loc
   in
 
+  let to_fail (env : env) (p : A.lident A.fail) : M.fail =
+    M.mk_fail p.label p.arg (ptyp_to_type p.atype) (to_mterm { env with formula = true } p.formula) ~loc:p.loc
+  in
+
   let to_variable (env : env) (v : A.lident A.variable) : M.variable =
     M.mk_variable
       ((fun (arg : A.lident A.decl_gen) : (M.lident * M.type_ * M.mterm option) ->
@@ -967,6 +971,7 @@ let to_model (ast : A.ast) : M.model =
     let definitions    = List.map (to_definition  env) v.definitions in
     let lemmas         = List.map (to_label_lterm env) v.lemmas      in
     let theorems       = List.map (to_label_lterm env) v.theorems    in
+    let fails          = List.map (to_fail env)        v.fails in
     let variables      = List.map (fun x -> to_variable env x) v.variables in
     let invariants     = List.map (fun (a, l) -> (a, List.map (fun x -> to_label_lterm env x) l)) v.invariants in
     let effects        = Option.map_dfl (fun x -> [to_instruction env x]) [] v.effect in
@@ -976,6 +981,7 @@ let to_model (ast : A.ast) : M.model =
       ~definitions:definitions
       ~lemmas:lemmas
       ~theorems:theorems
+      ~fails:fails
       ~variables:variables
       ~invariants:invariants
       ~effects:effects

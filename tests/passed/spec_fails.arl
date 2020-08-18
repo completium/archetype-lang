@@ -5,11 +5,13 @@ asset myasset {
 }
 
 entry exec () {
-  fail ("error")
-}
-
-specification {
-  fails {
-    x : myasset | x.id = 0
+  specification {
+    fails {
+      f1 with (s : string) :
+        s = "error";
+    }
+  }
+  effect {
+    fail ("error")
   }
 }

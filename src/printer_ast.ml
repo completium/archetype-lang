@@ -698,6 +698,7 @@ let pp_specification fmt (v : lident specification) =
   let empty = List.is_empty v.predicates
               && List.is_empty v.definitions
               && List.is_empty v.lemmas
+              && List.is_empty v.fails
               && List.is_empty v.theorems
               && List.is_empty v.variables
               && List.is_empty v.invariants
@@ -718,6 +719,14 @@ let pp_specification fmt (v : lident specification) =
       pp_ptyp d.typ
       pp_pterm d.body
   in
+  let pp_fail fmt (f : lident fail) =
+    Format.fprintf fmt "%a with (%a : %a):@\n  @[%a@];"
+      pp_id f.label
+      pp_id f.arg
+      pp_ptyp f.atype
+      pp_pterm f.formula
+  in
+  let pp_fails fmt l = if List.is_empty l then () else Format.fprintf fmt "fails {@\n  @[%a@]@\n}" (pp_list "@\n" pp_fail) l in
   let pp_variable_spec fmt (v : lident variable) =
     let decl = v.decl in
     Format.fprintf fmt "variable %a%a%a"
@@ -753,9 +762,10 @@ let pp_specification fmt (v : lident specification) =
   if empty
   then ()
   else
-    Format.fprintf fmt "specification {@\n  @[%a%a%a%a%a%a%a%a%a@]@\n}@\n"
+    Format.fprintf fmt "specification {@\n  @[%a%a%a%a%a%a%a%a%a%a@]@\n}@\n"
       (pp_no_empty_list2 pp_predicate) v.predicates
       (pp_no_empty_list2 pp_definitions) v.definitions
+      pp_fails v.fails
       (pp_no_empty_list2 (fun fmt -> Format.fprintf fmt "axioms:@\n  @[%a@]@\n" pp_label_term)) v.lemmas
       (pp_no_empty_list2 (fun fmt -> Format.fprintf fmt "theorems:@\n  @[%a@]@\n" pp_label_term)) v.theorems
       (pp_no_empty_list2 pp_variable_spec) v.variables

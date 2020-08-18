@@ -42,6 +42,7 @@ let opt_lsp     = ref false
 let opt_service = ref false
 let opt_json    = ref false
 let opt_pt      = ref false
+let opt_extpt   = ref false
 let opt_ext     = ref false
 let opt_ast     = ref false
 let opt_typed   = ref false

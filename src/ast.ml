@@ -441,6 +441,15 @@ type 'id definition = {
 }
 [@@deriving show {with_path = false}]
 
+type 'id fail = {
+  label: 'id;
+  arg: 'id;
+  atype: type_;
+  formula: 'id term_gen;
+  loc: Location.t [@opaque];
+}
+[@@deriving show {with_path = false}]
+
 type 'id invariant = {
   label: 'id;
   formulas: 'id term_gen list;
@@ -467,6 +476,7 @@ type 'id assert_ = {
 type 'id specification = {
   predicates  : 'id predicate list;
   definitions : 'id definition list;
+  fails       : 'id fail list;
   lemmas      : 'id label_term list;
   theorems    : 'id label_term list;
   variables   : 'id variable list;
@@ -687,6 +697,9 @@ let mk_predicate ?(args = []) ?(loc = Location.dummy) name body =
 let mk_definition ?(loc = Location.dummy) name typ var body =
   { name; typ; var; body; loc }
 
+let mk_fail ?(loc = Location.dummy) label arg atype formula =
+  { label; arg; atype; formula; loc }
+
 let mk_invariant ?(formulas = []) label =
   { label; formulas }
 
@@ -696,8 +709,8 @@ let mk_postcondition ?(invariants = []) ?(uses = []) name formula =
 let mk_assert ?(invariants = []) ?(uses = []) name label formula =
   { name; label; formula; invariants; uses }
 
-let mk_specification ?(predicates = []) ?(definitions = []) ?(lemmas = []) ?(theorems = []) ?(variables = []) ?(invariants = []) ?effect ?(specs = []) ?(asserts = []) ?(loc = Location.dummy) () =
-  { predicates; definitions; lemmas; theorems; variables; invariants; effect; specs; asserts; loc}
+let mk_specification ?(predicates = []) ?(definitions = []) ?(fails = []) ?(lemmas = []) ?(theorems = []) ?(variables = []) ?(invariants = []) ?effect ?(specs = []) ?(asserts = []) ?(loc = Location.dummy) () =
+  { predicates; definitions; fails; lemmas; theorems; variables; invariants; effect; specs; asserts; loc}
 
 let mk_function_struct ?(args = []) ?specification ?(loc = Location.dummy) name body return =
   { name; args; body; specification; return; loc }

@@ -710,6 +710,17 @@ type 'id invariant_gen = {
 type invariant = lident invariant_gen
 [@@deriving show {with_path = false}]
 
+type 'id fail_gen = {
+  label: 'id;
+  arg: 'id;
+  atype: type_;
+  formula: 'id mterm_gen;
+  loc: Location.t [@opaque];
+}
+[@@deriving show {with_path = false}]
+
+type fail = lident fail_gen
+[@@deriving show {with_path = false}]
 
 type spec_mode =
   | Post
@@ -746,6 +757,7 @@ type 'id specification_gen = {
   definitions    : 'id definition_gen list;
   lemmas         : 'id label_term_gen list;
   theorems       : 'id label_term_gen list;
+  fails          : 'id fail_gen list;
   variables      : 'id variable_gen list;
   invariants     : ('id * 'id label_term_gen list) list;
   effects        : 'id mterm_gen list;
@@ -850,14 +862,17 @@ let mk_definition ?(loc = Location.dummy) name typ var body =
 let mk_invariant ?(formulas = []) label =
   { label; formulas }
 
+let mk_fail ?(loc = Location.dummy) label arg atype formula =
+  { label; arg; atype; formula; loc }
+
 let mk_postcondition ?(invariants = []) ?(uses = []) name mode formula =
   { name; mode; formula; invariants; uses }
 
 let mk_assert ?(invariants = []) ?(uses = []) name label formula =
   { name; label; formula; invariants; uses }
 
-let mk_specification ?(predicates = []) ?(definitions = []) ?(lemmas = []) ?(theorems = []) ?(variables = []) ?(invariants = []) ?(effects = []) ?(postconditions = []) ?(loc = Location.dummy) () =
-  { predicates; definitions; lemmas; theorems; variables; invariants; effects; postconditions; loc}
+let mk_specification ?(predicates = []) ?(definitions = []) ?(lemmas = []) ?(theorems = []) ?(fails = []) ?(variables = []) ?(invariants = []) ?(effects = []) ?(postconditions = []) ?(loc = Location.dummy) () =
+  { predicates; definitions; lemmas; theorems; fails; variables; invariants; effects; postconditions; loc}
 
 let mk_security_predicate ?(loc = Location.dummy) s_node : security_predicate =
   { s_node; loc }
@@ -2998,6 +3013,8 @@ type kind_ident =
   | KIinvariant
   | KIpostcondition
   | KIpostconditionuse
+  | KIfaillabel
+  | KIfailarg
   | KIsecurityad
   | KIsecurityrole
   | KIsecurityentry
@@ -3189,6 +3206,15 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
         loc  = d.loc;
       }
     in
+    let for_fail (f : fail) : fail =
+      {
+        label        = g KIfaillabel f.label;
+        arg          = g KIfailarg   f.arg;
+        atype        = for_type      f.atype;
+        formula      = for_mterm     f.formula;
+        loc          = f.loc;
+      }
+    in
     let for_variable (v : variable) : variable =
       let for_argument (arg : argument) : argument =
         let a, b, c = arg in
@@ -3220,6 +3246,7 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
       definitions    = List.map for_definition    spec.definitions;
       lemmas         = List.map for_label_term    spec.lemmas;
       theorems       = List.map for_label_term    spec.theorems;
+      fails          = List.map for_fail          spec.fails;
       variables      = List.map for_variable      spec.variables;
       invariants     = List.map (fun (x, y) -> g KIinvariant x, List.map for_label_term y) spec.invariants;
       effects        = List.map for_mterm         spec.effects;

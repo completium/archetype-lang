@@ -851,6 +851,20 @@ let pp_specification_item fmt = function
       pp_type typ
       (pp_expr e_default PNone) body
 
+  (* fails {
+     x with (s : string) :
+      true;
+     } *)
+  | Vfails l ->
+    Format.fprintf fmt "fails {@\n  @[%a@]@\n}"
+      (pp_list "" (fun fmt (lbl, arg, t, f) ->
+           Format.fprintf fmt "%a with (%a : %a):@\n  %a;"
+             pp_id lbl
+             pp_id arg
+             pp_type t
+             (pp_expr e_default PNone) f
+         )) l
+
   | Vvariable (id, typ, dv) ->
     Format.fprintf fmt "variable %a : %a%a"
       pp_id id
@@ -982,11 +996,11 @@ let pp_entry_properties fmt (props : entry_properties) =
       s1
       pp_extensions exts
       (pp_list ";@\n" (fun fmt (id, e, f) ->
-         Format.fprintf fmt "%a%a: %a"
-           pp_id id
-           (pp_option (fun fmt x -> Format.fprintf fmt " %s %a" s2 (pp_expr e_default PNone) x)) f
-           (pp_expr e_default PNone) e
-      )) l
+           Format.fprintf fmt "%a%a: %a"
+             pp_id id
+             (pp_option (fun fmt x -> Format.fprintf fmt " %s %a" s2 (pp_expr e_default PNone) x)) f
+             (pp_expr e_default PNone) e
+         )) l
   in
   pp_option (pp_rf "require" "otherwise") fmt props.require;
   pp_option (pp_rf "failif" "with") fmt props.failif;
@@ -1107,20 +1121,20 @@ let rec pp_declaration fmt { pldesc = e; _ } =
 
   | Dspecasset (id, l) ->
     Format.fprintf fmt "specification asset %a {@\n  @[%a@]@\n}"
-    pp_id id
-    (pp_list "@\n" (fun fmt x -> let (id, x) = unloc x in Format.fprintf fmt "%a: %a;" pp_id id pp_simple_expr x)) l
+      pp_id id
+      (pp_list "@\n" (fun fmt x -> let (id, x) = unloc x in Format.fprintf fmt "%a: %a;" pp_id id pp_simple_expr x)) l
 
   | Dspecfun (b, id, args, s) ->
     Format.fprintf fmt "specification %s %a%a {@\n  %a@\n}"
-    (if b then "entry" else "function")
-    pp_id id
-    pp_fun_args args
-    pp_specification s
+      (if b then "entry" else "function")
+      pp_id id
+      pp_fun_args args
+      pp_specification s
 
   | Dspecvariable (id, l) ->
     Format.fprintf fmt "specification variable %a {@\n  @[%a@]@\n}"
-    pp_id id
-    (pp_list "@\n" (fun fmt x -> let (id, x) = unloc x in Format.fprintf fmt "%a: %a;" pp_id id pp_simple_expr x)) l
+      pp_id id
+      (pp_list "@\n" (fun fmt x -> let (id, x) = unloc x in Format.fprintf fmt "%a: %a;" pp_id id pp_simple_expr x)) l
 
   | Dsecurity v ->
     let items, exts = v |> unloc in

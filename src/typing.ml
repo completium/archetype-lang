@@ -1042,6 +1042,7 @@ type vardecl = {
 type 'env ispecification = [
   | `Predicate     of A.lident * (A.lident * A.ptyp) list * A.pterm
   | `Definition    of A.lident * (A.lident * A.ptyp) * A.pterm
+  | `Fails         of (A.lident * A.lident * A.ptyp * A.pterm) list
   | `Variable      of A.lident * A.pterm option
   | `Asset         of A.lident * A.pterm * (A.lident * A.pterm list) list * A.lident list
   | `Effect        of 'env * A.instruction
@@ -3975,6 +3976,23 @@ let for_specification_item
     let _, ((poenv, _) as i) = for_effect `Ghost poenv i in
     (env, poenv), [`Effect i]
 
+  | PT.Vfails l -> begin
+      let l, env = List.fold_left (
+          fun (accu, aenv) (lbl, arg, atype, f) ->
+            let ty = for_type_exn aenv atype in
+            let env_internal = Env.Local.push env (arg, ty) in
+            let f = for_formula env_internal f in
+            let env =
+              if   check_and_emit_name_free env lbl
+              then Env.Label.push env (lbl, `Plain)
+              else env
+            in
+            (lbl, arg, ty, f)::accu, env
+        ) ([], env) l in
+
+      (env, poenv), [`Fails (List.rev l)]
+    end
+
   | PT.Vpostcondition (x, f, invs, uses, kind) -> begin
       begin match kind, mode with
         | Some PKInv, `Local ->
@@ -5096,6 +5114,7 @@ let specifications_of_ispecifications =
   let env0 : A.lident A.specification = A.{
       predicates  = [];
       definitions = [];
+      fails       = [];
       lemmas      = [];
       theorems    = [];
       variables   = [];
@@ -5150,6 +5169,10 @@ let specifications_of_ispecifications =
     | `Definition (defname, (x, xty), body) ->
       let def = A.mk_definition ~loc:(loc defname) defname xty x body in
       { env with A.definitions = env.definitions @ [def] }
+
+    | `Fails l ->
+      {env with A.fails = env.fails @ List.map (fun (id, arg, atype, f) -> A.mk_fail id arg atype f) l}
+
 
   in fun ispecs -> List.fold_left do1 env0 ispecs
 
