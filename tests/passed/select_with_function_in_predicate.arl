@@ -1,4 +1,4 @@
-archetype select_with_extra_var
+archetype select_with_function_in_predicate
 
 asset my_asset identified by id {
   id : string;

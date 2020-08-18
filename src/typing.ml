@@ -2024,6 +2024,7 @@ let rec for_xexpr
             A.VTnone
         in
 
+
         let lk = Env.lookup_entry subenv (unloc x) in
 
         begin match lk, vset with
@@ -2034,6 +2035,14 @@ let rec for_xexpr
 
         if is_expr_kind mode.em_kind && Option.is_some vset then
           Env.emit_error env (loc tope, VSetInExpr);
+
+        let vs =
+          match vset with
+          | None           -> A.Vnone
+          | Some VSAdded   -> A.Vadded
+          | Some VSRemoved -> A.Vremoved
+          | Some VSUnmoved -> A.Vunmoved
+        in
 
         match lk with
         | Some (`Local (xty, _)) ->
@@ -2050,7 +2059,7 @@ let rec for_xexpr
             | `Yes None ->
               () end;
 
-          mk_sp (Some xty) (A.Pvar (vt, Vnone, x))
+          mk_sp (Some xty) (A.Pvar (vt, vs, x))
 
         | Some (`Global decl) -> begin
             begin match mode.em_kind, decl.vr_kind with
@@ -2063,16 +2072,16 @@ let rec for_xexpr
             | Some (body, `Inline) ->
               body
             | _ ->
-              mk_sp (Some decl.vr_type) (A.Pvar (vt, Vnone, x))
+              mk_sp (Some decl.vr_type) (A.Pvar (vt, vs, x))
           end
 
         | Some (`Asset decl) ->
           let typ = A.Tcontainer ((A.Tasset decl.as_name), A.Collection) in
-          mk_sp (Some typ) (A.Pvar (vt, Vnone, x))
+          mk_sp (Some typ) (A.Pvar (vt, vs, x))
 
         | Some (`Definition decl) ->
           let typ = A.Tcontainer ((A.Tasset decl.df_asset), A.View) in
-          mk_sp (Some typ) (A.Pvar (vt, Vnone, x))
+          mk_sp (Some typ) (A.Pvar (vt, vs, x))
 
         | Some (`StateByCtor (decl, _)) ->
           let vt =
@@ -2080,15 +2089,8 @@ let rec for_xexpr
               Env.emit_error env (loc tope, BeforeIrrelevant `State); A.VTnone
             end else vt in
 
-          let vset =
-            match vset with
-            | None           -> A.Vnone
-            | Some VSAdded   -> A.Vadded
-            | Some VSRemoved -> A.Vremoved
-            | Some VSUnmoved -> A.Vunmoved
-          in
           let typ = A.Tenum decl.sd_name in
-          mk_sp (Some typ) (A.Pvar (vt, vset, x))
+          mk_sp (Some typ) (A.Pvar (vt, vs, x))
 
         | Some (`Context (asset, ofield)) -> begin
             let atype = A.Tasset asset.as_name in

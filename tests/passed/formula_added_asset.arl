@@ -1,0 +1,15 @@
+archetype formula_added_asset
+
+asset my_asset {
+  id: nat;
+  v : string;
+}
+
+entry exec () {
+  specification {
+    s1: added.my_asset.isempty()
+  }
+  effect {
+    ()
+  }
+}

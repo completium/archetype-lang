@@ -1,4 +1,4 @@
-archetype spec_entry
+archetype spec_function
 
 function f () : nat {
   return 1

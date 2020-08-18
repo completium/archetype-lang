@@ -243,6 +243,14 @@ let to_model (ast : A.ast) : M.model =
       | A.VTat lbl -> M.Msetat (lbl, M.mk_mterm e (ptyp_to_type (Option.get pterm.type_)) ~loc:pterm.loc)
       | A.VTnone -> e
     in
+    let process_deltaset vs e =
+      let mt = M.mk_mterm e (ptyp_to_type (Option.get pterm.type_)) ~loc:pterm.loc in
+      match vs with
+      | A.Vadded   -> M.Msetadded   mt
+      | A.Vremoved -> M.Msetremoved mt
+      | A.Vunmoved -> M.Msetunmoved mt
+      | A.Vnone    -> e
+    in
     let is_record = function | M.Trecord _ -> true | _ -> false in
     let type_ = ptyp_to_type (Option.get pterm.type_) in
     let f x = to_mterm env x in
@@ -286,13 +294,13 @@ let to_model (ast : A.ast) : M.model =
       | A.Pcall (Some p, A.Cconst A.Cbefore,    []) -> M.Msetbefore    (f p)
       | A.Pletin (id, init, typ, body, o) -> M.Mletin         ([id], f init, Option.map ptyp_to_type typ, f body, Option.map f o)
       | A.Pdeclvar (i, t, v)              -> M.Mdeclvar       ([i], Option.map ptyp_to_type t, f v)
-      | A.Pvar (b, _vs, {pldesc = "state"; _})                -> let e = M.Mvar (dumloc "", Vstate) in process_before b e
-      | A.Pvar (b, _vs, id) when is_param env id              -> let e = M.Mvar (id, Vparam)        in process_before b e
-      | A.Pvar (b, _vs, id) when A.Utils.is_variable ast id   -> let e = M.Mvar (id, Vstorevar)     in process_before b e
-      | A.Pvar (b, _vs, id) when A.Utils.is_asset ast id      -> let e = M.Mvar (id, Vstorecol)     in process_before b e
-      | A.Pvar (b, _vs, id) when A.Utils.is_enum_value ast id -> let e = M.Mvar (id, Venumval)      in process_before b e
-      | A.Pvar (b, _vs, id) when A.Utils.is_definition ast id -> let e = M.Mvar (id, Vdefinition)   in process_before b e
-      | A.Pvar (b, _vs, id)                                   -> let e = M.Mvar (id, Vlocal)        in process_before b e
+      | A.Pvar (b, vs, {pldesc = "state"; _})                -> let e = M.Mvar (dumloc "", Vstate) in process_before b e |> process_deltaset vs
+      | A.Pvar (b, vs, id) when is_param env id              -> let e = M.Mvar (id, Vparam)        in process_before b e |> process_deltaset vs
+      | A.Pvar (b, vs, id) when A.Utils.is_variable ast id   -> let e = M.Mvar (id, Vstorevar)     in process_before b e |> process_deltaset vs
+      | A.Pvar (b, vs, id) when A.Utils.is_asset ast id      -> let e = M.Mvar (id, Vstorecol)     in process_before b e |> process_deltaset vs
+      | A.Pvar (b, vs, id) when A.Utils.is_enum_value ast id -> let e = M.Mvar (id, Venumval)      in process_before b e |> process_deltaset vs
+      | A.Pvar (b, vs, id) when A.Utils.is_definition ast id -> let e = M.Mvar (id, Vdefinition)   in process_before b e |> process_deltaset vs
+      | A.Pvar (b, vs, id)                                   -> let e = M.Mvar (id, Vlocal)        in process_before b e |> process_deltaset vs
       | A.Parray l                             ->
         begin
           let l = List.map f l in
