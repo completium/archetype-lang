@@ -1,4 +1,5 @@
 open Ident
+open Tools
 
 type 'a with_annot = {
   node:       'a;
@@ -65,7 +66,6 @@ type z_operator =
 type un_operator =
   | Ucar
   | Ucdr
-  | Uminus
   | Uneg
   | Uint
   | Unot
@@ -268,3 +268,98 @@ let itrue  = Iconst (mk_type Tbool, Dtrue)
 let ifalse = Iconst (mk_type Tbool, Dfalse)
 let iint n = Iconst (mk_type Tint,  Dint n)
 let inat n = Iconst (mk_type Tnat,  Dint n)
+
+(* -------------------------------------------------------------------- *)
+
+let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) = function
+  | SEQ l                   -> SEQ (List.map fc l)
+  | DROP n                  -> DROP n
+  | DUP                     -> DUP
+  | SWAP                    -> SWAP
+  | DIG n                   -> DIG n
+  | DUG n                   -> DUG n
+  | PUSH (t, d)             -> PUSH (ft t, fd d)
+  | SOME                    -> SOME
+  | NONE t                  -> NONE (ft t)
+  | UNIT                    -> UNIT
+  | IF_NONE (then_, else_)  -> IF_NONE (List.map fc then_, List.map fc else_)
+  | PAIR                    -> PAIR
+  | CAR                     -> CAR
+  | CDR                     -> CDR
+  | LEFT t                  -> LEFT (ft t)
+  | RIGHT t                 -> RIGHT (ft t)
+  | IF_LEFT (then_, else_)  -> IF_LEFT (List.map fc then_, List.map fc else_)
+  | NIL t                   -> NIL (ft t)
+  | CONS                    -> CONS
+  | IF_CONS (then_, else_)  -> IF_CONS (List.map fc then_, List.map fc else_)
+  | SIZE                    -> SIZE
+  | EMPTY_SET      t        -> EMPTY_SET     (ft t)
+  | EMPTY_MAP      t        -> EMPTY_MAP     (ft t)
+  | EMPTY_BIG_MAP  t        -> EMPTY_BIG_MAP (ft t)
+  | MAP  l                  -> MAP  (List.map fc l)
+  | ITER l                  -> ITER (List.map fc l)
+  | MEM                     -> MEM
+  | GET                     -> GET
+  | UPDATE                  -> UPDATE
+  | IF (then_, else_)       -> IF (List.map fc then_, List.map fc else_)
+  | LOOP l                  -> LOOP (List.map fc l)
+  | LOOP_LEFT l             -> LOOP_LEFT (List.map fc l)
+  | LAMBDA (at, rt, body)   -> LAMBDA (ft at, ft rt, List.map fc body)
+  | EXEC                    -> EXEC
+  | DIP (n, l)              -> DIP (n, List.map fc l)
+  | FAILWITH                -> FAILWITH
+  | CAST                    -> CAST
+  | RENAME                  -> RENAME
+  | CONCAT                  -> CONCAT
+  | SLICE                   -> SLICE
+  | PACK                    -> PACK
+  | UNPACK t                -> UNPACK (ft t)
+  | ADD                     -> ADD
+  | SUB                     -> SUB
+  | MUL                     -> MUL
+  | EDIV                    -> EDIV
+  | ABS                     -> ABS
+  | ISNAT                   -> ISNAT
+  | INT                     -> INT
+  | NEG                     -> NEG
+  | LSL                     -> LSL
+  | LSR                     -> LSR
+  | OR                      -> OR
+  | AND                     -> AND
+  | XOR                     -> XOR
+  | NOT                     -> NOT
+  | COMPARE                 -> COMPARE
+  | EQ                      -> EQ
+  | NEQ                     -> NEQ
+  | LT                      -> LT
+  | GT                      -> GT
+  | LE                      -> LE
+  | GE                      -> GE
+  | SELF                    -> SELF
+  | CONTRACT t              -> CONTRACT (ft t)
+  | TRANSFER_TOKENS         -> TRANSFER_TOKENS
+  | SET_DELEGATE            -> SET_DELEGATE
+  | CREATE_ACCOUNT          -> CREATE_ACCOUNT
+  | CREATE_CONTRACT l       -> CREATE_CONTRACT (List.map fc l)
+  | IMPLICIT_ACCOUNT        -> IMPLICIT_ACCOUNT
+  | NOW                     -> NOW
+  | AMOUNT                  -> AMOUNT
+  | BALANCE                 -> BALANCE
+  | CHECK_SIGNATURE         -> CHECK_SIGNATURE
+  | BLAKE2B                 -> BLAKE2B
+  | SHA256                  -> SHA256
+  | SHA512                  -> SHA512
+  | HASH_KEY                -> HASH_KEY
+  | STEPS_TO_QUOTA          -> STEPS_TO_QUOTA
+  | SOURCE                  -> SOURCE
+  | SENDER                  -> SENDER
+  | ADDRESS                 -> ADDRESS
+  | CHAIN_ID                -> CHAIN_ID
+
+let map_code (fc : code -> code) = map_code_gen fc id id
+
+let rec flat (c : code) : code =
+  match c with
+  | SEQ l -> SEQ (List.fold_right (fun x accu -> match flat x with | SEQ l -> l @ accu | a -> a::accu) l [])
+  (* TODO: handle constructors with code list arg*)
+  | _ -> map_code flat c

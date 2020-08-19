@@ -76,7 +76,6 @@ let rec pp_instruction fmt (i : instruction) =
       match op with
       | Ucar      -> Format.fprintf fmt "car(%a)"      f e
       | Ucdr      -> Format.fprintf fmt "cdr(%a)"      f e
-      | Uminus    -> Format.fprintf fmt "-(%a)"        f e
       | Uneg      -> Format.fprintf fmt "neg(%a)"      f e
       | Uint      -> Format.fprintf fmt "int(%a)"      f e
       | Unot      -> Format.fprintf fmt "not(%a)"      f e

@@ -117,10 +117,13 @@ let to_ir (model : M.model) : T.ir =
       model.storage
   in
 
+  let remove_annot (t : T.type_) = {t with annotation = None} in
+
   let storage_type, storage_data =
     match l with
-    | [] -> T.mk_type Tunit, T.Dunit
-    | _ -> let lt, ld = List.split l in to_one_type lt, to_one_data ld
+    | []  -> T.mk_type Tunit, T.Dunit
+    | [t, d] -> remove_annot t, d
+    | _   -> let lt, ld = List.split l in to_one_type lt, to_one_data ld
   in
 
   let rec mterm_to_intruction env (mtt : M.mterm) : T.instruction =
@@ -426,5 +429,107 @@ let to_ir (model : M.model) : T.ir =
 let to_michelson (ir : T.ir) : T.michelson =
   let storage = ir.storage |> fst in
   let parameter = T.mk_type T.Tunit in
-  let code = T.SEQ [T.CDR; T.NIL (T.mk_type Toperation); T.PAIR ] in
-  T.mk_michelson storage parameter code
+  let default = T.SEQ [T.CDR; T.NIL (T.mk_type Toperation); T.PAIR ] in
+
+  let rec instruction_to_code (i : T.instruction) : T.code =
+    let f = instruction_to_code in
+    match i with
+    | Iseq l             -> T.SEQ (List.map f l)
+    | IletIn (_id, _v, _b)  -> assert false
+    | Ivar _id            -> assert false
+    | Icall (_id, _args)   -> assert false
+    | Iassign (_id, _, v) -> f v
+    | Izop op -> begin
+        match op with
+        | Znow               -> T.NOW
+        | Zamount            -> T.AMOUNT
+        | Zbalance           -> T.BALANCE
+        | Zsource            -> T.SOURCE
+        | Zsender            -> T.SENDER
+        | Zaddress           -> T.ADDRESS
+        | Zchain_id          -> T.CHAIN_ID
+        | Zself_address      -> T.SEQ [T.SELF; T.ADDRESS]
+      end
+    | Iunop (op, e) -> begin
+        let op =
+          match op with
+          | Ucar      -> T.CAR
+          | Ucdr      -> T.CDR
+          | Uneg      -> T.NEG
+          | Uint      -> T.INT
+          | Unot      -> T.NOT
+          | Uabs      -> T.ABS
+          | Uisnat    -> T.ISNAT
+          | Usome     -> T.SOME
+          | Usize     -> T.SIZE
+          | Upack     -> T.PACK
+          | Uunpack t -> T.UNPACK t
+          | Ublake2b  -> T.BLAKE2B
+          | Usha256   -> T.SHA256
+          | Usha512   -> T.SHA512
+          | Uhash_key -> T.HASH_KEY
+        in
+        let e = f e in
+        T.SEQ [e; op]
+      end
+    | Ibinop (op, lhs, rhs) -> begin
+        let op =
+          match op with
+          | Badd       -> T.ADD
+          | Bsub       -> T.SUB
+          | Bmul       -> T.MUL
+          | Bediv      -> T.EDIV
+          | Blsl       -> T.LSL
+          | Blsr       -> T.LSR
+          | Bor        -> T.OR
+          | Band       -> T.AND
+          | Bxor       -> T.XOR
+          | Bcompare   -> T.COMPARE
+          | Beq        -> T.EQ
+          | Bneq       -> T.NEQ
+          | Blt        -> T.LT
+          | Bgt        -> T.GT
+          | Ble        -> T.LE
+          | Bge        -> T.GE
+          | Bget       -> T.GET
+          | Bmem       -> T.MEM
+          | Bconcat    -> T.CONCAT
+          | Bcons      -> T.CONS
+        in
+        let lhs = f lhs in
+        let rhs = f rhs in
+        T.SEQ [lhs; rhs; op]
+      end
+    | Iterop (op, a1, a2, a3) -> begin
+        let op =
+          match op with
+          | Tcheck_signature -> T.CHECK_SIGNATURE
+          | Tslice           -> T.SLICE
+          | Tupdate          -> T.UPDATE
+        in
+        let a1 = f a1 in
+        let a2 = f a2 in
+        let a3 = f a3 in
+        T.SEQ [a1; a2; a3; op]
+      end
+    | Iconst (t, e) -> T.PUSH (t, e)
+    | Iif (_c, _t, _e) -> assert false
+    | Ifail e       -> begin
+        let e = f e in
+        T.SEQ [e; T.FAILWITH]
+      end
+  in
+
+  let convert (i : T.instruction) : T.code =
+    let code = instruction_to_code i in
+    let code = T.SEQ [T.DROP 0; code; T.NIL (T.mk_type Toperation); T.PAIR ] in
+      T.flat code
+    in
+
+    let code =
+      match ir.entries with
+      | [e] -> convert e.body
+      | _ -> default
+    in
+
+    T.mk_michelson storage parameter code
