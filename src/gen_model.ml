@@ -236,6 +236,16 @@ let to_model (ast : A.ast) : M.model =
     | _ -> false
   in
 
+  let get_kind_var env id =
+    if is_param env id
+    then M.Vparam
+    else M.Vlocal
+  in
+
+  let build_mvar ?(loc = Location.dummy) env id t =
+    M.mk_mterm (Mvar (id, get_kind_var env id)) t ~loc:loc
+  in
+
   let rec to_mterm (env : env) (pterm : A.pterm) : M.mterm =
     let process_before vt e =
       match vt with
@@ -1080,7 +1090,7 @@ let to_model (ast : A.ast) : M.model =
   in
 
   let process_transaction (env : env) (transaction : A.transaction) : M.function__ =
-    let process_calledby (body : M.mterm) : M.mterm =
+    let process_calledby env (body : M.mterm) : M.mterm =
       let process_cb (cb : A.rexpr) (body : M.mterm) : M.mterm =
         let rec process_rexpr (rq : A.rexpr) : M.mterm option =
           let caller : M.mterm = M.mk_mterm M.Mcaller (M.Tbuiltin Baddress) in
@@ -1111,7 +1121,7 @@ let to_model (ast : A.ast) : M.model =
       end
     in
 
-    let process b (x : A.lident A.label_term) (body : M.mterm) : M.mterm =
+    let process env b (x : A.lident A.label_term) (body : M.mterm) : M.mterm =
       let term = to_mterm env x.term in
       let cond : M.mterm =
         match b with
@@ -1129,18 +1139,18 @@ let to_model (ast : A.ast) : M.model =
       let cond_if = M.mk_mterm (M.Mif (cond, fail_cond, None)) M.Tunit ~loc:x.loc in
       add_seq cond_if body
     in
-    let apply b li body =
+    let apply env b li body =
       match li with
       | None -> body
-      | Some l -> List.fold_right (fun (x : A.lident A.label_term) (accu : M.mterm) -> process b x accu) l body
+      | Some l -> List.fold_right (fun (x : A.lident A.label_term) (accu : M.mterm) -> process env b x accu) l body
     in
-    let process_requires (body : M.mterm) : M.mterm =
+    let process_requires env (body : M.mterm) : M.mterm =
       body
-      |>  apply `Failif  transaction.failif
-      |>  apply `Require transaction.require
+      |>  apply env `Failif  transaction.failif
+      |>  apply env `Require transaction.require
     in
 
-    let process_accept_transfer (body : M.mterm) : M.mterm =
+    let process_accept_transfer _env (body : M.mterm) : M.mterm =
       if (not transaction.accept_transfer)
       then
         let type_currency = M.Tbuiltin Bcurrency in
@@ -1154,16 +1164,17 @@ let to_model (ast : A.ast) : M.model =
         body
     in
 
-    let process_body_args () : M.argument list * M.mterm =
+    let process_body_args env : M.argument list * M.mterm * env =
       let args  = List.map (fun (x : A.lident A.decl_gen) -> (x.name, (ptyp_to_type |@ Option.get) x.typ, None)) transaction.args in
+      let env   = {env with function_p = Some (transaction.name, args); } in
       let empty : M.mterm = M.mk_mterm (M.Mseq []) Tunit in
       match transaction.transition, transaction.effect with
       | None, None ->
         let body = empty in
-        args, body
+        args, body, env
       | None, Some e ->
         let body = to_instruction env e in
-        args, body
+        args, body, env
       | Some t, None ->
         let p_on =
           match t.on with
@@ -1176,16 +1187,17 @@ let to_model (ast : A.ast) : M.model =
           | Some (ki, kt, _an, _) -> args @ [(ki, kt, None)]
           | None -> args
         in
+        let env = {env with function_p = Some (transaction.name, args); } in
         let build_code (body : M.mterm) : M.mterm =
           (List.fold_right (fun ((id, cond, effect) : (A.lident * A.pterm option * A.instruction option)) (acc : M.mterm) : M.mterm ->
                let tre : M.mterm =
                  match p_on with
                  | Some (key_ident, key_type, an, enum_type) ->
-                   let k : M.mterm = M.mk_mterm (M.Mvar (key_ident, Vlocal)) key_type ~loc:(Location.loc key_ident) in
+                   let k : M.mterm = build_mvar env key_ident key_type ~loc:(Location.loc key_ident) in
                    let v : M.mterm = M.mk_mterm (M.Mvar (id, Venumval)) enum_type ~loc:(Location.loc id) in
                    M.mk_mterm (M.Massign (ValueAssign, v.type_, Aassetstate (an, k), v)) Tunit
                  | _ ->
-                   let v : M.mterm = M.mk_mterm (M.Mvar (id, Vlocal)) (M.Tstate) ~loc:(Location.loc id) in
+                   let v : M.mterm = build_mvar env id M.Tstate ~loc:(Location.loc id) in
                    M.mk_mterm (M.Massign (ValueAssign, v.type_, Astate, v)) Tunit
                in
                let code : M.mterm =
@@ -1219,32 +1231,30 @@ let to_model (ast : A.ast) : M.model =
               let w =
                 match p_on with
                 | Some (ki, kt, an, et) ->
-                  let k : M.mterm = M.mk_mterm (M.Mvar (ki, Vlocal)) kt ~loc:(Location.loc ki) in
+                  let k : M.mterm = build_mvar env ki kt ~loc:(Location.loc ki) in
                   M.mk_mterm (M.Mvar (dumloc an, Vassetstate k)) et
                 | _ -> M.mk_mterm (M.Mvar(dumloc "", Vstate)) Tstate
               in
               M.mk_mterm (M.Mmatchwith (w, List.map (fun x -> (x, body)) list_patterns @ [pattern, fail_instr])) Tunit
             end
         in
-        args, body
+        args, body, env
 
       | _ -> emit_error (transaction.loc, CannotExtractBody); bailout ()
     in
 
     (* let list  = list |> cont process_function ast.functions in *)
-    let name  = transaction.name in
-    let args, body = process_body_args () in
+    let args, body, env = process_body_args env in
     let body =
       body
-      |> process_requires
-      |> process_accept_transfer
-      |> process_calledby
+      |> process_requires env
+      |> process_accept_transfer env
+      |> process_calledby env
     in
     let loc   = transaction.loc in
-    let env   = {env with function_p = Some (name, args); } in
     let spec : M.specification option = Option.map (to_specification env) transaction.specification in
 
-    process_fun_gen name args body loc spec (fun x -> M.Entry x)
+    process_fun_gen transaction.name args body loc spec (fun x -> M.Entry x)
   in
 
   let process_decl_ (env : env) = function

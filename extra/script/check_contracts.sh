@@ -100,6 +100,7 @@ auction_lazy.arl \
 auction_no_memory.arl \
 auction_zilliqa.arl \
 auction.arl \
+autocallable.arl \
 bond.arl \
 c3n.arl \
 certificate_generator.arl \
@@ -136,7 +137,6 @@ zero_coupon_bond.arl \
 "
 
 REMAINED_VERIF_CONTRACTS="\
-autocallable.arl \
 "
 
 RET=0
