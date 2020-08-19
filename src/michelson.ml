@@ -128,6 +128,9 @@ type instruction =
   | Iif     of instruction * instruction * instruction
   | Ifail   of instruction
   | Iseq    of instruction list
+  | Iset    of type_ * instruction list
+  | Ilist   of type_ * instruction list
+  | Imap    of type_ * type_ * (instruction * instruction) list
 [@@deriving show {with_path = false}]
 
 type func = {
@@ -175,8 +178,8 @@ type code =
   | IF_CONS            of code list * code list
   | SIZE
   | EMPTY_SET          of type_
-  | EMPTY_MAP          of type_
-  | EMPTY_BIG_MAP      of type_
+  | EMPTY_MAP          of type_ * type_
+  | EMPTY_BIG_MAP      of type_ * type_
   | MAP                of code list
   | ITER               of code list
   | MEM
@@ -264,10 +267,18 @@ let mk_michelson storage parameter code =
 
 (* -------------------------------------------------------------------- *)
 
-let itrue  = Iconst (mk_type Tbool, Dtrue)
-let ifalse = Iconst (mk_type Tbool, Dfalse)
-let iint n = Iconst (mk_type Tint,  Dint n)
-let inat n = Iconst (mk_type Tnat,  Dint n)
+let itrue     = Iconst (mk_type Tbool, Dtrue)
+let ifalse    = Iconst (mk_type Tbool, Dfalse)
+let iint n    = Iconst (mk_type Tint,  Dint n)
+let inat n    = Iconst (mk_type Tnat,  Dint n)
+let istring s = Iconst (mk_type Tstring,  Dstring s)
+(* -------------------------------------------------------------------- *)
+
+let ctrue     = PUSH (mk_type Tbool, Dtrue)
+let cfalse    = PUSH (mk_type Tbool, Dfalse)
+let cint n    = PUSH (mk_type Tint,  Dint n)
+let cnat n    = PUSH (mk_type Tnat,  Dint n)
+let cstring s = PUSH (mk_type Tstring,  Dstring s)
 
 (* -------------------------------------------------------------------- *)
 
@@ -294,8 +305,8 @@ let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) =
   | IF_CONS (then_, else_)  -> IF_CONS (List.map fc then_, List.map fc else_)
   | SIZE                    -> SIZE
   | EMPTY_SET      t        -> EMPTY_SET     (ft t)
-  | EMPTY_MAP      t        -> EMPTY_MAP     (ft t)
-  | EMPTY_BIG_MAP  t        -> EMPTY_BIG_MAP (ft t)
+  | EMPTY_MAP      (k, v)   -> EMPTY_MAP     (ft k, ft v)
+  | EMPTY_BIG_MAP  (k, v)   -> EMPTY_BIG_MAP (ft k, ft v)
   | MAP  l                  -> MAP  (List.map fc l)
   | ITER l                  -> ITER (List.map fc l)
   | MEM                     -> MEM

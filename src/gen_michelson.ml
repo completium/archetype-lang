@@ -128,11 +128,13 @@ let to_ir (model : M.model) : T.ir =
 
   let rec mterm_to_intruction env (mtt : M.mterm) : T.instruction =
     let f = mterm_to_intruction env in
+    let ft = to_type in
     match mtt.node with
 
     (* lambda *)
 
-    | Mletin (_ids, _a, _t, _b, _) -> assert false
+    | Mletin ([id], v, _, b, _)    -> T.IletIn (unloc id, f v, f b)
+    | Mletin _                     -> assert false
     | Mdeclvar (_ids, _t, _v)      -> assert false
     | Mapp (_e, _args)             -> assert false
 
@@ -148,12 +150,13 @@ let to_ir (model : M.model) : T.ir =
 
     (* control *)
 
-    | Mif (_c, _t, _e)           -> assert false
+    | Mif (c, t, Some e)         -> T.Iif (f c, f t, f e)
+    | Mif (c, t, None)           -> T.Iif (f c, f t, T.Iseq [])
     | Mmatchwith (_e, _l)        -> assert false
     | Mfor (_id, _col, _body, _) -> assert false
     | Miter (_i, _a, _b, _c, _)  -> assert false
     | Mwhile (_c, _b, _)         -> assert false
-    | Mseq _is                   -> assert false
+    | Mseq is                    -> T.Iseq (List.map f is)
     | Mreturn _x                 -> assert false
     | Mlabel _                   -> assert false
     | Mmark  _                   -> assert false
@@ -161,7 +164,18 @@ let to_ir (model : M.model) : T.ir =
 
     (* effect *)
 
-    | Mfail _ft          -> assert false
+    | Mfail ft          -> begin
+        let x =
+          match ft with
+          | Invalid v            -> f v
+          | InvalidCaller        -> T.istring "InvalidCaller"
+          | InvalidCondition lbl -> T.istring ("InvalidCondition" ^ (match lbl with | Some lbl -> ": " ^ lbl | _ -> ""))
+          | NoTransfer           -> T.istring "NoTransfer"
+          | AssignNat            -> T.istring "AssignNat"
+          | InvalidState         -> T.istring "InvalidState"
+        in
+        T.Ifail x
+      end
     | Mtransfer (_v, _k) -> assert false
 
     (* entrypoint *)
@@ -209,7 +223,12 @@ let to_ir (model : M.model) : T.ir =
     | Massets    _l -> assert false
     | Mlitset    _l -> assert false
     | Mlitlist   _l -> assert false
-    | Mlitmap    _l -> assert false
+    | Mlitmap    l -> begin
+        match mtt.type_ with
+        | M.Tmap (true, k, v)  (* TODO: big map *)
+        | M.Tmap (false, k, v) -> T.Imap (ft k, ft v, List.map (fun (x, y) -> f x, f y) l)
+        | _ -> assert false
+      end
     | Mlitrecord _l -> assert false
 
     (* access *)
@@ -317,7 +336,7 @@ let to_ir (model : M.model) : T.ir =
     | Mceil _x           -> assert false
     | Mtostring (_t, _x) -> assert false
     | Mpack x            -> T.Iunop (Upack,  f x)
-    | Munpack (t, x)     -> T.Iunop (Uunpack (to_type t),  f x)
+    | Munpack (t, x)     -> T.Iunop (Uunpack (ft t),  f x)
 
     (* crypto functions *)
 
@@ -346,7 +365,7 @@ let to_ir (model : M.model) : T.ir =
     | Mvar (_v, Vstorecol)       -> assert false
     | Mvar (_v, Venumval)        -> assert false
     | Mvar (_v, Vdefinition)     -> assert false
-    | Mvar (_v, Vlocal)          -> assert false
+    | Mvar (v, Vlocal)           -> T.Ivar (unloc v)
     | Mvar (_v, Vparam)          -> assert false
     | Mvar (_v, Vfield)          -> assert false
     | Mvar (_, Vthe)             -> assert false
@@ -434,11 +453,11 @@ let to_michelson (ir : T.ir) : T.michelson =
   let rec instruction_to_code (i : T.instruction) : T.code =
     let f = instruction_to_code in
     match i with
-    | Iseq l             -> T.SEQ (List.map f l)
-    | IletIn (_id, _v, _b)  -> assert false
-    | Ivar _id            -> assert false
+    | Iseq l               -> T.SEQ (List.map f l)
+    | IletIn (_id, v, b)   -> T.SEQ [f v; f b]      (* TODO *)
+    | Ivar _id             -> T.SEQ [] (* TODO *)
     | Icall (_id, _args)   -> assert false
-    | Iassign (_id, _, v) -> f v
+    | Iassign (_id, _, v)  -> f v
     | Izop op -> begin
         match op with
         | Znow               -> T.NOW
@@ -518,18 +537,27 @@ let to_michelson (ir : T.ir) : T.michelson =
         let e = f e in
         T.SEQ [e; T.FAILWITH]
       end
+    | Iset (t, l) -> begin
+        T.SEQ ([T.EMPTY_SET t] @ List.map (fun x -> T.SEQ [T.ctrue; f x; T.UPDATE ] ) l)
+      end
+    | Ilist (t, _l) -> begin
+        T.NIL t
+      end
+    | Imap (k, v, l) -> begin
+        T.SEQ ([T.EMPTY_MAP (k, v)] @ List.map (fun (x, y) -> T.SEQ [f y; T.SOME; f x; T.UPDATE ] ) l)
+      end
   in
 
   let convert (i : T.instruction) : T.code =
     let code = instruction_to_code i in
     let code = T.SEQ [T.DROP 0; code; T.NIL (T.mk_type Toperation); T.PAIR ] in
-      T.flat code
-    in
+    T.flat code
+  in
 
-    let code =
-      match ir.entries with
-      | [e] -> convert e.body
-      | _ -> default
-    in
+  let code =
+    match ir.entries with
+    | [e] -> convert e.body
+    | _ -> default
+  in
 
-    T.mk_michelson storage parameter code
+  T.mk_michelson storage parameter code
