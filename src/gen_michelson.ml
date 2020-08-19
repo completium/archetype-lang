@@ -365,16 +365,16 @@ let to_ir (model : M.model) : T.ir =
 
     (* variable *)
 
-    | Mvar (_an, Vassetstate _k) -> assert false
-    | Mvar (v, Vstorevar)        -> T.Ivar (unloc v)
-    | Mvar (_v, Vstorecol)       -> assert false
-    | Mvar (_v, Venumval)        -> assert false
-    | Mvar (_v, Vdefinition)     -> assert false
-    | Mvar (v, Vlocal)           -> T.Ivar (unloc v)
-    | Mvar (v, Vparam)           -> T.Ivar (unloc v)
-    | Mvar (_v, Vfield)          -> assert false
-    | Mvar (_, Vthe)             -> assert false
-    | Mvar (_, Vstate)           -> assert false
+    | Mvar (_an, Vassetstate _k, _, _) -> assert false
+    | Mvar (v, Vstorevar, _, _)        -> T.Ivar (unloc v)
+    | Mvar (_v, Vstorecol, _, _)       -> assert false
+    | Mvar (_v, Venumval, _, _)        -> assert false
+    | Mvar (_v, Vdefinition, _, _)     -> assert false
+    | Mvar (v, Vlocal, _, _)           -> T.Ivar (unloc v)
+    | Mvar (v, Vparam, _, _)           -> T.Ivar (unloc v)
+    | Mvar (_v, Vfield, _, _)          -> assert false
+    | Mvar (_, Vthe, _, _)             -> assert false
+    | Mvar (_, Vstate, _, _)           -> assert false
 
     (* rational *)
 
@@ -414,11 +414,6 @@ let to_ir (model : M.model) : T.ir =
 
     (* formula asset collection *)
 
-    | Msetbefore    _ -> emit_error (UnsupportedTerm ("setbefore"))
-    | Msetat        _ -> emit_error (UnsupportedTerm ("setat"))
-    | Msetunmoved   _ -> emit_error (UnsupportedTerm ("setunmoved"))
-    | Msetadded     _ -> emit_error (UnsupportedTerm ("setadded"))
-    | Msetremoved   _ -> emit_error (UnsupportedTerm ("setremoved"))
     | Msetiterated  _ -> emit_error (UnsupportedTerm ("setiterated"))
     | Msettoiterate _ -> emit_error (UnsupportedTerm ("settoiterate"))
 

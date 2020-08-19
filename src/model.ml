@@ -334,7 +334,7 @@ type ('id, 'term) mterm_node  =
   | Mselfaddress
   | Mchainid
   (* variable *)
-  | Mvar              of 'id * 'term var_kind_gen
+  | Mvar              of 'id * 'term var_kind_gen * temp * delta
   (* rational *)
   | Mrateq            of 'term * 'term
   | Mratcmp           of comparison_operator * 'term * 'term
@@ -357,11 +357,6 @@ type ('id, 'term) mterm_node  =
   | Mimply            of 'term * 'term
   | Mequiv            of 'term * 'term
   (* formula asset collection *)
-  | Msetbefore        of 'term
-  | Msetat            of ident * 'term
-  | Msetunmoved       of 'term
-  | Msetadded         of 'term
-  | Msetremoved       of 'term
   | Msetiterated      of 'term iter_container_kind_gen
   | Msettoiterate     of 'term iter_container_kind_gen
   (* formula asset collection methods *)
@@ -1240,7 +1235,7 @@ let cmp_mterm_node
     | Mselfaddress, Mselfaddress                                                       -> true
     | Mchainid, Mchainid                                                               -> true
     (* variable *)
-    | Mvar (id1, k1), Mvar (id2, k2)                                                   -> cmpi id1 id2 && cmp_var_kind k1 k2
+    | Mvar (id1, k1, t1, d1), Mvar (id2, k2, t2, d2)                                   -> cmpi id1 id2 && cmp_var_kind k1 k2 && cmp_temp t1 t2 && cmp_delta d1 d2
     (* rational *)
     | Mrateq (l1, r1), Mrateq (l2, r2)                                                 -> cmp l1 l2 && cmp r1 r2
     | Mratcmp (op1, l1, r1), Mratcmp (op2, l2, r2)                                     -> cmp_comparison_operator op1 op2 && cmp l1 l2 && cmp r1 r2
@@ -1263,11 +1258,6 @@ let cmp_mterm_node
     | Mimply (l1, r1), Mimply (l2, r2)                                                 -> cmp l1 l2 && cmp r1 r2
     | Mequiv (l1, r1), Mequiv (l2, r2)                                                 -> cmp l1 l2 && cmp r1 r2
     (* formula asset collection *)
-    | Msetbefore e1, Msetbefore e2                                                     -> cmp e1 e2
-    | Msetat (lbl1, e1), Msetat (lbl2, e2)                                             -> cmp_ident lbl1 lbl2 && cmp e1 e2
-    | Msetunmoved e1, Msetunmoved e2                                                   -> cmp e1 e2
-    | Msetadded e1, Msetadded e2                                                       -> cmp e1 e2
-    | Msetremoved e1, Msetremoved   e2                                                 -> cmp e1 e2
     | Msetiterated e1, Msetiterated  e2                                                -> cmp_iter_container_kind e1 e2
     | Msettoiterate e1, Msettoiterate e2                                               -> cmp_iter_container_kind e1 e2
     (* formula asset collection methods *)
@@ -1605,7 +1595,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mchainid                       -> Mchainid
   | Mselfaddress                   -> Mselfaddress
   (* variable *)
-  | Mvar (id, k)                   -> Mvar (g id, map_var_kind f k)
+  | Mvar (id, k, t, d)             -> Mvar (g id, map_var_kind f k, map_temp fi t, map_delta d)
   (* rational *)
   | Mrateq (l, r)                  -> Mrateq (f l, f r)
   | Mratcmp (op, l, r)             -> Mratcmp (op, f l, f r)
@@ -1628,11 +1618,6 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mimply (l, r)                  -> Mimply (f l, f r)
   | Mequiv  (l, r)                 -> Mequiv (f l, f r)
   (* formula asset collection *)
-  | Msetbefore    e                -> Msetbefore    (f e)
-  | Msetat (lbl, e)                -> Msetat        (fi lbl, f e)
-  | Msetunmoved   e                -> Msetunmoved   (f e)
-  | Msetadded     e                -> Msetadded     (f e)
-  | Msetremoved   e                -> Msetremoved   (f e)
   | Msetiterated  e                -> Msetiterated  (map_iter_container_kind fi f e)
   | Msettoiterate e                -> Msettoiterate (map_iter_container_kind fi f e)
   (* formula asset collection methods *)
@@ -1972,7 +1957,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mselfaddress                          -> accu
   | Mchainid                              -> accu
   (* variable *)
-  | Mvar (_, k)                           -> fold_var_kind f accu k
+  | Mvar (_, k, _, _)                     -> fold_var_kind f accu k
   (* rational *)
   | Mrateq (l, r)                         -> f (f accu l) r
   | Mratcmp (_, l, r)                     -> f (f accu l) r
@@ -1995,11 +1980,6 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mimply (l, r)                         -> f (f accu l) r
   | Mequiv  (l, r)                        -> f (f accu l) r
   (* formula asset collection *)
-  | Msetbefore    e                       -> f accu e
-  | Msetat   (_, e)                       -> f accu e
-  | Msetunmoved   e                       -> f accu e
-  | Msetadded     e                       -> f accu e
-  | Msetremoved   e                       -> f accu e
   | Msetiterated  e                       -> fold_iter_container_kind f accu e
   | Msettoiterate e                       -> fold_iter_container_kind f accu e
   (* formula asset collection methods *)
@@ -2779,9 +2759,9 @@ let fold_map_term
 
   (* variable *)
 
-  | Mvar (id, k) ->
+  | Mvar (id, k, t, d) ->
     let ke, ka = fold_map_var_kind f accu k in
-    g (Mvar (id, ke)), ka
+    g (Mvar (id, ke, t, d)), ka
 
 
   (* rational *)
@@ -2882,26 +2862,6 @@ let fold_map_term
 
 
   (* formula asset collection *)
-
-  | Msetbefore e ->
-    let ee, ea = f accu e in
-    g (Msetbefore ee), ea
-
-  | Msetat (lbl, e) ->
-    let ee, ea = f accu e in
-    g (Msetat (lbl, ee)), ea
-
-  | Msetunmoved e ->
-    let ee, ea = f accu e in
-    g (Msetunmoved ee), ea
-
-  | Msetadded e ->
-    let ee, ea = f accu e in
-    g (Msetadded ee), ea
-
-  | Msetremoved e ->
-    let ee, ea = f accu e in
-    g (Msetremoved ee), ea
 
   | Msetiterated e ->
     let ee, ea = fold_map_iter_container_kind f accu e in
@@ -3818,12 +3778,12 @@ end = struct
 
   let is_varlocal (t : mterm) =
     match t.node with
-    | Mvar (_, Vlocal) -> true
+    | Mvar (_, Vlocal, _, _) -> true
     | _ -> false
 
   let dest_varlocal (t : mterm) =
     match t.node with
-    |  Mvar (i, Vlocal) -> unloc i
+    |  Mvar (i, Vlocal, _, _) -> unloc i
     | _ -> assert false
 
   let is_container t =
@@ -3871,14 +3831,16 @@ end = struct
     | Post -> true
     | _ -> false
 
-  let get_added_removed_sets (_m : model) v : ((lident,(lident mterm_gen)) mterm_node) list =
-    let rec internal_fold_add_remove ctx acc (term : mterm) =
-      match term.node with
-      | Msetadded e -> acc @ [ Msetadded e ]
-      | Msetremoved e -> acc @ [ Msetremoved e ]
-      | _ -> fold_term (internal_fold_add_remove ctx) acc term in
-    Tools.List.dedup (Option.map_dfl (fun (x : specification) ->
-        fold_specification (mk_ctx_model ()) internal_fold_add_remove x []) [] v)
+  let get_added_removed_sets (_m : model) _v : ((lident,(lident mterm_gen)) mterm_node) list =
+    (* TODO: temp * delta *)
+    (* let rec internal_fold_add_remove ctx acc (term : mterm) =
+       match term.node with
+       | Msetadded e -> acc @ [ Msetadded e ]
+       | Msetremoved e -> acc @ [ Msetremoved e ]
+       | _ -> fold_term (internal_fold_add_remove ctx) acc term in
+       Tools.List.dedup (Option.map_dfl (fun (x : specification) ->
+        fold_specification (mk_ctx_model ()) internal_fold_add_remove x []) [] v) *)
+    []
 
   (* returns asset name * invariant name * invariant term *)
   let get_storage_invariants (m : model) (asset_name : ident option) : (ident * ident * mterm) list =
@@ -3982,11 +3944,11 @@ end = struct
 
   let get_source_for (_m : model) (_ctx : ctx_model) (c : mterm) : mterm option =
     match c.node with
-    | Mvar(an, Vparam) ->
+    | Mvar(an, Vparam, t, d) ->
       begin
         let l, an = deloc an in
         let idparam = mkloc l (an ^ "_values") in
-        Some (mk_mterm (Mvar(idparam, Vparam) ) (Tmap(false, Tbuiltin Bint, Tasset (dumloc "myasset"))))
+        Some (mk_mterm (Mvar(idparam, Vparam, t, d) ) (Tmap(false, Tbuiltin Bint, Tasset (dumloc "myasset"))))
       end
     | _ -> None
 
@@ -4011,8 +3973,8 @@ end = struct
     let remove_const (mt : mterm) : mterm =
       let rec aux (mt : mterm) : mterm =
         match mt.node with
-        | Mvar(v, Vstorevar)
-        | Mvar(v, Vlocal) when is_const (unloc v) ->
+        | Mvar(v, Vstorevar, _, _)
+        | Mvar(v, Vlocal, _, _) when is_const (unloc v) ->
           let dv = get_value (unloc v) in
           aux dv
         | _ -> map_mterm aux mt
@@ -4304,7 +4266,7 @@ end = struct
       ) false m.api_items
 
   let get_asset_collection (an : ident) : mterm =
-    mk_mterm (Mvar (dumloc an, Vstorecol)) (Tcontainer (Tasset (dumloc an), Collection))
+    mk_mterm (Mvar (dumloc an, Vstorecol, Tnone, Dnone)) (Tcontainer (Tasset (dumloc an), Collection))
 
   let is_asset_single_field (model : model) (an : ident) : bool =
     get_asset model an |> fun x -> x.values |> List.filter (fun (x : asset_item) -> not x.shadow) |> List.length = 1

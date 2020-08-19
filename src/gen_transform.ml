@@ -256,7 +256,7 @@ let build_col_asset (an : ident) =
   let type_asset = Tasset dan in
   let type_col = Tcontainer (type_asset,Collection) in
   let type_view = Tcontainer (type_asset,View) in
-  let col : mterm  = mk_mterm (Mvar (dan, Vstorecol)) type_col in
+  let col : mterm  = mk_mterm (Mvar (dan, Vstorecol, Tnone, Dnone)) type_col in
   mk_mterm (Mcast (type_col, type_view, col)) type_view, type_asset
 
 let build_get (an : ident) v = mk_mterm (Mget (an, CKcoll (Tnone, Dnone), v)) (Tasset (dumloc an))
@@ -280,7 +280,7 @@ let replace_update_by_set (model : model) : model =
         let type_asset = Tasset (dumloc an) in
 
         let var_name = dumloc (an ^ "_") in
-        let var_mterm : mterm = mk_mterm (Mvar (var_name, Vlocal)) type_asset in
+        let var_mterm : mterm = mk_mterm (Mvar (var_name, Vlocal, Tnone, Dnone)) type_asset in
 
         (* let key_name = "k_" in *)
         (* let key_loced : lident = dumloc (key_name) in *)
@@ -397,8 +397,8 @@ let extend_loop_iter (model : model) : model =
         else
           t in
       match t.node with
-      | Mvar (v, Vlocal) when cmp_lident v (dumloc "toiterate") -> mk_term `Toiterate
-      | Mvar (v, Vlocal) when cmp_lident v (dumloc "iterated") -> mk_term `Iterated
+      | Mvar (v, Vlocal, _, _) when cmp_lident v (dumloc "toiterate") -> mk_term `Toiterate
+      | Mvar (v, Vlocal, _, _) when cmp_lident v (dumloc "iterated") -> mk_term `Iterated
       | _ -> map_mterm (internal_map_inv_iter ctx) t in
     map_mterm_model internal_map_inv_iter model in
   map_invariant_iter ()
@@ -410,8 +410,8 @@ let process_single_field_storage (model : model) : model =
       let storage_id = dumloc "_s" in
       let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
         match mt.node with
-        | Mvar (a, Vstorevar) when String.equal (unloc a) (unloc i.id) ->
-          mk_mterm (Mvar (storage_id, Vlocal)) mt.type_
+        | Mvar (a, Vstorevar, d, t) when String.equal (unloc a) (unloc i.id) ->
+          mk_mterm (Mvar (storage_id, Vlocal, d, t)) mt.type_
         | Massign (op, t, Avar a, v) when String.equal (unloc a) (unloc i.id) ->
           let vv = map_mterm (aux ctx) v in
           mk_mterm (Massign (op, t, Avar storage_id, vv)) mt.type_
@@ -818,7 +818,7 @@ let assign_loop_label (model : model) : model =
             begin
               let col =
                 match c with
-                | ICKcoll an -> mk_mterm (Mvar (dumloc an, Vstorecol)) (Tcontainer (Tasset (dumloc an), Collection))
+                | ICKcoll an -> mk_mterm (Mvar (dumloc an, Vstorecol, Tnone, Dnone)) (Tcontainer (Tasset (dumloc an), Collection))
                 | ICKview c
                 | ICKfield (_, _, c)
                 | ICKset  c
@@ -955,8 +955,8 @@ let remove_enum_matchwith (model : model) : model =
     let mk_id (prefix : string) (id : lident) : lident =
       mkloc (loc id) (mk_enum_ident prefix (unloc id)) in
     match mt.node, mt.type_ with
-    | Mvar (id, Vlocal), Tstate -> mk_mterm (Mvar (mk_id "state" id, Vlocal)) type_int
-    | Mvar (id, Venumval), Tenum e -> mk_mterm (Mvar (mk_id (unloc e) id, Vlocal)) type_int
+    | Mvar (id, Vlocal, t, d), Tstate -> mk_mterm (Mvar (mk_id "state" id, Vlocal, t, d)) type_int
+    | Mvar (id, Venumval, t, d), Tenum e -> mk_mterm (Mvar (mk_id (unloc e) id, Vlocal, t, d)) type_int
     | Mexprmatchwith (v, ps), _
     | Mmatchwith (v, ps), _ ->
       let val_v =
@@ -976,7 +976,7 @@ let remove_enum_matchwith (model : model) : model =
         List.fold_right (fun (x : (pattern * mterm)) accu ->
             let mk_cond id =
               begin
-                let val_enum id = mk_mterm (Mvar (mk_id val_v id, Vlocal)) type_v in
+                let val_enum id = mk_mterm (Mvar (mk_id val_v id, Vlocal, Tnone, Dnone)) type_v in
                 mk_mterm (Mequal (type_v, v, val_enum id)) type_bool
               end
             in
@@ -1552,9 +1552,9 @@ let add_explicit_sort (model : model) : model =
     in
     let rec is_implicit_sort env (mt : mterm) : bool =
       match mt.node with
-      | Mvar (_, Vstorecol) -> true
+      | Mvar (_, Vstorecol, _, _) -> true
 
-      | Mvar (id, Vlocal) -> not (List.exists (fun a -> String.equal a (unloc id)) env)
+      | Mvar (id, Vlocal, _, _) -> not (List.exists (fun a -> String.equal a (unloc id)) env)
 
       (* asset api *)
       | Mselect (_, CKview c, _, _, _) -> is_implicit_sort env c
@@ -1638,10 +1638,10 @@ let remove_cmp_enum (model : model) : model =
   in
   let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
     match mt.node with
-    | Mequal  (_, ({type_ = (Tstate | Tenum _)} as v), {node = Mvar (id, Venumval)}) -> mk_exprmatchwith `Pos v id
-    | Mequal  (_, {node = Mvar (id, Venumval)}, ({type_ = (Tstate | Tenum _)} as v)) -> mk_exprmatchwith `Pos v id
-    | Mnequal (_, ({type_ = (Tstate | Tenum _)} as v), {node = Mvar (id, Venumval)}) -> mk_exprmatchwith `Neg v id
-    | Mnequal (_, {node = Mvar (id, Venumval)}, ({type_ = (Tstate | Tenum _)} as v)) -> mk_exprmatchwith `Neg v id
+    | Mequal  (_, ({type_ = (Tstate | Tenum _)} as v), {node = Mvar (id, Venumval, _, _)}) -> mk_exprmatchwith `Pos v id
+    | Mequal  (_, {node = Mvar (id, Venumval, _, _)}, ({type_ = (Tstate | Tenum _)} as v)) -> mk_exprmatchwith `Pos v id
+    | Mnequal (_, ({type_ = (Tstate | Tenum _)} as v), {node = Mvar (id, Venumval, _, _)}) -> mk_exprmatchwith `Neg v id
+    | Mnequal (_, {node = Mvar (id, Venumval, _, _)}, ({type_ = (Tstate | Tenum _)} as v)) -> mk_exprmatchwith `Neg v id
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
@@ -1850,7 +1850,7 @@ let process_asset_state (model : model) : model =
           let name    = get_state_lident (unloc a.name) in
           let typ     = Tenum id in
           let e_val   = enum.initial in
-          let default = mk_mterm (Mvar (e_val, Venumval)) typ in
+          let default = mk_mterm (Mvar (e_val, Venumval, Tnone, Dnone)) typ in
 
           map := MapString.add (unloc a.name) default !map;
           let item = mk_asset_item name typ typ ~default:default in
@@ -1871,7 +1871,7 @@ let process_asset_state (model : model) : model =
 
   let rec aux ctx (mt : mterm) : mterm =
     match mt.node, mt.type_ with
-    | Mvar (an, Vassetstate k), _ ->
+    | Mvar (an, Vassetstate k, _, _), _ ->
       begin
         let an = unloc an in
         let i = get_state_lident an in
@@ -2112,7 +2112,7 @@ let remove_fun_dotasset (model : model) : model =
           let l, accu = efd_aux accu l in
           let var_id = prefix ^ string_of_int (!cpt) in
           cpt := !cpt + 1;
-          let var = mk_mterm (Mvar (dumloc var_id, Vlocal)) l.type_ in
+          let var = mk_mterm (Mvar (dumloc var_id, Vlocal, Tnone, Dnone)) l.type_ in
           let nmt = mk_mterm (Mdot (var, r)) mt.type_ in
           nmt, accu @ [(dumloc var_id, l)]
         end
@@ -2156,7 +2156,7 @@ let build_col (an : ident) =
   let type_asset = Tasset dan in
   let type_col = Tcontainer (type_asset,Collection) in
   let type_view = Tcontainer (type_asset,View) in
-  let col : mterm  = mk_mterm (Mvar (dan, Vstorecol)) type_col in
+  let col : mterm  = mk_mterm (Mvar (dan, Vstorecol, Tnone, Dnone)) type_col in
   mk_mterm (Mcast (type_col, type_view, col)) type_view
 
 let change_type_of_nth (model : model) : model =
@@ -2465,7 +2465,7 @@ let replace_for_to_iter (model : model) : model =
     let process ids col t body lbl =
       let nbody = aux ctx body in
       let idx_id = "_i_" ^ lbl in
-      let idx = mk_mterm (Mvar (dumloc idx_id, Vlocal)) (Tbuiltin Bint) in
+      let idx = mk_mterm (Mvar (dumloc idx_id, Vlocal, Tnone, Dnone)) (Tbuiltin Bint) in
       let nth = mk_mterm (Mlistnth(t, col, idx)) t in
       let letin = mk_mterm (Mletin (ids, nth, Some t, nbody, None)) Tunit in
       let bound_min = mk_mterm (Mint Big_int.zero_big_int) (Tbuiltin Bint) in
@@ -2498,7 +2498,7 @@ let replace_for_to_iter (model : model) : model =
           | _ -> assert false
         end in
       let idx_id = "_i_" ^ lbl in
-      let idx = mk_mterm (Mvar (dumloc idx_id, Vlocal)) (Tbuiltin Bint) in
+      let idx = mk_mterm (Mvar (dumloc idx_id, Vlocal, Tnone, Dnone)) (Tbuiltin Bint) in
       let nth = mk_mterm (Mnth(an, ck, idx)) type_asset in
       let letin = mk_mterm (Mletin ([id], nth, Some type_asset, nbody, None)) Tunit in
       let bound_min = mk_mterm (Mint Big_int.zero_big_int) (Tbuiltin Bint) in
@@ -2570,11 +2570,11 @@ let remove_assign_operator (model : model) : model =
   let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
     match mt.node with
     | Massign (op, t, Avar id, v) ->
-      let lhs = mk_mterm (Mvar (id, Vlocal)) v.type_ in
+      let lhs = mk_mterm (Mvar (id, Vlocal, Tnone, Dnone)) v.type_ in
       let v = process_assign_op op t lhs v in
       mk_mterm (Massign (ValueAssign, t, Avar id, v)) mt.type_
     | Massign (op, t, Avarstore id, v) ->
-      let lhs = mk_mterm (Mvar (id, Vstorevar)) v.type_ in
+      let lhs = mk_mterm (Mvar (id, Vstorevar, Tnone, Dnone)) v.type_ in
       let v = process_assign_op op t lhs v in
       mk_mterm (Massign (ValueAssign, t, Avarstore id, v)) mt.type_
     | Massign (op, t, Aasset (an, fn, k), v) ->
@@ -2704,9 +2704,9 @@ let rename_shadow_variable (model : model) : model =
               let newid : ident = MapString.find (unloc id) !map_ids in
               { mt with node = Massign (op, t, Avarstore (dumloc newid), newb) }
             end
-          | Mvar (id, Vlocal) when MapString.mem(unloc id) !map_ids -> begin
+          | Mvar (id, Vlocal, t, d) when MapString.mem(unloc id) !map_ids -> begin
               let newid : ident = MapString.find (unloc id) !map_ids in
-              { mt with node = Mvar (dumloc newid, Vstorevar) }
+              { mt with node = Mvar (dumloc newid, Vstorevar, t, d) }
             end
           | _ -> map_mterm aux mt
         in
@@ -2734,7 +2734,7 @@ let concat_shadown_effect_to_exec (model : model) : model =
   let for_mterm _ctx (x : mterm) : mterm =
     let rec aux (mt : mterm) : mterm =
       match mt.node with
-      | Mvar (id, _) when SetString.mem (unloc id) !set_storage_ident -> { mt with node = Mvar (id, Vstorevar)}
+      | Mvar (id, _, t, d) when SetString.mem (unloc id) !set_storage_ident -> { mt with node = Mvar (id, Vstorevar, t, d)}
       | Massign (op, t, Avar id, v) when SetString.mem (unloc id) !set_storage_ident  -> begin
           let nv = aux v in
           { mt with node = (Massign (op, t, Avarstore id, nv)) }
@@ -2797,7 +2797,7 @@ let create_var_before_for (model : model) : model =
     | Mfor (id, ((ICKview c | ICKfield (_, _, c) | ICKlist c) as k), body, Some lbl) ->
       begin
         let var_id = "col_" ^ lbl ^ "_" in
-        let var : mterm = mk_mterm (Mvar (dumloc var_id, Vlocal)) c.type_ in
+        let var : mterm = mk_mterm (Mvar (dumloc var_id, Vlocal, Tnone, Dnone)) c.type_ in
         let ickvar : iter_container_kind =
           match k with
           | ICKview _  -> ICKview var
@@ -3030,7 +3030,7 @@ let eval_storage (model : model) : model =
     let for_mterm (mt : mterm) : mterm =
       let rec aux (mt : mterm) : mterm =
         match mt.node with
-        | Mvar (id, _) when MapString.mem (unloc id) map -> MapString.find (unloc id) map
+        | Mvar (id, _, _, _) when MapString.mem (unloc id) map -> MapString.find (unloc id) map
         | _ -> map_mterm aux mt
       in
       aux mt

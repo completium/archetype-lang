@@ -428,15 +428,15 @@ let pp_model fmt (model : model) =
   in
 
   let pp_temp fmt = function
-    | Tbefore -> Format.fprintf fmt "[before]"
-    | Tat i   -> Format.fprintf fmt "[at(%s)]" i
+    | Tbefore -> Format.fprintf fmt "before."
+    | Tat i   -> Format.fprintf fmt "at(%s)." i
     | Tnone   -> ()
   in
 
   let pp_delta fmt = function
-    | Dadded   -> Format.fprintf fmt "[added]"
-    | Dremoved -> Format.fprintf fmt "[removed]"
-    | Dunmoved -> Format.fprintf fmt "[unmoved]"
+    | Dadded   -> Format.fprintf fmt "added."
+    | Dremoved -> Format.fprintf fmt "removed."
+    | Dunmoved -> Format.fprintf fmt "unmoved."
     | Dnone    -> ()
   in
 
@@ -1283,16 +1283,16 @@ let pp_model fmt (model : model) =
 
       (* variable *)
 
-      | Mvar (an, Vassetstate k) -> Format.fprintf fmt "state_%a(%a)" pp_str (Location.unloc an) f k
-      | Mvar (v, Vstorevar)      -> Format.fprintf fmt "%s.%a" const_storage pp_id v
-      | Mvar (v, Vstorecol)      -> Format.fprintf fmt "%s.%a" const_storage pp_id v
-      | Mvar (v, Venumval)       -> pp_id fmt v
-      | Mvar (v, Vdefinition)    -> pp_id fmt v
-      | Mvar (v, Vlocal)         -> pp_id fmt v
-      | Mvar (v, Vparam)         -> pp_id fmt v
-      | Mvar (v, Vfield)         -> pp_id fmt v
-      | Mvar (_, Vthe)           -> pp_str fmt "the"
-      | Mvar (_, Vstate)         -> Format.fprintf fmt "%s.%s" const_storage const_state
+      | Mvar (an, Vassetstate k, _, _) -> Format.fprintf fmt "state_%a(%a)" pp_str (Location.unloc an) f k
+      | Mvar (v, Vstorevar, _, _)      -> Format.fprintf fmt "%s.%a" const_storage pp_id v
+      | Mvar (v, Vstorecol, _, _)      -> Format.fprintf fmt "%s.%a" const_storage pp_id v
+      | Mvar (v, Venumval, _, _)       -> pp_id fmt v
+      | Mvar (v, Vdefinition, _, _)    -> pp_id fmt v
+      | Mvar (v, Vlocal, _, _)         -> pp_id fmt v
+      | Mvar (v, Vparam, _, _)         -> pp_id fmt v
+      | Mvar (v, Vfield, _, _)         -> pp_id fmt v
+      | Mvar (_, Vthe, _, _)           -> pp_str fmt "the"
+      | Mvar (_, Vstate, _, _)         -> Format.fprintf fmt "%s.%s" const_storage const_state
 
 
       (* rational *)
@@ -1420,11 +1420,6 @@ let pp_model fmt (model : model) =
 
       (* formula asset collection *)
 
-      | Msetbefore    _ -> emit_error (UnsupportedTerm ("setbefore"))
-      | Msetat        _ -> emit_error (UnsupportedTerm ("setat"))
-      | Msetunmoved   _ -> emit_error (UnsupportedTerm ("setunmoved"))
-      | Msetadded     _ -> emit_error (UnsupportedTerm ("setadded"))
-      | Msetremoved   _ -> emit_error (UnsupportedTerm ("setremoved"))
       | Msetiterated  _ -> emit_error (UnsupportedTerm ("setiterated"))
       | Msettoiterate _ -> emit_error (UnsupportedTerm ("settoiterate"))
 

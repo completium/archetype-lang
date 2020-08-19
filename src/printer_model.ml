@@ -116,14 +116,14 @@ let pp_entry_description fmt ad =
   | ADcall     id -> Format.fprintf fmt "call (%a)" pp_ident id
 
 let pp_temp fmt = function
-  | Tbefore -> Format.fprintf fmt "[before]"
-  | Tat i   -> Format.fprintf fmt "[at(%s)]" i
+  | Tbefore -> Format.fprintf fmt "before."
+  | Tat i   -> Format.fprintf fmt "at(%s)." i
   | Tnone   -> ()
 
 let pp_delta fmt = function
-  | Dadded   -> Format.fprintf fmt "[added]"
-  | Dremoved -> Format.fprintf fmt "[removed]"
-  | Dunmoved -> Format.fprintf fmt "[unmoved]"
+  | Dadded   -> Format.fprintf fmt "added."
+  | Dremoved -> Format.fprintf fmt "removed."
+  | Dunmoved -> Format.fprintf fmt "unmoved."
   | Dnone    -> ()
 
 let pp_container_kind f fmt = function
@@ -952,16 +952,16 @@ let pp_mterm fmt (mt : mterm) =
 
     (* variable *)
 
-    | Mvar (an, Vassetstate k) -> Format.fprintf fmt "state_%a(%a)" pp_str (Location.unloc an) f k
-    | Mvar(v, Vstorevar)   -> Format.fprintf fmt "s.%a" pp_id v
-    | Mvar(v, Vstorecol)   -> pp_id fmt v
-    | Mvar(v, Venumval)    -> pp_id fmt v
-    | Mvar(v, Vdefinition) -> pp_id fmt v
-    | Mvar(v, Vlocal)      -> pp_id fmt v
-    | Mvar(v, Vparam)      -> pp_id fmt v
-    | Mvar(v, Vfield)      -> pp_id fmt v
-    | Mvar(_, Vthe)        -> pp_str fmt "the"
-    | Mvar(_, Vstate)      -> pp_str fmt "state"
+    | Mvar (an, Vassetstate k, t, d) -> Format.fprintf fmt "%a%astate_%a(%a)" pp_temp t pp_delta d pp_str (Location.unloc an) f k
+    | Mvar(v, Vstorevar, t, d)       -> Format.fprintf fmt "%a%as.%a" pp_temp t pp_delta d pp_id v
+    | Mvar(v, Vstorecol, t, d)       -> Format.fprintf fmt "%a%a%a" pp_temp t pp_delta d pp_id v
+    | Mvar(v, Venumval, t, d)        -> Format.fprintf fmt "%a%a%a" pp_temp t pp_delta d pp_id v
+    | Mvar(v, Vdefinition, t, d)     -> Format.fprintf fmt "%a%a%a" pp_temp t pp_delta d pp_id v
+    | Mvar(v, Vlocal, t, d)          -> Format.fprintf fmt "%a%a%a" pp_temp t pp_delta d pp_id v
+    | Mvar(v, Vparam, t, d)          -> Format.fprintf fmt "%a%a%a" pp_temp t pp_delta d pp_id v
+    | Mvar(v, Vfield, t, d)          -> Format.fprintf fmt "%a%a%a" pp_temp t pp_delta d pp_id v
+    | Mvar(_, Vthe, t, d)            -> Format.fprintf fmt "%a%athe" pp_temp t pp_delta d
+    | Mvar(_, Vstate, t, d)          -> Format.fprintf fmt "%a%astate" pp_temp t pp_delta d
 
 
     (* rational *)
@@ -1124,27 +1124,6 @@ let pp_mterm fmt (mt : mterm) =
 
 
     (* formula asset collection *)
-
-    | Msetbefore e ->
-      Format.fprintf fmt "before %a"
-        f e
-
-    | Msetat (lbl, e) ->
-      Format.fprintf fmt "at(%a) %a"
-        pp_str lbl
-        f e
-
-    | Msetunmoved e ->
-      Format.fprintf fmt "unmoved %a"
-        f e
-
-    | Msetadded e ->
-      Format.fprintf fmt "added %a"
-        f e
-
-    | Msetremoved e ->
-      Format.fprintf fmt "removed %a"
-        f e
 
     | Msetiterated e ->
       Format.fprintf fmt "iterated (%a)"

@@ -660,7 +660,7 @@ let is_predicate m id =
 let extract_def_args m body =
   let rec internal_extract_def_args acc (term : M.mterm) =
     match term.M.node with
-    | M.Mvar (id ,Vparam) ->
+    | M.Mvar (id ,Vparam, _, _) ->
       if acc_has_id (unloc id) acc
       then acc
       else acc @ [Tvar (unloc id), unloc id, map_mtype m term.type_]
@@ -2030,7 +2030,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       begin match v.node, ctx.lctx with
         | Mapp(f,_), _  when is_coll_field m (unloc f) ->
           map_mterm m ctx v |> Mlwtree.deloc
-        | Mvar (f, Vlocal), _ when is_coll_field m (unloc f) ->
+        | Mvar (f, Vlocal, _, _), _ when is_coll_field m (unloc f) ->
           map_mterm m ctx v |> Mlwtree.deloc
         (* | Mdotasset (_,f) when is_coll_field m (unloc f) -> *)
         | Mdotassetfield (_, _, f), _ when is_coll_field m (unloc f) ->
@@ -2149,9 +2149,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     (* variables *)
 
-    | Mvar(_, Vassetstate _) -> error_not_translated "Mvar(_, Vassetstate _)"
+    | Mvar(_, Vassetstate _, _, _) -> error_not_translated "Mvar(_, Vassetstate _)"
 
-    | Mvar (v, Vstorevar) ->
+    | Mvar (v, Vstorevar, _, _) ->
       begin
         match ctx.lctx with
         | Inv -> Tvar (map_lident v)
@@ -2159,25 +2159,32 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | _ -> Tdoti (dl gs, map_lident v)
       end
 
-    | Mvar (n, Vstorecol) ->
+    | Mvar (n, Vstorecol, t, d) ->
       let coll =
-        match ctx.lctx, ctx.old, ctx.lmod with
+        match ctx.lctx, t, d with
         | Inv, _, _ -> Tvar (mk_ac_id (n |> unloc))
         | Def, _, _ -> mk_ac_sv gsarg (n |> unloc)
-        | _, false, Nomod   -> mk_ac (n |> unloc)
-        | _, false, Added   -> mk_ac_added (n |> unloc)
-        | _, false, Removed -> mk_ac_rmed (n |> unloc)
-        | _, true, Nomod    -> mk_ac_old (n |> unloc)
-        | _, true, Added    -> mk_ac_old_added (n |> unloc)
-        | _, true, Removed  -> mk_ac_old_rmed (n |> unloc)
+        | _, M.Tnone, M.Dnone        -> mk_ac (n |> unloc)
+        | _, M.Tnone, M.Dadded       -> mk_ac_added (n |> unloc)
+        | _, M.Tnone, M.Dremoved     -> mk_ac_rmed (n |> unloc)
+        | _, M.Tnone, M.Dunmoved     -> mk_ac (n |> unloc) (* TODO: temp * delta *)
+        | _, M.Tbefore, M.Dnone      -> mk_ac_old (n |> unloc)
+        | _, M.Tbefore, M.Dadded     -> mk_ac_old_added (n |> unloc)
+        | _, M.Tbefore, M.Dremoved   -> mk_ac_old_rmed (n |> unloc)
+        | _, M.Tbefore, M.Dunmoved   -> mk_ac (n |> unloc) (* TODO: temp * delta *)
+        | _, M.Tat lbl, M.Dnone      -> Tat (lbl, mk_ac (n |> unloc))
+        | _, M.Tat lbl, M.Dadded     -> Tat (lbl, mk_ac_added (n |> unloc))
+        | _, M.Tat lbl, M.Dremoved   -> Tat (lbl, mk_ac_rmed (n |> unloc))
+        | _, M.Tat _lbl, M.Dunmoved  -> mk_ac (n |> unloc) (* TODO: temp * delta *)
+
       in
       loc_term coll |> Mlwtree.deloc
 
-    | Mvar (v, Venumval) -> Tvar (map_lident v)
-    | Mvar (v, Vdefinition) ->
+    | Mvar (v, Venumval, _, _) -> Tvar (map_lident v)
+    | Mvar (v, Vdefinition, _, _) ->
       let params = get_def_params m (unloc v) |> List.map loc_term in
       Tapp (loc_term (Tvar (unloc v)), [loc_term (mk_def_storage ctx)] @ params)
-    | Mvar (v, Vlocal) ->
+    | Mvar (v, Vlocal, _, _) ->
       begin match ctx.lctx, mt.type_ with
         | Logic, M.Tcontainer ((Tasset a), View) ->
           Tfromview (map_lident a, dl (Tvar (map_lident v)), loc_term (mk_ac (unloc a)))
@@ -2185,10 +2192,10 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
           Tfromfield (map_lident a, dl (Tvar (map_lident v)), loc_term (mk_ac (unloc a)))
         | _ -> Tvar (map_lident v)
       end
-    | Mvar (v, Vparam) -> Tvar (map_lident v)
-    | Mvar (_, Vfield) -> error_not_translated "Mvar (_, Vfield)"
-    | Mvar (_, Vthe)   -> error_not_translated "Mvar (_, Vthe)"
-    | Mvar (_, Vstate) ->
+    | Mvar (v, Vparam, _, _) -> Tvar (map_lident v)
+    | Mvar (_, Vfield, _, _) -> error_not_translated "Mvar (_, Vfield)"
+    | Mvar (_, Vthe, _, _)   -> error_not_translated "Mvar (_, Vthe)"
+    | Mvar (_, Vstate, _, _) ->
       begin
         match ctx.lctx with
         | Inv -> loc_term (Tvar "state") |> Mlwtree.deloc
@@ -2273,12 +2280,13 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     (* formula asset collection *)
 
+    (* TODO: temp * delta *)
     (* | Msetbefore c -> map_mterm m { ctx with old = true } c |> Mlwtree.deloc *)
-    | Msetbefore c -> map_mterm m { ctx with old = true } c |> Mlwtree.deloc
+    (* | Msetbefore c -> map_mterm m { ctx with old = true } c |> Mlwtree.deloc
     | Msetat (label,t) -> Tat (dl label, map_mterm m ctx t)
     | Msetunmoved _ -> error_not_translated "Msetunmoved"
     | Msetadded c ->  map_mterm m { ctx with lmod = Added } c |> Mlwtree.deloc
-    | Msetremoved c -> map_mterm m { ctx with lmod = Removed } c |> Mlwtree.deloc
+    | Msetremoved c -> map_mterm m { ctx with lmod = Removed } c |> Mlwtree.deloc *)
     | Msetiterated  container ->
       let n = M.Utils.get_asset_type mt in
       let iter_id = Option.get (ctx.loop_id) in
@@ -2756,7 +2764,8 @@ let mk_require n i t = {
 (* TODO : should plunge in called functions body *)
 let mk_requires m n v =
   M.Utils.get_added_removed_sets m v
-  |> List.map (fun t ->
+  (* TODO: temp * delta *)
+  (* |> List.map (fun t ->
       match t with
       | M.Msetadded e ->
         let a = M.Utils.get_asset_type e in
@@ -2765,7 +2774,7 @@ let mk_requires m n v =
         let a = M.Utils.get_asset_type e in
         loc_term (Tempty (a,mk_ac_rmed a))
       | _ -> assert false
-    )
+    ) *)
   |> Tools.List.dedup
   |> List.mapi (fun i t  -> mk_require n i t)
 
@@ -2847,7 +2856,7 @@ let mk_functions m =
         variants = [];
         requires =
           (mk_entry_require m (M.Utils.get_callers m (unloc s.name))) @
-          (mk_requires m (s.name |> unloc) v) @
+          (* (mk_requires m (s.name |> unloc) v) @ *) (* TODO: temp * delta *)
           (mk_preconds m s.args s.body);
         ensures  = Option.fold (mk_ensures m) [] v;
         body     = flatten_if_fail m s.body;
@@ -2868,8 +2877,8 @@ let mk_entries m =
         raises   = fold_exns m s.body |> List.map loc_term;
         variants = [];
         requires =
-          (mk_entry_require m [unloc s.name]) @
-          (mk_requires m (unloc s.name) v);
+          (mk_entry_require m [unloc s.name])(*  @
+          (mk_requires m (unloc s.name) v) *) (* TODO: temp * delta *);
         ensures  = Option.fold (mk_ensures m) [] v;
         body     = flatten_if_fail m s.body;
       }

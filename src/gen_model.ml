@@ -218,14 +218,15 @@ let to_model (ast : A.ast) : M.model =
     match fp.node, fp.type_ with
     | M.Mdotassetfield (an, _k, fn), Tcontainer ((Tasset _), (Aggregate | Partition)) -> M.CKfield (unloc an, unloc fn, fp, Tnone, Dnone)
     | M.Mdot ({type_ = Tasset an}, fn), Tcontainer ((Tasset _), (Aggregate | Partition)) -> M.CKfield (unloc an, unloc fn, fp, Tnone, Dnone)
-    | M.Mvar (v, Vdefinition), _ -> M.CKdef (unloc v)
-    | M.Mvar (fn, _), Tcontainer ((Tasset _), (Aggregate | Partition)) -> begin
+    | M.Mvar (v, Vdefinition, _, _), _ -> M.CKdef (unloc v)
+    | M.Mvar (fn, _, t, d), Tcontainer ((Tasset _), (Aggregate | Partition)) -> begin
         let an = match env.asset_name with
           | Some v -> v
           | None -> assert false
         in
-        M.CKfield (an, unloc fn, fp, Tnone, Dnone)
+        M.CKfield (an, unloc fn, fp, t, d)
       end
+    | M.Mvar (_, _, t, d), Tcontainer ((Tasset _), Collection) -> M.CKcoll (t, d)
     | _, Tcontainer ((Tasset _), Collection) -> M.CKcoll (Tnone, Dnone)
     | _ -> M.CKview fp
   in
@@ -243,23 +244,20 @@ let to_model (ast : A.ast) : M.model =
   in
 
   let build_mvar ?(loc = Location.dummy) env id t =
-    M.mk_mterm (Mvar (id, get_kind_var env id)) t ~loc:loc
+    M.mk_mterm (Mvar (id, get_kind_var env id, Tnone, Dnone)) t ~loc:loc
   in
 
   let rec to_mterm (env : env) (pterm : A.pterm) : M.mterm =
-    let process_before vt e =
-      match vt with
-      | A.VTbefore -> M.Msetbefore (M.mk_mterm e (ptyp_to_type (Option.get pterm.type_)) ~loc:pterm.loc)
-      | A.VTat lbl -> M.Msetat (lbl, M.mk_mterm e (ptyp_to_type (Option.get pterm.type_)) ~loc:pterm.loc)
-      | A.VTnone -> e
+    let to_temp = function
+      | A.VTbefore -> M.Tbefore
+      | A.VTat lbl -> M.Tat lbl
+      | A.VTnone   -> M.Tnone
     in
-    let process_deltaset vs e =
-      let mt = M.mk_mterm e (ptyp_to_type (Option.get pterm.type_)) ~loc:pterm.loc in
-      match vs with
-      | A.Vadded   -> M.Msetadded   mt
-      | A.Vremoved -> M.Msetremoved mt
-      | A.Vunmoved -> M.Msetunmoved mt
-      | A.Vnone    -> e
+    let to_delta = function
+      | A.Vadded   -> M.Dadded
+      | A.Vremoved -> M.Dremoved
+      | A.Vunmoved -> M.Dunmoved
+      | A.Vnone    -> M.Dnone
     in
     let is_record = function | M.Trecord _ -> true | _ -> false in
     let type_ = ptyp_to_type (Option.get pterm.type_) in
@@ -301,16 +299,15 @@ let to_model (ast : A.ast) : M.model =
           M.Mlitrecord (List.map2 (fun x y -> x, f y) ids l)
         end
       | A.Precord l                       -> M.Masset         (List.map f l)
-      | A.Pcall (Some p, A.Cconst A.Cbefore,    []) -> M.Msetbefore    (f p)
       | A.Pletin (id, init, typ, body, o) -> M.Mletin         ([id], f init, Option.map ptyp_to_type typ, f body, Option.map f o)
       | A.Pdeclvar (i, t, v)              -> M.Mdeclvar       ([i], Option.map ptyp_to_type t, f v)
-      | A.Pvar (b, vs, {pldesc = "state"; _})                -> let e = M.Mvar (dumloc "", Vstate) in process_before b e |> process_deltaset vs
-      | A.Pvar (b, vs, id) when is_param env id              -> let e = M.Mvar (id, Vparam)        in process_before b e |> process_deltaset vs
-      | A.Pvar (b, vs, id) when A.Utils.is_variable ast id   -> let e = M.Mvar (id, Vstorevar)     in process_before b e |> process_deltaset vs
-      | A.Pvar (b, vs, id) when A.Utils.is_asset ast id      -> let e = M.Mvar (id, Vstorecol)     in process_before b e |> process_deltaset vs
-      | A.Pvar (b, vs, id) when A.Utils.is_enum_value ast id -> let e = M.Mvar (id, Venumval)      in process_before b e |> process_deltaset vs
-      | A.Pvar (b, vs, id) when A.Utils.is_definition ast id -> let e = M.Mvar (id, Vdefinition)   in process_before b e |> process_deltaset vs
-      | A.Pvar (b, vs, id)                                   -> let e = M.Mvar (id, Vlocal)        in process_before b e |> process_deltaset vs
+      | A.Pvar (b, vs, {pldesc = "state"; _})                -> M.Mvar (dumloc "", Vstate, to_temp b, to_delta vs)
+      | A.Pvar (b, vs, id) when is_param env id              -> M.Mvar (id, Vparam, to_temp b, to_delta vs)
+      | A.Pvar (b, vs, id) when A.Utils.is_variable ast id   -> M.Mvar (id, Vstorevar, to_temp b, to_delta vs)
+      | A.Pvar (b, vs, id) when A.Utils.is_asset ast id      -> M.Mvar (id, Vstorecol, to_temp b, to_delta vs)
+      | A.Pvar (b, vs, id) when A.Utils.is_enum_value ast id -> M.Mvar (id, Venumval, to_temp b, to_delta vs)
+      | A.Pvar (b, vs, id) when A.Utils.is_definition ast id -> M.Mvar (id, Vdefinition, to_temp b, to_delta vs)
+      | A.Pvar (b, vs, id)                                   -> M.Mvar (id, Vlocal, to_temp b, to_delta vs)
       | A.Parray l                             ->
         begin
           let l = List.map f l in
@@ -347,7 +344,7 @@ let to_model (ast : A.ast) : M.model =
             M.Mdot (f e, id)
         end
 
-      | A.Pconst Cstate                        -> M.Mvar(dumloc "", Vstate)
+      | A.Pconst Cstate                        -> M.Mvar(dumloc "", Vstate, Tnone, Dnone)
       | A.Pconst Cnow                          -> M.Mnow
       | A.Pconst Ctransferred                  -> M.Mtransferred
       | A.Pconst Ccaller                       -> M.Mcaller
@@ -867,7 +864,7 @@ let to_model (ast : A.ast) : M.model =
           let fp = f p in
           let fq = f q in
           match fp with
-          | {node = M.Mvar (asset_name, Vstorecol); _} -> M.Maddasset (unloc asset_name, fq)
+          | {node = M.Mvar (asset_name, Vstorecol, _, _); _} -> M.Maddasset (unloc asset_name, fq)
           | {node = M.Mdotassetfield (asset_name , k, fn); _} -> M.Maddfield (unloc asset_name, unloc fn, k, fq)
           | _ -> assert false
         )
@@ -876,7 +873,7 @@ let to_model (ast : A.ast) : M.model =
           let fp = f p in
           let fq = f q in
           match fp with
-          | {node = M.Mvar (asset_name, Vstorecol); _} -> M.Mremoveasset (unloc asset_name, fq)
+          | {node = M.Mvar (asset_name, Vstorecol, _, _); _} -> M.Mremoveasset (unloc asset_name, fq)
           | {node = M.Mdotassetfield (asset_name , k, fn); _} -> M.Mremovefield (unloc asset_name, unloc fn, k, fq)
           | _ -> assert false
         )
@@ -884,7 +881,7 @@ let to_model (ast : A.ast) : M.model =
       | A.Icall (Some p, A.Cconst (A.Cremoveall), []) when is_asset_container p -> (
           let fp = f p in
           match fp with
-          | {node = M.Mvar (_, Vstorecol); _} -> emit_error (instr.loc, NoRemoveAllOnCollection); bailout ()
+          | {node = M.Mvar (_, Vstorecol, _, _); _} -> emit_error (instr.loc, NoRemoveAllOnCollection); bailout ()
           | {node = M.Mdotassetfield (asset_name , k, fn); _} -> M.Mremoveall (unloc asset_name, unloc fn, k)
           | _ -> assert false
         )
@@ -1194,7 +1191,7 @@ let to_model (ast : A.ast) : M.model =
                  match p_on with
                  | Some (key_ident, key_type, an, enum_type) ->
                    let k : M.mterm = build_mvar env key_ident key_type ~loc:(Location.loc key_ident) in
-                   let v : M.mterm = M.mk_mterm (M.Mvar (id, Venumval)) enum_type ~loc:(Location.loc id) in
+                   let v : M.mterm = M.mk_mterm (M.Mvar (id, Venumval, Tnone, Dnone)) enum_type ~loc:(Location.loc id) in
                    M.mk_mterm (M.Massign (ValueAssign, v.type_, Aassetstate (an, k), v)) Tunit
                  | _ ->
                    let v : M.mterm = build_mvar env id M.Tstate ~loc:(Location.loc id) in
@@ -1232,8 +1229,8 @@ let to_model (ast : A.ast) : M.model =
                 match p_on with
                 | Some (ki, kt, an, et) ->
                   let k : M.mterm = build_mvar env ki kt ~loc:(Location.loc ki) in
-                  M.mk_mterm (M.Mvar (dumloc an, Vassetstate k)) et
-                | _ -> M.mk_mterm (M.Mvar(dumloc "", Vstate)) Tstate
+                  M.mk_mterm (M.Mvar (dumloc an, Vassetstate k, Tnone, Dnone)) et
+                | _ -> M.mk_mterm (M.Mvar(dumloc "", Vstate, Tnone, Dnone)) Tstate
               in
               M.mk_mterm (M.Mmatchwith (w, List.map (fun x -> (x, body)) list_patterns @ [pattern, fail_instr])) Tunit
             end

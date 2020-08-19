@@ -1282,22 +1282,22 @@ let pp_model fmt (model : model) =
 
       (* variable *)
 
-      | Mvar (an, Vassetstate k) -> Format.fprintf fmt "state_%a(%a)" pp_str (unloc an) f k
-      | Mvar (v, Vstorevar) ->
+      | Mvar (an, Vassetstate k, _, _) -> Format.fprintf fmt "state_%a(%a)" pp_str (unloc an) f k
+      | Mvar (v, Vstorevar, _, _) ->
         Format.fprintf fmt "self%a.%a"
           (fun fmt b -> match b with false -> pp_str fmt ".data" | _ -> ()) (is_const env v)
           pp_id v
-      | Mvar (v, Vstorecol) -> Format.fprintf fmt "self.data.%a" pp_id v
-      | Mvar (v, Venumval)  -> pp_id fmt v
-      | Mvar (v, Vdefinition)  -> pp_id fmt v
-      | Mvar (v, Vlocal)    ->
+      | Mvar (v, Vstorecol, _, _) -> Format.fprintf fmt "self.data.%a" pp_id v
+      | Mvar (v, Venumval, _, _)  -> pp_id fmt v
+      | Mvar (v, Vdefinition, _, _)  -> pp_id fmt v
+      | Mvar (v, Vlocal, _, _)    ->
         Format.fprintf fmt "%a%a"
           (fun fmt b -> match b with true -> pp_str fmt "self." | _ -> ()) (is_const env v)
           pp_id v
-      | Mvar (v, Vparam)    -> Format.fprintf fmt "%s.%a" const_params pp_id v
-      | Mvar (v, Vfield)    -> pp_id fmt v
-      | Mvar (_, Vthe)      -> pp_str fmt "the"
-      | Mvar (_, Vstate)    -> pp_str fmt "self.data.state"
+      | Mvar (v, Vparam, _, _)    -> Format.fprintf fmt "%s.%a" const_params pp_id v
+      | Mvar (v, Vfield, _, _)    -> pp_id fmt v
+      | Mvar (_, Vthe, _, _)      -> pp_str fmt "the"
+      | Mvar (_, Vstate, _, _)    -> pp_str fmt "self.data.state"
 
 
       (* rational *)
@@ -1420,11 +1420,6 @@ let pp_model fmt (model : model) =
 
       (* formula asset collection *)
 
-      | Msetbefore    _ -> emit_error (UnsupportedTerm ("Msetbefore"))
-      | Msetat        _ -> emit_error (UnsupportedTerm ("Msetat"))
-      | Msetunmoved   _ -> emit_error (UnsupportedTerm ("Msetunmoved"))
-      | Msetadded     _ -> emit_error (UnsupportedTerm ("Msetadded"))
-      | Msetremoved   _ -> emit_error (UnsupportedTerm ("Msetremoved"))
       | Msetiterated  _ -> emit_error (UnsupportedTerm ("Msetiterated"))
       | Msettoiterate _ -> emit_error (UnsupportedTerm ("Msettoiterate"))
 
