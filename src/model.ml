@@ -149,10 +149,23 @@ type 'term var_kind_gen =
   | Vthe
 [@@deriving show {with_path = false}]
 
+type temp =
+  | Tbefore
+  | Tat of ident
+  | Tnone
+[@@deriving show {with_path = false}]
+
+type delta =
+  | Dadded
+  | Dremoved
+  | Dunmoved
+  | Dnone
+[@@deriving show {with_path = false}]
+
 type 'term container_kind_gen =
-  | CKcoll
+  | CKcoll  of temp * delta
   | CKview  of 'term
-  | CKfield of (ident * ident * 'term)
+  | CKfield of (ident * ident * 'term * temp * delta)
   | CKdef   of ident
 [@@deriving show {with_path = false}]
 
@@ -1035,11 +1048,26 @@ let cmp_mterm_node
     | Vthe, Vthe -> true
     | _ -> false
   in
+  let cmp_temp (lhs : temp) (rhs : temp) : bool =
+    match lhs, rhs with
+    | Tbefore, Tbefore -> true
+    | Tat i1, Tat i2   -> cmp_ident i1 i2
+    | Tnone, Tnone     -> true
+    | _ -> false
+  in
+  let cmp_delta (lhs : delta) (rhs : delta) : bool =
+    match lhs, rhs with
+    | Dadded, Dadded     -> true
+    | Dremoved, Dremoved -> true
+    | Dunmoved, Dunmoved -> true
+    | Dnone, Dnone       -> true
+    | _ -> false
+  in
   let cmp_container_kind (lhs : container_kind) (rhs : container_kind) : bool =
     match lhs, rhs with
-    | CKcoll, CKcoll -> true
+    | CKcoll (t1, d1), CKcoll (t2, d2) -> cmp_temp t1 t2 && cmp_delta d1 d2
     | CKview l, CKview r -> cmp l r
-    | CKfield (an1, fn1, mt1), CKfield (an2, fn2, mt2) -> cmp_ident an1 an2 && cmp_ident fn1 fn2 && cmp mt1 mt2
+    | CKfield (an1, fn1, mt1, t1, d1), CKfield (an2, fn2, mt2, t2, d2) -> cmp_ident an1 an2 && cmp_ident fn1 fn2 && cmp mt1 mt2 && cmp_temp t1 t2 && cmp_delta d1 d2
     | CKdef v1, CKdef v2 -> cmp_ident v1 v2
     | _ -> false
   in
@@ -1397,11 +1425,22 @@ let map_var_kind f = function
   | Vstate -> Vstate
   | Vthe -> Vthe
 
+let map_temp (fi : ident -> ident) = function
+  | Tbefore -> Tbefore
+  | Tat i   -> Tat (fi i)
+  | Tnone   -> Tnone
+
+let map_delta = function
+  | Dadded   -> Dadded
+  | Dremoved -> Dremoved
+  | Dunmoved -> Dunmoved
+  | Dnone    -> Dnone
+
 let map_container_kind (fi : ident -> ident) f = function
-  | CKcoll               -> CKcoll
-  | CKview  mt           -> CKview  (f mt)
-  | CKfield (an, fn, mt) -> CKfield (fi an, fi fn, f mt)
-  | CKdef v              -> CKdef (fi v)
+  | CKcoll (t, d)              -> CKcoll (map_temp fi t, map_delta d)
+  | CKview  mt                 -> CKview  (f mt)
+  | CKfield (an, fn, mt, t, d) -> CKfield (fi an, fi fn, f mt, map_temp fi t, map_delta d)
+  | CKdef v                    -> CKdef (fi v)
 
 let map_iter_container_kind (fi : ident -> ident) f = function
   | ICKcoll  an           -> ICKcoll  (fi an)
@@ -1763,10 +1802,10 @@ let fold_var_kind f accu = function
   | Vthe -> accu
 
 let fold_container_kind f accu = function
-  | CKcoll             -> accu
-  | CKview mt          -> f accu mt
-  | CKfield (_, _, mt) -> f accu mt
-  | CKdef _            -> accu
+  | CKcoll _                 -> accu
+  | CKview mt                -> f accu mt
+  | CKfield (_, _, mt, _, _) -> f accu mt
+  | CKdef _                  -> accu
 
 let fold_iter_container_kind f accu = function
   | ICKcoll  _          -> accu
@@ -2003,13 +2042,13 @@ let fold_map_var_kind f accu = function
   | Vthe      -> Vthe,      accu
 
 let fold_map_container_kind f accu = function
-  | CKcoll -> CKcoll, accu
+  | CKcoll (t, d) -> CKcoll (t, d), accu
   | CKview mt ->
     let mte, mta = f accu mt in
     CKview mte, mta
-  | CKfield (an, fn, mt) ->
+  | CKfield (an, fn, mt, t, d) ->
     let mte, mta = f accu mt in
-    CKfield (an, fn, mte), mta
+    CKfield (an, fn, mte, t, d), mta
   | CKdef v -> CKdef v, accu
 
 let fold_map_iter_container_kind f accu = function

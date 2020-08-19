@@ -169,15 +169,15 @@ let remove_add_update ?(isformula = false) (model : model) : model =
         in
         let cond   = mk_mterm (
             match c with
-            | CKfield (_, _, ({node = Mdotassetfield (andat, kdat, fn)} as a)) ->
-              let c = (if isformula then a else kdat) in Mcontains (an, CKfield(unloc andat, unloc fn, c), k)
-            | CKcoll -> Mcontains (an, c, k)
+            | CKfield (_, _, ({node = Mdotassetfield (andat, kdat, fn)} as a), t, d) ->
+              let c = (if isformula then a else kdat) in Mcontains (an, CKfield(unloc andat, unloc fn, c, t, d), k)
+            | CKcoll _ -> Mcontains (an, c, k)
             | _ -> assert false) Tunit in
         let asset  = mk_asset (an, k, l) in
         let add    = mk_mterm (
             match c with
-            | CKfield (_, _, {node = Mdotassetfield (an, k, fn)}) -> Maddfield (unloc an, unloc fn, k, asset)
-            | CKcoll -> Maddasset (an, asset)
+            | CKfield (_, _, {node = Mdotassetfield (an, k, fn)}, _, _) -> Maddfield (unloc an, unloc fn, k, asset)
+            | CKcoll _ -> Maddasset (an, asset)
             | _ -> assert false) Tunit in
         let update = mk_mterm (Mupdate (an, k, l)) Tunit in
         let if_node = Mif (cond, update, Some add) in
@@ -259,7 +259,7 @@ let build_col_asset (an : ident) =
   let col : mterm  = mk_mterm (Mvar (dan, Vstorecol)) type_col in
   mk_mterm (Mcast (type_col, type_view, col)) type_view, type_asset
 
-let build_get (an : ident) v = mk_mterm (Mget (an, CKcoll, v)) (Tasset (dumloc an))
+let build_get (an : ident) v = mk_mterm (Mget (an, CKcoll (Tnone, Dnone), v)) (Tasset (dumloc an))
 
 (* myasset.update k {f1 = v1; f2 = v2}
 
@@ -2031,9 +2031,9 @@ let extract_term_from_instruction f (model : model) : model =
     | Mclear (an, v) ->
       let ve, va =
         match v with
-        | CKcoll -> CKcoll, []
+        | CKcoll (d, t) -> CKcoll (d, t), []
         | CKview v  -> let ve, va = f v in CKview ve, va
-        | CKfield (an, fn, v) -> let ve, va = f v in CKfield (an, fn, ve), va
+        | CKfield (an, fn, v, d, t) -> let ve, va = f v in CKfield (an, fn, ve, d, t), va
         | CKdef v -> CKdef v, []
       in
       process (mk_mterm (Mclear (an, ve)) mt.type_) va
@@ -2041,9 +2041,9 @@ let extract_term_from_instruction f (model : model) : model =
     | Mremoveif (an, v, la, b, a) ->
       let ve, va =
         match v with
-        | CKcoll -> CKcoll, []
+        | CKcoll (d, t) -> CKcoll (d, t), []
         | CKview v  -> let ve, va = f v in CKview ve, va
-        | CKfield (an, fn, v) -> let ve, va = f v in CKfield (an, fn, ve), va
+        | CKfield (an, fn, v, d, t) -> let ve, va = f v in CKfield (an, fn, ve, d, t), va
         | CKdef v -> CKdef v, []
       in
       let be, ba = f b in
@@ -2067,9 +2067,9 @@ let extract_term_from_instruction f (model : model) : model =
     | Maddupdate (an, c, k, l) ->
       let ce, ca =
         match c with
-        | CKcoll    -> CKcoll, []
+        | CKcoll (d, t) -> CKcoll (d, t), []
         | CKview c  -> let ce, ca = f c in CKview ce, ca
-        | CKfield (an, fn, c) -> let ce, ca = f c in CKfield (an, fn, ce), ca
+        | CKfield (an, fn, c, d, t) -> let ce, ca = f c in CKfield (an, fn, ce, d, t), ca
         | CKdef v -> CKdef v, []
       in
       let ke, ka = f k in
@@ -2300,10 +2300,10 @@ let add_contain_on_get (model : model) : model =
       | Mremoveif (_an, v, _la, b, a) ->
         let accu =
           match v with
-          | CKcoll     -> accu
-          | CKview c   -> f accu c
-          | CKfield (_, _, c)  -> f accu c
-          | CKdef _    -> accu
+          | CKcoll _                 -> accu
+          | CKview c                 -> f accu c
+          | CKfield (_, _, c, _, _)  -> f accu c
+          | CKdef _                  -> accu
         in
         let accu = f accu b in
         let accu = List.fold_right (fun v accu -> f accu v) a accu in
@@ -2312,10 +2312,10 @@ let add_contain_on_get (model : model) : model =
       | Mclear (_an, v) ->
         let accu =
           match v with
-          | CKcoll     -> accu
-          | CKview c   -> f accu c
-          | CKfield (_, _, c)  -> f accu c
-          | CKdef _    -> accu
+          | CKcoll _                -> accu
+          | CKview c                -> f accu c
+          | CKfield (_, _, c, _, _) -> f accu c
+          | CKdef _                 -> accu
         in
         gg accu mt
 
@@ -2332,10 +2332,10 @@ let add_contain_on_get (model : model) : model =
       | Maddupdate (_an, c, k, l) ->
         let accu =
           match c with
-          | CKcoll     -> accu
-          | CKview c   -> f accu c
-          | CKfield (_, _, c)  -> f accu c
-          | CKdef _    -> accu
+          | CKcoll _                -> accu
+          | CKview c                -> f accu c
+          | CKfield (_, _, c, _, _) -> f accu c
+          | CKdef _                 -> accu
         in
         let accu = f accu k in
         let accu = List.fold_right (fun (_, _, v) accu -> f accu v) l accu in
@@ -2351,7 +2351,7 @@ let add_contain_on_get (model : model) : model =
       | _ ->
         begin
           let build_contains (an, k) : mterm =
-            let contains = mk_mterm (Mcontains(an, CKcoll, k)) (Tbuiltin Bbool) in
+            let contains = mk_mterm (Mcontains(an, CKcoll (Tnone, Dnone), k)) (Tbuiltin Bbool) in
             let not_contains = mk_mterm (Mnot contains) (Tbuiltin Bbool) in
             let str_fail : mterm = mk_mterm (Mstring "get failed") (Tbuiltin Bstring) in
             let fail = mk_mterm (Mfail (Invalid str_fail)) Tunit in
@@ -2492,9 +2492,9 @@ let replace_for_to_iter (model : model) : model =
       let type_asset = Tasset (dumloc an) in
       let ck =
         begin match col with
-          | ICKcoll _ -> CKcoll
+          | ICKcoll _ -> CKcoll (Tnone, Dnone)
           | ICKview x -> CKview x
-          | ICKfield (an, fn, x) -> CKfield (an, fn, x)
+          | ICKfield (an, fn, x) -> CKfield (an, fn, x, Tnone, Dnone)
           | _ -> assert false
         end in
       let idx_id = "_i_" ^ lbl in
@@ -2668,7 +2668,7 @@ let replace_instr_verif (model : model) : model =
     match mt.node with
     | Mremoveasset (an, k) ->
       begin
-        let cond : mterm = mk_mterm (Mcontains (an, CKcoll, k)) (Tbuiltin Bbool) in
+        let cond : mterm = mk_mterm (Mcontains (an, CKcoll (Tnone, Dnone), k)) (Tbuiltin Bbool) in
         let get = build_get an k in
         let i : mterm = mk_mterm (Mremoveasset (an, get)) Tunit in
         let mif : mterm = mk_mterm (Mif (cond, i, None)) Tunit in
@@ -2820,15 +2820,15 @@ let replace_col_by_key_for_ckfield (model : model) =
     (* | Mclear (an, CKfield (fan, ffn, {node = Mdotassetfield (_, kdat, _)}))             -> { mt with node = Mclear (an, CKfield (fan, ffn, kdat)) } *)
     (* | Maddupdate (an, CKfield (fan, ffn, {node = Mdotassetfield (_, kdat, _)}), k, l)   -> { mt with node = Maddupdate (an, CKfield (fan, ffn, kdat), k, l) } *)
     (* asset api expression *)
-    | Mget (an, CKfield (fan, ffn, {node = Mdotassetfield (_, kdat, _)}), k)            -> { mt with node = Mget (an, CKfield (fan, ffn, kdat), k) }
-    | Mselect (an, CKfield (fan, ffn, {node = Mdotassetfield (_, kdat, _)}), la, lb, a) -> { mt with node = Mselect (an, CKfield (fan, ffn, kdat), la, lb, a) }
-    | Msort (an, CKfield (fan, ffn, {node = Mdotassetfield (_, kdat, _)}), l)           -> { mt with node = Msort (an, CKfield (fan, ffn, kdat), l) }
-    | Mcontains (an, CKfield (fan, ffn, {node = Mdotassetfield (_, kdat, _)}), i)       -> { mt with node = Mcontains (an, CKfield (fan, ffn, kdat), i) }
-    | Mnth (an, CKfield (fan, ffn, {node = Mdotassetfield (_, kdat, _)}), i)            -> { mt with node = Mnth (an, CKfield (fan, ffn, kdat), i) }
-    | Mcount (an, CKfield (fan, ffn, {node = Mdotassetfield (_, kdat, _)}))             -> { mt with node = Mcount (an, CKfield (fan, ffn, kdat)) }
-    | Msum (an, CKfield (fan, ffn, {node = Mdotassetfield (_, kdat, _)}), p)            -> { mt with node = Msum (an, CKfield (fan, ffn, kdat), p) }
-    | Mhead (an, CKfield (fan, ffn, {node = Mdotassetfield (_, kdat, _)}), i)           -> { mt with node = Mhead (an, CKfield (fan, ffn, kdat), i) }
-    | Mtail (an, CKfield (fan, ffn, {node = Mdotassetfield (_, kdat, _)}), i)           -> { mt with node = Mtail (an, CKfield (fan, ffn, kdat), i) }
+    | Mget (an, CKfield (fan, ffn, {node = Mdotassetfield (_, kdat, _)}, t, d), k)            -> { mt with node = Mget (an, CKfield (fan, ffn, kdat, t, d), k) }
+    | Mselect (an, CKfield (fan, ffn, {node = Mdotassetfield (_, kdat, _)}, t, d), la, lb, a) -> { mt with node = Mselect (an, CKfield (fan, ffn, kdat, t, d), la, lb, a) }
+    | Msort (an, CKfield (fan, ffn, {node = Mdotassetfield (_, kdat, _)}, t, d), l)           -> { mt with node = Msort (an, CKfield (fan, ffn, kdat, t, d), l) }
+    | Mcontains (an, CKfield (fan, ffn, {node = Mdotassetfield (_, kdat, _)}, t, d), i)       -> { mt with node = Mcontains (an, CKfield (fan, ffn, kdat, t, d), i) }
+    | Mnth (an, CKfield (fan, ffn, {node = Mdotassetfield (_, kdat, _)}, t, d), i)            -> { mt with node = Mnth (an, CKfield (fan, ffn, kdat, t, d), i) }
+    | Mcount (an, CKfield (fan, ffn, {node = Mdotassetfield (_, kdat, _)}, t, d))             -> { mt with node = Mcount (an, CKfield (fan, ffn, kdat, t, d)) }
+    | Msum (an, CKfield (fan, ffn, {node = Mdotassetfield (_, kdat, _)}, t, d), p)            -> { mt with node = Msum (an, CKfield (fan, ffn, kdat, t, d), p) }
+    | Mhead (an, CKfield (fan, ffn, {node = Mdotassetfield (_, kdat, _)}, t, d), i)           -> { mt with node = Mhead (an, CKfield (fan, ffn, kdat, t, d), i) }
+    | Mtail (an, CKfield (fan, ffn, {node = Mdotassetfield (_, kdat, _)}, t, d), i)           -> { mt with node = Mtail (an, CKfield (fan, ffn, kdat, t, d), i) }
     (* default *)
     | _ -> map_mterm (aux ctx) mt
   in

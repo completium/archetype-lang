@@ -423,9 +423,9 @@ let pp_model fmt (model : model) =
   in
 
   let pp_prefix_container_kind an fmt = function
-    | CKcoll    -> Format.fprintf fmt "c_%s" an
+    | CKcoll _  -> Format.fprintf fmt "c_%s" an
     | CKview _  -> Format.fprintf fmt "v_%s" an
-    | CKfield (an, fn, _) -> Format.fprintf fmt "f_%s_%s" an fn
+    | CKfield (an, fn, _, _, _) -> Format.fprintf fmt "f_%s_%s" an fn
     | CKdef _   -> assert false
   in
 
@@ -936,9 +936,9 @@ let pp_model fmt (model : model) =
             an
             (fun fmt _ ->
                match c with
-               | CKcoll -> ()
+               | CKcoll _ -> ()
                | CKview mt -> f fmt mt
-               | CKfield (_an, _fn, _k) -> ()
+               | CKfield (_an, _fn, _k, _, _) -> ()
                | CKdef _ -> assert false) ()
         in
         pp fmt (an, c, la, lb, a)
@@ -949,9 +949,9 @@ let pp_model fmt (model : model) =
             an
             (fun fmt _ ->
                match c with
-               | CKcoll -> ()
+               | CKcoll _ -> ()
                | CKview mt -> f fmt mt
-               | CKfield (_an, _fn, _k) -> ()
+               | CKfield (_an, _fn, _k, _, _) -> ()
                | CKdef _ -> assert false) ()
         in
         pp fmt (an, c)
@@ -985,9 +985,9 @@ let pp_model fmt (model : model) =
             (pp_prefix_container_kind an) c
             (fun fmt _ ->
                match c with
-               | CKcoll -> ()
+               | CKcoll _ -> ()
                | CKview mt -> f fmt mt
-               | CKfield (_an, _fn, k) -> f fmt k
+               | CKfield (_an, _fn, k, _, _) -> f fmt k
                | CKdef _ -> assert false) ()
         in
         pp fmt (an, c, la, lb, a)
@@ -998,9 +998,9 @@ let pp_model fmt (model : model) =
             pp_str an
             (fun fmt _ ->
                match c with
-               | CKcoll -> ()
+               | CKcoll _ -> ()
                | CKview mt -> f fmt mt
-               | CKfield (_an, _fn, k) -> f fmt k
+               | CKfield (_an, _fn, k, _, _) -> f fmt k
                | CKdef _ -> assert false) ()
             (pp_list ", " (fun fmt (a, b) -> Format.fprintf fmt "%a %a" pp_ident a pp_sort_kind b)) l
         in
@@ -1012,9 +1012,9 @@ let pp_model fmt (model : model) =
             (pp_prefix_container_kind an) c
             (fun fmt _ ->
                match c with
-               | CKcoll -> f fmt i
+               | CKcoll _ -> f fmt i
                | CKview mt -> Format.fprintf fmt "%a, %a" f mt f i
-               | CKfield (_an, _fn, k) -> Format.fprintf fmt "%a, %a" f k f i
+               | CKfield (_an, _fn, k, _, _) -> Format.fprintf fmt "%a, %a" f k f i
                | CKdef _ -> assert false) ()
         in
         pp fmt (an, c, i)
@@ -1025,9 +1025,9 @@ let pp_model fmt (model : model) =
             (pp_prefix_container_kind an) c
             (fun fmt _ ->
                match c with
-               | CKcoll -> f fmt i
+               | CKcoll _ -> f fmt i
                | CKview _mt -> ()
-               | CKfield (_an, _fn, _) -> ()
+               | CKfield (_an, _fn, _, _, _) -> ()
                | CKdef _ -> assert false) ()
         in
         pp fmt (an, c, i)
@@ -1038,9 +1038,9 @@ let pp_model fmt (model : model) =
             (pp_prefix_container_kind an) c
             (fun fmt _ ->
                match c with
-               | CKcoll -> ()
+               | CKcoll _ -> ()
                | CKview mt -> f fmt mt
-               | CKfield (_an, _fn, k) -> f fmt k
+               | CKfield (_an, _fn, k, _, _) -> f fmt k
                | CKdef _ -> assert false) ()
         in
         pp fmt (an, c)
@@ -1051,9 +1051,9 @@ let pp_model fmt (model : model) =
             pp_str an
             (fun fmt _ ->
                match c with
-               | CKcoll -> ()
+               | CKcoll _ -> ()
                | CKview mt -> f fmt mt
-               | CKfield (_an, _fn, _k) -> ()
+               | CKfield (_an, _fn, _k, _, _) -> ()
                | CKdef _ -> assert false) ()
         in
         pp fmt (an, c, p)
@@ -1063,9 +1063,9 @@ let pp_model fmt (model : model) =
           (pp_prefix_container_kind an) c
           (fun fmt _ ->
              match c with
-             | CKcoll -> f fmt i
+             | CKcoll _ -> f fmt i
              | CKview _mt -> ()
-             | CKfield (_an, _fn, _) -> ()
+             | CKfield (_an, _fn, _, _, _) -> ()
              | CKdef _ -> assert false) ()
 
       | Mtail (an, c, i) ->
@@ -1073,9 +1073,9 @@ let pp_model fmt (model : model) =
           (pp_prefix_container_kind an) c
           (fun fmt _ ->
              match c with
-             | CKcoll -> f fmt i
+             | CKcoll _ -> f fmt i
              | CKview _mt -> ()
-             | CKfield (_an, _fn, _) -> ()
+             | CKfield (_an, _fn, _, _, _) -> ()
              | CKdef _ -> assert false) ()
 
 

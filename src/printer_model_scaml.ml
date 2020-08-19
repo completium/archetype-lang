@@ -427,13 +427,25 @@ let pp_model fmt (model : model) =
     | Pwild -> pp_str fmt "_"
   in
 
-  let pp_container_kind f fmt = function
-    | CKcoll     -> pp_str fmt "_Coll_"
-    | CKview mt  -> f fmt mt
-    | CKfield (an, fn, mt) -> Format.fprintf fmt "CKfield (%s, %s, %a)" an fn f mt
-    | CKdef _    -> pp_str fmt "_Def_"
+  let pp_temp fmt = function
+    | Tbefore -> Format.fprintf fmt "[before]"
+    | Tat i   -> Format.fprintf fmt "[at(%s)]" i
+    | Tnone   -> ()
   in
 
+  let pp_delta fmt = function
+    | Dadded   -> Format.fprintf fmt "[added]"
+    | Dremoved -> Format.fprintf fmt "[removed]"
+    | Dunmoved -> Format.fprintf fmt "[unmoved]"
+    | Dnone    -> ()
+  in
+
+  let pp_container_kind f fmt = function
+    | CKcoll (t, d)              -> Format.fprintf fmt "_%a%aColl_" pp_temp t pp_delta d
+    | CKview mt                  -> f fmt mt
+    | CKfield (an, fn, mt, t, d) -> Format.fprintf fmt "%a%aCKfield (%s, %s, %a)" pp_temp t pp_delta d an fn f mt
+    | CKdef v                    -> Format.fprintf fmt "_Def(%s)_" v
+  in
 
   let pp_iter_container_kind f fmt = function
     | ICKcoll an  -> Format.fprintf fmt "%a" pp_str an

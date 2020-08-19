@@ -216,17 +216,17 @@ let to_model (ast : A.ast) : M.model =
 
   let to_ck (env : env) (fp : M.mterm) : M.container_kind =
     match fp.node, fp.type_ with
-    | M.Mdotassetfield (an, _k, fn), Tcontainer ((Tasset _), (Aggregate | Partition)) -> M.CKfield (unloc an, unloc fn, fp)
-    | M.Mdot ({type_ = Tasset an}, fn), Tcontainer ((Tasset _), (Aggregate | Partition)) -> M.CKfield (unloc an, unloc fn, fp)
+    | M.Mdotassetfield (an, _k, fn), Tcontainer ((Tasset _), (Aggregate | Partition)) -> M.CKfield (unloc an, unloc fn, fp, Tnone, Dnone)
+    | M.Mdot ({type_ = Tasset an}, fn), Tcontainer ((Tasset _), (Aggregate | Partition)) -> M.CKfield (unloc an, unloc fn, fp, Tnone, Dnone)
     | M.Mvar (v, Vdefinition), _ -> M.CKdef (unloc v)
     | M.Mvar (fn, _), Tcontainer ((Tasset _), (Aggregate | Partition)) -> begin
         let an = match env.asset_name with
           | Some v -> v
           | None -> assert false
         in
-        M.CKfield (an, unloc fn, fp)
+        M.CKfield (an, unloc fn, fp, Tnone, Dnone)
       end
-    | _, Tcontainer ((Tasset _), Collection) -> M.CKcoll
+    | _, Tcontainer ((Tasset _), Collection) -> M.CKcoll (Tnone, Dnone)
     | _ -> M.CKview fp
   in
 
@@ -895,8 +895,8 @@ let to_model (ast : A.ast) : M.model =
         let lambda_args, args = List.fold_right (fun (x, y, z) (l1, l2) -> ((unloc x, ptyp_to_type y)::l1, (f z)::l2)) l ([], []) in
         begin
           match fp.node, fp.type_ with
-          | Mdotassetfield (an, k, fn), _ -> M.Mremoveif (unloc an, CKfield (unloc an, unloc fn, k), lambda_args, lambda_body, args)
-          | _, Tcontainer (Tasset an, _)  -> M.Mremoveif (unloc an, CKcoll, lambda_args, lambda_body, args)
+          | Mdotassetfield (an, k, fn), _ -> M.Mremoveif (unloc an, CKfield (unloc an, unloc fn, k, Tnone, Dnone), lambda_args, lambda_body, args)
+          | _, Tcontainer (Tasset an, _)  -> M.Mremoveif (unloc an, CKcoll (Tnone, Dnone), lambda_args, lambda_body, args)
           | _ -> assert false
         end
 
@@ -904,7 +904,7 @@ let to_model (ast : A.ast) : M.model =
           let fp = f p in
           begin
             match fp.node, fp.type_ with
-            | Mdotassetfield (an, k, fn), _ -> M.Mclear (unloc an, CKfield (unloc an, unloc fn, k))
+            | Mdotassetfield (an, k, fn), _ -> M.Mclear (unloc an, CKfield (unloc an, unloc fn, k, Tnone, Dnone))
             | _, Tcontainer (Tasset an, _)  -> M.Mclear (unloc an, to_ck env fp)
             | _ -> assert false
           end
@@ -920,8 +920,8 @@ let to_model (ast : A.ast) : M.model =
         let fe = List.map (fun (id, op, c) -> (id, to_op op, f c)) e in
         begin
           match fp.node, fp.type_ with
-          | Mdotassetfield (_, _k, fn), Tcontainer (Tasset an, (Aggregate | Partition)) -> M.Maddupdate (unloc an, CKfield (unloc an, unloc fn, fp), fk, fe)
-          | _, Tcontainer (Tasset an, Collection)  -> M.Maddupdate (unloc an, CKcoll, fk, fe)
+          | Mdotassetfield (_, _k, fn), Tcontainer (Tasset an, (Aggregate | Partition)) -> M.Maddupdate (unloc an, CKfield (unloc an, unloc fn, fp, Tnone, Dnone), fk, fe)
+          | _, Tcontainer (Tasset an, Collection)  -> M.Maddupdate (unloc an, CKcoll (Tnone, Dnone), fk, fe)
           | _ -> assert false
         end
 

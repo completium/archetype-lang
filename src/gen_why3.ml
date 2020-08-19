@@ -1419,7 +1419,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                 Tpsome (map_lident id),  map_mterm m ctx b;
                 Twild, map_mterm m ctx e
               ])
-    | Mletin ([id], { node = M.Mnth (n, CKcoll,k); type_ = _ }, _, b, Some e) ->
+    | Mletin ([id], { node = M.Mnth (n, CKcoll _,k); type_ = _ }, _, b, Some e) ->
       begin match ctx.lctx with
       | Inv | Logic | Def ->
       Tmatch (Tnth (dl n,
@@ -1786,7 +1786,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mremoveif (_a, (CKview _l), _la, _lb, _) -> assert false
     | Mremoveif (_a, CKdef _, _la, _lb, _) -> assert false
 
-    | Mremoveif (a, CKfield (_, field, k), args, tbody, _a) ->
+    | Mremoveif (a, CKfield (_, field, k, _, _), args, tbody, _a) ->
       let args = mk_filter_args m ctx args tbody in
       let oasset, _ = M.Utils.get_field_container m a field in
       let removeif_name = mk_removeif_name m oasset tbody in
@@ -1803,7 +1803,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       else
         mk_trace_seq m (mk_match_get_some a (map_mterm m ctx k) assign Enotfound) [CUpdate field]
 
-    | Mremoveif (a, CKcoll, args, tbody, _a) ->
+    | Mremoveif (a, CKcoll _, args, tbody, _a) ->
 
       let args = mk_filter_args m ctx args tbody in
 
@@ -1830,7 +1830,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       else
         mk_trace_seq m (Tassign (mk_ac_ctx a ctx, removeif)) [CRm a]
 
-    | Mclear (n, CKcoll) ->
+    | Mclear (n, CKcoll _) ->
       let partitions = M.Utils.get_asset_partitions m n in
       let remove = List.map (fun (f, oasset) ->
           let capoasset = String.capitalize_ascii oasset in
@@ -1869,7 +1869,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       else
         mk_trace_seq m assign [CRm n]
     | Mclear (_, CKdef _) -> assert false
-    | Mclear (_n, CKfield (n, f, v)) ->
+    | Mclear (_n, CKfield (n, f, v, _, _)) ->
       let oasset,_ = M.Utils.get_field_container m n f in
       let asset = dl (mk_match_get_some_id (dl "_a") n (map_mterm m ctx v) (loc_term (Tvar "_a")) Enotfound) in
       let field = dl (Tdot(asset, loc_term (Tvar f))) in
@@ -1899,11 +1899,11 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let args = mk_filter_args m ctx args tbody in
       Tvselect (dl a, dl (mk_select_name m a tbody), args, map_mterm m ctx v, mk_ac_ctx a ctx)
     | Mselect (_a, CKdef _, _args, _tbody, _) -> assert false
-    | Mselect (a, CKfield (_, _, v), args, tbody, _a) ->
+    | Mselect (a, CKfield (_, _, v, _, _), args, tbody, _a) ->
       let args = mk_filter_args m ctx args tbody in
       let toview = dl (Ttoview(dl (mk_field_id a), map_mterm m ctx v)) in
       Tvselect (dl a, dl (mk_select_name m a tbody), args, toview, mk_ac_ctx a ctx)
-    | Mselect (a, CKcoll, args, tbody, _values) ->
+    | Mselect (a, CKcoll _, args, tbody, _values) ->
       let args = mk_filter_args m ctx args tbody in
       let filterid = mk_select_name m a tbody in
       begin match ctx.lctx with
@@ -1912,20 +1912,20 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       end
     | Msort (a, (CKview c),l) -> Tvsort (dl (mk_sort_clone_id a l),map_mterm m ctx c,mk_ac_ctx a ctx)
     | Msort (_, CKdef _, _) -> assert false
-    | Msort (a, CKfield (_, _, c),l) ->
+    | Msort (a, CKfield (_, _, c, _, _),l) ->
       Tvsort (dl (mk_sort_clone_id a l),
               dl (Ttoview (dl (mk_field_id a), map_mterm m ctx c)),
               mk_ac_ctx a ctx)
-    | Msort (a, CKcoll,l) ->
+    | Msort (a, CKcoll _,l) ->
       Tvsort (dl (mk_sort_clone_id a l),
               dl (Ttoview(dl a, mk_ac_ctx a ctx)),
               mk_ac_ctx a ctx)
     | Mcontains (a, (CKview v), r) -> Tvcontains (dl (mk_view_id a), map_mterm m ctx r, map_mterm m ctx v)
     | Mcontains (_, CKdef _, _) -> assert false
-    | Mcontains (a, CKfield (_, _, v), r) -> Tvcontains (dl (mk_view_id a),
+    | Mcontains (a, CKfield (_, _, v, _, _), r) -> Tvcontains (dl (mk_view_id a),
                                                          map_mterm m ctx r,
                                                          dl (Ttoview(dl (mk_field_id a), map_mterm m ctx v)))
-    | Mcontains (a, CKcoll, r) -> Tcontains (dl a,
+    | Mcontains (a, CKcoll _, r) -> Tcontains (dl a,
                                              map_mterm m ctx r,
                                              mk_ac_ctx a ctx)
 
@@ -1938,7 +1938,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mnth (n, CKdef d, c) ->
       let params = get_def_params m d in
       Tnth (dl n, map_mterm m ctx c, loc_term (Tapp(Tvar d, [mk_def_storage ctx] @ params)))
-    | Mnth (n, CKfield (_, _, c),k) ->
+    | Mnth (n, CKfield (_, _, c, _, _), k) ->
       begin match ctx.lctx with
         | Logic | Inv | Def -> Tnth (dl n, map_mterm m ctx c, mk_ac_ctx n ctx)
         | _ ->
@@ -1948,7 +1948,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
           dl (Ttoview (dl (mk_field_id n), map_mterm m ctx c))) in
           mk_match (dl nth) "_a" (loc_term (Tvar "_a")) Enotfound
       end
-    | Mnth (n, CKcoll,k) ->
+    | Mnth (n, CKcoll _,k) ->
       let nth =  Tnth(
           dl (mk_view_id n),
           map_mterm m ctx k,
@@ -1965,9 +1965,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mcount (a, CKdef d) ->
       let params = get_def_params m d in
       Tcard (dl a, loc_term (Tapp (Tvar d, [mk_def_storage ctx] @ params)))
-    | Mcount (a, (CKfield (_, _, t))) ->
+    | Mcount (a, (CKfield (_, _, t, _, _))) ->
       Tcard (dl (mk_view_id a), dl (Ttoview (dl (mk_field_id a), map_mterm m ctx t)))
-    | Mcount (a, CKcoll) ->
+    | Mcount (a, CKcoll _) ->
       Tcard (dl (mk_view_id a), dl (Ttoview(dl a, mk_ac_ctx a ctx)))
     | Msum          (a, (CKview v),f) ->
       let cloneid = mk_sum_clone_id m a f in
@@ -1977,11 +1977,11 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | _ -> Tvsum(dl cloneid , map_mterm m ctx v, col)
       end
     | Msum (_, CKdef _, _) -> assert false
-    | Msum          (a, CKfield (_, _, v),f) ->
+    | Msum          (a, CKfield (_, _, v, _, _),f) ->
       let cloneid = mk_sum_clone_id m a f in
       let col = mk_ac_ctx a ctx in
       Tvsum(dl cloneid, dl (Ttoview(dl (mk_field_id a), map_mterm m ctx v)) ,col)
-    | Msum (a, CKcoll,f) ->
+    | Msum (a, CKcoll _,f) ->
       let cloneid = mk_sum_clone_id m a f in
       let col = mk_ac_ctx a ctx in
       begin match ctx.lctx with
@@ -1994,11 +1994,11 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | _ -> Tvhead(dl (mk_view_id n), map_mterm m ctx v, map_mterm m ctx c)
       end
     | Mhead (_, CKdef _, _) -> assert false
-    | Mhead (n, CKfield (_, _, c), v) ->
+    | Mhead (n, CKfield (_, _, c, _, _), v) ->
       Tvhead(dl (mk_view_id n),
              map_mterm m ctx v,
              dl (Ttoview (dl (mk_field_id n), map_mterm m ctx c)))
-    | Mhead (n, CKcoll, v) ->
+    | Mhead (n, CKcoll _, v) ->
       begin match ctx.lctx with
         | Inv | Logic | Def -> Tvhead (dl n,  map_mterm m ctx v, mk_ac_ctx n ctx)
         | _ ->
@@ -2013,11 +2013,11 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | _ -> Tvtail(dl (mk_view_id n), map_mterm m ctx v, map_mterm m ctx c)
       end
     | Mtail  (_, CKdef _, _) -> assert false
-    | Mtail  (n, CKfield (_, _, c), v) ->
+    | Mtail  (n, CKfield (_, _, c, _, _), v) ->
       Tvtail(dl (mk_view_id n),
              map_mterm m ctx v,
              dl (Ttoview (dl (mk_field_id n), map_mterm m ctx c)))
-    | Mtail  (n, CKcoll, v) ->
+    | Mtail  (n, CKcoll _, v) ->
       begin match ctx.lctx with
         | Inv | Logic | Def -> Tvtail(dl n, map_mterm m ctx v, mk_ac_ctx n ctx)
         | _ ->
@@ -2318,11 +2318,11 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Msubsetof (n, c, x) -> begin
         let arg =
           match c,ctx.lctx with
-          | CKfield (_ ,_, c), ( Logic | Inv | Def) -> dl (Tfromfield(dl n,map_mterm m ctx c, mk_ac_ctx n ctx))
+          | CKfield (_ ,_, c, _, _), ( Logic | Inv | Def) -> dl (Tfromfield(dl n,map_mterm m ctx c, mk_ac_ctx n ctx))
           | CKview c,_  -> map_mterm m ctx c
-          | CKfield (_, _, c), _ -> dl (Ttoview (dl (mk_field_id n), map_mterm m ctx c))
-          | CKcoll, ( Logic | Inv | Def ) -> mk_ac_ctx n ctx
-          | CKcoll,_ -> dl (Ttoview (dl n, mk_ac_ctx n ctx))
+          | CKfield (_, _, c, _, _), _ -> dl (Ttoview (dl (mk_field_id n), map_mterm m ctx c))
+          | CKcoll _, ( Logic | Inv | Def ) -> mk_ac_ctx n ctx
+          | CKcoll _,_ -> dl (Ttoview (dl n, mk_ac_ctx n ctx))
           | CKdef _, _ -> assert false
         in
         match ctx.lctx with
@@ -2664,7 +2664,7 @@ let fold_exns m body : term list =
     | M.Mget (_, _, k) -> internal_fold_exn (acc @ [Texn Enotfound]) k
     | M.Mmapget (_ , _, c, k) -> internal_fold_exn (internal_fold_exn (acc @ [Texn Enotfound]) k) c
     | M.Mnth (_, CKview c, k) -> internal_fold_exn (internal_fold_exn (acc @ [Texn Enotfound]) c) k
-    | M.Mnth (_, CKcoll, k) -> internal_fold_exn ((acc @ [Texn Enotfound])) k
+    | M.Mnth (_, CKcoll _, k) -> internal_fold_exn ((acc @ [Texn Enotfound])) k
     | M.Mset (_, _, k, v) -> internal_fold_exn (internal_fold_exn (acc @ [Texn Enotfound]) k) v
     | M.Maddasset (_, i) -> internal_fold_exn (acc @ [Texn Ekeyexist]) i
     | M.Maddfield (a, f, c, i) ->
@@ -2674,8 +2674,8 @@ let fold_exns m body : term list =
     | M.Mremovefield (_,_,k,v) -> internal_fold_exn
                                     (internal_fold_exn (acc @ [Texn Enotfound]) k) v
     | M.Mremoveall (_a,_f,v) -> internal_fold_exn (acc @ [Texn Enotfound]) v
-    | M.Mremoveif (_, CKfield (_,_,k), _, _ ,_ ) -> internal_fold_exn (acc @ [Texn Enotfound]) k
-    | M.Mclear (_a,CKfield (_,_,k)) -> internal_fold_exn (acc @ [Texn Enotfound]) k
+    | M.Mremoveif (_, CKfield (_,_,k,_,_), _, _ ,_ ) -> internal_fold_exn (acc @ [Texn Enotfound]) k
+    | M.Mclear (_a,CKfield (_,_,k,_,_)) -> internal_fold_exn (acc @ [Texn Enotfound]) k
     | M.Moptget _ -> acc @ [Texn Enotfound]
     | M.Mfail InvalidCaller -> acc @ [Texn Einvalidcaller]
     | M.Mfail NoTransfer -> acc @ [Texn Enotransfer]
