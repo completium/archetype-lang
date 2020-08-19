@@ -56,14 +56,18 @@ let output (model : Model.model) =
               if !Options.opt_raw_ir
               then Format.fprintf fmt "%a@." Michelson.pp_ir ir
               else begin
-                match !Options.target with
-                | MichelsonStorage -> Format.fprintf fmt "%a@." Printer_michelson.pp_data (snd ir.storage)
-                | Michelson ->
-                  let michelson = Gen_michelson.to_michelson ir in
-                  if !Options.opt_raw_michelson
-                  then Format.fprintf fmt "%a@." Michelson.pp_michelson michelson
-                  else Format.fprintf fmt "%a@." Printer_michelson.pp_michelson michelson
-                | _ -> assert false
+                if !Options.opt_ir
+                then Format.fprintf fmt "%a@." Printer_michelson.pp_ir ir
+                else begin
+                  match !Options.target with
+                  | MichelsonStorage -> Format.fprintf fmt "%a@." Printer_michelson.pp_data (snd ir.storage)
+                  | Michelson ->
+                    let michelson = Gen_michelson.to_michelson ir in
+                    if !Options.opt_raw_michelson
+                    then Format.fprintf fmt "%a@." Michelson.pp_michelson michelson
+                    else Format.fprintf fmt "%a@." Printer_michelson.pp_michelson michelson
+                  | _ -> assert false
+                end
               end
           end
         | Whyml        ->
@@ -382,6 +386,8 @@ let main () =
       "--raw", Arg.Set Options.opt_raw, " Same as -r";
       "-ry", Arg.Set Options.opt_raw_whytree, " Print raw model tree";
       "--raw-whytree", Arg.Set Options.opt_raw_whytree, " Same as -r";
+      "-ir", Arg.Set Options.opt_ir, " Generate intermediate representation";
+      "--intermediate-representation", Arg.Set Options.opt_ir, " Same as -ri";
       "-ri", Arg.Set Options.opt_raw_ir, " Print raw intermediate representation";
       "--raw-ir", Arg.Set Options.opt_raw_ir, " Same as -ri";
       "-rm", Arg.Set Options.opt_raw_michelson, " Print raw michelson";

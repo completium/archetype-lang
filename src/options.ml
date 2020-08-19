@@ -46,6 +46,7 @@ let opt_extpt   = ref false
 let opt_ext     = ref false
 let opt_ast     = ref false
 let opt_typed   = ref false
+let opt_ir      = ref false
 let opt_all_parenthesis = ref false
 let opt_m     = ref false
 let opt_raw   = ref false

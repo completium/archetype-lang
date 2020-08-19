@@ -51,14 +51,105 @@ let rec pp_data fmt (d : data) =
   | Dlist l         -> Format.fprintf fmt "{ %a }" (pp_list "; " pp_data) l
   | Dplist l        -> Format.fprintf fmt "{ %a }" (pp_list "; " (fun fmt (x, y) -> Format.fprintf fmt "Elt %a %a" pp_data x pp_data y)) l
 
+let pp_id fmt i = Format.fprintf fmt "%s" i
 
 let rec pp_instruction fmt (i : instruction) =
+  let f = pp_instruction in
+  match i with
+  | Iseq l -> (pp_list ";@\n" f) fmt l
+  | IletIn (id, v, b) -> Format.fprintf fmt "let %a = %a in@\n  @[%a@]" pp_id id f v f b
+  | Ivar id -> pp_id fmt id
+  | Icall (id, args) -> Format.fprintf fmt "%a(%a)" pp_id id (pp_list ", " f) args
+  | Iassign (id, _, v) -> Format.fprintf fmt "%a := %a" pp_id id f v
+  | Izop op -> begin
+      match op with
+      | Znow               -> pp_id fmt "now"
+      | Zamount            -> pp_id fmt "amount"
+      | Zbalance           -> pp_id fmt "balance"
+      | Zsource            -> pp_id fmt "source"
+      | Zsender            -> pp_id fmt "sender"
+      | Zaddress           -> pp_id fmt "address"
+      | Zchain_id          -> pp_id fmt "chain_id"
+      | Zself_address      -> pp_id fmt "self_address"
+    end
+  | Iunop (op, e) -> begin
+      match op with
+      | Ucar      -> Format.fprintf fmt "car(%a)"      f e
+      | Ucdr      -> Format.fprintf fmt "cdr(%a)"      f e
+      | Uminus    -> Format.fprintf fmt "-(%a)"        f e
+      | Uneg      -> Format.fprintf fmt "neg(%a)"      f e
+      | Uint      -> Format.fprintf fmt "int(%a)"      f e
+      | Unot      -> Format.fprintf fmt "not(%a)"      f e
+      | Uabs      -> Format.fprintf fmt "abs(%a)"      f e
+      | Uisnat    -> Format.fprintf fmt "isnat(%a)"    f e
+      | Usome     -> Format.fprintf fmt "some(%a)"     f e
+      | Usize     -> Format.fprintf fmt "size(%a)"     f e
+      | Upack     -> Format.fprintf fmt "pack(%a)"     f e
+      | Uunpack t -> Format.fprintf fmt "unpack<%a>(%a)" pp_type t f e
+      | Ublake2b  -> Format.fprintf fmt "blake2b(%a)"  f e
+      | Usha256   -> Format.fprintf fmt "sha256(%a)"   f e
+      | Usha512   -> Format.fprintf fmt "sha512(%a)"   f e
+      | Uhash_key -> Format.fprintf fmt "hash_key(%a)" f e
+    end
+  | Ibinop (op, lhs, rhs) -> begin
+      match op with
+      | Badd       -> Format.fprintf fmt "(%a) * (%a)"       f lhs f rhs
+      | Bsub       -> Format.fprintf fmt "(%a) - (%a)"       f lhs f rhs
+      | Bmul       -> Format.fprintf fmt "(%a) * (%a)"       f lhs f rhs
+      | Bediv      -> Format.fprintf fmt "(%a) / (%a)"       f lhs f rhs
+      | Blsl       -> Format.fprintf fmt "(%a) << (%a)"      f lhs f rhs
+      | Blsr       -> Format.fprintf fmt "(%a) >> (%a)"      f lhs f rhs
+      | Bor        -> Format.fprintf fmt "(%a) or (%a)"      f lhs f rhs
+      | Band       -> Format.fprintf fmt "(%a) and (%a)"     f lhs f rhs
+      | Bxor       -> Format.fprintf fmt "xor (%a, %a)"      f lhs f rhs
+      | Bcompare   -> Format.fprintf fmt "compare (%a, %a)"  f lhs f rhs
+      | Beq        -> Format.fprintf fmt "(%a) = (%a)"       f lhs f rhs
+      | Bneq       -> Format.fprintf fmt "(%a) <> (%a)"      f lhs f rhs
+      | Blt        -> Format.fprintf fmt "(%a) < (%a)"       f lhs f rhs
+      | Bgt        -> Format.fprintf fmt "(%a) > (%a)"       f lhs f rhs
+      | Ble        -> Format.fprintf fmt "(%a) <= (%a)"      f lhs f rhs
+      | Bge        -> Format.fprintf fmt "(%a) >= (%a)"      f lhs f rhs
+      | Bget       -> Format.fprintf fmt "get(%a, %a)"       f lhs f rhs
+      | Bmem       -> Format.fprintf fmt "mem(%a, %a)"       f lhs f rhs
+      | Bconcat    -> Format.fprintf fmt "concat(%a, %a)"    f lhs f rhs
+      | Bcons      -> Format.fprintf fmt "cons(%a, %a)"      f lhs f rhs
+    end
+  | Iterop (op, a1, a2, a3) -> begin
+      match op with
+      | Tcheck_signature -> Format.fprintf fmt "check_signature(%a, %a, %a)" f a1 f a2 f a3
+      | Tslice           -> Format.fprintf fmt "slice(%a, %a, %a)"           f a1 f a2 f a3
+      | Tupdate          -> Format.fprintf fmt "update(%a, %a, %a)"          f a1 f a2 f a3
+    end
+  | Iconst (t, e) -> Format.fprintf fmt "const(%a : %a)" pp_data e pp_type t
+  | Iif (c, t, e) -> Format.fprintf fmt "if (%a)@\nthen @[%a@]@\nelse @[%a@]@\n" f c f t f e
+  | Ifail e -> Format.fprintf fmt "fail(%a)" f e
+
+let pp_func fmt (f : func) =
+  Format.fprintf fmt "function %s (%a) : %a {@\n  @[%a@]@\n}@\n "
+    f.name
+    (pp_list ", " (fun fmt (id, t) -> Format.fprintf fmt "%s : %a" id pp_type t)) f.args
+    pp_type f.ret
+    pp_instruction f.body
+
+let pp_entry fmt (e : entry) =
+  Format.fprintf fmt "entry %s (%a) {@\n  @[%a@]@\n}@\n "
+    e.name
+    (pp_list ", " (fun fmt (id, t) -> Format.fprintf fmt "%s : %a" id pp_type t)) e.args
+    pp_instruction e.body
+
+let pp_ir fmt (ir : ir) =
+  Format.fprintf fmt "storage_type: %a@\n@\n" pp_type (fst ir.storage);
+  Format.fprintf fmt "storage_data: %a@\n@\n" pp_data (snd ir.storage);
+  (pp_list "@\n@\n" pp_func) fmt ir.funs;
+  (pp_list "@\n@\n" pp_entry) fmt ir.entries
+
+let rec pp_code fmt (i : code) =
   let pp_inc fmt i =
     match i with
     | 0 -> ()
     | _ -> Format.fprintf fmt " 0"
   in
-  let fs fmt = Format.fprintf fmt "{ @[%a@] }" (pp_list ";@\n" pp_instruction) in
+  let fs fmt = Format.fprintf fmt "{ @[%a@] }" (pp_list ";@\n" pp_code) in
   match i with
   | SEQ l               -> fs fmt l
   | DROP i              -> Format.fprintf fmt "DROP%a" pp_inc i
@@ -153,7 +244,7 @@ let pp_michelson fmt (m : michelson) =
      }"
     pp_type m.storage
     pp_type m.parameter
-    pp_instruction m.code
+    pp_code m.code
 
 (* -------------------------------------------------------------------------- *)
 
