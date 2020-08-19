@@ -71,6 +71,7 @@ let rec pp_instruction fmt (i : instruction) =
       | Zaddress           -> pp_id fmt "address"
       | Zchain_id          -> pp_id fmt "chain_id"
       | Zself_address      -> pp_id fmt "self_address"
+      | Znone t            -> Format.fprintf fmt "none(%a)" pp_type t
     end
   | Iunop (op, e) -> begin
       match op with
@@ -100,7 +101,7 @@ let rec pp_instruction fmt (i : instruction) =
       | Blsr       -> Format.fprintf fmt "(%a) >> (%a)"      f lhs f rhs
       | Bor        -> Format.fprintf fmt "(%a) or (%a)"      f lhs f rhs
       | Band       -> Format.fprintf fmt "(%a) and (%a)"     f lhs f rhs
-      | Bxor       -> Format.fprintf fmt "xor (%a, %a)"      f lhs f rhs
+      | Bxor       -> Format.fprintf fmt "(%a) ^ (%a)"       f lhs f rhs
       | Bcompare   -> Format.fprintf fmt "compare (%a, %a)"  f lhs f rhs
       | Beq        -> Format.fprintf fmt "(%a) = (%a)"       f lhs f rhs
       | Bneq       -> Format.fprintf fmt "(%a) <> (%a)"      f lhs f rhs
@@ -112,6 +113,7 @@ let rec pp_instruction fmt (i : instruction) =
       | Bmem       -> Format.fprintf fmt "mem(%a, %a)"       f lhs f rhs
       | Bconcat    -> Format.fprintf fmt "concat(%a, %a)"    f lhs f rhs
       | Bcons      -> Format.fprintf fmt "cons(%a, %a)"      f lhs f rhs
+      | Bpair      -> Format.fprintf fmt "pair(%a, %a)"      f lhs f rhs
     end
   | Iterop (op, a1, a2, a3) -> begin
       match op with

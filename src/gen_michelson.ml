@@ -218,7 +218,12 @@ let to_ir (model : M.model) : T.ir =
     | Mnone    -> assert false
     | Msome _v -> assert false
 
-    | Mtuple     _l -> assert false
+    | Mtuple     l -> begin
+        match List.rev l with
+        | []  -> T.iunit
+        | [e] -> f e
+        | e::t -> List.fold_left (fun accu x -> T.Ibinop (Bpair, f x, accu)) (f e) t
+      end
     | Masset     _l -> assert false
     | Massets    _l -> assert false
     | Mlitset    _l -> assert false
@@ -293,7 +298,7 @@ let to_ir (model : M.model) : T.ir =
     (* utils *)
 
     | Mcast (_src, _dst, _v) -> assert false
-    | Mtupleaccess (_x, _k)  -> assert false
+    | Mtupleaccess (x, n)    -> Tools.foldi (fun x -> T.Iunop (Ucdr, x)) (f x) (Big_int.int_of_big_int n)
 
     (* set api expression *)
 
@@ -313,8 +318,8 @@ let to_ir (model : M.model) : T.ir =
 
     (* map api expression *)
 
-    | Mmapput (_, _, _c, _k, _v)  -> assert false
-    | Mmapremove (_, _tv, _c, _k) -> assert false
+    | Mmapput (_, _, c, k, v)     -> T.Iterop (Tupdate, f c, T.isome (f v), f k)
+    | Mmapremove (_, tv, c, k)    -> T.Iterop (Tupdate, f c, T.inone (ft tv), f k)
     | Mmapget (_, _, _c, _k)      -> assert false
     | Mmapgetopt (_, _, c, k)     -> T.Ibinop (Bget, f c, f k)
     | Mmapcontains (_, _, c, k)   -> T.Ibinop (Bmem, f c, f k)
@@ -361,12 +366,12 @@ let to_ir (model : M.model) : T.ir =
     (* variable *)
 
     | Mvar (_an, Vassetstate _k) -> assert false
-    | Mvar (_v, Vstorevar)       -> assert false
+    | Mvar (v, Vstorevar)        -> T.Ivar (unloc v)
     | Mvar (_v, Vstorecol)       -> assert false
     | Mvar (_v, Venumval)        -> assert false
     | Mvar (_v, Vdefinition)     -> assert false
     | Mvar (v, Vlocal)           -> T.Ivar (unloc v)
-    | Mvar (_v, Vparam)          -> assert false
+    | Mvar (v, Vparam)           -> T.Ivar (unloc v)
     | Mvar (_v, Vfield)          -> assert false
     | Mvar (_, Vthe)             -> assert false
     | Mvar (_, Vstate)           -> assert false
@@ -468,6 +473,7 @@ let to_michelson (ir : T.ir) : T.michelson =
         | Zaddress           -> T.ADDRESS
         | Zchain_id          -> T.CHAIN_ID
         | Zself_address      -> T.SEQ [T.SELF; T.ADDRESS]
+        | Znone t            -> T.NONE t
       end
     | Iunop (op, e) -> begin
         let op =
@@ -514,10 +520,11 @@ let to_michelson (ir : T.ir) : T.michelson =
           | Bmem       -> T.MEM
           | Bconcat    -> T.CONCAT
           | Bcons      -> T.CONS
+          | Bpair      -> T.PAIR
         in
-        let lhs = f lhs in
         let rhs = f rhs in
-        T.SEQ [lhs; rhs; op]
+        let lhs = f lhs in
+        T.SEQ [rhs; lhs; op]
       end
     | Iterop (op, a1, a2, a3) -> begin
         let op =

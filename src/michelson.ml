@@ -61,6 +61,7 @@ type z_operator =
   | Zaddress
   | Zchain_id
   | Zself_address
+  | Znone of type_
 [@@deriving show {with_path = false}]
 
 type un_operator =
@@ -102,6 +103,7 @@ type bin_operator =
   | Bmem
   | Bconcat
   | Bcons
+  | Bpair
 [@@deriving show {with_path = false}]
 
 type ter_operator =
@@ -272,6 +274,10 @@ let ifalse    = Iconst (mk_type Tbool, Dfalse)
 let iint n    = Iconst (mk_type Tint,  Dint n)
 let inat n    = Iconst (mk_type Tnat,  Dint n)
 let istring s = Iconst (mk_type Tstring,  Dstring s)
+let isome   s = Iunop  (Usome, s)
+let inone   t = Izop   (Znone t)
+let iunit     = Iconst (mk_type Tunit, Dunit)
+
 (* -------------------------------------------------------------------- *)
 
 let ctrue     = PUSH (mk_type Tbool, Dtrue)

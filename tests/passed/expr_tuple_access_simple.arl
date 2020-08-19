@@ -1,0 +1,10 @@
+archetype expr_tuple_access_simple
+
+variable n : nat = 0
+
+entry exec () {
+  effect {
+    var tuple : (nat * nat * nat) = (1, 2, 3);
+    n := tuple[2]
+  }
+}

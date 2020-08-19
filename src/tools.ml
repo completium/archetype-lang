@@ -30,6 +30,14 @@ let pair x y = (x, y)
 
 let (%>) f g = fun x -> g (f x)
 
+let foldi f accu n =
+  let rec aux f accu n =
+    if n <= 0
+    then accu
+    else aux f (f accu) (n - 1)
+  in
+  aux f accu n
+
 (* -------------------------------------------------------------------- *)
 module String : sig
   include module type of String
@@ -350,7 +358,7 @@ end = struct
 
   let count (f : 'a -> bool) =
     let rec doit acc = function
-      | []      -> acc 
+      | []      -> acc
       | x :: xs -> doit (acc + if f x then 1 else 0) xs
     in fun xs -> doit 0 xs
 
