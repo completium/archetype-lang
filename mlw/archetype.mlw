@@ -107,6 +107,8 @@ module Utils
      div n d
   end
 
+  val function xor_int int int : int
+
   (* ------------------------------------------------------------------------ *)
   (* Rational *)
 
@@ -285,6 +287,7 @@ module Utils
   (* ----------------------------------------------------------------------- *)
   (* bool *)
   let function neq_bool (a : bool) (b : bool) : bool = not (a && b)
+  let function xor_bool (a : bool) (b : bool) : bool = (a || b) && not (a && b)
 
   (* ------------------------------------------------------------------------ *)
   axiom inv_pack_unpack: forall x : bytes. exists a : int. unpack(x) = Some(a) -> pack(a) = x
@@ -510,6 +513,10 @@ module ListUtils
   ensures { forall k. mem k result -> mem k l }
   ensures { 0 <= n <= length l -> length result = n }
   = reverse (head n (reverse l))
+
+  (* ------------------------------------------------------------------------ *)
+  predicate subset (l1 : list 't) (l2 : list 't) =
+  forall e. mem e l1 -> mem e l2
 
 end
 
@@ -772,6 +779,9 @@ module View
 
   (* ------------------------------------------------------------------------ *)
   lemma eqvP : forall v1 v2. eq v1 v2 <-> v1 = v2
+
+  (* ------------------------------------------------------------------------ *)
+  predicate subset (v1 : view) (v2 : view) = I.subset v1.content v2.content
 
 end
 
