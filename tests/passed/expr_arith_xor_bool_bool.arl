@@ -1,4 +1,4 @@
-archetype expr_arith_and_bool_bool
+archetype expr_arith_xor_bool_bool
 
 variable res : bool = false
 

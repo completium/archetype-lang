@@ -1,0 +1,15 @@
+archetype expr_record_lit
+
+record my_record {
+  id : string;
+  v  : int;
+  n  : nat;
+}
+
+variable res : my_record = {""; 0i; 0}
+
+entry exec () {
+  effect {
+    res := {id = "mystr"; v = 1i; n = 3}
+  }
+}

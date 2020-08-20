@@ -1,0 +1,12 @@
+archetype expr_map_lit
+
+variable res : map<nat, string> = []
+
+entry exec () {
+  specification {
+    s0: map_length(res) = 3;
+  }
+  effect {
+    res := [(0, "0"); (1, "1"); (2, "2")];
+  }
+}

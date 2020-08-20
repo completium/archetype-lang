@@ -80,9 +80,10 @@ let to_ir (model : M.model) : T.ir =
       | Ttuple lt    -> to_one_type (List.map to_type lt) |> fun x -> x.node
       | Tset t -> T.Tset (to_type t)
       | Tmap (b, k, v) -> if b then T.Tbig_map (to_type k, to_type v) else T.Tmap (to_type k, to_type v)
-      | Trecord _id -> begin
-          (* TODO *)
-          assert false
+      | Trecord id -> begin
+          let r = M.Utils.get_record model (unloc id) in
+          let lt = List.map (fun (x : M.record_field) -> x.type_) r.fields in
+          to_one_type (List.map to_type lt) |> fun x -> x.node
         end
       | Tunit -> T.Tunit
       | Toperation -> T.Toperation
@@ -115,7 +116,7 @@ let to_ir (model : M.model) : T.ir =
     | Mlitlist   l      -> T.Dlist (List.map to_data l)
     | Mlitmap    l      -> T.Dplist (List.map (fun (x, y) -> to_data x, to_data y) l)
     | Muminus    v      -> to_data v |> (function | T.Dint n -> T.Dint (Big_int.mult_int_big_int (-1) n) | _ -> assert false )
-    (* | Mlitrecord l -> to_data v *)
+    | Mlitrecord l      -> to_one_data (List.map (to_data |@ snd) l)
     | Mnattoint v
     | Mnattorat v
     | Minttorat v
@@ -253,8 +254,16 @@ let to_ir (model : M.model) : T.ir =
       end
     | Masset     _l -> assert false
     | Massets    _l -> assert false
-    | Mlitset    _l -> assert false
-    | Mlitlist   _l -> assert false
+    | Mlitset    l -> begin
+        match mtt.type_ with
+        |  M.Tset t -> T.Iset (ft t, List.map f l)
+        | _ -> assert false
+      end
+    | Mlitlist   l ->  begin
+        match mtt.type_ with
+        |  M.Tlist t -> T.Ilist (ft t, List.map f l)
+        | _ -> assert false
+      end
     | Mlitmap    l -> begin
         match mtt.type_ with
         | M.Tmap (true, k, v)  (* TODO: big map *)
@@ -332,7 +341,7 @@ let to_ir (model : M.model) : T.ir =
 
     | Msetadd (_, c, a)        -> T.Iterop (Tupdate, f c, f a, T.itrue)
     | Msetremove (_, c, a)     -> T.Iterop (Tupdate, f c, f a, T.ifalse)
-    | Msetcontains (_, c, k)   -> T.Ibinop (Bmem, f c, f k)
+    | Msetcontains (_, c, k)   -> T.Ibinop (Bmem, f k, f c)
     | Msetlength (_, c)        -> T.Iunop  (Usize, f c)
 
 
@@ -510,23 +519,28 @@ let to_michelson (ir : T.ir) : T.michelson =
     match i with
     | Iseq l               -> seq env l
     | IletIn (id, v, b)    -> begin
-        let v, env = f v in
-        let env = add_var_env env id in
-        let b, env = fe env b in
+        let v, _ = f v in
+        let env0 = add_var_env env id in
+        let b, _ = fe env0 b in
         T.SEQ [v; b; T.DROP 0], env
       end
     | Ivar id              -> begin
         let n = get_sp_for_id env id in
-        Format.eprintf "%a@." pp_env env;
-        Format.eprintf "var %s: %i@." id n;
-        T.SEQ [ T.DIG n; T.DUP; T.DUG (n + 1)], env
+        (* Format.eprintf "%a@." pp_env env; *)
+        (* Format.eprintf "var %s: %i@." id n; *)
+        let c =
+          if n = 0
+          then T.DUP
+          else T.SEQ [ T.DIG n; T.DUP; T.DUG (n + 1)]
+        in
+        c, env
       end
     | Icall (_id, _args)   -> assert false
     | Iassign (id, _, v)  -> begin
         let n = get_sp_for_id env id in
-        let v, env0 = f v in
-        Format.eprintf "%a@." pp_env env0;
-        Format.eprintf "assign %s: %i@." id n;
+        let v, _env0 = f v in
+        (* Format.eprintf "%a@." pp_env _env0; *)
+        (* Format.eprintf "assign %s: %i@." id n; *)
         let c =
           if n <= 0
           then T.SEQ [ v; T.SWAP; T.DROP 0 ]
@@ -625,24 +639,29 @@ let to_michelson (ir : T.ir) : T.michelson =
     | Iconst (t, e) -> T.PUSH (t, e), inc_env env
     | Iif (_c, _t, _e) -> assert false
     | Iwhile (_c, _b) -> assert false
-    (* | Iset (t, l) -> begin
-        T.SEQ ([T.EMPTY_SET t] @ List.map (fun x -> T.SEQ [T.ctrue; f x; T.UPDATE ] ) l)
-       end
-       | Ilist (t, _l) -> begin
-        T.NIL t, inc_env env
-       end
-       | Imap (k, v, l) -> begin
-        T.SEQ ([T.EMPTY_MAP (k, v)] @ List.map (fun (x, y) -> T.SEQ [f y; T.SOME; f x; T.UPDATE ] ) l), inc_env env
-       end
-       | Irecord l -> begin
+    | Iset (t, l) -> begin
+        T.SEQ ((T.EMPTY_SET t)::(l |> List.rev |> List.map (fun x -> let x, _ = f x in T.SEQ [T.ctrue; x; T.UPDATE ] ))), inc_env env
+      end
+    | Ilist (t, l) -> begin
+        T.SEQ ((T.NIL t)::(l |> List.rev |> List.map (fun x -> let x, _ = f x in T.SEQ [ x; T.CONS ] ))), inc_env env
+      end
+    | Imap (k, v, l) -> begin
+        T.SEQ ([T.EMPTY_MAP (k, v)] @
+               (l
+                |> List.rev
+                |> List.map (fun (x, y) ->
+                    let y, _ = f y in
+                    let x, _ = f x in
+                    T.SEQ [y; T.SOME; x; T.UPDATE ] ))), inc_env env
+      end
+    | Irecord l -> begin
         match List.rev l with
-        | []  -> T.SEQ []
+        | []  -> T.SEQ [], inc_env env
         | [e] -> f e
         | a::q -> begin
-            T.SEQ [List.fold_left (fun accu x -> T.SEQ [accu; f x; T.PAIR] ) (f a) q ]
+            (T.SEQ [let a, _ = f a in List.fold_left (fun accu x -> let x, _ = f x in T.SEQ [accu; x; T.PAIR] ) a q ]), inc_env env
           end
-       end *)
-    | _ -> assert false
+      end
   in
 
   let convert (e : T.entry) : T.code =

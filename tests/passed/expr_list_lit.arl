@@ -1,0 +1,12 @@
+archetype expr_list_lit
+
+variable res : list<string> = []
+
+entry exec () {
+  specification {
+    s0: length(res) = 3;
+  }
+  effect {
+    res := ["1"; "2"; "3"];
+  }
+}
