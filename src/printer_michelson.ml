@@ -128,6 +128,7 @@ let rec pp_instruction fmt (i : instruction) =
   | Ilist (t, l)   -> Format.fprintf fmt "list<%a>[%a]" pp_type t (pp_list "; " f) l
   | Imap (k, v, l) -> Format.fprintf fmt "map<%a, %a>[%a]" pp_type k pp_type v (pp_list "; " (fun fmt (vk, vv) -> Format.fprintf fmt "%a : %a" f vk f vv)) l
   | Irecord l      -> Format.fprintf fmt "record[%a]" (pp_list "; " f) l
+  | Iwhile _ -> assert false
 
 let pp_func fmt (f : func) =
   Format.fprintf fmt "function %s (%a) : %a {@\n  @[%a@]@\n}@\n "

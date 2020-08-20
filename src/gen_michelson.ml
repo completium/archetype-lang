@@ -559,6 +559,7 @@ let to_michelson (ir : T.ir) : T.michelson =
       end
     | Iconst (t, e) -> T.PUSH (t, e)
     | Iif (_c, _t, _e) -> assert false
+    | Iwhile (_c, _b) -> assert false
     | Iset (t, l) -> begin
         T.SEQ ([T.EMPTY_SET t] @ List.map (fun x -> T.SEQ [T.ctrue; f x; T.UPDATE ] ) l)
       end
