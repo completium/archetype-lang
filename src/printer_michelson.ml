@@ -90,6 +90,7 @@ let rec pp_instruction fmt (i : instruction) =
       | Usha256   -> Format.fprintf fmt "sha256(%a)"   f e
       | Usha512   -> Format.fprintf fmt "sha512(%a)"   f e
       | Uhash_key -> Format.fprintf fmt "hash_key(%a)" f e
+      | Ufail     -> Format.fprintf fmt "fail(%a)"     f e
     end
   | Ibinop (op, lhs, rhs) -> begin
       match op with
@@ -101,7 +102,7 @@ let rec pp_instruction fmt (i : instruction) =
       | Blsr       -> Format.fprintf fmt "(%a) >> (%a)"      f lhs f rhs
       | Bor        -> Format.fprintf fmt "(%a) or (%a)"      f lhs f rhs
       | Band       -> Format.fprintf fmt "(%a) and (%a)"     f lhs f rhs
-      | Bxor       -> Format.fprintf fmt "(%a) ^ (%a)"       f lhs f rhs
+      | Bxor       -> Format.fprintf fmt "(%a) xor (%a)"     f lhs f rhs
       | Bcompare   -> Format.fprintf fmt "compare (%a, %a)"  f lhs f rhs
       | Beq        -> Format.fprintf fmt "(%a) = (%a)"       f lhs f rhs
       | Bneq       -> Format.fprintf fmt "(%a) <> (%a)"      f lhs f rhs
@@ -123,7 +124,6 @@ let rec pp_instruction fmt (i : instruction) =
     end
   | Iconst (t, e)  -> Format.fprintf fmt "const(%a : %a)" pp_data e pp_type t
   | Iif (c, t, e)  -> Format.fprintf fmt "if (%a)@\nthen @[%a@]@\nelse @[%a@]@\n" f c f t f e
-  | Ifail e        -> Format.fprintf fmt "fail(%a)" f e
   | Iset (t, l)    -> Format.fprintf fmt "set<%a>[%a]" pp_type t (pp_list "; " f) l
   | Ilist (t, l)   -> Format.fprintf fmt "list<%a>[%a]" pp_type t (pp_list "; " f) l
   | Imap (k, v, l) -> Format.fprintf fmt "map<%a, %a>[%a]" pp_type k pp_type v (pp_list "; " (fun fmt (vk, vv) -> Format.fprintf fmt "%a : %a" f vk f vv)) l

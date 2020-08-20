@@ -80,6 +80,7 @@ type un_operator =
   | Usha256
   | Usha512
   | Uhash_key
+  | Ufail
 [@@deriving show {with_path = false}]
 
 type bin_operator =
@@ -118,18 +119,18 @@ type place =
 [@@deriving show {with_path = false}]
 
 type instruction =
+  | Iseq    of instruction list
   | IletIn  of ident * instruction * instruction
   | Ivar    of ident
   | Icall   of ident * instruction list
   | Iassign of ident * place * instruction
+  | Iif     of instruction * instruction * instruction
+  | Iwhile  of instruction * instruction
   | Izop    of z_operator
   | Iunop   of un_operator * instruction
   | Ibinop  of bin_operator * instruction * instruction
   | Iterop  of ter_operator * instruction * instruction * instruction
   | Iconst  of type_ * data
-  | Iif     of instruction * instruction * instruction
-  | Ifail   of instruction
-  | Iseq    of instruction list
   | Iset    of type_ * instruction list
   | Ilist   of type_ * instruction list
   | Imap    of type_ * type_ * (instruction * instruction) list

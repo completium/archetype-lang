@@ -196,7 +196,7 @@ let to_ir (model : M.model) : T.ir =
           | AssignNat            -> T.istring "AssignNat"
           | InvalidState         -> T.istring "InvalidState"
         in
-        T.Ifail x
+        T.Iunop  (Ufail, x)
       end
     | Mtransfer (_v, _k) -> assert false
 
@@ -511,6 +511,7 @@ let to_michelson (ir : T.ir) : T.michelson =
           | Usha256   -> T.SHA256
           | Usha512   -> T.SHA512
           | Uhash_key -> T.HASH_KEY
+          | Ufail     -> T.FAILWITH
         in
         let e = f e in
         T.SEQ [e; op]
@@ -551,17 +552,13 @@ let to_michelson (ir : T.ir) : T.michelson =
           | Tslice           -> T.SLICE
           | Tupdate          -> T.UPDATE
         in
-        let a1 = f a1 in
-        let a2 = f a2 in
         let a3 = f a3 in
-        T.SEQ [a1; a2; a3; op]
+        let a2 = f a2 in
+        let a1 = f a1 in
+        T.SEQ [a3; a2; a1; op]
       end
     | Iconst (t, e) -> T.PUSH (t, e)
     | Iif (_c, _t, _e) -> assert false
-    | Ifail e       -> begin
-        let e = f e in
-        T.SEQ [e; T.FAILWITH]
-      end
     | Iset (t, l) -> begin
         T.SEQ ([T.EMPTY_SET t] @ List.map (fun x -> T.SEQ [T.ctrue; f x; T.UPDATE ] ) l)
       end
