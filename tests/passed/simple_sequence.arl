@@ -8,6 +8,6 @@ entry exec () {
   effect {
     n := 3;
     str := "mystring";
-    n := 2 + n;
+    n += 2;
   }
 }

@@ -1,6 +1,7 @@
 open Ident
 open Location
 open Tools
+open Printer_tools
 
 module M = Model
 module T = Michelson
@@ -10,15 +11,19 @@ exception Anomaly of string
 type error_desc =
   | FieldNotFoundFor of string * string
   | UnsupportedTerm of string
+  | StackEmtptyDec
+  | StackIdNotFound of string * string list
   | TODO
 [@@deriving show {with_path = false}]
 
 let pp_error_desc fmt e =
   let pp s = Format.fprintf fmt s in
   match e with
-  | TODO                      -> pp "TODO"
-  | FieldNotFoundFor (rn, fn) -> pp "Field not found for record '%s' and field '%s'" rn fn
-  | UnsupportedTerm s         -> pp "UnsupportedTerm: %s" s
+  | TODO                       -> pp "TODO"
+  | FieldNotFoundFor (rn, fn)  -> pp "Field not found for record '%s' and field '%s'" rn fn
+  | UnsupportedTerm s          -> pp "UnsupportedTerm: %s" s
+  | StackEmtptyDec             -> pp "StackEmtptyDec"
+  | StackIdNotFound (id, vars) -> pp "StackIdNotFound: %s on [%a]" id (pp_list "; " (fun fmt x -> Format.fprintf fmt "%s" x)) vars
 
 let emit_error (desc : error_desc) =
   let str = Format.asprintf "%a@." pp_error_desc desc in
@@ -470,151 +475,180 @@ let to_ir (model : M.model) : T.ir =
   T.mk_ir storage_type storage_data l entries
 
 type env = {
-  sp: int;
   vars : ident list;
 }
 [@@deriving show {with_path = false}]
 
-let mk_env ?(vars=[]) () = { sp = 0; vars = vars}
-let add_sp_env (env : env) n = { env with sp = env.sp + n }
-let inc_env (env : env) = add_sp_env env 1
-let dec_env (env : env) = add_sp_env env (-1)
-let add_var_env (env : env) id = { env with sp = env.sp + 1; vars = env.vars @ [id] }
-let get_sp_for_id (env : env) id =  List.index_of (String.equal id) env.vars
+let mk_env ?(vars=[]) () = { vars = vars}
+let inc_env (env : env) = { env with vars = "_"::env.vars }
+let dec_env (env : env) = { env with vars = match env.vars with | _::t -> t | _ -> emit_error StackEmtptyDec }
+let add_var_env (env : env) id = { env with vars = id::env.vars }
+let get_sp_for_id (env : env) id =
+  match List.index_of (String.equal id) env.vars with
+  | -1 -> emit_error (StackIdNotFound (id, env.vars))
+  | v -> v
 
 let to_michelson (ir : T.ir) : T.michelson =
   let storage = ir.storage_type in
   let parameter = T.mk_type T.Tunit in
   let default = T.SEQ [T.CDR; T.NIL (T.mk_type Toperation); T.PAIR ] in
 
-  let rec instruction_to_code env (i : T.instruction) : T.code =
+  let rec instruction_to_code env (i : T.instruction) : T.code * env =
     let fe env = instruction_to_code env in
     let f = fe env in
+
+    let seq env l =
+      match l with
+      | []   -> T.SEQ [], env
+      | [e]  -> f e
+      | e::t ->
+        List.fold_left (fun (a, env) x -> begin
+              let v, env = fe env x in (T.SEQ [a; v], env)
+            end ) (f e) t
+    in
+
     match i with
-    | Iseq l               -> (T.SEQ (List.map f l))
+    | Iseq l               -> seq env l
     | IletIn (id, v, b)    -> begin
-        let v = f v in
+        let v, env = f v in
         let env = add_var_env env id in
-        let b = fe env b in
-        T.SEQ [v; b; T.DROP 0]
+        let b, env = fe env b in
+        T.SEQ [v; b; T.DROP 0], env
       end
     | Ivar id              -> begin
         let n = get_sp_for_id env id in
         Format.eprintf "%a@." pp_env env;
         Format.eprintf "var %s: %i@." id n;
-        T.SEQ [ T.DIG n; T.DUP; T.DUG (n + 1)]
+        T.SEQ [ T.DIG n; T.DUP; T.DUG (n + 1)], env
       end
     | Icall (_id, _args)   -> assert false
     | Iassign (id, _, v)  -> begin
         let n = get_sp_for_id env id in
-        Format.eprintf "%a@." pp_env env;
+        let v, env0 = f v in
+        Format.eprintf "%a@." pp_env env0;
         Format.eprintf "assign %s: %i@." id n;
-        if n <= 0
-        then T.SEQ [ T.DROP 0; f v]
-        else T.SEQ [ T.DIG n; T.DROP 0; f v; T.DUG n]
+        let c =
+          if n <= 0
+          then T.SEQ [ v; T.SWAP; T.DROP 0 ]
+          else T.SEQ [ v; (T.DIP (1, [T.DIG n; T.DROP 0])); T.DUG n]
+        in
+        c, env
       end
     | Izop op -> begin
-        match op with
-        | Znow               -> T.NOW
-        | Zamount            -> T.AMOUNT
-        | Zbalance           -> T.BALANCE
-        | Zsource            -> T.SOURCE
-        | Zsender            -> T.SENDER
-        | Zaddress           -> T.ADDRESS
-        | Zchain_id          -> T.CHAIN_ID
-        | Zself_address      -> T.SEQ [T.SELF; T.ADDRESS]
-        | Znone t            -> T.NONE t
+        let c =
+          match op with
+          | Znow               -> T.NOW
+          | Zamount            -> T.AMOUNT
+          | Zbalance           -> T.BALANCE
+          | Zsource            -> T.SOURCE
+          | Zsender            -> T.SENDER
+          | Zaddress           -> T.ADDRESS
+          | Zchain_id          -> T.CHAIN_ID
+          | Zself_address      -> T.SEQ [T.SELF; T.ADDRESS]
+          | Znone t            -> T.NONE t
+        in
+        c, inc_env env
       end
     | Iunop (op, e) -> begin
-        let op =
-          match op with
-          | Ucar      -> T.CAR
-          | Ucdr      -> T.CDR
-          | Uneg      -> T.NEG
-          | Uint      -> T.INT
-          | Unot      -> T.NOT
-          | Uabs      -> T.ABS
-          | Uisnat    -> T.ISNAT
-          | Usome     -> T.SOME
-          | Usize     -> T.SIZE
-          | Upack     -> T.PACK
-          | Uunpack t -> T.UNPACK t
-          | Ublake2b  -> T.BLAKE2B
-          | Usha256   -> T.SHA256
-          | Usha512   -> T.SHA512
-          | Uhash_key -> T.HASH_KEY
-          | Ufail     -> T.FAILWITH
+        let c =
+          let op =
+            match op with
+            | Ucar      -> T.CAR
+            | Ucdr      -> T.CDR
+            | Uneg      -> T.NEG
+            | Uint      -> T.INT
+            | Unot      -> T.NOT
+            | Uabs      -> T.ABS
+            | Uisnat    -> T.ISNAT
+            | Usome     -> T.SOME
+            | Usize     -> T.SIZE
+            | Upack     -> T.PACK
+            | Uunpack t -> T.UNPACK t
+            | Ublake2b  -> T.BLAKE2B
+            | Usha256   -> T.SHA256
+            | Usha512   -> T.SHA512
+            | Uhash_key -> T.HASH_KEY
+            | Ufail     -> T.FAILWITH
+          in
+          let e, _ = f e in
+          T.SEQ [e; op]
         in
-        let e = f e in
-        T.SEQ [e; op]
+        c, env
       end
     | Ibinop (op, lhs, rhs) -> begin
-        let op =
-          match op with
-          | Badd       -> T.ADD
-          | Bsub       -> T.SUB
-          | Bmul       -> T.MUL
-          | Bediv      -> T.EDIV
-          | Blsl       -> T.LSL
-          | Blsr       -> T.LSR
-          | Bor        -> T.OR
-          | Band       -> T.AND
-          | Bxor       -> T.XOR
-          | Bcompare   -> T.COMPARE
-          | Beq        -> T.EQ
-          | Bneq       -> T.NEQ
-          | Blt        -> T.LT
-          | Bgt        -> T.GT
-          | Ble        -> T.LE
-          | Bge        -> T.GE
-          | Bget       -> T.GET
-          | Bmem       -> T.MEM
-          | Bconcat    -> T.CONCAT
-          | Bcons      -> T.CONS
-          | Bpair      -> T.PAIR
+        let c =
+          let op =
+            match op with
+            | Badd       -> T.ADD
+            | Bsub       -> T.SUB
+            | Bmul       -> T.MUL
+            | Bediv      -> T.EDIV
+            | Blsl       -> T.LSL
+            | Blsr       -> T.LSR
+            | Bor        -> T.OR
+            | Band       -> T.AND
+            | Bxor       -> T.XOR
+            | Bcompare   -> T.COMPARE
+            | Beq        -> T.EQ
+            | Bneq       -> T.NEQ
+            | Blt        -> T.LT
+            | Bgt        -> T.GT
+            | Ble        -> T.LE
+            | Bge        -> T.GE
+            | Bget       -> T.GET
+            | Bmem       -> T.MEM
+            | Bconcat    -> T.CONCAT
+            | Bcons      -> T.CONS
+            | Bpair      -> T.PAIR
+          in
+          let rhs, env = f rhs in
+          let lhs, _ = fe env lhs in
+          T.SEQ [rhs; lhs; op]
         in
-        let rhs = f rhs in
-        let lhs = f lhs in
-        T.SEQ [rhs; lhs; op]
+        c, dec_env env
       end
     | Iterop (op, a1, a2, a3) -> begin
-        let op =
-          match op with
-          | Tcheck_signature -> T.CHECK_SIGNATURE
-          | Tslice           -> T.SLICE
-          | Tupdate          -> T.UPDATE
+        let c =
+          let op =
+            match op with
+            | Tcheck_signature -> T.CHECK_SIGNATURE
+            | Tslice           -> T.SLICE
+            | Tupdate          -> T.UPDATE
+          in
+          let a3, env = fe env a3 in
+          let a2, env = fe env a2 in
+          let a1, _   = fe env a1 in
+          T.SEQ [a3; a2; a1; op]
         in
-        let a3 = f a3 in
-        let a2 = f a2 in
-        let a1 = f a1 in
-        T.SEQ [a3; a2; a1; op]
+        c, dec_env (dec_env env)
       end
-    | Iconst (t, e) -> T.PUSH (t, e)
+    | Iconst (t, e) -> T.PUSH (t, e), inc_env env
     | Iif (_c, _t, _e) -> assert false
     | Iwhile (_c, _b) -> assert false
-    | Iset (t, l) -> begin
+    (* | Iset (t, l) -> begin
         T.SEQ ([T.EMPTY_SET t] @ List.map (fun x -> T.SEQ [T.ctrue; f x; T.UPDATE ] ) l)
-      end
-    | Ilist (t, _l) -> begin
-        T.NIL t
-      end
-    | Imap (k, v, l) -> begin
-        T.SEQ ([T.EMPTY_MAP (k, v)] @ List.map (fun (x, y) -> T.SEQ [f y; T.SOME; f x; T.UPDATE ] ) l)
-      end
-    | Irecord l -> begin
+       end
+       | Ilist (t, _l) -> begin
+        T.NIL t, inc_env env
+       end
+       | Imap (k, v, l) -> begin
+        T.SEQ ([T.EMPTY_MAP (k, v)] @ List.map (fun (x, y) -> T.SEQ [f y; T.SOME; f x; T.UPDATE ] ) l), inc_env env
+       end
+       | Irecord l -> begin
         match List.rev l with
         | []  -> T.SEQ []
         | [e] -> f e
         | a::q -> begin
             T.SEQ [List.fold_left (fun accu x -> T.SEQ [accu; f x; T.PAIR] ) (f a) q ]
           end
-      end
+       end *)
+    | _ -> assert false
   in
 
   let convert (e : T.entry) : T.code =
     let vars = List.map fst ir.storage_list |> List.rev in
     let env = mk_env () ~vars in
-    let code = instruction_to_code env e.body in
+    let code, _ = instruction_to_code env e.body in
     let nb_fs = List.length ir.storage_list - 1 in
     let unfold_storage = foldi (fun x -> T.UNPAIR::T.SWAP::x ) [] nb_fs in
     let fold_storage = foldi (fun x -> T.SWAP::T.PAIR::x ) [] nb_fs in
