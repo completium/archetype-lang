@@ -1,0 +1,7 @@
+archetype simple_assign1
+
+variable n : nat = 0
+
+entry exec () {
+  n := 1
+}
