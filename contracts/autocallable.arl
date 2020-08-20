@@ -95,8 +95,8 @@ function compute_expected (d : date) : tez {
     definition ibarrier { i : interest |
       forall f in fixing,
         (* retrieving the first element of etrigger *)
-        let some e0 = etrigger.nth(0) in
-        let some efirst = etrigger[e0.eobservation] in
+        let some key_efirst = etrigger.nth(0) in
+        let some efirst = etrigger[key_efirst] in
           if i.iobservation = f.fobservation and i.iobservation <= efirst.eobservation
           then (* barrier condition *)
                     f.bac >= bac_strike
@@ -111,8 +111,8 @@ function compute_expected (d : date) : tez {
     (** expected is the sum of redemption nominal and interests *)
     postcondition p_expected {
         let expected : tez =
-          let some e0 = etrigger.nth(0) in
-          let some ftrigger = early[e0.eobservation] in
+          let some ftrigger_key = etrigger.nth(0) in
+          let some ftrigger = early[ftrigger_key] in
           (* early redemption *)
           ftrigger.value * nominal
           otherwise
@@ -150,8 +150,8 @@ function compute_expected (d : date) : tez {
         (* interests *)
         let interests =
         if expected = 0tz then 0tz else
-          (let some inth = ibarrier.nth(abs(ibarrier.count() - 1)) in
-          let some lbarrier = interest[inth.iobservation] in
+          (let some lbarrier_key = ibarrier.nth(abs(ibarrier.count() - 1)) in
+          let some lbarrier = interest[lbarrier_key] in
             let some v = fixing[lbarrier.iobservation] in
             if    v.bac >= lbarrier.barrier * bac_initial
               and v.sg  >= lbarrier.barrier * sg_initial
