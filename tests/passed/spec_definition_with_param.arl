@@ -17,12 +17,6 @@ entry exec (p : nat) {
     postcondition p2 {
       mydef.count() = 0
     }
-    postcondition p3 {
-      let some a = mydef[0] in
-      a.id = 0
-      otherwise true
-    }
-
   }
 
   effect {

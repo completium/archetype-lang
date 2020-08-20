@@ -188,7 +188,7 @@ type ('e,'t,'i) abstract_term =
   | Tequiv  of 'e * 'e
   | Tand    of 'e * 'e
   | Tor     of 'e * 'e
-  | Txor    of 'e * 'e
+  | Txor    of 't * 'e * 'e
   | Told    of 'e
   | Tfalse
   | Ttrue
@@ -510,7 +510,7 @@ and map_abstract_term
   | Timpl (e1,e2)      -> Timpl (map_e e1, map_e e2)
   | Tequiv (e1,e2)     -> Tequiv (map_e e1, map_e e2)
   | Tor (e1,e2)        -> Tor (map_e e1, map_e e2)
-  | Txor (e1,e2)       -> Txor (map_e e1, map_e e2)
+  | Txor (t,e1,e2)       -> Txor (map_t t, map_e e1, map_e e2)
   | Tand (e1,e2)       -> Tand (map_e e1, map_e e2)
   | Told e             -> Told (map_e e)
   | Tunion (i,e1,e2)   -> Tunion (map_i i, map_e e1, map_e e2)
@@ -931,7 +931,7 @@ let rec compare_abstract_term
     ) l1 l2 && cmpe e1 e2
   | Timpl (e1,e2), Timpl (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
   | Tor (e1,e2), Tor (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
-  | Txor (e1,e2), Txor (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
+  | Txor (t1,e1,e2), Txor (t2,f1,f2) -> cmpt t1 t2 && cmpe e1 f1 && cmpe e2 f2
   | Tand (e1,e2), Tand (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
   | Told e1, Told e2 -> cmpe e1 e2
   | Tfalse, Tfalse -> true

@@ -403,10 +403,19 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "%a || %a"
       (pp_term e_default PRight) e1
       (pp_term e_default PRight) e2
-  | Txor (e1,e2) ->
-    Format.fprintf fmt "%a ^ %a"
+  | Txor (Tyint, e1,e2) ->
+    Format.fprintf fmt "xor_int %a %a"
       (pp_term e_default PRight) e1
       (pp_term e_default PRight) e2
+  | Txor (Tyuint, e1,e2) ->
+    Format.fprintf fmt "xor_int %a %a"
+      (pp_term e_default PRight) e1
+      (pp_term e_default PRight) e2
+  | Txor (Tybool, e1,e2) ->
+    Format.fprintf fmt "xor_bool %a %a"
+      (pp_term e_default PRight) e1
+      (pp_term e_default PRight) e2
+  | Txor (_, _, _) -> assert false
   | Tgt ((Tystring | Tyaddr | Tyrole | Tykey | Tysignature | Tybytes),e1,e2) ->
     Format.fprintf fmt "str_gt %a %a"
       (pp_term e_default PRight) e1
@@ -727,8 +736,8 @@ let rec pp_term outer pos fmt = function
   | Tsubset (i,e1,e2) ->
     Format.fprintf fmt "%a.subset %a %a"
       pp_str (String.capitalize_ascii i)
-      (pp_with_paren (pp_term outer pos)) e2
       (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
   | Tctail (i,e1,e2) ->
     Format.fprintf fmt "%a.tail %a %a"
       pp_str (String.capitalize_ascii i)
