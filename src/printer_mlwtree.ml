@@ -316,7 +316,7 @@ let rec pp_term outer pos fmt = function
       pp_str (String.capitalize_ascii a)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
-   | Teqfield (i, e1, e2) ->
+  | Teqfield (i, e1, e2) ->
     Format.fprintf fmt "%a.eq %a %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
@@ -403,6 +403,10 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "%a || %a"
       (pp_term e_default PRight) e1
       (pp_term e_default PRight) e2
+  | Txor (e1,e2) ->
+    Format.fprintf fmt "%a ^ %a"
+      (pp_term e_default PRight) e1
+      (pp_term e_default PRight) e2
   | Tgt ((Tystring | Tyaddr | Tyrole | Tykey | Tysignature | Tybytes),e1,e2) ->
     Format.fprintf fmt "str_gt %a %a"
       (pp_term e_default PRight) e1
@@ -467,11 +471,11 @@ let rec pp_term outer pos fmt = function
   | Tnone -> pp_str fmt "None"
   | Tenum i -> pp_str fmt i
   | Tmark (i,e) -> Format.fprintf fmt "label %a in %a"
-    pp_str (String.capitalize_ascii i)
-    (pp_with_paren (pp_term outer pos)) e
+                     pp_str (String.capitalize_ascii i)
+                     (pp_with_paren (pp_term outer pos)) e
   | Tat (i,e) -> Format.fprintf fmt "(%a at %a)"
-    (pp_with_paren (pp_term outer pos)) e
-    pp_str (String.capitalize_ascii i)
+                   (pp_with_paren (pp_term outer pos)) e
+                   pp_str (String.capitalize_ascii i)
   | Tunit -> pp_str fmt "()"
   | Tsome e -> Format.fprintf fmt "Some %a" (pp_with_paren (pp_term e_default PRight)) e
   | Tnot e -> Format.fprintf fmt "not %a" (pp_with_paren (pp_term outer pos)) e
@@ -615,102 +619,102 @@ let rec pp_term outer pos fmt = function
   | Tlnth _ -> pp_str fmt "TODO_Tlnth"
   | Tselect (i1,e1,e2) ->
     begin match e1 with
-    | Tapp (id,[]) ->
-      Format.fprintf fmt "%a.select_to_coll %a %a"
-      pp_str (String.capitalize_ascii i1)
-      (pp_with_paren (pp_term outer pos)) id
-      (pp_with_paren (pp_term outer pos)) e2
-    | Tvar _ ->
-      Format.fprintf fmt "%a.select_to_coll %a %a"
-      pp_str (String.capitalize_ascii i1)
-      (pp_with_paren (pp_term outer pos)) e1
-      (pp_with_paren (pp_term outer pos)) e2
-    | _ ->
-      Format.fprintf fmt "%a.select_to_coll %a %a"
-      pp_str (String.capitalize_ascii i1)
-      (pp_with_paren (pp_term outer pos)) e1
-      (pp_with_paren (pp_term outer pos)) e2
+      | Tapp (id,[]) ->
+        Format.fprintf fmt "%a.select_to_coll %a %a"
+          pp_str (String.capitalize_ascii i1)
+          (pp_with_paren (pp_term outer pos)) id
+          (pp_with_paren (pp_term outer pos)) e2
+      | Tvar _ ->
+        Format.fprintf fmt "%a.select_to_coll %a %a"
+          pp_str (String.capitalize_ascii i1)
+          (pp_with_paren (pp_term outer pos)) e1
+          (pp_with_paren (pp_term outer pos)) e2
+      | _ ->
+        Format.fprintf fmt "%a.select_to_coll %a %a"
+          pp_str (String.capitalize_ascii i1)
+          (pp_with_paren (pp_term outer pos)) e1
+          (pp_with_paren (pp_term outer pos)) e2
     end
   | Tcselect (i1,i2,l,e) ->
     if List.length l > 0 then
       Format.fprintf fmt "%a.select (%a %a) %a"
-      pp_str (String.capitalize_ascii i1)
-      pp_str i2
-      (pp_list " " (pp_term outer pos)) l
-      (pp_with_paren (pp_term outer pos)) e
+        pp_str (String.capitalize_ascii i1)
+        pp_str i2
+        (pp_list " " (pp_term outer pos)) l
+        (pp_with_paren (pp_term outer pos)) e
     else
       Format.fprintf fmt "%a.select %a %a"
-      pp_str (String.capitalize_ascii i1)
-      pp_str i2
-      (pp_with_paren (pp_term outer pos)) e
+        pp_str (String.capitalize_ascii i1)
+        pp_str i2
+        (pp_with_paren (pp_term outer pos)) e
   | Tvselect (i1,i2,l,e1,e2) ->
     if List.length l > 0 then
       Format.fprintf fmt "%a.select_view (%a %a) %a %a"
-      pp_str (String.capitalize_ascii i1)
-      pp_str i2
-      (pp_list " " (pp_term outer pos)) l
-      (pp_with_paren (pp_term outer pos)) e1
-      (pp_with_paren (pp_term outer pos)) e2
+        pp_str (String.capitalize_ascii i1)
+        pp_str i2
+        (pp_list " " (pp_term outer pos)) l
+        (pp_with_paren (pp_term outer pos)) e1
+        (pp_with_paren (pp_term outer pos)) e2
     else
       Format.fprintf fmt "%a.select_view %a %a %a"
-      pp_str (String.capitalize_ascii i1)
-      pp_str i2
-      (pp_with_paren (pp_term outer pos)) e1
-      (pp_with_paren (pp_term outer pos)) e2
+        pp_str (String.capitalize_ascii i1)
+        pp_str i2
+        (pp_with_paren (pp_term outer pos)) e1
+        (pp_with_paren (pp_term outer pos)) e2
   | Tremoveif (i1,i2,l,e) ->
     if List.length l > 0 then
       Format.fprintf fmt "%a.removeif (%a %a) %a"
-      pp_str (String.capitalize_ascii i1)
-      pp_str i2
-      (pp_list " " (pp_term outer pos)) l
-      (pp_with_paren (pp_term outer pos)) e
+        pp_str (String.capitalize_ascii i1)
+        pp_str i2
+        (pp_list " " (pp_term outer pos)) l
+        (pp_with_paren (pp_term outer pos)) e
     else
       Format.fprintf fmt "%a.removeif %a %a"
-      pp_str (String.capitalize_ascii i1)
-      pp_str i2
-      (pp_with_paren (pp_term outer pos)) e
+        pp_str (String.capitalize_ascii i1)
+        pp_str i2
+        (pp_with_paren (pp_term outer pos)) e
   | Tpremoveif (i1,i2,l,e1,e2) ->
     if List.length l > 0 then
       Format.fprintf fmt "%a.removeif_in_field_and_pred (%a %a) %a %a"
-      pp_str (String.capitalize_ascii i1)
-      pp_str i2
-      (pp_list " " (pp_term outer pos)) l
-      (pp_with_paren (pp_term outer pos)) e1
-      (pp_with_paren (pp_term outer pos)) e2
+        pp_str (String.capitalize_ascii i1)
+        pp_str i2
+        (pp_list " " (pp_term outer pos)) l
+        (pp_with_paren (pp_term outer pos)) e1
+        (pp_with_paren (pp_term outer pos)) e2
     else
       Format.fprintf fmt "%a.removeif_in_field_and_pred %a %a %a"
-      pp_str (String.capitalize_ascii i1)
-      pp_str i2
-      (pp_with_paren (pp_term outer pos)) e1
-      (pp_with_paren (pp_term outer pos)) e2
+        pp_str (String.capitalize_ascii i1)
+        pp_str i2
+        (pp_with_paren (pp_term outer pos)) e1
+        (pp_with_paren (pp_term outer pos)) e2
   | Tfremoveif (i1,i2,l,e0,e1,e2) ->
     if List.length l > 0 then
       Format.fprintf fmt "%a.removeif %a (%a %a) %a %a"
-      pp_str (String.capitalize_ascii i1)
-      (pp_with_paren (pp_term outer pos)) e0
-      pp_str i2
-      (pp_list " " (pp_term outer pos)) l
-      (pp_with_paren (pp_term outer pos)) e1
-      (pp_with_paren (pp_term outer pos)) e2
+        pp_str (String.capitalize_ascii i1)
+        (pp_with_paren (pp_term outer pos)) e0
+        pp_str i2
+        (pp_list " " (pp_term outer pos)) l
+        (pp_with_paren (pp_term outer pos)) e1
+        (pp_with_paren (pp_term outer pos)) e2
     else
       Format.fprintf fmt "%a.removeif %a %a %a %a"
-      pp_str (String.capitalize_ascii i1)
-      (pp_with_paren (pp_term outer pos)) e0
-      pp_str i2
-      (pp_with_paren (pp_term outer pos)) e1
-      (pp_with_paren (pp_term outer pos)) e2
+        pp_str (String.capitalize_ascii i1)
+        (pp_with_paren (pp_term outer pos)) e0
+        pp_str i2
+        (pp_with_paren (pp_term outer pos)) e1
+        (pp_with_paren (pp_term outer pos)) e2
   | Tunionpred (i1,i2,l,e) ->
     if List.length l > 0 then
       Format.fprintf fmt "%a.union_with_pred (%a %a) %a"
-      pp_str (String.capitalize_ascii i1)
-      pp_str i2
-      (pp_list " " (pp_term outer pos)) l
-      (pp_with_paren (pp_term outer pos)) e
+        pp_str (String.capitalize_ascii i1)
+        pp_str i2
+        (pp_list " " (pp_term outer pos)) l
+        (pp_with_paren (pp_term outer pos)) e
     else
       Format.fprintf fmt "%a.union_with_pred %a %a"
-      pp_str (String.capitalize_ascii i1)
-      pp_str i2
-      (pp_with_paren (pp_term outer pos)) e
+        pp_str (String.capitalize_ascii i1)
+        pp_str i2
+        (pp_with_paren (pp_term outer pos)) e
   | Twitness i ->
     Format.fprintf fmt "%a.witness"
       pp_str (String.capitalize_ascii i)
@@ -789,12 +793,12 @@ let rec pp_term outer pos fmt = function
       (pp_with_paren (pp_term outer pos)) v
       (pp_with_paren (pp_term outer pos)) a
       pp_str i
-      (* (pp_with_paren (pp_term outer pos)) l *)
+  (* (pp_with_paren (pp_term outer pos)) l *)
   | Tmkoperation (a,v,_l) ->
     Format.fprintf fmt "mk_operation %a %a L.Nil"
       (pp_with_paren (pp_term outer pos)) a
       (pp_with_paren (pp_term outer pos)) v
-      (* (pp_with_paren (pp_term outer pos)) l *)
+  (* (pp_with_paren (pp_term outer pos)) l *)
   | Tentrypoint (i,v) ->
     Format.fprintf fmt "entrypoint \"%a\" %a"
       pp_str i
@@ -882,18 +886,18 @@ and pp_case fmt (p,t) =
     pp_pattern p
     (pp_term e_top PRight) t
 and pp_exn outer pos fmt = function
-| Ekeyexist           -> pp_str fmt "KeyExist"
-| Enotfound           -> pp_str fmt "NotFound"
-| Einvalidcaller      -> pp_str fmt "InvalidCaller"
-| Enegassignnat       -> pp_str fmt "NegAssignNat"
-| Einvalidcondition   -> pp_str fmt "InvalidCondition"
-| Einvalidstate       -> pp_str fmt "InvalidState"
-| Enotransfer         -> pp_str fmt "NoTransfer"
-| Ebreak              -> pp_str fmt "Break"
-| Einvalid (Some msg) -> Format.fprintf fmt "(Invalid \"%a\")" pp_str msg
-| Einvalid None       -> pp_str fmt "Invalid"
-| Efail (i,None)     -> Format.fprintf fmt "Fail%a" pp_int i
-| Efail (i,Some m)         -> Format.fprintf fmt "(Fail%a %a)" pp_int i (pp_term outer pos) m
+  | Ekeyexist           -> pp_str fmt "KeyExist"
+  | Enotfound           -> pp_str fmt "NotFound"
+  | Einvalidcaller      -> pp_str fmt "InvalidCaller"
+  | Enegassignnat       -> pp_str fmt "NegAssignNat"
+  | Einvalidcondition   -> pp_str fmt "InvalidCondition"
+  | Einvalidstate       -> pp_str fmt "InvalidState"
+  | Enotransfer         -> pp_str fmt "NoTransfer"
+  | Ebreak              -> pp_str fmt "Break"
+  | Einvalid (Some msg) -> Format.fprintf fmt "(Invalid \"%a\")" pp_str msg
+  | Einvalid None       -> pp_str fmt "Invalid"
+  | Efail (i,None)     -> Format.fprintf fmt "Fail%a" pp_int i
+  | Efail (i,Some m)         -> Format.fprintf fmt "(Fail%a %a)" pp_int i (pp_term outer pos) m
 and pp_dexn fmt (i,t) =
   Format.fprintf fmt "exception Fail%a %a"
     pp_id i

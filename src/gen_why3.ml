@@ -1680,6 +1680,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Mand (l, r) -> Tpand (map_mterm m ctx l, map_mterm m ctx r)
     | Mor (a, b) -> Tor (map_mterm m ctx a, map_mterm m ctx b)
+    | Mxor (a, b) -> Txor (map_mterm m ctx a, map_mterm m ctx b)
     | Mnot c -> Tnot (map_mterm m ctx c)
     | Mplus (l, r)  -> Tplus  (dl Tyint, map_mterm m ctx l, map_mterm m ctx r)
     | Mminus (l, r) -> Tminus (dl Tyint, map_mterm m ctx l, map_mterm m ctx r)

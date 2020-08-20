@@ -107,6 +107,7 @@
       "when"                , WHEN           ;
       "while"               , WHILE          ;
       "with"                , WITH           ;
+      "xor"                 , XOR           ;
     ]
 
   let () =

@@ -772,6 +772,14 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (l, r)
 
+    | Mxor (l, r) ->
+      let pp fmt (l, r) =
+        Format.fprintf fmt "Bitwise.xor(%a, %a)"
+          f l
+          f r
+      in
+      pp fmt (l, r)
+
     | Mnot e ->
       let pp fmt e =
         Format.fprintf fmt "not (%a)"

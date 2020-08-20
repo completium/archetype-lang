@@ -258,6 +258,7 @@ let to_ir (model : M.model) : T.ir =
 
     | Mand (l, r)      -> T.Ibinop (Band, f l, f r)
     | Mor (l, r)       -> T.Ibinop (Bor, f l, f r)
+    | Mxor (l, r)      -> T.Ibinop (Bxor, f l, f r)
     | Mnot e           -> T.Iunop  (Unot, f e)
     | Mplus (l, r)     -> T.Ibinop (Badd, f l, f r)
     | Mminus (l, r)    -> T.Ibinop (Bsub, f l, f r)

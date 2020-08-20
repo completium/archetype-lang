@@ -32,6 +32,7 @@ and type_t = type_r loced
 and logical_operator =
   | And
   | Or
+  | Xor
   | Imply
   | Equiv
 
@@ -455,5 +456,6 @@ let is_keyword = function
   | "when"
   | "while"
   | "with"
+  | "xor"
     -> true
   | _ -> false

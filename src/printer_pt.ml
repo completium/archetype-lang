@@ -28,6 +28,7 @@ let e_imply         =  (40,  Right)    (* ->  *)
 let e_equiv         =  (50,  NonAssoc) (* <-> *)
 let e_and           =  (60,  Left)     (* and *)
 let e_or            =  (70,  Left)     (* or  *)
+let e_xor           =  (70,  Left)     (* xor *)
 let e_equal         =  (80,  NonAssoc) (* =   *)
 let e_nequal        =  (80,  NonAssoc) (* <>  *)
 let e_gt            =  (90,  Left)     (* >   *)
@@ -56,6 +57,7 @@ let get_prec_from_operator (op : operator) =
   match op with
   | Logical And     -> e_and
   | Logical Or      -> e_or
+  | Logical Xor     -> e_xor
   | Logical Imply   -> e_imply
   | Logical Equiv   -> e_equiv
   | Cmp Equal       -> e_equal
@@ -161,6 +163,7 @@ let logical_operator_to_str op =
   match op with
   | And   -> "and"
   | Or    -> "or"
+  | Xor   -> "xor"
   | Imply -> "->"
   | Equiv -> "<->"
 

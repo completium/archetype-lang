@@ -268,6 +268,7 @@ let to_model (ast : A.ast) : M.model =
       | A.Pmatchwith (m, l)               -> M.Mexprmatchwith (f m, List.map (fun (p, e) -> (to_pattern p, f e)) l)
       | A.Plogical (A.And, l, r)          -> M.Mand           (f l, f r)
       | A.Plogical (A.Or, l, r)           -> M.Mor            (f l, f r)
+      | A.Plogical (A.Xor, l, r)          -> M.Mxor           (f l, f r)
       | A.Plogical (A.Imply, l, r)        -> M.Mimply         (f l, f r)
       | A.Plogical (A.Equiv, l, r)        -> M.Mequiv         (f l, f r)
       | A.Pnot e                          -> M.Mnot           (f e)

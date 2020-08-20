@@ -254,6 +254,7 @@ type ('id, 'term) mterm_node  =
   (* arithmetic operators *)
   | Mand              of 'term * 'term
   | Mor               of 'term * 'term
+  | Mxor              of 'term * 'term
   | Mnot              of 'term
   | Mplus             of 'term * 'term
   | Mminus            of 'term * 'term
@@ -1154,6 +1155,7 @@ let cmp_mterm_node
     (* arithmetic operators *)
     | Mand (l1, r1), Mand (l2, r2)                                                     -> cmp l1 l2 && cmp r1 r2
     | Mor (l1, r1), Mor (l2, r2)                                                       -> cmp l1 l2 && cmp r1 r2
+    | Mxor (l1, r1), Mxor (l2, r2)                                                     -> cmp l1 l2 && cmp r1 r2
     | Mnot e1, Mnot e2                                                                 -> cmp e1 e2
     | Mplus (l1, r1), Mplus (l2, r2)                                                   -> cmp l1 l2 && cmp r1 r2
     | Mminus (l1, r1), Mminus (l2, r2)                                                 -> cmp l1 l2 && cmp r1 r2
@@ -1515,6 +1517,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   (* arithmetic operators *)
   | Mand (l, r)                    -> Mand (f l, f r)
   | Mor (l, r)                     -> Mor (f l, f r)
+  | Mxor (l, r)                    -> Mxor (f l, f r)
   | Mnot e                         -> Mnot (f e)
   | Mplus (l, r)                   -> Mplus (f l, f r)
   | Mminus (l, r)                  -> Mminus (f l, f r)
@@ -1877,6 +1880,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   (* arithmetic operators *)
   | Mand (l, r)                           -> f (f accu l) r
   | Mor (l, r)                            -> f (f accu l) r
+  | Mxor (l, r)                           -> f (f accu l) r
   | Mnot e                                -> f accu e
   | Mplus (l, r)                          -> f (f accu l) r
   | Mminus (l, r)                         -> f (f accu l) r
@@ -2391,6 +2395,11 @@ let fold_map_term
     let le, la = f accu l in
     let re, ra = f la r in
     g (Mor (le, re)), ra
+
+  | Mxor (l, r) ->
+    let le, la = f accu l in
+    let re, ra = f la r in
+    g (Mxor (le, re)), ra
 
   | Mnot e ->
     let ee, ea = f accu e in

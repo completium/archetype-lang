@@ -69,6 +69,7 @@ type type_ = ptyp (* type of pterm *)
 type logical_operator =
   | And
   | Or
+  | Xor
   | Imply
   | Equiv
 [@@deriving show {with_path = false}]

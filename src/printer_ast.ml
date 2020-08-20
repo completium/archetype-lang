@@ -108,6 +108,7 @@ let pp_bval fmt (bval : bval) =
 let pp_logical_operator fmt = function
   | And   -> pp_str fmt "and"
   | Or    -> pp_str fmt "or"
+  | Xor   -> pp_str fmt "xor"
   | Imply -> pp_str fmt "->"
   | Equiv -> pp_str fmt "<->"
 

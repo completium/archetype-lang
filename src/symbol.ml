@@ -2,6 +2,7 @@ open Parser
 open Parser.MenhirInterpreter
 
 let string_of_token = function
+  | XOR            -> "XOR"
   | WITH            -> "WITH"
   | WHILE           -> "WHILE"
   | WHEN            -> "WHEN"
@@ -149,6 +150,7 @@ let string_of_token = function
   | ACCEPT_TRANSFER -> "ACCEPT_TRANSFER"
 
 let string_of_symbol = function
+  | X (T T_XOR) -> "xor"
   | X (T T_WITH) -> "with"
   | X (T T_WHILE) -> "while"
   | X (T T_WHEN) -> "when"

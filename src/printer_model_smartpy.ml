@@ -803,6 +803,14 @@ let pp_model fmt (model : model) =
         in
         pp fmt (l, r)
 
+      | Mxor (l, r) ->
+        let pp fmt (l, r) =
+          Format.fprintf fmt "(%a) ^ (%a)"
+            f l
+            f r
+        in
+        pp fmt (l, r)
+
       | Mnot e ->
         let pp fmt e =
           Format.fprintf fmt "~(%a)"

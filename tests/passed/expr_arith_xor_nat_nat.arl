@@ -1,0 +1,12 @@
+archetype expr_arith_xor_nat_nat
+
+variable res : nat = 0
+
+entry exec () {
+  specification {
+    s0: res = 3
+  }
+  effect {
+    res := 1 xor 2
+  }
+}

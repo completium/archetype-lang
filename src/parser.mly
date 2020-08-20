@@ -158,6 +158,7 @@
 %token WHEN
 %token WHILE
 %token WITH
+%token XOR
 
 %token INVALID_EXPR
 %token INVALID_DECL
@@ -190,7 +191,7 @@
 %right IMPLY
 %nonassoc EQUIV
 
-%left OR
+%left OR XOR
 %left AND
 
 %nonassoc EQUAL NEQUAL
@@ -972,6 +973,7 @@ record_item:
 %inline logical_operator:
  | AND   { And }
  | OR    { Or }
+ | XOR   { Xor }
  | IMPLY { Imply }
  | EQUIV { Equiv }
 

@@ -493,6 +493,7 @@ let pp_operator fmt (op : PT.operator) : unit =
   match op with
   | Logical And   -> pp "and"
   | Logical Or    -> pp "or"
+  | Logical Xor   -> pp "xor"
   | Logical Imply -> pp "->"
   | Logical Equiv -> pp "<->"
   | Cmp Equal     -> pp "="
@@ -776,6 +777,8 @@ let opsigs =
       PT.Arith PT.DivEuc , ([A.VTcurrency; A.VTint           ], A.VTcurrency)  ;
       PT.Arith PT.DivEuc , ([A.VTduration; A.VTint           ], A.VTduration)  ;
       PT.Arith PT.Plus   , ([A.VTstring  ; A.VTstring        ], A.VTstring  )  ;
+      PT.Logical PT.Xor  , ([A.VTbool    ; A.VTbool          ], A.VTbool    )  ;
+      PT.Logical PT.Xor  , ([A.VTnat     ; A.VTnat           ], A.VTnat     )  ;
     ] in
 
   cmpsigs @ grptypes @ rgtypes @ ariths @ nat @ bools @ others
@@ -1784,6 +1787,7 @@ let tt_logical_operator (op : PT.logical_operator) =
   match op with
   | And   -> A.And
   | Or    -> A.Or
+  | Xor   -> A.Xor
   | Imply -> A.Imply
   | Equiv -> A.Equiv
 
