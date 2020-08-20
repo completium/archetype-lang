@@ -153,7 +153,9 @@ type entry = {
 [@@deriving show {with_path = false}]
 
 type ir = {
-  storage: type_ * data;
+  storage_type: type_;
+  storage_data : data;
+  storage_list: (ident * type_) list;
   funs: func list;
   entries: entry list;
 }
@@ -174,6 +176,7 @@ type code =
   | PAIR
   | CAR
   | CDR
+  | UNPAIR
   | LEFT               of type_
   | RIGHT              of type_
   | IF_LEFT            of code list * code list
@@ -263,11 +266,15 @@ let mk_func name args ret body : func =
 let mk_entry name args body : entry =
   {name; args; body}
 
-let mk_ir ?(funs=[]) storage entries : ir =
-  {storage; funs; entries}
+let mk_ir ?(funs=[]) storage_type storage_data storage_list entries : ir =
+  {storage_type; storage_data; storage_list; funs; entries}
 
 let mk_michelson storage parameter code =
   { storage; parameter; code }
+
+(* -------------------------------------------------------------------- *)
+
+let toperation = mk_type Toperation
 
 (* -------------------------------------------------------------------- *)
 
@@ -305,6 +312,7 @@ let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) =
   | PAIR                    -> PAIR
   | CAR                     -> CAR
   | CDR                     -> CDR
+  | UNPAIR                  -> UNPAIR
   | LEFT t                  -> LEFT (ft t)
   | RIGHT t                 -> RIGHT (ft t)
   | IF_LEFT (then_, else_)  -> IF_LEFT (List.map fc then_, List.map fc else_)

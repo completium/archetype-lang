@@ -60,7 +60,7 @@ let output (model : Model.model) =
                 then Format.fprintf fmt "%a@." Printer_michelson.pp_ir ir
                 else begin
                   match !Options.target with
-                  | MichelsonStorage -> Format.fprintf fmt "%a@." Printer_michelson.pp_data (snd ir.storage)
+                  | MichelsonStorage -> Format.fprintf fmt "%a@." Printer_michelson.pp_data ir.storage_data
                   | Michelson ->
                     let michelson = Gen_michelson.to_michelson ir in
                     if !Options.opt_raw_michelson

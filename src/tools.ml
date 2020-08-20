@@ -223,6 +223,7 @@ module List : sig
   val last          : 'a list -> 'a
   val for_all2      : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
   val count         : ('a -> bool) -> 'a list -> int
+  val split3      : ('a * 'b * 'c) list -> 'a list * 'b list * 'c list
 
   module Exn : sig
     val assoc     : 'a -> ('a * 'b) list -> 'b option
@@ -361,6 +362,11 @@ end = struct
       | []      -> acc
       | x :: xs -> doit (acc + if f x then 1 else 0) xs
     in fun xs -> doit 0 xs
+
+  let rec split3 = function
+      [] -> ([], [], [])
+    | (x,y,z)::l ->
+      let (rx, ry, rz) = split3 l in (x::rx, y::ry, z::rz)
 
   module Exn = struct
     let assoc x xs =

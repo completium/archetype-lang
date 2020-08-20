@@ -54,6 +54,7 @@ let rec pp_data fmt (d : data) =
 let pp_id fmt i = Format.fprintf fmt "%s" i
 
 let rec pp_instruction fmt (i : instruction) =
+  let pp s = Format.fprintf fmt s in
   let f = pp_instruction in
   match i with
   | Iseq l -> (pp_list ";@\n" f) fmt l
@@ -75,59 +76,59 @@ let rec pp_instruction fmt (i : instruction) =
     end
   | Iunop (op, e) -> begin
       match op with
-      | Ucar      -> Format.fprintf fmt "car(%a)"      f e
-      | Ucdr      -> Format.fprintf fmt "cdr(%a)"      f e
-      | Uneg      -> Format.fprintf fmt "neg(%a)"      f e
-      | Uint      -> Format.fprintf fmt "int(%a)"      f e
-      | Unot      -> Format.fprintf fmt "not(%a)"      f e
-      | Uabs      -> Format.fprintf fmt "abs(%a)"      f e
-      | Uisnat    -> Format.fprintf fmt "isnat(%a)"    f e
-      | Usome     -> Format.fprintf fmt "some(%a)"     f e
-      | Usize     -> Format.fprintf fmt "size(%a)"     f e
-      | Upack     -> Format.fprintf fmt "pack(%a)"     f e
-      | Uunpack t -> Format.fprintf fmt "unpack<%a>(%a)" pp_type t f e
-      | Ublake2b  -> Format.fprintf fmt "blake2b(%a)"  f e
-      | Usha256   -> Format.fprintf fmt "sha256(%a)"   f e
-      | Usha512   -> Format.fprintf fmt "sha512(%a)"   f e
-      | Uhash_key -> Format.fprintf fmt "hash_key(%a)" f e
-      | Ufail     -> Format.fprintf fmt "fail(%a)"     f e
+      | Ucar      -> pp "car(%a)"      f e
+      | Ucdr      -> pp "cdr(%a)"      f e
+      | Uneg      -> pp "neg(%a)"      f e
+      | Uint      -> pp "int(%a)"      f e
+      | Unot      -> pp "not(%a)"      f e
+      | Uabs      -> pp "abs(%a)"      f e
+      | Uisnat    -> pp "isnat(%a)"    f e
+      | Usome     -> pp "some(%a)"     f e
+      | Usize     -> pp "size(%a)"     f e
+      | Upack     -> pp "pack(%a)"     f e
+      | Uunpack t -> pp "unpack<%a>(%a)" pp_type t f e
+      | Ublake2b  -> pp "blake2b(%a)"  f e
+      | Usha256   -> pp "sha256(%a)"   f e
+      | Usha512   -> pp "sha512(%a)"   f e
+      | Uhash_key -> pp "hash_key(%a)" f e
+      | Ufail     -> pp "fail(%a)"     f e
     end
   | Ibinop (op, lhs, rhs) -> begin
       match op with
-      | Badd       -> Format.fprintf fmt "(%a) * (%a)"       f lhs f rhs
-      | Bsub       -> Format.fprintf fmt "(%a) - (%a)"       f lhs f rhs
-      | Bmul       -> Format.fprintf fmt "(%a) * (%a)"       f lhs f rhs
-      | Bediv      -> Format.fprintf fmt "(%a) / (%a)"       f lhs f rhs
-      | Blsl       -> Format.fprintf fmt "(%a) << (%a)"      f lhs f rhs
-      | Blsr       -> Format.fprintf fmt "(%a) >> (%a)"      f lhs f rhs
-      | Bor        -> Format.fprintf fmt "(%a) or (%a)"      f lhs f rhs
-      | Band       -> Format.fprintf fmt "(%a) and (%a)"     f lhs f rhs
-      | Bxor       -> Format.fprintf fmt "(%a) xor (%a)"     f lhs f rhs
-      | Bcompare   -> Format.fprintf fmt "compare (%a, %a)"  f lhs f rhs
-      | Beq        -> Format.fprintf fmt "(%a) = (%a)"       f lhs f rhs
-      | Bneq       -> Format.fprintf fmt "(%a) <> (%a)"      f lhs f rhs
-      | Blt        -> Format.fprintf fmt "(%a) < (%a)"       f lhs f rhs
-      | Bgt        -> Format.fprintf fmt "(%a) > (%a)"       f lhs f rhs
-      | Ble        -> Format.fprintf fmt "(%a) <= (%a)"      f lhs f rhs
-      | Bge        -> Format.fprintf fmt "(%a) >= (%a)"      f lhs f rhs
-      | Bget       -> Format.fprintf fmt "get(%a, %a)"       f lhs f rhs
-      | Bmem       -> Format.fprintf fmt "mem(%a, %a)"       f lhs f rhs
-      | Bconcat    -> Format.fprintf fmt "concat(%a, %a)"    f lhs f rhs
-      | Bcons      -> Format.fprintf fmt "cons(%a, %a)"      f lhs f rhs
-      | Bpair      -> Format.fprintf fmt "pair(%a, %a)"      f lhs f rhs
+      | Badd       -> pp "(%a) * (%a)"       f lhs f rhs
+      | Bsub       -> pp "(%a) - (%a)"       f lhs f rhs
+      | Bmul       -> pp "(%a) * (%a)"       f lhs f rhs
+      | Bediv      -> pp "(%a) / (%a)"       f lhs f rhs
+      | Blsl       -> pp "(%a) << (%a)"      f lhs f rhs
+      | Blsr       -> pp "(%a) >> (%a)"      f lhs f rhs
+      | Bor        -> pp "(%a) or (%a)"      f lhs f rhs
+      | Band       -> pp "(%a) and (%a)"     f lhs f rhs
+      | Bxor       -> pp "(%a) xor (%a)"     f lhs f rhs
+      | Bcompare   -> pp "compare (%a, %a)"  f lhs f rhs
+      | Beq        -> pp "(%a) = (%a)"       f lhs f rhs
+      | Bneq       -> pp "(%a) <> (%a)"      f lhs f rhs
+      | Blt        -> pp "(%a) < (%a)"       f lhs f rhs
+      | Bgt        -> pp "(%a) > (%a)"       f lhs f rhs
+      | Ble        -> pp "(%a) <= (%a)"      f lhs f rhs
+      | Bge        -> pp "(%a) >= (%a)"      f lhs f rhs
+      | Bget       -> pp "get(%a, %a)"       f lhs f rhs
+      | Bmem       -> pp "mem(%a, %a)"       f lhs f rhs
+      | Bconcat    -> pp "concat(%a, %a)"    f lhs f rhs
+      | Bcons      -> pp "cons(%a, %a)"      f lhs f rhs
+      | Bpair      -> pp "pair(%a, %a)"      f lhs f rhs
     end
   | Iterop (op, a1, a2, a3) -> begin
       match op with
-      | Tcheck_signature -> Format.fprintf fmt "check_signature(%a, %a, %a)" f a1 f a2 f a3
-      | Tslice           -> Format.fprintf fmt "slice(%a, %a, %a)"           f a1 f a2 f a3
-      | Tupdate          -> Format.fprintf fmt "update(%a, %a, %a)"          f a1 f a2 f a3
+      | Tcheck_signature -> pp "check_signature(%a, %a, %a)" f a1 f a2 f a3
+      | Tslice           -> pp "slice(%a, %a, %a)"           f a1 f a2 f a3
+      | Tupdate          -> pp "update(%a, %a, %a)"          f a1 f a2 f a3
     end
-  | Iconst (t, e)  -> Format.fprintf fmt "const(%a : %a)" pp_data e pp_type t
-  | Iif (c, t, e)  -> Format.fprintf fmt "if (%a)@\nthen @[%a@]@\nelse @[%a@]@\n" f c f t f e
-  | Iset (t, l)    -> Format.fprintf fmt "set<%a>[%a]" pp_type t (pp_list "; " f) l
-  | Ilist (t, l)   -> Format.fprintf fmt "list<%a>[%a]" pp_type t (pp_list "; " f) l
-  | Imap (k, v, l) -> Format.fprintf fmt "map<%a, %a>[%a]" pp_type k pp_type v (pp_list "; " (fun fmt (vk, vv) -> Format.fprintf fmt "%a : %a" f vk f vv)) l
-  | Irecord l      -> Format.fprintf fmt "record[%a]" (pp_list "; " f) l
+  | Iconst (t, e)  -> pp "const(%a : %a)" pp_data e pp_type t
+  | Iif (c, t, e)  -> pp "if (%a)@\nthen @[%a@]@\nelse @[%a@]@\n" f c f t f e
+  | Iset (t, l)    -> pp "set<%a>[%a]" pp_type t (pp_list "; " f) l
+  | Ilist (t, l)   -> pp "list<%a>[%a]" pp_type t (pp_list "; " f) l
+  | Imap (k, v, l) -> pp "map<%a, %a>[%a]" pp_type k pp_type v (pp_list "; " (fun fmt (vk, vv) -> Format.fprintf fmt "%a : %a" f vk f vv)) l
+  | Irecord l      -> pp "record[%a]" (pp_list "; " f) l
   | Iwhile _ -> assert false
 
 let pp_func fmt (f : func) =
@@ -144,102 +145,104 @@ let pp_entry fmt (e : entry) =
     pp_instruction e.body
 
 let pp_ir fmt (ir : ir) =
-  Format.fprintf fmt "storage_type: %a@\n@\n" pp_type (fst ir.storage);
-  Format.fprintf fmt "storage_data: %a@\n@\n" pp_data (snd ir.storage);
+  Format.fprintf fmt "storage_type: %a@\n@\n" pp_type ir.storage_type;
+  Format.fprintf fmt "storage_data: %a@\n@\n" pp_data ir.storage_data;
   (pp_list "@\n@\n" pp_func) fmt ir.funs;
   (pp_list "@\n@\n" pp_entry) fmt ir.entries
 
 let rec pp_code fmt (i : code) =
+  let pp s = Format.fprintf fmt s in
   let pp_inc fmt i =
     match i with
     | 0 -> ()
-    | _ -> Format.fprintf fmt " 0"
+    | _ -> Format.fprintf fmt " %i" i
   in
   let fs fmt = Format.fprintf fmt "{ @[%a@] }" (pp_list ";@\n" pp_code) in
   match i with
   | SEQ l                -> fs fmt l
-  | DROP i               -> Format.fprintf fmt "DROP%a" pp_inc i
-  | DUP                  -> Format.fprintf fmt "DUP"
-  | SWAP                 -> Format.fprintf fmt "SWAP"
-  | DIG i                -> Format.fprintf fmt "DIG%a" pp_inc i
-  | DUG i                -> Format.fprintf fmt "DUG%a" pp_inc i
-  | PUSH (t, d)          -> Format.fprintf fmt "PUSH %a %a" pp_type t pp_data d
-  | SOME                 -> Format.fprintf fmt "SOME"
-  | NONE t               -> Format.fprintf fmt "NONE %a" pp_type t
-  | UNIT                 -> Format.fprintf fmt "UNIT"
-  | IF_NONE (ti, ei)     -> Format.fprintf fmt "IF_NONE %a %a" fs ti fs ei
-  | PAIR                 -> Format.fprintf fmt "PAIR"
-  | CAR                  -> Format.fprintf fmt "CAR"
-  | CDR                  -> Format.fprintf fmt "CDR"
-  | LEFT  t              -> Format.fprintf fmt "LEFT %a" pp_type t
-  | RIGHT t              -> Format.fprintf fmt "RIGHT %a" pp_type t
-  | IF_LEFT (ti, ei)     -> Format.fprintf fmt "IF_LEFT %a %a" fs ti fs ei
-  | NIL t                -> Format.fprintf fmt "NIL %a" pp_type t
-  | CONS                 -> Format.fprintf fmt "CONS"
-  | IF_CONS (ti, ei)     -> Format.fprintf fmt "IF_CONS %a %a" fs ti fs ei
-  | SIZE                 -> Format.fprintf fmt "SIZE"
-  | EMPTY_SET     t      -> Format.fprintf fmt "EMPTY_SET %a" pp_type t
-  | EMPTY_MAP     (k, v) -> Format.fprintf fmt "EMPTY_MAP %a %a" pp_type k pp_type v
-  | EMPTY_BIG_MAP (k, v) -> Format.fprintf fmt "EMPTY_BIG_MAP %a %a" pp_type k pp_type v
-  | MAP  is              -> Format.fprintf fmt "MAP %a" fs is
-  | ITER is              -> Format.fprintf fmt "ITER %a" fs is
-  | MEM                  -> Format.fprintf fmt "MEM"
-  | GET                  -> Format.fprintf fmt "GET"
-  | UPDATE               -> Format.fprintf fmt "UPDATE"
-  | IF (ti, ei)          -> Format.fprintf fmt "IF %a %a" fs ti fs ei
-  | LOOP is              -> Format.fprintf fmt "LOOP %a" fs is
-  | LOOP_LEFT is         -> Format.fprintf fmt "LOOP_LEFT %a" fs is
-  | LAMBDA (at, rt, is)  -> Format.fprintf fmt "LAMBDA %a %a %a" pp_type at pp_type rt fs is
-  | EXEC                 -> Format.fprintf fmt "EXEC"
-  | DIP (i, is)          -> Format.fprintf fmt "DIP%a %a" pp_inc i fs is
-  | FAILWITH             -> Format.fprintf fmt "FAILWITH"
-  | CAST                 -> Format.fprintf fmt "CAST"
-  | RENAME               -> Format.fprintf fmt "RENAME"
-  | CONCAT               -> Format.fprintf fmt "CONCAT"
-  | SLICE                -> Format.fprintf fmt "SLICE"
-  | PACK                 -> Format.fprintf fmt "PACK"
-  | UNPACK t             -> Format.fprintf fmt "UNPACK %a" pp_type t
-  | ADD                  -> Format.fprintf fmt "ADD"
-  | SUB                  -> Format.fprintf fmt "SUB"
-  | MUL                  -> Format.fprintf fmt "MUL"
-  | EDIV                 -> Format.fprintf fmt "EDIV"
-  | ABS                  -> Format.fprintf fmt "ABS"
-  | ISNAT                -> Format.fprintf fmt "ISNAT"
-  | INT                  -> Format.fprintf fmt "INT"
-  | NEG                  -> Format.fprintf fmt "NEG"
-  | LSL                  -> Format.fprintf fmt "LSL"
-  | LSR                  -> Format.fprintf fmt "LSR"
-  | OR                   -> Format.fprintf fmt "OR"
-  | AND                  -> Format.fprintf fmt "AND"
-  | XOR                  -> Format.fprintf fmt "XOR"
-  | NOT                  -> Format.fprintf fmt "NOT"
-  | COMPARE              -> Format.fprintf fmt "COMPARE"
-  | EQ                   -> Format.fprintf fmt "EQ"
-  | NEQ                  -> Format.fprintf fmt "NEQ"
-  | LT                   -> Format.fprintf fmt "LT"
-  | GT                   -> Format.fprintf fmt "GT"
-  | LE                   -> Format.fprintf fmt "LE"
-  | GE                   -> Format.fprintf fmt "GE"
-  | SELF                 -> Format.fprintf fmt "SELF"
-  | CONTRACT t           -> Format.fprintf fmt "CONTRACT %a" pp_type t
-  | TRANSFER_TOKENS      -> Format.fprintf fmt "TRANSFER_TOKENS"
-  | SET_DELEGATE         -> Format.fprintf fmt "SET_DELEGATE"
-  | CREATE_ACCOUNT       -> Format.fprintf fmt "CREATE_ACCOUNT"
-  | CREATE_CONTRACT  is  -> Format.fprintf fmt "CREATE_CONTRACT %a" fs is
-  | IMPLICIT_ACCOUNT     -> Format.fprintf fmt "IMPLICIT_ACCOUNT"
-  | NOW                  -> Format.fprintf fmt "NOW"
-  | AMOUNT               -> Format.fprintf fmt "AMOUNT"
-  | BALANCE              -> Format.fprintf fmt "BALANCE"
-  | CHECK_SIGNATURE      -> Format.fprintf fmt "CHECK_SIGNATURE"
-  | BLAKE2B              -> Format.fprintf fmt "BLAKE2B"
-  | SHA256               -> Format.fprintf fmt "SHA256"
-  | SHA512               -> Format.fprintf fmt "SHA512"
-  | HASH_KEY             -> Format.fprintf fmt "HASH_KEY"
-  | STEPS_TO_QUOTA       -> Format.fprintf fmt "STEPS_TO_QUOTA"
-  | SOURCE               -> Format.fprintf fmt "SOURCE"
-  | SENDER               -> Format.fprintf fmt "SENDER"
-  | ADDRESS              -> Format.fprintf fmt "ADDRESS"
-  | CHAIN_ID             -> Format.fprintf fmt "CHAIN_ID"
+  | DROP i               -> pp "DROP%a" pp_inc i
+  | DUP                  -> pp "DUP"
+  | SWAP                 -> pp "SWAP"
+  | DIG i                -> pp "DIG%a" pp_inc i
+  | DUG i                -> pp "DUG%a" pp_inc i
+  | PUSH (t, d)          -> pp "PUSH %a %a" pp_type t pp_data d
+  | SOME                 -> pp "SOME"
+  | NONE t               -> pp "NONE %a" pp_type t
+  | UNIT                 -> pp "UNIT"
+  | IF_NONE (ti, ei)     -> pp "IF_NONE %a %a" fs ti fs ei
+  | PAIR                 -> pp "PAIR"
+  | CAR                  -> pp "CAR"
+  | CDR                  -> pp "CDR"
+  | UNPAIR               -> pp "UNPAIR"
+  | LEFT  t              -> pp "LEFT %a" pp_type t
+  | RIGHT t              -> pp "RIGHT %a" pp_type t
+  | IF_LEFT (ti, ei)     -> pp "IF_LEFT %a %a" fs ti fs ei
+  | NIL t                -> pp "NIL %a" pp_type t
+  | CONS                 -> pp "CONS"
+  | IF_CONS (ti, ei)     -> pp "IF_CONS %a %a" fs ti fs ei
+  | SIZE                 -> pp "SIZE"
+  | EMPTY_SET     t      -> pp "EMPTY_SET %a" pp_type t
+  | EMPTY_MAP     (k, v) -> pp "EMPTY_MAP %a %a" pp_type k pp_type v
+  | EMPTY_BIG_MAP (k, v) -> pp "EMPTY_BIG_MAP %a %a" pp_type k pp_type v
+  | MAP  is              -> pp "MAP %a" fs is
+  | ITER is              -> pp "ITER %a" fs is
+  | MEM                  -> pp "MEM"
+  | GET                  -> pp "GET"
+  | UPDATE               -> pp "UPDATE"
+  | IF (ti, ei)          -> pp "IF %a %a" fs ti fs ei
+  | LOOP is              -> pp "LOOP %a" fs is
+  | LOOP_LEFT is         -> pp "LOOP_LEFT %a" fs is
+  | LAMBDA (at, rt, is)  -> pp "LAMBDA %a %a %a" pp_type at pp_type rt fs is
+  | EXEC                 -> pp "EXEC"
+  | DIP (i, is)          -> pp "DIP%a %a" pp_inc i fs is
+  | FAILWITH             -> pp "FAILWITH"
+  | CAST                 -> pp "CAST"
+  | RENAME               -> pp "RENAME"
+  | CONCAT               -> pp "CONCAT"
+  | SLICE                -> pp "SLICE"
+  | PACK                 -> pp "PACK"
+  | UNPACK t             -> pp "UNPACK %a" pp_type t
+  | ADD                  -> pp "ADD"
+  | SUB                  -> pp "SUB"
+  | MUL                  -> pp "MUL"
+  | EDIV                 -> pp "EDIV"
+  | ABS                  -> pp "ABS"
+  | ISNAT                -> pp "ISNAT"
+  | INT                  -> pp "INT"
+  | NEG                  -> pp "NEG"
+  | LSL                  -> pp "LSL"
+  | LSR                  -> pp "LSR"
+  | OR                   -> pp "OR"
+  | AND                  -> pp "AND"
+  | XOR                  -> pp "XOR"
+  | NOT                  -> pp "NOT"
+  | COMPARE              -> pp "COMPARE"
+  | EQ                   -> pp "EQ"
+  | NEQ                  -> pp "NEQ"
+  | LT                   -> pp "LT"
+  | GT                   -> pp "GT"
+  | LE                   -> pp "LE"
+  | GE                   -> pp "GE"
+  | SELF                 -> pp "SELF"
+  | CONTRACT t           -> pp "CONTRACT %a" pp_type t
+  | TRANSFER_TOKENS      -> pp "TRANSFER_TOKENS"
+  | SET_DELEGATE         -> pp "SET_DELEGATE"
+  | CREATE_ACCOUNT       -> pp "CREATE_ACCOUNT"
+  | CREATE_CONTRACT  is  -> pp "CREATE_CONTRACT %a" fs is
+  | IMPLICIT_ACCOUNT     -> pp "IMPLICIT_ACCOUNT"
+  | NOW                  -> pp "NOW"
+  | AMOUNT               -> pp "AMOUNT"
+  | BALANCE              -> pp "BALANCE"
+  | CHECK_SIGNATURE      -> pp "CHECK_SIGNATURE"
+  | BLAKE2B              -> pp "BLAKE2B"
+  | SHA256               -> pp "SHA256"
+  | SHA512               -> pp "SHA512"
+  | HASH_KEY             -> pp "HASH_KEY"
+  | STEPS_TO_QUOTA       -> pp "STEPS_TO_QUOTA"
+  | SOURCE               -> pp "SOURCE"
+  | SENDER               -> pp "SENDER"
+  | ADDRESS              -> pp "ADDRESS"
+  | CHAIN_ID             -> pp "CHAIN_ID"
 
 let pp_michelson fmt (m : michelson) =
   Format.fprintf fmt

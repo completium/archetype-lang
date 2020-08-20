@@ -1,4 +1,4 @@
-archetype simple_sequence
+archetype simple_sequence_with_arg_var
 
 variable str : string = ""
 variable n   : nat    = 0

@@ -24,7 +24,7 @@ let emit_error (desc : error_desc) =
   let str = Format.asprintf "%a@." pp_error_desc desc in
   raise (Anomaly str)
 
-type env = {
+type env_ir = {
   function_p: (ident * (ident * T.type_) list) option
 }
 
@@ -36,7 +36,7 @@ let to_ir (model : M.model) : T.ir =
   let to_one_gen init f l =
     match List.rev l with
     | [] -> init
-    | i::q -> List.fold_right (fun x accu -> f x accu) q i
+    | i::q -> List.fold_left (fun accu x -> f x accu) i q
   in
 
   let to_one_type (l : T.type_ list) : T.type_ = to_one_gen (T.mk_type T.Tunit) (fun x accu -> (T.mk_type (T.Tpair (x, accu)))) l in
@@ -135,7 +135,7 @@ let to_ir (model : M.model) : T.ir =
 
   let l = List.map (
       fun (si : M.storage_item) ->
-        to_type ~annotation:(unloc si.id) si.typ, to_data si.default)
+        (unloc si.id), to_type ~annotation:(unloc si.id) si.typ, to_data si.default)
       model.storage
   in
 
@@ -144,8 +144,8 @@ let to_ir (model : M.model) : T.ir =
   let storage_type, storage_data =
     match l with
     | []  -> T.mk_type Tunit, T.Dunit
-    | [t, d] -> remove_annot t, d
-    | _   -> let lt, ld = List.split l in to_one_type lt, to_one_data ld
+    | [_, t, d] -> remove_annot t, d
+    | _   -> let _, lt, ld = List.split3 l in to_one_type lt, to_one_data ld
   in
 
   let rec mterm_to_intruction env (mtt : M.mterm) : T.instruction =
@@ -466,21 +466,53 @@ let to_ir (model : M.model) : T.ir =
     List.fold_right (fun (x : M.function__) accu -> match x.node with | Entry fs -> (for_fs env fs)::accu | _ -> accu ) model.functions []
   in
 
-  T.mk_ir (storage_type, storage_data) entries
+  let l = List.map (fun (x, y, _) -> (x, y)) l in
+  T.mk_ir storage_type storage_data l entries
+
+type env = {
+  sp: int;
+  vars : ident list;
+}
+[@@deriving show {with_path = false}]
+
+let mk_env ?(vars=[]) () = { sp = 0; vars = vars}
+let add_sp_env (env : env) n = { env with sp = env.sp + n }
+let inc_env (env : env) = add_sp_env env 1
+let dec_env (env : env) = add_sp_env env (-1)
+let add_var_env (env : env) id = { env with sp = env.sp + 1; vars = env.vars @ [id] }
+let get_sp_for_id (env : env) id =  List.index_of (String.equal id) env.vars
 
 let to_michelson (ir : T.ir) : T.michelson =
-  let storage = ir.storage |> fst in
+  let storage = ir.storage_type in
   let parameter = T.mk_type T.Tunit in
   let default = T.SEQ [T.CDR; T.NIL (T.mk_type Toperation); T.PAIR ] in
 
-  let rec instruction_to_code (i : T.instruction) : T.code =
-    let f = instruction_to_code in
+  let rec instruction_to_code env (i : T.instruction) : T.code =
+    let fe env = instruction_to_code env in
+    let f = fe env in
     match i with
-    | Iseq l               -> T.SEQ (List.map f l)
-    | IletIn (_id, v, b)   -> T.SEQ [f v; f b]      (* TODO *)
-    | Ivar _id             -> T.SEQ [] (* TODO *)
+    | Iseq l               -> (T.SEQ (List.map f l))
+    | IletIn (id, v, b)    -> begin
+        let v = f v in
+        let env = add_var_env env id in
+        let b = fe env b in
+        T.SEQ [v; b; T.DROP 0]
+      end
+    | Ivar id              -> begin
+        let n = get_sp_for_id env id in
+        Format.eprintf "%a@." pp_env env;
+        Format.eprintf "var %s: %i@." id n;
+        T.SEQ [ T.DIG n; T.DUP; T.DUG (n + 1)]
+      end
     | Icall (_id, _args)   -> assert false
-    | Iassign (_id, _, v)  -> f v
+    | Iassign (id, _, v)  -> begin
+        let n = get_sp_for_id env id in
+        Format.eprintf "%a@." pp_env env;
+        Format.eprintf "assign %s: %i@." id n;
+        if n <= 0
+        then T.SEQ [ T.DROP 0; f v]
+        else T.SEQ [ T.DIG n; T.DROP 0; f v; T.DUG n]
+      end
     | Izop op -> begin
         match op with
         | Znow               -> T.NOW
@@ -579,15 +611,20 @@ let to_michelson (ir : T.ir) : T.michelson =
       end
   in
 
-  let convert (i : T.instruction) : T.code =
-    let code = instruction_to_code i in
-    let code = T.SEQ [T.DROP 0; code; T.NIL (T.mk_type Toperation); T.PAIR ] in
+  let convert (e : T.entry) : T.code =
+    let vars = List.map fst ir.storage_list |> List.rev in
+    let env = mk_env () ~vars in
+    let code = instruction_to_code env e.body in
+    let nb_fs = List.length ir.storage_list - 1 in
+    let unfold_storage = foldi (fun x -> T.UNPAIR::T.SWAP::x ) [] nb_fs in
+    let fold_storage = foldi (fun x -> T.SWAP::T.PAIR::x ) [] nb_fs in
+    let code = T.SEQ ([T.CDR] @ unfold_storage @ [code] @ fold_storage @ [T.NIL (T.toperation); T.PAIR ]) in
     T.flat code
   in
 
   let code =
     match ir.entries with
-    | [e] -> convert e.body
+    | [e] -> convert e
     | _ -> default
   in
 
