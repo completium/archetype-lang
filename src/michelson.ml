@@ -133,6 +133,7 @@ type instruction =
   | Iset    of type_ * instruction list
   | Ilist   of type_ * instruction list
   | Imap    of type_ * type_ * (instruction * instruction) list
+  | Irecord of instruction list
 [@@deriving show {with_path = false}]
 
 type func = {

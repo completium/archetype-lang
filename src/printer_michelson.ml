@@ -121,12 +121,13 @@ let rec pp_instruction fmt (i : instruction) =
       | Tslice           -> Format.fprintf fmt "slice(%a, %a, %a)"           f a1 f a2 f a3
       | Tupdate          -> Format.fprintf fmt "update(%a, %a, %a)"          f a1 f a2 f a3
     end
-  | Iconst (t, e) -> Format.fprintf fmt "const(%a : %a)" pp_data e pp_type t
-  | Iif (c, t, e) -> Format.fprintf fmt "if (%a)@\nthen @[%a@]@\nelse @[%a@]@\n" f c f t f e
-  | Ifail e -> Format.fprintf fmt "fail(%a)" f e
-  | Iset (t, l) -> Format.fprintf fmt "set<%a>[%a]" pp_type t (pp_list "; " f) l
-  | Ilist (t, l) -> Format.fprintf fmt "list<%a>[%a]" pp_type t (pp_list "; " f) l
+  | Iconst (t, e)  -> Format.fprintf fmt "const(%a : %a)" pp_data e pp_type t
+  | Iif (c, t, e)  -> Format.fprintf fmt "if (%a)@\nthen @[%a@]@\nelse @[%a@]@\n" f c f t f e
+  | Ifail e        -> Format.fprintf fmt "fail(%a)" f e
+  | Iset (t, l)    -> Format.fprintf fmt "set<%a>[%a]" pp_type t (pp_list "; " f) l
+  | Ilist (t, l)   -> Format.fprintf fmt "list<%a>[%a]" pp_type t (pp_list "; " f) l
   | Imap (k, v, l) -> Format.fprintf fmt "map<%a, %a>[%a]" pp_type k pp_type v (pp_list "; " (fun fmt (vk, vv) -> Format.fprintf fmt "%a : %a" f vk f vv)) l
+  | Irecord l      -> Format.fprintf fmt "record[%a]" (pp_list "; " f) l
 
 let pp_func fmt (f : func) =
   Format.fprintf fmt "function %s (%a) : %a {@\n  @[%a@]@\n}@\n "

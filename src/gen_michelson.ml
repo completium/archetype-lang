@@ -8,9 +8,17 @@ module T = Michelson
 exception Anomaly of string
 
 type error_desc =
+  | FieldNotFoundFor of string * string
   | UnsupportedTerm of string
   | TODO
 [@@deriving show {with_path = false}]
+
+let pp_error_desc fmt e =
+  let pp s = Format.fprintf fmt s in
+  match e with
+  | TODO                      -> pp "TODO"
+  | FieldNotFoundFor (rn, fn) -> pp "Field not found for record '%s' and field '%s'" rn fn
+  | UnsupportedTerm s         -> pp "UnsupportedTerm: %s" s
 
 let emit_error (desc : error_desc) =
   let str = Format.asprintf "%a@." pp_error_desc desc in
@@ -109,6 +117,20 @@ let to_ir (model : M.model) : T.ir =
     | Mcast (_, _, v) -> to_data v
     | _ -> Format.printf "%a@." M.pp_mterm mt; assert false
 
+  in
+
+  let get_record_index (rv : M.mterm) fn =
+    match rv.type_ with
+    | M.Trecord rn -> begin
+        let rn = unloc rn in
+        let r : M.record = M.Utils.get_record model rn in
+        let res = List.fold_lefti (fun i accu (x : M.record_field) ->
+            if String.equal fn (unloc x.name) then i else accu) (-1) r.fields in
+        match res with
+        | -1 -> emit_error (FieldNotFoundFor (rn, fn))
+        | _ -> res
+      end
+    | _ -> assert false
   in
 
   let l = List.map (
@@ -234,11 +256,11 @@ let to_ir (model : M.model) : T.ir =
         | M.Tmap (false, k, v) -> T.Imap (ft k, ft v, List.map (fun (x, y) -> f x, f y) l)
         | _ -> assert false
       end
-    | Mlitrecord _l -> assert false
+    | Mlitrecord l -> T.Irecord (List.map (fun (_, x) -> f x) l)
 
     (* access *)
 
-    | Mdot (_e, _i)         -> assert false
+    | Mdot (e, i)           -> let n = get_record_index e (unloc i) in Tools.foldi (fun x -> T.Iunop (Ucdr, x)) (f e) n
     | Mdotassetfield _      -> emit_error (UnsupportedTerm ("dotassetfield"))
     | Mdotcontract (_e, _i) -> assert false
     | Maccestuple (_e, _i)  -> assert false
@@ -548,6 +570,14 @@ let to_michelson (ir : T.ir) : T.michelson =
       end
     | Imap (k, v, l) -> begin
         T.SEQ ([T.EMPTY_MAP (k, v)] @ List.map (fun (x, y) -> T.SEQ [f y; T.SOME; f x; T.UPDATE ] ) l)
+      end
+    | Irecord l -> begin
+        match List.rev l with
+        | []  -> T.SEQ []
+        | [e] -> f e
+        | a::q -> begin
+            T.SEQ [List.fold_left (fun accu x -> T.SEQ [accu; f x; T.PAIR] ) (f a) q ]
+          end
       end
   in
 
