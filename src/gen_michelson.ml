@@ -481,7 +481,17 @@ let to_ir (model : M.model) : T.ir =
   in
 
   let l = List.map (fun (x, y, _) -> (x, y)) l in
-  T.mk_ir storage_type storage_data l entries
+  let parameter : T.type_ =
+    match entries with
+    | [] -> T.tunit
+    | [e] -> begin
+        match e.args with
+        | [] -> T.tunit
+        | l -> to_one_type (List.map snd l)
+      end
+    | _ -> T.tunit
+  in
+  T.mk_ir storage_type storage_data l parameter entries
 
 type env = {
   vars : ident list;
@@ -499,7 +509,6 @@ let get_sp_for_id (env : env) id =
 
 let to_michelson (ir : T.ir) : T.michelson =
   let storage = ir.storage_type in
-  let parameter = T.mk_type T.Tunit in
   let default = T.SEQ [T.CDR; T.NIL (T.mk_type Toperation); T.PAIR ] in
 
   let rec instruction_to_code env (i : T.instruction) : T.code * env =
@@ -664,14 +673,30 @@ let to_michelson (ir : T.ir) : T.michelson =
       end
   in
 
+  let unfold = foldi (fun x -> T.UNPAIR::T.SWAP::x ) [] in
+
   let convert (e : T.entry) : T.code =
     let vars = List.map fst ir.storage_list |> List.rev in
     let env = mk_env () ~vars in
-    let code, _ = instruction_to_code env e.body in
-    let nb_fs = List.length ir.storage_list - 1 in
-    let unfold_storage = foldi (fun x -> T.UNPAIR::T.SWAP::x ) [] nb_fs in
+    let nb_storage_item = List.length ir.storage_list in
+    let nb_fs = nb_storage_item - 1 in
+    let unfold_storage = unfold nb_fs  in
     let fold_storage = foldi (fun x -> T.SWAP::T.PAIR::x ) [] nb_fs in
-    let code = T.SEQ ([T.CDR] @ unfold_storage @ [code] @ fold_storage @ [T.NIL (T.toperation); T.PAIR ]) in
+    let code = match e.args with
+      | [] -> begin
+          let code, _ = instruction_to_code env e.body in
+          T.SEQ ([T.CDR] @ unfold_storage @ [code] @ fold_storage @ [T.NIL (T.toperation); T.PAIR ])
+        end
+      | l  -> begin
+          let nb_args = List.length l in
+          let nb_as = nb_args - 1 in
+          let unfold_args = unfold nb_as in
+          let args = List.map fst l |> List.rev in
+          let env = { env with vars = args @ env.vars } in
+          let code, _ = instruction_to_code env e.body in
+          T.SEQ ([T.DUP; T.CDR] @ unfold_storage @ [T.DIG nb_storage_item; T.CAR] @ unfold_args @ [code] @ [T.DROP nb_args] @ fold_storage @ [T.NIL (T.toperation); T.PAIR ])
+        end
+    in
     T.flat code
   in
 
@@ -681,4 +706,4 @@ let to_michelson (ir : T.ir) : T.michelson =
     | _ -> default
   in
 
-  T.mk_michelson storage parameter code
+  T.mk_michelson storage ir.parameter code

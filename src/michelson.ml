@@ -156,6 +156,7 @@ type ir = {
   storage_type: type_;
   storage_data : data;
   storage_list: (ident * type_) list;
+  parameter: type_;
   funs: func list;
   entries: entry list;
 }
@@ -266,8 +267,8 @@ let mk_func name args ret body : func =
 let mk_entry name args body : entry =
   {name; args; body}
 
-let mk_ir ?(funs=[]) storage_type storage_data storage_list entries : ir =
-  {storage_type; storage_data; storage_list; funs; entries}
+let mk_ir ?(funs=[]) storage_type storage_data storage_list parameter entries : ir =
+  {storage_type; storage_data; storage_list; parameter; funs; entries}
 
 let mk_michelson storage parameter code =
   { storage; parameter; code }
@@ -276,16 +277,26 @@ let mk_michelson storage parameter code =
 
 let toperation = mk_type Toperation
 
+
 (* -------------------------------------------------------------------- *)
 
-let itrue     = Iconst (mk_type Tbool, Dtrue)
-let ifalse    = Iconst (mk_type Tbool, Dfalse)
-let iint n    = Iconst (mk_type Tint,  Dint n)
-let inat n    = Iconst (mk_type Tnat,  Dint n)
-let istring s = Iconst (mk_type Tstring,  Dstring s)
+let tunit   = mk_type Tunit
+let tstring = mk_type Tstring
+let tnat    = mk_type Tnat
+let tint    = mk_type Tint
+let tbool   = mk_type Tbool
+
+
+(* -------------------------------------------------------------------- *)
+
+let itrue     = Iconst (tbool,    Dtrue)
+let ifalse    = Iconst (tbool,    Dfalse)
+let iint n    = Iconst (tint,     Dint n)
+let inat n    = Iconst (tnat,     Dint n)
+let istring s = Iconst (tstring,  Dstring s)
 let isome   s = Iunop  (Usome, s)
 let inone   t = Izop   (Znone t)
-let iunit     = Iconst (mk_type Tunit, Dunit)
+let iunit     = Iconst (tunit, Dunit)
 
 (* -------------------------------------------------------------------- *)
 
