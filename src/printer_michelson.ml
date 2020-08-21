@@ -177,7 +177,7 @@ let rec pp_code fmt (i : code) =
   | UNPAIR               -> pp "UNPAIR"
   | LEFT  t              -> pp "LEFT %a" pp_type t
   | RIGHT t              -> pp "RIGHT %a" pp_type t
-  | IF_LEFT (ti, ei)     -> pp "IF_LEFT %a %a" fs ti fs ei
+  | IF_LEFT (ti, ei)     -> pp "IF_LEFT@\n  @[%a@]@\n  @[%a@]" fs ti fs ei
   | NIL t                -> pp "NIL %a" pp_type t
   | CONS                 -> pp "CONS"
   | IF_CONS (ti, ei)     -> pp "IF_CONS %a %a" fs ti fs ei

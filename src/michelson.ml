@@ -397,7 +397,9 @@ let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) =
 let map_code (fc : code -> code) = map_code_gen fc id id
 
 let rec flat (c : code) : code =
+  let f l = List.fold_right (fun x accu -> match flat x with | SEQ l -> l @ accu | a -> a::accu) l [] in
   match c with
-  | SEQ l -> SEQ (List.fold_right (fun x accu -> match flat x with | SEQ l -> l @ accu | a -> a::accu) l [])
+  | SEQ l -> SEQ (f l)
+  | IF_LEFT (x, y) -> IF_LEFT (f x, f y)
   (* TODO: handle constructors with code list arg*)
   | _ -> map_code flat c
