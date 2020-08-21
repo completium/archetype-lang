@@ -2611,27 +2611,23 @@ let mk_ensures m acc (v : M.specification) =
         form = map_mterm m { init_ctx with lctx = Logic } spec.formula
       }) (v.postconditions |> List.filter M.Utils.is_post))
 
-let mk_require n i t = {
-  id = dl (n ^ "_require_" ^ (string_of_int i));
-  form = t
-}
-
-(* TODO : should plunge in called functions body *)
-let mk_requires m n v =
-  M.Utils.get_added_removed_sets m v
-  (* TODO: temp * delta *)
-  (* |> List.map (fun t ->
-      match t with
-      | M.Msetadded e ->
-        let a = M.Utils.get_asset_type e in
-        loc_term (Tempty (a,mk_ac_added a))
-      | M.Msetremoved e ->
-        let a = M.Utils.get_asset_type e in
-        loc_term (Tempty (a,mk_ac_rmed a))
-      | _ -> assert false
-    ) *)
-  |> Tools.List.dedup
-  |> List.mapi (fun i t  -> mk_require n i t)
+let mk_delta_requires m =
+  M.Utils.get_assets m |>
+  List.map (fun (a : M.asset) ->
+    (* for each asset, generate preconditions that added and removed are empty *)
+    let name = unloc a.name in
+    [{
+        id = dl ("require_" ^ name ^ "_added_isempty");
+        form =
+          Tempty (name, mk_ac_added name)
+          |> loc_term
+    }; {
+        id = dl (name ^ "_removed_isempty");
+        form =
+          Tempty (name, mk_ac_rmed name)
+          |> loc_term
+    }]
+  ) |> List.flatten
 
 (* for each arg, retrieve corresponding type invariants, and convert it to precondition *)
 let mk_preconds m args body : ((loc_term,loc_ident) abstract_formula) list =
@@ -2711,7 +2707,7 @@ let mk_functions m =
         variants = [];
         requires =
           (mk_entry_require m (M.Utils.get_callers m (unloc s.name))) @
-          (* (mk_requires m (s.name |> unloc) v) @ *) (* TODO: temp * delta *)
+          (* (mk_delta_requires m) @ *)
           (mk_preconds m s.args s.body);
         ensures  = Option.fold (mk_ensures m) [] v;
         body     = flatten_if_fail m s.body;
@@ -2732,8 +2728,8 @@ let mk_entries m =
         raises   = fold_exns m s.body |> List.map loc_term;
         variants = [];
         requires =
-          (mk_entry_require m [unloc s.name])(*  @
-          (mk_requires m (unloc s.name) v) *) (* TODO: temp * delta *);
+          (mk_entry_require m [unloc s.name]) @
+          (mk_delta_requires m);
         ensures  = Option.fold (mk_ensures m) [] v;
         body     = flatten_if_fail m s.body;
       }

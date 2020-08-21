@@ -3433,7 +3433,6 @@ module Utils : sig
   val get_formula                        : model -> mterm option -> ident -> mterm option
   val is_post                            : postcondition -> bool
   val get_sum_idxs                       : model -> ident -> int list
-  val get_added_removed_sets             : model -> specification option -> mterm__node list
   val get_storage_invariants             : model -> ident option -> (ident * ident * mterm) list
   val is_field_storage                   : model -> ident -> bool
   val with_trace                         : model -> bool
@@ -3841,17 +3840,6 @@ end = struct
     match s.mode with
     | Post -> true
     | _ -> false
-
-  let get_added_removed_sets (_m : model) _v : ((lident,(lident mterm_gen)) mterm_node) list =
-    (* TODO: temp * delta *)
-    (* let rec internal_fold_add_remove ctx acc (term : mterm) =
-       match term.node with
-       | Msetadded e -> acc @ [ Msetadded e ]
-       | Msetremoved e -> acc @ [ Msetremoved e ]
-       | _ -> fold_term (internal_fold_add_remove ctx) acc term in
-       Tools.List.dedup (Option.map_dfl (fun (x : specification) ->
-        fold_specification (mk_ctx_model ()) internal_fold_add_remove x []) [] v) *)
-    []
 
   (* returns asset name * invariant name * invariant term *)
   let get_storage_invariants (m : model) (asset_name : ident option) : (ident * ident * mterm) list =
