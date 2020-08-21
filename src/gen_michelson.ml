@@ -44,7 +44,7 @@ let to_ir (model : M.model) : T.ir =
     | i::q -> List.fold_left (fun accu x -> f x accu) i q
   in
 
-  let to_one_type (l : T.type_ list) : T.type_ = to_one_gen (T.mk_type T.Tunit) (fun x accu -> (T.mk_type (T.Tpair (x, accu)))) l in
+  let to_one_type (l : T.type_ list) : T.type_ = to_one_gen T.tunit (fun x accu -> (T.mk_type (T.Tpair (x, accu)))) l in
 
   let to_one_data (l : T.data list) : T.data = to_one_gen (T.Dunit) (fun x accu -> (T.Dpair (x, accu))) l in
 
@@ -480,16 +480,22 @@ let to_ir (model : M.model) : T.ir =
     List.fold_right (fun (x : M.function__) accu -> match x.node with | Entry fs -> (for_fs env fs)::accu | _ -> accu ) model.functions []
   in
 
+  let annot a (t : T.type_) = { t with annotation = Some a} in
   let l = List.map (fun (x, y, _) -> (x, y)) l in
   let parameter : T.type_ =
-    match entries with
+    let for_entry (e : T.entry) =
+      match List.rev e.args with
+      | []   -> T.tunit
+      | [e]  -> snd e
+      | (id, te)::t -> List.fold_left (fun accu (id, te) -> T.mk_type (T.Tpair (annot id te, accu))) (annot id te) t
+    in
+    match List.rev entries with
     | [] -> T.tunit
-    | [e] -> begin
-        match e.args with
-        | [] -> T.tunit
-        | l -> to_one_type (List.map snd l)
+    | [e] -> for_entry e
+    | i::t -> begin
+        let for_entry e = e |> for_entry |> (fun (x : T.type_) -> annot e.name x) in
+        List.fold_left (fun accu x -> (T.mk_type (T.Tor (for_entry x, accu)))) (for_entry i) t
       end
-    | _ -> T.tunit
   in
   T.mk_ir storage_type storage_data l parameter entries
 
