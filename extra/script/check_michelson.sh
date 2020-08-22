@@ -41,6 +41,10 @@ PASSED="\
 ./tests/passed/effect_control_for_list.arl \
 ./tests/passed/effect_control_for_map.arl \
 ./tests/passed/test_for_list_alt.arl \
+./tests/passed/expr_lit_opt_none.arl \
+./tests/passed/expr_lit_opt_some.arl \
+./tests/passed/expr_fun_opt_isnone.arl \
+./tests/passed/expr_fun_opt_issome.arl \
 "
 
 RET=0

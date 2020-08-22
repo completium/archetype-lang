@@ -52,121 +52,6 @@ type data =
   | Dplist             of (data * data) list
 [@@deriving show {with_path = false}]
 
-type z_operator =
-  | Znow
-  | Zamount
-  | Zbalance
-  | Zsource
-  | Zsender
-  | Zaddress
-  | Zchain_id
-  | Zself_address
-  | Znone of type_
-[@@deriving show {with_path = false}]
-
-type un_operator =
-  | Ucar
-  | Ucdr
-  | Uneg
-  | Uint
-  | Unot
-  | Uabs
-  | Uisnat
-  | Usome
-  | Usize
-  | Upack
-  | Uunpack  of type_
-  | Ublake2b
-  | Usha256
-  | Usha512
-  | Uhash_key
-  | Ufail
-[@@deriving show {with_path = false}]
-
-type bin_operator =
-  | Badd
-  | Bsub
-  | Bmul
-  | Bediv
-  | Blsl
-  | Blsr
-  | Bor
-  | Band
-  | Bxor
-  | Bcompare
-  | Bget
-  | Bmem
-  | Bconcat
-  | Bcons
-  | Bpair
-[@@deriving show {with_path = false}]
-
-type ter_operator =
-  | Tcheck_signature
-  | Tslice
-  | Tupdate
-[@@deriving show {with_path = false}]
-
-type place =
-  | Local
-  | Storage
-[@@deriving show {with_path = false}]
-
-type cmp_operator =
-  | Ceq
-  | Cne
-  | Cgt
-  | Cge
-  | Clt
-  | Cle
-[@@deriving show {with_path = false}]
-
-type instruction =
-  | Iseq     of instruction list
-  | IletIn   of ident * instruction * instruction
-  | Ivar     of ident
-  | Icall    of ident * instruction list
-  | Iassign  of ident * place * instruction
-  | Iif      of instruction * instruction * instruction
-  | Iwhile   of instruction * instruction
-  | Iiter    of ident list * instruction * instruction
-  | Izop     of z_operator
-  | Iunop    of un_operator * instruction
-  | Ibinop   of bin_operator * instruction * instruction
-  | Iterop   of ter_operator * instruction * instruction * instruction
-  | Iconst   of type_ * data
-  | Icompare of cmp_operator * instruction * instruction
-  | Iset     of type_ * instruction list
-  | Ilist    of type_ * instruction list
-  | Imap     of type_ * type_ * (instruction * instruction) list
-  | Irecord  of instruction list
-[@@deriving show {with_path = false}]
-
-type func = {
-  name: ident;
-  args: (ident * type_) list;
-  ret: type_;
-  body: instruction;
-}
-[@@deriving show {with_path = false}]
-
-type entry = {
-  name: ident;
-  args: (ident * type_) list;
-  body: instruction;
-}
-[@@deriving show {with_path = false}]
-
-type ir = {
-  storage_type: type_;
-  storage_data : data;
-  storage_list: (ident * type_) list;
-  parameter: type_;
-  funs: func list;
-  entries: entry list;
-}
-[@@deriving show {with_path = false}]
-
 type code =
   | SEQ                of code list
   | DROP               of int
@@ -258,6 +143,118 @@ type code =
   | SENDER
   | ADDRESS
   | CHAIN_ID
+[@@deriving show {with_path = false}]
+
+type z_operator =
+  | Znow
+  | Zamount
+  | Zbalance
+  | Zsource
+  | Zsender
+  | Zaddress
+  | Zchain_id
+  | Zself_address
+  | Znone of type_
+[@@deriving show {with_path = false}]
+
+type un_operator =
+  | Ucar
+  | Ucdr
+  | Uneg
+  | Uint
+  | Unot
+  | Uabs
+  | Uisnat
+  | Usome
+  | Usize
+  | Upack
+  | Uunpack  of type_
+  | Ublake2b
+  | Usha256
+  | Usha512
+  | Uhash_key
+  | Ufail
+[@@deriving show {with_path = false}]
+
+type bin_operator =
+  | Badd
+  | Bsub
+  | Bmul
+  | Bediv
+  | Blsl
+  | Blsr
+  | Bor
+  | Band
+  | Bxor
+  | Bcompare
+  | Bget
+  | Bmem
+  | Bconcat
+  | Bcons
+  | Bpair
+[@@deriving show {with_path = false}]
+
+type ter_operator =
+  | Tcheck_signature
+  | Tslice
+  | Tupdate
+[@@deriving show {with_path = false}]
+
+type cmp_operator =
+  | Ceq
+  | Cne
+  | Cgt
+  | Cge
+  | Clt
+  | Cle
+[@@deriving show {with_path = false}]
+
+type instruction =
+  | Iseq        of instruction list
+  | IletIn      of ident * instruction * instruction
+  | Ivar        of ident
+  | Icall       of ident * instruction list
+  | Iassign     of ident * instruction
+  | Iif         of instruction * instruction * instruction
+  | Iifnone     of instruction * instruction * instruction
+  | Iwhile      of instruction * instruction
+  | Iiter       of ident list * instruction * instruction
+  | Izop        of z_operator
+  | Iunop       of un_operator * instruction
+  | Ibinop      of bin_operator * instruction * instruction
+  | Iterop      of ter_operator * instruction * instruction * instruction
+  | Iconst      of type_ * data
+  | Icompare    of cmp_operator * instruction * instruction
+  | Iset        of type_ * instruction list
+  | Ilist       of type_ * instruction list
+  | Imap        of type_ * type_ * (instruction * instruction) list
+  | Irecord     of instruction list
+  | Imichelson  of instruction list * code * ident list
+[@@deriving show {with_path = false}]
+
+type func = {
+  name: ident;
+  args: (ident * type_) list;
+  ret: type_;
+  body: instruction;
+}
+[@@deriving show {with_path = false}]
+
+type entry = {
+  name: ident;
+  args: (ident * type_) list;
+  body: instruction;
+}
+[@@deriving show {with_path = false}]
+
+type ir = {
+  storage_type: type_;
+  storage_data : data;
+  storage_list: (ident * type_) list;
+  parameter: type_;
+  funs: func list;
+  entries: entry list;
+}
 [@@deriving show {with_path = false}]
 
 type michelson = {

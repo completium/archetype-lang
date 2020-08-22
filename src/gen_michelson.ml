@@ -168,8 +168,8 @@ let to_ir (model : M.model) : T.ir =
 
     (* assign *)
 
-    | Massign (_op, _, Avar id, v)                 -> T.Iassign (unloc id, Local, f v)
-    | Massign (_op, _, Avarstore id, v)            -> T.Iassign (unloc id, Storage, f v)
+    | Massign (_op, _, Avar id, v)                 -> T.Iassign (unloc id, f v)
+    | Massign (_op, _, Avarstore id, v)            -> T.Iassign (unloc id, f v)
     | Massign (_op, _, Aasset (_an, _fn, _k), _v)  -> assert false
     | Massign (_op, _, Arecord (_rn, _fn, _r), _v) -> assert false
     | Massign (_op, _, Astate, _x)                 -> assert false
@@ -261,8 +261,16 @@ let to_ir (model : M.model) : T.ir =
 
     (* composite type constructors *)
 
-    | Mnone    -> assert false
-    | Msome _v -> assert false
+    | Mnone    -> begin
+        let t =
+          match mtt.type_ with
+          | M.Toption t -> to_type t
+          | _ -> assert false
+        in
+        T.Izop (T.Znone t)
+      end
+
+    | Msome v -> T.Iunop (Usome, f v)
 
     | Mtuple     l -> begin
         match List.rev l with
@@ -389,8 +397,8 @@ let to_ir (model : M.model) : T.ir =
     | Mconcat (x, y)     -> T.Ibinop (Bconcat, f x, f y)
     | Mslice (x, s, e)   -> T.Iterop (Tslice, f x, f s, f e)
     | Mlength x          -> T.Iunop (Usize, f x)
-    | Misnone _x         -> assert false
-    | Missome _x         -> assert false
+    | Misnone x          -> T.Imichelson ([f x], T.SEQ [T.IF_NONE ([T.ctrue],  [T.DROP 1; T.cfalse])], ["_"])
+    | Missome x          -> T.Imichelson ([f x], T.SEQ [T.IF_NONE ([T.cfalse], [T.DROP 1; T.ctrue])],  ["_"])
     | Moptget _x         -> assert false
     | Mfloor _x          -> assert false
     | Mceil _x           -> assert false
@@ -575,11 +583,9 @@ let to_michelson (ir : T.ir) : T.michelson =
 
     | Icall (_id, _args)   -> assert false
 
-    | Iassign (id, _, v)  -> begin
+    | Iassign (id, v)  -> begin
         let n = get_sp_for_id env id in
         let v, _env0 = f v in
-        (* Format.eprintf "%a@." pp_env _env0; *)
-        (* Format.eprintf "assign %s: %i@." id n; *)
         let c =
           if n <= 0
           then T.SEQ [ v; T.SWAP; T.DROP 1 ]
@@ -589,12 +595,21 @@ let to_michelson (ir : T.ir) : T.michelson =
       end
 
     | Iif (c, t, e) -> begin
-        let c, _ = f c in
-        let t, _ = f t in
-        let e, _ = f e in
+        let c, _   = f c in
+        let t, env = f t in
+        let e, _   = f e in
 
         T.SEQ [ c; T.IF ([t], [e]) ], env
       end
+
+    | Iifnone (v, t, e) -> begin
+        let v, _   = f v in
+        let t, env = f t in
+        let e, _   = f e in
+
+        T.SEQ [ v; T.IF_NONE ([t], [e]) ], env
+      end
+
 
     | Iwhile (c, b) -> begin
         let c, _ = f c in
@@ -738,6 +753,11 @@ let to_michelson (ir : T.ir) : T.michelson =
         | a::q -> begin
             (T.SEQ [let a, _ = f a in List.fold_left (fun accu x -> let x, _ = f x in T.SEQ [accu; x; T.PAIR] ) a q ]), inc_env env
           end
+      end
+
+    | Imichelson (a, c, v) -> begin
+        let a, _ = seq env a in
+        T.SEQ [a; c], { env with vars = v @ env.vars }
       end
   in
 
