@@ -129,6 +129,7 @@ type instruction =
   | Iassign  of ident * place * instruction
   | Iif      of instruction * instruction * instruction
   | Iwhile   of instruction * instruction
+  | Iiter    of ident list * instruction * instruction
   | Izop     of z_operator
   | Iunop    of un_operator * instruction
   | Ibinop   of bin_operator * instruction * instruction

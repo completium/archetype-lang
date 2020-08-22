@@ -1,6 +1,6 @@
-archetype effect_control_for_list
+archetype test_for_list_alt
 
-variable res : nat = 0
+variable res : int = 0
 
 entry exec () {
   specification {

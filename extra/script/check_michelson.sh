@@ -37,6 +37,10 @@ PASSED="\
 ./tests/passed/test_if_int_nat.arl \
 ./tests/passed/simple_while.arl \
 ./tests/passed/effect_control_while.arl \
+./tests/passed/effect_control_for_set.arl \
+./tests/passed/effect_control_for_list.arl \
+./tests/passed/effect_control_for_map.arl \
+./tests/passed/test_for_list_alt.arl \
 "
 
 RET=0

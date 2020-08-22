@@ -181,7 +181,25 @@ let to_ir (model : M.model) : T.ir =
     | Mif (c, t, Some e)         -> T.Iif (f c, f t, f e)
     | Mif (c, t, None)           -> T.Iif (f c, f t, T.Iseq [])
     | Mmatchwith (_e, _l)        -> assert false
-    | Mfor (_id, _col, _body, _) -> assert false
+    | Mfor (id, c, b, _)         -> begin
+        let ids =
+          match id with
+          | M.FIsimple x      -> [x]
+          | M.FIdouble (x, y) -> [x; y]
+        in
+        let ids = List.map unloc ids in
+        let c =
+          match c with
+          | ICKcoll  _
+          | ICKview  _
+          | ICKfield _ -> assert false
+          | ICKset   c
+          | ICKlist  c
+          | ICKmap   c -> f c
+        in
+        let b = f b in
+        T.Iiter (ids, c, b)
+      end
     | Miter (_i, _a, _b, _c, _)  -> assert false
     | Mwhile (c, b, _)           -> T.Iwhile (f c, f b)
     | Mseq is                    -> T.Iseq (List.map f is)
@@ -537,12 +555,14 @@ let to_michelson (ir : T.ir) : T.michelson =
 
     match i with
     | Iseq l               -> seq env l
+
     | IletIn (id, v, b)    -> begin
         let v, _ = f v in
         let env0 = add_var_env env id in
         let b, _ = fe env0 b in
         T.SEQ [v; b; T.DROP 1], env
       end
+
     | Ivar id              -> begin
         let n = get_sp_for_id env id in
         let c =
@@ -550,9 +570,11 @@ let to_michelson (ir : T.ir) : T.michelson =
           then T.DUP
           else T.SEQ [ T.DIG n; T.DUP; T.DUG (n + 1)]
         in
-        c, env
+        c, inc_env env
       end
+
     | Icall (_id, _args)   -> assert false
+
     | Iassign (id, _, v)  -> begin
         let n = get_sp_for_id env id in
         let v, _env0 = f v in
@@ -565,6 +587,37 @@ let to_michelson (ir : T.ir) : T.michelson =
         in
         c, env
       end
+
+    | Iif (c, t, e) -> begin
+        let c, _ = f c in
+        let t, _ = f t in
+        let e, _ = f e in
+
+        T.SEQ [ c; T.IF ([t], [e]) ], env
+      end
+
+    | Iwhile (c, b) -> begin
+        let c, _ = f c in
+        let b, _ = f b in
+        T.SEQ [c; T.LOOP [b; c]] , env
+      end
+
+    | Iiter (ids, c, b) -> begin
+        let c, _ = f c in
+        match ids with
+        | [id] -> begin
+            let env0 = add_var_env env id in
+            let b, _ = fe env0 b in
+            T.SEQ [c; T.ITER [b; T.DROP 1]] , env
+          end
+        | [k; v] -> begin
+            let env0 = add_var_env (add_var_env env v) k in
+            let b, _ = fe env0 b in
+            T.SEQ [c; T.ITER [T.UNPAIR; b; T.DROP 2]] , env
+          end
+        | _ -> assert false
+      end
+
     | Izop op -> begin
         let c =
           match op with
@@ -627,7 +680,7 @@ let to_michelson (ir : T.ir) : T.michelson =
             | Bpair      -> T.PAIR
           in
           let rhs, env = f rhs in
-          let lhs, _ = fe env lhs in
+          let lhs, _   = fe env lhs in
           T.SEQ [rhs; lhs; op]
         in
         c, env
@@ -666,19 +719,6 @@ let to_michelson (ir : T.ir) : T.michelson =
         c, env
       end
 
-    | Iif (c, t, e) -> begin
-        let c, _ = f c in
-        let t, _ = f t in
-        let e, _ = f e in
-
-        T.SEQ [ c; T.IF ([t], [e]) ], env
-      end
-    | Iwhile (c, b) -> begin
-        let mc, _ = f c in
-        let mb, _ = fe env b in
-        let md, _ = fe env c in
-        T.SEQ [mc; T.LOOP [mb; md]] , env
-      end
     | Iset (t, l) -> begin
         T.SEQ ((T.EMPTY_SET t)::(l |> List.rev |> List.map (fun x -> let x, _ = f x in T.SEQ [T.ctrue; x; T.UPDATE ] ))), inc_env env
       end
