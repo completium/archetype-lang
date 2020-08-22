@@ -603,7 +603,6 @@ let to_michelson (ir : T.ir) : T.michelson =
       end
 
     | Icall (id, args)   -> begin
-        print_env env;
         let fid, _     = f (Ivar id) in
         let args, _    = seq env args in
 
