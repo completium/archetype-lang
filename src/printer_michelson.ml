@@ -168,7 +168,7 @@ let rec pp_instruction fmt (i : instruction) =
   | IletIn (id, v, b) -> Format.fprintf fmt "let %a = %a in@\n  @[%a@]" pp_id id f v f b
   | Ivar id -> pp_id fmt id
   | Icall (id, args)     -> Format.fprintf fmt "%a(%a)" pp_id id (pp_list ", " f) args
-  | Iassign (id, v)      -> Format.fprintf fmt "%a := %a" pp_id id f v
+  | Iassign (id, v)      -> Format.fprintf fmt "%a := @[%a@]" pp_id id f v
   | Iif (c, t, e)        -> pp "if (%a)@\nthen @[%a@]@\nelse @[%a@]" f c f t f e
   | Iifnone (v, t, e, b) -> pp "if_none (%a)@\nthen @[%a@]@\nelse%a @[%a@]" f v f t (pp_do_if b pp_id) " drop" f e
   | Iwhile (c, b)        -> pp "while (%a) do@\n  @[%a@]@\ndone" f c f b
