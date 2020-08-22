@@ -216,7 +216,7 @@ type instruction =
   | Icall       of ident * instruction list
   | Iassign     of ident * instruction
   | Iif         of instruction * instruction * instruction
-  | Iifnone     of instruction * instruction * (instruction -> instruction)
+  | Iifnone     of instruction * instruction * (instruction -> instruction) * ident
   | Iwhile      of instruction * instruction
   | Iiter       of ident list * instruction * instruction
   | Izop        of z_operator

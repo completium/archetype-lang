@@ -167,12 +167,12 @@ let rec pp_instruction fmt (i : instruction) =
   | Iseq l -> (pp_list ";@\n" f) fmt l
   | IletIn (id, v, b) -> Format.fprintf fmt "let %a = %a in@\n  @[%a@]" pp_id id f v f b
   | Ivar id -> pp_id fmt id
-  | Icall (id, args)     -> Format.fprintf fmt "%a(%a)" pp_id id (pp_list ", " f) args
-  | Iassign (id, v)      -> Format.fprintf fmt "%a := @[%a@]" pp_id id f v
-  | Iif (c, t, e)        -> pp "if (%a)@\nthen @[%a@]@\nelse @[%a@]" f c f t f e
-  | Iifnone (v, t, fe)   -> pp "if_none (%a)@\nthen @[%a@]@\nelse @[fun X -> %a@]" f v f t f (fe(Ivar "X"))
-  | Iwhile (c, b)        -> pp "while (%a) do@\n  @[%a@]@\ndone" f c f b
-  | Iiter (ids, c, b)    -> pp "iter %a on (%a) do@\n  @[%a@]@\ndone" (pp_list ", " pp_id) ids f c f b
+  | Icall (id, args)       -> Format.fprintf fmt "%a(%a)" pp_id id (pp_list ", " f) args
+  | Iassign (id, v)        -> Format.fprintf fmt "%a := @[%a@]" pp_id id f v
+  | Iif (c, t, e)          -> pp "if (%a)@\nthen @[%a@]@\nelse @[%a@]" f c f t f e
+  | Iifnone (v, t, fe, id) -> pp "if_none (%a)@\nthen @[%a@]@\nelse @[fun %s -> %a@]" f v f t id f (fe(Ivar id))
+  | Iwhile (c, b)          -> pp "while (%a) do@\n  @[%a@]@\ndone" f c f b
+  | Iiter (ids, c, b)      -> pp "iter %a on (%a) do@\n  @[%a@]@\ndone" (pp_list ", " pp_id) ids f c f b
   | Izop op -> begin
       match op with
       | Znow               -> pp_id fmt "now"
