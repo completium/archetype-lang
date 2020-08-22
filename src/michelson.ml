@@ -94,12 +94,6 @@ type bin_operator =
   | Band
   | Bxor
   | Bcompare
-  | Beq
-  | Bneq
-  | Blt
-  | Bgt
-  | Ble
-  | Bge
   | Bget
   | Bmem
   | Bconcat
@@ -118,23 +112,33 @@ type place =
   | Storage
 [@@deriving show {with_path = false}]
 
+type cmp_operator =
+  | Ceq
+  | Cne
+  | Cgt
+  | Cge
+  | Clt
+  | Cle
+[@@deriving show {with_path = false}]
+
 type instruction =
-  | Iseq    of instruction list
-  | IletIn  of ident * instruction * instruction
-  | Ivar    of ident
-  | Icall   of ident * instruction list
-  | Iassign of ident * place * instruction
-  | Iif     of instruction * instruction * instruction
-  | Iwhile  of instruction * instruction
-  | Izop    of z_operator
-  | Iunop   of un_operator * instruction
-  | Ibinop  of bin_operator * instruction * instruction
-  | Iterop  of ter_operator * instruction * instruction * instruction
-  | Iconst  of type_ * data
-  | Iset    of type_ * instruction list
-  | Ilist   of type_ * instruction list
-  | Imap    of type_ * type_ * (instruction * instruction) list
-  | Irecord of instruction list
+  | Iseq     of instruction list
+  | IletIn   of ident * instruction * instruction
+  | Ivar     of ident
+  | Icall    of ident * instruction list
+  | Iassign  of ident * place * instruction
+  | Iif      of instruction * instruction * instruction
+  | Iwhile   of instruction * instruction
+  | Izop     of z_operator
+  | Iunop    of un_operator * instruction
+  | Ibinop   of bin_operator * instruction * instruction
+  | Iterop   of ter_operator * instruction * instruction * instruction
+  | Iconst   of type_ * data
+  | Icompare of cmp_operator * instruction * instruction
+  | Iset     of type_ * instruction list
+  | Ilist    of type_ * instruction list
+  | Imap     of type_ * type_ * (instruction * instruction) list
+  | Irecord  of instruction list
 [@@deriving show {with_path = false}]
 
 type func = {
@@ -199,6 +203,12 @@ type code =
   | LAMBDA             of type_ * type_ * code list
   | EXEC
   | DIP                of int * code list
+  | ASSERT_EQ
+  | ASSERT_NEQ
+  | ASSERT_LT
+  | ASSERT_LE
+  | ASSERT_GT
+  | ASSERT_GE
   | FAILWITH
   | CAST
   | RENAME
@@ -373,6 +383,12 @@ let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) =
   | GT                      -> GT
   | LE                      -> LE
   | GE                      -> GE
+  | ASSERT_EQ               -> ASSERT_EQ
+  | ASSERT_NEQ              -> ASSERT_NEQ
+  | ASSERT_LT               -> ASSERT_LT
+  | ASSERT_LE               -> ASSERT_LE
+  | ASSERT_GT               -> ASSERT_GT
+  | ASSERT_GE               -> ASSERT_GE
   | SELF                    -> SELF
   | CONTRACT t              -> CONTRACT (ft t)
   | TRANSFER_TOKENS         -> TRANSFER_TOKENS

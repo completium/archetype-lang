@@ -281,12 +281,12 @@ let to_ir (model : M.model) : T.ir =
 
     (* comparison operators *)
 
-    | Mequal (_, l, r)  -> T.Ibinop (Beq, f l, f r)
-    | Mnequal (_, l, r) -> T.Ibinop (Bneq, f l, f r)
-    | Mgt (l, r)        -> T.Ibinop (Bgt, f l, f r)
-    | Mge (l, r)        -> T.Ibinop (Bge, f l, f r)
-    | Mlt (l, r)        -> T.Ibinop (Blt, f l, f r)
-    | Mle (l, r)        -> T.Ibinop (Ble, f l, f r)
+    | Mequal (_, l, r)  -> T.Icompare (Ceq, f l, f r)
+    | Mnequal (_, l, r) -> T.Icompare (Cne, f l, f r)
+    | Mgt (l, r)        -> T.Icompare (Cgt, f l, f r)
+    | Mge (l, r)        -> T.Icompare (Cge, f l, f r)
+    | Mlt (l, r)        -> T.Icompare (Clt, f l, f r)
+    | Mle (l, r)        -> T.Icompare (Cle, f l, f r)
     | Mmulticomp _      -> emit_error (UnsupportedTerm ("multicomp"))
 
 
@@ -515,7 +515,7 @@ let get_sp_for_id (env : env) id =
 
 let print_env str env =
   Format.eprintf "%s: %a@." str pp_env env
-        (* Format.eprintf "var %s: %i@." id n; *)
+(* Format.eprintf "var %s: %i@." id n; *)
 
 let to_michelson (ir : T.ir) : T.michelson =
   let storage = ir.storage_type in
@@ -620,12 +620,6 @@ let to_michelson (ir : T.ir) : T.michelson =
             | Band       -> T.AND
             | Bxor       -> T.XOR
             | Bcompare   -> T.COMPARE
-            | Beq        -> T.EQ
-            | Bneq       -> T.NEQ
-            | Blt        -> T.LT
-            | Bgt        -> T.GT
-            | Ble        -> T.LE
-            | Bge        -> T.GE
             | Bget       -> T.GET
             | Bmem       -> T.MEM
             | Bconcat    -> T.CONCAT
@@ -654,6 +648,24 @@ let to_michelson (ir : T.ir) : T.michelson =
         c, env
       end
     | Iconst (t, e) -> T.PUSH (t, e), inc_env env
+    | Icompare (op, lhs, rhs) -> begin
+        let c =
+          let op =
+            match op with
+            | Ceq -> T.EQ
+            | Cne -> T.NEQ
+            | Clt -> T.LT
+            | Cle -> T.LE
+            | Cgt -> T.GT
+            | Cge -> T.GE
+          in
+          let r, _ = f rhs in
+          let l, _ = f lhs in
+          T.SEQ [r; l; T.COMPARE; op]
+        in
+        c, env
+      end
+
     | Iif (c, t, e) -> begin
         let c, _ = f c in
         let t, _ = f t in
@@ -662,11 +674,11 @@ let to_michelson (ir : T.ir) : T.michelson =
         T.SEQ [ c; T.IF ([t], [e]) ], env
       end
     | Iwhile (c, b) -> begin
-        let mc, env = f c in
-        let mb, env = fe env b in
-        let md, _   = fe env c in
-      T.SEQ [mc; T.LOOP [mb; md]] , env
-    end
+        let mc, _ = f c in
+        let mb, _ = fe env b in
+        let md, _ = fe env c in
+        T.SEQ [mc; T.LOOP [mb; md]] , env
+      end
     | Iset (t, l) -> begin
         T.SEQ ((T.EMPTY_SET t)::(l |> List.rev |> List.map (fun x -> let x, _ = f x in T.SEQ [T.ctrue; x; T.UPDATE ] ))), inc_env env
       end

@@ -105,12 +105,6 @@ let rec pp_instruction fmt (i : instruction) =
       | Band       -> pp "(%a) and (%a)"     f lhs f rhs
       | Bxor       -> pp "(%a) xor (%a)"     f lhs f rhs
       | Bcompare   -> pp "compare (%a, %a)"  f lhs f rhs
-      | Beq        -> pp "(%a) = (%a)"       f lhs f rhs
-      | Bneq       -> pp "(%a) <> (%a)"      f lhs f rhs
-      | Blt        -> pp "(%a) < (%a)"       f lhs f rhs
-      | Bgt        -> pp "(%a) > (%a)"       f lhs f rhs
-      | Ble        -> pp "(%a) <= (%a)"      f lhs f rhs
-      | Bge        -> pp "(%a) >= (%a)"      f lhs f rhs
       | Bget       -> pp "get(%a, %a)"       f lhs f rhs
       | Bmem       -> pp "mem(%a, %a)"       f lhs f rhs
       | Bconcat    -> pp "concat(%a, %a)"    f lhs f rhs
@@ -122,6 +116,15 @@ let rec pp_instruction fmt (i : instruction) =
       | Tcheck_signature -> pp "check_signature(%a, %a, %a)" f a1 f a2 f a3
       | Tslice           -> pp "slice(%a, %a, %a)"           f a1 f a2 f a3
       | Tupdate          -> pp "update(%a, %a, %a)"          f a1 f a2 f a3
+    end
+  | Icompare (op, lhs, rhs) -> begin
+      match op with
+      | Ceq        -> pp "(%a) = (%a)"       f lhs f rhs
+      | Cne        -> pp "(%a) <> (%a)"      f lhs f rhs
+      | Clt        -> pp "(%a) < (%a)"       f lhs f rhs
+      | Cgt        -> pp "(%a) > (%a)"       f lhs f rhs
+      | Cle        -> pp "(%a) <= (%a)"      f lhs f rhs
+      | Cge        -> pp "(%a) >= (%a)"      f lhs f rhs
     end
   | Iconst (t, e)  -> pp "const(%a : %a)" pp_data e pp_type t
   | Iif (c, t, e)  -> pp "if (%a)@\nthen @[%a@]@\nelse @[%a@]@\n" f c f t f e
@@ -229,6 +232,12 @@ let rec pp_code fmt (i : code) =
   | GT                   -> pp "GT"
   | LE                   -> pp "LE"
   | GE                   -> pp "GE"
+  | ASSERT_EQ            -> pp "ASSERT_EQ"
+  | ASSERT_NEQ           -> pp "ASSERT_NEQ"
+  | ASSERT_LT            -> pp "ASSERT_LT"
+  | ASSERT_GT            -> pp "ASSERT_GT"
+  | ASSERT_LE            -> pp "ASSERT_LE"
+  | ASSERT_GE            -> pp "ASSERT_GE"
   | SELF                 -> pp "SELF"
   | CONTRACT t           -> pp "CONTRACT %a" pp_type t
   | TRANSFER_TOKENS      -> pp "TRANSFER_TOKENS"
