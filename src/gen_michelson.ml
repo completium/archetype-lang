@@ -397,9 +397,14 @@ let to_ir (model : M.model) : T.ir =
     | Mconcat (x, y)     -> T.Ibinop (Bconcat, f x, f y)
     | Mslice (x, s, e)   -> T.Iterop (Tslice, f x, f s, f e)
     | Mlength x          -> T.Iunop (Usize, f x)
-    | Misnone x          -> T.Imichelson ([f x], T.SEQ [T.IF_NONE ([T.ctrue],  [T.DROP 1; T.cfalse])], ["_"])
+    | Misnone x          -> T.Iifnone (f x, T.itrue, T.ifalse, true)
+    | Missome x          -> T.Iifnone (f x, T.itrue, T.ifalse, true)
+    | Moptget x          -> T.Iifnone (f x, T.ifail "NoneValue", T.iskip,  false)
+
+
+    (* | Misnone x          -> T.Imichelson ([f x], T.SEQ [T.IF_NONE ([T.ctrue],  [T.DROP 1; T.cfalse])], ["_"])
     | Missome x          -> T.Imichelson ([f x], T.SEQ [T.IF_NONE ([T.cfalse], [T.DROP 1; T.ctrue])],  ["_"])
-    | Moptget x          -> T.Imichelson ([f x], T.SEQ [T.IF_NONE ([T.cfail "NoneValue"], [])],  ["_"])
+    | Moptget x          -> T.Imichelson ([f x], T.SEQ [T.IF_NONE ([T.cfail "NoneValue"], [])],  ["_"]) *)
     | Mfloor _x          -> assert false
     | Mceil _x           -> assert false
     | Mtostring (_t, _x) -> assert false
@@ -602,12 +607,13 @@ let to_michelson (ir : T.ir) : T.michelson =
         T.SEQ [ c; T.IF ([t], [e]) ], env
       end
 
-    | Iifnone (v, t, e) -> begin
+    | Iifnone (v, t, e, b) -> begin
         let v, _   = f v in
         let t, env = f t in
-        let e, _   = f e in
+        let e, _   = if b then f e else fe (inc_env env) e in
+        let d = if b then [T.DROP 1] else [] in
 
-        T.SEQ [ v; T.IF_NONE ([t], [e]) ], env
+        T.SEQ [ v; T.IF_NONE ([t], d @ [e]) ], env
       end
 
 
