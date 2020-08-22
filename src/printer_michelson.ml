@@ -170,7 +170,7 @@ let rec pp_instruction fmt (i : instruction) =
   | Icall (id, args)     -> Format.fprintf fmt "%a(%a)" pp_id id (pp_list ", " f) args
   | Iassign (id, v)      -> Format.fprintf fmt "%a := @[%a@]" pp_id id f v
   | Iif (c, t, e)        -> pp "if (%a)@\nthen @[%a@]@\nelse @[%a@]" f c f t f e
-  | Iifnone (v, t, e, b) -> pp "if_none (%a)@\nthen @[%a@]@\nelse%a @[%a@]" f v f t (pp_do_if b pp_id) " drop" f e
+  | Iifnone (v, t, fe)   -> pp "if_none (%a)@\nthen @[%a@]@\nelse @[fun X -> %a@]" f v f t f (fe(Ivar "X"))
   | Iwhile (c, b)        -> pp "while (%a) do@\n  @[%a@]@\ndone" f c f b
   | Iiter (ids, c, b)    -> pp "iter %a on (%a) do@\n  @[%a@]@\ndone" (pp_list ", " pp_id) ids f c f b
   | Izop op -> begin

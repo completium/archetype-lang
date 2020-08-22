@@ -216,7 +216,7 @@ type instruction =
   | Icall       of ident * instruction list
   | Iassign     of ident * instruction
   | Iif         of instruction * instruction * instruction
-  | Iifnone     of instruction * instruction * instruction * bool
+  | Iifnone     of instruction * instruction * (instruction -> instruction)
   | Iwhile      of instruction * instruction
   | Iiter       of ident list * instruction * instruction
   | Izop        of z_operator
@@ -305,6 +305,8 @@ let istring s = Iconst (tstring,  Dstring s)
 let isome   s = Iunop  (Usome, s)
 let inone   t = Izop   (Znone t)
 let iunit     = Iconst (tunit, Dunit)
+let icar x    = Iunop  (Ucar, x)
+let icdr x    = Iunop  (Ucdr, x)
 let ifail msg = Iunop (Ufail, istring msg)
 let iskip     = Iseq []
 

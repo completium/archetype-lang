@@ -46,6 +46,8 @@ PASSED="\
 ./tests/passed/expr_fun_opt_isnone.arl \
 ./tests/passed/expr_fun_opt_issome.arl \
 ./tests/passed/expr_fun_opt_optget.arl \
+./tests/passed/expr_arith_ediv_nat_nat.arl \
+./tests/passed/expr_arith_mod_nat_nat.arl \
 "
 
 RET=0

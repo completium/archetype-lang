@@ -326,8 +326,8 @@ let to_ir (model : M.model) : T.ir =
     | Mminus (l, r)    -> T.Ibinop (Bsub, f l, f r)
     | Mmult (l, r)     -> T.Ibinop (Bmul, f l, f r)
     | Mdivrat _        -> emit_error (UnsupportedTerm ("divrat"))
-    | Mdiveuc (_l, _r) -> assert false
-    | Mmodulo (_l, _r) -> assert false
+    | Mdiveuc (l, r)   -> T.Iifnone (T.Ibinop (Bediv, f l, f r), T.ifail "DivByZero", T.icar)
+    | Mmodulo (l, r)   -> T.Iifnone (T.Ibinop (Bediv, f l, f r), T.ifail "DivByZero", T.icdr)
     | Muplus _e        -> assert false
     | Muminus e        -> T.Iunop  (Uneg, f e)
 
@@ -397,9 +397,9 @@ let to_ir (model : M.model) : T.ir =
     | Mconcat (x, y)     -> T.Ibinop (Bconcat, f x, f y)
     | Mslice (x, s, e)   -> T.Iterop (Tslice, f x, f s, f e)
     | Mlength x          -> T.Iunop (Usize, f x)
-    | Misnone x          -> T.Iifnone (f x, T.itrue, T.ifalse, true)
-    | Missome x          -> T.Iifnone (f x, T.itrue, T.ifalse, true)
-    | Moptget x          -> T.Iifnone (f x, T.ifail "NoneValue", T.iskip,  false)
+    | Misnone x          -> T.Iifnone (f x, T.itrue,  fun _ -> T.ifalse)
+    | Missome x          -> T.Iifnone (f x, T.ifalse, fun _ -> T.itrue)
+    | Moptget x          -> T.Iifnone (f x, T.ifail "NoneValue", id)
 
 
     (* | Misnone x          -> T.Imichelson ([f x], T.SEQ [T.IF_NONE ([T.ctrue],  [T.DROP 1; T.cfalse])], ["_"])
@@ -607,13 +607,13 @@ let to_michelson (ir : T.ir) : T.michelson =
         T.SEQ [ c; T.IF ([t], [e]) ], env
       end
 
-    | Iifnone (v, t, e, b) -> begin
+    | Iifnone (v, t, e) -> begin
         let v, _   = f v in
         let t, env = f t in
-        let e, _   = if b then f e else fe (inc_env env) e in
-        let d = if b then [T.DROP 1] else [] in
+        let env0 = add_var_env env "_var_ifnone" in
+        let e, _   = fe env0 (e (T.Ivar "_var_ifnone")) in
 
-        T.SEQ [ v; T.IF_NONE ([t], d @ [e]) ], env
+        T.SEQ [ v; T.IF_NONE ([t], [e; T.SWAP; T.DROP 1]) ], env
       end
 
 
