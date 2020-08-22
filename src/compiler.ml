@@ -346,7 +346,12 @@ let main () =
         "Unknown target %s (--list-target to see available target)@." s;
       exit 2 in
 
+  let c  =  Arg.Unit (fun _ -> f "michelson") in
+  let ir =  Arg.Unit (fun _ -> f "michelson"; Options.opt_ir := true ) in
+
   let arg_list = Arg.align [
+      "-c", c, "compile to michelson";
+      "--compile", c, " Same as -c";
       "-t", Arg.String f, "<lang> Transcode to <lang> language";
       "--target", Arg.String f, " Same as -t";
       "--list-target", Arg.Unit (fun _ -> Format.printf "target available:@\n  ligo@\n  scaml (beta)@\n  whyml@\n"; exit 0), " List available target languages";
@@ -386,8 +391,8 @@ let main () =
       "--raw", Arg.Set Options.opt_raw, " Same as -r";
       "-ry", Arg.Set Options.opt_raw_whytree, " Print raw model tree";
       "--raw-whytree", Arg.Set Options.opt_raw_whytree, " Same as -r";
-      "-ir", Arg.Set Options.opt_ir, " Generate intermediate representation";
-      "--intermediate-representation", Arg.Set Options.opt_ir, " Same as -ri";
+      "-ir", ir, " Generate intermediate representation";
+      "--intermediate-representation", ir, " Same as -ri";
       "-ri", Arg.Set Options.opt_raw_ir, " Print raw intermediate representation";
       "--raw-ir", Arg.Set Options.opt_raw_ir, " Same as -ri";
       "-rm", Arg.Set Options.opt_raw_michelson, " Print raw michelson";

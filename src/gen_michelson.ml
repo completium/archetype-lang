@@ -11,7 +11,7 @@ exception Anomaly of string
 type error_desc =
   | FieldNotFoundFor of string * string
   | UnsupportedTerm of string
-  | StackEmtptyDec
+  | StackEmptyDec
   | StackIdNotFound of string * string list
   | TODO
 [@@deriving show {with_path = false}]
@@ -22,7 +22,7 @@ let pp_error_desc fmt e =
   | TODO                       -> pp "TODO"
   | FieldNotFoundFor (rn, fn)  -> pp "Field not found for record '%s' and field '%s'" rn fn
   | UnsupportedTerm s          -> pp "UnsupportedTerm: %s" s
-  | StackEmtptyDec             -> pp "StackEmtptyDec"
+  | StackEmptyDec              -> pp "StackEmptyDec"
   | StackIdNotFound (id, vars) -> pp "StackIdNotFound: %s on [%a]" id (pp_list "; " (fun fmt x -> Format.fprintf fmt "%s" x)) vars
 
 let emit_error (desc : error_desc) =
@@ -339,8 +339,8 @@ let to_ir (model : M.model) : T.ir =
 
     (* set api expression *)
 
-    | Msetadd (_, c, a)        -> T.Iterop (Tupdate, f c, f a, T.itrue)
-    | Msetremove (_, c, a)     -> T.Iterop (Tupdate, f c, f a, T.ifalse)
+    | Msetadd (_, c, a)        -> T.Iterop (Tupdate, f a, T.itrue,  f c)
+    | Msetremove (_, c, a)     -> T.Iterop (Tupdate, f a, T.ifalse, f c)
     | Msetcontains (_, c, k)   -> T.Ibinop (Bmem, f k, f c)
     | Msetlength (_, c)        -> T.Iunop  (Usize, f c)
 
@@ -355,11 +355,11 @@ let to_ir (model : M.model) : T.ir =
 
     (* map api expression *)
 
-    | Mmapput (_, _, c, k, v)     -> T.Iterop (Tupdate, f c, T.isome (f v), f k)
-    | Mmapremove (_, tv, c, k)    -> T.Iterop (Tupdate, f c, T.inone (ft tv), f k)
+    | Mmapput (_, _, c, k, v)     -> T.Iterop (Tupdate, f k, T.isome (f v),   f c)
+    | Mmapremove (_, tv, c, k)    -> T.Iterop (Tupdate, f k, T.inone (ft tv), f c)
     | Mmapget (_, _, _c, _k)      -> assert false
-    | Mmapgetopt (_, _, c, k)     -> T.Ibinop (Bget, f c, f k)
-    | Mmapcontains (_, _, c, k)   -> T.Ibinop (Bmem, f c, f k)
+    | Mmapgetopt (_, _, c, k)     -> T.Ibinop (Bget, f k, f c)
+    | Mmapcontains (_, _, c, k)   -> T.Ibinop (Bmem, f k, f c)
     | Mmaplength (_, _, c)        -> T.Iunop (Usize, f c)
 
 
@@ -506,12 +506,16 @@ type env = {
 
 let mk_env ?(vars=[]) () = { vars = vars}
 let inc_env (env : env) = { env with vars = "_"::env.vars }
-let dec_env (env : env) = { env with vars = match env.vars with | _::t -> t | _ -> emit_error StackEmtptyDec }
+let dec_env (env : env) = { env with vars = match env.vars with | _::t -> t | _ -> emit_error StackEmptyDec }
 let add_var_env (env : env) id = { env with vars = id::env.vars }
 let get_sp_for_id (env : env) id =
   match List.index_of (String.equal id) env.vars with
   | -1 -> emit_error (StackIdNotFound (id, env.vars))
   | v -> v
+
+let print_env str env =
+  Format.eprintf "%s: %a@." str pp_env env
+        (* Format.eprintf "var %s: %i@." id n; *)
 
 let to_michelson (ir : T.ir) : T.michelson =
   let storage = ir.storage_type in
@@ -541,8 +545,6 @@ let to_michelson (ir : T.ir) : T.michelson =
       end
     | Ivar id              -> begin
         let n = get_sp_for_id env id in
-        (* Format.eprintf "%a@." pp_env env; *)
-        (* Format.eprintf "var %s: %i@." id n; *)
         let c =
           if n = 0
           then T.DUP
@@ -634,7 +636,7 @@ let to_michelson (ir : T.ir) : T.michelson =
           let lhs, _ = fe env lhs in
           T.SEQ [rhs; lhs; op]
         in
-        c, dec_env env
+        c, env
       end
     | Iterop (op, a1, a2, a3) -> begin
         let c =
@@ -649,16 +651,16 @@ let to_michelson (ir : T.ir) : T.michelson =
           let a1, _   = fe env a1 in
           T.SEQ [a3; a2; a1; op]
         in
-        c, dec_env (dec_env env)
+        c, env
       end
     | Iconst (t, e) -> T.PUSH (t, e), inc_env env
     | Iif (c, t, e) -> begin
-      let c, _ = f c in
-      let t, _ = f t in
-      let e, _ = f e in
+        let c, _ = f c in
+        let t, _ = f t in
+        let e, _ = f e in
 
-      T.SEQ [ c; T.IF ([t], [e]) ], env
-    end
+        T.SEQ [ c; T.IF ([t], [e]) ], env
+      end
     | Iwhile (_c, _b) -> assert false
     | Iset (t, l) -> begin
         T.SEQ ((T.EMPTY_SET t)::(l |> List.rev |> List.map (fun x -> let x, _ = f x in T.SEQ [T.ctrue; x; T.UPDATE ] ))), inc_env env

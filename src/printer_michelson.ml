@@ -157,6 +157,11 @@ let rec pp_code fmt (i : code) =
     | 0 | 1 -> ()
     | _ -> Format.fprintf fmt " %i" i
   in
+  let pp_arg2 fmt i =
+    match i with
+    | 0 -> ()
+    | _ -> Format.fprintf fmt " %i" i
+  in
   let fs fmt = Format.fprintf fmt "{ @[%a@] }" (pp_list ";@\n" pp_code) in
   let fsl fmt = Format.fprintf fmt "{ %a }" (pp_list "; " pp_code) in
   match i with
@@ -164,8 +169,8 @@ let rec pp_code fmt (i : code) =
   | DROP i               -> pp "DROP%a" pp_arg i
   | DUP                  -> pp "DUP"
   | SWAP                 -> pp "SWAP"
-  | DIG i                -> pp "DIG%a" pp_arg i
-  | DUG i                -> pp "DUG%a" pp_arg i
+  | DIG i                -> pp "DIG%a" pp_arg2 i
+  | DUG i                -> pp "DUG%a" pp_arg2 i
   | PUSH (t, d)          -> pp "PUSH %a %a" pp_type t pp_data d
   | SOME                 -> pp "SOME"
   | NONE t               -> pp "NONE %a" pp_type t
