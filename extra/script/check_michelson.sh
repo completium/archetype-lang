@@ -35,6 +35,8 @@ PASSED="\
 ./tests/passed/expr_control_if_else_nat_int.arl \
 ./tests/passed/expr_control_if_else_nat_nat.arl \
 ./tests/passed/test_if_int_nat.arl \
+./tests/passed/simple_while.arl \
+./tests/passed/effect_control_while.arl \
 "
 
 RET=0

@@ -183,7 +183,7 @@ let to_ir (model : M.model) : T.ir =
     | Mmatchwith (_e, _l)        -> assert false
     | Mfor (_id, _col, _body, _) -> assert false
     | Miter (_i, _a, _b, _c, _)  -> assert false
-    | Mwhile (_c, _b, _)         -> assert false
+    | Mwhile (c, b, _)           -> T.Iwhile (f c, f b)
     | Mseq is                    -> T.Iseq (List.map f is)
     | Mreturn _x                 -> assert false
     | Mlabel _                   -> assert false
@@ -661,7 +661,12 @@ let to_michelson (ir : T.ir) : T.michelson =
 
         T.SEQ [ c; T.IF ([t], [e]) ], env
       end
-    | Iwhile (_c, _b) -> assert false
+    | Iwhile (c, b) -> begin
+        let mc, env = f c in
+        let mb, env = fe env b in
+        let md, _   = fe env c in
+      T.SEQ [mc; T.LOOP [mb; md]] , env
+    end
     | Iset (t, l) -> begin
         T.SEQ ((T.EMPTY_SET t)::(l |> List.rev |> List.map (fun x -> let x, _ = f x in T.SEQ [T.ctrue; x; T.UPDATE ] ))), inc_env env
       end

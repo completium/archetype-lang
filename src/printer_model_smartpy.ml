@@ -536,7 +536,7 @@ let pp_model fmt (model : model) =
           f b
 
       | Mwhile (c, b, _) ->
-        Format.fprintf fmt "sp.while (%a):@\n  @[%a@]@\ndone"
+        Format.fprintf fmt "sp.while (%a):@\n  @[%a@]@\n"
           f c
           f b
 
