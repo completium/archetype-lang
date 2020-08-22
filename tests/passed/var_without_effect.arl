@@ -1,0 +1,6 @@
+archetype var_without_effect
+
+entry exec () {
+  var res : int = 1i;
+  ()
+}
