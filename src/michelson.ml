@@ -396,10 +396,46 @@ let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) =
 
 let map_code (fc : code -> code) = map_code_gen fc id id
 
-let rec flat (c : code) : code =
-  let f l = List.fold_right (fun x accu -> match flat x with | SEQ l -> l @ accu | a -> a::accu) l [] in
-  match c with
-  | SEQ l -> SEQ (f l)
-  | IF_LEFT (x, y) -> IF_LEFT (f x, f y)
-  (* TODO: handle constructors with code list arg*)
-  | _ -> map_code flat c
+let rec map_seq f = function
+  | SEQ l             -> SEQ (f l)
+  | IF_NONE (x, y)    -> IF_NONE (f x, f y)
+  | IF_LEFT (x, y)    -> IF_LEFT (f x, f y)
+  | IF_CONS (x, y)    -> IF_CONS (f x, f y)
+  | MAP x             -> MAP (f x)
+  | ITER x            -> ITER (f x)
+  | IF (x, y)         -> IF (f x, f y)
+  | LOOP x            -> LOOP (f x)
+  | LOOP_LEFT x       -> LOOP_LEFT (f x)
+  | LAMBDA (a, b, x)  -> LAMBDA (a, b, f x)
+  | DIP (n, x)        -> DIP (n, f x)
+  | CREATE_CONTRACT x -> CREATE_CONTRACT (f x)
+  | x -> map_code (map_seq f) x
+
+module Utils : sig
+
+  val flat : code -> code
+  val optim : code -> code
+
+end = struct
+
+  let rec flat (c : code) : code =
+    let f l = List.fold_right (fun x accu -> match flat x with | SEQ l -> l @ accu | a -> a::accu) l [] in
+    map_seq f c
+
+  let factorize_instrs (c : code) : code =
+    let f l =
+      let rec aux accu l =
+        match l with
+        | (DROP x)::(DROP y)::t -> aux accu ((DROP (x + y))::t)
+        | e::t -> aux (e::accu) t
+        | [] -> List.rev accu
+      in
+      aux [] l
+    in
+    map_seq f c
+
+  let optim c =
+    c
+    |> factorize_instrs
+
+end

@@ -152,20 +152,20 @@ let pp_ir fmt (ir : ir) =
 
 let rec pp_code fmt (i : code) =
   let pp s = Format.fprintf fmt s in
-  let pp_inc fmt i =
+  let pp_arg fmt i =
     match i with
-    | 0 -> ()
+    | 0 | 1 -> ()
     | _ -> Format.fprintf fmt " %i" i
   in
   let fs fmt = Format.fprintf fmt "{ @[%a@] }" (pp_list ";@\n" pp_code) in
-  let fsl fmt = Format.fprintf fmt "{ %a@ }" (pp_list "; " pp_code) in
+  let fsl fmt = Format.fprintf fmt "{ %a }" (pp_list "; " pp_code) in
   match i with
   | SEQ l                -> fs fmt l
-  | DROP i               -> pp "DROP%a" pp_inc i
+  | DROP i               -> pp "DROP%a" pp_arg i
   | DUP                  -> pp "DUP"
   | SWAP                 -> pp "SWAP"
-  | DIG i                -> pp "DIG%a" pp_inc i
-  | DUG i                -> pp "DUG%a" pp_inc i
+  | DIG i                -> pp "DIG%a" pp_arg i
+  | DUG i                -> pp "DUG%a" pp_arg i
   | PUSH (t, d)          -> pp "PUSH %a %a" pp_type t pp_data d
   | SOME                 -> pp "SOME"
   | NONE t               -> pp "NONE %a" pp_type t
@@ -190,12 +190,12 @@ let rec pp_code fmt (i : code) =
   | MEM                  -> pp "MEM"
   | GET                  -> pp "GET"
   | UPDATE               -> pp "UPDATE"
-  | IF (ti, ei)          -> pp "IF %a %a" fs ti fs ei
+  | IF (ti, ei)          -> pp "IF %a %a" fsl ti fsl ei
   | LOOP is              -> pp "LOOP %a" fs is
   | LOOP_LEFT is         -> pp "LOOP_LEFT %a" fs is
   | LAMBDA (at, rt, is)  -> pp "LAMBDA %a %a %a" pp_type at pp_type rt fs is
   | EXEC                 -> pp "EXEC"
-  | DIP (i, is)          -> pp "DIP%a %a" pp_inc i fsl is
+  | DIP (i, is)          -> pp "DIP%a %a" pp_arg i fsl is
   | FAILWITH             -> pp "FAILWITH"
   | CAST                 -> pp "CAST"
   | RENAME               -> pp "RENAME"

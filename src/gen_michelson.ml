@@ -237,8 +237,8 @@ let to_ir (model : M.model) : T.ir =
 
     (* control expression *)
 
-    | Mexprif (_c, _t, _e)     -> assert false
-    | Mexprmatchwith (_e, _l)  -> assert false
+    | Mexprif (c, t, e)       -> T.Iif (f c, f t, f e)
+    | Mexprmatchwith (_e, _l) -> assert false
 
 
     (* composite type constructors *)
@@ -537,7 +537,7 @@ let to_michelson (ir : T.ir) : T.michelson =
         let v, _ = f v in
         let env0 = add_var_env env id in
         let b, _ = fe env0 b in
-        T.SEQ [v; b; T.DROP 0], env
+        T.SEQ [v; b; T.DROP 1], env
       end
     | Ivar id              -> begin
         let n = get_sp_for_id env id in
@@ -558,8 +558,8 @@ let to_michelson (ir : T.ir) : T.michelson =
         (* Format.eprintf "assign %s: %i@." id n; *)
         let c =
           if n <= 0
-          then T.SEQ [ v; T.SWAP; T.DROP 0 ]
-          else T.SEQ [ v; (T.DIP (1, [T.DIG n; T.DROP 0])); T.DUG n]
+          then T.SEQ [ v; T.SWAP; T.DROP 1 ]
+          else T.SEQ [ v; (T.DIP (1, [T.DIG n; T.DROP 1])); T.DUG n]
         in
         c, env
       end
@@ -652,7 +652,13 @@ let to_michelson (ir : T.ir) : T.michelson =
         c, dec_env (dec_env env)
       end
     | Iconst (t, e) -> T.PUSH (t, e), inc_env env
-    | Iif (_c, _t, _e) -> assert false
+    | Iif (c, t, e) -> begin
+      let c, _ = f c in
+      let t, _ = f t in
+      let e, _ = f e in
+
+      T.SEQ [ c; T.IF ([t], [e]) ], env
+    end
     | Iwhile (_c, _b) -> assert false
     | Iset (t, l) -> begin
         T.SEQ ((T.EMPTY_SET t)::(l |> List.rev |> List.map (fun x -> let x, _ = f x in T.SEQ [T.ctrue; x; T.UPDATE ] ))), inc_env env
@@ -723,7 +729,9 @@ let to_michelson (ir : T.ir) : T.michelson =
           T.SEQ ([T.DUP; T.CDR] @ unfold_storage @ [T.DIG nb_storage_item; T.CAR; c])
         end
     in
-    T.flat code
+    code
+    |> T.Utils.flat
+    |> T.Utils.optim
   in
 
   let code = build_code () in
