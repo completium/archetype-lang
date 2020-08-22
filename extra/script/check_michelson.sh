@@ -45,6 +45,7 @@ PASSED="\
 ./tests/passed/expr_lit_opt_some.arl \
 ./tests/passed/expr_fun_opt_isnone.arl \
 ./tests/passed/expr_fun_opt_issome.arl \
+./tests/passed/expr_fun_opt_optget.arl \
 "
 
 RET=0

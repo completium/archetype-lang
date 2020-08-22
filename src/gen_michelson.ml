@@ -399,7 +399,7 @@ let to_ir (model : M.model) : T.ir =
     | Mlength x          -> T.Iunop (Usize, f x)
     | Misnone x          -> T.Imichelson ([f x], T.SEQ [T.IF_NONE ([T.ctrue],  [T.DROP 1; T.cfalse])], ["_"])
     | Missome x          -> T.Imichelson ([f x], T.SEQ [T.IF_NONE ([T.cfalse], [T.DROP 1; T.ctrue])],  ["_"])
-    | Moptget _x         -> assert false
+    | Moptget x          -> T.Imichelson ([f x], T.SEQ [T.IF_NONE ([T.cfail "NoneValue"], [])],  ["_"])
     | Mfloor _x          -> assert false
     | Mceil _x           -> assert false
     | Mtostring (_t, _x) -> assert false

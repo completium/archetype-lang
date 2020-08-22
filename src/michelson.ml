@@ -313,6 +313,7 @@ let cfalse    = PUSH (mk_type Tbool, Dfalse)
 let cint n    = PUSH (mk_type Tint,  Dint n)
 let cnat n    = PUSH (mk_type Tnat,  Dint n)
 let cstring s = PUSH (mk_type Tstring,  Dstring s)
+let cfail msg = SEQ [PUSH (mk_type Tstring,  Dstring msg); FAILWITH]
 
 (* -------------------------------------------------------------------- *)
 
