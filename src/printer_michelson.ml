@@ -1,4 +1,4 @@
-(* open Tools *)
+open Tools
 open Printer_tools
 open Michelson
 
@@ -99,7 +99,7 @@ let rec pp_code fmt (i : code) =
   | IF (ti, ei)          -> pp "IF %a %a" fsl ti fsl ei
   | LOOP is              -> pp "LOOP %a" fs is
   | LOOP_LEFT is         -> pp "LOOP_LEFT %a" fs is
-  | LAMBDA (at, rt, is)  -> pp "LAMBDA %a %a %a" pp_type at pp_type rt fs is
+  | LAMBDA (at, rt, is)  -> pp "LAMBDA %a %a %a" pp_type at pp_type rt fsl is
   | EXEC                 -> pp "EXEC"
   | DIP (i, is)          -> pp "DIP%a %a" pp_arg i fsl is
   | FAILWITH             -> pp "FAILWITH"
@@ -258,9 +258,11 @@ let pp_entry fmt (e : entry) =
     pp_instruction e.body
 
 let pp_ir fmt (ir : ir) =
+  let pp a = Format.fprintf fmt a in
   Format.fprintf fmt "storage_type: %a@\n@\n" pp_type ir.storage_type;
   Format.fprintf fmt "storage_data: %a@\n@\n" pp_data ir.storage_data;
   (pp_list "@\n@\n" pp_func) fmt ir.funs;
+  (if (List.is_not_empty ir.funs) then (pp "@\n"));
   (pp_list "@\n@\n" pp_entry) fmt ir.entries
 
 let pp_michelson fmt (m : michelson) =

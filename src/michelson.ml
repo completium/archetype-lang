@@ -234,6 +234,7 @@ type instruction =
 
 type func = {
   name: ident;
+  raw_type_arg: type_;
   args: (ident * type_) list;
   ret: type_;
   body: instruction;
@@ -269,13 +270,13 @@ type michelson = {
 let mk_type ?annotation node : type_ =
   {node; annotation}
 
-let mk_func name args ret body : func =
-  {name; args; ret; body}
+let mk_func name raw_type_arg args ret body : func =
+  {name; raw_type_arg; args; ret; body}
 
 let mk_entry name args body : entry =
   {name; args; body}
 
-let mk_ir ?(funs=[]) storage_type storage_data storage_list parameter entries : ir =
+let mk_ir storage_type storage_data storage_list parameter funs entries : ir =
   {storage_type; storage_data; storage_list; parameter; funs; entries}
 
 let mk_michelson storage parameter code =

@@ -48,6 +48,11 @@ PASSED="\
 ./tests/passed/expr_fun_opt_optget.arl \
 ./tests/passed/expr_arith_ediv_nat_nat.arl \
 ./tests/passed/expr_arith_mod_nat_nat.arl \
+./tests/passed/simple_fun1.arl \
+./tests/passed/simple_fun2.arl \
+./tests/passed/simple_fun3.arl \
+./tests/passed/simple_fun4.arl \
+./tests/passed/simple_fun_alt.arl \
 "
 
 RET=0

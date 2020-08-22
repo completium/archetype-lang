@@ -1,0 +1,11 @@
+archetype simple_fun2
+
+variable res : int = 0
+
+function f (i : int) : int {
+  return i
+}
+
+entry exec () {
+  res := f(0);
+}

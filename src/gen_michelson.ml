@@ -164,7 +164,7 @@ let to_ir (model : M.model) : T.ir =
     | Mletin ([id], v, _, b, _)    -> T.IletIn (unloc id, f v, f b)
     | Mletin _                     -> assert false
     | Mdeclvar (_ids, _t, _v)      -> assert false
-    | Mapp (_e, _args)             -> assert false
+    | Mapp (e, args)               -> T.Icall (unloc e, List.map f args)
 
     (* assign *)
 
@@ -203,7 +203,7 @@ let to_ir (model : M.model) : T.ir =
     | Miter (_i, _a, _b, _c, _)  -> assert false
     | Mwhile (c, b, _)           -> T.Iwhile (f c, f b)
     | Mseq is                    -> T.Iseq (List.map f is)
-    | Mreturn _x                 -> assert false
+    | Mreturn x                  -> f x
     | Mlabel _                   -> assert false
     | Mmark  _                   -> assert false
 
@@ -403,8 +403,8 @@ let to_ir (model : M.model) : T.ir =
 
 
     (* | Misnone x          -> T.Imichelson ([f x], T.SEQ [T.IF_NONE ([T.ctrue],  [T.DROP 1; T.cfalse])], ["_"])
-    | Missome x          -> T.Imichelson ([f x], T.SEQ [T.IF_NONE ([T.cfalse], [T.DROP 1; T.ctrue])],  ["_"])
-    | Moptget x          -> T.Imichelson ([f x], T.SEQ [T.IF_NONE ([T.cfail "NoneValue"], [])],  ["_"]) *)
+       | Missome x          -> T.Imichelson ([f x], T.SEQ [T.IF_NONE ([T.cfalse], [T.DROP 1; T.ctrue])],  ["_"])
+       | Moptget x          -> T.Imichelson ([f x], T.SEQ [T.IF_NONE ([T.cfail "NoneValue"], [])],  ["_"]) *)
     | Mfloor _x          -> assert false
     | Mceil _x           -> assert false
     | Mtostring (_t, _x) -> assert false
@@ -499,16 +499,32 @@ let to_ir (model : M.model) : T.ir =
 
   let env = mk_env () in
 
-  let entries =
-    let for_fs env (fs : M.function_struct) : T.entry =
+  let funs, entries =
+
+    let for_fs env (fs : M.function_struct) =
       let name = unloc fs.name in
       let args = List.map (fun (id, t, _) -> unloc id, to_type t) fs.args in
       let env = {env with function_p = Some (name, args)} in
       let body = mterm_to_intruction env fs.body in
+      name, args, body
+    in
+
+    let for_fs_fun env (fs : M.function_struct) ret : T.func =
+      let ret = to_type ret in
+      let name, args, body = for_fs env fs in
+      let raw_type_arg = to_one_type (List.map snd args) in
+      T.mk_func name raw_type_arg args ret body
+    in
+
+    let for_fs_entry env (fs : M.function_struct) : T.entry =
+      let name, args, body = for_fs env fs in
       T.mk_entry name args body
     in
 
-    List.fold_right (fun (x : M.function__) accu -> match x.node with | Entry fs -> (for_fs env fs)::accu | _ -> accu ) model.functions []
+    List.fold_right (fun (x : M.function__) (funs, entries) ->
+        match x.node with
+        | Entry fs -> (funs, (for_fs_entry env fs)::entries)
+        | Function (fs, ret) -> ((for_fs_fun env fs ret)::funs, entries) ) model.functions ([], [])
   in
 
   let annot a (t : T.type_) = { t with annotation = Some a} in
@@ -528,7 +544,7 @@ let to_ir (model : M.model) : T.ir =
         List.fold_left (fun accu x -> (T.mk_type (T.Tor (for_entry x, accu)))) (for_entry i) t
       end
   in
-  T.mk_ir storage_type storage_data l parameter entries
+  T.mk_ir storage_type storage_data l parameter funs entries
 
 type env = {
   vars : ident list;
@@ -544,7 +560,7 @@ let get_sp_for_id (env : env) id =
   | -1 -> emit_error (StackIdNotFound (id, env.vars))
   | v -> v
 
-let print_env str env =
+let print_env ?(str="") env =
   Format.eprintf "%s: %a@." str pp_env env
 (* Format.eprintf "var %s: %i@." id n; *)
 
@@ -586,7 +602,13 @@ let to_michelson (ir : T.ir) : T.michelson =
         c, inc_env env
       end
 
-    | Icall (_id, _args)   -> assert false
+    | Icall (id, args)   -> begin
+        print_env env;
+        let fid, _     = f (Ivar id) in
+        let args, _    = seq env args in
+
+        T.SEQ [fid; args; T.EXEC], inc_env env
+      end
 
     | Iassign (id, v)  -> begin
         let n = get_sp_for_id env id in
@@ -771,7 +793,29 @@ let to_michelson (ir : T.ir) : T.michelson =
 
     let unfold = foldi (fun x -> T.UNPAIR::T.SWAP::x ) [] in
 
-    let vars = List.map fst ir.storage_list |> List.rev in
+    let get_funs _ : T.code list * ident list =
+      let funs = List.map (
+          fun (x : T.func) ->
+            let targs = x.raw_type_arg in
+            let env = mk_env ~vars:(x.args |> List.map fst |> List.rev) () in
+            let nb_args = List.length x.args in
+            let nb_as = nb_args - 1 in
+            let unfold_args = unfold nb_as in
+            let code, _ = instruction_to_code env x.body in
+            T.LAMBDA (targs, x.ret, unfold_args @ [code] @ [T.DUG nb_args; T.DROP nb_args]), x.name
+        ) ir.funs
+      in
+      List.split funs
+    in
+
+    let funs, funids = get_funs () in
+    let cfuns, unfold_funs =
+      let n = (List.length funs) in
+      if n = 0 then [], []
+      else funs @ [T.DIG (List.length funs)], [T.DIP (1, [T.DROP n]) ]
+    in
+
+    let vars = List.rev (List.map fst ir.storage_list) @ List.rev funids in
     let env = mk_env () ~vars in
     let nb_storage_item = List.length ir.storage_list in
     let nb_fs = nb_storage_item - 1 in
@@ -785,7 +829,7 @@ let to_michelson (ir : T.ir) : T.michelson =
           match e.args with
           | [] -> begin
               let code, _ = instruction_to_code env e.body in
-              T.SEQ ([T.CDR] @ unfold_storage @ [code] @ fold_storage @ [T.NIL (T.toperation); T.PAIR ])
+              T.SEQ (cfuns @ [T.CDR] @ unfold_storage @ [code] @ fold_storage @ [T.NIL (T.toperation); T.PAIR ] @ unfold_funs)
             end
           | l -> begin
               let nb_args = List.length l in
@@ -794,7 +838,7 @@ let to_michelson (ir : T.ir) : T.michelson =
               let args = List.map fst l |> List.rev in
               let env = { env with vars = args @ env.vars } in
               let code, _ = instruction_to_code env e.body in
-              T.SEQ ([T.DUP; T.CDR] @ unfold_storage @ [T.DIG nb_storage_item; T.CAR] @ unfold_args @ [code] @ [T.DROP nb_args] @ fold_storage @ [T.NIL (T.toperation); T.PAIR ])
+              T.SEQ (cfuns @ [T.DUP; T.CDR] @ unfold_storage @ [T.DIG nb_storage_item; T.CAR] @ unfold_args @ [code] @ [T.DROP nb_args] @ fold_storage @ [T.NIL (T.toperation); T.PAIR ] @ unfold_funs)
             end
         end
       | e::l -> begin
@@ -805,10 +849,10 @@ let to_michelson (ir : T.ir) : T.michelson =
             let args = List.map fst e.args |> List.rev in
             let env = { env with vars = args @ env.vars } in
             let code, _ = instruction_to_code env e.body in
-            T.SEQ (unfold_args @ [code] @ [T.DROP nb_args] @ fold_storage @ [T.NIL (T.toperation); T.PAIR ])
+            T.SEQ (unfold_args @ [code] @ [T.DROP nb_args] @ fold_storage @ [T.NIL (T.toperation); T.PAIR ] @ unfold_funs)
           in
           let c : T.code = List.fold_left (fun accu x -> T.IF_LEFT ([for_entry x], [accu])) (for_entry e) l in
-          T.SEQ ([T.DUP; T.CDR] @ unfold_storage @ [T.DIG nb_storage_item; T.CAR; c])
+          T.SEQ (cfuns @ [T.DUP; T.CDR] @ unfold_storage @ [T.DIG nb_storage_item; T.CAR; c])
         end
     in
     code

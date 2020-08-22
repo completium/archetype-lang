@@ -1,0 +1,12 @@
+archetype simple_fun_alt
+
+function f (i : int) : int {
+  return 0
+}
+
+entry exec () {
+  effect {
+    var res : int = f(0);
+    ()
+  }
+}
