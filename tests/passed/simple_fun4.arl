@@ -1,15 +1,11 @@
-archetype simple_fun4
+archetype simple_fun3
 
 variable res : int = 0
 
-function f (i : int) : int {
-  return i
+function f (i : int, str : string, n : nat) : int {
+  return (i + length(str) + n)
 }
 
 entry exec () {
-  res := f(0);
-}
-
-entry exec1 () {
-  res := f(1);
+  res := f(1, "mystr", 5);
 }
