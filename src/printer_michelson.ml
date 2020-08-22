@@ -99,7 +99,7 @@ let rec pp_instruction fmt (i : instruction) =
     end
   | Ibinop (op, lhs, rhs) -> begin
       match op with
-      | Badd       -> pp "(%a) * (%a)"       f lhs f rhs
+      | Badd       -> pp "(%a) + (%a)"       f lhs f rhs
       | Bsub       -> pp "(%a) - (%a)"       f lhs f rhs
       | Bmul       -> pp "(%a) * (%a)"       f lhs f rhs
       | Bediv      -> pp "(%a) / (%a)"       f lhs f rhs

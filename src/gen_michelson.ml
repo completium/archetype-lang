@@ -563,7 +563,7 @@ let to_michelson (ir : T.ir) : T.michelson =
         T.SEQ [v; b; T.DROP 1], env
       end
 
-    | Ivar id              -> begin
+    | Ivar id -> begin
         let n = get_sp_for_id env id in
         let c =
           if n = 0
@@ -634,30 +634,27 @@ let to_michelson (ir : T.ir) : T.michelson =
         c, inc_env env
       end
     | Iunop (op, e) -> begin
-        let c =
-          let op =
-            match op with
-            | Ucar      -> T.CAR
-            | Ucdr      -> T.CDR
-            | Uneg      -> T.NEG
-            | Uint      -> T.INT
-            | Unot      -> T.NOT
-            | Uabs      -> T.ABS
-            | Uisnat    -> T.ISNAT
-            | Usome     -> T.SOME
-            | Usize     -> T.SIZE
-            | Upack     -> T.PACK
-            | Uunpack t -> T.UNPACK t
-            | Ublake2b  -> T.BLAKE2B
-            | Usha256   -> T.SHA256
-            | Usha512   -> T.SHA512
-            | Uhash_key -> T.HASH_KEY
-            | Ufail     -> T.FAILWITH
-          in
-          let e, _ = f e in
-          T.SEQ [e; op]
+        let op =
+          match op with
+          | Ucar      -> T.CAR
+          | Ucdr      -> T.CDR
+          | Uneg      -> T.NEG
+          | Uint      -> T.INT
+          | Unot      -> T.NOT
+          | Uabs      -> T.ABS
+          | Uisnat    -> T.ISNAT
+          | Usome     -> T.SOME
+          | Usize     -> T.SIZE
+          | Upack     -> T.PACK
+          | Uunpack t -> T.UNPACK t
+          | Ublake2b  -> T.BLAKE2B
+          | Usha256   -> T.SHA256
+          | Usha512   -> T.SHA512
+          | Uhash_key -> T.HASH_KEY
+          | Ufail     -> T.FAILWITH
         in
-        c, env
+        let e, env = f e in
+        T.SEQ [e; op], env
       end
     | Ibinop (op, lhs, rhs) -> begin
         let c =
