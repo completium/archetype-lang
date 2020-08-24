@@ -163,9 +163,14 @@ let to_ir (model : M.model) : T.ir =
     let ft = to_type in
 
     let vops = T.Ivar operations in
-    let contract_internal a t d = T.Iifnone (T.Iunop (Ucontract (t, a), f d), T.ifail "BadContract", id, "_var_ifnone") in
+    let contract_internal a t d = T.Iifnone (T.Iunop (Ucontract (t, a), d), T.ifail "BadContract", id, "_var_ifnone") in
     let get_contract      t d = contract_internal  None     t d in
-    let get_entrypoint id t d = contract_internal (Some id) t d in
+    let get_entrypoint id t d = contract_internal (Some ("%" ^ id)) t d in
+    let get_self_entrypoint id =
+      let fs = M.Utils.get_fs model id in
+      let ts = List.map proj3_2 fs.args in
+      get_entrypoint id (to_one_type (List.map to_type ts)) (T.Izop Zself_address)
+    in
 
     match mtt.node with
 
@@ -184,7 +189,7 @@ let to_ir (model : M.model) : T.ir =
     | Massign (_op, _, Arecord (_rn, _fn, _r), _v) -> assert false
     | Massign (_op, _, Astate, _x)                 -> assert false
     | Massign (_op, _, Aassetstate (_an, _k), _v)  -> assert false
-    | Massign (_op, _, Aoperations, _v)            -> assert false
+    | Massign (_op, _, Aoperations, v)             -> T.Iassign (operations, f v)
 
     (* control *)
 
@@ -233,20 +238,23 @@ let to_ir (model : M.model) : T.ir =
         T.Iunop  (Ufail, x)
       end
     | Mtransfer (v, k) -> begin
-        let op =
+        let arg, entry =
           match k with
-          | TKsimple d           -> T.Iterop (Ttransfer_tokens, T.iunit, f v, get_contract T.tunit d)
-          | TKcall (id, t, d, a) -> T.Iterop (Ttransfer_tokens, f a, f v, get_entrypoint id (to_type t) d)
-          | TKentry (_e, _a)     -> assert false
-          | TKself (_id, _args)  -> assert false
+          | TKsimple d           -> T.iunit, get_contract T.tunit (f d)
+          | TKcall (id, t, d, a) -> f a, get_entrypoint id (to_type t) (f d)
+          | TKentry (e, a)       -> f a, f e
+          | TKself (id, args)    -> begin
+              let a = T.Irecord (List.map (fun (_, x) -> f x) args) in
+              a, get_self_entrypoint id
+            end
         in
-        T.Iassign (operations, T.Ibinop (Bcons, op, vops))
+        T.Iassign (operations, T.Ibinop (Bcons, T.Iterop (Ttransfer_tokens, arg, f v, entry), vops))
       end
 
     (* entrypoint *)
 
-    | Mentrypoint (_, _a, _s) -> assert false
-    | Mself _id               -> assert false
+    | Mentrypoint (t, id, d)  -> T.Iunop (Ucontract (to_type t, Some (unloc id)), f d)
+    | Mself id                -> get_self_entrypoint (unloc id)
 
 
     (* operation *)
@@ -379,7 +387,11 @@ let to_ir (model : M.model) : T.ir =
 
     (* utils *)
 
-    | Mcast (_src, _dst, v)  -> f v
+    | Mcast (src, dst, v) -> begin
+        match src, dst with
+        | M.Tbuiltin Baddress, M.Tentrysig t -> get_contract (to_type t) (f v)
+        | _ -> f v
+      end
     | Mtupleaccess (x, n)    -> Tools.foldi (fun x -> T.Iunop (Ucdr, x)) (f x) (Big_int.int_of_big_int n)
 
     (* set api expression *)

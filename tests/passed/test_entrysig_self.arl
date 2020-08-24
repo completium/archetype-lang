@@ -1,0 +1,12 @@
+archetype test_entrysig_self
+
+variable res : nat = 0
+
+entry otherentry(i : nat) {
+  res := i;
+}
+
+entry exec () {
+  var e : entrysig<nat> = self.otherentry;
+  transfer 0tz to entry e(3);
+}

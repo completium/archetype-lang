@@ -62,6 +62,9 @@ PASSED="\
 ./tests/passed/transfer_entrypoint.arl \
 ./tests/passed/transfer_self.arl \
 ./tests/passed/transfer_simple_with_entrypoint.arl \
+./tests/passed/test_transfer.arl \
+./tests/passed/test_entrysig_self.arl \
+./tests/passed/lang_entrysig.arl \
 "
 
 RET=0

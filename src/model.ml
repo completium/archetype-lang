@@ -3468,6 +3468,9 @@ module Utils : sig
   val get_function                       : model -> ident -> function_struct
   val get_asset_partitions               : model -> ident -> (ident * ident) list
   val get_specifications                 : model -> specification list
+  val get_fss                            : model -> function_struct list
+  val get_fs                             : model -> ident -> function_struct
+
 end = struct
 
   open Tools
@@ -4620,4 +4623,9 @@ end = struct
     (List.fold_left (fun acc (s,_) -> match s with Some v -> acc@[v] | None -> acc) [] (get_entries model)) @
     ((List.fold_left (fun acc (s,_,_) -> match s with Some v -> acc@[v] | None -> acc)) [] (get_functions model))
 
+  let get_fss (model : model) : function_struct list =
+    List.map (fun (x) -> match x.node with | Entry fs | Function (fs, _) -> fs) model.functions
+
+  let get_fs (model : model) (id : ident) : function_struct =
+    List.find (fun (x : function_struct) -> String.equal id (unloc x.name)) (get_fss model)
 end

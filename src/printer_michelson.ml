@@ -53,7 +53,7 @@ let rec pp_data fmt (d : data) =
 
 let rec pp_code fmt (i : code) =
   let pp s = Format.fprintf fmt s in
-  let pp_annot = pp_option (fun fmt -> Format.fprintf fmt " %%%s") in
+  let pp_annot = pp_option (fun fmt -> Format.fprintf fmt " %s") in
   let pp_arg fmt i =
     match i with
     | 0 | 1 -> ()
