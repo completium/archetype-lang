@@ -1,0 +1,23 @@
+archetype simple_multi_entry3
+
+variable str : string = ""
+variable n   : nat    = 0
+variable i   : int    = 0
+
+entry e1 (v : nat) {
+  n := v;
+  i := n + i;
+  n += 2;
+}
+
+entry e2 (a : nat, b : nat) {
+  str := "mystring";
+  n := a + b;
+  i := 9 - n
+}
+
+entry e3 () {
+  n := 3;
+  str := "mystring";
+  n += 2;
+}

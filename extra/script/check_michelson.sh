@@ -28,6 +28,7 @@ PASSED="\
 ./tests/passed/expr_map_contains.arl \
 ./tests/passed/simple_multi_entry.arl \
 ./tests/passed/simple_multi_entry2.arl \
+./tests/passed/simple_multi_entry3.arl \
 ./tests/passed/effect_control_if.arl \
 ./tests/passed/effect_control_if_else.arl \
 ./tests/passed/expr_control_if_else_int_int.arl \

@@ -641,7 +641,7 @@ let to_michelson (ir : T.ir) : T.michelson =
     | Iifnone (v, t, e, id) -> begin
         let v, _   = f v in
         let t, env = f t in
-        let env0 = add_var_env env id in
+        let env0   = add_var_env env id in
         let e, _   = fe env0 (e (T.Ivar id)) in
 
         T.SEQ [ v; T.IF_NONE ([t], [e; T.SWAP; T.DROP 1]) ], env
@@ -831,54 +831,37 @@ let to_michelson (ir : T.ir) : T.michelson =
     let unfold_storage = unfold nb_fs  in
     let fold_storage = foldi (fun x -> T.SWAP::T.PAIR::x ) [] nb_fs in
 
-    let code =
-      match List.rev ir.entries with
-      | []   -> assert false
-      | [e]  -> begin
-          match e.args with
-          | [] -> begin
-              let code, _ = instruction_to_code env e.body in
-              T.SEQ (cfuns @ [T.CDR] @ unfold_storage @ [code] @ fold_storage @ [T.NIL (T.toperation); T.PAIR ] @ unfold_funs)
-            end
-          | l -> begin
-              let nb_args = List.length l in
-              let nb_as = nb_args - 1 in
-              let unfold_args = unfold nb_as in
-              let args = List.map fst l |> List.rev in
-              let env = { env with vars = args @ env.vars } in
-              let code, _ = instruction_to_code env e.body in
-              T.SEQ (cfuns @ [T.DUP; T.CDR] @ unfold_storage @ [T.DIG nb_storage_item; T.CAR] @ unfold_args @ [code] @ [T.DROP nb_args] @ fold_storage @ [T.NIL (T.toperation); T.PAIR ] @ unfold_funs)
-            end
+
+    let for_entry (e : T.entry) =
+      match e.args with
+      | [] -> begin
+          (* print_env env; *)
+          let code, _ = instruction_to_code env e.body in
+          T.SEQ ([T.DROP 1] @ [code] @ fold_storage @ [T.NIL (T.toperation); T.PAIR ])
         end
-      | e::l -> begin
-          let for_entry (e : T.entry) =
-          match e.args with
-          | [] -> begin
-              let code, _ = instruction_to_code env e.body in
-              T.SEQ (cfuns @ [T.CDR] @ unfold_storage @ [code] @ fold_storage @ [T.NIL (T.toperation); T.PAIR ] @ unfold_funs)
-            end
-          | l -> begin
-              let nb_args = List.length l in
-              let nb_as = nb_args - 1 in
-              let unfold_args = unfold nb_as in
-              let args = List.map fst l |> List.rev in
-              let env = { env with vars = args @ env.vars } in
-              let code, _ = instruction_to_code env e.body in
-              T.SEQ (cfuns @ [T.DUP; T.CDR] @ unfold_storage @ [T.DIG nb_storage_item; T.CAR] @ unfold_args @ [code] @ [T.DROP nb_args] @ fold_storage @ [T.NIL (T.toperation); T.PAIR ] @ unfold_funs)
-            end
-            (* let nb_args = List.length e.args in
-            let nb_as = nb_args - 1 in
-            let unfold_args = unfold nb_as in
-            let args = List.map fst e.args |> List.rev in
-            let env = { env with vars = args @ env.vars } in
-            let code, _ = instruction_to_code env e.body in
-            T.SEQ (unfold_args @ [code] @ [T.DROP nb_args] @ fold_storage @ [T.NIL (T.toperation); T.PAIR ] @ unfold_funs) *)
-          in
-          let c : T.code = List.fold_left (fun accu x -> T.IF_LEFT ([for_entry x], [accu])) (for_entry e) l in
-          T.SEQ (cfuns @ [T.DUP; T.CDR] @ unfold_storage @ [T.DIG nb_storage_item; T.CAR; c])
+      | l -> begin
+          let nb_args = List.length l in
+          let nb_as = nb_args - 1 in
+          let unfold_args = unfold nb_as in
+          let args = List.map fst l |> List.rev in
+          let env = { env with vars = args @ env.vars } in
+          (* print_env env; *)
+          let code, _ = instruction_to_code env e.body in
+          T.SEQ (unfold_args @ [code] @ [T.DROP nb_args] @ fold_storage @ [T.NIL (T.toperation); T.PAIR ])
         end
     in
-    code
+
+    let code =
+      let us = if nb_storage_item > 1 then [T.DIP (1, unfold_storage)] else [] in
+      match List.rev ir.entries with
+      | []   -> assert false
+      | [e]  -> T.SEQ ([T.UNPAIR] @ us @ [for_entry e])
+      | e::l -> begin
+          let c : T.code = List.fold_left (fun accu x -> T.IF_LEFT ([for_entry x], [accu])) (for_entry e) l in
+          T.SEQ ([T.UNPAIR] @ us @ [c])
+        end
+    in
+    T.SEQ (cfuns @ [code] @ unfold_funs)
     |> T.Utils.flat
     |> T.Utils.optim
   in
