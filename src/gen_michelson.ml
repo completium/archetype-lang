@@ -659,6 +659,7 @@ let to_michelson (ir : T.ir) : T.michelson =
       end
 
     | Iif (c, t, e) -> begin
+        print_env env;
         let c, _   = f c in
         let t, env = f t in (* TODO: fix it (what it does in the stack) *)
         let e, _   = f e in
@@ -791,8 +792,8 @@ let to_michelson (ir : T.ir) : T.michelson =
             | Cgt -> T.GT
             | Cge -> T.GE
           in
-          let r, _ = f rhs in
-          let l, _ = f lhs in
+          let r, env0 = f rhs in
+          let l, _ = fe env0 lhs in
           T.SEQ [r; l; T.COMPARE; op]
         in
         c, env
