@@ -326,6 +326,155 @@ let cfail msg = SEQ [PUSH (mk_type Tstring,  Dstring msg); FAILWITH]
 
 (* -------------------------------------------------------------------- *)
 
+let cmp_ident = String.equal
+
+let cmp_type lhs rhs =
+  let rec f lhs rhs =
+    match lhs.node, rhs.node with
+    | Taddress, Taddress                   -> true
+    | Tbig_map (a1, b1), Tbig_map (a2, b2) -> f a1 a2 && f b1 b2
+    | Tbool, Tbool                         -> true
+    | Tbytes, Tbytes                       -> true
+    | Tchain_id, Tchain_id                 -> true
+    | Tcontract a1, Tcontract a2           -> f a1 a2
+    | Tint, Tint                           -> true
+    | Tkey, Tkey                           -> true
+    | Tkey_hash, Tkey_hash                 -> true
+    | Tlambda (a1, b1), Tlambda (a2, b2)   -> f a1 a2 && f b1 b2
+    | Tlist a1, Tlist a2                   -> f a1 a2
+    | Tmap (a1, b1), Tmap (a2, b2)         -> f a1 a2 && f b1 b2
+    | Tmutez, Tmutez                       -> true
+    | Tnat, Tnat                           -> true
+    | Toperation, Toperation               -> true
+    | Toption a1, Toption a2               -> f a1 a2
+    | Tor (a1, b1), Tor (a2, b2)           -> f a1 a2 && f b1 b2
+    | Tpair (a1, b1), Tpair (a2, b2)       -> f a1 a2 && f b1 b2
+    | Tset a1, Tset a2                     -> f a1 a2
+    | Tsignature, Tsignature               -> true
+    | Tstring, Tstring                     -> true
+    | Ttimestamp, Ttimestamp               -> true
+    | Tunit, Tunit                         -> true
+    | _ -> false
+  in
+  f lhs rhs
+
+let cmp_data lhs rhs =
+  let rec f lhs rhs =
+    match lhs, rhs with
+    | Dint n1, Dint n2               -> Big_int.eq_big_int n1 n2
+    | Dstring s1, Dstring s2         -> String.equal s1 s2
+    | Dbytes s1, Dbytes s2           -> String.equal s1 s2
+    | Dunit, Dunit                   -> true
+    | Dtrue, Dtrue                   -> true
+    | Dfalse, Dfalse                 -> true
+    | Dpair (a1, b1), Dpair (a2, b2) -> f a1 a2 && f b1 b2
+    | Dleft d1, Dleft d2             -> f d1 d2
+    | Dright d1, Dright d2           -> f d1 d2
+    | Dsome d1, Dsome d2             -> f d1 d2
+    | Dnone, Dnone                   -> true
+    | Dlist ds1, Dlist ds2           -> List.for_all2 f ds1 ds2
+    | Dplist l1, Dplist l2           -> List.for_all2 (fun (k1, v1) (k2, v2) -> f k1 k2 && f v1 v2) l1 l2
+    | _ -> false
+  in
+  f lhs rhs
+
+let cmp_code lhs rhs =
+  let rec f lhs rhs =
+    match lhs, rhs with
+    | SEQ l1, SEQ l2                                 -> List.for_all2 f l1 l2
+    | DROP n1, DROP n2                               -> n1 = n2
+    | DUP, DUP                                       -> true
+    | SWAP, SWAP                                     -> true
+    | DIG n1, DIG n2                                 -> n1 = n2
+    | DUG n1, DUG n2                                 -> n1 = n2
+    | PUSH (t1, d1), PUSH (t2, d2)                   -> cmp_type t1 t2 && cmp_data d1 d2
+    | SOME, SOME                                     -> true
+    | NONE t1, NONE t2                               -> cmp_type t1 t2
+    | UNIT, UNIT                                     -> true
+    | IF_NONE (t1, e1), IF_NONE (t2, e2)             -> List.for_all2 f t1 t2 && List.for_all2 f e1 e2
+    | PAIR, PAIR                                     -> true
+    | CAR, CAR                                       -> true
+    | CDR, CDR                                       -> true
+    | UNPAIR, UNPAIR                                 -> true
+    | LEFT t1, LEFT t2                               -> cmp_type t1 t2
+    | RIGHT t1, RIGHT t2                             -> cmp_type t1 t2
+    | IF_LEFT (t1, e1), IF_LEFT (t2, e2)             -> List.for_all2 f t1 t2 && List.for_all2 f e1 e2
+    | NIL t1, NIL t2                                 -> cmp_type t1 t2
+    | CONS, CONS                                     -> true
+    | IF_CONS (t1, e1), IF_CONS (t2, e2)             -> List.for_all2 f t1 t2 && List.for_all2 f e1 e2
+    | SIZE, SIZE                                     -> true
+    | EMPTY_SET t1, EMPTY_SET t2                     -> cmp_type t1 t2
+    | EMPTY_MAP (k1, v1), EMPTY_MAP (k2, v2)         -> cmp_type k1 k2 && cmp_type v1 v2
+    | EMPTY_BIG_MAP (k1, v1), EMPTY_BIG_MAP (k2, v2) -> cmp_type k1 k2 && cmp_type v1 v2
+    | MAP  l1, MAP  l2                               -> List.for_all2 f l1 l2
+    | ITER l1, ITER l2                               -> List.for_all2 f l1 l2
+    | MEM, MEM                                       -> true
+    | GET, GET                                       -> true
+    | UPDATE, UPDATE                                 -> true
+    | IF (t1, e1), IF (t2, e2)                       -> List.for_all2 f t1 t2 && List.for_all2 f e1 e2
+    | LOOP l1, LOOP l2                               -> List.for_all2 f l1 l2
+    | LOOP_LEFT l1, LOOP_LEFT l2                     -> List.for_all2 f l1 l2
+    | LAMBDA (a1, r1, b1), LAMBDA (a2, r2, b2)       -> cmp_type a1 a2 && cmp_type r1 r2 && List.for_all2 f b1 b2
+    | EXEC, EXEC                                     -> true
+    | DIP (n1, l1), DIP (n2, l2)                     -> n1 = n2 && List.for_all2 f l1 l2
+    | FAILWITH, FAILWITH                             -> true
+    | CAST, CAST                                     -> true
+    | RENAME, RENAME                                 -> true
+    | CONCAT, CONCAT                                 -> true
+    | SLICE, SLICE                                   -> true
+    | PACK, PACK                                     -> true
+    | UNPACK t1, UNPACK t2                           -> cmp_type t1 t2
+    | ADD, ADD                                       -> true
+    | SUB, SUB                                       -> true
+    | MUL, MUL                                       -> true
+    | EDIV, EDIV                                     -> true
+    | ABS, ABS                                       -> true
+    | ISNAT, ISNAT                                   -> true
+    | INT, INT                                       -> true
+    | NEG, NEG                                       -> true
+    | LSL, LSL                                       -> true
+    | LSR, LSR                                       -> true
+    | OR, OR                                         -> true
+    | AND, AND                                       -> true
+    | XOR, XOR                                       -> true
+    | NOT, NOT                                       -> true
+    | COMPARE, COMPARE                               -> true
+    | EQ, EQ                                         -> true
+    | NEQ, NEQ                                       -> true
+    | LT, LT                                         -> true
+    | GT, GT                                         -> true
+    | LE, LE                                         -> true
+    | GE, GE                                         -> true
+    | ASSERT_EQ, ASSERT_EQ                           -> true
+    | ASSERT_NEQ, ASSERT_NEQ                         -> true
+    | ASSERT_LT, ASSERT_LT                           -> true
+    | ASSERT_LE, ASSERT_LE                           -> true
+    | ASSERT_GT, ASSERT_GT                           -> true
+    | ASSERT_GE, ASSERT_GE                           -> true
+    | SELF, SELF                                     -> true
+    | CONTRACT (t1, a1), CONTRACT (t2, a2)           -> cmp_type t1 t2 && Option.cmp cmp_ident a1 a2
+    | TRANSFER_TOKENS, TRANSFER_TOKENS               -> true
+    | SET_DELEGATE, SET_DELEGATE                     -> true
+    | CREATE_ACCOUNT, CREATE_ACCOUNT                 -> true
+    | CREATE_CONTRACT l1, CREATE_CONTRACT l2         -> List.for_all2 f l1 l2
+    | IMPLICIT_ACCOUNT, IMPLICIT_ACCOUNT             -> true
+    | NOW, NOW                                       -> true
+    | AMOUNT, AMOUNT                                 -> true
+    | BALANCE, BALANCE                               -> true
+    | CHECK_SIGNATURE, CHECK_SIGNATURE               -> true
+    | BLAKE2B, BLAKE2B                               -> true
+    | SHA256, SHA256                                 -> true
+    | SHA512, SHA512                                 -> true
+    | HASH_KEY, HASH_KEY                             -> true
+    | STEPS_TO_QUOTA, STEPS_TO_QUOTA                 -> true
+    | SOURCE, SOURCE                                 -> true
+    | SENDER, SENDER                                 -> true
+    | ADDRESS, ADDRESS                               -> true
+    | CHAIN_ID, CHAIN_ID                             -> true
+    | _ -> false
+  in
+  f lhs rhs
+
 let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) = function
   | SEQ l                   -> SEQ (List.map fc l)
   | DROP n                  -> DROP n
@@ -463,8 +612,30 @@ end = struct
     in
     map_seq f c
 
+  let rec factorize_double_branches (c : code) : code =
+    let g = List.map factorize_double_branches in
+    let rec map f x =
+      match x with
+      | IF (x, y)      -> let a, x, y = f (g x) (g y) in SEQ ([IF (x, y)] @ a)
+      | IF_NONE (x, y) -> let a, x, y = f (g x) (g y) in SEQ ([IF_NONE (x, y)] @ a)
+      | IF_LEFT (x, y) -> let a, x, y = f (g x) (g y) in SEQ ([IF_LEFT (x, y)] @ a)
+      | IF_CONS (x, y) -> let a, x, y = f (g x) (g y) in SEQ ([IF_CONS (x, y)] @ a)
+      | x -> map_code (map f) x
+    in
+    let f x y =
+      let rec aux accu a b =
+        match a, b with
+        | x::t, y::u when cmp_code x y -> aux (x::accu) t u
+        | _ -> accu, List.rev a, List.rev b
+      in
+      aux [] (List.rev x) (List.rev y)
+    in
+    map f c
+    |> flat
+
   let optim c =
     c
     |> factorize_instrs
+    (* |> factorize_double_branches *)
 
 end
