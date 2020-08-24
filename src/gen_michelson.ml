@@ -824,7 +824,7 @@ let to_michelson (ir : T.ir) : T.michelson =
       else funs @ [T.DIG (List.length funs)], [T.DIP (1, [T.DROP n]) ]
     in
 
-    let vars = List.rev (List.map fst ir.storage_list) @ List.rev funids in
+    let vars = List.rev (let l = ir.storage_list in if List.is_empty l then ["_"] else List.map fst l) @ List.rev funids in
     let env = mk_env () ~vars in
     let nb_storage_item = List.length ir.storage_list in
     let nb_fs = nb_storage_item - 1 in
@@ -835,7 +835,6 @@ let to_michelson (ir : T.ir) : T.michelson =
     let for_entry (e : T.entry) =
       match e.args with
       | [] -> begin
-          (* print_env env; *)
           let code, _ = instruction_to_code env e.body in
           T.SEQ ([T.DROP 1] @ [code] @ fold_storage @ [T.NIL (T.toperation); T.PAIR ])
         end
@@ -845,7 +844,7 @@ let to_michelson (ir : T.ir) : T.michelson =
           let unfold_args = unfold nb_as in
           let args = List.map fst l |> List.rev in
           let env = { env with vars = args @ env.vars } in
-          (* print_env env; *)
+          print_env env;
           let code, _ = instruction_to_code env e.body in
           T.SEQ (unfold_args @ [code] @ [T.DROP nb_args] @ fold_storage @ [T.NIL (T.toperation); T.PAIR ])
         end
