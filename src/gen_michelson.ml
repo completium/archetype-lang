@@ -833,6 +833,7 @@ let to_michelson (ir : T.ir) : T.michelson =
 
 
     let for_entry (e : T.entry) =
+      (* stack state : functions, unfolded storage, argument *)
       match e.args with
       | [] -> begin
           let code, _ = instruction_to_code env e.body in
@@ -851,16 +852,16 @@ let to_michelson (ir : T.ir) : T.michelson =
     in
 
     let code =
-      let us = if nb_storage_item > 1 then [T.DIP (1, unfold_storage)] else [] in
       match List.rev ir.entries with
       | []   -> assert false
-      | [e]  -> T.SEQ ([T.UNPAIR] @ us @ [for_entry e])
+      | [e]  -> T.SEQ [for_entry e]
       | e::l -> begin
           let c : T.code = List.fold_left (fun accu x -> T.IF_LEFT ([for_entry x], [accu])) (for_entry e) l in
-          T.SEQ ([T.UNPAIR] @ us @ [c])
+          T.SEQ ([c])
         end
     in
-    T.SEQ (cfuns @ [code] @ unfold_funs)
+    let us = if nb_storage_item > 1 then [T.DIP (1, unfold_storage)] else [] in
+    T.SEQ (cfuns @ [T.UNPAIR] @ us @ [code] @ unfold_funs)
     |> T.Utils.flat
     |> T.Utils.optim
   in
