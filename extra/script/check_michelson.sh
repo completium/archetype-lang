@@ -57,6 +57,7 @@ PASSED="\
 ./tests/passed/simple_fun5.arl \
 ./tests/passed/simple_fun6.arl \
 ./tests/passed/simple_fun_alt.arl \
+./tests/passed/transfer_simple.arl \
 "
 
 RET=0

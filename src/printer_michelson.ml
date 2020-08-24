@@ -187,22 +187,23 @@ let rec pp_instruction fmt (i : instruction) =
     end
   | Iunop (op, e) -> begin
       match op with
-      | Ucar      -> pp "car(%a)"      f e
-      | Ucdr      -> pp "cdr(%a)"      f e
-      | Uneg      -> pp "neg(%a)"      f e
-      | Uint      -> pp "int(%a)"      f e
-      | Unot      -> pp "not(%a)"      f e
-      | Uabs      -> pp "abs(%a)"      f e
-      | Uisnat    -> pp "isnat(%a)"    f e
-      | Usome     -> pp "some(%a)"     f e
-      | Usize     -> pp "size(%a)"     f e
-      | Upack     -> pp "pack(%a)"     f e
-      | Uunpack t -> pp "unpack<%a>(%a)" pp_type t f e
-      | Ublake2b  -> pp "blake2b(%a)"  f e
-      | Usha256   -> pp "sha256(%a)"   f e
-      | Usha512   -> pp "sha512(%a)"   f e
-      | Uhash_key -> pp "hash_key(%a)" f e
-      | Ufail     -> pp "fail(%a)"     f e
+      | Ucar        -> pp "car(%a)"          f e
+      | Ucdr        -> pp "cdr(%a)"          f e
+      | Uneg        -> pp "neg(%a)"          f e
+      | Uint        -> pp "int(%a)"          f e
+      | Unot        -> pp "not(%a)"          f e
+      | Uabs        -> pp "abs(%a)"          f e
+      | Uisnat      -> pp "isnat(%a)"        f e
+      | Usome       -> pp "some(%a)"         f e
+      | Usize       -> pp "size(%a)"         f e
+      | Upack       -> pp "pack(%a)"         f e
+      | Uunpack t   -> pp "unpack<%a>(%a)"   pp_type t f e
+      | Ublake2b    -> pp "blake2b(%a)"      f e
+      | Usha256     -> pp "sha256(%a)"       f e
+      | Usha512     -> pp "sha512(%a)"       f e
+      | Uhash_key   -> pp "hash_key(%a)"     f e
+      | Ufail       -> pp "fail(%a)"         f e
+      | Ucontract t -> pp "contract<%a>(%a)" pp_type t f e
     end
   | Ibinop (op, lhs, rhs) -> begin
       match op with
@@ -227,6 +228,7 @@ let rec pp_instruction fmt (i : instruction) =
       | Tcheck_signature -> pp "check_signature(%a, %a, %a)" f a1 f a2 f a3
       | Tslice           -> pp "slice(%a, %a, %a)"           f a1 f a2 f a3
       | Tupdate          -> pp "update(%a, %a, %a)"          f a1 f a2 f a3
+      | Ttransfer_tokens -> pp "transfer_tokens(%a, %a, %a)" f a1 f a2 f a3
     end
   | Icompare (op, lhs, rhs) -> begin
       match op with

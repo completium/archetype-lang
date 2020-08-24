@@ -174,6 +174,7 @@ type un_operator =
   | Usha512
   | Uhash_key
   | Ufail
+  | Ucontract of type_
 [@@deriving show {with_path = false}]
 
 type bin_operator =
@@ -198,6 +199,7 @@ type ter_operator =
   | Tcheck_signature
   | Tslice
   | Tupdate
+  | Ttransfer_tokens
 [@@deriving show {with_path = false}]
 
 type cmp_operator =
@@ -417,19 +419,21 @@ let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) =
 
 let map_code (fc : code -> code) = map_code_gen fc id id
 
-let rec map_seq f = function
-  | SEQ l             -> SEQ (f l)
-  | IF_NONE (x, y)    -> IF_NONE (f x, f y)
-  | IF_LEFT (x, y)    -> IF_LEFT (f x, f y)
-  | IF_CONS (x, y)    -> IF_CONS (f x, f y)
-  | MAP x             -> MAP (f x)
-  | ITER x            -> ITER (f x)
-  | IF (x, y)         -> IF (f x, f y)
-  | LOOP x            -> LOOP (f x)
-  | LOOP_LEFT x       -> LOOP_LEFT (f x)
-  | LAMBDA (a, b, x)  -> LAMBDA (a, b, f x)
-  | DIP (n, x)        -> DIP (n, f x)
-  | CREATE_CONTRACT x -> CREATE_CONTRACT (f x)
+let rec map_seq f x =
+  let g x = f (List.map (map_seq f) x) in
+  match x with
+  | SEQ l             -> SEQ (g l)
+  | IF_NONE (x, y)    -> IF_NONE (g x, g y)
+  | IF_LEFT (x, y)    -> IF_LEFT (g x, g y)
+  | IF_CONS (x, y)    -> IF_CONS (g x, g y)
+  | MAP x             -> MAP (g x)
+  | ITER x            -> ITER (g x)
+  | IF (x, y)         -> IF (g x, g y)
+  | LOOP x            -> LOOP (g x)
+  | LOOP_LEFT x       -> LOOP_LEFT (g x)
+  | LAMBDA (a, b, x)  -> LAMBDA (a, b, g x)
+  | DIP (n, x)        -> DIP (n, g x)
+  | CREATE_CONTRACT x -> CREATE_CONTRACT (g x)
   | x -> map_code (map_seq f) x
 
 module Utils : sig
@@ -448,6 +452,9 @@ end = struct
       let rec aux accu l =
         match l with
         | (DROP x)::(DROP y)::t -> aux accu ((DROP (x + y))::t)
+        | (DUP)::(DROP x)::t    -> aux accu ((DROP (x - 1))::t)
+        | (DUP)::(SWAP)::t      -> aux accu ((DUP)::t)
+        | (DROP 0)::t           -> aux accu t
         | e::t -> aux (e::accu) t
         | [] -> List.rev accu
       in

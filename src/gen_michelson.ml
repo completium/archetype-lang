@@ -50,6 +50,7 @@ let to_ir (model : M.model) : T.ir =
 
   let to_one_data (l : T.data list) : T.data = to_one_gen (T.Dunit) (fun x accu -> (T.Dpair (x, accu))) l in
 
+
   let rec to_type ?annotation (t : M.type_) : T.type_ =
     let node =
       match t with
@@ -160,6 +161,10 @@ let to_ir (model : M.model) : T.ir =
   let rec mterm_to_intruction env (mtt : M.mterm) : T.instruction =
     let f = mterm_to_intruction env in
     let ft = to_type in
+
+    let vops = T.Ivar operations in
+    let get_contract t d = T.Iifnone (T.Iunop (Ucontract t, f d), T.ifail "BadContract", id, "_var_ifnone") in
+
     match mtt.node with
 
     (* lambda *)
@@ -182,7 +187,7 @@ let to_ir (model : M.model) : T.ir =
     (* control *)
 
     | Mif (c, t, Some e)         -> T.Iif (f c, f t, f e)
-    | Mif (c, t, None)           -> T.Iif (f c, f t, T.Iseq [])
+    | Mif (c, t, None)           -> T.Iif (f c, f t, T.iskip)
     | Mmatchwith (_e, _l)        -> assert false
     | Mfor (id, c, b, _)         -> begin
         let ids =
@@ -225,7 +230,13 @@ let to_ir (model : M.model) : T.ir =
         in
         T.Iunop  (Ufail, x)
       end
-    | Mtransfer (_v, _k) -> assert false
+    | Mtransfer (v, k) -> begin
+        match k with
+        | TKsimple d -> T.Ibinop (Bcons, T.Iterop (Ttransfer_tokens, T.iunit, f v, get_contract T.tunit d), vops)
+        | TKcall (_id, _t, _d, _a) -> assert false
+        | TKentry (_e, _a)         -> assert false
+        | TKself (_id, _args)      -> assert false
+      end
 
     (* entrypoint *)
 
@@ -235,8 +246,8 @@ let to_ir (model : M.model) : T.ir =
 
     (* operation *)
 
-    | Moperations               -> assert false
-    | Mmkoperation (_v, _d, _a) -> assert false
+    | Moperations            -> vops
+    | Mmkoperation (v, e, a) -> T.Iterop (Ttransfer_tokens, f a, f v, f e)
 
 
     (* literals *)
@@ -249,10 +260,10 @@ let to_ir (model : M.model) : T.ir =
     | Mstring v          -> T.Iconst (T.mk_type Tstring, Dstring v)
     | Mcurrency (v, Utz) -> T.Iconst (T.mk_type Tmutez, Dint v)
     | Mcurrency _        -> assert false
-    | Maddress _v        -> assert false
-    | Mdate _v           -> assert false
-    | Mduration _v       -> assert false
-    | Mtimestamp _v      -> assert false
+    | Maddress v         -> T.Iconst (T.mk_type Taddress, Dstring v)
+    | Mdate v            -> T.Iconst (T.mk_type Ttimestamp, Dint (Core.date_to_timestamp v))
+    | Mduration v        -> T.Iconst (T.mk_type Tint, Dint (Core.duration_to_timestamp v))
+    | Mtimestamp v       -> T.Iconst (T.mk_type Ttimestamp, Dint v)
     | Mbytes v           -> T.Iconst (T.mk_type Tbytes, Dbytes v)
     | Munit              -> T.Iconst (T.mk_type Tunit, Dunit)
 
@@ -363,7 +374,7 @@ let to_ir (model : M.model) : T.ir =
 
     (* utils *)
 
-    | Mcast (_src, _dst, _v) -> assert false
+    | Mcast (_src, _dst, v)  -> f v
     | Mtupleaccess (x, n)    -> Tools.foldi (fun x -> T.Iunop (Ucdr, x)) (f x) (Big_int.int_of_big_int n)
 
     (* set api expression *)
@@ -632,7 +643,7 @@ let to_michelson (ir : T.ir) : T.michelson =
 
     | Iif (c, t, e) -> begin
         let c, _   = f c in
-        let t, env = f t in
+        let t, env = f t in (* TODO: fix it (what it does in the stack) *)
         let e, _   = f e in
 
         T.SEQ [ c; T.IF ([t], [e]) ], env
@@ -688,22 +699,23 @@ let to_michelson (ir : T.ir) : T.michelson =
     | Iunop (op, e) -> begin
         let op =
           match op with
-          | Ucar      -> T.CAR
-          | Ucdr      -> T.CDR
-          | Uneg      -> T.NEG
-          | Uint      -> T.INT
-          | Unot      -> T.NOT
-          | Uabs      -> T.ABS
-          | Uisnat    -> T.ISNAT
-          | Usome     -> T.SOME
-          | Usize     -> T.SIZE
-          | Upack     -> T.PACK
-          | Uunpack t -> T.UNPACK t
-          | Ublake2b  -> T.BLAKE2B
-          | Usha256   -> T.SHA256
-          | Usha512   -> T.SHA512
-          | Uhash_key -> T.HASH_KEY
-          | Ufail     -> T.FAILWITH
+          | Ucar        -> T.CAR
+          | Ucdr        -> T.CDR
+          | Uneg        -> T.NEG
+          | Uint        -> T.INT
+          | Unot        -> T.NOT
+          | Uabs        -> T.ABS
+          | Uisnat      -> T.ISNAT
+          | Usome       -> T.SOME
+          | Usize       -> T.SIZE
+          | Upack       -> T.PACK
+          | Uunpack   t -> T.UNPACK t
+          | Ublake2b    -> T.BLAKE2B
+          | Usha256     -> T.SHA256
+          | Usha512     -> T.SHA512
+          | Uhash_key   -> T.HASH_KEY
+          | Ufail       -> T.FAILWITH
+          | Ucontract t -> T.CONTRACT t
         in
         let e, env = f e in
         T.SEQ [e; op], env
@@ -741,6 +753,7 @@ let to_michelson (ir : T.ir) : T.michelson =
             | Tcheck_signature -> T.CHECK_SIGNATURE
             | Tslice           -> T.SLICE
             | Tupdate          -> T.UPDATE
+            | Ttransfer_tokens -> T.TRANSFER_TOKENS
           in
           let a3, env = fe env a3 in
           let a2, env = fe env a2 in
@@ -818,13 +831,15 @@ let to_michelson (ir : T.ir) : T.michelson =
     in
 
     let funs, funids = get_funs () in
-    let cfuns, unfold_funs =
+    let cfuns, df =
       let n = (List.length funs) in
-      if n = 0 then [], []
-      else funs @ [T.DIG (List.length funs)], [T.DIP (1, [T.DROP n]) ]
+      if n = 0 then [], 0
+      else funs, List.length funs
     in
 
-    let ops, ops_var, eops = if ir.with_operations then [T.NIL T.toperation], [operations], [T.DIG 1] else [], [], [T.NIL T.toperation] in
+    let ops, ops_var, eops, opsf = if ir.with_operations then [T.NIL T.toperation], [operations], [T.DIG 1; T.SWAP], 1 else [], [], [T.NIL T.toperation], 0 in
+
+    let fff, eee = let n = df + opsf in if n > 0 then [T.DIG n], [T.DIP (1, [T.DROP n]) ] else [], [] in
 
     let vars = List.rev (let l = ir.storage_list in if List.is_empty l then ["_"] else List.map fst l) @ ops_var @ List.rev funids in
     let env = mk_env () ~vars in
@@ -863,7 +878,7 @@ let to_michelson (ir : T.ir) : T.michelson =
         end
     in
     let us = if nb_storage_item > 1 then [T.DIP (1, unfold_storage)] else [] in
-    T.SEQ (cfuns @ ops @ [T.UNPAIR] @ us @ [code] @ unfold_funs)
+    T.SEQ (cfuns @ ops @ fff @ [T.UNPAIR] @ us @ [code] @ eee)
     |> T.Utils.flat
     |> T.Utils.optim
   in
