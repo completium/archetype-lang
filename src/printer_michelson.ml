@@ -53,6 +53,7 @@ let rec pp_data fmt (d : data) =
 
 let rec pp_code fmt (i : code) =
   let pp s = Format.fprintf fmt s in
+  let pp_annot = pp_option (fun fmt -> Format.fprintf fmt " %%%s") in
   let pp_arg fmt i =
     match i with
     | 0 | 1 -> ()
@@ -137,7 +138,7 @@ let rec pp_code fmt (i : code) =
   | ASSERT_LE            -> pp "ASSERT_LE"
   | ASSERT_GE            -> pp "ASSERT_GE"
   | SELF                 -> pp "SELF"
-  | CONTRACT t           -> pp "CONTRACT %a" pp_type t
+  | CONTRACT (t, a)      -> pp "CONTRACT%a %a" pp_annot a pp_type t
   | TRANSFER_TOKENS      -> pp "TRANSFER_TOKENS"
   | SET_DELEGATE         -> pp "SET_DELEGATE"
   | CREATE_ACCOUNT       -> pp "CREATE_ACCOUNT"
@@ -203,7 +204,7 @@ let rec pp_instruction fmt (i : instruction) =
       | Usha512     -> pp "sha512(%a)"       f e
       | Uhash_key   -> pp "hash_key(%a)"     f e
       | Ufail       -> pp "fail(%a)"         f e
-      | Ucontract t -> pp "contract<%a>(%a)" pp_type t f e
+      | Ucontract (t, a) -> pp "contract%a<%a>(%a)" (pp_option (fun fmt x -> Format.fprintf fmt "%%%a" pp_id x)) a pp_type t f e
     end
   | Ibinop (op, lhs, rhs) -> begin
       match op with

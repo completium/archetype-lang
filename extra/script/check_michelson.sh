@@ -58,6 +58,10 @@ PASSED="\
 ./tests/passed/simple_fun6.arl \
 ./tests/passed/simple_fun_alt.arl \
 ./tests/passed/transfer_simple.arl \
+./tests/passed/transfer_call.arl \
+./tests/passed/transfer_entrypoint.arl \
+./tests/passed/transfer_self.arl \
+./tests/passed/transfer_simple_with_entrypoint.arl \
 "
 
 RET=0

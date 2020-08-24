@@ -163,7 +163,9 @@ let to_ir (model : M.model) : T.ir =
     let ft = to_type in
 
     let vops = T.Ivar operations in
-    let get_contract t d = T.Iifnone (T.Iunop (Ucontract t, f d), T.ifail "BadContract", id, "_var_ifnone") in
+    let contract_internal a t d = T.Iifnone (T.Iunop (Ucontract (t, a), f d), T.ifail "BadContract", id, "_var_ifnone") in
+    let get_contract      t d = contract_internal  None     t d in
+    let get_entrypoint id t d = contract_internal (Some id) t d in
 
     match mtt.node with
 
@@ -231,11 +233,14 @@ let to_ir (model : M.model) : T.ir =
         T.Iunop  (Ufail, x)
       end
     | Mtransfer (v, k) -> begin
-        match k with
-        | TKsimple d -> T.Ibinop (Bcons, T.Iterop (Ttransfer_tokens, T.iunit, f v, get_contract T.tunit d), vops)
-        | TKcall (_id, _t, _d, _a) -> assert false
-        | TKentry (_e, _a)         -> assert false
-        | TKself (_id, _args)      -> assert false
+        let op =
+          match k with
+          | TKsimple d           -> T.Iterop (Ttransfer_tokens, T.iunit, f v, get_contract T.tunit d)
+          | TKcall (id, t, d, a) -> T.Iterop (Ttransfer_tokens, f a, f v, get_entrypoint id (to_type t) d)
+          | TKentry (_e, _a)     -> assert false
+          | TKself (_id, _args)  -> assert false
+        in
+        T.Iassign (operations, T.Ibinop (Bcons, op, vops))
       end
 
     (* entrypoint *)
@@ -699,23 +704,23 @@ let to_michelson (ir : T.ir) : T.michelson =
     | Iunop (op, e) -> begin
         let op =
           match op with
-          | Ucar        -> T.CAR
-          | Ucdr        -> T.CDR
-          | Uneg        -> T.NEG
-          | Uint        -> T.INT
-          | Unot        -> T.NOT
-          | Uabs        -> T.ABS
-          | Uisnat      -> T.ISNAT
-          | Usome       -> T.SOME
-          | Usize       -> T.SIZE
-          | Upack       -> T.PACK
-          | Uunpack   t -> T.UNPACK t
-          | Ublake2b    -> T.BLAKE2B
-          | Usha256     -> T.SHA256
-          | Usha512     -> T.SHA512
-          | Uhash_key   -> T.HASH_KEY
-          | Ufail       -> T.FAILWITH
-          | Ucontract t -> T.CONTRACT t
+          | Ucar             -> T.CAR
+          | Ucdr             -> T.CDR
+          | Uneg             -> T.NEG
+          | Uint             -> T.INT
+          | Unot             -> T.NOT
+          | Uabs             -> T.ABS
+          | Uisnat           -> T.ISNAT
+          | Usome            -> T.SOME
+          | Usize            -> T.SIZE
+          | Upack            -> T.PACK
+          | Uunpack        t -> T.UNPACK t
+          | Ublake2b         -> T.BLAKE2B
+          | Usha256          -> T.SHA256
+          | Usha512          -> T.SHA512
+          | Uhash_key        -> T.HASH_KEY
+          | Ufail            -> T.FAILWITH
+          | Ucontract (t, a) -> T.CONTRACT (t, a)
         in
         let e, env = f e in
         T.SEQ [e; op], env
@@ -837,9 +842,9 @@ let to_michelson (ir : T.ir) : T.michelson =
       else funs, List.length funs
     in
 
-    let ops, ops_var, eops, opsf = if ir.with_operations then [T.NIL T.toperation], [operations], [T.DIG 1; T.SWAP], 1 else [], [], [T.NIL T.toperation], 0 in
+    let ops, ops_var, eops, opsf = if ir.with_operations then [T.NIL T.toperation], [operations], [T.DIG 1], 1 else [], [], [T.NIL T.toperation], 0 in
 
-    let fff, eee = let n = df + opsf in if n > 0 then [T.DIG n], [T.DIP (1, [T.DROP n]) ] else [], [] in
+    let fff, eee = let n = df + opsf in (if n > 0 then [T.DIG n] else []), (if df > 0 then [T.DIP (1, [T.DROP df]) ] else []) in
 
     let vars = List.rev (let l = ir.storage_list in if List.is_empty l then ["_"] else List.map fst l) @ ops_var @ List.rev funids in
     let env = mk_env () ~vars in
@@ -862,7 +867,6 @@ let to_michelson (ir : T.ir) : T.michelson =
           let unfold_args = unfold nb_as in
           let args = List.map fst l |> List.rev in
           let env = { env with vars = args @ env.vars } in
-          print_env env;
           let code, _ = instruction_to_code env e.body in
           T.SEQ (unfold_args @ [code] @ [T.DROP nb_args] @ fold_storage @ eops @ [T.PAIR])
         end

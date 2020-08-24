@@ -124,7 +124,7 @@ type code =
   | LE
   | GE
   | SELF
-  | CONTRACT           of type_
+  | CONTRACT           of type_ * ident option
   | TRANSFER_TOKENS
   | SET_DELEGATE
   | CREATE_ACCOUNT
@@ -174,7 +174,7 @@ type un_operator =
   | Usha512
   | Uhash_key
   | Ufail
-  | Ucontract of type_
+  | Ucontract of type_ * ident option
 [@@deriving show {with_path = false}]
 
 type bin_operator =
@@ -397,7 +397,7 @@ let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) =
   | ASSERT_GT               -> ASSERT_GT
   | ASSERT_GE               -> ASSERT_GE
   | SELF                    -> SELF
-  | CONTRACT t              -> CONTRACT (ft t)
+  | CONTRACT (t, a)         -> CONTRACT (ft t, a)
   | TRANSFER_TOKENS         -> TRANSFER_TOKENS
   | SET_DELEGATE            -> SET_DELEGATE
   | CREATE_ACCOUNT          -> CREATE_ACCOUNT
