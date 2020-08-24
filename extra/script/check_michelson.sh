@@ -23,6 +23,7 @@ PASSED="\
 ./tests/passed/expr_map_lit.arl \
 ./tests/passed/expr_map_put.arl \
 ./tests/passed/expr_map_remove.arl \
+./tests/passed/expr_map_get.arl \
 ./tests/passed/expr_map_getopt.arl \
 ./tests/passed/expr_map_length.arl \
 ./tests/passed/expr_map_contains.arl \

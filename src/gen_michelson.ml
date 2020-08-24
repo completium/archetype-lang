@@ -383,7 +383,7 @@ let to_ir (model : M.model) : T.ir =
 
     | Mmapput (_, _, c, k, v)     -> T.Iterop (Tupdate, f k, T.isome (f v),   f c)
     | Mmapremove (_, tv, c, k)    -> T.Iterop (Tupdate, f k, T.inone (ft tv), f c)
-    | Mmapget (_, _, _c, _k)      -> assert false
+    | Mmapget (_, _, c, k)        -> T.Iifnone (T.Ibinop (Bget, f k, f c), T.ifail "GetNoneValue", id, "_var_ifnone")
     | Mmapgetopt (_, _, c, k)     -> T.Ibinop (Bget, f k, f c)
     | Mmapcontains (_, _, c, k)   -> T.Ibinop (Bmem, f k, f c)
     | Mmaplength (_, _, c)        -> T.Iunop (Usize, f c)
@@ -400,11 +400,6 @@ let to_ir (model : M.model) : T.ir =
     | Misnone x          -> T.Iifnone (f x, T.itrue,  (fun _ -> T.ifalse), "_var_ifnone")
     | Missome x          -> T.Iifnone (f x, T.ifalse, (fun _ -> T.itrue), "_var_ifnone")
     | Moptget x          -> T.Iifnone (f x, T.ifail "NoneValue", id, "_var_ifnone")
-
-
-    (* | Misnone x          -> T.Imichelson ([f x], T.SEQ [T.IF_NONE ([T.ctrue],  [T.DROP 1; T.cfalse])], ["_"])
-       | Missome x          -> T.Imichelson ([f x], T.SEQ [T.IF_NONE ([T.cfalse], [T.DROP 1; T.ctrue])],  ["_"])
-       | Moptget x          -> T.Imichelson ([f x], T.SEQ [T.IF_NONE ([T.cfail "NoneValue"], [])],  ["_"]) *)
     | Mfloor _x          -> assert false
     | Mceil _x           -> assert false
     | Mtostring (_t, _x) -> assert false
