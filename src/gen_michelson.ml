@@ -29,6 +29,8 @@ let emit_error (desc : error_desc) =
   let str = Format.asprintf "%a@." pp_error_desc desc in
   raise (Anomaly str)
 
+let operations = "_ops"
+
 type env_ir = {
   function_p: (ident * (ident * T.type_) list) option
 }
@@ -99,7 +101,8 @@ let to_ir (model : M.model) : T.ir =
   let rec to_data (mt : M.mterm) : T.data =
     match mt.node with
     | Munit             -> T.Dunit
-    | Mbool      v      -> (if v then T.Dtrue else T.Dfalse)
+    | Mbool      true   -> T.Dtrue
+    | Mbool      false  -> T.Dfalse
     | Mint       n      -> T.Dint n
     | Mnat       n      -> T.Dint n
     | Mstring    s      -> T.Dstring s
@@ -328,7 +331,7 @@ let to_ir (model : M.model) : T.ir =
     | Mdivrat _        -> emit_error (UnsupportedTerm ("divrat"))
     | Mdiveuc (l, r)   -> T.Iifnone (T.Ibinop (Bediv, f l, f r), T.ifail "DivByZero", T.icar, "_var_ifnone")
     | Mmodulo (l, r)   -> T.Iifnone (T.Ibinop (Bediv, f l, f r), T.ifail "DivByZero", T.icdr, "_var_ifnone")
-    | Muplus _e        -> assert false
+    | Muplus e         -> f e
     | Muminus e        -> T.Iunop  (Uneg, f e)
 
     (* asset api effect *)
@@ -539,7 +542,9 @@ let to_ir (model : M.model) : T.ir =
         List.fold_left (fun accu x -> (T.mk_type (T.Tor (for_entry x, accu)))) (for_entry i) t
       end
   in
-  T.mk_ir storage_type storage_data l parameter funs entries
+  let with_operations = M.Utils.with_operations model in
+
+  T.mk_ir storage_type storage_data l parameter funs entries ~with_operations:with_operations
 
 type env = {
   vars : ident list;
@@ -819,7 +824,9 @@ let to_michelson (ir : T.ir) : T.michelson =
       else funs @ [T.DIG (List.length funs)], [T.DIP (1, [T.DROP n]) ]
     in
 
-    let vars = List.rev (let l = ir.storage_list in if List.is_empty l then ["_"] else List.map fst l) @ List.rev funids in
+    let ops, ops_var, eops = if ir.with_operations then [T.NIL T.toperation], [operations], [T.DIG 1] else [], [], [T.NIL T.toperation] in
+
+    let vars = List.rev (let l = ir.storage_list in if List.is_empty l then ["_"] else List.map fst l) @ ops_var @ List.rev funids in
     let env = mk_env () ~vars in
     let nb_storage_item = List.length ir.storage_list in
     let nb_fs = nb_storage_item - 1 in
@@ -832,7 +839,7 @@ let to_michelson (ir : T.ir) : T.michelson =
       match e.args with
       | [] -> begin
           let code, _ = instruction_to_code env e.body in
-          T.SEQ ([T.DROP 1] @ [code] @ fold_storage @ [T.NIL (T.toperation); T.PAIR ])
+          T.SEQ ([T.DROP 1] @ [code] @ fold_storage @ eops @ [T.PAIR])
         end
       | l -> begin
           let nb_args = List.length l in
@@ -842,7 +849,7 @@ let to_michelson (ir : T.ir) : T.michelson =
           let env = { env with vars = args @ env.vars } in
           print_env env;
           let code, _ = instruction_to_code env e.body in
-          T.SEQ (unfold_args @ [code] @ [T.DROP nb_args] @ fold_storage @ [T.NIL (T.toperation); T.PAIR ])
+          T.SEQ (unfold_args @ [code] @ [T.DROP nb_args] @ fold_storage @ eops @ [T.PAIR])
         end
     in
 
@@ -856,7 +863,7 @@ let to_michelson (ir : T.ir) : T.michelson =
         end
     in
     let us = if nb_storage_item > 1 then [T.DIP (1, unfold_storage)] else [] in
-    T.SEQ (cfuns @ [T.UNPAIR] @ us @ [code] @ unfold_funs)
+    T.SEQ (cfuns @ ops @ [T.UNPAIR] @ us @ [code] @ unfold_funs)
     |> T.Utils.flat
     |> T.Utils.optim
   in

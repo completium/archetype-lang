@@ -252,6 +252,7 @@ type ir = {
   storage_type: type_;
   storage_data : data;
   storage_list: (ident * type_) list;
+  with_operations: bool;
   parameter: type_;
   funs: func list;
   entries: entry list;
@@ -276,8 +277,8 @@ let mk_func name raw_type_arg args ret body : func =
 let mk_entry name args body : entry =
   {name; args; body}
 
-let mk_ir storage_type storage_data storage_list parameter funs entries : ir =
-  {storage_type; storage_data; storage_list; parameter; funs; entries}
+let mk_ir storage_type storage_data storage_list ?(with_operations = false) parameter funs entries : ir =
+  {storage_type; storage_data; storage_list; with_operations; parameter; funs; entries}
 
 let mk_michelson storage parameter code =
   { storage; parameter; code }
