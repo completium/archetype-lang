@@ -129,8 +129,8 @@ let to_ir (model : M.model) : T.ir =
 
   in
 
-  let get_record_index (rv : M.mterm) fn =
-    match rv.type_ with
+  let get_record_index (rt : M.type_) fn =
+    match rt with
     | M.Trecord rn -> begin
         let rn = unloc rn in
         let r : M.record = M.Utils.get_record model rn in
@@ -186,7 +186,10 @@ let to_ir (model : M.model) : T.ir =
     | Massign (_op, _, Avar id, v)                 -> T.Iassign (unloc id, f v)
     | Massign (_op, _, Avarstore id, v)            -> T.Iassign (unloc id, f v)
     | Massign (_op, _, Aasset (_an, _fn, _k), _v)  -> assert false
-    | Massign (_op, _, Arecord (_rn, _fn, _r), _v) -> assert false
+    | Massign (_op, _, Arecord (_rn, fn, {node = Mvar (id, _, _, _); type_ = t}), v) -> begin
+        let n = get_record_index t (unloc fn) in T.IassignRec (unloc id, n, f v)
+      end
+    | Massign (_op, _, Arecord _, _v)              -> T.iskip
     | Massign (_op, _, Astate, _x)                 -> assert false
     | Massign (_op, _, Aassetstate (_an, _k), _v)  -> assert false
     | Massign (_op, _, Aoperations, v)             -> T.Iassign (operations, f v)
@@ -327,7 +330,7 @@ let to_ir (model : M.model) : T.ir =
 
     (* access *)
 
-    | Mdot (e, i)           -> let n = get_record_index e (unloc i) in Tools.foldi (fun x -> T.Iunop (Ucdr, x)) (f e) n
+    | Mdot (e, i)           -> let n = get_record_index e.type_ (unloc i) in Tools.foldi (fun x -> T.Iunop (Ucdr, x)) (f e) n
     | Mdotassetfield _      -> emit_error (UnsupportedTerm ("dotassetfield"))
     | Mdotcontract (_e, _i) -> assert false
     | Maccestuple (_e, _i)  -> assert false
@@ -620,6 +623,16 @@ let to_michelson (ir : T.ir) : T.michelson =
             end ) (f e) t
     in
 
+    let assign env id v =
+      let n = get_sp_for_id env id in
+      let c =
+        if n <= 0
+        then T.SEQ [ v; T.SWAP; T.DROP 1 ]
+        else T.SEQ [ v; (T.DIP (1, [T.DIG n; T.DROP 1])); T.DUG n]
+      in
+      c, env
+    in
+
     match i with
     | Iseq l               -> seq env l
 
@@ -648,18 +661,19 @@ let to_michelson (ir : T.ir) : T.michelson =
       end
 
     | Iassign (id, v)  -> begin
-        let n = get_sp_for_id env id in
-        let v, _env0 = f v in
-        let c =
-          if n <= 0
-          then T.SEQ [ v; T.SWAP; T.DROP 1 ]
-          else T.SEQ [ v; (T.DIP (1, [T.DIG n; T.DROP 1])); T.DUG n]
-        in
-        c, env
+        let v, _ = f v in
+        assign env id v
       end
 
+    | IassignRec (id, n, v) ->
+       let v, _ = fe env v in
+       let unfold = foldi (fun x -> T.UNPAIR::T.SWAP::x ) [] n in
+       let fold = foldi (fun x -> T.SWAP::T.PAIR::x ) [] n in
+       let a, _ = f (Ivar id) in
+       let v = T.SEQ ([ a ] @ unfold @ [ T.DROP 1; v ] @ fold) in
+       assign env id v
+
     | Iif (c, t, e) -> begin
-        print_env env;
         let c, _   = f c in
         let t, env = f t in (* TODO: fix it (what it does in the stack) *)
         let e, _   = f e in

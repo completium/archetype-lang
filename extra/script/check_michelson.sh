@@ -66,6 +66,9 @@ PASSED="\
 ./tests/passed/test_entrysig_self.arl \
 ./tests/passed/lang_entrysig.arl \
 ./tests/passed/test_operations.arl \
+./tests/passed/simple_record_assign.arl \
+./tests/passed/simple_record_assign1.arl \
+./tests/passed/simple_record_assign2.arl \
 "
 
 RET=0

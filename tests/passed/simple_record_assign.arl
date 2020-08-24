@@ -1,0 +1,12 @@
+archetype simple_record_assign
+
+record my_record {
+  id : string;
+  v  : nat;
+}
+
+variable r : my_record = { id = "id"; v = 0 }
+
+entry exec () {
+  r.v := 1
+}

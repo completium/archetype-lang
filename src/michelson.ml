@@ -217,6 +217,7 @@ type instruction =
   | Ivar        of ident
   | Icall       of ident * instruction list
   | Iassign     of ident * instruction
+  | IassignRec  of ident * int * instruction
   | Iif         of instruction * instruction * instruction
   | Iifnone     of instruction * instruction * (instruction -> instruction) * ident
   | Iwhile      of instruction * instruction
