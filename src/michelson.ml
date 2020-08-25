@@ -211,6 +211,12 @@ type cmp_operator =
   | Cle
 [@@deriving show {with_path = false}]
 
+type builtin =
+  | Bceil
+  | Bfloor
+  | Btostring of type_
+[@@deriving show {with_path = false}]
+
 type instruction =
   | Iseq        of instruction list
   | IletIn      of ident * instruction * instruction
@@ -235,12 +241,17 @@ type instruction =
   | Imichelson  of instruction list * code * ident list
 [@@deriving show {with_path = false}]
 
+type implem =
+  | Concrete of instruction
+  | Abstract of builtin
+[@@deriving show {with_path = false}]
+
 type func = {
   name: ident;
   raw_type_arg: type_;
   args: (ident * type_) list;
   ret: type_;
-  body: instruction;
+  body: implem;
 }
 [@@deriving show {with_path = false}]
 
@@ -286,18 +297,17 @@ let mk_ir storage_type storage_data storage_list ?(with_operations = false) para
 let mk_michelson storage parameter code =
   { storage; parameter; code }
 
-(* -------------------------------------------------------------------- *)
-
-let toperation = mk_type Toperation
-
 
 (* -------------------------------------------------------------------- *)
 
-let tunit   = mk_type Tunit
-let tstring = mk_type Tstring
-let tnat    = mk_type Tnat
-let tint    = mk_type Tint
-let tbool   = mk_type Tbool
+let toperation  = mk_type Toperation
+let tunit       = mk_type Tunit
+let tstring     = mk_type Tstring
+let tnat        = mk_type Tnat
+let tint        = mk_type Tint
+let tbool       = mk_type Tbool
+let tpair t1 t2 = mk_type (Tpair (t1, t2))
+let trat        = tpair tint tnat
 
 
 (* -------------------------------------------------------------------- *)
@@ -475,6 +485,13 @@ let cmp_code lhs rhs =
   in
   f lhs rhs
 
+let cmp_builtin lhs rhs =
+  match lhs, rhs with
+  | Bfloor, Bfloor             -> true
+  | Bceil, Bceil               -> true
+  | Btostring t1, Btostring t2 -> cmp_type t1 t2
+  | _ -> false
+
 let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) = function
   | SEQ l                   -> SEQ (List.map fc l)
   | DROP n                  -> DROP n
@@ -588,10 +605,16 @@ let rec map_seq f x =
 
 module Utils : sig
 
-  val flat : code -> code
-  val optim : code -> code
+  val get_fun_name : builtin -> ident
+  val flat         : code -> code
+  val optim        : code -> code
 
 end = struct
+
+  let get_fun_name = function
+    | Bfloor      -> "_floor"
+    | Bceil       -> "_ceil"
+    | Btostring _ -> "_to_string_nat"
 
   let rec flat (c : code) : code =
     let f l = List.fold_right (fun x accu -> match flat x with | SEQ l -> l @ accu | a -> a::accu) l [] in

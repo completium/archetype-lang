@@ -100,7 +100,7 @@ let rec pp_code fmt (i : code) =
   | IF (ti, ei)          -> pp "IF %a %a" fsl ti fsl ei
   | LOOP is              -> pp "LOOP %a" fs is
   | LOOP_LEFT is         -> pp "LOOP_LEFT %a" fs is
-  | LAMBDA (at, rt, is)  -> pp "LAMBDA %a %a %a" pp_type at pp_type rt fsl is
+  | LAMBDA (at, rt, is)  -> pp "LAMBDA@\n  @[%a@]@\n  @[%a@]@\n  @[%a@]" pp_type at pp_type rt fs is
   | EXEC                 -> pp "EXEC"
   | DIP (i, is)          -> pp "DIP%a %a" pp_arg i fsl is
   | FAILWITH             -> pp "FAILWITH"
@@ -249,11 +249,15 @@ let rec pp_instruction fmt (i : instruction) =
   | Imichelson (a, c, v) -> pp "michelson [%a] (%a) {%a}" (pp_list "; " pp_id) v (pp_list "; " f) a pp_code c
 
 let pp_func fmt (f : func) =
-  Format.fprintf fmt "function %s (%a) : %a {@\n  @[%a@]@\n}@\n "
+  Format.fprintf fmt "function %s (%a) : %a%a@\n "
     f.name
     (pp_list ", " (fun fmt (id, t) -> Format.fprintf fmt "%s : %a" id pp_type t)) f.args
     pp_type f.ret
-    pp_instruction f.body
+    (fun fmt x ->
+       match x with
+       | Concrete body -> Format.fprintf fmt "{@\n  @[%a@]@\n}" pp_instruction body
+       | Abstract _    -> Format.fprintf fmt "abstract"
+    ) f.body
 
 let pp_entry fmt (e : entry) =
   Format.fprintf fmt "entry %s (%a) {@\n  @[%a@]@\n}@\n "

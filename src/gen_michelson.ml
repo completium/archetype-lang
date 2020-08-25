@@ -13,17 +13,19 @@ type error_desc =
   | UnsupportedTerm of string
   | StackEmptyDec
   | StackIdNotFound of string * string list
+  | NoConcreteImplementationFor of string
   | TODO
 [@@deriving show {with_path = false}]
 
 let pp_error_desc fmt e =
   let pp s = Format.fprintf fmt s in
   match e with
-  | TODO                       -> pp "TODO"
-  | FieldNotFoundFor (rn, fn)  -> pp "Field not found for record '%s' and field '%s'" rn fn
-  | UnsupportedTerm s          -> pp "UnsupportedTerm: %s" s
-  | StackEmptyDec              -> pp "StackEmptyDec"
-  | StackIdNotFound (id, vars) -> pp "StackIdNotFound: %s on [%a]" id (pp_list "; " (fun fmt x -> Format.fprintf fmt "%s" x)) vars
+  | TODO                          -> pp "TODO"
+  | FieldNotFoundFor (rn, fn)     -> pp "Field not found for record '%s' and field '%s'" rn fn
+  | UnsupportedTerm s             -> pp "UnsupportedTerm: %s" s
+  | StackEmptyDec                 -> pp "StackEmptyDec"
+  | StackIdNotFound (id, vars)    -> pp "StackIdNotFound: %s on [%a]" id (pp_list "; " (fun fmt x -> Format.fprintf fmt "%s" x)) vars
+  | NoConcreteImplementationFor s -> pp "No concrete implementation for: %s" s
 
 let emit_error (desc : error_desc) =
   let str = Format.asprintf "%a@." pp_error_desc desc in
@@ -158,6 +160,32 @@ let to_ir (model : M.model) : T.ir =
     | _   -> let _, lt, ld = List.split3 l in to_one_type lt, to_one_data ld
   in
 
+  let builtins = ref [] in
+
+  let add_builtin b =
+    if not (List.exists (T.cmp_builtin b) !builtins)
+    then builtins := b::!builtins;
+  in
+
+  let get_builtin_fun b =
+    let name = T.Utils.get_fun_name b in
+    match b with
+    | Bceil -> begin
+        let raw_type_arg = T.trat in
+        let args         = ["r", T.trat] in
+        let ret          = T.tint in
+        T.mk_func name raw_type_arg args ret (T.Abstract b)
+      end
+    | Bfloor ->  begin
+        let raw_type_arg = T.trat in
+        let args         = ["r", T.trat] in
+        let ret          = T.tint in
+        (* let body         = [] in *)
+        T.mk_func name raw_type_arg args ret (T.Abstract b)
+      end
+    | _ -> assert false
+  in
+
   let rec mterm_to_intruction env (mtt : M.mterm) : T.instruction =
     let f = mterm_to_intruction env in
     let ft = to_type in
@@ -171,6 +199,7 @@ let to_ir (model : M.model) : T.ir =
       let ts = List.map proj3_2 fs.args in
       get_entrypoint id (to_one_type (List.map to_type ts)) (T.Izop Zself_address)
     in
+
 
     match mtt.node with
 
@@ -270,7 +299,8 @@ let to_ir (model : M.model) : T.ir =
 
     | Mint  v            -> T.Iconst (T.mk_type Tint, Dint v)
     | Mnat  v            -> T.Iconst (T.mk_type Tnat, Dint v)
-    | Mbool v            -> T.Iconst (T.mk_type Tbool, if v then Dtrue else Dfalse)
+    | Mbool true         -> T.Iconst (T.mk_type Tbool, Dtrue)
+    | Mbool false        -> T.Iconst (T.mk_type Tbool, Dfalse)
     | Menum _v           -> assert false
     | Mrational (_n, _d) -> assert false
     | Mstring v          -> T.Iconst (T.mk_type Tstring, Dstring v)
@@ -434,9 +464,9 @@ let to_ir (model : M.model) : T.ir =
     | Misnone x          -> T.Iifnone (f x, T.itrue,  (fun _ -> T.ifalse), "_var_ifnone")
     | Missome x          -> T.Iifnone (f x, T.ifalse, (fun _ -> T.itrue), "_var_ifnone")
     | Moptget x          -> T.Iifnone (f x, T.ifail "NoneValue", id, "_var_ifnone")
-    | Mfloor _x          -> assert false
-    | Mceil _x           -> assert false
-    | Mtostring (_t, _x) -> assert false
+    | Mfloor  x          -> let b = T.Bfloor           in add_builtin b; T.Icall (T.Utils.get_fun_name b, [f x])
+    | Mceil   x          -> let b = T.Bceil            in add_builtin b; T.Icall (T.Utils.get_fun_name b, [f x])
+    | Mtostring (t, x)   -> let b = T.Btostring (ft t) in add_builtin b; T.Icall (T.Utils.get_fun_name b, [f x])
     | Mpack x            -> T.Iunop (Upack,  f x)
     | Munpack (t, x)     -> T.Iunop (Uunpack (ft t),  f x)
 
@@ -542,7 +572,7 @@ let to_ir (model : M.model) : T.ir =
       let ret = to_type ret in
       let name, args, body = for_fs env fs in
       let raw_type_arg = to_one_type (List.map snd args) in
-      T.mk_func name raw_type_arg args ret body
+      T.mk_func name raw_type_arg args ret (T.Concrete body)
     in
 
     let for_fs_entry env (fs : M.function_struct) : T.entry =
@@ -575,7 +605,18 @@ let to_ir (model : M.model) : T.ir =
   in
   let with_operations = M.Utils.with_operations model in
 
+  let funs = List.fold_left (fun accu x -> (get_builtin_fun x)::accu) funs !builtins in
+
   T.mk_ir storage_type storage_data l parameter funs entries ~with_operations:with_operations
+
+
+(* -------------------------------------------------------------------- *)
+
+let concrete_michelson b =
+  match b with
+  | T.Bfloor      -> T.SEQ [UNPAIR; EDIV; IF_NONE ([(PUSH (T.tstring, (Dstring "DivByZero"))); FAILWITH], [CAR])]
+  | T.Bceil       -> T.SEQ [UNPAIR; EDIV; IF_NONE ([(PUSH (T.tstring, (Dstring "DivByZero"))); FAILWITH], [UNPAIR; SWAP; INT; EQ; IF ([], [PUSH (T.tint, T.Dint Big_int.unit_big_int); ADD])])]
+  | T.Btostring _ -> emit_error (NoConcreteImplementationFor (T.Utils.get_fun_name b))
 
 type env = {
   vars : ident list;
@@ -666,12 +707,12 @@ let to_michelson (ir : T.ir) : T.michelson =
       end
 
     | IassignRec (id, n, v) ->
-       let v, _ = fe env v in
-       let unfold = foldi (fun x -> T.UNPAIR::T.SWAP::x ) [] n in
-       let fold = foldi (fun x -> T.SWAP::T.PAIR::x ) [] n in
-       let a, _ = f (Ivar id) in
-       let v = T.SEQ ([ a ] @ unfold @ [ T.DROP 1; v ] @ fold) in
-       assign env id v
+      let v, _ = fe env v in
+      let unfold = foldi (fun x -> T.UNPAIR::T.SWAP::x ) [] n in
+      let fold = foldi (fun x -> T.SWAP::T.PAIR::x ) [] n in
+      let a, _ = f (Ivar id) in
+      let v = T.SEQ ([ a ] @ unfold @ [ T.DROP 1; v ] @ fold) in
+      assign env id v
 
     | Iif (c, t, e) -> begin
         let c, _   = f c in
@@ -855,8 +896,12 @@ let to_michelson (ir : T.ir) : T.michelson =
             let nb_args = List.length x.args in
             let nb_as = nb_args - 1 in
             let unfold_args = unfold nb_as in
-            let code, _ = instruction_to_code env x.body in
-            T.LAMBDA (targs, x.ret, unfold_args @ [code] @ [T.DUG nb_args; T.DROP nb_args]), x.name
+            let code =
+              match x.body with
+              | Concrete body -> let code, _ = instruction_to_code env body in code::[T.DUG nb_args; T.DROP nb_args]
+              | Abstract b    -> [concrete_michelson b]
+            in
+            T.LAMBDA (targs, x.ret, unfold_args @ code ), x.name
         ) ir.funs
       in
       List.split funs

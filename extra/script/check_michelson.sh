@@ -69,6 +69,9 @@ PASSED="\
 ./tests/passed/simple_record_assign.arl \
 ./tests/passed/simple_record_assign1.arl \
 ./tests/passed/simple_record_assign2.arl \
+./tests/passed/expr_fun_floor.arl \
+./tests/passed/expr_fun_ceil.arl \
+./tests/passed/expr_fun_to_string_nat.arl \
 "
 
 RET=0

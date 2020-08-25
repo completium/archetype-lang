@@ -923,9 +923,9 @@ let pp_model_internal fmt (model : model) b =
       let pp fmt (an, v) =
         let pp_arg fmt _ =
           match v with
-          | CKcoll _                -> Format.fprintf fmt  "%s" const_storage
-          | CKview c                -> Format.fprintf fmt  "%s, %a" const_storage f c
-          | CKfield (_, _, c, _, _) -> Format.fprintf fmt  "%s, %a" const_storage f c
+          | CKcoll _                -> Format.fprintf fmt "%s" const_storage
+          | CKview c                -> Format.fprintf fmt "%s, %a" const_storage f c
+          | CKfield (_, _, c, _, _) -> Format.fprintf fmt "%s, %a" const_storage f c
           | CKdef _                 -> assert false
         in
         Format.fprintf fmt "%s := clear_%a (%a)"
