@@ -97,7 +97,7 @@ let rec pp_code fmt (i : code) =
   | MEM                  -> pp "MEM"
   | GET                  -> pp "GET"
   | UPDATE               -> pp "UPDATE"
-  | IF (ti, ei)          -> pp "IF %a %a" fsl ti fsl ei
+  | IF (ti, ei)          -> pp "IF@\n  @[%a@]@\n  @[%a@]" fs ti fs ei
   | LOOP is              -> pp "LOOP %a" fs is
   | LOOP_LEFT is         -> pp "LOOP_LEFT %a" fs is
   | LAMBDA (at, rt, is)  -> pp "LAMBDA@\n  @[%a@]@\n  @[%a@]@\n  @[%a@]" pp_type at pp_type rt fs is

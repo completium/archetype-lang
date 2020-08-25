@@ -172,18 +172,58 @@ let to_ir (model : M.model) : T.ir =
     match b with
     | Bceil -> begin
         let raw_type_arg = T.trat in
-        let args         = ["r", T.trat] in
+        let args         = ["_", T.trat] in
         let ret          = T.tint in
         T.mk_func name raw_type_arg args ret (T.Abstract b)
       end
-    | Bfloor ->  begin
+    | Bfloor -> begin
         let raw_type_arg = T.trat in
-        let args         = ["r", T.trat] in
+        let args         = ["_", T.trat] in
         let ret          = T.tint in
         (* let body         = [] in *)
         T.mk_func name raw_type_arg args ret (T.Abstract b)
       end
-    | _ -> assert false
+    | Btostring t -> begin
+        let raw_type_arg = t in
+        let arg_name     = "x" in
+        let res_name     = "res" in
+        let map_name     = "m" in
+        let pair_name    = "p" in
+        let args         = [arg_name, t] in
+        let ret          = T.tstring in
+        let body         = begin
+          let zero = T.inat Big_int.zero_big_int in
+          let ten  = T.inat (Big_int.big_int_of_int 10) in
+          let varg = T.Ivar arg_name in
+          let vres = T.Ivar res_name in
+          let vmap = T.Ivar map_name in
+          let vpair= T.Ivar pair_name in
+          let cond = T.Icompare(Cgt, varg, zero) in
+          let map  = T.Imap (T.tnat, T.tstring, [T.inat (Big_int.big_int_of_int 0), T.istring "0";
+                                                 T.inat (Big_int.big_int_of_int 1), T.istring "1";
+                                                 T.inat (Big_int.big_int_of_int 2), T.istring "2";
+                                                 T.inat (Big_int.big_int_of_int 3), T.istring "3";
+                                                 T.inat (Big_int.big_int_of_int 4), T.istring "4";
+                                                 T.inat (Big_int.big_int_of_int 5), T.istring "5";
+                                                 T.inat (Big_int.big_int_of_int 6), T.istring "6";
+                                                 T.inat (Big_int.big_int_of_int 7), T.istring "7";
+                                                 T.inat (Big_int.big_int_of_int 8), T.istring "8";
+                                                 T.inat (Big_int.big_int_of_int 9), T.istring "9"]) in
+          let get_map : T.instruction = T.Iifnone (T.Ibinop (Bget, T.Iunop (Ucdr, vpair), vmap), T.ifail "GetNoneValue", id, "_var_ifnone") in
+          let concat : T.instruction = T.Ibinop (Bconcat, get_map, vres) in
+          let assign_res : T.instruction = T.Iassign (res_name, concat) in
+          let assign_arg : T.instruction = T.Iassign (arg_name, T.Iunop (Ucar, vpair)) in
+          let b : T.instruction =
+            T.IletIn(pair_name,
+                     T.Iifnone (T.Ibinop (Bediv, varg, ten), T.ifail "DivByZero", id, "_var_ifnone"),
+                     T.Iseq [assign_res; assign_arg]) in
+          let loop = T.Iwhile (cond, b) in
+          let a : T.instruction = T.IletIn(res_name, T.istring "", IletIn(map_name, map, T.Iseq [loop; vres]) ) in
+          T.Iif (cond, a, T.istring "0")
+        end
+        in
+        T.mk_func name raw_type_arg args ret (T.Concrete body)
+      end
   in
 
   let rec mterm_to_intruction env (mtt : M.mterm) : T.instruction =
@@ -927,7 +967,7 @@ let to_michelson (ir : T.ir) : T.michelson =
 
 
     let for_entry (e : T.entry) =
-      (* stack state : functions, unfolded storage, argument *)
+      (* stack state : functions, (operations list)?, unfolded storage, argument *)
       match e.args with
       | [] -> begin
           let code, _ = instruction_to_code env e.body in
