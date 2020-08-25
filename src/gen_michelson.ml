@@ -697,7 +697,7 @@ let to_michelson (ir : T.ir) : T.michelson =
     let fold env l =
       match List.rev l with
       | []   -> T.SEQ [], env
-      | [e]  -> f e
+      | [e]  -> fe env e
       | e::t ->
         List.fold_left (fun (a, env) x -> begin
               let v, env = fe env x in (T.SEQ [a; v; T.PAIR], env)
@@ -735,10 +735,10 @@ let to_michelson (ir : T.ir) : T.michelson =
       end
 
     | Icall (id, args)   -> begin
-        let fid, _     = f (Ivar id) in
-        let args, _    = fold env args in
+        let fid, env   = fe env (Ivar id) in
+        let cargs, env = fold env args in
 
-        T.SEQ [fid; args; T.EXEC], inc_env env
+        T.SEQ [fid; cargs; T.EXEC], (foldi dec_env env (List.length args + 1))
       end
 
     | Iassign (id, v)  -> begin
