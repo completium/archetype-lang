@@ -172,28 +172,37 @@ let to_ir (model : M.model) : T.ir =
   let get_builtin_fun b =
     let name = T.Utils.get_fun_name Printer_michelson.show_pretty_type b in
     match b with
-    | Bceil -> begin
-        let raw_type_arg = T.trat in
-        let args         = ["_", T.trat] in
-        let ret          = T.tint in
-        T.mk_func name raw_type_arg args ret (T.Abstract b)
+    | Bmin t
+    | Bmax t -> begin
+        let targ = T.tpair t t in
+        let tret = t in
+        T.mk_func name targ tret (T.Abstract b)
       end
-    | Bfloor -> begin
-        let raw_type_arg = T.trat in
-        let args         = ["_", T.trat] in
-        let ret          = T.tint in
-        (* let body         = [] in *)
-        T.mk_func name raw_type_arg args ret (T.Abstract b)
+    | Bfloor
+    | Bceil -> begin
+        let targ = T.trat in
+        let tret  = T.tint in
+        T.mk_func name targ tret (T.Abstract b)
+      end
+    | BlistContains t -> begin
+        let targ = T.tpair (T.tlist t) t in
+        let tret = T.tbool in
+        T.mk_func name targ tret (T.Abstract b)
+      end
+    | BlistNth t -> begin
+        let targ = t in
+        let tret = T.tint in
+        T.mk_func name targ tret (T.Abstract b)
       end
     | Btostring t -> begin
-        let raw_type_arg = t in
-        let arg_name     = "x" in
-        let res_name     = "res" in
-        let map_name     = "m" in
-        let pair_name    = "p" in
-        let args         = [arg_name, t] in
-        let ret          = T.tstring in
-        let body         = begin
+        let targ = t in
+        let tret = T.tstring in
+        let args, body = begin
+          let arg_name     = "x" in
+          let args         = [arg_name, t] in
+          let res_name     = "res" in
+          let map_name     = "m" in
+          let pair_name    = "p" in
           let zero = T.inat Big_int.zero_big_int in
           let ten  = T.inat (Big_int.big_int_of_int 10) in
           let varg = T.Ivar arg_name in
@@ -221,37 +230,10 @@ let to_ir (model : M.model) : T.ir =
                      T.Iseq [assign_res; assign_arg]) in
           let loop = T.Iwhile (cond, b) in
           let a : T.instruction = T.IletIn(res_name, T.istring "", IletIn(map_name, map, T.Iseq [loop; vres]) ) in
-          T.Iif (cond, a, T.istring "0")
+          args, T.Iif (cond, a, T.istring "0")
         end
         in
-        T.mk_func name raw_type_arg args ret (T.Concrete body)
-      end
-    | BlistContains t -> begin
-        let list_name    = "l" in
-        let elt_name     = "x" in
-        let raw_type_arg = T.tpair (T.tlist t) t in
-        let args         = [list_name, T.tlist t; elt_name, t] in
-        let ret          = T.tbool in
-        (* let b            = begin
-           let res_name     = "r" in
-           let var_name     = "v" in
-           let vlist        = T.Ivar list_name in
-           let velt         = T.Ivar elt_name in
-           let vres         = T.Ivar res_name in
-           let vvar         = T.Ivar var_name in
-           let mem    = T.Icompare (Ceq, velt, vvar) in
-           let cond   = T.Ibinop (Bor, vres, mem) in
-           let assign = T.Iassign (res_name, cond) in
-           let loop   = T.Iiter ([var_name], vlist, assign) in
-           T.IletIn (res_name, T.ifalse, loop)
-           end in *)
-        T.mk_func name raw_type_arg args ret (T.Abstract b)
-      end
-    | BlistNth t -> begin
-        let raw_type_arg = t in
-        let args         = ["l", t] in
-        let ret          = T.tint in
-        T.mk_func name raw_type_arg args ret (T.Abstract b)
+        T.mk_func name targ tret (T.Concrete (args, body))
       end
   in
 
@@ -269,6 +251,12 @@ let to_ir (model : M.model) : T.ir =
       get_entrypoint id (to_one_type (List.map to_type ts)) (T.Izop Zself_address)
     in
 
+    let mk_tuple l =
+      match List.rev l with
+      | []  -> T.iunit
+      | [e] -> e
+      | e::t -> List.fold_left (fun accu x -> T.Ibinop (Bpair, x, accu)) e t
+    in
 
     match mtt.node with
 
@@ -316,7 +304,7 @@ let to_ir (model : M.model) : T.ir =
         let b = f b in
         T.Iiter (ids, c, b)
       end
-    | Miter (_i, _a, _b, _c, _)  ->emit_error TODO
+    | Miter (_i, _a, _b, _c, _)  -> emit_error TODO
     | Mwhile (c, b, _)           -> T.Iwhile (f c, f b)
     | Mseq is                    -> T.Iseq (List.map f is)
     | Mreturn x                  -> f x
@@ -401,12 +389,7 @@ let to_ir (model : M.model) : T.ir =
 
     | Msome v -> T.Iunop (Usome, f v)
 
-    | Mtuple     l -> begin
-        match List.rev l with
-        | []  -> T.iunit
-        | [e] -> f e
-        | e::t -> List.fold_left (fun accu x -> T.Ibinop (Bpair, f x, accu)) (f e) t
-      end
+    | Mtuple l      -> mk_tuple (List.map f l)
     | Masset     _l -> emit_error (TODO)
     | Massets    _l -> emit_error (TODO)
     | Mlitset    l -> begin
@@ -523,8 +506,8 @@ let to_ir (model : M.model) : T.ir =
 
     (* builtin functions *)
 
-    | Mmax (_l, _r)      -> assert false
-    | Mmin (_l, _r)      -> assert false
+    | Mmax (l, r)        -> let b = T.Bmax (to_type l.type_) in add_builtin b; T.Icall (get_fun_name b, [f l; f r])
+    | Mmin (l, r)        -> let b = T.Bmin (to_type l.type_) in add_builtin b; T.Icall (get_fun_name b, [f l; f r])
     | Mabs x             -> T.Iunop (Uabs, f x)
     | Mconcat (x, y)     -> T.Ibinop (Bconcat, f x, f y)
     | Mslice (x, s, e)   -> T.Iterop (Tslice, f x, f s, f e)
@@ -637,10 +620,10 @@ let to_ir (model : M.model) : T.ir =
     in
 
     let for_fs_fun env (fs : M.function_struct) ret : T.func =
-      let ret = to_type ret in
+      let tret = to_type ret in
       let name, args, body = for_fs env fs in
-      let raw_type_arg = to_one_type (List.map snd args) in
-      T.mk_func name raw_type_arg args ret (T.Concrete body)
+      let targ = to_one_type (List.map snd args) in
+      T.mk_func name targ tret (T.Concrete (args, body))
     in
 
     let for_fs_entry env (fs : M.function_struct) : T.entry =
@@ -683,11 +666,13 @@ let to_ir (model : M.model) : T.ir =
 let concrete_michelson b =
   let error _ = emit_error (NoConcreteImplementationFor (get_fun_name b)) in
   match b with
+  | T.Bmin _          -> T.SEQ [DUP; UNPAIR; COMPARE; LT; IF ([CAR], [CDR])]
+  | T.Bmax _          -> T.SEQ [DUP; UNPAIR; COMPARE; LT; IF ([CDR], [CAR])]
   | T.Bfloor          -> T.SEQ [UNPAIR; EDIV; IF_NONE ([(PUSH (T.tstring, (Dstring "DivByZero"))); FAILWITH], [CAR])]
   | T.Bceil           -> T.SEQ [UNPAIR; EDIV; IF_NONE ([(PUSH (T.tstring, (Dstring "DivByZero"))); FAILWITH], [UNPAIR; SWAP; INT; EQ; IF ([], [PUSH (T.tint, T.Dint Big_int.unit_big_int); ADD])])]
-  | T.Btostring _     -> error ()
   | T.BlistContains _ -> T.SEQ [UNPAIR; PUSH (T.tbool, T.Dfalse); SWAP; ITER [DIG 2; DUP; DUG 3; COMPARE; EQ; OR; ]; DIP (1, [DROP 1])]
-  | T.BlistNth _      -> error ()
+  | T.BlistNth _      -> assert false
+  | T.Btostring _     -> error ()
 
 type env = {
   vars : ident list;
@@ -964,17 +949,17 @@ let to_michelson (ir : T.ir) : T.michelson =
     let get_funs _ : T.code list * ident list =
       let funs = List.map (
           fun (x : T.func) ->
-            let targs = x.raw_type_arg in
-            let env = mk_env ~vars:(x.args |> List.map fst |> List.rev) () in
-            let nb_args = List.length x.args in
-            let nb_as = nb_args - 1 in
-            let unfold_args = unfold nb_as in
             let code =
               match x.body with
-              | Concrete body -> let code, _ = instruction_to_code env body in unfold_args @ code::[T.DUG nb_args; T.DROP nb_args]
+              | Concrete (args, body) ->
+                let env = mk_env ~vars:(args |> List.map fst |> List.rev) () in
+                let nb_args = List.length args in
+                let nb_as = nb_args - 1 in
+                let unfold_args = unfold nb_as in
+                let code, _ = instruction_to_code env body in unfold_args @ code::[T.DUG nb_args; T.DROP nb_args]
               | Abstract b    -> [concrete_michelson b]
             in
-            T.LAMBDA (targs, x.ret, code ), x.name
+            T.LAMBDA (x.targ, x.tret, code ), x.name
         ) ir.funs
       in
       List.split funs

@@ -262,14 +262,18 @@ let rec pp_instruction fmt (i : instruction) =
   | Imichelson (a, c, v) -> pp "michelson [%a] (%a) {%a}" (pp_list "; " pp_id) v (pp_list "; " f) a pp_code c
 
 let pp_func fmt (f : func) =
-  Format.fprintf fmt "function %s (%a) : %a%a@\n "
+  Format.fprintf fmt "function %s %a@\n "
     f.name
-    (pp_list ", " (fun fmt (id, t) -> Format.fprintf fmt "%s : %a" id pp_type t)) f.args
-    pp_type f.ret
     (fun fmt x ->
        match x with
-       | Concrete body -> Format.fprintf fmt "{@\n  @[%a@]@\n}" pp_instruction body
-       | Abstract _    -> Format.fprintf fmt "abstract"
+       | Concrete (args, body) ->
+         Format.fprintf fmt "(%a) : %a{@\n  @[%a@]@\n}"
+           (pp_list ", " (fun fmt (id, t) ->
+                Format.fprintf fmt "%s : %a" id pp_type t)) args
+           pp_type f.tret
+           pp_instruction body
+       | Abstract _ ->
+         Format.fprintf fmt "(%a) : %a = abstract" pp_type f.targ pp_type f.tret
     ) f.body
 
 let pp_entry fmt (e : entry) =

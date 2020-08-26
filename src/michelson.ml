@@ -212,11 +212,13 @@ type cmp_operator =
 [@@deriving show {with_path = false}]
 
 type builtin =
-  | Bceil
+  | Bmin of type_
+  | Bmax of type_
   | Bfloor
-  | Btostring of type_
+  | Bceil
   | BlistContains of type_
   | BlistNth of type_
+  | Btostring of type_
 [@@deriving show {with_path = false}]
 
 type instruction =
@@ -244,15 +246,14 @@ type instruction =
 [@@deriving show {with_path = false}]
 
 type implem =
-  | Concrete of instruction
+  | Concrete of (ident * type_) list * instruction
   | Abstract of builtin
 [@@deriving show {with_path = false}]
 
 type func = {
   name: ident;
-  raw_type_arg: type_;
-  args: (ident * type_) list;
-  ret: type_;
+  targ: type_;
+  tret: type_;
   body: implem;
 }
 [@@deriving show {with_path = false}]
@@ -287,8 +288,8 @@ type michelson = {
 let mk_type ?annotation node : type_ =
   {node; annotation}
 
-let mk_func name raw_type_arg args ret body : func =
-  {name; raw_type_arg; args; ret; body}
+let mk_func name targ tret body : func =
+  {name; targ; tret; body}
 
 let mk_entry name args body : entry =
   {name; args; body}
@@ -618,11 +619,13 @@ module Utils : sig
 end = struct
 
   let get_fun_name ft = function
+    | Bmin t          -> "_min_" ^ (ft t)
+    | Bmax t          -> "_max_" ^ (ft t)
     | Bfloor          -> "_floor"
     | Bceil           -> "_ceil"
-    | Btostring t     -> "_to_string_" ^ (ft t)
     | BlistContains t -> "_list_contains_" ^ (ft t)
-    | BlistNth t      -> "_list_nth_" ^ (ft t)
+    | BlistNth t      -> "_list_nth_"      ^ (ft t)
+    | Btostring t     -> "_to_string_"     ^ (ft t)
 
   let rec flat (c : code) : code =
     let f l = List.fold_right (fun x accu -> match flat x with | SEQ l -> l @ accu | a -> a::accu) l [] in
