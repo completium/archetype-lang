@@ -224,6 +224,33 @@ let to_ir (model : M.model) : T.ir =
         in
         T.mk_func name raw_type_arg args ret (T.Concrete body)
       end
+    | BlistContains t -> begin
+        let list_name    = "l" in
+        let elt_name     = "x" in
+        let raw_type_arg = T.tpair (T.tlist t) t in
+        let args         = [list_name, T.tlist t; elt_name, t] in
+        let ret          = T.tbool in
+        (* let b            = begin
+          let res_name     = "r" in
+          let var_name     = "v" in
+          let vlist        = T.Ivar list_name in
+          let velt         = T.Ivar elt_name in
+          let vres         = T.Ivar res_name in
+          let vvar         = T.Ivar var_name in
+          let mem    = T.Icompare (Ceq, velt, vvar) in
+          let cond   = T.Ibinop (Bor, vres, mem) in
+          let assign = T.Iassign (res_name, cond) in
+          let loop   = T.Iiter ([var_name], vlist, assign) in
+          T.IletIn (res_name, T.ifalse, loop)
+        end in *)
+        T.mk_func name raw_type_arg args ret (T.Abstract b)
+      end
+    | BlistNth t -> begin
+        let raw_type_arg = t in
+        let args         = ["l", t] in
+        let ret          = T.tint in
+        T.mk_func name raw_type_arg args ret (T.Abstract b)
+      end
   in
 
   let rec mterm_to_intruction env (mtt : M.mterm) : T.instruction =
@@ -245,29 +272,29 @@ let to_ir (model : M.model) : T.ir =
 
     (* lambda *)
 
-    | Mletin ([id], v, _, b, _)    -> T.IletIn (unloc id, f v, f b)
-    | Mletin _                     -> assert false
-    | Mdeclvar (_ids, _t, _v)      -> assert false
-    | Mapp (e, args)               -> T.Icall (unloc e, List.map f args)
+    | Mletin ([id], v, _, b, _) -> T.IletIn (unloc id, f v, f b)
+    | Mletin _                  -> emit_error (UnsupportedTerm ("Mletin"))
+    | Mdeclvar _                -> emit_error (UnsupportedTerm ("Mdeclvar"))
+    | Mapp (e, args)            -> T.Icall (unloc e, List.map f args)
 
     (* assign *)
 
     | Massign (_op, _, Avar id, v)                 -> T.Iassign (unloc id, f v)
     | Massign (_op, _, Avarstore id, v)            -> T.Iassign (unloc id, f v)
-    | Massign (_op, _, Aasset (_an, _fn, _k), _v)  -> assert false
+    | Massign (_op, _, Aasset (_an, _fn, _k), _v)  -> emit_error TODO
     | Massign (_op, _, Arecord (_rn, fn, {node = Mvar (id, _, _, _); type_ = t}), v) -> begin
         let n = get_record_index t (unloc fn) in T.IassignRec (unloc id, n, f v)
       end
     | Massign (_op, _, Arecord _, _v)              -> T.iskip
-    | Massign (_op, _, Astate, _x)                 -> assert false
-    | Massign (_op, _, Aassetstate (_an, _k), _v)  -> assert false
+    | Massign (_op, _, Astate, _x)                 -> emit_error TODO
+    | Massign (_op, _, Aassetstate (_an, _k), _v)  -> emit_error TODO
     | Massign (_op, _, Aoperations, v)             -> T.Iassign (operations, f v)
 
     (* control *)
 
     | Mif (c, t, Some e)         -> T.Iif (f c, f t, f e)
     | Mif (c, t, None)           -> T.Iif (f c, f t, T.iskip)
-    | Mmatchwith (_e, _l)        -> assert false
+    | Mmatchwith (_e, _l)        -> emit_error (UnsupportedTerm ("Mmatchwith"))
     | Mfor (id, c, b, _)         -> begin
         let ids =
           match id with
@@ -279,7 +306,7 @@ let to_ir (model : M.model) : T.ir =
           match c with
           | ICKcoll  _
           | ICKview  _
-          | ICKfield _ -> assert false
+          | ICKfield _ -> emit_error TODO
           | ICKset   c
           | ICKlist  c
           | ICKmap   c -> f c
@@ -287,12 +314,12 @@ let to_ir (model : M.model) : T.ir =
         let b = f b in
         T.Iiter (ids, c, b)
       end
-    | Miter (_i, _a, _b, _c, _)  -> assert false
+    | Miter (_i, _a, _b, _c, _)  ->emit_error TODO
     | Mwhile (c, b, _)           -> T.Iwhile (f c, f b)
     | Mseq is                    -> T.Iseq (List.map f is)
     | Mreturn x                  -> f x
-    | Mlabel _                   -> assert false
-    | Mmark  _                   -> assert false
+    | Mlabel _                   -> T.iskip
+    | Mmark  _                   -> T.iskip
 
 
     (* effect *)
@@ -341,11 +368,11 @@ let to_ir (model : M.model) : T.ir =
     | Mnat  v            -> T.Iconst (T.mk_type Tnat, Dint v)
     | Mbool true         -> T.Iconst (T.mk_type Tbool, Dtrue)
     | Mbool false        -> T.Iconst (T.mk_type Tbool, Dfalse)
-    | Menum _v           -> assert false
-    | Mrational (_n, _d) -> assert false
+    | Menum _            -> emit_error (UnsupportedTerm ("Menum"))
+    | Mrational _        -> emit_error (UnsupportedTerm ("Mrational"))
     | Mstring v          -> T.Iconst (T.mk_type Tstring, Dstring v)
     | Mcurrency (v, Utz) -> T.Iconst (T.mk_type Tmutez, Dint v)
-    | Mcurrency _        -> assert false
+    | Mcurrency _        -> emit_error (UnsupportedTerm ("Mcurrency"))
     | Maddress v         -> T.Iconst (T.mk_type Taddress, Dstring v)
     | Mdate v            -> T.Iconst (T.mk_type Ttimestamp, Dint (Core.date_to_timestamp v))
     | Mduration v        -> T.Iconst (T.mk_type Tint, Dint (Core.duration_to_timestamp v))
@@ -356,7 +383,7 @@ let to_ir (model : M.model) : T.ir =
     (* control expression *)
 
     | Mexprif (c, t, e)       -> T.Iif (f c, f t, f e)
-    | Mexprmatchwith (_e, _l) -> assert false
+    | Mexprmatchwith (_e, _l) -> emit_error (UnsupportedTerm ("Mexprmatchwith"))
 
 
     (* composite type constructors *)
@@ -378,8 +405,8 @@ let to_ir (model : M.model) : T.ir =
         | [e] -> f e
         | e::t -> List.fold_left (fun accu x -> T.Ibinop (Bpair, f x, accu)) (f e) t
       end
-    | Masset     _l -> assert false
-    | Massets    _l -> assert false
+    | Masset     _l -> emit_error (TODO)
+    | Massets    _l -> emit_error (TODO)
     | Mlitset    l -> begin
         match mtt.type_ with
         |  M.Tset t -> T.Iset (ft t, List.map f l)
@@ -433,29 +460,29 @@ let to_ir (model : M.model) : T.ir =
 
     (* asset api effect *)
 
-    | Maddasset (_an, _i)               -> assert false
-    | Maddfield (_an, _fn, _c, _i)      -> assert false
-    | Mremoveasset (_an, _i)            -> assert false
-    | Mremoveall (_an, _fn, _a)         -> assert false
-    | Mremovefield (_an, _fn, _c, _i)   -> assert false
-    | Mremoveif (_an, _c, _la, _lb, _a) -> assert false
-    | Mclear (_an, _v)                  -> assert false
-    | Mset (_c, _l, _k, _v)             -> assert false
-    | Mupdate (_an, _k, _l)             -> assert false
-    | Maddupdate _                      -> emit_error (UnsupportedTerm ("addupdate"))
+    | Maddasset (_an, _i)               -> emit_error TODO
+    | Maddfield (_an, _fn, _c, _i)      -> emit_error TODO
+    | Mremoveasset (_an, _i)            -> emit_error TODO
+    | Mremoveall (_an, _fn, _a)         -> emit_error TODO
+    | Mremovefield (_an, _fn, _c, _i)   -> emit_error TODO
+    | Mremoveif (_an, _c, _la, _lb, _a) -> emit_error TODO
+    | Mclear (_an, _v)                  -> emit_error TODO
+    | Mset (_c, _l, _k, _v)             -> emit_error TODO
+    | Mupdate (_an, _k, _l)             -> emit_error TODO
+    | Maddupdate _                      -> emit_error TODO
 
 
     (* asset api expression *)
 
-    | Mget (_an, _c, _k)              -> assert false
-    | Mselect (_an, _c, _la, _lb, _a) -> assert false
-    | Msort (_an, _c, _l)             -> assert false
-    | Mcontains (_an, _c, _i)         -> assert false
-    | Mnth (_an, _c, _i)              -> assert false
-    | Mcount (_an, _c)                -> assert false
-    | Msum (_an, _c, _p)              -> assert false
-    | Mhead (_an, _c, _i)             -> assert false
-    | Mtail (_an, _c, _i)             -> assert false
+    | Mget (_an, _c, _k)              -> emit_error TODO
+    | Mselect (_an, _c, _la, _lb, _a) -> emit_error TODO
+    | Msort (_an, _c, _l)             -> emit_error TODO
+    | Mcontains (_an, _c, _i)         -> emit_error TODO
+    | Mnth (_an, _c, _i)              -> emit_error TODO
+    | Mcount (_an, _c)                -> emit_error TODO
+    | Msum (_an, _c, _p)              -> emit_error TODO
+    | Mhead (_an, _c, _i)             -> emit_error TODO
+    | Mtail (_an, _c, _i)             -> emit_error TODO
 
 
     (* utils *)
@@ -478,10 +505,9 @@ let to_ir (model : M.model) : T.ir =
     (* list api expression *)
 
     | Mlistprepend (_t, i, l)    -> T.Ibinop (Bcons, f l, f i)
-    | Mlistcontains (_t, _c, _a) -> assert false
+    | Mlistcontains (t, c, a)    -> let b = T.BlistContains (to_type t) in add_builtin b; T.Icall (T.Utils.get_fun_name b, [f c; f a])
     | Mlistlength (_, l)         -> T.Iunop (Usize, f l)
-    | Mlistnth (_t, _c, _a)      -> assert false
-
+    | Mlistnth (t, c, a)         -> let b = T.BlistNth (to_type t) in add_builtin b; T.Icall (T.Utils.get_fun_name b, [f c; f a])
 
     (* map api expression *)
 
@@ -653,10 +679,13 @@ let to_ir (model : M.model) : T.ir =
 (* -------------------------------------------------------------------- *)
 
 let concrete_michelson b =
+  let error _ = emit_error (NoConcreteImplementationFor (T.Utils.get_fun_name b)) in
   match b with
-  | T.Bfloor      -> T.SEQ [UNPAIR; EDIV; IF_NONE ([(PUSH (T.tstring, (Dstring "DivByZero"))); FAILWITH], [CAR])]
-  | T.Bceil       -> T.SEQ [UNPAIR; EDIV; IF_NONE ([(PUSH (T.tstring, (Dstring "DivByZero"))); FAILWITH], [UNPAIR; SWAP; INT; EQ; IF ([], [PUSH (T.tint, T.Dint Big_int.unit_big_int); ADD])])]
-  | T.Btostring _ -> emit_error (NoConcreteImplementationFor (T.Utils.get_fun_name b))
+  | T.Bfloor          -> T.SEQ [UNPAIR; EDIV; IF_NONE ([(PUSH (T.tstring, (Dstring "DivByZero"))); FAILWITH], [CAR])]
+  | T.Bceil           -> T.SEQ [UNPAIR; EDIV; IF_NONE ([(PUSH (T.tstring, (Dstring "DivByZero"))); FAILWITH], [UNPAIR; SWAP; INT; EQ; IF ([], [PUSH (T.tint, T.Dint Big_int.unit_big_int); ADD])])]
+  | T.Btostring _     -> error ()
+  | T.BlistContains _ -> T.SEQ [UNPAIR; PUSH (T.tbool, T.Dfalse); SWAP; ITER [DIG 2; DUP; DUG 3; COMPARE; EQ; OR; ]; DIP (1, [DROP 1])]
+  | T.BlistNth _      -> error ()
 
 type env = {
   vars : ident list;
@@ -701,7 +730,7 @@ let to_michelson (ir : T.ir) : T.michelson =
       | e::t ->
         List.fold_left (fun (a, env) x -> begin
               let v, env = fe env x in (T.SEQ [a; v; T.PAIR], env)
-            end ) (f e) t
+            end ) (fe env e) t
     in
 
     let assign env id v =
@@ -938,10 +967,10 @@ let to_michelson (ir : T.ir) : T.michelson =
             let unfold_args = unfold nb_as in
             let code =
               match x.body with
-              | Concrete body -> let code, _ = instruction_to_code env body in code::[T.DUG nb_args; T.DROP nb_args]
+              | Concrete body -> let code, _ = instruction_to_code env body in unfold_args @ code::[T.DUG nb_args; T.DROP nb_args]
               | Abstract b    -> [concrete_michelson b]
             in
-            T.LAMBDA (targs, x.ret, unfold_args @ code ), x.name
+            T.LAMBDA (targs, x.ret, code ), x.name
         ) ir.funs
       in
       List.split funs

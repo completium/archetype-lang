@@ -72,6 +72,7 @@ PASSED="\
 ./tests/passed/expr_fun_floor.arl \
 ./tests/passed/expr_fun_ceil.arl \
 ./tests/passed/expr_fun_to_string_nat.arl \
+./tests/passed/test_list_contains.arl \
 "
 
 RET=0

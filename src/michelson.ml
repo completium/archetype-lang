@@ -215,6 +215,8 @@ type builtin =
   | Bceil
   | Bfloor
   | Btostring of type_
+  | BlistContains of type_
+  | BlistNth of type_
 [@@deriving show {with_path = false}]
 
 type instruction =
@@ -308,7 +310,9 @@ let tint        = mk_type Tint
 let tbool       = mk_type Tbool
 let tpair t1 t2 = mk_type (Tpair (t1, t2))
 let trat        = tpair tint tnat
-
+let tlist t     = mk_type (Tlist t)
+let tset t      = mk_type (Tlist t)
+let tmap t1 t2  = mk_type (Tmap (t1, t2))
 
 (* -------------------------------------------------------------------- *)
 
@@ -487,9 +491,11 @@ let cmp_code lhs rhs =
 
 let cmp_builtin lhs rhs =
   match lhs, rhs with
-  | Bfloor, Bfloor             -> true
-  | Bceil, Bceil               -> true
-  | Btostring t1, Btostring t2 -> cmp_type t1 t2
+  | Bfloor, Bfloor                     -> true
+  | Bceil, Bceil                       -> true
+  | Btostring t1, Btostring t2         -> cmp_type t1 t2
+  | BlistContains t1, BlistContains t2 -> cmp_type t1 t2
+  | BlistNth t1, BlistNth t2           -> cmp_type t1 t2
   | _ -> false
 
 let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) = function
@@ -612,9 +618,11 @@ module Utils : sig
 end = struct
 
   let get_fun_name = function
-    | Bfloor      -> "_floor"
-    | Bceil       -> "_ceil"
-    | Btostring _ -> "_to_string_nat"
+    | Bfloor          -> "_floor"
+    | Bceil           -> "_ceil"
+    | Btostring _     -> "_to_string_nat"
+    | BlistContains _ -> "_list_contains"
+    | BlistNth _      -> "_list_nth"
 
   let rec flat (c : code) : code =
     let f l = List.fold_right (fun x accu -> match flat x with | SEQ l -> l @ accu | a -> a::accu) l [] in
