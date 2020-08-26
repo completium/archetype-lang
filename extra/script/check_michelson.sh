@@ -66,6 +66,8 @@ PASSED="\
 ./tests/passed/test_entrysig_self.arl \
 ./tests/passed/lang_entrysig.arl \
 ./tests/passed/test_operations.arl \
+./tests/passed/simple_record_lit.arl \
+./tests/passed/simple_record_lit_rev.arl \
 ./tests/passed/simple_record_assign.arl \
 ./tests/passed/simple_record_assign1.arl \
 ./tests/passed/simple_record_assign2.arl \
@@ -73,6 +75,7 @@ PASSED="\
 ./tests/passed/expr_fun_ceil.arl \
 ./tests/passed/expr_fun_to_string_nat.arl \
 ./tests/passed/test_list_contains.arl \
+./tests/passed/test_list_contains2.arl \
 "
 
 RET=0

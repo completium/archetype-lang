@@ -35,6 +35,19 @@ let rec pp_type fmt (t : type_) =
   | Ttimestamp          -> pp_simple_a "timestamp"
   | Taddress            -> pp_simple_a "address"
 
+let rec pp_pretty_type fmt (t : type_) =
+  match t.node with
+  | Toption    t        -> Format.fprintf fmt "option_%a"     pp_pretty_type t
+  | Tlist      t        -> Format.fprintf fmt "list_%a"       pp_pretty_type t
+  | Tset       t        -> Format.fprintf fmt "set_%a"        pp_pretty_type t
+  | Tcontract  t        -> Format.fprintf fmt "contract_%a"   pp_pretty_type t
+  | Tpair      (lt, rt) -> Format.fprintf fmt "pair_%a_%a"    pp_pretty_type lt  pp_pretty_type rt
+  | Tor        (lt, rt) -> Format.fprintf fmt "or_%a_%a"      pp_pretty_type lt  pp_pretty_type rt
+  | Tlambda    (at, rt) -> Format.fprintf fmt "lambda_%a_%a"  pp_pretty_type at  pp_pretty_type rt
+  | Tmap       (kt, vt) -> Format.fprintf fmt "map_%a_%a"     pp_pretty_type kt  pp_pretty_type vt
+  | Tbig_map   (kt, vt) -> Format.fprintf fmt "big_map_%a_%a" pp_pretty_type kt  pp_pretty_type vt
+  | _ -> pp_type fmt t
+
 let rec pp_data fmt (d : data) =
   match d with
   | Dint    v       -> pp_big_int fmt v
@@ -289,4 +302,5 @@ let pp_michelson fmt (m : michelson) =
 let string_of__of_pp pp x =
   Format.asprintf "%a@." pp x
 
+let show_pretty_type x = string_of__of_pp pp_pretty_type x
 let show_model x = string_of__of_pp pp_michelson x

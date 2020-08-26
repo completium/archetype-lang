@@ -611,18 +611,18 @@ let rec map_seq f x =
 
 module Utils : sig
 
-  val get_fun_name : builtin -> ident
+  val get_fun_name : (type_ -> ident) -> builtin -> ident
   val flat         : code -> code
   val optim        : code -> code
 
 end = struct
 
-  let get_fun_name = function
+  let get_fun_name ft = function
     | Bfloor          -> "_floor"
     | Bceil           -> "_ceil"
-    | Btostring _     -> "_to_string_nat"
-    | BlistContains _ -> "_list_contains"
-    | BlistNth _      -> "_list_nth"
+    | Btostring t     -> "_to_string_" ^ (ft t)
+    | BlistContains t -> "_list_contains_" ^ (ft t)
+    | BlistNth t      -> "_list_nth_" ^ (ft t)
 
   let rec flat (c : code) : code =
     let f l = List.fold_right (fun x accu -> match flat x with | SEQ l -> l @ accu | a -> a::accu) l [] in

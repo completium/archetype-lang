@@ -31,6 +31,8 @@ let emit_error (desc : error_desc) =
   let str = Format.asprintf "%a@." pp_error_desc desc in
   raise (Anomaly str)
 
+let get_fun_name = T.Utils.get_fun_name Printer_michelson.show_pretty_type
+
 let operations = "_ops"
 
 type env_ir = {
@@ -168,7 +170,7 @@ let to_ir (model : M.model) : T.ir =
   in
 
   let get_builtin_fun b =
-    let name = T.Utils.get_fun_name b in
+    let name = T.Utils.get_fun_name Printer_michelson.show_pretty_type b in
     match b with
     | Bceil -> begin
         let raw_type_arg = T.trat in
@@ -231,18 +233,18 @@ let to_ir (model : M.model) : T.ir =
         let args         = [list_name, T.tlist t; elt_name, t] in
         let ret          = T.tbool in
         (* let b            = begin
-          let res_name     = "r" in
-          let var_name     = "v" in
-          let vlist        = T.Ivar list_name in
-          let velt         = T.Ivar elt_name in
-          let vres         = T.Ivar res_name in
-          let vvar         = T.Ivar var_name in
-          let mem    = T.Icompare (Ceq, velt, vvar) in
-          let cond   = T.Ibinop (Bor, vres, mem) in
-          let assign = T.Iassign (res_name, cond) in
-          let loop   = T.Iiter ([var_name], vlist, assign) in
-          T.IletIn (res_name, T.ifalse, loop)
-        end in *)
+           let res_name     = "r" in
+           let var_name     = "v" in
+           let vlist        = T.Ivar list_name in
+           let velt         = T.Ivar elt_name in
+           let vres         = T.Ivar res_name in
+           let vvar         = T.Ivar var_name in
+           let mem    = T.Icompare (Ceq, velt, vvar) in
+           let cond   = T.Ibinop (Bor, vres, mem) in
+           let assign = T.Iassign (res_name, cond) in
+           let loop   = T.Iiter ([var_name], vlist, assign) in
+           T.IletIn (res_name, T.ifalse, loop)
+           end in *)
         T.mk_func name raw_type_arg args ret (T.Abstract b)
       end
     | BlistNth t -> begin
@@ -505,9 +507,9 @@ let to_ir (model : M.model) : T.ir =
     (* list api expression *)
 
     | Mlistprepend (_t, i, l)    -> T.Ibinop (Bcons, f l, f i)
-    | Mlistcontains (t, c, a)    -> let b = T.BlistContains (to_type t) in add_builtin b; T.Icall (T.Utils.get_fun_name b, [f c; f a])
+    | Mlistcontains (t, c, a)    -> let b = T.BlistContains (to_type t) in add_builtin b; T.Icall (get_fun_name b, [f c; f a])
     | Mlistlength (_, l)         -> T.Iunop (Usize, f l)
-    | Mlistnth (t, c, a)         -> let b = T.BlistNth (to_type t) in add_builtin b; T.Icall (T.Utils.get_fun_name b, [f c; f a])
+    | Mlistnth (t, c, a)         -> let b = T.BlistNth (to_type t) in add_builtin b; T.Icall (get_fun_name b, [f c; f a])
 
     (* map api expression *)
 
@@ -530,9 +532,9 @@ let to_ir (model : M.model) : T.ir =
     | Misnone x          -> T.Iifnone (f x, T.itrue,  (fun _ -> T.ifalse), "_var_ifnone")
     | Missome x          -> T.Iifnone (f x, T.ifalse, (fun _ -> T.itrue), "_var_ifnone")
     | Moptget x          -> T.Iifnone (f x, T.ifail "NoneValue", id, "_var_ifnone")
-    | Mfloor  x          -> let b = T.Bfloor           in add_builtin b; T.Icall (T.Utils.get_fun_name b, [f x])
-    | Mceil   x          -> let b = T.Bceil            in add_builtin b; T.Icall (T.Utils.get_fun_name b, [f x])
-    | Mtostring (t, x)   -> let b = T.Btostring (ft t) in add_builtin b; T.Icall (T.Utils.get_fun_name b, [f x])
+    | Mfloor  x          -> let b = T.Bfloor           in add_builtin b; T.Icall (get_fun_name b, [f x])
+    | Mceil   x          -> let b = T.Bceil            in add_builtin b; T.Icall (get_fun_name b, [f x])
+    | Mtostring (t, x)   -> let b = T.Btostring (ft t) in add_builtin b; T.Icall (get_fun_name b, [f x])
     | Mpack x            -> T.Iunop (Upack,  f x)
     | Munpack (t, x)     -> T.Iunop (Uunpack (ft t),  f x)
 
@@ -679,7 +681,7 @@ let to_ir (model : M.model) : T.ir =
 (* -------------------------------------------------------------------- *)
 
 let concrete_michelson b =
-  let error _ = emit_error (NoConcreteImplementationFor (T.Utils.get_fun_name b)) in
+  let error _ = emit_error (NoConcreteImplementationFor (get_fun_name b)) in
   match b with
   | T.Bfloor          -> T.SEQ [UNPAIR; EDIV; IF_NONE ([(PUSH (T.tstring, (Dstring "DivByZero"))); FAILWITH], [CAR])]
   | T.Bceil           -> T.SEQ [UNPAIR; EDIV; IF_NONE ([(PUSH (T.tstring, (Dstring "DivByZero"))); FAILWITH], [UNPAIR; SWAP; INT; EQ; IF ([], [PUSH (T.tint, T.Dint Big_int.unit_big_int); ADD])])]
@@ -689,10 +691,12 @@ let concrete_michelson b =
 
 type env = {
   vars : ident list;
+  fail : bool;
 }
 [@@deriving show {with_path = false}]
 
-let mk_env ?(vars=[]) () = { vars = vars}
+let mk_env ?(vars=[]) () = { vars = vars; fail = false }
+let fail_env (env : env) = { env with fail = true }
 let inc_env (env : env) = { env with vars = "_"::env.vars }
 let dec_env (env : env) = { env with vars = match env.vars with | _::t -> t | _ -> emit_error StackEmptyDec }
 let add_var_env (env : env) id = { env with vars = id::env.vars }
@@ -716,11 +720,11 @@ let to_michelson (ir : T.ir) : T.michelson =
     let seq env l =
       match l with
       | []   -> T.SEQ [], env
-      | [e]  -> f e
+      | [e]  -> fe env e
       | e::t ->
         List.fold_left (fun (a, env) x -> begin
               let v, env = fe env x in (T.SEQ [a; v], env)
-            end ) (f e) t
+            end ) (fe env e) t
     in
 
     let fold env l =
@@ -785,9 +789,21 @@ let to_michelson (ir : T.ir) : T.michelson =
 
     | Iif (c, t, e) -> begin
         let c, _   = f c in
-        let t, env = f t in (* TODO: fix it (what it does in the stack) *)
-        let e, _   = f e in
+        let t, envt = f t in (* TODO: fix it (what it does in the stack) *)
+        let e, enve = f e in
 
+        (* let c, env = fe env c in
+           let t, envt = fe (dec_env env) t in
+           let e, enve = fe (dec_env env) e in *)
+
+        let env =
+          (* TODO: check if `envt` and `enve` have the same stack *)
+          match envt.fail, enve.fail with
+          | false, false -> envt
+          | false, true  -> envt
+          | true,  false -> enve
+          | true,  true  -> envt
+        in
         T.SEQ [ c; T.IF ([t], [e]) ], env
       end
 
@@ -826,15 +842,15 @@ let to_michelson (ir : T.ir) : T.michelson =
     | Izop op -> begin
         let c =
           match op with
-          | Znow               -> T.NOW
-          | Zamount            -> T.AMOUNT
-          | Zbalance           -> T.BALANCE
-          | Zsource            -> T.SOURCE
-          | Zsender            -> T.SENDER
-          | Zaddress           -> T.ADDRESS
-          | Zchain_id          -> T.CHAIN_ID
-          | Zself_address      -> T.SEQ [T.SELF; T.ADDRESS]
-          | Znone t            -> T.NONE t
+          | Znow          -> T.NOW
+          | Zamount       -> T.AMOUNT
+          | Zbalance      -> T.BALANCE
+          | Zsource       -> T.SOURCE
+          | Zsender       -> T.SENDER
+          | Zaddress      -> T.ADDRESS
+          | Zchain_id     -> T.CHAIN_ID
+          | Zself_address -> T.SEQ [T.SELF; T.ADDRESS]
+          | Znone t       -> T.NONE t
         in
         c, inc_env env
       end
@@ -860,49 +876,44 @@ let to_michelson (ir : T.ir) : T.michelson =
           | Ucontract (t, a) -> T.CONTRACT (t, a)
         in
         let e, env = f e in
+        let env = match op with T.FAILWITH -> fail_env env | _ -> env in
         T.SEQ [e; op], env
       end
     | Ibinop (op, lhs, rhs) -> begin
-        let c =
-          let op =
-            match op with
-            | Badd       -> T.ADD
-            | Bsub       -> T.SUB
-            | Bmul       -> T.MUL
-            | Bediv      -> T.EDIV
-            | Blsl       -> T.LSL
-            | Blsr       -> T.LSR
-            | Bor        -> T.OR
-            | Band       -> T.AND
-            | Bxor       -> T.XOR
-            | Bcompare   -> T.COMPARE
-            | Bget       -> T.GET
-            | Bmem       -> T.MEM
-            | Bconcat    -> T.CONCAT
-            | Bcons      -> T.CONS
-            | Bpair      -> T.PAIR
-          in
-          let rhs, env = f rhs in
-          let lhs, _   = fe env lhs in
-          T.SEQ [rhs; lhs; op]
+        let op =
+          match op with
+          | Badd       -> T.ADD
+          | Bsub       -> T.SUB
+          | Bmul       -> T.MUL
+          | Bediv      -> T.EDIV
+          | Blsl       -> T.LSL
+          | Blsr       -> T.LSR
+          | Bor        -> T.OR
+          | Band       -> T.AND
+          | Bxor       -> T.XOR
+          | Bcompare   -> T.COMPARE
+          | Bget       -> T.GET
+          | Bmem       -> T.MEM
+          | Bconcat    -> T.CONCAT
+          | Bcons      -> T.CONS
+          | Bpair      -> T.PAIR
         in
-        c, env
+        let rhs, env = fe env rhs in
+        let lhs, env = fe env lhs in
+        T.SEQ [rhs; lhs; op], (dec_env env)
       end
     | Iterop (op, a1, a2, a3) -> begin
-        let c =
-          let op =
-            match op with
-            | Tcheck_signature -> T.CHECK_SIGNATURE
-            | Tslice           -> T.SLICE
-            | Tupdate          -> T.UPDATE
-            | Ttransfer_tokens -> T.TRANSFER_TOKENS
-          in
-          let a3, env = fe env a3 in
-          let a2, env = fe env a2 in
-          let a1, _   = fe env a1 in
-          T.SEQ [a3; a2; a1; op]
+        let op =
+          match op with
+          | Tcheck_signature -> T.CHECK_SIGNATURE
+          | Tslice           -> T.SLICE
+          | Tupdate          -> T.UPDATE
+          | Ttransfer_tokens -> T.TRANSFER_TOKENS
         in
-        c, env
+        let a3, env = fe env a3 in
+        let a2, env = fe env a2 in
+        let a1, env = fe env a1 in
+        T.SEQ [a3; a2; a1; op], (dec_env (dec_env env))
       end
     | Iconst (t, e) -> T.PUSH (t, e), inc_env env
     | Icompare (op, lhs, rhs) -> begin
@@ -938,14 +949,7 @@ let to_michelson (ir : T.ir) : T.michelson =
                     let x, _ = f x in
                     T.SEQ [y; T.SOME; x; T.UPDATE ] ))), inc_env env
       end
-    | Irecord l -> begin
-        match List.rev l with
-        | []  -> T.SEQ [], inc_env env
-        | [e] -> f e
-        | a::q -> begin
-            (T.SEQ [let a, _ = f a in List.fold_left (fun accu x -> let x, _ = f x in T.SEQ [accu; x; T.PAIR] ) a q ]), inc_env env
-          end
-      end
+    | Irecord l -> fold env l
 
     | Imichelson (a, c, v) -> begin
         let a, _ = seq env a in
