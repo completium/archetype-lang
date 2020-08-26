@@ -230,6 +230,7 @@ type instruction =
   | IassignRec  of ident * int * instruction
   | Iif         of instruction * instruction * instruction
   | Iifnone     of instruction * instruction * (instruction -> instruction) * ident
+  | Iifcons     of instruction * instruction * instruction
   | Iwhile      of instruction * instruction
   | Iiter       of ident list * instruction * instruction
   | Izop        of z_operator

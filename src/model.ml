@@ -295,8 +295,9 @@ type ('id, 'term) mterm_node  =
   | Msetlength        of type_ * 'term
   (* list api expression *)
   | Mlistprepend      of type_ * 'term * 'term
-  | Mlistcontains     of type_ * 'term * 'term
+  | Mlistheadtail     of type_ * 'term
   | Mlistlength       of type_ * 'term
+  | Mlistcontains     of type_ * 'term * 'term
   | Mlistnth          of type_ * 'term * 'term
   (* map api expression *)
   | Mmapput           of type_ * type_ * 'term * 'term * 'term
@@ -1196,8 +1197,9 @@ let cmp_mterm_node
     | Msetlength (t1, c1), Msetlength (t2, c2)                                         -> cmp_type t1 t2 && cmp c1 c2
     (* list api expression *)
     | Mlistprepend (t1, c1, a1), Mlistprepend (t2, c2, a2)                             -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
-    | Mlistcontains (t1, c1, a1), Mlistcontains (t2, c2, a2)                           -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
+    | Mlistheadtail (t1, c1), Mlistheadtail (t2, c2)                                   -> cmp_type t1 t2 && cmp c1 c2
     | Mlistlength (t1, c1), Mlistlength (t2, c2)                                       -> cmp_type t1 t2 && cmp c1 c2
+    | Mlistcontains (t1, c1, a1), Mlistcontains (t2, c2, a2)                           -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
     | Mlistnth (t1, c1, a1), Mlistnth (t2, c2, a2)                                     -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
     (* map api expression *)
     | Mmapput (tk1, tv1, c1, k1, v1), Mmapput (tk2, tv2, c2, k2, v2)                   -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2 && cmp v1 v2
@@ -1558,8 +1560,9 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Msetlength (t, c)              -> Msetlength (ft t, f c)
   (* list api expression *)
   | Mlistprepend (t, c, a)         -> Mlistprepend (ft t, f c, f a)
-  | Mlistcontains (t, c, a)        -> Mlistcontains (t, f c, f a)
+  | Mlistheadtail(t, c)            -> Mlistheadtail(t, f c)
   | Mlistlength(t, c)              -> Mlistlength(t, f c)
+  | Mlistcontains (t, c, a)        -> Mlistcontains (t, f c, f a)
   | Mlistnth (t, c, a)             -> Mlistnth (t, f c, f a)
   (* map api expression *)
   | Mmapput (tk, tv, c, k, v)      -> Mmapput (ft tk, ft tv, f c, f k, f v)
@@ -1921,8 +1924,9 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Msetlength (_, c)                     -> f accu c
   (* list api expression *)
   | Mlistprepend (_, c, a)                -> f (f accu c) a
-  | Mlistcontains (_, c, a)               -> f (f accu c) a
+  | Mlistheadtail (_, c)                  -> f accu c
   | Mlistlength (_, c)                    -> f accu c
+  | Mlistcontains (_, c, a)               -> f (f accu c) a
   | Mlistnth (_, c, a)                    -> f (f accu c) a
   (* map api expression *)
   | Mmapput (_, _, c, k, v)               -> f (f (f accu c) k) v
@@ -2606,14 +2610,18 @@ let fold_map_term
     let ae, aa = f ca a in
     g (Mlistprepend (t, ce, ae)), aa
 
-  | Mlistcontains (t, c, a) ->
+  | Mlistheadtail (t, c) ->
     let ce, ca = f accu c in
-    let ae, aa = f ca a in
-    g (Mlistcontains (t, ce, ae)), aa
+    g (Mlistheadtail (t, ce)), ca
 
   | Mlistlength (t, c) ->
     let ce, ca = f accu c in
     g (Mlistlength (t, ce)), ca
+
+  | Mlistcontains (t, c, a) ->
+    let ce, ca = f accu c in
+    let ae, aa = f ca a in
+    g (Mlistcontains (t, ce, ae)), aa
 
   | Mlistnth (t, c, a) ->
     let ce, ca = f accu c in

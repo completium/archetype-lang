@@ -489,16 +489,21 @@ let to_model (ast : A.ast) : M.model =
           M.Mlistprepend (t, fp, fq)
         )
 
-      | A.Pcall (None, A.Cconst (A.Ccontains), [AExpr p; AExpr q]) when is_list p ->
+      | A.Pcall (None, A.Cconst (A.Cheadtail), [AExpr p]) when is_list p ->
         let fp = f p in
-        let fq = f q in
         let t = extract_builtin_type_list fp in
-        M.Mlistcontains (t, fp, fq)
+        M.Mlistheadtail (t, fp)
 
       | A.Pcall (None, A.Cconst (A.Clength), [AExpr p]) when is_list p ->
         let fp = f p in
         let t = extract_builtin_type_list fp in
         M.Mlistlength (t, fp)
+
+      | A.Pcall (None, A.Cconst (A.Ccontains), [AExpr p; AExpr q]) when is_list p ->
+        let fp = f p in
+        let fq = f q in
+        let t = extract_builtin_type_list fp in
+        M.Mlistcontains (t, fp, fq)
 
       | A.Pcall (None, A.Cconst (A.Cnth), [AExpr p; AExpr q]) when is_list p ->
         let fp = f p in

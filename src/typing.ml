@@ -950,10 +950,11 @@ let setops : opinfo list =
 let listops : opinfo list =
   let elemt = A.Tnamed 0 in
   let lst   = A.Tlist elemt in [
-    ("contains", A.Ccontains, `Total  , Some lst, [elemt  ], A.vtbool, Mint.empty);
-    ("prepend" , A.Cprepend , `Total  , Some lst, [elemt  ], lst     , Mint.empty);
-    ("length"  , A.Clength  , `Total  , Some lst, [       ], A.vtnat , Mint.empty);
-    ("nth"     , A.Cnth     , `Partial, Some lst, [A.vtnat], elemt   , Mint.empty);
+    ("prepend"        , A.Cprepend  , `Total  , Some lst, [elemt  ], lst                   , Mint.empty);
+    ("length"         , A.Clength   , `Total  , Some lst, [       ], A.vtnat               , Mint.empty);
+    ("list_head_tail" , A.Cheadtail , `Total  , Some lst, [       ], A.Ttuple [elemt; lst] , Mint.empty);
+    ("contains"       , A.Ccontains , `Total  , Some lst, [elemt  ], A.vtbool              , Mint.empty);
+    ("nth"            , A.Cnth      , `Partial, Some lst, [A.vtnat], elemt                 , Mint.empty);
   ]
 
 (* -------------------------------------------------------------------- *)

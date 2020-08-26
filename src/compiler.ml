@@ -65,7 +65,11 @@ let output (model : Model.model) =
                     let michelson = Gen_michelson.to_michelson ir in
                     if !Options.opt_raw_michelson
                     then Format.fprintf fmt "%a@." Michelson.pp_michelson michelson
-                    else Format.fprintf fmt "%a@." Printer_michelson.pp_michelson michelson
+                    else begin
+                      Format.fprintf fmt "# %a@.%a@."
+                        Printer_michelson.pp_data ir.storage_data
+                        Printer_michelson.pp_michelson michelson
+                    end
                   | _ -> assert false
                 end
               end

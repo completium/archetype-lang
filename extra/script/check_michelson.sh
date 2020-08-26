@@ -19,6 +19,7 @@ PASSED="\
 ./tests/passed/expr_set_contains.arl \
 ./tests/passed/expr_list_lit.arl \
 ./tests/passed/expr_list_prepend.arl \
+./tests/passed/expr_list_head_tail.arl \
 ./tests/passed/expr_list_length.arl \
 ./tests/passed/expr_map_lit.arl \
 ./tests/passed/expr_map_put.arl \

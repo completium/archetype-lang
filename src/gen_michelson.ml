@@ -190,9 +190,19 @@ let to_ir (model : M.model) : T.ir =
         T.mk_func name targ tret (T.Abstract b)
       end
     | BlistNth t -> begin
-        let targ = t in
-        let tret = T.tint in
-        T.mk_func name targ tret (T.Abstract b)
+        let targ = T.tpair (T.tlist t) T.tnat in
+        let tret = t in
+        let args, body = begin
+          let arg_name     = "x" in
+          let list_name    = "l" in
+          let args         = [list_name, T.tlist t; arg_name, T.tnat] in
+         (* let res_name     = "res" in
+          let map_name     = "m" in
+          let pair_name    = "p" in *)
+          args, T.istring "toto"
+        end
+        in
+        T.mk_func name targ tret (T.Concrete (args, body))
       end
     | Btostring t -> begin
         let targ = t in
@@ -490,8 +500,9 @@ let to_ir (model : M.model) : T.ir =
     (* list api expression *)
 
     | Mlistprepend (_t, i, l)    -> T.Ibinop (Bcons, f l, f i)
-    | Mlistcontains (t, c, a)    -> let b = T.BlistContains (to_type t) in add_builtin b; T.Icall (get_fun_name b, [f c; f a])
+    | Mlistheadtail (_t, l)      -> T.Iifcons (f l, T.iskip, T.ifail "EmptyList")
     | Mlistlength (_, l)         -> T.Iunop (Usize, f l)
+    | Mlistcontains (t, c, a)    -> let b = T.BlistContains (to_type t) in add_builtin b; T.Icall (get_fun_name b, [f c; f a])
     | Mlistnth (t, c, a)         -> let b = T.BlistNth (to_type t) in add_builtin b; T.Icall (get_fun_name b, [f c; f a])
 
     (* map api expression *)
@@ -774,7 +785,7 @@ let to_michelson (ir : T.ir) : T.michelson =
 
     | Iif (c, t, e) -> begin
         let c, _   = f c in
-        let t, envt = f t in (* TODO: fix it (what it does in the stack) *)
+        let t, envt = f t in
         let e, enve = f e in
 
         (* let c, env = fe env c in
@@ -801,6 +812,13 @@ let to_michelson (ir : T.ir) : T.michelson =
         T.SEQ [ v; T.IF_NONE ([t], [e; T.SWAP; T.DROP 1]) ], env
       end
 
+    | Iifcons (l, t, e) -> begin
+        let l, _     = f l in
+        let t, _envt = f t in
+        let e, _enve = f e in
+
+        T.SEQ [ l; T.IF_CONS ([T.PAIR; t], [e]) ], (inc_env env)
+      end
 
     | Iwhile (c, b) -> begin
         let c, _ = f c in

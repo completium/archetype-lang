@@ -5,10 +5,11 @@ entry exec () {
     var l : list<string> = ["1"; "2"; "3"];
 
     (* expr *)
-    var a : list<string> = prepend(l, "2");
-    var c : bool         = contains(l, "2");
-    var k : nat          = length(l);
-    var n : string       = nth(l, 0);
+    var a  : list<string>            = prepend(l, "2");
+    var ht : (string * list<string>) = list_head_tail(l);
+    var k  : nat                     = length(l);
+    var c  : bool                    = contains(l, "2");
+    var n  : string                  = nth(l, 0);
 
   }
 }

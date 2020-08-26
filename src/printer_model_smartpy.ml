@@ -1140,14 +1140,16 @@ let pp_model fmt (model : model) =
           f c
           f a
 
-      | Mlistcontains (_, c, a) ->
-        Format.fprintf fmt "list_contains (%a, %a)"
-          f c
-          f a
+      | Mlistheadtail _ -> assert false
 
       | Mlistlength (_, c) ->
         Format.fprintf fmt "sp.len (%a)"
           f c
+
+      | Mlistcontains (_, c, a) ->
+        Format.fprintf fmt "list_contains (%a, %a)"
+          f c
+          f a
 
       | Mlistnth (_, c, a) ->
         Format.fprintf fmt "list_nth (%a, %a)"

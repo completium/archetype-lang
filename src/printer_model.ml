@@ -811,14 +811,18 @@ let pp_mterm fmt (mt : mterm) =
         f c
         f a
 
-    | Mlistcontains (_, c, a) ->
-      Format.fprintf fmt "list_contains (%a, %a)"
+    | Mlistheadtail (_, c) ->
+      Format.fprintf fmt "list_head_tail (%a)"
         f c
-        f a
 
     | Mlistlength (_, c) ->
       Format.fprintf fmt "list_length (%a)"
         f c
+
+    | Mlistcontains (_, c, a) ->
+      Format.fprintf fmt "list_contains (%a, %a)"
+        f c
+        f a
 
     | Mlistnth (_, c, a) ->
       Format.fprintf fmt "list_nth (%a, %a)"

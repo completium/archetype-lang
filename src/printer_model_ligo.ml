@@ -1176,15 +1176,21 @@ let pp_model_internal fmt (model : model) b =
         f c
         f a
 
+    | Mlistheadtail (t, c) ->
+      Format.fprintf fmt "(case (%a) of | h#t -> (h, t) | nil -> (failwith (\"EmptyList\") : (%a * list(%a))) end)"
+        f c
+        pp_type t
+        pp_type t
+
+    | Mlistlength (_t, c) ->
+      Format.fprintf fmt "size (%a)"
+        f c
+
     | Mlistcontains (t, c, a) ->
       Format.fprintf fmt "list_%a_contains (%a, %a)"
         pp_pretty_type t
         f c
         f a
-
-    | Mlistlength (_t, c) ->
-      Format.fprintf fmt "size (%a)"
-        f c
 
     | Mlistnth (t, c, a) ->
       Format.fprintf fmt "list_%a_nth (%a, %a)"

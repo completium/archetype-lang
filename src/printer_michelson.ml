@@ -100,7 +100,7 @@ let rec pp_code fmt (i : code) =
   | IF_LEFT (ti, ei)     -> pp "IF_LEFT@\n  @[%a@]@\n  @[%a@]" fs ti fs ei
   | NIL t                -> pp "NIL %a" pp_type t
   | CONS                 -> pp "CONS"
-  | IF_CONS (ti, ei)     -> pp "IF_CONS %a %a" fs ti fs ei
+  | IF_CONS (ti, ei)     -> pp "IF_CONS@\n  @[%a@]@\n  @[%a@]" fs ti fs ei
   | SIZE                 -> pp "SIZE"
   | EMPTY_SET     t      -> pp "EMPTY_SET %a" pp_type t
   | EMPTY_MAP     (k, v) -> pp "EMPTY_MAP %a %a" pp_type k pp_type v
@@ -186,6 +186,7 @@ let rec pp_instruction fmt (i : instruction) =
   | IassignRec (id, n, v)  -> Format.fprintf fmt "%a[%i] := @[%a@]" pp_id id n f v
   | Iif (c, t, e)          -> pp "if (%a)@\nthen @[%a@]@\nelse @[%a@]" f c f t f e
   | Iifnone (v, t, fe, id) -> pp "if_none (%a)@\nthen @[%a@]@\nelse @[fun %s -> %a@]" f v f t id f (fe(Ivar id))
+  | Iifcons (v, t, e)      -> pp "if_cons (%a)@\nthen @[%a@]@\nelse @[%a@]" f v f t f e
   | Iwhile (c, b)          -> pp "while (%a) do@\n  @[%a@]@\ndone" f c f b
   | Iiter (ids, c, b)      -> pp "iter %a on (%a) do@\n  @[%a@]@\ndone" (pp_list ", " pp_id) ids f c f b
   | Izop op -> begin

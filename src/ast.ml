@@ -173,6 +173,7 @@ type const =
   | Ctail
   | Cabs
   | Cprepend
+  | Cheadtail
   (* map *)
   | Cmput
   | Cmremove
