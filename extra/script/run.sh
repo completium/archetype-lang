@@ -7,10 +7,8 @@ fi
 
 name="$(basename -- $1)"
 id=${name%.*}
-rarg=$2
-rentry=$3
-arg=${rarg:=Unit}
-entrypoint=${rentry:=default}
+arg=${2:-Unit}
+entrypoint=${3:-default}
 
 ./archetype.exe --set-caller-init="tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg" -t michelson $1 > $id.tz
 storage=`./archetype.exe --set-caller-init="tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg" -t michelson-storage $1`
