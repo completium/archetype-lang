@@ -264,6 +264,11 @@ let to_ir (model : M.model) : T.ir =
         let tret = T.tbool in
         T.mk_func name targ tret (T.Abstract b)
       end
+    | Bratuminus -> begin
+        let targ = T.trat in
+        let tret = T.trat in
+        T.mk_func name targ tret (T.Abstract b)
+      end
   in
 
   let rec mterm_to_intruction env (mtt : M.mterm) : T.instruction =
@@ -604,7 +609,7 @@ let to_ir (model : M.model) : T.ir =
       in
       let b = T.Bratcmp in add_builtin b; T.Icall (get_fun_name b, [T.Irecord [f l; f r]; op])
     | Mratarith (_op, _l, _r) -> assert false
-    | Mratuminus _v           -> assert false
+    | Mratuminus v            -> let b = T.Bratuminus in add_builtin b; T.Icall (get_fun_name b, [f v])
     | Mrattez (_c, _t)        -> assert false
     | Mdivtez (_c, _t)        -> assert false
     | Mnattoint e             -> T.Iunop (Uint, f e)
@@ -721,6 +726,7 @@ let concrete_michelson b =
   | T.Bratcmp         -> T.SEQ [UNPAIR; UNPAIR; DIP (1, [UNPAIR]); UNPAIR; DUG 3; MUL; DIP (1, [MUL]); SWAP; COMPARE; SWAP;
                                 IF_LEFT ([DROP 1; EQ], [IF_LEFT ([IF_LEFT ([DROP 1; LT], [DROP 1; LE])],
                                                                  [IF_LEFT ([DROP 1; GT], [DROP 1; GE])])])]
+  | T.Bratuminus      -> T.SEQ [UNPAIR; NEG; PAIR]
 
 type env = {
   vars : ident list;

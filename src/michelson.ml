@@ -222,6 +222,7 @@ type builtin =
   | BlistNth of type_
   | Btostring of type_
   | Bratcmp
+  | Bratuminus
 [@@deriving show {with_path = false}]
 
 type instruction =
@@ -640,6 +641,7 @@ end = struct
     | BlistNth t      -> "_list_nth_"      ^ (ft t)
     | Btostring t     -> "_to_string_"     ^ (ft t)
     | Bratcmp         -> "_ratcmp"
+    | Bratuminus      -> "_ratuminus"
 
   let rec flat (c : code) : code =
     let f l = List.fold_right (fun x accu -> match flat x with | SEQ l -> l @ accu | a -> a::accu) l [] in
