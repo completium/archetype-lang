@@ -80,6 +80,8 @@ PASSED="\
 ./tests/passed/test_list_nth.arl \
 ./tests/passed/test_list_mynth.arl \
 ./tests/passed/test_list_mynth2.arl \
+./tests/passed/simple_fun_with_storage.arl \
+./tests/passed/simple_fun_with_storage2.arl \
 "
 
 RET=0
