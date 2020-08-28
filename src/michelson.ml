@@ -227,6 +227,9 @@ type builtin =
   | Bratdiv
   | Bratmul
   | Bratuminus
+  | Brattez
+  | Bdivtez
+  | Bratdur
 [@@deriving show {with_path = false}]
 
 type instruction =
@@ -318,6 +321,7 @@ let tstring     = mk_type Tstring
 let tnat        = mk_type Tnat
 let tint        = mk_type Tint
 let tbool       = mk_type Tbool
+let tmutez      = mk_type Tmutez
 let tpair t1 t2 = mk_type (Tpair (t1, t2))
 let tor t1 t2   = mk_type (Tor (t1, t2))
 let trat        = tpair tint tnat
@@ -650,6 +654,9 @@ end = struct
     | Bratmul         -> "_ratmul"
     | Bratdiv         -> "_ratdiv"
     | Bratuminus      -> "_ratuminus"
+    | Brattez         -> "_rattez"
+    | Bdivtez         -> "_divtez"
+    | Bratdur         -> "_ratdur"
 
   let rec flat (c : code) : code =
     let f l = List.fold_right (fun x accu -> match flat x with | SEQ l -> l @ accu | a -> a::accu) l [] in

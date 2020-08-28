@@ -285,6 +285,21 @@ let to_ir (model : M.model) : T.ir =
         let tret = T.trat in
         T.mk_func name targ tret (T.Abstract b)
       end
+    | Brattez -> begin
+        let targ = T.tpair T.trat T.tmutez in
+        let tret = T.tmutez in
+        T.mk_func name targ tret (T.Abstract b)
+      end
+    | Bdivtez -> begin
+        let targ = T.tpair T.tmutez T.tmutez in
+        let tret = T.tnat in
+        T.mk_func name targ tret (T.Abstract b)
+      end
+    | Bratdur -> begin
+        let targ = T.tpair T.trat T.tint in
+        let tret = T.tint in
+        T.mk_func name targ tret (T.Abstract b)
+      end
   in
 
   let rec mterm_to_intruction env (mtt : M.mterm) : T.instruction =
@@ -634,12 +649,12 @@ let to_ir (model : M.model) : T.ir =
         | Rdiv   -> let b = T.Bratdiv    in add_builtin b; norm (T.Icall (get_fun_name b, [f l; f r]))
       end
     | Mratuminus v            -> let b = T.Bratuminus in add_builtin b; T.Icall (get_fun_name b, [f v])
-    | Mrattez (_c, _t)        -> assert false
-    | Mdivtez (_c, _t)        -> assert false
+    | Mrattez  (c, t)         -> let b = T.Brattez    in add_builtin b; T.Icall (get_fun_name b, [f c; f t])
+    | Mdivtez  (c, t)         -> let b = T.Bdivtez    in add_builtin b; T.Icall (get_fun_name b, [f c; f t])
     | Mnattoint e             -> T.Iunop (Uint, f e)
     | Mnattorat e             -> T.Irecord [T.Iunop (Uint, f e); T.inat Big_int.unit_big_int]
     | Minttorat e             -> T.Irecord [f e; T.inat Big_int.unit_big_int]
-    | Mratdur (_c, _t)        -> assert false
+    | Mratdur  (c, t)         -> let b = T.Bratdur    in add_builtin b; T.Icall (get_fun_name b, [f c; f t])
 
 
     (* functional *)
@@ -742,8 +757,8 @@ let concrete_michelson b =
   match b with
   | T.Bmin _          -> T.SEQ [DUP; UNPAIR; COMPARE; LT; IF ([CAR], [CDR])]
   | T.Bmax _          -> T.SEQ [DUP; UNPAIR; COMPARE; LT; IF ([CDR], [CAR])]
-  | T.Bfloor          -> T.SEQ [UNPAIR; EDIV; IF_NONE ([(PUSH (T.tstring, (Dstring "DivByZero"))); FAILWITH], [CAR])]
-  | T.Bceil           -> T.SEQ [UNPAIR; EDIV; IF_NONE ([(PUSH (T.tstring, (Dstring "DivByZero"))); FAILWITH], [UNPAIR; SWAP; INT; EQ; IF ([], [PUSH (T.tint, T.Dint Big_int.unit_big_int); ADD])])]
+  | T.Bfloor          -> T.SEQ [UNPAIR; EDIV; IF_NONE ([T.cfail "DivByZero"; FAILWITH], [CAR])]
+  | T.Bceil           -> T.SEQ [UNPAIR; EDIV; IF_NONE ([T.cfail "DivByZero"; FAILWITH], [UNPAIR; SWAP; INT; EQ; IF ([], [PUSH (T.tint, T.Dint Big_int.unit_big_int); ADD])])]
   | T.BlistContains _ -> T.SEQ [UNPAIR; PUSH (T.tbool, T.Dfalse); SWAP; ITER [DIG 2; DUP; DUG 3; COMPARE; EQ; OR; ]; DIP (1, [DROP 1])]
   | T.BlistNth _      -> error ()
   | T.Btostring _     -> error ()
@@ -755,6 +770,9 @@ let concrete_michelson b =
   | T.Bratmul         -> T.SEQ [UNPAIR; DIP (1, [UNPAIR]); UNPAIR; DIP (1, [SWAP]); MUL; DIP (1, [MUL]); PAIR ]
   | T.Bratdiv         -> T.SEQ [UNPAIR; DIP (1, [UNPAIR]); UNPAIR; DIG 3; PUSH (T.tint, T.Dint Big_int.zero_big_int); DIG 4; DUP; DUG 5; COMPARE; GE; IF ([INT], [NEG]); MUL; DIP (1, [MUL; ABS]); PAIR ]
   | T.Bratuminus      -> T.SEQ [UNPAIR; NEG; PAIR]
+  | T.Brattez         -> T.SEQ [UNPAIR; UNPAIR; ABS; DIG 2; MUL; EDIV; IF_NONE ([T.cfail "DivByZero"], []); CAR;]
+  | T.Bdivtez         -> T.SEQ []
+  | T.Bratdur         -> T.SEQ []
 
 type env = {
   vars : ident list;

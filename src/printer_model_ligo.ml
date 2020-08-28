@@ -2587,9 +2587,9 @@ let pp_model_internal fmt (model : model) b =
         pp_type Utils.type_rational
     | DivTez ->
       Format.fprintf fmt
-        "function div_tez (const a : tez; const b : tez) : int is@\n\
+        "function div_tez (const a : tez; const b : tez) : nat is@\n\
          begin@\n  \
-         const r : int = int(a / b);@\n  \
+         const r : nat = a / b;@\n  \
          end with r@\n"
     | RatDur ->
       Format.fprintf fmt
