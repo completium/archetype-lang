@@ -57,6 +57,8 @@ PASSED="\
 ./tests/passed/simple_fun4.arl \
 ./tests/passed/simple_fun5.arl \
 ./tests/passed/simple_fun6.arl \
+./tests/passed/simple_fun7.arl \
+./tests/passed/simple_fun8.arl \
 ./tests/passed/simple_fun_alt.arl \
 ./tests/passed/transfer_simple.arl \
 ./tests/passed/transfer_call.arl \
@@ -82,6 +84,7 @@ PASSED="\
 ./tests/passed/test_list_mynth2.arl \
 ./tests/passed/simple_fun_with_storage.arl \
 ./tests/passed/simple_fun_with_storage2.arl \
+./tests/passed/simple_fun_with_storage3.arl \
 "
 
 RET=0

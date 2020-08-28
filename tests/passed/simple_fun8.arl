@@ -1,0 +1,12 @@
+archetype simple_fun8
+
+variable res : int = 0
+variable n   : nat = 1
+
+function f (res0 : int, n0 : nat) : int {
+  return 0
+}
+
+entry exec () {
+  res := n + f(res, n);
+}
