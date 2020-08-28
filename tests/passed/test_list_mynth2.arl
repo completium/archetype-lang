@@ -6,8 +6,8 @@ function mynth(l : list<string>, idx : nat) : string {
   var ll = l;
   var r : option<string> = none;
   var i : nat = 0;
-  while i < idx do
-    var e : (string * list<string>) = list_head_tail(l);
+  while i <= idx do
+    var e : (string * list<string>) = list_head_tail(ll);
     r := some(e[0]);
     ll := e[1];
     i += 1;

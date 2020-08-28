@@ -193,7 +193,31 @@ let to_ir (model : M.model) : T.ir =
     | BlistNth t -> begin
         let targ = T.tpair (T.tlist t) T.tnat in
         let tret = t in
-        T.mk_func name targ tret (T.Abstract b)
+        let args, body = begin
+          let arg_name  = "idx" in
+          let list_name = "l" in
+          let args      = [list_name, T.tlist t; arg_name, T.tnat] in
+          let res_name  = "r" in
+          let iter_name = "i" in
+          let e_name    = "e" in
+          let varg      = T.Ivar arg_name in
+          let vlist     = T.Ivar list_name in
+          let vres      = T.Ivar res_name in
+          let viter     = T.Ivar iter_name in
+          let ve        = T.Ivar e_name in
+          let return    = T.Iassign (fun_result, T.Iifnone (vres, T.ifail "NoneValue", id, "_var_ifnone")) in
+          let cond      = T.Icompare (Cle, viter, varg) in
+          let vheadtail = T.Iifcons (vlist, T.iskip, T.ifail "EmptyList") in
+          let ares      = T.Iassign (res_name, T.isome(T.icar ve)) in
+          let alist     = T.Iassign (list_name, T.icdr ve) in
+          let aiter     = T.Iassign (iter_name, T.Ibinop (Badd, viter, T.inat Big_int.unit_big_int)) in
+          let bloop     = T.IletIn(e_name, vheadtail, T.Iseq [ares; alist; aiter]) in
+          let loop      = T.Iwhile (cond, bloop) in
+          let body      = T.IletIn(res_name, T.inone t, IletIn(iter_name, T.inat Big_int.zero_big_int, T.Iseq [loop; return])) in
+          args, body
+        end
+        in
+        T.mk_func name targ tret (T.Concrete (args, body))
       end
     | Btostring t -> begin
         let targ = t in
@@ -221,16 +245,14 @@ let to_ir (model : M.model) : T.ir =
                                                  T.inat (Big_int.big_int_of_int 7), T.istring "7";
                                                  T.inat (Big_int.big_int_of_int 8), T.istring "8";
                                                  T.inat (Big_int.big_int_of_int 9), T.istring "9"]) in
-          let get_map : T.instruction = T.Iifnone (T.Ibinop (Bget, T.Iunop (Ucdr, vpair), vmap), T.ifail "GetNoneValue", id, "_var_ifnone") in
-          let concat : T.instruction = T.Ibinop (Bconcat, get_map, vres) in
-          let assign_res : T.instruction = T.Iassign (res_name, concat) in
-          let assign_arg : T.instruction = T.Iassign (arg_name, T.Iunop (Ucar, vpair)) in
-          let b : T.instruction =
-            T.IletIn(pair_name,
-                     T.Iifnone (T.Ibinop (Bediv, varg, ten), T.ifail "DivByZero", id, "_var_ifnone"),
-                     T.Iseq [assign_res; assign_arg]) in
-          let loop = T.Iwhile (cond, b) in
-          let a : T.instruction = T.IletIn(res_name, T.istring "", IletIn(map_name, map, T.Iseq [loop; vres]) ) in
+          let get_map    = T.Iifnone (T.Ibinop (Bget, T.Iunop (Ucdr, vpair), vmap), T.ifail "GetNoneValue", id, "_var_ifnone") in
+          let concat     = T.Ibinop (Bconcat, get_map, vres) in
+          let assign_res = T.Iassign (res_name, concat) in
+          let assign_arg = T.Iassign (arg_name, T.Iunop (Ucar, vpair)) in
+          let vpair      = T.Iifnone (T.Ibinop (Bediv, varg, ten), T.ifail "DivByZero", id, "_var_ifnone") in
+          let b          = T.IletIn(pair_name, vpair, T.Iseq [assign_res; assign_arg]) in
+          let loop       = T.Iwhile (cond, b) in
+          let a          = T.IletIn(res_name, T.istring "", IletIn(map_name, map, T.Iseq [loop; vres]) ) in
           args, T.Iif (cond, a, T.istring "0")
         end
         in
