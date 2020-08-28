@@ -99,7 +99,7 @@ PASSED="\
 ./tests/passed/rat_arith_div.arl \
 ./tests/passed/rat_tez.arl \
 ./tests/passed/rat_dur.arl \
-./tests/passed/rat_divtez.arl \
+./tests/passed/cast_tez_nat.arl \
 "
 
 RET=0

@@ -228,7 +228,6 @@ type builtin =
   | Bratmul
   | Bratuminus
   | Brattez
-  | Bdivtez
   | Bratdur
 [@@deriving show {with_path = false}]
 
@@ -336,6 +335,7 @@ let ifalse     = Iconst (tbool,    Dfalse)
 let iint n     = Iconst (tint,     Dint n)
 let inat n     = Iconst (tnat,     Dint n)
 let istring s  = Iconst (tstring,  Dstring s)
+let imutez  v  = Iconst (tmutez,   Dint v)
 let isome   s  = Iunop  (Usome, s)
 let inone   t  = Izop   (Znone t)
 let iunit      = Iconst (tunit, Dunit)
@@ -655,7 +655,6 @@ end = struct
     | Bratdiv         -> "_ratdiv"
     | Bratuminus      -> "_ratuminus"
     | Brattez         -> "_rattez"
-    | Bdivtez         -> "_divtez"
     | Bratdur         -> "_ratdur"
 
   let rec flat (c : code) : code =

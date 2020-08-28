@@ -158,7 +158,7 @@ end = struct
         | A.VTint      , A.VTrational   -> Some 1
         | A.VTstring   , A.VTkey        -> Some 1
         | A.VTstring   , A.VTsignature  -> Some 1
-        | A.VTcurrency , A.VTint        -> Some 1
+        | A.VTcurrency , A.VTnat        -> Some 1
         | A.VTduration , A.VTint        -> Some 1
 
         | _, _ -> None

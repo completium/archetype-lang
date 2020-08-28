@@ -368,11 +368,6 @@ let to_model (ast : A.ast) : M.model =
           | A.Tbuiltin VTnat, A.Tbuiltin VTint, _                  -> M.Mnattoint v
           | A.Tbuiltin VTnat, A.Tbuiltin VTrational, _             -> M.Mnattorat v
           | A.Tbuiltin VTint, A.Tbuiltin VTrational, _             -> M.Minttorat v
-          | A.Tbuiltin VTcurrency, A.Tbuiltin VTint, _ -> begin
-              let one : Core.big_int = Big_int.unit_big_int in
-              let u : M.mterm = M.mk_mterm (M.Mcurrency (one, M.Utz)) (M.Tbuiltin Bcurrency) in
-              M.Mdivtez (v, u)
-            end
           | _ -> M.Mcast (ptyp_to_type src, ptyp_to_type dst, v)
         end
       | A.Pquantifer (Forall, i, (coll, typ), term)    -> M.Mforall (i, ptyp_to_type typ, Option.map f coll, f term)

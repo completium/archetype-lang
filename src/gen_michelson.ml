@@ -290,11 +290,6 @@ let to_ir (model : M.model) : T.ir =
         let tret = T.tmutez in
         T.mk_func name targ tret (T.Abstract b)
       end
-    | Bdivtez -> begin
-        let targ = T.tpair T.tmutez T.tmutez in
-        let tret = T.tnat in
-        T.mk_func name targ tret (T.Abstract b)
-      end
     | Bratdur -> begin
         let targ = T.tpair T.trat T.tint in
         let tret = T.tint in
@@ -539,7 +534,8 @@ let to_ir (model : M.model) : T.ir =
 
     | Mcast (src, dst, v) -> begin
         match src, dst with
-        | M.Tbuiltin Baddress, M.Tentrysig t -> get_contract (to_type t) (f v)
+        | M.Tbuiltin Baddress, M.Tentrysig t    -> get_contract (to_type t) (f v)
+        | M.Tbuiltin Bcurrency, M.Tbuiltin Bnat -> T.idiv (f v) (T.imutez Big_int.unit_big_int)
         | _ -> f v
       end
     | Mtupleaccess (x, n)      ->
@@ -650,7 +646,6 @@ let to_ir (model : M.model) : T.ir =
       end
     | Mratuminus v            -> let b = T.Bratuminus in add_builtin b; T.Icall (get_fun_name b, [f v])
     | Mrattez  (c, t)         -> let b = T.Brattez    in add_builtin b; T.Icall (get_fun_name b, [f c; f t])
-    | Mdivtez  (c, t)         -> let b = T.Bdivtez    in add_builtin b; T.Icall (get_fun_name b, [f c; f t])
     | Mnattoint e             -> T.Iunop (Uint, f e)
     | Mnattorat e             -> T.Irecord [T.Iunop (Uint, f e); T.inat Big_int.unit_big_int]
     | Minttorat e             -> T.Irecord [f e; T.inat Big_int.unit_big_int]
@@ -771,7 +766,6 @@ let concrete_michelson b =
   | T.Bratdiv         -> T.SEQ [UNPAIR; DIP (1, [UNPAIR]); UNPAIR; DIG 3; PUSH (T.tint, T.Dint Big_int.zero_big_int); DIG 4; DUP; DUG 5; COMPARE; GE; IF ([INT], [NEG]); MUL; DIP (1, [MUL; ABS]); PAIR ]
   | T.Bratuminus      -> T.SEQ [UNPAIR; NEG; PAIR]
   | T.Brattez         -> T.SEQ [UNPAIR; UNPAIR; ABS; DIG 2; MUL; EDIV; IF_NONE ([T.cfail "DivByZero"], []); CAR;]
-  | T.Bdivtez         -> T.SEQ []
   | T.Bratdur         -> T.SEQ [UNPAIR; UNPAIR; DIG 2; MUL; EDIV; IF_NONE ([T.cfail "DivByZero"], []); CAR;]
 
 type env = {

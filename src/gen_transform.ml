@@ -1249,14 +1249,6 @@ let remove_rational (model : model) : model =
                 | None -> map_mterm aux mt
               end
           end
-        | Tbuiltin Bint -> begin
-            match op, a.type_, b.type_ with
-            | `Diveuc, Tbuiltin Bcurrency, Tbuiltin Bcurrency ->
-              let lhs = a |> aux in
-              let rhs = b |> aux in
-              mk_mterm (Mdivtez (lhs, rhs)) type_int
-            | _ -> map_mterm aux mt
-          end
         | Tbuiltin Bcurrency -> begin
             match op, a.type_, b.type_ with
             | `Mult, Tbuiltin Bnat,      Tbuiltin Bcurrency
