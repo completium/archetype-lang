@@ -784,7 +784,7 @@ let to_michelson (ir : T.ir) : T.michelson =
         let fid, env   = fe env (Ivar id) in
         let cargs, env = fold env args in
 
-        T.SEQ [fid; cargs; T.EXEC], dec_env (dec_env env)
+        T.SEQ [fid; cargs; T.EXEC], dec_env env
       end
 
     | Iassign (id, v)  -> begin
@@ -895,7 +895,7 @@ let to_michelson (ir : T.ir) : T.michelson =
           | Ufail            -> T.FAILWITH
           | Ucontract (t, a) -> T.CONTRACT (t, a)
         in
-        let e, env = f e in
+        let e, env = fe env e in
         let env = match op with T.FAILWITH -> fail_env env | _ -> env in
         T.SEQ [e; op], env
       end
