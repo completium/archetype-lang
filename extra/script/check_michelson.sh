@@ -77,6 +77,9 @@ PASSED="\
 ./tests/passed/expr_fun_to_string_nat.arl \
 ./tests/passed/test_list_contains.arl \
 ./tests/passed/test_list_contains2.arl \
+./tests/passed/test_list_nth.arl \
+./tests/passed/test_list_mynth.arl \
+./tests/passed/test_list_mynth2.arl \
 "
 
 RET=0

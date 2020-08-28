@@ -228,23 +228,24 @@ let to_ir (model : M.model) : T.ir =
           let res_name     = "res" in
           let map_name     = "m" in
           let pair_name    = "p" in
-          let zero = T.inat Big_int.zero_big_int in
-          let ten  = T.inat (Big_int.big_int_of_int 10) in
-          let varg = T.Ivar arg_name in
-          let vres = T.Ivar res_name in
-          let vmap = T.Ivar map_name in
-          let vpair= T.Ivar pair_name in
-          let cond = T.Icompare(Cgt, varg, zero) in
-          let map  = T.Imap (T.tnat, T.tstring, [T.inat (Big_int.big_int_of_int 0), T.istring "0";
-                                                 T.inat (Big_int.big_int_of_int 1), T.istring "1";
-                                                 T.inat (Big_int.big_int_of_int 2), T.istring "2";
-                                                 T.inat (Big_int.big_int_of_int 3), T.istring "3";
-                                                 T.inat (Big_int.big_int_of_int 4), T.istring "4";
-                                                 T.inat (Big_int.big_int_of_int 5), T.istring "5";
-                                                 T.inat (Big_int.big_int_of_int 6), T.istring "6";
-                                                 T.inat (Big_int.big_int_of_int 7), T.istring "7";
-                                                 T.inat (Big_int.big_int_of_int 8), T.istring "8";
-                                                 T.inat (Big_int.big_int_of_int 9), T.istring "9"]) in
+          let zero   = T.inat Big_int.zero_big_int in
+          let ten    = T.inat (Big_int.big_int_of_int 10) in
+          let varg   = T.Ivar arg_name in
+          let vres   = T.Ivar res_name in
+          let vmap   = T.Ivar map_name in
+          let vpair  = T.Ivar pair_name in
+          let return x = T.Iassign (fun_result, x) in
+          let cond   = T.Icompare(Cgt, varg, zero) in
+          let map    = T.Imap (T.tnat, T.tstring, [T.inat (Big_int.big_int_of_int 0), T.istring "0";
+                                                   T.inat (Big_int.big_int_of_int 1), T.istring "1";
+                                                   T.inat (Big_int.big_int_of_int 2), T.istring "2";
+                                                   T.inat (Big_int.big_int_of_int 3), T.istring "3";
+                                                   T.inat (Big_int.big_int_of_int 4), T.istring "4";
+                                                   T.inat (Big_int.big_int_of_int 5), T.istring "5";
+                                                   T.inat (Big_int.big_int_of_int 6), T.istring "6";
+                                                   T.inat (Big_int.big_int_of_int 7), T.istring "7";
+                                                   T.inat (Big_int.big_int_of_int 8), T.istring "8";
+                                                   T.inat (Big_int.big_int_of_int 9), T.istring "9"]) in
           let get_map    = T.Iifnone (T.Ibinop (Bget, T.Iunop (Ucdr, vpair), vmap), T.ifail "GetNoneValue", id, "_var_ifnone") in
           let concat     = T.Ibinop (Bconcat, get_map, vres) in
           let assign_res = T.Iassign (res_name, concat) in
@@ -252,8 +253,8 @@ let to_ir (model : M.model) : T.ir =
           let vpair      = T.Iifnone (T.Ibinop (Bediv, varg, ten), T.ifail "DivByZero", id, "_var_ifnone") in
           let b          = T.IletIn(pair_name, vpair, T.Iseq [assign_res; assign_arg]) in
           let loop       = T.Iwhile (cond, b) in
-          let a          = T.IletIn(res_name, T.istring "", IletIn(map_name, map, T.Iseq [loop; vres]) ) in
-          args, T.Iif (cond, a, T.istring "0")
+          let a          = T.IletIn(res_name, T.istring "", IletIn(map_name, map, T.Iseq [loop; return vres]) ) in
+          args, T.Iif (cond, a, return (T.istring "0"))
         end
         in
         T.mk_func name targ tret (T.Concrete (args, body))
