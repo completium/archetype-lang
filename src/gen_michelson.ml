@@ -772,7 +772,7 @@ let concrete_michelson b =
   | T.Bratuminus      -> T.SEQ [UNPAIR; NEG; PAIR]
   | T.Brattez         -> T.SEQ [UNPAIR; UNPAIR; ABS; DIG 2; MUL; EDIV; IF_NONE ([T.cfail "DivByZero"], []); CAR;]
   | T.Bdivtez         -> T.SEQ []
-  | T.Bratdur         -> T.SEQ []
+  | T.Bratdur         -> T.SEQ [UNPAIR; UNPAIR; DIG 2; MUL; EDIV; IF_NONE ([T.cfail "DivByZero"], []); CAR;]
 
 type env = {
   vars : ident list;

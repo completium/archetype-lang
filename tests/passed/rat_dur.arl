@@ -3,5 +3,5 @@ archetype rat_tez
 variable res : duration = 0s
 
 entry exec () {
-  res := 0.3 * 1h;
+  res := 0.5 * 1m;
 }
