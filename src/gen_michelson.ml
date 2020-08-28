@@ -801,13 +801,13 @@ let to_michelson (ir : T.ir) : T.michelson =
       assign env id v
 
     | Iif (c, t, e) -> begin
-        let c, _   = f c in
-        let t, envt = f t in
-        let e, enve = f e in
+        (* let c, _   = f c in
+           let t, envt = f t in
+           let e, enve = f e in *)
 
-        (* let c, env = fe env c in
-           let t, envt = fe (dec_env env) t in
-           let e, enve = fe (dec_env env) e in *)
+        let c, env = fe env c in
+        let t, envt = fe (dec_env env) t in
+        let e, enve = fe (dec_env env) e in
 
         let env =
           (* TODO: check if `envt` and `enve` have the same stack *)
@@ -937,21 +937,18 @@ let to_michelson (ir : T.ir) : T.michelson =
       end
     | Iconst (t, e) -> T.PUSH (t, e), inc_env env
     | Icompare (op, lhs, rhs) -> begin
-        let c =
-          let op =
-            match op with
-            | Ceq -> T.EQ
-            | Cne -> T.NEQ
-            | Clt -> T.LT
-            | Cle -> T.LE
-            | Cgt -> T.GT
-            | Cge -> T.GE
-          in
-          let r, env0 = f rhs in
-          let l, _ = fe env0 lhs in
-          T.SEQ [r; l; T.COMPARE; op]
+        let op =
+          match op with
+          | Ceq -> T.EQ
+          | Cne -> T.NEQ
+          | Clt -> T.LT
+          | Cle -> T.LE
+          | Cgt -> T.GT
+          | Cge -> T.GE
         in
-        c, env
+        let r, env = fe env rhs in
+        let l, env = fe env lhs in
+        T.SEQ [r; l; T.COMPARE; op], dec_env env
       end
 
     | Iset (t, l) -> begin
