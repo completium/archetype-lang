@@ -205,6 +205,8 @@ let rec pp_instruction fmt (i : instruction) =
       match op with
       | Ucar        -> pp "car(%a)"          f e
       | Ucdr        -> pp "cdr(%a)"          f e
+      | Uleft  t    -> pp "left<%a>(%a)"     pp_type t f e
+      | Uright t    -> pp "right<%a>(%a)"    pp_type t f e
       | Uneg        -> pp "neg(%a)"          f e
       | Uint        -> pp "int(%a)"          f e
       | Unot        -> pp "not(%a)"          f e

@@ -1,0 +1,7 @@
+archetype rat_int
+
+variable res : rational = 0.0
+
+entry exec (i : int) {
+  res := i
+}

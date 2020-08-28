@@ -772,7 +772,7 @@ let opsigs =
       PT.Arith PT.Mult   , ([A.VTrational; A.VTduration      ], A.VTduration)  ;
       PT.Arith PT.Mult   , ([A.VTduration; A.VTrational      ], A.VTduration)  ;
       PT.Arith PT.DivRat , ([A.VTduration; A.VTduration      ], A.VTrational)  ;
-      PT.Arith PT.DivEuc , ([A.VTcurrency; A.VTcurrency      ], A.VTint     )  ;
+      PT.Arith PT.DivEuc , ([A.VTcurrency; A.VTcurrency      ], A.VTnat     )  ;
       PT.Arith PT.DivEuc , ([A.VTduration; A.VTduration      ], A.VTint     )  ;
       PT.Arith PT.DivEuc , ([A.VTcurrency; A.VTint           ], A.VTcurrency)  ;
       PT.Arith PT.DivEuc , ([A.VTduration; A.VTint           ], A.VTduration)  ;

@@ -1,0 +1,7 @@
+archetype rat_divtez
+
+variable res : nat = 0
+
+entry exec () {
+  res := 1tz div 2tz;
+}

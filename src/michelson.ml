@@ -160,6 +160,8 @@ type z_operator =
 type un_operator =
   | Ucar
   | Ucdr
+  | Uleft  of type_
+  | Uright of type_
   | Uneg
   | Uint
   | Unot
@@ -219,6 +221,7 @@ type builtin =
   | BlistContains of type_
   | BlistNth of type_
   | Btostring of type_
+  | Bratcmp
 [@@deriving show {with_path = false}]
 
 type instruction =
@@ -311,6 +314,7 @@ let tnat        = mk_type Tnat
 let tint        = mk_type Tint
 let tbool       = mk_type Tbool
 let tpair t1 t2 = mk_type (Tpair (t1, t2))
+let tor t1 t2   = mk_type (Tor (t1, t2))
 let trat        = tpair tint tnat
 let tlist t     = mk_type (Tlist t)
 let tset t      = mk_type (Tlist t)
@@ -318,18 +322,26 @@ let tmap t1 t2  = mk_type (Tmap (t1, t2))
 
 (* -------------------------------------------------------------------- *)
 
-let itrue     = Iconst (tbool,    Dtrue)
-let ifalse    = Iconst (tbool,    Dfalse)
-let iint n    = Iconst (tint,     Dint n)
-let inat n    = Iconst (tnat,     Dint n)
-let istring s = Iconst (tstring,  Dstring s)
-let isome   s = Iunop  (Usome, s)
-let inone   t = Izop   (Znone t)
-let iunit     = Iconst (tunit, Dunit)
-let icar x    = Iunop  (Ucar, x)
-let icdr x    = Iunop  (Ucdr, x)
-let ifail msg = Iunop (Ufail, istring msg)
-let iskip     = Iseq []
+let itrue      = Iconst (tbool,    Dtrue)
+let ifalse     = Iconst (tbool,    Dfalse)
+let iint n     = Iconst (tint,     Dint n)
+let inat n     = Iconst (tnat,     Dint n)
+let istring s  = Iconst (tstring,  Dstring s)
+let isome   s  = Iunop  (Usome, s)
+let inone   t  = Izop   (Znone t)
+let iunit      = Iconst (tunit, Dunit)
+let icar x     = Iunop  (Ucar, x)
+let icdr x     = Iunop  (Ucdr, x)
+let ifail msg  = Iunop (Ufail, istring msg)
+let iskip      = Iseq []
+let ileft t x  = Iunop  (Uleft t, x)
+let iright t x = Iunop  (Uright t, x)
+let ieq  l r   = Icompare (Ceq, l, r)
+let iadd l r   = Ibinop (Badd, l, r)
+let isub l r   = Ibinop (Bsub, l, r)
+let imul l r   = Ibinop (Bmul, l, r)
+let idiv l r   = Iifnone (Ibinop (Bediv, l, r), ifail "DivByZero", icar, "_var_ifnone")
+let imod l r   = Iifnone (Ibinop (Bediv, l, r), ifail "DivByZero", icdr, "_var_ifnone")
 
 (* -------------------------------------------------------------------- *)
 
@@ -627,6 +639,7 @@ end = struct
     | BlistContains t -> "_list_contains_" ^ (ft t)
     | BlistNth t      -> "_list_nth_"      ^ (ft t)
     | Btostring t     -> "_to_string_"     ^ (ft t)
+    | Bratcmp         -> "_ratcmp"
 
   let rec flat (c : code) : code =
     let f l = List.fold_right (fun x accu -> match flat x with | SEQ l -> l @ accu | a -> a::accu) l [] in

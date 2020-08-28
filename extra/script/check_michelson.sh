@@ -85,6 +85,20 @@ PASSED="\
 ./tests/passed/simple_fun_with_storage.arl \
 ./tests/passed/simple_fun_with_storage2.arl \
 ./tests/passed/simple_fun_with_storage3.arl \
+./tests/passed/rat_nat.arl \
+./tests/passed/rat_int.arl \
+./tests/passed/rat_cmp_eq.arl \
+./tests/passed/rat_cmp_lt.arl \
+./tests/passed/rat_cmp_le.arl \
+./tests/passed/rat_cmp_gt.arl \
+./tests/passed/rat_cmp_ge.arl \
+./tests/passed/rat_arith_uminus.arl \
+./tests/passed/rat_arith_plus.arl \
+./tests/passed/rat_arith_minus.arl \
+./tests/passed/rat_arith_mult.arl \
+./tests/passed/rat_arith_div.arl \
+./tests/passed/rat_tez.arl \
+./tests/passed/rat_dur.arl \
 "
 
 RET=0
