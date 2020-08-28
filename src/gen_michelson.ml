@@ -264,7 +264,18 @@ let to_ir (model : M.model) : T.ir =
         let tret = T.tbool in
         T.mk_func name targ tret (T.Abstract b)
       end
-    | Bratmul -> begin
+    | Bratnorm -> begin
+        let targ = T.trat in
+        let tret = T.trat in
+        T.mk_func name targ tret (T.Abstract b)
+      end
+    | Brataddsub -> begin
+        let targ = T.tpair (T.tpair T.trat T.trat) (T.tor T.tunit T.tunit) in
+        let tret = T.trat in
+        T.mk_func name targ tret (T.Abstract b)
+      end
+    | Bratmul
+    | Bratdiv -> begin
         let targ = T.tpair T.trat T.trat in
         let tret = T.trat in
         T.mk_func name targ tret (T.Abstract b)
@@ -614,11 +625,13 @@ let to_ir (model : M.model) : T.ir =
       in
       let b = T.Bratcmp in add_builtin b; T.Icall (get_fun_name b, [T.Irecord [f l; f r]; op])
     | Mratarith (op, l, r)    -> begin
+        (* let norm x = let b = T.Bratnorm in add_builtin b; T.Icall (get_fun_name b, [x]) in *)
+        let norm x = x in
         match op with
-        | Rplus  -> assert false
-        | Rminus -> assert false
-        | Rmult  -> let b = T.Bratmul in add_builtin b; T.Icall (get_fun_name b, [f l; f r])
-        | Rdiv   -> assert false
+        | Rplus  -> let b = T.Brataddsub in add_builtin b; norm (T.Icall (get_fun_name b, [T.Irecord [f l; f r]; T.ileft  T.tunit T.iunit]))
+        | Rminus -> let b = T.Brataddsub in add_builtin b; norm (T.Icall (get_fun_name b, [T.Irecord [f l; f r]; T.iright T.tunit T.iunit]))
+        | Rmult  -> let b = T.Bratmul    in add_builtin b; norm (T.Icall (get_fun_name b, [f l; f r]))
+        | Rdiv   -> let b = T.Bratdiv    in add_builtin b; norm (T.Icall (get_fun_name b, [f l; f r]))
       end
     | Mratuminus v            -> let b = T.Bratuminus in add_builtin b; T.Icall (get_fun_name b, [f v])
     | Mrattez (_c, _t)        -> assert false
@@ -737,7 +750,10 @@ let concrete_michelson b =
   | T.Bratcmp         -> T.SEQ [UNPAIR; UNPAIR; DIP (1, [UNPAIR]); UNPAIR; DUG 3; MUL; DIP (1, [MUL]); SWAP; COMPARE; SWAP;
                                 IF_LEFT ([DROP 1; EQ], [IF_LEFT ([IF_LEFT ([DROP 1; LT], [DROP 1; LE])],
                                                                  [IF_LEFT ([DROP 1; GT], [DROP 1; GE])])])]
+  | T.Bratnorm        -> T.SEQ []
+  | T.Brataddsub      -> T.SEQ [UNPAIR; UNPAIR; DIP (1, [UNPAIR; SWAP; DUP]); UNPAIR; SWAP; DUP; DIG 3; MUL; DUG 4; DIG 3; MUL; DIP (1, [MUL]); DIG 3; IF_LEFT ([DROP 1; ADD], [DROP 1; SWAP; SUB]); PAIR;]
   | T.Bratmul         -> T.SEQ [UNPAIR; DIP (1, [UNPAIR]); UNPAIR; DIP (1, [SWAP]); MUL; DIP (1, [MUL]); PAIR ]
+  | T.Bratdiv         -> T.SEQ [UNPAIR; DIP (1, [UNPAIR]); UNPAIR; DIG 3; PUSH (T.tint, T.Dint Big_int.zero_big_int); DIG 4; DUP; DUG 5; COMPARE; GE; IF ([INT], [NEG]); MUL; DIP (1, [MUL; ABS]); PAIR ]
   | T.Bratuminus      -> T.SEQ [UNPAIR; NEG; PAIR]
 
 type env = {

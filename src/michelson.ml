@@ -222,6 +222,9 @@ type builtin =
   | BlistNth of type_
   | Btostring of type_
   | Bratcmp
+  | Bratnorm
+  | Brataddsub
+  | Bratdiv
   | Bratmul
   | Bratuminus
 [@@deriving show {with_path = false}]
@@ -642,7 +645,10 @@ end = struct
     | BlistNth t      -> "_list_nth_"      ^ (ft t)
     | Btostring t     -> "_to_string_"     ^ (ft t)
     | Bratcmp         -> "_ratcmp"
+    | Bratnorm        -> "_ratnorm"
+    | Brataddsub      -> "_rataddsub"
     | Bratmul         -> "_ratmul"
+    | Bratdiv         -> "_ratdiv"
     | Bratuminus      -> "_ratuminus"
 
   let rec flat (c : code) : code =
