@@ -1132,6 +1132,7 @@ let pp_model_internal fmt (model : model) b =
           (fun fmt x -> begin
                match src, dst with
                | Tbuiltin (Baddress | Brole), Tentrysig _ -> Format.fprintf fmt "get_contract(%a)" f x
+               | Tbuiltin Bcurrency, Tbuiltin Bnat        -> Format.fprintf fmt "((%a) / 1mutez)" f x
                | _ -> f fmt x
              end) v
           pp_type dst

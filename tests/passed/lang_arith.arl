@@ -80,7 +80,6 @@ entry exec () {
     var int_tez_mult   : tez      = 1i * 1tz;
     var rat_tez_mult   : tez      = 1.1 * 1tz;
     var tez_nat_ediv   : tez      = 1tz div 2;
-    var tez_int_ediv   : tez      = 1tz div 2i;
 
     var date_date_minus : duration = 2020-01-01 - 2019-12-31;
 

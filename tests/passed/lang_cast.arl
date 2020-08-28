@@ -2,7 +2,7 @@ archetype lang_cast
 
 entry exec () {
   effect {
-    var tez_to_int : int = 1tz; // convert to mutez (1000000)
+    var tez_to_int : nat = 1tz; // convert to mutez (1000000)
     dorequire (tez_to_int = tez_to_int, "ko");
 
     var dur_to_int : int = 1h; // convert to second (3600)
