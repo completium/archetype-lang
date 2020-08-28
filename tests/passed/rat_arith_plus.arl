@@ -2,6 +2,6 @@ archetype rat_arith_plus
 
 variable res : rational = 0.0
 
-entry exec (n : int) {
-  res := (n / 2) + 0.5
+entry exec (r : rational) {
+  res := r + 0.5
 }

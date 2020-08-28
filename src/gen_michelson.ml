@@ -264,6 +264,11 @@ let to_ir (model : M.model) : T.ir =
         let tret = T.tbool in
         T.mk_func name targ tret (T.Abstract b)
       end
+    | Bratmul -> begin
+        let targ = T.tpair T.trat T.trat in
+        let tret = T.trat in
+        T.mk_func name targ tret (T.Abstract b)
+      end
     | Bratuminus -> begin
         let targ = T.trat in
         let tret = T.trat in
@@ -608,7 +613,13 @@ let to_ir (model : M.model) : T.ir =
         | Ge -> T.iright tu (T.iright tou (T.iright tu u))
       in
       let b = T.Bratcmp in add_builtin b; T.Icall (get_fun_name b, [T.Irecord [f l; f r]; op])
-    | Mratarith (_op, _l, _r) -> assert false
+    | Mratarith (op, l, r)    -> begin
+        match op with
+        | Rplus  -> assert false
+        | Rminus -> assert false
+        | Rmult  -> let b = T.Bratmul in add_builtin b; T.Icall (get_fun_name b, [f l; f r])
+        | Rdiv   -> assert false
+      end
     | Mratuminus v            -> let b = T.Bratuminus in add_builtin b; T.Icall (get_fun_name b, [f v])
     | Mrattez (_c, _t)        -> assert false
     | Mdivtez (_c, _t)        -> assert false
@@ -726,6 +737,7 @@ let concrete_michelson b =
   | T.Bratcmp         -> T.SEQ [UNPAIR; UNPAIR; DIP (1, [UNPAIR]); UNPAIR; DUG 3; MUL; DIP (1, [MUL]); SWAP; COMPARE; SWAP;
                                 IF_LEFT ([DROP 1; EQ], [IF_LEFT ([IF_LEFT ([DROP 1; LT], [DROP 1; LE])],
                                                                  [IF_LEFT ([DROP 1; GT], [DROP 1; GE])])])]
+  | T.Bratmul         -> T.SEQ [UNPAIR; DIP (1, [UNPAIR]); UNPAIR; DIP (1, [SWAP]); MUL; DIP (1, [MUL]); PAIR ]
   | T.Bratuminus      -> T.SEQ [UNPAIR; NEG; PAIR]
 
 type env = {
