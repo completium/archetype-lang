@@ -34,6 +34,7 @@ let emit_error (desc : error_desc) =
 let get_fun_name = T.Utils.get_fun_name Printer_michelson.show_pretty_type
 
 let operations = "_ops"
+let fun_result = "_fun_res"
 
 type env_ir = {
   function_p: (ident * (ident * T.type_) list) option
@@ -192,17 +193,7 @@ let to_ir (model : M.model) : T.ir =
     | BlistNth t -> begin
         let targ = T.tpair (T.tlist t) T.tnat in
         let tret = t in
-        let args, body = begin
-          let arg_name     = "x" in
-          let list_name    = "l" in
-          let args         = [list_name, T.tlist t; arg_name, T.tnat] in
-         (* let res_name     = "res" in
-          let map_name     = "m" in
-          let pair_name    = "p" in *)
-          args, T.istring "toto"
-        end
-        in
-        T.mk_func name targ tret (T.Concrete (args, body))
+        T.mk_func name targ tret (T.Abstract b)
       end
     | Btostring t -> begin
         let targ = t in
@@ -317,7 +308,7 @@ let to_ir (model : M.model) : T.ir =
     | Miter (_i, _a, _b, _c, _)  -> emit_error TODO
     | Mwhile (c, b, _)           -> T.Iwhile (f c, f b)
     | Mseq is                    -> T.Iseq (List.map f is)
-    | Mreturn x                  -> f x
+    | Mreturn x                  -> T.Iassign (fun_result, f x)
     | Mlabel _                   -> T.iskip
     | Mmark  _                   -> T.iskip
 
@@ -487,7 +478,10 @@ let to_ir (model : M.model) : T.ir =
         | M.Tbuiltin Baddress, M.Tentrysig t -> get_contract (to_type t) (f v)
         | _ -> f v
       end
-    | Mtupleaccess (x, n)    -> Tools.foldi (fun x -> T.Iunop (Ucdr, x)) (f x) (Big_int.int_of_big_int n)
+    | Mtupleaccess (x, n)      ->
+      if Big_int.eq_big_int Big_int.zero_big_int n
+      then T.Iunop (Ucar, f x)
+      else Tools.foldi (fun x -> T.Iunop (Ucdr, x)) (f x) (Big_int.int_of_big_int n)
 
     (* set api expression *)
 
@@ -974,7 +968,9 @@ let to_michelson (ir : T.ir) : T.michelson =
                 let nb_args = List.length args in
                 let nb_as = nb_args - 1 in
                 let unfold_args = unfold nb_as in
-                let code, _ = instruction_to_code env body in unfold_args @ code::[T.DUG nb_args; T.DROP nb_args]
+                let res = T.PUSH (T.tunit, T.Dunit) in
+                let env = add_var_env env fun_result in
+                let code, _ = instruction_to_code env body in unfold_args @ [res] @ code::[T.DUG nb_args; T.DROP nb_args]
               | Abstract b    -> [concrete_michelson b]
             in
             T.LAMBDA (x.targ, x.tret, code ), x.name
