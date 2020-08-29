@@ -158,7 +158,7 @@ end = struct
         | A.VTint      , A.VTrational   -> Some 1
         | A.VTstring   , A.VTkey        -> Some 1
         | A.VTstring   , A.VTsignature  -> Some 1
-        | A.VTcurrency , A.VTint        -> Some 1
+        | A.VTcurrency , A.VTnat        -> Some 1
         | A.VTduration , A.VTint        -> Some 1
 
         | _, _ -> None
@@ -765,16 +765,16 @@ let opsigs =
       PT.Arith PT.Minus  , ([A.VTduration; A.VTint           ], A.VTduration)  ;
       PT.Arith PT.Minus  , ([A.VTdate    ; A.VTduration      ], A.VTdate    )  ;
       PT.Arith PT.Minus  , ([A.VTdate    ; A.VTdate          ], A.VTduration)  ;
-      PT.Arith PT.Mult   , ([A.VTint     ; A.VTcurrency      ], A.VTcurrency)  ;
+      PT.Arith PT.Mult   , ([A.VTnat     ; A.VTcurrency      ], A.VTcurrency)  ;
       PT.Arith PT.Mult   , ([A.VTcurrency; A.VTint           ], A.VTcurrency)  ;
       PT.Arith PT.Mult   , ([A.VTrational; A.VTcurrency      ], A.VTcurrency)  ;
       PT.Arith PT.Mult   , ([A.VTint     ; A.VTduration      ], A.VTduration)  ;
       PT.Arith PT.Mult   , ([A.VTrational; A.VTduration      ], A.VTduration)  ;
       PT.Arith PT.Mult   , ([A.VTduration; A.VTrational      ], A.VTduration)  ;
       PT.Arith PT.DivRat , ([A.VTduration; A.VTduration      ], A.VTrational)  ;
-      PT.Arith PT.DivEuc , ([A.VTcurrency; A.VTcurrency      ], A.VTint     )  ;
+      PT.Arith PT.DivEuc , ([A.VTcurrency; A.VTcurrency      ], A.VTnat     )  ;
       PT.Arith PT.DivEuc , ([A.VTduration; A.VTduration      ], A.VTint     )  ;
-      PT.Arith PT.DivEuc , ([A.VTcurrency; A.VTint           ], A.VTcurrency)  ;
+      PT.Arith PT.DivEuc , ([A.VTcurrency; A.VTnat           ], A.VTcurrency)  ;
       PT.Arith PT.DivEuc , ([A.VTduration; A.VTint           ], A.VTduration)  ;
       PT.Arith PT.Plus   , ([A.VTstring  ; A.VTstring        ], A.VTstring  )  ;
       PT.Logical PT.Xor  , ([A.VTbool    ; A.VTbool          ], A.VTbool    )  ;

@@ -1,8 +1,0 @@
-archetype cast_tez_int
-
-entry exec () {
-  effect {
-    var a : int = 1tz;
-    dorequire(a = 1, "ko")
-  }
-}

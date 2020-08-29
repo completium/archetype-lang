@@ -171,6 +171,7 @@ let to_ir (model : M.model) : T.ir =
   in
 
   let get_builtin_fun b =
+    let return x = T.Iassign (fun_result, x) in
     let name = T.Utils.get_fun_name Printer_michelson.show_pretty_type b in
     match b with
     | Bmin t
@@ -234,7 +235,6 @@ let to_ir (model : M.model) : T.ir =
           let vres   = T.Ivar res_name in
           let vmap   = T.Ivar map_name in
           let vpair  = T.Ivar pair_name in
-          let return x = T.Iassign (fun_result, x) in
           let cond   = T.Icompare(Cgt, varg, zero) in
           let map    = T.Imap (T.tnat, T.tstring, [T.inat (Big_int.big_int_of_int 0), T.istring "0";
                                                    T.inat (Big_int.big_int_of_int 1), T.istring "1";
@@ -258,6 +258,42 @@ let to_ir (model : M.model) : T.ir =
         end
         in
         T.mk_func name targ tret (T.Concrete (args, body))
+      end
+    | Bratcmp -> begin
+        let targ = T.tpair (T.tpair T.trat T.trat) (T.tor T.tunit (T.tor (T.tor T.tunit T.tunit) (T.tor T.tunit T.tunit))) in
+        let tret = T.tbool in
+        T.mk_func name targ tret (T.Abstract b)
+      end
+    | Bratnorm -> begin
+        let targ = T.trat in
+        let tret = T.trat in
+        T.mk_func name targ tret (T.Abstract b)
+      end
+    | Brataddsub -> begin
+        let targ = T.tpair (T.tpair T.trat T.trat) (T.tor T.tunit T.tunit) in
+        let tret = T.trat in
+        T.mk_func name targ tret (T.Abstract b)
+      end
+    | Bratmul
+    | Bratdiv -> begin
+        let targ = T.tpair T.trat T.trat in
+        let tret = T.trat in
+        T.mk_func name targ tret (T.Abstract b)
+      end
+    | Bratuminus -> begin
+        let targ = T.trat in
+        let tret = T.trat in
+        T.mk_func name targ tret (T.Abstract b)
+      end
+    | Brattez -> begin
+        let targ = T.tpair T.trat T.tmutez in
+        let tret = T.tmutez in
+        T.mk_func name targ tret (T.Abstract b)
+      end
+    | Bratdur -> begin
+        let targ = T.tpair T.trat T.tint in
+        let tret = T.tint in
+        T.mk_func name targ tret (T.Abstract b)
       end
   in
 
@@ -458,12 +494,12 @@ let to_ir (model : M.model) : T.ir =
     | Mor (l, r)       -> T.Ibinop (Bor, f l, f r)
     | Mxor (l, r)      -> T.Ibinop (Bxor, f l, f r)
     | Mnot e           -> T.Iunop  (Unot, f e)
-    | Mplus (l, r)     -> T.Ibinop (Badd, f l, f r)
-    | Mminus (l, r)    -> T.Ibinop (Bsub, f l, f r)
-    | Mmult (l, r)     -> T.Ibinop (Bmul, f l, f r)
+    | Mplus (l, r)     -> T.iadd (f l) (f r)
+    | Mminus (l, r)    -> T.isub (f l) (f r)
+    | Mmult (l, r)     -> T.imul (f l) (f r)
     | Mdivrat _        -> emit_error (UnsupportedTerm ("divrat"))
-    | Mdiveuc (l, r)   -> T.Iifnone (T.Ibinop (Bediv, f l, f r), T.ifail "DivByZero", T.icar, "_var_ifnone")
-    | Mmodulo (l, r)   -> T.Iifnone (T.Ibinop (Bediv, f l, f r), T.ifail "DivByZero", T.icdr, "_var_ifnone")
+    | Mdiveuc (l, r)   -> T.idiv (f l) (f r)
+    | Mmodulo (l, r)   -> T.imod (f l) (f r)
     | Muplus e         -> f e
     | Muminus e        -> T.Iunop  (Uneg, f e)
 
@@ -498,13 +534,14 @@ let to_ir (model : M.model) : T.ir =
 
     | Mcast (src, dst, v) -> begin
         match src, dst with
-        | M.Tbuiltin Baddress, M.Tentrysig t -> get_contract (to_type t) (f v)
+        | M.Tbuiltin Baddress, M.Tentrysig t    -> get_contract (to_type t) (f v)
+        | M.Tbuiltin Bcurrency, M.Tbuiltin Bnat -> T.idiv (f v) (T.imutez Big_int.unit_big_int)
         | _ -> f v
       end
     | Mtupleaccess (x, n)      ->
       if Big_int.eq_big_int Big_int.zero_big_int n
-      then T.Iunop (Ucar, f x)
-      else Tools.foldi (fun x -> T.Iunop (Ucdr, x)) (f x) (Big_int.int_of_big_int n)
+      then T.icar (f x)
+      else Tools.foldi (fun x -> T.icdr x) (f x) (Big_int.int_of_big_int n)
 
     (* set api expression *)
 
@@ -584,16 +621,35 @@ let to_ir (model : M.model) : T.ir =
 
     (* rational *)
 
-    | Mrateq (_l, _r)         -> assert false
-    | Mratcmp (_op, _l, _r)   -> assert false
-    | Mratarith (_op, _l, _r) -> assert false
-    | Mratuminus _v           -> assert false
-    | Mrattez (_c, _t)        -> assert false
-    | Mdivtez (_c, _t)        -> assert false
+    | Mrateq (l, r)           -> let b = T.Bratcmp in add_builtin b; T.Icall (get_fun_name b, [T.Irecord [f l; f r]; T.ileft (T.tor (T.tor T.tunit T.tunit) (T.tor T.tunit T.tunit)) T.iunit])
+    | Mratcmp (op, l, r)   ->
+      let op =
+        let u    = T.iunit in
+        let tu   = T.tunit in
+        let tou  = T.tor tu tu in
+        (* let toou = T.tor tou tou in *)
+        match op with
+        | Lt -> T.iright tu (T.ileft  tou (T.ileft  tu u))
+        | Le -> T.iright tu (T.ileft  tou (T.iright tu u))
+        | Gt -> T.iright tu (T.iright tou (T.ileft  tu u))
+        | Ge -> T.iright tu (T.iright tou (T.iright tu u))
+      in
+      let b = T.Bratcmp in add_builtin b; T.Icall (get_fun_name b, [T.Irecord [f l; f r]; op])
+    | Mratarith (op, l, r)    -> begin
+        (* let norm x = let b = T.Bratnorm in add_builtin b; T.Icall (get_fun_name b, [x]) in *)
+        let norm x = x in
+        match op with
+        | Rplus  -> let b = T.Brataddsub in add_builtin b; norm (T.Icall (get_fun_name b, [T.Irecord [f l; f r]; T.ileft  T.tunit T.iunit]))
+        | Rminus -> let b = T.Brataddsub in add_builtin b; norm (T.Icall (get_fun_name b, [T.Irecord [f l; f r]; T.iright T.tunit T.iunit]))
+        | Rmult  -> let b = T.Bratmul    in add_builtin b; norm (T.Icall (get_fun_name b, [f l; f r]))
+        | Rdiv   -> let b = T.Bratdiv    in add_builtin b; norm (T.Icall (get_fun_name b, [f l; f r]))
+      end
+    | Mratuminus v            -> let b = T.Bratuminus in add_builtin b; T.Icall (get_fun_name b, [f v])
+    | Mrattez  (c, t)         -> let b = T.Brattez    in add_builtin b; T.Icall (get_fun_name b, [f c; f t])
     | Mnattoint e             -> T.Iunop (Uint, f e)
-    | Mnattorat _e            -> assert false
-    | Minttorat _e            -> assert false
-    | Mratdur (_c, _t)        -> assert false
+    | Mnattorat e             -> T.Irecord [T.Iunop (Uint, f e); T.inat Big_int.unit_big_int]
+    | Minttorat e             -> T.Irecord [f e; T.inat Big_int.unit_big_int]
+    | Mratdur  (c, t)         -> let b = T.Bratdur    in add_builtin b; T.Icall (get_fun_name b, [f c; f t])
 
 
     (* functional *)
@@ -696,11 +752,21 @@ let concrete_michelson b =
   match b with
   | T.Bmin _          -> T.SEQ [DUP; UNPAIR; COMPARE; LT; IF ([CAR], [CDR])]
   | T.Bmax _          -> T.SEQ [DUP; UNPAIR; COMPARE; LT; IF ([CDR], [CAR])]
-  | T.Bfloor          -> T.SEQ [UNPAIR; EDIV; IF_NONE ([(PUSH (T.tstring, (Dstring "DivByZero"))); FAILWITH], [CAR])]
-  | T.Bceil           -> T.SEQ [UNPAIR; EDIV; IF_NONE ([(PUSH (T.tstring, (Dstring "DivByZero"))); FAILWITH], [UNPAIR; SWAP; INT; EQ; IF ([], [PUSH (T.tint, T.Dint Big_int.unit_big_int); ADD])])]
+  | T.Bfloor          -> T.SEQ [UNPAIR; EDIV; IF_NONE ([T.cfail "DivByZero"], [CAR])]
+  | T.Bceil           -> T.SEQ [UNPAIR; EDIV; IF_NONE ([T.cfail "DivByZero"], [UNPAIR; SWAP; INT; EQ; IF ([], [PUSH (T.tint, T.Dint Big_int.unit_big_int); ADD])])]
   | T.BlistContains _ -> T.SEQ [UNPAIR; PUSH (T.tbool, T.Dfalse); SWAP; ITER [DIG 2; DUP; DUG 3; COMPARE; EQ; OR; ]; DIP (1, [DROP 1])]
-  | T.BlistNth _      -> assert false
+  | T.BlistNth _      -> error ()
   | T.Btostring _     -> error ()
+  | T.Bratcmp         -> T.SEQ [UNPAIR; UNPAIR; DIP (1, [UNPAIR]); UNPAIR; DUG 3; MUL; DIP (1, [MUL]); SWAP; COMPARE; SWAP;
+                                IF_LEFT ([DROP 1; EQ], [IF_LEFT ([IF_LEFT ([DROP 1; LT], [DROP 1; LE])],
+                                                                 [IF_LEFT ([DROP 1; GT], [DROP 1; GE])])])]
+  | T.Bratnorm        -> T.SEQ []
+  | T.Brataddsub      -> T.SEQ [UNPAIR; UNPAIR; DIP (1, [UNPAIR; SWAP; DUP]); UNPAIR; SWAP; DUP; DIG 3; MUL; DUG 4; DIG 3; MUL; DIP (1, [MUL]); DIG 3; IF_LEFT ([DROP 1; ADD], [DROP 1; SWAP; SUB]); PAIR;]
+  | T.Bratmul         -> T.SEQ [UNPAIR; DIP (1, [UNPAIR]); UNPAIR; DIP (1, [SWAP]); MUL; DIP (1, [MUL]); PAIR ]
+  | T.Bratdiv         -> T.SEQ [UNPAIR; DIP (1, [UNPAIR]); UNPAIR; DIG 3; PUSH (T.tint, T.Dint Big_int.zero_big_int); DIG 4; DUP; DUG 5; COMPARE; GE; IF ([INT], [NEG]); MUL; DIP (1, [MUL; ABS]); PAIR ]
+  | T.Bratuminus      -> T.SEQ [UNPAIR; NEG; PAIR]
+  | T.Brattez         -> T.SEQ [UNPAIR; UNPAIR; ABS; DIG 2; MUL; EDIV; IF_NONE ([T.cfail "DivByZero"], []); CAR;]
+  | T.Bratdur         -> T.SEQ [UNPAIR; UNPAIR; DIG 2; MUL; EDIV; IF_NONE ([T.cfail "DivByZero"], []); CAR;]
 
 type env = {
   vars : ident list;
@@ -746,7 +812,7 @@ let to_michelson (ir : T.ir) : T.michelson =
       | [e]  -> fe env e
       | e::t ->
         List.fold_left (fun (a, env) x -> begin
-              let v, env = fe env x in (T.SEQ [a; v; T.PAIR], env)
+              let v, env = fe env x in (T.SEQ [a; v; T.PAIR], dec_env env)
             end ) (fe env e) t
     in
 
@@ -784,7 +850,7 @@ let to_michelson (ir : T.ir) : T.michelson =
         let fid, env   = fe env (Ivar id) in
         let cargs, env = fold env args in
 
-        T.SEQ [fid; cargs; T.EXEC], (foldi dec_env env (List.length args + 1))
+        T.SEQ [fid; cargs; T.EXEC], dec_env env
       end
 
     | Iassign (id, v)  -> begin
@@ -801,13 +867,13 @@ let to_michelson (ir : T.ir) : T.michelson =
       assign env id v
 
     | Iif (c, t, e) -> begin
-        let c, _   = f c in
-        let t, envt = f t in
-        let e, enve = f e in
+        (* let c, _   = f c in
+           let t, envt = f t in
+           let e, enve = f e in *)
 
-        (* let c, env = fe env c in
-           let t, envt = fe (dec_env env) t in
-           let e, enve = fe (dec_env env) e in *)
+        let c, env = fe env c in
+        let t, envt = fe (dec_env env) t in
+        let e, enve = fe (dec_env env) e in
 
         let env =
           (* TODO: check if `envt` and `enve` have the same stack *)
@@ -879,6 +945,8 @@ let to_michelson (ir : T.ir) : T.michelson =
           match op with
           | Ucar             -> T.CAR
           | Ucdr             -> T.CDR
+          | Uleft t          -> T.LEFT t
+          | Uright t         -> T.RIGHT t
           | Uneg             -> T.NEG
           | Uint             -> T.INT
           | Unot             -> T.NOT
@@ -895,7 +963,7 @@ let to_michelson (ir : T.ir) : T.michelson =
           | Ufail            -> T.FAILWITH
           | Ucontract (t, a) -> T.CONTRACT (t, a)
         in
-        let e, env = f e in
+        let e, env = fe env e in
         let env = match op with T.FAILWITH -> fail_env env | _ -> env in
         T.SEQ [e; op], env
       end
@@ -937,21 +1005,18 @@ let to_michelson (ir : T.ir) : T.michelson =
       end
     | Iconst (t, e) -> T.PUSH (t, e), inc_env env
     | Icompare (op, lhs, rhs) -> begin
-        let c =
-          let op =
-            match op with
-            | Ceq -> T.EQ
-            | Cne -> T.NEQ
-            | Clt -> T.LT
-            | Cle -> T.LE
-            | Cgt -> T.GT
-            | Cge -> T.GE
-          in
-          let r, env0 = f rhs in
-          let l, _ = fe env0 lhs in
-          T.SEQ [r; l; T.COMPARE; op]
+        let op =
+          match op with
+          | Ceq -> T.EQ
+          | Cne -> T.NEQ
+          | Clt -> T.LT
+          | Cle -> T.LE
+          | Cgt -> T.GT
+          | Cge -> T.GE
         in
-        c, env
+        let r, env = fe env rhs in
+        let l, env = fe env lhs in
+        T.SEQ [r; l; T.COMPARE; op], dec_env env
       end
 
     | Iset (t, l) -> begin

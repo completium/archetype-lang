@@ -124,8 +124,6 @@ let generate_api_storage ?(verif=false) (model : model) : model =
         [APIInternal (RatUminus)]
       | Mrattez _ ->
         [APIInternal (RatTez)]
-      | Mdivtez _ ->
-        [APIInternal (DivTez)]
       | Mratdur _ ->
         [APIInternal (RatDur)]
       | Mfail (Invalid mt) when Utils.is_not_string_nat_int mt.type_ ->

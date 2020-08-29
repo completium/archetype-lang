@@ -1249,14 +1249,6 @@ let remove_rational (model : model) : model =
                 | None -> map_mterm aux mt
               end
           end
-        | Tbuiltin Bint -> begin
-            match op, a.type_, b.type_ with
-            | `Diveuc, Tbuiltin Bcurrency, Tbuiltin Bcurrency ->
-              let lhs = a |> aux in
-              let rhs = b |> aux in
-              mk_mterm (Mdivtez (lhs, rhs)) type_int
-            | _ -> map_mterm aux mt
-          end
         | Tbuiltin Bcurrency -> begin
             match op, a.type_, b.type_ with
             | `Mult, Tbuiltin Bnat,      Tbuiltin Bcurrency
@@ -3042,3 +3034,66 @@ let eval_storage (model : model) : model =
   { model with
     storage = List.map (for_storage_item map) model.storage;
   }
+
+let remove_storage_field_in_function (model : model) : model =
+
+  (* let print_map map =
+    if MapString.is_empty map
+    then Format.printf "map empty !@."
+    else MapString.iter (fun k v -> Format.printf "%s : [%a]@." k (Printer_tools.pp_list "; " Printer_model.pp_mterm) v) map
+  in *)
+
+  let extract_storage_var map (fs : function_struct) : mterm * (argument list * mterm list MapString.t) =
+    let fs_name = unloc fs.name in
+
+    let rec aux (accu, map) (mt : mterm) : mterm * (argument list * mterm list MapString.t) =
+      let g (x : mterm__node) : mterm = { mt with node = x; } in
+      match mt.node with
+      | Mvar (id, (Vstorecol | Vstorevar), d, t) -> begin
+          let a =
+            if List.exists (fun (c, _, _) -> String.equal (unloc id) (unloc c) ) accu
+            then accu, map
+            else
+              let args = if MapString.mem fs_name map then MapString.find fs_name map else [] in
+              ((id, mt.type_, None)::accu, (MapString.add fs_name (mt::args) map))
+          in
+          g (Mvar (id, Vparam, d, t)), a
+        end
+      | _ -> fold_map_term g aux (accu, map) mt
+    in
+    aux ([], map) fs.body
+  in
+
+  let rec apply_args map (mt : mterm) : mterm =
+    match mt.node with
+    | Mapp (id, args) when MapString.mem (unloc id) map -> begin
+        let args = List.map (apply_args map) args in
+        let nargs = MapString.find (unloc id) map in
+        { mt with node = Mapp (id, nargs @ args) }
+      end
+    | _ -> map_mterm (apply_args map) mt
+  in
+
+  let for_function__ map (f__ : function__) : function__ * mterm list MapString.t =
+    let for_function_node map (fn : function_node) : function_node * mterm list MapString.t =
+      let for_function_struct map (fs : function_struct) : function_struct * mterm list MapString.t =
+        let nbody, (nargs, nmap) = extract_storage_var map fs in
+        match nargs with
+        | [] -> fs, map
+        | _ ->
+          { fs with
+            args = nargs @ fs.args;
+            body = nbody;
+          }, nmap
+      in
+      match fn with
+      | Function (fs, t) -> let nfs, nmap = for_function_struct map fs in Function (nfs, t), nmap
+      | _ -> fn, map
+    in
+    let nnode, nmap = for_function_node map f__.node in
+    { f__ with
+      node = nnode;
+    }, nmap
+  in
+  let funs, map = List.fold_right (fun f (fs, map) -> let n, nmap = for_function__ map f in (n::fs, nmap)) model.functions ([], MapString.empty) in
+  map_model (fun _ -> id) id (apply_args map) { model with functions = funs; }

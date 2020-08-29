@@ -343,7 +343,6 @@ type ('id, 'term) mterm_node  =
   | Mratarith         of rat_arith_op * 'term * 'term
   | Mratuminus        of 'term
   | Mrattez           of 'term * 'term
-  | Mdivtez           of 'term * 'term
   | Mnattoint         of 'term
   | Mnattorat         of 'term
   | Minttorat         of 'term
@@ -461,7 +460,6 @@ and api_internal =
   | RatArith
   | RatUminus
   | RatTez
-  | DivTez
   | RatDur
 [@@deriving show {with_path = false}]
 
@@ -1246,7 +1244,6 @@ let cmp_mterm_node
     | Mratarith (op1, l1, r1), Mratarith (op2, l2, r2)                                 -> cmp_rat_arith_op op1 op2 && cmp l1 l2 && cmp r1 r2
     | Mratuminus v1, Mratuminus v2                                                     -> cmp v1 v2
     | Mrattez (c1, t1), Mrattez (c2, t2)                                               -> cmp c1 c2 && cmp t1 t2
-    | Mdivtez (c1, t1), Mdivtez (c2, t2)                                               -> cmp c1 c2 && cmp t1 t2
     | Mnattoint e1, Mnattoint e2                                                       -> cmp e1 e2
     | Mnattorat e1, Mnattorat e2                                                       -> cmp e1 e2
     | Minttorat e1, Minttorat e2                                                       -> cmp e1 e2
@@ -1343,7 +1340,6 @@ let cmp_api_item_node (a1 : api_storage_node) (a2 : api_storage_node) : bool =
     | RatArith,  RatArith  -> true
     | RatUminus, RatUminus -> true
     | RatTez,    RatTez    -> true
-    | DivTez,    DivTez    -> true
     | RatDur,    RatDur    -> true
     | _ -> false
   in
@@ -1608,7 +1604,6 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mratarith (op, l, r)           -> Mratarith (op, f l, f r)
   | Mratuminus v                   -> Mratuminus (f v)
   | Mrattez (c, t)                 -> Mrattez (f c, f t)
-  | Mdivtez (c, t)                 -> Mdivtez (f c, f t)
   | Mnattoint e                    -> Mnattoint (f e)
   | Mnattorat e                    -> Mnattorat (f e)
   | Minttorat e                    -> Minttorat (f e)
@@ -1972,7 +1967,6 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mratarith (_, l, r)                   -> f (f accu l) r
   | Mratuminus v                          -> f accu v
   | Mrattez (c, t)                        -> f (f accu c) t
-  | Mdivtez (c, t)                        -> f (f accu c) t
   | Mnattoint e                           -> f accu e
   | Mnattorat e                           -> f accu e
   | Minttorat e                           -> f accu e
@@ -2807,11 +2801,6 @@ let fold_map_term
     let te, ta = f ca t in
     g (Mrattez (ce, te)), ta
 
-  | Mdivtez (c, t) ->
-    let ce, ca = f accu c in
-    let te, ta = f ca t in
-    g (Mdivtez (ce, te)), ta
-
   | Mnattoint e ->
     let ee, ea = f accu e in
     g (Mnattoint ee), ea
@@ -3092,7 +3081,6 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
         | RatArith  -> RatArith
         | RatUminus -> RatUminus
         | RatTez    -> RatTez
-        | DivTez    -> DivTez
         | RatDur    -> RatDur
       in
       match asn with
@@ -4351,43 +4339,42 @@ end = struct
              | APIInternal (RatArith      ) ->  3
              | APIInternal (RatUminus     ) ->  4
              | APIInternal (RatTez        ) ->  5
-             | APIInternal (DivTez        ) ->  6
-             | APIInternal (RatDur        ) ->  7
-             | APIAsset   (Nth           _) -> if verif then 8 else 9
-             | APIAsset   (Get           _) -> if verif then 9 else 8
-             | APIAsset   (Set           _) -> 10
-             | APIAsset   (Add           _) -> 11
-             | APIAsset   (Remove        _) -> 12
-             | APIAsset   (Update        _) -> 13
-             | APIAsset   (FieldAdd      _) -> 14
-             | APIAsset   (FieldRemove   _) -> 15
-             | APIAsset   (RemoveAll     _) -> 16
-             | APIAsset   (RemoveIf      _) -> 17
-             | APIAsset   (Clear         _) -> 18
-             | APIAsset   (Contains      _) -> 19
-             | APIAsset   (Select        _) -> 20
-             | APIAsset   (Sort          _) -> 21
-             | APIAsset   (Count         _) -> 22
-             | APIAsset   (Sum           _) -> 23
-             | APIAsset   (Head          _) -> 24
-             | APIAsset   (Tail          _) -> 25
-             | APIList    (Lprepend      _) -> 26
-             | APIList    (Lcontains     _) -> 27
-             | APIList    (Llength       _) -> 28
-             | APIList    (Lnth          _) -> 29
-             | APIBuiltin (Bmin          _) -> 30
-             | APIBuiltin (Bmax          _) -> 31
-             | APIBuiltin (Babs          _) -> 32
-             | APIBuiltin (Bconcat       _) -> 33
-             | APIBuiltin (Bslice        _) -> 34
-             | APIBuiltin (Blength       _) -> 35
-             | APIBuiltin (Bisnone       _) -> 36
-             | APIBuiltin (Bissome       _) -> 37
-             | APIBuiltin (Boptget       _) -> 38
-             | APIBuiltin (Bfloor         ) -> 39
-             | APIBuiltin (Bceil          ) -> 40
-             | APIBuiltin (Btostring     _) -> 41
-             | APIBuiltin (Bfail         _) -> 42
+             | APIInternal (RatDur        ) ->  6
+             | APIAsset   (Nth           _) -> if verif then 7 else 8
+             | APIAsset   (Get           _) -> if verif then 8 else 7
+             | APIAsset   (Set           _) -> 9
+             | APIAsset   (Add           _) -> 10
+             | APIAsset   (Remove        _) -> 11
+             | APIAsset   (Update        _) -> 12
+             | APIAsset   (FieldAdd      _) -> 13
+             | APIAsset   (FieldRemove   _) -> 14
+             | APIAsset   (RemoveAll     _) -> 15
+             | APIAsset   (RemoveIf      _) -> 16
+             | APIAsset   (Clear         _) -> 17
+             | APIAsset   (Contains      _) -> 18
+             | APIAsset   (Select        _) -> 19
+             | APIAsset   (Sort          _) -> 20
+             | APIAsset   (Count         _) -> 21
+             | APIAsset   (Sum           _) -> 22
+             | APIAsset   (Head          _) -> 23
+             | APIAsset   (Tail          _) -> 24
+             | APIList    (Lprepend      _) -> 25
+             | APIList    (Lcontains     _) -> 26
+             | APIList    (Llength       _) -> 27
+             | APIList    (Lnth          _) -> 28
+             | APIBuiltin (Bmin          _) -> 29
+             | APIBuiltin (Bmax          _) -> 30
+             | APIBuiltin (Babs          _) -> 31
+             | APIBuiltin (Bconcat       _) -> 32
+             | APIBuiltin (Bslice        _) -> 33
+             | APIBuiltin (Blength       _) -> 34
+             | APIBuiltin (Bisnone       _) -> 35
+             | APIBuiltin (Bissome       _) -> 36
+             | APIBuiltin (Boptget       _) -> 37
+             | APIBuiltin (Bfloor         ) -> 38
+             | APIBuiltin (Bceil          ) -> 39
+             | APIBuiltin (Btostring     _) -> 40
+             | APIBuiltin (Bfail         _) -> 41
            in
            let idx1 = get_kind i1.node_item in
            let idx2 = get_kind i2.node_item in

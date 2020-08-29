@@ -1132,6 +1132,7 @@ let pp_model_internal fmt (model : model) b =
           (fun fmt x -> begin
                match src, dst with
                | Tbuiltin (Baddress | Brole), Tentrysig _ -> Format.fprintf fmt "get_contract(%a)" f x
+               | Tbuiltin Bcurrency, Tbuiltin Bnat        -> Format.fprintf fmt "((%a) / 1mutez)" f x
                | _ -> f fmt x
              end) v
           pp_type dst
@@ -1441,14 +1442,6 @@ let pp_model_internal fmt (model : model) b =
     | Mrattez (c, t) ->
       let pp fmt (c, t) =
         Format.fprintf fmt "rat_tez (%a, %a)"
-          f c
-          f t
-      in
-      pp fmt (c, t)
-
-    | Mdivtez (c, t) ->
-      let pp fmt (c, t) =
-        Format.fprintf fmt "div_tez (%a, %a)"
           f c
           f t
       in
@@ -2585,12 +2578,6 @@ let pp_model_internal fmt (model : model) b =
          const r : tez = abs(c.0) * t / c.1;@\n  \
          end with r@\n"
         pp_type Utils.type_rational
-    | DivTez ->
-      Format.fprintf fmt
-        "function div_tez (const a : tez; const b : tez) : int is@\n\
-         begin@\n  \
-         const r : int = int(a / b);@\n  \
-         end with r@\n"
     | RatDur ->
       Format.fprintf fmt
         "function rat_dur (const c : %a; const d : int) : int is@\n\

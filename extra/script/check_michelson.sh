@@ -57,6 +57,8 @@ PASSED="\
 ./tests/passed/simple_fun4.arl \
 ./tests/passed/simple_fun5.arl \
 ./tests/passed/simple_fun6.arl \
+./tests/passed/simple_fun7.arl \
+./tests/passed/simple_fun8.arl \
 ./tests/passed/simple_fun_alt.arl \
 ./tests/passed/transfer_simple.arl \
 ./tests/passed/transfer_call.arl \
@@ -80,6 +82,24 @@ PASSED="\
 ./tests/passed/test_list_nth.arl \
 ./tests/passed/test_list_mynth.arl \
 ./tests/passed/test_list_mynth2.arl \
+./tests/passed/simple_fun_with_storage.arl \
+./tests/passed/simple_fun_with_storage2.arl \
+./tests/passed/simple_fun_with_storage3.arl \
+./tests/passed/rat_nat.arl \
+./tests/passed/rat_int.arl \
+./tests/passed/rat_cmp_eq.arl \
+./tests/passed/rat_cmp_lt.arl \
+./tests/passed/rat_cmp_le.arl \
+./tests/passed/rat_cmp_gt.arl \
+./tests/passed/rat_cmp_ge.arl \
+./tests/passed/rat_arith_uminus.arl \
+./tests/passed/rat_arith_plus.arl \
+./tests/passed/rat_arith_minus.arl \
+./tests/passed/rat_arith_mult.arl \
+./tests/passed/rat_arith_div.arl \
+./tests/passed/rat_tez.arl \
+./tests/passed/rat_dur.arl \
+./tests/passed/cast_tez_nat.arl \
 "
 
 RET=0

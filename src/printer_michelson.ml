@@ -205,6 +205,8 @@ let rec pp_instruction fmt (i : instruction) =
       match op with
       | Ucar        -> pp "car(%a)"          f e
       | Ucdr        -> pp "cdr(%a)"          f e
+      | Uleft  t    -> pp "left<%a>(%a)"     pp_type t f e
+      | Uright t    -> pp "right<%a>(%a)"    pp_type t f e
       | Uneg        -> pp "neg(%a)"          f e
       | Uint        -> pp "int(%a)"          f e
       | Unot        -> pp "not(%a)"          f e
@@ -268,7 +270,7 @@ let pp_func fmt (f : func) =
     (fun fmt x ->
        match x with
        | Concrete (args, body) ->
-         Format.fprintf fmt "(%a) : %a{@\n  @[%a@]@\n}"
+         Format.fprintf fmt "(%a) : %a {@\n  @[%a@]@\n}"
            (pp_list ", " (fun fmt (id, t) ->
                 Format.fprintf fmt "%s : %a" id pp_type t)) args
            pp_type f.tret

@@ -1,0 +1,7 @@
+archetype rat_cmp_ge
+
+variable res : bool = false
+
+entry exec (r : rational) {
+  res := r >= 0.25
+}
