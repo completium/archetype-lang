@@ -380,11 +380,11 @@ let mk_sum_clone m asset key tkey formula =
       Ctype ("tk", tkey |> map_mtype m |> unloc_type);
       Cval ("field", mk_get_sum_value_id asset id);
       Cval ("view_to_list", cap_asset ^ ".view_to_list");
-      Cval ("from_view", cap_asset ^ ".from_view");
+      Cval ("to_view", cap_asset ^ ".to_view");
+      Cval ("contains", (String.capitalize_ascii (mk_view_id asset)) ^ ".contains");
       Cval ("add", cap_asset ^ ".add");
       Cval ("remove", cap_asset ^ ".remove");
       Cval ("set", cap_asset ^ ".set");
-      Cval ("contains", cap_asset ^ ".contains");
       Cval ("get", cap_asset ^ ".get");
       Cval ("keyt", key);
     ]

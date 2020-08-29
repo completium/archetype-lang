@@ -756,11 +756,14 @@ module View
   (* keeps last i elements *)
   let function tail (i : int) (v : view) : view
   ensures { forall k. contains k result -> contains k v }
-  ensures { 0 <= i <= card v -> card result = i }
+  ensures { 0 <= i <= card v -> card result = card v - i }
   = mk (I.tail i (elts v))
 
   (* ------------------------------------------------------------------------ *)
-  lemma drop_none: forall v. tail 0 v = mk Nil
+  lemma tail0: forall v. tail 0 v = v
+
+  (* ------------------------------------------------------------------------ *)
+  lemma tailn: forall v. tail (card v) v = empty
 
   (* ------------------------------------------------------------------------ *)
   let function eq (v1 v2 : view) : bool
@@ -1204,6 +1207,36 @@ module Collection
   = { content = s }
 
   (* ------------------------------------------------------------------------ *)
+  function union (c1 c2 : collection) : collection
+  = mk (N.union c1.content c2.content)
+
+  (* ------------------------------------------------------------------------ *)
+  function inter (c1 c2 : collection) : collection
+  = mk (N.inter c1.content c2.content)
+
+  (* ------------------------------------------------------------------------ *)
+  function diff (c1 c2 : collection) : collection
+  = mk (N.diff c1.content c2.content)
+
+  (* ------------------------------------------------------------------------ *)
+  function singleton (a : t) : collection = mk (N.singleton a)
+
+   (* ------------------------------------------------------------------------ *)
+  let function empty = mk N.empty
+
+  (* ------------------------------------------------------------------------ *)
+  predicate is_empty (c : collection) = N.is_empty c.content
+
+  (* ------------------------------------------------------------------------ *)
+  predicate subset (c1 c2 : collection) = N.subset c1.content c2.content
+
+  (* ------------------------------------------------------------------------ *)
+  predicate (==) (c1 c2 : collection) = N.(==) c1.content c2.content
+
+  (* ------------------------------------------------------------------------ *)
+  let function card (c : collection) = N.card c.content
+
+  (* ------------------------------------------------------------------------ *)
   let function elts (c : collection) : list t
   ensures { norm result = result }
   ensures { key_injective result }
@@ -1248,6 +1281,7 @@ module Collection
   let function add (a : t) (c : collection) : collection
   requires { not (contains (keyt a) c) }
   ensures { mem a result }
+  ensures { forall r. mem r result <-> r = a \/ mem r c }
   ensures { forall k. k <> keyt a -> get k c = get k result }
   ensures { get (keyt a) result = Some a }
   = mk (N.add a c.content)
@@ -1255,6 +1289,7 @@ module Collection
   (* ------------------------------------------------------------------------ *)
   let function remove (k : tk) (c : collection) : collection
   ensures { forall i. i <> k -> get i c = get i result }
+  ensures { forall a. mem a result <-> mem a c /\ keyt a <> k }
   ensures { get k result = None }
   =
   mk (N.remove k c.content)
@@ -1347,34 +1382,13 @@ module Collection
   list_to_view (N.elts c.content)
 
   (* ------------------------------------------------------------------------ *)
-  function union (c1 c2 : collection) : collection
-  = mk (N.union c1.content c2.content)
+  lemma get_to_view_contains_false : forall k c.
+  not (vcontains k (to_view c)) <-> get k c = None
 
   (* ------------------------------------------------------------------------ *)
-  function inter (c1 c2 : collection) : collection
-  = mk (N.inter c1.content c2.content)
-
-  (* ------------------------------------------------------------------------ *)
-  function diff (c1 c2 : collection) : collection
-  = mk (N.diff c1.content c2.content)
-
-  (* ------------------------------------------------------------------------ *)
-  function singleton (a : t) : collection = mk (N.singleton a)
-
-   (* ------------------------------------------------------------------------ *)
-  let function empty = mk N.empty
-
-  (* ------------------------------------------------------------------------ *)
-  predicate is_empty (c : collection) = N.is_empty c.content
-
-  (* ------------------------------------------------------------------------ *)
-  predicate subset (c1 c2 : collection) = N.subset c1.content c2.content
-
-  (* ------------------------------------------------------------------------ *)
-  predicate (==) (c1 c2 : collection) = N.(==) c1.content c2.content
-
-  (* ------------------------------------------------------------------------ *)
-  let function card (c : collection) = N.card c.content
+  lemma get_to_view_contains_true : forall k c a.
+  keyt a = k ->
+  get k c = Some a <-> vcontains k (to_view c)
 
   (* ------------------------------------------------------------------------ *)
   let function select_to_coll (p : t -> bool) (c : collection) : collection
@@ -1695,7 +1709,10 @@ module Sum
   val function view_to_list view collection : list t
 
   (* ------------------------------------------------------------------------ *)
-  val function from_view view collection : collection
+  val function to_view collection : view
+
+  (* ------------------------------------------------------------------------ *)
+  val function contains tk view : bool
 
   (* ------------------------------------------------------------------------ *)
   val function add t collection : collection
@@ -1705,9 +1722,6 @@ module Sum
 
   (* ------------------------------------------------------------------------ *)
   val function set tk t collection : collection
-
-  (* ------------------------------------------------------------------------ *)
-  val function contains tk collection : bool
 
   (* ------------------------------------------------------------------------ *)
   val function get tk collection : option t
@@ -1729,23 +1743,19 @@ module Sum
   internal_sum (view_to_list v c)
 
   (* ------------------------------------------------------------------------ *)
-  function sum_formula (c : collection) : int
-
-  (* ------------------------------------------------------------------------ *)
-  axiom sum_formula_spec : forall v c. sum v c = sum_formula (from_view v c)
-
-  (* ------------------------------------------------------------------------ *)
   axiom effect_add : forall a c.
-  not (contains (keyt a) c) -> sum_formula (add a c) = sum_formula c + field a
+  not (contains (keyt a) (to_view c)) -> 
+  sum (to_view (add a c)) (add a c) = sum (to_view c) c + field a
 
   (* ------------------------------------------------------------------------ *)
   axiom effect_remove : forall a c.
-  contains (keyt a) c -> sum_formula (remove (keyt a) c) = sum_formula c - field a
+  contains (keyt a) (to_view c) -> 
+  sum (to_view (remove (keyt a) c)) (remove (keyt a) c) = sum_formula c - field a
 
   (* ------------------------------------------------------------------------ *)
   axiom effect_set : forall k a c.
   keyt a = k ->
-  sum_formula (set k a c) = sum_formula c +
+  sum (to_view (set k a c)) (set k a c) = sum (to_view c) c +
   match get k c with | Some r -> field a - field r | None -> 0 end
 
 end
