@@ -262,7 +262,6 @@ type ('id, 'term) mterm_node  =
   | Mdivrat           of 'term * 'term
   | Mdiveuc           of 'term * 'term
   | Mmodulo           of 'term * 'term
-  | Muplus            of 'term
   | Muminus           of 'term
   (* asset api effect *)
   | Maddasset         of ident * 'term
@@ -1162,7 +1161,6 @@ let cmp_mterm_node
     | Mdivrat (l1, r1), Mdivrat (l2, r2)                                               -> cmp l1 l2 && cmp r1 r2
     | Mdiveuc (l1, r1), Mdiveuc (l2, r2)                                               -> cmp l1 l2 && cmp r1 r2
     | Mmodulo (l1, r1), Mmodulo (l2, r2)                                               -> cmp l1 l2 && cmp r1 r2
-    | Muplus e1, Muplus e2                                                             -> cmp e1 e2
     | Muminus e1, Muminus e2                                                           -> cmp e1 e2
     (* asset api effect *)
     | Maddasset (an1, i1), Maddasset (an2, i2)                                         -> cmp_ident an1 an2 && cmp i1 i2
@@ -1523,7 +1521,6 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mdivrat (l, r)                 -> Mdivrat (f l, f r)
   | Mdiveuc (l, r)                 -> Mdiveuc (f l, f r)
   | Mmodulo (l, r)                 -> Mmodulo (f l, f r)
-  | Muplus e                       -> Muplus (f e)
   | Muminus e                      -> Muminus (f e)
   (* asset api effect *)
   | Maddasset (an, i)              -> Maddasset (fi an, f i)
@@ -1886,7 +1883,6 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mdivrat (l, r)                        -> f (f accu l) r
   | Mdiveuc (l, r)                        -> f (f accu l) r
   | Mmodulo (l, r)                        -> f (f accu l) r
-  | Muplus e                              -> f accu e
   | Muminus e                             -> f accu e
   (* asset api effect *)
   | Maddasset (_, i)                      -> f accu i
@@ -2432,10 +2428,6 @@ let fold_map_term
     let le, la = f accu l in
     let re, ra = f la r in
     g (Mmodulo (le, re)), ra
-
-  | Muplus e ->
-    let ee, ea = f accu e in
-    g (Muplus ee), ea
 
   | Muminus e ->
     let ee, ea = f accu e in

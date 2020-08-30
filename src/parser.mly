@@ -996,7 +996,6 @@ record_item:
  | PERCENT { Modulo }
 
 %inline unary_operator:
- | PLUS    { Uplus }
  | MINUS   { Uminus }
  | NOT     { Not }
 

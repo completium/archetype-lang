@@ -508,7 +508,6 @@ let pp_operator fmt (op : PT.operator) : unit =
   | Arith DivRat  -> pp "/"
   | Arith DivEuc  -> pp "div"
   | Arith Modulo  -> pp "%"
-  | Unary Uplus   -> pp "unary +"
   | Unary Uminus  -> pp "unary -"
   | Unary Not     -> pp "not"
 
@@ -725,7 +724,7 @@ let cmpsigs : (PT.operator * (A.vtyp list * A.vtyp)) list =
 let opsigs =
   let grptypes : (PT.operator * (A.vtyp list * A.vtyp)) list =
     let bops = List.map (fun x -> PT.Arith x) [PT.Plus ; PT.Minus] in
-    let uops = List.map (fun x -> PT.Unary x) [PT.Uplus; PT.Uminus] in
+    let uops = List.map (fun x -> PT.Unary x) [PT.Uminus] in
     let bsig = List.map (fun ty -> ([ty; ty], ty)) grptypes in
     let usig = List.map (fun ty -> ([ty], ty)) grptypes in
     (List.mappdt (fun op sig_ -> (op, sig_)) bops bsig)
@@ -733,7 +732,7 @@ let opsigs =
 
   let rgtypes : (PT.operator * (A.vtyp list * A.vtyp)) list =
     let bops = (List.map (fun x -> PT.Arith x) [PT.Plus; PT.Minus; PT.Mult]) in
-    let uops = (List.map (fun x -> PT.Unary x) [PT.Uplus; PT.Uminus]) in
+    let uops = (List.map (fun x -> PT.Unary x) [PT.Uminus]) in
     let bsig = List.map (fun ty -> ([ty; ty], ty)) rgtypes in
     let usig = List.map (fun ty -> ([ty], ty)) rgtypes in
     (List.mappdt (fun op sig_ -> (op, sig_)) bops bsig)
@@ -2485,7 +2484,6 @@ let rec for_xexpr
               match
                 match op with
                 | PT.Not    -> `Not
-                | PT.Uplus  -> `UArith (A.Uplus)
                 | PT.Uminus -> `UArith (A.Uminus)
               with
               | `Not ->

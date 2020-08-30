@@ -500,7 +500,6 @@ let to_ir (model : M.model) : T.ir =
     | Mdivrat _        -> emit_error (UnsupportedTerm ("divrat"))
     | Mdiveuc (l, r)   -> T.idiv (f l) (f r)
     | Mmodulo (l, r)   -> T.imod (f l) (f r)
-    | Muplus e         -> f e
     | Muminus e        -> T.Iunop  (Uneg, f e)
 
     (* asset api effect *)

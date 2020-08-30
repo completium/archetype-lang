@@ -859,13 +859,6 @@ let pp_model fmt (model : model) =
         in
         pp fmt (l, r)
 
-      | Muplus e ->
-        let pp fmt e =
-          Format.fprintf fmt "+(%a)"
-            f e
-        in
-        pp fmt e
-
       | Muminus e ->
         let pp fmt e =
           Format.fprintf fmt "-(%a)"
