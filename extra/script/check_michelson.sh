@@ -110,6 +110,7 @@ PASSED="\
 ./tests/passed/simple_asset_get_asset2_key.arl \
 ./tests/passed/simple_asset_get_asset2_value.arl \
 ./tests/passed/simple_asset_get_asset2_value2.arl \
+./tests/passed/expr_method_asset_count.arl \
 "
 
 RET=0
