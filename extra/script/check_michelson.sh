@@ -100,6 +100,10 @@ PASSED="\
 ./tests/passed/rat_tez.arl \
 ./tests/passed/rat_dur.arl \
 ./tests/passed/cast_tez_nat.arl \
+./tests/passed/simple_asset_skip_empty_one_field.arl \
+./tests/passed/simple_asset_skip_empty.arl \
+./tests/passed/simple_asset_skip_one_field.arl \
+./tests/passed/simple_asset_skip.arl \
 "
 
 RET=0

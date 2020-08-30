@@ -1,4 +1,4 @@
-archetype rat_arith_plus
+archetype rat_arith_uminus
 
 variable res : rational = 0.0
 

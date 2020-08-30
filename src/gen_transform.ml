@@ -3038,10 +3038,10 @@ let eval_storage (model : model) : model =
 let remove_storage_field_in_function (model : model) : model =
 
   (* let print_map map =
-    if MapString.is_empty map
-    then Format.printf "map empty !@."
-    else MapString.iter (fun k v -> Format.printf "%s : [%a]@." k (Printer_tools.pp_list "; " Printer_model.pp_mterm) v) map
-  in *)
+     if MapString.is_empty map
+     then Format.printf "map empty !@."
+     else MapString.iter (fun k v -> Format.printf "%s : [%a]@." k (Printer_tools.pp_list "; " Printer_model.pp_mterm) v) map
+     in *)
 
   let extract_storage_var map (fs : function_struct) : mterm * (argument list * mterm list MapString.t) =
     let fs_name = unloc fs.name in
@@ -3097,3 +3097,26 @@ let remove_storage_field_in_function (model : model) : model =
   in
   let funs, map = List.fold_right (fun f (fs, map) -> let n, nmap = for_function__ map f in (n::fs, nmap)) model.functions ([], MapString.empty) in
   map_model (fun _ -> id) id (apply_args map) { model with functions = funs; }
+
+let remove_asset (model : model) : model =
+  let for_storage_item (x : storage_item) =
+    let for_type an =
+      let asset = Utils.get_asset model an in
+      let ts = List.fold_right (fun (x : asset_item) accu ->
+          if List.exists (String.equal (unloc x.name)) asset.keys
+          then accu
+          else x.type_::accu) asset.values [] in
+      Ttuple ts
+    in
+    match x.model_type with
+    | MTasset an -> begin
+        match x.typ with
+        (* | Tset (Tasset an)       -> {x with typ = Tset (for_type an) } *)
+        | Tmap (b, k, Tasset _) -> { x with typ = Tmap (b, k, for_type an) }
+        | _ -> x
+      end
+    | _ -> x
+  in
+  { model with
+    storage = List.map for_storage_item model.storage;
+  }

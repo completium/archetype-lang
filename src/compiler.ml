@@ -247,6 +247,7 @@ let generate_target model =
     |> assign_loop_label
     |> remove_letin_from_expr
     |> remove_storage_field_in_function
+    |> remove_asset
     |> optimize
     |> generate_api_storage
     |> output

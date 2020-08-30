@@ -1,4 +1,4 @@
-archetype simple_record_assign2
+archetype simple_record_assign1
 
 record my_record {
   v  : nat;
