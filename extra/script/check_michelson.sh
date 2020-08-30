@@ -104,6 +104,12 @@ PASSED="\
 ./tests/passed/simple_asset_skip_empty.arl \
 ./tests/passed/simple_asset_skip_one_field.arl \
 ./tests/passed/simple_asset_skip.arl \
+./tests/passed/simple_asset_get_one_field.arl \
+./tests/passed/simple_asset_get_asset1_key.arl \
+./tests/passed/simple_asset_get_asset1_value.arl \
+./tests/passed/simple_asset_get_asset2_key.arl \
+./tests/passed/simple_asset_get_asset2_value.arl \
+./tests/passed/simple_asset_get_asset2_value2.arl \
 "
 
 RET=0

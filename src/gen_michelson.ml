@@ -518,7 +518,11 @@ let to_ir (model : M.model) : T.ir =
 
     (* asset api expression *)
 
-    | Mget (_an, _c, _k)              -> emit_error TODO
+    | Mget (an, _c, k) -> begin
+        let asset_map = T.Ivar (an ^ "_assets") in
+        T.Iifnone (T.Ibinop (Bget, f k, asset_map), T.ifail "GetNoneValue", id, "_var_ifnone")
+      end
+
     | Mselect (_an, _c, _la, _lb, _a) -> emit_error TODO
     | Msort (_an, _c, _l)             -> emit_error TODO
     | Mcontains (_an, _c, _i)         -> emit_error TODO

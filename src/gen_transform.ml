@@ -3099,24 +3099,83 @@ let remove_storage_field_in_function (model : model) : model =
   map_model (fun _ -> id) id (apply_args map) { model with functions = funs; }
 
 let remove_asset (model : model) : model =
-  let for_storage_item (x : storage_item) =
-    let for_type an =
-      let asset = Utils.get_asset model an in
-      let ts = List.fold_right (fun (x : asset_item) accu ->
-          if List.exists (String.equal (unloc x.name)) asset.keys
-          then accu
-          else x.type_::accu) asset.values [] in
-      Ttuple ts
-    in
-    match x.model_type with
-    | MTasset an -> begin
-        match x.typ with
-        (* | Tset (Tasset an)       -> {x with typ = Tset (for_type an) } *)
-        | Tmap (b, k, Tasset _) -> { x with typ = Tmap (b, k, for_type an) }
-        | _ -> x
-      end
-    | _ -> x
+  let for_type an =
+    let asset = Utils.get_asset model an in
+    let map : int MapString.t = MapString.empty in
+    let ts, map, l = List.fold_left (fun (accu, map, i) (x : asset_item) ->
+        if List.exists (String.equal (unloc x.name)) asset.keys
+        then accu, map, i
+        else (accu @ [x.type_], MapString.add (unloc x.name) i map, i + 1)) ([], map, 0) asset.values in
+    Ttuple ts, map, l <= 1
   in
-  { model with
-    storage = List.map for_storage_item model.storage;
-  }
+  let for_asset_type an =
+    let _, kt = Utils.get_asset_key model an in
+    if Utils.is_asset_single_field model an
+    then kt
+    else Ttuple [kt; proj3_1 (for_type an)]
+  in
+
+  let process_storage (model : model) : model * (bool * (int MapString.t)) MapString.t =
+    let for_storage_item map (x : storage_item) =
+      match x.model_type, x.typ with
+      | MTasset an, Tmap (b, k, Tasset _) -> begin
+          let ts, map_, is_single_record = for_type an in
+          { x with typ = Tmap (b, k, ts) }, MapString.add an (is_single_record, map_) map
+        end
+      | _ -> x, map
+    in
+    let map : (bool * (int MapString.t)) MapString.t = MapString.empty in
+    let nstorage, map = List.fold_left (fun (accu, map) x -> let a, map = for_storage_item map x in (accu @ [a], map)) ([], map) model.storage in
+    { model with
+      storage = nstorage;
+    }, map
+  in
+
+
+  let process_mterm map (model : model) : model =
+    let is_simple_record an =
+      MapString.find an map |> fst
+    in
+    let get_idx an fn =
+      let _, m = MapString.find an map in
+      MapString.find fn m
+    in
+
+    let is_key an fn =
+      let kn, _ = Utils.get_asset_key model an in
+      String.equal kn fn
+    in
+
+    let rec fm ctx (mt : mterm) : mterm =
+      match mt.node with
+      | Mget (an, CKcoll _, k) when Utils.is_asset_single_field model an -> fm ctx k
+      | Mdot (({node = _; type_ = Tasset an} as a), _) when Utils.is_asset_single_field model (unloc an) -> fm ctx a
+      | Mdot ({node = Mget (_, CKcoll _, k); type_ = Tasset an}, fn) when is_key (unloc an) (unloc fn) -> begin
+          fm ctx k
+        end
+      | Mdot (({node = _; type_ = Tasset an} as a), fn) -> begin
+          let an, fn = unloc an, unloc fn in
+          let mt_get = fm ctx a in
+          if is_simple_record an
+          then mt_get
+          else
+            let idx = Big_int.big_int_of_int (get_idx an fn) in
+            mk_mterm (Mtupleaccess(mt_get, idx)) mt.type_
+        end
+      | _ -> map_mterm (fm ctx) mt
+    in
+    map_mterm_model fm model
+  in
+
+  let remove_type_asset (model : model) : model =
+    let ft t =
+      match t with
+      | Tasset an -> for_asset_type (unloc an)
+      | _ -> t
+    in
+    map_model (fun _ -> id) ft id model
+  in
+
+  let model, map = process_storage model in
+  process_mterm map model
+  |> remove_type_asset
