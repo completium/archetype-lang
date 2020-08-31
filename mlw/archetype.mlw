@@ -158,10 +158,6 @@ module Utils
      | OpArithDiv -> ((fst lhs) * (snd rhs) , (snd lhs) * (fst rhs))
      end
 
-  let function div_tez (a : tez) (b : tez) : tez
-  requires { not b = 0 }
-   = div a b
-
   let function rat_tez (c : (int, int)) (t : tez) : tez
   requires { not (snd c) = 0 }
   =  div ((abs (fst c)) * t) (abs (snd c))
@@ -763,7 +759,7 @@ module View
   lemma tail0: forall v. tail 0 v = v
 
   (* ------------------------------------------------------------------------ *)
-  lemma tailn: forall v. tail (card v) v = empty
+  lemma tail_empty: forall n v. n >= card v -> tail n v = empty
 
   (* ------------------------------------------------------------------------ *)
   let function eq (v1 v2 : view) : bool
@@ -1712,6 +1708,9 @@ module Sum
   val function to_view collection : view
 
   (* ------------------------------------------------------------------------ *)
+  val function empty : view
+
+  (* ------------------------------------------------------------------------ *)
   val function contains tk view : bool
 
   (* ------------------------------------------------------------------------ *)
@@ -1743,6 +1742,9 @@ module Sum
   internal_sum (view_to_list v c)
 
   (* ------------------------------------------------------------------------ *)
+  lemma sum_empty : forall c. sum empty c = 0
+
+  (* ------------------------------------------------------------------------ *)
   axiom effect_add : forall a c.
   not (contains (keyt a) (to_view c)) -> 
   sum (to_view (add a c)) (add a c) = sum (to_view c) c + field a
@@ -1750,7 +1752,7 @@ module Sum
   (* ------------------------------------------------------------------------ *)
   axiom effect_remove : forall a c.
   contains (keyt a) (to_view c) -> 
-  sum (to_view (remove (keyt a) c)) (remove (keyt a) c) = sum_formula c - field a
+  sum (to_view (remove (keyt a) c)) (remove (keyt a) c) = sum (to_view c) c - field a
 
   (* ------------------------------------------------------------------------ *)
   axiom effect_set : forall k a c.

@@ -381,6 +381,7 @@ let mk_sum_clone m asset key tkey formula =
       Cval ("field", mk_get_sum_value_id asset id);
       Cval ("view_to_list", cap_asset ^ ".view_to_list");
       Cval ("to_view", cap_asset ^ ".to_view");
+      Cval ("empty", (String.capitalize_ascii (mk_view_id asset)) ^ ".empty");
       Cval ("contains", (String.capitalize_ascii (mk_view_id asset)) ^ ".contains");
       Cval ("add", cap_asset ^ ".add");
       Cval ("remove", cap_asset ^ ".remove");
