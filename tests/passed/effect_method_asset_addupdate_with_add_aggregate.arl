@@ -17,7 +17,5 @@ asset my_asset identified by id {
 }
 
 entry exec () {
-  effect {
-    my_asset.addupdate ("my_id", {value = 3; myaggregate += [1; 2; 3] });
-  }
+  my_asset.addupdate ("my_id", {value = 3; myaggregate += [1; 2; 3] });
 }

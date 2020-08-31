@@ -8,10 +8,6 @@ asset my_asset identified by id {
   {"id2"}
 }
 
-variable res : int = 0
-
 entry exec () {
-  effect {
-    my_asset.clear()
-  }
+  my_asset.clear()
 }

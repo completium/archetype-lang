@@ -13,7 +13,5 @@ asset my_asset identified by id {
 }
 
 entry exec () {
-  effect {
-    my_asset.addupdate ("my_id", {value = 3; mypartition += [{oid = 1}; {oid = 2}; {oid = 3}] })
-  }
+  my_asset.addupdate ("my_id", {value = 3; mypartition += [{oid = 1}; {oid = 2}; {oid = 3}] })
 }

@@ -9,8 +9,6 @@ asset my_asset identified by id {
   {"id2"; 2}
 }
 
-variable res : int = 0
-
 entry exec () {
   specification {
     s1: my_asset.isempty();

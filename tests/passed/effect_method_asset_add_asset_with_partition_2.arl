@@ -14,10 +14,6 @@ asset my_asset identified by id {
   apartition2 : partition<o_asset2>;
 }
 
-variable res : int = 0
-
 entry exec () {
-  effect {
-    my_asset.add({id = "id3"; apartition = [{1}; {2}; {3}]; apartition2 = [{4}; {5}; {6}]})
-  }
+  my_asset.add({id = "id3"; apartition = [{1}; {2}; {3}]; apartition2 = [{4}; {5}; {6}]})
 }

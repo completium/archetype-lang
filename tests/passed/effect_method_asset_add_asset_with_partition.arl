@@ -9,10 +9,6 @@ asset my_asset identified by id {
   anaggregate : partition<o_asset>;
 }
 
-variable res : int = 0
-
 entry exec () {
-  effect {
-    my_asset.add({id = "id3"; anaggregate = [{1}; {2}; {3}]})
-  }
+  my_asset.add({id = "id3"; anaggregate = [{1}; {2}; {3}]})
 }

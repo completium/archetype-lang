@@ -3235,7 +3235,24 @@ let remove_asset (model : model) : model =
         end
 
       | Maddfield    _ -> assert false
-      | Mremoveasset _ -> assert false
+
+      | Mremoveasset (an, v) -> begin
+          let v = fm ctx v in
+          let va = get_asset_global an in
+
+          let new_value =
+            let node =
+              match va.type_ with
+              | Tset kt          -> Msetremove (kt, va, v)
+              | Tmap (_, kt, kv) -> Mmapremove (kt, kv, va, v)
+              | _ -> assert false
+            in
+            mk_mterm node va.type_
+          in
+
+          mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), new_value)) Tunit
+        end
+
       | Mremovefield _ -> assert false
       | Mremoveall   _ -> assert false
       | Mremoveif    _ -> assert false

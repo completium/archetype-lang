@@ -10,8 +10,6 @@ asset my_asset identified by id {
   {"id2"; 2; true}
 }
 
-variable res : int = 0
-
 entry exec () {
   specification {
     s0: my_asset.count() = before.my_asset.count() + 1;

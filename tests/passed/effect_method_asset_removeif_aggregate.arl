@@ -15,7 +15,5 @@ asset my_asset identified by id {
 }
 
 entry exec () {
-  effect {
-    my_asset["id0"].col.removeif(the.val = 0)
-  }
+  my_asset["id0"].col.removeif(the.val = 0)
 }
