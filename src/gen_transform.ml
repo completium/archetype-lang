@@ -3187,7 +3187,9 @@ let remove_asset (model : model) : model =
 
     let get_asset_key_type x = Utils.get_asset_key model x |> snd in
 
-    let extract_key_value (v : mterm) : mterm * mterm * (ident * mterm) list * (ident * mterm) list =
+    let extract_key x = Utils.extract_key_value_from_masset model x in
+
+    let extract_key_value (v : mterm) : mterm * mterm * (ident * mterm) list * (ident * mterm * mterm) list =
       match v with
       | {node = (Masset l); type_ = Tasset an } ->
         let an = unloc an in
@@ -3209,8 +3211,8 @@ let remove_asset (model : model) : model =
                 | Mlitlist l, Tcontainer (Tasset an, Aggregate) -> begin
                     to_litset an l, List.map (fun x -> unloc an, x) l, []
                   end
-                | Mlitlist l, Tcontainer (Tasset an, Partition) -> begin
-                    to_litset an l, [], List.map (fun x -> unloc an, x) l
+                | Mlitset l, Tcontainer (Tasset an, Partition) -> begin
+                    to_litset an (List.map extract_key l), [], List.map (fun x -> unloc an, extract_key x, x) l
                   end
                 | _ -> v, [], []
               in
@@ -3230,6 +3232,17 @@ let remove_asset (model : model) : model =
         in
         k, v, ags, pts
       | _ -> raise Not_found
+    in
+
+    let get_list_assets_partition pts =
+      List.fold_left (fun accu (an, _, v) ->
+          let rec f l =
+            match l with
+            | (a, b)::t when String.equal a an -> (an, v::b)::t
+            | x::t -> x::(f t)
+            | [] -> [an, [v]]
+          in
+          f accu) [] pts
     in
 
     let rec fm ctx (mt : mterm) : mterm =
@@ -3287,7 +3300,27 @@ let remove_asset (model : model) : model =
                     let c = List.fold_left (fun accu (an, x) -> mk_mterm (Mand (f an x, accu)) tbool) (f an a) t in
                     mk_mterm (Mif (c, b, Some (fail "KeyNotFound"))) Tunit
                   end
-                | [], _    -> b
+                | [], (an, k, _)::t -> begin
+                    let f an x = mk_mterm (Msetcontains (get_asset_key_type an , get_asset_global an, x)) tbool in
+                    let c = List.fold_left (fun accu (an, x, _) -> mk_mterm (Mor (f an x, accu)) tbool) (f an k) t in
+                    let ll = get_list_assets_partition pts in
+                    let linstrs = List.map (fun (an, l) ->
+                        let va = get_asset_global an in
+                        let a = List.fold_left (fun accu x -> begin
+                              let k, v, _, _ = extract_key_value x in
+                              match va.type_ with
+                              | Tset kt          ->
+                                mk_mterm (Msetadd (kt, accu, k)) va.type_
+                              | Tmap (_, kt, vt) ->
+                                mk_mterm (Mmapput (kt, vt, accu, k, v)) va.type_
+                              | _ -> assert false
+                            end
+                          ) va l in
+                        mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), a)) Tunit
+                      ) ll in
+                    let seq = mk_mterm (Mseq (b::linstrs)) Tunit in
+                    mk_mterm (Mif (c, fail "KeyAlreadyExists", Some seq)) Tunit
+                  end
                 | _        -> b
               end
             | _ -> assert false

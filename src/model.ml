@@ -3470,7 +3470,6 @@ end = struct
     | CurrencyValueCannotBeNegative
     | EmptyAssetKeys of string
     | SeveralAssetKeys of string
-    | KeyNotFound of string
   [@@deriving show {with_path = false}]
 
   let emit_error (desc : error_desc) =
