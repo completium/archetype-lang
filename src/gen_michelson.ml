@@ -318,8 +318,6 @@ let to_ir (model : M.model) : T.ir =
       | e::t -> List.fold_left (fun accu x -> T.Ibinop (Bpair, x, accu)) e t
     in
 
-    let get_asset_global an = T.Ivar (an ^ "_assets") in
-
     match mtt.node with
 
     (* lambda *)
@@ -506,39 +504,29 @@ let to_ir (model : M.model) : T.ir =
 
     (* asset api effect *)
 
-    | Maddasset (_an, _i)               -> emit_error TODO
-    | Maddfield (_an, _fn, _c, _i)      -> emit_error TODO
-    | Mremoveasset (_an, _i)            -> emit_error TODO
-    | Mremoveall (_an, _fn, _a)         -> emit_error TODO
-    | Mremovefield (_an, _fn, _c, _i)   -> emit_error TODO
-    | Mremoveif (_an, _c, _la, _lb, _a) -> emit_error TODO
-    | Mclear (_an, _v)                  -> emit_error TODO
-    | Mset (_c, _l, _k, _v)             -> emit_error TODO
-    | Mupdate (_an, _k, _l)             -> emit_error TODO
-    | Maddupdate _                      -> emit_error TODO
+    | Maddasset _    -> emit_error (UnsupportedTerm ("addasset"))
+    | Maddfield _    -> emit_error (UnsupportedTerm ("addfield"))
+    | Mremoveasset _ -> emit_error (UnsupportedTerm ("removeasset"))
+    | Mremoveall _   -> emit_error (UnsupportedTerm ("removeall"))
+    | Mremovefield _ -> emit_error (UnsupportedTerm ("removefield"))
+    | Mremoveif _    -> emit_error (UnsupportedTerm ("removeif"))
+    | Mclear _       -> emit_error (UnsupportedTerm ("clear"))
+    | Mset _         -> emit_error (UnsupportedTerm ("set"))
+    | Mupdate _      -> emit_error (UnsupportedTerm ("update"))
+    | Maddupdate _   -> emit_error (UnsupportedTerm ("addupdate"))
 
 
     (* asset api expression *)
 
-    | Mget (an, _c, k) -> begin
-        let asset_map = get_asset_global an in
-        T.Iifnone (T.Ibinop (Bget, f k, asset_map), T.ifail "GetNoneValue", id, "_var_ifnone")
-      end
-
-    | Mselect (_an, _c, _la, _lb, _a) -> emit_error TODO
-    | Msort (_an, _c, _l)             -> emit_error TODO
-    | Mcontains (_an, _c, _i)         -> emit_error TODO
-    | Mnth (_an, _c, _i)              -> emit_error TODO
-    | Mcount (an, c)                  -> begin
-        match c with
-        | CKcoll _  -> T.Iunop (Usize, get_asset_global an)
-        | CKview _  -> assert false
-        | CKfield _ -> assert false
-        | CKdef _   -> assert false
-      end
-    | Msum (_an, _c, _p)              -> emit_error TODO
-    | Mhead (_an, _c, _i)             -> emit_error TODO
-    | Mtail (_an, _c, _i)             -> emit_error TODO
+    | Mget      _ -> emit_error (UnsupportedTerm ("get"))
+    | Mselect   _ -> emit_error (UnsupportedTerm ("select"))
+    | Msort     _ -> emit_error (UnsupportedTerm ("sort"))
+    | Mcontains _ -> emit_error (UnsupportedTerm ("contains"))
+    | Mnth      _ -> emit_error (UnsupportedTerm ("nth"))
+    | Mcount    _ -> emit_error (UnsupportedTerm ("count"))
+    | Msum      _ -> emit_error (UnsupportedTerm ("sum"))
+    | Mhead     _ -> emit_error (UnsupportedTerm ("head"))
+    | Mtail     _ -> emit_error (UnsupportedTerm ("tail"))
 
 
     (* utils *)
@@ -621,7 +609,7 @@ let to_ir (model : M.model) : T.ir =
 
     | Mvar (_an, Vassetstate _k, _, _) -> assert false
     | Mvar (v, Vstorevar, _, _)        -> T.Ivar (unloc v)
-    | Mvar (_v, Vstorecol, _, _)       -> assert false
+    | Mvar (v, Vstorecol, _, _)        -> T.Ivar (unloc v)
     | Mvar (_v, Venumval, _, _)        -> assert false
     | Mvar (_v, Vdefinition, _, _)     -> assert false
     | Mvar (v, Vlocal, _, _)           -> T.Ivar (unloc v)

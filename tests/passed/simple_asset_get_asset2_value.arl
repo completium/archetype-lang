@@ -3,11 +3,11 @@ archetype simple_asset_get_asset2_value
 asset my_asset identified by id {
   id : string;
   v0 : nat;
-  v1 : nat;
+  v1 : bool;
 } initialized by {
-  {"id0"; 0; 0};
-  {"id1"; 1; 1};
-  {"id2"; 2; 2}
+  {"id0"; 0; true};
+  {"id1"; 1; true};
+  {"id2"; 2; true}
 }
 
 

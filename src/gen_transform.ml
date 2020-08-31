@@ -3115,16 +3115,18 @@ let remove_asset (model : model) : model =
     else Ttuple [kt; proj3_1 (for_type an)]
   in
 
-  let process_storage (model : model) : model * (bool * (int MapString.t)) MapString.t =
+  let process_storage (model : model) : model * (bool * (int MapString.t) * type_) MapString.t =
     let for_storage_item map (x : storage_item) =
       match x.model_type, x.typ with
       | MTasset an, Tmap (b, k, Tasset _) -> begin
           let ts, map_, is_single_record = for_type an in
-          { x with typ = Tmap (b, k, ts) }, MapString.add an (is_single_record, map_) map
+          let type_ = Tmap (b, k, ts) in
+          { x with typ = type_ }, MapString.add an (is_single_record, map_, type_) map
         end
+      | MTasset an, (Tset _ as t) -> x, MapString.add an (false, MapString.empty, t) map
       | _ -> x, map
     in
-    let map : (bool * (int MapString.t)) MapString.t = MapString.empty in
+    let map : (bool * (int MapString.t) * type_) MapString.t = MapString.empty in
     let nstorage, map = List.fold_left (fun (accu, map) x -> let a, map = for_storage_item map x in (accu @ [a], map)) ([], map) model.storage in
     { model with
       storage = nstorage;
@@ -3134,11 +3136,19 @@ let remove_asset (model : model) : model =
 
   let process_mterm map (model : model) : model =
     let is_simple_record an =
-      MapString.find an map |> fst
+      MapString.find an map
+      |> proj3_1
     in
+
     let get_idx an fn =
-      let _, m = MapString.find an map in
-      MapString.find fn m
+      MapString.find an map
+      |> proj3_2
+      |> MapString.find fn
+    in
+
+    let get_type_for_asset_container an =
+      MapString.find an map
+      |> proj3_3
     in
 
     let is_key an fn =
@@ -3146,9 +3156,13 @@ let remove_asset (model : model) : model =
       String.equal kn fn
     in
 
+    let get_asset_global an =
+      let type_ = get_type_for_asset_container an in
+      mk_mterm (Mvar (dumloc (an ^ "_assets"), Vstorecol, Tnone, Dnone)) type_
+    in
+
     let rec fm ctx (mt : mterm) : mterm =
       match mt.node with
-      | Mget (an, CKcoll _, k) when Utils.is_asset_single_field model an -> fm ctx k
       | Mdot (({node = _; type_ = Tasset an} as a), _) when Utils.is_asset_single_field model (unloc an) -> fm ctx a
       | Mdot ({node = Mget (_, CKcoll _, k); type_ = Tasset an}, fn) when is_key (unloc an) (unloc fn) -> begin
           fm ctx k
@@ -3162,6 +3176,31 @@ let remove_asset (model : model) : model =
             let idx = Big_int.big_int_of_int (get_idx an fn) in
             mk_mterm (Mtupleaccess(mt_get, idx)) mt.type_
         end
+      | Mget (an, CKcoll _, k) when Utils.is_asset_single_field model an -> fm ctx k
+
+      | Mget (an, CKcoll _, k) -> begin
+          let k = fm ctx k in
+          let va = get_asset_global an in
+          let kt, vt =
+            match va.type_ with
+            | Tmap (_, kt, vt) -> kt, vt
+            | _ -> assert false
+          in
+          let map_get = Mmapget (kt, vt, va, k) in
+          mk_mterm map_get vt
+        end
+
+      | Mcount (an, CKcoll _) -> begin
+          let va = get_asset_global an in
+          let node =
+            match va.type_ with
+            | Tset kt          -> Msetlength (kt, va)
+            | Tmap (_, kt, vt) -> Mmaplength (kt, vt, va)
+            | _ -> assert false
+          in
+          mk_mterm node (Tbuiltin Bbool)
+        end
+
       | _ -> map_mterm (fm ctx) mt
     in
     map_mterm_model fm model
