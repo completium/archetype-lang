@@ -3308,7 +3308,10 @@ let remove_asset (model : model) : model =
 
           let assign =
             match va.type_ with
-            | Tset kt          -> mk_mterm (Msetadd (kt, va, k)) va.type_
+            | Tset kt          ->  begin
+                let a = mk_mterm (Msetadd (kt, va, k)) va.type_ in
+                mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), a)) Tunit
+              end
             | Tmap (_, kt, kv) -> begin
                 let a = mk_mterm (Mmapput (kt, kv, va, k, v)) va.type_ in
                 let b = mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), a)) Tunit in
