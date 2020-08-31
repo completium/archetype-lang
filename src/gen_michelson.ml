@@ -450,8 +450,8 @@ let to_ir (model : M.model) : T.ir =
     | Msome v -> T.Iunop (Usome, f v)
 
     | Mtuple l      -> mk_tuple (List.map f l)
-    | Masset     _l -> emit_error (TODO)
-    | Massets    _l -> emit_error (TODO)
+    | Masset     _l -> emit_error (UnsupportedTerm ("Masset"))
+    | Massets    _l -> emit_error (UnsupportedTerm ("Massets"))
     | Mlitset    l -> begin
         match mtt.type_ with
         |  M.Tset t -> T.Iset (ft t, List.map f l)
@@ -473,7 +473,7 @@ let to_ir (model : M.model) : T.ir =
     (* access *)
 
     | Mdot (e, i)           -> let n = get_record_index e.type_ (unloc i) in Tools.foldi (fun x -> T.Iunop (Ucdr, x)) (f e) n
-    | Mdotassetfield _      -> emit_error (UnsupportedTerm ("dotassetfield"))
+    | Mdotassetfield _      -> emit_error (UnsupportedTerm ("Mdotassetfield"))
 
     (* comparison operators *)
 
@@ -483,7 +483,7 @@ let to_ir (model : M.model) : T.ir =
     | Mge (l, r)        -> T.Icompare (Cge, f l, f r)
     | Mlt (l, r)        -> T.Icompare (Clt, f l, f r)
     | Mle (l, r)        -> T.Icompare (Cle, f l, f r)
-    | Mmulticomp _      -> emit_error (UnsupportedTerm ("multicomp"))
+    | Mmulticomp _      -> emit_error (UnsupportedTerm ("Mmulticomp"))
 
 
     (* arithmetic operators *)
@@ -495,36 +495,36 @@ let to_ir (model : M.model) : T.ir =
     | Mplus (l, r)     -> T.iadd (f l) (f r)
     | Mminus (l, r)    -> T.isub (f l) (f r)
     | Mmult (l, r)     -> T.imul (f l) (f r)
-    | Mdivrat _        -> emit_error (UnsupportedTerm ("divrat"))
+    | Mdivrat _        -> emit_error (UnsupportedTerm ("Mdivrat"))
     | Mdiveuc (l, r)   -> T.idiv (f l) (f r)
     | Mmodulo (l, r)   -> T.imod (f l) (f r)
     | Muminus e        -> T.Iunop  (Uneg, f e)
 
     (* asset api effect *)
 
-    | Maddasset _    -> emit_error (UnsupportedTerm ("addasset"))
-    | Maddfield _    -> emit_error (UnsupportedTerm ("addfield"))
-    | Mremoveasset _ -> emit_error (UnsupportedTerm ("removeasset"))
-    | Mremoveall _   -> emit_error (UnsupportedTerm ("removeall"))
-    | Mremovefield _ -> emit_error (UnsupportedTerm ("removefield"))
-    | Mremoveif _    -> emit_error (UnsupportedTerm ("removeif"))
-    | Mclear _       -> emit_error (UnsupportedTerm ("clear"))
-    | Mset _         -> emit_error (UnsupportedTerm ("set"))
-    | Mupdate _      -> emit_error (UnsupportedTerm ("update"))
-    | Maddupdate _   -> emit_error (UnsupportedTerm ("addupdate"))
+    | Maddasset _    -> emit_error (UnsupportedTerm ("Maddasset"))
+    | Maddfield _    -> emit_error (UnsupportedTerm ("Maddfield"))
+    | Mremoveasset _ -> emit_error (UnsupportedTerm ("Mremoveasset"))
+    | Mremoveall _   -> emit_error (UnsupportedTerm ("Mremoveall"))
+    | Mremovefield _ -> emit_error (UnsupportedTerm ("Mremovefield"))
+    | Mremoveif _    -> emit_error (UnsupportedTerm ("Mremoveif"))
+    | Mclear _       -> emit_error (UnsupportedTerm ("Mclear"))
+    | Mset _         -> emit_error (UnsupportedTerm ("Mset"))
+    | Mupdate _      -> emit_error (UnsupportedTerm ("Mupdate"))
+    | Maddupdate _   -> emit_error (UnsupportedTerm ("Maddupdate"))
 
 
     (* asset api expression *)
 
-    | Mget      _ -> emit_error (UnsupportedTerm ("get"))
-    | Mselect   _ -> emit_error (UnsupportedTerm ("select"))
-    | Msort     _ -> emit_error (UnsupportedTerm ("sort"))
-    | Mcontains _ -> emit_error (UnsupportedTerm ("contains"))
-    | Mnth      _ -> emit_error (UnsupportedTerm ("nth"))
-    | Mcount    _ -> emit_error (UnsupportedTerm ("count"))
-    | Msum      _ -> emit_error (UnsupportedTerm ("sum"))
-    | Mhead     _ -> emit_error (UnsupportedTerm ("head"))
-    | Mtail     _ -> emit_error (UnsupportedTerm ("tail"))
+    | Mget      _ -> emit_error (UnsupportedTerm ("Mget"))
+    | Mselect   _ -> emit_error (UnsupportedTerm ("Mselect"))
+    | Msort     _ -> emit_error (UnsupportedTerm ("Msort"))
+    | Mcontains _ -> emit_error (UnsupportedTerm ("Mcontains"))
+    | Mnth      _ -> emit_error (UnsupportedTerm ("Mnth"))
+    | Mcount    _ -> emit_error (UnsupportedTerm ("Mcount"))
+    | Msum      _ -> emit_error (UnsupportedTerm ("Msum"))
+    | Mhead     _ -> emit_error (UnsupportedTerm ("Mhead"))
+    | Mtail     _ -> emit_error (UnsupportedTerm ("Mtail"))
 
 
     (* utils *)
@@ -651,41 +651,41 @@ let to_ir (model : M.model) : T.ir =
 
     (* functional *)
 
-    | Mfold _ -> emit_error (UnsupportedTerm ("fold"))
+    | Mfold _ -> emit_error (UnsupportedTerm ("Mfold"))
 
 
     (* imperative *)
 
-    | Mbreak -> emit_error (UnsupportedTerm ("break"))
+    | Mbreak -> emit_error (UnsupportedTerm ("Mbreak"))
 
 
     (* quantifiers *)
 
-    | Mforall _ -> emit_error (UnsupportedTerm ("forall"))
-    | Mexists _ -> emit_error (UnsupportedTerm ("exists"))
+    | Mforall _ -> emit_error (UnsupportedTerm ("Mforall"))
+    | Mexists _ -> emit_error (UnsupportedTerm ("Mexists"))
 
 
     (* formula operators *)
 
-    | Mimply _ -> emit_error (UnsupportedTerm ("imply"))
-    | Mequiv _ -> emit_error (UnsupportedTerm ("equiv"))
+    | Mimply _ -> emit_error (UnsupportedTerm ("Mimply"))
+    | Mequiv _ -> emit_error (UnsupportedTerm ("Mequiv"))
 
 
     (* formula asset collection *)
 
-    | Msetiterated  _ -> emit_error (UnsupportedTerm ("setiterated"))
-    | Msettoiterate _ -> emit_error (UnsupportedTerm ("settoiterate"))
+    | Msetiterated  _ -> emit_error (UnsupportedTerm ("Msetiterated"))
+    | Msettoiterate _ -> emit_error (UnsupportedTerm ("Msettoiterate"))
 
 
     (* formula asset collection methods *)
 
-    | Mempty     _ -> emit_error (UnsupportedTerm ("empty"))
-    | Msingleton _ -> emit_error (UnsupportedTerm ("singleton"))
-    | Msubsetof  _ -> emit_error (UnsupportedTerm ("subsetof"))
-    | Misempty   _ -> emit_error (UnsupportedTerm ("isempty"))
-    | Munion     _ -> emit_error (UnsupportedTerm ("union"))
-    | Minter     _ -> emit_error (UnsupportedTerm ("inter"))
-    | Mdiff      _ -> emit_error (UnsupportedTerm ("diff"))
+    | Mempty     _ -> emit_error (UnsupportedTerm ("Mempty"))
+    | Msingleton _ -> emit_error (UnsupportedTerm ("Msingleton"))
+    | Msubsetof  _ -> emit_error (UnsupportedTerm ("Msubsetof"))
+    | Misempty   _ -> emit_error (UnsupportedTerm ("Misempty"))
+    | Munion     _ -> emit_error (UnsupportedTerm ("Munion"))
+    | Minter     _ -> emit_error (UnsupportedTerm ("Minter"))
+    | Mdiff      _ -> emit_error (UnsupportedTerm ("Mdiff"))
   in
 
   let env = mk_env () in

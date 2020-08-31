@@ -3115,19 +3115,18 @@ let remove_asset (model : model) : model =
     else Ttuple [kt; proj3_1 (for_type an)]
   in
 
-  let process_storage (model : model) : model * (bool * (int MapString.t) * type_) MapString.t =
+  let process_storage (model : model) : model * ((bool * bool) * (int MapString.t) * type_) MapString.t =
     let for_storage_item map (x : storage_item) =
       match x.model_type, x.typ with
       | MTasset an, Tmap (b, k, Tasset _) -> begin
           let ts, map_, is_single_record = for_type an in
           let type_ = Tmap (b, k, ts) in
-          { x with typ = type_ }, MapString.add an (is_single_record, map_, type_) map
+          { x with typ = type_ }, MapString.add an ((true, is_single_record), map_, type_) map
         end
-      | MTasset an, (Tset _ as t) -> x, MapString.add an (false, MapString.empty, t) map
+      | MTasset an, (Tset _ as t) -> x, MapString.add an ((false, false), MapString.empty, t) map
       | _ -> x, map
     in
-    let map : (bool * (int MapString.t) * type_) MapString.t = MapString.empty in
-    let nstorage, map = List.fold_left (fun (accu, map) x -> let a, map = for_storage_item map x in (accu @ [a], map)) ([], map) model.storage in
+    let nstorage, map = List.fold_left (fun (accu, map) x -> let a, map = for_storage_item map x in (accu @ [a], map)) ([], MapString.empty) model.storage in
     { model with
       storage = nstorage;
     }, map
@@ -3135,9 +3134,13 @@ let remove_asset (model : model) : model =
 
 
   let process_mterm map (model : model) : model =
-    let is_simple_record an =
+    let is_single_simple_record an =
       MapString.find an map
       |> proj3_1
+    in
+
+    let is_simple_record an =
+      is_single_simple_record an |> snd
     in
 
     let get_idx an fn =
@@ -3156,13 +3159,21 @@ let remove_asset (model : model) : model =
       String.equal kn fn
     in
 
+    let get_asset_global_id an = dumloc (an ^ "_assets") in
+
     let get_asset_global an =
       let type_ = get_type_for_asset_container an in
-      mk_mterm (Mvar (dumloc (an ^ "_assets"), Vstorecol, Tnone, Dnone)) type_
+      let id = get_asset_global_id an in
+      mk_mterm (Mvar (id, Vstorecol, Tnone, Dnone)) type_
     in
+
+    let extract_key_value = Utils.extract_key_value_from_masset2 model in
 
     let rec fm ctx (mt : mterm) : mterm =
       match mt.node with
+
+      (* access *)
+
       | Mdot (({node = _; type_ = Tasset an} as a), _) when Utils.is_asset_single_field model (unloc an) -> fm ctx a
       | Mdot ({node = Mget (_, CKcoll _, k); type_ = Tasset an}, fn) when is_key (unloc an) (unloc fn) -> begin
           fm ctx k
@@ -3189,6 +3200,51 @@ let remove_asset (model : model) : model =
           let map_get = Mmapget (kt, vt, va, k) in
           mk_mterm map_get vt
         end
+
+      (* effect *)
+
+      | Maddasset (an, v) -> begin
+          let v = fm ctx v in
+          (* let is_single, is_record = is_single_simple_record an in *)
+          let va = get_asset_global an in
+          let k, v = extract_key_value v in
+
+          let cond =
+            let node =
+              match va.type_ with
+              | Tset kt          -> Msetcontains (kt, va, k)
+              | Tmap (_, kt, kv) -> Mmapcontains (kt, kv, va, k)
+              | _ -> assert false
+            in
+            mk_mterm node tbool
+          in
+
+          let new_value =
+            let node =
+              match va.type_ with
+              | Tset kt          -> Msetadd (kt, va, k)
+              | Tmap (_, kt, kv) -> Mmapput (kt, kv, va, k, v)
+              | _ -> assert false
+            in
+            mk_mterm node va.type_
+          in
+
+          let assign = mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), new_value)) Tunit in
+          let node_if = Mif (cond, fail "KeyAlreadyExists", Some assign) in
+          mk_mterm node_if Tunit
+        end
+
+      | Maddfield    _ -> assert false
+      | Mremoveasset _ -> assert false
+      | Mremovefield _ -> assert false
+      | Mremoveall   _ -> assert false
+      | Mremoveif    _ -> assert false
+      | Mclear       _ -> assert false
+      | Mset         _ -> assert false
+      | Mupdate      _ -> assert false
+      | Maddupdate   _ -> assert false
+
+      (* expression *)
 
       | Mcount (an, CKcoll _) -> begin
           let va = get_asset_global an in

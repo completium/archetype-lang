@@ -929,6 +929,16 @@ let mk_model ?(api_items = []) ?(api_verif = []) ?(decls = []) ?(functions = [])
 
 (* -------------------------------------------------------------------- *)
 
+let tunit = Tunit
+let tbool = Tbuiltin Bbool
+let tstring = Tbuiltin Bstring
+
+let mk_string x = mk_mterm (Mstring x) tstring
+
+let fail x = mk_mterm (Mfail (Invalid (mk_string x))) tunit
+
+(* -------------------------------------------------------------------- *)
+
 let cmp_ident (i1 : ident) (i2 : ident) : bool = String.equal i1 i2
 let cmp_lident (i1 : lident) (i2 : lident) : bool = cmp_ident (Location.unloc i1) (Location.unloc i2)
 let cmp_bool (b1 : bool) (b2 : bool) : bool = b1 = b2
@@ -3436,6 +3446,7 @@ module Utils : sig
   val get_all_map_types                  : model -> type_ list
   val get_all_fail_types                 : model -> type_ list
   val extract_key_value_from_masset      : model -> mterm -> mterm
+  val extract_key_value_from_masset2     : model -> mterm -> mterm * mterm
   val is_not_string_nat_int              : type_ -> bool
   val get_function                       : model -> ident -> function_struct
   val get_asset_partitions               : model -> ident -> (ident * ident) list
@@ -3460,6 +3471,7 @@ end = struct
     | CurrencyValueCannotBeNegative
     | EmptyAssetKeys of string
     | SeveralAssetKeys of string
+    | KeyNotFound of string
   [@@deriving show {with_path = false}]
 
   let emit_error (desc : error_desc) =
@@ -4572,6 +4584,33 @@ end = struct
       let asset_key = match asset.keys with [k] -> k | _ -> emit_error (SeveralAssetKeys an) in
       let assoc_fields = List.map2 (fun (ai : asset_item) (x : mterm) -> (unloc ai.name, x)) asset.values l in
       List.find (fun (id, _) -> (String.equal asset_key id)) assoc_fields |> snd
+    | _ -> raise Not_found
+
+  let extract_key_value_from_masset2 (model : model) (v : mterm) : mterm * mterm =
+    match v with
+    | {node = (Masset l); type_ = Tasset an } ->
+      let an = unloc an in
+      let asset : asset = get_asset model an in
+      let asset_key = match asset.keys with [k] -> k | _ -> emit_error (SeveralAssetKeys an) in
+      let assoc_fields = List.map2 (fun (ai : asset_item) (x : mterm) -> (unloc ai.name, x)) asset.values l in
+      let k, l = List.fold_left (fun (sk, sv) x ->
+          let id, v = x in
+          if (String.equal asset_key id)
+          then (Some v, sv)
+          else (sk, sv @ [v])
+        ) (None, []) assoc_fields in
+      let k =
+        match k with
+        | Some k -> k
+        | None -> emit_error (KeyNotFound an)
+      in
+      let v =
+        match l with
+        | [] -> mk_mterm (Mtuple []) Tunit
+        | [v] -> v
+        | _ -> mk_mterm (Mtuple l) (Ttuple (List.map (fun (x : mterm) -> x.type_) l))
+      in
+      k, v
     | _ -> raise Not_found
 
   let is_not_string_nat_int = (function | Tbuiltin (Bstring | Bnat | Bint) -> false | _ -> true)

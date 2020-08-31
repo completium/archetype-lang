@@ -111,6 +111,9 @@ PASSED="\
 ./tests/passed/simple_asset_get_asset2_value.arl \
 ./tests/passed/simple_asset_get_asset2_value2.arl \
 ./tests/passed/expr_method_asset_count.arl \
+./tests/passed/effect_method_asset_add_asset_one_field.arl \
+./tests/passed/effect_method_asset_add_asset.arl \
+./tests/passed/effect_method_asset_add_asset2.arl \
 "
 
 RET=0
