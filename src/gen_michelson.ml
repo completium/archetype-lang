@@ -318,6 +318,8 @@ let to_ir (model : M.model) : T.ir =
       | e::t -> List.fold_left (fun accu x -> T.Ibinop (Bpair, x, accu)) e t
     in
 
+    let get_asset_global an = T.Ivar (an ^ "_assets") in
+
     match mtt.node with
 
     (* lambda *)
@@ -500,7 +502,6 @@ let to_ir (model : M.model) : T.ir =
     | Mdivrat _        -> emit_error (UnsupportedTerm ("divrat"))
     | Mdiveuc (l, r)   -> T.idiv (f l) (f r)
     | Mmodulo (l, r)   -> T.imod (f l) (f r)
-    | Muplus e         -> f e
     | Muminus e        -> T.Iunop  (Uneg, f e)
 
     (* asset api effect *)
@@ -519,12 +520,22 @@ let to_ir (model : M.model) : T.ir =
 
     (* asset api expression *)
 
-    | Mget (_an, _c, _k)              -> emit_error TODO
+    | Mget (an, _c, k) -> begin
+        let asset_map = get_asset_global an in
+        T.Iifnone (T.Ibinop (Bget, f k, asset_map), T.ifail "GetNoneValue", id, "_var_ifnone")
+      end
+
     | Mselect (_an, _c, _la, _lb, _a) -> emit_error TODO
     | Msort (_an, _c, _l)             -> emit_error TODO
     | Mcontains (_an, _c, _i)         -> emit_error TODO
     | Mnth (_an, _c, _i)              -> emit_error TODO
-    | Mcount (_an, _c)                -> emit_error TODO
+    | Mcount (an, c)                  -> begin
+        match c with
+        | CKcoll _  -> T.Iunop (Usize, get_asset_global an)
+        | CKview _  -> assert false
+        | CKfield _ -> assert false
+        | CKdef _   -> assert false
+      end
     | Msum (_an, _c, _p)              -> emit_error TODO
     | Mhead (_an, _c, _i)             -> emit_error TODO
     | Mtail (_an, _c, _i)             -> emit_error TODO

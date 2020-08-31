@@ -129,7 +129,6 @@ let pp_arithmetic_operator fmt = function
   | Modulo -> pp_str fmt "%"
 
 let pp_unary_arithmetic_operator fmt = function
-  | Uplus  -> pp_str fmt "+"
   | Uminus -> pp_str fmt "-"
 
 let pp_assignment_operator fmt = function

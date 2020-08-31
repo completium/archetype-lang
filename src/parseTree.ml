@@ -53,7 +53,6 @@ and arithmetic_operator =
   | Modulo
 
 and unary_operator =
-  | Uplus
   | Uminus
   | Not
 

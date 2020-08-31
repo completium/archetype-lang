@@ -1,4 +1,4 @@
-archetype rat_tez
+archetype rat_dur
 
 variable res : duration = 0s
 

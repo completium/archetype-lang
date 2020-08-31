@@ -1,0 +1,17 @@
+archetype simple_asset_get_one_field
+
+asset my_asset identified by id {
+  id : string;
+} initialized by {
+  {"id0"};
+  {"id1"};
+  {"id2"}
+}
+
+variable res : string = ""
+
+entry exec () {
+  var v = my_asset["id1"].id;
+  dorequire(v = "id1", "ko");
+  res := v;
+}

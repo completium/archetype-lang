@@ -1,4 +1,4 @@
-archetype expr_list_nth
+archetype test_list_nth
 
 variable res : string = ""
 

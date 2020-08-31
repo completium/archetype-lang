@@ -100,6 +100,17 @@ PASSED="\
 ./tests/passed/rat_tez.arl \
 ./tests/passed/rat_dur.arl \
 ./tests/passed/cast_tez_nat.arl \
+./tests/passed/simple_asset_skip_empty_one_field.arl \
+./tests/passed/simple_asset_skip_empty.arl \
+./tests/passed/simple_asset_skip_one_field.arl \
+./tests/passed/simple_asset_skip.arl \
+./tests/passed/simple_asset_get_one_field.arl \
+./tests/passed/simple_asset_get_asset1_key.arl \
+./tests/passed/simple_asset_get_asset1_value.arl \
+./tests/passed/simple_asset_get_asset2_key.arl \
+./tests/passed/simple_asset_get_asset2_value.arl \
+./tests/passed/simple_asset_get_asset2_value2.arl \
+./tests/passed/expr_method_asset_count.arl \
 "
 
 RET=0

@@ -72,7 +72,6 @@ let get_prec_from_operator (op : operator) =
   | Arith DivRat    -> e_divrat
   | Arith DivEuc    -> e_diveuc
   | Arith Modulo    -> e_modulo
-  | Unary Uplus     -> e_plus
   | Unary Uminus    -> e_minus
   | Unary Not       -> e_not
 
@@ -187,7 +186,6 @@ let arithmetic_operator_to_str op =
 
 let unary_operator_to_str op =
   match op with
-  | Uplus   -> "+"
   | Uminus  -> "-"
   | Not     -> "not"
 

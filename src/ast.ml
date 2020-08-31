@@ -103,7 +103,6 @@ type arithmetic_operator =
 [@@deriving show {with_path = false}]
 
 type unary_arithmetic_operator =
-  | Uplus
   | Uminus
 [@@deriving show {with_path = false}]
 
