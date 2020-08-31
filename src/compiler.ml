@@ -228,7 +228,7 @@ let generate_target model =
     |> remove_container_op_in_update
     |> merge_update
     |> remove_assign_operator
-    |> extract_item_collection_from_add_asset
+    (* |> extract_item_collection_from_add_asset *)
     |> process_internal_string
     |> remove_rational
     |> abs_tez

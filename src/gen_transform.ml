@@ -3105,7 +3105,15 @@ let remove_asset (model : model) : model =
     let ts, map, l = List.fold_left (fun (accu, map, i) (x : asset_item) ->
         if List.exists (String.equal (unloc x.name)) asset.keys
         then accu, map, i
-        else (accu @ [x.type_], MapString.add (unloc x.name) i map, i + 1)) ([], map, 0) asset.values in
+        else (
+          let type_ =
+            match x.type_ with
+            | Tcontainer (Tasset an, _) -> Tset (Utils.get_asset_key model (unloc an) |> snd)
+            | Tcontainer (b, _) -> Tset (b)
+            | t -> t
+          in
+          (accu @ [type_], MapString.add (unloc x.name) i map, i + 1))
+      ) ([], map, 0) asset.values in
     Ttuple ts, map, l <= 1
   in
   let for_asset_type an =
@@ -3167,7 +3175,62 @@ let remove_asset (model : model) : model =
       mk_mterm (Mvar (id, Vstorecol, Tnone, Dnone)) type_
     in
 
-    let extract_key_value = Utils.extract_key_value_from_masset2 model in
+    let get_contains_va (va : mterm) (k : mterm) : mterm =
+      let node =
+        match va.type_ with
+        | Tset kt          -> Msetcontains (kt, va, k)
+        | Tmap (_, kt, kv) -> Mmapcontains (kt, kv, va, k)
+        | _ -> assert false
+      in
+      mk_mterm node tbool
+    in
+
+    let get_asset_key_type x = Utils.get_asset_key model x |> snd in
+
+    let extract_key_value (v : mterm) : mterm * mterm * (ident * mterm) list * (ident * mterm) list =
+      match v with
+      | {node = (Masset l); type_ = Tasset an } ->
+        let an = unloc an in
+        let asset : asset = Utils.get_asset model an in
+        let asset_key = match asset.keys with [k] -> k | _ -> assert false in
+        let assoc_fields : (ident * type_ * mterm) list = List.map2 (fun (ai : asset_item) (x : mterm) -> (unloc ai.name, ai.type_, x)) asset.values l in
+        let k, l, ags, pts = List.fold_left (fun (sk, sv, ags, pts) (x : ident * type_ * mterm) ->
+            let id, t, v = x in
+            if String.equal asset_key id
+            then Some v, sv, ags, pts
+            else begin
+              let to_litset an l =
+                let _, kt = Utils.get_asset_key model (unloc an) in
+                let set_t = Tset kt in
+                List.fold_left (fun accu x -> mk_mterm (Msetadd(kt, accu, x)) set_t) (mk_mterm (Mlitset []) set_t) l
+              in
+              let v, nags, npts =
+                match v.node, t with
+                | Mlitlist l, Tcontainer (Tasset an, Aggregate) -> begin
+                    to_litset an l, List.map (fun x -> unloc an, x) l, []
+                  end
+                | Mlitlist l, Tcontainer (Tasset an, Partition) -> begin
+                    to_litset an l, [], List.map (fun x -> unloc an, x) l
+                  end
+                | _ -> v, [], []
+              in
+              (sk, sv @ [v], ags @ nags, pts @ npts)
+            end
+          ) (None, [], [], []) assoc_fields in
+        let k =
+          match k with
+          | Some k -> k
+          | None -> assert false
+        in
+        let v =
+          match l with
+          | [] -> mk_mterm (Mtuple []) Tunit
+          | [v] -> v
+          | _ -> mk_mterm (Mtuple l) (Ttuple (List.map (fun (x : mterm) -> x.type_) l))
+        in
+        k, v, ags, pts
+      | _ -> raise Not_found
+    in
 
     let rec fm ctx (mt : mterm) : mterm =
       match mt.node with
@@ -3207,34 +3270,59 @@ let remove_asset (model : model) : model =
           let v = fm ctx v in
           (* let is_single, is_record = is_single_simple_record an in *)
           let va = get_asset_global an in
-          let k, v = extract_key_value v in
+          let k, v, ags, pts = extract_key_value v in
 
-          let cond =
-            let node =
-              match va.type_ with
-              | Tset kt          -> Msetcontains (kt, va, k)
-              | Tmap (_, kt, kv) -> Mmapcontains (kt, kv, va, k)
-              | _ -> assert false
-            in
-            mk_mterm node tbool
+          let cond = get_contains_va va k in
+
+          let assign =
+            match va.type_ with
+            | Tset kt          -> mk_mterm (Msetadd (kt, va, k)) va.type_
+            | Tmap (_, kt, kv) -> begin
+                let a = mk_mterm (Mmapput (kt, kv, va, k, v)) va.type_ in
+                let b = mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), a)) Tunit in
+                match ags, pts with
+                | [], []   -> b
+                | (an, a)::t, [] -> begin
+                    let f an x = mk_mterm (Msetcontains (get_asset_key_type an , get_asset_global an, x)) tbool in
+                    let c = List.fold_left (fun accu (an, x) -> mk_mterm (Mand (f an x, accu)) tbool) (f an a) t in
+                    mk_mterm (Mif (c, b, Some (fail "KeyNotFound"))) Tunit
+                  end
+                | [], _    -> b
+                | _        -> b
+              end
+            | _ -> assert false
           in
+
+          let node_if = Mif (cond, fail "KeyAlreadyExists", Some assign) in
+          mk_mterm node_if Tunit
+        end
+
+      (* | Maddfield (an, _fn, k, _v) -> begin
+          let k = fm ctx k in
+          (* let v = fm ctx v in *)
+          let va = get_asset_global an in
+
+          let cond = get_contains_va va k in
 
           let new_value =
             let node =
               match va.type_ with
-              | Tset kt          -> Msetadd (kt, va, k)
-              | Tmap (_, kt, kv) -> Mmapput (kt, kv, va, k, v)
+              | Tmap (_, kt, vt) -> begin
+                  let map_get = mk_mterm (Mmapget (kt, vt, va, k)) vt in
+                  Mmapput (kt, vt, va, k, map_get)
+                end
               | _ -> assert false
             in
             mk_mterm node va.type_
           in
 
           let assign = mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), new_value)) Tunit in
-          let node_if = Mif (cond, fail "KeyAlreadyExists", Some assign) in
-          mk_mterm node_if Tunit
-        end
 
-      | Maddfield    _ -> assert false
+          let node_if = Mif (cond, fail "KeyNotFound", Some assign) in
+          mk_mterm node_if Tunit
+         end *)
+
+      | Maddfield _ -> mt
 
       | Mremoveasset (an, v) -> begin
           let v = fm ctx v in
@@ -3253,13 +3341,13 @@ let remove_asset (model : model) : model =
           mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), new_value)) Tunit
         end
 
-      | Mremovefield _ -> assert false
-      | Mremoveall   _ -> assert false
-      | Mremoveif    _ -> assert false
-      | Mclear       _ -> assert false
-      | Mset         _ -> assert false
-      | Mupdate      _ -> assert false
-      | Maddupdate   _ -> assert false
+      | Mremovefield _ -> mt
+      | Mremoveall   _ -> mt
+      | Mremoveif    _ -> mt
+      | Mclear       _ -> mt
+      | Mset         _ -> mt
+      | Mupdate      _ -> mt
+      | Maddupdate   _ -> mt
 
       (* expression *)
 
@@ -3280,10 +3368,10 @@ let remove_asset (model : model) : model =
   in
 
   let remove_type_asset (model : model) : model =
-    let ft t =
+    let rec ft t =
       match t with
       | Tasset an -> for_asset_type (unloc an)
-      | _ -> t
+      | _ -> map_type ft t
     in
     map_model (fun _ -> id) ft id model
   in

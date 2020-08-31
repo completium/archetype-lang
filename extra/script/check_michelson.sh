@@ -117,6 +117,8 @@ PASSED="\
 ./tests/passed/effect_method_asset_remove_asset_one_field.arl \
 ./tests/passed/effect_method_asset_remove_asset.arl \
 ./tests/passed/effect_method_asset_remove_asset2.arl \
+./tests/passed/effect_method_asset_add_asset_with_aggregate.arl \
+./tests/passed/test_add_asset_with_aggregate.arl \
 "
 
 RET=0

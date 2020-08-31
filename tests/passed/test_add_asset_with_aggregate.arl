@@ -1,0 +1,18 @@
+archetype test_add_asset_with_aggregate
+
+asset o_asset {
+  oid : nat;
+} initialized by {
+  { 1 };
+  { 2 };
+  { 3 }
+}
+
+asset my_asset identified by id {
+  id : string;
+  anaggregate : aggregate<o_asset>;
+}
+
+entry exec (n : nat) {
+  my_asset.add({id = "id3"; anaggregate = [n]})
+}

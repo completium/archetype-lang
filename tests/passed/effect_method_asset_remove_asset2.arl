@@ -1,0 +1,15 @@
+archetype effect_method_asset_remove_asset2
+
+asset my_asset identified by id {
+  id : string;
+  value : int;
+  v : bool;
+} initialized by {
+  {"id0"; 0; true};
+  {"id1"; 1; true};
+  {"id2"; 2; true}
+}
+
+entry exec () {
+  my_asset.remove("id0")
+}
