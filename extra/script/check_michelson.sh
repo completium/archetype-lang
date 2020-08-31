@@ -122,6 +122,7 @@ PASSED="\
 ./tests/passed/effect_method_asset_add_asset_with_partition.arl \
 ./tests/passed/effect_method_asset_add_asset_with_partition_2.arl \
 ./tests/passed/test_add_asset_with_partition.arl \
+./tests/passed/test_add_asset_with_both.arl \
 "
 
 RET=0

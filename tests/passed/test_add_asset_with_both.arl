@@ -1,0 +1,28 @@
+archetype test_add_asset_with_both
+
+asset o_asset {
+  oid : nat;
+} initialized by {
+  { 1 };
+  { 2 };
+  { 3 }
+}
+
+asset p_asset {
+  pid : int;
+} initialized by {
+  { 1i };
+  { 2i };
+  { 3i }
+}
+
+asset my_asset identified by id {
+  id : string;
+  a : aggregate<o_asset>;
+  p : partition<p_asset>;
+}
+
+
+entry exec (n : nat, i : int) {
+  my_asset.add({id = "id3"; a=[n]; p = [{i}]})
+}

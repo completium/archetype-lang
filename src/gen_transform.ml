@@ -3245,6 +3245,25 @@ let remove_asset (model : model) : model =
           f accu) [] pts
     in
 
+    let get_instrs_add_with_partition pts =
+      let ll = get_list_assets_partition pts in
+      let linstrs = List.map (fun (an, l) ->
+          let va = get_asset_global an in
+          let a = List.fold_left (fun accu x -> begin
+                let k, v, _, _ = extract_key_value x in
+                match va.type_ with
+                | Tset kt          ->
+                  mk_mterm (Msetadd (kt, accu, k)) va.type_
+                | Tmap (_, kt, vt) ->
+                  mk_mterm (Mmapput (kt, vt, accu, k, v)) va.type_
+                | _ -> assert false
+              end
+            ) va l in
+          mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), a)) Tunit
+        ) ll
+      in linstrs
+    in
+
     let rec fm ctx (mt : mterm) : mterm =
       match mt.node with
 
@@ -3303,25 +3322,17 @@ let remove_asset (model : model) : model =
                 | [], (an, k, _)::t -> begin
                     let f an x = mk_mterm (Msetcontains (get_asset_key_type an , get_asset_global an, x)) tbool in
                     let c = List.fold_left (fun accu (an, x, _) -> mk_mterm (Mor (f an x, accu)) tbool) (f an k) t in
-                    let ll = get_list_assets_partition pts in
-                    let linstrs = List.map (fun (an, l) ->
-                        let va = get_asset_global an in
-                        let a = List.fold_left (fun accu x -> begin
-                              let k, v, _, _ = extract_key_value x in
-                              match va.type_ with
-                              | Tset kt          ->
-                                mk_mterm (Msetadd (kt, accu, k)) va.type_
-                              | Tmap (_, kt, vt) ->
-                                mk_mterm (Mmapput (kt, vt, accu, k, v)) va.type_
-                              | _ -> assert false
-                            end
-                          ) va l in
-                        mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), a)) Tunit
-                      ) ll in
+                    let linstrs = get_instrs_add_with_partition pts in
                     let seq = mk_mterm (Mseq (b::linstrs)) Tunit in
                     mk_mterm (Mif (c, fail "KeyAlreadyExists", Some seq)) Tunit
                   end
-                | _        -> b
+                | (aan, aa)::at, pt ->
+                  let f an x = mk_mterm (Msetcontains (get_asset_key_type an , get_asset_global an, x)) tbool in
+                  let c = List.fold_left (fun accu (an, x) -> mk_mterm (Mand (f an x, accu)) tbool) (f aan aa) at in
+                  let c = List.fold_left (fun accu (an, x, _) -> mk_mterm (Mand (mnot (f an x), accu)) tbool) c pt in
+                  let linstrs = get_instrs_add_with_partition pts in
+                  let seq = mk_mterm (Mseq (b::linstrs)) Tunit in
+                  mk_mterm (Mif (c, seq, Some (fail "KeyNotFoundOrKeyAlreadyExists"))) Tunit
               end
             | _ -> assert false
           in
