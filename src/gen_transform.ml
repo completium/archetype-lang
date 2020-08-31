@@ -2980,7 +2980,7 @@ let process_multi_keys (model : model) : model =
             let fn = unloc fn in
             let idx = List.assoc fn keys_index in
             let x : mterm = mk_mterm node new_key_type in
-            let node = Maccestuple (x, Big_int.big_int_of_int idx) in
+            let node = Mtupleaccess (x, Big_int.big_int_of_int idx) in
             mk_mterm node mt.type_
           in
           match mt with

@@ -1657,9 +1657,6 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       Tdot(
         dl (Tapp (loc_term (Tvar ("get_"^(unloc an))),[map_mterm m ctx k])),
         loc_term (Tvar (unloc fn)))
-    | Mdotcontract       _ -> error_not_translated "Mdotcontract"
-    | Maccestuple        (v,i) ->
-      let s = get_tuple_size v.type_ in Tnthtuple (succ (Big_int.int_of_big_int i),s,map_mterm m ctx v)
 
     (* comparison operators *)
 

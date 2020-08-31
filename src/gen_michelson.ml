@@ -474,8 +474,6 @@ let to_ir (model : M.model) : T.ir =
 
     | Mdot (e, i)           -> let n = get_record_index e.type_ (unloc i) in Tools.foldi (fun x -> T.Iunop (Ucdr, x)) (f e) n
     | Mdotassetfield _      -> emit_error (UnsupportedTerm ("dotassetfield"))
-    | Mdotcontract (_e, _i) -> assert false
-    | Maccestuple (_e, _i)  -> assert false
 
     (* comparison operators *)
 
