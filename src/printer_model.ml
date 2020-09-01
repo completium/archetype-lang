@@ -414,15 +414,6 @@ let pp_mterm fmt (mt : mterm) =
         f k
         pp_id fn
 
-    | Mdotcontract (e, i) ->
-      Format.fprintf fmt "%a (%a)"
-        pp_id i
-        f e
-
-    | Maccestuple (e, i) ->
-      Format.fprintf fmt "%a[%a]"
-        f e
-        pp_big_int i
 
     (* comparison operators *)
 

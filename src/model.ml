@@ -241,8 +241,6 @@ type ('id, 'term) mterm_node  =
   (* access *)
   | Mdot              of 'term * 'id
   | Mdotassetfield    of 'id * 'term * 'id
-  | Mdotcontract      of 'term * 'id
-  | Maccestuple       of 'term * Core.big_int
   (* comparison operators *)
   | Mequal            of type_ * 'term * 'term
   | Mnequal           of type_ * 'term * 'term
@@ -931,6 +929,17 @@ let mk_model ?(api_items = []) ?(api_verif = []) ?(decls = []) ?(functions = [])
 
 (* -------------------------------------------------------------------- *)
 
+let tunit = Tunit
+let tbool = Tbuiltin Bbool
+let tstring = Tbuiltin Bstring
+
+let mk_string x = mk_mterm (Mstring x) tstring
+
+let fail x = mk_mterm (Mfail (Invalid (mk_string x))) tunit
+let mnot x = mk_mterm (Mnot x) tbool
+
+(* -------------------------------------------------------------------- *)
+
 let cmp_ident (i1 : ident) (i2 : ident) : bool = String.equal i1 i2
 let cmp_lident (i1 : lident) (i2 : lident) : bool = cmp_ident (Location.unloc i1) (Location.unloc i2)
 let cmp_bool (b1 : bool) (b2 : bool) : bool = b1 = b2
@@ -1140,8 +1149,6 @@ let cmp_mterm_node
     (* access *)
     | Mdot (e1, i1), Mdot (e2, i2)                                                     -> cmp e1 e2 && cmpi i1 i2
     | Mdotassetfield (an1, k1, fn1), Mdotassetfield (an2, k2, fn2)                     -> cmpi an1 an2 && cmp k1 k2 && cmpi fn1 fn2
-    | Mdotcontract (e1, i1), Mdotcontract (e2, i2)                                     -> cmp e1 e2 && cmpi i1 i2
-    | Maccestuple (e1, i1), Maccestuple (e2, i2)                                       -> cmp e1 e2 && Big_int.eq_big_int i1 i2
     (* comparison operators *)
     | Mequal (t1, l1, r1), Mequal (t2, l2, r2)                                         -> cmp_type t1 t2 && cmp l1 l2 && cmp r1 r2
     | Mnequal (t1, l1, r1), Mnequal (t2, l2, r2)                                       -> cmp_type t1 t2 && cmp l1 l2 && cmp r1 r2
@@ -1500,8 +1507,6 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   (* access *)
   | Mdot (e, i)                    -> Mdot (f e, g i)
   | Mdotassetfield (an, k, fn)     -> Mdotassetfield (g an, f k, g fn)
-  | Mdotcontract (e, i)            -> Mdotcontract (f e, g i)
-  | Maccestuple (e, i)             -> Maccestuple (f e, i)
   (* comparison operators *)
   | Mequal (t, l, r)               -> Mequal (ft t, f l, f r)
   | Mnequal (t, l, r)              -> Mnequal (ft t, f l, f r)
@@ -1862,8 +1867,6 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   (* access *)
   | Mdot (e, _)                           -> f accu e
   | Mdotassetfield (_, k, _)              -> f accu k
-  | Mdotcontract (e, _)                   -> f accu e
-  | Maccestuple (e, _)                    -> f accu e
   (* comparison operators *)
   | Mequal (_, l, r)                         -> f (f accu l) r
   | Mnequal (_, l, r)                        -> f (f accu l) r
@@ -2325,14 +2328,6 @@ let fold_map_term
   | Mdotassetfield (an, k, fn) ->
     let ke, ka = f accu k in
     g (Mdotassetfield (an, ke, fn)), ka
-
-  | Mdotcontract (e, i) ->
-    let ee, ea = f accu e in
-    g (Mdotcontract (ee, i)), ea
-
-  | Maccestuple (e, i) ->
-    let ee, ea = f accu e in
-    g (Maccestuple (ee, i)), ea
 
 
   (* comparison operators *)

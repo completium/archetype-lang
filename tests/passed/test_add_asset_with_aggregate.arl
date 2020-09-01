@@ -1,4 +1,4 @@
-archetype effect_method_asset_add_asset_with_aggregate
+archetype test_add_asset_with_aggregate
 
 asset o_asset {
   oid : nat;
@@ -13,6 +13,6 @@ asset my_asset identified by id {
   anaggregate : aggregate<o_asset>;
 }
 
-entry exec () {
-  my_asset.add({id = "id3"; anaggregate = [1; 2; 3]})
+entry exec (n : nat) {
+  my_asset.add({id = "id3"; anaggregate = [n]})
 }

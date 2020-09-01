@@ -17,14 +17,12 @@ asset my_asset identified by id {
 }
 
 entry exec () {
-  effect {
-    my_asset.update ("my_id", {value = 3; myaggregate += [1; 2; 3] });
-    (*
-    sugar for
-    my_asset.update ("my_id", {value = 3});
-    my_asset["my_id"].myaggregate.add(1);
-    my_asset["my_id"].myaggregate.add(2);
-    my_asset["my_id"].myaggregate.add(3)
-    *)
-  }
+  my_asset.update ("my_id", {value = 3; myaggregate += [1; 2; 3] });
+  (*
+  sugar for
+  my_asset.update ("my_id", {value = 3});
+  my_asset["my_id"].myaggregate.add(1);
+  my_asset["my_id"].myaggregate.add(2);
+  my_asset["my_id"].myaggregate.add(3)
+  *)
 }

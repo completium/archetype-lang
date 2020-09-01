@@ -721,15 +721,6 @@ let pp_model fmt (model : model) =
           f k
           pp_id fn
 
-      | Mdotcontract (e, i) ->
-        Format.fprintf fmt "%a.%a"
-          f e
-          pp_id i
-
-      | Maccestuple (e, i) ->
-        Format.fprintf fmt "%a[%a]"
-          f e
-          pp_big_int i
 
       (* comparison operators *)
 

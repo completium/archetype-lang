@@ -13,14 +13,12 @@ asset my_asset identified by id {
 }
 
 entry exec () {
-  effect {
-    my_asset.update ("my_id", {value = 3; mypartition -= [1; 2; 3] })
-    (*
-    sugar for
-    my_asset.update ("my_id", {value = 3});
-    my_asset["my_id"].mypartition.remove(1);
-    my_asset["my_id"].mypartition.remove(2);
-    my_asset["my_id"].mypartition.remove(3)
-    *)
-  }
+  my_asset.update ("my_id", {value = 3; mypartition -= [1; 2; 3] })
+  (*
+  sugar for
+  my_asset.update ("my_id", {value = 3});
+  my_asset["my_id"].mypartition.remove(1);
+  my_asset["my_id"].mypartition.remove(2);
+  my_asset["my_id"].mypartition.remove(3)
+  *)
 }

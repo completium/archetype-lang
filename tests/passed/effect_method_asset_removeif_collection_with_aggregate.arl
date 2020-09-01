@@ -15,7 +15,5 @@ asset my_asset identified by id {
 }
 
 entry exec () {
-  effect {
-    my_asset.removeif(the.value = 1)
-  }
+  my_asset.removeif(the.value = 1)
 }
