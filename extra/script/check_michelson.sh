@@ -133,7 +133,7 @@ RET=0
 
 echo "Check michelson"
 echo ""
-echo "                                                             RET GEN COMPILE"
+echo "                                                                       RET GEN COMPILE"
 for i in $PASSED; do
     ${BIN} $i
     if [ $? -ne 0 ]; then

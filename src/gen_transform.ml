@@ -3227,7 +3227,7 @@ let remove_asset (model : model) : model =
                   end
                 | _ -> v, [], []
               in
-              (sk, sv @ [v], ags @ nags, pts @ npts)
+              (sk, sv @ [id, v], ags @ nags, pts @ npts)
             end
           ) (None, [], [], []) assoc_fields in
         let k =
@@ -3237,9 +3237,9 @@ let remove_asset (model : model) : model =
         in
         let v =
           match l with
-          | [] -> mk_mterm (Mtuple []) Tunit
-          | [v] -> v
-          | _ -> mk_mterm (Mtuple l) (Ttuple (List.map (fun (x : mterm) -> x.type_) l))
+          | [] -> mk_mterm (Munit) Tunit
+          | [v] -> snd v
+          | _ -> mk_mterm (Mlitrecord l) (Trecord (dumloc an))
         in
         k, v, ags, pts
       | _ -> raise Not_found

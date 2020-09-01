@@ -28,7 +28,7 @@ process_compile() {
 }
 
 process() {
-    printf '%-60s' $1
+    printf '%-70s' $1
     $BIN $1 >/dev/null 2>/dev/null
     RET=$?
     if [ $RET -eq 0 ]; then
