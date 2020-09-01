@@ -1,0 +1,16 @@
+archetype test_remove_asset_with_partition
+
+asset o_asset {
+  oid : nat;
+}
+
+asset my_asset identified by id {
+  id : string;
+  anaggregate : partition<o_asset>;
+} initialized by {
+  {"id3"; []}
+}
+
+entry exec () {
+  my_asset.remove("id3")
+}

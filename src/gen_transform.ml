@@ -3254,6 +3254,16 @@ let remove_asset (model : model) : model =
           f accu) [] pts
     in
 
+    let get_partitions an : (ident * ident) list =
+      let asset : asset = Utils.get_asset model an in
+      List.fold_left (fun accu (x : asset_item) ->
+          match x.original_type with
+          | Tcontainer (Tasset an, Partition) -> (unloc x.name, unloc an)::accu
+          | _ -> accu
+        ) [] asset.values
+      |> List.rev
+    in
+
     let get_instrs_add_with_partition pts =
       let ll = get_list_assets_partition pts in
       let linstrs = List.map (fun (an, l) ->
@@ -3271,6 +3281,43 @@ let remove_asset (model : model) : model =
           mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), a)) Tunit
         ) ll
       in linstrs
+    in
+
+    let remove_asset f an k =
+      let k = f k in
+      let va = get_asset_global an in
+
+      let new_value =
+        let node =
+          match va.type_ with
+          | Tset kt          -> Msetremove (kt, va, k)
+          | Tmap (_, kt, kv) -> Mmapremove (kt, kv, va, k)
+          | _ -> assert false
+        in
+        mk_mterm node va.type_
+      in
+
+      let assign = mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), new_value)) Tunit in
+
+      let partitions : (ident * ident) list = get_partitions an in
+
+      match partitions with
+      | [] -> assign
+      | _ -> begin
+          let l : mterm list = List.map (fun (fn, aan) ->
+              let viter_name = "_viter" in
+              let viter_id = dumloc viter_name in
+              let pk = Utils.get_asset_key model aan |> snd in
+              let pva : mterm = get_asset_global aan in
+              let viter : mterm = mk_mterm (Mvar (viter_id, Vstorecol, Tnone, Dnone)) pk in
+              let pnew_value : mterm = mk_mterm (Msetremove(pk, pva, viter) ) (Tset pk) in
+              let passign : mterm = mk_mterm (Massign (ValueAssign, pva.type_, Avarstore (get_asset_global_id aan), pnew_value)) Tunit in
+              let set_m : mterm = mk_mterm (Mdot((mk_mterm (Mget(an, CKcoll(Tnone, Dnone), k)) (Tasset (dumloc an))), dumloc fn)) pk in
+              let set : mterm = f set_m in
+              mk_mterm (Mfor (FIsimple viter_id, ICKset set, passign, None)) Tunit
+            ) partitions in
+          mk_mterm (Mseq (l @ [assign])) tunit
+        end
     in
 
     let rec fm ctx (mt : mterm) : mterm =
@@ -3408,22 +3455,7 @@ let remove_asset (model : model) : model =
 
       | Maddfield _ -> mt
 
-      | Mremoveasset (an, v) -> begin
-          let v = fm ctx v in
-          let va = get_asset_global an in
-
-          let new_value =
-            let node =
-              match va.type_ with
-              | Tset kt          -> Msetremove (kt, va, v)
-              | Tmap (_, kt, kv) -> Mmapremove (kt, kv, va, v)
-              | _ -> assert false
-            in
-            mk_mterm node va.type_
-          in
-
-          mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), new_value)) Tunit
-        end
+      | Mremoveasset (an, k) -> remove_asset (fm ctx) an k
 
       | Mremovefield _ -> mt
       | Mremoveall   _ -> mt
