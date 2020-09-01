@@ -3125,11 +3125,20 @@ let remove_asset (model : model) : model =
 
   let process_storage (model : model) : model * ((bool * bool) * (int MapString.t) * type_) MapString.t =
     let for_storage_item map (x : storage_item) =
+      let map_storage_mterm (mt : mterm) : mterm =
+        let rec aux (mt : mterm) : mterm =
+          match mt with
+          | { node = Massets l; type_ = Tcontainer (t, _)} -> mk_mterm (Mlitset (List.map aux l)) (Tset t)
+          | _ -> map_mterm aux mt
+        in
+        aux mt
+      in
       match x.model_type, x.typ with
       | MTasset an, Tmap (b, k, Tasset _) -> begin
           let ts, map_, is_single_record = for_type an in
           let type_ = Tmap (b, k, ts) in
-          { x with typ = type_ }, MapString.add an ((true, is_single_record), map_, type_) map
+          let default = map_storage_mterm x.default in
+          { x with typ = type_; default = default; }, MapString.add an ((true, is_single_record), map_, type_) map
         end
       | MTasset an, (Tset _ as t) -> x, MapString.add an ((false, false), MapString.empty, t) map
       | _ -> x, map
@@ -3294,6 +3303,34 @@ let remove_asset (model : model) : model =
           in
           let map_get = Mmapget (kt, vt, va, k) in
           mk_mterm map_get vt
+        end
+
+      (* control *)
+
+      | Mfor (FIsimple id, ICKcoll an, b, lbl) -> begin
+          let b = fm ctx b in
+          let va = get_asset_global an in
+          let node =
+            match va.type_ with
+            | Tset _ -> Mfor (FIsimple id, ICKset va, b, lbl)
+            | Tmap _ -> Mfor (FIdouble (id, dumloc "_v"), ICKmap va, b, lbl)
+            | _ -> assert false
+          in
+          { mt with node = node }
+        end
+
+      | Mfor (FIsimple id, ICKfield (_, _, c), b, lbl) -> begin
+          let b = fm ctx b in
+          let c = fm ctx c in
+          let node = Mfor (FIsimple id, ICKset c, b, lbl) in
+          { mt with node = node }
+        end
+
+      | Mfor (FIsimple id, ICKview v, b, lbl) -> begin
+          let b = fm ctx b in
+          let v = fm ctx v in
+          let node = Mfor (FIsimple id, ICKlist v, b, lbl) in
+          { mt with node = node }
         end
 
       (* effect *)
