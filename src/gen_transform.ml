@@ -3102,9 +3102,9 @@ let remove_asset (model : model) : model =
   let for_type an =
     let asset = Utils.get_asset model an in
     let map : int MapString.t = MapString.empty in
-    let ts, map, l = List.fold_left (fun (accu, map, i) (x : asset_item) ->
+    let _ts, fields, map, l = List.fold_left (fun (accu, fields, map, i) (x : asset_item) ->
         if List.exists (String.equal (unloc x.name)) asset.keys
-        then accu, map, i
+        then accu, fields, map, i
         else (
           let type_ =
             match x.type_ with
@@ -3112,15 +3112,16 @@ let remove_asset (model : model) : model =
             | Tcontainer (b, _) -> Tset (b)
             | t -> t
           in
-          (accu @ [type_], MapString.add (unloc x.name) i map, i + 1))
-      ) ([], map, 0) asset.values in
-    Ttuple ts, map, l <= 1
+          let fields = fields @ [unloc x.name, type_] in
+          (accu @ [type_], fields, MapString.add (unloc x.name) i map, i + 1))
+      ) ([], [], map, 0) asset.values in
+    Trecord (dumloc an), fields, map, l <= 1
   in
   let for_asset_type an =
     let _, kt = Utils.get_asset_key model an in
     if Utils.is_asset_single_field model an
     then kt
-    else Ttuple [kt; proj3_1 (for_type an)]
+    else Ttuple [kt; proj4_1 (for_type an)]
   in
 
   let process_storage (model : model) : model * ((bool * bool) * (int MapString.t) * type_) MapString.t =
@@ -3135,17 +3136,18 @@ let remove_asset (model : model) : model =
       in
       match x.model_type, x.typ with
       | MTasset an, Tmap (b, k, Tasset _) -> begin
-          let ts, map_, is_single_record = for_type an in
+          let ts, fields, map_, is_single_record = for_type an in
           let type_ = Tmap (b, k, ts) in
           let default = map_storage_mterm x.default in
-          { x with typ = type_; default = default; }, MapString.add an ((true, is_single_record), map_, type_) map
+          { x with typ = type_; default = default; }, [Drecord (mk_record (dumloc an) ~fields:(List.map (fun (id, t) -> mk_record_field (dumloc id) t) fields) )], MapString.add an ((true, is_single_record), map_, type_) map
         end
-      | MTasset an, (Tset _ as t) -> x, MapString.add an ((false, false), MapString.empty, t) map
-      | _ -> x, map
+      | MTasset an, (Tset _ as t) -> x, [], MapString.add an ((false, false), MapString.empty, t) map
+      | _ -> x, [], map
     in
-    let nstorage, map = List.fold_left (fun (accu, map) x -> let a, map = for_storage_item map x in (accu @ [a], map)) ([], MapString.empty) model.storage in
+    let nstorage, decls, map = List.fold_left (fun (accu, decls, map) x -> let a, ds, map = for_storage_item map x in (accu @ [a], decls @ ds, map)) ([], [], MapString.empty) model.storage in
     { model with
       storage = nstorage;
+      decls = model.decls @ decls;
     }, map
   in
 
