@@ -145,7 +145,7 @@ let to_ir (model : M.model) : T.ir =
         | -1 -> emit_error (FieldNotFoundFor (rn, fn))
         | _ -> res
       end
-    | _ -> assert false
+    | _ -> Format.eprintf "%a@." M.pp_type_ rt; assert false
   in
 
   let l = List.map (
@@ -318,6 +318,12 @@ let to_ir (model : M.model) : T.ir =
       | e::t -> List.fold_left (fun accu x -> T.Ibinop (Bpair, x, accu)) e t
     in
 
+    let access_record n x =
+      if n = 0
+      then T.icar x
+      else Tools.foldi T.icdr x n
+    in
+
     match mtt.node with
 
     (* lambda *)
@@ -472,7 +478,7 @@ let to_ir (model : M.model) : T.ir =
 
     (* access *)
 
-    | Mdot (e, i)           -> let n = get_record_index e.type_ (unloc i) in Tools.foldi (fun x -> T.Iunop (Ucdr, x)) (f e) n
+    | Mdot (e, i)           -> let n = get_record_index e.type_ (unloc i) in access_record n (f e)
     | Mdotassetfield _      -> emit_error (UnsupportedTerm ("Mdotassetfield"))
 
     (* comparison operators *)
@@ -535,10 +541,7 @@ let to_ir (model : M.model) : T.ir =
         | M.Tbuiltin Bcurrency, M.Tbuiltin Bnat -> T.idiv (f v) (T.imutez Big_int.unit_big_int)
         | _ -> f v
       end
-    | Mtupleaccess (x, n)      ->
-      if Big_int.eq_big_int Big_int.zero_big_int n
-      then T.icar (f x)
-      else Tools.foldi (fun x -> T.icdr x) (f x) (Big_int.int_of_big_int n)
+    | Mtupleaccess (x, n) -> access_record (Big_int.int_of_big_int n) (f x)
 
     (* set api expression *)
 

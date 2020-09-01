@@ -127,6 +127,8 @@ PASSED="\
 ./tests/passed/effect_control_for_aggregate.arl \
 ./tests/passed/effect_control_for_partition.arl \
 ./tests/passed/test_remove_asset_with_partition.arl \
+./tests/passed/test_addfield_aggregate.arl \
+./tests/passed/test_addfield_aggregate_2.arl \
 "
 
 RET=0
