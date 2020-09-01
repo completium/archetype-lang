@@ -782,6 +782,9 @@ module View
   (* ------------------------------------------------------------------------ *)
   predicate subset (v1 : view) (v2 : view) = I.subset v1.content v2.content
 
+  (* ------------------------------------------------------------------------ *)
+  axiom empty_subset : forall v. subset empty v 
+
 end
 
 (* FIELD is a sorted and unduped fset of key -------------------------------- *)
@@ -1387,6 +1390,12 @@ module Collection
   get k c = Some a <-> vcontains k (to_view c)
 
   (* ------------------------------------------------------------------------ *)
+  axiom mem_to_view : forall a c. mem a c <-> vcontains (keyt a) (to_view c)
+
+  (* ------------------------------------------------------------------------ *)
+  axiom empty_to_view : forall c. is_empty c -> to_view c = vmk Nil
+
+  (* ------------------------------------------------------------------------ *)
   let function select_to_coll (p : t -> bool) (c : collection) : collection
   ensures { forall e. mem e result <-> p e /\ mem e c }
   =
@@ -1401,17 +1410,17 @@ module Collection
 
   (* ------------------------------------------------------------------------ *)
   let function select (p : t -> bool) (c : collection) : view
-  ensures { forall k. vcontains k result -> exists e. get k c = Some e /\ p e }
-  ensures { forall e k. get k c = Some e -> p e <-> vcontains k result }
+  ensures { forall e k. get k c = Some e -> p e -> vcontains k result }
+  ensures { forall e. vcontains (keyt e) result -> p e }
   ensures { forall e k. get k c = Some e -> not (p e) -> not (vcontains k result) }
   =
   to_view (select_to_coll p c)
 
   (* ------------------------------------------------------------------------ *)
   let function select_view (p : t -> bool) (v : view) (c : collection) : view
-  ensures { forall k. vcontains k result -> vcontains k v }
-  ensures { forall k. vcontains k result -> forall e. get k c = Some e -> p e }
-  ensures { forall e k. get k c = Some e -> vcontains k v /\ p e <-> vcontains k result }
+  ensures { forall e k. vcontains k v -> get k c = Some e -> p e -> vcontains k result }
+  ensures { forall e. vcontains (keyt e) result -> p e }
+  ensures { forall e k. vcontains k v -> get k c = Some e -> not (p e) -> not (vcontains k result) }
   =
   select (fun x -> p x && vcontains (keyt x) v) c
 
