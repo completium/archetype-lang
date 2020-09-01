@@ -1,0 +1,15 @@
+archetype test_add_asset2_with_partition
+
+asset o_asset {
+  oid : nat;
+}
+
+asset my_asset identified by id {
+  id : string;
+  p : partition<o_asset>;
+  v : bool;
+}
+
+entry exec (n : nat) {
+  my_asset.add({id = "id3"; p = [{n}]; v = true})
+}

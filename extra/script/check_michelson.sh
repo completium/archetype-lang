@@ -122,12 +122,13 @@ PASSED="\
 ./tests/passed/effect_method_asset_add_asset_with_partition.arl \
 ./tests/passed/effect_method_asset_add_asset_with_partition_2.arl \
 ./tests/passed/test_add_asset_with_partition.arl \
+./tests/passed/test_add_asset2_with_partition.arl \
 ./tests/passed/test_add_asset_with_both.arl \
 ./tests/passed/effect_control_for_collection.arl \
 ./tests/passed/effect_control_for_aggregate.arl \
 ./tests/passed/effect_control_for_partition.arl \
 ./tests/passed/test_remove_asset_with_partition.arl \
-./tests/passed/test_addfield_aggregate.arl \
+./tests/passed/test_addfield_aggregate_1.arl \
 ./tests/passed/test_addfield_aggregate_2.arl \
 "
 

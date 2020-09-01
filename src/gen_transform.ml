@@ -3143,7 +3143,8 @@ let remove_asset (model : model) : model =
           let ts, fields, is_single_record = for_type an in
           let type_ = Tmap (b, k, ts) in
           let default = map_storage_mterm x.default in
-          { x with typ = type_; default = default; }, [Drecord (mk_record (dumloc an) ~fields:(List.map (fun (id, t) -> mk_record_field (dumloc id) t) fields) )], MapString.add an ((true, is_single_record), type_) map
+          let d = match fields with | [] | [_] -> [] | _ -> [Drecord (mk_record (dumloc an) ~fields:(List.map (fun (id, t) -> mk_record_field (dumloc id) t) fields) )] in
+          { x with typ = type_; default = default; }, d, MapString.add an ((true, is_single_record), type_) map
         end
       | MTasset an, (Tset _ as t) -> x, [], MapString.add an ((false, false), t) map
       | _ -> x, [], map
@@ -3194,7 +3195,11 @@ let remove_asset (model : model) : model =
       mk_mterm node tbool
     in
 
-    let get_asset_key_type x = Utils.get_asset_key model x |> snd in
+    let msg_KeyAlreadyExists              = "KeyAlreadyExists" in
+    let msg_KeyNotFound                   = "KeyNotFound" in
+    let msg_KeyNotFoundOrKeyAlreadyExists = "KeyNotFoundOrKeyAlreadyExists" in
+
+    (* let get_asset_key_type x = Utils.get_asset_key model x |> snd in *)
 
     let extract_key x = Utils.extract_key_value_from_masset model x in
 
@@ -3281,6 +3286,65 @@ let remove_asset (model : model) : model =
           mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), a)) Tunit
         ) ll
       in linstrs
+    in
+
+    let create_contains_asset_key an x =
+      let va = get_asset_global an in
+      let f x =
+        match va.type_ with
+        | Tset tk          -> Msetcontains (tk, va, x)
+        | Tmap (_, tk, tv) -> Mmapcontains (tk, tv, va, x)
+        | _ -> Format.eprintf "%a@." pp_type_ va.type_; assert false
+      in
+      mk_mterm (f x) tbool
+    in
+
+    let add_asset f an v =
+      begin
+        let v = f v in
+        (* let is_single, is_record = is_single_simple_record an in *)
+        let va = get_asset_global an in
+        let k, v, ags, pts = extract_key_value v in
+
+        let cond = get_contains_va va k in
+
+        let assign =
+          match va.type_ with
+          | Tset kt          ->  begin
+              let a = mk_mterm (Msetadd (kt, va, k)) va.type_ in
+              mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), a)) Tunit
+            end
+          | Tmap (_, kt, kv) -> begin
+              let a = mk_mterm (Mmapput (kt, kv, va, k, v)) va.type_ in
+              let b = mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), a)) Tunit in
+              match ags, pts with
+              | [], []   -> b
+              | (an, a)::t, [] -> begin
+                  let f = create_contains_asset_key in
+                  let c = List.fold_left (fun accu (an, x) -> mk_mterm (Mand (f an x, accu)) tbool) (f an a) t in
+                  mk_mterm (Mif (c, b, Some (fail msg_KeyNotFound))) Tunit
+                end
+              | [], (an, k, _)::t -> begin
+                  let f = create_contains_asset_key in
+                  let c = List.fold_left (fun accu (an, x, _) -> mk_mterm (Mor (f an x, accu)) tbool) (f an k) t in
+                  let linstrs = get_instrs_add_with_partition pts in
+                  let seq = mk_mterm (Mseq (b::linstrs)) Tunit in
+                  mk_mterm (Mif (c, fail msg_KeyAlreadyExists, Some seq)) Tunit
+                end
+              | (aan, aa)::at, pt ->
+                let f = create_contains_asset_key in
+                let c = List.fold_left (fun accu (an, x) -> mk_mterm (Mand (f an x, accu)) tbool) (f aan aa) at in
+                let c = List.fold_left (fun accu (an, x, _) -> mk_mterm (Mand (mnot (f an x), accu)) tbool) c pt in
+                let linstrs = get_instrs_add_with_partition pts in
+                let seq = mk_mterm (Mseq (b::linstrs)) Tunit in
+                mk_mterm (Mif (c, seq, Some (fail msg_KeyNotFoundOrKeyAlreadyExists))) Tunit
+            end
+          | _ -> assert false
+        in
+
+        let node_if = Mif (cond, fail msg_KeyAlreadyExists, Some assign) in
+        mk_mterm node_if Tunit
+      end
     in
 
     let remove_asset f an k =
@@ -3381,80 +3445,10 @@ let remove_asset (model : model) : model =
 
       (* effect *)
 
-      | Maddasset (an, v) -> begin
-          let v = fm ctx v in
-          (* let is_single, is_record = is_single_simple_record an in *)
-          let va = get_asset_global an in
-          let k, v, ags, pts = extract_key_value v in
+      | Maddasset (an, v) -> add_asset (fm ctx) an v
 
-          let cond = get_contains_va va k in
-
-          let assign =
-            match va.type_ with
-            | Tset kt          ->  begin
-                let a = mk_mterm (Msetadd (kt, va, k)) va.type_ in
-                mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), a)) Tunit
-              end
-            | Tmap (_, kt, kv) -> begin
-                let a = mk_mterm (Mmapput (kt, kv, va, k, v)) va.type_ in
-                let b = mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), a)) Tunit in
-                match ags, pts with
-                | [], []   -> b
-                | (an, a)::t, [] -> begin
-                    let f an x = mk_mterm (Msetcontains (get_asset_key_type an , get_asset_global an, x)) tbool in
-                    let c = List.fold_left (fun accu (an, x) -> mk_mterm (Mand (f an x, accu)) tbool) (f an a) t in
-                    mk_mterm (Mif (c, b, Some (fail "KeyNotFound"))) Tunit
-                  end
-                | [], (an, k, _)::t -> begin
-                    let f an x = mk_mterm (Msetcontains (get_asset_key_type an , get_asset_global an, x)) tbool in
-                    let c = List.fold_left (fun accu (an, x, _) -> mk_mterm (Mor (f an x, accu)) tbool) (f an k) t in
-                    let linstrs = get_instrs_add_with_partition pts in
-                    let seq = mk_mterm (Mseq (b::linstrs)) Tunit in
-                    mk_mterm (Mif (c, fail "KeyAlreadyExists", Some seq)) Tunit
-                  end
-                | (aan, aa)::at, pt ->
-                  let f an x = mk_mterm (Msetcontains (get_asset_key_type an , get_asset_global an, x)) tbool in
-                  let c = List.fold_left (fun accu (an, x) -> mk_mterm (Mand (f an x, accu)) tbool) (f aan aa) at in
-                  let c = List.fold_left (fun accu (an, x, _) -> mk_mterm (Mand (mnot (f an x), accu)) tbool) c pt in
-                  let linstrs = get_instrs_add_with_partition pts in
-                  let seq = mk_mterm (Mseq (b::linstrs)) Tunit in
-                  mk_mterm (Mif (c, seq, Some (fail "KeyNotFoundOrKeyAlreadyExists"))) Tunit
-              end
-            | _ -> assert false
-          in
-
-          let node_if = Mif (cond, fail "KeyAlreadyExists", Some assign) in
-          mk_mterm node_if Tunit
-        end
-
-      (* | Maddfield (an, _fn, k, _v) -> begin
-          let k = fm ctx k in
-          (* let v = fm ctx v in *)
-          let va = get_asset_global an in
-
-          let cond = get_contains_va va k in
-
-          let new_value =
-            let node =
-              match va.type_ with
-              | Tmap (_, kt, vt) -> begin
-                  let map_get = mk_mterm (Mmapget (kt, vt, va, k)) vt in
-                  Mmapput (kt, vt, va, k, map_get)
-                end
-              | _ -> assert false
-            in
-            mk_mterm node va.type_
-          in
-
-          let assign = mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), new_value)) Tunit in
-
-          let node_if = Mif (cond, fail "KeyNotFound", Some assign) in
-          mk_mterm node_if Tunit
-         end *)
-
-      | Maddfield (an, fn, ak, bk) -> begin
+      | Maddfield (an, fn, ak, b) -> begin
           let ak = fm ctx ak in
-          let bk = fm ctx bk in
 
           let va = get_asset_global an in
           let kt, vt =
@@ -3463,28 +3457,35 @@ let remove_asset (model : model) : model =
             | _ -> assert false
           in
 
-          let _is_single, is_record = is_single_simple_record an in
-          let aan, _c = Utils.get_field_container model an fn in
+          let _, is_record = is_single_simple_record an in
+          let aan, c = Utils.get_field_container model an fn in
           let atk = Utils.get_asset_key model aan |> snd in
-          let v : mterm =
-            if is_record
-            then begin
-              let get : mterm = mk_mterm (Mget(an, CKcoll (Tnone, Dnone), ak)) (Trecord (dumloc an)) in
-              get
-            end
-            else begin
-              let set : mterm = mk_mterm (Mget(an, CKcoll (Tnone, Dnone), ak)) (Tset atk) in
-              mk_mterm (Msetadd (atk, set, bk)) (Tset atk)
-            end
-          in
 
-          (* let set = mk_mterm (Mdot (), fn) (Tset tk) in
-             let nv = mk_mterm (Msetadd) *)
-
-
-          let nmap : mterm = mk_mterm (Mmapput (kt, vt, va, ak, v) ) va.type_ in
-          mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), nmap)) Tunit
-
+          match c with
+          | Aggregate ->
+            let bk = fm ctx b in
+            let v : mterm =
+              if is_record
+              then begin
+                let set : mterm = mk_mterm (Mmapget(kt, vt, va, ak)) (Tset atk) in
+                mk_mterm (Msetadd (atk, set, bk)) (Tset atk)
+              end
+              else begin
+                let get : mterm = mk_mterm (Mmapget(kt, vt, va, ak)) (Trecord (dumloc an)) in
+                get
+              end
+            in
+            let cond = create_contains_asset_key aan bk in
+            let nmap : mterm = mk_mterm (Mmapput (kt, vt, va, ak, v) ) va.type_ in
+            let assign = mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), nmap)) Tunit in
+            mk_mterm (Mif (cond, assign, Some (fail msg_KeyNotFound))) tunit
+          | Partition ->
+            let bk = extract_key b in
+            let bk = fm ctx bk in
+            let cond = create_contains_asset_key aan bk in
+            let seq = mk_mterm (Mseq [add_asset (fm ctx) an b]) tunit in
+            mk_mterm (Mif (cond, fail msg_KeyAlreadyExists, Some seq)) tunit
+          | _ -> assert false
         end
 
       | Mremoveasset (an, k) -> remove_asset (fm ctx) an k
