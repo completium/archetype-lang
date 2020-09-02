@@ -237,7 +237,7 @@ type instruction =
   | Ivar        of ident
   | Icall       of ident * instruction list
   | Iassign     of ident * instruction
-  | IassignRec  of ident * int * instruction
+  | IassignRec  of ident * int * int * instruction
   | Iif         of instruction * instruction * instruction
   | Iifnone     of instruction * instruction * (instruction -> instruction) * ident
   | Iifcons     of instruction * instruction * instruction
@@ -253,6 +253,7 @@ type instruction =
   | Ilist       of type_ * instruction list
   | Imap        of type_ * type_ * (instruction * instruction) list
   | Irecord     of instruction list
+  | Irecupdate  of instruction * int * (int * instruction) list (* value * size * (index, value) fields *)
   | Imichelson  of instruction list * code * ident list
 [@@deriving show {with_path = false}]
 

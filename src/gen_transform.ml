@@ -3464,15 +3464,19 @@ let remove_asset (model : model) : model =
           match c with
           | Aggregate ->
             let bk = fm ctx b in
+            let ts = Tset atk in
+            let add_set set = mk_mterm (Msetadd (atk, set, bk)) ts in
+            let get_ t = mk_mterm (Mmapget(kt, vt, va, ak)) t in
             let v : mterm =
               if is_record
               then begin
-                let set : mterm = mk_mterm (Mmapget(kt, vt, va, ak)) (Tset atk) in
-                mk_mterm (Msetadd (atk, set, bk)) (Tset atk)
+                add_set (get_ ts)
               end
               else begin
-                let get : mterm = mk_mterm (Mmapget(kt, vt, va, ak)) (Trecord (dumloc an)) in
-                get
+                let tr = Trecord (dumloc an) in
+                let get : mterm = get_ tr in
+                let set : mterm = mk_mterm (Mdot(get, dumloc fn)) (Tset atk) in
+                mk_mterm (Mrecupdate(get, [fn, add_set set])) tr
               end
             in
             let cond = create_contains_asset_key aan bk in
