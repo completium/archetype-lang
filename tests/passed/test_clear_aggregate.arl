@@ -1,0 +1,19 @@
+archetype test_clear_aggregate
+
+asset o_asset identified by oid {
+  oid : nat;
+}
+
+asset my_asset identified by id {
+  id     : string;
+  value  : int;
+  col    : aggregate<o_asset>;
+} initialized by {
+  {"id0"; 0; []};
+  {"id1"; 1; []};
+  {"id2"; 2; []}
+}
+
+entry exec () {
+  my_asset["id0"].col.clear()
+}

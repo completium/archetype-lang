@@ -3676,7 +3676,19 @@ let remove_asset (model : model) : model =
               let assign = fm ctx (mk_mterm (Mremoveall (an, fn, k)) tunit) in
               mk_mterm (Mseq [loop; assign]) tunit
             end
-          | _ -> assert false
+          | CKview l -> begin
+              let tk = Utils.get_asset_key model an |> snd in
+
+              let l = fm ctx l in
+
+              let var_id = dumloc "_ak" in
+              let var_value = mk_mterm (Mvar (var_id, Vlocal, Tnone, Dnone)) tk in
+
+              let b : mterm = remove_asset (fm ctx) an var_value in
+
+              mk_mterm (Mfor (FIsimple var_id, ICKlist l, b, None)) tunit
+            end
+          | CKdef _ -> assert false
         end
 
       | Mupdate (an, k, l) -> begin
@@ -3726,6 +3738,11 @@ let remove_asset (model : model) : model =
       | Maddupdate   _ -> mt
 
       (* expression *)
+
+      | Mselect (an, _, _, _, _) -> begin
+          let tk = Utils.get_asset_key model an |> snd in
+          mk_mterm (Mlitlist []) (Tlist tk)
+      end
 
       | Mcount (an, CKcoll _) -> begin
           let va = get_asset_global an in
