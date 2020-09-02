@@ -3461,9 +3461,7 @@ let remove_asset (model : model) : model =
           let aan, c = Utils.get_field_container model an fn in
           let atk = Utils.get_asset_key model aan |> snd in
 
-          match c with
-          | Aggregate ->
-            let bk = fm ctx b in
+          let mk_assign bk =
             let ts = Tset atk in
             let add_set set = mk_mterm (Msetadd (atk, set, bk)) ts in
             let get_ t = mk_mterm (Mmapget(kt, vt, va, ak)) t in
@@ -3479,16 +3477,21 @@ let remove_asset (model : model) : model =
                 mk_mterm (Mrecupdate(get, [fn, add_set set])) tr
               end
             in
-            let cond = create_contains_asset_key aan bk in
             let nmap : mterm = mk_mterm (Mmapput (kt, vt, va, ak, v) ) va.type_ in
-            let assign = mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), nmap)) Tunit in
+            mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), nmap)) Tunit
+          in
+
+          match c with
+          | Aggregate ->
+            let bk = fm ctx b in
+            let assign = mk_assign bk in
+            let cond = create_contains_asset_key aan bk in
             mk_mterm (Mif (cond, assign, Some (fail msg_KeyNotFound))) tunit
           | Partition ->
             let bk = extract_key b in
             let bk = fm ctx bk in
-            let cond = create_contains_asset_key aan bk in
-            let seq = mk_mterm (Mseq [add_asset (fm ctx) an b]) tunit in
-            mk_mterm (Mif (cond, fail msg_KeyAlreadyExists, Some seq)) tunit
+            let assign = mk_assign bk in
+            mk_mterm (Mseq [add_asset (fm ctx) aan b; assign]) tunit
           | _ -> assert false
         end
 

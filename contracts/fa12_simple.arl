@@ -10,7 +10,7 @@ asset ledger identified by holder to big_map {
 }
 
 entry %transfer (from_ : int, to_ : int, value : nat) {
-  ledger./*add*/update(to_, { tokens += value });
+  ledger./*add*/update(to_, { tokens += (value + 1) });
   ledger.update(from_, { tokens -= value });
 }
 

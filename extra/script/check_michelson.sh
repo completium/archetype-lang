@@ -139,6 +139,8 @@ PASSED="\
 ./tests/passed/test_asset_update_2.arl \
 ./tests/passed/test_asset_update_3.arl \
 ./tests/passed/test_asset_update_4.arl \
+./tests/passed/test_addfield_partition_1.arl \
+./tests/passed/test_addfield_partition_2.arl \
 "
 
 RET=0
