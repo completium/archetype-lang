@@ -3498,8 +3498,51 @@ let remove_asset (model : model) : model =
       | Mremoveall   _ -> mt
       | Mremoveif    _ -> mt
       | Mclear       _ -> mt
-      | Mset         _ -> mt
-      | Mupdate      _ -> mt
+
+      | Mupdate (an, k, l) -> begin
+          let k = fm ctx k in
+
+          let va = get_asset_global an in
+
+          let _, is_record = is_single_simple_record an in
+
+          let kt, tasset =
+            match get_type_for_asset_container an with
+            | Tmap (_, kt, vt) -> kt, vt
+            | _ -> assert false
+          in
+
+          let v : mterm =
+            if is_record
+            then begin
+              match l with
+              | [] -> assert false
+              | [(_, op, v)] -> begin
+                  match op with
+                  | ValueAssign -> let v = fm ctx v in v
+                  | _ -> assert false
+                end
+              | _ -> assert false
+            end
+            else begin
+              let get : mterm = mk_mterm (Mmapget(kt, tasset, va, k)) tasset in
+              let ll = List.map (fun (id, op, v) ->
+                  match op with
+                  | ValueAssign -> begin
+                      let v = fm ctx v in
+                      unloc id, v
+                    end
+                  | _ -> assert false
+                ) l in
+              mk_mterm (Mrecupdate(get, ll)) tasset
+            end
+          in
+
+          let nmap = mk_mterm (Mmapput (kt, tasset, va, k, v)) va.type_ in
+
+          mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), nmap)) Tunit
+        end
+
       | Maddupdate   _ -> mt
 
       (* expression *)
