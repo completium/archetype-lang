@@ -1047,14 +1047,7 @@ let to_michelson (ir : T.ir) : T.michelson =
     | Irecord l -> fold env l
     | Irecupdate (x, s, l) -> begin
         match l with
-        | [n, v] ->
-          if n = 0
-          then
-            let x, env = fe env x in
-            if s = 1
-            then T.SEQ ([ x ; T.DROP 1; (fe env v |> fst)]), env
-            else T.SEQ ([ x ; T.UNPAIR; T.DROP 1; (fe env v |> fst); T.PAIR]), env
-          else begin
+        | [n, v] -> begin
             let x, env = fe env x in
             let rec g (s, env) x =
               if x = 0
@@ -1066,7 +1059,12 @@ let to_michelson (ir : T.ir) : T.michelson =
               end
             in
             let a = g (s, env) n in
-            T.SEQ ([ x ; T.UNPAIR] @ a @ [T.PAIR]), env
+            let b =
+              if s = 1
+              then a
+              else [T.UNPAIR] @ a @ [T.PAIR]
+            in
+            T.SEQ ([ x ] @ b), env
           end
         | _ -> assert false
       end
