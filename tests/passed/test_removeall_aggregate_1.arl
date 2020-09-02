@@ -1,0 +1,22 @@
+archetype test_removeall_aggregate_1
+
+asset o_asset identified by oid {
+  oid : nat;
+} initialized by {
+  {0};
+  {1};
+  {2}
+}
+
+asset my_asset identified by id {
+  id     : string;
+  col    : aggregate<o_asset>;
+} initialized by {
+  {"id0"; []};
+  {"id1"; []};
+  {"id2"; []}
+}
+
+entry exec () {
+  my_asset["id0"].col.removeall()
+}

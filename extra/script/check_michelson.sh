@@ -145,6 +145,10 @@ PASSED="\
 ./tests/passed/test_removefield_aggregate_2.arl \
 ./tests/passed/test_removefield_partition_1.arl \
 ./tests/passed/test_removefield_partition_2.arl \
+./tests/passed/test_removeall_aggregate_1.arl \
+./tests/passed/test_removeall_aggregate_2.arl \
+./tests/passed/test_removeall_partition_1.arl \
+./tests/passed/test_removeall_partition_2.arl \
 "
 
 RET=0
