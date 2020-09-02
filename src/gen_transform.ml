@@ -3497,7 +3497,48 @@ let remove_asset (model : model) : model =
 
       | Mremoveasset (an, k) -> remove_asset (fm ctx) an k
 
-      | Mremovefield _ -> mt
+      | Mremovefield (an, fn, ak, b) -> begin
+          let ak = fm ctx ak in
+          let bk = fm ctx b in
+
+          let va = get_asset_global an in
+          let kt, vt =
+            match va.type_ with
+            | Tmap (_, kt, vt) -> kt, vt
+            | _ -> assert false
+          in
+
+          let _, is_record = is_single_simple_record an in
+          let aan, c = Utils.get_field_container model an fn in
+          let atk = Utils.get_asset_key model aan |> snd in
+
+          let mk_assign bk =
+            let ts = Tset atk in
+            let add_set set = mk_mterm (Msetremove (atk, set, bk)) ts in
+            let get_ t = mk_mterm (Mmapget(kt, vt, va, ak)) t in
+            let v : mterm =
+              if is_record
+              then begin
+                add_set (get_ ts)
+              end
+              else begin
+                let tr = Trecord (dumloc an) in
+                let get : mterm = get_ tr in
+                let set : mterm = mk_mterm (Mdot(get, dumloc fn)) (Tset atk) in
+                mk_mterm (Mrecupdate(get, [fn, add_set set])) tr
+              end
+            in
+            let nmap : mterm = mk_mterm (Mmapput (kt, vt, va, ak, v) ) va.type_ in
+            mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), nmap)) Tunit
+          in
+
+          match c with
+          | Aggregate -> mk_assign bk
+          | Partition ->
+            let assign = mk_assign bk in
+            mk_mterm (Mseq [remove_asset (fm ctx) aan b; assign]) tunit
+          | _ -> assert false
+        end
       | Mremoveall   _ -> mt
       | Mremoveif    _ -> mt
       | Mclear       _ -> mt

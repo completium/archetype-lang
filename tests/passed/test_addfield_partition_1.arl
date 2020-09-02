@@ -1,4 +1,4 @@
-archetype test_addfield_partition
+archetype test_addfield_partition_1
 
 asset o_asset identified by oid {
   oid : string;
