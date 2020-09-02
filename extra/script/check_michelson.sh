@@ -149,6 +149,10 @@ PASSED="\
 ./tests/passed/test_removeall_aggregate_2.arl \
 ./tests/passed/test_removeall_partition_1.arl \
 ./tests/passed/test_removeall_partition_2.arl \
+./tests/passed/effect_method_asset_clear_asset.arl \
+./tests/passed/effect_method_asset_clear_asset_one_field.arl \
+./tests/passed/effect_method_asset_clear_asset_with_aggregate.arl \
+./tests/passed/effect_method_asset_clear_asset_with_partition.arl \
 "
 
 RET=0

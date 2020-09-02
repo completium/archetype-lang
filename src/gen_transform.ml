@@ -3602,7 +3602,53 @@ let remove_asset (model : model) : model =
         end
 
       | Mremoveif    _ -> mt
-      | Mclear       _ -> mt
+
+      | Mclear (an, ck) -> begin
+          match ck with
+          | CKcoll _ -> begin
+              let va = get_asset_global an in
+              let _, is_record = is_single_simple_record an in
+              let empty =
+                let node =
+                  match va.type_ with
+                  | Tset _ -> Mlitset []
+                  | Tmap _ -> Mlitmap []
+                  | _ -> assert false
+                in
+                mk_mterm node va.type_
+              in
+
+              let mk_loop fn aan =
+                let tv =
+                  match va.type_ with
+                  | Tmap (_, _, tv) ->tv
+                  | _ -> assert false
+                in
+                let var_id = dumloc "_v" in
+                let var_value : mterm = mk_mterm (Mvar (var_id, Vlocal, Tnone, Dnone)) tv in
+                let atk = Utils.get_asset_key model aan |> snd in
+                let set =
+                  if is_record
+                  then var_value
+                  else mk_mterm (Mdot (var_value, dumloc fn)) (Tset atk)
+                in
+                let loop : mterm =
+                  let var_id = dumloc "_ak" in
+                  let var_value = mk_mterm (Mvar (var_id, Vlocal, Tnone, Dnone)) atk in
+                  let b : mterm = remove_asset (fm ctx) aan var_value in
+                  mk_mterm (Mfor (FIsimple var_id, ICKset set, b, None)) tunit
+                in
+                mk_mterm (Mfor (FIdouble (dumloc "_k", var_id), ICKmap va, loop, None)) tunit
+              in
+
+              let assign = mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), empty)) Tunit in
+              let partitions = get_partitions an in
+              match partitions with
+              | [] -> assign
+              | _ -> mk_mterm (Mseq ((List.map (fun (fn, aan) -> mk_loop fn aan) partitions) @ [assign])) tunit
+            end
+          | _ -> assert false
+        end
 
       | Mupdate (an, k, l) -> begin
           let k = fm ctx k in
