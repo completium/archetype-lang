@@ -11,11 +11,11 @@ asset o_asset identified by oid {
 asset my_asset identified by id {
   id     : string;
   col    : aggregate<o_asset>;
-  val    : bool;
+  val    : nat;
 } initialized by {
-  {"id0"; []; true};
-  {"id1"; []; true};
-  {"id2"; []; true}
+  {"id0"; []; 0};
+  {"id1"; []; 0};
+  {"id2"; []; 0}
 }
 
 entry exec (n : nat) {

@@ -181,14 +181,14 @@ let rec pp_instruction fmt (i : instruction) =
   | Iseq l -> (pp_list ";@\n" f) fmt l
   | IletIn (id, v, b) -> Format.fprintf fmt "let %a = %a in@\n  @[%a@]" pp_id id f v f b
   | Ivar id -> pp_id fmt id
-  | Icall (id, args)       -> Format.fprintf fmt "%a(%a)" pp_id id (pp_list ", " f) args
-  | Iassign (id, v)        -> Format.fprintf fmt "%a := @[%a@]" pp_id id f v
-  | IassignRec (id, n, v)  -> Format.fprintf fmt "%a[%i] := @[%a@]" pp_id id n f v
-  | Iif (c, t, e)          -> pp "if (%a)@\nthen @[%a@]@\nelse @[%a@]" f c f t f e
-  | Iifnone (v, t, fe, id) -> pp "if_none (%a)@\nthen @[%a@]@\nelse @[fun %s -> %a@]" f v f t id f (fe(Ivar id))
-  | Iifcons (v, t, e)      -> pp "if_cons (%a)@\nthen @[%a@]@\nelse @[%a@]" f v f t f e
-  | Iwhile (c, b)          -> pp "while (%a) do@\n  @[%a@]@\ndone" f c f b
-  | Iiter (ids, c, b)      -> pp "iter %a on (%a) do@\n  @[%a@]@\ndone" (pp_list ", " pp_id) ids f c f b
+  | Icall (id, args)         -> Format.fprintf fmt "%a(%a)" pp_id id (pp_list ", " f) args
+  | Iassign (id, v)          -> Format.fprintf fmt "%a := @[%a@]" pp_id id f v
+  | IassignRec (id, s, n, v) -> Format.fprintf fmt "%a[%i]/* size = %i */ := @[%a@]" pp_id id n s f v
+  | Iif (c, t, e)            -> pp "if (%a)@\nthen @[%a@]@\nelse @[%a@]" f c f t f e
+  | Iifnone (v, t, fe, id)   -> pp "if_none (%a)@\nthen @[%a@]@\nelse @[fun %s -> %a@]" f v f t id f (fe(Ivar id))
+  | Iifcons (v, t, e)        -> pp "if_cons (%a)@\nthen @[%a@]@\nelse @[%a@]" f v f t f e
+  | Iwhile (c, b)            -> pp "while (%a) do@\n  @[%a@]@\ndone" f c f b
+  | Iiter (ids, c, b)        -> pp "iter %a on (%a) do@\n  @[%a@]@\ndone" (pp_list ", " pp_id) ids f c f b
   | Izop op -> begin
       match op with
       | Znow               -> pp_id fmt "now"
@@ -257,11 +257,12 @@ let rec pp_instruction fmt (i : instruction) =
       | Cle        -> pp "(%a) <= (%a)"      f lhs f rhs
       | Cge        -> pp "(%a) >= (%a)"      f lhs f rhs
     end
-  | Iconst (t, e)     -> pp "const(%a : %a)" pp_data e pp_type t
-  | Iset (t, l)       -> pp "set<%a>[%a]" pp_type t (pp_list "; " f) l
-  | Ilist (t, l)      -> pp "list<%a>[%a]" pp_type t (pp_list "; " f) l
-  | Imap (k, v, l)    -> pp "map<%a, %a>[%a]" pp_type k pp_type v (pp_list "; " (fun fmt (vk, vv) -> Format.fprintf fmt "%a : %a" f vk f vv)) l
-  | Irecord l         -> pp "record[%a]" (pp_list "; " f) l
+  | Iconst (t, e)        -> pp "const(%a : %a)" pp_data e pp_type t
+  | Iset (t, l)          -> pp "set<%a>[%a]" pp_type t (pp_list "; " f) l
+  | Ilist (t, l)         -> pp "list<%a>[%a]" pp_type t (pp_list "; " f) l
+  | Imap (k, v, l)       -> pp "map<%a, %a>[%a]" pp_type k pp_type v (pp_list "; " (fun fmt (vk, vv) -> Format.fprintf fmt "%a : %a" f vk f vv)) l
+  | Irecord l            -> pp "record[%a]" (pp_list "; " f) l
+  | Irecupdate (x, s, l) -> pp "recupdate[size=%i| %a with [@[%a@]]]" s f x (pp_list "; " (fun fmt (i, v) -> Format.fprintf fmt "%i: (%a)" i f v)) l
   | Imichelson (a, c, v) -> pp "michelson [%a] (%a) {%a}" (pp_list "; " pp_id) v (pp_list "; " f) a pp_code c
 
 let pp_func fmt (f : func) =

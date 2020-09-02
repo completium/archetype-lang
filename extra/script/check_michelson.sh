@@ -130,6 +130,15 @@ PASSED="\
 ./tests/passed/test_remove_asset_with_partition.arl \
 ./tests/passed/test_addfield_aggregate_1.arl \
 ./tests/passed/test_addfield_aggregate_2.arl \
+./tests/passed/test_record.arl \
+./tests/passed/test_record_assign_1.arl \
+./tests/passed/test_record_assign_2.arl \
+./tests/passed/test_record_assign_3.arl \
+./tests/passed/test_record_assign_full.arl \
+./tests/passed/test_asset_update.arl \
+./tests/passed/test_asset_update_2.arl \
+./tests/passed/test_asset_update_3.arl \
+./tests/passed/test_asset_update_4.arl \
 "
 
 RET=0

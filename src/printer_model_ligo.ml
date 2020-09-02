@@ -1130,6 +1130,15 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (x, k)
 
+    | Mrecupdate (x, l) ->
+      let pp fmt (x, l) =
+        Format.fprintf fmt "%a with record [%a]"
+          f x
+          (pp_list " " (fun fmt (i, v) -> Format.fprintf fmt "%s = %a" i f v)) l
+      in
+      pp fmt (x, l)
+
+
     (* set api expression *)
 
     | Msetadd (_, c, a) ->

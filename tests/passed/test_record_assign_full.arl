@@ -1,0 +1,26 @@
+archetype test_record_assign_full
+
+record my_record {
+  v0 : string;
+  v1 : nat;
+  v2 : int;
+  v3 : bool;
+}
+
+variable res : my_record = {""; 0; 0i; false}
+
+entry setv0 (v : string) {
+  res.v0 := v;
+}
+
+entry setv1 (v : nat) {
+  res.v1 := v;
+}
+
+entry setv2 (v : int) {
+  res.v2 := v;
+}
+
+entry setv3 (v : bool) {
+  res.v3 := v;
+}

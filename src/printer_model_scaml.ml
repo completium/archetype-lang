@@ -1090,6 +1090,14 @@ let pp_model fmt (model : model) =
         in
         pp fmt (x, k)
 
+      | Mrecupdate (x, l) ->
+        let pp fmt (x, l) =
+          Format.fprintf fmt "{ %a with %a }"
+            f x
+            (pp_list " " (fun fmt (i, v) -> Format.fprintf fmt "%s = %a" i f v)) l
+        in
+        pp fmt (x, l)
+
 
       (* set api expression *)
 

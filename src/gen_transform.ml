@@ -3464,15 +3464,19 @@ let remove_asset (model : model) : model =
           match c with
           | Aggregate ->
             let bk = fm ctx b in
+            let ts = Tset atk in
+            let add_set set = mk_mterm (Msetadd (atk, set, bk)) ts in
+            let get_ t = mk_mterm (Mmapget(kt, vt, va, ak)) t in
             let v : mterm =
               if is_record
               then begin
-                let set : mterm = mk_mterm (Mmapget(kt, vt, va, ak)) (Tset atk) in
-                mk_mterm (Msetadd (atk, set, bk)) (Tset atk)
+                add_set (get_ ts)
               end
               else begin
-                let get : mterm = mk_mterm (Mmapget(kt, vt, va, ak)) (Trecord (dumloc an)) in
-                get
+                let tr = Trecord (dumloc an) in
+                let get : mterm = get_ tr in
+                let set : mterm = mk_mterm (Mdot(get, dumloc fn)) (Tset atk) in
+                mk_mterm (Mrecupdate(get, [fn, add_set set])) tr
               end
             in
             let cond = create_contains_asset_key aan bk in
@@ -3494,8 +3498,51 @@ let remove_asset (model : model) : model =
       | Mremoveall   _ -> mt
       | Mremoveif    _ -> mt
       | Mclear       _ -> mt
-      | Mset         _ -> mt
-      | Mupdate      _ -> mt
+
+      | Mupdate (an, k, l) -> begin
+          let k = fm ctx k in
+
+          let va = get_asset_global an in
+
+          let _, is_record = is_single_simple_record an in
+
+          let kt, tasset =
+            match get_type_for_asset_container an with
+            | Tmap (_, kt, vt) -> kt, vt
+            | _ -> assert false
+          in
+
+          let v : mterm =
+            if is_record
+            then begin
+              match l with
+              | [] -> assert false
+              | [(_, op, v)] -> begin
+                  match op with
+                  | ValueAssign -> let v = fm ctx v in v
+                  | _ -> assert false
+                end
+              | _ -> assert false
+            end
+            else begin
+              let get : mterm = mk_mterm (Mmapget(kt, tasset, va, k)) tasset in
+              let ll = List.map (fun (id, op, v) ->
+                  match op with
+                  | ValueAssign -> begin
+                      let v = fm ctx v in
+                      unloc id, v
+                    end
+                  | _ -> assert false
+                ) l in
+              mk_mterm (Mrecupdate(get, ll)) tasset
+            end
+          in
+
+          let nmap = mk_mterm (Mmapput (kt, tasset, va, k, v)) va.type_ in
+
+          mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), nmap)) Tunit
+        end
+
       | Maddupdate   _ -> mt
 
       (* expression *)

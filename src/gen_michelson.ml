@@ -134,6 +134,16 @@ let to_ir (model : M.model) : T.ir =
 
   in
 
+  let get_record_size (rt : M.type_) : int =
+    match rt with
+    | M.Trecord rn -> begin
+        let rn = unloc rn in
+        let r : M.record = M.Utils.get_record model rn in
+        List.length r.fields
+      end
+    | _ -> Format.eprintf "%a@." M.pp_type_ rt; assert false
+  in
+
   let get_record_index (rt : M.type_) fn =
     match rt with
     | M.Trecord rn -> begin
@@ -339,7 +349,8 @@ let to_ir (model : M.model) : T.ir =
     | Massign (_op, _, Avarstore id, v)            -> T.Iassign (unloc id, f v)
     | Massign (_op, _, Aasset (_an, _fn, _k), _v)  -> emit_error TODO
     | Massign (_op, _, Arecord (_rn, fn, {node = Mvar (id, _, _, _); type_ = t}), v) -> begin
-        let n = get_record_index t (unloc fn) in T.IassignRec (unloc id, n, f v)
+        let s = get_record_size t in
+        let n = get_record_index t (unloc fn) in T.IassignRec (unloc id, s, n, f v)
       end
     | Massign (_op, _, Arecord _, _v)              -> T.iskip
     | Massign (_op, _, Astate, _x)                 -> emit_error TODO
@@ -542,6 +553,14 @@ let to_ir (model : M.model) : T.ir =
         | _ -> f v
       end
     | Mtupleaccess (x, n) -> access_record (Big_int.int_of_big_int n) (f x)
+    | Mrecupdate (x, l) ->
+      let s = get_record_size mtt.type_ in
+      let ll =
+        l
+        |> List.map (fun (i, v) -> get_record_index mtt.type_ i, f v)
+        |> List.sort (fun (i1, _) (i2, _) -> i1 - i2)
+      in
+      T.Irecupdate (f x, s, ll)
 
     (* set api expression *)
 
@@ -858,12 +877,8 @@ let to_michelson (ir : T.ir) : T.michelson =
         assign env id v
       end
 
-    | IassignRec (id, n, v) ->
-      let v, _ = fe env v in
-      let unfold = foldi (fun x -> T.UNPAIR::T.SWAP::x ) [] n in
-      let fold = foldi (fun x -> T.SWAP::T.PAIR::x ) [] n in
-      let a, _ = f (Ivar id) in
-      let v = T.SEQ ([ a ] @ unfold @ [ T.DROP 1; v ] @ fold) in
+    | IassignRec (id, s, n, v) ->
+      let v, _ = fe env (Irecupdate (Ivar id, s, [n, v])) in
       assign env id v
 
     | Iif (c, t, e) -> begin
@@ -1035,6 +1050,29 @@ let to_michelson (ir : T.ir) : T.michelson =
                     T.SEQ [y; T.SOME; x; T.UPDATE ] ))), inc_env env
       end
     | Irecord l -> fold env l
+    | Irecupdate (x, s, l) -> begin
+        let x, env = fe env x in
+        let rec g (l, env) x =
+          match l with
+          | [] -> []
+          | (n, v)::q -> begin
+              if x = n
+              then let v, _ = fe env v in [T.DROP 1; v] @ g (q, env) x
+              else begin
+                if s = x + 2
+                then [T.SWAP ] @ g (l, env) (x + 1) @ [T.SWAP]
+                else [T.SWAP; T.UNPAIR ] @ g (l, inc_env env) (x + 1) @ [T.PAIR; T.SWAP]
+              end
+            end
+        in
+        let a = g (l, env) 0 in
+        let b =
+          if s = 1
+          then a
+          else [T.UNPAIR] @ a @ [T.PAIR]
+        in
+        T.SEQ ([ x ] @ b), env
+      end
 
     | Imichelson (a, c, v) -> begin
         let a, _ = seq env a in
