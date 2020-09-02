@@ -555,7 +555,12 @@ let to_ir (model : M.model) : T.ir =
     | Mtupleaccess (x, n) -> access_record (Big_int.int_of_big_int n) (f x)
     | Mrecupdate (x, l) ->
       let s = get_record_size mtt.type_ in
-      T.Irecupdate (f x, s, List.map (fun (i, v) -> get_record_index mtt.type_ i, f v) l)
+      let ll =
+        l
+        |> List.map (fun (i, v) -> get_record_index mtt.type_ i, f v)
+        |> List.sort (fun (i1, _) (i2, _) -> i1 - i2)
+      in
+      T.Irecupdate (f x, s, ll)
 
     (* set api expression *)
 

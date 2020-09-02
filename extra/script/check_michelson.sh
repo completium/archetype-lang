@@ -135,6 +135,9 @@ PASSED="\
 ./tests/passed/test_record_assign_2.arl \
 ./tests/passed/test_record_assign_3.arl \
 ./tests/passed/test_record_assign_full.arl \
+./tests/passed/test_asset_update.arl \
+./tests/passed/test_asset_update_2.arl \
+./tests/passed/test_asset_update_3.arl \
 "
 
 RET=0
