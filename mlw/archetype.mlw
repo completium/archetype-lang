@@ -239,8 +239,8 @@ module Utils
 
   val function from_int int : arstring
 
-  axiom from_int_spec : forall i.
-  from_int i = S.from_int i
+  (* axiom from_int_spec : forall i.
+  from_int i = S.from_int i *)
 
   (* ----------------------------------------------------------------------- *)
   (* Option *)
@@ -1375,6 +1375,7 @@ module Collection
   (* ----------------------------------------------------------------------- *)
   let rec function to_view (c : collection) : view
   ensures { forall k. vcontains k result -> exists e. get k c = Some e }
+  ensures { forall e. mem e c -> vcontains (keyt e) result }
   ensures { K.sorted (velts result) }
   (* TODO dedicated sort predicate that does not use velts ? *)
   =
@@ -1383,11 +1384,6 @@ module Collection
   (* ------------------------------------------------------------------------ *)
   lemma get_to_view_contains_false : forall k c.
   not (vcontains k (to_view c)) <-> get k c = None
-
-  (* ------------------------------------------------------------------------ *)
-  lemma get_to_view_contains_true : forall k c a.
-  keyt a = k ->
-  get k c = Some a <-> vcontains k (to_view c)
 
   (* ------------------------------------------------------------------------ *)
   axiom mem_to_view : forall a c. mem a c <-> vcontains (keyt a) (to_view c)
@@ -1755,12 +1751,12 @@ module Sum
 
   (* ------------------------------------------------------------------------ *)
   axiom effect_add : forall a c.
-  not (contains (keyt a) (to_view c)) -> 
+  get (keyt a) c = None -> 
   sum (to_view (add a c)) (add a c) = sum (to_view c) c + field a
 
   (* ------------------------------------------------------------------------ *)
   axiom effect_remove : forall a c.
-  contains (keyt a) (to_view c) -> 
+  get (keyt a) c = Some a -> 
   sum (to_view (remove (keyt a) c)) (remove (keyt a) c) = sum (to_view c) c - field a
 
   (* ------------------------------------------------------------------------ *)
