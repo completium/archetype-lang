@@ -239,9 +239,9 @@ module Utils
 
   val function from_int int : arstring
 
-  (* axiom from_int_spec : forall i.
-  from_int i = S.from_int i *)
-
+(*  axiom from_int_spec : forall i.
+  from_int i = S.from_int i
+*)
   (* ----------------------------------------------------------------------- *)
   (* Option *)
 
@@ -566,13 +566,13 @@ module CollectionSet
   let function mk (l : list t) = F.mk l
 
   (* ------------------------------------------------------------------------ *)
-  let function card (s : cset) = F.fcard s
+  let function card (s : cset) = F.fcard s 
 
   (* GET INTERNAL ----------------------------------------------------------- *)
   let rec function internal_get (k : tk) (l : list t) : option t
   variant { l }
   ensures { forall e. result = Some e -> proj e = k }
-  ensures { result = None -> forall e. M.mem e l -> proj e <> k }
+  ensures { result = None -> forall e. M.mem e l -> proj e <> k } 
   =
   match l with
   | Cons e tl ->
@@ -585,13 +585,13 @@ module CollectionSet
   (* GET -------------------------------------------------------------------- *)
   let function get (k : tk) (s : cset) : option t
   ensures { result = None -> forall e. F.fmem e s -> proj e <> k }
-  ensures { forall e. result = Some e -> proj e = k }
+  ensures { forall e. result = Some e -> proj e = k } 
   = internal_get k (F.content s)
 
   (* ADD -------------------------------------------------------------------- *)
   let function add (a : t) (s : cset) : cset
   ensures { forall k. k <> proj a -> get k result = get k s }
-  ensures { get (proj a) result = Some a }
+  ensures { get (proj a) result = Some a } 
   = F.mk (Cons a (F.content s))  (* normalisation is done by F.mk *)
 
   (* REMOVE ----------------------------------------------------------------- *)
@@ -784,7 +784,7 @@ module View
 
   (* ------------------------------------------------------------------------ *)
   axiom empty_subset : forall v. subset empty v 
-
+ 
 end
 
 (* FIELD is a sorted and unduped fset of key -------------------------------- *)
@@ -843,7 +843,7 @@ module Field
   predicate mem (k : tk) (f : field) = N.mem k f
 
   (* ------------------------------------------------------------------------ *)
-  let function contains (k : tk) (f : field) : bool
+ let function contains (k : tk) (f : field) : bool
   ensures { result = true -> exists e. mem e f /\ e = k }
   ensures { result = false -> N.get k f = None }
   (* TODO is this valid ? result <-> mem e f *)
@@ -1238,7 +1238,7 @@ module Collection
   (* ------------------------------------------------------------------------ *)
   let function elts (c : collection) : list t
   ensures { norm result = result }
-  ensures { key_injective result }
+  ensures { key_injective result } 
   =  N.elts c.content
 
   (* ------------------------------------------------------------------------ *)
@@ -1257,7 +1257,7 @@ module Collection
   (* ------------------------------------------------------------------------ *)
   let function contains (k : tk) (c : collection) : bool
   ensures { result = true -> exists e. mem e c /\ keyt e = k }
-  ensures { result = false -> get k c = None }
+  ensures { result = false -> get k c = None } 
   =
   match get k c with
   | Some _ -> true
@@ -1376,18 +1376,18 @@ module Collection
   let rec function to_view (c : collection) : view
   ensures { forall k. vcontains k result -> exists e. get k c = Some e }
   ensures { forall e. mem e c -> vcontains (keyt e) result }
-  ensures { K.sorted (velts result) }
+  ensures { K.sorted (velts result) } 
   (* TODO dedicated sort predicate that does not use velts ? *)
   =
   list_to_view (N.elts c.content)
-
+ 
   (* ------------------------------------------------------------------------ *)
   lemma get_to_view_contains_false : forall k c.
   not (vcontains k (to_view c)) <-> get k c = None
 
-  (* ------------------------------------------------------------------------ *)
+ (*  (* ------------------------------------------------------------------------ *)
   axiom mem_to_view : forall a c. mem a c <-> vcontains (keyt a) (to_view c)
-
+*)
   (* ------------------------------------------------------------------------ *)
   axiom empty_to_view : forall c. is_empty c -> to_view c = vmk Nil
 
@@ -1403,7 +1403,7 @@ module Collection
   | Cons e tl -> if p e then Cons e (internal_select tl) else (internal_select tl)
   end in
   mk (N.mk (internal_select ((N.elts (content c)))))
-
+ 
   (* ------------------------------------------------------------------------ *)
   let function select (p : t -> bool) (c : collection) : view
   ensures { forall e k. get k c = Some e -> p e -> vcontains k result }
@@ -1752,18 +1752,18 @@ module Sum
   (* ------------------------------------------------------------------------ *)
   axiom effect_add : forall a c.
   get (keyt a) c = None -> 
-  sum (to_view (add a c)) (add a c) = sum (to_view c) c + field a
+  sum (to_view (add a c)) (add a c) = sum (to_view c) c + field a 
 
   (* ------------------------------------------------------------------------ *)
   axiom effect_remove : forall a c.
   get (keyt a) c = Some a -> 
-  sum (to_view (remove (keyt a) c)) (remove (keyt a) c) = sum (to_view c) c - field a
+  sum (to_view (remove (keyt a) c)) (remove (keyt a) c) = sum (to_view c) c - field a 
 
   (* ------------------------------------------------------------------------ *)
   axiom effect_set : forall k a c.
   keyt a = k ->
   sum (to_view (set k a c)) (set k a c) = sum (to_view c) c +
-  match get k c with | Some r -> field a - field r | None -> 0 end
+  match get k c with | Some r -> field a - field r | None -> 0 end 
 
 end
 
