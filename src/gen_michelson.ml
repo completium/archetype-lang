@@ -1054,16 +1054,16 @@ let to_michelson (ir : T.ir) : T.michelson =
         match l with
         | [n, v] -> begin
             let x, env = fe env x in
-            let rec g (s, env) x =
-              if x = 0
+            let rec g env x =
+              if x = n
               then let v, _ = fe env v in [T.DROP 1; v]
               else begin
-                if s = 2
-                then [T.SWAP ] @ g (s - 1, env) (x - 1) @ [T.SWAP]
-                else [T.SWAP; T.UNPAIR ] @ g (s - 1, (inc_env env)) (x - 1) @ [T.PAIR; T.SWAP]
+                if s = x + 2
+                then [T.SWAP ] @ g (env) (x + 1) @ [T.SWAP]
+                else [T.SWAP; T.UNPAIR ] @ g (inc_env env) (x + 1) @ [T.PAIR; T.SWAP]
               end
             in
-            let a = g (s, env) n in
+            let a = g env 0 in
             let b =
               if s = 1
               then a
@@ -1073,6 +1073,30 @@ let to_michelson (ir : T.ir) : T.michelson =
           end
         | _ -> assert false
       end
+
+          (* | Irecupdate (x, s, l) -> begin
+        let x, env = fe env x in
+        let rec g (l, s, env) x =
+          match l with
+          | [] -> []
+          | (n, v)::q -> begin
+              if x = n
+              then let v, _ = fe env v in [T.DROP 1; v] @ g (q, s, env) x
+              else begin
+                if s = x + 1
+                then [T.SWAP ] @ g (l, s + 1, env) (x + 1) @ [T.SWAP]
+                else [T.SWAP; T.UNPAIR ] @ g (l, s + 1, (inc_env env)) (x + 1) @ [T.PAIR; T.SWAP]
+              end
+            end
+        in
+        let a = g (l, s, env) 0 in
+        let b =
+          if s = 1
+          then a
+          else [T.UNPAIR] @ a @ [T.PAIR]
+        in
+        T.SEQ ([ x ] @ b), env
+      end *)
 
     | Imichelson (a, c, v) -> begin
         let a, _ = seq env a in
