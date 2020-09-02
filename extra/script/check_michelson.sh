@@ -138,6 +138,7 @@ PASSED="\
 ./tests/passed/test_asset_update.arl \
 ./tests/passed/test_asset_update_2.arl \
 ./tests/passed/test_asset_update_3.arl \
+./tests/passed/test_asset_update_4.arl \
 "
 
 RET=0
