@@ -3621,7 +3621,7 @@ let remove_asset (model : model) : model =
               let mk_loop fn aan =
                 let tv =
                   match va.type_ with
-                  | Tmap (_, _, tv) ->tv
+                  | Tmap (_, _, tv) -> tv
                   | _ -> assert false
                 in
                 let var_id = dumloc "_v" in
@@ -3646,6 +3646,35 @@ let remove_asset (model : model) : model =
               match partitions with
               | [] -> assign
               | _ -> mk_mterm (Mseq ((List.map (fun (fn, aan) -> mk_loop fn aan) partitions) @ [assign])) tunit
+            end
+          | CKfield (an, fn, k, _, _) -> begin
+              let kk = fm ctx k in
+
+              let va = get_asset_global an in
+              let _, is_record = is_single_simple_record an in
+
+              let aan, _ = Utils.get_field_container model an fn in
+              let atk = Utils.get_asset_key model aan |> snd in
+
+              let tk, tv =
+                match va.type_ with
+                | Tmap (_, tk, tv) -> tk, tv
+                | _ -> assert false
+              in
+
+              let set =
+                let get = mk_mterm (Mmapget (tk, tv, va, kk)) tv in
+                if is_record
+                then get
+                else mk_mterm (Mdot(get, dumloc fn)) (Tset atk)
+              in
+
+              let var_id = dumloc "_ak" in
+              let var_value = mk_mterm (Mvar (var_id, Vlocal, Tnone, Dnone)) atk in
+              let b : mterm = remove_asset (fm ctx) aan var_value in
+              let loop = mk_mterm (Mfor (FIsimple var_id, ICKset set, b, None)) tunit in
+              let assign = fm ctx (mk_mterm (Mremoveall (an, fn, k)) tunit) in
+              mk_mterm (Mseq [loop; assign]) tunit
             end
           | _ -> assert false
         end

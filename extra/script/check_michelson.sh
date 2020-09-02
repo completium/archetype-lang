@@ -153,6 +153,8 @@ PASSED="\
 ./tests/passed/effect_method_asset_clear_asset_one_field.arl \
 ./tests/passed/effect_method_asset_clear_asset_with_aggregate.arl \
 ./tests/passed/effect_method_asset_clear_asset_with_partition.arl \
+./tests/passed/effect_method_asset_clear_aggregate.arl \
+./tests/passed/test_clear_aggregate.arl \
 "
 
 RET=0
