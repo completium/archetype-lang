@@ -4005,15 +4005,48 @@ let remove_asset (model : model) : model =
         end
       | Mnth       _ -> mt
 
-      | Mcount (an, CKcoll _) -> begin
-          let va = get_asset_global an in
+      | Mcount (an, ck) -> begin
           let node =
-            match va.type_ with
-            | Tset kt          -> Msetlength (kt, va)
-            | Tmap (_, kt, vt) -> Mmaplength (kt, vt, va)
-            | _ -> assert false
+            match ck with
+            | CKcoll _ -> begin
+                let va = get_asset_global an in
+                match va.type_ with
+                | Tset tk          -> Msetlength (tk, va)
+                | Tmap (_, tk, tv) -> Mmaplength (tk, tv, va)
+                | _ -> assert false
+              end
+            | CKview v -> begin
+                let tk = Utils.get_asset_key model an |> snd in
+                let v = fm ctx v in
+                Mlistlength (tk, v)
+              end
+            | CKfield (an, fn, kk, _, _) -> begin
+                let kk = fm ctx kk in
+
+                let va = get_asset_global an in
+
+                let _, is_record = is_single_simple_record an in
+                let aan, _ = Utils.get_field_container model an fn in
+                let atk = Utils.get_asset_key model aan |> snd in
+
+                let tk, tv =
+                  match va.type_ with
+                  | Tmap (_, tk, tv) -> tk, tv
+                  | _ -> assert false
+                in
+
+                let set =
+                  let get = mk_mterm (Mmapget (tk, tv, va, kk)) tv in
+                  if is_record
+                  then get
+                  else mk_mterm (Mdot(get, dumloc fn)) (Tset atk)
+                in
+
+                Msetlength(atk, set)
+              end
+            | CKdef _ -> assert false
           in
-          mk_mterm node (Tbuiltin Bbool)
+          mk_mterm node tnat
         end
 
       | Msum       _ -> mt

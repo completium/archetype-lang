@@ -179,6 +179,11 @@ PASSED="\
 ./tests/passed/test_addupdate_0.arl \
 ./tests/passed/test_addupdate_1.arl \
 ./tests/passed/test_addupdate_2.arl \
+./tests/passed/expr_method_asset_count.arl \
+./tests/passed/expr_method_asset_count_aggregate.arl \
+./tests/passed/expr_method_asset_count_one_field.arl \
+./tests/passed/expr_method_asset_count_partition.arl \
+./tests/passed/expr_method_asset_count_view.arl \
 "
 
 RET=0

@@ -933,6 +933,8 @@ let mk_model ?(api_items = []) ?(api_verif = []) ?(decls = []) ?(functions = [])
 
 let tunit = Tunit
 let tbool = Tbuiltin Bbool
+let tnat  = Tbuiltin Bnat
+let tint  = Tbuiltin Bint
 let tstring = Tbuiltin Bstring
 
 let mk_string x = mk_mterm (Mstring x) tstring
