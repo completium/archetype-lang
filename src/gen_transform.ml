@@ -3397,6 +3397,49 @@ let remove_asset (model : model) : model =
         end
     in
 
+    let remove_field f (an, fn, ak, b) =
+      let ak = f ak in
+      let bk = f b in
+
+      let va = get_asset_global an in
+      let kt, vt =
+        match va.type_ with
+        | Tmap (_, kt, vt) -> kt, vt
+        | _ -> assert false
+      in
+
+      let _, is_record = is_single_simple_record an in
+      let aan, c = Utils.get_field_container model an fn in
+      let atk = Utils.get_asset_key model aan |> snd in
+
+      let mk_assign bk =
+        let ts = Tset atk in
+        let remove_set set = mk_mterm (Msetremove (atk, set, bk)) ts in
+        let get_ t = mk_mterm (Mmapget(kt, vt, va, ak)) t in
+        let v : mterm =
+          if is_record
+          then begin
+            remove_set (get_ ts)
+          end
+          else begin
+            let tr = Trecord (dumloc an) in
+            let get : mterm = get_ tr in
+            let set : mterm = mk_mterm (Mdot(get, dumloc fn)) (Tset atk) in
+            mk_mterm (Mrecupdate(get, [fn, remove_set set])) tr
+          end
+        in
+        let nmap : mterm = mk_mterm (Mmapput (kt, vt, va, ak, v) ) va.type_ in
+        mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), nmap)) Tunit
+      in
+
+      match c with
+      | Aggregate -> mk_assign bk
+      | Partition ->
+        let assign = mk_assign bk in
+        mk_mterm (Mseq [remove_asset f aan b; assign]) tunit
+      | _ -> assert false
+    in
+
     let rec fm ctx (mt : mterm) : mterm =
       match mt.node with
 
@@ -3510,48 +3553,7 @@ let remove_asset (model : model) : model =
 
       | Mremoveasset (an, k) -> remove_asset (fm ctx) an k
 
-      | Mremovefield (an, fn, ak, b) -> begin
-          let ak = fm ctx ak in
-          let bk = fm ctx b in
-
-          let va = get_asset_global an in
-          let kt, vt =
-            match va.type_ with
-            | Tmap (_, kt, vt) -> kt, vt
-            | _ -> assert false
-          in
-
-          let _, is_record = is_single_simple_record an in
-          let aan, c = Utils.get_field_container model an fn in
-          let atk = Utils.get_asset_key model aan |> snd in
-
-          let mk_assign bk =
-            let ts = Tset atk in
-            let remove_set set = mk_mterm (Msetremove (atk, set, bk)) ts in
-            let get_ t = mk_mterm (Mmapget(kt, vt, va, ak)) t in
-            let v : mterm =
-              if is_record
-              then begin
-                remove_set (get_ ts)
-              end
-              else begin
-                let tr = Trecord (dumloc an) in
-                let get : mterm = get_ tr in
-                let set : mterm = mk_mterm (Mdot(get, dumloc fn)) (Tset atk) in
-                mk_mterm (Mrecupdate(get, [fn, remove_set set])) tr
-              end
-            in
-            let nmap : mterm = mk_mterm (Mmapput (kt, vt, va, ak, v) ) va.type_ in
-            mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), nmap)) Tunit
-          in
-
-          match c with
-          | Aggregate -> mk_assign bk
-          | Partition ->
-            let assign = mk_assign bk in
-            mk_mterm (Mseq [remove_asset (fm ctx) aan b; assign]) tunit
-          | _ -> assert false
-        end
+      | Mremovefield (an, fn, ak, b) -> remove_field (fm ctx) (an, fn, ak, b)
 
       | Mremoveall (an, fn, k) -> begin
           let kk = fm ctx k in
@@ -3615,34 +3617,34 @@ let remove_asset (model : model) : model =
         end
 
       | Mremoveif (an, ck, _, b, _) -> begin
+
+          let get_val an v fn t : mterm =
+            let _, is_record = is_single_simple_record an in
+            if is_record
+            then v
+            else mk_mterm (Mdot(v, fn)) t
+          in
+
+          let mk_cond an vkey vval x =
+            let akn, _akt = Utils.get_asset_key model an in
+            let rec aux (mt : mterm) : mterm =
+              match mt.node with
+              | Mdot ({node = Mvar ({pldesc = "the"}, _, _, _); _}, fn) when String.equal (unloc fn) akn -> vkey
+              | Mdot ({node = Mvar ({pldesc = "the"}, _, _, _); _}, fn) -> get_val an (Option.get vval) fn mt.type_
+              | _ -> map_mterm aux mt
+            in
+            aux x
+          in
+
           match ck with
           | CKcoll _ -> begin
               let va = get_asset_global an in
-              let akn, _akt = Utils.get_asset_key model an in
-              let _, is_record = is_single_simple_record an in
-
-              let get_val v fn t : mterm =
-                if is_record
-                then v
-                else mk_mterm (Mdot(v, fn)) t
-              in
-
-              let mk_cond vkey vval x =
-                let rec aux (mt : mterm) : mterm =
-                  match mt.node with
-                  | Mdot ({node = Mvar ({pldesc = "the"}, _, _, _); _}, fn) when String.equal (unloc fn) akn -> vkey
-                  | Mdot ({node = Mvar ({pldesc = "the"}, _, _, _); _}, fn) -> get_val (Option.get vval) fn mt.type_
-                  | _ -> map_mterm aux mt
-                in
-                aux x
-              in
-
               match va.type_ with
               | Tset kt -> begin
                   let ikey = dumloc "_k" in
                   let vkey = mk_mterm (Mvar(ikey, Vlocal, Tnone, Dnone)) kt in
 
-                  let cond = fm ctx (mk_cond vkey None b) in
+                  let cond = fm ctx (mk_cond an vkey None b) in
                   let remove = remove_asset (fm ctx) an vkey in
                   let body = mk_mterm (Mif (cond, remove, None)) tunit in
                   let loop = mk_mterm (Mfor(FIsimple ikey, ICKset va, body, None) ) tunit in
@@ -3655,7 +3657,7 @@ let remove_asset (model : model) : model =
                   let ival = dumloc "_v" in
                   let vval = mk_mterm (Mvar(ival, Vlocal, Tnone, Dnone)) vt in
 
-                  let cond = fm ctx (mk_cond vkey (Some vval) b) in
+                  let cond = fm ctx (mk_cond an vkey (Some vval) b) in
                   let remove = remove_asset (fm ctx) an vkey in
                   let body = mk_mterm (Mif (cond, remove, None)) tunit in
                   let loop = mk_mterm (Mfor(FIdouble (ikey, ival), ICKmap va, body, None) ) tunit in
@@ -3663,9 +3665,57 @@ let remove_asset (model : model) : model =
                 end
               | _ -> assert false
             end
-          (* | CKfield (an, fn, k, _, _) -> begin
-              assert false
-            end *)
+
+          | CKfield (an, fn, k, _, _) -> begin
+              let va = get_asset_global an in
+              let get =
+                match va.type_ with
+                | Tmap (_, kt, vt) -> mk_mterm (Mmapget (kt, vt, va, fm ctx k)) vt
+                | _ -> assert false
+              in
+
+              let aan, _ = Utils.get_field_container model an fn in
+              let _ , aatk = Utils.get_asset_key model aan in
+
+              let set =
+                let _, is_record = is_single_simple_record an in
+                if is_record
+                then get
+                else mk_mterm (Mdot(get, dumloc fn)) (Tset aatk)
+              in
+
+              let ikey = dumloc "_k" in
+              let vkey = mk_mterm (Mvar(ikey, Vlocal, Tnone, Dnone)) aatk in
+
+
+              let vaa = get_asset_global aan in
+              let geta =
+                match vaa.type_ with
+                | Tmap (_, kt, vt) -> Some (mk_mterm (Mmapget (kt, vt, vaa, vkey)) vt)
+                | _ -> None
+              in
+
+              let body =
+                match geta with
+                | Some g -> begin
+                    let ival = dumloc "_v" in
+                    let vval = mk_mterm (Mvar(ival, Vlocal, Tnone, Dnone)) g.type_ in
+
+                    let cond = fm ctx (mk_cond aan vkey (Some vval) b) in
+                    let remove = remove_field (fm ctx) (an, fn, k, vkey) in
+                    let body = mk_mterm (Mif (cond, remove, None)) tunit in
+                    mk_mterm (Mletin([ival], g, Some g.type_, body, None)) tunit
+                  end
+                | None -> begin
+                    let cond = fm ctx (mk_cond aan vkey None b) in
+                    let remove = remove_field (fm ctx) (an, fn, k, vkey) in
+                    mk_mterm (Mif (cond, remove, None)) tunit
+                  end
+              in
+
+              let loop = mk_mterm (Mfor(FIsimple ikey, ICKset set, body, None) ) tunit in
+              loop
+            end
           | _ -> assert false
         end
 
