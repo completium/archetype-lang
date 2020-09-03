@@ -3726,18 +3726,55 @@ let remove_asset (model : model) : model =
           let mul_val id x = mk_mterm (Mmult   (get_val id, x)) x.type_ in
           let div_val id x = mk_mterm (Mdiveuc (get_val id, x)) x.type_ in
           let and_val id x = mk_mterm (Mand    (get_val id, x)) x.type_ in
-          let or_val id x  = mk_mterm (Mor     (get_val id, x)) x.type_ in
+          let or_val  id x = mk_mterm (Mor     (get_val id, x)) x.type_ in
 
-          let l, b = List.fold_right (fun (id, op, v) (accu, b) ->
-              match op with
-              | ValueAssign  -> (id, op, v)::accu, b
-              | PlusAssign   -> (id, ValueAssign, add_val id v)::accu , true
-              | MinusAssign  -> (id, ValueAssign, sub_val id v)::accu , true
-              | MultAssign   -> (id, ValueAssign, mul_val id v)::accu , true
-              | DivAssign    -> (id, ValueAssign, div_val id v)::accu , true
-              | AndAssign    -> (id, ValueAssign, and_val id v)::accu , true
-              | OrAssign     -> (id, ValueAssign, or_val  id v)::accu , true
-            ) l ([], false)
+          let extract_listlit (v : mterm) : mterm list =
+            match v.node with
+            | Mlitlist (l) -> l
+            | _ -> assert false
+          in
+
+          let l, b, ags = List.fold_right (fun (id, op, v) (accu, b, ags) ->
+              let _, ts, _ = Utils.get_asset_field model (an, unloc id) in
+              let v = fm ctx v in
+              match ts, op with
+              | Tcontainer(Tasset aan, Aggregate), ValueAssign -> begin
+                  let aan = unloc aan in
+                  let _, tk = Utils.get_asset_key model aan in
+                  let ll =  extract_listlit v in
+                  let set = mk_mterm (Mlitset ll) (Tset tk) in
+                  (id, ValueAssign, set)::accu, b, (unloc id, aan, `Aggregate, `Replace, ll)::ags
+                end
+
+              | Tcontainer(Tasset aan, Aggregate), PlusAssign -> begin
+                  let aan = unloc aan in
+                  let _, tk = Utils.get_asset_key model aan in
+                  let ts = Tset tk in
+                  let ll =  extract_listlit v in
+                  let get : mterm = get_val id in
+                  let set = List.fold_left (fun accu (x : mterm) -> mk_mterm (Msetadd (tk, accu, x)) ts) get ll in
+                  (id, ValueAssign, set)::accu, true, (unloc id, aan, `Aggregate, `Add, ll)::ags
+                end
+
+              | Tcontainer(Tasset aan, Aggregate), MinusAssign  ->  begin
+                  let aan = unloc aan in
+                  let _, tk = Utils.get_asset_key model aan in
+                  let ts = Tset tk in
+                  let ll =  extract_listlit v in
+                  let get : mterm = get_val id in
+                  let set = List.fold_left (fun accu (x : mterm) -> mk_mterm (Msetremove (tk, accu, x)) ts) get ll in
+                  (id, ValueAssign, set)::accu, true, (unloc id, aan, `Aggregate, `Remove, ll)::ags
+                end
+
+
+              | _, ValueAssign  -> (id, op, v)::accu, b, ags
+              | _, PlusAssign   -> (id, ValueAssign, add_val id v)::accu , true, ags
+              | _, MinusAssign  -> (id, ValueAssign, sub_val id v)::accu , true, ags
+              | _, MultAssign   -> (id, ValueAssign, mul_val id v)::accu , true, ags
+              | _, DivAssign    -> (id, ValueAssign, div_val id v)::accu , true, ags
+              | _, AndAssign    -> (id, ValueAssign, and_val id v)::accu , true, ags
+              | _, OrAssign     -> (id, ValueAssign, or_val  id v)::accu , true, ags
+            ) l ([], false, [])
           in
 
           let v : mterm =
@@ -3770,6 +3807,22 @@ let remove_asset (model : model) : model =
 
           let assign = mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), nmap)) Tunit in
           let assign = if b then mk_letin assign else assign in
+          let elts_cond = List.fold_left (fun accu x ->
+              match x with
+              | _, aan, `Aggregate, (`Add | `Replace) , l -> List.map (fun x -> aan, x) l @ accu
+              | _ -> accu
+            ) [] ags in
+
+          let assign : mterm =
+            match elts_cond with
+            | [] -> assign
+            | (an, mt)::l -> begin
+                let mk_cond an mt = create_contains_asset_key an mt in
+                let init : mterm = mk_cond an mt in
+                let cond : mterm = List.fold_left (fun accu (an, x) -> mk_mterm (Mand(accu, mk_cond an x)) tbool ) init l in
+                mk_mterm (Mif (cond, assign, Some (fail msg_KeyNotFound))) tunit
+              end
+          in
           assign
         end
 

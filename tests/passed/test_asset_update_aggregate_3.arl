@@ -1,0 +1,25 @@
+archetype test_asset_update_aggregate_3
+
+asset o_asset {
+  oid : nat;
+} initialized by {
+  {0};
+  {1};
+  {2};
+  {3};
+  {4}
+}
+
+asset my_asset identified by id {
+  id : string;
+  v0 : nat;
+  c  : aggregate<o_asset>;
+} initialized by {
+  {"id0"; 0; []};
+  {"id1"; 1; []};
+  {"id2"; 2; []}
+}
+
+entry exec (n : nat) {
+  my_asset.update("id1", {c -= [1; n]})
+}
