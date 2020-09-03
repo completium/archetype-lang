@@ -162,6 +162,15 @@ PASSED="\
 ./tests/passed/test_asset_update_aggregate_1.arl \
 ./tests/passed/test_asset_update_aggregate_2.arl \
 ./tests/passed/test_asset_update_aggregate_3.arl \
+./tests/passed/test_asset_update_partition_1.arl \
+./tests/passed/test_asset_update_partition_2.arl \
+./tests/passed/test_asset_update_partition_3.arl \
+./tests/passed/test_asset_update_partition_4.arl \
+./tests/passed/test_asset_update_partition_5.arl \
+./tests/passed/test_asset_update_partition_6.arl \
+./tests/passed/test_asset_update_partition_7.arl \
+./tests/passed/test_asset_update_partition_8.arl \
+./tests/passed/test_asset_update_partition_9.arl \
 "
 
 RET=0

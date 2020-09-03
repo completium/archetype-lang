@@ -1,0 +1,27 @@
+archetype test_asset_update_partition_9
+
+asset o_asset {
+  oid : nat;
+  v   : string;
+  i   : int;
+} initialized by {
+  {0; "str0"; 0i};
+  {1; "str1"; 0i};
+  {2; "str2"; 0i};
+  {3; "str3"; 0i};
+  {4; "str4"; 0i}
+}
+
+asset my_asset identified by id {
+  id : string;
+  v0 : nat;
+  c  : partition<o_asset>;
+} initialized by {
+  {"id0"; 0; []};
+  {"id1"; 1; []};
+  {"id2"; 2; []}
+}
+
+entry exec (n : nat) {
+  my_asset.update("id1", {c -= [5; n]})
+}
