@@ -2075,6 +2075,10 @@ let extract_term_from_instruction f (model : model) : model =
           ((id, op, ve)::xe, va @ xa)) l ([], []) in
       process (mk_mterm (Maddupdate (an, ce, ke, le)) mt.type_) (ca @ ka @ la)
 
+    | Maddforce (an, v) ->
+      let ve, va = f v in
+      process (mk_mterm (Maddforce (an, ve)) mt.type_) va
+
     | _ -> map_mterm (aux ctx) mt
   in
   Model.map_mterm_model aux model
@@ -2336,6 +2340,10 @@ let add_contain_on_get (model : model) : model =
         in
         let accu = f accu k in
         let accu = List.fold_right (fun (_, _, v) accu -> f accu v) l accu in
+        gg accu mt
+
+      | Maddforce (_an, v) ->
+        let accu = f accu v in
         gg accu mt
 
       | _ -> map_mterm (for_instruction g f env accu) mt
