@@ -158,6 +158,7 @@ PASSED="\
 ./tests/passed/effect_method_asset_clear_view.arl \
 ./tests/passed/effect_method_asset_clear_view_with_aggregate.arl \
 ./tests/passed/effect_method_asset_clear_view_with_partition.arl \
+./tests/passed/test_asset_update_5.arl \
 "
 
 RET=0

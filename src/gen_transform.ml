@@ -3704,6 +3704,42 @@ let remove_asset (model : model) : model =
             | _ -> assert false
           in
 
+          let var_id = dumloc "_asset" in
+
+          let mk_letin x =
+            let get = mk_mterm (Mmapget(kt, tasset, va, k)) tasset in
+            mk_mterm (Mletin ([var_id], get, Some tasset, x, None)) tunit
+          in
+
+          let get_val id =
+            let var = mk_mterm (Mvar(var_id, Vlocal, Tnone, Dnone)) tasset in
+            if is_record
+            then var
+            else begin
+              let _, ts, _ = Utils.get_asset_field model (an, unloc id) in
+              mk_mterm (Mdot(var, id)) ts
+            end
+          in
+
+          let add_val id x = mk_mterm (Mplus   (get_val id, x)) x.type_ in
+          let sub_val id x = mk_mterm (Mminus  (get_val id, x)) x.type_ in
+          let mul_val id x = mk_mterm (Mmult   (get_val id, x)) x.type_ in
+          let div_val id x = mk_mterm (Mdiveuc (get_val id, x)) x.type_ in
+          let and_val id x = mk_mterm (Mand    (get_val id, x)) x.type_ in
+          let or_val id x  = mk_mterm (Mor     (get_val id, x)) x.type_ in
+
+          let l, b = List.fold_right (fun (id, op, v) (accu, b) ->
+              match op with
+              | ValueAssign  -> (id, op, v)::accu, b
+              | PlusAssign   -> (id, ValueAssign, add_val id v)::accu , true
+              | MinusAssign  -> (id, ValueAssign, sub_val id v)::accu , true
+              | MultAssign   -> (id, ValueAssign, mul_val id v)::accu , true
+              | DivAssign    -> (id, ValueAssign, div_val id v)::accu , true
+              | AndAssign    -> (id, ValueAssign, and_val id v)::accu , true
+              | OrAssign     -> (id, ValueAssign, or_val  id v)::accu , true
+            ) l ([], false)
+          in
+
           let v : mterm =
             if is_record
             then begin
@@ -3732,7 +3768,9 @@ let remove_asset (model : model) : model =
 
           let nmap = mk_mterm (Mmapput (kt, tasset, va, k, v)) va.type_ in
 
-          mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), nmap)) Tunit
+          let assign = mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), nmap)) Tunit in
+          let assign = if b then mk_letin assign else assign in
+          assign
         end
 
       | Maddupdate   _ -> mt
@@ -3742,7 +3780,7 @@ let remove_asset (model : model) : model =
       | Mselect (an, _, _, _, _) -> begin
           let tk = Utils.get_asset_key model an |> snd in
           mk_mterm (Mlitlist []) (Tlist tk)
-      end
+        end
 
       | Mcount (an, CKcoll _) -> begin
           let va = get_asset_global an in
