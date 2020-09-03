@@ -272,6 +272,7 @@ type ('id, 'term) mterm_node  =
   | Mset              of ident * ident list * 'term * 'term (*asset_name * field_name modified * ... *)
   | Mupdate           of ident * 'term * ('id * assignment_operator * 'term) list
   | Maddupdate        of ident * 'term container_kind_gen * 'term * ('id * assignment_operator * 'term) list
+  | Maddforce         of ident * 'term
   (* asset api expression *)
   | Mget              of ident * 'term container_kind_gen * 'term
   | Mselect           of ident * 'term container_kind_gen * (ident * type_) list * 'term * 'term list (* asset_name, view, lambda (args, body, apply_args) *)
@@ -1181,6 +1182,7 @@ let cmp_mterm_node
     | Mset (c1, l1, k1, v1), Mset (c2, l2, k2, v2)                                     -> cmp_ident c1 c2 && List.for_all2 cmp_ident l1 l2 && cmp k1 k2 && cmp v1 v2
     | Mupdate (an1, k1, l1), Mupdate (an2, k2, l2)                                     -> cmp_ident an1 an2 && cmp k1 k2 && List.for_all2 (fun (id1, op1, v1) (id2, op2, v2) -> cmpi id1 id2 && cmp_assign_op op1 op2 && cmp v1 v2) l1 l2
     | Maddupdate (an1, c1, k1, l1), Maddupdate (an2, c2, k2, l2)                       -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && cmp k1 k2 && List.for_all2 (fun (id1, op1, v1) (id2, op2, v2) -> cmpi id1 id2 && cmp_assign_op op1 op2 && cmp v1 v2) l1 l2
+    | Maddforce (an1, v1), Maddforce (an2, v2)                                         -> cmp_ident an1 an2 && cmp v1 v2
     (* asset api expression *)
     | Mget (an1, c1, k1), Mget (an2, c2, k2)                                           -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && cmp k1 k2
     | Mselect (an1, c1, la1, lb1, a1), Mselect (an2, c2, la2, lb2, a2)                 -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && List.for_all2 (fun (i1, t1) (i2, t2) -> cmp_ident i1 i2 && cmp_type t1 t2) la1 la2 && cmp lb1 lb2 && List.for_all2 cmp a1 a2
@@ -1540,6 +1542,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mset (an, l, k, v)             -> Mset (fi an, List.map fi l, f k, f v)
   | Mupdate (an, k, l)             -> Mupdate (fi an, f k, List.map (fun (id, op, v) -> (g id, op, f v)) l)
   | Maddupdate (an, c, k, l)       -> Maddupdate (fi an, map_container_kind fi f c, f k, List.map (fun (id, op, v) -> (g id, op, f v)) l)
+  | Maddforce (an, v)              -> Maddforce (fi an, f v)
   (* asset api expression *)
   | Mget (an, c, k)                -> Mget (fi an, map_container_kind fi f c, f k)
   | Mselect (an, c, la, lb, a)     -> Mselect (fi an, map_container_kind fi f c, List.map (fun (i, t) -> (fi i, ft t)) la, f lb, List.map f a)
@@ -1901,6 +1904,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mset (_, _, k, v)                     -> f (f accu v) k
   | Mupdate (_, k, l)                     -> List.fold_left (fun accu (_, _, v) -> f accu v) (f accu k) l
   | Maddupdate (_, c, k, l)               -> List.fold_left (fun accu (_, _, v) -> f accu v) (f (fold_container_kind f accu c) k) l
+  | Maddforce (_, v)                      -> f accu v
   (* asset api expression *)
   | Mget (_, c, k)                        -> f (fold_container_kind f accu c) k
   | Mselect (_, c, _, lb, a)              -> List.fold_left (fun accu x -> f accu x) (f (fold_container_kind f accu c) lb) a
@@ -2500,6 +2504,10 @@ let fold_map_term
       |> (fun (x, y) -> (List.rev x, y))
     in
     g (Maddupdate (an, ce, ke, le)), la
+
+  | Maddforce (an, v) ->
+    let ve, va = f accu v in
+    g (Maddforce (an, ve)), va
 
 
   (* asset api expression *)

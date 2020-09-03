@@ -123,7 +123,7 @@ let process_assign_op op (t : type_) (lhs : mterm) (v : mterm) : mterm =
   | AndAssign   , _ -> mk_mterm (Mand (lhs, v)) t
   | OrAssign    , _ -> mk_mterm (Mor (lhs, v)) t
 
-let remove_add_update ?(isformula = false) (model : model) : model =
+let remove_add_update ?(with_force = false) ?(isformula = false) (model : model) : model =
   let error = ref false in
   let f_error (l : Location.t) (an : string) (fn : string) = emit_error(l, CannotBuildAsset (an, fn)); error := true in
   let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
@@ -131,6 +131,7 @@ let remove_add_update ?(isformula = false) (model : model) : model =
     | Maddupdate (an, c, k, l) ->
       begin
         let type_asset = Tasset (dumloc an) in
+        let is_standalone = List.fold_left (fun accu (_, op, _) -> match op with | ValueAssign -> accu | _ -> false) true l in
         let mk_asset (an, k, l) =
           let dummy_mterm = mk_mterm (Mseq []) Tunit in
           let asset = Utils.get_asset model an in
@@ -174,14 +175,18 @@ let remove_add_update ?(isformula = false) (model : model) : model =
             | CKcoll _ -> Mcontains (an, c, k)
             | _ -> assert false) Tunit in
         let asset  = mk_asset (an, k, l) in
-        let add    = mk_mterm (
-            match c with
-            | CKfield (_, _, {node = Mdotassetfield (an, k, fn)}, _, _) -> Maddfield (unloc an, unloc fn, k, asset)
-            | CKcoll _ -> Maddasset (an, asset)
-            | _ -> assert false) Tunit in
-        let update = mk_mterm (Mupdate (an, k, l)) Tunit in
-        let if_node = Mif (cond, update, Some add) in
-        mk_mterm if_node Tunit
+        if with_force && is_standalone
+        then mk_mterm (Maddforce (an, asset)) tunit
+        else begin
+          let add = mk_mterm (
+              match c with
+              | CKfield (_, _, {node = Mdotassetfield (an, k, fn)}, _, _) -> Maddfield (unloc an, unloc fn, k, asset)
+              | CKcoll _ -> Maddasset (an, asset)
+              | _ -> assert false) Tunit in
+          let update = mk_mterm (Mupdate (an, k, l)) Tunit in
+          let if_node = Mif (cond, update, Some add) in
+          mk_mterm if_node Tunit
+        end
       end
     | _ -> map_mterm (aux ctx) mt
   in
@@ -2906,7 +2911,6 @@ let filter_api_storage (model : model) =
     api_items = filter model.api_items |> Utils.sort_api_storage model true
   }
 
-
 let remove_asset (model : model) : model =
   let for_storage_item (si : storage_item) : storage_item =
     let rec remove_assets x =
@@ -3299,7 +3303,7 @@ let remove_asset (model : model) : model =
       mk_mterm (f x) tbool
     in
 
-    let add_asset f an v =
+    let add_asset ?(force=false) f an v =
       begin
         let v = f v in
         (* let is_single, is_record = is_single_simple_record an in *)
@@ -3342,8 +3346,9 @@ let remove_asset (model : model) : model =
           | _ -> assert false
         in
 
-        let node_if = Mif (cond, fail msg_KeyAlreadyExists, Some assign) in
-        mk_mterm node_if Tunit
+        if force
+        then assign
+        else mk_mterm (Mif (cond, fail msg_KeyAlreadyExists, Some assign)) tunit
       end
     in
 
@@ -3943,7 +3948,7 @@ let remove_asset (model : model) : model =
           assign
         end
 
-      | Maddupdate   _ -> mt
+      | Maddforce (an, v) -> add_asset (fm ctx) an v ~force:true
 
       (* expression *)
 
@@ -3951,6 +3956,54 @@ let remove_asset (model : model) : model =
           let tk = Utils.get_asset_key model an |> snd in
           mk_mterm (Mlitlist []) (Tlist tk)
         end
+
+      | Msort      _ -> mt
+
+      | Mcontains (an, ck, k) -> begin
+          let k = fm ctx k in
+          let node =
+            match ck with
+            | CKcoll _ -> begin
+                let va = get_asset_global an in
+                match va.type_ with
+                | Tset tk          -> Msetcontains (tk, va, k)
+                | Tmap (_, tk, tv) -> Mmapcontains (tk, tv, va, k)
+                | _ -> assert false
+              end
+            | CKview v -> begin
+                let tk = Utils.get_asset_key model an |> snd in
+                let v = fm ctx v in
+                Mlistcontains (tk, v, k)
+              end
+            | CKfield (an, fn, kk, _, _) -> begin
+                let kk = fm ctx kk in
+
+                let va = get_asset_global an in
+
+                let _, is_record = is_single_simple_record an in
+                let aan, _ = Utils.get_field_container model an fn in
+                let atk = Utils.get_asset_key model aan |> snd in
+
+                let tk, tv =
+                  match va.type_ with
+                  | Tmap (_, tk, tv) -> tk, tv
+                  | _ -> assert false
+                in
+
+                let set =
+                  let get = mk_mterm (Mmapget (tk, tv, va, kk)) tv in
+                  if is_record
+                  then get
+                  else mk_mterm (Mdot(get, dumloc fn)) (Tset atk)
+                in
+
+                Msetcontains(atk, set, k)
+              end
+            | CKdef _ -> assert false
+          in
+          mk_mterm node tbool
+        end
+      | Mnth       _ -> mt
 
       | Mcount (an, CKcoll _) -> begin
           let va = get_asset_global an in
@@ -3962,6 +4015,10 @@ let remove_asset (model : model) : model =
           in
           mk_mterm node (Tbuiltin Bbool)
         end
+
+      | Msum       _ -> mt
+      | Mhead      _ -> mt
+      | Mtail      _ -> mt
 
       | _ -> map_mterm (fm ctx) mt
     in

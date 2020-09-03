@@ -990,7 +990,8 @@ let pp_model fmt (model : model) =
         pp fmt (c, k, v)
 
       | Mupdate _    -> emit_error (UnsupportedTerm ("update"))
-      | Maddupdate _ -> emit_error (UnsupportedTerm ("add_update"))
+      | Maddupdate _ -> emit_error (UnsupportedTerm ("addupdate"))
+      | Maddforce  _ -> emit_error (UnsupportedTerm ("addforce"))
 
 
       (* asset api expression *)

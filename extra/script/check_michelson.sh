@@ -171,6 +171,14 @@ PASSED="\
 ./tests/passed/test_asset_update_partition_7.arl \
 ./tests/passed/test_asset_update_partition_8.arl \
 ./tests/passed/test_asset_update_partition_9.arl \
+./tests/passed/expr_method_asset_contains.arl \
+./tests/passed/expr_method_asset_contains_aggregate.arl \
+./tests/passed/expr_method_asset_contains_one_field.arl \
+./tests/passed/expr_method_asset_contains_partition.arl \
+./tests/passed/expr_method_asset_contains_view.arl \
+./tests/passed/test_addupdate_0.arl \
+./tests/passed/test_addupdate_1.arl \
+./tests/passed/test_addupdate_2.arl \
 "
 
 RET=0

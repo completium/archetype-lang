@@ -1883,6 +1883,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Mupdate             _ -> error_not_translated "Mupdate"
     | Maddupdate          _ -> error_not_translated "Maddupdate"
+    | Maddforce           _ -> error_not_translated "Maddforce"
 
     | Mget (an, _c, k) ->
       begin match ctx.lctx with

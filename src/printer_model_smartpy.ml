@@ -958,6 +958,7 @@ let pp_model fmt (model : model) =
 
       | Mupdate    _ -> emit_error (UnsupportedTerm ("Mupdate"))
       | Maddupdate _ -> emit_error (UnsupportedTerm ("Maddupdate"))
+      | Maddforce  _ -> emit_error (UnsupportedTerm ("Maddforce"))
 
 
       (* asset api expression *)
