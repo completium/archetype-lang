@@ -887,11 +887,11 @@ let to_michelson (ir : T.ir) : T.michelson =
            let t, envt = f t in
            let e, enve = f e in *)
 
-        let c, env = fe env c in
-        let t, envt = fe (dec_env env) t in
-        let e, enve = fe (dec_env env) e in
+        let c, env0 = fe env c in
+        let t, envt = fe (dec_env env0) t in
+        let e, enve = fe (dec_env env0) e in
 
-        let env =
+        let _env =
           (* TODO: check if `envt` and `enve` have the same stack *)
           match envt.fail, enve.fail with
           | false, false -> envt
