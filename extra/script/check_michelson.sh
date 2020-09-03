@@ -184,6 +184,15 @@ PASSED="\
 ./tests/passed/expr_method_asset_count_one_field.arl \
 ./tests/passed/expr_method_asset_count_partition.arl \
 ./tests/passed/expr_method_asset_count_view.arl \
+./tests/passed/test_removeif_coll_0.arl \
+./tests/passed/test_removeif_coll_1.arl \
+./tests/passed/test_removeif_coll_2.arl \
+./tests/passed/test_removeif_agg_0.arl \
+./tests/passed/test_removeif_agg_1.arl \
+./tests/passed/test_removeif_agg_2.arl \
+./tests/passed/test_removeif_part_0.arl \
+./tests/passed/test_removeif_part_1.arl \
+./tests/passed/test_removeif_part_2.arl \
 "
 
 RET=0

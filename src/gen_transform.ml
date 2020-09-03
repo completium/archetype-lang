@@ -3614,7 +3614,60 @@ let remove_asset (model : model) : model =
           | _ -> assert false
         end
 
-      | Mremoveif    _ -> mt
+      | Mremoveif (an, ck, _, b, _) -> begin
+          match ck with
+          | CKcoll _ -> begin
+              let va = get_asset_global an in
+              let akn, _akt = Utils.get_asset_key model an in
+              let _, is_record = is_single_simple_record an in
+
+              let get_val v fn t : mterm =
+                if is_record
+                then v
+                else mk_mterm (Mdot(v, fn)) t
+              in
+
+              let mk_cond vkey vval x =
+                let rec aux (mt : mterm) : mterm =
+                  match mt.node with
+                  | Mdot ({node = Mvar ({pldesc = "the"}, _, _, _); _}, fn) when String.equal (unloc fn) akn -> vkey
+                  | Mdot ({node = Mvar ({pldesc = "the"}, _, _, _); _}, fn) -> get_val (Option.get vval) fn mt.type_
+                  | _ -> map_mterm aux mt
+                in
+                aux x
+              in
+
+              match va.type_ with
+              | Tset kt -> begin
+                  let ikey = dumloc "_k" in
+                  let vkey = mk_mterm (Mvar(ikey, Vlocal, Tnone, Dnone)) kt in
+
+                  let cond = fm ctx (mk_cond vkey None b) in
+                  let remove = remove_asset (fm ctx) an vkey in
+                  let body = mk_mterm (Mif (cond, remove, None)) tunit in
+                  let loop = mk_mterm (Mfor(FIsimple ikey, ICKset va, body, None) ) tunit in
+                  loop
+                end
+              | Tmap (_, kt, vt) -> begin
+                  let ikey = dumloc "_k" in
+                  let vkey = mk_mterm (Mvar(ikey, Vlocal, Tnone, Dnone)) kt in
+
+                  let ival = dumloc "_v" in
+                  let vval = mk_mterm (Mvar(ival, Vlocal, Tnone, Dnone)) vt in
+
+                  let cond = fm ctx (mk_cond vkey (Some vval) b) in
+                  let remove = remove_asset (fm ctx) an vkey in
+                  let body = mk_mterm (Mif (cond, remove, None)) tunit in
+                  let loop = mk_mterm (Mfor(FIdouble (ikey, ival), ICKmap va, body, None) ) tunit in
+                  loop
+                end
+              | _ -> assert false
+            end
+          (* | CKfield (an, fn, k, _, _) -> begin
+              assert false
+            end *)
+          | _ -> assert false
+        end
 
       | Mclear (an, ck) -> begin
           match ck with
