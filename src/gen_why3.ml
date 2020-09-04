@@ -1946,6 +1946,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Msetcontains (t, s, e) -> Tcontains (dl (mk_set_name m (Tset t)), map_mterm m ctx e, map_mterm m ctx s)
     | Msetlength (t, s)      -> Tcard (dl (mk_set_name m (Tset t)), map_mterm m ctx s)
     | Msetnth _ -> error_not_translated "Mmapnth"
+    | Msetfold _ -> error_not_translated "Mmapfold"
 
     (* list api expression *)
 

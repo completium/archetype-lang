@@ -809,6 +809,15 @@ let pp_mterm fmt (mt : mterm) =
         f c
         f a
 
+    | Msetfold (t, ix, ia, c, a, b) ->
+      Format.fprintf fmt "set_%a_fold (%a, %a, (%a, %a) -> %a)"
+        pp_type t
+        f c
+        f a
+        pp_id ia
+        pp_id ix
+        f b
+
 
     (* list api expression *)
 

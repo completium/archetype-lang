@@ -1127,6 +1127,7 @@ let pp_model fmt (model : model) =
           f c
 
       | Msetnth _ -> emit_error (UnsupportedTerm ("Msetnth"))
+      | Msetfold _ -> emit_error (UnsupportedTerm ("Msetfold"))
 
 
       (* list api expression *)

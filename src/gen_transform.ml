@@ -4063,10 +4063,33 @@ let remove_asset (model : model) : model =
 
       (* expression *)
 
-      | Mselect (an, _, _, _, _) -> begin
-          (* TODO *)
-          let tk = Utils.get_asset_key model an |> snd in
-          mk_mterm (Mlitlist []) (Tlist tk)
+      | Mselect (an, ck, _, _b, _) -> begin
+          let atk = Utils.get_asset_key model an |> snd in
+          let tr = Tlist atk in
+          let node =
+            match ck with
+            | CKcoll _ -> begin
+                let va = get_asset_global an in
+                match va.type_ with
+                | Tset _ -> begin
+
+                    let empty = mk_mterm (Mlitlist []) tr in
+
+                    let iid = dumloc "_sid" in
+                    let vid = mk_mterm (Mvar(iid, Vlocal, Tnone, Dnone)) atk in
+
+                    let iaccu = dumloc "_accu" in
+                    let vaccu = mk_mterm (Mvar(iaccu, Vlocal, Tnone, Dnone)) atk in
+
+                    let b =  mk_mterm (Mlistprepend(atk, vaccu, vid)) tr in
+
+                    Msetfold(atk, iid, iaccu, va, empty, b)
+                  end
+                | _ -> assert false
+              end
+            | _ -> assert false
+          in
+          mk_mterm node tr
         end
 
       | Msort (an, _, _) -> begin

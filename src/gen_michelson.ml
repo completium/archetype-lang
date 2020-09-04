@@ -386,9 +386,9 @@ let to_ir (model : M.model) : T.ir =
         let ids = List.map unloc ids in
         let c =
           match c with
-          | ICKcoll  _
-          | ICKview  _
-          | ICKfield _ -> emit_error TODO
+          | ICKcoll  _ -> emit_error (UnsupportedTerm ("ICKcoll"))
+          | ICKview  _ -> emit_error (UnsupportedTerm ("ICKview"))
+          | ICKfield _ -> emit_error (UnsupportedTerm ("ICKfield"))
           | ICKset   c
           | ICKlist  c
           | ICKmap   c -> f c
@@ -580,11 +580,12 @@ let to_ir (model : M.model) : T.ir =
 
     (* set api expression *)
 
-    | Msetadd (_, c, a)        -> T.Iterop (Tupdate, f a, T.itrue,  f c)
-    | Msetremove (_, c, a)     -> T.Iterop (Tupdate, f a, T.ifalse, f c)
-    | Msetcontains (_, c, k)   -> T.Ibinop (Bmem, f k, f c)
-    | Msetlength (_, c)        -> T.Iunop  (Usize, f c)
-    | Msetnth (t, c, a)        -> let b = T.BsetNth (to_type t) in add_builtin b; T.Icall (get_fun_name b, [f c; f a])
+    | Msetadd (_, c, a)             -> T.Iterop (Tupdate, f a, T.itrue,  f c)
+    | Msetremove (_, c, a)          -> T.Iterop (Tupdate, f a, T.ifalse, f c)
+    | Msetcontains (_, c, k)        -> T.Ibinop (Bmem, f k, f c)
+    | Msetlength (_, c)             -> T.Iunop  (Usize, f c)
+    | Msetnth (t, c, a)             -> let b = T.BsetNth (to_type t) in add_builtin b; T.Icall (get_fun_name b, [f c; f a])
+    | Msetfold (_, ix, ia, c, a, b) -> T.Ifold (unloc ix, unloc ia, f c, f a, T.Iassign (unloc ia, f b))
 
     (* list api expression *)
 
@@ -1097,6 +1098,13 @@ let to_michelson (ir : T.ir) : T.michelson =
           else [T.UNPAIR] @ a @ [T.PAIR]
         in
         T.SEQ ([ x ] @ b), env
+      end
+
+    | Ifold (ix, ia, c, a, b) -> begin
+        let a, _env0 = fe env a in
+        let c, _env1 = fe (add_var_env env ia) c in
+        let b, _env2 = fe (add_var_env (add_var_env env ia) ix) b in
+        T.SEQ [a; c; T.ITER [b; T.DROP 1]], inc_env env
       end
 
     | Imichelson (a, c, v) -> begin
