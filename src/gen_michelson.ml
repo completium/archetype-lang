@@ -235,11 +235,6 @@ let to_ir (model : M.model) : T.ir =
         in
         T.mk_func name targ tret (T.Concrete (args, body))
       end
-    | BlistReverse t -> begin
-        let targ = T.tlist t in
-        let tret = T.tlist t in
-        T.mk_func name targ tret (T.Abstract b)
-      end
     | BmapNth (k, v) -> begin
         let targ = T.tpair (T.tmap k v) T.tnat in
         let tret = T.tpair k v in
@@ -594,7 +589,7 @@ let to_ir (model : M.model) : T.ir =
     | Mlistlength (_, l)         -> T.Iunop (Usize, f l)
     | Mlistcontains (t, c, a)    -> let b = T.BlistContains (to_type t) in add_builtin b; T.Icall (get_fun_name b, [f c; f a])
     | Mlistnth (t, c, a)         -> let b = T.BlistNth (to_type t) in add_builtin b; T.Icall (get_fun_name b, [f c; f a])
-    | Mlistreverse (t, l)        -> let b = T.BlistReverse (to_type t) in add_builtin b; T.Icall (get_fun_name b, [f l])
+    | Mlistreverse _             -> emit_error (UnsupportedTerm ("Mlistreverse"))
     | Mlistfold (_, ix, ia, c, a, b) -> T.Ifold (unloc ix, unloc ia, f c, f a, T.Iassign (unloc ia, f b))
 
     (* map api expression *)
@@ -796,11 +791,6 @@ let concrete_michelson b =
   | T.BsetNth _       -> error ()
   | T.BlistContains _ -> T.SEQ [UNPAIR; PUSH (T.tbool, T.Dfalse); SWAP; ITER [DIG 2; DUP; DUG 3; COMPARE; EQ; OR; ]; DIP (1, [DROP 1])]
   | T.BlistNth _      -> error ()
-  | T.BlistReverse t  -> T.SEQ [NIL t; SWAP; PAIR; LEFT (T.tlist t);
-                                LOOP_LEFT [
-                                  DUP; CAR; DIP (1, [CDR]);
-                                  IF_CONS ([SWAP; DIP (1, [CONS]); PAIR; LEFT (T.tlist t)],
-                                           [RIGHT (T.tpair (T.tlist t) (T.tlist t))])]]
   | T.BmapNth _       -> error ()
   | T.Btostring _     -> error ()
   | T.Bratcmp         -> T.SEQ [UNPAIR; UNPAIR; DIP (1, [UNPAIR]); UNPAIR; DUG 3; MUL; DIP (1, [MUL]); SWAP; COMPARE; SWAP;
