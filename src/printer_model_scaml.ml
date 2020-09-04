@@ -1157,6 +1157,8 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "list_reverse (%a)"
           f l
 
+      | Mlistfold _ -> emit_error (UnsupportedTerm ("Mlistfold"))
+
 
       (* map api expression *)
 

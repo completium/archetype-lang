@@ -301,6 +301,7 @@ type ('id, 'term) mterm_node  =
   | Mlistcontains     of type_ * 'term * 'term
   | Mlistnth          of type_ * 'term * 'term
   | Mlistreverse      of type_ * 'term
+  | Mlistfold         of type_ * 'id   * 'id   * 'term * 'term * 'term
   (* map api expression *)
   | Mmapput           of type_ * type_ * 'term * 'term * 'term
   | Mmapremove        of type_ * type_ * 'term * 'term
@@ -1218,6 +1219,7 @@ let cmp_mterm_node
     | Mlistcontains (t1, c1, a1), Mlistcontains (t2, c2, a2)                           -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
     | Mlistnth (t1, c1, a1), Mlistnth (t2, c2, a2)                                     -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
     | Mlistreverse (t1, l1), Mlistreverse (t2, l2)                                     -> cmp_type t1 t2 && cmp l1 l2
+    | Mlistfold (t1, ix1, ia1, c1, a1, b1), Mlistfold (t2, ix2, ia2, c2, a2, b2)       -> cmp_type t1 t2 && cmp_lident ix1 ix2 && cmp_lident ia1 ia2 && cmp c1 c2 && cmp a1 a2 && cmp b1 b2
     (* map api expression *)
     | Mmapput (tk1, tv1, c1, k1, v1), Mmapput (tk2, tv2, c2, k2, v2)                   -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2 && cmp v1 v2
     | Mmapremove (tk1, tv1, c1, k1), Mmapremove (tk2, tv2, c2, k2)                     -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2
@@ -1583,6 +1585,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mlistcontains (t, c, a)        -> Mlistcontains (t, f c, f a)
   | Mlistnth (t, c, a)             -> Mlistnth (t, f c, f a)
   | Mlistreverse(t, l)             -> Mlistreverse(t, f l)
+  | Mlistfold (t, ix, ia, c, a, b) -> Mlistfold (ft t, g ix, g ia, f c, f a, f b)
   (* map api expression *)
   | Mmapput (tk, tv, c, k, v)      -> Mmapput (ft tk, ft tv, f c, f k, f v)
   | Mmapremove (tk, tv, c, k)      -> Mmapremove (ft tk, ft tv, f c, f k)
@@ -1949,6 +1952,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mlistcontains (_, c, a)               -> f (f accu c) a
   | Mlistnth (_, c, a)                    -> f (f accu c) a
   | Mlistreverse (_, l)                   -> f accu l
+  | Mlistfold (_, _, _, c, a, b)          -> f (f (f accu c) a) b
   (* map api expression *)
   | Mmapput (_, _, c, k, v)               -> f (f (f accu c) k) v
   | Mmapremove (_, _, c, k)               -> f (f accu c) k
@@ -2666,6 +2670,12 @@ let fold_map_term
   | Mlistreverse (t, l) ->
     let le, la = f accu l in
     g (Mlistreverse (t, le)), la
+
+  | Mlistfold (t, ix, ia, c, a, b) ->
+    let ce, ca = f accu c in
+    let ae, aa = f ca a in
+    let be, ba = f aa b in
+    g (Mlistfold (t, ix, ia, ce, ae, be)), ba
 
 
   (* map api expression *)

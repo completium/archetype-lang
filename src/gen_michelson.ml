@@ -595,6 +595,7 @@ let to_ir (model : M.model) : T.ir =
     | Mlistcontains (t, c, a)    -> let b = T.BlistContains (to_type t) in add_builtin b; T.Icall (get_fun_name b, [f c; f a])
     | Mlistnth (t, c, a)         -> let b = T.BlistNth (to_type t) in add_builtin b; T.Icall (get_fun_name b, [f c; f a])
     | Mlistreverse (t, l)        -> let b = T.BlistReverse (to_type t) in add_builtin b; T.Icall (get_fun_name b, [f l])
+    | Mlistfold (_, ix, ia, c, a, b) -> T.Ifold (unloc ix, unloc ia, f c, f a, T.Iassign (unloc ia, f b))
 
     (* map api expression *)
 

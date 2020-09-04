@@ -3499,6 +3499,24 @@ let remove_asset (model : model) : model =
           { mt with node = node }
         end
 
+      | Mlistreverse (t, l) -> begin
+          let l = fm ctx l in
+
+          let tl = Tlist t in
+
+          let empty = mk_mterm (Mlitlist []) tl in
+
+          let iid = dumloc "_liid" in
+          let vid = mk_mterm (Mvar(iid, Vlocal, Tnone, Dnone)) t in
+
+          let iaccu = dumloc "_accu" in
+          let vaccu = mk_mterm (Mvar(iaccu, Vlocal, Tnone, Dnone)) t in
+
+          let b =  mk_mterm (Mlistprepend(t, vaccu, vid)) tl in
+
+          mk_mterm (Mlistfold(t, iid, iaccu, l, empty, b)) tl
+        end
+
       (* effect *)
 
       | Maddasset (an, v) -> add_asset (fm ctx) an v

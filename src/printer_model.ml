@@ -848,6 +848,14 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "list_reverse (%a)"
         f l
 
+    | Mlistfold (t, ix, ia, c, a, b) ->
+      Format.fprintf fmt "list_%a_fold (%a, %a, (%a, %a) -> %a)"
+        pp_type t
+        f c
+        f a
+        pp_id ia
+        pp_id ix
+        f b
 
     (* map api expression *)
 
