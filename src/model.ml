@@ -299,6 +299,7 @@ type ('id, 'term) mterm_node  =
   | Mlistlength       of type_ * 'term
   | Mlistcontains     of type_ * 'term * 'term
   | Mlistnth          of type_ * 'term * 'term
+  | Mlistreverse      of type_ * 'term
   (* map api expression *)
   | Mmapput           of type_ * type_ * 'term * 'term * 'term
   | Mmapremove        of type_ * type_ * 'term * 'term
@@ -437,6 +438,7 @@ and api_list =
   | Lcontains        of type_
   | Llength          of type_
   | Lnth             of type_
+  | Lreverse         of type_
 [@@deriving show {with_path = false}]
 
 and api_builtin =
@@ -1213,6 +1215,7 @@ let cmp_mterm_node
     | Mlistlength (t1, c1), Mlistlength (t2, c2)                                       -> cmp_type t1 t2 && cmp c1 c2
     | Mlistcontains (t1, c1, a1), Mlistcontains (t2, c2, a2)                           -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
     | Mlistnth (t1, c1, a1), Mlistnth (t2, c2, a2)                                     -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
+    | Mlistreverse (t1, l1), Mlistreverse (t2, l2)                                     -> cmp_type t1 t2 && cmp l1 l2
     (* map api expression *)
     | Mmapput (tk1, tv1, c1, k1, v1), Mmapput (tk2, tv2, c2, k2, v2)                   -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2 && cmp v1 v2
     | Mmapremove (tk1, tv1, c1, k1), Mmapremove (tk2, tv2, c2, k2)                     -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2
@@ -1329,6 +1332,7 @@ let cmp_api_item_node (a1 : api_storage_node) (a2 : api_storage_node) : bool =
     | Lcontains t1, Lcontains t2 -> cmp_type t1 t2
     | Llength   t1, Llength   t2 -> cmp_type t1 t2
     | Lnth      t1, Lnth      t2 -> cmp_type t1 t2
+    | Lreverse  t1, Lreverse  t2 -> cmp_type t1 t2
     | _ -> false
   in
   let cmp_api_builtin (b1 : api_builtin) (b2 : api_builtin) : bool =
@@ -1575,6 +1579,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mlistlength(t, c)              -> Mlistlength(t, f c)
   | Mlistcontains (t, c, a)        -> Mlistcontains (t, f c, f a)
   | Mlistnth (t, c, a)             -> Mlistnth (t, f c, f a)
+  | Mlistreverse(t, l)             -> Mlistreverse(t, f l)
   (* map api expression *)
   | Mmapput (tk, tv, c, k, v)      -> Mmapput (ft tk, ft tv, f c, f k, f v)
   | Mmapremove (tk, tv, c, k)      -> Mmapremove (ft tk, ft tv, f c, f k)
@@ -1939,6 +1944,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mlistlength (_, c)                    -> f accu c
   | Mlistcontains (_, c, a)               -> f (f accu c) a
   | Mlistnth (_, c, a)                    -> f (f accu c) a
+  | Mlistreverse (_, l)                   -> f accu l
   (* map api expression *)
   | Mmapput (_, _, c, k, v)               -> f (f (f accu c) k) v
   | Mmapremove (_, _, c, k)               -> f (f accu c) k
@@ -2647,6 +2653,10 @@ let fold_map_term
     let ae, aa = f ca a in
     g (Mlistnth (t, ce, ae)), aa
 
+  | Mlistreverse (t, l) ->
+    let le, la = f accu l in
+    g (Mlistreverse (t, le)), la
+
 
   (* map api expression *)
 
@@ -3086,6 +3096,7 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
         | Lcontains t -> Lcontains (for_type t)
         | Llength   t -> Llength   (for_type t)
         | Lnth      t -> Lnth      (for_type t)
+        | Lreverse  t -> Lreverse  (for_type t)
       in
       let for_api_builtin (abuiltin : api_builtin) : api_builtin =
         match abuiltin with
@@ -4391,19 +4402,20 @@ end = struct
              | APIList    (Lcontains     _) -> 26
              | APIList    (Llength       _) -> 27
              | APIList    (Lnth          _) -> 28
-             | APIBuiltin (Bmin          _) -> 29
-             | APIBuiltin (Bmax          _) -> 30
-             | APIBuiltin (Babs          _) -> 31
-             | APIBuiltin (Bconcat       _) -> 32
-             | APIBuiltin (Bslice        _) -> 33
-             | APIBuiltin (Blength       _) -> 34
-             | APIBuiltin (Bisnone       _) -> 35
-             | APIBuiltin (Bissome       _) -> 36
-             | APIBuiltin (Boptget       _) -> 37
-             | APIBuiltin (Bfloor         ) -> 38
-             | APIBuiltin (Bceil          ) -> 39
-             | APIBuiltin (Btostring     _) -> 40
-             | APIBuiltin (Bfail         _) -> 41
+             | APIList    (Lreverse      _) -> 29
+             | APIBuiltin (Bmin          _) -> 30
+             | APIBuiltin (Bmax          _) -> 31
+             | APIBuiltin (Babs          _) -> 32
+             | APIBuiltin (Bconcat       _) -> 33
+             | APIBuiltin (Bslice        _) -> 34
+             | APIBuiltin (Blength       _) -> 35
+             | APIBuiltin (Bisnone       _) -> 36
+             | APIBuiltin (Bissome       _) -> 37
+             | APIBuiltin (Boptget       _) -> 38
+             | APIBuiltin (Bfloor         ) -> 39
+             | APIBuiltin (Bceil          ) -> 40
+             | APIBuiltin (Btostring     _) -> 41
+             | APIBuiltin (Bfail         _) -> 42
            in
            let idx1 = get_kind i1.node_item in
            let idx2 = get_kind i2.node_item in

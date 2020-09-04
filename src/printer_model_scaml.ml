@@ -334,6 +334,7 @@ let pp_model fmt (model : model) =
     | Lcontains t -> Format.fprintf fmt "list_contains\t %a" pp_type t
     | Llength t   -> Format.fprintf fmt "list_length\t %a" pp_type t
     | Lnth t      -> Format.fprintf fmt "list_nth\t %a" pp_type t
+    | Lreverse t  -> Format.fprintf fmt "list_reverse\t %a" pp_type t
   in
 
   let pp_api_builtin fmt = function
@@ -1150,6 +1151,10 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "list_nth (%a, %a)"
           f c
           f a
+
+      | Mlistreverse (_, l) ->
+        Format.fprintf fmt "list_reverse (%a)"
+          f l
 
 
       (* map api expression *)

@@ -86,6 +86,8 @@ let generate_api_storage ?(verif=false) (model : model) : model =
         [APIList (Llength t)]
       | Mlistnth (t, _, _) ->
         [APIList (Lnth t)]
+      | Mlistreverse (t, _) ->
+        [APIList (Lreverse t)]
       | Mmax _ when is_rat ->
         [APIInternal (RatCmp) ; APIBuiltin (Bmax mt_type)]
       | Mmax _ ->

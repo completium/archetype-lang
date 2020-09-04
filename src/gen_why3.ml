@@ -1959,6 +1959,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | Logic | Inv | Def -> nth
         | _ -> mk_match (dl nth) "_a" (loc_term (Tvar "_a")) Enotfound
       end
+    | Mlistreverse _ -> error_not_translated "Mlistreverse"
 
     (* map api expression *)
 

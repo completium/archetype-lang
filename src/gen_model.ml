@@ -505,6 +505,11 @@ let to_model (ast : A.ast) : M.model =
         let t = extract_builtin_type_list fp in
         M.Mlistnth (t, fp, fq)
 
+      | A.Pcall (None, A.Cconst (A.Creverse), [AExpr p]) when is_list p ->
+        let fp = f p in
+        let t = extract_builtin_type_list fp in
+        M.Mlistreverse (t, fp)
+
 
       (* Map *)
 

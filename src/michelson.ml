@@ -221,6 +221,7 @@ type builtin =
   | BsetNth of type_
   | BlistContains of type_
   | BlistNth of type_
+  | BlistReverse of type_
   | BmapNth of (type_ * type_)
   | Btostring of type_
   | Bratcmp
@@ -517,11 +518,33 @@ let cmp_code lhs rhs =
 
 let cmp_builtin lhs rhs =
   match lhs, rhs with
+  (* | Bmin of type_
+  | Bmax of type_
+  | Bfloor
+  | Bceil
+  | BsetNth of type_
+  | BlistContains of type_
+  | BlistNth of type_
+  | BlistReverse of type_
+  | BmapNth of (type_ * type_)
+  | Btostring of type_
+  | Bratcmp
+  | Bratnorm
+  | Brataddsub
+  | Bratdiv
+  | Bratmul
+  | Bratuminus
+  | Brattez
+  | Bratdur *)
+
   | Bfloor, Bfloor                     -> true
   | Bceil, Bceil                       -> true
   | Btostring t1, Btostring t2         -> cmp_type t1 t2
+  | BsetNth t1, BsetNth t2             -> cmp_type t1 t2
   | BlistContains t1, BlistContains t2 -> cmp_type t1 t2
   | BlistNth t1, BlistNth t2           -> cmp_type t1 t2
+  | BlistReverse t1, BlistReverse t2   -> cmp_type t1 t2
+  | BmapNth (k1, v1), BmapNth (k2, v2) -> cmp_type k1 k2 && cmp_type v1 v2
   | _ -> false
 
 let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) = function
@@ -651,6 +674,7 @@ end = struct
     | BsetNth t       -> "_set_nth_"       ^ (ft t)
     | BlistContains t -> "_list_contains_" ^ (ft t)
     | BlistNth t      -> "_list_nth_"      ^ (ft t)
+    | BlistReverse t  -> "_list_reverse_"  ^ (ft t)
     | Btostring t     -> "_to_string_"     ^ (ft t)
     | BmapNth (k, v)  -> "_map_nth_"       ^ (ft k) ^ "_" ^ (ft v)
     | Bratcmp         -> "_ratcmp"

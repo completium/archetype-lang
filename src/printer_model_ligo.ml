@@ -1194,6 +1194,11 @@ let pp_model_internal fmt (model : model) b =
         f c
         f a
 
+    | Mlistreverse (t, l) ->
+      Format.fprintf fmt "list_%a_reverse (%a)"
+        pp_pretty_type t
+        f l
+
 
     (* map api expression *)
 
@@ -2376,6 +2381,17 @@ let pp_model_internal fmt (model : model) b =
         pp_type t
         pp_type t
         pp_type t pp_type t
+
+    | Lreverse t  ->
+      Format.fprintf fmt
+        "function list_%a_reverse (const l : list(%a)) : list(%a) is@\n  \
+         block {@\ \
+         function rev (const accu: list(%a); const x: %a) : list(%a) is x # accu;@\n    \
+         }@\n  \
+         with list_fold (rev, l, ((list [] : list(%a))))@\n"
+        pp_pretty_type t pp_type t pp_type t
+        pp_type t pp_type t pp_type t
+        pp_type t
   in
 
   let pp_api_builtin (_env : env) fmt = function

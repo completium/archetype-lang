@@ -954,6 +954,7 @@ let listops : opinfo list =
     ("list_head_tail" , A.Cheadtail , `Total  , Some lst, [       ], A.Ttuple [elemt; lst] , Mint.empty);
     ("contains"       , A.Ccontains , `Total  , Some lst, [elemt  ], A.vtbool              , Mint.empty);
     ("nth"            , A.Cnth      , `Partial, Some lst, [A.vtnat], elemt                 , Mint.empty);
+    ("reverse"        , A.Creverse  , `Total  , Some lst, [       ], lst                   , Mint.empty);
   ]
 
 (* -------------------------------------------------------------------- *)
