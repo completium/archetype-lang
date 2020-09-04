@@ -4064,11 +4064,16 @@ let remove_asset (model : model) : model =
       (* expression *)
 
       | Mselect (an, _, _, _, _) -> begin
+          (* TODO *)
           let tk = Utils.get_asset_key model an |> snd in
           mk_mterm (Mlitlist []) (Tlist tk)
         end
 
-      | Msort      _ -> mt
+      | Msort (an, _, _) -> begin
+          (* TODO *)
+          let tk = Utils.get_asset_key model an |> snd in
+          mk_mterm (Mlitlist []) (Tlist tk)
+        end
 
       | Mcontains (an, ck, k) -> begin
           let k = fm ctx k in
@@ -4114,7 +4119,48 @@ let remove_asset (model : model) : model =
           in
           mk_mterm node tbool
         end
-      | Mnth       _ -> mt
+
+      | Mnth (an, ck, n) -> begin
+          let n = fm ctx n in
+          match ck with
+          | CKcoll _ -> begin
+              let va = get_asset_global an in
+              match va.type_ with
+              | Tset tk          -> mk_mterm (Msetnth (tk, va, n)) tk
+              | Tmap (_, tk, tv) -> mk_mterm (Mtupleaccess ((mk_mterm (Mmapnth (tk, tv, va, n)) (Ttuple [tk; tv])), Big_int.zero_big_int)) tk
+              | _ -> assert false
+            end
+          | CKview v -> begin
+              let tk = Utils.get_asset_key model an |> snd in
+              let v = fm ctx v in
+              mk_mterm (Mlistnth (tk, v, n)) tk
+            end
+          | CKfield (an, fn, kk, _, _) -> begin
+              let kk = fm ctx kk in
+
+              let va = get_asset_global an in
+
+              let _, is_record = is_single_simple_record an in
+              let aan, _ = Utils.get_field_container model an fn in
+              let atk = Utils.get_asset_key model aan |> snd in
+
+              let tk, tv =
+                match va.type_ with
+                | Tmap (_, tk, tv) -> tk, tv
+                | _ -> assert false
+              in
+
+              let set =
+                let get = mk_mterm (Mmapget (tk, tv, va, kk)) tv in
+                if is_record
+                then get
+                else mk_mterm (Mdot(get, dumloc fn)) (Tset atk)
+              in
+
+              mk_mterm (Msetnth(atk, set, n)) atk
+            end
+          | CKdef _ -> assert false
+        end
 
       | Mcount (an, ck) -> begin
           let node =
@@ -4160,9 +4206,26 @@ let remove_asset (model : model) : model =
           mk_mterm node tnat
         end
 
-      | Msum       _ -> mt
-      | Mhead      _ -> mt
-      | Mtail      _ -> mt
+      | Msum (_an, _ck, _p) -> begin
+          (* TODO *)
+          match mt.type_ with
+          | Tbuiltin Bnat -> mk_mterm (Mnat Big_int.zero_big_int) tnat
+          | Tbuiltin Bint -> mk_mterm (Mint Big_int.zero_big_int) tint
+          | Ttuple [Tbuiltin Bint; Tbuiltin Bnat] -> Utils.mk_rat Big_int.zero_big_int Big_int.unit_big_int
+          | _ -> assert false
+        end
+
+      | Mhead (an, _ck, _n) -> begin
+          (* TODO *)
+          let tk = Utils.get_asset_key model an |> snd in
+          mk_mterm (Mlitlist []) (Tlist tk)
+        end
+
+      | Mtail (an, _ck, _n) -> begin
+          (* TODO *)
+          let tk = Utils.get_asset_key model an |> snd in
+          mk_mterm (Mlitlist []) (Tlist tk)
+        end
 
       | _ -> map_mterm (fm ctx) mt
     in

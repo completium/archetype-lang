@@ -218,8 +218,10 @@ type builtin =
   | Bmax of type_
   | Bfloor
   | Bceil
+  | BsetNth of type_
   | BlistContains of type_
   | BlistNth of type_
+  | BmapNth of (type_ * type_)
   | Btostring of type_
   | Bratcmp
   | Bratnorm
@@ -646,9 +648,11 @@ end = struct
     | Bmax t          -> "_max_" ^ (ft t)
     | Bfloor          -> "_floor"
     | Bceil           -> "_ceil"
+    | BsetNth t       -> "_set_nth_"       ^ (ft t)
     | BlistContains t -> "_list_contains_" ^ (ft t)
     | BlistNth t      -> "_list_nth_"      ^ (ft t)
     | Btostring t     -> "_to_string_"     ^ (ft t)
+    | BmapNth (k, v)  -> "_map_nth_"       ^ (ft k) ^ "_" ^ (ft v)
     | Bratcmp         -> "_ratcmp"
     | Bratnorm        -> "_ratnorm"
     | Brataddsub      -> "_rataddsub"

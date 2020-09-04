@@ -803,6 +803,12 @@ let pp_mterm fmt (mt : mterm) =
         pp_type t
         f c
 
+    | Msetnth (t, c, a) ->
+      Format.fprintf fmt "set_%a_nth (%a, %a)"
+        pp_type t
+        f c
+        f a
+
 
     (* list api expression *)
 
@@ -861,6 +867,11 @@ let pp_mterm fmt (mt : mterm) =
     | Mmaplength (_, _, c) ->
       Format.fprintf fmt "map_length (%a)"
         f c
+
+    | Mmapnth (_, _, c, a) ->
+      Format.fprintf fmt "map_nth (%a, %a)"
+        f c
+        f a
 
 
     (* builtin functions *)

@@ -292,6 +292,7 @@ type ('id, 'term) mterm_node  =
   | Msetremove        of type_ * 'term * 'term
   | Msetcontains      of type_ * 'term * 'term
   | Msetlength        of type_ * 'term
+  | Msetnth           of type_ * 'term * 'term
   (* list api expression *)
   | Mlistprepend      of type_ * 'term * 'term
   | Mlistheadtail     of type_ * 'term
@@ -305,6 +306,7 @@ type ('id, 'term) mterm_node  =
   | Mmapgetopt        of type_ * type_ * 'term * 'term
   | Mmapcontains      of type_ * type_ * 'term * 'term
   | Mmaplength        of type_ * type_ * 'term
+  | Mmapnth           of type_ * type_ * 'term * 'term
   (* builtin functions *)
   | Mmin              of 'term * 'term
   | Mmax              of 'term * 'term
@@ -1204,6 +1206,7 @@ let cmp_mterm_node
     | Msetremove (t1, c1, a1), Msetremove (t2, c2, a2)                                 -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
     | Msetcontains (t1, c1, a1), Msetcontains (t2, c2, a2)                             -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
     | Msetlength (t1, c1), Msetlength (t2, c2)                                         -> cmp_type t1 t2 && cmp c1 c2
+    | Msetnth (t1, c1, a1), Msetnth (t2, c2, a2)                                     -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
     (* list api expression *)
     | Mlistprepend (t1, c1, a1), Mlistprepend (t2, c2, a2)                             -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
     | Mlistheadtail (t1, c1), Mlistheadtail (t2, c2)                                   -> cmp_type t1 t2 && cmp c1 c2
@@ -1217,6 +1220,7 @@ let cmp_mterm_node
     | Mmapgetopt (tk1, tv1, c1, k1), Mmapgetopt (tk2, tv2, c2, k2)                     -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2
     | Mmapcontains (tk1, tv1, c1, k1), Mmapcontains (tk2, tv2, c2, k2)                 -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2
     | Mmaplength (tk1, tv1, c1), Mmaplength (tk2, tv2, c2)                             -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2
+    | Mmapnth (tk1, tv1, c1, a1), Mmapnth (tk2, tv2, c2, a2)                           -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp a1 a2
     (* builtin functions *)
     | Mmin (l1, r1), Mmin (l2, r2)                                                     -> cmp l1 l2 && cmp r1 r2
     | Mmax (l1, r1), Mmax (l2, r2)                                                     -> cmp l1 l2 && cmp r1 r2
@@ -1564,6 +1568,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Msetremove (t, c, a)           -> Msetremove (ft t, f c, f a)
   | Msetcontains (t, c, a)         -> Msetcontains (ft t, f c, f a)
   | Msetlength (t, c)              -> Msetlength (ft t, f c)
+  | Msetnth (t, c, a)              -> Msetnth (t, f c, f a)
   (* list api expression *)
   | Mlistprepend (t, c, a)         -> Mlistprepend (ft t, f c, f a)
   | Mlistheadtail(t, c)            -> Mlistheadtail(t, f c)
@@ -1577,6 +1582,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mmapgetopt (tk, tv, c, k)      -> Mmapgetopt (ft tk, ft tv, f c, f k)
   | Mmapcontains (tk, tv, c, k)    -> Mmapcontains (ft tk, ft tv, f c, f k)
   | Mmaplength (tk, tv, c)         -> Mmaplength (ft tk, ft tv, f c)
+  | Mmapnth (tk, tv, c, a)         -> Mmapnth (ft tk, ft tv, f c, f a)
   (* builtin functions *)
   | Mmin (l, r)                    -> Mmin (f l, f r)
   | Mmax (l, r)                    -> Mmax (f l, f r)
@@ -1876,8 +1882,8 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mdot (e, _)                           -> f accu e
   | Mdotassetfield (_, k, _)              -> f accu k
   (* comparison operators *)
-  | Mequal (_, l, r)                         -> f (f accu l) r
-  | Mnequal (_, l, r)                        -> f (f accu l) r
+  | Mequal (_, l, r)                      -> f (f accu l) r
+  | Mnequal (_, l, r)                     -> f (f accu l) r
   | Mgt (l, r)                            -> f (f accu l) r
   | Mge (l, r)                            -> f (f accu l) r
   | Mlt (l, r)                            -> f (f accu l) r
@@ -1926,6 +1932,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Msetremove (_, c, a)                  -> f (f accu c) a
   | Msetcontains (_, c, a)                -> f (f accu c) a
   | Msetlength (_, c)                     -> f accu c
+  | Msetnth (_, c, a)                     -> f (f accu c) a
   (* list api expression *)
   | Mlistprepend (_, c, a)                -> f (f accu c) a
   | Mlistheadtail (_, c)                  -> f accu c
@@ -1939,6 +1946,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mmapgetopt (_, _, c, k)               -> f (f accu c) k
   | Mmapcontains (_, _, c, k)             -> f (f accu c) k
   | Mmaplength (_, _, c)                  -> f accu c
+  | Mmapnth (_, _, c, a)                  -> f (f accu c) a
   (* builtin functions *)
   | Mmax (l, r)                           -> f (f accu l) r
   | Mmin (l, r)                           -> f (f accu l) r
@@ -2608,6 +2616,11 @@ let fold_map_term
     let ce, ca = f accu c in
     g (Msetlength (t, ce)), ca
 
+  | Msetnth (t, c, a) ->
+    let ce, ca = f accu c in
+    let ae, aa = f ca a in
+    g (Msetnth (t, ce, ae)), aa
+
 
   (* list api expression *)
 
@@ -2667,6 +2680,10 @@ let fold_map_term
     let ce, ca = f accu c in
     g (Mmaplength (tk, tv, ce)), ca
 
+  | Mmapnth (tk, tv, c, a) ->
+    let ce, ca = f accu c in
+    let ae, aa = f ca a in
+    g (Mmapnth (tk, tv, ce, ae)), aa
 
   (* builtin functions *)
 

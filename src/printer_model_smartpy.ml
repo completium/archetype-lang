@@ -1124,6 +1124,8 @@ let pp_model fmt (model : model) =
           (* pp_type t *)
           f c
 
+      | Msetnth _ -> emit_error (UnsupportedTerm ("Msetnth"))
+
 
       (* list api expression *)
 
@@ -1180,6 +1182,8 @@ let pp_model fmt (model : model) =
       | Mmaplength (_, _, c) ->
         Format.fprintf fmt "sp.len(%a)"
           f c
+
+      | Mmapnth _ -> emit_error (UnsupportedTerm ("Mmapnth"))
 
 
       (* builtin functions *)

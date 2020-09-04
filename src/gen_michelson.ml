@@ -196,6 +196,11 @@ let to_ir (model : M.model) : T.ir =
         let tret  = T.tint in
         T.mk_func name targ tret (T.Abstract b)
       end
+    | BsetNth t -> begin
+        let targ = T.tpair (T.tset t) T.tnat in
+        let tret = t in
+        T.mk_func name targ tret (T.Abstract b)
+      end
     | BlistContains t -> begin
         let targ = T.tpair (T.tlist t) t in
         let tret = T.tbool in
@@ -229,6 +234,11 @@ let to_ir (model : M.model) : T.ir =
         end
         in
         T.mk_func name targ tret (T.Concrete (args, body))
+      end
+    | BmapNth (k, v) -> begin
+        let targ = T.tpair (T.tmap k v) T.tnat in
+        let tret = T.tpair k v in
+        T.mk_func name targ tret (T.Abstract b)
       end
     | Btostring t -> begin
         let targ = t in
@@ -569,7 +579,7 @@ let to_ir (model : M.model) : T.ir =
     | Msetremove (_, c, a)     -> T.Iterop (Tupdate, f a, T.ifalse, f c)
     | Msetcontains (_, c, k)   -> T.Ibinop (Bmem, f k, f c)
     | Msetlength (_, c)        -> T.Iunop  (Usize, f c)
-
+    | Msetnth (t, c, a)        -> let b = T.BsetNth (to_type t) in add_builtin b; T.Icall (get_fun_name b, [f c; f a])
 
     (* list api expression *)
 
@@ -587,6 +597,7 @@ let to_ir (model : M.model) : T.ir =
     | Mmapgetopt (_, _, c, k)     -> T.Ibinop (Bget, f k, f c)
     | Mmapcontains (_, _, c, k)   -> T.Ibinop (Bmem, f k, f c)
     | Mmaplength (_, _, c)        -> T.Iunop (Usize, f c)
+    | Mmapnth (kt, kv, c, a)      -> let b = T.BmapNth (to_type kt, to_type kv) in add_builtin b; T.Icall (get_fun_name b, [f c; f a])
 
 
     (* builtin functions *)
@@ -774,8 +785,10 @@ let concrete_michelson b =
   | T.Bmax _          -> T.SEQ [DUP; UNPAIR; COMPARE; LT; IF ([CDR], [CAR])]
   | T.Bfloor          -> T.SEQ [UNPAIR; EDIV; IF_NONE ([T.cfail "DivByZero"], [CAR])]
   | T.Bceil           -> T.SEQ [UNPAIR; EDIV; IF_NONE ([T.cfail "DivByZero"], [UNPAIR; SWAP; INT; EQ; IF ([], [PUSH (T.tint, T.Dint Big_int.unit_big_int); ADD])])]
+  | T.BsetNth _       -> error ()
   | T.BlistContains _ -> T.SEQ [UNPAIR; PUSH (T.tbool, T.Dfalse); SWAP; ITER [DIG 2; DUP; DUG 3; COMPARE; EQ; OR; ]; DIP (1, [DROP 1])]
   | T.BlistNth _      -> error ()
+  | T.BmapNth _       -> error ()
   | T.Btostring _     -> error ()
   | T.Bratcmp         -> T.SEQ [UNPAIR; UNPAIR; DIP (1, [UNPAIR]); UNPAIR; DUG 3; MUL; DIP (1, [MUL]); SWAP; COMPARE; SWAP;
                                 IF_LEFT ([DROP 1; EQ], [IF_LEFT ([IF_LEFT ([DROP 1; LT], [DROP 1; LE])],
