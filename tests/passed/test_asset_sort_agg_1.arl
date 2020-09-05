@@ -18,7 +18,7 @@ asset my_asset {
 
 variable res : list<nat> = []
 
-entry exec (n : nat) {
+entry exec () {
   my_asset.update("id", {c = [0; 1; 2]});
   res := my_asset["id"].c.sort(desc(id));
 }

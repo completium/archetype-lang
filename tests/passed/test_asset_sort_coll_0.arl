@@ -10,6 +10,6 @@ asset my_asset identified by id {
 
 variable res : list<nat> = []
 
-entry exec (n : nat) {
+entry exec () {
   res := my_asset.sort(desc(id));
 }
