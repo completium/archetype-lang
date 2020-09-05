@@ -3537,6 +3537,7 @@ module Utils : sig
   val get_fss                            : model -> function_struct list
   val get_fs                             : model -> ident -> function_struct
   val extract_assign_kind                : mterm -> assign_kind list
+  val extract_asset_name_effect          : model -> mterm -> ident list
 
 end = struct
 
@@ -4697,9 +4698,43 @@ end = struct
     List.find (fun (x : function_struct) -> String.equal id (unloc x.name)) (get_fss model)
 
   let extract_assign_kind (mt : mterm) : assign_kind list =
-  let rec aux accu (t : mterm) =
-    match t.node with
-    | Massign (_, _, ak, _) -> ak::accu
-    | _ -> fold_term aux accu t in
-  aux [] mt
+    let rec aux accu (t : mterm) =
+      match t.node with
+      | Massign (_, _, ak, _) -> ak::accu
+      | _ -> fold_term aux accu t in
+    aux [] mt
+
+  let extract_asset_name_effect (model : model) (mt : mterm) : ident list =
+    let only_partition accu an fn =
+      let aan, c = get_field_container model an fn in
+      match c with
+      | Partition -> aan::accu
+      | _ -> accu
+    in
+    let with_partition accu an fn =
+      let accu = an::accu in
+      only_partition accu an fn
+    in
+    let all_partition accu an =
+      let accu = an::accu in
+      let parts = get_asset_partitions model an in
+      List.fold_left (fun accu (aan, afn) -> only_partition accu aan afn) accu parts
+    in
+    let rec aux accu (t : mterm) =
+      match t.node with
+      | Maddasset (an, _)                                 -> an::accu
+      | Maddfield (an, fn, _, _)                          -> with_partition accu an fn
+      | Mremoveasset (an, _)                              -> an::accu
+      | Mremovefield (an, fn, _, _)                       -> with_partition accu an fn
+      | Mremoveall (an, fn, _)                            -> only_partition accu an fn
+      | Mremoveif (an, CKcoll _, _, _, _)                 -> all_partition accu an
+      | Mremoveif (an, CKfield (_, fn, _, _, _), _, _, _) -> only_partition accu an fn
+      | Mclear (an, CKcoll _)                             -> all_partition accu an
+      | Mclear (an, CKview _)                             -> all_partition accu an
+      | Mclear (an, CKfield (_, fn, _, _, _))             -> only_partition accu an fn
+      | Mset (an, _, _, _)                                -> an::accu
+      | Maddforce (an, _)                                 -> all_partition accu an
+      | _ -> fold_term aux accu t in
+    aux [] mt
+
 end
