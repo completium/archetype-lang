@@ -193,6 +193,15 @@ PASSED="\
 ./tests/passed/test_removeif_part_0.arl \
 ./tests/passed/test_removeif_part_1.arl \
 ./tests/passed/test_removeif_part_2.arl \
+./tests/passed/test_asset_select_coll_0.arl \
+./tests/passed/test_asset_select_coll_1.arl \
+./tests/passed/test_asset_select_coll_2.arl \
+./tests/passed/test_asset_select_view_0.arl \
+./tests/passed/test_asset_select_view_1.arl \
+./tests/passed/test_asset_select_view_2.arl \
+./tests/passed/test_asset_select_agg_0.arl \
+./tests/passed/test_asset_select_agg_1.arl \
+./tests/passed/test_asset_select_agg_2.arl \
 "
 
 RET=0

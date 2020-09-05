@@ -946,6 +946,9 @@ let tstring = Tbuiltin Bstring
 
 let mk_string x = mk_mterm (Mstring x) tstring
 
+let mtrue = mk_mterm (Mbool true) tbool
+let mfalse = mk_mterm (Mbool false) tbool
+
 let fail x = mk_mterm (Mfail (Invalid (mk_string x))) tunit
 let mnot x = mk_mterm (Mnot x) tbool
 

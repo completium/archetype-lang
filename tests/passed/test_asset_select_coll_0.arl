@@ -1,4 +1,4 @@
-archetype test_asset_select_0
+archetype test_asset_select_coll_0
 
 asset my_asset identified by id {
   id : nat;

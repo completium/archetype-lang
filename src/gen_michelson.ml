@@ -227,9 +227,9 @@ let to_ir (model : M.model) : T.ir =
           let ares      = T.Iassign (res_name, T.isome(T.icar ve)) in
           let alist     = T.Iassign (list_name, T.icdr ve) in
           let aiter     = T.Iassign (iter_name, T.Ibinop (Badd, viter, T.inat Big_int.unit_big_int)) in
-          let bloop     = T.IletIn(e_name, vheadtail, T.Iseq [ares; alist; aiter]) in
+          let bloop     = T.IletIn(e_name, vheadtail, T.Iseq [ares; alist; aiter], true) in
           let loop      = T.Iwhile (cond, bloop) in
-          let body      = T.IletIn(res_name, T.inone t, IletIn(iter_name, T.inat Big_int.zero_big_int, T.Iseq [loop; return])) in
+          let body      = T.IletIn(res_name, T.inone t, IletIn(iter_name, T.inat Big_int.zero_big_int, T.Iseq [loop; return], true), true) in
           args, body
         end
         in
@@ -271,9 +271,9 @@ let to_ir (model : M.model) : T.ir =
           let assign_res = T.Iassign (res_name, concat) in
           let assign_arg = T.Iassign (arg_name, T.Iunop (Ucar, vpair)) in
           let vpair      = T.Iifnone (T.Ibinop (Bediv, varg, ten), T.ifail "DivByZero", id, "_var_ifnone") in
-          let b          = T.IletIn(pair_name, vpair, T.Iseq [assign_res; assign_arg]) in
+          let b          = T.IletIn(pair_name, vpair, T.Iseq [assign_res; assign_arg], true) in
           let loop       = T.Iwhile (cond, b) in
-          let a          = T.IletIn(res_name, T.istring "", IletIn(map_name, map, T.Iseq [loop; return vres]) ) in
+          let a          = T.IletIn(res_name, T.istring "", IletIn(map_name, map, T.Iseq [loop; return vres], true), true) in
           args, T.Iif (cond, a, return (T.istring "0"))
         end
         in
@@ -348,7 +348,7 @@ let to_ir (model : M.model) : T.ir =
 
     (* lambda *)
 
-    | Mletin ([id], v, _, b, _) -> T.IletIn (unloc id, f v, f b)
+    | Mletin ([id], v, _, b, _) -> let is_unit = match mtt.type_ with Tunit -> true | _ -> false in T.IletIn (unloc id, f v, f b, is_unit)
     | Mletin _                  -> emit_error (UnsupportedTerm ("Mletin"))
     | Mdeclvar _                -> emit_error (UnsupportedTerm ("Mdeclvar"))
     | Mapp (e, args)            -> T.Icall (unloc e, List.map f args)
@@ -866,11 +866,13 @@ let to_michelson (ir : T.ir) : T.michelson =
     match i with
     | Iseq l               -> seq env l
 
-    | IletIn (id, v, b)    -> begin
+    | IletIn (id, v, b, u)    -> begin
         let v, _ = f v in
         let env0 = add_var_env env id in
         let b, _ = fe env0 b in
-        T.SEQ [v; b; T.DROP 1], env
+        if u
+        then T.SEQ [v; b; T.DROP 1], env
+        else T.SEQ [v; b; T.DIP (1, [T.DROP 1])], inc_env env
       end
 
     | Ivar id -> begin

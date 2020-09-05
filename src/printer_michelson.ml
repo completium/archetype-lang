@@ -179,7 +179,7 @@ let rec pp_instruction fmt (i : instruction) =
   match i with
   | Iseq [] -> pp "{ }"
   | Iseq l -> (pp_list ";@\n" f) fmt l
-  | IletIn (id, v, b) -> Format.fprintf fmt "let %a = %a in@\n  @[%a@]" pp_id id f v f b
+  | IletIn (id, v, b, _) -> Format.fprintf fmt "let %a = %a in@\n  @[%a@]" pp_id id f v f b
   | Ivar id -> pp_id fmt id
   | Icall (id, args)         -> Format.fprintf fmt "%a(%a)" pp_id id (pp_list ", " f) args
   | Iassign (id, v)          -> Format.fprintf fmt "%a := @[%a@]" pp_id id f v

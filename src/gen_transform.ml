@@ -4144,6 +4144,60 @@ let remove_asset (model : model) : model =
                 end
               | _ -> assert false
             end
+          | CKfield (an, fn, k, _, _) -> begin
+              let va = get_asset_global an in
+              let get =
+                match va.type_ with
+                | Tmap (_, kt, vt) -> mk_mterm (Mmapget (kt, vt, va, fm ctx k)) vt
+                | _ -> assert false
+              in
+
+              let aan, _ = Utils.get_field_container model an fn in
+              let _ , aatk = Utils.get_asset_key model aan in
+              let tr = Tlist aatk in
+
+              let set =
+                let _, is_record = is_single_simple_record an in
+                if is_record
+                then get
+                else mk_mterm (Mdot(get, dumloc fn)) (Tset aatk)
+              in
+
+              let iid = dumloc "_sid" in
+              let vid = mk_mterm (Mvar (iid, Vlocal, Tnone, Dnone)) aatk in
+
+              let iaccu = dumloc "_accu" in
+              let vaccu = mk_mterm (Mvar (iaccu, Vlocal, Tnone, Dnone)) aatk in
+
+              let vaa = get_asset_global aan in
+              let geta =
+                match vaa.type_ with
+                | Tmap (_, kt, vt) -> Some (mk_mterm (Mmapget (kt, vt, vaa, vid)) vt)
+                | _ -> None
+              in
+
+              let body =
+                let act = mk_mterm (Mlistprepend(atk, vaccu, vid)) tr in
+                match geta with
+                | Some g -> begin
+                    let ival = dumloc "_v" in
+                    let vval = mk_mterm (Mvar(ival, Vlocal, Tnone, Dnone)) g.type_ in
+
+                    let cond = fm ctx (mk_cond aan vid (Some vval) b) in
+                    let body = mk_mterm (Mif (cond, act, Some vaccu)) tr in
+                    mk_mterm (Mletin([ival], g, Some g.type_, body, None)) tr
+                  end
+                | None -> begin
+                    let cond = fm ctx (mk_cond aan vid None b) in
+                    mk_mterm (Mif (cond, act, Some vaccu)) tr
+                  end
+              in
+
+              let empty = mk_mterm (Mlitlist []) tr in
+
+              let fold = mk_mterm (Msetfold(atk, iid, iaccu, set, empty, body)) tr in
+              mk_mterm (Mlistreverse (atk, fold)) tbool |> fm ctx
+            end
           | _ -> assert false
         end
 

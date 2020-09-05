@@ -235,7 +235,7 @@ type builtin =
 
 type instruction =
   | Iseq        of instruction list
-  | IletIn      of ident * instruction * instruction
+  | IletIn      of ident * instruction * instruction * bool
   | Ivar        of ident
   | Icall       of ident * instruction list
   | Iassign     of ident * instruction
