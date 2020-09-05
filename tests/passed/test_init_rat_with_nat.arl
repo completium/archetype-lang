@@ -1,0 +1,7 @@
+archetype test_init_rat_with_nat
+
+variable res : rational = 0
+
+entry exec () {
+  ()
+}

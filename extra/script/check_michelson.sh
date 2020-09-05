@@ -202,6 +202,16 @@ PASSED="\
 ./tests/passed/test_asset_select_view_0.arl \
 ./tests/passed/test_asset_select_view_1.arl \
 ./tests/passed/test_asset_select_view_2.arl \
+./tests/passed/test_asset_sum_coll_0.arl \
+./tests/passed/test_asset_sum_coll_1.arl \
+./tests/passed/test_asset_sum_coll_2.arl \
+./tests/passed/test_asset_sum_agg_0.arl \
+./tests/passed/test_asset_sum_agg_1.arl \
+./tests/passed/test_asset_sum_agg_2.arl \
+./tests/passed/test_asset_sum_view_0.arl \
+./tests/passed/test_asset_sum_view_1.arl \
+./tests/passed/test_asset_sum_view_2.arl \
+./tests/passed/test_asset_sum_coll_rat.arl \
 "
 
 RET=0
