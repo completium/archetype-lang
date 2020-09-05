@@ -4104,15 +4104,15 @@ let remove_asset (model : model) : model =
           | CKcoll _ -> begin
               let va = get_asset_global an in
               match va.type_ with
-              | Tset _ -> begin
+              | Tset skt -> begin
 
                   let empty = mk_mterm (Mlitlist []) tr in
 
                   let iid = dumloc "_sid" in
-                  let vid = mk_mterm (Mvar (iid, Vlocal, Tnone, Dnone)) atk in
+                  let vid = mk_mterm (Mvar (iid, Vlocal, Tnone, Dnone)) skt in
 
                   let iaccu = dumloc "_accu" in
-                  let vaccu = mk_mterm (Mvar (iaccu, Vlocal, Tnone, Dnone)) atk in
+                  let vaccu = mk_mterm (Mvar (iaccu, Vlocal, Tnone, Dnone)) tr in
 
                   let cond  = mk_cond an vid None b in
                   let mthen = mk_mterm (Mlistprepend(atk, vaccu, vid)) tr in
@@ -4121,18 +4121,18 @@ let remove_asset (model : model) : model =
                   let fold = mk_mterm (Msetfold(atk, iid, iaccu, va, empty, mif)) tr in
                   mk_mterm (Mlistreverse (atk, fold)) tbool |> fm ctx
                 end
-              | Tmap _ -> begin
+              | Tmap (_, mkt, mkv) -> begin
 
                   let empty = mk_mterm (Mlitlist []) tr in
 
                   let ikid = dumloc "_kid" in
-                  let vkid = mk_mterm (Mvar (ikid, Vlocal, Tnone, Dnone)) atk in
+                  let vkid = mk_mterm (Mvar (ikid, Vlocal, Tnone, Dnone)) mkt in
 
                   let ivid = dumloc "_vid" in
-                  let vvid = mk_mterm (Mvar (ivid, Vlocal, Tnone, Dnone)) atk in
+                  let vvid = mk_mterm (Mvar (ivid, Vlocal, Tnone, Dnone)) mkv in
 
                   let iaccu = dumloc "_accu" in
-                  let vaccu = mk_mterm (Mvar (iaccu, Vlocal, Tnone, Dnone)) atk in
+                  let vaccu = mk_mterm (Mvar (iaccu, Vlocal, Tnone, Dnone)) tr in
 
                   let cond  = mk_cond an vkid (Some vvid) b in
                   let mthen = mk_mterm (Mlistprepend(atk, vaccu, vkid)) tr in

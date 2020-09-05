@@ -899,9 +899,9 @@ let pp_mterm fmt (mt : mterm) =
         pp_type t
         f c
         f a
-        pp_id ia
         pp_id ik
         pp_id iv
+        pp_id ia
         f b
 
     (* builtin functions *)
