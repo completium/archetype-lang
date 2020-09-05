@@ -1,0 +1,17 @@
+archetype test_asset_nth_view_2
+
+asset my_asset identified by id {
+  id : string;
+  v  : nat;
+  b  : bool;
+} initialized by {
+  {"id0"; 0; true};
+  {"id1"; 1; true};
+  {"id2"; 2; true}
+}
+
+variable res : string = ""
+
+entry exec (n : nat) {
+  res := my_asset.select(the.id <> "").nth(n);
+}

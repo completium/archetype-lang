@@ -1,0 +1,17 @@
+archetype test_asset_head_view_2
+
+asset my_asset identified by id {
+  id : nat;
+  s : string;
+  b : bool;
+} initialized by {
+  {0; "mystr0"; true};
+  {1; "mystr1"; true};
+  {2; "mystr2"; true}
+}
+
+variable res : list<nat> = []
+
+entry exec (n : nat) {
+  res := my_asset.select(the.id >= 0).head(n);
+}

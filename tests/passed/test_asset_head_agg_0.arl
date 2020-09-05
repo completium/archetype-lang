@@ -1,4 +1,4 @@
-archetype test_asset_sum_agg_0
+archetype test_asset_head_agg_0
 
 asset o_asset {
   id : nat;
@@ -15,9 +15,9 @@ asset my_asset {
   {"id"; []}
 }
 
-variable res : nat = 0
+variable res : list<nat> = []
 
-entry exec () {
+entry exec (n : nat) {
   my_asset.update("id", {c = [0; 1; 2]});
-  res := my_asset["id"].c.sum(id);
+  res := my_asset["id"].c.head(n);
 }

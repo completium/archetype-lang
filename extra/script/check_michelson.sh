@@ -212,6 +212,42 @@ PASSED="\
 ./tests/passed/test_asset_sum_view_1.arl \
 ./tests/passed/test_asset_sum_view_2.arl \
 ./tests/passed/test_asset_sum_coll_rat.arl \
+./tests/passed/test_asset_nth_coll_0.arl \
+./tests/passed/test_asset_nth_coll_1.arl \
+./tests/passed/test_asset_nth_coll_2.arl \
+./tests/passed/test_asset_nth_agg_0.arl \
+./tests/passed/test_asset_nth_agg_1.arl \
+./tests/passed/test_asset_nth_agg_2.arl \
+./tests/passed/test_asset_nth_view_0.arl \
+./tests/passed/test_asset_nth_view_1.arl \
+./tests/passed/test_asset_nth_view_2.arl \
+./tests/passed/test_asset_head_coll_0.arl \
+./tests/passed/test_asset_head_coll_1.arl \
+./tests/passed/test_asset_head_coll_2.arl \
+./tests/passed/test_asset_head_agg_0.arl \
+./tests/passed/test_asset_head_agg_1.arl \
+./tests/passed/test_asset_head_agg_2.arl \
+./tests/passed/test_asset_head_view_0.arl \
+./tests/passed/test_asset_head_view_1.arl \
+./tests/passed/test_asset_head_view_2.arl \
+./tests/passed/test_asset_tail_coll_0.arl \
+./tests/passed/test_asset_tail_coll_1.arl \
+./tests/passed/test_asset_tail_coll_2.arl \
+./tests/passed/test_asset_tail_agg_0.arl \
+./tests/passed/test_asset_tail_agg_1.arl \
+./tests/passed/test_asset_tail_agg_2.arl \
+./tests/passed/test_asset_tail_view_0.arl \
+./tests/passed/test_asset_tail_view_1.arl \
+./tests/passed/test_asset_tail_view_2.arl \
+./tests/passed/test_asset_sort_coll_0.arl \
+./tests/passed/test_asset_sort_coll_1.arl \
+./tests/passed/test_asset_sort_coll_2.arl \
+./tests/passed/test_asset_sort_agg_0.arl \
+./tests/passed/test_asset_sort_agg_1.arl \
+./tests/passed/test_asset_sort_agg_2.arl \
+./tests/passed/test_asset_sort_view_0.arl \
+./tests/passed/test_asset_sort_view_1.arl \
+./tests/passed/test_asset_sort_view_2.arl \
 "
 
 RET=0

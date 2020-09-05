@@ -4259,10 +4259,11 @@ let remove_asset (model : model) : model =
           mk_list_reverse atk r
         end
 
-      | Msort (an, _, _) -> begin
+      | Msort (_an, _, _) -> begin
           (* TODO *)
-          let tk = Utils.get_asset_key model an |> snd in
-          mk_mterm (Mlitlist []) (Tlist tk)
+          (* let tk = Utils.get_asset_key model an |> snd in *)
+          (* mk_mterm (Mlitlist []) (Tlist tk) *)
+          assert false
         end
 
       | Mcontains (an, ck, k) -> begin
@@ -4310,7 +4311,10 @@ let remove_asset (model : model) : model =
           mk_mterm node tbool
         end
 
-      | Mnth (an, ck, n) -> begin
+      | Mnth (_an, _ck, _n) -> begin
+          assert false
+        end
+      (* | Mnth (an, ck, n) -> begin
           let n = fm ctx n in
           match ck with
           | CKcoll _ -> begin
@@ -4350,7 +4354,7 @@ let remove_asset (model : model) : model =
               mk_mterm (Msetnth(atk, set, n)) atk
             end
           | CKdef _ -> assert false
-        end
+         end *)
 
       | Mcount (an, ck) -> begin
           let node =
@@ -4438,16 +4442,18 @@ let remove_asset (model : model) : model =
           fold_ck (fm ctx) (an, ck) init mk
         end
 
-      | Mhead (an, _ck, _n) -> begin
+      | Mhead (_an, _ck, _n) -> begin
           (* TODO *)
-          let tk = Utils.get_asset_key model an |> snd in
-          mk_mterm (Mlitlist []) (Tlist tk)
+          (* let tk = Utils.get_asset_key model an |> snd in *)
+          (* mk_mterm (Mlitlist []) (Tlist tk) *)
+          assert false
         end
 
-      | Mtail (an, _ck, _n) -> begin
+      | Mtail (_an, _ck, _n) -> begin
           (* TODO *)
-          let tk = Utils.get_asset_key model an |> snd in
-          mk_mterm (Mlitlist []) (Tlist tk)
+          (* let tk = Utils.get_asset_key model an |> snd in *)
+          (* mk_mterm (Mlitlist []) (Tlist tk) *)
+          assert false
         end
 
       (* misc *)
