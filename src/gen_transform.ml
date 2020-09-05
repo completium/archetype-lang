@@ -3838,7 +3838,22 @@ let remove_asset (model : model) : model =
           in
 
           let add_val id x = mk_mterm (Mplus   (get_val id, x)) x.type_ in
-          let sub_val id x = mk_mterm (Mminus  (get_val id, x)) x.type_ in
+
+          let sub_val id (x : mterm) =
+            let _, t, _ = Utils.get_asset_field model (an, unloc id) in
+            match t with
+            |  Tbuiltin Bnat -> begin
+                let a = mk_mterm (Mminus (get_val id, x)) (Tbuiltin Bint) in
+                let zero = mk_mterm (Mint Big_int.zero_big_int) (Tbuiltin Bint) in
+                let cond = mk_mterm (Mge (a, zero)) (Tbuiltin Bbool) in
+                let v = mk_mterm (Mabs a) (Tbuiltin Bnat) in
+                let f = mk_mterm (Mfail AssignNat) (Tunit) in
+                let c = mk_mterm (Mcast (Tunit, Tbuiltin Bnat, f)) (Tbuiltin Bnat) in
+                mk_mterm (Mexprif (cond, v, c)) (Tbuiltin Bnat)
+              end
+            | _ ->  mk_mterm (Mminus  (get_val id, x)) x.type_
+          in
+
           let mul_val id x = mk_mterm (Mmult   (get_val id, x)) x.type_ in
           let div_val id x = mk_mterm (Mdiveuc (get_val id, x)) x.type_ in
           let and_val id x = mk_mterm (Mand    (get_val id, x)) x.type_ in
