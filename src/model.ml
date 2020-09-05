@@ -3538,6 +3538,7 @@ module Utils : sig
   val get_fs                             : model -> ident -> function_struct
   val extract_assign_kind                : mterm -> assign_kind list
   val extract_asset_name_effect          : model -> mterm -> ident list
+  val extract_var_idents                 : mterm -> ident list
 
 end = struct
 
@@ -4736,5 +4737,26 @@ end = struct
       | Maddforce (an, _)                                 -> all_partition accu an
       | _ -> fold_term aux accu t in
     aux [] mt
+
+  let extract_var_idents (mt : mterm) : ident list =
+    let rec aux env accu (t : mterm) =
+      match t.node with
+      | Mletin (ids, a, _, b, o) -> begin
+          let f = aux (env @ (List.map unloc ids)) in
+          let tmp = f (f accu a) b in
+          Option.map_dfl (f tmp) tmp o
+        end
+      | Mvar (id, Vlocal, _, _)  when not (List.exists (String.equal (unloc id)) env) -> (unloc id)::accu
+      | Mvar (id, Vstorevar, _, _) -> (unloc id)::accu
+      | Mvar (_,  Vstate, _, _)    -> "state"::accu
+      | Mnow                       -> "now"::accu
+      | Mtransferred               -> "transferred"::accu
+      | Mcaller                    -> "caller"::accu
+      | Mbalance                   -> "balance"::accu
+      | Msource                    -> "source"::accu
+      | Mselfaddress               -> "selfaddress"::accu
+      | Mchainid                   -> "chainid"::accu
+      | _ -> fold_term (aux env) accu t in
+    aux [] [] mt
 
 end
