@@ -4246,12 +4246,18 @@ let remove_asset (model : model) : model =
 
             let cond  = mk_cond an vkid vvid b in
             let mthen = mk_mterm (Mlistprepend(atk, vaccu, vkid)) tr in
-            let mif   = mk_mterm (Mif (cond, mthen, Some vaccu)) tunit in
+            let mif   = mk_mterm (Mif (cond, mthen, Some vaccu)) tr in
             mif
           in
 
-          let atk = Utils.get_asset_key model an |> snd in
-          let tr = Tlist atk in
+          let atk, tr =
+            let a =
+              match ck with
+              | CKfield (an, fn, _, _, _) -> Utils.get_field_container model an fn |> fst |> Utils.get_asset_key model |> snd
+              | _ -> Utils.get_asset_key model an |> snd
+            in
+            a, Tlist a
+          in
 
           let empty = mk_mterm (Mlitlist []) tr in
           let r = fold_ck (fm ctx) (an, ck) empty mk in
@@ -4339,47 +4345,6 @@ let remove_asset (model : model) : model =
           |> mk_tupleaccess 1
           |> mk_optget
         end
-      (* | Mnth (an, ck, n) -> begin
-          let n = fm ctx n in
-          match ck with
-          | CKcoll _ -> begin
-              let va = get_asset_global an in
-              match va.type_ with
-              | Tset tk          -> mk_mterm (Msetnth (tk, va, n)) tk
-              | Tmap (_, tk, tv) -> mk_mterm (Mtupleaccess ((mk_mterm (Mmapnth (tk, tv, va, n)) (Ttuple [tk; tv])), Big_int.zero_big_int)) tk
-              | _ -> assert false
-            end
-          | CKview v -> begin
-              let tk = Utils.get_asset_key model an |> snd in
-              let v = fm ctx v in
-              mk_mterm (Mlistnth (tk, v, n)) tk
-            end
-          | CKfield (an, fn, kk, _, _) -> begin
-              let kk = fm ctx kk in
-
-              let va = get_asset_global an in
-
-              let _, is_record = is_single_simple_record an in
-              let aan, _ = Utils.get_field_container model an fn in
-              let atk = Utils.get_asset_key model aan |> snd in
-
-              let tk, tv =
-                match va.type_ with
-                | Tmap (_, tk, tv) -> tk, tv
-                | _ -> assert false
-              in
-
-              let set =
-                let get = mk_mterm (Mmapget (tk, tv, va, kk)) tv in
-                if is_record
-                then get
-                else mk_mterm (Mdot(get, dumloc fn)) (Tset atk)
-              in
-
-              mk_mterm (Msetnth(atk, set, n)) atk
-            end
-          | CKdef _ -> assert false
-         end *)
 
       | Mcount (an, ck) -> begin
           let node =
@@ -4467,11 +4432,40 @@ let remove_asset (model : model) : model =
           fold_ck (fm ctx) (an, ck) init mk
         end
 
-      | Mhead (_an, _ck, _n) -> begin
-          (* TODO *)
-          (* let tk = Utils.get_asset_key model an |> snd in *)
-          (* mk_mterm (Mlitlist []) (Tlist tk) *)
-          assert false
+      | Mhead (an, ck, n) -> begin
+          let n = fm ctx n in
+
+          let atk, tr =
+            let a =
+              match ck with
+              | CKfield (an, fn, _, _, _) -> Utils.get_field_container model an fn |> fst |> Utils.get_asset_key model |> snd
+              | _ -> Utils.get_asset_key model an |> snd
+            in
+            a, Tlist a
+          in
+
+          let mk vkid _vvid (vaccu : mterm) : mterm =
+
+            let vtn = mk_tupleaccess 0 vaccu in
+            let vtr = mk_tupleaccess 1 vaccu in
+
+            let inc = mk_mterm (Mplus(vtn, mk_nat 1)) tnat in
+
+            let cond  = mk_mterm (Mlt(vtn, n)) tbool in
+            let add   = mk_mterm (Mlistprepend(atk, vtr, vkid)) tr in
+            let mthen = mk_tuple [inc; add] in
+            let melse = mk_tuple [inc; vtr] in
+            let mif   = mk_mterm (Mif (cond, mthen, Some melse)) vaccu.type_ in
+            mif
+          in
+
+          let init_0 = mk_nat 0 in
+          let init_1 = mk_mterm (Mlitlist []) tr in
+          let init   = mk_tuple [init_0; init_1] in
+
+          fold_ck (fm ctx) (an, ck) init mk
+          |> mk_tupleaccess 1
+          |> mk_list_reverse atk
         end
 
       | Mtail (_an, _ck, _n) -> begin
