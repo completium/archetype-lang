@@ -62,6 +62,7 @@ entry consume (a : address, quantity : int) {
         added.mile.isempty()
       }
     }
+
   }
 
   called by admin
@@ -71,7 +72,7 @@ entry consume (a : address, quantity : int) {
   }
 
   effect {
-    var by_expiration = owner[a].miles.sort(expiration).select(the.expiration > now);
+    var by_expiration = owner[a].miles.sort(expiration).select(the.expiration >= now);
     dorequire (by_expiration.sum(the.amount) >= quantity, "NotEnoughMiles");
     var remainder = quantity;
     for : loop m in by_expiration do
@@ -115,10 +116,10 @@ entry clear_expired () {
   }
 }
 
-security {
+/*security {
   (*  this ensures that any mile was added with the 'add' entry *)
   g1 : only_by_role (anyentry, admin);
   g2 : only_in_entry (remove (mile), [consume or clear_expired]);
   g3 : not_in_entry (add (mile), consume);
   g4 : no_storage_fail (add)
-}
+}*/

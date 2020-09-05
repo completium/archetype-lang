@@ -383,6 +383,10 @@ let mk_sum_clone m asset key tkey formula =
       Cval ("to_view", cap_asset ^ ".to_view");
       Cval ("empty", (String.capitalize_ascii (mk_view_id asset)) ^ ".empty");
       Cval ("contains", (String.capitalize_ascii (mk_view_id asset)) ^ ".contains");
+      Cval ("nth", (String.capitalize_ascii (mk_view_id asset)) ^ ".nth");
+      Cval ("head", (String.capitalize_ascii (mk_view_id asset)) ^ ".head");
+      Cval ("tail", (String.capitalize_ascii (mk_view_id asset)) ^ ".tail");
+      Cval ("card", (String.capitalize_ascii (mk_view_id asset)) ^ ".card");
       Cval ("add", cap_asset ^ ".add");
       Cval ("remove", cap_asset ^ ".remove");
       Cval ("set", cap_asset ^ ".set");
