@@ -4063,33 +4063,52 @@ let remove_asset (model : model) : model =
 
       (* expression *)
 
-      | Mselect (an, ck, _, _b, _) -> begin
+      | Mselect (an, ck, _, b, _) -> begin
           let atk = Utils.get_asset_key model an |> snd in
           let tr = Tlist atk in
-          let node =
-            match ck with
-            | CKcoll _ -> begin
-                let va = get_asset_global an in
-                match va.type_ with
-                | Tset _ -> begin
 
-                    let empty = mk_mterm (Mlitlist []) tr in
-
-                    let iid = dumloc "_sid" in
-                    let vid = mk_mterm (Mvar(iid, Vlocal, Tnone, Dnone)) atk in
-
-                    let iaccu = dumloc "_accu" in
-                    let vaccu = mk_mterm (Mvar(iaccu, Vlocal, Tnone, Dnone)) atk in
-
-                    let b =  mk_mterm (Mlistprepend(atk, vaccu, vid)) tr in
-
-                    Msetfold(atk, iid, iaccu, va, empty, b)
-                  end
-                | _ -> assert false
-              end
-            | _ -> assert false
+          let get_val an v fn t : mterm =
+            let _, is_record = is_single_simple_record an in
+            if is_record
+            then v
+            else mk_mterm (Mdot(v, fn)) t
           in
-          mk_mterm node tr
+
+          let mk_cond an vkey vval x =
+            let akn, _akt = Utils.get_asset_key model an in
+            let rec aux (mt : mterm) : mterm =
+              match mt.node with
+              | Mdot ({node = Mvar ({pldesc = "the"}, _, _, _); _}, fn) when String.equal (unloc fn) akn -> vkey
+              | Mdot ({node = Mvar ({pldesc = "the"}, _, _, _); _}, fn) -> get_val an (Option.get vval) fn mt.type_
+              | _ -> map_mterm aux mt
+            in
+            aux x
+          in
+
+          match ck with
+          | CKcoll _ -> begin
+              let va = get_asset_global an in
+              match va.type_ with
+              | Tset _ -> begin
+
+                  let empty = mk_mterm (Mlitlist []) tr in
+
+                  let iid = dumloc "_sid" in
+                  let vid = mk_mterm (Mvar (iid, Vlocal, Tnone, Dnone)) atk in
+
+                  let iaccu = dumloc "_accu" in
+                  let vaccu = mk_mterm (Mvar (iaccu, Vlocal, Tnone, Dnone)) atk in
+
+                  let cond  = mk_cond an vid None b in
+                  let mthen = mk_mterm (Mlistprepend(atk, vaccu, vid)) tr in
+                  let mif   = mk_mterm (Mif (cond, mthen, Some vaccu)) tunit in
+
+                  let fold = mk_mterm (Msetfold(atk, iid, iaccu, va, empty, mif)) tr in
+                  mk_mterm (Mlistreverse (atk, fold)) tbool |> fm ctx
+                end
+              | _ -> assert false
+            end
+          | _ -> assert false
         end
 
       | Msort (an, _, _) -> begin
