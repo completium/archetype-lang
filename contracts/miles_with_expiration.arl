@@ -55,14 +55,14 @@ entry consume (a : address, quantity : int) {
         removed.mile.subsetof(by_expiration)
       }
     }
-/*
+
     postcondition p4 {
       added.mile.isempty()
       invariant for loop {
         added.mile.isempty()
       }
     }
-  */
+
   }
 
   called by admin
@@ -72,7 +72,7 @@ entry consume (a : address, quantity : int) {
   }
 
   effect {
-    var by_expiration = owner[a].miles.sort(expiration).select(the.expiration > now);
+    var by_expiration = owner[a].miles.sort(expiration).select(the.expiration >= now);
     dorequire (by_expiration.sum(the.amount) >= quantity, "NotEnoughMiles");
     var remainder = quantity;
     for : loop m in by_expiration do
