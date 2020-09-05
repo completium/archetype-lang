@@ -759,7 +759,12 @@ module View
   lemma tail0: forall v. tail 0 v = v
 
   (* ------------------------------------------------------------------------ *)
-  lemma tail_empty: forall n v. n >= card v -> tail n v = empty
+  lemma tail_empty: forall i v. i >= card v -> tail i v = empty
+
+  (* ------------------------------------------------------------------------ *)
+  lemma tail_not_contains_succ: forall i k v.
+  nth i v = Some k ->
+  not (contains k (tail (i+1) v))
 
   (* ------------------------------------------------------------------------ *)
   let function eq (v1 v2 : view) : bool
@@ -1299,6 +1304,7 @@ module Collection
   requires { contains k c }
   ensures { get k result = Some a }
   ensures { forall i. i <> k -> get i result = get i c }
+  ensures { forall x. mem x result -> x = a \/ (a <> x /\ mem x c) }
   =
   let rec internal_set (l : list t) : list t
   requires { key_injective l }
@@ -1716,6 +1722,18 @@ module Sum
   val function contains tk view : bool
 
   (* ------------------------------------------------------------------------ *)
+  val function nth int view : option tk
+
+  (* ------------------------------------------------------------------------ *)
+  val function head int view : view
+
+  (* ------------------------------------------------------------------------ *)
+  val function tail int view : view
+
+  (* ------------------------------------------------------------------------ *)
+  val function card view : int
+
+  (* ------------------------------------------------------------------------ *)
   val function add t collection : collection
 
   (* ------------------------------------------------------------------------ *)
@@ -1761,6 +1779,32 @@ module Sum
   keyt a = k ->
   sum (to_view (set k a c)) (set k a c) = sum (to_view c) c +
   match get k c with | Some r -> field a - field r | None -> 0 end
+
+  (* ------------------------------------------------------------------------ *)
+  axiom effect_gt0 : forall v c.
+  (forall e. get (keyt e) c = Some e -> field e >= 0) -> 
+  sum v c >= 0
+
+  (* ------------------------------------------------------------------------ *)
+  axiom effect_tail_succ : forall i v c.
+  sum (tail (i+1) v) c = sum (tail i v) c - 
+  match nth i v with
+  | Some k -> match get k c with | Some a -> field a | None -> 0 end
+  | None -> 0
+  end
+
+  (* ------------------------------------------------------------------------ *)
+  axiom effect_head_succ : forall i v c.
+  sum (head (i+1) v) c = sum (head i v) c + 
+  match nth (i+1) v with
+  | Some k -> match get k c with | Some a -> field a | None -> 0 end
+  | None -> 0
+  end
+
+  (* ------------------------------------------------------------------------ *)
+  axiom effect_remove_not_in_view : forall k v c.
+  not (contains k v) ->
+  sum v (remove k c) = sum v c
 
 end
 

@@ -55,13 +55,14 @@ entry consume (a : address, quantity : int) {
         removed.mile.subsetof(by_expiration)
       }
     }
-
+/*
     postcondition p4 {
       added.mile.isempty()
       invariant for loop {
         added.mile.isempty()
       }
     }
+  */
   }
 
   called by admin
@@ -115,10 +116,10 @@ entry clear_expired () {
   }
 }
 
-security {
+/*security {
   (*  this ensures that any mile was added with the 'add' entry *)
   g1 : only_by_role (anyentry, admin);
   g2 : only_in_entry (remove (mile), [consume or clear_expired]);
   g3 : not_in_entry (add (mile), consume);
   g4 : no_storage_fail (add)
-}
+}*/
