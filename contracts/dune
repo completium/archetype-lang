@@ -31,6 +31,7 @@
   (miles_with_expiration.arl as contracts/miles_with_expiration.arl)
   (miles.arl as contracts/miles.arl)
   (mini_dao.arl as contracts/mini_dao.arl)
+  (mwe_fit.arl as contracts/mwe_fit.arl)
   (mwe_medium.arl as contracts/mwe_medium.arl)
   (oraclesetvalue.arl as contracts/oraclesetvalue.arl)
   (perishable.arl as contracts/perishable.arl)

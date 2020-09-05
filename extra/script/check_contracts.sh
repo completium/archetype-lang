@@ -34,6 +34,7 @@ miles_with_expiration_simple.arl \
 miles_with_expiration.arl \
 miles.arl \
 mini_dao.arl \
+mwe_fit.arl \
 mwe_medium.arl \
 oraclesetvalue.arl \
 perishable.arl \
@@ -79,6 +80,7 @@ miles_with_expiration_simple.arl \
 miles_with_expiration.arl \
 miles.arl \
 mini_dao.arl \
+mwe_fit.arl \
 mwe_medium.arl \
 oraclesetvalue.arl \
 perishable.arl \
@@ -124,6 +126,7 @@ miles_with_expiration_simple.arl \
 miles_with_expiration.arl \
 miles.arl \
 mini_dao.arl \
+mwe_fit.arl \
 mwe_medium.arl \
 oraclesetvalue.arl \
 perishable.arl \
