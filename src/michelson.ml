@@ -218,8 +218,10 @@ type builtin =
   | Bmax of type_
   | Bfloor
   | Bceil
+  | BsetNth of type_
   | BlistContains of type_
   | BlistNth of type_
+  | BmapNth of (type_ * type_)
   | Btostring of type_
   | Bratcmp
   | Bratnorm
@@ -254,6 +256,7 @@ type instruction =
   | Imap        of type_ * type_ * (instruction * instruction) list
   | Irecord     of instruction list
   | Irecupdate  of instruction * int * (int * instruction) list (* value * size * (index, value) fields *)
+  | Ifold       of ident * ident * instruction * instruction * instruction (* var_iterated * var_accu * container * init * code*)
   | Imichelson  of instruction list * code * ident list
 [@@deriving show {with_path = false}]
 
@@ -515,11 +518,23 @@ let cmp_code lhs rhs =
 
 let cmp_builtin lhs rhs =
   match lhs, rhs with
+  | Bmin t1, Bmin t2                   -> cmp_type t1 t2
+  | Bmax t1, Bmax t2                   -> cmp_type t1 t2
   | Bfloor, Bfloor                     -> true
   | Bceil, Bceil                       -> true
-  | Btostring t1, Btostring t2         -> cmp_type t1 t2
+  | BsetNth t1, BsetNth t2             -> cmp_type t1 t2
   | BlistContains t1, BlistContains t2 -> cmp_type t1 t2
   | BlistNth t1, BlistNth t2           -> cmp_type t1 t2
+  | BmapNth (k1, v1), BmapNth (k2, v2) -> cmp_type k1 k2 && cmp_type v1 v2
+  | Btostring t1, Btostring t2         -> cmp_type t1 t2
+  | Bratcmp, Bratcmp                   -> true
+  | Bratnorm, Bratnorm                 -> true
+  | Brataddsub, Brataddsub             -> true
+  | Bratdiv, Bratdiv                   -> true
+  | Bratmul, Bratmul                   -> true
+  | Bratuminus, Bratuminus             -> true
+  | Brattez, Brattez                   -> true
+  | Bratdur, Bratdur                   -> true
   | _ -> false
 
 let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) = function
@@ -646,9 +661,11 @@ end = struct
     | Bmax t          -> "_max_" ^ (ft t)
     | Bfloor          -> "_floor"
     | Bceil           -> "_ceil"
+    | BsetNth t       -> "_set_nth_"       ^ (ft t)
     | BlistContains t -> "_list_contains_" ^ (ft t)
     | BlistNth t      -> "_list_nth_"      ^ (ft t)
     | Btostring t     -> "_to_string_"     ^ (ft t)
+    | BmapNth (k, v)  -> "_map_nth_"       ^ (ft k) ^ "_" ^ (ft v)
     | Bratcmp         -> "_ratcmp"
     | Bratnorm        -> "_ratnorm"
     | Brataddsub      -> "_rataddsub"

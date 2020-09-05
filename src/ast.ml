@@ -173,6 +173,7 @@ type const =
   | Cabs
   | Cprepend
   | Cheadtail
+  | Creverse
   (* map *)
   | Cmput
   | Cmremove

@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - specification declaration for asset, variable, entry and function
  - `fails` section in specification declaration
  - `xor` operator
- - `head_tail` builtin function for list
+ - `head_tail` and `reverse` builtin functions for list
 
 ## [1.1.2] - 2020-08-13
 ### Changed

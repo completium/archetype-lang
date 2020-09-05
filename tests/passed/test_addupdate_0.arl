@@ -1,0 +1,15 @@
+archetype test_addupdate_0
+
+asset my_asset identified by id {
+  id : string;
+  v : nat = 0;
+  value : int = 0i;
+} initialized by {
+  {"id0"; 0; 0i};
+  {"id1"; 0; 0i};
+  {"id2"; 0; 0i}
+}
+
+entry exec (n : nat) {
+  my_asset.addupdate("id2", {v = n})
+}

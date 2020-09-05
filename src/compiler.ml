@@ -224,7 +224,7 @@ let generate_target model =
     |> replace_col_by_key_for_ckfield
     |> process_asset_state
     |> replace_assignfield_by_update
-    |> remove_add_update
+    |> remove_add_update ~with_force:true
     (* |> remove_container_op_in_update *)
     |> merge_update
     |> remove_assign_operator

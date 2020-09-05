@@ -159,6 +159,40 @@ PASSED="\
 ./tests/passed/effect_method_asset_clear_view_with_aggregate.arl \
 ./tests/passed/effect_method_asset_clear_view_with_partition.arl \
 ./tests/passed/test_asset_update_5.arl \
+./tests/passed/test_asset_update_aggregate_1.arl \
+./tests/passed/test_asset_update_aggregate_2.arl \
+./tests/passed/test_asset_update_aggregate_3.arl \
+./tests/passed/test_asset_update_partition_1.arl \
+./tests/passed/test_asset_update_partition_2.arl \
+./tests/passed/test_asset_update_partition_3.arl \
+./tests/passed/test_asset_update_partition_4.arl \
+./tests/passed/test_asset_update_partition_5.arl \
+./tests/passed/test_asset_update_partition_6.arl \
+./tests/passed/test_asset_update_partition_7.arl \
+./tests/passed/test_asset_update_partition_8.arl \
+./tests/passed/test_asset_update_partition_9.arl \
+./tests/passed/expr_method_asset_contains.arl \
+./tests/passed/expr_method_asset_contains_aggregate.arl \
+./tests/passed/expr_method_asset_contains_one_field.arl \
+./tests/passed/expr_method_asset_contains_partition.arl \
+./tests/passed/expr_method_asset_contains_view.arl \
+./tests/passed/test_addupdate_0.arl \
+./tests/passed/test_addupdate_1.arl \
+./tests/passed/test_addupdate_2.arl \
+./tests/passed/expr_method_asset_count.arl \
+./tests/passed/expr_method_asset_count_aggregate.arl \
+./tests/passed/expr_method_asset_count_one_field.arl \
+./tests/passed/expr_method_asset_count_partition.arl \
+./tests/passed/expr_method_asset_count_view.arl \
+./tests/passed/test_removeif_coll_0.arl \
+./tests/passed/test_removeif_coll_1.arl \
+./tests/passed/test_removeif_coll_2.arl \
+./tests/passed/test_removeif_agg_0.arl \
+./tests/passed/test_removeif_agg_1.arl \
+./tests/passed/test_removeif_agg_2.arl \
+./tests/passed/test_removeif_part_0.arl \
+./tests/passed/test_removeif_part_1.arl \
+./tests/passed/test_removeif_part_2.arl \
 "
 
 RET=0

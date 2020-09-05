@@ -1,0 +1,14 @@
+archetype test_removeif_coll_1
+
+asset my_asset identified by id {
+  id     : nat;
+  s      : string;
+} initialized by {
+  {0; "mystr0"};
+  {1; "mystr1"};
+  {2; "mystr2"}
+}
+
+entry exec (n : nat, is : string) {
+  my_asset.removeif(the.id >= n or the.s = is)
+}

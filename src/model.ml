@@ -272,6 +272,7 @@ type ('id, 'term) mterm_node  =
   | Mset              of ident * ident list * 'term * 'term (*asset_name * field_name modified * ... *)
   | Mupdate           of ident * 'term * ('id * assignment_operator * 'term) list
   | Maddupdate        of ident * 'term container_kind_gen * 'term * ('id * assignment_operator * 'term) list
+  | Maddforce         of ident * 'term
   (* asset api expression *)
   | Mget              of ident * 'term container_kind_gen * 'term
   | Mselect           of ident * 'term container_kind_gen * (ident * type_) list * 'term * 'term list (* asset_name, view, lambda (args, body, apply_args) *)
@@ -291,12 +292,16 @@ type ('id, 'term) mterm_node  =
   | Msetremove        of type_ * 'term * 'term
   | Msetcontains      of type_ * 'term * 'term
   | Msetlength        of type_ * 'term
+  | Msetnth           of type_ * 'term * 'term
+  | Msetfold          of type_ * 'id   * 'id   * 'term * 'term * 'term
   (* list api expression *)
   | Mlistprepend      of type_ * 'term * 'term
   | Mlistheadtail     of type_ * 'term
   | Mlistlength       of type_ * 'term
   | Mlistcontains     of type_ * 'term * 'term
   | Mlistnth          of type_ * 'term * 'term
+  | Mlistreverse      of type_ * 'term
+  | Mlistfold         of type_ * 'id   * 'id   * 'term * 'term * 'term
   (* map api expression *)
   | Mmapput           of type_ * type_ * 'term * 'term * 'term
   | Mmapremove        of type_ * type_ * 'term * 'term
@@ -304,6 +309,7 @@ type ('id, 'term) mterm_node  =
   | Mmapgetopt        of type_ * type_ * 'term * 'term
   | Mmapcontains      of type_ * type_ * 'term * 'term
   | Mmaplength        of type_ * type_ * 'term
+  | Mmapnth           of type_ * type_ * 'term * 'term
   (* builtin functions *)
   | Mmin              of 'term * 'term
   | Mmax              of 'term * 'term
@@ -434,6 +440,7 @@ and api_list =
   | Lcontains        of type_
   | Llength          of type_
   | Lnth             of type_
+  | Lreverse         of type_
 [@@deriving show {with_path = false}]
 
 and api_builtin =
@@ -932,6 +939,8 @@ let mk_model ?(api_items = []) ?(api_verif = []) ?(decls = []) ?(functions = [])
 
 let tunit = Tunit
 let tbool = Tbuiltin Bbool
+let tnat  = Tbuiltin Bnat
+let tint  = Tbuiltin Bint
 let tstring = Tbuiltin Bstring
 
 let mk_string x = mk_mterm (Mstring x) tstring
@@ -1181,6 +1190,7 @@ let cmp_mterm_node
     | Mset (c1, l1, k1, v1), Mset (c2, l2, k2, v2)                                     -> cmp_ident c1 c2 && List.for_all2 cmp_ident l1 l2 && cmp k1 k2 && cmp v1 v2
     | Mupdate (an1, k1, l1), Mupdate (an2, k2, l2)                                     -> cmp_ident an1 an2 && cmp k1 k2 && List.for_all2 (fun (id1, op1, v1) (id2, op2, v2) -> cmpi id1 id2 && cmp_assign_op op1 op2 && cmp v1 v2) l1 l2
     | Maddupdate (an1, c1, k1, l1), Maddupdate (an2, c2, k2, l2)                       -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && cmp k1 k2 && List.for_all2 (fun (id1, op1, v1) (id2, op2, v2) -> cmpi id1 id2 && cmp_assign_op op1 op2 && cmp v1 v2) l1 l2
+    | Maddforce (an1, v1), Maddforce (an2, v2)                                         -> cmp_ident an1 an2 && cmp v1 v2
     (* asset api expression *)
     | Mget (an1, c1, k1), Mget (an2, c2, k2)                                           -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && cmp k1 k2
     | Mselect (an1, c1, la1, lb1, a1), Mselect (an2, c2, la2, lb2, a2)                 -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && List.for_all2 (fun (i1, t1) (i2, t2) -> cmp_ident i1 i2 && cmp_type t1 t2) la1 la2 && cmp lb1 lb2 && List.for_all2 cmp a1 a2
@@ -1200,12 +1210,16 @@ let cmp_mterm_node
     | Msetremove (t1, c1, a1), Msetremove (t2, c2, a2)                                 -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
     | Msetcontains (t1, c1, a1), Msetcontains (t2, c2, a2)                             -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
     | Msetlength (t1, c1), Msetlength (t2, c2)                                         -> cmp_type t1 t2 && cmp c1 c2
+    | Msetnth (t1, c1, a1), Msetnth (t2, c2, a2)                                       -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
+    | Msetfold (t1, ix1, ia1, c1, a1, b1), Msetfold (t2, ix2, ia2, c2, a2, b2)         -> cmp_type t1 t2 && cmp_lident ix1 ix2 && cmp_lident ia1 ia2 && cmp c1 c2 && cmp a1 a2 && cmp b1 b2
     (* list api expression *)
     | Mlistprepend (t1, c1, a1), Mlistprepend (t2, c2, a2)                             -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
     | Mlistheadtail (t1, c1), Mlistheadtail (t2, c2)                                   -> cmp_type t1 t2 && cmp c1 c2
     | Mlistlength (t1, c1), Mlistlength (t2, c2)                                       -> cmp_type t1 t2 && cmp c1 c2
     | Mlistcontains (t1, c1, a1), Mlistcontains (t2, c2, a2)                           -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
     | Mlistnth (t1, c1, a1), Mlistnth (t2, c2, a2)                                     -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
+    | Mlistreverse (t1, l1), Mlistreverse (t2, l2)                                     -> cmp_type t1 t2 && cmp l1 l2
+    | Mlistfold (t1, ix1, ia1, c1, a1, b1), Mlistfold (t2, ix2, ia2, c2, a2, b2)       -> cmp_type t1 t2 && cmp_lident ix1 ix2 && cmp_lident ia1 ia2 && cmp c1 c2 && cmp a1 a2 && cmp b1 b2
     (* map api expression *)
     | Mmapput (tk1, tv1, c1, k1, v1), Mmapput (tk2, tv2, c2, k2, v2)                   -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2 && cmp v1 v2
     | Mmapremove (tk1, tv1, c1, k1), Mmapremove (tk2, tv2, c2, k2)                     -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2
@@ -1213,6 +1227,7 @@ let cmp_mterm_node
     | Mmapgetopt (tk1, tv1, c1, k1), Mmapgetopt (tk2, tv2, c2, k2)                     -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2
     | Mmapcontains (tk1, tv1, c1, k1), Mmapcontains (tk2, tv2, c2, k2)                 -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2
     | Mmaplength (tk1, tv1, c1), Mmaplength (tk2, tv2, c2)                             -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2
+    | Mmapnth (tk1, tv1, c1, a1), Mmapnth (tk2, tv2, c2, a2)                           -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp a1 a2
     (* builtin functions *)
     | Mmin (l1, r1), Mmin (l2, r2)                                                     -> cmp l1 l2 && cmp r1 r2
     | Mmax (l1, r1), Mmax (l2, r2)                                                     -> cmp l1 l2 && cmp r1 r2
@@ -1321,6 +1336,7 @@ let cmp_api_item_node (a1 : api_storage_node) (a2 : api_storage_node) : bool =
     | Lcontains t1, Lcontains t2 -> cmp_type t1 t2
     | Llength   t1, Llength   t2 -> cmp_type t1 t2
     | Lnth      t1, Lnth      t2 -> cmp_type t1 t2
+    | Lreverse  t1, Lreverse  t2 -> cmp_type t1 t2
     | _ -> false
   in
   let cmp_api_builtin (b1 : api_builtin) (b2 : api_builtin) : bool =
@@ -1540,6 +1556,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mset (an, l, k, v)             -> Mset (fi an, List.map fi l, f k, f v)
   | Mupdate (an, k, l)             -> Mupdate (fi an, f k, List.map (fun (id, op, v) -> (g id, op, f v)) l)
   | Maddupdate (an, c, k, l)       -> Maddupdate (fi an, map_container_kind fi f c, f k, List.map (fun (id, op, v) -> (g id, op, f v)) l)
+  | Maddforce (an, v)              -> Maddforce (fi an, f v)
   (* asset api expression *)
   | Mget (an, c, k)                -> Mget (fi an, map_container_kind fi f c, f k)
   | Mselect (an, c, la, lb, a)     -> Mselect (fi an, map_container_kind fi f c, List.map (fun (i, t) -> (fi i, ft t)) la, f lb, List.map f a)
@@ -1559,12 +1576,16 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Msetremove (t, c, a)           -> Msetremove (ft t, f c, f a)
   | Msetcontains (t, c, a)         -> Msetcontains (ft t, f c, f a)
   | Msetlength (t, c)              -> Msetlength (ft t, f c)
+  | Msetnth (t, c, a)              -> Msetnth (ft t, f c, f a)
+  | Msetfold (t, ix, ia, c, a, b)  -> Msetfold (ft t, g ix, g ia, f c, f a, f b)
   (* list api expression *)
   | Mlistprepend (t, c, a)         -> Mlistprepend (ft t, f c, f a)
   | Mlistheadtail(t, c)            -> Mlistheadtail(t, f c)
   | Mlistlength(t, c)              -> Mlistlength(t, f c)
   | Mlistcontains (t, c, a)        -> Mlistcontains (t, f c, f a)
   | Mlistnth (t, c, a)             -> Mlistnth (t, f c, f a)
+  | Mlistreverse(t, l)             -> Mlistreverse(t, f l)
+  | Mlistfold (t, ix, ia, c, a, b) -> Mlistfold (ft t, g ix, g ia, f c, f a, f b)
   (* map api expression *)
   | Mmapput (tk, tv, c, k, v)      -> Mmapput (ft tk, ft tv, f c, f k, f v)
   | Mmapremove (tk, tv, c, k)      -> Mmapremove (ft tk, ft tv, f c, f k)
@@ -1572,6 +1593,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mmapgetopt (tk, tv, c, k)      -> Mmapgetopt (ft tk, ft tv, f c, f k)
   | Mmapcontains (tk, tv, c, k)    -> Mmapcontains (ft tk, ft tv, f c, f k)
   | Mmaplength (tk, tv, c)         -> Mmaplength (ft tk, ft tv, f c)
+  | Mmapnth (tk, tv, c, a)         -> Mmapnth (ft tk, ft tv, f c, f a)
   (* builtin functions *)
   | Mmin (l, r)                    -> Mmin (f l, f r)
   | Mmax (l, r)                    -> Mmax (f l, f r)
@@ -1871,8 +1893,8 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mdot (e, _)                           -> f accu e
   | Mdotassetfield (_, k, _)              -> f accu k
   (* comparison operators *)
-  | Mequal (_, l, r)                         -> f (f accu l) r
-  | Mnequal (_, l, r)                        -> f (f accu l) r
+  | Mequal (_, l, r)                      -> f (f accu l) r
+  | Mnequal (_, l, r)                     -> f (f accu l) r
   | Mgt (l, r)                            -> f (f accu l) r
   | Mge (l, r)                            -> f (f accu l) r
   | Mlt (l, r)                            -> f (f accu l) r
@@ -1901,6 +1923,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mset (_, _, k, v)                     -> f (f accu v) k
   | Mupdate (_, k, l)                     -> List.fold_left (fun accu (_, _, v) -> f accu v) (f accu k) l
   | Maddupdate (_, c, k, l)               -> List.fold_left (fun accu (_, _, v) -> f accu v) (f (fold_container_kind f accu c) k) l
+  | Maddforce (_, v)                      -> f accu v
   (* asset api expression *)
   | Mget (_, c, k)                        -> f (fold_container_kind f accu c) k
   | Mselect (_, c, _, lb, a)              -> List.fold_left (fun accu x -> f accu x) (f (fold_container_kind f accu c) lb) a
@@ -1920,12 +1943,16 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Msetremove (_, c, a)                  -> f (f accu c) a
   | Msetcontains (_, c, a)                -> f (f accu c) a
   | Msetlength (_, c)                     -> f accu c
+  | Msetnth (_, c, a)                     -> f (f accu c) a
+  | Msetfold (_, _, _, c, a, b)           -> f (f (f accu c) a) b
   (* list api expression *)
   | Mlistprepend (_, c, a)                -> f (f accu c) a
   | Mlistheadtail (_, c)                  -> f accu c
   | Mlistlength (_, c)                    -> f accu c
   | Mlistcontains (_, c, a)               -> f (f accu c) a
   | Mlistnth (_, c, a)                    -> f (f accu c) a
+  | Mlistreverse (_, l)                   -> f accu l
+  | Mlistfold (_, _, _, c, a, b)          -> f (f (f accu c) a) b
   (* map api expression *)
   | Mmapput (_, _, c, k, v)               -> f (f (f accu c) k) v
   | Mmapremove (_, _, c, k)               -> f (f accu c) k
@@ -1933,6 +1960,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mmapgetopt (_, _, c, k)               -> f (f accu c) k
   | Mmapcontains (_, _, c, k)             -> f (f accu c) k
   | Mmaplength (_, _, c)                  -> f accu c
+  | Mmapnth (_, _, c, a)                  -> f (f accu c) a
   (* builtin functions *)
   | Mmax (l, r)                           -> f (f accu l) r
   | Mmin (l, r)                           -> f (f accu l) r
@@ -2501,6 +2529,10 @@ let fold_map_term
     in
     g (Maddupdate (an, ce, ke, le)), la
 
+  | Maddforce (an, v) ->
+    let ve, va = f accu v in
+    g (Maddforce (an, ve)), va
+
 
   (* asset api expression *)
 
@@ -2598,6 +2630,17 @@ let fold_map_term
     let ce, ca = f accu c in
     g (Msetlength (t, ce)), ca
 
+  | Msetnth (t, c, a) ->
+    let ce, ca = f accu c in
+    let ae, aa = f ca a in
+    g (Msetnth (t, ce, ae)), aa
+
+  | Msetfold (t, ix, ia, c, a, b) ->
+    let ce, ca = f accu c in
+    let ae, aa = f ca a in
+    let be, ba = f aa b in
+    g (Msetfold (t, ix, ia, ce, ae, be)), ba
+
 
   (* list api expression *)
 
@@ -2623,6 +2666,16 @@ let fold_map_term
     let ce, ca = f accu c in
     let ae, aa = f ca a in
     g (Mlistnth (t, ce, ae)), aa
+
+  | Mlistreverse (t, l) ->
+    let le, la = f accu l in
+    g (Mlistreverse (t, le)), la
+
+  | Mlistfold (t, ix, ia, c, a, b) ->
+    let ce, ca = f accu c in
+    let ae, aa = f ca a in
+    let be, ba = f aa b in
+    g (Mlistfold (t, ix, ia, ce, ae, be)), ba
 
 
   (* map api expression *)
@@ -2657,6 +2710,10 @@ let fold_map_term
     let ce, ca = f accu c in
     g (Mmaplength (tk, tv, ce)), ca
 
+  | Mmapnth (tk, tv, c, a) ->
+    let ce, ca = f accu c in
+    let ae, aa = f ca a in
+    g (Mmapnth (tk, tv, ce, ae)), aa
 
   (* builtin functions *)
 
@@ -3059,6 +3116,7 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
         | Lcontains t -> Lcontains (for_type t)
         | Llength   t -> Llength   (for_type t)
         | Lnth      t -> Lnth      (for_type t)
+        | Lreverse  t -> Lreverse  (for_type t)
       in
       let for_api_builtin (abuiltin : api_builtin) : api_builtin =
         match abuiltin with
@@ -4364,19 +4422,20 @@ end = struct
              | APIList    (Lcontains     _) -> 26
              | APIList    (Llength       _) -> 27
              | APIList    (Lnth          _) -> 28
-             | APIBuiltin (Bmin          _) -> 29
-             | APIBuiltin (Bmax          _) -> 30
-             | APIBuiltin (Babs          _) -> 31
-             | APIBuiltin (Bconcat       _) -> 32
-             | APIBuiltin (Bslice        _) -> 33
-             | APIBuiltin (Blength       _) -> 34
-             | APIBuiltin (Bisnone       _) -> 35
-             | APIBuiltin (Bissome       _) -> 36
-             | APIBuiltin (Boptget       _) -> 37
-             | APIBuiltin (Bfloor         ) -> 38
-             | APIBuiltin (Bceil          ) -> 39
-             | APIBuiltin (Btostring     _) -> 40
-             | APIBuiltin (Bfail         _) -> 41
+             | APIList    (Lreverse      _) -> 29
+             | APIBuiltin (Bmin          _) -> 30
+             | APIBuiltin (Bmax          _) -> 31
+             | APIBuiltin (Babs          _) -> 32
+             | APIBuiltin (Bconcat       _) -> 33
+             | APIBuiltin (Bslice        _) -> 34
+             | APIBuiltin (Blength       _) -> 35
+             | APIBuiltin (Bisnone       _) -> 36
+             | APIBuiltin (Bissome       _) -> 37
+             | APIBuiltin (Boptget       _) -> 38
+             | APIBuiltin (Bfloor         ) -> 39
+             | APIBuiltin (Bceil          ) -> 40
+             | APIBuiltin (Btostring     _) -> 41
+             | APIBuiltin (Bfail         _) -> 42
            in
            let idx1 = get_kind i1.node_item in
            let idx2 = get_kind i2.node_item in

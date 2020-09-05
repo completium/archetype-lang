@@ -257,13 +257,14 @@ let rec pp_instruction fmt (i : instruction) =
       | Cle        -> pp "(%a) <= (%a)"      f lhs f rhs
       | Cge        -> pp "(%a) >= (%a)"      f lhs f rhs
     end
-  | Iconst (t, e)        -> pp "const(%a : %a)" pp_data e pp_type t
-  | Iset (t, l)          -> pp "set<%a>[%a]" pp_type t (pp_list "; " f) l
-  | Ilist (t, l)         -> pp "list<%a>[%a]" pp_type t (pp_list "; " f) l
-  | Imap (k, v, l)       -> pp "map<%a, %a>[%a]" pp_type k pp_type v (pp_list "; " (fun fmt (vk, vv) -> Format.fprintf fmt "%a : %a" f vk f vv)) l
-  | Irecord l            -> pp "record[%a]" (pp_list "; " f) l
-  | Irecupdate (x, s, l) -> pp "recupdate[size=%i| %a with [@[%a@]]]" s f x (pp_list "; " (fun fmt (i, v) -> Format.fprintf fmt "%i: (%a)" i f v)) l
-  | Imichelson (a, c, v) -> pp "michelson [%a] (%a) {%a}" (pp_list "; " pp_id) v (pp_list "; " f) a pp_code c
+  | Iconst (t, e)           -> pp "const(%a : %a)" pp_data e pp_type t
+  | Iset (t, l)             -> pp "set<%a>[%a]" pp_type t (pp_list "; " f) l
+  | Ilist (t, l)            -> pp "list<%a>[%a]" pp_type t (pp_list "; " f) l
+  | Imap (k, v, l)          -> pp "map<%a, %a>[%a]" pp_type k pp_type v (pp_list "; " (fun fmt (vk, vv) -> Format.fprintf fmt "%a : %a" f vk f vv)) l
+  | Irecord l               -> pp "record[%a]" (pp_list "; " f) l
+  | Irecupdate (x, s, l)    -> pp "recupdate[size=%i| %a with [@[%a@]]]" s f x (pp_list "; " (fun fmt (i, v) -> Format.fprintf fmt "%i: (%a)" i f v)) l
+  | Ifold (ix, ia, c, a, b) -> pp "fold %a with (%a) do (%s, %s) ->@\n  @[%a@]@\ndone" f c f a ia ix f b
+  | Imichelson (a, c, v)    -> pp "michelson [%a] (%a) {%a}" (pp_list "; " pp_id) v (pp_list "; " f) a pp_code c
 
 let pp_func fmt (f : func) =
   Format.fprintf fmt "function %s %a@\n "

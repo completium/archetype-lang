@@ -10,6 +10,6 @@ entry exec () {
     var k  : nat                     = length(l);
     var c  : bool                    = contains(l, "2");
     var n  : string                  = nth(l, 0);
-
+    var r  : list<string>            = reverse(l);
   }
 }

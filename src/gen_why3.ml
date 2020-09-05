@@ -1887,6 +1887,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Mupdate             _ -> error_not_translated "Mupdate"
     | Maddupdate          _ -> error_not_translated "Maddupdate"
+    | Maddforce           _ -> error_not_translated "Maddforce"
 
     | Mget (an, _c, k) ->
       begin match ctx.lctx with
@@ -1948,7 +1949,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Msetremove (t, s, e)   -> Tremove (dl (mk_set_name m (Tset t)), map_mterm m ctx e, map_mterm m ctx s)
     | Msetcontains (t, s, e) -> Tcontains (dl (mk_set_name m (Tset t)), map_mterm m ctx e, map_mterm m ctx s)
     | Msetlength (t, s)      -> Tcard (dl (mk_set_name m (Tset t)), map_mterm m ctx s)
-
+    | Msetnth _ -> error_not_translated "Mmapnth"
+    | Msetfold _ -> error_not_translated "Mmapfold"
 
     (* list api expression *)
 
@@ -1962,6 +1964,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | Logic | Inv | Def -> nth
         | _ -> mk_match (dl nth) "_a" (loc_term (Tvar "_a")) Enotfound
       end
+    | Mlistreverse _ -> error_not_translated "Mlistreverse"
+    | Mlistfold    _ -> error_not_translated "Mlistfold"
 
     (* map api expression *)
 
@@ -1977,6 +1981,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       Tcontains (dl (mk_map_name m (M.Tmap (false, kt, kv))),map_mterm m ctx k, map_mterm m ctx c)
     | Mmaplength (k, v, c)      ->
       let tmap = mk_map_name m (M.Tmap (false, k,v)) in Tcard (dl tmap,map_mterm m ctx c)
+    | Mmapnth _ -> error_not_translated "Mmapnth"
     (* builtin functions *)
     | Mmax (l,r) ->
       begin match mt.type_ with

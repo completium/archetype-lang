@@ -1,0 +1,23 @@
+archetype test_removeif_part_1
+
+asset my_asset identified by id {
+  id     : nat;
+  s      : string;
+} initialized by {
+  {0; "mystr0"};
+  {1; "mystr1"};
+  {2; "mystr2"}
+}
+
+asset s_asset identified by sid {
+  sid : string;
+  c   : partition<my_asset>;
+} initialized by {
+  {"id0"; []};
+  {"id1"; []};
+  {"id2"; []}
+}
+
+entry exec (n : nat, is : string) {
+  s_asset["id0"].c.removeif(the.id >= n or the.s = is)
+}

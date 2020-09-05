@@ -338,6 +338,7 @@ let pp_model fmt (model : model) =
     | Lcontains _ -> ()
     | Llength   _ -> ()
     | Lnth      _ -> ()
+    | Lreverse  _ -> ()
 
   in
 
@@ -958,6 +959,7 @@ let pp_model fmt (model : model) =
 
       | Mupdate    _ -> emit_error (UnsupportedTerm ("Mupdate"))
       | Maddupdate _ -> emit_error (UnsupportedTerm ("Maddupdate"))
+      | Maddforce  _ -> emit_error (UnsupportedTerm ("Maddforce"))
 
 
       (* asset api expression *)
@@ -1123,6 +1125,9 @@ let pp_model fmt (model : model) =
           (* pp_type t *)
           f c
 
+      | Msetnth  _ -> emit_error (UnsupportedTerm ("Msetnth"))
+      | Msetfold _ -> emit_error (UnsupportedTerm ("Msetfold"))
+
 
       (* list api expression *)
 
@@ -1146,6 +1151,12 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "list_nth (%a, %a)"
           f c
           f a
+
+      | Mlistreverse (_, l) ->
+        Format.fprintf fmt "list_reverse (%a)"
+          f l
+
+      | Mlistfold _ -> emit_error (UnsupportedTerm ("Mlistfold"))
 
 
       (* map api expression *)
@@ -1179,6 +1190,8 @@ let pp_model fmt (model : model) =
       | Mmaplength (_, _, c) ->
         Format.fprintf fmt "sp.len(%a)"
           f c
+
+      | Mmapnth _ -> emit_error (UnsupportedTerm ("Mmapnth"))
 
 
       (* builtin functions *)

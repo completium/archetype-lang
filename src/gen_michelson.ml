@@ -196,6 +196,11 @@ let to_ir (model : M.model) : T.ir =
         let tret  = T.tint in
         T.mk_func name targ tret (T.Abstract b)
       end
+    | BsetNth t -> begin
+        let targ = T.tpair (T.tset t) T.tnat in
+        let tret = t in
+        T.mk_func name targ tret (T.Abstract b)
+      end
     | BlistContains t -> begin
         let targ = T.tpair (T.tlist t) t in
         let tret = T.tbool in
@@ -229,6 +234,11 @@ let to_ir (model : M.model) : T.ir =
         end
         in
         T.mk_func name targ tret (T.Concrete (args, body))
+      end
+    | BmapNth (k, v) -> begin
+        let targ = T.tpair (T.tmap k v) T.tnat in
+        let tret = T.tpair k v in
+        T.mk_func name targ tret (T.Abstract b)
       end
     | Btostring t -> begin
         let targ = t in
@@ -371,9 +381,9 @@ let to_ir (model : M.model) : T.ir =
         let ids = List.map unloc ids in
         let c =
           match c with
-          | ICKcoll  _
-          | ICKview  _
-          | ICKfield _ -> emit_error TODO
+          | ICKcoll  _ -> emit_error (UnsupportedTerm ("ICKcoll"))
+          | ICKview  _ -> emit_error (UnsupportedTerm ("ICKview"))
+          | ICKfield _ -> emit_error (UnsupportedTerm ("ICKfield"))
           | ICKset   c
           | ICKlist  c
           | ICKmap   c -> f c
@@ -529,6 +539,7 @@ let to_ir (model : M.model) : T.ir =
     | Mset _         -> emit_error (UnsupportedTerm ("Mset"))
     | Mupdate _      -> emit_error (UnsupportedTerm ("Mupdate"))
     | Maddupdate _   -> emit_error (UnsupportedTerm ("Maddupdate"))
+    | Maddforce _    -> emit_error (UnsupportedTerm ("Maddforce"))
 
 
     (* asset api expression *)
@@ -564,11 +575,12 @@ let to_ir (model : M.model) : T.ir =
 
     (* set api expression *)
 
-    | Msetadd (_, c, a)        -> T.Iterop (Tupdate, f a, T.itrue,  f c)
-    | Msetremove (_, c, a)     -> T.Iterop (Tupdate, f a, T.ifalse, f c)
-    | Msetcontains (_, c, k)   -> T.Ibinop (Bmem, f k, f c)
-    | Msetlength (_, c)        -> T.Iunop  (Usize, f c)
-
+    | Msetadd (_, c, a)             -> T.Iterop (Tupdate, f a, T.itrue,  f c)
+    | Msetremove (_, c, a)          -> T.Iterop (Tupdate, f a, T.ifalse, f c)
+    | Msetcontains (_, c, k)        -> T.Ibinop (Bmem, f k, f c)
+    | Msetlength (_, c)             -> T.Iunop  (Usize, f c)
+    | Msetnth (t, c, a)             -> let b = T.BsetNth (to_type t) in add_builtin b; T.Icall (get_fun_name b, [f c; f a])
+    | Msetfold (_, ix, ia, c, a, b) -> T.Ifold (unloc ix, unloc ia, f c, f a, T.Iassign (unloc ia, f b))
 
     (* list api expression *)
 
@@ -577,6 +589,8 @@ let to_ir (model : M.model) : T.ir =
     | Mlistlength (_, l)         -> T.Iunop (Usize, f l)
     | Mlistcontains (t, c, a)    -> let b = T.BlistContains (to_type t) in add_builtin b; T.Icall (get_fun_name b, [f c; f a])
     | Mlistnth (t, c, a)         -> let b = T.BlistNth (to_type t) in add_builtin b; T.Icall (get_fun_name b, [f c; f a])
+    | Mlistreverse _             -> emit_error (UnsupportedTerm ("Mlistreverse"))
+    | Mlistfold (_, ix, ia, c, a, b) -> T.Ifold (unloc ix, unloc ia, f c, f a, T.Iassign (unloc ia, f b))
 
     (* map api expression *)
 
@@ -586,6 +600,7 @@ let to_ir (model : M.model) : T.ir =
     | Mmapgetopt (_, _, c, k)     -> T.Ibinop (Bget, f k, f c)
     | Mmapcontains (_, _, c, k)   -> T.Ibinop (Bmem, f k, f c)
     | Mmaplength (_, _, c)        -> T.Iunop (Usize, f c)
+    | Mmapnth (kt, kv, c, a)      -> let b = T.BmapNth (to_type kt, to_type kv) in add_builtin b; T.Icall (get_fun_name b, [f c; f a])
 
 
     (* builtin functions *)
@@ -773,8 +788,10 @@ let concrete_michelson b =
   | T.Bmax _          -> T.SEQ [DUP; UNPAIR; COMPARE; LT; IF ([CDR], [CAR])]
   | T.Bfloor          -> T.SEQ [UNPAIR; EDIV; IF_NONE ([T.cfail "DivByZero"], [CAR])]
   | T.Bceil           -> T.SEQ [UNPAIR; EDIV; IF_NONE ([T.cfail "DivByZero"], [UNPAIR; SWAP; INT; EQ; IF ([], [PUSH (T.tint, T.Dint Big_int.unit_big_int); ADD])])]
+  | T.BsetNth _       -> error ()
   | T.BlistContains _ -> T.SEQ [UNPAIR; PUSH (T.tbool, T.Dfalse); SWAP; ITER [DIG 2; DUP; DUG 3; COMPARE; EQ; OR; ]; DIP (1, [DROP 1])]
   | T.BlistNth _      -> error ()
+  | T.BmapNth _       -> error ()
   | T.Btostring _     -> error ()
   | T.Bratcmp         -> T.SEQ [UNPAIR; UNPAIR; DIP (1, [UNPAIR]); UNPAIR; DUG 3; MUL; DIP (1, [MUL]); SWAP; COMPARE; SWAP;
                                 IF_LEFT ([DROP 1; EQ], [IF_LEFT ([IF_LEFT ([DROP 1; LT], [DROP 1; LE])],
@@ -886,11 +903,11 @@ let to_michelson (ir : T.ir) : T.michelson =
            let t, envt = f t in
            let e, enve = f e in *)
 
-        let c, env = fe env c in
-        let t, envt = fe (dec_env env) t in
-        let e, enve = fe (dec_env env) e in
+        let c, env0 = fe env c in
+        let t, envt = fe (dec_env env0) t in
+        let e, enve = fe (dec_env env0) e in
 
-        let env =
+        let _env =
           (* TODO: check if `envt` and `enve` have the same stack *)
           match envt.fail, enve.fail with
           | false, false -> envt
@@ -1072,6 +1089,13 @@ let to_michelson (ir : T.ir) : T.michelson =
           else [T.UNPAIR] @ a @ [T.PAIR]
         in
         T.SEQ ([ x ] @ b), env
+      end
+
+    | Ifold (ix, ia, c, a, b) -> begin
+        let a, _env0 = fe env a in
+        let c, _env1 = fe (add_var_env env ia) c in
+        let b, _env2 = fe (add_var_env (add_var_env env ia) ix) b in
+        T.SEQ [a; c; T.ITER [b; T.DROP 1]], inc_env env
       end
 
     | Imichelson (a, c, v) -> begin

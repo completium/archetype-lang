@@ -662,6 +662,14 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (an, c, k, l)
 
+    | Maddforce (an, v) ->
+      let pp fmt (an, v) =
+        Format.fprintf fmt "add_force_%a (%a)"
+          pp_str an
+          f v
+      in
+      pp fmt (an, v)
+
 
     (* asset api expression *)
 
@@ -795,6 +803,21 @@ let pp_mterm fmt (mt : mterm) =
         pp_type t
         f c
 
+    | Msetnth (t, c, a) ->
+      Format.fprintf fmt "set_%a_nth (%a, %a)"
+        pp_type t
+        f c
+        f a
+
+    | Msetfold (t, ix, ia, c, a, b) ->
+      Format.fprintf fmt "set_%a_fold (%a, %a, (%a, %a) -> %a)"
+        pp_type t
+        f c
+        f a
+        pp_id ia
+        pp_id ix
+        f b
+
 
     (* list api expression *)
 
@@ -821,6 +844,18 @@ let pp_mterm fmt (mt : mterm) =
         f c
         f a
 
+    | Mlistreverse (_, l) ->
+      Format.fprintf fmt "list_reverse (%a)"
+        f l
+
+    | Mlistfold (t, ix, ia, c, a, b) ->
+      Format.fprintf fmt "list_%a_fold (%a, %a, (%a, %a) -> %a)"
+        pp_type t
+        f c
+        f a
+        pp_id ia
+        pp_id ix
+        f b
 
     (* map api expression *)
 
@@ -853,6 +888,11 @@ let pp_mterm fmt (mt : mterm) =
     | Mmaplength (_, _, c) ->
       Format.fprintf fmt "map_length (%a)"
         f c
+
+    | Mmapnth (_, _, c, a) ->
+      Format.fprintf fmt "map_nth (%a, %a)"
+        f c
+        f a
 
 
     (* builtin functions *)
@@ -1229,6 +1269,7 @@ let pp_api_list fmt = function
   | Lcontains t -> Format.fprintf fmt "list_contains\t %a" pp_type t
   | Llength t   -> Format.fprintf fmt "list_length\t %a" pp_type t
   | Lnth t      -> Format.fprintf fmt "list_nth\t %a" pp_type t
+  | Lreverse t  -> Format.fprintf fmt "list_reverse\t %a" pp_type t
 
 let pp_api_builtin fmt = function
   | Bmin    t   -> Format.fprintf fmt "min on %a"    pp_type t

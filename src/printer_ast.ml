@@ -227,6 +227,7 @@ let to_const = function
   | Cabs            -> "abs"
   | Cprepend        -> "prepend"
   | Cheadtail       -> "head_tail"
+  | Creverse        -> "reverse"
   (* map *)
   | Cmput           -> "put"
   | Cmremove        -> "remove"
