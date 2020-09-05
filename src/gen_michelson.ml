@@ -580,7 +580,7 @@ let to_ir (model : M.model) : T.ir =
     | Msetcontains (_, c, k)        -> T.Ibinop (Bmem, f k, f c)
     | Msetlength (_, c)             -> T.Iunop  (Usize, f c)
     | Msetnth (t, c, a)             -> let b = T.BsetNth (to_type t) in add_builtin b; T.Icall (get_fun_name b, [f c; f a])
-    | Msetfold (_, ix, ia, c, a, b) -> T.Ifold (unloc ix, unloc ia, f c, f a, T.Iassign (unloc ia, f b))
+    | Msetfold (_, ix, ia, c, a, b) -> T.Ifold (unloc ix, None, unloc ia, f c, f a, T.Iassign (unloc ia, f b))
 
     (* list api expression *)
 
@@ -590,7 +590,7 @@ let to_ir (model : M.model) : T.ir =
     | Mlistcontains (t, c, a)    -> let b = T.BlistContains (to_type t) in add_builtin b; T.Icall (get_fun_name b, [f c; f a])
     | Mlistnth (t, c, a)         -> let b = T.BlistNth (to_type t) in add_builtin b; T.Icall (get_fun_name b, [f c; f a])
     | Mlistreverse _             -> emit_error (UnsupportedTerm ("Mlistreverse"))
-    | Mlistfold (_, ix, ia, c, a, b) -> T.Ifold (unloc ix, unloc ia, f c, f a, T.Iassign (unloc ia, f b))
+    | Mlistfold (_, ix, ia, c, a, b) -> T.Ifold (unloc ix, None, unloc ia, f c, f a, T.Iassign (unloc ia, f b))
 
     (* map api expression *)
 
@@ -601,6 +601,7 @@ let to_ir (model : M.model) : T.ir =
     | Mmapcontains (_, _, c, k)   -> T.Ibinop (Bmem, f k, f c)
     | Mmaplength (_, _, c)        -> T.Iunop (Usize, f c)
     | Mmapnth (kt, kv, c, a)      -> let b = T.BmapNth (to_type kt, to_type kv) in add_builtin b; T.Icall (get_fun_name b, [f c; f a])
+    | Mmapfold (_, ik, iv, ia, c, a, b) -> T.Ifold (unloc ik, Some (unloc iv), unloc ia, f c, f a, T.Iassign (unloc ia, f b))
 
 
     (* builtin functions *)
@@ -1091,11 +1092,17 @@ let to_michelson (ir : T.ir) : T.michelson =
         T.SEQ ([ x ] @ b), env
       end
 
-    | Ifold (ix, ia, c, a, b) -> begin
+    | Ifold (ix, iy, ia, c, a, b) -> begin
         let a, _env0 = fe env a in
         let c, _env1 = fe (add_var_env env ia) c in
-        let b, _env2 = fe (add_var_env (add_var_env env ia) ix) b in
-        T.SEQ [a; c; T.ITER [b; T.DROP 1]], inc_env env
+        let env2, pi =
+          let env_= add_var_env env ia in
+          match iy with
+          | Some iy -> add_var_env (add_var_env env_ iy) ix, T.UNPAIR
+          | None -> add_var_env env_ ix, T.cskip
+        in
+        let b, _env2 = fe env2 b in
+        T.SEQ [a; c; T.ITER [pi; b; T.DROP 1]], inc_env env
       end
 
     | Imichelson (a, c, v) -> begin

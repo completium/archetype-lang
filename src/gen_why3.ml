@@ -1982,6 +1982,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mmaplength (k, v, c)      ->
       let tmap = mk_map_name m (M.Tmap (false, k,v)) in Tcard (dl tmap,map_mterm m ctx c)
     | Mmapnth _ -> error_not_translated "Mmapnth"
+    | Mmapfold _ -> error_not_translated "Mmapfold"
     (* builtin functions *)
     | Mmax (l,r) ->
       begin match mt.type_ with

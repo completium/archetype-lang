@@ -4106,6 +4106,27 @@ let remove_asset (model : model) : model =
                   let fold = mk_mterm (Msetfold(atk, iid, iaccu, va, empty, mif)) tr in
                   mk_mterm (Mlistreverse (atk, fold)) tbool |> fm ctx
                 end
+              | Tmap _ -> begin
+
+                  let empty = mk_mterm (Mlitlist []) tr in
+
+                  let ikid = dumloc "_kid" in
+                  let vkid = mk_mterm (Mvar (ikid, Vlocal, Tnone, Dnone)) atk in
+
+                  let ivid = dumloc "_vid" in
+                  let vvid = mk_mterm (Mvar (ivid, Vlocal, Tnone, Dnone)) atk in
+
+                  let iaccu = dumloc "_accu" in
+                  let vaccu = mk_mterm (Mvar (iaccu, Vlocal, Tnone, Dnone)) atk in
+
+                  let cond  = mk_cond an vkid (Some vvid) b in
+                  let mthen = mk_mterm (Mlistprepend(atk, vaccu, vkid)) tr in
+                  let mif   = mk_mterm (Mif (cond, mthen, Some vaccu)) tunit in
+
+                  let fold = mk_mterm (Mmapfold(atk, ikid, ivid, iaccu, va, empty, mif)) tr in
+                  mk_mterm (Mlistreverse (atk, fold)) tbool |> fm ctx
+
+                end
               | _ -> assert false
             end
           | _ -> assert false

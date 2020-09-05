@@ -894,6 +894,15 @@ let pp_mterm fmt (mt : mterm) =
         f c
         f a
 
+    | Mmapfold (t, ik, iv, ia, c, a, b) ->
+      Format.fprintf fmt "map_%a_fold (%a, %a, ((%a, %a), %a) -> %a)"
+        pp_type t
+        f c
+        f a
+        pp_id ia
+        pp_id ik
+        pp_id iv
+        f b
 
     (* builtin functions *)
 

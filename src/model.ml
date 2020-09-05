@@ -310,6 +310,7 @@ type ('id, 'term) mterm_node  =
   | Mmapcontains      of type_ * type_ * 'term * 'term
   | Mmaplength        of type_ * type_ * 'term
   | Mmapnth           of type_ * type_ * 'term * 'term
+  | Mmapfold          of type_ * 'id   * 'id   * 'id   * 'term * 'term * 'term
   (* builtin functions *)
   | Mmin              of 'term * 'term
   | Mmax              of 'term * 'term
@@ -1228,6 +1229,7 @@ let cmp_mterm_node
     | Mmapcontains (tk1, tv1, c1, k1), Mmapcontains (tk2, tv2, c2, k2)                 -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2
     | Mmaplength (tk1, tv1, c1), Mmaplength (tk2, tv2, c2)                             -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2
     | Mmapnth (tk1, tv1, c1, a1), Mmapnth (tk2, tv2, c2, a2)                           -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp a1 a2
+    | Mmapfold (t1, ik1, iv1, ia1, c1, a1, b1), Mmapfold (t2, ik2, iv2, ia2, c2, a2, b2) -> cmp_type t1 t2 && cmp_lident ik1 ik2 && cmp_lident iv1 iv2 && cmp_lident ia1 ia2 && cmp c1 c2 && cmp a1 a2 && cmp b1 b2
     (* builtin functions *)
     | Mmin (l1, r1), Mmin (l2, r2)                                                     -> cmp l1 l2 && cmp r1 r2
     | Mmax (l1, r1), Mmax (l2, r2)                                                     -> cmp l1 l2 && cmp r1 r2
@@ -1594,6 +1596,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mmapcontains (tk, tv, c, k)    -> Mmapcontains (ft tk, ft tv, f c, f k)
   | Mmaplength (tk, tv, c)         -> Mmaplength (ft tk, ft tv, f c)
   | Mmapnth (tk, tv, c, a)         -> Mmapnth (ft tk, ft tv, f c, f a)
+  | Mmapfold (t, ik, iv, ia, c, a, b) -> Mmapfold (ft t, g ik, g iv, g ia, f c, f a, f b)
   (* builtin functions *)
   | Mmin (l, r)                    -> Mmin (f l, f r)
   | Mmax (l, r)                    -> Mmax (f l, f r)
@@ -1961,6 +1964,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mmapcontains (_, _, c, k)             -> f (f accu c) k
   | Mmaplength (_, _, c)                  -> f accu c
   | Mmapnth (_, _, c, a)                  -> f (f accu c) a
+  | Mmapfold (_, _, _, _, c, a, b)        -> f (f (f accu c) a) b
   (* builtin functions *)
   | Mmax (l, r)                           -> f (f accu l) r
   | Mmin (l, r)                           -> f (f accu l) r
@@ -2714,6 +2718,12 @@ let fold_map_term
     let ce, ca = f accu c in
     let ae, aa = f ca a in
     g (Mmapnth (tk, tv, ce, ae)), aa
+
+  | Mmapfold (t, ik, iv, ia, c, a, b) ->
+    let ce, ca = f accu c in
+    let ae, aa = f ca a in
+    let be, ba = f aa b in
+    g (Mmapfold (t, ik, iv, ia, ce, ae, be)), ba
 
   (* builtin functions *)
 
@@ -3526,6 +3536,7 @@ module Utils : sig
   val get_specifications                 : model -> specification list
   val get_fss                            : model -> function_struct list
   val get_fs                             : model -> ident -> function_struct
+  val extract_assign_kind                : mterm -> assign_kind list
 
 end = struct
 
@@ -4684,4 +4695,11 @@ end = struct
 
   let get_fs (model : model) (id : ident) : function_struct =
     List.find (fun (x : function_struct) -> String.equal id (unloc x.name)) (get_fss model)
+
+  let extract_assign_kind (mt : mterm) : assign_kind list =
+  let rec aux accu (t : mterm) =
+    match t.node with
+    | Massign (_, _, ak, _) -> ak::accu
+    | _ -> fold_term aux accu t in
+  aux [] mt
 end

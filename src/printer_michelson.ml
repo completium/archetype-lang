@@ -263,7 +263,7 @@ let rec pp_instruction fmt (i : instruction) =
   | Imap (k, v, l)          -> pp "map<%a, %a>[%a]" pp_type k pp_type v (pp_list "; " (fun fmt (vk, vv) -> Format.fprintf fmt "%a : %a" f vk f vv)) l
   | Irecord l               -> pp "record[%a]" (pp_list "; " f) l
   | Irecupdate (x, s, l)    -> pp "recupdate[size=%i| %a with [@[%a@]]]" s f x (pp_list "; " (fun fmt (i, v) -> Format.fprintf fmt "%i: (%a)" i f v)) l
-  | Ifold (ix, ia, c, a, b) -> pp "fold %a with (%a) do (%s, %s) ->@\n  @[%a@]@\ndone" f c f a ia ix f b
+  | Ifold (ix, iy, ia, c, a, b) -> pp "fold %a with (%a) do (%s, %a) ->@\n  @[%a@]@\ndone" f c f a ia (fun fmt _-> match iy with | Some iy -> Format.fprintf fmt "(%s, %s)" ix iy  | None -> Format.fprintf fmt "%s" ix) () f b
   | Imichelson (a, c, v)    -> pp "michelson [%a] (%a) {%a}" (pp_list "; " pp_id) v (pp_list "; " f) a pp_code c
 
 let pp_func fmt (f : func) =

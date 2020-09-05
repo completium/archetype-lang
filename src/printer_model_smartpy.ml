@@ -1158,7 +1158,6 @@ let pp_model fmt (model : model) =
 
       | Mlistfold _ -> emit_error (UnsupportedTerm ("Mlistfold"))
 
-
       (* map api expression *)
 
       | Mmapput (_, _, c, k, v) ->
@@ -1191,7 +1190,8 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "sp.len(%a)"
           f c
 
-      | Mmapnth _ -> emit_error (UnsupportedTerm ("Mmapnth"))
+      | Mmapnth   _ -> emit_error (UnsupportedTerm ("Mmapnth"))
+      | Mmapfold  _ -> emit_error (UnsupportedTerm ("Mmapfold"))
 
 
       (* builtin functions *)

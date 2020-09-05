@@ -256,7 +256,7 @@ type instruction =
   | Imap        of type_ * type_ * (instruction * instruction) list
   | Irecord     of instruction list
   | Irecupdate  of instruction * int * (int * instruction) list (* value * size * (index, value) fields *)
-  | Ifold       of ident * ident * instruction * instruction * instruction (* var_iterated * var_accu * container * init * code*)
+  | Ifold       of ident * ident option * ident * instruction * instruction * instruction (* var_iterated * var_accu * container * init * code*)
   | Imichelson  of instruction list * code * ident list
 [@@deriving show {with_path = false}]
 
@@ -364,6 +364,7 @@ let cint n    = PUSH (mk_type Tint,  Dint n)
 let cnat n    = PUSH (mk_type Tnat,  Dint n)
 let cstring s = PUSH (mk_type Tstring,  Dstring s)
 let cfail msg = SEQ [PUSH (mk_type Tstring,  Dstring msg); FAILWITH]
+let cskip     = SEQ []
 
 (* -------------------------------------------------------------------- *)
 
