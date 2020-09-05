@@ -3485,7 +3485,6 @@ let remove_asset (model : model) : model =
 
           let aan, _ = Utils.get_field_container model an fn in
           let _ , aatk = Utils.get_asset_key model aan in
-          let tr = Tlist aatk in
 
           let set =
             let _, is_record = is_single_simple_record an in
@@ -4311,8 +4310,34 @@ let remove_asset (model : model) : model =
           mk_mterm node tbool
         end
 
-      | Mnth (_an, _ck, _n) -> begin
-          assert false
+      | Mnth (an, ck, n) -> begin
+          let n = fm ctx n in
+          let mk vkid _vvid (vaccu : mterm) : mterm =
+            let tr = vaccu.type_ in
+
+            let vtn = mk_tupleaccess 0 vaccu in
+            let vtr = mk_tupleaccess 1 vaccu in
+
+            let inc = mk_mterm (Mplus(vtn, mk_nat 1)) tnat in
+
+            let cond = mk_mterm (Mequal (tr, vtn, n)) tbool in
+            let mthen = mk_tuple [inc; mk_some vkid] in
+            let melse = mk_tuple [inc; vtr] in
+            mk_mterm (Mif(cond, mthen, Some melse)) tr
+          in
+
+          let atk =
+            match ck with
+            | CKfield (an, fn, _, _, _) -> Utils.get_field_container model an fn |> fst |> Utils.get_asset_key model |> snd
+            | _ -> Utils.get_asset_key model an |> snd
+          in
+
+          let init_0 = mk_nat 0 in
+          let init_1 = mk_mterm (Mnone) (Toption atk) in
+          let init   = mk_tuple [init_0; init_1] in
+          fold_ck (fm ctx) (an, ck) init mk
+          |> mk_tupleaccess 1
+          |> mk_optget
         end
       (* | Mnth (an, ck, n) -> begin
           let n = fm ctx n in

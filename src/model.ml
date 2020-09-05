@@ -943,11 +943,31 @@ let tbool = Tbuiltin Bbool
 let tnat  = Tbuiltin Bnat
 let tint  = Tbuiltin Bint
 let tstring = Tbuiltin Bstring
+let toption t = Toption t
 
 let mk_string x = mk_mterm (Mstring x) tstring
+let mk_nat x = mk_mterm (Mnat (Big_int.big_int_of_int x)) tnat
+let mk_int x = mk_mterm (Mint (Big_int.big_int_of_int x)) tint
 
 let mtrue = mk_mterm (Mbool true) tbool
 let mfalse = mk_mterm (Mbool false) tbool
+
+
+let mk_tuple (l : mterm list) = mk_mterm (Mtuple l) (Ttuple (List.map (fun (x : mterm) -> x.type_) l))
+
+let mk_tupleaccess n (x : mterm) =
+  match x.type_ with
+  | Ttuple lt ->
+    let t = List.nth lt n in
+    mk_mterm (Mtupleaccess (x, Big_int.big_int_of_int n)) t
+  | _ -> assert false
+
+let mk_optget (x : mterm) =
+  match x.type_ with
+  | Toption t -> mk_mterm (Moptget x) t
+  | _ -> assert false
+
+let mk_some x = mk_mterm (Msome x) (toption x.type_)
 
 let fail x = mk_mterm (Mfail (Invalid (mk_string x))) tunit
 let mnot x = mk_mterm (Mnot x) tbool
