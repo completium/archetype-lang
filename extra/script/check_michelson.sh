@@ -248,6 +248,7 @@ PASSED="\
 ./tests/passed/test_asset_sort_view_0.arl \
 ./tests/passed/test_asset_sort_view_1.arl \
 ./tests/passed/test_asset_sort_view_2.arl \
+./tests/passed/test_asset_sort_coll_complex.arl \
 "
 
 RET=0
