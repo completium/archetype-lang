@@ -12,5 +12,5 @@ asset my_asset identified by id {
 variable res : list<nat> = []
 
 entry exec (n : nat) {
-  res := my_asset.select(the.id <= n or the.s = "mystr2");
+  res := my_asset.select(the.id >= n or the.s = "mystr2");
 }

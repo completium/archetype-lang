@@ -1095,14 +1095,14 @@ let to_michelson (ir : T.ir) : T.michelson =
     | Ifold (ix, iy, ia, c, a, b) -> begin
         let a, _env0 = fe env a in
         let c, _env1 = fe (add_var_env env ia) c in
-        let env2, pi =
+        let env2, pi, n =
           let env_= add_var_env env ia in
           match iy with
-          | Some iy -> add_var_env (add_var_env env_ iy) ix, T.UNPAIR
-          | None -> add_var_env env_ ix, T.cskip
+          | Some iy -> add_var_env (add_var_env env_ iy) ix, T.UNPAIR, 2
+          | None -> add_var_env env_ ix, T.cskip, 1
         in
         let b, _env2 = fe env2 b in
-        T.SEQ [a; c; T.ITER [pi; b; T.DROP 1]], inc_env env
+        T.SEQ [a; c; T.ITER [pi; b; T.DROP n]], inc_env env
       end
 
     | Imichelson (a, c, v) -> begin
