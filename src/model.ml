@@ -3546,7 +3546,7 @@ module Utils : sig
   val get_fs                             : model -> ident -> function_struct
   val extract_assign_kind                : mterm -> assign_kind list
   val extract_asset_effect               : model -> mterm -> effect list
-  val extract_var_idents                 : mterm -> ident list
+  val extract_var_idents                 : model -> mterm -> ident list
 
 end = struct
 
@@ -4702,13 +4702,13 @@ end = struct
 
   let get_specification (model : model) (name : ident) =
     let rec get_entry_spec = function
-    | (s, (f:function_struct))::_ when String.compare (unloc f.name) name = 0 -> s
-    | _::tl -> get_entry_spec tl
-    | [] -> None in
+      | (s, (f:function_struct))::_ when String.compare (unloc f.name) name = 0 -> s
+      | _::tl -> get_entry_spec tl
+      | [] -> None in
     let rec get_function_spec = function
-    | (s, (f:function_struct),_)::_ when String.compare (unloc f.name) name = 0 -> s
-    | _::tl -> get_function_spec tl
-    | [] -> None in
+      | (s, (f:function_struct),_)::_ when String.compare (unloc f.name) name = 0 -> s
+      | _::tl -> get_function_spec tl
+      | [] -> None in
     match get_entry_spec (get_entries model) with
     | Some s -> Some s
     | None -> get_function_spec (get_functions model)
@@ -4731,22 +4731,22 @@ end = struct
       let aan, c = get_field_container model an fn in
       match c with
       | Partition -> begin match p with
-      | `Added -> (Eadded aan)::accu
-      | `Removed -> (Eremoved aan)::accu
-      end
+          | `Added -> (Eadded aan)::accu
+          | `Removed -> (Eremoved aan)::accu
+        end
       | _ -> accu
     in
     let with_partition accu an fn m p =
       let accu = begin match m with
-      | `Updated -> (Eupdated an)::accu
+        | `Updated -> (Eupdated an)::accu
       end in
       only_partition accu an fn p
     in
     let all_partition accu an m p =
       let accu = begin match m with
-      | `Updated -> (Eupdated an)::accu
-      | `Removed -> (Eremoved an)::accu
-      | `Added   -> (Eadded an)::accu
+        | `Updated -> (Eupdated an)::accu
+        | `Removed -> (Eremoved an)::accu
+        | `Added   -> (Eadded an)::accu
       end in
       let parts = get_asset_partitions model an in
       List.fold_left (fun accu (aan, afn) -> only_partition accu aan afn p) accu parts
@@ -4768,18 +4768,30 @@ end = struct
       | _ -> fold_term aux accu t in
     aux [] mt
 
-  let extract_var_idents (mt : mterm) : ident list =
+  let extract_var_idents (model : model) (mt : mterm) : ident list =
+    let add_expr_asset an ck accu =
+      let aan =
+        match ck with
+        | CKcoll _
+        | CKview _
+        | CKdef _ -> an
+        | CKfield (an, fn, _, _, _) -> get_field_container model an fn |> fst
+      in
+      aan::accu
+    in
+
     let rec aux env accu (t : mterm) =
       match t.node with
       | Mletin (ids, a, _, b, o) ->
-          let f = aux (env @ (List.map unloc ids)) in
-          let tmp = f (f accu a) b in
-          Option.map_dfl (f tmp) tmp o
-      | Mforall (id, _, _, b) ->
-          let f = aux (env @ [unloc id]) in
-          f accu b
+        let f = aux (env @ (List.map unloc ids)) in
+        let tmp = f (f accu a) b in
+        Option.map_dfl (f tmp) tmp o
+      | Mforall (id, _, c, b) ->
+        let f = aux (env @ [unloc id]) in
+        f (Option.fold f accu c) b
       | Mvar (id, Vlocal, _, _)  when not (List.exists (String.equal (unloc id)) env) -> (unloc id)::accu
       | Mvar (id, Vstorevar, _, _) -> (unloc id)::accu
+      | Mvar (id, Vstorecol, _, _) -> (unloc id)::accu
       | Mvar (_,  Vstate, _, _)    -> "state"::accu
       | Mnow                       -> "now"::accu
       | Mtransferred               -> "transferred"::accu
@@ -4788,7 +4800,19 @@ end = struct
       | Msource                    -> "source"::accu
       | Mselfaddress               -> "selfaddress"::accu
       | Mchainid                   -> "chainid"::accu
+
+      | Mget (an, ck, _)
+      | Mselect (an, ck, _, _, _)
+      | Msort (an, ck,_)
+      | Mcontains (an, ck, _)
+      | Mnth (an, ck, _)
+      | Mcount (an, ck)
+      | Msum (an, ck, _)
+      | Mhead (an, ck, _)
+      | Mtail (an, ck, _)          -> add_expr_asset an ck accu
+
       | _ -> fold_term (aux env) accu t in
     aux [] [] mt
+    |> Tools.List.dedup
 
 end

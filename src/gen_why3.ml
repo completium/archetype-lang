@@ -1314,10 +1314,9 @@ end in
 let invariant_vars =
   Option.fold get_specifications [] entry |>
   List.fold_left (fun acc t ->
-    (* Format.printf "%a@." Printer_model.pp_mterm t;
-    print_endline (String.concat " " (M.Utils.extract_var_idents t)); *)
-    acc @ (M.Utils.extract_var_idents t)
-  ) [] |> Tools.List.dedup in
+    let l = M.Utils.extract_var_idents m t in
+    (* Format.eprintf "formula: %a@\nidents: %a@." Printer_model.pp_mterm t (Printer_tools.pp_list " " (fun fmt s -> Format.fprintf fmt "%s" s)) l; *)
+    acc @ l) [] |> Tools.List.dedup in
 print_endline (String.concat " " invariant_vars);
 (* scan storage fields : generate when in invariant_vars and not in assigned *)
 let storage_invs = List.fold_left (fun acc (item : M.storage_item) ->

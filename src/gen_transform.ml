@@ -4264,12 +4264,54 @@ let remove_asset (model : model) : model =
           mk_list_reverse atk r
         end
 
-      | Msort (_an, _, _) -> begin
-          (* TODO *)
-          (* let tk = Utils.get_asset_key model an |> snd in *)
-          (* mk_mterm (Mlitlist []) (Tlist tk) *)
-          assert false
-        end
+      | Msort _ -> assert false
+      (* | Msort (an, ck, crits) -> begin
+          let atk, tr =
+            let a =
+              match ck with
+              | CKfield (an, fn, _, _, _) -> Utils.get_field_container model an fn |> fst |> Utils.get_asset_key model |> snd
+              | _ -> Utils.get_asset_key model an |> snd
+            in
+            a, Tlist a
+          in
+
+          let mk vkid _vvid (vaccu : mterm) : mterm =
+
+            let get_val an v fn t : mterm =
+              let _, is_record = is_single_simple_record an in
+              if is_record
+              then v
+              else mk_mterm (Mdot(v, fn)) t
+            in
+
+            let mk_cond an vkey vval x =
+              let akn, _akt = Utils.get_asset_key model an in
+              let rec aux (mt : mterm) : mterm =
+                match mt.node with
+                | Mdot ({node = Mvar ({pldesc = "the"}, _, _, _); _}, fn) when String.equal (unloc fn) akn -> vkey
+                | Mdot ({node = Mvar ({pldesc = "the"}, _, _, _); _}, fn) -> get_val an (Option.get vval) fn mt.type_
+                | _ -> map_mterm aux mt
+              in
+              aux x
+            in
+
+            let vtn = mk_tupleaccess 0 vaccu in
+            let vtr = mk_tupleaccess 1 vaccu in
+
+            let inc = mk_mterm (Mplus(vtn, mk_nat 1)) tnat in
+
+            let cond  = mtrue in
+            let add   = mk_mterm (Mlistprepend(atk, vtr, vkid)) tr in
+            let mthen = mk_tuple [inc; add] in
+            let melse = mk_tuple [inc; vtr] in
+            let mif   = mk_mterm (Mif (cond, mthen, Some melse)) vaccu.type_ in
+            mif
+          in
+
+          let init = mk_mterm (Mlitlist []) tr in
+
+          fold_ck (fm ctx) (an, ck) init mk
+        end *)
 
       | Mcontains (an, ck, k) -> begin
           let k = fm ctx k in
