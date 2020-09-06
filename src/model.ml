@@ -952,14 +952,18 @@ let mtrue = mk_mterm (Mbool true) tbool
 let mfalse = mk_mterm (Mbool false) tbool
 
 
+let mk_mvar id t = mk_mterm (Mvar(id, Vlocal, Tnone, Dnone )) t
+
 let mk_tuple (l : mterm list) = mk_mterm (Mtuple l) (Ttuple (List.map (fun (x : mterm) -> x.type_) l))
+
+let mk_letin id v b = mk_mterm (Mletin([id], v, Some v.type_, b, None)) b.type_
 
 let mk_tupleaccess n (x : mterm) =
   match x.type_ with
   | Ttuple lt ->
     let t = List.nth lt n in
     mk_mterm (Mtupleaccess (x, Big_int.big_int_of_int n)) t
-  | _ -> assert false
+  | _ -> Format.eprintf "mk_tupleaccess type: %a@." pp_type_ x.type_; assert false
 
 let mk_optget (x : mterm) =
   match x.type_ with
