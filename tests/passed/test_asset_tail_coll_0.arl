@@ -1,4 +1,4 @@
-archetype test_asset_select_0
+archetype test_asset_tail_coll_0
 
 asset my_asset identified by id {
   id : nat;
@@ -11,5 +11,5 @@ asset my_asset identified by id {
 variable res : list<nat> = []
 
 entry exec (n : nat) {
-  res := my_asset.select(the.id <= n);
+  res := my_asset.tail(n);
 }

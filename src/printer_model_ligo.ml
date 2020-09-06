@@ -1161,7 +1161,6 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt "Set.size (%a)"
         f c
 
-    | Msetnth _ -> emit_error (UnsupportedTerm ("Msetnth"))
     | Msetfold _ -> emit_error (UnsupportedTerm ("Msetfold"))
 
 
@@ -1235,7 +1234,6 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt "Map.size(%a)"
         f c
 
-    | Mmapnth  _ -> emit_error (UnsupportedTerm ("Mmapnth"))
     | Mmapfold _ -> emit_error (UnsupportedTerm ("Mmapfold"))
 
     (* builtin functions *)

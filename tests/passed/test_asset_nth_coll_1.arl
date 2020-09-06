@@ -1,0 +1,16 @@
+archetype test_asset_nth_coll_1
+
+asset my_asset identified by id {
+  id : string;
+  value : int;
+} initialized by {
+  {"id0"; 0i};
+  {"id1"; 1i};
+  {"id2"; 2i}
+}
+
+variable res : string = ""
+
+entry exec (n : nat) {
+  res := my_asset.nth(n)
+}

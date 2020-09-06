@@ -1126,7 +1126,6 @@ let pp_model fmt (model : model) =
           pp_type t
           f c
 
-      | Msetnth _ -> emit_error (UnsupportedTerm ("Msetnth"))
       | Msetfold _ -> emit_error (UnsupportedTerm ("Msetfold"))
 
 
@@ -1192,7 +1191,6 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "map_length (%a)"
           f c
 
-      | Mmapnth  _ -> emit_error (UnsupportedTerm ("Mmapnth"))
       | Mmapfold _ -> emit_error (UnsupportedTerm ("Mmapfold"))
 
       (* builtin functions *)

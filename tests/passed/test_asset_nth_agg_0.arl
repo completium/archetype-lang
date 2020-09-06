@@ -1,0 +1,23 @@
+archetype test_asset_nth_agg_0
+
+asset o_asset {
+  id : string;
+} initialized by {
+  {"id0"};
+  {"id1"};
+  {"id2"}
+}
+
+asset my_asset {
+  mid : string;
+  c : aggregate<o_asset>;
+} initialized by {
+  {"id"; []}
+}
+
+variable res : string = ""
+
+entry exec (n : nat) {
+  my_asset.update("id", {c = ["id0"; "id1"; "id2"]});
+  res := my_asset["id"].c.nth(n);
+}

@@ -3440,6 +3440,143 @@ let remove_asset (model : model) : model =
       | _ -> assert false
     in
 
+    let fold_ck f (an, ck : ident * container_kind) (init : mterm) mk =
+      let tr = init.type_ in
+      let atk = Utils.get_asset_key model an |> snd in
+
+      match ck with
+      | CKcoll _ -> begin
+          let va = get_asset_global an in
+          match va.type_ with
+          | Tset skt -> begin
+
+              let iid = dumloc "_sid" in
+              let vid = mk_mterm (Mvar (iid, Vlocal, Tnone, Dnone)) skt in
+
+              let iaccu = dumloc "_accu" in
+              let vaccu = mk_mterm (Mvar (iaccu, Vlocal, Tnone, Dnone)) tr in
+
+              let act = mk vid None vaccu in
+              mk_mterm (Msetfold(atk, iid, iaccu, va, init, act)) tr
+            end
+          | Tmap (_, mkt, mkv) -> begin
+
+              let ikid = dumloc "_kid" in
+              let vkid = mk_mterm (Mvar (ikid, Vlocal, Tnone, Dnone)) mkt in
+
+              let ivid = dumloc "_vid" in
+              let vvid = mk_mterm (Mvar (ivid, Vlocal, Tnone, Dnone)) mkv in
+
+              let iaccu = dumloc "_accu" in
+              let vaccu = mk_mterm (Mvar (iaccu, Vlocal, Tnone, Dnone)) tr in
+
+              let act = mk vkid (Some vvid) vaccu in
+              mk_mterm (Mmapfold(atk, ikid, ivid, iaccu, va, init, act)) tr
+            end
+          | _ -> assert false
+        end
+      | CKfield (an, fn, k, _, _) -> begin
+          let va = get_asset_global an in
+          let get =
+            match va.type_ with
+            | Tmap (_, kt, vt) -> mk_mterm (Mmapget (kt, vt, va, f k)) vt
+            | _ -> assert false
+          in
+
+          let aan, _ = Utils.get_field_container model an fn in
+          let _ , aatk = Utils.get_asset_key model aan in
+
+          let set =
+            let _, is_record = is_single_simple_record an in
+            if is_record
+            then get
+            else mk_mterm (Mdot(get, dumloc fn)) (Tset aatk)
+          in
+
+          let iid = dumloc "_sid" in
+          let vid = mk_mterm (Mvar (iid, Vlocal, Tnone, Dnone)) aatk in
+
+          let iaccu = dumloc "_accu" in
+          let vaccu = mk_mterm (Mvar (iaccu, Vlocal, Tnone, Dnone)) tr in
+
+          let vaa = get_asset_global aan in
+          let geta =
+            match vaa.type_ with
+            | Tmap (_, kt, vt) -> Some (mk_mterm (Mmapget (kt, vt, vaa, vid)) vt)
+            | _ -> None
+          in
+
+          let body =
+            match geta with
+            | Some g -> begin
+                let ival = dumloc "_v" in
+                let vval = mk_mterm (Mvar(ival, Vlocal, Tnone, Dnone)) g.type_ in
+
+                let act : mterm = mk vid (Some vval) vaccu in
+                mk_mterm (Mletin([ival], g, Some g.type_, act, None)) tr
+              end
+            | None -> begin
+                let act = mk vid None vaccu in
+                act
+              end
+          in
+
+          mk_mterm (Msetfold(atk, iid, iaccu, set, init, body)) tr
+
+        end
+      | CKview c -> begin
+          let l = f c in
+
+          let iid = dumloc "_sid" in
+          let vid = mk_mterm (Mvar (iid, Vlocal, Tnone, Dnone)) atk in
+
+          let iaccu = dumloc "_accu" in
+          let vaccu = mk_mterm (Mvar (iaccu, Vlocal, Tnone, Dnone)) tr in
+
+          let vaa = get_asset_global an in
+          let geta =
+            match vaa.type_ with
+            | Tmap (_, kt, vt) -> Some (mk_mterm (Mmapget (kt, vt, vaa, vid)) vt)
+            | _ -> None
+          in
+
+          let body =
+            match geta with
+            | Some g -> begin
+                let ival = dumloc "_v" in
+                let vval = mk_mterm (Mvar(ival, Vlocal, Tnone, Dnone)) g.type_ in
+
+                let act = mk vid (Some vval) vaccu in
+                mk_mterm (Mletin([ival], g, Some g.type_, act, None)) tr
+              end
+            | None -> begin
+                let act = mk vid None vaccu in
+                act
+              end
+          in
+
+          mk_mterm (Mlistfold(atk, iid, iaccu, l, init, body)) tr
+        end
+      | _ -> assert false
+    in
+
+
+    let mk_list_reverse t l =
+      let tl = Tlist t in
+
+      let empty = mk_mterm (Mlitlist []) tl in
+
+      let iid = dumloc "_liid" in
+      let vid = mk_mterm (Mvar(iid, Vlocal, Tnone, Dnone)) t in
+
+      let iaccu = dumloc "_accu" in
+      let vaccu = mk_mterm (Mvar(iaccu, Vlocal, Tnone, Dnone)) t in
+
+      let b =  mk_mterm (Mlistprepend(t, vaccu, vid)) tl in
+
+      mk_mterm (Mlistfold(t, iid, iaccu, l, empty, b)) tl
+    in
+
     let rec fm ctx (mt : mterm) : mterm =
       match mt.node with
 
@@ -3838,7 +3975,22 @@ let remove_asset (model : model) : model =
           in
 
           let add_val id x = mk_mterm (Mplus   (get_val id, x)) x.type_ in
-          let sub_val id x = mk_mterm (Mminus  (get_val id, x)) x.type_ in
+
+          let sub_val id (x : mterm) =
+            let _, t, _ = Utils.get_asset_field model (an, unloc id) in
+            match t with
+            |  Tbuiltin Bnat -> begin
+                let a = mk_mterm (Mminus (get_val id, x)) (Tbuiltin Bint) in
+                let zero = mk_mterm (Mint Big_int.zero_big_int) (Tbuiltin Bint) in
+                let cond = mk_mterm (Mge (a, zero)) (Tbuiltin Bbool) in
+                let v = mk_mterm (Mabs a) (Tbuiltin Bnat) in
+                let f = mk_mterm (Mfail AssignNat) (Tunit) in
+                let c = mk_mterm (Mcast (Tunit, Tbuiltin Bnat, f)) (Tbuiltin Bnat) in
+                mk_mterm (Mexprif (cond, v, c)) (Tbuiltin Bnat)
+              end
+            | _ ->  mk_mterm (Mminus  (get_val id, x)) x.type_
+          in
+
           let mul_val id x = mk_mterm (Mmult   (get_val id, x)) x.type_ in
           let div_val id x = mk_mterm (Mdiveuc (get_val id, x)) x.type_ in
           let and_val id x = mk_mterm (Mand    (get_val id, x)) x.type_ in
@@ -4064,78 +4216,59 @@ let remove_asset (model : model) : model =
       (* expression *)
 
       | Mselect (an, ck, _, b, _) -> begin
-          let atk = Utils.get_asset_key model an |> snd in
-          let tr = Tlist atk in
+          let mk vkid vvid (vaccu : mterm) : mterm =
 
-          let get_val an v fn t : mterm =
-            let _, is_record = is_single_simple_record an in
-            if is_record
-            then v
-            else mk_mterm (Mdot(v, fn)) t
-          in
-
-          let mk_cond an vkey vval x =
-            let akn, _akt = Utils.get_asset_key model an in
-            let rec aux (mt : mterm) : mterm =
-              match mt.node with
-              | Mdot ({node = Mvar ({pldesc = "the"}, _, _, _); _}, fn) when String.equal (unloc fn) akn -> vkey
-              | Mdot ({node = Mvar ({pldesc = "the"}, _, _, _); _}, fn) -> get_val an (Option.get vval) fn mt.type_
-              | _ -> map_mterm aux mt
+            let get_val an v fn t : mterm =
+              let _, is_record = is_single_simple_record an in
+              if is_record
+              then v
+              else mk_mterm (Mdot(v, fn)) t
             in
-            aux x
+
+            let mk_cond an vkey vval x =
+              let akn, _akt = Utils.get_asset_key model an in
+              let rec aux (mt : mterm) : mterm =
+                match mt.node with
+                | Mdot ({node = Mvar ({pldesc = "the"}, _, _, _); _}, fn) when String.equal (unloc fn) akn -> vkey
+                | Mdot ({node = Mvar ({pldesc = "the"}, _, _, _); _}, fn) -> get_val an (Option.get vval) fn mt.type_
+                | _ -> map_mterm aux mt
+              in
+              aux x
+            in
+
+            let tr    = vaccu.type_ in
+
+            let atk =
+              match tr with
+              | Tlist atk -> atk
+              | _ -> assert false
+            in
+
+            let cond  = mk_cond an vkid vvid b in
+            let mthen = mk_mterm (Mlistprepend(atk, vaccu, vkid)) tr in
+            let mif   = mk_mterm (Mif (cond, mthen, Some vaccu)) tr in
+            mif
           in
 
-          match ck with
-          | CKcoll _ -> begin
-              let va = get_asset_global an in
-              match va.type_ with
-              | Tset _ -> begin
+          let atk, tr =
+            let a =
+              match ck with
+              | CKfield (an, fn, _, _, _) -> Utils.get_field_container model an fn |> fst |> Utils.get_asset_key model |> snd
+              | _ -> Utils.get_asset_key model an |> snd
+            in
+            a, Tlist a
+          in
 
-                  let empty = mk_mterm (Mlitlist []) tr in
-
-                  let iid = dumloc "_sid" in
-                  let vid = mk_mterm (Mvar (iid, Vlocal, Tnone, Dnone)) atk in
-
-                  let iaccu = dumloc "_accu" in
-                  let vaccu = mk_mterm (Mvar (iaccu, Vlocal, Tnone, Dnone)) atk in
-
-                  let cond  = mk_cond an vid None b in
-                  let mthen = mk_mterm (Mlistprepend(atk, vaccu, vid)) tr in
-                  let mif   = mk_mterm (Mif (cond, mthen, Some vaccu)) tunit in
-
-                  let fold = mk_mterm (Msetfold(atk, iid, iaccu, va, empty, mif)) tr in
-                  mk_mterm (Mlistreverse (atk, fold)) tbool |> fm ctx
-                end
-              | Tmap _ -> begin
-
-                  let empty = mk_mterm (Mlitlist []) tr in
-
-                  let ikid = dumloc "_kid" in
-                  let vkid = mk_mterm (Mvar (ikid, Vlocal, Tnone, Dnone)) atk in
-
-                  let ivid = dumloc "_vid" in
-                  let vvid = mk_mterm (Mvar (ivid, Vlocal, Tnone, Dnone)) atk in
-
-                  let iaccu = dumloc "_accu" in
-                  let vaccu = mk_mterm (Mvar (iaccu, Vlocal, Tnone, Dnone)) atk in
-
-                  let cond  = mk_cond an vkid (Some vvid) b in
-                  let mthen = mk_mterm (Mlistprepend(atk, vaccu, vkid)) tr in
-                  let mif   = mk_mterm (Mif (cond, mthen, Some vaccu)) tunit in
-
-                  let fold = mk_mterm (Mmapfold(atk, ikid, ivid, iaccu, va, empty, mif)) tr in
-                  mk_mterm (Mlistreverse (atk, fold)) tbool |> fm ctx
-
-                end
-              | _ -> assert false
-            end
-          | _ -> assert false
+          let empty = mk_mterm (Mlitlist []) tr in
+          let r = fold_ck (fm ctx) (an, ck) empty mk in
+          mk_list_reverse atk r
         end
 
-      | Msort (an, _, _) -> begin
+      | Msort (_an, _, _) -> begin
           (* TODO *)
-          let tk = Utils.get_asset_key model an |> snd in
-          mk_mterm (Mlitlist []) (Tlist tk)
+          (* let tk = Utils.get_asset_key model an |> snd in *)
+          (* mk_mterm (Mlitlist []) (Tlist tk) *)
+          assert false
         end
 
       | Mcontains (an, ck, k) -> begin
@@ -4185,44 +4318,32 @@ let remove_asset (model : model) : model =
 
       | Mnth (an, ck, n) -> begin
           let n = fm ctx n in
-          match ck with
-          | CKcoll _ -> begin
-              let va = get_asset_global an in
-              match va.type_ with
-              | Tset tk          -> mk_mterm (Msetnth (tk, va, n)) tk
-              | Tmap (_, tk, tv) -> mk_mterm (Mtupleaccess ((mk_mterm (Mmapnth (tk, tv, va, n)) (Ttuple [tk; tv])), Big_int.zero_big_int)) tk
-              | _ -> assert false
-            end
-          | CKview v -> begin
-              let tk = Utils.get_asset_key model an |> snd in
-              let v = fm ctx v in
-              mk_mterm (Mlistnth (tk, v, n)) tk
-            end
-          | CKfield (an, fn, kk, _, _) -> begin
-              let kk = fm ctx kk in
+          let mk vkid _vvid (vaccu : mterm) : mterm =
+            let tr = vaccu.type_ in
 
-              let va = get_asset_global an in
+            let vtn = mk_tupleaccess 0 vaccu in
+            let vtr = mk_tupleaccess 1 vaccu in
 
-              let _, is_record = is_single_simple_record an in
-              let aan, _ = Utils.get_field_container model an fn in
-              let atk = Utils.get_asset_key model aan |> snd in
+            let inc = mk_mterm (Mplus(vtn, mk_nat 1)) tnat in
 
-              let tk, tv =
-                match va.type_ with
-                | Tmap (_, tk, tv) -> tk, tv
-                | _ -> assert false
-              in
+            let cond = mk_mterm (Mequal (tr, vtn, n)) tbool in
+            let mthen = mk_tuple [inc; mk_some vkid] in
+            let melse = mk_tuple [inc; vtr] in
+            mk_mterm (Mif(cond, mthen, Some melse)) tr
+          in
 
-              let set =
-                let get = mk_mterm (Mmapget (tk, tv, va, kk)) tv in
-                if is_record
-                then get
-                else mk_mterm (Mdot(get, dumloc fn)) (Tset atk)
-              in
+          let atk =
+            match ck with
+            | CKfield (an, fn, _, _, _) -> Utils.get_field_container model an fn |> fst |> Utils.get_asset_key model |> snd
+            | _ -> Utils.get_asset_key model an |> snd
+          in
 
-              mk_mterm (Msetnth(atk, set, n)) atk
-            end
-          | CKdef _ -> assert false
+          let init_0 = mk_nat 0 in
+          let init_1 = mk_mterm (Mnone) (Toption atk) in
+          let init   = mk_tuple [init_0; init_1] in
+          fold_ck (fm ctx) (an, ck) init mk
+          |> mk_tupleaccess 1
+          |> mk_optget
         end
 
       | Mcount (an, ck) -> begin
@@ -4269,45 +4390,142 @@ let remove_asset (model : model) : model =
           mk_mterm node tnat
         end
 
-      | Msum (_an, _ck, _p) -> begin
-          (* TODO *)
-          match mt.type_ with
-          | Tbuiltin Bnat -> mk_mterm (Mnat Big_int.zero_big_int) tnat
-          | Tbuiltin Bint -> mk_mterm (Mint Big_int.zero_big_int) tint
-          | Ttuple [Tbuiltin Bint; Tbuiltin Bnat] -> Utils.mk_rat Big_int.zero_big_int Big_int.unit_big_int
-          | _ -> assert false
+      | Msum (an, ck, p) -> begin
+          let mk vkid vvid (vaccu : mterm) : mterm =
+
+            let get_val an v fn t : mterm =
+              let _, is_record = is_single_simple_record an in
+              if is_record
+              then v
+              else mk_mterm (Mdot(v, fn)) t
+            in
+
+            let mk_val an vkey vval x =
+              let akn, _akt = Utils.get_asset_key model an in
+              let rec aux (mt : mterm) : mterm =
+                match mt.node with
+                | Mdot ({node = Mvar ({pldesc = "the"}, _, _, _); _}, fn) when String.equal (unloc fn) akn -> vkey
+                | Mdot ({node = Mvar ({pldesc = "the"}, _, _, _); _}, fn) -> get_val an (Option.get vval) fn mt.type_
+                | _ -> map_mterm aux mt
+              in
+              aux x
+            in
+
+            let tr = vaccu.type_ in
+
+            let v  = mk_val an vkid vvid p in
+            let node =
+              match tr with
+              | Ttuple [Tbuiltin Bint; Tbuiltin Bnat] -> Mratarith(Rplus, vaccu, v)
+              | _ -> Mplus(vaccu, v)
+            in
+            mk_mterm node tr
+          in
+
+          let init =
+            match mt.type_ with
+            | Tbuiltin Bnat -> mk_mterm (Mnat Big_int.zero_big_int) tnat
+            | Tbuiltin Bint -> mk_mterm (Mint Big_int.zero_big_int) tint
+            | Ttuple [Tbuiltin Bint; Tbuiltin Bnat] -> Utils.mk_rat Big_int.zero_big_int Big_int.unit_big_int
+            | _ -> assert false
+          in
+          fold_ck (fm ctx) (an, ck) init mk
         end
 
-      | Mhead (an, _ck, _n) -> begin
-          (* TODO *)
-          let tk = Utils.get_asset_key model an |> snd in
-          mk_mterm (Mlitlist []) (Tlist tk)
+      | Mhead (an, ck, n) -> begin
+          let n = fm ctx n in
+
+          let atk, tr =
+            let a =
+              match ck with
+              | CKfield (an, fn, _, _, _) -> Utils.get_field_container model an fn |> fst |> Utils.get_asset_key model |> snd
+              | _ -> Utils.get_asset_key model an |> snd
+            in
+            a, Tlist a
+          in
+
+          let mk vkid _vvid (vaccu : mterm) : mterm =
+
+            let vtn = mk_tupleaccess 0 vaccu in
+            let vtr = mk_tupleaccess 1 vaccu in
+
+            let inc = mk_mterm (Mplus(vtn, mk_nat 1)) tnat in
+
+            let cond  = mk_mterm (Mlt(vtn, n)) tbool in
+            let add   = mk_mterm (Mlistprepend(atk, vtr, vkid)) tr in
+            let mthen = mk_tuple [inc; add] in
+            let melse = mk_tuple [inc; vtr] in
+            let mif   = mk_mterm (Mif (cond, mthen, Some melse)) vaccu.type_ in
+            mif
+          in
+
+          let init_0 = mk_nat 0 in
+          let init_1 = mk_mterm (Mlitlist []) tr in
+          let init   = mk_tuple [init_0; init_1] in
+
+          fold_ck (fm ctx) (an, ck) init mk
+          |> mk_tupleaccess 1
+          |> mk_list_reverse atk
         end
 
-      | Mtail (an, _ck, _n) -> begin
-          (* TODO *)
-          let tk = Utils.get_asset_key model an |> snd in
-          mk_mterm (Mlitlist []) (Tlist tk)
+      | Mtail (an, ck, n) -> begin
+          let n = fm ctx n in
+
+          let atk, tr =
+            let a =
+              match ck with
+              | CKfield (an, fn, _, _, _) -> Utils.get_field_container model an fn |> fst |> Utils.get_asset_key model |> snd
+              | _ -> Utils.get_asset_key model an |> snd
+            in
+            a, Tlist a
+          in
+
+          let rev vkid _vvid (vaccu : mterm) : mterm =
+            mk_mterm (Mlistprepend(atk, vaccu, vkid)) tr
+          in
+
+          let head n l =
+
+            let init_0 = mk_nat 0 in
+            let init_1 = mk_mterm (Mlitlist []) tr in
+            let init   = mk_tuple [init_0; init_1] in
+
+            let iid = dumloc "_hd" in
+            let vid = mk_mterm (Mvar (iid, Vlocal, Tnone, Dnone)) atk in
+
+            let iaccu = dumloc "_haccu" in
+            let vaccu = mk_mterm (Mvar (iaccu, Vlocal, Tnone, Dnone)) init.type_ in
+
+            let body =
+              let vtn = mk_tupleaccess 0 vaccu in
+              let vtr = mk_tupleaccess 1 vaccu in
+
+              let inc = mk_mterm (Mplus(vtn, mk_nat 1)) tnat in
+
+              let cond  = mk_mterm (Mlt(vtn, n)) tbool in
+              let add   = mk_mterm (Mlistprepend(atk, vtr, vid)) tr in
+              let mthen = mk_tuple [inc; add] in
+              let melse = mk_tuple [inc; vtr] in
+              let mif   = mk_mterm (Mif (cond, mthen, Some melse)) vaccu.type_ in
+              mif
+            in
+
+            mk_mterm (Mlistfold(atk, iid, iaccu, l, init, body)) init.type_
+          in
+
+          let init = mk_mterm (Mlitlist []) tr in
+
+          fold_ck (fm ctx) (an, ck) init rev
+          |> head n
+          |> mk_tupleaccess 1
+          |> mk_list_reverse atk
         end
 
       (* misc *)
 
       | Mlistreverse (t, l) -> begin
           let l = fm ctx l in
-
-          let tl = Tlist t in
-
-          let empty = mk_mterm (Mlitlist []) tl in
-
-          let iid = dumloc "_liid" in
-          let vid = mk_mterm (Mvar(iid, Vlocal, Tnone, Dnone)) t in
-
-          let iaccu = dumloc "_accu" in
-          let vaccu = mk_mterm (Mvar(iaccu, Vlocal, Tnone, Dnone)) t in
-
-          let b =  mk_mterm (Mlistprepend(t, vaccu, vid)) tl in
-
-          mk_mterm (Mlistfold(t, iid, iaccu, l, empty, b)) tl
+          mk_list_reverse t l
         end
 
       | _ -> map_mterm (fm ctx) mt

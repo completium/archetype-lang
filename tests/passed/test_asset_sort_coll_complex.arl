@@ -1,0 +1,23 @@
+archetype test_asset_sort_coll_complex
+
+asset my_asset identified by id {
+  id : nat;
+  n0 : nat;
+  n1 : nat;
+  n2 : nat;
+} initialized by {
+  {0; 0; 0; 0};
+  {1; 0; 0; 1};
+  {2; 0; 1; 0};
+  {3; 0; 1; 1};
+  {4; 1; 0; 0};
+  {5; 1; 0; 1};
+  {6; 1; 1; 0};
+  {7; 1; 1; 1}
+}
+
+variable res : list<nat> = []
+
+entry exec () {
+  res := my_asset.sort(desc(n0), desc(n1), desc(n2));
+}

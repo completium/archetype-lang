@@ -1,0 +1,15 @@
+archetype test_asset_sum_coll_0
+
+asset my_asset identified by id {
+  id : nat;
+} initialized by {
+  {0};
+  {1};
+  {2}
+}
+
+variable res : nat = 0
+
+entry exec () {
+  res := my_asset.sum(id)
+}

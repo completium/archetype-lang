@@ -196,11 +196,6 @@ let to_ir (model : M.model) : T.ir =
         let tret  = T.tint in
         T.mk_func name targ tret (T.Abstract b)
       end
-    | BsetNth t -> begin
-        let targ = T.tpair (T.tset t) T.tnat in
-        let tret = t in
-        T.mk_func name targ tret (T.Abstract b)
-      end
     | BlistContains t -> begin
         let targ = T.tpair (T.tlist t) t in
         let tret = T.tbool in
@@ -227,18 +222,13 @@ let to_ir (model : M.model) : T.ir =
           let ares      = T.Iassign (res_name, T.isome(T.icar ve)) in
           let alist     = T.Iassign (list_name, T.icdr ve) in
           let aiter     = T.Iassign (iter_name, T.Ibinop (Badd, viter, T.inat Big_int.unit_big_int)) in
-          let bloop     = T.IletIn(e_name, vheadtail, T.Iseq [ares; alist; aiter]) in
+          let bloop     = T.IletIn(e_name, vheadtail, T.Iseq [ares; alist; aiter], true) in
           let loop      = T.Iwhile (cond, bloop) in
-          let body      = T.IletIn(res_name, T.inone t, IletIn(iter_name, T.inat Big_int.zero_big_int, T.Iseq [loop; return])) in
+          let body      = T.IletIn(res_name, T.inone t, IletIn(iter_name, T.inat Big_int.zero_big_int, T.Iseq [loop; return], true), true) in
           args, body
         end
         in
         T.mk_func name targ tret (T.Concrete (args, body))
-      end
-    | BmapNth (k, v) -> begin
-        let targ = T.tpair (T.tmap k v) T.tnat in
-        let tret = T.tpair k v in
-        T.mk_func name targ tret (T.Abstract b)
       end
     | Btostring t -> begin
         let targ = t in
@@ -271,9 +261,9 @@ let to_ir (model : M.model) : T.ir =
           let assign_res = T.Iassign (res_name, concat) in
           let assign_arg = T.Iassign (arg_name, T.Iunop (Ucar, vpair)) in
           let vpair      = T.Iifnone (T.Ibinop (Bediv, varg, ten), T.ifail "DivByZero", id, "_var_ifnone") in
-          let b          = T.IletIn(pair_name, vpair, T.Iseq [assign_res; assign_arg]) in
+          let b          = T.IletIn(pair_name, vpair, T.Iseq [assign_res; assign_arg], true) in
           let loop       = T.Iwhile (cond, b) in
-          let a          = T.IletIn(res_name, T.istring "", IletIn(map_name, map, T.Iseq [loop; return vres]) ) in
+          let a          = T.IletIn(res_name, T.istring "", IletIn(map_name, map, T.Iseq [loop; return vres], true), true) in
           args, T.Iif (cond, a, return (T.istring "0"))
         end
         in
@@ -348,7 +338,7 @@ let to_ir (model : M.model) : T.ir =
 
     (* lambda *)
 
-    | Mletin ([id], v, _, b, _) -> T.IletIn (unloc id, f v, f b)
+    | Mletin ([id], v, _, b, _) -> let is_unit = match mtt.type_ with Tunit -> true | _ -> false in T.IletIn (unloc id, f v, f b, is_unit)
     | Mletin _                  -> emit_error (UnsupportedTerm ("Mletin"))
     | Mdeclvar _                -> emit_error (UnsupportedTerm ("Mdeclvar"))
     | Mapp (e, args)            -> T.Icall (unloc e, List.map f args)
@@ -579,7 +569,6 @@ let to_ir (model : M.model) : T.ir =
     | Msetremove (_, c, a)          -> T.Iterop (Tupdate, f a, T.ifalse, f c)
     | Msetcontains (_, c, k)        -> T.Ibinop (Bmem, f k, f c)
     | Msetlength (_, c)             -> T.Iunop  (Usize, f c)
-    | Msetnth (t, c, a)             -> let b = T.BsetNth (to_type t) in add_builtin b; T.Icall (get_fun_name b, [f c; f a])
     | Msetfold (_, ix, ia, c, a, b) -> T.Ifold (unloc ix, None, unloc ia, f c, f a, T.Iassign (unloc ia, f b))
 
     (* list api expression *)
@@ -600,7 +589,6 @@ let to_ir (model : M.model) : T.ir =
     | Mmapgetopt (_, _, c, k)     -> T.Ibinop (Bget, f k, f c)
     | Mmapcontains (_, _, c, k)   -> T.Ibinop (Bmem, f k, f c)
     | Mmaplength (_, _, c)        -> T.Iunop (Usize, f c)
-    | Mmapnth (kt, kv, c, a)      -> let b = T.BmapNth (to_type kt, to_type kv) in add_builtin b; T.Icall (get_fun_name b, [f c; f a])
     | Mmapfold (_, ik, iv, ia, c, a, b) -> T.Ifold (unloc ik, Some (unloc iv), unloc ia, f c, f a, T.Iassign (unloc ia, f b))
 
 
@@ -789,10 +777,8 @@ let concrete_michelson b =
   | T.Bmax _          -> T.SEQ [DUP; UNPAIR; COMPARE; LT; IF ([CDR], [CAR])]
   | T.Bfloor          -> T.SEQ [UNPAIR; EDIV; IF_NONE ([T.cfail "DivByZero"], [CAR])]
   | T.Bceil           -> T.SEQ [UNPAIR; EDIV; IF_NONE ([T.cfail "DivByZero"], [UNPAIR; SWAP; INT; EQ; IF ([], [PUSH (T.tint, T.Dint Big_int.unit_big_int); ADD])])]
-  | T.BsetNth _       -> error ()
   | T.BlistContains _ -> T.SEQ [UNPAIR; PUSH (T.tbool, T.Dfalse); SWAP; ITER [DIG 2; DUP; DUG 3; COMPARE; EQ; OR; ]; DIP (1, [DROP 1])]
   | T.BlistNth _      -> error ()
-  | T.BmapNth _       -> error ()
   | T.Btostring _     -> error ()
   | T.Bratcmp         -> T.SEQ [UNPAIR; UNPAIR; DIP (1, [UNPAIR]); UNPAIR; DUG 3; MUL; DIP (1, [MUL]); SWAP; COMPARE; SWAP;
                                 IF_LEFT ([DROP 1; EQ], [IF_LEFT ([IF_LEFT ([DROP 1; LT], [DROP 1; LE])],
@@ -866,11 +852,13 @@ let to_michelson (ir : T.ir) : T.michelson =
     match i with
     | Iseq l               -> seq env l
 
-    | IletIn (id, v, b)    -> begin
+    | IletIn (id, v, b, u)    -> begin
         let v, _ = f v in
         let env0 = add_var_env env id in
         let b, _ = fe env0 b in
-        T.SEQ [v; b; T.DROP 1], env
+        if u
+        then T.SEQ [v; b; T.DROP 1], env
+        else T.SEQ [v; b; T.DIP (1, [T.DROP 1])], inc_env env
       end
 
     | Ivar id -> begin
