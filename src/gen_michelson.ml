@@ -155,7 +155,7 @@ let to_ir (model : M.model) : T.ir =
         | -1 -> emit_error (FieldNotFoundFor (rn, fn))
         | _ -> res
       end
-    | _ -> Format.eprintf "%a@." M.pp_type_ rt; assert false
+    | _ -> Format.eprintf "get_record_index: %a@." M.pp_type_ rt; assert false
   in
 
   let l = List.map (
@@ -451,7 +451,7 @@ let to_ir (model : M.model) : T.ir =
 
     | Mexprif (c, t, e)       -> T.Iif (f c, f t, f e)
     | Mexprmatchwith (_e, _l) -> emit_error (UnsupportedTerm ("Mexprmatchwith"))
-
+    | Mmatchsome (e, n, i, s) -> T.Iifnone (f e, f n, (fun _ -> f s), i)
 
     (* composite type constructors *)
 
@@ -908,12 +908,11 @@ let to_michelson (ir : T.ir) : T.michelson =
       end
 
     | Iifnone (v, t, e, id) -> begin
-        let v, _   = f v in
-        let t, env = f t in
-        let env0   = add_var_env env id in
-        let e, _   = fe env0 (e (T.Ivar id)) in
+        let v, _ = fe env v in
+        let t, _ = fe env t in
+        let e, _ = fe (add_var_env env id) (e (T.Ivar id)) in
 
-        T.SEQ [ v; T.IF_NONE ([t], [e; T.SWAP; T.DROP 1]) ], env
+        T.SEQ [ v; T.IF_NONE ([t], [e; T.SWAP; T.DROP 1]) ], inc_env env
       end
 
     | Iifcons (l, t, e) -> begin

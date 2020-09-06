@@ -604,6 +604,7 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (e, l)
 
+    | Mmatchsome _ -> emit_error (UnsupportedTerm ("Mmatchsome"))
 
     (* composite type constructors *)
 
@@ -687,7 +688,7 @@ let pp_model_internal fmt (model : model) b =
         f e
         pp_id i
 
-    | Mdotassetfield _ -> emit_error (UnsupportedTerm ("dotassetfield"))
+    | Mdotassetfield _ -> emit_error (UnsupportedTerm ("Mdotassetfield"))
 
 
     (* comparison operators *)

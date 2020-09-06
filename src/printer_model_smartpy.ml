@@ -630,6 +630,7 @@ let pp_model fmt (model : model) =
           f e
 
       | Mexprmatchwith _ -> emit_error (UnsupportedTerm ("Mexprmatchwith"))
+      | Mmatchsome     _ -> emit_error (UnsupportedTerm ("Mmatchsome"))
 
 
       (* composite type constructors *)

@@ -4266,7 +4266,7 @@ let remove_asset (model : model) : model =
           mk_list_reverse atk r
         end
 
-      | Msort (an, ck, _crits) -> begin
+      | Msort (an, ck, crits) -> begin
           let atk, tr =
             let a =
               match ck with
@@ -4276,28 +4276,89 @@ let remove_asset (model : model) : model =
             a, Tlist a
           in
 
-          let sort (vkid : mterm) _vvid (vaccu : mterm) : mterm =
+          let sort (vkid : mterm) (vvid : mterm option) (vaccu : mterm) : mterm =
+
+            let get_val k (v : mterm option) fn : mterm =
+              let _, t, _ = Utils.get_asset_field model (an, fn) in
+              let is_key = String.equal fn (Utils.get_asset_key model an |> fst) in
+
+              let _, is_record = is_single_simple_record an in
+
+              match is_key, is_record, v with
+              | true, _, _      -> k
+              | _, true, Some v -> v
+              | _, _, Some v    -> mk_mterm (Mdot(v, dumloc fn)) t
+              | _ -> assert false
+            in
 
             let iinit_0 = mk_some vkid in
             let iinit_1 = mk_mterm (Mlitlist []) tr in
             let iinit   = mk_tuple [iinit_0; iinit_1] in
 
             let ixins = dumloc "_x_insert" in
-            let _vxins = mk_mvar ixins atk in
+            let vxins = mk_mvar ixins atk in
 
             let iains = dumloc "_accu_insert" in
             let vains = mk_mvar iains iinit.type_ in
 
             let insert : mterm =
+
               let ia0 = dumloc "_ia0" in
               let va0 : mterm = mk_mvar ia0 iinit_0.type_ in
 
               let ia1 = dumloc "_ia1" in
               let va1 : mterm = mk_mvar ia1 iinit_1.type_ in
 
-              (* let prepend x = mk_mterm (Mlistprepend(atk, va1, x)) tr in *)
+              let ims1 = "_ms" in
+              let vms1 : mterm = mk_mvar (dumloc ims1) iinit_1.type_ in
 
-              mk_tuple [va0; va1]
+              let prepend x l = mk_mterm (Mlistprepend(atk, l, x)) tr in
+
+              let neutral = mk_tuple [va0; prepend vxins va1] in
+              let act = mk_tuple [mk_none (vkid.type_); prepend vxins (prepend vms1 va1)] in
+
+              let ivb = dumloc "_b" in
+
+              let va = get_asset_global an in
+              let add_letin x =
+                match va.type_ with
+                | Tset _ -> x
+                | Tmap (_, kt, vt) ->
+                  let mk_get x = mk_mterm (Mmapget (kt, vt, va, x)) vt in
+                  x |> mk_letin ivb (mk_get vms1)
+                | _ -> assert false
+              in
+
+              let vvb : mterm option =
+                match va.type_ with
+                | Tset _ -> None
+                | Tmap (_, _, vt) -> Some (mk_mvar ivb vt)
+                | _ -> assert false
+              in
+
+              let crit = List.fold_right (fun (id, sk) accu ->
+                  let vl = get_val vxins vvid id in
+                  let vr = get_val vms1  vvb  id in
+                  let gt = mk_mterm (Mgt (vl, vr)) tbool in
+                  let lt = mk_mterm (Mlt (vl, vr)) tbool in
+                  let mk_if c t e = mk_mterm (Mif (c, t, Some e)) tint in
+                  let one = mk_int 1 in
+                  let mone = mk_int (-1) in
+                  match sk with
+                  | SKasc  -> mk_if gt one (mk_if lt mone accu)
+                  | SKdesc -> mk_if lt one (mk_if gt mone accu)
+                ) crits (mk_int 0) |> add_letin
+              in
+
+              let cond = mk_mterm (Mlt (crit, mk_int 1)) tbool in
+
+              (* let cond = mtrue in *)
+
+              let mif = mk_mterm (Mif (cond, act, Some neutral)) neutral.type_ in
+
+              let matchsome : mterm = mk_mterm (Mmatchsome (va0, neutral, ims1, mif)) vains.type_ in
+
+              matchsome
               |> mk_letin ia1 (mk_tupleaccess 1 vains)
               |> mk_letin ia0 (mk_tupleaccess 0 vains)
             in
@@ -4309,7 +4370,7 @@ let remove_asset (model : model) : model =
 
           let init = mk_mterm (Mlitlist []) tr in
 
-          fold_ck (fm ctx) (an, ck) init sort
+          fold_ck (fm ctx) (an, ck) init sort ~with_value:true
         end
 
       | Mcontains (an, ck, k) -> begin

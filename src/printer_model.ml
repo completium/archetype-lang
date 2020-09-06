@@ -360,6 +360,15 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (e, l)
 
+    | Mmatchsome (e, n, i, s) ->
+      let pp fmt (e, n, i, s) =
+        Format.fprintf fmt "match_some %a with@\n| None -> @[%a@]@\n| Some %s -> @[%a@]"
+          f e
+          f n
+          i
+          f s
+      in
+      pp fmt (e, n, i, s)
 
     (* composite type constructors *)
 
