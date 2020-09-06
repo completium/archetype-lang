@@ -3461,6 +3461,7 @@ let extract_list (mt : mterm) (e : mterm) =
 
 (* -------------------------------------------------------------------- *)
 
+type effect = Eadded of ident | Eremoved of ident | Eupdated of ident
 module Utils : sig
 
   val get_vars                           : model -> var list
@@ -3539,10 +3540,11 @@ module Utils : sig
   val get_function                       : model -> ident -> function_struct
   val get_asset_partitions               : model -> ident -> (ident * ident) list
   val get_specifications                 : model -> specification list
+  val get_specification                  : model -> ident -> specification option
   val get_fss                            : model -> function_struct list
   val get_fs                             : model -> ident -> function_struct
   val extract_assign_kind                : mterm -> assign_kind list
-  val extract_asset_name_effect          : model -> mterm -> ident list
+  val extract_asset_effect               : model -> mterm -> effect list
   val extract_var_idents                 : mterm -> ident list
 
 end = struct
@@ -4697,6 +4699,19 @@ end = struct
     (List.fold_left (fun acc (s,_) -> match s with Some v -> acc@[v] | None -> acc) [] (get_entries model)) @
     ((List.fold_left (fun acc (s,_,_) -> match s with Some v -> acc@[v] | None -> acc)) [] (get_functions model))
 
+  let get_specification (model : model) (name : ident) =
+    let rec get_entry_spec = function
+    | (s, (f:function_struct))::_ when String.compare (unloc f.name) name = 0 -> s
+    | _::tl -> get_entry_spec tl
+    | [] -> None in
+    let rec get_function_spec = function
+    | (s, (f:function_struct),_)::_ when String.compare (unloc f.name) name = 0 -> s
+    | _::tl -> get_function_spec tl
+    | [] -> None in
+    match get_entry_spec (get_entries model) with
+    | Some s -> Some s
+    | None -> get_function_spec (get_functions model)
+
   let get_fss (model : model) : function_struct list =
     List.map (fun (x) -> match x.node with | Entry fs | Function (fs, _) -> fs) model.functions
 
@@ -4710,47 +4725,58 @@ end = struct
       | _ -> fold_term aux accu t in
     aux [] mt
 
-  let extract_asset_name_effect (model : model) (mt : mterm) : ident list =
-    let only_partition accu an fn =
+  let extract_asset_effect (model : model) (mt : mterm) : effect list =
+    let only_partition accu an fn p =
       let aan, c = get_field_container model an fn in
       match c with
-      | Partition -> aan::accu
+      | Partition -> begin match p with
+      | `Added -> (Eadded aan)::accu
+      | `Removed -> (Eremoved aan)::accu
+      end
       | _ -> accu
     in
-    let with_partition accu an fn =
-      let accu = an::accu in
-      only_partition accu an fn
+    let with_partition accu an fn m p =
+      let accu = begin match m with
+      | `Updated -> (Eupdated an)::accu
+      end in
+      only_partition accu an fn p
     in
-    let all_partition accu an =
-      let accu = an::accu in
+    let all_partition accu an m p =
+      let accu = begin match m with
+      | `Updated -> (Eupdated an)::accu
+      | `Removed -> (Eremoved an)::accu
+      | `Added   -> (Eadded an)::accu
+      end in
       let parts = get_asset_partitions model an in
-      List.fold_left (fun accu (aan, afn) -> only_partition accu aan afn) accu parts
+      List.fold_left (fun accu (aan, afn) -> only_partition accu aan afn p) accu parts
     in
     let rec aux accu (t : mterm) =
       match t.node with
-      | Maddasset (an, _)                                 -> an::accu
-      | Maddfield (an, fn, _, _)                          -> with_partition accu an fn
-      | Mremoveasset (an, _)                              -> an::accu
-      | Mremovefield (an, fn, _, _)                       -> with_partition accu an fn
-      | Mremoveall (an, fn, _)                            -> only_partition accu an fn
-      | Mremoveif (an, CKcoll _, _, _, _)                 -> all_partition accu an
-      | Mremoveif (an, CKfield (_, fn, _, _, _), _, _, _) -> only_partition accu an fn
-      | Mclear (an, CKcoll _)                             -> all_partition accu an
-      | Mclear (an, CKview _)                             -> all_partition accu an
-      | Mclear (an, CKfield (_, fn, _, _, _))             -> only_partition accu an fn
-      | Mset (an, _, _, _)                                -> an::accu
-      | Maddforce (an, _)                                 -> all_partition accu an
+      | Maddasset (an, _)                                 -> (Eadded an)::accu
+      | Maddfield (an, fn, _, _)                          -> with_partition accu an fn `Updated `Added
+      | Mremoveasset (an, _)                              -> (Eremoved an)::accu
+      | Mremovefield (an, fn, _, _)                       -> with_partition accu an fn `Updated `Removed
+      | Mremoveall (an, fn, _)                            -> only_partition accu an fn `Removed
+      | Mremoveif (an, CKcoll _, _, _, _)                 -> all_partition accu an `Updated `Removed
+      | Mremoveif (an, CKfield (_, fn, _, _, _), _, _, _) -> only_partition accu an fn `Removed
+      | Mclear (an, CKcoll _)                             -> all_partition accu an `Removed `Removed
+      | Mclear (an, CKview _)                             -> all_partition accu an `Removed `Removed
+      | Mclear (an, CKfield (_, fn, _, _, _))             -> only_partition accu an fn `Removed
+      | Mset (an, _, _, _)                                -> (Eupdated an)::accu
+      | Maddforce (an, _)                                 -> all_partition accu an `Added `Added
       | _ -> fold_term aux accu t in
     aux [] mt
 
   let extract_var_idents (mt : mterm) : ident list =
     let rec aux env accu (t : mterm) =
       match t.node with
-      | Mletin (ids, a, _, b, o) -> begin
+      | Mletin (ids, a, _, b, o) ->
           let f = aux (env @ (List.map unloc ids)) in
           let tmp = f (f accu a) b in
           Option.map_dfl (f tmp) tmp o
-        end
+      | Mforall (id, _, _, b) ->
+          let f = aux (env @ [unloc id]) in
+          f accu b
       | Mvar (id, Vlocal, _, _)  when not (List.exists (String.equal (unloc id)) env) -> (unloc id)::accu
       | Mvar (id, Vstorevar, _, _) -> (unloc id)::accu
       | Mvar (_,  Vstate, _, _)    -> "state"::accu

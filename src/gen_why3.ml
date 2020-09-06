@@ -1287,7 +1287,14 @@ let mk_storage_loop_inv lbl lblbef id =
     form = loc_term (Teq (Tyint, Tapp (Tvar id,[Tvar gs]), Tapp (Tvar id, [Tat (lblbef,Tvar gs)])))
   }
 
-let mk_vars_loop_invariants m lbl lblbef body =
+let rec is_identical id = function
+| (M.Eadded i)::_ when String.compare i id = 0 -> false
+| (M.Eremoved i)::_ when String.compare i id = 0 -> false
+| (M.Eupdated i)::_ when String.compare i id = 0 -> false
+| _::tl -> is_identical id tl
+| [] -> true
+
+let mk_vars_loop_invariants m entry lbl lblbef body =
 let assigned_vars = M.Utils.extract_assign_kind body |>
   List.fold_left (fun acc ak ->
     match ak with
@@ -1296,48 +1303,65 @@ let assigned_vars = M.Utils.extract_assign_kind body |>
     | _ -> acc
   ) []
 in
-let assigned_assets = M.Utils.extract_asset_name_effect m body in
+let assigned_assets = M.Utils.extract_asset_effect m body in
 (* invariant_vars are the storage / local variables spec are about *)
+let get_specifications acc name =  begin
+  match M.Utils.get_specification m name with
+  | Some s -> acc @ List.map (fun (p : M.postcondition) -> p.formula) s.postconditions
+  | None -> acc
+end in
 let invariant_vars =
-  Option.fold (M.Utils.get_loop_invariants m) [] lbl |>
-  List.fold_left (fun acc (_,t) ->
+  Option.fold get_specifications [] entry |>
+  List.fold_left (fun acc t ->
     acc @ (M.Utils.extract_var_idents t)
-  ) [] in
+  ) [] |> Tools.List.dedup in
 (* scan storage fields : generate when in invariant_vars and not in assigned *)
 let storage_invs = List.fold_left (fun acc (item : M.storage_item) ->
       acc @
       match item.typ with
-      | M.Tcontainer (Tasset id, _)
-        when (List.mem (unloc id) invariant_vars) && not (List.mem (unloc id) assigned_assets) ->
-        acc @ [mk_storage_loop_inv lbl lblbef (mk_ac_id (unloc id))]
+      | M.Tcontainer (Tasset id, _) when (List.mem (unloc id) invariant_vars) ->
+        let acc = if is_identical (unloc id) assigned_assets then
+          acc @ [mk_storage_loop_inv lbl lblbef (mk_ac_id (unloc id))]
+        else acc in
+        let acc  = if not (List.mem (M.Eadded (unloc id)) assigned_assets) then
+          acc @ [mk_storage_loop_inv lbl lblbef (mk_ac_added_id (unloc id))]
+        else acc in
+        let acc = if not (List.mem (M.Eremoved (unloc id)) assigned_assets) then
+          acc @ [mk_storage_loop_inv lbl lblbef (mk_ac_rmed_id (unloc id))]
+        else acc in
+        acc
       | _ when (List.mem (unloc item.id) invariant_vars) && not (List.mem (unloc item.id) assigned_vars) ->
         acc @ [mk_storage_loop_inv lbl lblbef (unloc (item.id))]
       | _ -> acc
     ) [] (M.Utils.get_storage m) in
 let const_storage_invs = List.fold_left (fun acc id ->
-  if List.mem id invariant_vars then
+  if List.mem id invariant_vars && not (List.mem id assigned_vars) then
     acc @ [mk_storage_loop_inv lbl lblbef ("_"^id)]
   else acc
-) [] ["now"; "caller"] in
+) [] ["now"; "caller"; "balance"; "source"; "selfaddress"] in
 (* TODO : local variables (pass context) *)
 storage_invs @ const_storage_invs
 
 (* -------------------------------------------------------------------------- *)
 
-let mk_var (i : ident) = Tvar i
-
 (* type logical_mod = Nomod | Added | Removed *)
 type mode = Inv | Logic | Exec | Def
 
 type logical_context = {
-  lctx    : mode;
-  loop_id : ident option;
+  lctx     : mode;
+  entry_id : ident option;
+  locals   : ident list;
+  loop_id  : ident option;
 }
 
 let init_ctx = {
-  lctx = Exec;
-  loop_id = None;
+  lctx     = Exec;
+  entry_id = None;
+  locals   = [];
+  loop_id  = None;
 }
+
+let add_local id ctx = { ctx with locals = id::ctx.locals }
 
 let mk_trace_seq m t chs =
   if M.Utils.with_trace m then
@@ -1464,6 +1488,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     (* lambda *)
 
     | Mletin ([id], v, _, b, None) ->
+      let ctx = add_local (unloc id) ctx in
       Tletin (M.Utils.is_local_assigned (unloc id) b, map_lident id, None, map_mterm m ctx v, map_mterm m ctx b)
 
     | Mletin ([id], { node = M.Mget (a, CKcoll (t,d), k); type_ = _ }, _, b, Some e) -> (* logical *)
@@ -1503,6 +1528,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
           Twild, map_mterm m ctx o
         ])
     | Mletin (l, v, _, b, None) ->
+      let ctx = List.fold_left (fun acc id -> add_local (unloc id) acc) ctx l in
       let id = "("^(l |> List.map unloc |> String.concat ",")^")" in
       Tletin (false, dl id , None, map_mterm m ctx v, map_mterm m ctx b)
     | Mletin              _ -> Tvar (dl "TODO letin")
@@ -2291,7 +2317,7 @@ and mk_invariants (m : M.model) ctx id (lbl : ident option) lbody =
           form = map_security_pred `Loop sec.predicate |> loc_term; }
       )
   in
-  let vars_loop_invariants = mk_vars_loop_invariants m lbl (mk_lbl_before lbl) lbody in
+  let vars_loop_invariants = mk_vars_loop_invariants m ctx.entry_id lbl (mk_lbl_before lbl) lbody in
   loop_invariants          @
   storage_loop_invariants  @
   security_loop_invariants @
@@ -2662,12 +2688,12 @@ let is_fail (t : M.mterm) =
   | M.Mfail _ -> true
   | _ -> false
 
-let flatten_if_fail m (t : M.mterm) : loc_term =
+let flatten_if_fail m ctx (t : M.mterm) : loc_term =
   let rec rec_flat acc (t : M.mterm) : loc_term list =
     match t.node with
     | M.Mif (c,th, Some e) when is_fail th ->
-      rec_flat (acc@[mk_loc t.loc (Tif (map_mterm m init_ctx c, map_mterm m init_ctx th,None))]) e
-    | _ -> acc @ [map_mterm m init_ctx t] in
+      rec_flat (acc@[mk_loc t.loc (Tif (map_mterm m ctx c, map_mterm m ctx th,None))]) e
+    | _ -> acc @ [map_mterm m ctx t] in
   mk_loc t.loc (Tseq (rec_flat [] t))
 
 let mk_ensures m acc (v : M.specification) =
@@ -2775,7 +2801,7 @@ let mk_functions m =
           (* (mk_delta_requires m) @ *)
           (mk_preconds m s.args s.body);
         ensures  = Option.fold (mk_ensures m) [] v;
-        body     = flatten_if_fail m s.body;
+        body     = flatten_if_fail m { init_ctx with entry_id = Some (unloc s.name) } s.body;
       }
   )
 
@@ -2796,7 +2822,7 @@ let mk_entries m =
           (mk_entry_require m [unloc s.name]) @
           (mk_delta_requires m);
         ensures  = Option.fold (mk_ensures m) [] v;
-        body     = flatten_if_fail m s.body;
+        body     = flatten_if_fail m { init_ctx with entry_id = Some (unloc s.name) } s.body;
       }
   )
 
