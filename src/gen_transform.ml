@@ -4468,11 +4468,57 @@ let remove_asset (model : model) : model =
           |> mk_list_reverse atk
         end
 
-      | Mtail (_an, _ck, _n) -> begin
-          (* TODO *)
-          (* let tk = Utils.get_asset_key model an |> snd in *)
-          (* mk_mterm (Mlitlist []) (Tlist tk) *)
-          assert false
+      | Mtail (an, ck, n) -> begin
+          let n = fm ctx n in
+
+          let atk, tr =
+            let a =
+              match ck with
+              | CKfield (an, fn, _, _, _) -> Utils.get_field_container model an fn |> fst |> Utils.get_asset_key model |> snd
+              | _ -> Utils.get_asset_key model an |> snd
+            in
+            a, Tlist a
+          in
+
+          let rev vkid _vvid (vaccu : mterm) : mterm =
+            mk_mterm (Mlistprepend(atk, vaccu, vkid)) tr
+          in
+
+          let head n l =
+
+            let init_0 = mk_nat 0 in
+            let init_1 = mk_mterm (Mlitlist []) tr in
+            let init   = mk_tuple [init_0; init_1] in
+
+            let iid = dumloc "_hd" in
+            let vid = mk_mterm (Mvar (iid, Vlocal, Tnone, Dnone)) atk in
+
+            let iaccu = dumloc "_haccu" in
+            let vaccu = mk_mterm (Mvar (iaccu, Vlocal, Tnone, Dnone)) init.type_ in
+
+            let body =
+              let vtn = mk_tupleaccess 0 vaccu in
+              let vtr = mk_tupleaccess 1 vaccu in
+
+              let inc = mk_mterm (Mplus(vtn, mk_nat 1)) tnat in
+
+              let cond  = mk_mterm (Mlt(vtn, n)) tbool in
+              let add   = mk_mterm (Mlistprepend(atk, vtr, vid)) tr in
+              let mthen = mk_tuple [inc; add] in
+              let melse = mk_tuple [inc; vtr] in
+              let mif   = mk_mterm (Mif (cond, mthen, Some melse)) vaccu.type_ in
+              mif
+            in
+
+            mk_mterm (Mlistfold(atk, iid, iaccu, l, init, body)) init.type_
+          in
+
+          let init = mk_mterm (Mlitlist []) tr in
+
+          fold_ck (fm ctx) (an, ck) init rev
+          |> head n
+          |> mk_tupleaccess 1
+          |> mk_list_reverse atk
         end
 
       (* misc *)
