@@ -1269,6 +1269,59 @@ let get_record_name = function
   | Drecord (n,_) -> n
   | _ -> assert false
 
+(* variables loop invariants ------------------------------------------------ *)
+
+let mk_lbl_before lbl =
+  match lbl with
+  | Some a -> "Before_" ^ a
+  | None ->  "Before_loop"
+
+let mk_inv_lbl lbl id =
+  match lbl with
+  | Some a-> id ^ "_invariant_" ^ a
+  | None -> id ^ "_invariant"
+
+let mk_storage_loop_inv lbl lblbef id =
+  let iid = mk_inv_lbl lbl id in {
+    id =  dl iid;
+    form = loc_term (Teq (Tyint, Tapp (Tvar id,[Tvar gs]), Tapp (Tvar id, [Tat (lblbef,Tvar gs)])))
+  }
+
+let mk_vars_loop_invariants m lbl lblbef body =
+let assigned_vars = M.Utils.extract_assign_kind body |>
+  List.fold_left (fun acc ak ->
+    match ak with
+    | M.Avar id -> acc @ [unloc id]
+    | M.Avarstore id -> acc @ [unloc id]
+    | _ -> acc
+  ) []
+in
+let assigned_assets = M.Utils.extract_asset_name_effect m body in
+(* invariant_vars are the storage / local variables spec are about *)
+let invariant_vars =
+  Option.fold (M.Utils.get_loop_invariants m) [] lbl |>
+  List.fold_left (fun acc (_,t) ->
+    acc @ (M.Utils.extract_var_idents t)
+  ) [] in
+(* scan storage fields : generate when in invariant_vars and not in assigned *)
+let storage_invs = List.fold_left (fun acc (item : M.storage_item) ->
+      acc @
+      match item.typ with
+      | M.Tcontainer (Tasset id, _)
+        when (List.mem (unloc id) invariant_vars) && not (List.mem (unloc id) assigned_assets) ->
+        acc @ [mk_storage_loop_inv lbl lblbef (mk_ac_id (unloc id))]
+      | _ when (List.mem (unloc item.id) invariant_vars) && not (List.mem (unloc item.id) assigned_vars) ->
+        acc @ [mk_storage_loop_inv lbl lblbef (unloc (item.id))]
+      | _ -> acc
+    ) [] (M.Utils.get_storage m) in
+let const_storage_invs = List.fold_left (fun acc id ->
+  if List.mem id invariant_vars then
+    acc @ [mk_storage_loop_inv lbl lblbef ("_"^id)]
+  else acc
+) [] ["now"; "caller"] in
+(* TODO : local variables (pass context) *)
+storage_invs @ const_storage_invs
+
 (* -------------------------------------------------------------------------- *)
 
 let mk_var (i : ident) = Tvar i
@@ -1519,18 +1572,20 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mfor (_id, _c, _b, _lbl) -> error_not_supported "Mfor"
     | Miter (id, from, to_, body, lbl) -> (* ('id * 'term * 'term * 'term * ident option) *)
       let inv_ctx = { ctx with lctx = Logic } in
-      Tfor (map_lident id,
-            map_mterm m ctx from,
-            map_mterm m ctx to_,
-            mk_invariants m inv_ctx (Some id) lbl body,
-            map_mterm m ctx body
-           )
+      Tmark (dl (mk_lbl_before lbl),
+        dl (Tfor (map_lident id,
+                  map_mterm m ctx from,
+                  map_mterm m ctx to_,
+                  mk_invariants m inv_ctx (Some id) lbl body,
+                  map_mterm m ctx body
+      )))
     | Mwhile (test, body, lbl) ->
       let inv_ctx = { ctx with lctx = Logic } in
-      Twhile (map_mterm m ctx test,
-              mk_invariants m inv_ctx None lbl body,
-              map_mterm m ctx body
-      )
+      Tmark (dl (mk_lbl_before lbl),
+        dl (Twhile (map_mterm m ctx test,
+                    mk_invariants m inv_ctx None lbl body,
+                    map_mterm m ctx body
+      )))
     | Mseq [] -> Tunit
     | Mseq l -> Tseq (List.map (map_mterm m ctx) l)
 
@@ -2238,7 +2293,11 @@ and mk_invariants (m : M.model) ctx id (lbl : ident option) lbody =
           form = map_security_pred `Loop sec.predicate |> loc_term; }
       )
   in
-  loop_invariants @ storage_loop_invariants @ security_loop_invariants
+  let vars_loop_invariants = mk_vars_loop_invariants m lbl (mk_lbl_before lbl) lbody in
+  loop_invariants          @
+  storage_loop_invariants  @
+  security_loop_invariants @
+  vars_loop_invariants
 and mk_filter_args m ctx args tbody =
   let globals =
     extract_args tbody |>
