@@ -4301,6 +4301,8 @@ let remove_asset (model : model) : model =
             let iains = dumloc "_accu_insert" in
             let vains = mk_mvar iains iinit.type_ in
 
+            let prepend x l = mk_mterm (Mlistprepend(atk, l, x)) tr in
+
             let insert : mterm =
 
               let ia0 = dumloc "_ia0" in
@@ -4311,11 +4313,6 @@ let remove_asset (model : model) : model =
 
               let ims1 = "_ms" in
               let vms1 : mterm = mk_mvar (dumloc ims1) iinit_1.type_ in
-
-              let prepend x l = mk_mterm (Mlistprepend(atk, l, x)) tr in
-
-              let neutral = mk_tuple [va0; prepend vxins va1] in
-              let act = mk_tuple [mk_none (vkid.type_); prepend vxins (prepend vms1 va1)] in
 
               let ivb = dumloc "_b" in
 
@@ -4352,7 +4349,8 @@ let remove_asset (model : model) : model =
 
               let cond = mk_mterm (Mlt (crit, mk_int 1)) tbool in
 
-              (* let cond = mtrue in *)
+              let neutral = mk_tuple [va0; prepend vxins va1] in
+              let act = mk_tuple [mk_none (vkid.type_); prepend vxins (prepend vms1 va1)] in
 
               let mif = mk_mterm (Mif (cond, act, Some neutral)) neutral.type_ in
 
@@ -4363,9 +4361,23 @@ let remove_asset (model : model) : model =
               |> mk_letin ia0 (mk_tupleaccess 0 vains)
             in
 
-            mk_mterm (Mlistfold(atk, ixins, iains, vaccu, iinit, insert)) iinit.type_
-            |> mk_tupleaccess 1
-            |> mk_list_reverse atk
+            let iz0 = dumloc "_iz0" in
+            let vz0 : mterm = mk_mvar iz0 iinit_0.type_ in
+
+            let iz1 = dumloc "_iz1" in
+            let vz1 : mterm = mk_mvar iz1 iinit_1.type_ in
+
+            let a = mk_mterm (Mlistfold(atk, ixins, iains, vaccu, iinit, insert)) iinit.type_ in
+
+            let i0 = dumloc "_i0" in
+            let v0 : mterm = mk_mvar i0 a.type_ in
+
+            let matchsome : mterm = mk_mterm (Mmatchsome (vz0, vz1, "", prepend vkid vaccu)) tr in
+
+            matchsome
+            |> mk_letin iz1 (mk_tupleaccess 1 v0 |> mk_list_reverse atk)
+            |> mk_letin iz0 (mk_tupleaccess 0 v0)
+            |> mk_letin i0 a
           in
 
           let init = mk_mterm (Mlitlist []) tr in
