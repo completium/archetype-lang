@@ -4311,9 +4311,6 @@ let remove_asset (model : model) : model =
               let ia1 = dumloc "_ia1" in
               let va1 : mterm = mk_mvar ia1 iinit_1.type_ in
 
-              let ims1 = "_ms" in
-              let vms1 : mterm = mk_mvar (dumloc ims1) iinit_1.type_ in
-
               let ivb = dumloc "_b" in
 
               let va = get_asset_global an in
@@ -4322,7 +4319,7 @@ let remove_asset (model : model) : model =
                 | Tset _ -> x
                 | Tmap (_, kt, vt) ->
                   let mk_get x = mk_mterm (Mmapget (kt, vt, va, x)) vt in
-                  x |> mk_letin ivb (mk_get vms1)
+                  x |> mk_letin ivb (mk_get vxins)
                 | _ -> assert false
               in
 
@@ -4334,8 +4331,8 @@ let remove_asset (model : model) : model =
               in
 
               let crit = List.fold_right (fun (id, sk) accu ->
-                  let vl = get_val vxins vvid id in
-                  let vr = get_val vms1  vvb  id in
+                  let vl = get_val vxins vvb   id in
+                  let vr = get_val vkid  vvid  id in
                   let gt = mk_mterm (Mgt (vl, vr)) tbool in
                   let lt = mk_mterm (Mlt (vl, vr)) tbool in
                   let mk_if c t e = mk_mterm (Mif (c, t, Some e)) tint in
@@ -4347,14 +4344,14 @@ let remove_asset (model : model) : model =
                 ) crits (mk_int 0) |> add_letin
               in
 
-              let cond = mk_mterm (Mlt (crit, mk_int 1)) tbool in
+              let cond = mk_mterm (Mgt (crit, mk_int 0)) tbool in
 
               let neutral = mk_tuple [va0; prepend vxins va1] in
-              let act = mk_tuple [mk_none (vkid.type_); prepend vxins (prepend vms1 va1)] in
+              let act = mk_tuple [mk_none (vkid.type_); prepend vxins (prepend vkid va1)] in
 
               let mif = mk_mterm (Mif (cond, act, Some neutral)) neutral.type_ in
 
-              let matchsome : mterm = mk_mterm (Mmatchsome (va0, neutral, ims1, mif)) vains.type_ in
+              let matchsome : mterm = mk_mterm (Mmatchsome (va0, neutral, "", mif)) vains.type_ in
 
               matchsome
               |> mk_letin ia1 (mk_tupleaccess 1 vains)
@@ -4372,10 +4369,11 @@ let remove_asset (model : model) : model =
             let i0 = dumloc "_i0" in
             let v0 : mterm = mk_mvar i0 a.type_ in
 
-            let matchsome : mterm = mk_mterm (Mmatchsome (vz0, vz1, "", prepend vkid vaccu)) tr in
+            let matchsome : mterm = mk_mterm (Mmatchsome (vz0, vz1, "", prepend vkid vz1)) tr in
 
             matchsome
-            |> mk_letin iz1 (mk_tupleaccess 1 v0 |> mk_list_reverse atk)
+            |> mk_list_reverse atk
+            |> mk_letin iz1 (mk_tupleaccess 1 v0)
             |> mk_letin iz0 (mk_tupleaccess 0 v0)
             |> mk_letin i0 a
           in

@@ -910,9 +910,15 @@ let to_michelson (ir : T.ir) : T.michelson =
     | Iifnone (v, t, id, s) -> begin
         let v, _ = fe env v in
         let t, _ = fe env t in
-        let e, _ = fe (add_var_env env id) s in
+        let e, enve = fe (add_var_env env id) s in
 
-        T.SEQ [ v; T.IF_NONE ([t], [e; T.SWAP; T.DROP 1]) ], inc_env env
+        let ee =
+          match enve.fail with
+          | true -> []
+          | false -> [T.SWAP; T.DROP 1]
+        in
+
+        T.SEQ [ v; T.IF_NONE ([t], [e] @ ee) ], inc_env env
       end
 
     | Iifcons (l, t, e) -> begin

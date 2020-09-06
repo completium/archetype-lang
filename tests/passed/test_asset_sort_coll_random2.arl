@@ -4,20 +4,20 @@ asset my_asset identified by id {
   id : nat;
   s : string;
 } initialized by {
-  {0; "a"};
-  {1; "b"};
-  {2; "c"};
-  {3; "d"};
-  {4; "e"};
-  {5; "f"};
-  {6; "g"};
-  {7; "h"};
+  {0; "g"};
+  {1; "e"};
+  {2; "a"};
+  {3; "j"};
+  {4; "b"};
+  {5; "h"};
+  {6; "d"};
+  {7; "f"};
   {8; "i"};
-  {9; "j"}
+  {9; "c"}
 }
 
 variable res : list<nat> = []
 
 entry exec () {
-  res := my_asset.sort(desc(s));
+  res := my_asset.sort(asc(s));
 }
