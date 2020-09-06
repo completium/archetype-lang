@@ -58,9 +58,9 @@ entry consume (a : address, quantity : int) {
 
     postcondition p4 {
       added.mile.isempty()
-      invariant for loop {
+      /* invariant for loop {
         added.mile.isempty()
-      }
+      } */
     }
 
   }
