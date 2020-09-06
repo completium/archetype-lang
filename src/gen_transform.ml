@@ -3440,7 +3440,7 @@ let remove_asset (model : model) : model =
       | _ -> assert false
     in
 
-    let fold_ck f (an, ck : ident * container_kind) (init : mterm) mk =
+    let fold_ck ?(with_value=true) f (an, ck : ident * container_kind) (init : mterm) mk =
       let tr = init.type_ in
       let atk = Utils.get_asset_key model an |> snd in
 
@@ -3512,8 +3512,9 @@ let remove_asset (model : model) : model =
                 let ival = dumloc "_v" in
                 let vval = mk_mterm (Mvar(ival, Vlocal, Tnone, Dnone)) g.type_ in
 
-                let act : mterm = mk vid (Some vval) vaccu in
-                mk_mterm (Mletin([ival], g, Some g.type_, act, None)) tr
+                if with_value
+                then let act : mterm = mk vid (Some vval) vaccu in mk_mterm (Mletin([ival], g, Some g.type_, act, None)) tr
+                else mk vid None vaccu
               end
             | None -> begin
                 let act = mk vid None vaccu in
@@ -3546,8 +3547,9 @@ let remove_asset (model : model) : model =
                 let ival = dumloc "_v" in
                 let vval = mk_mterm (Mvar(ival, Vlocal, Tnone, Dnone)) g.type_ in
 
-                let act = mk vid (Some vval) vaccu in
-                mk_mterm (Mletin([ival], g, Some g.type_, act, None)) tr
+                if with_value
+                then let act = mk vid (Some vval) vaccu in mk_mterm (Mletin([ival], g, Some g.type_, act, None)) tr
+                else mk vid None vaccu
               end
             | None -> begin
                 let act = mk vid None vaccu in
@@ -4311,7 +4313,7 @@ let remove_asset (model : model) : model =
           let init = mk_mterm (Mlitlist []) tr in
 
           fold_ck (fm ctx) (an, ck) init mk
-        end *)
+         end *)
 
       | Mcontains (an, ck, k) -> begin
           let k = fm ctx k in
@@ -4383,7 +4385,7 @@ let remove_asset (model : model) : model =
           let init_0 = mk_nat 0 in
           let init_1 = mk_mterm (Mnone) (Toption atk) in
           let init   = mk_tuple [init_0; init_1] in
-          fold_ck (fm ctx) (an, ck) init mk
+          fold_ck (fm ctx) (an, ck) init mk ~with_value:false
           |> mk_tupleaccess 1
           |> mk_optget
         end
@@ -4505,7 +4507,7 @@ let remove_asset (model : model) : model =
           let init_1 = mk_mterm (Mlitlist []) tr in
           let init   = mk_tuple [init_0; init_1] in
 
-          fold_ck (fm ctx) (an, ck) init mk
+          fold_ck (fm ctx) (an, ck) init mk ~with_value:false
           |> mk_tupleaccess 1
           |> mk_list_reverse atk
         end
@@ -4557,7 +4559,7 @@ let remove_asset (model : model) : model =
 
           let init = mk_mterm (Mlitlist []) tr in
 
-          fold_ck (fm ctx) (an, ck) init rev
+          fold_ck (fm ctx) (an, ck) init rev ~with_value:false
           |> head n
           |> mk_tupleaccess 1
           |> mk_list_reverse atk

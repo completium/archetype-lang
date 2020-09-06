@@ -547,6 +547,7 @@ type 'id storage_item_gen = {
 [@@deriving show {with_path = false}]
 
 type storage_item = lident storage_item_gen
+[@@deriving show {with_path = false}]
 
 type 'id storage_gen = 'id storage_item_gen list
 [@@deriving show {with_path = false}]
