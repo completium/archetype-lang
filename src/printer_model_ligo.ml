@@ -2089,6 +2089,14 @@ let pp_model_internal fmt (model : model) b =
           fn op2 fn
       in
 
+      let pp_rev fmt _ =
+        Format.fprintf fmt
+          "function rev (const accu: list(%a); const x: %a) : list(%a) is x # accu;@\n"
+          pp_type t
+          pp_type t
+          pp_type t
+      in
+
       let pp_fun_cmp fmt _ =
         Format.fprintf fmt
           "function cmp (const k1 : %a; const k2: %a) : int is@\n  \
@@ -2112,7 +2120,7 @@ let pp_model_internal fmt (model : model) b =
            const res : option(%a) * list(%a) =@\n    \
            case accu.0 of@\n    \
            | Some(v) ->@\n    \
-           if (cmp(x, v) < 0)@\n    \
+           if (cmp(x, v) > 0)@\n    \
            then ((None : option(%a)), cons(x, cons(v, accu.1)))@\n    \
            else (Some(v), cons(x, accu.1))@\n    \
            | None -> ((None : option(%a)), cons(x, accu.1))@\n    \
@@ -2135,11 +2143,11 @@ let pp_model_internal fmt (model : model) b =
            | Some(v) -> cons(v, res_opt.1)@\n    \
            | None -> res_opt.1@\n    \
            end;@\n  \
-           } with res;@\n"
+           } with list_fold(rev, res, (list [] : list(%a)));@\n"
           pp_type t pp_type t iter_type pp_type t
           pp_type t pp_type t iter_val pp_type t
           pp_type t pp_type t
-          pp_type t
+          pp_type t pp_type t
       in
 
       Format.fprintf fmt
@@ -2148,11 +2156,13 @@ let pp_model_internal fmt (model : model) b =
          @[%a@]@\n    \
          @[%a@]@\n    \
          @[%a@]@\n    \
+         @[%a@]@\n    \
          %a\
          const init : list(%a) = list [];@\n    \
          const res : list(%a) = %s_fold (sort, %s, init);@\n  \
          end with res@\n"
         (pp_prefix_api_container_kind an) c pp_postfix_sort l pp_fun_arg () pp_type t
+        pp_rev ()
         pp_fun_cmp ()
         pp_fun_insert ()
         pp_fun_sort ()
