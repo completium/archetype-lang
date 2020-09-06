@@ -1295,55 +1295,51 @@ let rec is_identical id = function
 | [] -> true
 
 let mk_vars_loop_invariants m entry lbl lblbef body =
-let assigned_vars = M.Utils.extract_assign_kind body |>
-  List.fold_left (fun acc ak ->
-    match ak with
-    | M.Avar id -> acc @ [unloc id]
-    | M.Avarstore id -> acc @ [unloc id]
-    | _ -> acc
-  ) []
-in
-let assigned_assets = M.Utils.extract_asset_effect m body in
-(* print_endline (String.concat "  " (List.map (fun s -> Format.asprintf "%a@." Model.pp_effect s) assigned_assets)); *)
-(* invariant_vars are the storage / local variables spec are about *)
-let get_specifications acc name =  begin
-  match M.Utils.get_specification m name with
-  | Some s -> acc @ List.map (fun (p : M.postcondition) -> p.formula) s.postconditions
-  | None -> acc
-end in
-let invariant_vars =
-  Option.fold get_specifications [] entry |>
-  List.fold_left (fun acc t ->
-    let l = M.Utils.extract_var_idents m t in
-    (* Format.eprintf "formula: %a@\nidents: %a@." Printer_model.pp_mterm t (Printer_tools.pp_list " " (fun fmt s -> Format.fprintf fmt "%s" s)) l; *)
-    acc @ l) [] |> Tools.List.dedup in
-print_endline (String.concat " " invariant_vars);
-(* scan storage fields : generate when in invariant_vars and not in assigned *)
-let storage_invs = List.fold_left (fun acc (item : M.storage_item) ->
-      acc @
-      match item.typ with
-      | M.Tcontainer (Tasset id, _) when (List.mem (unloc id) invariant_vars) ->
-        let acc = if is_identical (unloc id) assigned_assets then
-          acc @ [mk_storage_loop_inv lbl lblbef (mk_ac_id (unloc id))]
-        else acc in
-        let acc  = if not (List.mem (M.Eadded (unloc id)) assigned_assets) then
-          acc @ [mk_storage_loop_inv lbl lblbef (mk_ac_added_id (unloc id))]
-        else acc in
-        let acc = if not (List.mem (M.Eremoved (unloc id)) assigned_assets) then
-          acc @ [mk_storage_loop_inv lbl lblbef (mk_ac_rmed_id (unloc id))]
-        else acc in
-        acc
-      | _ when (List.mem (unloc item.id) invariant_vars) && not (List.mem (unloc item.id) assigned_vars) ->
-        acc @ [mk_storage_loop_inv lbl lblbef (unloc (item.id))]
+  let assigned_vars = M.Utils.extract_assign_kind body |>
+    List.fold_left (fun acc ak ->
+      match ak with
+      | M.Avar id -> acc @ [unloc id]
+      | M.Avarstore id -> acc @ [unloc id]
       | _ -> acc
-    ) [] (M.Utils.get_storage m) in
-let const_storage_invs = List.fold_left (fun acc id ->
-  if List.mem id invariant_vars && not (List.mem id assigned_vars) then
-    acc @ [mk_storage_loop_inv lbl lblbef ("_"^id)]
-  else acc
-) [] ["now"; "caller"; "balance"; "source"; "selfaddress"] in
-(* TODO : local variables (pass context) *)
-storage_invs @ const_storage_invs
+    ) []
+  in
+  let assigned_assets = M.Utils.extract_asset_effect m body in
+  (* invariant_vars are the storage / local variables spec are about *)
+  let get_specifications acc name =  begin
+    match M.Utils.get_specification m name with
+    | Some s -> acc @ List.map (fun (p : M.postcondition) -> p.formula) s.postconditions
+    | None -> acc
+  end in
+  let invariant_vars =
+    Option.fold get_specifications [] entry |>
+    List.fold_left (fun acc t ->
+      let l = M.Utils.extract_var_idents m t in
+      acc @ l) [] |> Tools.List.dedup in
+  (* scan storage fields : generate when in invariant_vars and not in assigned *)
+  let storage_invs = List.fold_left (fun acc (item : M.storage_item) ->
+    match item.model_type with
+    | M.MTasset  id when (List.mem id invariant_vars) ->
+      let acc = if is_identical id assigned_assets then
+        acc @ [mk_storage_loop_inv lbl lblbef (mk_ac_id id)]
+      else acc in
+      let acc  = if not (List.mem (M.Eadded id) assigned_assets) then
+        acc @ [mk_storage_loop_inv lbl lblbef (mk_ac_added_id id)]
+      else acc in
+      let acc = if not (List.mem (M.Eremoved id) assigned_assets) then
+        acc @ [mk_storage_loop_inv lbl lblbef (mk_ac_rmed_id id)]
+      else acc in
+      acc
+    | _ when (List.mem (unloc item.id) invariant_vars) && not (List.mem (unloc item.id) assigned_vars) ->
+      acc @ [mk_storage_loop_inv lbl lblbef (unloc (item.id))]
+    | _ -> acc
+  ) [] (M.Utils.get_storage m) in
+  let const_storage_invs = List.fold_left (fun acc id ->
+    if List.mem id invariant_vars && not (List.mem id assigned_vars) then
+      acc @ [mk_storage_loop_inv lbl lblbef ("_"^id)]
+    else acc
+  ) [] ["now"; "caller"; "balance"; "source"; "selfaddress"] in
+  (* TODO : local variables (pass context) *)
+  storage_invs @ const_storage_invs
 
 (* -------------------------------------------------------------------------- *)
 
