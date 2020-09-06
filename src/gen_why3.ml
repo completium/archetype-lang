@@ -1304,6 +1304,7 @@ let assigned_vars = M.Utils.extract_assign_kind body |>
   ) []
 in
 let assigned_assets = M.Utils.extract_asset_effect m body in
+(* print_endline (String.concat "  " (List.map (fun s -> Format.asprintf "%a@." Model.pp_effect s) assigned_assets)); *)
 (* invariant_vars are the storage / local variables spec are about *)
 let get_specifications acc name =  begin
   match M.Utils.get_specification m name with
@@ -1313,8 +1314,11 @@ end in
 let invariant_vars =
   Option.fold get_specifications [] entry |>
   List.fold_left (fun acc t ->
+    (* Format.printf "%a@." Printer_model.pp_mterm t;
+    print_endline (String.concat " " (M.Utils.extract_var_idents t)); *)
     acc @ (M.Utils.extract_var_idents t)
   ) [] |> Tools.List.dedup in
+print_endline (String.concat " " invariant_vars);
 (* scan storage fields : generate when in invariant_vars and not in assigned *)
 let storage_invs = List.fold_left (fun acc (item : M.storage_item) ->
       acc @

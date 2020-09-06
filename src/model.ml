@@ -3462,6 +3462,7 @@ let extract_list (mt : mterm) (e : mterm) =
 (* -------------------------------------------------------------------- *)
 
 type effect = Eadded of ident | Eremoved of ident | Eupdated of ident
+[@@deriving show {with_path = false}]
 module Utils : sig
 
   val get_vars                           : model -> var list
@@ -4756,12 +4757,12 @@ end = struct
       | Maddfield (an, fn, _, _)                          -> with_partition accu an fn `Updated `Added
       | Mremoveasset (an, _)                              -> (Eremoved an)::accu
       | Mremovefield (an, fn, _, _)                       -> with_partition accu an fn `Updated `Removed
-      | Mremoveall (an, fn, _)                            -> only_partition accu an fn `Removed
-      | Mremoveif (an, CKcoll _, _, _, _)                 -> all_partition accu an `Updated `Removed
-      | Mremoveif (an, CKfield (_, fn, _, _, _), _, _, _) -> only_partition accu an fn `Removed
+      | Mremoveall (an, fn, _)                            -> with_partition accu an fn `Updated `Removed
+      | Mremoveif (an, CKcoll _, _, _, _)                 -> all_partition accu an `Removed `Removed
+      | Mremoveif (an, CKfield (_, fn, _, _, _), _, _, _) -> with_partition accu an fn `Updated `Removed
       | Mclear (an, CKcoll _)                             -> all_partition accu an `Removed `Removed
       | Mclear (an, CKview _)                             -> all_partition accu an `Removed `Removed
-      | Mclear (an, CKfield (_, fn, _, _, _))             -> only_partition accu an fn `Removed
+      | Mclear (an, CKfield (_, fn, _, _, _))             -> with_partition accu an fn `Updated `Removed
       | Mset (an, _, _, _)                                -> (Eupdated an)::accu
       | Maddforce (an, _)                                 -> all_partition accu an `Added `Added
       | _ -> fold_term aux accu t in
