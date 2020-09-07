@@ -251,6 +251,8 @@ PASSED="\
 ./tests/passed/test_asset_sort_coll_complex.arl \
 ./tests/passed/test_asset_sort_coll_random.arl \
 ./tests/passed/test_asset_sort_coll_random2.arl \
+./tests/passed/test_iter.arl \
+./tests/passed/test_iter2.arl \
 "
 
 RET=0
