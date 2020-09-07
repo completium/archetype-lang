@@ -4647,6 +4647,26 @@ let remove_high_level_model (model : model)  =
         let b =  mk_mterm (Mlistprepend(t, vaccu, vid)) tl in
         mk_mterm (Mlistfold(t, iid, iaccu, f l, empty, b)) tl
       end
+    | Miter (i, a, b, c, lbl) -> begin
+      let a = f a in
+      let b = f b in
+      let c = f c in
+
+      let vi = mk_mvar i a.type_ in
+
+      let ie = dumloc "_e" in
+      let ve = mk_mvar ie b.type_ in
+
+      let vinc : mterm = mk_mterm (Mplus(vi, mk_int 1)) tint in
+      let inc  : mterm = mk_mterm (Massign(ValueAssign, tint, Avar i, vinc)) tunit in
+      let body : mterm = mk_mterm (Mseq([c; inc])) tunit |> flat_sequence_mterm in
+      let cond : mterm = mk_mterm (Mle (vi, ve)) tbool in
+      let loop : mterm = mk_mterm (Mwhile (cond, body, lbl)) tunit in
+
+      loop
+      |> mk_letin i  a
+      |> mk_letin ie b
+      end
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
