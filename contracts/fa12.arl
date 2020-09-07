@@ -16,6 +16,81 @@ asset ledger identified by holder to big_map {
 }
 
 entry %transfer (from_ : address, to_ : address, value : nat) {
+  specification {
+    fails {
+      f0 with (s : string) :
+        s = "NotEnoughBalance" and
+        let some after_from = ledger[from_] in
+          after_from.tokens < value
+        otherwise true;
+
+      f1 with (v : string * (nat * nat)) :
+        v[0] = "NotEnoughAllowance" and
+        caller <> from_ and
+        let some after_from_caller = allowance[(from_,caller)] in
+          after_from_caller.amount < value and
+          v[1][0] = value and
+          v[1][1] = after_from_caller.amount
+        otherwise true;
+    }
+    // LEDGER ASSET
+    postcondition p1 { // effect on from_ nbtokens
+      let some before_from = before.ledger[from_] in
+        let some after_from = ledger[from_] in
+          after_from.tokens = before_from.tokens - value
+        otherwise true
+      otherwise true
+    }
+    postcondition p2 { // effect on to_ nbtokens
+      let some after_to = ledger[to_] in
+        let some before_to = before.ledger[to_] in
+          after_to.tokens = before_to.tokens + value
+        otherwise
+          after_to.tokens = value
+      otherwise true
+    }
+    postcondition p3 { // other ledger assets are unchanged
+      forall tokenholder in ledger,
+        tokenholder.holder <> from_ ->
+        tokenholder.holder <> to_ ->
+        let some before_th = before.ledger[tokenholder.holder] in
+          tokenholder = before_th
+        otherwise true
+    }
+    postcondition p4 { // no ledger asset is removed
+      removed.ledger.isempty()
+    }
+    postcondition p5 { // added ledger asset may be to_
+      forall tokenholder in added.ledger,
+        tokenholder.holder = to_
+    }
+    postcondition p6 { // number of added asset is one
+      let some before_to = before.ledger[to_] in
+        true
+      otherwise
+        ledger.count() = before.ledger.count() + 1
+    }
+    // ALLOWANCE ASSET
+    postcondition p7 { // effect on allowance
+      caller <> from_ ->
+      let some before_from_caller = before.allowance[(from_,caller)] in
+        let some after_from_caller = allowance[(from_,caller)] in
+          before_from_caller.amount > value ->
+          after_from_caller.amount = before_from_caller.amount - value
+        otherwise true
+      otherwise true
+    }
+    postcondition p8 { // other allowance assets are unchanged
+      forall a in allowance,
+        a.addr_owner <> from_ and a.addr_spender <> caller ->
+        let some before_a = before.allowance[(from_,caller)] in
+          a = before_a
+        otherwise true
+    }
+    postcondition p9 { // no allowance is added or removed
+      removed.ledger.isempty() and added.ledger.isempty()
+    }
+  }
   require {
     r1 otherwise "NotEnoughBalance" : ledger[from_].tokens >= value;
   }
