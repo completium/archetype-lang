@@ -2608,7 +2608,7 @@ let mk_storage_api (m : M.model) _records =
 
 (* Entries --------------------------------------------------------------------*)
 
-let fold_exns m body : term list =
+let fold_exns m ctx body : term list =
   let rec internal_fold_exn acc (term : M.mterm) =
     match term.M.node with
     | M.Mget (_, _, k) -> internal_fold_exn (acc @ [Texn Enotfound]) k
@@ -2788,19 +2788,20 @@ let mk_functions m =
       let args = (List.map (fun (i, t, _) ->
           (map_lident i, map_mtype m t)
         ) s.args) in
+      let ctx = { init_ctx with entry_id = Some (unloc s.name) } in
       Dfun {
         name     = map_lident s.name;
         logic    = NoMod;
         args     = [dl gsinit, loc_type Tystorage] @ args;
         returns  = map_mtype m t;
-        raises   = fold_exns m s.body (* |> List.map (add_raise_ctx args src m) *) |> List.map loc_term;
+        raises   = fold_exns m { ctx with lctx = Logic } s.body |> List.map loc_term;
         variants = [];
         requires =
           (mk_entry_require m (M.Utils.get_callers m (unloc s.name))) @
           (* (mk_delta_requires m) @ *)
           (mk_preconds m s.args s.body);
         ensures  = Option.fold (mk_ensures m) [] v;
-        body     = flatten_if_fail m { init_ctx with entry_id = Some (unloc s.name) } s.body;
+        body     = flatten_if_fail m ctx s.body;
       }
   )
 
@@ -2808,6 +2809,7 @@ let mk_entries m =
   M.Utils.get_entries m |> List.map (
     fun ((v : M.specification option),
          (s : M.function_struct)) ->
+      let ctx = { init_ctx with entry_id = Some (unloc s.name) } in
       Dfun {
         name     = map_lident s.name;
         logic    = NoMod;
@@ -2815,13 +2817,13 @@ let mk_entries m =
             (map_lident i, map_mtype m t)
           ) s.args);
         returns  = dl Tyunit;
-        raises   = fold_exns m s.body |> List.map loc_term;
+        raises   = fold_exns m { ctx with lctx = Logic } s.body |> List.map loc_term;
         variants = [];
         requires =
           (mk_entry_require m [unloc s.name]) @
           (mk_delta_requires m);
         ensures  = Option.fold (mk_ensures m) [] v;
-        body     = flatten_if_fail m { init_ctx with entry_id = Some (unloc s.name) } s.body;
+        body     = flatten_if_fail m ctx s.body;
       }
   )
 

@@ -7,11 +7,11 @@ asset myasset {
 entry exec () {
   specification {
     fails {
-      f1 with (s : string) :
-        s = "error";
+      f1 with (s : string * nat) :
+        s = ("error",0);
     }
   }
   effect {
-    fail ("error")
+    fail (("error",0))
   }
 }
