@@ -4672,7 +4672,7 @@ let normalize_storage (model : model) : model =
     let _, storage = List.fold_left (fun (map, l) si ->
         let si = for_storage_item map si in
         let map = MapString.add (unloc si.id) si.default map in
-        (map, si::l)) (map, []) model.storage in
+        (map, l @ [si])) (map, []) model.storage in
     { model with
       storage = storage }
   in
@@ -4727,3 +4727,22 @@ let normalize_storage (model : model) : model =
   model
   |> replace_var_in_storage
   |> sort_container
+
+let remove_constant (model : model) : model =
+
+  let for_mterm map _ (mt : mterm) : mterm =
+    let rec aux (mt : mterm) : mterm =
+      match mt.node with
+      | Mvar (id, _, _, _) when MapString.mem (unloc id) map -> MapString.find (unloc id) map
+      | _ -> map_mterm aux mt
+    in
+    aux mt
+  in
+
+  let map, storage = List.fold_left (fun (map, l) si ->
+      match si.model_type with
+      | MTconst -> (MapString.add (unloc si.id) si.default map, l)
+      | _ -> (map, l @ [si])) (MapString.empty, []) model.storage in
+  { model with
+    storage = storage }
+  |> map_mterm_model (for_mterm map)

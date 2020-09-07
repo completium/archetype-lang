@@ -225,10 +225,8 @@ let generate_target model =
     |> process_asset_state
     |> replace_assignfield_by_update
     |> remove_add_update ~with_force:true
-    (* |> remove_container_op_in_update *)
     |> merge_update
     |> remove_assign_operator
-    (* |> extract_item_collection_from_add_asset *)
     |> process_internal_string
     |> remove_rational
     |> abs_tez
@@ -250,6 +248,7 @@ let generate_target model =
     |> remove_asset
     |> remove_high_level_model
     |> normalize_storage
+    |> remove_constant
     |> optimize
     |> generate_api_storage
     |> output
