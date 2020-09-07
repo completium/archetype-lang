@@ -244,6 +244,7 @@ and ('e,'t,'i) abstract_fun_struct = {
   args     : ('i * 't) list;
   returns  : 't;
   raises   : 'e list;
+  fails    : ('i option * 'e) list;
   variants : 'e list;
   requires : (('e,'i) abstract_formula) list;
   ensures  : (('e,'i) abstract_formula) list;
@@ -376,6 +377,7 @@ and map_abstract_fun_struct
   args     = List.map (fun (a,t) -> (map_i a, map_t t)) f.args;
   returns  = map_t f.returns;
   raises   = List.map map_e f.raises;
+  fails    = List.map (fun (i,e) -> (Option.map map_i i,map_e e)) f.fails;
   variants = List.map map_e f.variants;
   requires = List.map (map_abstract_formula map_e map_i) f.requires;
   ensures  = List.map (map_abstract_formula map_e map_i) f.ensures;

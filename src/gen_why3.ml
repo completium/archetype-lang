@@ -322,6 +322,7 @@ let mk_default_init = function
       args     = [];
       returns  = Tyasset n;
       raises   = [];
+      fails    = [];
       variants = [];
       requires = [];
       ensures  = [];
@@ -425,6 +426,7 @@ let mk_transfer () =
       args     = ["a", Tyint; "t", Tyaddr];
       returns  = Tyunit;
       raises   = [];
+      fails    = [];
       variants = [];
       requires = [];
       ensures  = [
@@ -461,6 +463,7 @@ let mk_call () =
       args     = ["t", Tyaddr; "a", Tytez; "n", Tystring; "l", Tylist Tystring];
       returns  = Tyunit;
       raises   = [];
+      fails    = [];
       variants = [];
       requires = [];
       ensures  = [];
@@ -481,6 +484,7 @@ let mk_operation () =
       args     = ["a", Tytez; "e", Tyentrysig; "l", Tylist Tystring];
       returns  = Tyunit;
       raises   = [];
+      fails    = [];
       variants = [];
       requires = [];
       ensures  = [];
@@ -539,6 +543,7 @@ let mk_cmp_function m asset fields =
       args     = ["a", Tyasset asset; "b", Tyasset asset];
       returns  = Tybool;
       raises   = [];
+      fails    = [];
       variants = [];
       requires = [];
       ensures  = [];
@@ -609,6 +614,7 @@ let mk_filter_predicate ftyp m asset test filter args =
     args     = args @ (extract_args test |> List.map (fun (_,a,b) -> a,b)) @ ["a", Tyasset asset];
     returns  = Tybool;
     raises   = [];
+    fails    = [];
     variants = [];
     requires = [];
     ensures  = [{
@@ -713,6 +719,7 @@ let mk_eq_type_fun m id t = Dfun {
     ];
     returns = Tybool |> dl;
     raises = [];
+    fails = [];
     variants = [];
     requires = [];
     ensures = [];
@@ -728,6 +735,7 @@ let mk_le_type_fun _m id t = Dfun {
     ];
     returns = Tybool |> dl;
     raises = [];
+    fails = [];
     variants = [];
     requires = [];
     ensures = [];
@@ -1062,6 +1070,7 @@ let mk_eq_enums m (r : M.asset) =
                 "e2" |> dl, loc_type (Tyenum id)];
         returns = Tybool |> dl;
         raises = [];
+        fails = [];
         variants = [];
         requires = [];
         ensures = [];
@@ -1086,6 +1095,7 @@ let mk_eq_key m (r : M.asset) =
     ];
     returns = Tybool |> dl;
     raises = [];
+    fails = [];
     variants = [];
     requires = [];
     ensures = [];
@@ -1105,6 +1115,7 @@ let mk_le_key m (r : M.asset) =
     ];
     returns = Tybool |> dl;
     raises = [];
+    fails = [];
     variants = [];
     requires = [];
     ensures = [];
@@ -1128,6 +1139,7 @@ let mk_eq_asset m (r : M.asset) =
             "a2" |> dl, Tyasset (map_lident r.name) |> dl];
     returns = Tybool |> dl;
     raises = [];
+    fails = [];
     variants = [];
     requires = [];
     ensures = [];
@@ -1202,6 +1214,7 @@ let mk_set_field _m asset fieldid oasset =
     ];
     returns = loc_type (Tyasset asset);
     raises = [];
+    fails = [];
     variants = [];
     requires = [];
     ensures = [(* {
@@ -2466,6 +2479,7 @@ let mk_cp_storage m (l : M.storage) =
     args = [arg |> dl, Tystorage |> dl];
     returns = Tystorage |> dl;
     raises = [];
+    fails  = [];
     variants = [];
     requires = [];
     ensures = [{
@@ -2529,6 +2543,7 @@ let mk_get_sum_value_from_pos asset id formula =
     args = ["v",Tyview asset; "c",Tycoll asset; "i",Tyint];
     returns = Tyint;
     raises = [];
+    fails = [];
     variants = [];
     requires = [];
     ensures = [];
@@ -2559,6 +2574,7 @@ let mk_get_sum_value asset id formula =
     args = ["a",Tyasset asset];
     returns = Tyint;
     raises = [];
+    fails = [];
     variants = [];
     requires = [];
     ensures = [];
@@ -2609,6 +2625,30 @@ let mk_storage_api (m : M.model) _records =
 
 (* Entries --------------------------------------------------------------------*)
 
+let fold_fails m ctx body : (loc_ident option * loc_term) list =
+  let rec internal_fold_fails acc (term : M.mterm) =
+    match term.M.node with
+    | M.Mfail (Invalid v) ->
+      let idx = get_fail_idx m v.type_ in
+      let fails =
+        Option.fold (fun acc (spec : M.specification) -> acc @ spec.fails) []
+          (Option.fold (fun _ id -> M.Utils.get_specification m id) None ctx.entry_id) in
+      (* retrieve fails with same arg type *)
+      let formulas = List.fold_left (fun acc (fail : M.fail) ->
+        let fidx = get_fail_idx m fail.atype in
+        if compare idx fidx = 0 then
+          acc @ [
+            Some (map_lident fail.label),
+            dl (Timpl (loc_term (Texn (Efail (idx, Some (Tvar (unloc fail.arg))))), map_mterm m ctx (fail.formula)))
+          ]
+        else acc
+      ) [] fails in
+      if compare (List.length formulas) 0 = 0 then
+        acc @ [None, loc_term (Texn (Efail (idx, None)))]
+      else acc @ formulas
+    | _ ->  M.fold_term internal_fold_fails acc term in
+  internal_fold_fails [] body
+
 let fold_exns m body : term list =
   let rec internal_fold_exn acc (term : M.mterm) =
     match term.M.node with
@@ -2633,7 +2673,6 @@ let fold_exns m body : term list =
     | M.Mfail (InvalidCondition _) -> acc @ [Texn Einvalidcondition]
     | M.Mfail InvalidState -> acc @ [Texn Einvalidstate]
     | M.Mfail AssignNat -> acc @ [Texn Enegassignnat]
-    | M.Mfail (Invalid v) -> let idx = get_fail_idx m v.type_ in acc @ [Texn (Efail (idx,None))]
     | M.Mlistnth _ -> acc @ [Texn Enotfound]
     | M.Mself _ -> acc @ [Texn Enotfound]
     | M.Mcast (Tbuiltin Baddress, Tentrysig _, v) -> internal_fold_exn (acc @ [Texn Enotfound]) v
@@ -2661,6 +2700,7 @@ let mk_theory m =
             args = [ dl gsarg, dl Tystorage ] @ params;
             returns = t;
             raises = [];
+            fails = [];
             variants = [];
             requires = [];
             ensures = [];
@@ -2789,19 +2829,21 @@ let mk_functions m =
       let args = (List.map (fun (i, t, _) ->
           (map_lident i, map_mtype m t)
         ) s.args) in
+      let ctx = { init_ctx with entry_id = Some (unloc s.name) } in
       Dfun {
         name     = map_lident s.name;
         logic    = NoMod;
         args     = [dl gsinit, loc_type Tystorage] @ args;
         returns  = map_mtype m t;
-        raises   = fold_exns m s.body (* |> List.map (add_raise_ctx args src m) *) |> List.map loc_term;
+        raises   = fold_exns m s.body |> List.map loc_term;
+        fails    = fold_fails m { ctx with lctx = Logic } s.body;
         variants = [];
         requires =
           (mk_entry_require m (M.Utils.get_callers m (unloc s.name))) @
           (* (mk_delta_requires m) @ *)
           (mk_preconds m s.args s.body);
         ensures  = Option.fold (mk_ensures m) [] v;
-        body     = flatten_if_fail m { init_ctx with entry_id = Some (unloc s.name) } s.body;
+        body     = flatten_if_fail m ctx s.body;
       }
   )
 
@@ -2809,6 +2851,7 @@ let mk_entries m =
   M.Utils.get_entries m |> List.map (
     fun ((v : M.specification option),
          (s : M.function_struct)) ->
+      let ctx = { init_ctx with entry_id = Some (unloc s.name) } in
       Dfun {
         name     = map_lident s.name;
         logic    = NoMod;
@@ -2817,12 +2860,13 @@ let mk_entries m =
           ) s.args);
         returns  = dl Tyunit;
         raises   = fold_exns m s.body |> List.map loc_term;
+        fails    = fold_fails m { ctx with lctx = Logic } s.body;
         variants = [];
         requires =
           (mk_entry_require m [unloc s.name]) @
           (mk_delta_requires m);
         ensures  = Option.fold (mk_ensures m) [] v;
-        body     = flatten_if_fail m { init_ctx with entry_id = Some (unloc s.name) } s.body;
+        body     = flatten_if_fail m ctx s.body;
       }
   )
 
