@@ -4650,3 +4650,80 @@ let remove_high_level_model (model : model)  =
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
+
+let normalize_storage (model : model) : model =
+
+  let replace_var_in_storage (model : model) : model =
+
+    let for_mterm map (mt : mterm) : mterm =
+      let rec aux (mt : mterm) : mterm =
+        match mt.node with
+        | Mvar (id, _, _, _) when MapString.mem (unloc id) map -> MapString.find (unloc id) map
+        | _ -> map_mterm aux mt
+      in
+      aux mt
+    in
+
+    let for_storage_item map (si : storage_item) : storage_item =
+      {si with default = for_mterm map si.default}
+    in
+
+    let map = MapString.empty in
+    let _, storage = List.fold_left (fun (map, l) si ->
+        let si = for_storage_item map si in
+        let map = MapString.add (unloc si.id) si.default map in
+        (map, si::l)) (map, []) model.storage in
+    { model with
+      storage = storage }
+  in
+
+  let sort_container (model : model) : model =
+
+    let for_mterm (mt : mterm) : mterm =
+      let rec cmp (lhs : mterm) (rhs : mterm) : int =
+        match lhs.node, rhs.node with
+        | Mbool      v1, Mbool v2      -> Bool.compare v1 v2
+        | Mnat       v1, Mnat v2       -> Big_int.compare_big_int v1 v2
+        | Mint       v1, Mint v2       -> Big_int.compare_big_int v1 v2
+        | Mstring    v1, Mstring v2    -> String.compare v1 v2
+        | Mcurrency  (v1, Utz), Mcurrency  (v2, Utz) -> Big_int.compare_big_int v1 v2
+        | Maddress   v1, Maddress   v2 -> String.compare v1 v2
+        | Mdate      v1, Mdate      v2 -> Big_int.compare_big_int (Core.date_to_timestamp v1) (Core.date_to_timestamp v2)
+        | Mtimestamp v1, Mtimestamp v2 -> Big_int.compare_big_int v1 v2
+        | Mbytes     v1, Mbytes     v2 -> String.compare v1 v2
+        | Mtuple l1, Mtuple l2 when List.length l1 = List.length l2 ->
+          List.fold_left2 (fun accu x y ->
+              match accu with
+              | Some _ -> accu
+              | None -> let r = cmp x y in if r = 0 then None else Some r
+            ) None l1 l2 |> (Option.get_dfl 0)
+        (* | Mlitrecord _ *)
+        | _ -> assert false
+      in
+
+      let sort = List.sort (fun (x1, _) (x2, _) -> cmp x1 x2) in
+
+      let rec aux (mt : mterm) : mterm =
+        match mt.node with
+        | Mlitset l -> begin
+            {mt with node = Mlitset (l |> List.map (fun x -> x, unit) |> sort |> List.map fst)}
+          end
+        | Mlitmap l -> begin
+            {mt with node = Mlitmap (sort l)}
+          end
+        | _ -> map_mterm aux mt
+      in
+      aux mt
+    in
+
+    let for_storage_item (si : storage_item) : storage_item =
+      {si with default = for_mterm si.default}
+    in
+
+    { model with
+      storage = List.map for_storage_item model.storage }
+  in
+
+  model
+  |> replace_var_in_storage
+  |> sort_container

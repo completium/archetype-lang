@@ -249,6 +249,7 @@ let generate_target model =
     |> remove_storage_field_in_function
     |> remove_asset
     |> remove_high_level_model
+    |> normalize_storage
     |> optimize
     |> generate_api_storage
     |> output
