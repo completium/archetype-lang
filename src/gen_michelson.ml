@@ -155,7 +155,7 @@ let to_ir (model : M.model) : T.ir =
         | -1 -> emit_error (FieldNotFoundFor (rn, fn))
         | _ -> res
       end
-    | _ -> Format.eprintf "%a@." M.pp_type_ rt; assert false
+    | _ -> Format.eprintf "get_record_index: %a@." M.pp_type_ rt; assert false
   in
 
   let l = List.map (
@@ -216,7 +216,7 @@ let to_ir (model : M.model) : T.ir =
           let vres      = T.Ivar res_name in
           let viter     = T.Ivar iter_name in
           let ve        = T.Ivar e_name in
-          let return    = T.Iassign (fun_result, T.Iifnone (vres, T.ifail "NoneValue", id, "_var_ifnone")) in
+          let return    = T.Iassign (fun_result, T.Iifnone (vres, T.ifail "NoneValue", "_var_ifnone", Ivar "_var_ifnone")) in
           let cond      = T.Icompare (Cle, viter, varg) in
           let vheadtail = T.Iifcons (vlist, T.iskip, T.ifail "EmptyList") in
           let ares      = T.Iassign (res_name, T.isome(T.icar ve)) in
@@ -256,11 +256,11 @@ let to_ir (model : M.model) : T.ir =
                                                    T.inat (Big_int.big_int_of_int 7), T.istring "7";
                                                    T.inat (Big_int.big_int_of_int 8), T.istring "8";
                                                    T.inat (Big_int.big_int_of_int 9), T.istring "9"]) in
-          let get_map    = T.Iifnone (T.Ibinop (Bget, T.Iunop (Ucdr, vpair), vmap), T.ifail "GetNoneValue", id, "_var_ifnone") in
+          let get_map    = T.Iifnone (T.Ibinop (Bget, T.Iunop (Ucdr, vpair), vmap), T.ifail "GetNoneValue", "_var_ifnone", Ivar "_var_ifnone") in
           let concat     = T.Ibinop (Bconcat, get_map, vres) in
           let assign_res = T.Iassign (res_name, concat) in
           let assign_arg = T.Iassign (arg_name, T.Iunop (Ucar, vpair)) in
-          let vpair      = T.Iifnone (T.Ibinop (Bediv, varg, ten), T.ifail "DivByZero", id, "_var_ifnone") in
+          let vpair      = T.Iifnone (T.Ibinop (Bediv, varg, ten), T.ifail "DivByZero", "_var_ifnone", Ivar "_var_ifnone") in
           let b          = T.IletIn(pair_name, vpair, T.Iseq [assign_res; assign_arg], true) in
           let loop       = T.Iwhile (cond, b) in
           let a          = T.IletIn(res_name, T.istring "", IletIn(map_name, map, T.Iseq [loop; return vres], true), true) in
@@ -312,7 +312,7 @@ let to_ir (model : M.model) : T.ir =
     let ft = to_type in
 
     let vops = T.Ivar operations in
-    let contract_internal a t d = T.Iifnone (T.Iunop (Ucontract (t, a), d), T.ifail "BadContract", id, "_var_ifnone") in
+    let contract_internal a t d = T.Iifnone (T.Iunop (Ucontract (t, a), d), T.ifail "BadContract", "_var_ifnone", Ivar "_var_ifnone") in
     let get_contract      t d = contract_internal  None     t d in
     let get_entrypoint id t d = contract_internal (Some ("%" ^ id)) t d in
     let get_self_entrypoint id =
@@ -451,7 +451,7 @@ let to_ir (model : M.model) : T.ir =
 
     | Mexprif (c, t, e)       -> T.Iif (f c, f t, f e)
     | Mexprmatchwith (_e, _l) -> emit_error (UnsupportedTerm ("Mexprmatchwith"))
-
+    | Mmatchsome (e, n, i, s) -> T.Iifnone (f e, f n, i, f s)
 
     (* composite type constructors *)
 
@@ -585,7 +585,7 @@ let to_ir (model : M.model) : T.ir =
 
     | Mmapput (_, _, c, k, v)     -> T.Iterop (Tupdate, f k, T.isome (f v),   f c)
     | Mmapremove (_, tv, c, k)    -> T.Iterop (Tupdate, f k, T.inone (ft tv), f c)
-    | Mmapget (_, _, c, k)        -> T.Iifnone (T.Ibinop (Bget, f k, f c), T.ifail "GetNoneValue", id, "_var_ifnone")
+    | Mmapget (_, _, c, k)        -> T.Iifnone (T.Ibinop (Bget, f k, f c), T.ifail "GetNoneValue", "_var_ifnone", Ivar "_var_ifnone")
     | Mmapgetopt (_, _, c, k)     -> T.Ibinop (Bget, f k, f c)
     | Mmapcontains (_, _, c, k)   -> T.Ibinop (Bmem, f k, f c)
     | Mmaplength (_, _, c)        -> T.Iunop (Usize, f c)
@@ -600,9 +600,9 @@ let to_ir (model : M.model) : T.ir =
     | Mconcat (x, y)     -> T.Ibinop (Bconcat, f x, f y)
     | Mslice (x, s, e)   -> T.Iterop (Tslice, f x, f s, f e)
     | Mlength x          -> T.Iunop (Usize, f x)
-    | Misnone x          -> T.Iifnone (f x, T.itrue,  (fun _ -> T.ifalse), "_var_ifnone")
-    | Missome x          -> T.Iifnone (f x, T.ifalse, (fun _ -> T.itrue), "_var_ifnone")
-    | Moptget x          -> T.Iifnone (f x, T.ifail "NoneValue", id, "_var_ifnone")
+    | Misnone x          -> T.Iifnone (f x, T.itrue,  "_var_ifnone", T.ifalse)
+    | Missome x          -> T.Iifnone (f x, T.ifalse, "_var_ifnone", T.itrue)
+    | Moptget x          -> T.Iifnone (f x, T.ifail "NoneValue", "_var_ifnone", Ivar "_var_ifnone")
     | Mfloor  x          -> let b = T.Bfloor           in add_builtin b; T.Icall (get_fun_name b, [f x])
     | Mceil   x          -> let b = T.Bceil            in add_builtin b; T.Icall (get_fun_name b, [f x])
     | Mtostring (t, x)   -> let b = T.Btostring (ft t) in add_builtin b; T.Icall (get_fun_name b, [f x])
@@ -907,13 +907,18 @@ let to_michelson (ir : T.ir) : T.michelson =
         T.SEQ [ c; T.IF ([t], [e]) ], env
       end
 
-    | Iifnone (v, t, e, id) -> begin
-        let v, _   = f v in
-        let t, env = f t in
-        let env0   = add_var_env env id in
-        let e, _   = fe env0 (e (T.Ivar id)) in
+    | Iifnone (v, t, id, s) -> begin
+        let v, _ = fe env v in
+        let t, _ = fe env t in
+        let e, enve = fe (add_var_env env id) s in
 
-        T.SEQ [ v; T.IF_NONE ([t], [e; T.SWAP; T.DROP 1]) ], env
+        let ee =
+          match enve.fail with
+          | true -> []
+          | false -> [T.SWAP; T.DROP 1]
+        in
+
+        T.SEQ [ v; T.IF_NONE ([t], [e] @ ee) ], inc_env env
       end
 
     | Iifcons (l, t, e) -> begin

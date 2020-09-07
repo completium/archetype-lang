@@ -228,6 +228,7 @@ type ('id, 'term) mterm_node  =
   (* control expression *)
   | Mexprif           of 'term * 'term * 'term
   | Mexprmatchwith    of 'term * ('id pattern_gen * 'term) list
+  | Mmatchsome        of 'term * 'term * ident * 'term
   (* composite type constructors *)
   | Mnone
   | Msome             of 'term
@@ -547,6 +548,7 @@ type 'id storage_item_gen = {
 [@@deriving show {with_path = false}]
 
 type storage_item = lident storage_item_gen
+[@@deriving show {with_path = false}]
 
 type 'id storage_gen = 'id storage_item_gen list
 [@@deriving show {with_path = false}]
@@ -951,14 +953,18 @@ let mtrue = mk_mterm (Mbool true) tbool
 let mfalse = mk_mterm (Mbool false) tbool
 
 
+let mk_mvar id t = mk_mterm (Mvar(id, Vlocal, Tnone, Dnone )) t
+
 let mk_tuple (l : mterm list) = mk_mterm (Mtuple l) (Ttuple (List.map (fun (x : mterm) -> x.type_) l))
+
+let mk_letin id v b = mk_mterm (Mletin([id], v, Some v.type_, b, None)) b.type_
 
 let mk_tupleaccess n (x : mterm) =
   match x.type_ with
   | Ttuple lt ->
     let t = List.nth lt n in
     mk_mterm (Mtupleaccess (x, Big_int.big_int_of_int n)) t
-  | _ -> assert false
+  | _ -> Format.eprintf "mk_tupleaccess type: %a@." pp_type_ x.type_; assert false
 
 let mk_optget (x : mterm) =
   match x.type_ with
@@ -966,6 +972,8 @@ let mk_optget (x : mterm) =
   | _ -> assert false
 
 let mk_some x = mk_mterm (Msome x) (toption x.type_)
+
+let mk_none t = mk_mterm (Mnone) (toption t)
 
 let fail x = mk_mterm (Mfail (Invalid (mk_string x))) tunit
 let mnot x = mk_mterm (Mnot x) tbool
@@ -1168,6 +1176,7 @@ let cmp_mterm_node
     (* control expression *)
     | Mexprif (c1, t1, e1), Mexprif (c2, t2, e2)                                       -> cmp c1 c2 && cmp t1 t2 && cmp e1 e2
     | Mexprmatchwith (e1, l1), Mexprmatchwith (e2, l2)                                 -> cmp e1 e2 && List.for_all2 (fun (p1, t1) (p2, t2) -> cmp_pattern p1 p2 && cmp t1 t2) l1 l2
+    | Mmatchsome (e1, n1, i1, s1), Mmatchsome (e2, n2, i2, s2)                         -> cmp e1 e2 && cmp n1 n2 && cmp_ident i1 i2 && cmp s1 s2
     (* composite type constructors *)
     | Mnone, Mnone                                                                     -> true
     | Msome v1, Msome v2                                                               -> cmp v1 v2
@@ -1533,6 +1542,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   (* control expression *)
   | Mexprif (c, t, e)              -> Mexprif (f c, f t, f e)
   | Mexprmatchwith (e, l)          -> Mexprmatchwith (f e, List.map (fun (p, e) -> (p, f e)) l)
+  | Mmatchsome (e, n, i, s)        -> Mmatchsome (f e, f n, fi i, f s)
   (* composite type constructors *)
   | Mnone                          -> Mnone
   | Msome v                        -> Msome (f v)
@@ -1899,6 +1909,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   (* control expression *)
   | Mexprif (c, t, e)                     -> f (f (f accu c) t) e
   | Mexprmatchwith (e, l)                 -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
+  | Mmatchsome (e, n, _, s)               -> f (f (f accu s) n) e
   (* composite type constructors *)
   | Mnone                                 -> accu
   | Msome v                               -> f accu v
@@ -2320,6 +2331,12 @@ let fold_map_term
       |> (fun (x, y) -> (List.rev x, y))
     in
     g (Mexprmatchwith (ee, pse)), psa
+
+  | Mmatchsome (e, n, i, s) ->
+    let ee, ea = f accu e in
+    let ne, na = f ea n in
+    let se, sa = f na s in
+    g (Mmatchsome (ee, ne, i, se)), sa
 
 
   (* composite type constructors *)

@@ -40,7 +40,6 @@ entry consume (a : address, quantity : int) {
     assert p1 {
       remainder = 0
     }
-
     postcondition p2 {
       mile.sum(the.amount) = before.mile.sum(the.amount) - quantity
       invariant for loop {
@@ -48,19 +47,14 @@ entry consume (a : address, quantity : int) {
         before.mile.sum(the.amount) = mile.sum(the.amount) + quantity - remainder
       }
     }
-
     postcondition p3 {
       forall m in removed.mile, m.expiration >= now
       invariant for loop {
         removed.mile.subsetof(by_expiration)
       }
     }
-
     postcondition p4 {
       added.mile.isempty()
-      invariant for loop {
-        added.mile.isempty()
-      }
     }
 
   }
@@ -80,6 +74,8 @@ entry consume (a : address, quantity : int) {
          var v = min(remainder, mile[m].amount);
          remainder -= v;
          mile[m].amount -= v;
+         if (mile[m].amount = 0)
+         then owner[a].miles.remove(m);
       )
     done;
     assert p1
