@@ -34,7 +34,7 @@ before_install:
   - opam pin add -n archetype .
   - opam depext archetype
   - opam install --deps-only archetype
-  - opam install why3.1.3.1
+  - opam install why3.1.3.2
   - curl -o ligo.deb https://ligolang.org/deb/ligo.deb
   - sudo dpkg -i ligo.deb
 
