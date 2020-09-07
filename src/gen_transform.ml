@@ -3562,23 +3562,6 @@ let remove_asset (model : model) : model =
       | _ -> assert false
     in
 
-
-    let mk_list_reverse t l =
-      let tl = Tlist t in
-
-      let empty = mk_mterm (Mlitlist []) tl in
-
-      let iid = dumloc "_liid" in
-      let vid = mk_mterm (Mvar(iid, Vlocal, Tnone, Dnone)) t in
-
-      let iaccu = dumloc "_accu" in
-      let vaccu = mk_mterm (Mvar(iaccu, Vlocal, Tnone, Dnone)) t in
-
-      let b =  mk_mterm (Mlistprepend(t, vaccu, vid)) tl in
-
-      mk_mterm (Mlistfold(t, iid, iaccu, l, empty, b)) tl
-    in
-
     let rec fm ctx (mt : mterm) : mterm =
       match mt.node with
 
@@ -4263,7 +4246,7 @@ let remove_asset (model : model) : model =
 
           let empty = mk_mterm (Mlitlist []) tr in
           let r = fold_ck (fm ctx) (an, ck) empty mk in
-          mk_list_reverse atk r
+          mk_mterm (Mlistreverse(atk, r)) (Tlist atk)
         end
 
       | Msort (an, ck, crits) -> begin
@@ -4372,7 +4355,7 @@ let remove_asset (model : model) : model =
             let matchsome : mterm = mk_mterm (Mmatchsome (vz0, vz1, "", prepend vkid vz1)) tr in
 
             matchsome
-            |> mk_list_reverse atk
+            |> (fun x -> mk_mterm (Mlistreverse(atk, x)) (Tlist atk))
             |> mk_letin iz1 (mk_tupleaccess 1 v0)
             |> mk_letin iz0 (mk_tupleaccess 0 v0)
             |> mk_letin i0 a
@@ -4577,7 +4560,7 @@ let remove_asset (model : model) : model =
 
           fold_ck (fm ctx) (an, ck) init mk ~with_value:false
           |> mk_tupleaccess 1
-          |> mk_list_reverse atk
+          |> (fun x -> mk_mterm (Mlistreverse(atk, x)) (Tlist atk))
         end
 
       | Mtail (an, ck, n) -> begin
@@ -4630,14 +4613,6 @@ let remove_asset (model : model) : model =
           fold_ck (fm ctx) (an, ck) init rev ~with_value:false
           |> head n
           |> mk_tupleaccess 1
-          |> mk_list_reverse atk
-        end
-
-      (* misc *)
-
-      | Mlistreverse (t, l) -> begin
-          let l = fm ctx l in
-          mk_list_reverse t l
         end
 
       | _ -> map_mterm (fm ctx) mt
@@ -4657,3 +4632,21 @@ let remove_asset (model : model) : model =
   let model, map = process_storage model in
   process_mterm map model
   |> remove_type_asset
+
+let remove_high_level_model (model : model)  =
+  let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
+    let f = aux ctx in
+    match mt.node with
+    | Mlistreverse (t, l) -> begin
+        let tl = Tlist t in
+        let empty = mk_mterm (Mlitlist []) tl in
+        let iid = dumloc "_liid" in
+        let vid = mk_mvar iid t in
+        let iaccu = dumloc "_accu" in
+        let vaccu = mk_mvar iaccu t in
+        let b =  mk_mterm (Mlistprepend(t, vaccu, vid)) tl in
+        mk_mterm (Mlistfold(t, iid, iaccu, f l, empty, b)) tl
+      end
+    | _ -> map_mterm (aux ctx) mt
+  in
+  map_mterm_model aux model
