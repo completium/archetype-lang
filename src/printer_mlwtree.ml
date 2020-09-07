@@ -870,13 +870,14 @@ and pp_variants fmt variants =
     Format.fprintf fmt "variant { %a }@\n"
       (pp_list ", " (pp_term e_default PRight)) variants
 and pp_fun fmt (s : fun_struct) =
-  Format.fprintf fmt "%a %a %a : %a@\n%a%a%a%a=  @[%a@]"
+  Format.fprintf fmt "%a %a %a : %a@\n%a%a%a%a%a=  @[%a@]"
     pp_logic s.logic
     pp_id s.name
     pp_args s.args
     pp_type s.returns
     pp_variants s.variants
     (pp_raise e_top PRight) s.raises
+    (pp_fails e_top PRight) s.fails
     pp_requires s.requires
     pp_ensures s.ensures
     (pp_term e_top PRight) s.body
@@ -886,6 +887,18 @@ and pp_raise outer pos fmt raises =
   else
     Format.fprintf fmt "@[raises { %a }@\n@]"
       (pp_list " }@\nraises { " (pp_term outer pos)) raises
+and pp_fails outer pos fmt fails =
+  if List.length fails = 0
+  then pp_str fmt ""
+  else
+    Format.fprintf fmt "@[raises {@\n %a @\n}@\n@]"
+    (pp_list "@\n}@\nraises {@\n " (pp_fail outer pos)) fails
+and pp_fail outer pos fmt fail =
+  match fail with
+  | Some _, t -> (* why3 does not allow annotation in raises section *)
+      Format.fprintf fmt "%a" (pp_term outer pos) t
+  | None, t ->
+      Format.fprintf fmt "%a" (pp_term outer pos) t
 and pp_catch outer pos fmt (exn,e) =
   Format.fprintf fmt "| %a -> %a"
     (pp_exn outer pos) exn
@@ -906,7 +919,7 @@ and pp_exn outer pos fmt = function
   | Einvalid (Some msg) -> Format.fprintf fmt "(Invalid \"%a\")" pp_str msg
   | Einvalid None       -> pp_str fmt "Invalid"
   | Efail (i,None)     -> Format.fprintf fmt "Fail%a" pp_int i
-  | Efail (i,Some m)         -> Format.fprintf fmt "(Fail%a %a)" pp_int i (pp_term outer pos) m
+  | Efail (i,Some m)         -> Format.fprintf fmt "Fail%a %a" pp_int i (pp_term outer pos) m
 and pp_dexn fmt (i,t) =
   Format.fprintf fmt "exception Fail%a %a"
     pp_id i
