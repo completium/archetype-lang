@@ -51,6 +51,14 @@ entry getTotalSupply (cb : entrysig<nat>) {
   transfer 0tz to entry cb(totalsupply);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// SPECIFICATION
+///////////////////////////////////////////////////////////////////////////////
+
+specification {
+  s1: ledger.sum(tokens) = totalsupply;
+}
+
 specification entry %transfer (from_ : address, to_ : address, value : nat) {
   fails {
     f0 with (s : string) :
@@ -126,6 +134,4 @@ specification entry %transfer (from_ : address, to_ : address, value : nat) {
   }
 }
 
-specification {
-  s1: ledger.sum(tokens) = totalsupply;
-}
+
