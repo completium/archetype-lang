@@ -888,7 +888,11 @@ let to_michelson (ir : T.ir) : T.michelson =
 
     | Icall (id, args)   -> begin
         let fid, env   = fe env (Ivar id) in
-        let cargs, env = fold env args in
+        let cargs, env =
+          match args with
+          | [] -> T.UNIT, inc_env env
+          | _ -> fold env args
+        in
 
         T.SEQ [fid; cargs; T.EXEC], dec_env env
       end
@@ -1122,22 +1126,23 @@ let to_michelson (ir : T.ir) : T.michelson =
     let unfold = foldi (fun x -> T.UNPAIR::T.SWAP::x ) [] in
 
     let get_funs _ : T.code list * ident list =
-      let funs = List.map (
-          fun (x : T.func) ->
+      let _env, funs = List.fold_left (
+          fun (env, funs) (x : T.func) ->
             let code =
               match x.body with
               | Concrete (args, body) ->
-                let env = mk_env ~vars:(args |> List.map fst |> List.rev) () in
+                let env = mk_env ~vars:((args |> List.map fst |> List.rev) @ env.vars) () in
                 let nb_args = List.length args in
                 let nb_as = nb_args - 1 in
                 let unfold_args = unfold nb_as in
                 let res = T.PUSH (T.tunit, T.Dunit) in
                 let env = add_var_env env fun_result in
-                let code, _ = instruction_to_code env body in unfold_args @ [res] @ code::[T.DUG nb_args; T.DROP nb_args]
+                let es = if nb_args = 0 then [T.SWAP; T.DROP 1] else [T.DUG nb_args; T.DROP nb_args] in
+                let code, _ = instruction_to_code env body in unfold_args @ [res] @ code::es
               | Abstract b    -> [concrete_michelson b]
             in
-            T.LAMBDA (x.targ, x.tret, code ), x.name
-        ) ir.funs
+            add_var_env env x.name, (funs @ [(T.LAMBDA (x.targ, x.tret, code ), x.name)])
+        ) (mk_env (), []) ir.funs
       in
       List.split funs
     in
