@@ -85,6 +85,7 @@ PASSED="\
 ./tests/passed/simple_fun_with_storage.arl \
 ./tests/passed/simple_fun_with_storage2.arl \
 ./tests/passed/simple_fun_with_storage3.arl \
+./tests/passed/test_fun_asset.arl \
 ./tests/passed/rat_nat.arl \
 ./tests/passed/rat_int.arl \
 ./tests/passed/rat_cmp_eq.arl \

@@ -1,0 +1,20 @@
+archetype test_fun_asset
+
+asset my_asset {
+  id : nat;
+} initialized by {
+  {0};
+  {1};
+  {2};
+  {3}
+}
+
+function get_count() : nat {
+  return (my_asset.count())
+}
+
+variable res : nat = 0
+
+entry exec () {
+  res := get_count()
+}
