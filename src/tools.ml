@@ -39,6 +39,20 @@ let foldi f accu n =
   aux f accu n
 
 (* -------------------------------------------------------------------- *)
+
+(* since 4.08 *)
+module Bool : sig
+  val compare : bool -> bool -> int
+end = struct
+  let compare a b =
+  match a, b with
+  | false, false -> 0
+  | false, true  -> -1
+  | true,  false -> 1
+  | true,  true  -> 0
+end
+
+(* -------------------------------------------------------------------- *)
 module String : sig
   include module type of String
 
