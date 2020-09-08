@@ -3562,23 +3562,6 @@ let remove_asset (model : model) : model =
       | _ -> assert false
     in
 
-
-    let mk_list_reverse t l =
-      let tl = Tlist t in
-
-      let empty = mk_mterm (Mlitlist []) tl in
-
-      let iid = dumloc "_liid" in
-      let vid = mk_mterm (Mvar(iid, Vlocal, Tnone, Dnone)) t in
-
-      let iaccu = dumloc "_accu" in
-      let vaccu = mk_mterm (Mvar(iaccu, Vlocal, Tnone, Dnone)) t in
-
-      let b =  mk_mterm (Mlistprepend(t, vaccu, vid)) tl in
-
-      mk_mterm (Mlistfold(t, iid, iaccu, l, empty, b)) tl
-    in
-
     let rec fm ctx (mt : mterm) : mterm =
       match mt.node with
 
@@ -4263,7 +4246,7 @@ let remove_asset (model : model) : model =
 
           let empty = mk_mterm (Mlitlist []) tr in
           let r = fold_ck (fm ctx) (an, ck) empty mk in
-          mk_list_reverse atk r
+          mk_mterm (Mlistreverse(atk, r)) (Tlist atk)
         end
 
       | Msort (an, ck, crits) -> begin
@@ -4372,7 +4355,7 @@ let remove_asset (model : model) : model =
             let matchsome : mterm = mk_mterm (Mmatchsome (vz0, vz1, "", prepend vkid vz1)) tr in
 
             matchsome
-            |> mk_list_reverse atk
+            |> (fun x -> mk_mterm (Mlistreverse(atk, x)) (Tlist atk))
             |> mk_letin iz1 (mk_tupleaccess 1 v0)
             |> mk_letin iz0 (mk_tupleaccess 0 v0)
             |> mk_letin i0 a
@@ -4577,7 +4560,7 @@ let remove_asset (model : model) : model =
 
           fold_ck (fm ctx) (an, ck) init mk ~with_value:false
           |> mk_tupleaccess 1
-          |> mk_list_reverse atk
+          |> (fun x -> mk_mterm (Mlistreverse(atk, x)) (Tlist atk))
         end
 
       | Mtail (an, ck, n) -> begin
@@ -4630,14 +4613,6 @@ let remove_asset (model : model) : model =
           fold_ck (fm ctx) (an, ck) init rev ~with_value:false
           |> head n
           |> mk_tupleaccess 1
-          |> mk_list_reverse atk
-        end
-
-      (* misc *)
-
-      | Mlistreverse (t, l) -> begin
-          let l = fm ctx l in
-          mk_list_reverse t l
         end
 
       | _ -> map_mterm (fm ctx) mt
@@ -4657,3 +4632,137 @@ let remove_asset (model : model) : model =
   let model, map = process_storage model in
   process_mterm map model
   |> remove_type_asset
+
+let remove_high_level_model (model : model)  =
+  let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
+    let f = aux ctx in
+    match mt.node with
+    | Mlistreverse (t, l) -> begin
+        let tl = Tlist t in
+        let empty = mk_mterm (Mlitlist []) tl in
+        let iid = dumloc "_liid" in
+        let vid = mk_mvar iid t in
+        let iaccu = dumloc "_accu" in
+        let vaccu = mk_mvar iaccu t in
+        let b =  mk_mterm (Mlistprepend(t, vaccu, vid)) tl in
+        mk_mterm (Mlistfold(t, iid, iaccu, f l, empty, b)) tl
+      end
+    | Miter (i, a, b, c, lbl) -> begin
+      let a = f a in
+      let b = f b in
+      let c = f c in
+
+      let vi = mk_mvar i a.type_ in
+
+      let ie = dumloc "_e" in
+      let ve = mk_mvar ie b.type_ in
+
+      let vinc : mterm = mk_mterm (Mplus(vi, mk_int 1)) tint in
+      let inc  : mterm = mk_mterm (Massign(ValueAssign, tint, Avar i, vinc)) tunit in
+      let body : mterm = mk_mterm (Mseq([c; inc])) tunit |> flat_sequence_mterm in
+      let cond : mterm = mk_mterm (Mle (vi, ve)) tbool in
+      let loop : mterm = mk_mterm (Mwhile (cond, body, lbl)) tunit in
+
+      loop
+      |> mk_letin i  a
+      |> mk_letin ie b
+      end
+    | _ -> map_mterm (aux ctx) mt
+  in
+  map_mterm_model aux model
+
+let normalize_storage (model : model) : model =
+
+  let replace_var_in_storage (model : model) : model =
+
+    let for_mterm map (mt : mterm) : mterm =
+      let rec aux (mt : mterm) : mterm =
+        match mt.node with
+        | Mvar (id, _, _, _) when MapString.mem (unloc id) map -> MapString.find (unloc id) map
+        | _ -> map_mterm aux mt
+      in
+      aux mt
+    in
+
+    let for_storage_item map (si : storage_item) : storage_item =
+      {si with default = for_mterm map si.default}
+    in
+
+    let map = MapString.empty in
+    let _, storage = List.fold_left (fun (map, l) si ->
+        let si = for_storage_item map si in
+        let map = MapString.add (unloc si.id) si.default map in
+        (map, l @ [si])) (map, []) model.storage in
+    { model with
+      storage = storage }
+  in
+
+  let sort_container (model : model) : model =
+
+    let for_mterm (mt : mterm) : mterm =
+      let rec cmp (lhs : mterm) (rhs : mterm) : int =
+        match lhs.node, rhs.node with
+        | Mbool      v1, Mbool v2      -> Bool.compare v1 v2
+        | Mnat       v1, Mnat v2       -> Big_int.compare_big_int v1 v2
+        | Mint       v1, Mint v2       -> Big_int.compare_big_int v1 v2
+        | Mstring    v1, Mstring v2    -> String.compare v1 v2
+        | Mcurrency  (v1, Utz), Mcurrency  (v2, Utz) -> Big_int.compare_big_int v1 v2
+        | Maddress   v1, Maddress   v2 -> String.compare v1 v2
+        | Mdate      v1, Mdate      v2 -> Big_int.compare_big_int (Core.date_to_timestamp v1) (Core.date_to_timestamp v2)
+        | Mtimestamp v1, Mtimestamp v2 -> Big_int.compare_big_int v1 v2
+        | Mbytes     v1, Mbytes     v2 -> String.compare v1 v2
+        | Mtuple l1, Mtuple l2 when List.length l1 = List.length l2 ->
+          List.fold_left2 (fun accu x y ->
+              match accu with
+              | Some _ -> accu
+              | None -> let r = cmp x y in if r = 0 then None else Some r
+            ) None l1 l2 |> (Option.get_dfl 0)
+        (* | Mlitrecord _ *)
+        | _ -> assert false
+      in
+
+      let sort = List.sort (fun (x1, _) (x2, _) -> cmp x1 x2) in
+
+      let rec aux (mt : mterm) : mterm =
+        match mt.node with
+        | Mlitset l -> begin
+            {mt with node = Mlitset (l |> List.map (fun x -> x, unit) |> sort |> List.map fst)}
+          end
+        | Mlitmap l -> begin
+            {mt with node = Mlitmap (sort l)}
+          end
+        | _ -> map_mterm aux mt
+      in
+      aux mt
+    in
+
+    let for_storage_item (si : storage_item) : storage_item =
+      {si with default = for_mterm si.default}
+    in
+
+    { model with
+      storage = List.map for_storage_item model.storage }
+  in
+
+  model
+  |> replace_var_in_storage
+  |> sort_container
+
+let remove_constant (model : model) : model =
+
+  let for_mterm map _ (mt : mterm) : mterm =
+    let rec aux (mt : mterm) : mterm =
+      match mt.node with
+      | Mvar (id, _, _, _) when MapString.mem (unloc id) map -> MapString.find (unloc id) map
+      | _ -> map_mterm aux mt
+    in
+    aux mt
+  in
+
+  let map, storage = List.fold_left (fun (map, l) si ->
+      match si.model_type with
+      | MTconst -> (MapString.add (unloc si.id) si.default map, l)
+      | _ -> (map, l @ [si])) (MapString.empty, []) model.storage in
+  { model with
+    storage = storage }
+  |> map_mterm_model (for_mterm map)

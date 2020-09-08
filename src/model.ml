@@ -948,6 +948,7 @@ let toption t = Toption t
 let mk_string x = mk_mterm (Mstring x) tstring
 let mk_nat x = mk_mterm (Mnat (Big_int.big_int_of_int x)) tnat
 let mk_int x = mk_mterm (Mint (Big_int.big_int_of_int x)) tint
+let unit = mk_mterm (Munit) tunit
 
 let mtrue = mk_mterm (Mbool true) tbool
 let mfalse = mk_mterm (Mbool false) tbool
