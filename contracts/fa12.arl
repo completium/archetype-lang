@@ -63,32 +63,34 @@ specification entry %transfer (from_ : address, to_ : address, value : nat) {
   fails {
     f0 with (s : string) :
       s = "NotEnoughBalance" and
-      let some after_from = ledger[from_] in
-        after_from.tokens < value
+      let some after_ledger_from = ledger[from_] in
+        after_ledger_from.tokens < value
       otherwise true;
     f1 with (v : string * (nat * nat)) :
       v[0] = "NotEnoughAllowance" and
       caller <> from_ and
-      let some after_from_caller = allowance[(from_,caller)] in
-        after_from_caller.amount < value and
+      let some after_allowance_from_caller = allowance[(from_,caller)] in
+        after_allowance_from_caller.amount < value and
         v[1][0] = value and
-        v[1][1] = after_from_caller.amount
+        v[1][1] = after_allowance_from_caller.amount
       otherwise true;
   }
   // LEDGER ASSET
   postcondition p1 { // effect on from_ nbtokens
-    let some before_from = before.ledger[from_] in
-      let some after_from = ledger[from_] in
-        after_from.tokens = before_from.tokens - value
+    from_ <> to_ ->
+    let some before_ledger_from = before.ledger[from_] in
+      let some after_ledger_from = ledger[from_] in
+        after_ledger_from.tokens = before_ledger_from.tokens - value
       otherwise true
     otherwise true
   }
   postcondition p2 { // effect on to_ nbtokens
-    let some after_to = ledger[to_] in
-      let some before_to = before.ledger[to_] in
-        after_to.tokens = before_to.tokens + value
+    from_ <> to_ ->
+    let some after_ledger_to = ledger[to_] in
+      let some before_ledger_to = before.ledger[to_] in
+        after_ledger_to.tokens = before_ledger_to.tokens + value
       otherwise
-        after_to.tokens = value
+        after_ledger_to.tokens = value
     otherwise true
   }
   postcondition p3 { // other ledger assets are unchanged

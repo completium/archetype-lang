@@ -102,7 +102,7 @@ let pp_with_paren pp fmt x =
   pp_maybe (needs_paren x) pp_paren pp fmt x
 
 let needs_paren = function
-  | Tseq _ -> true
+  | Tseq _ -> false
   | _      -> false
 
 let pp_if_with_paren pp fmt x =
@@ -212,11 +212,11 @@ let rec pp_pattern fmt = function
 let rec pp_term outer pos fmt = function
   | Tseq l         -> Format.fprintf fmt "@[%a@]" (pp_list ";@\n" (pp_term outer pos)) l
   | Tif (i,t, None)    ->
-    Format.fprintf fmt "@[if %a@ then %a@]"
+    Format.fprintf fmt "@[if %a then begin @\n  @[%a @] @\nend@]"
       (pp_term e_if PRight) i
       (pp_if_with_paren (pp_term e_then PRight)) t
   | Tif (i,t, Some e)    ->
-    Format.fprintf fmt "@[if %a then (@\n  @[%a @])@\nelse (@\n  @[%a @])@]"
+    Format.fprintf fmt "@[if %a then begin @\n  @[%a @] @\nend else begin @\n  @[%a @] @\nend@]"
       (pp_term e_if PRight) i
       (pp_if_with_paren (pp_term e_then PRight)) t
       (pp_if_with_paren (pp_term e_else PRight)) e
@@ -870,7 +870,7 @@ and pp_variants fmt variants =
     Format.fprintf fmt "variant { %a }@\n"
       (pp_list ", " (pp_term e_default PRight)) variants
 and pp_fun fmt (s : fun_struct) =
-  Format.fprintf fmt "%a %a %a : %a@\n%a%a%a%a%a=  @[%a@]"
+  Format.fprintf fmt "%a %a %a : %a@\n%a%a%a%a%a= @[%a@]"
     pp_logic s.logic
     pp_id s.name
     pp_args s.args
