@@ -3403,13 +3403,10 @@ let remove_asset (model : model) : model =
               let viter_name = "_viter" in
               let viter_id = dumloc viter_name in
               let pk = Utils.get_asset_key model aan |> snd in
-              let pva : mterm = get_asset_global aan in
-              let viter : mterm = mk_mterm (Mvar (viter_id, Vstorecol, Tnone, Dnone)) pk in
-              let pnew_value : mterm = mk_mterm (Msetremove(pk, pva, viter) ) (Tset pk) in
-              let passign : mterm = mk_mterm (Massign (ValueAssign, pva.type_, Avarstore (get_asset_global_id aan), pnew_value)) Tunit in
-              let set_m : mterm = mk_mterm (Mdot((mk_mterm (Mget(an, CKcoll(Tnone, Dnone), k)) (Tasset (dumloc an))), dumloc fn)) pk in
-              let set : mterm = f set_m in
-              mk_mterm (Mfor (FIsimple viter_id, ICKset set, passign, None)) Tunit
+              let viter    : mterm = mk_mterm (Mvar (viter_id, Vstorecol, Tnone, Dnone)) pk in
+              let set      : mterm = mk_mterm (Mdot((mk_mterm (Mget(an, CKcoll(Tnone, Dnone), k)) (Tasset (dumloc an))), dumloc fn)) pk |> f in
+              let passign2 : mterm = mk_mterm (Mremoveasset (aan, viter)) tunit |> f in
+              mk_mterm (Mfor (FIsimple viter_id, ICKset set, passign2, None)) Tunit
             ) partitions in
           mk_mterm (Mseq (l @ [assign])) tunit
         end
@@ -3890,7 +3887,7 @@ let remove_asset (model : model) : model =
                 in
                 let loop : mterm =
                   let var_id = dumloc "_ak" in
-                  let var_value = mk_mterm (Mvar (var_id, Vlocal, Tnone, Dnone)) atk in
+                  let var_value = mk_mvar var_id atk in
                   let b : mterm = remove_asset (fm ctx) aan var_value in
                   mk_mterm (Mfor (FIsimple var_id, ICKset set, b, None)) tunit
                 in
