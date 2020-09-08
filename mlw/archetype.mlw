@@ -194,13 +194,13 @@ module Utils
 
   val function str_concat arstring arstring : arstring
 
-  axiom str_concat_spec : forall s1 s2.
-  str_concat s1 s2 = S.concat s1 s2
+  (* axiom str_concat_spec : forall s1 s2.
+  str_concat s1 s2 = S.concat s1 s2 *)
 
   val function substring arstring int int : arstring
 
-  axiom substring_spec : forall s i j.
-  substring s i j = S.substring s i j
+  (* axiom substring_spec : forall s i j.
+  substring s i j = S.substring s i j *)
 
   val function str_length arstring : int
 
@@ -209,8 +209,8 @@ module Utils
 
   val function str_eq (_ : arstring) (_ : arstring) : bool
 
-  axiom str_eq_spec : forall s1 s2.
-  str_eq s1 s1 <-> s1 = s2
+  (* axiom str_eq_spec : forall s1 s2.
+  str_eq s1 s1 <-> s1 = s2 *)
 
   (* let function str_le (s1 : arstring) (s2 : arstring) : bool = s1 <= s2
   let function str_ge (s1 : arstring) (s2 : arstring) : bool = s1 >= s2
@@ -219,13 +219,13 @@ module Utils
 
   val function str_le arstring arstring : bool
 
-  axiom str_le_spec : forall s1 s2.
-  str_le s1 s2 = S.le s1 s2
+  (* axiom str_le_spec : forall s1 s2.
+  str_le s1 s2 = S.le s1 s2 *)
 
   val function str_ge arstring arstring : bool
 
-  axiom str_ge_spec : forall s1 s2.
-  str_ge s1 s2 = not (S.le s1 s2) \/ s1 = s2
+  (* axiom str_ge_spec : forall s1 s2.
+  str_ge s1 s2 = not (S.le s1 s2) \/ s1 = s2 *)
 
   val function str_lt arstring arstring : bool
 
@@ -234,8 +234,8 @@ module Utils
 
   val function str_gt arstring arstring : bool
 
-  axiom str_gt_spec : forall s1 s2.
-  str_gt s1 s2 = not (S.le s1 s2)
+  (* axiom str_gt_spec : forall s1 s2.
+  str_gt s1 s2 = not (S.le s1 s2) *)
 
   val function from_int int : arstring
 
@@ -566,13 +566,13 @@ module CollectionSet
   let function mk (l : list t) = F.mk l
 
   (* ------------------------------------------------------------------------ *)
-  let function card (s : cset) = F.fcard s 
+  let function card (s : cset) = F.fcard s
 
   (* GET INTERNAL ----------------------------------------------------------- *)
   let rec function internal_get (k : tk) (l : list t) : option t
   variant { l }
   ensures { forall e. result = Some e -> proj e = k }
-  ensures { result = None -> forall e. M.mem e l -> proj e <> k } 
+  ensures { result = None -> forall e. M.mem e l -> proj e <> k }
   =
   match l with
   | Cons e tl ->
@@ -585,13 +585,13 @@ module CollectionSet
   (* GET -------------------------------------------------------------------- *)
   let function get (k : tk) (s : cset) : option t
   ensures { result = None -> forall e. F.fmem e s -> proj e <> k }
-  ensures { forall e. result = Some e -> proj e = k } 
+  ensures { forall e. result = Some e -> proj e = k }
   = internal_get k (F.content s)
 
   (* ADD -------------------------------------------------------------------- *)
   let function add (a : t) (s : cset) : cset
   ensures { forall k. k <> proj a -> get k result = get k s }
-  ensures { get (proj a) result = Some a } 
+  ensures { get (proj a) result = Some a }
   = F.mk (Cons a (F.content s))  (* normalisation is done by F.mk *)
 
   (* REMOVE ----------------------------------------------------------------- *)
@@ -788,8 +788,8 @@ module View
   predicate subset (v1 : view) (v2 : view) = I.subset v1.content v2.content
 
   (* ------------------------------------------------------------------------ *)
-  axiom empty_subset : forall v. subset empty v 
- 
+  axiom empty_subset : forall v. subset empty v
+
 end
 
 (* FIELD is a sorted and unduped fset of key -------------------------------- *)
@@ -850,7 +850,7 @@ module Field
   (* ------------------------------------------------------------------------ *)
  let function contains (k : tk) (f : field) : bool
   ensures { result = true -> exists e. mem e f /\ e = k }
-  ensures { result = false -> N.get k f = None } 
+  ensures { result = false -> N.get k f = None }
   (* TODO is this valid ? result <-> mem e f *)
   =
   match N.get k f with
@@ -914,7 +914,7 @@ module Field
   let function to_view (f : field) : view
   (* TODO shall there be a dedicated sort predicate ?*)
   ensures { S.sorted (velts result) }
-  ensures { forall k. vcontains k result <-> contains k f } 
+  ensures { forall k. vcontains k result <-> contains k f }
   = vmk (N.elts f)
 
 end
@@ -1243,7 +1243,7 @@ module Collection
   (* ------------------------------------------------------------------------ *)
   let function elts (c : collection) : list t
   ensures { norm result = result }
-  ensures { key_injective result } 
+  ensures { key_injective result }
   =  N.elts c.content
 
   (* ------------------------------------------------------------------------ *)
@@ -1390,7 +1390,7 @@ module Collection
   (* TODO dedicated sort predicate that does not use velts ? *)
   =
   list_to_view (N.elts c.content)
- 
+
   (* ------------------------------------------------------------------------ *)
   lemma get_to_view_contains_false : forall k c.
   not (vcontains k (to_view c)) <-> get k c = None
@@ -1410,7 +1410,7 @@ module Collection
   | Cons e tl -> if p e then Cons e (internal_select tl) else (internal_select tl)
   end in
   mk (N.mk (internal_select ((N.elts (content c)))))
- 
+
   (* ------------------------------------------------------------------------ *)
   let function select (p : t -> bool) (c : collection) : view
   ensures { forall e k. get k c = Some e -> p e -> vcontains k result }
@@ -1770,12 +1770,12 @@ module Sum
 
   (* ------------------------------------------------------------------------ *)
   axiom effect_add : forall a c.
-  get (keyt a) c = None -> 
+  get (keyt a) c = None ->
   sum (to_view (add a c)) (add a c) = sum (to_view c) c + field a
 
   (* ------------------------------------------------------------------------ *)
   axiom effect_remove : forall a c.
-  get (keyt a) c = Some a -> 
+  get (keyt a) c = Some a ->
   sum (to_view (remove (keyt a) c)) (remove (keyt a) c) = sum (to_view c) c - field a
 
   (* ------------------------------------------------------------------------ *)
@@ -1786,12 +1786,12 @@ module Sum
 
   (* ------------------------------------------------------------------------ *)
   axiom effect_gt0 : forall v c.
-  (forall e. get (keyt e) c = Some e -> field e >= 0) -> 
+  (forall e. get (keyt e) c = Some e -> field e >= 0) ->
   sum v c >= 0
 
   (* ------------------------------------------------------------------------ *)
   axiom effect_tail_succ : forall i v c.
-  sum (tail (i+1) v) c = sum (tail i v) c - 
+  sum (tail (i+1) v) c = sum (tail i v) c -
   match nth i v with
   | Some k -> match get k c with | Some a -> field a | None -> 0 end
   | None -> 0
@@ -1799,7 +1799,7 @@ module Sum
 
   (* ------------------------------------------------------------------------ *)
   axiom effect_head_succ : forall i v c.
-  sum (head (i+1) v) c = sum (head i v) c + 
+  sum (head (i+1) v) c = sum (head i v) c +
   match nth (i+1) v with
   | Some k -> match get k c with | Some a -> field a | None -> 0 end
   | None -> 0
