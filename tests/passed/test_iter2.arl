@@ -1,4 +1,4 @@
-archetype test_iter
+archetype test_iter2
 
 variable res : int = 0
 

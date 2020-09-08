@@ -1,0 +1,12 @@
+archetype test_record_access_0
+
+record my_record {
+  id : string;
+}
+
+variable res : string = ""
+
+entry exec () {
+  var lit1 : my_record = {id = "mystr"};
+  res := lit1.id;
+}

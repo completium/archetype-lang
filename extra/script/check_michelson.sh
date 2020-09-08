@@ -131,7 +131,14 @@ PASSED="\
 ./tests/passed/test_remove_asset_with_partition.arl \
 ./tests/passed/test_addfield_aggregate_1.arl \
 ./tests/passed/test_addfield_aggregate_2.arl \
+./tests/passed/test_tuple_access_1.arl \
+./tests/passed/test_tuple_access_2.arl \
+./tests/passed/test_tuple_access_3.arl \
 ./tests/passed/test_record.arl \
+./tests/passed/test_record_access_0.arl \
+./tests/passed/test_record_access_1.arl \
+./tests/passed/test_record_access_2.arl \
+./tests/passed/test_record_access_3.arl \
 ./tests/passed/test_record_assign_1.arl \
 ./tests/passed/test_record_assign_2.arl \
 ./tests/passed/test_record_assign_3.arl \

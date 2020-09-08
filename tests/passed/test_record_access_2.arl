@@ -1,0 +1,18 @@
+archetype test_record_access_2
+
+record my_record {
+  id : string;
+  v  : int;
+  b  : bool;
+}
+
+variable rid : string = ""
+variable rv  : int    = 0i
+variable rb  : bool   = false
+
+entry exec () {
+  var lit1 : my_record = {id = "mystr"; v = 2i; b = true};
+  rid := lit1.id;
+  rv  := lit1.v;
+  rb  := lit1.b;
+}

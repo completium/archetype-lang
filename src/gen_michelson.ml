@@ -328,10 +328,18 @@ let to_ir (model : M.model) : T.ir =
       | e::t -> List.fold_left (fun accu x -> T.Ibinop (Bpair, x, accu)) e t
     in
 
-    let access_record n x =
-      if n = 0
-      then T.icar x
-      else Tools.foldi T.icdr x n
+    let access_record s i x =
+      if i = 0 && s = 1
+      then x
+      else begin
+        let x = Tools.foldi T.icdr x i in
+        let x =
+          if i < s - 1
+          then T.icar x
+          else x
+        in
+        x
+      end
     in
 
     match mtt.node with
@@ -489,7 +497,11 @@ let to_ir (model : M.model) : T.ir =
 
     (* access *)
 
-    | Mdot (e, i)           -> let n = get_record_index e.type_ (unloc i) in access_record n (f e)
+    | Mdot (e, i)           -> begin
+        let s = get_record_size e.type_ in
+        let n = get_record_index e.type_ (unloc i) in
+        access_record s n (f e)
+      end
     | Mdotassetfield _      -> emit_error (UnsupportedTerm ("Mdotassetfield"))
 
     (* comparison operators *)
@@ -553,7 +565,7 @@ let to_ir (model : M.model) : T.ir =
         | M.Tbuiltin Bcurrency, M.Tbuiltin Bnat -> T.idiv (f v) (T.imutez Big_int.unit_big_int)
         | _ -> f v
       end
-    | Mtupleaccess (x, n) -> access_record (Big_int.int_of_big_int n) (f x)
+    | Mtupleaccess (x, n) -> let s = (match x.type_ with | Ttuple l -> List.length l | _ -> 0) in access_record s (Big_int.int_of_big_int n) (f x)
     | Mrecupdate (x, l) ->
       let s = get_record_size mtt.type_ in
       let ll =
