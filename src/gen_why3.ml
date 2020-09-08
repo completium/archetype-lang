@@ -1760,8 +1760,16 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     (* comparison operators *)
 
-    | Mequal (t, l, r)  -> Teq  (map_mtype m t, map_mterm m ctx l, map_mterm m ctx r)
-    | Mnequal (t, l, r) -> Tneq (map_mtype m t, map_mterm m ctx l, map_mterm m ctx r)
+    | Mequal (t, l, r)  ->
+      begin match ctx.lctx with
+      | Logic | Inv -> Teq (dl Tyint, map_mterm m ctx l, map_mterm m ctx r)
+      | _           -> Teq (map_mtype m t, map_mterm m ctx l, map_mterm m ctx r)
+      end
+    | Mnequal (t, l, r) ->
+      begin match ctx.lctx with
+      | Logic | Inv -> Tneq (dl Tyint, map_mterm m ctx l, map_mterm m ctx r)
+      | _           -> Tneq (map_mtype m t, map_mterm m ctx l, map_mterm m ctx r)
+      end
     | Mgt (l, r) -> Tgt (map_mtype m l.type_, map_mterm m ctx l, map_mterm m ctx r)
     | Mge (l, r) -> Tge (map_mtype m l.type_, map_mterm m ctx l, map_mterm m ctx r)
     | Mlt (l, r) -> Tlt (map_mtype m l.type_, map_mterm m ctx l, map_mterm m ctx r)
