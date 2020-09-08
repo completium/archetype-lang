@@ -238,7 +238,7 @@ type instruction =
   | Icall       of ident * instruction list
   | Iassign     of ident * instruction
   | IassignRec  of ident * int * int * instruction
-  | Iif         of instruction * instruction * instruction
+  | Iif         of instruction * instruction * instruction * type_
   | Iifnone     of instruction * instruction * ident * instruction
   | Iifcons     of instruction * instruction * instruction
   | Iwhile      of instruction * instruction

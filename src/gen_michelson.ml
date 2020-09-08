@@ -264,7 +264,7 @@ let to_ir (model : M.model) : T.ir =
           let b          = T.IletIn(pair_name, vpair, T.Iseq [assign_res; assign_arg], true) in
           let loop       = T.Iwhile (cond, b) in
           let a          = T.IletIn(res_name, T.istring "", IletIn(map_name, map, T.Iseq [loop; return vres], true), true) in
-          args, T.Iif (cond, a, return (T.istring "0"))
+          args, T.Iif (cond, a, return (T.istring "0"), T.tunit)
         end
         in
         T.mk_func name targ tret (T.Concrete (args, body))
@@ -359,8 +359,8 @@ let to_ir (model : M.model) : T.ir =
 
     (* control *)
 
-    | Mif (c, t, Some e)         -> T.Iif (f c, f t, f e)
-    | Mif (c, t, None)           -> T.Iif (f c, f t, T.iskip)
+    | Mif (c, t, Some e)         -> T.Iif (f c, f t, f e, T.tunit)
+    | Mif (c, t, None)           -> T.Iif (f c, f t, T.iskip, T.tunit)
     | Mmatchwith (_e, _l)        -> emit_error (UnsupportedTerm ("Mmatchwith"))
     | Mfor (id, c, b, _)         -> begin
         let ids =
@@ -449,7 +449,7 @@ let to_ir (model : M.model) : T.ir =
 
     (* control expression *)
 
-    | Mexprif (c, t, e)       -> T.Iif (f c, f t, f e)
+    | Mexprif (c, t, e)       -> T.Iif (f c, f t, f e, ft mtt.type_)
     | Mexprmatchwith (_e, _l) -> emit_error (UnsupportedTerm ("Mexprmatchwith"))
     | Mmatchsome (e, n, i, s) -> T.Iifnone (f e, f n, i, f s)
 
@@ -887,22 +887,20 @@ let to_michelson (ir : T.ir) : T.michelson =
       let v, _ = fe env (Irecupdate (Ivar id, s, [n, v])) in
       assign env id v
 
-    | Iif (c, t, e) -> begin
-        (* let c, _   = f c in
-           let t, envt = f t in
-           let e, enve = f e in *)
-
+    | Iif (c, t, e, ty) -> begin
         let c, env0 = fe env c in
         let t, envt = fe (dec_env env0) t in
         let e, enve = fe (dec_env env0) e in
 
-        let _env =
-          (* TODO: check if `envt` and `enve` have the same stack *)
+        let env =
           match envt.fail, enve.fail with
-          | false, false -> envt
-          | false, true  -> envt
-          | true,  false -> enve
-          | true,  true  -> envt
+          | true, true  -> {env with fail = true}
+          | _           -> env
+        in
+        let env =
+          match ty.node with
+          | T.Tunit -> env
+          | _ -> inc_env env
         in
         T.SEQ [ c; T.IF ([t], [e]) ], env
       end
