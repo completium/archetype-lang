@@ -560,9 +560,11 @@ let to_ir (model : M.model) : T.ir =
     (* utils *)
 
     | Mcast (src, dst, v) -> begin
-        match src, dst with
-        | M.Tbuiltin Baddress, M.Tentrysig t    -> get_contract (to_type t) (f v)
-        | M.Tbuiltin Bcurrency, M.Tbuiltin Bnat -> T.idiv (f v) (T.imutez Big_int.unit_big_int)
+        match src, dst, v.node with
+        | M.Tbuiltin Baddress, M.Tentrysig t, _                -> get_contract (to_type t) (f v)
+        | M.Tbuiltin Bcurrency, M.Tbuiltin Bnat, _             -> T.idiv (f v) (T.imutez Big_int.unit_big_int)
+        | M.Tbuiltin Bstring, M.Tbuiltin Bkey, Mstring s       -> T.Iconst (T.mk_type Tkey, Dstring s)
+        | M.Tbuiltin Bstring, M.Tbuiltin Bsignature, Mstring s -> T.Iconst (T.mk_type Tsignature, Dstring s)
         | _ -> f v
       end
     | Mtupleaccess (x, n) -> let s = (match x.type_ with | Ttuple l -> List.length l | _ -> 0) in access_record s (Big_int.int_of_big_int n) (f x)
