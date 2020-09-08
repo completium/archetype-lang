@@ -245,8 +245,8 @@ let generate_target model =
     |> remove_duplicate_key
     |> assign_loop_label
     |> remove_letin_from_expr
-    |> remove_storage_field_in_function
     |> remove_asset
+    |> remove_storage_field_in_function
     |> remove_high_level_model
     |> normalize_storage
     |> remove_constant
