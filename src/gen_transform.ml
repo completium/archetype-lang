@@ -4648,24 +4648,24 @@ let remove_high_level_model (model : model)  =
         mk_mterm (Mlistfold(t, iid, iaccu, f l, empty, b)) tl
       end
     | Miter (i, a, b, c, lbl) -> begin
-      let a = f a in
-      let b = f b in
-      let c = f c in
+        let a = f a in
+        let b = f b in
+        let c = f c in
 
-      let vi = mk_mvar i a.type_ in
+        let vi = mk_mvar i a.type_ in
 
-      let ie = dumloc "_e" in
-      let ve = mk_mvar ie b.type_ in
+        let ie = dumloc "_e" in
+        let ve = mk_mvar ie b.type_ in
 
-      let vinc : mterm = mk_mterm (Mplus(vi, mk_int 1)) tint in
-      let inc  : mterm = mk_mterm (Massign(ValueAssign, tint, Avar i, vinc)) tunit in
-      let body : mterm = mk_mterm (Mseq([c; inc])) tunit |> flat_sequence_mterm in
-      let cond : mterm = mk_mterm (Mle (vi, ve)) tbool in
-      let loop : mterm = mk_mterm (Mwhile (cond, body, lbl)) tunit in
+        let vinc : mterm = mk_mterm (Mplus(vi, mk_int 1)) tint in
+        let inc  : mterm = mk_mterm (Massign(ValueAssign, tint, Avar i, vinc)) tunit in
+        let body : mterm = mk_mterm (Mseq([c; inc])) tunit |> flat_sequence_mterm in
+        let cond : mterm = mk_mterm (Mle (vi, ve)) tbool in
+        let loop : mterm = mk_mterm (Mwhile (cond, body, lbl)) tunit in
 
-      loop
-      |> mk_letin i  a
-      |> mk_letin ie b
+        loop
+        |> mk_letin i  a
+        |> mk_letin ie b
       end
     | _ -> map_mterm (aux ctx) mt
   in
@@ -4759,10 +4759,42 @@ let remove_constant (model : model) : model =
     aux mt
   in
 
+  let map = MapString.empty in
+
+  let map, decls = List.fold_left (fun (map, dns) dn ->
+      match dn with
+      | Dvar dvar when dvar.constant && Option.is_some(dvar.default)-> (MapString.add (unloc dvar.name) (Option.get dvar.default) map, dns)
+      | _ -> (map, dns @ [dn])) (map, []) model.decls in
+
   let map, storage = List.fold_left (fun (map, l) si ->
       match si.model_type with
       | MTconst -> (MapString.add (unloc si.id) si.default map, l)
-      | _ -> (map, l @ [si])) (MapString.empty, []) model.storage in
+      | _ -> (map, l @ [si])) (map, []) model.storage in
   { model with
+    decls = decls;
     storage = storage }
   |> map_mterm_model (for_mterm map)
+
+
+let remove_state (model : model) : model =
+  let state = "_state" in
+  let dstate = dumloc state in
+  let tstate = tint in
+
+  let for_mterm _ (mt : mterm) : mterm =
+    let rec aux (mt : mterm) : mterm =
+      match mt.node with
+      | Mvar (_, Vstate, _, _) -> mk_mvar dstate tint
+      | Massign (_, _, Astate, v)  -> {mt with node = Massign (ValueAssign, tint, Avarstore dstate, v)}
+      | _ -> map_mterm aux mt
+    in
+    aux mt
+  in
+
+  let storage = List.fold_left (fun l si ->
+      match si.model_type with
+      | MTstate -> l @ [{si with id = dstate; model_type = MTvar; typ = tstate; }]
+      | _ -> l @ [si]) [] model.storage in
+  { model with
+    storage = storage }
+  |> map_mterm_model for_mterm

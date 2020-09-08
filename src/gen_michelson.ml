@@ -61,7 +61,7 @@ let to_ir (model : M.model) : T.ir =
       match t with
       | Tasset _   -> assert false
       | Tenum _    -> assert false
-      | Tstate     -> assert false
+      | Tstate     -> T.Tint
       | Tbuiltin b -> begin
           match b with
           | Bunit      -> T.Tunit
@@ -347,14 +347,14 @@ let to_ir (model : M.model) : T.ir =
 
     | Massign (_op, _, Avar id, v)                 -> T.Iassign (unloc id, f v)
     | Massign (_op, _, Avarstore id, v)            -> T.Iassign (unloc id, f v)
-    | Massign (_op, _, Aasset (_an, _fn, _k), _v)  -> emit_error TODO
+    | Massign (_op, _, Aasset (_an, _fn, _k), _v)  -> emit_error (UnsupportedTerm ("Massign: Aasset"))
     | Massign (_op, _, Arecord (_rn, fn, {node = Mvar (id, _, _, _); type_ = t}), v) -> begin
         let s = get_record_size t in
         let n = get_record_index t (unloc fn) in T.IassignRec (unloc id, s, n, f v)
       end
     | Massign (_op, _, Arecord _, _v)              -> T.iskip
-    | Massign (_op, _, Astate, _x)                 -> emit_error TODO
-    | Massign (_op, _, Aassetstate (_an, _k), _v)  -> emit_error TODO
+    | Massign (_op, _, Astate, _x)                 -> emit_error (UnsupportedTerm ("Massign: Astate"))
+    | Massign (_op, _, Aassetstate (_an, _k), _v)  -> emit_error (UnsupportedTerm ("Massign: Aassetstate"))
     | Massign (_op, _, Aoperations, v)             -> T.Iassign (operations, f v)
 
     (* control *)
