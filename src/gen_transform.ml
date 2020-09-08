@@ -72,6 +72,24 @@ let emit_error (lc, error : Location.t * error_desc) =
   let pos : Position.t list = [location_to_position lc] in
   Error.error_alert pos str (fun _ -> ())
 
+let prune_formula (model : model) : model =
+  let empty_sec = mk_security () in
+  let empty_spec = mk_specification () in
+
+  let prune_decl = function
+    | Dvar dvar       -> Dvar   {dvar with invariants = []}
+    | Dasset dasset   -> Dasset {dasset with invariants = [] }
+    | Denum denum     -> Denum  {denum with values = List.map (fun (ei : enum_item) -> {ei with invariants = []}) denum.values }
+    | Drecord drecord -> Drecord drecord
+  in
+  let prune_function_ (f : function__) : function__ = { f with spec = None; }
+  in
+  { model with
+    decls = List.map prune_decl model.decls;
+    functions = List.map prune_function_ model.functions;
+    specification = empty_spec;
+    security = empty_sec
+  }
 
 let flat_sequence_mterm (mt : mterm) =
   let rec aux (mt : mterm) : mterm =

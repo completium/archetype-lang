@@ -220,6 +220,7 @@ let generate_target model =
   | Michelson
   | MichelsonStorage ->
     model
+    |> prune_formula
     |> process_multi_keys
     |> replace_col_by_key_for_ckfield
     |> process_asset_state
