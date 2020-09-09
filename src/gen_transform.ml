@@ -4328,18 +4328,19 @@ let remove_asset (model : model) : model =
                 | _ -> assert false
               in
 
-              let crit = List.fold_right (fun (id, sk) accu ->
-                  let vl = get_val vxins vvb   id in
-                  let vr = get_val vkid  vvid  id in
-                  let gt = mk_mterm (Mgt (vl, vr)) tbool in
-                  let lt = mk_mterm (Mlt (vl, vr)) tbool in
-                  let mk_if c t e = mk_mterm (Mif (c, t, Some e)) tint in
-                  let one = mk_int 1 in
-                  let mone = mk_int (-1) in
-                  match sk with
-                  | SKasc  -> mk_if gt one (mk_if lt mone accu)
-                  | SKdesc -> mk_if lt one (mk_if gt mone accu)
-                ) crits (mk_int 0) |> add_letin
+              let crit =
+                let zero = mk_int 0 in
+                let one = mk_int 1 in
+                List.fold_right (fun (id, sk) accu ->
+                    let vl = get_val vxins vvb   id in
+                    let vr = get_val vkid  vvid  id in
+                    let gt = mk_mterm (Mgt (vl, vr)) tbool in
+                    let lt = mk_mterm (Mlt (vl, vr)) tbool in
+                    let mk_if c t e = mk_mterm (Mexprif (c, t, e)) tint in
+                    match sk with
+                    | SKasc  -> mk_if gt one accu
+                    | SKdesc -> mk_if lt one accu
+                  ) crits zero |> add_letin
               in
 
               let cond = mk_mterm (Mgt (crit, mk_int 0)) tbool in
