@@ -742,9 +742,39 @@ let to_ir (model : M.model) : T.ir =
       name, args, body
     in
 
+    let get_extra_args (mt : M.mterm) : (ident * T.type_) list =
+      let rec aux accu (mt : M.mterm) : (ident * T.type_) list =
+        let doit accu mt b : (ident * T.type_) list  = let fu = get_builtin_fun b in (fu.name, T.tlambda fu.targ fu.tret)::(M.fold_term aux accu mt) in
+
+
+
+        match mt.node with
+        | Mmax _                  -> (doit accu mt (T.Bmax (to_type mt.type_)))
+        | Mmin _                  -> (doit accu mt (T.Bmin (to_type mt.type_)))
+        | Mfloor _                -> (doit accu mt (T.Bfloor                ))
+        | Mceil  _                -> (doit accu mt (T.Bceil                 ))
+        | Mlistcontains (t, _, _) -> (doit accu mt (T.BlistContains (to_type t)))
+        | Mlistnth (t, _, _)      -> (doit accu mt (T.BlistNth (to_type t)))
+        | Mtostring (t, _)        -> (doit accu mt (T.Btostring (to_type t) ))
+
+        | Mrateq _
+        | Mratcmp _                          -> (doit accu mt (T.Bratcmp   ))
+        | Mratarith ((Rplus | Rminus), _, _) -> (doit accu mt (T.Brataddsub))
+        | Mratarith (Rmult, _, _)            -> (doit accu mt (T.Bratmul   ))
+        | Mratarith (Rdiv, _, _)             -> (doit accu mt (T.Bratdiv   ))
+        | Mratuminus _                       -> (doit accu mt (T.Bratcmp   ))
+        | Mrattez _                          -> (doit accu mt (T.Brattez   ))
+        | Mratdur _                          -> (doit accu mt (T.Bratdur   ))
+
+        | _ -> M.fold_term aux accu mt
+      in
+      aux [] mt
+    in
+
     let for_fs_fun env (fs : M.function_struct) ret : T.func =
       let tret = to_type ret in
       let name, args, body = for_fs env fs in
+      let args = args @ (get_extra_args fs.body) in
       let targ = to_one_type (List.map snd args) in
       T.mk_func name targ tret (T.Concrete (args, body))
     in

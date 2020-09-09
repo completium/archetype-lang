@@ -316,19 +316,20 @@ let mk_michelson storage parameter code =
 
 (* -------------------------------------------------------------------- *)
 
-let toperation  = mk_type Toperation
-let tunit       = mk_type Tunit
-let tstring     = mk_type Tstring
-let tnat        = mk_type Tnat
-let tint        = mk_type Tint
-let tbool       = mk_type Tbool
-let tmutez      = mk_type Tmutez
-let tpair t1 t2 = mk_type (Tpair (t1, t2))
-let tor t1 t2   = mk_type (Tor (t1, t2))
-let trat        = tpair tint tnat
-let tlist t     = mk_type (Tlist t)
-let tset t      = mk_type (Tlist t)
-let tmap t1 t2  = mk_type (Tmap (t1, t2))
+let toperation    = mk_type Toperation
+let tunit         = mk_type Tunit
+let tstring       = mk_type Tstring
+let tnat          = mk_type Tnat
+let tint          = mk_type Tint
+let tbool         = mk_type Tbool
+let tmutez        = mk_type Tmutez
+let tpair t1 t2   = mk_type (Tpair (t1, t2))
+let tor t1 t2     = mk_type (Tor (t1, t2))
+let trat          = tpair tint tnat
+let tlist t       = mk_type (Tlist t)
+let tset t        = mk_type (Tlist t)
+let tmap t1 t2    = mk_type (Tmap (t1, t2))
+let tlambda t1 t2 = mk_type (Tlambda (t1, t2))
 
 (* -------------------------------------------------------------------- *)
 

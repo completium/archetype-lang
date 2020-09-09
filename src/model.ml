@@ -945,6 +945,8 @@ let tnat  = Tbuiltin Bnat
 let tint  = Tbuiltin Bint
 let tstring = Tbuiltin Bstring
 let toption t = Toption t
+let ttuple l = Ttuple l
+let trat  = ttuple [tint; tnat]
 
 let mk_bool x = mk_mterm (Mbool x) tbool
 let mk_string x = mk_mterm (Mstring x) tstring
