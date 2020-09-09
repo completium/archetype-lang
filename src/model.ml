@@ -945,11 +945,12 @@ let tint  = Tbuiltin Bint
 let tstring = Tbuiltin Bstring
 let toption t = Toption t
 
+let mk_bool x = mk_mterm (Mbool x) tbool
 let mk_string x = mk_mterm (Mstring x) tstring
 let mk_nat x = mk_mterm (Mnat (Big_int.big_int_of_int x)) tnat
-let mk_int x = mk_mterm (Mint (Big_int.big_int_of_int x)) tint
+let mk_bint x = mk_mterm (Mint x) tint
+let mk_int x = mk_bint (Big_int.big_int_of_int x)
 let unit = mk_mterm (Munit) tunit
-
 let mtrue = mk_mterm (Mbool true) tbool
 let mfalse = mk_mterm (Mbool false) tbool
 
@@ -4175,7 +4176,48 @@ end = struct
           | false -> mk_mterm (Mint res) (Tbuiltin Bint)
         in
 
+        let cmp_op op lhs rhs =
+          let lhs = aux lhs in
+          let rhs = aux rhs in
+
+          let r =
+            match lhs.node, rhs.node with
+            | Mbool b1,     Mbool b2   -> Bool.compare b1 b2
+
+            | Mnat n1,     Mnat n2
+            | Mnat n1,     Mint n2
+            | Mint n1,     Mnat n2
+            | Mint n1,     Mint n2
+            | Mcurrency (n1, Utz), Mcurrency (n2, Utz)
+            | Mtimestamp n1, Mtimestamp n2 -> Big_int.compare_big_int n1 n2
+
+            | Maddress s1,  Maddress s2
+            | Mbytes s1,    Mbytes s2
+            | Mstring s1,   Mstring  s2 -> String.compare s1 s2
+
+            | Mdate d1,     Mdate d2 -> Big_int.compare_big_int (Core.date_to_timestamp d1) (Core.date_to_timestamp d2)
+            | Mduration d1, Mduration d2 -> Big_int.compare_big_int (Core.duration_to_timestamp d1) (Core.duration_to_timestamp d2)
+            | _ -> assert false
+          in
+          let b =
+            match op with
+            | `Eq -> r = 0
+            | `Nq -> r <> 0
+            | `Gt -> r > 0
+            | `Ge -> r >= 0
+            | `Lt -> r < 0
+            | `Le -> r <= 0
+          in
+          mk_bool b
+        in
+
         match mt.node, mt.type_ with
+        | Mequal (_, lhs, rhs), _  -> cmp_op `Eq lhs rhs
+        | Mnequal (_, lhs, rhs), _ -> cmp_op `Nq lhs rhs
+        | Mgt (lhs, rhs), _        -> cmp_op `Gt lhs rhs
+        | Mge (lhs, rhs), _        -> cmp_op `Ge lhs rhs
+        | Mlt (lhs, rhs), _        -> cmp_op `Lt lhs rhs
+        | Mle (lhs, rhs), _        -> cmp_op `Le lhs rhs
         | Mplus   (a, b), Tbuiltin Bstring -> begin
             let a = extract_string a in
             let b = extract_string b in
@@ -4218,6 +4260,24 @@ end = struct
             let res = Big_int.eq_big_int (Big_int.mult_big_int num1 denom2) (Big_int.mult_big_int num2 denom1) in
             mk_mterm (Mbool res) (Tbuiltin Bbool)
           end
+
+        | Mratcmp (op, a, b), _ -> begin
+            let num1, denom1 = extract_rat (aux a) in
+            let num2, denom2 = extract_rat (aux b) in
+            let a = Big_int.mult_big_int num1 denom2 in
+            let b = Big_int.mult_big_int num2 denom1 in
+            let res =
+              begin
+                match op with
+                | Gt -> Big_int.gt_big_int a b
+                | Ge -> Big_int.ge_big_int a b
+                | Lt -> Big_int.lt_big_int a b
+                | Le -> Big_int.le_big_int a b
+              end
+            in
+            mk_bool res
+          end
+
         | Mratarith (op, a, b), _ -> begin
             let num1, denom1 = extract_rat (aux a) in
             let num2, denom2 = extract_rat (aux b) in
@@ -4227,26 +4287,12 @@ end = struct
             | Rmult  -> mk_rat (Big_int.mult_big_int num1 num2) (Big_int.mult_big_int denom1 denom2)
             | Rdiv   -> mk_rat (Big_int.mult_big_int num1 denom2) (Big_int.mult_big_int num2 denom1)
           end
+
         | Mratuminus x, _ -> begin
             let num, denom = extract_rat (aux x) in
             mk_rat (neg num) denom
           end
 
-        (* | Mratcmp (op, _a, _b) ->
-           begin
-            (* let num1, denom1 = extract_rat a in
-               let num2, denom2 = extract_rat b in *)
-            let res =
-              begin
-                match op with
-                | Gt
-                | Ge
-                | Lt
-                | Le -> false (* TODO *)
-              end
-            in
-            mk_mterm (Mbool res) (Tbuiltin Bbool)
-           end *)
         | Mrattez (coef, c), _ ->
           begin
             let coef = aux coef in
@@ -4262,6 +4308,27 @@ end = struct
                 let num = extract_big_int num in
                 let denom = extract_big_int denom in
                 f num denom v cur
+              end
+            | _ -> begin
+                Format.eprintf "%a@." pp_mterm mt;
+                assert false
+              end
+          end
+
+        | Mratdur (lhs, rhs), _ -> begin
+            let lhs = aux lhs in
+            let rhs = aux rhs    in
+            let f num denom v =
+              let res = Big_int.div_big_int (Big_int.mult_big_int num v) denom in
+              mk_bint res
+            in
+            match lhs.node, rhs.node with
+            | Mrational (num, denom), Mint v -> f num denom v
+            | Mtuple [num; denom], Mint v ->
+              begin
+                let num = extract_big_int num in
+                let denom = extract_big_int denom in
+                f num denom v
               end
             | _ -> begin
                 Format.eprintf "%a@." pp_mterm mt;
