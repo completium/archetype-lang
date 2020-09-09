@@ -309,6 +309,8 @@ let to_ir (model : M.model) : T.ir =
       end
   in
 
+  let extra_args : (ident * (ident * T.type_) list) list ref  = ref [] in
+
   let rec mterm_to_intruction env (mtt : M.mterm) : T.instruction =
     let f = mterm_to_intruction env in
     let ft = to_type in
@@ -351,7 +353,14 @@ let to_ir (model : M.model) : T.ir =
     | Mletin ([id], v, _, b, _) -> let is_unit = match mtt.type_ with Tunit -> true | _ -> false in T.IletIn (unloc id, f v, f b, is_unit)
     | Mletin _                  -> emit_error (UnsupportedTerm ("Mletin"))
     | Mdeclvar _                -> emit_error (UnsupportedTerm ("Mdeclvar"))
-    | Mapp (e, args)            -> T.Icall (unloc e, List.map f args)
+    | Mapp (e, args)            -> begin
+        let eargs =
+          match List.assoc_opt (unloc e) !extra_args with
+          | Some l -> List.map (fun (id, _t) -> T.Ivar id) l
+          | _ -> []
+        in
+        T.Icall (unloc e, List.map f args @ eargs)
+      end
 
     (* assign *)
 
@@ -744,9 +753,10 @@ let to_ir (model : M.model) : T.ir =
 
     let get_extra_args (mt : M.mterm) : (ident * T.type_) list =
       let rec aux accu (mt : M.mterm) : (ident * T.type_) list =
-        let doit accu mt b : (ident * T.type_) list  = let fu = get_builtin_fun b in (fu.name, T.tlambda fu.targ fu.tret)::(M.fold_term aux accu mt) in
-
-
+        let doit accu mt b : (ident * T.type_) list  =
+          let fu = get_builtin_fun b in
+          (fu.name, T.tlambda fu.targ fu.tret)::(M.fold_term aux accu mt)
+        in
 
         match mt.node with
         | Mmax _                  -> (doit accu mt (T.Bmax (to_type mt.type_)))
@@ -768,13 +778,15 @@ let to_ir (model : M.model) : T.ir =
 
         | _ -> M.fold_term aux accu mt
       in
-      aux [] mt
+      aux [] mt |> List.dedup
     in
 
     let for_fs_fun env (fs : M.function_struct) ret : T.func =
       let tret = to_type ret in
       let name, args, body = for_fs env fs in
-      let args = args @ (get_extra_args fs.body) in
+      let eargs = get_extra_args fs.body in
+      extra_args := (unloc fs.name, eargs)::!extra_args;
+      let args = args @ eargs in
       let targ = to_one_type (List.map snd args) in
       T.mk_func name targ tret (T.Concrete (args, body))
     in
@@ -784,12 +796,11 @@ let to_ir (model : M.model) : T.ir =
       T.mk_entry name args body
     in
 
-    List.fold_right (fun (x : M.function__) (funs, entries) ->
+    List.fold_left (fun (funs, entries) (x : M.function__) ->
         match x.node with
-        | Entry fs -> (funs, (for_fs_entry env fs)::entries)
-        | Function (fs, ret) -> ((for_fs_fun env fs ret)::funs, entries) ) model.functions ([], [])
+        | Entry fs -> (funs, entries @ [for_fs_entry env fs])
+        | Function (fs, ret) -> funs @ [for_fs_fun env fs ret], entries) ([], []) model.functions
   in
-
   let annot a (t : T.type_) = { t with annotation = Some a} in
   let l = List.map (fun (x, y, _) -> (x, y)) l in
   let parameter : T.type_ =
@@ -1156,17 +1167,12 @@ let to_michelson (ir : T.ir) : T.michelson =
     let unfold = foldi (fun x -> T.UNPAIR::T.SWAP::x ) [] in
 
     let get_funs _ : T.code list * ident list =
-      let _env, funs = List.fold_left (
-          fun (env, funs) (x : T.func) ->
+      let funs = List.map (
+          fun (x : T.func) ->
             let code =
               match x.body with
               | Concrete (args, body) ->
-                let largs =
-                  match args with
-                  (* | [] -> ["_"; "_"] *)
-                  | _ -> (args |> List.map fst |> List.rev)
-                in
-                let env = mk_env ~vars:(largs @ env.vars) () in
+                let env = mk_env ~vars:(args |> List.map fst |> List.rev) () in
                 let nb_args = List.length args in
                 let nb_as = nb_args - 1 in
                 let unfold_args = unfold nb_as in
@@ -1176,8 +1182,8 @@ let to_michelson (ir : T.ir) : T.michelson =
                 let code, _ = instruction_to_code env body in unfold_args @ [res] @ code::es
               | Abstract b    -> [concrete_michelson b]
             in
-            add_var_env env x.name, (funs @ [(T.LAMBDA (x.targ, x.tret, code ), x.name)])
-        ) (mk_env (), []) ir.funs
+            T.LAMBDA (x.targ, x.tret, code ), x.name
+        ) ir.funs
       in
       List.split funs
     in
