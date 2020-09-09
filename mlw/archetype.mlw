@@ -1260,6 +1260,9 @@ module Collection
   = N.get k c.content
 
   (* ------------------------------------------------------------------------ *)
+  axiom mem_get_key : forall a c. mem a c -> get (keyt a) c = Some a
+
+  (* ------------------------------------------------------------------------ *)
   let function contains (k : tk) (c : collection) : bool
   ensures { result = true -> exists e. mem e c /\ keyt e = k }
   ensures { result = false -> get k c = None }
@@ -1288,6 +1291,7 @@ module Collection
   ensures { forall r. mem r result <-> r = a \/ mem r c }
   ensures { forall k. k <> keyt a -> get k c = get k result }
   ensures { get (keyt a) result = Some a }
+  ensures { card result = card c + 1 }
   = mk (N.add a c.content)
 
   (* ------------------------------------------------------------------------ *)
@@ -1299,12 +1303,18 @@ module Collection
   mk (N.remove k c.content)
 
   (* ------------------------------------------------------------------------ *)
+  axiom card_remove : forall k c.
+  not (contains k c) -> 
+  card (remove k c) = card c - 1
+
+  (* ------------------------------------------------------------------------ *)
   let function set (k : tk) (a : t) (c : collection) : collection
   requires { keyt a = k }
   requires { contains k c }
   ensures { get k result = Some a }
   ensures { forall i. i <> k -> get i result = get i c }
   ensures { forall x. mem x result -> x = a \/ (a <> x /\ mem x c) }
+  ensures { card result = card c }
   =
   let rec internal_set (l : list t) : list t
   requires { key_injective l }
@@ -1337,6 +1347,9 @@ module Collection
 
   (* ------------------------------------------------------------------------ *)
   val function vcontains tk view : bool
+
+  (* ------------------------------------------------------------------------ *)
+  val function vcard view : int
 
   (* ------------------------------------------------------------------------ *)
   let function list_to_view (l : list t) : view
@@ -1387,6 +1400,7 @@ module Collection
   ensures { forall k. vcontains k result -> exists e. get k c = Some e }
   ensures { forall e. mem e c -> vcontains (keyt e) result }
   ensures { K.sorted (velts result) }
+  ensures { vcard result = card c }
   (* TODO dedicated sort predicate that does not use velts ? *)
   =
   list_to_view (N.elts c.content)
