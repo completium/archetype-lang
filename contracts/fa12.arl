@@ -93,6 +93,9 @@ specification entry %transfer (from_ : address, to_ : address, value : nat) {
         after_ledger_to.tokens = value
     otherwise false // to_ ledger asset exists after transfer
   }
+  /*postcondition transfer_p3_0 {
+    from_ = to_ -> ledger = before.ledger
+  }*/
   postcondition transfer_p3 { // other ledger assets are unchanged
     forall tokenholder in ledger,
       tokenholder.holder <> from_ ->
