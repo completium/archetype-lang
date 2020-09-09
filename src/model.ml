@@ -2182,15 +2182,15 @@ let fold_map_term
 
   | Mif (c, t, e) ->
     let ce, ca = f accu c in
-    let ti, ta = f ca t in
-    let ei, ea =
+    let te, ta = f ca t in
+    let ee, ea =
       match e with
       | Some v ->
         let a, b = f ta v in
         Some a, b
-      | None -> None, ca
+      | None -> None, ta
     in
-    g (Mif (ce, ti, ei)), ea
+    g (Mif (ce, te, ee)), ea
 
   | Mmatchwith (e, l) ->
     let ee, ea = f accu e in

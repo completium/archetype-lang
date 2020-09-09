@@ -3065,37 +3065,7 @@ let eval_storage (model : model) : model =
     storage = List.map (for_storage_item map) model.storage;
   }
 
-  (* let extract_storage_var map (fs : function_struct) : mterm * (argument list * mterm list MapString.t) =
-    let fs_name = unloc fs.name in
-
-      let add accu id (v : mterm) =
-        if List.exists (fun (c, _, _) -> String.equal (unloc id) (unloc c) ) accu
-        then accu, map
-        else
-          let args = if MapString.mem fs_name map then MapString.find fs_name map else [] in
-          ((id, v.type_, None)::accu |> List.dedup, (MapString.add fs_name (v::args) map))
-      in
-
-    let rec aux (accu, map) (mt : mterm) : mterm * (argument list * mterm list MapString.t) =
-      let g (x : mterm__node) : mterm = { mt with node = x; } in
-
-
-      match mt.node with
-      | Mvar (id, (Vstorecol | Vstorevar), d, t) -> begin
-          let a = add accu id mt in
-          g (Mvar (id, Vparam, d, t)), a
-        end
-      | _ -> fold_map_term g aux (accu, map) mt
-    in
-    aux ([], map) fs.body
-  in *)
 let remove_storage_field_in_function (model : model) : model =
-
-  (* let print_map map =
-     if MapString.is_empty map
-     then Format.printf "map empty !@."
-     else MapString.iter (fun k v -> Format.printf "%s : [%a]@." k (Printer_tools.pp_list "; " Printer_model.pp_mterm) v) map
-     in *)
 
   let extract_storage_var map (fs : function_struct) : mterm * (argument list * mterm list MapString.t) =
     let fs_name = unloc fs.name in
@@ -3109,7 +3079,7 @@ let remove_storage_field_in_function (model : model) : model =
             then accu, map
             else
               let args = if MapString.mem fs_name map then MapString.find fs_name map else [] in
-              ((id, mt.type_, None)::accu, (MapString.add fs_name (mt::args) map))
+              ((id, mt.type_, None)::accu |> List.dedup, (MapString.add fs_name (mt::args) map))
           in
           g (Mvar (id, Vparam, d, t)), a
         end
