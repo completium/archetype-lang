@@ -6,6 +6,8 @@ open Printer_tools
 module M = Model
 module T = Michelson
 
+module MapString = Map.Make(String)
+
 exception Anomaly of string
 
 type error_desc =
@@ -751,6 +753,8 @@ let to_ir (model : M.model) : T.ir =
       name, args, body
     in
 
+    let mapargs : 'a MapString.t ref = ref MapString.empty in
+
     let get_extra_args (mt : M.mterm) : (ident * T.type_) list =
       let rec aux accu (mt : M.mterm) : (ident * T.type_) list =
         let doit accu mt b : (ident * T.type_) list  =
@@ -776,18 +780,26 @@ let to_ir (model : M.model) : T.ir =
         | Mrattez _                          -> (doit accu mt (T.Brattez   ))
         | Mratdur _                          -> (doit accu mt (T.Bratdur   ))
 
+        | Mapp (fid, _)                   ->
+          let fid  = unloc fid in
+          let targs, tret = MapString.find fid !mapargs in
+          let eargs = match List.assoc_opt fid !extra_args with None -> [] | Some l -> l in
+          (fid, T.tlambda targs tret)::(eargs @ M.fold_term aux accu mt) |> List.dedup
+
         | _ -> M.fold_term aux accu mt
       in
       aux [] mt |> List.dedup
     in
 
     let for_fs_fun env (fs : M.function_struct) ret : T.func =
+    let fid = unloc fs.name in
       let tret = to_type ret in
       let name, args, body = for_fs env fs in
       let eargs = get_extra_args fs.body in
-      extra_args := (unloc fs.name, eargs)::!extra_args;
+      extra_args := (fid, eargs)::!extra_args;
       let args = args @ eargs in
       let targ = to_one_type (List.map snd args) in
+      mapargs := MapString.add fid (targ, tret) !mapargs;
       T.mk_func name targ tret (T.Concrete (args, body))
     in
 

@@ -1,0 +1,19 @@
+archetype test_fun6
+
+variable res : rational = 0.0
+
+function h (r : rational) : rational {
+  return (0.5 * r)
+}
+
+function g (r : rational) : rational {
+  return h(r)
+}
+
+function f (r : rational) : rational {
+  return g(r)
+}
+
+entry e() {
+  res := f(0.3)
+}

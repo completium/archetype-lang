@@ -1,0 +1,19 @@
+archetype test_fun5
+
+variable res : nat = 0
+
+function h (n : nat) : nat {
+  return n
+}
+
+function g (n : nat) : nat {
+  return h(n)
+}
+
+function f (n : nat) : nat {
+  return g(n)
+}
+
+entry e() {
+  res := f(1)
+}
