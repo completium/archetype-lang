@@ -893,7 +893,6 @@ let to_michelson (ir : T.ir) : T.michelson =
           | [] -> T.UNIT, inc_env env
           | _ -> fold env args
         in
-
         T.SEQ [fid; cargs; T.EXEC], dec_env env
       end
 
@@ -1131,7 +1130,12 @@ let to_michelson (ir : T.ir) : T.michelson =
             let code =
               match x.body with
               | Concrete (args, body) ->
-                let env = mk_env ~vars:((args |> List.map fst |> List.rev) @ env.vars) () in
+                let largs =
+                  match args with
+                  (* | [] -> ["_"; "_"] *)
+                  | _ -> (args |> List.map fst |> List.rev)
+                in
+                let env = mk_env ~vars:(largs @ env.vars) () in
                 let nb_args = List.length args in
                 let nb_as = nb_args - 1 in
                 let unfold_args = unfold nb_as in

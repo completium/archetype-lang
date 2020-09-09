@@ -813,12 +813,12 @@ let pp_mterm fmt (mt : mterm) =
         f c
 
     | Msetfold (t, ix, ia, c, a, b) ->
-      Format.fprintf fmt "set_%a_fold (%a, %a, (%a, %a) -> %a)"
+      Format.fprintf fmt "set_%a_fold (%a, %a, (%a, %a) ->@\n  @[%a@])"
         pp_type t
         f c
         f a
-        pp_id ia
         pp_id ix
+        pp_id ia
         f b
 
 
@@ -852,12 +852,12 @@ let pp_mterm fmt (mt : mterm) =
         f l
 
     | Mlistfold (t, ix, ia, c, a, b) ->
-      Format.fprintf fmt "list_%a_fold (%a, %a, (%a, %a) -> %a)"
+      Format.fprintf fmt "list_%a_fold (%a, %a, (%a, %a) ->@\n  @[%a@])"
         pp_type t
         f c
         f a
-        pp_id ia
         pp_id ix
+        pp_id ia
         f b
 
     (* map api expression *)
@@ -893,13 +893,13 @@ let pp_mterm fmt (mt : mterm) =
         f c
 
     | Mmapfold (t, ik, iv, ia, c, a, b) ->
-      Format.fprintf fmt "map_%a_fold (%a, %a, ((%a, %a), %a) -> %a)"
+      Format.fprintf fmt "map_%a_fold (%a, %a, (%a, (%a, %a)) ->@\n  @[%a@])"
         pp_type t
         f c
         f a
+        pp_id ia
         pp_id ik
         pp_id iv
-        pp_id ia
         f b
 
     (* builtin functions *)

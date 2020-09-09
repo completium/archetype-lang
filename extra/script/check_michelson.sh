@@ -262,6 +262,7 @@ PASSED="\
 ./tests/passed/test_iter.arl \
 ./tests/passed/test_iter2.arl \
 ./tests/passed/test_fun0.arl \
+./tests/passed/test_fun1.arl \
 "
 
 RET=0
