@@ -76,7 +76,7 @@ specification entry %transfer (from_ : address, to_ : address, value : nat) {
       otherwise true;
   }
   // LEDGER ASSET
-  postcondition p1 { // effect on from_ nbtokens
+  postcondition transfer_p1 { // effect on from_ nbtokens
     from_ <> to_ ->
     let some before_ledger_from = before.ledger[from_] in
       let some after_ledger_from = ledger[from_] in
@@ -84,16 +84,16 @@ specification entry %transfer (from_ : address, to_ : address, value : nat) {
       otherwise true
     otherwise true
   }
-  postcondition p2 { // effect on to_ nbtokens
+  postcondition transfer_p2 { // effect on to_ nbtokens
     from_ <> to_ ->
     let some after_ledger_to = ledger[to_] in
       let some before_ledger_to = before.ledger[to_] in
         after_ledger_to.tokens = before_ledger_to.tokens + value
       otherwise
         after_ledger_to.tokens = value
-    otherwise true
+    otherwise false // to_ ledger asset exists after transfer
   }
-  postcondition p3 { // other ledger assets are unchanged
+  postcondition transfer_p3 { // other ledger assets are unchanged
     forall tokenholder in ledger,
       tokenholder.holder <> from_ ->
       tokenholder.holder <> to_ ->
@@ -101,21 +101,21 @@ specification entry %transfer (from_ : address, to_ : address, value : nat) {
         tokenholder = before_th
       otherwise true
   }
-  postcondition p4 { // no ledger asset is removed
+  postcondition transfer_p4 { // no ledger asset is removed
     removed.ledger.isempty()
   }
-  postcondition p5 { // added ledger asset may be to_
+  postcondition transfer_p5 { // added ledger asset may be to_
     forall tokenholder in added.ledger,
       tokenholder.holder = to_
   }
-  postcondition p6 { // number of added asset is one
+  postcondition transfer_p6 { // number of added asset may be one
     let some before_to = before.ledger[to_] in
       true
     otherwise
       ledger.count() = before.ledger.count() + 1
   }
   // ALLOWANCE ASSET
-  postcondition p7 { // effect on allowance
+  postcondition transfer_p7 { // effect on allowance
     caller <> from_ ->
     let some before_from_caller = before.allowance[(from_,caller)] in
       let some after_from_caller = allowance[(from_,caller)] in
@@ -124,14 +124,45 @@ specification entry %transfer (from_ : address, to_ : address, value : nat) {
       otherwise true
     otherwise true
   }
-  postcondition p8 { // other allowance assets are unchanged
+  postcondition transfer_p8 { // other allowance assets are unchanged
     forall a in allowance,
       a.addr_owner <> from_ and a.addr_spender <> caller ->
-      let some before_a = before.allowance[(from_,caller)] in
+      let some before_a = before.allowance[(a.addr_owner,a.addr_spender)] in
         a = before_a
       otherwise true
   }
-  postcondition p9 { // no allowance is added or removed
+  postcondition transfer_p9 { // no allowance is added or removed
     removed.ledger.isempty() and added.ledger.isempty()
+  }
+}
+
+specification entry approve(spender : address, value : nat) {
+  fails {
+    f2 with (msg : (string * nat)) :
+      let some allowance_caller_spender = allowance[(caller,spender)] in
+        value > 0 and
+        allowance_caller_spender.amount > 0 and
+        msg = ("UnsafeAllowanceChange", allowance_caller_spender.amount) 
+      otherwise true; 
+  }
+  postcondition approve_p1 { // effect on allowance asset
+    let some allowance_caller_spender = allowance[(caller,spender)] in
+      allowance_caller_spender.amount = value
+    otherwise false // (caller,spender) allowance exists after approve
+  }
+
+  postcondition approve_p2 { // other allowance assets are unchanged
+    forall a in allowance,
+      (a.addr_owner, a.addr_spender) <> (caller, spender) ->
+      let some before_a = before.allowance[(a.addr_owner, a.addr_spender)] in
+        a = before_a
+      otherwise false // no other allowance asset is added  
+  }
+
+  postcondition approve_p3 { // number of added allowance may be 1
+    let some allowance_caller_spender = before.allowance[(caller,spender)] in
+      true
+    otherwise
+      allowance.count() = before.allowance.count() + 1
   }
 }

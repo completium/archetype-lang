@@ -1196,6 +1196,7 @@ let mk_coll m (r : M.asset) =
            Cval  ("vmk" |> dl, (String.capitalize_ascii (mk_view_id asset))^".mk" |> dl);
            Cval  ("velts" |> dl, (String.capitalize_ascii (mk_view_id asset))^".elts" |> dl);
            Cval  ("vcontains" |> dl, (String.capitalize_ascii (mk_view_id asset))^".contains" |> dl);
+           Cval  ("vcard" |> dl, (String.capitalize_ascii (mk_view_id asset))^".card" |> dl);
            Ctype ("field" |> dl, loc_type (Tyasset ((mk_field_id asset)^".field")));
            Cval  ("felts" |> dl, (String.capitalize_ascii (mk_field_id asset))^".elts" |> dl);
            Cval  ("fcontains" |> dl, (String.capitalize_ascii (mk_field_id asset))^".contains" |> dl)
