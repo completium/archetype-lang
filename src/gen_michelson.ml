@@ -93,6 +93,7 @@ let to_ir (model : M.model) : T.ir =
           let lt = List.map (fun (x : M.record_field) -> x.type_) r.fields in
           to_one_type (List.map to_type lt) |> fun x -> x.node
         end
+      | Tlambda (a, r) -> Tlambda (to_type a, to_type r)
       | Tunit -> T.Tunit
       | Toperation -> T.Toperation
       | Tentrysig t -> T.Tcontract (to_type t)

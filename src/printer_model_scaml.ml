@@ -123,6 +123,8 @@ let pp_model fmt (model : model) =
         pp_type v
     | Trecord id ->
       Format.fprintf fmt "%a" pp_id id
+    | Tlambda (a, r) ->
+      Format.fprintf fmt "(%a -> %a)" pp_type a pp_type r
     | Tunit ->
       Format.fprintf fmt "unit"
     | Tstorage ->

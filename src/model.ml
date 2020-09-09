@@ -66,6 +66,7 @@ type type_ =
   | Tset of type_
   | Tmap of bool * type_ * type_
   | Trecord of lident
+  | Tlambda of type_ * type_
   | Tunit
   | Tstorage
   | Toperation
@@ -1027,6 +1028,7 @@ let rec cmp_type
   | Tset b1, Tset b2                         -> cmp_type b1 b2
   | Tmap (b1, k1, v1), Tmap (b2, k2, v2)     -> b1 = b2 && cmp_type k1 k2 && cmp_type v1 v2
   | Trecord i1, Trecord i2                   -> cmp_lident i1 i2
+  | Tlambda (a1, r1), Tlambda (a2, r2)       -> cmp_type a1 a2 && cmp_type r1 r2
   | Tunit, Tunit                             -> true
   | Tstorage, Tstorage                       -> true
   | Toperation, Toperation                   -> true
@@ -1435,6 +1437,7 @@ let map_type (f : type_ -> type_) = function
   | Tset k            -> Tset k
   | Tmap (b, k, v)    -> Tmap (b, k, f v)
   | Trecord id        -> Trecord id
+  | Tlambda (a, r)    -> Tlambda (f a, f r)
   | Tunit             -> Tunit
   | Tstorage          -> Tstorage
   | Toperation        -> Toperation
@@ -3450,6 +3453,7 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
     | Tset k            -> Tset k
     | Tmap (b, k, v)    -> Tmap (b, k, for_type v)
     | Trecord id        -> Trecord (g KIrecordname id)
+    | Tlambda (a, r)    -> Tlambda (for_type a, for_type r)
     | Tunit             -> t
     | Tstorage          -> t
     | Toperation        -> t

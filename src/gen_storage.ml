@@ -67,6 +67,7 @@ let generate_storage (model : model) : model =
       | Tset k            -> mk_mterm   (Mlitset []) (Tset k)
       | Tmap (b, k, v)    -> mk_mterm   (Mlitmap []) (Tmap (b, k, v))
       | Trecord _         -> emit_error (NoInitExprFor "record")
+      | Tlambda _         -> emit_error (NoInitExprFor "lambda")
       | Tunit             -> emit_error (NoInitExprFor "unit")
       | Tstorage          -> emit_error (NoInitExprFor "storage")
       | Toperation        -> emit_error (NoInitExprFor "operation")
