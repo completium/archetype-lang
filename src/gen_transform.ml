@@ -3083,6 +3083,14 @@ let remove_storage_field_in_function (model : model) : model =
           in
           g (Mvar (id, Vparam, d, t)), a
         end
+      | Mapp (id, _) when MapString.mem (unloc id) map -> begin
+          let aaa = MapString.find (unloc id) map in
+          let args = if MapString.mem fs_name map then MapString.find fs_name map else [] in
+          mt,
+           ((List.map (fun (mt : mterm) ->
+            ((match mt.node with Mvar(id, _, _, _) -> id | _ -> assert false), mt.type_, None) ) aaa) @
+             accu, (MapString.add fs_name (aaa @ args) map))
+        end
       | _ -> fold_map_term g aux (accu, map) mt
     in
     aux ([], map) fs.body
@@ -3119,7 +3127,7 @@ let remove_storage_field_in_function (model : model) : model =
       node = nnode;
     }, nmap
   in
-  let funs, map = List.fold_right (fun f (fs, map) -> let n, nmap = for_function__ map f in (n::fs, nmap)) model.functions ([], MapString.empty) in
+  let funs, map = List.fold_left (fun (fs, map) f -> let n, nmap = for_function__ map f in (fs @ [n], nmap)) ([], MapString.empty) model.functions in
   map_model (fun _ -> id) id (apply_args map) { model with functions = funs; }
 
 let remove_asset (model : model) : model =
