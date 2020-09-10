@@ -431,7 +431,12 @@ let to_ir (model : M.model) : T.ir =
           | TKcall (id, t, d, a) -> f a, get_entrypoint id (to_type t) (f d)
           | TKentry (e, a)       -> f a, f e
           | TKself (id, args)    -> begin
-              let a = T.Irecord (List.map (fun (_, x) -> f x) args) in
+              let a =
+                match args with
+                | []  -> T.iunit
+                | [e] -> f (snd e)
+                | _   -> T.Irecord (List.map (fun (_, x) -> f x) args)
+              in
               a, get_self_entrypoint id
             end
         in
@@ -792,7 +797,7 @@ let to_ir (model : M.model) : T.ir =
     in
 
     let for_fs_fun env (fs : M.function_struct) ret : T.func =
-    let fid = unloc fs.name in
+      let fid = unloc fs.name in
       let tret = to_type ret in
       let name, args, body = for_fs env fs in
       let eargs = get_extra_args fs.body in

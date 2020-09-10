@@ -14,7 +14,7 @@ entry setTotalSupply(v : nat) {
   called by fa12
   effect {
     totalSupply := v;
-     transfer 0tz to entry self.checkTotalSupply()
+    transfer 0tz to entry self.checkTotalSupply()
   }
 }
 
