@@ -266,6 +266,9 @@ PASSED="\
 ./tests/passed/test_fun2.arl \
 ./tests/passed/test_fun3.arl \
 ./tests/passed/test_fun4.arl \
+./tests/passed/test_fun5.arl \
+./tests/passed/test_fun6.arl \
+./tests/passed/test_fun7.arl \
 "
 
 RET=0
