@@ -625,7 +625,7 @@ let to_ir (model : M.model) : T.ir =
     | Mmin (l, r)        -> let b = T.Bmin (to_type l.type_) in add_builtin b; T.Icall (get_fun_name b, [f l; f r])
     | Mabs x             -> T.Iunop (Uabs, f x)
     | Mconcat (x, y)     -> T.Ibinop (Bconcat, f x, f y)
-    | Mslice (x, s, e)   -> T.Iterop (Tslice, f x, f s, f e)
+    | Mslice (x, s, e)   -> T.Iifnone (T.Iterop (Tslice, f s, f e, f x), T.ifail "SliceError", "_x", Ivar "_x")
     | Mlength x          -> T.Iunop (Usize, f x)
     | Misnone x          -> T.Iifnone (f x, T.itrue,  "_var_ifnone", T.ifalse)
     | Missome x          -> T.Iifnone (f x, T.ifalse, "_var_ifnone", T.itrue)
