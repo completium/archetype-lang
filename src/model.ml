@@ -4223,7 +4223,6 @@ end = struct
         in
 
         match mt.node, mt.type_ with
-
         | Mnattoint x, _ -> let n = extract_big_int x in mk_bint n
         | Mnattorat x, _
         | Minttorat x, _ -> begin

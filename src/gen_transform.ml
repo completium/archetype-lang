@@ -4819,3 +4819,8 @@ let remove_state (model : model) : model =
   { model with
     storage = storage }
   |> map_mterm_model for_mterm
+
+let eval_storage (model : model) : model =
+  { model with
+    storage = List.map (fun (si : storage_item) -> {si with default = Model.Utils.eval [] si.default} ) model.storage;
+  }
