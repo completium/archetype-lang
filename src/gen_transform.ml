@@ -4641,6 +4641,7 @@ let remove_asset (model : model) : model =
   let remove_type_asset (model : model) : model =
     let rec ft t =
       match t with
+      | Tcontainer (Tasset an, View) -> Tlist (Utils.get_asset_key model (unloc an) |> snd)
       | Tasset an -> for_asset_type (unloc an)
       | _ -> map_type ft t
     in
