@@ -690,6 +690,18 @@ end = struct
     let f l = List.fold_right (fun x accu -> match flat x with | SEQ l -> l @ accu | a -> a::accu) l [] in
     map_seq f c
 
+  let handle_failwith (c : code) : code =
+    let f l =
+      let rec aux accu l =
+        match l with
+        | (FAILWITH)::_           -> aux (FAILWITH::accu) []
+        | e::t -> aux (e::accu) t
+        | [] -> List.rev accu
+      in
+      aux [] l
+    in
+    map_seq f c
+
   let factorize_instrs (c : code) : code =
     let f l =
       let rec aux accu l =
@@ -728,6 +740,7 @@ end = struct
 
   let optim c =
     c
+    |> handle_failwith
     |> factorize_instrs
     (* |> factorize_double_branches *)
 
