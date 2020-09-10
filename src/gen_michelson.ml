@@ -784,7 +784,7 @@ let to_ir (model : M.model) : T.ir =
       let rec aux accu (mt : M.mterm) : (ident * T.type_) list =
         let doit accu mt b : (ident * T.type_) list  =
           if is_inline b
-          then accu
+          then (M.fold_term aux accu mt)
           else
             let fu = get_builtin_fun b in
             (fu.name, T.tlambda fu.targ fu.tret)::(M.fold_term aux accu mt)
