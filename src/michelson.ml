@@ -227,6 +227,7 @@ type builtin =
   | Bratdiv
   | Bratmul
   | Bratuminus
+  | Bratabs
   | Brattez
   | Bratdur
 [@@deriving show {with_path = false}]
@@ -235,7 +236,7 @@ type instruction =
   | Iseq        of instruction list
   | IletIn      of ident * instruction * instruction * bool
   | Ivar        of ident
-  | Icall       of ident * instruction list
+  | Icall       of ident * instruction list * bool
   | Iassign     of ident * instruction
   | IassignRec  of ident * int * int * instruction
   | Iif         of instruction * instruction * instruction * type_
@@ -531,6 +532,7 @@ let cmp_builtin lhs rhs =
   | Bratdiv, Bratdiv                   -> true
   | Bratmul, Bratmul                   -> true
   | Bratuminus, Bratuminus             -> true
+  | Bratabs, Bratabs                   -> true
   | Brattez, Brattez                   -> true
   | Bratdur, Bratdur                   -> true
   | _ -> false
@@ -670,8 +672,8 @@ module Utils : sig
 end = struct
 
   let get_fun_name ft = function
-    | Bmin t          -> "_min_" ^ (ft t)
-    | Bmax t          -> "_max_" ^ (ft t)
+    | Bmin _t         -> "_min_"(*  ^ (ft t) *)
+    | Bmax _t         -> "_max_"(*  ^ (ft t) *)
     | Bfloor          -> "_floor"
     | Bceil           -> "_ceil"
     | BlistContains t -> "_list_contains_" ^ (ft t)
@@ -683,6 +685,7 @@ end = struct
     | Bratmul         -> "_ratmul"
     | Bratdiv         -> "_ratdiv"
     | Bratuminus      -> "_ratuminus"
+    | Bratabs         -> "_ratabs"
     | Brattez         -> "_rattez"
     | Bratdur         -> "_ratdur"
 

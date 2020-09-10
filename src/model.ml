@@ -950,7 +950,8 @@ let trat  = ttuple [tint; tnat]
 
 let mk_bool x = mk_mterm (Mbool x) tbool
 let mk_string x = mk_mterm (Mstring x) tstring
-let mk_nat x = mk_mterm (Mnat (Big_int.big_int_of_int x)) tnat
+let mk_bnat x = mk_mterm (Mnat x) tnat
+let mk_nat x = mk_bnat (Big_int.big_int_of_int x)
 let mk_bint x = mk_mterm (Mint x) tint
 let mk_int x = mk_bint (Big_int.big_int_of_int x)
 let unit = mk_mterm (Munit) tunit
@@ -975,6 +976,10 @@ let mk_optget (x : mterm) =
   match x.type_ with
   | Toption t -> mk_mterm (Moptget x) t
   | _ -> assert false
+
+let mk_abs (x : mterm) = mk_mterm (Mabs x) tnat
+
+let mk_nat_to_int (x : mterm) = mk_mterm (Mnattoint x) tint
 
 let mk_some x = mk_mterm (Msome x) (toption x.type_)
 
@@ -4218,6 +4223,13 @@ end = struct
         in
 
         match mt.node, mt.type_ with
+
+        | Mnattoint x, _ -> let n = extract_big_int x in mk_bint n
+        | Mnattorat x, _
+        | Minttorat x, _ -> begin
+            let n = extract_big_int x in
+            mk_rat n Big_int.unit_big_int
+          end
         | Mequal (_, lhs, rhs), _  -> cmp_op `Eq lhs rhs
         | Mnequal (_, lhs, rhs), _ -> cmp_op `Nq lhs rhs
         | Mgt (lhs, rhs), _        -> cmp_op `Gt lhs rhs

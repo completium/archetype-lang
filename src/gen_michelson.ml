@@ -33,6 +33,8 @@ let emit_error (desc : error_desc) =
   let str = Format.asprintf "%a@." pp_error_desc desc in
   raise (Anomaly str)
 
+let is_rat      = function | M.Ttuple [Tbuiltin Bint; Tbuiltin Bnat] -> true     | _ -> false
+
 let get_fun_name = T.Utils.get_fun_name Printer_michelson.show_pretty_type
 
 let operations = "_ops"
@@ -130,9 +132,6 @@ let to_ir (model : M.model) : T.ir =
     | Muminus    v      -> to_data v |> (function | T.Dint n -> T.Dint (Big_int.mult_int_big_int (-1) n) | _ -> assert false )
     | Mnow              -> T.Dint Big_int.zero_big_int
     | Mlitrecord l      -> to_one_data (List.map (to_data |@ snd) l)
-    | Mnattoint v
-    | Mnattorat v
-    | Minttorat v
     | Mcast (_, _, v) -> to_data v
     | _ -> Format.printf "%a@." M.pp_mterm mt; assert false
 
@@ -179,8 +178,27 @@ let to_ir (model : M.model) : T.ir =
 
   let builtins = ref [] in
 
+  let is_inline = function
+    | T.Bmin           _ -> true
+    | T.Bmax           _ -> true
+    | T.Bfloor           -> true
+    | T.Bceil            -> true
+    | T.BlistContains  _ -> false
+    | T.BlistNth       _ -> false
+    | T.Btostring      _ -> false
+    | T.Bratcmp          -> false
+    | T.Bratnorm         -> true
+    | T.Brataddsub       -> true
+    | T.Bratdiv          -> true
+    | T.Bratmul          -> true
+    | T.Bratuminus       -> true
+    | T.Bratabs          -> true
+    | T.Brattez          -> true
+    | T.Bratdur          -> true
+  in
+
   let add_builtin b =
-    if not (List.exists (T.cmp_builtin b) !builtins)
+    if not (is_inline b) && not (List.exists (T.cmp_builtin b) !builtins)
     then builtins := b::!builtins;
   in
 
@@ -294,7 +312,8 @@ let to_ir (model : M.model) : T.ir =
         let tret = T.trat in
         T.mk_func name targ tret (T.Abstract b)
       end
-    | Bratuminus -> begin
+    | Bratuminus
+    | Bratabs -> begin
         let targ = T.trat in
         let tret = T.trat in
         T.mk_func name targ tret (T.Abstract b)
@@ -361,7 +380,7 @@ let to_ir (model : M.model) : T.ir =
           | Some l -> List.map (fun (id, _t) -> T.Ivar id) l
           | _ -> []
         in
-        T.Icall (unloc e, List.map f args @ eargs)
+        T.Icall (unloc e, List.map f args @ eargs, false)
       end
 
     (* assign *)
@@ -608,8 +627,8 @@ let to_ir (model : M.model) : T.ir =
     | Mlistprepend (_t, i, l)    -> T.Ibinop (Bcons, f l, f i)
     | Mlistheadtail (_t, l)      -> T.Iifcons (f l, T.iskip, T.ifail "EmptyList")
     | Mlistlength (_, l)         -> T.Iunop (Usize, f l)
-    | Mlistcontains (t, c, a)    -> let b = T.BlistContains (to_type t) in add_builtin b; T.Icall (get_fun_name b, [f c; f a])
-    | Mlistnth (t, c, a)         -> let b = T.BlistNth (to_type t) in add_builtin b; T.Icall (get_fun_name b, [f c; f a])
+    | Mlistcontains (t, c, a)    -> let b = T.BlistContains (to_type t) in add_builtin b; T.Icall (get_fun_name b, [f c; f a], is_inline b)
+    | Mlistnth (t, c, a)         -> let b = T.BlistNth (to_type t) in add_builtin b; T.Icall (get_fun_name b, [f c; f a], is_inline b)
     | Mlistreverse _             -> emit_error (UnsupportedTerm ("Mlistreverse"))
     | Mlistfold (_, ix, ia, c, a, b) -> T.Ifold (unloc ix, None, unloc ia, f c, f a, T.Iassign (unloc ia, f b))
 
@@ -626,8 +645,9 @@ let to_ir (model : M.model) : T.ir =
 
     (* builtin functions *)
 
-    | Mmax (l, r)        -> let b = T.Bmax (to_type l.type_) in add_builtin b; T.Icall (get_fun_name b, [f l; f r])
-    | Mmin (l, r)        -> let b = T.Bmin (to_type l.type_) in add_builtin b; T.Icall (get_fun_name b, [f l; f r])
+    | Mmax (l, r)        -> let b = T.Bmax (to_type l.type_) in add_builtin b; T.Icall (get_fun_name b, [f l; f r], is_inline b)
+    | Mmin (l, r)        -> let b = T.Bmin (to_type l.type_) in add_builtin b; T.Icall (get_fun_name b, [f l; f r], is_inline b)
+    | Mabs x when is_rat x.type_ -> let b = T.Bratabs        in add_builtin b; T.Icall (get_fun_name b, [f x], is_inline b)
     | Mabs x             -> T.Iunop (Uabs, f x)
     | Mconcat (x, y)     -> T.Ibinop (Bconcat, f x, f y)
     | Mslice (x, s, e)   -> T.Iifnone (T.Iterop (Tslice, f s, f e, f x), T.ifail "SliceError", "_x", Ivar "_x")
@@ -635,9 +655,9 @@ let to_ir (model : M.model) : T.ir =
     | Misnone x          -> T.Iifnone (f x, T.itrue,  "_var_ifnone", T.ifalse)
     | Missome x          -> T.Iifnone (f x, T.ifalse, "_var_ifnone", T.itrue)
     | Moptget x          -> T.Iifnone (f x, T.ifail "NoneValue", "_var_ifnone", Ivar "_var_ifnone")
-    | Mfloor  x          -> let b = T.Bfloor           in add_builtin b; T.Icall (get_fun_name b, [f x])
-    | Mceil   x          -> let b = T.Bceil            in add_builtin b; T.Icall (get_fun_name b, [f x])
-    | Mtostring (t, x)   -> let b = T.Btostring (ft t) in add_builtin b; T.Icall (get_fun_name b, [f x])
+    | Mfloor  x          -> let b = T.Bfloor           in add_builtin b; T.Icall (get_fun_name b, [f x], is_inline b)
+    | Mceil   x          -> let b = T.Bceil            in add_builtin b; T.Icall (get_fun_name b, [f x], is_inline b)
+    | Mtostring (t, x)   -> let b = T.Btostring (ft t) in add_builtin b; T.Icall (get_fun_name b, [f x], is_inline b)
     | Mpack x            -> T.Iunop (Upack,  f x)
     | Munpack (t, x)     -> T.Iunop (Uunpack (ft t),  f x)
 
@@ -676,7 +696,7 @@ let to_ir (model : M.model) : T.ir =
 
     (* rational *)
 
-    | Mrateq (l, r)           -> let b = T.Bratcmp in add_builtin b; T.Icall (get_fun_name b, [T.Irecord [f l; f r]; T.ileft (T.tor (T.tor T.tunit T.tunit) (T.tor T.tunit T.tunit)) T.iunit])
+    | Mrateq (l, r)           -> let b = T.Bratcmp in add_builtin b; T.Icall (get_fun_name b, [T.Irecord [f l; f r]; T.ileft (T.tor (T.tor T.tunit T.tunit) (T.tor T.tunit T.tunit)) T.iunit], is_inline b)
     | Mratcmp (op, l, r)   ->
       let op =
         let u    = T.iunit in
@@ -689,22 +709,22 @@ let to_ir (model : M.model) : T.ir =
         | Gt -> T.iright tu (T.iright tou (T.ileft  tu u))
         | Ge -> T.iright tu (T.iright tou (T.iright tu u))
       in
-      let b = T.Bratcmp in add_builtin b; T.Icall (get_fun_name b, [T.Irecord [f l; f r]; op])
+      let b = T.Bratcmp in add_builtin b; T.Icall (get_fun_name b, [T.Irecord [f l; f r]; op], is_inline b)
     | Mratarith (op, l, r)    -> begin
         (* let norm x = let b = T.Bratnorm in add_builtin b; T.Icall (get_fun_name b, [x]) in *)
         let norm x = x in
         match op with
-        | Rplus  -> let b = T.Brataddsub in add_builtin b; norm (T.Icall (get_fun_name b, [T.Irecord [f l; f r]; T.ileft  T.tunit T.iunit]))
-        | Rminus -> let b = T.Brataddsub in add_builtin b; norm (T.Icall (get_fun_name b, [T.Irecord [f l; f r]; T.iright T.tunit T.iunit]))
-        | Rmult  -> let b = T.Bratmul    in add_builtin b; norm (T.Icall (get_fun_name b, [f l; f r]))
-        | Rdiv   -> let b = T.Bratdiv    in add_builtin b; norm (T.Icall (get_fun_name b, [f l; f r]))
+        | Rplus  -> let b = T.Brataddsub in add_builtin b; norm (T.Icall (get_fun_name b, [T.Irecord [f l; f r]; T.ileft  T.tunit T.iunit], is_inline b))
+        | Rminus -> let b = T.Brataddsub in add_builtin b; norm (T.Icall (get_fun_name b, [T.Irecord [f l; f r]; T.iright T.tunit T.iunit], is_inline b))
+        | Rmult  -> let b = T.Bratmul    in add_builtin b; norm (T.Icall (get_fun_name b, [f l; f r], is_inline b))
+        | Rdiv   -> let b = T.Bratdiv    in add_builtin b; norm (T.Icall (get_fun_name b, [f l; f r], is_inline b))
       end
-    | Mratuminus v            -> let b = T.Bratuminus in add_builtin b; T.Icall (get_fun_name b, [f v])
-    | Mrattez  (c, t)         -> let b = T.Brattez    in add_builtin b; T.Icall (get_fun_name b, [f c; f t])
+    | Mratuminus v            -> let b = T.Bratuminus in add_builtin b; T.Icall (get_fun_name b, [f v], is_inline b)
+    | Mrattez  (c, t)         -> let b = T.Brattez    in add_builtin b; T.Icall (get_fun_name b, [f c; f t], is_inline b)
     | Mnattoint e             -> T.Iunop (Uint, f e)
     | Mnattorat e             -> T.Irecord [T.Iunop (Uint, f e); T.inat Big_int.unit_big_int]
     | Minttorat e             -> T.Irecord [f e; T.inat Big_int.unit_big_int]
-    | Mratdur  (c, t)         -> let b = T.Bratdur    in add_builtin b; T.Icall (get_fun_name b, [f c; f t])
+    | Mratdur  (c, t)         -> let b = T.Bratdur    in add_builtin b; T.Icall (get_fun_name b, [f c; f t], is_inline b)
 
 
     (* functional *)
@@ -763,8 +783,11 @@ let to_ir (model : M.model) : T.ir =
     let get_extra_args (mt : M.mterm) : (ident * T.type_) list =
       let rec aux accu (mt : M.mterm) : (ident * T.type_) list =
         let doit accu mt b : (ident * T.type_) list  =
-          let fu = get_builtin_fun b in
-          (fu.name, T.tlambda fu.targ fu.tret)::(M.fold_term aux accu mt)
+          if is_inline b
+          then accu
+          else
+            let fu = get_builtin_fun b in
+            (fu.name, T.tlambda fu.targ fu.tret)::(M.fold_term aux accu mt)
         in
 
         match mt.node with
@@ -782,6 +805,7 @@ let to_ir (model : M.model) : T.ir =
         | Mratarith (Rmult, _, _)            -> (doit accu mt (T.Bratmul   ))
         | Mratarith (Rdiv, _, _)             -> (doit accu mt (T.Bratdiv   ))
         | Mratuminus _                       -> (doit accu mt (T.Bratcmp   ))
+        | Mabs _        when is_rat mt.type_ -> (doit accu mt (T.Bratabs   ))
         | Mrattez _                          -> (doit accu mt (T.Brattez   ))
         | Mratdur _                          -> (doit accu mt (T.Bratdur   ))
 
@@ -844,6 +868,24 @@ let to_ir (model : M.model) : T.ir =
 
 (* -------------------------------------------------------------------- *)
 
+let map_implem = [
+  get_fun_name (T.Bmin T.tunit)  , T.[DUP; UNPAIR; COMPARE; LT; IF ([CAR], [CDR])];
+  get_fun_name (T.Bmax T.tunit)  , T.[DUP; UNPAIR; COMPARE; LT; IF ([CDR], [CAR])];
+  get_fun_name T.Bratcmp         , T.[UNPAIR; UNPAIR; DIP (1, [UNPAIR]); UNPAIR; DUG 3; MUL; DIP (1, [MUL]); SWAP; COMPARE; SWAP;
+                                      IF_LEFT ([DROP 1; EQ], [IF_LEFT ([IF_LEFT ([DROP 1; LT], [DROP 1; LE])],
+                                                                       [IF_LEFT ([DROP 1; GT], [DROP 1; GE])])])];
+  get_fun_name T.Bfloor          , T.[UNPAIR; EDIV; IF_NONE ([T.cfail "DivByZero"], [CAR])];
+  get_fun_name T.Bceil           , T.[UNPAIR; EDIV; IF_NONE ([T.cfail "DivByZero"], [UNPAIR; SWAP; INT; EQ; IF ([], [PUSH (T.tint, T.Dint Big_int.unit_big_int); ADD])])];
+  get_fun_name T.Bratnorm        ,   [];
+  get_fun_name T.Brataddsub      , T.[UNPAIR; UNPAIR; DIP (1, [UNPAIR; SWAP; DUP]); UNPAIR; SWAP; DUP; DIG 3; MUL; DUG 4; DIG 3; MUL; DIP (1, [MUL]); DIG 3; IF_LEFT ([DROP 1; ADD], [DROP 1; SWAP; SUB]); PAIR;];
+  get_fun_name T.Bratmul         , T.[UNPAIR; DIP (1, [UNPAIR]); UNPAIR; DIP (1, [SWAP]); MUL; DIP (1, [MUL]); PAIR ];
+  get_fun_name T.Bratdiv         , T.[UNPAIR; DIP (1, [UNPAIR]); UNPAIR; DIG 3; PUSH (T.tint, T.Dint Big_int.zero_big_int); DIG 4; DUP; DUG 5; COMPARE; GE; IF ([INT], [NEG]); MUL; DIP (1, [MUL; ABS]); PAIR ];
+  get_fun_name T.Bratuminus      , T.[UNPAIR; NEG; PAIR];
+  get_fun_name T.Bratabs         , T.[UNPAIR; ABS; INT; PAIR];
+  get_fun_name T.Brattez         , T.[UNPAIR; UNPAIR; ABS; DIG 2; MUL; EDIV; IF_NONE ([T.cfail "DivByZero"], []); CAR;];
+  get_fun_name T.Bratdur         , T.[UNPAIR; UNPAIR; DIG 2; MUL; EDIV; IF_NONE ([T.cfail "DivByZero"], []); CAR;];
+]
+
 let concrete_michelson b =
   let error _ = emit_error (NoConcreteImplementationFor (get_fun_name b)) in
   match b with
@@ -862,6 +904,7 @@ let concrete_michelson b =
   | T.Bratmul         -> T.SEQ [UNPAIR; DIP (1, [UNPAIR]); UNPAIR; DIP (1, [SWAP]); MUL; DIP (1, [MUL]); PAIR ]
   | T.Bratdiv         -> T.SEQ [UNPAIR; DIP (1, [UNPAIR]); UNPAIR; DIG 3; PUSH (T.tint, T.Dint Big_int.zero_big_int); DIG 4; DUP; DUG 5; COMPARE; GE; IF ([INT], [NEG]); MUL; DIP (1, [MUL; ABS]); PAIR ]
   | T.Bratuminus      -> T.SEQ [UNPAIR; NEG; PAIR]
+  | T.Bratabs         -> T.SEQ [UNPAIR; ABS; INT; PAIR]
   | T.Brattez         -> T.SEQ [UNPAIR; UNPAIR; ABS; DIG 2; MUL; EDIV; IF_NONE ([T.cfail "DivByZero"], []); CAR;]
   | T.Bratdur         -> T.SEQ [UNPAIR; UNPAIR; DIG 2; MUL; EDIV; IF_NONE ([T.cfail "DivByZero"], []); CAR;]
 
@@ -945,14 +988,21 @@ let to_michelson (ir : T.ir) : T.michelson =
         c, inc_env env
       end
 
-    | Icall (id, args)   -> begin
-        let fid, env   = fe env (Ivar id) in
-        let cargs, env =
+    | Icall (id, args, inline)   -> begin
+        let get_args env =
           match args with
           | [] -> T.UNIT, inc_env env
           | _ -> fold env args
         in
-        T.SEQ [fid; cargs; T.EXEC], dec_env env
+        match inline, List.assoc_opt id map_implem with
+        | true, Some body_fun ->
+          let cargs, env = get_args env in
+          T.SEQ (cargs::body_fun), env
+        | _ -> begin
+            let fid, env   = fe env (Ivar id) in
+            let cargs, env = get_args env in
+            T.SEQ [fid; cargs; T.EXEC], dec_env env
+          end
       end
 
     | Iassign (id, v)  -> begin

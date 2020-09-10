@@ -3087,9 +3087,9 @@ let remove_storage_field_in_function (model : model) : model =
           let aaa = MapString.find (unloc id) map in
           let args = if MapString.mem fs_name map then MapString.find fs_name map else [] in
           mt,
-           ((List.map (fun (mt : mterm) ->
-            ((match mt.node with Mvar(id, _, _, _) -> id | _ -> assert false), mt.type_, None) ) aaa) @
-             accu, (MapString.add fs_name (aaa @ args) map))
+          ((List.map (fun (mt : mterm) ->
+               ((match mt.node with Mvar(id, _, _, _) -> id | _ -> assert false), mt.type_, None) ) aaa) @
+           accu, (MapString.add fs_name (aaa @ args) map))
         end
       | _ -> fold_map_term g aux (accu, map) mt
     in
