@@ -4728,7 +4728,9 @@ let normalize_storage (model : model) : model =
               | None -> let r = cmp x y in if r = 0 then None else Some r
             ) None l1 l2 |> (Option.get_dfl 0)
         (* | Mlitrecord _ *)
-        | _ -> assert false
+        | Mcast (_, _, v1), _          -> cmp v1 rhs
+        | _, Mcast (_, _, v2)          -> cmp lhs v2
+        | _ -> Format.eprintf "lhs:%a@.rhs:%a@." pp_mterm lhs pp_mterm rhs; assert false
       in
 
       let sort = List.sort (fun (x1, _) (x2, _) -> cmp x1 x2) in
