@@ -3610,6 +3610,12 @@ let remove_asset (model : model) : model =
           mk_mterm map_get vt
         end
 
+        | Mget (an, CKview c, k) -> begin
+          let get = mk_mterm (Mget(an, CKcoll(Tnone, Dnone), k)) mt.type_ |> fm ctx in
+          let cond = mk_mterm (Mcontains(an, CKview c, k)) tbool |> fm ctx in
+          mk_mterm (Mexprif(cond, get, fail "NotFound")) get.type_
+        end
+
       (* control *)
 
       | Mfor (FIsimple id, ICKcoll an, b, lbl) -> begin
