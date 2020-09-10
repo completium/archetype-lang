@@ -3610,7 +3610,7 @@ let remove_asset (model : model) : model =
           mk_mterm map_get vt
         end
 
-        | Mget (an, CKview c, k) -> begin
+      | Mget (an, CKview c, k) -> begin
           let get = mk_mterm (Mget(an, CKcoll(Tnone, Dnone), k)) mt.type_ |> fm ctx in
           let cond = mk_mterm (Mcontains(an, CKview c, k)) tbool |> fm ctx in
           mk_mterm (Mexprif(cond, get, fail "NotFound")) get.type_
@@ -4337,13 +4337,30 @@ let remove_asset (model : model) : model =
               in
 
               let crit =
+                let is_rat  = function
+                  | Ttuple [Tbuiltin Bint; Tbuiltin Bnat] -> true
+                  | _ -> false
+                in
                 let zero = mk_int 0 in
                 let one = mk_int 1 in
                 List.fold_right (fun (id, sk) accu ->
                     let vl = get_val vxins vvb   id in
                     let vr = get_val vkid  vvid  id in
-                    let gt = mk_mterm (Mgt (vl, vr)) tbool in
-                    let lt = mk_mterm (Mlt (vl, vr)) tbool in
+                    let gt =
+                      let node =
+                        if is_rat vl.type_
+                        then Mratcmp (Gt, vl, vr)
+                        else Mgt (vl, vr)
+                      in
+                      mk_mterm node tbool
+                    in
+                    let lt =
+                      let node =
+                        if is_rat vl.type_
+                        then Mratcmp (Lt, vl, vr)
+                        else Mlt (vl, vr)
+                      in
+                      mk_mterm node tbool in
                     let mk_if c t e = mk_mterm (Mexprif (c, t, e)) tint in
                     match sk with
                     | SKasc  -> mk_if gt one accu
