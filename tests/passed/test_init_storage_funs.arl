@@ -24,12 +24,15 @@ variable max_tez_tez : tez      = max(1tz, 2tz)
 variable floor_rat   : int      = floor(5 / 3)
 variable ceil_rat    : int      = ceil(5 / 3)
 
+variable nfloor_rat  : int      = floor(-5 / 3)
+variable nceil_rat   : int      = ceil(-5 / 3)
+
 variable abs_int : int          = abs(-1)
 variable abs_rat : rational     = abs(-1 / 2)
 
-variable concat_str : string   = concat("abc", "def")
-variable slice_str  : string   = slice("abcdef", 1, 2)
-variable length_str : int      = length("abcdef")
+variable concat_str : string    = concat("abc", "def")
+variable slice_str  : string    = slice("abcdef", 1, 2)
+variable length_str : nat       = length("abcdef")
 
 variable concat_byt : bytes = concat(0x12, 0xef)
 variable slice_byt  : bytes = slice(0xabcdef01, 1, 2)

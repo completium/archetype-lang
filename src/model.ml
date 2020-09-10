@@ -939,24 +939,26 @@ let mk_model ?(api_items = []) ?(api_verif = []) ?(decls = []) ?(functions = [])
 
 (* -------------------------------------------------------------------- *)
 
-let tunit = Tunit
-let tbool = Tbuiltin Bbool
-let tnat  = Tbuiltin Bnat
-let tint  = Tbuiltin Bint
-let tstring = Tbuiltin Bstring
+let tunit     = Tunit
+let tbool     = Tbuiltin Bbool
+let tnat      = Tbuiltin Bnat
+let tint      = Tbuiltin Bint
+let tstring   = Tbuiltin Bstring
+let tbytes    = Tbuiltin Bbytes
 let toption t = Toption t
-let ttuple l = Ttuple l
-let trat  = ttuple [tint; tnat]
+let ttuple l  = Ttuple l
+let trat      = ttuple [tint; tnat]
 
-let mk_bool x = mk_mterm (Mbool x) tbool
+let mk_bool x   = mk_mterm (Mbool x) tbool
 let mk_string x = mk_mterm (Mstring x) tstring
-let mk_bnat x = mk_mterm (Mnat x) tnat
-let mk_nat x = mk_bnat (Big_int.big_int_of_int x)
-let mk_bint x = mk_mterm (Mint x) tint
-let mk_int x = mk_bint (Big_int.big_int_of_int x)
-let unit = mk_mterm (Munit) tunit
-let mtrue = mk_mterm (Mbool true) tbool
-let mfalse = mk_mterm (Mbool false) tbool
+let mk_bytes x  = mk_mterm (Mbytes x) tbytes
+let mk_bnat x   = mk_mterm (Mnat x) tnat
+let mk_nat x    = mk_bnat  (Big_int.big_int_of_int x)
+let mk_bint x   = mk_mterm (Mint x) tint
+let mk_int x    = mk_bint  (Big_int.big_int_of_int x)
+let unit        = mk_mterm (Munit) tunit
+let mtrue       = mk_mterm (Mbool true) tbool
+let mfalse      = mk_mterm (Mbool false) tbool
 
 
 let mk_mvar id t = mk_mterm (Mvar(id, Vlocal, Tnone, Dnone )) t
@@ -3548,6 +3550,7 @@ module Utils : sig
   val with_operations_for_mterm          : mterm -> bool
   val with_operations                    : model -> bool
   val get_source_for                     : model -> ctx_model -> mterm -> mterm option
+  val cmp                                : mterm -> mterm -> int
   val eval                               : (ident * mterm) list -> mterm -> mterm
   val type_rational                      : type_
   val mk_rat                             : Core.big_int -> Core.big_int -> mterm
@@ -4076,6 +4079,28 @@ end = struct
     | true, false  -> mk (neg x) (abs y)
     | false, false -> mk (abs x) (abs y)
 
+  let rec cmp (lhs : mterm) (rhs : mterm) : int =
+    match lhs.node, rhs.node with
+    | Mbool      v1, Mbool v2      -> Bool.compare v1 v2
+    | Mnat       v1, Mnat v2       -> Big_int.compare_big_int v1 v2
+    | Mint       v1, Mint v2       -> Big_int.compare_big_int v1 v2
+    | Mstring    v1, Mstring v2    -> String.compare v1 v2
+    | Mcurrency  (v1, Utz), Mcurrency  (v2, Utz) -> Big_int.compare_big_int v1 v2
+    | Maddress   v1, Maddress   v2 -> String.compare v1 v2
+    | Mdate      v1, Mdate      v2 -> Big_int.compare_big_int (Core.date_to_timestamp v1) (Core.date_to_timestamp v2)
+    | Mtimestamp v1, Mtimestamp v2 -> Big_int.compare_big_int v1 v2
+    | Mbytes     v1, Mbytes     v2 -> String.compare v1 v2
+    | Mtuple l1, Mtuple l2 when List.length l1 = List.length l2 ->
+      List.fold_left2 (fun accu x y ->
+          match accu with
+          | Some _ -> accu
+          | None -> let r = cmp x y in if r = 0 then None else Some r
+        ) None l1 l2 |> (Option.get_dfl 0)
+    (* | Mlitrecord _ *)
+    | Mcast (_, _, v1), _          -> cmp v1 rhs
+    | _, Mcast (_, _, v2)          -> cmp lhs v2
+    | _ -> Format.eprintf "lhs:%a@.rhs:%a@." pp_mterm lhs pp_mterm rhs; assert false
+
   let eval (map_const_value : (ident * mterm) list) (mt : mterm) : mterm =
     let get_value (id : ident) : mterm = List.assoc id map_const_value in
     let is_const (id : ident) : bool = List.assoc_opt id map_const_value |> Option.is_some in
@@ -4109,6 +4134,10 @@ end = struct
       | _ -> false
     in
 
+    let is_rat  = function
+      | Ttuple [Tbuiltin Bint; Tbuiltin Bnat] -> true
+      | _ -> false
+    in
 
     let eval_expr mt :
       mterm =
@@ -4119,7 +4148,7 @@ end = struct
           | Mnattoint x -> extract_big_int x
           | Mnat v
           | Mint v -> v
-          | _ -> assert false
+          | _ -> Format.eprintf "%a@." pp_mterm i; assert false
         in
 
         let extract_bool (b : mterm) : bool =
@@ -4133,6 +4162,13 @@ end = struct
           let b = aux b in
           match b.node with
           | Mstring v -> v
+          | _ -> assert false
+        in
+
+        let extract_bytes (b : mterm) : string =
+          let b = aux b in
+          match b.node with
+          | Mbytes v -> v
           | _ -> assert false
         in
 
@@ -4228,6 +4264,10 @@ end = struct
         | Minttorat x, _ -> begin
             let n = extract_big_int x in
             mk_rat n Big_int.unit_big_int
+          end
+        | Muminus x, _ -> begin
+            let n = extract_big_int x in
+            mk_bint (Big_int.minus_big_int n)
           end
         | Mequal (_, lhs, rhs), _  -> cmp_op `Eq lhs rhs
         | Mnequal (_, lhs, rhs), _ -> cmp_op `Nq lhs rhs
@@ -4334,7 +4374,7 @@ end = struct
 
         | Mratdur (lhs, rhs), _ -> begin
             let lhs = aux lhs in
-            let rhs = aux rhs    in
+            let rhs = aux rhs in
             let f num denom v =
               let res = Big_int.div_big_int (Big_int.mult_big_int num v) denom in
               mk_bint res
@@ -4352,6 +4392,94 @@ end = struct
                 assert false
               end
           end
+
+        | Mmin (a, b) , t when is_rat t -> begin
+            let a = aux a in
+            let b = aux b in
+            let num1, denom1 = extract_rat a in
+            let num2, denom2 = extract_rat b in
+            let x = Big_int.mult_big_int num1 denom2 in
+            let y = Big_int.mult_big_int num2 denom1 in
+            if (Big_int.lt_big_int x y)
+            then a
+            else b
+          end
+
+        | Mmax (a, b) , t when is_rat t -> begin
+            let a = aux a in
+            let b = aux b in
+            let num1, denom1 = extract_rat a in
+            let num2, denom2 = extract_rat b in
+            let x = Big_int.mult_big_int num1 denom2 in
+            let y = Big_int.mult_big_int num2 denom1 in
+            if (Big_int.gt_big_int x y)
+            then a
+            else b
+          end
+
+        | Mabs x        , t when is_rat t -> begin
+            let num, denom = extract_rat (aux x) in
+            mk_rat (Big_int.abs_big_int num) denom
+          end
+
+        | Mmin (a, b), _ -> begin
+            let a = aux a in
+            let b = aux b in
+            if cmp a b < 0
+            then a
+            else b
+          end
+
+        | Mmax (a, b), _ -> begin
+            let a = aux a in
+            let b = aux b in
+            if cmp a b > 0
+            then a
+            else b
+          end
+
+        | Mabs x, _ -> begin
+            let n = extract_big_int x in
+            mk_bnat (Big_int.abs_big_int n)
+          end
+
+        | Mfloor x, _ -> begin
+            let num, denom = extract_rat (aux x) in
+            let n = Big_int.div_big_int num denom in
+            mk_bint n
+          end
+
+        | Mceil x, _ -> begin
+            let num, denom = extract_rat (aux x) in
+            let n, m = Big_int.quomod_big_int num denom in
+            let n = Big_int.add_big_int n (if Big_int.eq_big_int m Big_int.zero_big_int then Big_int.zero_big_int else Big_int.unit_big_int) in
+            mk_bint n
+          end
+
+        | Mconcat (x, y), t -> begin
+            match t with
+            | Tbuiltin Bstring -> let x = extract_string x in let y = extract_string y in mk_string (x ^ y)
+            | Tbuiltin Bbytes  -> let x = extract_bytes  x in let y = extract_bytes  y in mk_bytes (x ^ y)
+            | _ -> assert false
+          end
+
+        | Mslice (s, a, b), t -> begin
+            let a = extract_big_int a |> Big_int.int_of_big_int in
+            let b = extract_big_int b |> Big_int.int_of_big_int in
+
+            match t with
+            | Tbuiltin Bstring -> let s = extract_string s in mk_string (String.sub s a b)
+            | Tbuiltin Bbytes  -> let s = extract_bytes  s in mk_bytes  (String.sub s (2 * a) (2 * b))
+            | _ -> assert false
+          end
+
+        | Mlength x, _ -> begin
+            match x.type_ with
+            | Tbuiltin Bstring -> let x = extract_string x in mk_nat (String.length x)
+            | Tbuiltin Bbytes  -> let x = extract_bytes  x in mk_nat (String.length x)
+            | _ -> assert false
+          end
+
         | _ -> map_mterm aux mt
       in
       aux mt

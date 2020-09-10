@@ -4725,30 +4725,7 @@ let normalize_storage (model : model) : model =
   let sort_container (model : model) : model =
 
     let for_mterm (mt : mterm) : mterm =
-      let rec cmp (lhs : mterm) (rhs : mterm) : int =
-        match lhs.node, rhs.node with
-        | Mbool      v1, Mbool v2      -> Bool.compare v1 v2
-        | Mnat       v1, Mnat v2       -> Big_int.compare_big_int v1 v2
-        | Mint       v1, Mint v2       -> Big_int.compare_big_int v1 v2
-        | Mstring    v1, Mstring v2    -> String.compare v1 v2
-        | Mcurrency  (v1, Utz), Mcurrency  (v2, Utz) -> Big_int.compare_big_int v1 v2
-        | Maddress   v1, Maddress   v2 -> String.compare v1 v2
-        | Mdate      v1, Mdate      v2 -> Big_int.compare_big_int (Core.date_to_timestamp v1) (Core.date_to_timestamp v2)
-        | Mtimestamp v1, Mtimestamp v2 -> Big_int.compare_big_int v1 v2
-        | Mbytes     v1, Mbytes     v2 -> String.compare v1 v2
-        | Mtuple l1, Mtuple l2 when List.length l1 = List.length l2 ->
-          List.fold_left2 (fun accu x y ->
-              match accu with
-              | Some _ -> accu
-              | None -> let r = cmp x y in if r = 0 then None else Some r
-            ) None l1 l2 |> (Option.get_dfl 0)
-        (* | Mlitrecord _ *)
-        | Mcast (_, _, v1), _          -> cmp v1 rhs
-        | _, Mcast (_, _, v2)          -> cmp lhs v2
-        | _ -> Format.eprintf "lhs:%a@.rhs:%a@." pp_mterm lhs pp_mterm rhs; assert false
-      in
-
-      let sort = List.sort (fun (x1, _) (x2, _) -> cmp x1 x2) in
+      let sort = List.sort (fun (x1, _) (x2, _) -> Utils.cmp x1 x2) in
 
       let rec aux (mt : mterm) : mterm =
         match mt.node with
