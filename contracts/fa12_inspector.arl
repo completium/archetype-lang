@@ -49,5 +49,5 @@ entry setAllowanceValue(v : nat) {
 entry retrieveAllownaceFor(owner : address, spender : address) {
   allowanceOwner   := some(owner);
   allowanceSpender := some(spender);
-  transfer 0tz to fa12 call getBalance<address * address * entrysig<nat>> ((owner, spender, (self.setAllowanceValue)))
+  transfer 0tz to fa12 call getAllowance<address * address * entrysig<nat>> ((owner, spender, (self.setAllowanceValue)))
 }
