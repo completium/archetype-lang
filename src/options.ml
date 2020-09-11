@@ -7,7 +7,7 @@ type target_lang =
   | Michelson
   | MichelsonStorage
   | Whyml
-  | None
+  | Debug
 [@@deriving show {with_path = false}]
 
 type storage_policy =
@@ -30,7 +30,7 @@ type sorting_policy =
 let version = "1.2.0"
 let url = "https://archetype-lang.org/"
 
-let target = ref (None : target_lang)
+let target = ref (Michelson : target_lang)
 
 let storage_policy = ref Record
 let execution_mode = ref WithSideEffect
@@ -45,6 +45,7 @@ let opt_pt      = ref false
 let opt_extpt   = ref false
 let opt_ext     = ref false
 let opt_ast     = ref false
+let opt_mdl     = ref false
 let opt_typed   = ref false
 let opt_ir      = ref false
 let opt_all_parenthesis = ref false

@@ -36,6 +36,11 @@ let output_tast (ast : Ast.ast) =
   then Format.printf "%a@." Ast.pp_ast ast
   else Format.printf "%a@." Printer_ast.pp_ast ast
 
+let output_tmdl (model : Model.model) =
+  if !Options.opt_raw
+  then Format.printf "%a@." Model.pp_model model
+  else Format.printf "%a@." Printer_model.pp_model model
+
 let output (model : Model.model) =
   match !Options.opt_raw, !Options.opt_m with
   | true, _ -> Format.printf "%a@." Model.pp_model model
@@ -44,7 +49,7 @@ let output (model : Model.model) =
     begin
       let printer =
         match !Options.target with
-        | None         -> Printer_model.pp_model
+        | Debug        -> Printer_model.pp_model
         | Ligo         -> Printer_model_ligo.pp_model
         | LigoStorage  -> Printer_model_ligo.pp_storage
         | SmartPy      -> Printer_model_smartpy.pp_model
@@ -121,15 +126,6 @@ let generate_api_storage      = Gen_api_storage.generate_api_storage
 let generate_target model =
 
   match !Options.target with
-  | None ->
-    model
-    |> raise_if_error post_model_error prune_properties
-    |> process_multi_keys
-    |> replace_declvar_by_letin
-    |> generate_api_storage
-    (* |> (fun (model : Model.model) -> Format.printf "%a@." (Printer_tools.pp_list "@\n" Printer_model.pp_type) (Model.Utils.get_all_fail_types model)) *)
-    |> output
-
   | Ligo
   | LigoStorage ->
     model
@@ -300,6 +296,15 @@ let generate_target model =
     |> filter_api_storage
     |> output
 
+  | Debug ->
+    model
+    |> raise_if_error post_model_error prune_properties
+    |> process_multi_keys
+    |> replace_declvar_by_letin
+    |> generate_api_storage
+    (* |> (fun (model : Model.model) -> Format.printf "%a@." (Printer_tools.pp_list "@\n" Printer_model.pp_type) (Model.Utils.get_all_fail_types model)) *)
+    |> output
+
   | _ -> ()
 
 (* -------------------------------------------------------------------- *)
@@ -325,6 +330,7 @@ let compile (filename, channel) =
   |> raise_if_error post_model_error (check_and_replace_init_caller ~doit:!Options.with_init_caller)
   |> raise_if_error post_model_error check_duplicated_keys_in_asset
   |> raise_if_error post_model_error check_asset_key
+  |> cont !Options.opt_mdl output_tmdl
   |> generate_target
 
 let close dispose channel =
@@ -351,6 +357,7 @@ let main () =
     | "michelson"         -> Options.target := Michelson
     | "michelson-storage" -> Options.target := MichelsonStorage
     | "markdown"          -> Options.target := Markdown
+    | "debug"             -> Options.target := Debug
     |  s ->
       Format.eprintf
         "Unknown target %s (--list-target to see available target)@." s;
@@ -373,6 +380,8 @@ let main () =
       "--extensions", Arg.Set Options.opt_ext, " Same as -ext";
       "-ast", Arg.Set Options.opt_ast, " Generate typed ast";
       "--typed-ast", Arg.Set Options.opt_ast, " Same as -ast";
+      "-mdl", Arg.Set Options.opt_mdl, " Generate model";
+      "--model", Arg.Set Options.opt_mdl, " Same as -mdl";
       "--typed", Arg.Set Options.opt_typed, " Display type in ast output";
       "-ap", Arg.Set Options.opt_all_parenthesis, " Display all parenthesis in printer";
       "--typed", Arg.Set Options.opt_all_parenthesis, " Same as -ap";
