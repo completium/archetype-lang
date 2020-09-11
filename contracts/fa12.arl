@@ -15,18 +15,18 @@ asset ledger identified by holder to big_map {
   { holder = caller; tokens = totalsupply }
 }
 
-entry %transfer (from_ : address, to_ : address, value : nat) {
+entry %transfer (%from : address, %to : address, value : nat) {
   require {
-    r1 otherwise "NotEnoughBalance" : ledger[from_].tokens >= value;
+    r1 otherwise "NotEnoughBalance" : ledger[%from].tokens >= value;
   }
   effect {
-    if caller <> from_ then (
-      var current = allowance[(from_, caller)].amount;
+    if caller <> %from then (
+      var current = allowance[(%from, caller)].amount;
       dofailif(current < value, ("NotEnoughAllowance", ((value, current))));
-      allowance.update((from_, caller), { amount -=  value });
+      allowance.update((%from, caller), { amount -=  value });
     );
-    ledger.update(from_, { tokens -= value });
-    ledger.addupdate(to_, { tokens += value });
+    ledger.update(%from, { tokens -= value });
+    ledger.addupdate(%to, { tokens += value });
   }
 }
 
@@ -59,47 +59,47 @@ specification {
   s1: ledger.sum(tokens) = totalsupply;
 }
 
-specification entry %transfer (from_ : address, to_ : address, value : nat) {
+specification entry %transfer (%from : address, %to : address, value : nat) {
   fails {
     f0 with (s : string) :
       s = "NotEnoughBalance" and
-      let some after_ledger_from = ledger[from_] in
+      let some after_ledger_from = ledger[%from] in
         after_ledger_from.tokens < value
       otherwise true;
     f1 with (v : string * (nat * nat)) :
       v[0] = "NotEnoughAllowance" and
-      caller <> from_ and
-      let some after_allowance_from_caller = allowance[(from_,caller)] in
+      caller <> %from and
+      let some after_allowance_from_caller = allowance[(%from,caller)] in
         after_allowance_from_caller.amount < value and
         v[1][0] = value and
         v[1][1] = after_allowance_from_caller.amount
       otherwise true;
   }
   // LEDGER ASSET
-  postcondition transfer_p1 { // effect on from_ nbtokens
-    from_ <> to_ ->
-    let some before_ledger_from = before.ledger[from_] in
-      let some after_ledger_from = ledger[from_] in
+  postcondition transfer_p1 { // effect on %from nbtokens
+    %from <> %to ->
+    let some before_ledger_from = before.ledger[%from] in
+      let some after_ledger_from = ledger[%from] in
         after_ledger_from.tokens = before_ledger_from.tokens - value
       otherwise true
     otherwise true
   }
-  postcondition transfer_p2 { // effect on to_ nbtokens
-    from_ <> to_ ->
-    let some after_ledger_to = ledger[to_] in
-      let some before_ledger_to = before.ledger[to_] in
+  postcondition transfer_p2 { // effect on %to nbtokens
+    %from <> %to ->
+    let some after_ledger_to = ledger[%to] in
+      let some before_ledger_to = before.ledger[%to] in
         after_ledger_to.tokens = before_ledger_to.tokens + value
       otherwise
         after_ledger_to.tokens = value
-    otherwise false // to_ ledger asset exists after transfer
+    otherwise false // %to ledger asset exists after transfer
   }
   /*postcondition transfer_p3_0 {
-    from_ = to_ -> ledger = before.ledger
+    %from = %to -> ledger = before.ledger
   }*/
   postcondition transfer_p3 { // other ledger assets are unchanged
     forall tokenholder in ledger,
-      tokenholder.holder <> from_ ->
-      tokenholder.holder <> to_ ->
+      tokenholder.holder <> %from ->
+      tokenholder.holder <> %to ->
       let some before_th = before.ledger[tokenholder.holder] in
         tokenholder = before_th
       otherwise true
@@ -107,21 +107,21 @@ specification entry %transfer (from_ : address, to_ : address, value : nat) {
   postcondition transfer_p4 { // no ledger asset is removed
     removed.ledger.isempty()
   }
-  postcondition transfer_p5 { // added ledger asset may be to_
+  postcondition transfer_p5 { // added ledger asset may be %to
     forall tokenholder in added.ledger,
-      tokenholder.holder = to_
+      tokenholder.holder = %to
   }
   postcondition transfer_p6 { // number of added asset may be one
-    let some before_to = before.ledger[to_] in
+    let some before_to = before.ledger[%to] in
       true
     otherwise
       ledger.count() = before.ledger.count() + 1
   }
   // ALLOWANCE ASSET
   postcondition transfer_p7 { // effect on allowance
-    caller <> from_ ->
-    let some before_from_caller = before.allowance[(from_,caller)] in
-      let some after_from_caller = allowance[(from_,caller)] in
+    caller <> %from ->
+    let some before_from_caller = before.allowance[(%from,caller)] in
+      let some after_from_caller = allowance[(%from,caller)] in
         before_from_caller.amount > value ->
         after_from_caller.amount = before_from_caller.amount - value
       otherwise true
@@ -129,7 +129,7 @@ specification entry %transfer (from_ : address, to_ : address, value : nat) {
   }
   postcondition transfer_p8 { // other allowance assets are unchanged
     forall a in allowance,
-      a.addr_owner <> from_ and a.addr_spender <> caller ->
+      a.addr_owner <> %from and a.addr_spender <> caller ->
       let some before_a = before.allowance[(a.addr_owner,a.addr_spender)] in
         a = before_a
       otherwise true
@@ -145,8 +145,8 @@ specification entry approve(spender : address, value : nat) {
       let some allowance_caller_spender = allowance[(caller,spender)] in
         value > 0 and
         allowance_caller_spender.amount > 0 and
-        msg = ("UnsafeAllowanceChange", allowance_caller_spender.amount) 
-      otherwise true; 
+        msg = ("UnsafeAllowanceChange", allowance_caller_spender.amount)
+      otherwise true;
   }
   postcondition approve_p1 { // effect on allowance asset
     let some allowance_caller_spender = allowance[(caller,spender)] in
@@ -159,7 +159,7 @@ specification entry approve(spender : address, value : nat) {
       (a.addr_owner, a.addr_spender) <> (caller, spender) ->
       let some before_a = before.allowance[(a.addr_owner, a.addr_spender)] in
         a = before_a
-      otherwise false // no other allowance asset is added  
+      otherwise false // no other allowance asset is added
   }
 
   postcondition approve_p3 { // number of added allowance may be 1
