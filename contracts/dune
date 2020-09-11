@@ -21,6 +21,7 @@
   (escrow_simple.arl as contracts/escrow_simple.arl)
   (escrow_without_spec.arl as contracts/escrow_without_spec.arl)
   (fa12.arl as contracts/fa12.arl)
+  (fa12_inspector.arl as contracts/fa12_inspector.arl)
   (fizzy.arl as contracts/fizzy.arl)
   (guarantee_fund.arl as contracts/guarantee_fund.arl)
   (health_care.arl as contracts/health_care.arl)
