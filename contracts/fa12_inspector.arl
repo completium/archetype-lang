@@ -4,7 +4,17 @@ variable fa12 : address = @KT1RcPjfiNVnnisodgDczTGACH8gGnMo8vwi
 
 variable totalSupply : nat = 0
 
+variable balanceOwner     : option<address> = none
+variable balanceValue     : option<nat> = none
+
+variable allowanceOwner   : option<address> = none
+variable allowanceSpender : option<address> = none
+variable allowanceValue   : option<nat> = none
+
+
 variable res : nat = 0
+
+variable map_balance : map<address, nat> = []
 
 entry setTotalSupply(v : nat) {
   called by fa12
@@ -14,5 +24,30 @@ entry setTotalSupply(v : nat) {
 }
 
 entry retrieveTotalSupply() {
-  transfer 0tz to fa12 call getTotalSupply<entrysig<nat>>(self.setTotalSupply);
+  transfer 0tz to fa12 call getTotalSupply<entrysig<nat>>(self.setTotalSupply)
+}
+
+entry setBalanceValue(v : nat) {
+  called by fa12
+  effect {
+    balanceValue := some(v)
+  }
+}
+
+entry retrieveBalanceFor(owner : address) {
+  balanceOwner := some(owner);
+  transfer 0tz to fa12 call getBalance<address * entrysig<nat>> ((owner, (self.setBalanceValue)))
+}
+
+entry setAllowanceValue(v : nat) {
+  called by fa12
+  effect {
+    allowanceValue := some(v)
+  }
+}
+
+entry retrieveAllownaceFor(owner : address, spender : address) {
+  allowanceOwner   := some(owner);
+  allowanceSpender := some(spender);
+  transfer 0tz to fa12 call getBalance<address * address * entrysig<nat>> ((owner, spender, (self.setAllowanceValue)))
 }
