@@ -375,17 +375,17 @@ let main () =
       "--list-target", Arg.Unit (fun _ -> Format.printf "target available:@\n  ligo@\n  scaml (beta)@\n  whyml@\n"; exit 0), " List available target languages";
       "-pt", Arg.Set Options.opt_pt, " Generate parse tree";
       "--parse-tree", Arg.Set Options.opt_pt, " Same as -pt";
-      "-ept", Arg.Set Options.opt_extpt, " Generate extended parse tree";
-      "--extended-parse-tree", Arg.Set Options.opt_extpt, " Same as -ept";
-      "-ext", Arg.Set Options.opt_ext, " Process extensions";
-      "--extensions", Arg.Set Options.opt_ext, " Same as -ext";
+      (* "-ept", Arg.Set Options.opt_extpt, " Generate extended parse tree"; *)
+      (* "--extended-parse-tree", Arg.Set Options.opt_extpt, " Same as -ept"; *)
+      (* "-ext", Arg.Set Options.opt_ext, " Process extensions"; *)
+      (* "--extensions", Arg.Set Options.opt_ext, " Same as -ext"; *)
       "-ast", Arg.Set Options.opt_ast, " Generate typed ast";
       "--typed-ast", Arg.Set Options.opt_ast, " Same as -ast";
       "-mdl", Arg.Set Options.opt_mdl, " Generate model";
       "--model", Arg.Set Options.opt_mdl, " Same as -mdl";
-      "--typed", Arg.Set Options.opt_typed, " Display type in ast output";
-      "-ap", Arg.Set Options.opt_all_parenthesis, " Display all parenthesis in printer";
-      "--typed", Arg.Set Options.opt_all_parenthesis, " Same as -ap";
+      (* "--typed", Arg.Set Options.opt_typed, " Display type in ast output"; *)
+      (* "-ap", Arg.Set Options.opt_all_parenthesis, " Display all parenthesis in printer"; *)
+      (* "--typed", Arg.Set Options.opt_all_parenthesis, " Same as -ap"; *)
       "-fp", Arg.String (fun s -> Options.opt_property_focused := s), " Focus property (with whyml target only)";
       "--focus-property", Arg.String (fun s -> Options.opt_property_focused := s), " Same as -fp";
       "-sci", Arg.String (fun s -> Options.opt_caller := s), " Set caller address for initialization";
@@ -412,18 +412,18 @@ let main () =
       "-ry", Arg.Set Options.opt_raw_whytree, " Print raw model tree";
       "--raw-whytree", Arg.Set Options.opt_raw_whytree, " Same as -r";
       "-ir", ir, " Generate intermediate representation";
-      "--intermediate-representation", ir, " Same as -ri";
+      "--intermediate-representation", ir, " Same as -ir";
       "-ri", Arg.Set Options.opt_raw_ir, " Print raw intermediate representation";
       "--raw-ir", Arg.Set Options.opt_raw_ir, " Same as -ri";
       "-rm", Arg.Set Options.opt_raw_michelson, " Print raw michelson";
       "--raw-michelson", Arg.Set Options.opt_raw_michelson, " Same as -rm";
-      "-json", Arg.Set Options.opt_json, " Print JSON format";
+      (* "-json", Arg.Set Options.opt_json, " Print JSON format"; *)
       "-V", Arg.String (fun s -> Options.add_vids s), "<id> process specication identifiers";
       "-v", Arg.Unit (fun () -> print_version ()), " Show version number and exit";
       "--version", Arg.Unit (fun () -> print_version ()), " Same as -v";
     ] in
   let arg_usage = String.concat "\n" [
-      "usage : archetype [-t <lang> | -pt | -ext | -tast | [-ws] [-sa] [-skv] [-nse] | -lsp <request>] [-r | -json] <file>";
+      "usage : archetype [-t <lang> | -pt | -ast | -mdl | -c | -ir | -lsp <request>] [-r ] <file>";
       "";
       "Available options:";
     ]  in

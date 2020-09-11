@@ -1,6 +1,6 @@
 archetype fa12
 
-constant totalsupply : nat = 10_000_000
+variable totalsupply : nat = 10_000_000
 
 asset allowance identified by addr_owner addr_spender to big_map {
   addr_owner       : address;
@@ -40,7 +40,7 @@ entry approve(spender : address, value : nat) {
 }
 
 entry getAllowance (owner : address, spender : address, cb : entrysig<nat>) {
-  transfer 0tz to entry cb(allowance[(owner, spender)].amount);
+  ()
 }
 
 entry getBalance (owner : address, cb : entrysig<nat>) {
@@ -168,7 +168,7 @@ specification entry approve(spender : address, value : nat) {
     otherwise
       allowance.count() = before.allowance.count() + 1
   }
-  
+
   postcondition approve_p4 {
     ledger = before.ledger
   }
