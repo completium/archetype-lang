@@ -168,4 +168,8 @@ specification entry approve(spender : address, value : nat) {
     otherwise
       allowance.count() = before.allowance.count() + 1
   }
+  
+  postcondition approve_p4 {
+    ledger = before.ledger
+  }
 }
