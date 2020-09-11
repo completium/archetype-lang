@@ -25,6 +25,7 @@ escrow_penalty.arl \
 escrow_simple.arl \
 escrow_without_spec.arl \
 fa12.arl \
+fa12_inspector.arl \
 fizzy.arl \
 guarantee_fund.arl \
 health_care.arl \
@@ -71,6 +72,7 @@ escrow_penalty.arl \
 escrow_simple.arl \
 escrow_without_spec.arl \
 fa12.arl \
+fa12_inspector.arl \
 fizzy.arl \
 guarantee_fund.arl \
 health_care.arl \
@@ -117,6 +119,7 @@ escrow_penalty.arl \
 escrow_simple.arl \
 escrow_without_spec.arl \
 fa12.arl \
+fa12_inspector.arl \
 fizzy.arl \
 guarantee_fund.arl \
 health_care.arl \
