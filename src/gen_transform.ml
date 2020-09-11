@@ -1752,6 +1752,8 @@ let replace_ligo_ident (model : model) : model =
     match id with
     | "type" -> "type_"
     | "amount" -> "amount_"
+    | "from" -> "from_"
+    | "to" -> "to_"
     | _ -> id
   in
   replace_ident_model f model
@@ -4821,6 +4823,12 @@ let remove_state (model : model) : model =
   |> map_mterm_model for_mterm
 
 let eval_storage (model : model) : model =
+  let sis, _ = List.fold_left (fun (sis, map) (si : storage_item) ->
+      let mt = Model.Utils.eval map si.default in
+      let map = (unloc si.id, mt)::map in
+      (sis @ [{si with default = mt}], map)
+    ) ([], []) model.storage
+  in
   { model with
-    storage = List.map (fun (si : storage_item) -> {si with default = Model.Utils.eval [] si.default} ) model.storage;
+    storage = sis;
   }

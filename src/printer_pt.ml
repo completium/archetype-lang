@@ -616,7 +616,7 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_colon pos pp) fmt (t, a, b)
 
-  | Eself x -> Format.fprintf fmt "self.%a" pp_id x
+  | Eself x -> Format.fprintf fmt "(self.%a)" pp_id x
 
   | Eany -> Format.fprintf fmt "any"
 
