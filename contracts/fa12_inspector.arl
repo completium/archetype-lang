@@ -6,15 +6,10 @@ variable totalSupply : nat = 0
 
 variable res : nat = 0
 
-entry checkTotalSupply() {
-  res := if totalSupply > 5_000_000 then 1 else 2
-}
-
 entry setTotalSupply(v : nat) {
   called by fa12
   effect {
     totalSupply := v;
-    transfer 0tz to entry self.checkTotalSupply()
   }
 }
 
