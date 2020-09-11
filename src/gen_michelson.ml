@@ -888,25 +888,26 @@ let map_implem = [
 
 let concrete_michelson b =
   let error _ = emit_error (NoConcreteImplementationFor (get_fun_name b)) in
+  let get_implem b = List.assoc (get_fun_name b) map_implem in
   match b with
-  | T.Bmin _          -> T.SEQ [DUP; UNPAIR; COMPARE; LT; IF ([CAR], [CDR])]
-  | T.Bmax _          -> T.SEQ [DUP; UNPAIR; COMPARE; LT; IF ([CDR], [CAR])]
-  | T.Bfloor          -> T.SEQ [UNPAIR; EDIV; IF_NONE ([T.cfail "DivByZero"], [CAR])]
-  | T.Bceil           -> T.SEQ [UNPAIR; EDIV; IF_NONE ([T.cfail "DivByZero"], [UNPAIR; SWAP; INT; EQ; IF ([], [PUSH (T.tint, T.Dint Big_int.unit_big_int); ADD])])]
+  | T.Bmin _          -> T.SEQ (get_implem (Bmin T.tunit))
+  | T.Bmax _          -> T.SEQ (get_implem (Bmax T.tunit))
+  | T.Bfloor          -> T.SEQ (get_implem b)
+  | T.Bceil           -> T.SEQ (get_implem b)
   | T.BlistContains _ -> T.SEQ [UNPAIR; PUSH (T.tbool, T.Dfalse); SWAP; ITER [DIG 2; DUP; DUG 3; COMPARE; EQ; OR; ]; DIP (1, [DROP 1])]
   | T.BlistNth _      -> error ()
   | T.Btostring _     -> error ()
   | T.Bratcmp         -> T.SEQ [UNPAIR; UNPAIR; DIP (1, [UNPAIR]); UNPAIR; DUG 3; MUL; DIP (1, [MUL]); SWAP; COMPARE; SWAP;
                                 IF_LEFT ([DROP 1; EQ], [IF_LEFT ([IF_LEFT ([DROP 1; LT], [DROP 1; LE])],
                                                                  [IF_LEFT ([DROP 1; GT], [DROP 1; GE])])])]
-  | T.Bratnorm        -> T.SEQ []
-  | T.Brataddsub      -> T.SEQ [UNPAIR; UNPAIR; DIP (1, [UNPAIR; SWAP; DUP]); UNPAIR; SWAP; DUP; DIG 3; MUL; DUG 4; DIG 3; MUL; DIP (1, [MUL]); DIG 3; IF_LEFT ([DROP 1; ADD], [DROP 1; SWAP; SUB]); PAIR;]
-  | T.Bratmul         -> T.SEQ [UNPAIR; DIP (1, [UNPAIR]); UNPAIR; DIP (1, [SWAP]); MUL; DIP (1, [MUL]); PAIR ]
-  | T.Bratdiv         -> T.SEQ [UNPAIR; DIP (1, [UNPAIR]); UNPAIR; DIG 3; PUSH (T.tint, T.Dint Big_int.zero_big_int); DIG 4; DUP; DUG 5; COMPARE; GE; IF ([INT], [NEG]); MUL; DIP (1, [MUL; ABS]); PAIR ]
-  | T.Bratuminus      -> T.SEQ [UNPAIR; NEG; PAIR]
-  | T.Bratabs         -> T.SEQ [UNPAIR; ABS; INT; PAIR]
-  | T.Brattez         -> T.SEQ [UNPAIR; UNPAIR; ABS; DIG 2; MUL; EDIV; IF_NONE ([T.cfail "DivByZero"], []); CAR;]
-  | T.Bratdur         -> T.SEQ [UNPAIR; UNPAIR; DIG 2; MUL; EDIV; IF_NONE ([T.cfail "DivByZero"], []); CAR;]
+  | T.Bratnorm        -> T.SEQ (get_implem b)
+  | T.Brataddsub      -> T.SEQ (get_implem b)
+  | T.Bratmul         -> T.SEQ (get_implem b)
+  | T.Bratdiv         -> T.SEQ (get_implem b)
+  | T.Bratuminus      -> T.SEQ (get_implem b)
+  | T.Bratabs         -> T.SEQ (get_implem b)
+  | T.Brattez         -> T.SEQ (get_implem b)
+  | T.Bratdur         -> T.SEQ (get_implem b)
 
 type env = {
   vars : ident list;
