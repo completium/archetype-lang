@@ -419,7 +419,7 @@ let mk_partition_axiom asset f _kt pa kpt : decl =
 
 (* Transfer & contract call -------------------------------------------------*)
 
-let mk_transfer () =
+(* let mk_transfer () =
   let decl : (term, typ, ident) abstract_decl = Dfun {
       name     = "transfer";
       logic    = NoMod;
@@ -454,7 +454,7 @@ let mk_transfer () =
           )
         ]
     } in
-  loc_decl decl |> deloc
+  loc_decl decl |> deloc *)
 
 let mk_call () =
   let decl : (term, typ, ident) abstract_decl = Dfun {
@@ -477,7 +477,7 @@ let mk_call () =
     } in
   loc_decl decl |> deloc
 
-let mk_operation () =
+(* let mk_operation () =
   let decl : (term, typ, ident) abstract_decl = Dfun {
       name     = "mk_operation";
       logic    = NoMod;
@@ -487,7 +487,10 @@ let mk_operation () =
       fails    = [];
       variants = [];
       requires = [];
-      ensures  = [];
+      ensures  = [ {
+        id = "mk_op_post";
+        form = Teq(Tyint,Tcard (,(Tdoti("_ops", gs))),Tplus(Tcard(,Tapp(Told (Tvar gs),[Tvar "_ops"])),1));
+      }];
       body     =
         Tassign (
           Tdoti(gs,"_ops"),
@@ -496,7 +499,7 @@ let mk_operation () =
                  Tdoti(gs,"_ops")
                 ))
     } in
-  loc_decl decl |> deloc
+  loc_decl decl |> deloc *)
 
 (* Sort ----------------------------------------------------------------------*)
 
@@ -1652,7 +1655,24 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mtransfer (v, k) ->
       begin
         match k with
-        | TKsimple d             -> Ttransfer(map_mterm m ctx v, map_mterm m ctx d)
+        | TKsimple d             ->
+          let a = map_mterm m ctx v in
+          let t = map_mterm m ctx d in
+          Tseq[
+          dl (Tassign (
+            loc_term (Tdoti(gs,"_ops")),
+            dl (Tcons (dl gListAs,
+                    dl (Tapp(loc_term (Tvar "_mk_transfer"),[t;a])),
+                    loc_term (Tdoti(gs,"_ops"))
+                  ))));
+          dl (Tassign (
+            loc_term (Tdoti (gs,"_balance")),
+            dl (Tminus (dl Tyint,
+                    loc_term (Tdoti (gs,"_balance")),
+                    a
+                   ))
+          ))
+        ]
         | TKcall (id, _, d, a)   -> Tcall(map_mterm m ctx v, map_mterm m ctx d, dl id, map_mterm m ctx a)
         | TKentry (e, a)         -> Tmkoperation (map_mterm m ctx v, map_mterm m ctx e, map_mterm m ctx a)
         | TKself (id, _a)        -> Tmkoperation(map_mterm m ctx v, dl (Tapp (loc_term (Tvar "getopt"), [loc_term (Tentrypoint (id, Tselfaddress gs))])), loc_term (Tnil gs))
@@ -1672,7 +1692,15 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | _ -> Tdoti (dl gs, dl (mk_id gOperations))
       end
     | Mmkoperation (v, d, _a)   ->
-      Tapp (loc_term (Tvar "_mk_operation"), [map_mterm m ctx v; map_mterm m ctx d; loc_term (Tnil gListAs)])
+      let a = map_mterm m ctx v in
+      let e = map_mterm m ctx d in
+      let l = loc_term (Tnil gListAs) in
+      Tassign (
+          loc_term (Tdoti(gs,"_ops")),
+          dl (Tcons (dl gListAs,
+                 dl (Tapp( loc_term (Tvar "_mk_operation"),[a; e; l])),
+                 loc_term (Tdoti(gs,"_ops"))
+                )))
 
     (* literals *)
 
@@ -2944,7 +2972,7 @@ let to_whyml (m : M.model) : mlw_tree  =
   let storageval       = Dval (true, dl gs, dl Tystorage) in
   let axioms           = mk_axioms m in
   (*let partition_axioms = mk_partition_axioms m in*)
-  let transfer         = if M.Utils.with_operations m then [mk_transfer ();mk_call(); mk_operation()] else [] in
+  let transfer         = if M.Utils.with_operations m then [(* mk_transfer (); *)mk_call()(* ; mk_operation() *)] else [] in
   let theory           = mk_theory m in
   let storage_api      = mk_storage_api m (mlwassets |> wdl) in
   let functions        = mk_functions m in
