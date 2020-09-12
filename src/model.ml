@@ -946,6 +946,7 @@ let tnat      = Tbuiltin Bnat
 let tint      = Tbuiltin Bint
 let tstring   = Tbuiltin Bstring
 let tbytes    = Tbuiltin Bbytes
+let ttez      = Tbuiltin Bcurrency
 let toption t = Toption t
 let ttuple l  = Ttuple l
 let trat      = ttuple [tint; tnat]
@@ -963,6 +964,9 @@ let mfalse      = mk_mterm (Mbool false) tbool
 
 
 let mk_mvar id t = mk_mterm (Mvar(id, Vlocal, Tnone, Dnone )) t
+let mk_pvar id t = mk_mterm (Mvar(id, Vparam, Tnone, Dnone )) t
+
+let mk_tez v = mk_mterm (Mcurrency(Big_int.big_int_of_int v, Utz)) ttez
 
 let mk_tuple (l : mterm list) = mk_mterm (Mtuple l) (Ttuple (List.map (fun (x : mterm) -> x.type_) l))
 

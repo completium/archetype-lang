@@ -840,6 +840,7 @@ let to_ir (model : M.model) : T.ir =
     List.fold_left (fun (funs, entries) (x : M.function__) ->
         match x.node with
         | Entry fs -> (funs, entries @ [for_fs_entry env fs])
+        | Getter (_fs, _ret) -> assert false
         | Function (fs, ret) -> funs @ [for_fs_fun env fs ret], entries) ([], []) model.functions
   in
   let annot a (t : T.type_) = { t with annotation = Some a} in

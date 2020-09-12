@@ -17,7 +17,7 @@ type error_desc =
   | DuplicatedKeyAsset of ident
   | OnlyLiteralInAssetInit
   | NoEntrypoint
-  | UnknownEntrysig of ident
+  | UnknownContract of ident
   | NoSortOnKeyWithMultiKey of ident
 
 let pp_error_desc fmt = function
@@ -58,7 +58,7 @@ let pp_error_desc fmt = function
   | DefaultValueOnKeyAsset an ->
     Format.fprintf fmt "default value on key for asset \"%s\"" an
 
-  | UnknownEntrysig id ->
+  | UnknownContract id ->
     Format.fprintf fmt "cannot find type for '%s'" id
 
   | NoEntrypoint -> Format.fprintf fmt "No entrypoint found (action or transtion)"
@@ -4838,4 +4838,38 @@ let eval_storage (model : model) : model =
   in
   { model with
     storage = sis;
+  }
+
+let getter_to_entry (model : model) : model =
+  let for_function__ (f__ : function__) : function__ =
+    let for_function_node (fn : function_node) : function_node =
+      let for_function_struct (t : type_) (fs : function_struct) : function_struct =
+        let process () =
+          let icallback = dumloc "cb" in
+          let tcallback = Tcontract t in
+          let vcallback = mk_pvar icallback tcallback in
+          let rec aux (mt : mterm) : mterm =
+            match mt.node with
+            | Mreturn x -> mk_mterm (Mtransfer(mk_tez 0, TKentry(vcallback, x))) tunit
+            | _ -> map_mterm aux mt
+          in
+          (icallback, tcallback, None), aux fs.body
+        in
+        let arg, body = process () in
+        {
+          fs with
+          args = fs.args @ [arg];
+          body = body;
+        }
+      in
+      match fn with
+      | Getter(fs, t) -> Entry (for_function_struct t fs)
+      | _ -> fn
+    in
+    { f__ with
+      node = for_function_node f__.node;
+    }
+  in
+  { model with
+    functions = List.map for_function__ model.functions;
   }

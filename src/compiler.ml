@@ -129,6 +129,7 @@ let generate_target model =
   | LigoStorage ->
     model
     |> replace_ligo_ident
+    |> getter_to_entry
     |> process_multi_keys
     |> replace_col_by_key_for_ckfield
     |> process_asset_state
@@ -164,6 +165,7 @@ let generate_target model =
   | SmartPy ->
     model
     |> replace_col_by_key_for_ckfield
+    |> getter_to_entry
     |> process_multi_keys
     |> process_asset_state
     |> replace_assignfield_by_update
@@ -198,6 +200,7 @@ let generate_target model =
   | Scaml ->
     model
     |> remove_add_update
+    |> getter_to_entry
     |> process_multi_keys
     |> replace_update_by_set
     |> generate_storage
@@ -254,6 +257,7 @@ let generate_target model =
   | Whyml ->
     model
     |> replace_whyml_ident
+    |> getter_to_entry
     |> process_multi_keys
     |> replace_assignfield_by_update
     |> process_asset_state
