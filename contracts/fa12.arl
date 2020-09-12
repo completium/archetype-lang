@@ -171,3 +171,30 @@ specification entry approve(spender : address, value : nat) {
     ledger = before.ledger
   }
 }
+
+specification entry getAllowance (owner : address, spender : address, cb : contract<nat>) {
+  postcondition getallowance_p1 { // creates one op
+    length (operations) = 1
+  }
+  postcondition getallowance_p2 { // assets are unchanged
+    ledger = before.ledger and allowance = before.allowance
+  }
+}
+
+specification entry getBalance (owner : address, cb : contract<nat>) {
+  postcondition getbalance_p1 { // creates one op
+    length (operations) = 1
+  }
+  postcondition getbalance_p2 { // assets are unchanged
+    ledger = before.ledger and allowance = before.allowance
+  }
+}
+
+specification entry geTotalSupply (cb : contract<nat>) {
+  postcondition gettotalsupply_p1 { // creates one op
+    length (operations) = 1
+  }
+  postcondition gettotalsupply_p2 { // assets are unchanged
+    ledger = before.ledger and allowance = before.allowance
+  }
+}
