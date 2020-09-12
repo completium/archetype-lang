@@ -23,7 +23,7 @@ and type_r =
   | Tset       of type_t
   | Tlist      of type_t
   | Tmap       of type_t * type_t
-  | Tentrysig  of type_t
+  | Tcontract  of type_t
   | Tkeyof     of type_t
 
 and type_t = type_r loced
@@ -271,6 +271,7 @@ and declaration_unloc =
   | Dextension     of extension_decl
   | Dnamespace     of namespace_decl
   | Dfunction      of s_function
+  | Dgetter        of s_function
   | Dspecification of specification
   | Dspecasset     of lident * label_exprs
   | Dspecfun       of bool * lident * args * specification (* true = entry *)
@@ -393,7 +394,6 @@ let is_keyword = function
   | "end"
   | "entry"
   | "entrypoint"
-  | "entrysig"
   | "enum"
   | "exists"
   | "extension"
@@ -405,6 +405,7 @@ let is_keyword = function
   | "forall"
   | "from"
   | "function"
+  | "getter"
   | "identified"
   | "if"
   | "in"

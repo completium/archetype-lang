@@ -74,8 +74,8 @@ let rec pp_ptyp fmt (t : ptyp) =
       (pp_list " * " pp_ptyp) ts
   | Toperation ->
     Format.fprintf fmt "operation"
-  | Tentrysig et ->
-    Format.fprintf fmt "entrysig<%a>" pp_ptyp et
+  | Tcontract et ->
+    Format.fprintf fmt "contract<%a>" pp_ptyp et
   | Ttrace t ->
     Format.fprintf fmt "%a"
       pp_trtyp t

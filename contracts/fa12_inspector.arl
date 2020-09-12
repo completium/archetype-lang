@@ -24,7 +24,7 @@ entry setTotalSupply(v : nat) {
 }
 
 entry retrieveTotalSupply() {
-  transfer 0tz to fa12 call getTotalSupply<entrysig<nat>>(self.setTotalSupply)
+  transfer 0tz to fa12 call getTotalSupply<contract<nat>>(self.setTotalSupply)
 }
 
 entry setBalanceValue(v : nat) {
@@ -36,7 +36,7 @@ entry setBalanceValue(v : nat) {
 
 entry retrieveBalanceFor(owner : address) {
   balanceOwner := some(owner);
-  transfer 0tz to fa12 call getBalance<address * entrysig<nat>> ((owner, (self.setBalanceValue)))
+  transfer 0tz to fa12 call getBalance<address * contract<nat>> ((owner, (self.setBalanceValue)))
 }
 
 entry setAllowanceValue(v : nat) {
@@ -49,5 +49,5 @@ entry setAllowanceValue(v : nat) {
 entry retrieveAllownaceFor(owner : address, spender : address) {
   allowanceOwner   := some(owner);
   allowanceSpender := some(spender);
-  transfer 0tz to fa12 call getAllowance<address * address * entrysig<nat>> ((owner, spender, (self.setAllowanceValue)))
+  transfer 0tz to fa12 call getAllowance<address * address * contract<nat>> ((owner, spender, (self.setAllowanceValue)))
 }

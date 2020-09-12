@@ -2,6 +2,6 @@ archetype entry_token
 
 variable nbtokens : nat = 0
 
-entry getBalance(cb : entrysig<nat>) { transfer 0tz to entry cb(nbtokens) }
+entry getBalance(cb : contract<nat>) { transfer 0tz to entry cb(nbtokens) }
 
 entry setBalance(v : nat) { nbtokens := v }

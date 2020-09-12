@@ -58,7 +58,7 @@ type ptyp =
   | Ttuple of ptyp list
   | Toption of ptyp
   | Toperation
-  | Tentrysig of ptyp
+  | Tcontract of ptyp
   | Ttrace of trtyp
 [@@deriving show {with_path = false}]
 

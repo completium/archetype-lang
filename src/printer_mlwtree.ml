@@ -140,7 +140,7 @@ let pp_type fmt typ =
       | Tystorage     -> "_storage"
       | Tyunit        -> "unit"
       | Tyoperation   -> "operation"
-      | Tyentrysig    -> "entrysig"
+      | Tycontract    -> "contract"
       | Tycoll i      -> (String.capitalize_ascii i) ^ ".collection"
       | Tyview i      -> (String.capitalize_ascii i) ^ ".view"
       | Typartition i -> (String.capitalize_ascii i) ^ ".field"
@@ -154,7 +154,6 @@ let pp_type fmt typ =
       | Tylist tt     -> "L.list " ^ (typ_str ~pparen:(true) tt)
       | Tybool        -> "bool"
       | Tyuint        -> "nat"
-      | Tycontract i  -> i
       | Tyrational    -> "rational"
       | Tyduration    -> "duration"
       | Tysignature   -> "signature"

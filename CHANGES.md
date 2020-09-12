@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
  - remove `set_` and `map_` prefix for container builtins
+ - replace `entrysig` by `contract`
 
 ## [1.1.2] - 2020-08-13
 ### Changed

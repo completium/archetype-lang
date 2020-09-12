@@ -40,9 +40,8 @@ type ('i,'t) abstract_type =
   | Tychainid
   | Tystorage
   | Tyoperation
-  | Tyentrysig
+  | Tycontract
   | Tyunit
-  | Tycontract of 'i
   | Tyrecord of 'i
   | Tycoll  of 'i
   | Tyview of 'i
@@ -324,7 +323,7 @@ let map_abstract_type (map_i : 'i1 -> 'i2) (map_t : 't1 -> 't2) = function
   | Tystorage     -> Tystorage
   | Tyunit        -> Tyunit
   | Tyoperation   -> Tyoperation
-  | Tyentrysig    -> Tyentrysig
+  | Tycontract    -> Tycontract
   | Tyrecord i    -> Tyrecord (map_i i)
   | Tycoll i      -> Tycoll (map_i i)
   | Tyview i      -> Tyview (map_i i)
@@ -336,7 +335,6 @@ let map_abstract_type (map_i : 'i1 -> 'i2) (map_t : 't1 -> 't2) = function
   | Tyoption t    -> Tyoption (map_t t)
   | Tyset i       -> Tyset (map_i i)
   | Tylist t      -> Tylist (map_t t)
-  | Tycontract i  -> Tycontract (map_i i)
   | Tybool        -> Tybool
   | Tyuint        -> Tyuint
   | Tyrational    -> Tyrational
@@ -752,10 +750,9 @@ let compare_abstract_type
   | Tybytes, Tybytes -> true
   | Tystorage, Tystorage -> true
   | Tyoperation, Tyoperation -> true
-  | Tyentrysig, Tyentrysig -> true
+  | Tycontract, Tycontract -> true
   | Tyunit, Tyunit -> true
   | Tystate, Tystate -> true
-  | Tycontract i1, Tycontract i2 -> cmpi i1 i2
   | Tyrecord i1, Tyrecord i2 -> cmpi i1 i2
   | Tycoll i1, Tycoll i2 -> cmpi i1 i2
   | Tyview i1, Tyview i2 -> cmpi i1 i2

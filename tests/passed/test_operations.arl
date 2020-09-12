@@ -2,7 +2,7 @@ archetype test_operations
 
 entry exec() {
   var res : int = length(operations);
-  var e   : entrysig<unit> = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg;
+  var e   : contract<unit> = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg;
   var op  : operation = mkoperation(0tz, e, ());
   operations := prepend(operations, op);
   dorequire(res = 1, "ko")

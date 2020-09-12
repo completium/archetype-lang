@@ -100,7 +100,7 @@ let to_ir (model : M.model) : T.ir =
       | Tlambda (a, r) -> Tlambda (to_type a, to_type r)
       | Tunit -> T.Tunit
       | Toperation -> T.Toperation
-      | Tentrysig t -> T.Tcontract (to_type t)
+      | Tcontract t -> T.Tcontract (to_type t)
       | Tstorage -> assert false
       | Tprog  _ -> assert false
       | Tvset  _ -> assert false
@@ -598,7 +598,7 @@ let to_ir (model : M.model) : T.ir =
 
     | Mcast (src, dst, v) -> begin
         match src, dst, v.node with
-        | M.Tbuiltin Baddress, M.Tentrysig t, _                -> get_contract (to_type t) (f v)
+        | M.Tbuiltin Baddress, M.Tcontract t, _                -> get_contract (to_type t) (f v)
         | M.Tbuiltin Bcurrency, M.Tbuiltin Bnat, _             -> T.idiv (f v) (T.imutez Big_int.unit_big_int)
         | M.Tbuiltin Bstring, M.Tbuiltin Bkey, Mstring s       -> T.Iconst (T.mk_type Tkey, Dstring s)
         | M.Tbuiltin Bstring, M.Tbuiltin Bsignature, Mstring s -> T.Iconst (T.mk_type Tsignature, Dstring s)

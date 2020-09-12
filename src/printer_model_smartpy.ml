@@ -107,8 +107,8 @@ let pp_model fmt (model : model) =
       Format.fprintf fmt "storage"
     | Toperation ->
       Format.fprintf fmt "operation"
-    | Tentrysig t ->
-      Format.fprintf fmt "entrysig<%a>" pp_type t
+    | Tcontract t ->
+      Format.fprintf fmt "contract<%a>" pp_type t
     | Tprog _
     | Tvset _
     | Ttrace _ -> Format.fprintf fmt "todo"
