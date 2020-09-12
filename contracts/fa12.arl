@@ -61,19 +61,17 @@ specification {
 
 specification entry %transfer (%from : address, %to : address, value : nat) {
   fails {
-    f0 with (s : string) :
-      s = "NotEnoughBalance" and
+    f0 with (msg : string) :
       let some after_ledger_from = ledger[%from] in
+        msg = "NotEnoughBalance" and
         after_ledger_from.tokens < value
       otherwise true;
-    f1 with (v : string * (nat * nat)) :
-      v[0] = "NotEnoughAllowance" and
-      caller <> %from and
+    f1 with (msg : string * (nat * nat)) :
       let some after_allowance_from_caller = allowance[(%from,caller)] in
-        after_allowance_from_caller.amount < value and
-        v[1][0] = value and
-        v[1][1] = after_allowance_from_caller.amount
-      otherwise true;
+        msg = ("NotEnoughAllowance", ((value, after_allowance_from_caller.amount))) and
+        caller <> %from and
+        after_allowance_from_caller.amount < value
+      otherwise false;
   }
   // LEDGER ASSET
   postcondition transfer_p1 { // effect on %from nbtokens
@@ -143,10 +141,10 @@ specification entry approve(spender : address, value : nat) {
   fails {
     f2 with (msg : (string * nat)) :
       let some allowance_caller_spender = allowance[(caller,spender)] in
+        msg = ("UnsafeAllowanceChange", allowance_caller_spender.amount) and
         value > 0 and
-        allowance_caller_spender.amount > 0 and
-        msg = ("UnsafeAllowanceChange", allowance_caller_spender.amount)
-      otherwise true;
+        allowance_caller_spender.amount > 0
+      otherwise false;
   }
   postcondition approve_p1 { // effect on allowance asset
     let some allowance_caller_spender = allowance[(caller,spender)] in
