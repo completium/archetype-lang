@@ -4840,7 +4840,7 @@ let eval_storage (model : model) : model =
     storage = sis;
   }
 
-let getter_to_entry (model : model) : model =
+let getter_to_entry ?(extra=false) (model : model) : model =
   let for_function__ (f__ : function__) : function__ =
     let for_function_node (fn : function_node) : function_node =
       let for_function_struct (t : type_) (fs : function_struct) : function_struct =
@@ -4856,10 +4856,12 @@ let getter_to_entry (model : model) : model =
           (icallback, tcallback, None), aux fs.body
         in
         let arg, body = process () in
+        let args, eargs = if extra then  fs.args, [arg] else fs.args @ [arg], [] in
         {
           fs with
-          args = fs.args @ [arg];
-          body = body;
+          args  = args;
+          eargs = eargs;
+          body  = body;
         }
       in
       match fn with

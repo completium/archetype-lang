@@ -39,16 +39,16 @@ entry approve(spender : address, value : nat) {
   allowance.addupdate( k, { amount = value });
 }
 
-entry getAllowance (owner : address, spender : address, cb : contract<nat>) {
-  transfer 0tz to entry cb(allowance[(owner, spender)].amount);
+getter getAllowance (owner : address, spender : address) : nat {
+  return (allowance[(owner, spender)].amount)
 }
 
-entry getBalance (owner : address, cb : contract<nat>) {
-  transfer 0tz to entry cb(ledger[owner].tokens);
+getter getBalance (owner : address) : nat {
+  return (ledger[owner].tokens)
 }
 
-entry getTotalSupply (cb : contract<nat>) {
-  transfer 0tz to entry cb(totalsupply);
+getter getTotalSupply () : nat {
+  return totalsupply
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -128,7 +128,7 @@ specification entry %transfer (%from : address, %to : address, value : nat) {
   postcondition transfer_p8 { // other allowance assets are unchanged
     forall a in allowance,
       a.addr_owner <> %from and a.addr_spender <> caller ->
-      let some before_a = before.allowance[(a.addr_owner,a.addr_spender)] in
+      let some before_a = before.allowance[(a.addr_owner, a.addr_spender)] in
         a = before_a
       otherwise true
   }
@@ -140,14 +140,14 @@ specification entry %transfer (%from : address, %to : address, value : nat) {
 specification entry approve(spender : address, value : nat) {
   fails {
     f2 with (msg : (string * nat)) :
-      let some allowance_caller_spender = allowance[(caller,spender)] in
+      let some allowance_caller_spender = allowance[(caller, spender)] in
         msg = ("UnsafeAllowanceChange", allowance_caller_spender.amount) and
         value > 0 and
         allowance_caller_spender.amount > 0
       otherwise false;
   }
   postcondition approve_p1 { // effect on allowance asset
-    let some allowance_caller_spender = allowance[(caller,spender)] in
+    let some allowance_caller_spender = allowance[(caller, spender)] in
       allowance_caller_spender.amount = value
     otherwise false // (caller,spender) allowance exists after approve
   }
@@ -161,7 +161,7 @@ specification entry approve(spender : address, value : nat) {
   }
 
   postcondition approve_p3 { // number of added allowance may be 1
-    let some allowance_caller_spender = before.allowance[(caller,spender)] in
+    let some allowance_caller_spender = before.allowance[(caller, spender)] in
       true
     otherwise
       allowance.count() = before.allowance.count() + 1
@@ -172,7 +172,7 @@ specification entry approve(spender : address, value : nat) {
   }
 }
 
-specification entry getAllowance (owner : address, spender : address, cb : contract<nat>) {
+specification getter getAllowance (owner : address, spender : address) {
   postcondition getallowance_p1 { // creates one op
     length (operations) = 1
   }
@@ -181,7 +181,7 @@ specification entry getAllowance (owner : address, spender : address, cb : contr
   }
 }
 
-specification entry getBalance (owner : address, cb : contract<nat>) {
+specification getter getBalance (owner : address) {
   postcondition getbalance_p1 { // creates one op
     length (operations) = 1
   }
@@ -190,7 +190,7 @@ specification entry getBalance (owner : address, cb : contract<nat>) {
   }
 }
 
-specification entry geTotalSupply (cb : contract<nat>) {
+specification getter geTotalSupply () {
   postcondition gettotalsupply_p1 { // creates one op
     length (operations) = 1
   }

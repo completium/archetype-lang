@@ -655,10 +655,11 @@ type argument = lident argument_gen
 [@@deriving show {with_path = false}]
 
 type 'id function_struct_gen = {
-  name: 'id;
-  args: 'id argument_gen list;
-  body: 'id mterm_gen;
-  loc : Location.t [@opaque];
+  name:  'id;
+  args:  'id argument_gen list;
+  eargs: 'id argument_gen list;
+  body:  'id mterm_gen;
+  loc :  Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
@@ -923,8 +924,8 @@ let mk_record_field ?(loc = Location.dummy) name type_ : 'id record_field_gen =
 let mk_storage_item ?(const=false) ?(ghost = false) ?(loc = Location.dummy) id model_type typ default : 'id storage_item_gen =
   { id; model_type; typ; const; ghost; default; loc }
 
-let mk_function_struct ?(args = []) ?(loc = Location.dummy) name body : function_struct =
-  { name; args; body; loc }
+let mk_function_struct ?(args = []) ?(eargs = []) ?(loc = Location.dummy) name body : function_struct =
+  { name; args; eargs; body; loc }
 
 let mk_function ?spec node : 'id function__gen =
   { node; spec }
@@ -3381,10 +3382,11 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
           g KIargument a, for_type b, Option.map for_mterm c
         in
         {
-          name = g (match fn with | Function _ -> KIfunction | Getter _ -> KIgetter | Entry _ -> KIentry) fs.name;
-          args = List.map for_argument fs.args;
-          body = for_mterm fs.body;
-          loc  = fs.loc;
+          name  = g (match fn with | Function _ -> KIfunction | Getter _ -> KIgetter | Entry _ -> KIentry) fs.name;
+          args  = List.map for_argument fs.args;
+          eargs = List.map for_argument fs.eargs;
+          body  = for_mterm fs.body;
+          loc   = fs.loc;
         }
       in
       match fn with

@@ -773,9 +773,10 @@ let to_ir (model : M.model) : T.ir =
     let for_fs env (fs : M.function_struct) =
       let name = unloc fs.name in
       let args = List.map (fun (id, t, _) -> unloc id, to_type t) fs.args in
+      let eargs = List.map (fun (id, t, _) -> unloc id, to_type t) fs.eargs in
       let env = {env with function_p = Some (name, args)} in
       let body = mterm_to_intruction env fs.body in
-      name, args, body
+      name, args, eargs, body
     in
 
     let mapargs : 'a MapString.t ref = ref MapString.empty in
@@ -823,7 +824,7 @@ let to_ir (model : M.model) : T.ir =
     let for_fs_fun env (fs : M.function_struct) ret : T.func =
       let fid = unloc fs.name in
       let tret = to_type ret in
-      let name, args, body = for_fs env fs in
+      let name, args, _eargs, body = for_fs env fs in
       let eargs = get_extra_args fs.body in
       extra_args := (fid, eargs)::!extra_args;
       let args = args @ eargs in
@@ -833,24 +834,34 @@ let to_ir (model : M.model) : T.ir =
     in
 
     let for_fs_entry env (fs : M.function_struct) : T.entry =
-      let name, args, body = for_fs env fs in
-      T.mk_entry name args body
+      let name, args, eargs, body = for_fs env fs in
+      T.mk_entry name args eargs body
     in
 
     List.fold_left (fun (funs, entries) (x : M.function__) ->
         match x.node with
         | Entry fs -> (funs, entries @ [for_fs_entry env fs])
-        | Getter (_fs, _ret) -> assert false
+        | Getter _ -> emit_error (UnsupportedTerm ("Getter"))
         | Function (fs, ret) -> funs @ [for_fs_fun env fs ret], entries) ([], []) model.functions
   in
   let annot a (t : T.type_) = { t with annotation = Some a} in
   let l = List.map (fun (x, y, _) -> (x, y)) l in
   let parameter : T.type_ =
     let for_entry (e : T.entry) =
-      match List.rev e.args with
-      | []   -> T.tunit
-      | [e]  -> snd e
-      | (id, te)::t -> List.fold_left (fun accu (id, te) -> T.mk_type (T.Tpair (annot id te, accu))) (annot id te) t
+      let f l =
+        match List.rev l with
+        | []   -> T.tunit
+        | [e]  -> annot (fst e) (snd e)
+        | (id, te)::t -> List.fold_left (fun accu (id, te) -> T.mk_type (T.Tpair (annot id te, accu))) (annot id te) t
+      in
+      let  args : T.type_ = f e.args in
+      let eargs : T.type_ = f e.eargs |> remove_annot in
+
+      match args.node, eargs.node with
+      | T.Tunit, T.Tunit -> T.tunit
+      |       _, T.Tunit -> args
+      | T.Tunit, _       -> T.tpair T.tunit eargs
+      | _                -> T.tpair args eargs
     in
     match List.rev entries with
     | [] -> T.tunit
@@ -1277,20 +1288,30 @@ let to_michelson (ir : T.ir) : T.michelson =
 
 
     let for_entry (e : T.entry) =
-      (* stack state : functions, (operations list)?, unfolded storage, argument *)
-      match e.args with
-      | [] -> begin
+      (* stack state : functions, (operations list)?, unfolded storage, extra_argument? , argument *)
+      match e.args, e.eargs with
+      | [], [] -> begin
           let code, _ = instruction_to_code env e.body in
           T.SEQ ([T.DROP 1] @ [code] @ fold_storage @ eops @ [T.PAIR])
         end
-      | l -> begin
+      | l, m -> begin
+          let nb_eargs = List.length m in
+          let eargs = List.map fst m |> List.rev in
+          let unfold_eargs =
+            if List.length m > 0
+            then if List.length l = 0
+              then [T.UNPAIR; T.DROP 1]
+              else [T.UNPAIR]
+            else []
+          in
+
           let nb_args = List.length l in
           let nb_as = nb_args - 1 in
           let unfold_args = unfold nb_as in
           let args = List.map fst l |> List.rev in
-          let env = { env with vars = args @ env.vars } in
+          let env = { env with vars = args @ eargs @ env.vars } in
           let code, _ = instruction_to_code env e.body in
-          T.SEQ (unfold_args @ [code] @ [T.DROP nb_args] @ fold_storage @ eops @ [T.PAIR])
+          T.SEQ (unfold_eargs @ unfold_args @ [code] @ [T.DROP (nb_args + nb_eargs)] @ fold_storage @ eops @ [T.PAIR])
         end
     in
 

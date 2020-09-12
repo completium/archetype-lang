@@ -281,6 +281,7 @@ declaration_r:
  | x=specasset          { x }
  | x=specfun            { x }
  | x=specentry          { x }
+ | x=specgetter         { x }
  | x=specvariable       { x }
  | x=security_decl      { x }
  | INVALID_DECL         { Dinvalid }
@@ -463,6 +464,9 @@ specfun:
 
 specentry:
 | x=specfun_gen(ENTRY)    { let id, args, s = x in Dspecfun (true, id, args, s) }
+
+specgetter:
+| x=specfun_gen(GETTER)    { let id, args, s = x in Dspecfun (true, id, args, s) }
 
 specvariable:
 | SPECIFICATION VARIABLE id=ident LBRACE xs=label_exprs_non_empty RBRACE

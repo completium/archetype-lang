@@ -275,6 +275,7 @@ type func = {
 type entry = {
   name: ident;
   args: (ident * type_) list;
+  eargs: (ident * type_) list;
   body: instruction;
 }
 [@@deriving show {with_path = false}]
@@ -305,8 +306,8 @@ let mk_type ?annotation node : type_ =
 let mk_func name targ tret body : func =
   {name; targ; tret; body}
 
-let mk_entry name args body : entry =
-  {name; args; body}
+let mk_entry name args eargs body : entry =
+  {name; args; eargs; body}
 
 let mk_ir storage_type storage_data storage_list ?(with_operations = false) parameter funs entries : ir =
   {storage_type; storage_data; storage_list; with_operations; parameter; funs; entries}
