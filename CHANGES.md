@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - `fails` section in specification declaration
  - `xor` operator
  - `head_tail` and `reverse` builtin functions for list
+ - `getter` entry
 
 ### Changed
  - remove `set_` and `map_` prefix for container builtins

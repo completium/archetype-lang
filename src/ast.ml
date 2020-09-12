@@ -534,8 +534,14 @@ type security = {
 }
 [@@deriving show {with_path = false}]
 
+type fun_kind =
+  | FKfunction
+  | FKgetter
+[@@deriving show {with_path = false}]
+
 type 'id function_struct = {
   name          : 'id;
+  kind          : fun_kind;
   args          : ('id decl_gen) list;
   body          : 'id instruction_gen;
   specification : 'id specification option;
@@ -714,8 +720,8 @@ let mk_assert ?(invariants = []) ?(uses = []) name label formula =
 let mk_specification ?(predicates = []) ?(definitions = []) ?(fails = []) ?(lemmas = []) ?(theorems = []) ?(variables = []) ?(invariants = []) ?effect ?(specs = []) ?(asserts = []) ?(loc = Location.dummy) () =
   { predicates; definitions; fails; lemmas; theorems; variables; invariants; effect; specs; asserts; loc}
 
-let mk_function_struct ?(args = []) ?specification ?(loc = Location.dummy) name body return =
-  { name; args; body; specification; return; loc }
+let mk_function_struct ?(args = []) ?specification ?(loc = Location.dummy) name kind body return =
+  { name; kind; args; body; specification; return; loc }
 
 let mk_transition ?on ?(trs = []) from =
   { from; on; trs }

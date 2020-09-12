@@ -957,7 +957,8 @@ let pp_fun_args fmt args =
     (pp_list " " pp_fun_ident_typ) args
 
 let pp_function fmt (f : function_) =
-  Format.fprintf fmt "function %a%a : %a =@\n  @[%a%a@]@\n"
+  Format.fprintf fmt "%s %a%a : %a =@\n  @[%a%a@]@\n"
+    (match f.kind with | FKfunction -> "function" | FKgetter -> "getter")
     pp_id f.name
     pp_fun_args f.args
     pp_ptyp f.return
