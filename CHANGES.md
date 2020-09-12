@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Added
+ - Michelson backend
  - specification declaration for asset, variable, entry and function
  - `fails` section in specification declaration
  - `xor` operator

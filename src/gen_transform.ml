@@ -477,7 +477,7 @@ let check_partition_access (model : model) : model =
   model
 
 let check_number_entrypoint (model : model) : model =
-  let nb_entrypoints = model.functions |> List.filter (fun (f : function__) -> match f.node with | Entry _ -> true | _ -> false) |> List.length in
+  let nb_entrypoints = model.functions |> List.filter (fun (f : function__) -> match f.node with | Entry _ | Getter _-> true | _ -> false) |> List.length in
   if nb_entrypoints = 0 then (emit_error (model.loc, NoEntrypoint); raise (Error.Stop 5));
   model
 
@@ -683,7 +683,7 @@ let prune_properties (model : model) : model =
         let all_funs =
           model.functions
           |> List.map (fun (x : function__) -> x.node)
-          |> List.map ((function | Entry fs -> fs | Function (fs, _) -> fs))
+          |> List.map ((function | Entry fs -> fs | Getter (fs, _) | Function (fs, _) -> fs))
           |> List.map (fun (x : function_struct) -> unloc x.name) in
         let add l x = if List.mem x l then l else x::l in
         List.fold_left (fun accu _p_id ->
@@ -745,7 +745,8 @@ let prune_properties (model : model) : model =
             body = prune_mterm fs.body } in
         match fn with
         | Function (fs, r) -> Function (prune_function_struct fs, r)
-        | Entry fs -> Entry (prune_function_struct fs)
+        | Getter   (fs, r) -> Getter   (prune_function_struct fs, r)
+        | Entry     fs     -> Entry    (prune_function_struct fs)
       in
       { f with
         node = prune_function_node f.node;
@@ -756,7 +757,7 @@ let prune_properties (model : model) : model =
         items = List.filter (fun (x : security_item) -> remain_id (unloc x.label)) sec.items
       } in
     let f1 = (fun (fs : function_struct) -> remain_function (unloc fs.name)) in
-    let f2 = (fun (x : function__) -> match x.node with | Entry fs -> fs | Function (fs, _) -> fs) in
+    let f2 = (fun (x : function__) -> match x.node with | Entry fs -> fs | Getter (fs, _) | Function (fs, _) -> fs) in
     { model with
       api_verif = api_verifs;
       decls = List.map prune_decl model.decls;
@@ -1028,7 +1029,8 @@ let remove_enum_matchwith (model : model) : model =
     let process_node (node : function_node) : function_node =
       match node with
       | Function (fs, type_) -> Function (process_fs fs, process_type type_)
-      | Entry fs -> Entry (process_fs fs)
+      | Getter   (fs, type_) -> Getter   (process_fs fs, process_type type_)
+      | Entry     fs         -> Entry    (process_fs fs)
     in
     { f with
       node = process_node f.node;
@@ -1063,7 +1065,8 @@ let remove_enum_matchwith (model : model) : model =
       let for_fnode (node : function_node) : function_node =
         match node with
         | Function (fs, type_) -> Function (for_fs fs, for_type type_)
-        | Entry fs -> Entry (for_fs fs)
+        | Getter   (fs, type_) -> Getter   (for_fs fs, for_type type_)
+        | Entry     fs         -> Entry    (for_fs fs)
       in
       { f with
         node = for_fnode f.node;
@@ -1497,7 +1500,8 @@ let replace_date_duration_by_timestamp (model : model) : model =
            in
            match f.node with
            | Function (fs, ret) -> Function (process_fs fs, process_type ret)
-           | Entry fs           -> Entry (process_fs fs)
+           | Getter (fs, ret)   -> Getter   (process_fs fs, process_type ret)
+           | Entry fs           -> Entry    (process_fs fs)
          );
         })
   }
@@ -2407,7 +2411,8 @@ let add_contain_on_get (model : model) : model =
         {fs with body = for_mterm fs.body }
       in
       match fn with
-      | Entry fs -> Entry (for_function_struct fs)
+      | Entry     fs       -> Entry    (for_function_struct fs)
+      | Getter   (fs, ret) -> Getter   (for_function_struct fs, ret)
       | Function (fs, ret) -> Function (for_function_struct fs, ret)
     in
     { f with node = for_function_node f.node; }
@@ -2680,7 +2685,8 @@ let check_if_asset_in_function (model : model) : model =
         ()
       in
       match fn with
-      | Entry fs -> for_function_struct fs
+      | Entry     fs     -> for_function_struct fs
+      | Getter   (fs, _) -> for_function_struct fs
       | Function (fs, _) -> for_function_struct fs
     in
     for_function_node f.node
@@ -2705,7 +2711,7 @@ let replace_instr_verif (model : model) : model =
 
 let rename_shadow_variable (model : model) : model =
   let for_function__ (f__ : function__) : function__ =
-    let fun_id =  match f__.node with | Entry fs | Function (fs, _) -> unloc fs.name in
+    let fun_id =  match f__.node with | Entry fs | Getter (fs, _) | Function (fs, _) -> unloc fs.name in
     let for_specification spec : specification =
       let map_ids = ref MapString.empty in
       let rename_variables spec : specification =
@@ -2784,7 +2790,8 @@ let concat_shadown_effect_to_exec (model : model) : model =
       in
       match fn with
       | Function (fs, t) -> Function (for_function_struct fs, t)
-      | Entry fs         -> Entry (for_function_struct fs)
+      | Getter   (fs, t) -> Getter   (for_function_struct fs, t)
+      | Entry     fs     -> Entry    (for_function_struct fs)
     in
     let remove_shadow_effect (spec : specification) : specification =
       spec

@@ -1520,6 +1520,7 @@ let pp_model fmt (model : model) =
       | Entry f ->
         let str : string = Format.asprintf "let [@entry name=\"%a\"]" pp_id f.name in
         str, f, Some (Ttuple [Tcontainer (Toperation, Collection); Tstorage]), " (_s : storage)"
+      | Getter (f, a) -> "let", f, Some a, ""
       | Function (f, a) -> "let", f, Some a, ""
     in
     Format.fprintf fmt "%a %a %a%s%a =@\n@[<v 2>  %a@]@\n"

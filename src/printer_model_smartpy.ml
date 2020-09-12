@@ -1508,6 +1508,7 @@ let pp_model fmt (model : model) =
   let pp_contract_fun (env : env) fmt (fn : function_node) =
     match fn with
     | Entry fs -> (pp_contract_entry env) fmt fs
+    | Getter (fs, r) -> (pp_function env) fmt (fs, r)
     | Function (fs, r) -> (pp_function env) fmt (fs, r)
   in
 

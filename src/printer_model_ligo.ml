@@ -2658,6 +2658,8 @@ let pp_model_internal fmt (model : model) b =
         (pp_mterm env) fs.body
         (if with_operations then const_operations else "(nil : list(operation))") const_storage
 
+    | Getter _ -> emit_error (UnsupportedTerm ("Function"))
+
     | Function (fs, ret) ->
       Format.fprintf fmt
         "function %a(const %s : storage_type%a) : %a is@\n  \

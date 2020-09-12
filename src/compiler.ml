@@ -120,7 +120,6 @@ let generate_target_pt (pt : ParseTree.archetype) : ParseTree.archetype =
 
 let generate_model            = Gen_model.to_model
 let generate_storage          = Gen_storage.generate_storage
-let remove_side_effect        = Gen_reduce.reduce
 let generate_api_storage      = Gen_api_storage.generate_api_storage
 
 let generate_target model =
@@ -209,7 +208,6 @@ let generate_target model =
     |> remove_cmp_bool
     |> process_single_field_storage
     |> split_key_values
-    |> remove_side_effect
     |> optimize
     |> generate_api_storage
     |> output

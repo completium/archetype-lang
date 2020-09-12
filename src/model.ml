@@ -667,6 +667,7 @@ type function_struct = lident function_struct_gen
 
 type 'id function_node_gen =
   | Function           of 'id function_struct_gen * type_ (* fun * return type *)
+  | Getter             of 'id function_struct_gen * type_
   | Entry              of 'id function_struct_gen
 [@@deriving show {with_path = false}]
 
@@ -1739,7 +1740,8 @@ let map_mterm_model_exec custom (f : ('id, 't) ctx_model_gen -> mterm -> mterm) 
   let map_function (ctx : ('id, 't) ctx_model_gen) (fun_ : function__) : function__ = (
     let node = match fun_.node with
       | Function (fs, ret) -> Function (map_function_struct ctx fs, ret)
-      | Entry fs -> Entry (map_function_struct ctx fs)
+      | Getter   (fs, ret) -> Getter   (map_function_struct ctx fs, ret)
+      | Entry     fs       -> Entry    (map_function_struct ctx fs)
     in
     { fun_ with node = node}
   ) in
@@ -1815,6 +1817,7 @@ let map_mterm_model_formula custom (f : ('id, 't) ctx_model_gen -> mterm -> mter
     let fs : function_struct =
       match fun_.node with
       | Function (fs, _) -> fs
+      | Getter (fs, _) -> fs
       | Entry fs -> fs
     in
     let ctx = { ctx with fs = Some fs } in
@@ -3085,6 +3088,7 @@ let fold_model (f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (m : '
     let accu : 'a = (
       match a.node with
       | Function (fs, _)
+      | Getter (fs, _)
       | Entry fs -> f {ctx with fs = Some fs} accu fs.body
     ) in
     Option.map_dfl (fun (x : 'id specification_gen) -> fold_specification ctx f x accu) accu a.spec
@@ -3114,6 +3118,7 @@ type kind_ident =
   | KIstoragefield
   | KIentry
   | KIfunction
+  | KIgetter
   | KIargument
   | KIlocalvar
   | KIlabel
@@ -3372,7 +3377,7 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
           g KIargument a, for_type b, Option.map for_mterm c
         in
         {
-          name = g (match fn with | Function _ -> KIfunction | Entry _ -> KIentry) fs.name;
+          name = g (match fn with | Function _ -> KIfunction | Getter _ -> KIgetter | Entry _ -> KIentry) fs.name;
           args = List.map for_argument fs.args;
           body = for_mterm fs.body;
           loc  = fs.loc;
@@ -3380,7 +3385,8 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
       in
       match fn with
       | Function (fs, t) -> Function (for_function_struct fs, for_type t)
-      | Entry fs         -> Entry (for_function_struct fs)
+      | Getter   (fs, t) -> Getter   (for_function_struct fs, for_type t)
+      | Entry     fs     -> Entry    (for_function_struct fs)
     in
     {
       node = for_function_node f__.node;
@@ -3614,12 +3620,14 @@ end = struct
   let get_function_args (f : function__) : argument list =
     match f.node with
     | Function (s,_) -> s.args
+    | Getter (s,_)   -> s.args
     | Entry s        -> s.args
 
   let set_function_args (f : function__) (args : argument list) : function__ =
     match f.node with
-    | Function (s,t) -> { node = Function ({ s with args = args },t); spec = f.spec }
-    | Entry s        -> { node = Entry { s with args = args }; spec = f.spec }
+    | Function (s, t) -> { node = Function ({ s with args = args },t); spec = f.spec }
+    | Getter (s, t)   -> { node = Getter   ({ s with args = args },t); spec = f.spec }
+    | Entry s         -> { node = Entry     { s with args = args };    spec = f.spec }
 
   let is_entry (f : function__) : bool =
     match f with
@@ -3887,6 +3895,9 @@ end = struct
       | Function (s,r) -> Function ({
           s with body = m s.body;
         },r)
+      | Getter (s,r) -> Getter ({
+          s with body = m s.body;
+        },r)
       | Entry s        -> Entry {
           s with body = m s.body;
         }
@@ -4012,7 +4023,8 @@ end = struct
         (fun (f : function__) ->
            match f.node with
            | Function (fs, _) -> unloc fs.name, fs
-           | Entry fs-> unloc fs.name, fs)
+           | Getter   (fs, _) -> unloc fs.name, fs
+           | Entry     fs     -> unloc fs.name, fs)
         m.functions
     in
     let fun_id_list = List.map fst fun_ids in
@@ -4038,6 +4050,7 @@ end = struct
       let name =
         match f.node with
         | Entry fs -> unloc fs.name
+        | Getter (fs, _) -> unloc fs.name
         | Function (fs, _) -> unloc fs.name
       in
       []
@@ -4797,6 +4810,7 @@ end = struct
         let fs, t =
           match fn with
           | Function (fs, t) -> fs, Some t
+          | Getter (fs, t) -> fs, Some t
           | Entry fs -> fs, None
         in
         accu
@@ -4914,7 +4928,7 @@ end = struct
 
   let get_function (model : model) (id : ident) : function_struct =
     model.functions
-    |> List.map (fun x -> match x.node with | Function (fs, _) | Entry fs -> fs)
+    |> List.map (fun x -> match x.node with | Function (fs, _) | Getter (fs, _) | Entry fs -> fs)
     |> List.find (fun (x : function_struct) -> String.equal (unloc x.name) id)
 
   let get_asset_partitions (model : model) asset_name : (ident * ident) list =
@@ -4944,7 +4958,7 @@ end = struct
     | None -> get_function_spec (get_functions model)
 
   let get_fss (model : model) : function_struct list =
-    List.map (fun (x) -> match x.node with | Entry fs | Function (fs, _) -> fs) model.functions
+    List.map (fun (x) -> match x.node with | Entry fs | Getter (fs, _) | Function (fs, _) -> fs) model.functions
 
   let get_fs (model : model) (id : ident) : function_struct =
     List.find (fun (x : function_struct) -> String.equal id (unloc x.name)) (get_fss model)
