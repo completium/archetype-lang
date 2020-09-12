@@ -2416,7 +2416,7 @@ let add_contain_on_get (model : model) : model =
 
 let split_key_values (model : model) : model =
 
-  let asset_assets an = an ^ "_assets" in
+  let asset_assets an = an in
 
   let get_asset_assoc_key_value (asset_name : ident) (asset_value : mterm) : mterm * mterm=
     match asset_value.node with
@@ -3211,7 +3211,7 @@ let remove_asset (model : model) : model =
       String.equal kn fn
     in
 
-    let get_asset_global_id an = dumloc (an ^ "_assets") in
+    let get_asset_global_id an = dumloc (an) in
 
     let get_asset_global an =
       let type_ = get_type_for_asset_container an in
