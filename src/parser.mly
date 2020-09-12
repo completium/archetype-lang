@@ -80,6 +80,7 @@
 %token FORALL
 %token FROM
 %token FUNCTION
+%token GETTER
 %token GREATER
 %token GREATEREQUAL
 %token IDENTIFIED
@@ -275,6 +276,7 @@ declaration_r:
  | x=dextension         { x }
  | x=namespace          { x }
  | x=function_decl      { x }
+ | x=getter_decl        { x }
  | x=specification_decl { x }
  | x=specasset          { x }
  | x=specfun            { x }
@@ -350,6 +352,23 @@ function_item:
 function_decl:
 | f=function_gen
     { Dfunction f }
+
+%inline getter_gen:
+ | GETTER id=ident xs=function_args
+     r=function_return? LBRACE b=fun_body RBRACE {
+  let (s, e) = b in
+  {
+    name  = id;
+    args  = xs;
+    ret_t = r;
+    spec = s;
+    body  = e;
+  }
+}
+
+getter_decl:
+| f=getter_gen
+    { Dgetter f }
 
 %inline spec_predicate:
 | PREDICATE id=ident xs=function_args e=braced(expr) { Vpredicate (id, xs, e) }

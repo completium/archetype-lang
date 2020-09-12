@@ -56,6 +56,7 @@
       "forall"              , FORALL         ;
       "from"                , FROM           ;
       "function"            , FUNCTION       ;
+      "getter"              , GETTER         ;
       "identified"          , IDENTIFIED     ;
       "if"                  , IF             ;
       "in"                  , IN             ;

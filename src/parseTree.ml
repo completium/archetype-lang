@@ -271,6 +271,7 @@ and declaration_unloc =
   | Dextension     of extension_decl
   | Dnamespace     of namespace_decl
   | Dfunction      of s_function
+  | Dgetter        of s_function
   | Dspecification of specification
   | Dspecasset     of lident * label_exprs
   | Dspecfun       of bool * lident * args * specification (* true = entry *)
@@ -404,6 +405,7 @@ let is_keyword = function
   | "forall"
   | "from"
   | "function"
+  | "getter"
   | "identified"
   | "if"
   | "in"

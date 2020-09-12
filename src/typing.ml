@@ -4921,6 +4921,8 @@ let group_declarations (decls : (PT.declaration list)) =
     | PT.Dfunction infos ->
       { g with gr_funs = mk infos :: g.gr_funs }
 
+    | PT.Dgetter _ -> assert false
+
     | PT.Dspecification infos ->
       { g with gr_specs = mk infos :: g.gr_specs }
 
