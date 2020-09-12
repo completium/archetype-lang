@@ -939,10 +939,10 @@ let optionops : opinfo list = [
 let setops : opinfo list =
   let elemt = A.Tnamed 0 in
   let set   = A.Tset elemt in [
-    ("set_add"      , A.Csadd      , `Total , Some set, [ elemt ], set     , Mint.empty);
-    ("set_remove"   , A.Csremove   , `Total , Some set, [ elemt ], set     , Mint.empty);
-    ("set_contains" , A.Cscontains , `Total , Some set, [ elemt ], A.vtbool, Mint.empty);
-    ("set_length"   , A.Cslength   , `Total , Some set, [       ], A.vtnat , Mint.empty);
+    ("add"      , A.Csadd      , `Total , Some set, [ elemt ], set     , Mint.empty);
+    ("remove"   , A.Csremove   , `Total , Some set, [ elemt ], set     , Mint.empty);
+    ("contains" , A.Cscontains , `Total , Some set, [ elemt ], A.vtbool, Mint.empty);
+    ("length"   , A.Cslength   , `Total , Some set, [       ], A.vtnat , Mint.empty);
   ]
 
 (* -------------------------------------------------------------------- *)
@@ -951,7 +951,7 @@ let listops : opinfo list =
   let lst   = A.Tlist elemt in [
     ("prepend"        , A.Cprepend  , `Total  , Some lst, [elemt  ], lst                   , Mint.empty);
     ("length"         , A.Clength   , `Total  , Some lst, [       ], A.vtnat               , Mint.empty);
-    ("list_head_tail" , A.Cheadtail , `Total  , Some lst, [       ], A.Ttuple [elemt; lst] , Mint.empty);
+    ("head_tail"      , A.Cheadtail , `Total  , Some lst, [       ], A.Ttuple [elemt; lst] , Mint.empty);
     ("contains"       , A.Ccontains , `Total  , Some lst, [elemt  ], A.vtbool              , Mint.empty);
     ("nth"            , A.Cnth      , `Partial, Some lst, [A.vtnat], elemt                 , Mint.empty);
     ("reverse"        , A.Creverse  , `Total  , Some lst, [       ], lst                   , Mint.empty);
@@ -962,11 +962,11 @@ let mapops : opinfo list =
   let tkey = A.Tnamed 0 in
   let tval = A.Tnamed 1 in
   let map  = A.Tmap (tkey, tval) in [
-    ("map_put"      , A.Cmput      , `Total   , Some map, [ tkey; tval ], map           , Mint.empty);
-    ("map_remove"   , A.Cmremove   , `Total   , Some map, [ tkey       ], map           , Mint.empty);
-    ("map_getopt"   , A.Cmgetopt   , `Partial , Some map, [ tkey       ], A.Toption tval, Mint.empty);
-    ("map_contains" , A.Cmcontains , `Total   , Some map, [ tkey       ], A.vtbool      , Mint.empty);
-    ("map_length"   , A.Cmlength   , `Total   , Some map, [            ], A.vtnat       , Mint.empty);
+    ("put"      , A.Cmput      , `Total   , Some map, [ tkey; tval ], map           , Mint.empty);
+    ("remove"   , A.Cmremove   , `Total   , Some map, [ tkey       ], map           , Mint.empty);
+    ("getopt"   , A.Cmgetopt   , `Partial , Some map, [ tkey       ], A.Toption tval, Mint.empty);
+    ("contains" , A.Cmcontains , `Total   , Some map, [ tkey       ], A.vtbool      , Mint.empty);
+    ("length"   , A.Cmlength   , `Total   , Some map, [            ], A.vtnat       , Mint.empty);
   ]
 
 (* -------------------------------------------------------------------- *)

@@ -8,12 +8,12 @@ entry exec () {
                                       ("mystr3", 3) ];
 
     (* expr *)
-    var new_map1 : map<string, nat> = map_put(my_map, "mystr4", 4);
-    var new_map2 : map<string, nat> = map_remove(my_map, "mystr0");
+    var new_map1 : map<string, nat> = put(my_map, "mystr4", 4);
+    var new_map2 : map<string, nat> = remove(my_map, "mystr0");
     var val_opt  : nat              = my_map["0"];
-    var val      : option<nat>      = map_getopt(my_map, "mystr0");
-    var c        : bool             = map_contains(my_map, "mystr0");
-    var l        : nat              = map_length(my_map);
+    var val      : option<nat>      = getopt(my_map, "mystr0");
+    var c        : bool             = contains(my_map, "mystr0");
+    var l        : nat              = length(my_map);
 
     (* control *)
     var res : int = 0;

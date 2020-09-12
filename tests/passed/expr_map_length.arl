@@ -8,6 +8,6 @@ entry exec () {
   }
   effect {
     var m : map<nat, string> = [(0, "0")];
-    res := map_length(m);
+    res := length(m);
   }
 }

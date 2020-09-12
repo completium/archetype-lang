@@ -6,7 +6,7 @@ entry exec () {
 
     (* expr *)
     var a  : list<string>            = prepend(l, "2");
-    var ht : (string * list<string>) = list_head_tail(l);
+    var ht : (string * list<string>) = head_tail(l);
     var k  : nat                     = length(l);
     var c  : bool                    = contains(l, "2");
     var n  : string                  = nth(l, 0);

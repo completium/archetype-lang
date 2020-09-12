@@ -6,7 +6,7 @@ function mynth(l : list<string>, idx : nat) : string {
   var m : map<nat, string> = [];
   var i : nat = 0;
   for e in l do
-    m := map_put(m, i, e);
+    m := put(m, i, e);
     i += 1;
   done;
   return m[idx]

@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - `xor` operator
  - `head_tail` and `reverse` builtin functions for list
 
+### Changed
+ - remove `set_` and `map_` prefix for container builtins
+
 ## [1.1.2] - 2020-08-13
 ### Changed
  - Refactoring of whyml generation

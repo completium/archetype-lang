@@ -8,6 +8,6 @@ entry exec () {
   }
   effect {
     var l : list<string> = ["1"; "2"; "3"];
-    res := list_head_tail(l);
+    res := head_tail(l);
   }
 }

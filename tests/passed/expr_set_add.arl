@@ -4,10 +4,10 @@ variable res : set<string> = []
 
 entry exec () {
   specification {
-    s0: set_length(res) = 4;
+    s0: length(res) = 4;
   }
   effect {
     var l : set<string> = ["1"; "2"; "3"];
-    res := set_add(l, "0");
+    res := add(l, "0");
   }
 }
