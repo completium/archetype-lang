@@ -39,15 +39,15 @@ entry approve(spender : address, value : nat) {
   allowance.addupdate( k, { amount = value });
 }
 
-entry getAllowance (owner : address, spender : address, cb : entrysig<nat>) {
+entry getAllowance (owner : address, spender : address, cb : contract<nat>) {
   transfer 0tz to entry cb(allowance[(owner, spender)].amount);
 }
 
-entry getBalance (owner : address, cb : entrysig<nat>) {
+entry getBalance (owner : address, cb : contract<nat>) {
   transfer 0tz to entry cb(ledger[owner].tokens);
 }
 
-entry getTotalSupply (cb : entrysig<nat>) {
+entry getTotalSupply (cb : contract<nat>) {
   transfer 0tz to entry cb(totalsupply);
 }
 

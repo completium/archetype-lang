@@ -66,8 +66,8 @@ PASSED="\
 ./tests/passed/transfer_self.arl \
 ./tests/passed/transfer_simple_with_entrypoint.arl \
 ./tests/passed/test_transfer.arl \
-./tests/passed/test_entrysig_self.arl \
-./tests/passed/lang_entrysig.arl \
+./tests/passed/test_contract_self.arl \
+./tests/passed/lang_contract.arl \
 ./tests/passed/test_operations.arl \
 ./tests/passed/simple_record_lit.arl \
 ./tests/passed/simple_record_lit_rev.arl \

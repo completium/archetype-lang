@@ -1,4 +1,4 @@
-archetype test_entrysig_self
+archetype test_contract_self
 
 variable res : nat = 0
 
@@ -7,6 +7,6 @@ entry otherentry(i : nat) {
 }
 
 entry exec () {
-  var e : entrysig<nat> = self.otherentry;
+  var e : contract<nat> = self.otherentry;
   transfer 0tz to entry e(3);
 }

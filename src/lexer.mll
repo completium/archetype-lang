@@ -45,7 +45,6 @@
       "end"                 , END            ;
       "entry"               , ENTRY          ;
       "entrypoint"          , ENTRYPOINT     ;
-      "entrysig"            , ENTRYSIG       ;
       "enum"                , ENUM           ;
       "exists"              , EXISTS         ;
       "extension"           , EXTENSION      ;

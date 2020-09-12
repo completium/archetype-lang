@@ -393,7 +393,6 @@ let is_keyword = function
   | "end"
   | "entry"
   | "entrypoint"
-  | "entrysig"
   | "enum"
   | "exists"
   | "extension"
