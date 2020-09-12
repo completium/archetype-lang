@@ -23,7 +23,7 @@ and type_r =
   | Tset       of type_t
   | Tlist      of type_t
   | Tmap       of type_t * type_t
-  | Tentrysig  of type_t
+  | Tcontract  of type_t
   | Tkeyof     of type_t
 
 and type_t = type_r loced

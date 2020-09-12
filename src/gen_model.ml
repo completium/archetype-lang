@@ -96,7 +96,7 @@ let to_model (ast : A.ast) : M.model =
     | A.Tmap (k, v)        -> M.Tmap (false, ptyp_to_type k, ptyp_to_type v)
     | A.Ttuple l           -> M.Ttuple (List.map ptyp_to_type l)
     | A.Toperation         -> M.Toperation
-    | A.Tentrysig t        -> M.Tentrysig (ptyp_to_type t)
+    | A.Tcontract t        -> M.Tcontract (ptyp_to_type t)
     | A.Toption t          -> M.Toption (ptyp_to_type t)
     | A.Ttrace tr          -> M.Ttrace (to_trtyp tr)
   in

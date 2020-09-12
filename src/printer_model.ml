@@ -79,7 +79,7 @@ let rec pp_type fmt t =
     Format.fprintf fmt "storage"
   | Toperation ->
     Format.fprintf fmt "operation"
-  | Tentrysig t ->
+  | Tcontract t ->
     Format.fprintf fmt "entrysig<%a>" pp_type t
   | Tprog _
   | Tvset _

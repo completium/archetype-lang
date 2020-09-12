@@ -13,7 +13,7 @@ module Type : sig
   val as_container        : A.ptyp -> (A.ptyp * A.container) option
   val as_asset            : A.ptyp -> A.lident option
   val as_asset_collection : A.ptyp -> (A.lident * A.container) option
-  val as_entrysig         : A.ptyp -> A.ptyp option
+  val as_contract         : A.ptyp -> A.ptyp option
   val as_tuple            : A.ptyp -> (A.ptyp list) option
   val as_option           : A.ptyp -> A.ptyp option
   val as_set              : A.ptyp -> A.ptyp option
@@ -24,7 +24,7 @@ module Type : sig
   val is_numeric   : A.ptyp -> bool
   val is_currency  : A.ptyp -> bool
   val is_primitive : A.ptyp -> bool
-  val is_entrysig  : A.ptyp -> bool
+  val is_contract  : A.ptyp -> bool
   val is_option    : A.ptyp -> bool
   val is_set       : A.ptyp -> bool
   val is_list      : A.ptyp -> bool
@@ -61,7 +61,7 @@ end = struct
   let as_container = function A.Tcontainer (ty, c) -> Some (ty, c) | _ -> None
   let as_asset     = function A.Tasset     x       -> Some x       | _ -> None
   let as_tuple     = function A.Ttuple     ts      -> Some ts      | _ -> None
-  let as_entrysig  = function A.Tentrysig  x       -> Some x       | _ -> None
+  let as_contract  = function A.Tcontract  x       -> Some x       | _ -> None
   let as_option    = function A.Toption    t       -> Some t       | _ -> None
   let as_set       = function A.Tset       t       -> Some t       | _ -> None
   let as_list      = function A.Tlist      t       -> Some t       | _ -> None
@@ -83,8 +83,8 @@ end = struct
   let is_primitive = function
     | A.Tbuiltin _ -> true | _ -> false
 
-  let is_entrysig = function
-    | A.Tentrysig _ -> true | _ -> false
+  let is_contract = function
+    | A.Tcontract _ -> true | _ -> false
 
   let is_option = function
     | A.Toption _ -> true | _ -> false
@@ -129,7 +129,7 @@ end = struct
       | A.Ttuple  ts     -> List.for_all is_type ts
       | A.Tmap    (k, t) -> is_comparable k && is_type t
 
-      | A.Tentrysig _ -> true
+      | A.Tcontract _ -> true
       | A.Trecord   _ -> true
 
       | _ -> false
@@ -164,7 +164,7 @@ end = struct
         | _, _ -> None
       end
 
-    | A.Tbuiltin (A.VTaddress | A.VTrole), A.Tentrysig Tbuiltin (VTunit) ->
+    | A.Tbuiltin (A.VTaddress | A.VTrole), A.Tcontract Tbuiltin (VTunit) ->
       Some 1
 
     | A.Tcontainer (ty1, cf), A.Tcontainer (ty2, ct) ->
@@ -260,7 +260,7 @@ end = struct
         | Tset      ptn, Tset      tg
         | Tlist     ptn, Tlist     tg
         | Toption   ptn, Toption   tg
-        | Tentrysig ptn, Tentrysig tg ->
+        | Tcontract ptn, Tcontract tg ->
           doit ptn tg
 
         | Tmap (kptn, vptn), Tmap (ktg, vtg) ->
@@ -298,7 +298,7 @@ end = struct
       | Tmap       (k, v)  -> Tmap  (doit k, doit v)
       | Ttuple      ty     -> Ttuple (List.map doit ty)
       | Toption     ty     -> Toption (doit ty)
-      | Tentrysig   ty     -> Tentrysig (doit ty)
+      | Tcontract   ty     -> Tcontract (doit ty)
 
     in doit ty
 
@@ -409,7 +409,7 @@ type error_desc =
   | InvalidTypeForDoFailIf
   | InvalidTypeForDoRequire
   | InvalidTypeForEntrypoint
-  | InvalidTypeForEntrysig
+  | InvalidTypeForContract
   | InvalidTypeForFail
   | InvalidTypeForMapKey
   | InvalidTypeForMapValue
@@ -592,7 +592,7 @@ let pp_error_desc fmt e =
   | InvalidTypeForDoFailIf             -> pp "Invalid type for dofailif"
   | InvalidTypeForDoRequire            -> pp "Invalid type for dorequire"
   | InvalidTypeForEntrypoint           -> pp "Invalid type for entrypoint"
-  | InvalidTypeForEntrysig             -> pp "Invalid type for entrysig"
+  | InvalidTypeForContract             -> pp "Invalid type for contract"
   | InvalidTypeForFail                 -> pp "Invalid type for fail"
   | InvalidTypeForMapKey               -> pp "Invalid type for map key"
   | InvalidTypeForMapValue             -> pp "Invalid type for map value"
@@ -986,7 +986,7 @@ let packops : opinfo list =
 (* -------------------------------------------------------------------- *)
 let opsops : opinfo list =
   [  "mkoperation", A.Cmkoperation, `Total, None,
-     [A.vtcurrency; A.Tentrysig (A.Tnamed 0); A.Tnamed 0], A.Toperation, Mint.empty ]
+     [A.vtcurrency; A.Tcontract (A.Tnamed 0); A.Tnamed 0], A.Toperation, Mint.empty ]
 
 (* -------------------------------------------------------------------- *)
 let allops : opinfo list =
@@ -1760,7 +1760,7 @@ let rec valid_var_or_arg_type (ty : A.ptyp) =
   | Tmap   (k, v) -> List.for_all valid_var_or_arg_type [k; v]
   | Ttuple     ty -> List.for_all valid_var_or_arg_type ty
   | Toption    ty -> valid_var_or_arg_type ty
-  | Tentrysig  _  -> true
+  | Tcontract  _  -> true
   | Toperation    -> true
   | Ttrace     _  -> false
 
@@ -1864,8 +1864,8 @@ let for_type_exn ?pkey (env : env) =
     | Toption ty ->
       A.Toption (doit ty)
 
-    | Tentrysig ty ->
-      A.Tentrysig (doit ty)
+    | Tcontract ty ->
+      A.Tcontract (doit ty)
 
     | Tkeyof ty -> begin
         match doit ~canasset:true ty with
@@ -2810,7 +2810,7 @@ let rec for_xexpr
 
         let rty = Type.create_tuple (List.map snd decl.ad_args) in
 
-        mk_sp (Some (A.Tentrysig rty)) (A.Pself name)
+        mk_sp (Some (A.Tcontract rty)) (A.Pself name)
       end
 
     | Eentrypoint (ty, a, b) -> begin
@@ -2828,7 +2828,7 @@ let rec for_xexpr
         in
 
         mk_sp
-          (Some (A.Toption (A.Tentrysig ty)))
+          (Some (A.Toption (A.Tcontract ty)))
           (A.Pentrypoint (ty, id, b))
       end
 
@@ -3646,12 +3646,12 @@ let rec for_instruction_r
                 Env.emit_error env (loc name, UnknownLocalOrVariable (unloc name));
                 bailout () in
 
-            if not (Type.is_entrysig nty) then begin
+            if not (Type.is_contract nty) then begin
               Env.emit_error env (loc name, AEntryExpected nty);
               bailout ();
             end;
 
-            let aty = Option.get (Type.as_entrysig nty) in
+            let aty = Option.get (Type.as_contract nty) in
             let arg = for_expr kind env ~ety:aty arg in
 
             let e = A.mk_sp ~type_:nty (A.Pvar (VTnone, Vnone, name)) in

@@ -70,7 +70,7 @@ type type_ =
   | Tunit
   | Tstorage
   | Toperation
-  | Tentrysig of type_
+  | Tcontract of type_
   | Tprog of type_
   | Tvset of vset * type_
   | Ttrace of trtyp
@@ -1041,7 +1041,7 @@ let rec cmp_type
   | Tunit, Tunit                             -> true
   | Tstorage, Tstorage                       -> true
   | Toperation, Toperation                   -> true
-  | Tentrysig t1, Tentrysig t2               -> cmp_type t1 t2
+  | Tcontract t1, Tcontract t2               -> cmp_type t1 t2
   | Tprog t1, Tprog t2                       -> cmp_type t1 t2
   | Tvset (v1, t1), Tvset (v2, t2)           -> cmp_vset v1 v2 && cmp_type t1 t2
   | Ttrace t1, Ttrace t2                     -> cmp_trtyp t1 t2
@@ -1450,7 +1450,7 @@ let map_type (f : type_ -> type_) = function
   | Tunit             -> Tunit
   | Tstorage          -> Tstorage
   | Toperation        -> Toperation
-  | Tentrysig t       -> Tentrysig (f t)
+  | Tcontract t       -> Tcontract (f t)
   | Tprog t           -> Tprog (f t)
   | Tvset (v, t)      -> Tvset (v, t)
   | Ttrace t          -> Ttrace t
@@ -3466,7 +3466,7 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
     | Tunit             -> t
     | Tstorage          -> t
     | Toperation        -> t
-    | Tentrysig t       -> Tentrysig (for_type t)
+    | Tcontract t       -> Tcontract (for_type t)
     | Tprog a           -> Tprog (for_type a)
     | Tvset (v, a)      -> Tvset (v, for_type a)
     | Ttrace _          -> t
@@ -4850,7 +4850,7 @@ end = struct
       | Toption t      -> for_type accu t
       | Ttuple  ts     -> List.fold_left (for_type) accu ts
       | Tmap (_, _, t) -> for_type accu t
-      | Tentrysig t    -> for_type accu t
+      | Tcontract t    -> for_type accu t
       | Tprog t        -> for_type accu t
       | Tvset (_, t)   -> for_type accu t
       | _ -> accu
@@ -4864,7 +4864,7 @@ end = struct
       | Toption t      -> for_type accu t
       | Ttuple  ts     -> List.fold_left (for_type) accu ts
       | Tmap (_, _, t) -> for_type accu t
-      | Tentrysig t    -> for_type accu t
+      | Tcontract t    -> for_type accu t
       | Tprog t        -> for_type accu t
       | Tvset (_, t)   -> for_type accu t
       | _ -> accu
@@ -4878,7 +4878,7 @@ end = struct
       | Toption   t          -> for_type accu t
       | Ttuple    ts         -> List.fold_left (for_type) accu ts
       | Tmap      (_, _, tv) -> add_type (for_type accu tv) t
-      | Tentrysig t          -> for_type accu t
+      | Tcontract t          -> for_type accu t
       | Tprog     t          -> for_type accu t
       | Tvset     (_, t)     -> for_type accu t
       | _ -> accu

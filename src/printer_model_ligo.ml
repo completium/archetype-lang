@@ -179,7 +179,7 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt "storage"
     | Toperation ->
       Format.fprintf fmt "operation"
-    | Tentrysig t ->
+    | Tcontract t ->
       Format.fprintf fmt "contract(%a)" pp_type t
     | Tprog _
     | Tvset _
@@ -197,7 +197,7 @@ let pp_model_internal fmt (model : model) b =
     | Tset t             -> Format.fprintf fmt "set_%a" pp_pretty_type t
     | Tmap (true,  k, v) -> Format.fprintf fmt "bigmap_%a_%a" pp_pretty_type k pp_pretty_type v
     | Tmap (false, k, v) -> Format.fprintf fmt "map_%a_%a" pp_pretty_type k pp_pretty_type v
-    | Tentrysig t        -> Format.fprintf fmt "entrysig_%a" pp_pretty_type t
+    | Tcontract t        -> Format.fprintf fmt "contract_%a" pp_pretty_type t
     | _ -> pp_type fmt t
   in
 
@@ -1118,7 +1118,7 @@ let pp_model_internal fmt (model : model) b =
         Format.fprintf fmt "(%a : %a)"
           (fun fmt x -> begin
                match src, dst with
-               | Tbuiltin (Baddress | Brole), Tentrysig _ -> Format.fprintf fmt "get_contract(%a)" f x
+               | Tbuiltin (Baddress | Brole), Tcontract _ -> Format.fprintf fmt "get_contract(%a)" f x
                | Tbuiltin Bcurrency, Tbuiltin Bnat        -> Format.fprintf fmt "((%a) / 1mutez)" f x
                | _ -> f fmt x
              end) v

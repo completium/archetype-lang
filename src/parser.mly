@@ -511,7 +511,7 @@ type_s_unloc:
 | LIST        LESS x=type_t GREATER                { Tlist x           }
 | SET         LESS x=type_t GREATER                { Tset x            }
 | MAP         LESS k=type_t COMMA v=type_s GREATER { Tmap (k, v)       }
-| CONTRACT    LESS x=type_t GREATER                { Tentrysig x       }
+| CONTRACT    LESS x=type_t GREATER                { Tcontract x       }
 | x=paren(type_r)                                  { x                 }
 
 %inline type_tuples:

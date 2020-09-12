@@ -155,7 +155,7 @@ let rec map_mtype m (t : M.type_) : loc_typ =
       | M.Ttrace _                            -> Tyunit (* TODO: replace by the right type *)
       | M.Tset t                              -> Tyset (dl (mk_set_name m (Tset t)))
       | M.Tlist t                             -> Tylist (map_mtype m t)
-      | M.Tentrysig _                         -> Tyentrysig
+      | M.Tcontract _                         -> Tycontract
       | _ -> print_endline (Format.asprintf "%a@." M.pp_type_ t); assert false)
 
 let mk_list_name_from_mlwtype m t =
@@ -481,7 +481,7 @@ let mk_call () =
   let decl : (term, typ, ident) abstract_decl = Dfun {
       name     = "mk_operation";
       logic    = NoMod;
-      args     = ["a", Tytez; "e", Tyentrysig; "l", Tylist Tystring];
+      args     = ["a", Tytez; "e", Tycontract; "l", Tylist Tystring];
       returns  = Tyunit;
       raises   = [];
       fails    = [];
@@ -2069,7 +2069,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | _ -> Ttoview (map_lident a,map_mterm m ctx v)
       end
     | Mcast (Tcontainer (Tasset a,View),Tlist _, v) -> Telts(dl (mk_view_id (unloc a)), map_mterm m ctx v)
-    | Mcast (Tbuiltin Baddress, Tentrysig _, v) -> Tapp (loc_term (Tvar "getopt"), [(dl (Tentrypoint (dl "", map_mterm m ctx v)))])
+    | Mcast (Tbuiltin Baddress, Tcontract _, v) -> Tapp (loc_term (Tvar "getopt"), [(dl (Tentrypoint (dl "", map_mterm m ctx v)))])
     | Mcast (Tmap _ as t, Tlist _, c) -> Telts (dl (mk_map_name m t), map_mterm m ctx c)
     | Mcast (Tset _ as t, Tlist _, c) -> Telts (dl (mk_set_name m t), map_mterm m ctx c)
     | Mcast (_, _, v)       -> map_mterm m ctx v |> Mlwtree.deloc
@@ -2712,7 +2712,7 @@ let fold_exns m body : term list =
     | M.Mfail AssignNat -> acc @ [Texn Enegassignnat]
     | M.Mlistnth _ -> acc @ [Texn Enotfound]
     | M.Mself _ -> acc @ [Texn Enotfound]
-    | M.Mcast (Tbuiltin Baddress, Tentrysig _, v) -> internal_fold_exn (acc @ [Texn Enotfound]) v
+    | M.Mcast (Tbuiltin Baddress, Tcontract _, v) -> internal_fold_exn (acc @ [Texn Enotfound]) v
     | M.Mtransfer (v, TKself _) -> internal_fold_exn (acc @ [Texn Enotfound]) v
     | M.Mtransfer (v, _) -> internal_fold_exn acc v
     | M.Mapp (id, args) ->

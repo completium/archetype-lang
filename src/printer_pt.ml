@@ -144,7 +144,7 @@ let rec pp_type outer pos fmt e =
       pp_type_default k
       pp_type_default v
 
-  | Tentrysig t ->
+  | Tcontract t ->
     Format.fprintf fmt
       "contract<%a>"
       pp_type_default t

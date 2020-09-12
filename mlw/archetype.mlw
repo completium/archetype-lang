@@ -368,17 +368,17 @@ theory Operation
     _call_ = Some { _name = n; _args = l };
   }
 
-  type entrysig = {
+  type contract = {
     _entry_name : arstring;
     _entry_dest : address;
   }
 
-  let function entrypoint (n : arstring) (d : address) : option entrysig = Some {
+  let function entrypoint (n : arstring) (d : address) : option contract = Some {
     _entry_name = n;
     _entry_dest = d;
   }
 
-  let _mk_operation (a : tez) (e : entrysig) (l : list arstring) : operation = {
+  let _mk_operation (a : tez) (e : contract) (l : list arstring) : operation = {
     _destination_ = e._entry_dest;
     _amount_ = a;
     _call_ = Some { _name = e._entry_name; _args = l };
@@ -1304,7 +1304,7 @@ module Collection
 
   (* ------------------------------------------------------------------------ *)
   axiom card_remove : forall k c.
-  not (contains k c) -> 
+  not (contains k c) ->
   card (remove k c) = card c - 1
 
   (* ------------------------------------------------------------------------ *)
