@@ -40,7 +40,7 @@ entry approve(spender : address, value : nat) {
 }
 
 entry getAllowance (owner : address, spender : address, cb : entrysig<nat>) {
-  ()
+  transfer 0tz to entry cb(allowance[(owner, spender)].amount);
 }
 
 entry getBalance (owner : address, cb : entrysig<nat>) {
