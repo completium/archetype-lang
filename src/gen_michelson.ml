@@ -727,11 +727,6 @@ let to_ir (model : M.model) : T.ir =
     | Mratdur  (c, t)         -> let b = T.Bratdur    in add_builtin b; T.Icall (get_fun_name b, [f c; f t], is_inline b)
 
 
-    (* imperative *)
-
-    | Mbreak -> emit_error (UnsupportedTerm ("Mbreak"))
-
-
     (* quantifiers *)
 
     | Mforall _ -> emit_error (UnsupportedTerm ("Mforall"))

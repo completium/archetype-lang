@@ -1399,11 +1399,6 @@ let pp_model fmt (model : model) =
         pp fmt (c, t)
 
 
-      (* imperative *)
-
-      | Mbreak -> emit_error (UnsupportedTerm ("break"))
-
-
       (* quantifiers *)
 
       | Mforall _ -> emit_error (UnsupportedTerm ("forall"))

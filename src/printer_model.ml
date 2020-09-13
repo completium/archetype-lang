@@ -1105,11 +1105,6 @@ let pp_mterm fmt (mt : mterm) =
       pp fmt (c, t)
 
 
-    (* imperative *)
-
-    | Mbreak -> pp_str fmt "break"
-
-
     (* quantifiers *)
 
     | Mforall (i, t, None, e) ->

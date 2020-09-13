@@ -653,12 +653,6 @@ let rec pp_instruction fmt (i : instruction) =
       in
       (pp_with_paren pp) fmt (value, tr)
 
-    | Ibreak ->
-      let pp fmt () =
-        pp_str fmt "break"
-      in
-      (pp_with_paren pp) fmt ()
-
     | Icall (meth, kind, args) ->
       let pp fmt (meth, kind, args) =
         Format.fprintf fmt "%a%a(%a)"

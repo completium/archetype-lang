@@ -855,7 +855,6 @@ let to_model (ast : A.ast) : M.model =
           M.Mtransfer (v, k)
         end
 
-      | A.Ibreak    -> M.Mbreak
       | A.Ireturn e -> M.Mreturn (f e)
       | A.Ilabel  i -> M.Mlabel i
       | A.Ifail   m -> M.Mfail (Invalid (f m))

@@ -27,7 +27,6 @@
       "asset"               , ASSET          ;
       "at"                  , AT             ;
       "before"              , BEFORE         ;
-      "break"               , BREAK          ;
       "but"                 , BUT            ;
       "by"                  , BY             ;
       "call"                , CALL           ;

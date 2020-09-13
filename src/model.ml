@@ -352,8 +352,6 @@ type ('id, 'term) mterm_node  =
   | Mnattorat         of 'term
   | Minttorat         of 'term
   | Mratdur           of 'term * 'term
-  (* imperative *)
-  | Mbreak
   (* quantifiers *)
   | Mforall           of 'id * type_ * 'term option * 'term
   | Mexists           of 'id * type_ * 'term option * 'term
@@ -1317,8 +1315,6 @@ let cmp_mterm_node
     | Mnattorat e1, Mnattorat e2                                                       -> cmp e1 e2
     | Minttorat e1, Minttorat e2                                                       -> cmp e1 e2
     | Mratdur (c1, t1), Mratdur (c2, t2)                                               -> cmp c1 c2 && cmp t1 t2
-    (* imperative *)
-    | Mbreak, Mbreak                                                                   -> true
     (* quantifiers *)
     | Mforall (i1, t1, t2, e1), Mforall (i2, t3, t4, e2)                               -> cmpi i1 i2 && cmp_type t1 t3 && Option.cmp cmp t2 t4 && cmp e1 e2
     | Mexists (i1, t1, t2, e1), Mforall (i2, t3, t4, e2)                               -> cmpi i1 i2 && cmp_type t1 t3 && Option.cmp cmp t2 t4 && cmp e1 e2
@@ -1681,8 +1677,6 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mnattorat e                    -> Mnattorat (f e)
   | Minttorat e                    -> Minttorat (f e)
   | Mratdur (c, t)                 -> Mratdur (f c, f t)
-  (* imperative *)
-  | Mbreak                         -> Mbreak
   (* quantifiers *)
   | Mforall (i, t, s, e)           -> Mforall (g i, ft t, Option.map f s, f e)
   | Mexists (i, t, s, e)           -> Mexists (g i, ft t, Option.map f s, f e)
@@ -2048,8 +2042,6 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mnattorat e                           -> f accu e
   | Minttorat e                           -> f accu e
   | Mratdur (c, t)                        -> f (f accu c) t
-  (* imperative *)
-  | Mbreak                                -> accu
   (* quantifiers *)
   | Mforall (_, _, s, e)                  -> f (opt f accu s) e
   | Mexists (_, _, s, e)                  -> f (opt f accu s) e
@@ -2922,12 +2914,6 @@ let fold_map_term
     let ce, ca = f accu c in
     let te, ta = f ca t in
     g (Mratdur (ce, te)), ta
-
-
-  (* imperative *)
-
-  | Mbreak ->
-    g (Mbreak), accu
 
 
   (* quantifiers *)

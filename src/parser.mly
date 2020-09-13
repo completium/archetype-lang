@@ -43,7 +43,6 @@
 %token AT_REMOVE
 %token AT_UPDATE
 %token BEFORE
-%token BREAK
 %token BUT
 %token BY
 %token CALL
@@ -786,9 +785,6 @@ expr_r:
 
  | LABEL id=ident
      { Elabel id }
-
- | BREAK
-     { Ebreak }
 
  | FOR lbl=colon_ident x=for_ident IN y=expr DO body=block DONE
      { Efor (lbl, x, y, body) }

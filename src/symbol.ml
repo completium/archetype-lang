@@ -132,7 +132,6 @@ let string_of_token = function
   | BYTES s         -> Printf.sprintf "BYTES(%s)" s
   | BY              -> "BY"
   | BUT             -> "BUT"
-  | BREAK           -> "BREAK"
   | BEFORE          -> "BEFORE"
   | AT_UPDATE       -> "AT_UPDATE"
   | AT_REMOVE       -> "AT_REMOVE"
@@ -281,7 +280,6 @@ let string_of_symbol = function
   | X (T T_BYTES) -> "bytes"
   | X (T T_BY) -> "by"
   | X (T T_BUT) -> "but"
-  | X (T T_BREAK) -> "break"
   | X (T T_BEFORE) -> "before"
   | X (T T_AT) -> "at"
   | X (T T_AT_UPDATE) -> "@update"

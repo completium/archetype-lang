@@ -379,7 +379,6 @@ and 'id instruction_node =
   | Iassign of (assignment_operator * ptyp * 'id lvalue_gen * 'id term_gen)         (* $2 assignment_operator $3 *)
   | Irequire of (bool * 'id term_gen * 'id term_gen)                                               (* $1 ? require : failif *)
   | Itransfer of ('id term_gen * 'id transfer_t)
-  | Ibreak
   | Icall of ('id term_gen option * 'id call_kind * ('id term_arg) list)
   | Ireturn of 'id term_gen
   | Ilabel of 'id

@@ -2840,7 +2840,6 @@ let rec for_xexpr
     | Eassert    _
     | Elabel     _
     | Eassign    _
-    | Ebreak
     | Edofailif  _
     | Efor       _
     | Eiter      _
