@@ -1724,13 +1724,15 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     (* comparison operators *)
 
     | Mequal (t, l, r)  ->
-      begin match ctx.lctx with
-      | Logic | Inv -> Teq (dl Tyint, map_mterm m ctx l, map_mterm m ctx r)
+      begin match t, ctx.lctx with
+      | M.Tcontainer (Tasset id, Collection), (Logic | Inv) -> Teq (dl (Tycoll (map_lident id)), map_mterm m ctx l, map_mterm m ctx r)
+      | _, (Logic | Inv) -> Teq (dl Tyint, map_mterm m ctx l, map_mterm m ctx r)
       | _           -> Teq (map_mtype m t, map_mterm m ctx l, map_mterm m ctx r)
       end
     | Mnequal (t, l, r) ->
-      begin match ctx.lctx with
-      | Logic | Inv -> Tneq (dl Tyint, map_mterm m ctx l, map_mterm m ctx r)
+      begin match t, ctx.lctx with
+      | M.Tcontainer (Tasset id, Collection), (Logic | Inv) -> Tneq (dl (Tycoll (map_lident id)), map_mterm m ctx l, map_mterm m ctx r)
+      | _, (Logic | Inv) -> Tneq (dl Tyint, map_mterm m ctx l, map_mterm m ctx r)
       | _           -> Tneq (map_mtype m t, map_mterm m ctx l, map_mterm m ctx r)
       end
     | Mgt (l, r) -> Tgt (map_mtype m l.type_, map_mterm m ctx l, map_mterm m ctx r)

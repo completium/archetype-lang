@@ -1263,6 +1263,9 @@ module Collection
   axiom mem_get_key : forall a c. mem a c -> get (keyt a) c = Some a
 
   (* ------------------------------------------------------------------------ *)
+  predicate eq (c1 c2 : collection) = forall k. get k c1 = get k c2
+
+  (* ------------------------------------------------------------------------ *)
   let function contains (k : tk) (c : collection) : bool
   ensures { result = true -> exists e. mem e c /\ keyt e = k }
   ensures { result = false -> get k c = None }
