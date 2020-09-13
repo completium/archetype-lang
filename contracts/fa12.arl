@@ -77,18 +77,21 @@ specification entry %transfer (%from : address, %to : address, value : nat) {
   postcondition transfer_p1 { // effect on %from nbtokens
     %from <> %to ->
     let some before_ledger_from = before.ledger[%from] in
-      let some after_ledger_from = ledger[%from] in
-        after_ledger_from.tokens = before_ledger_from.tokens - value
-      otherwise true
-    otherwise true
+    let some after_ledger_from  = ledger[%from] in
+    after_ledger_from = { before_ledger_from with
+      tokens = (before_ledger_from.tokens - value)
+    }
+    otherwise false otherwise false
   }
   postcondition transfer_p2 { // effect on %to nbtokens
     %from <> %to ->
     let some after_ledger_to = ledger[%to] in
-      let some before_ledger_to = before.ledger[%to] in
-        after_ledger_to.tokens = before_ledger_to.tokens + value
-      otherwise
-        after_ledger_to.tokens = value
+    let some before_ledger_to = before.ledger[%to] in
+      after_ledger_to = { before_ledger_to with
+        tokens = (before_ledger_to.tokens + value)
+      }
+    otherwise
+      after_ledger_to = { holder = %to; tokens = value }
     otherwise false // %to ledger asset exists after transfer
   }
   postcondition transfer_p3 {
@@ -119,10 +122,12 @@ specification entry %transfer (%from : address, %to : address, value : nat) {
   postcondition transfer_p8 { // effect on allowance
     caller <> %from ->
     let some before_from_caller = before.allowance[(%from,caller)] in
-      let some after_from_caller = allowance[(%from,caller)] in
-        before_from_caller.amount > value ->
-        after_from_caller.amount = before_from_caller.amount - value
-      otherwise true
+    let some after_from_caller = allowance[(%from,caller)] in
+      before_from_caller.amount > value ->
+      after_from_caller = { before_from_caller with
+        amount = (before_from_caller.amount - value)
+      }
+    otherwise false
     otherwise true
   }
   postcondition transfer_p9 { // effect on allowance
@@ -150,9 +155,14 @@ specification entry approve(spender : address, value : nat) {
       otherwise false;
   }
   postcondition approve_p1 { // effect on allowance asset
-    let some allowance_caller_spender = allowance[(caller, spender)] in
-      allowance_caller_spender.amount = value
-    otherwise false // (caller,spender) allowance exists after approve
+    let some after_allowance_caller_spender = allowance[(caller,spender)] in
+    let some before_allowance_caller_spender = before.allowance[(caller,spender)] in
+      after_allowance_caller_spender = { before_allowance_caller_spender with
+        amount = value
+      }
+    otherwise
+      after_allowance_caller_spender = { addr_owner = caller; addr_spender = spender; amount = value }
+    otherwise false
   }
 
   postcondition approve_p2 { // other allowance assets are unchanged

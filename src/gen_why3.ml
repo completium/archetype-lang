@@ -1678,7 +1678,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | Ttuple l -> List.length l
         | _ -> assert false
       end in Ttupleaccess (map_mterm m ctx x, (Big_int.int_of_big_int k)+1, card)
-    | Mrecupdate _ -> assert false
+    | Mrecupdate (id, l) ->
+      Trecord (Some (map_mterm m ctx id), List.map (fun (i,t) -> (dl i, map_mterm m ctx t)) l)
     | Masset l ->
       let asset = M.Utils.get_asset_type mt in
       let fns = M.Utils.get_field_list m asset |> wdl in
