@@ -1,0 +1,12 @@
+archetype expr_record_update_unkown_field
+
+record my_record {
+  n : nat;
+  s : string;
+}
+
+variable res : my_record = { n = 0; s = ""}
+
+entry exec() {
+  res := { res with i = 0i }
+}
