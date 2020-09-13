@@ -1731,7 +1731,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       end
     | Mnequal (t, l, r) ->
       begin match t, ctx.lctx with
-      | M.Tcontainer (Tasset id, Collection), (Logic | Inv) -> Tneq (dl Tyint, map_mterm m ctx l, map_mterm m ctx r)
+      | M.Tcontainer (Tasset id, Collection), (Logic | Inv) -> Tneq (dl (Tycoll (map_lident id)), map_mterm m ctx l, map_mterm m ctx r)
       | _, (Logic | Inv) -> Tneq (dl Tyint, map_mterm m ctx l, map_mterm m ctx r)
       | _           -> Tneq (map_mtype m t, map_mterm m ctx l, map_mterm m ctx r)
       end
