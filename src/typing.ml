@@ -2834,6 +2834,7 @@ let rec for_xexpr
           (A.Pentrypoint (ty, id, b))
       end
 
+    | Erecupdate _
     | Eself      _
     | Evar       _
     | Efail      _

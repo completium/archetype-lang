@@ -118,6 +118,7 @@ and expr_unloc =
   | Eletin        of lident * type_t option * expr * expr * expr option
   | Evar          of lident * type_t option * expr
   | Ematchwith    of expr * branch list
+  | Erecupdate    of expr * (lident * expr) list
   | Equantifier   of quantifier * lident * quantifier_kind * expr
   | Eassert       of lident
   | Elabel        of lident

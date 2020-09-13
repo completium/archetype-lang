@@ -908,6 +908,9 @@ simple_expr_r:
  | LBRACKET e=expr RBRACKET
      { Earray (split_seq e) }
 
+ | LBRACE e=simple_expr WITH xs=separated_list(SEMI_COLON, recupdate_item) RBRACE
+     { Erecupdate (e, xs) }
+
  | LBRACE xs=separated_list(SEMI_COLON, record_item) RBRACE
      { Erecord xs }
 
@@ -983,6 +986,9 @@ record_item:
  | e=simple_expr { (None, e) }
  | id=ident op=assignment_operator_record e=simple_expr
    { (Some (op, id), e) }
+
+recupdate_item:
+ | id=ident EQUAL e=simple_expr { (id, e) }
 
 %inline quantifier:
  | FORALL { Forall }

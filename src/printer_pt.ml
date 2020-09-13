@@ -476,6 +476,17 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_default pos pp) fmt (x, xs)
 
+  | Erecupdate (e, l) ->
+
+    let pp fmt (e, l) =
+      Format.fprintf fmt "{%a with %a}"
+        (pp_expr e_default PNone) e
+        (pp_list "; " (fun fmt (id, v) ->
+             Format.fprintf fmt "%a = %a"
+               pp_id id
+               (pp_expr e_equal PRight) v)) l
+    in
+    (maybe_paren outer e_default pos pp) fmt (e, l)
 
   | Efor (lbl, fid, expr, body) ->
 
