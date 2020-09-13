@@ -352,8 +352,6 @@ type ('id, 'term) mterm_node  =
   | Mnattorat         of 'term
   | Minttorat         of 'term
   | Mratdur           of 'term * 'term
-  (* functional *)
-  | Mfold             of ('id * 'id list * 'term * 'term) (* ident list * collection * body *)
   (* imperative *)
   | Mbreak
   (* quantifiers *)
@@ -1319,8 +1317,6 @@ let cmp_mterm_node
     | Mnattorat e1, Mnattorat e2                                                       -> cmp e1 e2
     | Minttorat e1, Minttorat e2                                                       -> cmp e1 e2
     | Mratdur (c1, t1), Mratdur (c2, t2)                                               -> cmp c1 c2 && cmp t1 t2
-    (* functional *)
-    | Mfold (i1, is1, c1, b1), Mfold (i2, is2, c2, b2)                                 -> cmpi i1 i2 && List.for_all2 cmpi is1 is2 && cmp c1 c2 && cmp b1 b2
     (* imperative *)
     | Mbreak, Mbreak                                                                   -> true
     (* quantifiers *)
@@ -1685,8 +1681,6 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mnattorat e                    -> Mnattorat (f e)
   | Minttorat e                    -> Minttorat (f e)
   | Mratdur (c, t)                 -> Mratdur (f c, f t)
-  (* functional *)
-  | Mfold (i, is, c, b)            -> Mfold (g i, List.map g is, f c, f b)
   (* imperative *)
   | Mbreak                         -> Mbreak
   (* quantifiers *)
@@ -2054,8 +2048,6 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mnattorat e                           -> f accu e
   | Minttorat e                           -> f accu e
   | Mratdur (c, t)                        -> f (f accu c) t
-  (* functional *)
-  | Mfold (_, _, c, b)                    -> f (f accu c) b
   (* imperative *)
   | Mbreak                                -> accu
   (* quantifiers *)
@@ -2930,14 +2922,6 @@ let fold_map_term
     let ce, ca = f accu c in
     let te, ta = f ca t in
     g (Mratdur (ce, te)), ta
-
-
-  (* functional *)
-
-  | Mfold (i, is, c, b) ->
-    let ce, ca = f accu c in
-    let bi, ba = f ca b in
-    g (Mfold (i, is, ce, bi)), ba
 
 
   (* imperative *)

@@ -1105,16 +1105,6 @@ let pp_mterm fmt (mt : mterm) =
       pp fmt (c, t)
 
 
-    (* functional *)
-
-    | Mfold (i, is, c, b) ->
-      Format.fprintf fmt "fold %a %a %a (@\n  @[%a@]@\n)@\n"
-        pp_id i
-        (pp_list "%@," pp_id) is
-        f c
-        f b
-
-
     (* imperative *)
 
     | Mbreak -> pp_str fmt "break"

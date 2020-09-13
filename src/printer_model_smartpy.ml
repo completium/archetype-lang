@@ -1403,11 +1403,6 @@ let pp_model fmt (model : model) =
         pp fmt (c, t)
 
 
-      (* functional *)
-
-      | Mfold _ -> emit_error (UnsupportedTerm "Mfold")
-
-
       (* imperative *)
 
       | Mbreak -> emit_error (UnsupportedTerm ("Mbreak"))

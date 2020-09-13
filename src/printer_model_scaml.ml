@@ -1399,16 +1399,6 @@ let pp_model fmt (model : model) =
         pp fmt (c, t)
 
 
-      (* functional *)
-
-      | Mfold (i, is, c, b) ->
-        Format.fprintf fmt
-          "List.fold_left (fun (%a) %a ->@\n    @[%a@]) (%a) (%a)@\n"
-          (pp_list ", " pp_id) is pp_id i
-          f b
-          (pp_list ", " pp_id) is
-          f c
-
       (* imperative *)
 
       | Mbreak -> emit_error (UnsupportedTerm ("break"))
