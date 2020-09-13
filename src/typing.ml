@@ -2834,7 +2834,16 @@ let rec for_xexpr
           (A.Pentrypoint (ty, id, b))
       end
 
-    | Erecupdate _
+    | Erecupdate (e, l) -> begin
+        let e = for_xexpr env e in
+        let l = List.map (fun (id, v) -> id, for_xexpr env v) l in
+
+        if is_expr_kind mode.em_kind
+        then Env.emit_error env (loc tope, InvalidExpressionForEffect);
+
+        mk_sp e.type_ (A.Precupdate (e, l))
+      end
+
     | Eself      _
     | Evar       _
     | Efail      _

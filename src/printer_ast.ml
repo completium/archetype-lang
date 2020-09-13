@@ -367,6 +367,14 @@ let rec pp_pterm fmt (pterm : pterm) =
       in
       (pp_no_paren pp) fmt l
 
+    | Precupdate (e, l) ->
+      let pp fmt (e, l) =
+        Format.fprintf fmt "{%a with %a}"
+          pp_pterm e
+          (pp_list "; " (fun fmt (id, v) -> Format.fprintf fmt "%a = %a" pp_id id pp_pterm v)) l
+      in
+      (pp_no_paren pp) fmt (e, l)
+
     | Pletin (id, init, t, body, otherwise) ->
       let pp fmt (id, init, t, body) =
         Format.fprintf fmt "let %a%a= %a in@\n%a%a"

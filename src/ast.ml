@@ -315,6 +315,7 @@ type 'id term_node  =
   | Parith of arithmetic_operator * 'id term_gen * 'id term_gen
   | Puarith of unary_arithmetic_operator * 'id term_gen
   | Precord of 'id term_gen list
+  | Precupdate of 'id term_gen * ('id * 'id term_gen) list
   | Pletin of 'id * 'id term_gen * ptyp option * 'id term_gen * 'id term_gen option (* ident * init * type * body * otherwise *)
   | Pdeclvar of 'id * ptyp option * 'id term_gen
   | Pvar of var_temporality * vset * 'id

@@ -299,6 +299,7 @@ let to_model (ast : A.ast) : M.model =
           M.Mlitrecord (List.map2 (fun x y -> x, f y) ids l)
         end
       | A.Precord l                       -> M.Masset         (List.map f l)
+      | A.Precupdate (e, l)               -> M.Mrecupdate     (f e, List.map (fun (id, v) -> unloc id, f v) l)
       | A.Pletin (id, init, typ, body, o) -> M.Mletin         ([id], f init, Option.map ptyp_to_type typ, f body, Option.map f o)
       | A.Pdeclvar (i, t, v)              -> M.Mdeclvar       ([i], Option.map ptyp_to_type t, f v)
       | A.Pvar (b, vs, {pldesc = "state"; _})                -> M.Mvar (dumloc "", Vstate, to_temp b, to_delta vs)
