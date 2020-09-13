@@ -1482,23 +1482,6 @@ let pp_model_internal fmt (model : model) b =
       pp fmt (c, t)
 
 
-    (* functional *)
-
-    | Mfold (i, is, c, b) ->
-      Format.fprintf fmt
-        "List.fold (fun (%a, (%a)) ->@\n\
-         @[  %a@]) %a (%a)@\n"
-        pp_id i (pp_list ", " pp_id) is
-        f b
-        f c
-        (pp_list ", " pp_id) is
-
-
-    (* imperative *)
-
-    | Mbreak -> emit_error (UnsupportedTerm ("break"))
-
-
     (* quantifiers *)
 
     | Mforall _ -> emit_error (UnsupportedTerm ("forall"))
@@ -2657,6 +2640,8 @@ let pp_model_internal fmt (model : model) b =
            )) const_operations
         (pp_mterm env) fs.body
         (if with_operations then const_operations else "(nil : list(operation))") const_storage
+
+    | Getter _ -> emit_error (UnsupportedTerm ("Function"))
 
     | Function (fs, ret) ->
       Format.fprintf fmt

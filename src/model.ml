@@ -352,10 +352,6 @@ type ('id, 'term) mterm_node  =
   | Mnattorat         of 'term
   | Minttorat         of 'term
   | Mratdur           of 'term * 'term
-  (* functional *)
-  | Mfold             of ('id * 'id list * 'term * 'term) (* ident list * collection * body *)
-  (* imperative *)
-  | Mbreak
   (* quantifiers *)
   | Mforall           of 'id * type_ * 'term option * 'term
   | Mexists           of 'id * type_ * 'term option * 'term
@@ -655,10 +651,11 @@ type argument = lident argument_gen
 [@@deriving show {with_path = false}]
 
 type 'id function_struct_gen = {
-  name: 'id;
-  args: 'id argument_gen list;
-  body: 'id mterm_gen;
-  loc : Location.t [@opaque];
+  name:  'id;
+  args:  'id argument_gen list;
+  eargs: 'id argument_gen list;
+  body:  'id mterm_gen;
+  loc :  Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
@@ -667,6 +664,7 @@ type function_struct = lident function_struct_gen
 
 type 'id function_node_gen =
   | Function           of 'id function_struct_gen * type_ (* fun * return type *)
+  | Getter             of 'id function_struct_gen * type_
   | Entry              of 'id function_struct_gen
 [@@deriving show {with_path = false}]
 
@@ -922,8 +920,8 @@ let mk_record_field ?(loc = Location.dummy) name type_ : 'id record_field_gen =
 let mk_storage_item ?(const=false) ?(ghost = false) ?(loc = Location.dummy) id model_type typ default : 'id storage_item_gen =
   { id; model_type; typ; const; ghost; default; loc }
 
-let mk_function_struct ?(args = []) ?(loc = Location.dummy) name body : function_struct =
-  { name; args; body; loc }
+let mk_function_struct ?(args = []) ?(eargs = []) ?(loc = Location.dummy) name body : function_struct =
+  { name; args; eargs; body; loc }
 
 let mk_function ?spec node : 'id function__gen =
   { node; spec }
@@ -945,6 +943,7 @@ let tnat      = Tbuiltin Bnat
 let tint      = Tbuiltin Bint
 let tstring   = Tbuiltin Bstring
 let tbytes    = Tbuiltin Bbytes
+let ttez      = Tbuiltin Bcurrency
 let toption t = Toption t
 let ttuple l  = Ttuple l
 let trat      = ttuple [tint; tnat]
@@ -962,6 +961,9 @@ let mfalse      = mk_mterm (Mbool false) tbool
 
 
 let mk_mvar id t = mk_mterm (Mvar(id, Vlocal, Tnone, Dnone )) t
+let mk_pvar id t = mk_mterm (Mvar(id, Vparam, Tnone, Dnone )) t
+
+let mk_tez v = mk_mterm (Mcurrency(Big_int.big_int_of_int v, Utz)) ttez
 
 let mk_tuple (l : mterm list) = mk_mterm (Mtuple l) (Ttuple (List.map (fun (x : mterm) -> x.type_) l))
 
@@ -1313,10 +1315,6 @@ let cmp_mterm_node
     | Mnattorat e1, Mnattorat e2                                                       -> cmp e1 e2
     | Minttorat e1, Minttorat e2                                                       -> cmp e1 e2
     | Mratdur (c1, t1), Mratdur (c2, t2)                                               -> cmp c1 c2 && cmp t1 t2
-    (* functional *)
-    | Mfold (i1, is1, c1, b1), Mfold (i2, is2, c2, b2)                                 -> cmpi i1 i2 && List.for_all2 cmpi is1 is2 && cmp c1 c2 && cmp b1 b2
-    (* imperative *)
-    | Mbreak, Mbreak                                                                   -> true
     (* quantifiers *)
     | Mforall (i1, t1, t2, e1), Mforall (i2, t3, t4, e2)                               -> cmpi i1 i2 && cmp_type t1 t3 && Option.cmp cmp t2 t4 && cmp e1 e2
     | Mexists (i1, t1, t2, e1), Mforall (i2, t3, t4, e2)                               -> cmpi i1 i2 && cmp_type t1 t3 && Option.cmp cmp t2 t4 && cmp e1 e2
@@ -1679,10 +1677,6 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mnattorat e                    -> Mnattorat (f e)
   | Minttorat e                    -> Minttorat (f e)
   | Mratdur (c, t)                 -> Mratdur (f c, f t)
-  (* functional *)
-  | Mfold (i, is, c, b)            -> Mfold (g i, List.map g is, f c, f b)
-  (* imperative *)
-  | Mbreak                         -> Mbreak
   (* quantifiers *)
   | Mforall (i, t, s, e)           -> Mforall (g i, ft t, Option.map f s, f e)
   | Mexists (i, t, s, e)           -> Mexists (g i, ft t, Option.map f s, f e)
@@ -1739,7 +1733,8 @@ let map_mterm_model_exec custom (f : ('id, 't) ctx_model_gen -> mterm -> mterm) 
   let map_function (ctx : ('id, 't) ctx_model_gen) (fun_ : function__) : function__ = (
     let node = match fun_.node with
       | Function (fs, ret) -> Function (map_function_struct ctx fs, ret)
-      | Entry fs -> Entry (map_function_struct ctx fs)
+      | Getter   (fs, ret) -> Getter   (map_function_struct ctx fs, ret)
+      | Entry     fs       -> Entry    (map_function_struct ctx fs)
     in
     { fun_ with node = node}
   ) in
@@ -1815,6 +1810,7 @@ let map_mterm_model_formula custom (f : ('id, 't) ctx_model_gen -> mterm -> mter
     let fs : function_struct =
       match fun_.node with
       | Function (fs, _) -> fs
+      | Getter (fs, _) -> fs
       | Entry fs -> fs
     in
     let ctx = { ctx with fs = Some fs } in
@@ -2046,10 +2042,6 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mnattorat e                           -> f accu e
   | Minttorat e                           -> f accu e
   | Mratdur (c, t)                        -> f (f accu c) t
-  (* functional *)
-  | Mfold (_, _, c, b)                    -> f (f accu c) b
-  (* imperative *)
-  | Mbreak                                -> accu
   (* quantifiers *)
   | Mforall (_, _, s, e)                  -> f (opt f accu s) e
   | Mexists (_, _, s, e)                  -> f (opt f accu s) e
@@ -2924,20 +2916,6 @@ let fold_map_term
     g (Mratdur (ce, te)), ta
 
 
-  (* functional *)
-
-  | Mfold (i, is, c, b) ->
-    let ce, ca = f accu c in
-    let bi, ba = f ca b in
-    g (Mfold (i, is, ce, bi)), ba
-
-
-  (* imperative *)
-
-  | Mbreak ->
-    g (Mbreak), accu
-
-
   (* quantifiers *)
 
   | Mforall (id, t, Some s, e) ->
@@ -3085,6 +3063,7 @@ let fold_model (f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (m : '
     let accu : 'a = (
       match a.node with
       | Function (fs, _)
+      | Getter (fs, _)
       | Entry fs -> f {ctx with fs = Some fs} accu fs.body
     ) in
     Option.map_dfl (fun (x : 'id specification_gen) -> fold_specification ctx f x accu) accu a.spec
@@ -3114,6 +3093,7 @@ type kind_ident =
   | KIstoragefield
   | KIentry
   | KIfunction
+  | KIgetter
   | KIargument
   | KIlocalvar
   | KIlabel
@@ -3372,15 +3352,17 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
           g KIargument a, for_type b, Option.map for_mterm c
         in
         {
-          name = g (match fn with | Function _ -> KIfunction | Entry _ -> KIentry) fs.name;
-          args = List.map for_argument fs.args;
-          body = for_mterm fs.body;
-          loc  = fs.loc;
+          name  = g (match fn with | Function _ -> KIfunction | Getter _ -> KIgetter | Entry _ -> KIentry) fs.name;
+          args  = List.map for_argument fs.args;
+          eargs = List.map for_argument fs.eargs;
+          body  = for_mterm fs.body;
+          loc   = fs.loc;
         }
       in
       match fn with
       | Function (fs, t) -> Function (for_function_struct fs, for_type t)
-      | Entry fs         -> Entry (for_function_struct fs)
+      | Getter   (fs, t) -> Getter   (for_function_struct fs, for_type t)
+      | Entry     fs     -> Entry    (for_function_struct fs)
     in
     {
       node = for_function_node f__.node;
@@ -3614,12 +3596,14 @@ end = struct
   let get_function_args (f : function__) : argument list =
     match f.node with
     | Function (s,_) -> s.args
+    | Getter (s,_)   -> s.args
     | Entry s        -> s.args
 
   let set_function_args (f : function__) (args : argument list) : function__ =
     match f.node with
-    | Function (s,t) -> { node = Function ({ s with args = args },t); spec = f.spec }
-    | Entry s        -> { node = Entry { s with args = args }; spec = f.spec }
+    | Function (s, t) -> { node = Function ({ s with args = args },t); spec = f.spec }
+    | Getter (s, t)   -> { node = Getter   ({ s with args = args },t); spec = f.spec }
+    | Entry s         -> { node = Entry     { s with args = args };    spec = f.spec }
 
   let is_entry (f : function__) : bool =
     match f with
@@ -3887,6 +3871,9 @@ end = struct
       | Function (s,r) -> Function ({
           s with body = m s.body;
         },r)
+      | Getter (s,r) -> Getter ({
+          s with body = m s.body;
+        },r)
       | Entry s        -> Entry {
           s with body = m s.body;
         }
@@ -4012,7 +3999,8 @@ end = struct
         (fun (f : function__) ->
            match f.node with
            | Function (fs, _) -> unloc fs.name, fs
-           | Entry fs-> unloc fs.name, fs)
+           | Getter   (fs, _) -> unloc fs.name, fs
+           | Entry     fs     -> unloc fs.name, fs)
         m.functions
     in
     let fun_id_list = List.map fst fun_ids in
@@ -4038,6 +4026,7 @@ end = struct
       let name =
         match f.node with
         | Entry fs -> unloc fs.name
+        | Getter (fs, _) -> unloc fs.name
         | Function (fs, _) -> unloc fs.name
       in
       []
@@ -4797,6 +4786,7 @@ end = struct
         let fs, t =
           match fn with
           | Function (fs, t) -> fs, Some t
+          | Getter (fs, t) -> fs, Some t
           | Entry fs -> fs, None
         in
         accu
@@ -4914,7 +4904,7 @@ end = struct
 
   let get_function (model : model) (id : ident) : function_struct =
     model.functions
-    |> List.map (fun x -> match x.node with | Function (fs, _) | Entry fs -> fs)
+    |> List.map (fun x -> match x.node with | Function (fs, _) | Getter (fs, _) | Entry fs -> fs)
     |> List.find (fun (x : function_struct) -> String.equal (unloc x.name) id)
 
   let get_asset_partitions (model : model) asset_name : (ident * ident) list =
@@ -4944,7 +4934,7 @@ end = struct
     | None -> get_function_spec (get_functions model)
 
   let get_fss (model : model) : function_struct list =
-    List.map (fun (x) -> match x.node with | Entry fs | Function (fs, _) -> fs) model.functions
+    List.map (fun (x) -> match x.node with | Entry fs | Getter (fs, _) | Function (fs, _) -> fs) model.functions
 
   let get_fs (model : model) (id : ident) : function_struct =
     List.find (fun (x : function_struct) -> String.equal id (unloc x.name)) (get_fss model)

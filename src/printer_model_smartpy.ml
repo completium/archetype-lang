@@ -1403,16 +1403,6 @@ let pp_model fmt (model : model) =
         pp fmt (c, t)
 
 
-      (* functional *)
-
-      | Mfold _ -> emit_error (UnsupportedTerm "Mfold")
-
-
-      (* imperative *)
-
-      | Mbreak -> emit_error (UnsupportedTerm ("Mbreak"))
-
-
       (* quantifiers *)
 
       | Mforall _ -> emit_error (UnsupportedTerm ("Mforall"))
@@ -1508,6 +1498,7 @@ let pp_model fmt (model : model) =
   let pp_contract_fun (env : env) fmt (fn : function_node) =
     match fn with
     | Entry fs -> (pp_contract_entry env) fmt fs
+    | Getter (fs, r) -> (pp_function env) fmt (fs, r)
     | Function (fs, r) -> (pp_function env) fmt (fs, r)
   in
 

@@ -120,7 +120,6 @@ let generate_target_pt (pt : ParseTree.archetype) : ParseTree.archetype =
 
 let generate_model            = Gen_model.to_model
 let generate_storage          = Gen_storage.generate_storage
-let remove_side_effect        = Gen_reduce.reduce
 let generate_api_storage      = Gen_api_storage.generate_api_storage
 
 let generate_target model =
@@ -130,6 +129,7 @@ let generate_target model =
   | LigoStorage ->
     model
     |> replace_ligo_ident
+    |> getter_to_entry
     |> process_multi_keys
     |> replace_col_by_key_for_ckfield
     |> process_asset_state
@@ -165,6 +165,7 @@ let generate_target model =
   | SmartPy ->
     model
     |> replace_col_by_key_for_ckfield
+    |> getter_to_entry
     |> process_multi_keys
     |> process_asset_state
     |> replace_assignfield_by_update
@@ -199,6 +200,7 @@ let generate_target model =
   | Scaml ->
     model
     |> remove_add_update
+    |> getter_to_entry
     |> process_multi_keys
     |> replace_update_by_set
     |> generate_storage
@@ -209,7 +211,6 @@ let generate_target model =
     |> remove_cmp_bool
     |> process_single_field_storage
     |> split_key_values
-    |> remove_side_effect
     |> optimize
     |> generate_api_storage
     |> output
@@ -218,6 +219,7 @@ let generate_target model =
   | MichelsonStorage ->
     model
     |> prune_formula
+    |> getter_to_entry ~extra:true
     |> process_multi_keys
     |> replace_col_by_key_for_ckfield
     |> process_asset_state
@@ -256,6 +258,7 @@ let generate_target model =
   | Whyml ->
     model
     |> replace_whyml_ident
+    |> getter_to_entry
     |> process_multi_keys
     |> replace_assignfield_by_update
     |> process_asset_state

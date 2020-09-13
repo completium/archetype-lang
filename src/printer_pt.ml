@@ -477,14 +477,6 @@ let rec pp_expr outer pos fmt a =
     (maybe_paren outer e_default pos pp) fmt (x, xs)
 
 
-  | Ebreak ->
-
-    let pp fmt =
-      Format.fprintf fmt "break"
-    in
-    pp fmt
-
-
   | Efor (lbl, fid, expr, body) ->
 
     let pp fmt (lbl, fid, expr, body) =

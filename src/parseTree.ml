@@ -111,7 +111,6 @@ and expr_unloc =
   | Efail         of expr
   | Eassign       of assignment_operator * expr * expr
   | Eif           of expr * expr * expr option
-  | Ebreak
   | Efor          of lident option * for_ident * expr * expr
   | Eiter         of lident option * lident * expr option * expr * expr
   | Ewhile        of lident option * expr * expr
@@ -376,7 +375,6 @@ let is_keyword = function
   | "asset"
   | "at"
   | "before"
-  | "break"
   | "but"
   | "by"
   | "call"

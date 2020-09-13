@@ -855,7 +855,6 @@ let to_model (ast : A.ast) : M.model =
           M.Mtransfer (v, k)
         end
 
-      | A.Ibreak    -> M.Mbreak
       | A.Ireturn e -> M.Mreturn (f e)
       | A.Ilabel  i -> M.Mlabel i
       | A.Ifail   m -> M.Mfail (Invalid (f m))
@@ -1075,7 +1074,8 @@ let to_model (ast : A.ast) : M.model =
     let loc   = function_.loc in
     let ret   = ptyp_to_type function_.return in
     let spec : M.specification option = Option.map (to_specification env) function_.specification in
-    process_fun_gen name args body loc spec (fun x -> M.Function (x, ret))
+    let f     = match function_.kind with | FKfunction -> (fun x -> M.Function (x, ret)) | FKgetter -> (fun x -> M.Getter (x, ret)) in
+    process_fun_gen name args body loc spec f
   in
 
   let add_seq (s1 : M.mterm) (s2 : M.mterm) =

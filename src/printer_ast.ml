@@ -653,12 +653,6 @@ let rec pp_instruction fmt (i : instruction) =
       in
       (pp_with_paren pp) fmt (value, tr)
 
-    | Ibreak ->
-      let pp fmt () =
-        pp_str fmt "break"
-      in
-      (pp_with_paren pp) fmt ()
-
     | Icall (meth, kind, args) ->
       let pp fmt (meth, kind, args) =
         Format.fprintf fmt "%a%a(%a)"
@@ -957,7 +951,8 @@ let pp_fun_args fmt args =
     (pp_list " " pp_fun_ident_typ) args
 
 let pp_function fmt (f : function_) =
-  Format.fprintf fmt "function %a%a : %a =@\n  @[%a%a@]@\n"
+  Format.fprintf fmt "%s %a%a : %a =@\n  @[%a%a@]@\n"
+    (match f.kind with | FKfunction -> "function" | FKgetter -> "getter")
     pp_id f.name
     pp_fun_args f.args
     pp_ptyp f.return

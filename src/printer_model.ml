@@ -80,7 +80,7 @@ let rec pp_type fmt t =
   | Toperation ->
     Format.fprintf fmt "operation"
   | Tcontract t ->
-    Format.fprintf fmt "entrysig<%a>" pp_type t
+    Format.fprintf fmt "contract<%a>" pp_type t
   | Tprog _
   | Tvset _
   | Ttrace _ -> Format.fprintf fmt "todo"
@@ -1105,21 +1105,6 @@ let pp_mterm fmt (mt : mterm) =
       pp fmt (c, t)
 
 
-    (* functional *)
-
-    | Mfold (i, is, c, b) ->
-      Format.fprintf fmt "fold %a %a %a (@\n  @[%a@]@\n)@\n"
-        pp_id i
-        (pp_list "%@," pp_id) is
-        f c
-        f b
-
-
-    (* imperative *)
-
-    | Mbreak -> pp_str fmt "break"
-
-
     (* quantifiers *)
 
     | Mforall (i, t, None, e) ->
@@ -1588,7 +1573,8 @@ let pp_argument fmt ((id, t, dv) : argument) =
 
 let pp_function fmt f =
   let k, fs, ret = match f.node with
-    | Entry f -> "entry", f, None
+    | Entry f         -> "entry",    f, None
+    | Getter (f, a)   -> "getter",   f, Some a
     | Function (f, a) -> "function", f, Some a
   in
   Format.fprintf fmt "%a %a %a%a {@\n@[<v 2>  %a%a@]@\n}@\n"

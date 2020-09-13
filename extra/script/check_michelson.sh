@@ -269,6 +269,9 @@ PASSED="\
 ./tests/passed/test_fun5.arl \
 ./tests/passed/test_fun6.arl \
 ./tests/passed/test_fun7.arl \
+./tests/passed/test_getter.arl \
+./tests/passed/test_getter_with_arg.arl \
+./tests/passed/test_getter_with_args.arl \
 "
 
 RET=0

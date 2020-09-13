@@ -379,7 +379,6 @@ and 'id instruction_node =
   | Iassign of (assignment_operator * ptyp * 'id lvalue_gen * 'id term_gen)         (* $2 assignment_operator $3 *)
   | Irequire of (bool * 'id term_gen * 'id term_gen)                                               (* $1 ? require : failif *)
   | Itransfer of ('id term_gen * 'id transfer_t)
-  | Ibreak
   | Icall of ('id term_gen option * 'id call_kind * ('id term_arg) list)
   | Ireturn of 'id term_gen
   | Ilabel of 'id
@@ -534,8 +533,14 @@ type security = {
 }
 [@@deriving show {with_path = false}]
 
+type fun_kind =
+  | FKfunction
+  | FKgetter
+[@@deriving show {with_path = false}]
+
 type 'id function_struct = {
   name          : 'id;
+  kind          : fun_kind;
   args          : ('id decl_gen) list;
   body          : 'id instruction_gen;
   specification : 'id specification option;
@@ -714,8 +719,8 @@ let mk_assert ?(invariants = []) ?(uses = []) name label formula =
 let mk_specification ?(predicates = []) ?(definitions = []) ?(fails = []) ?(lemmas = []) ?(theorems = []) ?(variables = []) ?(invariants = []) ?effect ?(specs = []) ?(asserts = []) ?(loc = Location.dummy) () =
   { predicates; definitions; fails; lemmas; theorems; variables; invariants; effect; specs; asserts; loc}
 
-let mk_function_struct ?(args = []) ?specification ?(loc = Location.dummy) name body return =
-  { name; args; body; specification; return; loc }
+let mk_function_struct ?(args = []) ?specification ?(loc = Location.dummy) name kind body return =
+  { name; kind; args; body; specification; return; loc }
 
 let mk_transition ?on ?(trs = []) from =
   { from; on; trs }

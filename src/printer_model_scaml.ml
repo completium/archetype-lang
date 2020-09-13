@@ -1399,21 +1399,6 @@ let pp_model fmt (model : model) =
         pp fmt (c, t)
 
 
-      (* functional *)
-
-      | Mfold (i, is, c, b) ->
-        Format.fprintf fmt
-          "List.fold_left (fun (%a) %a ->@\n    @[%a@]) (%a) (%a)@\n"
-          (pp_list ", " pp_id) is pp_id i
-          f b
-          (pp_list ", " pp_id) is
-          f c
-
-      (* imperative *)
-
-      | Mbreak -> emit_error (UnsupportedTerm ("break"))
-
-
       (* quantifiers *)
 
       | Mforall _ -> emit_error (UnsupportedTerm ("forall"))
@@ -1520,6 +1505,7 @@ let pp_model fmt (model : model) =
       | Entry f ->
         let str : string = Format.asprintf "let [@entry name=\"%a\"]" pp_id f.name in
         str, f, Some (Ttuple [Tcontainer (Toperation, Collection); Tstorage]), " (_s : storage)"
+      | Getter (f, a) -> "let", f, Some a, ""
       | Function (f, a) -> "let", f, Some a, ""
     in
     Format.fprintf fmt "%a %a %a%s%a =@\n@[<v 2>  %a@]@\n"
