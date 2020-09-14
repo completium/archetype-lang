@@ -1765,10 +1765,14 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Maddasset (n, i) ->
       let key_value = mk_asset_key_value m ctx n i in
-      let add = dl (Tadd (dl n, map_mterm m ctx i, loc_term (mk_ac n))) in
-      let assign = dl (Tassign (loc_term (mk_ac n), add)) in
+      let mk_add_assign coll =
+        let add = dl (Tadd (dl n, map_mterm m ctx i, loc_term coll)) in
+        dl (Tassign (loc_term coll, add)) in
+      let assign = mk_add_assign (mk_ac n) in
+      let assign_added = mk_add_assign (mk_ac_added n) in
+      let assigns = dl (Tseq [assign; assign_added]) in
       mk_trace_seq m
-        (mk_match_get_none n key_value assign Ekeyexist)
+        (mk_match_get_none n key_value assigns Ekeyexist)
         [CAdd n]
 
     | Maddfield (a, f, k, kb) ->
@@ -1784,9 +1788,13 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         ])))) in
       let instr =
         if is_partition m a f then
-          let add = dl (Tadd (dl oasset, map_mterm m ctx kb, loc_term (mk_ac oasset))) in
-          let add_assign = dl (Tassign (loc_term (mk_ac oasset), add)) in
-          dl (Tseq [assign; dl (mk_match_get_none oasset v add_assign Ekeyexist)])
+          let mk_add_assign coll =
+            let add = dl (Tadd (dl oasset, map_mterm m ctx kb, loc_term coll)) in
+            dl (Tassign (loc_term coll, add)) in
+          let assign = mk_add_assign (mk_ac oasset) in
+          let assign_added = mk_add_assign (mk_ac_added oasset) in
+          let assigns = dl (Tseq [assign; assign_added]) in
+          dl (Tseq [assign; dl (mk_match_get_none oasset v assigns Ekeyexist)])
         else dl (mk_match_get_some oasset v assign Enotfound) in
       mk_trace_seq m
         (mk_match_get_some a (map_mterm m ctx k) instr Enotfound)
@@ -1810,14 +1818,17 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
           (List.hd remove)
         else dl Tnone in
       let remove_instr = dl (mk_match_get_some_id_nil (dl "_a") n (map_mterm m ctx i) remove) in
+      let mk_assign coll = dl (Tassign (loc_term (Tdot (Tvar gs,coll)),dl (Tremove(dl n,map_mterm m ctx i,loc_term coll)))) in
+      let mk_assign_add coll = dl (Tassign (loc_term (Tdot (Tvar gs,coll)),dl (Tadd(dl n,map_mterm m ctx i,loc_term coll)))) in
+      let assign = mk_assign (mk_ac n) in
+      let assign_rmed = mk_assign_add (mk_ac_rmed n) in
       if List.length partitions > 0 then
-        let assign = dl (Tassign (loc_term (Tdoti(gs,mk_ac_id n)),dl (Tremove(dl n,map_mterm m ctx i,loc_term (mk_ac n))))) in
         mk_trace_seq m
-          (Tseq [remove_instr; assign])
+          (Tseq [remove_instr; assign; assign_rmed])
           ([CRm n] @ tr_rm_oassets)
       else
         mk_trace_seq m
-          (Tassign (loc_term (Tdoti(gs,mk_ac_id n)),dl (Tremove(dl n,map_mterm m ctx i,loc_term (mk_ac n)))))
+          (Tseq [assign; assign_rmed])
           [CRm n]
 
     | Mremovefield (a, f, k, kb) ->
@@ -1831,9 +1842,15 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         ])))) in
       let instr =
         if is_partition m a f then
-          let rm = dl (Tremove (dl oasset, map_mterm m ctx kb, loc_term (mk_ac oasset))) in
-          let rm_assign = dl (Tassign (loc_term (mk_ac oasset), rm)) in
-          dl (Tseq [rm_assign; assign])
+          let mk_assign_rm coll =
+            let rm = dl (Tremove (dl oasset, map_mterm m ctx kb, loc_term coll)) in
+            dl (Tassign (loc_term coll, rm)) in
+          let mk_assign_add coll =
+            let rm = dl (Tadd (dl oasset, map_mterm m ctx kb, loc_term coll)) in
+            dl (Tassign (loc_term coll, rm)) in
+          let rm_assign = mk_assign_rm (mk_ac oasset) in
+          let rm_assign_rmed = mk_assign_add (mk_ac_rmed oasset) in
+          dl (Tseq [rm_assign; rm_assign_rmed; assign])
         else assign in
       mk_trace_seq m
         (mk_match_get_some a (map_mterm m ctx k) instr Enotfound)
