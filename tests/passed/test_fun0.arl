@@ -1,4 +1,4 @@
-archetype rat_arith_mult
+archetype test_fun0
 
 variable res : rational = 0.0
 
