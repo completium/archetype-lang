@@ -176,7 +176,11 @@ specification entry approve(spender : address, value : nat) {
       added.allowance = [ { addr_owner = caller; addr_spender = spender; amount = value } ]
   }
 
-  postcondition approve_p4 {
+  postcondition approve_p4 { // no allowance asset is removed
+    removed.allowance.isempty()
+  }
+
+  postcondition approve_p5 {
     ledger = before.ledger
   }
 }
