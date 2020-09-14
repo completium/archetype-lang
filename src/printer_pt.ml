@@ -482,7 +482,7 @@ let rec pp_expr outer pos fmt a =
       Format.fprintf fmt "{%a with %a}"
         (pp_expr e_default PNone) e
         (pp_list "; " (fun fmt (id, v) ->
-             Format.fprintf fmt "%a = %a"
+             Format.fprintf fmt "%a = (%a)"
                pp_id id
                (pp_expr e_equal PRight) v)) l
     in
@@ -892,9 +892,9 @@ let pp_specification_item fmt = function
 
 let pp_specification_items = pp_list "@\n@\n" pp_specification_item
 
-let pp_function_gen title fmt (f : s_function) =
+let pp_function fmt (f : s_function) =
   Format.fprintf fmt "%s %a %a%a %a@\n"
-    title
+    (if f.getter then "getter" else "function")
     pp_id f.name
     pp_fun_args f.args
     (pp_option (pp_prefix " : " pp_type)) f.ret_t
@@ -912,10 +912,6 @@ let pp_function_gen title fmt (f : s_function) =
               (pp_expr e_default PNone) f.body)
          (fun fmt (f : s_function) ->
             Format.fprintf fmt "{@\n%a@\n}" (pp_expr e_equal PRight) f.body)) f
-
-let pp_function = pp_function_gen "function"
-
-let pp_getter = pp_function_gen "getter"
 
 let pp_spec fmt (items, exts) =
   let is_simple_spec items =
@@ -1123,10 +1119,6 @@ let rec pp_declaration fmt { pldesc = e; _ } =
   | Dfunction f ->
     Format.fprintf fmt "%a"
       pp_function f
-
-  | Dgetter f ->
-    Format.fprintf fmt "%a"
-      pp_getter f
 
   | Dspecification v ->
     let items, exts = v |> unloc in

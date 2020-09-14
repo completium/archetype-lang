@@ -337,11 +337,12 @@ namespace:
      r=function_return? LBRACE b=fun_body RBRACE {
   let (s, e) = b in
   {
-    name  = id;
-    args  = xs;
-    ret_t = r;
-    spec = s;
-    body  = e;
+    name   = id;
+    args   = xs;
+    ret_t  = r;
+    spec   = s;
+    body   = e;
+    getter = false;
   }
 }
 
@@ -358,17 +359,18 @@ function_decl:
      r=function_return? LBRACE b=fun_body RBRACE {
   let (s, e) = b in
   {
-    name  = id;
-    args  = xs;
-    ret_t = r;
-    spec = s;
-    body  = e;
+    name   = id;
+    args   = xs;
+    ret_t  = r;
+    spec   = s;
+    body   = e;
+    getter = true;
   }
 }
 
 getter_decl:
 | f=getter_gen
-    { Dgetter f }
+    { Dfunction f }
 
 %inline spec_predicate:
 | PREDICATE id=ident xs=function_args e=braced(expr) { Vpredicate (id, xs, e) }

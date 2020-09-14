@@ -237,6 +237,7 @@ and s_function = {
   ret_t : type_t option;
   spec  : specification option;
   body  : expr;
+  getter: bool;
 }
 
 and entry_properties = {
@@ -271,7 +272,6 @@ and declaration_unloc =
   | Dextension     of extension_decl
   | Dnamespace     of namespace_decl
   | Dfunction      of s_function
-  | Dgetter        of s_function
   | Dspecification of specification
   | Dspecasset     of lident * label_exprs
   | Dspecfun       of bool * lident * args * specification (* true = entry *)

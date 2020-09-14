@@ -802,7 +802,6 @@ type groups = {
   gr_records     : PT.record_decl             loced list;
   gr_vars        : PT.variable_decl           loced list;
   gr_funs        : PT.s_function              loced list;
-  gr_getters     : PT.s_function              loced list;
   gr_acttxs      : acttx                      loced list;
   gr_specs       : PT.specification           loced list;
   gr_secs        : PT.security                loced list;
@@ -4203,7 +4202,7 @@ let rec for_state_formula ?enum (env : env) (st : PT.expr) : A.sexpr =
     mk_sp (A.Sref (mkloc (loc st) "<error>"))
 
 (* -------------------------------------------------------------------- *)
-let for_function kind (env : env) (fdecl : PT.s_function loced) =
+let for_function (env : env) (fdecl : PT.s_function loced) =
   let { pldesc = fdecl; plloc = loc; } = fdecl in
 
   Env.inscope env (fun env ->
@@ -4227,7 +4226,7 @@ let for_function kind (env : env) (fdecl : PT.s_function loced) =
         if check_and_emit_name_free env fdecl.name then
           (env, Some {
               fs_name  = fdecl.name;
-              fs_kind  = kind;
+              fs_kind  = if fdecl.getter then FKgetter else FKfunction;
               fs_args  = List.pmap id args;
               fs_retty = Option.get rty;
               fs_body  = body;
@@ -4247,13 +4246,13 @@ let rec for_callby (env : env) (cb : PT.expr) =
     [mkloc (loc cb) (Some (for_expr `Concrete env ~ety:A.vtrole cb))]
 
 (* -------------------------------------------------------------------- *)
-let for_entry_properties ?(kind=A.FKfunction) (env, poenv : env * env) (act : PT.entry_properties) =
+let for_entry_properties (env, poenv : env * env) (act : PT.entry_properties) =
   let calledby  = Option.map (fun (x, _) -> for_callby env x) act.calledby in
   let env, req  = Option.foldmap (for_rfs `Concrete) env (Option.fst act.require) in
   let env, fai  = Option.foldmap (for_rfs `Concrete) env (Option.fst act.failif) in
   let env, spec = Option.foldmap
       (fun env x -> for_specification `Local (env, poenv) x) env act.spec_fun in
-  let env, funs = List.fold_left_map (for_function kind) env act.functions in
+  let env, funs = List.fold_left_map for_function env act.functions in
 
   (env, (calledby, req, fai, spec, funs))
 
@@ -4389,14 +4388,14 @@ let for_vars_decl (env : env) (decls : PT.variable_decl loced list) =
   List.fold_left_map for_var_decl env decls
 
 (* -------------------------------------------------------------------- *)
-let for_fun_decl kind (env : env) (fdecl : PT.s_function loced) =
-  let env, decl = for_function kind env fdecl in
+let for_fun_decl (env : env) (fdecl : PT.s_function loced) =
+  let env, decl = for_function env fdecl in
 
   (Option.fold (fun env decl -> Env.Function.push env decl) env decl, decl)
 
 (* -------------------------------------------------------------------- *)
-let for_funs_decl ?(kind=A.FKfunction) (env : env) (decls : PT.s_function loced list) =
-  List.fold_left_map (for_fun_decl kind) env decls
+let for_funs_decl (env : env) (decls : PT.s_function loced list) =
+  List.fold_left_map for_fun_decl env decls
 
 (* -------------------------------------------------------------------- *)
 type pre_assetdecl = {
@@ -4897,7 +4896,6 @@ let group_declarations (decls : (PT.declaration list)) =
     gr_records    = [];
     gr_vars       = [];
     gr_funs       = [];
-    gr_getters    = [];
     gr_acttxs     = [];
     gr_specs      = [];
     gr_secs       = [];
@@ -4934,9 +4932,6 @@ let group_declarations (decls : (PT.declaration list)) =
     | PT.Dfunction infos ->
       { g with gr_funs = mk infos :: g.gr_funs }
 
-    | PT.Dgetter infos ->
-      { g with gr_getters = mk infos :: g.gr_getters }
-
     | PT.Dspecification infos ->
       { g with gr_specs = mk infos :: g.gr_specs }
 
@@ -4961,7 +4956,6 @@ type decls = {
   records   : recorddecl option list;
   assets    : assetdecl option list;
   functions : env fundecl option list;
-  getters   : env fundecl option list;
   acttxs    : env tentrydecl option list;
   specs     : env ispecification list list;
   secspecs  : A.security list;
@@ -5047,12 +5041,11 @@ let for_grouped_declarations (env : env) (toploc, g) =
 
   let env, specs           = for_specs_decl     env g.gr_specs     in
   let env, functions       = for_funs_decl      env g.gr_funs      in
-  let env, getters        = for_funs_decl      env g.gr_getters ~kind:A.FKgetter  in
   let env, acttxs          = for_acttxs_decl    env g.gr_acttxs    in
   let env, secspecs        = for_secs_decl      env g.gr_secs      in
 
   let output =
-    { state    ; variables; enums   ; assets ; functions; getters;
+    { state    ; variables; enums   ; assets ; functions;
       acttxs   ; specs    ; secspecs; records; }
 
   in (env, output)
@@ -5291,7 +5284,6 @@ let for_declarations (env : env) (decls : (PT.declaration list) loced) : A.ast =
       )
       ~funs:(
         List.map (fun x -> A.Ffunction x)    (functions_of_fdecls decls.functions) @
-        List.map (fun x -> A.Ffunction x)    (functions_of_fdecls decls.getters) @
         List.map (fun x -> A.Ftransaction x) (transentrys_of_tdecls decls.acttxs)
       )
       ~specifications:(List.map specifications_of_ispecifications decls.specs)
