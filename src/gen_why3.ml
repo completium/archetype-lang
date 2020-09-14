@@ -1685,10 +1685,11 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let fns = M.Utils.get_field_list m asset |> wdl in
       Trecord (None,(List.combine fns (List.map (map_mterm m ctx) l)))
 
-    | Massets _ ->
+    | Massets l ->
       begin
         match mt.type_ with
-        | Tcontainer (Tasset a,_) -> Temptyfield (dl (mk_field_id (unloc a)))
+        | Tcontainer (Tasset a,_) ->
+          Tmkcoll (map_lident a, List.map (map_mterm m ctx) l)
         | _ -> assert false
       end
 

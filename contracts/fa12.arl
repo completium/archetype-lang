@@ -114,9 +114,9 @@ specification entry %transfer (%from : address, %to : address, value : nat) {
   }
   postcondition transfer_p7 { // number of added asset may be one
     let some before_to = before.ledger[%to] in
-      true
+      added.ledger.isempty()
     otherwise
-      ledger.count() = before.ledger.count() + 1
+      added.ledger = [ { holder = %to; tokens = value } ]
   }
   // ALLOWANCE ASSET
   postcondition transfer_p8 { // effect on allowance
