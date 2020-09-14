@@ -1247,12 +1247,6 @@ module Collection
   =  N.elts c.content
 
   (* ------------------------------------------------------------------------ *)
-  let function from_list (l : list t) : collection
-  requires { key_injective l }
-  (* TODO postconditions *)
-  = { content = N.mk l }
-
-  (* ------------------------------------------------------------------------ *)
   let function get (k : tk) (c : collection) : option t
   ensures { result = None -> forall e. mem e c -> keyt e <> k }
   ensures { forall e. result = Some e -> keyt e = k }
@@ -1264,6 +1258,27 @@ module Collection
 
   (* ------------------------------------------------------------------------ *)
   predicate eq (c1 c2 : collection) = forall k. get k c1 = get k c2
+
+  (* ------------------------------------------------------------------------ *)
+  let function from_list (l : list t) : collection
+  requires { key_injective l }
+  = { content = N.mk l }
+
+  (* ------------------------------------------------------------------------ *)
+  axiom get_from_cons_hd : forall k a l.
+  key_injective (Cons a l) ->
+  keyt a = k ->
+  get k (from_list (Cons a l)) = Some a
+
+  (* ------------------------------------------------------------------------ *)
+  axiom get_from_cons_tl : forall k a l.
+  key_injective (Cons a l) ->
+  keyt a <> k ->
+  get k (from_list (Cons a l)) = get k (from_list l)
+
+  (* ------------------------------------------------------------------------ *)
+  axiom get_from_nil : forall k.
+  get k (from_list Nil) = None
 
   (* ------------------------------------------------------------------------ *)
   let function contains (k : tk) (c : collection) : bool
