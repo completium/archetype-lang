@@ -1758,6 +1758,7 @@ let replace_ligo_ident (model : model) : model =
     | "amount" -> "amount_"
     | "from" -> "from_"
     | "to" -> "to_"
+    | "is" -> "is_"
     | _ -> id
   in
   replace_ident_model f model
@@ -4840,12 +4841,12 @@ let eval_storage (model : model) : model =
     storage = sis;
   }
 
-let getter_to_entry ?(extra=false) (model : model) : model =
+let getter_to_entry ?(no_underscore=false) ?(extra=false) (model : model) : model =
   let for_function__ (f__ : function__) : function__ =
     let for_function_node (fn : function_node) : function_node =
       let for_function_struct (t : type_) (fs : function_struct) : function_struct =
         let process () =
-          let icallback = dumloc "_cb" in
+          let icallback = dumloc ((if no_underscore then "" else "_") ^ "cb" )in
           let tcallback = Tcontract t in
           let vcallback = mk_pvar icallback tcallback in
           let rec aux (mt : mterm) : mterm =
@@ -4856,7 +4857,7 @@ let getter_to_entry ?(extra=false) (model : model) : model =
           (icallback, tcallback, None), aux fs.body
         in
         let arg, body = process () in
-        let args, eargs = if extra then  fs.args, [arg] else fs.args @ [arg], [] in
+        let args, eargs = if extra then fs.args, [arg] else fs.args @ [arg], [] in
         {
           fs with
           args  = args;

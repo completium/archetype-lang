@@ -24,8 +24,8 @@ entry setTotalSupply(v : nat) {
 }
 
 entry retrieveTotalSupply() {
-  var Unit : unit = ();
-  var arg : (unit * contract<nat>) = (Unit, (self.setTotalSupply));
+  var u : unit = ();
+  var arg : (unit * contract<nat>) = (u, (self.setTotalSupply));
   transfer 0tz to fa12 call getTotalSupply<(unit * contract<nat>)>(arg)
 }
 

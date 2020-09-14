@@ -129,7 +129,7 @@ let generate_target model =
   | LigoStorage ->
     model
     |> replace_ligo_ident
-    |> getter_to_entry
+    |> getter_to_entry ~no_underscore:true
     |> process_multi_keys
     |> replace_col_by_key_for_ckfield
     |> process_asset_state
