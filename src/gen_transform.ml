@@ -4845,7 +4845,7 @@ let getter_to_entry ?(extra=false) (model : model) : model =
     let for_function_node (fn : function_node) : function_node =
       let for_function_struct (t : type_) (fs : function_struct) : function_struct =
         let process () =
-          let icallback = dumloc "cb" in
+          let icallback = dumloc "_cb" in
           let tcallback = Tcontract t in
           let vcallback = mk_pvar icallback tcallback in
           let rec aux (mt : mterm) : mterm =
