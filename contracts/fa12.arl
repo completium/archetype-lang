@@ -108,18 +108,14 @@ specification entry %transfer (%from : address, %to : address, value : nat) {
   postcondition transfer_p5 { // no ledger asset is removed
     removed.ledger.isempty()
   }
-  postcondition transfer_p6 { // added ledger asset may be %to
-    forall tokenholder in added.ledger,
-      tokenholder.holder = %to
-  }
-  postcondition transfer_p7 { // number of added asset may be one
+  postcondition transfer_p6 { // number of added asset may be one
     let some before_to = before.ledger[%to] in
       added.ledger.isempty()
     otherwise
       added.ledger = [ { holder = %to; tokens = value } ]
   }
   // ALLOWANCE ASSET
-  postcondition transfer_p8 { // effect on allowance
+  postcondition transfer_p7 { // effect on allowance
     caller <> %from ->
     let some before_from_caller = before.allowance[(%from,caller)] in
     let some after_from_caller = allowance[(%from,caller)] in
@@ -130,18 +126,18 @@ specification entry %transfer (%from : address, %to : address, value : nat) {
     otherwise false
     otherwise true
   }
-  postcondition transfer_p9 { // effect on allowance
+  postcondition transfer_p8 { // effect on allowance
     caller = %from -> allowance = before.allowance
   }
-  postcondition transfer_p10 { // other allowance assets are unchanged
+  postcondition transfer_p9 { // other allowance assets are unchanged
     forall a in allowance,
       a.addr_owner <> %from and a.addr_spender <> caller ->
       let some before_a = before.allowance[(a.addr_owner, a.addr_spender)] in
         a = before_a
       otherwise true
   }
-  postcondition transfer_p11 { // no allowance is added or removed
-    removed.ledger.isempty() and added.ledger.isempty()
+  postcondition transfer_p10 { // no allowance is added or removed
+    removed.allowance.isempty() and added.allowance.isempty()
   }
 }
 
@@ -173,11 +169,11 @@ specification entry approve(spender : address, value : nat) {
       otherwise false // no other allowance asset is added
   }
 
-  postcondition approve_p3 { // number of added allowance may be 1
+  postcondition approve_p3 { // added allowance
     let some allowance_caller_spender = before.allowance[(caller, spender)] in
-      true
+      added.allowance.isempty()
     otherwise
-      allowance.count() = before.allowance.count() + 1
+      added.allowance = [ { addr_owner = caller; addr_spender = spender; amount = value } ]
   }
 
   postcondition approve_p4 {
