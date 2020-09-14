@@ -1,0 +1,12 @@
+archetype expr_record_update_record_in_exec
+
+record my_record {
+  n : nat;
+  s : string;
+}
+
+variable res : my_record = { n = 0; s = ""}
+
+entry exec() {
+  res := { res with n = 1; s = "mystr" }
+}

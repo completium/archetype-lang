@@ -9,7 +9,7 @@ asset my_asset identified by id {
   {2; "mystr2"}
 }
 
-entry e() {
+entry exec() {
   specification {
     s0:
     let some a = my_asset[0] in
