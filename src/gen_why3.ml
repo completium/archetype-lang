@@ -1688,8 +1688,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Massets l ->
       begin
         match mt.type_ with
-        | Tcontainer (Tasset a,_) ->
+        | Tcontainer (Tasset a,Collection) ->
           Tmkcoll (map_lident a, List.map (map_mterm m ctx) l)
+        | Tcontainer (Tasset a,_) -> Temptyfield (dl (mk_field_id (unloc a)))
         | _ -> assert false
       end
 
@@ -1818,10 +1819,11 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
           (List.hd remove)
         else dl Tnone in
       let remove_instr = dl (mk_match_get_some_id_nil (dl "_a") n (map_mterm m ctx i) remove) in
-      let mk_assign coll = dl (Tassign (loc_term (Tdot (Tvar gs,coll)),dl (Tremove(dl n,map_mterm m ctx i,loc_term coll)))) in
-      let mk_assign_add coll = dl (Tassign (loc_term (Tdot (Tvar gs,coll)),dl (Tadd(dl n,map_mterm m ctx i,loc_term coll)))) in
+      let mk_assign coll = dl (Tassign (loc_term coll,dl (Tremove(dl n,map_mterm m ctx i,loc_term coll)))) in
+      let mk_assign_add coll asset = dl (Tassign (loc_term coll,dl (Tadd(dl n,asset,loc_term coll)))) in
       let assign = mk_assign (mk_ac n) in
-      let assign_rmed = mk_assign_add (mk_ac_rmed n) in
+      let rm_instr = mk_assign_add (mk_ac_rmed n) (loc_term (Tvar "_a")) in
+      let assign_rmed = dl (mk_match_get_some_id_nil (dl "_a") n (map_mterm m ctx i) rm_instr) in
       if List.length partitions > 0 then
         mk_trace_seq m
           (Tseq [remove_instr; assign; assign_rmed])
@@ -1845,11 +1847,12 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
           let mk_assign_rm coll =
             let rm = dl (Tremove (dl oasset, map_mterm m ctx kb, loc_term coll)) in
             dl (Tassign (loc_term coll, rm)) in
-          let mk_assign_add coll =
-            let rm = dl (Tadd (dl oasset, map_mterm m ctx kb, loc_term coll)) in
+          let mk_assign_add coll asset =
+            let rm = dl (Tadd (dl oasset, asset, loc_term coll)) in (* map_mterm m ctx kb *)
             dl (Tassign (loc_term coll, rm)) in
           let rm_assign = mk_assign_rm (mk_ac oasset) in
-          let rm_assign_rmed = mk_assign_add (mk_ac_rmed oasset) in
+          let rm_instr = mk_assign_add (mk_ac_rmed oasset) (loc_term (Tvar "_a")) in
+          let rm_assign_rmed = dl (mk_match_get_some_id_nil (dl "_a") oasset (map_mterm m ctx kb) rm_instr) in
           dl (Tseq [rm_assign; rm_assign_rmed; assign])
         else assign in
       mk_trace_seq m
