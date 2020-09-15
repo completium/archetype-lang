@@ -139,6 +139,10 @@ specification entry %transfer (%from : address, %to : address, value : nat) {
   postcondition transfer_p10 { // no allowance is added or removed
     removed.allowance.isempty() and added.allowance.isempty()
   }
+
+  postcondition transfer_p11 { // no operation generated
+    length (operations) = 0
+  }
 }
 
 specification entry approve(spender : address, value : nat) {
@@ -182,6 +186,10 @@ specification entry approve(spender : address, value : nat) {
 
   postcondition approve_p5 {
     ledger = before.ledger
+  }
+
+  postcondition approve_p6 { // no operation generated
+    length (operations) = 0
   }
 }
 
