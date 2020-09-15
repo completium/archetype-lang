@@ -156,6 +156,7 @@ let rec map_mtype m (t : M.type_) : loc_typ =
       | M.Tset t                              -> Tyset (dl (mk_set_name m (Tset t)))
       | M.Tlist t                             -> Tylist (map_mtype m t)
       | M.Tcontract _                         -> Tycontract
+      | M.Trecord id                          -> Tyrecord (map_lident id)
       | _ -> print_endline (Format.asprintf "%a@." M.pp_type_ t); assert false)
 
 let mk_list_name_from_mlwtype m t =
