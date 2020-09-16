@@ -130,9 +130,7 @@ specification entry %transfer (%from : address, %to : address, value : nat) {
   postcondition transfer_p9 { // other allowance assets are unchanged
     forall a in allowance,
       a.addr_owner <> %from and a.addr_spender <> caller ->
-      let some before_a = before.allowance[(a.addr_owner, a.addr_spender)] in
-        a = before_a
-      otherwise true
+      before.allowance[(a.addr_owner, a.addr_spender)] = some(a)
   }
   postcondition transfer_p10 { // no allowance is added or removed
     removed.allowance.isempty() and added.allowance.isempty()
