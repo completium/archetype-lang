@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Added
+ - New feature
+
+## [1.2.0] - 2020-09-15
+### Added
  - Michelson backend
  - specification declaration for asset, variable, entry and function
  - `fails` section in specification declaration
