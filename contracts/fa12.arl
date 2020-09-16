@@ -101,9 +101,7 @@ specification entry %transfer (%from : address, %to : address, value : nat) {
     forall tokenholder in ledger,
       tokenholder.holder <> %from ->
       tokenholder.holder <> %to ->
-      let some before_th = before.ledger[tokenholder.holder] in
-        tokenholder = before_th
-      otherwise false // no other ledger is added
+      before.ledger[tokenholder.holder] = some(tokenholder)
   }
   postcondition transfer_p5 { // no ledger asset is removed
     removed.ledger.isempty()
@@ -168,9 +166,7 @@ specification entry approve(spender : address, value : nat) {
   postcondition approve_p2 { // other allowance assets are unchanged
     forall a in allowance,
       (a.addr_owner, a.addr_spender) <> (caller, spender) ->
-      let some before_a = before.allowance[(a.addr_owner, a.addr_spender)] in
-        a = before_a
-      otherwise false // no other allowance asset is added
+      before.allowance[(a.addr_owner, a.addr_spender)] = some(a)
   }
 
   postcondition approve_p3 { // added allowance
