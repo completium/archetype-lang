@@ -1,0 +1,9 @@
+archetype specfun_bad_kind
+
+entry anentry (n : nat) {
+  ()
+}
+
+specification function anentry (n : int) {
+  e1: true;
+}
