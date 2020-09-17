@@ -1,0 +1,9 @@
+archetype specfun_bad_sig
+
+entry anentry (n : nat) {
+  ()
+}
+
+specification entry anentry (n : int) {
+  e1: true;
+}
