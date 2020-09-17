@@ -274,10 +274,15 @@ and declaration_unloc =
   | Dfunction      of s_function
   | Dspecification of specification
   | Dspecasset     of lident * label_exprs
-  | Dspecfun       of bool * lident * args * specification (* true = entry *)
+  | Dspecfun       of specfun_kind * lident * args * specification
   | Dspecvariable  of lident * label_exprs
   | Dsecurity      of security
   | Dinvalid
+
+and specfun_kind =
+  | SKentry
+  | SKfunction
+  | SKgetter
 
 and variable_decl =
   lident

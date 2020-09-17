@@ -1129,9 +1129,9 @@ let rec pp_declaration fmt { pldesc = e; _ } =
       pp_id id
       (pp_list "@\n" (fun fmt x -> let (id, x) = unloc x in Format.fprintf fmt "%a: %a;" pp_id id pp_simple_expr x)) l
 
-  | Dspecfun (b, id, args, s) ->
+  | Dspecfun (sfk, id, args, s) ->
     Format.fprintf fmt "specification %s %a%a {@\n  @[%a@]@\n}"
-      (if b then "entry" else "function")
+      (match sfk with | SKentry -> "entry"  | SKgetter -> "getter"  | SKfunction -> "function")
       pp_id id
       pp_fun_args args
       pp_specification_items (s |> unloc |> fst |> List.map unloc)

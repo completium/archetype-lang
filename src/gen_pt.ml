@@ -57,26 +57,26 @@ let remove_spec_decl (pt : archetype) : archetype =
     for_spec_gen map is_specvar for_decl ds
   in
 
-  let for_entry is_entry (ds : declaration list) =
+  let for_entry (ds : declaration list) =
     let map = List.fold_left (fun accu (d : declaration) ->
         match unloc d with
-        | Dspecfun (e, id, _, s) when e = is_entry -> MapString.add (unloc id) s accu
+        | Dspecfun (_, id, _, s) -> MapString.add (unloc id) s accu
         | _ -> accu ) MapString.empty ds
     in
 
     let for_decl map (decl : declaration) : declaration =
       match unloc decl with
-      | Dentry (a, b, c, d, e) when is_entry && MapString.mem (unloc a) map ->
+      | Dentry (a, b, c, d, e) when MapString.mem (unloc a) map ->
         let c = { c with spec_fun = Some (MapString.find (unloc a) map)} in
         { decl with pldesc = Dentry (a, b, c, d, e) }
-      | Dfunction a when not is_entry && MapString.mem (unloc a.name) map ->
+      | Dfunction a when MapString.mem (unloc a.name) map ->
         { decl with pldesc =  Dfunction {a with spec = Some (MapString.find (unloc a.name) map)} }
       | _ -> decl
     in
 
     let is_specvar decl =
       match unloc decl with
-      | Dspecfun (e, _, _, _) when e = is_entry -> true
+      | Dspecfun _ -> true
       | _ -> false
     in
 
@@ -84,5 +84,5 @@ let remove_spec_decl (pt : archetype) : archetype =
   in
 
   match unloc pt with
-  | Marchetype ds -> { pt with pldesc = Marchetype (ds |> for_variable |> for_asset |> for_entry true |> for_entry false)}
+  | Marchetype ds -> { pt with pldesc = Marchetype (ds |> for_variable |> for_asset |> for_entry)}
   | _ -> pt

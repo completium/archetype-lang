@@ -461,13 +461,13 @@ specfun_gen(X):
 { (id, args, s) }
 
 specfun:
-| x=specfun_gen(FUNCTION) { let id, args, s = x in Dspecfun (false, id, args, s) }
+| x=specfun_gen(FUNCTION) { let id, args, s = x in Dspecfun (SKfunction, id, args, s) }
 
 specentry:
-| x=specfun_gen(ENTRY)    { let id, args, s = x in Dspecfun (true, id, args, s) }
+| x=specfun_gen(ENTRY)    { let id, args, s = x in Dspecfun (SKentry, id, args, s) }
 
 specgetter:
-| x=specfun_gen(GETTER)    { let id, args, s = x in Dspecfun (true, id, args, s) }
+| x=specfun_gen(GETTER)    { let id, args, s = x in Dspecfun (SKgetter, id, args, s) }
 
 specvariable:
 | SPECIFICATION VARIABLE id=ident LBRACE xs=label_exprs_non_empty RBRACE
