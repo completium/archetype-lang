@@ -205,7 +205,7 @@ specification getter getBalance (owner : address) {
   }
 }
 
-specification getter geTotalSupply () {
+specification getter getTotalSupply () {
   postcondition gettotalsupply_p1 { // creates one op
     length (operations) = 1
   }
