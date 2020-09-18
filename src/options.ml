@@ -55,6 +55,7 @@ let opt_raw_whytree = ref false
 let opt_raw_ir = ref false
 let opt_raw_michelson = ref false
 let opt_caller = ref "$CALLER_ADDRESS"
+let opt_decomp = ref false
 
 let opt_property_focused = ref ""
 

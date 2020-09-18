@@ -16,9 +16,10 @@
   printer_model gen_storage gen_api_storage
   printer_model_tools printer_model_ligo printer_model_smartpy printer_model_scaml
   michelson gen_michelson printer_michelson
+  gen_decompile
   gen_why3 mlwtree printer_mlwtree
   )
-  (libraries menhirLib digestif num str ppx_deriving yojson ppx_deriving_yojson.runtime)
+  (libraries menhirLib digestif num str ppx_deriving yojson ppx_deriving_yojson.runtime tezos-micheline)
  (flags :standard -w -30  ; Allow sharing of record labels between distinct types.
                   -w -7   ; Allow overridden methods between visitors-generated classes.
                   -w -17) ; Allow visit_big_int not to be declared.

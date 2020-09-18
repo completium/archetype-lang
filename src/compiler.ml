@@ -3,6 +3,7 @@ open Archetype
 open Core
 open Gen_pt
 open Gen_transform
+open Gen_decompile
 
 exception Compiler_error
 exception E_arg
@@ -337,6 +338,17 @@ let compile (filename, channel) =
   |> cont !Options.opt_mdl output_tmdl
   |> generate_target
 
+let decompile (filename, channel) =
+  (filename, channel)
+  |> parse_michelson
+  |> to_ir
+  |> to_model
+  |> to_archetype
+  |> (fun pt ->
+      if !Options.opt_raw
+      then Format.printf "%a@." ParseTree.pp_archetype pt
+      else Format.printf "%a@." Printer_pt.pp_archetype pt)
+
 let close dispose channel =
   if dispose then close_in channel
 
@@ -373,6 +385,8 @@ let main () =
   let arg_list = Arg.align [
       "-c", c, "compile to michelson";
       "--compile", c, " Same as -c";
+      "-d", Arg.Set Options.opt_decomp, "decompile from michelson";
+      "--decompile", Arg.Set Options.opt_decomp, " Same as -d";
       "-t", Arg.String f, "<lang> Transcode to <lang> language";
       "--target", Arg.String f, " Same as -t";
       "--list-target", Arg.Unit (fun _ -> Format.printf "target available:@\n  ligo@\n  scaml (beta)@\n  whyml@\n"; exit 0), " List available target languages";
@@ -443,9 +457,10 @@ let main () =
 
   try
     begin
-      match !Options.opt_lsp, !Options.opt_service with
-      | true, _ -> Lsp.process (filename, channel)
-      | _, true -> Services.process (filename, channel)
+      match !Options.opt_lsp, !Options.opt_service, !Options.opt_decomp with
+      | true, _, _ -> Lsp.process (filename, channel)
+      | _, true, _ -> Services.process (filename, channel)
+      | _, _, true -> decompile (filename, channel)
       | _ -> compile (filename, channel)
     end;
     close dispose channel
