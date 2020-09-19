@@ -6,21 +6,10 @@ module M = Model
 module A = ParseTree
 
 let parse_michelson (_filename, _channel) : T.michelson =
-  let source = "{\
-                storage int;\
-                parameter unit;\
-                code { UNPAIR;\
-                DROP;\
-                PUSH int 2;\
-                SWAP;\
-                DROP;\
-                NIL operation;\
-                PAIR };\
-                }\
-               "
-  in
+  let source = "{ storage int; parameter unit; code { UNPAIR; DROP; PUSH int 2; SWAP; DROP; NIL operation; PAIR }; }" in
   let (tokens, _lexing_errors) = Micheline_parser.tokenize source in
   let (_asts, _parsing_errors) = Micheline_parser.parse_toplevel tokens in
+  let _ : Micheline_printer.node list = [] in
   (* List.iter (fun (x : Micheline_parser.node) -> Format.printf "%a@." Micheline_printer.print_expr x) asts; *)
   (* Format.printf "%a@." Micheline_printer.print asts *)
 
