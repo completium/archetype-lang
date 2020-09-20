@@ -4897,7 +4897,7 @@ let process_metadata (model : model) : model =
     let model =
       let rec aux ctx (mt : mterm) : mterm =
         match mt.node with
-        | Mmetadata -> mk_pvar (dumloc "metadata") mt.type_
+        | Mmetadata -> mk_svar (dumloc "metadata") mt.type_
         | _ -> map_mterm (aux ctx) mt
       in
       map_mterm_model aux model

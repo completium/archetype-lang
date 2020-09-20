@@ -963,6 +963,7 @@ let mfalse      = mk_mterm (Mbool false) tbool
 
 let mk_mvar id t = mk_mterm (Mvar(id, Vlocal, Tnone, Dnone )) t
 let mk_pvar id t = mk_mterm (Mvar(id, Vparam, Tnone, Dnone )) t
+let mk_svar id t = mk_mterm (Mvar(id, Vstorevar, Tnone, Dnone )) t
 
 let mk_tez v = mk_mterm (Mcurrency(Big_int.big_int_of_int v, Utz)) ttez
 
