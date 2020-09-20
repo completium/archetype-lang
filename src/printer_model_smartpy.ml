@@ -1293,6 +1293,7 @@ let pp_model fmt (model : model) =
       | Msource        -> pp_str fmt "sp.source"
       | Mselfaddress   -> pp_str fmt "sp.selfaddress"
       | Mchainid       -> pp_str fmt "sp.chain_id"
+      | Mmetadata      -> pp_str fmt "metadata"
 
 
       (* variable *)

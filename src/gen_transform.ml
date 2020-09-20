@@ -4878,11 +4878,30 @@ let getter_to_entry ?(no_underscore=false) ?(extra=false) (model : model) : mode
   }
 
 let process_metadata (model : model) : model =
-  let check_if_not_metadata _ = List.for_all (String.equal "") [!Options.opt_metadata_uri; !Options.opt_metadata_storage] in
+  let check_if_not_metadata _ =
+    List.for_all (String.equal "") [!Options.opt_metadata_uri; !Options.opt_metadata_storage]
+  in
 
-  if check_if_not_metadata ()
+  let with_metadata _ =
+    let rec aux ctx (accu : bool) (mt : mterm) : bool =
+      match mt.node with
+      | Mmetadata -> true
+      | _ -> fold_term (aux ctx) accu mt
+    in
+    fold_model aux model false
+  in
+
+  if check_if_not_metadata () && not (with_metadata ())
   then model
   else begin
+    let model =
+      let rec aux ctx (mt : mterm) : mterm =
+        match mt.node with
+        | Mmetadata -> mk_pvar (dumloc "metadata") mt.type_
+        | _ -> map_mterm (aux ctx) mt
+      in
+      map_mterm_model aux model
+    in
     let tmetadata = Tmap(true, tstring, tbytes) in
     let dmap =
       let mk_map _ =
@@ -4915,8 +4934,8 @@ let process_metadata (model : model) : model =
 
         let v =
           match !Options.opt_metadata_uri, !Options.opt_metadata_storage with
-          | "", "" -> assert false
-          | uri, "" -> [mk_uri uri]
+          | "", ""            -> []
+          | uri, ""           -> [mk_uri uri]
           | "", metadata_path -> [mk_uri ("tezos-storage:" ^ key); mk_data metadata_path]
           | _ -> assert false
         in

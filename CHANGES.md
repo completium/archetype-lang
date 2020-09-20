@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Added
- - Add contract metadata tzip12 (https://gitlab.com/tzip/tzip/-/blob/master/proposals/tzip-16/tzip-16.md)
+ - Add contract metadata tzip-16 (https://gitlab.com/tzip/tzip/-/blob/master/proposals/tzip-16/tzip-16.md)
 
 ## [1.2.0] - 2020-09-15
 ### Added

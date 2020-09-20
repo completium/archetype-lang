@@ -187,6 +187,7 @@ let to_const = function
   | Cresult         -> "result"
   | Cchainid        -> "chain_id"
   | Coperations     -> "operations"
+  | Cmetadata       -> "metadata"
   (* function *)
   | Cadd            -> "add"
   | Caddupdate      -> "addupdate"

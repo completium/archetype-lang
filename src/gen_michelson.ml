@@ -679,6 +679,7 @@ let to_ir (model : M.model) : T.ir =
     | Msource        -> T.Izop Zsource
     | Mselfaddress   -> T.Izop Zself_address
     | Mchainid       -> T.Izop Zchain_id
+    | Mmetadata      -> assert false
 
 
     (* variable *)

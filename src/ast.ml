@@ -133,6 +133,7 @@ type const =
   | Cresult
   | Cchainid
   | Coperations
+  | Cmetadata
   (* function *)
   | Cadd
   | Caddupdate

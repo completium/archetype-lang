@@ -2139,6 +2139,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Msource               -> Tsender (dl gs)
     | Mselfaddress          -> Tdoti(dl gs, dl (mk_id "selfaddress"))
     | Mchainid              -> Tchainid (dl gs)
+    | Mmetadata             -> assert false
 
     (* variables *)
 

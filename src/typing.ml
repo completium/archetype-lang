@@ -817,6 +817,7 @@ let globals = [
   ("transferred" , A.Ctransferred , A.vtcurrency);
   ("chainid"     , A.Cchainid     , A.vtchainid);
   ("operations"  , A.Coperations  , A.Tlist (A.Toperation));
+  ("metadata"    , A.Cmetadata    , A.Tmap (A.vtstring, A.vtbytes));
 ]
 
 let statename = "state"
@@ -3497,7 +3498,7 @@ let for_lvalue kind (env : env) (e : PT.expr) : (A.lvalue * A.ptyp) option =
         begin match vd.vr_kind, kind, vd.vr_core with
           | `Variable, `Concrete, _
           | `Ghost, `Ghost, _
-          | _, _, Some A.Coperations -> ()
+          | _, _, Some (A.Coperations | A.Cmetadata) -> ()
           | _, _, _ ->
             Env.emit_error env (loc e, ReadOnlyGlobal (unloc x));
         end;
