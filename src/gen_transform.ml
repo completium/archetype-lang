@@ -4876,3 +4876,60 @@ let getter_to_entry ?(no_underscore=false) ?(extra=false) (model : model) : mode
   { model with
     functions = List.map for_function__ model.functions;
   }
+
+let process_metadata (model : model) : model =
+  let check_if_not_metadata _ = List.for_all (String.equal "") [!Options.opt_metadata_uri; !Options.opt_metadata_storage] in
+
+  if check_if_not_metadata ()
+  then model
+  else begin
+    let tmetadata = Tmap(true, tstring, tbytes) in
+    let dmap =
+      let mk_map _ =
+
+        let key = "here" in
+
+        let mk_uri uri =
+          let empty = mk_string "" in
+          let uri =
+            let euridata = match Hex.of_string uri with `Hex str -> str in
+            mk_bytes euridata
+          in
+          empty, uri
+        in
+
+        let mk_data path =
+          let read_whole_file filename =
+            let ch = open_in filename in
+            let s = really_input_string ch (in_channel_length ch) in
+            close_in ch;
+            s
+          in
+          let vkey = mk_string key in
+          let input = read_whole_file path in
+          let metadata =
+            mk_bytes (match Hex.of_string input with `Hex str -> str)
+          in
+          vkey, metadata
+        in
+
+        let v =
+          match !Options.opt_metadata_uri, !Options.opt_metadata_storage with
+          | "", "" -> assert false
+          | uri, "" -> [mk_uri uri]
+          | "", metadata_path -> [mk_uri ("tezos-storage:" ^ key); mk_data metadata_path]
+          | _ -> assert false
+        in
+
+        mk_mterm (Mlitmap v) tmetadata in
+      if not (String.equal "" !Options.opt_metadata_uri)
+      then mk_map ()
+      else mk_map ()
+    in
+    let dvar = mk_var (dumloc "metadata") tmetadata tmetadata ~default:dmap in
+    let decl_metadata = Dvar dvar in
+    let decls = model.decls @ [decl_metadata] in
+    { model with
+      decls = decls }
+  end
+

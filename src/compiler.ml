@@ -335,6 +335,7 @@ let compile (filename, channel) =
   |> raise_if_error post_model_error (check_and_replace_init_caller ~doit:!Options.with_init_caller)
   |> raise_if_error post_model_error check_duplicated_keys_in_asset
   |> raise_if_error post_model_error check_asset_key
+  |> process_metadata
   |> cont !Options.opt_mdl output_tmdl
   |> generate_target
 
@@ -392,21 +393,18 @@ let main () =
       "--list-target", Arg.Unit (fun _ -> Format.printf "target available:@\n  ligo@\n  scaml (beta)@\n  whyml@\n"; exit 0), " List available target languages";
       "-pt", Arg.Set Options.opt_pt, " Generate parse tree";
       "--parse-tree", Arg.Set Options.opt_pt, " Same as -pt";
-      (* "-ept", Arg.Set Options.opt_extpt, " Generate extended parse tree"; *)
-      (* "--extended-parse-tree", Arg.Set Options.opt_extpt, " Same as -ept"; *)
-      (* "-ext", Arg.Set Options.opt_ext, " Process extensions"; *)
-      (* "--extensions", Arg.Set Options.opt_ext, " Same as -ext"; *)
       "-ast", Arg.Set Options.opt_ast, " Generate typed ast";
       "--typed-ast", Arg.Set Options.opt_ast, " Same as -ast";
       "-mdl", Arg.Set Options.opt_mdl, " Generate model";
       "--model", Arg.Set Options.opt_mdl, " Same as -mdl";
-      (* "--typed", Arg.Set Options.opt_typed, " Display type in ast output"; *)
-      (* "-ap", Arg.Set Options.opt_all_parenthesis, " Display all parenthesis in printer"; *)
-      (* "--typed", Arg.Set Options.opt_all_parenthesis, " Same as -ap"; *)
       "-fp", Arg.String (fun s -> Options.opt_property_focused := s), " Focus property (with whyml target only)";
       "--focus-property", Arg.String (fun s -> Options.opt_property_focused := s), " Same as -fp";
       "-sci", Arg.String (fun s -> Options.opt_caller := s), " Set caller address for initialization";
       "--set-caller-init", Arg.String (fun s -> Options.opt_caller := s), " Same as -sci";
+      "-mu", Arg.String (fun s -> Options.opt_metadata_uri := s), " Set metadata uri";
+      "--metadata-uri", Arg.String (fun s -> Options.opt_metadata_uri := s), " Same as -mu";
+      "-ms", Arg.String (fun s -> Options.opt_metadata_storage := s), " Set metadata in storage";
+      "--metadata-storage", Arg.String (fun s -> Options.opt_metadata_storage := s), " Same as -ms";
       "-lsp", Arg.String (fun s -> match s with
           | "errors" -> Options.opt_lsp := true; Lsp.kind := Errors
           | "outline" -> Options.opt_lsp := true; Lsp.kind := Outline
@@ -434,7 +432,6 @@ let main () =
       "--raw-ir", Arg.Set Options.opt_raw_ir, " Same as -ri";
       "-rm", Arg.Set Options.opt_raw_michelson, " Print raw michelson";
       "--raw-michelson", Arg.Set Options.opt_raw_michelson, " Same as -rm";
-      (* "-json", Arg.Set Options.opt_json, " Print JSON format"; *)
       "-V", Arg.String (fun s -> Options.add_vids s), "<id> process specication identifiers";
       "-v", Arg.Unit (fun () -> print_version ()), " Show version number and exit";
       "--version", Arg.Unit (fun () -> print_version ()), " Same as -v";

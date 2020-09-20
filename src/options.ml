@@ -56,6 +56,8 @@ let opt_raw_ir = ref false
 let opt_raw_michelson = ref false
 let opt_caller = ref "$CALLER_ADDRESS"
 let opt_decomp = ref false
+let opt_metadata_uri = ref ""
+let opt_metadata_storage = ref ""
 
 let opt_property_focused = ref ""
 
