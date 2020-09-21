@@ -29,19 +29,22 @@ let to_ir (_m : T.michelson) : T.ir =
   T.mk_ir storage_type storage_data storage_list parameter funs entries
 
 let to_model (_ir : T.ir) : M.model =
-  M.mk_model (dumloc "hello")
+  let storage =
+    let si = M.mk_storage_item (dumloc "n") MTvar M.tnat (M.mk_nat 0) in
+    [si]
+  in
+  let f : M.function__ =
+    let name = dumloc "default" in
+    let args = [] in
+    let body = M.mk_mterm (M.Massign (ValueAssign, M.tnat, Avarstore (dumloc "n"), M.mk_nat 2)) M.tunit in
+    let fn : M.function_struct = M.mk_function_struct name body ~args:args in
+    let node : M.function_node = M.Entry fn in
+    M.mk_function node
+  in
+  let functions = [f] in
+  M.mk_model (dumloc "hello") ~functions:functions ~storage:storage
 
 let to_archetype (model : M.model) : A.archetype =
-  let mk_entry_properties _ =
-    A.{
-      accept_transfer = true;
-      calledby        = None;
-      require         = None;
-      failif          = None;
-      spec_fun        = None;
-      functions       = [];
-    }
-  in
   let name = model.name in
   let exts = None in
   let d0 = A.Darchetype (name, exts) in
@@ -50,6 +53,6 @@ let to_archetype (model : M.model) : A.archetype =
   let two : A.expr = dumloc (A.Eliteral (Lnat (Big_int.big_int_of_int 2))) in
   let a : A.expr = dumloc (A.Eterm ((None, None), dumloc "n")) in
   let body : A.expr = dumloc (A.Eassign (ValueAssign, a, two)) in
-  let d2 = A.Dentry (dumloc "default", [], mk_entry_properties (), Some (body, None), exts) in
+  let d2 = A.Dentry (dumloc "default", [], A.mk_entry_properties (), Some (body, None), exts) in
   let decls = [d0; d1; d2] |> List.map dumloc in
   A.mk_archetype () ~decls:decls

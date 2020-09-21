@@ -437,7 +437,12 @@ let main () =
       "--version", Arg.Unit (fun () -> print_version ()), " Same as -v";
     ] in
   let arg_usage = String.concat "\n" [
-      "usage : archetype [-t <lang> | -pt | -ast | -mdl | -c | -ir | -lsp <request>] [-r ] <file>";
+      "usage : archetype \
+       [-t <lang> | -pt | -ast | -mdl | -ir | -c | -lsp <request> ] \
+       [ -sci <caller_address> ] \
+       [ -mu <json_metatdata_uri> | -ms <path_to_json_metatdata> ] \
+       [ -r ] \
+       <file>";
       "";
       "Available options:";
     ]  in

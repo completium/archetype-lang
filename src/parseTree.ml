@@ -368,8 +368,190 @@ and archetype = archetype_unloc loced
             visitors { variety = "reduce2"; ancestors = ["location_reduce2"; "ident_reduce2"] }
     ]
 
+(* -------------------------------------------------------------------- *)
+
+(* types *)
+
+let tref ?(loc=dummy) vt : type_t =
+  mkloc loc (Tref (mkloc loc vt))
+
+let tunit      = tref "unit"
+let tstring    = tref "string"
+let tnat       = tref "nat"
+let tint       = tref "int"
+let trational  = tref "rational"
+let tbool      = tref "bool"
+let trole      = tref "role"
+let taddress   = tref "address"
+let tdate      = tref "date"
+let ttez       = tref "tez"
+let tduration  = tref "duration"
+let tsignature = tref "signature"
+let tkey       = tref "key"
+let tkey_hash  = tref "key_hash"
+let tbytes     = tref "bytes"
+let tchain_id  = tref "chain_id"
+let toperation = tref "operation"
+
+let mk_tcontainer ?(loc=dummy) t c : type_t =
+  mkloc loc (Tcontainer (t, c))
+
+let mk_ttuple ?(loc=dummy) l : type_t =
+  mkloc loc (Ttuple l)
+
+let mk_toption ?(loc=dummy) t : type_t =
+  mkloc loc (Toption t)
+
+let mk_tset ?(loc=dummy) t : type_t =
+  mkloc loc (Tset t)
+
+let mk_tlist ?(loc=dummy) t : type_t =
+  mkloc loc (Tlist t)
+
+let mk_tmap ?(loc=dummy) k v : type_t =
+  mkloc loc (Tmap (k, v))
+
+let mk_tcontract ?(loc=dummy) t : type_t =
+  mkloc loc (Tcontract t)
+
+let mk_tkeyof ?(loc=dummy) t : type_t =
+  mkloc loc (Tkeyof t)
+
+
+
+(* expressions *)
+
+let mk_eliteral ?(loc=dummy) l =
+  mkloc loc (Eliteral l)
+
+let ebint n = mk_eliteral (Lint n)
+let eint  n = ebint (Big_int.big_int_of_int n)
+
+let ebnat n = mk_eliteral (Lnat n)
+let enat  n = ebnat (Big_int.big_int_of_int n)
+
+let ebtz n = mk_eliteral (Ltz n)
+let etz  n = ebtz (Big_int.big_int_of_int n)
+
+let ebmtz n = mk_eliteral (Lmtz n)
+let emtz  n = ebmtz (Big_int.big_int_of_int n)
+
+let ebutz n = mk_eliteral (Lutz n)
+let eutz  n = ebutz (Big_int.big_int_of_int n)
+
+let ebpercent n = mk_eliteral (Lpercent n)
+let epercent  n = ebpercent (Big_int.big_int_of_int n)
+
+let etrue = mk_eliteral (Lbool true)
+let efalse = mk_eliteral (Lbool false)
+
+let edecimal  v = mk_eliteral (Ldecimal v)
+let eaddress  v = mk_eliteral (Laddress v)
+let estring   v = mk_eliteral (Lstring v)
+let eduration v = mk_eliteral (Lduration v)
+let edate     v = mk_eliteral (Ldate v)
+let ebytes    v = mk_eliteral (Lbytes v)
+
+
+
+(* declarations utils *)
+
+let mk_s_function name args ret_t spec body getter : s_function =
+  {name; args; ret_t; spec; body; getter}
+
+let mk_entry_properties ?(accept_transfer = true) ?calledby ?require ?failif ?spec_fun ?(functions = []) _ : entry_properties =
+  { accept_transfer; calledby; require; failif; spec_fun; functions }
+
+let mk_transition_item id eexto eexts : lident * (expr * exts) option * (expr * exts) option = id, eexto, eexts
+
+let mk_variable_decl ?dv ?(le=[]) ?exts id t vk : variable_decl = id, t, dv, vk, le, exts
+
+let mk_enum_decl ?exts l : enum_decl = l, exts
+
+let mk_asset_decl ?(fs=[]) ?(sfs=[]) ?(aos=[]) ?(apos=[]) ?ao ?exts id : asset_decl = id, fs, sfs, aos, apos, ao, exts
+
+let mk_record_decl ?(fs=[]) ?exts id : record_decl = id, fs, exts
+
+let mk_entry_decl ?(args=[]) ?eexts ?exts id ep : entry_decl = id, args, ep, eexts, exts
+
+let mk_transition_decl ?(args=[]) ?te ?(trs=[]) ?exts id body ep : transition_decl = id, args, te, body, ep, trs, exts
+
+let mk_extension_decl ?(es=[]) id : extension_decl = id, es
+
+let mk_namespace_decl ?(ds=[]) id : namespace_decl = id, ds
+
+let mk_asset_option_identifiedby ids = AOidentifiedby ids
+let mk_asset_option_sortedby id      = AOsortedby id
+let mk_asset_option_to id            = AOto id
+
+let mk_asset_post_option_states id      = APOstates id
+let mk_asset_post_option_constraints ls = APOconstraints ls
+let mk_asset_post_option_init l         = APOinit l
+
+let mk_enum_option_initial _        = EOinitial
+let mk_enum_option_specification ls = EOspecification ls
+
+let mk_assetoperation aoes e : asset_operation = AssetOperation (aoes, e)
+
+
+
+(* declarations *)
+
+let mk_archetype ?exts ?(loc=dummy) id =
+  mkloc loc (Darchetype (id, exts))
+
+let mk_variable ?(loc=dummy) vd =
+  mkloc loc (Dvariable vd)
+
+let mk_enum ?(loc=dummy) ek ed =
+  mkloc loc (Denum (ek, ed))
+
+let mk_asset ?(loc=dummy) ad =
+  mkloc loc (Dasset ad)
+
+let mk_record ?(loc=dummy) rd =
+  mkloc loc (Drecord rd)
+
+let mk_entry ?(loc=dummy) ed =
+  mkloc loc (Dentry ed)
+
+let mk_transition ?(loc=dummy) td =
+  mkloc loc (Dtransition td)
+
+let mk_extension ?(loc=dummy) ed =
+  mkloc loc (Dextension ed)
+
+let mk_namespace ?(loc=dummy) nd =
+  mkloc loc (Dnamespace nd)
+
+let mk_function ?(loc=dummy) sf =
+  mkloc loc (Dfunction sf)
+
+let mk_specification ?(loc=dummy) s =
+  mkloc loc (Dspecification s)
+
+let mk_specasset ?(loc=dummy) id ls =
+  mkloc loc (Dspecasset (id, ls))
+
+let mk_specfun ?(loc=dummy) sf id args s =
+  mkloc loc (Dspecfun (sf, id, args, s))
+
+let mk_specvariable ?(loc=dummy) id ls =
+  mkloc loc (Dspecvariable (id, ls))
+
+let mk_security ?(loc=dummy) s =
+  mkloc loc (Dsecurity s)
+
+let mk_invalid ?(loc=dummy) () =
+  mkloc loc Dinvalid
+
+
+
 let mk_archetype ?(decls=[]) ?(loc=dummy) () =
   mkloc loc (Marchetype decls)
+
+(* -------------------------------------------------------------------- *)
+
 
 let is_keyword = function
   | "added"
