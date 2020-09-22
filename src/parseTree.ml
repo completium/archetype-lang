@@ -452,7 +452,40 @@ let eduration v = mk_eliteral (Lduration v)
 let edate     v = mk_eliteral (Ldate v)
 let ebytes    v = mk_eliteral (Lbytes v)
 
-
+let eterm         ?(loc=dummy) ?temp ?delta id    = mkloc loc (Eterm ((delta, temp), id))
+let earray        ?(loc=dummy) l                  = mkloc loc (Earray l)
+let erecord       ?(loc=dummy) rl                 = mkloc loc (Erecord rl)
+let etuple        ?(loc=dummy) l                  = mkloc loc (Etuple l)
+let edot          ?(loc=dummy) e id               = mkloc loc (Edot (e, id))
+let esqapp        ?(loc=dummy) e i                = mkloc loc (Esqapp (e, i))
+let emulticomp    ?(loc=dummy) e l                = mkloc loc (Emulticomp(e, l))
+let eapp          ?(loc=dummy) f e                = mkloc loc (Eapp(f, e))
+let emethod       ?(loc=dummy) e id args          = mkloc loc (Emethod(e, id, args))
+let etransfer     ?(loc=dummy) e t                = mkloc loc (Etransfer(e, t))
+let edorequire    ?(loc=dummy) e f                = mkloc loc (Edorequire(e, f))
+let edofailif     ?(loc=dummy) e f                = mkloc loc (Edofailif (e, f))
+let efail         ?(loc=dummy) e                  = mkloc loc (Efail e)
+let eassign       ?(loc=dummy) op e v             = mkloc loc (Eassign(op, e, v))
+let eif           ?(loc=dummy) ?e c t             = mkloc loc (Eif(c, t, e))
+let efor          ?(loc=dummy) ?lbl id c b        = mkloc loc (Efor(lbl, id, c, b))
+let eiter         ?(loc=dummy) ?lbl ?min id max e = mkloc loc (Eiter(lbl, id, min, max, e))
+let ewhile        ?(loc=dummy) ?lbl c b           = mkloc loc (Ewhile(lbl, c, b))
+let eseq          ?(loc=dummy) e1 e2              = mkloc loc (Eseq(e1, e2))
+let eletin        ?(loc=dummy) ?t ?o id v b       = mkloc loc (Eletin(id, t, v, b, o))
+let evar          ?(loc=dummy) ?t id e            = mkloc loc (Evar(id, t, e))
+let ematchwith    ?(loc=dummy) e l                = mkloc loc (Ematchwith(e, l))
+let erecupdate    ?(loc=dummy) e l                = mkloc loc (Erecupdate(e, l))
+let equantifier   ?(loc=dummy) q id qk e          = mkloc loc (Equantifier(q, id, qk, e))
+let eassert       ?(loc=dummy) id                 = mkloc loc (Eassert id)
+let elabel        ?(loc=dummy) id                 = mkloc loc (Elabel id)
+let ereturn       ?(loc=dummy) e                  = mkloc loc (Ereturn e)
+let eoption       ?(loc=dummy) e                  = mkloc loc (Eoption e)
+let eentrypoint   ?(loc=dummy) t e v              = mkloc loc (Eentrypoint (t, e, v))
+let eunpack       ?(loc=dummy) t e                = mkloc loc (Eunpack (t, e))
+let eself         ?(loc=dummy) id                 = mkloc loc (Eself id)
+let eany          ?(loc=dummy) _                  = mkloc loc (Eany)
+let enothing      ?(loc=dummy) _                  = mkloc loc (Enothing)
+let einvalid      ?(loc=dummy) _                  = mkloc loc (Einvalid)
 
 (* declarations utils *)
 
@@ -472,7 +505,7 @@ let mk_asset_decl ?(fs=[]) ?(sfs=[]) ?(aos=[]) ?(apos=[]) ?ao ?exts id : asset_d
 
 let mk_record_decl ?(fs=[]) ?exts id : record_decl = id, fs, exts
 
-let mk_entry_decl ?(args=[]) ?eexts ?exts id ep : entry_decl = id, args, ep, eexts, exts
+let mk_entry_decl ?(args=[]) ?body ?exts id ep : entry_decl = id, args, ep, body, exts
 
 let mk_transition_decl ?(args=[]) ?te ?(trs=[]) ?exts id body ep : transition_decl = id, args, te, body, ep, trs, exts
 
@@ -497,7 +530,7 @@ let mk_assetoperation aoes e : asset_operation = AssetOperation (aoes, e)
 
 (* declarations *)
 
-let mk_archetype ?exts ?(loc=dummy) id =
+let mk_darchetype ?exts ?(loc=dummy) id =
   mkloc loc (Darchetype (id, exts))
 
 let mk_variable ?(loc=dummy) vd =
