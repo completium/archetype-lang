@@ -1,6 +1,6 @@
-(ocamllex lexer)
+(ocamllex lexer michelson_lexer)
 (menhir
-  (modules parser)
+  (modules parser michelson_parser)
   (flags --explain --inspection --table --dump))
 
 (library
@@ -16,7 +16,7 @@
   printer_model gen_storage gen_api_storage
   printer_model_tools printer_model_ligo printer_model_smartpy printer_model_scaml
   michelson gen_michelson printer_michelson
-  gen_decompile
+  michelson_parser michelson_lexer gen_decompile
   gen_why3 mlwtree printer_mlwtree
   )
   (libraries menhirLib digestif num str ppx_deriving yojson ppx_deriving_yojson.runtime hex)

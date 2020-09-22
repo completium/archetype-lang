@@ -42,6 +42,16 @@ let output_tmdl (model : Model.model) =
   then Format.printf "%a@." Model.pp_model model
   else Format.printf "%a@." Printer_model.pp_model model
 
+let output_ir (ir : Michelson.ir) =
+  if !Options.opt_raw
+  then Format.printf "%a@." Michelson.pp_ir ir
+  else Format.printf "%a@." Printer_michelson.pp_ir ir
+
+let output_michelson (m : Michelson.michelson) =
+  if !Options.opt_raw
+  then Format.printf "%a@." Michelson.pp_michelson m
+  else Format.printf "%a@." Printer_michelson.pp_michelson m
+
 let output (model : Model.model) =
   match !Options.opt_raw, !Options.opt_m with
   | true, _ -> Format.printf "%a@." Model.pp_model model
@@ -340,15 +350,17 @@ let compile (filename, channel) =
   |> generate_target
 
 let decompile (filename, channel) =
+  let cont c p m = if c then (p m; raise Stop); m in
+
   (filename, channel)
   |> parse_michelson
+  |> cont !Options.opt_mic output_michelson
   |> to_ir
+  |> cont !Options.opt_ir output_ir
   |> to_model
+  |> cont !Options.opt_mdl output_tmdl
   |> to_archetype
-  |> (fun pt ->
-      if !Options.opt_raw
-      then Format.printf "%a@." ParseTree.pp_archetype pt
-      else Format.printf "%a@." Printer_pt.pp_archetype pt)
+  |> output_pt
 
 let close dispose channel =
   if dispose then close_in channel
@@ -428,6 +440,7 @@ let main () =
       "--raw-whytree", Arg.Set Options.opt_raw_whytree, " Same as -r";
       "-ir", ir, " Generate intermediate representation";
       "--intermediate-representation", ir, " Same as -ir";
+      "-mi", Arg.Set Options.opt_mic, " Output michelson";
       "-ri", Arg.Set Options.opt_raw_ir, " Print raw intermediate representation";
       "--raw-ir", Arg.Set Options.opt_raw_ir, " Same as -ri";
       "-rm", Arg.Set Options.opt_raw_michelson, " Print raw michelson";

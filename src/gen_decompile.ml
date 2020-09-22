@@ -1,22 +1,41 @@
-(* open Tezos_micheline *)
 open Location
 
 module T = Michelson
 module M = Model
 module A = ParseTree
 
-let parse_michelson (_filename, _channel) : T.michelson =
-  (* let source = "{ storage int; parameter unit; code { UNPAIR; DROP; PUSH int 2; SWAP; DROP; NIL operation; PAIR }; }" in *)
-  (* let (tokens, _lexing_errors) = Micheline_parser.tokenize source in *)
-  (* let (_asts, _parsing_errors) = Micheline_parser.parse_toplevel tokens in *)
-  (* let _ : Micheline_printer.node list = [] in *)
-  (* List.iter (fun (x : Micheline_parser.node) -> Format.printf "%a@." Micheline_printer.print_expr x) asts; *)
-  (* Format.printf "%a@." Micheline_printer.print asts *)
+let parse_michelson (_filename, ic) : T.michelson =
+  let location_to_str loc =
+    Printf.sprintf ("character %d:") (loc)
+  in
 
-  let storage = T.tint in
-  let parameter = T.tunit in
-  let code = T.SEQ T.[UNPAIR; DROP 1; PUSH (tint, Dint (Big_int.big_int_of_int 2)); SWAP; DROP 1; NIL toperation; PAIR] in
-  T.mk_michelson storage parameter code
+  let error_str () =
+    Printf.sprintf ("Error:")
+  in
+
+  let tokens = Lexing.from_channel ic in
+  try
+    Michelson_parser.main Michelson_lexer.token tokens
+  with
+  (* | Michelson_lexer.Error c ->
+     Printf.fprintf stderr ("%s\n%s Illegal character (%c)\n%!") (location_to_str (Lexing.lexeme_start linebuf)) (error_str ()) c;
+     exit (-1) *)
+  | Michelson_parser.Error ->
+    Printf.fprintf stderr ("%s\n%s Syntax error\n%!") (location_to_str (Lexing.lexeme_start tokens)) (error_str ());
+    exit (-1)
+
+
+(* let source = "{ storage int; parameter unit; code { UNPAIR; DROP; PUSH int 2; SWAP; DROP; NIL operation; PAIR }; }" in *)
+(* let (tokens, _lexing_errors) = Micheline_parser.tokenize source in *)
+(* let (_asts, _parsing_errors) = Micheline_parser.parse_toplevel tokens in *)
+(* let _ : Micheline_printer.node list = [] in *)
+(* List.iter (fun (x : Micheline_parser.node) -> Format.printf "%a@." Micheline_printer.print_expr x) asts; *)
+(* Format.printf "%a@." Micheline_printer.print asts *)
+
+(* let storage = T.tint in
+   let parameter = T.tunit in
+   let code = T.SEQ T.[UNPAIR; DROP 1; PUSH (tint, Dint (Big_int.big_int_of_int 2)); SWAP; DROP 1; NIL toperation; PAIR] in
+   T.mk_michelson storage parameter code *)
 
 
 let to_ir (_m : T.michelson) : T.ir =
