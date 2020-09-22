@@ -553,6 +553,7 @@ let map_data (f : data -> data) = function
   | Dnone        -> Dnone
   | Dlist l      -> Dlist (List.map f l)
   | Dplist l     -> Dplist (List.map (fun (x, y) -> f x, f y) l)
+  | Dvar v       -> Dvar v
 
 let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) = function
   | SEQ l                   -> SEQ (List.map fc l)
