@@ -5,44 +5,20 @@ module M = Model
 module A = ParseTree
 
 let parse_michelson (_filename, ic) : T.michelson =
-  let location_to_str loc =
-    Printf.sprintf ("character %d:") (loc)
-  in
-
-  let error_str () =
-    Printf.sprintf ("Error:")
-  in
-
   let tokens = Lexing.from_channel ic in
-  try
-    Michelson_parser.main Michelson_lexer.token tokens
-  with
-  (* | Michelson_lexer.Error c ->
-     Printf.fprintf stderr ("%s\n%s Illegal character (%c)\n%!") (location_to_str (Lexing.lexeme_start linebuf)) (error_str ()) c;
-     exit (-1) *)
-  | Michelson_parser.Error ->
-    Printf.fprintf stderr ("%s\n%s Syntax error\n%!") (location_to_str (Lexing.lexeme_start tokens)) (error_str ());
-    exit (-1)
+  Michelson_parser.main Michelson_lexer.token tokens
 
-
-(* let source = "{ storage int; parameter unit; code { UNPAIR; DROP; PUSH int 2; SWAP; DROP; NIL operation; PAIR }; }" in *)
-(* let (tokens, _lexing_errors) = Micheline_parser.tokenize source in *)
-(* let (_asts, _parsing_errors) = Micheline_parser.parse_toplevel tokens in *)
-(* let _ : Micheline_printer.node list = [] in *)
-(* List.iter (fun (x : Micheline_parser.node) -> Format.printf "%a@." Micheline_printer.print_expr x) asts; *)
-(* Format.printf "%a@." Micheline_printer.print asts *)
-
-(* let storage = T.tint in
-   let parameter = T.tunit in
-   let code = T.SEQ T.[UNPAIR; DROP 1; PUSH (tint, Dint (Big_int.big_int_of_int 2)); SWAP; DROP 1; NIL toperation; PAIR] in
-   T.mk_michelson storage parameter code *)
-
-
-let to_ir (_m : T.michelson) : T.ir =
-  let storage_type = T.tint in
-  let storage_data = T.Dint (Big_int.zero_big_int) in
+let to_ir (michelson : T.michelson) : T.ir =
+  let storage_type = michelson.storage in
+  let parameter    = michelson.parameter in
+  let storage_data =
+    match storage_type.node with
+    | T.Tnat
+    | T.Tint    -> T.Dint Big_int.zero_big_int
+    | T.Tstring -> T.Dstring ""
+    | _ -> assert false
+  in
   let storage_list = [] in
-  let parameter = T.tunit in
   let funs = [] in
   let entries = [] in
   T.mk_ir storage_type storage_data storage_list parameter funs entries
