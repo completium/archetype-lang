@@ -350,7 +350,7 @@ let compile (filename, channel) =
   |> generate_target
 
 let decompile (filename, channel) =
-  let cont c p m = if c then (p m; raise Stop); m in
+  let cont c p (m, e) = if c then (p m; raise Stop); (m, e) in
 
   (filename, channel)
   |> parse_michelson

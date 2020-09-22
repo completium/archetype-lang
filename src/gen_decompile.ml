@@ -1,14 +1,27 @@
 open Location
+open Tools
 
 module T = Michelson
 module M = Model
 module A = ParseTree
 
-let parse_michelson (_filename, ic) : T.michelson =
-  let tokens = Lexing.from_channel ic in
-  Michelson_parser.main Michelson_lexer.token tokens
+type env = {
+  name: string;
+}
 
-let to_ir (michelson : T.michelson) : T.ir =
+let mk_env ?(name="") _ : env = { name }
+
+let parse_michelson (filename, ic) : T.michelson * env =
+  let name =
+    match filename with
+    | "<stdin>" -> "noname"
+    | _ -> filename |> Filename.basename |> Filename.chop_extension
+  in
+  let env = mk_env ~name:name () in
+  let tokens = Lexing.from_channel ic in
+  Michelson_parser.main Michelson_lexer.token tokens, env
+
+let to_ir (michelson, env : T.michelson * env) : T.ir * env =
   let storage_type = michelson.storage in
   let parameter    = michelson.parameter in
   let storage_data =
@@ -20,26 +33,191 @@ let to_ir (michelson : T.michelson) : T.ir =
   in
   let storage_list = [] in
   let funs = [] in
-  let entries = [] in
-  T.mk_ir storage_type storage_data storage_list parameter funs entries
+  let rec interp instrs (stack : (T.data * T.type_) list) =
+    let f = interp in
+    match instrs, stack with
+    | T.SEQ l::it, _       -> f (l @ it) stack
+    | T.DROP 1::it, _::st  -> f it st
+    | T.SWAP::it, a::b::st -> f it (b::a::st)
+    | T.PUSH (t, d)::it, _ -> f it ((d, t)::stack)
+    | T.NIL t::it, _       -> f it ((Dlist [], T.tlist t)::stack)
+    | T.PAIR::it, a::b::st -> f it ((Dpair (fst a, fst b), (T.tpair (snd a) (snd b)))::st)
+    | T.UNPAIR::it, (T.Dpair (a, b), {node = T.Tpair (ta, tb)})::st -> f it ((a, ta)::(b, tb)::st)
+    | [], _ -> stack
+    | _ -> assert false
+  in
+  let init_stack : (T.data * T.type_) list = T.[Dpair (Dvar "parameter", Dvar "storage"), T.tpair parameter storage_type ] in
+  let stack = interp [michelson.code] init_stack in
+  let st, sv =
+    match stack with
+    | [T.Dpair (_, v), {node = T.Tpair (_, t)}] -> v, t
+    | _ -> assert false
+  in
+  let args = [] in
+  let body = T.Iassign ("storage", T.Iconst (sv, st)) in
+  let entries = T.[mk_entry "default" args [] body] in
+  T.mk_ir storage_type storage_data storage_list parameter funs entries, env
 
-let to_model (_ir : T.ir) : M.model =
+
+let to_model (ir, env : T.ir * env) : M.model * env =
+
+  let rec for_type (t : T.type_) : M.type_ =
+    let f = for_type in
+    match t.node with
+    | Tkey                  -> M.tkey
+    | Tunit                 -> M.tunit
+    | Tsignature            -> M.tsignature
+    | Toption    t          -> M.toption (f t)
+    | Tlist      t          -> M.tlist   (f t)
+    | Tset       t          -> M.tset    (f t)
+    | Toperation            -> M.toperation
+    | Tcontract  t          -> M.tcontract (f t)
+    | Tpair      (lt, rt)   -> M.ttuple [f lt; f rt]
+    | Tor        (_lt, _rt) -> assert false
+    | Tlambda    (at, rt)   -> M.tlambda (f at) (f rt)
+    | Tmap       (kt, vt)   -> M.tmap (f kt) (f vt)
+    | Tbig_map   (kt, vt)   -> M.tbig_map (f kt) (f vt)
+    | Tchain_id             -> M.tchainid
+    | Tint                  -> M.tint
+    | Tnat                  -> M.tnat
+    | Tstring               -> M.tstring
+    | Tbytes                -> M.tbytes
+    | Tmutez                -> M.ttez
+    | Tbool                 -> M.tbool
+    | Tkey_hash             -> M.tkeyhash
+    | Ttimestamp            -> M.ttimestamp
+    | Taddress              -> M.taddress
+  in
+
+  let for_data ?t (d : T.data) : M.mterm =
+    let is_nat = Option.map_dfl (fun (t : T.type_) -> match t.node with | T.Tnat -> true | _ -> false) false in
+    match d with
+    | Dint v when is_nat t -> M.mk_bnat v
+    | Dint    v        -> M.mk_bint v
+    | Dstring v        -> M.mk_string v
+    | Dbytes  v        -> M.mk_bytes v
+    | Dunit            -> M.unit
+    | Dtrue            -> M.mtrue
+    | Dfalse           -> M.mfalse
+    | Dpair  (_ld, _rd)-> assert false
+    | Dleft   _d       -> assert false
+    | Dright  _d       -> assert false
+    | Dsome   _d       -> assert false
+    | Dnone            -> assert false
+    | Dlist  _l        -> assert false
+    | Dplist _l        -> assert false
+    | Dvar id          -> M.mk_pvar (dumloc id) M.tunit
+  in
+
+  let rec for_instr (i : T.instruction) : M.mterm =
+    let f = for_instr in
+    match i with
+    | Iseq []                      -> assert false
+    | Iseq _l                      -> assert false
+    | IletIn (_id, _v, _b, _)      -> assert false
+    | Ivar _id                     -> assert false
+    | Icall (_id, _args, _)        -> assert false
+    | Iassign (id, v)              -> M.mk_mterm (M.Massign (ValueAssign, M.tunit, Avarstore (dumloc id), f v)) M.tunit
+    | IassignRec (_id, _s, _n, _v) -> assert false
+    | Iif (_c, _t, _e, _)          -> assert false
+    | Iifnone (_v, _t, _id, _s)    -> assert false
+    | Iifcons (_v, _t, _e)         -> assert false
+    | Iwhile (_c, _b)              -> assert false
+    | Iiter (_ids, _c, _b)         -> assert false
+    | Izop op -> begin
+        match op with
+        | Znow                -> assert false
+        | Zamount             -> assert false
+        | Zbalance            -> assert false
+        | Zsource             -> assert false
+        | Zsender             -> assert false
+        | Zaddress            -> assert false
+        | Zchain_id           -> assert false
+        | Zself_address       -> assert false
+        | Znone _t            -> assert false
+      end
+    | Iunop (op, _e) -> begin
+        match op with
+        | Ucar               -> assert false
+        | Ucdr               -> assert false
+        | Uleft  _t          -> assert false
+        | Uright _t          -> assert false
+        | Uneg               -> assert false
+        | Uint               -> assert false
+        | Unot               -> assert false
+        | Uabs               -> assert false
+        | Uisnat             -> assert false
+        | Usome              -> assert false
+        | Usize              -> assert false
+        | Upack              -> assert false
+        | Uunpack _t         -> assert false
+        | Ublake2b           -> assert false
+        | Usha256            -> assert false
+        | Usha512            -> assert false
+        | Uhash_key          -> assert false
+        | Ufail              -> assert false
+        | Ucontract (_t, _a) -> assert false
+      end
+    | Ibinop (op, _lhs, _rhs) -> begin
+        match op with
+        | Badd       -> assert false
+        | Bsub       -> assert false
+        | Bmul       -> assert false
+        | Bediv      -> assert false
+        | Blsl       -> assert false
+        | Blsr       -> assert false
+        | Bor        -> assert false
+        | Band       -> assert false
+        | Bxor       -> assert false
+        | Bcompare   -> assert false
+        | Bget       -> assert false
+        | Bmem       -> assert false
+        | Bconcat    -> assert false
+        | Bcons      -> assert false
+        | Bpair      -> assert false
+      end
+    | Iterop (op, _a1, _a2, _a3) -> begin
+        match op with
+        | Tcheck_signature -> assert false
+        | Tslice           -> assert false
+        | Tupdate          -> assert false
+        | Ttransfer_tokens -> assert false
+      end
+    | Icompare (op, _lhs, _rhs) -> begin
+        match op with
+        | Ceq        -> assert false
+        | Cne        -> assert false
+        | Clt        -> assert false
+        | Cgt        -> assert false
+        | Cle        -> assert false
+        | Cge        -> assert false
+      end
+    | Iconst (t, d)                     -> for_data ~t:t d
+    | Iset (_t, _l)                     -> assert false
+    | Ilist (_t, _l)                    -> assert false
+    | Imap (_k, _v, _l)                 -> assert false
+    | Irecord _l                        -> assert false
+    | Irecupdate (_x, _s, _l)           -> assert false
+    | Ifold (_ix, _iy, _ia, _c, _a, _b) -> assert false
+    | Imichelson (_a, _c, _v)           -> assert false
+  in
+
   let storage =
-    let si = M.mk_storage_item (dumloc "n") MTvar M.tnat (M.mk_nat 0) in
+    let si = M.mk_storage_item (dumloc "storage") MTvar (for_type ir.storage_type) (for_data ~t:ir.storage_type ir.storage_data) in
     [si]
   in
-  let f : M.function__ =
-    let name = dumloc "default" in
+  let for_entry (e : T.entry) : M.function__ =
+    let name = dumloc e.name in
     let args = [] in
-    let body = M.mk_mterm (M.Massign (ValueAssign, M.tnat, Avarstore (dumloc "n"), M.mk_nat 2)) M.tunit in
+    let body = for_instr e.body in
     let fn : M.function_struct = M.mk_function_struct name body ~args:args in
     let node : M.function_node = M.Entry fn in
     M.mk_function node
   in
-  let functions = [f] in
-  M.mk_model (dumloc "hello") ~functions:functions ~storage:storage
+  let functions = List.map for_entry ir.entries in
+  M.mk_model (dumloc env.name) ~functions:functions ~storage:storage, env
 
-let to_archetype (model : M.model) : A.archetype =
+let to_archetype (model, _env : M.model * env) : A.archetype =
   let rec for_type (t : M.type_) : A.type_t =
     let f = for_type in
     match t with

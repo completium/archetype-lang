@@ -63,6 +63,7 @@ let rec pp_data fmt (d : data) =
   | Dnone           -> Format.fprintf fmt "None"
   | Dlist l         -> Format.fprintf fmt "{ %a }" (pp_list "; " pp_data) l
   | Dplist l        -> Format.fprintf fmt "{ %a }" (pp_list "; " (fun fmt (x, y) -> Format.fprintf fmt "Elt %a %a" pp_data x pp_data y)) l
+  | Dvar id         -> Format.fprintf fmt "var(%s)" id
 
 let rec pp_code fmt (i : code) =
   let pp s = Format.fprintf fmt s in

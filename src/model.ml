@@ -938,16 +938,29 @@ let mk_model ?(api_items = []) ?(api_verif = []) ?(decls = []) ?(functions = [])
 
 (* -------------------------------------------------------------------- *)
 
-let tunit     = Tunit
-let tbool     = Tbuiltin Bbool
-let tnat      = Tbuiltin Bnat
-let tint      = Tbuiltin Bint
-let tstring   = Tbuiltin Bstring
-let tbytes    = Tbuiltin Bbytes
-let ttez      = Tbuiltin Bcurrency
-let toption t = Toption t
-let ttuple l  = Ttuple l
-let trat      = ttuple [tint; tnat]
+let tunit         = Tunit
+let tbool         = Tbuiltin Bbool
+let tnat          = Tbuiltin Bnat
+let tint          = Tbuiltin Bint
+let tstring       = Tbuiltin Bstring
+let tbytes        = Tbuiltin Bbytes
+let ttez          = Tbuiltin Bcurrency
+let tkey          = Tbuiltin Bkey
+let tkeyhash      = Tbuiltin Bkeyhash
+let ttimestamp    = Tbuiltin Btimestamp
+let taddress      = Tbuiltin Baddress
+let toption t     = Toption t
+let tset t        = Tset t
+let tlist t       = Tlist t
+let tmap k v      = Tmap (false, k, v)
+let tbig_map k v  = Tmap (true, k, v)
+let tlambda a r   = Tlambda (a, r)
+let ttuple l      = Ttuple l
+let trat          = ttuple [tint; tnat]
+let toperation    = Toperation
+let tsignature    = Tbuiltin Bsignature
+let tcontract t   = Tcontract t
+let tchainid      = Tbuiltin Bchainid
 
 let mk_bool x   = mk_mterm (Mbool x) tbool
 let mk_string x = mk_mterm (Mstring x) tstring

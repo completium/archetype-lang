@@ -50,6 +50,7 @@ type data =
   | Dnone
   | Dlist              of data list
   | Dplist             of (data * data) list
+  | Dvar               of string (* for symbolic execution *)
 [@@deriving show {with_path = false}]
 
 type code =
