@@ -146,7 +146,7 @@
 %token SEMI_COLON
 %token EOF
 
-%type <michelson> main
+%type <Michelson.michelson> main
 
 %start main
 
