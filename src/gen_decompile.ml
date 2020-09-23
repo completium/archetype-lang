@@ -37,7 +37,7 @@ let to_ir (michelson, env : T.michelson * env) : T.ir * env =
     let f = interp in
     match instrs, stack with
     | T.SEQ l::it, _       -> f (l @ it) stack
-    | T.DROP 1::it, _::st  -> f it st
+    | T.DROP n::it, _      -> f it (Tools.foldi (fun x -> match x with | _::st -> st | _ -> assert false) stack n)
     | T.SWAP::it, a::b::st -> f it (b::a::st)
     | T.PUSH (t, d)::it, _ -> f it ((d, t)::stack)
     | T.NIL t::it, _       -> f it ((Dlist [], T.tlist t)::stack)

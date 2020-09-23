@@ -14,126 +14,127 @@
 
 %}
 
-/* %token IABS */
-/* %token IADD */
-/* %token IADDRESS */
-/* %token IAMOUNT */
-/* %token IAND */
-/* %token IASSERT_EQ */
-/* %token IASSERT_GE */
-/* %token IASSERT_GT */
-/* %token IASSERT_LE */
-/* %token IASSERT_LT */
-/* %token IASSERT_NEQ */
-/* %token IBALANCE */
-/* %token IBLAKE2B */
-/* %token ICAR */
-/* %token ICAST */
-/* %token ICDR */
-/* %token ICHAIN_ID */
-/* %token ICHECK_SIGNATURE */
-/* %token ICOMPARE */
-/* %token ICONCAT */
-/* %token ICONS */
-/* %token ICONTRACT */
-/* %token ICREATE_ACCOUNT */
-/* %token ICREATE_CONTRACT */
-/* %token IDIG */
-/* %token IDIP */
-%token IDROP
-/* %token IDUG */
-/* %token IDUP */
-/* %token IEDIV */
-/* %token IEMPTY_BIG_MAP */
-/* %token IEMPTY_MAP */
-/* %token IEMPTY_SET */
-/* %token IEQ */
-/* %token IEXEC */
-/* %token IFAILWITH */
-/* %token IGE */
-/* %token IGET */
-/* %token IGT */
-/* %token IHASH_KEY */
-/* %token IIF_CONS */
-/* %token IIF_LEFT */
-/* %token IIF_NONE */
-/* %token IIF */
-/* %token IIMPLICIT_ACCOUNT */
-/* %token IINT */
-/* %token IISNAT */
-/* %token IITER */
-/* %token ILAMBDA */
-/* %token ILE */
-/* %token ILEFT */
-/* %token ILOOP_LEFT */
-/* %token ILOOP */
-/* %token ILSL */
-/* %token ILSR */
-/* %token ILT */
-/* %token IMAP */
-/* %token IMEM */
-/* %token IMUL */
-/* %token INEG */
-/* %token INEQ */
-%token INIL
-/* %token INONE */
-/* %token INOT */
-/* %token INOW */
-/* %token IOR */
-/* %token IPACK */
-%token IPAIR
-%token IPUSH
-/* %token IRENAME */
-/* %token IRIGHT */
-/* %token ISELF */
-/* %token ISENDER */
-/* %token ISEQ */
-/* %token ISET_DELEGATE */
-/* %token ISHA256 */
-/* %token ISHA512 */
-/* %token ISIZE */
-/* %token ISLICE */
-/* %token ISOME */
-/* %token ISOURCE */
-/* %token ISTEPS_TO_QUOTA */
-/* %token ISUB */
-%token ISWAP
-/* %token ITRANSFER_TOKENS */
-/* %token IUNIT */
-/* %token IUNPACK */
-%token IUNPAIR
-/* %token IUPDATE */
-/* %token IXOR */
+/* %token ABS */
+/* %token ADD */
+/* %token ADDRESS */
+/* %token AMOUNT */
+/* %token AND */
+/* %token ASSERT_EQ */
+/* %token ASSERT_GE */
+/* %token ASSERT_GT */
+/* %token ASSERT_LE */
+/* %token ASSERT_LT */
+/* %token ASSERT_NEQ */
+/* %token BALANCE */
+/* %token BLAKE2B */
+/* %token CAR */
+/* %token CAST */
+/* %token CDR */
+/* %token CHAIN_ID */
+/* %token CHECK_SIGNATURE */
+/* %token COMPARE */
+/* %token CONCAT */
+/* %token CONS */
+/* %token CONTRACT */
+/* %token CREATE_ACCOUNT */
+/* %token CREATE_CONTRACT */
+/* %token DIG */
+/* %token DIP */
+%token DROP
+/* %token DUG */
+/* %token DUP */
+/* %token EDIV */
+/* %token EMPTY_BIG_MAP */
+/* %token EMPTY_MAP */
+/* %token EMPTY_SET */
+/* %token EQ */
+/* %token EXEC */
+%token FAILWITH
+/* %token GE */
+/* %token GET */
+/* %token GT */
+/* %token HASH_KEY */
+/* %token IF_CONS */
+/* %token IF_LEFT */
+/* %token IF_NONE */
+/* %token IF */
+/* %token IMPLICIT_ACCOUNT */
+/* %token INT */
+/* %token ISNAT */
+/* %token ITER */
+/* %token LAMBDA */
+/* %token LE */
+/* %token LEFT */
+/* %token LOOP_LEFT */
+/* %token LOOP */
+/* %token LSL */
+/* %token LSR */
+/* %token LT */
+/* %token MAP */
+/* %token MEM */
+/* %token MUL */
+/* %token NEG */
+/* %token NEQ */
+%token NIL
+/* %token NONE */
+/* %token NOT */
+/* %token NOW */
+/* %token OR */
+/* %token PACK */
+%token PAIR
+%token PUSH
+/* %token RENAME */
+/* %token RIGHT */
+/* %token SELF */
+/* %token SENDER */
+/* %token SEQ */
+/* %token SET_DELEGATE */
+/* %token SHA256 */
+/* %token SHA512 */
+/* %token SIZE */
+/* %token SLICE */
+/* %token SOME */
+/* %token SOURCE */
+/* %token STEPS_TO_QUOTA */
+/* %token SUB */
+%token SWAP
+/* %token TRANSFER_TOKENS */
+%token UNIT
+/* %token UNPACK */
+%token UNPAIR
+/* %token UPDATE */
+/* %token XOR */
 
 %token CODE
 %token STORAGE
 %token PARAMETER
 
 %token ADDRESS
-/* %token BIG_MAP */
+%token BIG_MAP
 %token BOOL
 %token BYTES
 %token CHAIN_ID
-/* %token CONTRACT */
+%token CONTRACT
 %token INT
 %token KEY
 %token KEY_HASH
-/* %token LAMBDA */
-/* %token LIST */
-/* %token MAP */
+%token LAMBDA
+%token LIST
+%token MAP
 %token MUTEZ
 %token NAT
 %token OPERATION
-/* %token OPTION */
-/* %token OR */
-/* %token PAIR */
-/* %token SET */
+%token OPTION
+%token OR
+%token TPAIR
+%token SET
 %token SIGNATURE
 %token STRING
 %token TIMESTAMP
-%token UNIT
+%token TUNIT
 
 /* %token <string> IDENT */
+%token <string> ANNOTATION
 %token <string> VSTRING
 %token <Big_int.big_int> NUMBER
 
@@ -173,33 +174,35 @@ parameter:
 code:
  | CODE i=instruction SEMI_COLON { i }
 
-type_:
-| t=type_node { mk_type t }
+annotation:
+|              { None }
+| s=ANNOTATION { Some s }
 
-type_node:
-  | ADDRESS    { Taddress }
-/*  | BIG_MAP    { Tbig_map   of type_ * type_ }*/
-  | BOOL       { Tbool }
-  | BYTES      { Tbytes }
-  | CHAIN_ID   { Tchain_id }
-/*  | CONTRACT   { Tcontract  of type_ }*/
-  | INT        { Tint }
-  | KEY        { Tkey }
-  | KEY_HASH   { Tkey_hash }
-/*  | LAMBDA     { Tlambda    of type_ * type_ } */
-/*  | LIST       { Tlist      of type_ } */
-/*  | MAP        { Tmap       of type_ * type_ } */
-  | MUTEZ      { Tmutez }
-  | NAT        { Tnat }
-  | OPERATION  { Toperation }
-/*  | OPTION     { Toption    of type_ } */
-/*  | OR         { Tor        of type_ * type_ } */
-/*  | PAIR       { Tpair      of type_ * type_ } */
-/*  | SET        { Tset       of type_ } */
-  | SIGNATURE  { Tsignature }
-  | STRING     { Tstring }
-  | TIMESTAMP  { Ttimestamp }
-  | UNIT       { Tunit }
+type_:
+  | t=paren(type_)          { t }
+  | ADDRESS                 { mk_type (Taddress) }
+  | BIG_MAP k=type_ v=type_ { mk_type (Tbig_map (k, v)) }
+  | BOOL                    { mk_type (Tbool) }
+  | BYTES                   { mk_type (Tbytes) }
+  | CHAIN_ID                { mk_type (Tchain_id) }
+  | CONTRACT t=type_        { mk_type (Tcontract t) }
+  | INT a=annotation        { mk_type ?annotation:a (Tint) }
+  | KEY                     { mk_type (Tkey) }
+  | KEY_HASH                { mk_type (Tkey_hash) }
+  | LAMBDA a=type_ b=type_  { mk_type (Tlambda (a, b)) }
+  | LIST t=type_            { mk_type (Tlist t) }
+  | MAP k=type_ v=type_     { mk_type (Tmap (k, v)) }
+  | MUTEZ                   { mk_type (Tmutez) }
+  | NAT a=annotation        { mk_type ?annotation:a (Tnat) }
+  | OPERATION               { mk_type (Toperation) }
+  | OPTION t=type_          { mk_type (Toption t) }
+  | OR a=type_ b=type_      { mk_type (Tor (a, b)) }
+  | TPAIR a=type_ b=type_   { mk_type (Tpair (a, b)) }
+  | SET t=type_             { mk_type (Tset t) }
+  | SIGNATURE               { mk_type (Tsignature) }
+  | STRING                  { mk_type (Tstring) }
+  | TIMESTAMP               { mk_type (Ttimestamp) }
+  | TUNIT                   { mk_type (Tunit) }
 
 data:
  | n=NUMBER  { Dint n }
@@ -207,9 +210,100 @@ data:
 
 instruction:
  | LBRACE xs=separated_list(SEMI_COLON, instruction) RBRACE { SEQ xs }
- | IDROP                                                    { DROP 1 }
- | INIL t=type_                                             { NIL t }
- | IPAIR                                                    { PAIR  }
- | IPUSH t=type_ d=data                                     { PUSH (t, d) }
- | ISWAP                                                    { SWAP }
- | IUNPAIR                                                  { UNPAIR }
+/* %token ABS */
+/* %token ADD */
+/* %token ADDRESS */
+/* %token AMOUNT */
+/* %token AND */
+/* %token ASSERT_EQ */
+/* %token ASSERT_GE */
+/* %token ASSERT_GT */
+/* %token ASSERT_LE */
+/* %token ASSERT_LT */
+/* %token ASSERT_NEQ */
+/* %token BALANCE */
+/* %token BLAKE2B */
+/* %token CAR */
+/* %token CAST */
+/* %token CDR */
+/* %token CHAIN_ID */
+/* %token CHECK_SIGNATURE */
+/* %token COMPARE */
+/* %token CONCAT */
+/* %token CONS */
+/* %token CONTRACT */
+/* %token CREATE_ACCOUNT */
+/* %token CREATE_CONTRACT */
+/* %token DIG */
+/* %token DIP */
+| DROP                                                     { DROP 1 }
+/* %token DUG */
+/* %token DUP */
+/* %token EDIV */
+/* %token EMPTY_BIG_MAP */
+/* %token EMPTY_MAP */
+/* %token EMPTY_SET */
+/* %token EQ */
+/* %token EXEC */
+| FAILWITH                                                 { FAILWITH }
+/* %token GE */
+/* %token GET */
+/* %token GT */
+/* %token HASH_KEY */
+/* %token IF_CONS */
+/* %token IF_LEFT */
+/* %token IF_NONE */
+/* %token IF */
+/* %token IMPLICIT_ACCOUNT */
+/* %token INT */
+/* %token ISNAT */
+/* %token ITER */
+/* %token LAMBDA */
+/* %token LE */
+/* %token LEFT */
+/* %token LOOP_LEFT */
+/* %token LOOP */
+/* %token LSL */
+/* %token LSR */
+/* %token LT */
+/* %token MAP */
+/* %token MEM */
+/* %token MUL */
+/* %token NEG */
+/* %token NEQ */
+| NIL t=type_                                              { NIL t }
+/* %token NONE */
+/* %token NOT */
+/* %token NOW */
+/* %token OR */
+/* %token PACK */
+| PAIR                                                     { PAIR  }
+| PUSH t=type_ d=data                                      { PUSH (t, d) }
+/* %token RENAME */
+/* %token RIGHT */
+/* %token SELF */
+/* %token SENDER */
+/* %token SEQ */
+/* %token SET_DELEGATE */
+/* %token SHA256 */
+/* %token SHA512 */
+/* %token SIZE */
+/* %token SLICE */
+/* %token SOME */
+/* %token SOURCE */
+/* %token STEPS_TO_QUOTA */
+/* %token SUB */
+| SWAP                                                     { SWAP }
+/* %token TRANSFER_TOKENS */
+| UNIT                                                     { UNIT }
+/* %token UNPACK */
+| UNPAIR                                                   { UNPAIR }
+/* %token UPDATE */
+/* %token XOR */
+
+
+
+
+
+
+
