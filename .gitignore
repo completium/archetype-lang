@@ -33,3 +33,4 @@ contracts/*.md
 attic/
 .history
 extra/script/internal_check_ligo.sh
+_opam
