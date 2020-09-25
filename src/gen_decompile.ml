@@ -97,7 +97,7 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
     | _ -> ()
   in
 
-  let rec interp (env : ir_env) (accu : T.sys_equation) (instrs : T.code list) (stack : (T.dexpr) list) =
+  let rec interp (env : ir_env) (accu : T.sysofequations) (instrs : T.code list) (stack : (T.dexpr) list) =
     let f = interp in
 
     trace instrs stack;
@@ -185,9 +185,9 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
   in
 
   let env = mk_ir_env () in
-  let init_stack : (T.dexpr) list = T.[Dbop (Bpair, Doperations, Dstorage tstorage)] in
+  let init_stack : (T.dexpr) list = T.[Dbop (Bpair, Doperations, Dinitstorage tstorage)] in
   let sys, _ = interp env [] [michelson.code] init_stack in
-  Format.printf "sys:@\n%a@." Printer_michelson.pp_sys_equation sys
+  Format.printf "sys:@\n%a@." Printer_michelson.pp_sysofequations sys
 
 
 let to_model (ir, env : T.ir * env) : M.model * env =

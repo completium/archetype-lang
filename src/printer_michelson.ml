@@ -313,9 +313,9 @@ let pp_dexpr fmt (de : dexpr) =
   let f = pp_dexpr in
   match de with
   | Dalpha n           -> pp "x%i" n
-  | Dstorage t         -> pp "storage(%a)" pp_type t
+  | Dinitstorage t     -> pp "initstorage(%a)" pp_type t
   | Dparameter t       -> pp "parameter(%a)" pp_type t
-  | Dresult t          -> pp "result(%a)" pp_type t
+  | Dstorage t         -> pp "storage(%a)" pp_type t
   | Doperations        -> pp "operations"
   | Ddata d            -> pp "data(%a)" pp_data d
   | Dzop op -> begin
@@ -381,7 +381,7 @@ let pp_dexpr fmt (de : dexpr) =
 let pp_equation fmt ((a, b) : equation) =
   Format.fprintf fmt "%a = %a" pp_dexpr a pp_dexpr b
 
-let pp_sys_equation fmt (s : sys_equation) =
+let pp_sysofequations fmt (s : sysofequations) =
   (pp_list "@\n" pp_equation) fmt s
 
 (* -------------------------------------------------------------------------- *)

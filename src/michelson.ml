@@ -305,9 +305,9 @@ type alpha_ident = int
 
 type dexpr =
   | Dalpha of alpha_ident
-  | Dstorage of type_
+  | Dinitstorage of type_
   | Dparameter of type_
-  | Dresult of type_
+  | Dstorage of type_
   | Doperations
   | Ddata of data
   | Dzop of z_operator
@@ -318,7 +318,7 @@ type dexpr =
 
 type equation = dexpr * dexpr
 
-type sys_equation = equation list
+type sysofequations = equation list
 
 (* -------------------------------------------------------------------- *)
 
