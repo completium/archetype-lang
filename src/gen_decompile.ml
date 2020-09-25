@@ -179,13 +179,13 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
         f env accu it (T.Dbop (Bpair, x, y)::st)
       end
 
-    | [], [Dbop (Bpair, a, b)] -> (T.Dparameter tparameter, a)::(T.Dstorage tstorage, b)::accu, stack
+    | [], [Dbop (Bpair, a, b)] -> (T.Dparameter tparameter, a)::(T.Dinitstorage tstorage, b)::accu, stack
     | [], _   -> accu, stack
     | i::_, _ -> Format.eprintf "error:@\n %a@." pp_trace (i, stack); assert false
   in
 
   let env = mk_ir_env () in
-  let init_stack : (T.dexpr) list = T.[Dbop (Bpair, Doperations, Dinitstorage tstorage)] in
+  let init_stack : (T.dexpr) list = T.[Dbop (Bpair, Doperations, Dstorage tstorage)] in
   let sys, _ = interp env [] [michelson.code] init_stack in
   Format.printf "sys:@\n%a@." Printer_michelson.pp_sysofequations sys
 
