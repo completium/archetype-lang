@@ -19,7 +19,10 @@ let parse_michelson (filename, ic) : T.michelson * env =
   in
   let env = mk_env ~name:name () in
   let tokens = Lexing.from_channel ic in
-  Michelson_parser.main Michelson_lexer.token tokens, env
+  let res = Michelson_parser.main Michelson_lexer.token tokens, env in
+    match !Error.errors with
+  | [] -> res
+  | _ -> raise (Error.ParseError !Error.errors)
 
 let to_ir (michelson, env : T.michelson * env) : T.ir * env =
   let storage_type = michelson.storage in

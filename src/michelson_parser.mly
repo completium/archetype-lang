@@ -14,128 +14,137 @@
 
 %}
 
-/* %token ABS */
-/* %token ADD */
-/* %token ADDRESS */
-/* %token AMOUNT */
-/* %token AND */
-/* %token ASSERT_EQ */
-/* %token ASSERT_GE */
-/* %token ASSERT_GT */
-/* %token ASSERT_LE */
-/* %token ASSERT_LT */
-/* %token ASSERT_NEQ */
-/* %token BALANCE */
-/* %token BLAKE2B */
-/* %token CAR */
-/* %token CAST */
-/* %token CDR */
-/* %token CHAIN_ID */
-/* %token CHECK_SIGNATURE */
-/* %token COMPARE */
-/* %token CONCAT */
-/* %token CONS */
-/* %token CONTRACT */
-/* %token CREATE_ACCOUNT */
-/* %token CREATE_CONTRACT */
-/* %token DIG */
-/* %token DIP */
+%token ABS
+%token ADD
+%token ADDRESS
+%token AMOUNT
+%token AND
+%token ASSERT_EQ
+%token ASSERT_GE
+%token ASSERT_GT
+%token ASSERT_LE
+%token ASSERT_LT
+%token ASSERT_NEQ
+%token BALANCE
+%token BLAKE2B
+%token CAR
+%token CAST
+%token CDR
+%token CHAIN_ID
+%token CHECK_SIGNATURE
+%token COMPARE
+%token CONCAT
+%token CONS
+%token CONTRACT
+%token CREATE_ACCOUNT
+%token CREATE_CONTRACT
+%token DIG
+%token DIP
 %token DROP
-/* %token DUG */
-/* %token DUP */
-/* %token EDIV */
-/* %token EMPTY_BIG_MAP */
-/* %token EMPTY_MAP */
-/* %token EMPTY_SET */
-/* %token EQ */
-/* %token EXEC */
+%token DUG
+%token DUP
+%token EDIV
+%token EMPTY_BIG_MAP
+%token EMPTY_MAP
+%token EMPTY_SET
+%token EQ
+%token EXEC
 %token FAILWITH
-/* %token GE */
-/* %token GET */
-/* %token GT */
-/* %token HASH_KEY */
-/* %token IF_CONS */
-/* %token IF_LEFT */
-/* %token IF_NONE */
-/* %token IF */
-/* %token IMPLICIT_ACCOUNT */
-/* %token INT */
-/* %token ISNAT */
-/* %token ITER */
-/* %token LAMBDA */
-/* %token LE */
-/* %token LEFT */
-/* %token LOOP_LEFT */
-/* %token LOOP */
-/* %token LSL */
-/* %token LSR */
-/* %token LT */
-/* %token MAP */
-/* %token MEM */
-/* %token MUL */
-/* %token NEG */
-/* %token NEQ */
+%token GE
+%token GET
+%token GT
+%token HASH_KEY
+%token IF_CONS
+%token IF_LEFT
+%token IF_NONE
+%token IF
+%token IMPLICIT_ACCOUNT
+%token INT
+%token ISNAT
+%token ITER
+%token LAMBDA
+%token LE
+%token LEFT
+%token LOOP_LEFT
+%token LOOP
+%token LSL
+%token LSR
+%token LT
+%token MAP
+%token MEM
+%token MUL
+%token NEG
+%token NEQ
 %token NIL
-/* %token NONE */
-/* %token NOT */
-/* %token NOW */
-/* %token OR */
-/* %token PACK */
+%token NONE
+%token NOT
+%token NOW
+%token OR
+%token PACK
 %token PAIR
 %token PUSH
-/* %token RENAME */
-/* %token RIGHT */
-/* %token SELF */
-/* %token SENDER */
-/* %token SEQ */
-/* %token SET_DELEGATE */
-/* %token SHA256 */
-/* %token SHA512 */
-/* %token SIZE */
-/* %token SLICE */
-/* %token SOME */
-/* %token SOURCE */
-/* %token STEPS_TO_QUOTA */
-/* %token SUB */
+%token RENAME
+%token RIGHT
+%token SELF
+%token SENDER
+%token SET_DELEGATE
+%token SHA256
+%token SHA512
+%token SIZE
+%token SLICE
+%token SOME
+%token SOURCE
+%token STEPS_TO_QUOTA
+%token SUB
 %token SWAP
-/* %token TRANSFER_TOKENS */
+%token TRANSFER_TOKENS
 %token UNIT
-/* %token UNPACK */
+%token UNPACK
 %token UNPAIR
-/* %token UPDATE */
-/* %token XOR */
+%token UPDATE
+%token XOR
 
 %token CODE
 %token STORAGE
 %token PARAMETER
 
-%token ADDRESS
-%token BIG_MAP
-%token BOOL
-%token BYTES
-%token CHAIN_ID
-%token CONTRACT
-%token INT
-%token KEY
-%token KEY_HASH
-%token LAMBDA
-%token LIST
-%token MAP
-%token MUTEZ
-%token NAT
-%token OPERATION
-%token OPTION
-%token OR
+%token TADDRESS
+%token TBIG_MAP
+%token TBOOL
+%token TBYTES
+%token TCHAIN_ID
+%token TCONTRACT
+%token TINT
+%token TKEY
+%token TKEY_HASH
+%token TLAMBDA
+%token TLIST
+%token TMAP
+%token TMUTEZ
+%token TNAT
+%token TOPERATION
+%token TOPTION
+%token TOR
 %token TPAIR
-%token SET
-%token SIGNATURE
-%token STRING
-%token TIMESTAMP
+%token TSET
+%token TSIGNATURE
+%token TSTRING
+%token TTIMESTAMP
 %token TUNIT
 
-/* %token <string> IDENT */
+%token DUNIT
+%token DTRUE
+%token DFALSE
+%token DPAIR
+%token DLEFT
+%token DRIGHT
+%token DSOME
+%token DNONE
+%token DELT
+
 %token <string> ANNOTATION
 %token <string> VSTRING
+%token <string> BYTES
 %token <Big_int.big_int> NUMBER
 
 %token LPAREN
@@ -174,136 +183,151 @@ parameter:
 code:
  | CODE i=instruction SEMI_COLON { i }
 
-annotation:
+annot:
 |              { None }
 | s=ANNOTATION { Some s }
 
 type_:
-  | t=paren(type_)          { t }
-  | ADDRESS                 { mk_type (Taddress) }
-  | BIG_MAP k=type_ v=type_ { mk_type (Tbig_map (k, v)) }
-  | BOOL                    { mk_type (Tbool) }
-  | BYTES                   { mk_type (Tbytes) }
-  | CHAIN_ID                { mk_type (Tchain_id) }
-  | CONTRACT t=type_        { mk_type (Tcontract t) }
-  | INT a=annotation        { mk_type ?annotation:a (Tint) }
-  | KEY                     { mk_type (Tkey) }
-  | KEY_HASH                { mk_type (Tkey_hash) }
-  | LAMBDA a=type_ b=type_  { mk_type (Tlambda (a, b)) }
-  | LIST t=type_            { mk_type (Tlist t) }
-  | MAP k=type_ v=type_     { mk_type (Tmap (k, v)) }
-  | MUTEZ                   { mk_type (Tmutez) }
-  | NAT a=annotation        { mk_type ?annotation:a (Tnat) }
-  | OPERATION               { mk_type (Toperation) }
-  | OPTION t=type_          { mk_type (Toption t) }
-  | OR a=type_ b=type_      { mk_type (Tor (a, b)) }
-  | TPAIR a=type_ b=type_   { mk_type (Tpair (a, b)) }
-  | SET t=type_             { mk_type (Tset t) }
-  | SIGNATURE               { mk_type (Tsignature) }
-  | STRING                  { mk_type (Tstring) }
-  | TIMESTAMP               { mk_type (Ttimestamp) }
-  | TUNIT                   { mk_type (Tunit) }
+ | t=paren(type_)                     { t }
+ | TADDRESS a=annot                   { mk_type ?annotation:a (Taddress) }
+ | TBIG_MAP a=annot k=type_ v=type_   { mk_type ?annotation:a (Tbig_map (k, v)) }
+ | TBOOL a=annot                      { mk_type ?annotation:a (Tbool) }
+ | TBYTES a=annot                     { mk_type ?annotation:a (Tbytes) }
+ | TCHAIN_ID a=annot                  { mk_type ?annotation:a (Tchain_id) }
+ | TCONTRACT a=annot t=type_          { mk_type ?annotation:a (Tcontract t) }
+ | TINT a=annot                       { mk_type ?annotation:a (Tint) }
+ | TKEY a=annot                       { mk_type ?annotation:a (Tkey) }
+ | TKEY_HASH a=annot                  { mk_type ?annotation:a (Tkey_hash) }
+ | TLAMBDA a=annot ta=type_ tb=type_  { mk_type ?annotation:a (Tlambda (ta, tb)) }
+ | TLIST a=annot t=type_              { mk_type ?annotation:a (Tlist t) }
+ | TMAP a=annot k=type_ v=type_       { mk_type ?annotation:a (Tmap (k, v)) }
+ | TMUTEZ a=annot                     { mk_type ?annotation:a (Tmutez) }
+ | TNAT a=annot                       { mk_type ?annotation:a (Tnat) }
+ | TOPERATION a=annot                 { mk_type ?annotation:a (Toperation) }
+ | TOPTION a=annot t=type_            { mk_type ?annotation:a (Toption t) }
+ | TOR a=annot ta=type_ tb=type_      { mk_type ?annotation:a (Tor (ta, tb)) }
+ | TPAIR a=annot ta=type_ tb=type_    { mk_type ?annotation:a (Tpair (ta, tb)) }
+ | TSET a=annot t=type_               { mk_type ?annotation:a (Tset t) }
+ | TSIGNATURE a=annot                 { mk_type ?annotation:a (Tsignature) }
+ | TSTRING a=annot                    { mk_type ?annotation:a (Tstring) }
+ | TTIMESTAMP a=annot                 { mk_type ?annotation:a (Ttimestamp) }
+ | TUNIT a=annot                      { mk_type ?annotation:a (Tunit) }
+
+elt:
+| DELT a=data          { (a, a) }
 
 data:
- | n=NUMBER  { Dint n }
- | s=VSTRING { Dstring s }
+ | x=paren(data)       { x }
+ | n=NUMBER            { Dint n }
+ | s=VSTRING           { Dstring s }
+ | v=BYTES             { Dbytes v }
+ | DUNIT               { Dunit }
+ | DTRUE               { Dtrue }
+ | DFALSE              { Dfalse }
+ | DPAIR a=data b=data { Dpair (a, b) }
+ | DLEFT d=data        { Dleft d }
+ | DRIGHT d=data       { Dright d }
+ | DSOME d=data        { Dsome d }
+ | DNONE               { Dnone }
+ | LBRACE xs=separated_list(SEMI_COLON, data) RBRACE { Dlist xs }
+ | LBRACE xs=separated_nonempty_list(SEMI_COLON, elt) RBRACE  { Dplist xs }
+
+
+neo:
+ |           { 1 }
+ | n=NUMBER  { Big_int.int_of_big_int n }
+
+seq:
+| LBRACE xs=separated_list(SEMI_COLON, instruction) RBRACE { xs }
 
 instruction:
- | LBRACE xs=separated_list(SEMI_COLON, instruction) RBRACE { SEQ xs }
-/* %token ABS */
-/* %token ADD */
-/* %token ADDRESS */
-/* %token AMOUNT */
-/* %token AND */
-/* %token ASSERT_EQ */
-/* %token ASSERT_GE */
-/* %token ASSERT_GT */
-/* %token ASSERT_LE */
-/* %token ASSERT_LT */
-/* %token ASSERT_NEQ */
-/* %token BALANCE */
-/* %token BLAKE2B */
-/* %token CAR */
-/* %token CAST */
-/* %token CDR */
-/* %token CHAIN_ID */
-/* %token CHECK_SIGNATURE */
-/* %token COMPARE */
-/* %token CONCAT */
-/* %token CONS */
-/* %token CONTRACT */
-/* %token CREATE_ACCOUNT */
-/* %token CREATE_CONTRACT */
-/* %token DIG */
-/* %token DIP */
-| DROP                                                     { DROP 1 }
-/* %token DUG */
-/* %token DUP */
-/* %token EDIV */
-/* %token EMPTY_BIG_MAP */
-/* %token EMPTY_MAP */
-/* %token EMPTY_SET */
-/* %token EQ */
-/* %token EXEC */
-| FAILWITH                                                 { FAILWITH }
-/* %token GE */
-/* %token GET */
-/* %token GT */
-/* %token HASH_KEY */
-/* %token IF_CONS */
-/* %token IF_LEFT */
-/* %token IF_NONE */
-/* %token IF */
-/* %token IMPLICIT_ACCOUNT */
-/* %token INT */
-/* %token ISNAT */
-/* %token ITER */
-/* %token LAMBDA */
-/* %token LE */
-/* %token LEFT */
-/* %token LOOP_LEFT */
-/* %token LOOP */
-/* %token LSL */
-/* %token LSR */
-/* %token LT */
-/* %token MAP */
-/* %token MEM */
-/* %token MUL */
-/* %token NEG */
-/* %token NEQ */
-| NIL t=type_                                              { NIL t }
-/* %token NONE */
-/* %token NOT */
-/* %token NOW */
-/* %token OR */
-/* %token PACK */
-| PAIR                                                     { PAIR  }
-| PUSH t=type_ d=data                                      { PUSH (t, d) }
-/* %token RENAME */
-/* %token RIGHT */
-/* %token SELF */
-/* %token SENDER */
-/* %token SEQ */
-/* %token SET_DELEGATE */
-/* %token SHA256 */
-/* %token SHA512 */
-/* %token SIZE */
-/* %token SLICE */
-/* %token SOME */
-/* %token SOURCE */
-/* %token STEPS_TO_QUOTA */
-/* %token SUB */
-| SWAP                                                     { SWAP }
-/* %token TRANSFER_TOKENS */
-| UNIT                                                     { UNIT }
-/* %token UNPACK */
-| UNPAIR                                                   { UNPAIR }
-/* %token UPDATE */
-/* %token XOR */
-
-
-
-
-
-
-
+ | xs=seq                            { SEQ xs }
+ | ABS                               { ABS }
+ | ADD                               { ADD }
+ | ADDRESS                           { ADDRESS }
+ | AMOUNT                            { AMOUNT }
+ | AND                               { AND }
+ | ASSERT_EQ                         { ASSERT_EQ }
+ | ASSERT_GE                         { ASSERT_GE }
+ | ASSERT_GT                         { ASSERT_GT }
+ | ASSERT_LE                         { ASSERT_LE }
+ | ASSERT_LT                         { ASSERT_LT }
+ | ASSERT_NEQ                        { ASSERT_NEQ }
+ | BALANCE                           { BALANCE }
+ | BLAKE2B                           { BLAKE2B }
+ | CAR                               { CAR }
+ | CAST                              { CAST }
+ | CDR                               { CDR }
+ | CHAIN_ID                          { CHAIN_ID }
+ | CHECK_SIGNATURE                   { CHECK_SIGNATURE }
+ | COMPARE                           { COMPARE }
+ | CONCAT                            { CONCAT }
+ | CONS                              { CONS }
+ | CONTRACT a=annot t=type_          { CONTRACT (t, a) }
+ | CREATE_ACCOUNT                    { CREATE_ACCOUNT }
+ | CREATE_CONTRACT xs=seq            { CREATE_CONTRACT xs }
+ | DIG n=neo                         { DIG n }
+ | DIP n=neo xs=seq                  { DIP (n, xs) }
+ | DROP n=neo                        { DROP n }
+ | DUG n=neo                         { DUG n }
+ | DUP                               { DUP }
+ | EDIV                              { EDIV }
+ | EMPTY_BIG_MAP k=type_ v=type_     { EMPTY_BIG_MAP (k, v) }
+ | EMPTY_MAP k=type_ v=type_         { EMPTY_MAP (k, v) }
+ | EMPTY_SET t=type_                 { EMPTY_SET t }
+ | EQ                                { EQ }
+ | EXEC                              { EXEC }
+ | FAILWITH                          { FAILWITH }
+ | GE                                { GE }
+ | GET                               { GET }
+ | GT                                { GT }
+ | HASH_KEY                          { HASH_KEY }
+ | IF_CONS t=seq e=seq               { IF_CONS (t, e) }
+ | IF_LEFT t=seq e=seq               { IF_LEFT (t, e) }
+ | IF_NONE t=seq e=seq               { IF_NONE (t, e) }
+ | IF t=seq e=seq                    { IF (t, e) }
+ | IMPLICIT_ACCOUNT                  { IMPLICIT_ACCOUNT }
+ | INT                               { INT }
+ | ISNAT                             { ISNAT }
+ | ITER xs=seq                       { ITER xs }
+ | LAMBDA a=type_ r=type_ xs=seq     { LAMBDA (a, r, xs) }
+ | LE                                { LE }
+ | LEFT t=type_                      { LEFT t }
+ | LOOP_LEFT xs=seq                  { LOOP_LEFT xs }
+ | LOOP xs=seq                       { LOOP xs }
+ | LSL                               { LSL }
+ | LSR                               { LSR }
+ | LT                                { LT }
+ | MAP xs=seq                        { MAP xs }
+ | MEM                               { MEM }
+ | MUL                               { MUL }
+ | NEG                               { NEG }
+ | NEQ                               { NEQ }
+ | NIL t=type_                       { NIL t }
+ | NONE t=type_                      { NONE t }
+ | NOT                               { NOT }
+ | NOW                               { NOW }
+ | OR                                { OR }
+ | PACK                              { PACK }
+ | PAIR                              { PAIR }
+ | PUSH t=type_ d=data               { PUSH (t, d) }
+ | RENAME                            { RENAME }
+ | RIGHT t=type_                     { RIGHT t }
+ | SELF                              { SELF }
+ | SENDER                            { SENDER }
+ | SET_DELEGATE                      { SET_DELEGATE }
+ | SHA256                            { SHA256 }
+ | SHA512                            { SHA512 }
+ | SIZE                              { SIZE }
+ | SLICE                             { SLICE }
+ | SOME                              { SOME }
+ | SOURCE                            { SOURCE }
+ | STEPS_TO_QUOTA                    { STEPS_TO_QUOTA }
+ | SUB                               { SUB }
+ | SWAP                              { SWAP }
+ | TRANSFER_TOKENS                   { TRANSFER_TOKENS }
+ | UNIT                              { UNIT }
+ | UNPACK t=type_                    { UNPACK t }
+ | UNPAIR                            { UNPAIR }
+ | UPDATE                            { UPDATE }
+ | XOR                               { XOR }

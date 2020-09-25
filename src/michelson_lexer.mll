@@ -18,124 +18,133 @@
 
   let keywords_ =
     [
-      (* "ABS"              , ABS                ; *)
-      (* "ADD"              , ADD                ; *)
-      (* "ADDRESS"          , ADDRESS            ; *)
-      (* "AMOUNT"           , AMOUNT             ; *)
-      (* "AND"              , AND                ; *)
-      (* "ASSERT_EQ"        , ASSERT_EQ          ; *)
-      (* "ASSERT_GE"        , ASSERT_GE          ; *)
-      (* "ASSERT_GT"        , ASSERT_GT          ; *)
-      (* "ASSERT_LE"        , ASSERT_LE          ; *)
-      (* "ASSERT_LT"        , ASSERT_LT          ; *)
-      (* "ASSERT_NEQ"       , ASSERT_NEQ         ; *)
-      (* "BALANCE"          , BALANCE            ; *)
-      (* "BLAKE2B"          , BLAKE2B            ; *)
-      (* "CAR"              , CAR                ; *)
-      (* "CAST"             , CAST               ; *)
-      (* "CDR"              , CDR                ; *)
-      (* "CHAIN_ID"         , CHAIN_ID           ; *)
-      (* "CHECK_SIGNATURE"  , CHECK_SIGNATURE    ; *)
-      (* "COMPARE"          , COMPARE            ; *)
-      (* "CONCAT"           , CONCAT             ; *)
-      (* "CONS"             , CONS               ; *)
-      (* "CONTRACT"         , CONTRACT           ; *)
-      (* "CREATE_ACCOUNT"   , CREATE_ACCOUNT     ; *)
-      (* "CREATE_CONTRACT"  , CREATE_CONTRACT    ; *)
-      (* "DIG"              , DIG                ; *)
-      (* "DIP"              , DIP                ; *)
+      "ABS"              , ABS                ;
+      "ADD"              , ADD                ;
+      "ADDRESS"          , ADDRESS            ;
+      "AMOUNT"           , AMOUNT             ;
+      "AND"              , AND                ;
+      "ASSERT_EQ"        , ASSERT_EQ          ;
+      "ASSERT_GE"        , ASSERT_GE          ;
+      "ASSERT_GT"        , ASSERT_GT          ;
+      "ASSERT_LE"        , ASSERT_LE          ;
+      "ASSERT_LT"        , ASSERT_LT          ;
+      "ASSERT_NEQ"       , ASSERT_NEQ         ;
+      "BALANCE"          , BALANCE            ;
+      "BLAKE2B"          , BLAKE2B            ;
+      "CAR"              , CAR                ;
+      "CAST"             , CAST               ;
+      "CDR"              , CDR                ;
+      "CHAIN_ID"         , CHAIN_ID           ;
+      "CHECK_SIGNATURE"  , CHECK_SIGNATURE    ;
+      "COMPARE"          , COMPARE            ;
+      "CONCAT"           , CONCAT             ;
+      "CONS"             , CONS               ;
+      "CONTRACT"         , CONTRACT           ;
+      "CREATE_ACCOUNT"   , CREATE_ACCOUNT     ;
+      "CREATE_CONTRACT"  , CREATE_CONTRACT    ;
+      "DIG"              , DIG                ;
+      "DIP"              , DIP                ;
       "DROP"             , DROP               ;
-      (* "DUG"              , DUG                ; *)
-      (* "DUP"              , DUP                ; *)
-      (* "EDIV"             , EDIV               ; *)
-      (* "EMPTY_BIG_MAP"    , EMPTY_BIG_MAP      ; *)
-      (* "EMPTY_MAP"        , EMPTY_MAP          ; *)
-      (* "EMPTY_SET"        , EMPTY_SET          ; *)
-      (* "EQ"               , EQ                 ; *)
-      (* "EXEC"             , EXEC               ; *)
+      "DUG"              , DUG                ;
+      "DUP"              , DUP                ;
+      "EDIV"             , EDIV               ;
+      "EMPTY_BIG_MAP"    , EMPTY_BIG_MAP      ;
+      "EMPTY_MAP"        , EMPTY_MAP          ;
+      "EMPTY_SET"        , EMPTY_SET          ;
+      "EQ"               , EQ                 ;
+      "EXEC"             , EXEC               ;
       "FAILWITH"         , FAILWITH           ;
-      (* "GE"               , GE                 ; *)
-      (* "GET"              , GET                ; *)
-      (* "GT"               , GT                 ; *)
-      (* "HASH_KEY"         , HASH_KEY           ; *)
-      (* "IF_CONS"          , IF_CONS            ; *)
-      (* "IF_LEFT"          , IF_LEFT            ; *)
-      (* "IF_NONE"          , IF_NONE            ; *)
-      (* "IF"               , IF                 ; *)
-      (* "IMPLICIT_ACCOUNT" , IMPLICIT_ACCOUNT   ; *)
-      (* "INT"              , INT                ; *)
-      (* "ISNAT"            , ISNAT              ; *)
-      (* "ITER"             , ITER               ; *)
-      (* "LAMBDA"           , LAMBDA             ; *)
-      (* "LE"               , LE                 ; *)
-      (* "LEFT"             , LEFT               ; *)
-      (* "LOOP_LEFT"        , LOOP_LEFT          ; *)
-      (* "LOOP"             , LOOP               ; *)
-      (* "LSL"              , LSL                ; *)
-      (* "LSR"              , LSR                ; *)
-      (* "LT"               , LT                 ; *)
-      (* "MAP"              , MAP                ; *)
-      (* "MEM"              , MEM                ; *)
-      (* "MUL"              , MUL                ; *)
-      (* "NEG"              , NEG                ; *)
-      (* "NEQ"              , NEQ                ; *)
+      "GE"               , GE                 ;
+      "GET"              , GET                ;
+      "GT"               , GT                 ;
+      "HASH_KEY"         , HASH_KEY           ;
+      "IF_CONS"          , IF_CONS            ;
+      "IF_LEFT"          , IF_LEFT            ;
+      "IF_NONE"          , IF_NONE            ;
+      "IF"               , IF                 ;
+      "IMPLICIT_ACCOUNT" , IMPLICIT_ACCOUNT   ;
+      "INT"              , INT                ;
+      "ISNAT"            , ISNAT              ;
+      "ITER"             , ITER               ;
+      "LAMBDA"           , LAMBDA             ;
+      "LE"               , LE                 ;
+      "LEFT"             , LEFT               ;
+      "LOOP_LEFT"        , LOOP_LEFT          ;
+      "LOOP"             , LOOP               ;
+      "LSL"              , LSL                ;
+      "LSR"              , LSR                ;
+      "LT"               , LT                 ;
+      "MAP"              , MAP                ;
+      "MEM"              , MEM                ;
+      "MUL"              , MUL                ;
+      "NEG"              , NEG                ;
+      "NEQ"              , NEQ                ;
       "NIL"              , NIL                ;
-      (* "NONE"             , NONE               ; *)
-      (* "NOT"              , NOT                ; *)
-      (* "NOW"              , NOW                ; *)
-      (* "OR"               , OR                 ; *)
-      (* "PACK"             , PACK               ; *)
+      "NONE"             , NONE               ;
+      "NOT"              , NOT                ;
+      "NOW"              , NOW                ;
+      "OR"               , OR                 ;
+      "PACK"             , PACK               ;
       "PAIR"             , PAIR               ;
       "PUSH"             , PUSH               ;
-      (* "RENAME"           , RENAME             ; *)
-      (* "RIGHT"            , RIGHT              ; *)
-      (* "SELF"             , SELF               ; *)
-      (* "SENDER"           , SENDER             ; *)
-      (* "SEQ"              , SEQ                ; *)
-      (* "SET_DELEGATE"     , SET_DELEGATE       ; *)
-      (* "SHA256"           , SHA256             ; *)
-      (* "SHA512"           , SHA512             ; *)
-      (* "SIZE"             , SIZE               ; *)
-      (* "SLICE"            , SLICE              ; *)
-      (* "SOME"             , SOME               ; *)
-      (* "SOURCE"           , SOURCE             ; *)
-      (* "STEPS_TO_QUOTA"   , STEPS_TO_QUOTA     ; *)
-      (* "SUB"              , SUB                ; *)
+      "RENAME"           , RENAME             ;
+      "RIGHT"            , RIGHT              ;
+      "SELF"             , SELF               ;
+      "SENDER"           , SENDER             ;
+      "SET_DELEGATE"     , SET_DELEGATE       ;
+      "SHA256"           , SHA256             ;
+      "SHA512"           , SHA512             ;
+      "SIZE"             , SIZE               ;
+      "SLICE"            , SLICE              ;
+      "SOME"             , SOME               ;
+      "SOURCE"           , SOURCE             ;
+      "STEPS_TO_QUOTA"   , STEPS_TO_QUOTA     ;
+      "SUB"              , SUB                ;
       "SWAP"             , SWAP               ;
-      (* "TRANSFER_TOKENS"  , TRANSFER_TOKENS    ; *)
+      "TRANSFER_TOKENS"  , TRANSFER_TOKENS    ;
       "UNIT"             , UNIT               ;
-      (* "UNPACK"           , UNPACK             ; *)
+      "UNPACK"           , UNPACK             ;
       "UNPAIR"           , UNPAIR             ;
-      (* "UPDATE"           , UPDATE             ; *)
-      (* "XOR"              , XOR                ; *)
+      "UPDATE"           , UPDATE             ;
+      "XOR"              , XOR                ;
 
       "code"             , CODE               ;
       "storage"          , STORAGE            ;
       "parameter"        , PARAMETER          ;
 
-      "address"          , ADDRESS            ;
-      "big_map"          , BIG_MAP            ;
-      "bool"             , BOOL               ;
-      "bytes"            , BYTES              ;
-      "chain_id"         , CHAIN_ID           ;
-      "contract"         , CONTRACT           ;
-      "int"              , INT                ;
-      "key"              , KEY                ;
-      "key_hash"         , KEY_HASH           ;
-      "lambda"           , LAMBDA             ;
-      "list"             , LIST               ;
-      "map"              , MAP                ;
-      "mutez"            , MUTEZ              ;
-      "nat"              , NAT                ;
-      "operation"        , OPERATION          ;
-      "option"           , OPTION             ;
-      "or"               , OR                 ;
+      "address"          , TADDRESS           ;
+      "big_map"          , TBIG_MAP           ;
+      "bool"             , TBOOL              ;
+      "bytes"            , TBYTES             ;
+      "chain_id"         , TCHAIN_ID          ;
+      "contract"         , TCONTRACT          ;
+      "int"              , TINT               ;
+      "key"              , TKEY               ;
+      "key_hash"         , TKEY_HASH          ;
+      "lambda"           , TLAMBDA            ;
+      "list"             , TLIST              ;
+      "map"              , TMAP               ;
+      "mutez"            , TMUTEZ             ;
+      "nat"              , TNAT               ;
+      "operation"        , TOPERATION         ;
+      "option"           , TOPTION            ;
+      "or"               , TOR                ;
       "pair"             , TPAIR              ;
-      "set"              , SET                ;
-      "signature"        , SIGNATURE          ;
-      "string"           , STRING             ;
-      "timestamp"        , TIMESTAMP          ;
+      "set"              , TSET               ;
+      "signature"        , TSIGNATURE         ;
+      "string"           , TSTRING            ;
+      "timestamp"        , TTIMESTAMP         ;
       "unit"             , TUNIT              ;
+
+      "Unit"             , DUNIT              ;
+      "True"             , DTRUE              ;
+      "False"            , DFALSE             ;
+      "Right"            , DRIGHT             ;
+      "Pair"             , DPAIR              ;
+      "Left"             , DLEFT              ;
+      "Some"             , DSOME              ;
+      "None"             , DNONE              ;
+      "Elt"              , DELT               ;
 
       ]
     let () =
@@ -147,17 +156,20 @@
 let blank    = [' ' '\t' '\r']
 let newline  = '\n'
 let digit    = ['0'-'9']
-let ident    = (['a'-'z' 'A'-'Z']) (['a'-'z' 'A'-'Z' '0'-'9' '_' ])*
+let ident    = (['a'-'z' 'A'-'Z' '0'-'9' '_' ])+
 let annot    = '%' ident
+let bytes    = "0x" (['a'-'f' 'A'-'F' '0'-'9' ])+
+let number   = ("-")* digit+
 
 (* -------------------------------------------------------------------- *)
 rule token = parse
   | newline               { Lexing.new_line lexbuf; token lexbuf }
   | blank+                { token lexbuf }
 
-  | ident as id           { try  Hashtbl.find keywords id with Not_found -> assert false (*IDENT id*) }
-  | (digit+ as n)         { NUMBER (Big_int.big_int_of_string n) }
+  | (bytes as v)          { BYTES v }
+  | (number as n)         { NUMBER (Big_int.big_int_of_string n) }
   | annot as s            { ANNOTATION (String.sub s 1 ((String.length s) - 1))}
+  | ident as id           { try  Hashtbl.find keywords id with Not_found -> assert false }
 
   | "#"                   { comment_line lexbuf; token lexbuf }
   | "(*"                  { comment lexbuf; token lexbuf }
