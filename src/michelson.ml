@@ -54,96 +54,104 @@ type data =
 [@@deriving show {with_path = false}]
 
 type code =
+  (* Control structures *)
   | SEQ                of code list
-  | DROP               of int
-  | DUP
-  | SWAP
-  | DIG                of int
-  | DUG                of int
-  | PUSH               of type_* data
-  | SOME
-  | NONE               of type_
-  | UNIT
-  | IF_NONE            of code list * code list
-  | PAIR
-  | CAR
-  | CDR
-  | UNPAIR
-  | LEFT               of type_
-  | RIGHT              of type_
-  | IF_LEFT            of code list * code list
-  | NIL                of type_
-  | CONS
-  | IF_CONS            of code list * code list
-  | SIZE
-  | EMPTY_SET          of type_
-  | EMPTY_MAP          of type_ * type_
-  | EMPTY_BIG_MAP      of type_ * type_
-  | MAP                of code list
-  | ITER               of code list
-  | MEM
-  | GET
-  | UPDATE
+  | EXEC
+  | FAILWITH
   | IF                 of code list * code list
+  | IF_CONS            of code list * code list
+  | IF_LEFT            of code list * code list
+  | IF_NONE            of code list * code list
+  | ITER               of code list
+  | LAMBDA             of type_ * type_ * code list
   | LOOP               of code list
   | LOOP_LEFT          of code list
-  | LAMBDA             of type_ * type_ * code list
-  | EXEC
+  (* Stack manipulation *)
+  | DIG                of int
   | DIP                of int * code list
-  | ASSERT_EQ
-  | ASSERT_NEQ
-  | ASSERT_LT
-  | ASSERT_LE
-  | ASSERT_GT
-  | ASSERT_GE
-  | FAILWITH
-  | CAST
-  | RENAME
-  | CONCAT
-  | SLICE
-  | PACK
-  | UNPACK             of type_
-  | ADD
-  | SUB
-  | MUL
-  | EDIV
+  | DROP               of int
+  | DUG                of int
+  | DUP
+  | PUSH               of type_* data
+  | SWAP
+  (* Arthmetic operations *)
   | ABS
-  | ISNAT
+  | ADD
+  | COMPARE
+  | EDIV
+  | EQ
+  | GE
+  | GT
   | INT
-  | NEG
+  | ISNAT
+  | LE
   | LSL
   | LSR
-  | OR
-  | AND
-  | XOR
-  | NOT
-  | COMPARE
-  | EQ
-  | NEQ
   | LT
-  | GT
-  | LE
-  | GE
-  | SELF
+  | MUL
+  | NEG
+  | NEQ
+  | SUB
+  (* Boolean operations *)
+  | AND
+  | NOT
+  | OR
+  | XOR
+  (* Cryptographic operations *)
+  | BLAKE2B
+  | CHECK_SIGNATURE
+  | HASH_KEY
+  | SHA256
+  | SHA512
+  (* Blockchain operations *)
+  | ADDRESS
+  | AMOUNT
+  | BALANCE
+  | CHAIN_ID
   | CONTRACT           of type_ * ident option
-  | TRANSFER_TOKENS
-  | SET_DELEGATE
-  | CREATE_ACCOUNT
   | CREATE_CONTRACT    of code list
   | IMPLICIT_ACCOUNT
   | NOW
-  | AMOUNT
-  | BALANCE
-  | CHECK_SIGNATURE
-  | BLAKE2B
-  | SHA256
-  | SHA512
-  | HASH_KEY
-  | STEPS_TO_QUOTA
-  | SOURCE
+  | SELF
   | SENDER
-  | ADDRESS
-  | CHAIN_ID
+  | SET_DELEGATE
+  | SOURCE
+  | TRANSFER_TOKENS
+  (* Operations on data structures *)
+  | CAR
+  | CDR
+  | CONCAT
+  | CONS
+  | EMPTY_BIG_MAP      of type_ * type_
+  | EMPTY_MAP          of type_ * type_
+  | EMPTY_SET          of type_
+  | GET
+  | LEFT               of type_
+  | MAP                of code list
+  | MEM
+  | NIL                of type_
+  | NONE               of type_
+  | PACK
+  | PAIR
+  | RIGHT              of type_
+  | SIZE
+  | SLICE
+  | SOME
+  | UNIT
+  | UNPACK             of type_
+  | UPDATE
+  (* Other *)
+  | UNPAIR
+  | ASSERT_EQ
+  | ASSERT_GE
+  | ASSERT_GT
+  | ASSERT_LE
+  | ASSERT_LT
+  | ASSERT_NEQ
+  | CAST
+  | CREATE_ACCOUNT
+  | RENAME
+  | STEPS_TO_QUOTA
 [@@deriving show {with_path = false}]
 
 type z_operator =

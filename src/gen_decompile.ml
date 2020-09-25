@@ -87,20 +87,31 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
         Format.fprintf fmt "%i. %a@\n" i Printer_michelson.pp_dexpr c) st
   in
 
-  let pp_trace fmt (instr, stack : T.code * (T.dexpr) list) =
-    Format.fprintf fmt "@\nstack:@\n%a@\n@\ninstr: %a@." pp_stack stack Printer_michelson.pp_code instr
+  let pp_trace fmt (instr, stack, _sys : T.code * (T.dexpr) list * T.sysofequations) =
+    Format.fprintf fmt "@\nstack:@\n%a" pp_stack stack;
+    (* Format.fprintf fmt "@\nsys:@\n%a@\n" Printer_michelson.pp_sysofequations sys; *)
+    Format.fprintf fmt "@\ninstr: %a@." Printer_michelson.pp_code instr
+
   in
 
-  let trace (instrs : T.code list) (stack : (T.dexpr) list) =
+  let trace (instrs : T.code list) (stack : (T.dexpr) list)  (sys : T.sysofequations) =
     match !Options.opt_trace, instrs with
-    | true, i::_ -> Format.eprintf "%a" pp_trace (i, stack)
+    | true, i::_ -> Format.eprintf "%a" pp_trace (i, stack, sys)
     | _ -> ()
   in
 
   let rec interp (env : ir_env) (accu : T.sysofequations) (instrs : T.code list) (stack : (T.dexpr) list) =
     let f = interp in
 
-    trace instrs stack;
+    let interp_zop op a it st = f env ((a, Dzop op)::accu) it st in
+
+    let emit_error _ =
+      match instrs with
+      | i::_ -> Format.eprintf "error:@\n %a@." pp_trace (i, stack, accu); assert false
+      | _ -> assert false
+    in
+
+    trace instrs stack accu;
 
     match instrs, stack with
     | T.SEQ l::it, _       -> begin
@@ -117,15 +128,19 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
         f env accu it (b::a::st)
       end
 
+    | T.DUP::it, a::b::st -> begin
+        f env ((a, b)::accu) it (b::st)
+      end
+
     | T.DUG n::it, a::st      -> begin
         let rec insert idx e l =
-          if idx < 0 then assert false;
-          if idx = 0
-          then e::l
-          else insert (idx - 1) e l
+          match l with
+          | _ when idx = 0 -> e::l
+          | a::t -> a::(insert (idx - 1) e t)
+          | _ -> assert false
         in
 
-        let stack = insert (n - 1) a st in
+        let stack = insert n a st in
         f env accu it stack
       end
 
@@ -142,7 +157,7 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
       end
 
     | T.DIP (1, instrs)::it, a::st -> begin
-        let accu, stack = interp env accu instrs st in
+        let accu, stack = interp env accu (List.rev instrs) st in
         f env accu it (a::stack)
       end
 
@@ -179,15 +194,44 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
         f env accu it (T.Dbop (Bpair, x, y)::st)
       end
 
+    | T.ADD::it, a::st -> begin
+        let x = T.dalpha env.cpt_alpha in
+        let env = inc_cpt_alpha env in
+        let y = T.dalpha env.cpt_alpha in
+        let env = inc_cpt_alpha env in
+        f env ((a, Dbop (Badd, x, y))::accu) it (x::y::st)
+      end
+
+    | T.SIZE::it, a::st -> begin
+        let x = T.dalpha env.cpt_alpha in
+        let env = inc_cpt_alpha env in
+        f env ((a, Duop (Usize, x))::accu) it (x::st)
+      end
+
+    | T.NOW::it,      a::st         -> interp_zop Znow a it st
+    | T.AMOUNT::it,   a::st         -> interp_zop Zamount a it st
+    | T.BALANCE::it,  a::st         -> interp_zop Zbalance a it st
+    | T.SOURCE::it,   a::st         -> interp_zop Zsource a it st
+    | T.SENDER::it,   a::st         -> interp_zop Zsender a it st
+    | T.ADDRESS::it,  a::st         -> interp_zop Zaddress a it st
+
+    | T.CHAIN_ID::it, a::st         -> interp_zop Zchain_id a it st
+    | T.CHAIN_ID::_, _              -> emit_error ()
+    (* | T.SELF_ADDRESS::it, a::st    -> interp_zop Zself_address a it st *)
+    | T.NONE t::it,   a::st         -> interp_zop (Znone t) a it st
+    | T.NONE _::_, _                -> emit_error ()
+
     | [], [Dbop (Bpair, a, b)] -> (T.Dparameter tparameter, a)::(T.Dinitstorage tstorage, b)::accu, stack
     | [], _   -> accu, stack
-    | i::_, _ -> Format.eprintf "error:@\n %a@." pp_trace (i, stack); assert false
+    | _ -> assert false
   in
 
   let env = mk_ir_env () in
   let init_stack : (T.dexpr) list = T.[Dbop (Bpair, Doperations, Dstorage tstorage)] in
-  let sys, _ = interp env [] [michelson.code] init_stack in
-  Format.printf "sys:@\n%a@." Printer_michelson.pp_sysofequations sys
+  let sys, stack = interp env [] [michelson.code] init_stack in
+  trace [] stack sys;
+
+  Format.printf "@\n@\nsys:@\n%a@." Printer_michelson.pp_sysofequations sys
 
 
 let to_model (ir, env : T.ir * env) : M.model * env =

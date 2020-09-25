@@ -308,7 +308,7 @@ let pp_michelson fmt (m : michelson) =
     pp_code m.code
 (* -------------------------------------------------------------------------- *)
 
-let pp_dexpr fmt (de : dexpr) =
+let rec pp_dexpr fmt (de : dexpr) =
   let pp x = Format.fprintf fmt x in
   let f = pp_dexpr in
   match de with
