@@ -300,6 +300,27 @@ type michelson = {
 [@@deriving show {with_path = false}]
 
 (* -------------------------------------------------------------------- *)
+type alpha_ident = int
+[@@deriving show {with_path = false}]
+
+type dexpr =
+  | Dalpha of alpha_ident
+  | Dstorage of type_
+  | Dparameter of type_
+  | Dresult of type_
+  | Doperations
+  | Ddata of data
+  | Dzop of z_operator
+  | Duop of un_operator  * dexpr
+  | Dbop of bin_operator * dexpr * dexpr
+  | Dtop of ter_operator * dexpr * dexpr * dexpr
+[@@deriving show {with_path = false}]
+
+type equation = dexpr * dexpr
+
+type sys_equation = equation list
+
+(* -------------------------------------------------------------------- *)
 
 let mk_type ?annotation node : type_ =
   {node; annotation}
@@ -367,6 +388,10 @@ let cnat n    = PUSH (mk_type Tnat,  Dint n)
 let cstring s = PUSH (mk_type Tstring,  Dstring s)
 let cfail msg = SEQ [PUSH (mk_type Tstring,  Dstring msg); FAILWITH]
 let cskip     = SEQ []
+
+(* -------------------------------------------------------------------- *)
+
+let dalpha n  = Dalpha n
 
 (* -------------------------------------------------------------------- *)
 

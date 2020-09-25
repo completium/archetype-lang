@@ -306,6 +306,83 @@ let pp_michelson fmt (m : michelson) =
     pp_type m.storage
     pp_type m.parameter
     pp_code m.code
+(* -------------------------------------------------------------------------- *)
+
+let pp_dexpr fmt (de : dexpr) =
+  let pp x = Format.fprintf fmt x in
+  let f = pp_dexpr in
+  match de with
+  | Dalpha n           -> pp "x%i" n
+  | Dstorage t         -> pp "storage(%a)" pp_type t
+  | Dparameter t       -> pp "parameter(%a)" pp_type t
+  | Dresult t          -> pp "result(%a)" pp_type t
+  | Doperations        -> pp "operations"
+  | Ddata d            -> pp "data(%a)" pp_data d
+  | Dzop op -> begin
+      match op with
+      | Znow               -> pp_id fmt "now"
+      | Zamount            -> pp_id fmt "amount"
+      | Zbalance           -> pp_id fmt "balance"
+      | Zsource            -> pp_id fmt "source"
+      | Zsender            -> pp_id fmt "sender"
+      | Zaddress           -> pp_id fmt "address"
+      | Zchain_id          -> pp_id fmt "chain_id"
+      | Zself_address      -> pp_id fmt "self_address"
+      | Znone t            -> Format.fprintf fmt "none(%a)" pp_type t
+    end
+  | Duop (op, e) -> begin
+      match op with
+      | Ucar        -> pp "car(%a)"          f e
+      | Ucdr        -> pp "cdr(%a)"          f e
+      | Uleft  t    -> pp "left<%a>(%a)"     pp_type t f e
+      | Uright t    -> pp "right<%a>(%a)"    pp_type t f e
+      | Uneg        -> pp "neg(%a)"          f e
+      | Uint        -> pp "int(%a)"          f e
+      | Unot        -> pp "not(%a)"          f e
+      | Uabs        -> pp "abs(%a)"          f e
+      | Uisnat      -> pp "isnat(%a)"        f e
+      | Usome       -> pp "some(%a)"         f e
+      | Usize       -> pp "size(%a)"         f e
+      | Upack       -> pp "pack(%a)"         f e
+      | Uunpack t   -> pp "unpack<%a>(%a)"   pp_type t f e
+      | Ublake2b    -> pp "blake2b(%a)"      f e
+      | Usha256     -> pp "sha256(%a)"       f e
+      | Usha512     -> pp "sha512(%a)"       f e
+      | Uhash_key   -> pp "hash_key(%a)"     f e
+      | Ufail       -> pp "fail(%a)"         f e
+      | Ucontract (t, a) -> pp "contract%a<%a>(%a)" (pp_option (fun fmt x -> Format.fprintf fmt "%%%a" pp_id x)) a pp_type t f e
+    end
+  | Dbop (op, lhs, rhs) -> begin
+      match op with
+      | Badd       -> pp "(%a) + (%a)"       f lhs f rhs
+      | Bsub       -> pp "(%a) - (%a)"       f lhs f rhs
+      | Bmul       -> pp "(%a) * (%a)"       f lhs f rhs
+      | Bediv      -> pp "(%a) / (%a)"       f lhs f rhs
+      | Blsl       -> pp "(%a) << (%a)"      f lhs f rhs
+      | Blsr       -> pp "(%a) >> (%a)"      f lhs f rhs
+      | Bor        -> pp "(%a) or (%a)"      f lhs f rhs
+      | Band       -> pp "(%a) and (%a)"     f lhs f rhs
+      | Bxor       -> pp "(%a) xor (%a)"     f lhs f rhs
+      | Bcompare   -> pp "compare (%a, %a)"  f lhs f rhs
+      | Bget       -> pp "get(%a, %a)"       f lhs f rhs
+      | Bmem       -> pp "mem(%a, %a)"       f lhs f rhs
+      | Bconcat    -> pp "concat(%a, %a)"    f lhs f rhs
+      | Bcons      -> pp "cons(%a, %a)"      f lhs f rhs
+      | Bpair      -> pp "pair(%a, %a)"      f lhs f rhs
+    end
+  | Dtop (op, a1, a2, a3) -> begin
+      match op with
+      | Tcheck_signature -> pp "check_signature(%a, %a, %a)" f a1 f a2 f a3
+      | Tslice           -> pp "slice(%a, %a, %a)"           f a1 f a2 f a3
+      | Tupdate          -> pp "update(%a, %a, %a)"          f a1 f a2 f a3
+      | Ttransfer_tokens -> pp "transfer_tokens(%a, %a, %a)" f a1 f a2 f a3
+    end
+
+let pp_equation fmt ((a, b) : equation) =
+  Format.fprintf fmt "%a = %a" pp_dexpr a pp_dexpr b
+
+let pp_sys_equation fmt (s : sys_equation) =
+  (pp_list "@\n" pp_equation) fmt s
 
 (* -------------------------------------------------------------------------- *)
 

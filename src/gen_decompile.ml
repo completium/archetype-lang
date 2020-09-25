@@ -20,7 +20,7 @@ let parse_michelson (filename, ic) : T.michelson * env =
   let env = mk_env ~name:name () in
   let tokens = Lexing.from_channel ic in
   let res = Michelson_parser.main Michelson_lexer.token tokens, env in
-    match !Error.errors with
+  match !Error.errors with
   | [] -> res
   | _ -> raise (Error.ParseError !Error.errors)
 
@@ -60,6 +60,88 @@ let to_ir (michelson, env : T.michelson * env) : T.ir * env =
   let body = T.Iassign ("storage", T.Iconst (sv, st)) in
   let entries = T.[mk_entry "default" args [] body] in
   T.mk_ir storage_type storage_data storage_list parameter funs entries, env
+
+
+type ir_env = {
+  cpt_alpha : int;
+}
+
+let mk_ir_env ?(cpt_alpha=0) _ : ir_env =
+  { cpt_alpha }
+
+let to_ir2 (michelson, _ : T.michelson * 'a) =
+  let tstorage   = michelson.storage in
+  let tparameter = michelson.parameter in
+  (* let storage_data =
+     match storage_type.node with
+     | T.Tnat
+     | T.Tint    -> T.Dint Big_int.zero_big_int
+     | T.Tstring -> T.Dstring ""
+     | _ -> assert false
+     in *)
+
+  let inc_cpt_alpha env = { env with cpt_alpha = env.cpt_alpha + 1 } in
+
+  let rec interp (env : ir_env) (accu : T.sys_equation) instrs (stack : (T.dexpr) list) =
+    let f = interp in
+    match instrs, stack with
+    | T.SEQ l::it, _       -> begin
+        f env accu (it @ List.rev l) stack
+      end
+
+    | T.DROP 1::it, _      -> begin
+        let d = T.dalpha env.cpt_alpha in
+        let env = inc_cpt_alpha env in
+        f env accu it (d::stack)
+      end
+
+    | T.SWAP::it, a::b::st -> begin
+        f env accu it (b::a::st)
+      end
+
+    | T.PUSH (_t, d)::it, _ -> begin
+        let data = d in
+        let stack, eq = match stack with | a::t -> t, (a, T.Ddata data) | _ -> assert false in
+        let accu = eq::accu in
+        f env accu it stack
+      end
+
+    | T.NIL _::it, _       -> begin
+        let data = T.Dlist [] in
+        let stack, eq = match stack with | a::t -> t, (a, T.Ddata data) | _ -> assert false in
+        let accu = eq::accu in
+        f env accu it stack
+      end
+
+    | T.PAIR::it, a::st -> begin
+        let env, stack, eqs  =
+          match a with
+          | T.Dbop (Bpair, x, y) -> env, x::y::st, []
+          | _ -> begin
+              let x = T.dalpha env.cpt_alpha in
+              let env = inc_cpt_alpha env in
+              let y = T.dalpha env.cpt_alpha in
+              let env = inc_cpt_alpha env in
+              env, x::y::st, []
+            end
+        in
+        f env (eqs @ accu) it stack
+      end
+
+    | T.UNPAIR::it, x::y::st -> begin
+        f env accu it (T.Dbop (Bpair, x, y)::st)
+      end
+
+    | [], [Dbop (Bpair, a, b)] -> (T.Dparameter tparameter, a)::(T.Dstorage tstorage, b)::accu
+    | _ -> assert false
+  in
+
+
+
+  let env = mk_ir_env () in
+  let init_stack : (T.dexpr) list = T.[Dbop (Bpair, Doperations, Dstorage tstorage)] in
+  let sys = interp env [] [michelson.code] init_stack in
+  Format.printf "sys:@\n%a@." Printer_michelson.pp_sys_equation sys
 
 
 let to_model (ir, env : T.ir * env) : M.model * env =
