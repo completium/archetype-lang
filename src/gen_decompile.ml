@@ -88,7 +88,7 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
   in
 
   let pp_trace fmt (instr, stack : T.code * (T.dexpr) list) =
-    Format.fprintf fmt "instr: %a@\nstack:@\n%a@." Printer_michelson.pp_code instr pp_stack stack
+    Format.fprintf fmt "@\nstack:@\n%a@\n@\ninstr: %a@." pp_stack stack Printer_michelson.pp_code instr
   in
 
   let trace (instrs : T.code list) (stack : (T.dexpr) list) =
