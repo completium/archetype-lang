@@ -1,0 +1,11 @@
+archetype simple
+
+variable a : nat = 0
+variable b : int = 0
+
+entry exec () {
+  effect {
+    a := 2;
+    b := 3
+  }
+}

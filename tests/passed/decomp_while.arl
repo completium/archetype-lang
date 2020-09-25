@@ -1,0 +1,14 @@
+archetype simple_while
+
+variable a : nat = 0
+variable b : int = 0
+
+entry exec () {
+  var i = 0;
+  while i < 10 do
+    a := a + 1;
+    i := i + 1;
+    b := b + 1
+  done;
+  b := b + 5
+}
