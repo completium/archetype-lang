@@ -173,6 +173,7 @@
 
 main:
  | LBRACE s=storage p=parameter c=code RBRACE EOF { mk_michelson s p c }
+ | LBRACE p=parameter s=storage c=code RBRACE EOF { mk_michelson s p c }
 
 storage:
  | STORAGE t=type_ SEMI_COLON { t }
@@ -181,7 +182,7 @@ parameter:
  | PARAMETER t=type_ SEMI_COLON { t }
 
 code:
- | CODE i=instruction SEMI_COLON { i }
+ | CODE i=instruction SEMI_COLON? { i }
 
 annot:
 |              { None }

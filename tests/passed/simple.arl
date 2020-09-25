@@ -3,6 +3,7 @@ archetype simple
 variable n : nat = 0
 
 entry exec () {
+  refuse transfer
   effect {
     n := 2
   }
