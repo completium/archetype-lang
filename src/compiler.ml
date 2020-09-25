@@ -454,6 +454,7 @@ let main () =
       "--raw-ir", Arg.Set Options.opt_raw_ir, " Same as -ri";
       "-rm", Arg.Set Options.opt_raw_michelson, " Print raw michelson";
       "--raw-michelson", Arg.Set Options.opt_raw_michelson, " Same as -rm";
+      "--trace", Arg.Set Options.opt_trace, " Activate trace";
       "-V", Arg.String (fun s -> Options.add_vids s), "<id> process specication identifiers";
       "-v", Arg.Unit (fun () -> print_version ()), " Show version number and exit";
       "--version", Arg.Unit (fun () -> print_version ()), " Same as -v";

@@ -82,8 +82,26 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
 
   let inc_cpt_alpha env = { env with cpt_alpha = env.cpt_alpha + 1 } in
 
-  let rec interp (env : ir_env) (accu : T.sys_equation) instrs (stack : (T.dexpr) list) =
+  let pp_stack fmt (st : T.dexpr list) =
+    List.iteri (fun i (c : T.dexpr) ->
+        Format.fprintf fmt "%i. %a@\n" i Printer_michelson.pp_dexpr c) st
+  in
+
+  let pp_trace fmt (instr, stack : T.code * (T.dexpr) list) =
+    Format.fprintf fmt "instr: %a@\nstack:@\n%a@." Printer_michelson.pp_code instr pp_stack stack
+  in
+
+  let trace (instrs : T.code list) (stack : (T.dexpr) list) =
+    match !Options.opt_trace, instrs with
+    | true, i::_ -> Format.eprintf "%a" pp_trace (i, stack)
+    | _ -> ()
+  in
+
+  let rec interp (env : ir_env) (accu : T.sys_equation) (instrs : T.code list) (stack : (T.dexpr) list) =
     let f = interp in
+
+    trace instrs stack;
+
     match instrs, stack with
     | T.SEQ l::it, _       -> begin
         f env accu (it @ List.rev l) stack
@@ -97,6 +115,35 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
 
     | T.SWAP::it, a::b::st -> begin
         f env accu it (b::a::st)
+      end
+
+    | T.DUG n::it, a::st      -> begin
+        let rec insert idx e l =
+          if idx < 0 then assert false;
+          if idx = 0
+          then e::l
+          else insert (idx - 1) e l
+        in
+
+        let stack = insert (n - 1) a st in
+        f env accu it stack
+      end
+
+    | T.DIG n::it, _      -> begin
+        let rec aux accu idx l =
+          match l with
+          | e::t when idx = 0 -> (e::accu @ t)
+          | e::t -> aux (accu @ [e]) (idx - 1) t
+          | [] -> assert false
+        in
+
+        let stack = aux [] n stack in
+        f env accu it stack
+      end
+
+    | T.DIP (1, instrs)::it, a::st -> begin
+        let accu, stack = interp env accu instrs st in
+        f env accu it (a::stack)
       end
 
     | T.PUSH (_t, d)::it, _ -> begin
@@ -132,15 +179,14 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
         f env accu it (T.Dbop (Bpair, x, y)::st)
       end
 
-    | [], [Dbop (Bpair, a, b)] -> (T.Dparameter tparameter, a)::(T.Dstorage tstorage, b)::accu
-    | _ -> assert false
+    | [], [Dbop (Bpair, a, b)] -> (T.Dparameter tparameter, a)::(T.Dstorage tstorage, b)::accu, stack
+    | [], _   -> accu, stack
+    | i::_, _ -> Format.eprintf "error:@\n %a@." pp_trace (i, stack); assert false
   in
-
-
 
   let env = mk_ir_env () in
   let init_stack : (T.dexpr) list = T.[Dbop (Bpair, Doperations, Dstorage tstorage)] in
-  let sys = interp env [] [michelson.code] init_stack in
+  let sys, _ = interp env [] [michelson.code] init_stack in
   Format.printf "sys:@\n%a@." Printer_michelson.pp_sys_equation sys
 
 
