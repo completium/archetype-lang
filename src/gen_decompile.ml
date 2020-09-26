@@ -343,7 +343,7 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
 
     | [] -> begin
         match stack with
-        | [Dbop (Bpair, a, b)] -> (T.Dparameter tparameter, a)::(T.Dinitstorage tstorage, b)::accu, stack
+        | [Dbop (Bpair, a, b)] -> (a, T.Dparameter tparameter)::(b, T.Dinitstorage tstorage)::accu, stack
         | _ -> accu, stack
       end
   in
