@@ -64,10 +64,14 @@ let to_ir (michelson, env : T.michelson * env) : T.ir * env =
 
 type ir_env = {
   cpt_alpha : int;
+  deep:       int;
 }
 
-let mk_ir_env ?(cpt_alpha=0) _ : ir_env =
-  { cpt_alpha }
+let mk_ir_env ?(cpt_alpha=0) ?(deep=0) _ : ir_env =
+  { cpt_alpha; deep }
+
+let inc_deep env = { env with deep = env.deep + 1 }
+let dec_deep env = { env with deep = env.deep - 1 }
 
 let to_ir2 (michelson, _ : T.michelson * 'a) =
   let tstorage   = michelson.storage in
@@ -81,15 +85,20 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
   in
 
   let pp_trace fmt (instr, stack, sys : T.code * (T.dexpr) list * T.sysofequations) =
-    Format.fprintf fmt "@\nstack:@\n%a" pp_stack stack;
     Format.fprintf fmt "@\nsys:@\n%a@\n@\n" Printer_michelson.pp_sysofequations sys;
+    Format.fprintf fmt "@\nstack:@\n%a" pp_stack stack;
     Format.fprintf fmt "@\ninstr: %a@." Printer_michelson.pp_code instr
 
   in
 
-  let trace (instrs : T.code list) (stack : (T.dexpr) list)  (sys : T.sysofequations) =
+  let trace (env : ir_env) (instrs : T.code list) (stack : (T.dexpr) list)  (sys : T.sysofequations) =
+    let print_indent fmt n =
+      for _i = 1 to n do
+        Format.fprintf fmt "  "
+      done
+    in
     match !Options.opt_trace, instrs with
-    | true, i::_ -> Format.eprintf "%a" pp_trace (i, stack, sys)
+    | true, i::_ -> Format.eprintf "%a@[%a@]" print_indent env.deep pp_trace (i, stack, sys)
     | _ -> ()
   in
 
@@ -144,7 +153,7 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
       | _ -> emit_error ()
     in
 
-    trace instrs stack accu;
+    trace env instrs stack accu;
 
     match instrs with
 
@@ -193,7 +202,10 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
           in
           aux n [] stack
         in
+        let env = inc_deep env in
         let accu, stack, env = interp env accu (List.rev instrs) bst in
+        let env = dec_deep env in
+        trace env instrs stack accu;
         f env accu it (ast @ stack)
       end
 
@@ -350,8 +362,8 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
 
   let env = mk_ir_env () in
   let init_stack : (T.dexpr) list = T.[Dbop (Bpair, Doperations, Dstorage tstorage)] in
-  let sys, stack, _env = interp env [] [michelson.code] init_stack in
-  trace [] stack sys;
+  let sys, stack, env = interp env [] [michelson.code] init_stack in
+  trace env [] stack sys;
 
   Format.printf "@\n@\nsys:@\n%a@." Printer_michelson.pp_sysofequations sys
 
