@@ -1,5 +1,9 @@
 archetype decomp_if
-variable storage : (nat * nat) = (0, 0)
-entry exec (n : nat) {
-  storage := ((if n > 2 then 2 else 4), (if n < 6 then 5 else 8));
+
+variable n : nat = 0
+
+entry exec (b : bool) {
+  if b
+  then n := 2
+  else n := 3
 }
