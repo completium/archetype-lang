@@ -193,7 +193,7 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
           in
           aux n [] stack
         in
-        let accu, stack = interp env accu (List.rev instrs) bst in
+        let accu, stack, env = interp env accu (List.rev instrs) bst in
         f env accu it (ast @ stack)
       end
 
@@ -343,14 +343,14 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
 
     | [] -> begin
         match stack with
-        | [Dbop (Bpair, a, b)] -> (a, T.Dparameter tparameter)::(b, T.Dinitstorage tstorage)::accu, stack
-        | _ -> accu, stack
+        | [Dbop (Bpair, a, b)] -> (a, T.Dparameter tparameter)::(b, T.Dinitstorage tstorage)::accu, stack, env
+        | _ -> accu, stack, env
       end
   in
 
   let env = mk_ir_env () in
   let init_stack : (T.dexpr) list = T.[Dbop (Bpair, Doperations, Dstorage tstorage)] in
-  let sys, stack = interp env [] [michelson.code] init_stack in
+  let sys, stack, _env = interp env [] [michelson.code] init_stack in
   trace [] stack sys;
 
   Format.printf "@\n@\nsys:@\n%a@." Printer_michelson.pp_sysofequations sys
