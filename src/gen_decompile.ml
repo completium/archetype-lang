@@ -49,7 +49,7 @@ let to_ir (michelson, env : T.michelson * env) : T.ir * env =
     | [], _ -> stack
     | _ -> assert false
   in
-  let init_stack : (T.data * T.type_) list = T.[Dpair (Dvar "parameter", Dvar "storage"), T.tpair parameter storage_type ] in
+  let init_stack : (T.data * T.type_) list = T.[Dpair (Dstring "parameter", Dstring "storage"), T.tpair parameter storage_type ] in
   let stack = interp [michelson.code] init_stack in
   let st, sv =
     match stack with
@@ -72,13 +72,6 @@ let mk_ir_env ?(cpt_alpha=0) _ : ir_env =
 let to_ir2 (michelson, _ : T.michelson * 'a) =
   let tstorage   = michelson.storage in
   let tparameter = michelson.parameter in
-  (* let storage_data =
-     match storage_type.node with
-     | T.Tnat
-     | T.Tint    -> T.Dint Big_int.zero_big_int
-     | T.Tstring -> T.Dstring ""
-     | _ -> assert false
-     in *)
 
   let inc_cpt_alpha env = { env with cpt_alpha = env.cpt_alpha + 1 } in
 
@@ -103,127 +96,256 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
   let rec interp (env : ir_env) (accu : T.sysofequations) (instrs : T.code list) (stack : (T.dexpr) list) =
     let f = interp in
 
-    let interp_zop op a it st = f env ((a, Dzop op)::accu) it st in
-
     let emit_error _ =
       match instrs with
       | i::_ -> Format.eprintf "error:@\n %a@." pp_trace (i, stack, accu); assert false
       | _ -> assert false
     in
 
+    let interp_zop op it st =
+      match st with
+      | a::st -> f env ((a, Dzop op)::accu) it st
+      | _ -> emit_error ()
+    in
+
+    let interp_uop op it st =
+      match st with
+      | a::st -> begin
+          let x = T.dalpha env.cpt_alpha in
+          let env = inc_cpt_alpha env in
+          f env ((a, Duop (op, x))::accu) it (x::st)
+        end
+      | _ -> emit_error ()
+    in
+
+    let interp_bop op it st =
+      match st with
+      | a::st -> begin
+          let x = T.dalpha env.cpt_alpha in
+          let env = inc_cpt_alpha env in
+          let y = T.dalpha env.cpt_alpha in
+          let env = inc_cpt_alpha env in
+          f env ((a, Dbop (op, x, y))::accu) it (x::y::st)
+        end
+      | _ -> emit_error ()
+    in
+
+    let interp_top op it st =
+      match st with
+      | a::st -> begin
+          let x = T.dalpha env.cpt_alpha in
+          let env = inc_cpt_alpha env in
+          let y = T.dalpha env.cpt_alpha in
+          let env = inc_cpt_alpha env in
+          let z = T.dalpha env.cpt_alpha in
+          let env = inc_cpt_alpha env in
+          f env ((a, Dtop (op, x, y, z))::accu) it (x::y::z::st)
+        end
+      | _ -> emit_error ()
+    in
+
     trace instrs stack accu;
 
-    match instrs, stack with
-    | T.SEQ l::it, _       -> begin
+    match instrs with
+
+    (* Control structures *)
+
+    | T.SEQ l::it       -> begin
         f env accu (it @ List.rev l) stack
       end
+    | T.EXEC::_        -> assert false
+    | T.FAILWITH::_    -> assert false
+    | T.IF _::_        -> assert false
+    | T.IF_CONS _::_   -> assert false
+    | T.IF_LEFT _::_   -> assert false
+    | T.IF_NONE _::_   -> assert false
+    | T.ITER _::_      -> assert false
+    | T.LAMBDA _::_    -> assert false
+    | T.LOOP _::_      -> assert false
+    | T.LOOP_LEFT _::_ -> assert false
 
-    | T.DROP 1::it, _      -> begin
-        let d = T.dalpha env.cpt_alpha in
-        let env = inc_cpt_alpha env in
-        f env accu it (d::stack)
+
+    (* Stack manipulation *)
+
+    | T.DIG n::it -> begin
+        match stack with
+        | a::st -> begin
+            let rec insert idx e l =
+              match l with
+              | _ when idx = 0 -> e::l
+              | a::t -> a::(insert (idx - 1) e t)
+              | _ -> assert false
+            in
+
+            let stack = insert n a st in
+            f env accu it stack
+          end
+        | _ -> emit_error ()
       end
 
-    | T.SWAP::it, a::b::st -> begin
-        f env accu it (b::a::st)
-      end
-
-    | T.DUP::it, a::b::st -> begin
-        f env ((a, b)::accu) it (b::st)
-      end
-
-    | T.DUG n::it, a::st      -> begin
-        let rec insert idx e l =
-          match l with
-          | _ when idx = 0 -> e::l
-          | a::t -> a::(insert (idx - 1) e t)
-          | _ -> assert false
+    | T.DIP (n, instrs)::it -> begin
+        let ast, bst =
+          let rec aux idx accu l =
+            match l with
+            | _ when idx = 0 -> accu, l
+            | i::t -> aux (idx - 1) (accu @ [i]) t
+            | _ -> emit_error ()
+          in
+          aux n [] stack
         in
+        let accu, stack = interp env accu (List.rev instrs) bst in
+        f env accu it (ast @ stack)
+      end
 
-        let stack = insert n a st in
+    | T.DROP n::it -> begin
+        let stack, env = foldi
+            (fun (st, env) ->
+               let d = T.dalpha env.cpt_alpha in
+               let env = inc_cpt_alpha env in
+               (d::st), env
+            ) (stack, env) n
+        in
         f env accu it stack
       end
 
-    | T.DIG n::it, _      -> begin
+    | T.DUG n::it -> begin
         let rec aux accu idx l =
           match l with
           | e::t when idx = 0 -> (e::accu @ t)
           | e::t -> aux (accu @ [e]) (idx - 1) t
-          | [] -> assert false
+          | [] -> emit_error ()
         in
 
         let stack = aux [] n stack in
         f env accu it stack
       end
 
-    | T.DIP (1, instrs)::it, a::st -> begin
-        let accu, stack = interp env accu (List.rev instrs) st in
-        f env accu it (a::stack)
+    | T.DUP::it -> begin
+        match stack with
+        | a::b::st -> f env ((a, b)::accu) it (b::st)
+        | _ -> emit_error ()
       end
 
-    | T.PUSH (_t, d)::it, _ -> begin
+    | T.PUSH (_t, d)::it -> begin
         let data = d in
         let stack, eq = match stack with | a::t -> t, (a, T.Ddata data) | _ -> assert false in
         let accu = eq::accu in
         f env accu it stack
       end
 
-    | T.NIL _::it, _       -> begin
-        let data = T.Dlist [] in
-        let stack, eq = match stack with | a::t -> t, (a, T.Ddata data) | _ -> assert false in
-        let accu = eq::accu in
-        f env accu it stack
+    | T.SWAP::it -> begin
+        match stack with
+        | a::b::st -> f env accu it (b::a::st)
+        | _ -> emit_error ()
       end
 
-    | T.PAIR::it, a::st -> begin
-        let env, stack, eqs  =
-          match a with
-          | T.Dbop (Bpair, x, y) -> env, x::y::st, []
-          | _ -> begin
-              let x = T.dalpha env.cpt_alpha in
-              let env = inc_cpt_alpha env in
-              let y = T.dalpha env.cpt_alpha in
-              let env = inc_cpt_alpha env in
-              env, x::y::st, []
-            end
-        in
-        f env (eqs @ accu) it stack
+
+    (* Arthmetic operations *)
+
+    | ABS::it      -> interp_uop Uabs     it stack
+    | ADD::it      -> interp_bop Badd     it stack
+    | COMPARE::it  -> interp_bop Bcompare it stack
+    | EDIV::it     -> interp_bop Bediv    it stack
+    | EQ::it       -> interp_bop Beq      it stack
+    | GE::it       -> interp_bop Bge      it stack
+    | GT::it       -> interp_bop Bgt      it stack
+    | INT::it      -> interp_uop Uint     it stack
+    | ISNAT::it    -> interp_uop Uisnat   it stack
+    | LE::it       -> interp_bop Ble      it stack
+    | LSL::it      -> interp_bop Blsl     it stack
+    | LSR::it      -> interp_bop Blsr     it stack
+    | LT::it       -> interp_bop Blt      it stack
+    | MUL::it      -> interp_bop Bmul     it stack
+    | NEG::it      -> interp_uop Uneg     it stack
+    | NEQ::it      -> interp_bop Bne      it stack
+    | SUB::it      -> interp_bop Bsub     it stack
+
+
+    (* Boolean operations *)
+
+    | AND::it     -> interp_bop Band it stack
+    | NOT::it     -> interp_uop Unot it stack
+    | OR::it      -> interp_bop Bor  it stack
+    | XOR::it     -> interp_bop Bxor it stack
+
+
+    (* Cryptographic operations *)
+
+    | BLAKE2B::it          -> interp_uop Ublake2b         it stack
+    | CHECK_SIGNATURE::it  -> interp_top Tcheck_signature it stack
+    | HASH_KEY::it         -> interp_uop Uhash_key        it stack
+    | SHA256::it           -> interp_uop Usha256          it stack
+    | SHA512::it           -> interp_uop Usha512          it stack
+
+
+    (* Blockchain operations *)
+
+    | ADDRESS::it           -> interp_zop Zaddress it stack
+    | AMOUNT::it            -> interp_zop Zamount it stack
+    | BALANCE::it           -> interp_zop Zbalance it stack
+    | CHAIN_ID::it          -> interp_zop Zchain_id it stack
+    | CONTRACT (t, a)::it   -> interp_uop (Ucontract (t, a)) it stack
+    | CREATE_CONTRACT _::_  -> assert false
+    | IMPLICIT_ACCOUNT::_   -> assert false
+    | NOW::it               -> interp_zop Znow it stack
+    | SELF::_               -> assert false
+    | SENDER::it            -> interp_zop Zsender it stack
+    | SET_DELEGATE::_       -> assert false
+    | SOURCE::it            -> interp_zop Zsource it stack
+    | TRANSFER_TOKENS::_    -> assert false
+
+
+    (* Operations on data structures *)
+
+    | CAR::it                  -> interp_uop Ucar it stack
+    | CDR::it                  -> interp_uop Ucdr it stack
+    | CONCAT::it               -> interp_bop Bconcat it stack
+    | CONS::it                 -> interp_bop Bcons it stack
+    | EMPTY_BIG_MAP (k, v)::it -> interp_zop (Zemptybigmap (k, v)) it stack
+    | EMPTY_MAP (k, v)::it     -> interp_zop (Zemptymap (k, v)) it stack
+    | EMPTY_SET t::it          -> interp_zop (Zemptyset t) it stack
+    | GET::it                  -> interp_bop Bget it stack
+    | LEFT t::it               -> interp_uop (Uleft t) it stack
+    | MAP _::_                 -> assert false
+    | MEM::it                  -> interp_bop Bmem it stack
+    | NIL t::it                -> interp_zop (Znil t) it stack
+    | NONE t::it               -> interp_zop (Znone t)it stack
+    | PACK::it                 -> interp_uop Upack it stack
+    | PAIR::it                 -> interp_bop Bpair it stack
+    | RIGHT t::it              -> interp_uop (Uright t) it stack
+    | SIZE::it                 -> interp_uop Usize it stack
+    | SLICE::it                -> interp_top Tslice it stack
+    | SOME::it                 -> interp_uop (Usome) it stack
+    | UNIT::it                 -> interp_zop (Zunit) it stack
+    | UNPACK t::it             -> interp_uop (Uunpack t) it stack
+    | UPDATE::it               -> interp_top Tupdate it stack
+
+
+    (* Other *)
+
+    | T.UNPAIR::it  -> begin
+        match stack with
+        | x::y::st -> f env accu it (T.Dbop (Bpair, x, y)::st)
+        | _ -> emit_error ()
       end
+    | ASSERT_EQ::_       -> assert false
+    | ASSERT_GE::_       -> assert false
+    | ASSERT_GT::_       -> assert false
+    | ASSERT_LE::_       -> assert false
+    | ASSERT_LT::_       -> assert false
+    | ASSERT_NEQ::_      -> assert false
+    | CAST::_            -> assert false
+    | CREATE_ACCOUNT::_  -> assert false
+    | RENAME::_          -> assert false
+    | STEPS_TO_QUOTA::_  -> assert false
 
-    | T.UNPAIR::it, x::y::st -> begin
-        f env accu it (T.Dbop (Bpair, x, y)::st)
+
+
+    | [] -> begin
+        match stack with
+        | [Dbop (Bpair, a, b)] -> (T.Dparameter tparameter, a)::(T.Dinitstorage tstorage, b)::accu, stack
+        | _ -> accu, stack
       end
-
-    | T.ADD::it, a::st -> begin
-        let x = T.dalpha env.cpt_alpha in
-        let env = inc_cpt_alpha env in
-        let y = T.dalpha env.cpt_alpha in
-        let env = inc_cpt_alpha env in
-        f env ((a, Dbop (Badd, x, y))::accu) it (x::y::st)
-      end
-
-    | T.SIZE::it, a::st -> begin
-        let x = T.dalpha env.cpt_alpha in
-        let env = inc_cpt_alpha env in
-        f env ((a, Duop (Usize, x))::accu) it (x::st)
-      end
-
-    | T.NOW::it,      a::st         -> interp_zop Znow a it st
-    | T.AMOUNT::it,   a::st         -> interp_zop Zamount a it st
-    | T.BALANCE::it,  a::st         -> interp_zop Zbalance a it st
-    | T.SOURCE::it,   a::st         -> interp_zop Zsource a it st
-    | T.SENDER::it,   a::st         -> interp_zop Zsender a it st
-    | T.ADDRESS::it,  a::st         -> interp_zop Zaddress a it st
-
-    | T.CHAIN_ID::it, a::st         -> interp_zop Zchain_id a it st
-    | T.CHAIN_ID::_, _              -> emit_error ()
-    (* | T.SELF_ADDRESS::it, a::st    -> interp_zop Zself_address a it st *)
-    | T.NONE t::it,   a::st         -> interp_zop (Znone t) a it st
-    | T.NONE _::_, _                -> emit_error ()
-
-    | [], [Dbop (Bpair, a, b)] -> (T.Dparameter tparameter, a)::(T.Dinitstorage tstorage, b)::accu, stack
-    | [], _   -> accu, stack
-    | _ -> assert false
   in
 
   let env = mk_ir_env () in
@@ -281,7 +403,6 @@ let to_model (ir, env : T.ir * env) : M.model * env =
     | Dnone            -> assert false
     | Dlist  _l        -> assert false
     | Dplist _l        -> assert false
-    | Dvar id          -> M.mk_pvar (dumloc id) M.tunit
   in
 
   let rec for_instr (i : T.instruction) : M.mterm =
@@ -301,15 +422,20 @@ let to_model (ir, env : T.ir * env) : M.model * env =
     | Iiter (_ids, _c, _b)         -> assert false
     | Izop op -> begin
         match op with
-        | Znow                -> assert false
-        | Zamount             -> assert false
-        | Zbalance            -> assert false
-        | Zsource             -> assert false
-        | Zsender             -> assert false
-        | Zaddress            -> assert false
-        | Zchain_id           -> assert false
-        | Zself_address       -> assert false
-        | Znone _t            -> assert false
+        | Znow                  -> assert false
+        | Zamount               -> assert false
+        | Zbalance              -> assert false
+        | Zsource               -> assert false
+        | Zsender               -> assert false
+        | Zaddress              -> assert false
+        | Zchain_id             -> assert false
+        | Zself_address         -> assert false
+        | Znone _t              -> assert false
+        | Zunit                 -> assert false
+        | Znil _t               -> assert false
+        | Zemptyset _t          -> assert false
+        | Zemptymap (_k, _v)    -> assert false
+        | Zemptybigmap (_k, _v) -> assert false
       end
     | Iunop (op, _e) -> begin
         match op with
@@ -350,6 +476,12 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         | Bconcat    -> assert false
         | Bcons      -> assert false
         | Bpair      -> assert false
+        | Beq        -> assert false
+        | Bne        -> assert false
+        | Bgt        -> assert false
+        | Bge        -> assert false
+        | Blt        -> assert false
+        | Ble        -> assert false
       end
     | Iterop (op, _a1, _a2, _a3) -> begin
         match op with

@@ -50,7 +50,6 @@ type data =
   | Dnone
   | Dlist              of data list
   | Dplist             of (data * data) list
-  | Dvar               of string (* for symbolic execution *)
 [@@deriving show {with_path = false}]
 
 type code =
@@ -164,6 +163,11 @@ type z_operator =
   | Zchain_id
   | Zself_address
   | Znone of type_
+  | Zunit
+  | Znil       of type_
+  | Zemptyset  of type_
+  | Zemptymap  of type_ * type_
+  | Zemptybigmap  of type_ * type_
 [@@deriving show {with_path = false}]
 
 type un_operator =
@@ -204,6 +208,12 @@ type bin_operator =
   | Bconcat
   | Bcons
   | Bpair
+  | Beq
+  | Bne
+  | Bgt
+  | Bge
+  | Blt
+  | Ble
 [@@deriving show {with_path = false}]
 
 type ter_operator =
@@ -365,27 +375,31 @@ let tlambda t1 t2 = mk_type (Tlambda (t1, t2))
 
 (* -------------------------------------------------------------------- *)
 
-let itrue      = Iconst (tbool,    Dtrue)
-let ifalse     = Iconst (tbool,    Dfalse)
-let iint n     = Iconst (tint,     Dint n)
-let inat n     = Iconst (tnat,     Dint n)
-let istring s  = Iconst (tstring,  Dstring s)
-let imutez  v  = Iconst (tmutez,   Dint v)
-let isome   s  = Iunop  (Usome, s)
-let inone   t  = Izop   (Znone t)
-let iunit      = Iconst (tunit, Dunit)
-let icar x     = Iunop  (Ucar, x)
-let icdr x     = Iunop  (Ucdr, x)
-let ifail msg  = Iunop (Ufail, istring msg)
-let iskip      = Iseq []
-let ileft t x  = Iunop  (Uleft t, x)
-let iright t x = Iunop  (Uright t, x)
-let ieq  l r   = Icompare (Ceq, l, r)
-let iadd l r   = Ibinop (Badd, l, r)
-let isub l r   = Ibinop (Bsub, l, r)
-let imul l r   = Ibinop (Bmul, l, r)
-let idiv l r   = Iifnone (Ibinop (Bediv, l, r), ifail "DivByZero", "_var_ifnone", icar (Ivar ("_var_ifnone")) )
-let imod l r   = Iifnone (Ibinop (Bediv, l, r), ifail "DivByZero", "_var_ifnone", icdr (Ivar ("_var_ifnone")) )
+let itrue            = Iconst (tbool,    Dtrue)
+let ifalse           = Iconst (tbool,    Dfalse)
+let iint n           = Iconst (tint,     Dint n)
+let inat n           = Iconst (tnat,     Dint n)
+let istring s        = Iconst (tstring,  Dstring s)
+let imutez  v        = Iconst (tmutez,   Dint v)
+let isome   s        = Iunop  (Usome, s)
+let inone   t        = Izop   (Znone t)
+let iunit            = Izop    Zunit
+let inil t           = Izop (Znil t)
+let iemptyset t      = Izop (Zemptyset t)
+let iemptymap k v    = Izop (Zemptymap (k, v))
+let iemptybigmap k v = Izop (Zemptybigmap (k, v))
+let icar x           = Iunop  (Ucar, x)
+let icdr x           = Iunop  (Ucdr, x)
+let ifail msg        = Iunop (Ufail, istring msg)
+let iskip            = Iseq []
+let ileft t x        = Iunop  (Uleft t, x)
+let iright t x       = Iunop  (Uright t, x)
+let ieq  l r         = Icompare (Ceq, l, r)
+let iadd l r         = Ibinop (Badd, l, r)
+let isub l r         = Ibinop (Bsub, l, r)
+let imul l r         = Ibinop (Bmul, l, r)
+let idiv l r         = Iifnone (Ibinop (Bediv, l, r), ifail "DivByZero", "_var_ifnone", icar (Ivar ("_var_ifnone")) )
+let imod l r         = Iifnone (Ibinop (Bediv, l, r), ifail "DivByZero", "_var_ifnone", icdr (Ivar ("_var_ifnone")) )
 
 (* -------------------------------------------------------------------- *)
 
@@ -586,7 +600,6 @@ let map_data (f : data -> data) = function
   | Dnone        -> Dnone
   | Dlist l      -> Dlist (List.map f l)
   | Dplist l     -> Dplist (List.map (fun (x, y) -> f x, f y) l)
-  | Dvar v       -> Dvar v
 
 let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) = function
   | SEQ l                   -> SEQ (List.map fc l)

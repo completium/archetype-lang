@@ -63,7 +63,6 @@ let rec pp_data fmt (d : data) =
   | Dnone           -> Format.fprintf fmt "None"
   | Dlist l         -> Format.fprintf fmt "{ %a }" (pp_list "; " pp_data) l
   | Dplist l        -> Format.fprintf fmt "{ %a }" (pp_list "; " (fun fmt (x, y) -> Format.fprintf fmt "Elt %a %a" pp_data x pp_data y)) l
-  | Dvar id         -> Format.fprintf fmt "var(%s)" id
 
 let rec pp_code fmt (i : code) =
   let pp s = Format.fprintf fmt s in
@@ -192,15 +191,20 @@ let rec pp_instruction fmt (i : instruction) =
   | Iiter (ids, c, b)        -> pp "iter %a on (%a) do@\n  @[%a@]@\ndone" (pp_list ", " pp_id) ids f c f b
   | Izop op -> begin
       match op with
-      | Znow               -> pp_id fmt "now"
-      | Zamount            -> pp_id fmt "amount"
-      | Zbalance           -> pp_id fmt "balance"
-      | Zsource            -> pp_id fmt "source"
-      | Zsender            -> pp_id fmt "sender"
-      | Zaddress           -> pp_id fmt "address"
-      | Zchain_id          -> pp_id fmt "chain_id"
-      | Zself_address      -> pp_id fmt "self_address"
-      | Znone t            -> Format.fprintf fmt "none(%a)" pp_type t
+      | Znow                -> pp_id fmt "now"
+      | Zamount             -> pp_id fmt "amount"
+      | Zbalance            -> pp_id fmt "balance"
+      | Zsource             -> pp_id fmt "source"
+      | Zsender             -> pp_id fmt "sender"
+      | Zaddress            -> pp_id fmt "address"
+      | Zchain_id           -> pp_id fmt "chain_id"
+      | Zself_address       -> pp_id fmt "self_address"
+      | Znone t             -> Format.fprintf fmt "none(%a)" pp_type t
+      | Zunit               -> pp_id fmt "unit"
+      | Znil t              -> pp        "nil(%a)" pp_type t
+      | Zemptyset t         -> pp        "emptyset(%a)" pp_type t
+      | Zemptymap (k, v)    -> pp        "emptymap(%a, %a)" pp_type k pp_type v
+      | Zemptybigmap (k, v) -> pp        "emptybigmap(%a, %a)" pp_type k pp_type v
     end
   | Iunop (op, e) -> begin
       match op with
@@ -241,6 +245,12 @@ let rec pp_instruction fmt (i : instruction) =
       | Bconcat    -> pp "concat(%a, %a)"    f lhs f rhs
       | Bcons      -> pp "cons(%a, %a)"      f lhs f rhs
       | Bpair      -> pp "pair(%a, %a)"      f lhs f rhs
+      | Beq        -> pp "eq(%a, %a)"        f lhs f rhs
+      | Bne        -> pp "ne(%a, %a)"        f lhs f rhs
+      | Bgt        -> pp "gt(%a, %a)"        f lhs f rhs
+      | Bge        -> pp "ge(%a, %a)"        f lhs f rhs
+      | Blt        -> pp "lt(%a, %a)"        f lhs f rhs
+      | Ble        -> pp "le(%a, %a)"        f lhs f rhs
     end
   | Iterop (op, a1, a2, a3) -> begin
       match op with
@@ -320,15 +330,20 @@ let rec pp_dexpr fmt (de : dexpr) =
   | Ddata d            -> pp "data(%a)" pp_data d
   | Dzop op -> begin
       match op with
-      | Znow               -> pp_id fmt "now"
-      | Zamount            -> pp_id fmt "amount"
-      | Zbalance           -> pp_id fmt "balance"
-      | Zsource            -> pp_id fmt "source"
-      | Zsender            -> pp_id fmt "sender"
-      | Zaddress           -> pp_id fmt "address"
-      | Zchain_id          -> pp_id fmt "chain_id"
-      | Zself_address      -> pp_id fmt "self_address"
-      | Znone t            -> Format.fprintf fmt "none(%a)" pp_type t
+      | Znow                -> pp_id fmt "now"
+      | Zamount             -> pp_id fmt "amount"
+      | Zbalance            -> pp_id fmt "balance"
+      | Zsource             -> pp_id fmt "source"
+      | Zsender             -> pp_id fmt "sender"
+      | Zaddress            -> pp_id fmt "address"
+      | Zchain_id           -> pp_id fmt "chain_id"
+      | Zself_address       -> pp_id fmt "self_address"
+      | Znone t             -> pp        "none(%a)" pp_type t
+      | Zunit               -> pp_id fmt "unit"
+      | Znil t              -> pp        "nil(%a)" pp_type t
+      | Zemptyset t         -> pp        "emptyset(%a)" pp_type t
+      | Zemptymap (k, v)    -> pp        "emptymap(%a, %a)" pp_type k pp_type v
+      | Zemptybigmap (k, v) -> pp        "emptybigmap(%a, %a)" pp_type k pp_type v
     end
   | Duop (op, e) -> begin
       match op with
@@ -369,6 +384,12 @@ let rec pp_dexpr fmt (de : dexpr) =
       | Bconcat    -> pp "concat(%a, %a)"    f lhs f rhs
       | Bcons      -> pp "cons(%a, %a)"      f lhs f rhs
       | Bpair      -> pp "pair(%a, %a)"      f lhs f rhs
+      | Beq        -> pp "eq(%a, %a)"        f lhs f rhs
+      | Bne        -> pp "ne(%a, %a)"        f lhs f rhs
+      | Bgt        -> pp "gt(%a, %a)"        f lhs f rhs
+      | Bge        -> pp "ge(%a, %a)"        f lhs f rhs
+      | Blt        -> pp "lt(%a, %a)"        f lhs f rhs
+      | Ble        -> pp "le(%a, %a)"        f lhs f rhs
     end
   | Dtop (op, a1, a2, a3) -> begin
       match op with

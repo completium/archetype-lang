@@ -1083,15 +1083,20 @@ let to_michelson (ir : T.ir) : T.michelson =
     | Izop op -> begin
         let c =
           match op with
-          | Znow          -> T.NOW
-          | Zamount       -> T.AMOUNT
-          | Zbalance      -> T.BALANCE
-          | Zsource       -> T.SOURCE
-          | Zsender       -> T.SENDER
-          | Zaddress      -> T.ADDRESS
-          | Zchain_id     -> T.CHAIN_ID
-          | Zself_address -> T.SEQ [T.SELF; T.ADDRESS]
-          | Znone t       -> T.NONE t
+          | Znow                -> T.NOW
+          | Zamount             -> T.AMOUNT
+          | Zbalance            -> T.BALANCE
+          | Zsource             -> T.SOURCE
+          | Zsender             -> T.SENDER
+          | Zaddress            -> T.ADDRESS
+          | Zchain_id           -> T.CHAIN_ID
+          | Zself_address       -> T.SEQ [T.SELF; T.ADDRESS]
+          | Znone t             -> T.NONE t
+          | Zunit               -> T.UNIT
+          | Znil t              -> T.NIL t
+          | Zemptyset t         -> T.EMPTY_SET t
+          | Zemptymap (k, v)    -> T.EMPTY_MAP (k, v)
+          | Zemptybigmap (k, v) -> T.EMPTY_BIG_MAP (k, v)
         in
         c, inc_env env
       end
@@ -1140,6 +1145,12 @@ let to_michelson (ir : T.ir) : T.michelson =
           | Bconcat    -> T.CONCAT
           | Bcons      -> T.CONS
           | Bpair      -> T.PAIR
+          | Beq        -> T.EQ
+          | Bne        -> T.NEQ
+          | Bgt        -> T.GT
+          | Bge        -> T.GE
+          | Blt        -> T.LT
+          | Ble        -> T.LE
         in
         let rhs, env = fe env rhs in
         let lhs, env = fe env lhs in
