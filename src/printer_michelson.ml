@@ -400,7 +400,7 @@ let rec pp_dexpr fmt (de : dexpr) =
     end
 
 let pp_equation fmt ((a, b) : equation) =
-  Format.fprintf fmt "%a = %a" pp_dexpr a pp_dexpr b
+  Format.fprintf fmt "%a <- %a" pp_dexpr a pp_dexpr b
 
 let pp_sysofequations fmt (s : sysofequations) =
   (pp_list "@\n" pp_equation) fmt s

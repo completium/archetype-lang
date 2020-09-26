@@ -80,9 +80,9 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
         Format.fprintf fmt "%i. %a@\n" i Printer_michelson.pp_dexpr c) st
   in
 
-  let pp_trace fmt (instr, stack, _sys : T.code * (T.dexpr) list * T.sysofequations) =
+  let pp_trace fmt (instr, stack, sys : T.code * (T.dexpr) list * T.sysofequations) =
     Format.fprintf fmt "@\nstack:@\n%a" pp_stack stack;
-    (* Format.fprintf fmt "@\nsys:@\n%a@\n" Printer_michelson.pp_sysofequations sys; *)
+    Format.fprintf fmt "@\nsys:@\n%a@\n@\n" Printer_michelson.pp_sysofequations sys;
     Format.fprintf fmt "@\ninstr: %a@." Printer_michelson.pp_code instr
 
   in
