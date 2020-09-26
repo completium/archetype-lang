@@ -332,6 +332,7 @@ type dexpr =
   | Duop of un_operator  * dexpr
   | Dbop of bin_operator * dexpr * dexpr
   | Dtop of ter_operator * dexpr * dexpr * dexpr
+  | Dif  of dexpr * dexpr * dexpr    (* conditon * val_if_true * val_if_false *)
 [@@deriving show {with_path = false}]
 
 type equation = dexpr * dexpr

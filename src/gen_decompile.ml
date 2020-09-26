@@ -172,7 +172,11 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
       end
     | T.EXEC::_        -> assert false
     | T.FAILWITH::_    -> assert false
-    | T.IF _::_        -> assert false
+    | T.IF (_th, _el)::_it -> begin
+        match stack with
+        | _a::_ -> assert false
+        | _ -> emit_error ()
+      end
     | T.IF_CONS _::_   -> assert false
     | T.IF_LEFT _::_   -> assert false
     | T.IF_NONE _::_   -> assert false

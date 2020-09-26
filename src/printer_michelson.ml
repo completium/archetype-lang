@@ -398,6 +398,7 @@ let rec pp_dexpr fmt (de : dexpr) =
       | Tupdate          -> pp "update(%a, %a, %a)"          f a1 f a2 f a3
       | Ttransfer_tokens -> pp "transfer_tokens(%a, %a, %a)" f a1 f a2 f a3
     end
+  | Dif (c, t, e)        -> pp "if(%a, %a, %a)" f c f t f e
 
 let pp_equation fmt ((a, b) : equation) =
   Format.fprintf fmt "%a <- %a" pp_dexpr a pp_dexpr b
