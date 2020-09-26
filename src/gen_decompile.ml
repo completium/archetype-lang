@@ -99,7 +99,7 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
       done
     in
     match !Options.opt_trace, instrs with
-    | true, i::_ -> Format.eprintf "%a@[%a@]" print_indent env.deep (pp_trace ~with_instr:with_instr) (i, stack, sys)
+    | true, i::_ -> Format.eprintf "%a@[%a@]@." print_indent env.deep (pp_trace ~with_instr:with_instr) (i, stack, sys)
     | _ -> ()
   in
 
