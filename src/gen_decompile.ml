@@ -104,7 +104,10 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
   in
 
   let add_equation sys (a, b) =
-    (a, b)::sys
+    match a, b with
+    | T.Dbop (Bpair, a1, b1), T.Dbop (Bpair, a2, b2) -> (a1, a2)::(b1, b2)::sys
+    (* | T.Dbop (Bpair, a1, b1), T.Dparameter (T.Dbop (Bpair, a2, b2)) -> (a1, a2)::(b1, b2)::sys *)
+    | _ -> (a, b)::sys
   in
 
   let rec interp (env : ir_env) (accu : T.sysofequations) (instrs : T.code list) (stack : (T.dexpr) list) =
@@ -244,10 +247,13 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
       end
 
     | T.PUSH (_t, d)::it -> begin
-        let data = d in
-        let stack, eq = match stack with | a::t -> t, (a, T.Ddata data) | _ -> assert false in
-        let accu = eq::accu in
-        f env accu it stack
+        match stack with
+        | a::t -> begin
+            let data = d in
+            let accu = add_equation accu (a, T.Ddata data) in
+            f env accu it t
+          end
+        | _ -> emit_error ()
       end
 
     | T.SWAP::it -> begin
@@ -355,22 +361,19 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
     | CREATE_ACCOUNT::_  -> assert false
     | RENAME::_          -> assert false
     | STEPS_TO_QUOTA::_  -> assert false
-
-
-
-    | [] -> begin
-        match stack with
-        | [Dbop (Bpair, a, b)] -> (a, T.Dparameter tparameter)::(b, T.Dinitstorage tstorage)::accu, stack, env
-        | _ -> accu, stack, env
-      end
+    | [] -> accu, stack, env
   in
 
   let env = mk_ir_env () in
   let init_stack : (T.dexpr) list = T.[Dbop (Bpair, Doperations, Dstorage tstorage)] in
   let sys, stack, env = interp env [] [michelson.code] init_stack in
   trace env [] stack sys;
-
-  Format.printf "@\n@\nsys:@\n%a@." Printer_michelson.pp_sysofequations sys
+  let sys =
+    match stack with
+    | [x] -> add_equation sys (x, Dbop (Bpair, T.Dparameter tparameter, T.Dinitstorage tstorage))
+    | _ -> assert false
+  in
+  Format.printf "%a@." (pp_trace ~with_instr:false) (T.SEQ [], [], sys)
 
 
 let to_model (ir, env : T.ir * env) : M.model * env =
