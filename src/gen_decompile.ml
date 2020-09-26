@@ -84,22 +84,27 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
         Format.fprintf fmt "%i. %a@\n" i Printer_michelson.pp_dexpr c) st
   in
 
-  let pp_trace fmt (instr, stack, sys : T.code * (T.dexpr) list * T.sysofequations) =
-    Format.fprintf fmt "@\nsys:@\n%a@\n@\n" Printer_michelson.pp_sysofequations sys;
+  let pp_trace ?(with_instr=true) fmt (instr, stack, _sys : T.code * (T.dexpr) list * T.sysofequations) =
+    (* Format.fprintf fmt "@\nsys:@\n%a@\n@\n" Printer_michelson.pp_sysofequations sys; *)
     Format.fprintf fmt "@\nstack:@\n%a" pp_stack stack;
-    Format.fprintf fmt "@\ninstr: %a@." Printer_michelson.pp_code instr
+    if with_instr
+    then Format.fprintf fmt "@\ninstr: %a@." Printer_michelson.pp_code instr
 
   in
 
-  let trace (env : ir_env) (instrs : T.code list) (stack : (T.dexpr) list)  (sys : T.sysofequations) =
+  let trace ?(with_instr=true) (env : ir_env) (instrs : T.code list) (stack : (T.dexpr) list)  (sys : T.sysofequations) =
     let print_indent fmt n =
       for _i = 1 to n do
         Format.fprintf fmt "  "
       done
     in
     match !Options.opt_trace, instrs with
-    | true, i::_ -> Format.eprintf "%a@[%a@]" print_indent env.deep pp_trace (i, stack, sys)
+    | true, i::_ -> Format.eprintf "%a@[%a@]" print_indent env.deep (pp_trace ~with_instr:with_instr) (i, stack, sys)
     | _ -> ()
+  in
+
+  let add_equation sys (a, b) =
+    (a, b)::sys
   in
 
   let rec interp (env : ir_env) (accu : T.sysofequations) (instrs : T.code list) (stack : (T.dexpr) list) =
@@ -107,7 +112,7 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
 
     let emit_error _ =
       match instrs with
-      | i::_ -> Format.eprintf "error:@\n %a@." pp_trace (i, stack, accu); assert false
+      | i::_ -> Format.eprintf "error:@\n%a@." (pp_trace ~with_instr:true) (i, stack, accu); assert false
       | _ -> assert false
     in
 
@@ -122,7 +127,7 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
       | a::st -> begin
           let x = T.dalpha env.cpt_alpha in
           let env = inc_cpt_alpha env in
-          f env ((a, Duop (op, x))::accu) it (x::st)
+          f env (add_equation accu (a, Duop (op, x))) it (x::st)
         end
       | _ -> emit_error ()
     in
@@ -134,7 +139,7 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
           let env = inc_cpt_alpha env in
           let y = T.dalpha env.cpt_alpha in
           let env = inc_cpt_alpha env in
-          f env ((a, Dbop (op, x, y))::accu) it (x::y::st)
+          f env (add_equation accu (a, Dbop (op, x, y))) it (x::y::st)
         end
       | _ -> emit_error ()
     in
@@ -148,7 +153,7 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
           let env = inc_cpt_alpha env in
           let z = T.dalpha env.cpt_alpha in
           let env = inc_cpt_alpha env in
-          f env ((a, Dtop (op, x, y, z))::accu) it (x::y::z::st)
+          f env (add_equation accu (a, Dtop (op, x, y, z))) it (x::y::z::st)
         end
       | _ -> emit_error ()
     in
@@ -204,8 +209,8 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
         in
         let env = inc_deep env in
         let accu, stack, env = interp env accu (List.rev instrs) bst in
+        trace ~with_instr:false env instrs stack accu;
         let env = dec_deep env in
-        trace env instrs stack accu;
         f env accu it (ast @ stack)
       end
 
@@ -234,7 +239,7 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
 
     | T.DUP::it -> begin
         match stack with
-        | a::b::st -> f env ((a, b)::accu) it (b::st)
+        | a::b::st -> f env (add_equation accu (a, b)) it (b::st)
         | _ -> emit_error ()
       end
 
