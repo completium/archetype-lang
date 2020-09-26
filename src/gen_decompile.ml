@@ -172,10 +172,17 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
       end
     | T.EXEC::_        -> assert false
     | T.FAILWITH::_    -> assert false
-    | T.IF (_th, _el)::_it -> begin
-        match stack with
-        | _a::_ -> assert false
-        | _ -> emit_error ()
+    | T.IF (th, el)::it -> begin
+        let env = inc_deep env in
+        let sys_else, _stack_else, _env = interp env [] (List.rev el) stack in
+        let sys_then, _stack_then, _env = interp env [] (List.rev th) stack in
+
+        Format.eprintf "sys_else:@\n%a@\n@\n" Printer_michelson.pp_sysofequations sys_else;
+        Format.eprintf "sys_then:@\n%a@\n@\n" Printer_michelson.pp_sysofequations sys_then;
+
+        let x = T.dalpha env.cpt_alpha in
+        let env = inc_cpt_alpha env in
+        f env accu it (x::stack)
       end
     | T.IF_CONS _::_   -> assert false
     | T.IF_LEFT _::_   -> assert false
