@@ -1004,8 +1004,10 @@ let mk_some x = mk_mterm (Msome x) (toption x.type_)
 
 let mk_none t = mk_mterm (Mnone) (toption t)
 
-let fail x = mk_mterm (Mfail (Invalid (mk_string x))) tunit
-let mnot x = mk_mterm (Mnot x) tbool
+let fail x  = mk_mterm (Mfail (Invalid (mk_string x))) tunit
+let failg x = mk_mterm (Mfail (Invalid (x))) tunit
+let mnot x  = mk_mterm (Mnot x) tbool
+let seq x   = mk_mterm (Mseq x) tunit
 
 (* -------------------------------------------------------------------- *)
 

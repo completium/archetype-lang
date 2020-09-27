@@ -335,34 +335,48 @@ type dexpr =
 [@@deriving show {with_path = false}]
 
 type dinstruction =
-| Dassign of dexpr * dexpr
-| Dif     of dexpr * dinstruction list * dinstruction list
-| Dfail   of dexpr
+  | Dassign of dexpr * dexpr
+  | Dif     of dexpr * dinstruction list * dinstruction list
+  | Dfail   of dexpr
+[@@deriving show {with_path = false}]
 
 type sysofequations = dinstruction list
+[@@deriving show {with_path = false}]
 
 type dstack = {
   fail:  bool;
   stack: dexpr list;
 }
+[@@deriving show {with_path = false}]
+
+type dprogram = {
+  name: ident;
+  storage: type_;
+  parameter: type_;
+  storage_data: data;
+  code: dinstruction list;
+}
+[@@deriving show {with_path = false}]
 
 (* -------------------------------------------------------------------- *)
 
 let mk_type ?annotation node : type_ =
-  {node; annotation}
+  { node; annotation }
 
 let mk_func name targ tret body : func =
-  {name; targ; tret; body}
+  { name; targ; tret; body }
 
 let mk_entry name args eargs body : entry =
-  {name; args; eargs; body}
+  { name; args; eargs; body }
 
 let mk_ir storage_type storage_data storage_list ?(with_operations = false) parameter funs entries : ir =
-  {storage_type; storage_data; storage_list; with_operations; parameter; funs; entries}
+  { storage_type; storage_data; storage_list; with_operations; parameter; funs; entries }
 
 let mk_michelson storage parameter code =
   { storage; parameter; code }
 
+let mk_dprogram storage parameter storage_data name code =
+  { name; storage;  parameter; storage_data;code }
 
 (* -------------------------------------------------------------------- *)
 

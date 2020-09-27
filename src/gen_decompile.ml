@@ -24,58 +24,30 @@ let parse_michelson (filename, ic) : T.michelson * env =
   | [] -> res
   | _ -> raise (Error.ParseError !Error.errors)
 
-let to_ir (michelson, env : T.michelson * env) : T.ir * env =
-  let storage_type = michelson.storage in
-  let parameter    = michelson.parameter in
+type ir_env = {
+  cpt_alpha: int;
+  deep:      int;
+  fail:      bool;
+}
+
+let mk_ir_env ?(cpt_alpha=0) ?(deep=0) ?(fail=false) _ : ir_env =
+  { cpt_alpha; deep; fail }
+
+let inc_deep (env : ir_env) : ir_env = { env with deep = env.deep + 1 }
+let dec_deep (env : ir_env) : ir_env = { env with deep = env.deep - 1 }
+
+let to_ir (michelson, env : T.michelson * env) =
+  let tstorage   = michelson.storage in
+  let tparameter = michelson.parameter in
+
   let storage_data =
-    match storage_type.node with
+    match tstorage.node with
+    | T.Tunit   -> T.Dunit
     | T.Tnat
     | T.Tint    -> T.Dint Big_int.zero_big_int
     | T.Tstring -> T.Dstring ""
-    | _ -> assert false
+    | _ -> T.Dunit (* FIXME*)
   in
-  let storage_list = [] in
-  let funs = [] in
-  let rec interp instrs (stack : (T.data * T.type_) list) =
-    let f = interp in
-    match instrs, stack with
-    | T.SEQ l::it, _       -> f (l @ it) stack
-    | T.DROP n::it, _      -> f it (Tools.foldi (fun x -> match x with | _::st -> st | _ -> assert false) stack n)
-    | T.SWAP::it, a::b::st -> f it (b::a::st)
-    | T.PUSH (t, d)::it, _ -> f it ((d, t)::stack)
-    | T.NIL t::it, _       -> f it ((Dlist [], T.tlist t)::stack)
-    | T.PAIR::it, a::b::st -> f it ((Dpair (fst a, fst b), (T.tpair (snd a) (snd b)))::st)
-    | T.UNPAIR::it, (T.Dpair (a, b), {node = T.Tpair (ta, tb)})::st -> f it ((a, ta)::(b, tb)::st)
-    | [], _ -> stack
-    | _ -> assert false
-  in
-  let init_stack : (T.data * T.type_) list = T.[Dpair (Dstring "parameter", Dstring "storage"), T.tpair parameter storage_type ] in
-  let stack = interp [michelson.code] init_stack in
-  let st, sv =
-    match stack with
-    | [T.Dpair (_, v), {node = T.Tpair (_, t)}] -> v, t
-    | _ -> assert false
-  in
-  let args = [] in
-  let body = T.Iassign ("storage", T.Iconst (sv, st)) in
-  let entries = T.[mk_entry "default" args [] body] in
-  T.mk_ir storage_type storage_data storage_list parameter funs entries, env
-
-
-type ir_env = {
-  cpt_alpha : int;
-  deep:       int;
-}
-
-let mk_ir_env ?(cpt_alpha=0) ?(deep=0) _ : ir_env =
-  { cpt_alpha; deep }
-
-let inc_deep env = { env with deep = env.deep + 1 }
-let dec_deep env = { env with deep = env.deep - 1 }
-
-let to_ir2 (michelson, _ : T.michelson * 'a) =
-  let tstorage   = michelson.storage in
-  let tparameter = michelson.parameter in
 
   let inc_cpt_alpha env = { env with cpt_alpha = env.cpt_alpha + 1 } in
 
@@ -171,18 +143,31 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
         f env sys (it @ List.rev l) stack
       end
     | T.EXEC::_        -> assert false
-    | T.FAILWITH::_    -> assert false
+    | T.FAILWITH::it   -> begin
+        let env = {env with fail = true} in
+        let x = T.dalpha env.cpt_alpha in
+        let env = inc_cpt_alpha env in
+        f env (add_instruction sys (T.Dfail x)) it (x::stack)
+      end
     | T.IF (th, el)::it -> begin
         let env = inc_deep env in
-        let sys_else, _stack_else, _env = interp env [] (List.rev el) stack in
-        let sys_then, stack_then, _env = interp env [] (List.rev th) stack in
+        let sys_then, stack_then, env_then = interp env [] (List.rev th) stack in
+        let sys_else, stack_else, env_else = interp env [] (List.rev el) stack in
+
+        let stack =
+          match env_then.fail, env_else.fail with
+          | false, false -> stack_then
+          | true,  false -> stack_else
+          | false, true  -> stack_then
+          | true,  true  -> assert false
+        in
 
         let x = T.dalpha env.cpt_alpha in
         let env = inc_cpt_alpha env in
 
         let accu = add_instruction sys (T.Dif (x, sys_then, sys_else)) in
 
-        f env accu it (x::stack_then)
+        f env accu it (x::stack)
       end
     | T.IF_CONS _::_   -> assert false
     | T.IF_LEFT _::_   -> assert false
@@ -375,19 +360,20 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
     | [] -> sys, stack, env
   in
 
-  let env = mk_ir_env () in
+  let name = env.name in
+  let irenv = mk_ir_env () in
   let init_stack : (T.dexpr) list = T.[Dbop (Bpair, Doperations, Dstorage tstorage)] in
-  let sys, stack, env = interp env [] [michelson.code] init_stack in
-  trace env [] stack sys;
+  let sys, stack, irenv = interp irenv [] [michelson.code] init_stack in
+  trace irenv [] stack sys;
   let sys =
     match stack with
     | [x] -> add_instruction sys (T.Dassign (x, Dbop (Bpair, T.Dparameter tparameter, T.Dinitstorage tstorage)))
     | _ -> assert false
   in
-  Format.printf "%a@." pp_trace (None, [], sys)
+  (T.mk_dprogram tstorage tparameter storage_data name sys), env
 
 
-let to_model (ir, env : T.ir * env) : M.model * env =
+let to_model (dir, env : T.dprogram * env) : M.model * env =
 
   let rec for_type (t : T.type_) : M.type_ =
     let f = for_type in
@@ -436,124 +422,53 @@ let to_model (ir, env : T.ir * env) : M.model * env =
     | Dplist _l        -> assert false
   in
 
-  let rec for_instr (i : T.instruction) : M.mterm =
+  let for_expr (e : T.dexpr) : M.mterm =
+    (* let f = for_expr in *)
+    match e with
+    | Dalpha _i              -> assert false
+    | Dinitstorage _t        -> assert false
+    | Dparameter _t          -> assert false
+    | Dstorage _t            -> assert false
+    | Doperations            -> assert false
+    | Ddata _d               -> assert false
+    | Dzop _op               -> assert false
+    | Duop (_op, _a)         -> assert false
+    | Dbop (_op, _a, _b)     -> assert false
+    | Dtop (_op, _a, _b, _c) -> assert false
+  in
+
+  let rec for_instr (i : T.dinstruction) : M.mterm =
     let f = for_instr in
+    let seq x = M.seq (List.map f x) in
     match i with
-    | Iseq []                      -> assert false
-    | Iseq _l                      -> assert false
-    | IletIn (_id, _v, _b, _)      -> assert false
-    | Ivar _id                     -> assert false
-    | Icall (_id, _args, _)        -> assert false
-    | Iassign (id, v)              -> M.mk_mterm (M.Massign (ValueAssign, M.tunit, Avarstore (dumloc id), f v)) M.tunit
-    | IassignRec (_id, _s, _n, _v) -> assert false
-    | Iif (_c, _t, _e, _)          -> assert false
-    | Iifnone (_v, _t, _id, _s)    -> assert false
-    | Iifcons (_v, _t, _e)         -> assert false
-    | Iwhile (_c, _b)              -> assert false
-    | Iiter (_ids, _c, _b)         -> assert false
-    | Izop op -> begin
-        match op with
-        | Znow                  -> assert false
-        | Zamount               -> assert false
-        | Zbalance              -> assert false
-        | Zsource               -> assert false
-        | Zsender               -> assert false
-        | Zaddress              -> assert false
-        | Zchain_id             -> assert false
-        | Zself_address         -> assert false
-        | Znone _t              -> assert false
-        | Zunit                 -> assert false
-        | Znil _t               -> assert false
-        | Zemptyset _t          -> assert false
-        | Zemptymap (_k, _v)    -> assert false
-        | Zemptybigmap (_k, _v) -> assert false
-      end
-    | Iunop (op, _e) -> begin
-        match op with
-        | Ucar               -> assert false
-        | Ucdr               -> assert false
-        | Uleft  _t          -> assert false
-        | Uright _t          -> assert false
-        | Uneg               -> assert false
-        | Uint               -> assert false
-        | Unot               -> assert false
-        | Uabs               -> assert false
-        | Uisnat             -> assert false
-        | Usome              -> assert false
-        | Usize              -> assert false
-        | Upack              -> assert false
-        | Uunpack _t         -> assert false
-        | Ublake2b           -> assert false
-        | Usha256            -> assert false
-        | Usha512            -> assert false
-        | Uhash_key          -> assert false
-        | Ufail              -> assert false
-        | Ucontract (_t, _a) -> assert false
-      end
-    | Ibinop (op, _lhs, _rhs) -> begin
-        match op with
-        | Badd       -> assert false
-        | Bsub       -> assert false
-        | Bmul       -> assert false
-        | Bediv      -> assert false
-        | Blsl       -> assert false
-        | Blsr       -> assert false
-        | Bor        -> assert false
-        | Band       -> assert false
-        | Bxor       -> assert false
-        | Bcompare   -> assert false
-        | Bget       -> assert false
-        | Bmem       -> assert false
-        | Bconcat    -> assert false
-        | Bcons      -> assert false
-        | Bpair      -> assert false
-        | Beq        -> assert false
-        | Bne        -> assert false
-        | Bgt        -> assert false
-        | Bge        -> assert false
-        | Blt        -> assert false
-        | Ble        -> assert false
-      end
-    | Iterop (op, _a1, _a2, _a3) -> begin
-        match op with
-        | Tcheck_signature -> assert false
-        | Tslice           -> assert false
-        | Tupdate          -> assert false
-        | Ttransfer_tokens -> assert false
-      end
-    | Icompare (op, _lhs, _rhs) -> begin
-        match op with
-        | Ceq        -> assert false
-        | Cne        -> assert false
-        | Clt        -> assert false
-        | Cgt        -> assert false
-        | Cle        -> assert false
-        | Cge        -> assert false
-      end
-    | Iconst (t, d)                     -> for_data ~t:t d
-    | Iset (_t, _l)                     -> assert false
-    | Ilist (_t, _l)                    -> assert false
-    | Imap (_k, _v, _l)                 -> assert false
-    | Irecord _l                        -> assert false
-    | Irecupdate (_x, _s, _l)           -> assert false
-    | Ifold (_ix, _iy, _ia, _c, _a, _b) -> assert false
-    | Imichelson (_a, _c, _v)           -> assert false
+    | Dassign (_a, _b) -> assert false
+    | Dif (c, t, e)    -> M.mk_mterm (M.Mif (for_expr c, seq t, Some (seq e))) M.tunit
+    | Dfail e          -> M.failg (for_expr e)
   in
 
   let storage =
-    let si = M.mk_storage_item (dumloc "storage") MTvar (for_type ir.storage_type) (for_data ~t:ir.storage_type ir.storage_data) in
+    let si = M.mk_storage_item (dumloc "storage") MTvar (for_type dir.storage) (for_data ~t:dir.storage dir.storage_data) in
     [si]
   in
-  let for_entry (e : T.entry) : M.function__ =
-    let name = dumloc e.name in
+  (* let for_entry (e : T.entry) : M.function__ =
+     let name = dumloc e.name in
+     let args = [] in
+     let body = for_instr e.body in
+     let fn : M.function_struct = M.mk_function_struct name body ~args:args in
+     let node : M.function_node = M.Entry fn in
+     M.mk_function node
+     in *)
+  (* let functions = List.map for_entry ir.entries in *)
+  let mk_entry _ : M.function__ =
+    let name = dumloc "default" in
     let args = [] in
-    let body = for_instr e.body in
+    let body = M.seq (List.map for_instr dir.code) in
     let fn : M.function_struct = M.mk_function_struct name body ~args:args in
     let node : M.function_node = M.Entry fn in
     M.mk_function node
   in
-  let functions = List.map for_entry ir.entries in
-  M.mk_model (dumloc env.name) ~functions:functions ~storage:storage, env
+  let functions = [mk_entry () ] in
+  M.mk_model (dumloc dir.name) ~functions:functions ~storage:storage, env
 
 let to_archetype (model, _env : M.model * env) : A.archetype =
   let rec for_type (t : M.type_) : A.type_t =

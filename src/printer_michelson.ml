@@ -403,11 +403,24 @@ let rec pp_dinstruction fmt i =
   let seq is = (pp_list ";@\n" pp_dinstruction) is in
   match i with
   | Dassign (a, b) -> Format.fprintf fmt "%a <- %a" pp_dexpr a pp_dexpr b
-  | Dif (c, a, b)  -> Format.fprintf fmt "if (%a)@\nthen (@[%a@])@\nelse(@[%a@])" pp_dexpr c seq a seq b
+  | Dif (c, a, b)  -> Format.fprintf fmt "if (%a)@\nthen (@[%a@])@\nelse (@[%a@])" pp_dexpr c seq a seq b
   | Dfail e        -> Format.fprintf fmt "fail(%a)" pp_dexpr e
 
 let pp_sysofequations fmt (s : sysofequations) =
   (pp_list "@\n" pp_dinstruction) fmt s
+
+let pp_dprogram fmt (d : dprogram) =
+  Format.fprintf fmt
+    "{@\n  name: %s@\n  \
+     storage: %a@\n  \
+     parameter: %a@\n  \
+     storage_data: %a@\n  \
+     code:  @\n    @[%a@]@\n}"
+    d.name
+    pp_type d.storage
+    pp_type d.parameter
+    pp_data d.storage_data
+    (pp_list ";@\n" pp_dinstruction) d.code
 
 (* -------------------------------------------------------------------------- *)
 

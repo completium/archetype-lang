@@ -47,6 +47,11 @@ let output_ir (ir : Michelson.ir) =
   then Format.printf "%a@." Michelson.pp_ir ir
   else Format.printf "%a@." Printer_michelson.pp_ir ir
 
+let output_dprogram (dp : Michelson.dprogram) =
+  if !Options.opt_raw
+  then Format.printf "%a@." Michelson.pp_dprogram dp
+  else Format.printf "%a@." Printer_michelson.pp_dprogram dp
+
 let output_michelson (m : Michelson.michelson) =
   if !Options.opt_raw
   then Format.printf "%a@." Michelson.pp_michelson m
@@ -356,19 +361,11 @@ let decompile (filename, channel) =
   |> parse_michelson
   |> cont !Options.opt_mic output_michelson
   |> to_ir
-  |> cont !Options.opt_ir output_ir
+  |> cont !Options.opt_ir  output_dprogram
   |> to_model
   |> cont !Options.opt_mdl output_tmdl
   |> to_archetype
   |> output_pt
-
-let decompile2 (filename, channel) =
-  let cont c p (m, e) = if c then (p m; raise Stop); (m, e) in
-
-  (filename, channel)
-  |> parse_michelson
-  |> cont !Options.opt_mic output_michelson
-  |> to_ir2
 
 let close dispose channel =
   if dispose then close_in channel
@@ -408,7 +405,6 @@ let main () =
       "--compile", c, " Same as -c";
       "-d", Arg.Set Options.opt_decomp, "decompile from michelson";
       "--decompile", Arg.Set Options.opt_decomp, " Same as -d";
-      "-d2", Arg.Set Options.opt_decomp2, "decompile from michelson";
       "-t", Arg.String f, "<lang> Transcode to <lang> language";
       "--target", Arg.String f, " Same as -t";
       "--list-target", Arg.Unit (fun _ -> Format.printf "target available:@\n  ligo@\n  scaml (beta)@\n  whyml@\n"; exit 0), " List available target languages";
@@ -482,11 +478,10 @@ let main () =
 
   try
     begin
-      match !Options.opt_lsp, !Options.opt_service, !Options.opt_decomp, !Options.opt_decomp2 with
-      | true, _, _, _ -> Lsp.process (filename, channel)
-      | _, true, _, _ -> Services.process (filename, channel)
-      | _, _, true, _ -> decompile (filename, channel)
-      | _, _, _, true -> decompile2 (filename, channel)
+      match !Options.opt_lsp, !Options.opt_service, !Options.opt_decomp with
+      | true, _, _ -> Lsp.process (filename, channel)
+      | _, true, _ -> Services.process (filename, channel)
+      | _, _, true -> decompile (filename, channel)
       | _ -> compile (filename, channel)
     end;
     close dispose channel
