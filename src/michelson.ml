@@ -193,6 +193,12 @@ type un_operator =
   | Ucontract of type_ * ident option
   | Usetdelegate
   | Uimplicitaccount
+  | Ueq
+  | Une
+  | Ugt
+  | Uge
+  | Ult
+  | Ule
 [@@deriving show {with_path = false}]
 
 type bin_operator =
@@ -211,12 +217,6 @@ type bin_operator =
   | Bconcat
   | Bcons
   | Bpair
-  | Beq
-  | Bne
-  | Bgt
-  | Bge
-  | Blt
-  | Ble
 [@@deriving show {with_path = false}]
 
 type ter_operator =

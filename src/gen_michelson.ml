@@ -1125,6 +1125,12 @@ let to_michelson (ir : T.ir) : T.michelson =
           | Ucontract (t, a) -> T.CONTRACT (t, a)
           | Usetdelegate     -> T.SET_DELEGATE
           | Uimplicitaccount -> T.IMPLICIT_ACCOUNT
+          | Ueq              -> T.EQ
+          | Une              -> T.NEQ
+          | Ugt              -> T.GT
+          | Uge              -> T.GE
+          | Ult              -> T.LT
+          | Ule              -> T.LE
         in
         let e, env = fe env e in
         let env = match op with T.FAILWITH -> fail_env env | _ -> env in
@@ -1148,12 +1154,6 @@ let to_michelson (ir : T.ir) : T.michelson =
           | Bconcat    -> T.CONCAT
           | Bcons      -> T.CONS
           | Bpair      -> T.PAIR
-          | Beq        -> T.EQ
-          | Bne        -> T.NEQ
-          | Bgt        -> T.GT
-          | Bge        -> T.GE
-          | Blt        -> T.LT
-          | Ble        -> T.LE
         in
         let rhs, env = fe env rhs in
         let lhs, env = fe env lhs in

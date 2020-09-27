@@ -265,18 +265,18 @@ let to_dir (michelson, env : T.michelson * env) =
     | ADD::it      -> interp_bop Badd     it stack
     | COMPARE::it  -> interp_bop Bcompare it stack
     | EDIV::it     -> interp_bop Bediv    it stack
-    | EQ::it       -> interp_bop Beq      it stack
-    | GE::it       -> interp_bop Bge      it stack
-    | GT::it       -> interp_bop Bgt      it stack
+    | EQ::it       -> interp_uop Ueq      it stack
+    | GE::it       -> interp_uop Uge      it stack
+    | GT::it       -> interp_uop Ugt      it stack
     | INT::it      -> interp_uop Uint     it stack
     | ISNAT::it    -> interp_uop Uisnat   it stack
-    | LE::it       -> interp_bop Ble      it stack
+    | LE::it       -> interp_uop Ule      it stack
     | LSL::it      -> interp_bop Blsl     it stack
     | LSR::it      -> interp_bop Blsr     it stack
-    | LT::it       -> interp_bop Blt      it stack
+    | LT::it       -> interp_uop Ult      it stack
     | MUL::it      -> interp_bop Bmul     it stack
     | NEG::it      -> interp_uop Uneg     it stack
-    | NEQ::it      -> interp_bop Bne      it stack
+    | NEQ::it      -> interp_uop Une      it stack
     | SUB::it      -> interp_bop Bsub     it stack
 
 
@@ -368,7 +368,7 @@ let to_dir (michelson, env : T.michelson * env) =
   let sys =
     match stack with
     | x::_ -> add_instruction sys (T.Dassign (x, Dbop (Bpair, T.Dparameter tparameter, T.Dinitstorage tstorage)))
-    | _ -> Format.eprintf "Warning"; sys
+    | _ -> Format.eprintf "error: stack not empty@."; assert false
   in
   (T.mk_dprogram tstorage tparameter storage_data name sys), env
 
@@ -508,6 +508,12 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         | Ucontract (_t, _a) -> assert false
         | Usetdelegate       -> assert false
         | Uimplicitaccount   -> assert false
+        | Ueq                -> assert false
+        | Une                -> assert false
+        | Ugt                -> assert false
+        | Uge                -> assert false
+        | Ult                -> assert false
+        | Ule                -> assert false
       end
     | Ibinop (op, _lhs, _rhs) -> begin
         match op with
@@ -526,12 +532,6 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         | Bconcat    -> assert false
         | Bcons      -> assert false
         | Bpair      -> assert false
-        | Beq        -> assert false
-        | Bne        -> assert false
-        | Bgt        -> assert false
-        | Bge        -> assert false
-        | Blt        -> assert false
-        | Ble        -> assert false
       end
     | Iterop (op, _a1, _a2, _a3) -> begin
         match op with

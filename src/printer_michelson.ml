@@ -230,6 +230,12 @@ let rec pp_instruction fmt (i : instruction) =
       | Ucontract (t, a) -> pp "contract%a<%a>(%a)" (pp_option (fun fmt x -> Format.fprintf fmt "%%%a" pp_id x)) a pp_type t f e
       | Usetdelegate     -> pp "setdelegate(%a)" f e
       | Uimplicitaccount -> pp "implicitaccount(%a)" f e
+      | Ueq        -> pp "eq(%a)"        f e
+      | Une        -> pp "ne(%a)"        f e
+      | Ugt        -> pp "gt(%a)"        f e
+      | Uge        -> pp "ge(%a)"        f e
+      | Ult        -> pp "lt(%a)"        f e
+      | Ule        -> pp "le(%a)"        f e
     end
   | Ibinop (op, lhs, rhs) -> begin
       match op with
@@ -248,12 +254,6 @@ let rec pp_instruction fmt (i : instruction) =
       | Bconcat    -> pp "concat(%a, %a)"    f lhs f rhs
       | Bcons      -> pp "cons(%a, %a)"      f lhs f rhs
       | Bpair      -> pp "pair(%a, %a)"      f lhs f rhs
-      | Beq        -> pp "eq(%a, %a)"        f lhs f rhs
-      | Bne        -> pp "ne(%a, %a)"        f lhs f rhs
-      | Bgt        -> pp "gt(%a, %a)"        f lhs f rhs
-      | Bge        -> pp "ge(%a, %a)"        f lhs f rhs
-      | Blt        -> pp "lt(%a, %a)"        f lhs f rhs
-      | Ble        -> pp "le(%a, %a)"        f lhs f rhs
     end
   | Iterop (op, a1, a2, a3) -> begin
       match op with
@@ -372,6 +372,12 @@ let rec pp_dexpr fmt (de : dexpr) =
       | Ucontract (t, a) -> pp "contract%a<%a>(%a)" (pp_option (fun fmt x -> Format.fprintf fmt "%%%a" pp_id x)) a pp_type t f e
       | Usetdelegate     -> pp "setdelegate(%a)" f e
       | Uimplicitaccount -> pp "implicitaccount(%a)" f e
+      | Ueq        -> pp "eq(%a)"        f e
+      | Une        -> pp "ne(%a)"        f e
+      | Ugt        -> pp "gt(%a)"        f e
+      | Uge        -> pp "ge(%a)"        f e
+      | Ult        -> pp "lt(%a)"        f e
+      | Ule        -> pp "le(%a)"        f e
     end
   | Dbop (op, lhs, rhs) -> begin
       match op with
@@ -390,12 +396,6 @@ let rec pp_dexpr fmt (de : dexpr) =
       | Bconcat    -> pp "concat(%a, %a)"    f lhs f rhs
       | Bcons      -> pp "cons(%a, %a)"      f lhs f rhs
       | Bpair      -> pp "pair(%a, %a)"      f lhs f rhs
-      | Beq        -> pp "eq(%a, %a)"        f lhs f rhs
-      | Bne        -> pp "ne(%a, %a)"        f lhs f rhs
-      | Bgt        -> pp "gt(%a, %a)"        f lhs f rhs
-      | Bge        -> pp "ge(%a, %a)"        f lhs f rhs
-      | Blt        -> pp "lt(%a, %a)"        f lhs f rhs
-      | Ble        -> pp "le(%a, %a)"        f lhs f rhs
     end
   | Dtop (op, a1, a2, a3) -> begin
       match op with

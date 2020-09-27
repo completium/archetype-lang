@@ -48,4 +48,4 @@ build-deps: _opam
 	opam install . --deps-only --working-dir -y
 
 build-deps-dev: build-deps
-	opam install merlin why3.1.3.2 -y
+	opam install merlin ocp-indent why3.1.3.2 -y
