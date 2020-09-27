@@ -367,8 +367,8 @@ let to_dir (michelson, env : T.michelson * env) =
   trace irenv [] stack sys;
   let sys =
     match stack with
-    | [x] -> add_instruction sys (T.Dassign (x, Dbop (Bpair, T.Dparameter tparameter, T.Dinitstorage tstorage)))
-    | _ -> assert false
+    | x::_ -> add_instruction sys (T.Dassign (x, Dbop (Bpair, T.Dparameter tparameter, T.Dinitstorage tstorage)))
+    | _ -> Format.eprintf "Warning"; sys
   in
   (T.mk_dprogram tstorage tparameter storage_data name sys), env
 
