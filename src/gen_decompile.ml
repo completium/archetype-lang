@@ -299,19 +299,19 @@ let to_ir (michelson, env : T.michelson * env) =
 
     (* Blockchain operations *)
 
-    | ADDRESS::it           -> interp_zop Zaddress it stack
-    | AMOUNT::it            -> interp_zop Zamount it stack
-    | BALANCE::it           -> interp_zop Zbalance it stack
-    | CHAIN_ID::it          -> interp_zop Zchain_id it stack
-    | CONTRACT (t, a)::it   -> interp_uop (Ucontract (t, a)) it stack
-    | CREATE_CONTRACT _::_  -> assert false
-    | IMPLICIT_ACCOUNT::_   -> assert false
-    | NOW::it               -> interp_zop Znow it stack
-    | SELF::_               -> assert false
-    | SENDER::it            -> interp_zop Zsender it stack
-    | SET_DELEGATE::_       -> assert false
-    | SOURCE::it            -> interp_zop Zsource it stack
-    | TRANSFER_TOKENS::_    -> assert false
+    | ADDRESS::it            -> interp_zop Zaddress it stack
+    | AMOUNT::it             -> interp_zop Zamount it stack
+    | BALANCE::it            -> interp_zop Zbalance it stack
+    | CHAIN_ID::it           -> interp_zop Zchain_id it stack
+    | CONTRACT (t, a)::it    -> interp_uop (Ucontract (t, a)) it stack
+    | CREATE_CONTRACT _::_   -> assert false
+    | IMPLICIT_ACCOUNT::it   -> interp_uop (Uimplicitaccount) it stack
+    | NOW::it                -> interp_zop Znow it stack
+    | SELF::it               -> interp_zop (Zself None) it stack
+    | SENDER::it             -> interp_zop Zsender it stack
+    | SET_DELEGATE::it       -> interp_uop Usetdelegate it stack
+    | SOURCE::it             -> interp_zop Zsource it stack
+    | TRANSFER_TOKENS::it    -> interp_top Ttransfer_tokens it stack
 
 
     (* Operations on data structures *)

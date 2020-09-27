@@ -161,6 +161,7 @@ type z_operator =
   | Zsender
   | Zaddress
   | Zchain_id
+  | Zself of ident option
   | Zself_address
   | Znone of type_
   | Zunit
@@ -190,6 +191,8 @@ type un_operator =
   | Uhash_key
   | Ufail
   | Ucontract of type_ * ident option
+  | Usetdelegate
+  | Uimplicitaccount
 [@@deriving show {with_path = false}]
 
 type bin_operator =

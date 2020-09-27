@@ -1090,6 +1090,7 @@ let to_michelson (ir : T.ir) : T.michelson =
           | Zsender             -> T.SENDER
           | Zaddress            -> T.ADDRESS
           | Zchain_id           -> T.CHAIN_ID
+          | Zself _             -> T.SELF
           | Zself_address       -> T.SEQ [T.SELF; T.ADDRESS]
           | Znone t             -> T.NONE t
           | Zunit               -> T.UNIT
@@ -1122,6 +1123,8 @@ let to_michelson (ir : T.ir) : T.michelson =
           | Uhash_key        -> T.HASH_KEY
           | Ufail            -> T.FAILWITH
           | Ucontract (t, a) -> T.CONTRACT (t, a)
+          | Usetdelegate     -> T.SET_DELEGATE
+          | Uimplicitaccount -> T.IMPLICIT_ACCOUNT
         in
         let e, env = fe env e in
         let env = match op with T.FAILWITH -> fail_env env | _ -> env in
