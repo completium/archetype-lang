@@ -398,13 +398,16 @@ let rec pp_dexpr fmt (de : dexpr) =
       | Tupdate          -> pp "update(%a, %a, %a)"          f a1 f a2 f a3
       | Ttransfer_tokens -> pp "transfer_tokens(%a, %a, %a)" f a1 f a2 f a3
     end
-  | Dif (c, t, e)        -> pp "if(%a, %a, %a)" f c f t f e
 
-let pp_equation fmt ((a, b) : equation) =
-  Format.fprintf fmt "%a <- %a" pp_dexpr a pp_dexpr b
+let rec pp_dinstruction fmt i =
+  let seq is = (pp_list ";@\n" pp_dinstruction) is in
+  match i with
+  | Dassign (a, b) -> Format.fprintf fmt "%a <- %a" pp_dexpr a pp_dexpr b
+  | Dif (c, a, b)  -> Format.fprintf fmt "if (%a)@\nthen (@[%a@])@\nelse(@[%a@])" pp_dexpr c seq a seq b
+  | Dfail e        -> Format.fprintf fmt "fail(%a)" pp_dexpr e
 
 let pp_sysofequations fmt (s : sysofequations) =
-  (pp_list "@\n" pp_equation) fmt s
+  (pp_list "@\n" pp_dinstruction) fmt s
 
 (* -------------------------------------------------------------------------- *)
 

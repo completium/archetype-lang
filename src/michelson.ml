@@ -332,12 +332,19 @@ type dexpr =
   | Duop of un_operator  * dexpr
   | Dbop of bin_operator * dexpr * dexpr
   | Dtop of ter_operator * dexpr * dexpr * dexpr
-  | Dif  of dexpr * dexpr * dexpr    (* conditon * val_if_true * val_if_false *)
 [@@deriving show {with_path = false}]
 
-type equation = dexpr * dexpr
+type dinstruction =
+| Dassign of dexpr * dexpr
+| Dif     of dexpr * dinstruction list * dinstruction list
+| Dfail   of dexpr
 
-type sysofequations = equation list
+type sysofequations = dinstruction list
+
+type dstack = {
+  fail:  bool;
+  stack: dexpr list;
+}
 
 (* -------------------------------------------------------------------- *)
 

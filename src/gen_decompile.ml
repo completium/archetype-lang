@@ -84,44 +84,44 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
         Format.fprintf fmt "%i. %a@\n" i Printer_michelson.pp_dexpr c) st
   in
 
-  let pp_trace ?(with_instr=true) fmt (instr, stack, sys : T.code * (T.dexpr) list * T.sysofequations) =
+  let pp_trace fmt (instr, stack, sys : T.code option * (T.dexpr) list * T.sysofequations) =
     Format.fprintf fmt "@\nsys:@\n%a@\n@\n" Printer_michelson.pp_sysofequations sys;
     Format.fprintf fmt "@\nstack:@\n%a" pp_stack stack;
-    if with_instr
-    then Format.fprintf fmt "@\ninstr: %a@." Printer_michelson.pp_code instr
-
+    (Printer_tools.pp_option (fun fmt -> Format.fprintf fmt "@\ninstr: %a" Printer_michelson.pp_code)) fmt instr;
+    Format.fprintf fmt "@."
   in
 
-  let trace ?(with_instr=true) (env : ir_env) (instrs : T.code list) (stack : (T.dexpr) list)  (sys : T.sysofequations) =
+  let trace (env : ir_env) (instrs : T.code list) (stack : (T.dexpr) list)  (sys : T.sysofequations) =
     let print_indent fmt n =
       for _i = 1 to n do
         Format.fprintf fmt "  "
       done
     in
     match !Options.opt_trace, instrs with
-    | true, i::_ -> Format.eprintf "%a@[%a@]@." print_indent env.deep (pp_trace ~with_instr:with_instr) (i, stack, sys)
+    | true, i::_ -> Format.eprintf "%a@[%a@]@." print_indent env.deep pp_trace (Some i, stack, sys)
+    | true, [] -> Format.eprintf "%a@[%a@]@." print_indent env.deep pp_trace (None, stack, sys)
     | _ -> ()
   in
 
-  let add_equation sys (a, b) =
-    match a, b with
-    | T.Dbop (Bpair, a1, b1), T.Dbop (Bpair, a2, b2) -> (a1, a2)::(b1, b2)::sys
+  let add_instruction (sys : T.sysofequations) (i : T.dinstruction) =
+    match i with
+    | T.Dassign (T.Dbop (Bpair, a1, b1), T.Dbop (Bpair, a2, b2)) -> T.Dassign (a1, a2)::T.Dassign (b1, b2)::sys
     (* | T.Dbop (Bpair, a1, b1), T.Dparameter (T.Dbop (Bpair, a2, b2)) -> (a1, a2)::(b1, b2)::sys *)
-    | _ -> (a, b)::sys
+    | _ -> i::sys
   in
 
-  let rec interp (env : ir_env) (accu : T.sysofequations) (instrs : T.code list) (stack : (T.dexpr) list) =
+  let rec interp (env : ir_env) (sys : T.sysofequations) (instrs : T.code list) (stack : (T.dexpr) list) =
     let f = interp in
 
     let emit_error _ =
       match instrs with
-      | i::_ -> Format.eprintf "error:@\n%a@." (pp_trace ~with_instr:true) (i, stack, accu); assert false
+      | i::_ -> Format.eprintf "error:@\n%a@." pp_trace (Some i, stack, sys); assert false
       | _ -> assert false
     in
 
     let interp_zop op it st =
       match st with
-      | a::st -> f env ((a, Dzop op)::accu) it st
+      | a::st -> f env (add_instruction sys (T.Dassign (a, Dzop op))) it st
       | _ -> emit_error ()
     in
 
@@ -130,7 +130,7 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
       | a::st -> begin
           let x = T.dalpha env.cpt_alpha in
           let env = inc_cpt_alpha env in
-          f env (add_equation accu (a, Duop (op, x))) it (x::st)
+          f env (add_instruction sys (T.Dassign (a, Duop (op, x)))) it (x::st)
         end
       | _ -> emit_error ()
     in
@@ -142,7 +142,7 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
           let env = inc_cpt_alpha env in
           let y = T.dalpha env.cpt_alpha in
           let env = inc_cpt_alpha env in
-          f env (add_equation accu (a, Dbop (op, x, y))) it (x::y::st)
+          f env (add_instruction sys (T.Dassign (a, Dbop (op, x, y)))) it (x::y::st)
         end
       | _ -> emit_error ()
     in
@@ -156,33 +156,33 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
           let env = inc_cpt_alpha env in
           let z = T.dalpha env.cpt_alpha in
           let env = inc_cpt_alpha env in
-          f env (add_equation accu (a, Dtop (op, x, y, z))) it (x::y::z::st)
+          f env (add_instruction sys (T.Dassign (a, Dtop (op, x, y, z)))) it (x::y::z::st)
         end
       | _ -> emit_error ()
     in
 
-    trace env instrs stack accu;
+    trace env instrs stack sys;
 
     match instrs with
 
     (* Control structures *)
 
     | T.SEQ l::it       -> begin
-        f env accu (it @ List.rev l) stack
+        f env sys (it @ List.rev l) stack
       end
     | T.EXEC::_        -> assert false
     | T.FAILWITH::_    -> assert false
     | T.IF (th, el)::it -> begin
         let env = inc_deep env in
         let sys_else, _stack_else, _env = interp env [] (List.rev el) stack in
-        let sys_then, _stack_then, _env = interp env [] (List.rev th) stack in
-
-        Format.eprintf "sys_else:@\n%a@\n@\n" Printer_michelson.pp_sysofequations sys_else;
-        Format.eprintf "sys_then:@\n%a@\n@\n" Printer_michelson.pp_sysofequations sys_then;
+        let sys_then, stack_then, _env = interp env [] (List.rev th) stack in
 
         let x = T.dalpha env.cpt_alpha in
         let env = inc_cpt_alpha env in
-        f env accu it (x::stack)
+
+        let accu = add_instruction sys (T.Dif (x, sys_then, sys_else)) in
+
+        f env accu it (x::stack_then)
       end
     | T.IF_CONS _::_   -> assert false
     | T.IF_LEFT _::_   -> assert false
@@ -206,7 +206,7 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
             in
 
             let stack = insert n a st in
-            f env accu it stack
+            f env sys it stack
           end
         | _ -> emit_error ()
       end
@@ -222,8 +222,8 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
           aux n [] stack
         in
         let env = inc_deep env in
-        let accu, stack, env = interp env accu (List.rev instrs) bst in
-        trace ~with_instr:false env instrs stack accu;
+        let accu, stack, env = interp env sys (List.rev instrs) bst in
+        trace env [] stack accu;
         let env = dec_deep env in
         f env accu it (ast @ stack)
       end
@@ -236,7 +236,7 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
                (d::st), env
             ) (stack, env) n
         in
-        f env accu it stack
+        f env sys it stack
       end
 
     | T.DUG n::it -> begin
@@ -248,12 +248,12 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
         in
 
         let stack = aux [] n stack in
-        f env accu it stack
+        f env sys it stack
       end
 
     | T.DUP::it -> begin
         match stack with
-        | a::b::st -> f env (add_equation accu (a, b)) it (b::st)
+        | a::b::st -> f env (add_instruction sys (T.Dassign (a, b))) it (b::st)
         | _ -> emit_error ()
       end
 
@@ -261,7 +261,7 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
         match stack with
         | a::t -> begin
             let data = d in
-            let accu = add_equation accu (a, T.Ddata data) in
+            let accu = add_instruction sys (T.Dassign (a, T.Ddata data)) in
             f env accu it t
           end
         | _ -> emit_error ()
@@ -269,7 +269,7 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
 
     | T.SWAP::it -> begin
         match stack with
-        | a::b::st -> f env accu it (b::a::st)
+        | a::b::st -> f env sys it (b::a::st)
         | _ -> emit_error ()
       end
 
@@ -359,7 +359,7 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
 
     | T.UNPAIR::it  -> begin
         match stack with
-        | x::y::st -> f env accu it (T.Dbop (Bpair, x, y)::st)
+        | x::y::st -> f env sys it (T.Dbop (Bpair, x, y)::st)
         | _ -> emit_error ()
       end
     | ASSERT_EQ::_       -> assert false
@@ -372,7 +372,7 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
     | CREATE_ACCOUNT::_  -> assert false
     | RENAME::_          -> assert false
     | STEPS_TO_QUOTA::_  -> assert false
-    | [] -> accu, stack, env
+    | [] -> sys, stack, env
   in
 
   let env = mk_ir_env () in
@@ -381,10 +381,10 @@ let to_ir2 (michelson, _ : T.michelson * 'a) =
   trace env [] stack sys;
   let sys =
     match stack with
-    | [x] -> add_equation sys (x, Dbop (Bpair, T.Dparameter tparameter, T.Dinitstorage tstorage))
+    | [x] -> add_instruction sys (T.Dassign (x, Dbop (Bpair, T.Dparameter tparameter, T.Dinitstorage tstorage)))
     | _ -> assert false
   in
-  Format.printf "%a@." (pp_trace ~with_instr:false) (T.SEQ [], [], sys)
+  Format.printf "%a@." pp_trace (None, [], sys)
 
 
 let to_model (ir, env : T.ir * env) : M.model * env =
