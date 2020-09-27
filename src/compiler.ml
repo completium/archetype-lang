@@ -446,7 +446,7 @@ let main () =
       "--raw-whytree", Arg.Set Options.opt_raw_whytree, " Same as -r";
       "-ir", Arg.Set Options.opt_ir, " Generate intermediate representation";
       "--intermediate-representation", Arg.Set Options.opt_ir, " Same as -ir";
-      "-dir", Arg.Set Options.opt_dir, " Generate d intermediate representation";
+      "-dir", Arg.Set Options.opt_dir, " Generate intermediate decompilation";
       "--d-intermediate-representation", Arg.Set Options.opt_dir, " Same as -dir";
       "-mi", Arg.Set Options.opt_mic, " Output michelson";
       "-ri", Arg.Set Options.opt_raw_ir, " Print raw intermediate representation";
