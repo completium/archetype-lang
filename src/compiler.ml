@@ -400,8 +400,6 @@ let main () =
       exit 2 in
 
   let c   = Arg.Unit (fun _ -> f "michelson") in
-  let ir  = Arg.Unit (fun _ -> f "michelson"; Options.opt_ir  := true ) in
-  let dir = Arg.Unit (fun _ -> f "michelson"; Options.opt_dir := true ) in
 
   let arg_list = Arg.align [
       "-c", c, "compile to michelson";
@@ -446,10 +444,10 @@ let main () =
       "--raw", Arg.Set Options.opt_raw, " Same as -r";
       "-ry", Arg.Set Options.opt_raw_whytree, " Print raw model tree";
       "--raw-whytree", Arg.Set Options.opt_raw_whytree, " Same as -r";
-      "-ir", ir, " Generate intermediate representation";
-      "--intermediate-representation", ir, " Same as -ir";
-      "-dir", dir, " Generate d intermediate representation";
-      "--d-intermediate-representation", dir, " Same as -dir";
+      "-ir", Arg.Set Options.opt_ir, " Generate intermediate representation";
+      "--intermediate-representation", Arg.Set Options.opt_ir, " Same as -ir";
+      "-dir", Arg.Set Options.opt_dir, " Generate d intermediate representation";
+      "--d-intermediate-representation", Arg.Set Options.opt_dir, " Same as -dir";
       "-mi", Arg.Set Options.opt_mic, " Output michelson";
       "-ri", Arg.Set Options.opt_raw_ir, " Print raw intermediate representation";
       "--raw-ir", Arg.Set Options.opt_raw_ir, " Same as -ri";
