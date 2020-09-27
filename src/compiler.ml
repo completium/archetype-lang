@@ -360,8 +360,10 @@ let decompile (filename, channel) =
   (filename, channel)
   |> parse_michelson
   |> cont !Options.opt_mic output_michelson
+  |> to_dir
+  |> cont !Options.opt_dir  output_dprogram
   |> to_ir
-  |> cont !Options.opt_ir  output_dprogram
+  |> cont !Options.opt_ir  output_ir
   |> to_model
   |> cont !Options.opt_mdl output_tmdl
   |> to_archetype
@@ -397,8 +399,9 @@ let main () =
         "Unknown target %s (--list-target to see available target)@." s;
       exit 2 in
 
-  let c  =  Arg.Unit (fun _ -> f "michelson") in
-  let ir =  Arg.Unit (fun _ -> f "michelson"; Options.opt_ir := true ) in
+  let c   = Arg.Unit (fun _ -> f "michelson") in
+  let ir  = Arg.Unit (fun _ -> f "michelson"; Options.opt_ir  := true ) in
+  let dir = Arg.Unit (fun _ -> f "michelson"; Options.opt_dir := true ) in
 
   let arg_list = Arg.align [
       "-c", c, "compile to michelson";
@@ -445,6 +448,8 @@ let main () =
       "--raw-whytree", Arg.Set Options.opt_raw_whytree, " Same as -r";
       "-ir", ir, " Generate intermediate representation";
       "--intermediate-representation", ir, " Same as -ir";
+      "-dir", dir, " Generate d intermediate representation";
+      "--d-intermediate-representation", dir, " Same as -dir";
       "-mi", Arg.Set Options.opt_mic, " Output michelson";
       "-ri", Arg.Set Options.opt_raw_ir, " Print raw intermediate representation";
       "--raw-ir", Arg.Set Options.opt_raw_ir, " Same as -ri";
