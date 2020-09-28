@@ -31,6 +31,15 @@ type type_node =
   | Tstring
   | Ttimestamp
   | Tunit
+  (* | Tsapling_transaction *)
+  (* | Tsapling_state *)
+  (* | Tnever *)
+  (* | Tbls12_381_g1 *)
+  (* | Tbls12_381_g2 *)
+  (* | Tbls12_381_fr *)
+  (* | Tbaker_hash *)
+  (* | Tbaker_operation *)
+  (* | Tpvss_key *)
 [@@deriving show {with_path = false}]
 
 and type_ = type_node with_annot
@@ -55,6 +64,7 @@ type data =
 type code =
   (* Control structures *)
   | SEQ                of code list
+  | APPLY
   | EXEC
   | FAILWITH
   | IF                 of code list * code list
@@ -141,16 +151,27 @@ type code =
   | UPDATE
   (* Other *)
   | UNPAIR
-  | ASSERT_EQ
-  | ASSERT_GE
-  | ASSERT_GT
-  | ASSERT_LE
-  | ASSERT_LT
-  | ASSERT_NEQ
+  | SELF_ADDRESS
   | CAST
   | CREATE_ACCOUNT
   | RENAME
   | STEPS_TO_QUOTA
+  (* | LEVEL *)
+  (* | SAPLING_EMPTY_STATE *)
+  (* | SAPLING_VERIFY_UPDATE *)
+  (* | NEVER *)
+  (* | VOTING_POWER *)
+  (* | TOTAL_VOTING_POWER *)
+  (* | KECCAK *)
+  (* | SHA3 *)
+  (* | PAIRING_CHECK *)
+  (* | SUBMIT_PROPOSALS *)
+  (* | SUBMIT_BALLOT *)
+  (* | SET_BAKER_ACTIVE *)
+  (* | TOGGLE_BAKER_DELEGATIONS *)
+  (* | SET_BAKER_CONSENSUS_KEY *)
+  (* | SET_BAKER_PVSS_KEY *)
+
 [@@deriving show {with_path = false}]
 
 type z_operator =
@@ -512,6 +533,8 @@ let cmp_code lhs rhs =
     | CAR, CAR                                       -> true
     | CDR, CDR                                       -> true
     | UNPAIR, UNPAIR                                 -> true
+    | SELF_ADDRESS, SELF_ADDRESS                     -> true
+    | APPLY, APPLY                                   -> true
     | LEFT t1, LEFT t2                               -> cmp_type t1 t2
     | RIGHT t1, RIGHT t2                             -> cmp_type t1 t2
     | IF_LEFT (t1, e1), IF_LEFT (t2, e2)             -> List.for_all2 f t1 t2 && List.for_all2 f e1 e2
@@ -561,12 +584,6 @@ let cmp_code lhs rhs =
     | GT, GT                                         -> true
     | LE, LE                                         -> true
     | GE, GE                                         -> true
-    | ASSERT_EQ, ASSERT_EQ                           -> true
-    | ASSERT_NEQ, ASSERT_NEQ                         -> true
-    | ASSERT_LT, ASSERT_LT                           -> true
-    | ASSERT_LE, ASSERT_LE                           -> true
-    | ASSERT_GT, ASSERT_GT                           -> true
-    | ASSERT_GE, ASSERT_GE                           -> true
     | SELF, SELF                                     -> true
     | CONTRACT (t1, a1), CONTRACT (t2, a2)           -> cmp_type t1 t2 && Option.cmp cmp_ident a1 a2
     | TRANSFER_TOKENS, TRANSFER_TOKENS               -> true
@@ -642,6 +659,8 @@ let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) =
   | CAR                     -> CAR
   | CDR                     -> CDR
   | UNPAIR                  -> UNPAIR
+  | SELF_ADDRESS            -> SELF_ADDRESS
+  | APPLY                   -> APPLY
   | LEFT t                  -> LEFT (ft t)
   | RIGHT t                 -> RIGHT (ft t)
   | IF_LEFT (then_, else_)  -> IF_LEFT (List.map fc then_, List.map fc else_)
@@ -691,12 +710,6 @@ let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) =
   | GT                      -> GT
   | LE                      -> LE
   | GE                      -> GE
-  | ASSERT_EQ               -> ASSERT_EQ
-  | ASSERT_NEQ              -> ASSERT_NEQ
-  | ASSERT_LT               -> ASSERT_LT
-  | ASSERT_LE               -> ASSERT_LE
-  | ASSERT_GT               -> ASSERT_GT
-  | ASSERT_GE               -> ASSERT_GE
   | SELF                    -> SELF
   | CONTRACT (t, a)         -> CONTRACT (ft t, a)
   | TRANSFER_TOKENS         -> TRANSFER_TOKENS

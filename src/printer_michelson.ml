@@ -95,6 +95,8 @@ let rec pp_code fmt (i : code) =
   | CAR                  -> pp "CAR"
   | CDR                  -> pp "CDR"
   | UNPAIR               -> pp "UNPAIR"
+  | SELF_ADDRESS         -> pp "SELF_ADDRESS"
+  | APPLY                -> pp "APPLY"
   | LEFT  t              -> pp "LEFT %a" pp_type t
   | RIGHT t              -> pp "RIGHT %a" pp_type t
   | IF_LEFT (ti, ei)     -> pp "IF_LEFT@\n  @[%a@]@\n  @[%a@]" fs ti fs ei
@@ -144,12 +146,6 @@ let rec pp_code fmt (i : code) =
   | GT                   -> pp "GT"
   | LE                   -> pp "LE"
   | GE                   -> pp "GE"
-  | ASSERT_EQ            -> pp "ASSERT_EQ"
-  | ASSERT_NEQ           -> pp "ASSERT_NEQ"
-  | ASSERT_LT            -> pp "ASSERT_LT"
-  | ASSERT_GT            -> pp "ASSERT_GT"
-  | ASSERT_LE            -> pp "ASSERT_LE"
-  | ASSERT_GE            -> pp "ASSERT_GE"
   | SELF                 -> pp "SELF"
   | CONTRACT (t, a)      -> pp "CONTRACT%a %a" pp_annot a pp_type t
   | TRANSFER_TOKENS      -> pp "TRANSFER_TOKENS"

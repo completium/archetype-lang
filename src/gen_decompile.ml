@@ -139,17 +139,18 @@ let to_dir (michelson, env : T.michelson * env) =
 
     (* Control structures *)
 
-    | T.SEQ l::it       -> begin
+    | SEQ l::it       -> begin
         f env sys (it @ List.rev l) stack
       end
-    | T.EXEC::_        -> assert false
-    | T.FAILWITH::it   -> begin
+    | APPLY::_       -> assert false
+    | EXEC::_        -> assert false
+    | FAILWITH::it   -> begin
         let env = {env with fail = true} in
         let x = T.dalpha env.cpt_alpha in
         let env = inc_cpt_alpha env in
         f env (add_instruction sys (T.Dfail x)) it (x::stack)
       end
-    | T.IF (th, el)::it -> begin
+    | IF (th, el)::it -> begin
         let env = inc_deep env in
         let sys_then, stack_then, env_then = interp env [] (List.rev th) stack in
         let sys_else, stack_else, env_else = interp env [] (List.rev el) stack in
@@ -169,25 +170,25 @@ let to_dir (michelson, env : T.michelson * env) =
 
         f env accu it (x::stack)
       end
-    | T.IF_CONS _::_   -> assert false
-    | T.IF_LEFT _::_   -> assert false
-    | T.IF_NONE _::_   -> assert false
-    | T.ITER _::_      -> assert false
-    | T.LAMBDA _::_    -> assert false
-    | T.LOOP _::_      -> assert false
-    | T.LOOP_LEFT _::_ -> assert false
+    | IF_CONS _::_   -> assert false
+    | IF_LEFT _::_   -> assert false
+    | IF_NONE _::_   -> assert false
+    | ITER _::_      -> assert false
+    | LAMBDA _::_    -> assert false
+    | LOOP _::_      -> assert false
+    | LOOP_LEFT _::_ -> assert false
 
 
     (* Stack manipulation *)
 
-    | T.DIG n::it -> begin
+    | DIG n::it -> begin
         match stack with
         | a::st -> begin
             let rec insert idx e l =
               match l with
               | _ when idx = 0 -> e::l
               | a::t -> a::(insert (idx - 1) e t)
-              | _ -> assert false
+              | _ -> emit_error ()
             in
 
             let stack = insert n a st in
@@ -196,7 +197,7 @@ let to_dir (michelson, env : T.michelson * env) =
         | _ -> emit_error ()
       end
 
-    | T.DIP (n, instrs)::it -> begin
+    | DIP (n, instrs)::it -> begin
         let ast, bst =
           let rec aux idx accu l =
             match l with
@@ -213,7 +214,7 @@ let to_dir (michelson, env : T.michelson * env) =
         f env accu it (ast @ stack)
       end
 
-    | T.DROP n::it -> begin
+    | DROP n::it -> begin
         let stack, env = foldi
             (fun (st, env) ->
                let d = T.dalpha env.cpt_alpha in
@@ -224,7 +225,7 @@ let to_dir (michelson, env : T.michelson * env) =
         f env sys it stack
       end
 
-    | T.DUG n::it -> begin
+    | DUG n::it -> begin
         let rec aux accu idx l =
           match l with
           | e::t when idx = 0 -> (e::accu @ t)
@@ -236,13 +237,13 @@ let to_dir (michelson, env : T.michelson * env) =
         f env sys it stack
       end
 
-    | T.DUP::it -> begin
+    | DUP::it -> begin
         match stack with
         | a::b::st -> f env (add_instruction sys (T.Dassign (a, b))) it (b::st)
         | _ -> emit_error ()
       end
 
-    | T.PUSH (_t, d)::it -> begin
+    | PUSH (_t, d)::it -> begin
         match stack with
         | a::t -> begin
             let data = d in
@@ -252,7 +253,7 @@ let to_dir (michelson, env : T.michelson * env) =
         | _ -> emit_error ()
       end
 
-    | T.SWAP::it -> begin
+    | SWAP::it -> begin
         match stack with
         | a::b::st -> f env sys it (b::a::st)
         | _ -> emit_error ()
@@ -342,17 +343,13 @@ let to_dir (michelson, env : T.michelson * env) =
 
     (* Other *)
 
-    | T.UNPAIR::it  -> begin
+    | UNPAIR::it  -> begin
         match stack with
         | x::y::st -> f env sys it (T.Dbop (Bpair, x, y)::st)
         | _ -> emit_error ()
       end
-    | ASSERT_EQ::_       -> assert false
-    | ASSERT_GE::_       -> assert false
-    | ASSERT_GT::_       -> assert false
-    | ASSERT_LE::_       -> assert false
-    | ASSERT_LT::_       -> assert false
-    | ASSERT_NEQ::_      -> assert false
+    | SELF_ADDRESS::it   -> interp_zop (Zself_address) it stack
+
     | CAST::_            -> assert false
     | CREATE_ACCOUNT::_  -> assert false
     | RENAME::_          -> assert false

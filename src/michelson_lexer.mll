@@ -23,12 +23,7 @@
       "ADDRESS"          , ADDRESS            ;
       "AMOUNT"           , AMOUNT             ;
       "AND"              , AND                ;
-      "ASSERT_EQ"        , ASSERT_EQ          ;
-      "ASSERT_GE"        , ASSERT_GE          ;
-      "ASSERT_GT"        , ASSERT_GT          ;
-      "ASSERT_LE"        , ASSERT_LE          ;
-      "ASSERT_LT"        , ASSERT_LT          ;
-      "ASSERT_NEQ"       , ASSERT_NEQ         ;
+      "APPLY"            , APPLY              ;
       "BALANCE"          , BALANCE            ;
       "BLAKE2B"          , BLAKE2B            ;
       "CAR"              , CAR                ;
@@ -89,6 +84,7 @@
       "PUSH"             , PUSH               ;
       "RENAME"           , RENAME             ;
       "RIGHT"            , RIGHT              ;
+      "SELF_ADDRESS"     , SELF_ADDRESS       ;
       "SELF"             , SELF               ;
       "SENDER"           , SENDER             ;
       "SET_DELEGATE"     , SET_DELEGATE       ;

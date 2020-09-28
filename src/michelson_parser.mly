@@ -19,12 +19,7 @@
 %token ADDRESS
 %token AMOUNT
 %token AND
-%token ASSERT_EQ
-%token ASSERT_GE
-%token ASSERT_GT
-%token ASSERT_LE
-%token ASSERT_LT
-%token ASSERT_NEQ
+%token APPLY
 %token BALANCE
 %token BLAKE2B
 %token CAR
@@ -85,6 +80,7 @@
 %token PUSH
 %token RENAME
 %token RIGHT
+%token SELF_ADDRESS
 %token SELF
 %token SENDER
 %token SET_DELEGATE
@@ -248,12 +244,7 @@ instruction:
  | ADDRESS                           { ADDRESS }
  | AMOUNT                            { AMOUNT }
  | AND                               { AND }
- | ASSERT_EQ                         { ASSERT_EQ }
- | ASSERT_GE                         { ASSERT_GE }
- | ASSERT_GT                         { ASSERT_GT }
- | ASSERT_LE                         { ASSERT_LE }
- | ASSERT_LT                         { ASSERT_LT }
- | ASSERT_NEQ                        { ASSERT_NEQ }
+ | APPLY                             { APPLY }
  | BALANCE                           { BALANCE }
  | BLAKE2B                           { BLAKE2B }
  | CAR                               { CAR }
@@ -314,6 +305,7 @@ instruction:
  | PUSH t=type_ d=data               { PUSH (t, d) }
  | RENAME                            { RENAME }
  | RIGHT t=type_                     { RIGHT t }
+ | SELF_ADDRESS                      { SELF_ADDRESS }
  | SELF                              { SELF }
  | SENDER                            { SENDER }
  | SET_DELEGATE                      { SET_DELEGATE }
