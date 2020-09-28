@@ -11,29 +11,38 @@ let rec pp_type fmt (t : type_) =
     | _ -> pp_str fmt str
   in
   match t.node with
-  | Tkey                -> pp_simple_a "key"
-  | Tunit               -> pp_simple_a "unit"
-  | Tsignature          -> pp_simple_a "signature"
-  | Toption    t        -> Format.fprintf fmt "(option%a %a)"     pp_annot_opt () pp_type t
-  | Tlist      t        -> Format.fprintf fmt "(list%a %a)"       pp_annot_opt () pp_type t
-  | Tset       t        -> Format.fprintf fmt "(set%a %a)"        pp_annot_opt () pp_type t
-  | Toperation          -> pp_simple_a "operation"
-  | Tcontract  t        -> Format.fprintf fmt "(contract%a %a)"   pp_annot_opt () pp_type t
-  | Tpair      (lt, rt) -> Format.fprintf fmt "(pair%a %a %a)"    pp_annot_opt () pp_type lt  pp_type rt
-  | Tor        (lt, rt) -> Format.fprintf fmt "(or%a %a %a)"      pp_annot_opt () pp_type lt  pp_type rt
-  | Tlambda    (at, rt) -> Format.fprintf fmt "(lambda%a %a %a)"  pp_annot_opt () pp_type at  pp_type rt
-  | Tmap       (kt, vt) -> Format.fprintf fmt "(map%a %a %a)"     pp_annot_opt () pp_type kt  pp_type vt
-  | Tbig_map   (kt, vt) -> Format.fprintf fmt "(big_map%a %a %a)" pp_annot_opt () pp_type kt  pp_type vt
-  | Tchain_id           -> pp_simple_a "chain_id"
-  | Tint                -> pp_simple_a "int"
-  | Tnat                -> pp_simple_a "nat"
-  | Tstring             -> pp_simple_a "string"
-  | Tbytes              -> pp_simple_a "bytes"
-  | Tmutez              -> pp_simple_a "mutez"
-  | Tbool               -> pp_simple_a "bool"
-  | Tkey_hash           -> pp_simple_a "key_hash"
-  | Ttimestamp          -> pp_simple_a "timestamp"
-  | Taddress            -> pp_simple_a "address"
+  | Tkey                 -> pp_simple_a "key"
+  | Tunit                -> pp_simple_a "unit"
+  | Tsignature           -> pp_simple_a "signature"
+  | Toption    t         -> Format.fprintf fmt "(option%a %a)"     pp_annot_opt () pp_type t
+  | Tlist      t         -> Format.fprintf fmt "(list%a %a)"       pp_annot_opt () pp_type t
+  | Tset       t         -> Format.fprintf fmt "(set%a %a)"        pp_annot_opt () pp_type t
+  | Toperation           -> pp_simple_a "operation"
+  | Tcontract  t         -> Format.fprintf fmt "(contract%a %a)"   pp_annot_opt () pp_type t
+  | Tpair      (lt, rt)  -> Format.fprintf fmt "(pair%a %a %a)"    pp_annot_opt () pp_type lt  pp_type rt
+  | Tor        (lt, rt)  -> Format.fprintf fmt "(or%a %a %a)"      pp_annot_opt () pp_type lt  pp_type rt
+  | Tlambda    (at, rt)  -> Format.fprintf fmt "(lambda%a %a %a)"  pp_annot_opt () pp_type at  pp_type rt
+  | Tmap       (kt, vt)  -> Format.fprintf fmt "(map%a %a %a)"     pp_annot_opt () pp_type kt  pp_type vt
+  | Tbig_map   (kt, vt)  -> Format.fprintf fmt "(big_map%a %a %a)" pp_annot_opt () pp_type kt  pp_type vt
+  | Tchain_id            -> pp_simple_a "chain_id"
+  | Tint                 -> pp_simple_a "int"
+  | Tnat                 -> pp_simple_a "nat"
+  | Tstring              -> pp_simple_a "string"
+  | Tbytes               -> pp_simple_a "bytes"
+  | Tmutez               -> pp_simple_a "mutez"
+  | Tbool                -> pp_simple_a "bool"
+  | Tkey_hash            -> pp_simple_a "key_hash"
+  | Ttimestamp           -> pp_simple_a "timestamp"
+  | Taddress             -> pp_simple_a "address"
+  | Tsapling_transaction -> pp_simple_a "sapling_transaction"
+  | Tsapling_state       -> pp_simple_a "sapling_state"
+  | Tnever               -> pp_simple_a "never"
+  | Tbls12_381_g1        -> pp_simple_a "bls12_381_g1"
+  | Tbls12_381_g2        -> pp_simple_a "bls12_381_g2"
+  | Tbls12_381_fr        -> pp_simple_a "bls12_381_fr"
+  | Tbaker_hash          -> pp_simple_a "baker_hash"
+  | Tbaker_operation     -> pp_simple_a "baker_operation"
+  | Tpvss_key            -> pp_simple_a "pvss_key"
 
 let rec pp_pretty_type fmt (t : type_) =
   match t.node with
@@ -80,92 +89,115 @@ let rec pp_code fmt (i : code) =
   let fs fmt = Format.fprintf fmt "{ @[%a@] }" (pp_list ";@\n" pp_code) in
   let fsl fmt = Format.fprintf fmt "{ %a }" (pp_list "; " pp_code) in
   match i with
-  | SEQ l                -> fs fmt l
-  | DROP i               -> pp "DROP%a" pp_arg i
-  | DUP                  -> pp "DUP"
-  | SWAP                 -> pp "SWAP"
-  | DIG i                -> pp "DIG%a" pp_arg2 i
-  | DUG i                -> pp "DUG%a" pp_arg2 i
-  | PUSH (t, d)          -> pp "PUSH %a %a" pp_type t pp_data d
-  | SOME                 -> pp "SOME"
-  | NONE t               -> pp "NONE %a" pp_type t
-  | UNIT                 -> pp "UNIT"
-  | IF_NONE (ti, ei)     -> pp "IF_NONE@\n  @[%a@]@\n  @[%a@]" fs ti fs ei
-  | PAIR                 -> pp "PAIR"
-  | CAR                  -> pp "CAR"
-  | CDR                  -> pp "CDR"
-  | UNPAIR               -> pp "UNPAIR"
-  | SELF_ADDRESS         -> pp "SELF_ADDRESS"
-  | APPLY                -> pp "APPLY"
-  | LEFT  t              -> pp "LEFT %a" pp_type t
-  | RIGHT t              -> pp "RIGHT %a" pp_type t
-  | IF_LEFT (ti, ei)     -> pp "IF_LEFT@\n  @[%a@]@\n  @[%a@]" fs ti fs ei
-  | NIL t                -> pp "NIL %a" pp_type t
-  | CONS                 -> pp "CONS"
-  | IF_CONS (ti, ei)     -> pp "IF_CONS@\n  @[%a@]@\n  @[%a@]" fs ti fs ei
-  | SIZE                 -> pp "SIZE"
-  | EMPTY_SET     t      -> pp "EMPTY_SET %a" pp_type t
-  | EMPTY_MAP     (k, v) -> pp "EMPTY_MAP %a %a" pp_type k pp_type v
-  | EMPTY_BIG_MAP (k, v) -> pp "EMPTY_BIG_MAP %a %a" pp_type k pp_type v
-  | MAP  is              -> pp "MAP %a" fs is
-  | ITER is              -> pp "ITER %a" fs is
-  | MEM                  -> pp "MEM"
-  | GET                  -> pp "GET"
-  | UPDATE               -> pp "UPDATE"
-  | IF (ti, ei)          -> pp "IF@\n  @[%a@]@\n  @[%a@]" fs ti fs ei
-  | LOOP is              -> pp "LOOP %a" fs is
-  | LOOP_LEFT is         -> pp "LOOP_LEFT %a" fs is
-  | LAMBDA (at, rt, is)  -> pp "LAMBDA@\n  @[%a@]@\n  @[%a@]@\n  @[%a@]" pp_type at pp_type rt fs is
-  | EXEC                 -> pp "EXEC"
-  | DIP (i, is)          -> pp "DIP%a %a" pp_arg i fsl is
-  | FAILWITH             -> pp "FAILWITH"
-  | CAST                 -> pp "CAST"
-  | RENAME               -> pp "RENAME"
-  | CONCAT               -> pp "CONCAT"
-  | SLICE                -> pp "SLICE"
-  | PACK                 -> pp "PACK"
-  | UNPACK t             -> pp "UNPACK %a" pp_type t
-  | ADD                  -> pp "ADD"
-  | SUB                  -> pp "SUB"
-  | MUL                  -> pp "MUL"
-  | EDIV                 -> pp "EDIV"
-  | ABS                  -> pp "ABS"
-  | ISNAT                -> pp "ISNAT"
-  | INT                  -> pp "INT"
-  | NEG                  -> pp "NEG"
-  | LSL                  -> pp "LSL"
-  | LSR                  -> pp "LSR"
-  | OR                   -> pp "OR"
-  | AND                  -> pp "AND"
-  | XOR                  -> pp "XOR"
-  | NOT                  -> pp "NOT"
-  | COMPARE              -> pp "COMPARE"
-  | EQ                   -> pp "EQ"
-  | NEQ                  -> pp "NEQ"
-  | LT                   -> pp "LT"
-  | GT                   -> pp "GT"
-  | LE                   -> pp "LE"
-  | GE                   -> pp "GE"
-  | SELF                 -> pp "SELF"
-  | CONTRACT (t, a)      -> pp "CONTRACT%a %a" pp_annot a pp_type t
-  | TRANSFER_TOKENS      -> pp "TRANSFER_TOKENS"
-  | SET_DELEGATE         -> pp "SET_DELEGATE"
-  | CREATE_ACCOUNT       -> pp "CREATE_ACCOUNT"
-  | CREATE_CONTRACT  is  -> pp "CREATE_CONTRACT %a" fs is
-  | IMPLICIT_ACCOUNT     -> pp "IMPLICIT_ACCOUNT"
-  | NOW                  -> pp "NOW"
-  | AMOUNT               -> pp "AMOUNT"
-  | BALANCE              -> pp "BALANCE"
-  | CHECK_SIGNATURE      -> pp "CHECK_SIGNATURE"
-  | BLAKE2B              -> pp "BLAKE2B"
-  | SHA256               -> pp "SHA256"
-  | SHA512               -> pp "SHA512"
-  | HASH_KEY             -> pp "HASH_KEY"
-  | STEPS_TO_QUOTA       -> pp "STEPS_TO_QUOTA"
-  | SOURCE               -> pp "SOURCE"
-  | SENDER               -> pp "SENDER"
-  | ADDRESS              -> pp "ADDRESS"
-  | CHAIN_ID             -> pp "CHAIN_ID"
+  (* Control structures *)
+  | SEQ l                    -> fs fmt l
+  | APPLY                    -> pp "APPLY"
+  | EXEC                     -> pp "EXEC"
+  | FAILWITH                 -> pp "FAILWITH"
+  | IF (ti, ei)              -> pp "IF@\n  @[%a@]@\n  @[%a@]" fs ti fs ei
+  | IF_CONS (ti, ei)         -> pp "IF_CONS@\n  @[%a@]@\n  @[%a@]" fs ti fs ei
+  | IF_LEFT (ti, ei)         -> pp "IF_LEFT@\n  @[%a@]@\n  @[%a@]" fs ti fs ei
+  | IF_NONE (ti, ei)         -> pp "IF_NONE@\n  @[%a@]@\n  @[%a@]" fs ti fs ei
+  | ITER is                  -> pp "ITER %a" fs is
+  | LAMBDA (at, rt, is)      -> pp "LAMBDA@\n  @[%a@]@\n  @[%a@]@\n  @[%a@]" pp_type at pp_type rt fs is
+  | LOOP is                  -> pp "LOOP %a" fs is
+  | LOOP_LEFT is             -> pp "LOOP_LEFT %a" fs is
+  (* Stack manipulation *)
+  | DIG i                    -> pp "DIG%a" pp_arg2 i
+  | DIP (i, is)              -> pp "DIP%a %a" pp_arg i fsl is
+  | DROP i                   -> pp "DROP%a" pp_arg i
+  | DUG i                    -> pp "DUG%a" pp_arg2 i
+  | DUP                      -> pp "DUP"
+  | PUSH (t, d)              -> pp "PUSH %a %a" pp_type t pp_data d
+  | SWAP                     -> pp "SWAP"
+  (* Arthmetic operations *)
+  | ABS                      -> pp "ABS"
+  | ADD                      -> pp "ADD"
+  | COMPARE                  -> pp "COMPARE"
+  | EDIV                     -> pp "EDIV"
+  | EQ                       -> pp "EQ"
+  | GE                       -> pp "GE"
+  | GT                       -> pp "GT"
+  | INT                      -> pp "INT"
+  | ISNAT                    -> pp "ISNAT"
+  | LE                       -> pp "LE"
+  | LSL                      -> pp "LSL"
+  | LSR                      -> pp "LSR"
+  | LT                       -> pp "LT"
+  | MUL                      -> pp "MUL"
+  | NEG                      -> pp "NEG"
+  | NEQ                      -> pp "NEQ"
+  | SUB                      -> pp "SUB"
+  (* Boolean operations *)
+  | AND                      -> pp "AND"
+  | NOT                      -> pp "NOT"
+  | OR                       -> pp "OR"
+  | XOR                      -> pp "XOR"
+  (* Cryptographic operations *)
+  | BLAKE2B                  -> pp "BLAKE2B"
+  | CHECK_SIGNATURE          -> pp "CHECK_SIGNATURE"
+  | HASH_KEY                 -> pp "HASH_KEY"
+  | SHA256                   -> pp "SHA256"
+  | SHA512                   -> pp "SHA512"
+  (* Blockchain operations *)
+  | ADDRESS                  -> pp "ADDRESS"
+  | AMOUNT                   -> pp "AMOUNT"
+  | BALANCE                  -> pp "BALANCE"
+  | CHAIN_ID                 -> pp "CHAIN_ID"
+  | CONTRACT (t, a)          -> pp "CONTRACT%a %a" pp_annot a pp_type t
+  | CREATE_CONTRACT  is      -> pp "CREATE_CONTRACT %a" fs is
+  | IMPLICIT_ACCOUNT         -> pp "IMPLICIT_ACCOUNT"
+  | NOW                      -> pp "NOW"
+  | SELF                     -> pp "SELF"
+  | SENDER                   -> pp "SENDER"
+  | SET_DELEGATE             -> pp "SET_DELEGATE"
+  | SOURCE                   -> pp "SOURCE"
+  | TRANSFER_TOKENS          -> pp "TRANSFER_TOKENS"
+  (* Operations on data structures *)
+  | CAR                      -> pp "CAR"
+  | CDR                      -> pp "CDR"
+  | CONCAT                   -> pp "CONCAT"
+  | CONS                     -> pp "CONS"
+  | EMPTY_BIG_MAP (k, v)     -> pp "EMPTY_BIG_MAP %a %a" pp_type k pp_type v
+  | EMPTY_MAP     (k, v)     -> pp "EMPTY_MAP %a %a" pp_type k pp_type v
+  | EMPTY_SET     t          -> pp "EMPTY_SET %a" pp_type t
+  | GET                      -> pp "GET"
+  | LEFT  t                  -> pp "LEFT %a" pp_type t
+  | MAP  is                  -> pp "MAP %a" fs is
+  | MEM                      -> pp "MEM"
+  | NIL t                    -> pp "NIL %a" pp_type t
+  | NONE t                   -> pp "NONE %a" pp_type t
+  | PACK                     -> pp "PACK"
+  | PAIR                     -> pp "PAIR"
+  | RIGHT t                  -> pp "RIGHT %a" pp_type t
+  | SIZE                     -> pp "SIZE"
+  | SLICE                    -> pp "SLICE"
+  | SOME                     -> pp "SOME"
+  | UNIT                     -> pp "UNIT"
+  | UNPACK t                 -> pp "UNPACK %a" pp_type t
+  | UPDATE                   -> pp "UPDATE"
+  (* Other *)
+  | UNPAIR                   -> pp "UNPAIR"
+  | SELF_ADDRESS             -> pp "SELF_ADDRESS"
+  | CAST                     -> pp "CAST"
+  | CREATE_ACCOUNT           -> pp "CREATE_ACCOUNT"
+  | RENAME                   -> pp "RENAME"
+  | STEPS_TO_QUOTA           -> pp "STEPS_TO_QUOTA"
+  | LEVEL                    -> pp "LEVEL"
+  | SAPLING_EMPTY_STATE      -> pp "SAPLING_EMPTY_STATE"
+  | SAPLING_VERIFY_UPDATE    -> pp "SAPLING_VERIFY_UPDATE"
+  | NEVER                    -> pp "NEVER"
+  | VOTING_POWER             -> pp "VOTING_POWER"
+  | TOTAL_VOTING_POWER       -> pp "TOTAL_VOTING_POWER"
+  | KECCAK                   -> pp "KECCAK"
+  | SHA3                     -> pp "SHA3"
+  | PAIRING_CHECK            -> pp "PAIRING_CHECK"
+  | SUBMIT_PROPOSALS         -> pp "SUBMIT_PROPOSALS"
+  | SUBMIT_BALLOT            -> pp "SUBMIT_BALLOT"
+  | SET_BAKER_ACTIVE         -> pp "SET_BAKER_ACTIVE"
+  | TOGGLE_BAKER_DELEGATIONS -> pp "TOGGLE_BAKER_DELEGATIONS"
+  | SET_BAKER_CONSENSUS_KEY  -> pp "SET_BAKER_CONSENSUS_KEY"
+  | SET_BAKER_PVSS_KEY       -> pp "SET_BAKER_PVSS_KEY"
 
 let pp_id fmt i = Format.fprintf fmt "%s" i
 

@@ -350,10 +350,26 @@ let to_dir (michelson, env : T.michelson * env) =
       end
     | SELF_ADDRESS::it   -> interp_zop (Zself_address) it stack
 
-    | CAST::_            -> assert false
-    | CREATE_ACCOUNT::_  -> assert false
-    | RENAME::_          -> assert false
-    | STEPS_TO_QUOTA::_  -> assert false
+    | CAST::_                     -> assert false
+    | CREATE_ACCOUNT::_           -> assert false
+    | RENAME::_                   -> assert false
+    | STEPS_TO_QUOTA::_           -> assert false
+    | LEVEL::_                    -> assert false
+    | SAPLING_EMPTY_STATE::_      -> assert false
+    | SAPLING_VERIFY_UPDATE::_    -> assert false
+    | NEVER::_                    -> assert false
+    | VOTING_POWER::_             -> assert false
+    | TOTAL_VOTING_POWER::_       -> assert false
+    | KECCAK::_                   -> assert false
+    | SHA3::_                     -> assert false
+    | PAIRING_CHECK::_            -> assert false
+    | SUBMIT_PROPOSALS::_         -> assert false
+    | SUBMIT_BALLOT::_            -> assert false
+    | SET_BAKER_ACTIVE::_         -> assert false
+    | TOGGLE_BAKER_DELEGATIONS::_ -> assert false
+    | SET_BAKER_CONSENSUS_KEY::_  -> assert false
+    | SET_BAKER_PVSS_KEY::_       -> assert false
+
     | [] -> sys, stack, env
   in
 
@@ -428,6 +444,15 @@ let to_model (ir, env : T.ir * env) : M.model * env =
     | Tkey_hash             -> M.tkeyhash
     | Ttimestamp            -> M.ttimestamp
     | Taddress              -> M.taddress
+    | Tsapling_transaction  -> assert false
+    | Tsapling_state        -> assert false
+    | Tnever                -> assert false
+    | Tbls12_381_g1         -> assert false
+    | Tbls12_381_g2         -> assert false
+    | Tbls12_381_fr         -> assert false
+    | Tbaker_hash           -> assert false
+    | Tbaker_operation      -> assert false
+    | Tpvss_key             -> assert false
   in
 
   let for_data ?t (d : T.data) : M.mterm =

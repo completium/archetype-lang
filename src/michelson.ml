@@ -31,15 +31,15 @@ type type_node =
   | Tstring
   | Ttimestamp
   | Tunit
-  (* | Tsapling_transaction *)
-  (* | Tsapling_state *)
-  (* | Tnever *)
-  (* | Tbls12_381_g1 *)
-  (* | Tbls12_381_g2 *)
-  (* | Tbls12_381_fr *)
-  (* | Tbaker_hash *)
-  (* | Tbaker_operation *)
-  (* | Tpvss_key *)
+  | Tsapling_transaction
+  | Tsapling_state
+  | Tnever
+  | Tbls12_381_g1
+  | Tbls12_381_g2
+  | Tbls12_381_fr
+  | Tbaker_hash
+  | Tbaker_operation
+  | Tpvss_key
 [@@deriving show {with_path = false}]
 
 and type_ = type_node with_annot
@@ -156,21 +156,21 @@ type code =
   | CREATE_ACCOUNT
   | RENAME
   | STEPS_TO_QUOTA
-  (* | LEVEL *)
-  (* | SAPLING_EMPTY_STATE *)
-  (* | SAPLING_VERIFY_UPDATE *)
-  (* | NEVER *)
-  (* | VOTING_POWER *)
-  (* | TOTAL_VOTING_POWER *)
-  (* | KECCAK *)
-  (* | SHA3 *)
-  (* | PAIRING_CHECK *)
-  (* | SUBMIT_PROPOSALS *)
-  (* | SUBMIT_BALLOT *)
-  (* | SET_BAKER_ACTIVE *)
-  (* | TOGGLE_BAKER_DELEGATIONS *)
-  (* | SET_BAKER_CONSENSUS_KEY *)
-  (* | SET_BAKER_PVSS_KEY *)
+  | LEVEL
+  | SAPLING_EMPTY_STATE
+  | SAPLING_VERIFY_UPDATE
+  | NEVER
+  | VOTING_POWER
+  | TOTAL_VOTING_POWER
+  | KECCAK
+  | SHA3
+  | PAIRING_CHECK
+  | SUBMIT_PROPOSALS
+  | SUBMIT_BALLOT
+  | SET_BAKER_ACTIVE
+  | TOGGLE_BAKER_DELEGATIONS
+  | SET_BAKER_CONSENSUS_KEY
+  | SET_BAKER_PVSS_KEY
 
 [@@deriving show {with_path = false}]
 
@@ -468,29 +468,38 @@ let cmp_ident = String.equal
 let cmp_type lhs rhs =
   let rec f lhs rhs =
     match lhs.node, rhs.node with
-    | Taddress, Taddress                   -> true
-    | Tbig_map (a1, b1), Tbig_map (a2, b2) -> f a1 a2 && f b1 b2
-    | Tbool, Tbool                         -> true
-    | Tbytes, Tbytes                       -> true
-    | Tchain_id, Tchain_id                 -> true
-    | Tcontract a1, Tcontract a2           -> f a1 a2
-    | Tint, Tint                           -> true
-    | Tkey, Tkey                           -> true
-    | Tkey_hash, Tkey_hash                 -> true
-    | Tlambda (a1, b1), Tlambda (a2, b2)   -> f a1 a2 && f b1 b2
-    | Tlist a1, Tlist a2                   -> f a1 a2
-    | Tmap (a1, b1), Tmap (a2, b2)         -> f a1 a2 && f b1 b2
-    | Tmutez, Tmutez                       -> true
-    | Tnat, Tnat                           -> true
-    | Toperation, Toperation               -> true
-    | Toption a1, Toption a2               -> f a1 a2
-    | Tor (a1, b1), Tor (a2, b2)           -> f a1 a2 && f b1 b2
-    | Tpair (a1, b1), Tpair (a2, b2)       -> f a1 a2 && f b1 b2
-    | Tset a1, Tset a2                     -> f a1 a2
-    | Tsignature, Tsignature               -> true
-    | Tstring, Tstring                     -> true
-    | Ttimestamp, Ttimestamp               -> true
-    | Tunit, Tunit                         -> true
+    | Taddress, Taddress                         -> true
+    | Tbig_map (a1, b1), Tbig_map (a2, b2)       -> f a1 a2 && f b1 b2
+    | Tbool, Tbool                               -> true
+    | Tbytes, Tbytes                             -> true
+    | Tchain_id, Tchain_id                       -> true
+    | Tcontract a1, Tcontract a2                 -> f a1 a2
+    | Tint, Tint                                 -> true
+    | Tkey, Tkey                                 -> true
+    | Tkey_hash, Tkey_hash                       -> true
+    | Tlambda (a1, b1), Tlambda (a2, b2)         -> f a1 a2 && f b1 b2
+    | Tlist a1, Tlist a2                         -> f a1 a2
+    | Tmap (a1, b1), Tmap (a2, b2)               -> f a1 a2 && f b1 b2
+    | Tmutez, Tmutez                             -> true
+    | Tnat, Tnat                                 -> true
+    | Toperation, Toperation                     -> true
+    | Toption a1, Toption a2                     -> f a1 a2
+    | Tor (a1, b1), Tor (a2, b2)                 -> f a1 a2 && f b1 b2
+    | Tpair (a1, b1), Tpair (a2, b2)             -> f a1 a2 && f b1 b2
+    | Tset a1, Tset a2                           -> f a1 a2
+    | Tsignature, Tsignature                     -> true
+    | Tstring, Tstring                           -> true
+    | Ttimestamp, Ttimestamp                     -> true
+    | Tunit, Tunit                               -> true
+    | Tsapling_transaction, Tsapling_transaction -> true
+    | Tsapling_state, Tsapling_state             -> true
+    | Tnever, Tnever                             -> true
+    | Tbls12_381_g1, Tbls12_381_g1               -> true
+    | Tbls12_381_g2, Tbls12_381_g2               -> true
+    | Tbls12_381_fr, Tbls12_381_fr               -> true
+    | Tbaker_hash, Tbaker_hash                   -> true
+    | Tbaker_operation, Tbaker_operation         -> true
+    | Tpvss_key, Tpvss_key                       -> true
     | _ -> false
   in
   f lhs rhs
@@ -644,92 +653,116 @@ let map_data (f : data -> data) = function
   | Dplist l     -> Dplist (List.map (fun (x, y) -> f x, f y) l)
 
 let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) = function
-  | SEQ l                   -> SEQ (List.map fc l)
-  | DROP n                  -> DROP n
-  | DUP                     -> DUP
-  | SWAP                    -> SWAP
-  | DIG n                   -> DIG n
-  | DUG n                   -> DUG n
-  | PUSH (t, d)             -> PUSH (ft t, fd d)
-  | SOME                    -> SOME
-  | NONE t                  -> NONE (ft t)
-  | UNIT                    -> UNIT
-  | IF_NONE (then_, else_)  -> IF_NONE (List.map fc then_, List.map fc else_)
-  | PAIR                    -> PAIR
-  | CAR                     -> CAR
-  | CDR                     -> CDR
-  | UNPAIR                  -> UNPAIR
-  | SELF_ADDRESS            -> SELF_ADDRESS
-  | APPLY                   -> APPLY
-  | LEFT t                  -> LEFT (ft t)
-  | RIGHT t                 -> RIGHT (ft t)
-  | IF_LEFT (then_, else_)  -> IF_LEFT (List.map fc then_, List.map fc else_)
-  | NIL t                   -> NIL (ft t)
-  | CONS                    -> CONS
-  | IF_CONS (then_, else_)  -> IF_CONS (List.map fc then_, List.map fc else_)
-  | SIZE                    -> SIZE
-  | EMPTY_SET      t        -> EMPTY_SET     (ft t)
-  | EMPTY_MAP      (k, v)   -> EMPTY_MAP     (ft k, ft v)
-  | EMPTY_BIG_MAP  (k, v)   -> EMPTY_BIG_MAP (ft k, ft v)
-  | MAP  l                  -> MAP  (List.map fc l)
-  | ITER l                  -> ITER (List.map fc l)
-  | MEM                     -> MEM
-  | GET                     -> GET
-  | UPDATE                  -> UPDATE
-  | IF (then_, else_)       -> IF (List.map fc then_, List.map fc else_)
-  | LOOP l                  -> LOOP (List.map fc l)
-  | LOOP_LEFT l             -> LOOP_LEFT (List.map fc l)
-  | LAMBDA (at, rt, body)   -> LAMBDA (ft at, ft rt, List.map fc body)
-  | EXEC                    -> EXEC
-  | DIP (n, l)              -> DIP (n, List.map fc l)
-  | FAILWITH                -> FAILWITH
-  | CAST                    -> CAST
-  | RENAME                  -> RENAME
-  | CONCAT                  -> CONCAT
-  | SLICE                   -> SLICE
-  | PACK                    -> PACK
-  | UNPACK t                -> UNPACK (ft t)
-  | ADD                     -> ADD
-  | SUB                     -> SUB
-  | MUL                     -> MUL
-  | EDIV                    -> EDIV
-  | ABS                     -> ABS
-  | ISNAT                   -> ISNAT
-  | INT                     -> INT
-  | NEG                     -> NEG
-  | LSL                     -> LSL
-  | LSR                     -> LSR
-  | OR                      -> OR
-  | AND                     -> AND
-  | XOR                     -> XOR
-  | NOT                     -> NOT
-  | COMPARE                 -> COMPARE
-  | EQ                      -> EQ
-  | NEQ                     -> NEQ
-  | LT                      -> LT
-  | GT                      -> GT
-  | LE                      -> LE
-  | GE                      -> GE
-  | SELF                    -> SELF
-  | CONTRACT (t, a)         -> CONTRACT (ft t, a)
-  | TRANSFER_TOKENS         -> TRANSFER_TOKENS
-  | SET_DELEGATE            -> SET_DELEGATE
-  | CREATE_ACCOUNT          -> CREATE_ACCOUNT
-  | CREATE_CONTRACT l       -> CREATE_CONTRACT (List.map fc l)
-  | IMPLICIT_ACCOUNT        -> IMPLICIT_ACCOUNT
-  | NOW                     -> NOW
-  | AMOUNT                  -> AMOUNT
-  | BALANCE                 -> BALANCE
-  | CHECK_SIGNATURE         -> CHECK_SIGNATURE
-  | BLAKE2B                 -> BLAKE2B
-  | SHA256                  -> SHA256
-  | SHA512                  -> SHA512
-  | HASH_KEY                -> HASH_KEY
-  | STEPS_TO_QUOTA          -> STEPS_TO_QUOTA
-  | SOURCE                  -> SOURCE
-  | SENDER                  -> SENDER
-  | ADDRESS                 -> ADDRESS
-  | CHAIN_ID                -> CHAIN_ID
+(* Control structures *)
+  | SEQ l                    -> SEQ (List.map fc l)
+  | APPLY                    -> APPLY
+  | EXEC                     -> EXEC
+  | FAILWITH                 -> FAILWITH
+  | IF (then_, else_)        -> IF (List.map fc then_, List.map fc else_)
+  | IF_CONS (then_, else_)   -> IF_CONS (List.map fc then_, List.map fc else_)
+  | IF_LEFT (then_, else_)   -> IF_LEFT (List.map fc then_, List.map fc else_)
+  | IF_NONE (then_, else_)   -> IF_NONE (List.map fc then_, List.map fc else_)
+  | ITER l                   -> ITER (List.map fc l)
+  | LAMBDA (at, rt, body)    -> LAMBDA (ft at, ft rt, List.map fc body)
+  | LOOP l                   -> LOOP (List.map fc l)
+  | LOOP_LEFT l              -> LOOP_LEFT (List.map fc l)
+  (* Stack manipulation *)
+  | DIG n                    -> DIG n
+  | DIP (n, l)               -> DIP (n, List.map fc l)
+  | DROP n                   -> DROP n
+  | DUG n                    -> DUG n
+  | DUP                      -> DUP
+  | PUSH (t, d)              -> PUSH (ft t, fd d)
+  | SWAP                     -> SWAP
+  (* Arthmetic operations *)
+  | ABS                      -> ABS
+  | ADD                      -> ADD
+  | COMPARE                  -> COMPARE
+  | EDIV                     -> EDIV
+  | EQ                       -> EQ
+  | GE                       -> GE
+  | GT                       -> GT
+  | INT                      -> INT
+  | ISNAT                    -> ISNAT
+  | LE                       -> LE
+  | LSL                      -> LSL
+  | LSR                      -> LSR
+  | LT                       -> LT
+  | MUL                      -> MUL
+  | NEG                      -> NEG
+  | NEQ                      -> NEQ
+  | SUB                      -> SUB
+  (* Boolean operations *)
+  | AND                      -> AND
+  | NOT                      -> NOT
+  | OR                       -> OR
+  | XOR                      -> XOR
+  (* Cryptographic operations *)
+  | BLAKE2B                  -> BLAKE2B
+  | CHECK_SIGNATURE          -> CHECK_SIGNATURE
+  | HASH_KEY                 -> HASH_KEY
+  | SHA256                   -> SHA256
+  | SHA512                   -> SHA512
+  (* Blockchain operations *)
+  | ADDRESS                  -> ADDRESS
+  | AMOUNT                   -> AMOUNT
+  | BALANCE                  -> BALANCE
+  | CHAIN_ID                 -> CHAIN_ID
+  | CONTRACT (t, a)          -> CONTRACT (ft t, a)
+  | CREATE_CONTRACT l        -> CREATE_CONTRACT (List.map fc l)
+  | IMPLICIT_ACCOUNT         -> IMPLICIT_ACCOUNT
+  | NOW                      -> NOW
+  | SELF                     -> SELF
+  | SENDER                   -> SENDER
+  | SET_DELEGATE             -> SET_DELEGATE
+  | SOURCE                   -> SOURCE
+  | TRANSFER_TOKENS          -> TRANSFER_TOKENS
+  (* Operations on data structures *)
+  | CAR                      -> CAR
+  | CDR                      -> CDR
+  | CONCAT                   -> CONCAT
+  | CONS                     -> CONS
+  | EMPTY_BIG_MAP  (k, v)    -> EMPTY_BIG_MAP (ft k, ft v)
+  | EMPTY_MAP      (k, v)    -> EMPTY_MAP     (ft k, ft v)
+  | EMPTY_SET      t         -> EMPTY_SET     (ft t)
+  | GET                      -> GET
+  | LEFT t                   -> LEFT (ft t)
+  | MAP  l                   -> MAP  (List.map fc l)
+  | MEM                      -> MEM
+  | NIL t                    -> NIL (ft t)
+  | NONE t                   -> NONE (ft t)
+  | PACK                     -> PACK
+  | PAIR                     -> PAIR
+  | RIGHT t                  -> RIGHT (ft t)
+  | SIZE                     -> SIZE
+  | SLICE                    -> SLICE
+  | SOME                     -> SOME
+  | UNIT                     -> UNIT
+  | UNPACK t                 -> UNPACK (ft t)
+  | UPDATE                   -> UPDATE
+  (* Other *)
+  | UNPAIR                   -> UNPAIR
+  | SELF_ADDRESS             -> SELF_ADDRESS
+  | CAST                     -> CAST
+  | CREATE_ACCOUNT           -> CREATE_ACCOUNT
+  | RENAME                   -> RENAME
+  | STEPS_TO_QUOTA           -> STEPS_TO_QUOTA
+  | LEVEL                    -> LEVEL
+  | SAPLING_EMPTY_STATE      -> SAPLING_EMPTY_STATE
+  | SAPLING_VERIFY_UPDATE    -> SAPLING_VERIFY_UPDATE
+  | NEVER                    -> NEVER
+  | VOTING_POWER             -> VOTING_POWER
+  | TOTAL_VOTING_POWER       -> TOTAL_VOTING_POWER
+  | KECCAK                   -> KECCAK
+  | SHA3                     -> SHA3
+  | PAIRING_CHECK            -> PAIRING_CHECK
+  | SUBMIT_PROPOSALS         -> SUBMIT_PROPOSALS
+  | SUBMIT_BALLOT            -> SUBMIT_BALLOT
+  | SET_BAKER_ACTIVE         -> SET_BAKER_ACTIVE
+  | TOGGLE_BAKER_DELEGATIONS -> TOGGLE_BAKER_DELEGATIONS
+  | SET_BAKER_CONSENSUS_KEY  -> SET_BAKER_CONSENSUS_KEY
+  | SET_BAKER_PVSS_KEY       -> SET_BAKER_PVSS_KEY
+
 
 let map_code (fc : code -> code) = map_code_gen fc id id
 

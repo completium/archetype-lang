@@ -49,19 +49,21 @@
 %token GET
 %token GT
 %token HASH_KEY
+%token IF
 %token IF_CONS
 %token IF_LEFT
 %token IF_NONE
-%token IF
 %token IMPLICIT_ACCOUNT
 %token INT
 %token ISNAT
 %token ITER
+%token KECCAK
 %token LAMBDA
 %token LE
 %token LEFT
-%token LOOP_LEFT
+%token LEVEL
 %token LOOP
+%token LOOP_LEFT
 %token LSL
 %token LSR
 %token LT
@@ -70,6 +72,7 @@
 %token MUL
 %token NEG
 %token NEQ
+%token NEVER
 %token NIL
 %token NONE
 %token NOT
@@ -77,14 +80,21 @@
 %token OR
 %token PACK
 %token PAIR
+%token PAIRING_CHECK
 %token PUSH
 %token RENAME
 %token RIGHT
-%token SELF_ADDRESS
+%token SAPLING_EMPTY_STATE
+%token SAPLING_VERIFY_UPDATE
 %token SELF
+%token SELF_ADDRESS
 %token SENDER
+%token SET_BAKER_ACTIVE
+%token SET_BAKER_CONSENSUS_KEY
+%token SET_BAKER_PVSS_KEY
 %token SET_DELEGATE
 %token SHA256
+%token SHA3
 %token SHA512
 %token SIZE
 %token SLICE
@@ -92,12 +102,17 @@
 %token SOURCE
 %token STEPS_TO_QUOTA
 %token SUB
+%token SUBMIT_BALLOT
+%token SUBMIT_PROPOSALS
 %token SWAP
+%token TOGGLE_BAKER_DELEGATIONS
+%token TOTAL_VOTING_POWER
 %token TRANSFER_TOKENS
 %token UNIT
 %token UNPACK
 %token UNPAIR
 %token UPDATE
+%token VOTING_POWER
 %token XOR
 
 %token CODE
@@ -127,6 +142,15 @@
 %token TSTRING
 %token TTIMESTAMP
 %token TUNIT
+%token TSAPLING_TRANSACTION
+%token TSAPLING_STATE
+%token TNEVER
+%token TBLS12_381_G1
+%token TBLS12_381_G2
+%token TBLS12_381_FR
+%token TBAKER_HASH
+%token TBAKER_OPERATION
+%token TPVSS_KEY
 
 %token DUNIT
 %token DTRUE
@@ -187,7 +211,12 @@ annot:
 type_:
  | t=paren(type_)                     { t }
  | TADDRESS a=annot                   { mk_type ?annotation:a (Taddress) }
+ | TBAKER_HASH a=annot                { mk_type ?annotation:a (Tbaker_hash) }
+ | TBAKER_OPERATION a=annot           { mk_type ?annotation:a (Tbaker_operation) }
  | TBIG_MAP a=annot k=type_ v=type_   { mk_type ?annotation:a (Tbig_map (k, v)) }
+ | TBLS12_381_FR a=annot              { mk_type ?annotation:a (Tbls12_381_fr) }
+ | TBLS12_381_G1 a=annot              { mk_type ?annotation:a (Tbls12_381_g1) }
+ | TBLS12_381_G2 a=annot              { mk_type ?annotation:a (Tbls12_381_g2) }
  | TBOOL a=annot                      { mk_type ?annotation:a (Tbool) }
  | TBYTES a=annot                     { mk_type ?annotation:a (Tbytes) }
  | TCHAIN_ID a=annot                  { mk_type ?annotation:a (Tchain_id) }
@@ -200,10 +229,14 @@ type_:
  | TMAP a=annot k=type_ v=type_       { mk_type ?annotation:a (Tmap (k, v)) }
  | TMUTEZ a=annot                     { mk_type ?annotation:a (Tmutez) }
  | TNAT a=annot                       { mk_type ?annotation:a (Tnat) }
+ | TNEVER a=annot                     { mk_type ?annotation:a (Tnever) }
  | TOPERATION a=annot                 { mk_type ?annotation:a (Toperation) }
  | TOPTION a=annot t=type_            { mk_type ?annotation:a (Toption t) }
  | TOR a=annot ta=type_ tb=type_      { mk_type ?annotation:a (Tor (ta, tb)) }
  | TPAIR a=annot ta=type_ tb=type_    { mk_type ?annotation:a (Tpair (ta, tb)) }
+ | TPVSS_KEY a=annot                  { mk_type ?annotation:a (Tpvss_key) }
+ | TSAPLING_STATE a=annot             { mk_type ?annotation:a (Tsapling_state) }
+ | TSAPLING_TRANSACTION a=annot       { mk_type ?annotation:a (Tsapling_transaction) }
  | TSET a=annot t=type_               { mk_type ?annotation:a (Tset t) }
  | TSIGNATURE a=annot                 { mk_type ?annotation:a (Tsignature) }
  | TSTRING a=annot                    { mk_type ?annotation:a (Tstring) }
@@ -274,19 +307,21 @@ instruction:
  | GET                               { GET }
  | GT                                { GT }
  | HASH_KEY                          { HASH_KEY }
+ | IF t=seq e=seq                    { IF (t, e) }
  | IF_CONS t=seq e=seq               { IF_CONS (t, e) }
  | IF_LEFT t=seq e=seq               { IF_LEFT (t, e) }
  | IF_NONE t=seq e=seq               { IF_NONE (t, e) }
- | IF t=seq e=seq                    { IF (t, e) }
  | IMPLICIT_ACCOUNT                  { IMPLICIT_ACCOUNT }
  | INT                               { INT }
  | ISNAT                             { ISNAT }
  | ITER xs=seq                       { ITER xs }
+ | KECCAK                            { KECCAK }
  | LAMBDA a=type_ r=type_ xs=seq     { LAMBDA (a, r, xs) }
  | LE                                { LE }
  | LEFT t=type_                      { LEFT t }
- | LOOP_LEFT xs=seq                  { LOOP_LEFT xs }
+ | LEVEL                             { LEVEL }
  | LOOP xs=seq                       { LOOP xs }
+ | LOOP_LEFT xs=seq                  { LOOP_LEFT xs }
  | LSL                               { LSL }
  | LSR                               { LSR }
  | LT                                { LT }
@@ -295,6 +330,7 @@ instruction:
  | MUL                               { MUL }
  | NEG                               { NEG }
  | NEQ                               { NEQ }
+ | NEVER                             { NEVER }
  | NIL t=type_                       { NIL t }
  | NONE t=type_                      { NONE t }
  | NOT                               { NOT }
@@ -302,14 +338,21 @@ instruction:
  | OR                                { OR }
  | PACK                              { PACK }
  | PAIR                              { PAIR }
+ | PAIRING_CHECK                     { PAIRING_CHECK }
  | PUSH t=type_ d=data               { PUSH (t, d) }
  | RENAME                            { RENAME }
  | RIGHT t=type_                     { RIGHT t }
- | SELF_ADDRESS                      { SELF_ADDRESS }
+ | SAPLING_EMPTY_STATE               { SAPLING_EMPTY_STATE }
+ | SAPLING_VERIFY_UPDATE             { SAPLING_VERIFY_UPDATE }
  | SELF                              { SELF }
+ | SELF_ADDRESS                      { SELF_ADDRESS }
  | SENDER                            { SENDER }
+ | SET_BAKER_ACTIVE                  { SET_BAKER_ACTIVE }
+ | SET_BAKER_CONSENSUS_KEY           { SET_BAKER_CONSENSUS_KEY }
+ | SET_BAKER_PVSS_KEY                { SET_BAKER_PVSS_KEY }
  | SET_DELEGATE                      { SET_DELEGATE }
  | SHA256                            { SHA256 }
+ | SHA3                              { SHA3 }
  | SHA512                            { SHA512 }
  | SIZE                              { SIZE }
  | SLICE                             { SLICE }
@@ -317,10 +360,15 @@ instruction:
  | SOURCE                            { SOURCE }
  | STEPS_TO_QUOTA                    { STEPS_TO_QUOTA }
  | SUB                               { SUB }
+ | SUBMIT_BALLOT                     { SUBMIT_BALLOT }
+ | SUBMIT_PROPOSALS                  { SUBMIT_PROPOSALS }
  | SWAP                              { SWAP }
+ | TOGGLE_BAKER_DELEGATIONS          { TOGGLE_BAKER_DELEGATIONS }
+ | TOTAL_VOTING_POWER                { TOTAL_VOTING_POWER }
  | TRANSFER_TOKENS                   { TRANSFER_TOKENS }
  | UNIT                              { UNIT }
  | UNPACK t=type_                    { UNPACK t }
  | UNPAIR                            { UNPAIR }
  | UPDATE                            { UPDATE }
+ | VOTING_POWER                      { VOTING_POWER }
  | XOR                               { XOR }
