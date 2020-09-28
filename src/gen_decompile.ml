@@ -75,11 +75,47 @@ let to_dir (michelson, env : T.michelson * env) =
     | _ -> ()
   in
 
+  (* let add_instruction (sys : T.sysofequations) (i : T.dinstruction) = i::sys in *)
+
   let add_instruction (sys : T.sysofequations) (i : T.dinstruction) =
-    match i with
-    | T.Dassign (T.Dbop (Bpair, a1, b1), T.Dbop (Bpair, a2, b2)) -> T.Dassign (a1, a2)::T.Dassign (b1, b2)::sys
-    (* | T.Dbop (Bpair, a1, b1), T.Dparameter (T.Dbop (Bpair, a2, b2)) -> (a1, a2)::(b1, b2)::sys *)
-    | _ -> i::sys
+    let assigns =
+      let rec aux accu (a, b : T.dexpr * T.dexpr) =
+        match a, b with
+        | T.Dbop (Bpair, a1, b1), T.Dbop (Bpair, a2, b2) -> aux (aux accu (a1, a2)) (b1, b2)
+        | _ -> (a, b)::accu
+      in
+      match i with
+      | T.Dassign (a, b) -> aux [] (a, b)
+      | _                -> []
+    in
+
+    match assigns with
+    | [] -> i::sys
+    | _ -> begin
+        List.fold_right (
+          fun (a, b) accu ->
+
+            let count instrs =
+              let f accu (e : T.dexpr) = if T.cmp_dexpr a e then accu + 1 else accu in
+              List.fold_left (T.fold_dinstruction_dexpr f) 0 instrs
+            in
+
+            let cpt = count accu in
+
+            if cpt = 1
+            then begin
+              let replace instrs = List.map (
+                fun x ->
+                let fe (x : T.dexpr) : T.dexpr = if T.cmp_dexpr a x then b else x in
+                let rec f (x : T.dinstruction) : T.dinstruction = T.map_dinstruction_gen fe f x in
+                f x) instrs in
+              replace accu
+            end
+            else (T.Dassign (a, b))::accu
+
+        ) assigns sys
+      end
+
   in
 
   let rec interp (env : ir_env) (sys : T.sysofequations) (instrs : T.code list) (stack : (T.dexpr) list) =

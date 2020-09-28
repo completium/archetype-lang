@@ -367,12 +367,6 @@ type dinstruction =
 type sysofequations = dinstruction list
 [@@deriving show {with_path = false}]
 
-type dstack = {
-  fail:  bool;
-  stack: dexpr list;
-}
-[@@deriving show {with_path = false}]
-
 type dprogram = {
   name: ident;
   storage: type_;
@@ -653,7 +647,7 @@ let map_data (f : data -> data) = function
   | Delt (l, r)  -> Delt (f l, f r)
 
 let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) = function
-(* Control structures *)
+  (* Control structures *)
   | SEQ l                    -> SEQ (List.map fc l)
   | APPLY                    -> APPLY
   | EXEC                     -> EXEC
@@ -782,6 +776,73 @@ let rec map_seq f x =
   | DIP (n, x)        -> DIP (n, g x)
   | CREATE_CONTRACT x -> CREATE_CONTRACT (g x)
   | x -> map_code (map_seq f) x
+
+
+(* -------------------------------------------------------------------- *)
+
+let rec cmp_dexpr (lhs : dexpr) (rhs : dexpr) =
+  match lhs, rhs with
+  | Dalpha i1, Dalpha i2                           -> i1 = i2
+  | Dinitstorage t1, Dinitstorage t2               -> cmp_type t1 t2
+  | Dparameter t1, Dparameter t2                   -> cmp_type t1 t2
+  | Dstorage t1, Dstorage t2                       -> cmp_type t1 t2
+  | Doperations, Doperations                       -> true
+  | Ddata d1, Ddata d2                             -> cmp_data d1 d2
+  | Dzop op1, Dzop op2                             -> op1 = op2
+  | Duop (op1, x1), Duop (op2, x2)                 -> op1 = op2 && cmp_dexpr x1 x2
+  | Dbop (op1, x1, y1), Dbop (op2, x2, y2)         -> op1 = op2 && cmp_dexpr x1 x2 && cmp_dexpr y1 y2
+  | Dtop (op1, x1, y1, z1), Dtop (op2, x2, y2, z2) -> op1 = op2 && cmp_dexpr x1 x2 && cmp_dexpr y1 y2 && cmp_dexpr z1 z2
+  | _ -> false
+
+let rec cmp_dinstruction (lhs : dinstruction) (rhs : dinstruction) =
+ match lhs, rhs with
+  | Dassign (e1, v1), Dassign (e2, v2) -> cmp_dexpr e1 e2 && cmp_dexpr v1 v2
+  | Dif (c1, t1, e1), Dif (c2, t2, e2) -> cmp_dexpr c1 c2 && List.for_all2 cmp_dinstruction t1 t2 && List.for_all2 cmp_dinstruction e1 e2
+  | Dfail e1, Dfail e2                 -> cmp_dexpr e1 e2
+  | _ -> false
+
+let map_dinstruction_gen (fe : dexpr -> dexpr) (f : dinstruction -> dinstruction) = function
+  | Dassign (e, v)     -> Dassign (fe e, fe v)
+  | Dif     (c, t, e)  -> Dif     (fe c, List.map f t, List.map f e)
+  | Dfail   e          -> Dfail   (fe e)
+
+let map_dexpr_gen (ft : type_ -> type_) (fd : data -> data) (f : dexpr -> dexpr) = function
+  | Dalpha i                 -> Dalpha i
+  | Dinitstorage t           -> Dinitstorage (ft t)
+  | Dparameter t             -> Dparameter (ft t)
+  | Dstorage t               -> Dstorage (ft t)
+  | Doperations              -> Doperations
+  | Ddata d                  -> Ddata (fd d)
+  | Dzop op                  -> Dzop op
+  | Duop (op, x)             -> Duop (op, f x)
+  | Dbop (op, x, y)          -> Dbop (op, f x, f y)
+  | Dtop (op, x, y, z)       -> Dtop (op, f x, f y, f z)
+
+let map_dexpr = map_dexpr_gen id id
+
+let map_dinstruction_gen (fe : dexpr -> dexpr) (f : dinstruction -> dinstruction) = function
+  | Dassign (e, v)     -> Dassign (fe e, fe v)
+  | Dif     (c, t, e)  -> Dif     (fe c, List.map f t, List.map f e)
+  | Dfail   e          -> Dfail   (fe e)
+
+let map_dinstruction = map_dinstruction_gen id
+
+let fold_dexpr accu f = function
+  | Dalpha _                 -> accu
+  | Dinitstorage _           -> accu
+  | Dparameter _             -> accu
+  | Dstorage _               -> accu
+  | Doperations              -> accu
+  | Ddata _                  -> accu
+  | Dzop _                   -> accu
+  | Duop (_, x)              -> f accu x
+  | Dbop (_, x, y)           -> f (f accu x) y
+  | Dtop (_, x, y, z)        -> f (f (f accu x) y) z
+
+let rec fold_dinstruction_dexpr f accu = function
+  | Dassign (e, v)     -> f (f accu e) v
+  | Dif     (c, t, e)  -> List.fold_left (fold_dinstruction_dexpr f) (List.fold_left (fold_dinstruction_dexpr f) (f accu c) t) e
+  | Dfail   e          -> f accu e
 
 module Utils : sig
 
