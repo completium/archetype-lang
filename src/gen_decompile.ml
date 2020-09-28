@@ -95,20 +95,20 @@ let to_dir (michelson, env : T.michelson * env) =
         List.fold_right (
           fun (a, b) accu ->
 
-            let count instrs =
-              let f accu (e : T.dexpr) = if T.cmp_dexpr a e then accu + 1 else accu in
-              List.fold_left (T.fold_dinstruction_dexpr f) 0 instrs
+            let cpt =
+              let rec f accu (e : T.dexpr) = if T.cmp_dexpr a e then accu + 1 else T.fold_dexpr f accu e in
+              List.fold_left (T.fold_dinstruction_dexpr f) 0 accu
             in
-
-            let cpt = count accu in
 
             if cpt = 1
             then begin
               let replace instrs = List.map (
-                fun x ->
-                let fe (x : T.dexpr) : T.dexpr = if T.cmp_dexpr a x then b else x in
-                let rec f (x : T.dinstruction) : T.dinstruction = T.map_dinstruction_gen fe f x in
-                f x) instrs in
+                  fun x ->
+                    let rec fe (x : T.dexpr) : T.dexpr =
+                      if T.cmp_dexpr a x then b else T.map_dexpr fe x
+                    in
+                    let rec f (x : T.dinstruction) : T.dinstruction = T.map_dinstruction_gen fe f x in
+                    f x) instrs in
               replace accu
             end
             else (T.Dassign (a, b))::accu
@@ -191,11 +191,11 @@ let to_dir (michelson, env : T.michelson * env) =
         let sys_then, stack_then, env_then = interp env [] (List.rev th) stack in
         let sys_else, stack_else, env_else = interp env [] (List.rev el) stack in
 
-        let stack =
+        let stack, env =
           match env_then.fail, env_else.fail with
-          | false, false -> stack_then
-          | true,  false -> stack_else
-          | false, true  -> stack_then
+          | false, false -> stack_then, {env_then with fail = false}
+          | true,  false -> stack_else, {env_else with fail = false}
+          | false, true  -> stack_then, {env_then with fail = false}
           | true,  true  -> assert false
         in
 

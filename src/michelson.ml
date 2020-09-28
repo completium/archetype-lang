@@ -827,7 +827,7 @@ let map_dinstruction_gen (fe : dexpr -> dexpr) (f : dinstruction -> dinstruction
 
 let map_dinstruction = map_dinstruction_gen id
 
-let fold_dexpr accu f = function
+let fold_dexpr f accu = function
   | Dalpha _                 -> accu
   | Dinitstorage _           -> accu
   | Dparameter _             -> accu
