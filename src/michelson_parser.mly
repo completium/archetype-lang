@@ -244,7 +244,7 @@ type_:
  | TUNIT a=annot                      { mk_type ?annotation:a (Tunit) }
 
 elt:
-| DELT a=data          { (a, a) }
+| DELT a=data b=data         { (a, b) }
 
 data:
  | x=paren(data)       { x }
