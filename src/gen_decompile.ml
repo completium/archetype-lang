@@ -471,7 +471,7 @@ let to_model (ir, env : T.ir * env) : M.model * env =
     | Dsome   _d       -> assert false
     | Dnone            -> assert false
     | Dlist  _l        -> assert false
-    | Dplist _l        -> assert false
+    | Delt _           -> assert false
   in
 
   let rec for_instr (i : T.instruction) : M.mterm =

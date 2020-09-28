@@ -58,7 +58,7 @@ type data =
   | Dsome              of data
   | Dnone
   | Dlist              of data list
-  | Dplist             of (data * data) list
+  | Delt               of data * data
 [@@deriving show {with_path = false}]
 
 type code =
@@ -519,7 +519,7 @@ let cmp_data lhs rhs =
     | Dsome d1, Dsome d2             -> f d1 d2
     | Dnone, Dnone                   -> true
     | Dlist ds1, Dlist ds2           -> List.for_all2 f ds1 ds2
-    | Dplist l1, Dplist l2           -> List.for_all2 (fun (k1, v1) (k2, v2) -> f k1 k2 && f v1 v2) l1 l2
+    | Delt (a1, b1), Delt (a2, b2)   -> f a1 a2 && f b1 b2
     | _ -> false
   in
   f lhs rhs
@@ -650,7 +650,7 @@ let map_data (f : data -> data) = function
   | Dsome v      -> Dsome (f v)
   | Dnone        -> Dnone
   | Dlist l      -> Dlist (List.map f l)
-  | Dplist l     -> Dplist (List.map (fun (x, y) -> f x, f y) l)
+  | Delt (l, r)  -> Delt (f l, f r)
 
 let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) = function
 (* Control structures *)

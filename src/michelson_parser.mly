@@ -243,8 +243,6 @@ type_:
  | TTIMESTAMP a=annot                 { mk_type ?annotation:a (Ttimestamp) }
  | TUNIT a=annot                      { mk_type ?annotation:a (Tunit) }
 
-elt:
-| DELT a=data b=data         { (a, b) }
 
 data:
  | x=paren(data)       { x }
@@ -259,8 +257,8 @@ data:
  | DRIGHT d=data       { Dright d }
  | DSOME d=data        { Dsome d }
  | DNONE               { Dnone }
+ | DELT a=data b=data  { Delt (a, b) }
  | LBRACE xs=separated_list(SEMI_COLON, data) RBRACE { Dlist xs }
- | LBRACE xs=separated_nonempty_list(SEMI_COLON, elt) RBRACE  { Dplist xs }
 
 
 neo:

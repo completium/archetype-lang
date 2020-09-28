@@ -58,20 +58,21 @@ let rec pp_pretty_type fmt (t : type_) =
   | _ -> pp_type fmt t
 
 let rec pp_data fmt (d : data) =
+  let pp s = Format.fprintf fmt s in
   match d with
   | Dint    v       -> pp_big_int fmt v
-  | Dstring v       -> Format.fprintf fmt "\"%s\"" v
-  | Dbytes  v       -> Format.fprintf fmt "0x%s"     v
-  | Dunit           -> Format.fprintf fmt "Unit"
-  | Dtrue           -> Format.fprintf fmt "True"
-  | Dfalse          -> Format.fprintf fmt "False"
-  | Dpair  (ld, rd) -> Format.fprintf fmt "(Pair %a %a)" pp_data ld pp_data rd
-  | Dleft   d       -> Format.fprintf fmt "(Left %a)"      pp_data d
-  | Dright  d       -> Format.fprintf fmt "(Right %a)"     pp_data d
-  | Dsome   d       -> Format.fprintf fmt "(Some %a)"      pp_data d
-  | Dnone           -> Format.fprintf fmt "None"
-  | Dlist l         -> Format.fprintf fmt "{ %a }" (pp_list "; " pp_data) l
-  | Dplist l        -> Format.fprintf fmt "{ %a }" (pp_list "; " (fun fmt (x, y) -> Format.fprintf fmt "Elt %a %a" pp_data x pp_data y)) l
+  | Dstring v       -> pp "\"%s\"" v
+  | Dbytes  v       -> pp "0x%s"     v
+  | Dunit           -> pp "Unit"
+  | Dtrue           -> pp "True"
+  | Dfalse          -> pp "False"
+  | Dpair  (ld, rd) -> pp "(Pair %a %a)" pp_data ld pp_data rd
+  | Dleft   d       -> pp "(Left %a)"    pp_data d
+  | Dright  d       -> pp "(Right %a)"   pp_data d
+  | Dsome   d       -> pp "(Some %a)"    pp_data d
+  | Dnone           -> pp "None"
+  | Dlist l         -> pp "{ %a }" (pp_list "; " pp_data) l
+  | Delt (x, y)     -> pp "Elt %a %a" pp_data x pp_data y
 
 let rec pp_code fmt (i : code) =
   let pp s = Format.fprintf fmt s in

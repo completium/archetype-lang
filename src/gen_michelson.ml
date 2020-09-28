@@ -128,7 +128,7 @@ let to_ir (model : M.model) : T.ir =
     | Mtuple     l      -> to_one_data (List.map to_data l)
     | Mlitset    l      -> T.Dlist (List.map to_data l)
     | Mlitlist   l      -> T.Dlist (List.map to_data l)
-    | Mlitmap    l      -> T.Dplist (List.map (fun (x, y) -> to_data x, to_data y) l)
+    | Mlitmap    l      -> T.Dlist (List.map (fun (x, y) -> T.Delt (to_data x, to_data y)) l)
     | Muminus    v      -> to_data v |> (function | T.Dint n -> T.Dint (Big_int.mult_int_big_int (-1) n) | _ -> assert false )
     | Mnow              -> T.Dint Big_int.zero_big_int
     | Mlitrecord l      -> to_one_data (List.map (to_data |@ snd) l)
