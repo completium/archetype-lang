@@ -76,8 +76,6 @@ let to_dir (michelson, env : T.michelson * env) =
     | _ -> ()
   in
 
-  (* let add_instruction env (sys : T.sysofequations) (i : T.dinstruction) = i::sys in *)
-
   let add_instruction (_env : ir_env) (sys : T.sysofequations) (i : T.dinstruction) =
     let assigns =
       let rec aux accu (a, b : T.dexpr * T.dexpr) =
@@ -125,8 +123,18 @@ let to_dir (michelson, env : T.michelson * env) =
               | T.Dtop        _ -> 1
             in
 
-            match _cpt, a, _env.scopes with
-            | _, Dalpha _, [] -> begin
+            let is_assigned_a =
+              let rec aux accu x =
+                match x with
+                | T.Dassign (z, _) when T.cmp_dexpr a z -> true
+                | _ -> T.fold_dinstruction aux accu x
+              in
+
+              List.fold_left aux false (accu @ (List.flatten _env.scopes))
+            in
+
+            match _cpt, a, is_assigned_a, _env.scopes with
+            | _, Dalpha _, false, [] -> begin
                 let replace instrs = List.map (
                     fun x ->
                       let rec fe (x : T.dexpr) : T.dexpr =
@@ -179,6 +187,8 @@ let to_dir (michelson, env : T.michelson * env) =
       end
 
   in
+
+  (* let add_instruction _env (sys : T.sysofequations) (i : T.dinstruction) = i::sys in *)
 
   let rec interp (env : ir_env) (sys : T.sysofequations) (instrs : T.code list) (stack : (T.dexpr) list) =
     let f = interp in
@@ -488,7 +498,7 @@ let to_dir (michelson, env : T.michelson * env) =
   let rec type_to_dexpr (x : T.type_) =
     let f = type_to_dexpr in
     match x.node with
-    | T.Tpair (a, b) when (match x.annotation with | None | Some "storage" | Some "parameter" -> true | _ -> false) ->
+    | T.Tpair (a, b) when (match x.annotation with | None(*  | Some "storage" | Some "parameter" *) -> true | _ -> false) ->
       T.Dbop (Bpair, f a, f b)
     | _ -> T.Dvar x
   in
