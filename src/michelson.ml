@@ -347,8 +347,7 @@ type alpha_ident = int
 
 type dexpr =
   | Dalpha of alpha_ident
-  | Dinitstorage of type_
-  | Dparameter of type_
+  | Dvar of type_
   | Dstorage of type_
   | Doperations
   | Ddata of data
@@ -517,6 +516,83 @@ let cmp_data lhs rhs =
     | _ -> false
   in
   f lhs rhs
+
+let cmp_z_operator lhs rhs =
+  match lhs, rhs with
+  | Znow, Znow                                   -> true
+  | Zamount, Zamount                             -> true
+  | Zbalance, Zbalance                           -> true
+  | Zsource, Zsource                             -> true
+  | Zsender, Zsender                             -> true
+  | Zaddress, Zaddress                           -> true
+  | Zchain_id, Zchain_id                         -> true
+  | Zself a1, Zself a2                           -> Option.cmp String.equal a1 a2
+  | Zself_address, Zself_address                 -> true
+  | Znone t1, Znone t2                           -> cmp_type t1 t2
+  | Zunit, Zunit                                 -> true
+  | Znil t1, Znil t2                             -> cmp_type t1 t2
+  | Zemptyset t1, Zemptyset t2                   -> cmp_type t1 t2
+  | Zemptymap (k1, v1), Zemptymap (k2, v2)       -> cmp_type k1 k2 && cmp_type v1 v2
+  | Zemptybigmap (k1, v1), Zemptybigmap (k2, v2) -> cmp_type k1 k2 && cmp_type v1 v2
+  | _ -> false
+
+let cmp_un_operator lhs rhs =
+  match lhs, rhs with
+  | Ucar, Ucar                             -> true
+  | Ucdr, Ucdr                             -> true
+  | Uleft t1, Uleft t2                     -> cmp_type t1 t2
+  | Uright t1, Uright t2                   -> cmp_type t1 t2
+  | Uneg, Uneg                             -> true
+  | Uint, Uint                             -> true
+  | Unot, Unot                             -> true
+  | Uabs, Uabs                             -> true
+  | Uisnat, Uisnat                         -> true
+  | Usome, Usome                           -> true
+  | Usize, Usize                           -> true
+  | Upack, Upack                           -> true
+  | Uunpack t1, Uunpack t2                 -> cmp_type t1 t2
+  | Ublake2b, Ublake2b                     -> true
+  | Usha256, Usha256                       -> true
+  | Usha512, Usha512                       -> true
+  | Uhash_key, Uhash_key                   -> true
+  | Ufail, Ufail                           -> true
+  | Ucontract (t1, i1), Ucontract (t2, i2) -> cmp_type t1 t2 && Option.cmp String.equal i1 i2
+  | Usetdelegate, Usetdelegate             -> true
+  | Uimplicitaccount, Uimplicitaccount     -> true
+  | Ueq, Ueq                               -> true
+  | Une, Une                               -> true
+  | Ugt, Ugt                               -> true
+  | Uge, Uge                               -> true
+  | Ult, Ult                               -> true
+  | Ule, Ule                               -> true
+  | _ -> false
+
+let cmp_bin_operator lhs rhs =
+  match lhs, rhs with
+  | Badd, Badd         -> true
+  | Bsub, Bsub         -> true
+  | Bmul, Bmul         -> true
+  | Bediv, Bediv       -> true
+  | Blsl, Blsl         -> true
+  | Blsr, Blsr         -> true
+  | Bor, Bor           -> true
+  | Band, Band         -> true
+  | Bxor, Bxor         -> true
+  | Bcompare, Bcompare -> true
+  | Bget, Bget         -> true
+  | Bmem, Bmem         -> true
+  | Bconcat, Bconcat   -> true
+  | Bcons, Bcons       -> true
+  | Bpair, Bpair       -> true
+  | _ -> false
+
+let cmp_ter_operator lhs rhs =
+  match lhs, rhs with
+  | Tcheck_signature, Tcheck_signature -> true
+  | Tslice, Tslice                     -> true
+  | Tupdate, Tupdate                   -> true
+  | Ttransfer_tokens, Ttransfer_tokens -> true
+  | _ -> false
 
 let cmp_code lhs rhs =
   let rec f lhs rhs =
@@ -783,19 +859,18 @@ let rec map_seq f x =
 let rec cmp_dexpr (lhs : dexpr) (rhs : dexpr) =
   match lhs, rhs with
   | Dalpha i1, Dalpha i2                           -> i1 = i2
-  | Dinitstorage t1, Dinitstorage t2               -> cmp_type t1 t2
-  | Dparameter t1, Dparameter t2                   -> cmp_type t1 t2
+  | Dvar t1, Dvar t2                               -> cmp_type t1 t2
   | Dstorage t1, Dstorage t2                       -> cmp_type t1 t2
   | Doperations, Doperations                       -> true
   | Ddata d1, Ddata d2                             -> cmp_data d1 d2
-  | Dzop op1, Dzop op2                             -> op1 = op2
-  | Duop (op1, x1), Duop (op2, x2)                 -> op1 = op2 && cmp_dexpr x1 x2
-  | Dbop (op1, x1, y1), Dbop (op2, x2, y2)         -> op1 = op2 && cmp_dexpr x1 x2 && cmp_dexpr y1 y2
-  | Dtop (op1, x1, y1, z1), Dtop (op2, x2, y2, z2) -> op1 = op2 && cmp_dexpr x1 x2 && cmp_dexpr y1 y2 && cmp_dexpr z1 z2
+  | Dzop op1, Dzop op2                             -> cmp_z_operator op1 op2
+  | Duop (op1, x1), Duop (op2, x2)                 -> cmp_un_operator op1 op2 && cmp_dexpr x1 x2
+  | Dbop (op1, x1, y1), Dbop (op2, x2, y2)         -> cmp_bin_operator op1 op2 && cmp_dexpr x1 x2 && cmp_dexpr y1 y2
+  | Dtop (op1, x1, y1, z1), Dtop (op2, x2, y2, z2) -> cmp_ter_operator op1 op2 && cmp_dexpr x1 x2 && cmp_dexpr y1 y2 && cmp_dexpr z1 z2
   | _ -> false
 
 let rec cmp_dinstruction (lhs : dinstruction) (rhs : dinstruction) =
- match lhs, rhs with
+  match lhs, rhs with
   | Dassign (e1, v1), Dassign (e2, v2) -> cmp_dexpr e1 e2 && cmp_dexpr v1 v2
   | Dif (c1, t1, e1), Dif (c2, t2, e2) -> cmp_dexpr c1 c2 && List.for_all2 cmp_dinstruction t1 t2 && List.for_all2 cmp_dinstruction e1 e2
   | Dfail e1, Dfail e2                 -> cmp_dexpr e1 e2
@@ -808,8 +883,7 @@ let map_dinstruction_gen (fe : dexpr -> dexpr) (f : dinstruction -> dinstruction
 
 let map_dexpr_gen (ft : type_ -> type_) (fd : data -> data) (f : dexpr -> dexpr) = function
   | Dalpha i                 -> Dalpha i
-  | Dinitstorage t           -> Dinitstorage (ft t)
-  | Dparameter t             -> Dparameter (ft t)
+  | Dvar t                   -> Dvar t
   | Dstorage t               -> Dstorage (ft t)
   | Doperations              -> Doperations
   | Ddata d                  -> Ddata (fd d)
@@ -829,8 +903,7 @@ let map_dinstruction = map_dinstruction_gen id
 
 let fold_dexpr f accu = function
   | Dalpha _                 -> accu
-  | Dinitstorage _           -> accu
-  | Dparameter _             -> accu
+  | Dvar _                   -> accu
   | Dstorage _               -> accu
   | Doperations              -> accu
   | Ddata _                  -> accu

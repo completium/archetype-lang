@@ -1,0 +1,14 @@
+archetype decomp_if2
+
+variable a : nat = 0
+variable b : nat = 0
+
+entry exec (n : nat) {
+  if n < 6
+  then (a:= 6 ; b := 5)
+  else a := 8;
+
+  if n > 2
+  then a := 2
+  else (a:= 3 ; b := 4)
+}

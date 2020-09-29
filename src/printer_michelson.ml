@@ -355,8 +355,7 @@ let rec pp_dexpr fmt (de : dexpr) =
   let f = pp_dexpr in
   match de with
   | Dalpha n           -> pp "x%i" n
-  | Dinitstorage t     -> pp "initstorage(%a)" pp_type t
-  | Dparameter t       -> pp "parameter(%a)" pp_type t
+  | Dvar t             -> pp "var%a" (fun fmt -> (if Option.is_some t.annotation then pp_type fmt else (pp_paren pp_type) fmt)) t
   | Dstorage t         -> pp "storage(%a)" pp_type t
   | Doperations        -> pp "operations"
   | Ddata d            -> pp "data(%a)" pp_data d

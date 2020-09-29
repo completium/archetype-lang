@@ -28,10 +28,11 @@ type ir_env = {
   cpt_alpha: int;
   deep:      int;
   fail:      bool;
+  scopes:    (T.dinstruction list) list;
 }
 
-let mk_ir_env ?(cpt_alpha=0) ?(deep=0) ?(fail=false) _ : ir_env =
-  { cpt_alpha; deep; fail }
+let mk_ir_env ?(cpt_alpha=0) ?(deep=0) ?(fail=false) ?(scopes=[]) _ : ir_env =
+  { cpt_alpha; deep; fail; scopes }
 
 let inc_deep (env : ir_env) : ir_env = { env with deep = env.deep + 1 }
 let dec_deep (env : ir_env) : ir_env = { env with deep = env.deep - 1 }
@@ -75,13 +76,24 @@ let to_dir (michelson, env : T.michelson * env) =
     | _ -> ()
   in
 
-  (* let add_instruction (sys : T.sysofequations) (i : T.dinstruction) = i::sys in *)
+  (* let add_instruction env (sys : T.sysofequations) (i : T.dinstruction) = i::sys in *)
 
-  let add_instruction (sys : T.sysofequations) (i : T.dinstruction) =
+  let add_instruction (_env : ir_env) (sys : T.sysofequations) (i : T.dinstruction) =
     let assigns =
       let rec aux accu (a, b : T.dexpr * T.dexpr) =
         match a, b with
-        | T.Dbop (Bpair, a1, b1), T.Dbop (Bpair, a2, b2) -> aux (aux accu (a1, a2)) (b1, b2)
+        | _ when T.cmp_dexpr a b -> accu
+        | T.Dbop (Bpair, a1, b1), _ -> begin
+            let f op =
+              match b, op with
+              | T.Dbop (Bpair, x, _), T.Ucar -> x
+              | T.Dbop (Bpair, _, y), T.Ucdr -> y
+              | _ -> T.Duop (op, b)
+            in
+            let car = f Ucar in
+            let cdr = f Ucdr in
+            aux (aux accu (a1, car)) (b1, cdr)
+          end
         | _ -> (a, b)::accu
       in
       match i with
@@ -93,15 +105,43 @@ let to_dir (michelson, env : T.michelson * env) =
     | [] -> i::sys
     | _ -> begin
         List.fold_right (
-          fun (a, b) accu ->
+          fun (a, b) (accu : T.dinstruction list) ->
 
-            let cpt =
+            let _cpt =
               let rec f accu (e : T.dexpr) = if T.cmp_dexpr a e then accu + 1 else T.fold_dexpr f accu e in
-              List.fold_left (T.fold_dinstruction_dexpr f) 0 accu
+              List.fold_left (T.fold_dinstruction_dexpr f) 0 (accu @ (List.flatten _env.scopes))
             in
 
-            if cpt = 1
-            then begin
+            let _cost =
+              match b with
+              | T.Dalpha      _ -> 0
+              | T.Dvar        _ -> 0
+              | T.Dstorage    _ -> 0
+              | T.Doperations   -> 0
+              | T.Ddata       _ -> 0
+              | T.Dzop        _ -> 1
+              | T.Duop        _ -> 1
+              | T.Dbop        _ -> 1
+              | T.Dtop        _ -> 1
+            in
+
+            match _cpt, a, _env.scopes with
+            | _, Dalpha _, [] -> begin
+                let replace instrs = List.map (
+                    fun x ->
+                      let rec fe (x : T.dexpr) : T.dexpr =
+                        if T.cmp_dexpr a x then b else T.map_dexpr fe x
+                      in
+                      let rec f (x : T.dinstruction) : T.dinstruction = T.map_dinstruction_gen fe f x in
+                      f x) instrs in
+                replace accu
+              end
+            | _ -> (T.Dassign (a, b))::accu
+
+          (* match _cpt, a, _env.scopes with
+             (* | 0, _, _ -> accu *)
+             | 1, Dalpha _, []
+             | _, Dalpha _, [] when _cost = 0 -> begin
               let replace instrs = List.map (
                   fun x ->
                     let rec fe (x : T.dexpr) : T.dexpr =
@@ -110,8 +150,8 @@ let to_dir (michelson, env : T.michelson * env) =
                     let rec f (x : T.dinstruction) : T.dinstruction = T.map_dinstruction_gen fe f x in
                     f x) instrs in
               replace accu
-            end
-            else (T.Dassign (a, b))::accu
+             end
+             | _ -> (T.Dassign (a, b))::accu *)
 
         ) assigns sys
       end
@@ -127,35 +167,35 @@ let to_dir (michelson, env : T.michelson * env) =
       | _ -> assert false
     in
 
-    let interp_zop op it st =
+    let interp_zop env op it st =
       match st with
-      | a::st -> f env (add_instruction sys (T.Dassign (a, Dzop op))) it st
+      | a::st -> f env (add_instruction env sys (T.Dassign (a, Dzop op))) it st
       | _ -> emit_error ()
     in
 
-    let interp_uop op it st =
+    let interp_uop env op it st =
       match st with
       | a::st -> begin
           let x = T.dalpha env.cpt_alpha in
           let env = inc_cpt_alpha env in
-          f env (add_instruction sys (T.Dassign (a, Duop (op, x)))) it (x::st)
+          f env (add_instruction env sys (T.Dassign (a, Duop (op, x)))) it (x::st)
         end
       | _ -> emit_error ()
     in
 
-    let interp_bop op it st =
+    let interp_bop env op it st =
       match st with
       | a::st -> begin
           let x = T.dalpha env.cpt_alpha in
           let env = inc_cpt_alpha env in
           let y = T.dalpha env.cpt_alpha in
           let env = inc_cpt_alpha env in
-          f env (add_instruction sys (T.Dassign (a, Dbop (op, x, y)))) it (x::y::st)
+          f env (add_instruction env sys (T.Dassign (a, Dbop (op, x, y)))) it (x::y::st)
         end
       | _ -> emit_error ()
     in
 
-    let interp_top op it st =
+    let interp_top env op it st =
       match st with
       | a::st -> begin
           let x = T.dalpha env.cpt_alpha in
@@ -164,7 +204,7 @@ let to_dir (michelson, env : T.michelson * env) =
           let env = inc_cpt_alpha env in
           let z = T.dalpha env.cpt_alpha in
           let env = inc_cpt_alpha env in
-          f env (add_instruction sys (T.Dassign (a, Dtop (op, x, y, z)))) it (x::y::z::st)
+          f env (add_instruction env sys (T.Dassign (a, Dtop (op, x, y, z)))) it (x::y::z::st)
         end
       | _ -> emit_error ()
     in
@@ -184,25 +224,32 @@ let to_dir (michelson, env : T.michelson * env) =
         let env = {env with fail = true} in
         let x = T.dalpha env.cpt_alpha in
         let env = inc_cpt_alpha env in
-        f env (add_instruction sys (T.Dfail x)) it (x::stack)
+        f env (add_instruction env sys (T.Dfail x)) it (x::stack)
       end
     | IF (th, el)::it -> begin
         let env = inc_deep env in
-        let sys_then, stack_then, env_then = interp env [] (List.rev th) stack in
-        let sys_else, stack_else, env_else = interp env [] (List.rev el) stack in
+        let scopes = env.scopes in
+        let env = { env with scopes = sys::scopes } in
+        let sys_then, _stack_then, env = interp env [] (List.rev th) stack in
+        let sys_else, _stack_else, env = interp env [] (List.rev el) stack in
+        let env = { env with scopes = scopes } in
 
-        let stack, env =
-          match env_then.fail, env_else.fail with
-          | false, false -> stack_then, {env_then with fail = false}
-          | true,  false -> stack_else, {env_else with fail = false}
-          | false, true  -> stack_then, {env_then with fail = false}
-          | true,  true  -> assert false
-        in
+        (* Format.printf "stack:@\n%a@\n@." pp_stack stack; *)
+        (* Format.printf "_stack_then:@\n%a@\n@." pp_stack _stack_then; *)
+        (* Format.printf "_stack_else:@\n%a@\n@." pp_stack _stack_else; *)
+
+        (* let stack, env =
+           match env_then.fail, env_else.fail with
+           | false, false -> stack_then, {env_then with fail = false}
+           | true,  false -> stack_else, {env_else with fail = false}
+           | false, true  -> stack_then, {env_then with fail = false}
+           | true,  true  -> assert false
+           in *)
 
         let x = T.dalpha env.cpt_alpha in
         let env = inc_cpt_alpha env in
 
-        let accu = add_instruction sys (T.Dif (x, sys_then, sys_else)) in
+        let accu = add_instruction env sys (T.Dif (x, sys_then, sys_else)) in
 
         f env accu it (x::stack)
       end
@@ -275,7 +322,7 @@ let to_dir (michelson, env : T.michelson * env) =
 
     | DUP::it -> begin
         match stack with
-        | a::b::st -> f env (add_instruction sys (T.Dassign (a, b))) it (b::st)
+        | a::b::st -> f env (add_instruction env sys (T.Dassign (a, b))) it (b::st)
         | _ -> emit_error ()
       end
 
@@ -283,7 +330,7 @@ let to_dir (michelson, env : T.michelson * env) =
         match stack with
         | a::t -> begin
             let data = d in
-            let accu = add_instruction sys (T.Dassign (a, T.Ddata data)) in
+            let accu = add_instruction env sys (T.Dassign (a, T.Ddata data)) in
             f env accu it t
           end
         | _ -> emit_error ()
@@ -298,83 +345,83 @@ let to_dir (michelson, env : T.michelson * env) =
 
     (* Arthmetic operations *)
 
-    | ABS::it      -> interp_uop Uabs     it stack
-    | ADD::it      -> interp_bop Badd     it stack
-    | COMPARE::it  -> interp_bop Bcompare it stack
-    | EDIV::it     -> interp_bop Bediv    it stack
-    | EQ::it       -> interp_uop Ueq      it stack
-    | GE::it       -> interp_uop Uge      it stack
-    | GT::it       -> interp_uop Ugt      it stack
-    | INT::it      -> interp_uop Uint     it stack
-    | ISNAT::it    -> interp_uop Uisnat   it stack
-    | LE::it       -> interp_uop Ule      it stack
-    | LSL::it      -> interp_bop Blsl     it stack
-    | LSR::it      -> interp_bop Blsr     it stack
-    | LT::it       -> interp_uop Ult      it stack
-    | MUL::it      -> interp_bop Bmul     it stack
-    | NEG::it      -> interp_uop Uneg     it stack
-    | NEQ::it      -> interp_uop Une      it stack
-    | SUB::it      -> interp_bop Bsub     it stack
+    | ABS::it      -> interp_uop env Uabs     it stack
+    | ADD::it      -> interp_bop env Badd     it stack
+    | COMPARE::it  -> interp_bop env Bcompare it stack
+    | EDIV::it     -> interp_bop env Bediv    it stack
+    | EQ::it       -> interp_uop env Ueq      it stack
+    | GE::it       -> interp_uop env Uge      it stack
+    | GT::it       -> interp_uop env Ugt      it stack
+    | INT::it      -> interp_uop env Uint     it stack
+    | ISNAT::it    -> interp_uop env Uisnat   it stack
+    | LE::it       -> interp_uop env Ule      it stack
+    | LSL::it      -> interp_bop env Blsl     it stack
+    | LSR::it      -> interp_bop env Blsr     it stack
+    | LT::it       -> interp_uop env Ult      it stack
+    | MUL::it      -> interp_bop env Bmul     it stack
+    | NEG::it      -> interp_uop env Uneg     it stack
+    | NEQ::it      -> interp_uop env Une      it stack
+    | SUB::it      -> interp_bop env Bsub     it stack
 
 
     (* Boolean operations *)
 
-    | AND::it     -> interp_bop Band it stack
-    | NOT::it     -> interp_uop Unot it stack
-    | OR::it      -> interp_bop Bor  it stack
-    | XOR::it     -> interp_bop Bxor it stack
+    | AND::it     -> interp_bop env Band it stack
+    | NOT::it     -> interp_uop env Unot it stack
+    | OR::it      -> interp_bop env Bor  it stack
+    | XOR::it     -> interp_bop env Bxor it stack
 
 
     (* Cryptographic operations *)
 
-    | BLAKE2B::it          -> interp_uop Ublake2b         it stack
-    | CHECK_SIGNATURE::it  -> interp_top Tcheck_signature it stack
-    | HASH_KEY::it         -> interp_uop Uhash_key        it stack
-    | SHA256::it           -> interp_uop Usha256          it stack
-    | SHA512::it           -> interp_uop Usha512          it stack
+    | BLAKE2B::it          -> interp_uop env Ublake2b         it stack
+    | CHECK_SIGNATURE::it  -> interp_top env Tcheck_signature it stack
+    | HASH_KEY::it         -> interp_uop env Uhash_key        it stack
+    | SHA256::it           -> interp_uop env Usha256          it stack
+    | SHA512::it           -> interp_uop env Usha512          it stack
 
 
     (* Blockchain operations *)
 
-    | ADDRESS::it            -> interp_zop Zaddress it stack
-    | AMOUNT::it             -> interp_zop Zamount it stack
-    | BALANCE::it            -> interp_zop Zbalance it stack
-    | CHAIN_ID::it           -> interp_zop Zchain_id it stack
-    | CONTRACT (t, a)::it    -> interp_uop (Ucontract (t, a)) it stack
+    | ADDRESS::it            -> interp_zop env Zaddress it stack
+    | AMOUNT::it             -> interp_zop env Zamount it stack
+    | BALANCE::it            -> interp_zop env Zbalance it stack
+    | CHAIN_ID::it           -> interp_zop env Zchain_id it stack
+    | CONTRACT (t, a)::it    -> interp_uop env (Ucontract (t, a)) it stack
     | CREATE_CONTRACT _::_   -> assert false
-    | IMPLICIT_ACCOUNT::it   -> interp_uop (Uimplicitaccount) it stack
-    | NOW::it                -> interp_zop Znow it stack
-    | SELF::it               -> interp_zop (Zself None) it stack
-    | SENDER::it             -> interp_zop Zsender it stack
-    | SET_DELEGATE::it       -> interp_uop Usetdelegate it stack
-    | SOURCE::it             -> interp_zop Zsource it stack
-    | TRANSFER_TOKENS::it    -> interp_top Ttransfer_tokens it stack
+    | IMPLICIT_ACCOUNT::it   -> interp_uop env (Uimplicitaccount) it stack
+    | NOW::it                -> interp_zop env Znow it stack
+    | SELF::it               -> interp_zop env (Zself None) it stack
+    | SENDER::it             -> interp_zop env Zsender it stack
+    | SET_DELEGATE::it       -> interp_uop env Usetdelegate it stack
+    | SOURCE::it             -> interp_zop env Zsource it stack
+    | TRANSFER_TOKENS::it    -> interp_top env Ttransfer_tokens it stack
 
 
     (* Operations on data structures *)
 
-    | CAR::it                  -> interp_uop Ucar it stack
-    | CDR::it                  -> interp_uop Ucdr it stack
-    | CONCAT::it               -> interp_bop Bconcat it stack
-    | CONS::it                 -> interp_bop Bcons it stack
-    | EMPTY_BIG_MAP (k, v)::it -> interp_zop (Zemptybigmap (k, v)) it stack
-    | EMPTY_MAP (k, v)::it     -> interp_zop (Zemptymap (k, v)) it stack
-    | EMPTY_SET t::it          -> interp_zop (Zemptyset t) it stack
-    | GET::it                  -> interp_bop Bget it stack
-    | LEFT t::it               -> interp_uop (Uleft t) it stack
+    | CAR::it                  -> interp_uop env Ucar it stack
+    | CDR::it                  -> interp_uop env Ucdr it stack
+    | CONCAT::it               -> interp_bop env Bconcat it stack
+    | CONS::it                 -> interp_bop env Bcons it stack
+    | EMPTY_BIG_MAP (k, v)::it -> interp_zop env (Zemptybigmap (k, v)) it stack
+    | EMPTY_MAP (k, v)::it     -> interp_zop env (Zemptymap (k, v)) it stack
+    | EMPTY_SET t::it          -> interp_zop env (Zemptyset t) it stack
+    | GET::it                  -> interp_bop env Bget it stack
+    | LEFT t::it               -> interp_uop env (Uleft t) it stack
     | MAP _::_                 -> assert false
-    | MEM::it                  -> interp_bop Bmem it stack
-    | NIL t::it                -> interp_zop (Znil t) it stack
-    | NONE t::it               -> interp_zop (Znone t)it stack
-    | PACK::it                 -> interp_uop Upack it stack
-    | PAIR::it                 -> interp_bop Bpair it stack
-    | RIGHT t::it              -> interp_uop (Uright t) it stack
-    | SIZE::it                 -> interp_uop Usize it stack
-    | SLICE::it                -> interp_top Tslice it stack
-    | SOME::it                 -> interp_uop (Usome) it stack
-    | UNIT::it                 -> interp_zop (Zunit) it stack
-    | UNPACK t::it             -> interp_uop (Uunpack t) it stack
-    | UPDATE::it               -> interp_top Tupdate it stack
+    | MEM::it                  -> interp_bop env Bmem it stack
+    | NIL t::it                -> interp_zop env (Znil t) it stack
+    | NONE t::it               -> interp_zop env (Znone t)it stack
+    | PACK::it                 -> interp_uop env Upack it stack
+    | PAIR::it                 -> interp_bop env Bpair it stack
+    | RIGHT t::it              -> interp_uop env (Uright t) it stack
+    | SIZE::it                 -> interp_uop env Usize it stack
+    | SLICE::it                -> interp_top env Tslice it stack
+    | SOME::it                 -> interp_uop env (Usome) it stack
+    | UNIT::it                 -> interp_zop env (Zunit) it stack
+    | UNPACK t::it             -> interp_uop env (Uunpack t) it stack
+    | UPDATE::it               -> interp_top env Tupdate it stack
 
 
     (* Other *)
@@ -384,7 +431,7 @@ let to_dir (michelson, env : T.michelson * env) =
         | x::y::st -> f env sys it (T.Dbop (Bpair, x, y)::st)
         | _ -> emit_error ()
       end
-    | SELF_ADDRESS::it   -> interp_zop (Zself_address) it stack
+    | SELF_ADDRESS::it   -> interp_zop env (Zself_address) it stack
 
     | CAST::_                     -> assert false
     | CREATE_ACCOUNT::_           -> assert false
@@ -411,12 +458,24 @@ let to_dir (michelson, env : T.michelson * env) =
 
   let name = env.name in
   let irenv = mk_ir_env () in
-  let init_stack : (T.dexpr) list = T.[Dbop (Bpair, Doperations, Dstorage tstorage)] in
+  let rec type_to_dexpr (x : T.type_) =
+    let f = type_to_dexpr in
+    match x.node with
+    | T.Tpair (a, b) when (match x.annotation with | None | Some "storage" | Some "parameter" -> true | _ -> false) ->
+      T.Dbop (Bpair, f a, f b)
+    | _ -> T.Dvar x
+  in
+  let type_annot a (x : T.type_) = if Option.is_some x.annotation then x else { x with annotation = Some a } in
+
+  let init_stack : (T.dexpr) list = T.[Dbop (Bpair, Doperations, type_to_dexpr (type_annot "storage" tstorage))] in
   let sys, stack, irenv = interp irenv [] [michelson.code] init_stack in
   trace irenv [] stack sys;
   let sys =
     match stack with
-    | x::_ -> add_instruction sys (T.Dassign (x, Dbop (Bpair, T.Dparameter tparameter, T.Dinitstorage tstorage)))
+    | x::_ -> begin
+
+        add_instruction irenv sys (T.Dassign (x, Dbop (Bpair, type_to_dexpr (type_annot "parameter" tparameter), type_to_dexpr (type_annot "storage" tstorage))))
+      end
     | _ -> Format.eprintf "error: stack not empty@."; assert false
   in
   (T.mk_dprogram tstorage tparameter storage_data name sys), env
@@ -430,13 +489,12 @@ let to_ir (dir, env : T.dprogram * env) : T.ir * env =
     (* let f = for_expr in *)
     match e with
     | Dalpha _i              -> assert false
-    | Dinitstorage _t        -> assert false
-    | Dparameter _t          -> assert false
+    | Dvar _t                -> assert false
+    | Duop (_op, _a)         -> assert false
     | Dstorage _t            -> assert false
     | Doperations            -> assert false
     | Ddata _d               -> assert false
     | Dzop _op               -> assert false
-    | Duop (_op, _a)         -> assert false
     | Dbop (_op, _a, _b)     -> assert false
     | Dtop (_op, _a, _b, _c) -> assert false
   in
