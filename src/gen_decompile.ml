@@ -134,7 +134,29 @@ let to_dir (michelson, env : T.michelson * env) =
                       in
                       let rec f (x : T.dinstruction) : T.dinstruction = T.map_dinstruction_gen fe f x in
                       f x) instrs in
-                replace accu
+                let opt_expr sys =
+                  List.map (fun instr -> begin
+                        let rec fe (expr : T.dexpr) =
+                          match expr with
+                          | T.Duop (T.Ucar, T.Dbop (Bpair, x, _)) -> fe x
+                          | T.Duop (T.Ucdr, T.Dbop (Bpair, _, y)) -> fe y
+                          | _ -> T.map_dexpr fe expr
+                        in
+                        let rec f (x : T.dinstruction) : T.dinstruction = T.map_dinstruction_gen fe f x in
+                        f instr
+                      end) sys
+                in
+                let opt_instr (sys  : T.dinstruction list) =
+                  let rec aux (instrs : T.dinstruction list) =
+                    List.fold_right (fun instr accu ->
+                        match instr with
+                        | T.Dassign (a, b) when T.cmp_dexpr a b -> accu
+                        | T.Dif     (c, t, e)  -> (T.Dif (c, aux t, aux e))::accu
+                        | _ -> instr::accu) instrs []
+                  in
+                  aux sys
+                in
+                accu |> replace |> opt_expr |> opt_instr
               end
             | _ -> (T.Dassign (a, b))::accu
 
@@ -234,6 +256,11 @@ let to_dir (michelson, env : T.michelson * env) =
         let sys_else, _stack_else, env = interp env [] (List.rev el) stack in
         let env = { env with scopes = scopes } in
 
+        (* let stack =
+           if List.length(_stack_then) < List.length(stack)
+           then match stack with _::st -> st | _ -> assert false
+           else stack
+           in *)
         (* Format.printf "stack:@\n%a@\n@." pp_stack stack; *)
         (* Format.printf "_stack_then:@\n%a@\n@." pp_stack _stack_then; *)
         (* Format.printf "_stack_else:@\n%a@\n@." pp_stack _stack_else; *)
