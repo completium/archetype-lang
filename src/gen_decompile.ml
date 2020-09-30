@@ -270,10 +270,10 @@ let to_dir (michelson, env : T.michelson * env) =
            if List.length(_stack_then) < List.length(stack)
            then match stack with _::st -> st | _ -> assert false
            else stack
-        in *)
+           in *)
         (* Format.printf "stack:@\n%a@\n@." pp_stack stack;
-        Format.printf "_stack_then:@\n%a@\n@." pp_stack _stack_then;
-        Format.printf "_stack_else:@\n%a@\n@." pp_stack _stack_else; *)
+           Format.printf "_stack_then:@\n%a@\n@." pp_stack _stack_then;
+           Format.printf "_stack_else:@\n%a@\n@." pp_stack _stack_else; *)
 
         (* let stack = _stack_then in *)
         (* let stack, env =
@@ -496,23 +496,30 @@ let to_dir (michelson, env : T.michelson * env) =
 
   let name = env.name in
   let irenv = mk_ir_env () in
-  let rec type_to_dexpr (x : T.type_) =
-    let f = type_to_dexpr in
-    match x.node with
-    | T.Tpair (a, b) when (match x.annotation with | None(*  | Some "storage" | Some "parameter" *) -> true | _ -> false) ->
-      T.Dbop (Bpair, f a, f b)
-    | _ -> T.Dvar x
+  let type_to_dexpr (a : string) (x : T.type_) =
+    let rec aux (x : T.type_) =
+      match x.node with
+      | _ when Option.is_some x.annotation -> Some (T.Dvar x)
+      | T.Tpair (a, b) -> begin
+          match aux a, aux b with
+          | Some a, Some b -> Some (T.Dbop (Bpair, a, b))
+          | _ -> None
+        end
+      | _ -> None
+    in
+    let r = aux x in
+    match r with
+    | Some v -> v
+    | None -> T.Dvar { x with annotation = Some a }
   in
-  let type_annot a (x : T.type_) = if Option.is_some x.annotation then x else { x with annotation = Some a } in
 
-  let init_stack : (T.dexpr) list = T.[Dbop (Bpair, Doperations, type_to_dexpr (type_annot "storage" tstorage))] in
+  let init_stack : (T.dexpr) list = T.[Dbop (Bpair, Doperations, type_to_dexpr "storage" tstorage)] in
   let sys, stack, irenv = interp irenv [] [michelson.code] init_stack in
   trace irenv [] stack sys;
   let sys =
     match stack with
     | x::_ -> begin
-
-        add_instruction irenv sys (T.Dassign (x, Dbop (Bpair, type_to_dexpr (type_annot "parameter" tparameter), type_to_dexpr (type_annot "storage" tstorage))))
+        add_instruction irenv sys (T.Dassign (x, Dbop (Bpair, type_to_dexpr "parameter" tparameter, type_to_dexpr "storage" tstorage)))
       end
     | _ -> Format.eprintf "error: stack not empty@."; assert false
   in
