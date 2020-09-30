@@ -344,6 +344,7 @@ type error_desc =
   | AssertInGlobalSpec
   | AssetExpected                      of A.ptyp
   | AssetOrRecordExpected              of A.ptyp
+  | AssetUpdateInNonFormula
   | AssetWithoutFields
   | AssetWithoutPKey
   | BeforeIrrelevant                   of [`Local | `State]
@@ -457,6 +458,10 @@ type error_desc =
   | ReadOnlyGlobal                     of ident
   | RecordExpected
   | ReturnInVoidContext
+  | RecordUpdateDuplicatedFieldName    of ident
+  | RecordUpdateOnNonRecordOrAsset
+  | RecordUpdateOnPKey
+  | RecordUpdateWithInvalidFieldName
   | SecurityInExpr
   | ShadowPKey
   | ShadowSKey
@@ -524,6 +529,7 @@ let pp_error_desc fmt e =
   | AssertInGlobalSpec                 -> pp "Assertions specification at global level are forbidden"
   | AssetExpected ty                   -> pp "Asset expected (found a %a)" Printer_ast.pp_ptyp ty
   | AssetOrRecordExpected ty           -> pp "Asset or record expected (found a %a)" Printer_ast.pp_ptyp ty
+  | AssetUpdateInNonFormula            -> pp "Asset record updated can only appear in formulas"
   | AssetWithoutFields                 -> pp "Asset declaration without fields"
   | AssetWithoutPKey                   -> pp "Asset declaration without a primary key"
   | BeforeIrrelevant `Local            -> pp "The `before' modifier cannot be used on local variables"
@@ -639,6 +645,10 @@ let pp_error_desc fmt e =
   | ReadOnlyGlobal i                   -> pp "Global is read only: %a" pp_ident i
   | RecordExpected                     -> pp "Record expected"
   | ReturnInVoidContext                -> pp "Unexpected return in void context"
+  | RecordUpdateDuplicatedFieldName x  -> pp "Duplicated field name: %a" pp_ident x
+  | RecordUpdateOnNonRecordOrAsset     -> pp "Record update on a non-record/asset expression"
+  | RecordUpdateOnPKey                 -> pp "Record updates cannot act on primary keys"
+  | RecordUpdateWithInvalidFieldName   -> pp "Unknown or invalid field name"
   | SecurityInExpr                     -> pp "Found securtiy predicate in expression"
   | ShadowPKey                         -> pp "Primary key cannot be a shadow field"
   | ShadowSKey                         -> pp "Sort key cannot be a shadow field"
@@ -2327,6 +2337,64 @@ let rec for_xexpr
         end
       end
 
+    | Erecupdate (e, upd) -> begin
+        let e = for_xexpr env e in
+
+        let fields, isasset =
+          match e.A.type_ with
+          | Some Trecord { pldesc = rname } -> begin
+              let recd = Env.Record.get env rname in
+              let fields = List.map
+                (fun fd -> unloc fd.rfd_name, fd.rfd_type) recd.rd_fields in
+              (fields, None)
+            end
+
+          | Some Tasset { pldesc = aname } -> begin
+              let asset = Env.Asset.get env aname in
+              let fields = List.map
+                (fun fd -> unloc fd.fd_name, fd.fd_type) asset.as_fields in
+              (fields, Some (List.map unloc asset.as_pk))
+            end
+
+          | _ ->
+              if Option.is_some e.A.type_ then
+                Env.emit_error env (loc tope, RecordUpdateOnNonRecordOrAsset);
+              List.iter (fun (_, e) -> ignore (for_xexpr env e : A.pterm)) upd;
+              bailout () in
+
+        if Option.is_some isasset && not (is_form_kind mode.em_kind) then begin
+          Env.emit_error env (loc tope, AssetUpdateInNonFormula);
+          List.iter (fun (_, e) -> ignore (for_xexpr env e : A.pterm)) upd;
+          bailout ()
+        end;
+
+        let upd =
+          let seen = ref Sstr.empty in
+
+          let for1 (x, ue) =
+            if Sstr.mem (unloc x) !seen then
+              Env.emit_error env (loc x, RecordUpdateDuplicatedFieldName (unloc x));
+
+            if Option.get_dfl false (Option.map (List.mem (unloc x)) isasset) then
+              Env.emit_error env (loc x, RecordUpdateOnPKey);
+
+            let aout =
+              match List.assoc_opt (unloc x) fields with
+              | None ->
+                  Env.emit_error env (loc x, RecordUpdateWithInvalidFieldName);
+                  ignore (for_xexpr env ue : A.pterm);
+                  None
+              | Some ety ->
+                  let ue = for_xexpr env ~ety ue in
+                  if Sstr.mem (unloc x) !seen then None else Some (x, ue) in
+
+            seen := Sstr.add (unloc x) !seen; aout
+
+          in List.pmap for1 upd in
+
+        mk_sp e.A.type_ (A.Precupdate (e, upd))
+      end
+
     | Etuple es -> begin
         let etys =
           match Option.bind Type.as_tuple ety with
@@ -2832,16 +2900,6 @@ let rec for_xexpr
         mk_sp
           (Some (A.Toption (A.Tcontract ty)))
           (A.Pentrypoint (ty, id, b))
-      end
-
-    | Erecupdate (e, l) -> begin
-        let e = for_xexpr env e in
-        let l = List.map (fun (id, v) -> id, for_xexpr env v) l in
-
-        if is_expr_kind mode.em_kind
-        then Env.emit_error env (loc tope, InvalidExpressionForEffect);
-
-        mk_sp e.type_ (A.Precupdate (e, l))
       end
 
     | Eself      _
