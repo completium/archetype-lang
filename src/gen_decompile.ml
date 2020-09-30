@@ -107,7 +107,18 @@ let to_dir (michelson, env : T.michelson * env) =
 
             let _cpt =
               let rec f accu (e : T.dexpr) = if T.cmp_dexpr a e then accu + 1 else T.fold_dexpr f accu e in
-              List.fold_left (T.fold_dinstruction_dexpr f) 0 (accu @ (List.flatten _env.scopes))
+              let fi accu (i : T.dinstruction) =
+                match i with
+                | T.Dassign (_, x) -> f accu x
+                | _ -> T.fold_dinstruction_dexpr f accu i
+              in
+              List.fold_left fi 0 (accu @ (List.flatten _env.scopes))
+            in
+
+            let is_outside =
+              let rec f accu (e : T.dexpr) = if T.cmp_dexpr a e then true else T.fold_dexpr f accu e in
+              let fi accu (i : T.dinstruction) = T.fold_dinstruction_dexpr f accu i in
+              List.fold_left fi false (List.flatten _env.scopes)
             in
 
             let _cost =
@@ -133,8 +144,8 @@ let to_dir (michelson, env : T.michelson * env) =
               List.fold_left aux false (accu @ (List.flatten _env.scopes))
             in
 
-            match _cpt, a, is_assigned_a, _env.scopes with
-            | _, Dalpha _, false, [] -> begin
+            match _cpt, a, is_assigned_a, is_outside with
+            | _, Dalpha _, false, false -> begin
                 let replace instrs = List.map (
                     fun x ->
                       let rec fe (x : T.dexpr) : T.dexpr =
@@ -263,48 +274,46 @@ let to_dir (michelson, env : T.michelson * env) =
         let scopes = env.scopes in
         let env = { env with scopes = sys::scopes } in
         let sys_then, stack_then, env_then = interp env [] (List.rev th) stack in
-        let sys_else, stack_else, env_else = interp env [] (List.rev el) stack in
-        let env = { env with scopes = scopes } in
+        let sys_else, stack_else, env_else = interp { env with cpt_alpha = env_then.cpt_alpha } [] (List.rev el) stack in
+        let env = { env with scopes = scopes; cpt_alpha = env_else.cpt_alpha } in
 
         (* Format.printf "stack:@\n%a@\n@." pp_stack stack; *)
         (* Format.printf "_stack_then:@\n%a@\n@." pp_stack stack_then; *)
         (* Format.printf "_stack_else:@\n%a@\n@." pp_stack stack_else; *)
 
-        let stack_in =
-          match env_then.fail, env_else.fail with
-          | false, false -> stack_then
-          | true,  false -> stack_else
-          | false, true  -> stack_then
-          | true,  true  -> assert false
-        in
-
-        let lstackin = List.length stack_in in
-        let lstackref = List.length stack in
-
         let stack, env, sys_then, sys_else =
-          if lstackin = lstackref
-          then begin
-            let stack_rev_ref = List.rev stack in
-            let stack_rev_then = List.rev stack_then in
-            let stack_rev_else = List.rev stack_else in
+          let stack_rev_ref  = List.rev stack in
+          let stack_rev_then = List.rev stack_then in
+          let stack_rev_else = List.rev stack_else in
 
-            let rec g accu lref l2 =
-              match lref, l2 with
+          let _stack_in =
+            match env_then.fail, env_else.fail with
+            | false, false -> stack_then
+            | true,  false -> stack_else
+            | false, true  -> stack_then
+            | true,  true  -> assert false
+          in
+
+          let size = List.length _stack_in in
+          Format.printf "size: %i@\n@." size;
+
+          let g lref lbranch =
+            let size = min (List.length lref) (List.length lbranch) in
+            let l1 = List.sub 0 size lref in
+            let l2 = List.sub 0 size lbranch in
+            let rec aux accu x y =
+              match x, y with
               | [], [] -> accu
-              | a::t1, b::t2 -> g (add_instruction env accu (Dassign (b, a))) t1 t2
+              | a::t1, b::t2 -> aux (add_instruction env accu (Dassign (b, a))) t1 t2
               | _ -> assert false
             in
+            aux [] l1 l2
+          in
 
-            let sys_then = sys_then @ (g [] stack_rev_ref stack_rev_then) in
-            let sys_else = sys_else @ (g [] stack_rev_ref stack_rev_else) in
+          let sys_then = sys_then @ (g stack_rev_ref stack_rev_then) in
+          let sys_else = sys_else @ (g stack_rev_ref stack_rev_else) in
 
-            stack, env, sys_then, sys_else
-          end
-          else begin
-            if lstackin < lstackref then
-              List.sub 0 lstackin stack, env, sys_then, sys_else
-            else assert false
-          end
+          stack |> List.rev |> List.sub 0 (min size (List.length stack)) |> List.rev, env, sys_then, sys_else
         in
 
         let x = T.dalpha env.cpt_alpha in

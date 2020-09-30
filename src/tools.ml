@@ -384,8 +384,8 @@ end = struct
       let (rx, ry, rz) = split3 l in (x::rx, y::ry, z::rz)
 
   let rec sub s e = function
-    | [] -> invalid_arg "List.sub"
     | _    when e = 0 -> []
+    | [] -> invalid_arg "List.sub"
     | _::t when s > 0 -> sub (s - 1) (e - 1) t
     | h::t -> h::(sub (s - 1) (e - 1) t)
 
