@@ -79,7 +79,8 @@ module Utils
   (* Math *)
 
   let function abs (a : int) : int
-  ensures { result >= 0 }
+  ensures { a >= 0 -> result = a }
+  ensures { a <= 0 -> result = -a }
   =
   if a >= 0 then a else -a
 
