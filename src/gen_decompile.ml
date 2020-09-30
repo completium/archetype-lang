@@ -262,27 +262,50 @@ let to_dir (michelson, env : T.michelson * env) =
         let env = inc_deep env in
         let scopes = env.scopes in
         let env = { env with scopes = sys::scopes } in
-        let sys_then, _stack_then, env = interp env [] (List.rev th) stack in
-        let sys_else, _stack_else, env = interp env [] (List.rev el) stack in
+        let sys_then, stack_then, env_then = interp env [] (List.rev th) stack in
+        let sys_else, stack_else, env_else = interp env [] (List.rev el) stack in
         let env = { env with scopes = scopes } in
 
-        (* let stack =
-           if List.length(_stack_then) < List.length(stack)
-           then match stack with _::st -> st | _ -> assert false
-           else stack
-           in *)
-        (* Format.printf "stack:@\n%a@\n@." pp_stack stack;
-           Format.printf "_stack_then:@\n%a@\n@." pp_stack _stack_then;
-           Format.printf "_stack_else:@\n%a@\n@." pp_stack _stack_else; *)
+        (* Format.printf "stack:@\n%a@\n@." pp_stack stack; *)
+        (* Format.printf "_stack_then:@\n%a@\n@." pp_stack stack_then; *)
+        (* Format.printf "_stack_else:@\n%a@\n@." pp_stack stack_else; *)
 
-        (* let stack = _stack_then in *)
-        (* let stack, env =
-           match env_then.fail, env_else.fail with
-           | false, false -> stack_then, {env_then with fail = false}
-           | true,  false -> stack_else, {env_else with fail = false}
-           | false, true  -> stack_then, {env_then with fail = false}
-           | true,  true  -> assert false
-           in *)
+        let stack_in =
+          match env_then.fail, env_else.fail with
+          | false, false -> stack_then
+          | true,  false -> stack_else
+          | false, true  -> stack_then
+          | true,  true  -> assert false
+        in
+
+        let lstackin = List.length stack_in in
+        let lstackref = List.length stack in
+
+        let stack, env, sys_then, sys_else =
+          if lstackin = lstackref
+          then begin
+            let stack_rev_ref = List.rev stack in
+            let stack_rev_then = List.rev stack_then in
+            let stack_rev_else = List.rev stack_else in
+
+            let rec g accu lref l2 =
+              match lref, l2 with
+              | [], [] -> accu
+              | a::t1, b::t2 -> g (add_instruction env accu (Dassign (b, a))) t1 t2
+              | _ -> assert false
+            in
+
+            let sys_then = sys_then @ (g [] stack_rev_ref stack_rev_then) in
+            let sys_else = sys_else @ (g [] stack_rev_ref stack_rev_else) in
+
+            stack, env, sys_then, sys_else
+          end
+          else begin
+            if lstackin < lstackref then
+              List.sub 0 lstackin stack, env, sys_then, sys_else
+            else assert false
+          end
+        in
 
         let x = T.dalpha env.cpt_alpha in
         let env = inc_cpt_alpha env in

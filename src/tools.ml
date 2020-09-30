@@ -45,11 +45,11 @@ module Bool : sig
   val compare : bool -> bool -> int
 end = struct
   let compare a b =
-  match a, b with
-  | false, false -> 0
-  | false, true  -> -1
-  | true,  false -> 1
-  | true,  true  -> 0
+    match a, b with
+    | false, false -> 0
+    | false, true  -> -1
+    | true,  false -> 1
+    | true,  true  -> 0
 end
 
 (* -------------------------------------------------------------------- *)
@@ -237,7 +237,8 @@ module List : sig
   val last          : 'a list -> 'a
   val for_all2      : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
   val count         : ('a -> bool) -> 'a list -> int
-  val split3      : ('a * 'b * 'c) list -> 'a list * 'b list * 'c list
+  val split3        : ('a * 'b * 'c) list -> 'a list * 'b list * 'c list
+  val sub           : int -> int -> 'a list -> 'a list
 
   module Exn : sig
     val assoc     : 'a -> ('a * 'b) list -> 'b option
@@ -381,6 +382,12 @@ end = struct
       [] -> ([], [], [])
     | (x,y,z)::l ->
       let (rx, ry, rz) = split3 l in (x::rx, y::ry, z::rz)
+
+  let rec sub s e = function
+    | [] -> invalid_arg "List.sub"
+    | _    when e = 0 -> []
+    | _::t when s > 0 -> sub (s - 1) (e - 1) t
+    | h::t -> h::(sub (s - 1) (e - 1) t)
 
   module Exn = struct
     let assoc x xs =

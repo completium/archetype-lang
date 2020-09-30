@@ -1,0 +1,10 @@
+archetype decomp_if2
+
+variable a : nat = 0
+variable b : nat = 0
+
+entry exec (n : nat) {
+  if n > 2
+  then (var c = 1 ; a := 2 + c)
+  else b := 4
+}
