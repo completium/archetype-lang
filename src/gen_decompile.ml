@@ -270,11 +270,12 @@ let to_dir (michelson, env : T.michelson * env) =
            if List.length(_stack_then) < List.length(stack)
            then match stack with _::st -> st | _ -> assert false
            else stack
-           in *)
-        (* Format.printf "stack:@\n%a@\n@." pp_stack stack; *)
-        (* Format.printf "_stack_then:@\n%a@\n@." pp_stack _stack_then; *)
-        (* Format.printf "_stack_else:@\n%a@\n@." pp_stack _stack_else; *)
+        in *)
+        (* Format.printf "stack:@\n%a@\n@." pp_stack stack;
+        Format.printf "_stack_then:@\n%a@\n@." pp_stack _stack_then;
+        Format.printf "_stack_else:@\n%a@\n@." pp_stack _stack_else; *)
 
+        (* let stack = _stack_then in *)
         (* let stack, env =
            match env_then.fail, env_else.fail with
            | false, false -> stack_then, {env_then with fail = false}

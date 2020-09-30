@@ -917,7 +917,7 @@ let rec fold_dinstruction_dexpr f accu = function
   | Dif     (c, t, e)  -> List.fold_left (fold_dinstruction_dexpr f) (List.fold_left (fold_dinstruction_dexpr f) (f accu c) t) e
   | Dfail   e          -> f accu e
 
-let rec fold_dinstruction f accu = function
+let fold_dinstruction f accu = function
   | Dassign _     -> accu
   | Dif     (_, t, e)  -> List.fold_left f (List.fold_left f accu t) e
   | Dfail   _          -> accu
