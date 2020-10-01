@@ -376,6 +376,7 @@ type error_desc =
   | ExpressionExpected
   | ForeignState                       of ident option * ident option
   | FormulaExpected
+  | IncompatibleSpecSig
   | IncompatibleTypes                  of A.ptyp * A.ptyp
   | IndexOutOfBoundForTuple
   | InvalidArcheTypeDecl
@@ -475,11 +476,14 @@ type error_desc =
   | UnknownEnum                        of ident
   | UnknownField                       of ident * ident
   | UnknownFieldName                   of ident
+  | UnknownFunction                    of ident
+  | UnknownGetter                      of ident
   | UnknownLabel                       of ident
   | UnknownLocalOrVariable             of ident
   | UnknownProcedure                   of ident
   | UnknownState                       of ident
   | UnknownTypeName                    of ident
+  | UnknownVariable                    of ident
   | UnpureInFormula
   | UpdateEffectOnPkey
   | UpdateEffectWithoutDefault
@@ -563,6 +567,7 @@ let pp_error_desc fmt e =
   | ExpressionExpected                 -> pp "Expression expected"
   | ForeignState (i1, i2)              -> pp "Expecting a state of %a, not %a" pp_ident (Option.get_dfl "<global>" i1) pp_ident (Option.get_dfl "<global>" i2)
   | FormulaExpected                    -> pp "Formula expected"
+  | IncompatibleSpecSig                -> pp "Specification's signature does not match the one of the targeted object"
   | IncompatibleTypes (t1, t2)         -> pp "Incompatible types: found '%a' but expected '%a'" Printer_ast.pp_ptyp t1 Printer_ast.pp_ptyp t2
   | IndexOutOfBoundForTuple            -> pp "Index out of bounds for tuple"
   | InvalidArcheTypeDecl               -> pp "Invalid Archetype declaration"
@@ -662,11 +667,14 @@ let pp_error_desc fmt e =
   | UnknownEnum i                      -> pp "Unknown enum: %a" pp_ident i
   | UnknownField (i1, i2)              -> pp "Unknown field: asset %a does not have a field %a" pp_ident i1 pp_ident i2
   | UnknownFieldName i                 -> pp "Unknown field name: %a" pp_ident i
+  | UnknownFunction  i                 -> pp "Unknown function name: %a" pp_ident i
+  | UnknownGetter  i                   -> pp "Unknown getter name: %a" pp_ident i
   | UnknownLabel i                     -> pp "Unknown label: %a" pp_ident i
   | UnknownLocalOrVariable i           -> pp "Unknown local or variable: %a" pp_ident i
   | UnknownProcedure i                 -> pp "Unknown procedure: %a" pp_ident i
   | UnknownState i                     -> pp "Unknown state: %a" pp_ident i
   | UnknownTypeName i                  -> pp "Unknown type: %a" pp_ident i
+  | UnknownVariable i                  -> pp "Unknown variable: %a" pp_ident i
   | UnpureInFormula                    -> pp "Cannot use expression with side effect"
   | UpdateEffectOnPkey                 -> pp "Cannot set/update the primary key in an effect"
   | UpdateEffectWithoutDefault         -> pp "Update effect without default value for field"
@@ -805,16 +813,19 @@ type acttx = [
 ]
 
 type groups = {
-  gr_archetypes  : (PT.lident * PT.exts)      loced list;
-  gr_states      : PT.enum_decl               loced list;
-  gr_enums       : (PT.lident * PT.enum_decl) loced list;
-  gr_assets      : PT.asset_decl              loced list;
-  gr_records     : PT.record_decl             loced list;
-  gr_vars        : PT.variable_decl           loced list;
-  gr_funs        : PT.s_function              loced list;
-  gr_acttxs      : acttx                      loced list;
-  gr_specs       : PT.specification           loced list;
-  gr_secs        : PT.security                loced list;
+  gr_archetypes  : (PT.lident * PT.exts)        loced list;
+  gr_states      : PT.enum_decl                 loced list;
+  gr_enums       : (PT.lident * PT.enum_decl)   loced list;
+  gr_assets      : PT.asset_decl                loced list;
+  gr_records     : PT.record_decl               loced list;
+  gr_vars        : PT.variable_decl             loced list;
+  gr_funs        : PT.s_function                loced list;
+  gr_acttxs      : acttx                        loced list;
+  gr_specs       : PT.specification             loced list;
+  gr_specfuns    : PT.specfun                   loced list;
+  gr_specvars    : (PT.lident * PT.label_exprs) loced list;
+  gr_specassets  : (PT.lident * PT.label_exprs) loced list;
+  gr_secs        : PT.security                  loced list;
 }
 
 (* -------------------------------------------------------------------- *)
@@ -1071,7 +1082,7 @@ type 'env fundecl = {
   fs_args  : (A.lident * A.ptyp) list;
   fs_retty : A.ptyp;
   fs_body  : A.instruction;
-  fs_spec  : 'env ispecification list option;
+  fs_spec  : 'env ispecification list;
 }
 
 (* -------------------------------------------------------------------- *)
@@ -3777,7 +3788,8 @@ let rec for_instruction_r
         match e.A.type_ with
         | Some (A.Tcontainer (A.Tasset asset, _)) ->
           let asset = Env.Asset.get env (unloc asset) in
-          if asset.as_bm then Env.emit_error env (loc pe, NonIterableBigMapAsset (unloc asset.as_name));
+          if asset.as_bm then
+            Env.emit_error env (loc pe, NonIterableBigMapAsset (unloc asset.as_name));
           if   is_for_ident `Double
           then (Env.emit_error env (loc x, InvalidForIdentSimple); None)
           else Some [asset.as_pkty]
@@ -4261,7 +4273,27 @@ let rec for_state_formula ?enum (env : env) (st : PT.expr) : A.sexpr =
     mk_sp (A.Sref (mkloc (loc st) "<error>"))
 
 (* -------------------------------------------------------------------- *)
-let for_function (env : env) (fdecl : PT.s_function loced) =
+let named_sig_compatible args xargs =
+  let module E = struct exception Incompatible end in
+
+  try
+    if List.length args <> List.length xargs then
+      raise E.Incompatible;
+
+    List.iter2 (fun arg xarg ->
+      match arg, xarg with
+      | Some ({ pldesc = name }, ty), Some ({ pldesc = xname }, xty) ->
+          if name <> xname || not (Type.equal ty xty) then
+            raise E.Incompatible
+      | _, _ -> ()) args xargs;
+    true
+
+  with E.Incompatible -> false
+
+(* -------------------------------------------------------------------- *)
+let for_function
+  ?(xspecs : PT.specfun loced list option) (env as topenv : env) (fdecl : PT.s_function loced)
+=
   let { pldesc = fdecl; plloc = loc; } = fdecl in
 
   Env.inscope env (fun env ->
@@ -4279,7 +4311,30 @@ let for_function (env : env) (fdecl : PT.s_function loced) =
               vr_core = None;
             } in Env.Var.push poenv decl
           ) env in
-        Option.foldmap (fun env -> for_specification `Local (env, poenv)) env fdecl.spec in
+
+        let spec =
+          let myspec { plloc = xloc; pldesc = (kind, x, xargs, xspec) } =
+            match kind, fdecl.getter with
+            | PT.SKgetter  , true
+            | PT.SKfunction, false ->
+                let _, xargs = for_args_decl topenv xargs in
+
+                if not (named_sig_compatible args xargs) then
+                  Env.emit_error env (xloc, IncompatibleSpecSig);
+
+                if unloc x = unloc fdecl.name then Some xspec else None
+
+            | _ -> None in
+
+            Option.get_as_list fdecl.spec
+          @ List.pmap myspec (Option.get_dfl [] xspecs) in
+
+        let env, items =
+          List.fold_left_map
+            (fun env spec -> for_specification `Local (env, poenv) spec)
+            env spec in
+
+        env, List.flatten items in
 
       if Option.is_some rty && not (List.exists Option.is_none args) then
         if check_and_emit_name_free env fdecl.name then
@@ -4447,14 +4502,55 @@ let for_vars_decl (env : env) (decls : PT.variable_decl loced list) =
   List.fold_left_map for_var_decl env decls
 
 (* -------------------------------------------------------------------- *)
-let for_fun_decl (env : env) (fdecl : PT.s_function loced) =
-  let env, decl = for_function env fdecl in
+let for_var_specs
+  (env : env) (specs : (PT.lident * PT.label_exprs) loced list)
+=
+  List.iter (fun { pldesc = (x, _) } ->
+    if not (Env.Var.exists env (unloc x)) then
+      Env.emit_error env (loc x, UnknownVariable (unloc x)))
+    specs
 
+(* -------------------------------------------------------------------- *)
+let for_fun_decl
+  ?(xspecs : PT.specfun loced list option) (env : env) (fdecl : PT.s_function loced)
+=
+  let env, decl = for_function ?xspecs env fdecl in
   (Option.fold (fun env decl -> Env.Function.push env decl) env decl, decl)
 
 (* -------------------------------------------------------------------- *)
-let for_funs_decl (env : env) (decls : PT.s_function loced list) =
-  List.fold_left_map for_fun_decl env decls
+let for_funs_decl
+  (env : env) (decls : PT.s_function loced list) (xspecs : PT.specfun loced list)
+=
+  List.fold_left_map (for_fun_decl ~xspecs) env decls
+
+(* -------------------------------------------------------------------- *)
+let for_fun_specs (env : env) (specs : PT.specfun loced list) =
+  let for1 { plloc = _; pldesc = (kind, x, _, _) } =
+    match kind with
+    | PT.SKfunction -> begin
+        match Env.Function.lookup env (unloc x) with
+        | Some fund when fund.fs_kind = A.FKfunction ->
+            ()
+  
+        | _ ->
+            Env.emit_error env (loc x, UnknownFunction (unloc x))
+      end
+    
+    | PT.SKgetter -> begin
+        match Env.Function.lookup env (unloc x) with
+        | Some fund when fund.fs_kind = A.FKgetter ->
+            ()
+          
+        | _ ->
+            Env.emit_error env (loc x, UnknownGetter (unloc x));
+      end
+    
+    | PT.SKentry -> begin
+        if not (Env.Tentry.exists env (unloc x)) then
+          Env.emit_error env (loc x, UnknownEntry (unloc x));
+      end
+    
+  in List.iter for1 specs
 
 (* -------------------------------------------------------------------- *)
 type pre_assetdecl = {
@@ -4469,7 +4565,9 @@ type pre_assetdecl = {
   pas_init   : PT.expr list;
 }
 
-let for_asset_decl pkey (env : env) ((adecl, decl) : assetdecl * PT.asset_decl loced) =
+let for_asset_decl
+  ?(xspecs = []) pkey (env : env) ((adecl, decl) : assetdecl * PT.asset_decl loced)
+=
   let (x, cfields, sfields, opts, postopts, _ (* FIXME *), _) = unloc decl in
 
   let for_field field =
@@ -4510,9 +4608,20 @@ let for_asset_decl pkey (env : env) ((adecl, decl) : assetdecl * PT.asset_decl l
   let state   = List.pmap (function PT.APOstates      st -> Some st | _ -> None) postopts in
   let inits   = List.pmap (function PT.APOinit        it -> Some it | _ -> None) postopts in
 
-  let valid_to_type_values = ["big_map"] in
-  List.iter (function PT.AOto v when not (List.exists (String.equal (unloc v)) valid_to_type_values) -> Env.emit_error env (loc v, UnknownAssetToProperty (unloc v)) | _ -> () ) opts;
-  let bigmaps = List.exists (function PT.AOto {pldesc = "big_map"} -> true | _ -> false) opts in
+  let invs    =
+    let xinvs =
+      List.pmap (fun { pldesc = ({ pldesc = xname }, xinv ) } ->
+        if xname = unloc adecl.as_name then Some xinv else None) xspecs in
+    invs @ xinvs in
+
+  let bigmaps =
+    let valid_to_type_values = ["big_map"] in
+
+      List.iter (function
+        | PT.AOto v when not (List.exists (String.equal (unloc v)) valid_to_type_values) ->
+            Env.emit_error env (loc v, UnknownAssetToProperty (unloc v))
+        | _ -> ()) opts;
+      List.exists (function PT.AOto {pldesc = "big_map"} -> true | _ -> false) opts in
 
   let pks =
     let dokey key =
@@ -4629,7 +4738,7 @@ let for_asset_decl pkey (env : env) ((adecl, decl) : assetdecl * PT.asset_decl l
   with E.Bailout -> env, None
 
 (* -------------------------------------------------------------------- *)
-let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) =
+let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) xspecs =
   let (b, env), adecls = List.fold_left_map (fun (b, env) decl ->
       let (name, _, _, _, _, _, _) = unloc decl in
       let b = b && check_and_emit_name_free env name in
@@ -4654,7 +4763,7 @@ let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) =
 
     let _, decls =
       List.fold_left_map
-        (for_asset_decl pkey) env (List.combine adecls decls) in
+        (for_asset_decl ~xspecs pkey) env (List.combine adecls decls) in
 
     if not (List.for_all Option.is_some decls) then
       raise E.Bailout;
@@ -4809,6 +4918,15 @@ let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) =
     (env0, List.map (fun _ -> None) decls)
 
 (* -------------------------------------------------------------------- *)
+let for_asset_specs
+  (env : env) (specs : (PT.lident * PT.label_exprs) loced list)
+=
+  List.iter (fun { pldesc = (x, _) } ->
+    if not (Env.Asset.exists env (unloc x)) then
+      Env.emit_error env (loc x, UnknownAsset (unloc x)))
+    specs
+
+(* -------------------------------------------------------------------- *)
 let for_record_decl (env : env) (decl : PT.record_decl loced) =
   let name, fields, _ = unloc decl in
 
@@ -4852,7 +4970,9 @@ let for_records_decl (env : env) (decls : PT.record_decl loced list) =
   List.fold_left_map for_record_decl env decls
 
 (* -------------------------------------------------------------------- *)
-let for_acttx_decl (env : env) (decl : acttx loced) =
+let for_acttx_decl
+  ?(xspecs : PT.specfun loced list option) (env as topenv : env) (decl : acttx loced)
+=
   match unloc decl with
   | `Entry (x, args, pt, i_exts, _exts) -> begin
       let env, decl =
@@ -4865,6 +4985,26 @@ let for_acttx_decl (env : env) (decl : acttx loced) =
             let env, (callby, reqs, fais, spec, funs) =
               for_entry_properties (env, poenv) pt in
 
+            let env, xspec =
+              let myspec { plloc = xloc; pldesc = (kind, xname, xargs, xspec) } =
+                match kind with
+                | PT.SKentry ->
+                    let _, xargs = for_args_decl topenv xargs in
+    
+                    if not (named_sig_compatible args xargs) then
+                      Env.emit_error env (xloc, IncompatibleSpecSig);
+    
+                    if unloc xname = unloc x then Some xspec else None
+    
+                | _ -> None in
+        
+              let env, items =
+                List.fold_left_map
+                  (fun env spec -> for_specification `Local (env, poenv) spec)
+                  env (List.pmap myspec (Option.get_dfl [] xspecs))
+
+              in env, List.flatten items in
+
             let decl =
               { ad_name   = x;
                 ad_args   = List.pmap (fun x -> x) args;
@@ -4873,7 +5013,7 @@ let for_acttx_decl (env : env) (decl : acttx loced) =
                 ad_funs   = funs;
                 ad_reqs   = Option.get_dfl [] reqs;
                 ad_fais   = Option.get_dfl [] fais;
-                ad_spec   = Option.get_dfl [] spec;
+                ad_spec   = Option.get_dfl [] spec @ xspec;
                 ad_actfs  = pt.accept_transfer; } in
 
             (env, decl))
@@ -4907,6 +5047,28 @@ let for_acttx_decl (env : env) (decl : acttx loced) =
           let from_ = for_state_formula ?enum env from_ in
           let env, (callby, reqs, fais, spec, funs) =
             for_entry_properties (env, env) entrys in
+
+          let env, xspec =
+            let myspec { plloc = xloc; pldesc = (kind, xname, xargs, xspec) } =
+              match kind with
+              | PT.SKentry ->
+                  let _, xargs = for_args_decl topenv xargs in
+  
+                  if not (named_sig_compatible args xargs) then
+                    Env.emit_error env (xloc, IncompatibleSpecSig);
+  
+                  if unloc xname = unloc x then Some xspec else None
+  
+              | _ -> None in
+      
+            let env, items =
+              List.fold_left_map
+                (fun env spec -> for_specification `Local (env, env) spec)
+                env (List.pmap myspec (Option.get_dfl [] xspecs))
+
+            in env, List.flatten items in
+
+
           let env, tx =
             List.fold_left_map (for_transition ?enum) env tx in
 
@@ -4918,7 +5080,7 @@ let for_acttx_decl (env : env) (decl : acttx loced) =
               ad_funs   = funs;
               ad_reqs   = Option.get_dfl [] reqs;
               ad_fais   = Option.get_dfl [] fais;
-              ad_spec   = Option.get_dfl [] spec;
+              ad_spec   = Option.get_dfl [] spec @ xspec;
               ad_actfs  = entrys.accept_transfer; }
 
           in (env, decl))
@@ -4930,8 +5092,10 @@ let for_acttx_decl (env : env) (decl : acttx loced) =
     else (env, None)
 
 (* -------------------------------------------------------------------- *)
-let for_acttxs_decl (env : env) (decls : acttx loced list) =
-  List.fold_left_map for_acttx_decl env decls
+let for_acttxs_decl
+  (env : env) (decls : acttx loced list) (xspecs : PT.specfun loced list)
+=
+  List.fold_left_map (for_acttx_decl ~xspecs) env decls
 
 (* -------------------------------------------------------------------- *)
 let for_specs_decl (env as poenv : env) (decls : PT.specification loced list) =
@@ -4957,6 +5121,9 @@ let group_declarations (decls : (PT.declaration list)) =
     gr_funs       = [];
     gr_acttxs     = [];
     gr_specs      = [];
+    gr_specfuns   = [];
+    gr_specvars   = [];
+    gr_specassets = [];
     gr_secs       = [];
   } in
 
@@ -4997,9 +5164,15 @@ let group_declarations (decls : (PT.declaration list)) =
     | PT.Dsecurity infos ->
       { g with gr_secs = mk infos :: g.gr_secs }
 
-    | PT.Dspecasset    _ -> assert false
-    | PT.Dspecfun      _ -> assert false
-    | PT.Dspecvariable _ -> assert false
+    | PT.Dspecfun infos ->
+      { g with gr_specfuns = mk infos :: g.gr_specfuns }
+
+    | PT.Dspecvariable infos ->
+      { g with gr_specvars = mk infos :: g.gr_specvars }
+
+    | PT.Dspecasset infos ->
+      { g with gr_specassets = mk infos :: g.gr_specassets }
+
 
     | Dnamespace _  -> assert false
     | Dextension _  -> assert false
@@ -5053,12 +5226,14 @@ let for_grouped_declarations (env : env) (toploc, g) =
     | _ ->
       (None, None, env) in
 
-  let env, records      = for_records_decl   env g.gr_records   in
-  let env, enums        = for_enums_decl     env g.gr_enums     in
-  let enums, especs     = List.split enums                      in
-  let env, variables    = for_vars_decl      env g.gr_vars      in
-  let variables, vspecs = List.split variables                  in
-  let env, assets       = for_assets_decl    env g.gr_assets    in
+  let env, records      = for_records_decl   env g.gr_records in
+  let env, enums        = for_enums_decl     env g.gr_enums   in
+  let enums, especs     = List.split enums                    in
+  let env, variables    = for_vars_decl      env g.gr_vars    in
+  let variables, vspecs = List.split variables                in
+  let env, assets       = for_assets_decl    env g.gr_assets g.gr_specassets in
+
+  let () = for_asset_specs env g.gr_specassets in
 
   let env, enums =
     let check_enum_spec env (enum, spec) =
@@ -5079,10 +5254,21 @@ let for_grouped_declarations (env : env) (toploc, g) =
   in
 
   let env, variables =
-    let check_var_spec env (var, spec) =
-      match spec with None -> env, var | Some spec ->
+    let check_var_spec env (var, specs) =
+      let xspecs =
+        match var with
+        | Some var ->
+            List.pmap (fun { pldesc = ({ pldesc = xname }, xspec) } ->
+                if   xname = unloc var.vr_name
+                then Some xspec
+                else None) g.gr_specvars
+        | None -> [] in
 
-        let env, spec = for_lbls_formula env spec in
+      let specs = List.flatten (Option.get_as_list specs @ xspecs) in
+
+      match specs with [] -> env, var | _ ->
+
+        let env, spec = for_lbls_formula env specs in
         let spec = List.map (fun (label, term) ->
             A.{ label; term; error = None; loc = term.A.loc }
           ) spec in
@@ -5095,13 +5281,16 @@ let for_grouped_declarations (env : env) (toploc, g) =
       check_var_spec env
       (List.combine variables vspecs) in
 
+  let () = for_var_specs env g.gr_specvars in
+
   let state = List.hd enums in
   let enums = List.tl enums in
 
-  let env, specs           = for_specs_decl     env g.gr_specs     in
-  let env, functions       = for_funs_decl      env g.gr_funs      in
-  let env, acttxs          = for_acttxs_decl    env g.gr_acttxs    in
-  let env, secspecs        = for_secs_decl      env g.gr_secs      in
+  let env, specs     = for_specs_decl     env g.gr_specs     in
+  let env, functions = for_funs_decl      env g.gr_funs      g.gr_specfuns in
+  let env, acttxs    = for_acttxs_decl    env g.gr_acttxs    g.gr_specfuns in
+  let ()             = for_fun_specs      env g.gr_specfuns  in
+  let env, secspecs  = for_secs_decl      env g.gr_secs      in
 
   let output =
     { state    ; variables; enums   ; assets ; functions;
@@ -5246,9 +5435,9 @@ let specifications_of_ispecifications =
       let def = A.mk_definition ~loc:(loc defname) defname xty x body in
       { env with A.definitions = env.definitions @ [def] }
 
-    | `Fails l ->
-      {env with A.fails = env.fails @ List.map (fun (id, arg, atype, f) -> A.mk_fail id arg atype f) l}
-
+    | `Fails fails ->
+      let fails = List.map (fun (id, arg, atype, f) -> A.mk_fail id arg atype f) fails in
+      { env with A.fails = env.fails @ fails }
 
   in fun ispecs -> List.fold_left do1 env0 ispecs
 
@@ -5259,7 +5448,10 @@ let functions_of_fdecls fdecls =
         name = x; typ = Some ty; default = None; shadow  = false; loc = loc x;
       }) decl.fs_args in
 
-    let specs = Option.map specifications_of_ispecifications decl.fs_spec in
+    let specs =
+      if   List.is_empty decl.fs_spec
+      then None
+      else Some (specifications_of_ispecifications decl.fs_spec) in
 
     A.{ name          = decl.fs_name;
         kind          = decl.fs_kind;

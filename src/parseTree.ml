@@ -273,9 +273,9 @@ and declaration_unloc =
   | Dnamespace     of namespace_decl
   | Dfunction      of s_function
   | Dspecification of specification
-  | Dspecasset     of lident * label_exprs
-  | Dspecfun       of specfun_kind * lident * args * specification
-  | Dspecvariable  of lident * label_exprs
+  | Dspecasset     of (lident * label_exprs)
+  | Dspecfun       of specfun
+  | Dspecvariable  of (lident * label_exprs)
   | Dsecurity      of security
   | Dinvalid
 
@@ -283,6 +283,8 @@ and specfun_kind =
   | SKentry
   | SKfunction
   | SKgetter
+
+and specfun = specfun_kind * lident * args * specification
 
 and variable_decl =
   lident

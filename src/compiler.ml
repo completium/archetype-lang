@@ -1,7 +1,6 @@
 (* -------------------------------------------------------------------- *)
 open Archetype
 open Core
-open Gen_pt
 open Gen_transform
 open Gen_decompile
 
@@ -336,7 +335,6 @@ let compile (filename, channel) =
   |> raise_if_error parse_error parse
   |> cont !Options.opt_pt output_pt
   |> raise_if_error parse_error preprocess_ext
-  |> raise_if_error type_error remove_spec_decl
   |> cont !Options.opt_extpt output_pt
   |> raise_if_error parse_error generate_target_pt
   |> raise_if_error type_error type_

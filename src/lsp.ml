@@ -255,7 +255,7 @@ let process (filename, channel) =
     )
   | Errors ->
     try
-      let pt = Io.parse_archetype ~name:filename channel |> Gen_pt.remove_spec_decl in
+      let pt = Io.parse_archetype ~name:filename channel in
       if (List.is_empty !Error.errors)
       then
         let ast = Typing.typing Typing.empty pt in
