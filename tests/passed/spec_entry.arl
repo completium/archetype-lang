@@ -4,7 +4,7 @@ entry exec (p : nat) {
   ()
 }
 
-specification entry exec () {
+specification entry exec (p : nat) {
   postcondition s1 {
     true
   }

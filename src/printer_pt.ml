@@ -821,12 +821,16 @@ let pp_use fmt u =
   (pp_do_if (match u with | [] -> false | _ -> true) (fun fmt -> Format.fprintf fmt "@\n  @[use: %a;@]" (pp_list "@ " pp_id))) fmt u
 
 let pp_pc_ci fmt (s, id, f, is, u) =
-  Format.fprintf fmt "%a %a {@\n  @[%a@]%a%a@\n}"
-    pp_str s
-    pp_id id
-    (pp_expr e_default PNone) f
-    pp_invariants is
-    pp_use u
+  match s, is, u with
+  | "", [], [] -> Format.fprintf fmt "%a: %a@\n" pp_id id (pp_expr e_default PNone) f
+  | _  -> begin
+      Format.fprintf fmt "%a %a {@\n  @[%a@]%a%a@\n}"
+        pp_str s
+        pp_id id
+        (pp_expr e_default PNone) f
+        pp_invariants is
+        pp_use u
+    end
 
 let pp_postcondition fmt (id, f, is, u) =
   pp_pc_ci fmt ("postcondition", id, f, is, u)
