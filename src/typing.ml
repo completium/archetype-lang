@@ -4317,12 +4317,12 @@ let for_function
             match kind, fdecl.getter with
             | PT.SKgetter  , true
             | PT.SKfunction, false ->
-                let _, xargs = for_args_decl topenv xargs in
-
-                if not (named_sig_compatible args xargs) then
-                  Env.emit_error env (xloc, IncompatibleSpecSig);
-
-                if unloc x = unloc fdecl.name then Some xspec else None
+                if unloc x = unloc fdecl.name then begin
+                  let _, xargs = for_args_decl topenv xargs in
+                  if not (named_sig_compatible args xargs) then
+                    Env.emit_error env (xloc, IncompatibleSpecSig);
+                  Some xspec
+                end  else None
 
             | _ -> None in
 
@@ -4989,12 +4989,13 @@ let for_acttx_decl
               let myspec { plloc = xloc; pldesc = (kind, xname, xargs, xspec) } =
                 match kind with
                 | PT.SKentry ->
-                    let _, xargs = for_args_decl topenv xargs in
+                    if unloc xname = unloc x then begin
+                      let _, xargs = for_args_decl topenv xargs in
     
-                    if not (named_sig_compatible args xargs) then
-                      Env.emit_error env (xloc, IncompatibleSpecSig);
-    
-                    if unloc xname = unloc x then Some xspec else None
+                      if not (named_sig_compatible args xargs) then
+                        Env.emit_error env (xloc, IncompatibleSpecSig);
+                      Some xspec
+                    end else None
     
                 | _ -> None in
         
@@ -5051,13 +5052,12 @@ let for_acttx_decl
           let env, xspec =
             let myspec { plloc = xloc; pldesc = (kind, xname, xargs, xspec) } =
               match kind with
-              | PT.SKentry ->
+              | PT.SKentry when unloc xname = unloc x ->
                   let _, xargs = for_args_decl topenv xargs in
   
                   if not (named_sig_compatible args xargs) then
                     Env.emit_error env (xloc, IncompatibleSpecSig);
-  
-                  if unloc xname = unloc x then Some xspec else None
+                  Some xspec
   
               | _ -> None in
       
