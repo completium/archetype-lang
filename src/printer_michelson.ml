@@ -439,6 +439,7 @@ let rec pp_dinstruction fmt i =
   | Dassign (a, b) -> Format.fprintf fmt "%a <- %a" pp_dexpr a pp_dexpr b
   | Dif (c, a, b)  -> Format.fprintf fmt "if (%a)@\nthen (@[%a@])@\nelse (@[%a@])" pp_dexpr c seq a seq b
   | Dfail e        -> Format.fprintf fmt "fail(%a)" pp_dexpr e
+  | Ddecl id       -> Format.fprintf fmt "var x%i" id
 
 let pp_sysofequations fmt (s : sysofequations) =
   (pp_list "@\n" pp_dinstruction) fmt s

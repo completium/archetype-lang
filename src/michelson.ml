@@ -361,6 +361,7 @@ type dinstruction =
   | Dassign of dexpr * dexpr
   | Dif     of dexpr * dinstruction list * dinstruction list
   | Dfail   of dexpr
+  | Ddecl   of alpha_ident
 [@@deriving show {with_path = false}]
 
 type sysofequations = dinstruction list
@@ -880,6 +881,7 @@ let map_dinstruction_gen (fe : dexpr -> dexpr) (f : dinstruction -> dinstruction
   | Dassign (e, v)     -> Dassign (fe e, fe v)
   | Dif     (c, t, e)  -> Dif     (fe c, List.map f t, List.map f e)
   | Dfail   e          -> Dfail   (fe e)
+  | Ddecl id           -> Ddecl   id
 
 let map_dexpr_gen (ft : type_ -> type_) (fd : data -> data) (f : dexpr -> dexpr) = function
   | Dalpha i                 -> Dalpha i
@@ -898,6 +900,7 @@ let map_dinstruction_gen (fe : dexpr -> dexpr) (f : dinstruction -> dinstruction
   | Dassign (e, v)     -> Dassign (fe e, fe v)
   | Dif     (c, t, e)  -> Dif     (fe c, List.map f t, List.map f e)
   | Dfail   e          -> Dfail   (fe e)
+  | Ddecl id           -> Ddecl   id
 
 let map_dinstruction = map_dinstruction_gen id
 
@@ -916,11 +919,13 @@ let rec fold_dinstruction_dexpr f accu = function
   | Dassign (e, v)     -> f (f accu e) v
   | Dif     (c, t, e)  -> List.fold_left (fold_dinstruction_dexpr f) (List.fold_left (fold_dinstruction_dexpr f) (f accu c) t) e
   | Dfail   e          -> f accu e
+  | Ddecl _            -> accu
 
 let fold_dinstruction f accu = function
-  | Dassign _     -> accu
+  | Dassign _          -> accu
   | Dif     (_, t, e)  -> List.fold_left f (List.fold_left f accu t) e
   | Dfail   _          -> accu
+  | Ddecl _            -> accu
 
 module Utils : sig
 

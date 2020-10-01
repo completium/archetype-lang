@@ -239,6 +239,7 @@ module List : sig
   val count         : ('a -> bool) -> 'a list -> int
   val split3        : ('a * 'b * 'c) list -> 'a list * 'b list * 'c list
   val sub           : int -> int -> 'a list -> 'a list
+  val cut           : int -> 'a list -> ('a list * 'a list)
 
   module Exn : sig
     val assoc     : 'a -> ('a * 'b) list -> 'b option
@@ -388,6 +389,15 @@ end = struct
     | [] -> invalid_arg "List.sub"
     | _::t when s > 0 -> sub (s - 1) (e - 1) t
     | h::t -> h::(sub (s - 1) (e - 1) t)
+
+  let cut n l =
+    let rec aux idx accu l =
+      match l with
+      | _ when idx = 0 -> accu, l
+      | i::t -> aux (idx - 1) (accu @ [i]) t
+      | _ -> invalid_arg "List.cut"
+    in
+    aux n [] l
 
   module Exn = struct
     let assoc x xs =

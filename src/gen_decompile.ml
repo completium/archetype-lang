@@ -281,7 +281,7 @@ let to_dir (michelson, env : T.michelson * env) =
         (* Format.printf "_stack_then:@\n%a@\n@." pp_stack stack_then; *)
         (* Format.printf "_stack_else:@\n%a@\n@." pp_stack stack_else; *)
 
-        let stack, env, sys_then, sys_else =
+        let stack, env, decls, sys_then, sys_else =
           let stack_rev_ref  = List.rev stack in
           let stack_rev_then = List.rev stack_then in
           let stack_rev_else = List.rev stack_else in
@@ -293,9 +293,6 @@ let to_dir (michelson, env : T.michelson * env) =
             | false, true  -> stack_then
             | true,  true  -> assert false
           in
-
-          let size = List.length _stack_in in
-          Format.printf "size: %i@\n@." size;
 
           let g lref lbranch =
             let size = min (List.length lref) (List.length lbranch) in
@@ -313,15 +310,35 @@ let to_dir (michelson, env : T.michelson * env) =
           let sys_then = sys_then @ (g stack_rev_ref stack_rev_then) in
           let sys_else = sys_else @ (g stack_rev_ref stack_rev_else) in
 
-          stack |> List.rev |> List.sub 0 (min size (List.length stack)) |> List.rev, env, sys_then, sys_else
+          let stack, decls =
+            let l1 = (List.length _stack_in) in
+            let l2 = (List.length stack) in
+            if l1 = l2
+            then stack, []
+            else begin
+              if l1 < l2
+              then begin
+                let ast, bst = stack |> List.rev |> List.cut (l2 - 1) in
+                let sys = List.fold_left (fun accu (x : T.dexpr) ->
+                    match x with
+                    | T.Dalpha id -> [T.Ddecl id]
+                    | _ -> accu) sys bst in
+                List.rev ast, sys
+              end
+              else assert false
+            end
+          in
+
+          stack, env, decls, sys_then, sys_else
         in
 
         let x = T.dalpha env.cpt_alpha in
         let env = inc_cpt_alpha env in
 
-        let accu = add_instruction env sys (T.Dif (x, sys_then, sys_else)) in
+        let sys = add_instruction env sys (T.Dif (x, sys_then, sys_else)) in
+        let sys = List.fold_left (fun accu x -> add_instruction env accu x) sys decls in
 
-        f env accu it (x::stack)
+        f env sys it (x::stack)
       end
     | IF_CONS _::_   -> assert false
     | IF_LEFT _::_   -> assert false
@@ -583,6 +600,7 @@ let to_ir (dir, env : T.dprogram * env) : T.ir * env =
     | Dassign (_a, _b) -> assert false
     | Dif (c, t, e)    -> M.mk_mterm (M.Mif (for_expr c, seq t, Some (seq e))) M.tunit
     | Dfail e          -> M.failg (for_expr e)
+    | Ddecl _id        -> assert false
   in
 
   T.mk_ir tstorage storage_data [] tparameter [] [], env
