@@ -572,7 +572,8 @@ let to_dir (michelson, env : T.michelson * env) =
       end
     | _ -> Format.eprintf "error: stack not empty@."; assert false
   in
-  (T.mk_dprogram tstorage tparameter storage_data name sys), env
+  let functions = [] in
+  (T.mk_dprogram tstorage tparameter storage_data name functions sys), env
 
 let to_ir (dir, env : T.dprogram * env) : T.ir * env =
   let tstorage     = dir.storage in
@@ -597,10 +598,17 @@ let to_ir (dir, env : T.dprogram * env) : T.ir * env =
     let f = _for_instr in
     let seq x = M.seq (List.map f x) in
     match i with
-    | Dassign (_a, _b) -> assert false
-    | Dif (c, t, e)    -> M.mk_mterm (M.Mif (for_expr c, seq t, Some (seq e))) M.tunit
-    | Dfail e          -> M.failg (for_expr e)
-    | Ddecl _id        -> assert false
+    | Ddecl      _id         -> assert false
+    | Dassign   (_e, _v)     -> assert false
+    | Dfail      e           -> M.failg (for_expr e)
+    | Dexec     (_id, _arg)  -> assert false
+    | Dif       (c, t, e)    -> M.mk_mterm (M.Mif (for_expr c, seq t, Some (seq e))) M.tunit
+    | Difcons   (_c, _t, _e) -> assert false
+    | Difleft   (_c, _t, _e) -> assert false
+    | Difsome   (_c, _t, _e) -> assert false
+    | Dloop     (_c, _b)     -> assert false
+    | Dloopleft (_c, _b)     -> assert false
+    | Diter     (_c, _b)     -> assert false
   in
 
   T.mk_ir tstorage storage_data [] tparameter [] [], env
