@@ -21,6 +21,9 @@ env:
   - OCAML_VERSION=4.09.0
   - OCAML_VERSION=4.09.1
   - OCAML_VERSION=4.10.0
+  - OCAML_VERSION=4.10.1
+  - OCAML_VERSION=4.11.0
+  - OCAML_VERSION=4.11.1
 
 before_install:
   # Obtain and install opam locally.
