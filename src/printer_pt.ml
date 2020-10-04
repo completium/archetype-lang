@@ -144,6 +144,12 @@ let rec pp_type outer pos fmt e =
       pp_type_default k
       pp_type_default v
 
+  | Tor (k, v) ->
+    Format.fprintf fmt
+      "or<%a, %a>"
+      pp_type_default k
+      pp_type_default v
+
   | Tcontract t ->
     Format.fprintf fmt
       "contract<%a>"
@@ -436,8 +442,19 @@ let rec pp_expr outer pos fmt a =
         | OSome x -> Format.fprintf fmt "some(%a)" pp_simple_expr x
         | ONone -> Format.fprintf fmt "none"
       in
-      Format.fprintf fmt "%a"
-        pp_option_ x
+      pp_option_ fmt x
+    in
+    (maybe_paren outer e_default pos pp) fmt x
+
+  | Eor x ->
+
+    let pp fmt x =
+      let pp_or_ fmt x =
+        match x with
+        | Oleft  (t, x) -> Format.fprintf fmt "left<%a>(%a)" pp_type t pp_simple_expr x
+        | Oright (t, x) -> Format.fprintf fmt "right<%a>(%a)" pp_type t pp_simple_expr x
+      in
+      pp_or_ fmt x
     in
     (maybe_paren outer e_default pos pp) fmt x
 
@@ -475,6 +492,38 @@ let rec pp_expr outer pos fmt a =
                (pp_expr e_imply PRight) e)) xs
     in
     (maybe_paren outer e_default pos pp) fmt (x, xs)
+
+  | Ematchoption (x, id, ve, ne) ->
+    let pp fmt (x, id, ve, ne) =
+      Format.fprintf fmt "match_option (%a) with@\n  | some (%a) -> (@[%a@])@\n  | none -> (@[%a@])@\nend"
+        (pp_expr e_default PNone) x
+        pp_id id
+        (pp_expr e_default PNone) ve
+        (pp_expr e_default PNone) ne
+    in
+    (maybe_paren outer e_default pos pp) fmt (x, id, ve, ne)
+
+  | Ematchor (x, lid, le, rid, re) ->
+    let pp fmt (x, lid, le, rid, re) =
+      Format.fprintf fmt "match_or (%a) with@\n  | left (%a) -> (@[%a@])@\n  | right (%a) -> (@[%a@])@\nend"
+        (pp_expr e_default PNone) x
+        pp_id lid
+        (pp_expr e_default PNone) le
+        pp_id rid
+        (pp_expr e_default PNone) re
+    in
+    (maybe_paren outer e_default pos pp) fmt (x, lid, le, rid, re)
+
+  | Ematchlist (x, hid, tid, hte, ee) ->
+    let pp fmt (x, hid, tid, hte, ee) =
+      Format.fprintf fmt "match_list (%a) with@\n  | %a::%a -> (@[%a@])@\n  | [] -> (@[%a@])@\nend"
+        (pp_expr e_default PNone) x
+        pp_id hid
+        pp_id tid
+        (pp_expr e_default PNone) hte
+        (pp_expr e_default PNone) ee
+    in
+    (maybe_paren outer e_default pos pp) fmt (x, hid, tid, hte, ee)
 
   | Erecupdate (e, l) ->
 

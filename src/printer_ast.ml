@@ -53,21 +53,25 @@ let rec pp_ptyp fmt (t : ptyp) =
     Format.fprintf fmt "%a" pp_id en
   | Tbuiltin b -> pp_vtyp fmt b
   | Tcontainer (t, c) ->
-    Format.fprintf fmt "%a %a"
-      pp_ptyp t
+    Format.fprintf fmt "%a<%a>"
       pp_container c
+      pp_ptyp t
   | Tset t ->
-    Format.fprintf fmt "%a set"
+    Format.fprintf fmt "set<%a>"
       pp_ptyp t
   | Tlist t ->
-    Format.fprintf fmt "%a list"
+    Format.fprintf fmt "list<%a>"
       pp_ptyp t
   | Tmap (k, v) ->
-    Format.fprintf fmt "(%a * %a) map"
+    Format.fprintf fmt "map<%a, %a>"
+      pp_ptyp k
+      pp_ptyp v
+  | Tor (k, v) ->
+    Format.fprintf fmt "or<%a, %a>"
       pp_ptyp k
       pp_ptyp v
   | Toption t ->
-    Format.fprintf fmt "%a option"
+    Format.fprintf fmt "option<%a>"
       pp_ptyp t
   | Ttuple ts ->
     Format.fprintf fmt "%a"

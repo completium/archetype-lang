@@ -27,6 +27,7 @@
       "asset"               , ASSET          ;
       "at"                  , AT             ;
       "before"              , BEFORE         ;
+      "begin"               , BEGIN          ;
       "but"                 , BUT            ;
       "by"                  , BY             ;
       "call"                , CALL           ;
@@ -64,9 +65,13 @@
       "invariant"           , INVARIANT      ;
       "iter"                , ITER           ;
       "label"               , LABEL          ;
+      "left"                , LEFT           ;
       "let"                 , LET            ;
       "list"                , LIST           ;
       "map"                 , MAP            ;
+      "match_list"          , MATCH_LIST     ;
+      "match_option"        , MATCH_OPTION   ;
+      "match_or"            , MATCH_OR       ;
       "match"               , MATCH          ;
       "namespace"           , NAMESPACE      ;
       "none"                , NONE           ;
@@ -84,9 +89,10 @@
       "removed"             , REMOVED        ;
       "require"             , REQUIRE        ;
       "return"              , RETURN         ;
+      "right"               , RIGHT          ;
       "security"            , SECURITY       ;
-      "set"                 , SET            ;
       "self"                , SELF           ;
+      "set"                 , SET            ;
       "shadow"              , SHADOW         ;
       "some"                , SOME           ;
       "sorted"              , SORTED         ;
@@ -101,12 +107,12 @@
       "unpack"              , UNPACK         ;
       "use"                 , USE            ;
       "var"                 , VAR            ;
-      "view"                , VIEW           ;
       "variable"            , VARIABLE       ;
+      "view"                , VIEW           ;
       "when"                , WHEN           ;
       "while"               , WHILE          ;
       "with"                , WITH           ;
-      "xor"                 , XOR           ;
+      "xor"                 , XOR
     ]
 
   let () =
@@ -180,6 +186,7 @@ rule token = parse
   | ":="                  { COLONEQUAL }
   | ","                   { COMMA }
   | ":"                   { COLON }
+  | "::"                  { COLONCOLON }
   | ";"                   { SEMI_COLON }
   | "%"                   { PERCENT }
   | "|"                   { PIPE }

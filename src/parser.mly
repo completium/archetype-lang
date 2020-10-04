@@ -43,11 +43,13 @@
 %token AT_REMOVE
 %token AT_UPDATE
 %token BEFORE
+%token BEGIN
 %token BUT
 %token BY
 %token CALL
 %token CALLED
 %token COLON
+%token COLONCOLON
 %token COLONEQUAL
 %token COMMA
 %token CONSTANT
@@ -94,6 +96,7 @@
 %token LBRACE
 %token LBRACKET
 %token LBRACKETPERCENT
+%token LEFT
 %token LESS
 %token LESSEQUAL
 %token LET
@@ -101,6 +104,9 @@
 %token LPAREN
 %token MAP
 %token MATCH
+%token MATCH_LIST
+%token MATCH_OPTION
+%token MATCH_OR
 %token MINUS
 %token MINUSEQUAL
 %token MULT
@@ -131,6 +137,7 @@
 %token REMOVED
 %token REQUIRE
 %token RETURN
+%token RIGHT
 %token RPAREN
 %token SECURITY
 %token SELF
@@ -535,6 +542,7 @@ type_s_unloc:
 | LIST        LESS x=type_t GREATER                { Tlist x           }
 | SET         LESS x=type_t GREATER                { Tset x            }
 | MAP         LESS k=type_t COMMA v=type_s GREATER { Tmap (k, v)       }
+| OR          LESS k=type_t COMMA v=type_s GREATER { Tor (k, v)        }
 | CONTRACT    LESS x=type_t GREATER                { Tcontract x       }
 | x=paren(type_r)                                  { x                 }
 
@@ -839,6 +847,12 @@ expr_r:
  | NONE
      { Eoption ONone }
 
+ | LEFT LESS t=type_t GREATER x=paren(expr)
+     { Eor (Oleft (t, x)) }
+
+ | RIGHT LESS t=type_t GREATER x=paren(expr)
+     { Eor (Oright (t, x)) }
+
  | UNPACK LESS t=type_t GREATER x=paren(expr)
      { Eunpack (t, x) }
 
@@ -892,6 +906,12 @@ simple_expr_r:
 
  | MATCH x=expr WITH xs=branchs END { Ematchwith (x, xs) }
 
+ | MATCH_OPTION x=expr WITH PIPE SOME id=paren(ident) IMPLY ve=expr PIPE NONE IMPLY ne=expr END { Ematchoption (x, id, ve, ne) }
+
+ | MATCH_OR x=expr WITH PIPE LEFT lid=paren(ident) IMPLY le=expr PIPE RIGHT rid=paren(ident) IMPLY re=expr END { Ematchor (x, lid, le, rid, re) }
+
+ | MATCH_LIST x=expr WITH PIPE hid=ident COLONCOLON tid=ident IMPLY hte=expr PIPE LBRACKET RBRACKET IMPLY ee=expr END { Ematchlist (x, hid, tid, hte, ee) }
+
  | id=ident a=app_args
      { Eapp ( Fident id, a) }
 
@@ -929,6 +949,9 @@ simple_expr_r:
      { Einvalid }
 
  | x=paren(block_r)
+     { x }
+
+ | BEGIN x=block_r END
      { x }
 
 %inline vt_vset:

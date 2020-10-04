@@ -19,6 +19,7 @@ module Type : sig
   val as_set              : A.ptyp -> A.ptyp option
   val as_list             : A.ptyp -> A.ptyp option
   val as_map              : A.ptyp -> (A.ptyp * A.ptyp) option
+  val as_or               : A.ptyp -> (A.ptyp * A.ptyp) option
 
   val is_asset     : A.ptyp -> bool
   val is_numeric   : A.ptyp -> bool
@@ -66,6 +67,7 @@ end = struct
   let as_set       = function A.Tset       t       -> Some t       | _ -> None
   let as_list      = function A.Tlist      t       -> Some t       | _ -> None
   let as_map       = function A.Tmap       (k, v)  -> Some (k, v)  | _ -> None
+  let as_or        = function A.Tor        (l, r)  -> Some (l, r)  | _ -> None
 
   let as_asset_collection = function
     | A.Tcontainer (A.Tasset asset, c) -> Some (asset, c)
@@ -266,6 +268,9 @@ end = struct
         | Tmap (kptn, vptn), Tmap (ktg, vtg) ->
           List.iter2 doit [kptn; vptn] [ktg; vtg]
 
+        | Tor (lptn, rptn), Tor (ltg, rtg) ->
+          List.iter2 doit [lptn; rptn] [ltg; rtg]
+
         | Tcontainer (ptn, x), Tcontainer (tg, y) when x = y ->
           doit ptn tg
 
@@ -296,6 +301,7 @@ end = struct
       | Tset        ty     -> Tset  (doit ty)
       | Tlist       ty     -> Tlist (doit ty)
       | Tmap       (k, v)  -> Tmap  (doit k, doit v)
+      | Tor        (l, r)  -> Tor   (doit l, doit r)
       | Ttuple      ty     -> Ttuple (List.map doit ty)
       | Toption     ty     -> Toption (doit ty)
       | Tcontract   ty     -> Tcontract (doit ty)
@@ -415,6 +421,8 @@ type error_desc =
   | InvalidTypeForFail
   | InvalidTypeForMapKey
   | InvalidTypeForMapValue
+  | InvalidTypeForOrLeft
+  | InvalidTypeForOrRight
   | InvalidTypeForPk
   | InvalidTypeForSet
   | InvalidVarOrArgType
@@ -607,6 +615,8 @@ let pp_error_desc fmt e =
   | InvalidTypeForFail                 -> pp "Invalid type for fail"
   | InvalidTypeForMapKey               -> pp "Invalid type for map key"
   | InvalidTypeForMapValue             -> pp "Invalid type for map value"
+  | InvalidTypeForOrLeft               -> pp "Invalid type for or left"
+  | InvalidTypeForOrRight              -> pp "Invalid type for or right"
   | InvalidTypeForPk                   -> pp "Invalid type for primary key"
   | InvalidTypeForSet                  -> pp "Invalid type for set"
   | InvalidVarOrArgType                -> pp "A variable / argument type cannot be an asset or a collection"
@@ -1781,6 +1791,7 @@ let rec valid_var_or_arg_type (ty : A.ptyp) =
   | Tset       ty -> valid_var_or_arg_type ty
   | Tlist      ty -> valid_var_or_arg_type ty
   | Tmap   (k, v) -> List.for_all valid_var_or_arg_type [k; v]
+  | Tor    (l, r) -> List.for_all valid_var_or_arg_type [l; r]
   | Ttuple     ty -> List.for_all valid_var_or_arg_type ty
   | Toption    ty -> valid_var_or_arg_type ty
   | Tcontract  _  -> true
@@ -1876,10 +1887,21 @@ let for_type_exn ?pkey (env : env) =
       if not (Type.Michelson.is_comparable nk) then
         Env.emit_error env (loc k, InvalidTypeForMapKey);
 
-      if not (Type.Michelson.is_type nk) then
-        Env.emit_error env (loc k, InvalidTypeForMapValue);
+      if not (Type.Michelson.is_type nv) then
+        Env.emit_error env (loc v, InvalidTypeForMapValue);
 
       A.Tmap (nk, nv)
+
+    | Tor (l, r) ->
+      let nl, nr = doit l, doit r in
+
+      if not (Type.Michelson.is_type nl) then
+        Env.emit_error env (loc l, InvalidTypeForOrLeft);
+
+      if not (Type.Michelson.is_type nr) then
+        Env.emit_error env (loc r, InvalidTypeForOrRight);
+
+      A.Tor (nl, nr)
 
     | Ttuple tys ->
       A.Ttuple (List.map doit tys)
@@ -2356,22 +2378,22 @@ let rec for_xexpr
           | Some Trecord { pldesc = rname } -> begin
               let recd = Env.Record.get env rname in
               let fields = List.map
-                (fun fd -> unloc fd.rfd_name, fd.rfd_type) recd.rd_fields in
+                  (fun fd -> unloc fd.rfd_name, fd.rfd_type) recd.rd_fields in
               (fields, None)
             end
 
           | Some Tasset { pldesc = aname } -> begin
               let asset = Env.Asset.get env aname in
               let fields = List.map
-                (fun fd -> unloc fd.fd_name, fd.fd_type) asset.as_fields in
+                  (fun fd -> unloc fd.fd_name, fd.fd_type) asset.as_fields in
               (fields, Some (List.map unloc asset.as_pk))
             end
 
           | _ ->
-              if Option.is_some e.A.type_ then
-                Env.emit_error env (loc tope, RecordUpdateOnNonRecordOrAsset);
-              List.iter (fun (_, e) -> ignore (for_xexpr env e : A.pterm)) upd;
-              bailout () in
+            if Option.is_some e.A.type_ then
+              Env.emit_error env (loc tope, RecordUpdateOnNonRecordOrAsset);
+            List.iter (fun (_, e) -> ignore (for_xexpr env e : A.pterm)) upd;
+            bailout () in
 
         if Option.is_some isasset && not (is_form_kind mode.em_kind) then begin
           Env.emit_error env (loc tope, AssetUpdateInNonFormula);
@@ -2392,12 +2414,12 @@ let rec for_xexpr
             let aout =
               match List.assoc_opt (unloc x) fields with
               | None ->
-                  Env.emit_error env (loc x, RecordUpdateWithInvalidFieldName);
-                  ignore (for_xexpr env ue : A.pterm);
-                  None
+                Env.emit_error env (loc x, RecordUpdateWithInvalidFieldName);
+                ignore (for_xexpr env ue : A.pterm);
+                None
               | Some ety ->
-                  let ue = for_xexpr env ~ety ue in
-                  if Sstr.mem (unloc x) !seen then None else Some (x, ue) in
+                let ue = for_xexpr env ~ety ue in
+                if Sstr.mem (unloc x) !seen then None else Some (x, ue) in
 
             seen := Sstr.add (unloc x) !seen; aout
 
@@ -2913,6 +2935,10 @@ let rec for_xexpr
           (A.Pentrypoint (ty, id, b))
       end
 
+    | Ematchoption _
+    | Ematchor   _
+    | Ematchlist _
+    | Eor        _
     | Eself      _
     | Evar       _
     | Efail      _
@@ -4281,19 +4307,19 @@ let named_sig_compatible args xargs =
       raise E.Incompatible;
 
     List.iter2 (fun arg xarg ->
-      match arg, xarg with
-      | Some ({ pldesc = name }, ty), Some ({ pldesc = xname }, xty) ->
+        match arg, xarg with
+        | Some ({ pldesc = name }, ty), Some ({ pldesc = xname }, xty) ->
           if name <> xname || not (Type.equal ty xty) then
             raise E.Incompatible
-      | _, _ -> ()) args xargs;
+        | _, _ -> ()) args xargs;
     true
 
   with E.Incompatible -> false
 
 (* -------------------------------------------------------------------- *)
 let for_function
-  ?(xspecs : PT.specfun loced list option) (env as topenv : env) (fdecl : PT.s_function loced)
-=
+    ?(xspecs : PT.specfun loced list option) (env as topenv : env) (fdecl : PT.s_function loced)
+  =
   let { pldesc = fdecl; plloc = loc; } = fdecl in
 
   Env.inscope env (fun env ->
@@ -4317,16 +4343,16 @@ let for_function
             match kind, fdecl.getter with
             | PT.SKgetter  , true
             | PT.SKfunction, false ->
-                if unloc x = unloc fdecl.name then begin
-                  let _, xargs = for_args_decl topenv xargs in
-                  if not (named_sig_compatible args xargs) then
-                    Env.emit_error env (xloc, IncompatibleSpecSig);
-                  Some xspec
-                end  else None
+              if unloc x = unloc fdecl.name then begin
+                let _, xargs = for_args_decl topenv xargs in
+                if not (named_sig_compatible args xargs) then
+                  Env.emit_error env (xloc, IncompatibleSpecSig);
+                Some xspec
+              end  else None
 
             | _ -> None in
 
-            Option.get_as_list fdecl.spec
+          Option.get_as_list fdecl.spec
           @ List.pmap myspec (Option.get_dfl [] xspecs) in
 
         let env, items =
@@ -4503,24 +4529,24 @@ let for_vars_decl (env : env) (decls : PT.variable_decl loced list) =
 
 (* -------------------------------------------------------------------- *)
 let for_var_specs
-  (env : env) (specs : (PT.lident * PT.label_exprs) loced list)
-=
+    (env : env) (specs : (PT.lident * PT.label_exprs) loced list)
+  =
   List.iter (fun { pldesc = (x, _) } ->
-    if not (Env.Var.exists env (unloc x)) then
-      Env.emit_error env (loc x, UnknownVariable (unloc x)))
+      if not (Env.Var.exists env (unloc x)) then
+        Env.emit_error env (loc x, UnknownVariable (unloc x)))
     specs
 
 (* -------------------------------------------------------------------- *)
 let for_fun_decl
-  ?(xspecs : PT.specfun loced list option) (env : env) (fdecl : PT.s_function loced)
-=
+    ?(xspecs : PT.specfun loced list option) (env : env) (fdecl : PT.s_function loced)
+  =
   let env, decl = for_function ?xspecs env fdecl in
   (Option.fold (fun env decl -> Env.Function.push env decl) env decl, decl)
 
 (* -------------------------------------------------------------------- *)
 let for_funs_decl
-  (env : env) (decls : PT.s_function loced list) (xspecs : PT.specfun loced list)
-=
+    (env : env) (decls : PT.s_function loced list) (xspecs : PT.specfun loced list)
+  =
   List.fold_left_map (for_fun_decl ~xspecs) env decls
 
 (* -------------------------------------------------------------------- *)
@@ -4530,26 +4556,26 @@ let for_fun_specs (env : env) (specs : PT.specfun loced list) =
     | PT.SKfunction -> begin
         match Env.Function.lookup env (unloc x) with
         | Some fund when fund.fs_kind = A.FKfunction ->
-            ()
-  
+          ()
+
         | _ ->
-            Env.emit_error env (loc x, UnknownFunction (unloc x))
+          Env.emit_error env (loc x, UnknownFunction (unloc x))
       end
-    
+
     | PT.SKgetter -> begin
         match Env.Function.lookup env (unloc x) with
         | Some fund when fund.fs_kind = A.FKgetter ->
-            ()
-          
+          ()
+
         | _ ->
-            Env.emit_error env (loc x, UnknownGetter (unloc x));
+          Env.emit_error env (loc x, UnknownGetter (unloc x));
       end
-    
+
     | PT.SKentry -> begin
         if not (Env.Tentry.exists env (unloc x)) then
           Env.emit_error env (loc x, UnknownEntry (unloc x));
       end
-    
+
   in List.iter for1 specs
 
 (* -------------------------------------------------------------------- *)
@@ -4566,8 +4592,8 @@ type pre_assetdecl = {
 }
 
 let for_asset_decl
-  ?(xspecs = []) pkey (env : env) ((adecl, decl) : assetdecl * PT.asset_decl loced)
-=
+    ?(xspecs = []) pkey (env : env) ((adecl, decl) : assetdecl * PT.asset_decl loced)
+  =
   let (x, cfields, sfields, opts, postopts, _ (* FIXME *), _) = unloc decl in
 
   let for_field field =
@@ -4611,17 +4637,17 @@ let for_asset_decl
   let invs    =
     let xinvs =
       List.pmap (fun { pldesc = ({ pldesc = xname }, xinv ) } ->
-        if xname = unloc adecl.as_name then Some xinv else None) xspecs in
+          if xname = unloc adecl.as_name then Some xinv else None) xspecs in
     invs @ xinvs in
 
   let bigmaps =
     let valid_to_type_values = ["big_map"] in
 
-      List.iter (function
+    List.iter (function
         | PT.AOto v when not (List.exists (String.equal (unloc v)) valid_to_type_values) ->
-            Env.emit_error env (loc v, UnknownAssetToProperty (unloc v))
+          Env.emit_error env (loc v, UnknownAssetToProperty (unloc v))
         | _ -> ()) opts;
-      List.exists (function PT.AOto {pldesc = "big_map"} -> true | _ -> false) opts in
+    List.exists (function PT.AOto {pldesc = "big_map"} -> true | _ -> false) opts in
 
   let pks =
     let dokey key =
@@ -4919,11 +4945,11 @@ let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) xspec
 
 (* -------------------------------------------------------------------- *)
 let for_asset_specs
-  (env : env) (specs : (PT.lident * PT.label_exprs) loced list)
-=
+    (env : env) (specs : (PT.lident * PT.label_exprs) loced list)
+  =
   List.iter (fun { pldesc = (x, _) } ->
-    if not (Env.Asset.exists env (unloc x)) then
-      Env.emit_error env (loc x, UnknownAsset (unloc x)))
+      if not (Env.Asset.exists env (unloc x)) then
+        Env.emit_error env (loc x, UnknownAsset (unloc x)))
     specs
 
 (* -------------------------------------------------------------------- *)
@@ -4971,8 +4997,8 @@ let for_records_decl (env : env) (decls : PT.record_decl loced list) =
 
 (* -------------------------------------------------------------------- *)
 let for_acttx_decl
-  ?(xspecs : PT.specfun loced list option) (env as topenv : env) (decl : acttx loced)
-=
+    ?(xspecs : PT.specfun loced list option) (env as topenv : env) (decl : acttx loced)
+  =
   match unloc decl with
   | `Entry (x, args, pt, i_exts, _exts) -> begin
       let env, decl =
@@ -4989,16 +5015,16 @@ let for_acttx_decl
               let myspec { plloc = xloc; pldesc = (kind, xname, xargs, xspec) } =
                 match kind with
                 | PT.SKentry ->
-                    if unloc xname = unloc x then begin
-                      let _, xargs = for_args_decl topenv xargs in
-    
-                      if not (named_sig_compatible args xargs) then
-                        Env.emit_error env (xloc, IncompatibleSpecSig);
-                      Some xspec
-                    end else None
-    
+                  if unloc xname = unloc x then begin
+                    let _, xargs = for_args_decl topenv xargs in
+
+                    if not (named_sig_compatible args xargs) then
+                      Env.emit_error env (xloc, IncompatibleSpecSig);
+                    Some xspec
+                  end else None
+
                 | _ -> None in
-        
+
               let env, items =
                 List.fold_left_map
                   (fun env spec -> for_specification `Local (env, poenv) spec)
@@ -5053,14 +5079,14 @@ let for_acttx_decl
             let myspec { plloc = xloc; pldesc = (kind, xname, xargs, xspec) } =
               match kind with
               | PT.SKentry when unloc xname = unloc x ->
-                  let _, xargs = for_args_decl topenv xargs in
-  
-                  if not (named_sig_compatible args xargs) then
-                    Env.emit_error env (xloc, IncompatibleSpecSig);
-                  Some xspec
-  
+                let _, xargs = for_args_decl topenv xargs in
+
+                if not (named_sig_compatible args xargs) then
+                  Env.emit_error env (xloc, IncompatibleSpecSig);
+                Some xspec
+
               | _ -> None in
-      
+
             let env, items =
               List.fold_left_map
                 (fun env spec -> for_specification `Local (env, env) spec)
@@ -5093,8 +5119,8 @@ let for_acttx_decl
 
 (* -------------------------------------------------------------------- *)
 let for_acttxs_decl
-  (env : env) (decls : acttx loced list) (xspecs : PT.specfun loced list)
-=
+    (env : env) (decls : acttx loced list) (xspecs : PT.specfun loced list)
+  =
   List.fold_left_map (for_acttx_decl ~xspecs) env decls
 
 (* -------------------------------------------------------------------- *)
@@ -5258,10 +5284,10 @@ let for_grouped_declarations (env : env) (toploc, g) =
       let xspecs =
         match var with
         | Some var ->
-            List.pmap (fun { pldesc = ({ pldesc = xname }, xspec) } ->
-                if   xname = unloc var.vr_name
-                then Some xspec
-                else None) g.gr_specvars
+          List.pmap (fun { pldesc = ({ pldesc = xname }, xspec) } ->
+              if   xname = unloc var.vr_name
+              then Some xspec
+              else None) g.gr_specvars
         | None -> [] in
 
       let specs = List.flatten (Option.get_as_list specs @ xspecs) in

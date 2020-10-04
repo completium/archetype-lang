@@ -23,6 +23,7 @@ and type_r =
   | Tset       of type_t
   | Tlist      of type_t
   | Tmap       of type_t * type_t
+  | Tor        of type_t * type_t
   | Tcontract  of type_t
   | Tkeyof     of type_t
 
@@ -118,12 +119,16 @@ and expr_unloc =
   | Eletin        of lident * type_t option * expr * expr * expr option
   | Evar          of lident * type_t option * expr
   | Ematchwith    of expr * branch list
+  | Ematchoption  of expr * lident * expr * expr
+  | Ematchor      of expr * lident * expr * lident * expr
+  | Ematchlist    of expr * lident * lident * expr * expr
   | Erecupdate    of expr * (lident * expr) list
   | Equantifier   of quantifier * lident * quantifier_kind * expr
   | Eassert       of lident
   | Elabel        of lident
   | Ereturn       of expr
   | Eoption       of option_
+  | Eor           of or_
   | Eentrypoint   of type_t * expr * expr
   | Eunpack       of type_t * expr
   | Eself         of lident
@@ -148,6 +153,10 @@ and quantifier_kind =
 and option_ =
   | OSome of expr
   | ONone
+
+and or_ =
+  | Oleft of type_t * expr
+  | Oright of type_t * expr
 
 and function_ =
   | Fident of lident
@@ -598,6 +607,7 @@ let is_keyword = function
   | "asset"
   | "at"
   | "before"
+  | "begin"
   | "but"
   | "by"
   | "call"
@@ -635,9 +645,13 @@ let is_keyword = function
   | "invariant"
   | "iter"
   | "label"
+  | "left"
   | "let"
   | "list"
   | "map"
+  | "match_list"
+  | "match_option"
+  | "match_or"
   | "match"
   | "namespace"
   | "none"
@@ -655,9 +669,10 @@ let is_keyword = function
   | "removed"
   | "require"
   | "return"
+  | "right"
   | "security"
-  | "set"
   | "self"
+  | "set"
   | "shadow"
   | "some"
   | "sorted"
@@ -672,8 +687,8 @@ let is_keyword = function
   | "unpack"
   | "use"
   | "var"
-  | "view"
   | "variable"
+  | "view"
   | "when"
   | "while"
   | "with"
