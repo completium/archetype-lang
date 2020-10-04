@@ -96,42 +96,43 @@ and transfer_t =
   | TTself     of lident * expr list
 
 and expr_unloc =
-  | Eterm         of (var_vset option * var_label option) * lident
-  | Eliteral      of literal
-  | Earray        of expr list
-  | Erecord       of record_item list
-  | Etuple        of expr list
-  | Edot          of expr * lident
-  | Esqapp        of expr * expr
-  | Emulticomp    of expr * (comparison_operator loced * expr) list
-  | Eapp          of function_ * expr list
-  | Emethod       of expr * lident * expr list
-  | Etransfer     of expr * transfer_t
-  | Edorequire    of expr * expr
-  | Edofailif     of expr * expr
-  | Efail         of expr
-  | Eassign       of assignment_operator * expr * expr
-  | Eif           of expr * expr * expr option
-  | Efor          of lident option * for_ident * expr * expr
-  | Eiter         of lident option * lident * expr option * expr * expr
-  | Ewhile        of lident option * expr * expr
-  | Eseq          of expr * expr
-  | Eletin        of lident * type_t option * expr * expr * expr option
-  | Evar          of lident * type_t option * expr
-  | Ematchwith    of expr * branch list
-  | Ematchoption  of expr * lident * expr * expr
-  | Ematchor      of expr * lident * expr * lident * expr
-  | Ematchlist    of expr * lident * lident * expr * expr
-  | Erecupdate    of expr * (lident * expr) list
-  | Equantifier   of quantifier * lident * quantifier_kind * expr
-  | Eassert       of lident
-  | Elabel        of lident
-  | Ereturn       of expr
-  | Eoption       of option_
-  | Eor           of or_
-  | Eentrypoint   of type_t * expr * expr
-  | Eunpack       of type_t * expr
-  | Eself         of lident
+  | Eterm          of (var_vset option * var_label option) * lident
+  | Eliteral       of literal
+  | Earray         of expr list
+  | Erecord        of record_item list
+  | Etuple         of expr list
+  | Edot           of expr * lident
+  | Esqapp         of expr * expr
+  | Emulticomp     of expr * (comparison_operator loced * expr) list
+  | Eapp           of function_ * expr list
+  | Emethod        of expr * lident * expr list
+  | Etransfer      of expr * transfer_t
+  | Edorequire     of expr * expr
+  | Edofailif      of expr * expr
+  | Efail          of expr
+  | Eassign        of assignment_operator * expr * expr
+  | Eif            of expr * expr * expr option
+  | Efor           of lident option * for_ident * expr * expr
+  | Eiter          of lident option * lident * expr option * expr * expr
+  | Ewhile         of lident option * expr * expr
+  | Eseq           of expr * expr
+  | Eletin         of lident * type_t option * expr * expr * expr option
+  | Evar           of lident * type_t option * expr
+  | Ematchwith     of expr * branch list
+  | Ematchoption   of expr * lident * expr * expr
+  | Ematchor       of expr * lident * expr * lident * expr
+  | Ematchlist     of expr * lident * lident * expr * expr
+  | Ematchfoldleft of expr * lident * expr
+  | Erecupdate     of expr * (lident * expr) list
+  | Equantifier    of quantifier * lident * quantifier_kind * expr
+  | Eassert        of lident
+  | Elabel         of lident
+  | Ereturn        of expr
+  | Eoption        of option_
+  | Eor            of or_
+  | Eentrypoint    of type_t * expr * expr
+  | Eunpack        of type_t * expr
+  | Eself          of lident
   | Eany
   | Enothing
   | Einvalid

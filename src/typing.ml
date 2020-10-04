@@ -2954,6 +2954,7 @@ let rec for_xexpr
     | Ematchoption _
     | Ematchor   _
     | Ematchlist _
+    | Ematchfoldleft _
     | Eself      _
     | Evar       _
     | Efail      _

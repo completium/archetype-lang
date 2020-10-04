@@ -104,6 +104,7 @@
 %token LPAREN
 %token MAP
 %token MATCH
+%token MATCH_FOLD_LEFT
 %token MATCH_LIST
 %token MATCH_OPTION
 %token MATCH_OR
@@ -911,6 +912,8 @@ simple_expr_r:
  | MATCH_OR x=expr WITH PIPE LEFT lid=paren(ident) IMPLY le=expr PIPE RIGHT rid=paren(ident) IMPLY re=expr END { Ematchor (x, lid, le, rid, re) }
 
  | MATCH_LIST x=expr WITH PIPE hid=ident COLONCOLON tid=ident IMPLY hte=expr PIPE LBRACKET RBRACKET IMPLY ee=expr END { Ematchlist (x, hid, tid, hte, ee) }
+
+ | MATCH_FOLD_LEFT x=expr WITH PIPE id=ident IMPLY e=expr END { Ematchfoldleft (x, id, e) }
 
  | id=ident a=app_args
      { Eapp ( Fident id, a) }

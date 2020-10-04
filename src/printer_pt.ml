@@ -525,6 +525,15 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_default pos pp) fmt (x, hid, tid, hte, ee)
 
+  | Ematchfoldleft (x, id, e) ->
+    let pp fmt (x, id, e) =
+      Format.fprintf fmt "match_fold_left (%a) with@\n  | %a -> (@[%a@])@\nend"
+        (pp_expr e_default PNone) x
+        pp_id id
+        (pp_expr e_default PNone) e
+    in
+    (maybe_paren outer e_default pos pp) fmt (x, id, e)
+
   | Erecupdate (e, l) ->
 
     let pp fmt (e, l) =
