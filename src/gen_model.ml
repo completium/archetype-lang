@@ -94,7 +94,7 @@ let to_model (ast : A.ast) : M.model =
     | A.Tset t             -> M.Tset (ptyp_to_type t)
     | A.Tlist t            -> M.Tlist (ptyp_to_type t)
     | A.Tmap (k, v)        -> M.Tmap (false, ptyp_to_type k, ptyp_to_type v)
-    | A.Tor (_l, _r)         -> assert false (* M.Tor (ptyp_to_type l, ptyp_to_type r) *)
+    | A.Tor (l, r)         -> M.Tor (ptyp_to_type l, ptyp_to_type r)
     | A.Ttuple l           -> M.Ttuple (List.map ptyp_to_type l)
     | A.Toperation         -> M.Toperation
     | A.Tcontract t        -> M.Tcontract (ptyp_to_type t)
@@ -364,6 +364,8 @@ let to_model (ast : A.ast) : M.model =
       | A.Ptupleaccess (p, idx)                -> M.Mtupleaccess (f p, idx)
       | A.Pnone                                -> M.Mnone
       | A.Psome a                              -> M.Msome (f a)
+      | A.Pleft (t, x)                         -> M.Mleft (ptyp_to_type t, f x)
+      | A.Pright (t, x)                        -> M.Mright (ptyp_to_type t, f x)
       | A.Pcast (src, dst, v)                  -> begin
           let v = f v in
           match src, dst, v with

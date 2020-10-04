@@ -2830,6 +2830,22 @@ let rec for_xexpr
             (A.Psome oe)
       end
 
+    | Eor oe -> begin
+        match oe with
+        | Oleft (t, x) ->
+          let x = for_xexpr env x in
+          let ty = for_type_exn env t in
+          mk_sp
+            (Some (A.Tor (Option.get x.type_, ty)))
+            (A.Pleft (ty, x))
+        | Oright (t, x) ->
+          let x = for_xexpr env x in
+          let ty = for_type_exn env t in
+          mk_sp
+            (Some (A.Tor (ty, Option.get x.type_)))
+            (A.Pright (ty, x))
+      end
+
     | Ematchwith (e, bs) -> begin
         match for_gen_matchwith mode env (loc tope) e bs with
         | None -> bailout () | Some (decl, me, (wd, bsm), es) ->
@@ -2938,7 +2954,6 @@ let rec for_xexpr
     | Ematchoption _
     | Ematchor   _
     | Ematchlist _
-    | Eor        _
     | Eself      _
     | Evar       _
     | Efail      _

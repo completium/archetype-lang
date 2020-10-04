@@ -121,6 +121,10 @@ let pp_model fmt (model : model) =
       Format.fprintf fmt "(%a, %a) map"
         pp_type k
         pp_type v
+    | Tor (l, r) ->
+      Format.fprintf fmt "(%a, %a) or"
+        pp_type l
+        pp_type r
     | Trecord id ->
       Format.fprintf fmt "%a" pp_id id
     | Tlambda (a, r) ->
@@ -683,6 +687,14 @@ let pp_model fmt (model : model) =
 
 
       (* composite type constructors *)
+
+      | Mleft (_, x) ->
+        Format.fprintf fmt "Left (%a)"
+          f x
+
+      | Mright (_, x) ->
+        Format.fprintf fmt "Right (%a)"
+          f x
 
       | Mnone ->
         pp_str fmt "None"

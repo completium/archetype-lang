@@ -169,6 +169,10 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt "map(%a, %a)"
         pp_type k
         pp_type v
+    | Tor (l, r) ->
+      Format.fprintf fmt "michelson_or(%a, %a)"
+        pp_type l
+        pp_type r
     | Trecord id ->
       Format.fprintf fmt "%a" pp_id id
     | Tlambda (a, r) ->
@@ -609,6 +613,10 @@ let pp_model_internal fmt (model : model) b =
     | Mmatchsome _ -> emit_error (UnsupportedTerm ("Mmatchsome"))
 
     (* composite type constructors *)
+
+    | Mleft (_, x) -> Format.fprintf fmt "(M_left(%a) : %a)" f x pp_type mtt.type_
+
+    | Mright (_, x) -> Format.fprintf fmt "(M_right(%a) : %a)" f x pp_type mtt.type_
 
     | Mnone -> Format.fprintf fmt "(None : %a)" pp_type mtt.type_
 

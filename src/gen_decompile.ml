@@ -846,6 +846,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Ttuple tl           -> A.mk_ttuple (List.map f tl)
     | Tset t              -> A.mk_tset (f t)
     | Tmap (_, kt, vt)    -> A.mk_tmap (f kt) (f vt)
+    | Tor (lt, rt)        -> A.mk_tor (f lt) (f rt)
     | Trecord id          -> A.tref (unloc id)
     | Tlambda _           -> assert false
     | Tunit               -> A.tunit
@@ -959,15 +960,17 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     (* composite type constructors *)
 
-    | Mnone         -> assert false
-    | Msome _v      -> assert false
-    | Mtuple _l     -> assert false
-    | Masset _l     -> assert false
-    | Massets _l    -> assert false
-    | Mlitset _l    -> assert false
-    | Mlitlist _l   -> assert false
-    | Mlitmap _l    -> assert false
-    | Mlitrecord _l -> assert false
+    | Mleft (_t, _x)  -> assert false
+    | Mright (_t, _x) -> assert false
+    | Mnone           -> assert false
+    | Msome _v        -> assert false
+    | Mtuple _l       -> assert false
+    | Masset _l       -> assert false
+    | Massets _l      -> assert false
+    | Mlitset _l      -> assert false
+    | Mlitlist _l     -> assert false
+    | Mlitmap _l      -> assert false
+    | Mlitrecord _l   -> assert false
 
     (* access *)
 

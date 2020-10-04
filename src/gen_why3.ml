@@ -1670,6 +1670,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     (* composite type constructors *)
 
+    | Mleft (_t, _x) -> assert false
+    | Mright (_t, _x) -> assert false
     | Mnone -> Tnone
     | Msome v -> Tsome (map_mterm m ctx v)
 

@@ -1,0 +1,7 @@
+archetype expr_lit_or_left
+
+variable r : or<nat, int> = left<int>(0)
+
+entry exec () {
+  r := left<int>(1)
+}

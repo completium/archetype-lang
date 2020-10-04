@@ -65,6 +65,7 @@ type type_ =
   | Ttuple of type_ list
   | Tset of type_
   | Tmap of bool * type_ * type_
+  | Tor of type_ * type_
   | Trecord of lident
   | Tlambda of type_ * type_
   | Tunit
@@ -231,6 +232,8 @@ type ('id, 'term) mterm_node  =
   | Mexprmatchwith    of 'term * ('id pattern_gen * 'term) list
   | Mmatchsome        of 'term * 'term * ident * 'term
   (* composite type constructors *)
+  | Mleft             of type_ * 'term
+  | Mright            of type_ * 'term
   | Mnone
   | Msome             of 'term
   | Mtuple            of 'term list
@@ -954,6 +957,7 @@ let tset t        = Tset t
 let tlist t       = Tlist t
 let tmap k v      = Tmap (false, k, v)
 let tbig_map k v  = Tmap (true, k, v)
+let tor l r       = Tor (l, r)
 let tlambda a r   = Tlambda (a, r)
 let ttuple l      = Ttuple l
 let trat          = ttuple [tint; tnat]
@@ -1001,6 +1005,10 @@ let mk_abs (x : mterm) = mk_mterm (Mabs x) tnat
 let mk_nat_to_int (x : mterm) = mk_mterm (Mnattoint x) tint
 
 let mk_some x = mk_mterm (Msome x) (toption x.type_)
+
+let mk_left t x = mk_mterm (Mleft (t, x)) (tor x.type_ t)
+
+let mk_right t x = mk_mterm (Mright (t, x)) (tor t x.type_)
 
 let mk_none t = mk_mterm (Mnone) (toption t)
 
@@ -1055,6 +1063,7 @@ let rec cmp_type
   | Ttuple l1, Ttuple l2                     -> List.for_all2 cmp_type l1 l2
   | Tset b1, Tset b2                         -> cmp_type b1 b2
   | Tmap (b1, k1, v1), Tmap (b2, k2, v2)     -> b1 = b2 && cmp_type k1 k2 && cmp_type v1 v2
+  | Tor (l1, r1), Tor (l2, r2)               -> cmp_type l1 l2 && cmp_type r1 r2
   | Trecord i1, Trecord i2                   -> cmp_lident i1 i2
   | Tlambda (a1, r1), Tlambda (a2, r2)       -> cmp_type a1 a2 && cmp_type r1 r2
   | Tunit, Tunit                             -> true
@@ -1210,6 +1219,8 @@ let cmp_mterm_node
     | Mexprmatchwith (e1, l1), Mexprmatchwith (e2, l2)                                 -> cmp e1 e2 && List.for_all2 (fun (p1, t1) (p2, t2) -> cmp_pattern p1 p2 && cmp t1 t2) l1 l2
     | Mmatchsome (e1, n1, i1, s1), Mmatchsome (e2, n2, i2, s2)                         -> cmp e1 e2 && cmp n1 n2 && cmp_ident i1 i2 && cmp s1 s2
     (* composite type constructors *)
+    | Mleft (t1, x1), Mleft (t2, x2)                                                   -> cmp_type t1 t2 && cmp x1 x2
+    | Mright (t1, x1), Mright (t2, x2)                                                 -> cmp_type t1 t2 && cmp x1 x2
     | Mnone, Mnone                                                                     -> true
     | Msome v1, Msome v2                                                               -> cmp v1 v2
     | Mtuple l1, Mtuple l2                                                             -> List.for_all2 cmp l1 l2
@@ -1461,6 +1472,7 @@ let map_type (f : type_ -> type_) = function
   | Ttuple l          -> Ttuple (List.map f l)
   | Tset k            -> Tset k
   | Tmap (b, k, v)    -> Tmap (b, k, f v)
+  | Tor (l, r)        -> Tor (f l, f r)
   | Trecord id        -> Trecord id
   | Tlambda (a, r)    -> Tlambda (f a, f r)
   | Tunit             -> Tunit
@@ -1574,6 +1586,8 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mexprmatchwith (e, l)          -> Mexprmatchwith (f e, List.map (fun (p, e) -> (p, f e)) l)
   | Mmatchsome (e, n, i, s)        -> Mmatchsome (f e, f n, fi i, f s)
   (* composite type constructors *)
+  | Mleft (t, x)                   -> Mleft (ft t, f x)
+  | Mright (t, x)                  -> Mright (ft t, f x)
   | Mnone                          -> Mnone
   | Msome v                        -> Msome (f v)
   | Mtuple l                       -> Mtuple (List.map f l)
@@ -1940,6 +1954,8 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mexprmatchwith (e, l)                 -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
   | Mmatchsome (e, n, _, s)               -> f (f (f accu s) n) e
   (* composite type constructors *)
+  | Mleft (_, x)                          -> f accu x
+  | Mright (_, x)                         -> f accu x
   | Mnone                                 -> accu
   | Msome v                               -> f accu v
   | Mtuple l                              -> List.fold_left f accu l
@@ -2366,6 +2382,14 @@ let fold_map_term
 
 
   (* composite type constructors *)
+
+  | Mleft (t, x) ->
+    let xe, xa = f accu x in
+    g (Mleft (t, xe)), xa
+
+  | Mright (t, x) ->
+    let xe, xa = f accu x in
+    g (Mright (t, xe)), xa
 
   | Mnone ->
     g Mnone, accu
@@ -3466,6 +3490,7 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
     | Ttuple l          -> Ttuple (List.map for_type l)
     | Tset k            -> Tset k
     | Tmap (b, k, v)    -> Tmap (b, k, for_type v)
+    | Tor (l, r)        -> Tor (for_type l, for_type r)
     | Trecord id        -> Trecord (g KIrecordname id)
     | Tlambda (a, r)    -> Tlambda (for_type a, for_type r)
     | Tunit             -> t

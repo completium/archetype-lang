@@ -621,6 +621,8 @@ let rec is_literal (mt : mterm) : bool =
   | Mduration  _
   | Mtimestamp _
   | Mbytes     _
+  | Mleft      _
+  | Mright      _
   | Mnone
   | Msome      _
   | Mtuple     _

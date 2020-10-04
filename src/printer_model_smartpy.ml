@@ -92,11 +92,15 @@ let pp_model fmt (model : model) =
     | Tmap (true, k, v) ->
       Format.fprintf fmt "(%a, %a) bigmap"
         pp_type k
-        pp_type_ v
+        pp_type v
     | Tmap (false, k, v) ->
       Format.fprintf fmt "(%a, %a) map"
         pp_type k
-        pp_type_ v
+        pp_type v
+    | Tor (l, r) ->
+      Format.fprintf fmt "(%a, %a) or"
+        pp_type l
+        pp_type r
     | Trecord id ->
       Format.fprintf fmt "%a" pp_id id
     | Tlambda (a, r) ->
@@ -636,6 +640,14 @@ let pp_model fmt (model : model) =
 
 
       (* composite type constructors *)
+
+      | Mleft (_t, x) ->
+        Format.fprintf fmt "sp.left(%a)"
+          f x
+
+      | Mright (_t, x) ->
+        Format.fprintf fmt "sp.right(%a)"
+          f x
 
       | Mnone ->
         pp_str fmt "sp.none"

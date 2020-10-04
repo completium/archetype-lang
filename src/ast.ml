@@ -329,6 +329,8 @@ type 'id term_node  =
   | Ptupleaccess of 'id term_gen * Core.big_int
   | Pnone
   | Psome of 'id term_gen
+  | Pleft of ptyp * 'id term_gen
+  | Pright of ptyp * 'id term_gen
   | Pcast of ptyp * ptyp * 'id term_gen
   | Pself of 'id
   | Pentrypoint of ptyp * 'id * 'id term_gen

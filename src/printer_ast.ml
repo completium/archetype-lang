@@ -470,6 +470,22 @@ let rec pp_pterm fmt (pterm : pterm) =
       in
       (pp_no_paren pp) fmt (x, k)
 
+    | Pleft (t, x) ->
+      let pp fmt (t, x) =
+        Format.fprintf fmt "left<%a>(%a)"
+          pp_ptyp t
+          pp_pterm x
+      in
+      (pp_no_paren pp) fmt (t, x)
+
+    | Pright (t, x) ->
+      let pp fmt (t, x) =
+        Format.fprintf fmt "right<%a>(%a)"
+          pp_ptyp t
+          pp_pterm x
+      in
+      (pp_no_paren pp) fmt (t, x)
+
     | Pnone -> pp_str fmt "none"
 
     | Psome a ->

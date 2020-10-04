@@ -69,6 +69,10 @@ let rec pp_type fmt t =
     Format.fprintf fmt "bigmap<%a, %a>"
       pp_type k
       pp_type v
+  | Tor (l, r) ->
+    Format.fprintf fmt "or<%a, %a>"
+      pp_type l
+      pp_type r
   | Trecord id ->
     Format.fprintf fmt "%a" pp_id id
   | Tlambda (a, r) ->
@@ -373,6 +377,10 @@ let pp_mterm fmt (mt : mterm) =
       pp fmt (e, n, i, s)
 
     (* composite type constructors *)
+
+    | Mleft (t, x) -> Format.fprintf fmt "left<%a>(%a)" pp_type t f x
+
+    | Mright (t, x) -> Format.fprintf fmt "right<%a>(%a)" pp_type t f x
 
     | Mnone -> pp_str fmt "None"
 

@@ -86,13 +86,14 @@ let to_ir (model : M.model) : T.ir =
           | Bnat       -> T.Tnat
           | Bchainid   -> T.Tchain_id
         end
-      | Tcontainer _ -> assert false
-      | Tlist t      -> T.Tlist (to_type t)
-      | Toption t    -> T.Toption (to_type t)
-      | Ttuple lt    -> to_one_type (List.map to_type lt) |> fun x -> x.node
-      | Tset t -> T.Tset (to_type t)
+      | Tcontainer _   -> assert false
+      | Tlist t        -> T.Tlist (to_type t)
+      | Toption t      -> T.Toption (to_type t)
+      | Ttuple lt      -> to_one_type (List.map to_type lt) |> fun x -> x.node
+      | Tset t         -> T.Tset (to_type t)
       | Tmap (b, k, v) -> if b then T.Tbig_map (to_type k, to_type v) else T.Tmap (to_type k, to_type v)
-      | Trecord id -> begin
+      | Tor (l, r)     -> T.Tor (to_type l, to_type r)
+      | Trecord id     -> begin
           let r = M.Utils.get_record model (unloc id) in
           let lt = List.map (fun (x : M.record_field) -> x.type_) r.fields in
           to_one_type (List.map to_type lt) |> fun x -> x.node
@@ -132,7 +133,9 @@ let to_ir (model : M.model) : T.ir =
     | Muminus    v      -> to_data v |> (function | T.Dint n -> T.Dint (Big_int.mult_int_big_int (-1) n) | _ -> assert false )
     | Mnow              -> T.Dint Big_int.zero_big_int
     | Mlitrecord l      -> to_one_data (List.map (to_data |@ snd) l)
-    | Mcast (_, _, v) -> to_data v
+    | Mleft (_, x)      -> T.Dleft (to_data x)
+    | Mright (_, x)     -> T.Dright (to_data x)
+    | Mcast (_, _, v)   -> to_data v
     | _ -> Format.printf "%a@." M.pp_mterm mt; assert false
 
   in
@@ -500,6 +503,8 @@ let to_ir (model : M.model) : T.ir =
 
     (* composite type constructors *)
 
+    | Mleft  (t, v) -> T.Iunop (Uleft (ft t), f v)
+    | Mright (t, v) -> T.Iunop (Uright (ft t), f v)
     | Mnone    -> begin
         let t =
           match mtt.type_ with

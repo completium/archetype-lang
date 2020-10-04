@@ -422,6 +422,9 @@ let mk_tlist ?(loc=dummy) t : type_t =
 let mk_tmap ?(loc=dummy) k v : type_t =
   mkloc loc (Tmap (k, v))
 
+let mk_tor ?(loc=dummy) k v : type_t =
+  mkloc loc (Tor (k, v))
+
 let mk_tcontract ?(loc=dummy) t : type_t =
   mkloc loc (Tcontract t)
 
