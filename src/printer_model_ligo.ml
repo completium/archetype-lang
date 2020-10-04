@@ -170,7 +170,7 @@ let pp_model_internal fmt (model : model) b =
         pp_type k
         pp_type v
     | Tor (l, r) ->
-      Format.fprintf fmt "michelson_or(%a, %a)"
+      Format.fprintf fmt "michelson_or(%a, \"\", %a, \"\")"
         pp_type l
         pp_type r
     | Trecord id ->
