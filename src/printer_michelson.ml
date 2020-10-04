@@ -440,7 +440,7 @@ let rec pp_dinstruction fmt i =
   | Ddecl      id       -> pp "var x%i" id
   | Dassign   (e, v)    -> pp "%a <- %a" pp_dexpr e pp_dexpr v
   | Dfail      e        -> pp "fail(%a)" pp_dexpr e
-  | Dexec     (id, arg) -> pp "exec(%s, %a)" id pp_dexpr arg
+  | Dexec     (l, arg)  -> pp "exec(%a, %a)" pp_dexpr l pp_dexpr arg
   | Dif       (c, t, e) -> pp "if (%a)@\nthen (@[%a@])@\nelse (@[%a@])" pp_dexpr c seq t seq e
   | Difcons   (c, t, e) -> pp "ifcons (%a)@\nthen (@[%a@])@\nelse (@[%a@])" pp_dexpr c seq t seq e
   | Difleft   (c, t, e) -> pp "ifleft (%a)@\nthen (@[%a@])@\nelse (@[%a@])" pp_dexpr c seq t seq e
@@ -449,7 +449,7 @@ let rec pp_dinstruction fmt i =
   | Dloopleft (c, b)    -> pp "loopleft (%a) do@\n  @[%a@]@\ndone" pp_dexpr c seq b
   | Diter     (c, b)    -> pp "iter (%a) do@\n  @[%a@]@\ndone" pp_dexpr c seq b
 
-let pp_sysofequations fmt (s : sysofequations) =
+let pp_dinstructions fmt (s : dinstruction list) =
   (pp_list "@\n" pp_dinstruction) fmt s
 
 let pp_dprogram fmt (d : dprogram) =

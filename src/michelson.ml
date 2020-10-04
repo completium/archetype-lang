@@ -324,6 +324,7 @@ type entry = {
 [@@deriving show {with_path = false}]
 
 type ir = {
+  name: ident;
   storage_type: type_;
   storage_data : data;
   storage_list: (ident * type_) list;
@@ -361,7 +362,7 @@ type dinstruction =
   | Ddecl     of alpha_ident
   | Dassign   of dexpr * dexpr
   | Dfail     of dexpr
-  | Dexec     of ident * dexpr
+  | Dexec     of dexpr * dexpr
   | Dif       of dexpr * dinstruction list * dinstruction list
   | Difcons   of dexpr * dinstruction list * dinstruction list
   | Difleft   of dexpr * dinstruction list * dinstruction list
@@ -371,23 +372,11 @@ type dinstruction =
   | Diter     of dexpr * dinstruction list
 [@@deriving show {with_path = false}]
 
-type sysofequations = dinstruction list
-[@@deriving show {with_path = false}]
-
-type dfunction = {
-  name: ident;
-  parameter: type_;
-  return: type_;
-  body: dinstruction list;
-}
-[@@deriving show {with_path = false}]
-
 type dprogram = {
   name: ident;
   storage: type_;
   parameter: type_;
   storage_data: data;
-  functions: dfunction list;
   code: dinstruction list;
 }
 [@@deriving show {with_path = false}]
@@ -403,14 +392,14 @@ let mk_func name targ tret body : func =
 let mk_entry name args eargs body : entry =
   { name; args; eargs; body }
 
-let mk_ir storage_type storage_data storage_list ?(with_operations = false) parameter funs entries : ir =
-  { storage_type; storage_data; storage_list; with_operations; parameter; funs; entries }
+let mk_ir name storage_type storage_data storage_list ?(with_operations = false) parameter funs entries : ir =
+  { name; storage_type; storage_data; storage_list; with_operations; parameter; funs; entries }
 
 let mk_michelson storage parameter code =
   { storage; parameter; code }
 
-let mk_dprogram storage parameter storage_data name functions code =
-  { name; storage;  parameter; storage_data; functions; code }
+let mk_dprogram storage parameter storage_data name code =
+  { name; storage; parameter; storage_data; code }
 
 (* -------------------------------------------------------------------- *)
 
@@ -897,7 +886,7 @@ let map_dinstruction_gen (fe : dexpr -> dexpr) (f : dinstruction -> dinstruction
   | Ddecl      id       -> Ddecl      id
   | Dassign   (e, v)    -> Dassign   (fe e, fe v)
   | Dfail      e        -> Dfail     (fe e)
-  | Dexec     (id, arg) -> Dexec     (id, arg)
+  | Dexec     (l, arg) -> Dexec      (fe l, fe arg)
   | Dif       (c, t, e) -> Dif       (fe c, List.map f t, List.map f e)
   | Difcons   (c, t, e) -> Difcons   (fe c, List.map f t, List.map f e)
   | Difleft   (c, t, e) -> Difleft   (fe c, List.map f t, List.map f e)
@@ -924,7 +913,7 @@ let map_dinstruction_gen (fe : dexpr -> dexpr) (f : dinstruction -> dinstruction
   | Ddecl      id       -> Ddecl      id
   | Dassign   (e, v)    -> Dassign   (fe e, fe v)
   | Dfail      e        -> Dfail     (fe e)
-  | Dexec     (id, arg) -> Dexec     (id, fe arg)
+  | Dexec     (l, arg)  -> Dexec     (fe l, fe arg)
   | Dif       (c, t, e) -> Dif       (fe c, List.map f t, List.map f e)
   | Difcons   (c, t, e) -> Difcons   (fe c, List.map f t, List.map f e)
   | Difleft   (c, t, e) -> Difleft   (fe c, List.map f t, List.map f e)
@@ -951,7 +940,7 @@ let rec fold_dinstruction_dexpr f accu = function
   | Ddecl      _        -> accu
   | Dassign   (e, v)    -> f (f accu e) v
   | Dfail      e        -> f accu e
-  | Dexec     (_, arg)  -> f accu arg
+  | Dexec     (l, arg)  -> f (f accu arg) l
   | Dif       (c, t, e) -> List.fold_left (fold_dinstruction_dexpr f) (List.fold_left (fold_dinstruction_dexpr f) (f accu c) t) e
   | Difcons   (c, t, e) -> List.fold_left (fold_dinstruction_dexpr f) (List.fold_left (fold_dinstruction_dexpr f) (f accu c) t) e
   | Difleft   (c, t, e) -> List.fold_left (fold_dinstruction_dexpr f) (List.fold_left (fold_dinstruction_dexpr f) (f accu c) t) e

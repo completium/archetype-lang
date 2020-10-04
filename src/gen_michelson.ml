@@ -866,7 +866,8 @@ let to_ir (model : M.model) : T.ir =
 
   let funs = List.fold_left (fun accu x -> (get_builtin_fun x)::accu) funs !builtins in
 
-  T.mk_ir storage_type storage_data l parameter funs entries ~with_operations:with_operations
+  let name = unloc model.name in
+  T.mk_ir name storage_type storage_data l parameter funs entries ~with_operations:with_operations
 
 
 (* -------------------------------------------------------------------- *)

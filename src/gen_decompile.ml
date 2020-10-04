@@ -57,14 +57,14 @@ let to_dir (michelson, env : T.michelson * env) =
         Format.fprintf fmt "%i. %a@\n" i Printer_michelson.pp_dexpr c) st
   in
 
-  let pp_trace fmt (instr, stack, sys : T.code option * (T.dexpr) list * T.sysofequations) =
-    Format.fprintf fmt "@\nsys:@\n%a@\n@\n" Printer_michelson.pp_sysofequations sys;
+  let pp_trace fmt (instr, stack, sys : T.code option * (T.dexpr) list * T.dinstruction list) =
+    Format.fprintf fmt "@\nsys:@\n%a@\n@\n" Printer_michelson.pp_dinstructions sys;
     Format.fprintf fmt "@\nstack:@\n%a" pp_stack stack;
     (Printer_tools.pp_option (fun fmt -> Format.fprintf fmt "@\ninstr: %a" Printer_michelson.pp_code)) fmt instr;
     Format.fprintf fmt "@."
   in
 
-  let trace (env : ir_env) (instrs : T.code list) (stack : (T.dexpr) list)  (sys : T.sysofequations) =
+  let trace (env : ir_env) (instrs : T.code list) (stack : (T.dexpr) list)  (sys : T.dinstruction list) =
     let print_indent fmt n =
       for _i = 1 to n do
         Format.fprintf fmt "  "
@@ -76,7 +76,7 @@ let to_dir (michelson, env : T.michelson * env) =
     | _ -> ()
   in
 
-  let add_instruction (_env : ir_env) (sys : T.sysofequations) (i : T.dinstruction) =
+  let add_instruction (_env : ir_env) (sys : T.dinstruction list) (i : T.dinstruction) =
     let assigns =
       let rec aux accu (a, b : T.dexpr * T.dexpr) =
         match a, b with
@@ -199,9 +199,9 @@ let to_dir (michelson, env : T.michelson * env) =
 
   in
 
-  (* let add_instruction _env (sys : T.sysofequations) (i : T.dinstruction) = i::sys in *)
+  (* let add_instruction _env (sys : T.dinstruction list) (i : T.dinstruction) = i::sys in *)
 
-  let rec interp (env : ir_env) (sys : T.sysofequations) (instrs : T.code list) (stack : (T.dexpr) list) =
+  let rec interp (env : ir_env) (sys : T.dinstruction list) (instrs : T.code list) (stack : (T.dexpr) list) =
     let f = interp in
 
     let emit_error _ =
@@ -572,8 +572,7 @@ let to_dir (michelson, env : T.michelson * env) =
       end
     | _ -> Format.eprintf "error: stack not empty@."; assert false
   in
-  let functions = [] in
-  (T.mk_dprogram tstorage tparameter storage_data name functions sys), env
+  (T.mk_dprogram tstorage tparameter storage_data name sys), env
 
 let to_ir (dir, env : T.dprogram * env) : T.ir * env =
   let tstorage     = dir.storage in
@@ -611,7 +610,30 @@ let to_ir (dir, env : T.dprogram * env) : T.ir * env =
     | Diter     (_c, _b)     -> assert false
   in
 
-  T.mk_ir tstorage storage_data [] tparameter [] [], env
+  let name = dir.name in
+
+  let storage_list =
+    let rec aux (x : T.type_) =
+      match x.node, x.annotation with
+      | _, Some a  -> [a, x]
+      | T.Tpair (a, b), _ -> begin
+          match aux a, aux b with
+          | [], _
+          | _, [] -> []
+          | x, y  -> x @ y
+        end
+      | _ -> []
+    in
+    let r = aux tstorage in
+    match r with
+    | [] -> ["storage", tstorage]
+    | _  -> r
+  in
+
+  let funs = [] in
+  let entries = [] in
+
+  T.mk_ir name tstorage storage_data storage_list tparameter funs entries, env
 
 let to_model (ir, env : T.ir * env) : M.model * env =
 
@@ -791,7 +813,8 @@ let to_model (ir, env : T.ir * env) : M.model * env =
     M.mk_function node
   in
   let functions = List.map for_entry ir.entries in
-  M.mk_model (dumloc env.name) ~functions:functions ~storage:storage, env
+
+  M.mk_model (dumloc ir.name) ~functions:functions ~storage:storage, env
 
 let to_archetype (model, _env : M.model * env) : A.archetype =
   let rec for_type (t : M.type_) : A.type_t =
