@@ -231,6 +231,8 @@ type ('id, 'term) mterm_node  =
   | Mexprif           of 'term * 'term * 'term
   | Mexprmatchwith    of 'term * ('id pattern_gen * 'term) list
   | Mmatchsome        of 'term * 'term * ident * 'term
+  | Mmatchor          of 'term * 'id * 'term * 'id * 'term
+  | Mmatchlist        of 'term * 'id * 'id * 'term * 'term
   | Mmatchfoldleft    of 'term * 'id * 'term
   (* composite type constructors *)
   | Mleft             of type_ * 'term
@@ -1219,6 +1221,8 @@ let cmp_mterm_node
     | Mexprif (c1, t1, e1), Mexprif (c2, t2, e2)                                       -> cmp c1 c2 && cmp t1 t2 && cmp e1 e2
     | Mexprmatchwith (e1, l1), Mexprmatchwith (e2, l2)                                 -> cmp e1 e2 && List.for_all2 (fun (p1, t1) (p2, t2) -> cmp_pattern p1 p2 && cmp t1 t2) l1 l2
     | Mmatchsome (e1, n1, i1, s1), Mmatchsome (e2, n2, i2, s2)                         -> cmp e1 e2 && cmp n1 n2 && cmp_ident i1 i2 && cmp s1 s2
+    | Mmatchor (x1, lid1, le1, rid1, re1), Mmatchor (x2, lid2, le2, rid2, re2)         -> cmp x1 x2 && cmpi lid1 lid2 && cmp le1 le2 && cmpi rid1 rid2 && cmp re1 re2
+    | Mmatchlist (x1, hid1, tid1, hte1, ee1), Mmatchlist (x2, hid2, tid2, hte2, ee2)   -> cmp x1 x2 && cmpi hid1 hid2 && cmpi tid1 tid2 && cmp hte1 hte2 && cmp ee1 ee2
     | Mmatchfoldleft (x1, i1, e1), Mmatchfoldleft (x2, i2, e2)                         -> cmp x1 x2 && cmpi i1 i2 && cmp e1 e2
     (* composite type constructors *)
     | Mleft (t1, x1), Mleft (t2, x2)                                                   -> cmp_type t1 t2 && cmp x1 x2
@@ -1587,6 +1591,8 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mexprif (c, t, e)              -> Mexprif (f c, f t, f e)
   | Mexprmatchwith (e, l)          -> Mexprmatchwith (f e, List.map (fun (p, e) -> (p, f e)) l)
   | Mmatchsome (e, n, i, s)        -> Mmatchsome (f e, f n, fi i, f s)
+  | Mmatchor (x, lid, le, rid, re) -> Mmatchor (f x, g lid, f le, g rid, f re)
+  | Mmatchlist (x, hid, tid, hte, ee) -> Mmatchlist (f x, g hid, g tid, f hte, f ee)
   | Mmatchfoldleft (x, i, e)       -> Mmatchfoldleft (f x, g i, f e)
   (* composite type constructors *)
   | Mleft (t, x)                   -> Mleft (ft t, f x)
@@ -1956,6 +1962,8 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mexprif (c, t, e)                     -> f (f (f accu c) t) e
   | Mexprmatchwith (e, l)                 -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
   | Mmatchsome (e, n, _, s)               -> f (f (f accu s) n) e
+  | Mmatchor (x, _, le, _, re)            -> f (f (f accu x) le) re
+  | Mmatchlist (x, _, _, hte, ee)         -> f (f (f accu x) hte) ee
   | Mmatchfoldleft (x, _, e)              -> f (f accu x) e
   (* composite type constructors *)
   | Mleft (_, x)                          -> f accu x
@@ -2383,6 +2391,18 @@ let fold_map_term
     let ne, na = f ea n in
     let se, sa = f na s in
     g (Mmatchsome (ee, ne, i, se)), sa
+
+  | Mmatchor (x, lid, le, rid, re) ->
+    let xe, xa = f accu x in
+    let lee, lea = f xa le in
+    let ree, rea = f lea re in
+    g (Mmatchor (xe, lid, lee, rid, ree)), rea
+
+  | Mmatchlist (x, hid, tid, hte, ee) ->
+    let xe, xa = f accu x in
+    let htee, htea = f xa hte in
+    let eee, eea = f htea ee in
+    g (Mmatchlist (xe, hid, tid, htee, eee)), eea
 
   | Mmatchfoldleft (x, i, e) ->
     let xe, xa = f accu x in

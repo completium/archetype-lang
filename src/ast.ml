@@ -309,6 +309,9 @@ type 'id term_node  =
   | Pquantifer of quantifier * 'id * ('id term_gen option * type_) * 'id term_gen
   | Pif of ('id term_gen * 'id term_gen * 'id term_gen)
   | Pmatchwith of 'id term_gen * ('id pattern_gen * 'id term_gen) list
+  | Pmatchoption   of 'id term_gen * 'id * 'id term_gen * 'id term_gen
+  | Pmatchor       of 'id term_gen * 'id * 'id term_gen * 'id * 'id term_gen
+  | Pmatchlist     of 'id term_gen * 'id * 'id * 'id term_gen * 'id term_gen
   | Pmatchfoldleft of 'id term_gen * 'id * 'id term_gen
   | Pcall of ('id term_gen option * 'id call_kind * ('id term_arg) list)
   | Plogical of logical_operator * 'id term_gen * 'id term_gen

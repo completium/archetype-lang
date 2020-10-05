@@ -953,10 +953,12 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     (* control expression *)
 
-    | Mexprif (_c, _t, _e)        -> assert false
-    | Mexprmatchwith (_e, _l)     -> assert false
-    | Mmatchsome (_e, _n, _i, _s) -> assert false
-    | Mmatchfoldleft (_e, _i, _l) -> assert false
+    | Mexprif (_c, _t, _e)                   -> assert false
+    | Mexprmatchwith (_e, _l)                -> assert false
+    | Mmatchsome (_e, _n, _i, _s)            -> assert false
+    | Mmatchor (_x, _lid, _le, _rid, _re)    -> assert false
+    | Mmatchlist (_x, _hid, _tid, _hte, _ee) -> assert false
+    | Mmatchfoldleft (_e, _i, _l)            -> assert false
 
 
     (* composite type constructors *)

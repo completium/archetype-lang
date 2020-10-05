@@ -301,6 +301,38 @@ let rec pp_pterm fmt (pterm : pterm) =
       in
       (pp_with_paren pp) fmt (m, ps)
 
+    | Pmatchoption (x, id, ve, ne) ->
+      let pp fmt (x, id, ve, ne) =
+        Format.fprintf fmt "match_option %a with@\n  | some (%a) -> (@[%a@])@\n  | none -> (@[%a@])@\nend"
+          pp_pterm x
+          pp_id id
+          pp_pterm ve
+          pp_pterm ne
+      in
+      (pp_with_paren pp) fmt (x, id, ve, ne)
+
+    | Pmatchor (x, lid, le, rid, re) ->
+      let pp fmt (x, lid, le, rid, re) =
+        Format.fprintf fmt "match_or %a with@\n  | left (%a) -> (@[%a@])@\n  | right (%a) -> (@[%a@])@\nend"
+          pp_pterm x
+          pp_id lid
+          pp_pterm le
+          pp_id rid
+          pp_pterm re
+      in
+      (pp_with_paren pp) fmt (x, lid, le, rid, re)
+
+    | Pmatchlist (x, hid, tid, hte, ee) ->
+      let pp fmt (x, hid, tid, hte, ee) =
+        Format.fprintf fmt "match_list %a with@\n  | %a::%a -> (@[%a@])@\n  | [] -> (@[%a@])@\nend"
+          pp_pterm x
+          pp_id hid
+          pp_id tid
+          pp_pterm hte
+          pp_pterm ee
+      in
+      (pp_with_paren pp) fmt (x, hid, tid, hte, ee)
+
     | Pmatchfoldleft (x, id, e) ->
       let pp fmt (x, id, e) =
         Format.fprintf fmt "match_fold_left (%a) with@\n  | %a -> (@[%a@])@\nend"

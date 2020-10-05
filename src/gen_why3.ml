@@ -1413,12 +1413,12 @@ let mk_temp_delta = function
   | _ -> M.Tnone,M.Dnone
 
 let assign_operation a e l =
-Tassign (
-  loc_term (Tdoti(gs,"_ops")),
-  dl (Tcons (dl gListAs,
-    dl (Tapp( loc_term (Tvar "_mk_operation"),[a; e; l])),
-    loc_term (Tdoti(gs,"_ops"))
-)))
+  Tassign (
+    loc_term (Tdoti(gs,"_ops")),
+    dl (Tcons (dl gListAs,
+               dl (Tapp( loc_term (Tvar "_mk_operation"),[a; e; l])),
+               loc_term (Tdoti(gs,"_ops"))
+              )))
 
 let rec map_mterm m ctx (mt : M.mterm) : loc_term =
   let error_internal desc = emit_error (mt.loc, desc); Tnottranslated in
@@ -1584,31 +1584,31 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
           let a = map_mterm m ctx v in
           let t = map_mterm m ctx d in
           Tseq[
-          dl (Tassign (
-            loc_term (Tdoti(gs,"_ops")),
-            dl (Tcons (dl gListAs,
-                    dl (Tapp(loc_term (Tvar "_mk_transfer"),[t;a])),
-                    loc_term (Tdoti(gs,"_ops"))
-                  ))));
-          dl (Tassign (
-            loc_term (Tdoti (gs,"_balance")),
-            dl (Tminus (dl Tyint,
-                    loc_term (Tdoti (gs,"_balance")),
-                    a
-                   ))
-          ))
-        ]
+            dl (Tassign (
+                loc_term (Tdoti(gs,"_ops")),
+                dl (Tcons (dl gListAs,
+                           dl (Tapp(loc_term (Tvar "_mk_transfer"),[t;a])),
+                           loc_term (Tdoti(gs,"_ops"))
+                          ))));
+            dl (Tassign (
+                loc_term (Tdoti (gs,"_balance")),
+                dl (Tminus (dl Tyint,
+                            loc_term (Tdoti (gs,"_balance")),
+                            a
+                           ))
+              ))
+          ]
         | TKcall (id, _, d, _a)   ->
           let t = map_mterm m ctx v in
           let l = loc_term (Tnil gListAs) (*map_mterm m ctx a*) in
           let a = map_mterm m ctx d in
           let n = loc_term (Tstring id) in
           Tassign (
-          loc_term (Tdoti(gs,"_ops")),
-          dl (Tcons (dl gListAs,
-                 dl (Tapp(loc_term (Tvar "_mk_call"),[a; t; n; l])),
-                 loc_term (Tdoti(gs,"_ops"))
-                )))
+            loc_term (Tdoti(gs,"_ops")),
+            dl (Tcons (dl gListAs,
+                       dl (Tapp(loc_term (Tvar "_mk_call"),[a; t; n; l])),
+                       loc_term (Tdoti(gs,"_ops"))
+                      )))
         | TKentry (e, _a)         ->
           assign_operation (map_mterm m ctx v) (map_mterm m ctx e) (loc_term (Tnil gListAs))(*(map_mterm m ctx a)*)
         | TKself (id, _a)        ->
@@ -1666,7 +1666,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
           (map_mpattern p.node, map_mterm m ctx e)
         ) l)
 
-    | Mmatchsome _ -> error_not_supported "Mmatchsome"
+    | Mmatchsome     _ -> error_not_supported "Mmatchsome"
+    | Mmatchor       _ -> error_not_supported "Mmatchor"
+    | Mmatchlist     _ -> error_not_supported "Mmatchlist"
     | Mmatchfoldleft _ -> error_not_supported "Mmatchfoldleft"
 
     (* composite type constructors *)
@@ -1732,15 +1734,15 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Mequal (t, l, r)  ->
       begin match t, ctx.lctx with
-      | M.Tcontainer (Tasset id, Collection), (Logic | Inv) -> Teq (dl (Tycoll (map_lident id)), map_mterm m ctx l, map_mterm m ctx r)
-      | _, (Logic | Inv) -> Teq (dl Tyint, map_mterm m ctx l, map_mterm m ctx r)
-      | _           -> Teq (map_mtype m t, map_mterm m ctx l, map_mterm m ctx r)
+        | M.Tcontainer (Tasset id, Collection), (Logic | Inv) -> Teq (dl (Tycoll (map_lident id)), map_mterm m ctx l, map_mterm m ctx r)
+        | _, (Logic | Inv) -> Teq (dl Tyint, map_mterm m ctx l, map_mterm m ctx r)
+        | _           -> Teq (map_mtype m t, map_mterm m ctx l, map_mterm m ctx r)
       end
     | Mnequal (t, l, r) ->
       begin match t, ctx.lctx with
-      | M.Tcontainer (Tasset id, Collection), (Logic | Inv) -> Tneq (dl (Tycoll (map_lident id)), map_mterm m ctx l, map_mterm m ctx r)
-      | _, (Logic | Inv) -> Tneq (dl Tyint, map_mterm m ctx l, map_mterm m ctx r)
-      | _           -> Tneq (map_mtype m t, map_mterm m ctx l, map_mterm m ctx r)
+        | M.Tcontainer (Tasset id, Collection), (Logic | Inv) -> Tneq (dl (Tycoll (map_lident id)), map_mterm m ctx l, map_mterm m ctx r)
+        | _, (Logic | Inv) -> Tneq (dl Tyint, map_mterm m ctx l, map_mterm m ctx r)
+        | _           -> Tneq (map_mtype m t, map_mterm m ctx l, map_mterm m ctx r)
       end
     | Mgt (l, r) -> Tgt (map_mtype m l.type_, map_mterm m ctx l, map_mterm m ctx r)
     | Mge (l, r) -> Tge (map_mtype m l.type_, map_mterm m ctx l, map_mterm m ctx r)
@@ -2626,14 +2628,14 @@ let fold_fails m ctx body : (loc_ident option * loc_term) list =
           (Option.fold (fun _ id -> M.Utils.get_specification m id) None ctx.entry_id) in
       (* retrieve fails with same arg type *)
       let formulas = List.fold_left (fun acc (fail : M.fail) ->
-        let fidx = get_fail_idx m fail.atype in
-        if compare idx fidx = 0 then
-          acc @ [
-            Some (map_lident fail.label),
-            dl (Timpl (loc_term (Texn (Efail (idx, Some (Tvar (unloc fail.arg))))), map_mterm m ctx (fail.formula)))
-          ]
-        else acc
-      ) [] fails in
+          let fidx = get_fail_idx m fail.atype in
+          if compare idx fidx = 0 then
+            acc @ [
+              Some (map_lident fail.label),
+              dl (Timpl (loc_term (Texn (Efail (idx, Some (Tvar (unloc fail.arg))))), map_mterm m ctx (fail.formula)))
+            ]
+          else acc
+        ) [] fails in
       if compare (List.length formulas) 0 = 0 then
         acc @ [None, loc_term (Texn (Efail (idx, None)))]
       else acc @ formulas

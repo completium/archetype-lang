@@ -376,6 +376,28 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (e, n, i, s)
 
+    | Mmatchor (x, lid, le, rid, re) ->
+      let pp fmt (x, lid, le, rid, re) =
+        Format.fprintf fmt "match_or %a with@\n  | left (%a) -> (@[%a@])@\n  | right (%a) -> (@[%a@])@\nend"
+          f x
+          pp_id lid
+          f le
+          pp_id rid
+          f re
+      in
+      pp fmt (x, lid, le, rid, re)
+
+    | Mmatchlist (x, hid, tid, hte, ee) ->
+      let pp fmt (x, hid, tid, hte, ee) =
+        Format.fprintf fmt "match_list %a with@\n  | %a::%a -> (@[%a@])@\n  | [] -> (@[%a@])@\nend"
+          f x
+          pp_id hid
+          pp_id tid
+          f hte
+          f ee
+      in
+      pp fmt (x, hid, tid, hte, ee)
+
     | Mmatchfoldleft (x, id, e) ->
       let pp fmt (x, id, e) =
         Format.fprintf fmt "match_fold_left %a with@\n  | %a -> (@[%a@])@\nend"
