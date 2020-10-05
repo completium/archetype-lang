@@ -525,9 +525,9 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_default pos pp) fmt (x, hid, tid, hte, ee)
 
-  | Ematchfoldleft (x, id, e) ->
+  | Ematchloopleft (x, id, e) ->
     let pp fmt (x, id, e) =
-      Format.fprintf fmt "match_fold_left (%a) with@\n  | %a -> (@[%a@])@\nend"
+      Format.fprintf fmt "match_loop_left (%a) with@\n  | %a -> (@[%a@])@\nend"
         (pp_expr e_default PNone) x
         pp_id id
         (pp_expr e_default PNone) e

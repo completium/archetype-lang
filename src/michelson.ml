@@ -288,6 +288,7 @@ type instruction =
   | Iifcons     of instruction * ident * ident * instruction * instruction * type_
   | Iwhile      of instruction * instruction
   | Iiter       of ident list * instruction * instruction
+  | Iloopleft   of instruction * ident * instruction
   | Izop        of z_operator
   | Iunop       of un_operator * instruction
   | Ibinop      of bin_operator * instruction * instruction

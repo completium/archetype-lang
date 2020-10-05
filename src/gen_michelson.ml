@@ -502,7 +502,7 @@ let to_ir (model : M.model) : T.ir =
     | Mmatchoption (x, i, ve, ne)            -> T.Iifnone (f x, f ne, unloc i, f ve, ft mtt.type_)
     | Mmatchor (x, lid, le, rid, re)         -> T.Iifleft (f x, unloc lid, f le, unloc rid, f re, ft mtt.type_)
     | Mmatchlist (x, hid, tid, hte, ee)      -> T.Iifcons (f x, unloc hid, unloc tid, f hte, f ee, ft mtt.type_)
-    | Mmatchfoldleft (_e, _i, _l)            -> assert false (* TODO *)
+    | Mmatchloopleft (e, i, l)               -> T.Iloopleft (f e, unloc i, f l)
 
     (* composite type constructors *)
 
@@ -1107,6 +1107,13 @@ let to_michelson (ir : T.ir) : T.michelson =
             T.SEQ [c; T.ITER [T.UNPAIR; b; T.DROP 2]] , env
           end
         | _ -> assert false
+      end
+
+    | Iloopleft (l, i, b) -> begin
+        let l, _ = f l in
+        let b, env = fe (add_var_env env i) b in
+
+        T.SEQ [l; T.LOOP_LEFT [b; SWAP; DROP 1]], env
       end
 
     | Izop op -> begin

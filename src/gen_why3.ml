@@ -1669,7 +1669,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mmatchoption   _ -> error_not_supported "Mmatchoption"
     | Mmatchor       _ -> error_not_supported "Mmatchor"
     | Mmatchlist     _ -> error_not_supported "Mmatchlist"
-    | Mmatchfoldleft _ -> error_not_supported "Mmatchfoldleft"
+    | Mmatchloopleft _ -> error_not_supported "Mmatchloopleft"
 
     (* composite type constructors *)
 

@@ -639,7 +639,7 @@ let pp_model fmt (model : model) =
       | Mmatchoption   _ -> emit_error (UnsupportedTerm ("matchoption"))
       | Mmatchor       _ -> emit_error (UnsupportedTerm ("Mmatchor"))
       | Mmatchlist     _ -> emit_error (UnsupportedTerm ("Mmatchlist"))
-      | Mmatchfoldleft _ -> emit_error (UnsupportedTerm ("Mmatchfoldleft"))
+      | Mmatchloopleft _ -> emit_error (UnsupportedTerm ("Mmatchfoldleft"))
 
 
       (* composite type constructors *)

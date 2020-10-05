@@ -707,6 +707,7 @@ let to_model (ir, env : T.ir * env) : M.model * env =
     | Iifnone (_v, _t, _id, _s, _) -> assert false
     | Iifleft (_v, _, _r, _, _l, _)-> assert false
     | Iifcons (_v, _, _, _t, _e, _)-> assert false
+    | Iloopleft (_l, _i, _b)       -> assert false
     | Iwhile (_c, _b)              -> assert false
     | Iiter (_ids, _c, _b)         -> assert false
     | Izop op -> begin
@@ -959,7 +960,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mmatchoption (_x, _i, _ve, _ne)        -> assert false
     | Mmatchor (_x, _lid, _le, _rid, _re)    -> assert false
     | Mmatchlist (_x, _hid, _tid, _hte, _ee) -> assert false
-    | Mmatchfoldleft (_e, _i, _l)            -> assert false
+    | Mmatchloopleft (_e, _i, _l)            -> assert false
 
 
     (* composite type constructors *)

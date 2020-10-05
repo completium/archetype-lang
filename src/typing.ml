@@ -2917,8 +2917,16 @@ let rec for_xexpr
         mk_sp ty (A.Pmatchlist (x, hid, tid, hte, ee))
       end
 
-    | Ematchfoldleft (_x, _i, _e)-> begin
-        assert false
+    | Ematchloopleft (x, i, e)-> begin
+        (* TODO: check typing *)
+        let x = for_xexpr env x in
+        let oty = Option.bind Type.as_or x.type_ in
+
+        let lt, rt = Option.get oty in
+
+        let e = for_xexpr (Env.Local.push env (i, lt)) e in
+
+        mk_sp (Some rt) (A.Pmatchloopleft (x, i, e))
       end
 
     | Equantifier (qt, x, xty, body) -> begin

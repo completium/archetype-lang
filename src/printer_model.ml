@@ -398,7 +398,7 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (x, hid, tid, hte, ee)
 
-    | Mmatchfoldleft (x, id, e) ->
+    | Mmatchloopleft (x, id, e) ->
       let pp fmt (x, id, e) =
         Format.fprintf fmt "match_fold_left %a with@\n  | %a -> (@[%a@])@\nend"
           f x

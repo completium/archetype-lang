@@ -233,7 +233,7 @@ type ('id, 'term) mterm_node  =
   | Mmatchoption      of 'term * 'id * 'term * 'term
   | Mmatchor          of 'term * 'id * 'term * 'id * 'term
   | Mmatchlist        of 'term * 'id * 'id * 'term * 'term
-  | Mmatchfoldleft    of 'term * 'id * 'term
+  | Mmatchloopleft    of 'term * 'id * 'term
   (* composite type constructors *)
   | Mleft             of type_ * 'term
   | Mright            of type_ * 'term
@@ -1223,7 +1223,7 @@ let cmp_mterm_node
     | Mmatchoption (x1, i1, ve1, ne1), Mmatchoption (x2, i2, ve2, ne2)                 -> cmp x1 x2 && cmpi i1 i2 && cmp ve1 ve2 && cmp ne1 ne2
     | Mmatchor (x1, lid1, le1, rid1, re1), Mmatchor (x2, lid2, le2, rid2, re2)         -> cmp x1 x2 && cmpi lid1 lid2 && cmp le1 le2 && cmpi rid1 rid2 && cmp re1 re2
     | Mmatchlist (x1, hid1, tid1, hte1, ee1), Mmatchlist (x2, hid2, tid2, hte2, ee2)   -> cmp x1 x2 && cmpi hid1 hid2 && cmpi tid1 tid2 && cmp hte1 hte2 && cmp ee1 ee2
-    | Mmatchfoldleft (x1, i1, e1), Mmatchfoldleft (x2, i2, e2)                         -> cmp x1 x2 && cmpi i1 i2 && cmp e1 e2
+    | Mmatchloopleft (x1, i1, e1), Mmatchloopleft (x2, i2, e2)                         -> cmp x1 x2 && cmpi i1 i2 && cmp e1 e2
     (* composite type constructors *)
     | Mleft (t1, x1), Mleft (t2, x2)                                                   -> cmp_type t1 t2 && cmp x1 x2
     | Mright (t1, x1), Mright (t2, x2)                                                 -> cmp_type t1 t2 && cmp x1 x2
@@ -1593,7 +1593,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mmatchoption (x, i, ve, ne)    -> Mmatchoption   (f x, g i, f ve, f ne)
   | Mmatchor (x, lid, le, rid, re) -> Mmatchor       (f x, g lid, f le, g rid, f re)
   | Mmatchlist (x, hid, tid, hte, ee) -> Mmatchlist  (f x, g hid, g tid, f hte, f ee)
-  | Mmatchfoldleft (x, i, e)       -> Mmatchfoldleft (f x, g i, f e)
+  | Mmatchloopleft (x, i, e)       -> Mmatchloopleft (f x, g i, f e)
   (* composite type constructors *)
   | Mleft (t, x)                   -> Mleft (ft t, f x)
   | Mright (t, x)                  -> Mright (ft t, f x)
@@ -1964,7 +1964,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mmatchoption (x, _, ve, ne)           -> f (f (f accu x) ve) ne
   | Mmatchor (x, _, le, _, re)            -> f (f (f accu x) le) re
   | Mmatchlist (x, _, _, hte, ee)         -> f (f (f accu x) hte) ee
-  | Mmatchfoldleft (x, _, e)              -> f (f accu x) e
+  | Mmatchloopleft (x, _, e)              -> f (f accu x) e
   (* composite type constructors *)
   | Mleft (_, x)                          -> f accu x
   | Mright (_, x)                         -> f accu x
@@ -2404,10 +2404,10 @@ let fold_map_term
     let eee, eea = f htea ee in
     g (Mmatchlist (xe, hid, tid, htee, eee)), eea
 
-  | Mmatchfoldleft (x, i, e) ->
+  | Mmatchloopleft (x, i, e) ->
     let xe, xa = f accu x in
     let ee, ea = f xa e in
-    g (Mmatchfoldleft (xe, i, ee)), ea
+    g (Mmatchloopleft (xe, i, ee)), ea
 
 
   (* composite type constructors *)

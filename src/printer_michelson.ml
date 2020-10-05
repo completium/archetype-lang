@@ -219,6 +219,7 @@ let rec pp_instruction fmt (i : instruction) =
   | Iifcons (v, _, _, t, e, _) -> pp "if_cons (%a)@\nthen @[%a@]@\nelse @[%a@]" f v f t f e
   | Iwhile (c, b)              -> pp "while (%a) do@\n  @[%a@]@\ndone" f c f b
   | Iiter (ids, c, b)          -> pp "iter %a on (%a) do@\n  @[%a@]@\ndone" (pp_list ", " pp_id) ids f c f b
+  | Iloopleft (l, _, b)        -> pp "@[loop_left (%a) do@\n  @[%a@]@\ndone@]" f l f b
   | Izop op -> begin
       match op with
       | Znow                -> pp "now"

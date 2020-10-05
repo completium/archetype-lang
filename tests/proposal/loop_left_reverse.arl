@@ -1,4 +1,4 @@
-archetype effect_control_match_fold_left
+archetype effect_control_match_loop_left
 
 variable res : list<nat> = []
 
@@ -7,9 +7,9 @@ entry exec () {
   var empty : list<nat> = [];
   var p : or<list<nat> * list<nat>, list<nat>> = left<list<nat>> ((empty, l));
   res :=
-    match_fold_left p with
+    match_loop_left p with
     | x -> match_list x[1] with
-           | hd::tail -> left<list<nat>> ((prepend(hd, x[0]), tail))
+           | hd::tail -> left<list<nat>> ((prepend(x[0], hd), tail))
            | [] -> right<list<nat> * list<nat>>(x[0])
            end
     end

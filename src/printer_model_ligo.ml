@@ -613,7 +613,7 @@ let pp_model_internal fmt (model : model) b =
     | Mmatchoption (_x, _i, _ve, _ne)        -> emit_error (UnsupportedTerm ("matchoption"))
     | Mmatchor (_x, _lid, _le, _rid, _re)    -> emit_error (UnsupportedTerm ("matchor"))
     | Mmatchlist (_x, _hid, _tid, _hte, _ee) -> emit_error (UnsupportedTerm ("matchlist"))
-    | Mmatchfoldleft (_x, _id, _e)           -> emit_error (UnsupportedTerm ("matchfoldleft"))
+    | Mmatchloopleft (_x, _id, _e)           -> emit_error (UnsupportedTerm ("matchfoldleft"))
 
 
     (* composite type constructors *)

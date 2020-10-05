@@ -122,7 +122,7 @@ and expr_unloc =
   | Ematchoption   of expr * lident * expr * expr
   | Ematchor       of expr * lident * expr * lident * expr
   | Ematchlist     of expr * lident * lident * expr * expr
-  | Ematchfoldleft of expr * lident * expr
+  | Ematchloopleft of expr * lident * expr
   | Erecupdate     of expr * (lident * expr) list
   | Equantifier    of quantifier * lident * quantifier_kind * expr
   | Eassert        of lident
@@ -656,6 +656,7 @@ let is_keyword = function
   | "match_list"
   | "match_option"
   | "match_or"
+  | "match_loop_left"
   | "match"
   | "namespace"
   | "none"
