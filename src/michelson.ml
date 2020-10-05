@@ -283,8 +283,9 @@ type instruction =
   | Iassign     of ident * instruction
   | IassignRec  of ident * int * int * instruction
   | Iif         of instruction * instruction * instruction * type_
-  | Iifnone     of instruction * instruction * ident * instruction
-  | Iifcons     of instruction * instruction * instruction
+  | Iifnone     of instruction * instruction * ident * instruction * type_
+  | Iifleft     of instruction * ident * instruction * ident * instruction * type_
+  | Iifcons     of instruction * ident * ident * instruction * instruction * type_
   | Iwhile      of instruction * instruction
   | Iiter       of ident list * instruction * instruction
   | Izop        of z_operator
@@ -443,8 +444,8 @@ let ieq  l r         = Icompare (Ceq, l, r)
 let iadd l r         = Ibinop (Badd, l, r)
 let isub l r         = Ibinop (Bsub, l, r)
 let imul l r         = Ibinop (Bmul, l, r)
-let idiv l r         = Iifnone (Ibinop (Bediv, l, r), ifail "DivByZero", "_var_ifnone", icar (Ivar ("_var_ifnone")) )
-let imod l r         = Iifnone (Ibinop (Bediv, l, r), ifail "DivByZero", "_var_ifnone", icdr (Ivar ("_var_ifnone")) )
+let idiv l r         = Iifnone (Ibinop (Bediv, l, r), ifail "DivByZero", "_var_ifnone", icar (Ivar ("_var_ifnone")), tint )
+let imod l r         = Iifnone (Ibinop (Bediv, l, r), ifail "DivByZero", "_var_ifnone", icdr (Ivar ("_var_ifnone")), tnat )
 
 (* -------------------------------------------------------------------- *)
 

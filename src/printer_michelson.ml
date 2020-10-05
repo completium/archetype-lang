@@ -210,14 +210,15 @@ let rec pp_instruction fmt (i : instruction) =
   | Iseq l -> (pp_list ";@\n" f) fmt l
   | IletIn (id, v, b, _) -> Format.fprintf fmt "let %a = %a in@\n  @[%a@]" pp_id id f v f b
   | Ivar id -> pp_id fmt id
-  | Icall (id, args, _)      -> Format.fprintf fmt "%a(%a)" pp_id id (pp_list ", " f) args
-  | Iassign (id, v)          -> Format.fprintf fmt "%a := @[%a@]" pp_id id f v
-  | IassignRec (id, s, n, v) -> Format.fprintf fmt "%a[%i]/* size = %i */ := @[%a@]" pp_id id n s f v
-  | Iif (c, t, e, _)         -> pp "if (%a)@\nthen @[%a@]@\nelse @[%a@]" f c f t f e
-  | Iifnone (v, t, id, s)    -> pp "if_none (%a)@\nthen @[%a@]@\nelse @[fun %s -> %a@]" f v f t id f s
-  | Iifcons (v, t, e)        -> pp "if_cons (%a)@\nthen @[%a@]@\nelse @[%a@]" f v f t f e
-  | Iwhile (c, b)            -> pp "while (%a) do@\n  @[%a@]@\ndone" f c f b
-  | Iiter (ids, c, b)        -> pp "iter %a on (%a) do@\n  @[%a@]@\ndone" (pp_list ", " pp_id) ids f c f b
+  | Icall (id, args, _)        -> Format.fprintf fmt "%a(%a)" pp_id id (pp_list ", " f) args
+  | Iassign (id, v)            -> Format.fprintf fmt "%a := @[%a@]" pp_id id f v
+  | IassignRec (id, s, n, v)   -> Format.fprintf fmt "%a[%i]/* size = %i */ := @[%a@]" pp_id id n s f v
+  | Iif (c, t, e, _)           -> pp "if (%a)@\nthen @[%a@]@\nelse @[%a@]" f c f t f e
+  | Iifnone (v, t, id, s, _)   -> pp "if_none (%a)@\nthen @[%a@]@\nelse @[fun %s -> %a@]" f v f t id f s
+  | Iifleft (v, _, l, _, r, _) -> pp "if_left (%a)@\nthen @[%a@]@\nelse @[%a@]" f v f l f r
+  | Iifcons (v, _, _, t, e, _) -> pp "if_cons (%a)@\nthen @[%a@]@\nelse @[%a@]" f v f t f e
+  | Iwhile (c, b)              -> pp "while (%a) do@\n  @[%a@]@\ndone" f c f b
+  | Iiter (ids, c, b)          -> pp "iter %a on (%a) do@\n  @[%a@]@\ndone" (pp_list ", " pp_id) ids f c f b
   | Izop op -> begin
       match op with
       | Znow                -> pp "now"

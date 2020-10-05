@@ -704,8 +704,9 @@ let to_model (ir, env : T.ir * env) : M.model * env =
     | Iassign (id, v)              -> M.mk_mterm (M.Massign (ValueAssign, M.tunit, Avarstore (dumloc id), f v)) M.tunit
     | IassignRec (_id, _s, _n, _v) -> assert false
     | Iif (_c, _t, _e, _)          -> assert false
-    | Iifnone (_v, _t, _id, _s)    -> assert false
-    | Iifcons (_v, _t, _e)         -> assert false
+    | Iifnone (_v, _t, _id, _s, _) -> assert false
+    | Iifleft (_v, _, _r, _, _l, _)-> assert false
+    | Iifcons (_v, _, _, _t, _e, _)-> assert false
     | Iwhile (_c, _b)              -> assert false
     | Iiter (_ids, _c, _b)         -> assert false
     | Izop op -> begin

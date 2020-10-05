@@ -2873,6 +2873,54 @@ let rec for_xexpr
           mk_sp bty (A.Pmatchwith (me, aout))
       end
 
+    | Ematchoption (x, id, ve, ne) -> begin
+        (* TODO: check typing *)
+        let x = for_xexpr env x in
+        let oty = Option.bind Type.as_option x.type_ in
+
+        let ve = for_xexpr (Env.Local.push env (id, Option.get oty)) ve in
+        let ne = for_xexpr env ne in
+
+        let ty = ve.type_ in
+
+        mk_sp ty (A.Pmatchoption (x, id, ve, ne))
+      end
+
+    | Ematchor(x, lid, le, rid, re) -> begin
+        (* TODO: check typing *)
+        let x = for_xexpr env x in
+        let oty = Option.bind Type.as_or x.type_ in
+
+        let lt, rt = Option.get oty in
+
+        let ve = for_xexpr (Env.Local.push env (lid, lt)) le in
+        let re = for_xexpr (Env.Local.push env (rid, rt)) re in
+
+        let ty = ve.type_ in
+
+        mk_sp ty (A.Pmatchor (x, lid, ve, rid, re))
+      end
+
+    | Ematchlist (x, hid, tid, hte, ee) -> begin
+        (* TODO: check typing *)
+        let x = for_xexpr env x in
+        let lty = Option.bind Type.as_list x.type_ in
+
+        let lt  = Option.get x.type_ in
+        let elt = Option.get lty in
+
+        let hte = for_xexpr (Env.Local.push (Env.Local.push env (hid, elt)) (tid, lt)) hte in
+        let ee  = for_xexpr env ee in
+
+        let ty = hte.type_ in
+
+        mk_sp ty (A.Pmatchlist (x, hid, tid, hte, ee))
+      end
+
+    | Ematchfoldleft (_x, _i, _e)-> begin
+        assert false
+      end
+
     | Equantifier (qt, x, xty, body) -> begin
         if not (is_form_kind mode.em_kind) then begin
           Env.emit_error env (loc tope, BindingInExpr);
@@ -2951,10 +2999,6 @@ let rec for_xexpr
           (A.Pentrypoint (ty, id, b))
       end
 
-    | Ematchoption _
-    | Ematchor   _
-    | Ematchlist _
-    | Ematchfoldleft _
     | Eself      _
     | Evar       _
     | Efail      _
