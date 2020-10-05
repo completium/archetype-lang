@@ -267,7 +267,7 @@ let to_model (ast : A.ast) : M.model =
       match pterm.node with
       | A.Pif (c, t, e)                     -> M.Mexprif        (f c, f t, f e)
       | A.Pmatchwith (m, l)                 -> M.Mexprmatchwith (f m, List.map (fun (p, e) -> (to_pattern p, f e)) l)
-      | A.Pmatchoption (x, id, ve, ne)      -> M.Mmatchsome     (f x, f ne, unloc id, f ve)
+      | A.Pmatchoption (x, id, ve, ne)      -> M.Mmatchoption   (f x, id, f ve, f ne)
       | A.Pmatchor (x, lid, le, rid, re)    -> M.Mmatchor       (f x, lid, f le, rid, f re)
       | A.Pmatchlist (x, hid, tid, hte, ee) -> M.Mmatchlist     (f x, hid, tid, f hte, f ee)
       | A.Pmatchfoldleft (x, i, e)          -> M.Mmatchfoldleft (f x, i, f e)

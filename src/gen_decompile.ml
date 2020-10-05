@@ -955,7 +955,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     | Mexprif (_c, _t, _e)                   -> assert false
     | Mexprmatchwith (_e, _l)                -> assert false
-    | Mmatchsome (_e, _n, _i, _s)            -> assert false
+    | Mmatchoption (_x, _i, _ve, _ne)        -> assert false
     | Mmatchor (_x, _lid, _le, _rid, _re)    -> assert false
     | Mmatchlist (_x, _hid, _tid, _hte, _ee) -> assert false
     | Mmatchfoldleft (_e, _i, _l)            -> assert false

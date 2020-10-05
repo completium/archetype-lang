@@ -636,7 +636,7 @@ let pp_model fmt (model : model) =
           f e
 
       | Mexprmatchwith _ -> emit_error (UnsupportedTerm ("Mexprmatchwith"))
-      | Mmatchsome     _ -> emit_error (UnsupportedTerm ("Mmatchsome"))
+      | Mmatchoption   _ -> emit_error (UnsupportedTerm ("matchoption"))
       | Mmatchor       _ -> emit_error (UnsupportedTerm ("Mmatchor"))
       | Mmatchlist     _ -> emit_error (UnsupportedTerm ("Mmatchlist"))
       | Mmatchfoldleft _ -> emit_error (UnsupportedTerm ("Mmatchfoldleft"))

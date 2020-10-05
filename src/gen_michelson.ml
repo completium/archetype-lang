@@ -497,12 +497,12 @@ let to_ir (model : M.model) : T.ir =
 
     (* control expression *)
 
-    | Mexprif (c, t, e)       -> T.Iif (f c, f t, f e, ft mtt.type_)
-    | Mexprmatchwith (_e, _l) -> emit_error (UnsupportedTerm ("Mexprmatchwith"))
-    | Mmatchsome (e, n, i, s) -> T.Iifnone (f e, f n, i, f s)
+    | Mexprif (c, t, e)                      -> T.Iif (f c, f t, f e, ft mtt.type_)
+    | Mexprmatchwith (_e, _l)                -> emit_error (UnsupportedTerm ("Mexprmatchwith"))
+    | Mmatchoption (x, i, ve, ne)            -> T.Iifnone (f x, f ne, unloc i, f ve)
     | Mmatchor (_x, _lid, _le, _rid, _re)    -> assert false (* TODO *)
     | Mmatchlist (_x, _hid, _tid, _hte, _ee) -> assert false (* TODO *)
-    | Mmatchfoldleft (_e, _i, _l) -> assert false (* TODO *)
+    | Mmatchfoldleft (_e, _i, _l)            -> assert false (* TODO *)
 
     (* composite type constructors *)
 

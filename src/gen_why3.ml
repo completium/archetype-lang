@@ -1666,7 +1666,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
           (map_mpattern p.node, map_mterm m ctx e)
         ) l)
 
-    | Mmatchsome     _ -> error_not_supported "Mmatchsome"
+    | Mmatchoption   _ -> error_not_supported "Mmatchoption"
     | Mmatchor       _ -> error_not_supported "Mmatchor"
     | Mmatchlist     _ -> error_not_supported "Mmatchlist"
     | Mmatchfoldleft _ -> error_not_supported "Mmatchfoldleft"

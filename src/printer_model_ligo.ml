@@ -381,10 +381,6 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (e, l)
 
-    | Mmatchor (_x, _lid, _le, _rid, _re)    -> emit_error (UnsupportedTerm ("matchor"))
-    | Mmatchlist (_x, _hid, _tid, _hte, _ee) -> emit_error (UnsupportedTerm ("matchlist"))
-    | Mmatchfoldleft (_x, _id, _e)           -> emit_error (UnsupportedTerm ("matchfoldleft"))
-
     | Mfor (id, col, body, _) ->
       let postvar = function
         | ICKcoll an when not (Model.Utils.is_asset_single_field model an) -> " -> value_"
@@ -614,7 +610,11 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (e, l)
 
-    | Mmatchsome _ -> emit_error (UnsupportedTerm ("Mmatchsome"))
+    | Mmatchoption (_x, _i, _ve, _ne)        -> emit_error (UnsupportedTerm ("matchoption"))
+    | Mmatchor (_x, _lid, _le, _rid, _re)    -> emit_error (UnsupportedTerm ("matchor"))
+    | Mmatchlist (_x, _hid, _tid, _hte, _ee) -> emit_error (UnsupportedTerm ("matchlist"))
+    | Mmatchfoldleft (_x, _id, _e)           -> emit_error (UnsupportedTerm ("matchfoldleft"))
+
 
     (* composite type constructors *)
 

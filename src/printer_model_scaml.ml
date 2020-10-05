@@ -683,7 +683,7 @@ let pp_model fmt (model : model) =
         in
         pp fmt (e, l)
 
-      | Mmatchsome _     -> emit_error (UnsupportedTerm ("Mmatchsome"))
+      | Mmatchoption _   -> emit_error (UnsupportedTerm ("Mmatchoption"))
       | Mmatchor _       -> emit_error (UnsupportedTerm ("Mmatchor"))
       | Mmatchlist _     -> emit_error (UnsupportedTerm ("Mmatchlist"))
       | Mmatchfoldleft _ -> emit_error (UnsupportedTerm ("Mmatchfoldleft"))

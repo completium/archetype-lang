@@ -4387,7 +4387,7 @@ let remove_asset (model : model) : model =
 
               let mif = mk_mterm (Mif (cond, act, Some neutral)) neutral.type_ in
 
-              let matchsome : mterm = mk_mterm (Mmatchsome (va0, neutral, "", mif)) vains.type_ in
+              let matchsome : mterm = mk_mterm (Mmatchoption (va0, dumloc "", mif, neutral)) vains.type_ in
 
               matchsome
               |> mk_letin ia1 (mk_tupleaccess 1 vains)
@@ -4405,7 +4405,7 @@ let remove_asset (model : model) : model =
             let i0 = dumloc "_i0" in
             let v0 : mterm = mk_mvar i0 a.type_ in
 
-            let matchsome : mterm = mk_mterm (Mmatchsome (vz0, vz1, "", prepend vkid vz1)) tr in
+            let matchsome : mterm = mk_mterm (Mmatchoption (vz0, dumloc "", prepend vkid vz1, vz1)) tr in
 
             matchsome
             |> (fun x -> mk_mterm (Mlistreverse(atk, x)) (Tlist atk))
