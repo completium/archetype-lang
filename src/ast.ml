@@ -309,6 +309,7 @@ type 'id term_node  =
   | Pquantifer of quantifier * 'id * ('id term_gen option * type_) * 'id term_gen
   | Pif of ('id term_gen * 'id term_gen * 'id term_gen)
   | Pmatchwith of 'id term_gen * ('id pattern_gen * 'id term_gen) list
+  | Pmatchfoldleft of 'id term_gen * 'id * 'id term_gen
   | Pcall of ('id term_gen option * 'id call_kind * ('id term_arg) list)
   | Plogical of logical_operator * 'id term_gen * 'id term_gen
   | Pnot of 'id term_gen

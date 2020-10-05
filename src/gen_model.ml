@@ -267,6 +267,7 @@ let to_model (ast : A.ast) : M.model =
       match pterm.node with
       | A.Pif (c, t, e)                   -> M.Mexprif        (f c, f t, f e)
       | A.Pmatchwith (m, l)               -> M.Mexprmatchwith (f m, List.map (fun (p, e) -> (to_pattern p, f e)) l)
+      | A.Pmatchfoldleft (x, i, e)        -> M.Mmatchfoldleft (f x, i, f e)
       | A.Plogical (A.And, l, r)          -> M.Mand           (f l, f r)
       | A.Plogical (A.Or, l, r)           -> M.Mor            (f l, f r)
       | A.Plogical (A.Xor, l, r)          -> M.Mxor           (f l, f r)

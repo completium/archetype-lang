@@ -9,8 +9,8 @@ entry exec () {
   res :=
     match_fold_left p with
     | x -> match_list x[1] with
-           | hd::tail -> p := left<list<nat>> ((prepend(hd, x[0]), tail))
-           | [] -> p := right<list<nat> * list<nat>>(x[0])
+           | hd::tail -> left<list<nat>> ((prepend(hd, x[0]), tail))
+           | [] -> right<list<nat> * list<nat>>(x[0])
            end
     end
 }

@@ -376,6 +376,16 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (e, n, i, s)
 
+    | Mmatchfoldleft (x, id, e) ->
+      let pp fmt (x, id, e) =
+        Format.fprintf fmt "match_fold_left %a with@\n  | %a -> (@[%a@])@\nend"
+          f x
+          pp_id id
+          f e
+      in
+      pp fmt (x, id, e)
+
+
     (* composite type constructors *)
 
     | Mleft (t, x) -> Format.fprintf fmt "left<%a>(%a)" pp_type t f x

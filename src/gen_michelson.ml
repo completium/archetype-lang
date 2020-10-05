@@ -500,6 +500,7 @@ let to_ir (model : M.model) : T.ir =
     | Mexprif (c, t, e)       -> T.Iif (f c, f t, f e, ft mtt.type_)
     | Mexprmatchwith (_e, _l) -> emit_error (UnsupportedTerm ("Mexprmatchwith"))
     | Mmatchsome (e, n, i, s) -> T.Iifnone (f e, f n, i, f s)
+    | Mmatchfoldleft (_e, _i, _l) -> assert false (* TODO *)
 
     (* composite type constructors *)
 

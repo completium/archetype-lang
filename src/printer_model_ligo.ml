@@ -381,6 +381,8 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (e, l)
 
+    | Mmatchfoldleft (_x, _id, _e) -> emit_error (UnsupportedTerm ("matchfoldleft"))
+
     | Mfor (id, col, body, _) ->
       let postvar = function
         | ICKcoll an when not (Model.Utils.is_asset_single_field model an) -> " -> value_"
