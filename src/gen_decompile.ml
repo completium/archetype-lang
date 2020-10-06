@@ -579,29 +579,35 @@ let to_ir (dir, env : T.dprogram * env) : T.ir * env =
   let tparameter   = dir.parameter in
   let storage_data = dir.storage_data in
 
-  let for_expr (e : T.dexpr) : M.mterm =
-    (* let f = for_expr in *)
+  let rec for_expr (e : T.dexpr) : T.instruction =
+    let f = for_expr in
     match e with
     | Dalpha _i              -> assert false
     | Dvar _t                -> assert false
-    | Duop (_op, _a)         -> assert false
     | Dstorage _t            -> assert false
     | Doperations            -> assert false
-    | Ddata _d               -> assert false
-    | Dzop _op               -> assert false
-    | Dbop (_op, _a, _b)     -> assert false
-    | Dtop (_op, _a, _b, _c) -> assert false
+    | Ddata d                -> Iconst (T.tnat, d)
+    | Dzop op                -> Izop op
+    | Duop (op, a)           -> Iunop (op, f a)
+    | Dbop (op, a, b)        -> Ibinop (op, f a, f b)
+    | Dtop (op, a, b, c)     -> Iterop (op, f a, f b, f c)
   in
 
-  let rec _for_instr (i : T.dinstruction) : M.mterm =
-    let f = _for_instr in
-    let seq x = M.seq (List.map f x) in
+  let rec for_instr (i : T.dinstruction) : T.instruction =
+    let _f = for_instr in
+    let g = for_expr in
     match i with
     | Ddecl      _id         -> assert false
-    | Dassign   (_e, _v)     -> assert false
-    | Dfail      e           -> M.failg (for_expr e)
+    | Dassign   (e, v)       -> begin
+        let v = g v in
+        match e with
+        | Dvar t when Option.is_some t.annotation -> Iassign(Option.get t.annotation, v)
+        | Doperations -> T.iskip
+        | _ -> assert false
+      end
+    | Dfail      e           -> Iunop (Ufail, g e)
     | Dexec     (_id, _arg)  -> assert false
-    | Dif       (c, t, e)    -> M.mk_mterm (M.Mif (for_expr c, seq t, Some (seq e))) M.tunit
+    | Dif       (_c, _t, _e) -> assert false
     | Difcons   (_c, _t, _e) -> assert false
     | Difleft   (_c, _t, _e) -> assert false
     | Difsome   (_c, _t, _e) -> assert false
@@ -630,8 +636,29 @@ let to_ir (dir, env : T.dprogram * env) : T.ir * env =
     | _  -> r
   in
 
+  let args =
+    let rec aux (x : T.type_) =
+      match x.node, x.annotation with
+      | _, Some a  -> [a, x]
+      | T.Tpair (a, b), _ -> begin
+          match aux a, aux b with
+          | [], _
+          | _, [] -> []
+          | x, y  -> x @ y
+        end
+      | _ -> []
+    in
+    let r = aux tparameter in
+    match r with
+    | [] -> ["storage", tparameter]
+    | _  -> r
+  in
+
+  let code = T.Iseq (List.map for_instr dir.code) in
+  let entry = T.mk_entry "default" args [] code in
+
   let funs = [] in
-  let entries = [] in
+  let entries = [entry] in
 
   T.mk_ir name tstorage storage_data storage_list tparameter funs entries, env
 
@@ -649,7 +676,7 @@ let to_model (ir, env : T.ir * env) : M.model * env =
     | Toperation            -> M.toperation
     | Tcontract  t          -> M.tcontract (f t)
     | Tpair      (lt, rt)   -> M.ttuple [f lt; f rt]
-    | Tor        (_lt, _rt) -> assert false
+    | Tor        (lt, rt)   -> M.tor(f lt) (f rt)
     | Tlambda    (at, rt)   -> M.tlambda (f at) (f rt)
     | Tmap       (kt, vt)   -> M.tmap (f kt) (f vt)
     | Tbig_map   (kt, vt)   -> M.tbig_map (f kt) (f vt)
@@ -703,7 +730,7 @@ let to_model (ir, env : T.ir * env) : M.model * env =
     | Icall (_id, _args, _)        -> assert false
     | Iassign (id, v)              -> M.mk_mterm (M.Massign (ValueAssign, M.tunit, Avarstore (dumloc id), f v)) M.tunit
     | IassignRec (_id, _s, _n, _v) -> assert false
-    | Iif (_c, _t, _e, _)          -> assert false
+    | Iif (c, t, e, _ty)           -> M.mk_mterm (M.Mif (f c, f t, Some (f e))) M.tunit
     | Iifnone (_v, _t, _id, _s, _) -> assert false
     | Iifleft (_v, _, _r, _, _l, _)-> assert false
     | Iifcons (_v, _, _, _t, _e, _)-> assert false
@@ -728,7 +755,7 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         | Zemptymap (_k, _v)    -> assert false
         | Zemptybigmap (_k, _v) -> assert false
       end
-    | Iunop (op, _e) -> begin
+    | Iunop (op, e) -> begin
         match op with
         | Ucar               -> assert false
         | Ucdr               -> assert false
@@ -747,7 +774,7 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         | Usha256            -> assert false
         | Usha512            -> assert false
         | Uhash_key          -> assert false
-        | Ufail              -> assert false
+        | Ufail              -> M.failg (f e)
         | Ucontract (_t, _a) -> assert false
         | Usetdelegate       -> assert false
         | Uimplicitaccount   -> assert false
