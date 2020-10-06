@@ -567,6 +567,10 @@ let pp_model fmt (model : model) =
         in
         pp fmt (e, l)
 
+      | Minstrmatchoption _   -> emit_error (UnsupportedTerm ("Minstrmatchoption"))
+      | Minstrmatchor _       -> emit_error (UnsupportedTerm ("Minstrmatchor"))
+      | Minstrmatchlist _     -> emit_error (UnsupportedTerm ("Minstrmatchlist"))
+
       | Mfor (i, c, b, _) ->
         Format.fprintf fmt "for (%a in %a) (@\n  @[%a@])@\n"
           (fun fmt i -> match i with FIsimple x -> pp_id fmt x | FIdouble (x, y) -> Format.fprintf fmt "(%a, %a)" pp_id x pp_id y) i

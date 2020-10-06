@@ -1980,6 +1980,24 @@ let extract_term_from_instruction f (model : model) : model =
       let ll = List.map (fun (p, e) -> (p, aux ctx e)) l in
       process (mk_mterm (Mmatchwith (ee, ll)) mt.type_) ea
 
+    | Minstrmatchoption (x, i, ve, ne) ->
+      let xe, xa   = f x  in
+      let vee, vea = f ve in
+      let nee, nea = f ne in
+      process (mk_mterm (Minstrmatchoption (xe, i, vee, nee)) mt.type_) (xa @ vea @ nea)
+
+    | Minstrmatchor (x, lid, le, rid, re) ->
+      let xe, xa   = f x  in
+      let lee, lea = f le in
+      let ree, rea = f re in
+      process (mk_mterm (Minstrmatchor (xe, lid, lee, rid, ree)) mt.type_) (xa @ lea @ rea)
+
+    | Minstrmatchlist (x, hid, tid, hte, ee) ->
+      let xe, xa     = f x  in
+      let htee, htea = f hte in
+      let eee, eea   = f ee in
+      process (mk_mterm (Minstrmatchlist (xe, hid, tid, htee, eee)) mt.type_) (xa @ htea @ eea)
+
     | Mfor (i, c, b, lbl) ->
       let ce, ca =
         match c with
@@ -2268,6 +2286,24 @@ let add_contain_on_get (model : model) : model =
         let accu = f accu e in
         let ll = List.map (fun (p, e) -> (p, aux e)) l in
         gg accu (mk_mterm (Mmatchwith (e, ll)) mt.type_)
+
+      | Minstrmatchoption (x, i, ve, ne) ->
+        let accu = f accu x in
+        let vee = aux_env env ve in
+        let nee = aux_env env ne in
+        gg accu (mk_mterm (Minstrmatchoption (x, i, vee, nee)) mt.type_)
+
+      | Minstrmatchor (x, lid, le, rid, re) ->
+        let accu = f accu x in
+        let lee = aux_env env le in
+        let ree = aux_env env re in
+        gg accu (mk_mterm (Minstrmatchor (x, lid, lee, rid, ree)) mt.type_)
+
+      | Minstrmatchlist (x, hid, tid, hte, ee) ->
+        let accu = f accu x in
+        let htee = aux_env env hte in
+        let eee = aux_env env ee in
+        gg accu (mk_mterm (Minstrmatchlist (x, hid, tid, htee, eee)) mt.type_)
 
       | Mfor (i, c, b, lbl) ->
         let accu = fold_iter_container_kind f accu c in

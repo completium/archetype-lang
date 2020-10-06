@@ -534,6 +534,9 @@ let pp_model fmt (model : model) =
           f e
 
       | Mmatchwith _ -> emit_error (UnsupportedTerm ("Mmatchwith"))
+      | Minstrmatchoption   _ -> emit_error (UnsupportedTerm ("Minstrmatchoption"))
+      | Minstrmatchor       _ -> emit_error (UnsupportedTerm ("Minstrmatchor"))
+      | Minstrmatchlist     _ -> emit_error (UnsupportedTerm ("Minstrmatchlist"))
 
       | Mfor (i, c, b, _) ->
         Format.fprintf fmt "sp.for %a in %a:@\n  @[%a@]@\n"

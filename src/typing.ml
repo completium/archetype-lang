@@ -4011,6 +4011,44 @@ let rec for_instruction_r
           env, mki (A.Imatchwith (me, aout))
       end
 
+    | Ematchoption (x, id, ve, ne) -> begin
+        (* TODO: check typing *)
+        let x = for_xexpr (expr_mode kind) env x in
+        let oty = Option.bind Type.as_option x.type_ in
+
+        let _, ve = for_instruction ~ret kind (Env.Local.push env (id, Option.get oty)) ve in
+        let _, ne = for_instruction ~ret kind env ne in
+
+        env, mki (A.Imatchoption (x, id, ve, ne))
+      end
+
+    | Ematchor(x, lid, le, rid, re) -> begin
+        (* TODO: check typing *)
+        let x = for_xexpr (expr_mode kind) env x in
+        let oty = Option.bind Type.as_or x.type_ in
+
+        let lt, rt = Option.get oty in
+
+        let _, ve = for_instruction ~ret kind (Env.Local.push env (lid, lt)) le in
+        let _, re = for_instruction ~ret kind (Env.Local.push env (rid, rt)) re in
+
+        env, mki (A.Imatchor (x, lid, ve, rid, re))
+      end
+
+    | Ematchlist (x, hid, tid, hte, ee) -> begin
+        (* TODO: check typing *)
+        let x = for_xexpr (expr_mode kind) env x in
+        let lty = Option.bind Type.as_list x.type_ in
+
+        let lt  = Option.get x.type_ in
+        let elt = Option.get lty in
+
+        let _, hte = for_instruction ~ret kind (Env.Local.push (Env.Local.push env (hid, elt)) (tid, lt)) hte in
+        let _, ee  = for_instruction ~ret kind env ee in
+
+        env, mki (A.Imatchlist (x, hid, tid, hte, ee))
+      end
+
     | Elabel lbl ->
       let env =
         if   check_and_emit_name_free env lbl

@@ -681,6 +681,38 @@ let rec pp_instruction fmt (i : instruction) =
       in
       (pp_with_paren pp) fmt (m, ps)
 
+    | Imatchoption (x, id, ve, ne) ->
+      let pp fmt (x, id, ve, ne) =
+        Format.fprintf fmt "match_option %a with@\n  | some (%a) -> (@[%a@])@\n  | none -> (@[%a@])@\nend"
+          pp_pterm x
+          pp_id id
+          pp_instruction ve
+          pp_instruction ne
+      in
+      (pp_with_paren pp) fmt (x, id, ve, ne)
+
+    | Imatchor (x, lid, le, rid, re) ->
+      let pp fmt (x, lid, le, rid, re) =
+        Format.fprintf fmt "match_or %a with@\n  | left (%a) -> (@[%a@])@\n  | right (%a) -> (@[%a@])@\nend"
+          pp_pterm x
+          pp_id lid
+          pp_instruction le
+          pp_id rid
+          pp_instruction re
+      in
+      (pp_with_paren pp) fmt (x, lid, le, rid, re)
+
+    | Imatchlist (x, hid, tid, hte, ee) ->
+      let pp fmt (x, hid, tid, hte, ee) =
+        Format.fprintf fmt "match_list %a with@\n  | %a::%a -> (@[%a@])@\n  | [] -> (@[%a@])@\nend"
+          pp_pterm x
+          pp_id hid
+          pp_id tid
+          pp_instruction hte
+          pp_instruction ee
+      in
+      (pp_with_paren pp) fmt (x, hid, tid, hte, ee)
+
     | Iassign (op, _, `Var id, value) ->
       let pp fmt (op, id, value) =
         Format.fprintf fmt "%a %a %a"

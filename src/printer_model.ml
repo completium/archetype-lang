@@ -245,6 +245,38 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (e, l)
 
+    | Minstrmatchoption (x, i, ve, ne) ->
+      let pp fmt (x, i, ve, ne) =
+        Format.fprintf fmt "match_option %a with@\n| some (%a) -> @[%a@]@\n| none -> @[%a@]"
+          f x
+          pp_id i
+          f ve
+          f ne
+      in
+      pp fmt (x, i, ve, ne)
+
+    | Minstrmatchor (x, lid, le, rid, re) ->
+      let pp fmt (x, lid, le, rid, re) =
+        Format.fprintf fmt "match_or %a with@\n  | left (%a) -> (@[%a@])@\n  | right (%a) -> (@[%a@])@\nend"
+          f x
+          pp_id lid
+          f le
+          pp_id rid
+          f re
+      in
+      pp fmt (x, lid, le, rid, re)
+
+    | Minstrmatchlist (x, hid, tid, hte, ee) ->
+      let pp fmt (x, hid, tid, hte, ee) =
+        Format.fprintf fmt "match_list %a with@\n  | %a::%a -> (@[%a@])@\n  | [] -> (@[%a@])@\nend"
+          f x
+          pp_id hid
+          pp_id tid
+          f hte
+          f ee
+      in
+      pp fmt (x, hid, tid, hte, ee)
+
     | Mfor (i, c, b, l) ->
       Format.fprintf fmt "for %a%a in %a do@\n  @[%a@]@\ndone"
         (pp_option (fun fmt -> Format.fprintf fmt ": %a " pp_str)) l

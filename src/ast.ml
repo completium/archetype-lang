@@ -384,7 +384,10 @@ and 'id instruction_node =
   | Iletin of ('id * 'id term_gen * 'id instruction_gen)                            (* id * init * body *)
   | Ideclvar of 'id * 'id term_gen                                                  (* id * init *)
   | Iseq of 'id instruction_gen list                                                (* lhs ; rhs *)
-  | Imatchwith of 'id term_gen * ('id pattern_gen * 'id instruction_gen) list       (* match term with ('pattern * 'id instruction_gen) list *)
+  | Imatchwith   of 'id term_gen * ('id pattern_gen * 'id instruction_gen) list     (* match term with ('pattern * 'id instruction_gen) list *)
+  | Imatchoption of 'id term_gen * 'id * 'id instruction_gen * 'id instruction_gen
+  | Imatchor     of 'id term_gen * 'id * 'id instruction_gen * 'id * 'id instruction_gen
+  | Imatchlist   of 'id term_gen * 'id * 'id * 'id instruction_gen * 'id instruction_gen
   | Iassign of (assignment_operator * ptyp * 'id lvalue_gen * 'id term_gen)         (* $2 assignment_operator $3 *)
   | Irequire of (bool * 'id term_gen * 'id term_gen)                                               (* $1 ? require : failif *)
   | Itransfer of ('id term_gen * 'id transfer_t)

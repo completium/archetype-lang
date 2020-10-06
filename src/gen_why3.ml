@@ -1536,6 +1536,10 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
           (map_mpattern p.node, map_mterm m ctx e)
         ) l)
 
+    | Minstrmatchoption   _ -> error_not_supported "Minstrmatchoption"
+    | Minstrmatchor       _ -> error_not_supported "Minstrmatchor"
+    | Minstrmatchlist     _ -> error_not_supported "Minstrmatchlist"
+
     | Mfor (_id, _c, _b, _lbl) -> error_not_supported "Mfor"
     | Miter (id, from, to_, body, lbl) -> (* ('id * 'term * 'term * 'term * ident option) *)
       let inv_ctx = { ctx with lctx = Logic } in

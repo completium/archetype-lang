@@ -381,6 +381,10 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (e, l)
 
+    | Minstrmatchoption (_x, _i, _ve, _ne)        -> emit_error (UnsupportedTerm ("instr_matchoption"))
+    | Minstrmatchor (_x, _lid, _le, _rid, _re)    -> emit_error (UnsupportedTerm ("instr_matchor"))
+    | Minstrmatchlist (_x, _hid, _tid, _hte, _ee) -> emit_error (UnsupportedTerm ("instr_matchlist"))
+
     | Mfor (id, col, body, _) ->
       let postvar = function
         | ICKcoll an when not (Model.Utils.is_asset_single_field model an) -> " -> value_"

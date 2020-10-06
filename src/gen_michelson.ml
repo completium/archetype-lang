@@ -405,6 +405,9 @@ let to_ir (model : M.model) : T.ir =
     | Mif (c, t, Some e)         -> T.Iif (f c, f t, f e, T.tunit)
     | Mif (c, t, None)           -> T.Iif (f c, f t, T.iskip, T.tunit)
     | Mmatchwith (_e, _l)        -> emit_error (UnsupportedTerm ("Mmatchwith"))
+    | Minstrmatchoption (x, i, ve, ne)       -> T.Iifnone (f x, f ne, unloc i, f ve, T.tunit)
+    | Minstrmatchor (x, lid, le, rid, re)    -> T.Iifleft (f x, unloc lid, f le, unloc rid, f re, T.tunit)
+    | Minstrmatchlist (x, hid, tid, hte, ee) -> T.Iifcons (f x, unloc hid, unloc tid, f hte, f ee, T.tunit)
     | Mfor (id, c, b, _)         -> begin
         let ids =
           match id with

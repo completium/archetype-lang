@@ -908,6 +908,9 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     | Mif (_c, _t, _e)           -> assert false
     | Mmatchwith (_e, _l)        -> assert false
+    | Minstrmatchoption _        -> assert false
+    | Minstrmatchor     _        -> assert false
+    | Minstrmatchlist   _        -> assert false
     | Mfor (_i, _c, _b, _l)      -> assert false
     | Miter (_i, _a, _b, _c, _l) -> assert false
     | Mwhile (_c, _b, _l)        -> assert false
