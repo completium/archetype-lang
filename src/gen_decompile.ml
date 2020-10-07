@@ -878,23 +878,6 @@ let to_model (ir, env : T.ir * env) : M.model * env =
   let functions = List.map for_entry ir.entries in
 
   let model = M.mk_model (dumloc ir.name) ~functions:functions ~storage:storage in
-
-  let opt (model : M.model) : M.model =
-
-    let remove_operations_nil (model : M.model) : M.model =
-      let rec aux ctx (mt : M.mterm) : M.mterm =
-        match mt.node with
-        | Massign(ValueAssign, _, Avarstore {pldesc = "operations"}, { node = (Mlitlist []) }) -> M.seq []
-        | _ -> M.map_mterm (aux ctx) mt
-      in
-      M.map_mterm_model aux model
-    in
-
-    model |> remove_operations_nil |> Gen_transform.flat_sequence
-  in
-
-  let model = opt model in
-
   model, env
 
 let to_archetype (model, _env : M.model * env) : A.archetype =

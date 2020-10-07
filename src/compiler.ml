@@ -364,6 +364,8 @@ let decompile (filename, channel) =
   |> cont !Options.opt_ir  output_ir
   |> to_model
   |> cont !Options.opt_mdl output_tmdl
+  |> Opt_model.optimize
+  |> cont !Options.opt_omdl output_tmdl
   |> to_archetype
   |> output_pt
 
@@ -413,6 +415,8 @@ let main () =
       "--typed-ast", Arg.Set Options.opt_ast, " Same as -ast";
       "-mdl", Arg.Set Options.opt_mdl, " Generate model";
       "--model", Arg.Set Options.opt_mdl, " Same as -mdl";
+      "-omdl", Arg.Set Options.opt_omdl, " Generate optimized model";
+      "--optimized-model", Arg.Set Options.opt_omdl, " Same as -omdl";
       "-fp", Arg.String (fun s -> Options.opt_property_focused := s), " Focus property (with whyml target only)";
       "--focus-property", Arg.String (fun s -> Options.opt_property_focused := s), " Same as -fp";
       "-sci", Arg.String (fun s -> Options.opt_caller := s), " Set caller address for initialization";
