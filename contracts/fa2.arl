@@ -27,11 +27,29 @@ entry add_token (new_token_id : nat, totalsupply : nat) {
 }
 
 entry %transfer(%from : address, tds : list<transfer_destination>) {
-    iter i from 0 to length(tds) - 1 do
-        var td = nth(tds, abs(i));
+    for td in tds do
         dorequire(tokens.contains(td.token_id), "FA2_TOKEN_UNDEFINED");
         dorequire(ledger[(td.token_id, %from)].amount >= td.token_amount, "FA2_INSUFFICIENT_BALANCE");
         ledger.update((td.token_id, %from), { amount -= td.token_amount });
         ledger.addupdate((td.token_id, td.%to), { amount += td.token_amount });
     done;
+}
+
+record balance_of_request {
+    owner : address;
+    token_id : nat;
+}
+
+record balance_of_response {
+    request : balance_of_request;
+    %balance : nat;
+}
+
+getter balance_of (brs : list<balance_of_request>) {
+    return map(brs, br -> {
+        request = br;
+        if ledger.contains((br.token_id,br.owner)) then
+            ledger[(br.token_id,br.owner)].amount
+        else 0
+    });
 }
