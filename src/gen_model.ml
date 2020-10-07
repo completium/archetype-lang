@@ -271,6 +271,7 @@ let to_model (ast : A.ast) : M.model =
       | A.Pmatchor (x, lid, le, rid, re)    -> M.Mmatchor       (f x, lid, f le, rid, f re)
       | A.Pmatchlist (x, hid, tid, hte, ee) -> M.Mmatchlist     (f x, hid, tid, f hte, f ee)
       | A.Pmatchloopleft (x, i, e)          -> M.Mmatchloopleft (f x, i, f e)
+      | A.Pmap (x, i, e)                    -> M.Mmap           (f x, i, f e)
       | A.Plogical (A.And, l, r)            -> M.Mand           (f l, f r)
       | A.Plogical (A.Or, l, r)             -> M.Mor            (f l, f r)
       | A.Plogical (A.Xor, l, r)            -> M.Mxor           (f l, f r)

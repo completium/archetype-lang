@@ -300,6 +300,7 @@ type instruction =
   | Imap        of type_ * type_ * (instruction * instruction) list
   | Irecord     of instruction list
   | Irecupdate  of instruction * int * (int * instruction) list (* value * size * (index, value) fields *)
+  | Imap_       of instruction * ident * instruction
   | Ifold       of ident * ident option * ident * instruction * instruction * instruction (* var_iterated * var_accu * container * init * code*)
   | Imichelson  of instruction list * code * ident list
 [@@deriving show {with_path = false}]

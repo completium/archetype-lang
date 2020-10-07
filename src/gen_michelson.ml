@@ -506,6 +506,7 @@ let to_ir (model : M.model) : T.ir =
     | Mmatchor (x, lid, le, rid, re)         -> T.Iifleft (f x, unloc lid, f le, unloc rid, f re, ft mtt.type_)
     | Mmatchlist (x, hid, tid, hte, ee)      -> T.Iifcons (f x, unloc hid, unloc tid, f hte, f ee, ft mtt.type_)
     | Mmatchloopleft (e, i, l)               -> T.Iloopleft (f e, unloc i, f l)
+    | Mmap (e, i, l)                         -> T.Imap_ (f e, unloc i, f l)
 
     (* composite type constructors *)
 
@@ -1278,6 +1279,12 @@ let to_michelson (ir : T.ir) : T.michelson =
         in
         let b, _env2 = fe env2 b in
         T.SEQ [a; c; T.ITER [pi; b; T.DROP n]], inc_env env
+      end
+
+    | Imap_ (x, id, e) -> begin
+        let x, _env0 = fe env x in
+        let e, _env1 = fe (add_var_env env id) e in
+        T.SEQ [x; T.MAP [e; T.SWAP; T.DROP 1]], inc_env env
       end
 
     | Imichelson (a, c, v) -> begin

@@ -5,9 +5,9 @@ asset tokens {
 }
 
 asset ledger identified by token holder to big_map {
-    token      : nat;
-    holder     : address;
-    amount     : nat = 0;
+    token  : nat;
+    holder : address;
+    amount : nat = 0;
 }
 
 record transfer_destination {
@@ -37,19 +37,19 @@ entry %transfer(%from : address, tds : list<transfer_destination>) {
 
 record balance_of_request {
     owner : address;
-    token_id : nat;
+    btoken_id : nat;
 }
 
 record balance_of_response {
     request : balance_of_request;
-    %balance : nat;
+    bor_balance : nat;
 }
 
-getter balance_of (brs : list<balance_of_request>) {
+getter balance_of (brs : list<balance_of_request>) : list<balance_of_response> {
     return map(brs, br -> {
         request = br;
-        %balance =  if ledger.contains((br.token_id,br.owner)) then
-                        ledger[(br.token_id,br.owner)].amount
-                    else 0
-    });
+        bor_balance = (if ledger.contains((br.btoken_id,br.owner)) then
+                        ledger[(br.btoken_id,br.owner)].amount
+                       else 0)
+    })
 }

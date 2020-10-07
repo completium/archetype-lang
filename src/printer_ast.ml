@@ -342,6 +342,15 @@ let rec pp_pterm fmt (pterm : pterm) =
       in
       (pp_with_paren pp) fmt (x, id, e)
 
+    | Pmap (x, id, e) ->
+      let pp fmt (x, id, e) =
+        Format.fprintf fmt "map (%a, %a -> (@[%a@]))"
+          pp_pterm x
+          pp_id id
+          pp_pterm e
+      in
+      (pp_with_paren pp) fmt (x, id, e)
+
     | Pcall (meth, kind, args) ->
       let pp fmt (meth, kind, args) =
         Format.fprintf fmt "%a%a(%a)"

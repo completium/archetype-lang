@@ -355,7 +355,7 @@ let pp_mterm fmt (mt : mterm) =
 
     (* literals *)
 
-    | Mint v -> pp_big_int fmt v
+    | Mint v -> Format.fprintf fmt "%ai" pp_big_int v
     | Mnat v -> pp_big_int fmt v
     | Mbool b -> pp_str fmt (if b then "true" else "false")
     | Menum v -> pp_str fmt v
@@ -433,6 +433,15 @@ let pp_mterm fmt (mt : mterm) =
     | Mmatchloopleft (x, id, e) ->
       let pp fmt (x, id, e) =
         Format.fprintf fmt "match_fold_left %a with@\n  | %a -> (@[%a@])@\nend"
+          f x
+          pp_id id
+          f e
+      in
+      pp fmt (x, id, e)
+
+    | Mmap (x, id, e) ->
+      let pp fmt (x, id, e) =
+        Format.fprintf fmt "map (%a, %a -> (@[%a@]))"
           f x
           pp_id id
           f e

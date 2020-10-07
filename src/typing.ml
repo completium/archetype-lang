@@ -2929,6 +2929,19 @@ let rec for_xexpr
         mk_sp (Some rt) (A.Pmatchloopleft (x, i, e))
       end
 
+    | Emap (x, i, e)-> begin
+        (* TODO: check typing *)
+        let x = for_xexpr env x in
+        let lty = Option.bind Type.as_list x.type_ in
+        let lty = Option.get lty in
+
+        let e = for_xexpr (Env.Local.push env (i, lty)) e in
+
+        let ty = Option.get e.type_ in
+
+        mk_sp (Some (A.Tlist ty)) (A.Pmap (x, i, e))
+      end
+
     | Equantifier (qt, x, xty, body) -> begin
         if not (is_form_kind mode.em_kind) then begin
           Env.emit_error env (loc tope, BindingInExpr);

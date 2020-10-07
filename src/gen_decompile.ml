@@ -860,6 +860,7 @@ let to_model (ir, env : T.ir * env) : M.model * env =
     | Irecord _l                        -> assert false
     | Irecupdate (_x, _s, _l)           -> assert false
     | Ifold (_ix, _iy, _ia, _c, _a, _b) -> assert false
+    | Imap_ (x, id, e)                  -> let ee = f e in M.mk_mterm (Mmap (f x, dumloc id, ee)) (M.tlist ee.type_)
     | Imichelson (_a, _c, _v)           -> assert false
   in
 
@@ -1042,6 +1043,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mmatchor (_x, _lid, _le, _rid, _re)    -> assert false
     | Mmatchlist (_x, _hid, _tid, _hte, _ee) -> assert false
     | Mmatchloopleft (_e, _i, _l)            -> assert false
+    | Mmap (_e, _i, _l)                      -> assert false
 
 
     (* composite type constructors *)

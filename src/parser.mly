@@ -915,6 +915,8 @@ simple_expr_r:
 
  | MATCH_LOOP_LEFT x=expr WITH PIPE id=ident IMPLY e=expr END { Ematchloopleft (x, id, e) }
 
+ | MAP LPAREN x=expr COMMA id=ident IMPLY e=expr RPAREN { Emap (x, id, e) }
+
  | id=ident a=app_args
      { Eapp ( Fident id, a) }
 
