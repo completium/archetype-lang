@@ -48,8 +48,8 @@ record balance_of_response {
 getter balance_of (brs : list<balance_of_request>) {
     return map(brs, br -> {
         request = br;
-        if ledger.contains((br.token_id,br.owner)) then
-            ledger[(br.token_id,br.owner)].amount
-        else 0
+        %balance =  if ledger.contains((br.token_id,br.owner)) then
+                        ledger[(br.token_id,br.owner)].amount
+                    else 0
     });
 }
