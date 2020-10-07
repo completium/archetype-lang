@@ -583,7 +583,7 @@ let to_ir (dir, env : T.dprogram * env) : T.ir * env =
     let f = for_expr in
     match e with
     | Dalpha _i              -> assert false
-    | Dvar _t                -> assert false
+    | Dvar t                 -> Ivar (Option.get t.annotation)
     | Dstorage _t            -> assert false
     | Doperations            -> assert false
     | Ddata d                -> Iconst (T.tnat, d)
@@ -725,7 +725,7 @@ let to_model (ir, env : T.ir * env) : M.model * env =
     match i with
     | Iseq l                       -> M.seq (List.map f l)
     | IletIn (_id, _v, _b, _)      -> assert false
-    | Ivar _id                     -> assert false
+    | Ivar id                      -> M.mk_mvar (dumloc id) M.tunit
     | Icall (_id, _args, _)        -> assert false
     | Iassign (id, v)              -> M.mk_mterm (M.Massign (ValueAssign, M.tunit, Avarstore (dumloc id), f v)) M.tunit
     | IassignRec (_id, _s, _n, _v) -> assert false
@@ -767,7 +767,7 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         match ty.node with
         | T.Tunit -> M.mk_mterm (M.Minstrmatchlist (xe, dumloc hid, dumloc tid, hte, ne)) M.tunit
         | _       -> M.mk_mterm (M.Mmatchlist (xe, dumloc hid, dumloc tid, hte, ne)) (for_type ty)
-    end
+      end
     | Iloopleft (l, i, b) -> let be = f b in M.mk_mterm (M.Mmatchloopleft (f l, dumloc i, be)) be.type_
     | Iwhile (c, b)       -> M.mk_mterm (M.Mwhile (f c, f b, None)) M.tunit
     | Iiter (_ids, _c, _b)         -> assert false
@@ -795,13 +795,13 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         | Ucdr               -> assert false
         | Uleft  t           -> let ee = f e in let t = for_type t in M.mk_mterm (Mleft  (t, f e)) (M.tor ee.type_ t)
         | Uright t           -> let ee = f e in let t = for_type t in M.mk_mterm (Mright (t, f e)) (M.tor t ee.type_)
-        | Uneg               -> assert false
-        | Uint               -> assert false
+        | Uneg               -> M.mk_mterm (Muminus (f e)) M.tint
+        | Uint               -> f e
         | Unot               -> M.mk_mterm (Mnot (f e)) M.tbool
         | Uabs               -> M.mk_mterm (Mabs (f e)) (M.tnat)
         | Uisnat             -> assert false
         | Usome              -> let ee = f e in M.mk_mterm (Mabs ee) (M.toption ee.type_)
-        | Usize              -> assert false
+        | Usize              -> M.mk_mterm (Mlength (f e)) M.tnat
         | Upack              -> M.mk_mterm (Mpack (f e)) M.tbytes
         | Uunpack t          -> M.mk_mterm (Munpack (for_type t, f e)) (for_type t)
         | Ublake2b           -> M.mk_mterm (Mblake2b (f e)) M.tbytes
@@ -819,10 +819,10 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         | Ult                -> assert false
         | Ule                -> assert false
       end
-    | Ibinop (op, _lhs, _rhs) -> begin
+    | Ibinop (op, a, b) -> begin
         match op with
-        | Badd       -> assert false
-        | Bsub       -> assert false
+        | Badd       -> M.mk_mterm (Mplus (f a, f b)) M.tnat
+        | Bsub       -> M.mk_mterm (Mminus (f a, f b)) M.tint
         | Bmul       -> assert false
         | Bediv      -> assert false
         | Blsl       -> assert false
@@ -863,13 +863,24 @@ let to_model (ir, env : T.ir * env) : M.model * env =
     | Imichelson (_a, _c, _v)           -> assert false
   in
 
-  let storage =
-    let si = M.mk_storage_item (dumloc "storage") MTvar (for_type ir.storage_type) (for_data ~t:ir.storage_type ir.storage_data) in
-    [si]
+  let rec get_default_value (t : T.type_) =
+    let f = get_default_value in
+    match t.node with
+    | Tnat
+    | Tint    -> T.Dint Big_int.zero_big_int
+    | Tstring -> T.Dstring ""
+    | Tpair (a, b) -> T.Dpair (f a, f b)
+    | _ -> assert false
   in
+  let storage =
+    List.map (fun (id, t) ->
+        M.mk_storage_item (dumloc id) MTvar (for_type t) (for_data ~t:t (get_default_value t))
+      ) ir.storage_list
+  in
+
   let for_entry (e : T.entry) : M.function__ =
     let name = dumloc e.name in
-    let args = [] in
+    let args = List.map (fun (id, t) -> (dumloc id, for_type t, None) ) e.args in
     let body = for_instr e.body in
     let fn : M.function_struct = M.mk_function_struct name body ~args:args in
     let node : M.function_node = M.Entry fn in
@@ -1020,7 +1031,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mduration _v       -> assert false
     | Mtimestamp _v      -> assert false
     | Mbytes v           -> A.ebytes v
-    | Munit              -> assert false
+    | Munit              -> A.etuple []
 
 
     (* control expression *)
@@ -1070,7 +1081,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mor (_l, _r)     -> assert false
     | Mxor (_l, _r)    -> assert false
     | Mnot _e          -> assert false
-    | Mplus (_l, _r)   -> assert false
+    | Mplus (l, r)     -> A.eapp (A.Foperator (dumloc (A.Arith A.Plus))) [f l; f r]
     | Mminus (_l, _r)  -> assert false
     | Mmult (_l, _r)   -> assert false
     | Mdivrat (_l, _r) -> assert false
@@ -1152,7 +1163,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mabs _a             -> assert false
     | Mconcat (_x, _y)    -> assert false
     | Mslice (_x, _s, _e) -> assert false
-    | Mlength _x          -> assert false
+    | Mlength x           -> A.eapp (A.Fident (dumloc "length")) [f x]
     | Misnone _x          -> assert false
     | Missome _x          -> assert false
     | Moptget _x          -> assert false
@@ -1191,8 +1202,8 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mvar(v, Vstorecol, t, d)           -> A.eterm v ?temp:(for_temp t) ?delta:(for_delta d)
     | Mvar(_v, Venumval, _t, _d)         -> assert false
     | Mvar(_v, Vdefinition, _t, _d)      -> assert false
-    | Mvar(_v, Vlocal, _t, _d)           -> assert false
-    | Mvar(_v, Vparam, _t, _d)           -> assert false
+    | Mvar(v, Vlocal, t, d)              -> A.eterm v ?temp:(for_temp t) ?delta:(for_delta d)
+    | Mvar(v, Vparam, t, d)              -> A.eterm v ?temp:(for_temp t) ?delta:(for_delta d)
     | Mvar(_v, Vfield, _t, _d)           -> assert false
     | Mvar(_, Vthe, _t, _d)              -> assert false
     | Mvar(_, Vstate, _t, _d)            -> assert false
@@ -1260,9 +1271,10 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Entry fs -> begin
         let id = fs.name in
         let body = for_expr fs.body in
+        let args = List.map (fun (id, t, _) -> (id, for_type t, None) ) fs.args in
 
         let ep = A.mk_entry_properties () in
-        let ed = A.mk_entry_decl id ep ~body:(body, exts) in
+        let ed = A.mk_entry_decl ~args:args id ep ~body:(body, exts) in
 
         A.mk_entry ed
       end
