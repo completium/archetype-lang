@@ -320,6 +320,7 @@ and asset_decl =
 and record_decl =
   lident
   * field list
+  * expr option
   * exts
 
 and entry_decl =
@@ -519,7 +520,7 @@ let mk_enum_decl ?exts l : enum_decl = l, exts
 
 let mk_asset_decl ?(fs=[]) ?(sfs=[]) ?(aos=[]) ?(apos=[]) ?ao ?exts id : asset_decl = id, fs, sfs, aos, apos, ao, exts
 
-let mk_record_decl ?(fs=[]) ?exts id : record_decl = id, fs, exts
+let mk_record_decl ?(fs=[]) ?pos ?exts id : record_decl = id, fs, pos, exts
 
 let mk_entry_decl ?(args=[]) ?body ?exts id ep : entry_decl = id, args, ep, body, exts
 

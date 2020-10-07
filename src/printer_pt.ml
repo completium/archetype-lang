@@ -1139,11 +1139,12 @@ let rec pp_declaration fmt { pldesc = e; _ } =
       (pp_do_if (List.length shadow_fields > 0) ((fun fmt -> Format.fprintf fmt "shadow {@\n  @[%a@]@\n}" (pp_list ";@\n" pp_field)))) shadow_fields
       (pp_list " " pp_asset_post_option) apo
 
-  | Drecord (id, fields, exts) ->
-    Format.fprintf fmt "record%a %a %a@\n"
+  | Drecord (id, fields, pos, exts) ->
+    Format.fprintf fmt "record%a %a %a%a@\n"
       pp_extensions exts
       pp_id id
       (pp_do_if (List.length fields > 0) ((fun fmt -> Format.fprintf fmt " {@\n  @[%a@]@\n}" (pp_list ";@\n" pp_field)))) fields
+      (pp_option (fun fmt x -> Format.fprintf fmt " at (%a)" (pp_expr e_default PNone) x)) pos
 
   | Dentry (id, args, props, code, exts) ->
     Format.fprintf fmt "entry%a %a%a%a"

@@ -5073,7 +5073,7 @@ let for_asset_specs
 
 (* -------------------------------------------------------------------- *)
 let for_record_decl (env : env) (decl : PT.record_decl loced) =
-  let name, fields, _ = unloc decl in
+  let name, fields, _pos, _ = unloc decl in
 
   let fields =
     let get_field { pldesc = PT.Ffield (x, ty, e, _) } = (x, ty, e) in

@@ -562,10 +562,13 @@ type_s_unloc:
 | /* empty */ { [] }
 | SHADOW x=asset_fields { x }
 
+%inline record_position:
+| AT x=paren(expr) { x }
+
 record:
-| RECORD exts=extensions? x=ident fields=asset_fields?
+| RECORD exts=extensions? x=ident fields=asset_fields? pos=record_position?
 { let fs = match fields with | None -> [] | Some x -> x in
-  Drecord (x, fs, exts) }
+  Drecord (x, fs, pos, exts) }
 
 asset:
 | ASSET exts=extensions? ops=bracket(asset_operation)? x=ident opts=asset_options?
@@ -812,7 +815,7 @@ expr_r:
  | IF c=expr THEN t=expr ELSE e=expr
      { Eif (c, t, Some e) }
 
- | xs=paren(snl2(COMMA, simple_expr))
+ | xs=paren(snl2(COMMA, expr))
      { Etuple xs }
 
  | x=expr op=assignment_operator_expr y=expr
