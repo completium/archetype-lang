@@ -1,0 +1,37 @@
+archetype fa2
+
+asset tokens {
+    id : nat
+}
+
+asset ledger identified by token holder to big_map {
+    token      : nat;
+    holder     : address;
+    amount     : nat = 0;
+}
+
+record transfer_destination {
+    %to          : address;
+    token_id     : nat;
+    token_amount : nat
+}
+
+entry add_token (new_token_id : nat, totalsupply : nat) {
+    failif {
+        f0 : tokens.contains(new_token_id);
+    }
+    effect {
+        ledger.add({ new_token_id; caller; totalsupply });
+        tokens.add ({ new_token_id });
+    }
+}
+
+entry %transfer(%from : address, tds : list<transfer_destination>) {
+    iter i from 0 to length(tds) - 1 do
+        var td = nth(tds, abs(i));
+        dorequire(tokens.contains(td.token_id), "FA2_TOKEN_UNDEFINED");
+        dorequire(ledger[(td.token_id, %from)].amount >= td.token_amount, "FA2_INSUFFICIENT_BALANCE");
+        ledger.update((td.token_id, %from), { amount -= td.token_amount });
+        ledger.addupdate((td.token_id, td.%to), { amount += td.token_amount });
+    done;
+}
