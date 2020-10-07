@@ -602,7 +602,7 @@ let to_ir (dir, env : T.dprogram * env) : T.ir * env =
         let v = g v in
         match e with
         | Dvar t when Option.is_some t.annotation -> Iassign(Option.get t.annotation, v)
-        | Doperations -> T.iskip
+        | Doperations -> Iassign("operations", v)
         | _ -> assert false
       end
     | Dfail      e           -> Iunop (Ufail, g e)
@@ -724,7 +724,7 @@ let to_model (ir, env : T.ir * env) : M.model * env =
     let f = for_instr in
     match i with
     | Iseq []                      -> assert false
-    | Iseq _l                      -> assert false
+    | Iseq l                       -> M.seq (List.map f l)
     | IletIn (_id, _v, _b, _)      -> assert false
     | Ivar _id                     -> assert false
     | Icall (_id, _args, _)        -> assert false
@@ -750,10 +750,10 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         | Zself_address         -> assert false
         | Znone _t              -> assert false
         | Zunit                 -> assert false
-        | Znil _t               -> assert false
-        | Zemptyset _t          -> assert false
-        | Zemptymap (_k, _v)    -> assert false
-        | Zemptybigmap (_k, _v) -> assert false
+        | Znil t                -> M.mk_mterm (Mlitlist []) (M.tlist (for_type t))
+        | Zemptyset t           -> M.mk_mterm (Mlitset [])  (M.tset  (for_type t))
+        | Zemptymap (k, v)      -> M.mk_mterm (Mlitmap [])  (M.tmap  (for_type k) (for_type v))
+        | Zemptybigmap (k, v)   -> M.mk_mterm (Mlitmap [])  (M.tbig_map (for_type k) (for_type v))
       end
     | Iunop (op, e) -> begin
         match op with
@@ -843,7 +843,25 @@ let to_model (ir, env : T.ir * env) : M.model * env =
   in
   let functions = List.map for_entry ir.entries in
 
-  M.mk_model (dumloc ir.name) ~functions:functions ~storage:storage, env
+  let model = M.mk_model (dumloc ir.name) ~functions:functions ~storage:storage in
+
+  let opt (model : M.model) : M.model =
+
+    let remove_operations_nil (model : M.model) : M.model =
+      let rec aux ctx (mt : M.mterm) : M.mterm =
+        match mt.node with
+        | Massign(ValueAssign, _, Avarstore {pldesc = "operations"}, { node = (Mlitlist []) }) -> M.seq []
+        | _ -> M.map_mterm (aux ctx) mt
+      in
+      M.map_mterm_model aux model
+    in
+
+    model |> remove_operations_nil |> Gen_transform.flat_sequence
+  in
+
+  let model = opt model in
+
+  model, env
 
 let to_archetype (model, _env : M.model * env) : A.archetype =
   let rec for_type (t : M.type_) : A.type_t =
@@ -941,7 +959,12 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mfor (_i, _c, _b, _l)      -> assert false
     | Miter (_i, _a, _b, _c, _l) -> assert false
     | Mwhile (_c, _b, _l)        -> assert false
-    | Mseq _is                   -> assert false
+    | Mseq l                     -> begin
+        match List.rev l with
+        | []   -> assert false
+        | [e]  -> f e
+        | e::t -> List.fold_left (fun accu x -> A.eseq (f x) accu) (f e) t
+      end
     | Mreturn _x                 -> assert false
     | Mlabel _i                  -> assert false
     | Mmark (_i, _x)             -> assert false
@@ -1003,7 +1026,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Masset _l       -> assert false
     | Massets _l      -> assert false
     | Mlitset _l      -> assert false
-    | Mlitlist _l     -> assert false
+    | Mlitlist l      -> A.earray (List.map f l)
     | Mlitmap _l      -> assert false
     | Mlitrecord _l   -> assert false
 
