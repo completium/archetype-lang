@@ -723,33 +723,67 @@ let to_model (ir, env : T.ir * env) : M.model * env =
   let rec for_instr (i : T.instruction) : M.mterm =
     let f = for_instr in
     match i with
-    | Iseq []                      -> assert false
     | Iseq l                       -> M.seq (List.map f l)
     | IletIn (_id, _v, _b, _)      -> assert false
     | Ivar _id                     -> assert false
     | Icall (_id, _args, _)        -> assert false
     | Iassign (id, v)              -> M.mk_mterm (M.Massign (ValueAssign, M.tunit, Avarstore (dumloc id), f v)) M.tunit
     | IassignRec (_id, _s, _n, _v) -> assert false
-    | Iif (c, t, e, _ty)           -> M.mk_mterm (M.Mif (f c, f t, Some (f e))) M.tunit
-    | Iifnone (_v, _t, _id, _s, _) -> assert false
-    | Iifleft (_v, _, _r, _, _l, _)-> assert false
-    | Iifcons (_v, _, _, _t, _e, _)-> assert false
-    | Iloopleft (_l, _i, _b)       -> assert false
-    | Iwhile (_c, _b)              -> assert false
+    | Iif (c, t, e, ty) -> begin
+        let ce = f c in
+        let te = f t in
+        let ee = f e in
+        match ty.node with
+        | T.Tunit -> begin
+            let ee =
+              match ee with
+              | {node = Mseq []} -> None
+              | v -> Some v
+            in
+            M.mk_mterm (M.Mif (ce, te, ee)) M.tunit
+          end
+        | _ -> M.mk_mterm (M.Mexprif (ce, te, ee)) (for_type ty)
+      end
+    | Iifnone (x, ne, id, v, ty) -> begin
+        let xe  = f x in
+        let nee = f ne in
+        let ve  = f v in
+        match ty.node with
+        | T.Tunit -> M.mk_mterm (M.Minstrmatchoption (xe, dumloc id, ve, nee)) M.tunit
+        | _       -> M.mk_mterm (M.Mmatchoption (xe, dumloc id, ve, nee)) (for_type ty)
+      end
+    | Iifleft (x, lid, l, rid, r, ty) -> begin
+        let xe = f x in
+        let le = f l in
+        let re = f r in
+        match ty.node with
+        | T.Tunit -> M.mk_mterm (M.Minstrmatchor (xe, dumloc lid, le, dumloc rid, re)) M.tunit
+        | _       -> M.mk_mterm (M.Mmatchor (xe, dumloc lid, le, dumloc rid, re)) (for_type ty)
+      end
+    | Iifcons (x, hid, tid, ht, n, ty) -> begin
+        let xe  = f x in
+        let hte = f ht in
+        let ne  = f n in
+        match ty.node with
+        | T.Tunit -> M.mk_mterm (M.Minstrmatchlist (xe, dumloc hid, dumloc tid, hte, ne)) M.tunit
+        | _       -> M.mk_mterm (M.Mmatchlist (xe, dumloc hid, dumloc tid, hte, ne)) (for_type ty)
+    end
+    | Iloopleft (l, i, b) -> let be = f b in M.mk_mterm (M.Mmatchloopleft (f l, dumloc i, be)) be.type_
+    | Iwhile (c, b)       -> M.mk_mterm (M.Mwhile (f c, f b, None)) M.tunit
     | Iiter (_ids, _c, _b)         -> assert false
     | Izop op -> begin
         match op with
-        | Znow                  -> assert false
-        | Zamount               -> assert false
-        | Zbalance              -> assert false
-        | Zsource               -> assert false
-        | Zsender               -> assert false
+        | Znow                  -> M.mk_mterm  Mnow         (M.tdate)
+        | Zamount               -> M.mk_mterm  Mtransferred (M.ttez)
+        | Zbalance              -> M.mk_mterm  Mbalance     (M.ttez)
+        | Zsource               -> M.mk_mterm  Msource      (M.taddress)
+        | Zsender               -> M.mk_mterm  Mcaller      (M.taddress)
         | Zaddress              -> assert false
-        | Zchain_id             -> assert false
+        | Zchain_id             -> M.mk_mterm  Mchainid     (M.tchainid)
         | Zself _               -> assert false
-        | Zself_address         -> assert false
-        | Znone _t              -> assert false
-        | Zunit                 -> assert false
+        | Zself_address         -> M.mk_mterm  Mselfaddress (M.taddress)
+        | Znone t               -> M.mk_mterm  Mnone        (M.toption (for_type t))
+        | Zunit                 -> M.mk_mterm  Munit         M.tunit
         | Znil t                -> M.mk_mterm (Mlitlist []) (M.tlist (for_type t))
         | Zemptyset t           -> M.mk_mterm (Mlitset [])  (M.tset  (for_type t))
         | Zemptymap (k, v)      -> M.mk_mterm (Mlitmap [])  (M.tmap  (for_type k) (for_type v))
@@ -759,21 +793,21 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         match op with
         | Ucar               -> assert false
         | Ucdr               -> assert false
-        | Uleft  _t          -> assert false
-        | Uright _t          -> assert false
+        | Uleft  t           -> let ee = f e in let t = for_type t in M.mk_mterm (Mleft  (t, f e)) (M.tor ee.type_ t)
+        | Uright t           -> let ee = f e in let t = for_type t in M.mk_mterm (Mright (t, f e)) (M.tor t ee.type_)
         | Uneg               -> assert false
         | Uint               -> assert false
-        | Unot               -> assert false
-        | Uabs               -> assert false
+        | Unot               -> M.mk_mterm (Mnot (f e)) M.tbool
+        | Uabs               -> M.mk_mterm (Mabs (f e)) (M.tnat)
         | Uisnat             -> assert false
-        | Usome              -> assert false
+        | Usome              -> let ee = f e in M.mk_mterm (Mabs ee) (M.toption ee.type_)
         | Usize              -> assert false
-        | Upack              -> assert false
-        | Uunpack _t         -> assert false
-        | Ublake2b           -> assert false
-        | Usha256            -> assert false
-        | Usha512            -> assert false
-        | Uhash_key          -> assert false
+        | Upack              -> M.mk_mterm (Mpack (f e)) M.tbytes
+        | Uunpack t          -> M.mk_mterm (Munpack (for_type t, f e)) (for_type t)
+        | Ublake2b           -> M.mk_mterm (Mblake2b (f e)) M.tbytes
+        | Usha256            -> M.mk_mterm (Msha256 (f e)) M.tbytes
+        | Usha512            -> M.mk_mterm (Msha512 (f e)) M.tbytes
+        | Uhash_key          -> M.mk_mterm (Mhashkey (f e)) M.tkeyhash
         | Ufail              -> M.failg (f e)
         | Ucontract (_t, _a) -> assert false
         | Usetdelegate       -> assert false

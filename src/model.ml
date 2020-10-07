@@ -956,6 +956,7 @@ let tbytes        = Tbuiltin Bbytes
 let ttez          = Tbuiltin Bcurrency
 let tkey          = Tbuiltin Bkey
 let tkeyhash      = Tbuiltin Bkeyhash
+let tdate         = Tbuiltin Bdate
 let ttimestamp    = Tbuiltin Btimestamp
 let taddress      = Tbuiltin Baddress
 let toption t     = Toption t
