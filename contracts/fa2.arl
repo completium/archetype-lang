@@ -4,10 +4,16 @@ asset tokens {
     id : nat
 }
 
-asset ledger identified by token holder to big_map {
+asset ledger identified by token owner to big_map {
     token  : nat;
-    holder : address;
+    owner  : address;
     amount : nat = 0;
+}
+
+asset operator identified by op_addr op_token_id op_owner_addr to big_map {
+    op_addr       : address;
+    op_token_id   : nat;
+    op_owner_addr : address;
 }
 
 record transfer_destination {
@@ -28,28 +34,47 @@ entry add_token (new_token_id : nat, totalsupply : nat) {
 
 entry %transfer(%from : address, tds : list<transfer_destination>) {
     for td in tds do
-        dorequire(tokens.contains(td.token_id), "FA2_TOKEN_UNDEFINED");
-        dorequire(ledger[(td.token_id, %from)].amount >= td.token_amount, "FA2_INSUFFICIENT_BALANCE");
-        ledger.update((td.token_id, %from), { amount -= td.token_amount });
-        ledger.addupdate((td.token_id, td.%to), { amount += td.token_amount });
+        if caller = %from or operator.contains((caller,td.token_id,%from)) then begin
+            dorequire(tokens.contains(td.token_id), "FA2_TOKEN_UNDEFINED");
+            dorequire(ledger[(td.token_id, %from)].amount >= td.token_amount, "FA2_INSUFFICIENT_BALANCE");
+            ledger.update((td.token_id, %from), { amount -= td.token_amount });
+            ledger.addupdate((td.token_id, td.%to), { amount += td.token_amount });
+        end
     done;
 }
 
 record balance_of_request {
-    owner : address;
+    bo_owner : address;
     btoken_id : nat;
 }
 
 record balance_of_response {
     request : balance_of_request;
-    bor_balance : nat;
+    balance_ : nat;
 }
 
 getter balance_of (brs : list<balance_of_request>) : list<balance_of_response> {
     return map(brs, br -> {
         request = br;
-        bor_balance = (if ledger.contains((br.btoken_id,br.owner)) then
-                        ledger[(br.btoken_id,br.owner)].amount
-                       else 0)
+        balance_ = (if ledger.contains((br.btoken_id,br.bo_owner))
+                    then ledger[(br.btoken_id,br.bo_owner)].amount
+                    else 0)
     })
+}
+
+record operator_param {
+    opp_owner    : address;
+    opp_operator : address;
+    opp_token_id : nat
+}
+
+entry update_operators (upl : list<or<operator_param, operator_param>>) {
+    for up in upl do
+        match_or up with
+        | left(param) -> // add
+            operator.add({ param.opp_operator; param.opp_token_id; param.opp_owner })
+        | right(param) -> // remove
+            operator.remove((param.opp_operator, param.opp_token_id, param.opp_owner))
+        end;
+    done;
 }

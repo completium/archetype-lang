@@ -607,7 +607,7 @@ let to_ir (dir, env : T.dprogram * env) : T.ir * env =
       end
     | Dfail      e           -> Iunop (Ufail, g e)
     | Dexec     (_id, _arg)  -> assert false
-    | Dif       (_c, _t, _e) -> assert false
+    | Dif       (c, t, e) -> Iif (g c, Iseq (List.map _f t), Iseq (List.map _f e), T.tunit)
     | Difcons   (_c, _t, _e) -> assert false
     | Difleft   (_c, _t, _e) -> assert false
     | Difsome   (_c, _t, _e) -> assert false
@@ -791,8 +791,8 @@ let to_model (ir, env : T.ir * env) : M.model * env =
       end
     | Iunop (op, e) -> begin
         match op with
-        | Ucar               -> assert false
-        | Ucdr               -> assert false
+        | Ucar               -> M.mk_mterm (Mtupleaccess (f e, Big_int.zero_big_int))  (M.tunit)
+        | Ucdr               -> M.mk_mterm (Mtupleaccess (f e, Big_int.unit_big_int))  (M.tunit)
         | Uleft  t           -> let ee = f e in let t = for_type t in M.mk_mterm (Mleft  (t, f e)) (M.tor ee.type_ t)
         | Uright t           -> let ee = f e in let t = for_type t in M.mk_mterm (Mright (t, f e)) (M.tor t ee.type_)
         | Uneg               -> M.mk_mterm (Muminus (f e)) M.tint
@@ -823,7 +823,7 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         match op with
         | Badd       -> M.mk_mterm (Mplus (f a, f b)) M.tnat
         | Bsub       -> M.mk_mterm (Mminus (f a, f b)) M.tint
-        | Bmul       -> assert false
+        | Bmul       -> M.mk_mterm (Mmult (f a, f b)) M.tint
         | Bediv      -> assert false
         | Blsl       -> assert false
         | Blsr       -> assert false
@@ -835,7 +835,7 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         | Bmem       -> assert false
         | Bconcat    -> assert false
         | Bcons      -> assert false
-        | Bpair      -> assert false
+        | Bpair      -> M.mk_mterm (Mtuple [f a; f b]) (M.tunit)
       end
     | Iterop (op, _a1, _a2, _a3) -> begin
         match op with
