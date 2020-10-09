@@ -5504,6 +5504,7 @@ let records_of_rdecls rdecls =
 
     A.{ name   = decl.rd_name;
         fields = List.map for_field decl.rd_fields;
+        pos    = Pnode [];
         loc    = loc decl.rd_name; }
 
   in List.map for1 rdecls

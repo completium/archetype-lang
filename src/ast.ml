@@ -645,9 +645,15 @@ type 'id asset_struct = {
 
 type asset = lident asset_struct
 
+type 'a position =
+  | Pleaf of 'a
+  | Pnode of 'a position list
+[@@deriving show {with_path = false}]
+
 type 'id record_struct = {
   name    : 'id;
   fields  : 'id decl_gen list;
+  pos     : 'id position;
   loc     : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]

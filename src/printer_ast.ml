@@ -1007,10 +1007,15 @@ let pp_asset fmt (a : lident asset_struct) =
           Format.fprintf fmt " with {@\n  @[%a@]@\n}"
             (pp_list ";@\n" pp_label_term))) a.specs
 
+let rec pp_position pp fmt = function
+| Pleaf x -> pp fmt x
+| Pnode l -> (pp_paren (pp_list "," (pp_position pp))) fmt l
+
 let pp_record fmt (r : record) =
-  Format.fprintf fmt "record %a {@\n  @[%a@]@\n}@\n"
+  Format.fprintf fmt "record %a {@\n  @[%a@]@\n}@\nas %a@\n"
     pp_id r.name
     (pp_list "@\n" pp_field) r.fields
+    (pp_position pp_id) r.pos
 
 let pp_enum_item fmt (ei : lident enum_item_struct) =
   Format.fprintf fmt "| %a%a%a"
