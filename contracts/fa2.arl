@@ -16,106 +16,107 @@ variable permissions_descriptor : operator_transfer_policy * owner_hook_policy *
     = (Owner_or_operator_transfer, Owner_no_hook, Owner_no_hook)
 
 asset tokens {
-    id : nat
+  id : nat
 }
 
 asset ledger identified by token owner to big_map {
-    token  : nat;
-    owner  : address;
-    amount : nat = 0;
+  token  : nat;
+  owner  : address;
+  amount : nat = 0;
 }
 
 asset operator identified by op_addr op_token_id op_owner_addr to big_map {
-    op_addr       : address;
-    op_token_id   : nat;
-    op_owner_addr : address;
+  op_addr       : address;
+  op_token_id   : nat;
+  op_owner_addr : address;
 }
 
 record transfer_destination {
-    %to          : address;
-    token_id     : nat;
-    token_amount : nat
+  %to          : address;
+  token_id     : nat;
+  token_amount : nat
 }
 
 function apply_transfer_policy (%from : address, tr : transfer_destination) : option<string> {
-    var res : option<string> =
-        match permissions_descriptor[0] with
-        | No_transfer ->
-            if caller = admin then
-                none<string>
-            else
-                some("FA2_TX_DENIED")
-        | Owner_transfer ->
-            if caller = %from and ledger.contains((tr.token_id, %from)) then
-                none<string>
-            else
-                some("FA2_NOT_OWNER")
-        | Owner_or_operator_transfer ->
-            if (%caller = %from and ledger.contains((tr.token_id, %from))) or
-            operator.contains((caller,tr.token_id,%from)) then
-                none<string>
-            else
-                some("FA2_NOT_OPERATOR")
-        end;
-    return res
+  var res : option<string> =
+    match permissions_descriptor[0] with
+    | No_transfer ->
+      if caller = admin then
+        none<string>
+      else
+        some("FA2_TX_DENIED")
+    | Owner_transfer ->
+      if caller = %from and ledger.contains((tr.token_id, %from)) then
+        none<string>
+      else
+        some("FA2_NOT_OWNER")
+    | Owner_or_operator_transfer ->
+      if (%caller = %from and ledger.contains((tr.token_id, %from))) or
+      operator.contains((caller,tr.token_id,%from)) then
+        none<string>
+      else
+        some("FA2_NOT_OPERATOR")
+    end;
+  return res
 }
 
 entry add_token (new_token_id : nat, totalsupply : nat) {
-    failif {
-        f0 : tokens.contains(new_token_id);
-    }
-    effect {
-        ledger.add({ new_token_id; caller; totalsupply });
-        tokens.add ({ new_token_id });
-    }
+  failif {
+    f0 : tokens.contains(new_token_id);
+  }
+  effect {
+    ledger.add({ new_token_id; caller; totalsupply });
+    tokens.add ({ new_token_id });
+  }
 }
 
 entry %transfer(%from : address, tds : list<transfer_destination>) {
-    for td in tds do
-        var tp = apply_transfer_policy(%from, td);
-        if isnone(tp) then begin
-            dorequire(tokens.contains(td.token_id), "FA2_TOKEN_UNDEFINED");
-            dorequire(ledger[(td.token_id, %from)].amount >= td.token_amount, "FA2_INSUFFICIENT_BALANCE");
-            ledger.update((td.token_id, %from), { amount -= td.token_amount });
-            ledger.addupdate((td.token_id, td.%to), { amount += td.token_amount });
-        end else begin
-            fail(opt_get(tp))
-        end
-    done;
+  for td in tds do
+    match_option apply_transfer_policy(%from, td) with
+    | some(msg) ->
+      fail(msg)
+    | none -> begin
+        dorequire(tokens.contains(td.token_id), "FA2_TOKEN_UNDEFINED");
+        dorequire(ledger[(td.token_id, %from)].amount >= td.token_amount, "FA2_INSUFFICIENT_BALANCE");
+        ledger.update((td.token_id, %from), { amount -= td.token_amount });
+        ledger.addupdate((td.token_id, td.%to), { amount += td.token_amount });
+      end
+    end
+  done;
 }
 
 record balance_of_request {
-    bo_owner : address;
-    btoken_id : nat;
+  bo_owner : address;
+  btoken_id : nat;
 }
 
 record balance_of_response {
-    request : balance_of_request;
-    balance_ : nat;
+  request : balance_of_request;
+  balance_ : nat;
 }
 
 getter balance_of (brs : list<balance_of_request>) : list<balance_of_response> {
-    return map(brs, br -> {
-        request = br;
-        balance_ = (if ledger.contains((br.btoken_id,br.bo_owner))
-                    then ledger[(br.btoken_id,br.bo_owner)].amount
-                    else 0)
-    })
+  return map(brs, br -> {
+    request = br;
+    balance_ = (if ledger.contains((br.btoken_id,br.bo_owner))
+                then ledger[(br.btoken_id,br.bo_owner)].amount
+                else 0)
+  })
 }
 
 record operator_param {
-    opp_owner    : address;
-    opp_operator : address;
-    opp_token_id : nat
+  opp_owner    : address;
+  opp_operator : address;
+  opp_token_id : nat
 }
 
 entry update_operators (upl : list<or<operator_param, operator_param>>) {
-    for up in upl do
-        match_or up with
-        | left(param) -> // add
-            operator.add({ param.opp_operator; param.opp_token_id; param.opp_owner })
-        | right(param) -> // remove
-            operator.remove((param.opp_operator, param.opp_token_id, param.opp_owner))
-        end;
-    done;
+  for up in upl do
+    match_or up with
+    | left(param) -> // add
+      operator.add({ param.opp_operator; param.opp_token_id; param.opp_owner })
+    | right(param) -> // remove
+      operator.remove((param.opp_operator, param.opp_token_id, param.opp_owner))
+    end;
+  done;
 }
