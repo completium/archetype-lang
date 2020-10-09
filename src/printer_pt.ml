@@ -468,7 +468,7 @@ let rec pp_expr outer pos fmt a =
   | Elambda (rt, id, at, e) ->
 
     let pp fmt (rt, id, at, e) =
-      Format.fprintf fmt "lambda%a(%a -> %a)"
+      Format.fprintf fmt "lambda%a(%a -> @[%a@])"
         (pp_option (fun fmt -> Format.fprintf fmt "<%a>" pp_type)) rt
         (fun fmt (id, at) ->
            match at with

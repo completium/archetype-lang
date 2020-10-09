@@ -493,7 +493,18 @@ let pp_mterm fmt (mt : mterm) =
                           k
                           f v)) l
 
-    (* access *)
+    | Mlambda (rt, id, at, e) ->
+      let pp fmt (rt, id, at, e) =
+        Format.fprintf fmt "lambda<%a>((%a : %a) -> @[%a@])"
+          pp_type rt
+          pp_id id
+          pp_type at
+          f e
+      in
+      pp fmt (rt, id, at, e)
+
+
+      (* access *)
 
     | Mdot (e, i) ->
       Format.fprintf fmt "%a.%a"

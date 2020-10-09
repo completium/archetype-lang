@@ -769,7 +769,8 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         | _       -> M.mk_mterm (M.Mmatchlist (xe, dumloc hid, dumloc tid, hte, ne)) (for_type ty)
       end
     | Iloopleft (l, i, b) -> let be = f b in M.mk_mterm (M.Mmatchloopleft (f l, dumloc i, be)) be.type_
-    | Iwhile (c, b)       -> M.mk_mterm (M.Mwhile (f c, f b, None)) M.tunit
+    | Ilambda (_rt, _id, _at, _e)  -> assert false
+    | Iwhile (c, b)                -> M.mk_mterm (M.Mwhile (f c, f b, None)) M.tunit
     | Iiter (_ids, _c, _b)         -> assert false
     | Izop op -> begin
         match op with
@@ -836,6 +837,8 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         | Bconcat    -> assert false
         | Bcons      -> assert false
         | Bpair      -> M.mk_mterm (Mtuple [f a; f b]) (M.tunit)
+        | Bexec      -> assert false
+        | Bapply     -> assert false
       end
     | Iterop (op, _a1, _a2, _a3) -> begin
         match op with
@@ -1059,6 +1062,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mlitlist l      -> A.earray (List.map f l)
     | Mlitmap _l      -> assert false
     | Mlitrecord _l   -> assert false
+    | Mlambda (_rt, _id, _at, _e) -> assert false
 
     (* access *)
 

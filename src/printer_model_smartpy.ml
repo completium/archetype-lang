@@ -731,6 +731,8 @@ let pp_model fmt (model : model) =
                             k
                             f v)) l
 
+      | Mlambda (_rt, _id, _at, _e) -> emit_error (UnsupportedTerm ("Mlambda"))
+
       (* access *)
 
       | Mdot (e, i) ->

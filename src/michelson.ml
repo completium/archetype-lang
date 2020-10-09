@@ -238,6 +238,8 @@ type bin_operator =
   | Bconcat
   | Bcons
   | Bpair
+  | Bexec
+  | Bapply
 [@@deriving show {with_path = false}]
 
 type ter_operator =
@@ -289,6 +291,7 @@ type instruction =
   | Iwhile      of instruction * instruction
   | Iiter       of ident list * instruction * instruction
   | Iloopleft   of instruction * ident * instruction
+  | Ilambda     of type_ * ident * type_ * instruction
   | Izop        of z_operator
   | Iunop       of un_operator * instruction
   | Ibinop      of bin_operator * instruction * instruction
@@ -593,6 +596,8 @@ let cmp_bin_operator lhs rhs =
   | Bconcat, Bconcat   -> true
   | Bcons, Bcons       -> true
   | Bpair, Bpair       -> true
+  | Bexec, Bexec       -> true
+  | Bapply, Bapply     -> true
   | _ -> false
 
 let cmp_ter_operator lhs rhs =

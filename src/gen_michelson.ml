@@ -543,6 +543,7 @@ let to_ir (model : M.model) : T.ir =
         | _ -> assert false
       end
     | Mlitrecord l -> T.Irecord (List.map (fun (_, x) -> f x) l)
+    | Mlambda (rt, id, at, e) -> T.Ilambda (ft rt, unloc id, ft at, f e)
 
     (* access *)
 
@@ -1120,6 +1121,12 @@ let to_michelson (ir : T.ir) : T.michelson =
         T.SEQ [l; T.LOOP_LEFT [b; SWAP; DROP 1]], env
       end
 
+    | Ilambda (rt, id, at, e) -> begin
+        let e, _env = fe (add_var_env env id) e in
+
+        T.LAMBDA (rt, at, [e; SWAP; DROP 1]), env
+      end
+
     | Izop op -> begin
         let c =
           match op with
@@ -1194,6 +1201,8 @@ let to_michelson (ir : T.ir) : T.michelson =
           | Bconcat    -> T.CONCAT
           | Bcons      -> T.CONS
           | Bpair      -> T.PAIR
+          | Bexec      -> T.EXEC
+          | Bapply     -> T.APPLY
         in
         let rhs, env = fe env rhs in
         let lhs, env = fe env lhs in

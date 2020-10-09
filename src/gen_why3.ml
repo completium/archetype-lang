@@ -1726,6 +1726,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                    ) ([] : loc_term list) l)
       else Temptycoll (dl map)
     | Mlitrecord l -> Trecord (None, List.map (fun (n,v) -> (dl n, map_mterm m ctx v)) l)
+    | Mlambda (_rt, _id, _at, _e) -> assert false
+
 
     (* access *)
 

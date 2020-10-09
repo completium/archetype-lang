@@ -540,6 +540,16 @@ let rec pp_pterm fmt (pterm : pterm) =
       in
       (pp_no_paren pp) fmt (t, x)
 
+    | Plambda (rt, id, at, e) ->
+      let pp fmt (rt, id, at, e) =
+        Format.fprintf fmt "lambda<%a>((%a : %a) -> @[%a@])"
+          pp_ptyp rt
+          pp_id id
+          pp_ptyp at
+          pp_pterm e
+      in
+      (pp_no_paren pp) fmt (rt, id, at, e)
+
     | Pnone -> pp_str fmt "none"
 
     | Psome a ->

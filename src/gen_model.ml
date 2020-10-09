@@ -372,6 +372,7 @@ let to_model (ast : A.ast) : M.model =
       | A.Psome a                              -> M.Msome (f a)
       | A.Pleft (t, x)                         -> M.Mleft (ptyp_to_type t, f x)
       | A.Pright (t, x)                        -> M.Mright (ptyp_to_type t, f x)
+      | A.Plambda (rt, id, at, e)              -> M.Mlambda (ptyp_to_type rt, id, ptyp_to_type at, f e)
       | A.Pcast (src, dst, v)                  -> begin
           let v = f v in
           match src, dst, v with

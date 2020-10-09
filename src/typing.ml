@@ -2871,10 +2871,25 @@ let rec for_xexpr
             (A.Pright (ty, x))
       end
 
-    | Elambda _ -> begin
-        (* TODO *)
-        Env.emit_error env (loc tope, InvalidExpression);
-        bailout ()
+    | Elambda (rt, id, at, e) -> begin
+        (* TODO: check typing *)
+        let rt, at =
+          match rt, at with
+          | Some rt, Some at -> rt, at
+          | _ -> begin
+              Env.emit_error env (loc tope, InvalidExpression);
+              bailout ()
+            end
+        in
+
+        let aty = for_type_exn env at in
+        let rty = for_type_exn env rt in
+
+        let e = for_xexpr (Env.Local.push env (id, aty)) ~ety:rty e in
+
+        mk_sp
+          (Some (A.Tlambda (aty, rty)))
+          (A.Plambda (aty, id, rty, e))
       end
 
     | Ematchwith (e, bs) -> begin

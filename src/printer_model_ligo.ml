@@ -700,6 +700,9 @@ let pp_model_internal fmt (model : model) b =
                           f v)) l
         pp_type mtt.type_
 
+    | Mlambda (_rt, _id, _at, _e) -> emit_error (UnsupportedTerm ("Mlambda"))
+
+
     (* access *)
 
     | Mdot (e, i) ->

@@ -220,6 +220,7 @@ let rec pp_instruction fmt (i : instruction) =
   | Iwhile (c, b)              -> pp "while (%a) do@\n  @[%a@]@\ndone" f c f b
   | Iiter (ids, c, b)          -> pp "iter %a on (%a) do@\n  @[%a@]@\ndone" (pp_list ", " pp_id) ids f c f b
   | Iloopleft (l, _, b)        -> pp "@[loop_left (%a) do@\n  @[%a@]@\ndone@]" f l f b
+  | Ilambda (rt, id, at, e)    -> pp "lambda<%a>((%s : %a) -> %a)" pp_type rt id pp_type at f e
   | Izop op -> begin
       match op with
       | Znow                -> pp "now"
@@ -285,6 +286,8 @@ let rec pp_instruction fmt (i : instruction) =
       | Bconcat    -> pp "concat(%a, %a)"    f lhs f rhs
       | Bcons      -> pp "cons(%a, %a)"      f lhs f rhs
       | Bpair      -> pp "pair(%a, %a)"      f lhs f rhs
+      | Bexec      -> pp "exec(%a, %a)"      f lhs f rhs
+      | Bapply     -> pp "apply(%a, %a)"     f lhs f rhs
     end
   | Iterop (op, a1, a2, a3) -> begin
       match op with
@@ -427,6 +430,8 @@ let rec pp_dexpr fmt (de : dexpr) =
       | Bconcat    -> pp "concat(%a, %a)"    f lhs f rhs
       | Bcons      -> pp "cons(%a, %a)"      f lhs f rhs
       | Bpair      -> pp "pair(%a, %a)"      f lhs f rhs
+      | Bexec      -> pp "exec(%a, %a)"      f lhs f rhs
+      | Bapply     -> pp "apply(%a, %a)"     f lhs f rhs
     end
   | Dtop (op, a1, a2, a3) -> begin
       match op with

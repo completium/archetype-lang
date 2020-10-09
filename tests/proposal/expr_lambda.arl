@@ -3,12 +3,15 @@ archetype expr_lambda
 variable res : int = 0
 
 entry exec () {
+  specification {
+    s0: res = 1;
+  }
   effect {
     var lambda_0 : lambda<nat, int> = lambda<int>((x : nat) -> x - 1);
-    var lambda_1 : lambda<nat, int> = lambda<int>(x -> x - 1);
-    var lambda_2 : lambda<nat, int> = lambda((x : nat) -> x - 1);
-    var lambda_3 : lambda<nat, int> = lambda(x -> x - 1);
+    // var lambda_1 : lambda<nat, int> = lambda<int>(x -> x - 1);
+    // var lambda_2 : lambda<nat, int> = lambda((x : nat) -> x - 1);
+    // var lambda_3 : lambda<nat, int> = lambda(x -> x - 1);
 
-    res := exec_lambda(lambda_0, 0)
+    res := exec_lambda(lambda_0, 2)
   }
 }
