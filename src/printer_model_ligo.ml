@@ -619,6 +619,8 @@ let pp_model_internal fmt (model : model) b =
     | Mmatchlist (_x, _hid, _tid, _hte, _ee) -> emit_error (UnsupportedTerm ("matchlist"))
     | Mmatchloopleft (_x, _id, _e)           -> emit_error (UnsupportedTerm ("matchfoldleft"))
     | Mmap (_x, _id, _e)                     -> emit_error (UnsupportedTerm ("map"))
+    | Mexeclambda (_l, _a)                   -> emit_error (UnsupportedTerm ("execlambda"))
+    | Mapplylambda (_l, _a)                  -> emit_error (UnsupportedTerm ("applylambda"))
 
 
     (* composite type constructors *)

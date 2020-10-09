@@ -1675,6 +1675,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mmatchlist     _ -> error_not_supported "Mmatchlist"
     | Mmatchloopleft _ -> error_not_supported "Mmatchloopleft"
     | Mmap           _ -> error_not_supported "Mmap"
+    | Mexeclambda    _ -> error_not_supported "Mexeclambda"
+    | Mapplylambda   _ -> error_not_supported "Mapplylambda"
+
 
     (* composite type constructors *)
 
@@ -1726,7 +1729,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                    ) ([] : loc_term list) l)
       else Temptycoll (dl map)
     | Mlitrecord l -> Trecord (None, List.map (fun (n,v) -> (dl n, map_mterm m ctx v)) l)
-    | Mlambda (_rt, _id, _at, _e) -> assert false
+    | Mlambda (_rt, _id, _at, _e) -> error_not_supported "Mlambda"
 
 
     (* access *)

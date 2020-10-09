@@ -1030,8 +1030,14 @@ let opsops : opinfo list =
      [A.vtcurrency; A.Tcontract (A.Tnamed 0); A.Tnamed 0], A.Toperation, Mint.empty ]
 
 (* -------------------------------------------------------------------- *)
+let lambdaops : opinfo list = [
+  ("exec_lambda",   A.Cexec, `Total  , Some (A.Tlambda (A.Tnamed 0, A.Tnamed 1)), [A.Tnamed 0], A.Tnamed 1, Mint.empty);
+  (* ("apply_lambda",  A.Capply, `Total  , Some (A.Tlambda (A.Tnamed 0, A.Tnamed 1)), [A.Tnamed 0], A.Tnamed 1, Mint.empty) *)
+]
+
+(* -------------------------------------------------------------------- *)
 let allops : opinfo list =
-  coreops @ optionops @ setops @ listops @ mapops @ cryptoops @ packops @ opsops
+  coreops @ optionops @ setops @ listops @ mapops @ cryptoops @ packops @ opsops @ lambdaops
 
 (* -------------------------------------------------------------------- *)
 type assetdecl = {

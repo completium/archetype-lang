@@ -1047,6 +1047,8 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mmatchlist (_x, _hid, _tid, _hte, _ee) -> assert false
     | Mmatchloopleft (_e, _i, _l)            -> assert false
     | Mmap (_e, _i, _l)                      -> assert false
+    | Mexeclambda (_l, _a)                   -> assert false
+    | Mapplylambda (_l, _a)                  -> assert false
 
 
     (* composite type constructors *)

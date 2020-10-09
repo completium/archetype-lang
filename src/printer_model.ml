@@ -448,6 +448,22 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (x, id, e)
 
+    | Mexeclambda (l, a) ->
+      let pp fmt (l, a) =
+        Format.fprintf fmt "exec_lambda (%a, %a)"
+          f l
+          f a
+      in
+      pp fmt (l, a)
+
+    | Mapplylambda (l, a) ->
+      let pp fmt (l, a) =
+        Format.fprintf fmt "apply_lambda (%a, %a)"
+          f l
+          f a
+      in
+      pp fmt (l, a)
+
 
     (* composite type constructors *)
 
@@ -504,7 +520,7 @@ let pp_mterm fmt (mt : mterm) =
       pp fmt (rt, id, at, e)
 
 
-      (* access *)
+    (* access *)
 
     | Mdot (e, i) ->
       Format.fprintf fmt "%a.%a"

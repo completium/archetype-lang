@@ -225,6 +225,8 @@ let to_const = function
   | Cupdate         -> "update"
   | Cmkoperation    -> "mkoperation"
   | Ctostring       -> "to_string"
+  | Cexec           -> "exec"
+  | Capply          -> "apply"
   (* set *)
   | Csadd           -> "set_add"
   | Csremove        -> "set_remove"

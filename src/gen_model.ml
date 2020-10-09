@@ -722,6 +722,19 @@ let to_model (ast : A.ast) : M.model =
         M.Mmkoperation (fa, fb, fc)
 
 
+      (* Lambda *)
+
+      | A.Pcall (None, A.Cconst (A.Cexec), [AExpr a; AExpr b]) ->
+        let fa = f a in
+        let fb = f b in
+        M.Mexeclambda (fa, fb)
+
+      | A.Pcall (None, A.Cconst (A.Capply), [AExpr a; AExpr b]) ->
+        let fa = f a in
+        let fb = f b in
+        M.Mapplylambda (fa, fb)
+
+
       (* Fail *)
 
       | A.Pcall (aux, A.Cconst c, args) ->

@@ -644,6 +644,9 @@ let pp_model fmt (model : model) =
       | Mmatchlist     _ -> emit_error (UnsupportedTerm ("Mmatchlist"))
       | Mmatchloopleft _ -> emit_error (UnsupportedTerm ("Mmatchfoldleft"))
       | Mmap           _ -> emit_error (UnsupportedTerm ("Mmap"))
+      | Mexeclambda    _ -> emit_error (UnsupportedTerm ("Mexeclambda"))
+      | Mapplylambda   _ -> emit_error (UnsupportedTerm ("Mapplylambda"))
+
 
 
       (* composite type constructors *)

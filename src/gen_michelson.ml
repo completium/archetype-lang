@@ -507,6 +507,8 @@ let to_ir (model : M.model) : T.ir =
     | Mmatchlist (x, hid, tid, hte, ee)      -> T.Iifcons (f x, unloc hid, unloc tid, f hte, f ee, ft mtt.type_)
     | Mmatchloopleft (e, i, l)               -> T.Iloopleft (f e, unloc i, f l)
     | Mmap (e, i, l)                         -> T.Imap_ (f e, unloc i, f l)
+    | Mexeclambda (l, a)                     -> T.Ibinop (Bexec, f a, f l)
+    | Mapplylambda (l, a)                    -> T.Ibinop (Bapply, f a, f l)
 
     (* composite type constructors *)
 

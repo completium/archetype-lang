@@ -165,6 +165,8 @@ type const =
   | Cupdate
   | Cmkoperation
   | Ctostring
+  | Cexec
+  | Capply
   (* set *)
   | Csadd
   | Csremove
