@@ -1,5 +1,20 @@
 archetype fa2
 
+variable admin : address = @tz1
+
+enum operator_transfer_policy =
+| No_transfer
+| Owner_transfer
+| Owner_or_operator_transfer (* default *)
+
+enum owner_hook_policy =
+| Owner_no_hook              (* default *)
+| Optional_owner_hook
+| Required_owner_hook
+
+variable permissions_descriptor : operator_transfer_policy * owner_hook_policy * owner_hook_policy
+    = (Owner_or_operator_transfer, Owner_no_hook, Owner_no_hook)
+
 asset tokens {
     id : nat
 }
@@ -22,6 +37,29 @@ record transfer_destination {
     token_amount : nat
 }
 
+function apply_transfer_policy (%from : address, tr : transfer_destination) : option<string> {
+    var res : option<string> =
+        match permissions_descriptor[0] with
+        | No_transfer ->
+            if caller = admin then
+                none<string>
+            else
+                some("FA2_TX_DENIED")
+        | Owner_transfer ->
+            if caller = %from and ledger.contains((tr.token_id, %from)) then
+                none<string>
+            else
+                some("FA2_NOT_OWNER")
+        | Owner_or_operator_transfer ->
+            if (%caller = %from and ledger.contains((tr.token_id, %from))) or
+            operator.contains((caller,tr.token_id,%from)) then
+                none<string>
+            else
+                some("FA2_NOT_OPERATOR")
+        end;
+    return res
+}
+
 entry add_token (new_token_id : nat, totalsupply : nat) {
     failif {
         f0 : tokens.contains(new_token_id);
@@ -34,11 +72,14 @@ entry add_token (new_token_id : nat, totalsupply : nat) {
 
 entry %transfer(%from : address, tds : list<transfer_destination>) {
     for td in tds do
-        if caller = %from or operator.contains((caller,td.token_id,%from)) then begin
+        var tp = apply_transfer_policy(%from, td);
+        if isnone(tp) then begin
             dorequire(tokens.contains(td.token_id), "FA2_TOKEN_UNDEFINED");
             dorequire(ledger[(td.token_id, %from)].amount >= td.token_amount, "FA2_INSUFFICIENT_BALANCE");
             ledger.update((td.token_id, %from), { amount -= td.token_amount });
             ledger.addupdate((td.token_id, td.%to), { amount += td.token_amount });
+        end else begin
+            fail(opt_get(tp))
         end
     done;
 }
