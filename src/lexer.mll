@@ -65,6 +65,7 @@
       "invariant"           , INVARIANT      ;
       "iter"                , ITER           ;
       "label"               , LABEL          ;
+      "lambda"              , LAMBDA         ;
       "left"                , LEFT           ;
       "let"                 , LET            ;
       "list"                , LIST           ;

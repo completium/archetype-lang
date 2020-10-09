@@ -56,6 +56,7 @@ type ptyp =
   | Tlist of ptyp
   | Tmap of ptyp * ptyp
   | Tor of ptyp * ptyp
+  | Tlambda of ptyp * ptyp
   | Ttuple of ptyp list
   | Toption of ptyp
   | Toperation

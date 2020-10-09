@@ -68,6 +68,7 @@ end = struct
   let as_list      = function A.Tlist      t       -> Some t       | _ -> None
   let as_map       = function A.Tmap       (k, v)  -> Some (k, v)  | _ -> None
   let as_or        = function A.Tor        (l, r)  -> Some (l, r)  | _ -> None
+  let as_lambda    = function A.Tlambda    (a, r)  -> Some (a, r)  | _ -> None
 
   let as_asset_collection = function
     | A.Tcontainer (A.Tasset asset, c) -> Some (asset, c)
@@ -271,6 +272,9 @@ end = struct
         | Tor (lptn, rptn), Tor (ltg, rtg) ->
           List.iter2 doit [lptn; rptn] [ltg; rtg]
 
+        | Tlambda (lptn, rptn), Tlambda (ltg, rtg) ->
+          List.iter2 doit [lptn; rptn] [ltg; rtg]
+
         | Tcontainer (ptn, x), Tcontainer (tg, y) when x = y ->
           doit ptn tg
 
@@ -298,13 +302,14 @@ end = struct
       | Ttrace    _
       | Tbuiltin  _ -> ty
       | Tcontainer (ty, c) -> Tcontainer (doit ty, c)
-      | Tset        ty     -> Tset  (doit ty)
-      | Tlist       ty     -> Tlist (doit ty)
-      | Tmap       (k, v)  -> Tmap  (doit k, doit v)
-      | Tor        (l, r)  -> Tor   (doit l, doit r)
-      | Ttuple      ty     -> Ttuple (List.map doit ty)
-      | Toption     ty     -> Toption (doit ty)
-      | Tcontract   ty     -> Tcontract (doit ty)
+      | Tset        ty     -> Tset       (doit ty)
+      | Tlist       ty     -> Tlist      (doit ty)
+      | Tmap       (k, v)  -> Tmap       (doit k, doit v)
+      | Tor        (l, r)  -> Tor        (doit l, doit r)
+      | Tlambda    (a, r)  -> Tlambda    (doit a, doit r)
+      | Ttuple      ty     -> Ttuple     (List.map doit ty)
+      | Toption     ty     -> Toption    (doit ty)
+      | Tcontract   ty     -> Tcontract  (doit ty)
 
     in doit ty
 
@@ -419,6 +424,8 @@ type error_desc =
   | InvalidTypeForEntrypoint
   | InvalidTypeForContract
   | InvalidTypeForFail
+  | InvalidTypeForLambdaArgument
+  | InvalidTypeForLambdaReturn
   | InvalidTypeForMapKey
   | InvalidTypeForMapValue
   | InvalidTypeForOrLeft
@@ -617,6 +624,8 @@ let pp_error_desc fmt e =
   | InvalidTypeForMapValue             -> pp "Invalid type for map value"
   | InvalidTypeForOrLeft               -> pp "Invalid type for or left"
   | InvalidTypeForOrRight              -> pp "Invalid type for or right"
+  | InvalidTypeForLambdaArgument       -> pp "Invalid type for lambda argument"
+  | InvalidTypeForLambdaReturn         -> pp "Invalid type for lambda return"
   | InvalidTypeForPk                   -> pp "Invalid type for primary key"
   | InvalidTypeForSet                  -> pp "Invalid type for set"
   | InvalidVarOrArgType                -> pp "A variable / argument type cannot be an asset or a collection"
@@ -1783,20 +1792,21 @@ let select_operator env ?(formula = false) ?(asset = false) loc (op, tys) =
 (* -------------------------------------------------------------------- *)
 let rec valid_var_or_arg_type (ty : A.ptyp) =
   match ty with
-  | Tnamed     _  -> assert false
-  | Tasset     _  -> false
-  | Trecord    _  -> true
-  | Tenum      _  -> true
-  | Tbuiltin   _  -> true
-  | Tset       ty -> valid_var_or_arg_type ty
-  | Tlist      ty -> valid_var_or_arg_type ty
-  | Tmap   (k, v) -> List.for_all valid_var_or_arg_type [k; v]
-  | Tor    (l, r) -> List.for_all valid_var_or_arg_type [l; r]
-  | Ttuple     ty -> List.for_all valid_var_or_arg_type ty
-  | Toption    ty -> valid_var_or_arg_type ty
-  | Tcontract  _  -> true
-  | Toperation    -> true
-  | Ttrace     _  -> false
+  | Tnamed   _     -> assert false
+  | Tasset   _     -> false
+  | Trecord  _     -> true
+  | Tenum    _     -> true
+  | Tbuiltin _     -> true
+  | Tset     ty    -> valid_var_or_arg_type ty
+  | Tlist    ty    -> valid_var_or_arg_type ty
+  | Tmap    (k, v) -> List.for_all valid_var_or_arg_type [k; v]
+  | Tor     (l, r) -> List.for_all valid_var_or_arg_type [l; r]
+  | Tlambda (a, r) -> List.for_all valid_var_or_arg_type [a; r]
+  | Ttuple   ty    -> List.for_all valid_var_or_arg_type ty
+  | Toption  ty    -> valid_var_or_arg_type ty
+  | Tcontract _    -> true
+  | Toperation     -> true
+  | Ttrace    _    -> false
 
   | Tcontainer (_, A.View) -> true
   | Tcontainer (_,      _) -> false
@@ -1902,6 +1912,17 @@ let for_type_exn ?pkey (env : env) =
         Env.emit_error env (loc r, InvalidTypeForOrRight);
 
       A.Tor (nl, nr)
+
+    | Tlambda (a, r) ->
+      let na, nr = doit a, doit r in
+
+      if not (Type.Michelson.is_type na) then
+        Env.emit_error env (loc a, InvalidTypeForLambdaArgument);
+
+      if not (Type.Michelson.is_type nr) then
+        Env.emit_error env (loc r, InvalidTypeForLambdaReturn);
+
+      A.Tlambda (na, nr)
 
     | Ttuple tys ->
       A.Ttuple (List.map doit tys)
@@ -2824,8 +2845,8 @@ let rec for_xexpr
           mk_sp (Option.map (fun ty -> A.Toption ty) ty) A.Pnone
 
         | ONone (Some ty) ->
-            let ty = for_type env ty in
-            mk_sp (Option.map (fun ty -> A.Toption ty) ty) A.Pnone
+          let ty = for_type env ty in
+          mk_sp (Option.map (fun ty -> A.Toption ty) ty) A.Pnone
 
         | OSome oe ->
           let oe = for_xexpr env oe in
@@ -2848,6 +2869,12 @@ let rec for_xexpr
           mk_sp
             (Some (A.Tor (ty, Option.get x.type_)))
             (A.Pright (ty, x))
+      end
+
+    | Elambda _ -> begin
+        (* TODO *)
+        Env.emit_error env (loc tope, InvalidExpression);
+        bailout ()
       end
 
     | Ematchwith (e, bs) -> begin

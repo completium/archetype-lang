@@ -95,6 +95,7 @@ let to_model (ast : A.ast) : M.model =
     | A.Tlist t            -> M.Tlist (ptyp_to_type t)
     | A.Tmap (k, v)        -> M.Tmap (false, ptyp_to_type k, ptyp_to_type v)
     | A.Tor (l, r)         -> M.Tor (ptyp_to_type l, ptyp_to_type r)
+    | A.Tlambda (a, r)     -> M.Tlambda (ptyp_to_type a, ptyp_to_type r)
     | A.Ttuple l           -> M.Ttuple (List.map ptyp_to_type l)
     | A.Toperation         -> M.Toperation
     | A.Tcontract t        -> M.Tcontract (ptyp_to_type t)

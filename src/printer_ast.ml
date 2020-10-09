@@ -70,6 +70,10 @@ let rec pp_ptyp fmt (t : ptyp) =
     Format.fprintf fmt "or<%a, %a>"
       pp_ptyp k
       pp_ptyp v
+  | Tlambda (a, r) ->
+    Format.fprintf fmt "lambda<%a, %a>"
+      pp_ptyp a
+      pp_ptyp r
   | Toption t ->
     Format.fprintf fmt "option<%a>"
       pp_ptyp t
@@ -1008,8 +1012,8 @@ let pp_asset fmt (a : lident asset_struct) =
             (pp_list ";@\n" pp_label_term))) a.specs
 
 let rec pp_position pp fmt = function
-| Pleaf x -> pp fmt x
-| Pnode l -> (pp_paren (pp_list "," (pp_position pp))) fmt l
+  | Pleaf x -> pp fmt x
+  | Pnode l -> (pp_paren (pp_list "," (pp_position pp))) fmt l
 
 let pp_record fmt (r : record) =
   Format.fprintf fmt "record %a {@\n  @[%a@]@\n}@\nas %a@\n"

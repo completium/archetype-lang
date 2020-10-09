@@ -93,6 +93,7 @@
 %token INVARIANT
 %token ITER
 %token LABEL
+%token LAMBDA
 %token LBRACE
 %token LBRACKET
 %token LBRACKETPERCENT
@@ -544,6 +545,7 @@ type_s_unloc:
 | SET         LESS x=type_t GREATER                { Tset x            }
 | MAP         LESS k=type_t COMMA v=type_s GREATER { Tmap (k, v)       }
 | OR          LESS k=type_t COMMA v=type_s GREATER { Tor (k, v)        }
+| LAMBDA      LESS a=type_t COMMA r=type_s GREATER { Tlambda (a, r)    }
 | CONTRACT    LESS x=type_t GREATER                { Tcontract x       }
 | x=paren(type_r)                                  { x                 }
 
@@ -859,6 +861,18 @@ expr_r:
 
  | RIGHT LESS t=type_t GREATER x=paren(expr)
      { Eor (Oright (t, x)) }
+
+ | LAMBDA LESS rt=type_t GREATER LPAREN LPAREN id=ident COLON at=type_t RPAREN IMPLY e=expr RPAREN
+     { Elambda (Some rt, id, Some at, e) }
+
+ | LAMBDA LESS rt=type_t GREATER LPAREN id=ident IMPLY e=expr RPAREN
+     { Elambda (Some rt, id, None, e) }
+
+ | LAMBDA LPAREN LPAREN id=ident COLON at=type_t RPAREN IMPLY e=expr RPAREN
+     { Elambda (None, id, Some at, e) }
+
+ | LAMBDA LPAREN id=ident IMPLY e=expr RPAREN
+     { Elambda (None, id, None, e) }
 
  | UNPACK LESS t=type_t GREATER x=paren(expr)
      { Eunpack (t, x) }

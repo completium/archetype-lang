@@ -24,6 +24,7 @@ and type_r =
   | Tlist      of type_t
   | Tmap       of type_t * type_t
   | Tor        of type_t * type_t
+  | Tlambda    of type_t * type_t
   | Tcontract  of type_t
   | Tkeyof     of type_t
 
@@ -131,6 +132,7 @@ and expr_unloc =
   | Ereturn        of expr
   | Eoption        of option_
   | Eor            of or_
+  | Elambda        of type_t option * lident * type_t option * expr
   | Eentrypoint    of type_t * expr * expr
   | Eunpack        of type_t * expr
   | Eself          of lident

@@ -150,6 +150,12 @@ let rec pp_type outer pos fmt e =
       pp_type_default k
       pp_type_default v
 
+  | Tlambda (a, r) ->
+    Format.fprintf fmt
+      "lambda<%a, %a>"
+      pp_type_default a
+      pp_type_default r
+
   | Tcontract t ->
     Format.fprintf fmt
       "contract<%a>"
@@ -458,6 +464,20 @@ let rec pp_expr outer pos fmt a =
       pp_or_ fmt x
     in
     (maybe_paren outer e_default pos pp) fmt x
+
+  | Elambda (rt, id, at, e) ->
+
+    let pp fmt (rt, id, at, e) =
+      Format.fprintf fmt "lambda%a(%a -> %a)"
+        (pp_option (fun fmt -> Format.fprintf fmt "<%a>" pp_type)) rt
+        (fun fmt (id, at) ->
+           match at with
+           | Some at -> Format.fprintf fmt "(%a : %a)" pp_id id pp_type at
+           | None -> pp_id fmt id) (id, at)
+        pp_simple_expr e
+
+    in
+    (maybe_paren outer e_default pos pp) fmt (rt, id, at, e)
 
   | Eassign (op, lhs, rhs) ->
 
