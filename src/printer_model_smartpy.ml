@@ -642,7 +642,7 @@ let pp_model fmt (model : model) =
       | Mmatchoption   _ -> emit_error (UnsupportedTerm ("matchoption"))
       | Mmatchor       _ -> emit_error (UnsupportedTerm ("Mmatchor"))
       | Mmatchlist     _ -> emit_error (UnsupportedTerm ("Mmatchlist"))
-      | Mmatchloopleft _ -> emit_error (UnsupportedTerm ("Mmatchfoldleft"))
+      | Mloopleft      _ -> emit_error (UnsupportedTerm ("Mloopleft"))
       | Mmap           _ -> emit_error (UnsupportedTerm ("Mmap"))
       | Mexeclambda    _ -> emit_error (UnsupportedTerm ("Mexeclambda"))
       | Mapplylambda   _ -> emit_error (UnsupportedTerm ("Mapplylambda"))

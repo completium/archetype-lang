@@ -123,7 +123,7 @@ and expr_unloc =
   | Ematchoption   of expr * lident * expr * expr
   | Ematchor       of expr * lident * expr * lident * expr
   | Ematchlist     of expr * lident * lident * expr * expr
-  | Ematchloopleft of expr * lident * expr
+  | Eloopleft      of expr * lident * expr
   | Emap           of expr * lident * expr
   | Erecupdate     of expr * (lident * expr) list
   | Equantifier    of quantifier * lident * quantifier_kind * expr

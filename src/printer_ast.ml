@@ -339,9 +339,9 @@ let rec pp_pterm fmt (pterm : pterm) =
       in
       (pp_with_paren pp) fmt (x, hid, tid, hte, ee)
 
-    | Pmatchloopleft (x, id, e) ->
+    | Ploopleft (x, id, e) ->
       let pp fmt (x, id, e) =
-        Format.fprintf fmt "match_loop_left (%a) with@\n  | %a -> (@[%a@])@\nend"
+        Format.fprintf fmt "loop_left (%a, %a -> (@[%a@]))@\n"
           pp_pterm x
           pp_id id
           pp_pterm e

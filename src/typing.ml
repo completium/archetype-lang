@@ -2969,7 +2969,7 @@ let rec for_xexpr
         mk_sp ty (A.Pmatchlist (x, hid, tid, hte, ee))
       end
 
-    | Ematchloopleft (x, i, e)-> begin
+    | Eloopleft (x, i, e)-> begin
         (* TODO: check typing *)
         let x = for_xexpr env x in
         let oty = Option.bind Type.as_or x.type_ in
@@ -2978,7 +2978,7 @@ let rec for_xexpr
 
         let e = for_xexpr (Env.Local.push env (i, lt)) e in
 
-        mk_sp (Some rt) (A.Pmatchloopleft (x, i, e))
+        mk_sp (Some rt) (A.Ploopleft (x, i, e))
       end
 
     | Emap (x, i, e)-> begin
