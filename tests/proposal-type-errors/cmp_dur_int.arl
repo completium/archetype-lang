@@ -1,0 +1,8 @@
+archetype cmp_duration_int
+
+variable b : bool = false
+
+entry exec () {
+  var d : duration = 0s;
+  b := d = 0i
+}
