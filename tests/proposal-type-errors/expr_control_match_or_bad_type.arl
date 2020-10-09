@@ -1,0 +1,12 @@
+archetype expr_control_match_or_bad_type
+
+variable a : nat = 0
+
+entry exec() {
+  var l : nat = 2;
+  a :=
+  match_or l with
+  | left(v)  -> v
+  | right(v) -> 0
+  end
+}

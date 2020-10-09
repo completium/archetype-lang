@@ -1,0 +1,12 @@
+archetype expr_control_match_option_bad_return
+
+variable res : nat = 0
+
+entry exec() {
+  var o : option<nat> = some(3);
+  res :=
+  match_option o with
+  | some(v) -> v
+  | none -> "0"
+  end
+}
