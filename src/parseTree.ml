@@ -154,7 +154,7 @@ and quantifier_kind =
 
 and option_ =
   | OSome of expr
-  | ONone
+  | ONone of type_t option
 
 and or_ =
   | Oleft of type_t * expr

@@ -2816,12 +2816,16 @@ let rec for_xexpr
 
     | Eoption oe -> begin
         match oe with
-        | ONone ->
+        | ONone None ->
           let ty = Option.bind Type.as_option ety in
 
           if Option.is_none ty then
             Env.emit_error env (loc tope, CannotInfer);
           mk_sp (Option.map (fun ty -> A.Toption ty) ty) A.Pnone
+
+        | ONone (Some ty) ->
+            let ty = for_type env ty in
+            mk_sp (Option.map (fun ty -> A.Toption ty) ty) A.Pnone
 
         | OSome oe ->
           let oe = for_xexpr env oe in

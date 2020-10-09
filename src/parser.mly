@@ -848,8 +848,11 @@ expr_r:
  | SOME x=paren(simple_expr)
      { Eoption (OSome x) }
 
- | NONE
-     { Eoption ONone }
+ | NONE %prec prec_order
+     { Eoption (ONone None) }
+
+ | NONE LESS t=type_t GREATER
+     { Eoption (ONone (Some t)) }
 
  | LEFT LESS t=type_t GREATER x=paren(expr)
      { Eor (Oleft (t, x)) }

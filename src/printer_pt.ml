@@ -440,7 +440,8 @@ let rec pp_expr outer pos fmt a =
       let pp_option_ fmt x =
         match x with
         | OSome x -> Format.fprintf fmt "some(%a)" pp_simple_expr x
-        | ONone -> Format.fprintf fmt "none"
+        | ONone None -> Format.fprintf fmt "none"
+        | ONone (Some t) -> Format.fprintf fmt "none<%a>" pp_type t
       in
       pp_option_ fmt x
     in
