@@ -2926,13 +2926,13 @@ let rec for_xexpr
 
     | Eor oe -> begin
         match oe with
-        | Oleft (t, x) ->
+        | Oleft (_, t, x) ->
           let x = for_xexpr env x in
           let ty = for_type_exn env t in
           mk_sp
             (Some (A.Tor (Option.get x.type_, ty)))
             (A.Pleft (ty, x))
-        | Oright (t, x) ->
+        | Oright (t, _, x) ->
           let x = for_xexpr env x in
           let ty = for_type_exn env t in
           mk_sp

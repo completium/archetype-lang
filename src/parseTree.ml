@@ -160,8 +160,8 @@ and option_ =
   | ONone of type_t option
 
 and or_ =
-  | Oleft of type_t * expr
-  | Oright of type_t * expr
+  | Oleft  of type_t option * type_t * expr
+  | Oright of type_t * type_t option * expr
 
 and function_ =
   | Fident of lident

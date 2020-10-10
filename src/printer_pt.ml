@@ -463,9 +463,13 @@ let rec pp_expr outer pos fmt a =
 
     let pp fmt x =
       let pp_or_ fmt x =
+        let pp_ot fmt = function
+          | None -> Format.fprintf fmt "_"
+          | Some t -> pp_type fmt t
+        in
         match x with
-        | Oleft  (t, x) -> Format.fprintf fmt "left<%a>(%a)" pp_type t pp_simple_expr x
-        | Oright (t, x) -> Format.fprintf fmt "right<%a>(%a)" pp_type t pp_simple_expr x
+        | Oleft  (ot, t, x) -> Format.fprintf fmt "left<%a, %a>(%a)"  pp_ot ot pp_type t pp_simple_expr x
+        | Oright (t, ot, x) -> Format.fprintf fmt "right<%a, %a>(%a)" pp_type t pp_ot ot pp_simple_expr x
       in
       pp_or_ fmt x
     in

@@ -859,10 +859,22 @@ expr_r:
      { Eoption (ONone (Some t)) }
 
  | LEFT LESS t=type_t GREATER x=paren(expr)
-     { Eor (Oleft (t, x)) }
+     { Eor (Oleft (None, t, x)) }
+
+ | LEFT LESS UNDERSCORE COMMA t=type_t GREATER x=paren(expr)
+     { Eor (Oleft (None, t, x)) }
+
+ | LEFT LESS ot=type_t COMMA t=type_t GREATER x=paren(expr)
+     { Eor (Oleft (Some ot, t, x)) }
 
  | RIGHT LESS t=type_t GREATER x=paren(expr)
-     { Eor (Oright (t, x)) }
+     { Eor (Oright (t, None, x)) }
+
+ | RIGHT LESS t=type_t COMMA UNDERSCORE GREATER x=paren(expr)
+     { Eor (Oright (t, None, x)) }
+
+ | RIGHT LESS t=type_t COMMA ot=type_t GREATER x=paren(expr)
+     { Eor (Oright (t, Some ot, x)) }
 
  | LAMBDA LESS rt=type_t GREATER LPAREN LPAREN id=ident COLON at=type_t RPAREN IMPLY e=expr RPAREN
      { Elambda (Some rt, id, Some at, e) }
