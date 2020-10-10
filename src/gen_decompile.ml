@@ -787,8 +787,8 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         | Zunit                 -> M.mk_mterm  Munit         M.tunit
         | Znil t                -> M.mk_mterm (Mlitlist []) (M.tlist (for_type t))
         | Zemptyset t           -> M.mk_mterm (Mlitset [])  (M.tset  (for_type t))
-        | Zemptymap (k, v)      -> M.mk_mterm (Mlitmap [])  (M.tmap  (for_type k) (for_type v))
-        | Zemptybigmap (k, v)   -> M.mk_mterm (Mlitmap [])  (M.tbig_map (for_type k) (for_type v))
+        | Zemptymap (k, v)      -> M.mk_mterm (Mlitmap (false, [])) (M.tmap  (for_type k) (for_type v))
+        | Zemptybigmap (k, v)   -> M.mk_mterm (Mlitmap (true, [])) (M.tbig_map (for_type k) (for_type v))
       end
     | Iunop (op, e) -> begin
         match op with
@@ -859,7 +859,7 @@ let to_model (ir, env : T.ir * env) : M.model * env =
     | Iconst (t, d)                     -> for_data ~t:t d
     | Iset (_t, _l)                     -> assert false
     | Ilist (_t, _l)                    -> assert false
-    | Imap (_k, _v, _l)                 -> assert false
+    | Imap (_b, _k, _v, _l)             -> assert false
     | Irecord _l                        -> assert false
     | Irecupdate (_x, _s, _l)           -> assert false
     | Ifold (_ix, _iy, _ia, _c, _a, _b) -> assert false
@@ -1062,7 +1062,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Massets _l      -> assert false
     | Mlitset _l      -> assert false
     | Mlitlist l      -> A.earray (List.map f l)
-    | Mlitmap _l      -> assert false
+    | Mlitmap (_b, _l)-> assert false
     | Mlitrecord _l   -> assert false
     | Mlambda (_rt, _id, _at, _e) -> assert false
 

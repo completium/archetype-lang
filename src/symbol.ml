@@ -140,6 +140,7 @@ let string_of_token = function
   | BYTES s         -> Printf.sprintf "BYTES(%s)" s
   | BY              -> "BY"
   | BUT             -> "BUT"
+  | BIG_MAP         -> "BIG_MAP"
   | BEGIN           -> "BEGIN"
   | BEFORE          -> "BEFORE"
   | AT_UPDATE       -> "AT_UPDATE"
@@ -297,6 +298,7 @@ let string_of_symbol = function
   | X (T T_BYTES) -> "bytes"
   | X (T T_BY) -> "by"
   | X (T T_BUT) -> "but"
+  | X (T T_BIG_MAP) -> "big_map"
   | X (T T_BEGIN) -> "begin"
   | X (T T_BEFORE) -> "before"
   | X (T T_AT) -> "at"

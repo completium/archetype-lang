@@ -250,7 +250,7 @@ type ('id, 'term) mterm_node  =
   | Massets           of 'term list
   | Mlitset           of 'term list
   | Mlitlist          of 'term list
-  | Mlitmap           of ('term * 'term) list
+  | Mlitmap           of bool * ('term * 'term) list
   | Mlitrecord        of (ident * 'term) list
   | Mlambda           of type_ * 'id * type_ * 'term
   (* access *)
@@ -1248,7 +1248,7 @@ let cmp_mterm_node
     | Massets l1, Massets l2                                                           -> List.for_all2 cmp l1 l2
     | Mlitset l1, Mlitset l2                                                           -> List.for_all2 cmp l1 l2
     | Mlitlist l1, Mlitlist l2                                                         -> List.for_all2 cmp l1 l2
-    | Mlitmap l1, Mlitmap l2                                                           -> List.for_all2 (fun (k1, v1) (k2, v2) -> (cmp k1 k2 && cmp v1 v2)) l1 l2
+    | Mlitmap (b1, l1), Mlitmap (b2, l2)                                               -> cmp_bool b1 b2 && List.for_all2 (fun (k1, v1) (k2, v2) -> (cmp k1 k2 && cmp v1 v2)) l1 l2
     | Mlitrecord l1, Mlitrecord l2                                                     -> List.for_all2 (fun (i1, v1) (i2, v2) -> (cmp_ident i1 i2 && cmp v1 v2)) l1 l2
     | Mlambda (rt1, id1, at1, e1), Mlambda (rt2, id2, at2, e2)                         -> cmp_type rt1 rt2 && cmpi id1 id2 && cmp_type at1 at2 && cmp e1 e2
     (* access *)
@@ -1625,7 +1625,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Massets l                      -> Massets (List.map f l)
   | Mlitset l                      -> Mlitset (List.map f l)
   | Mlitlist l                     -> Mlitlist (List.map f l)
-  | Mlitmap l                      -> Mlitmap (List.map (pair_sigle_map f) l)
+  | Mlitmap (b, l)                 -> Mlitmap (b, List.map (pair_sigle_map f) l)
   | Mlitrecord l                   -> Mlitrecord (List.map ((fun (x, y) -> (x, f y))) l)
   | Mlambda (rt, id, at, e)        -> Mlambda (ft rt, g id, ft at, f e)
   (* access *)
@@ -2003,7 +2003,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Massets l                             -> List.fold_left f accu l
   | Mlitset l                             -> List.fold_left f accu l
   | Mlitlist l                            -> List.fold_left f accu l
-  | Mlitmap l                             -> List.fold_left (fun accu (k, v) -> f (f accu k) v) accu l
+  | Mlitmap (_, l)                        -> List.fold_left (fun accu (k, v) -> f (f accu k) v) accu l
   | Mlitrecord l                          -> List.fold_left (fun accu (_, v) -> f accu v) accu l
   | Mlambda (_, _, _, e)                  -> f accu e
   (* access *)
@@ -2509,7 +2509,7 @@ let fold_map_term
     let le, la = fold_map_term_list f accu l in
     g (Mlitlist le), la
 
-  | Mlitmap l ->
+  | Mlitmap (b, l) ->
     let le, la =
       List.fold_left
         (fun (pterms, accu) (k, v) ->
@@ -2517,7 +2517,7 @@ let fold_map_term
            let vn, accu = f accu v in
            pterms @ [kn, vn], accu) ([], accu) l
     in
-    g (Mlitmap le), la
+    g (Mlitmap (b, le)), la
 
   | Mlitrecord l ->
     let le, la =

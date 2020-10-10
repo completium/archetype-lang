@@ -679,7 +679,7 @@ let pp_model_internal fmt (model : model) b =
             (pp_list "; " f) l
       end
 
-    | Mlitmap l -> begin
+    | Mlitmap (_, l) -> begin
         match mtt.type_ with
         | Tmap (true, _, _) ->
           Format.fprintf fmt "(Big_map.literal (list [%a]) : %a)"

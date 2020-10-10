@@ -23,6 +23,7 @@ and type_r =
   | Tset       of type_t
   | Tlist      of type_t
   | Tmap       of type_t * type_t
+  | Tbig_map   of type_t * type_t
   | Tor        of type_t * type_t
   | Tlambda    of type_t * type_t
   | Tcontract  of type_t
@@ -350,7 +351,7 @@ and namespace_decl =
 and asset_option =
   | AOidentifiedby of lident list
   | AOsortedby of lident
-  | AOto of lident
+  | AOtoBigMap
 
 and asset_post_option =
   | APOstates of lident
@@ -534,7 +535,7 @@ let mk_namespace_decl ?(ds=[]) id : namespace_decl = id, ds
 
 let mk_asset_option_identifiedby ids = AOidentifiedby ids
 let mk_asset_option_sortedby id      = AOsortedby id
-let mk_asset_option_to id            = AOto id
+let mk_asset_option_to_big_map       = AOtoBigMap
 
 let mk_asset_post_option_states id      = APOstates id
 let mk_asset_post_option_constraints ls = APOconstraints ls

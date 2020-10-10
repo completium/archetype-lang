@@ -66,6 +66,10 @@ let rec pp_ptyp fmt (t : ptyp) =
     Format.fprintf fmt "map<%a, %a>"
       pp_ptyp k
       pp_ptyp v
+  | Tbig_map (k, v) ->
+    Format.fprintf fmt "big_map<%a, %a>"
+      pp_ptyp k
+      pp_ptyp v
   | Tor (k, v) ->
     Format.fprintf fmt "or<%a, %a>"
       pp_ptyp k

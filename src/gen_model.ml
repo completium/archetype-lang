@@ -94,6 +94,7 @@ let to_model (ast : A.ast) : M.model =
     | A.Tset t             -> M.Tset (ptyp_to_type t)
     | A.Tlist t            -> M.Tlist (ptyp_to_type t)
     | A.Tmap (k, v)        -> M.Tmap (false, ptyp_to_type k, ptyp_to_type v)
+    | A.Tbig_map (k, v)    -> M.Tmap (true, ptyp_to_type k, ptyp_to_type v)
     | A.Tor (l, r)         -> M.Tor (ptyp_to_type l, ptyp_to_type r)
     | A.Tlambda (a, r)     -> M.Tlambda (ptyp_to_type a, ptyp_to_type r)
     | A.Ttuple l           -> M.Ttuple (List.map ptyp_to_type l)
@@ -322,7 +323,7 @@ let to_model (ast : A.ast) : M.model =
           match type_ with
           | Tcontainer (Tasset _, _)   -> M.Massets l
           | Tset _ -> M.Mlitset l
-          | Tmap _ -> M.Mlitmap (List.map (fun (x : M.mterm) -> match x.node with | M.Mtuple [k; v] -> (k, v)  | _ -> assert false) l)
+          | Tmap (b, _, _) -> M.Mlitmap (b, List.map (fun (x : M.mterm) -> match x.node with | M.Mtuple [k; v] -> (k, v)  | _ -> assert false) l)
           | _ -> M.Mlitlist l
         end
       | A.Plit ({node = BVint i; _})           -> M.Mint i

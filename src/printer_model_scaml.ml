@@ -757,7 +757,7 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "[%a]"
           (pp_list "; " f) l
 
-      | Mlitmap l ->
+      | Mlitmap (_, l) ->
         Format.fprintf fmt "[%a]"
           (pp_list "; " (fun fmt (k, v) -> Format.fprintf fmt "%a : %a"
                             f k

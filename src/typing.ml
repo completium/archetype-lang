@@ -19,7 +19,9 @@ module Type : sig
   val as_set              : A.ptyp -> A.ptyp option
   val as_list             : A.ptyp -> A.ptyp option
   val as_map              : A.ptyp -> (A.ptyp * A.ptyp) option
+  val as_big_map          : A.ptyp -> (A.ptyp * A.ptyp) option
   val as_or               : A.ptyp -> (A.ptyp * A.ptyp) option
+  val as_lambda            : A.ptyp -> (A.ptyp * A.ptyp) option
 
   val is_asset     : A.ptyp -> bool
   val is_numeric   : A.ptyp -> bool
@@ -30,6 +32,9 @@ module Type : sig
   val is_set       : A.ptyp -> bool
   val is_list      : A.ptyp -> bool
   val is_map       : A.ptyp -> bool
+  val is_big_map   : A.ptyp -> bool
+  val is_lambda    : A.ptyp -> bool
+  val is_or        : A.ptyp -> bool
 
   module Michelson : sig
     val is_type       : A.ptyp -> bool
@@ -67,6 +72,7 @@ end = struct
   let as_set       = function A.Tset       t       -> Some t       | _ -> None
   let as_list      = function A.Tlist      t       -> Some t       | _ -> None
   let as_map       = function A.Tmap       (k, v)  -> Some (k, v)  | _ -> None
+  let as_big_map   = function A.Tbig_map   (a, r)  -> Some (a, r)  | _ -> None
   let as_or        = function A.Tor        (l, r)  -> Some (l, r)  | _ -> None
   let as_lambda    = function A.Tlambda    (a, r)  -> Some (a, r)  | _ -> None
 
@@ -101,6 +107,15 @@ end = struct
   let is_map = function
     | A.Tmap _ -> true | _ -> false
 
+  let is_big_map = function
+    | A.Tbig_map _ -> true | _ -> false
+
+  let is_or = function
+    | A.Tor _ -> true | _ -> false
+
+  let is_lambda = function
+    | A.Tlambda _ -> true | _ -> false
+
   module Michelson = struct
     let is_comparable ?(simple = false) = function
       | A.Tbuiltin VTnat
@@ -126,11 +141,14 @@ end = struct
       | A.Tbuiltin VTsignature -> true
       | A.Tbuiltin VTchainid   -> true
 
-      | A.Toption t      -> is_type t
-      | A.Tlist   t      -> is_type t
-      | A.Tset    t      -> is_type t
-      | A.Ttuple  ts     -> List.for_all is_type ts
-      | A.Tmap    (k, t) -> is_comparable k && is_type t
+      | A.Toption   t     -> is_type t
+      | A.Tlist     t     -> is_type t
+      | A.Tset      t     -> is_type t
+      | A.Ttuple    ts    -> List.for_all is_type ts
+      | A.Tmap     (k, t) -> is_comparable k && is_type t
+      | A.Tbig_map (k, t) -> is_comparable k && is_type t
+      | A.Tor      (l, r) -> is_type l && is_type r
+      | A.Tlambda  (a, r) -> is_type a && is_type r
 
       | A.Tcontract _ -> true
       | A.Trecord   _ -> true
@@ -269,6 +287,9 @@ end = struct
         | Tmap (kptn, vptn), Tmap (ktg, vtg) ->
           List.iter2 doit [kptn; vptn] [ktg; vtg]
 
+        | Tbig_map (kptn, vptn), Tbig_map (ktg, vtg) ->
+          List.iter2 doit [kptn; vptn] [ktg; vtg]
+
         | Tor (lptn, rptn), Tor (ltg, rtg) ->
           List.iter2 doit [lptn; rptn] [ltg; rtg]
 
@@ -305,6 +326,7 @@ end = struct
       | Tset        ty     -> Tset       (doit ty)
       | Tlist       ty     -> Tlist      (doit ty)
       | Tmap       (k, v)  -> Tmap       (doit k, doit v)
+      | Tbig_map   (k, v)  -> Tbig_map   (doit k, doit v)
       | Tor        (l, r)  -> Tor        (doit l, doit r)
       | Tlambda    (a, r)  -> Tlambda    (doit a, doit r)
       | Ttuple      ty     -> Ttuple     (List.map doit ty)
@@ -419,10 +441,12 @@ type error_desc =
   | InvalidShadowVariableAccess
   | InvalidSortingExpression
   | InvalidStateExpression
+  | InvalidTypeForBigMapKey
+  | InvalidTypeForBigMapValue
+  | InvalidTypeForContract
   | InvalidTypeForDoFailIf
   | InvalidTypeForDoRequire
   | InvalidTypeForEntrypoint
-  | InvalidTypeForContract
   | InvalidTypeForFail
   | InvalidTypeForLambdaArgument
   | InvalidTypeForLambdaReturn
@@ -615,17 +639,19 @@ let pp_error_desc fmt e =
   | InvalidShadowVariableAccess        -> pp "Shadow variable access in non-shadow code"
   | InvalidSortingExpression           -> pp "Invalid sorting expression"
   | InvalidStateExpression             -> pp "Invalid state expression"
+  | InvalidTypeForBigMapKey            -> pp "Invalid type for big map key"
+  | InvalidTypeForBigMapValue          -> pp "Invalid type for big map value"
+  | InvalidTypeForContract             -> pp "Invalid type for contract"
   | InvalidTypeForDoFailIf             -> pp "Invalid type for dofailif"
   | InvalidTypeForDoRequire            -> pp "Invalid type for dorequire"
   | InvalidTypeForEntrypoint           -> pp "Invalid type for entrypoint"
-  | InvalidTypeForContract             -> pp "Invalid type for contract"
   | InvalidTypeForFail                 -> pp "Invalid type for fail"
+  | InvalidTypeForLambdaArgument       -> pp "Invalid type for lambda argument"
+  | InvalidTypeForLambdaReturn         -> pp "Invalid type for lambda return"
   | InvalidTypeForMapKey               -> pp "Invalid type for map key"
   | InvalidTypeForMapValue             -> pp "Invalid type for map value"
   | InvalidTypeForOrLeft               -> pp "Invalid type for or left"
   | InvalidTypeForOrRight              -> pp "Invalid type for or right"
-  | InvalidTypeForLambdaArgument       -> pp "Invalid type for lambda argument"
-  | InvalidTypeForLambdaReturn         -> pp "Invalid type for lambda return"
   | InvalidTypeForPk                   -> pp "Invalid type for primary key"
   | InvalidTypeForSet                  -> pp "Invalid type for set"
   | InvalidVarOrArgType                -> pp "A variable / argument type cannot be an asset or a collection"
@@ -857,7 +883,7 @@ let globals = [
   ("transferred" , A.Ctransferred , A.vtcurrency);
   ("chainid"     , A.Cchainid     , A.vtchainid);
   ("operations"  , A.Coperations  , A.Tlist (A.Toperation));
-  ("metadata"    , A.Cmetadata    , A.Tmap (A.vtstring, A.vtbytes));
+  ("metadata"    , A.Cmetadata    , A.Tbig_map (A.vtstring, A.vtbytes));
 ]
 
 let statename = "state"
@@ -1011,6 +1037,17 @@ let mapops : opinfo list =
   ]
 
 (* -------------------------------------------------------------------- *)
+let bigmapops : opinfo list =
+  let tkey = A.Tnamed 0 in
+  let tval = A.Tnamed 1 in
+  let big_map  = A.Tbig_map (tkey, tval) in [
+    ("put"      , A.Cmput      , `Total   , Some big_map, [ tkey; tval ], big_map       , Mint.empty);
+    ("remove"   , A.Cmremove   , `Total   , Some big_map, [ tkey       ], big_map       , Mint.empty);
+    ("getopt"   , A.Cmgetopt   , `Partial , Some big_map, [ tkey       ], A.Toption tval, Mint.empty);
+    ("contains" , A.Cmcontains , `Total   , Some big_map, [ tkey       ], A.vtbool      , Mint.empty);
+  ]
+
+(* -------------------------------------------------------------------- *)
 let cryptoops : opinfo list =
   List.map (fun (x, y) -> x, y, `Total, None, [A.vtbytes], A.vtbytes, Mint.empty)
     [("blake2b", A.Cblake2b);
@@ -1037,7 +1074,7 @@ let lambdaops : opinfo list = [
 
 (* -------------------------------------------------------------------- *)
 let allops : opinfo list =
-  coreops @ optionops @ setops @ listops @ mapops @ cryptoops @ packops @ opsops @ lambdaops
+  coreops @ optionops @ setops @ listops @ mapops @ bigmapops @ cryptoops @ packops @ opsops @ lambdaops
 
 (* -------------------------------------------------------------------- *)
 type assetdecl = {
@@ -1798,21 +1835,22 @@ let select_operator env ?(formula = false) ?(asset = false) loc (op, tys) =
 (* -------------------------------------------------------------------- *)
 let rec valid_var_or_arg_type (ty : A.ptyp) =
   match ty with
-  | Tnamed   _     -> assert false
-  | Tasset   _     -> false
-  | Trecord  _     -> true
-  | Tenum    _     -> true
-  | Tbuiltin _     -> true
-  | Tset     ty    -> valid_var_or_arg_type ty
-  | Tlist    ty    -> valid_var_or_arg_type ty
-  | Tmap    (k, v) -> List.for_all valid_var_or_arg_type [k; v]
-  | Tor     (l, r) -> List.for_all valid_var_or_arg_type [l; r]
-  | Tlambda (a, r) -> List.for_all valid_var_or_arg_type [a; r]
-  | Ttuple   ty    -> List.for_all valid_var_or_arg_type ty
-  | Toption  ty    -> valid_var_or_arg_type ty
-  | Tcontract _    -> true
-  | Toperation     -> true
-  | Ttrace    _    -> false
+  | Tnamed    _     -> assert false
+  | Tasset    _     -> false
+  | Trecord   _     -> true
+  | Tenum     _     -> true
+  | Tbuiltin  _     -> true
+  | Tset      ty    -> valid_var_or_arg_type ty
+  | Tlist     ty    -> valid_var_or_arg_type ty
+  | Tmap     (k, v) -> List.for_all valid_var_or_arg_type [k; v]
+  | Tbig_map (k, v) -> List.for_all valid_var_or_arg_type [k; v]
+  | Tor      (l, r) -> List.for_all valid_var_or_arg_type [l; r]
+  | Tlambda  (a, r) -> List.for_all valid_var_or_arg_type [a; r]
+  | Ttuple    ty    -> List.for_all valid_var_or_arg_type ty
+  | Toption   ty    -> valid_var_or_arg_type ty
+  | Tcontract  _    -> true
+  | Toperation      -> true
+  | Ttrace     _    -> false
 
   | Tcontainer (_, A.View) -> true
   | Tcontainer (_,      _) -> false
@@ -1907,6 +1945,17 @@ let for_type_exn ?pkey (env : env) =
         Env.emit_error env (loc v, InvalidTypeForMapValue);
 
       A.Tmap (nk, nv)
+
+    | Tbig_map (k, v) ->
+      let nk, nv = doit k, doit v in
+
+      if not (Type.Michelson.is_comparable nk) then
+        Env.emit_error env (loc k, InvalidTypeForBigMapKey);
+
+      if not (Type.Michelson.is_type nv) then
+        Env.emit_error env (loc v, InvalidTypeForBigMapValue);
+
+      A.Tbig_map (nk, nv)
 
     | Tor (l, r) ->
       let nl, nr = doit l, doit r in
@@ -2194,7 +2243,7 @@ let rec for_xexpr
     | Earray [] -> begin
         match ety with
         | Some (A.Tcontainer (_, _))
-        | Some (A.Tset _ | A.Tlist _ | A.Tmap _) ->
+        | Some (A.Tset _ | A.Tlist _ | A.Tmap _ | A.Tbig_map _) ->
           mk_sp ety (A.Parray [])
 
         | _ ->
@@ -2225,6 +2274,14 @@ let rec for_xexpr
             | _ -> (Env.emit_error env (loc tope, InvalidMapType); bailout ())
           in
           mk_sp (Some (A.Tmap (k, v))) (A.Parray (e :: es))
+
+        | Some Tbig_map _, Some ty ->
+          let k, v  =
+            match ty with
+            | Ttuple [k; v] -> (k, v)
+            | _ -> (Env.emit_error env (loc tope, InvalidMapType); bailout ())
+          in
+          mk_sp (Some (A.Tbig_map (k, v))) (A.Parray (e :: es))
 
         | _, Some ty ->
           mk_sp (Some (A.Tlist ty)) (A.Parray (e :: es))
@@ -2489,6 +2546,12 @@ let rec for_xexpr
             mk_sp (Some (List.nth lt i)) (A.Ptupleaccess (ee, idx))
           end
         | Some (A.Tmap (kt, vt)) -> begin
+            let pk = for_xexpr ?ety:(Some kt) env pk in
+            mk_sp
+              (Some vt)
+              (A.Pcall (None, A.Cconst A.Cmget, [A.AExpr ee; A.AExpr pk]))
+          end
+        | Some (A.Tbig_map (kt, vt)) -> begin
             let pk = for_xexpr ?ety:(Some kt) env pk in
             mk_sp
               (Some vt)
@@ -4812,13 +4875,13 @@ let for_asset_decl
     invs @ xinvs in
 
   let bigmaps =
-    let valid_to_type_values = ["big_map"] in
+    (* let valid_to_type_values = ["big_map"] in
 
-    List.iter (function
+       List.iter (function
         | PT.AOto v when not (List.exists (String.equal (unloc v)) valid_to_type_values) ->
           Env.emit_error env (loc v, UnknownAssetToProperty (unloc v))
-        | _ -> ()) opts;
-    List.exists (function PT.AOto {pldesc = "big_map"} -> true | _ -> false) opts in
+        | _ -> ()) opts; *)
+    List.exists (function PT.AOtoBigMap -> true | _ -> false) opts in
 
   let pks =
     let dokey key =

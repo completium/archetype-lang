@@ -44,6 +44,7 @@
 %token AT_UPDATE
 %token BEFORE
 %token BEGIN
+%token BIG_MAP
 %token BUT
 %token BY
 %token CALL
@@ -544,6 +545,7 @@ type_s_unloc:
 | LIST        LESS x=type_t GREATER                { Tlist x           }
 | SET         LESS x=type_t GREATER                { Tset x            }
 | MAP         LESS k=type_t COMMA v=type_s GREATER { Tmap (k, v)       }
+| BIG_MAP     LESS k=type_t COMMA v=type_s GREATER { Tbig_map (k, v)   }
 | OR          LESS k=type_t COMMA v=type_s GREATER { Tor (k, v)        }
 | LAMBDA      LESS a=type_t COMMA r=type_s GREATER { Tlambda (a, r)    }
 | CONTRACT    LESS x=type_t GREATER                { Tcontract x       }
@@ -606,7 +608,7 @@ asset_post_option:
 asset_option:
 | IDENTIFIED BY xs=ident+ { AOidentifiedby xs }
 | SORTED BY x=ident       { AOsortedby x }
-| TO i=ident              { AOto i }
+| TO BIG_MAP              { AOtoBigMap }
 
 %inline fields:
 | xs=sl(SEMI_COLON, field) { xs }

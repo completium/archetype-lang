@@ -2492,7 +2492,7 @@ let split_key_values (model : model) : model =
           let type_asset = Tmap (asset.big_map, t, Tasset an) in
           let default =
             match x.default.node with
-            | Massets l -> mk_mterm (Mlitmap (List.map (fun x -> get_asset_assoc_key_value (unloc an) x) l)) type_asset
+            | Massets l -> mk_mterm (Mlitmap (asset.big_map, List.map (fun x -> get_asset_assoc_key_value (unloc an) x) l)) type_asset
             | _ -> assert false
           in
           let asset_assets =
@@ -2605,7 +2605,7 @@ let remove_duplicate_key (model : model) : model =
               let type_asset = Tset t in
               let default =
                 match x.default.node with
-                | Mlitmap l ->  mk_mterm (Mlitset (List.map fst l)) type_asset
+                | Mlitmap (_, l) ->  mk_mterm (Mlitset (List.map fst l)) type_asset
                 | _ -> assert false
               in
               let asset_assets =
@@ -2620,9 +2620,9 @@ let remove_duplicate_key (model : model) : model =
           else
             let default, typ =
               match x.default.node, x.typ with
-              | Mlitmap l, Tmap (b, kt, Tasset an) ->
+              | Mlitmap (_, l), Tmap (b, kt, Tasset an) ->
                 let t = Tmap (b, kt, Tasset (dumloc ((unloc an) ^ "_storage"))) in
-                let mt = mk_mterm (Mlitmap (List.map (fun (k, v) -> (k, remove_key_value_for_asset_node v)) l)) t in
+                let mt = mk_mterm (Mlitmap (b, List.map (fun (k, v) -> (k, remove_key_value_for_asset_node v)) l)) t in
                 mt, t
               | _ -> x.default, x.typ
             in
@@ -3921,7 +3921,7 @@ let remove_asset (model : model) : model =
                 let node =
                   match va.type_ with
                   | Tset _ -> Mlitset []
-                  | Tmap _ -> Mlitmap []
+                  | Tmap (b, _, _) -> Mlitmap (b, [])
                   | _ -> assert false
                 in
                 mk_mterm node va.type_
@@ -4797,8 +4797,8 @@ let normalize_storage (model : model) : model =
         | Mlitset l -> begin
             {mt with node = Mlitset (l |> List.map (fun x -> x, unit) |> sort |> List.map fst)}
           end
-        | Mlitmap l -> begin
-            {mt with node = Mlitmap (sort l)}
+        | Mlitmap (b, l) -> begin
+            {mt with node = Mlitmap (b, sort l)}
           end
         | _ -> map_mterm aux mt
       in
@@ -4978,7 +4978,7 @@ let process_metadata (model : model) : model =
           | _ -> assert false
         in
 
-        mk_mterm (Mlitmap v) tmetadata in
+        mk_mterm (Mlitmap (true, v)) tmetadata in
       if not (String.equal "" !Options.opt_metadata_uri)
       then mk_map ()
       else mk_map ()

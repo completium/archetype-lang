@@ -497,8 +497,9 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "list(%a)"
         (pp_list "; " f) l
 
-    | Mlitmap l ->
-      Format.fprintf fmt "map(%a)"
+    | Mlitmap (b, l) ->
+      Format.fprintf fmt "%amap(%a)"
+         (fun fmt b -> if b then Format.fprintf fmt "big_" else Format.fprintf fmt "") b
         (pp_list "; " (fun fmt (k, v) -> Format.fprintf fmt "%a : %a"
                           f k
                           f v)) l

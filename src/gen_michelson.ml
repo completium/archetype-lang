@@ -129,7 +129,7 @@ let to_ir (model : M.model) : T.ir =
     | Mtuple     l      -> to_one_data (List.map to_data l)
     | Mlitset    l      -> T.Dlist (List.map to_data l)
     | Mlitlist   l      -> T.Dlist (List.map to_data l)
-    | Mlitmap    l      -> T.Dlist (List.map (fun (x, y) -> T.Delt (to_data x, to_data y)) l)
+    | Mlitmap    (_, l) -> T.Dlist (List.map (fun (x, y) -> T.Delt (to_data x, to_data y)) l)
     | Muminus    v      -> to_data v |> (function | T.Dint n -> T.Dint (Big_int.mult_int_big_int (-1) n) | _ -> assert false )
     | Mnow              -> T.Dint Big_int.zero_big_int
     | Mlitrecord l      -> to_one_data (List.map (to_data |@ snd) l)
@@ -271,16 +271,16 @@ let to_ir (model : M.model) : T.ir =
           let vmap   = T.Ivar map_name in
           let vpair  = T.Ivar pair_name in
           let cond   = T.Icompare(Cgt, varg, zero) in
-          let map    = T.Imap (T.tnat, T.tstring, [T.inat (Big_int.big_int_of_int 0), T.istring "0";
-                                                   T.inat (Big_int.big_int_of_int 1), T.istring "1";
-                                                   T.inat (Big_int.big_int_of_int 2), T.istring "2";
-                                                   T.inat (Big_int.big_int_of_int 3), T.istring "3";
-                                                   T.inat (Big_int.big_int_of_int 4), T.istring "4";
-                                                   T.inat (Big_int.big_int_of_int 5), T.istring "5";
-                                                   T.inat (Big_int.big_int_of_int 6), T.istring "6";
-                                                   T.inat (Big_int.big_int_of_int 7), T.istring "7";
-                                                   T.inat (Big_int.big_int_of_int 8), T.istring "8";
-                                                   T.inat (Big_int.big_int_of_int 9), T.istring "9"]) in
+          let map    = T.Imap (false, T.tnat, T.tstring, [T.inat (Big_int.big_int_of_int 0), T.istring "0";
+                                                          T.inat (Big_int.big_int_of_int 1), T.istring "1";
+                                                          T.inat (Big_int.big_int_of_int 2), T.istring "2";
+                                                          T.inat (Big_int.big_int_of_int 3), T.istring "3";
+                                                          T.inat (Big_int.big_int_of_int 4), T.istring "4";
+                                                          T.inat (Big_int.big_int_of_int 5), T.istring "5";
+                                                          T.inat (Big_int.big_int_of_int 6), T.istring "6";
+                                                          T.inat (Big_int.big_int_of_int 7), T.istring "7";
+                                                          T.inat (Big_int.big_int_of_int 8), T.istring "8";
+                                                          T.inat (Big_int.big_int_of_int 9), T.istring "9"]) in
           let get_map    = T.Iifnone (T.Ibinop (Bget, T.Iunop (Ucdr, vpair), vmap), T.ifail "GetNoneValue", "_var_ifnone", Ivar "_var_ifnone", T.tstring) in
           let concat     = T.Ibinop (Bconcat, get_map, vres) in
           let assign_res = T.Iassign (res_name, concat) in
@@ -538,10 +538,9 @@ let to_ir (model : M.model) : T.ir =
         |  M.Tlist t -> T.Ilist (ft t, List.map f l)
         | _ -> assert false
       end
-    | Mlitmap    l -> begin
+    | Mlitmap (_, l) -> begin
         match mtt.type_ with
-        | M.Tmap (true, k, v)  (* TODO: big map *)
-        | M.Tmap (false, k, v) -> T.Imap (ft k, ft v, List.map (fun (x, y) -> f x, f y) l)
+        | M.Tmap (b, k, v) -> T.Imap (b, ft k, ft v, List.map (fun (x, y) -> f x, f y) l)
         | _ -> assert false
       end
     | Mlitrecord l -> T.Irecord (List.map (fun (_, x) -> f x) l)
@@ -1245,8 +1244,9 @@ let to_michelson (ir : T.ir) : T.michelson =
     | Ilist (t, l) -> begin
         T.SEQ ((T.NIL t)::(l |> List.rev |> List.map (fun x -> let x, _ = f x in T.SEQ [ x; T.CONS ] ))), inc_env env
       end
-    | Imap (k, v, l) -> begin
-        T.SEQ ([T.EMPTY_MAP (k, v)] @
+    | Imap (b, k, v, l) -> begin
+        let a = if b then T.EMPTY_BIG_MAP (k, v) else T.EMPTY_MAP (k, v) in
+        T.SEQ ([a] @
                (l
                 |> List.rev
                 |> List.map (fun (x, y) ->

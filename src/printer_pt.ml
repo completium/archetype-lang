@@ -144,6 +144,12 @@ let rec pp_type outer pos fmt e =
       pp_type_default k
       pp_type_default v
 
+  | Tbig_map (k, v) ->
+    Format.fprintf fmt
+      "big_map<%a, %a>"
+      pp_type_default k
+      pp_type_default v
+
   | Tor (k, v) ->
     Format.fprintf fmt
       "or<%a, %a>"
@@ -836,7 +842,7 @@ let pp_asset_option fmt opt =
   match opt with
   | AOidentifiedby ids -> Format.fprintf fmt "identified by %a" (pp_list " " pp_id) ids
   | AOsortedby id      -> Format.fprintf fmt "sorted by %a" pp_id id
-  | AOto id            -> Format.fprintf fmt "to %a" pp_id id
+  | AOtoBigMap         -> Format.fprintf fmt "to big_map"
 
 let operation_enum_to_str e =
   match e with

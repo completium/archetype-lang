@@ -1720,7 +1720,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       List.fold_left(fun acc e ->
           dl (Tcons(dl gListAs, map_mterm m ctx e, acc))
         ) (loc_term (Tnil gListAs)) l |> Mlwtree.deloc
-    | Mlitmap  l   ->
+    | Mlitmap  (_, l)   ->
       let map = mk_map_name m mt.type_ in
       if List.length l > 0 then
         Tmkcoll (dl map,

@@ -300,7 +300,7 @@ type instruction =
   | Icompare    of cmp_operator * instruction * instruction
   | Iset        of type_ * instruction list
   | Ilist       of type_ * instruction list
-  | Imap        of type_ * type_ * (instruction * instruction) list
+  | Imap        of bool * type_ * type_ * (instruction * instruction) list
   | Irecord     of instruction list
   | Irecupdate  of instruction * int * (int * instruction) list (* value * size * (index, value) fields *)
   | Imap_       of instruction * ident * instruction

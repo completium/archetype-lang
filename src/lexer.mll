@@ -28,6 +28,7 @@
       "at"                  , AT             ;
       "before"              , BEFORE         ;
       "begin"               , BEGIN          ;
+      "big_map"             , BIG_MAP        ;
       "but"                 , BUT            ;
       "by"                  , BY             ;
       "call"                , CALL           ;
