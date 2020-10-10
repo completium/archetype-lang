@@ -46,7 +46,7 @@ module Type : sig
   val equal     : A.ptyp -> A.ptyp -> bool
   val sig_equal : A.ptyp list -> A.ptyp list -> bool
 
-  val compatible     : ?autoview:bool -> from_:A.ptyp -> to_:A.ptyp -> bool
+  val compatible     : ?autoview:bool -> ?for_eq:bool -> from_:A.ptyp -> to_:A.ptyp -> bool
   val distance       : from_:A.ptyp -> to_:A.ptyp -> int option
   val sig_compatible : from_:A.ptyp list -> to_:A.ptyp list -> bool
   val sig_distance   : from_:A.ptyp list -> to_:A.ptyp list -> int option
@@ -165,7 +165,7 @@ end = struct
 
   let equal = ((=) : A.ptyp -> A.ptyp -> bool)
 
-  let distance ?(autoview = false) ~(from_ : A.ptyp) ~(to_ : A.ptyp) =
+  let distance ?(autoview = false) ?(for_eq = false) ~(from_ : A.ptyp) ~(to_ : A.ptyp) =
     match from_, to_ with
     | _, _ when equal from_ to_ ->
       Some 0
@@ -179,8 +179,9 @@ end = struct
         | A.VTint      , A.VTrational   -> Some 1
         | A.VTstring   , A.VTkey        -> Some 1
         | A.VTstring   , A.VTsignature  -> Some 1
-        | A.VTcurrency , A.VTnat        -> Some 1
-        | A.VTduration , A.VTint        -> Some 1
+
+        | A.VTcurrency , A.VTnat when not for_eq -> Some 1
+        | A.VTduration , A.VTint when not for_eq -> Some 1
 
         | _, _ -> None
       end
@@ -196,15 +197,15 @@ end = struct
     | _, _ ->
       None
 
-  let compatible ?autoview ~(from_ : A.ptyp) ~(to_ : A.ptyp) =
-    Option.is_some (distance ?autoview ~from_ ~to_)
+  let compatible ?autoview ?for_eq ~(from_ : A.ptyp) ~(to_ : A.ptyp) =
+    Option.is_some (distance ?autoview ?for_eq ~from_ ~to_)
 
   let join ?autoview (tys : A.ptyp list) =
     let module E = struct exception Error end in
 
     let join2 ty1 ty2 =
-      if compatible ?autoview ~from_:ty1 ~to_:ty2 then ty2 else
-      if compatible ?autoview ~from_:ty2 ~to_:ty1 then ty1 else
+      if compatible ?autoview ~for_eq:false ~from_:ty1 ~to_:ty2 then ty2 else
+      if compatible ?autoview ~for_eq:false ~from_:ty2 ~to_:ty1 then ty1 else
         raise E.Error in
 
     try
@@ -215,12 +216,12 @@ end = struct
     with E.Error -> None
 
   let distance ~(from_ : A.ptyp) ~(to_ : A.ptyp) =
-    distance ~autoview:false ~from_ ~to_
+    distance ~autoview:false ~for_eq:false ~from_ ~to_
 
   let sig_compatible ~(from_ : A.ptyp list) ~(to_ : A.ptyp list) =
     List.length from_ = List.length to_
     && List.for_all2
-      (fun from_ to_ -> compatible ~autoview:false ~from_ ~to_)
+      (fun from_ to_ -> compatible ~autoview:false ~for_eq:false ~from_ ~to_)
       from_ to_
 
   let sig_distance ~(from_ : A.ptyp list) ~(to_ : A.ptyp list) =
@@ -260,7 +261,7 @@ end = struct
             map := !map |> Mint.update i (function
                 | None    -> Some tg
                 | Some ty ->
-                  if   compatible ~autoview:false ~to_:ty ~from_:tg
+                  if   compatible ~autoview:false ~for_eq:false ~to_:ty ~from_:tg
                   then Some ty
                   else raise E.Error)
           end
@@ -307,7 +308,7 @@ end = struct
 
       in
 
-      if not (compatible ~autoview:false ~to_:ptn ~from_:tg) then
+      if not (compatible ~autoview:false ~for_eq:false ~to_:ptn ~from_:tg) then
         doit ptn tg
 
     with E.Error -> raise UnificationFailure
@@ -1746,8 +1747,8 @@ let select_operator env ?(formula = false) ?(asset = false) loc (op, tys) =
           if not formula && (not (Type.support_eq t1) || not (Type.support_eq t2)) then
             raise E.NoEq;
 
-          if not (Type.compatible ~autoview:false ~from_:t1 ~to_:t2) &&
-             not (Type.compatible ~autoview:false ~from_:t2 ~to_:t1) then
+          if not (Type.compatible ~autoview:false ~for_eq:true ~from_:t1 ~to_:t2) &&
+             not (Type.compatible ~autoview:false ~for_eq:true ~from_:t2 ~to_:t1) then
             raise E.NoEq;
 
           Some ({ osl_sig = [t1; t2]; osl_ret = A.Tbuiltin A.VTbool; })
@@ -1771,7 +1772,7 @@ let select_operator env ?(formula = false) ?(asset = false) loc (op, tys) =
           | true, PT.Arith PT.Plus,
             [Tcontainer ((Tasset _) as aty, Partition) as rty;
              Tcontainer ((Tasset _) as sty, Collection)]
-            when Type.compatible ~autoview:false ~from_:sty ~to_:aty
+            when Type.compatible ~autoview:false ~for_eq:false ~from_:sty ~to_:aty
             -> [{ osl_sig = tys; osl_ret = rty }]
 
           | true, PT.Arith PT.Plus,
@@ -1782,7 +1783,7 @@ let select_operator env ?(formula = false) ?(asset = false) loc (op, tys) =
 
             let asset = Env.Asset.get env (unloc aty) in
 
-            if Type.compatible ~autoview:false  ~from_:sty ~to_:asset.as_pkty then
+            if Type.compatible ~autoview:false ~for_eq:false ~from_:sty ~to_:asset.as_pkty then
               [{ osl_sig = tys; osl_ret = rty }]
             else []
 
@@ -3184,7 +3185,7 @@ and cast_expr ?(autoview = false) (env : env) (to_ : A.ptyp option) (e : A.pterm
     A.mk_sp ~loc:e.loc ~type_:to_ (A.Pcast (from_, to_, e))
 
   | Some to_, { type_ = Some from_ } ->
-    if not (Type.compatible ~autoview ~from_ ~to_) then
+    if not (Type.compatible ~autoview ~for_eq:false ~from_ ~to_) then
       Env.emit_error env (e.loc, IncompatibleTypes (from_, to_));
     if not (Type.equal from_ to_) then
       A.mk_sp ~loc:e.loc ~type_:to_ (A.Pcast (from_, to_, e))
@@ -3675,7 +3676,7 @@ and for_role (env : env) (name : PT.lident) =
     None
 
   | Some nty ->
-    if not (Type.compatible ~autoview:false ~from_:nty.vr_type ~to_:A.vtrole) then
+    if not (Type.compatible ~autoview:false ~for_eq:false ~from_:nty.vr_type ~to_:A.vtrole) then
       (Env.emit_error env (loc name, NotARole (unloc name)); None)
     else Some name
 
@@ -4874,14 +4875,7 @@ let for_asset_decl
           if xname = unloc adecl.as_name then Some xinv else None) xspecs in
     invs @ xinvs in
 
-  let bigmaps =
-    (* let valid_to_type_values = ["big_map"] in
-
-       List.iter (function
-        | PT.AOto v when not (List.exists (String.equal (unloc v)) valid_to_type_values) ->
-          Env.emit_error env (loc v, UnknownAssetToProperty (unloc v))
-        | _ -> ()) opts; *)
-    List.exists (function PT.AOtoBigMap -> true | _ -> false) opts in
+  let bigmaps = List.exists (function PT.AOtoBigMap -> true | _ -> false) opts in
 
   let pks =
     let dokey key =
