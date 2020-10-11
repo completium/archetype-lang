@@ -29,7 +29,7 @@ and type_r =
   | Tcontract  of type_t
   | Tkeyof     of type_t
 
-and type_t = type_r loced
+and type_t = type_r loced * lident option
 
 (* -------------------------------------------------------------------- *)
 and logical_operator =
@@ -389,8 +389,7 @@ and archetype = archetype_unloc loced
 
 (* types *)
 
-let tref ?(loc=dummy) vt : type_t =
-  mkloc loc (Tref (mkloc loc vt))
+let tref ?(loc=dummy) ?a vt : type_t = (mkloc loc (Tref (mkloc loc vt))), a
 
 let tunit      = tref "unit"
 let tstring    = tref "string"
@@ -410,32 +409,32 @@ let tbytes     = tref "bytes"
 let tchain_id  = tref "chain_id"
 let toperation = tref "operation"
 
-let mk_tcontainer ?(loc=dummy) t c : type_t =
-  mkloc loc (Tcontainer (t, c))
+let mk_tcontainer ?(loc=dummy) ?a t c : type_t =
+  mkloc loc (Tcontainer (t, c)), a
 
-let mk_ttuple ?(loc=dummy) l : type_t =
-  mkloc loc (Ttuple l)
+let mk_ttuple ?(loc=dummy) ?a l : type_t =
+  mkloc loc (Ttuple l), a
 
-let mk_toption ?(loc=dummy) t : type_t =
-  mkloc loc (Toption t)
+let mk_toption ?(loc=dummy) ?a t : type_t =
+  mkloc loc (Toption t), a
 
-let mk_tset ?(loc=dummy) t : type_t =
-  mkloc loc (Tset t)
+let mk_tset ?(loc=dummy) ?a t : type_t =
+  mkloc loc (Tset t), a
 
-let mk_tlist ?(loc=dummy) t : type_t =
-  mkloc loc (Tlist t)
+let mk_tlist ?(loc=dummy) ?a t : type_t =
+  mkloc loc (Tlist t), a
 
-let mk_tmap ?(loc=dummy) k v : type_t =
-  mkloc loc (Tmap (k, v))
+let mk_tmap ?(loc=dummy) ?a k v : type_t =
+  mkloc loc (Tmap (k, v)), a
 
-let mk_tor ?(loc=dummy) k v : type_t =
-  mkloc loc (Tor (k, v))
+let mk_tor ?(loc=dummy) ?a k v : type_t =
+  mkloc loc (Tor (k, v)), a
 
-let mk_tcontract ?(loc=dummy) t : type_t =
-  mkloc loc (Tcontract t)
+let mk_tcontract ?(loc=dummy) ?a t : type_t =
+  mkloc loc (Tcontract t), a
 
-let mk_tkeyof ?(loc=dummy) t : type_t =
-  mkloc loc (Tkeyof t)
+let mk_tkeyof ?(loc=dummy) ?a t : type_t =
+  mkloc loc (Tkeyof t), a
 
 
 

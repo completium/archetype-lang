@@ -99,81 +99,77 @@ let pp_id fmt (id : lident) =
 let pp_container fmt c =
   Format.fprintf fmt "%s" (container_to_str c)
 
-let rec pp_type outer pos fmt e =
-  let pp_type_default = pp_type e_default PNone in
+let rec pp_type fmt (e, a) =
+  let f fmt x = pp_type fmt x in
 
-  match unloc e with
-  | Tref x ->
-    Format.fprintf fmt
-      "%a"
-      pp_id x
-
-  | Tcontainer (x, y) ->
-    Format.fprintf fmt
-      "%a<%a>"
-      pp_container y
-      pp_type_default x
-
-  | Ttuple l ->
-
-    let pp fmt l =
+  let pp_e fmt e =
+    match unloc e with
+    | Tref x ->
       Format.fprintf fmt
-        "(%a)"
-        (pp_list " * " (pp_type e_tuple PInfix)) l
-    in
-    (maybe_paren outer e_tuple pos pp) fmt l
+        "%a"
+        pp_id x
 
-  | Toption x ->
-    Format.fprintf fmt
-      "option<%a>"
-      pp_type_default x
+    | Tcontainer (x, y) ->
+      Format.fprintf fmt
+        "%a<%a>"
+        pp_container y
+        f x
 
-  | Tset x ->
-    Format.fprintf fmt
-      "set<%a>"
-      pp_type_default x
+    | Ttuple l -> (pp_paren (pp_list " * " f)) fmt l
 
-  | Tlist x ->
-    Format.fprintf fmt
-      "list<%a>"
-      pp_type_default x
+    | Toption x ->
+      Format.fprintf fmt
+        "option<%a>"
+        f x
 
-  | Tmap (k, v) ->
-    Format.fprintf fmt
-      "map<%a, %a>"
-      pp_type_default k
-      pp_type_default v
+    | Tset x ->
+      Format.fprintf fmt
+        "set<%a>"
+        f x
 
-  | Tbig_map (k, v) ->
-    Format.fprintf fmt
-      "big_map<%a, %a>"
-      pp_type_default k
-      pp_type_default v
+    | Tlist x ->
+      Format.fprintf fmt
+        "list<%a>"
+        f x
 
-  | Tor (k, v) ->
-    Format.fprintf fmt
-      "or<%a, %a>"
-      pp_type_default k
-      pp_type_default v
+    | Tmap (k, v) ->
+      Format.fprintf fmt
+        "map<%a, %a>"
+        f k
+        f v
 
-  | Tlambda (a, r) ->
-    Format.fprintf fmt
-      "lambda<%a, %a>"
-      pp_type_default a
-      pp_type_default r
+    | Tbig_map (k, v) ->
+      Format.fprintf fmt
+        "big_map<%a, %a>"
+        f k
+        f v
 
-  | Tcontract t ->
-    Format.fprintf fmt
-      "contract<%a>"
-      pp_type_default t
+    | Tor (k, v) ->
+      Format.fprintf fmt
+        "or<%a, %a>"
+        f k
+        f v
 
-  | Tkeyof t ->
-    Format.fprintf fmt
-      "pkey<%a>"
-      pp_type_default t
+    | Tlambda (a, r) ->
+      Format.fprintf fmt
+        "lambda<%a, %a>"
+        f a
+        f r
 
-let pp_type fmt e = pp_type e_default PNone fmt e
+    | Tcontract t ->
+      Format.fprintf fmt
+        "contract<%a>"
+        f t
 
+    | Tkeyof t ->
+      Format.fprintf fmt
+        "pkey<%a>"
+        f t
+  in
+
+  match a with
+  | None -> pp_e fmt e
+  | Some a -> Format.fprintf fmt "(%a %%%a)" pp_e e pp_id a
 
 (* -------------------------------------------------------------------------- *)
 let logical_operator_to_str op =
@@ -634,7 +630,7 @@ let rec pp_expr outer pos fmt a =
   | Eletin (id, t, e, body, other) ->
     let f =
       match t with
-      | Some ({pldesc= Ttuple _; _}) -> pp_paren
+      | Some ({pldesc= Ttuple _; _}, _) -> pp_paren
       | _ -> pp_neutral
     in
     let pp fmt (id, t, e, body, other) =
@@ -655,7 +651,7 @@ let rec pp_expr outer pos fmt a =
     let pp fmt (id, t, e) =
       let f =
         match t with
-        | Some ({pldesc= Ttuple _; _}) -> pp_paren
+        | Some ({pldesc= Ttuple _; _}, _) -> pp_paren
         | _ -> pp_neutral
       in
       Format.fprintf fmt "var %a%a = %a"

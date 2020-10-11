@@ -529,14 +529,15 @@ enum_option:
 | WITH xs=braced(label_exprs) { EOspecification (xs) }
 
 %inline type_t:
-| e=loc(type_r) { e }
+| t=loc(type_r)                             { (t, None) }
+| LPAREN t=loc(type_r) a=loc(PIDENT) RPAREN { (t, Some a) }
+
+%inline type_s:
+| x=loc(type_s_unloc)     { (x, None) }
 
 type_r:
 | x=type_s xs=type_tuples { Ttuple (x::xs) }
 | x=type_s_unloc          { x }
-
-%inline type_s:
-| x=loc(type_s_unloc)     { x }
 
 type_s_unloc:
 | x=ident                                          { Tref x            }
@@ -550,7 +551,6 @@ type_s_unloc:
 | OR          LESS k=type_t COMMA v=type_s GREATER { Tor (k, v)        }
 | LAMBDA      LESS a=type_t COMMA r=type_s GREATER { Tlambda (a, r)    }
 | CONTRACT    LESS x=type_t GREATER                { Tcontract x       }
-| LPAREN x=type_r _a=loc(PIDENT) RPAREN          { x                 }
 | x=paren(type_r)                                  { x                 }
 
 %inline type_tuples:

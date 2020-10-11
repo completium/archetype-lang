@@ -71,7 +71,7 @@ let pp_archetype fmt pt =
           ) exts
       in
       let roles : variable_decl list =
-        List.fold_right (fun x accu -> x |> unloc |> function | Dvariable ((_, {pldesc = Tref {pldesc = "role"}; _}, _, _, _, _) as a) -> a::accu | _ -> accu) es []
+        List.fold_right (fun x accu -> x |> unloc |> function | Dvariable ((_, ({pldesc = Tref {pldesc = "role"}; _}, _), _, _, _, _) as a) -> a::accu | _ -> accu) es []
       in
       match roles with
       | [] -> ()

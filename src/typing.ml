@@ -1905,7 +1905,7 @@ let tt_cmp_operator (op : PT.comparison_operator) =
 exception InvalidType
 
 let for_type_exn ?pkey (env : env) =
-  let rec doit ?(canasset = false) (ty : PT.type_t) : A.ptyp =
+  let rec doit ?(canasset = false) ((ty, _) : PT.type_t) : A.ptyp =
     match unloc ty with
     | Tref x -> begin
         match Env.Type.lookup env (unloc x) with
@@ -1922,14 +1922,14 @@ let for_type_exn ?pkey (env : env) =
       let ty = doit ~canasset:true pty in
 
       if not (Type.is_asset ty) then
-        Env.emit_error env (loc pty, ContainerOfNonAsset);
+        Env.emit_error env (loc (fst pty), ContainerOfNonAsset);
       A.Tcontainer (ty, for_container env ctn)
 
     | Tset ty ->
       let t = doit ty in
 
       if not (Type.Michelson.is_comparable ~simple:true t) then
-        Env.emit_error env (loc ty, InvalidTypeForSet);
+        Env.emit_error env (loc (fst ty), InvalidTypeForSet);
 
       A.Tset (doit ty)
 
@@ -1940,10 +1940,10 @@ let for_type_exn ?pkey (env : env) =
       let nk, nv = doit k, doit v in
 
       if not (Type.Michelson.is_comparable nk) then
-        Env.emit_error env (loc k, InvalidTypeForMapKey);
+        Env.emit_error env (loc (fst k), InvalidTypeForMapKey);
 
       if not (Type.Michelson.is_type nv) then
-        Env.emit_error env (loc v, InvalidTypeForMapValue);
+        Env.emit_error env (loc (fst v), InvalidTypeForMapValue);
 
       A.Tmap (nk, nv)
 
@@ -1951,10 +1951,10 @@ let for_type_exn ?pkey (env : env) =
       let nk, nv = doit k, doit v in
 
       if not (Type.Michelson.is_comparable nk) then
-        Env.emit_error env (loc k, InvalidTypeForBigMapKey);
+        Env.emit_error env (loc (fst k), InvalidTypeForBigMapKey);
 
       if not (Type.Michelson.is_type nv) then
-        Env.emit_error env (loc v, InvalidTypeForBigMapValue);
+        Env.emit_error env (loc (fst v), InvalidTypeForBigMapValue);
 
       A.Tbig_map (nk, nv)
 
@@ -1962,10 +1962,10 @@ let for_type_exn ?pkey (env : env) =
       let nl, nr = doit l, doit r in
 
       if not (Type.Michelson.is_type nl) then
-        Env.emit_error env (loc l, InvalidTypeForOrLeft);
+        Env.emit_error env (loc (fst l), InvalidTypeForOrLeft);
 
       if not (Type.Michelson.is_type nr) then
-        Env.emit_error env (loc r, InvalidTypeForOrRight);
+        Env.emit_error env (loc (fst r), InvalidTypeForOrRight);
 
       A.Tor (nl, nr)
 
@@ -1973,10 +1973,10 @@ let for_type_exn ?pkey (env : env) =
       let na, nr = doit a, doit r in
 
       if not (Type.Michelson.is_type na) then
-        Env.emit_error env (loc a, InvalidTypeForLambdaArgument);
+        Env.emit_error env (loc (fst a), InvalidTypeForLambdaArgument);
 
       if not (Type.Michelson.is_type nr) then
-        Env.emit_error env (loc r, InvalidTypeForLambdaReturn);
+        Env.emit_error env (loc (fst r), InvalidTypeForLambdaReturn);
 
       A.Tlambda (na, nr)
 
@@ -2003,7 +2003,7 @@ let for_type_exn ?pkey (env : env) =
           end
 
         | _ ->
-          Env.emit_error env (loc ty, NotAnAssetType);
+          Env.emit_error env (loc (fst ty), NotAnAssetType);
           raise InvalidType
       end
 
@@ -2018,18 +2018,18 @@ let for_asset_type (env : env) (ty : PT.type_t) : A.lident option =
   | None ->
     None
   | Some None ->
-    Env.emit_error env (loc ty, NotAnAssetType);
+    Env.emit_error env (loc (fst ty), NotAnAssetType);
     None
   | Some (Some x) ->
     Some x
 
 (* -------------------------------------------------------------------- *)
 let for_asset_keyof_type (env : env) (ty : PT.type_t) : A.lident option =
-  match unloc ty with
+  match unloc (fst ty) with
   | PT.Tkeyof t ->
     for_asset_type env t
   | _ ->
-    Env.emit_error env (loc ty, NotAKeyOfType);
+    Env.emit_error env (loc (fst ty), NotAKeyOfType);
     None
 
 (* -------------------------------------------------------------------- *)
@@ -5194,7 +5194,7 @@ let for_record_decl (env : env) (decl : PT.record_decl loced) =
 
       ty |> Option.iter (fun ty ->
           if not (Type.Michelson.is_type ty) then
-            Env.emit_error env (loc pty, InvalidRecordFieldType));
+            Env.emit_error env (loc (fst pty), InvalidRecordFieldType));
       let e  = e |> Option.map (for_expr `Concrete env ?ety:ty) in
       (x, ty, e) in
     List.map for1 fields in
