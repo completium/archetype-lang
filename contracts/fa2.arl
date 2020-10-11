@@ -101,45 +101,51 @@ entry set_hook (ti : nat, h : option<contract<transfer_descriptor_param>>) {
 }
 
 function apply_hook (
-  token_id    : nat,
-  owner       : address,
+  itoken_id    : nat,
+  iowner       : address,
   tp          : transfer_descriptor_param,
   hook_policy : owner_hook_policy) : or<option<operation>,string> {
-  var op : option<operation> =
-    match hook_policy with
+  return
+    (match hook_policy with
     | Owner_no_hook -> left<_,string>(none<operation>)
     | Optional_owner_hook -> begin
-      match_option ledger[(token_id, owner)].hook with
-      | some(h) -> some(mkoperation(0tz,h,tp))
-      | none -> none<operation>
+      match_option ledger[(itoken_id, iowner)].hook with
+      | some(h) -> left<_,string>(some(mkoperation(0tz,h,tp)))
+      | none -> left<_,string>(none<operation>)
       end
     end
     | Required_owner_hook ->
-      match_option ledger[(token_id, owner)].hook with
-      | some(h) -> some(mkoperation(0tz,h,tp))
-      | none -> fail("FA2_HOOK_NOT_SET")
+      match_option ledger[(itoken_id, iowner)].hook with
+      | some(h) -> left<_,string>(some(mkoperation(0tz,h,tp)))
+      | none -> right<option<operation>, _>("FA2_HOOK_NOT_SET")
       end
-    end;
-  return op
+    end)
 }
 
 entry %transfer(%from : address, tds : list<transfer_destination>) {
   var hook_applied_for : set<bool> = [];
   var transfer_param = get_transfer_param(%from, tds);
-  operations := prepend(operations, apply_hook(%from, transfer_param));
+  match_or (apply_hook(%from, transfer_param)) with
+  | left(sop) -> begin
+      match_option sop with
+      | some (op) -> operations := prepend(operations, op)
+      | none -> ()
+      end
+    end
+  | right(msg) -> fail (msg)
+  end;
   for td in tds do
     match_option apply_transfer_policy(%from, td) with
     | some(msg) -> fail(msg)
     | none -> begin
-      dorequire(tokens.contains(td.token_id), "FA2_TOKEN_UNDEFINED");
-      dorequire(ledger[(td.token_id, %from)].amount >= td.token_amount, "FA2_INSUFFICIENT_BALANCE");
-      operations := prepend(operations, apply_hook(td.%to, transfer_param));
-      ledger.update((td.token_id, %from), { amount -= td.token_amount });
-      ledger.addupdate((td.token_id, td.%to), { amount += td.token_amount });
+        dorequire(tokens.contains(td.token_id), "FA2_TOKEN_UNDEFINED");
+        dorequire(ledger[(td.token_id, %from)].amount >= td.token_amount, "FA2_INSUFFICIENT_BALANCE");
+        operations := prepend(operations, apply_hook(td.%to, transfer_param));
+        ledger.update((td.token_id, %from), { amount -= td.token_amount });
+        ledger.addupdate((td.token_id, td.%to), { amount += td.token_amount });
       end
     end
-  done;
-
+  done
 }
 
 record balance_of_request {

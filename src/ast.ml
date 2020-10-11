@@ -51,21 +51,21 @@ type ptyp =
   | Trecord of lident
   | Tenum of lident
   | Tbuiltin of vtyp
-  | Tcontainer of ptyp * container
-  | Tset of ptyp
-  | Tlist of ptyp
-  | Tmap of ptyp * ptyp
-  | Tbig_map of ptyp * ptyp
-  | Tor of ptyp * ptyp
-  | Tlambda of ptyp * ptyp
-  | Ttuple of ptyp list
-  | Toption of ptyp
+  | Tcontainer of type_ * container
+  | Tset of type_
+  | Tlist of type_
+  | Tmap of type_ * type_
+  | Tbig_map of type_ * type_
+  | Tor of type_ * type_
+  | Tlambda of type_ * type_
+  | Ttuple of type_ list
+  | Toption of type_
   | Toperation
-  | Tcontract of ptyp
+  | Tcontract of type_
   | Ttrace of trtyp
 [@@deriving show {with_path = false}]
 
-type type_ = ptyp (* type of pterm *)
+and type_ = ptyp (* * lident option *) (* type of pterm *)
 [@@deriving show {with_path = false}]
 
 (* operators and constants *)
@@ -209,7 +209,7 @@ type const =
 
 type ('node) struct_poly = {
   node : 'node;                   (* kind of object *)
-  type_ : ptyp option;            (* type of object *)
+  type_ : type_ option;            (* type of object *)
   label : ident option;           (* label (typically for instruction) *)
   loc : Location.t [@opaque];     (* location of object *)
 }
@@ -327,8 +327,8 @@ type 'id term_node  =
   | Puarith of unary_arithmetic_operator * 'id term_gen
   | Precord of 'id term_gen list
   | Precupdate of 'id term_gen * ('id * 'id term_gen) list
-  | Pletin of 'id * 'id term_gen * ptyp option * 'id term_gen * 'id term_gen option (* ident * init * type * body * otherwise *)
-  | Pdeclvar of 'id * ptyp option * 'id term_gen
+  | Pletin of 'id * 'id term_gen * type_ option * 'id term_gen * 'id term_gen option (* ident * init * type * body * otherwise *)
+  | Pdeclvar of 'id * type_ option * 'id term_gen
   | Pvar of var_temporality * vset * 'id
   | Parray of 'id term_gen list
   | Plit of bval
@@ -338,17 +338,17 @@ type 'id term_node  =
   | Ptupleaccess of 'id term_gen * Core.big_int
   | Pnone
   | Psome of 'id term_gen
-  | Pleft of ptyp * 'id term_gen
-  | Pright of ptyp * 'id term_gen
-  | Plambda of ptyp * 'id * ptyp * 'id term_gen
-  | Pcast of ptyp * ptyp * 'id term_gen
+  | Pleft of type_ * 'id term_gen
+  | Pright of type_ * 'id term_gen
+  | Plambda of type_ * 'id * type_ * 'id term_gen
+  | Pcast of type_ * type_ * 'id term_gen
   | Pself of 'id
-  | Pentrypoint of ptyp * 'id * 'id term_gen
+  | Pentrypoint of type_ * 'id * 'id term_gen
 [@@deriving show {with_path = false}]
 
 and 'id term_arg =
   | AExpr    of 'id term_gen
-  | AFun     of 'id * ptyp * ('id * ptyp * 'id term_gen) list * 'id term_gen
+  | AFun     of 'id * type_ * ('id * type_ * 'id term_gen) list * 'id term_gen
   | AEffect  of ('id * operator * 'id term_gen) list
   | ASorting of bool * 'id
 [@@deriving show {with_path = false}]
@@ -394,7 +394,7 @@ and 'id instruction_node =
   | Imatchoption of 'id term_gen * 'id * 'id instruction_gen * 'id instruction_gen
   | Imatchor     of 'id term_gen * 'id * 'id instruction_gen * 'id * 'id instruction_gen
   | Imatchlist   of 'id term_gen * 'id * 'id * 'id instruction_gen * 'id instruction_gen
-  | Iassign of (assignment_operator * ptyp * 'id lvalue_gen * 'id term_gen)         (* $2 assignment_operator $3 *)
+  | Iassign of (assignment_operator * type_ * 'id lvalue_gen * 'id term_gen)         (* $2 assignment_operator $3 *)
   | Irequire of (bool * 'id term_gen * 'id term_gen)                                               (* $1 ? require : failif *)
   | Itransfer of ('id term_gen * 'id transfer_t)
   | Icall of ('id term_gen option * 'id call_kind * ('id term_arg) list)
@@ -418,7 +418,7 @@ and lvalue = lident lvalue_gen
 
 type 'id decl_gen = {
   name    : 'id;
-  typ     : ptyp option;
+  typ     : type_ option;
   default : 'id term_gen option;
   shadow  : bool;
   loc     : Location.t [@opaque];
@@ -562,7 +562,7 @@ type 'id function_struct = {
   args          : ('id decl_gen) list;
   body          : 'id instruction_gen;
   specification : 'id specification option;
-  return        : ptyp;
+  return        : type_;
   loc           : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -588,7 +588,7 @@ type rexpr = lident rexpr_gen
 
 type 'id transition = {
   from : 'id sexpr_gen;
-  on   : ('id * ptyp * 'id * ptyp) option; (* key ident * key type * asset name * asset state type *)
+  on   : ('id * type_ * 'id * type_) option; (* key ident * key type * asset name * asset state type *)
   trs  : ('id * 'id term_gen option * 'id instruction_gen option) list; (* to * condition * entry*)
 }
 [@@deriving show {with_path = false}]
@@ -689,7 +689,7 @@ type 'id ast_struct = {
 
 and ast = lident ast_struct
 
-(* vtyp -> ptyp *)
+(* vtyp -> type_ *)
 let vtunit       = Tbuiltin (VTunit      )
 let vtbool       = Tbuiltin (VTbool      )
 let vtnat        = Tbuiltin (VTnat       )

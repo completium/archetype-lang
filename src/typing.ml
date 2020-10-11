@@ -152,6 +152,7 @@ end = struct
 
       | A.Tcontract _ -> true
       | A.Trecord   _ -> true
+      | A.Toperation  -> true
 
       | _ -> false
   end
