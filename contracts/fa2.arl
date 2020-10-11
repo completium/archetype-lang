@@ -12,17 +12,35 @@ enum owner_hook_policy =
 | Optional_owner_hook
 | Required_owner_hook
 
-variable permissions_descriptor : operator_transfer_policy * owner_hook_policy * owner_hook_policy
-    = (Owner_or_operator_transfer, Owner_no_hook, Owner_no_hook)
+/* variable permissions_descriptor : operator_transfer_policy * owner_hook_policy * owner_hook_policy
+    = (Owner_or_operator_transfer, Owner_no_hook, Owner_no_hook) */
 
 asset tokens {
-  id : nat
+  id : nat;
+  permissions_desc : operator_transfer_policy * owner_hook_policy * owner_hook_policy;
+}
+
+record transfer_destination_descriptor {
+  to_desc            : option<address>;
+  token_id_desc      : nat;
+  token_amount_desc  : nat;
+}
+
+record transfer_descriptor {
+  from_  : option<address>;
+  txs    : list<transfer_destination_descriptor>;
+}
+
+record transfer_descriptor_param {
+  batch          : list<transfer_descriptor>;
+  operator_p     : address;
 }
 
 asset ledger identified by token owner to big_map {
   token  : nat;
   owner  : address;
   amount : nat = 0;
+  hook   : option<contract<transfer_descriptor_param>> = none;
 }
 
 asset operator identified by op_addr op_token_id op_owner_addr to big_map {
@@ -37,9 +55,10 @@ record transfer_destination {
   token_amount : nat
 }
 
+
 function apply_transfer_policy (%from : address, tr : transfer_destination) : option<string> {
   var res : option<string> =
-    match permissions_descriptor[0] with
+    match tokens[tr.token_id].permissions_desc[0] with
     | No_transfer ->
       if caller = admin then
         none<string>
@@ -60,17 +79,54 @@ function apply_transfer_policy (%from : address, tr : transfer_destination) : op
   return res
 }
 
-entry add_token (new_token_id : nat, totalsupply : nat) {
+entry add_token (
+  new_token_id : nat,
+  totalsupply  : nat,
+  owner_hook   : option<contract<transfer_descriptor_param>>,
+  permissions  : operator_transfer_policy * owner_hook_policy * owner_hook_policy) {
   failif {
     f0 : tokens.contains(new_token_id);
   }
   effect {
-    ledger.add({ new_token_id; caller; totalsupply });
-    tokens.add ({ new_token_id });
+    ledger.add ({ new_token_id; caller; totalsupply; owner_hook });
+    tokens.add ({ new_token_id; permissions });
   }
 }
 
+entry set_hook (ti : nat, h : option<contract<transfer_descriptor_param>>) {
+  // if only 'update', it is impossble to set the hook if no token is possessed ...
+  // how to prove that it is impossible not to set the hook ?
+  // no fail and valid postcondition ?
+  ledger.addupdate ((ti, caller), { hook = h });
+}
+
+function apply_hook (
+  token_id : nat,
+  owner : address,
+  tp : transfer_descriptor_param,
+  hook_policy : owner_hook_policy) : option<operation> {
+  var op : option<operation> =
+    match hook_policy with
+    | Owner_no_hook -> none<operation>
+    | Optional_owner_hook -> begin
+      match_option ledger[(token_id, owner)].hook with
+      | some(h) -> some(mkoperation(0tz,h,tp))
+      | none -> none<operation>
+      end
+    end
+    | Required_owner_hook ->
+      match_option ledger[(token_id, owner)].hook with
+      | some(h) -> some(mkoperation(0tz,h,tp))
+      | none -> fail("FA2_HOOK_NOT_SET")
+      end
+    end;
+  return op
+}
+
 entry %transfer(%from : address, tds : list<transfer_destination>) {
+  var hook_applied_for : set<bool> = [];
+  var transfer_param = get_transfer_param(%from, tds);
+  operations := prepend(operations, apply_hook(%from, transfer_param));
   for td in tds do
     match_option apply_transfer_policy(%from, td) with
     | some(msg) ->
@@ -78,11 +134,13 @@ entry %transfer(%from : address, tds : list<transfer_destination>) {
     | none -> begin
         dorequire(tokens.contains(td.token_id), "FA2_TOKEN_UNDEFINED");
         dorequire(ledger[(td.token_id, %from)].amount >= td.token_amount, "FA2_INSUFFICIENT_BALANCE");
+        operations := prepend(operations, apply_hook(td.%to, transfer_param));
         ledger.update((td.token_id, %from), { amount -= td.token_amount });
         ledger.addupdate((td.token_id, td.%to), { amount += td.token_amount });
       end
     end
   done;
+
 }
 
 record balance_of_request {
