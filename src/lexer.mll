@@ -158,7 +158,7 @@ rule token = parse
   | "@remove"             { AT_REMOVE }
   | "@update"             { AT_UPDATE }
   | ident as id           { try  Hashtbl.find keywords id with Not_found -> IDENT id }
-  | pident as id          { IDENT (String.sub id 1 ((String.length id) - 1)) }
+  | pident as id          { PIDENT (String.sub id 1 ((String.length id) - 1)) }
   | tz as t               { TZ   (Big_int.big_int_of_string (String.sub t 0 ((String.length t) - 2))) }
   | mtz as t              { MTZ  (Big_int.big_int_of_string (String.sub t 0 ((String.length t) - 3))) }
   | utz as t              { UTZ  (Big_int.big_int_of_string (String.sub t 0 ((String.length t) - 3))) }

@@ -48,6 +48,7 @@ let string_of_token = function
   | PKEY            -> "PKEY"
   | PIPEEQUAL       -> "OREQUAL"
   | PIPE            -> "PIPE"
+  | PIDENT s        -> Printf.sprintf "PIDENT(%s)" s
   | PERCENTRBRACKET -> "PERCENTRBRACKET"
   | PERCENT_LIT n   -> Printf.sprintf "PERCENT_LIT(%s)" (Big_int.string_of_big_int n)
   | PERCENT         -> "PERCENT"
@@ -205,6 +206,7 @@ let string_of_symbol = function
   | X (T T_PKEY) -> "pkey"
   | X (T T_PIPEEQUAL) -> "|="
   | X (T T_PIPE) -> "|"
+  | X (T T_PIDENT) -> "an pident"
   | X (T T_PERCENTRBRACKET) -> "%]"
   | X (T T_PERCENT) -> "%"
   | X (T T_PERCENT_LIT) -> "a literal percent"

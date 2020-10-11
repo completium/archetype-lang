@@ -174,6 +174,7 @@
 %token INVALID_EFFECT
 
 %token <string> IDENT
+%token <string> PIDENT
 %token <string> STRING
 %token <Big_int.big_int> NUMBERINT
 %token <Big_int.big_int> NUMBERNAT
@@ -549,6 +550,7 @@ type_s_unloc:
 | OR          LESS k=type_t COMMA v=type_s GREATER { Tor (k, v)        }
 | LAMBDA      LESS a=type_t COMMA r=type_s GREATER { Tlambda (a, r)    }
 | CONTRACT    LESS x=type_t GREATER                { Tcontract x       }
+| LPAREN x=type_r _a=loc(PIDENT) RPAREN          { x                 }
 | x=paren(type_r)                                  { x                 }
 
 %inline type_tuples:
@@ -624,6 +626,7 @@ field_r:
 
 %inline ident:
 | x=loc(IDENT) { x }
+| x=loc(PIDENT) { x }
 
 entry:
   ENTRY exts=option(extensions) x=ident
