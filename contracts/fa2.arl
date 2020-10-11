@@ -101,13 +101,13 @@ entry set_hook (ti : nat, h : option<contract<transfer_descriptor_param>>) {
 }
 
 function apply_hook (
-  token_id : nat,
-  owner : address,
-  tp : transfer_descriptor_param,
-  hook_policy : owner_hook_policy) : option<operation> {
+  token_id    : nat,
+  owner       : address,
+  tp          : transfer_descriptor_param,
+  hook_policy : owner_hook_policy) : or<option<operation>,string> {
   var op : option<operation> =
     match hook_policy with
-    | Owner_no_hook -> none<operation>
+    | Owner_no_hook -> left<_,string>(none<operation>)
     | Optional_owner_hook -> begin
       match_option ledger[(token_id, owner)].hook with
       | some(h) -> some(mkoperation(0tz,h,tp))
@@ -129,14 +129,13 @@ entry %transfer(%from : address, tds : list<transfer_destination>) {
   operations := prepend(operations, apply_hook(%from, transfer_param));
   for td in tds do
     match_option apply_transfer_policy(%from, td) with
-    | some(msg) ->
-      fail(msg)
+    | some(msg) -> fail(msg)
     | none -> begin
-        dorequire(tokens.contains(td.token_id), "FA2_TOKEN_UNDEFINED");
-        dorequire(ledger[(td.token_id, %from)].amount >= td.token_amount, "FA2_INSUFFICIENT_BALANCE");
-        operations := prepend(operations, apply_hook(td.%to, transfer_param));
-        ledger.update((td.token_id, %from), { amount -= td.token_amount });
-        ledger.addupdate((td.token_id, td.%to), { amount += td.token_amount });
+      dorequire(tokens.contains(td.token_id), "FA2_TOKEN_UNDEFINED");
+      dorequire(ledger[(td.token_id, %from)].amount >= td.token_amount, "FA2_INSUFFICIENT_BALANCE");
+      operations := prepend(operations, apply_hook(td.%to, transfer_param));
+      ledger.update((td.token_id, %from), { amount -= td.token_amount });
+      ledger.addupdate((td.token_id, td.%to), { amount += td.token_amount });
       end
     end
   done;
