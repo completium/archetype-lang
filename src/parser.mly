@@ -852,54 +852,6 @@ expr_r:
  | RETURN x=simple_expr
      { Ereturn x }
 
- | SOME x=paren(simple_expr)
-     { Eoption (OSome x) }
-
- | NONE %prec prec_order
-     { Eoption (ONone None) }
-
- | NONE LESS t=type_t GREATER
-     { Eoption (ONone (Some t)) }
-
- | LEFT LESS t=type_t GREATER x=paren(expr)
-     { Eor (Oleft (None, t, x)) }
-
- | LEFT LESS UNDERSCORE COMMA t=type_t GREATER x=paren(expr)
-     { Eor (Oleft (None, t, x)) }
-
- | LEFT LESS ot=type_t COMMA t=type_t GREATER x=paren(expr)
-     { Eor (Oleft (Some ot, t, x)) }
-
- | RIGHT LESS t=type_t GREATER x=paren(expr)
-     { Eor (Oright (t, None, x)) }
-
- | RIGHT LESS t=type_t COMMA UNDERSCORE GREATER x=paren(expr)
-     { Eor (Oright (t, None, x)) }
-
- | RIGHT LESS t=type_t COMMA ot=type_t GREATER x=paren(expr)
-     { Eor (Oright (t, Some ot, x)) }
-
- | LAMBDA LESS rt=type_t GREATER LPAREN LPAREN id=ident COLON at=type_t RPAREN IMPLY e=expr RPAREN
-     { Elambda (Some rt, id, Some at, e) }
-
- | LAMBDA LESS rt=type_t GREATER LPAREN id=ident IMPLY e=expr RPAREN
-     { Elambda (Some rt, id, None, e) }
-
- | LAMBDA LPAREN LPAREN id=ident COLON at=type_t RPAREN IMPLY e=expr RPAREN
-     { Elambda (None, id, Some at, e) }
-
- | LAMBDA LPAREN id=ident IMPLY e=expr RPAREN
-     { Elambda (None, id, None, e) }
-
- | UNPACK LESS t=type_t GREATER x=paren(expr)
-     { Eunpack (t, x) }
-
- | SELF DOT x=ident
-     { Eself x }
-
- | ENTRYPOINT LESS t=type_t GREATER LPAREN a=expr COMMA b=expr RPAREN
-     { Eentrypoint (t, a, b) }
-
  | x=order_operations %prec prec_order { x }
 
  | e1=expr op=loc(bin_operator) e2=expr
@@ -983,6 +935,54 @@ simple_expr_r:
 
  | vt=vt x=ident
      { Eterm (vt, x) }
+
+ | SOME x=paren(simple_expr)
+     { Eoption (OSome x) }
+
+ | NONE %prec prec_order
+     { Eoption (ONone None) }
+
+ | NONE LESS t=type_t GREATER
+     { Eoption (ONone (Some t)) }
+
+ | LEFT LESS t=type_t GREATER x=paren(expr)
+     { Eor (Oleft (None, t, x)) }
+
+ | LEFT LESS UNDERSCORE COMMA t=type_t GREATER x=paren(expr)
+     { Eor (Oleft (None, t, x)) }
+
+ | LEFT LESS ot=type_t COMMA t=type_t GREATER x=paren(expr)
+     { Eor (Oleft (Some ot, t, x)) }
+
+ | RIGHT LESS t=type_t GREATER x=paren(expr)
+     { Eor (Oright (t, None, x)) }
+
+ | RIGHT LESS t=type_t COMMA UNDERSCORE GREATER x=paren(expr)
+     { Eor (Oright (t, None, x)) }
+
+ | RIGHT LESS t=type_t COMMA ot=type_t GREATER x=paren(expr)
+     { Eor (Oright (t, Some ot, x)) }
+
+ | LAMBDA LESS rt=type_t GREATER LPAREN LPAREN id=ident COLON at=type_t RPAREN IMPLY e=expr RPAREN
+     { Elambda (Some rt, id, Some at, e) }
+
+ | LAMBDA LESS rt=type_t GREATER LPAREN id=ident IMPLY e=expr RPAREN
+     { Elambda (Some rt, id, None, e) }
+
+ | LAMBDA LPAREN LPAREN id=ident COLON at=type_t RPAREN IMPLY e=expr RPAREN
+     { Elambda (None, id, Some at, e) }
+
+ | LAMBDA LPAREN id=ident IMPLY e=expr RPAREN
+     { Elambda (None, id, None, e) }
+
+ | UNPACK LESS t=type_t GREATER x=paren(expr)
+     { Eunpack (t, x) }
+
+ | SELF DOT x=ident
+     { Eself x }
+
+ | ENTRYPOINT LESS t=type_t GREATER LPAREN a=expr COMMA b=expr RPAREN
+     { Eentrypoint (t, a, b) }
 
  | ANY
      { Eany }
