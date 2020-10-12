@@ -13,17 +13,24 @@ enum owner_hook_policy =
 | Required_owner_hook
 
 
-record custom {
+record custom_policy {
   tag        : string;
   config_api : option<address>;
 }
 
-variable permissions_descriptor : operator_transfer_policy * owner_hook_policy * owner_hook_policy * option<custom> = (
-  Owner_or_operator_transfer,
-  Owner_no_hook,
-  Owner_no_hook,
-  none<custom>
-)
+record permissions {
+  transfer_policy      : operator_transfer_policy;
+  sender_hook_policy   : owner_hook_policy;
+  receiver_hook_policy : owner_hook_policy;
+  custom               : option<custom_policy>;
+}
+
+variable permissions_descriptor : permissions = {
+  No_transfer;
+  Owner_no_hook;
+  Owner_no_hook;
+  none;
+}
 
 asset tokens {
   id : nat;
