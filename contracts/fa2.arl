@@ -18,23 +18,29 @@ record custom_policy {
   config_api : option<address>;
 }
 
-record permissions {
+record basic_permissions {
   transfer_policy      : operator_transfer_policy;
   sender_hook_policy   : owner_hook_policy;
   receiver_hook_policy : owner_hook_policy;
+}
+
+record permissions {
+  basic                : basic_permissions;
   custom               : option<custom_policy>;
 }
 
 variable permissions_descriptor : permissions = {
-  No_transfer;
-  Owner_no_hook;
-  Owner_no_hook;
-  none;
+  {
+    No_transfer;
+    Owner_no_hook;
+    Owner_no_hook
+  };
+  none<custom_policy>
 }
 
 asset tokens {
   id : nat;
-  permissions_desc : operator_transfer_policy * owner_hook_policy * owner_hook_policy;
+  permissions_desc : basic_permissions;
 }
 
 record transfer_destination_descriptor {
@@ -74,43 +80,42 @@ record transfer_destination {
 
 function get_transfer_policy (tid : nat) : operator_transfer_policy {
   return
-    match_option permissions_descriptor[3] with // check custom policy
+    match_option permissions_descriptor.custom with // check custom policy
     | some(c) ->
       if c.tag = "FA2_PER_TOKEN" then begin // look up in tokens
-        tokens[tid].permissions_desc[0]
+        tokens[tid].permissions_desc.transfer_policy
       end else begin // fall back to default
-        permissions_descriptor[0]
+        permissions_descriptor.basic.transfer_policy
       end
     | none -> // no custom, get default
-      permissions_descriptor[0]
+      permissions_descriptor.basic.transfer_policy
     end
 }
 
-function get_sender_hook_policy (tid : nat) : owner_hook_policy {
-  return
-    match_option permissions_descriptor[3] with // check custom policy
-    | some(c) ->
-      if c.tag = "FA2_PER_TOKEN" then begin // look up in tokens
-        tokens[tid].permissions_desc[1]
-      end else begin // fall back to default
-        permissions_descriptor[1]
-      end
-    | none -> // no custom, get default
-      permissions_descriptor[1]
-    end
-}
+enum owner_type =
+| Sender
+| Receiver
 
-function get_reveiver_hook_policy (tid : nat) : owner_hook_policy {
+function get_hook_policy (tid : nat, ot : owner_type) : owner_hook_policy {
   return
-    match_option permissions_descriptor[3] with // check custom policy
+    match_option permissions_descriptor.custom with // check custom policy
     | some(c) ->
       if c.tag = "FA2_PER_TOKEN" then begin // look up in tokens
-        tokens[tid].permissions_desc[2]
+        match ot with
+        | Sender   ->  tokens[tid].permissions_desc.sender_hook_policy
+        | Receiver ->  tokens[tid].permissions_desc.receiver_hook_policy
+        end
       end else begin // fall back to default
-        permissions_descriptor[2]
+        match ot with
+        | Sender   ->  permissions_descriptor.basic.sender_hook_policy
+        | Receiver ->  permissions_descriptor.basic.receiver_hook_policy
+        end
       end
     | none -> // no custom, get default
-      permissions_descriptor[2]
+      match ot with
+      | Sender   ->  permissions_descriptor.basic.sender_hook_policy
+      | Receiver ->  permissions_descriptor.basic.receiver_hook_policy
+      end
     end
 }
 
@@ -140,13 +145,13 @@ entry add_token (
   new_token_id : nat,
   totalsupply  : nat,
   owner_hook   : option<contract<transfer_descriptor_param>>,
-  permissions  : operator_transfer_policy * owner_hook_policy * owner_hook_policy) {
+  perms        : basic_permissions) {
   failif {
     f0 : tokens.contains(new_token_id);
   }
   effect {
     ledger.add ({ new_token_id; caller; totalsupply; owner_hook });
-    tokens.add ({ new_token_id; permissions });
+    tokens.add ({ new_token_id; perms });
   }
 }
 
@@ -182,7 +187,8 @@ function apply_hook (
 entry %transfer(%from : address, tds : list<transfer_destination>) {
   var hook_applied_for : set<address * nat> = [];
   var transfer_param = get_transfer_param(%from, tds);
-  match_or (apply_hook(%from, transfer_param)) with
+  var sender_hp = get_hook_policy(0, Sender);
+  match_or (apply_hook(0, %from, transfer_param, sender_hp)) with
   | left(sop) -> begin
       match_option sop with
       | some (op) -> operations := prepend(operations, op)
@@ -197,6 +203,7 @@ entry %transfer(%from : address, tds : list<transfer_destination>) {
     | none -> begin
         dorequire(tokens.contains(td.token_id), "FA2_TOKEN_UNDEFINED");
         dorequire(ledger[(td.token_id, %from)].amount >= td.token_amount, "FA2_INSUFFICIENT_BALANCE");
+        var receiver_hp = get_hook_policy(0, Sender);
         operations := prepend(operations, apply_hook(td.%to, transfer_param));
         ledger.update((td.token_id, %from), { amount -= td.token_amount });
         ledger.addupdate((td.token_id, td.%to), { amount += td.token_amount });
