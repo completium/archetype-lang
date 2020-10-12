@@ -1026,6 +1026,7 @@ let listops : opinfo list =
     ("contains"       , A.Ccontains , `Total  , Some lst, [elemt  ], A.vtbool              , Mint.empty);
     ("nth"            , A.Cnth      , `Partial, Some lst, [A.vtnat], elemt                 , Mint.empty);
     ("reverse"        , A.Creverse  , `Total  , Some lst, [       ], lst                   , Mint.empty);
+    ("concat"         , A.Cconcat   , `Total  , Some lst, [lst    ], lst                   , Mint.empty);
   ]
 
 (* -------------------------------------------------------------------- *)

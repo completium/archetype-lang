@@ -4737,6 +4737,16 @@ let remove_high_level_model (model : model)  =
         let b =  mk_mterm (Mlistprepend(t, vaccu, vid)) tl in
         mk_mterm (Mlistfold(t, iid, iaccu, f l, empty, b)) tl
       end
+    | Mlistconcat (t, l, m) -> begin
+        let tl = Tlist t in
+        let iter = f (mk_mterm (Mlistreverse (t, f l)) tl) in
+        let iid = dumloc "_liid" in
+        let vid = mk_mvar iid t in
+        let iaccu = dumloc "_accu" in
+        let vaccu = mk_mvar iaccu t in
+        let b =  mk_mterm (Mlistprepend(t, vaccu, vid)) tl in
+        mk_mterm (Mlistfold(t, iid, iaccu, iter, f m, b)) tl
+      end
     | Miter (i, a, b, c, lbl) -> begin
         let a = f a in
         let b = f b in

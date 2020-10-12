@@ -1224,6 +1224,7 @@ let pp_model_internal fmt (model : model) b =
         pp_pretty_type t
         f l
 
+    | Mlistconcat _ -> emit_error (UnsupportedTerm ("Mlistconcat"))
     | Mlistfold _ -> emit_error (UnsupportedTerm ("Mlistfold"))
 
     (* map api expression *)

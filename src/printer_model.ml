@@ -962,6 +962,11 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "list_reverse (%a)"
         f l
 
+    | Mlistconcat (_, l, m) ->
+      Format.fprintf fmt "list_concat (%a, %a)"
+        f l
+        f m
+
     | Mlistfold (t, ix, ia, c, a, b) ->
       Format.fprintf fmt "list_%a_fold (%a, %a, (%a, %a) ->@\n  @[%a@])"
         pp_type t
