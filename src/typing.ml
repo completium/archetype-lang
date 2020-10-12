@@ -5481,8 +5481,8 @@ let for_grouped_declarations (env : env) (toploc, g) =
     | _ ->
       (None, None, env) in
 
-  let env, records      = for_records_decl   env g.gr_records in
   let env, enums        = for_enums_decl     env g.gr_enums   in
+  let env, records      = for_records_decl   env g.gr_records in
   let enums, especs     = List.split enums                    in
   let env, variables    = for_vars_decl      env g.gr_vars    in
   let variables, vspecs = List.split variables                in
