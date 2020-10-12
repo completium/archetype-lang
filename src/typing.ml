@@ -2729,7 +2729,7 @@ let rec for_xexpr
         if List.length args <> List.length fun_.fs_args then begin
           let na = List.length args and ne = List.length fun_.fs_args in
           Env.emit_error env (loc tope, InvalidNumberOfArguments (na, ne));
-          List.make (fun _ -> None) ne
+          List.make (fun _ -> None) na
         end else List.map (fun (_, ty) -> Some ty) fun_.fs_args in
 
       let args = List.map2 (fun ety e -> for_xexpr env ?ety e) tyargs args in
