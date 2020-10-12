@@ -2689,6 +2689,7 @@ let fold_exns m body : term list =
     | M.Mcast (Tbuiltin Baddress, Tcontract _, v) -> internal_fold_exn (acc @ [Texn Enotfound]) v
     | M.Mtransfer (TKself (v, _, _)) -> internal_fold_exn (acc @ [Texn Enotfound]) v
     | M.Mtransfer (TKsimple (v, _))
+    | M.Mtransfer (TKentry (v, _, _))
     | M.Mtransfer (TKcall      (v, _, _, _, _))
     | M.Mtransfer (TKoperation v) -> internal_fold_exn acc v
     | M.Mapp (id, args) ->
