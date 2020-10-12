@@ -1,10 +1,10 @@
 archetype extension mutable (
 
-  variable[%%mutable (arole, cond)%%] avariable : type
+  variable[%%mutable (arole, cond)%%] avariable : %type
 
 ) {
 
-  entry set_<%avariable> (new<%avariable> : type) {
+  entry set_<%avariable> (new<%avariable> : %type) {
     called by arole
     require {
       set_<%avariable>_c1 : cond;

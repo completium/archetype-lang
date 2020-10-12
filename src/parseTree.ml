@@ -291,6 +291,7 @@ and declaration_unloc =
   | Dspecfun       of specfun
   | Dspecvariable  of (lident * label_exprs)
   | Dsecurity      of security
+  | Dtype          of lident * type_t
   | Dinvalid
 
 and specfun_kind =
@@ -594,6 +595,10 @@ let mk_specvariable ?(loc=dummy) id ls =
 let mk_security ?(loc=dummy) s =
   mkloc loc (Dsecurity s)
 
+let mk_dtype ?(loc=dummy) id t =
+  mkloc loc (Dtype (id, t))
+
+
 let mk_invalid ?(loc=dummy) () =
   mkloc loc Dinvalid
 
@@ -692,6 +697,7 @@ let is_keyword = function
   | "transfer"
   | "transition"
   | "true"
+  | "type"
   | "unmoved"
   | "unpack"
   | "use"
