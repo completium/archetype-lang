@@ -994,7 +994,7 @@ let remove_enum_matchwith (model : model) : model =
       let v = process_mterm ctx v in
       let type_v = v.type_ in
       begin
-        let default_ = mk_mterm (Mseq []) Tunit in
+        let default_ = if (match mt.node with | Mexprmatchwith _ -> true | _ -> false) then fail("") else skip in
         let else_ = List.fold_left (fun accu (x : (pattern * mterm)) ->
             match x with
             | {node = Pwild; _}, e -> process_mterm ctx e
