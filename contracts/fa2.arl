@@ -1,6 +1,6 @@
 archetype fa2
 
-variable admin : address = @tz1
+/* enum & record types ------------------------------------------------------- */
 
 enum operator_transfer_policy =
 | No_transfer
@@ -12,16 +12,15 @@ enum owner_hook_policy =
 | Optional_owner_hook
 | Required_owner_hook
 
-
-record custom_policy {
-  tag        : string;
-  config_api : option<address>;
-}
-
 record basic_permissions {
   transfer_policy      : operator_transfer_policy;
   sender_hook_policy   : owner_hook_policy;
   receiver_hook_policy : owner_hook_policy;
+}
+
+record custom_policy {
+  tag        : string;
+  config_api : option<address>;
 }
 
 record permissions {
@@ -29,19 +28,7 @@ record permissions {
   custom               : option<custom_policy>;
 }
 
-variable permissions_descriptor : permissions = {
-  {
-    No_transfer;
-    Owner_no_hook;
-    Owner_no_hook
-  };
-  none<custom_policy>
-}
-
-asset tokens {
-  id : nat;
-  permissions_desc : basic_permissions;
-}
+/* Hook paramter : transfer descriptor */
 
 record transfer_destination_descriptor {
   to_desc            : option<address>;
@@ -59,6 +46,47 @@ record transfer_descriptor_param {
   operator_p     : address;
 }
 
+/* transfer argument type */
+
+record transfer_destination {
+  %to          : address;
+  token_id     : nat;
+  token_amount : nat
+}
+
+/* getBalance operator argument type */
+
+record balance_of_request {
+  bo_owner : address;
+  btoken_id : nat;
+}
+
+record balance_of_response {
+  request : balance_of_request;
+  balance_ : nat;
+}
+
+/* update_operator argument type */
+
+record operator_param {
+  opp_owner    : address;
+  opp_operator : address;
+  opp_token_id : nat
+}
+
+/* STORAGE ------------------------------------------------------------------ */
+
+variable admin : address = @tz1
+
+variable permissions_descriptor : permissions = {
+  {
+    No_transfer;
+    Owner_no_hook;
+    Owner_no_hook
+  };
+  none<custom_policy>
+}
+
 asset ledger identified by token owner to big_map {
   token  : nat;
   owner  : address;
@@ -72,11 +100,12 @@ asset operator identified by op_addr op_token_id op_owner_addr to big_map {
   op_owner_addr : address;
 }
 
-record transfer_destination {
-  %to          : address;
-  token_id     : nat;
-  token_amount : nat
+asset tokens {
+  id : nat;
+  permissions_desc : basic_permissions;
 }
+
+/* utils function ------------------------------------------------------------- */
 
 function get_transfer_policy (tid : nat) : operator_transfer_policy {
   return
@@ -141,27 +170,6 @@ function apply_transfer_policy (otp : operator_transfer_policy, %from : address,
     end
 }
 
-entry add_token (
-  new_token_id : nat,
-  totalsupply  : nat,
-  owner_hook   : option<contract<transfer_descriptor_param>>,
-  perms        : basic_permissions) {
-  failif {
-    f0 : tokens.contains(new_token_id);
-  }
-  effect {
-    ledger.add ({ new_token_id; caller; totalsupply; owner_hook });
-    tokens.add ({ new_token_id; perms });
-  }
-}
-
-entry set_hook (ti : nat, h : option<contract<transfer_descriptor_param>>) {
-  // if only 'update', it is impossble to set the hook if no token is possessed ...
-  // how to prove that it is impossible not to set the hook ?
-  // no fail and valid postcondition ?
-  ledger.addupdate ((ti, caller), { hook = h });
-}
-
 function apply_hook (
   itoken_id   : nat,
   iowner      : address,
@@ -200,6 +208,29 @@ function get_hook_param(c : address, f : address, tds : list<transfer_destinatio
       token_amount_desc  = td.token_amount
     })}]; c
   }
+}
+
+/* entry points -------------------------------------------------------------- */
+
+entry add_token (
+  new_token_id : nat,
+  totalsupply  : nat,
+  owner_hook   : option<contract<transfer_descriptor_param>>,
+  perms        : basic_permissions) {
+  failif {
+    f0 : tokens.contains(new_token_id);
+  }
+  effect {
+    ledger.add ({ new_token_id; caller; totalsupply; owner_hook });
+    tokens.add ({ new_token_id; perms });
+  }
+}
+
+entry set_hook (ti : nat, h : option<contract<transfer_descriptor_param>>) {
+  // if only 'update', it is impossble to set the hook if no token is possessed ...
+  // how to prove that it is impossible not to set the hook ?
+  // no fail and valid postcondition ?
+  ledger.addupdate ((ti, caller), { hook = h });
 }
 
 entry %transfer(%from : address, tds : list<transfer_destination>) {
@@ -244,16 +275,6 @@ entry %transfer(%from : address, tds : list<transfer_destination>) {
   done
 }
 
-record balance_of_request {
-  bo_owner : address;
-  btoken_id : nat;
-}
-
-record balance_of_response {
-  request : balance_of_request;
-  balance_ : nat;
-}
-
 getter balance_of (brs : list<balance_of_request>) : list<balance_of_response> {
   return map(brs, br -> {
     request = br;
@@ -261,12 +282,6 @@ getter balance_of (brs : list<balance_of_request>) : list<balance_of_response> {
                 then ledger[(br.btoken_id,br.bo_owner)].amount
                 else 0)
   })
-}
-
-record operator_param {
-  opp_owner    : address;
-  opp_operator : address;
-  opp_token_id : nat
 }
 
 entry update_operators (upl : list<or<operator_param, operator_param>>) {
