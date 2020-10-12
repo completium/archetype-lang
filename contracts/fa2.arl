@@ -191,15 +191,20 @@ function is_per_token () : bool {
   end
 }
 
-function get_hook_param(c : address, tds : list<transfer_destination>) : transfer_descriptor_param {
-  return { // TODO
-    []; c
+function get_hook_param(c : address, f : address, tds : list<transfer_destination>) : transfer_descriptor_param {
+  return { [ {
+    from_ = some(f);
+    txs = map(tds, td -> {
+      to_desc            = some(td.%to);
+      token_id_desc      = td.token_id;
+      token_amount_desc  = td.token_amount
+    })}]; c
   }
 }
 
 entry %transfer(%from : address, tds : list<transfer_destination>) {
   var applied_hooks : set<address * nat> = []; // do not apply hook twice
-  var hook_param = get_hook_param(caller, tds);
+  var hook_param = get_hook_param(caller, %from, tds);
   for td in tds do
     var applied_hook_id = if is_per_token() then td.token_id else 0;
     var transfer_p = get_transfer_policy(td.token_id);
