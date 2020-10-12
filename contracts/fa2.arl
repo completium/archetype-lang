@@ -111,7 +111,7 @@ function get_hook_policy (tid : nat, ot : owner_type) : owner_hook_policy {
         | Receiver ->  permissions_descriptor.basic.receiver_hook_policy
         end
       end
-    | none -> // no custom, get default
+    | none -> // fall back to default
       match ot with
       | Sender   ->  permissions_descriptor.basic.sender_hook_policy
       | Receiver ->  permissions_descriptor.basic.receiver_hook_policy
@@ -119,9 +119,9 @@ function get_hook_policy (tid : nat, ot : owner_type) : owner_hook_policy {
     end
 }
 
-function apply_transfer_policy (%from : address, tr : transfer_destination) : option<string> {
+function apply_transfer_policy (otp : operator_transfer_policy, %from : address, tr : transfer_destination) : option<string> {
   return
-    match get_transfer_policy(tr.token_id) with
+    match otp with
     | No_transfer ->
       if caller = admin then
         none<string>
@@ -166,9 +166,9 @@ function apply_hook (
   itoken_id   : nat,
   iowner      : address,
   tp          : transfer_descriptor_param,
-  hook_policy : owner_hook_policy) : or<option<operation>,string> {
+  ot          : owner_type) : or<option<operation>,string> {
   return
-    match hook_policy with
+    match get_hook_policy(itoken_id, ot)  with
     | Owner_no_hook -> left<_,string>(none<operation>)
     | Optional_owner_hook -> begin
       match_option ledger[(itoken_id, iowner)].hook with
@@ -184,27 +184,54 @@ function apply_hook (
     end
 }
 
+function is_per_token () : bool {
+  return match_option permissions_descriptor.custom with // check custom policy
+    | some(c) -> if c.tag = "FA2_PER_TOKEN" then true else false
+    | none -> false
+  end
+}
+
+function get_hook_param(c : address, tds : list<transfer_destination>) : transfer_descriptor_param {
+  return { // TODO
+    []; c
+  }
+}
+
 entry %transfer(%from : address, tds : list<transfer_destination>) {
-  var hook_applied_for : set<address * nat> = [];
-  var transfer_param = get_transfer_param(%from, tds);
-  var sender_hp = get_hook_policy(0, Sender);
-  match_or (apply_hook(0, %from, transfer_param, sender_hp)) with
-  | left(sop) -> begin
-      match_option sop with
-      | some (op) -> operations := prepend(operations, op)
-      | none -> ()
-      end
-    end
-  | right(msg) -> fail (msg)
-  end;
+  var applied_hooks : set<address * nat> = []; // do not apply hook twice
+  var hook_param = get_hook_param(caller, tds);
   for td in tds do
-    match_option apply_transfer_policy(%from, td) with
+    var applied_hook_id = if is_per_token() then td.token_id else 0;
+    var transfer_p = get_transfer_policy(td.token_id);
+    match_option apply_transfer_policy(transfer_p, %from, td) with
     | some(msg) -> fail(msg)
     | none -> begin
+        // basic checks -------------------------------------------------------
         dorequire(tokens.contains(td.token_id), "FA2_TOKEN_UNDEFINED");
         dorequire(ledger[(td.token_id, %from)].amount >= td.token_amount, "FA2_INSUFFICIENT_BALANCE");
-        var receiver_hp = get_hook_policy(0, Sender);
-        operations := prepend(operations, apply_hook(td.%to, transfer_param));
+        // apply sender hook --------------------------------------------------
+        if not contains(applied_hooks, (%from, applied_hook_id)) then begin
+          match_or apply_hook(td.token_id, %from, hook_param, Sender) with
+          | left(sop) -> match_option sop with
+            | some (op) -> operations := prepend(operations, op)
+            | none -> ()
+            end
+          | right(msg) -> fail (msg)
+          end;
+          applied_hooks := add(applied_hooks, (%from, applied_hook_id));
+        end;
+        // apply receiver hook ------------------------------------------------
+        if not contains(applied_hooks, (td.%to, applied_hook_id)) then begin
+          match_or apply_hook(td.token_id, td.%to, hook_param, Receiver) with
+          | left(sop) -> match_option sop with
+            | some (op) -> operations := prepend(operations, op)
+            | none -> ()
+            end
+          | right(msg) -> fail (msg)
+          end;
+          applied_hooks := add(applied_hooks, (td.%to, applied_hook_id));
+        end;
+        // update ledger ------------------------------------------------------
         ledger.update((td.token_id, %from), { amount -= td.token_amount });
         ledger.addupdate((td.token_id, td.%to), { amount += td.token_amount });
       end
