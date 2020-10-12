@@ -1241,10 +1241,10 @@ let to_michelson (ir : T.ir) : T.michelson =
       end
 
     | Iset (t, l) -> begin
-        T.SEQ ((T.EMPTY_SET t)::(l |> List.rev |> List.map (fun x -> let x, _ = f x in T.SEQ [T.ctrue; x; T.UPDATE ] ))), inc_env env
+        T.SEQ ((T.EMPTY_SET t)::(l |> List.rev |> List.map (fun x -> let x, _ = fe (inc_env (inc_env env)) x in T.SEQ [T.ctrue; x; T.UPDATE ] ))), inc_env env
       end
     | Ilist (t, l) -> begin
-        T.SEQ ((T.NIL t)::(l |> List.rev |> List.map (fun x -> let x, _ = f x in T.SEQ [ x; T.CONS ] ))), inc_env env
+        T.SEQ ((T.NIL t)::(l |> List.rev |> List.map (fun x -> let x, _ = fe (inc_env env) x in T.SEQ [ x; T.CONS ] ))), inc_env env
       end
     | Imap (b, k, v, l) -> begin
         let a = if b then T.EMPTY_BIG_MAP (k, v) else T.EMPTY_MAP (k, v) in
@@ -1252,8 +1252,8 @@ let to_michelson (ir : T.ir) : T.michelson =
                (l
                 |> List.rev
                 |> List.map (fun (x, y) ->
-                    let y, _ = f y in
-                    let x, _ = f x in
+                    let y, _ = fe (inc_env env) y in
+                    let x, _ = fe (inc_env (inc_env env)) x in
                     T.SEQ [y; T.SOME; x; T.UPDATE ] ))), inc_env env
       end
     | Irecord l -> fold env l
