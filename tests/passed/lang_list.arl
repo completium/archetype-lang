@@ -11,5 +11,6 @@ entry exec () {
     var c  : bool                    = contains(l, "2");
     var n  : string                  = nth(l, 0);
     var r  : list<string>            = reverse(l);
+    var ll : list<string>            = concat(l, l);
   }
 }

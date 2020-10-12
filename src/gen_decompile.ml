@@ -1150,6 +1150,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mlistcontains (_, _c, _a)            -> assert false
     | Mlistnth (_, _c, _a)                 -> assert false
     | Mlistreverse (_, _l)                 -> assert false
+    | Mlistconcat (_, _l, _m)              -> assert false
     | Mlistfold (_t, _ix, _ia, _c, _a, _b) -> assert false
 
 
