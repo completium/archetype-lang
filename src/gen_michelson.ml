@@ -64,7 +64,7 @@ let to_ir (model : M.model) : T.ir =
     let node =
       match t with
       | Tasset _   -> assert false
-      | Tenum _    -> assert false
+      | Tenum _    -> T.Tint
       | Tstate     -> T.Tint
       | Tbuiltin b -> begin
           match b with
