@@ -12,8 +12,18 @@ enum owner_hook_policy =
 | Optional_owner_hook
 | Required_owner_hook
 
-/* variable permissions_descriptor : operator_transfer_policy * owner_hook_policy * owner_hook_policy
-    = (Owner_or_operator_transfer, Owner_no_hook, Owner_no_hook) */
+
+record custom {
+  tag        : string;
+  config_api : option<address>;
+}
+
+variable permissions_descriptor : operator_transfer_policy * owner_hook_policy * owner_hook_policy * option<custom> = (
+  Owner_or_operator_transfer,
+  Owner_no_hook,
+  Owner_no_hook,
+  none<custom>
+)
 
 asset tokens {
   id : nat;
@@ -55,10 +65,51 @@ record transfer_destination {
   token_amount : nat
 }
 
+function get_transfer_policy (tid : nat) : operator_transfer_policy {
+  return
+    match_option permissions_descriptor[3] with // check custom policy
+    | some(c) ->
+      if c.tag = "FA2_PER_TOKEN" then begin // look up in tokens
+        tokens[tid].permissions_desc[0]
+      end else begin // fall back to default
+        permissions_descriptor[0]
+      end
+    | none -> // no custom, get default
+      permissions_descriptor[0]
+    end
+}
+
+function get_sender_hook_policy (tid : nat) : owner_hook_policy {
+  return
+    match_option permissions_descriptor[3] with // check custom policy
+    | some(c) ->
+      if c.tag = "FA2_PER_TOKEN" then begin // look up in tokens
+        tokens[tid].permissions_desc[1]
+      end else begin // fall back to default
+        permissions_descriptor[1]
+      end
+    | none -> // no custom, get default
+      permissions_descriptor[1]
+    end
+}
+
+function get_reveiver_hook_policy (tid : nat) : owner_hook_policy {
+  return
+    match_option permissions_descriptor[3] with // check custom policy
+    | some(c) ->
+      if c.tag = "FA2_PER_TOKEN" then begin // look up in tokens
+        tokens[tid].permissions_desc[2]
+      end else begin // fall back to default
+        permissions_descriptor[2]
+      end
+    | none -> // no custom, get default
+      permissions_descriptor[2]
+    end
+}
 
 function apply_transfer_policy (%from : address, tr : transfer_destination) : option<string> {
-  var res : option<string> =
-    match tokens[tr.token_id].permissions_desc[0] with
+  return
+    match get_transfer_policy(tr.token_id) with
     | No_transfer ->
       if caller = admin then
         none<string>
@@ -75,8 +126,7 @@ function apply_transfer_policy (%from : address, tr : transfer_destination) : op
         none<string>
       else
         some("FA2_NOT_OPERATOR")
-    end;
-  return res
+    end
 }
 
 entry add_token (
@@ -101,12 +151,12 @@ entry set_hook (ti : nat, h : option<contract<transfer_descriptor_param>>) {
 }
 
 function apply_hook (
-  itoken_id    : nat,
-  iowner       : address,
+  itoken_id   : nat,
+  iowner      : address,
   tp          : transfer_descriptor_param,
   hook_policy : owner_hook_policy) : or<option<operation>,string> {
   return
-    (match hook_policy with
+    match hook_policy with
     | Owner_no_hook -> left<_,string>(none<operation>)
     | Optional_owner_hook -> begin
       match_option ledger[(itoken_id, iowner)].hook with
@@ -119,11 +169,11 @@ function apply_hook (
       | some(h) -> left<_,string>(some(mkoperation(0tz,h,tp)))
       | none -> right<option<operation>, _>("FA2_HOOK_NOT_SET")
       end
-    end)
+    end
 }
 
 entry %transfer(%from : address, tds : list<transfer_destination>) {
-  var hook_applied_for : set<bool> = [];
+  var hook_applied_for : set<address * nat> = [];
   var transfer_param = get_transfer_param(%from, tds);
   match_or (apply_hook(%from, transfer_param)) with
   | left(sop) -> begin
