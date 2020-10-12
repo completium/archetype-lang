@@ -117,7 +117,7 @@ end = struct
     | A.Tlambda _ -> true | _ -> false
 
   module Michelson = struct
-    let is_comparable ?(simple = false) = function
+    let rec is_comparable ?(simple = false) = function
       | A.Tbuiltin VTnat
       | A.Tbuiltin VTint
       | A.Tbuiltin VTstring
@@ -132,6 +132,7 @@ end = struct
         -> true
 
       | A.Trecord _ when not simple -> true
+      | A.Ttuple l -> List.for_all is_comparable l
       | _ -> false
 
     let rec is_type = function
@@ -2729,7 +2730,7 @@ let rec for_xexpr
       let tyargs =
         if List.length args <> List.length fun_.fs_args then begin
           let na = List.length args and ne = List.length fun_.fs_args in
-          Env.emit_error env (loc tope, InvalidNumberOfArguments (na, ne));
+          Env.emit_error env (loc tope, InvalidNumberOfArguments (ne, na));
           List.make (fun _ -> None) na
         end else List.map (fun (_, ty) -> Some ty) fun_.fs_args in
 
