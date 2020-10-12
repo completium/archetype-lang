@@ -2038,16 +2038,16 @@ let extract_term_from_instruction f (model : model) : model =
       in
       process (mk_mterm (Mfail (ve)) mt.type_) va
 
-    | Mtransfer (v, k) ->
-      let ve, va = f v in
-      let ke, ka =
+    | Mtransfer (k) ->
+      let tre, tra =
         match k with
-        | TKsimple d           -> let de, da = f d in TKsimple de, da
-        | TKcall (id, t, d, a) -> let de, da = f d in let ae, aa = f a in TKcall (id, t, de, ae), da @ aa
-        | TKentry (e, a)       -> let ee, ea = f e in let ae, aa = f a in TKentry (ee, ae), ea @ aa
-        | TKself (id, args)    -> let args, accu = List.fold_left (fun (args, accu) (id, a) -> let ae, aa = f a in (args @ [id, ae], accu @ aa)) ([], []) args  in TKself (id, args), accu
+        | TKsimple (v, d)         -> let ve, va = f v in let de, da = f d in TKsimple (ve, de), va @ da
+        | TKcall (v, id, t, d, a) -> let ve, va = f v in let de, da = f d in let ae, aa = f a in TKcall (ve, id, t, de, ae), va @ da @ aa
+        | TKentry (v, e, a)       -> let ve, va = f v in let ee, ea = f e in let ae, aa = f a in TKentry (ve, ee, ae), va @ ea @ aa
+        | TKself (v, id, args)    -> let ve, va = f v in let args, accu = List.fold_left (fun (args, accu) (id, a) -> let ae, aa = f a in (args @ [id, ae], accu @ aa)) ([], []) args  in TKself (ve, id, args), va @ accu
+        | TKoperation op          -> let ope, opa = f op in TKoperation ope, opa
       in
-      process (mk_mterm (Mtransfer (ve, ke)) mt.type_) (va @ ka)
+      process (mk_mterm (Mtransfer tre) mt.type_) tra
 
 
     (* asset api effect *)
@@ -2335,9 +2335,8 @@ let add_contain_on_get (model : model) : model =
         in
         gg accu mt
 
-      | Mtransfer (v, k) ->
-        let accu = f accu v in
-        let accu = fold_transfer_kind f accu k in
+      | Mtransfer tr ->
+        let accu = fold_transfer_kind f accu tr in
         gg accu mt
 
 
@@ -4899,7 +4898,7 @@ let getter_to_entry ?(no_underscore=false) ?(extra=false) (model : model) : mode
           let vcallback = mk_pvar icallback tcallback in
           let rec aux (mt : mterm) : mterm =
             match mt.node with
-            | Mreturn x -> mk_mterm (Mtransfer(mk_tez 0, TKentry(vcallback, x))) tunit
+            | Mreturn x -> mk_mterm (Mtransfer(TKentry(mk_tez 0, vcallback, x))) tunit
             | _ -> map_mterm aux mt
           in
           (icallback, tcallback, None), aux fs.body

@@ -395,18 +395,15 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_app pos pp) fmt (e, id, args)
 
-  | Etransfer (x, tr) ->
-    let pp fmt (x, tr) =
-      Format.fprintf fmt "transfer %a%a"
-        pp_simple_expr x
-        (fun fmt -> function
-           | TTsimple dst                 -> Format.fprintf fmt " to %a" pp_simple_expr dst
-           | TTcontract (dst, id, t, arg) -> Format.fprintf fmt " to %a call %a<%a>(%a)" pp_simple_expr dst pp_id id pp_type t pp_simple_expr arg
-           | TTentry (id, arg)            -> Format.fprintf fmt " to entry %a(%a)" pp_id id pp_simple_expr arg
-           | TTself (id, args)            -> Format.fprintf fmt " to entry self.%a(%a)" pp_id id (pp_list "," pp_simple_expr) args
-        ) tr
+  | Etransfer tr ->
+    let pp fmt = function
+      | TTsimple (x, dst)               -> Format.fprintf fmt "transfer %a to %a" pp_simple_expr x pp_simple_expr dst
+      | TTcontract (x, dst, id, t, arg) -> Format.fprintf fmt "transfer %a to %a call %a<%a>(%a)" pp_simple_expr x pp_simple_expr dst pp_id id pp_type t pp_simple_expr arg
+      | TTentry (x, id, arg)            -> Format.fprintf fmt "transfer %a to entry %a(%a)" pp_simple_expr x pp_id id pp_simple_expr arg
+      | TTself (x, id, args)            -> Format.fprintf fmt "transfer %a to entry self.%a(%a)" pp_simple_expr x pp_id id (pp_list "," pp_simple_expr) args
+      | TToperation x                   -> Format.fprintf fmt "transfer %a" pp_simple_expr x
     in
-    (maybe_paren outer e_default pos pp) fmt (x, tr)
+    (maybe_paren outer e_default pos pp) fmt tr
 
   | Edorequire (x, y) ->
 
@@ -1245,7 +1242,7 @@ let rec pp_declaration fmt { pldesc = e; _ } =
     pp_security fmt (items, exts)
 
   | Dtype (id, t) ->
-     Format.fprintf fmt "type %a = %a"
+    Format.fprintf fmt "type %a = %a"
       pp_id id
       pp_type t
 

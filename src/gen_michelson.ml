@@ -449,23 +449,24 @@ let to_ir (model : M.model) : T.ir =
         in
         T.Iunop  (Ufail, x)
       end
-    | Mtransfer (v, k) -> begin
-        let arg, entry =
-          match k with
-          | TKsimple d           -> T.iunit, get_contract T.tunit (f d)
-          | TKcall (id, t, d, a) -> f a, get_entrypoint id (to_type t) (f d)
-          | TKentry (e, a)       -> f a, f e
-          | TKself (id, args)    -> begin
+    | Mtransfer tr -> begin
+        let op =
+          match tr with
+          | TKsimple (v, d)         -> T.Iterop (Ttransfer_tokens, T.iunit, f v, get_contract T.tunit (f d))
+          | TKcall (v, id, t, d, a) -> T.Iterop (Ttransfer_tokens, f a, f v, get_entrypoint id (to_type t) (f d))
+          | TKentry (v, e, a)       -> T.Iterop (Ttransfer_tokens, f a, f v, f e)
+          | TKself (v, id, args)    -> begin
               let a =
                 match args with
                 | []  -> T.iunit
                 | [e] -> f (snd e)
                 | _   -> T.Irecord (List.map (fun (_, x) -> f x) args)
               in
-              a, get_self_entrypoint id
+              T.Iterop (Ttransfer_tokens, a, f v, get_self_entrypoint id)
             end
+          | TKoperation op -> f op
         in
-        T.Iassign (operations, T.Ibinop (Bcons, T.Iterop (Ttransfer_tokens, arg, f v, entry), vops))
+        T.Iassign (operations, T.Ibinop (Bcons, op, vops))
       end
 
     (* entrypoint *)

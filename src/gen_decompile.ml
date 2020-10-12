@@ -1005,7 +1005,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     (* effect *)
 
     | Mfail _ft          -> assert false
-    | Mtransfer (_v, _k) -> assert false
+    | Mtransfer _tr      -> assert false
 
 
     (* entrypoint *)

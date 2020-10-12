@@ -833,17 +833,20 @@ expr_r:
  | x=expr op=assignment_operator_expr y=expr
      { Eassign (op, x, y) }
 
+ | TRANSFER x=simple_expr AT
+     { Etransfer (TToperation (x)) }
+
  | TRANSFER x=simple_expr TO y=simple_expr
-     { Etransfer (x, TTsimple y) }
+     { Etransfer (TTsimple (x, y)) }
 
  | TRANSFER x=simple_expr TO y=simple_expr CALL id=ident LESS t=type_t GREATER args=paren(expr)
-     { Etransfer (x, TTcontract (y, id, t, args)) }
+     { Etransfer (TTcontract (x, y, id, t, args)) }
 
  | TRANSFER x=simple_expr TO ENTRY id=ident arg=simple_expr
-     { Etransfer (x, TTentry (id, arg)) }
+     { Etransfer (TTentry (x, id, arg)) }
 
  | TRANSFER x=simple_expr TO ENTRY SELF DOT id=ident args=paren(sl(COMMA, simple_expr))
-     { Etransfer (x, TTself (id, args)) }
+     { Etransfer (TTself (x, id, args)) }
 
  | DOREQUIRE LPAREN x=expr COMMA y=expr RPAREN
      { Edorequire (x, y) }

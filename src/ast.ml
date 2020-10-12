@@ -377,10 +377,11 @@ type 'id instruction_poly = {
 [@@deriving show {with_path = false}]
 
 and 'id transfer_t =
-  | TTsimple   of 'id term_gen
-  | TTcontract of 'id term_gen * 'id * type_ * 'id term_gen
-  | TTentry    of 'id term_gen * 'id term_gen
-  | TTself     of 'id * ('id * 'id term_gen) list
+  | TTsimple    of 'id term_gen * 'id term_gen
+  | TTcontract  of 'id term_gen * 'id term_gen * 'id * type_ * 'id term_gen
+  | TTentry     of 'id term_gen * 'id term_gen * 'id term_gen
+  | TTself      of 'id term_gen * 'id * ('id * 'id term_gen) list
+  | TToperation of 'id term_gen
 
 and 'id instruction_node =
   | Iif of ('id term_gen * 'id instruction_gen * 'id instruction_gen)               (* condition * then_ * else_ *)
@@ -396,7 +397,7 @@ and 'id instruction_node =
   | Imatchlist   of 'id term_gen * 'id * 'id * 'id instruction_gen * 'id instruction_gen
   | Iassign of (assignment_operator * type_ * 'id lvalue_gen * 'id term_gen)         (* $2 assignment_operator $3 *)
   | Irequire of (bool * 'id term_gen * 'id term_gen)                                               (* $1 ? require : failif *)
-  | Itransfer of ('id term_gen * 'id transfer_t)
+  | Itransfer of ('id transfer_t)
   | Icall of ('id term_gen option * 'id call_kind * ('id term_arg) list)
   | Ireturn of 'id term_gen
   | Ilabel of 'id

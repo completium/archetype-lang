@@ -486,15 +486,15 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt "failwith (%a)"
         (pp_fail_type f) ft
 
-    | Mtransfer (v, k) -> begin
-        match k with
-        | TKsimple d ->
+    | Mtransfer tr -> begin
+        match tr with
+        | TKsimple (x, d) ->
           Format.fprintf fmt "%s := cons(transaction(unit, %a, (get_contract(%a) : contract(unit))), %s)"
             const_operations
-            f v
+            f x
             f d
             const_operations
-        | TKcall (id, t, d, a) ->
+        | TKcall (x, id, t, d, a) ->
           let pp_entrypoint fmt _ =
             Format.fprintf fmt "case (Tezos.get_entrypoint_opt(\"%%%s\", %a) : option(contract(%a))) of Some (v) -> v | None -> (failwith(\"error self\") : contract(%a)) end"
               id f d pp_type t pp_type t
@@ -502,19 +502,19 @@ let pp_model_internal fmt (model : model) b =
           Format.fprintf fmt "%s := cons(transaction(%a, %a, %a), %s)"
             const_operations
             f a
-            f v
+            f x
             pp_entrypoint ()
             const_operations
 
-        | TKentry (e, a) ->
+        | TKentry (x, e, a) ->
           Format.fprintf fmt "%s := cons(transaction(%a, %a, %a), %s)"
             const_operations
             f a
-            f v
+            f x
             f e
             const_operations
 
-        | TKself (id, args) ->
+        | TKself (x, id, args) ->
           let pp_entrypoint fmt _ =
             Format.fprintf fmt "case (Tezos.get_entrypoint_opt(\"%%%s\", Tezos.self_address) : option(contract(action_%s))) of Some (v) -> v | None -> (failwith(\"error self\") : contract(action_%s)) end"
               id id id
@@ -527,7 +527,13 @@ let pp_model_internal fmt (model : model) b =
                | [] -> pp_str fmt "unit"
                | _  -> Format.fprintf fmt "record %a end" (pp_list "; " (fun fmt (id, v) -> Format.fprintf fmt "%s = %a" id f v)) l) args
             id
-            f v pp_entrypoint () const_operations
+            f x pp_entrypoint () const_operations
+
+        | TKoperation x ->
+          Format.fprintf fmt "%s := cons(%a, %s)"
+            const_operations
+            f x
+            const_operations
       end
 
 

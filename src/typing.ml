@@ -3925,22 +3925,24 @@ let rec for_instruction_r
         env, mki (A.Iassign (op, t, x, e))
       end
 
-    | Etransfer (e, tr) ->
-      let e  = for_expr kind env ~ety:A.vtcurrency e in
+    | Etransfer tr ->
       let tr =
         match tr with
-        | TTsimple to_ ->
-          A.TTsimple (for_expr kind env ~ety:A.vtrole to_)
+        | TTsimple (e, to_) ->
+          let e  = for_expr kind env ~ety:A.vtcurrency e in
+          A.TTsimple (e, for_expr kind env ~ety:A.vtrole to_)
 
-        | TTcontract (to_, name, ty, arg) -> begin
+        | TTcontract (e, to_, name, ty, arg) -> begin
+            let e  = for_expr kind env ~ety:A.vtcurrency e in
             let ty  = for_type_exn env ty in
             let to_ = for_expr ~ety:A.vtaddress kind env to_ in
             let arg = for_expr ~ety:ty kind env arg in
 
-            A.TTcontract (to_, name, ty, arg)
+            A.TTcontract (e, to_, name, ty, arg)
           end
 
-        | TTentry (name, arg) -> begin
+        | TTentry (e, name, arg) -> begin
+            let x  = for_expr kind env ~ety:A.vtcurrency e in
             let nty =
               match Env.lookup_entry env (unloc name) with
               | Some (`Local (nty, (`Standard | `Argument))) ->
@@ -3963,10 +3965,11 @@ let rec for_instruction_r
 
             let e = A.mk_sp ~type_:nty (A.Pvar (VTnone, Vnone, name)) in
 
-            A.TTentry (e, arg)
+            A.TTentry (x, e, arg)
           end
 
-        | TTself (name, args) -> begin
+        | TTself (e, name, args) -> begin
+            let e  = for_expr kind env ~ety:A.vtcurrency e in
             let entry =
               match Env.Tentry.lookup env (unloc name) with
               | None ->
@@ -3986,10 +3989,14 @@ let rec for_instruction_r
                 (fun (id, ety) arg -> id, for_expr ~ety kind env arg)
                 entry.ad_args args in
 
-            A.TTself (name, args)
+            A.TTself (e, name, args)
           end
 
-      in env, mki (Itransfer (e, tr))
+        | TToperation e ->
+          let e  = for_expr kind env ~ety:A.Toperation e in
+          A.TToperation (e)
+
+      in env, mki (Itransfer tr)
 
     | Eif (c, bit, bif) ->
       let c        = for_expr kind env ~ety:A.vtbool c in

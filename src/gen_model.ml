@@ -878,16 +878,16 @@ let to_model (ast : A.ast) : M.model =
         let e : M.mterm = f e in
         M.Mif (cond, fail (Invalid e), None)
 
-      | A.Itransfer (v, k) -> begin
-          let v = f v in
-          let k =
-            match k with
-            | TTsimple d                 -> M.TKsimple (f d)
-            | TTcontract (d, id, t, arg) -> M.TKcall (unloc id, ptyp_to_type t, f d, f arg)
-            | TTentry (e, arg)           -> M.TKentry (f e, f arg)
-            | TTself (id, args)          -> M.TKself (unloc id, List.map (fun (id, v) -> unloc id, f v) args)
+      | A.Itransfer tr -> begin
+          let tr =
+            match tr with
+            | TTsimple (v, d)               -> M.TKsimple (f v, f d)
+            | TTcontract (v, d, id, t, arg) -> M.TKcall (f v, unloc id, ptyp_to_type t, f d, f arg)
+            | TTentry (v, e, arg)           -> M.TKentry (f v, f e, f arg)
+            | TTself (v, id, args)          -> M.TKself (f v, unloc id, List.map (fun (id, v) -> unloc id, f v) args)
+            | TToperation v                 -> M.TKoperation (f v)
           in
-          M.Mtransfer (v, k)
+          M.Mtransfer tr
         end
 
       | A.Ireturn e -> M.Mreturn (f e)

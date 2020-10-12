@@ -771,18 +771,15 @@ let rec pp_instruction fmt (i : instruction) =
       in
       (pp_with_paren pp) fmt (k, pt, f)
 
-    | Itransfer (value, tr) ->
-      let pp fmt (value, tr) =
-        Format.fprintf fmt "transfer %a%a"
-          pp_pterm value
-          (fun fmt -> function
-             | TTsimple dst                 -> Format.fprintf fmt " to %a" pp_pterm dst
-             | TTcontract (dst, id, t, arg) -> Format.fprintf fmt " to %a call %a<%a>(%a)" pp_pterm dst pp_id id pp_ptyp t pp_pterm arg
-             | TTentry (e, arg)             -> Format.fprintf fmt " to entry %a(%a)" pp_pterm e pp_pterm arg
-             | TTself (id, args)            -> Format.fprintf fmt " to entry self.%a(%a)" pp_id id (pp_list "," (fun fmt (id, v) ->  Format.fprintf fmt "%a = %a" pp_id id pp_pterm v)) args
-          ) tr
+    | Itransfer tr ->
+      let pp fmt = function
+        | TTsimple (x, dst)               -> Format.fprintf fmt "transfer %a to %a" pp_pterm x pp_pterm dst
+        | TTcontract (x, dst, id, t, arg) -> Format.fprintf fmt "transfer %a to %a call %a<%a>(%a)" pp_pterm x pp_pterm dst pp_id id pp_ptyp t pp_pterm arg
+        | TTentry (x, e, arg)             -> Format.fprintf fmt "transfer %a to entry %a(%a)" pp_pterm x pp_pterm e pp_pterm arg
+        | TTself (x, id, args)            -> Format.fprintf fmt "transfer %a to entry self.%a(%a)" pp_pterm x pp_id id (pp_list "," (fun fmt (id, v) ->  Format.fprintf fmt "%a = %a" pp_id id pp_pterm v)) args
+        | TToperation x                   -> Format.fprintf fmt "transfer %a" pp_pterm x
       in
-      (pp_with_paren pp) fmt (value, tr)
+      (pp_with_paren pp) fmt tr
 
     | Icall (meth, kind, args) ->
       let pp fmt (meth, kind, args) =

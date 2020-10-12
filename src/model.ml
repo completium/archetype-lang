@@ -181,10 +181,11 @@ type 'term iter_container_kind_gen =
 [@@deriving show {with_path = false}]
 
 type 'term transfer_kind_gen =
-  | TKsimple of 'term                         (* dest *)
-  | TKcall   of ident * type_ * 'term * 'term (* entry_id * type_entry * dest * args *)
-  | TKentry  of 'term * 'term                 (* entry * arg *)
-  | TKself   of ident * (ident * 'term) list  (* entry_id * args *)
+  | TKsimple    of 'term * 'term                         (* dest *)
+  | TKcall      of 'term * ident * type_ * 'term * 'term (* entry_id * type_entry * dest * args *)
+  | TKentry     of 'term * 'term * 'term                 (* entry * arg *)
+  | TKself      of 'term * ident * (ident * 'term) list  (* entry_id * args *)
+  | TKoperation of 'term
 [@@deriving show {with_path = false}]
 
 type ('id, 'term) mterm_node  =
@@ -209,7 +210,7 @@ type ('id, 'term) mterm_node  =
   | Mmark             of 'id * 'term
   (* effect *)
   | Mfail             of 'id fail_type_gen
-  | Mtransfer         of 'term * 'term transfer_kind_gen
+  | Mtransfer         of 'term transfer_kind_gen
   (* entrypoint *)
   | Mentrypoint       of type_ * 'id * 'term   (* type * address * string *)
   | Mself             of 'id                   (* entryname *)
@@ -1179,10 +1180,11 @@ let cmp_mterm_node
   in
   let cmp_transfer_kind (lhs : transfer_kind) (rhs : transfer_kind) : bool =
     match lhs, rhs with
-    | TKsimple d1, TKsimple d2                         -> cmp d1 d2
-    | TKcall (i1, t1, d1, a1), TKcall (i2, t2, d2, a2) -> cmp_ident i1 i2 && cmp_type t1 t2 && cmp d1 d2 && cmp a1 a2
-    | TKentry (e1, a1), TKentry (e2, a2)               -> cmp e1 e2 && cmp a1 a2
-    | TKself (i1, as1), TKself (i2, as2)               -> cmp_ident i1 i2 && List.for_all2 (fun (id1, v1) (id2, v2) -> cmp_ident id1 id2 && cmp v1 v2) as1 as2
+    | TKsimple (x1, d1), TKsimple (x2, d2)                     -> cmp x1 x2 && cmp d1 d2
+    | TKcall (x1, i1, t1, d1, a1), TKcall (x2, i2, t2, d2, a2) -> cmp x1 x2 && cmp_ident i1 i2 && cmp_type t1 t2 && cmp d1 d2 && cmp a1 a2
+    | TKentry (x1, e1, a1), TKentry (x2, e2, a2)               -> cmp x1 x2 && cmp e1 e2 && cmp a1 a2
+    | TKself (x1, i1, as1), TKself (x2, i2, as2)               -> cmp x1 x2 && cmp_ident i1 i2 && List.for_all2 (fun (id1, v1) (id2, v2) -> cmp_ident id1 id2 && cmp v1 v2) as1 as2
+    | TKoperation x1, TKoperation x2                           -> cmp x1 x2
     | _ -> false
   in
   try
@@ -1208,7 +1210,7 @@ let cmp_mterm_node
     | Mmark (i1, x1), Mmark (i2, x2)                                                   -> cmpi i1 i2 && cmp x1 x2
     (* effect *)
     | Mfail ft1, Mfail ft2                                                             -> cmp_fail_type cmp ft1 ft2
-    | Mtransfer (v1, k1), Mtransfer (v2, k2)                                           -> cmp v1 v2 && cmp_transfer_kind k1 k2
+    | Mtransfer tr1, Mtransfer tr2                                                     -> cmp_transfer_kind tr1 tr2
     (* entrypoint *)
     | Mentrypoint (t1, a1, s1), Mentrypoint (t2, a2, s2)                               -> cmp_type t1 t2 && cmpi a1 a2 && cmp s1 s2
     | Mself id1, Mself id2                                                             -> cmpi id1 id2
@@ -1559,10 +1561,11 @@ let map_iter_container_kind (fi : ident -> ident) f = function
   | ICKmap   mt           -> ICKmap   (f mt)
 
 let map_transfer_kind (fi : ident -> ident) (ft : type_ -> type_) f = function
-  | TKsimple d           -> TKsimple (f d)
-  | TKcall (id, t, d, a) -> TKcall (fi id, ft t, f d, f a)
-  | TKentry (e, a)       -> TKentry (f e, f a)
-  | TKself (id, args)    -> TKself (fi id, List.map (fun (id, v) -> fi id, f v) args)
+  | TKsimple (x, d)         -> TKsimple (f x, f d)
+  | TKcall (x, id, t, d, a) -> TKcall (f x, fi id, ft t, f d, f a)
+  | TKentry (x, e, a)       -> TKentry (f x, f e, f a)
+  | TKself (x, id, args)    -> TKself (f x, fi id, List.map (fun (id, v) -> fi id, f v) args)
+  | TKoperation x           -> TKoperation (f x)
 
 let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ -> type_) (f : 'id mterm_gen -> 'id mterm_gen) = function
   (* lambda *)
@@ -1586,7 +1589,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mmark (i, x)                   -> Mmark (g i, f x)
   (* effect *)
   | Mfail v                        -> Mfail (match v with | Invalid v -> Invalid (f v) | _ -> v)
-  | Mtransfer (v, k)               -> Mtransfer (f v, map_transfer_kind fi ft f k)
+  | Mtransfer tr                   -> Mtransfer (map_transfer_kind fi ft f tr)
   (* entrypoint *)
   | Mentrypoint (t, a, s)          -> Mentrypoint (ft t, g a, f s)
   | Mself id                       -> Mself (g id)
@@ -1936,10 +1939,11 @@ let fold_iter_container_kind f accu = function
   | ICKmap   mt         -> f accu mt
 
 let fold_transfer_kind f accu = function
-  | TKsimple d          -> f accu d
-  | TKcall (_, _, d, a) -> f (f accu d) a
-  | TKentry (e, a)      -> f (f accu e) a
-  | TKself (_, args)    -> List.fold_left f accu (List.map snd args)
+  | TKsimple (x, d)        -> f (f accu x) d
+  | TKcall (x, _, _, d, a) -> f (f (f accu x) d) a
+  | TKentry (x, e, a)      -> f (f (f accu x) e) a
+  | TKself (x, _, args)    -> List.fold_left f (f accu x) (List.map snd args)
+  | TKoperation x          -> f accu x
 
 let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_gen) : 'a =
   let opt f accu x = match x with | Some v -> f accu v | None -> accu in
@@ -1965,7 +1969,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mmark (_, x)                          -> f accu x
   (* effect *)
   | Mfail v                               -> (match v with | Invalid v -> f accu v | _ -> accu)
-  | Mtransfer (v, k)                      -> fold_transfer_kind f (f accu v) k
+  | Mtransfer tr                          -> fold_transfer_kind f accu tr
   (* entrypoint *)
   | Mentrypoint (_, _, s)                 -> f accu s
   | Mself _                               -> accu
@@ -2200,23 +2204,30 @@ let fold_map_iter_container_kind f accu = function
     ICKmap mte, mta
 
 let fold_map_transfer_kind f accu = function
-  | TKsimple d ->
-    let de, da = f accu d in
-    TKsimple de, da
-  | TKcall (id, t, d, a) ->
-    let de, da = f accu d in
+  | TKsimple (x, d) ->
+    let xe, xa = f accu x in
+    let de, da = f xa d in
+    TKsimple (xe, de), da
+  | TKcall (x, id, t, d, a) ->
+    let xe, xa = f accu x in
+    let de, da = f xa d in
     let ae, aa = f da a in
-    TKcall (id, t, de, ae), aa
-  | TKentry (e, a) ->
-    let ee, ea = f accu e in
+    TKcall (xe, id, t, de, ae), aa
+  | TKentry (x, e, a) ->
+    let xe, xa = f accu x in
+    let ee, ea = f xa e in
     let ae, aa = f ea a in
-    TKentry (ee, ae), aa
-  | TKself (id, args)->
+    TKentry (xe, ee, ae), aa
+  | TKself (x, id, args)->
+    let xe, xa = f accu x in
     let args, accu =
       List.fold_left (fun (args, accu) (id, a) ->
           let ae, aa = f accu a in
-          (args @ [id, ae], aa)) ([], accu) args in
-    TKself (id, args), accu
+          (args @ [id, ae], aa)) ([], xa) args in
+    TKself (xe, id, args), accu
+  | TKoperation x ->
+    let xe, xa = f accu x in
+    TKoperation xe, xa
 
 let fold_map_term
     (g : ('id, 'id mterm_gen) mterm_node -> 'id mterm_gen)
@@ -2348,10 +2359,9 @@ let fold_map_term
     in
     g (Mfail fte), fta
 
-  | Mtransfer (v, k) ->
-    let ve, va = f accu v in
-    let ke, ka = fold_map_transfer_kind f va k in
-    g (Mtransfer (ve, ke)), ka
+  | Mtransfer tr ->
+    let tre, tra = fold_map_transfer_kind f accu tr in
+    g (Mtransfer tre), tra
 
 
   (* entrypoint *)

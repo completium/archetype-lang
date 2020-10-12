@@ -436,10 +436,11 @@ let pp_model fmt (model : model) =
   in
 
   let pp_transfer_kind f fmt = function
-    | TKsimple d           -> Format.fprintf fmt "to %a" f d
-    | TKcall (id, _, d, a) -> Format.fprintf fmt "to %a call %s(%a)" f d id f a
-    | TKentry (e, a)       -> Format.fprintf fmt "to entry %a(%a)" f e f a
-    | TKself (id, args)    -> Format.fprintf fmt "to entry self.%a(%a)" pp_str id (pp_list ", " (fun fmt (id, x) -> Format.fprintf fmt "%s = %a" id f x)) args
+    | TKsimple (x, d)         -> Format.fprintf fmt "transfer %a to %a" f x f d
+    | TKcall (x, id, _, d, a) -> Format.fprintf fmt "transfer %a to %a call %s(%a)" f x f d id f a
+    | TKentry (x, e, a)       -> Format.fprintf fmt "transfer %a to entry %a(%a)" f x f e f a
+    | TKself (x, id, args)    -> Format.fprintf fmt "transfer %a to entry self.%a(%a)" f x pp_str id (pp_list ", " (fun fmt (id, x) -> Format.fprintf fmt "%s = %a" id f x)) args
+    | TKoperation x           -> Format.fprintf fmt "transfer %a" f x
   in
 
   let pp_mterm (env : Printer_model_tools.env) fmt (mt : mterm) =
@@ -570,14 +571,7 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "sp.failwith (\"%a\")"
           (pp_fail_type f) ft
 
-      | Mtransfer (v, k) ->
-
-        Format.fprintf fmt "transfer %a %a"
-          f v
-          (pp_transfer_kind f) k
-      (* Format.fprintf fmt "sp.send(%a, %a)"
-         f d
-         f v *)
+      | Mtransfer tr -> pp_transfer_kind f fmt tr
 
 
       (* entrypoint *)

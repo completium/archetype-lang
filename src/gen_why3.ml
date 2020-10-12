@@ -1581,10 +1581,10 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let idx = get_fail_idx m v.type_ in
       Tseq [loc_term (Tassign (Tvar gs, cp_storage gsinit)); dl (Traise (Efail (idx,Some (map_mterm m ctx v))))]
 
-    | Mtransfer (v, k) ->
+    | Mtransfer tr ->
       begin
-        match k with
-        | TKsimple d             ->
+        match tr with
+        | TKsimple (v, d) ->
           let a = map_mterm m ctx v in
           let t = map_mterm m ctx d in
           Tseq[
@@ -1602,7 +1602,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                            ))
               ))
           ]
-        | TKcall (id, _, d, _a)   ->
+        | TKcall (v, id, _, d, _a)   ->
           let t = map_mterm m ctx v in
           let l = loc_term (Tnil gListAs) (*map_mterm m ctx a*) in
           let a = map_mterm m ctx d in
@@ -1613,13 +1613,20 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                        dl (Tapp(loc_term (Tvar "_mk_call"),[a; t; n; l])),
                        loc_term (Tdoti(gs,"_ops"))
                       )))
-        | TKentry (e, _a)         ->
+        | TKentry (v, e, _a)         ->
           assign_operation (map_mterm m ctx v) (map_mterm m ctx e) (loc_term (Tnil gListAs))(*(map_mterm m ctx a)*)
-        | TKself (id, _a)        ->
+        | TKself (v, id, _a)->
           assign_operation
             (map_mterm m ctx v)
             (dl (Tapp (loc_term (Tvar "getopt"), [loc_term (Tentrypoint (id, Tselfaddress gs))])))
             (loc_term (Tnil gListAs))
+        | TKoperation op ->
+          Tassign (
+            loc_term (Tdoti(gs,"_ops")),
+            dl (Tcons (dl gListAs,
+                       map_mterm m ctx op,
+                       loc_term (Tdoti(gs,"_ops"))
+                      )))
       end
 
     (* entrypoint *)
@@ -2680,8 +2687,10 @@ let fold_exns m body : term list =
     | M.Mlistnth _ -> acc @ [Texn Enotfound]
     | M.Mself _ -> acc @ [Texn Enotfound]
     | M.Mcast (Tbuiltin Baddress, Tcontract _, v) -> internal_fold_exn (acc @ [Texn Enotfound]) v
-    | M.Mtransfer (v, TKself _) -> internal_fold_exn (acc @ [Texn Enotfound]) v
-    | M.Mtransfer (v, _) -> internal_fold_exn acc v
+    | M.Mtransfer (TKself (v, _, _)) -> internal_fold_exn (acc @ [Texn Enotfound]) v
+    | M.Mtransfer (TKsimple (v, _))
+    | M.Mtransfer (TKcall      (v, _, _, _, _))
+    | M.Mtransfer (TKoperation v) -> internal_fold_exn acc v
     | M.Mapp (id, args) ->
       let fun_struct = M.Utils.get_function m (unloc id) in
       List.fold_left (fun acc arg ->

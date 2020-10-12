@@ -92,10 +92,11 @@ and for_ident_unloc = FIsimple of lident | FIdouble of lident * lident
 and for_ident = for_ident_unloc loced
 
 and transfer_t =
-  | TTsimple   of expr
-  | TTcontract of expr * lident * type_t * expr
-  | TTentry    of lident * expr
-  | TTself     of lident * expr list
+  | TTsimple    of expr * expr
+  | TTcontract  of expr * expr * lident * type_t * expr
+  | TTentry     of expr * lident * expr
+  | TTself      of expr * lident * expr list
+  | TToperation of expr
 
 and expr_unloc =
   | Eterm          of (var_vset option * var_label option) * lident
@@ -108,7 +109,7 @@ and expr_unloc =
   | Emulticomp     of expr * (comparison_operator loced * expr) list
   | Eapp           of function_ * expr list
   | Emethod        of expr * lident * expr list
-  | Etransfer      of expr * transfer_t
+  | Etransfer      of transfer_t
   | Edorequire     of expr * expr
   | Edofailif      of expr * expr
   | Efail          of expr
@@ -481,7 +482,7 @@ let esqapp        ?(loc=dummy) e i                = mkloc loc (Esqapp (e, i))
 let emulticomp    ?(loc=dummy) e l                = mkloc loc (Emulticomp(e, l))
 let eapp          ?(loc=dummy) f e                = mkloc loc (Eapp(f, e))
 let emethod       ?(loc=dummy) e id args          = mkloc loc (Emethod(e, id, args))
-let etransfer     ?(loc=dummy) e t                = mkloc loc (Etransfer(e, t))
+let etransfer     ?(loc=dummy) t                  = mkloc loc (Etransfer t)
 let edorequire    ?(loc=dummy) e f                = mkloc loc (Edorequire(e, f))
 let edofailif     ?(loc=dummy) e f                = mkloc loc (Edofailif (e, f))
 let efail         ?(loc=dummy) e                  = mkloc loc (Efail e)
