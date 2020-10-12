@@ -1,10 +1,10 @@
 archetype extension mutable_signed (
 
-  variable[%%mutable_signed (roles, cond)%%] avariable : type
+  variable[%%mutable_signed (roles, cond)%%] avariable : %type
 
 ) {
 
-  entry[%%signedbyall (roles)%%] set_<%avariable> (newvariable : type) {
+  entry[%%signedbyall (roles)%%] set_<%avariable> (newvariable : %type) {
     require {
       set_<%avariable>_c1 : cond;
     }

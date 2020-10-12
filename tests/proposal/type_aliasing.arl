@@ -1,0 +1,9 @@
+archetype type_aliasing
+
+type my_type = nat
+
+variable n : my_type = 0
+
+entry exec(p : my_type) {
+  n := p
+}

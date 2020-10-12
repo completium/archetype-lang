@@ -5431,6 +5431,7 @@ let group_declarations (decls : (PT.declaration list)) =
       { g with gr_specassets = mk infos :: g.gr_specassets }
 
 
+    | Dtype      _  -> assert false
     | Dnamespace _  -> assert false
     | Dextension _  -> assert false
     | Dinvalid      -> assert false

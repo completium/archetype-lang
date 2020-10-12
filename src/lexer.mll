@@ -106,6 +106,7 @@
       "transfer"            , TRANSFER       ;
       "transition"          , TRANSITION     ;
       "true"                , TRUE           ;
+      "type"                , TYPE           ;
       "unmoved"             , UNMOVED        ;
       "unpack"              , UNPACK         ;
       "use"                 , USE            ;

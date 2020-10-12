@@ -15,6 +15,7 @@ let string_of_token = function
   | UNMOVED         -> "UNMOVED"
   | UNDERSCORE      -> "UNDERSCORE"
   | TZ n            -> Printf.sprintf "TZ(%s)" (Big_int.string_of_big_int n)
+  | TYPE            -> "TYPE"
   | TRUE            -> "TRUE"
   | TRANSITION      -> "TRANSITION"
   | TRANSFER        -> "TRANSFER"
@@ -173,6 +174,7 @@ let string_of_symbol = function
   | X (T T_UNMOVED) -> "unmoved"
   | X (T T_UNDERSCORE) -> "_"
   | X (T T_TZ) -> "a tz"
+  | X (T T_TYPE) -> "a type"
   | X (T T_TRUE) -> "true"
   | X (T T_TRANSITION) -> "transition"
   | X (T T_TRANSFER) -> "transfer"
@@ -322,6 +324,7 @@ let string_of_symbol = function
   | X (N N_variable) -> "a variable"
   | X (N N_type_s_unloc) -> "types"
   | X (N N_type_r) -> "a type"
+  | X (N N_type_decl) -> "a type decl"
   | X (N N_transition) -> "a transition"
   | X (N N_transition_to_item) -> "a transition to item"
   | X (N N_start_expr) -> "a start expression"

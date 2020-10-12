@@ -157,6 +157,7 @@
 %token TRANSFER
 %token TRANSITION
 %token TRUE
+%token TYPE
 %token UNDERSCORE
 %token UNMOVED
 %token UNPACK
@@ -294,6 +295,7 @@ declaration_r:
  | x=specgetter         { x }
  | x=specvariable       { x }
  | x=security_decl      { x }
+ | x=type_decl          { x }
  | INVALID_DECL         { Dinvalid }
 
 archetype:
@@ -498,6 +500,9 @@ security_decl_unloc:
 
 security_decl:
 | x=loc(security_decl_unloc)      { Dsecurity x }
+
+type_decl:
+| TYPE id=ident EQUAL t=type_t    { Dtype (id, t) }
 
 enum:
 | STATES exts=extensions? xs=equal_enum_values

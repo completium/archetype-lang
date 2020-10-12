@@ -1244,6 +1244,11 @@ let rec pp_declaration fmt { pldesc = e; _ } =
     let items, exts = v |> unloc in
     pp_security fmt (items, exts)
 
+  | Dtype (id, t) ->
+     Format.fprintf fmt "type %a = %a"
+      pp_id id
+      pp_type t
+
   | Dinvalid ->
     Format.fprintf fmt "(* invalid declaration *)"
 
