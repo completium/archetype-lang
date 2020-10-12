@@ -151,6 +151,7 @@ end = struct
       | A.Tlambda  (a, r) -> is_type a && is_type r
 
       | A.Tcontract _ -> true
+      | A.Tenum     _ -> true
       | A.Trecord   _ -> true
       | A.Toperation  -> true
 
@@ -5184,7 +5185,6 @@ let for_asset_specs
 (* -------------------------------------------------------------------- *)
 let for_record_decl (env : env) (decl : PT.record_decl loced) =
   let name, fields, _pos, _ = unloc decl in
-
   let fields =
     let get_field { pldesc = PT.Ffield (x, ty, e, _) } = (x, ty, e) in
     List.map get_field fields in
