@@ -211,10 +211,10 @@ entry %transfer(%from : address, tds : list<transfer_destination>) {
     match_option apply_transfer_policy(transfer_p, %from, td) with
     | some(msg) -> fail(msg)
     | none -> begin
-        // basic checks -------------------------------------------------------
+        /* basic checks ----------------------------------------------------- */
         dorequire(tokens.contains(td.token_id), "FA2_TOKEN_UNDEFINED");
         dorequire(ledger[(td.token_id, %from)].amount >= td.token_amount, "FA2_INSUFFICIENT_BALANCE");
-        // apply sender hook --------------------------------------------------
+        /* apply sender hook ------------------------------------------------ */
         if not contains(applied_hooks, (%from, applied_hook_id)) then begin
           match_or apply_hook(td.token_id, %from, hook_param, Sender) with
           | left(sop) -> match_option sop with
@@ -225,7 +225,7 @@ entry %transfer(%from : address, tds : list<transfer_destination>) {
           end;
           applied_hooks := add(applied_hooks, (%from, applied_hook_id));
         end;
-        // apply receiver hook ------------------------------------------------
+        /* apply receiver hook ---------------------------------------------- */
         if not contains(applied_hooks, (td.%to, applied_hook_id)) then begin
           match_or apply_hook(td.token_id, td.%to, hook_param, Receiver) with
           | left(sop) -> match_option sop with
@@ -236,7 +236,7 @@ entry %transfer(%from : address, tds : list<transfer_destination>) {
           end;
           applied_hooks := add(applied_hooks, (td.%to, applied_hook_id));
         end;
-        // update ledger ------------------------------------------------------
+        /* update ledger ---------------------------------------------------- */
         ledger.update((td.token_id, %from), { amount -= td.token_amount });
         ledger.addupdate((td.token_id, td.%to), { amount += td.token_amount });
       end
