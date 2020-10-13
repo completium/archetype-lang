@@ -1,6 +1,6 @@
 archetype fa2
 
-/* enum & record types ------------------------------------------------------- */
+/* TYPES ---------------------------------------------------------------- */
 
 enum operator_transfer_policy =
 | No_transfer
@@ -109,7 +109,7 @@ asset tokens {
   permissions_desc : basic_permissions;
 }
 
-/* utils function ------------------------------------------------------------- */
+/* UTIL FUNCTIONS -------------------------------------------------------------- */
 
 function get_transfer_policy (tid : nat) : operator_transfer_policy {
   return
@@ -148,7 +148,10 @@ function get_hook_policy (tid : nat, ot : owner_type) : owner_hook_policy {
     end
 }
 
-function apply_transfer_policy (otp : operator_transfer_policy, %from : address, tr : transfer_destination) : option<string> {
+function apply_transfer_policy (
+  otp   : operator_transfer_policy,
+  %from : address,
+  tr    : transfer_destination) : option<string> {
   return
     match otp with
     | No_transfer ->
@@ -171,9 +174,9 @@ function apply_transfer_policy (otp : operator_transfer_policy, %from : address,
 }
 
 function mk_op (
-  a           : address,
-  tp          : transfer_descriptor_param,
-  ot          : owner_type) : or<option<operation>,string> {
+  a  : address,
+  tp : transfer_descriptor_param,
+  ot : owner_type) : or<option<operation>,string> {
   return
     match ot with
     | Sender ->
@@ -184,10 +187,10 @@ function mk_op (
 }
 
 function apply_hook (
-  itoken_id   : nat,
-  iowner      : address,
-  tp          : transfer_descriptor_param,
-  ot          : owner_type) : or<option<operation>,string> {
+  itoken_id : nat,
+  iowner    : address,
+  tp        : transfer_descriptor_param,
+  ot        : owner_type) : or<option<operation>,string> {
   return
     match get_hook_policy(itoken_id, ot)  with
     | Owner_no_hook -> left<_,string>(none<operation>)
@@ -223,7 +226,7 @@ function get_hook_param(c : address, f : address, tds : list<transfer_destinatio
   }
 }
 
-/* entry points -------------------------------------------------------------- */
+/* ENTRY POINTS -------------------------------------------------------------- */
 
 entry add_token (
   new_token_id : nat,
