@@ -1,0 +1,13 @@
+archetype asset_addupdate
+
+asset my_asset {
+  a : address;
+  b : nat = 0;
+  c : nat = 0;
+}
+
+entry exec() {
+  // var z = (0, caller);
+  var z = caller;
+  my_asset.update(z, { b += 2 });
+}

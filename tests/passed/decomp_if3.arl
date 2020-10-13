@@ -1,4 +1,4 @@
-archetype decomp_if2
+archetype decomp_if3
 
 variable a : nat = 0
 variable b : nat = 0

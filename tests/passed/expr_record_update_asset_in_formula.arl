@@ -1,4 +1,4 @@
-archetype test_recupdate_in_formula
+archetype expr_record_update_asset_in_formula
 
 asset my_asset identified by id {
   id : nat;

@@ -80,7 +80,7 @@ record operator_param {
 
 /* STORAGE ------------------------------------------------------------------ */
 
-variable admin : address = @tz1
+variable admin : address = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 
 variable permissions_descriptor : permissions = {
   {
@@ -174,25 +174,45 @@ function apply_transfer_policy (
 }
 
 function mk_op (
-  a  : address,
-  tp : transfer_descriptor_param,
-  ot : owner_type) : or<option<operation>,string> {
-  return
+  a           : address,
+  tp          : transfer_descriptor_param,
+  ot          : owner_type) : or<option<operation>,string> {
+  var e =
     match ot with
-    | Sender ->
-      left<_,string>(some(mkoperation(0tz,opt_get(entrypoint<transfer_descriptor_param>("%fa2_token_sender",a)),tp)))
-    | Receiver ->
-      left<_,string>(some(mkoperation(0tz,opt_get(entrypoint<transfer_descriptor_param>("%fa2_token_receiver",a)),tp)))
-    end
+    | Sender   -> entrypoint<transfer_descriptor_param>("%fa2_token_sender",a)
+    | Receiver -> entrypoint<transfer_descriptor_param>("%fa2_token_receiver", a)
+    end;
+  return left<_,string>(some(mkoperation(0tz, opt_get(e), tp)))
 }
 
 function apply_hook (
-  itoken_id : nat,
-  iowner    : address,
-  tp        : transfer_descriptor_param,
-  ot        : owner_type) : or<option<operation>,string> {
+  itoken_id   : nat,
+  iowner      : address,
+  tp          : transfer_descriptor_param,
+  ot          : owner_type) : or<option<operation>,string> {
+  var v_owner_hook_policy =
+    match_option permissions_descriptor.custom with // check custom policy
+    | some(cust) ->
+      if cust.tag = "FA2_PER_TOKEN" then begin // look up in tokens
+        match ot with
+        | Sender   ->  tokens[itoken_id].permissions_desc.sender_hook_policy
+        | Receiver ->  tokens[itoken_id].permissions_desc.receiver_hook_policy
+        end
+      end else begin // fall back to default
+        match ot with
+        | Sender   ->  permissions_descriptor.basic.sender_hook_policy
+        | Receiver ->  permissions_descriptor.basic.receiver_hook_policy
+        end
+      end
+    | none -> // fall back to default
+      match ot with
+      | Sender   ->  permissions_descriptor.basic.sender_hook_policy
+      | Receiver ->  permissions_descriptor.basic.receiver_hook_policy
+      end
+    end;
   return
-    match get_hook_policy(itoken_id, ot)  with
+    // match get_hook_policy(itoken_id, ot) with
+    match v_owner_hook_policy with
     | Owner_no_hook -> left<_,string>(none<operation>)
     | Optional_owner_hook -> begin
       match_option ledger[(itoken_id, iowner)].hook with

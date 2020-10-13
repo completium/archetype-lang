@@ -1,0 +1,17 @@
+archetype variable_in_container
+
+record rt {
+  s : set<nat>;
+  l : list<nat>;
+  m : map<nat, nat>;
+}
+
+variable v : rt = { s = []; l = []; m = [] }
+
+entry exec () {
+  var n : nat = 0;
+  var vs : set<nat>  = [ n; n ];
+  var vl : list<nat> = [ n; n ];
+  var vm : map<nat, nat> = [ (n, n); (n, n) ];
+  v := { s = vs; l = vl; m = vm }
+}

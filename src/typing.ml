@@ -141,6 +141,7 @@ end = struct
       | A.Tbuiltin VTkey       -> true
       | A.Tbuiltin VTsignature -> true
       | A.Tbuiltin VTchainid   -> true
+      | A.Tbuiltin VTunit      -> true
 
       | A.Toption   t     -> is_type t
       | A.Tlist     t     -> is_type t

@@ -1029,6 +1029,7 @@ let fail x  = mk_mterm (Mfail (Invalid (mk_string x))) tunit
 let failg x = mk_mterm (Mfail (Invalid (x))) tunit
 let mnot x  = mk_mterm (Mnot x) tbool
 let seq x   = mk_mterm (Mseq x) tunit
+let skip    = seq []
 
 (* -------------------------------------------------------------------- *)
 
