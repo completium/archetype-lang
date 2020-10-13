@@ -1,7 +1,0 @@
-archetype non_comparable_set
-
-entry exec () {
-  effect {
-    var s : set<int * int>  = [];
-  }
-}

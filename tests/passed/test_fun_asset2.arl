@@ -1,0 +1,33 @@
+archetype test_fun_asset
+
+asset my_asset {
+  id : nat;
+} initialized by {
+  {0};
+  {1};
+  {2};
+  {3}
+}
+
+record rt {
+  n : nat;
+  k : int;
+}
+
+variable res : nat = 0
+variable v : nat = 0
+
+variable r : rt = {n = 0; k = 1i}
+
+
+function get_count() : nat {
+  return (r.n + my_asset.count())
+}
+
+function f() : nat {
+  return get_count()
+}
+
+entry exec () {
+  res := f()
+}

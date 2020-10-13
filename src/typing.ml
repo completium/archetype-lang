@@ -37,8 +37,12 @@ module Type : sig
   val is_or        : A.ptyp -> bool
 
   module Michelson : sig
-    val is_type       : A.ptyp -> bool
-    val is_comparable : ?simple:bool -> A.ptyp -> bool
+    val is_type          : A.ptyp -> bool
+    val is_comparable    : A.ptyp -> bool
+    val is_passable      : A.ptyp -> bool
+    val is_storable      : A.ptyp -> bool
+    val is_packable      : A.ptyp -> bool
+    val is_big_map_value : A.ptyp -> bool
   end
 
   val support_eq : A.ptyp -> bool
@@ -52,7 +56,7 @@ module Type : sig
   val sig_distance   : from_:A.ptyp list -> to_:A.ptyp list -> int option
   val join           : ?autoview:bool -> A.ptyp list -> A.ptyp option
 
-  type trestr = [`Michelson]
+  type trestr = [`MichelsonPackable]
 
   exception UnificationFailure
 
@@ -117,47 +121,216 @@ end = struct
     | A.Tlambda _ -> true | _ -> false
 
   module Michelson = struct
-    let rec is_comparable ?(simple = false) = function
-      | A.Tbuiltin VTnat
-      | A.Tbuiltin VTint
-      | A.Tbuiltin VTstring
-      | A.Tbuiltin VTbytes
-      | A.Tbuiltin VTcurrency
-      | A.Tbuiltin VTbool
-      | A.Tbuiltin VTkeyhash
-      | A.Tbuiltin VTdate
-      | A.Tbuiltin VTduration
-      | A.Tbuiltin VTaddress
-      | A.Tbuiltin VTrole
-        -> true
-
-      | A.Trecord _ when not simple -> true
-      | A.Ttuple l -> List.for_all is_comparable l
-      | _ -> false
-
-    let rec is_type = function
-      | t when is_comparable t -> true
-
-      | A.Tbuiltin VTkey       -> true
-      | A.Tbuiltin VTsignature -> true
-      | A.Tbuiltin VTchainid   -> true
+    let is_type t =
+      match t with
+      | A.Tnamed  _            -> false
+      | A.Tasset  _            -> false
+      | A.Trecord _            -> true (* all record fields got a michelson type *)
+      | A.Tenum   _            -> true
       | A.Tbuiltin VTunit      -> true
+      | A.Tbuiltin VTbool      -> true
+      | A.Tbuiltin VTnat       -> true
+      | A.Tbuiltin VTint       -> true
+      | A.Tbuiltin VTrational  -> true
+      | A.Tbuiltin VTdate      -> true
+      | A.Tbuiltin VTduration  -> true
+      | A.Tbuiltin VTstring    -> true
+      | A.Tbuiltin VTaddress   -> true
+      | A.Tbuiltin VTrole      -> true
+      | A.Tbuiltin VTcurrency  -> true
+      | A.Tbuiltin VTkey       -> true
+      | A.Tbuiltin VTkeyhash   -> true
+      | A.Tbuiltin VTsignature -> true
+      | A.Tbuiltin VTbytes     -> true
+      | A.Tbuiltin VTchainid   -> true
+      | A.Tcontainer         _ -> false
+      | A.Tset               _ -> true
+      | A.Tlist              _ -> true
+      | A.Tmap               _ -> true
+      | A.Tbig_map           _ -> true
+      | A.Tor                _ -> true
+      | A.Tlambda            _ -> true
+      | A.Ttuple             _ -> true
+      | A.Toption            _ -> true
+      | A.Toperation           -> true
+      | A.Tcontract          _ -> true
+      | A.Ttrace             _ -> false
 
-      | A.Toption   t     -> is_type t
-      | A.Tlist     t     -> is_type t
-      | A.Tset      t     -> is_type t
-      | A.Ttuple    ts    -> List.for_all is_type ts
-      | A.Tmap     (k, t) -> is_comparable k && is_type t
-      | A.Tbig_map (k, t) -> is_comparable k && is_type t
-      | A.Tor      (l, r) -> is_type l && is_type r
-      | A.Tlambda  (a, r) -> is_type a && is_type r
+    let rec is_comparable t =
+      match t with
+      | A.Tnamed        _      -> false
+      | A.Tasset        _      -> false
+      | A.Trecord       _      -> true (* TODO: Check if first field is comparable *)
+      | A.Tenum         _      -> true
+      | A.Tbuiltin VTunit      -> false
+      | A.Tbuiltin VTbool      -> true
+      | A.Tbuiltin VTnat       -> true
+      | A.Tbuiltin VTint       -> true
+      | A.Tbuiltin VTrational  -> true
+      | A.Tbuiltin VTdate      -> true
+      | A.Tbuiltin VTduration  -> true
+      | A.Tbuiltin VTstring    -> true
+      | A.Tbuiltin VTaddress   -> true
+      | A.Tbuiltin VTrole      -> true
+      | A.Tbuiltin VTcurrency  -> true
+      | A.Tbuiltin VTkey       -> false
+      | A.Tbuiltin VTkeyhash   -> true
+      | A.Tbuiltin VTsignature -> false
+      | A.Tbuiltin VTbytes     -> true
+      | A.Tbuiltin VTchainid   -> false
+      | A.Tcontainer         _ -> false
+      | A.Tset               _ -> false
+      | A.Tlist              _ -> false
+      | A.Tmap               _ -> false
+      | A.Tbig_map           _ -> false
+      | A.Tor                _ -> false
+      | A.Tlambda            _ -> false
+      | A.Ttuple             l -> (match l with | e::_ -> is_comparable e | _ -> false)
+      | A.Toption            _ -> false
+      | A.Toperation           -> false
+      | A.Tcontract          _ -> false
+      | A.Ttrace             _ -> false
 
-      | A.Tcontract _ -> true
-      | A.Tenum     _ -> true
-      | A.Trecord   _ -> true
-      | A.Toperation  -> true
+    let rec is_passable t =
+      match t with
+      | A.Tnamed        _      -> false
+      | A.Tasset        _      -> false
+      | A.Trecord       _      -> true
+      | A.Tenum         _      -> true
+      | A.Tbuiltin VTunit      -> true
+      | A.Tbuiltin VTbool      -> true
+      | A.Tbuiltin VTnat       -> true
+      | A.Tbuiltin VTint       -> true
+      | A.Tbuiltin VTrational  -> true
+      | A.Tbuiltin VTdate      -> true
+      | A.Tbuiltin VTduration  -> true
+      | A.Tbuiltin VTstring    -> true
+      | A.Tbuiltin VTaddress   -> true
+      | A.Tbuiltin VTrole      -> true
+      | A.Tbuiltin VTcurrency  -> true
+      | A.Tbuiltin VTkey       -> true
+      | A.Tbuiltin VTkeyhash   -> true
+      | A.Tbuiltin VTsignature -> true
+      | A.Tbuiltin VTbytes     -> true
+      | A.Tbuiltin VTchainid   -> true
+      | A.Tcontainer         _ -> false
+      | A.Tset               _ -> true
+      | A.Tlist              _ -> true
+      | A.Tmap               _ -> true
+      | A.Tbig_map           _ -> true
+      | A.Tor                _ -> true
+      | A.Tlambda            _ -> true
+      | A.Ttuple             l -> List.for_all is_passable l
+      | A.Toption            _ -> true
+      | A.Toperation           -> false
+      | A.Tcontract          _ -> true
+      | A.Ttrace             _ -> false
 
-      | _ -> false
+    let rec is_storable t =
+      match t with
+      | A.Tnamed        _      -> false
+      | A.Tasset        _      -> false
+      | A.Trecord       _      -> true (* TODO: Check if all fields are storable *)
+      | A.Tenum         _      -> true
+      | A.Tbuiltin VTunit      -> true
+      | A.Tbuiltin VTbool      -> true
+      | A.Tbuiltin VTnat       -> true
+      | A.Tbuiltin VTint       -> true
+      | A.Tbuiltin VTrational  -> true
+      | A.Tbuiltin VTdate      -> true
+      | A.Tbuiltin VTduration  -> true
+      | A.Tbuiltin VTstring    -> true
+      | A.Tbuiltin VTaddress   -> true
+      | A.Tbuiltin VTrole      -> true
+      | A.Tbuiltin VTcurrency  -> true
+      | A.Tbuiltin VTkey       -> true
+      | A.Tbuiltin VTkeyhash   -> true
+      | A.Tbuiltin VTsignature -> true
+      | A.Tbuiltin VTbytes     -> true
+      | A.Tbuiltin VTchainid   -> true
+      | A.Tcontainer         _ -> false
+      | A.Tset               t -> is_storable t
+      | A.Tlist              t -> is_storable t
+      | A.Tmap          (k, v) -> List.for_all is_storable [k; v]
+      | A.Tbig_map      (k, v) -> List.for_all is_storable [k; v]
+      | A.Tor           (l, r) -> List.for_all is_storable [l; r]
+      | A.Tlambda            _ -> true
+      | A.Ttuple             l -> List.for_all is_storable l
+      | A.Toption            t -> is_storable t
+      | A.Toperation           -> false
+      | A.Tcontract          _ -> false
+      | A.Ttrace             _ -> false
+
+    let rec is_packable t =
+      match t with
+      | A.Tnamed             _ -> false
+      | A.Tasset             _ -> false
+      | A.Trecord            _ -> true (* TODO: check if all fields are packable *)
+      | A.Tenum              _ -> true
+      | A.Tbuiltin VTunit      -> true
+      | A.Tbuiltin VTbool      -> true
+      | A.Tbuiltin VTnat       -> true
+      | A.Tbuiltin VTint       -> true
+      | A.Tbuiltin VTrational  -> true
+      | A.Tbuiltin VTdate      -> true
+      | A.Tbuiltin VTduration  -> true
+      | A.Tbuiltin VTstring    -> true
+      | A.Tbuiltin VTaddress   -> true
+      | A.Tbuiltin VTrole      -> true
+      | A.Tbuiltin VTcurrency  -> true
+      | A.Tbuiltin VTkey       -> true
+      | A.Tbuiltin VTkeyhash   -> true
+      | A.Tbuiltin VTsignature -> true
+      | A.Tbuiltin VTbytes     -> true
+      | A.Tbuiltin VTchainid   -> true
+      | A.Tcontainer         _ -> false
+      | A.Tset               t -> is_packable t
+      | A.Tlist              t -> is_packable t
+      | A.Tmap          (k, v) -> List.for_all is_packable [k; v]
+      | A.Tbig_map           _ -> false
+      | A.Tor           (l, r) -> List.for_all is_packable [l; r]
+      | A.Tlambda            _ -> true
+      | A.Ttuple             l -> List.for_all is_packable l
+      | A.Toption            t -> is_packable t
+      | A.Toperation           -> false
+      | A.Tcontract          _ -> true
+      | A.Ttrace             _ -> false
+
+    let rec is_big_map_value t =
+      match t with
+      | A.Tnamed        _      -> false
+      | A.Tasset        _      -> false
+      | A.Trecord       _      -> true (* TODO: check if all fields are typed for big map value *)
+      | A.Tenum         _      -> true
+      | A.Tbuiltin VTunit      -> true
+      | A.Tbuiltin VTbool      -> true
+      | A.Tbuiltin VTnat       -> true
+      | A.Tbuiltin VTint       -> true
+      | A.Tbuiltin VTrational  -> true
+      | A.Tbuiltin VTdate      -> true
+      | A.Tbuiltin VTduration  -> true
+      | A.Tbuiltin VTstring    -> true
+      | A.Tbuiltin VTaddress   -> true
+      | A.Tbuiltin VTrole      -> true
+      | A.Tbuiltin VTcurrency  -> true
+      | A.Tbuiltin VTkey       -> true
+      | A.Tbuiltin VTkeyhash   -> true
+      | A.Tbuiltin VTsignature -> true
+      | A.Tbuiltin VTbytes     -> true
+      | A.Tbuiltin VTchainid   -> true
+      | A.Tcontainer         _ -> false
+      | A.Tset               t -> is_big_map_value t
+      | A.Tlist              t -> is_big_map_value t
+      | A.Tmap          (k, v) -> List.for_all is_big_map_value [k; v]
+      | A.Tbig_map           _ -> false
+      | A.Tor           (l, r) -> List.for_all is_big_map_value [l; r]
+      | A.Tlambda            _ -> true
+      | A.Ttuple             l -> List.for_all is_big_map_value l
+      | A.Toption            t -> is_big_map_value t
+      | A.Toperation           -> false
+      | A.Tcontract          _ -> true
+      | A.Ttrace             _ -> false
+
   end
 
   let rec support_eq = function
@@ -245,7 +418,7 @@ end = struct
     List.length tys1 = List.length tys2
     && List.for_all2 equal tys1 tys2
 
-  type trestr = [`Michelson]
+  type trestr = [`MichelsonPackable]
 
   exception UnificationFailure
 
@@ -257,8 +430,8 @@ end = struct
         match ptn, tg with
         | A.Tnamed i, _ -> begin
             begin match Mint.find_opt i restr with
-              | Some `Michelson ->
-                if not (Michelson.is_type tg) then
+              | Some `MichelsonPackable ->
+                if not (Michelson.is_packable tg) then
                   raise E.Error;
               | None -> () end;
 
@@ -1065,7 +1238,7 @@ let cryptoops : opinfo list =
 
 (* -------------------------------------------------------------------- *)
 let packops : opinfo list =
-  ["pack", A.Cpack, `Total, None, [A.Tnamed 0], A.vtbytes, Mint.of_list [0, `Michelson]]
+  ["pack", A.Cpack, `Total, None, [A.Tnamed 0], A.vtbytes, Mint.of_list [0, `MichelsonPackable]]
 
 (* -------------------------------------------------------------------- *)
 let opsops : opinfo list =
@@ -1933,7 +2106,7 @@ let for_type_exn ?pkey (env : env) =
     | Tset ty ->
       let t = doit ty in
 
-      if not (Type.Michelson.is_comparable ~simple:true t) then
+      if not (Type.Michelson.is_comparable t) then
         Env.emit_error env (loc (fst ty), InvalidTypeForSet);
 
       A.Tset (doit ty)
@@ -1958,7 +2131,7 @@ let for_type_exn ?pkey (env : env) =
       if not (Type.Michelson.is_comparable nk) then
         Env.emit_error env (loc (fst k), InvalidTypeForBigMapKey);
 
-      if not (Type.Michelson.is_type nv) then
+      if not (Type.Michelson.is_big_map_value nv) then
         Env.emit_error env (loc (fst v), InvalidTypeForBigMapValue);
 
       A.Tbig_map (nk, nv)
@@ -3098,7 +3271,7 @@ let rec for_xexpr
       let e  = for_xexpr env ~ety:A.vtbytes e in
 
       Option.iter (fun ty ->
-          if not (Type.Michelson.is_type ty) then
+          if not (Type.Michelson.is_packable ty) then
             Env.emit_error env (loc tope, PackUnpackOnNonPrimitive)) ty;
 
       mk_sp

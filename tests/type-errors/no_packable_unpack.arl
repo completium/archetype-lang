@@ -1,0 +1,7 @@
+archetype no_packable_unpack
+
+variable bm : option<big_map<nat, int>> = none<big_map<nat, int>>
+
+entry exec (b : bytes) {
+  bm := unpack<big_map<nat, int>>(b)
+}

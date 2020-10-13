@@ -1,0 +1,7 @@
+archetype no_big_map_value_type
+
+variable m : big_map<nat, big_map<nat, int>> = []
+
+entry exec () {
+  ()
+}
