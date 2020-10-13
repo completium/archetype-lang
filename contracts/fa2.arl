@@ -223,7 +223,11 @@ function apply_hook (
     | Required_owner_hook ->
       match_option ledger[(itoken_id, iowner)].hook with
       | some(h) -> mk_op (h, tp, ot)
-      | none -> right<option<operation>, _>("FA2_HOOK_NOT_SET")
+      | none ->
+        match ot with
+        | Sender   -> right<option<operation>, _>("FA2_SENDER_HOOK_UNDEFINED")
+        | Receiver -> right<option<operation>, _>("FA2_RECEIVER_HOOK_UNDEFINED")
+        end
       end
     end
 }
@@ -244,6 +248,14 @@ function get_hook_param(c : address, f : address, tds : list<transfer_destinatio
       token_amount_desc  = td.token_amount
     })}]; c
   }
+}
+
+function get_update_param (up : or<operator_param, operator_param>) : operator_param {
+  return
+    match_or up with
+    | left(param) -> param
+    | right(param) -> param
+    end
 }
 
 /* ENTRY POINTS -------------------------------------------------------------- */
@@ -322,6 +334,11 @@ getter balance_of (brs : list<balance_of_request>) : list<balance_of_response> {
 
 entry update_operators (upl : list<or<operator_param, operator_param>>) {
   for up in upl do
+    match get_transfer_policy(get_update_param(up).opp_token_id) with
+    | No_transfer -> fail("FA2_OPERATORS_UNSUPPORTED")
+    | Owner_transfer -> fail("FA2_OPERATORS_UNSUPPORTED")
+    | Owner_or_operator_transfer -> ()
+    end;
     match_or up with
     | left(param) -> // add
       operator.add({ param.opp_operator; param.opp_token_id; param.opp_owner })
