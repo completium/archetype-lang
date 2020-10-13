@@ -55,48 +55,53 @@ let rec pp_ptyp fmt (t : ptyp) =
   | Tcontainer (t, c) ->
     Format.fprintf fmt "%a<%a>"
       pp_container c
-      pp_ptyp t
+      pp_type t
   | Tset t ->
     Format.fprintf fmt "set<%a>"
-      pp_ptyp t
+      pp_type t
   | Tlist t ->
     Format.fprintf fmt "list<%a>"
-      pp_ptyp t
+      pp_type t
   | Tmap (k, v) ->
     Format.fprintf fmt "map<%a, %a>"
-      pp_ptyp k
-      pp_ptyp v
+      pp_type k
+      pp_type v
   | Tbig_map (k, v) ->
     Format.fprintf fmt "big_map<%a, %a>"
-      pp_ptyp k
-      pp_ptyp v
+      pp_type k
+      pp_type v
   | Tor (k, v) ->
     Format.fprintf fmt "or<%a, %a>"
-      pp_ptyp k
-      pp_ptyp v
+      pp_type k
+      pp_type v
   | Tlambda (a, r) ->
     Format.fprintf fmt "lambda<%a, %a>"
-      pp_ptyp a
-      pp_ptyp r
+      pp_type a
+      pp_type r
   | Toption t ->
     Format.fprintf fmt "option<%a>"
-      pp_ptyp t
+      pp_type t
   | Ttuple ts ->
     Format.fprintf fmt "%a"
-      (pp_list " * " pp_ptyp) ts
+      (pp_list " * " pp_type) ts
   | Toperation ->
     Format.fprintf fmt "operation"
   | Tcontract et ->
-    Format.fprintf fmt "contract<%a>" pp_ptyp et
+    Format.fprintf fmt "contract<%a>" pp_type et
   | Ttrace t ->
     Format.fprintf fmt "%a"
       pp_trtyp t
+
+and pp_type fmt t = pp_ptyp fmt t
+  (* match a with
+  | Some a -> Format.fprintf fmt "(%a : %a)" pp_ptyp t pp_id a
+  | None -> pp_ptyp fmt t *)
 
 let pp_struct_poly pp_node fmt (s : 'a struct_poly) =
   if !Options.opt_typed then
     Format.fprintf fmt "(%a : %a)"
       pp_node s.node
-      (pp_option pp_ptyp) s.type_
+      (pp_option pp_type) s.type_
   else
     pp_node fmt s.node
 
@@ -286,7 +291,7 @@ let rec pp_pterm fmt (pterm : pterm) =
         Format.fprintf fmt "%a (%a : %a), %a"
           pp_quantifier q
           pp_id i
-          pp_ptyp t
+          pp_type t
           pp_pterm b
       in
       (pp_with_paren pp) fmt (q, i, (a, t), b)
@@ -444,7 +449,7 @@ let rec pp_pterm fmt (pterm : pterm) =
       let pp fmt (id, init, t, body) =
         Format.fprintf fmt "let %a%a= %a in@\n%a%a"
           pp_id id
-          (pp_option (pp_prefix " : " pp_ptyp)) t
+          (pp_option (pp_prefix " : " pp_type)) t
           pp_pterm init
           pp_pterm body
           (pp_option (fun fmt -> Format.fprintf fmt " otherwise %a" pp_pterm)) otherwise
@@ -455,7 +460,7 @@ let rec pp_pterm fmt (pterm : pterm) =
       let pp fmt (i, t, v) =
         Format.fprintf fmt "var %a%a = %a"
           pp_id i
-          (pp_option (pp_prefix " : " pp_ptyp)) t
+          (pp_option (pp_prefix " : " pp_type)) t
           pp_pterm v
       in
       (pp_with_paren pp) fmt (i, t, v)
@@ -533,7 +538,7 @@ let rec pp_pterm fmt (pterm : pterm) =
     | Pleft (t, x) ->
       let pp fmt (t, x) =
         Format.fprintf fmt "left<%a>(%a)"
-          pp_ptyp t
+          pp_type t
           pp_pterm x
       in
       (pp_no_paren pp) fmt (t, x)
@@ -541,7 +546,7 @@ let rec pp_pterm fmt (pterm : pterm) =
     | Pright (t, x) ->
       let pp fmt (t, x) =
         Format.fprintf fmt "right<%a>(%a)"
-          pp_ptyp t
+          pp_type t
           pp_pterm x
       in
       (pp_no_paren pp) fmt (t, x)
@@ -549,9 +554,9 @@ let rec pp_pterm fmt (pterm : pterm) =
     | Plambda (rt, id, at, e) ->
       let pp fmt (rt, id, at, e) =
         Format.fprintf fmt "lambda<%a>((%a : %a) -> @[%a@])"
-          pp_ptyp rt
+          pp_type rt
           pp_id id
-          pp_ptyp at
+          pp_type at
           pp_pterm e
       in
       (pp_no_paren pp) fmt (rt, id, at, e)
@@ -568,8 +573,8 @@ let rec pp_pterm fmt (pterm : pterm) =
     | Pcast (src, dst, a) ->
       let pp fmt (src, dst, a) =
         Format.fprintf fmt "cast_%a_%a(%a)"
-          pp_ptyp src
-          pp_ptyp dst
+          pp_type src
+          pp_type dst
           pp_pterm a
       in
       (pp_no_paren pp) fmt (src, dst, a)
@@ -584,7 +589,7 @@ let rec pp_pterm fmt (pterm : pterm) =
     | Pentrypoint (t, a, b) ->
       let pp fmt (t, a, b) =
         Format.fprintf fmt "entrypoint<%a>(%a, %a)"
-          pp_ptyp  t
+          pp_type  t
           pp_id a
           pp_pterm b
       in
@@ -599,8 +604,8 @@ and pp_term_arg fmt = function
     then
       Format.fprintf fmt "(%a : %a)%a -> %a"
         pp_id id
-        pp_ptyp t
-        (pp_list "" (fun fmt (x, y, z) -> Format.fprintf fmt " (%a : %a = %a)" pp_id x pp_ptyp y pp_pterm z)) l
+        pp_type t
+        (pp_list "" (fun fmt (x, y, z) -> Format.fprintf fmt " (%a : %a = %a)" pp_id x pp_type y pp_pterm z)) l
         pp_pterm pt
     else
       pp_pterm fmt pt
@@ -676,7 +681,7 @@ let rec pp_instruction fmt (i : instruction) =
       let pp fmt (id, init, body) =
         Format.fprintf fmt "let %a%a = %a in@\n%a"
           pp_id id
-          (pp_option (pp_prefix " : " pp_ptyp)) init.type_
+          (pp_option (pp_prefix " : " pp_type)) init.type_
           pp_pterm init
           pp_instruction body
       in
@@ -686,7 +691,7 @@ let rec pp_instruction fmt (i : instruction) =
       let pp fmt (i, v) =
         Format.fprintf fmt "var %a%a = %a"
           pp_id i
-          (pp_option (pp_prefix " : " pp_ptyp)) v.type_
+          (pp_option (pp_prefix " : " pp_type)) v.type_
           pp_pterm v
       in
       (pp_with_paren pp) fmt (i, v)
@@ -774,7 +779,7 @@ let rec pp_instruction fmt (i : instruction) =
     | Itransfer tr ->
       let pp fmt = function
         | TTsimple (x, dst)               -> Format.fprintf fmt "transfer %a to %a" pp_pterm x pp_pterm dst
-        | TTcontract (x, dst, id, t, arg) -> Format.fprintf fmt "transfer %a to %a call %a<%a>(%a)" pp_pterm x pp_pterm dst pp_id id pp_ptyp t pp_pterm arg
+        | TTcontract (x, dst, id, t, arg) -> Format.fprintf fmt "transfer %a to %a call %a<%a>(%a)" pp_pterm x pp_pterm dst pp_id id pp_type t pp_pterm arg
         | TTentry (x, e, arg)             -> Format.fprintf fmt "transfer %a to entry %a(%a)" pp_pterm x pp_pterm e pp_pterm arg
         | TTself (x, id, args)            -> Format.fprintf fmt "transfer %a to entry self.%a(%a)" pp_pterm x pp_id id (pp_list "," (fun fmt (id, v) ->  Format.fprintf fmt "%a = %a" pp_id id pp_pterm v)) args
         | TToperation x                   -> Format.fprintf fmt "transfer %a" pp_pterm x
@@ -833,21 +838,21 @@ let pp_specification fmt (v : lident specification) =
   let pp_predicate fmt (p : lident predicate) =
     Format.fprintf fmt "predicate %a (%a) =@\n  @[%a@]"
       pp_id p.name
-      (pp_list ", " (fun fmt (id, typ) -> Format.fprintf fmt "%a : %a" pp_id id pp_ptyp typ)) p.args
+      (pp_list ", " (fun fmt (id, typ) -> Format.fprintf fmt "%a : %a" pp_id id pp_type typ)) p.args
       pp_pterm p.body
   in
   let pp_definitions fmt (d : lident definition) =
     Format.fprintf fmt "definition %a =@\n  @[{ %a : %a | %a }@]"
       pp_id d.name
       pp_id d.var
-      pp_ptyp d.typ
+      pp_type d.typ
       pp_pterm d.body
   in
   let pp_fail fmt (f : lident fail) =
     Format.fprintf fmt "%a with (%a : %a):@\n  @[%a@];@\n"
       pp_id f.label
       pp_id f.arg
-      pp_ptyp f.atype
+      pp_type f.atype
       pp_pterm f.formula
   in
   let pp_fails fmt l = if List.is_empty l then () else Format.fprintf fmt "fails {@\n  @[%a@]@\n}" (pp_list "@\n" pp_fail) l in
@@ -855,7 +860,7 @@ let pp_specification fmt (v : lident specification) =
     let decl = v.decl in
     Format.fprintf fmt "variable %a%a%a"
       pp_id decl.name
-      (pp_option (pp_prefix " : " pp_ptyp)) decl.typ
+      (pp_option (pp_prefix " : " pp_type)) decl.typ
       (pp_option (pp_prefix " := " pp_pterm)) decl.default
   in
   let pp_invariant fmt (i : lident invariant) =
@@ -983,7 +988,7 @@ let pp_variable fmt (v : lident variable) =
   Format.fprintf fmt "%s %a : %a%a%a@\n"
     (if v.constant then "constant" else "variable")
     pp_id v.decl.name
-    pp_ptyp (Option.get v.decl.typ)
+    pp_type (Option.get v.decl.typ)
     (pp_option (pp_prefix " = " pp_pterm)) v.decl.default
     (fun fmt l ->
        if List.is_empty l
@@ -994,7 +999,7 @@ let pp_variable fmt (v : lident variable) =
 let pp_field fmt (f : lident decl_gen) =
   Format.fprintf fmt "%a : %a%a;"
     pp_id f.name
-    (pp_option pp_ptyp) f.typ
+    (pp_option pp_type) f.typ
     (pp_option (pp_prefix " := " pp_pterm)) f.default
 
 let pp_asset fmt (a : lident asset_struct) =
@@ -1077,7 +1082,7 @@ let rec pp_sexpr fmt (s : sexpr) =
 let pp_fun_ident_typ fmt (arg : lident decl_gen) =
   Format.fprintf fmt "%a : %a"
     pp_id arg.name
-    pp_ptyp (Option.get arg.typ)
+    pp_type (Option.get arg.typ)
 
 let pp_fun_args fmt args =
   Format.fprintf fmt " (%a)"
@@ -1088,7 +1093,7 @@ let pp_function fmt (f : function_) =
     (match f.kind with | FKfunction -> "function" | FKgetter -> "getter")
     pp_id f.name
     pp_fun_args f.args
-    pp_ptyp f.return
+    pp_type f.return
     (pp_option pp_specification) f.specification
     pp_instruction f.body
 
