@@ -1,4 +1,4 @@
-archetype no_storable
+archetype no_storable_in_variable
 
 variable n : option<operation> = none<operation>
 

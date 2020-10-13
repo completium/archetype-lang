@@ -1,0 +1,10 @@
+archetype no_storable_in_asset
+
+asset my_asset {
+  id: string;
+  op: operation;
+}
+
+entry exec () {
+  ()
+}
