@@ -1,4 +1,4 @@
-archetype cmp_duration_int
+archetype cmp_dur_int
 
 variable b : bool = false
 

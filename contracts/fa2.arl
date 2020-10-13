@@ -170,19 +170,6 @@ function apply_transfer_policy (otp : operator_transfer_policy, %from : address,
     end
 }
 
-// function mk_op (
-//   a           : address,
-//   tp          : transfer_descriptor_param,
-//   ot          : owner_type) : or<option<operation>,string> {
-//   return
-//     match ot with
-//     | Sender ->
-//       left<_,string>(some(mkoperation(0tz,opt_get(entrypoint<transfer_descriptor_param>("%fa2_token_sender",a)),tp)))
-//     | Receiver ->
-//       left<_,string>(some(mkoperation(0tz,opt_get(entrypoint<transfer_descriptor_param>("%fa2_token_receiver",a)),tp)))
-//     end
-// }
-
 function mk_op (
   a           : address,
   tp          : transfer_descriptor_param,
@@ -192,8 +179,7 @@ function mk_op (
     | Sender   -> entrypoint<transfer_descriptor_param>("%fa2_token_sender",a)
     | Receiver -> entrypoint<transfer_descriptor_param>("%fa2_token_receiver", a)
     end;
-  var c = opt_get(e);
-  return left<_,string>(some(mkoperation(0tz, c, tp)))
+  return left<_,string>(some(mkoperation(0tz, opt_get(e), tp)))
 }
 
 function apply_hook (
@@ -202,7 +188,7 @@ function apply_hook (
   tp          : transfer_descriptor_param,
   ot          : owner_type) : or<option<operation>,string> {
   return
-    match get_hook_policy(itoken_id, ot)  with
+    match get_hook_policy(itoken_id, ot) with
     | Owner_no_hook -> left<_,string>(none<operation>)
     | Optional_owner_hook -> begin
       match_option ledger[(itoken_id, iowner)].hook with

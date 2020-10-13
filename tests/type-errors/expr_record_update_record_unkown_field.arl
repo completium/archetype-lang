@@ -1,4 +1,4 @@
-archetype expr_record_update_unkown_field
+archetype expr_record_update_record_unkown_field
 
 record my_record {
   n : nat;

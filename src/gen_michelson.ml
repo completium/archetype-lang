@@ -1064,7 +1064,7 @@ let to_michelson (ir : T.ir) : T.michelson =
           | _       -> [T.SWAP; T.DROP 1], inc_env env
         in
 
-        T.SEQ [ v; T.IF_NONE ([t], [e] @ ee) ], inc_env env
+        T.SEQ [ v; T.IF_NONE ([t], [e] @ ee) ], env
       end
 
     | Iifleft (v, lid, le, rid, re, ty) -> begin

@@ -1,4 +1,4 @@
-archetype simple_while
+archetype decomp_while
 
 variable a : nat = 0
 variable b : int = 0
