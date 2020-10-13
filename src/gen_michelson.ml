@@ -1058,10 +1058,10 @@ let to_michelson (ir : T.ir) : T.michelson =
         let t, _ = fe env t in
         let e, _ = fe (add_var_env env id) s in
 
-        let ee =
+        let ee, env =
           match ty.node with
-          | T.Tunit -> [T.DROP 1]
-          | _       -> [T.SWAP; T.DROP 1]
+          | T.Tunit -> [T.DROP 1], env
+          | _       -> [T.SWAP; T.DROP 1], inc_env env
         in
 
         T.SEQ [ v; T.IF_NONE ([t], [e] @ ee) ], inc_env env
@@ -1072,13 +1072,13 @@ let to_michelson (ir : T.ir) : T.michelson =
         let l, _ = fe (add_var_env env lid) le in
         let r, _ = fe (add_var_env env rid) re in
 
-        let ee =
+        let ee, env =
           match ty.node with
-          | T.Tunit -> [T.DROP 1]
-          | _       -> [T.SWAP; T.DROP 1]
+          | T.Tunit -> [T.DROP 1], env
+          | _       -> [T.SWAP; T.DROP 1], inc_env env
         in
 
-        T.SEQ [ v; T.IF_LEFT ([l] @ ee, [r] @ ee) ], inc_env env
+        T.SEQ [ v; T.IF_LEFT ([l] @ ee, [r] @ ee) ], env
       end
 
     | Iifcons (x, hd, tl, hte, ne, ty) -> begin
@@ -1086,13 +1086,13 @@ let to_michelson (ir : T.ir) : T.michelson =
         let t, _ = fe (add_var_env (add_var_env env tl) hd) hte in
         let n, _ = fe env ne in
 
-        let ee =
+        let ee, env =
           match ty.node with
-          | T.Tunit -> [T.DROP 2]
-          | _       -> [T.DUG 2; T.DROP 2]
+          | T.Tunit -> [T.DROP 2], env
+          | _       -> [T.DUG 2; T.DROP 2], inc_env env
         in
 
-        T.SEQ [ x; T.IF_CONS ([t] @ ee, [n]) ], (inc_env env)
+        T.SEQ [ x; T.IF_CONS ([t] @ ee, [n]) ], env
       end
 
     | Iwhile (c, b) -> begin
