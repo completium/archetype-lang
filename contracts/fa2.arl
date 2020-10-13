@@ -190,29 +190,8 @@ function apply_hook (
   iowner      : address,
   tp          : transfer_descriptor_param,
   ot          : owner_type) : or<option<operation>,string> {
-  var v_owner_hook_policy =
-    match_option permissions_descriptor.custom with // check custom policy
-    | some(cust) ->
-      if cust.tag = "FA2_PER_TOKEN" then begin // look up in tokens
-        match ot with
-        | Sender   ->  tokens[itoken_id].permissions_desc.sender_hook_policy
-        | Receiver ->  tokens[itoken_id].permissions_desc.receiver_hook_policy
-        end
-      end else begin // fall back to default
-        match ot with
-        | Sender   ->  permissions_descriptor.basic.sender_hook_policy
-        | Receiver ->  permissions_descriptor.basic.receiver_hook_policy
-        end
-      end
-    | none -> // fall back to default
-      match ot with
-      | Sender   ->  permissions_descriptor.basic.sender_hook_policy
-      | Receiver ->  permissions_descriptor.basic.receiver_hook_policy
-      end
-    end;
   return
-    // match get_hook_policy(itoken_id, ot) with
-    match v_owner_hook_policy with
+    match get_hook_policy(itoken_id, ot) with
     | Owner_no_hook -> left<_,string>(none<operation>)
     | Optional_owner_hook -> begin
       match_option ledger[(itoken_id, iowner)].hook with

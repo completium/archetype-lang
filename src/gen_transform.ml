@@ -3133,10 +3133,11 @@ let remove_storage_field_in_function (model : model) : model =
       | Mapp (id, _) when MapString.mem (unloc id) map -> begin
           let aaa = MapString.find (unloc id) map in
           let args = if MapString.mem fs_name map then MapString.find fs_name map else [] in
-          mt,
-          ((List.map (fun (mt : mterm) ->
-               ((match mt.node with Mvar(id, _, _, _) -> id | _ -> assert false), mt.type_, None) ) aaa) @
-           accu, (MapString.add fs_name (aaa @ args) map))
+          let a = (List.map (fun (mt : mterm) ->
+               ((match mt.node with Mvar(id, _, _, _) -> id | _ -> assert false), mt.type_, None) ) aaa) in
+          let dargs = List.dedupcmp (fun (a : argument) (b : argument) -> cmp_lident (proj3_1 a) (proj3_1 b)) (a @ accu) in
+          let dvars = List.dedupcmp cmp_mterm (aaa @ args) in
+          mt, (dargs, (MapString.add fs_name dvars map))
         end
       | _ -> fold_map_term g aux (accu, map) mt
     in

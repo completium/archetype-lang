@@ -234,6 +234,7 @@ module List : sig
   val assoc_all     : 'a -> ('a * 'b) list -> 'b list
   val index_of      : ('a -> bool) -> 'a list -> int
   val dedup         : 'a list -> 'a list
+  val dedupcmp      : ('a -> 'a -> bool) -> 'a list -> 'a list
   val last          : 'a list -> 'a
   val for_all2      : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
   val count         : ('a -> bool) -> 'a list -> int
@@ -355,6 +356,13 @@ end = struct
       if List.mem e tl then
         dedup tl
       else e::(dedup tl)
+    | [] -> []
+
+  let rec dedupcmp cmp = function
+    | e::tl ->
+      if List.exists (cmp e) tl then
+        dedupcmp cmp tl
+      else e::(dedupcmp cmp tl)
     | [] -> []
 
   let rec last = function
