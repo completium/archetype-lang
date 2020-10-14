@@ -21,19 +21,15 @@ enum owner_hook_policy =
 | Optional_owner_hook
 | Required_owner_hook
 
-record basic_permissions {
-  transfer_policy      : operator_transfer_policy;
-  sender_hook_policy   : owner_hook_policy;
-  receiver_hook_policy : owner_hook_policy;
-}
-
 record custom_policy {
   tag        : string;
   config_api : option<address>;
 }
 
 record permissions {
-  basic                : basic_permissions;
+  transfer_policy      : operator_transfer_policy;
+  sender_hook_policy   : owner_hook_policy;
+  receiver_hook_policy : owner_hook_policy;
   custom               : option<custom_policy>;
 }
 
@@ -94,11 +90,9 @@ constant per_token_policy : string = "PER_TOKEN_POLICY"
 variable admin : address = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 
 variable permissions_descriptor : permissions = {
-  {
-    No_transfer;
-    Owner_no_hook;
-    Owner_no_hook
-  };
+  No_transfer;
+  Owner_no_hook;
+  Owner_no_hook;
   none<custom_policy>
 }
 
@@ -118,7 +112,7 @@ asset operator identified by op_addr op_token_id op_owner_addr to big_map {
 asset token {
   id               : nat;
   token_typ        : token_type;
-  permissions_desc : option<basic_permissions>;
+  permissions_desc : option<permissions>;
 }
 
 asset token_metadata to big_map {
@@ -195,9 +189,9 @@ function get_transfer_policy (tid : nat) : operator_transfer_policy {
     is_per_token_transfer (
       match_option token[tid].permissions_desc with
       | some(pd) -> pd.transfer_policy
-      | none -> permissions_descriptor.basic.transfer_policy
+      | none -> permissions_descriptor.transfer_policy
       end, // default
-      permissions_descriptor.basic.transfer_policy
+      permissions_descriptor.transfer_policy
     )
 }
 
@@ -207,16 +201,16 @@ function get_hook_policy (tid : nat, ot : owner_type) : owner_hook_policy {
       match ot with
       | Sender   ->  match_option token[tid].permissions_desc with
         | some(pd) -> pd.sender_hook_policy
-        | none -> permissions_descriptor.basic.sender_hook_policy
+        | none -> permissions_descriptor.sender_hook_policy
         end
       | Receiver ->  match_option token[tid].permissions_desc with
         | some(pd) -> pd.receiver_hook_policy
-        | none -> permissions_descriptor.basic.receiver_hook_policy
+        | none -> permissions_descriptor.receiver_hook_policy
         end
       end, // default
       match ot with
-        | Sender   ->  permissions_descriptor.basic.sender_hook_policy
-        | Receiver ->  permissions_descriptor.basic.receiver_hook_policy
+        | Sender   ->  permissions_descriptor.sender_hook_policy
+        | Receiver ->  permissions_descriptor.receiver_hook_policy
       end
     )
 }
@@ -323,7 +317,7 @@ entry add_token (
   new_symbol             : string,
   new_name               : string,
   new_decimals           : nat,
-  new_token_permissions  : option<basic_permissions>) {
+  new_token_permissions  : option<permissions>) {
   called by admin
   failif {
     f0 : token.contains(new_token_id);
