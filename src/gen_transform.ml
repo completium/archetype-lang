@@ -1005,7 +1005,12 @@ let remove_enum_matchwith (model : model) : model =
                 mk_mterm (Mequal (type_v, v, val_enum id)) tbool
               end
             in
-            let mk_if cond then_ else_ = mk_mterm (Mif (cond, then_, Some else_)) mt.type_ in
+            let mk_if cond then_ else_ =
+              match mt.node with
+              | Mexprmatchwith _ -> mk_mterm (Mexprif (cond, then_, else_))  mt.type_
+              | Mmatchwith     _ -> mk_mterm (Mif (cond, then_, Some else_)) tunit
+              | _ -> assert false
+            in
             match x with
             | {node = Pconst id; _}, e ->
               begin
