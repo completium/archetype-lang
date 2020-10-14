@@ -94,7 +94,7 @@ let rec pp_ptyp fmt (t : ptyp) =
 
 and pp_type fmt t = pp_ptyp fmt t
   (* match a with
-  | Some a -> Format.fprintf fmt "(%a : %a)" pp_ptyp t pp_id a
+  | Some a -> Format.fprintf fmt "(%a %%%a)" pp_ptyp t pp_id a
   | None -> pp_ptyp fmt t *)
 
 let pp_struct_poly pp_node fmt (s : 'a struct_poly) =

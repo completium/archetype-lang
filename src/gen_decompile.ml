@@ -898,7 +898,7 @@ let to_model (ir, env : T.ir * env) : M.model * env =
 let to_archetype (model, _env : M.model * env) : A.archetype =
   let rec for_type (t : M.type_) : A.type_t =
     let f = for_type in
-    match t with
+    match M.get_ntype t with
     | Tasset id           -> A.tref (unloc id)
     | Tenum id            -> A.tref (unloc id)
     | Tstate              -> assert false

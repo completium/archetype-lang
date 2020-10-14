@@ -37,57 +37,62 @@ let pp_container fmt = function
   | View       -> Format.fprintf fmt "view"
 
 let rec pp_type fmt t =
-  match t with
-  | Tasset an ->
-    Format.fprintf fmt "%a" pp_id an
-  | Tstate ->
-    Format.fprintf fmt "state"
-  | Tenum en ->
-    Format.fprintf fmt "%a" pp_id en
-  | Tbuiltin b -> pp_btyp fmt b
-  | Tcontainer (t, c) ->
-    Format.fprintf fmt "%a %a"
-      pp_type t
-      pp_container c
-  | Tlist t ->
-    Format.fprintf fmt "list<%a>"
-      pp_type t
-  | Toption t ->
-    Format.fprintf fmt "option<%a>"
-      pp_type t
-  | Ttuple ts ->
-    Format.fprintf fmt "%a"
-      (pp_list " * " pp_type) ts
-  | Tset k ->
-    Format.fprintf fmt "set<%a>"
-      pp_type k
-  | Tmap (false, k, v) ->
-    Format.fprintf fmt "map<%a, %a>"
-      pp_type k
-      pp_type v
-  | Tmap (true, k, v) ->
-    Format.fprintf fmt "bigmap<%a, %a>"
-      pp_type k
-      pp_type v
-  | Tor (l, r) ->
-    Format.fprintf fmt "or<%a, %a>"
-      pp_type l
-      pp_type r
-  | Trecord id ->
-    Format.fprintf fmt "%a" pp_id id
-  | Tlambda (a, r) ->
-    Format.fprintf fmt "(%a -> %a)" pp_type a pp_type r
-  | Tunit ->
-    Format.fprintf fmt "unit"
-  | Tstorage ->
-    Format.fprintf fmt "storage"
-  | Toperation ->
-    Format.fprintf fmt "operation"
-  | Tcontract t ->
-    Format.fprintf fmt "contract<%a>" pp_type t
-  | Tprog _
-  | Tvset _
-  | Ttrace _ -> Format.fprintf fmt "todo"
+  let pp_ntype fmt nt =
+    match nt with
+    | Tasset an ->
+      Format.fprintf fmt "%a" pp_id an
+    | Tstate ->
+      Format.fprintf fmt "state"
+    | Tenum en ->
+      Format.fprintf fmt "%a" pp_id en
+    | Tbuiltin b -> pp_btyp fmt b
+    | Tcontainer (t, c) ->
+      Format.fprintf fmt "%a %a"
+        pp_type t
+        pp_container c
+    | Tlist t ->
+      Format.fprintf fmt "list<%a>"
+        pp_type t
+    | Toption t ->
+      Format.fprintf fmt "option<%a>"
+        pp_type t
+    | Ttuple ts ->
+      Format.fprintf fmt "%a"
+        (pp_list " * " pp_type) ts
+    | Tset k ->
+      Format.fprintf fmt "set<%a>"
+        pp_type k
+    | Tmap (false, k, v) ->
+      Format.fprintf fmt "map<%a, %a>"
+        pp_type k
+        pp_type v
+    | Tmap (true, k, v) ->
+      Format.fprintf fmt "bigmap<%a, %a>"
+        pp_type k
+        pp_type v
+    | Tor (l, r) ->
+      Format.fprintf fmt "or<%a, %a>"
+        pp_type l
+        pp_type r
+    | Trecord id ->
+      Format.fprintf fmt "%a" pp_id id
+    | Tlambda (a, r) ->
+      Format.fprintf fmt "(%a -> %a)" pp_type a pp_type r
+    | Tunit ->
+      Format.fprintf fmt "unit"
+    | Tstorage ->
+      Format.fprintf fmt "storage"
+    | Toperation ->
+      Format.fprintf fmt "operation"
+    | Tcontract t ->
+      Format.fprintf fmt "contract<%a>" pp_type t
+    | Tprog _
+    | Tvset _
+    | Ttrace _ -> Format.fprintf fmt "todo"
+  in
+  match get_atype t with
+  | Some a -> Format.fprintf fmt "(%a %%%a)" pp_ntype (get_ntype t) pp_id a
+  | None -> pp_ntype fmt (get_ntype t)
 
 let pp_operator fmt op =
   let to_str = function
@@ -497,7 +502,7 @@ let pp_mterm fmt (mt : mterm) =
 
     | Mlitmap (b, l) ->
       Format.fprintf fmt "%amap(%a)"
-         (fun fmt b -> if b then Format.fprintf fmt "big_" else Format.fprintf fmt "") b
+        (fun fmt b -> if b then Format.fprintf fmt "big_" else Format.fprintf fmt "") b
         (pp_list "; " (fun fmt (k, v) -> Format.fprintf fmt "%a : %a"
                           f k
                           f v)) l

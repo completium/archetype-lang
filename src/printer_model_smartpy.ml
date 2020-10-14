@@ -56,7 +56,7 @@ let pp_model fmt (model : model) =
   in
 
   let rec pp_type fmt t =
-    match t with
+    match get_ntype t with
     | Tasset an ->
       let fields : (string * type_) list =
         Utils.get_asset model (unloc an)
@@ -69,7 +69,7 @@ let pp_model fmt (model : model) =
     | Tenum en ->
       Format.fprintf fmt "%a" pp_id en
     | Tbuiltin b -> pp_btyp fmt b
-    | Tcontainer (Tasset an, (Aggregate | Partition)) ->
+    | Tcontainer ((Tasset an, _), (Aggregate | Partition)) ->
       let _, ak = Utils.get_asset_key model (unloc an) in
       Format.fprintf fmt "sp.TSet(%a)"
         pp_type ak
@@ -401,8 +401,8 @@ let pp_model fmt (model : model) =
   in
 
   let _pp_pretty_type fmt t =
-    match t with
-    | Ttuple[Tbuiltin Bint; Tbuiltin Bint] -> pp_type fmt (Tbuiltin Brational)
+    match get_ntype t with
+    | Ttuple[(Tbuiltin Bint, _); (Tbuiltin Bnat, _)] -> pp_type fmt (mktype (Tbuiltin Brational))
     | _ -> pp_type fmt t
   in
 
@@ -666,7 +666,7 @@ let pp_model fmt (model : model) =
 
       | Masset l ->
         let asset_name =
-          match mtt.type_ with
+          match get_ntype mtt.type_ with
           | Tasset asset_name -> asset_name
           | _ -> assert false
         in
@@ -685,7 +685,7 @@ let pp_model fmt (model : model) =
 
       | Mlitset l ->
         let t =
-          match mtt.type_ with
+          match get_ntype mtt.type_ with
           | Tset t -> t
           | _ -> assert false
         in
@@ -695,7 +695,7 @@ let pp_model fmt (model : model) =
 
       | Mlitlist l ->
         let t =
-          match mtt.type_ with
+          match get_ntype mtt.type_ with
           | Tlist t -> t
           | _ -> assert false
         in
@@ -707,7 +707,7 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "%a"
           (fun fmt _ -> begin
                let k, v =
-                 match mtt.type_ with
+                 match get_ntype mtt.type_ with
                  | Tmap (_, k, v) -> k, v
                  | _ -> assert false
                in
@@ -902,7 +902,7 @@ let pp_model fmt (model : model) =
 
       | Mremoveasset (an, i) ->
         let cond, str =
-          (match i.type_ with
+          (match get_ntype i.type_ with
            | Tasset an ->
              let k, _ = Utils.get_asset_key model (unloc an) in
              true, "." ^ k
@@ -918,7 +918,7 @@ let pp_model fmt (model : model) =
 
       | Mremovefield (an, fn, c, i) ->
         let cond, str =
-          (match i.type_ with
+          (match get_ntype i.type_ with
            | Tasset an ->
              let k, _ = Utils.get_asset_key model (unloc an) in
              true, "." ^ k

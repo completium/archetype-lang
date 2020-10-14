@@ -54,7 +54,7 @@ type trtyp =
   | TRfield
 [@@deriving show {with_path = false}]
 
-type type_ =
+type ntype =
   | Tasset of lident
   | Tenum of lident
   | Tstate
@@ -75,6 +75,9 @@ type type_ =
   | Tprog of type_
   | Tvset of vset * type_
   | Ttrace of trtyp
+[@@deriving show {with_path = false}]
+
+and type_ = ntype * lident option
 [@@deriving show {with_path = false}]
 
 type 'id pattern_node =
@@ -953,31 +956,47 @@ let mk_model ?(api_items = []) ?(api_verif = []) ?(decls = []) ?(functions = [])
 
 (* -------------------------------------------------------------------- *)
 
-let tunit         = Tunit
-let tbool         = Tbuiltin Bbool
-let tnat          = Tbuiltin Bnat
-let tint          = Tbuiltin Bint
-let tstring       = Tbuiltin Bstring
-let tbytes        = Tbuiltin Bbytes
-let ttez          = Tbuiltin Bcurrency
-let tkey          = Tbuiltin Bkey
-let tkeyhash      = Tbuiltin Bkeyhash
-let tdate         = Tbuiltin Bdate
-let ttimestamp    = Tbuiltin Btimestamp
-let taddress      = Tbuiltin Baddress
-let toption t     = Toption t
-let tset t        = Tset t
-let tlist t       = Tlist t
-let tmap k v      = Tmap (false, k, v)
-let tbig_map k v  = Tmap (true, k, v)
-let tor l r       = Tor (l, r)
-let tlambda a r   = Tlambda (a, r)
-let ttuple l      = Ttuple l
-let trat          = ttuple [tint; tnat]
-let toperation    = Toperation
-let tsignature    = Tbuiltin Bsignature
-let tcontract t   = Tcontract t
-let tchainid      = Tbuiltin Bchainid
+let mktype ?annot n : type_ = n, annot
+let get_ntype t : ntype = fst t
+let get_atype t : lident option = snd t
+
+let tunit          = mktype (Tunit)
+let tbool          = mktype (Tbuiltin Bbool)
+let tnat           = mktype (Tbuiltin Bnat)
+let tint           = mktype (Tbuiltin Bint)
+let tstring        = mktype (Tbuiltin Bstring)
+let tbytes         = mktype (Tbuiltin Bbytes)
+let ttez           = mktype (Tbuiltin Bcurrency)
+let tduration      = mktype (Tbuiltin Bduration)
+let tkey           = mktype (Tbuiltin Bkey)
+let tkeyhash       = mktype (Tbuiltin Bkeyhash)
+let tdate          = mktype (Tbuiltin Bdate)
+let ttimestamp     = mktype (Tbuiltin Btimestamp)
+let taddress       = mktype (Tbuiltin Baddress)
+let trole          = mktype (Tbuiltin Brole)
+let tenum v        = mktype (Tenum v)
+let tstate         = mktype (Tstate)
+let tstorage       = mktype (Tstorage)
+let trecord rn     = mktype (Trecord rn)
+let toption t      = mktype (Toption t)
+let tset t         = mktype (Tset t)
+let tlist t        = mktype (Tlist t)
+let tbmap b k v    = mktype (Tmap (b, k, v))
+let tmap k v       = mktype (Tmap (false, k, v))
+let tbig_map k v   = mktype (Tmap (true, k, v))
+let tor l r        = mktype (Tor (l, r))
+let tlambda a r    = mktype (Tlambda (a, r))
+let ttuple l       = mktype (Ttuple l)
+let trat           = ttuple [tint; tnat]
+let toperation     = mktype (Toperation)
+let tsignature     = mktype (Tbuiltin Bsignature)
+let tcontract t    = mktype (Tcontract t)
+let tchainid       = mktype (Tbuiltin Bchainid)
+let tasset an      = mktype (Tasset an)
+let tcollection an = mktype (Tcontainer (tasset an, Collection))
+let taggregate an  = mktype (Tcontainer (tasset an, Aggregate))
+let tpartition an  = mktype (Tcontainer (tasset an, Partition))
+let tview an       = mktype (Tcontainer (tasset an, View))
 
 let mk_bool x   = mk_mterm (Mbool x) tbool
 let mk_string x = mk_mterm (Mstring x) tstring
@@ -997,19 +1016,19 @@ let mk_svar id t = mk_mterm (Mvar(id, Vstorevar, Tnone, Dnone )) t
 
 let mk_tez v = mk_mterm (Mcurrency(Big_int.big_int_of_int v, Utz)) ttez
 
-let mk_tuple (l : mterm list) = mk_mterm (Mtuple l) (Ttuple (List.map (fun (x : mterm) -> x.type_) l))
+let mk_tuple (l : mterm list) = mk_mterm (Mtuple l) (ttuple (List.map (fun (x : mterm) -> x.type_) l))
 
 let mk_letin id v b = mk_mterm (Mletin([id], v, Some v.type_, b, None)) b.type_
 
 let mk_tupleaccess n (x : mterm) =
-  match x.type_ with
+  match get_ntype x.type_ with
   | Ttuple lt ->
     let t = List.nth lt n in
     mk_mterm (Mtupleaccess (x, Big_int.big_int_of_int n)) t
-  | _ -> Format.eprintf "mk_tupleaccess type: %a@." pp_type_ x.type_; assert false
+  | v -> Format.eprintf "mk_tupleaccess type: %a@." pp_ntype v; assert false
 
 let mk_optget (x : mterm) =
-  match x.type_ with
+  match get_ntype x.type_ with
   | Toption t -> mk_mterm (Moptget x) t
   | _ -> assert false
 
@@ -1062,9 +1081,9 @@ let cmp_fail_type
   | InvalidCondition c1, InvalidCondition c2 -> Option.cmp cmp_ident c1 c2
   | _ -> false
 
-let rec cmp_type
-    (t1 : type_)
-    (t2 : type_)
+let rec cmp_ntype
+    (t1 : ntype)
+    (t2 : ntype)
   : bool =
   match t1, t2 with
   | Tasset i1, Tasset i2                     -> cmp_lident i1 i2
@@ -1088,6 +1107,16 @@ let rec cmp_type
   | Tvset (v1, t1), Tvset (v2, t2)           -> cmp_vset v1 v2 && cmp_type t1 t2
   | Ttrace t1, Ttrace t2                     -> cmp_trtyp t1 t2
   | _ -> false
+
+and cmp_type
+    ?(with_annot=false)
+    (t1 : type_)
+    (t2 : type_)
+  : bool =
+  let b = cmp_ntype (get_ntype t1) (get_ntype t2) in
+  if with_annot
+  then b && (Option.cmp cmp_lident (get_atype t1) (get_atype t1))
+  else b
 
 let cmp_pattern_node
     (cmpi  : 'id -> 'id -> bool)
@@ -1487,7 +1516,8 @@ let cmp_api_verif (v1 : api_verif) (v2 : api_verif) : bool =
 (* | _ -> false *)
 
 (* -------------------------------------------------------------------- *)
-let map_type (f : type_ -> type_) = function
+let map_ptyp (f : type_ -> type_) (nt : ntype) : ntype =
+  match nt with
   | Tasset id         -> Tasset id
   | Tenum id          -> Tenum id
   | Tstate            -> Tstate
@@ -1508,6 +1538,9 @@ let map_type (f : type_ -> type_) = function
   | Tprog t           -> Tprog (f t)
   | Tvset (v, t)      -> Tvset (v, t)
   | Ttrace t          -> Ttrace t
+
+let map_type (f : type_ -> type_) (t : type_) : type_ =
+  mktype ?annot:(get_atype t) (map_ptyp f (get_ntype t))
 
 (* -------------------------------------------------------------------- *)
 
@@ -3595,27 +3628,30 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
 let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : model =
   let g k (id : lident) = {id with pldesc=(f k id.pldesc)} in
   let rec for_type (t : type_) : type_ =
-    match t with
-    | Tasset id         -> Tasset (g KIassetname id)
-    | Tenum id          -> Tenum (g KIenumname id)
-    | Tstate            -> t
-    | Tbuiltin _        -> t
-    | Tcontainer (a, c) -> Tcontainer (for_type a, c)
-    | Tlist a           -> Tlist (for_type a)
-    | Toption a         -> Toption (for_type a)
-    | Ttuple l          -> Ttuple (List.map for_type l)
-    | Tset k            -> Tset k
-    | Tmap (b, k, v)    -> Tmap (b, k, for_type v)
-    | Tor (l, r)        -> Tor (for_type l, for_type r)
-    | Trecord id        -> Trecord (g KIrecordname id)
-    | Tlambda (a, r)    -> Tlambda (for_type a, for_type r)
-    | Tunit             -> t
-    | Tstorage          -> t
-    | Toperation        -> t
-    | Tcontract t       -> Tcontract (for_type t)
-    | Tprog a           -> Tprog (for_type a)
-    | Tvset (v, a)      -> Tvset (v, for_type a)
-    | Ttrace _          -> t
+    let for_ntype (nt : ntype) : ntype =
+      match nt with
+      | Tasset id         -> Tasset (g KIassetname id)
+      | Tenum id          -> Tenum (g KIenumname id)
+      | Tstate            -> nt
+      | Tbuiltin _        -> nt
+      | Tcontainer (a, c) -> Tcontainer (for_type a, c)
+      | Tlist a           -> Tlist (for_type a)
+      | Toption a         -> Toption (for_type a)
+      | Ttuple l          -> Ttuple (List.map for_type l)
+      | Tset k            -> Tset k
+      | Tmap (b, k, v)    -> Tmap (b, k, for_type v)
+      | Tor (l, r)        -> Tor (for_type l, for_type r)
+      | Trecord id        -> Trecord (g KIrecordname id)
+      | Tlambda (a, r)    -> Tlambda (for_type a, for_type r)
+      | Tunit             -> nt
+      | Tstorage          -> nt
+      | Toperation        -> nt
+      | Tcontract t       -> Tcontract (for_type t)
+      | Tprog a           -> Tprog (for_type a)
+      | Tvset (v, a)      -> Tvset (v, for_type a)
+      | Ttrace _          -> nt
+    in
+    mktype ?annot:(get_atype t) (for_ntype (get_ntype t))
   in
   let rec for_mterm (mt : mterm) : mterm =
     let node : mterm__node = map_term_node_internal (f KImterm) (g KImterm) for_type for_mterm mt.node in
@@ -3698,7 +3734,6 @@ module Utils : sig
   val get_source_for                     : model -> ctx_model -> mterm -> mterm option
   val cmp                                : mterm -> mterm -> int
   val eval                               : (ident * mterm) list -> mterm -> mterm
-  val type_rational                      : type_
   val mk_rat                             : Core.big_int -> Core.big_int -> mterm
   val get_select_idx                     : model -> ident -> mterm -> int
   val get_sum_idx                        : model -> ident -> mterm -> int
@@ -3798,9 +3833,10 @@ end = struct
     | Masset l -> List.nth l pos
     | _ -> emit_error (NotaRecord t)
 
-  let type_to_asset = function
+  let type_to_asset t =
+    match get_ntype t with
     | Tasset n -> n |> unloc
-    | Tcontainer (Tasset n, _) -> n |> unloc
+    | Tcontainer ((Tasset n, _), _) -> n |> unloc
     | _ -> emit_error NotanAssetType
 
   let get_asset_type (t : mterm) : ident = type_to_asset t.type_
@@ -3867,17 +3903,17 @@ end = struct
       ) []
 
   let get_containers m : (ident * ident * type_) list =
-    get_containers_internal (function | Tcontainer (Tasset _, (Partition | Aggregate)) -> true | _ -> false ) m
+    get_containers_internal (fun x -> match get_ntype x with | Tcontainer ((Tasset _, _), (Partition | Aggregate)) -> true | _ -> false ) m
 
   let get_partitions m : (ident * ident * type_) list =
-    get_containers_internal (function | Tcontainer (Tasset _, Partition) -> true | _ -> false ) m
+    get_containers_internal (fun x -> match get_ntype x with |  Tcontainer ((Tasset _, _), Partition) -> true | _ -> false ) m
 
   let has_container (m : model) (asset : ident) : bool =
     try
       let asset = get_asset m asset in
       List.fold_left (fun acc (v : asset_item) ->
-          match v.type_ with
-          | Tcontainer (Tasset _, (Partition | Aggregate)) -> true
+          match get_ntype v.type_ with
+          | Tcontainer ((Tasset _, _), (Partition | Aggregate)) -> true
           | _ -> acc
         ) false asset.values
     with
@@ -3887,15 +3923,16 @@ end = struct
     try
       let asset = get_asset m asset in
       List.fold_left (fun acc (v : asset_item) ->
-          match v.type_ with
-          | Tcontainer (Tasset _, (Partition | Aggregate)) -> acc @ [unloc v.name, v.type_, v.default]
+          match get_ntype v.type_ with
+          | Tcontainer ((Tasset _, _), (Partition | Aggregate)) -> acc @ [unloc v.name, v.type_, v.default]
           | _ -> acc
         ) [] asset.values
     with
     | Not_found -> []
 
-  let dest_container = function
-    | Tcontainer (Tasset p,(Partition | Aggregate)) -> unloc p
+  let dest_container t =
+    match get_ntype t with
+    | Tcontainer ((Tasset p, _),(Partition | Aggregate)) -> unloc p
     | _ -> assert false
 
   let get_asset_field (m : model) (asset_name, field_name : ident * ident) : ident * type_ * mterm option =
@@ -3930,8 +3967,8 @@ end = struct
       | Not_found -> emit_error (AssetFieldNotFound (asset_name, field_name))
     in
     let ot = seek_original_type () in
-    match ot with
-    | Tcontainer (Tasset an, c) -> (unloc an, c)
+    match get_ntype ot with
+    | Tcontainer ((Tasset an, _), c) -> (unloc an, c)
     | _ -> assert false
 
   let get_container_assets model asset : ident list =
@@ -3946,8 +3983,8 @@ end = struct
       | (r,i,t) :: _tl when String.equal r asset &&
                             String.equal i field ->
         let pa  = dest_container t in
-        let k,t = get_asset_key model pa in
-        (pa,k,t)
+        let k, t = get_asset_key model pa in
+        (pa, k, t)
       | _ :: tl -> rec_get tl
       | _ -> emit_error (ContainerNotFound) in
     rec_get containers
@@ -4061,8 +4098,8 @@ end = struct
     | _ -> assert false
 
   let is_container t =
-    match t with
-    | Tcontainer ((Tasset _),_) -> true
+    match get_ntype t with
+    | Tcontainer ((Tasset _, _),_) -> true
     | _ -> false
 
 
@@ -4213,19 +4250,17 @@ end = struct
       begin
         let l, an = deloc an in
         let idparam = mkloc l (an ^ "_values") in
-        Some (mk_mterm (Mvar(idparam, Vparam, t, d) ) (Tmap(false, Tbuiltin Bint, Tasset (dumloc "myasset"))))
+        Some (mk_mterm (Mvar(idparam, Vparam, t, d) ) (mktype (Tmap(false, tint, tasset (dumloc "myasset")))))
       end
     | _ -> None
-
-  let type_rational = Ttuple [Tbuiltin Bint; Tbuiltin Bnat]
 
   let mk_rat (n : Core.big_int) (d : Core.big_int) : mterm =
     let pos x = Big_int.sign_big_int x >= 0 in
     let abs x = Big_int.abs_big_int x in
     let neg x = Big_int.sub_big_int Big_int.zero_big_int x in
-    let mk_int i = mk_mterm (Mint i) (Tbuiltin Bint) in
-    let mk_nat i = if not (pos i) then assert false; mk_mterm (Mnat i) (Tbuiltin Bnat) in
-    let mk n d = mk_mterm (Mtuple [mk_int n ; mk_nat d]) type_rational in
+    let mk_int i = mk_bint i in
+    let mk_nat i = if not (pos i) then assert false; mk_bnat i in
+    let mk n d = mk_mterm (Mtuple [mk_int n ; mk_nat d]) trat in
     let x, y = Core.compute_irr_fract (n, d) in
     match pos x, pos y with
     | _ , true     -> mk x y
@@ -4270,25 +4305,26 @@ end = struct
     in
 
     let is_int (mt : mterm) =
-      match mt.type_ with
+      match get_ntype mt.type_ with
       | Tbuiltin Bint -> true
       | _ -> false
     in
 
     let is_tez (mt : mterm) =
-      match mt.type_ with
+      match get_ntype mt.type_ with
       | Tbuiltin Bcurrency -> true
       | _ -> false
     in
 
     let is_timestamp (mt : mterm) =
-      match mt.type_ with
+      match get_ntype mt.type_ with
       | Tbuiltin Btimestamp -> true
       | _ -> false
     in
 
-    let is_rat  = function
-      | Ttuple [Tbuiltin Bint; Tbuiltin Bnat] -> true
+    let is_rat t =
+      match get_ntype t with
+      | Ttuple [(Tbuiltin Bint, _); (Tbuiltin Bnat, _)] -> true
       | _ -> false
     in
 
@@ -4357,11 +4393,11 @@ end = struct
           | _ -> assert false
         in
 
-        let arith t op (a, b) : mterm =
+        let arith (t : type_) op (a, b) : mterm =
           let a = extract_big_int a in
           let b = extract_big_int b in
 
-          let is_nat = function Tbuiltin Bnat -> true | _ -> false in
+          let is_nat t = match get_ntype t with Tbuiltin Bnat -> true | _ -> false in
           let res, nat =
             match op with
             | `Plus   -> Big_int.add_big_int a b,  is_nat t
@@ -4372,8 +4408,8 @@ end = struct
             | _ -> assert false
           in
           match nat with
-          | true  -> mk_mterm (Mnat res) (Tbuiltin Bnat)
-          | false -> mk_mterm (Mint res) (Tbuiltin Bint)
+          | true  -> mk_mterm (Mnat res) tnat
+          | false -> mk_mterm (Mint res) tint
         in
 
         let cmp_op op lhs rhs =
@@ -4428,47 +4464,47 @@ end = struct
         | Mge (lhs, rhs), _        -> cmp_op `Ge lhs rhs
         | Mlt (lhs, rhs), _        -> cmp_op `Lt lhs rhs
         | Mle (lhs, rhs), _        -> cmp_op `Le lhs rhs
-        | Mplus   (a, b), Tbuiltin Bstring -> begin
+        | Mplus   (a, b), (Tbuiltin Bstring, _) -> begin
             let a = extract_string a in
             let b = extract_string b in
-            mk_mterm (Mstring (a ^ b)) (Tbuiltin Bstring)
+            mk_mterm (Mstring (a ^ b)) tstring
           end
-        | Mplus   (a, b), Tbuiltin Bcurrency when is_tez a && is_tez b -> begin
+        | Mplus   (a, b), (Tbuiltin Bcurrency, _) when is_tez a && is_tez b -> begin
             let a = extract_tez a in
             let b = extract_tez b in
-            mk_mterm (Mcurrency (Big_int.add_big_int a b, Utz)) (Tbuiltin Bcurrency)
+            mk_mterm (Mcurrency (Big_int.add_big_int a b, Utz)) ttez
           end
         | Mplus   (a, b), _ when is_timestamp a && is_int b -> begin
             let a = extract_timestamp a in
             let b = extract_big_int b in
-            mk_mterm (Mtimestamp (Big_int.add_big_int a b)) (Tbuiltin Btimestamp)
+            mk_mterm (Mtimestamp (Big_int.add_big_int a b)) ttimestamp
           end
         | Mplus   (a, b), t -> arith t `Plus  (aux a, aux b)
-        | Mminus  (a, b), Tbuiltin Bcurrency when is_tez a && is_tez b -> begin
+        | Mminus  (a, b), (Tbuiltin Bcurrency, _) when is_tez a && is_tez b -> begin
             let a = extract_tez a in
             let b = extract_tez b in
             let res = Big_int.sub_big_int a b in
             if Big_int.sign_big_int res < 0 then emit_error2(mt.loc, CurrencyValueCannotBeNegative);
-            mk_mterm (Mcurrency (res, Utz)) (Tbuiltin Bcurrency)
+            mk_mterm (Mcurrency (res, Utz)) ttez
           end
         | Mminus  (a, b), _ when is_timestamp a && is_timestamp b -> begin
             let a = extract_timestamp a in
             let b = extract_timestamp b in
             let res = Big_int.sub_big_int a b in
-            mk_mterm (Mint res) (Tbuiltin Bint)
+            mk_mterm (Mint res) tint
           end
         | Mminus  (a, b), t -> arith t `Minus (aux a, aux b)
         | Mmult   (a, b), t -> arith t `Mult  (aux a, aux b)
         | Mdiveuc (a, b), t -> arith t `Ediv  (aux a, aux b)
         | Mmodulo (a, b), t -> arith t `Modulo   (aux a, aux b)
-        | Mnot     a    , _ -> mk_mterm (Mbool (not (extract_bool (aux a)))) (Tbuiltin Bbool)
-        | Mand    (a, b), _ -> mk_mterm (Mbool ((extract_bool (aux a)) && (extract_bool (aux b)))) (Tbuiltin Bbool)
-        | Mor     (a, b), _ -> mk_mterm (Mbool ((extract_bool (aux a)) || (extract_bool (aux b)))) (Tbuiltin Bbool)
+        | Mnot     a    , _ -> mk_mterm (Mbool (not (extract_bool (aux a)))) tbool
+        | Mand    (a, b), _ -> mk_mterm (Mbool ((extract_bool (aux a)) && (extract_bool (aux b)))) tbool
+        | Mor     (a, b), _ -> mk_mterm (Mbool ((extract_bool (aux a)) || (extract_bool (aux b)))) tbool
         | Mrateq  (a, b), _ -> begin
             let num1, denom1 = extract_rat (aux a) in
             let num2, denom2 = extract_rat (aux b) in
             let res = Big_int.eq_big_int (Big_int.mult_big_int num1 denom2) (Big_int.mult_big_int num2 denom1) in
-            mk_mterm (Mbool res) (Tbuiltin Bbool)
+            mk_bool res
           end
 
         | Mratcmp (op, a, b), _ -> begin
@@ -4509,7 +4545,7 @@ end = struct
             let c    = aux c    in
             let f num denom v cur =
               let res = Big_int.div_big_int (Big_int.mult_big_int num v) denom in
-              mk_mterm (Mcurrency (res, cur)) (Tbuiltin Bcurrency)
+              mk_mterm (Mcurrency (res, cur)) ttez
             in
             match coef.node, c.node with
             | Mrational (num, denom), Mcurrency (v, cur) -> f num denom v cur
@@ -4610,7 +4646,7 @@ end = struct
           end
 
         | Mconcat (x, y), t -> begin
-            match t with
+            match get_ntype t with
             | Tbuiltin Bstring -> let x = extract_string x in let y = extract_string y in mk_string (x ^ y)
             | Tbuiltin Bbytes  -> let x = extract_bytes  x in let y = extract_bytes  y in mk_bytes (x ^ y)
             | _ -> assert false
@@ -4620,14 +4656,14 @@ end = struct
             let a = extract_big_int a |> Big_int.int_of_big_int in
             let b = extract_big_int b |> Big_int.int_of_big_int in
 
-            match t with
+            match get_ntype t with
             | Tbuiltin Bstring -> let s = extract_string s in mk_string (String.sub s a b)
             | Tbuiltin Bbytes  -> let s = extract_bytes  s in mk_bytes  (String.sub s (2 * a) (2 * b))
             | _ -> assert false
           end
 
         | Mlength x, _ -> begin
-            match x.type_ with
+            match get_ntype x.type_ with
             | Tbuiltin Bstring -> let x = extract_string x in mk_nat (String.length x)
             | Tbuiltin Bbytes  -> let x = extract_bytes  x in mk_nat (String.length x)
             | _ -> assert false
@@ -4728,7 +4764,7 @@ end = struct
       ) false m.api_items
 
   let get_asset_collection (an : ident) : mterm =
-    mk_mterm (Mvar (dumloc an, Vstorecol, Tnone, Dnone)) (Tcontainer (Tasset (dumloc an), Collection))
+    mk_mterm (Mvar (dumloc an, Vstorecol, Tnone, Dnone)) (mktype (Tcontainer (mktype (Tasset (dumloc an)), Collection)))
 
   let is_asset_single_field (model : model) (an : ident) : bool =
     get_asset model an |> fun x -> x.values |> List.filter (fun (x : asset_item) -> not x.shadow) |> List.length = 1
@@ -4998,7 +5034,7 @@ end = struct
 
   let get_all_set_types (model : model) : type_ list =
     let rec for_type accu t =
-      match t with
+      match get_ntype t with
       | Tset _         -> add_type accu t
       | Tlist   t      -> for_type accu t
       | Toption t      -> for_type accu t
@@ -5013,7 +5049,7 @@ end = struct
 
   let get_all_list_types (model : model) : type_ list =
     let rec for_type accu t =
-      match t with
+      match get_ntype t with
       | Tlist   tv     -> add_type (for_type accu tv) t
       | Toption t      -> for_type accu t
       | Ttuple  ts     -> List.fold_left (for_type) accu ts
@@ -5027,7 +5063,7 @@ end = struct
 
   let get_all_map_types (model : model) : type_ list =
     let rec for_type accu t =
-      match t with
+      match get_ntype t with
       | Tlist     t          -> for_type accu t
       | Toption   t          -> for_type accu t
       | Ttuple    ts         -> List.fold_left (for_type) accu ts
@@ -5056,7 +5092,7 @@ end = struct
 
   let extract_key_value_from_masset (model : model) (v : mterm) : mterm =
     match v with
-    | {node = (Masset l); type_ = Tasset an } ->
+    | {node = (Masset l); type_ = (Tasset an, _) } ->
       let an = unloc an in
       let asset : asset = get_asset model an in
       let asset_key = match asset.keys with [k] -> k | _ -> emit_error (SeveralAssetKeys an) in
@@ -5064,7 +5100,7 @@ end = struct
       List.find (fun (id, _) -> (String.equal asset_key id)) assoc_fields |> snd
     | _ -> raise Not_found
 
-  let is_not_string_nat_int = (function | Tbuiltin (Bstring | Bnat | Bint) -> false | _ -> true)
+  let is_not_string_nat_int t = (match get_ntype t with | Tbuiltin (Bstring | Bnat | Bint) -> false | _ -> true)
 
   let get_function (model : model) (id : ident) : function_struct =
     model.functions
@@ -5074,8 +5110,8 @@ end = struct
   let get_asset_partitions (model : model) asset_name : (ident * ident) list =
     let asset = get_asset model asset_name in
     List.fold_left (fun accu (x : asset_item) ->
-        match x.original_type with
-        | Tcontainer (Tasset an, Partition) -> (unloc x.name, unloc an)::accu
+        match get_ntype x.original_type with
+        | Tcontainer ((Tasset an, _), Partition) -> (unloc x.name, unloc an)::accu
         | _ -> accu
       ) [] asset.values
 

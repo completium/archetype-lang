@@ -33,7 +33,7 @@ let emit_error (desc : error_desc) =
   let str = Format.asprintf "%a@." pp_error_desc desc in
   raise (Anomaly str)
 
-let is_rat      = function | M.Ttuple [Tbuiltin Bint; Tbuiltin Bnat] -> true     | _ -> false
+let is_rat t = match M.get_ntype t with | M.Ttuple [(Tbuiltin Bint, _); (Tbuiltin Bnat, _)] -> true     | _ -> false
 
 let get_fun_name = T.Utils.get_fun_name Printer_michelson.show_pretty_type
 
@@ -62,7 +62,7 @@ let to_ir (model : M.model) : T.ir =
 
   let rec to_type ?annotation (t : M.type_) : T.type_ =
     let node =
-      match t with
+      match M.get_ntype t with
       | Tasset _   -> assert false
       | Tenum _    -> T.Tint
       | Tstate     -> T.Tint
@@ -141,7 +141,7 @@ let to_ir (model : M.model) : T.ir =
   in
 
   let get_record_size (rt : M.type_) : int =
-    match rt with
+    match M.get_ntype rt with
     | M.Trecord rn -> begin
         let rn = unloc rn in
         let r : M.record = M.Utils.get_record model rn in
@@ -151,7 +151,7 @@ let to_ir (model : M.model) : T.ir =
   in
 
   let get_record_index (rt : M.type_) fn =
-    match rt with
+    match M.get_ntype rt with
     | M.Trecord rn -> begin
         let rn = unloc rn in
         let r : M.record = M.Utils.get_record model rn in
@@ -374,7 +374,7 @@ let to_ir (model : M.model) : T.ir =
 
     (* lambda *)
 
-    | Mletin ([id], v, _, b, _) -> let is_unit = match mtt.type_ with Tunit -> true | _ -> false in T.IletIn (unloc id, f v, f b, is_unit)
+    | Mletin ([id], v, _, b, _) -> let is_unit = match M.get_ntype mtt.type_ with Tunit -> true | _ -> false in T.IletIn (unloc id, f v, f b, is_unit)
     | Mletin _                  -> emit_error (UnsupportedTerm ("Mletin"))
     | Mdeclvar _                -> emit_error (UnsupportedTerm ("Mdeclvar"))
     | Mapp (e, args)            -> begin
@@ -517,7 +517,7 @@ let to_ir (model : M.model) : T.ir =
     | Mright (t, v) -> T.Iunop (Uright (ft t), f v)
     | Mnone    -> begin
         let t =
-          match mtt.type_ with
+          match M.get_ntype mtt.type_ with
           | M.Toption t -> to_type t
           | _ -> assert false
         in
@@ -530,17 +530,17 @@ let to_ir (model : M.model) : T.ir =
     | Masset     _l -> emit_error (UnsupportedTerm ("Masset"))
     | Massets    _l -> emit_error (UnsupportedTerm ("Massets"))
     | Mlitset    l -> begin
-        match mtt.type_ with
+        match M.get_ntype mtt.type_ with
         |  M.Tset t -> T.Iset (ft t, List.map f l)
         | _ -> assert false
       end
     | Mlitlist   l ->  begin
-        match mtt.type_ with
+        match M.get_ntype mtt.type_ with
         |  M.Tlist t -> T.Ilist (ft t, List.map f l)
         | _ -> assert false
       end
     | Mlitmap (_, l) -> begin
-        match mtt.type_ with
+        match M.get_ntype mtt.type_ with
         | M.Tmap (b, k, v) -> T.Imap (b, ft k, ft v, List.map (fun (x, y) -> f x, f y) l)
         | _ -> assert false
       end
@@ -612,14 +612,14 @@ let to_ir (model : M.model) : T.ir =
     (* utils *)
 
     | Mcast (src, dst, v) -> begin
-        match src, dst, v.node with
+        match M.get_ntype src, M.get_ntype dst, v.node with
         | M.Tbuiltin Baddress, M.Tcontract t, _                -> get_contract (to_type t) (f v)
         | M.Tbuiltin Bcurrency, M.Tbuiltin Bnat, _             -> T.idiv (f v) (T.imutez Big_int.unit_big_int)
         | M.Tbuiltin Bstring, M.Tbuiltin Bkey, Mstring s       -> T.Iconst (T.mk_type Tkey, Dstring s)
         | M.Tbuiltin Bstring, M.Tbuiltin Bsignature, Mstring s -> T.Iconst (T.mk_type Tsignature, Dstring s)
         | _ -> f v
       end
-    | Mtupleaccess (x, n) -> let s = (match x.type_ with | Ttuple l -> List.length l | _ -> 0) in access_record s (Big_int.int_of_big_int n) (f x)
+    | Mtupleaccess (x, n) -> let s = (match M.get_ntype x.type_ with | Ttuple l -> List.length l | _ -> 0) in access_record s (Big_int.int_of_big_int n) (f x)
     | Mrecupdate (x, l) ->
       let s = get_record_size mtt.type_ in
       let ll =

@@ -14,7 +14,7 @@ let generate_storage (model : model) : model =
 
   let asset_to_storage_items (asset : asset) : storage_item =
     let asset_name = asset.name in
-    let typ_ = Tcontainer (Tasset asset_name, Collection) in
+    let typ_ = tcollection asset_name in
     mk_storage_item
       asset_name
       (MTasset (unloc asset_name))
@@ -27,56 +27,52 @@ let generate_storage (model : model) : model =
     | _ when String.equal (unloc e.name) "state" ->
       begin
         let iv = e.initial in
-        let dv = mk_mterm (Mvar (iv, Vlocal, Tnone, Dnone)) (Tstate) in
-        [ mk_storage_item e.name MTstate Tstate dv ]
+        let dv = mk_mterm (Mvar (iv, Vlocal, Tnone, Dnone)) tstate in
+        [ mk_storage_item e.name MTstate tstate dv ]
       end
     | _ -> []
   in
 
   let variable_to_storage_items (var : var) : storage_item =
 
-    let init_ b =
-      match b with
-      | Bunit       -> mk_mterm (Munit) (Tbuiltin Bunit)
-      | Bbool       -> mk_mterm (Mbool false) (Tbuiltin b)
-      | Bint        -> mk_mterm (Mint (Big_int.zero_big_int)) (Tbuiltin b)
-      | Brational   -> mk_mterm (Mrational (Big_int.zero_big_int, Big_int.unit_big_int)) (Tbuiltin b)
-      | Bdate       -> emit_error (NoInitExprFor "date")
-      | Bduration   -> mk_mterm (Mduration (Core.mk_duration ())) (Tbuiltin b)
-      | Btimestamp  -> emit_error (NoInitExprFor "timestamp")
-      | Bstring     -> mk_mterm (Mstring "") (Tbuiltin b)
-      | Baddress    -> emit_error (NoInitExprFor "address")
-      | Brole       -> emit_error (NoInitExprFor "role")
-      | Bcurrency   -> mk_mterm (Mcurrency (Big_int.zero_big_int, Tz)) (Tbuiltin b)
-      | Bkey        -> emit_error (NoInitExprFor "key")
-      | Bkeyhash    -> emit_error (NoInitExprFor "key_hash")
-      | Bsignature  -> emit_error (NoInitExprFor "signature")
-      | Bbytes      -> mk_mterm (Mbytes ("0x0")) (Tbuiltin b)
-      | Bnat        -> mk_mterm (Mint (Big_int.zero_big_int)) (Tbuiltin b)
-      | Bchainid    -> emit_error (NoInitExprFor "chainid")
-    in
-
-    let init_default_value = function
-      | Tbuiltin b        -> init_ b
-      | Tcontainer (t, _) -> mk_mterm (Massets []) (Tcontainer(t, Collection))
-      | Tlist t           -> mk_mterm (Mlitlist []) (Tlist t)
-      | Toption t         -> mk_mterm (Mnone) (Toption t)
+    let init_default_value ty =
+      match get_ntype ty with
+      | Tbuiltin Bunit       -> mk_mterm (Munit) ty
+      | Tbuiltin Bbool       -> mk_mterm (Mbool false) ty
+      | Tbuiltin Bint        -> mk_mterm (Mint (Big_int.zero_big_int)) ty
+      | Tbuiltin Brational   -> mk_mterm (Mrational (Big_int.zero_big_int, Big_int.unit_big_int)) ty
+      | Tbuiltin Bdate       -> emit_error (NoInitExprFor "date")
+      | Tbuiltin Bduration   -> mk_mterm (Mduration (Core.mk_duration ())) ty
+      | Tbuiltin Btimestamp  -> emit_error (NoInitExprFor "timestamp")
+      | Tbuiltin Bstring     -> mk_mterm (Mstring "") ty
+      | Tbuiltin Baddress    -> emit_error (NoInitExprFor "address")
+      | Tbuiltin Brole       -> emit_error (NoInitExprFor "role")
+      | Tbuiltin Bcurrency   -> mk_mterm (Mcurrency (Big_int.zero_big_int, Tz)) ty
+      | Tbuiltin Bkey        -> emit_error (NoInitExprFor "key")
+      | Tbuiltin Bkeyhash    -> emit_error (NoInitExprFor "key_hash")
+      | Tbuiltin Bsignature  -> emit_error (NoInitExprFor "signature")
+      | Tbuiltin Bbytes      -> mk_mterm (Mbytes ("0x0")) ty
+      | Tbuiltin Bnat        -> mk_mterm (Mint (Big_int.zero_big_int)) ty
+      | Tbuiltin Bchainid    -> emit_error (NoInitExprFor "chainid")
+      | Tcontainer _         -> mk_mterm (Massets []) ty
+      | Tlist _              -> mk_mterm (Mlitlist []) ty
+      | Toption _            -> mk_mterm (Mnone) ty
       | Tasset v
-      | Tenum v           -> emit_error (NoInitExprFor (unloc v))
-      | Ttuple _          -> emit_error (NoInitExprFor "tuple")
-      | Tset k            -> mk_mterm   (Mlitset []) (Tset k)
-      | Tmap (b, k, v)    -> mk_mterm   (Mlitmap (b, [])) (Tmap (b, k, v))
-      | Tor _             -> emit_error (NoInitExprFor "or")
-      | Trecord _         -> emit_error (NoInitExprFor "record")
-      | Tlambda _         -> emit_error (NoInitExprFor "lambda")
-      | Tunit             -> emit_error (NoInitExprFor "unit")
-      | Tstorage          -> emit_error (NoInitExprFor "storage")
-      | Toperation        -> emit_error (NoInitExprFor "operation")
-      | Tcontract _       -> emit_error (NoInitExprFor "contract")
-      | Tprog _           -> emit_error (NoInitExprFor "prog")
-      | Tvset _           -> emit_error (NoInitExprFor "vset")
-      | Ttrace _          -> emit_error (NoInitExprFor "trace")
-      | Tstate            -> emit_error (NoInitExprFor "state")
+      | Tenum v              -> emit_error (NoInitExprFor (unloc v))
+      | Ttuple _             -> emit_error (NoInitExprFor "tuple")
+      | Tset _               -> mk_mterm   (Mlitset []) ty
+      | Tmap (b, _, _)       -> mk_mterm   (Mlitmap (b, [])) ty
+      | Tor _                -> emit_error (NoInitExprFor "or")
+      | Trecord _            -> emit_error (NoInitExprFor "record")
+      | Tlambda _            -> emit_error (NoInitExprFor "lambda")
+      | Tunit                -> emit_error (NoInitExprFor "unit")
+      | Tstorage             -> emit_error (NoInitExprFor "storage")
+      | Toperation           -> emit_error (NoInitExprFor "operation")
+      | Tcontract _          -> emit_error (NoInitExprFor "contract")
+      | Tprog _              -> emit_error (NoInitExprFor "prog")
+      | Tvset _              -> emit_error (NoInitExprFor "vset")
+      | Ttrace _             -> emit_error (NoInitExprFor "trace")
+      | Tstate               -> emit_error (NoInitExprFor "state")
     in
 
     let (name, type_, dv) = var.name, var.type_, var.default in
@@ -105,7 +101,7 @@ let generate_storage (model : model) : model =
       | Massign (op, t, Avar id, v) when Model.Utils.is_field_storage model (unloc id) ->
         begin
           let vv = aux c v in
-          mk_mterm (Massign (op, t, Avarstore id, vv)) Tunit
+          mk_mterm (Massign (op, t, Avarstore id, vv)) tunit
         end
       | Mvar (id, Vlocal, t, d) when Model.Utils.is_field_storage model (unloc id) ->
         mk_mterm (Mvar (id, Vstorevar, t, d)) mt.type_

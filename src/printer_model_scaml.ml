@@ -36,7 +36,7 @@ type position =
   | Rhs
 
 let pp_cast (pos : position) (ltype : type_) (rtype : type_) (pp : 'a -> mterm -> unit) (fmt : Format.formatter) =
-  match pos, ltype, rtype with
+  match pos, get_ntype ltype, get_ntype rtype with
   | Lhs, Tbuiltin Brole, Tbuiltin Baddress ->
     Format.fprintf fmt "(%a : address)" pp
   | Rhs, Tbuiltin Baddress, Tbuiltin Brole ->
@@ -89,7 +89,7 @@ let pp_model fmt (model : model) =
   in
 
   let rec pp_type fmt t =
-    match t with
+    match get_ntype t with
     | Tasset an ->
       Format.fprintf fmt "%a" pp_id an
     | Tstate ->
@@ -716,7 +716,7 @@ let pp_model fmt (model : model) =
 
       | Masset l ->
         let asset_name =
-          match mtt.type_ with
+          match get_ntype mtt.type_ with
           | Tasset asset_name -> asset_name
           | _ -> assert false
         in
@@ -733,7 +733,7 @@ let pp_model fmt (model : model) =
 
       | Massets l ->
         begin
-          match mtt.type_ with
+          match get_ntype mtt.type_ with
           | Tmap (_, _k , _v) ->
             begin
               match l with
@@ -944,7 +944,7 @@ let pp_model fmt (model : model) =
 
       | Mremoveasset (an, i) ->
         let cond, str =
-          (match i.type_ with
+          (match get_ntype i.type_ with
            | Tasset an ->
              let k, _ = Utils.get_asset_key model (unloc an) in
              true, "." ^ k
@@ -970,7 +970,7 @@ let pp_model fmt (model : model) =
 
       | Mremovefield (an, fn, c, i) ->
         let cond, str =
-          (match i.type_ with
+          (match get_ntype i.type_ with
            | Tasset an ->
              let k, _ = Utils.get_asset_key model (unloc an) in
              true, "." ^ k
@@ -1467,8 +1467,8 @@ let pp_model fmt (model : model) =
 
   let pp_asset_item fmt (item : asset_item) =
     let pp_typ fmt t =
-      match t with
-      | Tcontainer (Tasset an, _) ->
+      match get_ntype t with
+      | Tcontainer ((Tasset an, _), _) ->
         let _, t = Utils.get_asset_key model (unloc an) in
         Format.fprintf fmt "%a list"
           pp_type t
@@ -1527,7 +1527,7 @@ let pp_model fmt (model : model) =
     let k, fs, ret, extra_arg = match f.node with
       | Entry f ->
         let str : string = Format.asprintf "let [@entry name=\"%a\"]" pp_id f.name in
-        str, f, Some (Ttuple [Tcontainer (Toperation, Collection); Tstorage]), " (_s : storage)"
+        str, f, Some (ttuple [tlist toperation; tstorage]), " (_s : storage)"
       | Getter (f, a) -> "let", f, Some a, ""
       | Function (f, a) -> "let", f, Some a, ""
     in

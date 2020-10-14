@@ -103,7 +103,7 @@ let to_model (ast : A.ast) : M.model =
       | A.Toption t          -> M.Toption (type_to_type t)
       | A.Ttrace tr          -> M.Ttrace (to_trtyp tr)
     in
-    f t
+    M.mktype (f t)
   in
 
   let to_assignment_operator = function
@@ -146,11 +146,11 @@ let to_model (ast : A.ast) : M.model =
   in
 
   let fail (ft : M.fail_type) : M.mterm =
-    M.mk_mterm (Mfail ft) M.Tunit
+    M.mk_mterm (Mfail ft) M.tunit
   in
 
   let term_not x : M.mterm =
-    M.mk_mterm (M.Mnot x) (M.Tbuiltin Bbool)
+    M.mk_mterm (M.Mnot x) M.tbool
   in
 
   (* let unit : M.mterm = M.mk_mterm (M.Mseq []) M.Tunit in *)
@@ -176,7 +176,7 @@ let to_model (ast : A.ast) : M.model =
 
   let extract_asset_name (mterm : M.mterm) : ident =
     match mterm with
-    | {type_ = Tcontainer (Tasset asset_name, _); _} -> unloc asset_name
+    | {type_ = (Tcontainer ((Tasset asset_name, _), _), _); _} -> unloc asset_name
     | _ -> assert false
   in
 
@@ -190,19 +190,19 @@ let to_model (ast : A.ast) : M.model =
 
   let extract_builtin_type_list (v : M.mterm) : M.type_ =
     match v with
-    | {type_ = Tlist t; _} -> t
+    | {type_ = (Tlist t, _); _} -> t
     | _ -> assert false
   in
 
   let extract_builtin_type_set (v : M.mterm) : M.type_ =
     match v with
-    | {type_ = Tset t; _} -> t
+    | {type_ = (Tset t, _); _} -> t
     | _ -> assert false
   in
 
   let extract_builtin_type_map (v : M.mterm) : M.type_ * M.type_ =
     match v with
-    | {type_ = Tmap (_, k, v); _} -> k, v
+    | {type_ = (Tmap (_, k, v), _); _} -> k, v
     | _ -> assert false
   in
 
@@ -221,18 +221,18 @@ let to_model (ast : A.ast) : M.model =
 
   let to_ck (env : env) (fp : M.mterm) : M.container_kind =
     match fp.node, fp.type_ with
-    | M.Mdotassetfield (an, _k, fn), Tcontainer ((Tasset _), (Aggregate | Partition)) -> M.CKfield (unloc an, unloc fn, fp, Tnone, Dnone)
-    | M.Mdot ({type_ = Tasset an}, fn), Tcontainer ((Tasset _), (Aggregate | Partition)) -> M.CKfield (unloc an, unloc fn, fp, Tnone, Dnone)
+    | M.Mdotassetfield (an, _k, fn), (Tcontainer ((Tasset _, _), (Aggregate | Partition)), _) -> M.CKfield (unloc an, unloc fn, fp, Tnone, Dnone)
+    | M.Mdot ({type_ = (Tasset an, _)}, fn), (Tcontainer ((Tasset _, _), (Aggregate | Partition)), _) -> M.CKfield (unloc an, unloc fn, fp, Tnone, Dnone)
     | M.Mvar (v, Vdefinition, _, _), _ -> M.CKdef (unloc v)
-    | M.Mvar (fn, _, t, d), Tcontainer ((Tasset _), (Aggregate | Partition)) -> begin
+    | M.Mvar (fn, _, t, d), (Tcontainer ((Tasset _, _), (Aggregate | Partition)), _) -> begin
         let an = match env.asset_name with
           | Some v -> v
           | None -> assert false
         in
         M.CKfield (an, unloc fn, fp, t, d)
       end
-    | M.Mvar (_, _, t, d), Tcontainer ((Tasset _), Collection) -> M.CKcoll (t, d)
-    | _, Tcontainer ((Tasset _), Collection) -> M.CKcoll (Tnone, Dnone)
+    | M.Mvar (_, _, t, d), (Tcontainer ((Tasset _, _), Collection), _) -> M.CKcoll (t, d)
+    | _, (Tcontainer ((Tasset _, _), Collection), _) -> M.CKcoll (Tnone, Dnone)
     | _ -> M.CKview fp
   in
 
@@ -264,7 +264,7 @@ let to_model (ast : A.ast) : M.model =
       | A.Vunmoved -> M.Dunmoved
       | A.Vnone    -> M.Dnone
     in
-    let is_record = function | M.Trecord _ -> true | _ -> false in
+    let is_record t = match M.get_ntype t with | M.Trecord _ -> true | _ -> false in
     let type_ = type_to_type (Option.get pterm.type_) in
     let f x = to_mterm env x in
     let node =
@@ -297,7 +297,7 @@ let to_model (ast : A.ast) : M.model =
       | A.Parith (A.Modulo, l, r)           -> M.Mmodulo        (f l, f r)
       | A.Puarith (A.Uminus, e)             -> M.Muminus        (f e)
       | A.Precord l when is_record type_    -> begin
-          let record_name =  match type_ with | M.Trecord name -> unloc name | _ -> assert false in
+          let record_name =  match M.get_ntype type_ with | M.Trecord name -> unloc name | _ -> assert false in
           let ids : ident list =
             List.fold_left (fun accu (x : A.lident A.decl_) ->
                 match x with
@@ -322,8 +322,8 @@ let to_model (ast : A.ast) : M.model =
       | A.Parray l                             ->
         begin
           let l = List.map f l in
-          match type_ with
-          | Tcontainer (Tasset _, _)   -> M.Massets l
+          match M.get_ntype type_ with
+          | Tcontainer ((Tasset _, _), _)   -> M.Massets l
           | Tset _ -> M.Mlitset l
           | Tmap (b, _, _) -> M.Mlitmap (b, List.map (fun (x : M.mterm) -> match x.node with | M.Mtuple [k; v] -> (k, v)  | _ -> assert false) l)
           | _ -> M.Mlitlist l
@@ -345,8 +345,8 @@ let to_model (ast : A.ast) : M.model =
           match e with
           | {node = Pcall (Some a, Cconst Cget, [AExpr k])} -> begin
               let b = f a in
-              match b.type_ with
-              | M.Tcontainer (Tasset an, Collection) -> M.Mdotassetfield (an, f k, id)
+              match M.get_ntype b.type_ with
+              | M.Tcontainer ((Tasset an, _), Collection) -> M.Mdotassetfield (an, f k, id)
               | _ -> M.Mdot (f e, id)
             end
 
@@ -677,7 +677,7 @@ let to_model (ast : A.ast) : M.model =
       | A.Pcall (None, A.Cconst A.Cunpack, [AExpr x]) ->
         let fx = f x in
         let t =
-          match type_ with
+          match M.get_ntype type_ with
           | Toption t -> t
           | _ -> assert false
         in
@@ -766,7 +766,7 @@ let to_model (ast : A.ast) : M.model =
 
   let extract_asset_name (pterm : M.mterm) : Ident.ident =
     match pterm with
-    | {type_ = Tcontainer (Tasset asset_name, _); _ } -> unloc asset_name
+    | {type_ = (Tcontainer ((Tasset asset_name, _), _), _); _ } -> unloc asset_name
     | _ -> assert false
   in
 
@@ -795,7 +795,7 @@ let to_model (ast : A.ast) : M.model =
         let default = Option.map (to_mterm env) x.default in
         M.mk_asset_item x.name typ typ ?default:default ~shadow:x.shadow ~loc:x.loc) a.fields
     in
-    let mk_asset an l = M.mk_mterm (M.Masset (List.map (to_mterm env) l)) (M.Tasset an) in
+    let mk_asset an l = M.mk_mterm (M.Masset (List.map (to_mterm env) l)) (M.tasset an) in
     let r : M.asset = M.mk_asset a.name ~keys:(List.map unloc (a.keys)) ~values:values ~sort:a.sort ~big_map:a.big_map ?state:a.state ~invariants:(List.map (fun x -> (to_label_lterm env) x) a.specs) ~init:(List.map (fun x -> (mk_asset a.name) x) a.init) ~loc:a.loc in
     M.Dasset r
   in
@@ -827,12 +827,12 @@ let to_model (ast : A.ast) : M.model =
         begin
           let ncol =
             let x = f col in
-            match x.node, x.type_ with
+            match x.node, M.get_ntype x.type_ with
             | _, M.Tset  _ -> M.ICKset x
             | _, M.Tlist _ -> M.ICKlist x
             | _, M.Tmap  _ -> M.ICKmap x
-            | _, M.Tcontainer ((Tasset an), Collection) -> M.ICKcoll (unloc an)
-            | M.Mdotassetfield (an, _k, fn), M.Tcontainer ((Tasset _), (Aggregate | Partition)) -> M.ICKfield (unloc an, unloc fn, x)
+            | _, M.Tcontainer ((Tasset an, _), Collection) -> M.ICKcoll (unloc an)
+            | M.Mdotassetfield (an, _k, fn), M.Tcontainer ((Tasset _, _), (Aggregate | Partition)) -> M.ICKfield (unloc an, unloc fn, x)
             | _ -> M.ICKview x
           in
           let i =
@@ -932,18 +932,18 @@ let to_model (ast : A.ast) : M.model =
         let lambda_body = f q in
         let lambda_args, args = List.fold_right (fun (x, y, z) (l1, l2) -> ((unloc x, type_to_type y)::l1, (f z)::l2)) l ([], []) in
         begin
-          match fp.node, fp.type_ with
+          match fp.node, M.get_ntype fp.type_ with
           | Mdotassetfield (an, k, fn), _ -> M.Mremoveif (unloc an, CKfield (unloc an, unloc fn, k, Tnone, Dnone), lambda_args, lambda_body, args)
-          | _, Tcontainer (Tasset an, _)  -> M.Mremoveif (unloc an, CKcoll (Tnone, Dnone), lambda_args, lambda_body, args)
+          | _, Tcontainer ((Tasset an, _), _)  -> M.Mremoveif (unloc an, CKcoll (Tnone, Dnone), lambda_args, lambda_body, args)
           | _ -> assert false
         end
 
       | A.Icall (Some p, A.Cconst (A.Cclear), []) -> (
           let fp = f p in
           begin
-            match fp.node, fp.type_ with
+            match fp.node, M.get_ntype fp.type_ with
             | Mdotassetfield (an, k, fn), _ -> M.Mclear (unloc an, CKfield (unloc an, unloc fn, k, Tnone, Dnone))
-            | _, Tcontainer (Tasset an, _)  -> M.Mclear (unloc an, to_ck env fp)
+            | _, Tcontainer ((Tasset an, _), _)  -> M.Mclear (unloc an, to_ck env fp)
             | _ -> assert false
           end
         )
@@ -957,9 +957,9 @@ let to_model (ast : A.ast) : M.model =
         let fk = f k in
         let fe = List.map (fun (id, op, c) -> (id, to_op op, f c)) e in
         begin
-          match fp.node, fp.type_ with
-          | Mdotassetfield (_, _k, fn), Tcontainer (Tasset an, (Aggregate | Partition)) -> M.Maddupdate (unloc an, CKfield (unloc an, unloc fn, fp, Tnone, Dnone), fk, fe)
-          | _, Tcontainer (Tasset an, Collection)  -> M.Maddupdate (unloc an, CKcoll (Tnone, Dnone), fk, fe)
+          match fp.node, M.get_ntype fp.type_ with
+          | Mdotassetfield (_, _k, fn), Tcontainer ((Tasset an, _), (Aggregate | Partition)) -> M.Maddupdate (unloc an, CKfield (unloc an, unloc fn, fp, Tnone, Dnone), fk, fe)
+          | _, Tcontainer ((Tasset an, _), Collection)  -> M.Maddupdate (unloc an, CKcoll (Tnone, Dnone), fk, fe)
           | _ -> assert false
         end
 
@@ -984,7 +984,7 @@ let to_model (ast : A.ast) : M.model =
           (match aux with | Some _ -> "with aux" | _ -> "without aux");
         assert false
     in
-    M.mk_mterm node (M.Tunit) ~loc:instr.loc
+    M.mk_mterm node M.tunit ~loc:instr.loc
   in
 
   let to_predicate (env : env) (p : A.lident A.predicate) : M.predicate =
@@ -1125,31 +1125,31 @@ let to_model (ast : A.ast) : M.model =
     let l1 = extract s1 in
     let l2 = extract s2 in
 
-    M.mk_mterm (M.Mseq (l1 @ l2)) M.Tunit
+    M.mk_mterm (M.Mseq (l1 @ l2)) M.tunit
   in
 
   let process_transaction (env : env) (transaction : A.transaction) : M.function__ =
     let process_calledby env (body : M.mterm) : M.mterm =
       let process_cb (cb : A.rexpr) (body : M.mterm) : M.mterm =
         let rec process_rexpr (rq : A.rexpr) : M.mterm option =
-          let caller : M.mterm = M.mk_mterm M.Mcaller (M.Tbuiltin Baddress) in
+          let caller : M.mterm = M.mk_mterm M.Mcaller (M.taddress) in
           match rq.node with
           | Rany -> None
           | Rexpr e ->
             begin
               let mt = to_mterm env e in
-              Some (M.mk_mterm (M.Mequal (M.Tbuiltin Baddress, caller, mt)) (M.Tbuiltin Bbool) ~loc:rq.loc)
+              Some (M.mk_mterm (M.Mequal (M.taddress, caller, mt)) (M.tbool) ~loc:rq.loc)
             end
           | Ror (l, r) ->
             let l = Option.get (process_rexpr l) in
             let r = Option.get (process_rexpr r) in
-            Some (M.mk_mterm (M.Mor (l, r)) (M.Tbuiltin Bbool) ~loc:rq.loc)
+            Some (M.mk_mterm (M.Mor (l, r)) (M.tbool) ~loc:rq.loc)
         in
         match process_rexpr cb with
         | Some a ->
-          let require : M.mterm = M.mk_mterm (M.Mnot (a)) (M.Tbuiltin Bbool) ~loc:cb.loc in
+          let require : M.mterm = M.mk_mterm (M.Mnot (a)) (M.tbool) ~loc:cb.loc in
           let fail_auth : M.mterm = fail InvalidCaller in
-          let cond_if = M.mk_mterm (M.Mif (require, fail_auth, None)) M.Tunit in
+          let cond_if = M.mk_mterm (M.Mif (require, fail_auth, None)) M.tunit in
           add_seq cond_if body
         | _ -> body
       in
@@ -1164,7 +1164,7 @@ let to_model (ast : A.ast) : M.model =
       let term = to_mterm env x.term in
       let cond : M.mterm =
         match b with
-        | `Require ->  M.mk_mterm (M.Mnot term) (Tbuiltin Bbool) ~loc:x.loc
+        | `Require ->  M.mk_mterm (M.Mnot term) (M.tbool) ~loc:x.loc
         | `Failif -> term
       in
       let fail_cond : M.mterm =
@@ -1175,7 +1175,7 @@ let to_model (ast : A.ast) : M.model =
         in
         fail a
       in
-      let cond_if = M.mk_mterm (M.Mif (cond, fail_cond, None)) M.Tunit ~loc:x.loc in
+      let cond_if = M.mk_mterm (M.Mif (cond, fail_cond, None)) M.tunit ~loc:x.loc in
       add_seq cond_if body
     in
     let apply env b li body =
@@ -1192,12 +1192,11 @@ let to_model (ast : A.ast) : M.model =
     let process_accept_transfer _env (body : M.mterm) : M.mterm =
       if (not transaction.accept_transfer)
       then
-        let type_currency = M.Tbuiltin Bcurrency in
-        let lhs : M.mterm = M.mk_mterm (M.Mtransferred) type_currency in
-        let rhs : M.mterm = M.mk_mterm (M.Mcurrency (Big_int.zero_big_int, Tz)) type_currency in
-        let eq : M.mterm = M.mk_mterm (M.Mequal (type_currency, lhs, rhs)) (M.Tbuiltin Bbool) in
-        let cond : M.mterm = M.mk_mterm (M.Mnot eq) (M.Tbuiltin Bbool) in
-        let cond_if : M.mterm = M.mk_mterm (M.Mif (cond, fail (NoTransfer), None)) M.Tunit in
+        let lhs : M.mterm = M.mk_mterm (M.Mtransferred) M.ttez in
+        let rhs : M.mterm = M.mk_mterm (M.Mcurrency (Big_int.zero_big_int, Tz)) M.ttez in
+        let eq : M.mterm = M.mk_mterm (M.Mequal (M.ttez, lhs, rhs)) M.tbool in
+        let cond : M.mterm = M.mk_mterm (M.Mnot eq) M.tbool in
+        let cond_if : M.mterm = M.mk_mterm (M.Mif (cond, fail (NoTransfer), None)) M.tunit in
         add_seq cond_if body
       else
         body
@@ -1206,7 +1205,7 @@ let to_model (ast : A.ast) : M.model =
     let process_body_args env : M.argument list * M.mterm * env =
       let args  = List.map (fun (x : A.lident A.decl_gen) -> (x.name, (type_to_type |@ Option.get) x.typ, None)) transaction.args in
       let env   = {env with function_p = Some (transaction.name, args); } in
-      let empty : M.mterm = M.mk_mterm (M.Mseq []) Tunit in
+      let empty : M.mterm = M.mk_mterm (M.Mseq []) M.tunit in
       match transaction.transition, transaction.effect with
       | None, None ->
         let body = empty in
@@ -1234,19 +1233,19 @@ let to_model (ast : A.ast) : M.model =
                  | Some (key_ident, key_type, an, enum_type) ->
                    let k : M.mterm = build_mvar env key_ident key_type ~loc:(Location.loc key_ident) in
                    let v : M.mterm = M.mk_mterm (M.Mvar (id, Venumval, Tnone, Dnone)) enum_type ~loc:(Location.loc id) in
-                   M.mk_mterm (M.Massign (ValueAssign, v.type_, Aassetstate (an, k), v)) Tunit
+                   M.mk_mterm (M.Massign (ValueAssign, v.type_, Aassetstate (an, k), v)) M.tunit
                  | _ ->
-                   let v : M.mterm = build_mvar env id M.Tstate ~loc:(Location.loc id) in
-                   M.mk_mterm (M.Massign (ValueAssign, v.type_, Astate, v)) Tunit
+                   let v : M.mterm = build_mvar env id M.tstate ~loc:(Location.loc id) in
+                   M.mk_mterm (M.Massign (ValueAssign, v.type_, Astate, v)) M.tunit
                in
                let code : M.mterm =
                  match effect with
-                 | Some e -> M.mk_mterm (M.Mseq [to_instruction env e; tre]) Tunit
+                 | Some e -> M.mk_mterm (M.Mseq [to_instruction env e; tre]) M.tunit
                  | None -> tre
                in
 
                match cond with
-               | Some c -> M.mk_mterm (M.Mif (to_mterm env c, code, Some acc)) Tunit
+               | Some c -> M.mk_mterm (M.Mif (to_mterm env c, code, Some acc)) M.tunit
                | None -> code
              ) t.trs body)
         in
@@ -1272,9 +1271,9 @@ let to_model (ast : A.ast) : M.model =
                 | Some (ki, kt, an, et) ->
                   let k : M.mterm = build_mvar env ki kt ~loc:(Location.loc ki) in
                   M.mk_mterm (M.Mvar (dumloc an, Vassetstate k, Tnone, Dnone)) et
-                | _ -> M.mk_mterm (M.Mvar(dumloc "", Vstate, Tnone, Dnone)) Tstate
+                | _ -> M.mk_mterm (M.Mvar(dumloc "", Vstate, Tnone, Dnone)) M.tstate
               in
-              M.mk_mterm (M.Mmatchwith (w, List.map (fun x -> (x, body)) list_patterns @ [pattern, fail_instr])) Tunit
+              M.mk_mterm (M.Mmatchwith (w, List.map (fun x -> (x, body)) list_patterns @ [pattern, fail_instr])) M.tunit
             end
         in
         args, body, env

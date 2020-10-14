@@ -20,8 +20,8 @@ let generate_api_storage ?(verif=false) (model : model) : model =
   let rec f (ctx : ctx_model) (accu : api_storage list) (term : mterm) : api_storage list =
     let api_items : api_storage_node list =
       let mt_type = term.type_ in
-      let is_rat = match mt_type with | Tbuiltin Brational | Ttuple [Tbuiltin Bint; Tbuiltin Bnat] -> true | _ -> false in
-      let extract_option_type = function | Toption x -> x | _ -> assert false in
+      let is_rat = match get_ntype mt_type with | Tbuiltin Brational | Ttuple [(Tbuiltin Bint, _); (Tbuiltin Bnat, _)] -> true | _ -> false in
+      let extract_option_type t = match get_ntype t with | Toption x -> x | _ -> assert false in
       match term.node with
       | Mget (asset_name, _, _) ->
         [APIAsset (Get asset_name)]
@@ -50,9 +50,9 @@ let generate_api_storage ?(verif=false) (model : model) : model =
       | Mremoveif (_, ((CKfield (an, fn, _, _, _)) as c), la, lb, _) ->
         let _, t, _ = Utils.get_asset_field model (an, fn) in
         let aan, l =
-          match t with
-          | Tcontainer (Tasset aan, Aggregate) -> unloc aan, []
-          | Tcontainer (Tasset aan, Partition) -> unloc aan, [APIAsset (Remove (unloc aan))]
+          match get_ntype t with
+          | Tcontainer ((Tasset aan, _), Aggregate) -> unloc aan, []
+          | Tcontainer ((Tasset aan, _), Partition) -> unloc aan, [APIAsset (Remove (unloc aan))]
           | _ -> assert false
         in
         [APIAsset (Get aan); APIAsset (FieldRemove (an, fn)); APIAsset (RemoveIf (an, to_ck c, la, lb))] @ l

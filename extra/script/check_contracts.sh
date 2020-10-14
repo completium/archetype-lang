@@ -26,6 +26,7 @@ escrow_simple.arl \
 escrow_without_spec.arl \
 fa12.arl \
 fa12_inspector.arl \
+fa2.arl \
 fizzy.arl \
 guarantee_fund.arl \
 health_care.arl \
@@ -96,6 +97,7 @@ zero_coupon_bond.arl \
 "
 
 REMAINED_EXEC_CONTRACTS="\
+fa2.arl \
 "
 
 VERIF_CONTRACTS="\
@@ -143,6 +145,7 @@ zero_coupon_bond.arl \
 "
 
 REMAINED_VERIF_CONTRACTS="\
+fa2.arl \
 "
 
 RET=0
