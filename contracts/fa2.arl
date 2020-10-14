@@ -89,6 +89,8 @@ record operator_param {
 
 /* STORAGE ------------------------------------------------------------------ */
 
+constant per_token_policy : string = "PER_TOKEN_POLICY"
+
 variable admin : address = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 
 variable permissions_descriptor : permissions = {
@@ -132,7 +134,7 @@ function get_transfer_policy (tid : nat) : operator_transfer_policy {
   return
     match_option permissions_descriptor.custom with // check custom policy
     | some(cust) ->
-      if cust.tag = "FA2_PER_TOKEN" then begin // look up in tokens
+      if cust.tag = per_token_policy then begin // look up in tokens
         match_option token[tid].permissions_desc with
         | some(pd) -> pd.transfer_policy
         | none -> permissions_descriptor.basic.transfer_policy
@@ -149,7 +151,7 @@ function get_hook_policy (tid : nat, ot : owner_type) : owner_hook_policy {
   return
     match_option permissions_descriptor.custom with // check custom policy
     | some(cust) ->
-      if cust.tag = "FA2_PER_TOKEN" then begin // look up in tokens
+      if cust.tag = per_token_policy then begin // look up in tokens
         match ot with
         | Sender   ->  match_option token[tid].permissions_desc with
           | some(pd) -> pd.sender_hook_policy
@@ -205,7 +207,7 @@ function mk_op (
   ot : owner_type) : or<option<operation>,string> {
   var e =
     match ot with
-    | Sender   -> entrypoint<transfer_descriptor_param>("%fa2_token_sender",a)
+    | Sender   -> entrypoint<transfer_descriptor_param>("%fa2_token_sender", a)
     | Receiver -> entrypoint<transfer_descriptor_param>("%fa2_token_receiver", a)
     end;
   return left<_,string>(some(mkoperation(0tz, opt_get(e), tp)))
@@ -239,7 +241,7 @@ function apply_hook (
 
 function is_per_token () : bool {
   return match_option permissions_descriptor.custom with // check custom policy
-    | some(c) -> if c.tag = "FA2_PER_TOKEN" then true else false
+    | some(c) -> if c.tag = per_token_policy then true else false
     | none -> false
   end
 }
@@ -276,7 +278,7 @@ function apply_allowance (itoken_id : nat) : bool {
   return
     match_option permissions_descriptor.custom with
     | some(c) ->
-      if c.tag = "PER_TOKEN" then begin
+      if c.tag = per_token_policy then begin
         token[itoken_id].token_typ = FA1_2
       end else begin
         false
