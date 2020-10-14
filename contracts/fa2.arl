@@ -121,6 +121,14 @@ asset token {
   permissions_desc : option<basic_permissions>;
 }
 
+asset token_metadata to big_map {
+  meta_token_id  : nat;
+  symbol         : string;
+  name           : string;
+  decimals       : nat;
+  extras         : map<string, string>;
+}
+
 asset allowance identified by addr_owner allowed_spender allowed_token_id to big_map {
   addr_owner         : address;
   allowed_spender    : address;
@@ -311,17 +319,26 @@ entry add_token (
   new_token_type         : token_type,
   totalsupply            : nat,
   new_owner              : address,
-  owner_hook             : option<address>,
+  new_owner_hook         : option<address>,
+  new_symbol             : string,
+  new_name               : string,
+  new_decimals           : nat,
   new_token_permissions  : option<basic_permissions>) {
   called by admin
   failif {
     f0 : token.contains(new_token_id);
-    f1 : new_token_type = NFT and totalsupply <> 1
+    f1 : token_metadata.contains(new_token_id);
+    f2 : new_token_type = NFT and totalsupply <> 1
   }
   effect {
     token.add ({ new_token_id; new_token_type; new_token_permissions });
-    ledger.add ({ new_token_id; new_owner; totalsupply; owner_hook });
+    token_metadata.add ({ new_token_id; new_symbol; new_name; new_decimals; [] });
+    ledger.add ({ new_token_id; new_owner; totalsupply; new_owner_hook });
   }
+}
+
+getter token_metadata_registry () : address {
+  return selfaddress
 }
 
 entry set_hook (ti : nat, h : option<address>) {
@@ -348,7 +365,7 @@ entry %transfer(%from : address, tds : list<transfer_destination>) {
         if not contains(applied_hooks, (%from, applied_hook_id)) then begin
           match_or apply_hook(td.token_id_dest, %from, hook_param, Sender) with
           | left(sop) -> match_option sop with
-            | some (op) -> operations := prepend(operations, op)
+            | some (op) -> transfer op
             | none -> ()
             end
           | right(msg) -> fail (msg)
@@ -359,7 +376,7 @@ entry %transfer(%from : address, tds : list<transfer_destination>) {
         if not contains(applied_hooks, (td.to_dest, applied_hook_id)) then begin
           match_or apply_hook(td.token_id_dest, td.%to_dest, hook_param, Receiver) with
           | left(sop) -> match_option sop with
-            | some (op) -> operations := prepend(operations, op)
+            | some (op) -> transfer op
             | none -> ()
             end
           | right(msg) -> fail (msg)
