@@ -331,12 +331,23 @@ entry add_token (
   }
 }
 
-entry set_permissions_descriptor () {
+entry set_permissions_descriptor (
+  otp        : operator_transfer_policy,
+  shp        : owner_hook_policy,
+  rhp        : owner_hook_policy,
+  withcustom : bool) {
   called by admin
   effect {
+    var cust_pol =
+      if withcustom then some({
+        tag = per_token_policy;
+        config_api = some(selfaddress)
+      }) else none<custom_policy>;
     permissions_descriptor := {
-      per_token_policy;
-      some<address> (selfaddress);
+      transfer_policy      = otp;
+      sender_hook_policy   = shp;
+      receiver_hook_policy = rhp;
+      custom = cust_pol
     }
   }
 }
