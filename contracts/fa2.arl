@@ -130,6 +130,27 @@ asset allowance identified by addr_owner allowed_spender allowed_token_id to big
 
 /* UTIL FUNCTIONS -------------------------------------------------------------- */
 
+function is_per_token_policy (is : bool, isnot : bool) : bool {
+  return
+    match_option permissions_descriptor.custom with
+    | some(c) ->
+      if c.tag = per_token_policy then begin
+        is
+      end else begin
+        isnot
+      end
+    | none -> isnot
+    end
+}
+
+function is_per_token () : bool {
+  return is_per_token_policy(true,false)
+}
+
+function apply_allowance (itoken_id : nat) : bool {
+  return is_per_token_policy(token[itoken_id].token_typ = FA1_2, false)
+}
+
 function get_transfer_policy (tid : nat) : operator_transfer_policy {
   return
     match_option permissions_descriptor.custom with // check custom policy
@@ -239,13 +260,6 @@ function apply_hook (
     end
 }
 
-function is_per_token () : bool {
-  return match_option permissions_descriptor.custom with // check custom policy
-    | some(c) -> if c.tag = per_token_policy then true else false
-    | none -> false
-  end
-}
-
 function get_hook_param(c : address, f : address, tds : list<transfer_destination>) : transfer_descriptor_param {
   return { [ {
     from_ = some(f);
@@ -271,19 +285,6 @@ function get_amount (itoken_id : nat, iamount : nat) : nat {
     | FT    -> iamount
     | FA1_2 -> iamount
     | NFT   -> if iamount > 0 then 1 else 0
-    end
-}
-
-function apply_allowance (itoken_id : nat) : bool {
-  return
-    match_option permissions_descriptor.custom with
-    | some(c) ->
-      if c.tag = per_token_policy then begin
-        token[itoken_id].token_typ = FA1_2
-      end else begin
-        false
-      end
-    | none -> false
     end
 }
 
