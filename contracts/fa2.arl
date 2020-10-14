@@ -1,5 +1,9 @@
 archetype fa2
 
+/* Informal specification:
+https://gitlab.com/tzip/tzip/-/blob/master/proposals/tzip-12/tzip-12.md
+*/
+
 /* TYPES ---------------------------------------------------------------- */
 
 enum token_type =
@@ -196,9 +200,9 @@ function apply_transfer_policy (
 }
 
 function mk_op (
-  a           : address,
-  tp          : transfer_descriptor_param,
-  ot          : owner_type) : or<option<operation>,string> {
+  a  : address,
+  tp : transfer_descriptor_param,
+  ot : owner_type) : or<option<operation>,string> {
   var e =
     match ot with
     | Sender   -> entrypoint<transfer_descriptor_param>("%fa2_token_sender",a)
@@ -268,6 +272,19 @@ function get_amount (itoken_id : nat, iamount : nat) : nat {
     end
 }
 
+function apply_allowance (itoken_id : nat) : bool {
+  return
+    match_option permissions_descriptor.custom with
+    | some(c) ->
+      if c.tag = "PER_TOKEN" then begin
+        token[itoken_id].token_typ = FA1_2
+      end else begin
+        false
+      end
+    | none -> false
+    end
+}
+
 /* ENTRY POINTS -------------------------------------------------------------- */
 
 entry add_token (
@@ -331,7 +348,7 @@ entry %transfer(%from : address, tds : list<transfer_destination>) {
           applied_hooks := add(applied_hooks, (td.to_dest, applied_hook_id));
         end;
         /* check allowance for FA 1.2 --------------------------------------- */
-        if token[td.token_id_dest].token_typ = FA1_2 then begin
+        if apply_allowance(td.token_id_dest) then begin
           if caller <> %from then begin
             var current = allowance[(%from, caller,td.token_id_dest)].allowed_amount;
             dofailif(current < transfer_amount, ("NotEnoughAllowance", ((transfer_amount, current))));
