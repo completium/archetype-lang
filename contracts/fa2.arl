@@ -130,6 +130,9 @@ asset allowance identified by addr_owner allowed_spender allowed_token_id to big
 
 /* UTIL FUNCTIONS -------------------------------------------------------------- */
 
+/* custom policy folder when is per_token_policy
+   the pesence of three functions is because there is no polymorphism in Michelson
+*/
 function is_per_token_policy (is : bool, isnot : bool) : bool {
   return
     match_option permissions_descriptor.custom with
@@ -143,6 +146,34 @@ function is_per_token_policy (is : bool, isnot : bool) : bool {
     end
 }
 
+function is_per_token_transfer (is : operator_transfer_policy, isnot : operator_transfer_policy) : operator_transfer_policy {
+  return
+    match_option permissions_descriptor.custom with
+    | some(c) ->
+      if c.tag = per_token_policy then begin
+        is
+      end else begin
+        isnot
+      end
+    | none -> isnot
+    end
+}
+
+function is_per_token_hook (is : owner_hook_policy, isnot : owner_hook_policy) : owner_hook_policy {
+  return
+    match_option permissions_descriptor.custom with
+    | some(c) ->
+      if c.tag = per_token_policy then begin
+        is
+      end else begin
+        isnot
+      end
+    | none -> isnot
+    end
+}
+
+/* ------------------------------------ */
+
 function is_per_token () : bool {
   return is_per_token_policy(true,false)
 }
@@ -153,48 +184,33 @@ function apply_allowance (itoken_id : nat) : bool {
 
 function get_transfer_policy (tid : nat) : operator_transfer_policy {
   return
-    match_option permissions_descriptor.custom with // check custom policy
-    | some(cust) ->
-      if cust.tag = per_token_policy then begin // look up in tokens
-        match_option token[tid].permissions_desc with
-        | some(pd) -> pd.transfer_policy
-        | none -> permissions_descriptor.basic.transfer_policy
-        end
-      end else begin // fall back to default
-        permissions_descriptor.basic.transfer_policy
-      end
-    | none -> // no custom, get default
+    is_per_token_transfer (
+      match_option token[tid].permissions_desc with
+      | some(pd) -> pd.transfer_policy
+      | none -> permissions_descriptor.basic.transfer_policy
+      end,
       permissions_descriptor.basic.transfer_policy
-    end
+    )
 }
 
 function get_hook_policy (tid : nat, ot : owner_type) : owner_hook_policy {
   return
-    match_option permissions_descriptor.custom with // check custom policy
-    | some(cust) ->
-      if cust.tag = per_token_policy then begin // look up in tokens
-        match ot with
-        | Sender   ->  match_option token[tid].permissions_desc with
-          | some(pd) -> pd.sender_hook_policy
-          | none -> permissions_descriptor.basic.sender_hook_policy
-          end
-        | Receiver ->  match_option token[tid].permissions_desc with
-          | some(pd) -> pd.receiver_hook_policy
-          | none -> permissions_descriptor.basic.receiver_hook_policy
-          end
+    is_per_token_hook (
+      match ot with
+      | Sender   ->  match_option token[tid].permissions_desc with
+        | some(pd) -> pd.sender_hook_policy
+        | none -> permissions_descriptor.basic.sender_hook_policy
         end
-      end else begin // fall back to default
-        match ot with
+      | Receiver ->  match_option token[tid].permissions_desc with
+        | some(pd) -> pd.receiver_hook_policy
+        | none -> permissions_descriptor.basic.receiver_hook_policy
+        end
+      end,
+      match ot with
         | Sender   ->  permissions_descriptor.basic.sender_hook_policy
         | Receiver ->  permissions_descriptor.basic.receiver_hook_policy
-        end
       end
-    | none -> // fall back to default
-      match ot with
-      | Sender   ->  permissions_descriptor.basic.sender_hook_policy
-      | Receiver ->  permissions_descriptor.basic.receiver_hook_policy
-      end
-    end
+    )
 }
 
 function apply_transfer_policy (
