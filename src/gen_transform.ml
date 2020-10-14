@@ -3119,14 +3119,22 @@ let remove_storage_field_in_function (model : model) : model =
           in
           g (Mvar (id, Vparam, d, t)), a
         end
-      | Mapp (id, _) when MapString.mem (unloc id) map -> begin
+      | Mapp (id, app_args) when MapString.mem (unloc id) map -> begin
+
+          let ((app_args, (accu, map)) : 'c list * 'a) =
+            List.fold_left
+              (fun (pterms, accu) x ->
+                 let p, accu = aux accu x in
+                 pterms @ [p], accu) ([], (accu, map)) app_args
+          in
+
           let aaa = MapString.find (unloc id) map in
           let args = if MapString.mem fs_name map then MapString.find fs_name map else [] in
           let a = (List.map (fun (mt : mterm) ->
               ((match mt.node with Mvar(id, _, _, _) -> id | _ -> assert false), mt.type_, None) ) aaa) in
           let dargs = List.dedupcmp (fun (a : argument) (b : argument) -> cmp_lident (proj3_1 a) (proj3_1 b)) (a @ accu) in
           let dvars = List.dedupcmp cmp_mterm (aaa @ args) in
-          mt, (dargs, (MapString.add fs_name dvars map))
+          { mt with node = Mapp (id, app_args) }, (dargs, (MapString.add fs_name dvars map))
         end
       | _ -> fold_map_term g aux (accu, map) mt
     in
