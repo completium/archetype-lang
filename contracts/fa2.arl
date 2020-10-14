@@ -2,6 +2,11 @@ archetype fa2
 
 /* TYPES ---------------------------------------------------------------- */
 
+enum token_type =
+| FT
+| FA1_2
+| NFT
+
 enum operator_transfer_policy =
 | No_transfer
 | Owner_transfer
@@ -49,9 +54,9 @@ record transfer_descriptor_param {
 /* transfer argument type */
 
 record transfer_destination {
-  %to          : address;
-  token_id     : nat;
-  token_amount : nat
+  to_dest           : address;
+  token_id_dest     : nat;
+  token_amount_dest : nat
 }
 
 enum owner_type =
@@ -91,11 +96,11 @@ variable permissions_descriptor : permissions = {
   none<custom_policy>
 }
 
-asset ledger identified by token owner to big_map {
-  token  : nat;
-  owner  : address;
-  amount : nat = 0;
-  hook   : option<address> = none;
+asset ledger identified by token_id owner to big_map {
+  token_id  : nat;
+  owner     : address;
+  amount    : nat = 0;
+  hook      : option<address> = none;
 }
 
 asset operator identified by op_addr op_token_id op_owner_addr to big_map {
@@ -104,9 +109,17 @@ asset operator identified by op_addr op_token_id op_owner_addr to big_map {
   op_owner_addr : address;
 }
 
-asset tokens {
-  id : nat;
-  permissions_desc : basic_permissions;
+asset token {
+  id               : nat;
+  token_typ        : token_type;
+  permissions_desc : option<basic_permissions>;
+}
+
+asset allowance identified by addr_owner allowed_spender allowed_token_id to big_map {
+  addr_owner         : address;
+  allowed_spender    : address;
+  allowed_token_id   : nat;
+  allowed_amount     : nat;
 }
 
 /* UTIL FUNCTIONS -------------------------------------------------------------- */
@@ -116,7 +129,10 @@ function get_transfer_policy (tid : nat) : operator_transfer_policy {
     match_option permissions_descriptor.custom with // check custom policy
     | some(cust) ->
       if cust.tag = "FA2_PER_TOKEN" then begin // look up in tokens
-        tokens[tid].permissions_desc.transfer_policy
+        match_option token[tid].permissions_desc with
+        | some(pd) -> pd.transfer_policy
+        | none -> permissions_descriptor.basic.transfer_policy
+        end
       end else begin // fall back to default
         permissions_descriptor.basic.transfer_policy
       end
@@ -131,8 +147,14 @@ function get_hook_policy (tid : nat, ot : owner_type) : owner_hook_policy {
     | some(cust) ->
       if cust.tag = "FA2_PER_TOKEN" then begin // look up in tokens
         match ot with
-        | Sender   ->  tokens[tid].permissions_desc.sender_hook_policy
-        | Receiver ->  tokens[tid].permissions_desc.receiver_hook_policy
+        | Sender   ->  match_option token[tid].permissions_desc with
+          | some(pd) -> pd.sender_hook_policy
+          | none -> permissions_descriptor.basic.sender_hook_policy
+          end
+        | Receiver ->  match_option token[tid].permissions_desc with
+          | some(pd) -> pd.receiver_hook_policy
+          | none -> permissions_descriptor.basic.receiver_hook_policy
+          end
         end
       end else begin // fall back to default
         match ot with
@@ -160,13 +182,13 @@ function apply_transfer_policy (
       else
         some("FA2_TX_DENIED")
     | Owner_transfer ->
-      if caller = %from and ledger.contains((tr.token_id, %from)) then
+      if caller = %from and ledger.contains((tr.token_id_dest, %from)) then
         none<string>
       else
         some("FA2_NOT_OWNER")
     | Owner_or_operator_transfer ->
-      if (%caller = %from and ledger.contains((tr.token_id, %from))) or
-      operator.contains((caller,tr.token_id,%from)) then
+      if (%caller = %from and ledger.contains((tr.token_id_dest, %from))) or
+      operator.contains((caller,tr.token_id_dest,%from)) then
         none<string>
       else
         some("FA2_NOT_OPERATOR")
@@ -203,10 +225,10 @@ function apply_hook (
       match_option ledger[(itoken_id, iowner)].hook with
       | some(h) -> mk_op (h, tp, ot)
       | none ->
-        match ot with
-        | Sender   -> right<option<operation>, _>("FA2_SENDER_HOOK_UNDEFINED")
-        | Receiver -> right<option<operation>, _>("FA2_RECEIVER_HOOK_UNDEFINED")
-        end
+        right<option<operation>, _> (match ot with
+          | Sender   -> "FA2_SENDER_HOOK_UNDEFINED"
+          | Receiver -> "FA2_RECEIVER_HOOK_UNDEFINED"
+          end)
       end
     end
 }
@@ -222,9 +244,9 @@ function get_hook_param(c : address, f : address, tds : list<transfer_destinatio
   return { [ {
     from_ = some(f);
     txs = map(tds, td -> {
-      to_desc            = some(td.%to);
-      token_id_desc      = td.token_id;
-      token_amount_desc  = td.token_amount
+      to_desc            = some(td.to_dest);
+      token_id_desc      = td.token_id_dest;
+      token_amount_desc  = td.token_amount_dest
     })}]; c
   }
 }
@@ -237,19 +259,32 @@ function get_update_param (up : or<operator_param, operator_param>) : operator_p
     end
 }
 
+function get_amount (itoken_id : nat, iamount : nat) : nat {
+  return
+    match token[itoken_id].token_typ with
+    | FT    -> iamount
+    | FA1_2 -> iamount
+    | NFT   -> if iamount > 0 then 1 else 0
+    end
+}
+
 /* ENTRY POINTS -------------------------------------------------------------- */
 
 entry add_token (
-  new_token_id : nat,
-  totalsupply  : nat,
-  owner_hook   : option<address>,
-  perms        : basic_permissions) {
+  new_token_id           : nat,
+  new_token_type         : token_type,
+  totalsupply            : nat,
+  new_owner              : address,
+  owner_hook             : option<address>,
+  new_token_permissions  : option<basic_permissions>) {
+  called by admin
   failif {
-    f0 : tokens.contains(new_token_id);
+    f0 : token.contains(new_token_id);
+    f1 : new_token_type = NFT and totalsupply <> 1
   }
   effect {
-    ledger.add ({ new_token_id; caller; totalsupply; owner_hook });
-    tokens.add ({ new_token_id; perms });
+    token.add ({ new_token_id; new_token_type; new_token_permissions });
+    ledger.add ({ new_token_id; new_owner; totalsupply; owner_hook });
   }
 }
 
@@ -264,17 +299,18 @@ entry %transfer(%from : address, tds : list<transfer_destination>) {
   var applied_hooks : set<address * nat> = []; // do not apply hook twice
   var hook_param = get_hook_param(caller, %from, tds);
   for td in tds do
-    var applied_hook_id = if is_per_token() then td.token_id else 0;
-    var transfer_p = get_transfer_policy(td.token_id);
+    var transfer_amount = get_amount(td.token_id_dest, td.token_amount_dest);
+    var applied_hook_id = if is_per_token() then td.token_id_dest else 0;
+    var transfer_p = get_transfer_policy(td.token_id_dest);
     match_option apply_transfer_policy(transfer_p, %from, td) with
     | some(msg) -> fail(msg)
     | none -> begin
         /* basic checks ----------------------------------------------------- */
-        dorequire(tokens.contains(td.token_id), "FA2_TOKEN_UNDEFINED");
-        dorequire(ledger[(td.token_id, %from)].amount >= td.token_amount, "FA2_INSUFFICIENT_BALANCE");
+        dorequire(token.contains(td.token_id_dest), "FA2_TOKEN_UNDEFINED");
+        dorequire(ledger[(td.token_id_dest, %from)].amount >= transfer_amount, "FA2_INSUFFICIENT_BALANCE");
         /* apply sender hook ------------------------------------------------ */
         if not contains(applied_hooks, (%from, applied_hook_id)) then begin
-          match_or apply_hook(td.token_id, %from, hook_param, Sender) with
+          match_or apply_hook(td.token_id_dest, %from, hook_param, Sender) with
           | left(sop) -> match_option sop with
             | some (op) -> operations := prepend(operations, op)
             | none -> ()
@@ -284,19 +320,27 @@ entry %transfer(%from : address, tds : list<transfer_destination>) {
           applied_hooks := add(applied_hooks, (%from, applied_hook_id));
         end;
         /* apply receiver hook ---------------------------------------------- */
-        if not contains(applied_hooks, (td.%to, applied_hook_id)) then begin
-          match_or apply_hook(td.token_id, td.%to, hook_param, Receiver) with
+        if not contains(applied_hooks, (td.to_dest, applied_hook_id)) then begin
+          match_or apply_hook(td.token_id_dest, td.%to_dest, hook_param, Receiver) with
           | left(sop) -> match_option sop with
             | some (op) -> operations := prepend(operations, op)
             | none -> ()
             end
           | right(msg) -> fail (msg)
           end;
-          applied_hooks := add(applied_hooks, (td.%to, applied_hook_id));
+          applied_hooks := add(applied_hooks, (td.to_dest, applied_hook_id));
+        end;
+        /* check allowance for FA 1.2 --------------------------------------- */
+        if token[td.token_id_dest].token_typ = FA1_2 then begin
+          if caller <> %from then begin
+            var current = allowance[(%from, caller,td.token_id_dest)].allowed_amount;
+            dofailif(current < transfer_amount, ("NotEnoughAllowance", ((transfer_amount, current))));
+            allowance.update((%from, caller, td.token_id_dest), { allowed_amount -=  transfer_amount });
+          end;
         end;
         /* update ledger ---------------------------------------------------- */
-        ledger.update((td.token_id, %from), { amount -= td.token_amount });
-        ledger.addupdate((td.token_id, td.%to), { amount += td.token_amount });
+        ledger.update((td.token_id_dest, %from), { amount -= transfer_amount });
+        ledger.addupdate((td.token_id_dest, td.to_dest), { amount += transfer_amount });
       end
     end
   done
@@ -325,4 +369,23 @@ entry update_operators (upl : list<or<operator_param, operator_param>>) {
       operator.remove((param.opp_operator, param.opp_token_id, param.opp_owner))
     end;
   done;
+}
+
+entry approve (spender : address, value : nat, itoken_id : nat) {
+  require {
+    r1 otherwise "NOT_A_FA1_2" : token[itoken_id].token_typ = FA1_2
+  }
+  effect {
+    match get_transfer_policy(itoken_id) with
+    | No_transfer -> fail("FA2_OPERATORS_UNSUPPORTED")
+    | Owner_transfer -> fail("FA2_OPERATORS_UNSUPPORTED")
+    | Owner_or_operator_transfer -> ()
+    end;
+    var k = (caller, spender, itoken_id);
+    if allowance.contains(k) then begin
+      var previous = allowance[k].allowed_amount;
+      dofailif(previous > 0 and value > 0, (("UnsafeAllowanceChange", previous)));
+    end;
+    allowance.addupdate( k, { allowed_amount = value });
+  }
 }
