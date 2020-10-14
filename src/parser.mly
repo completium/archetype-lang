@@ -654,7 +654,7 @@ on_value:
 
 transition:
   TRANSITION exts=option(extensions) x=ident
-    args=function_args on=on_value? LBRACE xs=entry_properties FROM f=expr trs=transitions RBRACE
+    args=function_args on=on_value? LBRACE xs=entry_properties FROM f=simple_expr trs=transitions RBRACE
       { Dtransition (x, args, on, f, xs, trs, exts) }
 
 %inline transitems_eq:
@@ -778,7 +778,7 @@ ident_typ_q:
 
 %inline from_expr:
 |                { None }
-| FROM e=expr    { Some e }
+| FROM e=simple_expr    { Some e }
 
 expr_r:
  | LPAREN RPAREN
@@ -833,7 +833,7 @@ expr_r:
  | x=expr op=assignment_operator_expr y=expr
      { Eassign (op, x, y) }
 
- | TRANSFER x=simple_expr AT
+ | TRANSFER x=simple_expr
      { Etransfer (TToperation (x)) }
 
  | TRANSFER x=simple_expr TO y=simple_expr

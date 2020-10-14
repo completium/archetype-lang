@@ -4,6 +4,6 @@ entry exec() {
   var res : int = length(operations);
   var e   : contract<unit> = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg;
   var op  : operation = mkoperation(0tz, e, ());
-  transfer op at;
+  transfer op;
   dorequire(res = 1, "ok")
 }

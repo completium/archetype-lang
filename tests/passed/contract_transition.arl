@@ -24,7 +24,7 @@ transition mytr_a () {
 }
 
 transition mytr_b () {
-  from First or Second
+  from (First or Second)
   to Third
   with effect {
     ()
