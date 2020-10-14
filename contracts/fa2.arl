@@ -331,6 +331,16 @@ entry add_token (
   }
 }
 
+entry set_permissions_descriptor () {
+  called by admin
+  effect {
+    permissions_descriptor := {
+      per_token_policy;
+      some<address> (selfaddress);
+    }
+  }
+}
+
 getter token_metadata_registry () : address {
   return selfaddress
 }
