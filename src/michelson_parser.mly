@@ -208,6 +208,11 @@ annot:
 |              { None }
 | s=ANNOTATION { Some s }
 
+%inline double_annot:
+|                           { None }
+| _a=ANNOTATION             { None }
+| a=ANNOTATION b=ANNOTATION { Some (a, b) }
+
 type_:
  | t=paren(type_)                     { t }
  | TADDRESS a=annot                   { mk_type ?annotation:a (Taddress) }
@@ -333,11 +338,11 @@ instruction:
  | NONE t=type_                      { NONE t }
  | NOT                               { NOT }
  | NOW                               { NOW }
- | OR                                { OR }
+ | OR _a=annot                       { OR }
  | PACK                              { PACK }
- | PAIR                              { PAIR }
+ | PAIR _a=double_annot              { PAIR }
  | PAIRING_CHECK                     { PAIRING_CHECK }
- | PUSH t=type_ d=data               { PUSH (t, d) }
+ | PUSH _a=annot t=type_ d=data      { PUSH (t, d) }
  | RENAME                            { RENAME }
  | RIGHT t=type_                     { RIGHT t }
  | SAPLING_EMPTY_STATE               { SAPLING_EMPTY_STATE }
@@ -366,7 +371,7 @@ instruction:
  | TRANSFER_TOKENS                   { TRANSFER_TOKENS }
  | UNIT                              { UNIT }
  | UNPACK t=type_                    { UNPACK t }
- | UNPAIR                            { UNPAIR }
+ | UNPAIR _a=double_annot            { UNPAIR }
  | UPDATE                            { UPDATE }
  | VOTING_POWER                      { VOTING_POWER }
  | XOR                               { XOR }

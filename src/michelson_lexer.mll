@@ -177,7 +177,9 @@ let blank    = [' ' '\t' '\r']
 let newline  = '\n'
 let digit    = ['0'-'9']
 let ident    = (['a'-'z' 'A'-'Z' '0'-'9' '_' ])+
-let annot    = '%' ident
+let tannot    = ':' ident
+let pannot    = '%' ident
+let aannot    = '@' ident
 let bytes    = "0x" (['a'-'f' 'A'-'F' '0'-'9' ])+
 let number   = ("-")* digit+
 
@@ -188,8 +190,10 @@ rule token = parse
 
   | (bytes as v)          { BYTES v }
   | (number as n)         { NUMBER (Big_int.big_int_of_string n) }
-  | annot as s            { ANNOTATION (String.sub s 1 ((String.length s) - 1))}
-  | ident as id           { try  Hashtbl.find keywords id with Not_found -> assert false }
+  | tannot as s           { ANNOTATION (String.sub s 1 ((String.length s) - 1))}
+  | aannot as s           { ANNOTATION (String.sub s 1 ((String.length s) - 1))}
+  | pannot as s           { ANNOTATION (String.sub s 1 ((String.length s) - 1))}
+  | ident as id           { try Hashtbl.find keywords id with Not_found -> Format.eprintf "Unknown: %s@." id; assert false }
 
   | "#"                   { comment_line lexbuf; token lexbuf }
   | "(*"                  { comment lexbuf; token lexbuf }
