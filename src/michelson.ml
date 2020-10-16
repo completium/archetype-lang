@@ -1160,8 +1160,7 @@ end = struct
     let ft = type_to_micheline in
     let fd = data_to_micheline in
     let mk ?(args=[]) ?(annots=[]) x = Oprim (mk_prim ~args ~annots x) in
-    let mk_int n = Oint (Int.to_string n) in
-    (* let mk_str s = Ostring s in *)
+    let mk_int n = Oint (string_of_int n) in
     let mk_array l = Oarray (List.map f l) in
     let fan = function | Some v -> [v] | None -> [] in
     match c with

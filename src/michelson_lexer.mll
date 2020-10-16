@@ -190,9 +190,9 @@ rule token = parse
 
   | (bytes as v)          { BYTES v }
   | (number as n)         { NUMBER (Big_int.big_int_of_string n) }
-  | tannot as s           { ANNOTATION (String.sub s 1 ((String.length s) - 1))}
-  | aannot as s           { ANNOTATION (String.sub s 1 ((String.length s) - 1))}
-  | pannot as s           { ANNOTATION (String.sub s 1 ((String.length s) - 1))}
+  | tannot as s           { ANNOTATION (s)}
+  | aannot as s           { ANNOTATION (s)}
+  | pannot as s           { ANNOTATION (s)}
   | ident as id           { try Hashtbl.find keywords id with Not_found -> Format.eprintf "Unknown: %s@." id; assert false }
 
   | "#"                   { comment_line lexbuf; token lexbuf }

@@ -40,6 +40,8 @@ let get_fun_name = T.Utils.get_fun_name Printer_michelson.show_pretty_type
 let operations = "_ops"
 let fun_result = "_fun_res"
 
+let mk_fannot x = "%" ^ x
+
 type env_ir = {
   function_p: (ident * (ident * T.type_) list) option
 }
@@ -107,7 +109,7 @@ let to_ir (model : M.model) : T.ir =
       | Tvset  _ -> assert false
       | Ttrace _ -> assert false
     in
-    T.mk_type ?annotation node
+    T.mk_type ?annotation:(Option.map (fun x -> mk_fannot x) annotation) node
   in
 
   let rec to_data (mt : M.mterm) : T.data =
@@ -166,7 +168,7 @@ let to_ir (model : M.model) : T.ir =
 
   let l = List.map (
       fun (si : M.storage_item) ->
-        (unloc si.id), to_type ~annotation:(unloc si.id) si.typ, to_data si.default)
+        (unloc si.id), to_type ~annotation:(mk_fannot (unloc si.id)) si.typ, to_data si.default)
       model.storage
   in
 
@@ -851,7 +853,7 @@ let to_ir (model : M.model) : T.ir =
         | Getter _ -> emit_error (UnsupportedTerm ("Getter"))
         | Function (fs, ret) -> funs @ [for_fs_fun env fs ret], entries) ([], []) model.functions
   in
-  let annot a (t : T.type_) = { t with annotation = Some a} in
+  let annot a (t : T.type_) = { t with annotation = Some (mk_fannot a)} in
   let l = List.map (fun (x, y, _) -> (x, y)) l in
   let parameter : T.type_ =
     let for_entry (e : T.entry) =

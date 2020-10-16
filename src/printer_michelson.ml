@@ -3,7 +3,7 @@ open Printer_tools
 open Michelson
 
 let rec pp_type fmt (t : type_) =
-  let pp_annot fmt a = Format.fprintf fmt " %%%a" pp_str a in
+  let pp_annot fmt a = Format.fprintf fmt " %a" pp_str a in
   let pp_annot_opt fmt _ = (pp_option pp_annot) fmt t.annotation in
   let pp_simple_a str =
     match t.annotation with

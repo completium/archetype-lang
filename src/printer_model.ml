@@ -91,7 +91,7 @@ let rec pp_type fmt t =
     | Ttrace _ -> Format.fprintf fmt "todo"
   in
   match get_atype t with
-  | Some a -> Format.fprintf fmt "(%a %%%a)" pp_ntype (get_ntype t) pp_id a
+  | Some a -> Format.fprintf fmt "(%a %a)" pp_ntype (get_ntype t) pp_id a
   | None -> pp_ntype fmt (get_ntype t)
 
 let pp_operator fmt op =
