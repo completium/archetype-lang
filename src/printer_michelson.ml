@@ -364,6 +364,8 @@ let rec pp_dexpr fmt (de : dexpr) =
   | Dvar t             -> pp "var%a" (fun fmt -> (if Option.is_some t.annotation then pp_type fmt else (pp_paren pp_type) fmt)) t
   | Dstorage t         -> pp "storage(%a)" pp_type t
   | Doperations        -> pp "operations"
+  | Dlbdparam          -> pp "lambda_parameter"
+  | Dlbdresult         -> pp "lambda_result"
   | Ddata d            -> pp "data(%a)" pp_data d
   | Dzop op -> begin
       match op with
@@ -440,22 +442,24 @@ let rec pp_dexpr fmt (de : dexpr) =
       | Tupdate          -> pp "update(%a, %a, %a)"          f a1 f a2 f a3
       | Ttransfer_tokens -> pp "transfer_tokens(%a, %a, %a)" f a1 f a2 f a3
     end
+  | Dapp (l, a)              -> pp "app(%a, %a)" f l f a
+  | Dlambda (at, rt, instrs) -> pp "lambda<%a>(@[(_ : %a) ->@\n@[%a@]@])" pp_type at pp_type rt (pp_list ";@\n" pp_dinstruction) instrs
 
-let rec pp_dinstruction fmt i =
+and pp_dinstruction fmt i =
   let pp x = Format.fprintf fmt x in
   let seq is = (pp_list ";@\n" pp_dinstruction) is in
   match i with
-  | Ddecl      id       -> pp "var x%i" id
-  | Dassign   (e, v)    -> pp "%a <- %a" pp_dexpr e pp_dexpr v
-  | Dfail      e        -> pp "fail(%a)" pp_dexpr e
-  | Dexec     (l, arg)  -> pp "exec(%a, %a)" pp_dexpr l pp_dexpr arg
-  | Dif       (c, t, e) -> pp "if (%a)@\nthen (@[%a@])@\nelse (@[%a@])" pp_dexpr c seq t seq e
-  | Difcons   (c, t, e) -> pp "ifcons (%a)@\nthen (@[%a@])@\nelse (@[%a@])" pp_dexpr c seq t seq e
-  | Difleft   (c, t, e) -> pp "ifleft (%a)@\nthen (@[%a@])@\nelse (@[%a@])" pp_dexpr c seq t seq e
-  | Difsome   (c, t, e) -> pp "ifsome (%a)@\nthen (@[%a@])@\nelse (@[%a@])" pp_dexpr c seq t seq e
-  | Dloop     (c, b)    -> pp "loop (%a) do@\n  @[%a@]@\ndone" pp_dexpr c seq b
-  | Dloopleft (c, b)    -> pp "loopleft (%a) do@\n  @[%a@]@\ndone" pp_dexpr c seq b
-  | Diter     (c, b)    -> pp "iter (%a) do@\n  @[%a@]@\ndone" pp_dexpr c seq b
+  | Ddecl      id                -> pp "var x%i" id
+  | Dassign   (e, v)             -> pp "%a <- %a" pp_dexpr e pp_dexpr v
+  | Dfail      e                 -> pp "fail(%a)" pp_dexpr e
+  | Dexec     (l, arg)           -> pp "exec(%a, %a)" pp_dexpr l pp_dexpr arg
+  | Dif       (c, t, e)          -> pp "if (%a)@\nthen (@[%a@])@\nelse (@[%a@])" pp_dexpr c seq t seq e
+  | Difcons   (c, ihd, it, t, e) -> pp "ifcons (%a|x%i::x%i)@\nthen (@[%a@])@\nelse (@[%a@])" pp_dexpr c ihd it seq t seq e
+  | Difleft   (c, it, t, ie, e)  -> pp "ifleft (%a|x%i|x%i)@\nthen (@[%a@])@\nelse (@[%a@])" pp_dexpr c it ie seq t seq e
+  | Difnone   (c, n, iv, v)      -> pp "ifnone (%a|x%i)@\nthen (@[%a@])@\nelse (@[%a@])" pp_dexpr c iv seq n seq v
+  | Dloop     (c, b)             -> pp "loop (%a) do@\n  @[%a@]@\ndone" pp_dexpr c seq b
+  | Dloopleft (c, b)             -> pp "loopleft (%a) do@\n  @[%a@]@\ndone" pp_dexpr c seq b
+  | Diter     (c, b)             -> pp "iter (%a) do@\n  @[%a@]@\ndone" pp_dexpr c seq b
 
 let pp_dinstructions fmt (s : dinstruction list) =
   (pp_list "@\n" pp_dinstruction) fmt s

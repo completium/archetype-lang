@@ -127,11 +127,15 @@ let to_dir (michelson, env : T.michelson * env) =
               | T.Dvar        _ -> 0
               | T.Dstorage    _ -> 0
               | T.Doperations   -> 0
+              | T.Dlbdparam     -> 0
+              | T.Dlbdresult    -> 0
               | T.Ddata       _ -> 0
               | T.Dzop        _ -> 1
               | T.Duop        _ -> 1
               | T.Dbop        _ -> 1
               | T.Dtop        _ -> 1
+              | T.Dapp        _ -> 1
+              | T.Dlambda     _ -> 1
             in
 
             let is_assigned_a =
@@ -352,9 +356,9 @@ let to_dir (michelson, env : T.michelson * env) =
       let fif =
         match k with
         | `Base -> fun (x, y, z) -> T.Dif (x, y, z)
-        | `Cons -> fun (x, y, z) -> T.Difcons (x, y, z)
-        | `Left -> fun (x, y, z) -> T.Difleft (x, y, z)
-        | `None -> fun (x, y, z) -> T.Difsome (x, y, z)
+        | `Cons -> fun (x, y, z) -> T.Difcons (x, 0, 0, y, z)
+        | `Left -> fun (x, y, z) -> T.Difleft (x, 0, y, 0, z)
+        | `None -> fun (x, y, z) -> T.Difnone (x, y, 0, z)
       in
 
       let sys = add_instruction env sys (fif (x, sys_then, sys_else)) in
@@ -373,7 +377,16 @@ let to_dir (michelson, env : T.michelson * env) =
         f env sys (it @ List.rev l) stack
       end
     | APPLY::_       -> assert false
-    | EXEC::_        -> assert false
+    | EXEC::it       -> begin
+        match stack with
+        | a::st ->
+          let x = T.dalpha env.cpt_alpha in
+          let env = inc_cpt_alpha env in
+          let y = T.dalpha env.cpt_alpha in
+          let env = inc_cpt_alpha env in
+          f env (add_instruction env sys (T.Dassign (a, Dapp (y, x)))) it (x::y::st)
+        | _ -> emit_error ()
+      end
     | FAILWITH::it   -> begin
         let env = {env with fail = true} in
         let x = T.dalpha env.cpt_alpha in
@@ -385,7 +398,26 @@ let to_dir (michelson, env : T.michelson * env) =
     | IF_LEFT (th, el)::it -> interp_if `Left (th, el) it
     | IF_NONE (th, el)::it -> interp_if `None (th, el) it
     | ITER _::_      -> assert false
-    | LAMBDA _::_    -> assert false
+    | LAMBDA (rt, at, instrs)::it -> begin
+        match stack with
+        | a::t -> begin
+            let instrs =
+              let env = mk_ir_env () in
+              let stack = [T.Dlbdresult] in
+              let body, stack, env = interp env [] (List.rev instrs) stack in
+              let body =
+                match stack with
+                | [x] -> add_instruction env body (T.Dassign (x, T.Dlbdparam))
+                | _ -> emit_error ()
+              in
+              trace env instrs stack sys;
+              body
+            in
+            let accu = add_instruction env sys (T.Dassign (a, T.Dlambda (at, rt, instrs))) in
+            f env accu it t
+          end
+        | _ -> emit_error ()
+      end
     | LOOP _::_      -> assert false
     | LOOP_LEFT _::_ -> assert false
 
@@ -627,15 +659,21 @@ let to_ir (dir, env : T.dprogram * env) : T.ir * env =
     | Dvar t                 -> Ivar (Option.get t.annotation)
     | Dstorage _t            -> assert false
     | Doperations            -> assert false
+    | Dlbdparam              -> assert false
+    | Dlbdresult             -> assert false
     | Ddata d                -> Iconst (T.tnat, d)
     | Dzop op                -> Izop op
     | Duop (op, a)           -> Iunop (op, f a)
     | Dbop (op, a, b)        -> Ibinop (op, f a, f b)
     | Dtop (op, a, b, c)     -> Iterop (op, f a, f b, f c)
+    | Dapp _                 -> assert false
+    | Dlambda _              -> assert false
   in
 
   let rec for_instr (i : T.dinstruction) : T.instruction =
-    let _f = for_instr in
+    let f = for_instr in
+    let seq x = T.Iseq (List.map f x) in
+    let to_ident n = Format.sprintf "x%i" n in
     let g = for_expr in
     match i with
     | Ddecl      _id         -> assert false
@@ -646,15 +684,15 @@ let to_ir (dir, env : T.dprogram * env) : T.ir * env =
         | Doperations -> Iassign("operations", v)
         | _ -> assert false
       end
-    | Dfail      e           -> Iunop (Ufail, g e)
-    | Dexec     (_id, _arg)  -> assert false
-    | Dif       (c, t, e) -> Iif (g c, Iseq (List.map _f t), Iseq (List.map _f e), T.tunit)
-    | Difcons   (_c, _t, _e) -> assert false
-    | Difleft   (_c, _t, _e) -> assert false
-    | Difsome   (_c, _t, _e) -> assert false
-    | Dloop     (_c, _b)     -> assert false
-    | Dloopleft (_c, _b)     -> assert false
-    | Diter     (_c, _b)     -> assert false
+    | Dfail      e                 -> Iunop (Ufail, g e)
+    | Dexec     (_id, _arg)        -> assert false
+    | Dif       (c, t, e)          -> Iif     (g c, seq t, seq e, T.tunit)
+    | Difcons   (c, ihd, it, t, e) -> Iifcons (g c, to_ident ihd, to_ident it, seq t, seq e, T.tunit)
+    | Difleft   (c, il, l, ir, r)  -> Iifleft (g c, to_ident il, seq l, to_ident ir, seq r, T.tunit)
+    | Difnone   (c, n, iv, v)      -> Iifnone (g c, seq n, to_ident iv, seq v, T.tunit)
+    | Dloop     (_c, _b)           -> assert false
+    | Dloopleft (_c, _b)           -> assert false
+    | Diter     (_c, _b)           -> assert false
   in
 
   let name = dir.name in
