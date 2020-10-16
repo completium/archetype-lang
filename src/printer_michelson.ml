@@ -356,6 +356,46 @@ let pp_michelson fmt (m : michelson) =
     pp_code m.code
 (* -------------------------------------------------------------------------- *)
 
+let pp_a fmt (tag, value) =
+  Format.fprintf fmt "\"%s\": \"%s\"" tag value
+
+let pp_prim fmt pp (p : prim) =
+  if List.is_empty p.args && List.is_empty p.annots
+  then Format.fprintf fmt "{  %a  }" pp_a ("prim", p.prim)
+  else
+    let ppf fmt (l, tag, pp, nl) =
+      if not (List.is_empty l)
+      then begin
+        Format.fprintf fmt ",@\n\"%s\": [@\n@[  @[%a@]@]@\n]" tag (pp_list ",@\n" pp) l;
+        if nl
+        then Format.fprintf fmt "@\n"
+      end
+    in
+    Format.fprintf fmt "{  @[%a%a%a@]@\n}"
+      pp_a ("prim", p.prim)
+      ppf (p.args, "args", pp, not (List.is_empty p.annots))
+      ppf (p.annots, "annots", (fun fmt s -> Format.fprintf fmt "\"%s\"" s), false)
+
+let rec pp_obj_micheline fmt (o : obj_micheline) =
+  let pp x = Format.fprintf fmt "{  %a  }" x in
+  match o with
+  | Oprim   p -> pp_prim fmt pp_obj_micheline p
+  | Ostring v -> pp pp_a ("string", v)
+  | Obytes  v -> pp pp_a ("bytes", v)
+  | Oint    v -> pp pp_a ("int", v)
+  | Oarray  l -> Format.fprintf fmt "[  %a  ]" (pp_list ",@\n" pp_obj_micheline) l
+
+let pp_micheline fmt (m : micheline) =
+  Format.fprintf fmt
+    "{@\n  \
+     \"code\":@\n    [  @[%a@]  ]@\n  \
+     \"storage\":@\n    @[%a@];@\n\
+     }"
+    (pp_list ",@\n" pp_obj_micheline) m.code
+    pp_obj_micheline m.storage
+
+(* -------------------------------------------------------------------------- *)
+
 let rec pp_dexpr fmt (de : dexpr) =
   let pp x = Format.fprintf fmt x in
   let f = pp_dexpr in

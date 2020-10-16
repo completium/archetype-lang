@@ -31,6 +31,8 @@ variable op1 : option<int> = none
 variable op2 : option<nat> = some(0)
 variable b : bytes = 0xff
 variable vunit : unit = ()
+variable oleft  : or<string, nat> = left<nat>("str")
+variable oright : or<string, nat> = right<string>(0)
 
 entry exec () {
   ()

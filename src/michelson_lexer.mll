@@ -177,9 +177,9 @@ let blank    = [' ' '\t' '\r']
 let newline  = '\n'
 let digit    = ['0'-'9']
 let ident    = (['a'-'z' 'A'-'Z' '0'-'9' '_' ])+
-let tannot    = ':' ident
-let pannot    = '%' ident
-let aannot    = '@' ident
+let tannot   = ':' ident
+let pannot   = '%' ident
+let aannot   = '@' ident
 let bytes    = "0x" (['a'-'f' 'A'-'F' '0'-'9' ])+
 let number   = ("-")* digit+
 

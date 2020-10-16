@@ -348,6 +348,27 @@ type michelson = {
 }
 [@@deriving show {with_path = false}]
 
+type prim = {
+  prim: ident;
+  args: obj_micheline list;
+  annots: ident list;
+}
+[@@deriving show {with_path = false}]
+
+and obj_micheline =
+  | Oprim of prim
+  | Ostring of string
+  | Obytes of string
+  | Oint of string
+  | Oarray of obj_micheline list
+[@@deriving show {with_path = false}]
+
+type micheline = {
+  code: obj_micheline list;
+  storage: obj_micheline;
+}
+[@@deriving show {with_path = false}]
+
 (* -------------------------------------------------------------------- *)
 type alpha_ident = int
 [@@deriving show {with_path = false}]
@@ -405,8 +426,14 @@ let mk_entry name args eargs body : entry =
 let mk_ir name storage_type storage_data storage_list ?(with_operations = false) parameter funs entries : ir =
   { name; storage_type; storage_data; storage_list; with_operations; parameter; funs; entries }
 
-let mk_michelson storage parameter code =
+let mk_michelson storage parameter code : michelson =
   { storage; parameter; code }
+
+let mk_prim ?(args=[]) ?(annots=[]) prim : prim =
+  { prim; args; annots }
+
+let mk_micheline code storage : micheline =
+  { code; storage; }
 
 let mk_dprogram storage parameter storage_data name code =
   { name; storage; parameter; storage_data; code }
@@ -990,6 +1017,7 @@ module Utils : sig
   val get_fun_name : (type_ -> ident) -> builtin -> ident
   val flat         : code -> code
   val optim        : code -> code
+  val to_micheline : michelson -> data -> micheline
 
 end = struct
 
@@ -1067,6 +1095,192 @@ end = struct
     c
     |> handle_failwith
     |> factorize_instrs
-    (* |> factorize_double_branches *)
+  (* |> factorize_double_branches *)
+
+  let rec type_to_micheline (t : type_) : obj_micheline =
+    let prim, args =
+      match t.node with
+      | Taddress             -> "address", []
+      | Tbig_map (k, v)      -> "big_map", [k; v]
+      | Tbool                -> "bool", []
+      | Tbytes               -> "bytes", []
+      | Tchain_id            -> "chain_id", []
+      | Tcontract t          -> "contract", [t]
+      | Tint                 -> "int", []
+      | Tkey                 -> "key", []
+      | Tkey_hash            -> "key_hash", []
+      | Tlambda (a, r)       -> "lambda", [a; r]
+      | Tlist t              -> "list", [t]
+      | Tmap (k, v)          -> "map", [k; v]
+      | Tmutez               -> "mutez", []
+      | Tnat                 -> "nat", []
+      | Toperation           -> "operation", []
+      | Toption t            -> "option", [t]
+      | Tor (l, r)           -> "or", [l; r]
+      | Tpair (l, r)         -> "pair", [l; r]
+      | Tset t               -> "set", [t]
+      | Tsignature           -> "signature", []
+      | Tstring              -> "string", []
+      | Ttimestamp           -> "timestamp", []
+      | Tunit                -> "unit", []
+      | Tsapling_transaction -> "sapling_transaction", []
+      | Tsapling_state       -> "sapling_state", []
+      | Tnever               -> "never", []
+      | Tbls12_381_g1        -> "bls12_381_g1", []
+      | Tbls12_381_g2        -> "bls12_381_g2", []
+      | Tbls12_381_fr        -> "bls12_381_fr", []
+      | Tbaker_hash          -> "baker_hash", []
+      | Tbaker_operation     -> "baker_operation", []
+      | Tpvss_key            -> "pvss_key", []
+    in
+    let args = if List.is_empty args then None else Some (List.map type_to_micheline args) in
+    let annots = Option.bind (fun x -> Some [x]) t.annotation in
+    let prim = mk_prim ?args ?annots prim in
+    Oprim prim
+
+  let rec data_to_micheline (d : data) : obj_micheline =
+    let f = data_to_micheline in
+    match d with
+    | Dint n       -> Oint (Big_int.string_of_big_int n)
+    | Dstring v    -> Ostring v
+    | Dbytes v     -> Obytes v
+    | Dunit        -> Oprim (mk_prim "Unit")
+    | Dtrue        -> Oprim (mk_prim "True")
+    | Dfalse       -> Oprim (mk_prim "False")
+    | Dpair (l, r) -> Oprim (mk_prim ~args:[f l; f r] "Pair")
+    | Dleft v      -> Oprim (mk_prim ~args:[f v] "Left")
+    | Dright v     -> Oprim (mk_prim ~args:[f v] "Right")
+    | Dsome v      -> Oprim (mk_prim ~args:[f v] "Some")
+    | Dnone        -> Oprim (mk_prim "None")
+    | Dlist l      -> Oarray (List.map f l)
+    | Delt (l, r)  -> Oprim (mk_prim ~args:[f l; f r] "Elt")
+
+  let rec code_to_micheline (c : code) : obj_micheline =
+    let f = code_to_micheline in
+    let ft = type_to_micheline in
+    let fd = data_to_micheline in
+    let mk ?(args=[]) ?(annots=[]) x = Oprim (mk_prim ~args ~annots x) in
+    let mk_int n = Oint (Int.to_string n) in
+    (* let mk_str s = Ostring s in *)
+    let mk_array l = Oarray (List.map f l) in
+    let fan = function | Some v -> [v] | None -> [] in
+    match c with
+    (* Control structures *)
+    | SEQ l                    -> mk ~args:(List.map f l) "code"
+    | APPLY                    -> mk "APPLY"
+    | EXEC                     -> mk "EXEC"
+    | FAILWITH                 -> mk "FAILWITH"
+    | IF (t, e)                -> mk ~args:[mk_array t; mk_array e] "IF"
+    | IF_CONS (t, e)           -> mk ~args:[mk_array t; mk_array e] "IF_CONS"
+    | IF_LEFT (t, e)           -> mk ~args:[mk_array t; mk_array e] "IF_LEFT"
+    | IF_NONE (t, e)           -> mk ~args:[mk_array t; mk_array e] "IF_NONE"
+    | ITER l                   -> mk ~args:[mk_array l] "ITER"
+    | LAMBDA (at, rt, body)    -> mk ~args:[ft at; ft rt; mk_array body] "LAMBDA"
+    | LOOP l                   -> mk ~args:[mk_array l] "LOOP"
+    | LOOP_LEFT l              -> mk ~args:[mk_array l] "LOOP_LEFT"
+    (* Stack manipulation *)
+    | DIG n                    -> mk ~args:[mk_int n] "DIG"
+    | DIP (n, l)               -> mk ~args:[mk_int n; mk_array l] "DIP"
+    | DROP n                   -> mk ~args:[mk_int n] "DROP"
+    | DUG n                    -> mk ~args:[mk_int n] "DUG"
+    | DUP                      -> mk "DUP"
+    | PUSH (t, d)              -> mk ~args:[ft t; fd d] "PUSH"
+    | SWAP                     -> mk "SWAP"
+    (* Arthmetic operations *)
+    | ABS                      -> mk "ABS"
+    | ADD                      -> mk "ADD"
+    | COMPARE                  -> mk "COMPARE"
+    | EDIV                     -> mk "EDIV"
+    | EQ                       -> mk "EQ"
+    | GE                       -> mk "GE"
+    | GT                       -> mk "GT"
+    | INT                      -> mk "INT"
+    | ISNAT                    -> mk "ISNAT"
+    | LE                       -> mk "LE"
+    | LSL                      -> mk "LSL"
+    | LSR                      -> mk "LSR"
+    | LT                       -> mk "LT"
+    | MUL                      -> mk "MUL"
+    | NEG                      -> mk "NEG"
+    | NEQ                      -> mk "NEQ"
+    | SUB                      -> mk "SUB"
+    (* Boolean operations *)
+    | AND                      -> mk "AND"
+    | NOT                      -> mk "NOT"
+    | OR                       -> mk "OR"
+    | XOR                      -> mk "XOR"
+    (* Cryptographic operations *)
+    | BLAKE2B                  -> mk "BLAKE2B"
+    | CHECK_SIGNATURE          -> mk "CHECK_SIGNATURE"
+    | HASH_KEY                 -> mk "HASH_KEY"
+    | SHA256                   -> mk "SHA256"
+    | SHA512                   -> mk "SHA512"
+    (* Blockchain operations *)
+    | ADDRESS                  -> mk "ADDRESS"
+    | AMOUNT                   -> mk "AMOUNT"
+    | BALANCE                  -> mk "BALANCE"
+    | CHAIN_ID                 -> mk "CHAIN_ID"
+    | CONTRACT (t, a)          -> mk ~args:[ft t] ~annots:(fan a) "CONTRACT"
+    | CREATE_CONTRACT l        -> mk ~args:[mk_array l] "CREATE_CONTRACT"
+    | IMPLICIT_ACCOUNT         -> mk "IMPLICIT_ACCOUNT"
+    | NOW                      -> mk "NOW"
+    | SELF                     -> mk "SELF"
+    | SENDER                   -> mk "SENDER"
+    | SET_DELEGATE             -> mk "SET_DELEGATE"
+    | SOURCE                   -> mk "SOURCE"
+    | TRANSFER_TOKENS          -> mk "TRANSFER_TOKENS"
+    (* Operations on data structures *)
+    | CAR                      -> mk "CAR"
+    | CDR                      -> mk "CDR"
+    | CONCAT                   -> mk "CONCAT"
+    | CONS                     -> mk "CONS"
+    | EMPTY_BIG_MAP  (k, v)    -> mk ~args:[ft k; ft v] "EMPTY_BIG_MAP"
+    | EMPTY_MAP      (k, v)    -> mk ~args:[ft k; ft v] "EMPTY_MAP"
+    | EMPTY_SET      t         -> mk ~args:[ft t] "EMPTY_SET"
+    | GET                      -> mk "GET"
+    | LEFT t                   -> mk ~args:[ft t] "LEFT"
+    | MAP  l                   -> mk ~args:[mk_array l] "MAP"
+    | MEM                      -> mk "MEM"
+    | NIL t                    -> mk ~args:[ft t] "NIL"
+    | NONE t                   -> mk ~args:[ft t] "NONE"
+    | PACK                     -> mk "PACK"
+    | PAIR                     -> mk "PAIR"
+    | RIGHT t                  -> mk ~args:[ft t] "RIGHT"
+    | SIZE                     -> mk "SIZE"
+    | SLICE                    -> mk "SLICE"
+    | SOME                     -> mk "SOME"
+    | UNIT                     -> mk "UNIT"
+    | UNPACK t                 -> mk ~args:[ft t] "UNPACK"
+    | UPDATE                   -> mk "UPDATE"
+    (* Other *)
+    | UNPAIR                   -> mk "UNPAIR"
+    | SELF_ADDRESS             -> mk "SELF_ADDRESS"
+    | CAST                     -> mk "CAST"
+    | CREATE_ACCOUNT           -> mk "CREATE_ACCOUNT"
+    | RENAME                   -> mk "RENAME"
+    | STEPS_TO_QUOTA           -> mk "STEPS_TO_QUOTA"
+    | LEVEL                    -> mk "LEVEL"
+    | SAPLING_EMPTY_STATE      -> mk "SAPLING_EMPTY_STATE"
+    | SAPLING_VERIFY_UPDATE    -> mk "SAPLING_VERIFY_UPDATE"
+    | NEVER                    -> mk "NEVER"
+    | VOTING_POWER             -> mk "VOTING_POWER"
+    | TOTAL_VOTING_POWER       -> mk "TOTAL_VOTING_POWER"
+    | KECCAK                   -> mk "KECCAK"
+    | SHA3                     -> mk "SHA3"
+    | PAIRING_CHECK            -> mk "PAIRING_CHECK"
+    | SUBMIT_PROPOSALS         -> mk "SUBMIT_PROPOSALS"
+    | SUBMIT_BALLOT            -> mk "SUBMIT_BALLOT"
+    | SET_BAKER_ACTIVE         -> mk "SET_BAKER_ACTIVE"
+    | TOGGLE_BAKER_DELEGATIONS -> mk "TOGGLE_BAKER_DELEGATIONS"
+    | SET_BAKER_CONSENSUS_KEY  -> mk "SET_BAKER_CONSENSUS_KEY"
+    | SET_BAKER_PVSS_KEY       -> mk "SET_BAKER_PVSS_KEY"
+
+
+  let to_micheline (m : michelson) (s : data) : micheline =
+    let storage   = type_to_micheline m.storage in
+    let parameter = type_to_micheline m.parameter in
+    let code      = code_to_micheline m.code in
+    let f tag x   = Oprim (mk_prim ~args:[x] tag) in
+    mk_micheline [f "storage" storage; f "parameter" parameter; f "code" code] (data_to_micheline s)
 
 end
