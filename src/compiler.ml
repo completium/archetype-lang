@@ -88,7 +88,9 @@ let output (model : Model.model) =
                     else begin
                       if !Options.opt_json then
                         let micheline = Michelson.Utils.to_micheline michelson ir.storage_data in
-                        Format.fprintf fmt "%a@." Printer_michelson.pp_micheline micheline
+                        if !Options.opt_rjson
+                        then Format.fprintf fmt "%a@." Michelson.pp_micheline micheline
+                        else Format.fprintf fmt "%a@." Printer_michelson.pp_micheline micheline
                       else
                         Format.fprintf fmt "# %a@.%a@."
                           Printer_michelson.pp_data ir.storage_data
@@ -459,7 +461,10 @@ let main () =
       "--raw-ir", Arg.Set Options.opt_raw_ir, " Same as -ri";
       "-rm", Arg.Set Options.opt_raw_michelson, " Print raw michelson";
       "--raw-michelson", Arg.Set Options.opt_raw_michelson, " Same as -rm";
-      "--json", Arg.Set Options.opt_json, " Json";
+      "-j", Arg.Set Options.opt_json, " Json";
+      "--json", Arg.Set Options.opt_json, " Same as -j";
+      "-rj", Arg.Set Options.opt_rjson, " Raw Json";
+      "--raw-json", Arg.Set Options.opt_rjson, " Same as -rj";
       "--trace", Arg.Set Options.opt_trace, " Activate trace";
       "-V", Arg.String (fun s -> Options.add_vids s), "<id> process specication identifiers";
       "-v", Arg.Unit (fun () -> print_version ()), " Show version number and exit";

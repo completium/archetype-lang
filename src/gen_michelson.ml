@@ -109,7 +109,7 @@ let to_ir (model : M.model) : T.ir =
       | Tvset  _ -> assert false
       | Ttrace _ -> assert false
     in
-    T.mk_type ?annotation:(Option.map (fun x -> mk_fannot x) annotation) node
+    T.mk_type ?annotation node
   in
 
   let rec to_data (mt : M.mterm) : T.data =
