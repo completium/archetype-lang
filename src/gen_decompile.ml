@@ -259,7 +259,7 @@ let to_dir (michelson, env : T.michelson * env) =
       | _ -> emit_error ()
     in
 
-    let interp_if k (th, el) it =
+    let _interp_if k (th, el) it =
 
       let add_vars b (sys, stack, env) =
         let add_var d (sys, stack, env) =
@@ -342,7 +342,7 @@ let to_dir (michelson, env : T.michelson * env) =
               let ast, bst = stack |> List.rev |> List.cut (l2 - 1) in
               let sys = List.fold_left (fun accu (x : T.dexpr) ->
                   match x with
-                  | T.Dalpha id -> [T.Ddecl id]
+                  (* | T.Dalpha id -> [T.Ddecl id] *)
                   | _ -> accu) sys bst in
               List.rev ast, sys
             end
@@ -358,7 +358,7 @@ let to_dir (michelson, env : T.michelson * env) =
 
       let fif =
         match k with
-        | `Base -> fun (x, y, z) -> T.Dif (x, y, z)
+        | `Base -> fun (x, y, z) -> T.Dif     (x, y, z)
         | `Cons -> fun (x, y, z) -> T.Difcons (x, 0, 0, y, z)
         | `Left -> fun (x, y, z) -> T.Difleft (x, 0, y, 0, z)
         | `None -> fun (x, y, z) -> T.Difnone (x, y, 0, z)
@@ -368,6 +368,34 @@ let to_dir (michelson, env : T.michelson * env) =
       let sys = List.fold_left (fun accu x -> add_instruction env accu x) sys decls in
 
       f env sys it (x::stack)
+    in
+
+    let interp_if k (th, el) it =
+      let sys_then, stack_then, env_then = interp env [] (List.rev th) stack in
+      let sys_else, stack_else, env_else = interp env [] (List.rev el) stack in
+
+      let stack_in =
+        match env_then.fail, env_else.fail with
+        | false, false -> stack_then
+        | true,  false -> stack_else
+        | false, true  -> stack_then
+        | true,  true  -> assert false
+      in
+
+      let fif =
+        match k with
+        | `Base -> fun (x, y, z) -> T.Dif     (x, y, z)
+        | `Cons -> fun (x, y, z) -> T.Difcons (x, 0, 0, y, z)
+        | `Left -> fun (x, y, z) -> T.Difleft (x, 0, y, 0, z)
+        | `None -> fun (x, y, z) -> T.Difnone (x, y, 0, z)
+      in
+
+      let x = T.dalpha env.cpt_alpha in
+      let env = inc_cpt_alpha env in
+
+      let sys = add_instruction env sys (fif (x, sys_then, sys_else)) in
+
+      f env sys it (x::stack_in)
     in
 
     trace env instrs stack sys;
@@ -409,7 +437,16 @@ let to_dir (michelson, env : T.michelson * env) =
     | IF_CONS (th, el)::it -> interp_if `Cons (th, el) it
     | IF_LEFT (th, el)::it -> interp_if `Left (th, el) it
     | IF_NONE (th, el)::it -> interp_if `None (th, el) it
-    | ITER _::_      -> assert false
+    | ITER cs::it -> begin
+        let c = T.dalpha env.cpt_alpha in
+        let env = inc_cpt_alpha env in
+        let stack = (c::stack) in
+        let body =
+          let instrs, _stack, _env = interp env [] (List.rev cs) stack in
+          instrs
+        in
+        f env (add_instruction env sys (T.Diter (c , body))) it stack
+      end
     | LAMBDA (rt, at, instrs)::it -> begin
         match stack with
         | a::t -> begin
