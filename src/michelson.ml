@@ -288,7 +288,7 @@ type instruction =
   | Iifnone     of instruction * instruction * ident * instruction * type_
   | Iifleft     of instruction * ident * instruction * ident * instruction * type_
   | Iifcons     of instruction * ident * ident * instruction * instruction * type_
-  | Iwhile      of instruction * instruction
+  | Iloop       of instruction * instruction
   | Iiter       of ident list * instruction * instruction
   | Iloopleft   of instruction * ident * instruction
   | Ilambda     of type_ * ident * type_ * instruction
@@ -374,32 +374,33 @@ type alpha_ident = int
 [@@deriving show {with_path = false}]
 
 type dexpr =
-  | Dalpha of alpha_ident
-  | Dvar of type_
-  | Dstorage of type_
+  | Dalpha    of alpha_ident
+  | Dvar      of type_
+  | Dstorage  of type_
   | Doperations
   | Dlbdparam
   | Dlbdresult
-  | Ddata of data
-  | Dzop of z_operator
-  | Duop of un_operator  * dexpr
-  | Dbop of bin_operator * dexpr * dexpr
-  | Dtop of ter_operator * dexpr * dexpr * dexpr
-  | Dapp of dexpr * dexpr
-  | Dlambda of type_ * type_ * dinstruction list
+  | Ddata     of data
+  | Dzop      of z_operator
+  | Duop      of un_operator  * dexpr
+  | Dbop      of bin_operator * dexpr * dexpr
+  | Dtop      of ter_operator * dexpr * dexpr * dexpr
+  | Dapply    of dexpr * dexpr
+  | Dexec     of dexpr * dexpr
+  | Dlambda   of type_ * type_ * dinstruction list
+  | Dloopleft of dexpr * dinstruction list
+  | Dmap      of dexpr * dinstruction list
 [@@deriving show {with_path = false}]
 
 and dinstruction =
   | Ddecl     of alpha_ident
   | Dassign   of dexpr * dexpr
   | Dfail     of dexpr
-  | Dexec     of dexpr * dexpr
   | Dif       of dexpr * dinstruction list * dinstruction list
   | Difcons   of dexpr * alpha_ident * alpha_ident * dinstruction list * dinstruction list
   | Difleft   of dexpr * alpha_ident * dinstruction list * alpha_ident * dinstruction list
   | Difnone   of dexpr * dinstruction list * alpha_ident * dinstruction list
   | Dloop     of dexpr * dinstruction list
-  | Dloopleft of dexpr * dinstruction list
   | Diter     of dexpr * dinstruction list
 [@@deriving show {with_path = false}]
 
@@ -914,8 +915,11 @@ let rec cmp_dexpr (lhs : dexpr) (rhs : dexpr) =
   | Duop (op1, x1), Duop (op2, x2)                   -> cmp_un_operator op1 op2 && cmp_dexpr x1 x2
   | Dbop (op1, x1, y1), Dbop (op2, x2, y2)           -> cmp_bin_operator op1 op2 && cmp_dexpr x1 x2 && cmp_dexpr y1 y2
   | Dtop (op1, x1, y1, z1), Dtop (op2, x2, y2, z2)   -> cmp_ter_operator op1 op2 && cmp_dexpr x1 x2 && cmp_dexpr y1 y2 && cmp_dexpr z1 z2
-  | Dapp (l1, a1), Dapp (l2, a2)                     -> cmp_dexpr l1 l2 && cmp_dexpr a1 a2
+  | Dapply (l1, a1), Dapply (l2, a2)                 -> cmp_dexpr l1 l2 && cmp_dexpr a1 a2
+  | Dexec (l1, a1), Dexec (l2, a2)                   -> cmp_dexpr l1 l2 && cmp_dexpr a1 a2
   | Dlambda (at1, rt1, is1), Dlambda (at2, rt2, is2) -> cmp_type at1 at2 && cmp_type rt1 rt2 && List.for_all2 cmp_dinstruction is1 is2
+  | Dloopleft (l1, is1), Dloopleft (l2, is2)         -> cmp_dexpr l1 l2 && List.for_all2 cmp_dinstruction is1 is2
+  | Dmap (l1, is1), Dmap (l2, is2)                   -> cmp_dexpr l1 l2 && List.for_all2 cmp_dinstruction is1 is2
   | _ -> false
 
 and cmp_dinstruction (lhs : dinstruction) (rhs : dinstruction) =
@@ -929,13 +933,11 @@ let map_dinstruction_gen (fe : dexpr -> dexpr) (f : dinstruction -> dinstruction
   | Ddecl      id                -> Ddecl      id
   | Dassign   (e, v)             -> Dassign   (fe e, fe v)
   | Dfail      e                 -> Dfail     (fe e)
-  | Dexec     (l, arg)           -> Dexec     (fe l, fe arg)
   | Dif       (c, t, e)          -> Dif       (fe c, List.map f t, List.map f e)
   | Difcons   (c, ihs, it, t, e) -> Difcons   (fe c, ihs, it, List.map f t, List.map f e)
   | Difleft   (c, it, t, ie, e)  -> Difleft   (fe c, it, List.map f t, ie, List.map f e)
   | Difnone   (c, n, iv, v)      -> Difnone   (fe c, List.map f n, iv, List.map f v)
   | Dloop     (c, b)             -> Dloop     (fe c, List.map f b)
-  | Dloopleft (c, b)             -> Dloopleft (fe c, List.map f b)
   | Diter     (c, b)             -> Diter     (fe c, List.map f b)
 
 
@@ -951,20 +953,21 @@ let map_dexpr_gen (ft : type_ -> type_) (fd : data -> data) (f : dexpr -> dexpr)
   | Duop (op, x)             -> Duop (op, f x)
   | Dbop (op, x, y)          -> Dbop (op, f x, f y)
   | Dtop (op, x, y, z)       -> Dtop (op, f x, f y, f z)
-  | Dapp (l, a)              -> Dapp (f l, f a)
+  | Dapply (l, a)            -> Dapply (f l, f a)
+  | Dexec (l, a)             -> Dexec (f l, f a)
   | Dlambda (at, rt, instrs) -> Dlambda (ft at, ft rt, instrs)
+  | Dloopleft (l, is)        -> Dloopleft (f l, is)
+  | Dmap (l, is)             -> Dmap (f l, is)
 
 and map_dinstruction_gen (fe : dexpr -> dexpr) (f : dinstruction -> dinstruction) = function
   | Ddecl      id                -> Ddecl      id
   | Dassign   (e, v)             -> Dassign   (fe e, fe v)
   | Dfail      e                 -> Dfail     (fe e)
-  | Dexec     (l, arg)           -> Dexec     (fe l, fe arg)
   | Dif       (c, t, e)          -> Dif       (fe c, List.map f t, List.map f e)
   | Difcons   (c, ihs, it, t, e) -> Difcons   (fe c, ihs, it, List.map f t, List.map f e)
   | Difleft   (c, it, t, ie, e)  -> Difleft   (fe c, it, List.map f t, ie, List.map f e)
   | Difnone   (c, n, iv, v)      -> Difnone   (fe c, List.map f n, iv, List.map f v)
   | Dloop     (c, b)             -> Dloop     (fe c, List.map f b)
-  | Dloopleft (c, b)             -> Dloopleft (fe c, List.map f b)
   | Diter     (c, b)             -> Diter     (fe c, List.map f b)
 
 let map_dexpr = map_dexpr_gen id id
@@ -983,33 +986,32 @@ let fold_dexpr f accu = function
   | Duop (_, x)              -> f accu x
   | Dbop (_, x, y)           -> f (f accu x) y
   | Dtop (_, x, y, z)        -> f (f (f accu x) y) z
-  | Dapp (l, a)              -> f (f accu l) a
+  | Dapply (l, a)            -> f (f accu l) a
+  | Dexec (l, a)             -> f (f accu l) a
   | Dlambda (_, _, _instrs)  -> accu
+  | Dloopleft (l, _)         -> f accu l
+  | Dmap (l, _)              -> f accu l
 
 let rec fold_dinstruction_dexpr f accu = function
   | Ddecl      _              -> accu
   | Dassign   (e, v)          -> f (f accu e) v
   | Dfail      e              -> f accu e
-  | Dexec     (l, arg)        -> f (f accu arg) l
   | Dif       (c, t, e)       -> List.fold_left (fold_dinstruction_dexpr f) (List.fold_left (fold_dinstruction_dexpr f) (f accu c) t) e
   | Difcons   (c, _, _, t, e) -> List.fold_left (fold_dinstruction_dexpr f) (List.fold_left (fold_dinstruction_dexpr f) (f accu c) t) e
   | Difleft   (c, _, t, _, e) -> List.fold_left (fold_dinstruction_dexpr f) (List.fold_left (fold_dinstruction_dexpr f) (f accu c) t) e
   | Difnone   (c, n, _, v)    -> List.fold_left (fold_dinstruction_dexpr f) (List.fold_left (fold_dinstruction_dexpr f) (f accu c) n) v
   | Dloop     (c, b)          -> List.fold_left (fold_dinstruction_dexpr f) (f accu c) b
-  | Dloopleft (c, b)          -> List.fold_left (fold_dinstruction_dexpr f) (f accu c) b
   | Diter     (c, b)          -> List.fold_left (fold_dinstruction_dexpr f) (f accu c) b
 
 let fold_dinstruction f accu = function
-  | Ddecl      _        -> accu
+  | Ddecl      _              -> accu
   | Dassign    _              -> accu
   | Dfail      _              -> accu
-  | Dexec      _              -> accu
   | Dif       (_, t, e)       -> List.fold_left f (List.fold_left f accu t) e
   | Difcons   (_, _, _, t, e) -> List.fold_left f (List.fold_left f accu t) e
   | Difleft   (_, _, t, _, e) -> List.fold_left f (List.fold_left f accu t) e
   | Difnone   (_, n, _, v)    -> List.fold_left f (List.fold_left f accu n) v
   | Dloop     (_, b)          -> List.fold_left f accu b
-  | Dloopleft (_, b)          -> List.fold_left f accu b
   | Diter     (_, b)          -> List.fold_left f accu b
 
 module Utils : sig

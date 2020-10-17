@@ -76,7 +76,7 @@ let to_dir (michelson, env : T.michelson * env) =
     | _ -> ()
   in
 
-  let add_instruction (_env : ir_env) (sys : T.dinstruction list) (i : T.dinstruction) =
+  let _add_instruction (_env : ir_env) (sys : T.dinstruction list) (i : T.dinstruction) =
     let assigns =
       let rec aux accu (a, b : T.dexpr * T.dexpr) =
         match a, b with
@@ -134,8 +134,11 @@ let to_dir (michelson, env : T.michelson * env) =
               | T.Duop        _ -> 1
               | T.Dbop        _ -> 1
               | T.Dtop        _ -> 1
-              | T.Dapp        _ -> 1
+              | T.Dapply      _ -> 1
+              | T.Dexec       _ -> 1
               | T.Dlambda     _ -> 1
+              | T.Dloopleft   _ -> 1
+              | T.Dmap        _ -> 1
             in
 
             let is_assigned_a =
@@ -203,7 +206,7 @@ let to_dir (michelson, env : T.michelson * env) =
 
   in
 
-  (* let add_instruction _env (sys : T.dinstruction list) (i : T.dinstruction) = i::sys in *)
+  let add_instruction _env (sys : T.dinstruction list) (i : T.dinstruction) = i::sys in
 
   let rec interp (env : ir_env) (sys : T.dinstruction list) (instrs : T.code list) (stack : (T.dexpr) list) =
     let f = interp in
@@ -373,21 +376,30 @@ let to_dir (michelson, env : T.michelson * env) =
 
     (* Control structures *)
 
-    | SEQ l::it       -> begin
+    | SEQ l::it -> begin
         f env sys (it @ List.rev l) stack
       end
-    | APPLY::_       -> assert false
-    | EXEC::it       -> begin
+    | APPLY::it -> begin
         match stack with
         | a::st ->
           let x = T.dalpha env.cpt_alpha in
           let env = inc_cpt_alpha env in
           let y = T.dalpha env.cpt_alpha in
           let env = inc_cpt_alpha env in
-          f env (add_instruction env sys (T.Dassign (a, Dapp (y, x)))) it (x::y::st)
+          f env (add_instruction env sys (T.Dassign (a, Dapply (y, x)))) it (x::y::st)
         | _ -> emit_error ()
       end
-    | FAILWITH::it   -> begin
+    | EXEC::it -> begin
+        match stack with
+        | a::st ->
+          let x = T.dalpha env.cpt_alpha in
+          let env = inc_cpt_alpha env in
+          let y = T.dalpha env.cpt_alpha in
+          let env = inc_cpt_alpha env in
+          f env (add_instruction env sys (T.Dassign (a, Dexec (y, x)))) it (x::y::st)
+        | _ -> emit_error ()
+      end
+    | FAILWITH::it -> begin
         let env = {env with fail = true} in
         let x = T.dalpha env.cpt_alpha in
         let env = inc_cpt_alpha env in
@@ -418,8 +430,30 @@ let to_dir (michelson, env : T.michelson * env) =
           end
         | _ -> emit_error ()
       end
-    | LOOP _::_      -> assert false
-    | LOOP_LEFT _::_ -> assert false
+    | LOOP cs::it -> begin
+        let c = T.dalpha env.cpt_alpha in
+        let env = inc_cpt_alpha env in
+        let stack = (c::stack) in
+        let body =
+          let instrs, _stack, _env = interp env [] (List.rev cs) stack in
+          instrs
+        in
+        f env (add_instruction env sys (T.Dloop (c , body))) it stack
+      end
+    | LOOP_LEFT cs::it -> begin
+        match stack with
+        | a::st -> begin
+            let x = T.dalpha env.cpt_alpha in
+            let env = inc_cpt_alpha env in
+            let stack = (x::st) in
+            let body =
+              let instrs, _stack, _env = interp env [] (List.rev cs) stack in
+              instrs
+            in
+            f env (add_instruction env sys (T.Dassign (a, (T.Dloopleft (x , body))))) it stack
+          end
+        | _ -> emit_error ()
+      end
 
 
     (* Stack manipulation *)
@@ -569,7 +603,20 @@ let to_dir (michelson, env : T.michelson * env) =
     | EMPTY_SET t::it          -> interp_zop env (Zemptyset t) it stack
     | GET::it                  -> interp_bop env Bget it stack
     | LEFT t::it               -> interp_uop env (Uleft t) it stack
-    | MAP _::_                 -> assert false
+    | MAP cs::it               ->  begin
+        match stack with
+        | a::st -> begin
+            let x = T.dalpha env.cpt_alpha in
+            let env = inc_cpt_alpha env in
+            let stack = (x::st) in
+            let body =
+              let instrs, _stack, _env = interp env [] (List.rev cs) stack in
+              instrs
+            in
+            f env (add_instruction env sys (T.Dassign (a, (T.Dmap (x , body))))) it stack
+          end
+        | _ -> emit_error ()
+      end
     | MEM::it                  -> interp_bop env Bmem it stack
     | NIL t::it                -> interp_zop env (Znil t) it stack
     | NONE t::it               -> interp_zop env (Znone t)it stack
@@ -654,6 +701,9 @@ let to_ir (dir, env : T.dprogram * env) : T.ir * env =
 
   let rec for_expr (e : T.dexpr) : T.instruction =
     let f = for_expr in
+    let g = for_instr in
+    let seq x = T.Iseq (List.map g x) in
+
     match e with
     | Dalpha _i              -> assert false
     | Dvar t                 -> Ivar (Option.get t.annotation)
@@ -666,33 +716,33 @@ let to_ir (dir, env : T.dprogram * env) : T.ir * env =
     | Duop (op, a)           -> Iunop (op, f a)
     | Dbop (op, a, b)        -> Ibinop (op, f a, f b)
     | Dtop (op, a, b, c)     -> Iterop (op, f a, f b, f c)
-    | Dapp _                 -> assert false
-    | Dlambda _              -> assert false
-  in
+    | Dapply (a, l)          -> Ibinop (Bexec, f a, f l)
+    | Dexec (a, l)           -> Ibinop (Bexec, f a, f l)
+    | Dlambda (at, rt, l)    -> Ilambda (at, "", rt, seq l)
+    | Dloopleft (c, b)       -> Iloopleft (f c, "", seq b)
+    | Dmap (c, b)            -> Imap_ (f c, "", seq b)
+  and for_instr (i : T.dinstruction) : T.instruction =
+    let f = for_expr in
+    let g = for_instr in
+    let seq x = T.Iseq (List.map g x) in
 
-  let rec for_instr (i : T.dinstruction) : T.instruction =
-    let f = for_instr in
-    let seq x = T.Iseq (List.map f x) in
     let to_ident n = Format.sprintf "x%i" n in
-    let g = for_expr in
     match i with
     | Ddecl      _id         -> assert false
     | Dassign   (e, v)       -> begin
-        let v = g v in
+        let v = f v in
         match e with
         | Dvar t when Option.is_some t.annotation -> Iassign(Option.get t.annotation, v)
         | Doperations -> Iassign("operations", v)
         | _ -> assert false
       end
-    | Dfail      e                 -> Iunop (Ufail, g e)
-    | Dexec     (_id, _arg)        -> assert false
-    | Dif       (c, t, e)          -> Iif     (g c, seq t, seq e, T.tunit)
-    | Difcons   (c, ihd, it, t, e) -> Iifcons (g c, to_ident ihd, to_ident it, seq t, seq e, T.tunit)
-    | Difleft   (c, il, l, ir, r)  -> Iifleft (g c, to_ident il, seq l, to_ident ir, seq r, T.tunit)
-    | Difnone   (c, n, iv, v)      -> Iifnone (g c, seq n, to_ident iv, seq v, T.tunit)
-    | Dloop     (_c, _b)           -> assert false
-    | Dloopleft (_c, _b)           -> assert false
-    | Diter     (_c, _b)           -> assert false
+    | Dfail      e                 -> Iunop   (Ufail, f e)
+    | Dif       (c, t, e)          -> Iif     (f c, seq t, seq e, T.tunit)
+    | Difcons   (c, ihd, it, t, e) -> Iifcons (f c, to_ident ihd, to_ident it, seq t, seq e, T.tunit)
+    | Difleft   (c, il, l, ir, r)  -> Iifleft (f c, to_ident il, seq l, to_ident ir, seq r, T.tunit)
+    | Difnone   (c, n, iv, v)      -> Iifnone (f c, seq n, to_ident iv, seq v, T.tunit)
+    | Dloop     (c, b)             -> Iloop   (f c, seq b)
+    | Diter     (c, b)             -> Iiter   ([], f c,  seq b)
   in
 
   let name = dir.name in
@@ -849,7 +899,7 @@ let to_model (ir, env : T.ir * env) : M.model * env =
       end
     | Iloopleft (l, i, b)          -> let be = f b in M.mk_mterm (M.Mloopleft (f l, dumloc i, be)) be.type_
     | Ilambda (_rt, _id, _at, _e)  -> assert false
-    | Iwhile (c, b)                -> M.mk_mterm (M.Mwhile (f c, f b, None)) M.tunit
+    | Iloop (c, b)                 -> M.mk_mterm (M.Mwhile (f c, f b, None)) M.tunit
     | Iiter (_ids, _c, _b)         -> assert false
     | Izop op -> begin
         match op with

@@ -217,7 +217,7 @@ let rec pp_instruction fmt (i : instruction) =
   | Iifnone (v, t, id, s, _)   -> pp "if_none (%a)@\nthen @[%a@]@\nelse @[fun %s -> %a@]" f v f t id f s
   | Iifleft (v, _, l, _, r, _) -> pp "if_left (%a)@\nthen @[%a@]@\nelse @[%a@]" f v f l f r
   | Iifcons (v, _, _, t, e, _) -> pp "if_cons (%a)@\nthen @[%a@]@\nelse @[%a@]" f v f t f e
-  | Iwhile (c, b)              -> pp "while (%a) do@\n  @[%a@]@\ndone" f c f b
+  | Iloop (c, b)               -> pp "loop (%a) do@\n  @[%a@]@\ndone" f c f b
   | Iiter (ids, c, b)          -> pp "iter %a on (%a) do@\n  @[%a@]@\ndone" (pp_list ", " pp_id) ids f c f b
   | Iloopleft (l, _, b)        -> pp "@[loop_left (%a) do@\n  @[%a@]@\ndone@]" f l f b
   | Ilambda (rt, id, at, e)    -> pp "lambda<%a>((%s : %a) -> %a)" pp_type rt id pp_type at f e
@@ -399,6 +399,7 @@ let pp_micheline fmt (m : micheline) =
 let rec pp_dexpr fmt (de : dexpr) =
   let pp x = Format.fprintf fmt x in
   let f = pp_dexpr in
+  let seq x = (pp_list ";@\n" pp_dinstruction) x in
   match de with
   | Dalpha n           -> pp "x%i" n
   | Dvar t             -> pp "var%a" (fun fmt -> (if Option.is_some t.annotation then pp_type fmt else (pp_paren pp_type) fmt)) t
@@ -482,8 +483,11 @@ let rec pp_dexpr fmt (de : dexpr) =
       | Tupdate          -> pp "update(%a, %a, %a)"          f a1 f a2 f a3
       | Ttransfer_tokens -> pp "transfer_tokens(%a, %a, %a)" f a1 f a2 f a3
     end
-  | Dapp (l, a)              -> pp "app(%a, %a)" f l f a
-  | Dlambda (at, rt, instrs) -> pp "lambda<%a>(@[(_ : %a) ->@\n@[%a@]@])" pp_type at pp_type rt (pp_list ";@\n" pp_dinstruction) instrs
+  | Dapply (l, a)            -> pp "apply(%a, %a)" f l f a
+  | Dexec (l, a)             -> pp "exec(%a, %a)" f l f a
+  | Dlambda (at, rt, instrs) -> pp "@[lambda<%a>(@[(_ : %a) ->@\n@[%a@]@])@]" pp_type at pp_type rt seq instrs
+  | Dloopleft (c, b)         -> pp "@[loopleft (%a) do@\n  @[%a@]@\ndone@]" pp_dexpr c seq b
+  | Dmap  (c, b)             -> pp "@[map (%a) do@\n  @[%a@]@\ndone@]" pp_dexpr c seq b
 
 and pp_dinstruction fmt i =
   let pp x = Format.fprintf fmt x in
@@ -492,13 +496,11 @@ and pp_dinstruction fmt i =
   | Ddecl      id                -> pp "var x%i" id
   | Dassign   (e, v)             -> pp "%a <- %a" pp_dexpr e pp_dexpr v
   | Dfail      e                 -> pp "fail(%a)" pp_dexpr e
-  | Dexec     (l, arg)           -> pp "exec(%a, %a)" pp_dexpr l pp_dexpr arg
   | Dif       (c, t, e)          -> pp "if (%a)@\nthen (@[%a@])@\nelse (@[%a@])" pp_dexpr c seq t seq e
   | Difcons   (c, ihd, it, t, e) -> pp "ifcons (%a|x%i::x%i)@\nthen (@[%a@])@\nelse (@[%a@])" pp_dexpr c ihd it seq t seq e
   | Difleft   (c, it, t, ie, e)  -> pp "ifleft (%a|x%i|x%i)@\nthen (@[%a@])@\nelse (@[%a@])" pp_dexpr c it ie seq t seq e
   | Difnone   (c, n, iv, v)      -> pp "ifnone (%a|x%i)@\nthen (@[%a@])@\nelse (@[%a@])" pp_dexpr c iv seq n seq v
   | Dloop     (c, b)             -> pp "loop (%a) do@\n  @[%a@]@\ndone" pp_dexpr c seq b
-  | Dloopleft (c, b)             -> pp "loopleft (%a) do@\n  @[%a@]@\ndone" pp_dexpr c seq b
   | Diter     (c, b)             -> pp "iter (%a) do@\n  @[%a@]@\ndone" pp_dexpr c seq b
 
 let pp_dinstructions fmt (s : dinstruction list) =

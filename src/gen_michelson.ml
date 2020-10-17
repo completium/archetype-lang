@@ -250,7 +250,7 @@ let to_ir (model : M.model) : T.ir =
           let alist     = T.Iassign (list_name, T.icdr ve) in
           let aiter     = T.Iassign (iter_name, T.Ibinop (Badd, viter, T.inat Big_int.unit_big_int)) in
           let bloop     = T.IletIn(e_name, vheadtail, T.Iseq [ares; alist; aiter], true) in
-          let loop      = T.Iwhile (cond, bloop) in
+          let loop      = T.Iloop (cond, bloop) in
           let body      = T.IletIn(res_name, T.inone t, IletIn(iter_name, T.inat Big_int.zero_big_int, T.Iseq [loop; return], true), true) in
           args, body
         end
@@ -289,7 +289,7 @@ let to_ir (model : M.model) : T.ir =
           let assign_arg = T.Iassign (arg_name, T.Iunop (Ucar, vpair)) in
           let vpair      = T.Iifnone (T.Ibinop (Bediv, varg, ten), T.ifail "DivByZero", "_var_ifnone", Ivar "_var_ifnone", T.tpair T.tint T.tnat) in
           let b          = T.IletIn(pair_name, vpair, T.Iseq [assign_res; assign_arg], true) in
-          let loop       = T.Iwhile (cond, b) in
+          let loop       = T.Iloop (cond, b) in
           let a          = T.IletIn(res_name, T.istring "", IletIn(map_name, map, T.Iseq [loop; return vres], true), true) in
           args, T.Iif (cond, a, return (T.istring "0"), T.tunit)
         end
@@ -430,7 +430,7 @@ let to_ir (model : M.model) : T.ir =
         T.Iiter (ids, c, b)
       end
     | Miter (_i, _a, _b, _c, _)  -> emit_error TODO
-    | Mwhile (c, b, _)           -> T.Iwhile (f c, f b)
+    | Mwhile (c, b, _)           -> T.Iloop (f c, f b)
     | Mseq is                    -> T.Iseq (List.map f is)
     | Mreturn x                  -> T.Iassign (fun_result, f x)
     | Mlabel _                   -> T.iskip
@@ -1097,7 +1097,7 @@ let to_michelson (ir : T.ir) : T.michelson =
         T.SEQ [ x; T.IF_CONS ([t] @ ee, [n]) ], env
       end
 
-    | Iwhile (c, b) -> begin
+    | Iloop (c, b) -> begin
         let c, _ = f c in
         let b, _ = f b in
         T.SEQ [c; T.LOOP [b; c]] , env
