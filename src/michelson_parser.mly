@@ -54,20 +54,20 @@ main:
 %inline annots:
 | xs=annot* { xs }
 
-%inline aaa:
+%inline seq:
 | xs=snl(SEMI_COLON, node) { xs }
 
 %inline sequence:
 | LBRACE RBRACE  { Oarray [] }
-| xs=braced(aaa) { Oarray xs }
+| xs=braced(seq) { Oarray xs }
 
-%inline rinteger:
+%inline integer:
 | n=NUMBER { Oint n }
 
-%inline rstring:
+%inline string:
 | s=STRING { Ostring s }
 
-%inline rbytes:
+%inline bytes:
 | b=BYTES { Obytes b }
 
 %inline prim:
@@ -80,18 +80,18 @@ main:
 | p=IDENT a=annots args=arguments { Oprim {prim = p; args = args; annots = a} }
 
 node:
-| x=rinteger    { x }
-| x=rstring     { x }
-| x=rbytes      { x }
+| x=integer     { x }
+| x=string      { x }
+| x=bytes       { x }
 | x=prim        { x }
 | x=prim_app    { x }
 | x=sequence    { x }
 | x=paren(node) { x }
 
 argument:
-| x=rinteger        { x }
-| x=rstring         { x }
-| x=rbytes          { x }
+| x=integer         { x }
+| x=string          { x }
+| x=bytes           { x }
 | x=prim            { x }
 | x=paren(prim_app) { x }
 | x=sequence        { x }

@@ -21,9 +21,7 @@ let blank    = [' ' '\t' '\r']
 let newline  = '\n'
 let digit    = ['0'-'9']
 let ident    = (['a'-'z' 'A'-'Z' '0'-'9' '_' ])+
-let tannot   = ':' ident
-let pannot   = '%' ident
-let aannot   = '@' ident
+let annot    = ['@' ':' '$' '&' '%' '!' '?'] (['_' '0'-'9' 'a'-'z' 'A'-'Z' '.' '%' '@'])*
 let bytes    = "0x" (['a'-'f' 'A'-'F' '0'-'9' ])+
 let number   = ("-")* digit+
 
@@ -35,9 +33,7 @@ rule token = parse
   | (bytes as v)          { BYTES v }
   | number as n           { NUMBER n }
   | ident as s            { IDENT s}
-  | tannot as s           { ANNOTATION (s)}
-  | aannot as s           { ANNOTATION (s)}
-  | pannot as s           { ANNOTATION (s)}
+  | annot as s            { ANNOTATION (s)}
 
   | "#"                   { comment_line lexbuf; token lexbuf }
   | "(*"                  { comment lexbuf; token lexbuf }
