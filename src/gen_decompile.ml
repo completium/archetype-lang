@@ -19,10 +19,250 @@ let parse_michelson (filename, ic) : T.michelson * env =
   in
   let env = mk_env ~name:name () in
   let tokens = Lexing.from_channel ic in
-  let res = Michelson_parser.main Michelson_lexer.token tokens, env in
-  match !Error.errors with
-  | [] -> res
-  | _ -> raise (Error.ParseError !Error.errors)
+  let res = Michelson_parser.main Michelson_lexer.token tokens in
+
+  let input =
+    match res with
+    | Oarray l -> l
+    | _ -> raise (Error.ParseError !Error.errors)
+  in
+
+  let to_michelson (l : T.obj_micheline list) : T.michelson =
+
+    let fa l = match l with | a::_ -> Some a | [] -> None in
+
+    let rec to_type (o : T.obj_micheline) : T.type_ =
+      let f = to_type in
+      match o with
+      | Oprim ({prim = "address"; annots; _})                    -> T.mk_type ?annotation:(fa annots) Taddress
+      | Oprim ({prim = "big_map"; annots; args = k::v::_})       -> T.mk_type ?annotation:(fa annots) (Tbig_map (f k, f v))
+      | Oprim ({prim = "bool"; annots; _})                       -> T.mk_type ?annotation:(fa annots) Tbool
+      | Oprim ({prim = "bytes"; annots; _})                      -> T.mk_type ?annotation:(fa annots) Tunit
+      | Oprim ({prim = "chain_id"; annots; _})                   -> T.mk_type ?annotation:(fa annots) Tunit
+      | Oprim ({prim = "contract"; annots; args = t::_})         -> T.mk_type ?annotation:(fa annots) (Tcontract (f t))
+      | Oprim ({prim = "int"; annots; _})                        -> T.mk_type ?annotation:(fa annots) Tint
+      | Oprim ({prim = "key"; annots; _})                        -> T.mk_type ?annotation:(fa annots) Tkey
+      | Oprim ({prim = "key_hash"; annots; _})                   -> T.mk_type ?annotation:(fa annots) Tkey_hash
+      | Oprim ({prim = "lambda"; annots; args = a::r::_})        -> T.mk_type ?annotation:(fa annots) (Tlambda (f a, f r))
+      | Oprim ({prim = "list"; annots; args = t::_})             -> T.mk_type ?annotation:(fa annots) (Tlist (f t))
+      | Oprim ({prim = "map"; annots; args = k::v::_})           -> T.mk_type ?annotation:(fa annots) (Tmap (f k, f v))
+      | Oprim ({prim = "mutez"; annots; _})                      -> T.mk_type ?annotation:(fa annots) Tmutez
+      | Oprim ({prim = "nat"; annots; _})                        -> T.mk_type ?annotation:(fa annots) Tnat
+      | Oprim ({prim = "operation"; annots; _})                  -> T.mk_type ?annotation:(fa annots) Toperation
+      | Oprim ({prim = "option"; annots; args = t::_})           -> T.mk_type ?annotation:(fa annots) (Toption (f t))
+      | Oprim ({prim = "or"; annots; args = a::b::_})            -> T.mk_type ?annotation:(fa annots) (Tor (f a, f b))
+      | Oprim ({prim = "pair"; annots; args = a::l::_})          -> T.mk_type ?annotation:(fa annots) (Tpair (f a, f l))
+      | Oprim ({prim = "set"; annots; args = t::_})              -> T.mk_type ?annotation:(fa annots) (Tset (f t))
+      | Oprim ({prim = "signature"; annots; _})                  -> T.mk_type ?annotation:(fa annots) Tsignature
+      | Oprim ({prim = "string"; annots; _})                     -> T.mk_type ?annotation:(fa annots) Tstring
+      | Oprim ({prim = "timestamp"; annots; _})                  -> T.mk_type ?annotation:(fa annots) Ttimestamp
+      | Oprim ({prim = "unit"; annots; _})                       -> T.mk_type ?annotation:(fa annots) Tunit
+      | Oprim ({prim = "sapling_transaction"; annots; _})        -> T.mk_type ?annotation:(fa annots) Tsapling_transaction
+      | Oprim ({prim = "sapling_state"; annots; _})              -> T.mk_type ?annotation:(fa annots) Tsapling_state
+      | Oprim ({prim = "never"; annots; _})                      -> T.mk_type ?annotation:(fa annots) Tnever
+      | Oprim ({prim = "bls12_381_g1"; annots; _})               -> T.mk_type ?annotation:(fa annots) Tbls12_381_g1
+      | Oprim ({prim = "bls12_381_g2"; annots; _})               -> T.mk_type ?annotation:(fa annots) Tbls12_381_g2
+      | Oprim ({prim = "bls12_381_fr"; annots; _})               -> T.mk_type ?annotation:(fa annots) Tbls12_381_fr
+      | Oprim ({prim = "baker_hash"; annots; _})                 -> T.mk_type ?annotation:(fa annots) Tbaker_hash
+      | Oprim ({prim = "baker_operation"; annots; _})            -> T.mk_type ?annotation:(fa annots) Tbaker_operation
+      | Oprim ({prim = "pvss_key"; annots; _})                   -> T.mk_type ?annotation:(fa annots) Tpvss_key
+      | _ -> Format.eprintf "type unknown %a@." T.pp_obj_micheline o; assert false
+    in
+
+    let to_int = function | T.Oint x -> int_of_string x | _ -> assert false in
+
+    let rec to_data (o : T.obj_micheline) : T.data =
+      let f = to_data in
+      match o with
+      | T.Oint x                                  -> T.Dint (Big_int.big_int_of_string x)
+      | T.Ostring s                               -> T.Dstring s
+      | T.Obytes  s                               -> T.Dbytes s
+      | Oprim ({prim = "Unit";  _ })              -> T.Dunit
+      | Oprim ({prim = "True";  _ })              -> T.Dtrue
+      | Oprim ({prim = "False"; _ })              -> T.Dfalse
+      | Oprim ({prim = "Pair";  args = a::b::_ }) -> T.Dpair  (f a, f b)
+      | Oprim ({prim = "Left";  args = a::_ })    -> T.Dleft  (f a)
+      | Oprim ({prim = "Right"; args = a::_ })    -> T.Dright (f a)
+      | Oprim ({prim = "Some";  args = a::_ })    -> T.Dsome  (f a)
+      | Oprim ({prim = "None";  _ })              -> T.Dnone
+      | Oarray l                                  -> T.Dlist (List.map f l)
+      | Oprim ({prim = "Elt"; args = a::b::_ })   -> T.Delt  (f a, f b)
+
+      | _ -> Format.eprintf "data unknown %a@." T.pp_obj_micheline o; assert false
+    in
+
+    let rec to_code (o : T.obj_micheline) : T.code =
+      let f = to_code in
+      let seq = function | T.Oarray l -> List.map f l | _ -> assert false in
+      match o with
+      (* Control structures *)
+      | Oarray l                                             -> T.SEQ (List.map f l)
+      | Oprim ({prim = "APPLY"; _})                          -> T.APPLY
+      | Oprim ({prim = "EXEC"; _})                           -> T.EXEC
+      | Oprim ({prim = "FAILWITH"; _})                       -> T.FAILWITH
+      | Oprim ({prim = "IF"; args = t::e::_; _})             -> T.IF        (seq t, seq e)
+      | Oprim ({prim = "IF_CONS"; args = t::e::_; _})        -> T.IF_CONS   (seq t, seq e)
+      | Oprim ({prim = "IF_LEFT"; args = t::e::_; _})        -> T.IF_LEFT   (seq t, seq e)
+      | Oprim ({prim = "IF_NONE"; args = t::e::_; _})        -> T.IF_NONE   (seq t, seq e)
+      | Oprim ({prim = "ITER"; args = l::_; _})              -> T.ITER      (seq l)
+      | Oprim ({prim = "LAMBDA"; args = a::r::b; _})         -> T.LAMBDA    (to_type a, to_type r, List.map f b)
+      | Oprim ({prim = "LOOP"; args = l::_; _})              -> T.LOOP      (seq l)
+      | Oprim ({prim = "LOOP_LEFT"; args = l::_; _})         -> T.LOOP_LEFT (seq l)
+      (* Stack manipulation *)
+      | Oprim ({prim = "DIG"; args = n::_})                  -> T.DIG (to_int n)
+      | Oprim ({prim = "DIG"; _})                            -> T.DIG 1
+      | Oprim ({prim = "DIP"; args = n::l::_})               -> T.DIP (to_int n, seq l)
+      | Oprim ({prim = "DIP"; args = l::_})                  -> T.DIP (1, seq l)
+      | Oprim ({prim = "DROP"; args = n::_})                 -> T.DROP (to_int n)
+      | Oprim ({prim = "DROP"; _})                           -> T.DROP 1
+      | Oprim ({prim = "DUG"; args = n::_})                  -> T.DUG (to_int n)
+      | Oprim ({prim = "DUG"; _})                            -> T.DUG 1
+      | Oprim ({prim = "DUP"; _})                            -> T.DUP
+      | Oprim ({prim = "PUSH"; args = t::v::_})              -> T.PUSH (to_type t, to_data v)
+      | Oprim ({prim = "SWAP"; _})                           -> T.SWAP
+      (* Arthmetic operations *)
+      | Oprim ({prim = "ABS"; _})                            -> T.ABS
+      | Oprim ({prim = "ADD"; _})                            -> T.ADD
+      | Oprim ({prim = "COMPARE"; _})                        -> T.COMPARE
+      | Oprim ({prim = "EDIV"; _})                           -> T.EDIV
+      | Oprim ({prim = "EQ"; _})                             -> T.EQ
+      | Oprim ({prim = "GE"; _})                             -> T.GE
+      | Oprim ({prim = "GT"; _})                             -> T.GT
+      | Oprim ({prim = "INT"; _})                            -> T.INT
+      | Oprim ({prim = "ISNAT"; _})                          -> T.ISNAT
+      | Oprim ({prim = "LE"; _})                             -> T.LE
+      | Oprim ({prim = "LSL"; _})                            -> T.LSL
+      | Oprim ({prim = "LSR"; _})                            -> T.LSR
+      | Oprim ({prim = "LT"; _})                             -> T.LT
+      | Oprim ({prim = "MUL"; _})                            -> T.MUL
+      | Oprim ({prim = "NEG"; _})                            -> T.NEG
+      | Oprim ({prim = "NEQ"; _})                            -> T.NEQ
+      | Oprim ({prim = "SUB"; _})                            -> T.SUB
+      (* Boolean operations *)
+      | Oprim ({prim = "AND"; _})                            -> T.AND
+      | Oprim ({prim = "NOT"; _})                            -> T.NOT
+      | Oprim ({prim = "OR"; _})                             -> T.OR
+      | Oprim ({prim = "XOR"; _})                            -> T.XOR
+      (* Cryptographic operations *)
+      | Oprim ({prim = "BLAKE2B"; _})                        -> T.BLAKE2B
+      | Oprim ({prim = "CHECK_SIGNATURE"; _})                -> T.CHECK_SIGNATURE
+      | Oprim ({prim = "HASH_KEY"; _})                       -> T.HASH_KEY
+      | Oprim ({prim = "SHA256"; _})                         -> T.SHA256
+      | Oprim ({prim = "SHA512"; _})                         -> T.SHA512
+      (* Blockchain operations *)
+      | Oprim ({prim = "ADDRESS"; _})                        -> T.ADDRESS
+      | Oprim ({prim = "AMOUNT"; _})                         -> T.AMOUNT
+      | Oprim ({prim = "BALANCE"; _})                        -> T.BALANCE
+      | Oprim ({prim = "CHAIN_ID"; _})                       -> T.CHAIN_ID
+      | Oprim ({prim = "CONTRACT"; args = t::_; annots = a}) -> T.CONTRACT (to_type t, fa a)
+      | Oprim ({prim = "CREATE_CONTRACT"; args = l::_; _})   -> T.CREATE_CONTRACT (seq l)
+      | Oprim ({prim = "IMPLICIT_ACCOUNT"; _})               -> T.IMPLICIT_ACCOUNT
+      | Oprim ({prim = "NOW"; _})                            -> T.NOW
+      | Oprim ({prim = "SELF"; _})                           -> T.SELF
+      | Oprim ({prim = "SENDER"; _})                         -> T.SENDER
+      | Oprim ({prim = "SET_DELEGATE"; _})                   -> T.SET_DELEGATE
+      | Oprim ({prim = "SOURCE"; _})                         -> T.SOURCE
+      | Oprim ({prim = "TRANSFER_TOKENS"; _})                -> T.TRANSFER_TOKENS
+      (* Operations on data structures *)
+      | Oprim ({prim = "CAR"; _})                            -> T.CAR
+      | Oprim ({prim = "CDR"; _})                            -> T.CDR
+      | Oprim ({prim = "CONCAT"; _})                         -> T.CONCAT
+      | Oprim ({prim = "CONS"; _})                           -> T.CONS
+      | Oprim ({prim = "EMPTY_BIG_MAP" ; args = k::v::_})    -> T.EMPTY_BIG_MAP (to_type k, to_type v)
+      | Oprim ({prim = "EMPTY_MAP" ; args = k::v::_})        -> T.EMPTY_MAP (to_type k, to_type v)
+      | Oprim ({prim = "EMPTY_SET" ; args = t::_})           -> T.EMPTY_SET (to_type t)
+      | Oprim ({prim = "GET"; _})                            -> T.GET
+      | Oprim ({prim = "LEFT" ; args = t::_})                -> T.LEFT (to_type t)
+      | Oprim ({prim = "MAP"; args = s::_})                  -> T.MAP (seq s)
+      | Oprim ({prim = "MEM"; _})                            -> T.MEM
+      | Oprim ({prim = "NIL" ; args = t::_})                 -> T.NIL (to_type t)
+      | Oprim ({prim = "NONE" ; args = t::_})                -> T.NONE (to_type t)
+      | Oprim ({prim = "PACK"; _})                           -> T.PACK
+      | Oprim ({prim = "PAIR"; _})                           -> T.PAIR
+      | Oprim ({prim = "RIGHT" ; args = t::_})               -> T.RIGHT (to_type t)
+      | Oprim ({prim = "SIZE"; _})                           -> T.SIZE
+      | Oprim ({prim = "SLICE"; _})                          -> T.SLICE
+      | Oprim ({prim = "SOME"; _})                           -> T.SOME
+      | Oprim ({prim = "UNIT"; _})                           -> T.UNIT
+      | Oprim ({prim = "UNPACK" ; args = t::_})              -> T.UNPACK (to_type t)
+      | Oprim ({prim = "UPDATE"; _})                         -> T.UPDATE
+      (* Other *)
+      | Oprim ({prim = "UNPAIR"; _})                         -> T.UNPAIR
+      | Oprim ({prim = "SELF_ADDRESS"; _})                   -> T.SELF_ADDRESS
+      | Oprim ({prim = "CAST"; _})                           -> T.CAST
+      | Oprim ({prim = "CREATE_ACCOUNT"; _})                 -> T.CREATE_ACCOUNT
+      | Oprim ({prim = "RENAME"; _})                         -> T.RENAME
+      | Oprim ({prim = "STEPS_TO_QUOTA"; _})                 -> T.STEPS_TO_QUOTA
+      | Oprim ({prim = "LEVEL"; _})                          -> T.LEVEL
+      | Oprim ({prim = "SAPLING_EMPTY_STATE"; _})            -> T.SAPLING_EMPTY_STATE
+      | Oprim ({prim = "SAPLING_VERIFY_UPDATE"; _})          -> T.SAPLING_VERIFY_UPDATE
+      | Oprim ({prim = "NEVER"; _})                          -> T.NEVER
+      | Oprim ({prim = "VOTING_POWER"; _})                   -> T.VOTING_POWER
+      | Oprim ({prim = "TOTAL_VOTING_POWER"; _})             -> T.TOTAL_VOTING_POWER
+      | Oprim ({prim = "KECCAK"; _})                         -> T.KECCAK
+      | Oprim ({prim = "SHA3"; _})                           -> T.SHA3
+      | Oprim ({prim = "PAIRING_CHECK"; _})                  -> T.PAIRING_CHECK
+      | Oprim ({prim = "SUBMIT_PROPOSALS"; _})               -> T.SUBMIT_PROPOSALS
+      | Oprim ({prim = "SUBMIT_BALLOT"; _})                  -> T.SUBMIT_BALLOT
+      | Oprim ({prim = "SET_BAKER_ACTIVE"; _})               -> T.SET_BAKER_ACTIVE
+      | Oprim ({prim = "TOGGLE_BAKER_DELEGATIONS"; _})       -> T.TOGGLE_BAKER_DELEGATIONS
+      | Oprim ({prim = "SET_BAKER_CONSENSUS_KEY"; _})        -> T.SET_BAKER_CONSENSUS_KEY
+      | Oprim ({prim = "SET_BAKER_PVSS_KEY"; _})             -> T.SET_BAKER_PVSS_KEY
+      (* Macro *)
+      | Oprim ({prim = "IFCMPEQ"; args = [l; r]})            -> T.SEQ [COMPARE; EQ; T.IF (seq l, seq r)]
+      | Oprim ({prim = "IFCMPNEQ"; args = [l; r]})           -> T.SEQ [COMPARE; NEQ; T.IF (seq l, seq r)]
+      | Oprim ({prim = "IFCMPLT"; args = [l; r]})            -> T.SEQ [COMPARE; LT; T.IF (seq l, seq r)]
+      | Oprim ({prim = "IFCMPGT"; args = [l; r]})            -> T.SEQ [COMPARE; GT; T.IF (seq l, seq r)]
+      | Oprim ({prim = "IFCMPLE"; args = [l; r]})            -> T.SEQ [COMPARE; LE; T.IF (seq l, seq r)]
+      | Oprim ({prim = "IFCMPGE"; args = [l; r]})            -> T.SEQ [COMPARE; GE; T.IF (seq l, seq r)]
+
+      | Oprim ({prim = "IFEQ"; args = [l; r]})               -> T.SEQ [EQ; T.IF (seq l, seq r)]
+      | Oprim ({prim = "IFNEQ"; args = [l; r]})              -> T.SEQ [NEQ; T.IF (seq l, seq r)]
+      | Oprim ({prim = "IFLT"; args = [l; r]})               -> T.SEQ [LT; T.IF (seq l, seq r)]
+      | Oprim ({prim = "IFGT"; args = [l; r]})               -> T.SEQ [GT; T.IF (seq l, seq r)]
+      | Oprim ({prim = "IFLE"; args = [l; r]})               -> T.SEQ [LE; T.IF (seq l, seq r)]
+      | Oprim ({prim = "IFGE"; args = [l; r]})               -> T.SEQ [GE; T.IF (seq l, seq r)]
+
+      | Oprim ({prim = "CMPEQ"; _})                          -> T.SEQ [COMPARE; EQ]
+      | Oprim ({prim = "CMPNEQ"; _})                         -> T.SEQ [COMPARE; NEQ]
+      | Oprim ({prim = "CMPLT"; _})                          -> T.SEQ [COMPARE; LT]
+      | Oprim ({prim = "CMPGT"; _})                          -> T.SEQ [COMPARE; GT]
+      | Oprim ({prim = "CMPLE"; _})                          -> T.SEQ [COMPARE; LE]
+      | Oprim ({prim = "CMPGE"; _})                          -> T.SEQ [COMPARE; GE]
+
+      | Oprim ({prim = "ASSERT"; _})                         -> T.IF ([], [FAILWITH])
+      | Oprim ({prim = "ASSERT_NONE"; _})                    -> T.IF_NONE ([], [FAILWITH])
+      | Oprim ({prim = "ASSERT_SOME"; _})                    -> T.IF_NONE ([FAILWITH], [])
+      | Oprim ({prim = "ASSERT_LEFT"; _})                    -> T.IF_LEFT ([], [FAILWITH])
+      | Oprim ({prim = "ASSERT_RIGHT"; _})                   -> T.IF_LEFT ([FAILWITH], [])
+
+      | Oprim ({prim = "ASSERT_CMPEQ"; _})                   -> T.SEQ [COMPARE; EQ; IF ([], [UNIT; FAILWITH])]
+      | Oprim ({prim = "ASSERT_CMPNEQ"; _})                  -> T.SEQ [COMPARE; NEQ; IF ([], [UNIT; FAILWITH])]
+      | Oprim ({prim = "ASSERT_CMPLT"; _})                   -> T.SEQ [COMPARE; LT; IF ([], [UNIT; FAILWITH])]
+      | Oprim ({prim = "ASSERT_CMPGT"; _})                   -> T.SEQ [COMPARE; GT; IF ([], [UNIT; FAILWITH])]
+      | Oprim ({prim = "ASSERT_CMPLE"; _})                   -> T.SEQ [COMPARE; LE; IF ([], [UNIT; FAILWITH])]
+      | Oprim ({prim = "ASSERT_CMPGE"; _})                   -> T.SEQ [COMPARE; GE; IF ([], [UNIT; FAILWITH])]
+
+      | Oprim ({prim = "ASSERT_EQ"; _})                      -> T.SEQ [EQ; IF ([], [UNIT; FAILWITH])]
+      | Oprim ({prim = "ASSERT_NEQ"; _})                     -> T.SEQ [NEQ; IF ([], [UNIT; FAILWITH])]
+      | Oprim ({prim = "ASSERT_LT"; _})                      -> T.SEQ [LT; IF ([], [UNIT; FAILWITH])]
+      | Oprim ({prim = "ASSERT_GT"; _})                      -> T.SEQ [GT; IF ([], [UNIT; FAILWITH])]
+      | Oprim ({prim = "ASSERT_LE"; _})                      -> T.SEQ [LE; IF ([], [UNIT; FAILWITH])]
+      | Oprim ({prim = "ASSERT_GE"; _})                      -> T.SEQ [GE; IF ([], [UNIT; FAILWITH])]
+
+      | _ -> Format.eprintf "code unknown: %a@." T.pp_obj_micheline o; assert false
+    in
+    let seek i l : T.obj_micheline = List.find T.(function | Oprim ({prim = p; _}) -> String.equal i p | _ -> false) l in
+    let get_arg = function | T.Oprim ({args=x::_; _}) -> x | _ -> assert false in
+
+    let storage   = l |> seek "storage"   |> get_arg |> to_type in
+    let parameter = l |> seek "parameter" |> get_arg |> to_type in
+    let code      = l |> seek "code"      |> get_arg |> to_code in
+
+    T.mk_michelson storage parameter (Michelson.Utils.flat code)
+  in
+
+  to_michelson input, env
 
 type ir_env = {
   cpt_alpha: int;
