@@ -18,13 +18,59 @@ let parse_michelson (filename, ic) : T.michelson * env =
     | _ -> filename |> Filename.basename |> Filename.chop_extension
   in
   let env = mk_env ~name:name () in
-  let tokens = Lexing.from_channel ic in
-  let res = Michelson_parser.main Michelson_lexer.token tokens in
 
   let input =
-    match res with
-    | Oarray l -> l
-    | _ -> raise (Error.ParseError !Error.errors)
+    if !Options.opt_json then
+      let open Yojson.Safe in
+
+      let is_prim s l = List.exists (fun x -> String.equal s (fst x)) l
+      in
+
+      let rec aux (i : t) : T.obj_micheline =
+        match i with
+        | `Assoc l when is_prim "prim" l -> begin
+            let extract l =
+              List.fold_left (
+                fun (prim, args, annots) (id, json) ->
+                  match id, json with
+                  | "prim", `String s -> (s, args, annots)
+                  | "args", `List l ->  (prim, List.map aux l, annots)
+                  | "annots", `List l ->  (prim, args, List.map (function | `String s -> s | _ -> assert false) l)
+                  | _ -> (prim, args, annots)
+              ) ("", [], []) l
+            in
+            let prim, args, annots = extract l in
+            let prim : T.prim = { prim = prim; args = args; annots = annots } in
+            T.Oprim prim
+          end
+        | `Assoc l when is_prim "int" l -> begin
+            let json = List.find (fun x -> String.equal "int" (fst x)) l in
+            let s = match snd json with | `String s -> s | _ -> assert false in
+            T.Ostring s
+          end
+        | `Assoc l when is_prim "string" l -> begin
+            let json = List.find (fun x -> String.equal "string" (fst x)) l in
+            let s = match snd json with | `String s -> s | _ -> assert false in
+            T.Ostring s
+          end
+        | `Assoc l when is_prim "bytes" l -> begin
+            let json = List.find (fun x -> String.equal "bytes" (fst x)) l in
+            let s = match snd json with | `String s -> s | _ -> assert false in
+            T.Ostring s
+          end
+        | `List l -> T.Oarray (List.map aux l)
+        | _ -> Format.printf "%s@." (to_string i); assert false
+      in
+      let open Util in
+      let json = from_channel ic in
+      let code = json |> member "code" |> to_list in
+      List.map aux code
+    else
+      let tokens = Lexing.from_channel ic in
+      let res = Michelson_parser.main Michelson_lexer.token tokens in
+      match res with
+      | Oarray l -> l
+      | _ -> raise (Error.ParseError !Error.errors)
   in
 
   let to_michelson (l : T.obj_micheline list) : T.michelson =
@@ -230,11 +276,11 @@ let parse_michelson (filename, ic) : T.michelson * env =
       | Oprim ({prim = "CMPLE"; _})                          -> T.SEQ [COMPARE; LE]
       | Oprim ({prim = "CMPGE"; _})                          -> T.SEQ [COMPARE; GE]
 
-      | Oprim ({prim = "ASSERT"; _})                         -> T.IF ([], [FAILWITH])
-      | Oprim ({prim = "ASSERT_NONE"; _})                    -> T.IF_NONE ([], [FAILWITH])
-      | Oprim ({prim = "ASSERT_SOME"; _})                    -> T.IF_NONE ([FAILWITH], [])
-      | Oprim ({prim = "ASSERT_LEFT"; _})                    -> T.IF_LEFT ([], [FAILWITH])
-      | Oprim ({prim = "ASSERT_RIGHT"; _})                   -> T.IF_LEFT ([FAILWITH], [])
+      | Oprim ({prim = "ASSERT"; _})                         -> T.IF ([], [UNIT; FAILWITH])
+      | Oprim ({prim = "ASSERT_NONE"; _})                    -> T.IF_NONE ([], [UNIT; FAILWITH])
+      | Oprim ({prim = "ASSERT_SOME"; _})                    -> T.IF_NONE ([UNIT; FAILWITH], [])
+      | Oprim ({prim = "ASSERT_LEFT"; _})                    -> T.IF_LEFT ([], [UNIT; FAILWITH])
+      | Oprim ({prim = "ASSERT_RIGHT"; _})                   -> T.IF_LEFT ([UNIT; FAILWITH], [])
 
       | Oprim ({prim = "ASSERT_CMPEQ"; _})                   -> T.SEQ [COMPARE; EQ; IF ([], [UNIT; FAILWITH])]
       | Oprim ({prim = "ASSERT_CMPNEQ"; _})                  -> T.SEQ [COMPARE; NEQ; IF ([], [UNIT; FAILWITH])]
