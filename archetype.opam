@@ -33,7 +33,6 @@ depends: [
   "ppx_deriving_yojson"
   "visitors"
   "hex"
-  "unix"
 ]
 conflicts: [
   "digestif" {= "0.7.4"}
