@@ -1,4 +1,4 @@
-archetype asset_initializedby_partition_filled
+archetype asset_initializedby_aggregate_filled_not_exist
 
 asset o_asset {
   oid: nat;
@@ -16,9 +16,7 @@ asset my_asset identified by id {
   id : string;
   o  : aggregate<o_asset>;
 } initialized by {
-  {"my_id0"; [0; 1; 2]};
-  {"my_id1"; [3; 4; 5]};
-  {"my_id2"; [0; 1; 2]}
+  {"my_id0"; [9]}
 }
 
 entry exec () {
