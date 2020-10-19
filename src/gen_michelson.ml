@@ -133,7 +133,7 @@ let to_ir (model : M.model) : T.ir =
     | Mlitlist   l      -> T.Dlist (List.map to_data l)
     | Mlitmap    (_, l) -> T.Dlist (List.map (fun (x, y) -> T.Delt (to_data x, to_data y)) l)
     | Muminus    v      -> to_data v |> (function | T.Dint n -> T.Dint (Big_int.mult_int_big_int (-1) n) | _ -> assert false )
-    | Mnow              -> T.Dint Big_int.zero_big_int
+    | Mnow              -> T.Dint (Unix.time () |> int_of_float |> Big_int.big_int_of_int)
     | Mlitrecord l      -> to_one_data (List.map (to_data |@ snd) l)
     | Mleft (_, x)      -> T.Dleft (to_data x)
     | Mright (_, x)     -> T.Dright (to_data x)
