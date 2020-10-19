@@ -11,7 +11,7 @@ type env = {
 
 let mk_env ?(name="") _ : env = { name }
 
-let parse_michelson (filename, ic) : T.michelson * env =
+let parse_micheline (filename, ic) : T.obj_micheline * env =
   let name =
     match filename with
     | "<stdin>" -> "noname"
@@ -23,12 +23,11 @@ let parse_michelson (filename, ic) : T.michelson * env =
     if !Options.opt_json then
       let open Yojson.Safe in
 
-      let is_prim s l = List.exists (fun x -> String.equal s (fst x)) l
-      in
+      let is_tag s l = List.exists (fun x -> String.equal s (fst x)) l in
 
       let rec aux (i : t) : T.obj_micheline =
         match i with
-        | `Assoc l when is_prim "prim" l -> begin
+        | `Assoc l when is_tag "prim" l -> begin
             let extract l =
               List.fold_left (
                 fun (prim, args, annots) (id, json) ->
@@ -43,20 +42,20 @@ let parse_michelson (filename, ic) : T.michelson * env =
             let prim : T.prim = { prim = prim; args = args; annots = annots } in
             T.Oprim prim
           end
-        | `Assoc l when is_prim "int" l -> begin
+        | `Assoc l when is_tag "int" l -> begin
             let json = List.find (fun x -> String.equal "int" (fst x)) l in
             let s = match snd json with | `String s -> s | _ -> assert false in
-            T.Ostring s
+            T.Oint s
           end
-        | `Assoc l when is_prim "string" l -> begin
+        | `Assoc l when is_tag "string" l -> begin
             let json = List.find (fun x -> String.equal "string" (fst x)) l in
             let s = match snd json with | `String s -> s | _ -> assert false in
             T.Ostring s
           end
-        | `Assoc l when is_prim "bytes" l -> begin
+        | `Assoc l when is_tag "bytes" l -> begin
             let json = List.find (fun x -> String.equal "bytes" (fst x)) l in
             let s = match snd json with | `String s -> s | _ -> assert false in
-            T.Ostring s
+            T.Obytes s
           end
         | `List l -> T.Oarray (List.map aux l)
         | _ -> Format.printf "%s@." (to_string i); assert false
@@ -64,17 +63,15 @@ let parse_michelson (filename, ic) : T.michelson * env =
       let open Util in
       let json = from_channel ic in
       let code = json |> member "code" |> to_list in
-      List.map aux code
+      T.Oarray (List.map aux code)
     else
       let tokens = Lexing.from_channel ic in
-      let res = Michelson_parser.main Michelson_lexer.token tokens in
-      match res with
-      | Oarray l -> l
-      | _ -> raise (Error.ParseError !Error.errors)
+      Michelson_parser.main Michelson_lexer.token tokens
   in
+  input, env
 
-  let to_michelson (l : T.obj_micheline list) : T.michelson =
-
+let to_michelson (input, env : T.obj_micheline * env) : T.michelson * env =
+  let ff (input : T.obj_micheline) : T.michelson =
     let fa l = match l with | a::_ -> Some a | [] -> None in
 
     let rec to_type (o : T.obj_micheline) : T.type_ =
@@ -115,7 +112,7 @@ let parse_michelson (filename, ic) : T.michelson * env =
       | _ -> Format.eprintf "type unknown %a@." T.pp_obj_micheline o; assert false
     in
 
-    let to_int = function | T.Oint x -> int_of_string x | _ -> assert false in
+    let to_int = function | T.Oint x -> int_of_string x | o -> Format.eprintf "to_int unknown %a@." T.pp_obj_micheline o; assert false in
 
     let rec to_data (o : T.obj_micheline) : T.data =
       let f = to_data in
@@ -201,7 +198,7 @@ let parse_michelson (filename, ic) : T.michelson * env =
       | Oprim ({prim = "BALANCE"; _})                        -> T.BALANCE
       | Oprim ({prim = "CHAIN_ID"; _})                       -> T.CHAIN_ID
       | Oprim ({prim = "CONTRACT"; args = t::_; annots = a}) -> T.CONTRACT (to_type t, fa a)
-      | Oprim ({prim = "CREATE_CONTRACT"; args = l::_; _})   -> T.CREATE_CONTRACT (seq l)
+      | Oprim ({prim = "CREATE_CONTRACT"; args = _c::_; _})  -> T.CREATE_CONTRACT []
       | Oprim ({prim = "IMPLICIT_ACCOUNT"; _})               -> T.IMPLICIT_ACCOUNT
       | Oprim ({prim = "NOW"; _})                            -> T.NOW
       | Oprim ({prim = "SELF"; _})                           -> T.SELF
@@ -301,14 +298,13 @@ let parse_michelson (filename, ic) : T.michelson * env =
     let seek i l : T.obj_micheline = List.find T.(function | Oprim ({prim = p; _}) -> String.equal i p | _ -> false) l in
     let get_arg = function | T.Oprim ({args=x::_; _}) -> x | _ -> assert false in
 
+    let l = input |> (function | Oarray l -> l | _ -> assert false) in
     let storage   = l |> seek "storage"   |> get_arg |> to_type in
     let parameter = l |> seek "parameter" |> get_arg |> to_type in
     let code      = l |> seek "code"      |> get_arg |> to_code in
-
     T.mk_michelson storage parameter (Michelson.Utils.flat code)
   in
-
-  to_michelson input, env
+  ff input, env
 
 type ir_env = {
   cpt_alpha: int;

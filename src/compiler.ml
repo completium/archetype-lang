@@ -51,6 +51,16 @@ let output_dprogram (dp : Michelson.dprogram) =
   then Format.printf "%a@." Michelson.pp_dprogram dp
   else Format.printf "%a@." Printer_michelson.pp_dprogram dp
 
+let output_obj_micheline (o : Michelson.obj_micheline) =
+  if !Options.opt_raw
+  then Format.printf "%a@." Michelson.pp_obj_micheline o
+  else Format.printf "%a@." Printer_michelson.pp_obj_micheline o
+
+let output_micheline (m : Michelson.micheline) =
+  if !Options.opt_raw
+  then Format.printf "%a@." Michelson.pp_micheline m
+  else Format.printf "%a@." Printer_michelson.pp_micheline m
+
 let output_michelson (m : Michelson.michelson) =
   if !Options.opt_raw
   then Format.printf "%a@." Michelson.pp_michelson m
@@ -362,7 +372,9 @@ let decompile (filename, channel) =
   let cont c p (m, e) = if c then (p m; raise Stop); (m, e) in
 
   (filename, channel)
-  |> parse_michelson
+  |> parse_micheline
+  |> cont !Options.opt_mici output_obj_micheline
+  |> to_michelson
   |> cont !Options.opt_mic output_michelson
   |> to_dir
   |> cont !Options.opt_dir  output_dprogram
@@ -456,6 +468,7 @@ let main () =
       "--intermediate-representation", Arg.Set Options.opt_ir, " Same as -ir";
       "-dir", Arg.Set Options.opt_dir, " Generate intermediate decompilation";
       "--d-intermediate-representation", Arg.Set Options.opt_dir, " Same as -dir";
+      "-mici", Arg.Set Options.opt_mici, " Output micheline";
       "-mi", Arg.Set Options.opt_mic, " Output michelson";
       "-ri", Arg.Set Options.opt_raw_ir, " Print raw intermediate representation";
       "--raw-ir", Arg.Set Options.opt_raw_ir, " Same as -ri";
