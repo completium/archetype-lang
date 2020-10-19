@@ -21,7 +21,7 @@ process_files() {
     printf '%-50s' `basename $i`
     process $i -mici
     process $i -mi
-#    process $i -dir
+    process $i -dir
 #    process $i -ir
 #    process $i -mdl
 #    process $i
