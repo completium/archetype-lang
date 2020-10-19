@@ -1405,12 +1405,20 @@ let replace_date_duration_by_timestamp (model : model) : model =
     in
     aux t
   in
-  let to_timestamp (x : mterm) =
+  let rec to_timestamp (x : mterm) =
+    let mk n = mk_mterm (Mtimestamp n) ttimestamp in
+    let extract (x : mterm) = match x.node with | Mtimestamp n -> n | _ -> assert false in
+    let f = to_timestamp in
+    let g = extract |@ f in
     match x.node with
-    | Mdate d     -> mk_mterm (Mtimestamp (Core.date_to_timestamp d)) ttimestamp
-    (* | Mduration d -> mk_mterm (Mint (Core.duration_to_timestamp d)) tint *)
-    | Mnow
-    | Mtimestamp _ -> x
+    | Mdate d       -> mk (Core.date_to_timestamp d)
+    | Mduration d   -> mk (Core.duration_to_timestamp d)
+    | Mint i        -> mk i
+    | Mnat n        -> mk n
+    | Mnow          -> mk (Unix.time () |> int_of_float |> Big_int.big_int_of_int)
+    | Mplus  (a, b) -> mk (Big_int.add_big_int (g a) (g b))
+    | Mminus (a, b) -> mk (Big_int.sub_big_int (g a) (g b))
+    | Mtimestamp _  -> x
     | _ ->
       begin
         Format.eprintf "cannot transform to timestamp: %a@.%a@." Printer_model.pp_mterm x pp_mterm x;
