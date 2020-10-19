@@ -9,7 +9,7 @@ type error_desc =
   | AssetPartitionnedby of string * string list
   | CannotBuildAsset of string * string
   | ContainersInAssetContainers of string * string * string
-  | NoEmptyContainerForInitAsset of string * string * container
+  (* | NoEmptyContainerForInitAsset of string * string * container *)
   | NoEmptyContainerForDefaultValue of string * string * container
   | NoClearForPartitionAsset of ident
   | DefaultValueOnKeyAsset of ident
@@ -33,10 +33,10 @@ let pp_error_desc fmt = function
     Format.fprintf fmt "Cannot build an asset '%s', '%s' is a container field, which refers to an asset '%s', which contains a container field itself."
       an fn an2
 
-  | NoEmptyContainerForInitAsset (an, fn, c) ->
+  (* | NoEmptyContainerForInitAsset (an, fn, c) ->
     Format.fprintf fmt "Field '%s' of '%s' asset is a %a, which must be initialized by an empty container."
       fn an
-      Printer_model.pp_container c
+      Printer_model.pp_container c *)
 
   | NoEmptyContainerForDefaultValue (an, fn, c) ->
     Format.fprintf fmt "Field '%s' of '%s' asset is a %a, which must be initialized by an empty container."
@@ -506,7 +506,7 @@ let check_containers_asset (model : model) : model =
   if List.is_not_empty l then raise (Error.Stop 5);
   model
 
-let check_empty_container_on_initializedby (model : model) : model =
+(* let check_empty_container_on_initializedby (model : model) : model =
   let l : (string * string * container * Location.t) list =
     List.fold_right (fun asset accu -> ((List.fold_right (fun (value : mterm) accu ->
         (fun (asset : asset) (value : mterm) accu ->
@@ -523,7 +523,7 @@ let check_empty_container_on_initializedby (model : model) : model =
   in
   List.iter (fun (an, fn, c, l) -> emit_error (l, (NoEmptyContainerForInitAsset (an, fn, c)))) l;
   if List.is_not_empty l then raise (Error.Stop 5);
-  model
+  model *)
 
 let check_empty_container_on_asset_default_value (model : model) : model =
   let assets = Utils.get_assets model in
