@@ -745,10 +745,70 @@ let prune_properties (model : model) : model =
     }
 
 let move_partition_init_asset (model : model) : model =
-   (* let map =
+  let extract_assets model : (mterm list) MapString.t * model =
+    let add_map k l m =
+      let ll = match MapString.find_opt k m with
+        | None -> []
+        | Some l -> l
+      in
+      MapString.add k (ll @ l) m
+    in
+    let map : (mterm list) MapString.t = MapString.empty in
+    let map, decls = List.fold_left (
+        fun (map, decls) decl ->
+          match decl with
+          | Dasset a -> begin
+              let map, init = List.fold_left (
+                  fun (map, assets) (asset : mterm) ->
+                    let map, assets =
+                      match asset.node with
+                      | Masset fields -> begin
+                          let map, fields =
+                            List.fold_left2 (fun (map, fields) (ai : asset_item) (fv : mterm) ->
+                                match fv.node, ai.type_ with
+                                | Massets l, (Tcontainer ((Tasset aan, _), Partition), _) -> begin
+                                    let aan = unloc aan in
+                                    let _, kt = Utils.get_asset_key model aan in
+                                    let extract_key (mt : mterm)=
+                                      match mt.node with
+                                      | Masset l -> List.nth l (Utils.get_key_pos model aan)
+                                      | _ -> assert false
+                                    in
+                                    let keys = List.map extract_key l in
+                                    let map = add_map aan l map in
+                                    map, fields @ [mk_mterm (Mlitset keys) (tset kt)]
+                                  end
+                                | _ -> map, (fields @ [fv])
+                              ) (map, []) a.values fields
+                          in
+                          map, assets @ [{ asset with node = Masset fields }]
+                        end
+                      | _ -> assert false
+                    in
+                    map, assets
+                ) (map, []) a.init in
+              map, (decls @ [Dasset {a with init = init}])
+            end
+          | _ -> (map, decls)
+      ) (map, []) model.decls in
+    map, {
+      model with
+      decls = decls
+    }
+  in
 
-   in *)
-   model
+  let add_assets (map, model : (mterm list) MapString.t * model) : model =
+    let f (d : decl_node) : decl_node =
+      match d with
+      | Dasset a when MapString.mem (unloc a.name) map -> Dasset { a with init = a.init @ (MapString.find (unloc a.name) map )}
+      | _ -> d
+    in
+    { model with
+      decls = List.map f model.decls }
+  in
+  model
+  |> extract_assets
+  |> add_assets
 
 let replace_declvar_by_letin (model : model) : model =
   let empty : mterm = mk_mterm (Mseq []) tunit in
