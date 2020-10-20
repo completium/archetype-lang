@@ -253,7 +253,7 @@ let generate_target model =
     |> getter_to_entry ~extra:true
     |> process_multi_keys
     |> replace_col_by_key_for_ckfield
-    (* |> move_partition_init_asset *)
+    |> move_partition_init_asset
     |> process_asset_state
     |> replace_assignfield_by_update
     |> remove_add_update ~with_force:true

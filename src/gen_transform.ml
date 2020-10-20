@@ -789,7 +789,7 @@ let move_partition_init_asset (model : model) : model =
                 ) (map, []) a.init in
               map, (decls @ [Dasset {a with init = init}])
             end
-          | _ -> (map, decls)
+          | _ -> (map, decls @ [decl])
       ) (map, []) model.decls in
     map, {
       model with
