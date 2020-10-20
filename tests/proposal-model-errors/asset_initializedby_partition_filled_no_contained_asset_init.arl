@@ -1,0 +1,19 @@
+archetype asset_initializedby_partition_filled_no_contained_asset_init
+
+asset o_asset {
+  oid: int;
+  v : string;
+} initialized by {
+  {0; "str0"}
+}
+
+asset my_asset identified by id {
+  id : string;
+  o  : partition<o_asset>;
+} initialized by {
+  {"my_id0"; []}
+}
+
+entry exec () {
+  ()
+}
