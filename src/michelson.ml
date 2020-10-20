@@ -753,6 +753,44 @@ let cmp_builtin lhs rhs =
   | Bratdur, Bratdur                   -> true
   | _ -> false
 
+let map_type (f : type_ -> type_) (t : type_) : type_ =
+  let node =
+    match t.node with
+    | Taddress             -> Taddress
+    | Tbig_map   (k, v)    -> Tbig_map   (f k, f v)
+    | Tbool                -> Tbool
+    | Tbytes               -> Tbytes
+    | Tchain_id            -> Tchain_id
+    | Tcontract  t         -> Tcontract  (f t)
+    | Tint                 -> Tint
+    | Tkey                 -> Tkey
+    | Tkey_hash            -> Tkey_hash
+    | Tlambda    (a, r)    -> Tlambda    (f a, f r)
+    | Tlist      t         -> Tlist      (f t)
+    | Tmap       (k, v)    -> Tmap       (f k, f v)
+    | Tmutez               -> Tmutez
+    | Tnat                 -> Tnat
+    | Toperation           -> Toperation
+    | Toption    t         -> Toption    (f t)
+    | Tor        (l, r)    -> Tor        (f l, f r)
+    | Tpair      (l, r)    -> Tpair      (f l, f r)
+    | Tset       t         -> Tset       (f t)
+    | Tsignature           -> Tsignature
+    | Tstring              -> Tstring
+    | Ttimestamp           -> Ttimestamp
+    | Tunit                -> Tunit
+    | Tsapling_transaction -> Tsapling_transaction
+    | Tsapling_state       -> Tsapling_state
+    | Tnever               -> Tnever
+    | Tbls12_381_g1        -> Tbls12_381_g1
+    | Tbls12_381_g2        -> Tbls12_381_g2
+    | Tbls12_381_fr        -> Tbls12_381_fr
+    | Tbaker_hash          -> Tbaker_hash
+    | Tbaker_operation     -> Tbaker_operation
+    | Tpvss_key            -> Tpvss_key
+  in
+  {node = node; annotation = t.annotation}
+
 let map_data (f : data -> data) = function
   | Dint n       -> Dint n
   | Dstring v    -> Dstring v

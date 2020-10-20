@@ -1,7 +1,7 @@
 archetype asset_initializedby_partition_filled
 
 asset o_asset {
-  oid: int;
+  oid: nat;
   v : string;
 }
 

@@ -42,6 +42,13 @@ let fun_result = "_fun_res"
 
 let mk_fannot x = "%" ^ x
 
+let rar t =
+  let rec aux (t : T.type_) : T.type_ =
+    let t = T.map_type aux t in
+    { t with annotation = None }
+  in
+  aux t
+
 type env_ir = {
   function_p: (ident * (ident * T.type_) list) option
 }
@@ -97,7 +104,10 @@ let to_ir (model : M.model) : T.ir =
       | Tor (l, r)     -> T.Tor (to_type l, to_type r)
       | Trecord id     -> begin
           let r = M.Utils.get_record model (unloc id) in
-          let lt = List.map (fun (x : M.record_field) -> x.type_) r.fields in
+          let lt = List.map (fun (x : M.record_field) ->
+              match snd x.type_ with
+              | Some _ -> x.type_
+              | None -> fst x.type_, Some (dumloc (mk_fannot (unloc x.name)))) r.fields in
           to_one_type (List.map to_type lt) |> fun x -> x.node
         end
       | Tlambda (a, r) -> Tlambda (to_type a, to_type r)
@@ -108,6 +118,16 @@ let to_ir (model : M.model) : T.ir =
       | Tprog  _ -> assert false
       | Tvset  _ -> assert false
       | Ttrace _ -> assert false
+    in
+    let annotation =
+      match annotation with
+      | Some _ -> annotation
+      | _ -> begin
+          match snd t with
+          | Some a when String.equal "%_" (unloc a) -> None
+          | Some a -> Some (unloc a)
+          | None -> None
+        end
     in
     T.mk_type ?annotation node
   in
@@ -1144,12 +1164,12 @@ let to_michelson (ir : T.ir) : T.michelson =
           | Zchain_id           -> T.CHAIN_ID
           | Zself _             -> T.SELF
           | Zself_address       -> T.SEQ [T.SELF; T.ADDRESS]
-          | Znone t             -> T.NONE t
+          | Znone t             -> T.NONE (rar t)
           | Zunit               -> T.UNIT
-          | Znil t              -> T.NIL t
-          | Zemptyset t         -> T.EMPTY_SET t
-          | Zemptymap (k, v)    -> T.EMPTY_MAP (k, v)
-          | Zemptybigmap (k, v) -> T.EMPTY_BIG_MAP (k, v)
+          | Znil t              -> T.NIL (rar t)
+          | Zemptyset t         -> T.EMPTY_SET (rar t)
+          | Zemptymap (k, v)    -> T.EMPTY_MAP (rar k, rar v)
+          | Zemptybigmap (k, v) -> T.EMPTY_BIG_MAP (rar k, rar v)
         in
         c, inc_env env
       end
@@ -1158,8 +1178,8 @@ let to_michelson (ir : T.ir) : T.michelson =
           match op with
           | Ucar             -> T.CAR
           | Ucdr             -> T.CDR
-          | Uleft t          -> T.LEFT t
-          | Uright t         -> T.RIGHT t
+          | Uleft t          -> T.LEFT (rar t)
+          | Uright t         -> T.RIGHT (rar t)
           | Uneg             -> T.NEG
           | Uint             -> T.INT
           | Unot             -> T.NOT
@@ -1168,13 +1188,13 @@ let to_michelson (ir : T.ir) : T.michelson =
           | Usome            -> T.SOME
           | Usize            -> T.SIZE
           | Upack            -> T.PACK
-          | Uunpack        t -> T.UNPACK t
+          | Uunpack        t -> T.UNPACK (rar t)
           | Ublake2b         -> T.BLAKE2B
           | Usha256          -> T.SHA256
           | Usha512          -> T.SHA512
           | Uhash_key        -> T.HASH_KEY
           | Ufail            -> T.FAILWITH
-          | Ucontract (t, a) -> T.CONTRACT (t, a)
+          | Ucontract (t, a) -> T.CONTRACT (rar t, a)
           | Usetdelegate     -> T.SET_DELEGATE
           | Uimplicitaccount -> T.IMPLICIT_ACCOUNT
           | Ueq              -> T.EQ
@@ -1226,7 +1246,7 @@ let to_michelson (ir : T.ir) : T.michelson =
         let a1, env = fe env a1 in
         T.SEQ [a3; a2; a1; op], (dec_env (dec_env env))
       end
-    | Iconst (t, e) -> T.PUSH (t, e), inc_env env
+    | Iconst (t, e) -> T.PUSH (rar t, e), inc_env env
     | Icompare (op, lhs, rhs) -> begin
         let op =
           match op with

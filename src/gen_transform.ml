@@ -9,7 +9,6 @@ type error_desc =
   | AssetPartitionnedby of string * string list
   | CannotBuildAsset of string * string
   | ContainersInAssetContainers of string * string * string
-  (* | NoEmptyContainerForInitAsset of string * string * container *)
   | NoEmptyContainerForDefaultValue of string * string * container
   | NoClearForPartitionAsset of ident
   | DefaultValueOnKeyAsset of ident
@@ -32,11 +31,6 @@ let pp_error_desc fmt = function
   | ContainersInAssetContainers (an, fn, an2) ->
     Format.fprintf fmt "Cannot build an asset '%s', '%s' is a container field, which refers to an asset '%s', which contains a container field itself."
       an fn an2
-
-  (* | NoEmptyContainerForInitAsset (an, fn, c) ->
-    Format.fprintf fmt "Field '%s' of '%s' asset is a %a, which must be initialized by an empty container."
-      fn an
-      Printer_model.pp_container c *)
 
   | NoEmptyContainerForDefaultValue (an, fn, c) ->
     Format.fprintf fmt "Field '%s' of '%s' asset is a %a, which must be initialized by an empty container."
@@ -506,25 +500,6 @@ let check_containers_asset (model : model) : model =
   if List.is_not_empty l then raise (Error.Stop 5);
   model
 
-(* let check_empty_container_on_initializedby (model : model) : model =
-  let l : (string * string * container * Location.t) list =
-    List.fold_right (fun asset accu -> ((List.fold_right (fun (value : mterm) accu ->
-        (fun (asset : asset) (value : mterm) accu ->
-           match value.node with
-           | Masset l ->
-             (List.fold_right2 (fun (field : asset_item) (y : mterm) accu ->
-                  match get_ntype field.type_, y.node with
-                  | Tcontainer ((Tasset _, _), c), Massets ll when List.is_not_empty ll -> [unloc asset.name, unloc field.name, c, y.loc]
-                  | _ -> accu
-                ) asset.values l [])::accu
-           | _ -> accu
-        )
-          asset value accu) asset.init []) |> List.flatten)::accu) (Utils.get_assets model) [] |> List.flatten
-  in
-  List.iter (fun (an, fn, c, l) -> emit_error (l, (NoEmptyContainerForInitAsset (an, fn, c)))) l;
-  if List.is_not_empty l then raise (Error.Stop 5);
-  model *)
-
 let check_empty_container_on_asset_default_value (model : model) : model =
   let assets = Utils.get_assets model in
   let is_emtpy_container (omt : mterm) =
@@ -768,6 +743,12 @@ let prune_properties (model : model) : model =
       specification = prune_specs model.specification;
       security = prune_secs model.security
     }
+
+let move_partition_init_asset (model : model) : model =
+   (* let map =
+
+   in *)
+   model
 
 let replace_declvar_by_letin (model : model) : model =
   let empty : mterm = mk_mterm (Mseq []) tunit in
@@ -2986,25 +2967,6 @@ let filter_api_storage (model : model) =
     api_items = filter model.api_items |> Utils.sort_api_storage model true
   }
 
-let remove_asset (model : model) : model =
-  let for_storage_item (si : storage_item) : storage_item =
-    let rec remove_assets x =
-      let aux mt =
-        match mt with
-        | {node = Massets []; type_ = (Tcontainer (tk, (Aggregate | Partition)), _)} ->
-          mk_mterm (Mlitset []) (tset tk)
-        | _ -> map_mterm remove_assets mt
-      in
-      aux x
-    in
-    { si with
-      default = remove_assets si.default
-    }
-  in
-  { model with
-    storage = List.map for_storage_item model.storage
-  }
-
 let process_multi_keys (model : model) : model =
   let fold (model : model) (asset_name : ident) : model =
     match (Utils.get_asset model asset_name).keys with
@@ -3221,12 +3183,34 @@ let remove_asset (model : model) : model =
   let process_storage (model : model) : model * ((bool * bool) * type_) MapString.t =
     let for_storage_item map (x : storage_item) =
       let map_storage_mterm (mt : mterm) : mterm =
-        let rec aux (mt : mterm) : mterm =
-          match mt with
-          | { node = Massets l; type_ = (Tcontainer (t, _), _)} -> mk_mterm (Mlitset (List.map aux l)) (tset t)
-          | _ -> map_mterm aux mt
-        in
-        aux mt
+        match mt with
+        | { node = Mlitmap (b, l) } -> begin
+            let rec aux (mt : mterm) : mterm =
+              match mt with
+              | { node = Massets _l; type_ = (Tcontainer ((Tasset an, _), (Partition | Aggregate)), _)} ->
+                let kt = Utils.get_asset_key model (unloc an) |> snd in
+                (* let extract_key (l : mterm list) : mterm =
+                   List.nth l (Utils.get_key_pos model (unloc an))
+                   in
+                   let extract_asset (mt : mterm) : mterm list =
+                   match mt.node with
+                   | Masset l -> l
+                   | _ -> assert false
+                   in
+                   let ll = List.map extract_asset l in
+                   let lll = List.map extract_key ll in *)
+                mk_mterm (Mlitset []) (tset kt)
+              | { node = Massets l; type_ = (Tcontainer (kt, (Partition | Aggregate)), _)} ->
+                mk_mterm (Mlitset l) (tset kt)
+              | _ -> map_mterm aux mt
+            in
+            let l = List.map (fun (x, y) -> (x, aux y)) l in
+            { mt with node = Mlitmap (b, l) }
+          end
+        | { node = Massets _l; type_ = (Tcontainer (kt, (Partition | Aggregate)), _)} -> begin
+            mk_mterm (Mlitset []) (tset kt)
+          end
+        | _ -> mt
       in
       match x.model_type, get_ntype x.typ with
       | MTasset an, Tmap (b, k, (Tasset _, _)) -> begin
