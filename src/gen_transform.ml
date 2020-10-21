@@ -18,6 +18,7 @@ type error_desc =
   | NoEntrypoint
   | UnknownContract of ident
   | NoSortOnKeyWithMultiKey of ident
+  | NoInitForPartitionAsset of ident
 
 let pp_error_desc fmt = function
   | AssetPartitionnedby (i, l)         ->
@@ -58,6 +59,8 @@ let pp_error_desc fmt = function
   | NoEntrypoint -> Format.fprintf fmt "No entrypoint found (action or transtion)"
 
   | NoSortOnKeyWithMultiKey f -> Format.fprintf fmt "No sort on key with multi key: %s" f
+
+  | NoInitForPartitionAsset an -> Format.fprintf fmt "Asset '%s' is used in a partition, no asset must initialized" an
 
 type error = Location.t * error_desc
 
@@ -615,6 +618,42 @@ let rec is_literal (mt : mterm) : bool =
   | Minttorat v
   | Mcast (_, _, v) -> is_literal v
   | _ -> false
+
+let check_init_partition_in_asset (model : model) : model =
+
+  let an_partition : ident list =
+    List.map (function
+        | Dasset da ->
+          List.fold_left (fun accu (ai : asset_item) ->
+              match ai.type_ with
+              | Tcontainer ((Tasset an, _), Partition), _ -> (unloc an)::accu
+              | _ -> accu
+            ) [] da.values
+        | _ -> []
+      ) model.decls |> List.flatten
+  in
+
+  let errors : (Location.t * error_desc) list =
+    List.map (function
+        | Dasset da -> begin
+            let an : ident = unloc da.name in
+            let init : mterm list = da.init in
+            if
+              List.exists (String.equal an) an_partition &&
+              not (List.is_empty init)
+            then
+              let loc =
+                init
+                |> List.map (fun (x : mterm) -> x.loc)
+                |> Location.mergeall
+              in
+              [loc, NoInitForPartitionAsset an]
+            else []
+          end
+        | _ -> []) model.decls |> List.flatten
+  in
+  List.iter emit_error errors;
+  model
 
 let check_duplicated_keys_in_asset (model : model) : model =
   let map_keys = ref MapString.empty in

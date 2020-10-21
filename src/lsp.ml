@@ -266,9 +266,9 @@ let process (filename, channel) =
                   |> Gen_transform.check_number_entrypoint
                   |> Gen_transform.check_partition_access
                   |> Gen_transform.check_containers_asset
-                  (* |> Gen_transform.check_empty_container_on_initializedby *)
                   |> Gen_transform.check_empty_container_on_asset_default_value
                   |> Gen_transform.remove_add_update
+                  |> Gen_transform.check_init_partition_in_asset
                   |> Gen_transform.check_duplicated_keys_in_asset
                   |> Gen_transform.check_asset_key
           in
