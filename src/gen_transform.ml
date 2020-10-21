@@ -617,31 +617,64 @@ let rec is_literal (mt : mterm) : bool =
   | _ -> false
 
 let check_duplicated_keys_in_asset (model : model) : model =
+  let map_keys = ref MapString.empty in
+  let add_key an key =
+    let l =
+      match MapString.find_opt an !map_keys with
+      | None   -> []
+      | Some l -> l
+    in
+    map_keys := MapString.add an (key::l) !map_keys
+  in
+  let contains_key an key =
+    match MapString.find_opt an !map_keys with
+    | None   -> false
+    | Some l -> List.exists (cmp_mterm key) l
+  in
   let errors : (Location.t * error_desc) list ref = ref [] in
+
+  let check_asset_key an l =
+    let dasset = Utils.get_asset model an in
+    let asset : asset = Model.Utils.get_asset model an in
+    let asset_keys = dasset.keys in
+    let assoc_fields = List.map2 (fun (ai : asset_item) (x : mterm) -> (unloc ai.name, x)) asset.values l in
+    let value_key =  List.find (fun (id, _) -> List.exists (String.equal id) asset_keys) assoc_fields |> snd in
+    if not (is_literal value_key)
+    then errors := (value_key.loc, OnlyLiteralInAssetInit)::!errors
+    else (
+      if contains_key an value_key
+      then errors := (value_key.loc, DuplicatedKeyAsset an)::!errors
+      else add_key an value_key)
+  in
   List.iter
     (fun d ->
        match d with
        | Dasset dasset -> begin
            let an = unloc dasset.name in
-           let marked : mterm list ref = ref [] in
            List.iter (fun (value_asset : mterm) ->
                match value_asset.node with
                | Masset l -> begin
-                   let asset : asset = Model.Utils.get_asset model an in
-                   let asset_keys = dasset.keys in
-                   let assoc_fields = List.map2 (fun (ai : asset_item) (x : mterm) -> (unloc ai.name, x)) asset.values l in
-                   let value_key =  List.find (fun (id, _) -> List.exists (String.equal id) asset_keys) assoc_fields |> snd in
-                   if not (is_literal value_key)
-                   then errors := (value_key.loc, OnlyLiteralInAssetInit)::!errors
-                   else (
-                     if List.exists (cmp_mterm value_key) !marked
-                     then errors := (value_key.loc, DuplicatedKeyAsset an)::!errors
-                     else marked := value_key::!marked)
+                   check_asset_key an l;
+                   List.iter2 (fun (ai : asset_item) (mt : mterm) ->
+                       match ai.type_ with
+                       | Tcontainer ((Tasset aan, _), Partition), _ -> begin
+                           match mt.node with
+                           | Massets ll -> begin
+                               List.iter (fun (x : mterm) ->
+                                   match x.node with
+                                   | Masset lll -> check_asset_key (unloc aan) lll
+                                   | _ -> ()
+                                 ) ll
+                             end
+                           | _ -> ()
+                         end
+                       | _ -> ()) dasset.values l
                  end
                | _ -> ()
              ) dasset.init;
          end
-       | _ -> ()) model.decls;
+       | _ -> ()
+    ) model.decls;
   List.iter emit_error !errors;
   model
 
