@@ -146,7 +146,7 @@ let rec pp_code fmt (i : code) =
   | BALANCE                  -> pp "BALANCE"
   | CHAIN_ID                 -> pp "CHAIN_ID"
   | CONTRACT (t, a)          -> pp "CONTRACT%a %a" pp_annot a pp_type t
-  | CREATE_CONTRACT  is      -> pp "CREATE_CONTRACT %a" fs is
+  | CREATE_CONTRACT (p, s, c)-> pp "CREATE_CONTRACT@\n  {@[ parameter %a ;@\n storage %a ;@\n code %a@] }" pp_type p pp_type s pp_code c
   | IMPLICIT_ACCOUNT         -> pp "IMPLICIT_ACCOUNT"
   | NOW                      -> pp "NOW"
   | SELF                     -> pp "SELF"

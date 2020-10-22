@@ -118,7 +118,7 @@ type code =
   | BALANCE
   | CHAIN_ID
   | CONTRACT           of type_ * ident option
-  | CREATE_CONTRACT    of code list
+  | CREATE_CONTRACT    of type_ * type_ * code
   | IMPLICIT_ACCOUNT
   | NOW
   | SELF
@@ -714,7 +714,7 @@ let cmp_code lhs rhs =
     | TRANSFER_TOKENS, TRANSFER_TOKENS               -> true
     | SET_DELEGATE, SET_DELEGATE                     -> true
     | CREATE_ACCOUNT, CREATE_ACCOUNT                 -> true
-    | CREATE_CONTRACT l1, CREATE_CONTRACT l2         -> List.for_all2 f l1 l2
+    | CREATE_CONTRACT (p1, s1, c1), CREATE_CONTRACT (p2, s2, c2) -> cmp_type p1 p2 && cmp_type s1 s2 && f c1 c2
     | IMPLICIT_ACCOUNT, IMPLICIT_ACCOUNT             -> true
     | NOW, NOW                                       -> true
     | AMOUNT, AMOUNT                                 -> true
@@ -863,7 +863,7 @@ let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) =
   | BALANCE                  -> BALANCE
   | CHAIN_ID                 -> CHAIN_ID
   | CONTRACT (t, a)          -> CONTRACT (ft t, a)
-  | CREATE_CONTRACT l        -> CREATE_CONTRACT (List.map fc l)
+  | CREATE_CONTRACT (p, s, c)-> CREATE_CONTRACT (ft p, ft s, fc c)
   | IMPLICIT_ACCOUNT         -> IMPLICIT_ACCOUNT
   | NOW                      -> NOW
   | SELF                     -> SELF
@@ -934,7 +934,6 @@ let rec map_seq f x =
   | LOOP_LEFT x       -> LOOP_LEFT (g x)
   | LAMBDA (a, b, x)  -> LAMBDA (a, b, g x)
   | DIP (n, x)        -> DIP (n, g x)
-  | CREATE_CONTRACT x -> CREATE_CONTRACT (g x)
   | x -> map_code (map_seq f) x
 
 
@@ -1260,7 +1259,7 @@ end = struct
     | BALANCE                  -> mk "BALANCE"
     | CHAIN_ID                 -> mk "CHAIN_ID"
     | CONTRACT (t, a)          -> mk ~args:[ft t] ~annots:(fan a) "CONTRACT"
-    | CREATE_CONTRACT l        -> mk ~args:[mk_array l] "CREATE_CONTRACT"
+    | CREATE_CONTRACT (p, s, c)-> mk ~args:[mk ~args:[ft p] "parameter"; mk ~args:[ft s] "storage"; mk ~args:[f c] "code"] "CREATE_CONTRACT"
     | IMPLICIT_ACCOUNT         -> mk "IMPLICIT_ACCOUNT"
     | NOW                      -> mk "NOW"
     | SELF                     -> mk "SELF"

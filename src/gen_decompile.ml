@@ -198,7 +198,23 @@ let to_michelson (input, env : T.obj_micheline * env) : T.michelson * env =
       | Oprim ({prim = "BALANCE"; _})                        -> T.BALANCE
       | Oprim ({prim = "CHAIN_ID"; _})                       -> T.CHAIN_ID
       | Oprim ({prim = "CONTRACT"; args = t::_; annots = a}) -> T.CONTRACT (to_type t, fa a)
-      | Oprim ({prim = "CREATE_CONTRACT"; args = _c::_; _})  -> T.CREATE_CONTRACT []
+      | Oprim ({prim = "CREATE_CONTRACT"; args = a::_; _})   -> begin
+          let seek tag a =
+            let rec aux tag accu (a : T.obj_micheline) =
+              match a with
+              | Oprim {prim=a; args=arg::_; _} when String.equal tag a -> Some arg
+              | Oarray l -> List.fold_left (fun accu x -> match accu with | Some _ -> accu | None -> aux tag accu x) accu l
+              | _ -> None
+            in
+            match aux tag None a with
+            | Some a -> a
+            | None -> assert false
+          in
+          let p = seek "parameter" a in
+          let s = seek "storage" a in
+          let c = seek "code" a in
+          T.CREATE_CONTRACT (to_type p, to_type s, f c)
+        end
       | Oprim ({prim = "IMPLICIT_ACCOUNT"; _})               -> T.IMPLICIT_ACCOUNT
       | Oprim ({prim = "NOW"; _})                            -> T.NOW
       | Oprim ({prim = "SELF"; _})                           -> T.SELF
