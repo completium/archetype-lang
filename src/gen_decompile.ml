@@ -374,8 +374,8 @@ let to_dir (michelson, env : T.michelson * env) =
     | _ -> ()
   in
 
-  let _add_instruction (_env : ir_env) (sys : T.dinstruction list) (i : T.dinstruction) =
-    let assigns =
+  (* let _add_instruction (_env : ir_env) (sys : T.dinstruction list) (i : T.dinstruction) =
+     let assigns =
       let rec aux accu (a, b : T.dexpr * T.dexpr) =
         match a, b with
         | _ when T.cmp_dexpr a b -> accu
@@ -395,11 +395,11 @@ let to_dir (michelson, env : T.michelson * env) =
       match i with
       | T.Dassign (a, b) -> aux [] (a, b)
       | _                -> []
-    in
+     in
 
-    match assigns with
-    | [] -> i::sys
-    | _ -> begin
+     match assigns with
+     | [] -> i::sys
+     | _ -> begin
         List.fold_right (
           fun (a, b) (accu : T.dinstruction list) ->
 
@@ -502,7 +502,7 @@ let to_dir (michelson, env : T.michelson * env) =
         ) assigns sys
       end
 
-  in
+     in *)
 
   let add_instruction _env (sys : T.dinstruction list) (i : T.dinstruction) = i::sys in
 
@@ -1029,6 +1029,158 @@ let to_dir (michelson, env : T.michelson * env) =
   in
   (T.mk_dprogram tstorage tparameter storage_data name sys), env
 
+    (* let map_dinstruction_gen (fe : dexpr -> dexpr) (f : dinstruction -> dinstruction) = function
+       | Ddecl     (id, v)            -> Ddecl     (id, Option.map fe v)
+       | Dassign   (e, v)             -> Dassign   (fe e, fe v)
+       | Dfail      e                 -> Dfail     (fe e)
+       | Dif       (c, t, e)          -> Dif       (fe c, List.map f t, List.map f e)
+       | Difcons   (c, ihs, it, t, e) -> Difcons   (fe c, ihs, it, List.map f t, List.map f e)
+       | Difleft   (c, it, t, ie, e)  -> Difleft   (fe c, it, List.map f t, ie, List.map f e)
+       | Difnone   (c, n, iv, v)      -> Difnone   (fe c, List.map f n, iv, List.map f v)
+       | Dloop     (c, b)             -> Dloop     (fe c, List.map f b)
+       | Diter     (c, b)             -> Diter     (fe c, List.map f b)
+
+
+       let map_dexpr_gen (ft : type_ -> type_) (fd : data -> data) (f : dexpr -> dexpr) = function
+       | Dalpha i                 -> Dalpha i
+       | Dvar t                   -> Dvar t
+       | Dstorage t               -> Dstorage (ft t)
+       | Doperations              -> Doperations
+       | Dlbdparam                -> Dlbdparam
+       | Dlbdresult               -> Dlbdresult
+       | Ddata d                  -> Ddata (fd d)
+       | Dzop op                  -> Dzop op
+       | Duop (op, x)             -> Duop (op, f x)
+       | Dbop (op, x, y)          -> Dbop (op, f x, f y)
+       | Dtop (op, x, y, z)       -> Dtop (op, f x, f y, f z)
+       | Dapply (l, a)            -> Dapply (f l, f a)
+       | Dexec (l, a)             -> Dexec (f l, f a)
+       | Dlambda (at, rt, instrs) -> Dlambda (ft at, ft rt, instrs)
+       | Dloopleft (l, is)        -> Dloopleft (f l, is)
+       | Dmap (l, is)             -> Dmap (f l, is)
+
+       and map_dinstruction_gen (fe : dexpr -> dexpr) (f : dinstruction -> dinstruction) = function
+       | Ddecl     (id, v)                -> Ddecl      id
+       | Dassign   (e, v)             -> Dassign   (fe e, fe v)
+       | Dfail      e                 -> Dfail     (fe e)
+       | Dif       (c, t, e)          -> Dif       (fe c, List.map f t, List.map f e)
+       | Difcons   (c, ihs, it, t, e) -> Difcons   (fe c, ihs, it, List.map f t, List.map f e)
+       | Difleft   (c, it, t, ie, e)  -> Difleft   (fe c, it, List.map f t, ie, List.map f e)
+       | Difnone   (c, n, iv, v)      -> Difnone   (fe c, List.map f n, iv, List.map f v)
+       | Dloop     (c, b)             -> Dloop     (fe c, List.map f b)
+       | Diter     (c, b)             -> Diter     (fe c, List.map f b)
+
+       let map_dexpr = map_dexpr_gen id id
+
+       let map_dinstruction = map_dinstruction_gen id
+
+       let fold_dexpr f accu = function
+       | Dalpha _                 -> accu
+       | Dvar _                   -> accu
+       | Dstorage _               -> accu
+       | Doperations              -> accu
+       | Dlbdparam                -> accu
+       | Dlbdresult               -> accu
+       | Ddata _                  -> accu
+       | Dzop _                   -> accu
+       | Duop (_, x)              -> f accu x
+       | Dbop (_, x, y)           -> f (f accu x) y
+       | Dtop (_, x, y, z)        -> f (f (f accu x) y) z
+       | Dapply (l, a)            -> f (f accu l) a
+       | Dexec (l, a)             -> f (f accu l) a
+       | Dlambda (_, _, _instrs)  -> accu
+       | Dloopleft (l, _)         -> f accu l
+       | Dmap (l, _)              -> f accu l
+
+       let rec fold_dinstruction_dexpr f accu = function
+       | Ddecl      _              -> accu
+       | Dassign   (e, v)          -> f (f accu e) v
+       | Dfail      e              -> f accu e
+       | Dif       (c, t, e)       -> List.fold_left (fold_dinstruction_dexpr f) (List.fold_left (fold_dinstruction_dexpr f) (f accu c) t) e
+       | Difcons   (c, _, _, t, e) -> List.fold_left (fold_dinstruction_dexpr f) (List.fold_left (fold_dinstruction_dexpr f) (f accu c) t) e
+       | Difleft   (c, _, t, _, e) -> List.fold_left (fold_dinstruction_dexpr f) (List.fold_left (fold_dinstruction_dexpr f) (f accu c) t) e
+       | Difnone   (c, n, _, v)    -> List.fold_left (fold_dinstruction_dexpr f) (List.fold_left (fold_dinstruction_dexpr f) (f accu c) n) v
+       | Dloop     (c, b)          -> List.fold_left (fold_dinstruction_dexpr f) (f accu c) b
+       | Diter     (c, b)          -> List.fold_left (fold_dinstruction_dexpr f) (f accu c) b
+
+       let fold_dinstruction f accu = function
+       | Ddecl      _              -> accu
+       | Dassign    _              -> accu
+       | Dfail      _              -> accu
+       | Dif       (_, t, e)       -> List.fold_left f (List.fold_left f accu t) e
+       | Difcons   (_, _, _, t, e) -> List.fold_left f (List.fold_left f accu t) e
+       | Difleft   (_, _, t, _, e) -> List.fold_left f (List.fold_left f accu t) e
+       | Difnone   (_, n, _, v)    -> List.fold_left f (List.fold_left f accu n) v
+       | Dloop     (_, b)          -> List.fold_left f accu b
+       | Diter     (_, b)          -> List.fold_left f accu b *)
+
+
+
+let to_red_dir (dir, env : T.dprogram * env) : T.dprogram * env =
+  let rec doit (accu : T.dinstruction list) (code : T.dinstruction list) =
+
+
+    let replace src dst instrs =
+
+      let map_dexpr_gen (ft : T.type_ -> T.type_) (fd : T.data -> T.data) (f : T.dexpr -> T.dexpr) = function
+        | T.Dalpha i                 -> T.Dalpha i
+        | T.Dvar t                   -> T.Dvar t
+        | T.Dstorage t               -> T.Dstorage (ft t)
+        | T.Doperations              -> T.Doperations
+        | T.Dlbdparam                -> T.Dlbdparam
+        | T.Dlbdresult               -> T.Dlbdresult
+        | T.Ddata d                  -> T.Ddata (fd d)
+        | T.Dzop op                  -> T.Dzop op
+        | T.Duop (op, x)             -> T.Duop (op, f x)
+        | T.Dbop (op, x, y)          -> T.Dbop (op, f x, f y)
+        | T.Dtop (op, x, y, z)       -> T.Dtop (op, f x, f y, f z)
+        | T.Dapply (l, a)            -> T.Dapply (f l, f a)
+        | T.Dexec (l, a)             -> T.Dexec (f l, f a)
+        | T.Dlambda (at, rt, instrs) -> T.Dlambda (ft at, ft rt, instrs)
+        | T.Dloopleft (l, is)        -> T.Dloopleft (f l, is)
+        | T.Dmap (l, is)             -> T.Dmap (f l, is)
+      in
+      let map_dexpr f = map_dexpr_gen id id f in
+
+      let rec for_expr (e : T.dexpr) : T.dexpr =
+        if T.cmp_dexpr e src
+        then dst
+        else map_dexpr for_expr e
+      in
+
+      let rec replace (fe : T.dexpr -> T.dexpr) (x : T.dinstruction) =
+        let f = replace fe in
+        match x with
+        | T.Ddecl     (id, v)            -> T.Ddecl     (id, Option.map fe v)
+        | T.Dassign   (e, v)             -> T.Dassign   (fe e, fe v)
+        | T.Dfail      e                 -> T.Dfail     (fe e)
+        | T.Dif       (c, t, e)          -> T.Dif       (fe c, List.map f t, List.map f e)
+        | T.Difcons   (c, ihs, it, t, e) -> T.Difcons   (fe c, ihs, it, List.map f t, List.map f e)
+        | T.Difleft   (c, it, t, ie, e)  -> T.Difleft   (fe c, it, List.map f t, ie, List.map f e)
+        | T.Difnone   (c, n, iv, v)      -> T.Difnone   (fe c, List.map f n, iv, List.map f v)
+        | T.Dloop     (c, b)             -> T.Dloop     (fe c, List.map f b)
+        | T.Diter     (c, b)             -> T.Diter     (fe c, List.map f b)
+      in
+      List.map (replace for_expr) instrs
+    in
+
+    match code with
+    | Dassign (i, v)::tl when (function | T.Dalpha _ -> true | _ -> false) i -> let instrs = replace i v accu in doit instrs tl
+    (* | Ddecl (id, v)::tl                 -> assert false
+       | Dfail v:: tl                      -> assert false
+       | Dif (c, t, e)::tl                 -> assert false
+       | Difcons (c, hdid, tlid, t, e)::tl -> assert false
+       | Difleft (c, lid, l, rid, r)::tl   -> assert false
+       | Difnone (c, n, id, v)::tl         -> assert false
+       | Dloop (c, body)::tl               -> assert false
+       | Diter (c, body)::tl               -> assert false *)
+    | a::tl                             -> doit (a::accu) tl
+    | [] -> accu
+  in
+  { dir with
+    code = dir.code |> List.rev |> doit []
+  }, env
+
 let to_ir (dir, env : T.dprogram * env) : T.ir * env =
   let tstorage     = dir.storage in
   let tparameter   = dir.parameter in
@@ -1051,7 +1203,7 @@ let to_ir (dir, env : T.dprogram * env) : T.ir * env =
     | Duop (op, a)           -> Iunop (op, f a)
     | Dbop (op, a, b)        -> Ibinop (op, f a, f b)
     | Dtop (op, a, b, c)     -> Iterop (op, f a, f b, f c)
-    | Dapply (a, l)          -> Ibinop (Bexec, f a, f l)
+    | Dapply (a, l)          -> Ibinop (Bapply, f a, f l)
     | Dexec (a, l)           -> Ibinop (Bexec, f a, f l)
     | Dlambda (at, rt, l)    -> Ilambda (at, "", rt, seq l)
     | Dloopleft (c, b)       -> Iloopleft (f c, "", seq b)
@@ -1063,7 +1215,7 @@ let to_ir (dir, env : T.dprogram * env) : T.ir * env =
 
     let to_ident n = Format.sprintf "x%i" n in
     match i with
-    | Ddecl      _id         -> assert false
+    | Ddecl     (_id, _v)    -> assert false
     | Dassign   (e, v)       -> begin
         let v = f v in
         match e with

@@ -22,6 +22,7 @@ process_files() {
     process $i -mici
     process $i -mi
     process $i -dir
+#    process $i -rdir
 #    process $i -ir
 #    process $i -mdl
 #    process $i
@@ -31,7 +32,7 @@ process_files() {
 
 echo "Check mainnet contract"
 echo ""
-echo "                                                   MIC MI  DIR IR  MDL ARL"
+echo "                                                   MIC MI  DIR RIR IR  MDL ARL"
 
 process_files "/home/dev/archetype/chaintelligence-use-cases/mainnet/json"
 

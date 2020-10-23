@@ -379,7 +379,9 @@ let decompile (filename, channel) =
   |> to_michelson
   |> cont !Options.opt_mic output_michelson
   |> to_dir
-  |> cont !Options.opt_dir  output_dprogram
+  |> cont !Options.opt_dir output_dprogram
+  |> to_red_dir
+  |> cont !Options.opt_red_dir output_dprogram
   |> to_ir
   |> cont !Options.opt_ir  output_ir
   |> to_model
@@ -470,6 +472,8 @@ let main () =
       "--intermediate-representation", Arg.Set Options.opt_ir, " Same as -ir";
       "-dir", Arg.Set Options.opt_dir, " Generate intermediate decompilation";
       "--d-intermediate-representation", Arg.Set Options.opt_dir, " Same as -dir";
+      "-rdir", Arg.Set Options.opt_red_dir, " Generate reduced intermediate decompilation";
+      "--reduced-d-intermediate-representation", Arg.Set Options.opt_red_dir, " Same as -rdir";
       "-mici", Arg.Set Options.opt_mici, " Output micheline";
       "-mi", Arg.Set Options.opt_mic, " Output michelson";
       "-ri", Arg.Set Options.opt_raw_ir, " Print raw intermediate representation";

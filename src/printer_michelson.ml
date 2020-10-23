@@ -493,7 +493,7 @@ and pp_dinstruction fmt i =
   let pp x = Format.fprintf fmt x in
   let seq is = (pp_list ";@\n" pp_dinstruction) is in
   match i with
-  | Ddecl      id                -> pp "var x%i" id
+  | Ddecl     (id, v)            -> pp "var x%i%a" id (pp_option (fun fmt x -> Format.fprintf fmt " = %a" pp_dexpr x)) v
   | Dassign   (e, v)             -> pp "%a <- %a" pp_dexpr e pp_dexpr v
   | Dfail      e                 -> pp "fail(%a)" pp_dexpr e
   | Dif       (c, t, e)          -> pp "if (%a)@\nthen (@[%a@])@\nelse (@[%a@])" pp_dexpr c seq t seq e
