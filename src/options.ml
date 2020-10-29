@@ -66,6 +66,8 @@ let opt_trace = ref false
 let opt_metadata_uri = ref ""
 let opt_metadata_storage = ref ""
 let opt_expr : (string option) ref = ref (None : string option)
+let opt_entrypoint : (string option) ref = ref (None : string option)
+let opt_type : (string option) ref = ref (None : string option)
 
 let opt_property_focused = ref ""
 

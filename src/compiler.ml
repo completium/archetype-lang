@@ -518,6 +518,8 @@ let main () =
       "--raw-json", Arg.Set Options.opt_rjson, " Same as -rj";
       "--trace", Arg.Set Options.opt_trace, " Activate trace";
       "--expr", Arg.String (fun s -> Options.opt_expr := Some s), " ";
+      "--type", Arg.String (fun s -> Options.opt_type := Some s), " ";
+      "--entrypoint", Arg.String (fun s -> Options.opt_entrypoint := Some s), " ";
       "-V", Arg.String (fun s -> Options.add_vids s), "<id> process specication identifiers";
       "-v", Arg.Unit (fun () -> print_version ()), " Show version number and exit";
       "--version", Arg.Unit (fun () -> print_version ()), " Same as -v";

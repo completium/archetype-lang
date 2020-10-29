@@ -1236,3 +1236,62 @@ end = struct
     mk_micheline [f "storage" storage; f "parameter" parameter; f "code" code] (data_to_micheline s)
 
 end
+
+(***)
+
+let rec to_type (o : obj_micheline) : type_ =
+  let fa l = match l with | a::_ -> Some a | [] -> None in
+  let f = to_type in
+  match o with
+  | Oprim ({prim = "address"; annots; _})                    -> mk_type ?annotation:(fa annots) Taddress
+  | Oprim ({prim = "big_map"; annots; args = k::v::_})       -> mk_type ?annotation:(fa annots) (Tbig_map (f k, f v))
+  | Oprim ({prim = "bool"; annots; _})                       -> mk_type ?annotation:(fa annots) Tbool
+  | Oprim ({prim = "bytes"; annots; _})                      -> mk_type ?annotation:(fa annots) Tunit
+  | Oprim ({prim = "chain_id"; annots; _})                   -> mk_type ?annotation:(fa annots) Tunit
+  | Oprim ({prim = "contract"; annots; args = t::_})         -> mk_type ?annotation:(fa annots) (Tcontract (f t))
+  | Oprim ({prim = "int"; annots; _})                        -> mk_type ?annotation:(fa annots) Tint
+  | Oprim ({prim = "key"; annots; _})                        -> mk_type ?annotation:(fa annots) Tkey
+  | Oprim ({prim = "key_hash"; annots; _})                   -> mk_type ?annotation:(fa annots) Tkey_hash
+  | Oprim ({prim = "lambda"; annots; args = a::r::_})        -> mk_type ?annotation:(fa annots) (Tlambda (f a, f r))
+  | Oprim ({prim = "list"; annots; args = t::_})             -> mk_type ?annotation:(fa annots) (Tlist (f t))
+  | Oprim ({prim = "map"; annots; args = k::v::_})           -> mk_type ?annotation:(fa annots) (Tmap (f k, f v))
+  | Oprim ({prim = "mutez"; annots; _})                      -> mk_type ?annotation:(fa annots) Tmutez
+  | Oprim ({prim = "nat"; annots; _})                        -> mk_type ?annotation:(fa annots) Tnat
+  | Oprim ({prim = "operation"; annots; _})                  -> mk_type ?annotation:(fa annots) Toperation
+  | Oprim ({prim = "option"; annots; args = t::_})           -> mk_type ?annotation:(fa annots) (Toption (f t))
+  | Oprim ({prim = "or"; annots; args = a::b::_})            -> mk_type ?annotation:(fa annots) (Tor (f a, f b))
+  | Oprim ({prim = "pair"; annots; args = a::l::_})          -> mk_type ?annotation:(fa annots) (Tpair (f a, f l))
+  | Oprim ({prim = "set"; annots; args = t::_})              -> mk_type ?annotation:(fa annots) (Tset (f t))
+  | Oprim ({prim = "signature"; annots; _})                  -> mk_type ?annotation:(fa annots) Tsignature
+  | Oprim ({prim = "string"; annots; _})                     -> mk_type ?annotation:(fa annots) Tstring
+  | Oprim ({prim = "timestamp"; annots; _})                  -> mk_type ?annotation:(fa annots) Ttimestamp
+  | Oprim ({prim = "unit"; annots; _})                       -> mk_type ?annotation:(fa annots) Tunit
+  | Oprim ({prim = "sapling_transaction"; annots; _})        -> mk_type ?annotation:(fa annots) Tsapling_transaction
+  | Oprim ({prim = "sapling_state"; annots; _})              -> mk_type ?annotation:(fa annots) Tsapling_state
+  | Oprim ({prim = "never"; annots; _})                      -> mk_type ?annotation:(fa annots) Tnever
+  | Oprim ({prim = "bls12_381_g1"; annots; _})               -> mk_type ?annotation:(fa annots) Tbls12_381_g1
+  | Oprim ({prim = "bls12_381_g2"; annots; _})               -> mk_type ?annotation:(fa annots) Tbls12_381_g2
+  | Oprim ({prim = "bls12_381_fr"; annots; _})               -> mk_type ?annotation:(fa annots) Tbls12_381_fr
+  | Oprim ({prim = "baker_hash"; annots; _})                 -> mk_type ?annotation:(fa annots) Tbaker_hash
+  | Oprim ({prim = "baker_operation"; annots; _})            -> mk_type ?annotation:(fa annots) Tbaker_operation
+  | Oprim ({prim = "pvss_key"; annots; _})                   -> mk_type ?annotation:(fa annots) Tpvss_key
+  | _ -> Format.eprintf "type unknown %a@." pp_obj_micheline o; assert false
+
+
+let rec to_data (o : obj_micheline) : data =
+  let f = to_data in
+  match o with
+  | Oint x                                    -> Dint (Big_int.big_int_of_string x)
+  | Ostring s                                 -> Dstring s
+  | Obytes  s                                 -> Dbytes s
+  | Oprim ({prim = "Unit";  _ })              -> Dunit
+  | Oprim ({prim = "True";  _ })              -> Dtrue
+  | Oprim ({prim = "False"; _ })              -> Dfalse
+  | Oprim ({prim = "Pair";  args = a::b::_ }) -> Dpair  (f a, f b)
+  | Oprim ({prim = "Left";  args = a::_ })    -> Dleft  (f a)
+  | Oprim ({prim = "Right"; args = a::_ })    -> Dright (f a)
+  | Oprim ({prim = "Some";  args = a::_ })    -> Dsome  (f a)
+  | Oprim ({prim = "None";  _ })              -> Dnone
+  | Oarray l                                  -> Dlist (List.map f l)
+  | Oprim ({prim = "Elt"; args = a::b::_ })   -> Delt  (f a, f b)
+  | _ -> Format.eprintf "data unknown %a@." pp_obj_micheline o; assert false
