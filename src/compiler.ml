@@ -31,6 +31,13 @@ let output_pt (pt : ParseTree.archetype) =
   then Format.printf "%a@." ParseTree.pp_archetype pt
   else Format.printf "%a@." Printer_pt.pp_archetype pt
 
+let output_expr_pt (e : ParseTree.expr) =
+  if !Options.opt_json
+  then (Format.printf "%s\n" (Yojson.Safe.to_string (ParseTree.expr_to_yojson e)); raise Stop)
+  else if !Options.opt_raw
+  then Format.printf "%a@." ParseTree.pp_expr e
+  else Format.printf "%a@." Printer_pt.pp_simple_expr e
+
 let output_tast (ast : Ast.ast) =
   if !Options.opt_raw
   then Format.printf "%a@." Ast.pp_ast ast
@@ -40,6 +47,11 @@ let output_tmdl (model : Model.model) =
   if !Options.opt_raw
   then Format.printf "%a@." Model.pp_model model
   else Format.printf "%a@." Printer_model.pp_model model
+
+let output_mdl_mterm (mt : Model.mterm) =
+  if !Options.opt_raw
+  then Format.printf "%a@." Model.pp_mterm mt
+  else Format.printf "%a@." Printer_model.pp_mterm mt
 
 let output_ir (ir : Michelson.ir) =
   if !Options.opt_raw
@@ -65,6 +77,11 @@ let output_michelson (m : Michelson.michelson) =
   if !Options.opt_raw
   then Format.printf "%a@." Michelson.pp_michelson m
   else Format.printf "%a@." Printer_michelson.pp_michelson m
+
+let output_data (d : Michelson.data) =
+  if !Options.opt_raw
+  then Format.printf "%a@." Michelson.pp_data d
+  else Format.printf "%a@." Printer_michelson.pp_data d
 
 let output (model : Model.model) =
   match !Options.opt_raw, !Options.opt_m with
@@ -402,6 +419,21 @@ let set_margin i =
 let print_version () =
   Format.printf "%s@\n" Options.version;
   exit 0
+(* -------------------------------------------------------------------- *)
+
+let process_expr (input : string) =
+  let cont c p x = if c then (p x; raise Stop); x in
+
+  try
+    input
+    |> Io.parse_expr
+    |> cont !Options.opt_pt output_expr_pt
+    |> Gen_extra.to_model_expr
+    |> output_data
+  with
+  | Stop -> ()
+  | Error.ParseError _ -> assert false
+  | _ -> ()
 
 (* -------------------------------------------------------------------- *)
 let main () =
@@ -485,6 +517,7 @@ let main () =
       "-rj", Arg.Set Options.opt_rjson, " Raw Json";
       "--raw-json", Arg.Set Options.opt_rjson, " Same as -rj";
       "--trace", Arg.Set Options.opt_trace, " Activate trace";
+      "--expr", Arg.String (fun s -> Options.opt_expr := Some s), " ";
       "-V", Arg.String (fun s -> Options.add_vids s), "<id> process specication identifiers";
       "-v", Arg.Unit (fun () -> print_version ()), " Show version number and exit";
       "--version", Arg.Unit (fun () -> print_version ()), " Same as -v";
@@ -505,39 +538,44 @@ let main () =
   Arg.parse arg_list (fun s -> (ofilename := s;
                                 ochannel := Some (open_in s))) arg_usage;
 
-  let filename, channel, dispose =
-    match !ochannel with
-    | Some c -> (!ofilename, c, true)
-    | _ -> ("<stdin>", stdin, false) in
+  match !Options.opt_expr with
+  | Some v -> process_expr v
+  | _ -> begin
 
-  try
-    begin
-      match !Options.opt_lsp, !Options.opt_service, !Options.opt_decomp with
-      | true, _, _ -> Lsp.process (filename, channel)
-      | _, true, _ -> Services.process (filename, channel)
-      | _, _, true -> decompile (filename, channel)
-      | _ -> compile (filename, channel)
-    end;
-    close dispose channel
+      let filename, channel, dispose =
+        match !ochannel with
+        | Some c -> (!ofilename, c, true)
+        | _ -> ("<stdin>", stdin, false) in
 
-  with
-  | Stop ->
-    close dispose channel
-  | Compiler_error ->
-    close dispose channel;
-    Arg.usage arg_list arg_usage;
-    exit 1
-  | ArgError s ->
-    close dispose channel;
-    Printf.eprintf "%s.\n" s;
-    exit 1
-  | Error.ParseError _ ->
-    close dispose channel;
-    exit 1
-  | Error.Stop i
-  | Stop_error i ->
-    close dispose channel;
-    exit i
+      try
+        begin
+          match !Options.opt_lsp, !Options.opt_service, !Options.opt_decomp with
+          | true, _, _ -> Lsp.process (filename, channel)
+          | _, true, _ -> Services.process (filename, channel)
+          | _, _, true -> decompile (filename, channel)
+          | _ -> compile (filename, channel)
+        end;
+        close dispose channel
+
+      with
+      | Stop ->
+        close dispose channel
+      | Compiler_error ->
+        close dispose channel;
+        Arg.usage arg_list arg_usage;
+        exit 1
+      | ArgError s ->
+        close dispose channel;
+        Printf.eprintf "%s.\n" s;
+        exit 1
+      | Error.ParseError _ ->
+        close dispose channel;
+        exit 1
+      | Error.Stop i
+      | Stop_error i ->
+        close dispose channel;
+        exit i
+    end
 
 (* -------------------------------------------------------------------- *)
 let _ = main ()

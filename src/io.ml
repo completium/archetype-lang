@@ -158,7 +158,7 @@ let update_last_reduction checkpoint production last_reduction =
   | _ ->
     last_reduction
 
-let parse lexbuf =
+let parse r lexbuf =
   Lexer.initialize lexbuf;
 
   let rec on_error _last_last_reduction lexer checkpoint =
@@ -186,7 +186,7 @@ let parse lexbuf =
         lexer
         (resume checkpoint)
   in
-  let checkpoint = main lexbuf.lex_curr_p in
+  let checkpoint = r lexbuf.lex_curr_p in
   check_brackets_balance ();
   match !Error.errors with
   | [] ->
@@ -199,7 +199,7 @@ let parse lexbuf =
 let parse_archetype ?(name = "") (inc : in_channel) =
   Error.resume_on_error ();
   let lexbuf = lexbuf_from_channel name inc in
-  parse lexbuf
+  parse main lexbuf
 
 let parse_archetype_strict ?(name = "") (inc : in_channel) =
   let pt = parse_archetype inc ?name:(Some name) in
@@ -210,7 +210,15 @@ let parse_archetype_strict ?(name = "") (inc : in_channel) =
 let parse_archetype_strict_from_string ?(name = "") (input : string) =
   Error.resume_on_error ();
   let lexbuf = lexbuf_from_string name input in
-  let pt = parse lexbuf in
+  let pt = parse main lexbuf in
   match !Error.errors with
   | [] -> pt
+  | _ -> raise (Error.ParseError !Error.errors)
+
+let parse_expr (input : string) =
+  Error.resume_on_error ();
+  let lexbuf = lexbuf_from_string "" input in
+  let e = parse start_expr lexbuf in
+  match !Error.errors with
+  | [] -> e
   | _ -> raise (Error.ParseError !Error.errors)

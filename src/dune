@@ -18,6 +18,7 @@
   michelson gen_michelson printer_michelson
   michelson_parser michelson_lexer gen_decompile opt_model
   gen_why3 mlwtree printer_mlwtree
+  gen_extra
   )
   (libraries menhirLib digestif num str ppx_deriving yojson ppx_deriving_yojson.runtime hex unix)
  (flags :standard -w -30  ; Allow sharing of record labels between distinct types.
