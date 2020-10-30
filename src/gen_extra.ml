@@ -4,6 +4,23 @@ open Tools
 module PT = ParseTree
 module T  = Michelson
 
+type error_desc =
+  | TypeNotCompatible of T.type_ * PT.expr
+
+let pp_error_desc fmt = function
+  | TypeNotCompatible (t, e) ->
+    Format.fprintf fmt
+      "Type '%a' is not compatible with expression: '%a'."
+      Printer_michelson.pp_type t Printer_pt.pp_simple_expr e
+
+type error = Location.t * error_desc
+
+let emit_error (lc, error : Location.t * error_desc) =
+  let str : string = Format.asprintf "%a@." pp_error_desc error in
+  let pos : Position.t list = [location_to_position lc] in
+  Error.error_alert pos str (fun _ -> ());
+  raise (Error.Stop 5)
+
 let string_to_ttype ?entrypoint (input : string) : T.type_ =
 
   let typ =
@@ -28,46 +45,111 @@ let string_to_ttype ?entrypoint (input : string) : T.type_ =
   | _ -> typ
 
 
-let rec to_model_expr (e : PT.expr) : T.data =
-  let process (* ?typ *) (e : PT.expr) : T.data =
-    let f = to_model_expr in
+let to_model_expr (e : PT.expr) : T.data =
 
-    let to_one (l : PT.expr list) =
+  let rec f ?typ (e : PT.expr) : T.data =
+
+    let check_compatibility e et tref =
+      Option.iter (fun x -> if not (List.exists (T.cmp_type x) tref) then emit_error (loc e, TypeNotCompatible (x, e))) et
+    in
+
+    let cc tref = check_compatibility e typ tref in
+
+    let error_cc t = emit_error (loc e, TypeNotCompatible (t, e)) in
+
+    let to_one ?typ (l : PT.expr list) =
       match List.rev l with
       | [] -> T.Dunit
-      | i::q -> List.fold_left (fun accu x -> T.Dpair (f x, accu)) (f i) q
+      | i::q ->
+        let t, q =
+          match typ with
+          | Some x -> begin
+              let rec aux accu (t : T.type_) =
+                match t.node with
+                | T.Tpair (tl, tr) -> aux (accu @ [tl]) tr
+                | _ -> accu @ [t]
+              in
+              match List.rev (aux [] x) with
+              | hd::tl -> begin
+                  Some hd,
+                  if List.length q <> List.length tl
+                  then error_cc x
+                  else List.map2 (fun x y -> x, Some y) q tl
+                end
+              | _ -> error_cc x
+            end
+          | None -> None, List.map (fun x -> x, None) q
+        in
+
+        List.fold_left (fun accu (x, typ) ->
+            T.Dpair (f ?typ x, accu)
+          ) (f ?typ:t i) q
     in
 
     match unloc e with
-    (* | Eterm                _ -> assert false *)
-    | Eliteral (Lint      n) -> Dint n
-    | Eliteral (Lnat      n) -> Dint n
-    | Eliteral (Ldecimal  s) -> let n, d = Core.decimal_string_to_rational s in Dpair (Dint n, Dint d)
-    | Eliteral (Ltz       n) -> Dint (Big_int.mult_int_big_int 1000000 n)
-    | Eliteral (Lmtz      n) -> Dint (Big_int.mult_int_big_int    1000 n)
-    | Eliteral (Lutz      n) -> Dint n
-    | Eliteral (Laddress  s) -> Dstring s
-    | Eliteral (Lstring   s) -> Dstring s
-    | Eliteral (Lbool  true) -> Dtrue
-    | Eliteral (Lbool false) -> Dfalse
-    | Eliteral (Lduration s) -> Dint (s |> Core.string_to_duration |> Core.duration_to_timestamp)
-    | Eliteral (Ldate     s) -> Dint (s |> Core.string_to_date |> Core.date_to_timestamp)
-    | Eliteral (Lbytes    s) -> Dbytes s
-    | Eliteral (Lpercent  n) -> let n, d = Core.compute_irr_fract (n, Big_int.big_int_of_int 100) in Dpair (Dint n, Dint d)
-    | Earray         l       -> Dlist (List.map f l)
-    (* | Erecord        l       -> assert false *)
-    | Etuple         l       -> to_one l
-    | Eoption (OSome e)      -> Dsome (f e)
-    | Eoption (ONone _)      -> Dnone
-    | Eor     (Oleft _)      -> Dleft (f e)
-    | Eor     (Oright _)     -> Dright (f e)
+    | Eliteral (Lint      n)
+    | Eliteral (Lnat      n) -> begin
+        cc [T.tnat; T.tint];
+        Dint n
+      end
+    | Eliteral (Ldecimal  s) -> begin
+        cc [T.tpair T.tnat T.tint];
+        let n, d = Core.decimal_string_to_rational s in Dpair (Dint n, Dint d)
+      end
+    | Eliteral (Ltz       n) -> cc [T.tmutez]; Dint (Big_int.mult_int_big_int 1000000 n)
+    | Eliteral (Lmtz      n) -> cc [T.tmutez]; Dint (Big_int.mult_int_big_int    1000 n)
+    | Eliteral (Lutz      n) -> cc [T.tmutez]; Dint n
+    | Eliteral (Laddress  s) -> cc [T.taddress]; Dstring s
+    | Eliteral (Lstring   s) -> cc [T.tstring]; Dstring s
+    | Eliteral (Lbool  true) -> cc [T.tbool]; Dtrue
+    | Eliteral (Lbool false) -> cc [T.tbool]; Dfalse
+    | Eliteral (Lduration s) -> cc [T.tint; T.ttimestamp]; Dint (s |> Core.string_to_duration |> Core.duration_to_timestamp)
+    | Eliteral (Ldate     s) -> cc [T.ttimestamp]; Dint (s |> Core.string_to_date |> Core.date_to_timestamp)
+    | Eliteral (Lbytes    s) -> cc [T.tbytes]; Dbytes s
+    | Eliteral (Lpercent  n) -> cc [T.tpair T.tnat T.tint]; let n, d = Core.compute_irr_fract (n, Big_int.big_int_of_int 100) in Dpair (Dint n, Dint d)
+    | Enothing               -> cc [T.tunit]; Dunit
+    | Earray         l       -> begin
+        let ll =
+          match typ with
+          | Some ({node = (T.Tset t | T.Tlist t); annotation = _}) -> List.map (f ~typ:t) l
+          | Some ({node = (T.Tmap (tk, tv) | T.Tbig_map (tk, tv)); annotation = _} as tm) -> begin
+              List.map ( fun (x : PT.expr) ->
+                  match unloc x with
+                  | Etuple [a; b] -> T.Delt (f ~typ:tk a, f ~typ:tv b)
+                  | _ -> error_cc tm) l
+            end
+          | Some t -> error_cc t
+          | None -> List.map f l
+        in
+        Dlist ll
+      end
+    | Etuple l -> to_one ?typ l
+    | Eoption o -> begin
+        let g =
+          match typ with
+          | Some ({node = T.Toption t; annotation = _}) -> f ~typ:t
+          | Some t -> error_cc t
+          | None -> f ?typ:None
+        in
+        match o with
+        | OSome x -> Dsome (g x)
+        | ONone _ -> Dnone
+      end
+    | Eor o -> begin
+        let g =
+          match typ with
+          | Some ({node = T.Tor (tl, tr); annotation = _}) -> (match o with | Oleft _ -> f ~typ:tl | Oright _ -> f ~typ:tr)
+          | Some t -> error_cc t
+          | None -> f ?typ:None
+        in
+        match o with
+        | Oleft  (_, _, x) -> Dleft  (g x)
+        | Oright (_, _, x) -> Dright (g x)
+      end
     (* | Elambda        _       -> assert false *)
-    | Enothing               -> Dunit
     | _ -> assert false
   in
   let entrypoint = !Options.opt_entrypoint in
   let typ = Option.map (string_to_ttype ?entrypoint) !Options.opt_type in
 
-  Option.iter (fun t -> Format.printf "%a@\n" Printer_michelson.pp_type t) typ;
-
-  process e
+  f ?typ e
