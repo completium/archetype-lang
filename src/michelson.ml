@@ -973,6 +973,8 @@ module Utils : sig
   val get_fun_name : (type_ -> ident) -> builtin -> ident
   val flat         : code -> code
   val optim        : code -> code
+  val data_to_micheline : data -> obj_micheline
+  val type_to_micheline : type_ -> obj_micheline
   val to_micheline : michelson -> data -> micheline
 
 end = struct

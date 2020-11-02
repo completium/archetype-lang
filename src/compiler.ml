@@ -83,6 +83,11 @@ let output_data (d : Michelson.data) =
   then Format.printf "%a@." Michelson.pp_data d
   else Format.printf "%a@." Printer_michelson.pp_data d
 
+let output_obj_micheline (x : Michelson.obj_micheline) =
+  if !Options.opt_rjson
+  then Format.printf "%a@." Michelson.pp_obj_micheline x
+  else Format.printf "%a@." Printer_michelson.pp_obj_micheline x
+
 let output (model : Model.model) =
   match !Options.opt_raw, !Options.opt_m with
   | true, _ -> Format.printf "%a@." Model.pp_model model
@@ -429,7 +434,20 @@ let process_expr (input : string) =
     |> Io.parse_expr
     |> cont !Options.opt_pt output_expr_pt
     |> Gen_extra.to_model_expr
-    |> output_data
+    |> begin
+      fun x ->
+        if !Options.opt_json then begin
+          let micheline = Michelson.Utils.data_to_micheline x in
+          output_obj_micheline micheline;
+          match !Options.opt_type with
+          | Some t -> begin
+              let micheline = Michelson.Utils.type_to_micheline (Gen_extra.string_to_ttype t) in
+              output_obj_micheline micheline;
+            end
+          | None -> ()
+        end
+        else output_data x
+    end
   with
   | Stop -> ()
   | Error.ParseError _ -> assert false
