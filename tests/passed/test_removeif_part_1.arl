@@ -3,10 +3,6 @@ archetype test_removeif_part_1
 asset my_asset identified by id {
   id     : nat;
   s      : string;
-} initialized by {
-  {0; "mystr0"};
-  {1; "mystr1"};
-  {2; "mystr2"}
 }
 
 asset s_asset identified by sid {

@@ -2,10 +2,6 @@ archetype test_removeall_partition_2
 
 asset o_asset identified by oid {
   oid : nat;
-} initialized by {
-  {0};
-  {1};
-  {2}
 }
 
 asset my_asset identified by id {

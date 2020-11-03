@@ -10,10 +10,6 @@ asset o_asset {
 
 asset p_asset {
   pid : int;
-} initialized by {
-  { 1i };
-  { 2i };
-  { 3i }
 }
 
 asset my_asset identified by id {

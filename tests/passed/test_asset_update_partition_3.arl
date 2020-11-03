@@ -2,12 +2,6 @@ archetype test_asset_update_partition_3
 
 asset o_asset {
   oid : nat;
-} initialized by {
-  {0};
-  {1};
-  {2};
-  {3};
-  {4}
 }
 
 asset my_asset identified by id {

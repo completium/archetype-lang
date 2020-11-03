@@ -4,12 +4,6 @@ asset o_asset {
   oid : nat;
   v   : string;
   i   : int;
-} initialized by {
-  {0; "str0"; 0i};
-  {1; "str1"; 0i};
-  {2; "str2"; 0i};
-  {3; "str3"; 0i};
-  {4; "str4"; 0i}
 }
 
 asset my_asset identified by id {

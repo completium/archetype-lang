@@ -2,10 +2,6 @@ archetype test_removeif_part_0
 
 asset my_asset identified by id {
   id     : nat;
-} initialized by {
-  {0};
-  {1};
-  {2}
 }
 
 asset s_asset identified by sid {
