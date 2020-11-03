@@ -1,4 +1,5 @@
 open Location
+open Ident
 open Tools
 
 module PT = ParseTree
@@ -153,3 +154,45 @@ let to_model_expr (e : PT.expr) : T.data =
   let typ = Option.map (string_to_ttype ?entrypoint) !Options.opt_type in
 
   f ?typ e
+
+let show_entries (input : string) =
+  let with_annot (t : T.type_) : bool = Option.is_some t.annotation in
+
+  let for_type (t : T.type_) : Model.type_ = Gen_decompile.ttype_to_mtype t in
+
+  let do_or (typ : T.type_) =
+    let rec aux accu (t : T.type_) =
+      match t.node with
+      | _ when with_annot t -> accu @ [(Option.get t.annotation, t)]
+      | T.Tor (l, r) -> aux (aux accu l) r
+      | _ -> accu @ ["default", t]
+    in
+    aux [] typ
+  in
+
+  let do_pair (typ : T.type_) : (ident * Model.type_) list =
+    let ft = for_type in
+    let rec aux accu (t : T.type_) =
+      match t.node with
+      | _ when with_annot t -> accu @ [(Option.get t.annotation, ft t)]
+      | T.Tpair (l, r) -> aux (aux accu l) r
+      | _ -> accu @ ["_", ft t]
+    in
+    aux [] {typ with annotation = None}
+  in
+
+  input
+  |> string_to_ttype
+  |> do_or
+  |> List.map (fun (x, y) -> x, do_pair y)
+  |> fun (l : (ident * (ident * Model.type_) list) list) ->
+  Format.printf "%a@."
+    (Printer_tools.pp_list "@\n"
+       (fun fmt (id, l : ident * (ident * Model.type_) list) ->
+          Format.fprintf fmt "%s (%a)" id
+            (Printer_tools.pp_list ", " (fun fmt (id, t) ->
+                 Format.fprintf fmt "%s : %a" id Printer_model.pp_type t
+               )
+            ) l
+       )
+    ) l

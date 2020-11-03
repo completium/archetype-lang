@@ -537,6 +537,7 @@ let main () =
       "--trace", Arg.Set Options.opt_trace, " Activate trace";
       "--expr", Arg.String (fun s -> Options.opt_expr := Some s), " ";
       "--type", Arg.String (fun s -> Options.opt_type := Some s), " ";
+      "--show-entries", Arg.String (fun s -> Options.opt_show_entries := Some s), " ";
       "--entrypoint", Arg.String (fun s -> Options.opt_entrypoint := Some s), " ";
       "-V", Arg.String (fun s -> Options.add_vids s), "<id> process specication identifiers";
       "-v", Arg.Unit (fun () -> print_version ()), " Show version number and exit";
@@ -558,8 +559,9 @@ let main () =
   Arg.parse arg_list (fun s -> (ofilename := s;
                                 ochannel := Some (open_in s))) arg_usage;
 
-  match !Options.opt_expr with
-  | Some v -> process_expr v
+  match !Options.opt_expr, !Options.opt_show_entries with
+  | Some v, _ -> process_expr v
+  | _, Some v -> Gen_extra.show_entries v
   | _ -> begin
 
       let filename, channel, dispose =
