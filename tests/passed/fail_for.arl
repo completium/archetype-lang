@@ -1,0 +1,10 @@
+archetype fail_for
+
+entry exec () {
+  effect {
+    var l : set<nat> = [1; 2; 3];
+    for a in l do
+      fail("KO")
+    done
+  }
+}

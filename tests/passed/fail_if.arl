@@ -1,0 +1,7 @@
+archetype fail_if
+
+entry f () {
+  if true
+  then fail ("OK")
+  else fail ("KO")
+}

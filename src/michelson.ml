@@ -1002,16 +1002,44 @@ end = struct
     map_seq f c
 
   let handle_failwith (c : code) : code =
-    let f l =
-      let rec aux accu l =
+    let init = (false, []) in
+    let rec aux (c : code) =
+      let rec for_seq ((b, accu) : bool * code list) l : bool * code list =
         match l with
-        | (FAILWITH)::_           -> aux (FAILWITH::accu) []
-        | e::t -> aux (e::accu) t
-        | [] -> List.rev accu
+        | FAILWITH::_ -> for_seq (true, FAILWITH::accu) []
+        | e::t        -> begin
+            let bb, a = aux e in
+            let t = if bb then [] else t in
+            for_seq (bb, a::accu) t
+          end
+        | []          -> b, List.rev accu
       in
-      aux [] l
+
+      let g x f =
+        let _, x = for_seq init x in
+        false, f x
+      in
+
+      let h x y f =
+        let b0, x = for_seq init x in
+        let b1, y = for_seq init y in
+        b0 && b1, f x y
+      in
+
+      match c with
+      | SEQ x             -> g x (fun l -> SEQ (l))
+      | IF (x, y)         -> h x y (fun a b -> IF (a, b))
+      | IF_NONE (x, y)    -> h x y (fun a b -> IF_NONE (a, b))
+      | IF_LEFT (x, y)    -> h x y (fun a b -> IF_LEFT (a, b))
+      | IF_CONS (x, y)    -> h x y (fun a b -> IF_CONS (a, b))
+      | MAP x             -> g x (fun l -> MAP (l))
+      | ITER x            -> g x (fun l -> ITER (l))
+      | LOOP x            -> g x (fun l -> LOOP (l))
+      | LOOP_LEFT x       -> g x (fun l -> LOOP_LEFT (l))
+      | DIP (n, x)        -> g x (fun l -> DIP (n, l))
+      | _                 -> false, c
     in
-    map_seq f c
+    aux c |> snd
 
   let factorize_instrs (c : code) : code =
     let f l =

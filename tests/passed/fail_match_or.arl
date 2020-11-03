@@ -1,0 +1,11 @@
+archetype fail_match_or
+
+variable res : nat = 0
+
+entry exec() {
+  var o : or<nat, int> = left<int>(1);
+  match_or o with
+  | left (v)  -> fail("OK")
+  | right (v) -> fail("KO")
+  end
+}
