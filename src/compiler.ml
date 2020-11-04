@@ -413,6 +413,11 @@ let decompile (filename, channel) =
   |> to_archetype
   |> output_pt
 
+let showEntries (filename, channel) =
+  (filename, channel)
+  |> parse_micheline
+  |> (fun (m, _) -> Gen_extra.show_entries m)
+
 let close dispose channel =
   if dispose then close_in channel
 
@@ -537,7 +542,7 @@ let main () =
       "--trace", Arg.Set Options.opt_trace, " Activate trace";
       "--expr", Arg.String (fun s -> Options.opt_expr := Some s), " ";
       "--type", Arg.String (fun s -> Options.opt_type := Some s), " ";
-      "--show-entries", Arg.String (fun s -> Options.opt_show_entries := Some s), " ";
+      "--show-entries", Arg.Set Options.opt_show_entries, " Show entries";
       "--entrypoint", Arg.String (fun s -> Options.opt_entrypoint := Some s), " ";
       "-V", Arg.String (fun s -> Options.add_vids s), "<id> process specication identifiers";
       "-v", Arg.Unit (fun () -> print_version ()), " Show version number and exit";
@@ -559,9 +564,8 @@ let main () =
   Arg.parse arg_list (fun s -> (ofilename := s;
                                 ochannel := Some (open_in s))) arg_usage;
 
-  match !Options.opt_expr, !Options.opt_show_entries with
-  | Some v, _ -> process_expr v
-  | _, Some v -> Gen_extra.show_entries v
+  match !Options.opt_expr with
+  | Some v -> process_expr v
   | _ -> begin
 
       let filename, channel, dispose =
@@ -571,10 +575,11 @@ let main () =
 
       try
         begin
-          match !Options.opt_lsp, !Options.opt_service, !Options.opt_decomp with
-          | true, _, _ -> Lsp.process (filename, channel)
-          | _, true, _ -> Services.process (filename, channel)
-          | _, _, true -> decompile (filename, channel)
+          match !Options.opt_lsp, !Options.opt_service, !Options.opt_decomp, !Options.opt_show_entries with
+          | true, _, _, _ -> Lsp.process (filename, channel)
+          | _, true, _, _ -> Services.process (filename, channel)
+          | _, _, true, _ -> decompile (filename, channel)
+          | _, _, _, true -> showEntries (filename, channel)
           | _ -> compile (filename, channel)
         end;
         close dispose channel

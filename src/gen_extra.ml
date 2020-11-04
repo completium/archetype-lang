@@ -155,7 +155,7 @@ let to_model_expr (e : PT.expr) : T.data =
 
   f ?typ e
 
-let show_entries (input : string) =
+let show_entries (input : T.obj_micheline) =
   let with_annot (t : T.type_) : bool = Option.is_some t.annotation in
 
   let for_type (t : T.type_) : Model.type_ = Gen_decompile.ttype_to_mtype t in
@@ -181,8 +181,14 @@ let show_entries (input : string) =
     aux [] {typ with annotation = None}
   in
 
+  let seek i l : T.obj_micheline = List.find T.(function | Oprim ({prim = p; _}) -> String.equal i p | _ -> false) l in
+  let get_arg = function | T.Oprim ({args=x::_; _}) -> x | _ -> assert false in
+
   input
-  |> string_to_ttype
+  |> (function | Oarray l -> l | _ -> assert false)
+  |> seek "parameter"
+  |> get_arg
+  |> T.to_type
   |> do_or
   |> List.map (fun (x, y) -> x, do_pair y)
   |> fun (l : (ident * (ident * Model.type_) list) list) ->
