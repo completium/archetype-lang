@@ -155,6 +155,15 @@ let to_model_expr (e : PT.expr) : T.data =
 
   f ?typ e
 
+let extract_from_micheline tag input =
+  let seek i l : T.obj_micheline = List.find T.(function | Oprim ({prim = p; _}) -> String.equal i p | _ -> false) l in
+  let get_arg = function | T.Oprim ({args=x::_; _}) -> x | _ -> assert false in
+
+  input
+  |> (function | T.Oarray l -> l | _ -> assert false)
+  |> seek tag
+  |> get_arg
+
 let show_entries (input : T.obj_micheline) =
   let with_annot (t : T.type_) : bool = Option.is_some t.annotation in
 

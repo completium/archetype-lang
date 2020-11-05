@@ -385,6 +385,27 @@ let rec pp_obj_micheline fmt (o : obj_micheline) =
   | Oint    v -> pp pp_a ("int", v)
   | Oarray  l -> Format.fprintf fmt "[  %a  ]" (pp_list ",@\n" pp_obj_micheline) l
 
+(* let rec pp_raw_prim fmt (p : prim) =
+  let pp_space pp fmt l = if List.is_empty l then () else Format.fprintf fmt " %a" pp l in
+  let pps fmt str = Format.fprintf fmt "%s" str in
+  Format.fprintf fmt "%s%a%a"
+    p.prim
+    (pp_space (pp_list " " pps)) p.annots
+    (pp_space (fun fmt (args : obj_micheline list) ->
+         match args with
+         | []  -> ()
+         | [x] -> pp_raw_obj_micheline fmt x
+         | xs  -> (pp_paren (pp_list " " pp_raw_obj_micheline)) fmt xs)) p.args
+
+and pp_raw_obj_micheline fmt (o : obj_micheline) =
+  let pp a = Format.fprintf fmt a in
+  match o with
+  | Oprim   p -> pp_raw_prim fmt p
+  | Ostring v -> pp "%s" v
+  | Obytes  v -> pp "%s" v
+  | Oint    v -> pp "%s" v
+  | Oarray  l -> Format.fprintf fmt "{ %a }" (pp_list "; " pp_obj_micheline) l *)
+
 let pp_micheline fmt (m : micheline) =
   Format.fprintf fmt
     "{@\n  \

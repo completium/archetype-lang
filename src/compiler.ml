@@ -458,6 +458,17 @@ let process_expr (input : string) =
   | Error.ParseError _ -> assert false
   | _ -> ()
 
+let process_expr_type_channel (filename, channel) (input : string) =
+  Options.opt_type :=
+    (filename, channel)
+    |> parse_micheline ~ijson:true
+    |> (fun (x, _) -> Gen_extra.extract_from_micheline "parameter" x)
+    |> (fun x -> Michelson.to_type x)
+    |> (fun x -> Format.asprintf "%a@." Printer_michelson.pp_type x)
+    |> (fun x -> Some x);
+  (* Format.printf "%s@\n@." (!Options.opt_type |> Option.get) *)
+  process_expr input
+
 (* -------------------------------------------------------------------- *)
 let main () =
   set_margin 300;
@@ -542,6 +553,7 @@ let main () =
       "--trace", Arg.Set Options.opt_trace, " Activate trace";
       "--expr", Arg.String (fun s -> Options.opt_expr := Some s), " ";
       "--type", Arg.String (fun s -> Options.opt_type := Some s), " ";
+      "--with-contract", Arg.Set Options.opt_with_contract, " ";
       "--show-entries", Arg.Set Options.opt_show_entries, " Show entries";
       "--entrypoint", Arg.String (fun s -> Options.opt_entrypoint := Some s), " ";
       "-V", Arg.String (fun s -> Options.add_vids s), "<id> process specication identifiers";
@@ -565,7 +577,7 @@ let main () =
                                 ochannel := Some (open_in s))) arg_usage;
 
   match !Options.opt_expr with
-  | Some v -> process_expr v
+  | Some v when not !Options.opt_with_contract -> process_expr v
   | _ -> begin
 
       let filename, channel, dispose =
@@ -575,11 +587,12 @@ let main () =
 
       try
         begin
-          match !Options.opt_lsp, !Options.opt_service, !Options.opt_decomp, !Options.opt_show_entries with
-          | true, _, _, _ -> Lsp.process (filename, channel)
-          | _, true, _, _ -> Services.process (filename, channel)
-          | _, _, true, _ -> decompile (filename, channel)
-          | _, _, _, true -> showEntries (filename, channel)
+          match !Options.opt_lsp, !Options.opt_service, !Options.opt_decomp, !Options.opt_show_entries, !Options.opt_expr with
+          | true, _, _, _, _ -> Lsp.process (filename, channel)
+          | _, true, _, _, _ -> Services.process (filename, channel)
+          | _, _, true, _, _ -> decompile (filename, channel)
+          | _, _, _, true, _ -> showEntries (filename, channel)
+          | _, _, _, _, Some v -> process_expr_type_channel (filename, channel) v
           | _ -> compile (filename, channel)
         end;
         close dispose channel

@@ -11,7 +11,7 @@ type env = {
 
 let mk_env ?(name="") _ : env = { name }
 
-let parse_micheline (filename, ic) : T.obj_micheline * env =
+let parse_micheline ?ijson (filename, ic) : T.obj_micheline * env =
   let name =
     match filename with
     | "<stdin>" -> "noname"
@@ -20,7 +20,7 @@ let parse_micheline (filename, ic) : T.obj_micheline * env =
   let env = mk_env ~name:name () in
 
   let input =
-    if !Options.opt_json then
+    if match ijson with | Some v -> v | _ -> !Options.opt_json  then
       let open Yojson.Safe in
 
       let is_tag s l = List.exists (fun x -> String.equal s (fst x)) l in
