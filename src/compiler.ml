@@ -434,29 +434,24 @@ let print_version () =
 let process_expr (input : string) =
   let cont c p x = if c then (p x; raise Stop); x in
 
-  try
-    input
-    |> Io.parse_expr
-    |> cont !Options.opt_pt output_expr_pt
-    |> Gen_extra.to_model_expr
-    |> begin
-      fun x ->
-        if !Options.opt_json then begin
-          let micheline = Michelson.Utils.data_to_micheline x in
-          output_obj_micheline micheline;
-          match !Options.opt_type with
-          | Some t -> begin
-              let micheline = Michelson.Utils.type_to_micheline (Gen_extra.string_to_ttype t) in
-              output_obj_micheline micheline;
-            end
-          | None -> ()
-        end
-        else output_data x
-    end
-  with
-  | Stop -> ()
-  | Error.ParseError _ -> assert false
-  | _ -> ()
+  input
+  |> Io.parse_expr
+  |> cont !Options.opt_pt output_expr_pt
+  |> Gen_extra.to_model_expr
+  |> begin
+    fun x ->
+      if !Options.opt_json then begin
+        let micheline = Michelson.Utils.data_to_micheline x in
+        output_obj_micheline micheline;
+        match !Options.opt_type with
+        | Some t -> begin
+            let micheline = Michelson.Utils.type_to_micheline (Gen_extra.string_to_ttype t) in
+            output_obj_micheline micheline;
+          end
+        | None -> ()
+      end
+      else output_data x
+  end
 
 let process_expr_type_channel (filename, channel) (input : string) =
   Options.opt_type :=
@@ -468,6 +463,15 @@ let process_expr_type_channel (filename, channel) (input : string) =
     |> (fun x -> Some x);
   (* Format.printf "%s@\n@." (!Options.opt_type |> Option.get) *)
   process_expr input
+
+let process_expr_type_string (input : string) =
+  try
+    process_expr input
+  with
+  | Stop -> ()
+  | Stop_error n -> exit n
+  | Error.ParseError _ -> assert false
+  | _ -> ()
 
 (* -------------------------------------------------------------------- *)
 let main () =

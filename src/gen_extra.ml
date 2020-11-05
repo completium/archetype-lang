@@ -16,11 +16,11 @@ let pp_error_desc fmt = function
 
 type error = Location.t * error_desc
 
-let emit_error (lc, error : Location.t * error_desc) =
+let emit_error (lc, error : Location.t * error_desc) code =
   let str : string = Format.asprintf "%a@." pp_error_desc error in
   let pos : Position.t list = [location_to_position lc] in
   Error.error_alert pos str (fun _ -> ());
-  raise (Error.Stop 5)
+  raise (Error.Stop code)
 
 let string_to_ttype ?entrypoint (input : string) : T.type_ =
 
@@ -51,12 +51,12 @@ let to_model_expr (e : PT.expr) : T.data =
   let rec f ?typ (e : PT.expr) : T.data =
 
     let check_compatibility e et tref =
-      Option.iter (fun x -> if not (List.exists (T.cmp_type x) tref) then emit_error (loc e, TypeNotCompatible (x, e))) et
+      Option.iter (fun x -> if not (List.exists (T.cmp_type x) tref) then emit_error (loc e, TypeNotCompatible (x, e)) 3) et
     in
 
     let cc tref = check_compatibility e typ tref in
 
-    let error_cc t = emit_error (loc e, TypeNotCompatible (t, e)) in
+    let error_cc t = emit_error (loc e, TypeNotCompatible (t, e)) 3 in
 
     let to_one ?typ (l : PT.expr list) =
       match List.rev l with
