@@ -1,41 +1,43 @@
 #! /bin/bash
 
-BINLIGO="./extra/script/ligo.sh"
-BIN='./archetype.exe --set-caller-init=tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg'
+BIN=./extra/script/check_compile.sh
 
-NB_ERR=0
 RET=0
 
-process_files() {
-    for i in $1/*.arl; do
-      printf '%-100s' $i
-      ${BIN} $i > out.tz 2> /dev/null
-      if [ $? -eq 0 ]; then
-        ${BIN} -d -mi out.tz > /dev/null 2> /dev/null
-        if [ $? -eq 0 ]; then
-          echo -ne "\033[32m OK \033[0m"
-        else
-          echo -ne "\033[31m KO \033[0m"
-          NB_ERR=$((${NB_ERR} + 1))
-          RET=1
-        fi
-      else
-        echo -ne "\033[31m KO \033[0m"
-        NB_ERR=$((${NB_ERR} + 1))
-        RET=1
-      fi
-      rm -fr out.tz
-      echo ""
-    done
+BIN='./archetype.exe'
+
+process() {
+  ${BIN} -d $2 $1 --json > /dev/null 2> /dev/null
+  if [ $? -eq 0 ]; then
+    echo -ne "\033[32m OK \033[0m"
+  else
+    echo -ne "\033[31m KO \033[0m"
+    RET=1
+  fi
 }
 
-process_files "./tests/passed"
-process_files "./contracts"
-process_files "/home/dev/archetype/chaintelligence-use-cases/werenode"
+process_files() {
+  for i in $1/*.json; do
+    printf '%-90s' $i
+    process $i -mici
+    process $i -mi
+    process $i -dir
+#    process $i -rdir
+#    process $i -ir
+#    process $i -mdl
+#    process $i
+    echo ""
+  done
+}
 
+echo "Check mainnet contract"
+echo ""
+echo "                                                   MIC MI  DIR RIR IR  MDL ARL"
 
-if [ ${NB_ERR} -ne 0 ]; then
-  echo "errors: " ${NB_ERR}
-fi
+process_files "../chaintelligence-use-cases/mainnet/json"
+
+for i in $PASSED; do
+    ${BIN} $i
+done
 
 exit $RET
