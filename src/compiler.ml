@@ -120,9 +120,16 @@ let output (model : Model.model) =
                     else begin
                       if !Options.opt_json then
                         let micheline = Michelson.Utils.to_micheline michelson ir.storage_data in
-                        if !Options.opt_rjson
-                        then Format.fprintf fmt "%a@." Michelson.pp_micheline micheline
-                        else Format.fprintf fmt "%a@." Printer_michelson.pp_micheline micheline
+                        if !Options.opt_code_only
+                        then begin
+                          let code = micheline.code in
+                          output_obj_micheline (Michelson.Oarray code)
+                        end
+                        else begin
+                          if !Options.opt_rjson
+                          then Format.fprintf fmt "%a@." Michelson.pp_micheline micheline
+                          else Format.fprintf fmt "%a@." Printer_michelson.pp_micheline micheline
+                        end
                       else
                         Format.fprintf fmt "# %a@.%a@."
                           Printer_michelson.pp_data ir.storage_data
@@ -560,6 +567,7 @@ let main () =
       "--with-contract", Arg.Set Options.opt_with_contract, " ";
       "--show-entries", Arg.Set Options.opt_show_entries, " Show entries";
       "--entrypoint", Arg.String (fun s -> Options.opt_entrypoint := Some s), " ";
+      "--only-code", Arg.Set Options.opt_code_only, " ";
       "-V", Arg.String (fun s -> Options.add_vids s), "<id> process specication identifiers";
       "-v", Arg.Unit (fun () -> print_version ()), " Show version number and exit";
       "--version", Arg.Unit (fun () -> print_version ()), " Same as -v";

@@ -70,6 +70,7 @@ let opt_entrypoint : (string option) ref = ref (None : string option)
 let opt_type : (string option) ref = ref (None : string option)
 let opt_show_entries = ref false
 let opt_with_contract = ref false
+let opt_code_only = ref false
 
 let opt_property_focused = ref ""
 
