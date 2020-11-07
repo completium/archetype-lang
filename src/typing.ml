@@ -580,6 +580,7 @@ type error_desc =
   | DuplicatedFieldInAssetOrRecordLiteral of ident
   | DuplicatedFieldInRecordDecl        of ident
   | DuplicatedInitMarkForCtor
+  | DuplicatedPackingVar               of ident
   | DuplicatedPkeyField                of ident
   | DuplicatedVarDecl                  of ident
   | EffectInGlobalSpec
@@ -611,6 +612,8 @@ type error_desc =
   | InvalidMethodInFormula
   | InvalidMethodWithBigMap            of ident
   | InvalidNumberOfArguments           of int * int
+  | InvalidPackingExpr
+  | InvalidPackingFormat
   | InvalidRecordFieldType
   | InvalidRoleExpression
   | InvalidSecurityEntry
@@ -777,6 +780,7 @@ let pp_error_desc fmt e =
     -> pp "Duplicated field in asset or record literal: %a" pp_ident i
   | DuplicatedFieldInRecordDecl i      -> pp "Duplicated field in record declaration: %a" pp_ident i
   | DuplicatedInitMarkForCtor          -> pp "Duplicated 'initialized by' section for asset"
+  | DuplicatedPackingVar x             -> pp "Duplicated packing variable: %a" pp_ident x
   | DuplicatedPkeyField x              -> pp "Duplicated primary key field: %a" pp_ident x
   | DuplicatedVarDecl i                -> pp "Duplicated variable declaration: %a" pp_ident i
   | EffectInGlobalSpec                 -> pp "(Shadow) effects at global level are forbidden"
@@ -809,6 +813,8 @@ let pp_error_desc fmt e =
   | InvalidMethodInFormula             -> pp "Invalid method in formula"
   | InvalidMethodWithBigMap id         -> pp "Invalid method with big map asset: %s" id
   | InvalidNumberOfArguments (n1, n2)  -> pp "Invalid number of arguments: found '%i', but expected '%i'" n2 n1
+  | InvalidPackingExpr                 -> pp "Invalid packing expression"
+  | InvalidPackingFormat               -> pp "Invalid packing format"
   | InvalidRecordFieldType             -> pp "Invalid record field's type"
   | InvalidRoleExpression              -> pp "Invalid role expression"
   | InvalidSecurityEntry               -> pp "Invalid security entry"
@@ -1281,8 +1287,9 @@ let get_field (x : ident) (decl : assetdecl) =
 
 (* -------------------------------------------------------------------- *)
 type recorddecl = {
-  rd_name   : A.lident;
-  rd_fields : rfielddecl list;
+  rd_name    : A.lident;
+  rd_fields  : rfielddecl list;
+  rd_packing : rpacking option;
 }
 [@@deriving show {with_path = false}]
 
@@ -1291,6 +1298,10 @@ and rfielddecl = {
   rfd_type  : A.ptyp;
   rfd_dfl   : A.pterm option;
 }
+
+and rpacking =
+  | RLeaf of A.lident
+  | RNode of rpacking list
 
 let get_rfield (x : ident) (decl : recorddecl) =
   List.Exn.find (fun fd -> x = L.unloc fd.rfd_name) decl.rd_fields
@@ -5367,7 +5378,7 @@ let for_asset_specs
 
 (* -------------------------------------------------------------------- *)
 let for_record_decl (env : env) (decl : PT.record_decl loced) =
-  let name, fields, _pos, _ = unloc decl in
+  let name, fields, packing, _ = unloc decl in
   let fields =
     let get_field { pldesc = PT.Ffield (x, ty, e, _) } = (x, ty, e) in
     List.map get_field fields in
@@ -5398,8 +5409,56 @@ let for_record_decl (env : env) (decl : PT.record_decl loced) =
       | _   , _       -> None in
     List.pmap for1 fields in
 
+  let packing =
+    let module E = struct
+        exception InvalidPacking of (Location.t * [`Expr | `Format | `Dup of ident])
+      end in
+
+    let rec doit (e : PT.expr) =
+      match unloc e with
+      | Etuple es ->
+          RNode (List.map doit es)
+      | Eterm  ((None, None), x) ->
+          RLeaf x
+      | _ ->
+          raise (E.InvalidPacking (loc e, `Expr)) in
+
+    packing |> Option.bind (fun e ->
+        try
+          let packing = doit e in
+          let vars    =
+            let rec doit = function
+              | RLeaf x  -> Mid.singleton (unloc x) [loc x]
+              | RNode ch ->
+                  List.fold_left
+                    (Mid.merge (fun _ s1 s2 ->
+                        Some ((Option.get_dfl [] s1) @ (Option.get_dfl [] s2))))
+                    Mid.empty (List.map doit ch)
+            in doit packing in
+
+            let nvars = Mid.fold (fun _ lcs i -> List.length lcs + i) vars 0 in
+
+            if nvars <> List.length fields then
+              raise (E.InvalidPacking (loc e, `Format));
+
+            Mid.iter (fun x lcs ->
+              if List.length lcs > 1 then
+                raise (E.InvalidPacking (List.hd (List.rev lcs), `Dup x)))
+              vars;
+
+            Some packing
+
+        with E.InvalidPacking (lc, e) ->
+          begin match e with
+          | `Expr   -> Env.emit_error env (lc, InvalidPackingExpr)
+          | `Format -> Env.emit_error env (lc, InvalidPackingFormat)
+          | `Dup x  -> Env.emit_error env (lc, DuplicatedPackingVar x) end;
+          None) in
+
   if check_and_emit_name_free env name then
-    let rdecl = { rd_name = name; rd_fields = fields; } in
+    let rdecl = { rd_name    = name   ;
+                  rd_fields  = fields ;
+                  rd_packing = packing; } in
     Env.Record.push env rdecl, Some rdecl
   else (env, None)
 
@@ -5789,12 +5848,17 @@ let records_of_rdecls rdecls =
           typ     = Some fd.rfd_type;
           default = fd.rfd_dfl;
           shadow  = false;
-          loc     = loc fd.rfd_name; }
-    in
+          loc     = loc fd.rfd_name; } in
+
+    let packing =
+      let rec doit = function
+        | RLeaf id -> A.Pleaf id
+        | RNode ch -> A.Pnode (List.map doit ch)
+      in Option.map doit decl.rd_packing in
 
     A.{ name   = decl.rd_name;
         fields = List.map for_field decl.rd_fields;
-        pos    = Pnode [];
+        pos    = Option.get_dfl (Pnode []) packing;
         loc    = loc decl.rd_name; }
 
   in List.map for1 rdecls
