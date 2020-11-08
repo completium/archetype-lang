@@ -1450,10 +1450,10 @@ module Env : sig
   end
 
   module Type : sig
-    val lookup : t -> ident -> A.ptyp option
-    val get    : t -> ident -> A.ptyp
-    val exists : t -> ident -> bool
-    val push   : t -> (A.lident * A.ptyp) -> t
+    val lookup  : t -> ident -> A.ptyp option
+    val get     : t -> ident -> A.ptyp
+    val exists  : t -> ident -> bool
+    val push    : t -> (A.lident * A.ptyp) -> t
   end
 
   module Local : sig
@@ -1914,6 +1914,17 @@ let empty : env =
 
   env
 
+(* --------------------------------------------------------------------- *)
+let ty_of_init_ty (env : env) (ty : A.ptyp) =
+  match ty with
+  | A.Tcontainer (A.Tasset { pldesc = asset }, ctn) when Env.Asset.exists env asset ->
+      let asset = Env.Asset.get env asset in
+      let pk = List.map
+        (fun x -> (Option.get (get_field (unloc x) asset)).fd_type) asset.as_pk in
+      A.Tcontainer (Type.create_tuple pk, ctn)
+
+  | _ -> ty
+                                        
 (* -------------------------------------------------------------------- *)
 let check_and_emit_name_free (env : env) (x : A.lident) =
   match Env.name_free env (unloc x) with
@@ -5303,7 +5314,8 @@ let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) xspec
             end else
               let init1 =
                 List.map2
-                  (fun field (_, ie) -> for_expr `Concrete env ~ety:field.fd_type ie)
+                  (fun field (_, ie) ->
+                    for_expr `Concrete env ~ety:(ty_of_init_ty env field.fd_type) ie)
                   adecl.as_fields init1 in
               Some init1
 
@@ -5324,7 +5336,7 @@ let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) xspec
             let init1 =
               List.fold_left (fun init1 ({pldesc = x; plloc = tloc}, e) ->
                   let { fd_type = fty } = Option.get (get_field x adecl) in
-                  let e = for_expr `Concrete env ~ety:fty e in
+                  let e = for_expr `Concrete env ~ety:(ty_of_init_ty env fty) e in
                   Mid.update x (fun es -> Some ((e, tloc) :: (Option.get_dfl [] es))) init1
                 ) Mid.empty init1 in
 
