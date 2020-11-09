@@ -92,9 +92,11 @@ let container_to_str c =
   | Partition  -> "partition"
   | View       -> "view"
 
+let is_percent_prefix str = (String.length str >= 1 && String.equal "_" (String.sub str 0 1)) || is_keyword str
+
 let pp_id fmt (id : lident) =
   let id = unloc id in
-  Format.fprintf fmt "%a%s" (fun fmt _ -> if is_keyword id then pp_str fmt "%" else ()) () id
+  Format.fprintf fmt "%a%s" (fun fmt _ -> if is_percent_prefix id then pp_str fmt "%" else ()) () id
 
 let pp_container fmt c =
   Format.fprintf fmt "%s" (container_to_str c)
