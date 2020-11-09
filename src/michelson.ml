@@ -970,9 +970,10 @@ and cmp_dinstruction (lhs : dinstruction) (rhs : dinstruction) =
   | _ -> false
 module Utils : sig
 
-  val get_fun_name : (type_ -> ident) -> builtin -> ident
-  val flat         : code -> code
-  val optim        : code -> code
+  val get_fun_name  : (type_ -> ident) -> builtin -> ident
+  val flat          : code -> code
+  val optim         : code -> code
+  val replace_macro : code -> code
   val data_to_micheline : data -> obj_micheline
   val type_to_micheline : type_ -> obj_micheline
   val to_micheline : michelson -> data -> micheline
@@ -1083,6 +1084,14 @@ end = struct
     |> factorize_instrs
   (* |> factorize_double_branches *)
 
+  let replace_macro c =
+    let rec aux c =
+      match c with
+      | UNPAIR -> SEQ [DUP; CAR; DIP (1, [CDR])]
+      | _ -> map_code aux c
+    in
+    aux c
+
   let rec type_to_micheline (t : type_) : obj_micheline =
     let prim, args =
       match t.node with
@@ -1151,7 +1160,7 @@ end = struct
     let fan = function | Some v -> [v] | None -> [] in
     match c with
     (* Control structures *)
-    | SEQ l                    -> mk ~args:(List.map f l) "code"
+    | SEQ l                    -> mk_array l
     | APPLY                    -> mk "APPLY"
     | EXEC                     -> mk "EXEC"
     | FAILWITH                 -> mk "FAILWITH"
