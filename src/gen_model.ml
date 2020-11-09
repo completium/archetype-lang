@@ -801,12 +801,19 @@ let to_model (ast : A.ast) : M.model =
   in
 
   let process_record (r : A.record) : M.decl_node =
+    let rec for_pos (pos : A.lident A.position) : M.position =
+      match pos with
+      | A.Pleaf id -> M.Pleaf (unloc id)
+      | A.Pnode n -> M.Pnode (List.map for_pos n)
+    in
+
+    let pos = for_pos r.pos in
     let fs : M.record_field list =
       List.map (fun (x : A.lident A.decl_gen) ->
           let typ = Option.get (Option.map type_to_type x.typ) in
           M.mk_record_field x.name typ ~loc:x.loc) r.fields
     in
-    M.Drecord (M.mk_record r.name ~fields:fs ~loc:r.loc)
+    M.Drecord (M.mk_record r.name ~fields:fs ~pos ~loc:r.loc)
   in
 
   let rec to_instruction (env : env) (instr : A.instruction) : M.mterm =

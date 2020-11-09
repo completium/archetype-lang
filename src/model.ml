@@ -633,6 +633,11 @@ type 'id asset_gen = {
 type asset = lident asset_gen
 [@@deriving show {with_path = false}]
 
+type position =
+  | Pleaf of ident
+  | Pnode of position list
+[@@deriving show {with_path = false}]
+
 type 'id record_field_gen = {
   name: 'id;
   type_: type_;
@@ -646,6 +651,7 @@ type record_field = lident record_field_gen
 type 'id record_gen = {
   name: 'id;
   fields: 'id record_field_gen list;
+  pos: position;
   loc: Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -930,8 +936,8 @@ let mk_asset ?(values = []) ?(sort=[]) ?(big_map = false) ?state ?(keys = []) ?(
 let mk_asset_item ?default ?(shadow=false) ?(loc = Location.dummy) name type_ original_type : 'id asset_item_gen =
   { name; type_; original_type; default; shadow; loc }
 
-let mk_record ?(fields = []) ?(loc = Location.dummy) name : 'id record_gen =
-  { name; fields; loc }
+let mk_record ?(fields = []) ?(pos = Pnode []) ?(loc = Location.dummy) name : 'id record_gen =
+  { name; fields; pos; loc }
 
 let mk_record_field ?(loc = Location.dummy) name type_ : 'id record_field_gen =
   { name; type_; loc }
@@ -3446,6 +3452,7 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
       {
         name          = g KIrecordname r.name;
         fields        = List.map for_record_field r.fields;
+        pos           = r.pos;
         loc           = r.loc;
       }
     in
