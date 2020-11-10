@@ -108,7 +108,12 @@ let to_ir (model : M.model) : T.ir =
               match snd x.type_ with
               | Some _ -> x.type_
               | None -> fst x.type_, Some (dumloc (mk_fannot (unloc x.name)))) r.fields in
-          to_one_type (List.map to_type lt) |> fun x -> x.node
+          match r.pos with
+          | Pnode [] -> to_one_type (List.map to_type lt) |> fun x -> x.node
+          | _ -> begin
+
+              to_one_type (List.map to_type lt) |> fun x -> x.node
+            end
         end
       | Tlambda (a, r) -> Tlambda (to_type a, to_type r)
       | Tunit -> T.Tunit
@@ -397,19 +402,8 @@ let to_ir (model : M.model) : T.ir =
       match M.get_ntype e.type_ with
       | M.Trecord rn -> begin
           let rn = unloc rn in
-          let r : M.record = M.Utils.get_record model rn in
-
-          match r.pos with
-          | M.Pnode [] -> begin
-              let s = get_record_size e.type_ in
-              let n = get_record_index e.type_ fn in
-              access_tuple s n (f e)
-            end
-          | _ -> begin
-              let s = get_record_size e.type_ in
-              let n = get_record_index e.type_ fn in
-              access_tuple s n (f e)
-            end
+          let pos = M.Utils.get_record_pos model rn fn in
+          List.fold_left (fun accu (i, s) -> access_tuple s i accu) (f e) pos
         end
       | _ -> Format.eprintf "access_record: %a@." M.pp_type_ e.type_; assert false
     in

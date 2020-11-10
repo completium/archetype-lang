@@ -634,7 +634,7 @@ type asset = lident asset_gen
 [@@deriving show {with_path = false}]
 
 type position =
-  | Pleaf of ident
+  | Ptuple of ident list
   | Pnode of position list
 [@@deriving show {with_path = false}]
 
@@ -3768,6 +3768,7 @@ module Utils : sig
   val extract_assign_kind                : mterm -> assign_kind list
   val extract_asset_effect               : model -> mterm -> effect list
   val extract_var_idents                 : model -> mterm -> ident list
+  val get_record_pos                     : model -> ident -> ident -> (int * int) list
 
 end = struct
 
@@ -5242,5 +5243,15 @@ end = struct
       | _ -> fold_term (aux env) accu t in
     aux [] [] mt
     |> Tools.List.dedup
+
+  let get_record_pos model rn fn =
+    let r : record = get_record model rn in
+    let fields_length = List.length r.fields in
+    let fields_index  = List.index_of (fun (f : record_field) -> String.equal fn (unloc f.name)) r.fields in
+    if (fields_index == -1)
+    then assert false;
+    match r.pos with
+    | Pnode [] -> [fields_index, fields_length]
+    | _ -> [fields_index, fields_length]
 
 end

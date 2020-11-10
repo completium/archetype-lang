@@ -1469,9 +1469,20 @@ let pp_record fmt (r : record) =
       pp_id rf.name
       pp_type rf.type_
   in
-  Format.fprintf fmt "record %a {@\n  @[%a@]@\n}@\n"
+  let rec pp_pos fmt pos =
+    Format.fprintf fmt "(%a)"
+      (fun fmt pos ->
+         match pos with
+         | Ptuple l -> (pp_list ", " pp_ident) fmt l
+         | Pnode l  -> (pp_list ", " pp_pos)   fmt l) pos
+  in
+  Format.fprintf fmt "record %a {@\n  @[%a@]@\n}%a@\n"
     pp_id r.name
     (pp_list "@\n" pp_record_field) r.fields
+    (fun fmt x ->
+       match x with
+       | Pnode [] -> ()
+       | _ -> Format.fprintf fmt " as %a" pp_pos x) r.pos
 
 let pp_decl fmt = function
   | Dvar v -> pp_var fmt v

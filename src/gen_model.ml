@@ -803,8 +803,30 @@ let to_model (ast : A.ast) : M.model =
   let process_record (r : A.record) : M.decl_node =
     let rec for_pos (pos : A.lident A.position) : M.position =
       match pos with
-      | A.Pleaf id -> M.Pleaf (unloc id)
-      | A.Pnode n -> M.Pnode (List.map for_pos n)
+      | A.Pleaf id -> M.Ptuple [unloc id]
+      | A.Pnode n -> begin
+          let is_all_leaf l = List.for_all (function | A.Pleaf _ -> true | _ -> false) l in
+          match n with
+          | [] -> M.Pnode []
+          | _ when is_all_leaf n -> M.Ptuple (List.map (function | A.Pleaf id -> (unloc id) | _ -> assert false) n)
+          | _ -> begin
+              let update_res accu res =
+                match accu with
+                | [] -> res
+                | _  -> res @ [M.Ptuple accu]
+              in
+
+              let accu, res = List.fold_left (fun (accu, res) x ->
+                  match x with
+                  | A.Pleaf id -> (accu @ [unloc id], res)
+                  | _ -> begin
+                      let res = update_res accu res in
+                      ([], res @ [for_pos x])
+                    end) ([], []) n
+              in
+              M.Pnode (update_res accu res)
+            end
+        end
     in
 
     let pos = for_pos r.pos in

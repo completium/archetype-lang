@@ -38,7 +38,7 @@ let pp_no_empty_list2 pp fmt l =
   else Format.fprintf fmt "%a@\n" (pp_no_empty_list pp) l
 
 (* -------------------------------------------------------------------------- *)
-let pp_ident = pp_str
+let pp_ident fmt str = Format.fprintf fmt "%s" str
 
 let pp_id fmt (id : lident) =
   Format.fprintf fmt "%s" (unloc id)
