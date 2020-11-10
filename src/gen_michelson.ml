@@ -108,12 +108,32 @@ let to_ir (model : M.model) : T.ir =
               match snd x.type_ with
               | Some _ -> x.type_
               | None -> fst x.type_, Some (dumloc (mk_fannot (unloc x.name)))) r.fields in
-          match r.pos with
-          | Pnode [] -> to_one_type (List.map to_type lt) |> fun x -> x.node
-          | _ -> begin
-
-              to_one_type (List.map to_type lt) |> fun x -> x.node
-            end
+          let tn =
+            match r.pos with
+            | Pnode [] -> to_one_type (List.map to_type lt)
+            | p -> begin
+                let ltt = ref lt in
+                let rec aux p =
+                  match p with
+                  | M.Ptuple ids -> begin
+                      let length = List.length ids in
+                      let ll0, ll1 = List.cut length !ltt in
+                      ltt := ll1;
+                      let ll0 : M.type_ list = List.map2 (fun id (x : M.type_) ->
+                          let annot =
+                            match id with
+                            | "_" -> None
+                            | _ -> Some (dumloc ("%" ^ id))
+                          in
+                          M.mktype ?annot (M.get_ntype x)) ids ll0 in
+                      to_one_type (List.map to_type ll0)
+                    end
+                  | M.Pnode l -> to_one_type (List.map aux l)
+                in
+                aux p
+              end
+          in
+          tn.node
         end
       | Tlambda (a, r) -> Tlambda (to_type a, to_type r)
       | Tunit -> T.Tunit
