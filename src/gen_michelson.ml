@@ -162,30 +162,6 @@ let to_ir (model : M.model) : T.ir =
 
   in
 
-  let get_record_size (rt : M.type_) : int =
-    match M.get_ntype rt with
-    | M.Trecord rn -> begin
-        let rn = unloc rn in
-        let r : M.record = M.Utils.get_record model rn in
-        List.length r.fields
-      end
-    | _ -> Format.eprintf "%a@." M.pp_type_ rt; assert false
-  in
-
-  let get_record_index (rt : M.type_) fn =
-    match M.get_ntype rt with
-    | M.Trecord rn -> begin
-        let rn = unloc rn in
-        let r : M.record = M.Utils.get_record model rn in
-        let res = List.fold_lefti (fun i accu (x : M.record_field) ->
-            if String.equal fn (unloc x.name) then i else accu) (-1) r.fields in
-        match res with
-        | -1 -> emit_error (FieldNotFoundFor (rn, fn))
-        | _ -> res
-      end
-    | _ -> Format.eprintf "get_record_index: %a@." M.pp_type_ rt; assert false
-  in
-
   let l = List.map (
       fun (si : M.storage_item) ->
         (unloc si.id), to_type ~annotation:(mk_fannot (unloc si.id)) si.typ, to_data si.default)
@@ -378,7 +354,7 @@ let to_ir (model : M.model) : T.ir =
       | e::t -> List.fold_left (fun accu x -> T.Ibinop (Bpair, x, accu)) e t
     in
 
-    let access_record s i x =
+    let access_tuple s i x =
       if i = 0 && s = 1
       then x
       else begin
@@ -390,6 +366,52 @@ let to_ir (model : M.model) : T.ir =
         in
         x
       end
+    in
+
+    let get_record_size (rt : M.type_) : int =
+      match M.get_ntype rt with
+      | M.Trecord rn -> begin
+          let rn = unloc rn in
+          let r : M.record = M.Utils.get_record model rn in
+          List.length r.fields
+        end
+      | _ -> Format.eprintf "%a@." M.pp_type_ rt; assert false
+    in
+
+    let get_record_index (rt : M.type_) fn =
+      match M.get_ntype rt with
+      | M.Trecord rn -> begin
+          let rn = unloc rn in
+          let r : M.record = M.Utils.get_record model rn in
+          let res = List.fold_lefti (fun i accu (x : M.record_field) ->
+              if String.equal fn (unloc x.name) then i else accu) (-1) r.fields in
+          match res with
+          | -1 -> emit_error (FieldNotFoundFor (rn, fn))
+          | _ -> res
+        end
+      | _ -> Format.eprintf "get_record_index: %a@." M.pp_type_ rt; assert false
+    in
+
+    let access_record (e : M.mterm) fn =
+      let fn = unloc fn in
+      match M.get_ntype e.type_ with
+      | M.Trecord rn -> begin
+          let rn = unloc rn in
+          let r : M.record = M.Utils.get_record model rn in
+
+          match r.pos with
+          | M.Pnode [] -> begin
+              let s = get_record_size e.type_ in
+              let n = get_record_index e.type_ fn in
+              access_tuple s n (f e)
+            end
+          | _ -> begin
+              let s = get_record_size e.type_ in
+              let n = get_record_index e.type_ fn in
+              access_tuple s n (f e)
+            end
+        end
+      | _ -> Format.eprintf "access_record: %a@." M.pp_type_ e.type_; assert false
     in
 
     match mtt.node with
@@ -571,11 +593,7 @@ let to_ir (model : M.model) : T.ir =
 
     (* access *)
 
-    | Mdot (e, i)           -> begin
-        let s = get_record_size e.type_ in
-        let n = get_record_index e.type_ (unloc i) in
-        access_record s n (f e)
-      end
+    | Mdot (e, i)           -> access_record e i
     | Mdotassetfield _      -> emit_error (UnsupportedTerm ("Mdotassetfield"))
 
     (* comparison operators *)
@@ -641,7 +659,7 @@ let to_ir (model : M.model) : T.ir =
         | M.Tbuiltin Bstring, M.Tbuiltin Bsignature, Mstring s -> T.Iconst (T.mk_type Tsignature, Dstring s)
         | _ -> f v
       end
-    | Mtupleaccess (x, n) -> let s = (match M.get_ntype x.type_ with | Ttuple l -> List.length l | _ -> 0) in access_record s (Big_int.int_of_big_int n) (f x)
+    | Mtupleaccess (x, n) -> let s = (match M.get_ntype x.type_ with | Ttuple l -> List.length l | _ -> 0) in access_tuple s (Big_int.int_of_big_int n) (f x)
     | Mrecupdate (x, l) ->
       let s = get_record_size mtt.type_ in
       let ll =
