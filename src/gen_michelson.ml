@@ -70,80 +70,7 @@ let to_ir (model : M.model) : T.ir =
 
 
   let rec to_type ?annotation (t : M.type_) : T.type_ =
-    let node =
-      match M.get_ntype t with
-      | Tasset _   -> assert false
-      | Tenum _    -> T.Tint
-      | Tstate     -> T.Tint
-      | Tbuiltin b -> begin
-          match b with
-          | Bunit      -> T.Tunit
-          | Bbool      -> T.Tbool
-          | Bint       -> T.Tint
-          | Brational  -> assert false
-          | Bdate      -> T.Ttimestamp
-          | Bduration  -> T.Tint
-          | Btimestamp -> T.Ttimestamp
-          | Bstring    -> T.Tstring
-          | Baddress   -> T.Taddress
-          | Brole      -> T.Taddress
-          | Bcurrency  -> T.Tmutez
-          | Bsignature -> T.Tsignature
-          | Bkey       -> T.Tkey
-          | Bkeyhash   -> T.Tkey_hash
-          | Bbytes     -> T.Tbytes
-          | Bnat       -> T.Tnat
-          | Bchainid   -> T.Tchain_id
-        end
-      | Tcontainer _   -> assert false
-      | Tlist t        -> T.Tlist (to_type t)
-      | Toption t      -> T.Toption (to_type t)
-      | Ttuple lt      -> to_one_type (List.map to_type lt) |> fun x -> x.node
-      | Tset t         -> T.Tset (to_type t)
-      | Tmap (b, k, v) -> if b then T.Tbig_map (to_type k, to_type v) else T.Tmap (to_type k, to_type v)
-      | Tor (l, r)     -> T.Tor (to_type l, to_type r)
-      | Trecord id     -> begin
-          let r = M.Utils.get_record model (unloc id) in
-          let lt = List.map (fun (x : M.record_field) ->
-              match snd x.type_ with
-              | Some _ -> x.type_
-              | None -> fst x.type_, Some (dumloc (mk_fannot (unloc x.name)))) r.fields in
-          let tn =
-            match r.pos with
-            | Pnode [] -> to_one_type (List.map to_type lt)
-            | p -> begin
-                let ltt = ref lt in
-                let rec aux p =
-                  match p with
-                  | M.Ptuple ids -> begin
-                      let length = List.length ids in
-                      let ll0, ll1 = List.cut length !ltt in
-                      ltt := ll1;
-                      let ll0 : M.type_ list = List.map2 (fun id (x : M.type_) ->
-                          let annot =
-                            match id with
-                            | "_" -> None
-                            | _ -> Some (dumloc ("%" ^ id))
-                          in
-                          M.mktype ?annot (M.get_ntype x)) ids ll0 in
-                      to_one_type (List.map to_type ll0)
-                    end
-                  | M.Pnode l -> to_one_type (List.map aux l)
-                in
-                aux p
-              end
-          in
-          tn.node
-        end
-      | Tlambda (a, r) -> Tlambda (to_type a, to_type r)
-      | Tunit -> T.Tunit
-      | Toperation -> T.Toperation
-      | Tcontract t -> T.Tcontract (to_type t)
-      | Tstorage -> assert false
-      | Tprog  _ -> assert false
-      | Tvset  _ -> assert false
-      | Ttrace _ -> assert false
-    in
+
     let annotation =
       match annotation with
       | Some _ -> annotation
@@ -154,7 +81,76 @@ let to_ir (model : M.model) : T.ir =
           | None -> None
         end
     in
-    T.mk_type ?annotation node
+
+    match M.get_ntype t with
+    | Tasset _   -> assert false
+    | Tenum _    -> T.mk_type ?annotation T.Tint
+    | Tstate     -> T.mk_type ?annotation T.Tint
+    | Tbuiltin b -> T.mk_type ?annotation begin
+        match b with
+        | Bunit      -> T.Tunit
+        | Bbool      -> T.Tbool
+        | Bint       -> T.Tint
+        | Brational  -> assert false
+        | Bdate      -> T.Ttimestamp
+        | Bduration  -> T.Tint
+        | Btimestamp -> T.Ttimestamp
+        | Bstring    -> T.Tstring
+        | Baddress   -> T.Taddress
+        | Brole      -> T.Taddress
+        | Bcurrency  -> T.Tmutez
+        | Bsignature -> T.Tsignature
+        | Bkey       -> T.Tkey
+        | Bkeyhash   -> T.Tkey_hash
+        | Bbytes     -> T.Tbytes
+        | Bnat       -> T.Tnat
+        | Bchainid   -> T.Tchain_id
+      end
+    | Tcontainer _   -> assert false
+    | Tlist t        -> T.mk_type ?annotation (T.Tlist (to_type t))
+    | Toption t      -> T.mk_type ?annotation (T.Toption (to_type t))
+    | Ttuple lt      -> T.mk_type ?annotation (to_one_type (List.map to_type lt) |> fun x -> x.node)
+    | Tset t         -> T.mk_type ?annotation (T.Tset (to_type t))
+    | Tmap (b, k, v) -> T.mk_type ?annotation (if b then T.Tbig_map (to_type k, to_type v) else T.Tmap (to_type k, to_type v))
+    | Tor (l, r)     -> T.mk_type ?annotation (T.Tor (to_type l, to_type r))
+    | Trecord id     -> begin
+        let r = M.Utils.get_record model (unloc id) in
+        let lt = List.map (fun (x : M.record_field) ->
+            match snd x.type_ with
+            | Some _ -> x.type_
+            | None -> fst x.type_, Some (dumloc (mk_fannot (unloc x.name)))) r.fields in
+        match r.pos with
+        | Pnode [] -> T.mk_type ?annotation (to_one_type (List.map to_type lt) |> fun x -> x.node)
+        | p -> begin
+            let ltt = ref lt in
+            let rec aux p =
+              match p with
+              | M.Ptuple ids -> begin
+                  let length = List.length ids in
+                  let ll0, ll1 = List.cut length !ltt in
+                  ltt := ll1;
+                  let ll0 : M.type_ list = List.map2 (fun id (x : M.type_) ->
+                      let annot =
+                        match id with
+                        | "_" -> None
+                        | _ -> Some (dumloc ("%" ^ id))
+                      in
+                      M.mktype ?annot (M.get_ntype x)) ids ll0 in
+                  to_one_type (List.map to_type ll0)
+                end
+              | M.Pnode l -> to_one_type (List.map aux l)
+            in
+            aux p
+          end
+      end
+    | Tlambda (a, r) -> T.mk_type ?annotation (Tlambda (to_type a, to_type r))
+    | Tunit          -> T.mk_type ?annotation (T.Tunit)
+    | Toperation     -> T.mk_type ?annotation (T.Toperation)
+    | Tcontract t    -> T.mk_type ?annotation (T.Tcontract (to_type t))
+    | Tstorage       -> assert false
+    | Tprog  _       -> assert false
+    | Tvset  _       -> assert false
+    | Ttrace _       -> assert false
   in
 
   let rec to_data (mt : M.mterm) : T.data =

@@ -1,0 +1,49 @@
+archetype custom_storage3
+
+record my_record {
+  fa: nat;
+  fb: nat;
+  fc: nat;
+  fd: nat;
+  fe: nat;
+  ff: nat;
+  fg: nat;
+  fh: nat;
+  fi: nat;
+  fj: nat;
+  fk: nat;
+  fl: nat;
+  fm: nat;
+} at ((n, o, (p, q, (r, s, t, u), v), w, (x, y), z))
+
+variable r : my_record = {0; 1; 2; 3; 4; 5; 6; 7; 8; 9; 10; 11; 12}
+
+variable a : nat = 0
+variable b : nat = 0
+variable c : nat = 0
+variable d : nat = 0
+variable e : nat = 0
+variable f : nat = 0
+variable g : nat = 0
+variable h : nat = 0
+variable i : nat = 0
+variable j : nat = 0
+variable k : nat = 0
+variable l : nat = 0
+variable m : nat = 0
+
+entry exec () {
+  a := r.fa;
+  b := r.fb;
+  c := r.fc;
+  d := r.fd;
+  e := r.fe;
+  f := r.ff;
+  g := r.fg;
+  h := r.fh;
+  i := r.fi;
+  j := r.fj;
+  k := r.fk;
+  l := r.fl;
+  m := r.fm;
+}

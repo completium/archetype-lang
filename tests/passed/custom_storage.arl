@@ -8,7 +8,7 @@ record my_record {
   c: address;
 } at (((x, %_), z))
 
-variable r : my_record = {0i; 0; @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg}
+variable r : my_record = {1i; 2; @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg}
 
 entry exec () {
   res := r.b

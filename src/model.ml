@@ -5244,6 +5244,8 @@ end = struct
     aux [] [] mt
     |> Tools.List.dedup
 
+  exception Found of (int * int) list
+
   let get_record_pos model rn fn =
     let r : record = get_record model rn in
     let fields_length = List.length r.fields in
@@ -5252,6 +5254,28 @@ end = struct
     then assert false;
     match r.pos with
     | Pnode [] -> [fields_index, fields_length]
-    | _ -> [fields_index, fields_length]
+    | _ -> begin
+
+        let idx = ref fields_index in
+        let rec aux accu p =
+          match p with
+          | Ptuple ids -> begin
+              let l = List.length ids in
+              if l <= !idx
+              then idx := !idx - l
+              else raise (Found (accu @ [!idx, l]))
+            end
+          | Pnode children -> begin
+              let l = List.length children in
+              List.iteri (fun i x -> aux (accu @ [i, l]) x) children
+            end
+        in
+
+        try
+          aux [] r.pos;
+          assert false
+        with
+          Found res -> res
+      end
 
 end
