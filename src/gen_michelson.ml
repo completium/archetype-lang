@@ -176,33 +176,32 @@ let to_ir (model : M.model) : T.ir =
     | Muminus    v      -> to_data v |> (function | T.Dint n -> T.Dint (Big_int.mult_int_big_int (-1) n) | _ -> assert false )
     | Mnow              -> T.Dint (Unix.time () |> int_of_float |> Big_int.big_int_of_int)
     | Mlitrecord l      -> begin
-        let rn =
-          match M.get_ntype mt.type_ with
-          | Trecord rn -> unloc rn
-          | _ -> assert false
-        in
-        let r = M.Utils.get_record model rn in
         let data = List.map (to_data |@ snd) l in
-        match r.pos with
-        | Pnode [] -> to_one_data data
-        | _ -> begin
-            let ndata = ref data in
+        match M.get_ntype mt.type_ with
+        | Trecord rn -> begin
+            let r = M.Utils.get_record model (unloc rn) in
+            match r.pos with
+            | Pnode [] -> to_one_data data
+            | _ -> begin
+                let ndata = ref data in
 
-            let rec aux p =
-              match p with
-              | M.Ptuple ids  -> begin
-                  let l = List.length ids in
-                  let ll0, ll1 = List.cut l !ndata in
-                  ndata := ll1;
-                  to_one_data ll0
-                end
-              | M.Pnode  nodes -> begin
-                  to_one_data (List.map aux nodes)
-                end
-            in
+                let rec aux p =
+                  match p with
+                  | M.Ptuple ids  -> begin
+                      let l = List.length ids in
+                      let ll0, ll1 = List.cut l !ndata in
+                      ndata := ll1;
+                      to_one_data ll0
+                    end
+                  | M.Pnode  nodes -> begin
+                      to_one_data (List.map aux nodes)
+                    end
+                in
 
-            aux r.pos
+                aux r.pos
+              end
           end
+        | _ -> to_one_data data
       end
     | Mleft (_, x)      -> T.Dleft (to_data x)
     | Mright (_, x)     -> T.Dright (to_data x)
@@ -936,7 +935,7 @@ let to_ir (model : M.model) : T.ir =
       let f l =
         match List.rev l with
         | []   -> T.tunit
-        | [e]  -> annot (fst e) (snd e)
+        | [e]  -> snd e
         | (id, te)::t -> List.fold_left (fun accu (id, te) -> T.mk_type (T.Tpair (annot id te, accu))) (annot id te) t
       in
       let  args : T.type_ = f e.args in
