@@ -541,7 +541,7 @@ let to_ir (model : M.model) : T.ir =
                 match args with
                 | []  -> T.iunit
                 | [e] -> f (snd e)
-                | _   -> T.Irecord (List.map (fun (_, x) -> f x) args)
+                | _   -> T.isrecord (List.map (fun (_, x) -> f x) args)
               in
               T.Iterop (Ttransfer_tokens, a, f v, get_self_entrypoint id)
             end
@@ -612,12 +612,12 @@ let to_ir (model : M.model) : T.ir =
     | Massets    _l -> emit_error (UnsupportedTerm ("Massets"))
     | Mlitset    l -> begin
         match M.get_ntype mtt.type_ with
-        |  M.Tset t -> T.Iset (ft t, List.map f l)
+        | M.Tset t -> T.Iset (ft t, List.map f l)
         | _ -> assert false
       end
     | Mlitlist   l ->  begin
         match M.get_ntype mtt.type_ with
-        |  M.Tlist t -> T.Ilist (ft t, List.map f l)
+        | M.Tlist t -> T.Ilist (ft t, List.map f l)
         | _ -> assert false
       end
     | Mlitmap (_, l) -> begin
@@ -625,7 +625,36 @@ let to_ir (model : M.model) : T.ir =
         | M.Tmap (b, k, v) -> T.Imap (b, ft k, ft v, List.map (fun (x, y) -> f x, f y) l)
         | _ -> assert false
       end
-    | Mlitrecord l -> T.Irecord (List.map (fun (_, x) -> f x) l)
+    | Mlitrecord l -> begin
+        let ri =
+          let ll = List.map (fun (_, x) -> f x) l in
+          let mk_default _ = T.Rtuple ll in
+          match M.get_ntype mtt.type_ with
+          | M.Trecord rn -> begin
+              let r = M.Utils.get_record model (unloc rn) in
+              match r.pos with
+              | Pnode [] -> mk_default ()
+              | _ -> begin
+                  let ndata = ref ll in
+
+                  let rec aux p =
+                    match p with
+                    | M.Ptuple ids  -> begin
+                        let l = List.length ids in
+                        let ll0, ll1 = List.cut l !ndata in
+                        ndata := ll1;
+                        T.Rtuple ll0
+                      end
+                    | M.Pnode l -> T.Rnodes (List.map aux l)
+                  in
+
+                  aux r.pos
+                end
+            end
+          | _ -> mk_default ()
+        in
+        T.Irecord ri
+      end
     | Mlambda (rt, id, at, e) -> T.Ilambda (ft rt, unloc id, ft at, f e)
 
     (* access *)
@@ -790,7 +819,7 @@ let to_ir (model : M.model) : T.ir =
 
     (* rational *)
 
-    | Mrateq (l, r)           -> let b = T.Bratcmp in add_builtin b; T.Icall (get_fun_name b, [T.Irecord [f l; f r]; T.ileft (T.tor (T.tor T.tunit T.tunit) (T.tor T.tunit T.tunit)) T.iunit], is_inline b)
+    | Mrateq (l, r)           -> let b = T.Bratcmp in add_builtin b; T.Icall (get_fun_name b, [T.isrecord [f l; f r]; T.ileft (T.tor (T.tor T.tunit T.tunit) (T.tor T.tunit T.tunit)) T.iunit], is_inline b)
     | Mratcmp (op, l, r)   ->
       let op =
         let u    = T.iunit in
@@ -803,21 +832,21 @@ let to_ir (model : M.model) : T.ir =
         | Gt -> T.iright tu (T.iright tou (T.ileft  tu u))
         | Ge -> T.iright tu (T.iright tou (T.iright tu u))
       in
-      let b = T.Bratcmp in add_builtin b; T.Icall (get_fun_name b, [T.Irecord [f l; f r]; op], is_inline b)
+      let b = T.Bratcmp in add_builtin b; T.Icall (get_fun_name b, [T.isrecord [f l; f r]; op], is_inline b)
     | Mratarith (op, l, r)    -> begin
         (* let norm x = let b = T.Bratnorm in add_builtin b; T.Icall (get_fun_name b, [x]) in *)
         let norm x = x in
         match op with
-        | Rplus  -> let b = T.Brataddsub in add_builtin b; norm (T.Icall (get_fun_name b, [T.Irecord [f l; f r]; T.ileft  T.tunit T.iunit], is_inline b))
-        | Rminus -> let b = T.Brataddsub in add_builtin b; norm (T.Icall (get_fun_name b, [T.Irecord [f l; f r]; T.iright T.tunit T.iunit], is_inline b))
+        | Rplus  -> let b = T.Brataddsub in add_builtin b; norm (T.Icall (get_fun_name b, [T.isrecord [f l; f r]; T.ileft  T.tunit T.iunit], is_inline b))
+        | Rminus -> let b = T.Brataddsub in add_builtin b; norm (T.Icall (get_fun_name b, [T.isrecord [f l; f r]; T.iright T.tunit T.iunit], is_inline b))
         | Rmult  -> let b = T.Bratmul    in add_builtin b; norm (T.Icall (get_fun_name b, [f l; f r], is_inline b))
         | Rdiv   -> let b = T.Bratdiv    in add_builtin b; norm (T.Icall (get_fun_name b, [f l; f r], is_inline b))
       end
     | Mratuminus v            -> let b = T.Bratuminus in add_builtin b; T.Icall (get_fun_name b, [f v], is_inline b)
     | Mrattez  (c, t)         -> let b = T.Brattez    in add_builtin b; T.Icall (get_fun_name b, [f c; f t], is_inline b)
     | Mnattoint e             -> T.Iunop (Uint, f e)
-    | Mnattorat e             -> T.Irecord [T.Iunop (Uint, f e); T.inat Big_int.unit_big_int]
-    | Minttorat e             -> T.Irecord [f e; T.inat Big_int.unit_big_int]
+    | Mnattorat e             -> T.isrecord [T.Iunop (Uint, f e); T.inat Big_int.unit_big_int]
+    | Minttorat e             -> T.isrecord [f e; T.inat Big_int.unit_big_int]
     | Mratdur  (c, t)         -> let b = T.Bratdur    in add_builtin b; T.Icall (get_fun_name b, [f c; f t], is_inline b)
 
 
@@ -1044,15 +1073,17 @@ let to_michelson (ir : T.ir) : T.michelson =
             end ) (fe env e) t
     in
 
-    let fold env l =
+    let fold_gen g env l =
       match List.rev l with
       | []   -> T.SEQ [], env
-      | [e]  -> fe env e
+      | [e]  -> g env e
       | e::t ->
         List.fold_left (fun (a, env) x -> begin
-              let v, env = fe env x in (T.SEQ [a; v; T.PAIR], dec_env env)
-            end ) (fe env e) t
+              let v, env = g env x in (T.SEQ [a; v; T.PAIR], dec_env env)
+            end ) (g env e) t
     in
+
+    let fold env l = fold_gen fe env l in
 
     let assign env id v =
       let n = get_sp_for_id env id in
@@ -1333,7 +1364,13 @@ let to_michelson (ir : T.ir) : T.michelson =
                     let x, _ = fe (inc_env (inc_env env)) x in
                     T.SEQ [y; T.SOME; x; T.UPDATE ] ))), inc_env env
       end
-    | Irecord l -> fold env l
+    | Irecord ri -> begin
+        let rec aux env = function
+          | T.Rtuple l -> fold env l
+          | T.Rnodes l -> fold_gen aux env l
+        in
+        aux env ri
+      end
     | Irecupdate (x, s, l) -> begin
         let x, env = fe env x in
         let rec g (l, env) x =

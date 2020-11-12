@@ -301,11 +301,16 @@ type instruction =
   | Iset        of type_ * instruction list
   | Ilist       of type_ * instruction list
   | Imap        of bool * type_ * type_ * (instruction * instruction) list
-  | Irecord     of instruction list
+  | Irecord     of ritem
   | Irecupdate  of instruction * int * (int * instruction) list (* value * size * (index, value) fields *)
   | Imap_       of instruction * ident * instruction
   | Ifold       of ident * ident option * ident * instruction * instruction * instruction (* var_iterated * var_accu * container * init * code*)
   | Imichelson  of instruction list * code * ident list
+[@@deriving show {with_path = false}]
+
+and ritem =
+  | Rtuple of instruction list
+  | Rnodes of ritem list
 [@@deriving show {with_path = false}]
 
 type implem =
@@ -486,6 +491,8 @@ let isub l r         = Ibinop (Bsub, l, r)
 let imul l r         = Ibinop (Bmul, l, r)
 let idiv l r         = Iifnone (Ibinop (Bediv, l, r), ifail "DivByZero", "_var_ifnone", icar (Ivar ("_var_ifnone")), tint )
 let imod l r         = Iifnone (Ibinop (Bediv, l, r), ifail "DivByZero", "_var_ifnone", icdr (Ivar ("_var_ifnone")), tnat )
+let irecord ir       = Irecord ir
+let isrecord l       = irecord (Rtuple l)
 
 (* -------------------------------------------------------------------- *)
 

@@ -309,11 +309,15 @@ let rec pp_instruction fmt (i : instruction) =
   | Iset (t, l)             -> pp "set<%a>[%a]" pp_type t (pp_list "; " f) l
   | Ilist (t, l)            -> pp "list<%a>[%a]" pp_type t (pp_list "; " f) l
   | Imap (b, k, v, l)       -> pp "%smap<%a, %a>[%a]" (if b then "big_" else "") pp_type k pp_type v (pp_list "; " (fun fmt (vk, vv) -> Format.fprintf fmt "%a : %a" f vk f vv)) l
-  | Irecord l               -> pp "record[%a]" (pp_list "; " f) l
+  | Irecord ri              -> pp "record%a" pp_ritem ri
   | Irecupdate (x, s, l)    -> pp "recupdate[size=%i| %a with [@[%a@]]]" s f x (pp_list "; " (fun fmt (i, v) -> Format.fprintf fmt "%i: (%a)" i f v)) l
   | Ifold (ix, iy, ia, c, a, b) -> pp "fold %a with (%a) do (%s, %a) ->@\n  @[%a@]@\ndone" f c f a ia (fun fmt _-> match iy with | Some iy -> Format.fprintf fmt "(%s, %s)" ix iy  | None -> Format.fprintf fmt "%s" ix) () f b
   | Imap_ (x, id, e)        -> pp "map(%a, %s -> @[%a@])" f x id f e
   | Imichelson (a, c, v)    -> pp "michelson [%a] (%a) {%a}" (pp_list "; " pp_id) v (pp_list "; " f) a pp_code c
+
+and pp_ritem fmt = function
+  | Rtuple l -> Format.fprintf fmt "[%a]" (pp_list "; " pp_instruction) l
+  | Rnodes l -> Format.fprintf fmt "[%a]" (pp_list "; " pp_ritem) l
 
 let pp_func fmt (f : func) =
   Format.fprintf fmt "function %s %a@\n "
@@ -386,9 +390,9 @@ let rec pp_obj_micheline fmt (o : obj_micheline) =
   | Oarray  l -> Format.fprintf fmt "[  %a  ]" (pp_list ",@\n" pp_obj_micheline) l
 
 (* let rec pp_raw_prim fmt (p : prim) =
-  let pp_space pp fmt l = if List.is_empty l then () else Format.fprintf fmt " %a" pp l in
-  let pps fmt str = Format.fprintf fmt "%s" str in
-  Format.fprintf fmt "%s%a%a"
+   let pp_space pp fmt l = if List.is_empty l then () else Format.fprintf fmt " %a" pp l in
+   let pps fmt str = Format.fprintf fmt "%s" str in
+   Format.fprintf fmt "%s%a%a"
     p.prim
     (pp_space (pp_list " " pps)) p.annots
     (pp_space (fun fmt (args : obj_micheline list) ->
@@ -397,14 +401,14 @@ let rec pp_obj_micheline fmt (o : obj_micheline) =
          | [x] -> pp_raw_obj_micheline fmt x
          | xs  -> (pp_paren (pp_list " " pp_raw_obj_micheline)) fmt xs)) p.args
 
-and pp_raw_obj_micheline fmt (o : obj_micheline) =
-  let pp a = Format.fprintf fmt a in
-  match o with
-  | Oprim   p -> pp_raw_prim fmt p
-  | Ostring v -> pp "%s" v
-  | Obytes  v -> pp "%s" v
-  | Oint    v -> pp "%s" v
-  | Oarray  l -> Format.fprintf fmt "{ %a }" (pp_list "; " pp_obj_micheline) l *)
+   and pp_raw_obj_micheline fmt (o : obj_micheline) =
+   let pp a = Format.fprintf fmt a in
+   match o with
+   | Oprim   p -> pp_raw_prim fmt p
+   | Ostring v -> pp "%s" v
+   | Obytes  v -> pp "%s" v
+   | Oint    v -> pp "%s" v
+   | Oarray  l -> Format.fprintf fmt "{ %a }" (pp_list "; " pp_obj_micheline) l *)
 
 let pp_micheline fmt (m : micheline) =
   Format.fprintf fmt
