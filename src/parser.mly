@@ -39,6 +39,7 @@
 %token ASSERT
 %token ASSET
 %token AT
+%token AS
 %token AT_ADD
 %token AT_REMOVE
 %token AT_UPDATE
@@ -574,7 +575,7 @@ type_s_unloc:
 | SHADOW x=asset_fields { x }
 
 %inline record_position:
-| AT x=paren(expr) { x }
+| AS x=paren(expr) { x }
 
 record:
 | RECORD exts=extensions? x=ident fields=asset_fields? pos=record_position?

@@ -25,6 +25,7 @@
       "archetype"           , ARCHETYPE      ;
       "assert"              , ASSERT         ;
       "asset"               , ASSET          ;
+      "as"                  , AS             ;
       "at"                  , AT             ;
       "before"              , BEFORE         ;
       "begin"               , BEGIN          ;

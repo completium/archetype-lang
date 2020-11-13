@@ -6,7 +6,7 @@ record my_arg {
   a: int;
   b: nat;
   c: address;
-} at (((x, %_), z))
+} as (((x, %_), z))
 
 entry exec (p : my_arg) {
   res := p.b

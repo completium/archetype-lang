@@ -14,7 +14,7 @@ record my_record {
   fk: nat;
   fl: nat;
   fm: nat;
-} at ((n, o, (p, q, (r, s, t, u), v), w, (x, y), z))
+} as ((n, o, (p, q, (r, s, t, u), v), w, (x, y), z))
 
 variable r : my_record = {0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0}
 

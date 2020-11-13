@@ -15,7 +15,7 @@ record my_record {
   j: int;
   k: nat;
   l: address;
-} at ((m, n, (p, q, (r, s, t, u), v), (x, y), z))
+} as ((m, n, (p, q, (r, s, t, u), v), (x, y), z))
 
 variable r : my_record = {0i; 0; @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg; 0i; 0; @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 ; 0i; 0; @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg ; 0i; 0; @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg}

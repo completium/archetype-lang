@@ -619,6 +619,7 @@ let is_keyword = function
   | "archetype"
   | "assert"
   | "asset"
+  | "as"
   | "at"
   | "before"
   | "begin"

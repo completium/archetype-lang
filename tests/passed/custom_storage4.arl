@@ -7,7 +7,7 @@ record my_record {
   b: nat;
   c: string;
   d: nat;
-} at (((x, %_), (w, z)))
+} as (((x, %_), (w, z)))
 
 variable r : my_record = {0i; 0; ""; 0}
 
