@@ -1003,6 +1003,7 @@ let tcollection an = mktype (Tcontainer (tasset an, Collection))
 let taggregate an  = mktype (Tcontainer (tasset an, Aggregate))
 let tpartition an  = mktype (Tcontainer (tasset an, Partition))
 let tview an       = mktype (Tcontainer (tasset an, View))
+let toperations    = tlist toperation
 
 let mk_bool x   = mk_mterm (Mbool x) tbool
 let mk_string x = mk_mterm (Mstring x) tstring
@@ -1055,6 +1056,8 @@ let failg x = mk_mterm (Mfail (Invalid (x))) tunit
 let mnot x  = mk_mterm (Mnot x) tbool
 let seq x   = mk_mterm (Mseq x) tunit
 let skip    = seq []
+
+let operations = mk_mterm Moperations (tlist toperation)
 
 (* -------------------------------------------------------------------- *)
 

@@ -5127,3 +5127,32 @@ let process_metadata (model : model) : model =
       decls = decls }
   end
 
+let reverse_operations (model : model) : model =
+  let add_reverse_operations mt =
+    let reverse = mk_mterm (Mlistreverse (toperation, operations)) toperations in
+    let assign = mk_mterm (Massign (ValueAssign, toperations, Aoperations, reverse)) tunit in
+    seq [mt; assign] |> flat_sequence_mterm
+  in
+  let for_mterm mt =
+    if Utils.with_operations_for_mterm mt
+    then add_reverse_operations mt
+    else mt
+  in
+  let for_functions f =
+    let for_fs (fs : function_struct) =
+      { fs with
+        body = for_mterm fs.body;
+      }
+    in
+    let for_fnode (node : function_node) : function_node =
+      match node with
+      | Function (fs, type_) -> Function (for_fs fs, type_)
+      | Getter   (fs, type_) -> Getter   (for_fs fs, type_)
+      | Entry     fs         -> Entry    (for_fs fs)
+    in
+    { f with
+      node = for_fnode f.node;
+    }
+  in
+
+  { model with functions = List.map for_functions model.functions }

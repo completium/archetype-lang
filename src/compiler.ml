@@ -190,6 +190,7 @@ let generate_target model =
     model
     |> replace_ligo_ident
     |> getter_to_entry ~no_underscore:true
+    |> reverse_operations
     |> process_multi_keys
     |> replace_col_by_key_for_ckfield
     |> process_asset_state
@@ -226,6 +227,7 @@ let generate_target model =
     model
     |> replace_col_by_key_for_ckfield
     |> getter_to_entry
+    |> reverse_operations
     |> process_multi_keys
     |> process_asset_state
     |> replace_assignfield_by_update
@@ -261,6 +263,7 @@ let generate_target model =
     model
     |> remove_add_update
     |> getter_to_entry
+    |> reverse_operations
     |> process_multi_keys
     |> replace_update_by_set
     |> generate_storage
@@ -280,6 +283,7 @@ let generate_target model =
     model
     |> prune_formula
     |> getter_to_entry ~extra:true
+    |> reverse_operations
     |> process_multi_keys
     |> replace_col_by_key_for_ckfield
     |> move_partition_init_asset
@@ -320,6 +324,7 @@ let generate_target model =
     model
     |> replace_whyml_ident
     |> getter_to_entry
+    |> reverse_operations
     |> process_multi_keys
     |> replace_assignfield_by_update
     |> process_asset_state
