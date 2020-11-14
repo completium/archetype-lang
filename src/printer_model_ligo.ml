@@ -579,8 +579,6 @@ let pp_model_internal fmt (model : model) b =
       begin
         let v =
           match c with
-          | Tz  -> assert false
-          | Mtz -> assert false
           | Utz -> v
         in
         Format.fprintf fmt "%amutez"

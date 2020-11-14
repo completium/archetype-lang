@@ -1,6 +1,7 @@
 open Location
 open Ident
 open Tools
+open Core
 
 module PT = ParseTree
 module T  = Michelson
@@ -97,9 +98,9 @@ let to_model_expr (e : PT.expr) : T.data =
         cc [T.tpair T.tnat T.tint];
         let n, d = Core.decimal_string_to_rational s in Dpair (Dint n, Dint d)
       end
-    | Eliteral (Ltz       n) -> cc [T.tmutez]; Dint (Big_int.mult_int_big_int 1000000 n)
-    | Eliteral (Lmtz      n) -> cc [T.tmutez]; Dint (Big_int.mult_int_big_int    1000 n)
-    | Eliteral (Lutz      n) -> cc [T.tmutez]; Dint n
+    | Eliteral (Ltz       n) -> cc [T.tmutez]; Dint (string_to_big_int_tz Ktz  n)
+    | Eliteral (Lmtz      n) -> cc [T.tmutez]; Dint (string_to_big_int_tz Kmtz n)
+    | Eliteral (Lutz      n) -> cc [T.tmutez]; Dint (string_to_big_int_tz Kutz n)
     | Eliteral (Laddress  s) -> cc [T.taddress]; Dstring s
     | Eliteral (Lstring   s) -> cc [T.tstring]; Dstring s
     | Eliteral (Lbool  true) -> cc [T.tbool]; Dtrue
@@ -107,7 +108,7 @@ let to_model_expr (e : PT.expr) : T.data =
     | Eliteral (Lduration s) -> cc [T.tint; T.ttimestamp]; Dint (s |> Core.string_to_duration |> Core.duration_to_timestamp)
     | Eliteral (Ldate     s) -> cc [T.ttimestamp]; Dint (s |> Core.string_to_date |> Core.date_to_timestamp)
     | Eliteral (Lbytes    s) -> cc [T.tbytes]; Dbytes s
-    | Eliteral (Lpercent  n) -> cc [T.tpair T.tnat T.tint]; let n, d = Core.compute_irr_fract (n, Big_int.big_int_of_int 100) in Dpair (Dint n, Dint d)
+    | Eliteral (Lpercent  n) -> cc [T.tpair T.tnat T.tint]; let n, d = string_to_big_int_percent n in Dpair (Dint n, Dint d)
     | Enothing               -> cc [T.tunit]; Dunit
     | Earray         l       -> begin
         let ll =

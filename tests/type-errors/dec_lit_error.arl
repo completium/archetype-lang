@@ -1,0 +1,7 @@
+archetype dec_lit_error
+
+variable dtz  : tez = 1.23456789tz
+
+entry exec () {
+  ()
+}

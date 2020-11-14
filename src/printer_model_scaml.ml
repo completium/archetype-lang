@@ -648,8 +648,6 @@ let pp_model fmt (model : model) =
         let b : Big_int.big_int =
           begin
             match c with
-            | Tz   -> Big_int.mult_int_big_int 1000000 v
-            | Mtz  -> Big_int.mult_int_big_int 1000 v
             | Utz  -> v
           end
         in

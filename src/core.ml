@@ -217,7 +217,7 @@ let string_to_date =
     let digitre i =
       let re = String.concat "" (List.init i (fun _ -> "[0-9]")) in
       "\\(" ^ re ^ "\\)" in
-  
+
     let datere = String.concat "-" (List.map digitre [4; 2; 2]) in
     let timere = String.concat ":" (List.map digitre [2; 2]) in
     let timere = timere ^ ("\\(:\\([0-9][0-9]\\)\\)?") in
@@ -226,20 +226,20 @@ let string_to_date =
     (Str.regexp datere, Str.regexp timere, Str.regexp tzre) in
 
   let days = [|
-      [| 31; 28; 31; 30; 31; 30; 31; 31; 30; 31; 30; 31 |];
-      [| 31; 29; 31; 30; 31; 30; 31; 31; 30; 31; 30; 31 |];
-    |] in
+    [| 31; 28; 31; 30; 31; 30; 31; 31; 30; 31; 30; 31 |];
+    [| 31; 29; 31; 30; 31; 30; 31; 31; 30; 31; 30; 31 |];
+  |] in
 
   let validate_date ~year ~month ~day =
     if year < 1 || (month < 1 || month > 12) then false else
 
-    let isleap =
-      year mod 4 = 0 && (year mod 100 <> 0 || year mod 400 = 0) in
+      let isleap =
+        year mod 4 = 0 && (year mod 100 <> 0 || year mod 400 = 0) in
 
-    1 <= day && day <= days.(if isleap then 1 else 0).(month-1) in
+      1 <= day && day <= days.(if isleap then 1 else 0).(month-1) in
 
   let validate_time ?(second = 0) ~hour ~minute () =
-       (0 <= hour   && hour   < 24)
+    (0 <= hour   && hour   < 24)
     && (0 <= minute && minute < 60)
     && (0 <= second && second < 60) in
 
@@ -274,20 +274,20 @@ let string_to_date =
 
     let timezone, i =
       if i = String.length s then (None, i) else begin
-          if String.sub s i (String.length s - i) = "Z" then
-            (Some TZZ, String.length s)
-          else
-            match s.[i] with
-            | c when c = '+' || c = '-' ->
-                if not (Str.string_match tzre s (i+1)) then
-                  failure ();
-                let tzh = int_of_string (Str.matched_group 1 s) in
-                let tzm = int_of_string (Str.matched_group 2 s) in
-                if not (validate_time ~hour:tzh ~minute:tzm ()) then
-                  failure ();
-                let tz = if c = '+' then TZplus(tzh, tzm) else TZminus (tzh, tzm) in
-                (Some tz, Str.match_end ())
-            | _ -> failure ()
+        if String.sub s i (String.length s - i) = "Z" then
+          (Some TZZ, String.length s)
+        else
+          match s.[i] with
+          | c when c = '+' || c = '-' ->
+            if not (Str.string_match tzre s (i+1)) then
+              failure ();
+            let tzh = int_of_string (Str.matched_group 1 s) in
+            let tzm = int_of_string (Str.matched_group 2 s) in
+            if not (validate_time ~hour:tzh ~minute:tzm ()) then
+              failure ();
+            let tz = if c = '+' then TZplus(tzh, tzm) else TZminus (tzh, tzm) in
+            (Some tz, Str.match_end ())
+          | _ -> failure ()
       end in
 
     if i <> String.length s then failure ();
@@ -324,7 +324,7 @@ let string_to_date =
 
 
 (** inspired from
- https://discuss.ocaml.org/t/how-to-expose-date-time-types-in-a-library-nicely/1653/6 *)
+    https://discuss.ocaml.org/t/how-to-expose-date-time-types-in-a-library-nicely/1653/6 *)
 
 (** [is_leapyear] is true, if and only if a year is a leap year *)
 let is_leapyear year =
@@ -383,3 +383,36 @@ let date_to_timestamp (date : date) : big_int =
       f (h, m)
   in
   Big_int.add_big_int res correction
+
+type tzkind =
+  | Ktz
+  | Kmtz
+  | Kutz
+
+let string_to_big_int_tz kind input =
+  let b =
+    match kind with
+    | Ktz  -> 1000000
+    | Kmtz -> 1000
+    | Kutz -> 1
+  in
+  if String.contains input '.'
+  then begin
+    let n, d = decimal_string_to_rational input in
+    let n, d = compute_irr_fract (Big_int.mult_int_big_int b n, d) in
+    if Big_int.eq_big_int Big_int.unit_big_int d
+    then n
+    else begin
+      let module E = struct exception Invalid end in
+      raise E.Invalid
+    end
+  end
+  else Big_int.mult_int_big_int b (Big_int.big_int_of_string input)
+
+let string_to_big_int_percent input =
+  let n, d =
+    if String.contains input '.'
+    then decimal_string_to_rational input
+    else Big_int.big_int_of_string input, Big_int.unit_big_int
+  in
+  compute_irr_fract (n, Big_int.mult_int_big_int 100 d)

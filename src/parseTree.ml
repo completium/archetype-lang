@@ -172,16 +172,16 @@ and literal =
   | Lint      of Core.big_int
   | Lnat      of Core.big_int
   | Ldecimal  of string
-  | Ltz       of Core.big_int
-  | Lmtz      of Core.big_int
-  | Lutz      of Core.big_int
+  | Ltz       of string
+  | Lmtz      of string
+  | Lutz      of string
   | Laddress  of string
   | Lstring   of string
   | Lbool     of bool
   | Lduration of string
   | Ldate     of string
   | Lbytes    of string
-  | Lpercent  of Core.big_int
+  | Lpercent  of string
 
 and record_item = (assignment_operator * lident) option * expr
 
@@ -452,16 +452,12 @@ let ebnat n = mk_eliteral (Lnat n)
 let enat  n = ebnat (Big_int.big_int_of_int n)
 
 let ebtz n = mk_eliteral (Ltz n)
-let etz  n = ebtz (Big_int.big_int_of_int n)
 
-let ebmtz n = mk_eliteral (Lmtz n)
-let emtz  n = ebmtz (Big_int.big_int_of_int n)
+let emtz n = mk_eliteral (Lmtz n)
 
-let ebutz n = mk_eliteral (Lutz n)
-let eutz  n = ebutz (Big_int.big_int_of_int n)
+let eutz n = mk_eliteral (Lutz n)
 
-let ebpercent n = mk_eliteral (Lpercent n)
-let epercent  n = ebpercent (Big_int.big_int_of_int n)
+let epercent n = mk_eliteral (Lpercent n)
 
 let etrue = mk_eliteral (Lbool true)
 let efalse = mk_eliteral (Lbool false)

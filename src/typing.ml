@@ -637,6 +637,7 @@ type error_desc =
   | InvalidTypeForOrRight
   | InvalidTypeForPk
   | InvalidTypeForSet
+  | InvalidValueForCurrency
   | InvalidVarOrArgType
   | LabelInNonInvariant
   | LetInElseInInstruction
@@ -838,6 +839,7 @@ let pp_error_desc fmt e =
   | InvalidTypeForOrRight              -> pp "Invalid type for or right"
   | InvalidTypeForPk                   -> pp "Invalid type for primary key"
   | InvalidTypeForSet                  -> pp "Invalid type for set"
+  | InvalidValueForCurrency            -> pp "Invalid value for currency"
   | InvalidVarOrArgType                -> pp "A variable / argument type cannot be an asset or a collection"
   | LabelInNonInvariant                -> pp "The label modifier can only be used in invariants"
   | LetInElseInInstruction             -> pp "Let In else in instruction"
@@ -1918,13 +1920,13 @@ let empty : env =
 let ty_of_init_ty (env : env) (ty : A.ptyp) =
   match ty with
   | A.Tcontainer (A.Tasset { pldesc = asset }, ctn) when Env.Asset.exists env asset ->
-      let asset = Env.Asset.get env asset in
-      let pk = List.map
+    let asset = Env.Asset.get env asset in
+    let pk = List.map
         (fun x -> (Option.get (get_field (unloc x) asset)).fd_type) asset.as_pk in
-      A.Tcontainer (Type.create_tuple pk, ctn)
+    A.Tcontainer (Type.create_tuple pk, ctn)
 
   | _ -> ty
-                                        
+
 (* -------------------------------------------------------------------- *)
 let check_and_emit_name_free (env : env) (x : A.lident) =
   match Env.name_free env (unloc x) with
@@ -2233,8 +2235,16 @@ let for_asset_keyof_type (env : env) (ty : PT.type_t) : A.lident option =
     None
 
 (* -------------------------------------------------------------------- *)
-let for_literal (_env : env) (_ety : A.type_ option) (topv : PT.literal loced) : A.bval =
+let for_literal (env : env) (_ety : A.type_ option) (topv : PT.literal loced) : A.bval =
   let mk_sp type_ node = A.mk_sp ~loc:(loc topv) ~type_ node in
+
+  let get_tz_value k tz =
+    try
+      Core.string_to_big_int_tz k tz
+    with _
+      -> Env.emit_error env (loc topv, InvalidValueForCurrency);
+      Big_int.zero_big_int
+  in
 
   match unloc topv with
   | Lbool b ->
@@ -2253,13 +2263,13 @@ let for_literal (_env : env) (_ety : A.type_ option) (topv : PT.literal loced) :
     mk_sp A.vtstring (A.BVstring s)
 
   | Ltz tz ->
-    mk_sp (A.vtcurrency) (A.BVcurrency (A.Tz,  tz))
+    mk_sp (A.vtcurrency) (A.BVcurrency (A.Utz, get_tz_value Ktz tz))
 
   | Lmtz tz ->
-    mk_sp (A.vtcurrency) (A.BVcurrency (A.Mtz, tz))
+    mk_sp (A.vtcurrency) (A.BVcurrency (A.Utz, get_tz_value Kmtz tz))
 
   | Lutz tz ->
-    mk_sp (A.vtcurrency) (A.BVcurrency (A.Utz, tz))
+    mk_sp (A.vtcurrency) (A.BVcurrency (A.Utz, get_tz_value Kutz tz))
 
   | Laddress a ->
     mk_sp A.vtaddress (A.BVaddress a)
@@ -2274,7 +2284,7 @@ let for_literal (_env : env) (_ety : A.type_ option) (topv : PT.literal loced) :
     mk_sp A.vtbytes (A.BVbytes (s))
 
   | Lpercent n -> begin
-      let n, d = Core.compute_irr_fract (n, Big_int.big_int_of_int 100) in
+      let n, d = Core.string_to_big_int_percent n in
       mk_sp A.vtrational (A.BVrational (n, d))
     end
 
@@ -5315,7 +5325,7 @@ let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) xspec
               let init1 =
                 List.map2
                   (fun field (_, ie) ->
-                    for_expr `Concrete env ~ety:(ty_of_init_ty env field.fd_type) ie)
+                     for_expr `Concrete env ~ety:(ty_of_init_ty env field.fd_type) ie)
                   adecl.as_fields init1 in
               Some init1
 
@@ -5423,17 +5433,17 @@ let for_record_decl (env : env) (decl : PT.record_decl loced) =
 
   let packing =
     let module E = struct
-        exception InvalidPacking of (Location.t * [`Expr | `Format | `Dup of ident])
-      end in
+      exception InvalidPacking of (Location.t * [`Expr | `Format | `Dup of ident])
+    end in
 
     let rec doit (e : PT.expr) =
       match unloc e with
       | Etuple es ->
-          RNode (List.map doit es)
+        RNode (List.map doit es)
       | Eterm  ((None, None), x) ->
-          RLeaf x
+        RLeaf x
       | _ ->
-          raise (E.InvalidPacking (loc e, `Expr)) in
+        raise (E.InvalidPacking (loc e, `Expr)) in
 
     packing |> Option.bind (fun e ->
         try
@@ -5442,29 +5452,29 @@ let for_record_decl (env : env) (decl : PT.record_decl loced) =
             let rec doit = function
               | RLeaf x  -> Mid.singleton (unloc x) [loc x]
               | RNode ch ->
-                  List.fold_left
-                    (Mid.merge (fun _ s1 s2 ->
-                        Some ((Option.get_dfl [] s1) @ (Option.get_dfl [] s2))))
-                    Mid.empty (List.map doit ch)
+                List.fold_left
+                  (Mid.merge (fun _ s1 s2 ->
+                       Some ((Option.get_dfl [] s1) @ (Option.get_dfl [] s2))))
+                  Mid.empty (List.map doit ch)
             in doit packing in
 
-            let nvars = Mid.fold (fun _ lcs i -> List.length lcs + i) vars 0 in
+          let nvars = Mid.fold (fun _ lcs i -> List.length lcs + i) vars 0 in
 
-            if nvars <> List.length fields then
-              raise (E.InvalidPacking (loc e, `Format));
+          if nvars <> List.length fields then
+            raise (E.InvalidPacking (loc e, `Format));
 
-            Mid.iter (fun x lcs ->
+          Mid.iter (fun x lcs ->
               if List.length lcs > 1 then
                 raise (E.InvalidPacking (List.hd (List.rev lcs), `Dup x)))
-              vars;
+            vars;
 
-            Some packing
+          Some packing
 
         with E.InvalidPacking (lc, e) ->
           begin match e with
-          | `Expr   -> Env.emit_error env (lc, InvalidPackingExpr)
-          | `Format -> Env.emit_error env (lc, InvalidPackingFormat)
-          | `Dup x  -> Env.emit_error env (lc, DuplicatedPackingVar x) end;
+            | `Expr   -> Env.emit_error env (lc, InvalidPackingExpr)
+            | `Format -> Env.emit_error env (lc, InvalidPackingFormat)
+            | `Dup x  -> Env.emit_error env (lc, DuplicatedPackingVar x) end;
           None) in
 
   if check_and_emit_name_free env name then

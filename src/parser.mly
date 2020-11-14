@@ -181,14 +181,14 @@
 %token <Big_int.big_int> NUMBERINT
 %token <Big_int.big_int> NUMBERNAT
 %token <string> DECIMAL
-%token <Big_int.big_int> TZ
-%token <Big_int.big_int> MTZ
-%token <Big_int.big_int> UTZ
+%token <string> TZ
+%token <string> MTZ
+%token <string> UTZ
 %token <string> ADDRESS
 %token <string> DURATION
 %token <string> DATE
 %token <string> BYTES
-%token <Big_int.big_int> PERCENT_LIT
+%token <string> PERCENT_LIT
 
 %nonassoc IN
 

@@ -45,15 +45,13 @@ let to_model (ast : A.ast) : M.model =
   let to_container c =
     match c with
     | A.Collection -> M.Collection
-    | A.Aggregate     -> M.Aggregate
+    | A.Aggregate  -> M.Aggregate
     | A.Partition  -> M.Partition
     | A.View       -> M.View
     (* | _            -> emit_error (NotSupportedContainer (Format.asprintf "%a@." A.pp_container c)) *)
   in
 
   let to_currency = function
-    | A.Tz   -> M.Tz
-    | A.Mtz  -> M.Mtz
     | A.Utz  -> M.Utz
   in
 
@@ -1222,7 +1220,7 @@ let to_model (ast : A.ast) : M.model =
       if (not transaction.accept_transfer)
       then
         let lhs : M.mterm = M.mk_mterm (M.Mtransferred) M.ttez in
-        let rhs : M.mterm = M.mk_mterm (M.Mcurrency (Big_int.zero_big_int, Tz)) M.ttez in
+        let rhs : M.mterm = M.mk_mterm (M.Mcurrency (Big_int.zero_big_int, Utz)) M.ttez in
         let eq : M.mterm = M.mk_mterm (M.Mequal (M.ttez, lhs, rhs)) M.tbool in
         let cond : M.mterm = M.mk_mterm (M.Mnot eq) M.tbool in
         let cond_if : M.mterm = M.mk_mterm (M.Mif (cond, fail (NoTransfer), None)) M.tunit in

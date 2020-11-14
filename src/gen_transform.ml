@@ -1478,8 +1478,6 @@ let remove_rational (model : model) : model =
 
       match mt.node with
       | Mrational (n, d)   -> Utils.mk_rat n d
-      | Mcurrency (v, Tz)  -> { mt with node = Mcurrency  (Big_int.mult_int_big_int 1000000 v, Utz) }
-      | Mcurrency (v, Mtz) -> { mt with node = Mcurrency  (Big_int.mult_int_big_int    1000 v, Utz) }
       | Mplus     (a, b)   -> for_arith `Plus   (a, b)
       | Mminus    (a, b)   -> for_arith `Minus  (a, b)
       | Mmult     (a, b)   -> for_arith `Mult   (a, b)

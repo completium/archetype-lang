@@ -9,12 +9,12 @@ let string_of_token = function
   | VIEW            -> "VIEW"
   | VARIABLE        -> "VARIABLE"
   | VAR             -> "VAR"
-  | UTZ n           -> Printf.sprintf "UTZ(%s)" (Big_int.string_of_big_int n)
+  | UTZ n           -> Printf.sprintf "UTZ(%s)" n
   | USE             -> "USE"
   | UNPACK          -> "UNPACK"
   | UNMOVED         -> "UNMOVED"
   | UNDERSCORE      -> "UNDERSCORE"
-  | TZ n            -> Printf.sprintf "TZ(%s)" (Big_int.string_of_big_int n)
+  | TZ n            -> Printf.sprintf "TZ(%s)" n
   | TYPE            -> "TYPE"
   | TRUE            -> "TRUE"
   | TRANSITION      -> "TRANSITION"
@@ -51,7 +51,7 @@ let string_of_token = function
   | PIPE            -> "PIPE"
   | PIDENT s        -> Printf.sprintf "PIDENT(%s)" s
   | PERCENTRBRACKET -> "PERCENTRBRACKET"
-  | PERCENT_LIT n   -> Printf.sprintf "PERCENT_LIT(%s)" (Big_int.string_of_big_int n)
+  | PERCENT_LIT n   -> Printf.sprintf "PERCENT_LIT(%s)" n
   | PERCENT         -> "PERCENT"
   | PARTITION       -> "PARTITION"
   | OTHERWISE       -> "OTHERWISE"
@@ -66,7 +66,7 @@ let string_of_token = function
   | NAMESPACE       -> "NAMESPACE"
   | MULTEQUAL       -> "MULTEQUAL"
   | MULT            -> "MULT"
-  | MTZ n           -> Printf.sprintf "MTZ(%s)" (Big_int.string_of_big_int n)
+  | MTZ n           -> Printf.sprintf "MTZ(%s)" n
   | MINUSEQUAL      -> "MINUSEQUAL"
   | MINUS           -> "MINUS"
   | MATCH_OR        -> "MATCH_OR"

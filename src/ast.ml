@@ -14,8 +14,6 @@ type container =
 [@@deriving show {with_path = false}]
 
 type currency =
-  | Tz
-  | Mtz
   | Utz
 [@@deriving show {with_path = false}]
 

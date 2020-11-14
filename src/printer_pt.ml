@@ -734,16 +734,16 @@ and pp_literal fmt lit =
   (* | Lrational (d, n) -> Format.fprintf fmt "%s div %s"
                           (Big_int.string_of_big_int d)
                           (Big_int.string_of_big_int n) *)
-  | Ltz       n -> Format.fprintf fmt "%stz" (Big_int.string_of_big_int n)
-  | Lmtz      n -> Format.fprintf fmt "%smtz" (Big_int.string_of_big_int n)
-  | Lutz      n -> Format.fprintf fmt "%sutz" (Big_int.string_of_big_int n)
+  | Ltz       n -> Format.fprintf fmt "%stz"  n
+  | Lmtz      n -> Format.fprintf fmt "%smtz" n
+  | Lutz      n -> Format.fprintf fmt "%sutz" n
   | Laddress  a -> Format.fprintf fmt "@%s" a
   | Lstring   s -> Format.fprintf fmt "\"%s\"" s
   | Lbool     b -> Format.fprintf fmt "%s" (if b then "true" else "false")
   | Lduration d -> Format.fprintf fmt "%s" d
   | Ldate     d -> Format.fprintf fmt "%s" d
   | Lbytes    s -> Format.fprintf fmt "0x%s" s
-  | Lpercent  n -> Format.fprintf fmt "%s%%" (Big_int.string_of_big_int n)
+  | Lpercent  n -> Format.fprintf fmt "%s%%" n
 
 and pp_ident_ident fmt a =
   match a with

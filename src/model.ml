@@ -6,8 +6,8 @@ type lident = ident Location.loced
 [@@deriving show {with_path = false}]
 
 type currency =
-  | Tz
-  | Mtz
+  (* | Tz
+  | Mtz *)
   | Utz
 [@@deriving show {with_path = false}]
 
@@ -4392,8 +4392,6 @@ end = struct
           let b = aux b in
           match b.node with
           | Mcurrency (v, Utz) -> v
-          | Mcurrency (v, Mtz) -> Big_int.mult_int_big_int 1000 v
-          | Mcurrency (v, Tz)  -> Big_int.mult_int_big_int 1000000 v
           | _ -> assert false
         in
 

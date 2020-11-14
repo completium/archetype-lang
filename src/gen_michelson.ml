@@ -572,7 +572,6 @@ let to_ir (model : M.model) : T.ir =
     | Mrational _        -> emit_error (UnsupportedTerm ("Mrational"))
     | Mstring v          -> T.Iconst (T.mk_type Tstring, Dstring v)
     | Mcurrency (v, Utz) -> T.Iconst (T.mk_type Tmutez, Dint v)
-    | Mcurrency _        -> emit_error (UnsupportedTerm ("Mcurrency"))
     | Maddress v         -> T.Iconst (T.mk_type Taddress, Dstring v)
     | Mdate v            -> T.Iconst (T.mk_type Ttimestamp, Dint (Core.date_to_timestamp v))
     | Mduration v        -> T.Iconst (T.mk_type Tint, Dint (Core.duration_to_timestamp v))

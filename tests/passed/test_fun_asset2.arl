@@ -1,4 +1,4 @@
-archetype test_fun_asset
+archetype test_fun_asset2
 
 asset my_asset {
   id : nat;

@@ -23,8 +23,6 @@ let pp_model fmt (model : model) =
   in
 
   let pp_currency fmt = function
-    | Tz   -> Format.fprintf fmt "tez"
-    | Mtz  -> emit_error (UnsupportedValue ("Mtz"))
     | Utz  -> Format.fprintf fmt "mutez"
   in
 
