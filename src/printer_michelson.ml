@@ -67,9 +67,9 @@ let rec pp_data fmt (d : data) =
   | Dtrue           -> pp "True"
   | Dfalse          -> pp "False"
   | Dpair  (ld, rd) -> pp "(Pair %a %a)" pp_data ld pp_data rd
-  | Dleft   d       -> pp "(Left %a)"    pp_data d
-  | Dright  d       -> pp "(Right %a)"   pp_data d
-  | Dsome   d       -> pp "(Some %a)"    pp_data d
+  | Dleft   d       -> pp "Left %a"      pp_data d
+  | Dright  d       -> pp "Right %a"     pp_data d
+  | Dsome   d       -> pp "Some %a"      pp_data d
   | Dnone           -> pp "None"
   | Dlist l         -> pp "{ %a }" (pp_list "; " pp_data) l
   | Delt (x, y)     -> pp "Elt %a %a" pp_data x pp_data y
