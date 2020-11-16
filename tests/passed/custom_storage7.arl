@@ -1,4 +1,4 @@
-archetype custom_storage6
+archetype custom_storage7
 
 variable res : nat = 0
 

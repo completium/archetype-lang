@@ -416,30 +416,6 @@ let to_ir (model : M.model) : T.ir =
       end
     in
 
-    let get_record_size (rt : M.type_) : int =
-      match M.get_ntype rt with
-      | M.Trecord rn -> begin
-          let rn = unloc rn in
-          let r : M.record = M.Utils.get_record model rn in
-          List.length r.fields
-        end
-      | _ -> Format.eprintf "%a@." M.pp_type_ rt; assert false
-    in
-
-    let get_record_index (rt : M.type_) fn =
-      match M.get_ntype rt with
-      | M.Trecord rn -> begin
-          let rn = unloc rn in
-          let r : M.record = M.Utils.get_record model rn in
-          let res = List.fold_lefti (fun i accu (x : M.record_field) ->
-              if String.equal fn (unloc x.name) then i else accu) (-1) r.fields in
-          match res with
-          | -1 -> emit_error (FieldNotFoundFor (rn, fn))
-          | _ -> res
-        end
-      | _ -> Format.eprintf "get_record_index: %a@." M.pp_type_ rt; assert false
-    in
-
     let access_record (e : M.mterm) fn =
       let fn = unloc fn in
       match M.get_ntype e.type_ with
@@ -449,6 +425,42 @@ let to_ir (model : M.model) : T.ir =
           List.fold_left (fun accu (i, s) -> access_tuple s i accu) (f e) pos
         end
       | _ -> Format.eprintf "access_record: %a@." M.pp_type_ e.type_; assert false
+    in
+
+    let make_ru ?ru rn fn v : T.ruitem =
+      let res =
+        let l = Model.Utils.get_record_pos model rn fn in
+        let res, l =
+          match List.rev l with
+          | (p, s)::t -> T.RUassign(s, [p, f v]), t
+          | _ -> assert false
+        in
+        List.fold_right (fun (p, s) accu -> T.RUnodes(s, [p, accu])) l res
+      in
+
+      let rec merge r1 r2 : T.ruitem =
+        let sort l = List.sort (fun (x, _) (y, _) -> x - y) l in
+        let doit (s1, l1) (s2, l2) g f =
+          if s1 <> s2
+          then assert false;
+          let l = List.fold_left (fun accu (p, v2) ->
+              let a = List.assoc_opt p accu in
+              match a with
+              | None    -> (p, v2)::accu
+              | Some v1 -> f accu p v1 v2
+            ) l1 l2 in
+          let l = sort l in
+          g s1 l
+        in
+        match r1, r2 with
+        | T.RUassign (s1, l1), T.RUassign (s2, l2) -> doit (s1, l1) (s2, l2) (fun s x -> T.RUassign (s, x)) (fun accu p _  v2 -> List.put p v2 accu)
+        | T.RUnodes  (s1, l1), T.RUnodes  (s2, l2) -> doit (s1, l1) (s2, l2) (fun s x -> T.RUnodes (s, x))  (fun accu p v1 v2 -> List.put p (merge v1 v2) accu)
+        | _ -> assert false
+      in
+
+      match ru with
+      | Some v -> merge v res
+      | None -> res
     in
 
     match mtt.node with
@@ -474,9 +486,13 @@ let to_ir (model : M.model) : T.ir =
     | Massign (_op, _, Aasset (_an, _fn, _k), _v)  -> emit_error (UnsupportedTerm ("Massign: Aasset"))
     | Massign (_op, _, Arecord (_rn, fn, {node = Mvar (id, _, _, _); type_ = t}), v) -> begin
         let id = unloc id in
-        let s = get_record_size t in
-        let n = get_record_index t (unloc fn) in
-        let a = T.Irecupdate (T.Ivar id, RUassign(s, [n, f v])) in
+        let rn =
+          match M.get_ntype t with
+          | M.Trecord rn -> unloc rn
+          | _ -> assert false
+        in
+        let ru = make_ru rn (unloc fn) v in
+        let a = T.Irecupdate (T.Ivar id, ru) in
         T.Iassign (id, a)
       end
     | Massign (_op, _, Arecord _, _v)              -> T.iskip
@@ -729,13 +745,14 @@ let to_ir (model : M.model) : T.ir =
       end
     | Mtupleaccess (x, n) -> let s = (match M.get_ntype x.type_ with | Ttuple l -> List.length l | _ -> 0) in access_tuple s (Big_int.int_of_big_int n) (f x)
     | Mrecupdate (x, l) ->
-      let s = get_record_size mtt.type_ in
-      let ll =
-        l
-        |> List.map (fun (i, v) -> get_record_index mtt.type_ i, f v)
-        |> List.sort (fun (i1, _) (i2, _) -> i1 - i2)
+      let t = mtt.type_ in
+      let rn =
+        match M.get_ntype t with
+        | M.Trecord rn -> unloc rn
+        | _ -> assert false
       in
-      let ru = T.RUassign (s, ll) in
+      let ru = List.fold_left (fun (ru : T.ruitem option) (fn, v) -> Some (make_ru ?ru rn fn v)) None l in
+      let ru = match ru with | None -> assert false | Some v -> v in
       T.Irecupdate (f x, ru)
 
     (* set api expression *)

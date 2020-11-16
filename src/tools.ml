@@ -241,6 +241,7 @@ module List : sig
   val split3        : ('a * 'b * 'c) list -> 'a list * 'b list * 'c list
   val sub           : int -> int -> 'a list -> 'a list
   val cut           : int -> 'a list -> ('a list * 'a list)
+  val put           : 'a -> 'b -> ('a * 'b) list -> ('a * 'b) list
 
   module Exn : sig
     val assoc     : 'a -> ('a * 'b) list -> 'b option
@@ -406,6 +407,10 @@ end = struct
       | _ -> invalid_arg "List.cut"
     in
     aux n [] l
+
+  let rec put k v = function
+      [] -> [k, v]
+    | (a, b)::l -> if compare a k = 0 then (k, v)::l else (a, b)::(put k v l)
 
   module Exn = struct
     let assoc x xs =
