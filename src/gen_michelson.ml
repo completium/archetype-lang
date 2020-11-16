@@ -432,7 +432,7 @@ let to_ir (model : M.model) : T.ir =
         let l = Model.Utils.get_record_pos model rn fn in
         let res, l =
           match List.rev l with
-          | (p, s)::t -> T.RUassign(s, [p, f v]), t
+          | (p, s)::t -> T.RUassign(s, [p, f v]), List.rev t
           | _ -> assert false
         in
         List.fold_right (fun (p, s) accu -> T.RUnodes(s, [p, accu])) l res
@@ -442,7 +442,11 @@ let to_ir (model : M.model) : T.ir =
         let sort l = List.sort (fun (x, _) (y, _) -> x - y) l in
         let doit (s1, l1) (s2, l2) g f =
           if s1 <> s2
-          then assert false;
+          then begin
+            if !Options.opt_trace
+            then Format.printf "%a@\n%a@." Printer_michelson.pp_ruitem r1 Printer_michelson.pp_ruitem r2;
+            assert false
+          end;
           let l = List.fold_left (fun accu (p, v2) ->
               let a = List.assoc_opt p accu in
               match a with
@@ -1388,32 +1392,35 @@ let to_michelson (ir : T.ir) : T.michelson =
         aux env ri
       end
     | Irecupdate (x, ru) -> begin
-        let s, l =
-          match ru with
-          | RUassign (s, l) -> s, l
-          | _ -> assert false
-        in
         let x, env = fe env x in
-        let rec g (l, env) x =
-          match l with
-          | [] -> []
-          | (n, v)::q -> begin
-              if x = n
-              then let v, _ = fe env v in [T.DROP 1; v] @ g (q, env) x
-              else begin
-                if s = x + 2
-                then [T.SWAP ] @ g (l, env) (x + 1) @ [T.SWAP]
-                else [T.SWAP; T.UNPAIR ] @ g (l, inc_env env) (x + 1) @ [T.PAIR; T.SWAP]
+        let assign env s l h =
+          let rec g (l, env) x =
+            match l with
+            | [] -> []
+            | (n, v)::q -> begin
+                if x = n
+                then h env v @ g (q, env) x
+                else begin
+                  if s = x + 2
+                  then [T.SWAP ] @ g (l, env) (x + 1) @ [T.SWAP]
+                  else [T.SWAP; T.UNPAIR ] @ g (l, inc_env env) (x + 1) @ [T.PAIR; T.SWAP]
+                end
               end
-            end
+          in
+          let a = g (l, env) 0 in
+          let b =
+            if s = 1
+            then a
+            else [T.UNPAIR] @ a @ [T.PAIR]
+          in
+          T.SEQ ([ x ] @ b), env
         in
-        let a = g (l, env) 0 in
-        let b =
-          if s = 1
-          then a
-          else [T.UNPAIR] @ a @ [T.PAIR]
+        let rec aux env ru =
+          match ru with
+          | T.RUassign (s, l) -> assign env s l (fun env v -> let v, _ = fe env v in [T.DROP 1; v])
+          | T.RUnodes  (s, l) -> assign env s l (fun env v -> let v, _ = aux env v in [v; T.DIP (1, [T.DROP 1])])
         in
-        T.SEQ ([ x ] @ b), env
+        aux env ru
       end
 
     | Ifold (ix, iy, ia, c, a, b) -> begin
