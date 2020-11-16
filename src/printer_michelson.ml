@@ -212,7 +212,6 @@ let rec pp_instruction fmt (i : instruction) =
   | Ivar id -> pp_id fmt id
   | Icall (id, args, _)        -> Format.fprintf fmt "%a(%a)" pp_id id (pp_list ", " f) args
   | Iassign (id, v)            -> Format.fprintf fmt "%a := @[%a@]" pp_id id f v
-  | IassignRec (id, s, n, v)   -> Format.fprintf fmt "%a[%i]/* size = %i */ := @[%a@]" pp_id id n s f v
   | Iif (c, t, e, _)           -> pp "if (%a)@\nthen @[%a@]@\nelse @[%a@]" f c f t f e
   | Iifnone (v, t, id, s, _)   -> pp "if_none (%a)@\nthen @[%a@]@\nelse @[fun %s -> %a@]" f v f t id f s
   | Iifleft (v, _, l, _, r, _) -> pp "if_left (%a)@\nthen @[%a@]@\nelse @[%a@]" f v f l f r
@@ -310,7 +309,7 @@ let rec pp_instruction fmt (i : instruction) =
   | Ilist (t, l)            -> pp "list<%a>[%a]" pp_type t (pp_list "; " f) l
   | Imap (b, k, v, l)       -> pp "%smap<%a, %a>[%a]" (if b then "big_" else "") pp_type k pp_type v (pp_list "; " (fun fmt (vk, vv) -> Format.fprintf fmt "%a : %a" f vk f vv)) l
   | Irecord ri              -> pp "record%a" pp_ritem ri
-  | Irecupdate (x, s, l)    -> pp "recupdate[size=%i| %a with [@[%a@]]]" s f x (pp_list "; " (fun fmt (i, v) -> Format.fprintf fmt "%i: (%a)" i f v)) l
+  | Irecupdate (x, r)       -> pp "recupdate[%a with [@[%a@]]]" f x pp_ruitem r
   | Ifold (ix, iy, ia, c, a, b) -> pp "fold %a with (%a) do (%s, %a) ->@\n  @[%a@]@\ndone" f c f a ia (fun fmt _-> match iy with | Some iy -> Format.fprintf fmt "(%s, %s)" ix iy  | None -> Format.fprintf fmt "%s" ix) () f b
   | Imap_ (x, id, e)        -> pp "map(%a, %s -> @[%a@])" f x id f e
   | Imichelson (a, c, v)    -> pp "michelson [%a] (%a) {%a}" (pp_list "; " pp_id) v (pp_list "; " f) a pp_code c
@@ -318,6 +317,10 @@ let rec pp_instruction fmt (i : instruction) =
 and pp_ritem fmt = function
   | Rtuple l -> Format.fprintf fmt "[%a]" (pp_list "; " pp_instruction) l
   | Rnodes l -> Format.fprintf fmt "[%a]" (pp_list "; " pp_ritem) l
+
+and pp_ruitem fmt = function
+  | RUnodes  (s, l) -> Format.fprintf fmt "size:%i|@[%a@]" s (pp_list "@\n" (fun fmt (i, v) -> Format.fprintf fmt "%i = %a" i pp_ruitem v)) l
+  | RUassign (s, l) -> Format.fprintf fmt "size:%i|@[%a@]" s (pp_list "@\n" (fun fmt (i, v) -> Format.fprintf fmt "%i = %a" i pp_instruction v)) l
 
 let pp_func fmt (f : func) =
   Format.fprintf fmt "function %s %a@\n "

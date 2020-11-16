@@ -1290,7 +1290,6 @@ let to_model (ir, env : T.ir * env) : M.model * env =
     | Ivar id                      -> M.mk_mvar (dumloc id) M.tunit
     | Icall (_id, _args, _)        -> assert false
     | Iassign (id, v)              -> M.mk_mterm (M.Massign (ValueAssign, M.tunit, Avarstore (dumloc id), f v)) M.tunit
-    | IassignRec (_id, _s, _n, _v) -> assert false
     | Iif (c, t, e, ty) -> begin
         let ce = f c in
         let te = f t in
@@ -1423,7 +1422,7 @@ let to_model (ir, env : T.ir * env) : M.model * env =
     | Ilist (_t, _l)                    -> assert false
     | Imap (_b, _k, _v, _l)             -> assert false
     | Irecord _l                        -> assert false
-    | Irecupdate (_x, _s, _l)           -> assert false
+    | Irecupdate (_x, _l)               -> assert false
     | Ifold (_ix, _iy, _ia, _c, _a, _b) -> assert false
     | Imap_ (x, id, e)                  -> let ee = f e in M.mk_mterm (Mmap (f x, dumloc id, ee)) (M.tlist ee.type_)
     | Imichelson (_a, _c, _v)           -> assert false

@@ -473,8 +473,11 @@ let to_ir (model : M.model) : T.ir =
     | Massign (_op, _, Avarstore id, v)            -> T.Iassign (unloc id, f v)
     | Massign (_op, _, Aasset (_an, _fn, _k), _v)  -> emit_error (UnsupportedTerm ("Massign: Aasset"))
     | Massign (_op, _, Arecord (_rn, fn, {node = Mvar (id, _, _, _); type_ = t}), v) -> begin
+        let id = unloc id in
         let s = get_record_size t in
-        let n = get_record_index t (unloc fn) in T.IassignRec (unloc id, s, n, f v)
+        let n = get_record_index t (unloc fn) in
+        let a = T.Irecupdate (T.Ivar id, RUassign(s, [n, f v])) in
+        T.Iassign (id, a)
       end
     | Massign (_op, _, Arecord _, _v)              -> T.iskip
     | Massign (_op, _, Astate, _x)                 -> emit_error (UnsupportedTerm ("Massign: Astate"))
@@ -732,7 +735,8 @@ let to_ir (model : M.model) : T.ir =
         |> List.map (fun (i, v) -> get_record_index mtt.type_ i, f v)
         |> List.sort (fun (i1, _) (i2, _) -> i1 - i2)
       in
-      T.Irecupdate (f x, s, ll)
+      let ru = T.RUassign (s, ll) in
+      T.Irecupdate (f x, ru)
 
     (* set api expression *)
 
@@ -1138,10 +1142,6 @@ let to_michelson (ir : T.ir) : T.michelson =
         assign env id v
       end
 
-    | IassignRec (id, s, n, v) ->
-      let v, _ = fe env (Irecupdate (Ivar id, s, [n, v])) in
-      assign env id v
-
     | Iif (c, t, e, ty) -> begin
         let c, env0 = fe env c in
         let t, envt = fe (dec_env env0) t in
@@ -1370,7 +1370,12 @@ let to_michelson (ir : T.ir) : T.michelson =
         in
         aux env ri
       end
-    | Irecupdate (x, s, l) -> begin
+    | Irecupdate (x, ru) -> begin
+        let s, l =
+          match ru with
+          | RUassign (s, l) -> s, l
+          | _ -> assert false
+        in
         let x, env = fe env x in
         let rec g (l, env) x =
           match l with

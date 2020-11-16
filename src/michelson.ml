@@ -283,7 +283,6 @@ type instruction =
   | Ivar        of ident
   | Icall       of ident * instruction list * bool
   | Iassign     of ident * instruction
-  | IassignRec  of ident * int * int * instruction
   | Iif         of instruction * instruction * instruction * type_
   | Iifnone     of instruction * instruction * ident * instruction * type_
   | Iifleft     of instruction * ident * instruction * ident * instruction * type_
@@ -302,7 +301,7 @@ type instruction =
   | Ilist       of type_ * instruction list
   | Imap        of bool * type_ * type_ * (instruction * instruction) list
   | Irecord     of ritem
-  | Irecupdate  of instruction * int * (int * instruction) list (* value * size * (index, value) fields *)
+  | Irecupdate  of instruction * ruitem
   | Imap_       of instruction * ident * instruction
   | Ifold       of ident * ident option * ident * instruction * instruction * instruction (* var_iterated * var_accu * container * init * code*)
   | Imichelson  of instruction list * code * ident list
@@ -311,6 +310,11 @@ type instruction =
 and ritem =
   | Rtuple of instruction list
   | Rnodes of ritem list
+[@@deriving show {with_path = false}]
+
+and ruitem =
+  | RUnodes  of int * (int * ruitem) list
+  | RUassign of int * (int * instruction) list
 [@@deriving show {with_path = false}]
 
 type implem =
