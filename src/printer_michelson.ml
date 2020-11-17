@@ -319,8 +319,8 @@ and pp_ritem fmt = function
   | Rnodes l -> Format.fprintf fmt "[%a]" (pp_list "; " pp_ritem) l
 
 and pp_ruitem fmt = function
-  | RUnodes  (s, l) -> Format.fprintf fmt "size:%i|@[%a@]" s (pp_list "@\n" (fun fmt (i, v) -> Format.fprintf fmt "%i = %a" i pp_ruitem v)) l
-  | RUassign (s, l) -> Format.fprintf fmt "size:%i|@[%a@]" s (pp_list "@\n" (fun fmt (i, v) -> Format.fprintf fmt "%i = %a" i pp_instruction v)) l
+  | RUnodes  (s, l) -> Format.fprintf fmt "run|s:%i|@[%a@]" s (pp_list "@\n" (fun fmt (i, v) -> Format.fprintf fmt "%i = %a" i pp_ruitem v)) l
+  | RUassign (s, l) -> Format.fprintf fmt "rua|s:%i|@[%a@]" s (pp_list "@\n" (fun fmt (i, v) -> Format.fprintf fmt "%i = %a" i pp_instruction v)) l
 
 let pp_func fmt (f : func) =
   Format.fprintf fmt "function %s %a@\n "

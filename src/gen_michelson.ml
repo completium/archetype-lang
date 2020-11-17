@@ -1399,7 +1399,7 @@ let to_michelson (ir : T.ir) : T.michelson =
             | [] -> []
             | (n, v)::q -> begin
                 if x = n
-                then h env v @ g (q, env) x
+                then h env v s @ g (q, env) x
                 else begin
                   if s = x + 2
                   then [T.SWAP ] @ g (l, env) (x + 1) @ [T.SWAP]
@@ -1417,11 +1417,18 @@ let to_michelson (ir : T.ir) : T.michelson =
         in
         let rec aux env ru =
           match ru with
-          | T.RUassign (s, l) -> assign env s l (fun env v -> let v, _ = fe env v in [T.DROP 1; v])
-          | T.RUnodes  (s, l) -> assign env s l (fun env v -> let v, _ = aux (inc_env env) v in [v])
+          | T.RUassign (s, l) -> assign env s l (fun env v s ->
+              let env = if s = 1 then dec_env env else env in
+              let v, _ = fe env v in
+              [T.DROP 1; v]
+            )
+          | T.RUnodes  (s, l) -> assign env s l (fun env v _ ->
+              let v, _ = aux (inc_env env) v in
+              [v]
+            )
         in
         let v, _ = aux env ru in
-         T.SEQ ([x; v]), env
+        T.SEQ ([x; v]), env
       end
 
     | Ifold (ix, iy, ia, c, a, b) -> begin

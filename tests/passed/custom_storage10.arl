@@ -19,6 +19,7 @@ record my_record {
 variable r : my_record = {0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0}
 
 entry exec () {
+  var v = 8;
   r := {  r with
                  fa =  0;
                  fb =  1;
@@ -28,7 +29,7 @@ entry exec () {
                  ff =  5;
                  fg =  6;
                  fh =  7;
-                 fi =  8;
+                 fi =  v;
                  fj =  9;
                  fk = 10;
                  fl = 11;

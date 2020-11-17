@@ -34,3 +34,4 @@ attic/
 .history
 extra/script/internal_check_ligo.sh
 _opam
+tests/passed/test.arl
