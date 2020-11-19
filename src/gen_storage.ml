@@ -75,14 +75,15 @@ let generate_storage (model : model) : model =
       | Tstate               -> emit_error (NoInitExprFor "state")
     in
 
+    let constant = match var.kind with | VKconstant -> true | _ -> false in
     let (name, type_, dv) = var.name, var.type_, var.default in
-    let mt = if var.constant then MTconst else MTvar in
+    let mt = if constant then MTconst else MTvar in
     let dv =
       match dv with
       | Some v -> v
       | None   -> init_default_value type_
     in
-    mk_storage_item name mt type_ dv ~const:var.constant
+    mk_storage_item name mt type_ dv ~const:constant
   in
 
   let process_storage_item d : storage_item list =

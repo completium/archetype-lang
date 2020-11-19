@@ -581,11 +581,17 @@ type 'id enum_item_gen = {
 type enum_item = lident enum_item_gen
 [@@deriving show {with_path = false}]
 
+type variable_kind =
+  | VKconstant
+  | VKvariable
+  | VKparameter
+[@@deriving show {with_path = false}]
+
 type 'id var_gen = {
   name: 'id;
   type_: type_;
   original_type: type_;
-  constant: bool;
+  kind: variable_kind;
   default: 'id mterm_gen option;
   invariants: 'id label_term_gen list;
   loc: Location.t [@opaque];
@@ -707,9 +713,9 @@ type signature = lident signature_gen
 [@@deriving show {with_path = false}]
 
 type 'id variable_gen = {
-  decl         : 'id argument_gen;
-  constant     : bool;
-  loc          : Location.t [@opaque];
+  decl : 'id argument_gen;
+  kind : variable_kind;
+  loc  : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
@@ -888,8 +894,8 @@ let mk_mterm ?(loc = Location.dummy) node type_ : 'id mterm_gen =
 let mk_label_term ?(loc = Location.dummy) term label : 'id label_term_gen =
   { label; term; loc }
 
-let mk_variable ?(constant = false) ?(loc = Location.dummy) decl =
-  { decl; constant; loc }
+let mk_variable ?(loc = Location.dummy) decl kind =
+  { decl; kind; loc }
 
 let mk_predicate ?(args = []) ?(loc = Location.dummy) name body =
   { name; args; body; loc }
@@ -921,8 +927,8 @@ let mk_security_item ?(loc = Location.dummy) label predicate : security_item =
 let mk_security ?(items = []) ?(loc = Location.dummy) () : security =
   { items; loc }
 
-let mk_var ?(constant=false) ?(invariants=[]) ?default ?(loc = Location.dummy) name type_ original_type : 'id var_gen =
-  { name; type_; default; constant; invariants; original_type; loc }
+let mk_var ?(invariants=[]) ?default ?(loc = Location.dummy) name type_ original_type kind : 'id var_gen =
+  { name; type_; default; kind; invariants; original_type; loc }
 
 let mk_enum ?(values = []) name initial : 'id enum_gen =
   { name; values; initial }
@@ -3402,7 +3408,7 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
         name          = g KIdeclvarname v.name;
         type_         = for_type v.type_;
         original_type = for_type v.original_type;
-        constant      = v.constant;
+        kind          = v.kind;
         default       = Option.map for_mterm v.default;
         invariants    = List.map for_label_term v.invariants;
         loc           = v.loc;
@@ -3517,9 +3523,9 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
         g KIargument a, for_type b, Option.map for_mterm c
       in
       {
-        decl         = for_argument v.decl;
-        constant     = v.constant;
-        loc          = v.loc;
+        decl = for_argument v.decl;
+        kind = v.kind;
+        loc  = v.loc;
       }
     in
     let for_invariant (i : invariant) : invariant =

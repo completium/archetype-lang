@@ -1056,7 +1056,7 @@ let remove_enum_matchwith (model : model) : model =
             (dumloc name)
             tint
             tint
-            ~constant:true
+            VKconstant
             ~default:(mk_mterm (Mint (Big_int.big_int_of_int i)) tint)
             ~loc:id_loc
         ) in
@@ -4967,7 +4967,7 @@ let remove_constant (model : model) : model =
 
   let map, decls = List.fold_left (fun (map, dns) dn ->
       match dn with
-      | Dvar dvar when dvar.constant && Option.is_some(dvar.default)-> (MapString.add (unloc dvar.name) (Option.get dvar.default) map, dns)
+      | Dvar dvar when ((function | VKconstant -> true | _ -> false) dvar.kind) && Option.is_some(dvar.default)-> (MapString.add (unloc dvar.name) (Option.get dvar.default) map, dns)
       | _ -> (map, dns @ [dn])) (map, []) model.decls in
 
   let map, storage = List.fold_left (fun (map, l) si ->
@@ -5118,7 +5118,7 @@ let process_metadata (model : model) : model =
       then mk_map ()
       else mk_map ()
     in
-    let dvar = mk_var (dumloc "metadata") tmetadata tmetadata ~default:dmap in
+    let dvar = mk_var (dumloc "metadata") tmetadata tmetadata ~default:dmap VKvariable in
     let decl_metadata = Dvar dvar in
     let decls = model.decls @ [decl_metadata] in
     { model with

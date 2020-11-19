@@ -84,6 +84,7 @@
       "option"              , OPTION         ;
       "or"                  , OR             ;
       "otherwise"           , OTHERWISE      ;
+      "parameter"           , PARAMETER      ;
       "partition"           , PARTITION      ;
       "pkey"                , PKEY           ;
       "postcondition"       , POSTCONDITION  ;

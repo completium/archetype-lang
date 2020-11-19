@@ -1429,7 +1429,7 @@ let pp_var fmt (var : var) =
   Format.fprintf fmt "%a : %a%a%a"
     pp_id var.name
     pp_type var.type_
-    (fun fmt x -> pp_do_if (not (is_none x)) (fun fmt x -> Format.fprintf fmt " = %a" pp_mterm x) fmt (Option.get x)) var.default
+    (pp_option (fun fmt x -> Format.fprintf fmt " = %a" pp_mterm x)) var.default
     (pp_do_if (not (List.is_empty var.invariants)) (fun fmt xs -> Format.fprintf fmt "@\nwith {@\n  @[%a@]@\n}@\n" (pp_list ";@\n" pp_label_term) xs)) var.invariants
 
 let pp_enum_item fmt (enum_item : enum_item) =
@@ -1554,8 +1554,8 @@ let pp_specification fmt (v : specification) =
   let pp_fails fmt l = if List.is_empty l then () else Format.fprintf fmt "fails {@\n  @[%a@]@\n}" (pp_list "@\n" pp_fail) l in
   let pp_variable_spec fmt (v : variable) =
     let id, type_, dv = v.decl in
-    Format.fprintf fmt "%s %a : %a%a@\n"
-      (if v.constant then "constant" else "variable")
+    Format.fprintf fmt "%a %a : %a%a@\n"
+      pp_variable_kind v.kind
       pp_id id
       pp_type type_
       (pp_option (pp_prefix " = " pp_mterm)) dv

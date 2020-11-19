@@ -1,0 +1,9 @@
+archetype test_parameter
+
+parameter p : nat
+
+variable r : nat = 0
+
+entry exec () {
+  r := p
+}

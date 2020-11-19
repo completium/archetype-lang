@@ -982,9 +982,14 @@ let pp_security fmt (s : security) =
     Format.fprintf fmt "security {@\n  @[%a@]@\n}@\n"
       (pp_no_empty_list pp_security_item) s.items
 
+let pp_variable_kind fmt = function
+  | VKconstant  -> Format.fprintf fmt "constant"
+  | VKvariable  -> Format.fprintf fmt "variable"
+  | VKparameter -> Format.fprintf fmt "parameter"
+
 let pp_variable fmt (v : lident variable) =
-  Format.fprintf fmt "%s %a : %a%a%a@\n"
-    (if v.constant then "constant" else "variable")
+  Format.fprintf fmt "%a %a : %a%a%a@\n"
+    pp_variable_kind v.kind
     pp_id v.decl.name
     pp_type (Option.get v.decl.typ)
     (pp_option (pp_prefix " = " pp_pterm)) v.decl.default

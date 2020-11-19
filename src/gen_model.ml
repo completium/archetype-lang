@@ -768,10 +768,16 @@ let to_model (ast : A.ast) : M.model =
     | _ -> assert false
   in
 
+  let to_variable_kind = function
+    | A.VKconstant  -> M.VKconstant
+    | A.VKvariable  -> M.VKvariable
+    | A.VKparameter -> M.VKparameter
+  in
+
   let process_var (env : env) (v : A.lident A.variable) : M.decl_node =
     let t : M.type_ = type_to_type (Option.get v.decl.typ) in
     let invariants = List.map (fun x -> to_label_lterm env x) v.invs in
-    let var : M.var = M.mk_var v.decl.name t t ~constant:v.constant ?default:(Option.map (to_mterm env) v.decl.default) ~invariants:invariants ~loc:v.loc in
+    let var : M.var = M.mk_var v.decl.name t t (to_variable_kind v.kind) ?default:(Option.map (to_mterm env) v.decl.default) ~invariants:invariants ~loc:v.loc in
     M.Dvar var
   in
 
@@ -1031,7 +1037,7 @@ let to_model (ast : A.ast) : M.model =
     M.mk_variable
       ((fun (arg : A.lident A.decl_gen) : (M.lident * M.type_ * M.mterm option) ->
           (arg.name, type_to_type (Option.get arg.typ), Option.map (to_mterm env) arg.default)) v.decl)
-      ~constant:v.constant
+      (to_variable_kind v.kind)
       ~loc:v.loc
   in
 

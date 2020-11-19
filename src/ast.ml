@@ -434,11 +434,17 @@ type 'id label_term = {
 }
 [@@deriving show {with_path = false}]
 
+type variable_kind =
+  | VKconstant
+  | VKvariable
+  | VKparameter
+[@@deriving show {with_path = false}]
+
 type 'id variable = {
-  decl         : 'id decl_gen; (* TODO *)
-  constant     : bool;
-  invs         : 'id label_term list;
-  loc          : Location.t [@opaque];
+  decl : 'id decl_gen; (* TODO *)
+  kind : variable_kind;
+  invs : 'id label_term list;
+  loc  : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
@@ -718,8 +724,8 @@ let mk_instr ?label ?(loc = Location.dummy) node =
 let mk_label_term ?label ?error ?(loc = Location.dummy) term =
   { label; term; error; loc }
 
-let mk_variable ?(constant = false) ?(invs = []) ?(loc = Location.dummy) decl =
-  { decl; constant; invs; loc }
+let mk_variable ?(invs = []) ?(loc = Location.dummy) decl kind =
+  { decl; kind; invs; loc }
 
 let mk_predicate ?(args = []) ?(loc = Location.dummy) name body =
   { name; args; body; loc }

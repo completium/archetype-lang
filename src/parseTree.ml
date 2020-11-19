@@ -270,6 +270,7 @@ and transition = (lident * (expr * exts) option * (expr * exts) option) list
 and variable_kind =
   | VKvariable
   | VKconstant
+  | VKparameter
 
 and enum_kind =
   | EKenum of lident

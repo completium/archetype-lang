@@ -123,6 +123,7 @@
 %token OPTION
 %token OR
 %token OTHERWISE
+%token PARAMETER
 %token PARTITION
 %token PERCENT
 %token PERCENTRBRACKET
@@ -279,6 +280,7 @@ declaration_r:
  | x=archetype          { x }
  | x=constant           { x }
  | x=variable           { x }
+ | x=parameter          { x }
  | x=enum               { x }
  | x=asset              { x }
  | x=record             { x }
@@ -317,6 +319,10 @@ constant:
 variable:
   | x=vc_decl(VARIABLE) { let x, t, dv, invs, exts = x in
                           Dvariable (x, t, dv, VKvariable, invs, exts) }
+
+parameter:
+  | x=vc_decl(PARAMETER) { let x, t, dv, invs, exts = x in
+                          Dvariable (x, t, dv, VKparameter, invs, exts) }
 
 %inline default_value:
 | EQUAL x=expr { x }

@@ -1454,7 +1454,8 @@ let pp_model fmt (model : model) =
 
 
   let pp_var env (fmt : Format.formatter) (var : var) =
-    if (var.constant) then
+    let constant = match var.kind with | VKconstant -> true | _ -> false in
+    if constant then
       begin
         if Option.is_none var.default
         then assert false;

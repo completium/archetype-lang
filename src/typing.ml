@@ -1312,7 +1312,7 @@ let get_rfield (x : ident) (decl : recorddecl) =
 type vardecl = {
   vr_name   : A.lident;
   vr_type   : A.ptyp;
-  vr_kind   : [`Constant | `Variable | `Ghost | `Enum];
+  vr_kind   : [`Constant | `Variable | `Parameter | `Ghost | `Enum];
   vr_invs   : A.lident A.label_term list;
   vr_def    : (A.pterm * [`Inline | `Std]) option;
   vr_core   : A.const option;
@@ -4951,10 +4951,11 @@ let for_var_decl (env : env) (decl : PT.variable_decl loced) =
         Env.emit_error env (loc x, InvalidVarOrArgType));
 
   let ctt  = match ctt with
-    | VKconstant -> `Constant
-    | VKvariable -> `Variable in
+    | VKconstant  -> `Constant
+    | VKvariable  -> `Variable
+    | VKparameter -> `Parameter in
 
-  if Option.is_none pe then
+  if Option.is_none pe && ctt <> `Parameter then
     Env.emit_error env (loc decl, UninitializedVar);
 
   match dty with
@@ -5894,7 +5895,7 @@ let variables_of_vdecls fdecls =
               default = Option.fst decl.vr_def;
               shadow  = false;
               loc     = loc decl.vr_name; };
-        constant = decl.vr_kind = `Constant;
+        kind     = (match decl.vr_kind with | `Constant -> VKconstant | `Variable -> VKvariable | `Parameter -> VKparameter | _ -> VKvariable);
         invs     = decl.vr_invs;
         loc      = loc decl.vr_name; }
 
@@ -5946,7 +5947,7 @@ let specifications_of_ispecifications =
           (A.mk_decl
              ~loc:(loc x) ?default:e
              ?typ:(Option.bind (fun e -> e.A.type_) e)
-             x)
+             x) VKvariable
       in { env with A.variables = env.variables @ [var] }
 
     | `Effect (_, i) ->
