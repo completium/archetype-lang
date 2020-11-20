@@ -108,7 +108,7 @@ let to_model_expr (e : PT.expr) : T.data =
     | Eliteral (Lduration s) -> cc [T.tint; T.ttimestamp]; Dint (s |> Core.string_to_duration |> Core.duration_to_timestamp)
     | Eliteral (Ldate     s) -> cc [T.ttimestamp]; Dint (s |> Core.string_to_date |> Core.date_to_timestamp)
     | Eliteral (Lbytes    s) -> cc [T.tbytes]; Dbytes s
-    | Eliteral (Lpercent  n) -> cc [T.tpair T.tnat T.tint]; let n, d = string_to_big_int_percent n in Dpair (Dint n, Dint d)
+    | Eliteral (Lpercent  n) -> cc [T.tpair T.tint T.tnat]; let n, d = string_to_big_int_percent n in Dpair (Dint n, Dint d)
     | Enothing               -> cc [T.tunit]; Dunit
     | Earray         l       -> begin
         let ll =

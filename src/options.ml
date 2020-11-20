@@ -71,6 +71,9 @@ let opt_type : (string option) ref = ref (None : string option)
 let opt_show_entries = ref false
 let opt_with_contract = ref false
 let opt_code_only = ref false
+let opt_param_id = ref ""
+let opt_param_value = ref ""
+let opt_parameters = ref ([] : (string * string) list)
 
 let opt_property_focused = ref ""
 

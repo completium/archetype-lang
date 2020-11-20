@@ -1,9 +1,10 @@
 archetype test_parameter
 
-parameter p : nat
+parameter p : address
 
 variable r : nat = 0
 
 entry exec () {
-  r := p
+  // r := p
+  ()
 }

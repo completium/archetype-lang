@@ -1011,23 +1011,26 @@ let tpartition an  = mktype (Tcontainer (tasset an, Partition))
 let tview an       = mktype (Tcontainer (tasset an, View))
 let toperations    = tlist toperation
 
-let mk_bool x   = mk_mterm (Mbool x) tbool
-let mk_string x = mk_mterm (Mstring x) tstring
-let mk_bytes x  = mk_mterm (Mbytes x) tbytes
-let mk_bnat x   = mk_mterm (Mnat x) tnat
-let mk_nat x    = mk_bnat  (Big_int.big_int_of_int x)
-let mk_bint x   = mk_mterm (Mint x) tint
-let mk_int x    = mk_bint  (Big_int.big_int_of_int x)
-let unit        = mk_mterm (Munit) tunit
-let mtrue       = mk_mterm (Mbool true) tbool
-let mfalse      = mk_mterm (Mbool false) tbool
-
+let mk_bool     x = mk_mterm (Mbool x) tbool
+let mk_string   x = mk_mterm (Mstring x) tstring
+let mk_bytes    x = mk_mterm (Mbytes x) tbytes
+let mk_bnat     x = mk_mterm (Mnat x) tnat
+let mk_nat      x = mk_bnat  (Big_int.big_int_of_int x)
+let mk_bint     x = mk_mterm (Mint x) tint
+let mk_int      x = mk_bint  (Big_int.big_int_of_int x)
+let mk_address  x = mk_mterm (Maddress x) taddress
+let unit          = mk_mterm (Munit) tunit
+let mk_date     x = mk_mterm (Mdate x) tdate
+let mk_duration x = mk_mterm (Mduration x) tduration
+let mtrue         = mk_bool true
+let mfalse        = mk_bool false
 
 let mk_mvar id t = mk_mterm (Mvar(id, Vlocal, Tnone, Dnone )) t
 let mk_pvar id t = mk_mterm (Mvar(id, Vparam, Tnone, Dnone )) t
 let mk_svar id t = mk_mterm (Mvar(id, Vstorevar, Tnone, Dnone )) t
 
-let mk_tez v = mk_mterm (Mcurrency(Big_int.big_int_of_int v, Utz)) ttez
+let mk_btez v = mk_mterm (Mcurrency (v, Utz)) ttez
+let mk_tez  v = mk_btez (Big_int.big_int_of_int v)
 
 let mk_tuple (l : mterm list) = mk_mterm (Mtuple l) (ttuple (List.map (fun (x : mterm) -> x.type_) l))
 
@@ -1056,6 +1059,9 @@ let mk_left t x = mk_mterm (Mleft (t, x)) (tor x.type_ t)
 let mk_right t x = mk_mterm (Mright (t, x)) (tor t x.type_)
 
 let mk_none t = mk_mterm (Mnone) (toption t)
+
+let mk_brat n d  = mk_tuple [mk_bint n; mk_bnat d]
+let mk_rat n d   = mk_tuple [mk_int n; mk_nat d]
 
 let fail x  = mk_mterm (Mfail (Invalid (mk_string x))) tunit
 let failg x = mk_mterm (Mfail (Invalid (x))) tunit

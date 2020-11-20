@@ -190,6 +190,7 @@ let generate_target model =
     model
     |> replace_ligo_ident
     |> getter_to_entry ~no_underscore:true
+    |> process_parameter
     (* |> reverse_operations *)
     |> process_multi_keys
     |> replace_col_by_key_for_ckfield
@@ -227,6 +228,7 @@ let generate_target model =
     model
     |> replace_col_by_key_for_ckfield
     |> getter_to_entry
+    |> process_parameter
     (* |> reverse_operations *)
     |> process_multi_keys
     |> process_asset_state
@@ -263,6 +265,7 @@ let generate_target model =
     model
     |> remove_add_update
     |> getter_to_entry
+    |> process_parameter
     (* |> reverse_operations *)
     |> process_multi_keys
     |> replace_update_by_set
@@ -283,6 +286,7 @@ let generate_target model =
     model
     |> prune_formula
     |> getter_to_entry ~extra:true
+    |> process_parameter
     (* |> reverse_operations *)
     |> process_multi_keys
     |> replace_col_by_key_for_ckfield
@@ -324,6 +328,7 @@ let generate_target model =
     model
     |> replace_whyml_ident
     |> getter_to_entry
+    |> process_parameter
     (* |> reverse_operations *)
     |> process_multi_keys
     |> replace_assignfield_by_update
@@ -573,6 +578,7 @@ let main () =
       "--show-entries", Arg.Set Options.opt_show_entries, " Show entries";
       "--entrypoint", Arg.String (fun s -> Options.opt_entrypoint := Some s), " ";
       "--only-code", Arg.Set Options.opt_code_only, " ";
+      "--set-parameter", Arg.Tuple [Arg.Set_string Options.opt_param_id ; Arg.Set_string Options.opt_param_value], " ";
       "-V", Arg.String (fun s -> Options.add_vids s), "<id> process specication identifiers";
       "-v", Arg.Unit (fun () -> print_version ()), " Show version number and exit";
       "--version", Arg.Unit (fun () -> print_version ()), " Same as -v";
