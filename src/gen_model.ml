@@ -771,7 +771,6 @@ let to_model (ast : A.ast) : M.model =
   let to_variable_kind = function
     | A.VKconstant  -> M.VKconstant
     | A.VKvariable  -> M.VKvariable
-    | A.VKparameter -> M.VKparameter
   in
 
   let process_var (env : env) (v : A.lident A.variable) : M.decl_node =

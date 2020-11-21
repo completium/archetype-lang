@@ -985,7 +985,6 @@ let pp_security fmt (s : security) =
 let pp_variable_kind fmt = function
   | VKconstant  -> Format.fprintf fmt "constant"
   | VKvariable  -> Format.fprintf fmt "variable"
-  | VKparameter -> Format.fprintf fmt "parameter"
 
 let pp_variable fmt (v : lident variable) =
   Format.fprintf fmt "%a %a : %a%a%a@\n"

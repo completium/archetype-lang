@@ -437,7 +437,6 @@ type 'id label_term = {
 type variable_kind =
   | VKconstant
   | VKvariable
-  | VKparameter
 [@@deriving show {with_path = false}]
 
 type 'id variable = {

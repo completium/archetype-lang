@@ -5158,27 +5158,28 @@ let reverse_operations (model : model) : model =
   { model with functions = List.map for_functions model.functions }
 
 let process_parameter (model : model) : model =
-  let with_errors = ref false in
-  let for_var (var : var) : var =
-    match var.kind with
-    | VKparameter -> begin
-        let name = unloc var.name in
-        let extvalue = begin
-          let v = List.assoc_opt name !Options.opt_parameters in
-          Option.map Mtools.string_to_mterm v
-        end in
-        match extvalue, var.default with
-        | Some x, _
-        | _, Some x -> { var with kind = VKvariable; default = Some x }
-        | _ -> (with_errors := true; emit_error (var.loc, NoInitValueForParameter name); var)
-      end
-    | _ -> var
-  in
-  let for_decl = function
-    | Dvar v -> Dvar (for_var v)
-    | x -> x
-  in
-  let decls = List.map for_decl model.decls in
-  if !with_errors
-  then raise (Error.Stop 5);
-  { model with decls = decls }
+  model
+(* let with_errors = ref false in
+   let for_var (var : var) : var =
+   match var.kind with
+   | VKparameter -> begin
+      let name = unloc var.name in
+      let extvalue = begin
+        let v = List.assoc_opt name !Options.opt_parameters in
+        Option.map Mtools.string_to_mterm v
+      end in
+      match extvalue, var.default with
+      | Some x, _
+      | _, Some x -> { var with kind = VKvariable; default = Some x }
+      | _ -> (with_errors := true; emit_error (var.loc, NoInitValueForParameter name); var)
+    end
+   | _ -> var
+   in
+   let for_decl = function
+   | Dvar v -> Dvar (for_var v)
+   | x -> x
+   in
+   let decls = List.map for_decl model.decls in
+   if !with_errors
+   then raise (Error.Stop 5);
+   { model with decls = decls } *)

@@ -584,7 +584,6 @@ type enum_item = lident enum_item_gen
 type variable_kind =
   | VKconstant
   | VKvariable
-  | VKparameter
 [@@deriving show {with_path = false}]
 
 type 'id var_gen = {

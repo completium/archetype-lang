@@ -1134,7 +1134,7 @@ let rec pp_declaration fmt { pldesc = e; _ } =
 
   | Dvariable (id, typ, dv, kind, invs, exts) ->
     Format.fprintf fmt "%a%a %a : %a%a%a"
-      pp_str (match kind with | VKvariable -> "variable" | VKconstant -> "constant" | VKparameter -> "parameter")
+      pp_str (match kind with | VKvariable -> "variable" | VKconstant -> "constant")
       pp_extensions exts
       pp_id id
       pp_type typ

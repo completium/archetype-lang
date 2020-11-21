@@ -59,8 +59,7 @@ let pp_archetype fmt pt =
           (fun fmt ->
              function
              | VKvariable  -> pp_str fmt "variable"
-             | VKconstant  -> pp_str fmt "constant"
-             | VKparameter -> pp_str fmt "parameter") variable_kind
+             | VKconstant  -> pp_str fmt "constant") variable_kind
           (pp_option pp_expr) dv
           (fun fmt xs ->
              if Option.is_none xs
