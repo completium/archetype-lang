@@ -1121,16 +1121,27 @@ let pp_transition fmt (to_, conditions, effect) =
            pp_extensions exts
            pp_simple_expr e)) effect
 
+let pp_parameter fmt (id, ty, dv) =
+  Format.fprintf fmt "%a : %a%a"
+    pp_id id
+    pp_type ty
+    (pp_option (fun fmt x -> Format.fprintf fmt " = %a" pp_simple_expr x)) dv
+
+let pp_parameters fmt = function
+  | None -> ()
+  | Some xs -> Format.fprintf fmt "(%a)" (pp_list ", " pp_parameter) xs
+
 let rec pp_declaration fmt { pldesc = e; _ } =
   let is_empty_entry_properties_opt (ap : entry_properties) (a : 'a option) =
     match ap.calledby, ap.require, ap.functions, ap.spec_fun, a with
     | None, None, [], None, None -> true
     | _ -> false in
   match e with
-  | Darchetype (id, exts) ->
-    Format.fprintf fmt "archetype%a %a"
+  | Darchetype (id, ps, exts) ->
+    Format.fprintf fmt "archetype%a %a%a"
       pp_extensions exts
       pp_id id
+      pp_parameters ps
 
   | Dvariable (id, typ, dv, kind, invs, exts) ->
     Format.fprintf fmt "%a%a %a : %a%a%a"

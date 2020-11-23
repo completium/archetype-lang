@@ -300,7 +300,17 @@ declaration_r:
  | INVALID_DECL         { Dinvalid }
 
 archetype:
-| ARCHETYPE exts=option(extensions) x=ident { Darchetype (x, exts) }
+| ARCHETYPE exts=option(extensions) x=ident ps=parameters { Darchetype (x, ps, exts) }
+
+%inline parameters:
+| /* empty */                             { None }
+| LPAREN xs=snl(COMMA, parameter) RPAREN  { Some xs }
+
+%inline parameter:
+ | id=ident COLON ty=type_t dv=parameter_init?  { (id, ty, dv) }
+
+%inline parameter_init:
+ | EQUAL x=simple_expr { x }
 
 %inline invariants:
 | /* empty */                 { [] }

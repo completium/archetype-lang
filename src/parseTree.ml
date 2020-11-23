@@ -266,6 +266,10 @@ and entry_properties = {
 
 and transition = (lident * (expr * exts) option * (expr * exts) option) list
 
+and parameter = lident * type_t * expr option
+
+and parameters = parameter list option
+
 (* -------------------------------------------------------------------- *)
 and variable_kind =
   | VKvariable
@@ -277,7 +281,7 @@ and enum_kind =
 
 (* -------------------------------------------------------------------- *)
 and declaration_unloc =
-  | Darchetype     of lident * exts
+  | Darchetype     of lident * parameters * exts
   | Dvariable      of variable_decl
   | Denum          of enum_kind * enum_decl
   | Dasset         of asset_decl
@@ -547,8 +551,8 @@ let mk_assetoperation aoes e : asset_operation = AssetOperation (aoes, e)
 
 (* declarations *)
 
-let mk_darchetype ?exts ?(loc=dummy) id =
-  mkloc loc (Darchetype (id, exts))
+let mk_darchetype ?parameters ?exts ?(loc=dummy) id =
+  mkloc loc (Darchetype (id, parameters, exts))
 
 let mk_variable ?(loc=dummy) vd =
   mkloc loc (Dvariable vd)

@@ -5651,7 +5651,7 @@ let group_declarations (decls : (PT.declaration list)) =
     let mk x = Location.mkloc loc x in
 
     match decl with
-    | PT.Darchetype (x, exts) ->
+    | PT.Darchetype (x, _, exts) ->
       { g with gr_archetypes = mk (x, exts) :: g.gr_archetypes }
 
     | PT.Dvariable infos ->
@@ -6049,7 +6049,7 @@ let for_declarations (env : env) (decls : (PT.declaration list) loced) : A.ast =
   let toploc = loc decls in
 
   match unloc decls with
-  | { pldesc = Darchetype (x, _exts) } :: decls ->
+  | { pldesc = Darchetype (x, _, _exts) } :: decls ->
     let groups = group_declarations decls in
     let _env, decls = for_grouped_declarations env (toploc, groups) in
 

@@ -578,7 +578,7 @@ let main () =
       "--show-entries", Arg.Set Options.opt_show_entries, " Show entries";
       "--entrypoint", Arg.String (fun s -> Options.opt_entrypoint := Some s), " ";
       "--only-code", Arg.Set Options.opt_code_only, " ";
-      "--set-parameter", Arg.Tuple [Arg.Set_string Options.opt_param_id ; Arg.Set_string Options.opt_param_value], " ";
+      "--init", Arg.String (fun s -> Options.opt_init := s), " Initialize parameters";
       "-V", Arg.String (fun s -> Options.add_vids s), "<id> process specication identifiers";
       "-v", Arg.Unit (fun () -> print_version ()), " Show version number and exit";
       "--version", Arg.Unit (fun () -> print_version ()), " Same as -v";
