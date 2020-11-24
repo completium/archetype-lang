@@ -1330,6 +1330,7 @@ let pp_model fmt (model : model) =
       | Mvar (v, Vfield, _, _)         -> pp_id fmt v
       | Mvar (_, Vthe, _, _)           -> pp_str fmt "the"
       | Mvar (_, Vstate, _, _)         -> Format.fprintf fmt "%s.%s" const_storage const_state
+      | Mvar (v, Vparameter, _, _)     -> pp_id fmt v
 
 
       (* rational *)

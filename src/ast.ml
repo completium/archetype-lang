@@ -799,6 +799,7 @@ module Utils : sig
   val is_variable               : ast -> lident -> bool
   val is_asset                  : ast -> lident -> bool
   val is_enum_value             : ast -> lident -> bool
+  val is_parameter              : ast -> lident -> bool
   val is_definition             : ast -> lident -> bool
   val get_var_type              : ast -> lident -> type_
   val get_enum_name             : lident enum_struct -> lident
@@ -946,6 +947,9 @@ end = struct
     match get_enum_values ast ident with
     | Some _ -> true
     | None   -> false
+
+  let is_parameter ast ident =
+    List.exists (fun (x : lident parameter) -> String.equal (unloc ident) (unloc x.name)) ast.parameters
 
   let get_var_type (ast : ast) (ident : lident) : type_ =
     let var : type_ option =

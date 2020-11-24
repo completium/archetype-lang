@@ -316,6 +316,7 @@ let to_model (ast : A.ast) : M.model =
       | A.Pvar (b, vs, id) when A.Utils.is_asset ast id      -> M.Mvar (id, Vstorecol, to_temp b, to_delta vs)
       | A.Pvar (b, vs, id) when A.Utils.is_enum_value ast id -> M.Mvar (id, Venumval, to_temp b, to_delta vs)
       | A.Pvar (b, vs, id) when A.Utils.is_definition ast id -> M.Mvar (id, Vdefinition, to_temp b, to_delta vs)
+      | A.Pvar (b, vs, id) when A.Utils.is_parameter ast id  -> M.Mvar (id, Vparameter, to_temp b, to_delta vs)
       | A.Pvar (b, vs, id)                                   -> M.Mvar (id, Vlocal, to_temp b, to_delta vs)
       | A.Parray l                             ->
         begin

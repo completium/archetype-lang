@@ -5158,28 +5158,23 @@ let reverse_operations (model : model) : model =
   { model with functions = List.map for_functions model.functions }
 
 let process_parameter (model : model) : model =
-  model
-(* let with_errors = ref false in
-   let for_var (var : var) : var =
-   match var.kind with
-   | VKparameter -> begin
-      let name = unloc var.name in
-      let extvalue = begin
-        let v = List.assoc_opt name !Options.opt_parameters in
-        Option.map Mtools.string_to_mterm v
-      end in
-      match extvalue, var.default with
-      | Some x, _
-      | _, Some x -> { var with kind = VKvariable; default = Some x }
-      | _ -> (with_errors := true; emit_error (var.loc, NoInitValueForParameter name); var)
-    end
-   | _ -> var
-   in
-   let for_decl = function
-   | Dvar v -> Dvar (for_var v)
-   | x -> x
-   in
-   let decls = List.map for_decl model.decls in
-   if !with_errors
-   then raise (Error.Stop 5);
-   { model with decls = decls } *)
+  let for_parameter (param : parameter) =
+    let t = param.typ in
+    let name = param.name in
+    let default : mterm =
+      match param.value, param.default with
+      | Some v, _
+      | _, Some v -> v
+      | _ -> mk_parameter name t
+    in
+    let var : var = mk_var name t t VKvariable ~default ~loc:param.loc in
+    Dvar var
+  in
+  let rec aux ctx (mt : mterm) : mterm =
+    match mt.node with
+    | Mvar(a, Vparameter, c, d) -> { mt with node = Mvar(a, Vstorevar, c, d) }
+    | _ -> map_mterm (aux ctx) mt
+  in
+  let model = map_mterm_model aux model in
+  let params = List.map for_parameter model.parameters in
+  { model with decls = params @ model.decls }

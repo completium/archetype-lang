@@ -1280,6 +1280,7 @@ let to_model (ir, env : T.ir * env) : M.model * env =
     | Dnone            -> assert false
     | Dlist  _l        -> assert false
     | Delt _           -> assert false
+    | Dvar (_x, _t)    -> assert false
   in
 
   let rec for_instr (i : T.instruction) : M.mterm =
@@ -1777,6 +1778,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mvar(_v, Vfield, _t, _d)           -> assert false
     | Mvar(_, Vthe, _t, _d)              -> assert false
     | Mvar(_, Vstate, _t, _d)            -> assert false
+    | Mvar(v, Vparameter, t, d)          -> A.eterm v ?temp:(for_temp t) ?delta:(for_delta d)
 
 
     (* rational *)

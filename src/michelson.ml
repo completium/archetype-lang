@@ -45,6 +45,12 @@ type type_node =
 and type_ = type_node with_annot
 [@@deriving show {with_path = false}]
 
+type dvkind =
+  | DVKstring
+  | DVKint
+  | DVKbytes
+[@@deriving show {with_path = false}]
+
 type data =
   | Dint               of Core.big_int
   | Dstring            of string
@@ -59,6 +65,7 @@ type data =
   | Dnone
   | Dlist              of data list
   | Delt               of data * data
+  | Dvar               of ident * dvkind
 [@@deriving show {with_path = false}]
 
 type code =
@@ -372,6 +379,7 @@ and obj_micheline =
   | Obytes of string
   | Oint of string
   | Oarray of obj_micheline list
+  | Ovar of ident * dvkind
 [@@deriving show {with_path = false}]
 
 type micheline = {
@@ -822,6 +830,7 @@ let map_data (f : data -> data) = function
   | Dnone        -> Dnone
   | Dlist l      -> Dlist (List.map f l)
   | Delt (l, r)  -> Delt (f l, f r)
+  | Dvar (x, t)  -> Dvar (x, t)
 
 let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) = function
   (* Control structures *)
@@ -1163,6 +1172,7 @@ end = struct
     | Dnone        -> Oprim (mk_prim "None")
     | Dlist l      -> Oarray (List.map f l)
     | Delt (l, r)  -> Oprim (mk_prim ~args:[f l; f r] "Elt")
+    | Dvar (x, k)  -> Ovar (x, k)
 
   let rec code_to_micheline (c : code) : obj_micheline =
     let f = code_to_micheline in
@@ -1289,7 +1299,8 @@ end = struct
     let parameter = type_to_micheline m.parameter in
     let code      = code_to_micheline m.code in
     let f tag x   = Oprim (mk_prim ~args:[x] tag) in
-    mk_micheline [f "storage" storage; f "parameter" parameter; f "code" code] (data_to_micheline s)
+    let parameters = m.parameters in
+    mk_micheline ~parameters [f "storage" storage; f "parameter" parameter; f "code" code] (data_to_micheline s)
 
 end
 

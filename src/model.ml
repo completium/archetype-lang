@@ -152,6 +152,7 @@ type 'term var_kind_gen =
   | Vfield
   | Vstate
   | Vthe
+  | Vparameter
 [@@deriving show {with_path = false}]
 
 type temp =
@@ -1040,6 +1041,7 @@ let mfalse        = mk_bool false
 let mk_mvar id t = mk_mterm (Mvar(id, Vlocal, Tnone, Dnone )) t
 let mk_pvar id t = mk_mterm (Mvar(id, Vparam, Tnone, Dnone )) t
 let mk_svar id t = mk_mterm (Mvar(id, Vstorevar, Tnone, Dnone )) t
+let mk_parameter id t = mk_mterm (Mvar(id, Vparameter, Tnone, Dnone )) t
 
 let mk_btez v = mk_mterm (Mcurrency (v, Utz)) ttez
 let mk_tez  v = mk_btez (Big_int.big_int_of_int v)
@@ -1601,6 +1603,7 @@ let map_var_kind f = function
   | Vfield -> Vfield
   | Vstate -> Vstate
   | Vthe -> Vthe
+  | Vparameter -> Vparameter
 
 let map_temp (fi : ident -> ident) = function
   | Tbefore -> Tbefore
@@ -1989,7 +1992,8 @@ let fold_var_kind f accu = function
   | Vparam
   | Vfield
   | Vstate
-  | Vthe -> accu
+  | Vthe
+  | Vparameter -> accu
 
 let fold_container_kind f accu = function
   | CKcoll _                 -> accu
@@ -2241,6 +2245,7 @@ let fold_map_var_kind f accu = function
   | Vfield    -> Vfield,    accu
   | Vstate    -> Vstate,    accu
   | Vthe      -> Vthe,      accu
+  | Vparameter -> Vparameter, accu
 
 let fold_map_container_kind f accu = function
   | CKcoll (t, d) -> CKcoll (t, d), accu

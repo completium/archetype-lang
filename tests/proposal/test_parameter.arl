@@ -1,4 +1,4 @@
-archetype test_parameter(p : int)
+archetype test_parameter(p : nat)
 
 variable r : nat = 0
 

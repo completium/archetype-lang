@@ -6045,15 +6045,51 @@ let transentrys_of_tdecls tdecls =
   in List.map for1 (List.pmap id tdecls)
 
 (* -------------------------------------------------------------------- *)
-let for_declarations (env : env) (decls : (PT.declaration list) loced) : A.ast =
+let for_parameters env params _init =
+
+  match params with
+  | None -> env, []
+  | Some params -> begin
+      List.fold_left (fun (env, accu) (pname, ptyp, pdv) ->
+          let ety = for_type env ptyp in
+          let dv = Option.map (for_xexpr (expr_mode `Concrete) ?ety env) pdv in
+          let typ =
+            match ety with
+            | Some x -> x
+            | None -> assert false
+          in
+          let decl = {
+            vr_name = pname;
+            vr_type = typ;
+            vr_kind = `Variable;
+            vr_core = None;
+            vr_invs = [];
+            vr_def  = None;
+          } in
+          let env = Env.Var.push env decl in
+          let param : A.lident A.parameter = A.{
+              name    = pname;
+              typ     = typ;
+              default = dv;
+              value   = None;
+              loc     = loc pname;
+            } in
+          env, (accu @ [param])
+        ) (env, []) params
+    end
+
+(* -------------------------------------------------------------------- *)
+let for_declarations ?init (env : env) (decls : (PT.declaration list) loced) : A.ast =
   let toploc = loc decls in
 
   match unloc decls with
-  | { pldesc = Darchetype (x, _, _exts) } :: decls ->
+  | { pldesc = Darchetype (x, params, _exts) } :: decls ->
     let groups = group_declarations decls in
+    let env, parameters = for_parameters env params init in
     let _env, decls = for_grouped_declarations env (toploc, groups) in
 
     A.mk_model
+      ~parameters
       ~decls:(
         List.map (fun x -> A.Dvariable x) (variables_of_vdecls decls.variables)                            @
         List.map (fun x -> A.Denum x)     (enums_of_statedecl (List.pmap id (decls.state :: decls.enums))) @

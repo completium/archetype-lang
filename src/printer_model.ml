@@ -1131,6 +1131,7 @@ let pp_mterm fmt (mt : mterm) =
     | Mvar(v, Vfield, t, d)          -> Format.fprintf fmt "%a%a%a" pp_temp t pp_delta d pp_id v
     | Mvar(_, Vthe, t, d)            -> Format.fprintf fmt "%a%athe" pp_temp t pp_delta d
     | Mvar(_, Vstate, t, d)          -> Format.fprintf fmt "%a%astate" pp_temp t pp_delta d
+    | Mvar(v, Vparameter, t, d)      -> Format.fprintf fmt "%a%a%a" pp_temp t pp_delta d pp_id v
 
 
     (* rational *)
@@ -1712,8 +1713,17 @@ let pp_function fmt f =
     (pp_option pp_specification) f.spec
     pp_mterm fs.body
 
+let pp_parameters fmt = function
+  | [] -> ()
+  | params -> Format.fprintf fmt "(%a)" (pp_list ", " (
+      fun fmt (param : parameter) ->
+        Format.fprintf fmt "%a : %a%a"
+          pp_id param.name
+          pp_type param.typ
+          (pp_option (fun fmt x -> Format.fprintf fmt " = %a" pp_mterm x)) param.default)) params
+
 let pp_model fmt (model : model) =
-  Format.fprintf fmt "%a\
+  Format.fprintf fmt "%a%a\
                       @\n@\n%a\
                       @\n@\n%a\
                       @\n@\n%a\
@@ -1723,6 +1733,7 @@ let pp_model fmt (model : model) =
                       @\n@\n%a\
                       @."
     pp_id model.name
+    pp_parameters model.parameters
     pp_api_items model.api_items
     (pp_list "@\n" pp_api_verif) model.api_verif
     (pp_list "@\n" pp_decl) model.decls

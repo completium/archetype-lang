@@ -2192,6 +2192,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | Inv -> loc_term (Tvar "state") |> Mlwtree.deloc
         | _ -> loc_term (Tdoti (gs, "state")) |> Mlwtree.deloc
       end
+    | Mvar (v, Vparameter, _, _) -> Tvar (map_lident v)
 
 
 

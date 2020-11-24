@@ -1422,6 +1422,8 @@ let pp_model_internal fmt (model : model) b =
 
     | Mvar (_, Vstate, _, _)    -> Format.fprintf fmt "%s.%s" const_storage const_state
 
+    | Mvar (v, Vparameter, _, _)  -> pp_id fmt v
+
     (* rational *)
 
     | Mrateq (l, r) ->

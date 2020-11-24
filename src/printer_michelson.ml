@@ -73,6 +73,7 @@ let rec pp_data fmt (d : data) =
   | Dnone           -> pp "None"
   | Dlist l         -> pp "{ %a }" (pp_list "; " pp_data) l
   | Delt (x, y)     -> pp "Elt %a %a" pp_data x pp_data y
+  | Dvar (x, _)     -> pp "%s" x
 
 let rec pp_code fmt (i : code) =
   let pp s = Format.fprintf fmt s in
@@ -391,6 +392,14 @@ let rec pp_obj_micheline fmt (o : obj_micheline) =
   | Obytes  v -> pp pp_a ("bytes", v)
   | Oint    v -> pp pp_a ("int", v)
   | Oarray  l -> Format.fprintf fmt "[  %a  ]" (pp_list ",@\n" pp_obj_micheline) l
+  | Ovar (x, k) ->
+    pp (fun fmt (x, k) -> (
+          Format.fprintf fmt "\"%s\": %s" (
+            match k with
+            | DVKstring -> "string"
+            | DVKint    -> "int"
+            | DVKbytes  -> "bytes"
+          ) x)) (x, k)
 
 (* let rec pp_raw_prim fmt (p : prim) =
    let pp_space pp fmt l = if List.is_empty l then () else Format.fprintf fmt " %a" pp l in
