@@ -7,6 +7,7 @@ type target_lang =
   | Michelson
   | MichelsonStorage
   | Whyml
+  | Javascript
   | Debug
 [@@deriving show {with_path = false}]
 

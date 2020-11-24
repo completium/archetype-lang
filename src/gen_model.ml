@@ -1327,6 +1327,16 @@ let to_model (ast : A.ast) : M.model =
     process_fun_gen transaction.name args body loc spec (fun x -> M.Entry x)
   in
 
+  let process_parameter env (p : A.lident A.parameter) : M.parameter =
+    {
+      name    = p.name;
+      typ     = type_to_type p.typ;
+      default = Option.map (to_mterm env) p.default;
+      value   = Option.map (to_mterm env) p.value;
+      loc     = p.loc;
+    }
+  in
+
   let process_decl_ (env : env) = function
     | A.Dvariable v -> process_var env v
     | A.Dasset    a -> process_asset env a
@@ -1342,6 +1352,7 @@ let to_model (ast : A.ast) : M.model =
   let name = ast.name in
   let env = mk_env () in
 
+  let parameters = List.map (process_parameter env) ast.parameters in
   let decls = List.map (process_decl_ env) ast.decls in
   let functions = List.map (process_fun_ env) ast.funs in
 
@@ -1355,4 +1366,4 @@ let to_model (ast : A.ast) : M.model =
     |> (fun sec -> List.fold_left (fun accu x -> cont_security x accu) sec ast.securities)
   in
 
-  M.mk_model ~decls:decls ~functions:functions ~specification:specification ~security:security ~loc:ast.loc name
+  M.mk_model ~parameters:parameters ~decls:decls ~functions:functions ~specification:specification ~security:security ~loc:ast.loc name

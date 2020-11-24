@@ -102,7 +102,8 @@ let output (model : Model.model) =
         | SmartPy      -> Printer_model_smartpy.pp_model
         | Scaml        -> Printer_model_scaml.pp_model
         | Michelson
-        | MichelsonStorage -> begin
+        | MichelsonStorage
+        | Javascript -> begin
             fun fmt model ->
               let ir = Gen_michelson.to_ir model in
               if !Options.opt_raw_ir
@@ -134,6 +135,12 @@ let output (model : Model.model) =
                         Format.fprintf fmt "# %a@.%a@."
                           Printer_michelson.pp_data ir.storage_data
                           Printer_michelson.pp_michelson michelson
+                    end
+                  | Javascript -> begin
+                      let ir = Gen_michelson.to_ir model in
+                      let michelson = Gen_michelson.to_michelson ir in
+                      let micheline = Michelson.Utils.to_micheline michelson ir.storage_data in
+                      Format.fprintf fmt "%a@\n@." Printer_michelson.pp_javascript micheline
                     end
                   | _ -> assert false
                 end
@@ -282,7 +289,8 @@ let generate_target model =
     |> output
 
   | Michelson
-  | MichelsonStorage ->
+  | MichelsonStorage
+  | Javascript ->
     model
     |> prune_formula
     |> getter_to_entry ~extra:true
@@ -502,6 +510,7 @@ let main () =
     | "michelson"         -> Options.target := Michelson
     | "michelson-storage" -> Options.target := MichelsonStorage
     | "markdown"          -> Options.target := Markdown
+    | "javascript"        -> Options.target := Javascript
     | "debug"             -> Options.target := Debug
     |  s ->
       Format.eprintf

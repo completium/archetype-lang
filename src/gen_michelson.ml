@@ -1013,7 +1013,8 @@ let to_ir (model : M.model) : T.ir =
   let funs = List.fold_left (fun accu x -> (get_builtin_fun x)::accu) funs !builtins in
 
   let name = unloc model.name in
-  T.mk_ir name storage_type storage_data l parameter funs entries ~with_operations:with_operations
+  let parameters = List.map (fun (x : M.parameter) -> unloc x.name) model.parameters in
+  T.mk_ir name storage_type storage_data l parameter funs entries ~with_operations:with_operations ~parameters
 
 
 (* -------------------------------------------------------------------- *)
@@ -1545,4 +1546,5 @@ let to_michelson (ir : T.ir) : T.michelson =
   in
 
   let code = build_code () in
-  T.mk_michelson storage ir.parameter code
+  let parameters = ir.parameters in
+  T.mk_michelson ~parameters storage ir.parameter code

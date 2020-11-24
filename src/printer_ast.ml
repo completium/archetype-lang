@@ -91,9 +91,9 @@ let rec pp_ptyp fmt (t : ptyp) =
       pp_trtyp t
 
 and pp_type fmt t = pp_ptyp fmt t
-  (* match a with
-  | Some a -> Format.fprintf fmt "(%a %%%a)" pp_ptyp t pp_id a
-  | None -> pp_ptyp fmt t *)
+(* match a with
+   | Some a -> Format.fprintf fmt "(%a %%%a)" pp_ptyp t pp_id a
+   | None -> pp_ptyp fmt t *)
 
 let pp_struct_poly pp_node fmt (s : 'a struct_poly) =
   if !Options.opt_typed then
@@ -1152,8 +1152,30 @@ let pp_fun_ fmt = function
   | Ffunction f    -> pp_function fmt f
   | Ftransaction t -> pp_transaction fmt t
 
+let pp_parameter fmt (p : lident parameter) =
+  Format.fprintf fmt "%a : %a%a"
+    pp_id p.name
+    pp_type p.typ
+    (pp_option (fun fmt x -> Format.fprintf fmt " = %a" pp_pterm x)) p.default
+
+let pp_parameters fmt ps =
+  match ps with
+  | [] -> ()
+  | _  -> Format.fprintf fmt "(%a)" (pp_list ", " pp_parameter) ps
+
+let pp_parameter_value fmt (ps : 'id parameter) =
+  match ps.value with
+  | None   -> pp_str fmt "_"
+  | Some v -> pp_pterm fmt v
+
+let pp_parameter_values fmt (ps : 'id parameter list) =
+  match ps with
+  | [] -> ()
+  | _  -> Format.fprintf fmt "// %a@\n" (pp_list ", " pp_parameter_value) ps
+
 let pp_ast fmt (ast : ast) =
-  Format.fprintf fmt "archetype %a@\n@\n@." pp_id ast.name;
+  Format.fprintf fmt "archetype %a%a@\n@\n@." pp_id ast.name pp_parameters ast.parameters;
+  pp_parameter_values fmt ast.parameters;
   (pp_no_empty_list2 pp_decl_) fmt ast.decls;
   (pp_no_empty_list2 pp_fun_) fmt ast.funs;
   (pp_no_empty_list2 pp_specification) fmt ast.specifications;

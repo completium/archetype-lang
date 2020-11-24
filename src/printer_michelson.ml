@@ -549,6 +549,19 @@ let pp_dprogram fmt (d : dprogram) =
 
 (* -------------------------------------------------------------------------- *)
 
+let pp_javascript fmt (micheline : Michelson.micheline) =
+  let code : obj_micheline = Michelson.Oarray micheline.code in
+  let storage : obj_micheline = micheline.storage in
+  let parameters = micheline.parameters in
+  Format.fprintf fmt "\
+  export const code =@\n  @[%a@];@\n@\n\
+  export const getStorage = (@[%a@]) => {@\n\  return @[%a@];@\n\  }@\n"
+    pp_obj_micheline code
+    (pp_list ",@\n" pp_ident) parameters
+    pp_obj_micheline storage
+
+(* -------------------------------------------------------------------------- *)
+
 let string_of__of_pp pp x =
   Format.asprintf "%a@." pp x
 

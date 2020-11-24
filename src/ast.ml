@@ -496,6 +496,15 @@ type 'id assert_ = {
 }
 [@@deriving show {with_path = false}]
 
+type 'id parameter = {
+  name    : 'id;
+  typ     : type_;
+  default : 'id term_gen option;
+  value   : 'id term_gen option;
+  loc     : Location.t [@opaque];
+}
+[@@deriving show {with_path = false}]
+
 type 'id specification = {
   predicates  : 'id predicate list;
   definitions : 'id definition list;
@@ -683,6 +692,7 @@ type 'id fun_ =
 
 type 'id ast_struct = {
   name           : 'id;
+  parameters     : 'id parameter list;
   decls          : 'id decl_ list;
   funs           : 'id fun_ list;
   specifications : 'id specification list;
@@ -768,8 +778,8 @@ let mk_decl ?typ ?default ?(shadow=false) ?(loc = Location.dummy) name =
 let mk_asset ?(fields = []) ?(keys = []) ?(sort = []) ?(big_map = false) ?state ?(init = []) ?(specs = []) ?(loc = Location.dummy) name   =
   { name; fields; keys; sort; big_map; state; init; specs; loc }
 
-let mk_model ?(decls = []) ?(funs = []) ?(specifications = []) ?(securities = []) ?(loc = Location.dummy) name =
-  { name; decls; funs; specifications; securities; loc }
+let mk_model ?(parameters = []) ?(decls = []) ?(funs = []) ?(specifications = []) ?(securities = []) ?(loc = Location.dummy) name =
+  { name; parameters; decls; funs; specifications; securities; loc }
 
 let mk_id type_ id : qualid =
   { type_ = Some type_;

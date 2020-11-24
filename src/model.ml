@@ -7,7 +7,7 @@ type lident = ident Location.loced
 
 type currency =
   (* | Tz
-  | Mtz *)
+     | Mtz *)
   | Utz
 [@@deriving show {with_path = false}]
 
@@ -862,8 +862,21 @@ type 'id decl_node_gen =
 type decl_node = lident decl_node_gen
 [@@deriving show {with_path = false}]
 
+type 'id parameter_gen = {
+  name    : 'id;
+  typ     : type_;
+  default : 'id mterm_gen option;
+  value   : 'id mterm_gen option;
+  loc     : Location.t [@opaque];
+}
+[@@deriving show {with_path = false}]
+
+type parameter = lident parameter_gen
+[@@deriving show {with_path = false}]
+
 type 'id model_gen = {
   name          : lident;
+  parameters    : 'id parameter_gen list;
   api_items     : api_storage list;
   api_verif     : api_verif list;
   decls         : 'id decl_node_gen list;
@@ -962,8 +975,8 @@ let mk_signature ?(args = []) ?ret name : 'id signature_gen =
 let mk_api_item node_item api_loc =
   { node_item; api_loc }
 
-let mk_model ?(api_items = []) ?(api_verif = []) ?(decls = []) ?(functions = []) ?(storage = []) ?(specification = mk_specification ()) ?(security = mk_security ()) ?(loc = Location.dummy) name : model =
-  { name; api_items; api_verif; storage; decls; functions; specification; security; loc }
+let mk_model ?(parameters = []) ?(api_items = []) ?(api_verif = []) ?(decls = []) ?(functions = []) ?(storage = []) ?(specification = mk_specification ()) ?(security = mk_security ()) ?(loc = Location.dummy) name : model =
+  { name; parameters; api_items; api_verif; storage; decls; functions; specification; security; loc }
 
 (* -------------------------------------------------------------------- *)
 
@@ -3294,6 +3307,7 @@ let fold_model (f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (m : '
 
 type kind_ident =
   | KIarchetype
+  | KIparameter
   | KIdeclvarname
   | KIassetname
   | KIassetfield
@@ -3328,6 +3342,17 @@ type kind_ident =
 
 let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (for_mterm : mterm -> mterm) (model : model) : model =
   let g k (id : lident) = {id with pldesc=(f k id.pldesc)} in
+
+  let for_parameter (p : parameter) : parameter =
+    {
+      name    = g KIparameter p.name;
+      typ     = for_type p.typ;
+      default = Option.map for_mterm p.default;
+      value   = Option.map for_mterm p.value;
+      loc     = p.loc;
+    }
+  in
+
   let for_api_item (ai : api_storage) : api_storage =
     let for_node_item (asn : api_storage_node) : api_storage_node =
       let for_api_asset (aasset : api_asset) : api_asset =
@@ -3636,6 +3661,7 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
   in
   {
     name          = g KIarchetype model.name;
+    parameters    = List.map for_parameter model.parameters;
     api_items     = List.map for_api_item  model.api_items;
     api_verif     = List.map for_api_verif model.api_verif;
     decls         = List.map for_decl_node model.decls;

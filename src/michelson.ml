@@ -347,6 +347,7 @@ type ir = {
   parameter: type_;
   funs: func list;
   entries: entry list;
+  parameters: ident list;
 }
 [@@deriving show {with_path = false}]
 
@@ -354,6 +355,7 @@ type michelson = {
   storage: type_;
   parameter: type_;
   code: code;
+  parameters: ident list;
 }
 [@@deriving show {with_path = false}]
 
@@ -375,6 +377,7 @@ and obj_micheline =
 type micheline = {
   code: obj_micheline list;
   storage: obj_micheline;
+  parameters: ident list;
 }
 [@@deriving show {with_path = false}]
 
@@ -433,17 +436,17 @@ let mk_func name targ tret body : func =
 let mk_entry name args eargs body : entry =
   { name; args; eargs; body }
 
-let mk_ir name storage_type storage_data storage_list ?(with_operations = false) parameter funs entries : ir =
-  { name; storage_type; storage_data; storage_list; with_operations; parameter; funs; entries }
+let mk_ir ?(parameters = []) name storage_type storage_data storage_list ?(with_operations = false) parameter funs entries : ir =
+  { name; storage_type; storage_data; storage_list; with_operations; parameter; funs; entries; parameters }
 
-let mk_michelson storage parameter code : michelson =
-  { storage; parameter; code }
+let mk_michelson ?(parameters = []) storage parameter code : michelson =
+  { storage; parameter; code; parameters }
 
 let mk_prim ?(args=[]) ?(annots=[]) prim : prim =
   { prim; args; annots }
 
-let mk_micheline code storage : micheline =
-  { code; storage; }
+let mk_micheline ?(parameters = []) code storage : micheline =
+  { code; storage; parameters }
 
 let mk_dprogram storage parameter storage_data name code =
   { name; storage; parameter; storage_data; code }
