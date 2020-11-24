@@ -73,6 +73,7 @@ let opt_show_entries = ref false
 let opt_with_contract = ref false
 let opt_code_only = ref false
 let opt_init = ref ""
+let opt_no_js_header = ref false
 
 let opt_property_focused = ref ""
 

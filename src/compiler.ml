@@ -175,7 +175,11 @@ let preprocess_ext (pt : ParseTree.archetype) : ParseTree.archetype =
    else Typing.typing Typing.empty pt *)
 
 let type_ (pt : ParseTree.archetype) : Ast.ast =
-  Typing.typing Typing.empty pt
+  let init = match !Options.opt_init with
+    | "" -> None
+    | x  -> Some (Io.parse_expr x)
+  in
+  Typing.typing Typing.empty pt ?init
 
 let generate_target_pt (pt : ParseTree.archetype) : ParseTree.archetype =
   match !Options.target with
@@ -588,6 +592,7 @@ let main () =
       "--entrypoint", Arg.String (fun s -> Options.opt_entrypoint := Some s), " ";
       "--only-code", Arg.Set Options.opt_code_only, " ";
       "--init", Arg.String (fun s -> Options.opt_init := s), " Initialize parameters";
+      "--no-js-header", Arg.Set Options.opt_no_js_header, " No javascript header";
       "-V", Arg.String (fun s -> Options.add_vids s), "<id> process specication identifiers";
       "-v", Arg.Unit (fun () -> print_version ()), " Show version number and exit";
       "--version", Arg.Unit (fun () -> print_version ()), " Same as -v";

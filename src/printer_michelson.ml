@@ -73,7 +73,7 @@ let rec pp_data fmt (d : data) =
   | Dnone           -> pp "None"
   | Dlist l         -> pp "{ %a }" (pp_list "; " pp_data) l
   | Delt (x, y)     -> pp "Elt %a %a" pp_data x pp_data y
-  | Dvar (x, _)     -> pp "%s" x
+  | Dvar x          -> pp "%s" x
 
 let rec pp_code fmt (i : code) =
   let pp s = Format.fprintf fmt s in
@@ -392,14 +392,7 @@ let rec pp_obj_micheline fmt (o : obj_micheline) =
   | Obytes  v -> pp pp_a ("bytes", v)
   | Oint    v -> pp pp_a ("int", v)
   | Oarray  l -> Format.fprintf fmt "[  %a  ]" (pp_list ",@\n" pp_obj_micheline) l
-  | Ovar (x, k) ->
-    pp (fun fmt (x, k) -> (
-          Format.fprintf fmt "\"%s\": %s" (
-            match k with
-            | DVKstring -> "string"
-            | DVKint    -> "int"
-            | DVKbytes  -> "bytes"
-          ) x)) (x, k)
+  | Ovar    x -> Format.fprintf fmt "%s" x
 
 (* let rec pp_raw_prim fmt (p : prim) =
    let pp_space pp fmt l = if List.is_empty l then () else Format.fprintf fmt " %a" pp l in
@@ -558,16 +551,32 @@ let pp_dprogram fmt (d : dprogram) =
 
 (* -------------------------------------------------------------------------- *)
 
-let pp_javascript fmt (micheline : Michelson.micheline) =
+let pp_javascript_header fmt _ =
+  Format.fprintf fmt "\
+  /* Utils functions */@\n@\n\
+  export const mk_int v    = { \"int\" : v }@\n\
+  export const mk_string v = { \"string\" : v }@\n\
+  export const mk_bytes v  = { \"bytes\" : v }@\n\
+  export const mk_some v   = { \"prim\": \"Some\", \"args\": [ v ] }@\n\
+  @\n\
+  @\n\
+  "
+
+let pp_javascript_content fmt (micheline : Michelson.micheline) =
   let code : obj_micheline = Michelson.Oarray micheline.code in
   let storage : obj_micheline = micheline.storage in
   let parameters = micheline.parameters in
   Format.fprintf fmt "\
+  /* Code */@\n@\n\
   export const code =@\n  @[%a@];@\n@\n\
-  export const getStorage = (@[%a@]) => {@\n\  return @[%a@];@\n\  }@\n"
+  export const getStorage (@[%a@]) => {@\n\  return @[%a@];@\n\  }@\n"
     pp_obj_micheline code
-    (pp_list ",@\n" pp_ident) parameters
+    (pp_list ", " pp_ident) parameters
     pp_obj_micheline storage
+
+let pp_javascript fmt (micheline : Michelson.micheline) =
+  if not !Options.opt_no_js_header then pp_javascript_header fmt ();
+  pp_javascript_content fmt micheline
 
 (* -------------------------------------------------------------------------- *)
 

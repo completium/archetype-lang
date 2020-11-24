@@ -612,6 +612,7 @@ type error_desc =
   | InvalidMethodInFormula
   | InvalidMethodWithBigMap            of ident
   | InvalidNumberOfArguments           of int * int
+  | InvalidNumberOfParameters          of int * int
   | InvalidPackingExpr
   | InvalidPackingFormat
   | InvalidRecordFieldType
@@ -633,6 +634,7 @@ type error_desc =
   | InvalidTypeForLambdaReturn
   | InvalidTypeForMapKey
   | InvalidTypeForMapValue
+  | InvalidTypeForParameter
   | InvalidTypeForOrLeft
   | InvalidTypeForOrRight
   | InvalidTypeForPk
@@ -814,6 +816,7 @@ let pp_error_desc fmt e =
   | InvalidMethodInFormula             -> pp "Invalid method in formula"
   | InvalidMethodWithBigMap id         -> pp "Invalid method with big map asset: %s" id
   | InvalidNumberOfArguments (n1, n2)  -> pp "Invalid number of arguments: found '%i', but expected '%i'" n2 n1
+  | InvalidNumberOfParameters (n1, n2) -> pp "Invalid number of parameters: found '%i', but expected '%i'" n2 n1
   | InvalidPackingExpr                 -> pp "Invalid packing expression"
   | InvalidPackingFormat               -> pp "Invalid packing format"
   | InvalidRecordFieldType             -> pp "Invalid record field's type"
@@ -835,6 +838,7 @@ let pp_error_desc fmt e =
   | InvalidTypeForLambdaReturn         -> pp "Invalid type for lambda return"
   | InvalidTypeForMapKey               -> pp "Invalid type for map key"
   | InvalidTypeForMapValue             -> pp "Invalid type for map value"
+  | InvalidTypeForParameter            -> pp "Invalid type for parameter"
   | InvalidTypeForOrLeft               -> pp "Invalid type for or left"
   | InvalidTypeForOrRight              -> pp "Invalid type for or right"
   | InvalidTypeForPk                   -> pp "Invalid type for primary key"
@@ -6045,37 +6049,64 @@ let transentrys_of_tdecls tdecls =
   in List.map for1 (List.pmap id tdecls)
 
 (* -------------------------------------------------------------------- *)
-let for_parameters env params _init =
+let for_parameters ?init env params =
 
   match params with
   | None -> env, []
   | Some params -> begin
-      List.fold_left (fun (env, accu) (pname, ptyp, pdv) ->
-          let ety = for_type env ptyp in
-          let dv = Option.map (for_xexpr (expr_mode `Concrete) ?ety env) pdv in
-          let typ =
-            match ety with
-            | Some x -> x
-            | None -> assert false
-          in
-          let decl = {
-            vr_name = pname;
-            vr_type = typ;
-            vr_kind = `Variable;
-            vr_core = None;
-            vr_invs = [];
-            vr_def  = None;
-          } in
-          let env = Env.Var.push env decl in
-          let param : A.lident A.parameter = A.{
-              name    = pname;
-              typ     = typ;
-              default = dv;
-              value   = None;
-              loc     = loc pname;
+      let env, ps =
+        List.fold_left (fun (env, accu) p ->
+            let pname, ptyp, pdv = unloc p in
+            let ety = for_type env ptyp in
+            let dv = Option.map (for_xexpr (expr_mode `Concrete) ?ety env) pdv in
+            let typ =
+              match ety with
+              | Some x -> x
+              | None -> (Env.emit_error env (loc p, InvalidTypeForParameter); assert false)
+            in
+            let decl = {
+              vr_name = pname;
+              vr_type = typ;
+              vr_kind = `Variable;
+              vr_core = None;
+              vr_invs = [];
+              vr_def  = None;
             } in
-          env, (accu @ [param])
-        ) (env, []) params
+            let env = Env.Var.push env decl in
+            let param : A.lident A.parameter = A.{
+                name    = pname;
+                typ     = typ;
+                default = dv;
+                value   = None;
+                loc     = loc p;
+              } in
+            env, (accu @ [param])
+          ) (env, []) (unloc params)
+      in
+      match init with
+      | None -> env, ps
+      | _ -> begin
+          let inits =
+            match init with
+            | None -> None
+            | Some { pldesc = PT.Etuple l } when List.length ps > 1 -> Some l
+            | Some x -> Some [x]
+          in
+          match inits with
+          | None -> env, ps
+          | Some inits -> begin
+              let np = List.length ps in
+              let ni = List.length inits in
+              if np <> ni
+              then Env.emit_error env (loc params, InvalidNumberOfParameters (np, ni));
+              env, List.map2 (
+                fun (param : A.lident A.parameter) (init : PT.expr) ->
+                  let ety = Some param.typ in
+                  let v = for_xexpr ?ety (expr_mode `Concrete) env init in
+                  { param with value = Some v }
+              ) ps inits
+            end
+        end
     end
 
 (* -------------------------------------------------------------------- *)
@@ -6085,7 +6116,7 @@ let for_declarations ?init (env : env) (decls : (PT.declaration list) loced) : A
   match unloc decls with
   | { pldesc = Darchetype (x, params, _exts) } :: decls ->
     let groups = group_declarations decls in
-    let env, parameters = for_parameters env params init in
+    let env, parameters = for_parameters env params ?init in
     let _env, decls = for_grouped_declarations env (toploc, groups) in
 
     A.mk_model
@@ -6110,10 +6141,10 @@ let for_declarations ?init (env : env) (decls : (PT.declaration list) loced) : A
     { (A.mk_model (mkloc (loc decls) "<unknown>")) with loc = loc decls }
 
 (* -------------------------------------------------------------------- *)
-let typing (env : env) (cmd : PT.archetype) =
+let typing ?init (env : env) (cmd : PT.archetype) =
   match unloc cmd with
   | Marchetype decls ->
-    for_declarations env (mkloc (loc cmd) decls)
+    for_declarations env (mkloc (loc cmd) decls) ?init
 
   | Mextension _ ->
     assert false

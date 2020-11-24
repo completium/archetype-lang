@@ -303,10 +303,16 @@ archetype:
 | ARCHETYPE exts=option(extensions) x=ident ps=parameters { Darchetype (x, ps, exts) }
 
 %inline parameters:
-| /* empty */                             { None }
-| LPAREN xs=snl(COMMA, parameter) RPAREN  { Some xs }
+ | /* empty */                             { None }
+ | xs=loc(parameters_unloc)                { Some xs }
+
+%inline parameters_unloc:
+ | LPAREN xs=snl(COMMA, parameter) RPAREN  { xs }
 
 %inline parameter:
+ | x=loc(parameter_unloc)                  { x }
+
+%inline parameter_unloc:
  | id=ident COLON ty=type_t dv=parameter_init?  { (id, ty, dv) }
 
 %inline parameter_init:

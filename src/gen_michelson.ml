@@ -206,32 +206,7 @@ let to_ir (model : M.model) : T.ir =
     | Mleft (_, x)      -> T.Dleft (to_data x)
     | Mright (_, x)     -> T.Dright (to_data x)
     | Mcast (_, _, v)   -> to_data v
-    | Mvar (x, Vparameter, _, _) ->
-      let dvk =
-        match mt.type_ with
-        | M.Tbuiltin b, _ -> begin
-            match b with
-            | Bunit      -> assert false
-            | Bbool      -> assert false
-            | Bint       -> T.DVKint
-            | Brational  -> assert false
-            | Bdate      -> T.DVKint
-            | Bduration  -> T.DVKint
-            | Btimestamp -> T.DVKint
-            | Bstring    -> T.DVKstring
-            | Baddress   -> T.DVKstring
-            | Brole      -> T.DVKstring
-            | Bcurrency  -> T.DVKint
-            | Bsignature -> assert false
-            | Bkey       -> assert false
-            | Bkeyhash   -> assert false
-            | Bbytes     -> T.DVKbytes
-            | Bnat       -> T.DVKint
-            | Bchainid   -> assert false
-          end
-        | _ -> assert false
-      in
-      T.Dvar (unloc x, dvk)
+    | Mvar (x, Vparameter, _, _) -> T.Dvar (unloc x)
     | _ -> Format.printf "%a@." M.pp_mterm mt; assert false
 
   in

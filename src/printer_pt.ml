@@ -1129,7 +1129,7 @@ let pp_parameter fmt (id, ty, dv) =
 
 let pp_parameters fmt = function
   | None -> ()
-  | Some xs -> Format.fprintf fmt "(%a)" (pp_list ", " pp_parameter) xs
+  | Some xs -> Format.fprintf fmt "(%a)" (pp_list ", " (fun fmt x -> pp_parameter fmt (unloc x))) (unloc xs)
 
 let rec pp_declaration fmt { pldesc = e; _ } =
   let is_empty_entry_properties_opt (ap : entry_properties) (a : 'a option) =

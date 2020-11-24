@@ -266,9 +266,9 @@ and entry_properties = {
 
 and transition = (lident * (expr * exts) option * (expr * exts) option) list
 
-and parameter = lident * type_t * expr option
+and parameter = (lident * type_t * expr option) loced
 
-and parameters = parameter list option
+and parameters = parameter list loced option
 
 (* -------------------------------------------------------------------- *)
 and variable_kind =
