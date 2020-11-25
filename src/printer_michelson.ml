@@ -554,10 +554,12 @@ let pp_dprogram fmt (d : dprogram) =
 let pp_javascript_header fmt _ =
   Format.fprintf fmt "\
   /* Utils functions */@\n@\n\
-  export const mk_int v    = { \"int\" : v }@\n\
-  export const mk_string v = { \"string\" : v }@\n\
-  export const mk_bytes v  = { \"bytes\" : v }@\n\
-  export const mk_some v   = { \"prim\": \"Some\", \"args\": [ v ] }@\n\
+  export const mk_int    = v  => { \"int\" : v }@\n\
+  export const mk_string = v  => { \"string\" : v }@\n\
+  export const mk_bytes  = v  => { \"bytes\" : v }@\n\
+  export const mk_some   = v  => { \"prim\": \"Some\", \"args\": [ v ] }@\n\
+  export const mk_none   = () => { \"prim\": \"None\" }@\n\
+  export const mk_rational = (n, d) => {  \"prim\": \"Pair\", \"args\": [ {  \"int\": n  }, {  \"int\": d  } ] }
   @\n\
   @\n\
   "
@@ -569,7 +571,7 @@ let pp_javascript_content fmt (micheline : Michelson.micheline) =
   Format.fprintf fmt "\
   /* Code */@\n@\n\
   export const code =@\n  @[%a@];@\n@\n\
-  export const getStorage (@[%a@]) => {@\n\  return @[%a@];@\n\  }@\n"
+  export const getStorage = (@[%a@]) => {@\n\  return @[%a@];@\n\  }@\n"
     pp_obj_micheline code
     (pp_list ", " pp_ident) parameters
     pp_obj_micheline storage
