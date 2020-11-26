@@ -625,12 +625,21 @@ let to_dir (michelson, env : T.michelson * env) =
         | true,  true  -> assert false
       in
 
+      let get_id_first_stack st =
+        match st with
+        | (T.Dalpha n)::_ -> n
+        | _ -> assert false
+      in
+
+      let gst _ = get_id_first_stack stack_then in
+      let gse _ = get_id_first_stack stack_else in
+
       let fif =
         match k with
         | `Base -> fun (x, y, z) -> T.Dif     (x, y, z)
-        | `Cons -> fun (x, y, z) -> T.Difcons (x, 0, 0, y, z)
-        | `Left -> fun (x, y, z) -> T.Difleft (x, 0, y, 0, z)
-        | `None -> fun (x, y, z) -> T.Difnone (x, y, 0, z)
+        | `Cons -> fun (x, y, z) -> T.Difcons (x, gst (), gse (), y, z)
+        | `Left -> fun (x, y, z) -> T.Difleft (x, gst (), y, gse (), z)
+        | `None -> fun (x, y, z) -> T.Difnone (x, y, gse (), z)
       in
 
       let x = T.dalpha env.cpt_alpha in

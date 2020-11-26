@@ -32,7 +32,7 @@ process_files() {
 
 echo "Check mainnet contract"
 echo ""
-echo "                                                   MIC MI  DIR RIR IR  MDL ARL"
+echo "                                                                                           MIC MI  DIR RIR IR  MDL ARL"
 
 process_files "../chaintelligence-use-cases/mainnet/json"
 
