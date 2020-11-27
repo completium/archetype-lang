@@ -449,7 +449,100 @@ let to_dir (michelson, env : T.michelson * env) =
 
      in *)
 
-  let add_instruction _env (sys : T.dinstruction list) (i : T.dinstruction) = i::sys in
+  let add_instruction _env (sys : T.dinstruction list) (i : T.dinstruction) =
+    if !Options.opt_sdir
+    then i::sys
+    else begin
+      let assigns =
+        let rec aux accu (a, b : T.dexpr * T.dexpr) =
+          match a, b with
+          | _ when T.cmp_dexpr a b -> accu
+          | T.Dbop (Bpair, a1, b1), _ -> begin
+              let f op =
+                match b, op with
+                | T.Dbop (Bpair, x, _), T.Ucar -> x
+                | T.Dbop (Bpair, _, y), T.Ucdr -> y
+                | _ -> T.Duop (op, b)
+              in
+              let car = f Ucar in
+              let cdr = f Ucdr in
+              aux (aux accu (a1, car)) (b1, cdr)
+            end
+          | _ -> (a, b)::accu
+        in
+        match i with
+        | T.Dassign (a, b) -> aux [] (a, b)
+        | _                -> []
+      in
+
+      match assigns with
+      | [] -> i::sys
+      | _ -> begin
+          let compute_cpt a sys =
+            match a with
+            | T.Dalpha id ->
+              let inc  accu x  = if x = id then accu + 1 else accu in
+              let incs accu xs = List.fold_left inc accu xs in
+
+              let rec cpt_dexpr accu = function
+                | T.Dalpha id -> inc accu id
+                | v -> T.fold_dexpr cpt_dexpr cpt_instr accu v
+              and cpt_instr accu = function
+                | Ddecl   (id, _)           -> inc  accu id
+                | Difcons (_, hd, tl, _, _) -> incs accu [hd; tl]
+                | Difleft (_,  e, _,  l, _) -> incs accu [e; l]
+                | Difnone (_, _, v, _)      -> inc  accu v
+                | v -> T.fold_dexpr_dinstr cpt_instr cpt_dexpr accu v
+              in
+
+              List.fold_left cpt_instr 0 sys
+            | _ -> 0
+          in
+          List.fold_right (
+            fun (a, b) (accu : T.dinstruction list) ->
+              let do_neutral _ = (T.Dassign (a, b))::accu in
+              let cpt = compute_cpt a sys in
+              if cpt = 0
+              then do_neutral ()
+              else
+                match a, b with
+                | T.Dalpha _, _ -> begin
+                    let replace instrs = List.map (
+                        fun x ->
+                          let rec fe (x : T.dexpr) : T.dexpr =
+                            if T.cmp_dexpr a x then b else T.map_dexpr fe id id x
+                          in
+                          let rec f (x : T.dinstruction) : T.dinstruction = T.map_dexpr_dinstr f fe id x in
+                          f x) instrs in
+                    let opt_expr sys =
+                      List.map (fun instr -> begin
+                            let rec fe (expr : T.dexpr) =
+                              match expr with
+                              | T.Duop (T.Ucar, T.Dbop (Bpair, x, _)) -> fe x
+                              | T.Duop (T.Ucdr, T.Dbop (Bpair, _, y)) -> fe y
+                              | _ -> T.map_dexpr fe id id expr
+                            in
+                            let rec f (x : T.dinstruction) : T.dinstruction = T.map_dexpr_dinstr f fe id x in
+                            f instr
+                          end) sys
+                    in
+                    let opt_instr (sys  : T.dinstruction list) =
+                      let rec aux (instrs : T.dinstruction list) =
+                        List.fold_right (fun instr accu ->
+                            match instr with
+                            | T.Dassign (a, b) when T.cmp_dexpr a b -> accu
+                            | T.Dif     (c, t, e)  -> (T.Dif (c, aux t, aux e))::accu
+                            | _ -> instr::accu) instrs []
+                      in
+                      aux sys
+                    in
+                    accu |> replace |> opt_expr |> opt_instr
+                  end
+                | _ -> do_neutral ()
+          ) assigns sys
+        end
+    end
+  in
 
   let rec interp (env : ir_env) (sys : T.dinstruction list) (instrs : T.code list) (stack : (T.dexpr) list) =
     let f = interp in
@@ -502,41 +595,13 @@ let to_dir (michelson, env : T.michelson * env) =
       | _ -> emit_error ()
     in
 
-    let _interp_if k (th, el) it =
-
-      let add_vars b (sys, stack, env) =
-        let add_var d (sys, stack, env) =
-          match stack with
-          | a::_ -> begin
-              let sys = add_instruction env sys (T.Dassign (a, d)) in
-              sys, stack, env
-            end
-          | _ -> assert false
-        in
-        let x = T.dalpha env.cpt_alpha in
-        let ty = T.tunit in
-        match b with
-        | `Then -> begin
-            match k with
-            | `Base -> (sys, stack, env)
-            | `Cons -> (sys, stack, env) |> add_var (T.Ddata Dunit) |> add_var (T.Ddata Dunit)
-            | `Left -> (sys, stack, env) |> add_var (T.Duop (Uleft ty, x))
-            | `None -> (sys, stack, env)
-          end
-        | `Else -> begin
-            match k with
-            | `Base -> (sys, stack, env)
-            | `Cons -> (sys, stack, env)
-            | `Left -> (sys, stack, env) |> add_var (T.Duop (Uright ty, x))
-            | `None -> (sys, stack, env) |> add_var (T.Duop (Usome, x))
-          end
-      in
+    let interp_if k (th, el) it =
 
       let env = inc_deep env in
       let scopes = env.scopes in
       let env = { env with scopes = sys::scopes } in
-      let sys_then, stack_then, env_then = interp env [] (List.rev th) stack |> add_vars `Then in
-      let sys_else, stack_else, env_else = interp { env with cpt_alpha = env_then.cpt_alpha } [] (List.rev el) stack |> add_vars `Else in
+      let sys_then, stack_then, env_then = interp env [] (List.rev th) stack in
+      let sys_else, stack_else, env_else = interp { env with cpt_alpha = env_then.cpt_alpha } [] (List.rev el) stack in
 
 
       let env = { env with scopes = scopes; cpt_alpha = env_else.cpt_alpha } in
@@ -545,83 +610,55 @@ let to_dir (michelson, env : T.michelson * env) =
       (* Format.printf "_stack_then:@\n%a@\n@." pp_stack stack_then; *)
       (* Format.printf "_stack_else:@\n%a@\n@." pp_stack stack_else; *)
 
-      let stack, env, decls, sys_then, sys_else =
-        let stack_rev_ref  = List.rev stack in
-        let stack_rev_then = List.rev stack_then in
-        let stack_rev_else = List.rev stack_else in
-
-        let _stack_in =
-          match env_then.fail, env_else.fail with
-          | false, false -> stack_then
-          | true,  false -> stack_else
-          | false, true  -> stack_then
-          | true,  true  -> assert false
+      let replace_alpha src dst (sys : T.dinstruction list) : T.dinstruction list =
+        let fai x = if (x = src) then dst else x in
+        let rec fe x = T.map_dexpr        fe fi fai x
+        and fi i = T.map_dexpr_dinstr fi fe fai i
         in
-
-        let g lref lbranch =
-          let size = min (List.length lref) (List.length lbranch) in
-          let l1 = List.sub 0 size lref in
-          let l2 = List.sub 0 size lbranch in
-          let rec aux accu x y =
-            match x, y with
-            | [], [] -> accu
-            | a::t1, b::t2 -> aux (add_instruction env accu (Dassign (b, a))) t1 t2
-            | _ -> assert false
-          in
-          aux [] l1 l2
-        in
-
-        let sys_then = sys_then @ (g stack_rev_ref stack_rev_then) in
-        let sys_else = sys_else @ (g stack_rev_ref stack_rev_else) in
-
-        let stack, decls =
-          let l1 = (List.length _stack_in) in
-          let l2 = (List.length stack) in
-          if l1 = l2
-          then stack, []
-          else begin
-            if l1 < l2
-            then begin
-              let ast, bst = stack |> List.rev |> List.cut (l2 - 1) in
-              let sys = List.fold_left (fun accu (x : T.dexpr) ->
-                  match x with
-                  (* | T.Dalpha id -> [T.Ddecl id] *)
-                  | _ -> accu) sys bst in
-              List.rev ast, sys
-            end
-            else (Format.printf("l1: %d; l2: %d@.") l1 l2; assert false)
-          end
-        in
-
-        stack, env, decls, sys_then, sys_else
+        List.map fi sys
       in
 
-      let x = T.dalpha env.cpt_alpha in
-      let env = inc_cpt_alpha env in
-
-      let fif =
-        match k with
-        | `Base -> fun (x, y, z) -> T.Dif     (x, y, z)
-        | `Cons -> fun (x, y, z) -> T.Difcons (x, 0, 0, y, z)
-        | `Left -> fun (x, y, z) -> T.Difleft (x, 0, y, 0, z)
-        | `None -> fun (x, y, z) -> T.Difnone (x, y, 0, z)
-      in
-
-      let sys = add_instruction env sys (fif (x, sys_then, sys_else)) in
-      let sys = List.fold_left (fun accu x -> add_instruction env accu x) sys decls in
-
-      f env sys it (x::stack)
-    in
-
-    let interp_if k (th, el) it =
-      let sys_then, stack_then, env_then = interp env [] (List.rev th) stack in
-      let sys_else, stack_else, env_else = interp env [] (List.rev el) stack in
-
-      let stack_in =
+      let stack_in, sys_then, stack_then, sys_else, stack_else =
         match env_then.fail, env_else.fail with
-        | false, false -> stack_then
-        | true,  false -> stack_else
-        | false, true  -> stack_then
+        | false, false -> begin
+            let doit sys_then stack_then sys_else stack_else =
+              let lt = List.length stack_then in
+              let le = List.length stack_else in
+              if lt <> le
+              then assert false; (* TODO *)
+              let sys_else, stack_else = List.fold_left2 (fun (sys_else, stack_else) t e ->
+                  match t, e with
+                  | _ when T.cmp_dexpr t e -> (sys_else, e::stack_else)
+                  | T.Dalpha i1, T.Dalpha i2 -> (replace_alpha i2 i1 sys_else, t::stack_else)
+                  | _ -> (sys_else, t::stack_else)
+                ) (sys_else, []) stack_then stack_else in
+              sys_then, stack_then, sys_else, stack_else
+            in
+
+            let syt, stt, sye, ste =
+              match k, stack_then, stack_else  with
+              | `Base, stt, ste -> begin
+                  let syt, stt, sye, ste = doit sys_then stt sys_else ste in
+                  syt, stt, sye, ste
+                end
+              | `Cons, a::b::stt, ste -> begin
+                  let syt, stt, sye, ste = doit sys_then stt sys_else ste in
+                  syt, a::b::stt, sye, ste
+                end
+              | `Left, a::stt, b::ste -> begin
+                  let syt, stt, sye, ste = doit sys_then stt sys_else ste in
+                  syt, a::stt, sye, b::ste
+                end
+              | `None, stt, a::ste -> begin
+                  let syt, stt, sye, ste = doit sys_then stt sys_else ste in
+                  syt, stt, sye, a::ste
+                end
+              | _ -> assert false
+            in
+            stt, syt, stt, sye, ste
+          end
+        | true,  false -> stack_else, sys_then, stack_then, sys_else, stack_else
+        | false, true  -> stack_then, sys_then, stack_then, sys_else, stack_else
         | true,  true  -> assert false
       in
 
@@ -1070,7 +1107,7 @@ let to_dir (michelson, env : T.michelson * env) =
 
 
 
-let to_red_dir (dir, env : T.dprogram * env) : T.dprogram * env =
+let _to_red_dir (dir, env : T.dprogram * env) : T.dprogram * env =
   let rec doit (accu : T.dinstruction list) (code : T.dinstruction list) =
 
 
@@ -1134,6 +1171,8 @@ let to_red_dir (dir, env : T.dprogram * env) : T.dprogram * env =
   { dir with
     code = dir.code |> List.rev |> doit []
   }, env
+
+let to_red_dir (dir, env : T.dprogram * env) : T.dprogram * env = dir, env
 
 let to_ir (dir, env : T.dprogram * env) : T.ir * env =
   let tstorage     = dir.storage in

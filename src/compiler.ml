@@ -574,6 +574,7 @@ let main () =
       "--d-intermediate-representation", Arg.Set Options.opt_dir, " Same as -dir";
       "-rdir", Arg.Set Options.opt_red_dir, " Generate reduced intermediate decompilation";
       "--reduced-d-intermediate-representation", Arg.Set Options.opt_red_dir, " Same as -rdir";
+      "-sdir", Arg.Set Options.opt_sdir, " ";
       "-mici", Arg.Set Options.opt_mici, " Output micheline";
       "-mi", Arg.Set Options.opt_mic, " Output michelson";
       "-ri", Arg.Set Options.opt_raw_ir, " Print raw intermediate representation";

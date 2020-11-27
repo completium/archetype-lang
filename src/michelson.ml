@@ -985,6 +985,74 @@ and cmp_dinstruction (lhs : dinstruction) (rhs : dinstruction) =
   | Dif (c1, t1, e1), Dif (c2, t2, e2) -> cmp_dexpr c1 c2 && List.for_all2 cmp_dinstruction t1 t2 && List.for_all2 cmp_dinstruction e1 e2
   | Dfail e1, Dfail e2                 -> cmp_dexpr e1 e2
   | _ -> false
+
+
+let map_dexpr f fi fai x =
+  let g = List.map fi in
+  match x with
+  | Dalpha     i            -> Dalpha      (fai i)
+  | Dvar       t            -> Dvar         t
+  | Dstorage   t            -> Dstorage     t
+  | Doperations             -> Doperations
+  | Dlbdparam               -> Dlbdparam
+  | Dlbdresult              -> Dlbdresult
+  | Ddata      d            -> Ddata      d
+  | Dzop       op           -> Dzop       op
+  | Duop      (op, x)       -> Duop      (op, f x)
+  | Dbop      (op, x, y)    -> Dbop      (op, f x, f y)
+  | Dtop      (op, x, y, z) -> Dtop      (op, f x, f y, f z)
+  | Dapply    (l, a)        -> Dapply    (f l, f a)
+  | Dexec     (l, a)        -> Dexec     (f l, f a)
+  | Dlambda   (at, rt, is)  -> Dlambda   (at, rt, g is)
+  | Dloopleft (l, is)       -> Dloopleft (f l, g is)
+  | Dmap      (l, is)       -> Dmap      (f l, g is)
+
+let map_dexpr_dinstr fi fe fai x =
+  let g = List.map fi in
+  match x with
+  | Ddecl   (i, e)              -> Ddecl   (fai i, Option.map fe e)
+  | Dassign (e, v)              -> Dassign (fe e, fe v)
+  | Dfail    v                  -> Dfail   (fe v)
+  | Dif     (c, t, e)           -> Dif     (fe c, g t, g e)
+  | Difcons (c, hd, tl, ti, ei) -> Difcons (fe c, fai hd, fai tl, g ti, g ei)
+  | Difleft (c,  l, ti,  r, ei) -> Difleft (fe c, fai l, g ti, fai r, g ei)
+  | Difnone (c, ti, v, ei)      -> Difnone (fe c, g ti, fai v, g ei)
+  | Dloop   (e, is)             -> Dloop   (fe e, g is)
+  | Diter   (e, is)             -> Diter   (fe e, g is)
+
+let fold_dexpr f fi accu x =
+  let g accu is = List.fold_left (fun accu x -> fi accu x) accu is in
+  match x with
+  | Dalpha     _            -> accu
+  | Dvar       _            -> accu
+  | Dstorage   _            -> accu
+  | Doperations             -> accu
+  | Dlbdparam               -> accu
+  | Dlbdresult              -> accu
+  | Ddata      _            -> accu
+  | Dzop       _            -> accu
+  | Duop      (_, x)        -> f accu x
+  | Dbop      (_, x, y)     -> f (f accu x) y
+  | Dtop      (_, x, y, z)  -> f (f (f accu x) y) z
+  | Dapply    (l, a)        -> f (f accu l) a
+  | Dexec     (l, a)        -> f (f accu l) a
+  | Dlambda   (_, _, is)    -> g accu is
+  | Dloopleft (l, is)       -> g (f accu l) is
+  | Dmap      (l, is)       -> g (f accu l) is
+
+let fold_dexpr_dinstr fi fe accu x =
+  let g accu is = List.fold_left (fun accu x -> fi accu x) accu is in
+  match x with
+  | Ddecl   (_, e)              -> Option.fold fe accu e
+  | Dassign (e, v)              -> fe (fe accu e) v
+  | Dfail    v                  -> fe accu v
+  | Dif     (c, t, e)           -> g (g (fe accu c) t) e
+  | Difcons (c, _, _, ti, ei)   -> g (g (fe accu c) ti) ei
+  | Difleft (c,  _, ti,  _, ei) -> g (g (fe accu c) ti) ei
+  | Difnone (c, ti, _, ei)      -> g (g (fe accu c) ti) ei
+  | Dloop   (e, is)             -> g (fe accu e) is
+  | Diter   (e, is)             -> g (fe accu e) is
+
 module Utils : sig
 
   val get_fun_name  : (type_ -> ident) -> builtin -> ident
