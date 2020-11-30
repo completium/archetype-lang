@@ -5027,7 +5027,7 @@ let getter_to_entry ?(no_underscore=false) ?(extra=false) (model : model) : mode
           let vcallback = mk_pvar icallback tcallback in
           let rec aux (mt : mterm) : mterm =
             match mt.node with
-            | Mreturn x -> mk_mterm (Mtransfer(TKentry(mk_tez 0, vcallback, x))) tunit
+            | Mreturn x -> mk_mterm (Mtransfer(TKentry(mtransferred, vcallback, x))) tunit
             | _ -> map_mterm aux mt
           in
           (icallback, tcallback, None), aux fs.body

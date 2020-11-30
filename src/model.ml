@@ -1037,6 +1037,14 @@ let mk_date     x = mk_mterm (Mdate x) tdate
 let mk_duration x = mk_mterm (Mduration x) tduration
 let mtrue         = mk_bool true
 let mfalse        = mk_bool false
+let mnow          = mk_mterm Mnow         tdate
+let mtransferred  = mk_mterm Mtransferred ttez
+let mcaller       = mk_mterm Mcaller      taddress
+let mbalance      = mk_mterm Mbalance     ttez
+let msource       = mk_mterm Msource      taddress
+let mselfaddress  = mk_mterm Mselfaddress taddress
+let mchainid      = mk_mterm Mchainid     tchainid
+let mmetadata     = mk_mterm Mmetadata    (tmap tstring tbytes)
 
 let mk_mvar id t = mk_mterm (Mvar(id, Vlocal, Tnone, Dnone )) t
 let mk_pvar id t = mk_mterm (Mvar(id, Vparam, Tnone, Dnone )) t
