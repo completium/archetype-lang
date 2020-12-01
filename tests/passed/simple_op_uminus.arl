@@ -1,0 +1,7 @@
+archetype simple_op_uminus
+
+variable res : int = 0
+
+entry exec () {
+  res := -1
+}

@@ -1,0 +1,5 @@
+archetype test_getter_with_arg
+
+getter getArg (s : string) : string {
+  return s
+}

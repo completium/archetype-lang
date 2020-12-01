@@ -1,0 +1,5 @@
+archetype test_getter_with_args
+
+getter getSum (a : nat, b : nat) : nat {
+  return (a + b)
+}

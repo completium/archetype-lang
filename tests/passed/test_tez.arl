@@ -1,0 +1,12 @@
+archetype test_tez
+
+variable a : tez = 1tz
+variable b : tez = 1.2tz
+variable c : tez = 1mtz
+variable d : tez = 1.2mtz
+variable e : tez = 1utz
+variable f : tez = 1.0utz
+
+entry exec () {
+  ()
+}

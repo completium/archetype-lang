@@ -1,0 +1,10 @@
+archetype test_length_operations
+
+entry exec () {
+  specification {
+    s0: length(operations) = 1;
+  }
+  effect {
+    transfer 1tz to caller
+  }
+}

@@ -1,0 +1,14 @@
+archetype simple_sequence_with_arg2
+
+variable str : string = ""
+variable n   : nat    = 0
+
+entry exec (a : nat, x : nat) {
+  effect {
+    n := 3;
+    var z = x;
+    str := "mystring";
+    var y = 6 + z;
+    n += 2 + a;
+  }
+}

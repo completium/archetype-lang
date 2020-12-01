@@ -1,0 +1,25 @@
+archetype test_asset_sum_agg_2
+
+asset o_asset identified by id {
+  id : nat;
+  v : int;
+  b : bool;
+} initialized by {
+  {0; 0i; false};
+  {1; 1i; false};
+  {2; 2i; false}
+}
+
+asset my_asset {
+  mid : string;
+  c : aggregate<o_asset>;
+} initialized by {
+  {"id"; []}
+}
+
+variable res : int = 0
+
+entry exec () {
+  my_asset.update("id", {c = [0; 1; 2]});
+  res := my_asset["id"].c.sum(v);
+}

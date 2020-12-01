@@ -1,9 +1,7 @@
 archetype simple
 
-variable n : int = 0
+variable n : nat = 0
 
 entry exec () {
-  effect {
-    n := 2
-  }
+  n := 2
 }

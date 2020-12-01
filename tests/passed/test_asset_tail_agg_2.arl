@@ -1,0 +1,26 @@
+archetype test_asset_tail_agg_2
+
+asset o_asset identified by id {
+  id : nat;
+  s : string;
+  b : bool;
+} initialized by {
+  {0; "mystr0"; true};
+  {1; "mystr1"; true};
+  {2; "mystr2"; true}
+}
+
+asset my_asset {
+  mid : string;
+  c : aggregate<o_asset>;
+} initialized by {
+  {"id"; []}
+}
+
+variable res : list<nat> = []
+
+entry exec (n : nat) {
+  my_asset.update("id", {c = [0; 1; 2]});
+  res := my_asset["id"].c.tail(n);
+}
+

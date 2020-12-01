@@ -1,0 +1,16 @@
+archetype test_asset_sum_coll_rat
+
+asset my_asset identified by id {
+  id : string;
+  value : rational;
+} initialized by {
+  {"id0"; 0.0};
+  {"id1"; 0.1};
+  {"id2"; 0.2}
+}
+
+variable res : rational = 0.0
+
+entry exec () {
+  res := my_asset.sum(value)
+}

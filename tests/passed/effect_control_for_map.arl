@@ -1,10 +1,10 @@
 archetype effect_control_for_map
 
-variable res : int = 0
+variable res : nat = 0
 
 entry exec () {
   effect {
-    var m : map<string, nat> = [];
+    var m : map<string, nat> = [("id0", 0); ("id1", 1); ("id2", 2)];
     res := 0;
     for (k, v) in m do
       res += v;

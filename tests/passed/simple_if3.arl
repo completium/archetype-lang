@@ -1,0 +1,14 @@
+archetype simple_if3
+
+variable str : string = ""
+variable n   : nat    = 0
+variable i   : int    = 0
+
+entry exec (a : int) {
+  if (a = 0) then (
+    str := "mystr";
+    i := 1i
+  ) else (
+    n := 4
+  )
+}

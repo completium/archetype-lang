@@ -1,0 +1,7 @@
+archetype decomp_ifexpr
+
+variable n : nat = 0
+
+entry exec (b : bool) {
+  n := if b then 2 else 3
+}

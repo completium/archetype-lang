@@ -12,16 +12,16 @@ let pp_literal fmt (l : literal) =
   | Lint      n -> Format.fprintf fmt "%s" (Big_int.string_of_big_int n)
   | Lnat      n -> Format.fprintf fmt "%sn" (Big_int.string_of_big_int n)
   | Ldecimal  n -> Format.fprintf fmt "%s" n
-  | Ltz       n -> Format.fprintf fmt "%stz"   (Big_int.string_of_big_int n)
-  | Lmtz      n -> Format.fprintf fmt "%smtz"  (Big_int.string_of_big_int n)
-  | Lutz      n -> Format.fprintf fmt "%sutz"  (Big_int.string_of_big_int n)
+  | Ltz       n -> Format.fprintf fmt "%stz"  n
+  | Lmtz      n -> Format.fprintf fmt "%smtz" n
+  | Lutz      n -> Format.fprintf fmt "%sutz" n
   | Laddress  a -> Format.fprintf fmt "%s" a
   | Lstring   s -> Format.fprintf fmt "\"%s\"" s
   | Lbool     b -> Format.fprintf fmt "%s" (if b then "true" else "false")
   | Lduration d -> Format.fprintf fmt "%s" d
   | Ldate     d -> Format.fprintf fmt "%s" d
   | Lbytes    s -> Format.fprintf fmt "0x%s" s
-  | Lpercent  n -> Format.fprintf fmt "%s%%"  (Big_int.string_of_big_int n)
+  | Lpercent  n -> Format.fprintf fmt "%s%%" n
 
 let pp_expr fmt e =
   match unloc e with
@@ -33,7 +33,7 @@ let pp_archetype fmt pt =
     let decls =  List.map unloc es in
 
     let pp_title fmt _ =
-      let name = List.fold_left (fun accu -> function | Darchetype (x, _) -> unloc x | _ -> accu) "" decls in
+      let name = List.fold_left (fun accu -> function | Darchetype (x, _, _) -> unloc x | _ -> accu) "" decls in
       Format.fprintf fmt "# %a@\n\
                           > Genrated with [Archetype](%a) v%a@\n@\n" (* date ? *)
         pp_str name
@@ -58,8 +58,8 @@ let pp_archetype fmt pt =
           pp_id id
           (fun fmt ->
              function
-             | VKvariable -> pp_str fmt "variable"
-             | VKconstant -> pp_str fmt "constant") variable_kind
+             | VKvariable  -> pp_str fmt "variable"
+             | VKconstant  -> pp_str fmt "constant") variable_kind
           (pp_option pp_expr) dv
           (fun fmt xs ->
              if Option.is_none xs
@@ -71,7 +71,7 @@ let pp_archetype fmt pt =
           ) exts
       in
       let roles : variable_decl list =
-        List.fold_right (fun x accu -> x |> unloc |> function | Dvariable ((_, {pldesc = Tref {pldesc = "role"}; _}, _, _, _, _) as a) -> a::accu | _ -> accu) es []
+        List.fold_right (fun x accu -> x |> unloc |> function | Dvariable ((_, ({pldesc = Tref {pldesc = "role"}; _}, _), _, _, _, _) as a) -> a::accu | _ -> accu) es []
       in
       match roles with
       | [] -> ()

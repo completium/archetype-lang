@@ -1,0 +1,11 @@
+archetype effect_control_match_list
+
+variable res : nat = 0
+
+entry exec() {
+  var l : list<nat> = [1];
+  match_list l with
+  | hd::t -> res := hd
+  | []    -> fail("KO")
+  end
+}

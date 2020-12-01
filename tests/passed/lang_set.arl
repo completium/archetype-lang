@@ -5,10 +5,10 @@ entry exec () {
     var my_set : set<nat> = [0; 1 ; 2; 3];
 
     (* expr *)
-    var new_set2 : set<nat> = set_add (my_set, 4);
-    var new_set3 : set<nat> = set_remove(my_set, 0);
-    var set_c    : bool     = set_contains(my_set, 2);
-    var c        : int      = set_length(my_set);
+    var new_set2 : set<nat> = add (my_set, 4);
+    var new_set3 : set<nat> = remove(my_set, 0);
+    var set_c    : bool     = contains(my_set, 2);
+    var c        : int      = length(my_set);
 
     (* control *)
     var res : int = 0;

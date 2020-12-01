@@ -14,16 +14,10 @@ asset my_asset identified by id {
   {"id2"; 2; []}
 }
 
-variable res : int = 0
-
 entry pre_exec () {
-  effect {
-    my_asset["id0"].col.add({"oid"})
-  }
+  my_asset["id0"].col.add({"oid"})
 }
 
 entry exec () {
-  effect {
-    my_asset["id0"].col.remove("oid")
-  }
+  my_asset["id0"].col.remove("oid")
 }

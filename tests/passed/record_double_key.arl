@@ -1,0 +1,13 @@
+archetype record_double_key
+
+asset my_asset identified by a b {
+  a : nat;
+  b : address;
+  c : nat = 0;
+  d : nat = 0;
+}
+
+entry exec() {
+  var z = (0, caller);
+  my_asset.addupdate(z, { c += 2 });
+}

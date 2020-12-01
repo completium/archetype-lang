@@ -1,0 +1,11 @@
+archetype simple_record_lit
+
+record my_record {
+  id : string;
+  v  : nat;
+}
+
+entry exec () {
+  var r : my_record = { id = "id"; v = 0 };
+  dorequire(r.v = 0, "ko")
+}

@@ -1,0 +1,23 @@
+archetype test_list_mynth
+
+variable res : string = ""
+
+function mynth(l : list<string>, idx : nat) : string {
+  var m : map<nat, string> = [];
+  var i : nat = 0;
+  for e in l do
+    m := put(m, i, e);
+    i += 1;
+  done;
+  return m[idx]
+}
+
+entry exec () {
+  specification {
+    s0: res = "2";
+  }
+  effect {
+    var l : list<string> = ["1"; "2"; "3"];
+    res := mynth(l, 1)
+  }
+}

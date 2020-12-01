@@ -1,0 +1,7 @@
+archetype fail_while
+
+entry f () {
+  while (true) do
+    fail ("OK")
+  done
+}

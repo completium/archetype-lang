@@ -1,0 +1,11 @@
+archetype simple_assign3
+
+variable n : nat    = 0
+variable s : string = ""
+variable i : int    = 0
+
+entry exec () {
+  i := 5 - 1;
+  n := 1 + 2;
+  s := "a" + "b"
+}

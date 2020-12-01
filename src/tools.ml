@@ -30,6 +30,28 @@ let pair x y = (x, y)
 
 let (%>) f g = fun x -> g (f x)
 
+let foldi f accu n =
+  let rec aux f accu n =
+    if n <= 0
+    then accu
+    else aux f (f accu) (n - 1)
+  in
+  aux f accu n
+
+(* -------------------------------------------------------------------- *)
+
+(* since 4.08 *)
+module Bool : sig
+  val compare : bool -> bool -> int
+end = struct
+  let compare a b =
+    match a, b with
+    | false, false -> 0
+    | false, true  -> -1
+    | true,  false -> 1
+    | true,  true  -> 0
+end
+
 (* -------------------------------------------------------------------- *)
 module String : sig
   include module type of String
@@ -212,9 +234,14 @@ module List : sig
   val assoc_all     : 'a -> ('a * 'b) list -> 'b list
   val index_of      : ('a -> bool) -> 'a list -> int
   val dedup         : 'a list -> 'a list
+  val dedupcmp      : ('a -> 'a -> bool) -> 'a list -> 'a list
   val last          : 'a list -> 'a
   val for_all2      : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
   val count         : ('a -> bool) -> 'a list -> int
+  val split3        : ('a * 'b * 'c) list -> 'a list * 'b list * 'c list
+  val sub           : int -> int -> 'a list -> 'a list
+  val cut           : int -> 'a list -> ('a list * 'a list)
+  val put           : 'a -> 'b -> ('a * 'b) list -> ('a * 'b) list
 
   module Exn : sig
     val assoc     : 'a -> ('a * 'b) list -> 'b option
@@ -332,6 +359,13 @@ end = struct
       else e::(dedup tl)
     | [] -> []
 
+  let rec dedupcmp cmp = function
+    | e::tl ->
+      if List.exists (cmp e) tl then
+        dedupcmp cmp tl
+      else e::(dedupcmp cmp tl)
+    | [] -> []
+
   let rec last = function
     | [] -> raise Not_found
     | [e] -> e
@@ -350,9 +384,33 @@ end = struct
 
   let count (f : 'a -> bool) =
     let rec doit acc = function
-      | []      -> acc 
+      | []      -> acc
       | x :: xs -> doit (acc + if f x then 1 else 0) xs
     in fun xs -> doit 0 xs
+
+  let rec split3 = function
+      [] -> ([], [], [])
+    | (x,y,z)::l ->
+      let (rx, ry, rz) = split3 l in (x::rx, y::ry, z::rz)
+
+  let rec sub s e = function
+    | _    when e = 0 -> []
+    | [] -> invalid_arg "List.sub"
+    | _::t when s > 0 -> sub (s - 1) (e - 1) t
+    | h::t -> h::(sub (s - 1) (e - 1) t)
+
+  let cut n l =
+    let rec aux idx accu l =
+      match l with
+      | _ when idx = 0 -> accu, l
+      | i::t -> aux (idx - 1) (accu @ [i]) t
+      | _ -> invalid_arg "List.cut"
+    in
+    aux n [] l
+
+  let rec put k v = function
+      [] -> [k, v]
+    | (a, b)::l -> if compare a k = 0 then (k, v)::l else (a, b)::(put k v l)
 
   module Exn = struct
     let assoc x xs =

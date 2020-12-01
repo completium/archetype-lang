@@ -17,7 +17,7 @@ variable res : int = 0
 
 entry exec () {
   specification {
-    s0: res = 5;
+    s0: res = 0;
   }
   effect {
     res := 0;

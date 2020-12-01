@@ -1,0 +1,13 @@
+archetype expr_list_head_tail
+
+variable res : string * list<string> = ("", [])
+
+entry exec () {
+  specification {
+    s0: res = ("1", ["2"; "3"]);
+  }
+  effect {
+    var l : list<string> = ["1"; "2"; "3"];
+    res := head_tail(l);
+  }
+}

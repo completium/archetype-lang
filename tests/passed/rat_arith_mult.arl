@@ -1,0 +1,7 @@
+archetype rat_arith_mult
+
+variable res : rational = 0.0
+
+entry exec (r : rational) {
+  res := r * 0.5
+}

@@ -1,0 +1,13 @@
+archetype custom_args_with_record
+
+variable res : nat = 0
+
+record my_arg {
+  a: int;
+  b: nat;
+  c: address;
+} as (((x, %_), z))
+
+entry exec (p : my_arg) {
+  res := p.b
+}

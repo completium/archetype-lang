@@ -1,0 +1,7 @@
+archetype rat_arith_uminus
+
+variable res : rational = 0.0
+
+entry exec (r : rational) {
+  res := -r
+}

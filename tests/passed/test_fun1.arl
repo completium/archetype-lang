@@ -1,0 +1,15 @@
+archetype test_fun1
+
+asset sig {
+   id : string;
+}
+
+function f() : bool {
+  var b = min (0, 1);
+
+  return true
+}
+
+entry e() {
+  ()
+}

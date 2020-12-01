@@ -1,0 +1,9 @@
+archetype test_iter
+
+variable res : int = 0
+
+entry exec (s : int, e : int) {
+  iter i from s to e do
+    res += i
+  done
+}

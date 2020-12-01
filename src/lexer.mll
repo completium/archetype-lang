@@ -25,9 +25,11 @@
       "archetype"           , ARCHETYPE      ;
       "assert"              , ASSERT         ;
       "asset"               , ASSET          ;
+      "as"                  , AS             ;
       "at"                  , AT             ;
       "before"              , BEFORE         ;
-      "break"               , BREAK          ;
+      "begin"               , BEGIN          ;
+      "big_map"             , BIG_MAP        ;
       "but"                 , BUT            ;
       "by"                  , BY             ;
       "call"                , CALL           ;
@@ -45,17 +47,18 @@
       "end"                 , END            ;
       "entry"               , ENTRY          ;
       "entrypoint"          , ENTRYPOINT     ;
-      "entrysig"            , ENTRYSIG       ;
       "enum"                , ENUM           ;
       "exists"              , EXISTS         ;
       "extension"           , EXTENSION      ;
       "fail"                , FAIL           ;
       "failif"              , FAILIF         ;
+      "fails"               , FAILS          ;
       "false"               , FALSE          ;
       "for"                 , FOR            ;
       "forall"              , FORALL         ;
       "from"                , FROM           ;
       "function"            , FUNCTION       ;
+      "getter"              , GETTER         ;
       "identified"          , IDENTIFIED     ;
       "if"                  , IF             ;
       "in"                  , IN             ;
@@ -64,9 +67,15 @@
       "invariant"           , INVARIANT      ;
       "iter"                , ITER           ;
       "label"               , LABEL          ;
+      "lambda"              , LAMBDA         ;
+      "left"                , LEFT           ;
       "let"                 , LET            ;
       "list"                , LIST           ;
+      "loop_left"           , LOOP_LEFT;
       "map"                 , MAP            ;
+      "match_list"          , MATCH_LIST     ;
+      "match_option"        , MATCH_OPTION   ;
+      "match_or"            , MATCH_OR       ;
       "match"               , MATCH          ;
       "namespace"           , NAMESPACE      ;
       "none"                , NONE           ;
@@ -84,9 +93,10 @@
       "removed"             , REMOVED        ;
       "require"             , REQUIRE        ;
       "return"              , RETURN         ;
+      "right"               , RIGHT          ;
       "security"            , SECURITY       ;
-      "set"                 , SET            ;
       "self"                , SELF           ;
+      "set"                 , SET            ;
       "shadow"              , SHADOW         ;
       "some"                , SOME           ;
       "sorted"              , SORTED         ;
@@ -97,14 +107,17 @@
       "transfer"            , TRANSFER       ;
       "transition"          , TRANSITION     ;
       "true"                , TRUE           ;
+      "type"                , TYPE           ;
       "unmoved"             , UNMOVED        ;
       "unpack"              , UNPACK         ;
       "use"                 , USE            ;
       "var"                 , VAR            ;
-      "view"                , VIEW           ;
       "variable"            , VARIABLE       ;
+      "view"                , VIEW           ;
       "when"                , WHEN           ;
+      "while"               , WHILE          ;
       "with"                , WITH           ;
+      "xor"                 , XOR
     ]
 
   let () =
@@ -117,14 +130,14 @@ let blank    = [' ' '\t' '\r']
 let newline  = '\n'
 let digit    = ['0'-'9']
 let dec      = digit+ '.' digit+
-let tz       = digit+ "tz"
-let mtz      = digit+ "mtz"
-let utz      = digit+ "utz"
+let tz       = (digit+ | dec) "tz"
+let mtz      = (digit+ | dec) "mtz"
+let utz      = (digit+ | dec) "utz"
 let pep515_item = '_' digit digit digit
 let pep515   = digit? digit? digit pep515_item+
 let var      = "<%" ['a'-'z' 'A'-'Z'] ['a'-'z' 'A'-'Z' '0'-'9' '_' ]* '>'
 let ident    = (['a'-'z' 'A'-'Z'] | var)  (['a'-'z' 'A'-'Z' '0'-'9' '_' ] | var)*
-let pident   = '%' ident
+let pident   = '%' ['a'-'z' 'A'-'Z' '0'-'9' '_' ]+
 let address  = '@'['a'-'z' 'A'-'Z' '0'-'9' '_' ]+
 let duration = (digit+ 'w')? (digit+ 'd')? (digit+ 'h')? (digit+ 'm')? (digit+ 's')?
 let day      = digit digit digit digit '-' digit digit '-' digit digit
@@ -134,7 +147,7 @@ let date     = day ('T' hour ( timezone )?)?
 let accept_transfer = "accept" blank+ "transfer"
 let refuse_transfer = "refuse" blank+ "transfer"
 let bytes    = "0x" ['0'-'9' 'a'-'f' 'A'-'F']+
-let percent  = digit+ "%"
+let percent  = (digit+ | dec) "%"
 
 (* -------------------------------------------------------------------- *)
 rule token = parse
@@ -147,10 +160,10 @@ rule token = parse
   | "@remove"             { AT_REMOVE }
   | "@update"             { AT_UPDATE }
   | ident as id           { try  Hashtbl.find keywords id with Not_found -> IDENT id }
-  | pident as id          { IDENT (String.sub id 1 ((String.length id) - 1)) }
-  | tz as t               { TZ   (Big_int.big_int_of_string (String.sub t 0 ((String.length t) - 2))) }
-  | mtz as t              { MTZ  (Big_int.big_int_of_string (String.sub t 0 ((String.length t) - 3))) }
-  | utz as t              { UTZ  (Big_int.big_int_of_string (String.sub t 0 ((String.length t) - 3))) }
+  | pident as id          { PIDENT (String.sub id 1 ((String.length id) - 1)) }
+  | tz as t               { TZ   (String.sub t 0 ((String.length t) - 2)) }
+  | mtz as t              { MTZ  (String.sub t 0 ((String.length t) - 3)) }
+  | utz as t              { UTZ  (String.sub t 0 ((String.length t) - 3)) }
   | dec as input          { DECIMAL (input) }
   | (digit+ as n) 'i'     { NUMBERINT (Big_int.big_int_of_string n) }
   | (digit+ as n)         { NUMBERNAT (Big_int.big_int_of_string n) }
@@ -160,7 +173,7 @@ rule token = parse
   | duration as d         { DURATION (d) }
   | date as d             { DATE (d) }
   | bytes as v            { BYTES (String.sub v 2 ((String.length v) - 2)) }
-  | percent as v          { PERCENT_LIT (Big_int.big_int_of_string (String.sub v 0 ((String.length v) - 1))) }
+  | percent as v          { PERCENT_LIT (String.sub v 0 ((String.length v) - 1)) }
 
 
   | "//"                  { comment_line lexbuf; token lexbuf }
@@ -178,6 +191,7 @@ rule token = parse
   | ":="                  { COLONEQUAL }
   | ","                   { COMMA }
   | ":"                   { COLON }
+  | "::"                  { COLONCOLON }
   | ";"                   { SEMI_COLON }
   | "%"                   { PERCENT }
   | "|"                   { PIPE }

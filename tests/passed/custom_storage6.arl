@@ -1,0 +1,15 @@
+archetype custom_storage6
+
+variable res : nat = 0
+
+record my_record {
+  a: int;
+  b: nat;
+  c: address;
+} as (((x, %_), z))
+
+variable r : my_record = {1i; 2; @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg}
+
+entry exec () {
+  r := {r with a = 11i; b = 22}
+}

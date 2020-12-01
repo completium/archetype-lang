@@ -1,0 +1,14 @@
+archetype test_tuple_access_3
+
+variable rid : string = ""
+variable rv  : int    = 0i
+variable rb  : bool   = false
+variable rn  : nat    = 0
+
+entry exec () {
+  var lit1 : (string * int * bool * nat) = ("mystr", 2i, true, 3);
+  rid := lit1[0];
+  rv  := lit1[1];
+  rb  := lit1[2];
+  rn  := lit1[3]
+}

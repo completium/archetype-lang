@@ -8,6 +8,6 @@ entry exec () {
   }
   effect {
     var m : map<nat, string> = [(0, "0")];
-    res := map_contains(m, 0);
+    res := contains(m, 0);
   }
 }

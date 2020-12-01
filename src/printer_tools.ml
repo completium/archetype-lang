@@ -40,7 +40,7 @@ let pp_no_empty_list2 pp fmt l =
   else Format.fprintf fmt "%a@\n" (pp_no_empty_list pp) l
 
 (* -------------------------------------------------------------------------- *)
-let pp_ident = pp_str
+let pp_ident fmt str = Format.fprintf fmt "%s" str
 
 let pp_id fmt (id : lident) =
   Format.fprintf fmt "%s" (unloc id)
@@ -111,10 +111,10 @@ let pp_bin fmt _ = Format.fprintf fmt "archetype %a" pp_version ()
 
 let pp_fail_type f fmt = function
   | Model.Invalid e -> f fmt e
-  | Model.InvalidCaller -> Format.fprintf fmt "\"invalid caller\""
+  | Model.InvalidCaller -> Format.fprintf fmt "\"InvalidCaller\""
   | Model.InvalidCondition c ->
     Format.fprintf fmt "\"require %afailed\""
       (pp_option (pp_postfix " " pp_str)) c
-  | Model.NoTransfer -> Format.fprintf fmt "\"no transfer\""
+  | Model.NoTransfer -> Format.fprintf fmt "\"NoTransfer\""
   | Model.AssignNat -> Format.fprintf fmt "\"cannot assign negative value to nat\""
-  | Model.InvalidState -> Format.fprintf fmt "\"invalid state\""
+  | Model.InvalidState -> Format.fprintf fmt "\"InvalidState\""

@@ -14,8 +14,6 @@ type container =
 [@@deriving show {with_path = false}]
 
 type currency =
-  | Tz
-  | Mtz
   | Utz
 [@@deriving show {with_path = false}]
 
@@ -51,24 +49,28 @@ type ptyp =
   | Trecord of lident
   | Tenum of lident
   | Tbuiltin of vtyp
-  | Tcontainer of ptyp * container
-  | Tset of ptyp
-  | Tlist of ptyp
-  | Tmap of ptyp * ptyp
-  | Ttuple of ptyp list
-  | Toption of ptyp
+  | Tcontainer of type_ * container
+  | Tset of type_
+  | Tlist of type_
+  | Tmap of type_ * type_
+  | Tbig_map of type_ * type_
+  | Tor of type_ * type_
+  | Tlambda of type_ * type_
+  | Ttuple of type_ list
+  | Toption of type_
   | Toperation
-  | Tentrysig of ptyp
+  | Tcontract of type_
   | Ttrace of trtyp
 [@@deriving show {with_path = false}]
 
-type type_ = ptyp (* type of pterm *)
+and type_ = ptyp (* * lident option *) (* type of pterm *)
 [@@deriving show {with_path = false}]
 
 (* operators and constants *)
 type logical_operator =
   | And
   | Or
+  | Xor
   | Imply
   | Equiv
 [@@deriving show {with_path = false}]
@@ -102,7 +104,6 @@ type arithmetic_operator =
 [@@deriving show {with_path = false}]
 
 type unary_arithmetic_operator =
-  | Uplus
   | Uminus
 [@@deriving show {with_path = false}]
 
@@ -133,6 +134,7 @@ type const =
   | Cresult
   | Cchainid
   | Coperations
+  | Cmetadata
   (* function *)
   | Cadd
   | Caddupdate
@@ -162,6 +164,8 @@ type const =
   | Cupdate
   | Cmkoperation
   | Ctostring
+  | Cexec
+  | Capply
   (* set *)
   | Csadd
   | Csremove
@@ -172,6 +176,8 @@ type const =
   | Ctail
   | Cabs
   | Cprepend
+  | Cheadtail
+  | Creverse
   (* map *)
   | Cmput
   | Cmremove
@@ -201,7 +207,7 @@ type const =
 
 type ('node) struct_poly = {
   node : 'node;                   (* kind of object *)
-  type_ : ptyp option;            (* type of object *)
+  type_ : type_ option;            (* type of object *)
   label : ident option;           (* label (typically for instruction) *)
   loc : Location.t [@opaque];     (* location of object *)
 }
@@ -305,6 +311,11 @@ type 'id term_node  =
   | Pquantifer of quantifier * 'id * ('id term_gen option * type_) * 'id term_gen
   | Pif of ('id term_gen * 'id term_gen * 'id term_gen)
   | Pmatchwith of 'id term_gen * ('id pattern_gen * 'id term_gen) list
+  | Pmatchoption of 'id term_gen * 'id * 'id term_gen * 'id term_gen
+  | Pmatchor     of 'id term_gen * 'id * 'id term_gen * 'id * 'id term_gen
+  | Pmatchlist   of 'id term_gen * 'id * 'id * 'id term_gen * 'id term_gen
+  | Ploopleft    of 'id term_gen * 'id * 'id term_gen
+  | Pmap         of 'id term_gen * 'id * 'id term_gen
   | Pcall of ('id term_gen option * 'id call_kind * ('id term_arg) list)
   | Plogical of logical_operator * 'id term_gen * 'id term_gen
   | Pnot of 'id term_gen
@@ -313,8 +324,9 @@ type 'id term_node  =
   | Parith of arithmetic_operator * 'id term_gen * 'id term_gen
   | Puarith of unary_arithmetic_operator * 'id term_gen
   | Precord of 'id term_gen list
-  | Pletin of 'id * 'id term_gen * ptyp option * 'id term_gen * 'id term_gen option (* ident * init * type * body * otherwise *)
-  | Pdeclvar of 'id * ptyp option * 'id term_gen
+  | Precupdate of 'id term_gen * ('id * 'id term_gen) list
+  | Pletin of 'id * 'id term_gen * type_ option * 'id term_gen * 'id term_gen option (* ident * init * type * body * otherwise *)
+  | Pdeclvar of 'id * type_ option * 'id term_gen
   | Pvar of var_temporality * vset * 'id
   | Parray of 'id term_gen list
   | Plit of bval
@@ -324,14 +336,17 @@ type 'id term_node  =
   | Ptupleaccess of 'id term_gen * Core.big_int
   | Pnone
   | Psome of 'id term_gen
-  | Pcast of ptyp * ptyp * 'id term_gen
+  | Pleft of type_ * 'id term_gen
+  | Pright of type_ * 'id term_gen
+  | Plambda of type_ * 'id * type_ * 'id term_gen
+  | Pcast of type_ * type_ * 'id term_gen
   | Pself of 'id
-  | Pentrypoint of ptyp * 'id * 'id term_gen
+  | Pentrypoint of type_ * 'id * 'id term_gen
 [@@deriving show {with_path = false}]
 
 and 'id term_arg =
   | AExpr    of 'id term_gen
-  | AFun     of 'id * ptyp * ('id * ptyp * 'id term_gen) list * 'id term_gen
+  | AFun     of 'id * type_ * ('id * type_ * 'id term_gen) list * 'id term_gen
   | AEffect  of ('id * operator * 'id term_gen) list
   | ASorting of bool * 'id
 [@@deriving show {with_path = false}]
@@ -360,23 +375,27 @@ type 'id instruction_poly = {
 [@@deriving show {with_path = false}]
 
 and 'id transfer_t =
-  | TTsimple   of 'id term_gen
-  | TTcontract of 'id term_gen * 'id * type_ * 'id term_gen
-  | TTentry    of 'id term_gen * 'id term_gen
-  | TTself     of 'id * ('id * 'id term_gen) list
+  | TTsimple    of 'id term_gen * 'id term_gen
+  | TTcontract  of 'id term_gen * 'id term_gen * 'id * type_ * 'id term_gen
+  | TTentry     of 'id term_gen * 'id term_gen * 'id term_gen
+  | TTself      of 'id term_gen * 'id * ('id * 'id term_gen) list
+  | TToperation of 'id term_gen
 
 and 'id instruction_node =
   | Iif of ('id term_gen * 'id instruction_gen * 'id instruction_gen)               (* condition * then_ * else_ *)
-  | Ifor of ('id for_ident * 'id term_gen * 'id instruction_gen)                              (* id * collection * body *)
+  | Ifor of ('id for_ident * 'id term_gen * 'id instruction_gen)                    (* id * collection * body *)
   | Iiter of ('id * 'id term_gen* 'id term_gen * 'id instruction_gen)               (* id * bound_min * bound_max * body *)
+  | Iwhile of ('id term_gen * 'id instruction_gen)                                  (* condition * body *)
   | Iletin of ('id * 'id term_gen * 'id instruction_gen)                            (* id * init * body *)
   | Ideclvar of 'id * 'id term_gen                                                  (* id * init *)
   | Iseq of 'id instruction_gen list                                                (* lhs ; rhs *)
-  | Imatchwith of 'id term_gen * ('id pattern_gen * 'id instruction_gen) list       (* match term with ('pattern * 'id instruction_gen) list *)
-  | Iassign of (assignment_operator * ptyp * 'id lvalue_gen * 'id term_gen)         (* $2 assignment_operator $3 *)
+  | Imatchwith   of 'id term_gen * ('id pattern_gen * 'id instruction_gen) list     (* match term with ('pattern * 'id instruction_gen) list *)
+  | Imatchoption of 'id term_gen * 'id * 'id instruction_gen * 'id instruction_gen
+  | Imatchor     of 'id term_gen * 'id * 'id instruction_gen * 'id * 'id instruction_gen
+  | Imatchlist   of 'id term_gen * 'id * 'id * 'id instruction_gen * 'id instruction_gen
+  | Iassign of (assignment_operator * type_ * 'id lvalue_gen * 'id term_gen)         (* $2 assignment_operator $3 *)
   | Irequire of (bool * 'id term_gen * 'id term_gen)                                               (* $1 ? require : failif *)
-  | Itransfer of ('id term_gen * 'id transfer_t)
-  | Ibreak
+  | Itransfer of ('id transfer_t)
   | Icall of ('id term_gen option * 'id call_kind * ('id term_arg) list)
   | Ireturn of 'id term_gen
   | Ilabel of 'id
@@ -398,7 +417,7 @@ and lvalue = lident lvalue_gen
 
 type 'id decl_gen = {
   name    : 'id;
-  typ     : ptyp option;
+  typ     : type_ option;
   default : 'id term_gen option;
   shadow  : bool;
   loc     : Location.t [@opaque];
@@ -415,11 +434,16 @@ type 'id label_term = {
 }
 [@@deriving show {with_path = false}]
 
+type variable_kind =
+  | VKconstant
+  | VKvariable
+[@@deriving show {with_path = false}]
+
 type 'id variable = {
-  decl         : 'id decl_gen; (* TODO *)
-  constant     : bool;
-  invs         : 'id label_term list;
-  loc          : Location.t [@opaque];
+  decl : 'id decl_gen; (* TODO *)
+  kind : variable_kind;
+  invs : 'id label_term list;
+  loc  : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
@@ -437,6 +461,15 @@ type 'id definition = {
   var  : 'id;
   body : 'id term_gen;
   loc  : Location.t [@opaque];
+}
+[@@deriving show {with_path = false}]
+
+type 'id fail = {
+  label: 'id;
+  arg: 'id;
+  atype: type_;
+  formula: 'id term_gen;
+  loc: Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
@@ -463,9 +496,19 @@ type 'id assert_ = {
 }
 [@@deriving show {with_path = false}]
 
+type 'id parameter = {
+  name    : 'id;
+  typ     : type_;
+  default : 'id term_gen option;
+  value   : 'id term_gen option;
+  loc     : Location.t [@opaque];
+}
+[@@deriving show {with_path = false}]
+
 type 'id specification = {
   predicates  : 'id predicate list;
   definitions : 'id definition list;
+  fails       : 'id fail list;
   lemmas      : 'id label_term list;
   theorems    : 'id label_term list;
   variables   : 'id variable list;
@@ -521,12 +564,18 @@ type security = {
 }
 [@@deriving show {with_path = false}]
 
+type fun_kind =
+  | FKfunction
+  | FKgetter
+[@@deriving show {with_path = false}]
+
 type 'id function_struct = {
   name          : 'id;
+  kind          : fun_kind;
   args          : ('id decl_gen) list;
   body          : 'id instruction_gen;
   specification : 'id specification option;
-  return        : ptyp;
+  return        : type_;
   loc           : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -552,7 +601,7 @@ type rexpr = lident rexpr_gen
 
 type 'id transition = {
   from : 'id sexpr_gen;
-  on   : ('id * ptyp * 'id * ptyp) option; (* key ident * key type * asset name * asset state type *)
+  on   : ('id * type_ * 'id * type_) option; (* key ident * key type * asset name * asset state type *)
   trs  : ('id * 'id term_gen option * 'id instruction_gen option) list; (* to * condition * entry*)
 }
 [@@deriving show {with_path = false}]
@@ -614,9 +663,15 @@ type 'id asset_struct = {
 
 type asset = lident asset_struct
 
+type 'a position =
+  | Pleaf of 'a
+  | Pnode of 'a position list
+[@@deriving show {with_path = false}]
+
 type 'id record_struct = {
   name    : 'id;
   fields  : 'id decl_gen list;
+  pos     : 'id position;
   loc     : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -637,6 +692,7 @@ type 'id fun_ =
 
 type 'id ast_struct = {
   name           : 'id;
+  parameters     : 'id parameter list;
   decls          : 'id decl_ list;
   funs           : 'id fun_ list;
   specifications : 'id specification list;
@@ -647,7 +703,7 @@ type 'id ast_struct = {
 
 and ast = lident ast_struct
 
-(* vtyp -> ptyp *)
+(* vtyp -> type_ *)
 let vtunit       = Tbuiltin (VTunit      )
 let vtbool       = Tbuiltin (VTbool      )
 let vtnat        = Tbuiltin (VTnat       )
@@ -677,14 +733,17 @@ let mk_instr ?label ?(loc = Location.dummy) node =
 let mk_label_term ?label ?error ?(loc = Location.dummy) term =
   { label; term; error; loc }
 
-let mk_variable ?(constant = false) ?(invs = []) ?(loc = Location.dummy) decl =
-  { decl; constant; invs; loc }
+let mk_variable ?(invs = []) ?(loc = Location.dummy) decl kind =
+  { decl; kind; invs; loc }
 
 let mk_predicate ?(args = []) ?(loc = Location.dummy) name body =
   { name; args; body; loc }
 
 let mk_definition ?(loc = Location.dummy) name typ var body =
   { name; typ; var; body; loc }
+
+let mk_fail ?(loc = Location.dummy) label arg atype formula =
+  { label; arg; atype; formula; loc }
 
 let mk_invariant ?(formulas = []) label =
   { label; formulas }
@@ -695,11 +754,11 @@ let mk_postcondition ?(invariants = []) ?(uses = []) name formula =
 let mk_assert ?(invariants = []) ?(uses = []) name label formula =
   { name; label; formula; invariants; uses }
 
-let mk_specification ?(predicates = []) ?(definitions = []) ?(lemmas = []) ?(theorems = []) ?(variables = []) ?(invariants = []) ?effect ?(specs = []) ?(asserts = []) ?(loc = Location.dummy) () =
-  { predicates; definitions; lemmas; theorems; variables; invariants; effect; specs; asserts; loc}
+let mk_specification ?(predicates = []) ?(definitions = []) ?(fails = []) ?(lemmas = []) ?(theorems = []) ?(variables = []) ?(invariants = []) ?effect ?(specs = []) ?(asserts = []) ?(loc = Location.dummy) () =
+  { predicates; definitions; fails; lemmas; theorems; variables; invariants; effect; specs; asserts; loc}
 
-let mk_function_struct ?(args = []) ?specification ?(loc = Location.dummy) name body return =
-  { name; args; body; specification; return; loc }
+let mk_function_struct ?(args = []) ?specification ?(loc = Location.dummy) name kind body return =
+  { name; kind; args; body; specification; return; loc }
 
 let mk_transition ?on ?(trs = []) from =
   { from; on; trs }
@@ -719,8 +778,8 @@ let mk_decl ?typ ?default ?(shadow=false) ?(loc = Location.dummy) name =
 let mk_asset ?(fields = []) ?(keys = []) ?(sort = []) ?(big_map = false) ?state ?(init = []) ?(specs = []) ?(loc = Location.dummy) name   =
   { name; fields; keys; sort; big_map; state; init; specs; loc }
 
-let mk_model ?(decls = []) ?(funs = []) ?(specifications = []) ?(securities = []) ?(loc = Location.dummy) name =
-  { name; decls; funs; specifications; securities; loc }
+let mk_model ?(parameters = []) ?(decls = []) ?(funs = []) ?(specifications = []) ?(securities = []) ?(loc = Location.dummy) name =
+  { name; parameters; decls; funs; specifications; securities; loc }
 
 let mk_id type_ id : qualid =
   { type_ = Some type_;
@@ -740,6 +799,8 @@ module Utils : sig
   val is_variable               : ast -> lident -> bool
   val is_asset                  : ast -> lident -> bool
   val is_enum_value             : ast -> lident -> bool
+  val is_parameter              : ast -> lident -> bool
+  val is_definition             : ast -> lident -> bool
   val get_var_type              : ast -> lident -> type_
   val get_enum_name             : lident enum_struct -> lident
 
@@ -763,6 +824,24 @@ end = struct
   let get_variables ast = List.fold_right (fun (x : 'id decl_) accu -> match x with Dvariable x ->  x::accu | _ -> accu ) ast.decls []
   let get_assets ast    = List.fold_right (fun (x : 'id decl_) accu -> match x with Dasset x    ->  x::accu | _ -> accu ) ast.decls []
   let get_enums ast     = List.fold_right (fun (x : 'id decl_) accu -> match x with Denum x     ->  x::accu | _ -> accu ) ast.decls []
+
+  let get_definitions (ast : ast) =
+    let for_spec s = s.definitions in
+    let for_spec_accu accu s =
+      accu @ for_spec s
+    in
+    let for_spec_accu_opt accu s =
+      Option.map_dfl (fun x -> for_spec_accu accu x) accu s
+    in
+    []
+    |> (fun acc -> List.fold_left (fun accu (fu : 'id fun_) ->
+        let s =
+          match fu with
+          | Ffunction fs -> fs.specification
+          | Ftransaction ts -> ts.specification
+        in
+        for_spec_accu_opt accu s) acc ast.funs)
+    |> fun acc -> List.fold_left (fun accu s -> for_spec_accu accu s) acc ast.specifications
 
   let get_asset_opt ast asset_name : asset option =
     let id = unloc asset_name in
@@ -834,6 +913,13 @@ end = struct
         else accu
     ) None (get_enums ast)
 
+  let get_definition ast ident =
+    List.fold_left (fun accu (x : 'id definition) ->
+        if (Location.unloc x.name) = (Location.unloc ident)
+        then Some x
+        else accu
+      ) None (get_definitions ast)
+
   let get_variable_opt ast ident : 'id variable option =
     List.fold_left (
       fun accu (x : 'id variable) ->
@@ -852,10 +938,18 @@ end = struct
     | Some _ -> true
     | None   -> false
 
+  let is_definition ast ident =
+    match get_definition ast ident with
+    | Some _ -> true
+    | None   -> false
+
   let is_enum_value ast ident =
     match get_enum_values ast ident with
     | Some _ -> true
     | None   -> false
+
+  let is_parameter ast ident =
+    List.exists (fun (x : lident parameter) -> String.equal (unloc ident) (unloc x.name)) ast.parameters
 
   let get_var_type (ast : ast) (ident : lident) : type_ =
     let var : type_ option =

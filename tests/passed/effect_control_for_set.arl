@@ -1,6 +1,6 @@
 archetype effect_control_for_set
 
-variable res : int = 0
+variable res : nat = 0
 
 entry exec () {
   specification {

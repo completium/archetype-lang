@@ -1,0 +1,20 @@
+archetype test_list_contains2
+
+variable rt  : bool = false
+variable rf  : bool = false
+variable rt2 : bool = false
+
+entry exec () {
+  specification {
+    s0: rt = true and rf = false;
+  }
+  effect {
+    var l : list<string> = ["1"; "2"; "3"];
+    rt := contains(l, "2");
+    rf := contains(l, "0");
+
+
+    var l2 : list<nat> = [1; 2; 3];
+    rt2 := contains(l2, 2);
+  }
+}

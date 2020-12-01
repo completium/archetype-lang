@@ -8,6 +8,6 @@ entry exec () {
   }
   effect {
     var l : set<string> = ["1"; "2"; "3"];
-    res := set_contains(l, "2");
+    res := contains(l, "2");
   }
 }

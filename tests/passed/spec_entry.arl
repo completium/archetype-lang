@@ -1,0 +1,11 @@
+archetype spec_entry
+
+entry exec (p : nat) {
+  ()
+}
+
+specification entry exec (p : nat) {
+  postcondition s1 {
+    true
+  }
+}

@@ -1,0 +1,5 @@
+archetype no_passable
+
+entry exec (op : operation) {
+  transfer op at
+}

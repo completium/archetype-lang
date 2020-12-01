@@ -1,0 +1,26 @@
+archetype test_list_mynth2
+
+variable res : string = ""
+
+function mynth(l : list<string>, idx : nat) : string {
+  var ll = l;
+  var r : option<string> = none;
+  var i : nat = 0;
+  while i <= idx do
+    var e : (string * list<string>) = head_tail(ll);
+    r := some(e[0]);
+    ll := e[1];
+    i += 1;
+  done;
+  return opt_get(r)
+}
+
+entry exec () {
+  specification {
+    s0: res = "2";
+  }
+  effect {
+    var l : list<string> = ["1"; "2"; "3"];
+    res := mynth(l, 1)
+  }
+}

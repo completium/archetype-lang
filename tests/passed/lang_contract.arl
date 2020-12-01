@@ -1,0 +1,23 @@
+archetype lang_contract
+
+variable res : int = 0
+
+entry otherentry(i : int) {
+  res := i;
+}
+
+entry exec () {
+  // simple
+  var e1 : contract<unit> = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg;
+  transfer 0tz to entry e1(());
+
+  // dynamically from an address and string
+  var a : address = @KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm;
+  var e2_opt : option<contract<int>> = entrypoint<int>("%an_entry", a);
+  var e2 = opt_get(e2_opt);
+  transfer 0tz to entry e2(2);
+
+  // from
+  var e3 : contract<int> = self.otherentry;
+  transfer 0tz to entry e3(3);
+}

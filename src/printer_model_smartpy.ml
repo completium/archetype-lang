@@ -23,8 +23,6 @@ let pp_model fmt (model : model) =
   in
 
   let pp_currency fmt = function
-    | Tz   -> Format.fprintf fmt "tez"
-    | Mtz  -> emit_error (UnsupportedValue ("Mtz"))
     | Utz  -> Format.fprintf fmt "mutez"
   in
 
@@ -56,7 +54,7 @@ let pp_model fmt (model : model) =
   in
 
   let rec pp_type fmt t =
-    match t with
+    match get_ntype t with
     | Tasset an ->
       let fields : (string * type_) list =
         Utils.get_asset model (unloc an)
@@ -69,7 +67,7 @@ let pp_model fmt (model : model) =
     | Tenum en ->
       Format.fprintf fmt "%a" pp_id en
     | Tbuiltin b -> pp_btyp fmt b
-    | Tcontainer (Tasset an, (Aggregate | Partition)) ->
+    | Tcontainer ((Tasset an, _), (Aggregate | Partition)) ->
       let _, ak = Utils.get_asset_key model (unloc an) in
       Format.fprintf fmt "sp.TSet(%a)"
         pp_type ak
@@ -92,21 +90,27 @@ let pp_model fmt (model : model) =
     | Tmap (true, k, v) ->
       Format.fprintf fmt "(%a, %a) bigmap"
         pp_type k
-        pp_type_ v
+        pp_type v
     | Tmap (false, k, v) ->
       Format.fprintf fmt "(%a, %a) map"
         pp_type k
-        pp_type_ v
+        pp_type v
+    | Tor (l, r) ->
+      Format.fprintf fmt "(%a, %a) or"
+        pp_type l
+        pp_type r
     | Trecord id ->
       Format.fprintf fmt "%a" pp_id id
+    | Tlambda (a, r) ->
+      Format.fprintf fmt "(%a -> %a)" pp_type a pp_type r
     | Tunit ->
       Format.fprintf fmt "unit"
     | Tstorage ->
       Format.fprintf fmt "storage"
     | Toperation ->
       Format.fprintf fmt "operation"
-    | Tentrysig t ->
-      Format.fprintf fmt "entrysig<%a>" pp_type t
+    | Tcontract t ->
+      Format.fprintf fmt "contract<%a>" pp_type t
     | Tprog _
     | Tvset _
     | Ttrace _ -> Format.fprintf fmt "todo"
@@ -338,6 +342,7 @@ let pp_model fmt (model : model) =
     | Lcontains _ -> ()
     | Llength   _ -> ()
     | Lnth      _ -> ()
+    | Lreverse  _ -> ()
 
   in
 
@@ -363,7 +368,6 @@ let pp_model fmt (model : model) =
     | RatArith     -> Format.fprintf fmt "rat_arith"
     | RatUminus    -> Format.fprintf fmt "rat_uminus"
     | RatTez       -> Format.fprintf fmt "rat_to_tez"
-    | DivTez       -> Format.fprintf fmt "divtez"
     | RatDur       -> Format.fprintf fmt "ratdur"
   in
 
@@ -395,8 +399,8 @@ let pp_model fmt (model : model) =
   in
 
   let _pp_pretty_type fmt t =
-    match t with
-    | Ttuple[Tbuiltin Bint; Tbuiltin Bint] -> pp_type fmt (Tbuiltin Brational)
+    match get_ntype t with
+    | Ttuple[(Tbuiltin Bint, _); (Tbuiltin Bnat, _)] -> pp_type fmt (mktype (Tbuiltin Brational))
     | _ -> pp_type fmt t
   in
 
@@ -423,16 +427,18 @@ let pp_model fmt (model : model) =
   in
 
   let pp_prefix_container_kind an fmt = function
-    | CKcoll    -> Format.fprintf fmt "c_%s" an
+    | CKcoll _  -> Format.fprintf fmt "c_%s" an
     | CKview _  -> Format.fprintf fmt "v_%s" an
-    | CKfield (an, fn, _) -> Format.fprintf fmt "f_%s_%s" an fn
+    | CKfield (an, fn, _, _, _) -> Format.fprintf fmt "f_%s_%s" an fn
+    | CKdef _   -> assert false
   in
 
   let pp_transfer_kind f fmt = function
-    | TKsimple d        -> Format.fprintf fmt "to %a" f d
-    | TKcall (id, _, d, a) -> Format.fprintf fmt "to %a call %s(%a)" f d id f a
-    | TKentry (e, a)    -> Format.fprintf fmt "to entry %a(%a)" f e f a
-    | TKself (id, args) -> Format.fprintf fmt "to entry self.%a(%a)" pp_str id (pp_list ", " (fun fmt (id, x) -> Format.fprintf fmt "%s = %a" id f x)) args
+    | TKsimple (x, d)         -> Format.fprintf fmt "transfer %a to %a" f x f d
+    | TKcall (x, id, _, d, a) -> Format.fprintf fmt "transfer %a to %a call %s(%a)" f x f d id f a
+    | TKentry (x, e, a)       -> Format.fprintf fmt "transfer %a to entry %a(%a)" f x f e f a
+    | TKself (x, id, args)    -> Format.fprintf fmt "transfer %a to entry self.%a(%a)" f x pp_str id (pp_list ", " (fun fmt (id, x) -> Format.fprintf fmt "%s = %a" id f x)) args
+    | TKoperation x           -> Format.fprintf fmt "transfer %a" f x
   in
 
   let pp_mterm (env : Printer_model_tools.env) fmt (mt : mterm) =
@@ -527,11 +533,19 @@ let pp_model fmt (model : model) =
           f e
 
       | Mmatchwith _ -> emit_error (UnsupportedTerm ("Mmatchwith"))
+      | Minstrmatchoption   _ -> emit_error (UnsupportedTerm ("Minstrmatchoption"))
+      | Minstrmatchor       _ -> emit_error (UnsupportedTerm ("Minstrmatchor"))
+      | Minstrmatchlist     _ -> emit_error (UnsupportedTerm ("Minstrmatchlist"))
 
       | Mfor (i, c, b, _) ->
         Format.fprintf fmt "sp.for %a in %a:@\n  @[%a@]@\n"
           (fun fmt i -> match i with FIsimple x -> pp_id fmt x | FIdouble (x, y) -> Format.fprintf fmt "(%a, %a)" pp_id x pp_id y) i
           (pp_iter_container_kind f) c
+          f b
+
+      | Mwhile (c, b, _) ->
+        Format.fprintf fmt "sp.while (%a):@\n  @[%a@]@\n"
+          f c
           f b
 
       | Miter (i, a, b, c, _) ->
@@ -555,14 +569,7 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "sp.failwith (\"%a\")"
           (pp_fail_type f) ft
 
-      | Mtransfer (v, k) ->
-
-        Format.fprintf fmt "transfer %a %a"
-          f v
-          (pp_transfer_kind f) k
-      (* Format.fprintf fmt "sp.send(%a, %a)"
-         f d
-         f v *)
+      | Mtransfer tr -> pp_transfer_kind f fmt tr
 
 
       (* entrypoint *)
@@ -624,9 +631,25 @@ let pp_model fmt (model : model) =
           f e
 
       | Mexprmatchwith _ -> emit_error (UnsupportedTerm ("Mexprmatchwith"))
+      | Mmatchoption   _ -> emit_error (UnsupportedTerm ("matchoption"))
+      | Mmatchor       _ -> emit_error (UnsupportedTerm ("Mmatchor"))
+      | Mmatchlist     _ -> emit_error (UnsupportedTerm ("Mmatchlist"))
+      | Mloopleft      _ -> emit_error (UnsupportedTerm ("Mloopleft"))
+      | Mmap           _ -> emit_error (UnsupportedTerm ("Mmap"))
+      | Mexeclambda    _ -> emit_error (UnsupportedTerm ("Mexeclambda"))
+      | Mapplylambda   _ -> emit_error (UnsupportedTerm ("Mapplylambda"))
+
 
 
       (* composite type constructors *)
+
+      | Mleft (_t, x) ->
+        Format.fprintf fmt "sp.left(%a)"
+          f x
+
+      | Mright (_t, x) ->
+        Format.fprintf fmt "sp.right(%a)"
+          f x
 
       | Mnone ->
         pp_str fmt "sp.none"
@@ -641,7 +664,7 @@ let pp_model fmt (model : model) =
 
       | Masset l ->
         let asset_name =
-          match mtt.type_ with
+          match get_ntype mtt.type_ with
           | Tasset asset_name -> asset_name
           | _ -> assert false
         in
@@ -660,7 +683,7 @@ let pp_model fmt (model : model) =
 
       | Mlitset l ->
         let t =
-          match mtt.type_ with
+          match get_ntype mtt.type_ with
           | Tset t -> t
           | _ -> assert false
         in
@@ -670,7 +693,7 @@ let pp_model fmt (model : model) =
 
       | Mlitlist l ->
         let t =
-          match mtt.type_ with
+          match get_ntype mtt.type_ with
           | Tlist t -> t
           | _ -> assert false
         in
@@ -678,11 +701,11 @@ let pp_model fmt (model : model) =
           (pp_list ", " f) l
           pp_type t
 
-      | Mlitmap l ->
+      | Mlitmap (_, l) ->
         Format.fprintf fmt "%a"
           (fun fmt _ -> begin
                let k, v =
-                 match mtt.type_ with
+                 match get_ntype mtt.type_ with
                  | Tmap (_, k, v) -> k, v
                  | _ -> assert false
                in
@@ -703,6 +726,8 @@ let pp_model fmt (model : model) =
                             k
                             f v)) l
 
+      | Mlambda (_rt, _id, _at, _e) -> emit_error (UnsupportedTerm ("Mlambda"))
+
       (* access *)
 
       | Mdot (e, i) ->
@@ -716,15 +741,6 @@ let pp_model fmt (model : model) =
           f k
           pp_id fn
 
-      | Mdotcontract (e, i) ->
-        Format.fprintf fmt "%a.%a"
-          f e
-          pp_id i
-
-      | Maccestuple (e, i) ->
-        Format.fprintf fmt "%a[%a]"
-          f e
-          pp_big_int i
 
       (* comparison operators *)
 
@@ -797,6 +813,14 @@ let pp_model fmt (model : model) =
         in
         pp fmt (l, r)
 
+      | Mxor (l, r) ->
+        let pp fmt (l, r) =
+          Format.fprintf fmt "(%a) ^ (%a)"
+            f l
+            f r
+        in
+        pp fmt (l, r)
+
       | Mnot e ->
         let pp fmt e =
           Format.fprintf fmt "~(%a)"
@@ -846,13 +870,6 @@ let pp_model fmt (model : model) =
         in
         pp fmt (l, r)
 
-      | Muplus e ->
-        let pp fmt e =
-          Format.fprintf fmt "+(%a)"
-            f e
-        in
-        pp fmt e
-
       | Muminus e ->
         let pp fmt e =
           Format.fprintf fmt "-(%a)"
@@ -883,7 +900,7 @@ let pp_model fmt (model : model) =
 
       | Mremoveasset (an, i) ->
         let cond, str =
-          (match i.type_ with
+          (match get_ntype i.type_ with
            | Tasset an ->
              let k, _ = Utils.get_asset_key model (unloc an) in
              true, "." ^ k
@@ -899,7 +916,7 @@ let pp_model fmt (model : model) =
 
       | Mremovefield (an, fn, c, i) ->
         let cond, str =
-          (match i.type_ with
+          (match get_ntype i.type_ with
            | Tasset an ->
              let k, _ = Utils.get_asset_key model (unloc an) in
              true, "." ^ k
@@ -930,9 +947,10 @@ let pp_model fmt (model : model) =
             an
             (fun fmt _ ->
                match c with
-               | CKcoll -> ()
+               | CKcoll _ -> ()
                | CKview mt -> f fmt mt
-               | CKfield (_an, _fn, _k) -> ()) ()
+               | CKfield (_an, _fn, _k, _, _) -> ()
+               | CKdef _ -> assert false) ()
         in
         pp fmt (an, c, la, lb, a)
 
@@ -942,9 +960,10 @@ let pp_model fmt (model : model) =
             an
             (fun fmt _ ->
                match c with
-               | CKcoll -> ()
+               | CKcoll _ -> ()
                | CKview mt -> f fmt mt
-               | CKfield (_an, _fn, _k) -> ()) ()
+               | CKfield (_an, _fn, _k, _, _) -> ()
+               | CKdef _ -> assert false) ()
         in
         pp fmt (an, c)
 
@@ -959,6 +978,7 @@ let pp_model fmt (model : model) =
 
       | Mupdate    _ -> emit_error (UnsupportedTerm ("Mupdate"))
       | Maddupdate _ -> emit_error (UnsupportedTerm ("Maddupdate"))
+      | Maddforce  _ -> emit_error (UnsupportedTerm ("Maddforce"))
 
 
       (* asset api expression *)
@@ -977,9 +997,10 @@ let pp_model fmt (model : model) =
             (pp_prefix_container_kind an) c
             (fun fmt _ ->
                match c with
-               | CKcoll -> ()
+               | CKcoll _ -> ()
                | CKview mt -> f fmt mt
-               | CKfield (_an, _fn, k) -> f fmt k) ()
+               | CKfield (_an, _fn, k, _, _) -> f fmt k
+               | CKdef _ -> assert false) ()
         in
         pp fmt (an, c, la, lb, a)
 
@@ -989,9 +1010,10 @@ let pp_model fmt (model : model) =
             pp_str an
             (fun fmt _ ->
                match c with
-               | CKcoll -> ()
+               | CKcoll _ -> ()
                | CKview mt -> f fmt mt
-               | CKfield (_an, _fn, k) -> f fmt k) ()
+               | CKfield (_an, _fn, k, _, _) -> f fmt k
+               | CKdef _ -> assert false) ()
             (pp_list ", " (fun fmt (a, b) -> Format.fprintf fmt "%a %a" pp_ident a pp_sort_kind b)) l
         in
         pp fmt (an, c, l)
@@ -1002,9 +1024,10 @@ let pp_model fmt (model : model) =
             (pp_prefix_container_kind an) c
             (fun fmt _ ->
                match c with
-               | CKcoll -> f fmt i
+               | CKcoll _ -> f fmt i
                | CKview mt -> Format.fprintf fmt "%a, %a" f mt f i
-               | CKfield (_an, _fn, k) -> Format.fprintf fmt "%a, %a" f k f i) ()
+               | CKfield (_an, _fn, k, _, _) -> Format.fprintf fmt "%a, %a" f k f i
+               | CKdef _ -> assert false) ()
         in
         pp fmt (an, c, i)
 
@@ -1014,9 +1037,10 @@ let pp_model fmt (model : model) =
             (pp_prefix_container_kind an) c
             (fun fmt _ ->
                match c with
-               | CKcoll -> f fmt i
+               | CKcoll _ -> f fmt i
                | CKview _mt -> ()
-               | CKfield (_an, _fn, _) -> ()) ()
+               | CKfield (_an, _fn, _, _, _) -> ()
+               | CKdef _ -> assert false) ()
         in
         pp fmt (an, c, i)
 
@@ -1026,9 +1050,10 @@ let pp_model fmt (model : model) =
             (pp_prefix_container_kind an) c
             (fun fmt _ ->
                match c with
-               | CKcoll -> ()
+               | CKcoll _ -> ()
                | CKview mt -> f fmt mt
-               | CKfield (_an, _fn, k) -> f fmt k) ()
+               | CKfield (_an, _fn, k, _, _) -> f fmt k
+               | CKdef _ -> assert false) ()
         in
         pp fmt (an, c)
 
@@ -1038,9 +1063,10 @@ let pp_model fmt (model : model) =
             pp_str an
             (fun fmt _ ->
                match c with
-               | CKcoll -> ()
+               | CKcoll _ -> ()
                | CKview mt -> f fmt mt
-               | CKfield (_an, _fn, _k) -> ()) ()
+               | CKfield (_an, _fn, _k, _, _) -> ()
+               | CKdef _ -> assert false) ()
         in
         pp fmt (an, c, p)
 
@@ -1049,18 +1075,20 @@ let pp_model fmt (model : model) =
           (pp_prefix_container_kind an) c
           (fun fmt _ ->
              match c with
-             | CKcoll -> f fmt i
+             | CKcoll _ -> f fmt i
              | CKview _mt -> ()
-             | CKfield (_an, _fn, _) -> ()) ()
+             | CKfield (_an, _fn, _, _, _) -> ()
+             | CKdef _ -> assert false) ()
 
       | Mtail (an, c, i) ->
         Format.fprintf fmt "self.tail_%a (%a)"
           (pp_prefix_container_kind an) c
           (fun fmt _ ->
              match c with
-             | CKcoll -> f fmt i
+             | CKcoll _ -> f fmt i
              | CKview _mt -> ()
-             | CKfield (_an, _fn, _) -> ()) ()
+             | CKfield (_an, _fn, _, _, _) -> ()
+             | CKdef _ -> assert false) ()
 
 
       (* utils *)
@@ -1081,6 +1109,14 @@ let pp_model fmt (model : model) =
             pp_big_int k
         in
         pp fmt (x, k)
+
+      | Mrecupdate (x, l) ->
+        let pp fmt (x, l) =
+          Format.fprintf fmt "{ %a with %a }"
+            f x
+            (pp_list " " (fun fmt (i, v) -> Format.fprintf fmt "%s = %a" i f v)) l
+        in
+        pp fmt (x, l)
 
 
       (* set api expression *)
@@ -1108,6 +1144,8 @@ let pp_model fmt (model : model) =
           (* pp_type t *)
           f c
 
+      | Msetfold _ -> emit_error (UnsupportedTerm ("Msetfold"))
+
 
       (* list api expression *)
 
@@ -1116,20 +1154,28 @@ let pp_model fmt (model : model) =
           f c
           f a
 
-      | Mlistcontains (_, c, a) ->
-        Format.fprintf fmt "list_contains (%a, %a)"
-          f c
-          f a
+      | Mlistheadtail _ -> assert false
 
       | Mlistlength (_, c) ->
         Format.fprintf fmt "sp.len (%a)"
           f c
+
+      | Mlistcontains (_, c, a) ->
+        Format.fprintf fmt "list_contains (%a, %a)"
+          f c
+          f a
 
       | Mlistnth (_, c, a) ->
         Format.fprintf fmt "list_nth (%a, %a)"
           f c
           f a
 
+      | Mlistreverse (_, l) ->
+        Format.fprintf fmt "list_reverse (%a)"
+          f l
+
+      | Mlistconcat _ -> emit_error (UnsupportedTerm ("Mlistconcat"))
+      | Mlistfold _ -> emit_error (UnsupportedTerm ("Mlistfold"))
 
       (* map api expression *)
 
@@ -1162,6 +1208,8 @@ let pp_model fmt (model : model) =
       | Mmaplength (_, _, c) ->
         Format.fprintf fmt "sp.len(%a)"
           f c
+
+      | Mmapfold  _ -> emit_error (UnsupportedTerm ("Mmapfold"))
 
 
       (* builtin functions *)
@@ -1262,25 +1310,28 @@ let pp_model fmt (model : model) =
       | Msource        -> pp_str fmt "sp.source"
       | Mselfaddress   -> pp_str fmt "sp.selfaddress"
       | Mchainid       -> pp_str fmt "sp.chain_id"
+      | Mmetadata      -> pp_str fmt "metadata"
 
 
       (* variable *)
 
-      | Mvar (an, Vassetstate k) -> Format.fprintf fmt "state_%a(%a)" pp_str (unloc an) f k
-      | Mvar (v, Vstorevar) ->
+      | Mvar (an, Vassetstate k, _, _) -> Format.fprintf fmt "state_%a(%a)" pp_str (unloc an) f k
+      | Mvar (v, Vstorevar, _, _) ->
         Format.fprintf fmt "self%a.%a"
           (fun fmt b -> match b with false -> pp_str fmt ".data" | _ -> ()) (is_const env v)
           pp_id v
-      | Mvar (v, Vstorecol) -> Format.fprintf fmt "self.data.%a" pp_id v
-      | Mvar (v, Venumval)  -> pp_id fmt v
-      | Mvar (v, Vlocal)    ->
+      | Mvar (v, Vstorecol, _, _) -> Format.fprintf fmt "self.data.%a" pp_id v
+      | Mvar (v, Venumval, _, _)  -> pp_id fmt v
+      | Mvar (v, Vdefinition, _, _)  -> pp_id fmt v
+      | Mvar (v, Vlocal, _, _)    ->
         Format.fprintf fmt "%a%a"
           (fun fmt b -> match b with true -> pp_str fmt "self." | _ -> ()) (is_const env v)
           pp_id v
-      | Mvar (v, Vparam)    -> Format.fprintf fmt "%s.%a" const_params pp_id v
-      | Mvar (v, Vfield)    -> pp_id fmt v
-      | Mvar (_, Vthe)      -> pp_str fmt "the"
-      | Mvar (_, Vstate)    -> pp_str fmt "self.data.state"
+      | Mvar (v, Vparam, _, _)    -> Format.fprintf fmt "%s.%a" const_params pp_id v
+      | Mvar (v, Vfield, _, _)    -> pp_id fmt v
+      | Mvar (_, Vthe, _, _)      -> pp_str fmt "the"
+      | Mvar (_, Vstate, _, _)    -> pp_str fmt "self.data.state"
+      | Mvar (v, Vparameter, _, _)-> pp_id fmt v
 
 
       (* rational *)
@@ -1341,14 +1392,6 @@ let pp_model fmt (model : model) =
         in
         pp fmt (c, t)
 
-      | Mdivtez (c, t) ->
-        let pp fmt (c, t) =
-          Format.fprintf fmt "div_tez (%a, %a)"
-            f c
-            f t
-        in
-        pp fmt (c, t)
-
       | Mnattoint e ->
         let pp fmt e =
           Format.fprintf fmt "nat_to_int (%a)"
@@ -1379,16 +1422,6 @@ let pp_model fmt (model : model) =
         pp fmt (c, t)
 
 
-      (* functional *)
-
-      | Mfold _ -> emit_error (UnsupportedTerm "Mfold")
-
-
-      (* imperative *)
-
-      | Mbreak -> emit_error (UnsupportedTerm ("Mbreak"))
-
-
       (* quantifiers *)
 
       | Mforall _ -> emit_error (UnsupportedTerm ("Mforall"))
@@ -1403,11 +1436,6 @@ let pp_model fmt (model : model) =
 
       (* formula asset collection *)
 
-      | Msetbefore    _ -> emit_error (UnsupportedTerm ("Msetbefore"))
-      | Msetat        _ -> emit_error (UnsupportedTerm ("Msetat"))
-      | Msetunmoved   _ -> emit_error (UnsupportedTerm ("Msetunmoved"))
-      | Msetadded     _ -> emit_error (UnsupportedTerm ("Msetadded"))
-      | Msetremoved   _ -> emit_error (UnsupportedTerm ("Msetremoved"))
       | Msetiterated  _ -> emit_error (UnsupportedTerm ("Msetiterated"))
       | Msettoiterate _ -> emit_error (UnsupportedTerm ("Msettoiterate"))
 
@@ -1427,7 +1455,8 @@ let pp_model fmt (model : model) =
 
 
   let pp_var env (fmt : Format.formatter) (var : var) =
-    if (var.constant) then
+    let constant = match var.kind with | VKconstant -> true | _ -> false in
+    if constant then
       begin
         if Option.is_none var.default
         then assert false;
@@ -1489,6 +1518,7 @@ let pp_model fmt (model : model) =
   let pp_contract_fun (env : env) fmt (fn : function_node) =
     match fn with
     | Entry fs -> (pp_contract_entry env) fmt fs
+    | Getter (fs, r) -> (pp_function env) fmt (fs, r)
     | Function (fs, r) -> (pp_function env) fmt (fs, r)
   in
 

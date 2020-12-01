@@ -1,6 +1,0 @@
-archetype entrysig_unknown_self_entry
-
-entry exec () {
-  var e : entrysig<int> = self.an_entry;
-  transfer 0tz to entry e(3);
-}

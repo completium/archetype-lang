@@ -1,0 +1,38 @@
+archetype custom_storage8
+
+record my_record {
+  fa: nat;
+  fb: nat;
+  fc: nat;
+  fd: nat;
+  fe: nat;
+  ff: nat;
+  fg: nat;
+  fh: nat;
+  fi: nat;
+  fj: nat;
+  fk: nat;
+  fl: nat;
+  fm: nat;
+} as ((a, b, (c, d, (e, f, g, h), i), j, (k, l), m))
+
+variable r : my_record = {0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0}
+
+entry exec () {
+  var v = 8;
+  r := {  r with
+                 fa =  0;
+                 fb =  1;
+                 fc =  2;
+                 fd =  3;
+                 fe =  4;
+                 ff =  5;
+                 fg =  6;
+                 fh =  7;
+                 fi =  v;
+                 fj =  9;
+                 fk = 10;
+                 fl = 11;
+                 fm = 12
+        }
+}

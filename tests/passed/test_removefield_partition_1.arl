@@ -1,0 +1,18 @@
+archetype test_removefield_partition_1
+
+asset o_asset identified by oid {
+  oid : string;
+}
+
+asset my_asset identified by id {
+  id     : string;
+  col    : partition<o_asset>;
+} initialized by {
+  {"id0"; []};
+  {"id1"; []};
+  {"id2"; []}
+}
+
+entry exec (s : string) {
+  my_asset["id0"].col.remove(s)
+}

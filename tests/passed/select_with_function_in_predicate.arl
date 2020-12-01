@@ -1,0 +1,27 @@
+archetype select_with_function_in_predicate
+
+asset my_asset identified by id {
+  id : string;
+  value : int;
+} initialized by {
+  {"id0"; 0};
+  {"id1"; 1};
+  {"id2"; 2}
+}
+
+variable res : int = 0
+
+function f () : int {
+  return 1
+}
+
+entry exec (str : string) {
+  specification {
+    s0: res = 2;
+  }
+  effect {
+    var l = my_asset.select(the.value = f());
+    var k = l.nth(0);
+    res := my_asset[k].value
+  }
+}

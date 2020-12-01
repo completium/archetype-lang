@@ -4,9 +4,9 @@ variable res : map<nat, string> = [(0, "0")]
 
 entry exec () {
   specification {
-    s0: map_length(res) = 0;
+    s0: length(res) = 0;
   }
   effect {
-    res := map_remove(res, 0);
+    res := remove(res, 0);
   }
 }

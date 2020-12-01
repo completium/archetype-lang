@@ -1,0 +1,60 @@
+archetype spec_full
+
+asset myasset {
+  id: string;
+  val: bool;
+}
+
+asset col1 {
+  id1 : string;
+}
+
+asset col2 {
+  id2 : string;
+}
+
+entry exec () {
+ specification {
+
+    definition mydef {
+      x : myasset | forall y in col1, x.id = y.id1
+    }
+
+    predicate mypredicate (a : int) {
+      forall x in col1, forall y in col2, x.id1 = y.id2
+    }
+
+    variable myvar : int = 0
+
+    shadow effect {
+      myvar := 3
+    }
+
+    assert a1 {
+      x = y
+      invariant for myloop {
+        x = 0;
+        y = 0
+      }
+    }
+
+    postcondition s1 {
+      true
+      invariant for myloop {
+        x = 0;
+        y = 0
+      }
+    }
+  }
+
+  effect {
+    var x : int = 0;
+    var y : int = 0;
+    for : myloop c in col1 do
+      ()
+    done;
+    assert a1;
+    if x <> 0
+    then fail("error")
+  }
+}

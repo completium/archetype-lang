@@ -1,0 +1,11 @@
+archetype duplicated_label
+
+entry exec () {
+  specification {
+    s1 : true;
+    s1 : true;
+  }
+  effect {
+    ()
+  }
+}

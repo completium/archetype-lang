@@ -19,10 +19,14 @@ entry exec () {
     var r : rational = 2 / 6;
     var t : rational = -2 / 6;
     var u : rational = 80%;
+    var v : rational = 4.2%;
     var s : string = "str";
     var ctz  : tez = 1tz;
     var cmtz : tez = 1mtz;
     var cutz : tez = 1utz;
+    var dtz  : tez = 1.2tz;
+    var dmtz : tez = 1.2mtz;
+    var dutz : tez = 1utz;
     var a : address = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg;
     var d : duration = 3w8d4h34m18s; (* 3 weeks 8 days 4 hours 34 minutes 18 seconds *)
     var date0 : date = 2019-01-01;                (* iso 8601 *)

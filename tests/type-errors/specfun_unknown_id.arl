@@ -1,0 +1,9 @@
+archetype specfun_unknown_id
+
+entry anentry (n : nat) {
+  ()
+}
+
+specification entry badentry (n : nat) {
+  e1: true;
+}

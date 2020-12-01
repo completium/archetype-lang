@@ -1,0 +1,13 @@
+archetype test_record_assign_3
+
+record my_record {
+  id : string;
+  v  : nat;
+  a  : int
+}
+
+variable res : my_record = {""; 0; 0i}
+
+entry exec (i : int) {
+  res.a := i;
+}

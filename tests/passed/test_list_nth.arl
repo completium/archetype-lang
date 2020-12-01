@@ -1,0 +1,13 @@
+archetype test_list_nth
+
+variable res : string = ""
+
+entry exec () {
+  specification {
+    s0: res = "2";
+  }
+  effect {
+    var l : list<string> = ["1"; "2"; "3"];
+    res := nth(l, 1)
+  }
+}

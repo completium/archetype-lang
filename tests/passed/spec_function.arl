@@ -1,0 +1,15 @@
+archetype spec_function
+
+function f () : nat {
+  return 1
+}
+
+entry exec () {
+  ()
+}
+
+specification function f () {
+  postcondition s1 {
+    true
+  }
+}

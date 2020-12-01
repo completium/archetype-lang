@@ -1,79 +1,289 @@
 #! /bin/bash
 
-BIN='./archetype.exe --set-caller-init=tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg'
-BIN_TEZOS='~/tezos/tezos-client -S -A testnet-tezos.giganode.io -P 443'
-NB_ERR=0
-NB_ERR_RET=0
-NB_ERR_MICHELSON=0
-NB_ERR_MICHELSON_STORAGE=0
+BIN=./extra/script/check_compile.sh
 
-process_michelson() {
-    FILE=$1
-    OUT_MICHELSON=$FILE.tz
-    $BIN -t michelson $FILE >$OUT_MICHELSON 2>/dev/null
-    RET=$(echo $?)
-    if [ ${RET} -eq 0 ]; then
-        echo -ne "\033[32m OK \033[0m"
-
-        $BIN_TEZOS typecheck script $OUT_MICHELSON > /dev/null 2>/dev/null
-        RET=$(echo $?)
-        if [ ${RET} -eq 0 ]; then
-            echo -ne "\033[32m OK \033[0m"
-        else
-            echo -ne "\033[31m KO \033[0m"
-            NB_ERR=$((${NB_ERR} + 1))
-            NB_ERR_MICHELSON=$((${NB_ERR_MICHELSON} + 1))
-        fi
-    else
-        echo -ne "\033[31m KO \033[0m"
-        NB_ERR=$((${NB_ERR} + 1))
-        NB_ERR_MICHELSON=$((${NB_ERR_MICHELSON} + 1))
-    fi
-
-    rm -fr $OUT_MICHELSON *.pp.michelson $TZ
-}
-
-process_file() {
-    printf '%-70s' $1
-    $BIN $i >/dev/null 2>/dev/null
-    RET=$?
-    if [ $RET -eq $2 ]; then
-        echo -ne "\033[32m OK \033[0m"
-        process_michelson $i
-    else
-        echo -ne "\033[31m KO \033[0m"
-        NB_ERR=$((${NB_ERR} + 1))
-        NB_ERR_RET=$((${NB_ERR_RET} + 1))
-    fi
-    echo ""
-}
-
-process_files() {
-    for i in $1/*.arl; do
-        FIRST_CHAR=$(basename $i | cut -c 1)
-        if [ ${FIRST_CHAR} != "_" ]; then
-            process_file $i $2
-        fi
-    done
-    echo ""
-}
-
-printf '%-70s%s\n' '' ' RET GL  PL'
-
-process_files "./tests/passed" 0
-process_files "./contracts" 0
+PASSED="\
+./tests/passed/simple_op_add.arl \
+./tests/passed/simple_op_uminus.arl \
+./tests/passed/simple_assign1.arl \
+./tests/passed/simple_assign2.arl \
+./tests/passed/simple_assign3.arl \
+./tests/passed/simple_sequence.arl \
+./tests/passed/simple_sequence_with_arg.arl \
+./tests/passed/simple_sequence_with_arg_var.arl \
+./tests/passed/simple_sequence_with_arg2.arl \
+./tests/passed/expr_set_lit.arl \
+./tests/passed/expr_set_add.arl \
+./tests/passed/expr_set_remove.arl \
+./tests/passed/expr_set_length.arl  \
+./tests/passed/expr_set_contains.arl \
+./tests/passed/expr_list_lit.arl \
+./tests/passed/expr_list_prepend.arl \
+./tests/passed/expr_list_head_tail.arl \
+./tests/passed/expr_list_length.arl \
+./tests/passed/expr_map_lit.arl \
+./tests/passed/expr_map_put.arl \
+./tests/passed/expr_map_remove.arl \
+./tests/passed/expr_map_get.arl \
+./tests/passed/expr_map_getopt.arl \
+./tests/passed/expr_map_length.arl \
+./tests/passed/expr_map_contains.arl \
+./tests/passed/simple_multi_entry.arl \
+./tests/passed/simple_multi_entry2.arl \
+./tests/passed/simple_multi_entry3.arl \
+./tests/passed/effect_control_if.arl \
+./tests/passed/effect_control_if_else.arl \
+./tests/passed/expr_control_if_else_int_int.arl \
+./tests/passed/expr_control_if_else_int_nat.arl \
+./tests/passed/expr_control_if_else_nat_int.arl \
+./tests/passed/expr_control_if_else_nat_nat.arl \
+./tests/passed/test_if_int_nat.arl \
+./tests/passed/simple_while.arl \
+./tests/passed/effect_control_while.arl \
+./tests/passed/effect_control_for_set.arl \
+./tests/passed/effect_control_for_list.arl \
+./tests/passed/effect_control_for_map.arl \
+./tests/passed/test_for_list_alt.arl \
+./tests/passed/expr_lit_opt_none.arl \
+./tests/passed/expr_lit_opt_some.arl \
+./tests/passed/expr_fun_opt_isnone.arl \
+./tests/passed/expr_fun_opt_issome.arl \
+./tests/passed/expr_fun_opt_optget.arl \
+./tests/passed/expr_arith_ediv_nat_nat.arl \
+./tests/passed/expr_arith_mod_nat_nat.arl \
+./tests/passed/simple_fun1.arl \
+./tests/passed/simple_fun2.arl \
+./tests/passed/simple_fun3.arl \
+./tests/passed/simple_fun4.arl \
+./tests/passed/simple_fun5.arl \
+./tests/passed/simple_fun6.arl \
+./tests/passed/simple_fun7.arl \
+./tests/passed/simple_fun8.arl \
+./tests/passed/simple_fun_alt.arl \
+./tests/passed/transfer_simple.arl \
+./tests/passed/transfer_call.arl \
+./tests/passed/transfer_entrypoint.arl \
+./tests/passed/transfer_self.arl \
+./tests/passed/transfer_simple_with_entrypoint.arl \
+./tests/passed/test_transfer.arl \
+./tests/passed/test_contract_self.arl \
+./tests/passed/lang_contract.arl \
+./tests/passed/test_operations.arl \
+./tests/passed/simple_record_lit.arl \
+./tests/passed/simple_record_lit_rev.arl \
+./tests/passed/simple_record_assign.arl \
+./tests/passed/simple_record_assign1.arl \
+./tests/passed/simple_record_assign2.arl \
+./tests/passed/expr_fun_floor.arl \
+./tests/passed/expr_fun_ceil.arl \
+./tests/passed/expr_fun_to_string_nat.arl \
+./tests/passed/test_list_contains.arl \
+./tests/passed/test_list_contains2.arl \
+./tests/passed/test_list_nth.arl \
+./tests/passed/test_list_mynth.arl \
+./tests/passed/test_list_mynth2.arl \
+./tests/passed/simple_fun_with_storage.arl \
+./tests/passed/simple_fun_with_storage2.arl \
+./tests/passed/simple_fun_with_storage3.arl \
+./tests/passed/test_fun_asset.arl \
+./tests/passed/rat_nat.arl \
+./tests/passed/rat_int.arl \
+./tests/passed/rat_cmp_eq.arl \
+./tests/passed/rat_cmp_lt.arl \
+./tests/passed/rat_cmp_le.arl \
+./tests/passed/rat_cmp_gt.arl \
+./tests/passed/rat_cmp_ge.arl \
+./tests/passed/rat_arith_uminus.arl \
+./tests/passed/rat_arith_plus.arl \
+./tests/passed/rat_arith_minus.arl \
+./tests/passed/rat_arith_mult.arl \
+./tests/passed/rat_arith_div.arl \
+./tests/passed/rat_tez.arl \
+./tests/passed/rat_dur.arl \
+./tests/passed/cast_tez_nat.arl \
+./tests/passed/simple_asset_skip_empty_one_field.arl \
+./tests/passed/simple_asset_skip_empty.arl \
+./tests/passed/simple_asset_skip_one_field.arl \
+./tests/passed/simple_asset_skip.arl \
+./tests/passed/simple_asset_get_one_field.arl \
+./tests/passed/simple_asset_get_asset1_key.arl \
+./tests/passed/simple_asset_get_asset1_value.arl \
+./tests/passed/simple_asset_get_asset2_key.arl \
+./tests/passed/simple_asset_get_asset2_value.arl \
+./tests/passed/simple_asset_get_asset2_value2.arl \
+./tests/passed/expr_method_asset_count.arl \
+./tests/passed/effect_method_asset_add_asset_one_field.arl \
+./tests/passed/effect_method_asset_add_asset.arl \
+./tests/passed/effect_method_asset_add_asset2.arl \
+./tests/passed/effect_method_asset_remove_asset_one_field.arl \
+./tests/passed/effect_method_asset_remove_asset.arl \
+./tests/passed/effect_method_asset_remove_asset2.arl \
+./tests/passed/effect_method_asset_add_asset_with_aggregate.arl \
+./tests/passed/test_add_asset_with_aggregate.arl \
+./tests/passed/effect_method_asset_add_asset_with_partition.arl \
+./tests/passed/effect_method_asset_add_asset_with_partition_2.arl \
+./tests/passed/test_add_asset_with_partition.arl \
+./tests/passed/test_add_asset2_with_partition.arl \
+./tests/passed/test_add_asset_with_both.arl \
+./tests/passed/effect_control_for_collection.arl \
+./tests/passed/effect_control_for_aggregate.arl \
+./tests/passed/effect_control_for_partition.arl \
+./tests/passed/test_remove_asset_with_partition.arl \
+./tests/passed/test_addfield_aggregate_1.arl \
+./tests/passed/test_addfield_aggregate_2.arl \
+./tests/passed/test_tuple_access_1.arl \
+./tests/passed/test_tuple_access_2.arl \
+./tests/passed/test_tuple_access_3.arl \
+./tests/passed/test_record.arl \
+./tests/passed/test_record_access_0.arl \
+./tests/passed/test_record_access_1.arl \
+./tests/passed/test_record_access_2.arl \
+./tests/passed/test_record_access_3.arl \
+./tests/passed/test_record_assign_1.arl \
+./tests/passed/test_record_assign_2.arl \
+./tests/passed/test_record_assign_3.arl \
+./tests/passed/test_record_assign_full.arl \
+./tests/passed/test_asset_update.arl \
+./tests/passed/test_asset_update_2.arl \
+./tests/passed/test_asset_update_3.arl \
+./tests/passed/test_asset_update_4.arl \
+./tests/passed/test_addfield_partition_1.arl \
+./tests/passed/test_addfield_partition_2.arl \
+./tests/passed/test_removefield_aggregate_1.arl \
+./tests/passed/test_removefield_aggregate_2.arl \
+./tests/passed/test_removefield_partition_1.arl \
+./tests/passed/test_removefield_partition_2.arl \
+./tests/passed/test_removeall_aggregate_1.arl \
+./tests/passed/test_removeall_aggregate_2.arl \
+./tests/passed/test_removeall_partition_1.arl \
+./tests/passed/test_removeall_partition_2.arl \
+./tests/passed/effect_method_asset_clear_asset.arl \
+./tests/passed/effect_method_asset_clear_asset_one_field.arl \
+./tests/passed/effect_method_asset_clear_asset_with_aggregate.arl \
+./tests/passed/effect_method_asset_clear_asset_with_partition.arl \
+./tests/passed/effect_method_asset_clear_aggregate.arl \
+./tests/passed/test_clear_aggregate.arl \
+./tests/passed/effect_method_asset_clear_view.arl \
+./tests/passed/effect_method_asset_clear_view_with_aggregate.arl \
+./tests/passed/effect_method_asset_clear_view_with_partition.arl \
+./tests/passed/test_asset_update_5.arl \
+./tests/passed/test_asset_update_aggregate_1.arl \
+./tests/passed/test_asset_update_aggregate_2.arl \
+./tests/passed/test_asset_update_aggregate_3.arl \
+./tests/passed/test_asset_update_partition_1.arl \
+./tests/passed/test_asset_update_partition_2.arl \
+./tests/passed/test_asset_update_partition_3.arl \
+./tests/passed/test_asset_update_partition_4.arl \
+./tests/passed/test_asset_update_partition_5.arl \
+./tests/passed/test_asset_update_partition_6.arl \
+./tests/passed/test_asset_update_partition_7.arl \
+./tests/passed/test_asset_update_partition_8.arl \
+./tests/passed/test_asset_update_partition_9.arl \
+./tests/passed/expr_method_asset_contains.arl \
+./tests/passed/expr_method_asset_contains_aggregate.arl \
+./tests/passed/expr_method_asset_contains_one_field.arl \
+./tests/passed/expr_method_asset_contains_partition.arl \
+./tests/passed/expr_method_asset_contains_view.arl \
+./tests/passed/test_addupdate_0.arl \
+./tests/passed/test_addupdate_1.arl \
+./tests/passed/test_addupdate_2.arl \
+./tests/passed/expr_method_asset_count.arl \
+./tests/passed/expr_method_asset_count_aggregate.arl \
+./tests/passed/expr_method_asset_count_one_field.arl \
+./tests/passed/expr_method_asset_count_partition.arl \
+./tests/passed/expr_method_asset_count_view.arl \
+./tests/passed/test_removeif_coll_0.arl \
+./tests/passed/test_removeif_coll_1.arl \
+./tests/passed/test_removeif_coll_2.arl \
+./tests/passed/test_removeif_agg_0.arl \
+./tests/passed/test_removeif_agg_1.arl \
+./tests/passed/test_removeif_agg_2.arl \
+./tests/passed/test_removeif_part_0.arl \
+./tests/passed/test_removeif_part_1.arl \
+./tests/passed/test_removeif_part_2.arl \
+./tests/passed/test_asset_select_coll_0.arl \
+./tests/passed/test_asset_select_coll_1.arl \
+./tests/passed/test_asset_select_coll_2.arl \
+./tests/passed/test_asset_select_agg_0.arl \
+./tests/passed/test_asset_select_agg_1.arl \
+./tests/passed/test_asset_select_agg_2.arl \
+./tests/passed/test_asset_select_view_0.arl \
+./tests/passed/test_asset_select_view_1.arl \
+./tests/passed/test_asset_select_view_2.arl \
+./tests/passed/test_asset_sum_coll_0.arl \
+./tests/passed/test_asset_sum_coll_1.arl \
+./tests/passed/test_asset_sum_coll_2.arl \
+./tests/passed/test_asset_sum_agg_0.arl \
+./tests/passed/test_asset_sum_agg_1.arl \
+./tests/passed/test_asset_sum_agg_2.arl \
+./tests/passed/test_asset_sum_view_0.arl \
+./tests/passed/test_asset_sum_view_1.arl \
+./tests/passed/test_asset_sum_view_2.arl \
+./tests/passed/test_asset_sum_coll_rat.arl \
+./tests/passed/test_asset_nth_coll_0.arl \
+./tests/passed/test_asset_nth_coll_1.arl \
+./tests/passed/test_asset_nth_coll_2.arl \
+./tests/passed/test_asset_nth_agg_0.arl \
+./tests/passed/test_asset_nth_agg_1.arl \
+./tests/passed/test_asset_nth_agg_2.arl \
+./tests/passed/test_asset_nth_view_0.arl \
+./tests/passed/test_asset_nth_view_1.arl \
+./tests/passed/test_asset_nth_view_2.arl \
+./tests/passed/test_asset_head_coll_0.arl \
+./tests/passed/test_asset_head_coll_1.arl \
+./tests/passed/test_asset_head_coll_2.arl \
+./tests/passed/test_asset_head_agg_0.arl \
+./tests/passed/test_asset_head_agg_1.arl \
+./tests/passed/test_asset_head_agg_2.arl \
+./tests/passed/test_asset_head_view_0.arl \
+./tests/passed/test_asset_head_view_1.arl \
+./tests/passed/test_asset_head_view_2.arl \
+./tests/passed/test_asset_tail_coll_0.arl \
+./tests/passed/test_asset_tail_coll_1.arl \
+./tests/passed/test_asset_tail_coll_2.arl \
+./tests/passed/test_asset_tail_agg_0.arl \
+./tests/passed/test_asset_tail_agg_1.arl \
+./tests/passed/test_asset_tail_agg_2.arl \
+./tests/passed/test_asset_tail_view_0.arl \
+./tests/passed/test_asset_tail_view_1.arl \
+./tests/passed/test_asset_tail_view_2.arl \
+./tests/passed/test_asset_sort_coll_0.arl \
+./tests/passed/test_asset_sort_coll_1.arl \
+./tests/passed/test_asset_sort_coll_2.arl \
+./tests/passed/test_asset_sort_agg_0.arl \
+./tests/passed/test_asset_sort_agg_1.arl \
+./tests/passed/test_asset_sort_agg_2.arl \
+./tests/passed/test_asset_sort_view_0.arl \
+./tests/passed/test_asset_sort_view_1.arl \
+./tests/passed/test_asset_sort_view_2.arl \
+./tests/passed/test_asset_sort_coll_complex.arl \
+./tests/passed/test_asset_sort_coll_random.arl \
+./tests/passed/test_asset_sort_coll_random2.arl \
+./tests/passed/test_iter.arl \
+./tests/passed/test_iter2.arl \
+./tests/passed/test_fun0.arl \
+./tests/passed/test_fun1.arl \
+./tests/passed/test_fun2.arl \
+./tests/passed/test_fun3.arl \
+./tests/passed/test_fun4.arl \
+./tests/passed/test_fun5.arl \
+./tests/passed/test_fun6.arl \
+./tests/passed/test_fun7.arl \
+./tests/passed/test_getter.arl \
+./tests/passed/test_getter_with_arg.arl \
+./tests/passed/test_getter_with_args.arl \
+"
 
 RET=0
-if [ ${NB_ERR} -eq 0 ]; then
-    echo "passed."
-else
-    echo -e "\033[31mret: ${NB_ERR_RET} \033[0m"
-    echo -e "\033[31mmichelson: ${NB_ERR_MICHELSON} \033[0m"
-    echo -e "\033[31mmichelson storage: ${NB_ERR_MICHELSON_STORAGE} \033[0m"
-    echo -e "\033[31merrors: ${NB_ERR} \033[0m"
-    RET=1
-fi
 
-if [ ${RET} -ne 0 ]; then
-    exit ${RET}
-fi
+echo "Check michelson"
+echo ""
+echo "                                                                       RET GEN COMPILE"
+for i in $PASSED; do
+    ${BIN} $i
+    if [ $? -ne 0 ]; then
+        RET=1
+    fi
+done
+
+exit $RET

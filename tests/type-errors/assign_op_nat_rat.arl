@@ -1,0 +1,8 @@
+archetype assign_op_nat_rat
+
+variable n : nat = 0
+
+entry exec () {
+  var r : rational = 0.0;
+  n += r
+}

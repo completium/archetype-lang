@@ -1,0 +1,9 @@
+archetype specvar_unknown_id
+
+variable a : nat = 1
+
+entry exec () {
+  ()
+}
+
+specification variable n { a1 : a >= 1 }

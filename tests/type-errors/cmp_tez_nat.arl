@@ -1,0 +1,7 @@
+archetype cmp_tez_nat
+
+variable b : bool = false
+
+entry exec () {
+  b := transferred = 0
+}

@@ -1,0 +1,11 @@
+archetype spec_variable
+
+variable n : nat = 1
+
+entry exec () {
+  n := 2
+}
+
+specification variable n {
+  s1: n > 0;
+}

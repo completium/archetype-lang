@@ -1,0 +1,9 @@
+archetype decomp_test
+
+variable a : nat = 0
+variable b : nat = 0
+
+entry exec (s : string) {
+  a := length(s);
+  b := a + 1
+}

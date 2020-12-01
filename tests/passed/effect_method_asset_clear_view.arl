@@ -12,7 +12,5 @@ asset my_asset identified by id {
 variable res : int = 0
 
 entry exec () {
-  effect {
-    my_asset.select(value % 2 = 0).clear()
-  }
+  my_asset.select(value % 2 = 0).clear()
 }

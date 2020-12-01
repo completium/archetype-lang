@@ -1,0 +1,23 @@
+archetype test_asset_sort_coll_random2
+
+asset my_asset identified by id {
+  id : nat;
+  s : string;
+} initialized by {
+  {0; "g"};
+  {1; "e"};
+  {2; "a"};
+  {3; "j"};
+  {4; "b"};
+  {5; "h"};
+  {6; "d"};
+  {7; "f"};
+  {8; "i"};
+  {9; "c"}
+}
+
+variable res : list<nat> = []
+
+entry exec () {
+  res := my_asset.sort(asc(s));
+}

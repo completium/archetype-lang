@@ -1,0 +1,16 @@
+archetype test_asset_sum_view_1
+
+asset my_asset identified by id {
+  id : string;
+  value : int;
+} initialized by {
+  {"id0"; 0};
+  {"id1"; 1};
+  {"id2"; 2}
+}
+
+variable res : int = 0
+
+entry exec () {
+  res := my_asset.select(id <> "").sum(value)
+}

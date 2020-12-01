@@ -1,0 +1,12 @@
+archetype simple_fun_with_storage2
+
+variable res : int = 0
+variable n   : nat = 1
+
+function f (i : int) : int {
+  return (2 * n + res + i)
+}
+
+entry exec () {
+  res := f(1);
+}

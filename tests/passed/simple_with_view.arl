@@ -1,0 +1,11 @@
+archetype simple_with_view
+
+variable n : nat = 0
+
+entry assign () {
+  n := 2
+}
+
+getter getValue() : nat {
+  return n
+}

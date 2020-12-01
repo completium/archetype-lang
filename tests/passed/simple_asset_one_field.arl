@@ -1,0 +1,22 @@
+archetype simple_asset_one_field
+
+asset my_asset identified by id {
+  id : string;
+} initialized by {
+  {"id0"};
+  {"id1"};
+  {"id2"}
+}
+
+variable n : int = 0
+
+entry add_asset () {
+  my_asset.add({"id4"})
+}
+
+entry remove_asset () {
+  my_asset.remove("id0")
+}
+
+entry exec () {
+}

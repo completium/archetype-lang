@@ -1,0 +1,9 @@
+archetype decomp_if
+
+variable n : nat = 0
+
+entry exec (b : bool) {
+  if b
+  then n := 2
+  else n := 3
+}

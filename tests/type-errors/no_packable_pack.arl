@@ -1,0 +1,8 @@
+archetype no_packable_pack
+
+variable b : bytes = 0x0
+variable m : big_map<nat, int> = []
+
+entry exec () {
+  b := pack(m)
+}

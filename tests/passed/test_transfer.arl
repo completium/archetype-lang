@@ -11,7 +11,7 @@ entry exec () {
 
   transfer 0tz to @KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm call set_value<nat>(1);
 
-  var eopt : option<entrysig<nat>> = entrypoint<nat>("%set_value", @KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm);
+  var eopt : option<contract<nat>> = entrypoint<nat>("%set_value", @KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm);
   var e = opt_get(eopt);
   transfer 0tz to entry e(1);
 

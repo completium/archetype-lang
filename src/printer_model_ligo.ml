@@ -39,9 +39,9 @@ type position =
 
 let pp_cast (pos : position) (ltype : type_) (rtype : type_) (pp : 'a -> mterm -> unit) (fmt : Format.formatter) =
   match pos, ltype, rtype with
-  | Lhs, Tbuiltin Brole, Tbuiltin Baddress ->
+  | Lhs, (Tbuiltin Brole, _), (Tbuiltin Baddress, _) ->
     Format.fprintf fmt "(%a : address)" pp
-  | Rhs, Tbuiltin Baddress, Tbuiltin Brole ->
+  | Rhs, (Tbuiltin Baddress, _), (Tbuiltin Brole, _) ->
     Format.fprintf fmt "(%a : address)" pp
   | _ -> pp fmt
 
@@ -68,8 +68,8 @@ end = struct
     let args = List.map
         (fun (id, t, _) ->
            (unloc id,
-            match t with
-            | Tenum _ -> Tbuiltin Bint
+            match get_ntype t with
+            | Tenum _ -> tint
             | _ -> t)) fs.args
     in
     {
@@ -128,13 +128,13 @@ let pp_model_internal fmt (model : model) b =
 
   let pp_pretty_container fmt = function
     | Collection -> Format.fprintf fmt "collection"
-    | Aggregate     -> Format.fprintf fmt "Aggregate"
+    | Aggregate  -> Format.fprintf fmt "aggregate"
     | Partition  -> Format.fprintf fmt "partition"
     | View       -> Format.fprintf fmt "view"
   in
 
   let rec pp_type fmt t =
-    match t with
+    match get_ntype t with
     | Tasset an ->
       Format.fprintf fmt "%a" pp_id an
     | Tstate ->
@@ -142,9 +142,9 @@ let pp_model_internal fmt (model : model) b =
     | Tenum en ->
       Format.fprintf fmt "%a" pp_id en
     | Tbuiltin b -> pp_btyp fmt b
-    | Tcontainer (Tasset an, (Aggregate | Partition)) -> pp_type fmt (Tset ((Utils.get_asset_key model (unloc an) |> snd)))
-    | Tcontainer (Tasset an, _) -> pp_type fmt (Tlist ((Utils.get_asset_key model (unloc an) |> snd)))
-    | Tlist (Tasset an) -> pp_type fmt (Tlist ((Utils.get_asset_key model (unloc an) |> snd)))
+    | Tcontainer ((Tasset an, _), (Aggregate | Partition)) -> pp_type fmt (tset ((Utils.get_asset_key model (unloc an) |> snd)))
+    | Tcontainer ((Tasset an, _), _) -> pp_type fmt (tlist ((Utils.get_asset_key model (unloc an) |> snd)))
+    | Tlist (Tasset an, _) -> pp_type fmt (tlist ((Utils.get_asset_key model (unloc an) |> snd)))
     | Tcontainer (t, c) ->
       Format.fprintf fmt "%a(%a)"
         pp_container c
@@ -169,15 +169,21 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt "map(%a, %a)"
         pp_type k
         pp_type v
+    | Tor (l, r) ->
+      Format.fprintf fmt "michelson_or(%a, \"\", %a, \"\")"
+        pp_type l
+        pp_type r
     | Trecord id ->
       Format.fprintf fmt "%a" pp_id id
+    | Tlambda (a, r) ->
+      Format.fprintf fmt "(%a -> %a)" pp_type a pp_type r
     | Tunit ->
       Format.fprintf fmt "unit"
     | Tstorage ->
       Format.fprintf fmt "storage"
     | Toperation ->
       Format.fprintf fmt "operation"
-    | Tentrysig t ->
+    | Tcontract t ->
       Format.fprintf fmt "contract(%a)" pp_type t
     | Tprog _
     | Tvset _
@@ -186,8 +192,8 @@ let pp_model_internal fmt (model : model) b =
   (* const operations : list(operation) = nil ; *)
 
   let rec pp_pretty_type fmt t =
-    match t with
-    | Ttuple[Tbuiltin Bint; Tbuiltin Bint] -> pp_type fmt (Tbuiltin Brational)
+    match get_ntype t with
+    | Ttuple[(Tbuiltin Bint, _); (Tbuiltin Bnat, _)] -> pp_type fmt (mktype (Tbuiltin Brational))
     | Tlist t            -> Format.fprintf fmt "list_%a" pp_pretty_type t
     | Tcontainer (t, c)  -> Format.fprintf fmt "container_%a_%a" pp_pretty_type t pp_pretty_container c
     | Toption t          -> Format.fprintf fmt "option_%a" pp_pretty_type t
@@ -195,11 +201,11 @@ let pp_model_internal fmt (model : model) b =
     | Tset t             -> Format.fprintf fmt "set_%a" pp_pretty_type t
     | Tmap (true,  k, v) -> Format.fprintf fmt "bigmap_%a_%a" pp_pretty_type k pp_pretty_type v
     | Tmap (false, k, v) -> Format.fprintf fmt "map_%a_%a" pp_pretty_type k pp_pretty_type v
-    | Tentrysig t        -> Format.fprintf fmt "entrysig_%a" pp_pretty_type t
+    | Tcontract t        -> Format.fprintf fmt "contract_%a" pp_pretty_type t
     | _ -> pp_type fmt t
   in
 
-  let extract_option_type = function | Toption x -> x | _ -> assert false in
+  let extract_option_type t = match get_ntype t with | Toption x -> x | _ -> assert false in
 
   let pp_operator fmt op =
     let to_str = function
@@ -228,9 +234,10 @@ let pp_model_internal fmt (model : model) b =
   let pp_postfix_sort = (pp_list "_" (fun fmt (a, b) -> Format.fprintf fmt "%s_%a" a pp_sort_kind b)) in
 
   let pp_prefix_container_kind an fmt = function
-    | CKcoll    -> Format.fprintf fmt "c_%s" an
+    | CKcoll _  -> Format.fprintf fmt "c_%s" an
     | CKview _  -> Format.fprintf fmt "v_%s" an
-    | CKfield (an, fn, _) -> Format.fprintf fmt "f_%s_%s" an fn
+    | CKfield (an, fn, _, _, _) -> Format.fprintf fmt "f_%s_%s" an fn
+    | CKdef _   -> assert false (* no definition in execution *)
   in
 
   let pp_mterm_gen (env : env) f fmt (mtt : mterm) =
@@ -270,7 +277,7 @@ let pp_model_internal fmt (model : model) b =
 
     | Mapp (e, args) ->
       let pp fmt (e, args) =
-        let args = (mk_mterm (Mvar (dumloc const_storage, Vlocal)) Tstorage)::args in
+        let args = (mk_mterm (Mvar (dumloc const_storage, Vlocal, Tnone, Dnone)) tstorage)::args in
         Format.fprintf fmt "%a (%a)"
           pp_id e
           (pp_list ", " f) args
@@ -374,6 +381,10 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (e, l)
 
+    | Minstrmatchoption (_x, _i, _ve, _ne)        -> emit_error (UnsupportedTerm ("instr_matchoption"))
+    | Minstrmatchor (_x, _lid, _le, _rid, _re)    -> emit_error (UnsupportedTerm ("instr_matchor"))
+    | Minstrmatchlist (_x, _hid, _tid, _hte, _ee) -> emit_error (UnsupportedTerm ("instr_matchlist"))
+
     | Mfor (id, col, body, _) ->
       let postvar = function
         | ICKcoll an when not (Model.Utils.is_asset_single_field model an) -> " -> value_"
@@ -382,7 +393,7 @@ let pp_model_internal fmt (model : model) b =
       let pp_iter_container_kind f fmt = function
         | ICKcoll an ->
           let is_asset_single_field = Model.Utils.is_asset_single_field model an in
-          Format.fprintf fmt "%s (%s.%s_assets)"
+          Format.fprintf fmt "%s (%s.%s)"
             (if is_asset_single_field then "set" else "map")
             const_storage
             an
@@ -438,6 +449,11 @@ let pp_model_internal fmt (model : model) b =
         f b
         f c
 
+    | Mwhile (c, b, _) ->
+      Format.fprintf fmt "while (%a) block{@\n  @[%a@]@\n}"
+        f c
+        f b
+
     | Mseq is ->
       begin
         match is with
@@ -470,15 +486,15 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt "failwith (%a)"
         (pp_fail_type f) ft
 
-    | Mtransfer (v, k) -> begin
-        match k with
-        | TKsimple d ->
+    | Mtransfer tr -> begin
+        match tr with
+        | TKsimple (x, d) ->
           Format.fprintf fmt "%s := cons(transaction(unit, %a, (get_contract(%a) : contract(unit))), %s)"
             const_operations
-            f v
+            f x
             f d
             const_operations
-        | TKcall (id, t, d, a) ->
+        | TKcall (x, id, t, d, a) ->
           let pp_entrypoint fmt _ =
             Format.fprintf fmt "case (Tezos.get_entrypoint_opt(\"%%%s\", %a) : option(contract(%a))) of Some (v) -> v | None -> (failwith(\"error self\") : contract(%a)) end"
               id f d pp_type t pp_type t
@@ -486,19 +502,19 @@ let pp_model_internal fmt (model : model) b =
           Format.fprintf fmt "%s := cons(transaction(%a, %a, %a), %s)"
             const_operations
             f a
-            f v
+            f x
             pp_entrypoint ()
             const_operations
 
-        | TKentry (e, a) ->
+        | TKentry (x, e, a) ->
           Format.fprintf fmt "%s := cons(transaction(%a, %a, %a), %s)"
             const_operations
             f a
-            f v
+            f x
             f e
             const_operations
 
-        | TKself (id, args) ->
+        | TKself (x, id, args) ->
           let pp_entrypoint fmt _ =
             Format.fprintf fmt "case (Tezos.get_entrypoint_opt(\"%%%s\", Tezos.self_address) : option(contract(action_%s))) of Some (v) -> v | None -> (failwith(\"error self\") : contract(action_%s)) end"
               id id id
@@ -511,7 +527,13 @@ let pp_model_internal fmt (model : model) b =
                | [] -> pp_str fmt "unit"
                | _  -> Format.fprintf fmt "record %a end" (pp_list "; " (fun fmt (id, v) -> Format.fprintf fmt "%s = %a" id f v)) l) args
             id
-            f v pp_entrypoint () const_operations
+            f x pp_entrypoint () const_operations
+
+        | TKoperation x ->
+          Format.fprintf fmt "%s := cons(%a, %s)"
+            const_operations
+            f x
+            const_operations
       end
 
 
@@ -557,8 +579,6 @@ let pp_model_internal fmt (model : model) b =
       begin
         let v =
           match c with
-          | Tz  -> assert false
-          | Mtz -> assert false
           | Utz -> v
         in
         Format.fprintf fmt "%amutez"
@@ -598,8 +618,20 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (e, l)
 
+    | Mmatchoption (_x, _i, _ve, _ne)        -> emit_error (UnsupportedTerm ("matchoption"))
+    | Mmatchor (_x, _lid, _le, _rid, _re)    -> emit_error (UnsupportedTerm ("matchor"))
+    | Mmatchlist (_x, _hid, _tid, _hte, _ee) -> emit_error (UnsupportedTerm ("matchlist"))
+    | Mloopleft (_x, _id, _e)                -> emit_error (UnsupportedTerm ("loopleft"))
+    | Mmap (_x, _id, _e)                     -> emit_error (UnsupportedTerm ("map"))
+    | Mexeclambda (_l, _a)                   -> emit_error (UnsupportedTerm ("execlambda"))
+    | Mapplylambda (_l, _a)                  -> emit_error (UnsupportedTerm ("applylambda"))
+
 
     (* composite type constructors *)
+
+    | Mleft (_, x) -> Format.fprintf fmt "(M_left(%a) : %a)" f x pp_type mtt.type_
+
+    | Mright (_, x) -> Format.fprintf fmt "(M_right(%a) : %a)" f x pp_type mtt.type_
 
     | Mnone -> Format.fprintf fmt "(None : %a)" pp_type mtt.type_
 
@@ -613,7 +645,7 @@ let pp_model_internal fmt (model : model) b =
 
     | Masset l ->
       let asset_name =
-        match mtt.type_ with
+        match get_ntype mtt.type_ with
         | Tasset asset_name -> asset_name
         | _ -> assert false
       in
@@ -629,7 +661,7 @@ let pp_model_internal fmt (model : model) b =
 
     | Massets l ->
       begin
-        match l, mtt.type_ with
+        match l, get_ntype mtt.type_ with
         | [], Tmap (_b, k , v) -> Format.fprintf fmt "(map end : map(%a, %a))" pp_type k pp_type v
         | _, Tmap (_b, k , v) -> Format.fprintf fmt "(map %a end : map(%a, %a))" (pp_list "; " f) l pp_type k pp_type v
         | [], _ -> Format.fprintf fmt "(set[] : %a)" pp_type mtt.type_
@@ -651,8 +683,8 @@ let pp_model_internal fmt (model : model) b =
             (pp_list "; " f) l
       end
 
-    | Mlitmap l -> begin
-        match mtt.type_ with
+    | Mlitmap (_, l) -> begin
+        match get_ntype mtt.type_ with
         | Tmap (true, _, _) ->
           Format.fprintf fmt "(Big_map.literal (list [%a]) : %a)"
             (pp_list "; " (fun fmt (k, v) -> Format.fprintf fmt "(%a, %a)"
@@ -674,6 +706,9 @@ let pp_model_internal fmt (model : model) b =
                           f v)) l
         pp_type mtt.type_
 
+    | Mlambda (_rt, _id, _at, _e) -> emit_error (UnsupportedTerm ("Mlambda"))
+
+
     (* access *)
 
     | Mdot (e, i) ->
@@ -681,17 +716,7 @@ let pp_model_internal fmt (model : model) b =
         f e
         pp_id i
 
-    | Mdotassetfield _ -> emit_error (UnsupportedTerm ("dotassetfield"))
-
-    | Mdotcontract (e, i) ->
-      Format.fprintf fmt "%a.%a"
-        f e
-        pp_id i
-
-    | Maccestuple (e, i) ->
-      Format.fprintf fmt "%a.%a"
-        f e
-        pp_big_int i
+    | Mdotassetfield _ -> emit_error (UnsupportedTerm ("Mdotassetfield"))
 
 
     (* comparison operators *)
@@ -766,6 +791,14 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (l, r)
 
+    | Mxor (l, r) ->
+      let pp fmt (l, r) =
+        Format.fprintf fmt "Bitwise.xor(%a, %a)"
+          f l
+          f r
+      in
+      pp fmt (l, r)
+
     | Mnot e ->
       let pp fmt e =
         Format.fprintf fmt "not (%a)"
@@ -814,13 +847,6 @@ let pp_model_internal fmt (model : model) b =
           (pp_cast Rhs l.type_ r.type_ f) r
       in
       pp fmt (l, r)
-
-    | Muplus e ->
-      let pp fmt e =
-        Format.fprintf fmt "+(%a)"
-          f e
-      in
-      pp fmt e
 
     | Muminus e ->
       let pp fmt e =
@@ -892,9 +918,10 @@ let pp_model_internal fmt (model : model) b =
       let pp fmt (an, c, _la, _lb, a) =
         let pp fmt _ =
           match c with
-          | CKcoll -> pp_str fmt const_storage
-          | CKview _ -> assert false
-          | CKfield (_, _, k) -> Format.fprintf fmt "%s, %a" const_storage f k
+          | CKcoll _          -> pp_str fmt const_storage
+          | CKview _          -> assert false
+          | CKfield (_, _, k, _, _) -> Format.fprintf fmt "%s, %a" const_storage f k
+          | CKdef _           -> assert false
         in
         Format.fprintf fmt "%s := removeif_%a_%i (%a%a)"
           const_storage
@@ -908,9 +935,10 @@ let pp_model_internal fmt (model : model) b =
       let pp fmt (an, v) =
         let pp_arg fmt _ =
           match v with
-          | CKcoll            -> Format.fprintf fmt  "%s" const_storage
-          | CKview c          -> Format.fprintf fmt  "%s, %a" const_storage f c
-          | CKfield (_, _, c) -> Format.fprintf fmt  "%s, %a" const_storage f c
+          | CKcoll _                -> Format.fprintf fmt "%s" const_storage
+          | CKview c                -> Format.fprintf fmt "%s, %a" const_storage f c
+          | CKfield (_, _, c, _, _) -> Format.fprintf fmt "%s, %a" const_storage f c
+          | CKdef _                 -> assert false
         in
         Format.fprintf fmt "%s := clear_%a (%a)"
           const_storage
@@ -945,8 +973,8 @@ let pp_model_internal fmt (model : model) b =
         let asset_val = an ^ "_" in
         Format.fprintf fmt
           "const %s : %a = %a;@\n\
-           const %s : %s_storage = get_force(%s, %s.%s_assets);@\n\
-           %s.%s_assets[%s] := %s%a"
+           const %s : %s_storage = get_force(%s, %s.%s);@\n\
+           %s.%s[%s] := %s%a"
           asset_key pp_type t f (compute_ k)
           asset_val an asset_key const_storage an
           const_storage an asset_key asset_val
@@ -960,7 +988,7 @@ let pp_model_internal fmt (model : model) b =
                       let (_, type_, _) = Utils.get_asset_field model (an, id) in
                       Format.fprintf fmt "%s = %a" id
                         (fun fmt _ ->
-                           match op, type_ with
+                           match op, get_ntype type_ with
                            | ValueAssign, _ -> f fmt v
                            | PlusAssign , _ -> Format.fprintf fmt "%s.%s + (%a)"   asset_val id f v
                            | MinusAssign, Tbuiltin Bnat -> Format.fprintf fmt "(if (%s.%s - (%a)) >= 0 then abs(%s.%s - (%a)) else (failwith (%a) : nat))"   asset_val id f v asset_val id f v (pp_fail_type f) AssignNat
@@ -977,6 +1005,7 @@ let pp_model_internal fmt (model : model) b =
       pp fmt (an, k, l)
 
     | Maddupdate _ -> emit_error (UnsupportedTerm ("addupdate"))
+    | Maddforce  _ -> emit_error (UnsupportedTerm ("addforce"))
 
 
     (* asset api expression *)
@@ -995,9 +1024,10 @@ let pp_model_internal fmt (model : model) b =
       let pp fmt (an, c, _la, _lb, a) =
         let pp fmt _ =
           match c with
-          | CKcoll -> pp_str fmt const_storage
+          | CKcoll _ -> pp_str fmt const_storage
           | CKview mt
-          | CKfield (_, _, mt) -> Format.fprintf fmt "%s, %a" const_storage f mt
+          | CKfield (_, _, mt, _, _) -> Format.fprintf fmt "%s, %a" const_storage f mt
+          | CKdef _   -> assert false
         in
         Format.fprintf fmt "select_%a_%i (%a%a)"
           (pp_prefix_container_kind an) c index
@@ -1010,9 +1040,10 @@ let pp_model_internal fmt (model : model) b =
       let pp fmt (an, c, l) =
         let pp fmt _ =
           match c with
-          | CKcoll -> pp_str fmt const_storage
+          | CKcoll _ -> pp_str fmt const_storage
           | CKview mt
-          | CKfield (_, _, mt) -> Format.fprintf fmt "%s, %a" const_storage f mt
+          | CKfield (_, _, mt, _, _) -> Format.fprintf fmt "%s, %a" const_storage f mt
+          | CKdef _   -> assert false
         in
         Format.fprintf fmt "sort_%a_%a (%a)"
           (pp_prefix_container_kind an) c
@@ -1027,9 +1058,10 @@ let pp_model_internal fmt (model : model) b =
           (pp_prefix_container_kind an) c
           (fun fmt c ->
              match c with
-             | CKcoll             -> (pp_str fmt const_storage)
+             | CKcoll _           -> (pp_str fmt const_storage)
              | CKview mt          -> f fmt mt
-             | CKfield (_, _, mt) -> Format.fprintf fmt "%s, %a" const_storage f mt) c
+             | CKfield (_, _, mt, _, _) -> Format.fprintf fmt "%s, %a" const_storage f mt
+             | CKdef _   -> assert false) c
           f i
       in
       pp fmt (an, c, i)
@@ -1038,9 +1070,10 @@ let pp_model_internal fmt (model : model) b =
       let pp fmt (an, c, i) =
         let pp =
           match c with
-          | CKcoll     -> (fun fmt _ -> Format.fprintf fmt "%s" const_storage)
+          | CKcoll _    -> (fun fmt _ -> Format.fprintf fmt "%s" const_storage)
           | CKview mt
-          | CKfield (_, _, mt) -> (fun fmt _ -> Format.fprintf fmt "%s, %a" const_storage f mt)
+          | CKfield (_, _, mt, _, _) -> (fun fmt _ -> Format.fprintf fmt "%s, %a" const_storage f mt)
+          | CKdef _   -> assert false
         in
         Format.fprintf fmt "nth_%a (%a, %a)"
           (pp_prefix_container_kind an) c
@@ -1055,9 +1088,10 @@ let pp_model_internal fmt (model : model) b =
           (pp_prefix_container_kind an) c
           (fun fmt _ ->
              match c with
-             | CKcoll -> pp_str fmt const_storage
+             | CKcoll _ -> pp_str fmt const_storage
              | CKview mt -> f fmt mt
-             | CKfield (_, _, mt) -> Format.fprintf fmt "%s, %a" const_storage f mt) ()
+             | CKfield (_, _, mt, _, _) -> Format.fprintf fmt "%s, %a" const_storage f mt
+             | CKdef _   -> assert false) ()
       in
       pp fmt (an, c)
 
@@ -1066,9 +1100,10 @@ let pp_model_internal fmt (model : model) b =
       let pp fmt (an, c, _p) =
         let pp fmt _ =
           match c with
-          | CKcoll     -> pp_str fmt const_storage
+          | CKcoll _   -> pp_str fmt const_storage
           | CKview  mt
-          | CKfield (_, _, mt) -> Format.fprintf fmt "%s, %a" const_storage f mt
+          | CKfield (_, _, mt, _, _) -> Format.fprintf fmt "%s, %a" const_storage f mt
+          | CKdef _   -> assert false
         in
         Format.fprintf fmt "sum_%a_%i (%a)"
           (pp_prefix_container_kind an) c index
@@ -1082,9 +1117,10 @@ let pp_model_internal fmt (model : model) b =
           (pp_prefix_container_kind an) c
           (fun fmt c ->
              match c with
-             | CKcoll -> pp_str fmt const_storage
+             | CKcoll _ -> pp_str fmt const_storage
              | CKview mt -> f fmt mt
-             | CKfield (_, _, mt) -> Format.fprintf fmt "%s, %a" const_storage f mt) c
+             | CKfield (_, _, mt, _, _) -> Format.fprintf fmt "%s, %a" const_storage f mt
+             | CKdef _   -> assert false) c
           f i
       end
 
@@ -1094,9 +1130,10 @@ let pp_model_internal fmt (model : model) b =
           (pp_prefix_container_kind an) c
           (fun fmt c ->
              match c with
-             | CKcoll -> pp_str fmt const_storage
+             | CKcoll _ -> pp_str fmt const_storage
              | CKview mt -> f fmt mt
-             | CKfield (_, _, mt) -> Format.fprintf fmt "%s, %a" const_storage f mt) c
+             | CKfield (_, _, mt, _, _) -> Format.fprintf fmt "%s, %a" const_storage f mt
+             | CKdef _   -> assert false) c
           f i
       end
 
@@ -1106,8 +1143,9 @@ let pp_model_internal fmt (model : model) b =
       let pp fmt (src, dst, v) =
         Format.fprintf fmt "(%a : %a)"
           (fun fmt x -> begin
-               match src, dst with
-               | Tbuiltin (Baddress | Brole), Tentrysig _ -> Format.fprintf fmt "get_contract(%a)" f x
+               match get_ntype src, get_ntype dst with
+               | Tbuiltin (Baddress | Brole), Tcontract _ -> Format.fprintf fmt "get_contract(%a)" f x
+               | Tbuiltin Bcurrency, Tbuiltin Bnat        -> Format.fprintf fmt "((%a) / 1mutez)" f x
                | _ -> f fmt x
              end) v
           pp_type dst
@@ -1121,6 +1159,15 @@ let pp_model_internal fmt (model : model) b =
           pp_big_int k
       in
       pp fmt (x, k)
+
+    | Mrecupdate (x, l) ->
+      let pp fmt (x, l) =
+        Format.fprintf fmt "%a with record [%a]"
+          f x
+          (pp_list " " (fun fmt (i, v) -> Format.fprintf fmt "%s = %a" i f v)) l
+      in
+      pp fmt (x, l)
+
 
     (* set api expression *)
 
@@ -1143,6 +1190,8 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt "Set.size (%a)"
         f c
 
+    | Msetfold _ -> emit_error (UnsupportedTerm ("Msetfold"))
+
 
     (* list api expression *)
 
@@ -1152,15 +1201,21 @@ let pp_model_internal fmt (model : model) b =
         f c
         f a
 
+    | Mlistheadtail (t, c) ->
+      Format.fprintf fmt "(case (%a) of | h#t -> (h, t) | nil -> (failwith (\"EmptyList\") : (%a * list(%a))) end)"
+        f c
+        pp_type t
+        pp_type t
+
+    | Mlistlength (_t, c) ->
+      Format.fprintf fmt "size (%a)"
+        f c
+
     | Mlistcontains (t, c, a) ->
       Format.fprintf fmt "list_%a_contains (%a, %a)"
         pp_pretty_type t
         f c
         f a
-
-    | Mlistlength (_t, c) ->
-      Format.fprintf fmt "size (%a)"
-        f c
 
     | Mlistnth (t, c, a) ->
       Format.fprintf fmt "list_%a_nth (%a, %a)"
@@ -1168,6 +1223,13 @@ let pp_model_internal fmt (model : model) b =
         f c
         f a
 
+    | Mlistreverse (t, l) ->
+      Format.fprintf fmt "list_%a_reverse (%a)"
+        pp_pretty_type t
+        f l
+
+    | Mlistconcat _ -> emit_error (UnsupportedTerm ("Mlistconcat"))
+    | Mlistfold _ -> emit_error (UnsupportedTerm ("Mlistfold"))
 
     (* map api expression *)
 
@@ -1202,6 +1264,7 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt "Map.size(%a)"
         f c
 
+    | Mmapfold _ -> emit_error (UnsupportedTerm ("Mmapfold"))
 
     (* builtin functions *)
 
@@ -1219,7 +1282,7 @@ let pp_model_internal fmt (model : model) b =
 
     | Mabs a ->
       let pp_tmp fmt t =
-        match t with
+        match get_ntype t with
         | Tbuiltin Bnat -> ()
         | _ -> Format.fprintf fmt "_%a" pp_pretty_type t
       in
@@ -1235,7 +1298,7 @@ let pp_model_internal fmt (model : model) b =
 
     | Mslice (x, s, e) ->
       let prefix =
-        match mtt.type_ with
+        match get_ntype mtt.type_ with
         | Tbuiltin Bstring -> "string"
         | Tbuiltin Bbytes -> "bytes"
         | _ -> assert false
@@ -1321,27 +1384,30 @@ let pp_model_internal fmt (model : model) b =
     | Msource        -> pp_str fmt "source"
     | Mselfaddress   -> pp_str fmt "Tezos.self_address"
     | Mchainid       -> pp_str fmt "chain_id"
+    | Mmetadata      -> pp_str fmt "metadata"
 
 
     (* variable *)
 
-    | Mvar (an, Vassetstate k) ->
+    | Mvar (an, Vassetstate k, _, _) ->
       Format.fprintf fmt "state_%a(%a)"
         pp_str (unloc an)
         f k
 
-    | Mvar (v, Vstorevar) ->
+    | Mvar (v, Vstorevar, _, _) ->
       if (is_const env v)
       then pp_id fmt v
       else Format.fprintf fmt "%s.%a" const_storage pp_id v
 
-    | Mvar (v, Vstorecol) -> Format.fprintf fmt "%s.%a" const_storage pp_id v
+    | Mvar (v, Vstorecol, _, _) -> Format.fprintf fmt "%s.%a" const_storage pp_id v
 
-    | Mvar (v, Venumval)  -> pp_id fmt v
+    | Mvar (v, Venumval, _, _)  -> pp_id fmt v
 
-    | Mvar (v, Vlocal)    -> pp_id fmt v
+    | Mvar (v, Vdefinition, _, _) -> pp_id fmt v
 
-    | Mvar (v, Vparam)    ->
+    | Mvar (v, Vlocal, _, _)    -> pp_id fmt v
+
+    | Mvar (v, Vparam, _, _)    ->
       Format.fprintf fmt "%a%a"
         (fun fmt x ->
            match x with
@@ -1350,11 +1416,13 @@ let pp_model_internal fmt (model : model) b =
         ) env.f
         pp_id v
 
-    | Mvar (v, Vfield)    -> pp_id fmt v
+    | Mvar (v, Vfield, _, _)    -> pp_id fmt v
 
-    | Mvar (_, Vthe)      -> pp_str fmt "the"
+    | Mvar (_, Vthe, _, _)      -> pp_str fmt "the"
 
-    | Mvar (_, Vstate)    -> Format.fprintf fmt "%s.%s" const_storage const_state
+    | Mvar (_, Vstate, _, _)    -> Format.fprintf fmt "%s.%s" const_storage const_state
+
+    | Mvar (v, Vparameter, _, _)  -> pp_id fmt v
 
     (* rational *)
 
@@ -1414,14 +1482,6 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (c, t)
 
-    | Mdivtez (c, t) ->
-      let pp fmt (c, t) =
-        Format.fprintf fmt "div_tez (%a, %a)"
-          f c
-          f t
-      in
-      pp fmt (c, t)
-
     | Mnattoint e ->
       let pp fmt e =
         Format.fprintf fmt "int(%a)"
@@ -1452,23 +1512,6 @@ let pp_model_internal fmt (model : model) b =
       pp fmt (c, t)
 
 
-    (* functional *)
-
-    | Mfold (i, is, c, b) ->
-      Format.fprintf fmt
-        "List.fold (fun (%a, (%a)) ->@\n\
-         @[  %a@]) %a (%a)@\n"
-        pp_id i (pp_list ", " pp_id) is
-        f b
-        f c
-        (pp_list ", " pp_id) is
-
-
-    (* imperative *)
-
-    | Mbreak -> emit_error (UnsupportedTerm ("break"))
-
-
     (* quantifiers *)
 
     | Mforall _ -> emit_error (UnsupportedTerm ("forall"))
@@ -1483,11 +1526,6 @@ let pp_model_internal fmt (model : model) b =
 
     (* formula asset collection *)
 
-    | Msetbefore    _ -> emit_error (UnsupportedTerm ("setbefore"))
-    | Msetat        _ -> emit_error (UnsupportedTerm ("setat"))
-    | Msetunmoved   _ -> emit_error (UnsupportedTerm ("setunmoved"))
-    | Msetadded     _ -> emit_error (UnsupportedTerm ("setadded"))
-    | Msetremoved   _ -> emit_error (UnsupportedTerm ("setremoved"))
     | Msetiterated  _ -> emit_error (UnsupportedTerm ("setiterated"))
     | Msettoiterate _ -> emit_error (UnsupportedTerm ("settoiterate"))
 
@@ -1541,7 +1579,8 @@ let pp_model_internal fmt (model : model) b =
   in
 
   let pp_var env (fmt : Format.formatter) (var : var) =
-    if (var.constant) then
+    let constant = match var.kind with | VKconstant -> true | _ -> false in
+    if constant then
       begin
         if Option.is_none var.default
         then assert false;
@@ -1652,7 +1691,7 @@ let pp_model_internal fmt (model : model) b =
         Format.fprintf fmt
           "function get_%s (const s : storage_type; const key : %a) : %s is@\n  \
            begin@\n    \
-           if not set_mem(key, s.%s_assets) then failwith (\"key does not exists\") else skip;@\n    \
+           if not set_mem(key, s.%s) then failwith (\"key does not exists\") else skip;@\n    \
            const res : %s = record[%s = key]@\n  \
            end with (res)@\n"
           an pp_type t an
@@ -1663,7 +1702,7 @@ let pp_model_internal fmt (model : model) b =
         Format.fprintf fmt
           "function get_%s (const s : storage_type; const key : %a) : %s is@\n  \
            begin@\n    \
-           const a : %s_storage = get_force(key, s.%s_assets);@\n    \
+           const a : %s_storage = get_force(key, s.%s);@\n    \
            const res : %s = record[%a]@\n  \
            end with (res)@\n"
           an pp_type t an an an an
@@ -1678,9 +1717,9 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt
         "function set_%s (const s : storage_type; const key : %a; const a : %s) : storage_type is@\n  \
          begin@\n    \
-         const map_local : map(%a, %s_storage) = s.%s_assets;@\n    \
+         const map_local : map(%a, %s_storage) = s.%s;@\n    \
          map_local[key] := record[%a];@\n    \
-         s.%s_assets := map_local;@\n  \
+         s.%s := map_local;@\n  \
          end with (s)@\n"
         an pp_type t an
         pp_type t an an
@@ -1698,8 +1737,8 @@ let pp_model_internal fmt (model : model) b =
           "function add_%s (const s : storage_type; const a : %s) : storage_type is@\n  \
            begin@\n    \
            const key : %a = a.%s;@\n    \
-           if set_mem(key, s.%s_assets) then failwith (\"key already exists\") else skip;@\n    \
-           s.%s_assets := set_add(key, s.%s_assets);@\n  \
+           if set_mem(key, s.%s) then failwith (\"key already exists\") else skip;@\n    \
+           s.%s := set_add(key, s.%s);@\n  \
            end with (s)@\n"
           an an
           pp_type t k
@@ -1711,11 +1750,11 @@ let pp_model_internal fmt (model : model) b =
           "function add_%s (const s : storage_type; const a : %s) : storage_type is@\n  \
            begin@\n    \
            const key : %a = a.%s;@\n    \
-           const map_local : %amap(%a, %s_storage) = s.%s_assets;@\n    \
+           const map_local : %amap(%a, %s_storage) = s.%s;@\n    \
            if map_mem(key, map_local) then failwith (\"key already exists\") else skip;@\n    \
            const asset : %s_storage = record[%a];@\n    \
            map_local[key] := asset;@\n    \
-           s.%s_assets := map_local;@\n  \
+           s.%s := map_local;@\n  \
            end with (s)@\n"
           an an
           pp_type t k
@@ -1729,8 +1768,8 @@ let pp_model_internal fmt (model : model) b =
         begin
           let asset = Utils.get_asset model an in
           List.fold_left (fun accu (x : asset_item) ->
-              match x.original_type with
-              | Tcontainer (Tasset an, Partition) -> (unloc x.name, unloc an)::accu
+              match get_ntype x.original_type with
+              | Tcontainer ((Tasset an, _), Partition) -> (unloc x.name, unloc an)::accu
               | _ -> accu
             ) [] asset.values
         end
@@ -1738,14 +1777,14 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt
         "function remove_%s (const s : storage_type; const key : %a) : storage_type is@\n  \
          begin@\n    \
-         %aremove key from %s s.%s_assets;@\n  \
+         %aremove key from %s s.%s;@\n  \
          end with (s)@\n"
         an pp_type t
         (fun fmt aps ->
            match aps with
            | [] -> ()
            | _ ->
-             Format.fprintf fmt "const asset : %s_storage = get_force(key, s.%s_assets);@\n    " an an;
+             Format.fprintf fmt "const asset : %s_storage = get_force(key, s.%s);@\n    " an an;
              (pp_list "" (fun fmt (fn, fan : ident * ident) ->
                   Format.fprintf fmt
                     "for i in set (asset.%s) block {@\n      s := remove_%s(s, i)@\n    };@\n    "
@@ -1763,7 +1802,7 @@ let pp_model_internal fmt (model : model) b =
             Format.fprintf fmt
               "function clear_c_%s (const s : storage_type) : storage_type is@\n  \
                begin@\n  \
-               for %s in %s (s.%s_assets) block {@\n    \
+               for %s in %s (s.%s) block {@\n    \
                s := remove_%s(s, i)@\n  \
                }@\n  \
                end with (s)@\n"
@@ -1784,7 +1823,7 @@ let pp_model_internal fmt (model : model) b =
           Format.fprintf fmt
             "function clear_%a (const s : storage_type; const k : %a) : storage_type is@\n  \
              begin@\n  \
-             const a : %s_storage = get_force(k, s.%s_assets);@\n  \
+             const a : %s_storage = get_force(k, s.%s);@\n  \
              for i in set (a.%s) block {@\n    \
              s := remove_%s_%s (s, k, i)@\n  \
              }@\n  \
@@ -1813,7 +1852,7 @@ let pp_model_internal fmt (model : model) b =
         | Aggregate ->
           (fun fmt _ ->
              Format.fprintf fmt
-               "if not %s.mem(%s, s.%s_assets) then failwith (\"key does not exist\") else skip;@\n    "
+               "if not %s.mem(%s, s.%s) then failwith (\"key does not exist\") else skip;@\n    "
                (if single then "Set" else "Map") bkey ft),
           (fun fmt _ -> pp_type fmt kt)
         | Partition ->
@@ -1825,9 +1864,9 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt
         "function add_%s_%s (const s : storage_type; const asset_key : %a; const b : %a) : storage_type is@\n  \
          begin@\n    \
-         const asset_val : %s_storage = get_force(asset_key, s.%s_assets);@\n    \
+         const asset_val : %s_storage = get_force(asset_key, s.%s);@\n    \
          %a\
-         s.%s_assets[asset_key] := asset_val with record[%s = Set.add(%s, asset_val.%s)];@\n  \
+         s.%s[asset_key] := asset_val with record[%s = Set.add(%s, asset_val.%s)];@\n  \
          end with (s)@\n"
         an fn pp_type t pp_b_arg_type ()
         an
@@ -1842,9 +1881,9 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt
         "function remove_%s_%s (const s : storage_type; const asset_key : %a; const removed_key : %a) : storage_type is@\n  \
          begin@\n    \
-         const asset_val : %s_storage = get_force(asset_key, s.%s_assets);@\n    \
+         const asset_val : %s_storage = get_force(asset_key, s.%s);@\n    \
          remove removed_key from set asset_val.%s;@\n    \
-         s.%s_assets[asset_key] := asset_val;@\n  \
+         s.%s[asset_key] := asset_val;@\n  \
          %a\
          end with (s)@\n"
         an fn pp_type t pp_type tt
@@ -1859,7 +1898,7 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt
         "function removeall_%s_%s (const s : storage_type; const k : %a) : storage_type is@\n  \
          begin@\n    \
-         const asset_val : %s_storage = get_force(k, s.%s_assets);@\n    \
+         const asset_val : %s_storage = get_force(k, s.%s);@\n    \
          const l : set(%a) = asset_val.%s;@\n    \
          for i in set (l) block {@\n      \
          s := remove_%s_%s(s, k, i)@\n    \
@@ -1892,7 +1931,7 @@ let pp_model_internal fmt (model : model) b =
                begin@\n        \
                const the : %s = get_%s(s, i%s);@\n        \
                end with (if (%a) then remove_%s (accu, i%s) else accu);@\n    \
-               end with (%s_fold(aggregate, s.%s_assets, s))@\n"
+               end with (%s_fold(aggregate, s.%s, s))@\n"
               (pp_prefix_api_container_kind an) c i (pp_list "" pp_arg) args
               pp_type t iter_type
               an an iter_val
@@ -1910,7 +1949,7 @@ let pp_model_internal fmt (model : model) b =
                begin@\n          \
                const the : %s = get_%s(s, i);@\n      \
                end with (if (%a) then remove_%s_%s (accu, key, i) else accu);@\n  \
-               end with (case s.%s_assets[key] of None -> s | Some(a) -> set_fold(aggregate, a.%s, s) end)"
+               end with (case s.%s[key] of None -> s | Some(a) -> set_fold(aggregate, a.%s, s) end)"
               (pp_prefix_api_container_kind an) c i pp_type t (pp_list "" pp_arg) args
               pp_type tt
               aan aan
@@ -1936,10 +1975,10 @@ let pp_model_internal fmt (model : model) b =
              match c with
              | Coll  -> Format.fprintf fmt " skip "
              | View  -> Format.fprintf fmt "@\n  function aggregate (const accu : bool; const v : %a) : bool is block { skip } with (accu or v = key);@\n" pp_type t
-             | Field (an, fn) -> Format.fprintf fmt "@\n  const a : %s_storage = get_force(k, s.%s_assets);@\n  const l : set(%a) = a.%s;@\n" an an pp_type t fn) c
+             | Field (an, fn) -> Format.fprintf fmt "@\n  const a : %s_storage = get_force(k, s.%s);@\n  const l : set(%a) = a.%s;@\n" an an pp_type t fn) c
           (fun fmt c ->
              match c with
-             | Coll  -> Format.fprintf fmt "%s.mem (key, s.%s_assets)" (if Utils.is_asset_single_field model an then "Set" else "Map") an
+             | Coll  -> Format.fprintf fmt "%s.mem (key, s.%s)" (if Utils.is_asset_single_field model an then "Set" else "Map") an
              | View  -> Format.fprintf fmt "list_fold(aggregate, l, False)"
              | Field _ -> Format.fprintf fmt "Set.mem(key, l)" ) c
       end
@@ -1956,14 +1995,14 @@ let pp_model_internal fmt (model : model) b =
       let container, src, iter_type, iter_val, pp_src =
         match c with
         | Coll when is_one_field ->
-          "set", "s." ^ an ^ "_assets", "", "", (fun _ _ -> ())
+          "set", "s." ^ an ^ "", "", "", (fun _ _ -> ())
         | Coll ->
-          "map", "s." ^ an ^ "_assets", " * " ^ an ^ "_storage", ".0", (fun _ _ -> ())
+          "map", "s." ^ an ^ "", " * " ^ an ^ "_storage", ".0", (fun _ _ -> ())
         | View ->
           "list", "l", "", "", (fun _ _ -> ())
         | Field (an, fn) ->
           "set", "a." ^ fn, "", "",
-          (fun fmt _ -> Format.fprintf fmt "const a : %s_storage = get_force(k, s.%s_assets);@\n    " an an)
+          (fun fmt _ -> Format.fprintf fmt "const a : %s_storage = get_force(k, s.%s);@\n    " an an)
       in
       Format.fprintf fmt
         "function nth_%a (const s : storage_type%a; const index : nat) : %a is@\n  \
@@ -2000,14 +2039,14 @@ let pp_model_internal fmt (model : model) b =
       let container, src, iter_type, iter_val, pp_src =
         match c with
         | Coll when is_one_field ->
-          "set", "s." ^ an ^ "_assets", "", "", (fun _ _ -> ())
+          "set", "s." ^ an ^ "", "", "", (fun _ _ -> ())
         | Coll ->
-          "map", "s." ^ an ^ "_assets", " * " ^ an ^ "_storage", ".0", (fun _ _ -> ())
+          "map", "s." ^ an ^ "", " * " ^ an ^ "_storage", ".0", (fun _ _ -> ())
         | View ->
           "list", "l", "", "", (fun _ _ -> ())
         | Field (an, fn) ->
           "set", "a." ^ fn, "", "",
-          (fun fmt _ -> Format.fprintf fmt "const a : %s_storage = get_force(k, s.%s_assets);@\n    " an an)
+          (fun fmt _ -> Format.fprintf fmt "const a : %s_storage = get_force(k, s.%s);@\n    " an an)
       in
       Format.fprintf fmt
         "function select_%a_%i (const s : storage_type%a%a) : list(%a) is@\n  \
@@ -2040,14 +2079,14 @@ let pp_model_internal fmt (model : model) b =
       let container, src, iter_type, iter_val, pp_src =
         match c with
         | Coll when is_one_field ->
-          "set", "s." ^ an ^ "_assets", "", "", (fun _ _ -> ())
+          "set", "s." ^ an ^ "", "", "", (fun _ _ -> ())
         | Coll ->
-          "map", "s." ^ an ^ "_assets", " * " ^ an ^ "_storage", ".0", (fun _ _ -> ())
+          "map", "s." ^ an ^ "", " * " ^ an ^ "_storage", ".0", (fun _ _ -> ())
         | View ->
           "list", "l", "", "", (fun _ _ -> ())
         | Field (an, fn) ->
           "set", "a." ^ fn, "", "",
-          (fun fmt _ -> Format.fprintf fmt "const a : %s_storage = get_force(k, s.%s_assets);@\n    " an an)
+          (fun fmt _ -> Format.fprintf fmt "const a : %s_storage = get_force(k, s.%s);@\n    " an an)
       in
 
       let pp_criteria fmt (fn, c) =
@@ -2065,6 +2104,14 @@ let pp_model_internal fmt (model : model) b =
           fn d
           fn op1 fn
           fn op2 fn
+      in
+
+      let pp_rev fmt _ =
+        Format.fprintf fmt
+          "function rev (const accu: list(%a); const x: %a) : list(%a) is x # accu;@\n"
+          pp_type t
+          pp_type t
+          pp_type t
       in
 
       let pp_fun_cmp fmt _ =
@@ -2090,7 +2137,7 @@ let pp_model_internal fmt (model : model) b =
            const res : option(%a) * list(%a) =@\n    \
            case accu.0 of@\n    \
            | Some(v) ->@\n    \
-           if (cmp(x, v) < 0)@\n    \
+           if (cmp(x, v) > 0)@\n    \
            then ((None : option(%a)), cons(x, cons(v, accu.1)))@\n    \
            else (Some(v), cons(x, accu.1))@\n    \
            | None -> ((None : option(%a)), cons(x, accu.1))@\n    \
@@ -2113,11 +2160,11 @@ let pp_model_internal fmt (model : model) b =
            | Some(v) -> cons(v, res_opt.1)@\n    \
            | None -> res_opt.1@\n    \
            end;@\n  \
-           } with res;@\n"
+           } with list_fold(rev, res, (list [] : list(%a)));@\n"
           pp_type t pp_type t iter_type pp_type t
           pp_type t pp_type t iter_val pp_type t
           pp_type t pp_type t
-          pp_type t
+          pp_type t pp_type t
       in
 
       Format.fprintf fmt
@@ -2126,11 +2173,13 @@ let pp_model_internal fmt (model : model) b =
          @[%a@]@\n    \
          @[%a@]@\n    \
          @[%a@]@\n    \
+         @[%a@]@\n    \
          %a\
          const init : list(%a) = list [];@\n    \
          const res : list(%a) = %s_fold (sort, %s, init);@\n  \
          end with res@\n"
         (pp_prefix_api_container_kind an) c pp_postfix_sort l pp_fun_arg () pp_type t
+        pp_rev ()
         pp_fun_cmp ()
         pp_fun_insert ()
         pp_fun_sort ()
@@ -2153,11 +2202,11 @@ let pp_model_internal fmt (model : model) b =
              match c with
              | Coll -> Format.fprintf fmt "skip "
              | View -> Format.fprintf fmt "skip "
-             | Field (an, fn) -> Format.fprintf fmt "@\n  const a : %s_storage = get_force(k, s.%s_assets);@\n  const l : set(%a) = a.%s;@\n" an an pp_type t fn) c
+             | Field (an, fn) -> Format.fprintf fmt "@\n  const a : %s_storage = get_force(k, s.%s);@\n  const l : set(%a) = a.%s;@\n" an an pp_type t fn) c
           (fun fmt c ->
              match c with
              | Coll ->
-               let src = "s." ^ an ^ "_assets" in
+               let src = "s." ^ an ^ "" in
                let size = if Model.Utils.is_asset_single_field model an then "Set.size" else "Map.size" in
                Format.fprintf fmt "%s(%s)" size src
              | View -> Format.fprintf fmt "size(l)"
@@ -2167,14 +2216,14 @@ let pp_model_internal fmt (model : model) b =
     | Sum (an, c, t, p) ->
       let rec pp_expr fmt (mt : mterm) =
         match mt.node with
-        | Mdot ({node = Mvar ({pldesc = "the"; _}, Vlocal) }, fn) ->
+        | Mdot ({node = Mvar ({pldesc = "the"; _}, Vlocal, _, _) }, fn) ->
           Format.fprintf fmt "a.%a"
             pp_id fn
         | _ -> (pp_mterm_gen (mk_env ()) pp_expr) fmt mt
       in
       let get_zero _ =
-        match t with
-        | Ttuple [Tbuiltin Bint; Tbuiltin Bnat] -> "(0, 1n)"
+        match get_ntype t with
+        | Ttuple [(Tbuiltin Bint, _); (Tbuiltin Bnat, _)] -> "(0, 1n)"
         | Tbuiltin Bnat -> "0n"
         | _ -> "0"
       in
@@ -2188,21 +2237,21 @@ let pp_model_internal fmt (model : model) b =
         | Field (an, _) -> Format.fprintf fmt "; const k : %a" pp_type (Utils.get_asset_key model an |> snd)
       in
       let pp_formula fmt _ =
-        match t with
-        | Ttuple [Tbuiltin Bint; Tbuiltin Bnat] -> pp_str fmt "e.0 * int(accu.1) + accu.0 * int(e.1), e.1 * accu.1"
+        match get_ntype t with
+        | Ttuple [(Tbuiltin Bint, _); (Tbuiltin Bnat, _)] -> pp_str fmt "e.0 * int(accu.1) + accu.0 * int(e.1), e.1 * accu.1"
         | _ -> pp_str fmt "accu + e"
       in
       let container, src, iter_type, iter_val, pp_src =
         match c with
         | Coll when is_one_field ->
-          "set", "s." ^ an ^ "_assets", "", "", (fun _ _ -> ())
+          "set", "s." ^ an ^ "", "", "", (fun _ _ -> ())
         | Coll ->
-          "map", "s." ^ an ^ "_assets", " * " ^ an ^ "_storage", ".0", (fun _ _ -> ())
+          "map", "s." ^ an ^ "", " * " ^ an ^ "_storage", ".0", (fun _ _ -> ())
         | View ->
           "list", "l", "", "", (fun _ _ -> ())
         | Field (an, fn) ->
           "set", "a." ^ fn, "", "",
-          (fun fmt _ -> Format.fprintf fmt "@\n  const a : %s_storage = get_force(k, s.%s_assets);" an an)
+          (fun fmt _ -> Format.fprintf fmt "@\n  const a : %s_storage = get_force(k, s.%s);" an an)
       in
       Format.fprintf fmt
         "function sum_%a_%i (const s : storage_type%a) : %a is@\n  \
@@ -2233,14 +2282,14 @@ let pp_model_internal fmt (model : model) b =
       let size, container, src, iter_type, iter_val, pp_src =
         match c with
         | Coll when is_one_field ->
-          "Set.size", "set", "s." ^ an ^ "_assets", "", "", (fun _ _ -> ())
+          "Set.size", "set", "s." ^ an ^ "", "", "", (fun _ _ -> ())
         | Coll ->
-          "Map.size", "map", "s." ^ an ^ "_assets", " * " ^ an ^ "_storage", ".0", (fun _ _ -> ())
+          "Map.size", "map", "s." ^ an ^ "", " * " ^ an ^ "_storage", ".0", (fun _ _ -> ())
         | View ->
           "size", "list", "l", "", "", (fun _ _ -> ())
         | Field (an, fn) ->
           "Set.size", "set", "a." ^ fn, "", "",
-          (fun fmt _ -> Format.fprintf fmt "const a : %s_storage = get_force(k, s.%s_assets);@\n    " an an)
+          (fun fmt _ -> Format.fprintf fmt "const a : %s_storage = get_force(k, s.%s);@\n    " an an)
       in
       Format.fprintf fmt
         "function head_%a (%a; const i : nat) : list(%a) is@\n  \
@@ -2279,14 +2328,14 @@ let pp_model_internal fmt (model : model) b =
       let size, container, src, iter_type, iter_val, pp_src =
         match c with
         | Coll when is_one_field ->
-          "Set.size", "set", "s." ^ an ^ "_assets", "", "", (fun _ _ -> ())
+          "Set.size", "set", "s." ^ an ^ "", "", "", (fun _ _ -> ())
         | Coll ->
-          "Map.size", "map", "s." ^ an ^ "_assets", " * " ^ an ^ "_storage", ".0", (fun _ _ -> ())
+          "Map.size", "map", "s." ^ an ^ "", " * " ^ an ^ "_storage", ".0", (fun _ _ -> ())
         | View ->
           "size", "list", "l", "", "", (fun _ _ -> ())
         | Field (an, fn) ->
           "Set.size", "set", "a." ^ fn, "", "",
-          (fun fmt _ -> Format.fprintf fmt "const a : %s_storage = get_force(k, s.%s_assets);@\n    " an an)
+          (fun fmt _ -> Format.fprintf fmt "const a : %s_storage = get_force(k, s.%s);@\n    " an an)
       in
       Format.fprintf fmt
         "function tail_%a (%a; const i : nat) : list(%a) is@\n  \
@@ -2359,13 +2408,24 @@ let pp_model_internal fmt (model : model) b =
         pp_type t
         pp_type t
         pp_type t pp_type t
+
+    | Lreverse t  ->
+      Format.fprintf fmt
+        "function list_%a_reverse (const l : list(%a)) : list(%a) is@\n  \
+         block {@\ \
+         function rev (const accu: list(%a); const x: %a) : list(%a) is x # accu;@\n    \
+         }@\n  \
+         with list_fold (rev, l, ((list [] : list(%a))))@\n"
+        pp_pretty_type t pp_type t pp_type t
+        pp_type t pp_type t pp_type t
+        pp_type t
   in
 
   let pp_api_builtin (_env : env) fmt = function
     | Bmin t ->
       let cond =
-        match t with
-        | Tbuiltin Brational | Ttuple [Tbuiltin Bint; Tbuiltin Bnat] -> "rat_cmp(OpCmpLt(unit), a, b)"
+        match get_ntype t with
+        | Tbuiltin Brational | Ttuple [(Tbuiltin Bint, _); (Tbuiltin Bnat, _)] -> "rat_cmp(OpCmpLt(unit), a, b)"
         | _ -> "a < b"
       in
       Format.fprintf fmt
@@ -2374,8 +2434,8 @@ let pp_model_internal fmt (model : model) b =
 
     | Bmax t ->
       let cond =
-        match t with
-        | Tbuiltin Brational | Ttuple [Tbuiltin Bint; Tbuiltin Bnat] -> "rat_cmp(OpCmpGt(unit), a, b)"
+        match get_ntype t with
+        | Tbuiltin Brational | Ttuple [(Tbuiltin Bint, _); (Tbuiltin Bnat, _)] -> "rat_cmp(OpCmpGt(unit), a, b)"
         | _ -> "a > b"
       in
       Format.fprintf fmt
@@ -2384,14 +2444,14 @@ let pp_model_internal fmt (model : model) b =
 
     | Babs t ->
       begin
-        match t with
+        match get_ntype t with
         | Tbuiltin Bnat -> ()
         | _ ->
           begin
             let pp_body fmt _ =
-              match t with
+              match get_ntype t with
               | Tbuiltin Bint -> Format.fprintf fmt "int(abs(a))"
-              | Ttuple [Tbuiltin Bint; Tbuiltin Bnat] -> Format.fprintf fmt "(int(abs(a.0)),a.1)"
+              | Ttuple [(Tbuiltin Bint, _); (Tbuiltin Bnat, _)] -> Format.fprintf fmt "(int(abs(a.0)),a.1)"
               | _ -> assert false
             in
             Format.fprintf fmt
@@ -2402,7 +2462,7 @@ let pp_model_internal fmt (model : model) b =
 
     | Bconcat t ->
       let body =
-        match t with
+        match get_ntype t with
         | Tbuiltin Bstring -> "a ^ b"
         | Tbuiltin Bbytes -> "bytes_concat(a, b)"
         | _ -> assert false
@@ -2450,8 +2510,8 @@ let pp_model_internal fmt (model : model) b =
         pp_pretty_type t pp_type t pp_type t
         pp_pretty_type t pp_type t
 
-    | Bfloor    -> Format.fprintf fmt "function floor (const r : %a) : int is block {skip} with r.0 / int(r.1)@\n" pp_type Utils.type_rational
-    | Bceil     -> Format.fprintf fmt "function ceil (const r : %a) : int is block {skip} with r.0 / int(r.1) + (if r.0 mod r.1 = 0n then 0n else 1n)@\n" pp_type Utils.type_rational
+    | Bfloor    -> Format.fprintf fmt "function floor (const r : %a) : int is block {skip} with r.0 / int(r.1)@\n" pp_type trat
+    | Bceil     -> Format.fprintf fmt "function ceil (const r : %a) : int is block {skip} with r.0 / int(r.1) + (if r.0 mod r.1 = 0n then 0n else 1n)@\n" pp_type trat
     | Btostring t ->
       Format.fprintf fmt
         "function to_string_%a (const n : %a) : string is@\n  \
@@ -2502,8 +2562,8 @@ let pp_model_internal fmt (model : model) b =
         "function rat_eq (const lhs : %a; const rhs : %a) : bool is@\n  \
          block {skip} with@\n  \
          lhs.0 * int(rhs.1) = rhs.0 * int(lhs.1)@\n"
-        pp_type Utils.type_rational
-        pp_type Utils.type_rational
+        pp_type trat
+        pp_type trat
     | RatCmp       ->
       Format.fprintf fmt
         "type op_cmp is@\n\
@@ -2522,8 +2582,8 @@ let pp_model_internal fmt (model : model) b =
          | OpCmpGt -> a >  b@\n    \
          | OpCmpGe -> a >= b@\n    \
          end)@\n"
-        pp_type Utils.type_rational
-        pp_type Utils.type_rational
+        pp_type trat
+        pp_type trat
     | RatArith     ->
       Format.fprintf fmt
         "type op_arith is@\n\
@@ -2542,35 +2602,29 @@ let pp_model_internal fmt (model : model) b =
          | OpArithDiv   -> (lhs.0 * (if rhs.0 >= 0 then int(rhs.1) else -(int(rhs.1))), lhs.1 * abs(rhs.0))@\n    \
          end@\n  \
          end with r@\n"
-        pp_type Utils.type_rational
-        pp_type Utils.type_rational
-        pp_type Utils.type_rational
-        pp_type Utils.type_rational
+        pp_type trat
+        pp_type trat
+        pp_type trat
+        pp_type trat
     | RatUminus ->
       Format.fprintf fmt
         "function rat_uminus (const x : %a) : %a is (- x.0, x.1)@\n"
-        pp_type Utils.type_rational
-        pp_type Utils.type_rational
+        pp_type trat
+        pp_type trat
     | RatTez ->
       Format.fprintf fmt
         "function rat_tez (const c : %a; const t : tez) : tez is@\n\
          begin@\n  \
          const r : tez = abs(c.0) * t / c.1;@\n  \
          end with r@\n"
-        pp_type Utils.type_rational
-    | DivTez ->
-      Format.fprintf fmt
-        "function div_tez (const a : tez; const b : tez) : int is@\n\
-         begin@\n  \
-         const r : int = int(a / b);@\n  \
-         end with r@\n"
+        pp_type trat
     | RatDur ->
       Format.fprintf fmt
         "function rat_dur (const c : %a; const d : int) : int is@\n\
          begin@\n  \
          skip;@\n  \
          end with (c.0 * d / int(c.1))@\n"
-        pp_type Utils.type_rational
+        pp_type trat
   in
 
   let pp_api_item_node (env : env) fmt = function
@@ -2617,6 +2671,8 @@ let pp_model_internal fmt (model : model) b =
            )) const_operations
         (pp_mterm env) fs.body
         (if with_operations then const_operations else "(nil : list(operation))") const_storage
+
+    | Getter _ -> emit_error (UnsupportedTerm ("Function"))
 
     | Function (fs, ret) ->
       Format.fprintf fmt

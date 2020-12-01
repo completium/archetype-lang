@@ -1,0 +1,10 @@
+archetype test_tuple_access_1
+
+variable rid : string = ""
+variable rv  : int = 0
+
+entry exec () {
+  var lit1 : (string * int) = ("mystr", 2i);
+  rid := lit1[0];
+  rv  := lit1[1]
+}

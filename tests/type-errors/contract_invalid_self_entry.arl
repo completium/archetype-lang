@@ -1,0 +1,12 @@
+archetype contract_invalid_self_entry
+
+variable res : int = 0
+
+entry otherentry(i : int) {
+  res := i;
+}
+
+entry exec () {
+  var e : contract<string> = self.otherentry;
+  transfer 0tz to entry e("str");
+}

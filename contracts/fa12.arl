@@ -15,18 +15,18 @@ asset ledger identified by holder to big_map {
   { holder = caller; tokens = totalsupply }
 }
 
-entry %transfer (from_ : address, to_ : address, value : nat) {
+entry %transfer (%from : address, %to : address, value : nat) {
   require {
-    r1 otherwise "NotEnoughBalance" : ledger[from_].tokens >= value;
+    r1 otherwise "NotEnoughBalance" : ledger[%from].tokens >= value;
   }
   effect {
-    if caller <> from_ then (
-      var current = allowance[(from_, caller)].amount;
+    if caller <> %from then (
+      var current = allowance[(%from, caller)].amount;
       dofailif(current < value, ("NotEnoughAllowance", ((value, current))));
-      allowance.update((from_, caller), { amount -=  value });
+      allowance.update((%from, caller), { amount -=  value });
     );
-    ledger.update(from_, { tokens -= value });
-    ledger.addupdate(to_, { tokens += value });
+    ledger.update(%from, { tokens -= value });
+    ledger.addupdate(%to, { tokens += value });
   }
 }
 
@@ -39,18 +39,177 @@ entry approve(spender : address, value : nat) {
   allowance.addupdate( k, { amount = value });
 }
 
-entry getAllowance (owner : address, spender : address, cb : entrysig<nat>) {
-  transfer 0tz to entry cb(allowance[(owner, spender)].amount);
+getter getAllowance (owner : address, spender : address) : nat {
+  return (allowance[(owner, spender)].amount)
 }
 
-entry getBalance (owner : address, cb : entrysig<nat>) {
-  transfer 0tz to entry cb(ledger[owner].tokens);
+getter getBalance (owner : address) : nat {
+  return (ledger[owner].tokens)
 }
 
-entry getTotalSupply (cb : entrysig<nat>) {
-  transfer 0tz to entry cb(totalsupply);
+getter getTotalSupply () : nat {
+  return totalsupply
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// SPECIFICATION
+///////////////////////////////////////////////////////////////////////////////
 
 specification {
   s1: ledger.sum(tokens) = totalsupply;
+}
+
+specification entry %transfer (%from : address, %to : address, value : nat) {
+  fails {
+    f0 with (msg : string) :
+      let some after_ledger_from = ledger[%from] in
+        msg = "NotEnoughBalance" and
+        after_ledger_from.tokens < value
+      otherwise true;
+    f1 with (msg : string * (nat * nat)) :
+      let some after_allowance_from_caller = allowance[(%from,caller)] in
+        msg = ("NotEnoughAllowance", ((value, after_allowance_from_caller.amount))) and
+        caller <> %from and
+        after_allowance_from_caller.amount < value
+      otherwise false;
+  }
+  // LEDGER ASSET
+  postcondition transfer_p1 { // effect on %from nbtokens
+    %from <> %to ->
+    let some before_ledger_from = before.ledger[%from] in
+    let some after_ledger_from  = ledger[%from] in
+    after_ledger_from = { before_ledger_from with
+      tokens = abs (before_ledger_from.tokens - value)
+    }
+    otherwise false otherwise false
+  }
+  postcondition transfer_p2 { // effect on %to nbtokens
+    %from <> %to ->
+    let some after_ledger_to = ledger[%to] in
+    let some before_ledger_to = before.ledger[%to] in
+      after_ledger_to = { before_ledger_to with
+        tokens = (before_ledger_to.tokens + value)
+      }
+    otherwise
+      after_ledger_to = { holder = %to; tokens = value }
+    otherwise false // %to ledger asset exists after transfer
+  }
+  postcondition transfer_p3 {
+    %from = %to -> ledger = before.ledger
+  }
+  postcondition transfer_p4 { // other ledger assets are unchanged
+    forall tokenholder in ledger,
+      tokenholder.holder <> %from ->
+      tokenholder.holder <> %to ->
+      before.ledger[tokenholder.holder] = some(tokenholder)
+  }
+  postcondition transfer_p5 { // no ledger asset is removed
+    removed.ledger.isempty()
+  }
+  postcondition transfer_p6 { // number of added asset may be one
+    let some before_to = before.ledger[%to] in
+      added.ledger.isempty()
+    otherwise
+      added.ledger = [ { holder = %to; tokens = value } ]
+  }
+  // ALLOWANCE ASSET
+  postcondition transfer_p7 { // effect on allowance
+    caller <> %from ->
+    let some before_from_caller = before.allowance[(%from,caller)] in
+    let some after_from_caller = allowance[(%from,caller)] in
+      before_from_caller.amount > value ->
+      after_from_caller = { before_from_caller with
+        amount = abs (before_from_caller.amount - value)
+      }
+    otherwise false
+    otherwise true
+  }
+  postcondition transfer_p8 { // effect on allowance
+    caller = %from -> allowance = before.allowance
+  }
+  postcondition transfer_p9 { // other allowance assets are unchanged
+    forall a in allowance,
+      a.addr_owner <> %from and a.addr_spender <> caller ->
+      before.allowance[(a.addr_owner, a.addr_spender)] = some(a)
+  }
+  postcondition transfer_p10 { // no allowance is added or removed
+    removed.allowance.isempty() and added.allowance.isempty()
+  }
+
+  postcondition transfer_p11 { // no operation generated
+    length (operations) = 0
+  }
+}
+
+specification entry approve(spender : address, value : nat) {
+  fails {
+    f2 with (msg : (string * nat)) :
+      let some allowance_caller_spender = allowance[(caller, spender)] in
+        msg = ("UnsafeAllowanceChange", allowance_caller_spender.amount) and
+        value > 0 and
+        allowance_caller_spender.amount > 0
+      otherwise false;
+  }
+  postcondition approve_p1 { // effect on allowance asset
+    let some after_allowance_caller_spender = allowance[(caller,spender)] in
+    let some before_allowance_caller_spender = before.allowance[(caller,spender)] in
+      after_allowance_caller_spender = { before_allowance_caller_spender with
+        amount = value
+      }
+    otherwise
+      after_allowance_caller_spender = { addr_owner = caller; addr_spender = spender; amount = value }
+    otherwise false
+  }
+
+  postcondition approve_p2 { // other allowance assets are unchanged
+    forall a in allowance,
+      (a.addr_owner, a.addr_spender) <> (caller, spender) ->
+      before.allowance[(a.addr_owner, a.addr_spender)] = some(a)
+  }
+
+  postcondition approve_p3 { // added allowance
+    let some allowance_caller_spender = before.allowance[(caller, spender)] in
+      added.allowance.isempty()
+    otherwise
+      added.allowance = [ { addr_owner = caller; addr_spender = spender; amount = value } ]
+  }
+
+  postcondition approve_p4 { // no allowance asset is removed
+    removed.allowance.isempty()
+  }
+
+  postcondition approve_p5 {
+    ledger = before.ledger
+  }
+
+  postcondition approve_p6 { // no operation generated
+    length (operations) = 0
+  }
+}
+
+specification getter getAllowance (owner : address, spender : address) {
+  postcondition getallowance_p1 { // creates one op
+    length (operations) = 1
+  }
+  postcondition getallowance_p2 { // assets are unchanged
+    ledger = before.ledger and allowance = before.allowance
+  }
+}
+
+specification getter getBalance (owner : address) {
+  postcondition getbalance_p1 { // creates one op
+    length (operations) = 1
+  }
+  postcondition getbalance_p2 { // assets are unchanged
+    ledger = before.ledger and allowance = before.allowance
+  }
+}
+
+specification getter getTotalSupply () {
+  postcondition gettotalsupply_p1 { // creates one op
+    length (operations) = 1
+  }
+  postcondition gettotalsupply_p2 { // assets are unchanged
+    ledger = before.ledger and allowance = before.allowance
+  }
 }

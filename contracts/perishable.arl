@@ -35,7 +35,7 @@ asset p_contract {
 
 asset shipment identified by ship_id {
   ship_id  : string;
-  type     : productType;
+  stype    : productType;
   count    : int;
   p_c      : pkey<p_contract>;
 } with states shipmentStatus

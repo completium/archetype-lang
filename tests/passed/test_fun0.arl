@@ -1,0 +1,12 @@
+archetype test_fun0
+
+variable res : rational = 0.0
+
+function f () : nat {
+  return 0
+}
+
+entry exec (r : rational) {
+  var a = f();
+  res := r * 0.5
+}

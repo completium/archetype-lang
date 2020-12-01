@@ -1,0 +1,16 @@
+archetype test_asset_tail_coll_1
+
+asset my_asset identified by id {
+  id : nat;
+  s : string;
+} initialized by {
+  {0; "mystr0"};
+  {1; "mystr1"};
+  {2; "mystr2"}
+}
+
+variable res : list<nat> = []
+
+entry exec (n : nat) {
+  res := my_asset.tail(n);
+}

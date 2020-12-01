@@ -1,0 +1,16 @@
+archetype custom_storage4
+
+variable res : nat = 0
+
+record my_record {
+  a: int;
+  b: nat;
+  c: string;
+  d: nat;
+} as (((x, %_), (w, z)))
+
+variable r : my_record = {0i; 0; ""; 0}
+
+entry exec () {
+  r := {1i; 2; "mystr"; 3}
+}

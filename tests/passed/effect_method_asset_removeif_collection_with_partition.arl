@@ -1,0 +1,19 @@
+archetype effect_method_asset_removeif_collection_with_partition
+
+asset o_asset {
+  oid : nat;
+}
+
+asset my_asset identified by id {
+  id     : string;
+  value  : int;
+  c      : partition<o_asset>
+} initialized by {
+  {"id0"; 0; []};
+  {"id1"; 1; []};
+  {"id2"; 2; []}
+}
+
+entry exec () {
+  my_asset.removeif(the.value = 1)
+}

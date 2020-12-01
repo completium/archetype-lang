@@ -1,0 +1,56 @@
+archetype fa12_inspector
+
+variable fa12 : address = @KT1DvC4vS8hykGRCmoqGnnk1RV2wfFyp3BDv
+
+variable totalSupply : nat = 0
+
+variable balanceOwner     : option<address> = none
+variable balanceValue     : option<nat> = none
+
+variable allowanceOwner   : option<address> = none
+variable allowanceSpender : option<address> = none
+variable allowanceValue   : option<nat> = none
+
+
+variable res : nat = 0
+
+variable map_balance : map<address, nat> = []
+
+entry setTotalSupply(v : nat) {
+  called by fa12
+  effect {
+    totalSupply := v;
+  }
+}
+
+entry retrieveTotalSupply() {
+  var u : unit = ();
+  var arg : (unit * contract<nat>) = (u, (self.setTotalSupply));
+  transfer 0tz to fa12 call getTotalSupply<(unit * contract<nat>)>(arg)
+}
+
+entry setBalanceValue(v : nat) {
+  called by fa12
+  effect {
+    balanceValue := some(v)
+  }
+}
+
+entry retrieveBalanceFor(owner : address) {
+  balanceOwner := some(owner);
+  transfer 0tz to fa12 call getBalance<address * contract<nat>> ((owner, (self.setBalanceValue)))
+}
+
+entry setAllowanceValue(v : nat) {
+  called by fa12
+  effect {
+    allowanceValue := some(v)
+  }
+}
+
+entry retrieveAllowanceFor(owner : address, spender : address) {
+  allowanceOwner   := some(owner);
+  allowanceSpender := some(spender);
+  var pair : (address * address) = (owner, spender);
+  transfer 0tz to fa12 call getAllowance<(address * address) * contract<nat>> ((pair, (self.setAllowanceValue)))
+}

@@ -1,0 +1,17 @@
+archetype select_with_extra_var2
+
+asset my_asset identified by id {
+  id : string;
+  value : date;
+} initialized by {
+  {"id0"; 2020-12-31};
+  {"id1"; 2020-12-31};
+  {"id2"; 2020-12-31}
+}
+
+variable res : list<string> = []
+
+entry exec () {
+  var d = 2s;
+  res := my_asset.select(the.value > (now + d));
+}

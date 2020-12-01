@@ -1,0 +1,10 @@
+archetype simple_while
+
+variable res : bool = false
+
+entry exec () {
+  res := true;
+  while:loop res do
+    res := false
+  done;
+}

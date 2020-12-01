@@ -1,0 +1,11 @@
+archetype simple_fun4
+
+variable res : int = 0
+
+function f (i : int, str : string, n : nat) : int {
+  return (i + length(str) + n)
+}
+
+entry exec () {
+  res := f(1, "mystr", 5);
+}

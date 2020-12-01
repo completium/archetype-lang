@@ -1,0 +1,7 @@
+archetype simple_op_add
+
+variable res : nat = 0
+
+entry exec () {
+  res := 1 + 2
+}

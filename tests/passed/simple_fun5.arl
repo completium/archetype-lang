@@ -1,0 +1,15 @@
+archetype simple_fun5
+
+variable res : int = 0
+
+function f (i : int) : int {
+  return i
+}
+
+entry exec () {
+  res := f(0);
+}
+
+entry exec1 () {
+  res := f(1);
+}

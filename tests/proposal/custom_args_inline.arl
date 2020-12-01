@@ -1,0 +1,7 @@
+archetype custom_args_inline
+
+variable res : nat = 0
+
+entry exec ((a: (int %x), b: (nat %_)), c: (address %z)) {
+  res := b
+}

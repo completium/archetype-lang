@@ -9,10 +9,6 @@ asset my_asset identified by id {
   {"id2"; 2}
 }
 
-variable res : int = 0
-
 entry exec () {
-  effect {
-    my_asset.addupdate("id2", {value += 3})
-  }
+  my_asset.addupdate("id2", {value += 3})
 }

@@ -1,0 +1,15 @@
+archetype test_asset_select_coll_0
+
+asset my_asset identified by id {
+  id : nat;
+} initialized by {
+  {0};
+  {1};
+  {2}
+}
+
+variable res : list<nat> = []
+
+entry exec (n : nat) {
+  res := my_asset.select(the.id <= n);
+}

@@ -1,0 +1,24 @@
+archetype expr_record_update_asset_in_formula
+
+asset my_asset identified by id {
+  id : nat;
+  s : string;
+} initialized by {
+  {0; "mystr0"};
+  {1; "mystr1"};
+  {2; "mystr2"}
+}
+
+entry exec() {
+  specification {
+    s0:
+    let some a = my_asset[0] in
+    let some b = before.my_asset[0] in
+      a = { b with s = "0" }
+    otherwise true
+    otherwise true
+  }
+  effect {
+    my_asset.update(0, { s = "0"})
+  }
+}

@@ -1,0 +1,12 @@
+archetype test_if_int_nat
+
+variable res : int = 0i
+
+entry exec (a : nat, b : int) {
+  specification {
+    s0: res = 1i;
+  }
+  effect {
+    res := (if true then a else b)
+  }
+}

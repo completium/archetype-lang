@@ -1,0 +1,14 @@
+archetype simple_asset_skip
+
+asset my_asset identified by id {
+  id : string;
+  value : int;
+  v2 : nat;
+} initialized by {
+  {"id0"; 0i; 0};
+  {"id1"; 1i; 1};
+  {"id2"; 2i; 2}
+}
+
+entry exec () {
+}

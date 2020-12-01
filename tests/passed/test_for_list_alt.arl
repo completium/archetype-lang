@@ -1,0 +1,16 @@
+archetype test_for_list_alt
+
+variable res : int = 0
+
+entry exec () {
+  specification {
+    s0: res = 6;
+  }
+  effect {
+    var l : list<nat> = [1; 2; 3];
+    res := 0;
+    for i in l do
+      res += i;
+    done;
+  }
+}

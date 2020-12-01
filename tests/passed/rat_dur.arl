@@ -1,0 +1,7 @@
+archetype rat_dur
+
+variable res : duration = 0s
+
+entry exec () {
+  res := 0.5 * 1m;
+}

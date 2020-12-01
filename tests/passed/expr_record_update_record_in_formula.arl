@@ -1,0 +1,17 @@
+archetype expr_record_update_record_in_formula
+
+record my_record {
+  n : nat;
+  s : string;
+}
+
+variable res : my_record = { n = 0; s = ""}
+
+entry exec() {
+  specification {
+    s0: res = { before.res with s = "0" };
+  }
+  effect {
+    res.s := "0"
+  }
+}

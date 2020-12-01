@@ -1,0 +1,79 @@
+archetype fa12spec
+
+constant totalsupply : nat = 10_000_000
+
+asset allowance identified by addr_owner addr_spender to big_map {
+  addr_owner       : address;
+  addr_spender     : address;
+  amount           : nat;
+}
+
+asset ledger identified by holder to big_map {
+  holder     : address;
+  tokens     : nat = 0;
+} initialized by {
+  { holder = caller; tokens = totalsupply }
+}
+
+entry %transfer (from_ : address, to_ : address, value : nat) {
+  require {
+    r1 otherwise "NotEnoughBalance" : ledger[from_].tokens >= value;
+  }
+  effect {
+    if caller <> from_ then (
+      var current = allowance[(from_, caller)].amount;
+      dofailif(current < value, ("NotEnoughAllowance", ((value, current))));
+      allowance.update((from_, caller), { amount -=  value });
+    );
+    ledger.update(from_, { tokens -= value });
+    ledger.addupdate(to_, { tokens += value });
+  }
+}
+
+entry approve(spender : address, value : nat) {
+  var k = (caller, spender);
+  if allowance.contains(k) then (
+    var previous = allowance[k].amount;
+    dofailif(previous > 0 and value > 0, (("UnsafeAllowanceChange", previous)));
+  );
+  allowance.addupdate( k, { amount = value });
+}
+
+entry getAllowance (owner : address, spender : address, cb : entrysig<nat>) {
+  transfer 0tz to entry cb(allowance[(owner, spender)].amount);
+}
+
+entry getBalance (owner : address, cb : entrysig<nat>) {
+  transfer 0tz to entry cb(ledger[owner].tokens);
+}
+
+entry getTotalSupply (cb : entrysig<nat>) {
+  transfer 0tz to entry cb(totalsupply);
+}
+
+specification entry %transfer (from_ : address, to_ : address, value : nat) {
+  fails {
+    f0 with (s : string) :
+         s = "NotEnoughBalance" and
+         let some f = ledger[from_] in
+         f.tokens >= value
+         otherwise true;
+
+    f1 with (s : (string * (nat  * nat))) :
+         caller <> from_ and
+         let some a = allowance[(from_, caller)] in
+         a.amount < value
+         otherwise true;
+
+    f2 with (s : (string * (nat  * nat))) :
+         let some a = allowance[(from_, caller)] in
+         s[1][0] = a.amount and
+         s[0] = "NotEnoughAllowance" and
+         s[1][1] = value
+         otherwise true;
+  }
+}
+
+specification {
+  s1: ledger.sum(tokens) = totalsupply;
+}

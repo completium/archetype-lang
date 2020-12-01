@@ -3,7 +3,8 @@ archetype lang_arith
 entry exec () {
   effect {
     var bool_bool_and : bool = true and false;
-    var bool_bool_or  : bool = true or false;
+    var bool_bool_or  : bool = true or  false;
+    var bool_bool_xor : bool = true xor false;
     var bool_bool_not : bool = not true;
 
     /* nat nat */
@@ -12,6 +13,7 @@ entry exec () {
     var nat_nat_mult   : nat      = 1 *   2;
     var nat_nat_ediv   : nat      = 1 div 2;
     var nat_nat_modulo : nat      = 1 %   2;
+    var nat_nat_xor    : nat      = 1 xor 2;
     var nat_nat_div    : rational = 1 /   2;
 
     /* int int */
@@ -78,7 +80,6 @@ entry exec () {
     var int_tez_mult   : tez      = 1i * 1tz;
     var rat_tez_mult   : tez      = 1.1 * 1tz;
     var tez_nat_ediv   : tez      = 1tz div 2;
-    var tez_int_ediv   : tez      = 1tz div 2i;
 
     var date_date_minus : duration = 2020-01-01 - 2019-12-31;
 

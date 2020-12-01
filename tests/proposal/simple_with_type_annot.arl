@@ -1,0 +1,7 @@
+archetype simple_with_type_annot
+
+variable k : (nat %n) = 0
+
+entry exec (a : (nat %p)) {
+  k := a
+}

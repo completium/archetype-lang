@@ -40,6 +40,12 @@ clean:
 check:
 	./extra/script/check_pp.sh && ./extra/script/check_contracts.sh
 
-build-deps:
-	opam install dune.1.10.0 menhir.20190620 digestif.0.7.3 num ppx_deriving ppx_deriving_yojson visitors
+_opam:
+	opam switch create . 4.09.1 --no-install
+	eval $$(opam env)
 
+build-deps: _opam
+	opam install . --deps-only --working-dir -y
+
+build-deps-dev: build-deps
+	opam install merlin ocp-indent why3.1.3.2 -y

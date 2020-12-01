@@ -1,0 +1,9 @@
+archetype cast_tez_nat
+
+variable  res : nat = 0
+
+entry exec () {
+  effect {
+    res := 1tz;
+  }
+}

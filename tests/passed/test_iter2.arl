@@ -1,0 +1,9 @@
+archetype test_iter2
+
+variable res : int = 0
+
+entry exec () {
+  iter i from 0 to 3 do
+    res += i
+  done
+}

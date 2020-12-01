@@ -29,6 +29,7 @@ type location = {
 
 type kind =
   | StorageInvariant
+  | Fails
   | Assert
   | PostCondition
   | SecurityPredicate
@@ -79,21 +80,25 @@ let mk_property_get_property status obj : result_get_property =
   { status; obj }
 
 let extract_properties (pt : archetype) : property list =
-  let ep_specification_item (spi : specification_item) : property option =
+  let ep_specification_item (spi : specification_item) : property list =
     let f (label, formula, invs) m =
       let formula = Format.asprintf "%a" Printer_pt.pp_simple_expr formula in
       let location = mk_location (loc spi) in
       let invariants = List.map (fun (x, y : lident * expr list) ->
           let formulas = List.map (Format.asprintf "%a" Printer_pt.pp_simple_expr) y in
           mk_invariant (unloc x) formulas) invs in
-      Some (mk_property ~invariants:invariants m (unloc label) formula location)
+      [mk_property ~invariants:invariants m (unloc label) formula location]
     in
     match unloc spi with
+    | Vfails l ->
+      List.map (fun (label, _, _, formula : lident * lident * type_t * expr) ->
+          let formula = Format.asprintf "%a" Printer_pt.pp_simple_expr formula in
+          mk_property ~invariants:[] Fails (unloc label) formula (mk_location (loc label))) l
     | Vassert (label, formula, invs, _) ->
       f (label, formula, invs) Assert
     | Vpostcondition (label, formula, invs, _, _) ->
       f (label, formula, invs) PostCondition
-    | _ -> None
+    | _ -> []
   in
 
   let ep_security_item (si : security_item) : property =
@@ -108,7 +113,7 @@ let extract_properties (pt : archetype) : property list =
     |> unloc
     |> fst
     |> List.map ep_specification_item
-    |> Option.get_list
+    |> List.flatten
   in
 
   let ep_decl = function
@@ -144,6 +149,9 @@ let extract_properties (pt : archetype) : property list =
       end
 
     | Dspecification sp ->
+      ep_specification sp
+
+    | Dspecfun (_, _, _, sp) ->
       ep_specification sp
 
     | Dsecurity sec ->

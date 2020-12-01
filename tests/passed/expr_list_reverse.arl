@@ -1,0 +1,13 @@
+archetype expr_list_reverse
+
+variable res : list<string> = []
+
+entry exec () {
+  specification {
+    s0: res = ["3"; "2"; "1"];
+  }
+  effect {
+    var l : list<string> = ["1"; "2"; "3"];
+    res := reverse(l)
+  }
+}

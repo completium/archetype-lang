@@ -39,16 +39,19 @@
 %token ASSERT
 %token ASSET
 %token AT
+%token AS
 %token AT_ADD
 %token AT_REMOVE
 %token AT_UPDATE
 %token BEFORE
-%token BREAK
+%token BEGIN
+%token BIG_MAP
 %token BUT
 %token BY
 %token CALL
 %token CALLED
 %token COLON
+%token COLONCOLON
 %token COLONEQUAL
 %token COMMA
 %token CONSTANT
@@ -66,7 +69,6 @@
 %token END
 %token ENTRY
 %token ENTRYPOINT
-%token ENTRYSIG
 %token ENUM
 %token EOF
 %token EQUAL
@@ -75,11 +77,13 @@
 %token EXTENSION
 %token FAIL
 %token FAILIF
+%token FAILS
 %token FALSE
 %token FOR
 %token FORALL
 %token FROM
 %token FUNCTION
+%token GETTER
 %token GREATER
 %token GREATEREQUAL
 %token IDENTIFIED
@@ -91,16 +95,22 @@
 %token INVARIANT
 %token ITER
 %token LABEL
+%token LAMBDA
 %token LBRACE
 %token LBRACKET
 %token LBRACKETPERCENT
+%token LEFT
 %token LESS
 %token LESSEQUAL
 %token LET
 %token LIST
+%token LOOP_LEFT
 %token LPAREN
 %token MAP
 %token MATCH
+%token MATCH_LIST
+%token MATCH_OPTION
+%token MATCH_OR
 %token MINUS
 %token MINUSEQUAL
 %token MULT
@@ -131,6 +141,7 @@
 %token REMOVED
 %token REQUIRE
 %token RETURN
+%token RIGHT
 %token RPAREN
 %token SECURITY
 %token SELF
@@ -147,6 +158,7 @@
 %token TRANSFER
 %token TRANSITION
 %token TRUE
+%token TYPE
 %token UNDERSCORE
 %token UNMOVED
 %token UNPACK
@@ -155,25 +167,28 @@
 %token VARIABLE
 %token VIEW
 %token WHEN
+%token WHILE
 %token WITH
+%token XOR
 
 %token INVALID_EXPR
 %token INVALID_DECL
 %token INVALID_EFFECT
 
 %token <string> IDENT
+%token <string> PIDENT
 %token <string> STRING
 %token <Big_int.big_int> NUMBERINT
 %token <Big_int.big_int> NUMBERNAT
 %token <string> DECIMAL
-%token <Big_int.big_int> TZ
-%token <Big_int.big_int> MTZ
-%token <Big_int.big_int> UTZ
+%token <string> TZ
+%token <string> MTZ
+%token <string> UTZ
 %token <string> ADDRESS
 %token <string> DURATION
 %token <string> DATE
 %token <string> BYTES
-%token <Big_int.big_int> PERCENT_LIT
+%token <string> PERCENT_LIT
 
 %nonassoc IN
 
@@ -188,7 +203,7 @@
 %right IMPLY
 %nonassoc EQUIV
 
-%left OR
+%left OR XOR
 %left AND
 
 %nonassoc EQUAL NEQUAL
@@ -273,12 +288,35 @@ declaration_r:
  | x=dextension         { x }
  | x=namespace          { x }
  | x=function_decl      { x }
+ | x=getter_decl        { x }
  | x=specification_decl { x }
+ | x=specasset          { x }
+ | x=specfun            { x }
+ | x=specentry          { x }
+ | x=specgetter         { x }
+ | x=specvariable       { x }
  | x=security_decl      { x }
+ | x=type_decl          { x }
  | INVALID_DECL         { Dinvalid }
 
 archetype:
-| ARCHETYPE exts=option(extensions) x=ident { Darchetype (x, exts) }
+| ARCHETYPE exts=option(extensions) x=ident ps=parameters { Darchetype (x, ps, exts) }
+
+%inline parameters:
+ | /* empty */                             { None }
+ | xs=loc(parameters_unloc)                { Some xs }
+
+%inline parameters_unloc:
+ | LPAREN xs=snl(COMMA, parameter) RPAREN  { xs }
+
+%inline parameter:
+ | x=loc(parameter_unloc)                  { x }
+
+%inline parameter_unloc:
+ | id=ident COLON ty=type_t dv=parameter_init?  { (id, ty, dv) }
+
+%inline parameter_init:
+ | EQUAL x=simple_expr { x }
 
 %inline invariants:
 | /* empty */                 { [] }
@@ -329,11 +367,12 @@ namespace:
      r=function_return? LBRACE b=fun_body RBRACE {
   let (s, e) = b in
   {
-    name  = id;
-    args  = xs;
-    ret_t = r;
-    spec = s;
-    body  = e;
+    name   = id;
+    args   = xs;
+    ret_t  = r;
+    spec   = s;
+    body   = e;
+    getter = false;
   }
 }
 
@@ -345,8 +384,36 @@ function_decl:
 | f=function_gen
     { Dfunction f }
 
+%inline getter_gen:
+ | GETTER id=ident xs=function_args
+     r=function_return? LBRACE b=fun_body RBRACE {
+  let (s, e) = b in
+  {
+    name   = id;
+    args   = xs;
+    ret_t  = r;
+    spec   = s;
+    body   = e;
+    getter = true;
+  }
+}
+
+getter_decl:
+| f=getter_gen
+    { Dfunction f }
+
 %inline spec_predicate:
 | PREDICATE id=ident xs=function_args e=braced(expr) { Vpredicate (id, xs, e) }
+
+%inline spec_fail_item:
+| lbl=ident WITH LPAREN arg=ident COLON t=type_t RPAREN COLON f=expr SEMI_COLON
+{ (lbl, arg, t, f) }
+
+%inline spec_fail_items:
+| xs=spec_fail_item+ { xs }
+
+%inline spec_fails:
+| FAILS xs=braced(spec_fail_items) { Vfails xs }
 
 %inline spec_definition:
 | DEFINITION id=ident LBRACE a=ident COLON t=type_t PIPE e=expr RBRACE { Vdefinition (id, t, a, e) }
@@ -382,30 +449,59 @@ function_decl:
 spec_items:
 | ds=loc(spec_definition)*
   ps=loc(spec_predicate)*
+  fs=loc(spec_fails)*
   vs=loc(spec_variable)*
   es=loc(spec_effect)*
   bs=loc(spec_assert)*
   ss=loc(spec_postcondition)*
   cs=loc(spec_contract_invariant)*
-   { ds @ ps @ vs @ es @ bs @ ss @ cs }
+   { ds @ ps @ fs @ vs @ es @ bs @ ss @ cs }
 
-%inline specification:
-| SPECIFICATION exts=option(extensions) LBRACE
-    xs=spec_items RBRACE
-        { (xs, exts) }
+%inline specification_unloc_c:
+| xs=spec_items { xs }
 
-| SPECIFICATION exts=option(extensions) LBRACE
-    xs=label_exprs_non_empty RBRACE
+| xs=label_exprs_non_empty
         { let ll = List.map (fun x ->
             let loc, (lbl, e) = Location.deloc x in
             mkloc loc (Vpostcondition (lbl, e, [], [], None))) xs in
-            (ll, exts) }
+            ll }
+
+%inline specification_with_exts_unloc_c:
+| x=specification_unloc_c { (x, None) }
+
+%inline specification_c:
+| x=loc(specification_with_exts_unloc_c) { x }
+
+%inline specification:
+| SPECIFICATION exts=option(extensions) LBRACE xs=specification_unloc_c RBRACE
+    { (xs, exts) }
 
 specification_fun:
 | x=loc(specification) { x }
 
 specification_decl:
 | x=loc(specification)      { Dspecification x }
+
+specasset:
+| SPECIFICATION ASSET id=ident LBRACE xs=label_exprs_non_empty RBRACE
+{ Dspecasset (id, xs) }
+
+specfun_gen(X):
+| SPECIFICATION X id=ident args=function_args LBRACE s=specification_c RBRACE
+{ (id, args, s) }
+
+specfun:
+| x=specfun_gen(FUNCTION) { let id, args, s = x in Dspecfun (SKfunction, id, args, s) }
+
+specentry:
+| x=specfun_gen(ENTRY)    { let id, args, s = x in Dspecfun (SKentry, id, args, s) }
+
+specgetter:
+| x=specfun_gen(GETTER)    { let id, args, s = x in Dspecfun (SKgetter, id, args, s) }
+
+specvariable:
+| SPECIFICATION VARIABLE id=ident LBRACE xs=label_exprs_non_empty RBRACE
+{ Dspecvariable (id, xs) }
 
 %inline security_item_unloc:
 | lbl=ident COLON id=ident args=security_args
@@ -421,6 +517,9 @@ security_decl_unloc:
 
 security_decl:
 | x=loc(security_decl_unloc)      { Dsecurity x }
+
+type_decl:
+| TYPE id=ident EQUAL t=type_t    { Dtype (id, t) }
 
 enum:
 | STATES exts=extensions? xs=equal_enum_values
@@ -452,14 +551,15 @@ enum_option:
 | WITH xs=braced(label_exprs) { EOspecification (xs) }
 
 %inline type_t:
-| e=loc(type_r) { e }
+| t=loc(type_r)                             { (t, None) }
+| LPAREN t=loc(type_r) a=loc(PIDENT) RPAREN { (t, Some a) }
+
+%inline type_s:
+| x=loc(type_s_unloc)     { (x, None) }
 
 type_r:
 | x=type_s xs=type_tuples { Ttuple (x::xs) }
 | x=type_s_unloc          { x }
-
-%inline type_s:
-| x=loc(type_s_unloc)     { x }
 
 type_s_unloc:
 | x=ident                                          { Tref x            }
@@ -469,7 +569,10 @@ type_s_unloc:
 | LIST        LESS x=type_t GREATER                { Tlist x           }
 | SET         LESS x=type_t GREATER                { Tset x            }
 | MAP         LESS k=type_t COMMA v=type_s GREATER { Tmap (k, v)       }
-| ENTRYSIG    LESS x=type_t GREATER                { Tentrysig x       }
+| BIG_MAP     LESS k=type_t COMMA v=type_s GREATER { Tbig_map (k, v)   }
+| OR          LESS k=type_t COMMA v=type_s GREATER { Tor (k, v)        }
+| LAMBDA      LESS a=type_t COMMA r=type_s GREATER { Tlambda (a, r)    }
+| CONTRACT    LESS x=type_t GREATER                { Tcontract x       }
 | x=paren(type_r)                                  { x                 }
 
 %inline type_tuples:
@@ -487,10 +590,13 @@ type_s_unloc:
 | /* empty */ { [] }
 | SHADOW x=asset_fields { x }
 
+%inline record_position:
+| AS x=paren(expr) { x }
+
 record:
-| RECORD exts=extensions? x=ident fields=asset_fields?
+| RECORD exts=extensions? x=ident fields=asset_fields? pos=record_position?
 { let fs = match fields with | None -> [] | Some x -> x in
-  Drecord (x, fs, exts) }
+  Drecord (x, fs, pos, exts) }
 
 asset:
 | ASSET exts=extensions? ops=bracket(asset_operation)? x=ident opts=asset_options?
@@ -526,7 +632,7 @@ asset_post_option:
 asset_option:
 | IDENTIFIED BY xs=ident+ { AOidentifiedby xs }
 | SORTED BY x=ident       { AOsortedby x }
-| TO i=ident              { AOto i }
+| TO BIG_MAP              { AOtoBigMap }
 
 %inline fields:
 | xs=sl(SEMI_COLON, field) { xs }
@@ -542,6 +648,7 @@ field_r:
 
 %inline ident:
 | x=loc(IDENT) { x }
+| x=loc(PIDENT) { x }
 
 entry:
   ENTRY exts=option(extensions) x=ident
@@ -564,7 +671,7 @@ on_value:
 
 transition:
   TRANSITION exts=option(extensions) x=ident
-    args=function_args on=on_value? LBRACE xs=entry_properties FROM f=expr trs=transitions RBRACE
+    args=function_args on=on_value? LBRACE xs=entry_properties FROM f=simple_expr trs=transitions RBRACE
       { Dtransition (x, args, on, f, xs, trs, exts) }
 
 %inline transitems_eq:
@@ -688,7 +795,7 @@ ident_typ_q:
 
 %inline from_expr:
 |                { None }
-| FROM e=expr    { Some e }
+| FROM e=simple_expr    { Some e }
 
 expr_r:
  | LPAREN RPAREN
@@ -722,14 +829,14 @@ expr_r:
  | LABEL id=ident
      { Elabel id }
 
- | BREAK
-     { Ebreak }
-
  | FOR lbl=colon_ident x=for_ident IN y=expr DO body=block DONE
      { Efor (lbl, x, y, body) }
 
  | ITER lbl=colon_ident x=ident a=from_expr TO b=expr DO body=block DONE
      { Eiter (lbl, x, a, b, body) }
+
+ | WHILE lbl=colon_ident c=expr DO body=block DONE
+     { Ewhile (lbl, c, body) }
 
  | IF c=expr THEN t=expr
      { Eif (c, t, None) }
@@ -737,23 +844,26 @@ expr_r:
  | IF c=expr THEN t=expr ELSE e=expr
      { Eif (c, t, Some e) }
 
- | xs=paren(snl2(COMMA, simple_expr))
+ | xs=paren(snl2(COMMA, expr))
      { Etuple xs }
 
  | x=expr op=assignment_operator_expr y=expr
      { Eassign (op, x, y) }
 
+ | TRANSFER x=simple_expr
+     { Etransfer (TToperation (x)) }
+
  | TRANSFER x=simple_expr TO y=simple_expr
-     { Etransfer (x, TTsimple y) }
+     { Etransfer (TTsimple (x, y)) }
 
  | TRANSFER x=simple_expr TO y=simple_expr CALL id=ident LESS t=type_t GREATER args=paren(expr)
-     { Etransfer (x, TTcontract (y, id, t, args)) }
+     { Etransfer (TTcontract (x, y, id, t, args)) }
 
  | TRANSFER x=simple_expr TO ENTRY id=ident arg=simple_expr
-     { Etransfer (x, TTentry (id, arg)) }
+     { Etransfer (TTentry (x, id, arg)) }
 
  | TRANSFER x=simple_expr TO ENTRY SELF DOT id=ident args=paren(sl(COMMA, simple_expr))
-     { Etransfer (x, TTself (id, args)) }
+     { Etransfer (TTself (x, id, args)) }
 
  | DOREQUIRE LPAREN x=expr COMMA y=expr RPAREN
      { Edorequire (x, y) }
@@ -766,21 +876,6 @@ expr_r:
 
  | RETURN x=simple_expr
      { Ereturn x }
-
- | SOME x=paren(simple_expr)
-     { Eoption (OSome x) }
-
- | NONE
-     { Eoption ONone }
-
- | UNPACK LESS t=type_t GREATER x=paren(expr)
-     { Eunpack (t, x) }
-
- | SELF DOT x=ident
-     { Eself x }
-
- | ENTRYPOINT LESS t=type_t GREATER LPAREN a=expr COMMA b=expr RPAREN
-     { Eentrypoint (t, a, b) }
 
  | x=order_operations %prec prec_order { x }
 
@@ -826,6 +921,16 @@ simple_expr_r:
 
  | MATCH x=expr WITH xs=branchs END { Ematchwith (x, xs) }
 
+ | MATCH_OPTION x=expr WITH PIPE SOME id=paren(ident) IMPLY ve=expr PIPE NONE IMPLY ne=expr END { Ematchoption (x, id, ve, ne) }
+
+ | MATCH_OR x=expr WITH PIPE LEFT lid=paren(ident) IMPLY le=expr PIPE RIGHT rid=paren(ident) IMPLY re=expr END { Ematchor (x, lid, le, rid, re) }
+
+ | MATCH_LIST x=expr WITH PIPE hid=ident COLONCOLON tid=ident IMPLY hte=expr PIPE LBRACKET RBRACKET IMPLY ee=expr END { Ematchlist (x, hid, tid, hte, ee) }
+
+ | LOOP_LEFT LPAREN x=expr COMMA id=ident IMPLY e=expr RPAREN { Eloopleft (x, id, e) }
+
+ | MAP LPAREN x=expr COMMA id=ident IMPLY e=expr RPAREN { Emap (x, id, e) }
+
  | id=ident a=app_args
      { Eapp ( Fident id, a) }
 
@@ -844,6 +949,9 @@ simple_expr_r:
  | LBRACKET e=expr RBRACKET
      { Earray (split_seq e) }
 
+ | LBRACE e=simple_expr WITH xs=separated_list(SEMI_COLON, recupdate_item) RBRACE
+     { Erecupdate (e, xs) }
+
  | LBRACE xs=separated_list(SEMI_COLON, record_item) RBRACE
      { Erecord xs }
 
@@ -853,6 +961,54 @@ simple_expr_r:
  | vt=vt x=ident
      { Eterm (vt, x) }
 
+ | SOME x=paren(simple_expr)
+     { Eoption (OSome x) }
+
+ | NONE %prec prec_order
+     { Eoption (ONone None) }
+
+ | NONE LESS t=type_t GREATER
+     { Eoption (ONone (Some t)) }
+
+ | LEFT LESS t=type_t GREATER x=paren(expr)
+     { Eor (Oleft (None, t, x)) }
+
+ | LEFT LESS UNDERSCORE COMMA t=type_t GREATER x=paren(expr)
+     { Eor (Oleft (None, t, x)) }
+
+ | LEFT LESS ot=type_t COMMA t=type_t GREATER x=paren(expr)
+     { Eor (Oleft (Some ot, t, x)) }
+
+ | RIGHT LESS t=type_t GREATER x=paren(expr)
+     { Eor (Oright (t, None, x)) }
+
+ | RIGHT LESS t=type_t COMMA UNDERSCORE GREATER x=paren(expr)
+     { Eor (Oright (t, None, x)) }
+
+ | RIGHT LESS t=type_t COMMA ot=type_t GREATER x=paren(expr)
+     { Eor (Oright (t, Some ot, x)) }
+
+ | LAMBDA LESS rt=type_t GREATER LPAREN LPAREN id=ident COLON at=type_t RPAREN IMPLY e=expr RPAREN
+     { Elambda (Some rt, id, Some at, e) }
+
+ | LAMBDA LESS rt=type_t GREATER LPAREN id=ident IMPLY e=expr RPAREN
+     { Elambda (Some rt, id, None, e) }
+
+ | LAMBDA LPAREN LPAREN id=ident COLON at=type_t RPAREN IMPLY e=expr RPAREN
+     { Elambda (None, id, Some at, e) }
+
+ | LAMBDA LPAREN id=ident IMPLY e=expr RPAREN
+     { Elambda (None, id, None, e) }
+
+ | UNPACK LESS t=type_t GREATER x=paren(expr)
+     { Eunpack (t, x) }
+
+ | SELF DOT x=ident
+     { Eself x }
+
+ | ENTRYPOINT LESS t=type_t GREATER LPAREN a=expr COMMA b=expr RPAREN
+     { Eentrypoint (t, a, b) }
+
  | ANY
      { Eany }
 
@@ -860,6 +1016,9 @@ simple_expr_r:
      { Einvalid }
 
  | x=paren(block_r)
+     { x }
+
+ | BEGIN x=block_r END
      { x }
 
 %inline vt_vset:
@@ -920,6 +1079,9 @@ record_item:
  | id=ident op=assignment_operator_record e=simple_expr
    { (Some (op, id), e) }
 
+recupdate_item:
+ | id=ident EQUAL e=simple_expr { (id, e) }
+
 %inline quantifier:
  | FORALL { Forall }
  | EXISTS { Exists }
@@ -927,6 +1089,7 @@ record_item:
 %inline logical_operator:
  | AND   { And }
  | OR    { Or }
+ | XOR   { Xor }
  | IMPLY { Imply }
  | EQUIV { Equiv }
 
@@ -949,7 +1112,6 @@ record_item:
  | PERCENT { Modulo }
 
 %inline unary_operator:
- | PLUS    { Uplus }
  | MINUS   { Uminus }
  | NOT     { Not }
 

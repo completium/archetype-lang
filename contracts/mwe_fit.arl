@@ -1,0 +1,102 @@
+archetype mwe_fit
+
+variable admin : role = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
+
+(* id is a string because it is generated off-chain *)
+asset mile identified by id {
+   id         : string;
+   amount     : int;
+   expiration : date
+} with {
+   m1 : amount > 0;
+}
+
+(* a partition ensures there is no direct access to mile collection *)
+asset owner identified by addr {
+  addr  : role;
+  miles : partition<mile> = [] (* injective (owner x mile) *)
+}
+
+entry add (ow : address, newmile_id : string, newmile_amount : int, newmile_expiration : date) {
+   called by admin
+
+   require {
+     c1 : newmile_amount > 0;
+   }
+
+   failif {
+     c2 : mile.contains(newmile_id);
+   }
+
+   effect {
+     owner.addupdate (ow, { miles += [{id = newmile_id; amount = newmile_amount; expiration = newmile_expiration} ] })
+   }
+}
+
+entry consume (a : address, quantity : int) {
+
+  specification {
+
+    assert p1 {
+      remainder = 0
+    }
+    postcondition p2 {
+      mile.sum(the.amount) = before.mile.sum(the.amount) - quantity
+      invariant for loop {
+        0 <= remainder <= toiterate.sum(the.amount);
+        before.mile.sum(the.amount) = mile.sum(the.amount) + quantity - remainder
+      }
+    }
+    postcondition p3 {
+      forall m in removed.mile, m.expiration >= now
+      invariant for loop {
+        removed.mile.subsetof(by_expiration)
+      }
+    }
+    postcondition p4 {
+      added.mile.isempty()
+    }
+
+  }
+
+  called by admin
+
+  require {
+    r2 : quantity >= 0;
+  }
+
+  effect {
+    var by_expiration = owner[a].miles.sort(expiration).select(the.expiration >= now);
+    dorequire (by_expiration.sum(the.amount) >= quantity, "NotEnoughMiles");
+    var remainder = quantity;
+    for : loop m in by_expiration do
+      if remainder > 0 then (
+         var v = min(remainder, mile[m].amount);
+         remainder -= v;
+         mile[m].amount -= v;
+         if (mile[m].amount = 0)
+         then owner[a].miles.remove(m);
+      )
+    done;
+    assert p1
+  }
+}
+
+entry clear_expired () {
+  specification {
+    postcondition s3 {
+      forall m in removed.mile, m.expiration < now
+      invariant for loop2 {
+        forall m in removed.mile, m.expiration < now
+      }
+    }
+  }
+
+  called by admin
+
+  effect {
+    for : loop2 o in owner do
+      owner[o].miles.removeif(the.expiration < now)
+    done
+  }
+}

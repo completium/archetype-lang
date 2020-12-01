@@ -1,0 +1,27 @@
+archetype simple_asset_2
+
+asset my_asset identified by id {
+  id : string;
+  v0 : int;
+  v1 : bool;
+} initialized by {
+  {"id0"; 0; true};
+  {"id1"; 1; true};
+  {"id2"; 2; true}
+}
+
+variable n : int = 0
+
+entry add_asset () {
+  my_asset.add({"id4"; 4; true})
+}
+
+entry remove_asset () {
+  my_asset.remove("id0")
+}
+
+entry exec () {
+  var v = my_asset["id1"].v0;
+  dorequire(v = 1, "ko");
+  n := v;
+}

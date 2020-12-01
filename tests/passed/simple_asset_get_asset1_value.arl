@@ -1,0 +1,18 @@
+archetype simple_asset_get_asset1_value
+
+asset my_asset identified by id {
+  id : string;
+  value : nat;
+} initialized by {
+  {"id0"; 0};
+  {"id1"; 1};
+  {"id2"; 2}
+}
+
+variable res : nat = 0
+
+entry exec () {
+  var v = my_asset["id1"].value;
+  dorequire(v = 1, "ko");
+  res := v;
+}

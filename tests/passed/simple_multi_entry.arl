@@ -1,0 +1,11 @@
+archetype simple_multi_entry
+
+variable n : nat = 0
+
+entry e1 () {
+  n := n + 1
+}
+
+entry e2 () {
+  n := 2
+}

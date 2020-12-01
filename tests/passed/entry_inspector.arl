@@ -7,7 +7,7 @@ variable token : address = @KT1TsdGVD11MBAULJJvaxKmS4YKe88mn3c87
 entry balanceInquiry(v : nat) { total := v }
 
 entry exec () {
-  var gbopt : option<entrysig<entrysig<nat>>> = entrypoint<entrysig<nat>>("%getBalance", token);
-  var gb : entrysig<entrysig<nat>> = opt_get(gbopt);
+  var gbopt : option<contract<contract<nat>>> = entrypoint<contract<nat>>("%getBalance", token);
+  var gb : contract<contract<nat>> = opt_get(gbopt);
   transfer 0tz to entry gb(self.balanceInquiry);
 }

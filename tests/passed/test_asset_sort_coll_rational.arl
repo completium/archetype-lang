@@ -1,0 +1,19 @@
+archetype test_asset_sort_coll_rational
+
+asset my_asset identified by id {
+  id : nat;
+  r : rational;
+} initialized by {
+  {0; 0.0};
+  {1; 0.1};
+  {2; 0.2};
+  {3; 0.3};
+  {4; 0.4};
+  {5; 0.5}
+}
+
+variable res : list<nat> = []
+
+entry exec () {
+  res := my_asset.sort(desc(r));
+}

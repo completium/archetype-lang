@@ -1,0 +1,10 @@
+archetype dec_lit
+
+variable g : rational = 4.2%
+variable dtz  : tez = 1.2tz
+variable dmtz : tez = 1.2mtz
+variable dutz : tez = 1.0utz
+
+entry exec () {
+  ()
+}

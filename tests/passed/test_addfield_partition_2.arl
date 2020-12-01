@@ -1,0 +1,19 @@
+archetype test_addfield_partition_2
+
+asset o_asset identified by oid {
+  oid : string;
+}
+
+asset my_asset identified by id {
+  id     : string;
+  value  : int;
+  col    : partition<o_asset>;
+} initialized by {
+  {"id0"; 0; []};
+  {"id1"; 1; []};
+  {"id2"; 2; []}
+}
+
+entry exec (s : string) {
+  my_asset["id0"].col.add({s})
+}

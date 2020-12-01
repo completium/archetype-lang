@@ -1,0 +1,30 @@
+archetype test_metadata
+
+constant admin : address = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
+
+variable value : nat = 0
+
+entry addMetadata (ik : string, iv : bytes) {
+  called by admin
+  effect {
+    metadata := put(metadata, ik, iv)
+  }
+}
+
+entry removeMetadata(ik : string) {
+  called by admin
+  effect {
+    metadata := remove(metadata, ik)
+  }
+}
+
+entry setValue (v : nat) {
+  called by admin
+  effect {
+    value := v
+  }
+}
+
+getter getValue() : nat {
+  return value
+}

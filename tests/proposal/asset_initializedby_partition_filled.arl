@@ -1,0 +1,19 @@
+archetype asset_initializedby_partition_filled
+
+asset o_asset {
+  oid: nat;
+  v : string;
+}
+
+asset my_asset identified by id {
+  id : string;
+  o  : partition<o_asset>;
+} initialized by {
+  {"my_id0"; [{0; "str0"}; {1; "str1"}; {2; "str2"}]};
+  {"my_id1"; [{3; "str3"}; {4; "str4"}; {5; "str5"}]};
+  {"my_id2"; [{6; "str6"}; {7; "str7"}; {8; "str8"}]}
+}
+
+entry exec () {
+  ()
+}

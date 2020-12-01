@@ -1,0 +1,25 @@
+archetype test_specfun
+
+entry anentry (n : nat) {
+  ()
+}
+
+function afunction (i : int) : string {
+  return "mystr"
+}
+
+getter agetter () : nat {
+  return 0
+}
+
+specification entry anentry (n : nat) {
+  e1: true;
+}
+
+specification function afunction (i : int) {
+  f1: true;
+}
+
+specification getter agetter () {
+  g1: true;
+}

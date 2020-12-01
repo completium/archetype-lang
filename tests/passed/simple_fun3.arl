@@ -1,0 +1,11 @@
+archetype simple_fun3
+
+variable res : int = 0
+
+function f (i : int, str : string) : int {
+  return (i + length(str))
+}
+
+entry exec () {
+  res := f(1, "mystr");
+}

@@ -1,0 +1,9 @@
+archetype simple_assign2
+
+variable n : nat    = 0
+variable s : string = ""
+
+entry exec () {
+  n := 1 + 2;
+  s := "a" + "b"
+}

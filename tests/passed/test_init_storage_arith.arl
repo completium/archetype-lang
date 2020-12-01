@@ -41,10 +41,10 @@ variable dur_dur_ediv   : int      = 4h div 30m
 variable int_dur_mult   : duration = 2 * 1h
 variable dur_int_ediv   : duration = 1h div 2
 
-// variable date_dur_plus  : date     = 2020-01-01 + 1d
-// variable date_dur_minus : date     = 2020-01-01 - 1d
+variable date_dur_plus  : date     = 2020-01-01 + 1d
+variable date_dur_minus : date     = 2020-01-01 - 1d
 
-// variable dur_date_plus  : date     = 1d + 2020-01-01
+variable dur_date_plus  : date     = 1d + 2020-01-01
 
 variable str_str_plus   : string   = "str1" + "str2"
 

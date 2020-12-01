@@ -1,0 +1,19 @@
+archetype fa12_simple
+
+constant totalsupply : nat = 10_000_000
+
+asset ledger identified by holder to big_map {
+  holder     : int;
+  tokens     : nat = 0;
+} initialized by {
+  { holder = 0; tokens = totalsupply }
+}
+
+entry %transfer (from_ : int, to_ : int, value : nat) {
+  ledger./*add*/update(to_, { tokens += (value + 1) });
+  ledger.update(from_, { tokens -= value });
+}
+
+specification {
+  s1: ledger.sum(tokens) = totalsupply;
+}

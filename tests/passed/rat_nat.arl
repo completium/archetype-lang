@@ -1,0 +1,7 @@
+archetype rat_nat
+
+variable res : rational = 0.0
+
+entry exec (n : nat) {
+  res := n
+}

@@ -1,0 +1,12 @@
+archetype expr_arith_xor_bool_bool
+
+variable res : bool = false
+
+entry exec () {
+  specification {
+    s0: res = true
+  }
+  effect {
+    res := true xor false
+  }
+}

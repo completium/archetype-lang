@@ -1,0 +1,12 @@
+archetype simple_asset_skip_one_field
+
+asset my_asset identified by id {
+  id : string;
+} initialized by {
+  {"id0"};
+  {"id1"};
+  {"id2"}
+}
+
+entry exec () {
+}

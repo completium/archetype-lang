@@ -1,0 +1,12 @@
+archetype simple_fun7
+
+variable res : int = 0
+variable n   : nat = 1
+
+function f (res0 : int, n0 : nat, i : int) : int {
+  return (2 * n0 + res0 + i)
+}
+
+entry exec () {
+  res := f(res, n, 0);
+}

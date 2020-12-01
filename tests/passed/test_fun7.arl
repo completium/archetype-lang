@@ -1,0 +1,20 @@
+archetype test_fun7
+
+variable res : nat = 0
+variable i : int = 0
+
+function h (n : nat) : nat {
+  return (n + abs(i))
+}
+
+function g (n : nat) : nat {
+  return h(n)
+}
+
+function f (n : nat) : nat {
+  return g(n)
+}
+
+entry e() {
+  res := f(1)
+}

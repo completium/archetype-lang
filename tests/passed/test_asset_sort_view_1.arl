@@ -1,0 +1,16 @@
+archetype test_asset_sort_view_1
+
+asset my_asset identified by id {
+  id : nat;
+  s : string;
+} initialized by {
+  {0; "mystr0"};
+  {1; "mystr1"};
+  {2; "mystr2"}
+}
+
+variable res : list<nat> = []
+
+entry exec () {
+  res := my_asset.select(the.id >= 0).sort(desc(id));
+}

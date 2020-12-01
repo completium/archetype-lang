@@ -1,0 +1,17 @@
+archetype expr_record_update_asset_in_exec
+
+asset my_asset identified by id {
+  id : nat;
+  s : string;
+} initialized by {
+  {0; "mystr0"};
+  {1; "mystr1"};
+  {2; "mystr2"}
+}
+
+
+variable res : string = ""
+
+entry exec() {
+  res := ({ my_asset[0] with s = "mystr" }).s
+}
