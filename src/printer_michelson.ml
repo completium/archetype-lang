@@ -61,7 +61,7 @@ let rec pp_data fmt (d : data) =
   let pp s = Format.fprintf fmt s in
   match d with
   | Dint    v       -> pp_big_int fmt v
-  | Dstring v       -> pp "\"%s\"" v
+  | Dstring v       -> pp "\"%s\"" (String.escaped v)
   | Dbytes  v       -> pp "0x%s"     v
   | Dunit           -> pp "Unit"
   | Dtrue           -> pp "True"
@@ -407,7 +407,7 @@ let rec pp_obj_micheline fmt (o : obj_micheline) =
   let pp x = Format.fprintf fmt "{  %a  }" x in
   match o with
   | Oprim   p -> pp_prim fmt pp_obj_micheline p
-  | Ostring v -> pp pp_a ("string", v)
+  | Ostring v -> pp pp_a ("string", String.escaped v)
   | Obytes  v -> pp pp_a ("bytes", v)
   | Oint    v -> pp pp_a ("int", v)
   | Oarray  l -> Format.fprintf fmt "[  %a  ]" (pp_list ",@\n" pp_obj_micheline) l
