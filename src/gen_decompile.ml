@@ -162,7 +162,7 @@ let to_michelson (input, env : T.obj_micheline * env) : T.michelson * env =
         end
       | Oprim ({prim = "IMPLICIT_ACCOUNT"; _})               -> T.IMPLICIT_ACCOUNT
       | Oprim ({prim = "NOW"; _})                            -> T.NOW
-      | Oprim ({prim = "SELF"; _})                           -> T.SELF
+      | Oprim ({prim = "SELF"; annots = a; _})               -> T.SELF (fa a)
       | Oprim ({prim = "SENDER"; _})                         -> T.SENDER
       | Oprim ({prim = "SET_DELEGATE"; _})                   -> T.SET_DELEGATE
       | Oprim ({prim = "SOURCE"; _})                         -> T.SOURCE
@@ -911,7 +911,7 @@ let to_dir (michelson, env : T.michelson * env) =
     | CREATE_CONTRACT _::_   -> assert false
     | IMPLICIT_ACCOUNT::it   -> interp_uop env (Uimplicitaccount) it stack
     | NOW::it                -> interp_zop env Znow it stack
-    | SELF::it               -> interp_zop env (Zself None) it stack
+    | SELF a::it             -> interp_zop env (Zself a) it stack
     | SENDER::it             -> interp_zop env Zsender it stack
     | SET_DELEGATE::it       -> interp_uop env Usetdelegate it stack
     | SOURCE::it             -> interp_zop env Zsource it stack

@@ -67,9 +67,9 @@ let rec pp_data fmt (d : data) =
   | Dtrue           -> pp "True"
   | Dfalse          -> pp "False"
   | Dpair  (ld, rd) -> pp "(Pair %a %a)" pp_data ld pp_data rd
-  | Dleft   d       -> pp "Left %a"      pp_data d
-  | Dright  d       -> pp "Right %a"     pp_data d
-  | Dsome   d       -> pp "Some %a"      pp_data d
+  | Dleft   d       -> pp "(Left %a)"      pp_data d
+  | Dright  d       -> pp "(Right %a)"     pp_data d
+  | Dsome   d       -> pp "(Some %a)"      pp_data d
   | Dnone           -> pp "None"
   | Dlist l         -> pp "{ %a }" (pp_list "; " pp_data) l
   | Delt (x, y)     -> pp "Elt %a %a" pp_data x pp_data y
@@ -88,7 +88,7 @@ let rec pp_code fmt (i : code) =
     | 0 -> ()
     | _ -> Format.fprintf fmt " %i" i
   in
-  let with_complex_instr = function
+  let rec with_complex_instr = function
     | SEQ _
     | IF _
     | IF_CONS _
@@ -100,7 +100,7 @@ let rec pp_code fmt (i : code) =
     | LOOP_LEFT _
     | CREATE_CONTRACT _
       -> true
-    | DIP (_, l) when List.length l > 1 -> true
+    | DIP (_, l) when List.exists with_complex_instr l -> true
     | _ -> false
   in
   let with_complex_instrs l = List.exists with_complex_instr l in
@@ -169,7 +169,7 @@ let rec pp_code fmt (i : code) =
   | CREATE_CONTRACT (p, s, c)-> pp "CREATE_CONTRACT@\n  {@[ parameter %a ;@\n storage %a ;@\n code %a@] }" pp_type p pp_type s pp_code c
   | IMPLICIT_ACCOUNT         -> pp "IMPLICIT_ACCOUNT"
   | NOW                      -> pp "NOW"
-  | SELF                     -> pp "SELF"
+  | SELF a                   -> pp "SELF%a" pp_annot a
   | SENDER                   -> pp "SENDER"
   | SET_DELEGATE             -> pp "SET_DELEGATE"
   | SOURCE                   -> pp "SOURCE"

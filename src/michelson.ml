@@ -122,7 +122,7 @@ type code =
   | CREATE_CONTRACT    of type_ * type_ * code
   | IMPLICIT_ACCOUNT
   | NOW
-  | SELF
+  | SELF               of ident option
   | SENDER
   | SET_DELEGATE
   | SOURCE
@@ -728,7 +728,7 @@ let cmp_code lhs rhs =
     | GT, GT                                         -> true
     | LE, LE                                         -> true
     | GE, GE                                         -> true
-    | SELF, SELF                                     -> true
+    | SELF a1, SELF a2                               -> Option.cmp String.equal a1 a2
     | CONTRACT (t1, a1), CONTRACT (t2, a2)           -> cmp_type t1 t2 && Option.cmp cmp_ident a1 a2
     | TRANSFER_TOKENS, TRANSFER_TOKENS               -> true
     | SET_DELEGATE, SET_DELEGATE                     -> true
@@ -886,7 +886,7 @@ let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) =
   | CREATE_CONTRACT (p, s, c)-> CREATE_CONTRACT (ft p, ft s, fc c)
   | IMPLICIT_ACCOUNT         -> IMPLICIT_ACCOUNT
   | NOW                      -> NOW
-  | SELF                     -> SELF
+  | SELF a                   -> SELF a
   | SENDER                   -> SENDER
   | SET_DELEGATE             -> SET_DELEGATE
   | SOURCE                   -> SOURCE
@@ -1304,7 +1304,7 @@ end = struct
     | CREATE_CONTRACT (p, s, c)-> mk ~args:[mk ~args:[ft p] "parameter"; mk ~args:[ft s] "storage"; mk ~args:[f c] "code"] "CREATE_CONTRACT"
     | IMPLICIT_ACCOUNT         -> mk "IMPLICIT_ACCOUNT"
     | NOW                      -> mk "NOW"
-    | SELF                     -> mk "SELF"
+    | SELF a                   -> mk ~annots:(fan a) "SELF"
     | SENDER                   -> mk "SENDER"
     | SET_DELEGATE             -> mk "SET_DELEGATE"
     | SOURCE                   -> mk "SOURCE"

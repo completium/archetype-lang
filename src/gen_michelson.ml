@@ -1271,8 +1271,8 @@ let to_michelson (ir : T.ir) : T.michelson =
           | Zsender             -> T.SENDER
           | Zaddress            -> T.ADDRESS
           | Zchain_id           -> T.CHAIN_ID
-          | Zself _             -> T.SELF
-          | Zself_address       -> T.SEQ [T.SELF; T.ADDRESS]
+          | Zself a             -> T.SELF a
+          | Zself_address       -> T.SEQ [T.SELF None; T.ADDRESS]
           | Znone t             -> T.NONE (rar t)
           | Zunit               -> T.UNIT
           | Znil t              -> T.NIL (rar t)
