@@ -1,0 +1,57 @@
+{
+  storage (pair :storage (big_map address mutez) mutez);
+  parameter unit;
+  code { DUP;
+         DIP { CDR };
+         CAR;
+         AMOUNT;
+         SENDER;
+         DIP 3 { DUP };
+         DIG 4;
+         CAR;
+         DIP 2 { DUP };
+         DIG 3;
+         DIP 5 { DUP };
+         DIG 6;
+         CDR;
+         ADD;
+         SWAP;
+         PAIR;
+         PUSH key_hash "tz1iDu3tHhf7H4jyXk6rGV4FNUsMqQmRkwLp";
+         IMPLICIT_ACCOUNT;
+         DIP 3 { DUP };
+         DIG 4;
+         UNIT;
+         TRANSFER_TOKENS;
+         DIP { DUP };
+         SWAP;
+         CDR;
+         DIP 2 { DUP };
+         DIG 3;
+         CAR;
+         DIP 7 { DUP };
+         DIG 8;
+         CAR;
+         DIP 5 { DUP };
+         DIG 6;
+         GET;
+         IF_NONE
+           { DIP 5 { DUP };
+             DIG 6 }
+           { DIP 6 { DUP };
+             DIG 7;
+             ADD };
+         RENAME;
+         DIP 5 { DUP };
+         DIG 6;
+         DIP { SOME };
+         DIP 5 { DROP; DROP; DROP; DROP; DROP };
+         UPDATE;
+         PAIR;
+         NIL operation;
+         DIP 2 { DUP };
+         DIG 3;
+         DIP 3 { DROP };
+         CONS;
+         PAIR };
+}

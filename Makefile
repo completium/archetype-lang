@@ -17,6 +17,10 @@ compiler:
 	$(MAKE) -C src compiler.exe
 	ln -fs _build/default/src/compiler.exe archetype.exe
 
+demich:
+	$(MAKE) -C src2 demich.exe
+	ln -fs _build/default/src2/demich.exe demich.exe
+
 mlw:
 	$(MAKE) -C src mlw.exe
 	cp -f _build/default/src/mlw.exe .
@@ -36,6 +40,7 @@ install:
 clean:
 	@dune clean
 	$(MAKE) -C src clean
+	$(MAKE) -C src2 clean
 
 check:
 	./extra/script/check_pp.sh && ./extra/script/check_contracts.sh
