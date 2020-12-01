@@ -990,7 +990,7 @@ let to_ir (model : M.model) : T.ir =
       let f l =
         match List.rev l with
         | []   -> T.tunit
-        | [e]  -> snd e
+        | [e]  -> annot (fst e) (snd e)
         | (id, te)::t -> List.fold_left (fun accu (id, te) -> T.mk_type (T.Tpair (annot id te, accu))) (annot id te) t
       in
       let  args : T.type_ = f e.args in
