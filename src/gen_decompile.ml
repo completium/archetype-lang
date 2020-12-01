@@ -193,7 +193,7 @@ let to_michelson (input, env : T.obj_micheline * env) : T.michelson * env =
       (* Other *)
       | Oprim ({prim = "UNPAIR"; _})                         -> T.UNPAIR
       | Oprim ({prim = "SELF_ADDRESS"; _})                   -> T.SELF_ADDRESS
-      | Oprim ({prim = "CAST"; _})                           -> T.CAST
+      | Oprim ({prim = "CAST"; args = t::_})                 -> T.CAST (to_type t)
       | Oprim ({prim = "CREATE_ACCOUNT"; _})                 -> T.CREATE_ACCOUNT
       | Oprim ({prim = "RENAME"; _})                         -> T.RENAME
       | Oprim ({prim = "STEPS_TO_QUOTA"; _})                 -> T.STEPS_TO_QUOTA
@@ -966,7 +966,7 @@ let to_dir (michelson, env : T.michelson * env) =
       end
     | SELF_ADDRESS::it   -> interp_zop env (Zself_address) it stack
 
-    | CAST::_                     -> assert false
+    | CAST _::_                   -> assert false
     | CREATE_ACCOUNT::_           -> assert false
     | RENAME::_                   -> assert false
     | STEPS_TO_QUOTA::_           -> assert false

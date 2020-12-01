@@ -153,7 +153,7 @@ type code =
   (* Other *)
   | UNPAIR
   | SELF_ADDRESS
-  | CAST
+  | CAST               of type_
   | CREATE_ACCOUNT
   | RENAME
   | STEPS_TO_QUOTA
@@ -701,7 +701,7 @@ let cmp_code lhs rhs =
     | EXEC, EXEC                                     -> true
     | DIP (n1, l1), DIP (n2, l2)                     -> n1 = n2 && List.for_all2 f l1 l2
     | FAILWITH, FAILWITH                             -> true
-    | CAST, CAST                                     -> true
+    | CAST t1, CAST t2                               -> cmp_type t1 t2
     | RENAME, RENAME                                 -> true
     | CONCAT, CONCAT                                 -> true
     | SLICE, SLICE                                   -> true
@@ -917,7 +917,7 @@ let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) =
   (* Other *)
   | UNPAIR                   -> UNPAIR
   | SELF_ADDRESS             -> SELF_ADDRESS
-  | CAST                     -> CAST
+  | CAST t                   -> CAST (ft t)
   | CREATE_ACCOUNT           -> CREATE_ACCOUNT
   | RENAME                   -> RENAME
   | STEPS_TO_QUOTA           -> STEPS_TO_QUOTA
@@ -1335,7 +1335,7 @@ end = struct
     (* Other *)
     | UNPAIR                   -> mk "UNPAIR"
     | SELF_ADDRESS             -> mk "SELF_ADDRESS"
-    | CAST                     -> mk "CAST"
+    | CAST t                   -> mk ~args:[ft t] "CAST"
     | CREATE_ACCOUNT           -> mk "CREATE_ACCOUNT"
     | RENAME                   -> mk "RENAME"
     | STEPS_TO_QUOTA           -> mk "STEPS_TO_QUOTA"
@@ -1375,8 +1375,8 @@ let rec to_type (o : obj_micheline) : type_ =
   | Oprim ({prim = "address"; annots; _})                    -> mk_type ?annotation:(fa annots) Taddress
   | Oprim ({prim = "big_map"; annots; args = k::v::_})       -> mk_type ?annotation:(fa annots) (Tbig_map (f k, f v))
   | Oprim ({prim = "bool"; annots; _})                       -> mk_type ?annotation:(fa annots) Tbool
-  | Oprim ({prim = "bytes"; annots; _})                      -> mk_type ?annotation:(fa annots) Tunit
-  | Oprim ({prim = "chain_id"; annots; _})                   -> mk_type ?annotation:(fa annots) Tunit
+  | Oprim ({prim = "bytes"; annots; _})                      -> mk_type ?annotation:(fa annots) Tbytes
+  | Oprim ({prim = "chain_id"; annots; _})                   -> mk_type ?annotation:(fa annots) Tchain_id
   | Oprim ({prim = "contract"; annots; args = t::_})         -> mk_type ?annotation:(fa annots) (Tcontract (f t))
   | Oprim ({prim = "int"; annots; _})                        -> mk_type ?annotation:(fa annots) Tint
   | Oprim ({prim = "key"; annots; _})                        -> mk_type ?annotation:(fa annots) Tkey

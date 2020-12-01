@@ -88,8 +88,27 @@ let rec pp_code fmt (i : code) =
     | 0 -> ()
     | _ -> Format.fprintf fmt " %i" i
   in
+  let with_complex_instr = function
+    | SEQ _
+    | IF _
+    | IF_CONS _
+    | IF_LEFT _
+    | IF_NONE _
+    | ITER _
+    | LAMBDA _
+    | LOOP _
+    | LOOP_LEFT _
+    | CREATE_CONTRACT _
+      -> true
+    | DIP (_, l) when List.length l > 1 -> true
+    | _ -> false
+  in
+  let with_complex_instrs l = List.exists with_complex_instr l in
   let fs fmt = Format.fprintf fmt "{ @[%a@] }" (pp_list ";@\n" pp_code) in
-  let fsl fmt = Format.fprintf fmt "{ %a }" (pp_list "; " pp_code) in
+  let fsl fmt l =
+    if with_complex_instrs l
+    then fs fmt l
+    else Format.fprintf fmt "{ @[%a@] }" (pp_list "; " pp_code) l in
   match i with
   (* Control structures *)
   | SEQ l                    -> fs fmt l
@@ -181,7 +200,7 @@ let rec pp_code fmt (i : code) =
   (* Other *)
   | UNPAIR                   -> pp "UNPAIR"
   | SELF_ADDRESS             -> pp "SELF_ADDRESS"
-  | CAST                     -> pp "CAST"
+  | CAST t                   -> pp "CAST %a" pp_type t
   | CREATE_ACCOUNT           -> pp "CREATE_ACCOUNT"
   | RENAME                   -> pp "RENAME"
   | STEPS_TO_QUOTA           -> pp "STEPS_TO_QUOTA"
