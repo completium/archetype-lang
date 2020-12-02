@@ -64,6 +64,7 @@ let gen () = Oo.id (object end)
 
 (* -------------------------------------------------------------------- *)
 type symbol = string
+[@@deriving show {with_path = false}]
 
 type pcode = pinstr list
 
@@ -546,10 +547,14 @@ and expr  =
   | Var of var
   | Int of BigInt.t
   | Str of string
+[@@deriving show {with_path = false}]
 
 (* -------------------------------------------------------------------- *)
 type rstack1 = [var | `Paired of rstack1 * rstack1]
+[@@deriving show {with_path = false}]
+
 type rstack  = rstack1 list
+[@@deriving show {with_path = false}]
 
 (* -------------------------------------------------------------------- *)
 type dinstr =
@@ -1185,7 +1190,7 @@ end
 
 (* -------------------------------------------------------------------- *)
 let main () =
-  let module E = AVV in
+  let module E = DeferredWrite in
 
   let pty = compile_type E.arguments in
   let aty = compile_type E.storage in

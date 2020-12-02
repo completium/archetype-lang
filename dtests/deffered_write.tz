@@ -1,0 +1,16 @@
+{
+  storage int;
+  parameter bool;
+  code { UNPAIR;
+         DUP;
+         IF
+           { PUSH int 2 }
+           { PUSH int 3 };
+         SWAP;
+         IF
+           { SWAP; DROP }
+           { DROP };
+         NIL operation;
+         PAIR
+       }
+}
