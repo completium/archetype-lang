@@ -790,7 +790,7 @@ let rec decompile_i (s : rstack) (i : instr) : rstack * dinstr list =
     let x, s = List.pop s in
     let y, s = List.pop s in
     let _, z = unify x y in z :: s, [] (* FIXME? *)
-    
+
   | DIG i ->
     assert (List.length s >= i + 1);
     let x, s1 = List.hd s, List.tl s in
@@ -1185,7 +1185,7 @@ end
 
 (* -------------------------------------------------------------------- *)
 let main () =
-  let module E = DeferredWrite in
+  let module E = AVV in
 
   let pty = compile_type E.arguments in
   let aty = compile_type E.storage in

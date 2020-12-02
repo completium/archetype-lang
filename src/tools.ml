@@ -242,6 +242,7 @@ module List : sig
   val sub           : int -> int -> 'a list -> 'a list
   val cut           : int -> 'a list -> ('a list * 'a list)
   val put           : 'a -> 'b -> ('a * 'b) list -> ('a * 'b) list
+  val pop           : 'a list -> 'a * 'a list
 
   module Exn : sig
     val assoc     : 'a -> ('a * 'b) list -> 'b option
@@ -411,6 +412,11 @@ end = struct
   let rec put k v = function
       [] -> [k, v]
     | (a, b)::l -> if compare a k = 0 then (k, v)::l else (a, b)::(put k v l)
+
+  let pop (xs : 'a list) =
+    match xs with
+    | [] -> invalid_arg "List.pop"
+    | x :: xs -> (x, xs)
 
   module Exn = struct
     let assoc x xs =

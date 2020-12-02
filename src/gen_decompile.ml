@@ -267,282 +267,16 @@ let to_michelson (input, env : T.obj_micheline * env) : T.michelson * env =
   in
   ff input, env
 
-type ir_env = {
-  cpt_alpha: int;
-  deep:      int;
-  fail:      bool;
-  scopes:    (T.dinstruction list) list;
-}
+(* -------------------------------------------------------------------- *)
 
-let mk_ir_env ?(cpt_alpha=0) ?(deep=0) ?(fail=false) ?(scopes=[]) _ : ir_env =
-  { cpt_alpha; deep; fail; scopes }
+(*
+let mk_ir_env ?(cpt_alpha=0) ?(deep=0) ?(fail=false) _ : ir_env =
+  { cpt_alpha; deep; fail }
 
 let inc_deep (env : ir_env) : ir_env = { env with deep = env.deep + 1 }
 let dec_deep (env : ir_env) : ir_env = { env with deep = env.deep - 1 }
 
-let to_dir (michelson, env : T.michelson * env) =
-  let tstorage   = michelson.storage in
-  let tparameter = michelson.parameter in
-
-  let storage_data =
-    match tstorage.node with
-    | T.Tunit   -> T.Dunit
-    | T.Tnat
-    | T.Tint    -> T.Dint Big_int.zero_big_int
-    | T.Tstring -> T.Dstring ""
-    | _ -> T.Dunit (* FIXME*)
-  in
-
-  let inc_cpt_alpha env = { env with cpt_alpha = env.cpt_alpha + 1 } in
-
-  let pp_stack fmt (st : T.dexpr list) =
-    List.iteri (fun i (c : T.dexpr) ->
-        Format.fprintf fmt "%i. %a@\n" i Printer_michelson.pp_dexpr c) st
-  in
-
-  let pp_trace fmt (instr, stack, sys : T.code option * (T.dexpr) list * T.dinstruction list) =
-    Format.fprintf fmt "@\nsys:@\n%a@\n@\n" Printer_michelson.pp_dinstructions sys;
-    Format.fprintf fmt "@\nstack:@\n%a" pp_stack stack;
-    (Printer_tools.pp_option (fun fmt -> Format.fprintf fmt "@\ninstr: %a" Printer_michelson.pp_code)) fmt instr;
-    Format.fprintf fmt "@."
-  in
-
-  let trace (env : ir_env) (instrs : T.code list) (stack : (T.dexpr) list)  (sys : T.dinstruction list) =
-    let print_indent fmt n =
-      for _i = 1 to n do
-        Format.fprintf fmt "  "
-      done
-    in
-    match !Options.opt_trace, instrs with
-    | true, i::_ -> Format.eprintf "%a@[%a@]@." print_indent env.deep pp_trace (Some i, stack, sys)
-    | true, [] -> Format.eprintf "%a@[%a@]@." print_indent env.deep pp_trace (None, stack, sys)
-    | _ -> ()
-  in
-
-  (* let _add_instruction (_env : ir_env) (sys : T.dinstruction list) (i : T.dinstruction) =
-     let assigns =
-      let rec aux accu (a, b : T.dexpr * T.dexpr) =
-        match a, b with
-        | _ when T.cmp_dexpr a b -> accu
-        | T.Dbop (Bpair, a1, b1), _ -> begin
-            let f op =
-              match b, op with
-              | T.Dbop (Bpair, x, _), T.Ucar -> x
-              | T.Dbop (Bpair, _, y), T.Ucdr -> y
-              | _ -> T.Duop (op, b)
-            in
-            let car = f Ucar in
-            let cdr = f Ucdr in
-            aux (aux accu (a1, car)) (b1, cdr)
-          end
-        | _ -> (a, b)::accu
-      in
-      match i with
-      | T.Dassign (a, b) -> aux [] (a, b)
-      | _                -> []
-     in
-
-     match assigns with
-     | [] -> i::sys
-     | _ -> begin
-        List.fold_right (
-          fun (a, b) (accu : T.dinstruction list) ->
-
-            let _cpt =
-              let rec f accu (e : T.dexpr) = if T.cmp_dexpr a e then accu + 1 else T.fold_dexpr f accu e in
-              let fi accu (i : T.dinstruction) =
-                match i with
-                | T.Dassign (_, x) -> f accu x
-                | _ -> T.fold_dinstruction_dexpr f accu i
-              in
-              List.fold_left fi 0 (accu @ (List.flatten _env.scopes))
-            in
-
-            let is_outside =
-              let rec f accu (e : T.dexpr) = if T.cmp_dexpr a e then true else T.fold_dexpr f accu e in
-              let fi accu (i : T.dinstruction) = T.fold_dinstruction_dexpr f accu i in
-              List.fold_left fi false (List.flatten _env.scopes)
-            in
-
-            let _cost =
-              match b with
-              | T.Dalpha      _ -> 0
-              | T.Dvar        _ -> 0
-              | T.Dstorage    _ -> 0
-              | T.Doperations   -> 0
-              | T.Dlbdparam     -> 0
-              | T.Dlbdresult    -> 0
-              | T.Ddata       _ -> 0
-              | T.Dzop        _ -> 1
-              | T.Duop        _ -> 1
-              | T.Dbop        _ -> 1
-              | T.Dtop        _ -> 1
-              | T.Dapply      _ -> 1
-              | T.Dexec       _ -> 1
-              | T.Dlambda     _ -> 1
-              | T.Dloopleft   _ -> 1
-              | T.Dmap        _ -> 1
-            in
-
-            let is_assigned_a =
-              let rec aux accu x =
-                match x with
-                | T.Dassign (z, _) when T.cmp_dexpr a z -> true
-                | _ -> T.fold_dinstruction aux accu x
-              in
-
-              List.fold_left aux false (accu @ (List.flatten _env.scopes))
-            in
-
-            match _cpt, a, is_assigned_a, is_outside with
-            | _, Dalpha _, false, false -> begin
-                let replace instrs = List.map (
-                    fun x ->
-                      let rec fe (x : T.dexpr) : T.dexpr =
-                        if T.cmp_dexpr a x then b else T.map_dexpr fe x
-                      in
-                      let rec f (x : T.dinstruction) : T.dinstruction = T.map_dinstruction_gen fe f x in
-                      f x) instrs in
-                let opt_expr sys =
-                  List.map (fun instr -> begin
-                        let rec fe (expr : T.dexpr) =
-                          match expr with
-                          | T.Duop (T.Ucar, T.Dbop (Bpair, x, _)) -> fe x
-                          | T.Duop (T.Ucdr, T.Dbop (Bpair, _, y)) -> fe y
-                          | _ -> T.map_dexpr fe expr
-                        in
-                        let rec f (x : T.dinstruction) : T.dinstruction = T.map_dinstruction_gen fe f x in
-                        f instr
-                      end) sys
-                in
-                let opt_instr (sys  : T.dinstruction list) =
-                  let rec aux (instrs : T.dinstruction list) =
-                    List.fold_right (fun instr accu ->
-                        match instr with
-                        | T.Dassign (a, b) when T.cmp_dexpr a b -> accu
-                        | T.Dif     (c, t, e)  -> (T.Dif (c, aux t, aux e))::accu
-                        | _ -> instr::accu) instrs []
-                  in
-                  aux sys
-                in
-                accu |> replace |> opt_expr |> opt_instr
-              end
-            | _ -> (T.Dassign (a, b))::accu
-
-          (* match _cpt, a, _env.scopes with
-             (* | 0, _, _ -> accu *)
-             | 1, Dalpha _, []
-             | _, Dalpha _, [] when _cost = 0 -> begin
-              let replace instrs = List.map (
-                  fun x ->
-                    let rec fe (x : T.dexpr) : T.dexpr =
-                      if T.cmp_dexpr a x then b else T.map_dexpr fe x
-                    in
-                    let rec f (x : T.dinstruction) : T.dinstruction = T.map_dinstruction_gen fe f x in
-                    f x) instrs in
-              replace accu
-             end
-             | _ -> (T.Dassign (a, b))::accu *)
-
-        ) assigns sys
-      end
-
-     in *)
-
-  let add_instruction _env (sys : T.dinstruction list) (i : T.dinstruction) =
-    if !Options.opt_sdir
-    then i::sys
-    else begin
-      let assigns =
-        let rec aux accu (a, b : T.dexpr * T.dexpr) =
-          match a, b with
-          | _ when T.cmp_dexpr a b -> accu
-          | T.Dbop (Bpair, a1, b1), _ -> begin
-              let f op =
-                match b, op with
-                | T.Dbop (Bpair, x, _), T.Ucar -> x
-                | T.Dbop (Bpair, _, y), T.Ucdr -> y
-                | _ -> T.Duop (op, b)
-              in
-              let car = f Ucar in
-              let cdr = f Ucdr in
-              aux (aux accu (a1, car)) (b1, cdr)
-            end
-          | _ -> (a, b)::accu
-        in
-        match i with
-        | T.Dassign (a, b) -> aux [] (a, b)
-        | _                -> []
-      in
-
-      match assigns with
-      | [] -> i::sys
-      | _ -> begin
-          let compute_cpt a sys =
-            match a with
-            | T.Dalpha id ->
-              let inc  accu x  = if x = id then accu + 1 else accu in
-              let incs accu xs = List.fold_left inc accu xs in
-
-              let rec cpt_dexpr accu = function
-                | T.Dalpha id -> inc accu id
-                | v -> T.fold_dexpr cpt_dexpr cpt_instr accu v
-              and cpt_instr accu = function
-                | Ddecl   (id, _)           -> inc  accu id
-                | Difcons (_, hd, tl, _, _) -> incs accu [hd; tl]
-                | Difleft (_,  e, _,  l, _) -> incs accu [e; l]
-                | Difnone (_, _, v, _)      -> inc  accu v
-                | v -> T.fold_dexpr_dinstr cpt_instr cpt_dexpr accu v
-              in
-
-              List.fold_left cpt_instr 0 sys
-            | _ -> 0
-          in
-          List.fold_right (
-            fun (a, b) (accu : T.dinstruction list) ->
-              let do_neutral _ = (T.Dassign (a, b))::accu in
-              let cpt = compute_cpt a sys in
-              if cpt = 0
-              then do_neutral ()
-              else
-                match a, b with
-                | T.Dalpha _, _ -> begin
-                    let replace instrs = List.map (
-                        fun x ->
-                          let rec fe (x : T.dexpr) : T.dexpr =
-                            if T.cmp_dexpr a x then b else T.map_dexpr fe id id x
-                          in
-                          let rec f (x : T.dinstruction) : T.dinstruction = T.map_dexpr_dinstr f fe id x in
-                          f x) instrs in
-                    let opt_expr sys =
-                      List.map (fun instr -> begin
-                            let rec fe (expr : T.dexpr) =
-                              match expr with
-                              | T.Duop (T.Ucar, T.Dbop (Bpair, x, _)) -> fe x
-                              | T.Duop (T.Ucdr, T.Dbop (Bpair, _, y)) -> fe y
-                              | _ -> T.map_dexpr fe id id expr
-                            in
-                            let rec f (x : T.dinstruction) : T.dinstruction = T.map_dexpr_dinstr f fe id x in
-                            f instr
-                          end) sys
-                    in
-                    let opt_instr (sys  : T.dinstruction list) =
-                      let rec aux (instrs : T.dinstruction list) =
-                        List.fold_right (fun instr accu ->
-                            match instr with
-                            | T.Dassign (a, b) when T.cmp_dexpr a b -> accu
-                            | T.Dif     (c, t, e)  -> (T.Dif (c, aux t, aux e))::accu
-                            | _ -> instr::accu) instrs []
-                      in
-                      aux sys
-                    in
-                    accu |> replace |> opt_expr |> opt_instr
-                  end
-                | _ -> do_neutral ()
-          ) assigns sys
-        end
-    end
-  in
+let _to_dir (michelson, env : T.michelson * env) =
 
   let rec interp (env : ir_env) (sys : T.dinstruction list) (instrs : T.code list) (stack : (T.dexpr) list) =
     let f = interp in
@@ -987,8 +721,8 @@ let to_dir (michelson, env : T.michelson * env) =
     | SET_BAKER_PVSS_KEY::_       -> assert false
 
     | [] -> sys, stack, env
-  in
-
+  in *)
+(*
   let name = env.name in
   let irenv = mk_ir_env () in
   let type_to_dexpr (a : string) (x : T.type_) =
@@ -1018,7 +752,465 @@ let to_dir (michelson, env : T.michelson * env) =
       end
     | _ -> Format.eprintf "error: stack not empty@."; assert false
   in
-  (T.mk_dprogram tstorage tparameter storage_data name sys), env
+  (T.mk_dprogram tstorage tparameter storage_data name sys), env *)
+
+(* -------------------------------------------------------------------- *)
+
+type ir_env = {
+  cpt_alpha: int;
+  deep:      int;
+  fail:      bool;
+}
+
+module Decomp_dir : sig
+  val decompile : T.michelson -> T.dcode
+end = struct
+  open Michelson
+
+  let gen () = Oo.id (object end)
+
+  (* -------------------------------------------------------------------- *)
+  let var_unset (v : dlocal) =
+    Option.is_none !v
+
+  (* -------------------------------------------------------------------- *)
+  let write_var (e : dexpr) (v : dvar) =
+    match v with
+    | `VGlobal n ->
+      [DIAssign (`VGlobal n, `Expr e)]
+    | `VLocal x ->
+      x := Some e; []
+    | `VDup { contents = `Redirect _ } ->
+      assert false
+    | `VDup ({ contents = `Direct (i, _) } as x) ->
+      x := `Direct (i, None); [DIAssign (v, `Expr e)]
+
+  (* -------------------------------------------------------------------- *)
+  let rec expr_of_rstack1 (r : rstack1) =
+    match r with
+    | #dvar as v ->
+      Dvar v
+    | `Paired (r1, r2) ->
+      Dfun (`Bop Bpair, [expr_of_rstack1 r1; expr_of_rstack1 r2])
+
+  (* -------------------------------------------------------------------- *)
+  let pdestruct (path : bool list) (e : dexpr) =
+    List.fold_right (fun b e ->
+        let dtor = if b then `Uop Ucdr else `Uop Ucar in
+        Dfun (dtor, [e])) path e
+
+  (* -------------------------------------------------------------------- *)
+  let rec unify (v1 : rstack1) (v2 : rstack1) =
+    match v1, v2 with
+    | `VGlobal n, `VGlobal m when n = m ->
+      ([], []), `VGlobal n
+
+    | `VGlobal _, `VGlobal _ ->
+      assert false
+
+    | `VLocal x, `VLocal y when x ==(*phy*) y ->
+      ([], []), `VLocal x
+
+    | `VLocal x, `VLocal y ->
+      assert (var_unset x && var_unset y);
+      y := Some (Dvar (`VLocal x));
+      ([], []), `VLocal x
+
+    | `VDup { contents = `Redirect _ }, _
+    | _, `VDup { contents = `Redirect _ } -> assert false
+
+    | `VDup ({ contents = `Direct x } as vx),
+      `VDup ({ contents = `Direct y } as vy) -> begin
+        let tg =
+          match snd x, snd y with
+          | Some r1, Some r2 when r1 = r2 -> Some r1
+          | _, _ -> None in
+
+        let r = ref (`Direct (gen (), tg)) in
+        vx := `Redirect r; vy := `Redirect r;
+        ([], []), `VDup r
+      end
+
+    | `VLocal x, (`VDup _ as y) ->
+      assert (var_unset x);
+      x := Some (Dvar y);
+      ([], []), y
+
+    | `Paired (x1, y1), `Paired (x2, y2) ->
+      let (w1, w'1), z1 = unify x1 x2 in
+      let (w2, w'2), z2 = unify y1 y2 in
+      (w1 @ w2, w'1 @ w'2), `Paired (z1, z2)
+
+    | `VLocal x, `Paired _ ->
+      assert (var_unset x);
+      let y1 = `VLocal (ref None) in
+      let y2 = `VLocal (ref None) in
+      x := Some (Dfun (`Bop Bpair, [Dvar y1; Dvar y2]));
+      unify (`Paired (y1, y2)) v2
+
+    | `VGlobal n, `VDup { contents = `Direct (_, Some m)} when n = m ->
+      ([], []), `VGlobal n
+
+    | `VGlobal n, (`VDup (({ contents = `Direct (vi, _) } as vy) as y)) ->
+      vy := `Direct (vi, None);
+      ([n, y], []), `VDup y
+
+    | `VGlobal n, `VLocal y ->
+      assert (var_unset y);
+      let x = ref (`Direct (gen (), Some n)) in
+      y := Some (Dvar (`VDup x)); ([n, x], []), `VDup x
+
+    | `VGlobal _, `Paired _
+    | `VDup    _, `Paired _ ->
+      assert false
+
+    | `VDup    _, `VGlobal _
+    | `VDup    _, `VLocal  _
+    | `VLocal  _, `VGlobal _
+    | `Paired  _, `VLocal  _
+    | `Paired  _, `VGlobal _
+    | `Paired  _, `VDup    _ ->
+      let (w1, w2), s = unify v2 v1 in (w2, w1), s
+
+  (* -------------------------------------------------------------------- *)
+  let unify_rstack (s1 : rstack) (s2 : rstack) =
+    assert (List.length s1 = List.length s2);
+    let pr , s   = List.split (List.map2 unify s1 s2) in
+    let pr1, pr2 = List.split pr in
+    (List.flatten pr1, List.flatten pr2), s
+
+  (* -------------------------------------------------------------------- *)
+  let merge_rstack ((b1, s1) : bool * rstack) ((b2, s2) : bool * rstack) =
+    match b1, b2 with
+    |  true,  true -> unify_rstack s1 s2
+    |  true, false -> ([], []), s1
+    | false,  true -> ([], []), s2
+    | false, false -> assert false
+
+  (* -------------------------------------------------------------------- *)
+  let rec dptn_of_rstack1 (r : rstack1) =
+    match r with
+    | `Paired (r1, r2) ->
+      let p1, c1 = dptn_of_rstack1 r1 in
+      let p2, c2 = dptn_of_rstack1 r2 in
+      (DPair (p1, p2), c1 @ c2)
+
+    | `VLocal x ->
+      assert (var_unset x); (DVar x, [])
+
+    | (`VGlobal _) as n ->
+      let x : dlocal = ref None in
+      (DVar x, [DIAssign (n, `Expr (Dvar (`VLocal x)))])
+
+    | (`VDup _) as y ->           (* FIXME *)
+      let x : dlocal = ref None in
+      (DVar x, [DIAssign (y, `Expr (Dvar (`VLocal x)))])
+
+  (* -------------------------------------------------------------------- *)
+  let rec decompile_i (s : rstack) (i : code) : rstack * dinstr list =
+    match i with
+    | DUP ->
+      let x, s = List.pop s in
+      let y, s = List.pop s in
+      let _, z = unify x y in z :: s, [] (* FIXME? *)
+
+    | DIG i ->
+      assert (List.length s >= i + 1);
+      let x, s1 = List.hd s, List.tl s in
+      let s1, s2 = List.cut i s1 in
+      s1 @ (x :: s2), []
+
+    | DUG i ->
+      assert (List.length s >= i + 1);
+      let s1, s2 = List.cut i s in
+      let x, s2 = List.hd s2, List.tl s2 in
+      x :: (s1 @ s2), []
+
+    | DIP (i, c) ->
+      assert (List.length s >= i);
+      let s1, s2 = List.cut i s in
+      let s2, ops = decompile_s s2 c in
+      s1 @ s2, ops
+
+    | DROP i ->
+      (List.init i (fun _ -> `VLocal (ref None)) @ s), []
+
+    | PUSH (_t, d) -> begin
+        let x, s = List.pop s in
+
+        match x with
+        | #dvar as v ->
+          s, (write_var (Ddata d) v)
+        | _ ->
+          assert false
+      end
+
+    | PAIR -> begin
+        let x, s = List.pop s in
+
+        match x with
+        | `Paired (x1, x2) ->
+          x1 :: x2 :: s, []
+
+        | #dvar as v ->
+          let x1 = `VLocal (ref None) in
+          let x2 = `VLocal (ref None) in
+          let op = DIAssign (v, `Expr (Dfun (`Bop Bpair, [Dvar x1; Dvar x2]))) in
+          x1 :: x2 :: s, [op]
+      end
+
+    | UNPAIR ->
+      let x, s = List.pop s in
+      let y, s = List.pop s in
+      `Paired (x, y) :: s, []
+
+    | CAR ->
+      let x, s = List.pop s in
+      (`Paired (x, `VLocal (ref None)) :: s), []
+
+    | CDR ->
+      let y, s = List.pop s in
+      (`Paired (`VLocal (ref None), y) :: s), []
+
+    | SWAP -> begin
+        let x, s = List.pop s in
+        let y, s = List.pop s in
+        (y :: x :: s, [])
+      end
+
+    | IF (c1, c2) -> begin
+        let s1, b1 = decompile_s s c1 in
+        let s2, b2 = decompile_s s c2 in
+        let (pr1, pr2), s = unify_rstack s1 s2 in
+        let pr1 = List.map (fun (x, e) -> DIAssign (`VGlobal x, `Dup e)) pr1 in
+        let pr2 = List.map (fun (x, e) -> DIAssign (`VGlobal x, `Dup e)) pr2 in
+        let x = `VLocal (ref None) in
+        x :: s, [DIIf (Dvar x, (pr1 @ b1, pr2 @ b2))]
+      end
+
+    | IF_LEFT (c1, c2) ->
+      compile_match s [("left", 1), c1; ("right", 1), c2]
+
+    | IF_NONE (c1, c2) ->
+      compile_match s [("none", 0), c1; ("some", 1), c2]
+
+    | IF_CONS (c1, c2) ->
+      compile_match s [("cons", 1), c1; ("nil", 0), c2]
+
+    | UNIT    -> decompile_op s (`Zop Zunit      , 0)
+    | NONE t  -> decompile_op s (`Zop (Znone t)  , 0)
+    | SOME    -> decompile_op s (`Uop Usome      , 1)
+    | NIL t   -> decompile_op s (`Zop (Znil t)   , 0)
+    | CONS    -> decompile_op s (`Bop Bcons      , 2)
+    | SIZE    -> decompile_op s (`Uop Usize      , 1)
+    | LEFT t  -> decompile_op s (`Uop (Uleft t)  , 1)
+    | RIGHT t -> decompile_op s (`Uop (Uright t) , 1)
+
+    | NOT     -> decompile_op s (`Uop Unot       , 1)
+    | AND     -> decompile_op s (`Bop Band       , 2)
+    | OR      -> decompile_op s (`Bop Bor        , 2)
+    | ABS     -> decompile_op s (`Uop Uabs       , 1)
+    | NEG     -> decompile_op s (`Uop Uneg       , 1)
+    | ADD     -> decompile_op s (`Bop Badd       , 2)
+    | SUB     -> decompile_op s (`Bop Bsub       , 2)
+    | MUL     -> decompile_op s (`Bop Bmul       , 2)
+    | EDIV    -> decompile_op s (`Bop Bediv      , 2)
+    | EQ      -> decompile_op s (`Uop Ueq        , 1)
+    | NEQ     -> decompile_op s (`Uop Une        , 1)
+    | GT      -> decompile_op s (`Uop Ugt        , 1)
+    | GE      -> decompile_op s (`Uop Uge        , 1)
+    | LE      -> decompile_op s (`Uop Ule        , 1)
+    | LT      -> decompile_op s (`Uop Ult        , 1)
+    | COMPARE -> decompile_op s (`Bop Bcompare   , 2)
+
+    | FAILWITH ->
+       let s     = List.map (fun _ -> `VLocal (ref None)) s in
+       let x, _  = List.pop s in
+       (s, [DIFailwith (expr_of_rstack1 x)])
+
+    | MAP  _ -> assert false
+    | ITER _ -> assert false
+
+    | x -> Format.eprintf "%a@\n" pp_code x ; assert false
+
+  and decompile_op (s : rstack) ((op, n) : g_operator * int) =
+    let x, s = List.pop s in
+    match x with
+    | #dvar as x ->
+      let args = List.init n (fun _ -> `VLocal (ref None)) in
+      args @ s, write_var (Dfun (op, List.map (fun v -> Dvar v) args)) x
+    | _ -> assert false
+
+  and compile_match (s : rstack) (bs : ((string * int) * code list) list) =
+     let sc, subs = List.split (List.map (fun ((name, n), b) ->
+        let sc, bc = decompile_s s b in
+        assert (List.length sc >= n);
+        let p, sc = List.cut n sc in
+        let p, dp = List.split (List.map dptn_of_rstack1 p) in
+        (sc, (name, p, List.flatten dp @ bc))) bs) in
+
+     let x  = `VLocal (ref None) in (* FIXME *)
+     let sc = List.fold_left (fun x y -> snd (unify_rstack x y)) (List.hd sc) (List.tl sc) in
+
+     x :: sc, [DIMatch (Dvar x, subs)]
+
+  and decompile_s (s : rstack) (c : code list) : rstack * dinstr list =
+    let s, c = List.fold_left_map decompile_i s (List.rev c) in
+    s, List.flatten (List.rev c)
+
+  (* -------------------------------------------------------------------- *)
+  let rec compress_c (c : dcode) =
+    List.flatten (List.map compress_i c)
+
+  and compress_i (i : dinstr) =
+    match i with
+    | DIAssign (x, e) -> begin
+        match compress_assign_e e with
+        | None   -> []
+        | Some e -> [DIAssign (x, e)]
+      end
+
+    | DIIf (c, (b1, b2)) ->
+      [DIIf (compress_e c, (compress_c b1, compress_c b2))]
+
+    | DIMatch (c, bs) ->
+      [DIMatch (compress_e c, List.map (fun (n, x, b) -> (n, x, compress_c b)) bs)]
+
+    | DIFailwith e ->
+      [DIFailwith (compress_e e)]
+
+  and compress_e (e : dexpr) =
+    match e with
+    | Ddata _ -> e
+
+    | Dvar (`VGlobal _ | `VLocal { contents = None }) ->
+      e
+
+    | Dfun (op, args) ->
+      fun_simpl op (List.map compress_e args)
+
+    | Dvar (`VLocal { contents = Some e }) ->
+      compress_e e
+
+    | Dvar (`VDup _) ->
+      e
+
+
+  and compress_assign_e = function
+    | `Expr e -> Some (`Expr (compress_e e))
+    | `Dup  d -> Option.map (fun x -> `Dup x) (compress_vdup d)
+
+  and compress_vdup (v : vdup) : vdup option =
+    match !v with
+    | `Redirect v ->
+      compress_vdup v
+
+    | `Direct (_, None) ->
+      Some v
+
+    | `Direct (_, Some _) ->
+      None
+
+  and fun_simpl f args =
+    match f, args with
+    | `Uop Ucar, [Dfun (`Bop Bpair, [e; _])]
+    | `Uop Ucdr, [Dfun (`Bop Bpair, [_; e])] ->
+      e
+
+    | `Bop Bpair, [Dfun (`Uop Ucar, [e1]); Dfun (`Uop Ucdr, [e2])] when e1 = e2 ->
+      e1
+
+    | _, _ -> Dfun (f, args)
+
+  (* -------------------------------------------------------------------- *)
+
+  let decompile (michelson : michelson) =
+    let aty = michelson.storage in
+    let pty = michelson.parameter in
+    let code = match michelson.code with | SEQ l -> l | x -> [x] in
+
+    let args prefix =
+      let mkvar i : rstack1 =
+        `VGlobal (Printf.sprintf "%s%d" prefix i) in
+
+      let rec create i : _ -> rstack1 = function
+        | { node = Tpair (_, ty); _} ->
+          `Paired (mkvar i, create (i+1) ty)
+        | _ ->
+          mkvar i
+      in create 1 in
+
+    let pst = args "args_" pty in
+    let ast = args "sto_"  aty in
+
+    let ost, dc = decompile_s [`Paired (`VGlobal "ops", ast)] code in
+
+    match ost with
+    | [`Paired (px, ax)] ->
+      let (pr1 , pr2 ), _ = unify pst px in
+      let (pr'1, pr'2), _ = unify ast ax in
+      let pr = List.map (fun pr ->
+          List.map (fun (x, e) -> DIAssign (`VGlobal x, `Dup e)) pr
+        ) [pr1; pr'1; pr2; pr'2] in
+      List.flatten pr @ dc
+    | _ -> assert false
+
+end
+
+let to_dir (michelson, env : T.michelson * env) =
+  let tstorage   = michelson.storage in
+  let tparameter = michelson.parameter in
+  let name = env.name in
+
+  let storage_data =
+    match tstorage.node with
+    | T.Tunit   -> T.Dunit
+    | T.Tnat
+    | T.Tint    -> T.Dint Big_int.zero_big_int
+    | T.Tstring -> T.Dstring ""
+    | _ -> T.Dunit (* FIXME*)
+  in
+
+  let code = Decomp_dir.decompile michelson in
+
+  (T.mk_dprogram tstorage tparameter storage_data name code), env
+(* let rec interp (env : ir_env) (sys : T.dinstruction list) (instrs : T.code list) (stack : (T.dexpr) list) =
+   ()
+   in ()
+
+   let args prefix =
+   let mkvar i : rstack1 =
+    `VGlobal (Printf.sprintf "%s%d" prefix i) in
+
+   let rec create i : _ -> rstack1 = function
+    | T_Pair (_, ty) ->
+      `Paired (mkvar i, create (i+1) ty)
+    | _ ->
+      mkvar i
+   in create 1 in
+
+   let pst = args "args_" pty in
+   let ast = args "sto_"  aty in
+
+   let ost, dc = decompile [`Paired (`VGlobal "ops", ast)] code in
+
+   let dc =
+   match ost with
+   | [`Paired (px, ax)] ->
+      let (pr1 , pr2 ), _ = unify pst px in
+      let (pr'1, pr'2), _ = unify ast ax in
+      let pr = List.map (fun pr ->
+          List.map (fun (x, e) -> DIAssign (`VGlobal x, `Dup e)) pr
+        ) [pr1; pr'1; pr2; pr'2] in
+      List.flatten pr @ dc
+   | _ -> assert false in
+
+   Format.eprintf "%a@." pp_dcmd (compress_c dc) *)
+
+(* -------------------------------------------------------------------- *)
+
+
+
 
 (* let map_dinstruction_gen (fe : dexpr -> dexpr) (f : dinstruction -> dinstruction) = function
    | Ddecl     (id, v)            -> Ddecl     (id, Option.map fe v)
@@ -1106,9 +1298,9 @@ let to_dir (michelson, env : T.michelson * env) =
    | Diter     (_, b)          -> List.fold_left f accu b *)
 
 
-
+(*
 let _to_red_dir (dir, env : T.dprogram * env) : T.dprogram * env =
-  let rec doit (accu : T.dinstruction list) (code : T.dinstruction list) =
+  let rec doit (accu : T.dcode) (code : T.dcode) =
 
 
     let replace src dst instrs =
@@ -1170,7 +1362,7 @@ let _to_red_dir (dir, env : T.dprogram * env) : T.dprogram * env =
   in
   { dir with
     code = dir.code |> List.rev |> doit []
-  }, env
+  }, env *)
 
 let to_red_dir (dir, env : T.dprogram * env) : T.dprogram * env = dir, env
 
@@ -1179,53 +1371,52 @@ let to_ir (dir, env : T.dprogram * env) : T.ir * env =
   let tparameter   = dir.parameter in
   let storage_data = dir.storage_data in
 
-  let rec for_expr (e : T.dexpr) : T.instruction =
-    let f = for_expr in
-    let g = for_instr in
-    let seq x = T.Iseq (List.map g x) in
+  (* let rec for_expr (e : T.dexpr) : T.instruction =
+     let f = for_expr in
+     let g = for_instr in
+     let seq x = T.Iseq (List.map g x) in
 
-    match e with
-    | Dalpha _i              -> assert false
-    | Dvar t                 -> Ivar (Option.get t.annotation)
-    | Dstorage _t            -> assert false
-    | Doperations            -> assert false
-    | Dlbdparam              -> assert false
-    | Dlbdresult             -> assert false
-    | Ddata d                -> Iconst (T.tnat, d)
-    | Dzop op                -> Izop op
-    | Duop (op, a)           -> Iunop (op, f a)
-    | Dbop (op, a, b)        -> Ibinop (op, f a, f b)
-    | Dtop (op, a, b, c)     -> Iterop (op, f a, f b, f c)
-    | Dapply (a, l)          -> Ibinop (Bapply, f a, f l)
-    | Dexec (a, l)           -> Ibinop (Bexec, f a, f l)
-    | Dlambda (at, rt, l)    -> Ilambda (at, "", rt, seq l)
-    | Dloopleft (c, b)       -> Iloopleft (f c, "", seq b)
-    | Dmap (c, b)            -> Imap_ (f c, "", seq b)
-  and for_instr (i : T.dinstruction) : T.instruction =
-    let f = for_expr in
-    let g = for_instr in
-    let seq x = T.Iseq (List.map g x) in
+     match e with
+     (* | Dalpha _i              -> assert false
+     | Dvar t                 -> Ivar (Option.get t.annotation)
+     | Dstorage _t            -> assert false
+     | Doperations            -> assert false
+     | Dlbdparam              -> assert false
+     | Dlbdresult             -> assert false
+     | Ddata d                -> Iconst (T.tnat, d)
+     | Dzop op                -> Izop op
+     | Duop (op, a)           -> Iunop (op, f a)
+     | Dbop (op, a, b)        -> Ibinop (op, f a, f b)
+     | Dtop (op, a, b, c)     -> Iterop (op, f a, f b, f c)
+     | Dapply (a, l)          -> Ibinop (Bapply, f a, f l)
+     | Dexec (a, l)           -> Ibinop (Bexec, f a, f l)
+     | Dlambda (at, rt, l)    -> Ilambda (at, "", rt, seq l)
+     | Dloopleft (c, b)       -> Iloopleft (f c, "", seq b)
+     | Dmap (c, b)            -> Imap_ (f c, "", seq b) *)
+     | _ -> assert false
+     and for_instr (i : T.dinstr) : T.dinstr =
+     let f = for_expr in
+     let g = for_instr in
+     let seq x = T.Iseq (List.map g x) in
 
-    let to_ident n = Format.sprintf "x%i" n in
-    match i with
-    | Ddecl     (_id, _v)    -> assert false
-    | Dassign   (e, v)       -> begin
+     let to_ident n = Format.sprintf "x%i" n in
+     match i with
+     | Ddecl     (_id, _v)    -> assert false
+     | Dassign   (e, v)       -> begin
         let v = f v in
         match e with
         | Dvar t when Option.is_some t.annotation -> Iassign(Option.get t.annotation, v)
         | Doperations -> Iassign("operations", v)
         | _ -> assert false
       end
-    | Dfail      e                 -> Iunop   (Ufail, f e)
-    | Dif       (c, t, e)          -> Iif     (f c, seq t, seq e, T.tunit)
-    | Difcons   (c, ihd, it, t, e) -> Iifcons (f c, to_ident ihd, to_ident it, seq t, seq e, T.tunit)
-    | Difleft   (c, il, l, ir, r)  -> Iifleft (f c, to_ident il, seq l, to_ident ir, seq r, T.tunit)
-    | Difnone   (c, n, iv, v)      -> Iifnone (f c, seq n, to_ident iv, seq v, T.tunit)
-    | Dloop     (c, b)             -> Iloop   (f c, seq b)
-    | Diter     (c, b)             -> Iiter   ([], f c,  seq b)
-  in
-
-  let name = dir.name in
+     | Dfail      e                 -> Iunop   (Ufail, f e)
+     | Dif       (c, t, e)          -> Iif     (f c, seq t, seq e, T.tunit)
+     | Difcons   (c, ihd, it, t, e) -> Iifcons (f c, to_ident ihd, to_ident it, seq t, seq e, T.tunit)
+     | Difleft   (c, il, l, ir, r)  -> Iifleft (f c, to_ident il, seq l, to_ident ir, seq r, T.tunit)
+     | Difnone   (c, n, iv, v)      -> Iifnone (f c, seq n, to_ident iv, seq v, T.tunit)
+     | Dloop     (c, b)             -> Iloop   (f c, seq b)
+     | Diter     (c, b)             -> Iiter   ([], f c,  seq b)
+     in *)
 
   let storage_list =
     let rec aux (x : T.type_) =
@@ -1245,8 +1436,8 @@ let to_ir (dir, env : T.dprogram * env) : T.ir * env =
     | _  -> r
   in
 
-  let args =
-    let rec aux (x : T.type_) =
+  (* let args =
+     let rec aux (x : T.type_) =
       match x.node, x.annotation with
       | _, Some a  -> [a, x]
       | T.Tpair (a, b), _ -> begin
@@ -1256,18 +1447,19 @@ let to_ir (dir, env : T.dprogram * env) : T.ir * env =
           | x, y  -> x @ y
         end
       | _ -> []
-    in
-    let r = aux tparameter in
-    match r with
-    | [] -> ["storage", tparameter]
-    | _  -> r
-  in
+     in
+     let r = aux tparameter in
+     match r with
+     | [] -> ["storage", tparameter]
+     | _  -> r
+     in *)
 
-  let code = T.Iseq (List.map for_instr dir.code) in
-  let entry = T.mk_entry "default" args [] code in
+  (* let code = T.Iseq (List.map for_instr dir.code) in *)
+  (* let entry = T.mk_entry "default" args [] code in *)
 
+  let name = dir.name in
   let funs = [] in
-  let entries = [entry] in
+  let entries = [] in
 
   T.mk_ir name tstorage storage_data storage_list tparameter funs entries, env
 

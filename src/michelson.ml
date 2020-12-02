@@ -250,6 +250,9 @@ type ter_operator =
   | Ttransfer_tokens
 [@@deriving show {with_path = false}]
 
+type g_operator = [`Zop of z_operator | `Uop of un_operator  | `Bop of bin_operator  | `Top of ter_operator ]
+[@@deriving show {with_path = false}]
+
 type cmp_operator =
   | Ceq
   | Cne
@@ -384,38 +387,28 @@ type micheline = {
 [@@deriving show {with_path = false}]
 
 (* -------------------------------------------------------------------- *)
-type alpha_ident = int
+
+type dvar   = [`VLocal of dlocal | `VDup of vdup | `VGlobal of ident]
+and  dlocal = dexpr option ref
+and  vdup  = [`Direct of int * ident option | `Redirect of vdup] ref
+
+and  dexpr =
+  | Dvar       of dvar
+  | Ddata      of data
+  | Dfun       of g_operator * dexpr list
 [@@deriving show {with_path = false}]
 
-type dexpr =
-  | Dalpha    of alpha_ident
-  | Dvar      of type_
-  | Dstorage  of type_
-  | Doperations
-  | Dlbdparam
-  | Dlbdresult
-  | Ddata     of data
-  | Dzop      of z_operator
-  | Duop      of un_operator  * dexpr
-  | Dbop      of bin_operator * dexpr * dexpr
-  | Dtop      of ter_operator * dexpr * dexpr * dexpr
-  | Dapply    of dexpr * dexpr
-  | Dexec     of dexpr * dexpr
-  | Dlambda   of type_ * type_ * dinstruction list
-  | Dloopleft of dexpr * dinstruction list
-  | Dmap      of dexpr * dinstruction list
-[@@deriving show {with_path = false}]
+type dinstr =
+  | DIAssign   of dvar * [`Expr of dexpr | `Dup of vdup]
+  | DIIf       of dexpr * (dcode * dcode)
+  | DIMatch    of dexpr * (ident * dpattern list * dcode) list
+  | DIFailwith of dexpr
 
-and dinstruction =
-  | Ddecl     of alpha_ident * dexpr option
-  | Dassign   of dexpr * dexpr
-  | Dfail     of dexpr
-  | Dif       of dexpr * dinstruction list * dinstruction list
-  | Difcons   of dexpr * alpha_ident * alpha_ident * dinstruction list * dinstruction list
-  | Difleft   of dexpr * alpha_ident * dinstruction list * alpha_ident * dinstruction list
-  | Difnone   of dexpr * dinstruction list * alpha_ident * dinstruction list
-  | Dloop     of dexpr * dinstruction list
-  | Diter     of dexpr * dinstruction list
+and dpattern =
+  | DVar  of dlocal
+  | DPair of dpattern * dpattern
+
+and dcode = dinstr list
 [@@deriving show {with_path = false}]
 
 type dprogram = {
@@ -423,8 +416,16 @@ type dprogram = {
   storage: type_;
   parameter: type_;
   storage_data: data;
-  code: dinstruction list;
+  code: dcode;
 }
+[@@deriving show {with_path = false}]
+
+(* -------------------------------------------------------------------- *)
+
+type rstack1 = [dvar | `Paired of rstack1 * rstack1]
+[@@deriving show {with_path = false}]
+
+type rstack  = rstack1 list
 [@@deriving show {with_path = false}]
 
 (* -------------------------------------------------------------------- *)
@@ -512,10 +513,6 @@ let cnat n    = PUSH (mk_type Tnat,  Dint n)
 let cstring s = PUSH (mk_type Tstring,  Dstring s)
 let cfail msg = SEQ [PUSH (mk_type Tstring,  Dstring msg); FAILWITH]
 let cskip     = SEQ []
-
-(* -------------------------------------------------------------------- *)
-
-let dalpha n  = Dalpha n
 
 (* -------------------------------------------------------------------- *)
 
@@ -959,7 +956,7 @@ let rec map_seq f x =
 
 (* -------------------------------------------------------------------- *)
 
-let rec cmp_dexpr (lhs : dexpr) (rhs : dexpr) =
+(* let rec cmp_dexpr (lhs : dexpr) (rhs : dexpr) =
   match lhs, rhs with
   | Dalpha i1, Dalpha i2                             -> i1 = i2
   | Dvar t1, Dvar t2                                 -> cmp_type t1 t2
@@ -1051,7 +1048,7 @@ let fold_dexpr_dinstr fi fe accu x =
   | Difleft (c,  _, ti,  _, ei) -> g (g (fe accu c) ti) ei
   | Difnone (c, ti, _, ei)      -> g (g (fe accu c) ti) ei
   | Dloop   (e, is)             -> g (fe accu e) is
-  | Diter   (e, is)             -> g (fe accu e) is
+  | Diter   (e, is)             -> g (fe accu e) is *)
 
 module Utils : sig
 
