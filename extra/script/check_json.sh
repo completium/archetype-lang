@@ -1,9 +1,9 @@
 #! /bin/bash
 
-RET=0
-R=0
-NB=0
+BIN=./extra/script/check_compile.sh
+
 NB_ERR=0
+RET=0
 
 BIN='./archetype.exe'
 
@@ -209,53 +209,58 @@ KT1PDUV54BBGrg3zwpWaeFYNMUDgbYDPEXvJ \
 KT1TnwBxgK4ayHuxrti6KKkJpWBHXBYRCX6H \
 KT1UbqtneoB9H2xPrjrJg7SJTKJ57S2cQTYi"
 
+DEPRECATED_CONTRACTS="\
+KT1CjfCztmRpsyUee1nLa9Wcpfr7vgwqRZmk \
+KT1MzfYSbq18fYr4f44aQRoZBQN72BAtiz5j \
+KT1PyX9b8WmShQjqNgDQsvxqj9UYdmHLr3xg \
+KT1MHDHRLugz3A4qP6KqZDpa7FFmZfcJauV4 \
+KT19xDbLsvQKnp9xqfDNPWJbKJJmV93dHDUa \
+KT1BvVxWM6cjFuJNet4R9m64VDCN2iMvjuGE \
+"
+
 process() {
-  ${BIN} -d $2 $1 > /dev/null 2> /dev/null
+  name="$(basename -- $1)"
+  id=${name%.*}
+  tz=$id.tz
+  ${BIN} -d -mi $1 --json > /dev/null 2> /dev/null > $tz
   if [ $? -eq 0 ]; then
-    echo -ne "\033[32m OK \033[0m"
+    tezos-client-mainnet typecheck script $tz > /dev/null 2> /dev/null
+    if [ $? -eq 0 ]; then
+        echo -ne "\033[32m OK \033[0m"
+    else
+        echo -ne "\033[31m KO \033[0m"
+        NB_ERR=$((${NB_ERR} + 1))
+        RET=1
+    fi
   else
-    echo -ne "\033[31m KO \033[0m"
+    echo -ne "\033[31m KO JSON \033[0m"
+    NB_ERR=$((${NB_ERR} + 1))
     RET=1
-    R=1
   fi
+  rm -f $tz
 }
 
 process_files() {
-  for c in $CONTRACTS; do
-    R=0
-    i=./mainnet_contracts/tz/$c.tz
-    printf '%-90s' $i
-    process $i -mici
-    process $i -mi
-    process $i -dir
-#    process $i -rdir
-#    process $i -ir
-#    process $i -mdl
-#    process $i
+  for i in $CONTRACTS; do
+    printf '%-50s' $i
+    P="$1/$i.json"
+    process $P
     echo ""
-    NB=$((${NB} + 1))
-    if [ $R -eq 1 ]; then
-      NB_ERR=$((${NB_ERR} + 1))
-    fi
   done
 }
 
 echo "Check mainnet contract"
 echo ""
-echo "                                                                                           MIC MI  DIR RIR IR  MDL ARL"
+echo "                                                   C"
 
-process_files "../chaintelligence-use-cases/mainnet/json"
+process_files "/home/dev/archetype/chaintelligence-use-cases/mainnet/json"
 
 for i in $PASSED; do
     ${BIN} $i
 done
 
-echo ""
-if [ ${NB_ERR} -eq 0 ]; then
-    echo "passed."
-else
-    echo -e "errors: ${NB_ERR} / ${NB}"
-    RET=1
+if [ ${NB_ERR} -ne 0 ]; then
+  echo "errors: " ${NB_ERR}
 fi
 
 exit $RET

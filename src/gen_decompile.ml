@@ -929,10 +929,9 @@ end = struct
       (({ env with fail = true }, s), [DIFailwith (expr_of_rstack1 x)])
 
     | IF (c1, c2) -> begin
-        let (_env1, s1), b1 = decompile_s (env, s) c1 in
-        let (_env2, s2), b2 = decompile_s (env, s) c2 in
-        let (pr1, pr2), s = unify_rstack s1 s2 in
-        (* let (pr1, pr2), s = merge_rstack (env1.fail, s1) (env2.fail, s2) in *)
+        let (env1, s1), b1 = decompile_s (env, s) c1 in
+        let (env2, s2), b2 = decompile_s (env, s) c2 in
+        let (pr1, pr2), s = merge_rstack (not env1.fail, s1) (not env2.fail, s2) in
         let pr1 = List.map (fun (x, e) -> DIAssign (`VGlobal x, `Dup e)) pr1 in
         let pr2 = List.map (fun (x, e) -> DIAssign (`VGlobal x, `Dup e)) pr2 in
         let x = `VLocal (ref None) in
