@@ -1243,16 +1243,18 @@ end = struct
 
     let (_env, ost), dc = decompile_s (env, [`Paired (`VGlobal "ops", ast)]) code in
 
-    match ost with
-    | [`Paired (px, ax)] ->
-      let (pr1 , pr2 ), _ = unify pst px in
-      let (pr'1, pr'2), _ = unify ast ax in
-      let pr = List.map (fun pr ->
-          List.map (fun (x, e) -> DIAssign (`VGlobal x, `Dup e)) pr
-        ) [pr1; pr'1; pr2; pr'2] in
-      List.flatten pr @ dc
-    | _ -> assert false
-
+    let code =
+      match ost with
+      | [`Paired (px, ax)] ->
+        let (pr1 , pr2 ), _ = unify pst px in
+        let (pr'1, pr'2), _ = unify ast ax in
+        let pr = List.map (fun pr ->
+            List.map (fun (x, e) -> DIAssign (`VGlobal x, `Dup e)) pr
+          ) [pr1; pr'1; pr2; pr'2] in
+        List.flatten pr @ dc
+      | _ -> assert false
+    in
+    compress_c code
 end
 
 let to_dir (michelson, env : T.michelson * env) =
