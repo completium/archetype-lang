@@ -770,8 +770,9 @@ let rec unify (v1 : rstack1) (v2 : rstack1) =
   | `VGlobal n, `VGlobal m when n = m ->
     ([], []), `VGlobal n
 
-  | `VGlobal _, `VGlobal _ ->
-    assert false
+  | `VGlobal n, `VGlobal m (* n <> m *) ->
+    let r = ref (`Direct (gen (), None)) in
+    ([(n, r)], [(m, r)]), `VDup r
 
   | `VLocal x, `VLocal y when x ==(*phy*) y ->
     ([], []), `VLocal x
@@ -887,7 +888,10 @@ let rec decompile_i (s : rstack) (i : instr) : rstack * dinstr list =
   | DUP ->
     let x, s = List.pop s in
     let y, s = List.pop s in
-    let _, z = unify x y in z :: s, [] (* FIXME? *)
+    let (pr1, pr2), z = unify x y in
+    let pr1 = List.map (fun (x, e) -> DIAssign (`VGlobal x, `Dup e)) pr1 in
+    let pr2 = List.map (fun (x, e) -> DIAssign (`VGlobal x, `Dup e)) pr2 in
+    z :: s, pr1 @ pr2
 
   | DIG i ->
     assert (List.length s >= i + 1);
