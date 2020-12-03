@@ -588,68 +588,68 @@ let pp_simple_instr fmt i =
   let str =
     match i with
     (* Stack manipulation *)
-  | DROP _ -> "DROP"
-  | DUP    -> "DUP"
-  | SWAP   -> "SWAP"
-  | DIG  _ -> "DIG"
-  | DUG  _ -> "DUG"
-  | PUSH _ -> "PUSH"
+    | DROP _ -> "DROP"
+    | DUP    -> "DUP"
+    | SWAP   -> "SWAP"
+    | DIG  _ -> "DIG"
+    | DUG  _ -> "DUG"
+    | PUSH _ -> "PUSH"
 
-  (* Comparisons *)
-  | EQ  -> "EQ"
-  | NEQ -> "NEQ"
-  | LT  -> "LT"
-  | GT  -> "GT"
-  | LE  -> "LE"
-  | GE  -> "GE"
+    (* Comparisons *)
+    | EQ  -> "EQ"
+    | NEQ -> "NEQ"
+    | LT  -> "LT"
+    | GT  -> "GT"
+    | LE  -> "LE"
+    | GE  -> "GE"
 
-  (* Operations on integers *)
-  | NEG -> "NEG"
-  | ABS -> "ABS"
-  | ADD -> "ADD"
-  | SUB -> "SUB"
-  | MUL -> "MUL"
-  | EDIV -> "EDIV"
+    (* Operations on integers *)
+    | NEG -> "NEG"
+    | ABS -> "ABS"
+    | ADD -> "ADD"
+    | SUB -> "SUB"
+    | MUL -> "MUL"
+    | EDIV -> "EDIV"
 
-  (* Operations on booleans *)
-  | AND -> "AND"
-  | OR -> "OR"
-  | NOT -> "NOT"
+    (* Operations on booleans *)
+    | AND -> "AND"
+    | OR -> "OR"
+    | NOT -> "NOT"
 
-  (* Generic comparison operator *)
-  | COMPARE -> "COMPARE"
+    (* Generic comparison operator *)
+    | COMPARE -> "COMPARE"
 
-  (* Operations on unit value(s) *)
-  | UNIT -> "UNIT"
+    (* Operations on unit value(s) *)
+    | UNIT -> "UNIT"
 
-  (* Operations on optional values *)
-  | NONE    _ -> "NONE"
-  | SOME    _ -> "SOME"
-  | IF_NONE _ -> "IF_NONE"
+    (* Operations on optional values *)
+    | NONE    _ -> "NONE"
+    | SOME    _ -> "SOME"
+    | IF_NONE _ -> "IF_NONE"
 
-  (* Operations on pairs *)
-  | PAIR -> "PAIR"
-  | UNPAIR -> "UNPAIR"
-  | CAR -> "CAR"
-  | CDR -> "CDR"
+    (* Operations on pairs *)
+    | PAIR -> "PAIR"
+    | UNPAIR -> "UNPAIR"
+    | CAR -> "CAR"
+    | CDR -> "CDR"
 
-  (* Operations on sums *)
-  | LEFT    _ -> "LEFT"
-  | RIGHT   _ -> "RIGHT"
-  | IF_LEFT _ -> "IF_LEFT"
+    (* Operations on sums *)
+    | LEFT    _ -> "LEFT"
+    | RIGHT   _ -> "RIGHT"
+    | IF_LEFT _ -> "IF_LEFT"
 
-  (* Operations on lists *)
-  | NIL _ -> "NIL"
-  | CONS -> "CONS"
-  | IF_CONS _ -> "IF_CONS"
-  | SIZE -> "SIZE"
-  | MAP _ -> "MAP"
-  | ITER _ -> "ITER"
+    (* Operations on lists *)
+    | NIL _ -> "NIL"
+    | CONS -> "CONS"
+    | IF_CONS _ -> "IF_CONS"
+    | SIZE -> "SIZE"
+    | MAP _ -> "MAP"
+    | ITER _ -> "ITER"
 
-  (* Control structures *)
-  | FAILWITH _ -> "FAILWITH"
-  | IF       _ -> "IF"
-  | DIP      _ -> "DIP"
+    (* Control structures *)
+    | FAILWITH _ -> "FAILWITH"
+    | IF       _ -> "IF"
+    | DIP      _ -> "DIP"
   in
   Format.fprintf fmt "%s" str
 
@@ -1132,12 +1132,13 @@ end
 (* -------------------------------------------------------------------- *)
 module Simple2 : Example = struct
   let arguments = SoftCode.ct_UNIT
-  let storage   = SoftCode.ct_INT
+  let storage   = SoftCode.ct_PAIR SoftCode.ct_INT SoftCode.ct_INT
 
   let code =
     let open SoftCode in [
       c_UNPAIR;
       c_DROP 1;
+      c_UNPAIR;
       c_PUSH (`Int 3);
       c_SWAP;
       c_DROP 1;
