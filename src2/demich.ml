@@ -441,7 +441,7 @@ module SoftCode : sig
   val c_SWAP     : pinstr
   val c_DIG      : int -> pinstr
   val c_DUG      : int -> pinstr
-  val c_PUSH     : [`Int of int | `Str of string] -> pinstr
+  val c_PUSH     : [`Int of int | `Str of string ] -> pinstr
   val c_EQ       : pinstr
   val c_NEQ      : pinstr
   val c_LT       : pinstr
@@ -1130,6 +1130,27 @@ module Simple : Example = struct
 end
 
 (* -------------------------------------------------------------------- *)
+module Simple2 : Example = struct
+  let arguments = SoftCode.ct_UNIT
+  let storage   = SoftCode.ct_INT
+
+  let code =
+    let open SoftCode in [
+      c_UNPAIR;
+      c_DROP 1;
+      c_PUSH (`Int 3);
+      c_SWAP;
+      c_DROP 1;
+      c_DUP;
+      c_DIG 2;
+      c_DROP 1;
+      c_PAIR;
+      c_NIL ct_UNIT;
+      c_PAIR
+    ]
+end
+
+(* -------------------------------------------------------------------- *)
 module DecompIf : Example = struct
   let arguments = SoftCode.ct_BOOL
   let storage   = SoftCode.ct_INT
@@ -1300,10 +1321,10 @@ end
 
 (* -------------------------------------------------------------------- *)
 let main () =
-  let module T = Trace in
-  T.set_trace true;
+  (* let module T = Trace in *)
+  (* T.set_trace true; *)
 
-  let module E = DeferredWrite in
+  let module E = Simple2 in
 
   let pty = compile_type E.arguments in
   let aty = compile_type E.storage in
