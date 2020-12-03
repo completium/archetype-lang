@@ -614,6 +614,9 @@ let main () =
   Arg.parse arg_list (fun s -> (ofilename := s;
                                 ochannel := Some (open_in s))) arg_usage;
 
+  if (!Options.opt_trace)
+  then set_margin 3000;
+
   match !Options.opt_expr with
   | Some v when not !Options.opt_with_contract -> process_expr v
   | _ -> begin

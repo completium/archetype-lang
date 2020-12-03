@@ -912,6 +912,9 @@ end = struct
 
   let rec decompile_i (env, s : dir_env * rstack) (i : code) : (dir_env * rstack) * dinstr list =
 
+    if (!Options.opt_trace)
+    then Format.printf "%a\t[%a]@\n" Printer_michelson.pp_simple_code i (Printer_tools.pp_list "; " pp_rstack1) s;
+
     match i with
 
     (* Control structures *)
@@ -1265,6 +1268,10 @@ let to_dir (michelson, env : T.michelson * env) =
   let code = Decomp_dir.decompile michelson in
 
   (T.mk_dprogram tstorage tparameter storage_data name code), env
+
+
+
+
 (* let rec interp (env : ir_env) (sys : T.dinstruction list) (instrs : T.code list) (stack : (T.dexpr) list) =
    ()
    in ()

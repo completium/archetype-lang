@@ -10,7 +10,7 @@ module Format : sig
 
   val pp_option :
     (Format.formatter -> 'a -> unit) ->
-      Format.formatter -> 'a option -> unit
+    Format.formatter -> 'a option -> unit
 end = struct
   include BatFormat
 
@@ -37,9 +37,9 @@ end = struct
   let split3 =
     let rec doit (a1, a2, a3) = function
       | [] ->
-          (List.rev a1, List.rev a2, List.rev a3)
+        (List.rev a1, List.rev a2, List.rev a3)
       | (x1, x2, x3) :: s ->
-          doit (x1 :: a1, x2 :: a2, x3 :: a3)  s
+        doit (x1 :: a1, x2 :: a2, x3 :: a3)  s
     in fun s -> doit ([], [], []) s
 end
 
@@ -61,6 +61,20 @@ end
 
 (* -------------------------------------------------------------------- *)
 let gen () = Oo.id (object end)
+
+module Trace : sig
+  val set_trace : bool -> unit
+  val get_trace : unit -> bool
+  val print_trace : (Format.formatter -> 'a -> unit) -> 'a -> unit
+end = struct
+  let trace : bool ref = ref true
+  let set_trace v = trace := v
+  let get_trace _ = !trace
+  let print_trace pp x =
+    if !trace
+    then Format.printf "%a" pp x
+end
+
 
 (* -------------------------------------------------------------------- *)
 type symbol = string
@@ -570,86 +584,155 @@ and dpattern =
 and dcmd = dinstr list
 
 (* -------------------------------------------------------------------- *)
+let pp_simple_instr fmt i =
+  let str =
+    match i with
+    (* Stack manipulation *)
+  | DROP _ -> "DROP"
+  | DUP    -> "DUP"
+  | SWAP   -> "SWAP"
+  | DIG  _ -> "DIG"
+  | DUG  _ -> "DUG"
+  | PUSH _ -> "PUSH"
+
+  (* Comparisons *)
+  | EQ  -> "EQ"
+  | NEQ -> "NEQ"
+  | LT  -> "LT"
+  | GT  -> "GT"
+  | LE  -> "LE"
+  | GE  -> "GE"
+
+  (* Operations on integers *)
+  | NEG -> "NEG"
+  | ABS -> "ABS"
+  | ADD -> "ADD"
+  | SUB -> "SUB"
+  | MUL -> "MUL"
+  | EDIV -> "EDIV"
+
+  (* Operations on booleans *)
+  | AND -> "AND"
+  | OR -> "OR"
+  | NOT -> "NOT"
+
+  (* Generic comparison operator *)
+  | COMPARE -> "COMPARE"
+
+  (* Operations on unit value(s) *)
+  | UNIT -> "UNIT"
+
+  (* Operations on optional values *)
+  | NONE    _ -> "NONE"
+  | SOME    _ -> "SOME"
+  | IF_NONE _ -> "IF_NONE"
+
+  (* Operations on pairs *)
+  | PAIR -> "PAIR"
+  | UNPAIR -> "UNPAIR"
+  | CAR -> "CAR"
+  | CDR -> "CDR"
+
+  (* Operations on sums *)
+  | LEFT    _ -> "LEFT"
+  | RIGHT   _ -> "RIGHT"
+  | IF_LEFT _ -> "IF_LEFT"
+
+  (* Operations on lists *)
+  | NIL _ -> "NIL"
+  | CONS -> "CONS"
+  | IF_CONS _ -> "IF_CONS"
+  | SIZE -> "SIZE"
+  | MAP _ -> "MAP"
+  | ITER _ -> "ITER"
+
+  (* Control structures *)
+  | FAILWITH _ -> "FAILWITH"
+  | IF       _ -> "IF"
+  | DIP      _ -> "DIP"
+  in
+  Format.fprintf fmt "%s" str
+
 let rec pp_dcmd (fmt : Format.formatter) (c : dcmd) =
   match c with
   | [] ->
-      Format.fprintf fmt "%s" "pass"
+    Format.fprintf fmt "%s" "pass"
 
   | _ ->
-      Format.fprintf fmt "%a"
-        (Format.pp_print_list
-           ~pp_sep:(fun fmt () -> Format.fprintf fmt "@\n") pp_dinstr)
-        c
+    Format.fprintf fmt "%a"
+      (Format.pp_print_list
+         ~pp_sep:(fun fmt () -> Format.fprintf fmt "@\n") pp_dinstr)
+      c
 
 and pp_dinstr (fmt : Format.formatter) (i : dinstr) =
   match i with
   | DIAssign (x, `Expr e) ->
-      Format.fprintf fmt "%a <- %a" pp_var x pp_expr e
+    Format.fprintf fmt "%a <- %a" pp_var x pp_expr e
 
   | DIAssign (x, `Dup v) ->
-      Format.fprintf fmt "%a <- %a" pp_var x pp_var (`VDup v)
+    Format.fprintf fmt "%a <- %a" pp_var x pp_var (`VDup v)
 
   | DIIf (c, (b1, b2)) ->
-      Format.fprintf fmt "@[<v 2>if (%a):@\n%a@]@\n@[<v 2>else:@\n%a@]"
-        pp_expr c pp_dcmd b1 pp_dcmd b2
+    Format.fprintf fmt "@[<v 2>if (%a):@\n%a@]@\n@[<v 2>else:@\n%a@]"
+      pp_expr c pp_dcmd b1 pp_dcmd b2
 
   | DIMatch (c, bs) ->
-      let rec pp_pattern fmt = function
-        | DVar x ->
-            Format.fprintf fmt "%a" pp_var (`VLocal x)
-        | DPair (p1, p2) ->
-            Format.fprintf fmt "(%a, %a)" pp_pattern p1 pp_pattern p2 in
+    let rec pp_pattern fmt = function
+      | DVar x ->
+        Format.fprintf fmt "%a" pp_var (`VLocal x)
+      | DPair (p1, p2) ->
+        Format.fprintf fmt "(%a, %a)" pp_pattern p1 pp_pattern p2 in
 
-      let pp_branch fmt (c, ptn, body)  =
-        Format.fprintf fmt "@[<v 2>%s %a =>@\n%a@]" c
-          (Format.pp_print_list
-             ~pp_sep:(fun fmt () -> Format.fprintf fmt " ")
-             pp_pattern) ptn
-          pp_dcmd body
-      in
-
-      Format.fprintf fmt "match (%a) with@\n%a@\nend" pp_expr c
+    let pp_branch fmt (c, ptn, body)  =
+      Format.fprintf fmt "@[<v 2>%s %a =>@\n%a@]" c
         (Format.pp_print_list
-           ~pp_sep:(fun fmt () -> Format.fprintf fmt "@\n")
-           pp_branch) bs
+           ~pp_sep:(fun fmt () -> Format.fprintf fmt " ")
+           pp_pattern) ptn
+        pp_dcmd body
+    in
+
+    Format.fprintf fmt "match (%a) with@\n%a@\nend" pp_expr c
+      (Format.pp_print_list
+         ~pp_sep:(fun fmt () -> Format.fprintf fmt "@\n")
+         pp_branch) bs
 
   | DIFailwith e ->
-      Format.fprintf fmt "failwith (%a)" pp_expr e
+    Format.fprintf fmt "failwith (%a)" pp_expr e
 
 and pp_expr (fmt : Format.formatter) (e : expr) =
   match e with
   | Int i ->
-      Format.fprintf fmt "%s" (BigInt.string_of_big_int i)
+    Format.fprintf fmt "%s" (BigInt.string_of_big_int i)
 
   | Str s ->
-      Format.fprintf fmt "\"%s\"" s
+    Format.fprintf fmt "\"%s\"" s
 
   | Fun (f, args) ->
-      Format.fprintf fmt "%s(%a)" f
+    Format.fprintf fmt "%s(%a)" f
       (Format.pp_print_list
          ~pp_sep:(fun fmt () -> Format.pp_print_string fmt ", ")
          pp_expr)
       args
 
   | Var v ->
-     Format.fprintf fmt "%a" pp_var v
+    Format.fprintf fmt "%a" pp_var v
 
 and pp_var (fmt : Format.formatter) (v : var) =
   match v with
   | `VGlobal n ->
-      Format.fprintf fmt "%s" n
+    Format.fprintf fmt "%s" n
 
   | `VLocal x ->
-      Format.fprintf fmt "#%d" (Obj.magic x : int)
+    Format.fprintf fmt "#%d" (Obj.magic x : int)
 
   | `VDup { contents = `Direct (i, None) } ->
-      Format.fprintf fmt "$%d" i
+    Format.fprintf fmt "$%d" i
 
   | `VDup { contents = `Direct (_, Some n) } ->
-      Format.fprintf fmt "%s" n
+    Format.fprintf fmt "%s" n
 
   | `VDup { contents = `Redirect v } ->
-      Format.fprintf fmt "%a" pp_var (`VDup v)
+    Format.fprintf fmt "%a" pp_var (`VDup v)
 
 (* -------------------------------------------------------------------- *)
 let var_unset (v : local) =
@@ -661,42 +744,42 @@ let write_var (e : expr) (v : var) =
   | `VGlobal n ->
     [DIAssign (`VGlobal n, `Expr e)]
   | `VLocal x ->
-     x := Some e; []
+    x := Some e; []
   | `VDup { contents = `Redirect _ } ->
-     assert false
+    assert false
   | `VDup ({ contents = `Direct (i, _) } as x) ->
-     x := `Direct (i, None); [DIAssign (v, `Expr e)]
+    x := `Direct (i, None); [DIAssign (v, `Expr e)]
 
 (* -------------------------------------------------------------------- *)
 let rec expr_of_rstack1 (r : rstack1) =
   match r with
   | #var as v ->
-      Var v
+    Var v
   | `Paired (r1, r2) ->
-      Fun ("pair", [expr_of_rstack1 r1; expr_of_rstack1 r2])
+    Fun ("pair", [expr_of_rstack1 r1; expr_of_rstack1 r2])
 
 (* -------------------------------------------------------------------- *)
 let pdestruct (path : bool list) (e : expr) =
   List.fold_right (fun b e ->
-    let dtor = if b then "cdr" else "car" in
-    Fun (dtor, [e])) path e
+      let dtor = if b then "cdr" else "car" in
+      Fun (dtor, [e])) path e
 
 (* -------------------------------------------------------------------- *)
 let rec unify (v1 : rstack1) (v2 : rstack1) =
   match v1, v2 with
   | `VGlobal n, `VGlobal m when n = m ->
-      ([], []), `VGlobal n
+    ([], []), `VGlobal n
 
   | `VGlobal _, `VGlobal _ ->
-      assert false
+    assert false
 
   | `VLocal x, `VLocal y when x ==(*phy*) y ->
-      ([], []), `VLocal x
+    ([], []), `VLocal x
 
   | `VLocal x, `VLocal y ->
-      assert (var_unset x && var_unset y);
-      y := Some (Var (`VLocal x));
-      ([], []), `VLocal x
+    assert (var_unset x && var_unset y);
+    y := Some (Var (`VLocal x));
+    ([], []), `VLocal x
 
   | `VDup { contents = `Redirect _ }, _
   | _, `VDup { contents = `Redirect _ } -> assert false
@@ -714,33 +797,33 @@ let rec unify (v1 : rstack1) (v2 : rstack1) =
     end
 
   | `VLocal x, (`VDup _ as y) ->
-      assert (var_unset x);
-      x := Some (Var y);
-      ([], []), y
+    assert (var_unset x);
+    x := Some (Var y);
+    ([], []), y
 
   | `Paired (x1, y1), `Paired (x2, y2) ->
-      let (w1, w'1), z1 = unify x1 x2 in
-      let (w2, w'2), z2 = unify y1 y2 in
-      (w1 @ w2, w'1 @ w'2), `Paired (z1, z2)
+    let (w1, w'1), z1 = unify x1 x2 in
+    let (w2, w'2), z2 = unify y1 y2 in
+    (w1 @ w2, w'1 @ w'2), `Paired (z1, z2)
 
   | `VLocal x, `Paired _ ->
-      assert (var_unset x);
-      let y1 = `VLocal (ref None) in
-      let y2 = `VLocal (ref None) in
-      x := Some (Fun ("pair", [Var y1; Var y2]));
-      unify (`Paired (y1, y2)) v2
+    assert (var_unset x);
+    let y1 = `VLocal (ref None) in
+    let y2 = `VLocal (ref None) in
+    x := Some (Fun ("pair", [Var y1; Var y2]));
+    unify (`Paired (y1, y2)) v2
 
   | `VGlobal n, `VDup { contents = `Direct (_, Some m)} when n = m ->
-      ([], []), `VGlobal n
+    ([], []), `VGlobal n
 
   | `VGlobal n, (`VDup (({ contents = `Direct (vi, _) } as vy) as y)) ->
-      vy := `Direct (vi, None);
-      ([n, y], []), `VDup y
+    vy := `Direct (vi, None);
+    ([n, y], []), `VDup y
 
   | `VGlobal n, `VLocal y ->
-      assert (var_unset y);
-      let x = ref (`Direct (gen (), Some n)) in
-      y := Some (Var (`VDup x)); ([n, x], []), `VDup x
+    assert (var_unset y);
+    let x = ref (`Direct (gen (), Some n)) in
+    y := Some (Var (`VDup x)); ([n, x], []), `VDup x
 
   | `VGlobal _, `Paired _
   | `VDup    _, `Paired _ ->
@@ -752,7 +835,7 @@ let rec unify (v1 : rstack1) (v2 : rstack1) =
   | `Paired  _, `VLocal  _
   | `Paired  _, `VGlobal _
   | `Paired  _, `VDup    _ ->
-      let (w1, w2), s = unify v2 v1 in (w2, w1), s
+    let (w1, w2), s = unify v2 v1 in (w2, w1), s
 
 (* -------------------------------------------------------------------- *)
 let unify_rstack (s1 : rstack) (s2 : rstack) =
@@ -773,23 +856,33 @@ let merge_rstack ((b1, s1) : bool * rstack) ((b2, s2) : bool * rstack) =
 let rec dptn_of_rstack1 (r : rstack1) =
   match r with
   | `Paired (r1, r2) ->
-      let p1, c1 = dptn_of_rstack1 r1 in
-      let p2, c2 = dptn_of_rstack1 r2 in
-      (DPair (p1, p2), c1 @ c2)
+    let p1, c1 = dptn_of_rstack1 r1 in
+    let p2, c2 = dptn_of_rstack1 r2 in
+    (DPair (p1, p2), c1 @ c2)
 
   | `VLocal x ->
-      assert (var_unset x); (DVar x, [])
+    assert (var_unset x); (DVar x, [])
 
   | (`VGlobal _) as n ->
-      let x : local = ref None in
-      (DVar x, [DIAssign (n, `Expr (Var (`VLocal x)))])
+    let x : local = ref None in
+    (DVar x, [DIAssign (n, `Expr (Var (`VLocal x)))])
 
   | (`VDup _) as y ->           (* FIXME *)
-      let x : local = ref None in
-      (DVar x, [DIAssign (y, `Expr (Var (`VLocal x)))])
+    let x : local = ref None in
+    (DVar x, [DIAssign (y, `Expr (Var (`VLocal x)))])
 
 (* -------------------------------------------------------------------- *)
 let rec decompile_i (s : rstack) (i : instr) : rstack * dinstr list =
+  let pp_list sep pp =
+    Format.pp_print_list
+      ~pp_sep:(fun fmt () -> Format.fprintf fmt "%(%)" sep)
+      pp
+  in
+
+  if (Trace.get_trace ())
+  then Format.eprintf "%a\t[%a]@\n" pp_simple_instr i (pp_list "; " pp_rstack1) s;
+
+
   match i with
   | DUP ->
     let x, s = List.pop s in
@@ -822,9 +915,9 @@ let rec decompile_i (s : rstack) (i : instr) : rstack * dinstr list =
 
       match x with
       | #var as v ->
-          s, (write_var (Int i) v)
+        s, (write_var (Int i) v)
       | _ ->
-          assert false
+        assert false
     end
 
   | PUSH (V_Str c) -> begin
@@ -832,9 +925,9 @@ let rec decompile_i (s : rstack) (i : instr) : rstack * dinstr list =
 
       match x with
       | #var as v ->
-          s, (write_var (Str c) v)
+        s, (write_var (Str c) v)
       | _ ->
-          assert false
+        assert false
     end
 
   | PAIR -> begin
@@ -842,27 +935,27 @@ let rec decompile_i (s : rstack) (i : instr) : rstack * dinstr list =
 
       match x with
       | `Paired (x1, x2) ->
-          x1 :: x2 :: s, []
+        x1 :: x2 :: s, []
 
       | #var as v ->
-          let x1 = `VLocal (ref None) in
-          let x2 = `VLocal (ref None) in
-          let op = DIAssign (v, `Expr (Fun ("pair", [Var x1; Var x2]))) in
-          x1 :: x2 :: s, [op]
+        let x1 = `VLocal (ref None) in
+        let x2 = `VLocal (ref None) in
+        let op = DIAssign (v, `Expr (Fun ("pair", [Var x1; Var x2]))) in
+        x1 :: x2 :: s, [op]
     end
 
   | UNPAIR ->
-      let x, s = List.pop s in
-      let y, s = List.pop s in
-      `Paired (x, y) :: s, []
+    let x, s = List.pop s in
+    let y, s = List.pop s in
+    `Paired (x, y) :: s, []
 
   | CAR ->
-      let x, s = List.pop s in
-      (`Paired (x, `VLocal (ref None)) :: s), []
+    let x, s = List.pop s in
+    (`Paired (x, `VLocal (ref None)) :: s), []
 
   | CDR ->
-      let y, s = List.pop s in
-      (`Paired (`VLocal (ref None), y) :: s), []
+    let y, s = List.pop s in
+    (`Paired (`VLocal (ref None), y) :: s), []
 
   | SWAP -> begin
       let x, s = List.pop s in
@@ -881,13 +974,13 @@ let rec decompile_i (s : rstack) (i : instr) : rstack * dinstr list =
     end
 
   | IF_LEFT (c1, c2) ->
-      compile_match s [("left", 1), c1; ("right", 1), c2]
+    compile_match s [("left", 1), c1; ("right", 1), c2]
 
   | IF_NONE (c1, c2) ->
-      compile_match s [("none", 0), c1; ("some", 1), c2]
+    compile_match s [("none", 0), c1; ("some", 1), c2]
 
   | IF_CONS (c1, c2) ->
-      compile_match s [("cons", 1), c1; ("nil", 0), c2]
+    compile_match s [("cons", 1), c1; ("nil", 0), c2]
 
   | UNIT    -> decompile_op s ("unit"   , 0)
   | NONE _  -> decompile_op s ("none"   , 0)
@@ -916,20 +1009,20 @@ let rec decompile_i (s : rstack) (i : instr) : rstack * dinstr list =
   | COMPARE -> decompile_op s ("compare", 2)
 
   | FAILWITH s ->
-      let s     = List.map (fun _ -> `VLocal (ref None)) s in
-      let x, _  = List.pop s in
-      (s, [DIFailwith (expr_of_rstack1 x)])
+    let s     = List.map (fun _ -> `VLocal (ref None)) s in
+    let x, _  = List.pop s in
+    (s, [DIFailwith (expr_of_rstack1 x)])
 
   | MAP  _ -> assert false
   | ITER _ -> assert false
 
 and decompile_op (s : rstack) ((name, n) : symbol * int) =
-    let x, s = List.pop s in
-    match x with
-    | #var as x ->
-        let args = List.init n (fun _ -> `VLocal (ref None)) in
-        args @ s, write_var (Fun (name, List.map (fun v -> Var v) args)) x
-    | _ -> assert false
+  let x, s = List.pop s in
+  match x with
+  | #var as x ->
+    let args = List.init n (fun _ -> `VLocal (ref None)) in
+    args @ s, write_var (Fun (name, List.map (fun v -> Var v) args)) x
+  | _ -> assert false
 
 and compile_match (s : rstack) (bs : ((symbol * int) * code) list) =
   let sc, subs = List.split (List.map (fun ((name, n), b) ->
@@ -961,30 +1054,30 @@ and compress_i (i : dinstr) =
     end
 
   | DIIf (c, (b1, b2)) ->
-      [DIIf (compress_e c, (compress_c b1, compress_c b2))]
+    [DIIf (compress_e c, (compress_c b1, compress_c b2))]
 
   | DIMatch (c, bs) ->
-      [DIMatch (compress_e c, List.map (fun (n, x, b) -> (n, x, compress_c b)) bs)]
+    [DIMatch (compress_e c, List.map (fun (n, x, b) -> (n, x, compress_c b)) bs)]
 
   | DIFailwith e ->
-      [DIFailwith (compress_e e)]
+    [DIFailwith (compress_e e)]
 
 and compress_e (e : expr) =
   match e with
   | Int _ | Str _ ->
-      e
+    e
 
   | Var (`VGlobal _ | `VLocal { contents = None }) ->
-      e
+    e
 
   | Fun (f, args) ->
-      fun_simpl f (List.map compress_e args)
+    fun_simpl f (List.map compress_e args)
 
   | Var (`VLocal { contents = Some e }) ->
-      compress_e e
+    compress_e e
 
   | Var (`VDup _) ->
-      e
+    e
 
 and compress_assign_e = function
   | `Expr e -> Some (`Expr (compress_e e))
@@ -993,22 +1086,22 @@ and compress_assign_e = function
 and compress_vdup (v : vdup) : vdup option =
   match !v with
   | `Redirect v ->
-      compress_vdup v
+    compress_vdup v
 
   | `Direct (_, None) ->
-      Some v
+    Some v
 
   | `Direct (_, Some _) ->
-      None
+    None
 
 and fun_simpl f args =
   match f, args with
   | "car", [Fun ("pair", [e; _])]
   | "cdr", [Fun ("pair", [_; e])] ->
-      e
+    e
 
   | "pair", [Fun ("car", [e1]); Fun ("cdr", [e2])] when e1 = e2 ->
-      e1
+    e1
 
   | _, _ -> Fun (f, args)
 
@@ -1025,8 +1118,25 @@ module Simple : Example = struct
   let storage   = SoftCode.ct_INT
 
   let code =
+    let open SoftCode in [
+      c_UNPAIR;
+      c_DROP 1;
+      c_PUSH (`Int 2);
+      c_SWAP;
+      c_DROP 1;
+      c_NIL ct_UNIT;
+      c_PAIR;
+    ]
+end
+
+(* -------------------------------------------------------------------- *)
+module DecompIf : Example = struct
+  let arguments = SoftCode.ct_BOOL
+  let storage   = SoftCode.ct_INT
+
+  let code =
     let open SoftCode in
-      c_desugared_UNPAIR @ [
+    c_desugared_UNPAIR @ [
       c_DUP;
       c_IF
         [
@@ -1036,12 +1146,12 @@ module Simple : Example = struct
           ];
           c_DUG 1;
         ] (* else *) [
-          c_PUSH (`Int 3);
-          c_DIP 1 [
-            c_DIG 1; c_DROP 1;
-          ];
-          c_DUG 1;
+        c_PUSH (`Int 3);
+        c_DIP 1 [
+          c_DIG 1; c_DROP 1;
         ];
+        c_DUG 1;
+      ];
       c_DROP 1;
       c_NIL ct_UNIT;
       c_PAIR;
@@ -1190,6 +1300,9 @@ end
 
 (* -------------------------------------------------------------------- *)
 let main () =
+  let module T = Trace in
+  T.set_trace true;
+
   let module E = DeferredWrite in
 
   let pty = compile_type E.arguments in
@@ -1219,12 +1332,12 @@ let main () =
   let dc =
     match ost with
     | [`Paired (px, ax)] ->
-        let (pr1 , pr2 ), _ = unify pst px in
-        let (pr'1, pr'2), _ = unify ast ax in
-        let pr = List.map (fun pr ->
-            List.map (fun (x, e) -> DIAssign (`VGlobal x, `Dup e)) pr
-          ) [pr1; pr'1; pr2; pr'2] in
-        List.flatten pr @ dc
+      let (pr1 , pr2 ), _ = unify pst px in
+      let (pr'1, pr'2), _ = unify ast ax in
+      let pr = List.map (fun pr ->
+          List.map (fun (x, e) -> DIAssign (`VGlobal x, `Dup e)) pr
+        ) [pr1; pr'1; pr2; pr'2] in
+      List.flatten pr @ dc
     | _ -> assert false in
 
   Format.eprintf "%a@." pp_dcmd (compress_c dc)
