@@ -5,6 +5,9 @@ module Set    = BatSet
 module Map    = BatMap
 
 (* -------------------------------------------------------------------- *)
+type 'a pair = 'a * 'a
+
+(* -------------------------------------------------------------------- *)
 module Format : sig
   include module type of BatFormat
 
@@ -573,7 +576,6 @@ type rstack  = rstack1 list
 (* -------------------------------------------------------------------- *)
 type dinstr =
   | DIAssign   of var * [`Expr of expr | `Dup of vdup]
-  | DIIf       of expr * (dcmd * dcmd)
   | DIMatch    of expr * (symbol * dpattern list * dcmd) list
   | DIFailwith of expr
 
@@ -671,10 +673,6 @@ and pp_dinstr (fmt : Format.formatter) (i : dinstr) =
 
   | DIAssign (x, `Dup v) ->
     Format.fprintf fmt "%a <- %a" pp_var x pp_var (`VDup v)
-
-  | DIIf (c, (b1, b2)) ->
-    Format.fprintf fmt "@[<v 2>if (%a):@\n%a@]@\n@[<v 2>else:@\n%a@]"
-      pp_expr c pp_dcmd b1 pp_dcmd b2
 
   | DIMatch (c, bs) ->
     let rec pp_pattern fmt = function
@@ -846,14 +844,6 @@ let unify_rstack (s1 : rstack) (s2 : rstack) =
   (List.flatten pr1, List.flatten pr2), s
 
 (* -------------------------------------------------------------------- *)
-let merge_rstack ((b1, s1) : bool * rstack) ((b2, s2) : bool * rstack) =
-  match b1, b2 with
-  |  true,  true -> unify_rstack s1 s2
-  |  true, false -> ([], []), s1
-  | false,  true -> ([], []), s2
-  | false, false -> assert false
-
-(* -------------------------------------------------------------------- *)
 let rec dptn_of_rstack1 (r : rstack1) =
   match r with
   | `Paired (r1, r2) ->
@@ -967,24 +957,17 @@ let rec decompile_i (s : rstack) (i : instr) : rstack * dinstr list =
       (y :: x :: s, [])
     end
 
-  | IF (c1, c2) -> begin
-      let s1, b1 = decompile s c1 in
-      let s2, b2 = decompile s c2 in
-      let (pr1, pr2), s = unify_rstack s1 s2 in
-      let pr1 = List.map (fun (x, e) -> DIAssign (`VGlobal x, `Dup e)) pr1 in
-      let pr2 = List.map (fun (x, e) -> DIAssign (`VGlobal x, `Dup e)) pr2 in
-      let x = `VLocal (ref None) in
-      x :: s, [DIIf (Var x, (pr1 @ b1, pr2 @ b2))]
-    end
+  | IF (c1, c2) ->
+    compile_match s ((("true", 0), c1), (("false", 0), c2))
 
   | IF_LEFT (c1, c2) ->
-    compile_match s [("left", 1), c1; ("right", 1), c2]
+    compile_match s ((("left", 1), c1), (("right", 1), c2))
 
   | IF_NONE (c1, c2) ->
-    compile_match s [("none", 0), c1; ("some", 1), c2]
+    compile_match s ((("none", 0), c1), (("some", 1), c2))
 
   | IF_CONS (c1, c2) ->
-    compile_match s [("cons", 1), c1; ("nil", 0), c2]
+    compile_match s ((("cons", 1), c1), (("nil", 0), c2))
 
   | UNIT    -> decompile_op s ("unit"   , 0)
   | NONE _  -> decompile_op s ("none"   , 0)
@@ -1028,18 +1011,22 @@ and decompile_op (s : rstack) ((name, n) : symbol * int) =
     args @ s, write_var (Fun (name, List.map (fun v -> Var v) args)) x
   | _ -> assert false
 
-and compile_match (s : rstack) (bs : ((symbol * int) * code) list) =
-  let sc, subs = List.split (List.map (fun ((name, n), b) ->
-      let sc, bc = decompile s b in
-      assert (List.length sc >= n);
-      let p, sc = List.split_at n sc in
+and compile_match (s : rstack) ((bs1, bs2) : ((symbol * int) * code) pair) =
+  let for1 ((name, i), c) =
+      let sc, bc = decompile s c in
+      assert (List.length sc >= i);
+      let p, sc = List.split_at i sc in
       let p, dp = List.split (List.map dptn_of_rstack1 p) in
-      (sc, (name, p, List.flatten dp @ bc))) bs) in
+      (sc, (name, p, List.flatten dp @ bc)) in
 
-  let x  = `VLocal (ref None) in (* FIXME *)
-  let sc = List.fold_left (fun x y -> snd (unify_rstack x y)) (List.hd sc) (List.tl sc) in
+  let s1, (name1, p1, c1) = for1 bs1 in
+  let s2, (name2, p2, c2) = for1 bs2 in
 
-  x :: sc, [DIMatch (Var x, subs)]
+  let (pr1, pr2), s = unify_rstack s1 s2 in
+  let pr1 = List.map (fun (x, e) -> DIAssign (`VGlobal x, `Dup e)) pr1 in
+  let pr2 = List.map (fun (x, e) -> DIAssign (`VGlobal x, `Dup e)) pr2 in
+  let x = `VLocal (ref None) in
+  x :: s, [DIMatch (Var x, [(name1, p1, pr1 @ c1); (name2, p2, pr2 @ c2)])]
 
 and decompile (s : rstack) (c : code) : rstack * dinstr list =
   let s, c = List.fold_left_map decompile_i s (List.rev c) in
@@ -1056,9 +1043,6 @@ and compress_i (i : dinstr) =
       | None   -> []
       | Some e -> [DIAssign (x, e)]
     end
-
-  | DIIf (c, (b1, b2)) ->
-    [DIIf (compress_e c, (compress_c b1, compress_c b2))]
 
   | DIMatch (c, bs) ->
     [DIMatch (compress_e c, List.map (fun (n, x, b) -> (n, x, compress_c b)) bs)]
@@ -1329,7 +1313,7 @@ let main () =
   (* let module T = Trace in *)
   (* T.set_trace true; *)
 
-  let module E = Simple2 in
+  let module E = AVV in
 
   let pty = compile_type E.arguments in
   let aty = compile_type E.storage in
