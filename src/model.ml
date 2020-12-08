@@ -1082,6 +1082,15 @@ let mk_right t x = mk_mterm (Mright (t, x)) (tor t x.type_)
 
 let mk_none t = mk_mterm (Mnone) (toption t)
 
+let mk_pack v     = mk_mterm (Mpack v) tbytes
+let mk_unpack t v = mk_mterm (Munpack (t, v)) t
+
+let mk_blake2b  v = mk_mterm (Mblake2b v) tbytes
+let mk_sha256   v = mk_mterm (Msha256  v) tbytes
+let mk_sha512   v = mk_mterm (Msha512  v) tbytes
+let mk_hashkey  v = mk_mterm (Mhashkey v) tkeyhash
+let mk_checksignature a b c = mk_mterm (Mchecksignature (a, b, c)) tbool
+
 let mk_brat n d  = mk_tuple [mk_bint n; mk_bnat d]
 let mk_rat n d   = mk_tuple [mk_int n; mk_nat d]
 

@@ -1800,6 +1800,214 @@ let to_model (ir, env : T.ir * env) : M.model * env =
   let model = M.mk_model (dumloc ir.name) ~functions:functions ~storage:storage in
   model, env
 
+module Decomp_model : sig
+  val decompile : T.dprogram * env -> M.model * env
+end = struct
+  open Ident
+  open Michelson
+  open Model
+
+  let for_type (t : T.type_) : M.type_ = ttype_to_mtype t
+
+  let for_data ?t (d : T.data) : M.mterm =
+    let is_nat = Option.map_dfl (fun (t : T.type_) -> match t.node with | T.Tnat -> true | _ -> false) false in
+    match d with
+    | Dint v when is_nat t -> M.mk_bnat v
+    | Dint    v        -> mk_bint v
+    | Dstring v        -> mk_string v
+    | Dbytes  v        -> mk_bytes v
+    | Dunit            -> unit
+    | Dtrue            -> mtrue
+    | Dfalse           -> mfalse
+    | Dpair  (_ld, _rd)-> assert false
+    | Dleft   _d       -> assert false
+    | Dright  _d       -> assert false
+    | Dsome   _d       -> assert false
+    | Dnone            -> assert false
+    | Dlist  _l        -> assert false
+    | Delt _           -> assert false
+    | Dvar _x          -> assert false
+
+  let get_storage_list tstorage =
+    let rec aux (x : T.type_) =
+      match x.node, x.annotation with
+      | _, Some a  -> [a, x]
+      | T.Tpair (a, b), _ -> begin
+          match aux a, aux b with
+          | [], _
+          | _, [] -> []
+          | x, y  -> x @ y
+        end
+      | _ -> []
+    in
+    let r = aux tstorage in
+    match r with
+    | [] -> ["storage", tstorage]
+    | _  -> r
+
+  let rec get_default_value (t : T.type_) =
+    let f = get_default_value in
+    match t.node with
+    | Tnat
+    | Tint    -> T.Dint Big_int.zero_big_int
+    | Tstring -> T.Dstring ""
+    | Tpair (a, b) -> T.Dpair (f a, f b)
+    | _ -> T.Dint Big_int.zero_big_int(* assert false *)
+
+  let for_code (code : dcode) : mterm =
+    let ft = for_type in
+
+    let for_dvar (_v : dvar) : ident = "s"
+    in
+
+    let rec for_expr (e : dexpr) : mterm =
+      let f = for_expr in
+      let tunknown = tunit in
+      match e with
+      | Dvar v          -> mk_mvar (dumloc (for_dvar v)) tunit
+      | Ddata d         -> for_data d
+      | Dfun (`Uop Ueq, [Dfun (`Bop Bcompare, [a; b])]) -> mk_mterm (Mequal  (tint, f a, f b)) tbool
+      | Dfun (`Uop Une, [Dfun (`Bop Bcompare, [a; b])]) -> mk_mterm (Mnequal (tint, f a, f b)) tbool
+      | Dfun (`Uop Ugt, [Dfun (`Bop Bcompare, [a; b])]) -> mk_mterm (Mgt     (f a, f b)) tbool
+      | Dfun (`Uop Uge, [Dfun (`Bop Bcompare, [a; b])]) -> mk_mterm (Mge     (f a, f b)) tbool
+      | Dfun (`Uop Ult, [Dfun (`Bop Bcompare, [a; b])]) -> mk_mterm (Mlt     (f a, f b)) tbool
+      | Dfun (`Uop Ule, [Dfun (`Bop Bcompare, [a; b])]) -> mk_mterm (Mle     (f a, f b)) tbool
+      | Dfun (op, args) -> begin
+          match op, args with
+          | `Zop Znow,                       [] -> mnow
+          | `Zop Zamount,                    [] -> mtransferred
+          | `Zop Zbalance,                   [] -> mbalance
+          | `Zop Zsource,                    [] -> msource
+          | `Zop Zsender,                    [] -> mcaller
+          | `Zop Zaddress,                   [] -> assert false
+          | `Zop Zchain_id,                  [] -> mchainid
+          | `Zop Zself _a,                   [] -> assert false
+          | `Zop Zself_address,              [] -> mselfaddress
+          | `Zop Znone t,                    [] -> mk_none (ft t)
+          | `Zop Zunit,                      [] -> unit
+          | `Zop Znil t,                     [] -> mk_mterm (Mlitlist []) (tlist (ft t))
+          | `Zop Zemptyset  t,               [] -> mk_mterm (Mlitset [])  (tlist (ft t))
+          | `Zop Zemptymap (tk, tv),         [] -> mk_mterm (Mlitmap (false, [])) (tmap (ft tk) (ft tv))
+          | `Zop Zemptybigmap (tk, tv),      [] -> mk_mterm (Mlitmap (true, [])) (tmap (ft tk) (ft tv))
+          | `Uop Ucar,                    [ a ] -> mk_tupleaccess 0 (f a)
+          | `Uop Ucdr,                    [ a ] -> mk_tupleaccess 1 (f a)
+          | `Uop Uleft t,                 [ a ] -> mk_left  (ft t) (f a)
+          | `Uop Uright t,                [ a ] -> mk_right (ft t) (f a)
+          | `Uop Uneg,                    [ a ] -> mk_mterm (Muminus (f a)) tint
+          | `Uop Uint,                    [ a ] -> mk_nat_to_int (f a)
+          | `Uop Unot,                    [ a ] -> mnot (f a)
+          | `Uop Uabs,                    [ a ] -> mk_mterm (Mabs (f a)) tnat
+          | `Uop Uisnat,                  [ _a ] -> assert false
+          | `Uop Usome,                   [ a ] -> mk_some (f a)
+          | `Uop Usize,                   [ a ] -> mk_mterm (Mlistlength (tunknown, f a)) tnat
+          | `Uop Upack,                   [ a ] -> mk_pack (f a)
+          | `Uop Uunpack t,               [ a ] -> mk_unpack (ft t) (f a)
+          | `Uop Ublake2b,                [ a ] -> mk_blake2b (f a)
+          | `Uop Usha256,                 [ a ] -> mk_sha256 (f a)
+          | `Uop Usha512,                 [ a ] -> mk_sha512 (f a)
+          | `Uop Uhash_key,               [ a ] -> mk_hashkey (f a)
+          | `Uop Ufail,                   [ a ] -> failg (f a)
+          | `Uop Ucontract (_t, _an),     [ _a ] -> assert false
+          | `Uop Usetdelegate,            [ _a ] -> assert false
+          | `Uop Uimplicitaccount,        [ _a ] -> assert false
+          | `Uop Ueq,                     [ _ ] -> assert false
+          | `Uop Une,                     [ _ ] -> assert false
+          | `Uop Ugt,                     [ _ ] -> assert false
+          | `Uop Uge,                     [ _ ] -> assert false
+          | `Uop Ult,                     [ _ ] -> assert false
+          | `Uop Ule,                     [ _ ] -> assert false
+          | `Bop Badd,                 [ a; b ] -> mk_mterm (Mplus (f a, f b)) tint
+          | `Bop Bsub,                 [ a; b ] -> mk_mterm (Mminus (f a, f b)) tint
+          | `Bop Bmul,                 [ a; b ] -> mk_mterm (Mmult (f a, f b)) tint
+          | `Bop Bediv,                [ _a; _b ] -> assert false
+          | `Bop Blsl,                 [ _a; _b ] -> assert false
+          | `Bop Blsr,                 [ _a; _b ] -> assert false
+          | `Bop Bor,                  [ a; b ] -> mk_mterm (Mor  (f a, f b)) tbool
+          | `Bop Band,                 [ a; b ] -> mk_mterm (Mand (f a, f b)) tbool
+          | `Bop Bxor,                 [ a; b ] -> mk_mterm (Mxor (f a, f b)) tbool
+          | `Bop Bcompare,             [ _; _ ] -> assert false
+          | `Bop Bget,                 [ a; b ] -> mk_mterm (Mmapget (tunknown, tunknown, f a, f b)) tunknown
+          | `Bop Bmem,                 [ a; b ] -> mk_mterm (Mmapcontains(tunknown, tunknown, f a, f b)) tunknown
+          | `Bop Bconcat,              [ a; b ] -> mk_mterm (Mconcat (f a, f b)) tunknown
+          | `Bop Bcons,                [ a; b ] -> mk_mterm (Mlistprepend (tunknown, f a, f b)) tunknown
+          | `Bop Bpair,                [ a; b ] -> mk_tuple [f a; f b]
+          | `Bop Bexec,                [ _a; _b ] -> assert false
+          | `Bop Bapply,               [ _a; _b ] -> assert false
+          | `Top Tcheck_signature,  [ a; b; c ] -> mk_checksignature (f a) (f b) (f c)
+          | `Top Tslice,            [ a; b; c ] -> mk_mterm (Mslice (f a, f b, f c)) tunknown
+          | `Top Tupdate,           [ a; b; c ] -> mk_mterm (Mmapput (tunknown, tunknown, f a, f b, f c)) tunknown
+          | `Top Ttransfer_tokens,  [ _a; _b; _c ] -> assert false
+          | _ -> assert false
+        end
+
+    in
+
+    let rec for_instr i : mterm =
+      let f = for_instr in
+      let g = for_expr in
+      let seq (c : dcode) : mterm =
+        let instrs = List.map f c in
+        seq instrs
+      in
+      begin
+        match i with
+        | DIAssign (x, v) ->
+          let id = for_dvar x in
+          let v =
+            match v with
+            | `Dup _v -> assert false
+            | `Expr e -> g e
+          in
+          mk_mterm (Massign (ValueAssign, tunit, Avar (dumloc id), v)) tunit
+
+        | DIIf (c, (b1, b2)) ->
+          mk_mterm (Mif (g c, seq b1, Some (seq b2))) tunit
+
+        (* | DIMatch (c, bs) ->
+           let rec pp_pattern fmt = function
+            | DVar x ->
+              Format.fprintf fmt "%a" pp_var (`VLocal x)
+            | DPair (p1, p2) ->
+              Format.fprintf fmt "(%a, %a)" pp_pattern p1 pp_pattern p2 in
+
+           let pp_branch fmt (c, ptn, body)  =
+            Format.fprintf fmt "@[<v 2>%s %a =>@\n%a@]" c
+              (Format.pp_print_list
+                 ~pp_sep:(fun fmt () -> Format.fprintf fmt " ")
+                 pp_pattern) ptn
+              pp_dcode body
+           in
+
+           Format.fprintf fmt "match (%a) with@\n%a@\nend" pp_expr c
+            (Format.pp_print_list
+               ~pp_sep:(fun fmt () -> Format.fprintf fmt "@\n")
+               pp_branch) bs *)
+
+        | DIFailwith e -> failg (for_expr e)
+        | _ -> assert false
+      end
+    in
+    let instrs = List.map for_instr code in
+    seq instrs
+
+  let decompile (dprogram, env : dprogram * env) =
+    let code = for_code dprogram.code in
+    let functions = [mk_function (Entry (mk_function_struct (dumloc "default") code)) ] in
+
+    let storage_list = get_storage_list dprogram.storage in
+
+    let storage =
+      List.map (fun (id, t) ->
+          M.mk_storage_item (dumloc id) MTvar (for_type t) (for_data ~t:t (get_default_value t))
+        ) storage_list
+    in
+    let model = M.mk_model (dumloc dprogram.name) ~functions:functions ~storage:storage in
+    model, env
+end
+
+let dir_to_model (dir, env : T.dprogram * env) : M.model * env =
+  Decomp_model.decompile (dir, env)
+
 let to_archetype (model, _env : M.model * env) : A.archetype =
   let rec for_type (t : M.type_) : A.type_t =
     let f = for_type in
@@ -1813,7 +2021,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Tbuiltin Brational  -> A.trational
     | Tbuiltin Bdate      -> A.tdate
     | Tbuiltin Bduration  -> A.tduration
-    | Tbuiltin Btimestamp -> assert false
+    | Tbuiltin Btimestamp -> A.tdate
     | Tbuiltin Bstring    -> A.tstring
     | Tbuiltin Baddress   -> A.taddress
     | Tbuiltin Brole      -> A.trole
@@ -1888,7 +2096,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     (* control *)
 
-    | Mif (_c, _t, _e)           -> assert false
+    | Mif (c, t, e)              -> A.eif ?e:(Option.map f e) (f c) (f t)
     | Mmatchwith (_e, _l)        -> assert false
     | Minstrmatchoption _        -> assert false
     | Minstrmatchor     _        -> assert false
@@ -1909,7 +2117,14 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     (* effect *)
 
-    | Mfail _ft          -> assert false
+    | Mfail ft           -> begin
+        let v =
+          match ft with
+          | Invalid e -> f e
+          | _ -> assert false
+        in
+        A.efail v
+      end
     | Mtransfer _tr      -> assert false
 
 
@@ -1960,9 +2175,9 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     | Mleft (_t, _x)  -> assert false
     | Mright (_t, _x) -> assert false
-    | Mnone           -> assert false
-    | Msome _v        -> assert false
-    | Mtuple _l       -> assert false
+    | Mnone           -> A.eoption (ONone None)
+    | Msome v         -> A.eoption (OSome (f v))
+    | Mtuple l        -> A.etuple (List.map f l)
     | Masset _l       -> assert false
     | Massets _l      -> assert false
     | Mlitset _l      -> assert false
@@ -1979,12 +2194,12 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     (* comparison operators *)
 
-    | Mequal (_t, _l, _r)  -> assert false
-    | Mnequal (_t, _l, _r) -> assert false
-    | Mgt (_l, _r)         -> assert false
-    | Mge (_l, _r)         -> assert false
-    | Mlt (_l, _r)         -> assert false
-    | Mle (_l, _r)         -> assert false
+    | Mequal (_t, l, r)  -> A.eapp (Foperator (dumloc (A.Cmp Equal))) [f l; f r]
+    | Mnequal (_t, l, r) -> A.eapp (Foperator (dumloc (A.Cmp Nequal))) [f l; f r]
+    | Mgt (l, r)         -> A.eapp (Foperator (dumloc (A.Cmp Gt))) [f l; f r]
+    | Mge (l, r)         -> A.eapp (Foperator (dumloc (A.Cmp Ge))) [f l; f r]
+    | Mlt (l, r)         -> A.eapp (Foperator (dumloc (A.Cmp Lt))) [f l; f r]
+    | Mle (l, r)         -> A.eapp (Foperator (dumloc (A.Cmp Le))) [f l; f r]
     | Mmulticomp (_e, _l)  -> assert false
 
 
@@ -2061,7 +2276,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     (* map api expression *)
 
-    | Mmapput (_, _, _c, _k, _v)               -> assert false
+    | Mmapput (_, _, c, k, v)               -> A.eapp (A.Fident (dumloc "put")) [f c; f k; f v]
     | Mmapremove (_, _, _c, _k)                -> assert false
     | Mmapget (_, _, _c, _k)                   -> assert false
     | Mmapgetopt (_, _, _c, _k)                -> assert false
@@ -2099,14 +2314,14 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     (* constants *)
 
-    | Mnow           -> assert false
-    | Mtransferred   -> assert false
-    | Mcaller        -> assert false
-    | Mbalance       -> assert false
-    | Msource        -> assert false
-    | Mselfaddress   -> assert false
-    | Mchainid       -> assert false
-    | Mmetadata      -> assert false
+    | Mnow           -> A.eterm (dumloc A.cst_now)
+    | Mtransferred   -> A.eterm (dumloc A.cst_transferred)
+    | Mcaller        -> A.eterm (dumloc A.cst_caller)
+    | Mbalance       -> A.eterm (dumloc A.cst_balance)
+    | Msource        -> A.eterm (dumloc A.cst_source)
+    | Mselfaddress   -> A.eterm (dumloc A.cst_selfaddress)
+    | Mchainid       -> A.eterm (dumloc A.cst_chainid)
+    | Mmetadata      -> A.eterm (dumloc A.cst_metadata)
 
 
     (* variable *)

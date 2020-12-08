@@ -433,9 +433,9 @@ let decompile (filename, channel) =
   |> cont !Options.opt_dir output_dprogram
   |> to_red_dir
   |> cont !Options.opt_red_dir output_dprogram
-  |> to_ir
-  |> cont !Options.opt_ir  output_ir
-  |> to_model
+  (* |> to_ir *)
+  (* |> cont !Options.opt_ir  output_ir *)
+  |> dir_to_model
   |> cont !Options.opt_mdl output_tmdl
   |> Opt_model.optimize
   |> cont !Options.opt_omdl output_tmdl

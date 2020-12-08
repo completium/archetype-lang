@@ -610,6 +610,14 @@ let mk_archetype ?(decls=[]) ?(loc=dummy) () =
 
 (* -------------------------------------------------------------------- *)
 
+let cst_now         = "now"
+let cst_transferred = "transferred"
+let cst_caller      = "caller"
+let cst_balance     = "balance"
+let cst_source      = "source"
+let cst_selfaddress = "selfaddress"
+let cst_chainid     = "chainid"
+let cst_metadata    = "metadata"
 
 let is_keyword = function
   | "added"
