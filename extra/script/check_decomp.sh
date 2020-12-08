@@ -228,10 +228,8 @@ process_files() {
     process $i -mici
     process $i -mi
     process $i -dir
-#    process $i -rdir
-#    process $i -ir
-#    process $i -mdl
-#    process $i
+    process $i -mdl
+    process $i
     echo ""
     NB=$((${NB} + 1))
     if [ $R -eq 1 ]; then
@@ -242,9 +240,9 @@ process_files() {
 
 echo "Check mainnet contract"
 echo ""
-echo "                                                                                           MIC MI  DIR RIR IR  MDL ARL"
+echo "                                                                                           MIC MI  DIR MDL ARL"
 
-process_files "../chaintelligence-use-cases/mainnet/json"
+process_files ""
 
 for i in $PASSED; do
     ${BIN} $i
