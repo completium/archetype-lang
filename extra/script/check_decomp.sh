@@ -228,8 +228,8 @@ process_files() {
     process $i -mici
     process $i -mi
     process $i -dir
-    process $i -mdl
-    process $i
+    #process $i -mdl
+    #process $i
     echo ""
     NB=$((${NB} + 1))
     if [ $R -eq 1 ]; then

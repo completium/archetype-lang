@@ -388,6 +388,28 @@ type micheline = {
 
 (* -------------------------------------------------------------------- *)
 
+(***
+type proposal :
+
+```
+type dvar = ident
+
+and dvkind =
+  | DVKvar of ident
+  | DVKdup
+  | DVKexpr of dexpr option
+
+and  dexpr =
+  | Dvar       of dvar
+  | Ddata      of data
+  | Dfun       of g_operator * dexpr list
+```
+
+with an environment which contains a map
+map (ident -> vkind)
+
+***)
+
 type dvar   = [`VLocal of dlocal | `VDup of vdup | `VGlobal of ident]
 and  dlocal = dexpr option ref
 and  vdup  = [`Direct of int * ident option | `Redirect of vdup] ref
