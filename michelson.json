@@ -1,0 +1,327 @@
+ABS:
+- - 'int : A'
+  - 'nat : A'
+ADD:
+- - 'nat : nat : A'
+  - 'nat : A'
+- - 'nat : int : A'
+  - 'int : A'
+- - 'int : nat : A'
+  - 'int : A'
+- - 'int : int : A'
+  - 'int : A'
+- - 'timestamp : int : A'
+  - 'timestamp : A'
+- - 'int : timestamp : A'
+  - 'timestamp : A'
+- - 'mutez : mutez : A'
+  - 'mutez : A'
+ADDRESS:
+- - 'contract ty1 : A'
+  - 'address : A'
+AMOUNT:
+- - A
+  - 'mutez : A'
+AND:
+- - 'bool : bool : A'
+  - 'bool : A'
+- - 'nat : nat : A'
+  - 'nat : A'
+- - 'int : nat : A'
+  - 'nat : A'
+APPLY:
+- - 'ty1 : lambda ( pair ty1 ty2 ) ty3 : A'
+  - 'lambda ty2 ty3 : A'
+BALANCE:
+- - A
+  - 'mutez : A'
+BLAKE2B:
+- - 'bytes : A'
+  - 'bytes : A'
+CAR:
+- - 'pair ty1 ty2 : A'
+  - 'ty1 : A'
+CDR:
+- - 'pair ty1 ty2 : A'
+  - 'ty2 : A'
+CHAIN_ID:
+- - A
+  - 'chain_id : A'
+CHECK_SIGNATURE:
+- - 'key : signature : bytes : A'
+  - 'bool : A'
+COMPARE:
+- - 'cty : cty : A'
+  - 'int : A'
+CONCAT:
+- - 'string : string : A'
+  - 'string : A'
+- - 'list string : A'
+  - 'string : A'
+- - 'bytes : bytes : A'
+  - 'bytes : A'
+- - 'list bytes : A'
+  - 'bytes : A'
+CONS:
+- - 'ty1 : list ty1 : A'
+  - 'list ty1 : A'
+CONTRACT:
+- - 'address : A'
+  - 'option ( contract ty ) : A'
+CREATE_CONTRACT:
+- - 'option key_hash : mutez : ty1 : A'
+  - 'operation : address : A'
+DIG:
+- - 'A @ ( ty1 : B )'
+  - 'ty1 : ( A @ B )'
+DIP:
+- - A @ B
+  - A @ C
+DROP:
+- - A @ B
+  - B
+DUG:
+- - 'ty1 : ( A @ B )'
+  - 'A @ ( ty1 : B )'
+DUP:
+- - 'ty1 : A'
+  - 'ty1 : ty1 : A'
+EDIV:
+- - 'nat : nat : A'
+  - 'option ( pair nat nat ) : A'
+- - 'nat : int : A'
+  - 'option ( pair int nat ) : A'
+- - 'int : nat : A'
+  - 'option ( pair int nat ) : A'
+- - 'int : int : A'
+  - 'option ( pair int nat ) : A'
+- - 'mutez : nat : A'
+  - 'option ( pair mutez mutez ) : A'
+- - 'mutez : mutez : A'
+  - 'option ( pair nat mutez ) : A'
+EMPTY_BIG_MAP:
+- - A
+  - 'big_map kty vty : A'
+EMPTY_MAP:
+- - A
+  - 'map kty vty : A'
+EMPTY_SET:
+- - A
+  - 'set cty : A'
+EQ:
+- - 'int : A'
+  - 'bool : A'
+EXEC:
+- - 'ty1 : lambda ty1 ty2 : A'
+  - 'ty2 : A'
+FAILWITH:
+- - 'ty1 : A'
+  - B
+GE:
+- - 'int : A'
+  - 'bool : A'
+GET:
+- - 'kty : map kty vty : A'
+  - 'option vty : A'
+- - 'kty : big_map kty vty : A'
+  - 'option vty : A'
+GT:
+- - 'int : A'
+  - 'bool : A'
+HASH_KEY:
+- - 'key : A'
+  - 'key_hash : A'
+IF:
+- - 'bool : A'
+  - B
+IF_CONS:
+- - 'list ty : A'
+  - B
+IF_LEFT:
+- - 'or ty1 ty2 : A'
+  - B
+IF_NONE:
+- - 'option ty1 : A'
+  - B
+IMPLICIT_ACCOUNT:
+- - 'key_hash : A'
+  - 'contract unit : A'
+INT:
+- - 'nat : A'
+  - 'int : A'
+ISNAT:
+- - 'int : A'
+  - 'option nat : A'
+ITER:
+- - 'list ty : A'
+  - A
+- - 'set cty : A'
+  - A
+- - 'map kty vty : A'
+  - A
+LAMBDA:
+- - A
+  - 'lambda ty1 ty2 : A'
+LE:
+- - 'int : A'
+  - 'bool : A'
+LEFT:
+- - 'ty1 : A'
+  - 'or ty1 ty2 : A'
+LOOP:
+- - 'bool : A'
+  - A
+LOOP_LEFT:
+- - 'or ty1 ty2 : A'
+  - 'ty2 : A'
+LSL:
+- - 'nat : nat : A'
+  - 'nat : A'
+LSR:
+- - 'nat : nat : A'
+  - 'nat : A'
+LT:
+- - 'int : A'
+  - 'bool : A'
+MAP:
+- - 'list ty : A'
+  - 'list ty2 : A'
+- - 'map kty ty1 : A'
+  - 'map kty ty2 : A'
+MEM:
+- - 'cty : set cty : A'
+  - 'bool : A'
+- - 'kty : map kty vty : A'
+  - 'bool : A'
+- - 'kty : big_map kty vty : A'
+  - 'bool : A'
+MUL:
+- - 'nat : nat : A'
+  - 'nat : A'
+- - 'nat : int : A'
+  - 'int : A'
+- - 'int : nat : A'
+  - 'int : A'
+- - 'int : int : A'
+  - 'int : A'
+- - 'mutez : nat : A'
+  - 'mutez : A'
+- - 'nat : mutez : A'
+  - 'mutez : A'
+NEG:
+- - 'nat : A'
+  - 'int : A'
+- - 'int : A'
+  - 'int : A'
+NEQ:
+- - 'int : A'
+  - 'bool : A'
+NIL:
+- - A
+  - 'list ty : A'
+NONE:
+- - A
+  - 'option ty : A'
+NOT:
+- - 'bool : A'
+  - 'bool : A'
+- - 'nat : A'
+  - 'int : A'
+- - 'int : A'
+  - 'int : A'
+NOW:
+- - A
+  - 'timestamp : A'
+OR:
+- - 'bool : bool : A'
+  - 'bool : A'
+- - 'nat : nat : A'
+  - 'nat : A'
+PACK:
+- - 'ty : A'
+  - 'bytes : A'
+PAIR:
+- - 'ty1 : ty2 : A'
+  - 'pair ty1 ty2 : A'
+PUSH:
+- - A
+  - 'ty1 : A'
+RIGHT:
+- - 'ty2 : A'
+  - 'or ty1 ty2 : A'
+SELF:
+- - A
+  - 'contract ty : A'
+SENDER:
+- - A
+  - 'address : A'
+SET_DELEGATE:
+- - 'option key_hash : A'
+  - 'operation : A'
+SHA256:
+- - 'bytes : A'
+  - 'bytes : A'
+SHA512:
+- - 'bytes : A'
+  - 'bytes : A'
+SIZE:
+- - 'set cty : A'
+  - 'nat : A'
+- - 'map kty vty : A'
+  - 'nat : A'
+- - 'list ty : A'
+  - 'nat : A'
+- - 'string : A'
+  - 'nat : A'
+- - 'bytes : A'
+  - 'nat : A'
+SLICE:
+- - 'nat : nat : string : A'
+  - 'option string : A'
+- - 'nat : nat : bytes : A'
+  - 'option bytes : A'
+SOME:
+- - 'ty1 : A'
+  - 'option ty1 : A'
+SOURCE:
+- - A
+  - 'address : A'
+SUB:
+- - 'nat : nat : A'
+  - 'int : A'
+- - 'nat : int : A'
+  - 'int : A'
+- - 'int : nat : A'
+  - 'int : A'
+- - 'int : int : A'
+  - 'int : A'
+- - 'timestamp : int : A'
+  - 'timestamp : A'
+- - 'timestamp : timestamp : A'
+  - 'int : A'
+- - 'mutez : mutez : A'
+  - 'mutez : A'
+SWAP:
+- - 'ty1 : ty2 : A'
+  - 'ty2 : ty1 : A'
+TRANSFER_TOKENS:
+- - 'ty : mutez : contract ty : A'
+  - 'operation : A'
+UNIT:
+- - A
+  - 'unit : A'
+UNPACK:
+- - 'bytes : A'
+  - 'option ty : A'
+UPDATE:
+- - 'cty : bool : set cty : A'
+  - 'set cty : A'
+- - 'kty : option vty : map kty vty : A'
+  - 'map kty vty : A'
+- - 'kty : option vty : big_map kty vty : A'
+  - 'big_map kty vty : A'
+XOR:
+- - 'bool : bool : A'
+  - 'bool : A'
+- - 'nat : nat : A'
+  - 'nat : A'
