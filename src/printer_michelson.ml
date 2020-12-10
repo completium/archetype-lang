@@ -105,10 +105,20 @@ let rec pp_code fmt (i : code) =
   in
   let with_complex_instrs l = List.exists with_complex_instr l in
   let fs fmt = Format.fprintf fmt "{ @[%a@] }" (pp_list ";@\n" pp_code) in
-  let fsl fmt l =
-    if with_complex_instrs l
-    then fs fmt l
-    else Format.fprintf fmt "{ @[%a@] }" (pp_list "; " pp_code) l in
+  let pp_dip_arg fmt (i, l) =
+    let pp_aux fmt l =
+      if with_complex_instrs l
+      then fs fmt l
+      else Format.fprintf fmt "{ @[%a@] }" (pp_list "; " pp_code) l
+    in
+    if i = 1
+    then pp_aux fmt l
+    else begin
+      if List.exists with_complex_instr l
+      then Format.fprintf fmt "@[%i@\n%a@]" i pp_aux l
+      else Format.fprintf fmt "%i %a" i pp_aux l
+    end
+  in
   match i with
   (* Control structures *)
   | SEQ l                    -> fs fmt l
@@ -125,7 +135,7 @@ let rec pp_code fmt (i : code) =
   | LOOP_LEFT is             -> pp "LOOP_LEFT %a" fs is
   (* Stack manipulation *)
   | DIG i                    -> pp "DIG%a" pp_arg2 i
-  | DIP (i, is)              -> pp "DIP%a %a" pp_arg i fsl is
+  | DIP (i, is)              -> pp "DIP %a" pp_dip_arg (i, is)
   | DROP i                   -> pp "DROP%a" pp_arg i
   | DUG i                    -> pp "DUG%a" pp_arg2 i
   | DUP                      -> pp "DUP"

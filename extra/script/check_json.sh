@@ -241,7 +241,10 @@ process() {
 }
 
 process_files() {
+  k=0
   for i in $CONTRACTS; do
+    k=$((${k} + 1))
+    printf '%-3i ' $k
     printf '%-50s' $i
     P="$1/$i.json"
     process $P
@@ -251,7 +254,7 @@ process_files() {
 
 echo "Check mainnet contract"
 echo ""
-echo "                                                   C"
+echo "                                                       C"
 
 process_files "/home/dev/archetype/chaintelligence-use-cases/mainnet/json"
 

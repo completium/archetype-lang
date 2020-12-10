@@ -221,9 +221,12 @@ process() {
 }
 
 process_files() {
+  k=0
   for c in $CONTRACTS; do
+    k=$((${k} + 1))
     R=0
     i=./mainnet_contracts/tz/$c.tz
+    printf '%-3i ' $k
     printf '%-90s' $i
     process $i -mici
     process $i -mi

@@ -504,7 +504,7 @@ let process_expr_type_string (input : string) =
 
 (* -------------------------------------------------------------------- *)
 let main () =
-  set_margin 300;
+  set_margin 1000;
   let f = function
     | "ligo"              -> Options.target := Ligo
     | "ligo-storage"      -> Options.target := LigoStorage
