@@ -243,7 +243,7 @@ process_files() {
 
 echo "Check mainnet contract"
 echo ""
-echo "                                                                                           MIC MI  DIR MDL ARL"
+echo "                                                                                               MIC MI  DIR MDL ARL"
 
 process_files ""
 

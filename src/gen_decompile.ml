@@ -1569,39 +1569,42 @@ let to_ir (dir, env : T.dprogram * env) : T.ir * env =
 
 let rec ttype_to_mtype (t : T.type_) : M.type_ =
   let f = ttype_to_mtype in
-  match t.node with
-  | Tkey                  -> M.tkey
-  | Tunit                 -> M.tunit
-  | Tsignature            -> M.tsignature
-  | Toption    t          -> M.toption (f t)
-  | Tlist      t          -> M.tlist   (f t)
-  | Tset       t          -> M.tset    (f t)
-  | Toperation            -> M.toperation
-  | Tcontract  t          -> M.tcontract (f t)
-  | Tpair      (lt, rt)   -> M.ttuple [f lt; f rt]
-  | Tor        (lt, rt)   -> M.tor(f lt) (f rt)
-  | Tlambda    (at, rt)   -> M.tlambda (f at) (f rt)
-  | Tmap       (kt, vt)   -> M.tmap (f kt) (f vt)
-  | Tbig_map   (kt, vt)   -> M.tbig_map (f kt) (f vt)
-  | Tchain_id             -> M.tchainid
-  | Tint                  -> M.tint
-  | Tnat                  -> M.tnat
-  | Tstring               -> M.tstring
-  | Tbytes                -> M.tbytes
-  | Tmutez                -> M.ttez
-  | Tbool                 -> M.tbool
-  | Tkey_hash             -> M.tkeyhash
-  | Ttimestamp            -> M.ttimestamp
-  | Taddress              -> M.taddress
-  | Tsapling_transaction  -> assert false
-  | Tsapling_state        -> assert false
-  | Tnever                -> assert false
-  | Tbls12_381_g1         -> assert false
-  | Tbls12_381_g2         -> assert false
-  | Tbls12_381_fr         -> assert false
-  | Tbaker_hash           -> assert false
-  | Tbaker_operation      -> assert false
-  | Tpvss_key             -> assert false
+  let ty =
+    match t.node with
+    | Tkey                  -> M.tkey
+    | Tunit                 -> M.tunit
+    | Tsignature            -> M.tsignature
+    | Toption    t          -> M.toption (f t)
+    | Tlist      t          -> M.tlist   (f t)
+    | Tset       t          -> M.tset    (f t)
+    | Toperation            -> M.toperation
+    | Tcontract  t          -> M.tcontract (f t)
+    | Tpair      (lt, rt)   -> M.ttuple [f lt; f rt]
+    | Tor        (lt, rt)   -> M.tor(f lt) (f rt)
+    | Tlambda    (at, rt)   -> M.tlambda (f at) (f rt)
+    | Tmap       (kt, vt)   -> M.tmap (f kt) (f vt)
+    | Tbig_map   (kt, vt)   -> M.tbig_map (f kt) (f vt)
+    | Tchain_id             -> M.tchainid
+    | Tint                  -> M.tint
+    | Tnat                  -> M.tnat
+    | Tstring               -> M.tstring
+    | Tbytes                -> M.tbytes
+    | Tmutez                -> M.ttez
+    | Tbool                 -> M.tbool
+    | Tkey_hash             -> M.tkeyhash
+    | Ttimestamp            -> M.ttimestamp
+    | Taddress              -> M.taddress
+    | Tsapling_transaction  -> assert false
+    | Tsapling_state        -> assert false
+    | Tnever                -> assert false
+    | Tbls12_381_g1         -> assert false
+    | Tbls12_381_g2         -> assert false
+    | Tbls12_381_fr         -> assert false
+    | Tbaker_hash           -> assert false
+    | Tbaker_operation      -> assert false
+    | Tpvss_key             -> assert false
+  in
+  Option.fold (fun ty x -> M.mktype ~annot:(dumloc x) (M.get_ntype ty)) ty t.annotation
 
 let to_model (ir, env : T.ir * env) : M.model * env =
 
@@ -1850,15 +1853,25 @@ end = struct
     let f = get_default_value in
     match t.node with
     | Tnat
-    | Tint    -> T.Dint Big_int.zero_big_int
-    | Tstring -> T.Dstring ""
+    | Tint         -> T.Dint Big_int.zero_big_int
+    | Tstring      -> T.Dstring ""
     | Tpair (a, b) -> T.Dpair (f a, f b)
     | _ -> T.Dint Big_int.zero_big_int(* assert false *)
 
   let for_code (code : dcode) : mterm =
     let ft = for_type in
 
-    let for_dvar (_v : dvar) : ident = "s"
+    let for_dvar (v : dvar) : ident =
+      let rec for_vdup (a : vdup) =
+        match !a with
+        | `Direct (_, Some a) -> a
+        | `Direct (k, _) -> "v" ^ string_of_int k
+        | `Redirect v -> for_vdup v
+      in
+      match v with
+      | `VLocal _   -> "local"
+      | `VDup vdup  -> for_vdup vdup
+      | `VGlobal id -> id
     in
 
     let rec for_expr (e : dexpr) : mterm =
@@ -1984,6 +1997,9 @@ end = struct
                ~pp_sep:(fun fmt () -> Format.fprintf fmt "@\n")
                pp_branch) bs *)
 
+        | DIMatch (c, [("left", _lv, lc) ; ("right", _rv, rc)]) ->
+          mk_mterm (Minstrmatchor (g c, dumloc "_", seq rc, dumloc "_", seq lc)) tunit
+
         | DIFailwith e -> failg (for_expr e)
         | _ -> assert false
       end
@@ -1993,7 +2009,7 @@ end = struct
 
   let decompile (dprogram, env : dprogram * env) =
     let code = for_code dprogram.code in
-    let functions = [mk_function (Entry (mk_function_struct (dumloc "default") code)) ] in
+    let functions = [mk_function (Entry (mk_function_struct (dumloc "default") code ~args:[dumloc "arg", for_type dprogram.parameter, None])) ] in
 
     let storage_list = get_storage_list dprogram.storage in
 
