@@ -54,6 +54,8 @@ and arithmetic_operator =
   | DivRat
   | DivEuc
   | Modulo
+  | ShiftLeft
+  | ShiftRight
 
 and unary_operator =
   | Uminus

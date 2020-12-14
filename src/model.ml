@@ -281,6 +281,8 @@ type ('id, 'term) mterm_node  =
   | Mdiveuc           of 'term * 'term
   | Mmodulo           of 'term * 'term
   | Muminus           of 'term
+  | Mshiftleft        of 'term * 'term
+  | Mshiftright       of 'term * 'term
   (* asset api effect *)
   | Maddasset         of ident * 'term
   | Maddfield         of ident * ident * 'term * 'term (* asset_name * field_name * asset instance * item *)
@@ -1350,6 +1352,8 @@ let cmp_mterm_node
     | Mdiveuc (l1, r1), Mdiveuc (l2, r2)                                               -> cmp l1 l2 && cmp r1 r2
     | Mmodulo (l1, r1), Mmodulo (l2, r2)                                               -> cmp l1 l2 && cmp r1 r2
     | Muminus e1, Muminus e2                                                           -> cmp e1 e2
+    | Mshiftleft (l1, r1), Mshiftleft (l2, r2)                                         -> cmp l1 l2 && cmp r1 r2
+    | Mshiftright (l1, r1), Mshiftright (l2, r2)                                       -> cmp l1 l2 && cmp r1 r2
     (* asset api effect *)
     | Maddasset (an1, i1), Maddasset (an2, i2)                                         -> cmp_ident an1 an2 && cmp i1 i2
     | Maddfield (an1, fn1, c1, i1), Maddfield (an2, fn2, c2, i2)                       -> cmp_ident an1 an2 && cmp_ident fn1 fn2 && cmp c1 c2 && cmp i1 i2
@@ -1734,6 +1738,8 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mdiveuc (l, r)                 -> Mdiveuc (f l, f r)
   | Mmodulo (l, r)                 -> Mmodulo (f l, f r)
   | Muminus e                      -> Muminus (f e)
+  | Mshiftleft (l, r)              -> Mshiftleft (f l, f r)
+  | Mshiftright (l, r)             -> Mshiftright (f l, f r)
   (* asset api effect *)
   | Maddasset (an, i)              -> Maddasset (fi an, f i)
   | Maddfield (an, fn, c, i)       -> Maddfield (fi an, fi fn, f c, f i)
@@ -2115,6 +2121,8 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mdiveuc (l, r)                        -> f (f accu l) r
   | Mmodulo (l, r)                        -> f (f accu l) r
   | Muminus e                             -> f accu e
+  | Mshiftleft (l, r)                     -> f (f accu l) r
+  | Mshiftright (l, r)                    -> f (f accu l) r
   (* asset api effect *)
   | Maddasset (_, i)                      -> f accu i
   | Maddfield (_, _, c, i)                -> f (f accu c) i
@@ -2735,6 +2743,16 @@ let fold_map_term
   | Muminus e ->
     let ee, ea = f accu e in
     g (Muminus ee), ea
+
+  | Mshiftleft (l, r) ->
+    let le, la = f accu l in
+    let re, ra = f la r in
+    g (Mshiftleft (le, re)), ra
+
+  | Mshiftright (l, r) ->
+    let le, la = f accu l in
+    let re, ra = f la r in
+    g (Mshiftright (le, re)), ra
 
 
   (* asset api effect *)

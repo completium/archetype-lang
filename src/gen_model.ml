@@ -294,6 +294,8 @@ let to_model (ast : A.ast) : M.model =
       | A.Parith (A.DivEuc, l, r)           -> M.Mdiveuc        (f l, f r)
       | A.Parith (A.Modulo, l, r)           -> M.Mmodulo        (f l, f r)
       | A.Puarith (A.Uminus, e)             -> M.Muminus        (f e)
+      | A.Parith (A.ShiftLeft, l, r)        -> M.Mshiftleft     (f l, f r)
+      | A.Parith (A.ShiftRight, l, r)       -> M.Mshiftright    (f l, f r)
       | A.Precord l when is_record type_    -> begin
           let record_name =  match M.get_ntype type_ with | M.Trecord name -> unloc name | _ -> assert false in
           let ids : ident list =

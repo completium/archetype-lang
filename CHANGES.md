@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - records shaping with `as`
  - add `parameter`
+ - add left and right shift operators (`<<` and `>>`)
 
 ### Changed
  - handle decimal for percent and currency literals
