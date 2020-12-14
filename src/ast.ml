@@ -101,6 +101,7 @@ type arithmetic_operator =
   | DivRat
   | DivEuc
   | Modulo
+  | DivMod
   | ShiftLeft
   | ShiftRight
 [@@deriving show {with_path = false}]

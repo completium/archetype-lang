@@ -151,6 +151,7 @@
 %token SET
 %token SHADOW
 %token SLASH
+%token SLASHPERCENT
 %token SOME
 %token SORTED
 %token SPECIFICATION
@@ -216,7 +217,7 @@
 
 %left PLUS MINUS
 %left MULT SLASH PERCENT
-%left DIV
+%left DIV SLASHPERCENT
 
 %right NOT
 
@@ -1113,6 +1114,7 @@ recupdate_item:
  | SLASH   { DivRat }
  | DIV     { DivEuc }
  | PERCENT { Modulo }
+ | SLASHPERCENT   { DivMod     }
  | LESSLESS       { ShiftLeft  }
  | GREATERGREATER { ShiftRight }
 

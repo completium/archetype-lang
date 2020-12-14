@@ -870,6 +870,14 @@ let pp_model fmt (model : model) =
         in
         pp fmt (l, r)
 
+      | Mdivmod (l, r) ->
+        let pp fmt (l, r) =
+          Format.fprintf fmt "%a /%% %a"
+            f l
+            f r
+        in
+        pp fmt (l, r)
+
       | Muminus e ->
         let pp fmt e =
           Format.fprintf fmt "-(%a)"

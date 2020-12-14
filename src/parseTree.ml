@@ -54,6 +54,7 @@ and arithmetic_operator =
   | DivRat
   | DivEuc
   | Modulo
+  | DivMod
   | ShiftLeft
   | ShiftRight
 

@@ -293,6 +293,7 @@ let to_model (ast : A.ast) : M.model =
       | A.Parith (A.DivRat, l, r)           -> M.Mdivrat        (f l, f r)
       | A.Parith (A.DivEuc, l, r)           -> M.Mdiveuc        (f l, f r)
       | A.Parith (A.Modulo, l, r)           -> M.Mmodulo        (f l, f r)
+      | A.Parith (A.DivMod, l, r)           -> M.Mdivmod        (f l, f r)
       | A.Puarith (A.Uminus, e)             -> M.Muminus        (f e)
       | A.Parith (A.ShiftLeft, l, r)        -> M.Mshiftleft     (f l, f r)
       | A.Parith (A.ShiftRight, l, r)       -> M.Mshiftright    (f l, f r)
