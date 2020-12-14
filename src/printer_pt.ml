@@ -40,6 +40,8 @@ let e_minus         =  (100, Left)     (* -   *)
 let e_mult          =  (110, Left)     (* *   *)
 let e_divrat        =  (110, Left)     (* /   *)
 let e_modulo        =  (110, Left)     (* %   *)
+let e_left_shift    =  (115, Left)     (* <<  *)
+let e_right_shift   =  (115, Left)     (* >>  *)
 let e_diveuc        =  (115, Left)     (* div *)
 let e_not           =  (115, Right)    (* not *)
 let e_dot           =  (120, Right)    (* .   *)
@@ -72,6 +74,8 @@ let get_prec_from_operator (op : operator) =
   | Arith DivRat    -> e_divrat
   | Arith DivEuc    -> e_diveuc
   | Arith Modulo    -> e_modulo
+  | Arith ShiftLeft -> e_left_shift
+  | Arith ShiftRight-> e_right_shift
   | Unary Uminus    -> e_minus
   | Unary Not       -> e_not
 
@@ -199,6 +203,8 @@ let arithmetic_operator_to_str op =
   | DivRat -> "/"
   | DivEuc -> "div"
   | Modulo -> "%"
+  | ShiftLeft  -> "<<"
+  | ShiftRight -> ">>"
 
 let unary_operator_to_str op =
   match op with

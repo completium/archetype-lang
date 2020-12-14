@@ -698,17 +698,20 @@ let to_ir (model : M.model) : T.ir =
 
     (* arithmetic operators *)
 
-    | Mand (l, r)      -> T.Ibinop (Band, f l, f r)
-    | Mor (l, r)       -> T.Ibinop (Bor, f l, f r)
-    | Mxor (l, r)      -> T.Ibinop (Bxor, f l, f r)
-    | Mnot e           -> T.Iunop  (Unot, f e)
-    | Mplus (l, r)     -> T.iadd (f l) (f r)
-    | Mminus (l, r)    -> T.isub (f l) (f r)
-    | Mmult (l, r)     -> T.imul (f l) (f r)
-    | Mdivrat _        -> emit_error (UnsupportedTerm ("Mdivrat"))
-    | Mdiveuc (l, r)   -> T.idiv (f l) (f r)
-    | Mmodulo (l, r)   -> T.imod (f l) (f r)
-    | Muminus e        -> T.Iunop  (Uneg, f e)
+    | Mand (l, r)        -> T.Ibinop (Band, f l, f r)
+    | Mor (l, r)         -> T.Ibinop (Bor, f l, f r)
+    | Mxor (l, r)        -> T.Ibinop (Bxor, f l, f r)
+    | Mnot e             -> T.Iunop  (Unot, f e)
+    | Mplus (l, r)       -> T.iadd (f l) (f r)
+    | Mminus (l, r)      -> T.isub (f l) (f r)
+    | Mmult (l, r)       -> T.imul (f l) (f r)
+    | Mdivrat _          -> emit_error (UnsupportedTerm ("Mdivrat"))
+    | Mdiveuc (l, r)     -> T.idiv (f l) (f r)
+    | Mmodulo (l, r)     -> T.imod (f l) (f r)
+    | Muminus e          -> T.Iunop  (Uneg, f e)
+    | Mshiftleft (l, r)  -> T.Ibinop (Blsl, f l, f r)
+    | Mshiftright (l, r) -> T.Ibinop (Blsr, f l, f r)
+
 
     (* asset api effect *)
 

@@ -740,6 +740,8 @@ let pp_operator fmt (op : PT.operator) : unit =
   | Arith DivRat  -> pp "/"
   | Arith DivEuc  -> pp "div"
   | Arith Modulo  -> pp "%"
+  | Arith ShiftLeft  -> pp "<<"
+  | Arith ShiftRight -> pp ">>"
   | Unary Uminus  -> pp "unary -"
   | Unary Not     -> pp "not"
 
@@ -997,9 +999,11 @@ let opsigs =
       PT.Arith PT.DivEuc, ([A.VTint; A.VTint],           A.VTint) ] in
 
   let nat : (PT.operator * (A.vtyp list * A.vtyp)) list =
-    [ PT.Arith PT.Plus  , ([A.VTnat; A.VTnat], A.VTnat) ;
-      PT.Arith PT.Mult  , ([A.VTnat; A.VTnat], A.VTnat) ;
-      PT.Arith PT.DivEuc, ([A.VTnat; A.VTnat], A.VTnat) ] in
+    [ PT.Arith PT.Plus       , ([A.VTnat; A.VTnat], A.VTnat) ;
+      PT.Arith PT.Mult       , ([A.VTnat; A.VTnat], A.VTnat) ;
+      PT.Arith PT.DivEuc     , ([A.VTnat; A.VTnat], A.VTnat) ;
+      PT.Arith PT.ShiftLeft  , ([A.VTnat; A.VTnat], A.VTnat) ;
+      PT.Arith PT.ShiftRight , ([A.VTnat; A.VTnat], A.VTnat) ] in
 
   let bools : (PT.operator * (A.vtyp list * A.vtyp)) list =
     let unas = List.map (fun x -> PT.Unary   x) [PT.Not] in
@@ -2096,6 +2100,8 @@ let tt_arith_operator (op : PT.arithmetic_operator) =
   | DivEuc -> A.DivEuc
   | DivRat -> A.DivRat
   | Modulo -> A.Modulo
+  | ShiftLeft  -> A.ShiftLeft
+  | ShiftRight -> A.ShiftRight
 
 (* -------------------------------------------------------------------- *)
 let tt_cmp_operator (op : PT.comparison_operator) =

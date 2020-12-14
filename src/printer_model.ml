@@ -688,6 +688,22 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt e
 
+    | Mshiftleft (l, r) ->
+      let pp fmt (l, r) =
+        Format.fprintf fmt "%a << %a"
+          f l
+          f r
+      in
+      pp fmt (l, r)
+
+    | Mshiftright (l, r) ->
+      let pp fmt (l, r) =
+        Format.fprintf fmt "%a >> %a"
+          f l
+          f r
+      in
+      pp fmt (l, r)
+
 
     (* asset api effect *)
 

@@ -855,6 +855,22 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt e
 
+    | Mshiftleft (l, r) ->
+      let pp fmt (l, r) =
+        Format.fprintf fmt "Bitwise.shift_left(%a, %a)"
+          f l
+          f r
+      in
+      pp fmt (l, r)
+
+    | Mshiftright (l, r) ->
+      let pp fmt (l, r) =
+        Format.fprintf fmt "Bitwise.shift_right(%a, %a)"
+          f l
+          f r
+      in
+      pp fmt (l, r)
+
 
     (* asset api effect *)
 
