@@ -1608,6 +1608,8 @@ let rec ttype_to_mtype (t : T.type_) : M.type_ =
 
 let to_model (ir, env : T.ir * env) : M.model * env =
 
+  let tunknown = M.tunit in
+
   let for_type (t : T.type_) : M.type_ = ttype_to_mtype t in
 
   let for_data ?t (d : T.data) : M.mterm =
@@ -1706,7 +1708,7 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         | Uleft  t           -> let ee = f e in let t = for_type t in M.mk_mterm (Mleft  (t, f e)) (M.tor ee.type_ t)
         | Uright t           -> let ee = f e in let t = for_type t in M.mk_mterm (Mright (t, f e)) (M.tor t ee.type_)
         | Uneg               -> M.mk_mterm (Muminus (f e)) M.tint
-        | Uint               -> f e
+        | Uint               -> M.mk_mterm (Mnattoint (f e)) M.tint
         | Unot               -> M.mk_mterm (Mnot (f e)) M.tbool
         | Uabs               -> M.mk_mterm (Mabs (f e)) (M.tnat)
         | Uisnat             -> assert false
@@ -1734,18 +1736,18 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         | Badd       -> M.mk_mterm (Mplus (f a, f b)) M.tnat
         | Bsub       -> M.mk_mterm (Mminus (f a, f b)) M.tint
         | Bmul       -> M.mk_mterm (Mmult (f a, f b)) M.tint
-        | Bediv      -> assert false
-        | Blsl       -> assert false
-        | Blsr       -> assert false
-        | Bor        -> assert false
-        | Band       -> assert false
-        | Bxor       -> assert false
+        | Bediv      -> M.mk_mterm (Mdivmod (f a, f b)) tunknown
+        | Blsl       -> M.mk_mterm (Mshiftleft (f a, f b)) M.tnat
+        | Blsr       -> M.mk_mterm (Mshiftright (f a, f b)) M.tnat
+        | Bor        -> M.mk_mterm (Mand (f a, f b)) M.tbool
+        | Band       -> M.mk_mterm (Mor (f a, f b)) M.tbool
+        | Bxor       -> M.mk_mterm (Mxor (f a, f b)) tunknown
         | Bcompare   -> assert false
         | Bget       -> assert false
         | Bmem       -> assert false
         | Bconcat    -> assert false
-        | Bcons      -> assert false
-        | Bpair      -> M.mk_mterm (Mtuple [f a; f b]) (M.tunit)
+        | Bcons      -> M.mk_mterm (Mlistprepend (tunknown, f a, f b)) (M.tlist tunknown)
+        | Bpair      -> M.mk_mterm (Mtuple [f a; f b]) (M.ttuple [tunknown; tunknown])
         | Bexec      -> assert false
         | Bapply     -> assert false
       end
