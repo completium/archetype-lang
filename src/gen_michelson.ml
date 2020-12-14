@@ -708,6 +708,7 @@ let to_ir (model : M.model) : T.ir =
     | Mdivrat _          -> emit_error (UnsupportedTerm ("Mdivrat"))
     | Mdiveuc (l, r)     -> T.idiv (f l) (f r)
     | Mmodulo (l, r)     -> T.imod (f l) (f r)
+    | Mdivmod (l, r)     -> T.Ibinop (Bediv, f l, f r)
     | Muminus e          -> T.Iunop  (Uneg, f e)
     | Mshiftleft (l, r)  -> T.Ibinop (Blsl, f l, f r)
     | Mshiftright (l, r) -> T.Ibinop (Blsr, f l, f r)

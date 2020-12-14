@@ -1,4 +1,4 @@
-archetype custom_storage8
+archetype custom_storage10
 
 record my_record {
   fa: nat;

@@ -740,6 +740,7 @@ let pp_operator fmt (op : PT.operator) : unit =
   | Arith DivRat  -> pp "/"
   | Arith DivEuc  -> pp "div"
   | Arith Modulo  -> pp "%"
+  | Arith DivMod  -> pp "/%"
   | Arith ShiftLeft  -> pp "<<"
   | Arith ShiftRight -> pp ">>"
   | Unary Uminus  -> pp "unary -"
@@ -1039,11 +1040,24 @@ let opsigs =
 
   cmpsigs @ grptypes @ rgtypes @ ariths @ nat @ bools @ others
 
+
+let opsigs2 =
+  let divmod : (PT.operator * (A.vtyp list * A.ptyp)) list =
+    [ PT.Arith PT.DivMod  , ([A.VTnat; A.VTnat],           A.Toption (A.Ttuple [A.Tbuiltin A.VTnat; A.Tbuiltin A.VTnat])) ;
+      PT.Arith PT.DivMod  , ([A.VTnat; A.VTint],           A.Toption (A.Ttuple [A.Tbuiltin A.VTint; A.Tbuiltin A.VTnat])) ;
+      PT.Arith PT.DivMod  , ([A.VTint; A.VTnat],           A.Toption (A.Ttuple [A.Tbuiltin A.VTint; A.Tbuiltin A.VTnat])) ;
+      PT.Arith PT.DivMod  , ([A.VTint; A.VTint],           A.Toption (A.Ttuple [A.Tbuiltin A.VTint; A.Tbuiltin A.VTnat])) ;
+      PT.Arith PT.DivMod  , ([A.VTcurrency; A.VTnat],      A.Toption (A.Ttuple [A.Tbuiltin A.VTcurrency; A.Tbuiltin A.VTcurrency])) ;
+      PT.Arith PT.DivMod  , ([A.VTcurrency; A.VTcurrency], A.Toption (A.Ttuple [A.Tbuiltin A.VTnat; A.Tbuiltin A.VTcurrency])) ] in
+  divmod
+
 let opsigs =
-  let doit (args, ret) =
+  let doit f (args, ret) =
     { osl_sig = List.map (fun x -> A.Tbuiltin x) args;
-      osl_ret = A.Tbuiltin ret; } in
-  List.map (snd_map doit) opsigs
+      osl_ret = f ret; } in
+  List.map (snd_map (doit (fun x -> A.Tbuiltin x))) opsigs @
+  List.map (snd_map (doit id)) opsigs2
+
 
 (* -------------------------------------------------------------------- *)
 type acttx = [
@@ -2100,6 +2114,7 @@ let tt_arith_operator (op : PT.arithmetic_operator) =
   | DivEuc -> A.DivEuc
   | DivRat -> A.DivRat
   | Modulo -> A.Modulo
+  | DivMod -> A.DivMod
   | ShiftLeft  -> A.ShiftLeft
   | ShiftRight -> A.ShiftRight
 

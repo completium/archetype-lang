@@ -15,8 +15,9 @@ entry exec () {
     var nat_nat_modulo : nat      = 1 %   2;
     var nat_nat_xor    : nat      = 1 xor 2;
     var nat_nat_div    : rational = 1 /   2;
-    var nat_nat_lsl    : nat      = 4 << 1;
-    var nat_nat_lsr    : nat      = 4 >> 1;
+    var nat_nat_lsl    : nat      = 1 <<  2;
+    var nat_nat_lsr    : nat      = 1 >>  2;
+    var nat_nat_divmod : option<nat * nat> = 1 /%  2;
 
     /* int int */
     var int_int_plus   : int = 1i +   2i;
@@ -24,6 +25,7 @@ entry exec () {
     var int_int_mult   : int = 1i *   2i;
     var int_int_ediv   : int = 1i div 2i;
     var int_int_modulo : nat = 1i %   2i;
+    var int_int_divmod : option<int * nat> = 1i /%  2i;
 
     /* rat rat */
     var rat_rat_plus   : rational = 1.1 + 1.2;
@@ -38,6 +40,7 @@ entry exec () {
     var nat_int_ediv   : int      = 1 div 2i;
     var nat_int_modulo : nat      = 1 %   2i;
     var nat_int_div    : rational = 1 /   2i;
+    var nat_int_divmod : option<int * nat> = 1 /%  2i;
 
     /* int nat */
     var int_nat_plus   : int      = 1i +   2;
@@ -46,6 +49,7 @@ entry exec () {
     var int_nat_ediv   : int      = 1i div 2;
     var int_nat_modulo : nat      = 1i %   2;
     var int_nat_div    : rational = 1i /   2;
+    var int_nat_divmod : option<int * nat> = 1i /%  2;
 
     /* nat rat */
     var nat_rat_plus   : rational = 1 + 1.2;
@@ -82,6 +86,8 @@ entry exec () {
     var int_tez_mult   : tez      = 1i * 1tz;
     var rat_tez_mult   : tez      = 1.1 * 1tz;
     var tez_nat_ediv   : tez      = 1tz div 2;
+    var tez_tez_divmod : option<nat * tez> = 1tz /% 2tz;
+    var tez_nat_divmod : option<tez * tez> = 1tz /% 2;
 
     var date_date_minus : duration = 2020-01-01 - 2019-12-31;
 

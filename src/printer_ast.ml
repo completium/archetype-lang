@@ -142,6 +142,7 @@ let pp_arithmetic_operator fmt = function
   | DivEuc -> pp_str fmt "div"
   | DivRat -> pp_str fmt "/"
   | Modulo -> pp_str fmt "%"
+  | DivMod -> pp_str fmt "/%"
   | ShiftLeft  -> pp_str fmt "<<"
   | ShiftRight -> pp_str fmt ">>"
 

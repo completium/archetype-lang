@@ -280,6 +280,7 @@ type ('id, 'term) mterm_node  =
   | Mdivrat           of 'term * 'term
   | Mdiveuc           of 'term * 'term
   | Mmodulo           of 'term * 'term
+  | Mdivmod           of 'term * 'term
   | Muminus           of 'term
   | Mshiftleft        of 'term * 'term
   | Mshiftright       of 'term * 'term
@@ -1360,6 +1361,7 @@ let cmp_mterm_node
     | Mdivrat (l1, r1), Mdivrat (l2, r2)                                               -> cmp l1 l2 && cmp r1 r2
     | Mdiveuc (l1, r1), Mdiveuc (l2, r2)                                               -> cmp l1 l2 && cmp r1 r2
     | Mmodulo (l1, r1), Mmodulo (l2, r2)                                               -> cmp l1 l2 && cmp r1 r2
+    | Mdivmod (l1, r1), Mdivmod (l2, r2)                                               -> cmp l1 l2 && cmp r1 r2
     | Muminus e1, Muminus e2                                                           -> cmp e1 e2
     | Mshiftleft (l1, r1), Mshiftleft (l2, r2)                                         -> cmp l1 l2 && cmp r1 r2
     | Mshiftright (l1, r1), Mshiftright (l2, r2)                                       -> cmp l1 l2 && cmp r1 r2
@@ -1746,6 +1748,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mdivrat (l, r)                 -> Mdivrat (f l, f r)
   | Mdiveuc (l, r)                 -> Mdiveuc (f l, f r)
   | Mmodulo (l, r)                 -> Mmodulo (f l, f r)
+  | Mdivmod (l, r)                 -> Mdivmod (f l, f r)
   | Muminus e                      -> Muminus (f e)
   | Mshiftleft (l, r)              -> Mshiftleft (f l, f r)
   | Mshiftright (l, r)             -> Mshiftright (f l, f r)
@@ -2129,6 +2132,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mdivrat (l, r)                        -> f (f accu l) r
   | Mdiveuc (l, r)                        -> f (f accu l) r
   | Mmodulo (l, r)                        -> f (f accu l) r
+  | Mdivmod (l, r)                        -> f (f accu l) r
   | Muminus e                             -> f accu e
   | Mshiftleft (l, r)                     -> f (f accu l) r
   | Mshiftright (l, r)                    -> f (f accu l) r
@@ -2748,6 +2752,11 @@ let fold_map_term
     let le, la = f accu l in
     let re, ra = f la r in
     g (Mmodulo (le, re)), ra
+
+  | Mdivmod (l, r) ->
+    let le, la = f accu l in
+    let re, ra = f la r in
+    g (Mdivmod (le, re)), ra
 
   | Muminus e ->
     let ee, ea = f accu e in

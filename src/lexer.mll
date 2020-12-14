@@ -216,6 +216,7 @@ rule token = parse
   | "-"                   { MINUS }
   | "*"                   { MULT }
   | "/"                   { SLASH }
+  | "/%"                  { SLASHPERCENT }
   | "_"                   { UNDERSCORE }
   | eof                   { EOF }
   | _ as c                {

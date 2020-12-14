@@ -2232,6 +2232,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mdivrat (_l, _r) -> assert false
     | Mdiveuc (_l, _r) -> assert false
     | Mmodulo (_l, _r) -> assert false
+    | Mdivmod (_l, _r) -> assert false
     | Muminus _e       -> assert false
     | Mshiftleft  (_l, _r) -> assert false
     | Mshiftright (_l, _r) -> assert false

@@ -1780,6 +1780,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mdivrat _ -> error_not_translated "Mdivrat"
     | Mdiveuc (l, r) -> Tdiv (dl Tyint, map_mterm m ctx l, map_mterm m ctx r)
     | Mmodulo (l, r) -> Tmod (dl Tyint, map_mterm m ctx l, map_mterm m ctx r)
+    | Mdivmod (_l, _r) -> error_not_translated "Mdivmod"
     | Muminus v -> Tuminus (dl Tyint, map_mterm m ctx v)
     | Mshiftleft (_l, _r)  -> error_not_translated "Mshiftleft"
     | Mshiftright (_l, _r) -> error_not_translated "Mshiftright"
