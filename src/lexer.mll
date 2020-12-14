@@ -210,8 +210,8 @@ rule token = parse
   | "<="                  { LESSEQUAL }
   | ">"                   { GREATER }
   | ">="                  { GREATEREQUAL }
-  | ">>"                  { GREATERGREATER }
-  | "<<"                  { LESSLESS }
+  | ">->"                 { GREATER_GREATER }
+  | "<-<"                 { LESS_LESS }
   | "+"                   { PLUS }
   | "-"                   { MINUS }
   | "*"                   { MULT }
