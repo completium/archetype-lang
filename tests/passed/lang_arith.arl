@@ -15,8 +15,8 @@ entry exec () {
     var nat_nat_modulo : nat      = 1 %   2;
     var nat_nat_xor    : nat      = 1 xor 2;
     var nat_nat_div    : rational = 1 /   2;
-    var nat_nat_lsl    : nat      = 1 <<  2;
-    var nat_nat_lsr    : nat      = 1 >>  2;
+    var nat_nat_lsl    : nat      = 1 <-< 2;
+    var nat_nat_lsr    : nat      = 1 >-> 2;
     var nat_nat_divmod : option<nat * nat> = 1 /%  2;
 
     /* int int */

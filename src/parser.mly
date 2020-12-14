@@ -85,7 +85,7 @@
 %token FUNCTION
 %token GETTER
 %token GREATER
-%token GREATERGREATER
+%token GREATER_GREATER
 %token GREATEREQUAL
 %token IDENTIFIED
 %token IF
@@ -102,7 +102,7 @@
 %token LBRACKETPERCENT
 %token LEFT
 %token LESS
-%token LESSLESS
+%token LESS_LESS
 %token LESSEQUAL
 %token LET
 %token LIST
@@ -213,7 +213,7 @@
 %nonassoc prec_order
 %nonassoc prec_labelexpr
 %left GREATER GREATEREQUAL LESS LESSEQUAL
-%left LESSLESS GREATERGREATER
+%left LESS_LESS GREATER_GREATER
 
 %left PLUS MINUS
 %left MULT SLASH PERCENT
@@ -1114,9 +1114,9 @@ recupdate_item:
  | SLASH   { DivRat }
  | DIV     { DivEuc }
  | PERCENT { Modulo }
- | SLASHPERCENT   { DivMod     }
- | LESSLESS       { ShiftLeft  }
- | GREATERGREATER { ShiftRight }
+ | SLASHPERCENT    { DivMod     }
+ | LESS_LESS       { ShiftLeft  }
+ | GREATER_GREATER { ShiftRight }
 
 %inline unary_operator:
  | MINUS   { Uminus }
