@@ -102,6 +102,7 @@ type arithmetic_operator =
   | DivEuc
   | Modulo
   | DivMod
+  | ThreeWayCmp
   | ShiftLeft
   | ShiftRight
 [@@deriving show {with_path = false}]

@@ -710,6 +710,7 @@ let to_ir (model : M.model) : T.ir =
     | Mmodulo (l, r)     -> T.imod (f l) (f r)
     | Mdivmod (l, r)     -> T.Ibinop (Bediv, f l, f r)
     | Muminus e          -> T.Iunop  (Uneg, f e)
+    | MthreeWayCmp (l, r)-> T.Ibinop (Bcompare, f l, f r)
     | Mshiftleft (l, r)  -> T.Ibinop (Blsl, f l, f r)
     | Mshiftright (l, r) -> T.Ibinop (Blsr, f l, f r)
 

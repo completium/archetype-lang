@@ -101,6 +101,7 @@
 %token LBRACKETPERCENT
 %token LEFT
 %token LESS
+%token LESS_EQUAL_GREATER
 %token LESS_LESS_PIPE
 %token LESSEQUAL
 %token LET
@@ -212,8 +213,9 @@
 %nonassoc EQUAL NEQUAL
 %nonassoc prec_order
 %nonassoc prec_labelexpr
-%left GREATER GREATEREQUAL LESS LESSEQUAL
 %left LESS_LESS_PIPE PIPE_GREATER_GREATER
+%left LESS_EQUAL_GREATER
+%left GREATER GREATEREQUAL LESS LESSEQUAL
 
 %left PLUS MINUS
 %left MULT SLASH PERCENT
@@ -1114,9 +1116,10 @@ recupdate_item:
  | SLASH   { DivRat }
  | DIV     { DivEuc }
  | PERCENT { Modulo }
- | SLASHPERCENT         { DivMod     }
- | LESS_LESS_PIPE       { ShiftLeft  }
- | PIPE_GREATER_GREATER { ShiftRight }
+ | SLASHPERCENT         { DivMod      }
+ | LESS_EQUAL_GREATER   { ThreeWayCmp }
+ | LESS_LESS_PIPE       { ShiftLeft   }
+ | PIPE_GREATER_GREATER { ShiftRight  }
 
 %inline unary_operator:
  | MINUS   { Uminus }

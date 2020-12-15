@@ -741,8 +741,9 @@ let pp_operator fmt (op : PT.operator) : unit =
   | Arith DivEuc  -> pp "div"
   | Arith Modulo  -> pp "%"
   | Arith DivMod  -> pp "/%"
-  | Arith ShiftLeft  -> pp "<<"
-  | Arith ShiftRight -> pp ">>"
+  | Arith ThreeWayCmp -> pp "<=>"
+  | Arith ShiftLeft   -> pp "<<"
+  | Arith ShiftRight  -> pp ">>"
   | Unary Uminus  -> pp "unary -"
   | Unary Not     -> pp "not"
 
@@ -977,6 +978,11 @@ let cmpsigs : (PT.operator * (A.vtyp list * A.vtyp)) list =
   let sigs = List.map (fun ty -> ([ty; ty], A.VTbool)) cmptypes in
   List.mappdt (fun op sig_ -> (PT.Cmp op, sig_)) ops sigs
 
+let tsigs : (PT.operator * (A.vtyp list * A.vtyp)) list =
+  let ops  = [PT.ThreeWayCmp] in
+  let sigs = List.map (fun ty -> ([ty; ty], A.VTint)) cmptypes in
+  List.mappdt (fun op sig_ -> (PT.Arith op, sig_)) ops sigs
+
 let opsigs =
   let grptypes : (PT.operator * (A.vtyp list * A.vtyp)) list =
     let bops = List.map (fun x -> PT.Arith x) [PT.Plus ; PT.Minus] in
@@ -1038,7 +1044,7 @@ let opsigs =
       PT.Logical PT.Xor  , ([A.VTnat     ; A.VTnat           ], A.VTnat     )  ;
     ] in
 
-  cmpsigs @ grptypes @ rgtypes @ ariths @ nat @ bools @ others
+  cmpsigs @ tsigs @ grptypes @ rgtypes @ ariths @ nat @ bools @ others
 
 
 let opsigs2 =
@@ -2115,6 +2121,7 @@ let tt_arith_operator (op : PT.arithmetic_operator) =
   | DivRat -> A.DivRat
   | Modulo -> A.Modulo
   | DivMod -> A.DivMod
+  | ThreeWayCmp -> A.ThreeWayCmp
   | ShiftLeft  -> A.ShiftLeft
   | ShiftRight -> A.ShiftRight
 

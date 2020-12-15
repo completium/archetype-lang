@@ -1707,8 +1707,9 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mmodulo (_l, _r) -> assert false
     | Mdivmod (_l, _r) -> assert false
     | Muminus _e       -> assert false
-    | Mshiftleft  (_l, _r) -> assert false
-    | Mshiftright (_l, _r) -> assert false
+    | MthreeWayCmp (_l, _r) -> assert false
+    | Mshiftleft   (_l, _r) -> assert false
+    | Mshiftright  (_l, _r) -> assert false
 
     (* asset api effect *)
 

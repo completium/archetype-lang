@@ -282,6 +282,7 @@ type ('id, 'term) mterm_node  =
   | Mmodulo           of 'term * 'term
   | Mdivmod           of 'term * 'term
   | Muminus           of 'term
+  | MthreeWayCmp      of 'term * 'term
   | Mshiftleft        of 'term * 'term
   | Mshiftright       of 'term * 'term
   (* asset api effect *)
@@ -1354,6 +1355,7 @@ let cmp_mterm_node
     | Mmodulo (l1, r1), Mmodulo (l2, r2)                                               -> cmp l1 l2 && cmp r1 r2
     | Mdivmod (l1, r1), Mdivmod (l2, r2)                                               -> cmp l1 l2 && cmp r1 r2
     | Muminus e1, Muminus e2                                                           -> cmp e1 e2
+    | MthreeWayCmp (l1, r1), MthreeWayCmp (l2, r2)                                     -> cmp l1 l2 && cmp r1 r2
     | Mshiftleft (l1, r1), Mshiftleft (l2, r2)                                         -> cmp l1 l2 && cmp r1 r2
     | Mshiftright (l1, r1), Mshiftright (l2, r2)                                       -> cmp l1 l2 && cmp r1 r2
     (* asset api effect *)
@@ -1741,6 +1743,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mmodulo (l, r)                 -> Mmodulo (f l, f r)
   | Mdivmod (l, r)                 -> Mdivmod (f l, f r)
   | Muminus e                      -> Muminus (f e)
+  | MthreeWayCmp (l, r)            -> MthreeWayCmp (f l, f r)
   | Mshiftleft (l, r)              -> Mshiftleft (f l, f r)
   | Mshiftright (l, r)             -> Mshiftright (f l, f r)
   (* asset api effect *)
@@ -2125,6 +2128,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mmodulo (l, r)                        -> f (f accu l) r
   | Mdivmod (l, r)                        -> f (f accu l) r
   | Muminus e                             -> f accu e
+  | MthreeWayCmp (l, r)                   -> f (f accu l) r
   | Mshiftleft (l, r)                     -> f (f accu l) r
   | Mshiftright (l, r)                    -> f (f accu l) r
   (* asset api effect *)
@@ -2752,6 +2756,11 @@ let fold_map_term
   | Muminus e ->
     let ee, ea = f accu e in
     g (Muminus ee), ea
+
+  | MthreeWayCmp (l, r) ->
+    let le, la = f accu l in
+    let re, ra = f la r in
+    g (MthreeWayCmp (le, re)), ra
 
   | Mshiftleft (l, r) ->
     let le, la = f accu l in

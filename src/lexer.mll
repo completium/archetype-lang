@@ -212,6 +212,7 @@ rule token = parse
   | ">="                  { GREATEREQUAL }
   | "|>>"                 { PIPE_GREATER_GREATER }
   | "<<|"                 { LESS_LESS_PIPE }
+  | "<=>"                 { LESS_EQUAL_GREATER }
   | "+"                   { PLUS }
   | "-"                   { MINUS }
   | "*"                   { MULT }
