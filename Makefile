@@ -19,6 +19,7 @@ compiler:
 
 js:
 	$(MAKE) -C src compiler.bc.js
+	ln -fs _build/default/src/compiler.bc.js archetype.js
 
 mlw:
 	$(MAKE) -C src mlw.exe
