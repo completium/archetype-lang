@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - records shaping with `as`
  - add `parameter`
- - add left and right shift operators (`<-<` and `>->`)
+ - add left and right shift operators (`<<|` and `|>>`)
  - add divmod operator (EDIV in michelson)
 
 ### Changed

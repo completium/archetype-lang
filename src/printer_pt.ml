@@ -206,8 +206,8 @@ let arithmetic_operator_to_str op =
   | DivEuc -> "div"
   | Modulo -> "%"
   | DivMod -> "/%"
-  | ShiftLeft  -> "<-<"
-  | ShiftRight -> ">->"
+  | ShiftLeft  -> "<<|"
+  | ShiftRight -> "|>>"
 
 let unary_operator_to_str op =
   match op with
