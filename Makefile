@@ -17,6 +17,10 @@ compiler:
 	$(MAKE) -C src compiler.exe
 	ln -fs _build/default/src/compiler.exe archetype.exe
 
+js:
+	$(MAKE) -C src compiler.bc.js
+	ln -fs _build/default/src/compiler.bc.js archetype.js
+
 demich:
 	$(MAKE) -C src2 demich.exe
 	ln -fs _build/default/src2/demich.exe demich.exe
