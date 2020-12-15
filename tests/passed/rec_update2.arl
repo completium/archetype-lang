@@ -1,0 +1,51 @@
+archetype rec_update2
+
+record my_record {
+  fa: nat;
+  fb: nat;
+  fc: nat;
+  fd: nat;
+  fe: nat;
+  ff: nat;
+  fg: nat;
+  fh: nat;
+  fi: nat;
+  fj: nat;
+  fk: nat;
+  fl: nat;
+  fm: nat;
+}
+
+variable r : my_record = {0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0}
+
+entry exec () {
+  var a : nat =  0;
+  var b : nat =  1;
+  var c : nat =  2;
+  var d : nat =  3;
+  var e : nat =  4;
+  var f : nat =  5;
+  var g : nat =  6;
+  var h : nat =  7;
+  var i : nat =  8;
+  var j : nat =  9;
+  var k : nat = 10;
+  var l : nat = 11;
+  var m : nat = 12;
+
+  r := {  r with
+                 fa = a;
+                 fb = b;
+                 fc = c;
+                 fd = d;
+                 fe = e;
+                 ff = f;
+                 fg = g;
+                 fh = h;
+                 fi = i;
+                 fj = j;
+                 fk = k;
+                 fl = l;
+                 fm = m
+        }
+}

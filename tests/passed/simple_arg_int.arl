@@ -1,0 +1,7 @@
+archetype simple_arg_int
+
+variable n : int = 0
+
+entry assign (v : int) {
+  n := v
+}

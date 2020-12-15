@@ -1,0 +1,14 @@
+archetype rec_update
+
+record my_record {
+  a : string;
+  b  : int;
+  c  : nat;
+}
+
+variable r : my_record = {a = ""; b = 0i; c = 0}
+
+entry exec () {
+  r := { r with c = 2; a = "mystr" }
+}
+
