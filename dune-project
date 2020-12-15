@@ -25,7 +25,6 @@ on the Tezos blockchain, with a specific focus on contract security
  (depends
    (ocaml (>= 4.07.0))
    (dune  (>= 1.10.0))
-   (digestif (>= 0.7.2))
     menhir
     num
     yojson
@@ -33,8 +32,5 @@ on the Tezos blockchain, with a specific focus on contract security
     ppx_deriving_yojson
     visitors
     hex
-  )
-  (conflicts
-    (digestif (=  0.7.4))
   )
 )

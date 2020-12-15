@@ -17,6 +17,9 @@ compiler:
 	$(MAKE) -C src compiler.exe
 	ln -fs _build/default/src/compiler.exe archetype.exe
 
+js:
+	$(MAKE) -C src compiler.bc.js
+
 mlw:
 	$(MAKE) -C src mlw.exe
 	cp -f _build/default/src/mlw.exe .

@@ -485,9 +485,9 @@ module Mstr = Map.Make(String)
 let norm_hex_string (s : string) =
   if String.starts ~pattern:"0x" s then s else "0x" ^ s
 
-let sha s : Big_int.big_int =
+(* let sha s : Big_int.big_int =
   let s  = Digestif.SHA512.to_hex (Digestif.SHA512.digest_string s) in
-  Big_int.big_int_of_string (norm_hex_string s)
+  Big_int.big_int_of_string (norm_hex_string s) *)
 
 (* -------------------------------------------------------------------- *)
 let location_to_position (l : Location.t) : Position.t =
