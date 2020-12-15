@@ -1,0 +1,70 @@
+archetype test_fun8
+
+enum token_type =
+| FT
+| FA1_2
+| NFT
+
+enum operator_transfer_policy =
+| No_transfer
+| Owner_transfer
+| Owner_or_operator_transfer (* default *)
+
+enum owner_hook_policy =
+| Owner_no_hook              (* default *)
+| Optional_owner_hook
+| Required_owner_hook
+
+record basic_permissions {
+  transfer_policy      : operator_transfer_policy;
+  sender_hook_policy   : owner_hook_policy;
+  receiver_hook_policy : owner_hook_policy;
+}
+
+record custom_policy {
+  tag        : string;
+  config_api : option<address>;
+}
+
+record permissions {
+  basic                : basic_permissions;
+  custom               : option<custom_policy>;
+}
+
+/* transfer argument type */
+
+enum owner_type =
+| Sender
+| Receiver
+
+/* STORAGE ------------------------------------------------------------------ */
+
+variable permissions_descriptor : permissions = {
+  {
+    No_transfer;
+    Owner_no_hook;
+    Owner_no_hook
+  };
+  none<custom_policy>
+}
+
+
+function is_per_token_hook (is : owner_hook_policy) : owner_hook_policy {
+  var a = permissions_descriptor.custom;
+  return is
+}
+
+function get_hook_policy (tid : nat, ot : owner_type) : owner_hook_policy {
+  var r =
+  is_per_token_hook (
+      match ot with
+      | Sender   -> permissions_descriptor.basic.sender_hook_policy
+      | Receiver -> permissions_descriptor.basic.sender_hook_policy
+      end
+    );
+  return r
+}
+
+entry exec () {
+  ()
+}

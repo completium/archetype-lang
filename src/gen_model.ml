@@ -295,6 +295,7 @@ let to_model (ast : A.ast) : M.model =
       | A.Parith (A.Modulo, l, r)           -> M.Mmodulo        (f l, f r)
       | A.Parith (A.DivMod, l, r)           -> M.Mdivmod        (f l, f r)
       | A.Puarith (A.Uminus, e)             -> M.Muminus        (f e)
+      | A.Parith (A.ThreeWayCmp, l, r)      -> M.MthreeWayCmp   (f l, f r)
       | A.Parith (A.ShiftLeft, l, r)        -> M.Mshiftleft     (f l, f r)
       | A.Parith (A.ShiftRight, l, r)       -> M.Mshiftright    (f l, f r)
       | A.Precord l when is_record type_    -> begin

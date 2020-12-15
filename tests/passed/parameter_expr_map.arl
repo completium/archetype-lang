@@ -1,0 +1,16 @@
+archetype parameter_expr_map
+
+variable smap  : map<string, nat> = []
+variable slist : list<nat> = []
+
+entry e0 () {
+  ()
+}
+
+entry put (m : map<string, nat>, k : string, v : nat) {
+  smap := put(m, k, v)
+}
+
+entry e2 (l : list<nat>) {
+  slist := l
+}

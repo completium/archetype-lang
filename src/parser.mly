@@ -85,7 +85,6 @@
 %token FUNCTION
 %token GETTER
 %token GREATER
-%token GREATER_GREATER
 %token GREATEREQUAL
 %token IDENTIFIED
 %token IF
@@ -102,7 +101,8 @@
 %token LBRACKETPERCENT
 %token LEFT
 %token LESS
-%token LESS_LESS
+%token LESS_EQUAL_GREATER
+%token LESS_LESS_PIPE
 %token LESSEQUAL
 %token LET
 %token LIST
@@ -129,6 +129,7 @@
 %token PERCENT
 %token PERCENTRBRACKET
 %token PIPE
+%token PIPE_GREATER_GREATER
 %token PIPEEQUAL
 %token PKEY
 %token PLUS
@@ -212,8 +213,9 @@
 %nonassoc EQUAL NEQUAL
 %nonassoc prec_order
 %nonassoc prec_labelexpr
+%left LESS_LESS_PIPE PIPE_GREATER_GREATER
+%left LESS_EQUAL_GREATER
 %left GREATER GREATEREQUAL LESS LESSEQUAL
-%left LESS_LESS GREATER_GREATER
 
 %left PLUS MINUS
 %left MULT SLASH PERCENT
@@ -1114,9 +1116,10 @@ recupdate_item:
  | SLASH   { DivRat }
  | DIV     { DivEuc }
  | PERCENT { Modulo }
- | SLASHPERCENT    { DivMod     }
- | LESS_LESS       { ShiftLeft  }
- | GREATER_GREATER { ShiftRight }
+ | SLASHPERCENT         { DivMod      }
+ | LESS_EQUAL_GREATER   { ThreeWayCmp }
+ | LESS_LESS_PIPE       { ShiftLeft   }
+ | PIPE_GREATER_GREATER { ShiftRight  }
 
 %inline unary_operator:
  | MINUS   { Uminus }

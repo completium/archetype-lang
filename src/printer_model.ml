@@ -696,6 +696,14 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt e
 
+    | MthreeWayCmp (l, r) ->
+      let pp fmt (l, r) =
+        Format.fprintf fmt "%a <=> %a"
+          f l
+          f r
+      in
+      pp fmt (l, r)
+
     | Mshiftleft (l, r) ->
       let pp fmt (l, r) =
         Format.fprintf fmt "%a << %a"

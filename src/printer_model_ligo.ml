@@ -863,6 +863,14 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt e
 
+    | MthreeWayCmp (l, r) ->
+      let pp fmt (l, r) =
+        Format.fprintf fmt "%a <=> %a"
+          f l
+          f r
+      in
+      pp fmt (l, r)
+
     | Mshiftleft (l, r) ->
       let pp fmt (l, r) =
         Format.fprintf fmt "Bitwise.shift_left(%a, %a)"

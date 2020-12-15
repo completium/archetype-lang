@@ -7,6 +7,6 @@ entry exec () {
     s0: res = 8;
   }
   effect {
-    res := 4 <-< 1
+    res := 4 <<| 1
   }
 }

@@ -1,0 +1,7 @@
+archetype simpletime
+
+variable d : date = now + 1d
+
+entry exec () {
+  ()
+}

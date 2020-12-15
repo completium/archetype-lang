@@ -143,8 +143,9 @@ let pp_arithmetic_operator fmt = function
   | DivRat -> pp_str fmt "/"
   | Modulo -> pp_str fmt "%"
   | DivMod -> pp_str fmt "/%"
-  | ShiftLeft  -> pp_str fmt "<<"
-  | ShiftRight -> pp_str fmt ">>"
+  | ThreeWayCmp -> pp_str fmt "<=>"
+  | ShiftLeft   -> pp_str fmt "<<"
+  | ShiftRight  -> pp_str fmt ">>"
 
 let pp_unary_arithmetic_operator fmt = function
   | Uminus -> pp_str fmt "-"
