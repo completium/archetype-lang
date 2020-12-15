@@ -1742,14 +1742,14 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         | Bor        -> M.mk_mterm (Mand (f a, f b)) M.tbool
         | Band       -> M.mk_mterm (Mor (f a, f b)) M.tbool
         | Bxor       -> M.mk_mterm (Mxor (f a, f b)) tunknown
-        | Bcompare   -> assert false
+        | Bcompare   -> M.mk_mterm (MthreeWayCmp (f a, f b)) M.tint
         | Bget       -> assert false
         | Bmem       -> assert false
         | Bconcat    -> assert false
         | Bcons      -> M.mk_mterm (Mlistprepend (tunknown, f a, f b)) (M.tlist tunknown)
         | Bpair      -> M.mk_mterm (Mtuple [f a; f b]) (M.ttuple [tunknown; tunknown])
-        | Bexec      -> assert false
-        | Bapply     -> assert false
+        | Bexec      -> M.mk_mterm (Mexeclambda  (f a, f b)) tunknown
+        | Bapply     -> M.mk_mterm (Mapplylambda (f a, f b)) tunknown
       end
     | Iterop (op, _a1, _a2, _a3) -> begin
         match op with
