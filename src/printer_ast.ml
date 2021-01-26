@@ -261,6 +261,8 @@ let to_const = function
   | Cblake2b        -> "blake2b"
   | Csha256         -> "sha256"
   | Csha512         -> "sha512"
+  | Csha3           -> "sha3"
+  | Ckeccak         -> "keccak"
   | Cchecksignature -> "check_signature"
   | Chashkey        -> "hash_key"
   (* vset *)

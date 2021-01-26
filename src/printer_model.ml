@@ -1128,6 +1128,14 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "sha512 (%a)"
         f x
 
+    | Msha3 x ->
+      Format.fprintf fmt "sha3 (%a)"
+        f x
+
+    | Mkeccak x ->
+      Format.fprintf fmt "keccak (%a)"
+        f x
+
     | Mhashkey x ->
       Format.fprintf fmt "hash_key (%a)"
         f x

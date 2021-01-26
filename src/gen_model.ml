@@ -698,6 +698,14 @@ let to_model (ast : A.ast) : M.model =
         let fx = f x in
         M.Msha512 (fx)
 
+      | A.Pcall (None, A.Cconst A.Csha3, [AExpr x]) ->
+        let fx = f x in
+        M.Msha3 (fx)
+
+      | A.Pcall (None, A.Cconst A.Ckeccak, [AExpr x]) ->
+        let fx = f x in
+        M.Mkeccak (fx)
+
       | A.Pcall (None, A.Cconst A.Chashkey, [AExpr x]) ->
         let fx = f x in
         M.Mhashkey (fx)

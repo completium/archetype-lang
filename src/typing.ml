@@ -1267,7 +1267,9 @@ let cryptoops : opinfo list =
   List.map (fun (x, y) -> x, y, `Total, None, [A.vtbytes], A.vtbytes, Mint.empty)
     [("blake2b", A.Cblake2b);
      ("sha256" , A.Csha256 );
-     ("sha512" , A.Csha512 )]
+     ("sha512" , A.Csha512 );
+     ("sha3"   , A.Csha3   );
+     ("keccak" , A.Ckeccak )]
 
   @ [("hash_key"       , A.Chashkey       , `Total, None, [A.vtkey]                          , A.vtkeyhash, Mint.empty);
      ("check_signature", A.Cchecksignature, `Total, None, [A.vtkey; A.vtsignature; A.vtbytes], A.vtbool   , Mint.empty)]

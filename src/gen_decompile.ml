@@ -1418,6 +1418,8 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         | Ublake2b           -> M.mk_mterm (Mblake2b (f e)) M.tbytes
         | Usha256            -> M.mk_mterm (Msha256 (f e)) M.tbytes
         | Usha512            -> M.mk_mterm (Msha512 (f e)) M.tbytes
+        | Usha3              -> M.mk_mterm (Msha3 (f e)) M.tbytes
+        | Ukeccak            -> M.mk_mterm (Mkeccak (f e)) M.tbytes
         | Uhash_key          -> M.mk_mterm (Mhashkey (f e)) M.tkeyhash
         | Ufail              -> M.failg (f e)
         | Ucontract (_t, _a) -> assert false
@@ -1801,6 +1803,8 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mblake2b _x                  -> assert false
     | Msha256  _x                  -> assert false
     | Msha512  _x                  -> assert false
+    | Msha3    _x                  -> assert false
+    | Mkeccak  _x                  -> assert false
     | Mhashkey _x                  -> assert false
     | Mchecksignature (_k, _s, _x) -> assert false
 

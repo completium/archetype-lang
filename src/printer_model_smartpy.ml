@@ -1322,6 +1322,14 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "sp.sha512 (%a)"
           f x
 
+      | Msha3 x ->
+        Format.fprintf fmt "sp.sha3 (%a)"
+          f x
+
+      | Mkeccak x ->
+        Format.fprintf fmt "sp.keccak (%a)"
+          f x
+
       | Mhashkey x ->
         Format.fprintf fmt "hash_key (%a)"
           f x

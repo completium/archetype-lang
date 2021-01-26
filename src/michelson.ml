@@ -210,6 +210,8 @@ type un_operator =
   | Ublake2b
   | Usha256
   | Usha512
+  | Usha3
+  | Ukeccak
   | Uhash_key
   | Ufail
   | Ucontract of type_ * ident option

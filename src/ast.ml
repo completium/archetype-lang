@@ -193,6 +193,8 @@ type const =
   | Cblake2b
   | Csha256
   | Csha512
+  | Csha3
+  | Ckeccak
   | Cchecksignature
   | Chashkey
   (* vset *)

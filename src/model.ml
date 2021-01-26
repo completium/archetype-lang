@@ -353,6 +353,8 @@ type ('id, 'term) mterm_node  =
   | Mblake2b          of 'term
   | Msha256           of 'term
   | Msha512           of 'term
+  | Msha3             of 'term
+  | Mkeccak           of 'term
   | Mhashkey          of 'term
   | Mchecksignature   of 'term * 'term * 'term
   (* constants *)
@@ -1427,6 +1429,8 @@ let cmp_mterm_node
     | Mblake2b x1, Mblake2b x2                                                         -> cmp x1 x2
     | Msha256  x1, Msha256  x2                                                         -> cmp x1 x2
     | Msha512  x1, Msha512  x2                                                         -> cmp x1 x2
+    | Msha3    x1, Msha3    x2                                                         -> cmp x1 x2
+    | Mkeccak  x1, Mkeccak  x2                                                         -> cmp x1 x2
     | Mhashkey x1, Mhashkey  x2                                                        -> cmp x1 x2
     | Mchecksignature (k1, s1, x1), Mchecksignature (k2, s2, x2)                       -> cmp k1 k2 && cmp s1 s2 && cmp x1 x2
     (* constants *)
@@ -1812,8 +1816,10 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Munpack (t, x)                 -> Munpack (ft t, f x)
   (* crypto functions *)
   | Mblake2b x                     -> Mblake2b (f x)
-  | Msha256 x                      -> Msha256 (f x)
-  | Msha512 x                      -> Msha512 (f x)
+  | Msha256 x                      -> Msha256  (f x)
+  | Msha512 x                      -> Msha512  (f x)
+  | Msha3 x                        -> Msha3    (f x)
+  | Mkeccak x                      -> Mkeccak  (f x)
   | Mhashkey x                     -> Mhashkey (f x)
   | Mchecksignature (k, s, x)      -> Mchecksignature (f k, f s, f x)
   (* constants *)
@@ -2199,6 +2205,8 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mblake2b x                            -> f accu x
   | Msha256  x                            -> f accu x
   | Msha512  x                            -> f accu x
+  | Msha3    x                            -> f accu x
+  | Mkeccak  x                            -> f accu x
   | Mhashkey  x                           -> f accu x
   | Mchecksignature (k, s, x)             -> f (f (f accu k) s) x
   (* constants *)
@@ -3104,6 +3112,14 @@ let fold_map_term
   | Msha512 x ->
     let xe, xa = f accu x in
     g (Msha512 xe), xa
+
+  | Msha3 x ->
+    let xe, xa = f accu x in
+    g (Msha3 xe), xa
+
+  | Mkeccak x ->
+    let xe, xa = f accu x in
+    g (Mkeccak xe), xa
 
   | Mhashkey x ->
     let xe, xa = f accu x in

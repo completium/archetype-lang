@@ -273,6 +273,8 @@ module Utils
   let function blake2b (b : bytes) : bytes = b
   let function sha256 (b : bytes) : bytes = b
   let function sha512 (b : bytes) : bytes = b
+  let function sha3 (b : bytes) : bytes = b
+  let function keccak (b : bytes) : bytes = b
   let function hash_key (_k : key) : key_hash = 0
   let check_signature (_k : key) (_s : signature) (_b : bytes) = true
 

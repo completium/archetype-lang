@@ -2144,6 +2144,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mblake2b x -> Tapp (loc_term (Tvar "blake2b"),[map_mterm m ctx x])
     | Msha256  x -> Tapp (loc_term (Tvar "sha256"),[map_mterm m ctx x])
     | Msha512  x -> Tapp (loc_term (Tvar "sha512"),[map_mterm m ctx x])
+    | Msha3    x -> Tapp (loc_term (Tvar "sha3"),[map_mterm m ctx x])
+    | Mkeccak  x -> Tapp (loc_term (Tvar "keccak"),[map_mterm m ctx x])
     | Mhashkey  x -> Tapp (loc_term (Tvar "hash_key"),[map_mterm m ctx x])
     | Mchecksignature (k,s,b) -> Tapp (loc_term (Tvar "check_signature"),[map_mterm m ctx k;map_mterm m ctx s;map_mterm m ctx b])
 

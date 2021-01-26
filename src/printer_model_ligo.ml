@@ -1396,6 +1396,14 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt "Crypto.sha512 (%a)"
         f x
 
+    | Msha3 x ->
+      Format.fprintf fmt "Crypto.sha3 (%a)"
+        f x
+
+    | Mkeccak x ->
+      Format.fprintf fmt "Crypto.keccak (%a)"
+        f x
+
     | Mhashkey x ->
       Format.fprintf fmt "Crypto.hash_key (%a)"
         f x

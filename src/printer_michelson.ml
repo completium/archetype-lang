@@ -276,6 +276,8 @@ let rec pp_instruction fmt (i : instruction) =
       | Ublake2b    -> pp "blake2b(%a)"      f e
       | Usha256     -> pp "sha256(%a)"       f e
       | Usha512     -> pp "sha512(%a)"       f e
+      | Usha3       -> pp "sha3(%a)"         f e
+      | Ukeccak     -> pp "keccak(%a)"       f e
       | Uhash_key   -> pp "hash_key(%a)"     f e
       | Ufail       -> pp "fail(%a)"         f e
       | Ucontract (t, a) -> pp "contract%a<%a>(%a)" (pp_option (fun fmt x -> Format.fprintf fmt "%%%a" pp_id x)) a pp_type t f e
@@ -493,6 +495,8 @@ let rec pp_dexpr fmt (de : dexpr) =
       | Ublake2b    -> pp "blake2b(%a)"      f e
       | Usha256     -> pp "sha256(%a)"       f e
       | Usha512     -> pp "sha512(%a)"       f e
+      | Usha3       -> pp "sha3(%a)"         f e
+      | Ukeccak     -> pp "keccak(%a)"       f e
       | Uhash_key   -> pp "hash_key(%a)"     f e
       | Ufail       -> pp "fail(%a)"         f e
       | Ucontract (t, a) -> pp "contract%a<%a>(%a)" (pp_option (fun fmt x -> Format.fprintf fmt "%%%a" pp_id x)) a pp_type t f e

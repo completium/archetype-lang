@@ -818,6 +818,8 @@ let to_ir (model : M.model) : T.ir =
     | Mblake2b x                -> T.Iunop  (Ublake2b,  f x)
     | Msha256  x                -> T.Iunop  (Usha256,   f x)
     | Msha512  x                -> T.Iunop  (Usha512,   f x)
+    | Msha3    x                -> T.Iunop  (Usha3,   f x)
+    | Mkeccak  x                -> T.Iunop  (Ukeccak,   f x)
     | Mhashkey x                -> T.Iunop  (Uhash_key, f x)
     | Mchecksignature (k, s, x) -> T.Iterop (Tcheck_signature, f k, f s, f x)
 
@@ -1306,6 +1308,8 @@ let to_michelson (ir : T.ir) : T.michelson =
           | Ublake2b         -> T.BLAKE2B
           | Usha256          -> T.SHA256
           | Usha512          -> T.SHA512
+          | Usha3            -> T.SHA3
+          | Ukeccak          -> T.KECCAK
           | Uhash_key        -> T.HASH_KEY
           | Ufail            -> T.FAILWITH
           | Ucontract (t, a) -> T.CONTRACT (rar t, a)
