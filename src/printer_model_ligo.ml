@@ -1415,6 +1415,15 @@ let pp_model_internal fmt (model : model) b =
         f x
 
 
+    (* voting *)
+
+    | Mtotalvotingpower -> pp_str fmt "totalvotingpower"
+
+    | Mvotingpower x ->
+      Format.fprintf fmt "votingpower (%a)"
+        f x
+
+
     (* constants *)
 
     | Mnow           -> pp_str fmt "now"

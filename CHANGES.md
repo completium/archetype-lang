@@ -6,7 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased Edo
 ### Added
- - add new cryptographic hash functions: sha3 and keccak
+ - add new cryptographic hash functions: `sha3` and `keccak`
+ - add voting instructions: `totalvotingpower` and `votingpower`
 
 ## Unreleased
 ### Added

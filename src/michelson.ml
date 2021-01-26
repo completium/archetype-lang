@@ -37,9 +37,7 @@ type type_node =
   | Tbls12_381_g1
   | Tbls12_381_g2
   | Tbls12_381_fr
-  | Tbaker_hash
-  | Tbaker_operation
-  | Tpvss_key
+  | Tticket of type_
 [@@deriving show {with_path = false}]
 
 and type_ = type_node with_annot
@@ -191,6 +189,7 @@ type z_operator =
   | Zemptyset  of type_
   | Zemptymap  of type_ * type_
   | Zemptybigmap  of type_ * type_
+  | Ztotalvotingpower
 [@@deriving show {with_path = false}]
 
 type un_operator =
@@ -223,6 +222,7 @@ type un_operator =
   | Uge
   | Ult
   | Ule
+  | Uvotingpower
 [@@deriving show {with_path = false}]
 
 type bin_operator =
@@ -555,9 +555,7 @@ let cmp_type lhs rhs =
     | Tbls12_381_g1, Tbls12_381_g1               -> true
     | Tbls12_381_g2, Tbls12_381_g2               -> true
     | Tbls12_381_fr, Tbls12_381_fr               -> true
-    | Tbaker_hash, Tbaker_hash                   -> true
-    | Tbaker_operation, Tbaker_operation         -> true
-    | Tpvss_key, Tpvss_key                       -> true
+    | Tticket a1, Tticket a2                     -> f a1 a2
     | _ -> false
   in
   f lhs rhs
@@ -806,9 +804,7 @@ let map_type (f : type_ -> type_) (t : type_) : type_ =
     | Tbls12_381_g1        -> Tbls12_381_g1
     | Tbls12_381_g2        -> Tbls12_381_g2
     | Tbls12_381_fr        -> Tbls12_381_fr
-    | Tbaker_hash          -> Tbaker_hash
-    | Tbaker_operation     -> Tbaker_operation
-    | Tpvss_key            -> Tpvss_key
+    | Tticket       t      -> Tticket    (f t)
   in
   {node = node; annotation = t.annotation}
 
@@ -1211,9 +1207,7 @@ end = struct
       | Tbls12_381_g1        -> "bls12_381_g1", []
       | Tbls12_381_g2        -> "bls12_381_g2", []
       | Tbls12_381_fr        -> "bls12_381_fr", []
-      | Tbaker_hash          -> "baker_hash", []
-      | Tbaker_operation     -> "baker_operation", []
-      | Tpvss_key            -> "pvss_key", []
+      | Tticket t            -> "ticket", [t]
     in
     let args = if List.is_empty args then None else Some (List.map type_to_micheline args) in
     let annots = Option.bind (fun x -> Some [x]) t.annotation in
@@ -1403,9 +1397,7 @@ let rec to_type (o : obj_micheline) : type_ =
   | Oprim ({prim = "bls12_381_g1"; annots; _})               -> mk_type ?annotation:(fa annots) Tbls12_381_g1
   | Oprim ({prim = "bls12_381_g2"; annots; _})               -> mk_type ?annotation:(fa annots) Tbls12_381_g2
   | Oprim ({prim = "bls12_381_fr"; annots; _})               -> mk_type ?annotation:(fa annots) Tbls12_381_fr
-  | Oprim ({prim = "baker_hash"; annots; _})                 -> mk_type ?annotation:(fa annots) Tbaker_hash
-  | Oprim ({prim = "baker_operation"; annots; _})            -> mk_type ?annotation:(fa annots) Tbaker_operation
-  | Oprim ({prim = "pvss_key"; annots; _})                   -> mk_type ?annotation:(fa annots) Tpvss_key
+  | Oprim ({prim = "ticket"; annots; args = t::_})           -> mk_type ?annotation:(fa annots) (Tticket (f t))
   | _ -> Format.eprintf "type unknown %a@." pp_obj_micheline o; assert false
 
 

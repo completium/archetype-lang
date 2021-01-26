@@ -1147,6 +1147,15 @@ let pp_mterm fmt (mt : mterm) =
         f x
 
 
+    (* voting *)
+
+    | Mtotalvotingpower -> pp_str fmt "totalvotingpower"
+
+    | Mvotingpower x ->
+      Format.fprintf fmt "votingpower (%a)"
+        f x
+
+
     (* constants *)
 
     | Mnow           -> pp_str fmt "now"

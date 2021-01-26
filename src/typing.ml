@@ -1098,6 +1098,7 @@ let globals = [
   ("chainid"     , A.Cchainid     , A.vtchainid);
   ("operations"  , A.Coperations  , A.Tlist (A.Toperation));
   ("metadata"    , A.Cmetadata    , A.Tbig_map (A.vtstring, A.vtbytes));
+  ("totalvotingpower", A.Ctotalvotingpower, A.vtnat);
 ]
 
 let statename = "state"
@@ -1290,8 +1291,12 @@ let lambdaops : opinfo list = [
 ]
 
 (* -------------------------------------------------------------------- *)
+let customops : opinfo list =
+  ["votingpower" , A.Cvotingpower, `Total, None, [A.vtkeyhash], A.vtnat, Mint.empty]
+
+(* -------------------------------------------------------------------- *)
 let allops : opinfo list =
-  coreops @ optionops @ setops @ listops @ mapops @ bigmapops @ cryptoops @ packops @ opsops @ lambdaops
+  coreops @ optionops @ setops @ listops @ mapops @ bigmapops @ cryptoops @ packops @ opsops @ lambdaops @ customops
 
 (* -------------------------------------------------------------------- *)
 type assetdecl = {

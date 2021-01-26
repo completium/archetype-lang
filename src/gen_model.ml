@@ -368,6 +368,7 @@ let to_model (ast : A.ast) : M.model =
       | A.Pconst Cchainid                      -> M.Mchainid
       | A.Pconst Coperations                   -> M.Moperations
       | A.Pconst Cmetadata                     -> M.Mmetadata
+      | A.Pconst Ctotalvotingpower             -> M.Mtotalvotingpower
       | A.Pconst c                             ->
         Format.eprintf "expr const unkown: %a@." A.pp_const c;
         assert false
@@ -731,6 +732,13 @@ let to_model (ast : A.ast) : M.model =
 
          | A.Pcall (None, A.Cconst (A.Cmaybeperformedbyaction), [AExpr l; AExpr r]) ->
          M.MsecMayBePerformedByEntry (f l, f r) *)
+
+
+      (* Voting *)
+
+      | A.Pcall (None, A.Cconst A.Cvotingpower, [AExpr x]) ->
+        let fx = f x in
+        M.Mvotingpower (fx)
 
 
       (* Operation *)

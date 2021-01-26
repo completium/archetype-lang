@@ -40,9 +40,7 @@ let rec pp_type fmt (t : type_) =
   | Tbls12_381_g1        -> pp_simple_a "bls12_381_g1"
   | Tbls12_381_g2        -> pp_simple_a "bls12_381_g2"
   | Tbls12_381_fr        -> pp_simple_a "bls12_381_fr"
-  | Tbaker_hash          -> pp_simple_a "baker_hash"
-  | Tbaker_operation     -> pp_simple_a "baker_operation"
-  | Tpvss_key            -> pp_simple_a "pvss_key"
+  | Tticket       t      -> Format.fprintf fmt "(ticket%a %a)"        pp_annot_opt () pp_type t
 
 let rec pp_pretty_type fmt (t : type_) =
   match t.node with
@@ -257,6 +255,7 @@ let rec pp_instruction fmt (i : instruction) =
       | Zemptyset t         -> pp "emptyset(%a)" pp_type t
       | Zemptymap (k, v)    -> pp "emptymap(%a, %a)" pp_type k pp_type v
       | Zemptybigmap (k, v) -> pp "emptybigmap(%a, %a)" pp_type k pp_type v
+      | Ztotalvotingpower   -> pp "totalvotingpower"
     end
   | Iunop (op, e) -> begin
       match op with
@@ -289,6 +288,7 @@ let rec pp_instruction fmt (i : instruction) =
       | Uge        -> pp "ge(%a)"        f e
       | Ult        -> pp "lt(%a)"        f e
       | Ule        -> pp "le(%a)"        f e
+      | Uvotingpower -> pp "votingpower(%a)"        f e
     end
   | Ibinop (op, lhs, rhs) -> begin
       match op with
@@ -476,6 +476,7 @@ let rec pp_dexpr fmt (de : dexpr) =
       | Zemptyset t         -> pp "emptyset(%a)" pp_type t
       | Zemptymap (k, v)    -> pp "emptymap(%a, %a)" pp_type k pp_type v
       | Zemptybigmap (k, v) -> pp "emptybigmap(%a, %a)" pp_type k pp_type v
+      | Ztotalvotingpower   -> pp "totalvotingpower"
     end
   | Duop (op, e) -> begin
       match op with
@@ -508,6 +509,7 @@ let rec pp_dexpr fmt (de : dexpr) =
       | Uge        -> pp "ge(%a)"        f e
       | Ult        -> pp "lt(%a)"        f e
       | Ule        -> pp "le(%a)"        f e
+      | Uvotingpower -> pp "votingpower(%a)"        f e
     end
   | Dbop (op, lhs, rhs) -> begin
       match op with

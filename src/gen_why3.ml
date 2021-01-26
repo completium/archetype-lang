@@ -2149,6 +2149,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mhashkey  x -> Tapp (loc_term (Tvar "hash_key"),[map_mterm m ctx x])
     | Mchecksignature (k,s,b) -> Tapp (loc_term (Tvar "check_signature"),[map_mterm m ctx k;map_mterm m ctx s;map_mterm m ctx b])
 
+    (* voting *)
+    | Mtotalvotingpower -> assert false
+    | Mvotingpower x -> Tapp (loc_term (Tvar "votingpower"),[map_mterm m ctx x])
 
     (* constants *)
 

@@ -824,6 +824,12 @@ let to_ir (model : M.model) : T.ir =
     | Mchecksignature (k, s, x) -> T.Iterop (Tcheck_signature, f k, f s, f x)
 
 
+    (* crypto functions *)
+
+    | Mtotalvotingpower         -> T.Izop  (Ztotalvotingpower)
+    | Mvotingpower  x           -> T.Iunop (Uvotingpower, f x)
+
+
     (* constants *)
 
     | Mnow           -> T.Izop Znow
@@ -1286,6 +1292,7 @@ let to_michelson (ir : T.ir) : T.michelson =
           | Zemptyset t         -> T.EMPTY_SET (rar t)
           | Zemptymap (k, v)    -> T.EMPTY_MAP (rar k, rar v)
           | Zemptybigmap (k, v) -> T.EMPTY_BIG_MAP (rar k, rar v)
+          | Ztotalvotingpower   -> T.TOTAL_VOTING_POWER
         in
         c, inc_env env
       end
@@ -1321,6 +1328,7 @@ let to_michelson (ir : T.ir) : T.michelson =
           | Uge              -> T.GE
           | Ult              -> T.LT
           | Ule              -> T.LE
+          | Uvotingpower     -> T.VOTING_POWER
         in
         let e, env = fe env e in
         let env = match op with T.FAILWITH -> fail_env env | _ -> env in

@@ -265,6 +265,9 @@ let to_const = function
   | Ckeccak         -> "keccak"
   | Cchecksignature -> "check_signature"
   | Chashkey        -> "hash_key"
+  (* voting *)
+  | Ctotalvotingpower -> "totalvotingpower"
+  | Cvotingpower      -> "votingpower"
   (* vset *)
   | Cbefore         -> "before"
   | Citerated       -> "iterated"

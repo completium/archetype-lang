@@ -1341,6 +1341,15 @@ let pp_model fmt (model : model) =
           f x
 
 
+      (* voting *)
+
+      | Mtotalvotingpower -> pp_str fmt "sp.totalvotingpower"
+
+      | Mvotingpower x ->
+        Format.fprintf fmt "sp.votingpower (%a)"
+          f x
+
+
       (* constants *)
 
       | Mnow           -> pp_str fmt "sp.now"

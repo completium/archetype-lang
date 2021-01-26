@@ -197,6 +197,9 @@ type const =
   | Ckeccak
   | Cchecksignature
   | Chashkey
+  (* voting *)
+  | Ctotalvotingpower
+  | Cvotingpower
   (* vset *)
   | Cbefore
   | Citerated

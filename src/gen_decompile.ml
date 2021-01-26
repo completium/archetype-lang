@@ -1303,9 +1303,7 @@ let rec ttype_to_mtype (t : T.type_) : M.type_ =
   | Tbls12_381_g1         -> assert false
   | Tbls12_381_g2         -> assert false
   | Tbls12_381_fr         -> assert false
-  | Tbaker_hash           -> assert false
-  | Tbaker_operation      -> assert false
-  | Tpvss_key             -> assert false
+  | Tticket _t            -> assert false
 
 let to_model (ir, env : T.ir * env) : M.model * env =
 
@@ -1399,6 +1397,7 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         | Zemptyset t           -> M.mk_mterm (Mlitset [])  (M.tset  (for_type t))
         | Zemptymap (k, v)      -> M.mk_mterm (Mlitmap (false, [])) (M.tmap  (for_type k) (for_type v))
         | Zemptybigmap (k, v)   -> M.mk_mterm (Mlitmap (true, [])) (M.tbig_map (for_type k) (for_type v))
+        | Ztotalvotingpower     -> M.mk_mterm  Mtotalvotingpower (M.tnat)
       end
     | Iunop (op, e) -> begin
         match op with
@@ -1431,6 +1430,7 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         | Uge                -> assert false
         | Ult                -> assert false
         | Ule                -> assert false
+        | Uvotingpower       -> M.mk_mterm (Mvotingpower (f e)) M.tkeyhash
       end
     | Ibinop (op, a, b) -> begin
         match op with
@@ -1807,6 +1807,12 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mkeccak  _x                  -> assert false
     | Mhashkey _x                  -> assert false
     | Mchecksignature (_k, _s, _x) -> assert false
+
+
+    (* crypto functions *)
+
+    | Mtotalvotingpower            -> assert false
+    | Mvotingpower _x              -> assert false
 
 
     (* constants *)
