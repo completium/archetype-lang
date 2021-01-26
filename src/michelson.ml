@@ -190,6 +190,7 @@ type z_operator =
   | Zemptymap  of type_ * type_
   | Zemptybigmap  of type_ * type_
   | Ztotalvotingpower
+  | Zlevel
 [@@deriving show {with_path = false}]
 
 type un_operator =

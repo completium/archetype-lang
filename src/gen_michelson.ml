@@ -840,6 +840,7 @@ let to_ir (model : M.model) : T.ir =
     | Mselfaddress   -> T.Izop Zself_address
     | Mchainid       -> T.Izop Zchain_id
     | Mmetadata      -> assert false
+    | Mlevel         -> T.Izop Zlevel
 
 
     (* variable *)
@@ -1293,6 +1294,7 @@ let to_michelson (ir : T.ir) : T.michelson =
           | Zemptymap (k, v)    -> T.EMPTY_MAP (rar k, rar v)
           | Zemptybigmap (k, v) -> T.EMPTY_BIG_MAP (rar k, rar v)
           | Ztotalvotingpower   -> T.TOTAL_VOTING_POWER
+          | Zlevel              -> T.LEVEL
         in
         c, inc_env env
       end

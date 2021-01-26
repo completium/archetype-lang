@@ -1098,6 +1098,7 @@ let globals = [
   ("chainid"     , A.Cchainid     , A.vtchainid);
   ("operations"  , A.Coperations  , A.Tlist (A.Toperation));
   ("metadata"    , A.Cmetadata    , A.Tbig_map (A.vtstring, A.vtbytes));
+  ("level"       , A.Clevel       , A.vtnat);
   ("totalvotingpower", A.Ctotalvotingpower, A.vtnat);
 ]
 

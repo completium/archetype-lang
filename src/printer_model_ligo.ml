@@ -1434,6 +1434,7 @@ let pp_model_internal fmt (model : model) b =
     | Mselfaddress   -> pp_str fmt "Tezos.self_address"
     | Mchainid       -> pp_str fmt "chain_id"
     | Mmetadata      -> pp_str fmt "metadata"
+    | Mlevel         -> pp_str fmt "level"
 
 
     (* variable *)

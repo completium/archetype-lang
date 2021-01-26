@@ -369,6 +369,7 @@ type ('id, 'term) mterm_node  =
   | Mselfaddress
   | Mchainid
   | Mmetadata
+  | Mlevel
   (* variable *)
   | Mvar              of 'id * 'term var_kind_gen * temp * delta
   (* rational *)
@@ -1054,6 +1055,7 @@ let msource       = mk_mterm Msource      taddress
 let mselfaddress  = mk_mterm Mselfaddress taddress
 let mchainid      = mk_mterm Mchainid     tchainid
 let mmetadata     = mk_mterm Mmetadata    (tmap tstring tbytes)
+let mlevel        = mk_mterm Mlevel       tnat
 
 let mk_mvar id t = mk_mterm (Mvar(id, Vlocal, Tnone, Dnone )) t
 let mk_pvar id t = mk_mterm (Mvar(id, Vparam, Tnone, Dnone )) t
@@ -1447,6 +1449,7 @@ let cmp_mterm_node
     | Mselfaddress, Mselfaddress                                                       -> true
     | Mchainid, Mchainid                                                               -> true
     | Mmetadata, Mmetadata                                                             -> true
+    | Mlevel, Mlevel                                                                   -> true
     (* variable *)
     | Mvar (id1, k1, t1, d1), Mvar (id2, k2, t2, d2)                                   -> cmpi id1 id2 && cmp_var_kind k1 k2 && cmp_temp t1 t2 && cmp_delta d1 d2
     (* rational *)
@@ -1839,6 +1842,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mselfaddress                   -> Mselfaddress
   | Mchainid                       -> Mchainid
   | Mmetadata                      -> Mmetadata
+  | Mlevel                         -> Mlevel
   (* variable *)
   | Mvar (id, k, t, d)             -> Mvar (g id, map_var_kind f k, map_temp fi t, map_delta d)
   (* rational *)
@@ -2229,6 +2233,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mselfaddress                          -> accu
   | Mchainid                              -> accu
   | Mmetadata                             -> accu
+  | Mlevel                                -> accu
   (* variable *)
   | Mvar (_, k, _, _)                     -> fold_var_kind f accu k
   (* rational *)
@@ -3177,6 +3182,9 @@ let fold_map_term
 
   | Mmetadata ->
     g Mmetadata, accu
+
+  | Mlevel ->
+    g Mlevel, accu
 
 
   (* variable *)
@@ -5352,6 +5360,7 @@ end = struct
       | Mselfaddress               -> "selfaddress"::accu
       | Mchainid                   -> "chainid"::accu
       | Mmetadata                  -> "metadata"::accu
+      | Mlevel                     -> "level"::accu
 
       | Mget (an, ck, _)
       | Mselect (an, ck, _, _, _)

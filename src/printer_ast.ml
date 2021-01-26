@@ -207,6 +207,7 @@ let to_const = function
   | Cchainid        -> "chain_id"
   | Coperations     -> "operations"
   | Cmetadata       -> "metadata"
+  | Clevel          -> "level"
   (* function *)
   | Cadd            -> "add"
   | Caddupdate      -> "addupdate"

@@ -1166,6 +1166,7 @@ let pp_mterm fmt (mt : mterm) =
     | Mselfaddress   -> pp_str fmt "selfaddress"
     | Mchainid       -> pp_str fmt "chain_id"
     | Mmetadata      -> pp_str fmt "metadata"
+    | Mlevel         -> pp_str fmt "level"
 
 
     (* variable *)

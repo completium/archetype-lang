@@ -256,6 +256,7 @@ let rec pp_instruction fmt (i : instruction) =
       | Zemptymap (k, v)    -> pp "emptymap(%a, %a)" pp_type k pp_type v
       | Zemptybigmap (k, v) -> pp "emptybigmap(%a, %a)" pp_type k pp_type v
       | Ztotalvotingpower   -> pp "totalvotingpower"
+      | Zlevel              -> pp "level"
     end
   | Iunop (op, e) -> begin
       match op with
@@ -477,6 +478,7 @@ let rec pp_dexpr fmt (de : dexpr) =
       | Zemptymap (k, v)    -> pp "emptymap(%a, %a)" pp_type k pp_type v
       | Zemptybigmap (k, v) -> pp "emptybigmap(%a, %a)" pp_type k pp_type v
       | Ztotalvotingpower   -> pp "totalvotingpower"
+      | Zlevel              -> pp "level"
     end
   | Duop (op, e) -> begin
       match op with

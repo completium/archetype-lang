@@ -1360,6 +1360,7 @@ let pp_model fmt (model : model) =
       | Mselfaddress   -> pp_str fmt "sp.selfaddress"
       | Mchainid       -> pp_str fmt "sp.chain_id"
       | Mmetadata      -> pp_str fmt "metadata"
+      | Mlevel         -> pp_str fmt "sp.level"
 
 
       (* variable *)

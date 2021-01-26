@@ -139,6 +139,7 @@ type const =
   | Cchainid
   | Coperations
   | Cmetadata
+  | Clevel
   (* function *)
   | Cadd
   | Caddupdate

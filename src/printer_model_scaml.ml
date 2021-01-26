@@ -1365,6 +1365,7 @@ let pp_model fmt (model : model) =
       | Mselfaddress   -> pp_str fmt "Global.get_self_address()"
       | Mchainid       -> pp_str fmt "Global.get_chain_id ()"
       | Mmetadata      -> pp_str fmt "metadata"
+      | Mlevel         -> pp_str fmt "level"
 
 
       (* variable *)

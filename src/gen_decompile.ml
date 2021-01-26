@@ -1398,6 +1398,7 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         | Zemptymap (k, v)      -> M.mk_mterm (Mlitmap (false, [])) (M.tmap  (for_type k) (for_type v))
         | Zemptybigmap (k, v)   -> M.mk_mterm (Mlitmap (true, [])) (M.tbig_map (for_type k) (for_type v))
         | Ztotalvotingpower     -> M.mk_mterm  Mtotalvotingpower (M.tnat)
+        | Zlevel                -> M.mk_mterm  Mlevel (M.tnat)
       end
     | Iunop (op, e) -> begin
         match op with
@@ -1825,6 +1826,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mselfaddress   -> assert false
     | Mchainid       -> assert false
     | Mmetadata      -> assert false
+    | Mlevel         -> assert false
 
 
     (* variable *)
