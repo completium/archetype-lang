@@ -116,8 +116,8 @@ let to_model (ast : A.ast) : M.model =
 
   let to_pattern_node (n : A.lident A.pattern_node) : 'id M.pattern_node =
     match n with
-    | A.Mconst id -> M.Pconst id
-    | A.Mwild    -> M.Pwild
+    | A.Mconst (id, xs) -> M.Pconst (id, xs)
+    | A.Mwild -> M.Pwild
   in
 
   let to_pattern (p : A.pattern) : M.pattern =
@@ -1293,7 +1293,7 @@ let to_model (ast : A.ast) : M.model =
             begin
               let rec compute_patterns (a : A.sexpr) : M.pattern list =
                 match a.node with
-                | Sref id -> [M.mk_pattern (M.Pconst id)]
+                | Sref id -> [M.mk_pattern (M.Pconst (id, []))]
                 | Sor (a, b) -> [a; b] |> List.map (fun x -> compute_patterns x) |> List.flatten
                 | Sany -> emit_error (a.loc, AnyNotAuthorizedInTransitionTo); bailout ()
               in

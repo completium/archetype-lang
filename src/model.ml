@@ -82,7 +82,7 @@ and type_ = ntype * lident option
 
 type 'id pattern_node =
   | Pwild
-  | Pconst of 'id
+  | Pconst of 'id * lident list
 [@@deriving show {with_path = false}]
 
 type 'id pattern_gen = {
@@ -1171,7 +1171,10 @@ let cmp_pattern_node
     (p2    : 'id pattern_node)
   : bool =
   match p1, p2 with
-  | Pconst c1, Pconst c2 -> cmpi c1 c2
+  | Pconst (c1, xs1), Pconst (c2, xs2) ->
+       cmpi c1 c2
+    && List.length xs1 = List.length xs2
+    && List.for_all2 cmpi xs1 xs2
   | Pwild, Pwild -> true
   | _ -> false
 

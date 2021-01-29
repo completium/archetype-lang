@@ -284,7 +284,7 @@ type 'id pattern_gen = ('id pattern_node) struct_poly
 
 and 'id pattern_node =
   | Mwild
-  | Mconst of 'id
+  | Mconst of 'id * 'id list
 [@@deriving show {with_path = false}]
 
 type pattern = lident pattern_gen

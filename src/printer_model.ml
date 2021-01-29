@@ -106,7 +106,8 @@ let pp_operator fmt op =
 
 let pp_pattern fmt (p : pattern) =
   match p.node with
-  | Pconst i -> pp_id fmt i
+  | Pconst (i, []) -> pp_id fmt i
+  | Pconst (i, xs) -> Format.fprintf fmt "%a (%a)" pp_id i (pp_list ", " pp_id) xs
   | Pwild -> pp_str fmt "_"
 
 let pp_sort_kind fmt = function
@@ -251,7 +252,7 @@ let pp_mterm fmt (mt : mterm) =
 
     | Minstrmatchoption (x, i, ve, ne) ->
       let pp fmt (x, i, ve, ne) =
-        Format.fprintf fmt "match_option %a with@\n| some (%a) -> @[%a@]@\n| none -> @[%a@]"
+        Format.fprintf fmt "match %a with@\n| some (%a) -> @[%a@]@\n| none -> @[%a@]"
           f x
           pp_id i
           f ve
@@ -261,7 +262,7 @@ let pp_mterm fmt (mt : mterm) =
 
     | Minstrmatchor (x, lid, le, rid, re) ->
       let pp fmt (x, lid, le, rid, re) =
-        Format.fprintf fmt "match_or %a with@\n  | left (%a) -> (@[%a@])@\n  | right (%a) -> (@[%a@])@\nend"
+        Format.fprintf fmt "match %a with@\n  | left (%a) -> (@[%a@])@\n  | right (%a) -> (@[%a@])@\nend"
           f x
           pp_id lid
           f le
@@ -272,7 +273,7 @@ let pp_mterm fmt (mt : mterm) =
 
     | Minstrmatchlist (x, hid, tid, hte, ee) ->
       let pp fmt (x, hid, tid, hte, ee) =
-        Format.fprintf fmt "match_list %a with@\n  | %a::%a -> (@[%a@])@\n  | [] -> (@[%a@])@\nend"
+        Format.fprintf fmt "match %a with@\n  | %a::%a -> (@[%a@])@\n  | [] -> (@[%a@])@\nend"
           f x
           pp_id hid
           pp_id tid
@@ -401,7 +402,7 @@ let pp_mterm fmt (mt : mterm) =
 
     | Mmatchoption (x, i, ve, ne) ->
       let pp fmt (x, i, ve, ne) =
-        Format.fprintf fmt "match_option %a with@\n| some (%a) -> @[%a@]@\n| none -> @[%a@]"
+        Format.fprintf fmt "match %a with@\n| some (%a) -> @[%a@]@\n| none -> @[%a@]"
           f x
           pp_id i
           f ve
@@ -411,7 +412,7 @@ let pp_mterm fmt (mt : mterm) =
 
     | Mmatchor (x, lid, le, rid, re) ->
       let pp fmt (x, lid, le, rid, re) =
-        Format.fprintf fmt "match_or %a with@\n  | left (%a) -> (@[%a@])@\n  | right (%a) -> (@[%a@])@\nend"
+        Format.fprintf fmt "match %a with@\n  | left (%a) -> (@[%a@])@\n  | right (%a) -> (@[%a@])@\nend"
           f x
           pp_id lid
           f le
@@ -422,7 +423,7 @@ let pp_mterm fmt (mt : mterm) =
 
     | Mmatchlist (x, hid, tid, hte, ee) ->
       let pp fmt (x, hid, tid, hte, ee) =
-        Format.fprintf fmt "match_list %a with@\n  | %a::%a -> (@[%a@])@\n  | [] -> (@[%a@])@\nend"
+        Format.fprintf fmt "match %a with@\n  | %a::%a -> (@[%a@])@\n  | [] -> (@[%a@])@\nend"
           f x
           pp_id hid
           pp_id tid

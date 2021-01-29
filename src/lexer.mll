@@ -73,13 +73,11 @@
       "list"                , LIST           ;
       "loop_left"           , LOOP_LEFT;
       "map"                 , MAP            ;
-      "match_list"          , MATCH_LIST     ;
-      "match_option"        , MATCH_OPTION   ;
-      "match_or"            , MATCH_OR       ;
       "match"               , MATCH          ;
       "namespace"           , NAMESPACE      ;
       "none"                , NONE           ;
       "not"                 , NOT            ;
+      "of"                  , OF             ;
       "on"                  , ON             ;
       "option"              , OPTION         ;
       "or"                  , OR             ;
@@ -188,10 +186,10 @@ rule token = parse
   | "]"                   { RBRACKET }
   | "{"                   { LBRACE }
   | "}"                   { RBRACE }
+  | "::"                  { COLONCOLON }
   | ":="                  { COLONEQUAL }
   | ","                   { COMMA }
   | ":"                   { COLON }
-  | "::"                  { COLONCOLON }
   | ";"                   { SEMI_COLON }
   | "%"                   { PERCENT }
   | "|"                   { PIPE }

@@ -5,7 +5,7 @@ variable a : nat = 0
 entry exec() {
   var l : nat = 2;
   a :=
-  match_or l with
+  match l with
   | left(v)  -> v
   | right(v) -> 0
   end

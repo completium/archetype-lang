@@ -1128,7 +1128,7 @@ let remove_enum_matchwith (model : model) : model =
               | _ -> assert false
             in
             match x with
-            | {node = Pconst id; _}, e ->
+            | {node = Pconst (id, _); _}, e -> (* FIXME: matchwith *)
               begin
                 let e = process_mterm ctx e in
                 let cond = mk_cond id in
@@ -1768,7 +1768,7 @@ let remove_cmp_enum (model : model) : model =
       | `Pos -> t, f
       | `Neg -> f, t
     in
-    let pattern_const = mk_pattern (Pconst id), cv in
+    let pattern_const = mk_pattern (Pconst (id, [])), cv in (* FIXME: matchwith *)
     let pattern_wild = mk_pattern Pwild, wv in
 
     let l = [pattern_const; pattern_wild] in

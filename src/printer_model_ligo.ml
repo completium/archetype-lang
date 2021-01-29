@@ -222,7 +222,8 @@ let pp_model_internal fmt (model : model) b =
 
   let pp_pattern fmt (p : pattern) =
     match p.node with
-    | Pconst i -> Format.fprintf fmt "%a(unit)" pp_id i
+    | Pconst (i, []) -> Format.fprintf fmt "%a(unit)" pp_id i
+    | Pconst _ -> assert false (* FIXME: match *)
     | Pwild -> pp_str fmt "_"
   in
 

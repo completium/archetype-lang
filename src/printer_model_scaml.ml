@@ -429,7 +429,8 @@ let pp_model fmt (model : model) =
 
   let pp_pattern fmt (p : pattern) =
     match p.node with
-    | Pconst i -> pp_id fmt i
+    | Pconst (i, []) -> pp_id fmt i
+    | Pconst _ -> assert false (* FIXME: matchwith *)
     | Pwild -> pp_str fmt "_"
   in
 

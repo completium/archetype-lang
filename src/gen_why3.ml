@@ -1304,7 +1304,7 @@ let mk_trace_seq m t chs =
 let map_mpattern (p : M.lident M.pattern_node) =
   match p with
   | M.Pwild -> Twild
-  | M.Pconst i -> Tconst (map_lident i)
+  | M.Pconst (i, _) -> Tconst (map_lident i) (* FIXME: matchwith *)
 
 let is_coll_field m f : bool =
   M.Utils.get_containers m |> List.map (fun (_,v,_) -> v) |> List.mem f
