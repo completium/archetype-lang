@@ -634,6 +634,7 @@ type error_desc =
   | InvalidTypeForFail
   | InvalidTypeForLambdaArgument
   | InvalidTypeForLambdaReturn
+  | InvalidTypeForMapOperator          of A.ptyp
   | InvalidTypeForMapKey
   | InvalidTypeForMapValue
   | InvalidTypeForParameter
@@ -814,7 +815,7 @@ let pp_error_desc fmt e =
   | InvalidExprressionForTupleAccess   -> pp "Invalid expression for tuple access, only int literals are allowed"
   | InvalidFieldsCountInAssetOrRecordLiteral
     -> pp "Invalid fields count in asset or record literal"
-  | InvalidFoldInit ty                 -> pp "Fold operator initialize should have a sum type, not %a" Printer_ast.pp_ptyp ty
+  | InvalidFoldInit ty                 -> pp "Fold operator initializer should have a sum type, not %a" Printer_ast.pp_ptyp ty
   | InvalidForIdentMap                 -> pp "Invalid identifier for map iteration, must specify two identifiers like (x, y) instead of x"
   | InvalidForIdentSimple              -> pp "Invalid identifiers for iteration, excpted only one identifier"
   | InvalidFormula                     -> pp "Invalid formula"
@@ -845,6 +846,7 @@ let pp_error_desc fmt e =
   | InvalidTypeForFail                 -> pp "Invalid type for fail"
   | InvalidTypeForLambdaArgument       -> pp "Invalid type for lambda argument"
   | InvalidTypeForLambdaReturn         -> pp "Invalid type for lambda return"
+  | InvalidTypeForMapOperator ty       -> pp "Map operator should be applied to a list, not %a" Printer_ast.pp_ptyp ty
   | InvalidTypeForMapKey               -> pp "Invalid type for map key"
   | InvalidTypeForMapValue             -> pp "Invalid type for map value"
   | InvalidTypeForParameter            -> pp "Invalid type for parameter"
@@ -3344,8 +3346,9 @@ let rec for_xexpr
       end
 
     | Efold (pinit, x, pe)-> begin
-        let init  = for_xexpr env pinit in
-        let oty   = init.type_ |> Option.bind (fun ty ->
+        let init = for_xexpr env pinit in
+
+        let oty = init.type_ |> Option.bind (fun ty ->
           let oty = Type.as_or ty in
           if Option.is_none oty then
               Env.emit_error env (loc pinit, InvalidFoldInit ty);
@@ -3364,17 +3367,25 @@ let rec for_xexpr
         in mk_sp rt (A.Pfold (init, x, e))
       end
 
-    | Emap (x, i, e)-> begin
-        (* TODO: check typing *)
-        let x = for_xexpr env x in
-        let lty = Option.bind Type.as_list x.type_ in
-        let lty = Option.get lty in
+    | Emap (plst, x, pbody) -> begin
+        let lst = for_xexpr env plst in
 
-        let e = for_xexpr (Env.Local.push env (i, lty)) e in
+        let oty = lst.type_ |> Option.bind (fun ty ->
+          let oty = Type.as_list ty in
+          if Option.is_none oty then
+              Env.emit_error env (loc plst, InvalidTypeForMapOperator ty);
+          oty) in
 
-        let ty = Option.get e.type_ in
+        let body =
+          let env =
+            Option.fold
+              (fun env ty -> Env.Local.push ~kind:`LoopIndex env (x, ty))
+              env oty
+          in for_xexpr env pbody in
 
-        mk_sp (Some (A.Tlist ty)) (A.Pmap (x, i, e))
+        let rty = Option.map (fun ty -> A.Tlist ty) body.type_ in
+
+        mk_sp rty (A.Pmap (lst, x, body))
       end
 
     | Equantifier (qt, x, xty, body) -> begin
