@@ -1,0 +1,13 @@
+archetype expr_list_map
+
+variable res : list<nat> = []
+
+entry exec () {
+  specification {
+    s0: res = [2; 3; 4];
+  }
+  effect {
+    var l : list<int> = [0i; 1i; 2i];
+    res := map(l, x -> abs(x) + 2)
+  }
+}
