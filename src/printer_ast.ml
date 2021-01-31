@@ -351,9 +351,9 @@ let rec pp_pterm fmt (pterm : pterm) =
       in
       (pp_with_paren pp) fmt (x, hid, tid, hte, ee)
 
-    | Ploopleft (x, id, e) ->
+    | Pfold (x, id, e) ->
       let pp fmt (x, id, e) =
-        Format.fprintf fmt "loop_left (%a, %a -> (@[%a@]))@\n"
+        Format.fprintf fmt "fold (%a, %a -> (@[%a@]))@\n"
           pp_pterm x
           pp_id id
           pp_pterm e

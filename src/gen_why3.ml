@@ -1678,7 +1678,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mmatchoption   _ -> error_not_supported "Mmatchoption"
     | Mmatchor       _ -> error_not_supported "Mmatchor"
     | Mmatchlist     _ -> error_not_supported "Mmatchlist"
-    | Mloopleft      _ -> error_not_supported "Mloopleft"
+    | Mfold          _ -> error_not_supported "Mfold"
     | Mmap           _ -> error_not_supported "Mmap"
     | Mexeclambda    _ -> error_not_supported "Mexeclambda"
     | Mapplylambda   _ -> error_not_supported "Mapplylambda"

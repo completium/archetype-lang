@@ -566,9 +566,9 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_default pos pp) fmt (x, xs)
 
-  | Eloopleft (x, id, e) ->
+  | Efold (x, id, e) ->
     let pp fmt (x, id, e) =
-      Format.fprintf fmt "loop_left (%a, %a -> (@[%a@]))@\n"
+      Format.fprintf fmt "fold (%a, %a -> (@[%a@]))@\n"
         (pp_expr e_default PNone) x
         pp_id id
         (pp_expr e_default PNone) e

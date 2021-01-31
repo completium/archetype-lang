@@ -135,7 +135,7 @@ and expr_unloc =
   | Eletin         of lident * type_t option * expr * expr * expr option
   | Evar           of lident * type_t option * expr
   | Ematchwith     of expr * branch list
-  | Eloopleft      of expr * lident * expr
+  | Efold          of expr * lident * expr
   | Emap           of expr * lident * expr
   | Erecupdate     of expr * (lident * expr) list
   | Equantifier    of quantifier * lident * quantifier_kind * expr
@@ -657,6 +657,7 @@ let is_keyword = function
   | "failif"
   | "fails"
   | "false"
+  | "fold"
   | "for"
   | "forall"
   | "from"
@@ -674,7 +675,6 @@ let is_keyword = function
   | "let"
   | "list"
   | "map"
-  | "match_loop_left"
   | "match"
   | "namespace"
   | "none"

@@ -241,7 +241,7 @@ type ('id, 'term) mterm_node  =
   | Mmatchoption      of 'term * 'id * 'term * 'term
   | Mmatchor          of 'term * 'id * 'term * 'id * 'term
   | Mmatchlist        of 'term * 'id * 'id * 'term * 'term
-  | Mloopleft         of 'term * 'id * 'term
+  | Mfold             of 'term * 'id * 'term
   | Mmap              of 'term * 'id * 'term
   | Mexeclambda       of 'term * 'term
   | Mapplylambda      of 'term * 'term
@@ -1317,7 +1317,7 @@ let cmp_mterm_node
     | Mmatchoption (x1, i1, ve1, ne1), Mmatchoption (x2, i2, ve2, ne2)                 -> cmp x1 x2 && cmpi i1 i2 && cmp ve1 ve2 && cmp ne1 ne2
     | Mmatchor (x1, lid1, le1, rid1, re1), Mmatchor (x2, lid2, le2, rid2, re2)         -> cmp x1 x2 && cmpi lid1 lid2 && cmp le1 le2 && cmpi rid1 rid2 && cmp re1 re2
     | Mmatchlist (x1, hid1, tid1, hte1, ee1), Mmatchlist (x2, hid2, tid2, hte2, ee2)   -> cmp x1 x2 && cmpi hid1 hid2 && cmpi tid1 tid2 && cmp hte1 hte2 && cmp ee1 ee2
-    | Mloopleft (x1, i1, e1), Mloopleft (x2, i2, e2)                                   -> cmp x1 x2 && cmpi i1 i2 && cmp e1 e2
+    | Mfold (x1, i1, e1), Mfold (x2, i2, e2)                                           -> cmp x1 x2 && cmpi i1 i2 && cmp e1 e2
     | Mmap (x1, i1, e1), Mmap (x2, i2, e2)                                             -> cmp x1 x2 && cmpi i1 i2 && cmp e1 e2
     | Mexeclambda  (l1, a1), Mexeclambda  (l2, a2)                                     -> cmp l1 l2 && cmp a1 a2
     | Mapplylambda (l1, a1), Mapplylambda (l2, a2)                                     -> cmp l1 l2 && cmp a1 a2
@@ -1705,7 +1705,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mmatchoption (x, i, ve, ne)    -> Mmatchoption   (f x, g i, f ve, f ne)
   | Mmatchor (x, lid, le, rid, re) -> Mmatchor       (f x, g lid, f le, g rid, f re)
   | Mmatchlist (x, hid, tid, hte, ee) -> Mmatchlist  (f x, g hid, g tid, f hte, f ee)
-  | Mloopleft (x, i, e)            -> Mloopleft (f x, g i, f e)
+  | Mfold (x, i, e)                -> Mfold (f x, g i, f e)
   | Mmap (x, i, e)                 -> Mmap           (f x, g i, f e)
   | Mexeclambda  (l, a)            -> Mexeclambda    (f l, f a)
   | Mapplylambda (l, a)            -> Mapplylambda   (f l, f a)
@@ -2090,7 +2090,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mmatchoption (x, _, ve, ne)           -> f (f (f accu x) ve) ne
   | Mmatchor (x, _, le, _, re)            -> f (f (f accu x) le) re
   | Mmatchlist (x, _, _, hte, ee)         -> f (f (f accu x) hte) ee
-  | Mloopleft (x, _, e)                   -> f (f accu x) e
+  | Mfold (x, _, e)                       -> f (f accu x) e
   | Mmap (x, _, e)                        -> f (f accu x) e
   | Mexeclambda  (l, a)                   -> f (f accu l) a
   | Mapplylambda (l, a)                   -> f (f accu l) a
@@ -2564,10 +2564,10 @@ let fold_map_term
     let eee, eea = f htea ee in
     g (Mmatchlist (xe, hid, tid, htee, eee)), eea
 
-  | Mloopleft (x, i, e) ->
+  | Mfold (x, i, e) ->
     let xe, xa = f accu x in
     let ee, ea = f xa e in
-    g (Mloopleft (xe, i, ee)), ea
+    g (Mfold (xe, i, ee)), ea
 
   | Mmap (x, i, e) ->
     let xe, xa = f accu x in

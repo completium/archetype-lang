@@ -54,6 +54,7 @@
       "failif"              , FAILIF         ;
       "fails"               , FAILS          ;
       "false"               , FALSE          ;
+      "fold"                , FOLD           ;
       "for"                 , FOR            ;
       "forall"              , FORALL         ;
       "from"                , FROM           ;
@@ -71,7 +72,6 @@
       "left"                , LEFT           ;
       "let"                 , LET            ;
       "list"                , LIST           ;
-      "loop_left"           , LOOP_LEFT;
       "map"                 , MAP            ;
       "match"               , MATCH          ;
       "namespace"           , NAMESPACE      ;

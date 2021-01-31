@@ -622,7 +622,7 @@ let pp_model_internal fmt (model : model) b =
     | Mmatchoption (_x, _i, _ve, _ne)        -> emit_error (UnsupportedTerm ("matchoption"))
     | Mmatchor (_x, _lid, _le, _rid, _re)    -> emit_error (UnsupportedTerm ("matchor"))
     | Mmatchlist (_x, _hid, _tid, _hte, _ee) -> emit_error (UnsupportedTerm ("matchlist"))
-    | Mloopleft (_x, _id, _e)                -> emit_error (UnsupportedTerm ("loopleft"))
+    | Mfold (_x, _id, _e)                    -> emit_error (UnsupportedTerm ("fold"))
     | Mmap (_x, _id, _e)                     -> emit_error (UnsupportedTerm ("map"))
     | Mexeclambda (_l, _a)                   -> emit_error (UnsupportedTerm ("execlambda"))
     | Mapplylambda (_l, _a)                  -> emit_error (UnsupportedTerm ("applylambda"))

@@ -79,6 +79,7 @@
 %token FAILIF
 %token FAILS
 %token FALSE
+%token FOLD
 %token FOR
 %token FORALL
 %token FROM
@@ -106,7 +107,6 @@
 %token LESSEQUAL
 %token LET
 %token LIST
-%token LOOP_LEFT
 %token LPAREN
 %token MAP
 %token MATCH
@@ -936,7 +936,7 @@ order_operations:
 simple_expr_r:
  | MATCH x=expr WITH xs=branchs END { Ematchwith (x, xs) }
 
- | LOOP_LEFT LPAREN x=expr COMMA id=ident IMPLY e=expr RPAREN { Eloopleft (x, id, e) }
+ | FOLD LPAREN x=expr COMMA id=ident IMPLY e=expr RPAREN { Efold (x, id, e) }
 
  | MAP LPAREN x=expr COMMA id=ident IMPLY e=expr RPAREN { Emap (x, id, e) }
 

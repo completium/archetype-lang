@@ -603,6 +603,7 @@ type error_desc =
   | InvalidExpressionForEffect
   | InvalidExprressionForTupleAccess
   | InvalidFieldsCountInAssetOrRecordLiteral
+  | InvalidFoldInit                    of A.ptyp
   | InvalidForIdentMap
   | InvalidForIdentSimple
   | InvalidFormula
@@ -813,6 +814,7 @@ let pp_error_desc fmt e =
   | InvalidExprressionForTupleAccess   -> pp "Invalid expression for tuple access, only int literals are allowed"
   | InvalidFieldsCountInAssetOrRecordLiteral
     -> pp "Invalid fields count in asset or record literal"
+  | InvalidFoldInit ty                 -> pp "Fold operator initialize should have a sum type, not %a" Printer_ast.pp_ptyp ty
   | InvalidForIdentMap                 -> pp "Invalid identifier for map iteration, must specify two identifiers like (x, y) instead of x"
   | InvalidForIdentSimple              -> pp "Invalid identifiers for iteration, excpted only one identifier"
   | InvalidFormula                     -> pp "Invalid formula"
@@ -3138,7 +3140,11 @@ let rec for_xexpr
           | `SubColl -> Some (A.Tcontainer (A.Tasset asset.as_name, A.View))
           | `Ref i   -> Mint.find_opt i amap
           | `Pk      -> Some (asset.as_pkty)
-          | `PkOrAsset -> (match mode.em_kind with | `Formula _ -> Some ((A.Tasset asset.as_name)) | _ ->  Some (asset.as_pkty))
+          | `PkOrAsset -> begin
+              match mode.em_kind with
+              | `Formula _ -> Some (A.Tasset asset.as_name)
+              | _ ->  Some (asset.as_pkty)
+            end
           | _        -> assert false in
 
         let the = for_xexpr env the in
@@ -3337,16 +3343,25 @@ let rec for_xexpr
           in mk_sp bty aout
       end
 
-    | Eloopleft (x, i, e)-> begin
-        (* TODO: check typing *)
-        let x = for_xexpr env x in
-        let oty = Option.bind Type.as_or x.type_ in
+    | Efold (pinit, x, pe)-> begin
+        let init  = for_xexpr env pinit in
+        let oty   = init.type_ |> Option.bind (fun ty ->
+          let oty = Type.as_or ty in
+          if Option.is_none oty then
+              Env.emit_error env (loc pinit, InvalidFoldInit ty);
+          oty) in
 
-        let lt, rt = Option.get oty in
+        let ety = Option.map (fun (lt, rt) -> A.Tor (lt, rt)) oty in
+        let lt, rt = Option.map fst oty, Option.map snd oty in
 
-        let e = for_xexpr (Env.Local.push env (i, lt)) e in
+        let e =
+          let env =
+            Option.fold
+              (fun env lt -> Env.Local.push ~kind:`LoopIndex env (x, lt))
+              env lt
+          in for_xexpr env ?ety pe
 
-        mk_sp (Some rt) (A.Ploopleft (x, i, e))
+        in mk_sp rt (A.Pfold (init, x, e))
       end
 
     | Emap (x, i, e)-> begin

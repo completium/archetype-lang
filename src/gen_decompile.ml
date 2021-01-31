@@ -1378,7 +1378,7 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         | T.Tunit -> M.mk_mterm (M.Minstrmatchlist (xe, dumloc hid, dumloc tid, hte, ne)) M.tunit
         | _       -> M.mk_mterm (M.Mmatchlist (xe, dumloc hid, dumloc tid, hte, ne)) (for_type ty)
       end
-    | Iloopleft (l, i, b)          -> let be = f b in M.mk_mterm (M.Mloopleft (f l, dumloc i, be)) be.type_
+    | Iloopleft (l, i, b)          -> let be = f b in M.mk_mterm (M.Mfold (f l, dumloc i, be)) be.type_
     | Ilambda (_rt, _id, _at, _e)  -> assert false
     | Iloop (c, b)                 -> M.mk_mterm (M.Mwhile (f c, f b, None)) M.tunit
     | Iiter (_ids, _c, _b)         -> assert false
@@ -1655,7 +1655,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mmatchoption (_x, _i, _ve, _ne)        -> assert false
     | Mmatchor (_x, _lid, _le, _rid, _re)    -> assert false
     | Mmatchlist (_x, _hid, _tid, _hte, _ee) -> assert false
-    | Mloopleft (_e, _i, _l)                 -> assert false
+    | Mfold (_e, _i, _l)                     -> assert false
     | Mmap (_e, _i, _l)                      -> assert false
     | Mexeclambda (_l, _a)                   -> assert false
     | Mapplylambda (_l, _a)                  -> assert false

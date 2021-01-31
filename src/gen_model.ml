@@ -272,7 +272,7 @@ let to_model (ast : A.ast) : M.model =
       | A.Pmatchoption (x, id, ve, ne)      -> M.Mmatchoption   (f x, id, f ve, f ne)
       | A.Pmatchor (x, lid, le, rid, re)    -> M.Mmatchor       (f x, lid, f le, rid, f re)
       | A.Pmatchlist (x, hid, tid, hte, ee) -> M.Mmatchlist     (f x, hid, tid, f hte, f ee)
-      | A.Ploopleft (x, i, e)               -> M.Mloopleft      (f x, i, f e)
+      | A.Pfold (x, i, e)                   -> M.Mfold          (f x, i, f e)
       | A.Pmap (x, i, e)                    -> M.Mmap           (f x, i, f e)
       | A.Plogical (A.And, l, r)            -> M.Mand           (f l, f r)
       | A.Plogical (A.Or, l, r)             -> M.Mor            (f l, f r)

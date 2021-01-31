@@ -318,7 +318,7 @@ type 'id term_node  =
   | Pmatchoption of 'id term_gen * 'id * 'id term_gen * 'id term_gen
   | Pmatchor     of 'id term_gen * 'id * 'id term_gen * 'id * 'id term_gen
   | Pmatchlist   of 'id term_gen * 'id * 'id * 'id term_gen * 'id term_gen
-  | Ploopleft    of 'id term_gen * 'id * 'id term_gen
+  | Pfold        of 'id term_gen * 'id * 'id term_gen
   | Pmap         of 'id term_gen * 'id * 'id term_gen
   | Pcall of ('id term_gen option * 'id call_kind * ('id term_arg) list)
   | Plogical of logical_operator * 'id term_gen * 'id term_gen
