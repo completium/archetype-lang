@@ -3362,9 +3362,14 @@ let rec for_xexpr
             Option.fold
               (fun env lt -> Env.Local.push ~kind:`LoopIndex env (x, lt))
               env lt
-          in for_xexpr env ?ety pe
+          in for_xexpr env ?ety pe in
 
-        in mk_sp rt (A.Pfold (init, x, e))
+        let rty =
+          match mode.em_kind with
+          | `Expr    _ -> rt
+          | `Formula _ -> Option.map (fun ty -> A.Toption ty) rt in
+
+        mk_sp rty (A.Pfold (init, x, e))
       end
 
     | Emap (plst, x, pbody) -> begin
