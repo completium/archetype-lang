@@ -632,6 +632,7 @@ type 'id enum_item_struct = {
   name : 'id;
   initial : bool;
   invariants : 'id label_term list;
+  args: ptyp list;
   loc : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -770,8 +771,8 @@ let mk_transition ?on ?(trs = []) from =
 let mk_transaction_struct ?(args = []) ?calledby ?(accept_transfer = false) ?require ?failif ?transition ?specification ?(functions = []) ?effect ?(loc = Location.dummy) name =
   { name; args; calledby; accept_transfer; require; failif; transition; specification; functions; effect; loc }
 
-let mk_enum_item ?(initial = false) ?(invariants = []) ?(loc = Location.dummy) name : 'id enum_item_struct =
-  { name; initial; invariants; loc }
+let mk_enum_item ?(initial = false) ?(args = []) ?(invariants = []) ?(loc = Location.dummy) name : 'id enum_item_struct =
+  { name; initial; args; invariants; loc }
 
 let mk_enum ?(items = []) ?(loc = Location.dummy) kind =
   { kind; items; loc }

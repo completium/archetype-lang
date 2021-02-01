@@ -6016,11 +6016,12 @@ let for_grouped_declarations (env : env) (toploc, g) =
 (* -------------------------------------------------------------------- *)
 let enums_of_statedecl (enums : statedecl list) : A.enum list =
   let for1 tg =
-    let for_ctor1 ((id, _, invs) : ctordecl) =
+    let for_ctor1 ((id, cty, invs) : ctordecl) =
       let invs = List.map (fun (label, inv) -> A.mk_label_term ?label inv) invs in
 
       A.{ name       = id;
           initial    = String.equal (unloc id) tg.sd_init;
+          args       = cty;
           invariants = invs;
           loc        = Location.dummy; } in
 
