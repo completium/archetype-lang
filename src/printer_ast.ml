@@ -1047,8 +1047,13 @@ let pp_record fmt (r : record) =
     (pp_position pp_id) r.pos
 
 let pp_enum_item fmt (ei : lident enum_item_struct) =
-  Format.fprintf fmt "| %a%a%a"
+  Format.fprintf fmt "| %a%a%a%a"
     pp_id ei.name
+    (fun fmt l ->
+      if List.is_empty l
+      then ()
+      else (Format.fprintf fmt " of %a" (pp_list " * " pp_type) l)
+    ) ei.args
     (pp_do_if ei.initial pp_str) " initial"
     (pp_do_if (not (List.is_empty ei.invariants)) (
         fun fmt ->

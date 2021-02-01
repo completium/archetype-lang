@@ -279,22 +279,22 @@ let pp_pattern fmt p =
   | Pwild -> Format.fprintf fmt "| _"
 
   | Pref ({ pldesc = PSome }, [x]) ->
-      Format.fprintf fmt "| some %a" pp_id x
+    Format.fprintf fmt "| some %a" pp_id x
 
   | Pref ({ pldesc = PNone }, []) ->
-      Format.fprintf fmt "| none"
+    Format.fprintf fmt "| none"
 
   | Pref ({ pldesc = PCons }, [x; xs]) ->
-      Format.fprintf fmt "| %a :: %a" pp_id x pp_id xs
+    Format.fprintf fmt "| %a :: %a" pp_id x pp_id xs
 
   | Pref ({ pldesc = PNil }, []) ->
-      Format.fprintf fmt "| []"
+    Format.fprintf fmt "| []"
 
   | Pref ({ pldesc = PLeft }, [x]) ->
-      Format.fprintf fmt "| left %a" pp_id x
+    Format.fprintf fmt "| left %a" pp_id x
 
   | Pref ({ pldesc = PRight }, [x]) ->
-      Format.fprintf fmt "| right %a" pp_id x
+    Format.fprintf fmt "| right %a" pp_id x
 
   | Pref (i, [] ) ->  Format.fprintf fmt "| %a" pp_pname (unloc i)
   | Pref (i, [x]) ->  Format.fprintf fmt "| %a %a" pp_pname (unloc i) pp_id x
@@ -891,9 +891,14 @@ let pp_enum_option fmt = function
 
 let pp_ident_state fmt item =
   match item with
-  | (id, _, opts) ->            (* FIXME: enum *)
-    Format.fprintf fmt "%a%a"
+  | (id, lt, opts) ->
+    Format.fprintf fmt "%a%a%a"
       pp_id id
+      (fun fmt l ->
+         if List.length l = 0
+         then ()
+         else (Format.fprintf fmt " of %a" (pp_list " * " pp_type) l)
+      ) lt
       (pp_prefix " " (pp_list " " pp_enum_option)) opts
 
 let pp_asset_post_option fmt (apo : asset_post_option) =
