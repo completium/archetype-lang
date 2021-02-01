@@ -21,7 +21,7 @@ module Type : sig
   val as_map              : A.ptyp -> (A.ptyp * A.ptyp) option
   val as_big_map          : A.ptyp -> (A.ptyp * A.ptyp) option
   val as_or               : A.ptyp -> (A.ptyp * A.ptyp) option
-  val as_lambda            : A.ptyp -> (A.ptyp * A.ptyp) option
+  val as_lambda           : A.ptyp -> (A.ptyp * A.ptyp) option
 
   val is_asset     : A.ptyp -> bool
   val is_numeric   : A.ptyp -> bool
@@ -3266,41 +3266,54 @@ let rec for_xexpr
             (A.Psome oe)
       end
 
-    | Eor oe -> begin
-        match oe with
-        | Oleft (_, t, x) ->
-          let x = for_xexpr env x in
-          let ty = for_type_exn env t in
-          mk_sp
-            (Some (A.Tor (Option.get x.type_, ty)))
-            (A.Pleft (ty, x))
-        | Oright (t, _, x) ->
-          let x = for_xexpr env x in
-          let ty = for_type_exn env t in
-          mk_sp
-            (Some (A.Tor (ty, Option.get x.type_)))
-            (A.Pright (ty, x))
-      end
-
-    | Elambda (rt, id, at, e) -> begin
-        (* TODO: check typing *)
-        let rt, at =
-          match rt, at with
-          | Some rt, Some at -> rt, at
-          | _ -> begin
-              Env.emit_error env (loc tope, InvalidExpression);
-              bailout ()
-            end
-        in
-
-        let aty = for_type_exn env at in
-        let rty = for_type_exn env rt in
-
-        let e = for_xexpr (Env.Local.push env (id, aty)) ~ety:rty e in
+    | Eor (Oleft (_, t, x)) ->
+        let x  = for_xexpr env x in
+        let ty = for_type_exn env t in
 
         mk_sp
-          (Some (A.Tlambda (aty, rty)))
-          (A.Plambda (aty, id, rty, e))
+          (Some (A.Tor (Option.get_dfl A.vtunit x.type_, ty)))
+          (A.Pleft (ty, x))
+
+    | Eor (Oright (t, _, x)) ->
+        let x  = for_xexpr env x in
+        let ty = for_type_exn env t in
+        mk_sp
+          (Some (A.Tor (ty, Option.get_dfl A.vtunit x.type_)))
+          (A.Pright (ty, x))
+
+    | Elambda (prt, pid, pat, pe) -> begin
+        let rt, at =
+          match Option.bind Type.as_lambda ety with
+          | None -> None, None
+          | Some (at, rt) -> Some rt, Some at in
+
+        let rt =
+          match Option.bind (for_type env) prt with
+          | Some _ as rt -> rt
+          | _ -> rt in
+
+        let at =
+          match Option.bind (for_type env) pat with
+          | Some _ as at -> at
+          | _ -> at in
+
+        let _, e = Env.inscope env (fun env ->
+          let env =
+            match at with
+            | None ->
+                Env.emit_error env (loc pid, CannotInfer);
+                env
+            | Some at ->
+                Env.Local.push env (pid, at) in
+          env, for_xexpr env ?ety:rt pe) in
+
+        let oty =
+          match rt, at with
+          | Some rt, Some at -> Some (A.Tlambda (at, rt))
+          | _, _ -> None in
+
+        mk_sp oty
+          (A.Plambda (Option.get_dfl A.vtunit at, pid, Option.get_dfl A.vtunit rt, e))
       end
 
     | Ematchwith (e, bs) -> begin
