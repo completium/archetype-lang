@@ -254,7 +254,6 @@ and bval_node =
   | BVint          of Core.big_int
   | BVnat          of Core.big_int
   | BVbool         of bool
-  | BVenum         of string
   | BVrational     of Core.big_int * Core.big_int
   | BVdate         of Core.date
   | BVstring       of string

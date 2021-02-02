@@ -592,7 +592,6 @@ let to_ir (model : M.model) : T.ir =
     | Mnat  v            -> T.Iconst (T.mk_type Tnat, Dint v)
     | Mbool true         -> T.Iconst (T.mk_type Tbool, Dtrue)
     | Mbool false        -> T.Iconst (T.mk_type Tbool, Dfalse)
-    | Menum _            -> emit_error (UnsupportedTerm ("Menum"))
     | Mrational _        -> emit_error (UnsupportedTerm ("Mrational"))
     | Mstring v          -> T.Iconst (T.mk_type Tstring, Dstring v)
     | Mcurrency (v, Utz) -> T.Iconst (T.mk_type Tmutez, Dint v)

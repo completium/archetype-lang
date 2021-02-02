@@ -1654,7 +1654,6 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mnat v -> Tint v
     | Mbool false -> Tfalse
     | Mbool true -> Ttrue
-    | Menum               _ -> error_not_supported "Menum"
     | Mrational (l,r) -> Ttuple([ loc_term (Tint l); loc_term (Tint r)])
     | Mcurrency (i, Utz)  -> Tint i
     | Mstring v ->  (* Tint (Tools.sha v) *) Tstring v

@@ -637,7 +637,6 @@ let pp_model fmt (model : model) =
       | Mint v -> Format.fprintf fmt "(Int %a)" pp_big_int v
       | Mnat v -> pp_big_int fmt v
       | Mbool b -> pp_str fmt (if b then "true" else "false")
-      | Menum v -> pp_str fmt v
       | Mrational (n, d) ->
         Format.fprintf fmt "(%a. /. %a.)"
           pp_big_int n

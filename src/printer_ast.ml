@@ -108,7 +108,6 @@ let pp_bval fmt (bval : bval) =
     | BVint v           -> Format.fprintf fmt "%ai" pp_big_int v
     | BVnat v           -> pp_big_int fmt v
     | BVbool v          -> pp_str fmt (if v then "true" else "false")
-    | BVenum v          -> pp_str fmt v
     | BVrational (n, d) -> Format.fprintf fmt "(%a / %a)" pp_big_int n pp_big_int d
     | BVdate v          -> Core.pp_date fmt v
     | BVstring s        -> pp_str fmt s

@@ -1,11 +1,11 @@
 archetype effect_control_match_or
 
 enum t =
-| A of int
-| B of int
+| A of nat
+| B of nat
 | C
 
-variable res : int = 0
+variable res : nat = 0
 
 entry exec() {
   var o : t = A(1);

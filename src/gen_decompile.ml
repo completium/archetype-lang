@@ -1636,7 +1636,6 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mnat v             -> A.ebnat v
     | Mbool true         -> A.etrue
     | Mbool false        -> A.efalse
-    | Menum v            -> A.eterm (dumloc v)
     | Mrational (_n, _d) -> assert false
     | Mstring v          -> A.estring v
     | Mcurrency (_v, _c) -> assert false

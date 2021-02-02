@@ -334,7 +334,6 @@ let to_model (ast : A.ast) : M.model =
       | A.Plit ({node = BVint i; _})           -> M.Mint i
       | A.Plit ({node = BVnat i; _})           -> M.Mnat i
       | A.Plit ({node = BVbool b; _})          -> M.Mbool b
-      | A.Plit ({node = BVenum s; _})          -> M.Menum s
       | A.Plit ({node = BVrational (d, n); _}) -> M.Mrational (d, n)
       | A.Plit ({node = BVdate s; _})          -> M.Mdate s
       | A.Plit ({node = BVstring s; _})        -> M.Mstring s

@@ -360,7 +360,6 @@ let pp_mterm fmt (mt : mterm) =
     | Mint v -> Format.fprintf fmt "%ai" pp_big_int v
     | Mnat v -> pp_big_int fmt v
     | Mbool b -> pp_str fmt (if b then "true" else "false")
-    | Menum v -> pp_str fmt v
     | Mrational (n, d) ->
       Format.fprintf fmt "rat(%a, %a)"
         pp_big_int n

@@ -594,7 +594,6 @@ let rec is_literal (mt : mterm) : bool =
   | Mbool      _
   | Mint       _
   | Mnat       _
-  | Menum      _
   | Mrational  _
   | Mstring    _
   | Mcurrency  _
