@@ -1038,7 +1038,87 @@ let assign_loop_label (model : model) : model =
   in
   map_mterm_model aux model
 
-let remove_enum_matchwith (model : model) : model =
+(* TODO *)
+(* let _remove_cmp_enum (model : model) : model = model
+  (* let mk_exprmatchwith dir v id =
+    let t = mk_mterm (Mbool true) tbool in
+    let f = mk_mterm (Mbool false)tbool in
+    let cv, wv =
+      match dir with
+      | `Pos -> t, f
+      | `Neg -> f, t
+    in
+    let pattern_const = mk_pattern (Pconst (id, [])), cv in (* FIXME: matchwith *)
+    let pattern_wild = mk_pattern Pwild, wv in
+
+    let l = [pattern_const; pattern_wild] in
+    mk_mterm (Mexprmatchwith (v, l)) tbool
+  in
+  let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
+    match mt.node with
+    | Mequal  (_, ({type_ = ((Tstate | Tenum _), _)} as v), {node = Mvar (id, Venumval, _, _)}) -> mk_exprmatchwith `Pos v id
+    | Mequal  (_, {node = Mvar (id, Venumval, _, _)}, ({type_ = ((Tstate | Tenum _), _)} as v)) -> mk_exprmatchwith `Pos v id
+    | Mnequal (_, ({type_ = ((Tstate | Tenum _), _)} as v), {node = Mvar (id, Venumval, _, _)}) -> mk_exprmatchwith `Neg v id
+    | Mnequal (_, {node = Mvar (id, Venumval, _, _)}, ({type_ = ((Tstate | Tenum _), _)} as v)) -> mk_exprmatchwith `Neg v id
+    | _ -> map_mterm (aux ctx) mt
+  in
+  map_mterm_model aux model *)
+
+(* TODO *)
+let _process_asset_state (model : model) : model =
+  let get_state_lident an = dumloc ("state_" ^ an) in
+
+  let map = ref MapString.empty in
+  let for_decl (d : decl_node) : decl_node =
+    let for_asset (a : asset) =
+      match a.state with
+      | Some id ->
+        begin
+          let enum    = Utils.get_enum model (unloc id) in
+          let name    = get_state_lident (unloc a.name) in
+          let typ     = tenum id in
+          let e_val   = enum.initial in
+          let default = mk_enum_value e_val id in
+
+          map := MapString.add (unloc a.name) default !map;
+          let item = mk_asset_item name typ typ ~default:default in
+          let init_items = List.map (fun (x : mterm) ->
+              match x.node with
+              | Masset l -> {x with node = Masset(l @ [default]) }
+              | _ -> x) a.init in
+          { a with values = a.values @ [item]; state = None; init = init_items }
+        end
+      | None -> a
+    in
+    match d with
+    | Dasset a -> Dasset (for_asset a)
+    | _ -> d
+  in
+
+  let model = { model with decls = List.map for_decl model.decls} in
+
+  let rec aux ctx (mt : mterm) : mterm =
+    match mt.node, mt.type_ with
+    | Mvar (an, Vassetstate k, _, _), _ ->
+      begin
+        let an = unloc an in
+        let i = get_state_lident an in
+        mk_mterm (Mdotassetfield (dumloc an, k, i)) mt.type_
+      end
+    | Massign (op, _, Aassetstate (an, k), v), _ ->
+      let i = get_state_lident an in
+      mk_mterm (Mupdate (an, k, [(i, op, v) ])) tunit
+
+    | Masset l, (Tasset an, _) when MapString.mem (unloc an) !map ->
+      let default : mterm = MapString.find (unloc an) !map in
+      let l = List.map (aux ctx) l in
+      {mt with node = Masset (l @ [default]) }
+
+    | _ -> map_mterm (aux ctx) mt
+  in
+  map_mterm_model aux model
+
+let remove_enum (model : model) : model =
   let mk_enum_ident a b =
     let a =
       match a with
@@ -1228,7 +1308,15 @@ let remove_enum_matchwith (model : model) : model =
     functions = List.map process_functions model.functions;
   }
   |> map_mterm_model process_mterm
-  |> remove_enum
+  |> remove_enum *)
+
+(* end enum *)
+
+let remove_enum (model : model) : model =
+  let enum_to_mterm id = () in
+ model
+
+
 
 let remove_cmp_bool (model : model) : model =
   let rec aux c (mt : mterm) : mterm =
@@ -1757,33 +1845,6 @@ let add_explicit_sort (model : model) : model =
   in
   map_mterm_model (aux []) model
 
-
-(* TODO *)
-let remove_cmp_enum (model : model) : model = model
-  (* let mk_exprmatchwith dir v id =
-    let t = mk_mterm (Mbool true) tbool in
-    let f = mk_mterm (Mbool false)tbool in
-    let cv, wv =
-      match dir with
-      | `Pos -> t, f
-      | `Neg -> f, t
-    in
-    let pattern_const = mk_pattern (Pconst (id, [])), cv in (* FIXME: matchwith *)
-    let pattern_wild = mk_pattern Pwild, wv in
-
-    let l = [pattern_const; pattern_wild] in
-    mk_mterm (Mexprmatchwith (v, l)) tbool
-  in
-  let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
-    match mt.node with
-    | Mequal  (_, ({type_ = ((Tstate | Tenum _), _)} as v), {node = Mvar (id, Venumval, _, _)}) -> mk_exprmatchwith `Pos v id
-    | Mequal  (_, {node = Mvar (id, Venumval, _, _)}, ({type_ = ((Tstate | Tenum _), _)} as v)) -> mk_exprmatchwith `Pos v id
-    | Mnequal (_, ({type_ = ((Tstate | Tenum _), _)} as v), {node = Mvar (id, Venumval, _, _)}) -> mk_exprmatchwith `Neg v id
-    | Mnequal (_, {node = Mvar (id, Venumval, _, _)}, ({type_ = ((Tstate | Tenum _), _)} as v)) -> mk_exprmatchwith `Neg v id
-    | _ -> map_mterm (aux ctx) mt
-  in
-  map_mterm_model aux model *)
-
 let is_whyml_keyword = function
   |  "abstract"
   |  "absurd"
@@ -1976,61 +2037,6 @@ let merge_update (model : model) : model =
     | _ -> map_mterm (aux ctx) mt
   in
   Model.map_mterm_model aux model
-
-
-(* TODO *)
-let process_asset_state (model : model) : model =
-  let get_state_lident an = dumloc ("state_" ^ an) in
-
-  let map = ref MapString.empty in
-  let for_decl (d : decl_node) : decl_node =
-    let for_asset (a : asset) =
-      match a.state with
-      | Some id ->
-        begin
-          let enum    = Utils.get_enum model (unloc id) in
-          let name    = get_state_lident (unloc a.name) in
-          let typ     = tenum id in
-          let e_val   = enum.initial in
-          let default = mk_enum_value e_val id in
-
-          map := MapString.add (unloc a.name) default !map;
-          let item = mk_asset_item name typ typ ~default:default in
-          let init_items = List.map (fun (x : mterm) ->
-              match x.node with
-              | Masset l -> {x with node = Masset(l @ [default]) }
-              | _ -> x) a.init in
-          { a with values = a.values @ [item]; state = None; init = init_items }
-        end
-      | None -> a
-    in
-    match d with
-    | Dasset a -> Dasset (for_asset a)
-    | _ -> d
-  in
-
-  let model = { model with decls = List.map for_decl model.decls} in
-
-  let rec aux ctx (mt : mterm) : mterm =
-    match mt.node, mt.type_ with
-    | Mvar (an, Vassetstate k, _, _), _ ->
-      begin
-        let an = unloc an in
-        let i = get_state_lident an in
-        mk_mterm (Mdotassetfield (dumloc an, k, i)) mt.type_
-      end
-    | Massign (op, _, Aassetstate (an, k), v), _ ->
-      let i = get_state_lident an in
-      mk_mterm (Mupdate (an, k, [(i, op, v) ])) tunit
-
-    | Masset l, (Tasset an, _) when MapString.mem (unloc an) !map ->
-      let default : mterm = MapString.find (unloc an) !map in
-      let l = List.map (aux ctx) l in
-      {mt with node = Masset (l @ [default]) }
-
-    | _ -> map_mterm (aux ctx) mt
-  in
-  map_mterm_model aux model
 
 let extract_term_from_instruction f (model : model) : model =
   let rec aux ctx (mt : mterm) : mterm =
