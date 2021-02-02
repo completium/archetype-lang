@@ -2181,7 +2181,6 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let coll = mk_loc_coll_term (unloc n) ctx (t,d) in
       coll |> Mlwtree.deloc
 
-    | Mvar (v, Venumval, _, _) -> Tvar (map_lident v)
     | Mvar (v, Vdefinition, _, _) ->
       let params = get_def_params m (unloc v) |> List.map loc_term in
       Tapp (loc_term (Tvar (unloc v)), [loc_term (Tvar (mk_storage_id ctx))] @ params)
@@ -2196,7 +2195,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | _ -> loc_term (Tdoti (gs, "state")) |> Mlwtree.deloc
       end
     | Mvar (v, Vparameter, _, _) -> Tvar (map_lident v)
-
+    | Menumval _ -> error_not_translated "Menumval"
 
 
     (* rational ------------------------------------------------------------- *)

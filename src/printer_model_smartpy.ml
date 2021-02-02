@@ -1352,7 +1352,6 @@ let pp_model fmt (model : model) =
           (fun fmt b -> match b with false -> pp_str fmt ".data" | _ -> ()) (is_const env v)
           pp_id v
       | Mvar (v, Vstorecol, _, _) -> Format.fprintf fmt "self.data.%a" pp_id v
-      | Mvar (v, Venumval, _, _)  -> pp_id fmt v
       | Mvar (v, Vdefinition, _, _)  -> pp_id fmt v
       | Mvar (v, Vlocal, _, _)    ->
         Format.fprintf fmt "%a%a"
@@ -1363,7 +1362,7 @@ let pp_model fmt (model : model) =
       | Mvar (_, Vthe, _, _)      -> pp_str fmt "the"
       | Mvar (_, Vstate, _, _)    -> pp_str fmt "self.data.state"
       | Mvar (v, Vparameter, _, _)-> pp_id fmt v
-
+      | Menumval (_id, _args, _e) -> emit_error (UnsupportedTerm ("Menumval"))
 
       (* rational *)
 

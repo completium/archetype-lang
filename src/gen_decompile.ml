@@ -1821,7 +1821,6 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mvar (_an, Vassetstate _k, _t, _d) -> assert false
     | Mvar(v, Vstorevar, t, d)           -> A.eterm v ?temp:(for_temp t) ?delta:(for_delta d)
     | Mvar(v, Vstorecol, t, d)           -> A.eterm v ?temp:(for_temp t) ?delta:(for_delta d)
-    | Mvar(_v, Venumval, _t, _d)         -> assert false
     | Mvar(_v, Vdefinition, _t, _d)      -> assert false
     | Mvar(v, Vlocal, t, d)              -> A.eterm v ?temp:(for_temp t) ?delta:(for_delta d)
     | Mvar(v, Vparam, t, d)              -> A.eterm v ?temp:(for_temp t) ?delta:(for_delta d)
@@ -1829,7 +1828,11 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mvar(_, Vthe, _t, _d)              -> assert false
     | Mvar(_, Vstate, _t, _d)            -> assert false
     | Mvar(v, Vparameter, t, d)          -> A.eterm v ?temp:(for_temp t) ?delta:(for_delta d)
-
+    | Menumval (id, args, _e)             -> begin
+        match args with
+        | [] -> A.eterm id
+        | _  -> A.eapp (A.Fident id) []
+      end
 
     (* rational *)
 

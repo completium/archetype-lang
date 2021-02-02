@@ -145,7 +145,6 @@ type 'term var_kind_gen =
   | Vassetstate of 'term
   | Vstorevar
   | Vstorecol
-  | Venumval
   | Vdefinition
   | Vlocal
   | Vparam
@@ -365,6 +364,7 @@ type ('id, 'term) mterm_node  =
   | Mmetadata
   (* variable *)
   | Mvar              of 'id * 'term var_kind_gen * temp * delta
+  | Menumval          of 'id * 'term list * ident  (* value * args * ident of enum *)
   (* rational *)
   | Mrateq            of 'term * 'term
   | Mratcmp           of comparison_operator * 'term * 'term
@@ -1053,6 +1053,7 @@ let mk_mvar id t = mk_mterm (Mvar(id, Vlocal, Tnone, Dnone )) t
 let mk_pvar id t = mk_mterm (Mvar(id, Vparam, Tnone, Dnone )) t
 let mk_svar id t = mk_mterm (Mvar(id, Vstorevar, Tnone, Dnone )) t
 let mk_parameter id t = mk_mterm (Mvar(id, Vparameter, Tnone, Dnone )) t
+let mk_enum_value ?(args=[]) id e = mk_mterm (Menumval(id, args, unloc e)) (mktype (Tenum e))
 
 let mk_btez v = mk_mterm (Mcurrency (v, Utz)) ttez
 let mk_tez  v = mk_btez (Big_int.big_int_of_int v)
@@ -1171,7 +1172,7 @@ let cmp_pattern_node
   : bool =
   match p1, p2 with
   | Pconst (c1, xs1), Pconst (c2, xs2) ->
-       cmpi c1 c2
+    cmpi c1 c2
     && List.length xs1 = List.length xs2
     && List.for_all2 cmpi xs1 xs2
   | Pwild, Pwild -> true
@@ -1215,7 +1216,6 @@ let cmp_mterm_node
     | Vassetstate v1, Vassetstate v2 -> cmp v1 v2
     | Vstorevar, Vstorevar
     | Vstorecol, Vstorecol
-    | Venumval, Venumval
     | Vdefinition, Vdefinition
     | Vlocal, Vlocal
     | Vparam, Vparam
@@ -1613,7 +1613,6 @@ let map_var_kind f = function
   | Vassetstate mt -> Vassetstate (f mt)
   | Vstorevar -> Vstorevar
   | Vstorecol -> Vstorecol
-  | Venumval -> Venumval
   | Vdefinition -> Vdefinition
   | Vlocal -> Vlocal
   | Vparam -> Vparam
@@ -1827,6 +1826,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mmetadata                      -> Mmetadata
   (* variable *)
   | Mvar (id, k, t, d)             -> Mvar (g id, map_var_kind f k, map_temp fi t, map_delta d)
+  | Menumval (id, args, e)         -> Menumval (g id, List.map f args, fi e)
   (* rational *)
   | Mrateq (l, r)                  -> Mrateq (f l, f r)
   | Mratcmp (op, l, r)             -> Mratcmp (op, f l, f r)
@@ -2006,7 +2006,6 @@ let fold_var_kind f accu = function
   | Vassetstate mt -> f accu mt
   | Vstorevar
   | Vstorecol
-  | Venumval
   | Vdefinition
   | Vlocal
   | Vparam
@@ -2211,6 +2210,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mmetadata                             -> accu
   (* variable *)
   | Mvar (_, k, _, _)                     -> fold_var_kind f accu k
+  | Menumval (_, args, _)                 -> List.fold_left f accu args
   (* rational *)
   | Mrateq (l, r)                         -> f (f accu l) r
   | Mratcmp (_, l, r)                     -> f (f accu l) r
@@ -2261,7 +2261,6 @@ let fold_map_var_kind f accu = function
     Vassetstate mte, mta
   | Vstorevar -> Vstorevar, accu
   | Vstorecol -> Vstorecol, accu
-  | Venumval  -> Venumval,  accu
   | Vdefinition -> Vdefinition, accu
   | Vlocal    -> Vlocal,    accu
   | Vparam    -> Vparam,    accu
@@ -3144,6 +3143,15 @@ let fold_map_term
   | Mvar (id, k, t, d) ->
     let ke, ka = fold_map_var_kind f accu k in
     g (Mvar (id, ke, t, d)), ka
+
+  | Menumval (id, args, e) ->
+    let ((argss, argsa) : 'c list * 'a) =
+      List.fold_left
+        (fun (pterms, accu) x ->
+           let p, accu = f accu x in
+           pterms @ [p], accu) ([], accu) args
+    in
+    g (Menumval (id, argss, e)), argsa
 
 
   (* rational *)

@@ -838,7 +838,6 @@ let to_ir (model : M.model) : T.ir =
     | Mvar (_an, Vassetstate _k, _, _) -> assert false
     | Mvar (v, Vstorevar, _, _)        -> T.Ivar (unloc v)
     | Mvar (v, Vstorecol, _, _)        -> T.Ivar (unloc v)
-    | Mvar (_v, Venumval, _, _)        -> assert false
     | Mvar (_v, Vdefinition, _, _)     -> assert false
     | Mvar (v, Vlocal, _, _)           -> T.Ivar (unloc v)
     | Mvar (v, Vparam, _, _)           -> T.Ivar (unloc v)
@@ -846,6 +845,7 @@ let to_ir (model : M.model) : T.ir =
     | Mvar (_, Vthe, _, _)             -> assert false
     | Mvar (_, Vstate, _, _)           -> assert false
     | Mvar (_, Vparameter, _, _)       -> assert false
+    | Menumval (_id, _args, _e)        -> assert false
 
     (* rational *)
 

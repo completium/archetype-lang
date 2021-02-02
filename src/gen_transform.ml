@@ -1096,7 +1096,7 @@ let remove_enum_matchwith (model : model) : model =
       mkloc (loc id) (mk_enum_ident prefix (unloc id)) in
     match mt.node, get_ntype mt.type_ with
     | Mvar (id, Vlocal, t, d), Tstate -> mk_mterm (Mvar (mk_id "state" id, Vlocal, t, d)) tint
-    | Mvar (id, Venumval, t, d), Tenum e -> mk_mterm (Mvar (mk_id (unloc e) id, Vlocal, t, d)) tint
+    (* | Mvar (id, Venumval, t, d), Tenum e -> mk_mterm (Mvar (mk_id (unloc e) id, Vlocal, t, d)) tint *)
     | Mexprmatchwith (v, ps), _
     | Mmatchwith (v, ps), _ ->
       let val_v =
@@ -1758,8 +1758,9 @@ let add_explicit_sort (model : model) : model =
   map_mterm_model (aux []) model
 
 
-let remove_cmp_enum (model : model) : model =
-  let mk_exprmatchwith dir v id =
+(* TODO *)
+let remove_cmp_enum (model : model) : model = model
+  (* let mk_exprmatchwith dir v id =
     let t = mk_mterm (Mbool true) tbool in
     let f = mk_mterm (Mbool false)tbool in
     let cv, wv =
@@ -1781,7 +1782,7 @@ let remove_cmp_enum (model : model) : model =
     | Mnequal (_, {node = Mvar (id, Venumval, _, _)}, ({type_ = ((Tstate | Tenum _), _)} as v)) -> mk_exprmatchwith `Neg v id
     | _ -> map_mterm (aux ctx) mt
   in
-  map_mterm_model aux model
+  map_mterm_model aux model *)
 
 let is_whyml_keyword = function
   |  "abstract"
@@ -1977,6 +1978,7 @@ let merge_update (model : model) : model =
   Model.map_mterm_model aux model
 
 
+(* TODO *)
 let process_asset_state (model : model) : model =
   let get_state_lident an = dumloc ("state_" ^ an) in
 
@@ -1990,7 +1992,7 @@ let process_asset_state (model : model) : model =
           let name    = get_state_lident (unloc a.name) in
           let typ     = tenum id in
           let e_val   = enum.initial in
-          let default = mk_mterm (Mvar (e_val, Venumval, Tnone, Dnone)) typ in
+          let default = mk_enum_value e_val id in
 
           map := MapString.add (unloc a.name) default !map;
           let item = mk_asset_item name typ typ ~default:default in

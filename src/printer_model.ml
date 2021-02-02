@@ -1156,7 +1156,6 @@ let pp_mterm fmt (mt : mterm) =
     | Mvar (an, Vassetstate k, t, d) -> Format.fprintf fmt "%a%astate_%a(%a)" pp_temp t pp_delta d pp_str (Location.unloc an) f k
     | Mvar(v, Vstorevar, t, d)       -> Format.fprintf fmt "%a%as.%a" pp_temp t pp_delta d pp_id v
     | Mvar(v, Vstorecol, t, d)       -> Format.fprintf fmt "%a%a%a" pp_temp t pp_delta d pp_id v
-    | Mvar(v, Venumval, t, d)        -> Format.fprintf fmt "%a%a%a" pp_temp t pp_delta d pp_id v
     | Mvar(v, Vdefinition, t, d)     -> Format.fprintf fmt "%a%a%a" pp_temp t pp_delta d pp_id v
     | Mvar(v, Vlocal, t, d)          -> Format.fprintf fmt "%a%a%a" pp_temp t pp_delta d pp_id v
     | Mvar(v, Vparam, t, d)          -> Format.fprintf fmt "%a%a%a" pp_temp t pp_delta d pp_id v
@@ -1164,7 +1163,13 @@ let pp_mterm fmt (mt : mterm) =
     | Mvar(_, Vthe, t, d)            -> Format.fprintf fmt "%a%athe" pp_temp t pp_delta d
     | Mvar(_, Vstate, t, d)          -> Format.fprintf fmt "%a%astate" pp_temp t pp_delta d
     | Mvar(v, Vparameter, t, d)      -> Format.fprintf fmt "%a%a%a" pp_temp t pp_delta d pp_id v
-
+    | Menumval (id, args, _e)        -> begin
+        match args with
+        | [] -> Format.fprintf fmt "%a" pp_id id
+        | _  -> Format.fprintf fmt "%a (%a)"
+                  pp_id id
+                  (pp_list ", " f) args
+      end
 
     (* rational *)
 

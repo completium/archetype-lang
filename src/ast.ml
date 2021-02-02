@@ -807,6 +807,7 @@ module Utils : sig
   val is_definition             : ast -> lident -> bool
   val get_var_type              : ast -> lident -> type_
   val get_enum_name             : lident enum_struct -> lident
+  val get_enum_values           : ast -> lident -> lident option
 
 end = struct
   open Tools

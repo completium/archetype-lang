@@ -1,0 +1,18 @@
+archetype effect_control_match_or
+
+enum t =
+| A of nat
+| B of nat
+| C
+
+variable res : nat = 0
+
+entry exec() {
+  var n : t = C;
+  var o : t = A(1);
+
+  match o with
+  | A v | B v -> res := v
+  | C -> res := 0
+  end
+}
