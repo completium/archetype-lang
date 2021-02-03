@@ -1321,12 +1321,73 @@ type enum_info = {
 let remove_enum (model : model) : model =
   let map =
     let mk_enum_info (e : enum) : enum_info =
-      let mk_type _  = tunit in
-      let mk_item _ = (fun _ -> unit) in
+      let mk_args_type args =
+        match args with
+        | []  -> tunit
+        | [t] -> t
+        | _   -> ttuple args
+      in
+      let mk_type _  =
+        let f = mk_args_type in
+        let l = List.map (fun (x : enum_item) -> f x.args) e.values in
+        match l with
+        | []        -> assert false
+        | [a]       -> a
+        | [a; b]    -> tor a b
+        | [a; b; c] -> tor (tor a b) c
+        | _ -> assert false
+      in
+      let mk_items _ =
+        let f = mk_args_type in
+        let g xs =
+          match xs with
+          | [] -> unit
+          | [x] -> x
+          | _ -> mk_tuple xs
+        in
+        match e.values with
+        | []        -> MapString.empty
+        | [a]       -> MapString.add (unloc a.name) (fun xs -> g xs) MapString.empty
+        | [a; b]    ->
+          MapString.empty
+          |> MapString.add (unloc a.name) (fun xs -> mk_left  (f b.args) (g xs))
+          |> MapString.add (unloc b.name) (fun xs -> mk_right (f a.args) (g xs))
+        | [a; b; c] ->
+          MapString.empty
+          |> MapString.add (unloc a.name) (fun xs -> g xs |> mk_left  (f b.args) |> mk_left (f c.args))
+          |> MapString.add (unloc b.name) (fun xs -> g xs |> mk_right (f b.args) |> mk_left (f c.args))
+          |> MapString.add (unloc c.name) (fun xs -> mk_right (tor (f a.args) (f b.args)) (g xs))
+        | _ -> assert false
+      in
+      let mk_match (mk_matchor : (mterm * lident * mterm * lident * mterm) -> mterm__node) e ps =
+
+        let vs = List.map snd ps in
+
+        let id = dumloc "v" in
+
+        match vs with
+        | []        -> assert false
+        | [a]       -> a
+        | [a; b]    ->
+          let node : mterm__node = mk_matchor (e, id, a, id, b) in
+          mk_mterm node tunit
+        | [a; b; c] ->
+
+          let va = dumloc "a" in
+          let v = mk_mvar (dumloc "a") (tor tnat tnat) in
+
+          let node : mterm__node = mk_matchor (v, id, a, id, b) in
+          let z = mk_mterm node tunit in
+
+          let node0 : mterm__node = mk_matchor (e, va, z, dumloc "_", c) in
+          mk_mterm node0 tunit
+
+        | _ -> assert false
+      in
       {
-        type_ = mk_type ();
-        fitems = List.fold_left (fun accu (x : enum_item) -> MapString.add (unloc x.name) (mk_item x) accu) MapString.empty e.values;
-        fmatch = (fun _ x _ -> x);
+        type_  = mk_type ();
+        fitems = mk_items ();
+        fmatch = (fun mk_matchor e ps -> mk_match mk_matchor e ps);
       } in
     List.fold_left (fun accu x ->
         match x with

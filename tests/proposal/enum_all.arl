@@ -1,4 +1,4 @@
-archetype effect_control_match_or
+archetype enum_all
 
 enum t =
 | A of nat
@@ -18,8 +18,8 @@ entry exec() {
   | C -> res := 0
   end;
 
-  match n with
-  | C -> res := 0
-  | _ -> res := 1
-  end
+  // match n with
+  // | C -> res := 0
+  // | _ -> res := 1
+  // end
 }

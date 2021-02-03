@@ -791,7 +791,7 @@ let to_model (ast : A.ast) : M.model =
   let process_enum (env : env) (e : A.enum) : M.decl_node =
     let values = List.map (fun (x : A.lident A.enum_item_struct) ->
         let id : M.lident = x.name in
-        M.mk_enum_item id ~invariants:(List.map (fun x -> to_label_lterm env x) x.invariants)
+        M.mk_enum_item id ~args:(List.map type_to_type x.args) ~invariants:(List.map (fun x -> to_label_lterm env x) x.invariants)
       ) e.items in
     let initial : A.lident option = List.fold_left (fun accu (x : A.lident A.enum_item_struct) -> match x.initial with | true -> Some x.name | _ -> accu) None e.items in
     (* let initial = (match initial with | Some x -> x | _ -> emit_error (NoInitialValueFor (unloc e.name))) in *)

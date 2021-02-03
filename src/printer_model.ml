@@ -1470,12 +1470,21 @@ let pp_var fmt (var : var) =
     (pp_option (fun fmt x -> Format.fprintf fmt " = %a" pp_mterm x)) var.default
     (pp_do_if (not (List.is_empty var.invariants)) (fun fmt xs -> Format.fprintf fmt "@\nwith {@\n  @[%a@]@\n}@\n" (pp_list ";@\n" pp_label_term) xs)) var.invariants
 
-let pp_enum_item fmt (enum_item : enum_item) =
-  Format.fprintf fmt "%a"
-    pp_id enum_item.name
+let pp_enum_item fmt (ei : enum_item) =
+  Format.fprintf fmt "| %a%a%a"
+    pp_id ei.name
+    (fun fmt l ->
+       if List.is_empty l
+       then ()
+       else (Format.fprintf fmt " of %a" (pp_list " * " pp_type) l)
+    ) ei.args
+    (pp_do_if (not (List.is_empty ei.invariants)) (
+        fun fmt ->
+          Format.fprintf fmt " with {@[%a@]}"
+            (pp_list ";@\n" pp_label_term))) ei.invariants
 
 let pp_enum fmt (enum : enum) =
-  Format.fprintf fmt "enum %a {@\n@[<v 2>  %a@]@\n}@\n"
+  Format.fprintf fmt "enum %a =@\n@[<v 2>  %a@]@\n"
     pp_id enum.name
     (pp_list "@\n" pp_enum_item) enum.values
 

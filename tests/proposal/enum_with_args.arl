@@ -1,4 +1,4 @@
-archetype effect_control_match_or
+archetype enum_with_args
 
 enum t =
 | A of nat

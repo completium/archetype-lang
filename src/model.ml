@@ -578,6 +578,7 @@ type storage = lident storage_gen
 
 type 'id enum_item_gen = {
   name: 'id;
+  args: type_ list;
   invariants : 'id label_term_gen list;
 }
 [@@deriving show {with_path = false}]
@@ -949,8 +950,8 @@ let mk_var ?(invariants=[]) ?default ?(loc = Location.dummy) name type_ original
 let mk_enum ?(values = []) name initial : 'id enum_gen =
   { name; values; initial }
 
-let mk_enum_item ?(invariants = []) name : 'id enum_item_gen =
-  { name; invariants }
+let mk_enum_item ?(args = []) ?(invariants = []) name : 'id enum_item_gen =
+  { name; args; invariants }
 
 let mk_asset ?(values = []) ?(sort=[]) ?(big_map = false) ?state ?(keys = []) ?(invariants = []) ?(init = []) ?(loc = Location.dummy) name : 'id asset_gen =
   { name; values; sort; big_map; state; keys; invariants; init; loc }
@@ -3501,6 +3502,7 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
       let for_enum_item (ei : enum_item) : enum_item =
         {
           name        = g KIenumvalue ei.name;
+          args        = List.map for_type ei.args;
           invariants  = List.map for_label_term ei.invariants;
         }
       in
