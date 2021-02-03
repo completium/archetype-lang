@@ -7,6 +7,8 @@ enum t =
 
 variable res : nat = 0
 
+variable r : t = C
+
 entry exec() {
   var n : t = C;
   var o : t = A(1);
@@ -14,5 +16,10 @@ entry exec() {
   match o with
   | A v | B v -> res := v
   | C -> res := 0
+  end;
+
+  match n with
+  | C -> res := 0
+  | _ -> res := 1
   end
 }
