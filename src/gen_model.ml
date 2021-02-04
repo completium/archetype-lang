@@ -1272,7 +1272,7 @@ let to_model (ast : A.ast) : M.model =
                  match p_on with
                  | Some (key_ident, key_type, an, enum_type) ->
                    let k : M.mterm = build_mvar env key_ident key_type ~loc:(Location.loc key_ident) in
-                   let et = match enum_type with | _ -> unloc id (* FIXME *) in
+                   let et = match M.get_ntype enum_type with | M.Tenum id -> unloc id | _ -> assert false in
                    let v : M.mterm = M.mk_mterm (M.Menumval (id, [], et)) enum_type ~loc:(Location.loc id) in
                    M.mk_mterm (M.Massign (ValueAssign, v.type_, Aassetstate (an, k), v)) M.tunit
                  | _ ->
