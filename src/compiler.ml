@@ -328,7 +328,6 @@ let generate_target model =
     |> remove_high_level_model
     |> normalize_storage
     |> remove_constant
-    |> remove_state
     |> eval_storage
     |> optimize
     |> generate_api_storage

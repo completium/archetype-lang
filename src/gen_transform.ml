@@ -1038,42 +1038,16 @@ let assign_loop_label (model : model) : model =
   in
   map_mterm_model aux model
 
-(* TODO *)
-(* let _remove_cmp_enum (model : model) : model = model
-   (* let mk_exprmatchwith dir v id =
-    let t = mk_mterm (Mbool true) tbool in
-    let f = mk_mterm (Mbool false)tbool in
-    let cv, wv =
-      match dir with
-      | `Pos -> t, f
-      | `Neg -> f, t
-    in
-    let pattern_const = mk_pattern (Pconst (id, [])), cv in (* FIXME: matchwith *)
-    let pattern_wild = mk_pattern Pwild, wv in
-
-    let l = [pattern_const; pattern_wild] in
-    mk_mterm (Mexprmatchwith (v, l)) tbool
-   in
-   let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
-    match mt.node with
-    | Mequal  (_, ({type_ = ((Tstate | Tenum _), _)} as v), {node = Mvar (id, Venumval, _, _)}) -> mk_exprmatchwith `Pos v id
-    | Mequal  (_, {node = Mvar (id, Venumval, _, _)}, ({type_ = ((Tstate | Tenum _), _)} as v)) -> mk_exprmatchwith `Pos v id
-    | Mnequal (_, ({type_ = ((Tstate | Tenum _), _)} as v), {node = Mvar (id, Venumval, _, _)}) -> mk_exprmatchwith `Neg v id
-    | Mnequal (_, {node = Mvar (id, Venumval, _, _)}, ({type_ = ((Tstate | Tenum _), _)} as v)) -> mk_exprmatchwith `Neg v id
-    | _ -> map_mterm (aux ctx) mt
-   in
-   map_mterm_model aux model *)
-
-   let remove_enum (model : model) : model =
-   let mk_enum_ident a b =
+let remove_enum000 (model : model) : model =
+  let mk_enum_ident a b =
     let a =
       match a with
       | "$state" -> "state"
       | _ -> a
     in
     String.lowercase_ascii (a ^ "_" ^ b)
-   in
-   let process_decls decls =
+  in
+  let process_decls decls =
     let process_enum (enum : enum) =
       let mk_const id i =
         let id_loc, id_v = deloc id in
@@ -1116,15 +1090,15 @@ let assign_loop_label (model : model) : model =
           | _ -> [x]
         )
       ) [] decls
-   in
-   let rec process_mterm ctx (mt : mterm) : mterm =
-    let mk_id (prefix : string) (id : lident) : lident =
+  in
+  (* let rec process_mterm ctx (mt : mterm) : mterm =
+     let mk_id (prefix : string) (id : lident) : lident =
       mkloc (loc id) (mk_enum_ident prefix (unloc id)) in
-    match mt.node, get_ntype mt.type_ with
-    | Mvar (id, Vlocal, t, d), Tstate -> mk_mterm (Mvar (mk_id "state" id, Vlocal, t, d)) tint
-    (* | Mvar (id, Venumval, t, d), Tenum e -> mk_mterm (Mvar (mk_id (unloc e) id, Vlocal, t, d)) tint *)
-    | Mexprmatchwith (v, ps), _
-    | Mmatchwith (v, ps), _ ->
+     match mt.node, get_ntype mt.type_ with
+     | Mvar (id, Vlocal, t, d), Tstate -> mk_mterm (Mvar (mk_id "state" id, Vlocal, t, d)) tint
+     (* | Mvar (id, Venumval, t, d), Tenum e -> mk_mterm (Mvar (mk_id (unloc e) id, Vlocal, t, d)) tint *)
+     | Mexprmatchwith (v, ps), _
+     | Mmatchwith (v, ps), _ ->
       let val_v =
         match get_ntype v.type_ with
         | Tstate -> "state"
@@ -1162,14 +1136,14 @@ let assign_loop_label (model : model) : model =
             | _ -> accu
           ) ps else_
       end
-    | _ -> map_mterm (process_mterm ctx) mt
-   in
-   let process_type t =
+     | _ -> map_mterm (process_mterm ctx) mt
+     in *)
+  let process_type t =
     match get_ntype t with
     | Tenum _ -> tint
     | _ -> t
-   in
-   let process_functions f =
+  in
+  let process_functions f =
     let process_fs (fs : function_struct) =
       fs
     in
@@ -1182,9 +1156,9 @@ let assign_loop_label (model : model) : model =
     { f with
       node = process_node f.node;
     }
-   in
+  in
 
-   let remove_enum model =
+  let remove_enum model =
     let rec for_type (t : type_) : type_ =
       match get_ntype t with
       | Tenum _ -> tint
@@ -1230,7 +1204,7 @@ let assign_loop_label (model : model) : model =
     let for_decl (d : decl_node) : decl_node =
       match d with
       | Dvar v -> Dvar {v with default = Option.map for_mterm v.default;}
-                          | Dasset a -> Dasset { a with
+      | Dasset a -> Dasset { a with
                              values = List.map
                                  (fun (ai : asset_item) ->
                                     { ai with
@@ -1238,38 +1212,65 @@ let assign_loop_label (model : model) : model =
                                       default = Option.map for_mterm ai.default
                                     }) a.values;
                              init = List.map for_mterm a.init}
-                          | _ -> d
-                          in
+      | _ -> d
+    in
 
-                          { model with
-                          functions = List.map for_functions model.functions;
-                          storage = List.map for_storage_item model.storage;
-                          decls = List.map for_decl model.decls;
-                          }
-                          in
+    { model with
+      functions = List.map for_functions model.functions;
+      storage = List.map for_storage_item model.storage;
+      decls = List.map for_decl model.decls;
+    }
+  in
 
 
-                          { model with
-                          decls = process_decls model.decls;
-                          functions = List.map process_functions model.functions;
-                          }
-                          |> map_mterm_model process_mterm
-                          |> remove_enum *)
+  { model with
+    decls = process_decls model.decls;
+    functions = List.map process_functions model.functions;
+  }
+  (* |> map_mterm_model process_mterm *)
+  |> remove_enum
 
 (* end enum *)
 
 type enum_info = {
   type_   : type_;
   fitems  : (mterm list -> mterm) MapString.t;
-  fmatch  :  (type_ option) -> mterm -> (pattern * mterm) list -> mterm;
+  fmatch  : (type_ option) -> mterm -> (pattern * mterm) list -> mterm;
 }
 
 let remove_enum (model : model) : model =
+
+  let _remove_cmp_enum (model : model) : model =
+    let mk_exprmatchwith dir v id =
+      let t = mk_mterm (Mbool true) tbool in
+      let f = mk_mterm (Mbool false)tbool in
+      let cv, wv =
+        match dir with
+        | `Pos -> t, f
+        | `Neg -> f, t
+      in
+      let pattern_const = mk_pattern (Pconst (id, [])), cv in (* FIXME: matchwith *)
+      let pattern_wild  = mk_pattern Pwild, wv in
+
+      let l = [pattern_const; pattern_wild] in
+      mk_mterm (Mexprmatchwith (v, l)) tbool
+    in
+    let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
+      match mt.node with
+      | Mequal  (_, ({type_ = ((Tstate | Tenum _), _)} as v), {node = Menumval (id, _, _)}) -> mk_exprmatchwith `Pos v id
+      | Mequal  (_, {node = Menumval (id, _, _)}, ({type_ = ((Tstate | Tenum _), _)} as v)) -> mk_exprmatchwith `Pos v id
+      | Mnequal (_, ({type_ = ((Tstate | Tenum _), _)} as v), {node = Menumval (id, _, _)}) -> mk_exprmatchwith `Neg v id
+      | Mnequal (_, {node = Menumval (id, _, _)}, ({type_ = ((Tstate | Tenum _), _)} as v)) -> mk_exprmatchwith `Neg v id
+      | _ -> map_mterm (aux ctx) mt
+    in
+    map_mterm_model aux model
+  in
 
   let process_asset_state (model : model) : model =
     let get_state_lident an = dumloc ("state_" ^ an) in
 
     let map = ref MapString.empty in
+
     let for_decl (d : decl_node) : decl_node =
       let for_asset (a : asset) =
         match a.state with
@@ -1297,26 +1298,6 @@ let remove_enum (model : model) : model =
     in
 
     let model = { model with decls = List.map for_decl model.decls} in
-
-    (* let model =
-      let aux d =
-        match d with
-        | Denum e -> begin
-            Format.eprintf "%s@\n" (unloc e.name);
-            Dvar (
-              mk_var
-                (dumloc "_state")
-                tnat
-                tnat
-                VKconstant
-                ~default:(mk_nat 0) (* TODO *)
-                (* ~loc:id_loc *)
-            )
-          end
-        | _ -> d
-      in
-      { model with decls = List.map aux model.decls}
-    in *)
 
     let rec aux ctx (mt : mterm) : mterm =
       match mt.node, mt.type_ with
@@ -1495,6 +1476,8 @@ let remove_enum (model : model) : model =
 
   let for_mterm (mt : mterm) : mterm =
     let rec aux (mt : mterm) =
+      let state = "_state" in
+      let dstate = dumloc state in
       let for_matchwith rt (e : mterm) ps : mterm =
         let eid = get_enum_id e.type_ in
         let info : enum_info = get_info eid in
@@ -1503,7 +1486,9 @@ let remove_enum (model : model) : model =
         info.fmatch rt e ps
       in
       match mt.node with
-      | Menumval (id, args, eid) -> begin
+      | Mvar (_, Vstate, _, _)    -> mk_svar dstate tnat
+      | Massign (_, _, Astate, v) -> {mt with node = Massign (ValueAssign, tnat, Avarstore dstate, aux v)}
+      | Menumval (id, args, eid)  -> begin
           let args = List.map aux args in
           let info : enum_info = get_info eid in
           let f = MapString.find (unloc id) info.fitems in
@@ -1516,9 +1501,25 @@ let remove_enum (model : model) : model =
     aux mt
   in
 
+  let clean model =
+    let decls =
+      List.fold_right (fun x accu ->
+          match x with
+          | Denum ({name = {pldesc = "state"}} as e) ->
+            let initial = e.initial in
+            let info : enum_info = get_info "state" in
+            let dv = (MapString.find (unloc initial) info.fitems) [] in
+            (Dvar (mk_var (dumloc "_state") tnat tnat VKvariable ~default:dv ))::accu
+          | Denum _ -> accu
+          | x -> x::accu
+        ) model.decls []
+    in
+    { model with decls = decls }
+  in
+
   model
   |> process_asset_state
-  |> (fun x -> { x with decls = List.filter (function | Denum _ -> false | _ -> true ) x.decls})
+  |> clean
   |> map_model (fun _ x -> x) for_type for_mterm
 
 
@@ -5193,29 +5194,6 @@ let remove_constant (model : model) : model =
     storage = storage }
   |> map_mterm_model (for_mterm map)
 
-
-let remove_state (model : model) : model =
-  let state = "_state" in
-  let dstate = dumloc state in
-  let tstate = tint in
-
-  let for_mterm _ (mt : mterm) : mterm =
-    let rec aux (mt : mterm) : mterm =
-      match mt.node with
-      | Mvar (_, Vstate, _, _) -> mk_mvar dstate tint
-      | Massign (_, _, Astate, v)  -> {mt with node = Massign (ValueAssign, tint, Avarstore dstate, v)}
-      | _ -> map_mterm aux mt
-    in
-    aux mt
-  in
-
-  let storage = List.fold_left (fun l si ->
-      match si.model_type with
-      | MTstate -> l @ [{si with id = dstate; model_type = MTvar; typ = tstate; }]
-      | _ -> l @ [si]) [] model.storage in
-  { model with
-    storage = storage }
-  |> map_mterm_model for_mterm
 
 let eval_storage (model : model) : model =
   let sis, _ = List.fold_left (fun (sis, map) (si : storage_item) ->

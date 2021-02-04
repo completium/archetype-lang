@@ -1276,7 +1276,8 @@ let to_model (ast : A.ast) : M.model =
                    let v : M.mterm = M.mk_mterm (M.Menumval (id, [], et)) enum_type ~loc:(Location.loc id) in
                    M.mk_mterm (M.Massign (ValueAssign, v.type_, Aassetstate (an, k), v)) M.tunit
                  | _ ->
-                   let v : M.mterm = build_mvar env id M.tstate ~loc:(Location.loc id) in
+                   (* let v : M.mterm = build_mvar env id M.tstate ~loc:(Location.loc id) in *)
+                   let v : M.mterm = M.mk_mterm (Menumval (id, [], "state")) (M.tenum (dumloc "state")) ~loc:(Location.loc id) in
                    M.mk_mterm (M.Massign (ValueAssign, v.type_, Astate, v)) M.tunit
                in
                let code : M.mterm =
