@@ -1064,60 +1064,6 @@ let assign_loop_label (model : model) : model =
    in
    map_mterm_model aux model *)
 
-   (* TODO *)
-   let _process_asset_state (model : model) : model =
-   let get_state_lident an = dumloc ("state_" ^ an) in
-
-   let map = ref MapString.empty in
-   let for_decl (d : decl_node) : decl_node =
-    let for_asset (a : asset) =
-      match a.state with
-      | Some id ->
-        begin
-          let enum    = Utils.get_enum model (unloc id) in
-          let name    = get_state_lident (unloc a.name) in
-          let typ     = tenum id in
-          let e_val   = enum.initial in
-          let default = mk_enum_value e_val id in
-
-          map := MapString.add (unloc a.name) default !map;
-          let item = mk_asset_item name typ typ ~default:default in
-          let init_items = List.map (fun (x : mterm) ->
-              match x.node with
-              | Masset l -> {x with node = Masset(l @ [default]) }
-              | _ -> x) a.init in
-          { a with values = a.values @ [item]; state = None; init = init_items }
-        end
-      | None -> a
-    in
-    match d with
-    | Dasset a -> Dasset (for_asset a)
-    | _ -> d
-   in
-
-   let model = { model with decls = List.map for_decl model.decls} in
-
-   let rec aux ctx (mt : mterm) : mterm =
-    match mt.node, mt.type_ with
-    | Mvar (an, Vassetstate k, _, _), _ ->
-      begin
-        let an = unloc an in
-        let i = get_state_lident an in
-        mk_mterm (Mdotassetfield (dumloc an, k, i)) mt.type_
-      end
-    | Massign (op, _, Aassetstate (an, k), v), _ ->
-      let i = get_state_lident an in
-      mk_mterm (Mupdate (an, k, [(i, op, v) ])) tunit
-
-    | Masset l, (Tasset an, _) when MapString.mem (unloc an) !map ->
-      let default : mterm = MapString.find (unloc an) !map in
-      let l = List.map (aux ctx) l in
-      {mt with node = Masset (l @ [default]) }
-
-    | _ -> map_mterm (aux ctx) mt
-   in
-   map_mterm_model aux model
-
    let remove_enum (model : model) : model =
    let mk_enum_ident a b =
     let a =
@@ -1310,17 +1256,73 @@ let assign_loop_label (model : model) : model =
                           |> map_mterm_model process_mterm
                           |> remove_enum *)
 
+
+(* TODO *)
+let _process_asset_state (model : model) : model =
+  let get_state_lident an = dumloc ("state_" ^ an) in
+
+  let map = ref MapString.empty in
+  let for_decl (d : decl_node) : decl_node =
+    let for_asset (a : asset) =
+      match a.state with
+      | Some id ->
+        begin
+          let enum    = Utils.get_enum model (unloc id) in
+          let name    = get_state_lident (unloc a.name) in
+          let typ     = tenum id in
+          let e_val   = enum.initial in
+          let default = mk_enum_value e_val id in
+
+          map := MapString.add (unloc a.name) default !map;
+          let item = mk_asset_item name typ typ ~default:default in
+          let init_items = List.map (fun (x : mterm) ->
+              match x.node with
+              | Masset l -> {x with node = Masset(l @ [default]) }
+              | _ -> x) a.init in
+          { a with values = a.values @ [item]; state = None; init = init_items }
+        end
+      | None -> a
+    in
+    match d with
+    | Dasset a -> Dasset (for_asset a)
+    | _ -> d
+  in
+
+  let model = { model with decls = List.map for_decl model.decls} in
+
+  let rec aux ctx (mt : mterm) : mterm =
+    match mt.node, mt.type_ with
+    | Mvar (an, Vassetstate k, _, _), _ ->
+      begin
+        let an = unloc an in
+        let i = get_state_lident an in
+        mk_mterm (Mdotassetfield (dumloc an, k, i)) mt.type_
+      end
+    | Massign (op, _, Aassetstate (an, k), v), _ ->
+      let i = get_state_lident an in
+      mk_mterm (Mupdate (an, k, [(i, op, v) ])) tunit
+
+    | Masset l, (Tasset an, _) when MapString.mem (unloc an) !map ->
+      let default : mterm = MapString.find (unloc an) !map in
+      let l = List.map (aux ctx) l in
+      {mt with node = Masset (l @ [default]) }
+
+    | _ -> map_mterm (aux ctx) mt
+  in
+  map_mterm_model aux model
+
 (* end enum *)
 
 type enum_info = {
   type_   : type_;
   fitems  : (mterm list -> mterm) MapString.t;
-  fmatch  :  ((mterm * lident * mterm * lident * mterm) -> mterm__node) -> mterm -> (pattern * mterm) list -> mterm;
+  fmatch  :  (type_ option) -> mterm -> (pattern * mterm) list -> mterm;
 }
 
 let remove_enum (model : model) : model =
   let map =
     let mk_enum_info (e : enum) : enum_info =
+      let without_args = List.for_all (fun (x : enum_item) -> List.is_empty x.args) e.values in
       let mk_args_type args =
         match args with
         | []  -> tunit
@@ -1328,66 +1330,117 @@ let remove_enum (model : model) : model =
         | _   -> ttuple args
       in
       let mk_type _  =
-        let f = mk_args_type in
-        let l = List.map (fun (x : enum_item) -> f x.args) e.values in
-        match l with
-        | []        -> assert false
-        | [a]       -> a
-        | [a; b]    -> tor a b
-        | [a; b; c] -> tor (tor a b) c
-        | _ -> assert false
+        if without_args
+        then tnat
+        else begin
+          let f = mk_args_type in
+          let l = List.map (fun (x : enum_item) -> f x.args) e.values in
+          match l with
+          | []        -> assert false
+          | [a]       -> a
+          | [a; b]    -> tor a b
+          | [a; b; c] -> tor (tor a b) c
+          | _ -> assert false
+        end
       in
       let mk_items _ =
-        let f = mk_args_type in
-        let g xs =
-          match xs with
-          | [] -> unit
-          | [x] -> x
-          | _ -> mk_tuple xs
-        in
-        match e.values with
-        | []        -> MapString.empty
-        | [a]       -> MapString.add (unloc a.name) (fun xs -> g xs) MapString.empty
-        | [a; b]    ->
-          MapString.empty
-          |> MapString.add (unloc a.name) (fun xs -> mk_left  (f b.args) (g xs))
-          |> MapString.add (unloc b.name) (fun xs -> mk_right (f a.args) (g xs))
-        | [a; b; c] ->
-          MapString.empty
-          |> MapString.add (unloc a.name) (fun xs -> g xs |> mk_left  (f b.args) |> mk_left (f c.args))
-          |> MapString.add (unloc b.name) (fun xs -> g xs |> mk_right (f b.args) |> mk_left (f c.args))
-          |> MapString.add (unloc c.name) (fun xs -> mk_right (tor (f a.args) (f b.args)) (g xs))
-        | _ -> assert false
+        if without_args
+        then
+          begin
+            List.fold_lefti (fun i accu (x : enum_item) ->
+                MapString.add (unloc x.name) (fun _ -> mk_nat i) accu)
+              MapString.empty e.values
+          end
+        else begin
+          let f = mk_args_type in
+          let g xs =
+            match xs with
+            | [] -> unit
+            | [x] -> x
+            | _ -> mk_tuple xs
+          in
+          match e.values with
+          | []        -> MapString.empty
+          | [a]       ->
+            MapString.empty
+            |> MapString.add (unloc a.name) (fun xs -> g xs)
+          | [a; b]    ->
+            MapString.empty
+            |> MapString.add (unloc a.name) (fun xs -> mk_left  (f b.args) (g xs))
+            |> MapString.add (unloc b.name) (fun xs -> mk_right (f a.args) (g xs))
+          | [a; b; c] ->
+            MapString.empty
+            |> MapString.add (unloc a.name) (fun xs -> g xs |> mk_left  (f b.args) |> mk_left (f c.args))
+            |> MapString.add (unloc b.name) (fun xs -> g xs |> mk_right (f b.args) |> mk_left (f c.args))
+            |> MapString.add (unloc c.name) (fun xs -> mk_right (tor (f a.args) (f b.args)) (g xs))
+          | _ -> assert false
+        end
       in
-      let mk_match (mk_matchor : (mterm * lident * mterm * lident * mterm) -> mterm__node) e ps =
+      let mk_match (rt : type_ option) ev (ps : (pattern * mterm) list) =
+        if without_args
+        then
+          begin
+            match ps with
+            | [{node = Pwild; _}, v] -> v
+            | _ -> begin
+                let (init, lps) : mterm * ((pattern * mterm) list) =
+                  match List.rev ps with
+                  | [] -> assert false
+                  | ({node = Pwild; _}, v)::q -> v, q
+                  | ({node = (Pconst (_, _)); _}, v)::q -> v, q
+                in
+                let map : mterm MapString.t =
+                  List.fold_lefti
+                    (fun i accu (x : enum_item) ->
+                       MapString.add (unloc x.name) (mk_nat i) accu)
+                    MapString.empty e.values
+                in
+                let ivar = dumloc "_tmp" in
+                let mvar : mterm = mk_mvar ivar tnat in
+                let mk_cond (id : ident) = mk_mterm (Mequal (tnat, MapString.find id map, mvar)) tbool in
+                let mk_if (id : ident) (v : mterm) (accu : mterm) : mterm =
+                  match rt with
+                  | None    -> mk_mterm (Mif (mk_cond id, v, Some accu)) tunit
+                  | Some rt -> mk_mterm (Mexprif (mk_cond id, v, accu))  rt
+                in
+                let v =
+                  List.fold_left (fun accu (p, v: pattern * mterm) ->
+                      match p.node with
+                      | Pwild -> assert false
+                      | Pconst (id, _) -> mk_if (unloc id) v accu)
+                    init lps
+                in
+                mk_letin ivar ev v
+              end
+          end
+        else begin
+          let vs = List.map snd ps in
 
-        let vs = List.map snd ps in
+          let id = dumloc "v" in
+          let mk_matchor (e, a, b, c, d) : mterm =
+            match rt with
+            | None   -> mk_mterm (Minstrmatchor (e, a, b, c, d)) tunit
+            | Some t -> mk_mterm (Mmatchor (e, a, b, c, d)) t
+          in
 
-        let id = dumloc "v" in
+          match vs with
+          | []        -> assert false
+          | [a]       -> a
+          | [a; b]    -> mk_matchor (ev, id, a, id, b)
+          | [a; b; c] ->
 
-        match vs with
-        | []        -> assert false
-        | [a]       -> a
-        | [a; b]    ->
-          let node : mterm__node = mk_matchor (e, id, a, id, b) in
-          mk_mterm node tunit
-        | [a; b; c] ->
+            let va = dumloc "a" in
+            let v = mk_mvar va (tor tnat tnat) in
+            let z = mk_matchor (v, id, a, id, b) in
+            mk_matchor (ev, va, z, dumloc "_", c)
 
-          let va = dumloc "a" in
-          let v = mk_mvar (dumloc "a") (tor tnat tnat) in
-
-          let node : mterm__node = mk_matchor (v, id, a, id, b) in
-          let z = mk_mterm node tunit in
-
-          let node0 : mterm__node = mk_matchor (e, va, z, dumloc "_", c) in
-          mk_mterm node0 tunit
-
-        | _ -> assert false
+          | _ -> assert false
+        end
       in
       {
         type_  = mk_type ();
         fitems = mk_items ();
-        fmatch = (fun mk_matchor e ps -> mk_match mk_matchor e ps);
+        fmatch = (fun rt e ps -> mk_match rt e ps);
       } in
     List.fold_left (fun accu x ->
         match x with
@@ -1421,12 +1474,12 @@ let remove_enum (model : model) : model =
 
   let for_mterm (mt : mterm) : mterm =
     let rec aux (mt : mterm) =
-      let for_matchwith mk_matchor (e : mterm) ps : mterm =
+      let for_matchwith rt (e : mterm) ps : mterm =
         let eid = get_enum_id e.type_ in
         let info : enum_info = get_info eid in
         let e = aux e in
         let ps = List.map (fun (p, x) -> p, aux x) ps in
-        info.fmatch mk_matchor e ps
+        info.fmatch rt e ps
       in
       match mt.node with
       | Menumval (id, args, eid) -> begin
@@ -1435,8 +1488,8 @@ let remove_enum (model : model) : model =
           let f = MapString.find (unloc id) info.fitems in
           f args
         end
-      | Mmatchwith     (e, ps) when is_tenum (e.type_) -> for_matchwith (fun (a, b, c, d, e) -> Minstrmatchor (a, b, c, d, e)) e ps
-      | Mexprmatchwith (e, ps) when is_tenum (e.type_) -> for_matchwith (fun (a, b, c, d, e) -> Mmatchor      (a, b, c, d, e)) e ps
+      | Mmatchwith     (e, ps) when is_tenum (e.type_) -> for_matchwith None e ps
+      | Mexprmatchwith (e, ps) when is_tenum (e.type_) -> for_matchwith (Some mt.type_) e ps
       | _ -> let mt = map_mterm ~ft:for_type aux mt in { mt with type_ = for_type mt.type_ }
     in
     aux mt
@@ -1445,6 +1498,7 @@ let remove_enum (model : model) : model =
   let decls = List.filter (function | Denum _ -> false | _ -> true ) model.decls in
 
   model
+  |> _process_asset_state
   |> (fun x -> { x with decls = decls})
   |> map_model (fun _ x -> x) for_type for_mterm
 
