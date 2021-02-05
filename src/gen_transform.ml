@@ -1366,16 +1366,18 @@ let remove_enum (model : model) : model =
           let l = List.map (fun (x : enum_item) -> f x.args) values in
           List.fold_lefti (fun i accu (x : enum_item) ->
               let fr l init = List.fold_right (fun x accu -> mk_right x accu) l init in
+              let remove_last l =
+                match List.rev l with
+                | [] -> l
+                | _::q -> List.rev q
+              in
               let f =
-                if (i = 0)
+                if (i = List.length values - 1)
                 then
-                  let _l0, l1 = List.cut 1 l in
-                  let lt = mk_or l1 in
-                  (fun xs -> mk_left (lt) (g xs))
-                else if (i = List.length values - 1)
-                then fun xs -> fr l (g xs)
+                  fun xs -> fr (remove_last l) (g xs)
                 else
                   let l0, l1 = List.cut (i + 1) l in
+                  let l0 = remove_last l0 in
                   let lt = mk_or l1 in
                   (fun xs -> fr l0 (mk_left (lt) (g xs)))
               in
