@@ -1367,7 +1367,12 @@ let remove_enum (model : model) : model =
           List.fold_lefti (fun i accu (x : enum_item) ->
               let fr l init = List.fold_right (fun x accu -> mk_right x accu) l init in
               let f =
-                if (i = List.length values - 1)
+                if (i = 0)
+                then
+                  let _l0, l1 = List.cut 1 l in
+                  let lt = mk_or l1 in
+                  (fun xs -> mk_left (lt) (g xs))
+                else if (i = List.length values - 1)
                 then fun xs -> fr l (g xs)
                 else
                   let l0, l1 = List.cut (i + 1) l in
@@ -1416,27 +1421,43 @@ let remove_enum (model : model) : model =
               end
           end
         else begin
-          let vs = List.map snd ps in
+          let dvopt = List.fold_left (fun accu (p, v : pattern * mterm) -> match p.node with | Pwild -> Some v | _ -> accu) None ps in
+          let seek_value id =
+            let v = List.fold_lefti (fun idx accu (p, v : pattern * mterm)  ->
+                match p.node with
+                | Pconst (i, args) when String.equal (unloc i) (unloc id) -> Some (args, v, idx)
+                | _ -> accu) None ps
+            in
+            let aaa i = dumloc ("_none_" ^ (string_of_int i)) in
+            match v, dvopt with
+            | Some ([a], v, _), _ -> a, v
+            | Some ([], v, idx), _  -> aaa idx, v
+            | _, Some v        -> aaa (List.length ps), v
+            | _                -> assert false
+          in
 
-          let id = dumloc "v" in
+          let lvalues = List.map (fun (x : enum_item) -> seek_value x.name) e.values in
+
           let mk_matchor (e, a, b, c, d) : mterm =
             match rt with
             | None   -> mk_mterm (Minstrmatchor (e, a, b, c, d)) tunit
             | Some t -> mk_mterm (Mmatchor (e, a, b, c, d)) t
           in
 
-          match vs with
-          | []        -> assert false
-          | [a]       -> a
-          | [a; b]    -> mk_matchor (ev, id, a, id, b)
-          | [a; b; c] ->
+          match lvalues with
+          | []   -> assert false
+          | (a, b)::q ->
+            let x, y = begin
+              match List.rev q with
+              | [] -> assert false
+              | (c, d)::u -> List.fold_right (fun (g, h) (i, accu) ->
+                  let v = mk_mvar g (tunit) in
+                  g, mk_matchor (v, g, h, i, accu)
+                ) (List.rev u) (c, d)
+            end
+            in
+            mk_matchor (ev, a, b, x, y)
 
-            let va = dumloc "a" in
-            let v = mk_mvar va (tor tnat tnat) in
-            let z = mk_matchor (v, id, a, id, b) in
-            mk_matchor (ev, va, z, dumloc "_", c)
-
-          | _ -> assert false
         end
       in
       {

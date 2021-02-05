@@ -9,23 +9,22 @@ enum t =
 
 variable res : nat = 0
 
-variable r : t = C
+variable r : t = A("mystr")
 
 entry exec() {
-  var a : t = A("mystr");
-  var b : t = B(1);
-  var c : t = C;
-  var d : t = D(@tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg);
-  var e : t = E(2i);
 
+  r := B(1);
+  // r := C;
+  // r := D(@tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg);
+  // r := E(2i);
 
-  // match a with
-  // | A v -> res := length(v)
-  // | B v -> res := v
-  // | C   -> res := 0
-  // | D v -> res := 1
-  // | E v -> res := abs(v)
-  // end;
+  match r with
+  | A v -> res := length(v)
+  | B v -> res := v
+  | C   -> res := 0
+  | D v -> res := 1
+  | E v -> res := abs(v)
+  end
 
   // match n with
   // | C -> res := 0
