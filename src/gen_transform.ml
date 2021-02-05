@@ -1329,18 +1329,21 @@ let remove_enum (model : model) : model =
         | [t] -> t
         | _   -> ttuple args
       in
+      let mk_or l =
+        match List.rev l with
+        | z::q -> List.fold_right (fun x accu -> tor x accu) (List.rev q) z
+        | _    -> assert false
+      in
       let mk_type _  =
         if without_args
         then tnat
         else begin
           let f = mk_args_type in
           let l = List.map (fun (x : enum_item) -> f x.args) e.values in
-          match l with
+          match List.rev l with
           | []        -> assert false
           | [a]       -> a
-          | [a; b]    -> tor a b
-          | [a; b; c] -> tor (tor a b) c
-          | _ -> assert false
+          | _         -> mk_or l
         end
       in
       let mk_items _ =
@@ -1359,21 +1362,20 @@ let remove_enum (model : model) : model =
             | [x] -> x
             | _ -> mk_tuple xs
           in
-          match e.values with
-          | []        -> MapString.empty
-          | [a]       ->
-            MapString.empty
-            |> MapString.add (unloc a.name) (fun xs -> g xs)
-          | [a; b]    ->
-            MapString.empty
-            |> MapString.add (unloc a.name) (fun xs -> mk_left  (f b.args) (g xs))
-            |> MapString.add (unloc b.name) (fun xs -> mk_right (f a.args) (g xs))
-          | [a; b; c] ->
-            MapString.empty
-            |> MapString.add (unloc a.name) (fun xs -> g xs |> mk_left  (f b.args) |> mk_left (f c.args))
-            |> MapString.add (unloc b.name) (fun xs -> g xs |> mk_right (f b.args) |> mk_left (f c.args))
-            |> MapString.add (unloc c.name) (fun xs -> mk_right (tor (f a.args) (f b.args)) (g xs))
-          | _ -> assert false
+          let values = e.values in
+          let l = List.map (fun (x : enum_item) -> f x.args) values in
+          List.fold_lefti (fun i accu (x : enum_item) ->
+              let fr l init = List.fold_right (fun x accu -> mk_right x accu) l init in
+              let f =
+                if (i = List.length values - 1)
+                then fun xs -> fr l (g xs)
+                else
+                  let l0, l1 = List.cut (i + 1) l in
+                  let lt = mk_or l1 in
+                  (fun xs -> fr l0 (mk_left (lt) (g xs)))
+              in
+              MapString.add (unloc x.name) f accu
+            ) MapString.empty values
         end
       in
       let mk_match (rt : type_ option) ev (ps : (pattern * mterm) list) =
