@@ -72,6 +72,7 @@ end = struct
   let as_asset     = function A.Tasset     x       -> Some x       | _ -> None
   let as_tuple     = function A.Ttuple     ts      -> Some ts      | _ -> None
   let as_contract  = function A.Tcontract  x       -> Some x       | _ -> None
+  let as_ticket    = function A.Tticket    x       -> Some x       | _ -> None
   let as_option    = function A.Toption    t       -> Some t       | _ -> None
   let as_set       = function A.Tset       t       -> Some t       | _ -> None
   let as_list      = function A.Tlist      t       -> Some t       | _ -> None
@@ -154,6 +155,7 @@ end = struct
       | A.Toption            _ -> true
       | A.Toperation           -> true
       | A.Tcontract          _ -> true
+      | A.Tticket            _ -> true
       | A.Ttrace             _ -> false
 
     let rec is_comparable t =
@@ -189,6 +191,7 @@ end = struct
       | A.Toption            _ -> false
       | A.Toperation           -> false
       | A.Tcontract          _ -> false
+      | A.Tticket            _ -> false
       | A.Ttrace             _ -> false
 
     let rec is_passable t =
@@ -224,6 +227,7 @@ end = struct
       | A.Toption            _ -> true
       | A.Toperation           -> false
       | A.Tcontract          _ -> true
+      | A.Tticket            t -> is_passable t
       | A.Ttrace             _ -> false
 
     let rec is_storable t =
@@ -259,6 +263,7 @@ end = struct
       | A.Toption            t -> is_storable t
       | A.Toperation           -> false
       | A.Tcontract          _ -> false
+      | A.Tticket            t -> is_storable t
       | A.Ttrace             _ -> false
 
     let rec is_packable t =
@@ -294,6 +299,7 @@ end = struct
       | A.Toption            t -> is_packable t
       | A.Toperation           -> false
       | A.Tcontract          _ -> true
+      | A.Tticket            _ -> false
       | A.Ttrace             _ -> false
 
     let rec is_big_map_value t =
@@ -329,6 +335,7 @@ end = struct
       | A.Toption            t -> is_big_map_value t
       | A.Toperation           -> false
       | A.Tcontract          _ -> true
+      | A.Tticket            t -> is_big_map_value t
       | A.Ttrace             _ -> false
 
   end
@@ -459,7 +466,8 @@ end = struct
         | Tset      ptn, Tset      tg
         | Tlist     ptn, Tlist     tg
         | Toption   ptn, Toption   tg
-        | Tcontract ptn, Tcontract tg ->
+        | Tcontract ptn, Tcontract tg
+        | Tticket   ptn, Tticket   tg ->
           doit ptn tg
 
         | Tmap (kptn, vptn), Tmap (ktg, vtg) ->
@@ -510,6 +518,7 @@ end = struct
       | Ttuple      ty     -> Ttuple     (List.map doit ty)
       | Toption     ty     -> Toption    (doit ty)
       | Tcontract   ty     -> Tcontract  (doit ty)
+      | Tticket     ty     -> Tticket    (doit ty)
 
     in doit ty
 
@@ -2115,6 +2124,7 @@ let rec valid_var_or_arg_type (ty : A.ptyp) =
   | Toption   ty    -> valid_var_or_arg_type ty
   | Tcontract  _    -> true
   | Toperation      -> true
+  | Tticket   ty    -> valid_var_or_arg_type ty
   | Ttrace     _    -> false
 
   | Tcontainer (_, A.View) -> true
@@ -2256,6 +2266,9 @@ let for_type_exn ?pkey (env : env) =
 
     | Tcontract ty ->
       A.Tcontract (doit ty)
+
+    | Tticket ty ->
+      A.Tticket (doit ty)
 
     | Tkeyof ty -> begin
         match doit ~canasset:true ty with
@@ -3354,13 +3367,13 @@ let rec for_xexpr
             match decompile_match_with kd aout with
             | Some (`List ((x, xs, bcons), bnil)) ->
                 A.Pmatchlist (me, x, xs, bcons, bnil)
-  
+
             | Some (`Or ((xl, bl), (xr, br))) ->
                 A.Pmatchor (me, xl, bl, xr, br)
-  
+
             | Some (`Option ((x, bsome), bnone)) ->
                 A.Pmatchoption (me, x, bsome, bnone)
-  
+
             | None -> A.Pmatchwith (me, aout)
 
           in mk_sp bty aout
@@ -3638,17 +3651,17 @@ and for_gen_matchwith (mode : emode_t) (env : env) theloc pe bs =
                 (wd, Mstr.add pid (Some bse) bsm), Some (List.combine args cargs)
               end
             end
-  
+
             | PT.Pwild -> begin
               match wd with
               | None when Mstr.exists (fun _ v -> Option.is_none v) bsm ->
                 (Some bse, bsm), Some []
-  
+
               | _ ->
                 Env.emit_error env (loc pt, UselessPattern);
                 raise E.Bailout
               end
-  
+
           with E.Bailout -> (wd, bsm), None) bsm pts in
 
         let bsm, args =
@@ -4573,13 +4586,13 @@ let rec for_instruction_r
             match decompile_match_with kd aout with
             | Some (`List ((x, xs, bcons), bnil)) ->
                 A.Imatchlist (me, x, xs, bcons, bnil)
-  
+
             | Some (`Or ((xl, bl), (xr, br))) ->
                 A.Imatchor (me, xl, bl, xr, br)
-  
+
             | Some (`Option ((x, bsome), bnone)) ->
                 A.Imatchoption (me, x, bsome, bnone)
-  
+
             | None -> A.Imatchwith (me, aout)
 
           in env, mki aout

@@ -99,6 +99,7 @@ let to_model (ast : A.ast) : M.model =
       | A.Toperation         -> M.Toperation
       | A.Tcontract t        -> M.Tcontract (type_to_type t)
       | A.Toption t          -> M.Toption (type_to_type t)
+      | A.Tticket t          -> M.Tticket (type_to_type t)
       | A.Ttrace tr          -> M.Ttrace (to_trtyp tr)
     in
     M.mktype (f t)

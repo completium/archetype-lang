@@ -100,6 +100,7 @@
       "sorted"              , SORTED         ;
       "specification"       , SPECIFICATION  ;
       "states"              , STATES         ;
+      "ticket"              , TICKET         ;
       "then"                , THEN           ;
       "to"                  , TO             ;
       "transfer"            , TRANSFER       ;

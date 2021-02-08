@@ -28,6 +28,7 @@ and type_r =
   | Tlambda    of type_t * type_t
   | Tcontract  of type_t
   | Tkeyof     of type_t
+  | Tticket    of type_t
 
 and type_t = type_r loced * lident option
 
@@ -449,6 +450,9 @@ let mk_tor ?(loc=dummy) ?a k v : type_t =
 let mk_tcontract ?(loc=dummy) ?a t : type_t =
   mkloc loc (Tcontract t), a
 
+let mk_tticket ?(loc=dummy) ?a t : type_t =
+  mkloc loc (Tticket t), a
+
 let mk_tkeyof ?(loc=dummy) ?a t : type_t =
   mkloc loc (Tkeyof t), a
 
@@ -701,6 +705,7 @@ let is_keyword = function
   | "sorted"
   | "specification"
   | "states"
+  | "ticket"
   | "then"
   | "to"
   | "transfer"

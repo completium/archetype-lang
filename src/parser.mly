@@ -155,6 +155,7 @@
 %token SORTED
 %token SPECIFICATION
 %token STATES
+%token TICKET
 %token THEN
 %token TO
 %token TRANSFER
@@ -559,6 +560,7 @@ type_s_unloc:
 | c=container LESS x=type_t GREATER                { Tcontainer (x, c) }
 | PKEY        LESS x=type_t GREATER                { Tkeyof x          }
 | OPTION      LESS x=type_t GREATER                { Toption x         }
+| TICKET      LESS x=type_t GREATER                { Tticket x         }
 | LIST        LESS x=type_t GREATER                { Tlist x           }
 | SET         LESS x=type_t GREATER                { Tset x            }
 | MAP         LESS k=type_t COMMA v=type_s GREATER { Tmap (k, v)       }
@@ -773,7 +775,7 @@ branch:
 
 | LBRACKET RBRACKET
      { let lc = Location.make $startpos $endpos in
-       Pref (mkloc lc PNil, []) } 
+       Pref (mkloc lc PNil, []) }
 
 | x1=ident lc=loc(COLONCOLON) x2=ident
      { Pref (mkloc (loc lc) PCons, [x1; x2]) }

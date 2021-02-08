@@ -173,6 +173,11 @@ let rec pp_type fmt (e, a) =
         "contract<%a>"
         f t
 
+    | Tticket t ->
+      Format.fprintf fmt
+        "ticket<%a>"
+        f t
+
     | Tkeyof t ->
       Format.fprintf fmt
         "pkey<%a>"

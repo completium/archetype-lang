@@ -72,6 +72,7 @@ type ntype =
   | Tstorage
   | Toperation
   | Tcontract of type_
+  | Tticket of type_
   | Tprog of type_
   | Tvset of vset * type_
   | Ttrace of trtyp
@@ -1026,6 +1027,7 @@ let trat           = ttuple [tint; tnat]
 let toperation     = mktype (Toperation)
 let tsignature     = mktype (Tbuiltin Bsignature)
 let tcontract t    = mktype (Tcontract t)
+let tticket t      = mktype (Tticket t)
 let tchainid       = mktype (Tbuiltin Bchainid)
 let tasset an      = mktype (Tasset an)
 let tcollection an = mktype (Tcontainer (tasset an, Collection))
@@ -1158,6 +1160,7 @@ let rec cmp_ntype
   | Tstorage, Tstorage                       -> true
   | Toperation, Toperation                   -> true
   | Tcontract t1, Tcontract t2               -> cmp_type t1 t2
+  | Tticket t1, Tticket t2                   -> cmp_type t1 t2
   | Tprog t1, Tprog t2                       -> cmp_type t1 t2
   | Tvset (v1, t1), Tvset (v2, t2)           -> cmp_vset v1 v2 && cmp_type t1 t2
   | Ttrace t1, Ttrace t2                     -> cmp_trtyp t1 t2
@@ -1600,6 +1603,7 @@ let map_ptyp (f : type_ -> type_) (nt : ntype) : ntype =
   | Tstorage          -> Tstorage
   | Toperation        -> Toperation
   | Tcontract t       -> Tcontract (f t)
+  | Tticket t         -> Tticket (f t)
   | Tprog t           -> Tprog (f t)
   | Tvset (v, t)      -> Tvset (v, t)
   | Ttrace t          -> Ttrace t
@@ -3793,6 +3797,7 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
       | Tstorage          -> nt
       | Toperation        -> nt
       | Tcontract t       -> Tcontract (for_type t)
+      | Tticket t         -> Tticket (for_type t)
       | Tprog a           -> Tprog (for_type a)
       | Tvset (v, a)      -> Tvset (v, for_type a)
       | Ttrace _          -> nt
@@ -5186,6 +5191,7 @@ end = struct
       | Ttuple  ts     -> List.fold_left (for_type) accu ts
       | Tmap (_, _, t) -> for_type accu t
       | Tcontract t    -> for_type accu t
+      | Tticket t      -> for_type accu t
       | Tprog t        -> for_type accu t
       | Tvset (_, t)   -> for_type accu t
       | _ -> accu
@@ -5200,6 +5206,7 @@ end = struct
       | Ttuple  ts     -> List.fold_left (for_type) accu ts
       | Tmap (_, _, t) -> for_type accu t
       | Tcontract t    -> for_type accu t
+      | Tticket t      -> for_type accu t
       | Tprog t        -> for_type accu t
       | Tvset (_, t)   -> for_type accu t
       | _ -> accu
@@ -5214,6 +5221,7 @@ end = struct
       | Ttuple    ts         -> List.fold_left (for_type) accu ts
       | Tmap      (_, _, tv) -> add_type (for_type accu tv) t
       | Tcontract t          -> for_type accu t
+      | Tticket t            -> for_type accu t
       | Tprog     t          -> for_type accu t
       | Tvset     (_, t)     -> for_type accu t
       | _ -> accu

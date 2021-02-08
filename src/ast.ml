@@ -60,6 +60,7 @@ type ptyp =
   | Toption of type_
   | Toperation
   | Tcontract of type_
+  | Tticket of type_
   | Ttrace of trtyp
 [@@deriving show {with_path = false}]
 

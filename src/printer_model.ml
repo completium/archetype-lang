@@ -84,6 +84,8 @@ let rec pp_type fmt t =
       Format.fprintf fmt "operation"
     | Tcontract t ->
       Format.fprintf fmt "contract<%a>" pp_type t
+    | Tticket t ->
+      Format.fprintf fmt "ticket<%a>" pp_type t
     | Tprog _
     | Tvset _
     | Ttrace _ -> Format.fprintf fmt "todo"

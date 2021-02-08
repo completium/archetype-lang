@@ -21,6 +21,7 @@ let string_of_token = function
   | TRANSFER        -> "TRANSFER"
   | TO              -> "TO"
   | THEN            -> "THEN"
+  | TICKET          -> "TICKET"
   | STRING s        -> Printf.sprintf "STRING(%s)" s
   | STATES          -> "STATES"
   | SPECIFICATION   -> "SPECIFICATION"
@@ -183,6 +184,7 @@ let string_of_symbol = function
   | X (T T_TRANSFER) -> "transfer"
   | X (T T_TO) -> "to"
   | X (T T_THEN) -> "then"
+  | X (T T_TICKET) -> "ticket"
   | X (T T_STRING) -> "a string"
   | X (T T_STATES) -> "states"
   | X (T T_SPECIFICATION) -> "postcondition"

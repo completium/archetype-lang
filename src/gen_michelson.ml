@@ -147,6 +147,7 @@ let to_ir (model : M.model) : T.ir =
     | Tunit          -> T.mk_type ?annotation (T.Tunit)
     | Toperation     -> T.mk_type ?annotation (T.Toperation)
     | Tcontract t    -> T.mk_type ?annotation (T.Tcontract (to_type t))
+    | Tticket t      -> T.mk_type ?annotation (T.Tticket (to_type t))
     | Tstorage       -> assert false
     | Tprog  _       -> assert false
     | Tvset  _       -> assert false

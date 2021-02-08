@@ -86,6 +86,8 @@ let rec pp_ptyp fmt (t : ptyp) =
     Format.fprintf fmt "operation"
   | Tcontract et ->
     Format.fprintf fmt "contract<%a>" pp_type et
+  | Tticket et ->
+    Format.fprintf fmt "ticket<%a>" pp_type et
   | Ttrace t ->
     Format.fprintf fmt "%a"
       pp_trtyp t
@@ -1055,9 +1057,9 @@ let pp_enum_item fmt (ei : lident enum_item_struct) =
   Format.fprintf fmt "| %a%a%a%a"
     pp_id ei.name
     (fun fmt l ->
-      if List.is_empty l
-      then ()
-      else (Format.fprintf fmt " of %a" (pp_list " * " pp_type) l)
+       if List.is_empty l
+       then ()
+       else (Format.fprintf fmt " of %a" (pp_list " * " pp_type) l)
     ) ei.args
     (pp_do_if ei.initial pp_str) " initial"
     (pp_do_if (not (List.is_empty ei.invariants)) (

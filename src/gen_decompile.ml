@@ -1545,6 +1545,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Tstorage            -> assert false
     | Toperation          -> A.toperation
     | Tcontract t         -> A.mk_tcontract (f t)
+    | Tticket t           -> A.mk_tticket (f t)
     | Tprog _             -> assert false
     | Tvset _             -> assert false
     | Ttrace _            -> assert false

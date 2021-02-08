@@ -1,0 +1,7 @@
+archetype edo_ticket
+
+entry exec () {
+  var value : string = "mystring";
+  var t : ticket<string> = create_ticket (value, 3);
+
+}
