@@ -4,9 +4,5 @@ variable res : nat = 0
 
 entry exec() {
   var o : option<nat> = some(3);
-  res :=
-  match_option o with
-  | some(v) -> v
-  | none -> "0"
-  end
+  res := match o with | some v | none -> 0 end
 }

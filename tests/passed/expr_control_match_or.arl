@@ -6,14 +6,14 @@ variable b : int = 0
 entry exec() {
   var l : or<nat, int> = left<int>(2);
   a :=
-  match_or l with
+  match l with
   | left(v)  -> v
   | right(v) -> 0
   end;
 
   var r : or<nat, int> = right<nat>(3i);
   b :=
-  match_or r with
+  match r with
   | left(v)  -> 0i
   | right(v) -> v
   end

@@ -4,5 +4,5 @@ variable res : nat = 0
 
 entry exec () {
   var p : or<nat, nat> = left<nat> (0);
-  res := loop_left (p, x -> right<nat>(1))
+  res := fold (p, x -> right<nat>(1))
 }

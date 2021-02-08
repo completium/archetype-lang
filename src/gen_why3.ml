@@ -1304,7 +1304,7 @@ let mk_trace_seq m t chs =
 let map_mpattern (p : M.lident M.pattern_node) =
   match p with
   | M.Pwild -> Twild
-  | M.Pconst i -> Tconst (map_lident i)
+  | M.Pconst (i, _) -> Tconst (map_lident i) (* FIXME: matchwith *)
 
 let is_coll_field m f : bool =
   M.Utils.get_containers m |> List.map (fun (_,v,_) -> v) |> List.mem f
@@ -1654,7 +1654,6 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mnat v -> Tint v
     | Mbool false -> Tfalse
     | Mbool true -> Ttrue
-    | Menum               _ -> error_not_supported "Menum"
     | Mrational (l,r) -> Ttuple([ loc_term (Tint l); loc_term (Tint r)])
     | Mcurrency (i, Utz)  -> Tint i
     | Mstring v ->  (* Tint (Tools.sha v) *) Tstring v
@@ -1678,7 +1677,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mmatchoption   _ -> error_not_supported "Mmatchoption"
     | Mmatchor       _ -> error_not_supported "Mmatchor"
     | Mmatchlist     _ -> error_not_supported "Mmatchlist"
-    | Mloopleft      _ -> error_not_supported "Mloopleft"
+    | Mfold          _ -> error_not_supported "Mfold"
     | Mmap           _ -> error_not_supported "Mmap"
     | Mexeclambda    _ -> error_not_supported "Mexeclambda"
     | Mapplylambda   _ -> error_not_supported "Mapplylambda"
@@ -2188,7 +2187,6 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let coll = mk_loc_coll_term (unloc n) ctx (t,d) in
       coll |> Mlwtree.deloc
 
-    | Mvar (v, Venumval, _, _) -> Tvar (map_lident v)
     | Mvar (v, Vdefinition, _, _) ->
       let params = get_def_params m (unloc v) |> List.map loc_term in
       Tapp (loc_term (Tvar (unloc v)), [loc_term (Tvar (mk_storage_id ctx))] @ params)
@@ -2203,7 +2201,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | _ -> loc_term (Tdoti (gs, "state")) |> Mlwtree.deloc
       end
     | Mvar (v, Vparameter, _, _) -> Tvar (map_lident v)
-
+    | Menumval _ -> error_not_translated "Menumval"
 
 
     (* rational ------------------------------------------------------------- *)

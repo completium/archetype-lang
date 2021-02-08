@@ -222,7 +222,8 @@ let pp_model_internal fmt (model : model) b =
 
   let pp_pattern fmt (p : pattern) =
     match p.node with
-    | Pconst i -> Format.fprintf fmt "%a(unit)" pp_id i
+    | Pconst (i, []) -> Format.fprintf fmt "%a(unit)" pp_id i
+    | Pconst _ -> assert false (* FIXME: match *)
     | Pwild -> pp_str fmt "_"
   in
 
@@ -567,7 +568,6 @@ let pp_model_internal fmt (model : model) b =
     | Mint v -> pp_big_int fmt v
     | Mnat v -> Format.fprintf fmt "%an" pp_big_int v
     | Mbool b -> pp_str fmt (if b then "True" else "False")
-    | Menum v -> pp_str fmt v
     | Mrational (n, d) ->
       Format.fprintf fmt "(%a div %a)"
         pp_big_int n
@@ -621,7 +621,7 @@ let pp_model_internal fmt (model : model) b =
     | Mmatchoption (_x, _i, _ve, _ne)        -> emit_error (UnsupportedTerm ("matchoption"))
     | Mmatchor (_x, _lid, _le, _rid, _re)    -> emit_error (UnsupportedTerm ("matchor"))
     | Mmatchlist (_x, _hid, _tid, _hte, _ee) -> emit_error (UnsupportedTerm ("matchlist"))
-    | Mloopleft (_x, _id, _e)                -> emit_error (UnsupportedTerm ("loopleft"))
+    | Mfold (_x, _id, _e)                    -> emit_error (UnsupportedTerm ("fold"))
     | Mmap (_x, _id, _e)                     -> emit_error (UnsupportedTerm ("map"))
     | Mexeclambda (_l, _a)                   -> emit_error (UnsupportedTerm ("execlambda"))
     | Mapplylambda (_l, _a)                  -> emit_error (UnsupportedTerm ("applylambda"))
@@ -1451,8 +1451,6 @@ let pp_model_internal fmt (model : model) b =
 
     | Mvar (v, Vstorecol, _, _) -> Format.fprintf fmt "%s.%a" const_storage pp_id v
 
-    | Mvar (v, Venumval, _, _)  -> pp_id fmt v
-
     | Mvar (v, Vdefinition, _, _) -> pp_id fmt v
 
     | Mvar (v, Vlocal, _, _)    -> pp_id fmt v
@@ -1473,6 +1471,8 @@ let pp_model_internal fmt (model : model) b =
     | Mvar (_, Vstate, _, _)    -> Format.fprintf fmt "%s.%s" const_storage const_state
 
     | Mvar (v, Vparameter, _, _)  -> pp_id fmt v
+
+    | Menumval (_id, _args, _e) -> emit_error (UnsupportedTerm ("Menumval"))
 
     (* rational *)
 

@@ -106,7 +106,8 @@ let pp_operator fmt op =
 
 let pp_pattern fmt (p : pattern) =
   match p.node with
-  | Pconst i -> pp_id fmt i
+  | Pconst (i, []) -> pp_id fmt i
+  | Pconst (i, xs) -> Format.fprintf fmt "%a (%a)" pp_id i (pp_list ", " pp_id) xs
   | Pwild -> pp_str fmt "_"
 
 let pp_sort_kind fmt = function
@@ -251,7 +252,7 @@ let pp_mterm fmt (mt : mterm) =
 
     | Minstrmatchoption (x, i, ve, ne) ->
       let pp fmt (x, i, ve, ne) =
-        Format.fprintf fmt "match_option %a with@\n| some (%a) -> @[%a@]@\n| none -> @[%a@]"
+        Format.fprintf fmt "match %a with@\n| some (%a) -> @[%a@]@\n| none -> @[%a@]"
           f x
           pp_id i
           f ve
@@ -261,7 +262,7 @@ let pp_mterm fmt (mt : mterm) =
 
     | Minstrmatchor (x, lid, le, rid, re) ->
       let pp fmt (x, lid, le, rid, re) =
-        Format.fprintf fmt "match_or %a with@\n  | left (%a) -> (@[%a@])@\n  | right (%a) -> (@[%a@])@\nend"
+        Format.fprintf fmt "match %a with@\n  | left (%a) -> (@[%a@])@\n  | right (%a) -> (@[%a@])@\nend"
           f x
           pp_id lid
           f le
@@ -272,7 +273,7 @@ let pp_mterm fmt (mt : mterm) =
 
     | Minstrmatchlist (x, hid, tid, hte, ee) ->
       let pp fmt (x, hid, tid, hte, ee) =
-        Format.fprintf fmt "match_list %a with@\n  | %a::%a -> (@[%a@])@\n  | [] -> (@[%a@])@\nend"
+        Format.fprintf fmt "match %a with@\n  | %a::%a -> (@[%a@])@\n  | [] -> (@[%a@])@\nend"
           f x
           pp_id hid
           pp_id tid
@@ -359,7 +360,6 @@ let pp_mterm fmt (mt : mterm) =
     | Mint v -> Format.fprintf fmt "%ai" pp_big_int v
     | Mnat v -> pp_big_int fmt v
     | Mbool b -> pp_str fmt (if b then "true" else "false")
-    | Menum v -> pp_str fmt v
     | Mrational (n, d) ->
       Format.fprintf fmt "rat(%a, %a)"
         pp_big_int n
@@ -401,7 +401,7 @@ let pp_mterm fmt (mt : mterm) =
 
     | Mmatchoption (x, i, ve, ne) ->
       let pp fmt (x, i, ve, ne) =
-        Format.fprintf fmt "match_option %a with@\n| some (%a) -> @[%a@]@\n| none -> @[%a@]"
+        Format.fprintf fmt "match %a with@\n| some (%a) -> @[%a@]@\n| none -> @[%a@]"
           f x
           pp_id i
           f ve
@@ -411,7 +411,7 @@ let pp_mterm fmt (mt : mterm) =
 
     | Mmatchor (x, lid, le, rid, re) ->
       let pp fmt (x, lid, le, rid, re) =
-        Format.fprintf fmt "match_or %a with@\n  | left (%a) -> (@[%a@])@\n  | right (%a) -> (@[%a@])@\nend"
+        Format.fprintf fmt "match %a with@\n  | left (%a) -> (@[%a@])@\n  | right (%a) -> (@[%a@])@\nend"
           f x
           pp_id lid
           f le
@@ -422,7 +422,7 @@ let pp_mterm fmt (mt : mterm) =
 
     | Mmatchlist (x, hid, tid, hte, ee) ->
       let pp fmt (x, hid, tid, hte, ee) =
-        Format.fprintf fmt "match_list %a with@\n  | %a::%a -> (@[%a@])@\n  | [] -> (@[%a@])@\nend"
+        Format.fprintf fmt "match %a with@\n  | %a::%a -> (@[%a@])@\n  | [] -> (@[%a@])@\nend"
           f x
           pp_id hid
           pp_id tid
@@ -431,9 +431,9 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (x, hid, tid, hte, ee)
 
-    | Mloopleft (x, id, e) ->
+    | Mfold (x, id, e) ->
       let pp fmt (x, id, e) =
-        Format.fprintf fmt "loop_left (%a, %a -> (@[%a@]))@\n"
+        Format.fprintf fmt "fold (%a, %a -> (@[%a@]))@\n"
           f x
           pp_id id
           f e
@@ -1174,7 +1174,6 @@ let pp_mterm fmt (mt : mterm) =
     | Mvar (an, Vassetstate k, t, d) -> Format.fprintf fmt "%a%astate_%a(%a)" pp_temp t pp_delta d pp_str (Location.unloc an) f k
     | Mvar(v, Vstorevar, t, d)       -> Format.fprintf fmt "%a%as.%a" pp_temp t pp_delta d pp_id v
     | Mvar(v, Vstorecol, t, d)       -> Format.fprintf fmt "%a%a%a" pp_temp t pp_delta d pp_id v
-    | Mvar(v, Venumval, t, d)        -> Format.fprintf fmt "%a%a%a" pp_temp t pp_delta d pp_id v
     | Mvar(v, Vdefinition, t, d)     -> Format.fprintf fmt "%a%a%a" pp_temp t pp_delta d pp_id v
     | Mvar(v, Vlocal, t, d)          -> Format.fprintf fmt "%a%a%a" pp_temp t pp_delta d pp_id v
     | Mvar(v, Vparam, t, d)          -> Format.fprintf fmt "%a%a%a" pp_temp t pp_delta d pp_id v
@@ -1182,7 +1181,13 @@ let pp_mterm fmt (mt : mterm) =
     | Mvar(_, Vthe, t, d)            -> Format.fprintf fmt "%a%athe" pp_temp t pp_delta d
     | Mvar(_, Vstate, t, d)          -> Format.fprintf fmt "%a%astate" pp_temp t pp_delta d
     | Mvar(v, Vparameter, t, d)      -> Format.fprintf fmt "%a%a%a" pp_temp t pp_delta d pp_id v
-
+    | Menumval (id, args, _e)        -> begin
+        match args with
+        | [] -> Format.fprintf fmt "%a" pp_id id
+        | _  -> Format.fprintf fmt "%a (%a)"
+                  pp_id id
+                  (pp_list ", " f) args
+      end
 
     (* rational *)
 
@@ -1483,12 +1488,21 @@ let pp_var fmt (var : var) =
     (pp_option (fun fmt x -> Format.fprintf fmt " = %a" pp_mterm x)) var.default
     (pp_do_if (not (List.is_empty var.invariants)) (fun fmt xs -> Format.fprintf fmt "@\nwith {@\n  @[%a@]@\n}@\n" (pp_list ";@\n" pp_label_term) xs)) var.invariants
 
-let pp_enum_item fmt (enum_item : enum_item) =
-  Format.fprintf fmt "%a"
-    pp_id enum_item.name
+let pp_enum_item fmt (ei : enum_item) =
+  Format.fprintf fmt "| %a%a%a"
+    pp_id ei.name
+    (fun fmt l ->
+       if List.is_empty l
+       then ()
+       else (Format.fprintf fmt " of %a" (pp_list " * " pp_type) l)
+    ) ei.args
+    (pp_do_if (not (List.is_empty ei.invariants)) (
+        fun fmt ->
+          Format.fprintf fmt " with {@[%a@]}"
+            (pp_list ";@\n" pp_label_term))) ei.invariants
 
 let pp_enum fmt (enum : enum) =
-  Format.fprintf fmt "enum %a {@\n@[<v 2>  %a@]@\n}@\n"
+  Format.fprintf fmt "enum %a =@\n@[<v 2>  %a@]@\n"
     pp_id enum.name
     (pp_list "@\n" pp_enum_item) enum.values
 

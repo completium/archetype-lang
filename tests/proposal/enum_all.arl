@@ -1,0 +1,33 @@
+archetype enum_all
+
+enum t =
+| A of string
+| B of nat
+| C
+| D of address
+| E of int
+
+variable res : nat = 0
+
+variable r : t = A("mystr")
+
+entry exec() {
+
+  r := B(1);
+  r := C;
+  r := D(@tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg);
+  r := E(2i);
+
+  match r with
+  | A v -> res := length(v)
+  | B v -> res := v
+  | C   -> res := 0
+  | D v -> res := 1
+  | E v -> res := abs(v)
+  end;
+
+  match r with
+  | C -> res := 0
+  | _ -> res := 1
+  end
+}

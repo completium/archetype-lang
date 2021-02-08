@@ -592,7 +592,6 @@ let to_ir (model : M.model) : T.ir =
     | Mnat  v            -> T.Iconst (T.mk_type Tnat, Dint v)
     | Mbool true         -> T.Iconst (T.mk_type Tbool, Dtrue)
     | Mbool false        -> T.Iconst (T.mk_type Tbool, Dfalse)
-    | Menum _            -> emit_error (UnsupportedTerm ("Menum"))
     | Mrational _        -> emit_error (UnsupportedTerm ("Mrational"))
     | Mstring v          -> T.Iconst (T.mk_type Tstring, Dstring v)
     | Mcurrency (v, Utz) -> T.Iconst (T.mk_type Tmutez, Dint v)
@@ -610,7 +609,7 @@ let to_ir (model : M.model) : T.ir =
     | Mmatchoption (x, i, ve, ne)            -> T.Iifnone (f x, f ne, unloc i, f ve, ft mtt.type_)
     | Mmatchor (x, lid, le, rid, re)         -> T.Iifleft (f x, unloc lid, f le, unloc rid, f re, ft mtt.type_)
     | Mmatchlist (x, hid, tid, hte, ee)      -> T.Iifcons (f x, unloc hid, unloc tid, f hte, f ee, ft mtt.type_)
-    | Mloopleft (e, i, l)                    -> T.Iloopleft (f e, unloc i, f l)
+    | Mfold (e, i, l)                        -> T.Iloopleft (f e, unloc i, f l)
     | Mmap (e, i, l)                         -> T.Imap_ (f e, unloc i, f l)
     | Mexeclambda (l, a)                     -> T.Ibinop (Bexec, f a, f l)
     | Mapplylambda (l, a)                    -> T.Ibinop (Bapply, f a, f l)
@@ -848,7 +847,6 @@ let to_ir (model : M.model) : T.ir =
     | Mvar (_an, Vassetstate _k, _, _) -> assert false
     | Mvar (v, Vstorevar, _, _)        -> T.Ivar (unloc v)
     | Mvar (v, Vstorecol, _, _)        -> T.Ivar (unloc v)
-    | Mvar (_v, Venumval, _, _)        -> assert false
     | Mvar (_v, Vdefinition, _, _)     -> assert false
     | Mvar (v, Vlocal, _, _)           -> T.Ivar (unloc v)
     | Mvar (v, Vparam, _, _)           -> T.Ivar (unloc v)
@@ -856,6 +854,7 @@ let to_ir (model : M.model) : T.ir =
     | Mvar (_, Vthe, _, _)             -> assert false
     | Mvar (_, Vstate, _, _)           -> assert false
     | Mvar (_, Vparameter, _, _)       -> assert false
+    | Menumval (_id, _args, _e)        -> assert false
 
     (* rational *)
 

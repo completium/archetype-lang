@@ -260,7 +260,6 @@ and bval_node =
   | BVint          of Core.big_int
   | BVnat          of Core.big_int
   | BVbool         of bool
-  | BVenum         of string
   | BVrational     of Core.big_int * Core.big_int
   | BVdate         of Core.date
   | BVstring       of string
@@ -290,7 +289,7 @@ type 'id pattern_gen = ('id pattern_node) struct_poly
 
 and 'id pattern_node =
   | Mwild
-  | Mconst of 'id
+  | Mconst of 'id * 'id list
 [@@deriving show {with_path = false}]
 
 type pattern = lident pattern_gen
@@ -324,7 +323,7 @@ type 'id term_node  =
   | Pmatchoption of 'id term_gen * 'id * 'id term_gen * 'id term_gen
   | Pmatchor     of 'id term_gen * 'id * 'id term_gen * 'id * 'id term_gen
   | Pmatchlist   of 'id term_gen * 'id * 'id * 'id term_gen * 'id term_gen
-  | Ploopleft    of 'id term_gen * 'id * 'id term_gen
+  | Pfold        of 'id term_gen * 'id * 'id term_gen
   | Pmap         of 'id term_gen * 'id * 'id term_gen
   | Pcall of ('id term_gen option * 'id call_kind * ('id term_arg) list)
   | Plogical of logical_operator * 'id term_gen * 'id term_gen
@@ -638,6 +637,7 @@ type 'id enum_item_struct = {
   name : 'id;
   initial : bool;
   invariants : 'id label_term list;
+  args: ptyp list;
   loc : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -776,8 +776,8 @@ let mk_transition ?on ?(trs = []) from =
 let mk_transaction_struct ?(args = []) ?calledby ?(accept_transfer = false) ?require ?failif ?transition ?specification ?(functions = []) ?effect ?(loc = Location.dummy) name =
   { name; args; calledby; accept_transfer; require; failif; transition; specification; functions; effect; loc }
 
-let mk_enum_item ?(initial = false) ?(invariants = []) ?(loc = Location.dummy) name : 'id enum_item_struct =
-  { name; initial; invariants; loc }
+let mk_enum_item ?(initial = false) ?(args = []) ?(invariants = []) ?(loc = Location.dummy) name : 'id enum_item_struct =
+  { name; initial; args; invariants; loc }
 
 let mk_enum ?(items = []) ?(loc = Location.dummy) kind =
   { kind; items; loc }
@@ -813,6 +813,7 @@ module Utils : sig
   val is_definition             : ast -> lident -> bool
   val get_var_type              : ast -> lident -> type_
   val get_enum_name             : lident enum_struct -> lident
+  val get_enum_values           : ast -> lident -> lident option
 
 end = struct
   open Tools

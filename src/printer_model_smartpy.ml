@@ -601,7 +601,6 @@ let pp_model fmt (model : model) =
       | Mint v -> pp_big_int fmt v
       | Mnat v -> pp_big_int fmt v
       | Mbool b -> Format.fprintf fmt "sp.bool(%s)" (if b then "True" else "False")
-      | Menum v -> pp_str fmt v
       | Mrational _ -> assert false
       | Mstring v ->
         Format.fprintf fmt "\"%a\""
@@ -634,7 +633,7 @@ let pp_model fmt (model : model) =
       | Mmatchoption   _ -> emit_error (UnsupportedTerm ("matchoption"))
       | Mmatchor       _ -> emit_error (UnsupportedTerm ("Mmatchor"))
       | Mmatchlist     _ -> emit_error (UnsupportedTerm ("Mmatchlist"))
-      | Mloopleft      _ -> emit_error (UnsupportedTerm ("Mloopleft"))
+      | Mfold          _ -> emit_error (UnsupportedTerm ("Mfold"))
       | Mmap           _ -> emit_error (UnsupportedTerm ("Mmap"))
       | Mexeclambda    _ -> emit_error (UnsupportedTerm ("Mexeclambda"))
       | Mapplylambda   _ -> emit_error (UnsupportedTerm ("Mapplylambda"))
@@ -1371,7 +1370,6 @@ let pp_model fmt (model : model) =
           (fun fmt b -> match b with false -> pp_str fmt ".data" | _ -> ()) (is_const env v)
           pp_id v
       | Mvar (v, Vstorecol, _, _) -> Format.fprintf fmt "self.data.%a" pp_id v
-      | Mvar (v, Venumval, _, _)  -> pp_id fmt v
       | Mvar (v, Vdefinition, _, _)  -> pp_id fmt v
       | Mvar (v, Vlocal, _, _)    ->
         Format.fprintf fmt "%a%a"
@@ -1382,7 +1380,7 @@ let pp_model fmt (model : model) =
       | Mvar (_, Vthe, _, _)      -> pp_str fmt "the"
       | Mvar (_, Vstate, _, _)    -> pp_str fmt "self.data.state"
       | Mvar (v, Vparameter, _, _)-> pp_id fmt v
-
+      | Menumval (_id, _args, _e) -> emit_error (UnsupportedTerm ("Menumval"))
 
       (* rational *)
 

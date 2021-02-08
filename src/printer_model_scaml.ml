@@ -429,7 +429,8 @@ let pp_model fmt (model : model) =
 
   let pp_pattern fmt (p : pattern) =
     match p.node with
-    | Pconst i -> pp_id fmt i
+    | Pconst (i, []) -> pp_id fmt i
+    | Pconst _ -> assert false (* FIXME: matchwith *)
     | Pwild -> pp_str fmt "_"
   in
 
@@ -636,7 +637,6 @@ let pp_model fmt (model : model) =
       | Mint v -> Format.fprintf fmt "(Int %a)" pp_big_int v
       | Mnat v -> pp_big_int fmt v
       | Mbool b -> pp_str fmt (if b then "true" else "false")
-      | Menum v -> pp_str fmt v
       | Mrational (n, d) ->
         Format.fprintf fmt "(%a. /. %a.)"
           pp_big_int n
@@ -686,7 +686,7 @@ let pp_model fmt (model : model) =
       | Mmatchoption   _ -> emit_error (UnsupportedTerm ("Mmatchoption"))
       | Mmatchor       _ -> emit_error (UnsupportedTerm ("Mmatchor"))
       | Mmatchlist     _ -> emit_error (UnsupportedTerm ("Mmatchlist"))
-      | Mloopleft      _ -> emit_error (UnsupportedTerm ("Mloopleft"))
+      | Mfold          _ -> emit_error (UnsupportedTerm ("Mfold"))
       | Mmap           _ -> emit_error (UnsupportedTerm ("Mmap"))
       | Mexeclambda    _ -> emit_error (UnsupportedTerm ("Mexeclambda"))
       | Mapplylambda   _ -> emit_error (UnsupportedTerm ("Mapplylambda"))
@@ -1373,7 +1373,6 @@ let pp_model fmt (model : model) =
       | Mvar (an, Vassetstate k, _, _) -> Format.fprintf fmt "state_%a(%a)" pp_str (Location.unloc an) f k
       | Mvar (v, Vstorevar, _, _)      -> Format.fprintf fmt "%s.%a" const_storage pp_id v
       | Mvar (v, Vstorecol, _, _)      -> Format.fprintf fmt "%s.%a" const_storage pp_id v
-      | Mvar (v, Venumval, _, _)       -> pp_id fmt v
       | Mvar (v, Vdefinition, _, _)    -> pp_id fmt v
       | Mvar (v, Vlocal, _, _)         -> pp_id fmt v
       | Mvar (v, Vparam, _, _)         -> pp_id fmt v
@@ -1381,7 +1380,7 @@ let pp_model fmt (model : model) =
       | Mvar (_, Vthe, _, _)           -> pp_str fmt "the"
       | Mvar (_, Vstate, _, _)         -> Format.fprintf fmt "%s.%s" const_storage const_state
       | Mvar (v, Vparameter, _, _)     -> pp_id fmt v
-
+      | Menumval (_id, _args, _e) -> emit_error (UnsupportedTerm ("Menumval"))
 
       (* rational *)
 

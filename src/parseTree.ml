@@ -84,7 +84,16 @@ and operator =
 
 type pattern_unloc =
   | Pwild
-  | Pref of lident
+  | Pref of pname loced * lident list
+
+and pname =
+  | PIdent of ident
+  | PCons
+  | PNil
+  | PSome
+  | PNone
+  | PLeft
+  | PRight
 
 and pattern = pattern_unloc loced
 
@@ -126,10 +135,7 @@ and expr_unloc =
   | Eletin         of lident * type_t option * expr * expr * expr option
   | Evar           of lident * type_t option * expr
   | Ematchwith     of expr * branch list
-  | Ematchoption   of expr * lident * expr * expr
-  | Ematchor       of expr * lident * expr * lident * expr
-  | Ematchlist     of expr * lident * lident * expr * expr
-  | Eloopleft      of expr * lident * expr
+  | Efold          of expr * lident * expr
   | Emap           of expr * lident * expr
   | Erecupdate     of expr * (lident * expr) list
   | Equantifier    of quantifier * lident * quantifier_kind * expr
@@ -319,7 +325,7 @@ and variable_decl =
   * exts
 
 and enum_decl =
-  (lident * enum_option list) list * exts
+  (lident * type_t list * enum_option list) list * exts
 
 and asset_decl =
   lident
@@ -651,6 +657,7 @@ let is_keyword = function
   | "failif"
   | "fails"
   | "false"
+  | "fold"
   | "for"
   | "forall"
   | "from"
@@ -668,10 +675,6 @@ let is_keyword = function
   | "let"
   | "list"
   | "map"
-  | "match_list"
-  | "match_option"
-  | "match_or"
-  | "match_loop_left"
   | "match"
   | "namespace"
   | "none"

@@ -205,7 +205,7 @@ let generate_target model =
     (* |> reverse_operations *)
     |> process_multi_keys
     |> replace_col_by_key_for_ckfield
-    |> process_asset_state
+    |> remove_enum
     |> replace_assignfield_by_update
     |> remove_add_update
     |> remove_container_op_in_update
@@ -220,7 +220,6 @@ let generate_target model =
     |> replace_dotassetfield_by_dot
     |> generate_storage
     |> replace_declvar_by_letin
-    |> remove_enum_matchwith
     |> replace_lit_address_by_role
     |> remove_label
     |> flat_sequence
@@ -242,7 +241,7 @@ let generate_target model =
     |> process_parameter
     (* |> reverse_operations *)
     |> process_multi_keys
-    |> process_asset_state
+    |> remove_enum
     |> replace_assignfield_by_update
     |> remove_add_update
     |> remove_container_op_in_update
@@ -257,7 +256,6 @@ let generate_target model =
     |> replace_dotassetfield_by_dot
     |> generate_storage
     |> replace_declvar_by_letin
-    |> remove_enum_matchwith
     |> replace_lit_address_by_role
     |> remove_label
     |> flat_sequence
@@ -279,6 +277,7 @@ let generate_target model =
     |> process_parameter
     (* |> reverse_operations *)
     |> process_multi_keys
+    |> remove_enum
     |> replace_update_by_set
     |> generate_storage
     |> replace_declvar_by_letin
@@ -303,7 +302,7 @@ let generate_target model =
     |> process_multi_keys
     |> replace_col_by_key_for_ckfield
     |> move_partition_init_asset
-    |> process_asset_state
+    |> remove_enum
     |> replace_assignfield_by_update
     |> remove_add_update ~with_force:true
     |> merge_update
@@ -316,7 +315,6 @@ let generate_target model =
     |> replace_dotassetfield_by_dot
     |> generate_storage
     |> replace_declvar_by_letin
-    |> remove_enum_matchwith
     |> replace_lit_address_by_role
     |> remove_label
     |> flat_sequence
@@ -330,7 +328,6 @@ let generate_target model =
     |> remove_high_level_model
     |> normalize_storage
     |> remove_constant
-    |> remove_state
     |> eval_storage
     |> optimize
     |> generate_api_storage
@@ -344,7 +341,7 @@ let generate_target model =
     (* |> reverse_operations *)
     |> process_multi_keys
     |> replace_assignfield_by_update
-    |> process_asset_state
+    |> remove_enum
     |> remove_add_update ~isformula:true
     |> remove_container_op_in_update
     |> merge_update
@@ -372,7 +369,6 @@ let generate_target model =
     |> replace_for_to_iter
     |> replace_assignfield_by_update
     |> replace_update_by_set
-    |> remove_cmp_enum
     |> remove_cmp_bool
     |> replace_dotassetfield_by_dot
     |> transfer_shadow_variable_to_storage

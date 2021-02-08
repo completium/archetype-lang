@@ -1,0 +1,17 @@
+archetype enum_with_args_multi
+
+enum t =
+| A of nat * string
+| B of nat * string
+| C of int * nat * string
+
+variable res : nat = 0
+
+entry exec() {
+  var o : t = A(1, "toto");
+
+  match o with
+  | A (v, s) | B (v, s) -> res := v + length(s)
+  | C (a, b, c) -> res := b
+  end
+}

@@ -4,8 +4,5 @@ variable res : nat = 0
 
 entry exec () {
   var p : nat = 0;
-  res :=
-    match_loop_left p with
-    | x -> right<nat>(1)
-    end
+  res := fold(p, x -> right<nat>(1));
 }

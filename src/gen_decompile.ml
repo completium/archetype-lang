@@ -1376,7 +1376,7 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         | T.Tunit -> M.mk_mterm (M.Minstrmatchlist (xe, dumloc hid, dumloc tid, hte, ne)) M.tunit
         | _       -> M.mk_mterm (M.Mmatchlist (xe, dumloc hid, dumloc tid, hte, ne)) (for_type ty)
       end
-    | Iloopleft (l, i, b)          -> let be = f b in M.mk_mterm (M.Mloopleft (f l, dumloc i, be)) be.type_
+    | Iloopleft (l, i, b)          -> let be = f b in M.mk_mterm (M.Mfold (f l, dumloc i, be)) be.type_
     | Ilambda (_rt, _id, _at, _e)  -> assert false
     | Iloop (c, b)                 -> M.mk_mterm (M.Mwhile (f c, f b, None)) M.tunit
     | Iiter (_ids, _c, _b)         -> assert false
@@ -1639,7 +1639,6 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mnat v             -> A.ebnat v
     | Mbool true         -> A.etrue
     | Mbool false        -> A.efalse
-    | Menum v            -> A.eterm (dumloc v)
     | Mrational (_n, _d) -> assert false
     | Mstring v          -> A.estring v
     | Mcurrency (_v, _c) -> assert false
@@ -1658,7 +1657,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mmatchoption (_x, _i, _ve, _ne)        -> assert false
     | Mmatchor (_x, _lid, _le, _rid, _re)    -> assert false
     | Mmatchlist (_x, _hid, _tid, _hte, _ee) -> assert false
-    | Mloopleft (_e, _i, _l)                 -> assert false
+    | Mfold (_e, _i, _l)                     -> assert false
     | Mmap (_e, _i, _l)                      -> assert false
     | Mexeclambda (_l, _a)                   -> assert false
     | Mapplylambda (_l, _a)                  -> assert false
@@ -1834,7 +1833,6 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mvar (_an, Vassetstate _k, _t, _d) -> assert false
     | Mvar(v, Vstorevar, t, d)           -> A.eterm v ?temp:(for_temp t) ?delta:(for_delta d)
     | Mvar(v, Vstorecol, t, d)           -> A.eterm v ?temp:(for_temp t) ?delta:(for_delta d)
-    | Mvar(_v, Venumval, _t, _d)         -> assert false
     | Mvar(_v, Vdefinition, _t, _d)      -> assert false
     | Mvar(v, Vlocal, t, d)              -> A.eterm v ?temp:(for_temp t) ?delta:(for_delta d)
     | Mvar(v, Vparam, t, d)              -> A.eterm v ?temp:(for_temp t) ?delta:(for_delta d)
@@ -1842,7 +1840,11 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mvar(_, Vthe, _t, _d)              -> assert false
     | Mvar(_, Vstate, _t, _d)            -> assert false
     | Mvar(v, Vparameter, t, d)          -> A.eterm v ?temp:(for_temp t) ?delta:(for_delta d)
-
+    | Menumval (id, args, _e)             -> begin
+        match args with
+        | [] -> A.eterm id
+        | _  -> A.eapp (A.Fident id) []
+      end
 
     (* rational *)
 

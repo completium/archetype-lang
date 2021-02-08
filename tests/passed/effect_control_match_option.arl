@@ -4,7 +4,7 @@ variable res : nat = 0
 
 entry exec() {
   var o : option<nat> = some(1);
-  match_option o with
+  match o with
   | some(v) -> res := 1
   | none -> fail("KO")
   end

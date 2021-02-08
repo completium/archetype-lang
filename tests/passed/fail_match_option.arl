@@ -4,8 +4,8 @@ variable res : nat = 0
 
 entry exec() {
   var o : option<nat> = some(1);
-  match_option o with
-  | some(v) -> fail("OK")
+  match o with
   | none    -> fail("KO")
+  | some(v) -> fail("OK")
   end
 }

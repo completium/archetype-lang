@@ -116,8 +116,8 @@ let to_model (ast : A.ast) : M.model =
 
   let to_pattern_node (n : A.lident A.pattern_node) : 'id M.pattern_node =
     match n with
-    | A.Mconst id -> M.Pconst id
-    | A.Mwild    -> M.Pwild
+    | A.Mconst (id, xs) -> M.Pconst (id, xs)
+    | A.Mwild -> M.Pwild
   in
 
   let to_pattern (p : A.pattern) : M.pattern =
@@ -272,7 +272,7 @@ let to_model (ast : A.ast) : M.model =
       | A.Pmatchoption (x, id, ve, ne)      -> M.Mmatchoption   (f x, id, f ve, f ne)
       | A.Pmatchor (x, lid, le, rid, re)    -> M.Mmatchor       (f x, lid, f le, rid, f re)
       | A.Pmatchlist (x, hid, tid, hte, ee) -> M.Mmatchlist     (f x, hid, tid, f hte, f ee)
-      | A.Ploopleft (x, i, e)               -> M.Mloopleft      (f x, i, f e)
+      | A.Pfold (x, i, e)                   -> M.Mfold          (f x, i, f e)
       | A.Pmap (x, i, e)                    -> M.Mmap           (f x, i, f e)
       | A.Plogical (A.And, l, r)            -> M.Mand           (f l, f r)
       | A.Plogical (A.Or, l, r)             -> M.Mor            (f l, f r)
@@ -314,11 +314,16 @@ let to_model (ast : A.ast) : M.model =
       | A.Precupdate (e, l)                 -> M.Mrecupdate     (f e, List.map (fun (id, v) -> unloc id, f v) l)
       | A.Pletin (id, init, typ, body, o)   -> M.Mletin         ([id], f init, Option.map type_to_type typ, f body, Option.map f o)
       | A.Pdeclvar (i, t, v)                -> M.Mdeclvar       ([i], Option.map type_to_type t, f v)
+
+      (* enum value *)
+      | A.Pvar (_b, _vs, id) when A.Utils.is_enum_value ast id      -> M.Menumval (id, [], A.Utils.get_enum_values ast id |> Option.get |> unloc)
+      | A.Pcall (_, Cid id, args) when A.Utils.is_enum_value ast id -> M.Menumval (id, List.map (function | A.AExpr x -> f x | _ -> assert false) args, A.Utils.get_enum_values ast id |> Option.get |> unloc)
+
+
       | A.Pvar (b, vs, {pldesc = "state"; _})                -> M.Mvar (dumloc "", Vstate, to_temp b, to_delta vs)
       | A.Pvar (b, vs, id) when is_param env id              -> M.Mvar (id, Vparam, to_temp b, to_delta vs)
       | A.Pvar (b, vs, id) when A.Utils.is_variable ast id   -> M.Mvar (id, Vstorevar, to_temp b, to_delta vs)
       | A.Pvar (b, vs, id) when A.Utils.is_asset ast id      -> M.Mvar (id, Vstorecol, to_temp b, to_delta vs)
-      | A.Pvar (b, vs, id) when A.Utils.is_enum_value ast id -> M.Mvar (id, Venumval, to_temp b, to_delta vs)
       | A.Pvar (b, vs, id) when A.Utils.is_definition ast id -> M.Mvar (id, Vdefinition, to_temp b, to_delta vs)
       | A.Pvar (b, vs, id) when A.Utils.is_parameter ast id  -> M.Mvar (id, Vparameter, to_temp b, to_delta vs)
       | A.Pvar (b, vs, id)                                   -> M.Mvar (id, Vlocal, to_temp b, to_delta vs)
@@ -334,7 +339,6 @@ let to_model (ast : A.ast) : M.model =
       | A.Plit ({node = BVint i; _})           -> M.Mint i
       | A.Plit ({node = BVnat i; _})           -> M.Mnat i
       | A.Plit ({node = BVbool b; _})          -> M.Mbool b
-      | A.Plit ({node = BVenum s; _})          -> M.Menum s
       | A.Plit ({node = BVrational (d, n); _}) -> M.Mrational (d, n)
       | A.Plit ({node = BVdate s; _})          -> M.Mdate s
       | A.Plit ({node = BVstring s; _})        -> M.Mstring s
@@ -401,7 +405,6 @@ let to_model (ast : A.ast) : M.model =
       (* | A.Pcall (Some p, A.Cconst A.Cunmoved,   []) -> M.Msetunmoved   (f p)
          | A.Pcall (Some p, A.Cconst A.Cadded,     []) -> M.Msetadded     (f p)
          | A.Pcall (Some p, A.Cconst A.Cremoved,   []) -> M.Msetremoved   (f p) *)
-
 
       (* Asset *)
 
@@ -805,7 +808,7 @@ let to_model (ast : A.ast) : M.model =
   let process_enum (env : env) (e : A.enum) : M.decl_node =
     let values = List.map (fun (x : A.lident A.enum_item_struct) ->
         let id : M.lident = x.name in
-        M.mk_enum_item id ~invariants:(List.map (fun x -> to_label_lterm env x) x.invariants)
+        M.mk_enum_item id ~args:(List.map type_to_type x.args) ~invariants:(List.map (fun x -> to_label_lterm env x) x.invariants)
       ) e.items in
     let initial : A.lident option = List.fold_left (fun accu (x : A.lident A.enum_item_struct) -> match x.initial with | true -> Some x.name | _ -> accu) None e.items in
     (* let initial = (match initial with | Some x -> x | _ -> emit_error (NoInitialValueFor (unloc e.name))) in *)
@@ -1286,10 +1289,12 @@ let to_model (ast : A.ast) : M.model =
                  match p_on with
                  | Some (key_ident, key_type, an, enum_type) ->
                    let k : M.mterm = build_mvar env key_ident key_type ~loc:(Location.loc key_ident) in
-                   let v : M.mterm = M.mk_mterm (M.Mvar (id, Venumval, Tnone, Dnone)) enum_type ~loc:(Location.loc id) in
+                   let et = match M.get_ntype enum_type with | M.Tenum id -> unloc id | _ -> assert false in
+                   let v : M.mterm = M.mk_mterm (M.Menumval (id, [], et)) enum_type ~loc:(Location.loc id) in
                    M.mk_mterm (M.Massign (ValueAssign, v.type_, Aassetstate (an, k), v)) M.tunit
                  | _ ->
-                   let v : M.mterm = build_mvar env id M.tstate ~loc:(Location.loc id) in
+                   (* let v : M.mterm = build_mvar env id M.tstate ~loc:(Location.loc id) in *)
+                   let v : M.mterm = M.mk_mterm (Menumval (id, [], "state")) (M.tenum (dumloc "state")) ~loc:(Location.loc id) in
                    M.mk_mterm (M.Massign (ValueAssign, v.type_, Astate, v)) M.tunit
                in
                let code : M.mterm =
@@ -1310,7 +1315,7 @@ let to_model (ast : A.ast) : M.model =
             begin
               let rec compute_patterns (a : A.sexpr) : M.pattern list =
                 match a.node with
-                | Sref id -> [M.mk_pattern (M.Pconst id)]
+                | Sref id -> [M.mk_pattern (M.Pconst (id, []))]
                 | Sor (a, b) -> [a; b] |> List.map (fun x -> compute_patterns x) |> List.flatten
                 | Sany -> emit_error (a.loc, AnyNotAuthorizedInTransitionTo); bailout ()
               in

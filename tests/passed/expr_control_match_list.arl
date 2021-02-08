@@ -5,7 +5,7 @@ variable res : nat = 0
 entry exec() {
   var l : list<nat> = [1];
   res :=
-  match_list l with
+  match l with
   | hd::t -> hd
   | []    -> 0
   end

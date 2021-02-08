@@ -1,0 +1,9 @@
+archetype expr_lambda2
+
+variable res : nat = 0
+
+entry exec () {
+  var lambda_0 : lambda<string, nat> = lambda<nat>((x : string) -> length(x));
+
+  res := exec_lambda(lambda_0, "mystr")
+}

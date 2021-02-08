@@ -82,7 +82,7 @@ and type_ = ntype * lident option
 
 type 'id pattern_node =
   | Pwild
-  | Pconst of 'id
+  | Pconst of 'id * lident list
 [@@deriving show {with_path = false}]
 
 type 'id pattern_gen = {
@@ -145,7 +145,6 @@ type 'term var_kind_gen =
   | Vassetstate of 'term
   | Vstorevar
   | Vstorecol
-  | Venumval
   | Vdefinition
   | Vlocal
   | Vparam
@@ -225,7 +224,6 @@ type ('id, 'term) mterm_node  =
   | Mint              of Core.big_int
   | Mnat              of Core.big_int
   | Mbool             of bool
-  | Menum             of string
   | Mrational         of Core.big_int * Core.big_int
   | Mstring           of string
   | Mcurrency         of Core.big_int * currency
@@ -241,7 +239,7 @@ type ('id, 'term) mterm_node  =
   | Mmatchoption      of 'term * 'id * 'term * 'term
   | Mmatchor          of 'term * 'id * 'term * 'id * 'term
   | Mmatchlist        of 'term * 'id * 'id * 'term * 'term
-  | Mloopleft         of 'term * 'id * 'term
+  | Mfold             of 'term * 'id * 'term
   | Mmap              of 'term * 'id * 'term
   | Mexeclambda       of 'term * 'term
   | Mapplylambda      of 'term * 'term
@@ -372,6 +370,7 @@ type ('id, 'term) mterm_node  =
   | Mlevel
   (* variable *)
   | Mvar              of 'id * 'term var_kind_gen * temp * delta
+  | Menumval          of 'id * 'term list * ident  (* value * args * ident of enum *)
   (* rational *)
   | Mrateq            of 'term * 'term
   | Mratcmp           of comparison_operator * 'term * 'term
@@ -585,6 +584,7 @@ type storage = lident storage_gen
 
 type 'id enum_item_gen = {
   name: 'id;
+  args: type_ list;
   invariants : 'id label_term_gen list;
 }
 [@@deriving show {with_path = false}]
@@ -956,8 +956,8 @@ let mk_var ?(invariants=[]) ?default ?(loc = Location.dummy) name type_ original
 let mk_enum ?(values = []) name initial : 'id enum_gen =
   { name; values; initial }
 
-let mk_enum_item ?(invariants = []) name : 'id enum_item_gen =
-  { name; invariants }
+let mk_enum_item ?(args = []) ?(invariants = []) name : 'id enum_item_gen =
+  { name; args; invariants }
 
 let mk_asset ?(values = []) ?(sort=[]) ?(big_map = false) ?state ?(keys = []) ?(invariants = []) ?(init = []) ?(loc = Location.dummy) name : 'id asset_gen =
   { name; values; sort; big_map; state; keys; invariants; init; loc }
@@ -1061,6 +1061,7 @@ let mk_mvar id t = mk_mterm (Mvar(id, Vlocal, Tnone, Dnone )) t
 let mk_pvar id t = mk_mterm (Mvar(id, Vparam, Tnone, Dnone )) t
 let mk_svar id t = mk_mterm (Mvar(id, Vstorevar, Tnone, Dnone )) t
 let mk_parameter id t = mk_mterm (Mvar(id, Vparameter, Tnone, Dnone )) t
+let mk_enum_value ?(args=[]) id e = mk_mterm (Menumval(id, args, unloc e)) (mktype (Tenum e))
 
 let mk_btez v = mk_mterm (Mcurrency (v, Utz)) ttez
 let mk_tez  v = mk_btez (Big_int.big_int_of_int v)
@@ -1178,7 +1179,10 @@ let cmp_pattern_node
     (p2    : 'id pattern_node)
   : bool =
   match p1, p2 with
-  | Pconst c1, Pconst c2 -> cmpi c1 c2
+  | Pconst (c1, xs1), Pconst (c2, xs2) ->
+    cmpi c1 c2
+    && List.length xs1 = List.length xs2
+    && List.for_all2 cmpi xs1 xs2
   | Pwild, Pwild -> true
   | _ -> false
 
@@ -1220,7 +1224,6 @@ let cmp_mterm_node
     | Vassetstate v1, Vassetstate v2 -> cmp v1 v2
     | Vstorevar, Vstorevar
     | Vstorecol, Vstorecol
-    | Venumval, Venumval
     | Vdefinition, Vdefinition
     | Vlocal, Vlocal
     | Vparam, Vparam
@@ -1305,7 +1308,6 @@ let cmp_mterm_node
     | Mint v1, Mint v2                                                                 -> Big_int.eq_big_int v1 v2
     | Mnat v1, Mnat v2                                                                 -> Big_int.eq_big_int v1 v2
     | Mbool v1, Mbool v2                                                               -> cmp_bool v1 v2
-    | Menum v1, Menum v2                                                               -> cmp_ident v1 v2
     | Mrational (n1, d1), Mrational (n2, d2)                                           -> Big_int.eq_big_int n1 n2 && Big_int.eq_big_int d1 d2
     | Mstring v1, Mstring v2                                                           -> cmp_ident v1 v2
     | Mcurrency (v1, c1), Mcurrency (v2, c2)                                           -> Big_int.eq_big_int v1 v2 && cmp_currency c1 c2
@@ -1321,7 +1323,7 @@ let cmp_mterm_node
     | Mmatchoption (x1, i1, ve1, ne1), Mmatchoption (x2, i2, ve2, ne2)                 -> cmp x1 x2 && cmpi i1 i2 && cmp ve1 ve2 && cmp ne1 ne2
     | Mmatchor (x1, lid1, le1, rid1, re1), Mmatchor (x2, lid2, le2, rid2, re2)         -> cmp x1 x2 && cmpi lid1 lid2 && cmp le1 le2 && cmpi rid1 rid2 && cmp re1 re2
     | Mmatchlist (x1, hid1, tid1, hte1, ee1), Mmatchlist (x2, hid2, tid2, hte2, ee2)   -> cmp x1 x2 && cmpi hid1 hid2 && cmpi tid1 tid2 && cmp hte1 hte2 && cmp ee1 ee2
-    | Mloopleft (x1, i1, e1), Mloopleft (x2, i2, e2)                                   -> cmp x1 x2 && cmpi i1 i2 && cmp e1 e2
+    | Mfold (x1, i1, e1), Mfold (x2, i2, e2)                                           -> cmp x1 x2 && cmpi i1 i2 && cmp e1 e2
     | Mmap (x1, i1, e1), Mmap (x2, i2, e2)                                             -> cmp x1 x2 && cmpi i1 i2 && cmp e1 e2
     | Mexeclambda  (l1, a1), Mexeclambda  (l2, a2)                                     -> cmp l1 l2 && cmp a1 a2
     | Mapplylambda (l1, a1), Mapplylambda (l2, a2)                                     -> cmp l1 l2 && cmp a1 a2
@@ -1624,7 +1626,6 @@ let map_var_kind f = function
   | Vassetstate mt -> Vassetstate (f mt)
   | Vstorevar -> Vstorevar
   | Vstorecol -> Vstorecol
-  | Venumval -> Venumval
   | Vdefinition -> Vdefinition
   | Vlocal -> Vlocal
   | Vparam -> Vparam
@@ -1698,7 +1699,6 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mint v                         -> Mint v
   | Mnat v                         -> Mnat v
   | Mbool v                        -> Mbool v
-  | Menum v                        -> Menum (fi v)
   | Mrational (n, d)               -> Mrational (n, d)
   | Mstring v                      -> Mstring v
   | Mcurrency (v, c)               -> Mcurrency (v, c)
@@ -1714,7 +1714,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mmatchoption (x, i, ve, ne)    -> Mmatchoption   (f x, g i, f ve, f ne)
   | Mmatchor (x, lid, le, rid, re) -> Mmatchor       (f x, g lid, f le, g rid, f re)
   | Mmatchlist (x, hid, tid, hte, ee) -> Mmatchlist  (f x, g hid, g tid, f hte, f ee)
-  | Mloopleft (x, i, e)            -> Mloopleft (f x, g i, f e)
+  | Mfold (x, i, e)                -> Mfold (f x, g i, f e)
   | Mmap (x, i, e)                 -> Mmap           (f x, g i, f e)
   | Mexeclambda  (l, a)            -> Mexeclambda    (f l, f a)
   | Mapplylambda (l, a)            -> Mapplylambda   (f l, f a)
@@ -1845,6 +1845,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mlevel                         -> Mlevel
   (* variable *)
   | Mvar (id, k, t, d)             -> Mvar (g id, map_var_kind f k, map_temp fi t, map_delta d)
+  | Menumval (id, args, e)         -> Menumval (g id, List.map f args, fi e)
   (* rational *)
   | Mrateq (l, r)                  -> Mrateq (f l, f r)
   | Mratcmp (op, l, r)             -> Mratcmp (op, f l, f r)
@@ -2024,7 +2025,6 @@ let fold_var_kind f accu = function
   | Vassetstate mt -> f accu mt
   | Vstorevar
   | Vstorecol
-  | Venumval
   | Vdefinition
   | Vlocal
   | Vparam
@@ -2089,7 +2089,6 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mint _                                -> accu
   | Mnat _                                -> accu
   | Mbool _                               -> accu
-  | Menum _                               -> accu
   | Mrational _                           -> accu
   | Mstring _                             -> accu
   | Mcurrency _                           -> accu
@@ -2105,7 +2104,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mmatchoption (x, _, ve, ne)           -> f (f (f accu x) ve) ne
   | Mmatchor (x, _, le, _, re)            -> f (f (f accu x) le) re
   | Mmatchlist (x, _, _, hte, ee)         -> f (f (f accu x) hte) ee
-  | Mloopleft (x, _, e)                   -> f (f accu x) e
+  | Mfold (x, _, e)                       -> f (f accu x) e
   | Mmap (x, _, e)                        -> f (f accu x) e
   | Mexeclambda  (l, a)                   -> f (f accu l) a
   | Mapplylambda (l, a)                   -> f (f accu l) a
@@ -2236,6 +2235,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mlevel                                -> accu
   (* variable *)
   | Mvar (_, k, _, _)                     -> fold_var_kind f accu k
+  | Menumval (_, args, _)                 -> List.fold_left f accu args
   (* rational *)
   | Mrateq (l, r)                         -> f (f accu l) r
   | Mratcmp (_, l, r)                     -> f (f accu l) r
@@ -2286,7 +2286,6 @@ let fold_map_var_kind f accu = function
     Vassetstate mte, mta
   | Vstorevar -> Vstorevar, accu
   | Vstorecol -> Vstorecol, accu
-  | Venumval  -> Venumval,  accu
   | Vdefinition -> Vdefinition, accu
   | Vlocal    -> Vlocal,    accu
   | Vparam    -> Vparam,    accu
@@ -2517,9 +2516,6 @@ let fold_map_term
   | Mbool v ->
     g (Mbool v), accu
 
-  | Menum v ->
-    g (Menum v), accu
-
   | Mrational (n, d) ->
     g (Mrational (n, d)), accu
 
@@ -2585,10 +2581,10 @@ let fold_map_term
     let eee, eea = f htea ee in
     g (Mmatchlist (xe, hid, tid, htee, eee)), eea
 
-  | Mloopleft (x, i, e) ->
+  | Mfold (x, i, e) ->
     let xe, xa = f accu x in
     let ee, ea = f xa e in
-    g (Mloopleft (xe, i, ee)), ea
+    g (Mfold (xe, i, ee)), ea
 
   | Mmap (x, i, e) ->
     let xe, xa = f accu x in
@@ -3193,6 +3189,15 @@ let fold_map_term
     let ke, ka = fold_map_var_kind f accu k in
     g (Mvar (id, ke, t, d)), ka
 
+  | Menumval (id, args, e) ->
+    let ((argss, argsa) : 'c list * 'a) =
+      List.fold_left
+        (fun (pterms, accu) x ->
+           let p, accu = f accu x in
+           pterms @ [p], accu) ([], accu) args
+    in
+    g (Menumval (id, argss, e)), argsa
+
 
   (* rational *)
 
@@ -3541,6 +3546,7 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
       let for_enum_item (ei : enum_item) : enum_item =
         {
           name        = g KIenumvalue ei.name;
+          args        = List.map for_type ei.args;
           invariants  = List.map for_label_term ei.invariants;
         }
       in
