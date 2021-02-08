@@ -1424,22 +1424,28 @@ let remove_enum (model : model) : model =
           end
         else begin
           let dvopt = List.fold_left (fun accu (p, v : pattern * mterm) -> match p.node with | Pwild -> Some v | _ -> accu) None ps in
-          let seek_value id =
+          let seek_value (enum_item : enum_item) =
             let v = List.fold_lefti (fun idx accu (p, v : pattern * mterm)  ->
                 match p.node with
-                | Pconst (i, args) when String.equal (unloc i) (unloc id) -> Some (args, v, idx)
+                | Pconst (i, args) when String.equal (unloc i) (unloc enum_item.name) -> Some (args, v, idx)
                 | _ -> accu) None ps
             in
-            let aaa i = dumloc ("_none_" ^ (string_of_int i)) in
+            let id_var_or = dumloc ("_var_or") in
             match v, dvopt with
+            | Some ([], v, _), _  -> id_var_or, v
             | Some ([a], v, _), _ -> a, v
-            | Some ([], v, idx), _  -> aaa idx, v
-            | _, Some v        -> aaa (List.length ps), v
+            | Some (l, v, _), _ -> begin
+                let ts : type_ list =  enum_item.args in
+                let var = mk_mvar id_var_or (ttuple ts) in
+                let l2 : (int * lident) list = List.mapi (fun (i : int) (x : lident) -> i, x) l in
+                let v = List.fold_right (fun (i, x : int * lident) (accu : mterm) -> accu |> mk_letin x (mk_tupleaccess i var)) l2 v in
+                id_var_or, v
+              end
+            | _, Some v        -> id_var_or, v
             | _                -> assert false
           in
 
-          let lvalues = List.map (fun (x : enum_item) -> seek_value x.name) e.values in
-
+          let lvalues = List.map (fun (x : enum_item) -> seek_value x) e.values in
           let mk_matchor (e, a, b, c, d) : mterm =
             match rt with
             | None   -> mk_mterm (Minstrmatchor (e, a, b, c, d)) tunit
@@ -1541,7 +1547,6 @@ let remove_enum (model : model) : model =
     in
     { model with decls = decls }
   in
-
   model
   |> process_asset_state
   |> clean
@@ -2342,15 +2347,11 @@ let extract_term_from_instruction f (model : model) : model =
 
     | Minstrmatchor (x, lid, le, rid, re) ->
       let xe, xa   = f x  in
-      let lee, lea = f le in
-      let ree, rea = f re in
-      process (mk_mterm (Minstrmatchor (xe, lid, lee, rid, ree)) mt.type_) (xa @ lea @ rea)
+      process (mk_mterm (Minstrmatchor (xe, lid, le, rid, re)) mt.type_) (xa)
 
     | Minstrmatchlist (x, hid, tid, hte, ee) ->
       let xe, xa     = f x  in
-      let htee, htea = f hte in
-      let eee, eea   = f ee in
-      process (mk_mterm (Minstrmatchlist (xe, hid, tid, htee, eee)) mt.type_) (xa @ htea @ eea)
+      process (mk_mterm (Minstrmatchlist (xe, hid, tid, hte, ee)) mt.type_) (xa)
 
     | Mfor (i, c, b, lbl) ->
       let ce, ca =
