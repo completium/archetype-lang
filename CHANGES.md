@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - add new cryptographic hash functions: `sha3` and `keccak`
  - add voting instructions: `totalvotingpower` and `votingpower`
  - add `level` constant
- - add `ticket` type and associated instructions (`create_ticket`, `read_ticket`, `join_tickets`, `split_ticket`)
+ - add `ticket` type and associated instructions (`create_ticket`, `read_ticket`, `split_ticket`, `join_tickets`)
 
 ## Unreleased
 ### Added

@@ -269,8 +269,13 @@ let to_const = function
   | Cchecksignature -> "check_signature"
   | Chashkey        -> "hash_key"
   (* voting *)
-  | Ctotalvotingpower -> "totalvotingpower"
-  | Cvotingpower      -> "votingpower"
+  | Ctotalvotingpower -> "total_voting_power"
+  | Cvotingpower      -> "voting_power"
+  (* ticket *)
+  | Ccreateticket   -> "create_ticket"
+  | Creadticket     -> "read_ticket"
+  | Csplitticket    -> "split_ticket"
+  | Cjointickets    -> "join_tickets"
   (* vset *)
   | Cbefore         -> "before"
   | Citerated       -> "iterated"

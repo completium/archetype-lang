@@ -202,6 +202,11 @@ type const =
   (* voting *)
   | Ctotalvotingpower
   | Cvotingpower
+    (* ticket *)
+  | Ccreateticket
+  | Creadticket
+  | Csplitticket
+  | Cjointickets
   (* vset *)
   | Cbefore
   | Citerated

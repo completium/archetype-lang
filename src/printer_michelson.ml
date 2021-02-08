@@ -195,6 +195,11 @@ let rec pp_code fmt (i : code) =
   | UNIT                     -> pp "UNIT"
   | UNPACK t                 -> pp "UNPACK %a" pp_type t
   | UPDATE                   -> pp "UPDATE"
+    (* Operations on tickets *)
+  | JOIN_TICKETS             -> pp "JOIN_TICKETS"
+  | READ_TICKET              -> pp "READ_TICKET"
+  | SPLIT_TICKET             -> pp "SPLIT_TICKET"
+  | TICKET                   -> pp "TICKET"
   (* Other *)
   | UNPAIR                   -> pp "UNPAIR"
   | SELF_ADDRESS             -> pp "SELF_ADDRESS"
@@ -289,7 +294,9 @@ let rec pp_instruction fmt (i : instruction) =
       | Uge        -> pp "ge(%a)"        f e
       | Ult        -> pp "lt(%a)"        f e
       | Ule        -> pp "le(%a)"        f e
-      | Uvotingpower -> pp "votingpower(%a)"        f e
+      | Uvotingpower -> pp "voting_power(%a)" f e
+      | Ureadticket  -> pp "read_ticket(%a)"  f e
+      | Ujointickets -> pp "join_tickets(%a)" f e
     end
   | Ibinop (op, lhs, rhs) -> begin
       match op with
@@ -310,6 +317,8 @@ let rec pp_instruction fmt (i : instruction) =
       | Bpair      -> pp "pair(%a, %a)"      f lhs f rhs
       | Bexec      -> pp "exec(%a, %a)"      f lhs f rhs
       | Bapply     -> pp "apply(%a, %a)"     f lhs f rhs
+      | Bcreateticket -> pp "create_ticket(%a, %a)" f lhs f rhs
+      | Bsplitticket  -> pp "split_ticket(%a, %a)"  f lhs f rhs
     end
   | Iterop (op, a1, a2, a3) -> begin
       match op with
@@ -511,27 +520,31 @@ let rec pp_dexpr fmt (de : dexpr) =
       | Uge        -> pp "ge(%a)"        f e
       | Ult        -> pp "lt(%a)"        f e
       | Ule        -> pp "le(%a)"        f e
-      | Uvotingpower -> pp "votingpower(%a)"        f e
+      | Uvotingpower -> pp "votingpower(%a)" f e
+      | Ureadticket  -> pp "read_ticket(%a)" f e
+      | Ujointickets -> pp "join_tickets(%a)" f e
     end
   | Dbop (op, lhs, rhs) -> begin
       match op with
-      | Badd       -> pp "(%a) + (%a)"       f lhs f rhs
-      | Bsub       -> pp "(%a) - (%a)"       f lhs f rhs
-      | Bmul       -> pp "(%a) * (%a)"       f lhs f rhs
-      | Bediv      -> pp "(%a) / (%a)"       f lhs f rhs
-      | Blsl       -> pp "(%a) << (%a)"      f lhs f rhs
-      | Blsr       -> pp "(%a) >> (%a)"      f lhs f rhs
-      | Bor        -> pp "(%a) or (%a)"      f lhs f rhs
-      | Band       -> pp "(%a) and (%a)"     f lhs f rhs
-      | Bxor       -> pp "(%a) xor (%a)"     f lhs f rhs
-      | Bcompare   -> pp "compare (%a, %a)"  f lhs f rhs
-      | Bget       -> pp "get(%a, %a)"       f lhs f rhs
-      | Bmem       -> pp "mem(%a, %a)"       f lhs f rhs
-      | Bconcat    -> pp "concat(%a, %a)"    f lhs f rhs
-      | Bcons      -> pp "cons(%a, %a)"      f lhs f rhs
-      | Bpair      -> pp "pair(%a, %a)"      f lhs f rhs
-      | Bexec      -> pp "exec(%a, %a)"      f lhs f rhs
-      | Bapply     -> pp "apply(%a, %a)"     f lhs f rhs
+      | Badd          -> pp "(%a) + (%a)"            f lhs f rhs
+      | Bsub          -> pp "(%a) - (%a)"            f lhs f rhs
+      | Bmul          -> pp "(%a) * (%a)"            f lhs f rhs
+      | Bediv         -> pp "(%a) / (%a)"            f lhs f rhs
+      | Blsl          -> pp "(%a) << (%a)"           f lhs f rhs
+      | Blsr          -> pp "(%a) >> (%a)"           f lhs f rhs
+      | Bor           -> pp "(%a) or (%a)"           f lhs f rhs
+      | Band          -> pp "(%a) and (%a)"          f lhs f rhs
+      | Bxor          -> pp "(%a) xor (%a)"          f lhs f rhs
+      | Bcompare      -> pp "compare (%a, %a)"       f lhs f rhs
+      | Bget          -> pp "get(%a, %a)"            f lhs f rhs
+      | Bmem          -> pp "mem(%a, %a)"            f lhs f rhs
+      | Bconcat       -> pp "concat(%a, %a)"         f lhs f rhs
+      | Bcons         -> pp "cons(%a, %a)"           f lhs f rhs
+      | Bpair         -> pp "pair(%a, %a)"           f lhs f rhs
+      | Bexec         -> pp "exec(%a, %a)"           f lhs f rhs
+      | Bapply        -> pp "apply(%a, %a)"          f lhs f rhs
+      | Bcreateticket -> pp "create_tickets(%a, %a)" f lhs f rhs
+      | Bsplitticket  -> pp "split_ticket(%a, %a)"   f lhs f rhs
     end
   | Dtop (op, a1, a2, a3) -> begin
       match op with

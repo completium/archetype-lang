@@ -1116,7 +1116,7 @@ let globals = [
   ("operations"  , A.Coperations  , A.Tlist (A.Toperation));
   ("metadata"    , A.Cmetadata    , A.Tbig_map (A.vtstring, A.vtbytes));
   ("level"       , A.Clevel       , A.vtnat);
-  ("totalvotingpower", A.Ctotalvotingpower, A.vtnat);
+  ("total_voting_power", A.Ctotalvotingpower, A.vtnat);
 ]
 
 let statename = "state"
@@ -1310,11 +1310,19 @@ let lambdaops : opinfo list = [
 
 (* -------------------------------------------------------------------- *)
 let customops : opinfo list =
-  ["votingpower" , A.Cvotingpower, `Total, None, [A.vtkeyhash], A.vtnat, Mint.empty]
+  ["voting_power" , A.Cvotingpower, `Total, None, [A.vtkeyhash], A.vtnat, Mint.empty]
+
+(* -------------------------------------------------------------------- *)
+let ticketops : opinfo list = [
+  ("create_ticket", A.Ccreateticket, `Total, None, [A.Tnamed 0; A.vtnat], A.Tticket (A.Tnamed 0), Mint.empty);
+  ("read_ticket",   A.Creadticket,   `Total, None, [A.Tticket (A.Tnamed 0)], A.Ttuple [A.vtaddress; A.Tnamed 0; A.vtnat], Mint.empty);
+  ("split_ticket",  A.Csplitticket,  `Total, None, [A.Tticket (A.Tnamed 0); A.vtnat; A.vtnat], A.Toption (A.Ttuple [A.Tticket (A.Tnamed 0); A.Tticket (A.Tnamed 0)]), Mint.empty);
+  ("join_tickets",  A.Cjointickets,  `Total, None, [A.Tticket (A.Tnamed 0); A.Tticket (A.Tnamed 0)], A.Toption (A.Tticket (A.Tnamed 0)), Mint.empty);
+]
 
 (* -------------------------------------------------------------------- *)
 let allops : opinfo list =
-  coreops @ optionops @ setops @ listops @ mapops @ bigmapops @ cryptoops @ packops @ opsops @ lambdaops @ customops
+  coreops @ optionops @ setops @ listops @ mapops @ bigmapops @ cryptoops @ packops @ opsops @ lambdaops @ customops @ ticketops
 
 (* -------------------------------------------------------------------- *)
 type assetdecl = {
@@ -2392,13 +2400,13 @@ let form_mode (invariant : bool) =
 let decompile_match_with kd (bsm : (A.pattern * 'a) list) =
   let find (name : string) (n : int) =
     List.find_map (fun ((ptn, v) : A.pattern * _) ->
-      match ptn.A.node with
-      | A.Mconst (x, args) when unloc x = name && n = List.length args ->
+        match ptn.A.node with
+        | A.Mconst (x, args) when unloc x = name && n = List.length args ->
           Some (args, v)
-      | A.Mwild ->
+        | A.Mwild ->
           Some (List.init n (fun _ -> Location.mkloc dummy "_"), v)
-      | _ -> None)
-    bsm in
+        | _ -> None)
+      bsm in
 
   let module E = struct exception Bailout end in
 
@@ -2408,22 +2416,22 @@ let decompile_match_with kd (bsm : (A.pattern * 'a) list) =
   try
     match kd with
     | `List _ ->
-        let (x, xs), bcons = fst_map (List.as_seq2 %> Option.get) (find "$cons" 2) in
-        let _, bnil        = find "$nil" 0 in
+      let (x, xs), bcons = fst_map (List.as_seq2 %> Option.get) (find "$cons" 2) in
+      let _, bnil        = find "$nil" 0 in
 
-        Some (`List ((x, xs, bcons), bnil))
+      Some (`List ((x, xs, bcons), bnil))
 
     | `Option _ ->
-        let x, bsome = fst_map (List.as_seq1 %> Option.get) (find "$some" 1) in
-        let _, bnone = find "$none" 0 in
+      let x, bsome = fst_map (List.as_seq1 %> Option.get) (find "$some" 1) in
+      let _, bnone = find "$none" 0 in
 
-        Some (`Option ((x, bsome), bnone))
+      Some (`Option ((x, bsome), bnone))
 
     | `Or _ ->
-        let (xl, bl) = fst_map (List.as_seq1 %> Option.get) (find "$left"  1) in
-        let (xr, br) = fst_map (List.as_seq1 %> Option.get) (find "$right" 1) in
+      let (xl, bl) = fst_map (List.as_seq1 %> Option.get) (find "$left"  1) in
+      let (xr, br) = fst_map (List.as_seq1 %> Option.get) (find "$right" 1) in
 
-        Some (`Or ((xl, bl), (xr, br)))
+      Some (`Or ((xl, bl), (xr, br)))
 
     | `Enum -> raise E.Bailout
 
@@ -3288,19 +3296,19 @@ let rec for_xexpr
       end
 
     | Eor (Oleft (_, t, x)) ->
-        let x  = for_xexpr env x in
-        let ty = for_type_exn env t in
+      let x  = for_xexpr env x in
+      let ty = for_type_exn env t in
 
-        mk_sp
-          (Some (A.Tor (Option.get_dfl A.vtunit x.type_, ty)))
-          (A.Pleft (ty, x))
+      mk_sp
+        (Some (A.Tor (Option.get_dfl A.vtunit x.type_, ty)))
+        (A.Pleft (ty, x))
 
     | Eor (Oright (t, _, x)) ->
-        let x  = for_xexpr env x in
-        let ty = for_type_exn env t in
-        mk_sp
-          (Some (A.Tor (ty, Option.get_dfl A.vtunit x.type_)))
-          (A.Pright (ty, x))
+      let x  = for_xexpr env x in
+      let ty = for_type_exn env t in
+      mk_sp
+        (Some (A.Tor (ty, Option.get_dfl A.vtunit x.type_)))
+        (A.Pright (ty, x))
 
     | Elambda (prt, pid, pat, pe) -> begin
         let rt, at =
@@ -3319,14 +3327,14 @@ let rec for_xexpr
           | _ -> at in
 
         let _, e = Env.inscope env (fun env ->
-          let env =
-            match at with
-            | None ->
+            let env =
+              match at with
+              | None ->
                 Env.emit_error env (loc pid, CannotInfer);
                 env
-            | Some at ->
+              | Some at ->
                 Env.Local.push env (pid, at) in
-          env, for_xexpr env ?ety:rt pe) in
+            env, for_xexpr env ?ety:rt pe) in
 
         let oty =
           match rt, at with
@@ -3341,22 +3349,22 @@ let rec for_xexpr
         match for_gen_matchwith mode env (loc tope) e bs with
         | None -> bailout () | Some (kd, ctors, me, (wd, bsm, args), es) ->
           let es = List.map2 (fun e xs ->
-            let env = Env.Local.pushn ~kind:`Pattern env xs in
-            for_xexpr env e) es args in
+              let env = Env.Local.pushn ~kind:`Pattern env xs in
+              for_xexpr env e) es args in
           let bty, es = join_expr env ety es in
 
           let aout = List.pmap (fun (cname, _, _) ->
-            let bse  =
-              match Mstr.find (unloc cname) bsm, wd with
-              | Some i, _ ->
-                Some (List.nth es i, List.map fst (List.nth args i))
-              | None, Some _ ->
-                None
-              | None, None ->
-                Some (dummy bty, [])
-            in bse |> Option.map (fun (bse, args) ->
-                 (A.mk_sp (A.Mconst (cname, args)), bse))
-          ) ctors in
+              let bse  =
+                match Mstr.find (unloc cname) bsm, wd with
+                | Some i, _ ->
+                  Some (List.nth es i, List.map fst (List.nth args i))
+                | None, Some _ ->
+                  None
+                | None, None ->
+                  Some (dummy bty, [])
+              in bse |> Option.map (fun (bse, args) ->
+                  (A.mk_sp (A.Mconst (cname, args)), bse))
+            ) ctors in
 
           let aout =
             Option.fold
@@ -3366,13 +3374,13 @@ let rec for_xexpr
           let aout =
             match decompile_match_with kd aout with
             | Some (`List ((x, xs, bcons), bnil)) ->
-                A.Pmatchlist (me, x, xs, bcons, bnil)
+              A.Pmatchlist (me, x, xs, bcons, bnil)
 
             | Some (`Or ((xl, bl), (xr, br))) ->
-                A.Pmatchor (me, xl, bl, xr, br)
+              A.Pmatchor (me, xl, bl, xr, br)
 
             | Some (`Option ((x, bsome), bnone)) ->
-                A.Pmatchoption (me, x, bsome, bnone)
+              A.Pmatchoption (me, x, bsome, bnone)
 
             | None -> A.Pmatchwith (me, aout)
 
@@ -3383,10 +3391,10 @@ let rec for_xexpr
         let init = for_xexpr env pinit in
 
         let oty = init.type_ |> Option.bind (fun ty ->
-          let oty = Type.as_or ty in
-          if Option.is_none oty then
+            let oty = Type.as_or ty in
+            if Option.is_none oty then
               Env.emit_error env (loc pinit, InvalidFoldInit ty);
-          oty) in
+            oty) in
 
         let ety = Option.map (fun (lt, rt) -> A.Tor (lt, rt)) oty in
         let lt, rt = Option.map fst oty, Option.map snd oty in
@@ -3410,10 +3418,10 @@ let rec for_xexpr
         let lst = for_xexpr env plst in
 
         let oty = lst.type_ |> Option.bind (fun ty ->
-          let oty = Type.as_list ty in
-          if Option.is_none oty then
+            let oty = Type.as_list ty in
+            if Option.is_none oty then
               Env.emit_error env (loc plst, InvalidTypeForMapOperator ty);
-          oty) in
+            oty) in
 
         let body =
           let env =
@@ -3591,21 +3599,21 @@ and for_gen_matchwith (mode : emode_t) (env : env) theloc pe bs =
 
     | Some (A.Tlist ty) ->
       Some (`List ty, [
-        (mkloc Location.dummy (ident_of_pname PCons), [ty; A.Tlist ty], []);
-        (mkloc Location.dummy (ident_of_pname PNil ), [], []);
-      ])
+          (mkloc Location.dummy (ident_of_pname PCons), [ty; A.Tlist ty], []);
+          (mkloc Location.dummy (ident_of_pname PNil ), [], []);
+        ])
 
     | Some (A.Toption ty) ->
       Some (`Option ty, [
-        (mkloc Location.dummy (ident_of_pname PSome), [ty], []);
-        (mkloc Location.dummy (ident_of_pname PNone), []  , []);
-      ])
+          (mkloc Location.dummy (ident_of_pname PSome), [ty], []);
+          (mkloc Location.dummy (ident_of_pname PNone), []  , []);
+        ])
 
     | Some (A.Tor (ty1, ty2)) ->
       Some (`Or (ty1, ty2), [
-        (mkloc Location.dummy (ident_of_pname PLeft ), [ty1], []);
-        (mkloc Location.dummy (ident_of_pname PRight), [ty2], []);
-      ])
+          (mkloc Location.dummy (ident_of_pname PLeft ), [ty1], []);
+          (mkloc Location.dummy (ident_of_pname PRight), [ty2], []);
+        ])
 
     | Some _ ->
       Env.emit_error env (loc pe, NotAnEnumType); None in
@@ -3621,48 +3629,48 @@ and for_gen_matchwith (mode : emode_t) (env : env) theloc pe bs =
     let module E = struct exception Bailout end in
 
     let (wd, bsm), args = List.fold_left_mapi (fun bse ((_, bsm0) as bsm) (pts, _) ->
-      let (wd, bsm), args =
-        List.fold_left_map (fun (wd, bsm) pt ->
-          try
-            match unloc pt with
-            | PT.Pref (pid, args) -> begin
-              let pid = ident_of_pname (unloc pid) in
+        let (wd, bsm), args =
+          List.fold_left_map (fun (wd, bsm) pt ->
+              try
+                match unloc pt with
+                | PT.Pref (pid, args) -> begin
+                    let pid = ident_of_pname (unloc pid) in
 
-              match Mstr.find_opt pid bsm with
-              | None ->
-                Env.emit_error env (loc pt, AlienPattern);
-                raise E.Bailout
+                    match Mstr.find_opt pid bsm with
+                    | None ->
+                      Env.emit_error env (loc pt, AlienPattern);
+                      raise E.Bailout
 
-              | Some bd -> begin
-                let _, cargs, _ =
-                  List.find (fun (ct, _, _) -> unloc ct = pid) ctors in
+                    | Some bd -> begin
+                        let _, cargs, _ =
+                          List.find (fun (ct, _, _) -> unloc ct = pid) ctors in
 
-                let ng = List.length args in
-                let ne = List.length cargs in
+                        let ng = List.length args in
+                        let ne = List.length cargs in
 
-                if ng <> ne then begin
-                    Env.emit_error env (loc pt, InvalidNumberOfArguments (ne, ng));
-                    raise E.Bailout
-                end;
-                if Option.is_some bd || Option.is_some wd then begin
-                  Env.emit_error env (loc pt, UselessPattern);
-                  raise E.Bailout
-                end;
-                (wd, Mstr.add pid (Some bse) bsm), Some (List.combine args cargs)
-              end
-            end
+                        if ng <> ne then begin
+                          Env.emit_error env (loc pt, InvalidNumberOfArguments (ne, ng));
+                          raise E.Bailout
+                        end;
+                        if Option.is_some bd || Option.is_some wd then begin
+                          Env.emit_error env (loc pt, UselessPattern);
+                          raise E.Bailout
+                        end;
+                        (wd, Mstr.add pid (Some bse) bsm), Some (List.combine args cargs)
+                      end
+                  end
 
-            | PT.Pwild -> begin
-              match wd with
-              | None when Mstr.exists (fun _ v -> Option.is_none v) bsm ->
-                (Some bse, bsm), Some []
+                | PT.Pwild -> begin
+                    match wd with
+                    | None when Mstr.exists (fun _ v -> Option.is_none v) bsm ->
+                      (Some bse, bsm), Some []
 
-              | _ ->
-                Env.emit_error env (loc pt, UselessPattern);
-                raise E.Bailout
-              end
+                    | _ ->
+                      Env.emit_error env (loc pt, UselessPattern);
+                      raise E.Bailout
+                  end
 
-          with E.Bailout -> (wd, bsm), None) bsm pts in
+              with E.Bailout -> (wd, bsm), None) bsm pts in
 
         let bsm, args =
           try
@@ -3673,29 +3681,29 @@ and for_gen_matchwith (mode : emode_t) (env : env) theloc pe bs =
                 let xtymap = Mstr.of_list xtymap in
 
                 List.iter (fun xtys' ->
-                  let xtymap' = List.map (fun (x, ty) -> (unloc x, (loc x, ty))) xtys' in
-                  let xtymap' = Mstr.of_list xtymap' in
-                  let vars    = Sstr.of_list (List.map fst (Mstr.bindings xtymap ) @
-                                              List.map fst (Mstr.bindings xtymap') ) in
+                    let xtymap' = List.map (fun (x, ty) -> (unloc x, (loc x, ty))) xtys' in
+                    let xtymap' = Mstr.of_list xtymap' in
+                    let vars    = Sstr.of_list (List.map fst (Mstr.bindings xtymap ) @
+                                                List.map fst (Mstr.bindings xtymap') ) in
 
-                  Sstr.iter (fun x ->
-                  match Mstr.find_opt x xtymap, Mstr.find_opt x xtymap' with
-                  | Some (_, ty), Some (lc', ty') ->
-                      if not (Type.equal ty ty') then begin
-                        Env.emit_error env (lc', IncompatibleTypes (ty, ty'));
-                        raise E.Bailout
-                      end
-                  | None, Some (lc, _)
-                  | Some (lc, _), None ->
-                      Env.emit_error env (lc, NonHomogeneousPattern x)
-                  | None, None -> assert false) vars
-                ) rem; xtys
+                    Sstr.iter (fun x ->
+                        match Mstr.find_opt x xtymap, Mstr.find_opt x xtymap' with
+                        | Some (_, ty), Some (lc', ty') ->
+                          if not (Type.equal ty ty') then begin
+                            Env.emit_error env (lc', IncompatibleTypes (ty, ty'));
+                            raise E.Bailout
+                          end
+                        | None, Some (lc, _)
+                        | Some (lc, _), None ->
+                          Env.emit_error env (lc, NonHomogeneousPattern x)
+                        | None, None -> assert false) vars
+                  ) rem; xtys
             in (bsm, args)
 
           with E.Bailout -> (bsm0, []) in
         (wd, bsm), args
 
-    ) (None, bsm) bs in
+      ) (None, bsm) bs in
 
     if Option.is_none wd then begin
       let missing = Mstr.bindings bsm in
@@ -4560,22 +4568,22 @@ let rec for_instruction_r
         | None -> bailout () | Some (kd, ctors, me, (wd, bsm, args), is) ->
 
           let env, is = List.fold_left_map (fun env (i, xtys) ->
-            Env.inscope env (fun env ->
-              let env = Env.Local.pushn ~kind:`Pattern env xtys in
-              for_instruction ~ret kind env i)) env (List.combine is args) in
+              Env.inscope env (fun env ->
+                  let env = Env.Local.pushn ~kind:`Pattern env xtys in
+                  for_instruction ~ret kind env i)) env (List.combine is args) in
 
           let aout = List.pmap (fun (cname, _, _) ->
-            let bse =
-              match Mstr.find (unloc cname) bsm, wd with
-              | Some k, _ ->
-                Some (List.nth is k, List.map fst (List.nth args k))
-              | None, Some _ ->
-                None
-              | None, None ->
-                Some (mki (Iseq []), []) in
-            bse |> Option.map
-              (fun (bse, args) -> (A.mk_sp (A.Mconst (cname, args)), bse))
-          ) ctors in
+              let bse =
+                match Mstr.find (unloc cname) bsm, wd with
+                | Some k, _ ->
+                  Some (List.nth is k, List.map fst (List.nth args k))
+                | None, Some _ ->
+                  None
+                | None, None ->
+                  Some (mki (Iseq []), []) in
+              bse |> Option.map
+                (fun (bse, args) -> (A.mk_sp (A.Mconst (cname, args)), bse))
+            ) ctors in
 
           let aout =
             Option.fold
@@ -4585,13 +4593,13 @@ let rec for_instruction_r
           let aout =
             match decompile_match_with kd aout with
             | Some (`List ((x, xs, bcons), bnil)) ->
-                A.Imatchlist (me, x, xs, bcons, bnil)
+              A.Imatchlist (me, x, xs, bcons, bnil)
 
             | Some (`Or ((xl, bl), (xr, br))) ->
-                A.Imatchor (me, xl, bl, xr, br)
+              A.Imatchor (me, xl, bl, xr, br)
 
             | Some (`Option ((x, bsome), bnone)) ->
-                A.Imatchoption (me, x, bsome, bnone)
+              A.Imatchoption (me, x, bsome, bnone)
 
             | None -> A.Imatchwith (me, aout)
 
@@ -5083,16 +5091,16 @@ let for_core_enum_decl (env : env) (enum : enum_core loced) =
     let ctors =
       let map =
         List.fold_left (fun ctors (cname, cty, opts) ->
-          let cty = List.pmap (for_type env) cty in
-          let bd  =
-            match Mid.find (unloc cname) ctors with
-            | (x, cty', opts') -> (x, cty', opts' @ opts)
-            | exception Not_found -> (cname, cty, opts) in
-          Mid.add (unloc cname) bd ctors) Mid.empty ctors
+            let cty = List.pmap (for_type env) cty in
+            let bd  =
+              match Mid.find (unloc cname) ctors with
+              | (x, cty', opts') -> (x, cty', opts' @ opts)
+              | exception Not_found -> (cname, cty, opts) in
+            Mid.add (unloc cname) bd ctors) Mid.empty ctors
       in
-        List.map
-          (fun k -> Mid.find k map)
-          (List.undup (fun x -> x) (List.map (proj3_1 %> unloc) ctors)) in
+      List.map
+        (fun k -> Mid.find k map)
+        (List.undup (fun x -> x) (List.map (proj3_1 %> unloc) ctors)) in
 
     let for1 (cname, options) =
       let init, inv =

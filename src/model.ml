@@ -359,6 +359,11 @@ type ('id, 'term) mterm_node  =
   (* voting *)
   | Mtotalvotingpower
   | Mvotingpower      of 'term
+  (* ticket *)
+  | Mcreateticket     of 'term * 'term
+  | Mreadticket       of 'term
+  | Msplitticket      of 'term * 'term * 'term
+  | Mjointickets      of 'term * 'term
   (* constants *)
   | Mnow
   | Mtransferred
@@ -1445,6 +1450,11 @@ let cmp_mterm_node
     (* voting *)
     | Mtotalvotingpower, Mtotalvotingpower                                             -> true
     | Mvotingpower x1, Mvotingpower x2                                                 -> cmp x1 x2
+    (* ticket *)
+    | Mcreateticket (x1, a1), Mcreateticket (x2, a2)                                   -> cmp x1 x2 && cmp a1 a2
+    | Mreadticket x1, Mreadticket x2                                                   -> cmp x1 x2
+    | Msplitticket (x1, a1, b1), Msplitticket (x2, a2, b2)                             -> cmp x1 x2 && cmp a1 a2 && cmp b1 b2
+    | Mjointickets (x1, y1), Mjointickets (x2, y2)                                     -> cmp x1 x2 && cmp y1 y2
     (* constants *)
     | Mnow, Mnow                                                                       -> true
     | Mtransferred, Mtransferred                                                       -> true
@@ -1837,6 +1847,11 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   (* voting *)
   | Mtotalvotingpower              -> Mtotalvotingpower
   | Mvotingpower x                 -> Mvotingpower (f x)
+  (* ticket *)
+  | Mcreateticket (x, a)           -> Mcreateticket (f x, f a)
+  | Mreadticket x                  -> Mreadticket (f x)
+  | Msplitticket (x, a, b)         -> Msplitticket (f x, f a, f b)
+  | Mjointickets (x, y)            -> Mjointickets (f x, f y)
   (* constants *)
   | Mnow                           -> Mnow
   | Mtransferred                   -> Mtransferred
@@ -2227,6 +2242,11 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   (* voting *)
   | Mtotalvotingpower                     -> accu
   | Mvotingpower x                        -> f accu x
+  (* ticket *)
+  | Mcreateticket (x, a)                  -> f (f accu x) a
+  | Mreadticket x                         -> f accu x
+  | Msplitticket (x, a, b)                -> f (f (f accu x) a) b
+  | Mjointickets (x, y)                   -> f (f accu x) y
   (* constants *)
   | Mnow                                  -> accu
   | Mtransferred                          -> accu
@@ -3155,6 +3175,29 @@ let fold_map_term
   | Mvotingpower x ->
     let xe, xa = f accu x in
     g (Mvotingpower xe), xa
+
+
+  (* ticket *)
+
+  | Mcreateticket (x, a) ->
+    let xe, xa = f accu x in
+    let ae, aa = f xa a in
+    g (Mcreateticket (xe, ae)), aa
+
+  | Mreadticket x ->
+    let xe, xa = f accu x in
+    g (Mreadticket xe), xa
+
+  | Msplitticket (x, a, b) ->
+    let xe, xa = f accu x in
+    let ae, aa = f xa a in
+    let be, ba = f aa b in
+    g (Msplitticket (xe, ae, be)), ba
+
+  | Mjointickets (x, y) ->
+    let xe, xa = f accu x in
+    let ye, ya = f xa y in
+    g (Mjointickets (xe, ye)), ya
 
 
   (* constants *)

@@ -148,6 +148,11 @@ type code =
   | UNIT
   | UNPACK             of type_
   | UPDATE
+  (* Operations on tickets *)
+  | JOIN_TICKETS
+  | READ_TICKET
+  | SPLIT_TICKET
+  | TICKET
   (* Other *)
   | UNPAIR
   | SELF_ADDRESS
@@ -224,6 +229,8 @@ type un_operator =
   | Ult
   | Ule
   | Uvotingpower
+  | Ureadticket
+  | Ujointickets
 [@@deriving show {with_path = false}]
 
 type bin_operator =
@@ -244,6 +251,8 @@ type bin_operator =
   | Bpair
   | Bexec
   | Bapply
+  | Bcreateticket
+  | Bsplitticket
 [@@deriving show {with_path = false}]
 
 type ter_operator =
@@ -913,6 +922,11 @@ let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) =
   | UNIT                     -> UNIT
   | UNPACK t                 -> UNPACK (ft t)
   | UPDATE                   -> UPDATE
+  (* Operations on tickets *)
+  | JOIN_TICKETS             -> JOIN_TICKETS
+  | READ_TICKET              -> READ_TICKET
+  | SPLIT_TICKET             -> SPLIT_TICKET
+  | TICKET                   -> TICKET
   (* Other *)
   | UNPAIR                   -> UNPAIR
   | SELF_ADDRESS             -> SELF_ADDRESS
@@ -1329,6 +1343,11 @@ end = struct
     | UNIT                     -> mk "UNIT"
     | UNPACK t                 -> mk ~args:[ft t] "UNPACK"
     | UPDATE                   -> mk "UPDATE"
+    (* Operations on tickets *)
+    | JOIN_TICKETS             -> mk "JOIN_TICKETS"
+    | READ_TICKET              -> mk "READ_TICKET"
+    | SPLIT_TICKET             -> mk "SPLIT_TICKET"
+    | TICKET                   -> mk "TICKET"
     (* Other *)
     | UNPAIR                   -> mk "UNPAIR"
     | SELF_ADDRESS             -> mk "SELF_ADDRESS"

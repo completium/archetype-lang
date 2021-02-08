@@ -1151,11 +1151,30 @@ let pp_mterm fmt (mt : mterm) =
 
     (* voting *)
 
-    | Mtotalvotingpower -> pp_str fmt "totalvotingpower"
+    | Mtotalvotingpower -> pp_str fmt "total_voting_power"
 
     | Mvotingpower x ->
-      Format.fprintf fmt "votingpower (%a)"
+      Format.fprintf fmt "voting_power (%a)"
         f x
+
+
+    (* ticket *)
+
+    | Mcreateticket (x, a) ->
+      Format.fprintf fmt "create_ticket (%a, %a)"
+        f x f a
+
+    | Mreadticket x ->
+      Format.fprintf fmt "read_ticket (%a)"
+        f x
+
+    | Msplitticket (x, a, b) ->
+      Format.fprintf fmt "split_ticket (%a, %a, %a)"
+        f x f a f b
+
+    | Mjointickets (x, y) ->
+      Format.fprintf fmt "join_tickets (%a, %a)"
+        f x f y
 
 
     (* constants *)

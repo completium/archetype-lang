@@ -2152,6 +2152,12 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mtotalvotingpower -> assert false
     | Mvotingpower x -> Tapp (loc_term (Tvar "votingpower"),[map_mterm m ctx x])
 
+    (* ticket *)
+    | Mcreateticket (_x, _a)    -> assert false
+    | Mreadticket _x            -> assert false
+    | Msplitticket (_x, _a, _b) -> assert false
+    | Mjointickets (_x, _y)     -> assert false
+
     (* constants *)
 
     | Mnow -> Tnow (dl gs)

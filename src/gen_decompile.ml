@@ -957,6 +957,14 @@ let to_dir (michelson, env : T.michelson * env) =
     | UPDATE::it               -> interp_top env Tupdate it stack
 
 
+    (* Operations on tickets *)
+
+    | JOIN_TICKETS::it         -> interp_uop env Ujointickets  it stack
+    | READ_TICKET::it          -> interp_uop env Ureadticket   it stack
+    | SPLIT_TICKET::it         -> interp_bop env Bsplitticket  it stack
+    | TICKET::it               -> interp_bop env Bcreateticket it stack
+
+
     (* Other *)
 
     | UNPAIR::it  -> begin
@@ -1432,6 +1440,8 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         | Ult                -> assert false
         | Ule                -> assert false
         | Uvotingpower       -> M.mk_mterm (Mvotingpower (f e)) M.tkeyhash
+        | Ureadticket        -> assert false
+        | Ujointickets       -> assert false
       end
     | Ibinop (op, a, b) -> begin
         match op with
@@ -1452,6 +1462,8 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         | Bpair      -> M.mk_mterm (Mtuple [f a; f b]) (M.tunit)
         | Bexec      -> assert false
         | Bapply     -> assert false
+        | Bcreateticket -> assert false
+        | Bsplitticket  -> assert false
       end
     | Iterop (op, _a1, _a2, _a3) -> begin
         match op with
@@ -1810,10 +1822,18 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mchecksignature (_k, _s, _x) -> assert false
 
 
-    (* crypto functions *)
+    (* voting *)
 
     | Mtotalvotingpower            -> assert false
     | Mvotingpower _x              -> assert false
+
+
+    (* ticket *)
+
+    | Mcreateticket (_x, _a)    -> assert false
+    | Mreadticket _x            -> assert false
+    | Msplitticket (_x, _a, _b) -> assert false
+    | Mjointickets (_x, _y)     -> assert false
 
 
     (* constants *)

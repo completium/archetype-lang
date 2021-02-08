@@ -830,6 +830,14 @@ let to_ir (model : M.model) : T.ir =
     | Mvotingpower  x           -> T.Iunop (Uvotingpower, f x)
 
 
+    (* ticket *)
+
+    | Mcreateticket (x, a)   -> T.Ibinop (Bcreateticket, f x, f a)
+    | Mreadticket x          -> T.Imichelson ([Iunop (Ureadticket, f x)], T.SEQ [SWAP; DROP 1], [])
+    | Msplitticket (x, a, b) -> T.Ibinop (Bsplitticket,  f x, mk_tuple [f a; f b])
+    | Mjointickets (x, y)    -> T.Iunop  (Ujointickets,  mk_tuple [f x; f y])
+
+
     (* constants *)
 
     | Mnow           -> T.Izop Znow
@@ -1331,6 +1339,8 @@ let to_michelson (ir : T.ir) : T.michelson =
           | Ult              -> T.LT
           | Ule              -> T.LE
           | Uvotingpower     -> T.VOTING_POWER
+          | Ureadticket      -> T.READ_TICKET
+          | Ujointickets     -> T.JOIN_TICKETS
         in
         let e, env = fe env e in
         let env = match op with T.FAILWITH -> fail_env env | _ -> env in
@@ -1356,6 +1366,8 @@ let to_michelson (ir : T.ir) : T.michelson =
           | Bpair      -> T.PAIR
           | Bexec      -> T.EXEC
           | Bapply     -> T.APPLY
+          | Bcreateticket -> T.TICKET
+          | Bsplitticket  -> T.SPLIT_TICKET
         in
         let rhs, env = fe env rhs in
         let lhs, env = fe env lhs in

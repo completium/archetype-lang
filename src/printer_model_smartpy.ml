@@ -1344,11 +1344,30 @@ let pp_model fmt (model : model) =
 
       (* voting *)
 
-      | Mtotalvotingpower -> pp_str fmt "sp.totalvotingpower"
+      | Mtotalvotingpower -> pp_str fmt "sp.total_voting_power"
 
       | Mvotingpower x ->
-        Format.fprintf fmt "sp.votingpower (%a)"
+        Format.fprintf fmt "sp.voting_power (%a)"
           f x
+
+
+      (* ticket *)
+
+      | Mcreateticket (x, a) ->
+        Format.fprintf fmt "sp.create_ticket (%a, %a)"
+          f x f a
+
+      | Mreadticket x ->
+        Format.fprintf fmt "sp.read_ticket (%a)"
+          f x
+
+      | Msplitticket (x, a, b) ->
+        Format.fprintf fmt "sp.split_ticket (%a, %a, %a)"
+          f x f a f b
+
+      | Mjointickets (x, y) ->
+        Format.fprintf fmt "sp.join_tickets (%a, %a)"
+          f x f y
 
 
       (* constants *)

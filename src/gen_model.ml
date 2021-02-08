@@ -746,6 +746,29 @@ let to_model (ast : A.ast) : M.model =
         M.Mvotingpower (fx)
 
 
+      (* Ticket *)
+
+      | A.Pcall (None, A.Cconst A.Ccreateticket, [AExpr a; AExpr b]) ->
+        let fa = f a in
+        let fb = f b in
+        M.Mcreateticket (fa, fb)
+
+      | A.Pcall (None, A.Cconst A.Creadticket, [AExpr x]) ->
+        let fx = f x in
+        M.Mreadticket fx
+
+      | A.Pcall (None, A.Cconst A.Csplitticket, [AExpr a; AExpr b; AExpr c]) ->
+        let fa = f a in
+        let fb = f b in
+        let fc = f c in
+        M.Msplitticket (fa, fb, fc)
+
+      | A.Pcall (None, A.Cconst A.Cjointickets, [AExpr a; AExpr b]) ->
+        let fa = f a in
+        let fb = f b in
+        M.Mjointickets (fa, fb)
+
+
       (* Operation *)
 
       | A.Pcall (None, A.Cconst (A.Cmkoperation), [AExpr a; AExpr b; AExpr c]) ->
