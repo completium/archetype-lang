@@ -11,36 +11,36 @@ let rec pp_type fmt (t : type_) =
     | _ -> pp_str fmt str
   in
   match t.node with
-  | Tkey                 -> pp_simple_a "key"
-  | Tunit                -> pp_simple_a "unit"
-  | Tsignature           -> pp_simple_a "signature"
-  | Toption    t         -> Format.fprintf fmt "(option%a %a)"     pp_annot_opt () pp_type t
-  | Tlist      t         -> Format.fprintf fmt "(list%a %a)"       pp_annot_opt () pp_type t
-  | Tset       t         -> Format.fprintf fmt "(set%a %a)"        pp_annot_opt () pp_type t
-  | Toperation           -> pp_simple_a "operation"
-  | Tcontract  t         -> Format.fprintf fmt "(contract%a %a)"   pp_annot_opt () pp_type t
-  | Tpair      (lt, rt)  -> Format.fprintf fmt "(pair%a %a %a)"    pp_annot_opt () pp_type lt  pp_type rt
-  | Tor        (lt, rt)  -> Format.fprintf fmt "(or%a %a %a)"      pp_annot_opt () pp_type lt  pp_type rt
-  | Tlambda    (at, rt)  -> Format.fprintf fmt "(lambda%a %a %a)"  pp_annot_opt () pp_type at  pp_type rt
-  | Tmap       (kt, vt)  -> Format.fprintf fmt "(map%a %a %a)"     pp_annot_opt () pp_type kt  pp_type vt
-  | Tbig_map   (kt, vt)  -> Format.fprintf fmt "(big_map%a %a %a)" pp_annot_opt () pp_type kt  pp_type vt
-  | Tchain_id            -> pp_simple_a "chain_id"
-  | Tint                 -> pp_simple_a "int"
-  | Tnat                 -> pp_simple_a "nat"
-  | Tstring              -> pp_simple_a "string"
-  | Tbytes               -> pp_simple_a "bytes"
-  | Tmutez               -> pp_simple_a "mutez"
-  | Tbool                -> pp_simple_a "bool"
-  | Tkey_hash            -> pp_simple_a "key_hash"
-  | Ttimestamp           -> pp_simple_a "timestamp"
-  | Taddress             -> pp_simple_a "address"
-  | Tsapling_transaction -> pp_simple_a "sapling_transaction"
-  | Tsapling_state       -> pp_simple_a "sapling_state"
-  | Tnever               -> pp_simple_a "never"
-  | Tbls12_381_g1        -> pp_simple_a "bls12_381_g1"
-  | Tbls12_381_g2        -> pp_simple_a "bls12_381_g2"
-  | Tbls12_381_fr        -> pp_simple_a "bls12_381_fr"
-  | Tticket       t      -> Format.fprintf fmt "(ticket%a %a)"        pp_annot_opt () pp_type t
+  | Tkey                   -> pp_simple_a "key"
+  | Tunit                  -> pp_simple_a "unit"
+  | Tsignature             -> pp_simple_a "signature"
+  | Toption    t           -> Format.fprintf fmt "(option%a %a)"     pp_annot_opt () pp_type t
+  | Tlist      t           -> Format.fprintf fmt "(list%a %a)"       pp_annot_opt () pp_type t
+  | Tset       t           -> Format.fprintf fmt "(set%a %a)"        pp_annot_opt () pp_type t
+  | Toperation             -> pp_simple_a "operation"
+  | Tcontract  t           -> Format.fprintf fmt "(contract%a %a)"   pp_annot_opt () pp_type t
+  | Tpair      (lt, rt)    -> Format.fprintf fmt "(pair%a %a %a)"    pp_annot_opt () pp_type lt  pp_type rt
+  | Tor        (lt, rt)    -> Format.fprintf fmt "(or%a %a %a)"      pp_annot_opt () pp_type lt  pp_type rt
+  | Tlambda    (at, rt)    -> Format.fprintf fmt "(lambda%a %a %a)"  pp_annot_opt () pp_type at  pp_type rt
+  | Tmap       (kt, vt)    -> Format.fprintf fmt "(map%a %a %a)"     pp_annot_opt () pp_type kt  pp_type vt
+  | Tbig_map   (kt, vt)    -> Format.fprintf fmt "(big_map%a %a %a)" pp_annot_opt () pp_type kt  pp_type vt
+  | Tchain_id              -> pp_simple_a "chain_id"
+  | Tint                   -> pp_simple_a "int"
+  | Tnat                   -> pp_simple_a "nat"
+  | Tstring                -> pp_simple_a "string"
+  | Tbytes                 -> pp_simple_a "bytes"
+  | Tmutez                 -> pp_simple_a "mutez"
+  | Tbool                  -> pp_simple_a "bool"
+  | Tkey_hash              -> pp_simple_a "key_hash"
+  | Ttimestamp             -> pp_simple_a "timestamp"
+  | Taddress               -> pp_simple_a "address"
+  | Tticket       t        -> Format.fprintf fmt "(ticket%a %a)"        pp_annot_opt () pp_type t
+  | Tsapling_state       n -> Format.fprintf fmt "(sapling_state %i)" n
+  | Tsapling_transaction n -> Format.fprintf fmt "(sapling_transaction %i)" n
+  | Tbls12_381_fr          -> pp_simple_a "bls12_381_fr"
+  | Tbls12_381_g1          -> pp_simple_a "bls12_381_g1"
+  | Tbls12_381_g2          -> pp_simple_a "bls12_381_g2"
+  | Tnever                 -> pp_simple_a "never"
 
 let rec pp_pretty_type fmt (t : type_) =
   match t.node with

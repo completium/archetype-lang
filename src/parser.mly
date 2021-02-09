@@ -37,9 +37,9 @@
 %token ANY
 %token ARCHETYPE
 %token ASSERT
+%token AS
 %token ASSET
 %token AT
-%token AS
 %token AT_ADD
 %token AT_REMOVE
 %token AT_UPDATE
@@ -144,6 +144,8 @@
 %token RETURN
 %token RIGHT
 %token RPAREN
+%token SAPLING_STATE
+%token SAPLING_TRANSACTION
 %token SECURITY
 %token SELF
 %token SEMI_COLON
@@ -155,8 +157,8 @@
 %token SORTED
 %token SPECIFICATION
 %token STATES
-%token TICKET
 %token THEN
+%token TICKET
 %token TO
 %token TRANSFER
 %token TRANSITION
@@ -556,19 +558,21 @@ type_r:
 | x=type_s_unloc          { x }
 
 type_s_unloc:
-| x=ident                                          { Tref x            }
-| c=container LESS x=type_t GREATER                { Tcontainer (x, c) }
-| PKEY        LESS x=type_t GREATER                { Tkeyof x          }
-| OPTION      LESS x=type_t GREATER                { Toption x         }
-| TICKET      LESS x=type_t GREATER                { Tticket x         }
-| LIST        LESS x=type_t GREATER                { Tlist x           }
-| SET         LESS x=type_t GREATER                { Tset x            }
-| MAP         LESS k=type_t COMMA v=type_s GREATER { Tmap (k, v)       }
-| BIG_MAP     LESS k=type_t COMMA v=type_s GREATER { Tbig_map (k, v)   }
-| OR          LESS k=type_t COMMA v=type_s GREATER { Tor (k, v)        }
-| LAMBDA      LESS a=type_t COMMA r=type_s GREATER { Tlambda (a, r)    }
-| CONTRACT    LESS x=type_t GREATER                { Tcontract x       }
-| x=paren(type_r)                                  { x                 }
+| x=ident                                          { Tref x                 }
+| c=container LESS x=type_t GREATER                { Tcontainer (x, c)      }
+| PKEY        LESS x=type_t GREATER                { Tkeyof x               }
+| OPTION      LESS x=type_t GREATER                { Toption x              }
+| LIST        LESS x=type_t GREATER                { Tlist x                }
+| SET         LESS x=type_t GREATER                { Tset x                 }
+| MAP         LESS k=type_t COMMA v=type_s GREATER { Tmap (k, v)            }
+| BIG_MAP     LESS k=type_t COMMA v=type_s GREATER { Tbig_map (k, v)        }
+| OR          LESS k=type_t COMMA v=type_s GREATER { Tor (k, v)             }
+| LAMBDA      LESS a=type_t COMMA r=type_s GREATER { Tlambda (a, r)         }
+| CONTRACT    LESS x=type_t GREATER                { Tcontract x            }
+| TICKET      LESS x=type_t GREATER                { Tticket x              }
+| SAPLING_STATE       n=paren(NUMBERNAT)           { Tsapling_state       n }
+| SAPLING_TRANSACTION n=paren(NUMBERNAT)           { Tsapling_transaction n }
+| x=paren(type_r)                                  { x                      }
 
 %inline type_tuples:
 | xs=type_tuple+ { xs }

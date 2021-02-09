@@ -86,11 +86,15 @@ let rec pp_ptyp fmt (t : ptyp) =
     Format.fprintf fmt "operation"
   | Tcontract et ->
     Format.fprintf fmt "contract<%a>" pp_type et
-  | Tticket et ->
-    Format.fprintf fmt "ticket<%a>" pp_type et
   | Ttrace t ->
     Format.fprintf fmt "%a"
       pp_trtyp t
+  | Tticket et ->
+    Format.fprintf fmt "ticket<%a>" pp_type et
+  | Tsapling_state n ->
+    Format.fprintf fmt "sapling_state(%i)" n
+  | Tsapling_transaction n ->
+    Format.fprintf fmt "sapling_transaction(%i)" n
 
 and pp_type fmt t = pp_ptyp fmt t
 (* match a with

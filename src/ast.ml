@@ -60,8 +60,10 @@ type ptyp =
   | Toption of type_
   | Toperation
   | Tcontract of type_
-  | Tticket of type_
   | Ttrace of trtyp
+  | Tticket of type_
+  | Tsapling_state       of int
+  | Tsapling_transaction of int
 [@@deriving show {with_path = false}]
 
 and type_ = ptyp (* * lident option *) (* type of pterm *)

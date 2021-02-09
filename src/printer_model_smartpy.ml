@@ -111,11 +111,13 @@ let pp_model fmt (model : model) =
       Format.fprintf fmt "operation"
     | Tcontract t ->
       Format.fprintf fmt "contract<%a>" pp_type t
-    | Tticket t ->
-      Format.fprintf fmt "ticket<%a>" pp_type t
     | Tprog _
     | Tvset _
     | Ttrace _ -> Format.fprintf fmt "todo"
+    | Tticket t ->
+      Format.fprintf fmt "ticket<%a>" pp_type t
+    | Tsapling_state n -> Format.fprintf fmt "sapling_state(%i)" n
+    | Tsapling_transaction n -> Format.fprintf fmt "sapling_transaction(%i)" n
   in
 
 

@@ -1282,36 +1282,36 @@ let to_ir (dir, env : T.dprogram * env) : T.ir * env =
 let rec ttype_to_mtype (t : T.type_) : M.type_ =
   let f = ttype_to_mtype in
   match t.node with
-  | Tkey                  -> M.tkey
-  | Tunit                 -> M.tunit
-  | Tsignature            -> M.tsignature
-  | Toption    t          -> M.toption (f t)
-  | Tlist      t          -> M.tlist   (f t)
-  | Tset       t          -> M.tset    (f t)
-  | Toperation            -> M.toperation
-  | Tcontract  t          -> M.tcontract (f t)
-  | Tpair      (lt, rt)   -> M.ttuple [f lt; f rt]
-  | Tor        (lt, rt)   -> M.tor(f lt) (f rt)
-  | Tlambda    (at, rt)   -> M.tlambda (f at) (f rt)
-  | Tmap       (kt, vt)   -> M.tmap (f kt) (f vt)
-  | Tbig_map   (kt, vt)   -> M.tbig_map (f kt) (f vt)
-  | Tchain_id             -> M.tchainid
-  | Tint                  -> M.tint
-  | Tnat                  -> M.tnat
-  | Tstring               -> M.tstring
-  | Tbytes                -> M.tbytes
-  | Tmutez                -> M.ttez
-  | Tbool                 -> M.tbool
-  | Tkey_hash             -> M.tkeyhash
-  | Ttimestamp            -> M.ttimestamp
-  | Taddress              -> M.taddress
-  | Tsapling_transaction  -> assert false
-  | Tsapling_state        -> assert false
-  | Tnever                -> assert false
-  | Tbls12_381_g1         -> assert false
-  | Tbls12_381_g2         -> assert false
-  | Tbls12_381_fr         -> assert false
-  | Tticket _t            -> assert false
+  | Tkey                   -> M.tkey
+  | Tunit                  -> M.tunit
+  | Tsignature             -> M.tsignature
+  | Toption    t           -> M.toption (f t)
+  | Tlist      t           -> M.tlist   (f t)
+  | Tset       t           -> M.tset    (f t)
+  | Toperation             -> M.toperation
+  | Tcontract  t           -> M.tcontract (f t)
+  | Tpair      (lt, rt)    -> M.ttuple [f lt; f rt]
+  | Tor        (lt, rt)    -> M.tor(f lt) (f rt)
+  | Tlambda    (at, rt)    -> M.tlambda (f at) (f rt)
+  | Tmap       (kt, vt)    -> M.tmap (f kt) (f vt)
+  | Tbig_map   (kt, vt)    -> M.tbig_map (f kt) (f vt)
+  | Tchain_id              -> M.tchainid
+  | Tint                   -> M.tint
+  | Tnat                   -> M.tnat
+  | Tstring                -> M.tstring
+  | Tbytes                 -> M.tbytes
+  | Tmutez                 -> M.ttez
+  | Tbool                  -> M.tbool
+  | Tkey_hash              -> M.tkeyhash
+  | Ttimestamp             -> M.ttimestamp
+  | Taddress               -> M.taddress
+  | Tticket t              -> M.tticket (f t)
+  | Tsapling_transaction n -> M.tsapling_transaction n
+  | Tsapling_state       n -> M.tsapling_state n
+  | Tbls12_381_fr          -> assert false
+  | Tbls12_381_g1          -> assert false
+  | Tbls12_381_g2          -> assert false
+  | Tnever                 -> assert false
 
 let to_model (ir, env : T.ir * env) : M.model * env =
 
@@ -1524,43 +1524,45 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
   let rec for_type (t : M.type_) : A.type_t =
     let f = for_type in
     match M.get_ntype t with
-    | Tasset id           -> A.tref (unloc id)
-    | Tenum id            -> A.tref (unloc id)
-    | Tstate              -> assert false
-    | Tbuiltin Bunit      -> A.tunit
-    | Tbuiltin Bbool      -> A.tbool
-    | Tbuiltin Bint       -> A.tint
-    | Tbuiltin Brational  -> A.trational
-    | Tbuiltin Bdate      -> A.tdate
-    | Tbuiltin Bduration  -> A.tduration
-    | Tbuiltin Btimestamp -> assert false
-    | Tbuiltin Bstring    -> A.tstring
-    | Tbuiltin Baddress   -> A.taddress
-    | Tbuiltin Brole      -> A.trole
-    | Tbuiltin Bcurrency  -> A.ttez
-    | Tbuiltin Bsignature -> A.tsignature
-    | Tbuiltin Bkey       -> A.tkey
-    | Tbuiltin Bkeyhash   -> A.tkey_hash
-    | Tbuiltin Bbytes     -> A.tbytes
-    | Tbuiltin Bnat       -> A.tnat
-    | Tbuiltin Bchainid   -> A.tchain_id
-    | Tcontainer (t, c)   -> A.mk_tcontainer (f t) (match c with | Collection -> assert false | Aggregate -> A.Aggregate | Partition -> A.Partition | View -> A.View)
-    | Tlist t             -> A.mk_tlist (f t)
-    | Toption t           -> A.mk_toption (f t)
-    | Ttuple tl           -> A.mk_ttuple (List.map f tl)
-    | Tset t              -> A.mk_tset (f t)
-    | Tmap (_, kt, vt)    -> A.mk_tmap (f kt) (f vt)
-    | Tor (lt, rt)        -> A.mk_tor (f lt) (f rt)
-    | Trecord id          -> A.tref (unloc id)
-    | Tlambda _           -> assert false
-    | Tunit               -> A.tunit
-    | Tstorage            -> assert false
-    | Toperation          -> A.toperation
-    | Tcontract t         -> A.mk_tcontract (f t)
-    | Tticket t           -> A.mk_tticket (f t)
-    | Tprog _             -> assert false
-    | Tvset _             -> assert false
-    | Ttrace _            -> assert false
+    | Tasset id              -> A.tref (unloc id)
+    | Tenum id               -> A.tref (unloc id)
+    | Tstate                 -> assert false
+    | Tbuiltin Bunit         -> A.tunit
+    | Tbuiltin Bbool         -> A.tbool
+    | Tbuiltin Bint          -> A.tint
+    | Tbuiltin Brational     -> A.trational
+    | Tbuiltin Bdate         -> A.tdate
+    | Tbuiltin Bduration     -> A.tduration
+    | Tbuiltin Btimestamp    -> assert false
+    | Tbuiltin Bstring       -> A.tstring
+    | Tbuiltin Baddress      -> A.taddress
+    | Tbuiltin Brole         -> A.trole
+    | Tbuiltin Bcurrency     -> A.ttez
+    | Tbuiltin Bsignature    -> A.tsignature
+    | Tbuiltin Bkey          -> A.tkey
+    | Tbuiltin Bkeyhash      -> A.tkey_hash
+    | Tbuiltin Bbytes        -> A.tbytes
+    | Tbuiltin Bnat          -> A.tnat
+    | Tbuiltin Bchainid      -> A.tchain_id
+    | Tcontainer (t, c)      -> A.mk_tcontainer (f t) (match c with | Collection -> assert false | Aggregate -> A.Aggregate | Partition -> A.Partition | View -> A.View)
+    | Tlist t                -> A.mk_tlist (f t)
+    | Toption t              -> A.mk_toption (f t)
+    | Ttuple tl              -> A.mk_ttuple (List.map f tl)
+    | Tset t                 -> A.mk_tset (f t)
+    | Tmap (_, kt, vt)       -> A.mk_tmap (f kt) (f vt)
+    | Tor (lt, rt)           -> A.mk_tor (f lt) (f rt)
+    | Trecord id             -> A.tref (unloc id)
+    | Tlambda _              -> assert false
+    | Tunit                  -> A.tunit
+    | Tstorage               -> assert false
+    | Toperation             -> A.toperation
+    | Tcontract t            -> A.mk_tcontract (f t)
+    | Tprog _                -> assert false
+    | Tvset _                -> assert false
+    | Ttrace _               -> assert false
+    | Tticket t              -> A.mk_tticket (f t)
+    | Tsapling_state n       -> A.mk_sapling_state (Big_int.big_int_of_int n)
+    | Tsapling_transaction n -> A.mk_sapling_transaction (Big_int.big_int_of_int n)
   in
 
   let for_op = function

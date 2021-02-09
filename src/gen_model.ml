@@ -101,6 +101,7 @@ let to_model (ast : A.ast) : M.model =
       | A.Toption t          -> M.Toption (type_to_type t)
       | A.Tticket t          -> M.Tticket (type_to_type t)
       | A.Ttrace tr          -> M.Ttrace (to_trtyp tr)
+      | _ -> assert false
     in
     M.mktype (f t)
   in

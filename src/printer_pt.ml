@@ -173,15 +173,19 @@ let rec pp_type fmt (e, a) =
         "contract<%a>"
         f t
 
+    | Tkeyof t ->
+      Format.fprintf fmt
+        "pkey<%a>"
+        f t
+
     | Tticket t ->
       Format.fprintf fmt
         "ticket<%a>"
         f t
 
-    | Tkeyof t ->
-      Format.fprintf fmt
-        "pkey<%a>"
-        f t
+    | Tsapling_state n       -> Format.fprintf fmt "sapling_state(%s)"       (Big_int.string_of_big_int n)
+    | Tsapling_transaction n -> Format.fprintf fmt "sapling_transaction(%s)" (Big_int.string_of_big_int n)
+
   in
 
   match a with

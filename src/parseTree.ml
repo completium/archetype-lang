@@ -16,19 +16,21 @@ and container =
   | View
 
 and type_r =
-  | Tref       of lident
-  | Tcontainer of type_t * container
-  | Ttuple     of type_t list
-  | Toption    of type_t
-  | Tset       of type_t
-  | Tlist      of type_t
-  | Tmap       of type_t * type_t
-  | Tbig_map   of type_t * type_t
-  | Tor        of type_t * type_t
-  | Tlambda    of type_t * type_t
-  | Tcontract  of type_t
-  | Tkeyof     of type_t
-  | Tticket    of type_t
+  | Tref                 of lident
+  | Tcontainer           of type_t * container
+  | Ttuple               of type_t list
+  | Toption              of type_t
+  | Tset                 of type_t
+  | Tlist                of type_t
+  | Tmap                 of type_t * type_t
+  | Tbig_map             of type_t * type_t
+  | Tor                  of type_t * type_t
+  | Tlambda              of type_t * type_t
+  | Tcontract            of type_t
+  | Tkeyof               of type_t
+  | Tticket              of type_t
+  | Tsapling_state       of Core.big_int
+  | Tsapling_transaction of Core.big_int
 
 and type_t = type_r loced * lident option
 
@@ -450,12 +452,17 @@ let mk_tor ?(loc=dummy) ?a k v : type_t =
 let mk_tcontract ?(loc=dummy) ?a t : type_t =
   mkloc loc (Tcontract t), a
 
-let mk_tticket ?(loc=dummy) ?a t : type_t =
-  mkloc loc (Tticket t), a
-
 let mk_tkeyof ?(loc=dummy) ?a t : type_t =
   mkloc loc (Tkeyof t), a
 
+let mk_tticket ?(loc=dummy) ?a t : type_t =
+  mkloc loc (Tticket t), a
+
+let mk_sapling_state ?(loc=dummy) ?a n : type_t =
+  mkloc loc (Tsapling_state n), a
+
+let mk_sapling_transaction ?(loc=dummy) ?a n : type_t =
+  mkloc loc (Tsapling_transaction n), a
 
 
 (* expressions *)

@@ -31,13 +31,13 @@ type type_node =
   | Tstring
   | Ttimestamp
   | Tunit
-  | Tsapling_transaction
-  | Tsapling_state
-  | Tnever
+  | Tticket of type_
+  | Tsapling_state       of int
+  | Tsapling_transaction of int
   | Tbls12_381_g1
   | Tbls12_381_g2
   | Tbls12_381_fr
-  | Tticket of type_
+  | Tnever
 [@@deriving show {with_path = false}]
 
 and type_ = type_node with_annot
@@ -536,36 +536,36 @@ let cmp_ident = String.equal
 let cmp_type lhs rhs =
   let rec f lhs rhs =
     match lhs.node, rhs.node with
-    | Taddress, Taddress                         -> true
-    | Tbig_map (a1, b1), Tbig_map (a2, b2)       -> f a1 a2 && f b1 b2
-    | Tbool, Tbool                               -> true
-    | Tbytes, Tbytes                             -> true
-    | Tchain_id, Tchain_id                       -> true
-    | Tcontract a1, Tcontract a2                 -> f a1 a2
-    | Tint, Tint                                 -> true
-    | Tkey, Tkey                                 -> true
-    | Tkey_hash, Tkey_hash                       -> true
-    | Tlambda (a1, b1), Tlambda (a2, b2)         -> f a1 a2 && f b1 b2
-    | Tlist a1, Tlist a2                         -> f a1 a2
-    | Tmap (a1, b1), Tmap (a2, b2)               -> f a1 a2 && f b1 b2
-    | Tmutez, Tmutez                             -> true
-    | Tnat, Tnat                                 -> true
-    | Toperation, Toperation                     -> true
-    | Toption a1, Toption a2                     -> f a1 a2
-    | Tor (a1, b1), Tor (a2, b2)                 -> f a1 a2 && f b1 b2
-    | Tpair (a1, b1), Tpair (a2, b2)             -> f a1 a2 && f b1 b2
-    | Tset a1, Tset a2                           -> f a1 a2
-    | Tsignature, Tsignature                     -> true
-    | Tstring, Tstring                           -> true
-    | Ttimestamp, Ttimestamp                     -> true
-    | Tunit, Tunit                               -> true
-    | Tsapling_transaction, Tsapling_transaction -> true
-    | Tsapling_state, Tsapling_state             -> true
-    | Tnever, Tnever                             -> true
-    | Tbls12_381_g1, Tbls12_381_g1               -> true
-    | Tbls12_381_g2, Tbls12_381_g2               -> true
-    | Tbls12_381_fr, Tbls12_381_fr               -> true
-    | Tticket a1, Tticket a2                     -> f a1 a2
+    | Taddress, Taddress                               -> true
+    | Tbig_map (a1, b1), Tbig_map (a2, b2)             -> f a1 a2 && f b1 b2
+    | Tbool, Tbool                                     -> true
+    | Tbytes, Tbytes                                   -> true
+    | Tchain_id, Tchain_id                             -> true
+    | Tcontract a1, Tcontract a2                       -> f a1 a2
+    | Tint, Tint                                       -> true
+    | Tkey, Tkey                                       -> true
+    | Tkey_hash, Tkey_hash                             -> true
+    | Tlambda (a1, b1), Tlambda (a2, b2)               -> f a1 a2 && f b1 b2
+    | Tlist a1, Tlist a2                               -> f a1 a2
+    | Tmap (a1, b1), Tmap (a2, b2)                     -> f a1 a2 && f b1 b2
+    | Tmutez, Tmutez                                   -> true
+    | Tnat, Tnat                                       -> true
+    | Toperation, Toperation                           -> true
+    | Toption a1, Toption a2                           -> f a1 a2
+    | Tor (a1, b1), Tor (a2, b2)                       -> f a1 a2 && f b1 b2
+    | Tpair (a1, b1), Tpair (a2, b2)                   -> f a1 a2 && f b1 b2
+    | Tset a1, Tset a2                                 -> f a1 a2
+    | Tsignature, Tsignature                           -> true
+    | Tstring, Tstring                                 -> true
+    | Ttimestamp, Ttimestamp                           -> true
+    | Tunit, Tunit                                     -> true
+    | Tticket a1, Tticket a2                           -> f a1 a2
+    | Tsapling_state n1, Tsapling_state n2             -> n1 = n2
+    | Tsapling_transaction n1, Tsapling_transaction n2 -> n1 = n2
+    | Tbls12_381_g1, Tbls12_381_g1                     -> true
+    | Tbls12_381_g2, Tbls12_381_g2                     -> true
+    | Tbls12_381_fr, Tbls12_381_fr                     -> true
+    | Tnever, Tnever                                   -> true
     | _ -> false
   in
   f lhs rhs
@@ -785,36 +785,36 @@ let cmp_builtin lhs rhs =
 let map_type (f : type_ -> type_) (t : type_) : type_ =
   let node =
     match t.node with
-    | Taddress             -> Taddress
-    | Tbig_map   (k, v)    -> Tbig_map   (f k, f v)
-    | Tbool                -> Tbool
-    | Tbytes               -> Tbytes
-    | Tchain_id            -> Tchain_id
-    | Tcontract  t         -> Tcontract  (f t)
-    | Tint                 -> Tint
-    | Tkey                 -> Tkey
-    | Tkey_hash            -> Tkey_hash
-    | Tlambda    (a, r)    -> Tlambda    (f a, f r)
-    | Tlist      t         -> Tlist      (f t)
-    | Tmap       (k, v)    -> Tmap       (f k, f v)
-    | Tmutez               -> Tmutez
-    | Tnat                 -> Tnat
-    | Toperation           -> Toperation
-    | Toption    t         -> Toption    (f t)
-    | Tor        (l, r)    -> Tor        (f l, f r)
-    | Tpair      (l, r)    -> Tpair      (f l, f r)
-    | Tset       t         -> Tset       (f t)
-    | Tsignature           -> Tsignature
-    | Tstring              -> Tstring
-    | Ttimestamp           -> Ttimestamp
-    | Tunit                -> Tunit
-    | Tsapling_transaction -> Tsapling_transaction
-    | Tsapling_state       -> Tsapling_state
-    | Tnever               -> Tnever
-    | Tbls12_381_g1        -> Tbls12_381_g1
-    | Tbls12_381_g2        -> Tbls12_381_g2
-    | Tbls12_381_fr        -> Tbls12_381_fr
-    | Tticket       t      -> Tticket    (f t)
+    | Taddress               -> Taddress
+    | Tbig_map   (k, v)      -> Tbig_map   (f k, f v)
+    | Tbool                  -> Tbool
+    | Tbytes                 -> Tbytes
+    | Tchain_id              -> Tchain_id
+    | Tcontract  t           -> Tcontract  (f t)
+    | Tint                   -> Tint
+    | Tkey                   -> Tkey
+    | Tkey_hash              -> Tkey_hash
+    | Tlambda    (a, r)      -> Tlambda    (f a, f r)
+    | Tlist      t           -> Tlist      (f t)
+    | Tmap       (k, v)      -> Tmap       (f k, f v)
+    | Tmutez                 -> Tmutez
+    | Tnat                   -> Tnat
+    | Toperation             -> Toperation
+    | Toption    t           -> Toption    (f t)
+    | Tor        (l, r)      -> Tor        (f l, f r)
+    | Tpair      (l, r)      -> Tpair      (f l, f r)
+    | Tset       t           -> Tset       (f t)
+    | Tsignature             -> Tsignature
+    | Tstring                -> Tstring
+    | Ttimestamp             -> Ttimestamp
+    | Tunit                  -> Tunit
+    | Tsapling_transaction n -> Tsapling_transaction n
+    | Tsapling_state       n -> Tsapling_state n
+    | Tnever                 -> Tnever
+    | Tbls12_381_g1          -> Tbls12_381_g1
+    | Tbls12_381_g2          -> Tbls12_381_g2
+    | Tbls12_381_fr          -> Tbls12_381_fr
+    | Tticket       t        -> Tticket    (f t)
   in
   {node = node; annotation = t.annotation}
 
@@ -1193,36 +1193,36 @@ end = struct
   let rec type_to_micheline (t : type_) : obj_micheline =
     let prim, args =
       match t.node with
-      | Taddress             -> "address", []
-      | Tbig_map (k, v)      -> "big_map", [k; v]
-      | Tbool                -> "bool", []
-      | Tbytes               -> "bytes", []
-      | Tchain_id            -> "chain_id", []
-      | Tcontract t          -> "contract", [t]
-      | Tint                 -> "int", []
-      | Tkey                 -> "key", []
-      | Tkey_hash            -> "key_hash", []
-      | Tlambda (a, r)       -> "lambda", [a; r]
-      | Tlist t              -> "list", [t]
-      | Tmap (k, v)          -> "map", [k; v]
-      | Tmutez               -> "mutez", []
-      | Tnat                 -> "nat", []
-      | Toperation           -> "operation", []
-      | Toption t            -> "option", [t]
-      | Tor (l, r)           -> "or", [l; r]
-      | Tpair (l, r)         -> "pair", [l; r]
-      | Tset t               -> "set", [t]
-      | Tsignature           -> "signature", []
-      | Tstring              -> "string", []
-      | Ttimestamp           -> "timestamp", []
-      | Tunit                -> "unit", []
-      | Tsapling_transaction -> "sapling_transaction", []
-      | Tsapling_state       -> "sapling_state", []
-      | Tnever               -> "never", []
-      | Tbls12_381_g1        -> "bls12_381_g1", []
-      | Tbls12_381_g2        -> "bls12_381_g2", []
-      | Tbls12_381_fr        -> "bls12_381_fr", []
-      | Tticket t            -> "ticket", [t]
+      | Taddress               -> "address", []
+      | Tbig_map (k, v)        -> "big_map", [k; v]
+      | Tbool                  -> "bool", []
+      | Tbytes                 -> "bytes", []
+      | Tchain_id              -> "chain_id", []
+      | Tcontract t            -> "contract", [t]
+      | Tint                   -> "int", []
+      | Tkey                   -> "key", []
+      | Tkey_hash              -> "key_hash", []
+      | Tlambda (a, r)         -> "lambda", [a; r]
+      | Tlist t                -> "list", [t]
+      | Tmap (k, v)            -> "map", [k; v]
+      | Tmutez                 -> "mutez", []
+      | Tnat                   -> "nat", []
+      | Toperation             -> "operation", []
+      | Toption t              -> "option", [t]
+      | Tor (l, r)             -> "or", [l; r]
+      | Tpair (l, r)           -> "pair", [l; r]
+      | Tset t                 -> "set", [t]
+      | Tsignature             -> "signature", []
+      | Tstring                -> "string", []
+      | Ttimestamp             -> "timestamp", []
+      | Tunit                  -> "unit", []
+      | Tticket t              -> "ticket", [t]
+      | Tsapling_transaction n -> Format.asprintf "sapling_transaction(%i)" n, []
+      | Tsapling_state n       -> Format.asprintf "sapling_state(%i)" n, []
+      | Tbls12_381_g1          -> "bls12_381_g1", []
+      | Tbls12_381_g2          -> "bls12_381_g2", []
+      | Tbls12_381_fr          -> "bls12_381_fr", []
+      | Tnever                 -> "never", []
     in
     let args = if List.is_empty args then None else Some (List.map type_to_micheline args) in
     let annots = Option.bind (fun x -> Some [x]) t.annotation in
@@ -1388,36 +1388,36 @@ let rec to_type (o : obj_micheline) : type_ =
   let fa l = match l with | a::_ -> Some a | [] -> None in
   let f = to_type in
   match o with
-  | Oprim ({prim = "address"; annots; _})                    -> mk_type ?annotation:(fa annots) Taddress
-  | Oprim ({prim = "big_map"; annots; args = k::v::_})       -> mk_type ?annotation:(fa annots) (Tbig_map (f k, f v))
-  | Oprim ({prim = "bool"; annots; _})                       -> mk_type ?annotation:(fa annots) Tbool
-  | Oprim ({prim = "bytes"; annots; _})                      -> mk_type ?annotation:(fa annots) Tbytes
-  | Oprim ({prim = "chain_id"; annots; _})                   -> mk_type ?annotation:(fa annots) Tchain_id
-  | Oprim ({prim = "contract"; annots; args = t::_})         -> mk_type ?annotation:(fa annots) (Tcontract (f t))
-  | Oprim ({prim = "int"; annots; _})                        -> mk_type ?annotation:(fa annots) Tint
-  | Oprim ({prim = "key"; annots; _})                        -> mk_type ?annotation:(fa annots) Tkey
-  | Oprim ({prim = "key_hash"; annots; _})                   -> mk_type ?annotation:(fa annots) Tkey_hash
-  | Oprim ({prim = "lambda"; annots; args = a::r::_})        -> mk_type ?annotation:(fa annots) (Tlambda (f a, f r))
-  | Oprim ({prim = "list"; annots; args = t::_})             -> mk_type ?annotation:(fa annots) (Tlist (f t))
-  | Oprim ({prim = "map"; annots; args = k::v::_})           -> mk_type ?annotation:(fa annots) (Tmap (f k, f v))
-  | Oprim ({prim = "mutez"; annots; _})                      -> mk_type ?annotation:(fa annots) Tmutez
-  | Oprim ({prim = "nat"; annots; _})                        -> mk_type ?annotation:(fa annots) Tnat
-  | Oprim ({prim = "operation"; annots; _})                  -> mk_type ?annotation:(fa annots) Toperation
-  | Oprim ({prim = "option"; annots; args = t::_})           -> mk_type ?annotation:(fa annots) (Toption (f t))
-  | Oprim ({prim = "or"; annots; args = a::b::_})            -> mk_type ?annotation:(fa annots) (Tor (f a, f b))
-  | Oprim ({prim = "pair"; annots; args = a::l::_})          -> mk_type ?annotation:(fa annots) (Tpair (f a, f l))
-  | Oprim ({prim = "set"; annots; args = t::_})              -> mk_type ?annotation:(fa annots) (Tset (f t))
-  | Oprim ({prim = "signature"; annots; _})                  -> mk_type ?annotation:(fa annots) Tsignature
-  | Oprim ({prim = "string"; annots; _})                     -> mk_type ?annotation:(fa annots) Tstring
-  | Oprim ({prim = "timestamp"; annots; _})                  -> mk_type ?annotation:(fa annots) Ttimestamp
-  | Oprim ({prim = "unit"; annots; _})                       -> mk_type ?annotation:(fa annots) Tunit
-  | Oprim ({prim = "sapling_transaction"; annots; _})        -> mk_type ?annotation:(fa annots) Tsapling_transaction
-  | Oprim ({prim = "sapling_state"; annots; _})              -> mk_type ?annotation:(fa annots) Tsapling_state
-  | Oprim ({prim = "never"; annots; _})                      -> mk_type ?annotation:(fa annots) Tnever
-  | Oprim ({prim = "bls12_381_g1"; annots; _})               -> mk_type ?annotation:(fa annots) Tbls12_381_g1
-  | Oprim ({prim = "bls12_381_g2"; annots; _})               -> mk_type ?annotation:(fa annots) Tbls12_381_g2
-  | Oprim ({prim = "bls12_381_fr"; annots; _})               -> mk_type ?annotation:(fa annots) Tbls12_381_fr
-  | Oprim ({prim = "ticket"; annots; args = t::_})           -> mk_type ?annotation:(fa annots) (Tticket (f t))
+  | Oprim ({prim = "address"; annots; _})                                 -> mk_type ?annotation:(fa annots) Taddress
+  | Oprim ({prim = "big_map"; annots; args = k::v::_})                    -> mk_type ?annotation:(fa annots) (Tbig_map (f k, f v))
+  | Oprim ({prim = "bool"; annots; _})                                    -> mk_type ?annotation:(fa annots) Tbool
+  | Oprim ({prim = "bytes"; annots; _})                                   -> mk_type ?annotation:(fa annots) Tbytes
+  | Oprim ({prim = "chain_id"; annots; _})                                -> mk_type ?annotation:(fa annots) Tchain_id
+  | Oprim ({prim = "contract"; annots; args = t::_})                      -> mk_type ?annotation:(fa annots) (Tcontract (f t))
+  | Oprim ({prim = "int"; annots; _})                                     -> mk_type ?annotation:(fa annots) Tint
+  | Oprim ({prim = "key"; annots; _})                                     -> mk_type ?annotation:(fa annots) Tkey
+  | Oprim ({prim = "key_hash"; annots; _})                                -> mk_type ?annotation:(fa annots) Tkey_hash
+  | Oprim ({prim = "lambda"; annots; args = a::r::_})                     -> mk_type ?annotation:(fa annots) (Tlambda (f a, f r))
+  | Oprim ({prim = "list"; annots; args = t::_})                          -> mk_type ?annotation:(fa annots) (Tlist (f t))
+  | Oprim ({prim = "map"; annots; args = k::v::_})                        -> mk_type ?annotation:(fa annots) (Tmap (f k, f v))
+  | Oprim ({prim = "mutez"; annots; _})                                   -> mk_type ?annotation:(fa annots) Tmutez
+  | Oprim ({prim = "nat"; annots; _})                                     -> mk_type ?annotation:(fa annots) Tnat
+  | Oprim ({prim = "operation"; annots; _})                               -> mk_type ?annotation:(fa annots) Toperation
+  | Oprim ({prim = "option"; annots; args = t::_})                        -> mk_type ?annotation:(fa annots) (Toption (f t))
+  | Oprim ({prim = "or"; annots; args = a::b::_})                         -> mk_type ?annotation:(fa annots) (Tor (f a, f b))
+  | Oprim ({prim = "pair"; annots; args = a::l::_})                       -> mk_type ?annotation:(fa annots) (Tpair (f a, f l))
+  | Oprim ({prim = "set"; annots; args = t::_})                           -> mk_type ?annotation:(fa annots) (Tset (f t))
+  | Oprim ({prim = "signature"; annots; _})                               -> mk_type ?annotation:(fa annots) Tsignature
+  | Oprim ({prim = "string"; annots; _})                                  -> mk_type ?annotation:(fa annots) Tstring
+  | Oprim ({prim = "timestamp"; annots; _})                               -> mk_type ?annotation:(fa annots) Ttimestamp
+  | Oprim ({prim = "unit"; annots; _})                                    -> mk_type ?annotation:(fa annots) Tunit
+  | Oprim ({prim = "ticket"; annots; args = t::_})                        -> mk_type ?annotation:(fa annots) (Tticket (f t))
+  | Oprim ({prim = "sapling_state"; annots; args = (Oint n)::_; _})       -> mk_type ?annotation:(fa annots) (Tsapling_state (int_of_string n))
+  | Oprim ({prim = "sapling_transaction"; annots; args = (Oint n)::_; _}) -> mk_type ?annotation:(fa annots) (Tsapling_transaction (int_of_string n))
+  | Oprim ({prim = "bls12_381_g1"; annots; _})                            -> mk_type ?annotation:(fa annots) Tbls12_381_g1
+  | Oprim ({prim = "bls12_381_g2"; annots; _})                            -> mk_type ?annotation:(fa annots) Tbls12_381_g2
+  | Oprim ({prim = "bls12_381_fr"; annots; _})                            -> mk_type ?annotation:(fa annots) Tbls12_381_fr
+  | Oprim ({prim = "never"; annots; _})                                   -> mk_type ?annotation:(fa annots) Tnever
   | _ -> Format.eprintf "type unknown %a@." pp_obj_micheline o; assert false
 
 

@@ -72,10 +72,12 @@ type ntype =
   | Tstorage
   | Toperation
   | Tcontract of type_
-  | Tticket of type_
   | Tprog of type_
   | Tvset of vset * type_
   | Ttrace of trtyp
+  | Tticket of type_
+  | Tsapling_state of int
+  | Tsapling_transaction of int
 [@@deriving show {with_path = false}]
 
 and type_ = ntype * lident option
@@ -1033,6 +1035,8 @@ let toperation     = mktype (Toperation)
 let tsignature     = mktype (Tbuiltin Bsignature)
 let tcontract t    = mktype (Tcontract t)
 let tticket t      = mktype (Tticket t)
+let tsapling_state       n = mktype (Tsapling_state n)
+let tsapling_transaction n = mktype (Tsapling_transaction n)
 let tchainid       = mktype (Tbuiltin Bchainid)
 let tasset an      = mktype (Tasset an)
 let tcollection an = mktype (Tcontainer (tasset an, Collection))
@@ -1115,6 +1119,8 @@ let operations = mk_mterm Moperations (tlist toperation)
 (* -------------------------------------------------------------------- *)
 
 let cmp_ident (i1 : ident) (i2 : ident) : bool = String.equal i1 i2
+let cmp_big_int (n1 : Core.big_int) (n2 : Core.big_int) : bool = Big_int.compare_big_int n1 n2 = 0
+let cmp_int (n1 : int) (n2 : int) : bool = n1 = n2
 let cmp_lident (i1 : lident) (i2 : lident) : bool = cmp_ident (Location.unloc i1) (Location.unloc i2)
 let cmp_bool (b1 : bool) (b2 : bool) : bool = b1 = b2
 let cmp_assign_op (op1 : assignment_operator) (op2 : assignment_operator) : bool = op1 = op2
@@ -1166,6 +1172,8 @@ let rec cmp_ntype
   | Toperation, Toperation                   -> true
   | Tcontract t1, Tcontract t2               -> cmp_type t1 t2
   | Tticket t1, Tticket t2                   -> cmp_type t1 t2
+  | Tsapling_state n1, Tsapling_state n2     -> cmp_int n1 n2
+  | Tsapling_transaction n1, Tsapling_transaction n2 -> cmp_int n1 n2
   | Tprog t1, Tprog t2                       -> cmp_type t1 t2
   | Tvset (v1, t1), Tvset (v2, t2)           -> cmp_vset v1 v2 && cmp_type t1 t2
   | Ttrace t1, Ttrace t2                     -> cmp_trtyp t1 t2
@@ -1614,6 +1622,8 @@ let map_ptyp (f : type_ -> type_) (nt : ntype) : ntype =
   | Toperation        -> Toperation
   | Tcontract t       -> Tcontract (f t)
   | Tticket t         -> Tticket (f t)
+  | Tsapling_state n  -> Tsapling_state n
+  | Tsapling_transaction n -> Tsapling_transaction n
   | Tprog t           -> Tprog (f t)
   | Tvset (v, t)      -> Tvset (v, t)
   | Ttrace t          -> Ttrace t
@@ -3841,6 +3851,8 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
       | Toperation        -> nt
       | Tcontract t       -> Tcontract (for_type t)
       | Tticket t         -> Tticket (for_type t)
+      | Tsapling_state _  -> nt
+      | Tsapling_transaction _ -> nt
       | Tprog a           -> Tprog (for_type a)
       | Tvset (v, a)      -> Tvset (v, for_type a)
       | Ttrace _          -> nt

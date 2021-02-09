@@ -1,0 +1,9 @@
+archetype edo_sapling
+
+variable s : option<sapling_state(8)> = none
+
+entry init () {
+  // var s : sapling_state(99999999999) = create_sapling_state(99999999999);
+  // s := create_sapling_state(8)
+  ()
+}
