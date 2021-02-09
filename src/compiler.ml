@@ -195,6 +195,11 @@ let generate_api_storage      = Gen_api_storage.generate_api_storage
 
 let generate_target model =
 
+  let _print_model m =
+    Format.eprintf "%a@\n" Printer_model.pp_model m;
+    m
+  in
+
   match !Options.target with
   | Ligo
   | LigoStorage ->
@@ -322,7 +327,6 @@ let generate_target model =
     |> split_key_values
     |> remove_duplicate_key
     |> assign_loop_label
-    |> remove_letin_from_expr
     |> remove_asset
     |> remove_storage_field_in_function
     |> remove_high_level_model

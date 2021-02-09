@@ -305,9 +305,13 @@ let pp_mterm fmt (mt : mterm) =
         f c
         f b
 
-    | Mseq is ->
-      Format.fprintf fmt "%a"
-        (pp_list ";@\n" f) is
+    | Mseq is -> begin
+        match is with
+        | [] -> Format.fprintf fmt "(nops)"
+        | _ ->
+          Format.fprintf fmt "%a"
+            (pp_list ";@\n" f) is
+      end
 
     | Mreturn x ->
       Format.fprintf fmt "return %a"

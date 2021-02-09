@@ -1,0 +1,21 @@
+archetype edo_ticket_receiver
+
+constant emitter : address = @KT1RXHnJoewy3JuEv1HLP4eMLzTW9vEstVPn
+
+variable tickets : list<ticket<string>> = []
+
+entry receive(t : ticket<string>) {
+  called by emitter
+  effect {
+    tickets := prepend(tickets, t)
+  }
+}
+
+entry exec () {
+  var callback_opt : option<contract<ticket<string>>> = entrypoint<ticket<string>>("%receive", selfaddress);
+  var callback = opt_get(callback_opt);
+
+  var eopt : option<contract<contract<ticket<string>>>> = entrypoint<contract<ticket<string>>>("%emit", emitter);
+  var e = opt_get(eopt);
+  transfer 0tz to entry e(callback)
+}

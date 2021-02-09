@@ -1,0 +1,26 @@
+archetype edo_ticket_emitter
+
+variable myticket : option<ticket<string>> = none
+constant amount : nat = 10
+
+entry init () {
+  myticket := some(create_ticket ("myticket", 1_000_000));
+}
+
+entry emit (e : contract<ticket<string>>) {
+  match myticket with
+  | none -> fail("error: my ticket is not initialized")
+  | some (tick) -> begin
+      var info : (address * string * nat) = read_ticket(tick);
+      var n : nat = info[2];
+      var tickets : option<ticket<string> * ticket<string>> = split_ticket(tick, abs(n - amount), amount); // assume n >= amount
+        match tickets with
+        | none -> fail("error: cannot split myticket")
+        | some t -> begin
+            myticket := some(t[0]);
+            transfer 0tz to entry e(t[1])
+          end
+      end
+    end
+  end
+}
