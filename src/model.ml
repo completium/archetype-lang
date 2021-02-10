@@ -366,6 +366,9 @@ type ('id, 'term) mterm_node  =
   | Mreadticket       of 'term
   | Msplitticket      of 'term * 'term * 'term
   | Mjointickets      of 'term * 'term
+  (* sapling *)
+  | Msapling_empty_state   of int
+  | Msapling_verify_update of 'term * 'term
   (* constants *)
   | Mnow
   | Mtransferred
@@ -1171,12 +1174,12 @@ let rec cmp_ntype
   | Tstorage, Tstorage                       -> true
   | Toperation, Toperation                   -> true
   | Tcontract t1, Tcontract t2               -> cmp_type t1 t2
-  | Tticket t1, Tticket t2                   -> cmp_type t1 t2
-  | Tsapling_state n1, Tsapling_state n2     -> cmp_int n1 n2
-  | Tsapling_transaction n1, Tsapling_transaction n2 -> cmp_int n1 n2
   | Tprog t1, Tprog t2                       -> cmp_type t1 t2
   | Tvset (v1, t1), Tvset (v2, t2)           -> cmp_vset v1 v2 && cmp_type t1 t2
   | Ttrace t1, Ttrace t2                     -> cmp_trtyp t1 t2
+  | Tticket t1, Tticket t2                   -> cmp_type t1 t2
+  | Tsapling_state n1, Tsapling_state n2     -> cmp_int n1 n2
+  | Tsapling_transaction n1, Tsapling_transaction n2 -> cmp_int n1 n2
   | _ -> false
 
 and cmp_type
@@ -1463,6 +1466,9 @@ let cmp_mterm_node
     | Mreadticket x1, Mreadticket x2                                                   -> cmp x1 x2
     | Msplitticket (x1, a1, b1), Msplitticket (x2, a2, b2)                             -> cmp x1 x2 && cmp a1 a2 && cmp b1 b2
     | Mjointickets (x1, y1), Mjointickets (x2, y2)                                     -> cmp x1 x2 && cmp y1 y2
+    (* sapling *)
+    | Msapling_empty_state n1, Msapling_empty_state n2                                 -> cmp_int n1 n2
+    | Msapling_verify_update (s1, t1), Msapling_verify_update (s2, t2)                 -> cmp s1 s2 && cmp t1 t2
     (* constants *)
     | Mnow, Mnow                                                                       -> true
     | Mtransferred, Mtransferred                                                       -> true
@@ -1862,6 +1868,9 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mreadticket x                  -> Mreadticket (f x)
   | Msplitticket (x, a, b)         -> Msplitticket (f x, f a, f b)
   | Mjointickets (x, y)            -> Mjointickets (f x, f y)
+  (* sapling *)
+  | Msapling_empty_state    n      -> Msapling_empty_state   n
+  | Msapling_verify_update (s, t)  -> Msapling_verify_update (f s, f t)
   (* constants *)
   | Mnow                           -> Mnow
   | Mtransferred                   -> Mtransferred
@@ -2257,6 +2266,9 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mreadticket x                         -> f accu x
   | Msplitticket (x, a, b)                -> f (f (f accu x) a) b
   | Mjointickets (x, y)                   -> f (f accu x) y
+    (* sapling *)
+  | Msapling_empty_state    _             -> accu
+  | Msapling_verify_update (s, t)         -> f (f accu s) t
   (* constants *)
   | Mnow                                  -> accu
   | Mtransferred                          -> accu
@@ -3208,6 +3220,17 @@ let fold_map_term
     let xe, xa = f accu x in
     let ye, ya = f xa y in
     g (Mjointickets (xe, ye)), ya
+
+
+  (* sapling *)
+
+  | Msapling_empty_state n ->
+    g (Msapling_empty_state n), accu
+
+  | Msapling_verify_update (s, t) ->
+    let se, sa = f accu s in
+    let te, ta = f sa t in
+    g (Msapling_verify_update (se, te)), ta
 
 
   (* constants *)

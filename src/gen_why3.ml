@@ -2158,6 +2158,10 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Msplitticket (_x, _a, _b) -> assert false
     | Mjointickets (_x, _y)     -> assert false
 
+    (* sapling *)
+    | Msapling_empty_state _n         -> assert false
+    | Msapling_verify_update (_s, _t) -> assert false
+
     (* constants *)
 
     | Mnow -> Tnow (dl gs)

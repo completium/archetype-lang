@@ -209,6 +209,9 @@ type const =
   | Creadticket
   | Csplitticket
   | Cjointickets
+  (* sapling *)
+  | Csapling_empty_state
+  | Csapling_verify_update
   (* vset *)
   | Cbefore
   | Citerated

@@ -161,7 +161,7 @@ type code =
   | RENAME
   | STEPS_TO_QUOTA
   | LEVEL
-  | SAPLING_EMPTY_STATE
+  | SAPLING_EMPTY_STATE of int
   | SAPLING_VERIFY_UPDATE
   | NEVER
   | VOTING_POWER
@@ -196,6 +196,7 @@ type z_operator =
   | Zemptybigmap  of type_ * type_
   | Ztotalvotingpower
   | Zlevel
+  | Zsapling_empty_state of int
 [@@deriving show {with_path = false}]
 
 type un_operator =
@@ -253,6 +254,7 @@ type bin_operator =
   | Bapply
   | Bcreateticket
   | Bsplitticket
+  | Bsapling_verify_update
 [@@deriving show {with_path = false}]
 
 type ter_operator =
@@ -935,7 +937,7 @@ let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) =
   | RENAME                   -> RENAME
   | STEPS_TO_QUOTA           -> STEPS_TO_QUOTA
   | LEVEL                    -> LEVEL
-  | SAPLING_EMPTY_STATE      -> SAPLING_EMPTY_STATE
+  | SAPLING_EMPTY_STATE n    -> SAPLING_EMPTY_STATE n
   | SAPLING_VERIFY_UPDATE    -> SAPLING_VERIFY_UPDATE
   | NEVER                    -> NEVER
   | VOTING_POWER             -> VOTING_POWER
@@ -1356,7 +1358,7 @@ end = struct
     | RENAME                   -> mk "RENAME"
     | STEPS_TO_QUOTA           -> mk "STEPS_TO_QUOTA"
     | LEVEL                    -> mk "LEVEL"
-    | SAPLING_EMPTY_STATE      -> mk "SAPLING_EMPTY_STATE"
+    | SAPLING_EMPTY_STATE n    -> mk "SAPLING_EMPTY_STATE" ~args:[Oint (string_of_int n)]
     | SAPLING_VERIFY_UPDATE    -> mk "SAPLING_VERIFY_UPDATE"
     | NEVER                    -> mk "NEVER"
     | VOTING_POWER             -> mk "VOTING_POWER"

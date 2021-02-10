@@ -1183,6 +1183,15 @@ let pp_mterm fmt (mt : mterm) =
         f x f y
 
 
+    (* sapling *)
+
+    | Msapling_empty_state n ->
+      Format.fprintf fmt "sapling_empty_state (%i)" n
+
+    | Msapling_verify_update (s, t) ->
+      Format.fprintf fmt "sapling_verify_update (%a, %a)" f s f t
+
+
     (* constants *)
 
     | Mnow           -> pp_str fmt "now"

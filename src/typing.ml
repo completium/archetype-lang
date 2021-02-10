@@ -1330,20 +1330,20 @@ let lambdaops : opinfo list = [
 ]
 
 (* -------------------------------------------------------------------- *)
-let customops : opinfo list =
-  ["voting_power" , A.Cvotingpower, `Total, None, [A.vtkeyhash], A.vtnat, Mint.empty]
-
-(* -------------------------------------------------------------------- *)
-let ticketops : opinfo list = [
-  ("create_ticket", A.Ccreateticket, `Total, None, [A.Tnamed 0; A.vtnat], A.Tticket (A.Tnamed 0), Mint.empty);
-  ("read_ticket",   A.Creadticket,   `Total, None, [A.Tticket (A.Tnamed 0)], A.Ttuple [A.vtaddress; A.Tnamed 0; A.vtnat], Mint.empty);
-  ("split_ticket",  A.Csplitticket,  `Total, None, [A.Tticket (A.Tnamed 0); A.vtnat; A.vtnat], A.Toption (A.Ttuple [A.Tticket (A.Tnamed 0); A.Tticket (A.Tnamed 0)]), Mint.empty);
-  ("join_tickets",  A.Cjointickets,  `Total, None, [A.Tticket (A.Tnamed 0); A.Tticket (A.Tnamed 0)], A.Toption (A.Tticket (A.Tnamed 0)), Mint.empty);
-]
+let edoops : opinfo list =
+  [
+    ("voting_power" , A.Cvotingpower, `Total, None, [A.vtkeyhash], A.vtnat, Mint.empty);
+    ("create_ticket", A.Ccreateticket, `Total, None, [A.Tnamed 0; A.vtnat], A.Tticket (A.Tnamed 0), Mint.empty);
+    ("read_ticket",   A.Creadticket,   `Total, None, [A.Tticket (A.Tnamed 0)], A.Ttuple [A.vtaddress; A.Tnamed 0; A.vtnat], Mint.empty);
+    ("split_ticket",  A.Csplitticket,  `Total, None, [A.Tticket (A.Tnamed 0); A.vtnat; A.vtnat], A.Toption (A.Ttuple [A.Tticket (A.Tnamed 0); A.Tticket (A.Tnamed 0)]), Mint.empty);
+    ("join_tickets",  A.Cjointickets,  `Total, None, [A.Tticket (A.Tnamed 0); A.Tticket (A.Tnamed 0)], A.Toption (A.Tticket (A.Tnamed 0)), Mint.empty);
+    ("sapling_empty_state",   A.Csapling_empty_state,   `Total, None, [A.vtnat], A.Tsapling_state 0, Mint.empty);
+    ("sapling_verify_update", A.Csapling_verify_update, `Total, None, [A.Tsapling_transaction 0; A.Tsapling_state 0], A.Toption (A.Ttuple [A.vtint; A.Tsapling_state 0]), Mint.empty)
+  ]
 
 (* -------------------------------------------------------------------- *)
 let allops : opinfo list =
-  coreops @ optionops @ setops @ listops @ mapops @ bigmapops @ cryptoops @ packops @ opsops @ lambdaops @ customops @ ticketops
+  coreops @ optionops @ setops @ listops @ mapops @ bigmapops @ cryptoops @ packops @ opsops @ lambdaops @ edoops
 
 (* -------------------------------------------------------------------- *)
 type assetdecl = {
@@ -2322,16 +2322,16 @@ let for_type_exn ?pkey (env : env) =
       A.Tticket (doit ty)
 
     | Tsapling_state n -> begin
-      if (Big_int.lt_big_int n Big_int.zero_big_int) && (Big_int.ge_big_int n (Big_int.big_int_of_int 65536))
-      then (Env.emit_error env (loc ty, InvalidValueForMemoSize));
-      A.Tsapling_state (Big_int.int_of_big_int n)
-    end
+        if (Big_int.lt_big_int n Big_int.zero_big_int) && (Big_int.ge_big_int n (Big_int.big_int_of_int 65536))
+        then (Env.emit_error env (loc ty, InvalidValueForMemoSize));
+        A.Tsapling_state (Big_int.int_of_big_int n)
+      end
 
     | Tsapling_transaction n -> begin
-      if (Big_int.lt_big_int n Big_int.zero_big_int) && (Big_int.ge_big_int n (Big_int.big_int_of_int 65536))
-      then (Env.emit_error env (loc ty, InvalidValueForMemoSize));
-      A.Tsapling_transaction (Big_int.int_of_big_int n)
-    end
+        if (Big_int.lt_big_int n Big_int.zero_big_int) && (Big_int.ge_big_int n (Big_int.big_int_of_int 65536))
+        then (Env.emit_error env (loc ty, InvalidValueForMemoSize));
+        A.Tsapling_transaction (Big_int.int_of_big_int n)
+      end
 
 
   in fun ty -> doit ty

@@ -841,6 +841,11 @@ let to_ir (model : M.model) : T.ir =
     | Mjointickets (x, y)    -> T.Iunop  (Ujointickets,  mk_tuple [f x; f y])
 
 
+    (* sapling *)
+
+    | Msapling_empty_state n        -> T.Izop (Zsapling_empty_state n)
+    | Msapling_verify_update (s, t) -> T.Ibinop (Bsapling_verify_update, f s, f t)
+
     (* constants *)
 
     | Mnow           -> T.Izop Znow
@@ -1306,6 +1311,7 @@ let to_michelson (ir : T.ir) : T.michelson =
           | Zemptybigmap (k, v) -> T.EMPTY_BIG_MAP (rar k, rar v)
           | Ztotalvotingpower   -> T.TOTAL_VOTING_POWER
           | Zlevel              -> T.LEVEL
+          | Zsapling_empty_state n -> T.SAPLING_EMPTY_STATE n
         in
         c, inc_env env
       end
@@ -1371,6 +1377,7 @@ let to_michelson (ir : T.ir) : T.michelson =
           | Bapply     -> T.APPLY
           | Bcreateticket -> T.TICKET
           | Bsplitticket  -> T.SPLIT_TICKET
+          | Bsapling_verify_update -> T.SAPLING_VERIFY_UPDATE
         in
         let rhs, env = fe env rhs in
         let lhs, env = fe env lhs in

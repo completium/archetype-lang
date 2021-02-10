@@ -1372,6 +1372,15 @@ let pp_model fmt (model : model) =
           f x f y
 
 
+      (* sapling *)
+
+      | Msapling_empty_state n ->
+        Format.fprintf fmt "sp.sapling_empty_state (%i)" n
+
+      | Msapling_verify_update (_s, t) ->
+        Format.fprintf fmt "sp.sapling_verify_update (%a)" f t
+
+
       (* constants *)
 
       | Mnow           -> pp_str fmt "sp.now"

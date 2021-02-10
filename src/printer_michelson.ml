@@ -195,7 +195,7 @@ let rec pp_code fmt (i : code) =
   | UNIT                     -> pp "UNIT"
   | UNPACK t                 -> pp "UNPACK %a" pp_type t
   | UPDATE                   -> pp "UPDATE"
-    (* Operations on tickets *)
+  (* Operations on tickets *)
   | JOIN_TICKETS             -> pp "JOIN_TICKETS"
   | READ_TICKET              -> pp "READ_TICKET"
   | SPLIT_TICKET             -> pp "SPLIT_TICKET"
@@ -208,7 +208,7 @@ let rec pp_code fmt (i : code) =
   | RENAME                   -> pp "RENAME"
   | STEPS_TO_QUOTA           -> pp "STEPS_TO_QUOTA"
   | LEVEL                    -> pp "LEVEL"
-  | SAPLING_EMPTY_STATE      -> pp "SAPLING_EMPTY_STATE"
+  | SAPLING_EMPTY_STATE n    -> pp "SAPLING_EMPTY_STATE %i" n
   | SAPLING_VERIFY_UPDATE    -> pp "SAPLING_VERIFY_UPDATE"
   | NEVER                    -> pp "NEVER"
   | VOTING_POWER             -> pp "VOTING_POWER"
@@ -262,6 +262,7 @@ let rec pp_instruction fmt (i : instruction) =
       | Zemptybigmap (k, v) -> pp "emptybigmap(%a, %a)" pp_type k pp_type v
       | Ztotalvotingpower   -> pp "totalvotingpower"
       | Zlevel              -> pp "level"
+      | Zsapling_empty_state n -> pp "sapling_empty_state(%i)" n
     end
   | Iunop (op, e) -> begin
       match op with
@@ -319,6 +320,7 @@ let rec pp_instruction fmt (i : instruction) =
       | Bapply     -> pp "apply(%a, %a)"     f lhs f rhs
       | Bcreateticket -> pp "create_ticket(%a, %a)" f lhs f rhs
       | Bsplitticket  -> pp "split_ticket(%a, %a)"  f lhs f rhs
+      | Bsapling_verify_update -> pp "sapling_verify_update"
     end
   | Iterop (op, a1, a2, a3) -> begin
       match op with
@@ -488,6 +490,7 @@ let rec pp_dexpr fmt (de : dexpr) =
       | Zemptybigmap (k, v) -> pp "emptybigmap(%a, %a)" pp_type k pp_type v
       | Ztotalvotingpower   -> pp "totalvotingpower"
       | Zlevel              -> pp "level"
+      | Zsapling_empty_state n -> pp "sapling_empty_state(%i)" n
     end
   | Duop (op, e) -> begin
       match op with
@@ -545,6 +548,7 @@ let rec pp_dexpr fmt (de : dexpr) =
       | Bapply        -> pp "apply(%a, %a)"          f lhs f rhs
       | Bcreateticket -> pp "create_tickets(%a, %a)" f lhs f rhs
       | Bsplitticket  -> pp "split_ticket(%a, %a)"   f lhs f rhs
+      | Bsapling_verify_update -> pp "sapling_verify_update"
     end
   | Dtop (op, a1, a2, a3) -> begin
       match op with

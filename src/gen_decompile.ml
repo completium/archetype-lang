@@ -198,7 +198,7 @@ let to_michelson (input, env : T.obj_micheline * env) : T.michelson * env =
       | Oprim ({prim = "RENAME"; _})                         -> T.RENAME
       | Oprim ({prim = "STEPS_TO_QUOTA"; _})                 -> T.STEPS_TO_QUOTA
       | Oprim ({prim = "LEVEL"; _})                          -> T.LEVEL
-      | Oprim ({prim = "SAPLING_EMPTY_STATE"; _})            -> T.SAPLING_EMPTY_STATE
+      | Oprim ({prim = "SAPLING_EMPTY_STATE"; args = (Oint n)::_}) -> T.SAPLING_EMPTY_STATE (int_of_string n)
       | Oprim ({prim = "SAPLING_VERIFY_UPDATE"; _})          -> T.SAPLING_VERIFY_UPDATE
       | Oprim ({prim = "NEVER"; _})                          -> T.NEVER
       | Oprim ({prim = "VOTING_POWER"; _})                   -> T.VOTING_POWER
@@ -979,7 +979,7 @@ let to_dir (michelson, env : T.michelson * env) =
     | RENAME::_                   -> assert false
     | STEPS_TO_QUOTA::_           -> assert false
     | LEVEL::_                    -> assert false
-    | SAPLING_EMPTY_STATE::_      -> assert false
+    | SAPLING_EMPTY_STATE _::_    -> assert false
     | SAPLING_VERIFY_UPDATE::_    -> assert false
     | NEVER::_                    -> assert false
     | VOTING_POWER::_             -> assert false
@@ -1390,23 +1390,24 @@ let to_model (ir, env : T.ir * env) : M.model * env =
     | Iiter (_ids, _c, _b)         -> assert false
     | Izop op -> begin
         match op with
-        | Znow                  -> M.mk_mterm  Mnow         (M.tdate)
-        | Zamount               -> M.mk_mterm  Mtransferred (M.ttez)
-        | Zbalance              -> M.mk_mterm  Mbalance     (M.ttez)
-        | Zsource               -> M.mk_mterm  Msource      (M.taddress)
-        | Zsender               -> M.mk_mterm  Mcaller      (M.taddress)
-        | Zaddress              -> assert false
-        | Zchain_id             -> M.mk_mterm  Mchainid     (M.tchainid)
-        | Zself _               -> assert false
-        | Zself_address         -> M.mk_mterm  Mselfaddress (M.taddress)
-        | Znone t               -> M.mk_mterm  Mnone        (M.toption (for_type t))
-        | Zunit                 -> M.mk_mterm  Munit         M.tunit
-        | Znil t                -> M.mk_mterm (Mlitlist []) (M.tlist (for_type t))
-        | Zemptyset t           -> M.mk_mterm (Mlitset [])  (M.tset  (for_type t))
-        | Zemptymap (k, v)      -> M.mk_mterm (Mlitmap (false, [])) (M.tmap  (for_type k) (for_type v))
-        | Zemptybigmap (k, v)   -> M.mk_mterm (Mlitmap (true, [])) (M.tbig_map (for_type k) (for_type v))
-        | Ztotalvotingpower     -> M.mk_mterm  Mtotalvotingpower (M.tnat)
-        | Zlevel                -> M.mk_mterm  Mlevel (M.tnat)
+        | Znow                   -> M.mk_mterm  Mnow         (M.tdate)
+        | Zamount                -> M.mk_mterm  Mtransferred (M.ttez)
+        | Zbalance               -> M.mk_mterm  Mbalance     (M.ttez)
+        | Zsource                -> M.mk_mterm  Msource      (M.taddress)
+        | Zsender                -> M.mk_mterm  Mcaller      (M.taddress)
+        | Zaddress               -> assert false
+        | Zchain_id              -> M.mk_mterm  Mchainid     (M.tchainid)
+        | Zself _                -> assert false
+        | Zself_address          -> M.mk_mterm  Mselfaddress (M.taddress)
+        | Znone t                -> M.mk_mterm  Mnone        (M.toption (for_type t))
+        | Zunit                  -> M.mk_mterm  Munit         M.tunit
+        | Znil t                 -> M.mk_mterm (Mlitlist []) (M.tlist (for_type t))
+        | Zemptyset t            -> M.mk_mterm (Mlitset [])  (M.tset  (for_type t))
+        | Zemptymap (k, v)       -> M.mk_mterm (Mlitmap (false, [])) (M.tmap  (for_type k) (for_type v))
+        | Zemptybigmap (k, v)    -> M.mk_mterm (Mlitmap (true, [])) (M.tbig_map (for_type k) (for_type v))
+        | Ztotalvotingpower      -> M.mk_mterm  Mtotalvotingpower (M.tnat)
+        | Zlevel                 -> M.mk_mterm  Mlevel (M.tnat)
+        | Zsapling_empty_state n -> M.mk_mterm (Msapling_empty_state n) (M.tsapling_state n)
       end
     | Iunop (op, e) -> begin
         match op with
@@ -1464,6 +1465,7 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         | Bapply     -> assert false
         | Bcreateticket -> assert false
         | Bsplitticket  -> assert false
+        | Bsapling_verify_update -> M.mk_mterm (Msapling_verify_update (f a, f b)) (M.toption (M.ttuple [M.tint; M.tsapling_state 0]))
       end
     | Iterop (op, _a1, _a2, _a3) -> begin
         match op with
@@ -1836,6 +1838,12 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mreadticket _x            -> assert false
     | Msplitticket (_x, _a, _b) -> assert false
     | Mjointickets (_x, _y)     -> assert false
+
+
+    (* sapling *)
+
+    | Msapling_empty_state   _ -> assert false
+    | Msapling_verify_update _ -> assert false
 
 
     (* constants *)

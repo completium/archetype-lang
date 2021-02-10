@@ -280,6 +280,9 @@ let to_const = function
   | Creadticket     -> "read_ticket"
   | Csplitticket    -> "split_ticket"
   | Cjointickets    -> "join_tickets"
+  (* sapling *)
+  | Csapling_empty_state   -> "sapling_empty_state"
+  | Csapling_verify_update -> "sapling_verify_update"
   (* vset *)
   | Cbefore         -> "before"
   | Citerated       -> "iterated"
