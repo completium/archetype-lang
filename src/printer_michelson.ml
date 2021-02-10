@@ -298,6 +298,7 @@ let rec pp_instruction fmt (i : instruction) =
       | Uvotingpower -> pp "voting_power(%a)" f e
       | Ureadticket  -> pp "read_ticket(%a)"  f e
       | Ujointickets -> pp "join_tickets(%a)" f e
+      | Upairing_check -> pp "pairing_check"
     end
   | Ibinop (op, lhs, rhs) -> begin
       match op with
@@ -526,6 +527,7 @@ let rec pp_dexpr fmt (de : dexpr) =
       | Uvotingpower -> pp "votingpower(%a)" f e
       | Ureadticket  -> pp "read_ticket(%a)" f e
       | Ujointickets -> pp "join_tickets(%a)" f e
+      | Upairing_check -> pp "pairing_check"
     end
   | Dbop (op, lhs, rhs) -> begin
       match op with

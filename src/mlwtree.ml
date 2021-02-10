@@ -55,6 +55,10 @@ type ('i,'t) abstract_type =
   | Tyset of 'i
   | Tylist of 't
   | Tytuple of 't list
+  | Tybls12_381_fr
+  | Tybls12_381_g1
+  | Tybls12_381_g2
+  | Tynever
   (* ... *)
 [@@deriving show {with_path = false}]
 
@@ -344,6 +348,10 @@ let map_abstract_type (map_i : 'i1 -> 'i2) (map_t : 't1 -> 't2) = function
   | Tykeyhash     -> Tykeyhash
   | Tystate       -> Tystate
   | Tytuple l     -> Tytuple (List.map map_t l)
+  | Tybls12_381_fr-> Tybls12_381_fr
+  | Tybls12_381_g1-> Tybls12_381_g1
+  | Tybls12_381_g2-> Tybls12_381_g2
+  | Tynever       -> Tynever
 
 let map_abstract_univ_decl
     (map_t : 't1 -> 't2)
@@ -410,8 +418,8 @@ and map_abstract_term
                                 List.map (map_abstract_formula map_e map_i) l,
                                 map_e b)
   | Twhile (t,l,b)   -> Twhile (map_e t,
-                              List.map (map_abstract_formula map_e map_i) l,
-                              map_e b)
+                                List.map (map_abstract_formula map_e map_i) l,
+                                map_e b)
   | Ttry (b,l)         -> Ttry (map_e b, List.map (fun (exn,e) -> (map_exn map_e exn,map_e e)) l)
   | Tassert (l,e)      -> Tassert (Option.map map_i l,map_e e)
   | Tvar i             -> Tvar (map_i i)
@@ -837,7 +845,7 @@ let rec compare_abstract_term
         cmpi i1 i2 && cmpe j1 j2) l1 l2
   | Trecord (Some e1,l1), Trecord (Some e2,l2) ->
     cmpe e1 e2 && List.for_all2 (fun (i1,j1) (i2,j2) ->
-      cmpi i1 i2 && cmpe j1 j2) l1 l2
+        cmpi i1 i2 && cmpe j1 j2) l1 l2
   | Tdot (l1,r1), Tdot (l2,r2) -> cmpe r1 r2 && cmpe l1 l2
   | Tdoti (l1,r1), Tdoti (l2,r2) -> cmpi r1 r2 && cmpi l1 l2
   | Tename,Tename -> true

@@ -100,23 +100,27 @@ let pp_model_internal fmt (model : model) b =
   in
 
   let pp_btyp fmt = function
-    | Bunit       -> Format.fprintf fmt "unit"
-    | Bbool       -> Format.fprintf fmt "bool"
-    | Bint        -> Format.fprintf fmt "int"
-    | Brational   -> Format.fprintf fmt "rational"
-    | Bdate       -> Format.fprintf fmt "date"
-    | Bduration   -> Format.fprintf fmt "duration"
-    | Btimestamp  -> Format.fprintf fmt "timestamp"
-    | Bstring     -> Format.fprintf fmt "string"
-    | Baddress    -> Format.fprintf fmt "address"
-    | Brole       -> Format.fprintf fmt "address"
-    | Bcurrency   -> Format.fprintf fmt "tez"
-    | Bsignature  -> Format.fprintf fmt "signature"
-    | Bkey        -> Format.fprintf fmt "key"
-    | Bkeyhash    -> Format.fprintf fmt "key_hash"
-    | Bbytes      -> Format.fprintf fmt "bytes"
-    | Bnat        -> Format.fprintf fmt "nat"
-    | Bchainid    -> Format.fprintf fmt "chain_id"
+    | Bunit         -> Format.fprintf fmt "unit"
+    | Bbool         -> Format.fprintf fmt "bool"
+    | Bint          -> Format.fprintf fmt "int"
+    | Brational     -> Format.fprintf fmt "rational"
+    | Bdate         -> Format.fprintf fmt "date"
+    | Bduration     -> Format.fprintf fmt "duration"
+    | Btimestamp    -> Format.fprintf fmt "timestamp"
+    | Bstring       -> Format.fprintf fmt "string"
+    | Baddress      -> Format.fprintf fmt "address"
+    | Brole         -> Format.fprintf fmt "address"
+    | Bcurrency     -> Format.fprintf fmt "tez"
+    | Bsignature    -> Format.fprintf fmt "signature"
+    | Bkey          -> Format.fprintf fmt "key"
+    | Bkeyhash      -> Format.fprintf fmt "key_hash"
+    | Bbytes        -> Format.fprintf fmt "bytes"
+    | Bnat          -> Format.fprintf fmt "nat"
+    | Bchainid      -> Format.fprintf fmt "chain_id"
+    | Bbls12_381_fr -> Format.fprintf fmt "bls12_381_fr"
+    | Bbls12_381_g1 -> Format.fprintf fmt "bls12_381_g1"
+    | Bbls12_381_g2 -> Format.fprintf fmt "bls12_381_g2"
+    | Bnever        -> Format.fprintf fmt "never"
   in
 
   let pp_container fmt = function
@@ -1455,6 +1459,10 @@ let pp_model_internal fmt (model : model) b =
     | Msapling_verify_update (s, t) ->
       Format.fprintf fmt "sapling_verify_update (%a, %a)" f s f t
 
+
+    (* bls curve *)
+
+    | Mpairing_check x -> Format.fprintf fmt "pairing_check (%a)" f x
 
 
     (* constants *)

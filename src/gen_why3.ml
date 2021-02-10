@@ -127,6 +127,10 @@ let map_btype = function
   | M.Bbytes         -> Tybytes
   | M.Bnat           -> Tyuint
   | M.Bchainid       -> Tychainid
+  | M.Bbls12_381_fr  -> Tybls12_381_fr
+  | M.Bbls12_381_g1  -> Tybls12_381_g1
+  | M.Bbls12_381_g2  -> Tybls12_381_g2
+  | M.Bnever         -> Tynever
 
 let get_type_idx t = List.index_of (M.cmp_type t)
 
@@ -2161,6 +2165,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     (* sapling *)
     | Msapling_empty_state _n         -> assert false
     | Msapling_verify_update (_s, _t) -> assert false
+
+    (* bls curve *)
+    | Mpairing_check _x -> assert false
 
     (* constants *)
 

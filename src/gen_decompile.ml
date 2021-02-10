@@ -1443,6 +1443,7 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         | Uvotingpower       -> M.mk_mterm (Mvotingpower (f e)) M.tkeyhash
         | Ureadticket        -> assert false
         | Ujointickets       -> assert false
+        | Upairing_check     -> assert false
       end
     | Ibinop (op, a, b) -> begin
         match op with
@@ -1546,6 +1547,10 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Tbuiltin Bbytes        -> A.tbytes
     | Tbuiltin Bnat          -> A.tnat
     | Tbuiltin Bchainid      -> A.tchain_id
+    | Tbuiltin Bbls12_381_fr -> A.tbls12_381_fr
+    | Tbuiltin Bbls12_381_g1 -> A.tbls12_381_g1
+    | Tbuiltin Bbls12_381_g2 -> A.tbls12_381_g2
+    | Tbuiltin Bnever        -> A.tnever
     | Tcontainer (t, c)      -> A.mk_tcontainer (f t) (match c with | Collection -> assert false | Aggregate -> A.Aggregate | Partition -> A.Partition | View -> A.View)
     | Tlist t                -> A.mk_tlist (f t)
     | Toption t              -> A.mk_toption (f t)
@@ -1844,6 +1849,11 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     | Msapling_empty_state   _ -> assert false
     | Msapling_verify_update _ -> assert false
+
+
+    (* bls curve *)
+
+    | Mpairing_check _ -> assert false
 
 
     (* constants *)

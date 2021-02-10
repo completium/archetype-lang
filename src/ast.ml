@@ -34,6 +34,10 @@ type vtyp =
   | VTsignature
   | VTbytes
   | VTchainid
+  | VTbls12_381_fr
+  | VTbls12_381_g1
+  | VTbls12_381_g2
+  | VTnever
 [@@deriving show {with_path = false}]
 
 type trtyp =
@@ -212,6 +216,8 @@ type const =
   (* sapling *)
   | Csapling_empty_state
   | Csapling_verify_update
+  (* bls *)
+  | Cpairing_check
   (* vset *)
   | Cbefore
   | Citerated
@@ -725,25 +731,29 @@ type 'id ast_struct = {
 and ast = lident ast_struct
 
 (* vtyp -> type_ *)
-let vtunit       = Tbuiltin (VTunit      )
-let vtbool       = Tbuiltin (VTbool      )
-let vtnat        = Tbuiltin (VTnat       )
-let vtint        = Tbuiltin (VTint       )
-let vtrational   = Tbuiltin (VTrational  )
-let vtdate       = Tbuiltin (VTdate      )
-let vtduration   = Tbuiltin (VTduration  )
-let vtstring     = Tbuiltin (VTstring    )
-let vtaddress    = Tbuiltin (VTaddress   )
-let vtrole       = Tbuiltin (VTrole      )
-let vtcurrency   = Tbuiltin (VTcurrency  )
-let vtsignature  = Tbuiltin (VTsignature )
-let vtkey        = Tbuiltin (VTkey       )
-let vtkeyhash    = Tbuiltin (VTkeyhash   )
-let vtbytes      = Tbuiltin (VTbytes     )
-let vtchainid    = Tbuiltin (VTchainid   )
+let vtunit         = Tbuiltin (VTunit         )
+let vtbool         = Tbuiltin (VTbool         )
+let vtnat          = Tbuiltin (VTnat          )
+let vtint          = Tbuiltin (VTint          )
+let vtrational     = Tbuiltin (VTrational     )
+let vtdate         = Tbuiltin (VTdate         )
+let vtduration     = Tbuiltin (VTduration     )
+let vtstring       = Tbuiltin (VTstring       )
+let vtaddress      = Tbuiltin (VTaddress      )
+let vtrole         = Tbuiltin (VTrole         )
+let vtcurrency     = Tbuiltin (VTcurrency     )
+let vtsignature    = Tbuiltin (VTsignature    )
+let vtkey          = Tbuiltin (VTkey          )
+let vtkeyhash      = Tbuiltin (VTkeyhash      )
+let vtbytes        = Tbuiltin (VTbytes        )
+let vtchainid      = Tbuiltin (VTchainid      )
+let vtbls12_381_fr = Tbuiltin (VTbls12_381_fr )
+let vtbls12_381_g1 = Tbuiltin (VTbls12_381_g1 )
+let vtbls12_381_g2 = Tbuiltin (VTbls12_381_g2 )
+let vtnever        = Tbuiltin (VTnever        )
+
 
 (* mk functions *)
-
 
 let mk_sp ?label ?(loc = Location.dummy) ?type_ node =
   { node; type_; label; loc; }

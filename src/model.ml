@@ -36,6 +36,10 @@ type btyp =
   | Bbytes
   | Bnat
   | Bchainid
+  | Bbls12_381_fr
+  | Bbls12_381_g1
+  | Bbls12_381_g2
+  | Bnever
 [@@deriving show {with_path = false}]
 
 type vset =
@@ -369,6 +373,8 @@ type ('id, 'term) mterm_node  =
   (* sapling *)
   | Msapling_empty_state   of int
   | Msapling_verify_update of 'term * 'term
+  (* bls curve *)
+  | Mpairing_check of 'term
   (* constants *)
   | Mnow
   | Mtransferred
@@ -1041,6 +1047,10 @@ let tticket t      = mktype (Tticket t)
 let tsapling_state       n = mktype (Tsapling_state n)
 let tsapling_transaction n = mktype (Tsapling_transaction n)
 let tchainid       = mktype (Tbuiltin Bchainid)
+let tbls12_381_fr  = mktype (Tbuiltin Bbls12_381_fr)
+let tbls12_381_g1  = mktype (Tbuiltin Bbls12_381_g1)
+let tbls12_381_g2  = mktype (Tbuiltin Bbls12_381_g2)
+let tnever         = mktype (Tbuiltin Bnever)
 let tasset an      = mktype (Tasset an)
 let tcollection an = mktype (Tcontainer (tasset an, Collection))
 let taggregate an  = mktype (Tcontainer (tasset an, Aggregate))
@@ -1469,6 +1479,8 @@ let cmp_mterm_node
     (* sapling *)
     | Msapling_empty_state n1, Msapling_empty_state n2                                 -> cmp_int n1 n2
     | Msapling_verify_update (s1, t1), Msapling_verify_update (s2, t2)                 -> cmp s1 s2 && cmp t1 t2
+    (* bls curve *)
+    | Mpairing_check x1, Mpairing_check x2                                             -> cmp x1 x2
     (* constants *)
     | Mnow, Mnow                                                                       -> true
     | Mtransferred, Mtransferred                                                       -> true
@@ -1871,6 +1883,8 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   (* sapling *)
   | Msapling_empty_state    n      -> Msapling_empty_state   n
   | Msapling_verify_update (s, t)  -> Msapling_verify_update (f s, f t)
+  (* bls curve *)
+  | Mpairing_check x               -> Mpairing_check (f x)
   (* constants *)
   | Mnow                           -> Mnow
   | Mtransferred                   -> Mtransferred
@@ -2266,9 +2280,11 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mreadticket x                         -> f accu x
   | Msplitticket (x, a, b)                -> f (f (f accu x) a) b
   | Mjointickets (x, y)                   -> f (f accu x) y
-    (* sapling *)
+  (* sapling *)
   | Msapling_empty_state    _             -> accu
   | Msapling_verify_update (s, t)         -> f (f accu s) t
+  (* bls curve *)
+  | Mpairing_check x                      -> f accu x
   (* constants *)
   | Mnow                                  -> accu
   | Mtransferred                          -> accu
@@ -3231,6 +3247,13 @@ let fold_map_term
     let se, sa = f accu s in
     let te, ta = f sa t in
     g (Msapling_verify_update (se, te)), ta
+
+
+  (* bls curve *)
+
+  | Mpairing_check x ->
+    let xe, xa = f accu x in
+    g (Mpairing_check xe), xa
 
 
   (* constants *)

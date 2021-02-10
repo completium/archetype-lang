@@ -427,6 +427,11 @@ let tkey_hash  = tref "key_hash"
 let tbytes     = tref "bytes"
 let tchain_id  = tref "chain_id"
 let toperation = tref "operation"
+let toperation = tref "operation"
+let tbls12_381_fr = tref "bls12_381_fr"
+let tbls12_381_g1 = tref "bls12_381_g1"
+let tbls12_381_g2 = tref "bls12_381_g2"
+let tnever        = tref "never"
 
 let mk_tcontainer ?(loc=dummy) ?a t c : type_t =
   mkloc loc (Tcontainer (t, c)), a

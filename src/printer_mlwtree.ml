@@ -161,6 +161,10 @@ let pp_type fmt typ =
       | Tykeyhash     -> "key_hash"
       | Tystate       -> "state"
       | Tytuple l     -> "(" ^ (String.concat ", " (List.map typ_str l)) ^ ")"
+      | Tybls12_381_fr -> "bls12_381_fr"
+      | Tybls12_381_g1 -> "bls12_381_g1"
+      | Tybls12_381_g2 -> "bls12_381_g2"
+      | Tynever        -> "never"
     in
     if pparen && (needs_paren t) then
       "("^str^")"
@@ -891,13 +895,13 @@ and pp_fails outer pos fmt fails =
   then pp_str fmt ""
   else
     Format.fprintf fmt "@[raises {@\n %a @\n}@\n@]"
-    (pp_list "@\n}@\nraises {@\n " (pp_fail outer pos)) fails
+      (pp_list "@\n}@\nraises {@\n " (pp_fail outer pos)) fails
 and pp_fail outer pos fmt fail =
   match fail with
   | Some _, t -> (* why3 does not allow annotation in raises section *)
-      Format.fprintf fmt "%a" (pp_term outer pos) t
+    Format.fprintf fmt "%a" (pp_term outer pos) t
   | None, t ->
-      Format.fprintf fmt "%a" (pp_term outer pos) t
+    Format.fprintf fmt "%a" (pp_term outer pos) t
 and pp_catch outer pos fmt (exn,e) =
   Format.fprintf fmt "| %a -> %a"
     (pp_exn outer pos) exn

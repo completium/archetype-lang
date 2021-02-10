@@ -76,6 +76,10 @@ let generate_storage (model : model) : model =
       | Tticket _              -> emit_error (NoInitExprFor "ticket")
       | Tsapling_state _       -> emit_error (NoInitExprFor "sapling_state")
       | Tsapling_transaction _ -> emit_error (NoInitExprFor "sapling_transaction")
+      | Tbuiltin Bbls12_381_fr -> mk_mterm (Mint (Big_int.zero_big_int)) ty
+      | Tbuiltin Bbls12_381_g1 -> mk_mterm (Mint (Big_int.zero_big_int)) ty
+      | Tbuiltin Bbls12_381_g2 -> mk_mterm (Mint (Big_int.zero_big_int)) ty
+      | Tbuiltin Bnever        -> emit_error (NoInitExprFor "never")
     in
 
     let constant = match var.kind with | VKconstant -> true | _ -> false in

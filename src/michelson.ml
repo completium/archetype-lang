@@ -34,9 +34,9 @@ type type_node =
   | Tticket of type_
   | Tsapling_state       of int
   | Tsapling_transaction of int
+  | Tbls12_381_fr
   | Tbls12_381_g1
   | Tbls12_381_g2
-  | Tbls12_381_fr
   | Tnever
 [@@deriving show {with_path = false}]
 
@@ -232,6 +232,7 @@ type un_operator =
   | Uvotingpower
   | Ureadticket
   | Ujointickets
+  | Upairing_check
 [@@deriving show {with_path = false}]
 
 type bin_operator =

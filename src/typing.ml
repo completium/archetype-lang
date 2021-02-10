@@ -145,6 +145,10 @@ end = struct
       | A.Tbuiltin VTsignature   -> true
       | A.Tbuiltin VTbytes       -> true
       | A.Tbuiltin VTchainid     -> true
+      | A.Tbuiltin VTbls12_381_fr-> true
+      | A.Tbuiltin VTbls12_381_g1-> true
+      | A.Tbuiltin VTbls12_381_g2-> true
+      | A.Tbuiltin VTnever       -> true
       | A.Tcontainer           _ -> false
       | A.Tset                 _ -> true
       | A.Tlist                _ -> true
@@ -183,6 +187,10 @@ end = struct
       | A.Tbuiltin VTsignature   -> false
       | A.Tbuiltin VTbytes       -> true
       | A.Tbuiltin VTchainid     -> false
+      | A.Tbuiltin VTbls12_381_fr-> false
+      | A.Tbuiltin VTbls12_381_g1-> false
+      | A.Tbuiltin VTbls12_381_g2-> false
+      | A.Tbuiltin VTnever       -> true
       | A.Tcontainer           _ -> false
       | A.Tset                 _ -> false
       | A.Tlist                _ -> false
@@ -221,6 +229,10 @@ end = struct
       | A.Tbuiltin VTsignature   -> true
       | A.Tbuiltin VTbytes       -> true
       | A.Tbuiltin VTchainid     -> true
+      | A.Tbuiltin VTbls12_381_fr-> true
+      | A.Tbuiltin VTbls12_381_g1-> true
+      | A.Tbuiltin VTbls12_381_g2-> true
+      | A.Tbuiltin VTnever       -> true
       | A.Tcontainer           _ -> false
       | A.Tset                 _ -> true
       | A.Tlist                _ -> true
@@ -259,6 +271,10 @@ end = struct
       | A.Tbuiltin VTsignature   -> true
       | A.Tbuiltin VTbytes       -> true
       | A.Tbuiltin VTchainid     -> true
+      | A.Tbuiltin VTbls12_381_fr-> true
+      | A.Tbuiltin VTbls12_381_g1-> true
+      | A.Tbuiltin VTbls12_381_g2-> true
+      | A.Tbuiltin VTnever       -> true
       | A.Tcontainer           _ -> false
       | A.Tset                 t -> is_storable t
       | A.Tlist                t -> is_storable t
@@ -297,6 +313,10 @@ end = struct
       | A.Tbuiltin VTsignature   -> true
       | A.Tbuiltin VTbytes       -> true
       | A.Tbuiltin VTchainid     -> true
+      | A.Tbuiltin VTbls12_381_fr-> true
+      | A.Tbuiltin VTbls12_381_g1-> true
+      | A.Tbuiltin VTbls12_381_g2-> true
+      | A.Tbuiltin VTnever       -> true
       | A.Tcontainer           _ -> false
       | A.Tset                 t -> is_packable t
       | A.Tlist                t -> is_packable t
@@ -335,6 +355,10 @@ end = struct
       | A.Tbuiltin VTsignature   -> true
       | A.Tbuiltin VTbytes       -> true
       | A.Tbuiltin VTchainid     -> true
+      | A.Tbuiltin VTbls12_381_fr-> true
+      | A.Tbuiltin VTbls12_381_g1-> true
+      | A.Tbuiltin VTbls12_381_g2-> true
+      | A.Tbuiltin VTnever       -> true
       | A.Tcontainer           _ -> false
       | A.Tset                 t -> is_big_map_value t
       | A.Tlist                t -> is_big_map_value t
@@ -380,6 +404,12 @@ end = struct
         | A.VTint      , A.VTrational   -> Some 1
         | A.VTstring   , A.VTkey        -> Some 1
         | A.VTstring   , A.VTsignature  -> Some 1
+
+        | A.VTbls12_381_fr, A.VTint -> Some 1
+        | A.VTbls12_381_fr, A.VTnat -> Some 2
+
+        | A.VTint, A.VTbls12_381_fr -> Some 1
+        | A.VTnat, A.VTbls12_381_fr -> Some 2
 
         | A.VTcurrency , A.VTnat when not for_eq -> Some 1
         | A.VTduration , A.VTint when not for_eq -> Some 1
@@ -1082,8 +1112,15 @@ let opsigs =
       PT.Logical PT.Xor  , ([A.VTnat     ; A.VTnat           ], A.VTnat     )  ;
     ] in
 
-  cmpsigs @ tsigs @ grptypes @ rgtypes @ ariths @ nat @ bools @ others
+  let bls_curves : (PT.operator * (A.vtyp list * A.vtyp)) list =
+    List.map (fun x -> [ PT.Arith PT.Plus,   ([x; x], x);
+                         PT.Arith PT.Mult,   ([x; A.VTbls12_381_fr], x);
+                         PT.Unary PT.Uminus, ([x], x)])
+      [A.VTbls12_381_fr; A.VTbls12_381_g1; A.VTbls12_381_g2]
+    |> List.flatten
+  in
 
+  cmpsigs @ tsigs @ grptypes @ rgtypes @ ariths @ nat @ bools @ others @ bls_curves
 
 let opsigs2 =
   let divmod : (PT.operator * (A.vtyp list * A.ptyp)) list =
@@ -1330,20 +1367,38 @@ let lambdaops : opinfo list = [
 ]
 
 (* -------------------------------------------------------------------- *)
-let edoops : opinfo list =
+let voting_ops : opinfo list =
   [
-    ("voting_power" , A.Cvotingpower, `Total, None, [A.vtkeyhash], A.vtnat, Mint.empty);
+    ("voting_power" , A.Cvotingpower, `Total, None, [A.vtkeyhash], A.vtnat, Mint.empty)
+  ]
+
+(* -------------------------------------------------------------------- *)
+let ticket_ops : opinfo list =
+  [
     ("create_ticket", A.Ccreateticket, `Total, None, [A.Tnamed 0; A.vtnat], A.Tticket (A.Tnamed 0), Mint.empty);
     ("read_ticket",   A.Creadticket,   `Total, None, [A.Tticket (A.Tnamed 0)], A.Ttuple [A.vtaddress; A.Tnamed 0; A.vtnat], Mint.empty);
     ("split_ticket",  A.Csplitticket,  `Total, None, [A.Tticket (A.Tnamed 0); A.vtnat; A.vtnat], A.Toption (A.Ttuple [A.Tticket (A.Tnamed 0); A.Tticket (A.Tnamed 0)]), Mint.empty);
     ("join_tickets",  A.Cjointickets,  `Total, None, [A.Tticket (A.Tnamed 0); A.Tticket (A.Tnamed 0)], A.Toption (A.Tticket (A.Tnamed 0)), Mint.empty);
+  ]
+
+(* -------------------------------------------------------------------- *)
+let sapling_ops : opinfo list =
+  [
     ("sapling_empty_state",   A.Csapling_empty_state,   `Total, None, [A.vtnat], A.Tsapling_state 0, Mint.empty);
     ("sapling_verify_update", A.Csapling_verify_update, `Total, None, [A.Tsapling_transaction 0; A.Tsapling_state 0], A.Toption (A.Ttuple [A.vtint; A.Tsapling_state 0]), Mint.empty)
   ]
 
+let bls_ops : opinfo list =
+  [
+    ("pairing_check", A.Cpairing_check, `Total, None, [A.Tlist (A.Ttuple [A.vtbls12_381_g1; A.vtbls12_381_g2])], A.vtbool, Mint.empty)
+  ]
+
+
 (* -------------------------------------------------------------------- *)
 let allops : opinfo list =
-  coreops @ optionops @ setops @ listops @ mapops @ bigmapops @ cryptoops @ packops @ opsops @ lambdaops @ edoops
+  coreops @ optionops @ setops @ listops @ mapops @ bigmapops @
+  cryptoops @ packops @ opsops @ lambdaops @ voting_ops @
+  ticket_ops @ sapling_ops @ bls_ops
 
 (* -------------------------------------------------------------------- *)
 type assetdecl = {
@@ -1475,23 +1530,27 @@ let pterm_arg_as_pterm = function A.AExpr e -> Some e | _ -> None
 
 (* -------------------------------------------------------------------- *)
 let core_types = [
-  ("unit"     , A.vtunit           );
-  ("string"   , A.vtstring         );
-  ("nat"      , A.vtnat            );
-  ("int"      , A.vtint            );
-  ("rational" , A.vtrational       );
-  ("bool"     , A.vtbool           );
-  ("role"     , A.vtrole           );
-  ("address"  , A.vtaddress        );
-  ("date"     , A.vtdate           );
-  ("tez"      , A.vtcurrency       );
-  ("duration" , A.vtduration       );
-  ("signature", A.vtsignature      );
-  ("key"      , A.vtkey            );
-  ("key_hash" , A.vtkeyhash        );
-  ("bytes"    , A.vtbytes          );
-  ("chain_id" , A.vtchainid        );
-  ("operation", A.Toperation       );
+  ("unit"         , A.vtunit             );
+  ("string"       , A.vtstring           );
+  ("nat"          , A.vtnat              );
+  ("int"          , A.vtint              );
+  ("rational"     , A.vtrational         );
+  ("bool"         , A.vtbool             );
+  ("role"         , A.vtrole             );
+  ("address"      , A.vtaddress          );
+  ("date"         , A.vtdate             );
+  ("tez"          , A.vtcurrency         );
+  ("duration"     , A.vtduration         );
+  ("signature"    , A.vtsignature        );
+  ("key"          , A.vtkey              );
+  ("key_hash"     , A.vtkeyhash          );
+  ("bytes"        , A.vtbytes            );
+  ("chain_id"     , A.vtchainid          );
+  ("operation"    , A.Toperation         );
+  ("bls12_381_fr" , A.vtbls12_381_fr     );
+  ("bls12_381_g1" , A.vtbls12_381_g1     );
+  ("bls12_381_g2" , A.vtbls12_381_g2     );
+  ("never"        , A.vtnever            )
 ]
 
 (* -------------------------------------------------------------------- *)

@@ -79,6 +79,10 @@ let pp_model fmt (model : model) =
     | Bbytes      -> Format.fprintf fmt "bytes"
     | Bnat        -> Format.fprintf fmt "nat"
     | Bchainid    -> Format.fprintf fmt "chain_id"
+    | Bbls12_381_fr -> Format.fprintf fmt "bls12_381_fr"
+    | Bbls12_381_g1 -> Format.fprintf fmt "bls12_381_g1"
+    | Bbls12_381_g2 -> Format.fprintf fmt "bls12_381_g2"
+    | Bnever        -> Format.fprintf fmt "never"
   in
 
   let pp_container fmt = function
@@ -1385,6 +1389,11 @@ let pp_model fmt (model : model) =
 
       | Msapling_verify_update (s, t) ->
         Format.fprintf fmt "sapling_verify_update (%a, %a)" f s f t
+
+
+      (* bls curve *)
+
+      | Mpairing_check x -> Format.fprintf fmt "pairing_check (%a)" f x
 
 
       (* constants *)

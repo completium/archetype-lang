@@ -27,23 +27,27 @@ let pp_model fmt (model : model) =
   in
 
   let pp_btyp fmt = function
-    | Bunit       -> Format.fprintf fmt "sp.TUnit"
-    | Bbool       -> Format.fprintf fmt "sp.TBool"
-    | Bint        -> Format.fprintf fmt "sp.TInt"
-    | Brational   -> Format.fprintf fmt "rational"
-    | Bdate       -> Format.fprintf fmt "sp.TTimestamp"
-    | Bduration   -> Format.fprintf fmt "sp.Tint"
-    | Btimestamp  -> Format.fprintf fmt "sp.TTimestamp"
-    | Bstring     -> Format.fprintf fmt "sp.TString"
-    | Baddress    -> Format.fprintf fmt "sp.TAddress"
-    | Brole       -> Format.fprintf fmt "key_hash"
-    | Bcurrency   -> Format.fprintf fmt "sp.TMutez"
-    | Bsignature  -> Format.fprintf fmt "sp.TSignature"
-    | Bkey        -> Format.fprintf fmt "sp.TKey"
-    | Bkeyhash    -> Format.fprintf fmt "sp.TKeyHash"
-    | Bbytes      -> Format.fprintf fmt "sp.TBytes"
-    | Bnat        -> Format.fprintf fmt "sp.TNat"
-    | Bchainid    -> Format.fprintf fmt "sp.TChainId"
+    | Bunit         -> Format.fprintf fmt "sp.TUnit"
+    | Bbool         -> Format.fprintf fmt "sp.TBool"
+    | Bint          -> Format.fprintf fmt "sp.TInt"
+    | Brational     -> Format.fprintf fmt "rational"
+    | Bdate         -> Format.fprintf fmt "sp.TTimestamp"
+    | Bduration     -> Format.fprintf fmt "sp.Tint"
+    | Btimestamp    -> Format.fprintf fmt "sp.TTimestamp"
+    | Bstring       -> Format.fprintf fmt "sp.TString"
+    | Baddress      -> Format.fprintf fmt "sp.TAddress"
+    | Brole         -> Format.fprintf fmt "key_hash"
+    | Bcurrency     -> Format.fprintf fmt "sp.TMutez"
+    | Bsignature    -> Format.fprintf fmt "sp.TSignature"
+    | Bkey          -> Format.fprintf fmt "sp.TKey"
+    | Bkeyhash      -> Format.fprintf fmt "sp.TKeyHash"
+    | Bbytes        -> Format.fprintf fmt "sp.TBytes"
+    | Bnat          -> Format.fprintf fmt "sp.TNat"
+    | Bchainid      -> Format.fprintf fmt "sp.TChainId"
+    | Bbls12_381_fr -> Format.fprintf fmt "sp.TBls12_381_fr"
+    | Bbls12_381_g1 -> Format.fprintf fmt "sp.TBls12_381_g1"
+    | Bbls12_381_g2 -> Format.fprintf fmt "sp.TBls12_381_g2"
+    | Bnever        -> Format.fprintf fmt "sp.TNever"
   in
 
   let pp_container fmt = function
@@ -1379,6 +1383,11 @@ let pp_model fmt (model : model) =
 
       | Msapling_verify_update (_s, t) ->
         Format.fprintf fmt "sp.sapling_verify_update (%a)" f t
+
+
+      (* bls curve *)
+
+      | Mpairing_check x -> Format.fprintf fmt "sp.pairing_check (%a)" f x
 
 
       (* constants *)

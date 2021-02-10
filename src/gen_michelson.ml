@@ -88,23 +88,27 @@ let to_ir (model : M.model) : T.ir =
     | Tstate     -> T.mk_type ?annotation T.Tint
     | Tbuiltin b -> T.mk_type ?annotation begin
         match b with
-        | Bunit      -> T.Tunit
-        | Bbool      -> T.Tbool
-        | Bint       -> T.Tint
-        | Brational  -> assert false
-        | Bdate      -> T.Ttimestamp
-        | Bduration  -> T.Tint
-        | Btimestamp -> T.Ttimestamp
-        | Bstring    -> T.Tstring
-        | Baddress   -> T.Taddress
-        | Brole      -> T.Taddress
-        | Bcurrency  -> T.Tmutez
-        | Bsignature -> T.Tsignature
-        | Bkey       -> T.Tkey
-        | Bkeyhash   -> T.Tkey_hash
-        | Bbytes     -> T.Tbytes
-        | Bnat       -> T.Tnat
-        | Bchainid   -> T.Tchain_id
+        | Bunit         -> T.Tunit
+        | Bbool         -> T.Tbool
+        | Bint          -> T.Tint
+        | Brational     -> assert false
+        | Bdate         -> T.Ttimestamp
+        | Bduration     -> T.Tint
+        | Btimestamp    -> T.Ttimestamp
+        | Bstring       -> T.Tstring
+        | Baddress      -> T.Taddress
+        | Brole         -> T.Taddress
+        | Bcurrency     -> T.Tmutez
+        | Bsignature    -> T.Tsignature
+        | Bkey          -> T.Tkey
+        | Bkeyhash      -> T.Tkey_hash
+        | Bbytes        -> T.Tbytes
+        | Bnat          -> T.Tnat
+        | Bchainid      -> T.Tchain_id
+        | Bbls12_381_fr -> T.Tbls12_381_fr
+        | Bbls12_381_g1 -> T.Tbls12_381_g1
+        | Bbls12_381_g2 -> T.Tbls12_381_g2
+        | Bnever        -> T.Tnever
       end
     | Tcontainer _   -> assert false
     | Tlist t        -> T.mk_type ?annotation (T.Tlist (to_type t))
@@ -846,6 +850,12 @@ let to_ir (model : M.model) : T.ir =
     | Msapling_empty_state n        -> T.Izop (Zsapling_empty_state n)
     | Msapling_verify_update (s, t) -> T.Ibinop (Bsapling_verify_update, f s, f t)
 
+
+    (* bls curve *)
+
+    | Mpairing_check x -> T.Iunop (Upairing_check, f x)
+
+
     (* constants *)
 
     | Mnow           -> T.Izop Znow
@@ -1350,6 +1360,7 @@ let to_michelson (ir : T.ir) : T.michelson =
           | Uvotingpower     -> T.VOTING_POWER
           | Ureadticket      -> T.READ_TICKET
           | Ujointickets     -> T.JOIN_TICKETS
+          | Upairing_check   -> T.PAIRING_CHECK
         in
         let e, env = fe env e in
         let env = match op with T.FAILWITH -> fail_env env | _ -> env in

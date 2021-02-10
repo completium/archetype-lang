@@ -56,22 +56,26 @@ let to_model (ast : A.ast) : M.model =
   in
 
   let vtyp_to_btyp = function
-    | A.VTunit       -> M.Bunit
-    | A.VTbool       -> M.Bbool
-    | A.VTnat        -> M.Bnat
-    | A.VTint        -> M.Bint
-    | A.VTrational   -> M.Brational
-    | A.VTdate       -> M.Bdate
-    | A.VTduration   -> M.Bduration
-    | A.VTstring     -> M.Bstring
-    | A.VTaddress    -> M.Baddress
-    | A.VTrole       -> M.Brole
-    | A.VTcurrency   -> M.Bcurrency
-    | A.VTsignature  -> M.Bsignature
-    | A.VTkey        -> M.Bkey
-    | A.VTkeyhash    -> M.Bkeyhash
-    | A.VTbytes      -> M.Bbytes
-    | A.VTchainid    -> M.Bchainid
+    | A.VTunit         -> M.Bunit
+    | A.VTbool         -> M.Bbool
+    | A.VTnat          -> M.Bnat
+    | A.VTint          -> M.Bint
+    | A.VTrational     -> M.Brational
+    | A.VTdate         -> M.Bdate
+    | A.VTduration     -> M.Bduration
+    | A.VTstring       -> M.Bstring
+    | A.VTaddress      -> M.Baddress
+    | A.VTrole         -> M.Brole
+    | A.VTcurrency     -> M.Bcurrency
+    | A.VTsignature    -> M.Bsignature
+    | A.VTkey          -> M.Bkey
+    | A.VTkeyhash      -> M.Bkeyhash
+    | A.VTbytes        -> M.Bbytes
+    | A.VTchainid      -> M.Bchainid
+    | A.VTbls12_381_fr -> M.Bbls12_381_fr
+    | A.VTbls12_381_g1 -> M.Bbls12_381_g1
+    | A.VTbls12_381_g2 -> M.Bbls12_381_g2
+    | A.VTnever        -> M.Bnever
   in
 
   let to_trtyp = function
@@ -394,6 +398,7 @@ let to_model (ast : A.ast) : M.model =
           | A.Tbuiltin VTnat, A.Tbuiltin VTint, _                  -> M.Mnattoint v
           | A.Tbuiltin VTnat, A.Tbuiltin VTrational, _             -> M.Mnattorat v
           | A.Tbuiltin VTint, A.Tbuiltin VTrational, _             -> M.Minttorat v
+          | A.Tbuiltin VTbls12_381_fr, A.Tbuiltin VTint, _         -> M.Mnattoint v
           | _ -> M.Mcast (type_to_type src, type_to_type dst, v)
         end
       | A.Pquantifer (Forall, i, (coll, typ), term)    -> M.Mforall (i, type_to_type typ, Option.map f coll, f term)
@@ -784,6 +789,13 @@ let to_model (ast : A.ast) : M.model =
         let fx = f x in
         let fy = f y in
         M.Msapling_verify_update (fx, fy)
+
+
+      (* Bls curve *)
+
+      | A.Pcall (None, A.Cconst A.Cpairing_check, [AExpr x]) ->
+        let fx = f x in
+        M.Mpairing_check fx
 
 
       (* Operation *)
