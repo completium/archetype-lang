@@ -382,7 +382,7 @@ end = struct
   end
 
   let rec support_eq = function
-    | A.Tbuiltin VTchainid -> false
+    | A.Tbuiltin (VTchainid | VTbls12_381_fr | VTbls12_381_g1 | VTbls12_381_g2) -> false
     | A.Tbuiltin _ -> true
     | A.Tenum _ -> true
     | A.Ttuple tys -> List.for_all support_eq tys
