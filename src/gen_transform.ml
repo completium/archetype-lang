@@ -2166,18 +2166,6 @@ let replace_whyml_ident (model : model) : model =
   let f _env id = if is_whyml_keyword id then ("_"^id) else id in
   replace_ident_model f model
 
-let replace_ligo_ident (model : model) : model =
-  let f _env id =
-    match id with
-    | "type" -> "type_"
-    | "amount" -> "amount_"
-    | "from" -> "from_"
-    | "to" -> "to_"
-    | "is" -> "is_"
-    | _ -> id
-  in
-  replace_ident_model f model
-
 let replace_ident_model_val (model : model) : model =
   let f _env id =
     match id with

@@ -22,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - handle decimal for percent and currency literals
  - getter send `transferred` (AMOUNT) instead of 0tz
 
+### Removed
+ - Execution language target (LIGO, SmartPy and Scaml)
+
 ## [1.2.1] - 2020-10-01
 ### Added
  - Add contract metadata tzip-16 (https://gitlab.com/tzip/tzip/-/blob/master/proposals/tzip-16/tzip-16.md)

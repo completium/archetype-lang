@@ -96,11 +96,6 @@ let output (model : Model.model) =
     begin
       let printer =
         match !Options.target with
-        | Debug        -> Printer_model.pp_model
-        | Ligo         -> Printer_model_ligo.pp_model
-        | LigoStorage  -> Printer_model_ligo.pp_storage
-        | SmartPy      -> Printer_model_smartpy.pp_model
-        | Scaml        -> Printer_model_scaml.pp_model
         | Michelson
         | MichelsonStorage
         | Javascript -> begin
@@ -201,101 +196,6 @@ let generate_target model =
   in
 
   match !Options.target with
-  | Ligo
-  | LigoStorage ->
-    model
-    |> replace_ligo_ident
-    |> getter_to_entry ~no_underscore:true
-    |> process_parameter
-    (* |> reverse_operations *)
-    |> process_multi_keys
-    |> replace_col_by_key_for_ckfield
-    |> remove_enum
-    |> replace_assignfield_by_update
-    |> remove_add_update
-    |> remove_container_op_in_update
-    |> merge_update
-    |> remove_assign_operator
-    |> extract_item_collection_from_add_asset
-    |> process_internal_string
-    |> remove_rational
-    |> abs_tez
-    |> replace_date_duration_by_timestamp
-    |> eval_variable_initial_value
-    |> replace_dotassetfield_by_dot
-    |> generate_storage
-    |> replace_declvar_by_letin
-    |> replace_lit_address_by_role
-    |> remove_label
-    |> flat_sequence
-    |> remove_cmp_bool
-    |> split_key_values
-    |> remove_duplicate_key
-    |> assign_loop_label
-    |> remove_letin_from_expr
-    |> remove_fun_dotasset
-    |> eval_storage
-    |> optimize
-    |> generate_api_storage
-    |> output
-
-  | SmartPy ->
-    model
-    |> replace_col_by_key_for_ckfield
-    |> getter_to_entry
-    |> process_parameter
-    (* |> reverse_operations *)
-    |> process_multi_keys
-    |> remove_enum
-    |> replace_assignfield_by_update
-    |> remove_add_update
-    |> remove_container_op_in_update
-    |> merge_update
-    |> remove_assign_operator
-    |> extract_item_collection_from_add_asset
-    |> process_internal_string
-    |> remove_rational
-    |> abs_tez
-    |> replace_date_duration_by_timestamp
-    |> eval_variable_initial_value
-    |> replace_dotassetfield_by_dot
-    |> generate_storage
-    |> replace_declvar_by_letin
-    |> replace_lit_address_by_role
-    |> remove_label
-    |> flat_sequence
-    |> remove_cmp_bool
-    |> split_key_values
-    (* |> remove_duplicate_key *)
-    |> assign_loop_label
-    |> remove_letin_from_expr
-    (* |> remove_fun_dotasset *)
-    |> remove_asset
-    |> optimize
-    |> generate_api_storage
-    |> output
-
-  | Scaml ->
-    model
-    |> remove_add_update
-    |> getter_to_entry
-    |> process_parameter
-    (* |> reverse_operations *)
-    |> process_multi_keys
-    |> remove_enum
-    |> replace_update_by_set
-    |> generate_storage
-    |> replace_declvar_by_letin
-    |> replace_lit_address_by_role
-    |> remove_label
-    |> flat_sequence
-    |> remove_cmp_bool
-    |> process_single_field_storage
-    |> split_key_values
-    |> optimize
-    |> generate_api_storage
-    |> output
-
   | Michelson
   | MichelsonStorage
   | Javascript ->
@@ -381,15 +281,6 @@ let generate_target model =
     |> optimize
     |> generate_api_storage ~verif:true
     |> filter_api_storage
-    |> output
-
-  | Debug ->
-    model
-    |> raise_if_error post_model_error prune_properties
-    |> process_multi_keys
-    |> replace_declvar_by_letin
-    |> generate_api_storage
-    (* |> (fun (model : Model.model) -> Format.printf "%a@." (Printer_tools.pp_list "@\n" Printer_model.pp_type) (Model.Utils.get_all_fail_types model)) *)
     |> output
 
   | _ -> ()
@@ -506,16 +397,11 @@ let process_expr_type_string (input : string) =
 let main () =
   set_margin 300;
   let f = function
-    | "ligo"              -> Options.target := Ligo
-    | "ligo-storage"      -> Options.target := LigoStorage
-    | "smartpy"           -> Options.target := SmartPy
-    | "scaml"             -> Options.target := Scaml
-    | "whyml"             -> Options.target := Whyml
     | "michelson"         -> Options.target := Michelson
     | "michelson-storage" -> Options.target := MichelsonStorage
-    | "markdown"          -> Options.target := Markdown
+    | "whyml"             -> Options.target := Whyml
     | "javascript"        -> Options.target := Javascript
-    | "debug"             -> Options.target := Debug
+    | "markdown"          -> Options.target := Markdown
     |  s ->
       Format.eprintf
         "Unknown target %s (--list-target to see available target)@." s;
@@ -530,7 +416,7 @@ let main () =
       "--decompile", Arg.Set Options.opt_decomp, " Same as -d";
       "-t", Arg.String f, "<lang> Transcode to <lang> language";
       "--target", Arg.String f, " Same as -t";
-      "--list-target", Arg.Unit (fun _ -> Format.printf "target available:@\n  ligo@\n  scaml (beta)@\n  whyml@\n"; exit 0), " List available target languages";
+      "--list-target", Arg.Unit (fun _ -> Format.printf "target available:@\n  michelson@\n  michelson-storage@\n  whyml@\n  javascript@\n"; exit 0), " List available target languages";
       "-pt", Arg.Set Options.opt_pt, " Generate parse tree";
       "--parse-tree", Arg.Set Options.opt_pt, " Same as -pt";
       "-ast", Arg.Set Options.opt_ast, " Generate typed ast";

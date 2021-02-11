@@ -1,14 +1,9 @@
 type target_lang =
-  | Ligo
-  | LigoStorage
-  | SmartPy
   | Markdown
-  | Scaml
   | Michelson
   | MichelsonStorage
   | Whyml
   | Javascript
-  | Debug
 [@@deriving show {with_path = false}]
 
 type storage_policy =
