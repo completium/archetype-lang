@@ -4,21 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased Edo
-### Added
- - add new cryptographic hash functions: `sha3` and `keccak`
- - add voting instructions: `totalvotingpower` and `votingpower`
- - add `level` constant
- - add `ticket` type and associated instructions (`create_ticket`, `read_ticket`, `split_ticket`, `join_tickets`)
- - add sapling types (`sapling_state` and `sapling_transaction`) and operations (`sapling_empty_state` and `sapling_verify_update`)
- - add bls curves types (`bls12_381_fr`, `bls12_381_g1` and `bls12_381_g2`), arthmetic (`+`, `*`, unary `-`) and operation (`pairing_check`)
-
 ## Unreleased
 ### Added
  - records shaping with `as`
  - add `parameter`
  - add left and right shift operators (`<<|` and `|>>`)
  - add divmod and three-way comparison operators (resp. EDIV and COMPARE in michelson)
+ - edo features:
+   * add new cryptographic hash functions: `sha3` and `keccak`
+   * add `total_voting_power` constant and `voting_power` operation
+   * add `level` constant
+   * add `ticket` type and associated instructions (`create_ticket`, `read_ticket`, `split_ticket`, `join_tickets`)
+   * add sapling types (`sapling_state` and `sapling_transaction`) and operations (`sapling_empty_state` and `sapling_verify_update`)
+   * add bls curves types (`bls12_381_fr`, `bls12_381_g1` and `bls12_381_g2`), arthmetic (`+`, `*`, unary `-`) and operation (`pairing_check`)
 
 ### Changed
  - handle decimal for percent and currency literals

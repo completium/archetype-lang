@@ -243,6 +243,7 @@ module List : sig
   val sub            : int -> int -> 'a list -> 'a list
   val cut            : int -> 'a list -> ('a list * 'a list)
   val put            : 'a -> 'b -> ('a * 'b) list -> ('a * 'b) list
+  val find_map       : ('a -> 'b option) -> 'a list -> 'b option
 
   module Exn : sig
     val assoc     : 'a -> ('a * 'b) list -> 'b option
@@ -416,6 +417,14 @@ end = struct
       [] -> [k, v]
     | (a, b)::l -> if compare a k = 0 then (k, v)::l else (a, b)::(put k v l)
 
+  let rec find_map f = function
+    | [] -> None
+    | x :: l ->
+      begin match f x with
+        | Some _ as result -> result
+        | None -> find_map f l
+      end
+
   module Exn = struct
     let assoc x xs =
       try Some (List.assoc x xs) with Not_found -> None
@@ -490,8 +499,8 @@ let norm_hex_string (s : string) =
   if String.starts ~pattern:"0x" s then s else "0x" ^ s
 
 (* let sha s : Big_int.big_int =
-  let s  = Digestif.SHA512.to_hex (Digestif.SHA512.digest_string s) in
-  Big_int.big_int_of_string (norm_hex_string s) *)
+   let s  = Digestif.SHA512.to_hex (Digestif.SHA512.digest_string s) in
+   Big_int.big_int_of_string (norm_hex_string s) *)
 
 (* -------------------------------------------------------------------- *)
 let location_to_position (l : Location.t) : Position.t =
