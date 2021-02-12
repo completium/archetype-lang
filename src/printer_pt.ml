@@ -4,6 +4,12 @@ open Location
 open ParseTree
 open Printer_tools
 
+(* -------------------------------------------------------------------- *)
+
+let is_keyword = Lexer.keywords_ |> List.map fst |> fun x y -> List.mem y x
+
+(* -------------------------------------------------------------------- *)
+
 let e_equal_greater =  (10,  NonAssoc) (* =>  *)
 let e_in            =  (10,  NonAssoc) (* in  *)
 let e_to            =  (10,  NonAssoc) (* to  *)
