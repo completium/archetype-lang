@@ -1,0 +1,6 @@
+archetype edo_sapling_type_init
+
+entry init (t : sapling_transaction(2)) {
+  var s : sapling_state(2) = sapling_empty_state(2);
+  var b : bool = sapling_verify_update(t, st)
+}
