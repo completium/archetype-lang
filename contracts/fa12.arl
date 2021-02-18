@@ -44,7 +44,7 @@ getter getAllowance (owner : address, spender : address) : nat {
 }
 
 getter getBalance (owner : address) : nat {
-  return (ledger[owner].tokens)
+  return (if (ledger.contains(owner)) then ledger[owner].tokens else 0)
 }
 
 getter getTotalSupply () : nat {
