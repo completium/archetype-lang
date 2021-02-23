@@ -214,7 +214,7 @@ let to_ir (model : M.model) : T.ir =
     | Mleft (_, x)      -> T.Dleft (to_data x)
     | Mright (_, x)     -> T.Dright (to_data x)
     | Mcast (_, _, v)   -> to_data v
-    | Mvar (x, Vparameter, _, _) -> T.Dvar (unloc x)
+    | Mvar (x, Vparameter, _, _) -> T.Dvar (unloc x, to_type mt.type_)
     | _ -> Format.printf "%a@." M.pp_mterm mt; assert false
 
   in

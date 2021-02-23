@@ -1334,7 +1334,7 @@ let to_model (ir, env : T.ir * env) : M.model * env =
     | Dnone            -> assert false
     | Dlist  _l        -> assert false
     | Delt _           -> assert false
-    | Dvar _x          -> assert false
+    | Dvar (_x, _t)    -> assert false
   in
 
   let rec for_instr (i : T.instruction) : M.mterm =

@@ -107,10 +107,10 @@ let output (model : Model.model) =
                 if !Options.opt_ir
                 then Format.fprintf fmt "%a@." Printer_michelson.pp_ir ir
                 else begin
+                  let michelson = Gen_michelson.to_michelson ir in
                   match !Options.target with
                   | MichelsonStorage -> Format.fprintf fmt "%a@." Printer_michelson.pp_data ir.storage_data
                   | Michelson ->
-                    let michelson = Gen_michelson.to_michelson ir in
                     if !Options.opt_raw_michelson
                     then Format.fprintf fmt "%a@." Michelson.pp_michelson michelson
                     else begin
@@ -132,8 +132,6 @@ let output (model : Model.model) =
                           Printer_michelson.pp_michelson michelson
                     end
                   | Javascript -> begin
-                      let ir = Gen_michelson.to_ir model in
-                      let michelson = Gen_michelson.to_michelson ir in
                       let micheline = Michelson.Utils.to_micheline michelson ir.storage_data in
                       Format.fprintf fmt "%a@\n@." Printer_michelson.pp_javascript micheline
                     end

@@ -57,7 +57,7 @@ type data =
   | Dnone
   | Dlist              of data list
   | Delt               of data * data
-  | Dvar               of ident
+  | Dvar               of ident * type_
 [@@deriving show {with_path = false}]
 
 type code =
@@ -388,8 +388,15 @@ and obj_micheline =
   | Obytes of string
   | Oint of string
   | Oarray of obj_micheline list
-  | Ovar of ident
+  | Ovar of obj_micheline_var
 [@@deriving show {with_path = false}]
+
+and obj_micheline_var =
+  | OMVfree   of ident
+  | OMVint    of ident
+  | OMVstring of ident
+  | OMVbytes  of ident
+  | OMVif     of ident * obj_micheline * obj_micheline
 
 type micheline = {
   code: obj_micheline list;
@@ -835,7 +842,7 @@ let map_data (f : data -> data) = function
   | Dnone        -> Dnone
   | Dlist l      -> Dlist (List.map f l)
   | Delt (l, r)  -> Delt (f l, f r)
-  | Dvar c       -> Dvar c
+  | Dvar (c, t)  -> Dvar (c, t)
 
 let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) = function
   (* Control structures *)
@@ -1248,7 +1255,39 @@ end = struct
     | Dnone        -> Oprim (mk_prim "None")
     | Dlist l      -> Oarray (List.map f l)
     | Delt (l, r)  -> Oprim (mk_prim ~args:[f l; f r] "Elt")
-    | Dvar x       -> Ovar x
+    | Dvar (x, t)  -> begin
+        match t.node with
+        | Taddress                -> Ovar (OMVstring x)
+        | Tbig_map   (_k, _v)     -> Ovar (OMVfree x)
+        | Tbool                   -> Ovar (OMVif (x, Oprim (mk_prim "True"), Oprim (mk_prim "False")))
+        | Tbytes                  -> Ovar (OMVbytes x)
+        | Tchain_id               -> Ovar (OMVfree x)
+        | Tcontract  _t           -> Ovar (OMVfree x)
+        | Tint                    -> Ovar (OMVint x)
+        | Tkey                    -> Ovar (OMVbytes x)
+        | Tkey_hash               -> Ovar (OMVbytes x)
+        | Tlambda    (_a, _r)     -> Ovar (OMVfree x)
+        | Tlist      _t           -> Ovar (OMVfree x)
+        | Tmap       (_k, _v)     -> Ovar (OMVfree x)
+        | Tmutez                  -> Ovar (OMVint x)
+        | Tnat                    -> Ovar (OMVint x)
+        | Toperation              -> Ovar (OMVfree x)
+        | Toption    _t           -> Ovar (OMVfree x)
+        | Tor        (_l, _r)     -> Ovar (OMVfree x)
+        | Tpair      (_l, _r)     -> Ovar (OMVfree x)
+        | Tset       _t           -> Ovar (OMVfree x)
+        | Tsignature              -> Ovar (OMVbytes x)
+        | Tstring                 -> Ovar (OMVstring x)
+        | Ttimestamp              -> Ovar (OMVint x)
+        | Tunit                   -> Oprim (mk_prim "Unit")
+        | Tsapling_transaction _n -> Ovar (OMVfree x)
+        | Tsapling_state       _n -> Ovar (OMVfree x)
+        | Tnever                  -> Ovar (OMVfree x)
+        | Tbls12_381_g1           -> Ovar (OMVfree x)
+        | Tbls12_381_g2           -> Ovar (OMVfree x)
+        | Tbls12_381_fr           -> Ovar (OMVfree x)
+        | Tticket       _t        -> Ovar (OMVfree x)
+      end
 
   let rec code_to_micheline (c : code) : obj_micheline =
     let f = code_to_micheline in
