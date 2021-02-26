@@ -949,7 +949,12 @@ end = struct
 
     | ITER _cs      -> assert false
     | LAMBDA (_rt, _at, _instrs) -> assert false
-    | LOOP _cs      -> assert false
+    | LOOP cs       -> begin
+       let y = `VLocal (ref None) in
+       let (env, s), b = decompile_s (env, y::s) cs in
+       let x = `VLocal (ref None) in
+       (env, x :: s), [DIWhile (Dvar x, b)]
+       end
     | LOOP_LEFT _cs -> assert false
 
 
@@ -1174,6 +1179,9 @@ end = struct
 
     | DIFailwith e ->
       [DIFailwith (compress_e e)]
+
+    | DIWhile (c, b) ->
+      [DIWhile (compress_e c, compress_c b)]
 
   and compress_e (e : dexpr) =
     match e with

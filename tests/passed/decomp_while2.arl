@@ -1,0 +1,13 @@
+archetype decomp_while2
+
+entry exec (p : nat) {
+  var i = 0;
+  while (i < 10) do
+    var n = 0;
+    if (p < 3) then
+      n := 2
+    else
+      n := 3;
+    i := n + i
+  done
+}
