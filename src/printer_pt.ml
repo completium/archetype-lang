@@ -748,6 +748,8 @@ let rec pp_expr outer pos fmt a =
 
   | Enothing -> Format.fprintf fmt "()"
 
+  | Eunit -> Format.fprintf fmt "Unit"
+
   | Einvalid -> Format.fprintf fmt "(* invalid expr *)"
 
 

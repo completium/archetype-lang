@@ -13,6 +13,7 @@ let string_of_token = function
   | USE                  -> "USE"
   | UNPACK               -> "UNPACK"
   | UNMOVED              -> "UNMOVED"
+  | UNIT                 -> "UNIT"
   | UNDERSCORE           -> "UNDERSCORE"
   | TZ n                 -> Printf.sprintf "TZ(%s)" n
   | TYPE                 -> "TYPE"
@@ -178,6 +179,7 @@ let string_of_symbol = function
   | X (T T_USE) -> "use"
   | X (T T_UNPACK) -> "unpack"
   | X (T T_UNMOVED) -> "unmoved"
+  | X (T T_UNIT) -> "Unit"
   | X (T T_UNDERSCORE) -> "_"
   | X (T T_TZ) -> "a tz"
   | X (T T_TYPE) -> "a type"

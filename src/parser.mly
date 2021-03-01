@@ -165,6 +165,7 @@
 %token TRUE
 %token TYPE
 %token UNDERSCORE
+%token UNIT
 %token UNMOVED
 %token UNPACK
 %token USE
@@ -822,6 +823,9 @@ ident_typ_q:
 expr_r:
  | LPAREN RPAREN
      { Enothing }
+
+ | UNIT
+     { Eunit }
 
  | q=quantifier id=ident t=quant_kind COMMA y=expr
      { Equantifier (q, id, t, y) }

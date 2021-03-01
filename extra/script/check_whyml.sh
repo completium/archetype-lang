@@ -69,9 +69,9 @@ RET=0
 if [ ${NB_ERR} -eq 0 ]; then
     echo "passed."
 else
-    echo -e "\033[31mret: ${NB_ERR_RET} \033[0m"
-    echo -e "\033[31mwhyml: ${NB_ERR_WHY} \033[0m"
-    echo -e "\033[31merrors: ${NB_ERR} \033[0m"
+    echo -e "\033[31mKO ret: ${NB_ERR_RET} \033[0m"
+    echo -e "\033[31mKO whyml: ${NB_ERR_WHY} \033[0m"
+    echo -e "\033[31mKO errors: ${NB_ERR} \033[0m"
     RET=1
 fi
 

@@ -111,6 +111,7 @@
       "type"                , TYPE                ;
       "unmoved"             , UNMOVED             ;
       "unpack"              , UNPACK              ;
+      "Unit"                , UNIT                ;
       "use"                 , USE                 ;
       "var"                 , VAR                 ;
       "variable"            , VARIABLE            ;

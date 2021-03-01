@@ -153,6 +153,7 @@ and expr_unloc =
   | Eself          of lident
   | Eany
   | Enothing
+  | Eunit
   | Einvalid
 
 and branch = (pattern list * expr)
