@@ -1540,9 +1540,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
           (map_mpattern p.node, map_mterm m ctx e)
         ) l)
 
-    | Minstrmatchoption   _ -> error_not_supported "Minstrmatchoption"
-    | Minstrmatchor       _ -> error_not_supported "Minstrmatchor"
-    | Minstrmatchlist (t, hd, tl, a, b) -> Tmatchlist (map_mterm m ctx t, map_lident hd, map_lident tl, map_mterm m ctx a, map_mterm m ctx b)
+    | Minstrmatchoption (x, i, ve, ne)    -> Tmatchoption (map_mterm m ctx x, map_lident i, map_mterm m ctx ve, map_mterm m ctx ne)
+    | Minstrmatchor (x, lid, le, rid, re) -> Tmatchor     (map_mterm m ctx x, map_lident lid, map_mterm m ctx le, map_lident rid, map_mterm m ctx re)
+    | Minstrmatchlist (x, hd, tl, a, b)   -> Tmatchlist (map_mterm m ctx x, map_lident hd, map_lident tl, map_mterm m ctx a, map_mterm m ctx b)
 
     | Mfor (_id, _c, _b, _lbl) -> error_not_supported "Mfor"
     | Miter (id, from, to_, body, lbl) -> (* ('id * 'term * 'term * 'term * ident option) *)
@@ -1678,8 +1678,10 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
           (map_mpattern p.node, map_mterm m ctx e)
         ) l)
 
-    | Mmatchoption   _ -> error_not_supported "Mmatchoption"
-    | Mmatchor       _ -> error_not_supported "Mmatchor"
+    | Mmatchoption (x, i, ve, ne)    ->
+      Tmatchoption (map_mterm m ctx x, map_lident i, map_mterm m ctx ve, map_mterm m ctx ne)
+    | Mmatchor (x, lid, le, rid, re) ->
+      Tmatchor     (map_mterm m ctx x, map_lident lid, map_mterm m ctx le, map_lident rid, map_mterm m ctx re)
     | Mmatchlist (x, hid, tid, hte, ee) ->
       Tmatchlist (map_mterm m ctx x, map_lident hid, map_lident tid, map_mterm m ctx hte, map_mterm m ctx ee)
     | Mfold          _ -> error_not_supported "Mfold"
