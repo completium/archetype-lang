@@ -1,4 +1,4 @@
-archetype transfer_self2
+archetype transfer_self_below
 
 variable res : nat = 0
 
