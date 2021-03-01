@@ -1542,7 +1542,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Minstrmatchoption   _ -> error_not_supported "Minstrmatchoption"
     | Minstrmatchor       _ -> error_not_supported "Minstrmatchor"
-    | Minstrmatchlist     _ -> error_not_supported "Minstrmatchlist"
+    | Minstrmatchlist (t, hd, tl, a, b) -> Tmatchlist (map_mterm m ctx t, map_lident hd, map_lident tl, map_mterm m ctx a, map_mterm m ctx b)
 
     | Mfor (_id, _c, _b, _lbl) -> error_not_supported "Mfor"
     | Miter (id, from, to_, body, lbl) -> (* ('id * 'term * 'term * 'term * ident option) *)
@@ -1680,7 +1680,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Mmatchoption   _ -> error_not_supported "Mmatchoption"
     | Mmatchor       _ -> error_not_supported "Mmatchor"
-    | Mmatchlist     _ -> error_not_supported "Mmatchlist"
+    | Mmatchlist (x, hid, tid, hte, ee) ->
+      Tmatchlist (map_mterm m ctx x, map_lident hid, map_lident tid, map_mterm m ctx hte, map_mterm m ctx ee)
     | Mfold          _ -> error_not_supported "Mfold"
     | Mmap           _ -> error_not_supported "Mmap"
     | Mexeclambda    _ -> error_not_supported "Mexeclambda"

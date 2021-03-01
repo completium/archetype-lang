@@ -80,6 +80,7 @@ type ('e,'t,'i) abstract_term =
   | Tlambda of 'i list * 'e
   | Tif     of 'e * 'e * 'e option
   | Tmatch  of 'e * ('i pattern_node * 'e) list
+  | Tmatchlist  of 'e * 'i * 'i * 'e * 'e
   | Tapp    of 'e * 'e list
   | Tfor    of 'i * 'e * 'e * ('e,'i) abstract_formula list * 'e (* id, from, to, invariants, body *)
   | Twhile  of 'e * ('e,'i) abstract_formula list * 'e (* test, invariants, body *)
@@ -411,6 +412,7 @@ and map_abstract_term
   | Tlambda (l,b)      -> Tlambda (List.map map_i l, map_e b)
   | Tif (i,t,e)        -> Tif (map_e i, map_e t, Option.map map_e e)
   | Tmatch (t,l)       -> Tmatch (map_e t, List.map (fun (p,t) -> (map_pattern map_i p,map_e t)) l)
+  | Tmatchlist (t, hd, tl, a, b) -> Tmatchlist (map_e t, map_i hd, map_i tl, map_e a, map_e b)
   | Tapp (f,a)         -> Tapp (map_e f, List.map map_e a)
   | Tfor (i,f,s,l,b)   -> Tfor (map_i i,
                                 map_e f,

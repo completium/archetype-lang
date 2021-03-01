@@ -769,6 +769,13 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "@[match %a with@\n| %a @\nend@]"
       (pp_term outer pos) t
       (pp_list "@\n|" pp_case) l
+  | Tmatchlist (t, hd, tl, a, b) ->
+    Format.fprintf fmt "@[match %a with@\n@[| L.Cons %a %a -> (%a)@\n| L.Nil -> (%a)@] @\nend@]"
+      (pp_term outer pos) t
+      pp_str hd
+      pp_str tl
+      (pp_term outer pos) a
+      (pp_term outer pos) b
   | Tcons (i,e1,e2) ->
     Format.fprintf fmt "%a.Cons %a %a"
       pp_str i
