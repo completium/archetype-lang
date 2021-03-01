@@ -1,0 +1,7 @@
+archetype type_storage_or
+
+variable x : or<nat, string> = left<string>(2)
+
+entry exec() {
+  x := right<nat>("mystr")
+}

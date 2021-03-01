@@ -161,6 +161,7 @@ let pp_type fmt typ =
       | Tykeyhash     -> "key_hash"
       | Tystate       -> "state"
       | Tytuple l     -> "(" ^ (String.concat ", " (List.map typ_str l)) ^ ")"
+      | Tyor (a, b)   -> Format.asprintf "or (%s) (%s)" (typ_str a) (typ_str b)
       | Tybls12_381_fr -> "bls12_381_fr"
       | Tybls12_381_g1 -> "bls12_381_g1"
       | Tybls12_381_g2 -> "bls12_381_g2"
@@ -489,6 +490,8 @@ let rec pp_term outer pos fmt = function
                    (pp_with_paren (pp_term outer pos)) e
                    pp_str (String.capitalize_ascii i)
   | Tunit -> pp_str fmt "()"
+  | Tleft (_, x)  -> Format.fprintf fmt "Left (%a)"  (pp_with_paren (pp_term e_default PRight)) x
+  | Tright (_, x) -> Format.fprintf fmt "Right (%a)" (pp_with_paren (pp_term e_default PRight)) x
   | Tsome e -> Format.fprintf fmt "Some %a" (pp_with_paren (pp_term e_default PRight)) e
   | Tnot e -> Format.fprintf fmt "not %a" (pp_with_paren (pp_term outer pos)) e
   | Tpand (e1,e2) -> Format.fprintf fmt "(%a && %a)"

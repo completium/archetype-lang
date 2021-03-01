@@ -161,7 +161,14 @@ let rec map_mtype m (t : M.type_) : loc_typ =
       | M.Tlist t                                  -> Tylist (map_mtype m t)
       | M.Tcontract _                              -> Tycontract
       | M.Trecord id                               -> Tyrecord (map_lident id)
-      | _ -> print_endline (Format.asprintf "%a@." M.pp_type_ t); assert false)
+      | M.Tor (a, b)                               -> Tyor (map_mtype m a, map_mtype m b)
+
+      | M.Tcontainer (_, _)
+      | M.Tlambda (_, _)
+      | M.Tticket _
+      | M.Tsapling_state _
+      | M.Tsapling_transaction _
+        -> print_endline (Format.asprintf "%a@." M.pp_type_ t); assert false)
 
 let mk_list_name_from_mlwtype m t =
   let idx =
@@ -1692,9 +1699,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     (* composite type constructors *)
 
-    | Mleft (_t, _x) -> assert false
-    | Mright (_t, _x) -> assert false
-    | Mnone -> Tnone
+    | Mleft  (t, x) -> Tleft  (map_mtype m t, map_mterm m ctx x)
+    | Mright (t, x) -> Tright (map_mtype m t, map_mterm m ctx x)
+    | Mnone   -> Tnone
     | Msome v -> Tsome (map_mterm m ctx v)
 
     | Mtuple l              -> Ttuple (List.map (map_mterm m ctx) l)

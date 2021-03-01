@@ -55,6 +55,7 @@ type ('i,'t) abstract_type =
   | Tyset of 'i
   | Tylist of 't
   | Tytuple of 't list
+  | Tyor of 't * 't
   | Tybls12_381_fr
   | Tybls12_381_g1
   | Tybls12_381_g2
@@ -230,6 +231,8 @@ type ('e,'t,'i) abstract_term =
   (* option *)
   | Tnone
   | Tsome   of 'e
+  | Tleft   of 't * 'e
+  | Tright  of 't * 'e
   | Tenum   of 'i
   | Tmark   of 'i * 'e
   | Tat of 'i * 'e
@@ -351,6 +354,7 @@ let map_abstract_type (map_i : 'i1 -> 'i2) (map_t : 't1 -> 't2) = function
   | Tykeyhash     -> Tykeyhash
   | Tystate       -> Tystate
   | Tytuple l     -> Tytuple (List.map map_t l)
+  | Tyor (a, b)   -> Tyor (map_t a, map_t b)
   | Tybls12_381_fr-> Tybls12_381_fr
   | Tybls12_381_g1-> Tybls12_381_g1
   | Tybls12_381_g2-> Tybls12_381_g2
@@ -557,6 +561,8 @@ and map_abstract_term
   | Twitness i         -> Twitness (map_i i)
   | Tnone              -> Tnone
   | Tsome e            -> Tsome (map_e e)
+  | Tleft  (t, x)      -> Tleft  (map_t t, map_e x)
+  | Tright (t, x)      -> Tright (map_t t, map_e x)
   | Tenum i            -> Tenum (map_i i)
   | Tmark (i,e)        -> Tmark (map_i i, map_e e)
   | Tat (i,e)          -> Tat (map_i i, map_e e)
@@ -777,6 +783,7 @@ let compare_abstract_type
   | Tyoption t1, Tyoption t2 -> cmpt t1 t2
   | Tylist t1, Tylist t2 -> cmpt t1 t2
   | Tytuple l1, Tytuple l2 -> List.for_all2 cmpt l1 l2
+  | Tyor (a1, b1), Tyor (a2, b2) -> cmpt a1 a2 && cmpt b1 b2
   | _ -> false
 
 let compare_abstract_formula
