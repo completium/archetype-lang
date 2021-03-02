@@ -802,6 +802,15 @@ let rec pp_term outer pos fmt = function
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
+  | Tlistreverse (i, l) ->
+    Format.fprintf fmt "%a.reverse %a"
+      pp_str (String.capitalize_ascii i)
+      (pp_with_paren (pp_term outer pos)) l
+  | Tlistconcat (i, l1, l2) ->
+    Format.fprintf fmt "%a.concat %a %a"
+      pp_str (String.capitalize_ascii i)
+      (pp_with_paren (pp_term outer pos)) l1
+      (pp_with_paren (pp_term outer pos)) l2
   | Tremove (i,e1,e2) ->
     Format.fprintf fmt "%a.remove %a %a"
       pp_str (String.capitalize_ascii i)

@@ -2090,8 +2090,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | Logic | Inv | Def -> nth
         | _ -> mk_match (dl nth) "_a" (loc_term (Tvar "_a")) Enotfound
       end
-    | Mlistreverse _ -> error_not_translated "Mlistreverse"
-    | Mlistconcat  _ -> error_not_translated "Mlistconcat"
+    | Mlistreverse (t, l)      -> Tlistreverse (dl (mk_list_name m (M.tlist t)), map_mterm m ctx l)
+    | Mlistconcat  (t, l1, l2) -> Tlistconcat (dl (mk_list_name m (M.tlist t)), map_mterm m ctx l1, map_mterm m ctx l2)
     | Mlistfold    _ -> error_not_translated "Mlistfold"
 
     (* map api expression *)

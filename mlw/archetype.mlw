@@ -1652,6 +1652,9 @@ module List
   use list.List
   use list.Length as L
   use list.Nth as N
+  use list.Append as A
+  use list.Reverse as R
+  (* use list.Map as M *)
   use option.Option
   use Types
 
@@ -1670,6 +1673,15 @@ module List
   (* ------------------------------------------------------------------------ *)
   let function nth n l : option t
   = N.nth l n
+
+  (* ------------------------------------------------------------------------ *)
+  let function reverse l = R.reverse l
+
+  (* ------------------------------------------------------------------------ *)
+  let function concat l1 l2 = A.(++) l1 l2
+
+  (* ------------------------------------------------------------------------ *)
+  (* let function map f l = M.map f l *)
 
   (* ------------------------------------------------------------------------ *)
   let rec function contains a l

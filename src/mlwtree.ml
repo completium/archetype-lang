@@ -128,6 +128,8 @@ type ('e,'t,'i) abstract_term =
   | Tcontent of 'i * 'e
   | Tcontains of 'i * 'e * 'e
   | Tvcontent of 'i * 'e
+  | Tlistreverse of 'i * 'e
+  | Tlistconcat of 'i * 'e * 'e
   (* archetype lib *)
   | Tadd    of 'i * 'e * 'e
   | Tvadd    of 'i * 'e * 'e
@@ -466,6 +468,8 @@ and map_abstract_term
   | Tcontent (i,e)     -> Tcontent (map_i i, map_e e)
   | Tcontains (i,e1,e2)-> Tcontains (map_i i, map_e e1, map_e e2)
   | Tvcontent (i,e)    -> Tvcontent (map_i i, map_e e)
+  | Tlistreverse (i, l) -> Tlistreverse (map_i i, map_e l)
+  | Tlistconcat (i, l1, l2) -> Tlistconcat (map_i i, map_e l1, map_e l2)
   | Tfromfield (i,e1,e2)  -> Tfromfield (map_i i, map_e e1, map_e e2)
   | Tfromview (i,e1,e2)  -> Tfromview (map_i i, map_e e1, map_e e2)
   | Ttoview (i,e)      -> Ttoview (map_i i, map_e e)
@@ -891,6 +895,8 @@ let rec compare_abstract_term
   | Tcontent (i1,e1), Tcontent (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tcontains (i1,e1,e3), Tcontains (i2,e2,e4) -> cmpi i1 i2 && cmpe e1 e2 && cmpe e3 e4
   | Tvcontent (i1,e1), Tvcontent (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
+  | Tlistreverse (i1, l1), Tlistreverse (i2, l2) -> cmpi i1 i2 && cmpe l1 l2
+  | Tlistconcat (i1, l11, l12), Tlistconcat (i2, l21, l22) -> cmpi i1 i2 && cmpe l11 l21 && cmpe l12 l22
   | Tfromfield (i1,e1,f1), Tfromfield (i2,e2,f2) -> cmpi i1 i2 && cmpe e1 e2 && cmpe f1 f2
   | Tfromview (i1,e1,f1), Tfromview (i2,e2,f2) -> cmpi i1 i2 && cmpe e1 e2 && cmpe f1 f2
   | Ttoview (i1,e1), Ttoview (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
