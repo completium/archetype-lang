@@ -1782,7 +1782,6 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     (* list api expression *)
 
     | Mlistprepend (_, _c, _a)             -> assert false
-    | Mlistheadtail (_, _c)                -> assert false
     | Mlistlength (_, _c)                  -> assert false
     | Mlistcontains (_, _c, _a)            -> assert false
     | Mlistnth (_, _c, _a)                 -> assert false

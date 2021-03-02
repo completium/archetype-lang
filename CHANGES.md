@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
  - Execution language target (LIGO, SmartPy and Scaml)
+ - `head_tail` (replace by `match ... with ... end`)
 
 ## [1.2.1] - 2020-10-01
 ### Added

@@ -324,7 +324,6 @@ type ('id, 'term) mterm_node  =
   | Msetfold          of type_ * 'id   * 'id   * 'term * 'term * 'term
   (* list api expression *)
   | Mlistprepend      of type_ * 'term * 'term
-  | Mlistheadtail     of type_ * 'term
   | Mlistlength       of type_ * 'term
   | Mlistcontains     of type_ * 'term * 'term
   | Mlistnth          of type_ * 'term * 'term
@@ -1430,7 +1429,6 @@ let cmp_mterm_node
     | Msetfold (t1, ix1, ia1, c1, a1, b1), Msetfold (t2, ix2, ia2, c2, a2, b2)         -> cmp_type t1 t2 && cmp_lident ix1 ix2 && cmp_lident ia1 ia2 && cmp c1 c2 && cmp a1 a2 && cmp b1 b2
     (* list api expression *)
     | Mlistprepend (t1, c1, a1), Mlistprepend (t2, c2, a2)                             -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
-    | Mlistheadtail (t1, c1), Mlistheadtail (t2, c2)                                   -> cmp_type t1 t2 && cmp c1 c2
     | Mlistlength (t1, c1), Mlistlength (t2, c2)                                       -> cmp_type t1 t2 && cmp c1 c2
     | Mlistcontains (t1, c1, a1), Mlistcontains (t2, c2, a2)                           -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
     | Mlistnth (t1, c1, a1), Mlistnth (t2, c2, a2)                                     -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
@@ -1834,7 +1832,6 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Msetfold (t, ix, ia, c, a, b)  -> Msetfold (ft t, g ix, g ia, f c, f a, f b)
   (* list api expression *)
   | Mlistprepend (t, c, a)         -> Mlistprepend (ft t, f c, f a)
-  | Mlistheadtail(t, c)            -> Mlistheadtail(t, f c)
   | Mlistlength(t, c)              -> Mlistlength(t, f c)
   | Mlistcontains (t, c, a)        -> Mlistcontains (t, f c, f a)
   | Mlistnth (t, c, a)             -> Mlistnth (t, f c, f a)
@@ -2234,7 +2231,6 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Msetfold (_, _, _, c, a, b)           -> f (f (f accu c) a) b
   (* list api expression *)
   | Mlistprepend (_, c, a)                -> f (f accu c) a
-  | Mlistheadtail (_, c)                  -> f accu c
   | Mlistlength (_, c)                    -> f accu c
   | Mlistcontains (_, c, a)               -> f (f accu c) a
   | Mlistnth (_, c, a)                    -> f (f accu c) a
@@ -3037,10 +3033,6 @@ let fold_map_term
     let ce, ca = f accu c in
     let ae, aa = f ca a in
     g (Mlistprepend (t, ce, ae)), aa
-
-  | Mlistheadtail (t, c) ->
-    let ce, ca = f accu c in
-    g (Mlistheadtail (t, ce)), ca
 
   | Mlistlength (t, c) ->
     let ce, ca = f accu c in

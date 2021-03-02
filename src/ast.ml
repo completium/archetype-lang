@@ -188,7 +188,6 @@ type const =
   | Ctail
   | Cabs
   | Cprepend
-  | Cheadtail
   | Creverse
   (* map *)
   | Cmput

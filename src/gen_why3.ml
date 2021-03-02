@@ -2081,7 +2081,6 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     (* list api expression *)
 
     | Mlistprepend (t, l, e)  -> Tprepend (dl (mk_list_name m (M.tlist t)), map_mterm m ctx e, map_mterm m ctx l)
-    | Mlistheadtail (_t, _l)  -> assert false
     | Mlistlength (t, l)      -> Tcard (dl (mk_list_name m (M.tlist t)), map_mterm m ctx l)
     | Mlistcontains (t, l, e) -> Tcontains (dl (mk_list_name m (M.tlist t)), map_mterm m ctx e, map_mterm m ctx l)
     | Mlistnth (t, n, l)      ->

@@ -985,10 +985,6 @@ let pp_mterm fmt (mt : mterm) =
         f c
         f a
 
-    | Mlistheadtail (_, c) ->
-      Format.fprintf fmt "list_head_tail (%a)"
-        f c
-
     | Mlistlength (_, c) ->
       Format.fprintf fmt "list_length (%a)"
         f c

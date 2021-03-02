@@ -1309,7 +1309,6 @@ let listops : opinfo list =
   let lst   = A.Tlist elemt in [
     ("prepend"        , A.Cprepend  , `Total  , Some lst, [elemt  ], lst                   , Mint.empty);
     ("length"         , A.Clength   , `Total  , Some lst, [       ], A.vtnat               , Mint.empty);
-    ("head_tail"      , A.Cheadtail , `Total  , Some lst, [       ], A.Ttuple [elemt; lst] , Mint.empty);
     ("contains"       , A.Ccontains , `Total  , Some lst, [elemt  ], A.vtbool              , Mint.empty);
     ("nth"            , A.Cnth      , `Partial, Some lst, [A.vtnat], elemt                 , Mint.empty);
     ("reverse"        , A.Creverse  , `Total  , Some lst, [       ], lst                   , Mint.empty);

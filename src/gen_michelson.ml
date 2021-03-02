@@ -784,7 +784,6 @@ let to_ir (model : M.model) : T.ir =
     (* list api expression *)
 
     | Mlistprepend (_t, i, l)    -> T.Ibinop (Bcons, f l, f i)
-    | Mlistheadtail (_t, l)      -> T.Imichelson ([f l], T.SEQ [ IF_CONS ([T.PAIR], [T.cstring "EmptyList"; T.FAILWITH])], [])
     | Mlistlength (_, l)         -> T.Iunop (Usize, f l)
     | Mlistcontains (t, c, a)    -> let b = T.BlistContains (to_type t) in add_builtin b; T.Icall (get_fun_name b, [f c; f a], is_inline b)
     | Mlistnth (t, c, a)         -> let b = T.BlistNth (to_type t) in add_builtin b; T.Icall (get_fun_name b, [f c; f a], is_inline b)
