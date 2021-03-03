@@ -115,6 +115,12 @@ module Utils
      div n d
   end
 
+  let function divmod (a : int) (b : int) : option (int, int)
+  =
+  if b = 0
+  then None
+  else Some ((div a b), (mod a b))
+
   val function xor_int int int : int
 
   (* ------------------------------------------------------------------------ *)

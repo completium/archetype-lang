@@ -621,6 +621,10 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "mod %a %a"
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
+  | Tdivmod (_,e1,e2) ->
+    Format.fprintf fmt "divmod %a %a"
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
   | Tcnth (i,e1,e2) ->
     Format.fprintf fmt "%a.cnth %a %a"
       pp_str (String.capitalize_ascii i)
