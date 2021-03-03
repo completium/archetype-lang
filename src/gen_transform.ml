@@ -5381,3 +5381,23 @@ let process_parameter (model : model) : model =
   let model = map_mterm_model aux model in
   let params = List.map for_parameter model.parameters in
   { model with decls = params @ model.decls }
+
+let fix_container (model : model) =
+  let rec aux ctx (mt : mterm) =
+    match mt with
+    | { node = Masset fields; type_ = (Tasset an, _)} -> begin
+        let an = unloc an in
+        let asset = Utils.get_asset model an in
+        let types = List.map (fun (x : asset_item) -> x.type_) asset.values in
+        (* Format.printf "fields: %i; infos: %i@\n" (List.length fields) (List.length types); *)
+        assert (List.length fields == List.length types);
+        let l = List.map2 (fun t (mt : mterm) ->
+            match get_ntype t, mt.node with
+            | Tcontainer (((Tasset _), None), Aggregate), Mlitlist [] -> mk_mterm (Massets []) t
+            | _ -> mt
+          ) types fields in
+        mk_mterm (Masset l) mt.type_
+      end
+    | _ -> map_mterm (aux ctx) mt
+  in
+  map_mterm_model aux model

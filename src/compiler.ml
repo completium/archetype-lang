@@ -240,7 +240,6 @@ let generate_target model =
     |> replace_whyml_ident
     |> getter_to_entry
     |> process_parameter
-    (* |> reverse_operations *)
     |> process_multi_keys
     |> replace_assignfield_by_update
     |> remove_enum
@@ -255,16 +254,11 @@ let generate_target model =
     |> eval_variable_initial_value
     |> generate_storage
     |> replace_declvar_by_letin
-    (* |> add_explicit_sort *)
-    (* |> remove_enum_matchwith *)
-    (* |> remove_fun_dotasset *)
     |> replace_lit_address_by_role
     |> replace_label_by_mark
     |> flat_sequence
     |> remove_cmp_bool
     |> prune_properties
-    (* |> shallow_asset_verif *)
-    (* |> split_key_values *)
     |> Gen_transform.assign_loop_label
     |> create_var_before_for
     |> extend_loop_iter
@@ -274,11 +268,11 @@ let generate_target model =
     |> remove_cmp_bool
     |> replace_dotassetfield_by_dot
     |> transfer_shadow_variable_to_storage
-    (* |> replace_instr_verif *)
     |> eval_storage
     |> optimize
     |> generate_api_storage ~verif:true
     |> filter_api_storage
+    |> fix_container
     |> output
 
   | _ -> ()
