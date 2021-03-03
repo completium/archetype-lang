@@ -162,9 +162,9 @@ let rec map_mtype m (t : M.type_) : loc_typ =
       | M.Tcontract _                              -> Tycontract
       | M.Trecord id                               -> Tyrecord (map_lident id)
       | M.Tor (a, b)                               -> Tyor (map_mtype m a, map_mtype m b)
+      | M.Tlambda (a, b)                           -> Tylambda (map_mtype m a, map_mtype m b)
 
       | M.Tcontainer (_, _)
-      | M.Tlambda (_, _)
       | M.Tticket _
       | M.Tsapling_state _
       | M.Tsapling_transaction _
@@ -1693,8 +1693,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       Tmatchlist (map_mterm m ctx x, map_lident hid, map_lident tid, map_mterm m ctx hte, map_mterm m ctx ee)
     | Mfold          _ -> error_not_supported "Mfold"
     | Mmap           _ -> error_not_supported "Mmap"
-    | Mexeclambda    _ -> error_not_supported "Mexeclambda"
-    | Mapplylambda   _ -> error_not_supported "Mapplylambda"
+    | Mexeclambda  (a, b) -> Texeclambda (map_mterm m ctx a, map_mterm m ctx b)
+    | Mapplylambda (a, b) -> Tapplylambda (map_mterm m ctx a, map_mterm m ctx b)
 
 
     (* composite type constructors *)
@@ -1747,7 +1747,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                    ) ([] : loc_term list) l)
       else Temptycoll (dl map)
     | Mlitrecord l -> Trecord (None, List.map (fun (n,v) -> (dl n, map_mterm m ctx v)) l)
-    | Mlambda (_rt, _id, _at, _e) -> error_not_supported "Mlambda"
+    | Mlambda (rt, id, at, e) -> Tvlambda (map_mtype m rt, map_lident id, map_mtype m at, map_mterm m ctx e)
 
 
     (* access *)

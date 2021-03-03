@@ -162,6 +162,7 @@ let pp_type fmt typ =
       | Tystate       -> "state"
       | Tytuple l     -> "(" ^ (String.concat ", " (List.map typ_str l)) ^ ")"
       | Tyor (a, b)   -> Format.asprintf "or (%s) (%s)" (typ_str a) (typ_str b)
+      | Tylambda (a, b) -> Format.asprintf "(%s) -> (%s)" (typ_str a) (typ_str b)
       | Tybls12_381_fr -> "bls12_381_fr"
       | Tybls12_381_g1 -> "bls12_381_g1"
       | Tybls12_381_g2 -> "bls12_381_g2"
@@ -257,6 +258,9 @@ let rec pp_term outer pos fmt = function
       pp_str (string_of_int e2)
       pp_str (string_of_int e3)
       (pp_with_paren (pp_term outer pos)) e1
+  | Tvlambda    (_r, a, _t, b) -> Format.fprintf fmt "fun %a -> @[%a@]" pp_str a (pp_term outer pos) b
+  | Texeclambda (a, b) -> Format.fprintf fmt "%a (%a)" (pp_term outer pos) a (pp_term outer pos) b
+  | Tapplylambda (a, b) -> Format.fprintf fmt "%a (%a)" (pp_term outer pos) a (pp_term outer pos) b
   | Tvar i -> pp_str fmt i
   | Tdoti (i1,i2) -> Format.fprintf fmt "%a.%a" pp_str i1 pp_str i2
   | Tdot (e1,e2) ->

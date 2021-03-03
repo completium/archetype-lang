@@ -56,6 +56,7 @@ type ('i,'t) abstract_type =
   | Tylist of 't
   | Tytuple of 't list
   | Tyor of 't * 't
+  | Tylambda of 't * 't
   | Tybls12_381_fr
   | Tybls12_381_g1
   | Tybls12_381_g2
@@ -91,6 +92,10 @@ type ('e,'t,'i) abstract_term =
   | Tvar    of 'i
   | Ttuple  of 'e list
   | Ttupleaccess of 'e * int * int
+  (* lambda *)
+  | Tvlambda    of 't * 'i * 't * 'e
+  | Texeclambda of 'e * 'e
+  | Tapplylambda of 'e * 'e
   (* record *)
   | Trecord of 'e option * ('i * 'e) list (* { 'e with 'i = 'e; } *)
   | Tdot    of 'e * 'e
@@ -361,6 +366,7 @@ let map_abstract_type (map_i : 'i1 -> 'i2) (map_t : 't1 -> 't2) = function
   | Tystate       -> Tystate
   | Tytuple l     -> Tytuple (List.map map_t l)
   | Tyor (a, b)   -> Tyor (map_t a, map_t b)
+  | Tylambda (a, b) -> Tylambda (map_t a, map_t b)
   | Tybls12_381_fr-> Tybls12_381_fr
   | Tybls12_381_g1-> Tybls12_381_g1
   | Tybls12_381_g2-> Tybls12_381_g2
@@ -441,6 +447,11 @@ and map_abstract_term
   | Tvar i             -> Tvar (map_i i)
   | Ttuple l           -> Ttuple (List.map map_e l)
   | Ttupleaccess (e1,e2,e3) -> Ttupleaccess (map_e e1, e2, e3)
+  (* lambda *)
+  | Tvlambda    (r, a, t, b) -> Tvlambda (map_t r, map_i a, map_t t, map_e b)
+  | Texeclambda (a, b) -> Texeclambda (map_e a, map_e b)
+  | Tapplylambda (a, b) -> Tapplylambda (map_e a, map_e b)
+  (* record *)
   | Trecord (e,l)      -> Trecord (Option.map map_e e, List.map (fun (i,v) ->
       (map_i i,map_e v)) l)
   | Tdot (e1,e2)       -> Tdot (map_e e1, map_e e2)
@@ -796,6 +807,7 @@ let compare_abstract_type
   | Tylist t1, Tylist t2 -> cmpt t1 t2
   | Tytuple l1, Tytuple l2 -> List.for_all2 cmpt l1 l2
   | Tyor (a1, b1), Tyor (a2, b2) -> cmpt a1 a2 && cmpt b1 b2
+  | Tylambda (a1, b1), Tylambda (a2, b2) -> cmpt a1 a2 && cmpt b1 b2
   | _ -> false
 
 let compare_abstract_formula

@@ -1692,7 +1692,14 @@ module List
   let function concat l1 l2 = A.(++) l1 l2
 
   (* ------------------------------------------------------------------------ *)
-  (* let function map f l = M.map f l *)
+  type ta
+  type tb
+
+  let rec function map (f : ta -> tb) (l : list ta) : list tb =
+    match l with
+    | Nil      -> Nil
+    | Cons x r -> Cons (f x) (map f r)
+    end
 
   (* ------------------------------------------------------------------------ *)
   let rec function contains a l
