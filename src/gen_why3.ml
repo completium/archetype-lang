@@ -1795,9 +1795,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mmodulo (l, r) -> Tmod (dl Tyint, map_mterm m ctx l, map_mterm m ctx r)
     | Mdivmod (l, r) -> Tdivmod (dl Tyint, map_mterm m ctx l, map_mterm m ctx r)
     | Muminus v -> Tuminus (dl Tyint, map_mterm m ctx v)
-    | MthreeWayCmp (_l, _r) -> error_not_translated "MthreeWayCmp"
-    | Mshiftleft (_l, _r)   -> error_not_translated "Mshiftleft"
-    | Mshiftright (_l, _r)  -> error_not_translated "Mshiftright"
+    | MthreeWayCmp (l, r) -> Tthreewaycmp (dl Tyint, map_mterm m ctx l, map_mterm m ctx r)
+    | Mshiftleft   (l, r) -> Tshiftleft (map_mterm m ctx l, map_mterm m ctx r)
+    | Mshiftright  (l, r) -> Tshiftright (map_mterm m ctx l, map_mterm m ctx r)
 
 
     (* asset api effect *)

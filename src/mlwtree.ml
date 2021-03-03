@@ -169,7 +169,10 @@ type ('e,'t,'i) abstract_term =
   | Tmult   of 't * 'e * 'e
   | Tdiv    of 't * 'e * 'e
   | Tmod    of 't * 'e * 'e
-  | Tdivmod    of 't * 'e * 'e
+  | Tdivmod of 't * 'e * 'e
+  | Tthreewaycmp of 't * 'e * 'e
+  | Tshiftleft   of 'e * 'e
+  | Tshiftright  of 'e * 'e
   | Tnot    of 'e
   | Tpand   of 'e * 'e
   (* comp *)
@@ -512,6 +515,9 @@ and map_abstract_term
   | Tdiv (t,l,r)       -> Tdiv (map_t t, map_e l, map_e r)
   | Tmod (t,l,r)       -> Tmod (map_t t, map_e l, map_e r)
   | Tdivmod (t,l,r)    -> Tdivmod (map_t t, map_e l, map_e r)
+  | Tthreewaycmp (t,l,r) -> Tthreewaycmp (map_t t, map_e l, map_e r)
+  | Tshiftleft  (l,r)  -> Tshiftleft (map_e l, map_e r)
+  | Tshiftright (l,r)  -> Tshiftright (map_e l, map_e r)
   | Tnot e             -> Tnot (map_e e)
   | Tpand (e1,e2)      -> Tpand (map_e e1,map_e e2)
   | Teq (t,l,r)        -> Teq (map_t t, map_e l, map_e r)
@@ -935,6 +941,9 @@ let rec compare_abstract_term
   | Tdiv (t1,l1,r1), Tdiv (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
   | Tmod (t1,l1,r1), Tmod (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
   | Tdivmod (t1,l1,r1), Tdivmod (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
+  | Tthreewaycmp (t1,l1,r1), Tthreewaycmp (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
+  | Tshiftleft (l1,r1), Tshiftleft (l2,r2) -> cmpe l1 l2 && cmpe r1 r2
+  | Tshiftright (l1,r1), Tshiftright (l2,r2) -> cmpe l1 l2 && cmpe r1 r2
   | Tnot e1, Tnot e2 -> cmpe e1 e2
   | Tpand (e1,e2), Tpand (e3,e4) -> cmpe e1 e3 && cmpe e2 e4
   | Teq (i1,l1,r1), Teq (i2,l2,r2) -> cmpt i1 i2 && cmpe l1 l2 && cmpe r1 r2

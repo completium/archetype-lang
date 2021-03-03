@@ -625,6 +625,18 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "divmod %a %a"
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
+  | Tthreewaycmp (_,e1,e2) ->
+    Format.fprintf fmt "three_way_cmp_int %a %a"
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
+  | Tshiftleft (e1,e2) ->
+    Format.fprintf fmt "shift_left %a %a"
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
+  | Tshiftright (e1,e2) ->
+    Format.fprintf fmt "shift_right %a %a"
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
   | Tcnth (i,e1,e2) ->
     Format.fprintf fmt "%a.cnth %a %a"
       pp_str (String.capitalize_ascii i)

@@ -123,6 +123,11 @@ module Utils
 
   val function xor_int int int : int
 
+  val function three_way_cmp_int int int : int
+  val function three_way_cmp_string string string : int
+  val function shift_left  int int  : int
+  val function shift_right int int  : int
+
   (* ------------------------------------------------------------------------ *)
   (* Rational *)
 
