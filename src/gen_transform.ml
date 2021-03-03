@@ -5393,7 +5393,7 @@ let fix_container (model : model) =
         assert (List.length fields == List.length types);
         let l = List.map2 (fun t (mt : mterm) ->
             match get_ntype t, mt.node with
-            | Tcontainer (((Tasset _), None), Aggregate), Mlitlist [] -> mk_mterm (Massets []) t
+            | Tcontainer (((Tasset _), None), (Aggregate | Partition)), Mlitlist [] -> mk_mterm (Massets []) t
             | _ -> mt
           ) types fields in
         mk_mterm (Masset l) mt.type_
