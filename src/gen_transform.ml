@@ -5281,7 +5281,6 @@ let process_metadata (model : model) : model =
       in
       map_mterm_model aux model
     in
-    let tmetadata = tmap tstring tbytes in
     let dmap =
       let mk_map _ =
 
@@ -5319,7 +5318,7 @@ let process_metadata (model : model) : model =
           | _ -> assert false
         in
 
-        mk_mterm (Mlitmap (true, v)) tmetadata in
+        mk_metadata v in
       if not (String.equal "" !Options.opt_metadata_uri)
       then mk_map ()
       else mk_map ()

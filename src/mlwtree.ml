@@ -135,6 +135,8 @@ type ('e,'t,'i) abstract_term =
   | Tvcontent of 'i * 'e
   | Tlistreverse of 'i * 'e
   | Tlistconcat of 'i * 'e * 'e
+  | Tlistmap   of 'i * 'e * 'i * 'e
+  | Tfold  of 'e * 'i * 'e
   (* archetype lib *)
   | Tadd    of 'i * 'e * 'e
   | Tvadd    of 'i * 'e * 'e
@@ -494,6 +496,8 @@ and map_abstract_term
   | Tmlist (l,e1,i1,i2,i3,e2) -> Tmlist (map_i l,map_e e1, map_i i1, map_i i2, map_i i3, map_e e2)
   | Tcons (i,e1,e2)    -> Tcons (map_i i, map_e e1, map_e e2)
   | Tprepend (i,e1,e2) -> Tprepend (map_i i, map_e e1, map_e e2)
+  | Tlistmap  (t, x, i, e) -> Tlistmap  (map_i t, map_e x, map_i i, map_e e)
+  | Tfold (x, i, e)    -> Tfold (map_e x, map_i i, map_e e)
   | Tadd (i1,e1,e2)    -> Tadd (map_i i1, map_e e1, map_e e2)
   | Tvadd (i1,e1,e2)   -> Tvadd (map_i i1, map_e e1, map_e e2)
   | Tremove (i,e1,e2)  -> Tremove (map_i i,map_e e1, map_e e2)
@@ -927,6 +931,8 @@ let rec compare_abstract_term
     cmpi l1 l2 && cmpe e11 e12 && cmpi i11 i12 && cmpi i21 i22 && cmpi i31 i32 && cmpe e21 e22
   | Tcons (i1,e1,e2), Tcons (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tprepend (i1,e1,e2), Tprepend (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
+  | Tlistmap  (t1, x1, i1, e1), Tlistmap  (t2, x2, i2, e2) -> cmpi t1 t2 && cmpe x1 x2 && cmpi i1 i2 && cmpe e1 e2
+  | Tfold (x1, i1, e1), Tfold (x2, i2, e2) -> cmpe x1 x2 && cmpi i1 i2 && cmpe e1 e2
   | Tadd (i1,e1,e2), Tadd (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tvadd (i1,e1,e2), Tvadd (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tremove (i1,e1,e2), Tremove (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2

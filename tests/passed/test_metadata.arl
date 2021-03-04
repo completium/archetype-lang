@@ -11,20 +11,20 @@ entry addMetadata (ik : string, iv : bytes) {
   }
 }
 
-entry removeMetadata(ik : string) {
-  called by admin
-  effect {
-    metadata := remove(metadata, ik)
-  }
-}
+// entry removeMetadata(ik : string) {
+//   called by admin
+//   effect {
+//     metadata := remove(metadata, ik)
+//   }
+// }
 
-entry setValue (v : nat) {
-  called by admin
-  effect {
-    value := v
-  }
-}
+// entry setValue (v : nat) {
+//   called by admin
+//   effect {
+//     value := v
+//   }
+// }
 
-getter getValue() : nat {
-  return value
-}
+// getter getValue() : nat {
+//   return value
+// }

@@ -462,7 +462,7 @@ let rec pp_term outer pos fmt = function
   | Tapp (f,a) ->
     Format.fprintf fmt "%a %a"
       (pp_with_paren (pp_term outer pos)) f
-      (pp_list " " (pp_with_paren (pp_term outer pos))) a
+      (pp_list " " (pp_paren (pp_term outer pos))) a
   | Tget (i,e1,e2) ->
     Format.fprintf fmt "%a.get %a %a"
       pp_str (String.capitalize_ascii i)
@@ -831,6 +831,17 @@ let rec pp_term outer pos fmt = function
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) l1
       (pp_with_paren (pp_term outer pos)) l2
+  | Tlistmap (t, x, i, e) ->
+    Format.fprintf fmt "%a.map (fun %a -> @[%a@]) %a"
+      pp_str (String.capitalize_ascii t)
+      pp_str i
+      (pp_term outer pos) e
+      (pp_term outer pos) x
+  | Tfold (x, i, e) ->
+    Format.fprintf fmt "fold (fun %a -> @[%a@]) %a"
+      pp_str i
+      (pp_term outer pos) e
+      (pp_term outer pos) x
   | Tremove (i,e1,e2) ->
     Format.fprintf fmt "%a.remove %a %a"
       pp_str (String.capitalize_ascii i)

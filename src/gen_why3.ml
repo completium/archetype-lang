@@ -1691,8 +1691,14 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       Tmatchor     (map_mterm m ctx x, map_lident lid, map_mterm m ctx le, map_lident rid, map_mterm m ctx re)
     | Mmatchlist (x, hid, tid, hte, ee) ->
       Tmatchlist (map_mterm m ctx x, map_lident hid, map_lident tid, map_mterm m ctx hte, map_mterm m ctx ee)
-    | Mfold          _ -> error_not_supported "Mfold"
-    | Mmap           _ -> error_not_supported "Mmap"
+    | Mfold (x, i, e) -> Tfold (map_mterm m ctx x, map_lident i, map_mterm m ctx e)
+    | Mmap (x, i, e) ->
+      let st, _dt =
+        match M.get_ntype mt.type_, M.get_ntype x.type_ with
+        | Tlist st, Tlist dt -> st, dt
+        | _ -> assert false
+      in
+      Tlistmap (dl (mk_list_name m (M.tlist st)), map_mterm m ctx x, map_lident i, map_mterm m ctx e)
     | Mexeclambda  (a, b) -> Texeclambda (map_mterm m ctx a, map_mterm m ctx b)
     | Mapplylambda (a, b) -> Tapplylambda (map_mterm m ctx a, map_mterm m ctx b)
 
@@ -2973,7 +2979,7 @@ let to_whyml (m : M.model) : mlw_tree  =
   let maps             = M.Utils.get_all_map_types m |> List.map (mk_map_type m) |> List.flatten in
   let sets             = M.Utils.get_all_set_types m |> List.map (mk_set_type m) |> List.flatten in
   let mlwassets        = assets |> List.map (mk_asset m) |> wdl in
-  let eq_enums        = assets |> List.map (mk_eq_enums m) |> List.flatten in
+  let eq_enums         = assets |> List.map (mk_eq_enums m) |> List.flatten in
   let eq_keys          = assets |> List.map (mk_eq_key m) |> wdl in
   let le_keys          = assets |> List.map (mk_le_key m) |> wdl in
   let eq_assets        = assets |> List.map (mk_eq_asset m) |> wdl in
