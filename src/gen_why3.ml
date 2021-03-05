@@ -3007,11 +3007,11 @@ let to_whyml (m : M.model) : mlw_tree  =
               traceutils             @
               exns                   @
               enums                  @
-              records                @
               eq_enums               @
               lists                  @
               maps                   @
               sets                   @
+              records                @
               mlwassets              @
               aggregates             @
               storage_api_bs         @
