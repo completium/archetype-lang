@@ -2723,6 +2723,9 @@ let fold_exns m body : term list =
     | M.Mfail (InvalidCondition _) -> acc @ [Texn Einvalidcondition]
     | M.Mfail InvalidState -> acc @ [Texn Einvalidstate]
     | M.Mfail AssignNat -> acc @ [Texn Enegassignnat]
+    | M.Mfail Invalid v ->
+      let idx = get_fail_idx m v.type_ in
+      acc @ [Texn (Efail (idx, None))]
     | M.Mlistnth _ -> acc @ [Texn Enotfound]
     | M.Mself _ -> acc @ [Texn Enotfound]
     | M.Mcast ((Tbuiltin Baddress, _), (Tcontract _, _), v) -> internal_fold_exn (acc @ [Texn Enotfound]) v
