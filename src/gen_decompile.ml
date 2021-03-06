@@ -1183,6 +1183,9 @@ end = struct
     | DIWhile (c, b) ->
       [DIWhile (compress_e c, compress_c b)]
 
+    | DIIter (i, c, b) ->
+      [DIIter (i, compress_e c, compress_c b)]
+
   and compress_e (e : dexpr) =
     match e with
     | Ddata _ -> e

@@ -1,0 +1,25 @@
+{
+parameter (pair (option %admin (list address))
+                (pair (string %oldhash) (string %newhash)));
+storage (pair (list %admin address) (string %hash));
+code { { UNPAIR ;
+         UNPAIR ;
+         DIP { UNPAIR @oldhash @newhash } ;
+         DIP { DIP { DIP { UNPAIR @storedadmin @storedhash } } } } ;
+       SWAP ;
+       { DIP { DIP { DIP { SWAP } } } } ;
+       { DIP { DIP { SWAP } } } ;
+       DIP { SWAP } ;
+       { DIP { DIP { DIP { SWAP } } } } ;
+       { DIP { DIP { SWAP ; DUP ; DIP { SWAP } } } } ;
+       ASSERT_CMPEQ ;
+       SENDER ;
+       SWAP ;
+       { DIP { DIP { PUSH @admin bool False } } } ;
+       ITER { DIP { DUP } ; CMPEQ ; SWAP ; DIP { OR @admin } } ;
+       DROP ;
+       ASSERT ;
+       IF_NONE {} { DIP { DROP } } ;
+       NIL operation ;
+       { DIP { PAIR %admin %hash } ; PAIR %op } }
+}

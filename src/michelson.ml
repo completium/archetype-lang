@@ -426,6 +426,7 @@ type dinstr =
   | DIMatch    of dexpr * (ident * dpattern list * dcode) list
   | DIFailwith of dexpr
   | DIWhile    of dexpr * dcode
+  | DIIter     of ident * dexpr * dcode
 
 and dpattern =
   | DVar  of dlocal
