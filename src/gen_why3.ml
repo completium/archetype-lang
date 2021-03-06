@@ -212,7 +212,30 @@ let rec mk_eq_type m e1 e2 = function
         ], Tif (cmp, Ttrue, Some Tfalse);
         Tpatt_tuple [Twild;Twild], Tfalse
       ])
-  | _ -> Teq (Tyint, Tvar e1, Tvar e2)
+  | Tyint
+  | Tyuint
+  | Tykey
+  | Tykeyhash
+  | Tydate
+  | Tyduration
+  | Tytez
+  | Tysignature
+  | Tychainid
+  | Tystorage
+  | Tycontract
+  | Tystate
+  | Tybls12_381_fr
+  | Tybls12_381_g1
+  | Tybls12_381_g2
+  | Tynever
+  | Tyrecord _
+  | Tycoll _
+  | Tyview _
+  | Tymap _
+  | Tyset _
+  | Tyor (_, _)
+  | Tylambda (_, _)
+    -> Teq (Tyint, Tvar e1, Tvar e2)
 
 let rec mk_le_type e1 e2 = function
   | Tyunit -> Ttrue

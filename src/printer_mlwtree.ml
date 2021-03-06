@@ -831,14 +831,13 @@ let rec pp_term outer pos fmt = function
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) l1
       (pp_with_paren (pp_term outer pos)) l2
-  | Tlistmap (t, x, i, e) ->
-    Format.fprintf fmt "%a.map (fun %a -> @[%a@]) %a"
-      pp_str (String.capitalize_ascii t)
+  | Tlistmap (_, x, i, e) ->
+    Format.fprintf fmt "(fun f l -> let rec map f l = match l with | L.Nil -> L.Nil | L.Cons x r -> L.Cons (f x) (map f r) end in map f l) (fun %a -> @[%a@]) %a"
       pp_str i
       (pp_term outer pos) e
       (pp_term outer pos) x
   | Tfold (x, i, e) ->
-    Format.fprintf fmt "fold (fun %a -> @[%a@]) %a"
+    Format.fprintf fmt "(fun f x -> let rec fold f x = match x with | Left _ -> fold f x | Right v -> v end in fold f x) (fun %a -> @[%a@]) %a"
       pp_str i
       (pp_term outer pos) e
       (pp_term outer pos) x
