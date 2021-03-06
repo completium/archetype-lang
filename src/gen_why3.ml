@@ -1459,6 +1459,16 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
   let error_internal desc = emit_error (mt.loc, desc); Tnottranslated in
   let error_not_translated (msg : string) = (* Tnottranslated in *) error_internal (TODONotTranslated msg) in
   let error_not_supported (msg : string) = error_internal (NotSupported msg) in
+  let to_collection (an : ident) (mt : M.mterm) : loc_term  =
+    Format.eprintf "type_ : %a@\n" M.pp_type_ mt.type_;
+    let a = map_mterm m ctx mt in
+    match M.get_ntype mt.type_ with
+    | Tcontainer (_, View) -> begin
+        let b : loc_term = loc_term (mk_ac (an)) in
+        mk_loc mt.loc (Tfromview (with_dummy_loc an, a, b))
+      end
+    | _ -> a
+  in
   let t =
     match mt.node with
     (* lambda *)
@@ -2362,9 +2372,21 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | M.Tcontainer (_,View) -> Tvempty (dl (mk_view_id n), map_mterm m ctx r)
         | _ -> Tempty (dl n, map_mterm m ctx r)
       end
-    | Munion     (an, l, r) -> Tunion(dl an, map_mterm m ctx l, map_mterm m ctx r)
-    | Minter     (an, l, r) -> Tinter(dl an, map_mterm m ctx l, map_mterm m ctx r)
-    | Mdiff      (an, l, r) -> Tdiff(dl an, map_mterm m ctx l, map_mterm m ctx r)
+    | Munion (an, l, r) -> begin
+        let l = to_collection an l in
+        let r = to_collection an r in
+        Tunion(dl an, l, r)
+      end
+    | Minter (an, l, r) -> begin
+        let l = to_collection an l in
+        let r = to_collection an r in
+        Tinter(dl an, l, r)
+      end
+    | Mdiff (an, l, r) -> begin
+        let l = to_collection an l in
+        let r = to_collection an r in
+        Tdiff(dl an, l, r)
+      end
   in
   mk_loc mt.loc t
 and mk_invariants (m : M.model) ctx id (lbl : ident option) lbody =
