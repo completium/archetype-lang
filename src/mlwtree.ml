@@ -788,7 +788,7 @@ let compare_abstract_type
     (typ2 : ('i,'t) abstract_type) =
   match typ1,typ2 with
   | Tyint, Tyint -> true
-  | Tyuint, Tyunit -> true
+  | Tyuint, Tyuint -> true
   | Tybool, Tybool -> true
   | Tystring, Tystring -> true
   | Tyrational, Tyrational -> true

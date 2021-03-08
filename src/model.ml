@@ -5276,7 +5276,7 @@ end = struct
   let add_type (l : type_ list) (x : type_) =
     if List.exists (cmp_type x) l
     then l
-    else x::l
+    else l @ [x]
 
   let get_all_set_types (model : model) : type_ list =
     let rec for_type accu t =
