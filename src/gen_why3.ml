@@ -218,6 +218,17 @@ let rec mk_eq_type m e1 e2 = function
         Tpatt_tuple [Tpright (e1^"v1"); Tpright (e1^"v2")], mk_eq_type m (e1^"v1") (e1^"v2") b;
         Tpatt_tuple [Twild; Twild], Tfalse
       ])
+  | Tyrecord id -> begin
+      let r = Model.Utils.get_record m id in
+      let cmps = List.map (fun (f : M.record_field) ->
+          let fn = unloc f.name in
+          let e1i = e1 ^ "." ^ fn in
+          let e2i = e2 ^ "." ^ fn in
+          let t : typ = unloc_type (map_mtype m f.type_) in
+          mk_eq_type m e1i e2i t
+        ) r.fields in
+      List.fold_left (fun acc cmp -> Tpand (acc,cmp)) (List.hd cmps) (List.tl cmps)
+    end
   | Tyint
   | Tyuint
   | Tykey
@@ -234,7 +245,6 @@ let rec mk_eq_type m e1 e2 = function
   | Tybls12_381_g1
   | Tybls12_381_g2
   | Tynever
-  | Tyrecord _
   | Tycoll _
   | Tyview _
   | Tymap _
