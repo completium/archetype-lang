@@ -1563,6 +1563,19 @@ module Collection
   ensures { result = vcontains (keyt e) v }
   = vcontains (keyt e) v
 
+  (* ------------------------------------------------------------------------ *)
+  let rec function eq_collection (c1 : collection) (c2 : collection) : bool
+  =
+  let rec eq_list l1 l2 =
+    variant { l1, l2 }
+    match l1, l2 with
+    | Cons e1 tl1, Cons e2 tl2 ->
+      if eqt e1 e2 then true else eq_list tl1 tl2
+    | _ -> false
+    end
+  in
+  eq_list (N.elts c1.content) (N.elts c2.content)
+
 end
 
 module Set

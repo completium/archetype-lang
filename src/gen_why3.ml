@@ -173,10 +173,10 @@ let rec map_mtype m (t : M.type_) : loc_typ =
 let mk_list_name_from_mlwtype m t =
   let idx =
     M.Utils.get_all_list_types m
-    |>  List.map (map_mtype m)
-    |>  List.map unloc_type
+    |> List.map (map_mtype m)
+    |> List.map unloc_type
     |> List.index_of (cmp_type (Tylist t)) in
-  "List"^(string_of_int idx)
+  "List" ^ (string_of_int idx)
 
 let rec mk_eq_type m e1 e2 = function
   | Tyunit -> Ttrue
@@ -194,7 +194,7 @@ let rec mk_eq_type m e1 e2 = function
   | Tylist t -> Tapp (Tdoti (mk_list_name_from_mlwtype m t,"eq_list"),[Tvar e1; Tvar e2])
   | Tyoption t -> Tmatch (
       Ttuple [Tvar e1; Tvar e2], [
-        Tpatt_tuple [Tpsome (e1^"v1"); Tpsome (e2^"v2")], mk_eq_type m (e1^"v1") (e2^"v2") t;
+        Tpatt_tuple [Tpsome ("_v1"); Tpsome ("_v2")], mk_eq_type m ("_v1") ("_v2") t;
         Tpatt_tuple [Twild;Twild], Tfalse
       ])
   | Tytuple l ->
@@ -214,8 +214,8 @@ let rec mk_eq_type m e1 e2 = function
       ])
   | Tyor (a, b) -> Tmatch (
       Ttuple [Tvar e1; Tvar e2], [
-        Tpatt_tuple [Tpleft (e1^"v1"); Tpleft (e1^"v2")], mk_eq_type m (e1^"v1") (e1^"v2") a;
-        Tpatt_tuple [Tpright (e1^"v1"); Tpright (e1^"v2")], mk_eq_type m (e1^"v1") (e1^"v2") b;
+        Tpatt_tuple [Tpleft ("_v1"); Tpleft ("_v2")], mk_eq_type m ("_v1") ("_v2") a;
+        Tpatt_tuple [Tpright ("_v1"); Tpright ("_v2")], mk_eq_type m ("_v1") ("_v2") b;
         Tpatt_tuple [Twild; Twild], Tfalse
       ])
   | Tyrecord id -> begin
@@ -229,6 +229,10 @@ let rec mk_eq_type m e1 e2 = function
         ) r.fields in
       List.fold_left (fun acc cmp -> Tpand (acc,cmp)) (List.hd cmps) (List.tl cmps)
     end
+  | Tymap idx -> begin
+      Tapp (Tdoti ("Map" ^ idx, "eq_collection"),[Tvar e1; Tvar e2])
+    end
+  | Tycoll idx -> Tapp (Tdoti (String.capitalize_ascii idx, "eq_collection"),[Tvar e1; Tvar e2])
   | Tyint
   | Tyuint
   | Tykey
@@ -245,9 +249,7 @@ let rec mk_eq_type m e1 e2 = function
   | Tybls12_381_g1
   | Tybls12_381_g2
   | Tynever
-  | Tycoll _
   | Tyview _
-  | Tymap _
   | Tyset _
   | Tylambda (_, _)
     -> Teq (Tyint, Tvar e1, Tvar e2)
@@ -784,7 +786,7 @@ let map_record_fields m =
         name     = map_lident f.name;
         typ      = map_mtype m f.type_;
         init     = loc_term Tnone;
-        mutable_ = true;
+        mutable_ = false;
       })
 
 let mk_record m (r : M.record) : (loc_term, loc_typ, loc_ident) abstract_decl =
@@ -809,7 +811,32 @@ let rec type_to_init m (typ : loc_typ) : loc_term =
       | Tystring      -> Temptystr
       | Tyrole        -> Tdefaultaddr
       | Tyaddr        -> Tdefaultaddr
-      | _             -> Tint Big_int.zero_big_int)
+      | Tyoption _    -> Tnone
+      | Tyunit        -> Tunit
+      | Tyor (l, r)   -> Tleft (r, type_to_init m l)
+      | Tyset i       -> Temptycoll i
+      | Tyrecord _
+      | Tylambda (_, _)
+      | Tyint
+      | Tyuint
+      | Tyrational
+      | Tykey
+      | Tykeyhash
+      | Tydate
+      | Tyduration
+      | Tytez
+      | Tysignature
+      | Tybytes
+      | Tychainid
+      | Tystorage
+      | Tyoperation
+      | Tycontract
+      | Tystate
+      | Tybls12_381_fr
+      | Tybls12_381_g1
+      | Tybls12_381_g2
+      | Tynever
+        -> Tint Big_int.zero_big_int)
 
 let is_local_invariant _m an t =
   let rec internal_is_local acc (term : M.mterm) =
@@ -1570,10 +1597,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       Tassign (left,get_assign_value t left right assignop)
 
     | Massign (assignop, t, Arecord (_id1, id2, k), v) ->
-      let left = dl (Tdot (map_mterm m ctx (* id1 *) k, (* FIXME *)
-                           dl (Tvar (map_lident id2)))) in
-      let right = map_mterm m ctx v in
-      Tassign (left,get_assign_value t left right assignop)
+      let left = map_mterm m ctx k in
+      let right : loc_term = with_dummy_loc (Trecord (Some left, [map_lident id2, map_mterm m ctx v])) in
+      Tassign (left, get_assign_value t left right assignop)
 
     | Massign (_, _, Astate, v) -> Tassign (loc_term (Tdoti (gs, "state")), map_mterm m ctx v)
 
@@ -3072,13 +3098,13 @@ let to_whyml (m : M.model) : mlw_tree  =
               useEuclDiv             @
               useMinMax              @
               traceutils             @
+              records                @
               exns                   @
               enums                  @
               eq_enums               @
               lists                  @
               maps                   @
               sets                   @
-              records                @
               mlwassets              @
               aggregates             @
               storage_api_bs         @
