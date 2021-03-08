@@ -1460,7 +1460,6 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
   let error_not_translated (msg : string) = (* Tnottranslated in *) error_internal (TODONotTranslated msg) in
   let error_not_supported (msg : string) = error_internal (NotSupported msg) in
   let to_collection (an : ident) (mt : M.mterm) : loc_term  =
-    Format.eprintf "type_ : %a@\n" M.pp_type_ mt.type_;
     let a = map_mterm m ctx mt in
     match M.get_ntype mt.type_ with
     | Tcontainer (_, View) -> begin
@@ -2063,9 +2062,13 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       end
     (* view api ------------------------------------------------------------- *)
 
-    | Mselect (n, c, args, tbody, _a) ->
-      let args = mk_filter_args m ctx args tbody in
-      Tvselect (dl n, dl (mk_select_name m n tbody), args, mk_container_term m n ctx c, mk_lc_term n ctx)
+    | Mselect (n, c, args, tbody, _a) -> begin
+        let args = mk_filter_args m ctx args tbody in
+        match c with
+        | CKcoll _ -> Tcselect (dl n, dl (mk_select_name m n tbody), args, mk_lc_term n ctx)
+        | _ ->
+          Tvselect (dl n, dl (mk_select_name m n tbody), args, mk_container_term m n ctx c, mk_lc_term n ctx)
+      end
 
     | Msort (n, c,l) -> Tvsort (dl (mk_sort_clone_id n l),mk_container_term m n ctx c,mk_lc_term n ctx)
 
