@@ -1,0 +1,7 @@
+archetype list_option
+
+variable l : list<option<nat>> = []
+
+entry default () {
+  l := prepend(l, some(1))
+}

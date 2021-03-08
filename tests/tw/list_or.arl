@@ -1,0 +1,7 @@
+archetype list_or
+
+variable l : list<or<nat, string>> = []
+
+entry default () {
+  l := prepend(l, left<string>(1))
+}
