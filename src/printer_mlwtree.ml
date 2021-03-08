@@ -122,7 +122,10 @@ let pp_logic fmt m =
 (* -------------------------------------------------------------------------- *)
 
 let needs_paren = function
-  | Tylist _ -> true
+  | Tylist _
+  | Tyor _
+  | Tyoption _
+    -> true
   | _ -> false
 
 let pp_type fmt typ =
@@ -211,6 +214,8 @@ let rec pp_pattern fmt = function
   | Tconst a -> pp_id fmt a
   | Tpatt_tuple l -> Format.fprintf fmt "(%a)" (pp_list "),(" (pp_pattern)) l
   | Tpsome a -> Format.fprintf fmt "Some %a" pp_id a
+  | Tpleft a -> Format.fprintf fmt "Left %a" pp_id a
+  | Tpright a -> Format.fprintf fmt "Right %a" pp_id a
 
 (* -------------------------------------------------------------------------- *)
 

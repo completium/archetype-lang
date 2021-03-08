@@ -73,6 +73,8 @@ type 'i pattern_node =
   | Tconst of 'i
   | Tpatt_tuple of 'i pattern_node list
   | Tpsome of 'i
+  | Tpleft of 'i
+  | Tpright of 'i
 [@@deriving show {with_path = false}]
 
 type ('e,'t,'i) abstract_term =
@@ -386,6 +388,8 @@ let rec map_pattern map = function
   | Tconst i -> Tconst (map i)
   | Tpatt_tuple l -> Tpatt_tuple (List.map (map_pattern map) l)
   | Tpsome i -> Tpsome (map i)
+  | Tpleft i -> Tpleft (map i)
+  | Tpright i -> Tpright (map i)
 
 let rec map_abstract_formula
     (map_e : 'e1 -> 'e2)
@@ -846,6 +850,8 @@ let rec compare_pattern cmp p1 p2 =
   | Tconst i1, Tconst i2 -> cmp i1 i2
   | Tpatt_tuple l1, Tpatt_tuple l2 -> List.for_all2 (compare_pattern cmp) l1 l2
   | Tpsome i1, Tpsome i2 -> cmp i1 i2
+  | Tpleft i1, Tpleft i2 -> cmp i1 i2
+  | Tpright i1, Tpright i2 -> cmp i1 i2
   | _,_ -> false
 
 let rec compare_abstract_term

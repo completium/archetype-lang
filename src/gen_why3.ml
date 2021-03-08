@@ -212,6 +212,12 @@ let rec mk_eq_type m e1 e2 = function
         ], Tif (cmp, Ttrue, Some Tfalse);
         Tpatt_tuple [Twild;Twild], Tfalse
       ])
+  | Tyor (a, b) -> Tmatch (
+      Ttuple [Tvar e1; Tvar e2], [
+        Tpatt_tuple [Tpleft (e1^"v1"); Tpleft (e1^"v2")], mk_eq_type m (e1^"v1") (e1^"v2") a;
+        Tpatt_tuple [Tpright (e1^"v1"); Tpright (e1^"v2")], mk_eq_type m (e1^"v1") (e1^"v2") b;
+        Tpatt_tuple [Twild; Twild], Tfalse
+      ])
   | Tyint
   | Tyuint
   | Tykey
@@ -233,7 +239,6 @@ let rec mk_eq_type m e1 e2 = function
   | Tyview _
   | Tymap _
   | Tyset _
-  | Tyor (_, _)
   | Tylambda (_, _)
     -> Teq (Tyint, Tvar e1, Tvar e2)
 
