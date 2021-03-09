@@ -242,6 +242,7 @@ module List : sig
   val split3         : ('a * 'b * 'c) list -> 'a list * 'b list * 'c list
   val sub            : int -> int -> 'a list -> 'a list
   val cut            : int -> 'a list -> ('a list * 'a list)
+  val addput            : 'a -> 'b -> ('a * 'b) list -> ('a * 'b) list
   val find_map       : ('a -> 'b option) -> 'a list -> 'b option
 
   module Exn : sig
@@ -411,6 +412,10 @@ end = struct
       | _ -> invalid_arg "List.cut"
     in
     aux n [] l
+
+  let rec addput k v = function
+      [] -> [k, v]
+    | (a, b)::l -> if Stdlib.compare a k = 0 then (k, v)::l else (a, b)::(addput k v l)
 
   let rec find_map f = function
     | [] -> None
