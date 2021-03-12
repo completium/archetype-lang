@@ -761,202 +761,81 @@ module Decomp_dir : sig
 end = struct
   open Michelson
 
+  (* ------------------------------------------------------------------ *)
   let gen () = Oo.id (object end)
 
-  (* -------------------------------------------------------------------- *)
-  let var_unset (v : dlocal) =
-    Option.is_none !v
+  type dvar = [
+  | `VLocal  of int
+  | `VGlobal of string
+  ]
 
-  (* -------------------------------------------------------------------- *)
-  let write_var (e : dexpr) (v : dvar) =
-    match v with
-    | `VGlobal n ->
-      [DIAssign (`VGlobal n, `Expr e)]
-    | `VLocal x ->
-      x := Some e; []
-    | `VDup { contents = `Redirect _ } ->
-      assert false
-    | `VDup ({ contents = `Direct (i, _) } as x) ->
-      x := `Direct (i, None); [DIAssign (v, `Expr e)]
+  let vlocal  () : dvar = `VLocal (gen ())
+  let vglobal x  : dvar = `VGlobal x
 
-  (* -------------------------------------------------------------------- *)
-  let rec expr_of_rstack1 (r : rstack1) =
-    match r with
-    | #dvar as v ->
-      Dvar v
-    | `Paired (r1, r2) ->
-      Dfun (`Bop Bpair, [expr_of_rstack1 r1; expr_of_rstack1 r2])
+  let as_dvar (x : rstack1) : dvar =
+    match x with
+    | #dvar as x -> x
+    | _ -> assert false
 
-  (* -------------------------------------------------------------------- *)
-  let pdestruct (path : bool list) (e : dexpr) =
-    List.fold_right (fun b e ->
-        let dtor = if b then `Uop Ucdr else `Uop Ucar in
-        Dfun (dtor, [e])) path e
+  let rec write_var (e : dexpr) (x : rstack1) =
+    match x, e with
+    | #dvar as x, e -> [DIAssign (x, e)]
+    | `Paired (x1, x2), Depair (e1, e2) ->
+        let a = vlocal () in
+          write_var e1 (a :> rstack1)
+        @ write_var e2 x2
+        @ write_var (Dvar a) x1
+    | _ -> assert false
 
-  (* -------------------------------------------------------------------- *)
-  let rec unify (v1 : rstack1) (v2 : rstack1) =
-    match v1, v2 with
-    | `VGlobal n, `VGlobal m when n = m ->
-      ([], []), `VGlobal n
+  let rec dexpr_of_rstack1 (x : rstack1) =
+    match x with
+    | #dvar as x -> Dvar x
+    | `Paired (x, y) -> Depair (dexpr_of_rstack1 x, dexpr_of_rstack1 y)
 
-    | `VGlobal n, `VGlobal m (* n <> m *) ->
-      let r = ref (`Direct (gen (), None)) in
-      ([(n, r)], [(m, r)]), `VDup r
-
-    | `VLocal x, `VLocal y when x ==(*phy*) y ->
-      ([], []), `VLocal x
-
-    | `VLocal x, `VLocal y ->
-      assert (var_unset x && var_unset y);
-      y := Some (Dvar (`VLocal x));
-      ([], []), `VLocal x
-
-    | `VDup { contents = `Redirect _ }, _
-    | _, `VDup { contents = `Redirect _ } -> assert false
-
-    | `VDup ({ contents = `Direct x } as vx),
-      `VDup ({ contents = `Direct y } as vy) -> begin
-        let tg =
-          match snd x, snd y with
-          | Some r1, Some r2 when r1 = r2 -> Some r1
-          | _, _ -> None in
-
-        let r = ref (`Direct (gen (), tg)) in
-        vx := `Redirect r; vy := `Redirect r;
-        ([], []), `VDup r
-      end
-
-    | `VLocal x, (`VDup _ as y) ->
-      assert (var_unset x);
-      x := Some (Dvar y);
-      ([], []), y
-
-    | `Paired (x1, y1), `Paired (x2, y2) ->
-      let (w1, w'1), z1 = unify x1 x2 in
-      let (w2, w'2), z2 = unify y1 y2 in
-      (w1 @ w2, w'1 @ w'2), `Paired (z1, z2)
-
-    | `VLocal x, `Paired _ ->
-      assert (var_unset x);
-      let y1 = `VLocal (ref None) in
-      let y2 = `VLocal (ref None) in
-      x := Some (Dfun (`Bop Bpair, [Dvar y1; Dvar y2]));
-      unify (`Paired (y1, y2)) v2
-
-    | `VGlobal n, `VDup { contents = `Direct (_, Some m)} when n = m ->
-      ([], []), `VGlobal n
-
-    | `VGlobal n, (`VDup (({ contents = `Direct (vi, _) } as vy) as y)) ->
-      vy := `Direct (vi, None);
-      ([n, y], []), `VDup y
-
-    | `VGlobal n, `VLocal y ->
-      assert (var_unset y);
-      let x = ref (`Direct (gen (), Some n)) in
-      y := Some (Dvar (`VDup x)); ([n, x], []), `VDup x
-
-    | `VGlobal _, `Paired _
-    | `VDup    _, `Paired _ ->
-      assert false
-
-    | `VDup    _, `VGlobal _
-    | `VDup    _, `VLocal  _
-    | `VLocal  _, `VGlobal _
-    | `Paired  _, `VLocal  _
-    | `Paired  _, `VGlobal _
-    | `Paired  _, `VDup    _ ->
-      let (w1, w2), s = unify v2 v1 in (w2, w1), s
-
-  (* -------------------------------------------------------------------- *)
-  let unify_rstack (s1 : rstack) (s2 : rstack) =
+  let rec merge_rstack (s1 : rstack) (s2 : rstack) =
     assert (List.length s1 = List.length s2);
-    let pr , s   = List.split (List.map2 unify s1 s2) in
-    let pr1, pr2 = List.split pr in
-    (List.flatten pr1, List.flatten pr2), s
 
-  (* -------------------------------------------------------------------- *)
-  let merge_rstack ((b1, s1) : bool * rstack) ((b2, s2) : bool * rstack) =
-    match b1, b2 with
-    |  true,  true -> unify_rstack s1 s2
-    |  true, false -> ([], []), s1
-    | false,  true -> ([], []), s2
-    | false, false -> assert false
+    match s1, s2 with
+    | (#dvar as x) :: s1, (#dvar as y) :: s2 ->
+        let (is1, is2), s = merge_rstack s1 s2 in
+        let a = vlocal () in
+        (([DIAssign (a, Dvar x)] @ is1), is2), y :: s
 
-  (* -------------------------------------------------------------------- *)
-  let rec dptn_of_rstack1 (r : rstack1) =
-    match r with
-    | `Paired (r1, r2) ->
-      let p1, c1 = dptn_of_rstack1 r1 in
-      let p2, c2 = dptn_of_rstack1 r2 in
-      (DPair (p1, p2), c1 @ c2)
+    | `Paired (x1, y1) :: s1, `Paired (x2, y2) :: s2 ->
+        merge_rstack (x1 :: y1 :: s1) (x2 :: y2 :: s2)
 
-    | `VLocal x ->
-      assert (var_unset x); (DVar x, [])
+    | `Paired (x1, y1) :: s1, (#dvar as xy2) :: s2 ->
+        let i1 = write_var (dexpr_of_rstack1 (`Paired (x1, y1))) xy2 in
+        let (is1, is2), s = merge_rstack s1 s2 in
+        ((i1 @ is1), is2), `Paired (x1, y1) :: s
 
-    | (`VGlobal _) as n ->
-      let x : dlocal = ref None in
-      (DVar x, [DIAssign (n, `Expr (Dvar (`VLocal x)))])
+    | #dvar :: _, `Paired _ :: _ ->
+        let (is2, is1), s = merge_rstack s2 s1 in
+        (is1, is2), s
 
-    | (`VDup _) as y ->           (* FIXME *)
-      let x : dlocal = ref None in
-      (DVar x, [DIAssign (y, `Expr (Dvar (`VLocal x)))])
+    | [], [] ->
+        ([], []), []
 
-  (* -------------------------------------------------------------------- *)
-  type dir_env = {
-    fail:      bool;
-  }
+    | _, _ -> assert false
 
-  let mk_dir_env ?(fail = false) _ =
-    { fail }
+  let merge_rstack (s1 : rstack) (s2 : rstack) =
+    merge_rstack s1 s2
 
-  (* -------------------------------------------------------------------- *)
-
-  let rec decompile_i (env, s : dir_env * rstack) (i : code) : (dir_env * rstack) * dinstr list =
-
-    if (!Options.opt_trace)
-    then Format.printf "%a\t[%a]@\n" Printer_michelson.pp_simple_code i (Printer_tools.pp_list "; " pp_rstack1) s;
-
+  (* ------------------------------------------------------------------ *)
+  let rec decompile_i (s : rstack) (i : code) : rstack * dinstr list =
     match i with
 
     (* Control structures *)
 
-    | SEQ l -> decompile_s (env, s) l
-    | APPLY -> assert false
-    | EXEC  -> assert false
-    | FAILWITH ->
-      let s     = List.map (fun _ -> `VLocal (ref None)) s in
-      let x, _  = List.pop s in
-      (({ env with fail = true }, s), [DIFailwith (expr_of_rstack1 x)])
+    | SEQ l -> decompile_s s l
 
     | IF (c1, c2) -> begin
-        let (env1, s1), b1 = decompile_s (env, s) c1 in
-        let (env2, s2), b2 = decompile_s (env, s) c2 in
-        let (pr1, pr2), s = merge_rstack (not env1.fail, s1) (not env2.fail, s2) in
-        let pr1 = List.map (fun (x, e) -> DIAssign (`VGlobal x, `Dup e)) pr1 in
-        let pr2 = List.map (fun (x, e) -> DIAssign (`VGlobal x, `Dup e)) pr2 in
-        let x = `VLocal (ref None) in
-        (env, x :: s), [DIIf (Dvar x, (pr1 @ b1, pr2 @ b2))]
+        let s1, b1 = decompile_s s c1 in
+        let s2, b2 = decompile_s s c2 in
+        let (pr1, pr2), s = merge_rstack s1 s2 in
+        let x = vlocal () in
+        (x :> rstack1) :: s, [DIIf (Dvar x, (pr1 @ b1, pr2 @ b2))]
       end
-
-    | IF_CONS (c1, c2) ->
-      compile_match (env, s) [("cons", 1), c1; ("nil", 0), c2]
-
-    | IF_LEFT (c1, c2) ->
-      compile_match (env, s) [("left", 1), c1; ("right", 1), c2]
-
-    | IF_NONE (c1, c2) ->
-      compile_match (env, s) [("none", 0), c1; ("some", 1), c2]
-
-    | ITER _cs      -> assert false
-    | LAMBDA (_rt, _at, _instrs) -> assert false
-    | LOOP cs       -> begin
-       let y = `VLocal (ref None) in
-       let (env, s), b = decompile_s (env, y::s) cs in
-       let x = `VLocal (ref None) in
-       (env, x :: s), [DIWhile (Dvar x, b)]
-       end
-    | LOOP_LEFT _cs -> assert false
-
 
     (* Stack manipulation *)
 
@@ -964,143 +843,139 @@ end = struct
       assert (List.length s >= n + 1);
       let x, s1 = List.hd s, List.tl s in
       let s1, s2 = List.cut n s1 in
-      (env, s1 @ (x :: s2)), []
+      s1 @ (x :: s2), []
 
     | DIP (n, c) ->
       assert (List.length s >= n);
       let s1, s2 = List.cut n s in
-      let (_, s2), ops = decompile_s (env, s2) c in
-      (env, s1 @ s2), ops
+      let s2, ops = decompile_s s2 c in
+      s1 @ s2, ops
 
     | DROP n ->
-      (env, (List.init n (fun _ -> `VLocal (ref None)) @ s)), []
+      List.init n (fun _ -> (vlocal () :> rstack1)) @ s, []
 
     | DUG n ->
       assert (List.length s >= n + 1);
       let s1, s2 = List.cut n s in
       let x, s2 = List.hd s2, List.tl s2 in
-      (env, x :: (s1 @ s2)), []
+      x :: (s1 @ s2), []
 
     | DUP ->
       let x, s = List.pop s in
       let y, s = List.pop s in
-      let (pr1, pr2), z = unify x y in
-      let pr1 = List.map (fun (x, e) -> DIAssign (`VGlobal x, `Dup e)) pr1 in
-      let pr2 = List.map (fun (x, e) -> DIAssign (`VGlobal x, `Dup e)) pr2 in
-      (env, z :: s), pr1 @ pr2
+      let a = vlocal () in
+      let wri1 = write_var (Dvar a) x in
+      let wri2 = write_var (Dvar a) y in
+      (a :> rstack1) :: s, wri1 @ wri2
 
     | PUSH (_t, d) -> begin
         let x, s = List.pop s in
-
-        match x with
-        | #dvar as v ->
-          (env, s), (write_var (Ddata d) v)
-        | _ ->
-          assert false
+        let wri = write_var (Ddata d) x in
+        s, wri
       end
 
     | SWAP -> begin
         let x, s = List.pop s in
         let y, s = List.pop s in
-        ((env, y :: x :: s), [])
+        y :: x :: s, []
       end
 
 
     (* Arthmetic operations *)
 
-    | ABS      -> decompile_op (env, s) (`Uop Uabs     )
-    | ADD      -> decompile_op (env, s) (`Bop Badd     )
-    | COMPARE  -> decompile_op (env, s) (`Bop Bcompare )
-    | EDIV     -> decompile_op (env, s) (`Bop Bediv    )
-    | EQ       -> decompile_op (env, s) (`Uop Ueq      )
-    | GE       -> decompile_op (env, s) (`Uop Uge      )
-    | GT       -> decompile_op (env, s) (`Uop Ugt      )
-    | INT      -> decompile_op (env, s) (`Uop Uint     )
-    | ISNAT    -> decompile_op (env, s) (`Uop Uisnat   )
-    | LE       -> decompile_op (env, s) (`Uop Ule      )
-    | LSL      -> decompile_op (env, s) (`Bop Blsl     )
-    | LSR      -> decompile_op (env, s) (`Bop Blsr     )
-    | LT       -> decompile_op (env, s) (`Uop Ult      )
-    | MUL      -> decompile_op (env, s) (`Bop Bmul     )
-    | NEG      -> decompile_op (env, s) (`Uop Uneg     )
-    | NEQ      -> decompile_op (env, s) (`Uop Une      )
-    | SUB      -> decompile_op (env, s) (`Bop Bsub     )
+    | ABS      -> decompile_op s (`Uop Uabs     )
+    | ADD      -> decompile_op s (`Bop Badd     )
+    | COMPARE  -> decompile_op s (`Bop Bcompare )
+    | EDIV     -> decompile_op s (`Bop Bediv    )
+    | EQ       -> decompile_op s (`Uop Ueq      )
+    | GE       -> decompile_op s (`Uop Uge      )
+    | GT       -> decompile_op s (`Uop Ugt      )
+    | INT      -> decompile_op s (`Uop Uint     )
+    | ISNAT    -> decompile_op s (`Uop Uisnat   )
+    | LE       -> decompile_op s (`Uop Ule      )
+    | LSL      -> decompile_op s (`Bop Blsl     )
+    | LSR      -> decompile_op s (`Bop Blsr     )
+    | LT       -> decompile_op s (`Uop Ult      )
+    | MUL      -> decompile_op s (`Bop Bmul     )
+    | NEG      -> decompile_op s (`Uop Uneg     )
+    | NEQ      -> decompile_op s (`Uop Une      )
+    | SUB      -> decompile_op s (`Bop Bsub     )
 
 
     (* Boolean operations *)
 
-    | AND     -> decompile_op (env, s) (`Bop Band )
-    | NOT     -> decompile_op (env, s) (`Uop Unot )
-    | OR      -> decompile_op (env, s) (`Bop Bor  )
-    | XOR     -> decompile_op (env, s) (`Bop Bxor )
+    | AND     -> decompile_op s (`Bop Band )
+    | NOT     -> decompile_op s (`Uop Unot )
+    | OR      -> decompile_op s (`Bop Bor  )
+    | XOR     -> decompile_op s (`Bop Bxor )
 
 
     (* Cryptographic operations *)
 
-    | BLAKE2B          -> decompile_op (env, s) (`Uop Ublake2b         )
-    | CHECK_SIGNATURE  -> decompile_op (env, s) (`Top Tcheck_signature )
-    | HASH_KEY         -> decompile_op (env, s) (`Uop Uhash_key        )
-    | SHA256           -> decompile_op (env, s) (`Uop Usha256          )
-    | SHA512           -> decompile_op (env, s) (`Uop Usha512          )
+    | BLAKE2B          -> decompile_op s (`Uop Ublake2b         )
+    | CHECK_SIGNATURE  -> decompile_op s (`Top Tcheck_signature )
+    | HASH_KEY         -> decompile_op s (`Uop Uhash_key        )
+    | SHA256           -> decompile_op s (`Uop Usha256          )
+    | SHA512           -> decompile_op s (`Uop Usha512          )
 
 
     (* Blockchain operations *)
 
-    | ADDRESS            -> decompile_op (env, s) (`Zop  Zaddress          )
-    | AMOUNT             -> decompile_op (env, s) (`Zop  Zamount           )
-    | BALANCE            -> decompile_op (env, s) (`Zop  Zbalance          )
-    | CHAIN_ID           -> decompile_op (env, s) (`Zop  Zchain_id         )
-    | CONTRACT (t, a)    -> decompile_op (env, s) (`Uop (Ucontract (t, a)) )
+    | ADDRESS            -> decompile_op s (`Zop  Zaddress          )
+    | AMOUNT             -> decompile_op s (`Zop  Zamount           )
+    | BALANCE            -> decompile_op s (`Zop  Zbalance          )
+    | CHAIN_ID           -> decompile_op s (`Zop  Zchain_id         )
+    | CONTRACT (t, a)    -> decompile_op s (`Uop (Ucontract (t, a)) )
     | CREATE_CONTRACT _  -> assert false
-    | IMPLICIT_ACCOUNT   -> decompile_op (env, s) (`Uop (Uimplicitaccount) )
-    | NOW                -> decompile_op (env, s) (`Zop Znow               )
-    | SELF a             -> decompile_op (env, s) (`Zop (Zself a)          )
-    | SENDER             -> decompile_op (env, s) (`Zop Zsender            )
-    | SET_DELEGATE       -> decompile_op (env, s) (`Uop Usetdelegate       )
-    | SOURCE             -> decompile_op (env, s) (`Zop Zsource            )
-    | TRANSFER_TOKENS    -> decompile_op (env, s) (`Top Ttransfer_tokens   )
+    | IMPLICIT_ACCOUNT   -> decompile_op s (`Uop (Uimplicitaccount) )
+    | NOW                -> decompile_op s (`Zop Znow               )
+    | SELF a             -> decompile_op s (`Zop (Zself a)          )
+    | SENDER             -> decompile_op s (`Zop Zsender            )
+    | SET_DELEGATE       -> decompile_op s (`Uop Usetdelegate       )
+    | SOURCE             -> decompile_op s (`Zop Zsource            )
+    | TRANSFER_TOKENS    -> decompile_op s (`Top Ttransfer_tokens   )
 
 
     (* Operations on data structures *)
 
     | CAR ->
       let x, s = List.pop s in
-      (env, (`Paired (x, `VLocal (ref None)) :: s)), []
+      `Paired (x, (vlocal () :> rstack1)) :: s, []
     | CDR ->
       let y, s = List.pop s in
-      (env, (`Paired (`VLocal (ref None), y) :: s)), []
-    | CONCAT               -> decompile_op (env, s) (`Bop Bconcat               )
-    | CONS                 -> decompile_op (env, s) (`Bop Bcons                 )
-    | EMPTY_BIG_MAP (k, v) -> decompile_op (env, s) (`Zop (Zemptybigmap (k, v)) )
-    | EMPTY_MAP (k, v)     -> decompile_op (env, s) (`Zop (Zemptymap (k, v))    )
-    | EMPTY_SET t          -> decompile_op (env, s) (`Zop (Zemptyset t)         )
-    | GET                  -> decompile_op (env, s) (`Bop Bget                  )
-    | LEFT t               -> decompile_op (env, s) (`Uop (Uleft t)             )
+      `Paired ((vlocal () :> rstack1), y) :: s, []
+    | CONCAT               -> decompile_op s (`Bop Bconcat               )
+    | CONS                 -> decompile_op s (`Bop Bcons                 )
+    | EMPTY_BIG_MAP (k, v) -> decompile_op s (`Zop (Zemptybigmap (k, v)) )
+    | EMPTY_MAP (k, v)     -> decompile_op s (`Zop (Zemptymap (k, v))    )
+    | EMPTY_SET t          -> decompile_op s (`Zop (Zemptyset t)         )
+    | GET                  -> decompile_op s (`Bop Bget                  )
+    | LEFT t               -> decompile_op s (`Uop (Uleft t)             )
     | MAP _cs              -> assert false
-    | MEM                  -> decompile_op (env, s) (`Bop Bmem                  )
-    | NIL t                -> decompile_op (env, s) (`Zop (Znil t)              )
-    | NONE t               -> decompile_op (env, s) (`Zop (Znone t)             )
-    | PACK                 -> decompile_op (env, s) (`Uop Upack                 )
+    | MEM                  -> decompile_op s (`Bop Bmem                  )
+    | NIL t                -> decompile_op s (`Zop (Znil t)              )
+    | NONE t               -> decompile_op s (`Zop (Znone t)             )
+    | PACK                 -> decompile_op s (`Uop Upack                 )
     | PAIR                 ->  begin
         let x, s = List.pop s in
 
         match x with
         | `Paired (x1, x2) ->
-          (env, x1 :: x2 :: s), []
+          x1 :: x2 :: s, []
 
         | #dvar as v ->
-          let x1 = `VLocal (ref None) in
-          let x2 = `VLocal (ref None) in
-          let op = DIAssign (v, `Expr (Dfun (`Bop Bpair, [Dvar x1; Dvar x2]))) in
-          (env, x1 :: x2 :: s), [op]
+          let x1 = vlocal () in
+          let x2 = vlocal () in
+          let op = DIAssign (v, Dfun (`Bop Bpair, [Dvar x1; Dvar x2])) in
+          (x1 :> rstack1) :: (x2 :> rstack1) :: s, [op]
       end
-    | RIGHT t              -> decompile_op (env, s) (`Uop (Uright t)  )
-    | SIZE                 -> decompile_op (env, s) (`Uop Usize       )
-    | SLICE                -> decompile_op (env, s) (`Top Tslice      )
-    | SOME                 -> decompile_op (env, s) (`Uop (Usome)     )
-    | UNIT                 -> decompile_op (env, s) (`Zop (Zunit)     )
-    | UNPACK t             -> decompile_op (env, s) (`Uop (Uunpack t) )
-    | UPDATE               -> decompile_op (env, s) (`Top Tupdate     )
+    | RIGHT t              -> decompile_op s (`Uop (Uright t)  )
+    | SIZE                 -> decompile_op s (`Uop Usize       )
+    | SLICE                -> decompile_op s (`Top Tslice      )
+    | SOME                 -> decompile_op s (`Uop (Usome)     )
+    | UNIT                 -> decompile_op s (`Zop (Zunit)     )
+    | UNPACK t             -> decompile_op s (`Uop (Uunpack t) )
+    | UPDATE               -> decompile_op s (`Top Tupdate     )
 
 
     (* Other *)
@@ -1108,40 +983,21 @@ end = struct
     | UNPAIR ->
       let x, s = List.pop s in
       let y, s = List.pop s in
-      (env, `Paired (x, y) :: s), []
+      `Paired (x, y) :: s, []
 
-    | SELF_ADDRESS             -> decompile_op (env, s) (`Zop Zself_address )
-    | CAST _                   -> assert false
-    | CREATE_ACCOUNT           -> assert false
-    | RENAME                   -> assert false
-    | STEPS_TO_QUOTA           -> assert false
-    | LEVEL                    -> assert false
-    | SAPLING_EMPTY_STATE      -> assert false
-    | SAPLING_VERIFY_UPDATE    -> assert false
-    | NEVER                    -> assert false
-    | VOTING_POWER             -> assert false
-    | TOTAL_VOTING_POWER       -> assert false
-    | KECCAK                   -> assert false
-    | SHA3                     -> assert false
-    | PAIRING_CHECK            -> assert false
-    | SUBMIT_PROPOSALS         -> assert false
-    | SUBMIT_BALLOT            -> assert false
-    | SET_BAKER_ACTIVE         -> assert false
-    | TOGGLE_BAKER_DELEGATIONS -> assert false
-    | SET_BAKER_CONSENSUS_KEY  -> assert false
-    | SET_BAKER_PVSS_KEY       -> assert false
+    | SELF_ADDRESS -> decompile_op s (`Zop Zself_address )
+
+    | _ -> assert false
 
   (***************************************************************************************** *)
 
-  and decompile_op (env, s : dir_env * rstack) (op : g_operator) =
+  and decompile_op (s : rstack) (op : g_operator) =
     let n = match op with | `Zop _ -> 0 | `Uop _ -> 1 | `Bop _ -> 2 | `Top _ -> 3 in
     let x, s = List.pop s in
-    match x with
-    | #dvar as x ->
-      let args = List.init n (fun _ -> `VLocal (ref None)) in
-      (env, args @ s), write_var (Dfun (op, List.map (fun v -> Dvar v) args)) x
-    | _ -> assert false
+    let args = List.init n (fun _ -> vlocal ()) in
+    (args :> rstack) @ s, write_var (Dfun (op, List.map (fun v -> Dvar v) args)) x
 
+(*
   and compile_match (env, s : dir_env * rstack) (bs : ((string * int) * code list) list) =
     let sc, subs = List.split (List.map (fun ((name, n), b) ->
         let (_env, sc), bc = decompile_s (env, s) b in
@@ -1154,83 +1010,13 @@ end = struct
     let sc = List.fold_left (fun x y -> snd (unify_rstack x y)) (List.hd sc) (List.tl sc) in
 
     (env, x :: sc), [DIMatch (Dvar x, subs)]
+*)
 
-  and decompile_s (env, s : dir_env * rstack) (c : code list) : (dir_env * rstack) * dinstr list =
-    let (env, s), c = List.fold_left_map decompile_i (env, s) (List.rev c) in
-    (env, s), List.flatten (List.rev c)
-
-  (* -------------------------------------------------------------------- *)
-  let rec compress_c (c : dcode) =
-    List.flatten (List.map compress_i c)
-
-  and compress_i (i : dinstr) =
-    match i with
-    | DIAssign (x, e) -> begin
-        match compress_assign_e e with
-        | None   -> []
-        | Some e -> [DIAssign (x, e)]
-      end
-
-    | DIIf (c, (b1, b2)) ->
-      [DIIf (compress_e c, (compress_c b1, compress_c b2))]
-
-    | DIMatch (c, bs) ->
-      [DIMatch (compress_e c, List.map (fun (n, x, b) -> (n, x, compress_c b)) bs)]
-
-    | DIFailwith e ->
-      [DIFailwith (compress_e e)]
-
-    | DIWhile (c, b) ->
-      [DIWhile (compress_e c, compress_c b)]
-
-    | DIIter (i, c, b) ->
-      [DIIter (i, compress_e c, compress_c b)]
-
-  and compress_e (e : dexpr) =
-    match e with
-    | Ddata _ -> e
-
-    | Dvar (`VGlobal _ | `VLocal { contents = None }) ->
-      e
-
-    | Dfun (op, args) ->
-      fun_simpl op (List.map compress_e args)
-
-    | Dvar (`VLocal { contents = Some e }) ->
-      compress_e e
-
-    | Dvar (`VDup _) ->
-      e
-
-
-  and compress_assign_e = function
-    | `Expr e -> Some (`Expr (compress_e e))
-    | `Dup  d -> Option.map (fun x -> `Dup x) (compress_vdup d)
-
-  and compress_vdup (v : vdup) : vdup option =
-    match !v with
-    | `Redirect v ->
-      compress_vdup v
-
-    | `Direct (_, None) ->
-      Some v
-
-    | `Direct (_, Some _) ->
-      None
-
-  and fun_simpl f args =
-    match f, args with
-    | `Uop Ucar, [Dfun (`Bop Bpair, [e; _])]
-    | `Uop Ucdr, [Dfun (`Bop Bpair, [_; e])] ->
-      e
-
-    | `Bop Bpair, [Dfun (`Uop Ucar, [e1]); Dfun (`Uop Ucdr, [e2])] when e1 = e2 ->
-      e1
-
-    | _, _ -> Dfun (f, args)
+  and decompile_s (s : rstack) (c : code list) : rstack * dinstr list =
+    let s, c = List.fold_left_map decompile_i s (List.rev c) in
+    s, List.flatten (List.rev c)
 
   (* -------------------------------------------------------------------- *)
-
   let decompile (michelson : michelson) =
     let aty = michelson.storage in
     let pty = michelson.parameter in
@@ -1249,23 +1035,17 @@ end = struct
 
     let pst = args "args_" pty in
     let ast = args "sto_"  aty in
-    let env = mk_dir_env () in
 
-    let (env, ost), dc = decompile_s (env, [`Paired (`VGlobal "ops", ast)]) code in
+    let ost, dc = decompile_s [`Paired (`VGlobal "ops", ast)] code in
 
     let code =
-      match ost, env.fail with
-      | _, true -> dc
-      | [`Paired (px, ax)], _ ->
-        let (pr1 , pr2 ), _ = unify pst px in
-        let (pr'1, pr'2), _ = unify ast ax in
-        let pr = List.map (fun pr ->
-            List.map (fun (x, e) -> DIAssign (`VGlobal x, `Dup e)) pr
-          ) [pr1; pr'1; pr2; pr'2] in
-        List.flatten pr @ dc
+      match ost with
+      | [`Paired (px, ax)] ->
+        let pr1 = write_var (dexpr_of_rstack1 pst) px in
+        let pr2 = write_var (dexpr_of_rstack1 ast) ax in
+        pr1 @ pr2 @ dc
       | _ -> assert false
-    in
-    compress_c code
+    in code
 end
 
 let to_dir (michelson, env : T.michelson * env) =
@@ -1875,15 +1655,8 @@ end = struct
     let ft = for_type in
 
     let for_dvar (v : dvar) : ident =
-      let rec for_vdup (a : vdup) =
-        match !a with
-        | `Direct (_, Some a) -> a
-        | `Direct (k, _) -> "v" ^ string_of_int k
-        | `Redirect v -> for_vdup v
-      in
       match v with
-      | `VLocal _   -> "local"
-      | `VDup vdup  -> for_vdup vdup
+      | `VLocal  x  -> "$" ^ (string_of_int x)
       | `VGlobal id -> id
     in
 
@@ -1893,6 +1666,7 @@ end = struct
       match e with
       | Dvar v          -> mk_mvar (dumloc (for_dvar v)) tunit
       | Ddata d         -> for_data d
+      | Depair _        -> assert false
       | Dfun (`Uop Ueq, [Dfun (`Bop Bcompare, [a; b])]) -> mk_mterm (Mequal  (tint, f a, f b)) tbool
       | Dfun (`Uop Une, [Dfun (`Bop Bcompare, [a; b])]) -> mk_mterm (Mnequal (tint, f a, f b)) tbool
       | Dfun (`Uop Ugt, [Dfun (`Bop Bcompare, [a; b])]) -> mk_mterm (Mgt     (f a, f b)) tbool
@@ -1978,14 +1752,10 @@ end = struct
       in
       begin
         match i with
-        | DIAssign (x, v) ->
+        | DIAssign (x, e) ->
           let id = for_dvar x in
-          let v =
-            match v with
-            | `Dup _v -> assert false
-            | `Expr e -> g e
-          in
-          mk_mterm (Massign (ValueAssign, tunit, Avar (dumloc id), v)) tunit
+          let e = g e in
+          mk_mterm (Massign (ValueAssign, tunit, Avar (dumloc id), e)) tunit
 
         | DIIf (c, (b1, b2)) ->
           mk_mterm (Mif (g c, seq b1, Some (seq b2))) tunit

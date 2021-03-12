@@ -410,18 +410,17 @@ map (ident -> vkind)
 
 ***)
 
-type dvar   = [`VLocal of dlocal | `VDup of vdup | `VGlobal of ident]
-and  dlocal = dexpr option ref
-and  vdup  = [`Direct of int * ident option | `Redirect of vdup] ref
+type dvar   = [`VLocal of int | `VGlobal of ident]
 
 and  dexpr =
   | Dvar       of dvar
+  | Depair     of dexpr * dexpr
   | Ddata      of data
   | Dfun       of g_operator * dexpr list
 [@@deriving show {with_path = false}]
 
 type dinstr =
-  | DIAssign   of dvar * [`Expr of dexpr | `Dup of vdup]
+  | DIAssign   of dvar * dexpr
   | DIIf       of dexpr * (dcode * dcode)
   | DIMatch    of dexpr * (ident * dpattern list * dcode) list
   | DIFailwith of dexpr
@@ -429,7 +428,7 @@ type dinstr =
   | DIIter     of ident * dexpr * dcode
 
 and dpattern =
-  | DVar  of dlocal
+  | DVar  of int
   | DPair of dpattern * dpattern
 
 and dcode = dinstr list
@@ -834,17 +833,13 @@ let map_type (f : type_ -> type_) (t : type_) : type_ =
 
 let rec cmp_dvar (v1 : dvar) (v2 : dvar) =
   match v1, v2 with
-  | `VLocal l1, `VLocal l2  -> cmp_dlocal l1 l2
-  | `VDup d1,   `VDup d2    -> cmp_dvdup d1 d2
-  | `VGlobal g1,`VGlobal g2 -> String.equal g1 g2
+  | `VLocal  l1, `VLocal l2  -> l1 = l2
+  | `VGlobal g1, `VGlobal g2 -> String.equal g1 g2
   | _ -> false
-and cmp_dvdup (d1 : vdup) (d2 : vdup) =
-  match !d1, !d2 with
-  | `Direct (i1, s1), `Direct (i2, s2) -> i1 = i2 && Option.cmp String.equal s1 s2
-  | `Redirect d1, `Redirect d2 -> cmp_dvdup d1 d2
-  | _ -> false
+
 and cmp_dlocal l1 l2 =
   Option.cmp cmp_dexpr !l1 !l2
+
 and cmp_dexpr e1 e2 =
   match e1, e2 with
   | Dvar  v1, Dvar  v2 -> cmp_dvar v1 v2

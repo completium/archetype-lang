@@ -589,11 +589,8 @@ let rec pp_dcode (fmt : Format.formatter) (c : dcode) =
 
 and pp_dinstr (fmt : Format.formatter) (i : dinstr) =
   match i with
-  | DIAssign (x, `Expr e) ->
+  | DIAssign (x, e) ->
     Format.fprintf fmt "%a <- %a" pp_var x pp_expr e
-
-  | DIAssign (x, `Dup v) ->
-    Format.fprintf fmt "%a <- %a" pp_var x pp_var (`VDup v)
 
   | DIIf (c, (b1, b2)) ->
     Format.fprintf fmt "@[<v 2>if (%a):@\n%a@]@\n@[<v 2>else:@\n%a@]"
@@ -634,6 +631,7 @@ and pp_expr (fmt : Format.formatter) (e : dexpr) =
   let f = pp_expr in
   match e with
   | Dvar v              -> pp_var fmt v
+  | Depair (e1, e2)     -> Format.fprintf fmt "(%a, %a)" pp_expr e1 pp_expr e2
   | Ddata d             -> pp_data fmt d
   | Dfun (op, args)     -> begin
       match op, args with
@@ -650,16 +648,7 @@ and pp_var (fmt : Format.formatter) (v : dvar) =
     Format.fprintf fmt "%s" n
 
   | `VLocal x ->
-    Format.fprintf fmt "#%d" (Obj.magic x : int)
-
-  | `VDup { contents = `Direct (i, None) } ->
-    Format.fprintf fmt "$%d" i
-
-  | `VDup { contents = `Direct (_, Some n) } ->
-    Format.fprintf fmt "%s" n
-
-  | `VDup { contents = `Redirect v } ->
-    Format.fprintf fmt "%a" pp_var (`VDup v)
+    Format.fprintf fmt "#%d" x
 
 let pp_dprogram fmt (d : dprogram) =
   Format.fprintf fmt
