@@ -12,7 +12,7 @@ process_compile() {
     RET=$(echo $?)
     if [ ${RET} -eq 0 ]; then
         echo -ne "\033[32m OK \033[0m"
-        ~/tezos/tezos-client -S -A testnet-tezos.giganode.io -P 443 typecheck script $OUT_TZ > /dev/null 2> /dev/null
+        tezos-client --endpoint https://mainnet-tezos.giganode.io:443 typecheck script $OUT_TZ > /dev/null 2> /dev/null
         RET=$(echo $?)
         if [ ${RET} -eq 0 ]; then
             echo -ne "\033[32m OK \033[0m"

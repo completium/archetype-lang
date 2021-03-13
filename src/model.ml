@@ -36,6 +36,10 @@ type btyp =
   | Bbytes
   | Bnat
   | Bchainid
+  | Bbls12_381_fr
+  | Bbls12_381_g1
+  | Bbls12_381_g2
+  | Bnever
 [@@deriving show {with_path = false}]
 
 type vset =
@@ -75,6 +79,9 @@ type ntype =
   | Tprog of type_
   | Tvset of vset * type_
   | Ttrace of trtyp
+  | Tticket of type_
+  | Tsapling_state of int
+  | Tsapling_transaction of int
 [@@deriving show {with_path = false}]
 
 and type_ = ntype * lident option
@@ -82,7 +89,7 @@ and type_ = ntype * lident option
 
 type 'id pattern_node =
   | Pwild
-  | Pconst of 'id
+  | Pconst of 'id * lident list
 [@@deriving show {with_path = false}]
 
 type 'id pattern_gen = {
@@ -145,7 +152,6 @@ type 'term var_kind_gen =
   | Vassetstate of 'term
   | Vstorevar
   | Vstorecol
-  | Venumval
   | Vdefinition
   | Vlocal
   | Vparam
@@ -225,7 +231,6 @@ type ('id, 'term) mterm_node  =
   | Mint              of Core.big_int
   | Mnat              of Core.big_int
   | Mbool             of bool
-  | Menum             of string
   | Mrational         of Core.big_int * Core.big_int
   | Mstring           of string
   | Mcurrency         of Core.big_int * currency
@@ -241,7 +246,7 @@ type ('id, 'term) mterm_node  =
   | Mmatchoption      of 'term * 'id * 'term * 'term
   | Mmatchor          of 'term * 'id * 'term * 'id * 'term
   | Mmatchlist        of 'term * 'id * 'id * 'term * 'term
-  | Mloopleft         of 'term * 'id * 'term
+  | Mfold             of 'term * 'id * 'term
   | Mmap              of 'term * 'id * 'term
   | Mexeclambda       of 'term * 'term
   | Mapplylambda      of 'term * 'term
@@ -319,7 +324,6 @@ type ('id, 'term) mterm_node  =
   | Msetfold          of type_ * 'id   * 'id   * 'term * 'term * 'term
   (* list api expression *)
   | Mlistprepend      of type_ * 'term * 'term
-  | Mlistheadtail     of type_ * 'term
   | Mlistlength       of type_ * 'term
   | Mlistcontains     of type_ * 'term * 'term
   | Mlistnth          of type_ * 'term * 'term
@@ -353,8 +357,23 @@ type ('id, 'term) mterm_node  =
   | Mblake2b          of 'term
   | Msha256           of 'term
   | Msha512           of 'term
+  | Msha3             of 'term
+  | Mkeccak           of 'term
   | Mhashkey          of 'term
   | Mchecksignature   of 'term * 'term * 'term
+  (* voting *)
+  | Mtotalvotingpower
+  | Mvotingpower      of 'term
+  (* ticket *)
+  | Mcreateticket     of 'term * 'term
+  | Mreadticket       of 'term
+  | Msplitticket      of 'term * 'term * 'term
+  | Mjointickets      of 'term * 'term
+  (* sapling *)
+  | Msapling_empty_state   of int
+  | Msapling_verify_update of 'term * 'term
+  (* bls curve *)
+  | Mpairing_check of 'term
   (* constants *)
   | Mnow
   | Mtransferred
@@ -364,8 +383,10 @@ type ('id, 'term) mterm_node  =
   | Mselfaddress
   | Mchainid
   | Mmetadata
+  | Mlevel
   (* variable *)
   | Mvar              of 'id * 'term var_kind_gen * temp * delta
+  | Menumval          of 'id * 'term list * ident  (* value * args * ident of enum *)
   (* rational *)
   | Mrateq            of 'term * 'term
   | Mratcmp           of comparison_operator * 'term * 'term
@@ -579,6 +600,7 @@ type storage = lident storage_gen
 
 type 'id enum_item_gen = {
   name: 'id;
+  args: type_ list;
   invariants : 'id label_term_gen list;
 }
 [@@deriving show {with_path = false}]
@@ -950,8 +972,8 @@ let mk_var ?(invariants=[]) ?default ?(loc = Location.dummy) name type_ original
 let mk_enum ?(values = []) name initial : 'id enum_gen =
   { name; values; initial }
 
-let mk_enum_item ?(invariants = []) name : 'id enum_item_gen =
-  { name; invariants }
+let mk_enum_item ?(args = []) ?(invariants = []) name : 'id enum_item_gen =
+  { name; args; invariants }
 
 let mk_asset ?(values = []) ?(sort=[]) ?(big_map = false) ?state ?(keys = []) ?(invariants = []) ?(init = []) ?(loc = Location.dummy) name : 'id asset_gen =
   { name; values; sort; big_map; state; keys; invariants; init; loc }
@@ -1020,13 +1042,21 @@ let trat           = ttuple [tint; tnat]
 let toperation     = mktype (Toperation)
 let tsignature     = mktype (Tbuiltin Bsignature)
 let tcontract t    = mktype (Tcontract t)
+let tticket t      = mktype (Tticket t)
+let tsapling_state       n = mktype (Tsapling_state n)
+let tsapling_transaction n = mktype (Tsapling_transaction n)
 let tchainid       = mktype (Tbuiltin Bchainid)
+let tbls12_381_fr  = mktype (Tbuiltin Bbls12_381_fr)
+let tbls12_381_g1  = mktype (Tbuiltin Bbls12_381_g1)
+let tbls12_381_g2  = mktype (Tbuiltin Bbls12_381_g2)
+let tnever         = mktype (Tbuiltin Bnever)
 let tasset an      = mktype (Tasset an)
 let tcollection an = mktype (Tcontainer (tasset an, Collection))
 let taggregate an  = mktype (Tcontainer (tasset an, Aggregate))
 let tpartition an  = mktype (Tcontainer (tasset an, Partition))
 let tview an       = mktype (Tcontainer (tasset an, View))
 let toperations    = tlist toperation
+let tmetadata      = tmap tstring tbytes
 
 let mk_bool     x = mk_mterm (Mbool x) tbool
 let mk_string   x = mk_mterm (Mstring x) tstring
@@ -1049,11 +1079,13 @@ let msource       = mk_mterm Msource      taddress
 let mselfaddress  = mk_mterm Mselfaddress taddress
 let mchainid      = mk_mterm Mchainid     tchainid
 let mmetadata     = mk_mterm Mmetadata    (tmap tstring tbytes)
+let mlevel        = mk_mterm Mlevel       tnat
 
 let mk_mvar id t = mk_mterm (Mvar(id, Vlocal, Tnone, Dnone )) t
 let mk_pvar id t = mk_mterm (Mvar(id, Vparam, Tnone, Dnone )) t
 let mk_svar id t = mk_mterm (Mvar(id, Vstorevar, Tnone, Dnone )) t
 let mk_parameter id t = mk_mterm (Mvar(id, Vparameter, Tnone, Dnone )) t
+let mk_enum_value ?(args=[]) id e = mk_mterm (Menumval(id, args, unloc e)) (mktype (Tenum e))
 
 let mk_btez v = mk_mterm (Mcurrency (v, Utz)) ttez
 let mk_tez  v = mk_btez (Big_int.big_int_of_int v)
@@ -1098,6 +1130,8 @@ let mk_checksignature a b c = mk_mterm (Mchecksignature (a, b, c)) tbool
 let mk_brat n d  = mk_tuple [mk_bint n; mk_bnat d]
 let mk_rat n d   = mk_tuple [mk_int n; mk_nat d]
 
+let mk_metadata v = mk_mterm (Mlitmap(false, v)) tmetadata
+
 let fail x  = mk_mterm (Mfail (Invalid (mk_string x))) tunit
 let failg x = mk_mterm (Mfail (Invalid (x))) tunit
 let mnot x  = mk_mterm (Mnot x) tbool
@@ -1109,6 +1143,8 @@ let operations = mk_mterm Moperations (tlist toperation)
 (* -------------------------------------------------------------------- *)
 
 let cmp_ident (i1 : ident) (i2 : ident) : bool = String.equal i1 i2
+let cmp_big_int (n1 : Core.big_int) (n2 : Core.big_int) : bool = Big_int.compare_big_int n1 n2 = 0
+let cmp_int (n1 : int) (n2 : int) : bool = n1 = n2
 let cmp_lident (i1 : lident) (i2 : lident) : bool = cmp_ident (Location.unloc i1) (Location.unloc i2)
 let cmp_bool (b1 : bool) (b2 : bool) : bool = b1 = b2
 let cmp_assign_op (op1 : assignment_operator) (op2 : assignment_operator) : bool = op1 = op2
@@ -1162,6 +1198,9 @@ let rec cmp_ntype
   | Tprog t1, Tprog t2                       -> cmp_type t1 t2
   | Tvset (v1, t1), Tvset (v2, t2)           -> cmp_vset v1 v2 && cmp_type t1 t2
   | Ttrace t1, Ttrace t2                     -> cmp_trtyp t1 t2
+  | Tticket t1, Tticket t2                   -> cmp_type t1 t2
+  | Tsapling_state n1, Tsapling_state n2     -> cmp_int n1 n2
+  | Tsapling_transaction n1, Tsapling_transaction n2 -> cmp_int n1 n2
   | _ -> false
 
 and cmp_type
@@ -1180,7 +1219,10 @@ let cmp_pattern_node
     (p2    : 'id pattern_node)
   : bool =
   match p1, p2 with
-  | Pconst c1, Pconst c2 -> cmpi c1 c2
+  | Pconst (c1, xs1), Pconst (c2, xs2) ->
+    cmpi c1 c2
+    && List.length xs1 = List.length xs2
+    && List.for_all2 cmpi xs1 xs2
   | Pwild, Pwild -> true
   | _ -> false
 
@@ -1222,7 +1264,6 @@ let cmp_mterm_node
     | Vassetstate v1, Vassetstate v2 -> cmp v1 v2
     | Vstorevar, Vstorevar
     | Vstorecol, Vstorecol
-    | Venumval, Venumval
     | Vdefinition, Vdefinition
     | Vlocal, Vlocal
     | Vparam, Vparam
@@ -1307,7 +1348,6 @@ let cmp_mterm_node
     | Mint v1, Mint v2                                                                 -> Big_int.eq_big_int v1 v2
     | Mnat v1, Mnat v2                                                                 -> Big_int.eq_big_int v1 v2
     | Mbool v1, Mbool v2                                                               -> cmp_bool v1 v2
-    | Menum v1, Menum v2                                                               -> cmp_ident v1 v2
     | Mrational (n1, d1), Mrational (n2, d2)                                           -> Big_int.eq_big_int n1 n2 && Big_int.eq_big_int d1 d2
     | Mstring v1, Mstring v2                                                           -> cmp_ident v1 v2
     | Mcurrency (v1, c1), Mcurrency (v2, c2)                                           -> Big_int.eq_big_int v1 v2 && cmp_currency c1 c2
@@ -1323,7 +1363,7 @@ let cmp_mterm_node
     | Mmatchoption (x1, i1, ve1, ne1), Mmatchoption (x2, i2, ve2, ne2)                 -> cmp x1 x2 && cmpi i1 i2 && cmp ve1 ve2 && cmp ne1 ne2
     | Mmatchor (x1, lid1, le1, rid1, re1), Mmatchor (x2, lid2, le2, rid2, re2)         -> cmp x1 x2 && cmpi lid1 lid2 && cmp le1 le2 && cmpi rid1 rid2 && cmp re1 re2
     | Mmatchlist (x1, hid1, tid1, hte1, ee1), Mmatchlist (x2, hid2, tid2, hte2, ee2)   -> cmp x1 x2 && cmpi hid1 hid2 && cmpi tid1 tid2 && cmp hte1 hte2 && cmp ee1 ee2
-    | Mloopleft (x1, i1, e1), Mloopleft (x2, i2, e2)                                   -> cmp x1 x2 && cmpi i1 i2 && cmp e1 e2
+    | Mfold (x1, i1, e1), Mfold (x2, i2, e2)                                           -> cmp x1 x2 && cmpi i1 i2 && cmp e1 e2
     | Mmap (x1, i1, e1), Mmap (x2, i2, e2)                                             -> cmp x1 x2 && cmpi i1 i2 && cmp e1 e2
     | Mexeclambda  (l1, a1), Mexeclambda  (l2, a2)                                     -> cmp l1 l2 && cmp a1 a2
     | Mapplylambda (l1, a1), Mapplylambda (l2, a2)                                     -> cmp l1 l2 && cmp a1 a2
@@ -1401,7 +1441,6 @@ let cmp_mterm_node
     | Msetfold (t1, ix1, ia1, c1, a1, b1), Msetfold (t2, ix2, ia2, c2, a2, b2)         -> cmp_type t1 t2 && cmp_lident ix1 ix2 && cmp_lident ia1 ia2 && cmp c1 c2 && cmp a1 a2 && cmp b1 b2
     (* list api expression *)
     | Mlistprepend (t1, c1, a1), Mlistprepend (t2, c2, a2)                             -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
-    | Mlistheadtail (t1, c1), Mlistheadtail (t2, c2)                                   -> cmp_type t1 t2 && cmp c1 c2
     | Mlistlength (t1, c1), Mlistlength (t2, c2)                                       -> cmp_type t1 t2 && cmp c1 c2
     | Mlistcontains (t1, c1, a1), Mlistcontains (t2, c2, a2)                           -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
     | Mlistnth (t1, c1, a1), Mlistnth (t2, c2, a2)                                     -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
@@ -1431,13 +1470,27 @@ let cmp_mterm_node
     | Mtostring(t1, x1), Mtostring (t2, x2)                                            -> cmp_type t1 t2 && cmp x1 x2
     | Mpack x1, Mpack x2                                                               -> cmp x1 x2
     | Munpack (t1, x1), Munpack (t2, x2)                                               -> cmp_type t1 t2 && cmp x1 x2
-
     (* crypto functions *)
     | Mblake2b x1, Mblake2b x2                                                         -> cmp x1 x2
     | Msha256  x1, Msha256  x2                                                         -> cmp x1 x2
     | Msha512  x1, Msha512  x2                                                         -> cmp x1 x2
+    | Msha3    x1, Msha3    x2                                                         -> cmp x1 x2
+    | Mkeccak  x1, Mkeccak  x2                                                         -> cmp x1 x2
     | Mhashkey x1, Mhashkey  x2                                                        -> cmp x1 x2
     | Mchecksignature (k1, s1, x1), Mchecksignature (k2, s2, x2)                       -> cmp k1 k2 && cmp s1 s2 && cmp x1 x2
+    (* voting *)
+    | Mtotalvotingpower, Mtotalvotingpower                                             -> true
+    | Mvotingpower x1, Mvotingpower x2                                                 -> cmp x1 x2
+    (* ticket *)
+    | Mcreateticket (x1, a1), Mcreateticket (x2, a2)                                   -> cmp x1 x2 && cmp a1 a2
+    | Mreadticket x1, Mreadticket x2                                                   -> cmp x1 x2
+    | Msplitticket (x1, a1, b1), Msplitticket (x2, a2, b2)                             -> cmp x1 x2 && cmp a1 a2 && cmp b1 b2
+    | Mjointickets (x1, y1), Mjointickets (x2, y2)                                     -> cmp x1 x2 && cmp y1 y2
+    (* sapling *)
+    | Msapling_empty_state n1, Msapling_empty_state n2                                 -> cmp_int n1 n2
+    | Msapling_verify_update (s1, t1), Msapling_verify_update (s2, t2)                 -> cmp s1 s2 && cmp t1 t2
+    (* bls curve *)
+    | Mpairing_check x1, Mpairing_check x2                                             -> cmp x1 x2
     (* constants *)
     | Mnow, Mnow                                                                       -> true
     | Mtransferred, Mtransferred                                                       -> true
@@ -1447,6 +1500,7 @@ let cmp_mterm_node
     | Mselfaddress, Mselfaddress                                                       -> true
     | Mchainid, Mchainid                                                               -> true
     | Mmetadata, Mmetadata                                                             -> true
+    | Mlevel, Mlevel                                                                   -> true
     (* variable *)
     | Mvar (id1, k1, t1, d1), Mvar (id2, k2, t2, d2)                                   -> cmpi id1 id2 && cmp_var_kind k1 k2 && cmp_temp t1 t2 && cmp_delta d1 d2
     (* rational *)
@@ -1595,6 +1649,9 @@ let map_ptyp (f : type_ -> type_) (nt : ntype) : ntype =
   | Tstorage          -> Tstorage
   | Toperation        -> Toperation
   | Tcontract t       -> Tcontract (f t)
+  | Tticket t         -> Tticket (f t)
+  | Tsapling_state n  -> Tsapling_state n
+  | Tsapling_transaction n -> Tsapling_transaction n
   | Tprog t           -> Tprog (f t)
   | Tvset (v, t)      -> Tvset (v, t)
   | Ttrace t          -> Ttrace t
@@ -1621,7 +1678,6 @@ let map_var_kind f = function
   | Vassetstate mt -> Vassetstate (f mt)
   | Vstorevar -> Vstorevar
   | Vstorecol -> Vstorecol
-  | Venumval -> Venumval
   | Vdefinition -> Vdefinition
   | Vlocal -> Vlocal
   | Vparam -> Vparam
@@ -1695,7 +1751,6 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mint v                         -> Mint v
   | Mnat v                         -> Mnat v
   | Mbool v                        -> Mbool v
-  | Menum v                        -> Menum (fi v)
   | Mrational (n, d)               -> Mrational (n, d)
   | Mstring v                      -> Mstring v
   | Mcurrency (v, c)               -> Mcurrency (v, c)
@@ -1711,7 +1766,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mmatchoption (x, i, ve, ne)    -> Mmatchoption   (f x, g i, f ve, f ne)
   | Mmatchor (x, lid, le, rid, re) -> Mmatchor       (f x, g lid, f le, g rid, f re)
   | Mmatchlist (x, hid, tid, hte, ee) -> Mmatchlist  (f x, g hid, g tid, f hte, f ee)
-  | Mloopleft (x, i, e)            -> Mloopleft (f x, g i, f e)
+  | Mfold (x, i, e)                -> Mfold (f x, g i, f e)
   | Mmap (x, i, e)                 -> Mmap           (f x, g i, f e)
   | Mexeclambda  (l, a)            -> Mexeclambda    (f l, f a)
   | Mapplylambda (l, a)            -> Mapplylambda   (f l, f a)
@@ -1789,7 +1844,6 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Msetfold (t, ix, ia, c, a, b)  -> Msetfold (ft t, g ix, g ia, f c, f a, f b)
   (* list api expression *)
   | Mlistprepend (t, c, a)         -> Mlistprepend (ft t, f c, f a)
-  | Mlistheadtail(t, c)            -> Mlistheadtail(t, f c)
   | Mlistlength(t, c)              -> Mlistlength(t, f c)
   | Mlistcontains (t, c, a)        -> Mlistcontains (t, f c, f a)
   | Mlistnth (t, c, a)             -> Mlistnth (t, f c, f a)
@@ -1821,10 +1875,25 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Munpack (t, x)                 -> Munpack (ft t, f x)
   (* crypto functions *)
   | Mblake2b x                     -> Mblake2b (f x)
-  | Msha256 x                      -> Msha256 (f x)
-  | Msha512 x                      -> Msha512 (f x)
+  | Msha256 x                      -> Msha256  (f x)
+  | Msha512 x                      -> Msha512  (f x)
+  | Msha3 x                        -> Msha3    (f x)
+  | Mkeccak x                      -> Mkeccak  (f x)
   | Mhashkey x                     -> Mhashkey (f x)
   | Mchecksignature (k, s, x)      -> Mchecksignature (f k, f s, f x)
+  (* voting *)
+  | Mtotalvotingpower              -> Mtotalvotingpower
+  | Mvotingpower x                 -> Mvotingpower (f x)
+  (* ticket *)
+  | Mcreateticket (x, a)           -> Mcreateticket (f x, f a)
+  | Mreadticket x                  -> Mreadticket (f x)
+  | Msplitticket (x, a, b)         -> Msplitticket (f x, f a, f b)
+  | Mjointickets (x, y)            -> Mjointickets (f x, f y)
+  (* sapling *)
+  | Msapling_empty_state    n      -> Msapling_empty_state   n
+  | Msapling_verify_update (s, t)  -> Msapling_verify_update (f s, f t)
+  (* bls curve *)
+  | Mpairing_check x               -> Mpairing_check (f x)
   (* constants *)
   | Mnow                           -> Mnow
   | Mtransferred                   -> Mtransferred
@@ -1834,8 +1903,10 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mselfaddress                   -> Mselfaddress
   | Mchainid                       -> Mchainid
   | Mmetadata                      -> Mmetadata
+  | Mlevel                         -> Mlevel
   (* variable *)
   | Mvar (id, k, t, d)             -> Mvar (g id, map_var_kind f k, map_temp fi t, map_delta d)
+  | Menumval (id, args, e)         -> Menumval (g id, List.map f args, fi e)
   (* rational *)
   | Mrateq (l, r)                  -> Mrateq (f l, f r)
   | Mratcmp (op, l, r)             -> Mratcmp (op, f l, f r)
@@ -2015,7 +2086,6 @@ let fold_var_kind f accu = function
   | Vassetstate mt -> f accu mt
   | Vstorevar
   | Vstorecol
-  | Venumval
   | Vdefinition
   | Vlocal
   | Vparam
@@ -2080,7 +2150,6 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mint _                                -> accu
   | Mnat _                                -> accu
   | Mbool _                               -> accu
-  | Menum _                               -> accu
   | Mrational _                           -> accu
   | Mstring _                             -> accu
   | Mcurrency _                           -> accu
@@ -2096,7 +2165,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mmatchoption (x, _, ve, ne)           -> f (f (f accu x) ve) ne
   | Mmatchor (x, _, le, _, re)            -> f (f (f accu x) le) re
   | Mmatchlist (x, _, _, hte, ee)         -> f (f (f accu x) hte) ee
-  | Mloopleft (x, _, e)                   -> f (f accu x) e
+  | Mfold (x, _, e)                       -> f (f accu x) e
   | Mmap (x, _, e)                        -> f (f accu x) e
   | Mexeclambda  (l, a)                   -> f (f accu l) a
   | Mapplylambda (l, a)                   -> f (f accu l) a
@@ -2174,7 +2243,6 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Msetfold (_, _, _, c, a, b)           -> f (f (f accu c) a) b
   (* list api expression *)
   | Mlistprepend (_, c, a)                -> f (f accu c) a
-  | Mlistheadtail (_, c)                  -> f accu c
   | Mlistlength (_, c)                    -> f accu c
   | Mlistcontains (_, c, a)               -> f (f accu c) a
   | Mlistnth (_, c, a)                    -> f (f accu c) a
@@ -2208,8 +2276,23 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mblake2b x                            -> f accu x
   | Msha256  x                            -> f accu x
   | Msha512  x                            -> f accu x
+  | Msha3    x                            -> f accu x
+  | Mkeccak  x                            -> f accu x
   | Mhashkey  x                           -> f accu x
   | Mchecksignature (k, s, x)             -> f (f (f accu k) s) x
+  (* voting *)
+  | Mtotalvotingpower                     -> accu
+  | Mvotingpower x                        -> f accu x
+  (* ticket *)
+  | Mcreateticket (x, a)                  -> f (f accu x) a
+  | Mreadticket x                         -> f accu x
+  | Msplitticket (x, a, b)                -> f (f (f accu x) a) b
+  | Mjointickets (x, y)                   -> f (f accu x) y
+  (* sapling *)
+  | Msapling_empty_state    _             -> accu
+  | Msapling_verify_update (s, t)         -> f (f accu s) t
+  (* bls curve *)
+  | Mpairing_check x                      -> f accu x
   (* constants *)
   | Mnow                                  -> accu
   | Mtransferred                          -> accu
@@ -2219,8 +2302,10 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mselfaddress                          -> accu
   | Mchainid                              -> accu
   | Mmetadata                             -> accu
+  | Mlevel                                -> accu
   (* variable *)
   | Mvar (_, k, _, _)                     -> fold_var_kind f accu k
+  | Menumval (_, args, _)                 -> List.fold_left f accu args
   (* rational *)
   | Mrateq (l, r)                         -> f (f accu l) r
   | Mratcmp (_, l, r)                     -> f (f accu l) r
@@ -2271,7 +2356,6 @@ let fold_map_var_kind f accu = function
     Vassetstate mte, mta
   | Vstorevar -> Vstorevar, accu
   | Vstorecol -> Vstorecol, accu
-  | Venumval  -> Venumval,  accu
   | Vdefinition -> Vdefinition, accu
   | Vlocal    -> Vlocal,    accu
   | Vparam    -> Vparam,    accu
@@ -2502,9 +2586,6 @@ let fold_map_term
   | Mbool v ->
     g (Mbool v), accu
 
-  | Menum v ->
-    g (Menum v), accu
-
   | Mrational (n, d) ->
     g (Mrational (n, d)), accu
 
@@ -2570,10 +2651,10 @@ let fold_map_term
     let eee, eea = f htea ee in
     g (Mmatchlist (xe, hid, tid, htee, eee)), eea
 
-  | Mloopleft (x, i, e) ->
+  | Mfold (x, i, e) ->
     let xe, xa = f accu x in
     let ee, ea = f xa e in
-    g (Mloopleft (xe, i, ee)), ea
+    g (Mfold (xe, i, ee)), ea
 
   | Mmap (x, i, e) ->
     let xe, xa = f accu x in
@@ -2965,10 +3046,6 @@ let fold_map_term
     let ae, aa = f ca a in
     g (Mlistprepend (t, ce, ae)), aa
 
-  | Mlistheadtail (t, c) ->
-    let ce, ca = f accu c in
-    g (Mlistheadtail (t, ce)), ca
-
   | Mlistlength (t, c) ->
     let ce, ca = f accu c in
     g (Mlistlength (t, ce)), ca
@@ -3114,6 +3191,14 @@ let fold_map_term
     let xe, xa = f accu x in
     g (Msha512 xe), xa
 
+  | Msha3 x ->
+    let xe, xa = f accu x in
+    g (Msha3 xe), xa
+
+  | Mkeccak x ->
+    let xe, xa = f accu x in
+    g (Mkeccak xe), xa
+
   | Mhashkey x ->
     let xe, xa = f accu x in
     g (Mhashkey xe), xa
@@ -3123,6 +3208,56 @@ let fold_map_term
     let se, sa = f ka s in
     let xe, xa = f sa x in
     g (Mchecksignature (ke, se, xe)), xa
+
+
+  (* voting *)
+  | Mtotalvotingpower ->
+    g Mtotalvotingpower, accu
+
+  | Mvotingpower x ->
+    let xe, xa = f accu x in
+    g (Mvotingpower xe), xa
+
+
+  (* ticket *)
+
+  | Mcreateticket (x, a) ->
+    let xe, xa = f accu x in
+    let ae, aa = f xa a in
+    g (Mcreateticket (xe, ae)), aa
+
+  | Mreadticket x ->
+    let xe, xa = f accu x in
+    g (Mreadticket xe), xa
+
+  | Msplitticket (x, a, b) ->
+    let xe, xa = f accu x in
+    let ae, aa = f xa a in
+    let be, ba = f aa b in
+    g (Msplitticket (xe, ae, be)), ba
+
+  | Mjointickets (x, y) ->
+    let xe, xa = f accu x in
+    let ye, ya = f xa y in
+    g (Mjointickets (xe, ye)), ya
+
+
+  (* sapling *)
+
+  | Msapling_empty_state n ->
+    g (Msapling_empty_state n), accu
+
+  | Msapling_verify_update (s, t) ->
+    let se, sa = f accu s in
+    let te, ta = f sa t in
+    g (Msapling_verify_update (se, te)), ta
+
+
+  (* bls curve *)
+
+  | Mpairing_check x ->
+    let xe, xa = f accu x in
+    g (Mpairing_check xe), xa
 
 
   (* constants *)
@@ -3151,12 +3286,24 @@ let fold_map_term
   | Mmetadata ->
     g Mmetadata, accu
 
+  | Mlevel ->
+    g Mlevel, accu
+
 
   (* variable *)
 
   | Mvar (id, k, t, d) ->
     let ke, ka = fold_map_var_kind f accu k in
     g (Mvar (id, ke, t, d)), ka
+
+  | Menumval (id, args, e) ->
+    let ((argss, argsa) : 'c list * 'a) =
+      List.fold_left
+        (fun (pterms, accu) x ->
+           let p, accu = f accu x in
+           pterms @ [p], accu) ([], accu) args
+    in
+    g (Menumval (id, argss, e)), argsa
 
 
   (* rational *)
@@ -3506,6 +3653,7 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
       let for_enum_item (ei : enum_item) : enum_item =
         {
           name        = g KIenumvalue ei.name;
+          args        = List.map for_type ei.args;
           invariants  = List.map for_label_term ei.invariants;
         }
       in
@@ -3752,6 +3900,9 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
       | Tstorage          -> nt
       | Toperation        -> nt
       | Tcontract t       -> Tcontract (for_type t)
+      | Tticket t         -> Tticket (for_type t)
+      | Tsapling_state _  -> nt
+      | Tsapling_transaction _ -> nt
       | Tprog a           -> Tprog (for_type a)
       | Tvset (v, a)      -> Tvset (v, for_type a)
       | Ttrace _          -> nt
@@ -5134,7 +5285,7 @@ end = struct
   let add_type (l : type_ list) (x : type_) =
     if List.exists (cmp_type x) l
     then l
-    else x::l
+    else l @ [x]
 
   let get_all_set_types (model : model) : type_ list =
     let rec for_type accu t =
@@ -5145,6 +5296,7 @@ end = struct
       | Ttuple  ts     -> List.fold_left (for_type) accu ts
       | Tmap (_, _, t) -> for_type accu t
       | Tcontract t    -> for_type accu t
+      | Tticket t      -> for_type accu t
       | Tprog t        -> for_type accu t
       | Tvset (_, t)   -> for_type accu t
       | _ -> accu
@@ -5159,6 +5311,7 @@ end = struct
       | Ttuple  ts     -> List.fold_left (for_type) accu ts
       | Tmap (_, _, t) -> for_type accu t
       | Tcontract t    -> for_type accu t
+      | Tticket t      -> for_type accu t
       | Tprog t        -> for_type accu t
       | Tvset (_, t)   -> for_type accu t
       | _ -> accu
@@ -5173,6 +5326,7 @@ end = struct
       | Ttuple    ts         -> List.fold_left (for_type) accu ts
       | Tmap      (_, _, tv) -> add_type (for_type accu tv) t
       | Tcontract t          -> for_type accu t
+      | Tticket t            -> for_type accu t
       | Tprog     t          -> for_type accu t
       | Tvset     (_, t)     -> for_type accu t
       | _ -> accu
@@ -5325,6 +5479,7 @@ end = struct
       | Mselfaddress               -> "selfaddress"::accu
       | Mchainid                   -> "chainid"::accu
       | Mmetadata                  -> "metadata"::accu
+      | Mlevel                     -> "level"::accu
 
       | Mget (an, ck, _)
       | Mselect (an, ck, _, _, _)

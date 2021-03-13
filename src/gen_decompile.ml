@@ -198,7 +198,7 @@ let to_michelson (input, env : T.obj_micheline * env) : T.michelson * env =
       | Oprim ({prim = "RENAME"; _})                         -> T.RENAME
       | Oprim ({prim = "STEPS_TO_QUOTA"; _})                 -> T.STEPS_TO_QUOTA
       | Oprim ({prim = "LEVEL"; _})                          -> T.LEVEL
-      | Oprim ({prim = "SAPLING_EMPTY_STATE"; _})            -> T.SAPLING_EMPTY_STATE
+      | Oprim ({prim = "SAPLING_EMPTY_STATE"; args = (Oint n)::_}) -> T.SAPLING_EMPTY_STATE (int_of_string n)
       | Oprim ({prim = "SAPLING_VERIFY_UPDATE"; _})          -> T.SAPLING_VERIFY_UPDATE
       | Oprim ({prim = "NEVER"; _})                          -> T.NEVER
       | Oprim ({prim = "VOTING_POWER"; _})                   -> T.VOTING_POWER
@@ -691,6 +691,14 @@ let _to_dir (michelson, env : T.michelson * env) =
     | UPDATE::it               -> interp_top env Tupdate it stack
 
 
+    (* Operations on tickets *)
+
+    | JOIN_TICKETS::it         -> interp_uop env Ujointickets  it stack
+    | READ_TICKET::it          -> interp_uop env Ureadticket   it stack
+    | SPLIT_TICKET::it         -> interp_bop env Bsplitticket  it stack
+    | TICKET::it               -> interp_bop env Bcreateticket it stack
+
+
     (* Other *)
 
     | UNPAIR::it  -> begin
@@ -705,7 +713,7 @@ let _to_dir (michelson, env : T.michelson * env) =
     | RENAME::_                   -> assert false
     | STEPS_TO_QUOTA::_           -> assert false
     | LEVEL::_                    -> assert false
-    | SAPLING_EMPTY_STATE::_      -> assert false
+    | SAPLING_EMPTY_STATE _::_    -> assert false
     | SAPLING_VERIFY_UPDATE::_    -> assert false
     | NEVER::_                    -> assert false
     | VOTING_POWER::_             -> assert false
@@ -1360,42 +1368,37 @@ let to_ir (dir, env : T.dprogram * env) : T.ir * env =
 
 let rec ttype_to_mtype (t : T.type_) : M.type_ =
   let f = ttype_to_mtype in
-  let ty =
-    match t.node with
-    | Tkey                  -> M.tkey
-    | Tunit                 -> M.tunit
-    | Tsignature            -> M.tsignature
-    | Toption    t          -> M.toption (f t)
-    | Tlist      t          -> M.tlist   (f t)
-    | Tset       t          -> M.tset    (f t)
-    | Toperation            -> M.toperation
-    | Tcontract  t          -> M.tcontract (f t)
-    | Tpair      (lt, rt)   -> M.ttuple [f lt; f rt]
-    | Tor        (lt, rt)   -> M.tor(f lt) (f rt)
-    | Tlambda    (at, rt)   -> M.tlambda (f at) (f rt)
-    | Tmap       (kt, vt)   -> M.tmap (f kt) (f vt)
-    | Tbig_map   (kt, vt)   -> M.tbig_map (f kt) (f vt)
-    | Tchain_id             -> M.tchainid
-    | Tint                  -> M.tint
-    | Tnat                  -> M.tnat
-    | Tstring               -> M.tstring
-    | Tbytes                -> M.tbytes
-    | Tmutez                -> M.ttez
-    | Tbool                 -> M.tbool
-    | Tkey_hash             -> M.tkeyhash
-    | Ttimestamp            -> M.ttimestamp
-    | Taddress              -> M.taddress
-    | Tsapling_transaction  -> assert false
-    | Tsapling_state        -> assert false
-    | Tnever                -> assert false
-    | Tbls12_381_g1         -> assert false
-    | Tbls12_381_g2         -> assert false
-    | Tbls12_381_fr         -> assert false
-    | Tbaker_hash           -> assert false
-    | Tbaker_operation      -> assert false
-    | Tpvss_key             -> assert false
-  in
-  Option.fold (fun ty x -> M.mktype ~annot:(dumloc x) (M.get_ntype ty)) ty t.annotation
+  match t.node with
+  | Tkey                   -> M.tkey
+  | Tunit                  -> M.tunit
+  | Tsignature             -> M.tsignature
+  | Toption    t           -> M.toption (f t)
+  | Tlist      t           -> M.tlist   (f t)
+  | Tset       t           -> M.tset    (f t)
+  | Toperation             -> M.toperation
+  | Tcontract  t           -> M.tcontract (f t)
+  | Tpair      (lt, rt)    -> M.ttuple [f lt; f rt]
+  | Tor        (lt, rt)    -> M.tor(f lt) (f rt)
+  | Tlambda    (at, rt)    -> M.tlambda (f at) (f rt)
+  | Tmap       (kt, vt)    -> M.tmap (f kt) (f vt)
+  | Tbig_map   (kt, vt)    -> M.tbig_map (f kt) (f vt)
+  | Tchain_id              -> M.tchainid
+  | Tint                   -> M.tint
+  | Tnat                   -> M.tnat
+  | Tstring                -> M.tstring
+  | Tbytes                 -> M.tbytes
+  | Tmutez                 -> M.ttez
+  | Tbool                  -> M.tbool
+  | Tkey_hash              -> M.tkeyhash
+  | Ttimestamp             -> M.ttimestamp
+  | Taddress               -> M.taddress
+  | Tticket t              -> M.tticket (f t)
+  | Tsapling_transaction n -> M.tsapling_transaction n
+  | Tsapling_state       n -> M.tsapling_state n
+  | Tbls12_381_fr          -> assert false
+  | Tbls12_381_g1          -> assert false
+  | Tbls12_381_g2          -> assert false
+  | Tnever                 -> assert false
 
 let to_model (ir, env : T.ir * env) : M.model * env =
 
@@ -1420,7 +1423,7 @@ let to_model (ir, env : T.ir * env) : M.model * env =
     | Dnone            -> assert false
     | Dlist  _l        -> assert false
     | Delt _           -> assert false
-    | Dvar _x          -> assert false
+    | Dvar (_x, _t)    -> assert false
   in
 
   let rec for_instr (i : T.instruction) : M.mterm =
@@ -1470,27 +1473,30 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         | T.Tunit -> M.mk_mterm (M.Minstrmatchlist (xe, dumloc hid, dumloc tid, hte, ne)) M.tunit
         | _       -> M.mk_mterm (M.Mmatchlist (xe, dumloc hid, dumloc tid, hte, ne)) (for_type ty)
       end
-    | Iloopleft (l, i, b)          -> let be = f b in M.mk_mterm (M.Mloopleft (f l, dumloc i, be)) be.type_
+    | Iloopleft (l, i, b)          -> let be = f b in M.mk_mterm (M.Mfold (f l, dumloc i, be)) be.type_
     | Ilambda (_rt, _id, _at, _e)  -> assert false
     | Iloop (c, b)                 -> M.mk_mterm (M.Mwhile (f c, f b, None)) M.tunit
     | Iiter (_ids, _c, _b)         -> assert false
     | Izop op -> begin
         match op with
-        | Znow                  -> M.mk_mterm  Mnow         (M.tdate)
-        | Zamount               -> M.mk_mterm  Mtransferred (M.ttez)
-        | Zbalance              -> M.mk_mterm  Mbalance     (M.ttez)
-        | Zsource               -> M.mk_mterm  Msource      (M.taddress)
-        | Zsender               -> M.mk_mterm  Mcaller      (M.taddress)
-        | Zaddress              -> assert false
-        | Zchain_id             -> M.mk_mterm  Mchainid     (M.tchainid)
-        | Zself _               -> assert false
-        | Zself_address         -> M.mk_mterm  Mselfaddress (M.taddress)
-        | Znone t               -> M.mk_mterm  Mnone        (M.toption (for_type t))
-        | Zunit                 -> M.mk_mterm  Munit         M.tunit
-        | Znil t                -> M.mk_mterm (Mlitlist []) (M.tlist (for_type t))
-        | Zemptyset t           -> M.mk_mterm (Mlitset [])  (M.tset  (for_type t))
-        | Zemptymap (k, v)      -> M.mk_mterm (Mlitmap (false, [])) (M.tmap  (for_type k) (for_type v))
-        | Zemptybigmap (k, v)   -> M.mk_mterm (Mlitmap (true, [])) (M.tbig_map (for_type k) (for_type v))
+        | Znow                   -> M.mk_mterm  Mnow         (M.tdate)
+        | Zamount                -> M.mk_mterm  Mtransferred (M.ttez)
+        | Zbalance               -> M.mk_mterm  Mbalance     (M.ttez)
+        | Zsource                -> M.mk_mterm  Msource      (M.taddress)
+        | Zsender                -> M.mk_mterm  Mcaller      (M.taddress)
+        | Zaddress               -> assert false
+        | Zchain_id              -> M.mk_mterm  Mchainid     (M.tchainid)
+        | Zself _                -> assert false
+        | Zself_address          -> M.mk_mterm  Mselfaddress (M.taddress)
+        | Znone t                -> M.mk_mterm  Mnone        (M.toption (for_type t))
+        | Zunit                  -> M.mk_mterm  Munit         M.tunit
+        | Znil t                 -> M.mk_mterm (Mlitlist []) (M.tlist (for_type t))
+        | Zemptyset t            -> M.mk_mterm (Mlitset [])  (M.tset  (for_type t))
+        | Zemptymap (k, v)       -> M.mk_mterm (Mlitmap (false, [])) (M.tmap  (for_type k) (for_type v))
+        | Zemptybigmap (k, v)    -> M.mk_mterm (Mlitmap (true, [])) (M.tbig_map (for_type k) (for_type v))
+        | Ztotalvotingpower      -> M.mk_mterm  Mtotalvotingpower (M.tnat)
+        | Zlevel                 -> M.mk_mterm  Mlevel (M.tnat)
+        | Zsapling_empty_state n -> M.mk_mterm (Msapling_empty_state n) (M.tsapling_state n)
       end
     | Iunop (op, e) -> begin
         match op with
@@ -1510,6 +1516,8 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         | Ublake2b           -> M.mk_mterm (Mblake2b (f e)) M.tbytes
         | Usha256            -> M.mk_mterm (Msha256 (f e)) M.tbytes
         | Usha512            -> M.mk_mterm (Msha512 (f e)) M.tbytes
+        | Usha3              -> M.mk_mterm (Msha3 (f e)) M.tbytes
+        | Ukeccak            -> M.mk_mterm (Mkeccak (f e)) M.tbytes
         | Uhash_key          -> M.mk_mterm (Mhashkey (f e)) M.tkeyhash
         | Ufail              -> M.failg (f e)
         | Ucontract (_t, _a) -> assert false
@@ -1521,6 +1529,10 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         | Uge                -> assert false
         | Ult                -> assert false
         | Ule                -> assert false
+        | Uvotingpower       -> M.mk_mterm (Mvotingpower (f e)) M.tkeyhash
+        | Ureadticket        -> assert false
+        | Ujointickets       -> assert false
+        | Upairing_check     -> assert false
       end
     | Ibinop (op, a, b) -> begin
         match op with
@@ -1537,10 +1549,13 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         | Bget       -> assert false
         | Bmem       -> assert false
         | Bconcat    -> assert false
-        | Bcons      -> M.mk_mterm (Mlistprepend (tunknown, f a, f b)) (M.tlist tunknown)
-        | Bpair      -> M.mk_mterm (Mtuple [f a; f b]) (M.ttuple [tunknown; tunknown])
-        | Bexec      -> M.mk_mterm (Mexeclambda  (f a, f b)) tunknown
-        | Bapply     -> M.mk_mterm (Mapplylambda (f a, f b)) tunknown
+        | Bcons      -> assert false
+        | Bpair      -> M.mk_mterm (Mtuple [f a; f b]) (M.tunit)
+        | Bexec      -> assert false
+        | Bapply     -> assert false
+        | Bcreateticket -> assert false
+        | Bsplitticket  -> assert false
+        | Bsapling_verify_update -> M.mk_mterm (Msapling_verify_update (f a, f b)) (M.toption (M.ttuple [M.tint; M.tsapling_state 0]))
       end
     | Iterop (op, _a1, _a2, _a3) -> begin
         match op with
@@ -1623,7 +1638,7 @@ end = struct
     | Dnone            -> assert false
     | Dlist  _l        -> assert false
     | Delt _           -> assert false
-    | Dvar _x          -> assert false
+    | Dvar _           -> assert false
 
   let get_storage_list tstorage =
     let rec aux (x : T.type_) =
@@ -1812,42 +1827,49 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
   let rec for_type (t : M.type_) : A.type_t =
     let f = for_type in
     match M.get_ntype t with
-    | Tasset id           -> A.tref (unloc id)
-    | Tenum id            -> A.tref (unloc id)
-    | Tstate              -> assert false
-    | Tbuiltin Bunit      -> A.tunit
-    | Tbuiltin Bbool      -> A.tbool
-    | Tbuiltin Bint       -> A.tint
-    | Tbuiltin Brational  -> A.trational
-    | Tbuiltin Bdate      -> A.tdate
-    | Tbuiltin Bduration  -> A.tduration
-    | Tbuiltin Btimestamp -> A.tdate
-    | Tbuiltin Bstring    -> A.tstring
-    | Tbuiltin Baddress   -> A.taddress
-    | Tbuiltin Brole      -> A.trole
-    | Tbuiltin Bcurrency  -> A.ttez
-    | Tbuiltin Bsignature -> A.tsignature
-    | Tbuiltin Bkey       -> A.tkey
-    | Tbuiltin Bkeyhash   -> A.tkey_hash
-    | Tbuiltin Bbytes     -> A.tbytes
-    | Tbuiltin Bnat       -> A.tnat
-    | Tbuiltin Bchainid   -> A.tchain_id
-    | Tcontainer (t, c)   -> A.mk_tcontainer (f t) (match c with | Collection -> assert false | Aggregate -> A.Aggregate | Partition -> A.Partition | View -> A.View)
-    | Tlist t             -> A.mk_tlist (f t)
-    | Toption t           -> A.mk_toption (f t)
-    | Ttuple tl           -> A.mk_ttuple (List.map f tl)
-    | Tset t              -> A.mk_tset (f t)
-    | Tmap (_, kt, vt)    -> A.mk_tmap (f kt) (f vt)
-    | Tor (lt, rt)        -> A.mk_tor (f lt) (f rt)
-    | Trecord id          -> A.tref (unloc id)
-    | Tlambda _           -> assert false
-    | Tunit               -> A.tunit
-    | Tstorage            -> assert false
-    | Toperation          -> A.toperation
-    | Tcontract t         -> A.mk_tcontract (f t)
-    | Tprog _             -> assert false
-    | Tvset _             -> assert false
-    | Ttrace _            -> assert false
+    | Tasset id              -> A.tref (unloc id)
+    | Tenum id               -> A.tref (unloc id)
+    | Tstate                 -> assert false
+    | Tbuiltin Bunit         -> A.tunit
+    | Tbuiltin Bbool         -> A.tbool
+    | Tbuiltin Bint          -> A.tint
+    | Tbuiltin Brational     -> A.trational
+    | Tbuiltin Bdate         -> A.tdate
+    | Tbuiltin Bduration     -> A.tduration
+    | Tbuiltin Btimestamp    -> assert false
+    | Tbuiltin Bstring       -> A.tstring
+    | Tbuiltin Baddress      -> A.taddress
+    | Tbuiltin Brole         -> A.trole
+    | Tbuiltin Bcurrency     -> A.ttez
+    | Tbuiltin Bsignature    -> A.tsignature
+    | Tbuiltin Bkey          -> A.tkey
+    | Tbuiltin Bkeyhash      -> A.tkey_hash
+    | Tbuiltin Bbytes        -> A.tbytes
+    | Tbuiltin Bnat          -> A.tnat
+    | Tbuiltin Bchainid      -> A.tchain_id
+    | Tbuiltin Bbls12_381_fr -> A.tbls12_381_fr
+    | Tbuiltin Bbls12_381_g1 -> A.tbls12_381_g1
+    | Tbuiltin Bbls12_381_g2 -> A.tbls12_381_g2
+    | Tbuiltin Bnever        -> A.tnever
+    | Tcontainer (t, c)      -> A.mk_tcontainer (f t) (match c with | Collection -> assert false | Aggregate -> A.Aggregate | Partition -> A.Partition | View -> A.View)
+    | Tlist t                -> A.mk_tlist (f t)
+    | Toption t              -> A.mk_toption (f t)
+    | Ttuple tl              -> A.mk_ttuple (List.map f tl)
+    | Tset t                 -> A.mk_tset (f t)
+    | Tmap (_, kt, vt)       -> A.mk_tmap (f kt) (f vt)
+    | Tor (lt, rt)           -> A.mk_tor (f lt) (f rt)
+    | Trecord id             -> A.tref (unloc id)
+    | Tlambda _              -> assert false
+    | Tunit                  -> A.tunit
+    | Tstorage               -> assert false
+    | Toperation             -> A.toperation
+    | Tcontract t            -> A.mk_tcontract (f t)
+    | Tprog _                -> assert false
+    | Tvset _                -> assert false
+    | Ttrace _               -> assert false
+    | Tticket t              -> A.mk_tticket (f t)
+    | Tsapling_state n       -> A.mk_sapling_state (Big_int.big_int_of_int n)
+    | Tsapling_transaction n -> A.mk_sapling_transaction (Big_int.big_int_of_int n)
   in
 
   let for_op = function
@@ -1946,7 +1968,6 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mnat v             -> A.ebnat v
     | Mbool true         -> A.etrue
     | Mbool false        -> A.efalse
-    | Menum v            -> A.eterm (dumloc v)
     | Mrational (_n, _d) -> assert false
     | Mstring v          -> A.estring v
     | Mcurrency (_v, _c) -> assert false
@@ -1965,7 +1986,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mmatchoption (_x, _i, _ve, _ne)        -> assert false
     | Mmatchor (_x, _lid, _le, _rid, _re)    -> assert false
     | Mmatchlist (_x, _hid, _tid, _hte, _ee) -> assert false
-    | Mloopleft (_e, _i, _l)                 -> assert false
+    | Mfold (_e, _i, _l)                     -> assert false
     | Mmap (_e, _i, _l)                      -> assert false
     | Mexeclambda (_l, _a)                   -> assert false
     | Mapplylambda (_l, _a)                  -> assert false
@@ -2068,7 +2089,6 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     (* list api expression *)
 
     | Mlistprepend (_, _c, _a)             -> assert false
-    | Mlistheadtail (_, _c)                -> assert false
     | Mlistlength (_, _c)                  -> assert false
     | Mlistcontains (_, _c, _a)            -> assert false
     | Mlistnth (_, _c, _a)                 -> assert false
@@ -2111,8 +2131,35 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mblake2b _x                  -> assert false
     | Msha256  _x                  -> assert false
     | Msha512  _x                  -> assert false
+    | Msha3    _x                  -> assert false
+    | Mkeccak  _x                  -> assert false
     | Mhashkey _x                  -> assert false
     | Mchecksignature (_k, _s, _x) -> assert false
+
+
+    (* voting *)
+
+    | Mtotalvotingpower            -> assert false
+    | Mvotingpower _x              -> assert false
+
+
+    (* ticket *)
+
+    | Mcreateticket (_x, _a)    -> assert false
+    | Mreadticket _x            -> assert false
+    | Msplitticket (_x, _a, _b) -> assert false
+    | Mjointickets (_x, _y)     -> assert false
+
+
+    (* sapling *)
+
+    | Msapling_empty_state   _ -> assert false
+    | Msapling_verify_update _ -> assert false
+
+
+    (* bls curve *)
+
+    | Mpairing_check _ -> assert false
 
 
     (* constants *)
@@ -2125,6 +2172,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mselfaddress   -> A.eterm (dumloc A.cst_selfaddress)
     | Mchainid       -> A.eterm (dumloc A.cst_chainid)
     | Mmetadata      -> A.eterm (dumloc A.cst_metadata)
+    | Mlevel         -> assert false
 
 
     (* variable *)
@@ -2132,7 +2180,6 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mvar (_an, Vassetstate _k, _t, _d) -> assert false
     | Mvar(v, Vstorevar, t, d)           -> A.eterm v ?temp:(for_temp t) ?delta:(for_delta d)
     | Mvar(v, Vstorecol, t, d)           -> A.eterm v ?temp:(for_temp t) ?delta:(for_delta d)
-    | Mvar(_v, Venumval, _t, _d)         -> assert false
     | Mvar(_v, Vdefinition, _t, _d)      -> assert false
     | Mvar(v, Vlocal, t, d)              -> A.eterm v ?temp:(for_temp t) ?delta:(for_delta d)
     | Mvar(v, Vparam, t, d)              -> A.eterm v ?temp:(for_temp t) ?delta:(for_delta d)
@@ -2140,7 +2187,11 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mvar(_, Vthe, _t, _d)              -> assert false
     | Mvar(_, Vstate, _t, _d)            -> assert false
     | Mvar(v, Vparameter, t, d)          -> A.eterm v ?temp:(for_temp t) ?delta:(for_delta d)
-
+    | Menumval (id, args, _e)             -> begin
+        match args with
+        | [] -> A.eterm id
+        | _  -> A.eapp (A.Fident id) []
+      end
 
     (* rational *)
 

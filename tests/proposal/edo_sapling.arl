@@ -1,0 +1,13 @@
+archetype edo_sapling
+
+variable s : option<sapling_state(0)> = none
+variable r : option<int * sapling_state(0)> = none
+
+entry init () {
+  s := some(sapling_empty_state(0))
+}
+
+entry exec (t : sapling_transaction(0)) {
+  var st : sapling_state(0) = opt_get(s);
+  r := sapling_verify_update(t, st)
+}

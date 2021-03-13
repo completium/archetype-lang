@@ -1,0 +1,11 @@
+archetype effect_control_match_or
+
+variable res : nat = 0
+
+entry exec() {
+  var o : or<nat, int> = left<int>(1);
+  match o with
+  | left (v)  -> res := v
+  | right (v) -> fail("KO")
+  end
+}

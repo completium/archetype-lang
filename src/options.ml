@@ -2,16 +2,11 @@ type target_lang =
   | Solidity
   | Liquidity
   | LiquidityUrl
-  | Ligo
-  | LigoStorage
-  | SmartPy
   | Markdown
-  | Scaml
   | Michelson
   | MichelsonStorage
   | Whyml
   | Javascript
-  | Debug
 [@@deriving show {with_path = false}]
 
 type storage_policy =
@@ -31,7 +26,7 @@ type sorting_policy =
   | None
 [@@deriving show {with_path = false}]
 
-let version = "1.2.2"
+let version = "1.3.0"
 let url = "https://archetype-lang.org/"
 
 let target = ref (Michelson : target_lang)

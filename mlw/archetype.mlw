@@ -35,6 +35,13 @@ module Utils
   use option.Option
 
   (* ------------------------------------------------------------------------ *)
+  (* Or *)
+
+  type or 'a 'b =
+  | Left 'a
+  | Right 'b
+
+  (* ------------------------------------------------------------------------ *)
   (* Tuples *)
 
   let function fst (a : ('t1, 't2)) : 't1
@@ -108,7 +115,18 @@ module Utils
      div n d
   end
 
+  let function divmod (a : int) (b : int) : option (int, int)
+  =
+  if b = 0
+  then None
+  else Some ((div a b), (mod a b))
+
   val function xor_int int int : int
+
+  val function three_way_cmp_int int int : int
+  val function three_way_cmp_string string string : int
+  val function shift_left  int int  : int
+  val function shift_right int int  : int
 
   (* ------------------------------------------------------------------------ *)
   (* Rational *)
@@ -273,6 +291,8 @@ module Utils
   let function blake2b (b : bytes) : bytes = b
   let function sha256 (b : bytes) : bytes = b
   let function sha512 (b : bytes) : bytes = b
+  let function sha3 (b : bytes) : bytes = b
+  let function keccak (b : bytes) : bytes = b
   let function hash_key (_k : key) : key_hash = 0
   let check_signature (_k : key) (_s : signature) (_b : bytes) = true
 
@@ -1543,6 +1563,19 @@ module Collection
   ensures { result = vcontains (keyt e) v }
   = vcontains (keyt e) v
 
+  (* ------------------------------------------------------------------------ *)
+  let rec function eq_collection (c1 : collection) (c2 : collection) : bool
+  =
+  let rec eq_list l1 l2 =
+    variant { l1, l2 }
+    match l1, l2 with
+    | Cons e1 tl1, Cons e2 tl2 ->
+      if eqt e1 e2 then true else eq_list tl1 tl2
+    | _ -> false
+    end
+  in
+  eq_list (N.elts c1.content) (N.elts c2.content)
+
 end
 
 module Set
@@ -1643,6 +1676,9 @@ module List
   use list.List
   use list.Length as L
   use list.Nth as N
+  use list.Append as A
+  use list.Reverse as R
+  (* use list.Map as M *)
   use option.Option
   use Types
 
@@ -1661,6 +1697,19 @@ module List
   (* ------------------------------------------------------------------------ *)
   let function nth n l : option t
   = N.nth l n
+
+  (* ------------------------------------------------------------------------ *)
+  let function reverse l = R.reverse l
+
+  (* ------------------------------------------------------------------------ *)
+  let function concat l1 l2 = A.(++) l1 l2
+
+  (* ------------------------------------------------------------------------ *)
+  let rec function map (f : t -> t) (l : list t) : list t =
+    match l with
+    | Nil      -> Nil
+    | Cons x r -> Cons (f x) (map f r)
+    end
 
   (* ------------------------------------------------------------------------ *)
   let rec function contains a l

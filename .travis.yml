@@ -22,8 +22,10 @@ env:
   - OCAML_VERSION=4.09.1
   - OCAML_VERSION=4.10.0
   - OCAML_VERSION=4.10.1
+  - OCAML_VERSION=4.10.2
   - OCAML_VERSION=4.11.0
   - OCAML_VERSION=4.11.1
+  - OCAML_VERSION=4.12.0
 
 before_install:
   # Obtain and install opam locally.
@@ -37,9 +39,7 @@ before_install:
   - opam pin add -n archetype .
   - opam depext archetype
   - opam install --deps-only archetype
-  - opam install why3.1.3.2
-  - curl -o ligo.deb https://ligolang.org/deb/ligo.deb
-  - sudo dpkg -i ligo.deb
+  - opam install why3.1.3.2 tezos-client
 
 script:
   - opam config exec make all

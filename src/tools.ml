@@ -216,33 +216,34 @@ let (|? ) x f = ignore (Option.map f x)
 module List : sig
   include module type of List
 
-  val is_empty      : 'a list -> bool
-  val is_not_empty  : 'a list -> bool
-  val ohead         : 'a list -> 'a option
-  val chop          : 'a list -> 'a list
-  val as_seq1       : 'a list -> 'a option
-  val as_seq2       : 'a list -> ('a * 'a) option
-  val make          : (int -> 'a) -> int -> 'a list
-  val int_fold      : ('a -> int -> 'a) -> 'a -> int -> 'a
-  val pmap          : ('a -> 'b option) -> 'a list -> 'b list
-  val mappdt        : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
-  val find_dup      : ('a -> 'b) -> 'a list -> ('a * 'a) option
-  val undup         : ('a -> 'b) -> 'a list -> 'a list
-  val xfilter       : ('a -> [`Left of 'b | `Right of 'c]) -> 'a list -> 'b list * 'c list
-  val fold_lefti    : (int -> 'a -> 'b -> 'a) -> 'a -> 'b list -> 'a
-  val fold_left_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
-  val assoc_all     : 'a -> ('a * 'b) list -> 'b list
-  val index_of      : ('a -> bool) -> 'a list -> int
-  val dedup         : 'a list -> 'a list
-  val dedupcmp      : ('a -> 'a -> bool) -> 'a list -> 'a list
-  val last          : 'a list -> 'a
-  val for_all2      : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
-  val count         : ('a -> bool) -> 'a list -> int
-  val split3        : ('a * 'b * 'c) list -> 'a list * 'b list * 'c list
-  val sub           : int -> int -> 'a list -> 'a list
-  val cut           : int -> 'a list -> ('a list * 'a list)
-  val put           : 'a -> 'b -> ('a * 'b) list -> ('a * 'b) list
-  val pop           : 'a list -> 'a * 'a list
+  val is_empty       : 'a list -> bool
+  val is_not_empty   : 'a list -> bool
+  val ohead          : 'a list -> 'a option
+  val chop           : 'a list -> 'a list
+  val as_seq1        : 'a list -> 'a option
+  val as_seq2        : 'a list -> ('a * 'a) option
+  val make           : (int -> 'a) -> int -> 'a list
+  val int_fold       : ('a -> int -> 'a) -> 'a -> int -> 'a
+  val pmap           : ('a -> 'b option) -> 'a list -> 'b list
+  val mappdt         : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
+  val find_dup       : ('a -> 'b) -> 'a list -> ('a * 'a) option
+  val undup          : ('a -> 'b) -> 'a list -> 'a list
+  val xfilter        : ('a -> [`Left of 'b | `Right of 'c]) -> 'a list -> 'b list * 'c list
+  val fold_lefti     : (int -> 'a -> 'b -> 'a) -> 'a -> 'b list -> 'a
+  val fold_left_map  : ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
+  val fold_left_mapi : (int -> 'a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
+  val assoc_all      : 'a -> ('a * 'b) list -> 'b list
+  val index_of       : ('a -> bool) -> 'a list -> int
+  val dedup          : 'a list -> 'a list
+  val dedupcmp       : ('a -> 'a -> bool) -> 'a list -> 'a list
+  val last           : 'a list -> 'a
+  val for_all2       : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
+  val count          : ('a -> bool) -> 'a list -> int
+  val split3         : ('a * 'b * 'c) list -> 'a list * 'b list * 'c list
+  val sub            : int -> int -> 'a list -> 'a list
+  val cut            : int -> 'a list -> ('a list * 'a list)
+  val addput            : 'a -> 'b -> ('a * 'b) list -> ('a * 'b) list
+  val find_map       : ('a -> 'b option) -> 'a list -> 'b option
 
   module Exn : sig
     val assoc     : 'a -> ('a * 'b) list -> 'b option
@@ -335,13 +336,16 @@ end = struct
   let fold_lefti f state xs =
     fst (List.fold_left (fun (state, i) x -> (f i state x, i+1)) (state, 0) xs)
 
-  let fold_left_map f state xs =
+  let fold_left_mapi f state xs =
     let state, xs =
-      List.fold_left (fun (state, acc) x ->
-          let state, x = f state x in (state, x :: acc)
+      fold_lefti (fun i (state, acc) x ->
+          let state, x = f i state x in (state, x :: acc)
         ) (state, []) xs in
 
     (state, List.rev xs)
+
+  let fold_left_map f state xs =
+    fold_left_mapi (fun _ -> f) state xs
 
   let assoc_all (v : 'a) (xs : ('a * 'b) list) =
     pmap (fun (x, y) -> if x = v then Some y else None) xs
@@ -409,9 +413,17 @@ end = struct
     in
     aux n [] l
 
-  let rec put k v = function
+  let rec addput k v = function
       [] -> [k, v]
-    | (a, b)::l -> if compare a k = 0 then (k, v)::l else (a, b)::(put k v l)
+    | (a, b)::l -> if Stdlib.compare a k = 0 then (k, v)::l else (a, b)::(addput k v l)
+
+  let rec find_map f = function
+    | [] -> None
+    | x :: l ->
+      begin match f x with
+        | Some _ as result -> result
+        | None -> find_map f l
+      end
 
   let pop (xs : 'a list) =
     match xs with
@@ -492,8 +504,8 @@ let norm_hex_string (s : string) =
   if String.starts ~pattern:"0x" s then s else "0x" ^ s
 
 (* let sha s : Big_int.big_int =
-  let s  = Digestif.SHA512.to_hex (Digestif.SHA512.digest_string s) in
-  Big_int.big_int_of_string (norm_hex_string s) *)
+   let s  = Digestif.SHA512.to_hex (Digestif.SHA512.digest_string s) in
+   Big_int.big_int_of_string (norm_hex_string s) *)
 
 (* -------------------------------------------------------------------- *)
 let location_to_position (l : Location.t) : Position.t =

@@ -1,0 +1,14 @@
+archetype edo_crypto
+
+variable total : nat = 0
+variable power : nat = 0
+
+entry exec () {
+  effect {
+    var k  : key      = "edpkurLzuFFL1XyP3fed4u7MsgeywQoQmHM45Bz91PBzDvUjQ9bvdn";
+    var kh : key_hash = hash_key(k);
+
+    total := total_voting_power;
+    power := voting_power(kh)
+  }
+}

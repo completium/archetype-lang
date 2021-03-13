@@ -1,0 +1,7 @@
+archetype list_list
+
+variable l : list<list<nat>> = []
+
+entry default () {
+  l := prepend(l, [1])
+}

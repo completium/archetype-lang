@@ -1,0 +1,17 @@
+archetype edo_ticket
+
+variable rt : option<address * string * nat> = none
+variable jt : option<ticket<string>> = none
+variable st : option<ticket<string> * ticket<string>> = none
+
+entry e0 () {
+  rt := some(read_ticket(create_ticket ("mystring", 3)))
+}
+
+entry e1 () {
+  jt := join_tickets(create_ticket ("mystring", 3), create_ticket ("mystring", 5))
+}
+
+entry e2 () {
+  st := split_ticket(create_ticket ("mystring", 3), 1, 2)
+}

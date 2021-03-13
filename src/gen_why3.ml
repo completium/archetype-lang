@@ -127,6 +127,10 @@ let map_btype = function
   | M.Bbytes         -> Tybytes
   | M.Bnat           -> Tyuint
   | M.Bchainid       -> Tychainid
+  | M.Bbls12_381_fr  -> Tybls12_381_fr
+  | M.Bbls12_381_g1  -> Tybls12_381_g1
+  | M.Bbls12_381_g2  -> Tybls12_381_g2
+  | M.Bnever         -> Tynever
 
 let get_type_idx t = List.index_of (M.cmp_type t)
 
@@ -157,21 +161,29 @@ let rec map_mtype m (t : M.type_) : loc_typ =
       | M.Tlist t                                  -> Tylist (map_mtype m t)
       | M.Tcontract _                              -> Tycontract
       | M.Trecord id                               -> Tyrecord (map_lident id)
-      | _ -> print_endline (Format.asprintf "%a@." M.pp_type_ t); assert false)
+      | M.Tor (a, b)                               -> Tyor (map_mtype m a, map_mtype m b)
+      | M.Tlambda (a, b)                           -> Tylambda (map_mtype m a, map_mtype m b)
+
+      | M.Tcontainer (_, _)
+      | M.Tticket _
+      | M.Tsapling_state _
+      | M.Tsapling_transaction _
+        -> print_endline (Format.asprintf "%a@." M.pp_type_ t); assert false)
 
 let mk_list_name_from_mlwtype m t =
   let idx =
     M.Utils.get_all_list_types m
-    |>  List.map (map_mtype m)
-    |>  List.map unloc_type
+    |> List.map (map_mtype m)
+    |> List.map unloc_type
     |> List.index_of (cmp_type (Tylist t)) in
-  "List"^(string_of_int idx)
+  "List" ^ (string_of_int idx)
 
 let rec mk_eq_type m e1 e2 = function
   | Tyunit -> Ttrue
   | Tybool -> Tor (Tpand (Tvar e1,Tvar e2),Tpand(Tnot (Tvar e1), Tnot (Tvar e2)))
   | Tyrational -> Tapp (Tvar "rat_eq",[Tvar e1; Tvar e2])
   | Tystring -> Teq (Tystring, Tvar e1, Tvar e2)
+  | Tybytes -> Teq (Tybytes, Tvar e1, Tvar e2)
   | Tyaddr -> Teq (Tyaddr, Tvar e1, Tvar e2)
   | Tyrole -> Teq (Tyrole, Tvar e1, Tvar e2)
   | Tyasset a -> Tapp (Tvar ("eq_"^a),[Tvar e1; Tvar e2])
@@ -182,7 +194,7 @@ let rec mk_eq_type m e1 e2 = function
   | Tylist t -> Tapp (Tdoti (mk_list_name_from_mlwtype m t,"eq_list"),[Tvar e1; Tvar e2])
   | Tyoption t -> Tmatch (
       Ttuple [Tvar e1; Tvar e2], [
-        Tpatt_tuple [Tpsome (e1^"v1"); Tpsome (e2^"v2")], mk_eq_type m (e1^"v1") (e2^"v2") t;
+        Tpatt_tuple [Tpsome ("_v1"); Tpsome ("_v2")], mk_eq_type m ("_v1") ("_v2") t;
         Tpatt_tuple [Twild;Twild], Tfalse
       ])
   | Tytuple l ->
@@ -200,7 +212,47 @@ let rec mk_eq_type m e1 e2 = function
         ], Tif (cmp, Ttrue, Some Tfalse);
         Tpatt_tuple [Twild;Twild], Tfalse
       ])
-  | _ -> Teq (Tyint, Tvar e1, Tvar e2)
+  | Tyor (a, b) -> Tmatch (
+      Ttuple [Tvar e1; Tvar e2], [
+        Tpatt_tuple [Tpleft ("_v1"); Tpleft ("_v2")], mk_eq_type m ("_v1") ("_v2") a;
+        Tpatt_tuple [Tpright ("_v1"); Tpright ("_v2")], mk_eq_type m ("_v1") ("_v2") b;
+        Tpatt_tuple [Twild; Twild], Tfalse
+      ])
+  | Tyrecord id -> begin
+      let r = Model.Utils.get_record m id in
+      let cmps = List.map (fun (f : M.record_field) ->
+          let fn = unloc f.name in
+          let e1i = e1 ^ "." ^ fn in
+          let e2i = e2 ^ "." ^ fn in
+          let t : typ = unloc_type (map_mtype m f.type_) in
+          mk_eq_type m e1i e2i t
+        ) r.fields in
+      List.fold_left (fun acc cmp -> Tpand (acc,cmp)) (List.hd cmps) (List.tl cmps)
+    end
+  | Tymap idx -> begin
+      Tapp (Tdoti ("Map" ^ idx, "eq_collection"),[Tvar e1; Tvar e2])
+    end
+  | Tycoll idx -> Tapp (Tdoti (String.capitalize_ascii idx, "eq_collection"),[Tvar e1; Tvar e2])
+  | Tyint
+  | Tyuint
+  | Tykey
+  | Tykeyhash
+  | Tydate
+  | Tyduration
+  | Tytez
+  | Tysignature
+  | Tychainid
+  | Tystorage
+  | Tycontract
+  | Tystate
+  | Tybls12_381_fr
+  | Tybls12_381_g1
+  | Tybls12_381_g2
+  | Tynever
+  | Tyview _
+  | Tyset _
+  | Tylambda (_, _)
+    -> Teq (Tyint, Tvar e1, Tvar e2)
 
 let rec mk_le_type e1 e2 = function
   | Tyunit -> Ttrue
@@ -734,7 +786,7 @@ let map_record_fields m =
         name     = map_lident f.name;
         typ      = map_mtype m f.type_;
         init     = loc_term Tnone;
-        mutable_ = true;
+        mutable_ = false;
       })
 
 let mk_record m (r : M.record) : (loc_term, loc_typ, loc_ident) abstract_decl =
@@ -759,7 +811,32 @@ let rec type_to_init m (typ : loc_typ) : loc_term =
       | Tystring      -> Temptystr
       | Tyrole        -> Tdefaultaddr
       | Tyaddr        -> Tdefaultaddr
-      | _             -> Tint Big_int.zero_big_int)
+      | Tyoption _    -> Tnone
+      | Tyunit        -> Tunit
+      | Tyor (l, r)   -> Tleft (r, type_to_init m l)
+      | Tyset i       -> Temptycoll i
+      | Tyrecord _
+      | Tylambda (_, _)
+      | Tyint
+      | Tyuint
+      | Tyrational
+      | Tykey
+      | Tykeyhash
+      | Tydate
+      | Tyduration
+      | Tytez
+      | Tysignature
+      | Tybytes
+      | Tychainid
+      | Tystorage
+      | Tyoperation
+      | Tycontract
+      | Tystate
+      | Tybls12_381_fr
+      | Tybls12_381_g1
+      | Tybls12_381_g2
+      | Tynever
+        -> Tint Big_int.zero_big_int)
 
 let is_local_invariant _m an t =
   let rec internal_is_local acc (term : M.mterm) =
@@ -1304,7 +1381,7 @@ let mk_trace_seq m t chs =
 let map_mpattern (p : M.lident M.pattern_node) =
   match p with
   | M.Pwild -> Twild
-  | M.Pconst i -> Tconst (map_lident i)
+  | M.Pconst (i, _) -> Tconst (map_lident i) (* FIXME: matchwith *)
 
 let is_coll_field m f : bool =
   M.Utils.get_containers m |> List.map (fun (_,v,_) -> v) |> List.mem f
@@ -1424,6 +1501,15 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
   let error_internal desc = emit_error (mt.loc, desc); Tnottranslated in
   let error_not_translated (msg : string) = (* Tnottranslated in *) error_internal (TODONotTranslated msg) in
   let error_not_supported (msg : string) = error_internal (NotSupported msg) in
+  let to_collection (an : ident) (mt : M.mterm) : loc_term  =
+    let a = map_mterm m ctx mt in
+    match M.get_ntype mt.type_ with
+    | Tcontainer (_, View) -> begin
+        let b : loc_term = loc_term (mk_ac (an)) in
+        mk_loc mt.loc (Tfromview (with_dummy_loc an, a, b))
+      end
+    | _ -> a
+  in
   let t =
     match mt.node with
     (* lambda *)
@@ -1511,10 +1597,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       Tassign (left,get_assign_value t left right assignop)
 
     | Massign (assignop, t, Arecord (_id1, id2, k), v) ->
-      let left = dl (Tdot (map_mterm m ctx (* id1 *) k, (* FIXME *)
-                           dl (Tvar (map_lident id2)))) in
-      let right = map_mterm m ctx v in
-      Tassign (left,get_assign_value t left right assignop)
+      let left = map_mterm m ctx k in
+      let right : loc_term = with_dummy_loc (Trecord (Some left, [map_lident id2, map_mterm m ctx v])) in
+      Tassign (left, get_assign_value t left right assignop)
 
     | Massign (_, _, Astate, v) -> Tassign (loc_term (Tdoti (gs, "state")), map_mterm m ctx v)
 
@@ -1536,9 +1621,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
           (map_mpattern p.node, map_mterm m ctx e)
         ) l)
 
-    | Minstrmatchoption   _ -> error_not_supported "Minstrmatchoption"
-    | Minstrmatchor       _ -> error_not_supported "Minstrmatchor"
-    | Minstrmatchlist     _ -> error_not_supported "Minstrmatchlist"
+    | Minstrmatchoption (x, i, ve, ne)    -> Tmatchoption (map_mterm m ctx x, map_lident i, map_mterm m ctx ve, map_mterm m ctx ne)
+    | Minstrmatchor (x, lid, le, rid, re) -> Tmatchor     (map_mterm m ctx x, map_lident lid, map_mterm m ctx le, map_lident rid, map_mterm m ctx re)
+    | Minstrmatchlist (x, hd, tl, a, b)   -> Tmatchlist (map_mterm m ctx x, map_lident hd, map_lident tl, map_mterm m ctx a, map_mterm m ctx b)
 
     | Mfor (_id, _c, _b, _lbl) -> error_not_supported "Mfor"
     | Miter (id, from, to_, body, lbl) -> (* ('id * 'term * 'term * 'term * ident option) *)
@@ -1654,7 +1739,6 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mnat v -> Tint v
     | Mbool false -> Tfalse
     | Mbool true -> Ttrue
-    | Menum               _ -> error_not_supported "Menum"
     | Mrational (l,r) -> Ttuple([ loc_term (Tint l); loc_term (Tint r)])
     | Mcurrency (i, Utz)  -> Tint i
     | Mstring v ->  (* Tint (Tools.sha v) *) Tstring v
@@ -1675,20 +1759,29 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
           (map_mpattern p.node, map_mterm m ctx e)
         ) l)
 
-    | Mmatchoption   _ -> error_not_supported "Mmatchoption"
-    | Mmatchor       _ -> error_not_supported "Mmatchor"
-    | Mmatchlist     _ -> error_not_supported "Mmatchlist"
-    | Mloopleft      _ -> error_not_supported "Mloopleft"
-    | Mmap           _ -> error_not_supported "Mmap"
-    | Mexeclambda    _ -> error_not_supported "Mexeclambda"
-    | Mapplylambda   _ -> error_not_supported "Mapplylambda"
+    | Mmatchoption (x, i, ve, ne)    ->
+      Tmatchoption (map_mterm m ctx x, map_lident i, map_mterm m ctx ve, map_mterm m ctx ne)
+    | Mmatchor (x, lid, le, rid, re) ->
+      Tmatchor     (map_mterm m ctx x, map_lident lid, map_mterm m ctx le, map_lident rid, map_mterm m ctx re)
+    | Mmatchlist (x, hid, tid, hte, ee) ->
+      Tmatchlist (map_mterm m ctx x, map_lident hid, map_lident tid, map_mterm m ctx hte, map_mterm m ctx ee)
+    | Mfold (x, i, e) -> Tfold (map_mterm m ctx x, map_lident i, map_mterm m ctx e)
+    | Mmap (x, i, e) ->
+      let st, _dt =
+        match M.get_ntype mt.type_, M.get_ntype x.type_ with
+        | Tlist st, Tlist dt -> st, dt
+        | _ -> assert false
+      in
+      Tlistmap (dl (mk_list_name m (M.tlist st)), map_mterm m ctx x, map_lident i, map_mterm m ctx e)
+    | Mexeclambda  (a, b) -> Texeclambda (map_mterm m ctx a, map_mterm m ctx b)
+    | Mapplylambda (a, b) -> Tapplylambda (map_mterm m ctx a, map_mterm m ctx b)
 
 
     (* composite type constructors *)
 
-    | Mleft (_t, _x) -> assert false
-    | Mright (_t, _x) -> assert false
-    | Mnone -> Tnone
+    | Mleft  (t, x) -> Tleft  (map_mtype m t, map_mterm m ctx x)
+    | Mright (t, x) -> Tright (map_mtype m t, map_mterm m ctx x)
+    | Mnone   -> Tnone
     | Msome v -> Tsome (map_mterm m ctx v)
 
     | Mtuple l              -> Ttuple (List.map (map_mterm m ctx) l)
@@ -1734,7 +1827,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                    ) ([] : loc_term list) l)
       else Temptycoll (dl map)
     | Mlitrecord l -> Trecord (None, List.map (fun (n,v) -> (dl n, map_mterm m ctx v)) l)
-    | Mlambda (_rt, _id, _at, _e) -> error_not_supported "Mlambda"
+    | Mlambda (rt, id, at, e) -> Tvlambda (map_mtype m rt, map_lident id, map_mtype m at, map_mterm m ctx e)
 
 
     (* access *)
@@ -1780,11 +1873,11 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mdivrat _ -> error_not_translated "Mdivrat"
     | Mdiveuc (l, r) -> Tdiv (dl Tyint, map_mterm m ctx l, map_mterm m ctx r)
     | Mmodulo (l, r) -> Tmod (dl Tyint, map_mterm m ctx l, map_mterm m ctx r)
-    | Mdivmod (_l, _r) -> error_not_translated "Mdivmod"
+    | Mdivmod (l, r) -> Tdivmod (dl Tyint, map_mterm m ctx l, map_mterm m ctx r)
     | Muminus v -> Tuminus (dl Tyint, map_mterm m ctx v)
-    | MthreeWayCmp (_l, _r) -> error_not_translated "MthreeWayCmp"
-    | Mshiftleft (_l, _r)   -> error_not_translated "Mshiftleft"
-    | Mshiftright (_l, _r)  -> error_not_translated "Mshiftright"
+    | MthreeWayCmp (l, r) -> Tthreewaycmp (dl Tyint, map_mterm m ctx l, map_mterm m ctx r)
+    | Mshiftleft   (l, r) -> Tshiftleft (map_mterm m ctx l, map_mterm m ctx r)
+    | Mshiftright  (l, r) -> Tshiftright (map_mterm m ctx l, map_mterm m ctx r)
 
 
     (* asset api effect *)
@@ -2010,9 +2103,13 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       end
     (* view api ------------------------------------------------------------- *)
 
-    | Mselect (n, c, args, tbody, _a) ->
-      let args = mk_filter_args m ctx args tbody in
-      Tvselect (dl n, dl (mk_select_name m n tbody), args, mk_container_term m n ctx c, mk_lc_term n ctx)
+    | Mselect (n, c, args, tbody, _a) -> begin
+        let args = mk_filter_args m ctx args tbody in
+        match c with
+        | CKcoll _ -> Tcselect (dl n, dl (mk_select_name m n tbody), args, mk_lc_term n ctx)
+        | _ ->
+          Tvselect (dl n, dl (mk_select_name m n tbody), args, mk_container_term m n ctx c, mk_lc_term n ctx)
+      end
 
     | Msort (n, c,l) -> Tvsort (dl (mk_sort_clone_id n l),mk_container_term m n ctx c,mk_lc_term n ctx)
 
@@ -2068,7 +2165,6 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     (* list api expression *)
 
     | Mlistprepend (t, l, e)  -> Tprepend (dl (mk_list_name m (M.tlist t)), map_mterm m ctx e, map_mterm m ctx l)
-    | Mlistheadtail (_t, _l)  -> assert false
     | Mlistlength (t, l)      -> Tcard (dl (mk_list_name m (M.tlist t)), map_mterm m ctx l)
     | Mlistcontains (t, l, e) -> Tcontains (dl (mk_list_name m (M.tlist t)), map_mterm m ctx e, map_mterm m ctx l)
     | Mlistnth (t, n, l)      ->
@@ -2077,8 +2173,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | Logic | Inv | Def -> nth
         | _ -> mk_match (dl nth) "_a" (loc_term (Tvar "_a")) Enotfound
       end
-    | Mlistreverse _ -> error_not_translated "Mlistreverse"
-    | Mlistconcat  _ -> error_not_translated "Mlistconcat"
+    | Mlistreverse (t, l)      -> Tlistreverse (dl (mk_list_name m (M.tlist t)), map_mterm m ctx l)
+    | Mlistconcat  (t, l1, l2) -> Tlistconcat (dl (mk_list_name m (M.tlist t)), map_mterm m ctx l1, map_mterm m ctx l2)
     | Mlistfold    _ -> error_not_translated "Mlistfold"
 
     (* map api expression *)
@@ -2144,9 +2240,27 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mblake2b x -> Tapp (loc_term (Tvar "blake2b"),[map_mterm m ctx x])
     | Msha256  x -> Tapp (loc_term (Tvar "sha256"),[map_mterm m ctx x])
     | Msha512  x -> Tapp (loc_term (Tvar "sha512"),[map_mterm m ctx x])
+    | Msha3    x -> Tapp (loc_term (Tvar "sha3"),[map_mterm m ctx x])
+    | Mkeccak  x -> Tapp (loc_term (Tvar "keccak"),[map_mterm m ctx x])
     | Mhashkey  x -> Tapp (loc_term (Tvar "hash_key"),[map_mterm m ctx x])
     | Mchecksignature (k,s,b) -> Tapp (loc_term (Tvar "check_signature"),[map_mterm m ctx k;map_mterm m ctx s;map_mterm m ctx b])
 
+    (* voting *)
+    | Mtotalvotingpower -> assert false
+    | Mvotingpower x -> Tapp (loc_term (Tvar "votingpower"),[map_mterm m ctx x])
+
+    (* ticket *)
+    | Mcreateticket (_x, _a)    -> assert false
+    | Mreadticket _x            -> assert false
+    | Msplitticket (_x, _a, _b) -> assert false
+    | Mjointickets (_x, _y)     -> assert false
+
+    (* sapling *)
+    | Msapling_empty_state _n         -> assert false
+    | Msapling_verify_update (_s, _t) -> assert false
+
+    (* bls curve *)
+    | Mpairing_check _x -> assert false
 
     (* constants *)
 
@@ -2165,6 +2279,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mselfaddress          -> Tdoti(dl gs, dl (mk_id "selfaddress"))
     | Mchainid              -> Tchainid (dl gs)
     | Mmetadata             -> assert false
+    | Mlevel                -> assert false
 
     (* variables *)
 
@@ -2182,7 +2297,6 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let coll = mk_loc_coll_term (unloc n) ctx (t,d) in
       coll |> Mlwtree.deloc
 
-    | Mvar (v, Venumval, _, _) -> Tvar (map_lident v)
     | Mvar (v, Vdefinition, _, _) ->
       let params = get_def_params m (unloc v) |> List.map loc_term in
       Tapp (loc_term (Tvar (unloc v)), [loc_term (Tvar (mk_storage_id ctx))] @ params)
@@ -2197,7 +2311,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | _ -> loc_term (Tdoti (gs, "state")) |> Mlwtree.deloc
       end
     | Mvar (v, Vparameter, _, _) -> Tvar (map_lident v)
-
+    | Menumval _ -> error_not_translated "Menumval"
 
 
     (* rational ------------------------------------------------------------- *)
@@ -2302,9 +2416,21 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | M.Tcontainer (_,View) -> Tvempty (dl (mk_view_id n), map_mterm m ctx r)
         | _ -> Tempty (dl n, map_mterm m ctx r)
       end
-    | Munion     (an, l, r) -> Tunion(dl an, map_mterm m ctx l, map_mterm m ctx r)
-    | Minter     (an, l, r) -> Tinter(dl an, map_mterm m ctx l, map_mterm m ctx r)
-    | Mdiff      (an, l, r) -> Tdiff(dl an, map_mterm m ctx l, map_mterm m ctx r)
+    | Munion (an, l, r) -> begin
+        let l = to_collection an l in
+        let r = to_collection an r in
+        Tunion(dl an, l, r)
+      end
+    | Minter (an, l, r) -> begin
+        let l = to_collection an l in
+        let r = to_collection an r in
+        Tinter(dl an, l, r)
+      end
+    | Mdiff (an, l, r) -> begin
+        let l = to_collection an l in
+        let r = to_collection an r in
+        Tdiff(dl an, l, r)
+      end
   in
   mk_loc mt.loc t
 and mk_invariants (m : M.model) ctx id (lbl : ident option) lbody =
@@ -2687,6 +2813,9 @@ let fold_exns m body : term list =
     | M.Mfail (InvalidCondition _) -> acc @ [Texn Einvalidcondition]
     | M.Mfail InvalidState -> acc @ [Texn Einvalidstate]
     | M.Mfail AssignNat -> acc @ [Texn Enegassignnat]
+    | M.Mfail Invalid v ->
+      let idx = get_fail_idx m v.type_ in
+      acc @ [Texn (Efail (idx, None))]
     | M.Mlistnth _ -> acc @ [Texn Enotfound]
     | M.Mself _ -> acc @ [Texn Enotfound]
     | M.Mcast ((Tbuiltin Baddress, _), (Tcontract _, _), v) -> internal_fold_exn (acc @ [Texn Enotfound]) v
@@ -2943,7 +3072,7 @@ let to_whyml (m : M.model) : mlw_tree  =
   let maps             = M.Utils.get_all_map_types m |> List.map (mk_map_type m) |> List.flatten in
   let sets             = M.Utils.get_all_set_types m |> List.map (mk_set_type m) |> List.flatten in
   let mlwassets        = assets |> List.map (mk_asset m) |> wdl in
-  let eq_enums        = assets |> List.map (mk_eq_enums m) |> List.flatten in
+  let eq_enums         = assets |> List.map (mk_eq_enums m) |> List.flatten in
   let eq_keys          = assets |> List.map (mk_eq_key m) |> wdl in
   let le_keys          = assets |> List.map (mk_le_key m) |> wdl in
   let eq_assets        = assets |> List.map (mk_eq_asset m) |> wdl in
@@ -2969,9 +3098,9 @@ let to_whyml (m : M.model) : mlw_tree  =
               useEuclDiv             @
               useMinMax              @
               traceutils             @
+              records                @
               exns                   @
               enums                  @
-              records                @
               eq_enums               @
               lists                  @
               maps                   @

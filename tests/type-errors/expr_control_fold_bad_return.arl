@@ -1,0 +1,8 @@
+archetype expr_control_match_loop_left_bad_return
+
+variable res : nat = 0
+
+entry exec () {
+  var p : or<nat, nat> = left<nat> (0);
+  res := fold(p, x -> 1);
+}

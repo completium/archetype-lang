@@ -1,0 +1,13 @@
+archetype expr_list_map_string_nat
+
+variable res : list<nat> = []
+
+entry exec () {
+  specification {
+    s0: res = [2; 3; 4];
+  }
+  effect {
+    var l : list<string> = ["aa"; "bbb"; "cccc"];
+    res := map(l, x -> length(x))
+  }
+}

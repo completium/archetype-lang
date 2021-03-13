@@ -39,16 +39,16 @@ entry approve(spender : address, value : nat) {
   allowance.addupdate( k, { amount = value });
 }
 
-entry getAllowance (owner : address, spender : address, cb : entrysig<nat>) {
-  transfer 0tz to entry cb(allowance[(owner, spender)].amount);
+getter getAllowance (owner : address, spender : address) : nat {
+  return (allowance[(owner, spender)].amount)
 }
 
-entry getBalance (owner : address, cb : entrysig<nat>) {
-  transfer 0tz to entry cb(ledger[owner].tokens);
+getter getBalance (owner : address) : nat {
+  return (ledger[owner].tokens)
 }
 
-entry getTotalSupply (cb : entrysig<nat>) {
-  transfer 0tz to entry cb(totalsupply);
+getter getTotalSupply () : nat {
+  return totalsupply
 }
 
 specification entry %transfer (from_ : address, to_ : address, value : nat) {

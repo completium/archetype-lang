@@ -88,23 +88,27 @@ let to_ir (model : M.model) : T.ir =
     | Tstate     -> T.mk_type ?annotation T.Tint
     | Tbuiltin b -> T.mk_type ?annotation begin
         match b with
-        | Bunit      -> T.Tunit
-        | Bbool      -> T.Tbool
-        | Bint       -> T.Tint
-        | Brational  -> assert false
-        | Bdate      -> T.Ttimestamp
-        | Bduration  -> T.Tint
-        | Btimestamp -> T.Ttimestamp
-        | Bstring    -> T.Tstring
-        | Baddress   -> T.Taddress
-        | Brole      -> T.Taddress
-        | Bcurrency  -> T.Tmutez
-        | Bsignature -> T.Tsignature
-        | Bkey       -> T.Tkey
-        | Bkeyhash   -> T.Tkey_hash
-        | Bbytes     -> T.Tbytes
-        | Bnat       -> T.Tnat
-        | Bchainid   -> T.Tchain_id
+        | Bunit         -> T.Tunit
+        | Bbool         -> T.Tbool
+        | Bint          -> T.Tint
+        | Brational     -> assert false
+        | Bdate         -> T.Ttimestamp
+        | Bduration     -> T.Tint
+        | Btimestamp    -> T.Ttimestamp
+        | Bstring       -> T.Tstring
+        | Baddress      -> T.Taddress
+        | Brole         -> T.Taddress
+        | Bcurrency     -> T.Tmutez
+        | Bsignature    -> T.Tsignature
+        | Bkey          -> T.Tkey
+        | Bkeyhash      -> T.Tkey_hash
+        | Bbytes        -> T.Tbytes
+        | Bnat          -> T.Tnat
+        | Bchainid      -> T.Tchain_id
+        | Bbls12_381_fr -> T.Tbls12_381_fr
+        | Bbls12_381_g1 -> T.Tbls12_381_g1
+        | Bbls12_381_g2 -> T.Tbls12_381_g2
+        | Bnever        -> T.Tnever
       end
     | Tcontainer _   -> assert false
     | Tlist t        -> T.mk_type ?annotation (T.Tlist (to_type t))
@@ -151,6 +155,10 @@ let to_ir (model : M.model) : T.ir =
     | Tprog  _       -> assert false
     | Tvset  _       -> assert false
     | Ttrace _       -> assert false
+    | Tticket t      -> T.mk_type ?annotation (T.Tticket (to_type t))
+    | Tsapling_state n       -> T.mk_type ?annotation (T.Tsapling_state n)
+    | Tsapling_transaction n -> T.mk_type ?annotation (T.Tsapling_transaction n)
+
   in
 
   let rec to_data (mt : M.mterm) : T.data =
@@ -206,7 +214,8 @@ let to_ir (model : M.model) : T.ir =
     | Mleft (_, x)      -> T.Dleft (to_data x)
     | Mright (_, x)     -> T.Dright (to_data x)
     | Mcast (_, _, v)   -> to_data v
-    | Mvar (x, Vparameter, _, _) -> T.Dvar (unloc x)
+    | Mvar (x, Vparameter, _, _) -> T.Dvar (unloc x, to_type mt.type_)
+    | Mlambda (_rt, _id, _at, _e) -> assert false
     | _ -> Format.printf "%a@." M.pp_mterm mt; assert false
 
   in
@@ -458,8 +467,8 @@ let to_ir (model : M.model) : T.ir =
           g s1 l
         in
         match r1, r2 with
-        | T.RUassign (s1, l1), T.RUassign (s2, l2) -> doit (s1, l1) (s2, l2) (fun s x -> T.RUassign (s, x)) (fun accu p _  v2 -> List.put p v2 accu)
-        | T.RUnodes  (s1, l1), T.RUnodes  (s2, l2) -> doit (s1, l1) (s2, l2) (fun s x -> T.RUnodes (s, x))  (fun accu p v1 v2 -> List.put p (merge v1 v2) accu)
+        | T.RUassign (s1, l1), T.RUassign (s2, l2) -> doit (s1, l1) (s2, l2) (fun s x -> T.RUassign (s, x)) (fun accu p _  v2 -> List.addput p v2 accu)
+        | T.RUnodes  (s1, l1), T.RUnodes  (s2, l2) -> doit (s1, l1) (s2, l2) (fun s x -> T.RUnodes (s, x))  (fun accu p v1 v2 -> List.addput p (merge v1 v2) accu)
         | _ -> assert false
       in
 
@@ -592,7 +601,6 @@ let to_ir (model : M.model) : T.ir =
     | Mnat  v            -> T.Iconst (T.mk_type Tnat, Dint v)
     | Mbool true         -> T.Iconst (T.mk_type Tbool, Dtrue)
     | Mbool false        -> T.Iconst (T.mk_type Tbool, Dfalse)
-    | Menum _            -> emit_error (UnsupportedTerm ("Menum"))
     | Mrational _        -> emit_error (UnsupportedTerm ("Mrational"))
     | Mstring v          -> T.Iconst (T.mk_type Tstring, Dstring v)
     | Mcurrency (v, Utz) -> T.Iconst (T.mk_type Tmutez, Dint v)
@@ -610,7 +618,7 @@ let to_ir (model : M.model) : T.ir =
     | Mmatchoption (x, i, ve, ne)            -> T.Iifnone (f x, f ne, unloc i, f ve, ft mtt.type_)
     | Mmatchor (x, lid, le, rid, re)         -> T.Iifleft (f x, unloc lid, f le, unloc rid, f re, ft mtt.type_)
     | Mmatchlist (x, hid, tid, hte, ee)      -> T.Iifcons (f x, unloc hid, unloc tid, f hte, f ee, ft mtt.type_)
-    | Mloopleft (e, i, l)                    -> T.Iloopleft (f e, unloc i, f l)
+    | Mfold (e, i, l)                        -> T.Iloopleft (f e, unloc i, f l)
     | Mmap (e, i, l)                         -> T.Imap_ (f e, unloc i, f l)
     | Mexeclambda (l, a)                     -> T.Ibinop (Bexec, f a, f l)
     | Mapplylambda (l, a)                    -> T.Ibinop (Bapply, f a, f l)
@@ -776,7 +784,6 @@ let to_ir (model : M.model) : T.ir =
     (* list api expression *)
 
     | Mlistprepend (_t, i, l)    -> T.Ibinop (Bcons, f l, f i)
-    | Mlistheadtail (_t, l)      -> T.Imichelson ([f l], T.SEQ [ IF_CONS ([T.PAIR], [T.cstring "EmptyList"; T.FAILWITH])], [])
     | Mlistlength (_, l)         -> T.Iunop (Usize, f l)
     | Mlistcontains (t, c, a)    -> let b = T.BlistContains (to_type t) in add_builtin b; T.Icall (get_fun_name b, [f c; f a], is_inline b)
     | Mlistnth (t, c, a)         -> let b = T.BlistNth (to_type t) in add_builtin b; T.Icall (get_fun_name b, [f c; f a], is_inline b)
@@ -818,8 +825,35 @@ let to_ir (model : M.model) : T.ir =
     | Mblake2b x                -> T.Iunop  (Ublake2b,  f x)
     | Msha256  x                -> T.Iunop  (Usha256,   f x)
     | Msha512  x                -> T.Iunop  (Usha512,   f x)
+    | Msha3    x                -> T.Iunop  (Usha3,   f x)
+    | Mkeccak  x                -> T.Iunop  (Ukeccak,   f x)
     | Mhashkey x                -> T.Iunop  (Uhash_key, f x)
     | Mchecksignature (k, s, x) -> T.Iterop (Tcheck_signature, f k, f s, f x)
+
+
+    (* crypto functions *)
+
+    | Mtotalvotingpower         -> T.Izop  (Ztotalvotingpower)
+    | Mvotingpower  x           -> T.Iunop (Uvotingpower, f x)
+
+
+    (* ticket *)
+
+    | Mcreateticket (x, a)   -> T.Ibinop (Bcreateticket, f x, f a)
+    | Mreadticket x          -> T.Imichelson ([Iunop (Ureadticket, f x)], T.SEQ [SWAP; DROP 1], [])
+    | Msplitticket (x, a, b) -> T.Ibinop (Bsplitticket,  f x, mk_tuple [f a; f b])
+    | Mjointickets (x, y)    -> T.Iunop  (Ujointickets,  mk_tuple [f x; f y])
+
+
+    (* sapling *)
+
+    | Msapling_empty_state n        -> T.Izop (Zsapling_empty_state n)
+    | Msapling_verify_update (s, t) -> T.Ibinop (Bsapling_verify_update, f s, f t)
+
+
+    (* bls curve *)
+
+    | Mpairing_check x -> T.Iunop (Upairing_check, f x)
 
 
     (* constants *)
@@ -832,6 +866,7 @@ let to_ir (model : M.model) : T.ir =
     | Mselfaddress   -> T.Izop Zself_address
     | Mchainid       -> T.Izop Zchain_id
     | Mmetadata      -> assert false
+    | Mlevel         -> T.Izop Zlevel
 
 
     (* variable *)
@@ -839,7 +874,6 @@ let to_ir (model : M.model) : T.ir =
     | Mvar (_an, Vassetstate _k, _, _) -> assert false
     | Mvar (v, Vstorevar, _, _)        -> T.Ivar (unloc v)
     | Mvar (v, Vstorecol, _, _)        -> T.Ivar (unloc v)
-    | Mvar (_v, Venumval, _, _)        -> assert false
     | Mvar (_v, Vdefinition, _, _)     -> assert false
     | Mvar (v, Vlocal, _, _)           -> T.Ivar (unloc v)
     | Mvar (v, Vparam, _, _)           -> T.Ivar (unloc v)
@@ -847,6 +881,7 @@ let to_ir (model : M.model) : T.ir =
     | Mvar (_, Vthe, _, _)             -> assert false
     | Mvar (_, Vstate, _, _)           -> assert false
     | Mvar (_, Vparameter, _, _)       -> assert false
+    | Menumval (_id, _args, _e)        -> assert false
 
     (* rational *)
 
@@ -1284,6 +1319,9 @@ let to_michelson (ir : T.ir) : T.michelson =
           | Zemptyset t         -> T.EMPTY_SET (rar t)
           | Zemptymap (k, v)    -> T.EMPTY_MAP (rar k, rar v)
           | Zemptybigmap (k, v) -> T.EMPTY_BIG_MAP (rar k, rar v)
+          | Ztotalvotingpower   -> T.TOTAL_VOTING_POWER
+          | Zlevel              -> T.LEVEL
+          | Zsapling_empty_state n -> T.SAPLING_EMPTY_STATE n
         in
         c, inc_env env
       end
@@ -1306,6 +1344,8 @@ let to_michelson (ir : T.ir) : T.michelson =
           | Ublake2b         -> T.BLAKE2B
           | Usha256          -> T.SHA256
           | Usha512          -> T.SHA512
+          | Usha3            -> T.SHA3
+          | Ukeccak          -> T.KECCAK
           | Uhash_key        -> T.HASH_KEY
           | Ufail            -> T.FAILWITH
           | Ucontract (t, a) -> T.CONTRACT (rar t, a)
@@ -1317,6 +1357,10 @@ let to_michelson (ir : T.ir) : T.michelson =
           | Uge              -> T.GE
           | Ult              -> T.LT
           | Ule              -> T.LE
+          | Uvotingpower     -> T.VOTING_POWER
+          | Ureadticket      -> T.READ_TICKET
+          | Ujointickets     -> T.JOIN_TICKETS
+          | Upairing_check   -> T.PAIRING_CHECK
         in
         let e, env = fe env e in
         let env = match op with T.FAILWITH -> fail_env env | _ -> env in
@@ -1342,6 +1386,9 @@ let to_michelson (ir : T.ir) : T.michelson =
           | Bpair      -> T.PAIR
           | Bexec      -> T.EXEC
           | Bapply     -> T.APPLY
+          | Bcreateticket -> T.TICKET
+          | Bsplitticket  -> T.SPLIT_TICKET
+          | Bsapling_verify_update -> T.SAPLING_VERIFY_UPDATE
         in
         let rhs, env = fe env rhs in
         let lhs, env = fe env lhs in

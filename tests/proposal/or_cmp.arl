@@ -1,0 +1,10 @@
+archetype or_cmp
+
+variable c : int = 0
+
+entry default () {
+  effect {
+    c := left<string>(1) <=> right<nat>("mystr");
+  }
+
+}

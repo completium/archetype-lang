@@ -4,6 +4,12 @@ open Location
 open ParseTree
 open Printer_tools
 
+(* -------------------------------------------------------------------- *)
+
+let is_keyword = Lexer.keywords_ |> List.map fst |> fun x y -> List.mem y x
+
+(* -------------------------------------------------------------------- *)
+
 let e_equal_greater =  (10,  NonAssoc) (* =>  *)
 let e_in            =  (10,  NonAssoc) (* in  *)
 let e_to            =  (10,  NonAssoc) (* to  *)
@@ -102,9 +108,11 @@ let container_to_str c =
 
 let is_percent_prefix str = (String.length str >= 1 && String.equal "_" (String.sub str 0 1)) || is_keyword str
 
+let string_of_id (id : Ident.ident) : string =
+  if is_percent_prefix id then "%" ^ id else id
+
 let pp_id fmt (id : lident) =
-  let id = unloc id in
-  Format.fprintf fmt "%a%s" (fun fmt _ -> if is_percent_prefix id then pp_str fmt "%" else ()) () id
+  Format.fprintf fmt "%s" (string_of_id (unloc id))
 
 let pp_container fmt c =
   Format.fprintf fmt "%s" (container_to_str c)
@@ -175,6 +183,15 @@ let rec pp_type fmt (e, a) =
       Format.fprintf fmt
         "pkey<%a>"
         f t
+
+    | Tticket t ->
+      Format.fprintf fmt
+        "ticket<%a>"
+        f t
+
+    | Tsapling_state n       -> Format.fprintf fmt "sapling_state(%s)"       (Big_int.string_of_big_int n)
+    | Tsapling_transaction n -> Format.fprintf fmt "sapling_transaction(%s)" (Big_int.string_of_big_int n)
+
   in
 
   match a with
@@ -260,10 +277,43 @@ let quantifier_to_str op =
 let pp_quantifier fmt op =
   Format.fprintf fmt "%s" (quantifier_to_str op)
 
+let pp_pname fmt op =
+  let x =
+    match op with
+    | PIdent x -> string_of_id x
+    | PCons    -> "$cons"
+    | PNil     -> "$nil"
+    | PSome    -> "$some"
+    | PNone    -> "$none"
+    | PLeft    -> "$left"
+    | PRight   -> "$right"
+  in Format.fprintf fmt "%s" x
+
 let pp_pattern fmt p =
   match unloc p with
-  | Pwild ->  Format.fprintf fmt "| _"
-  | Pref i ->  Format.fprintf fmt "| %a" pp_id i
+  | Pwild -> Format.fprintf fmt "| _"
+
+  | Pref ({ pldesc = PSome }, [x]) ->
+    Format.fprintf fmt "| some %a" pp_id x
+
+  | Pref ({ pldesc = PNone }, []) ->
+    Format.fprintf fmt "| none"
+
+  | Pref ({ pldesc = PCons }, [x; xs]) ->
+    Format.fprintf fmt "| %a :: %a" pp_id x pp_id xs
+
+  | Pref ({ pldesc = PNil }, []) ->
+    Format.fprintf fmt "| []"
+
+  | Pref ({ pldesc = PLeft }, [x]) ->
+    Format.fprintf fmt "| left %a" pp_id x
+
+  | Pref ({ pldesc = PRight }, [x]) ->
+    Format.fprintf fmt "| right %a" pp_id x
+
+  | Pref (i, [] ) ->  Format.fprintf fmt "| %a" pp_pname (unloc i)
+  | Pref (i, [x]) ->  Format.fprintf fmt "| %a %a" pp_pname (unloc i) pp_id x
+  | Pref (i, xs ) ->  Format.fprintf fmt "| %a (%a)" pp_pname (unloc i) (pp_list ", " pp_id) xs
 
 let string_of_scope (s : scope) =
   match s with
@@ -531,41 +581,9 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_default pos pp) fmt (x, xs)
 
-  | Ematchoption (x, id, ve, ne) ->
-    let pp fmt (x, id, ve, ne) =
-      Format.fprintf fmt "match_option (%a) with@\n  | some (%a) -> (@[%a@])@\n  | none -> (@[%a@])@\nend"
-        (pp_expr e_default PNone) x
-        pp_id id
-        (pp_expr e_default PNone) ve
-        (pp_expr e_default PNone) ne
-    in
-    (maybe_paren outer e_default pos pp) fmt (x, id, ve, ne)
-
-  | Ematchor (x, lid, le, rid, re) ->
-    let pp fmt (x, lid, le, rid, re) =
-      Format.fprintf fmt "match_or (%a) with@\n  | left (%a) -> (@[%a@])@\n  | right (%a) -> (@[%a@])@\nend"
-        (pp_expr e_default PNone) x
-        pp_id lid
-        (pp_expr e_default PNone) le
-        pp_id rid
-        (pp_expr e_default PNone) re
-    in
-    (maybe_paren outer e_default pos pp) fmt (x, lid, le, rid, re)
-
-  | Ematchlist (x, hid, tid, hte, ee) ->
-    let pp fmt (x, hid, tid, hte, ee) =
-      Format.fprintf fmt "match_list (%a) with@\n  | %a::%a -> (@[%a@])@\n  | [] -> (@[%a@])@\nend"
-        (pp_expr e_default PNone) x
-        pp_id hid
-        pp_id tid
-        (pp_expr e_default PNone) hte
-        (pp_expr e_default PNone) ee
-    in
-    (maybe_paren outer e_default pos pp) fmt (x, hid, tid, hte, ee)
-
-  | Eloopleft (x, id, e) ->
+  | Efold (x, id, e) ->
     let pp fmt (x, id, e) =
-      Format.fprintf fmt "loop_left (%a, %a -> (@[%a@]))@\n"
+      Format.fprintf fmt "fold (%a, %a -> (@[%a@]))@\n"
         (pp_expr e_default PNone) x
         pp_id id
         (pp_expr e_default PNone) e
@@ -730,6 +748,8 @@ let rec pp_expr outer pos fmt a =
 
   | Enothing -> Format.fprintf fmt "()"
 
+  | Eunit -> Format.fprintf fmt "Unit"
+
   | Einvalid -> Format.fprintf fmt "(* invalid expr *)"
 
 
@@ -888,9 +908,14 @@ let pp_enum_option fmt = function
 
 let pp_ident_state fmt item =
   match item with
-  | (id, opts) ->
-    Format.fprintf fmt "%a%a"
+  | (id, lt, opts) ->
+    Format.fprintf fmt "%a%a%a"
       pp_id id
+      (fun fmt l ->
+         if List.length l = 0
+         then ()
+         else (Format.fprintf fmt " of %a" (pp_list " * " pp_type) l)
+      ) lt
       (pp_prefix " " (pp_list " " pp_enum_option)) opts
 
 let pp_asset_post_option fmt (apo : asset_post_option) =

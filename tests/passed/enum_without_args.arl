@@ -1,0 +1,19 @@
+archetype enum_without_args
+
+enum t =
+| A
+| B
+| C
+
+variable res : nat = 0
+
+variable r : t = C
+
+entry exec() {
+  var o : t = C;
+
+  match o with
+  | A | B -> res := 1
+  | C -> res := 0
+  end
+}

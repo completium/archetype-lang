@@ -195,7 +195,7 @@ let mk_outline_from_security (sec : PT.security) =
 
 let make_outline_from_enum ((ek, li, l) : (PT.enum_kind * 'a * 'b) ) =
   let outline = mk_outline ((match ek with | EKenum i -> (Location.unloc i) | EKstate -> "states"), symbol_kind_to_int Enum, l) in
-  outline :: (List.map (fun (id, _) -> mk_outline(Location.unloc id, symbol_kind_to_int EnumMember, Location.loc id) ) li)
+  outline :: (List.map (fun (id, _, _) -> mk_outline(Location.unloc id, symbol_kind_to_int EnumMember, Location.loc id) ) li) (* FIXME: enum *)
 (*
 
   {outline with

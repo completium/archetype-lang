@@ -122,7 +122,10 @@ let pp_logic fmt m =
 (* -------------------------------------------------------------------------- *)
 
 let needs_paren = function
-  | Tylist _ -> true
+  | Tylist _
+  | Tyor _
+  | Tyoption _
+    -> true
   | _ -> false
 
 let pp_type fmt typ =
@@ -161,6 +164,12 @@ let pp_type fmt typ =
       | Tykeyhash     -> "key_hash"
       | Tystate       -> "state"
       | Tytuple l     -> "(" ^ (String.concat ", " (List.map typ_str l)) ^ ")"
+      | Tyor (a, b)   -> Format.asprintf "or (%s) (%s)" (typ_str a) (typ_str b)
+      | Tylambda (a, b) -> Format.asprintf "(%s) -> (%s)" (typ_str a) (typ_str b)
+      | Tybls12_381_fr -> "bls12_381_fr"
+      | Tybls12_381_g1 -> "bls12_381_g1"
+      | Tybls12_381_g2 -> "bls12_381_g2"
+      | Tynever        -> "never"
     in
     if pparen && (needs_paren t) then
       "("^str^")"
@@ -205,6 +214,8 @@ let rec pp_pattern fmt = function
   | Tconst a -> pp_id fmt a
   | Tpatt_tuple l -> Format.fprintf fmt "(%a)" (pp_list "),(" (pp_pattern)) l
   | Tpsome a -> Format.fprintf fmt "Some %a" pp_id a
+  | Tpleft a -> Format.fprintf fmt "Left %a" pp_id a
+  | Tpright a -> Format.fprintf fmt "Right %a" pp_id a
 
 (* -------------------------------------------------------------------------- *)
 
@@ -252,6 +263,9 @@ let rec pp_term outer pos fmt = function
       pp_str (string_of_int e2)
       pp_str (string_of_int e3)
       (pp_with_paren (pp_term outer pos)) e1
+  | Tvlambda    (_r, a, _t, b) -> Format.fprintf fmt "fun %a -> @[%a@]" pp_str a (pp_term outer pos) b
+  | Texeclambda (a, b) -> Format.fprintf fmt "%a (%a)" (pp_term outer pos) a (pp_term outer pos) b
+  | Tapplylambda (a, b) -> Format.fprintf fmt "%a (%a)" (pp_term outer pos) a (pp_term outer pos) b
   | Tvar i -> pp_str fmt i
   | Tdoti (i1,i2) -> Format.fprintf fmt "%a.%a" pp_str i1 pp_str i2
   | Tdot (e1,e2) ->
@@ -453,7 +467,7 @@ let rec pp_term outer pos fmt = function
   | Tapp (f,a) ->
     Format.fprintf fmt "%a %a"
       (pp_with_paren (pp_term outer pos)) f
-      (pp_list " " (pp_with_paren (pp_term outer pos))) a
+      (pp_list " " (pp_paren (pp_term outer pos))) a
   | Tget (i,e1,e2) ->
     Format.fprintf fmt "%a.get %a %a"
       pp_str (String.capitalize_ascii i)
@@ -485,6 +499,8 @@ let rec pp_term outer pos fmt = function
                    (pp_with_paren (pp_term outer pos)) e
                    pp_str (String.capitalize_ascii i)
   | Tunit -> pp_str fmt "()"
+  | Tleft (_, x)  -> Format.fprintf fmt "Left (%a)"  (pp_with_paren (pp_term e_default PRight)) x
+  | Tright (_, x) -> Format.fprintf fmt "Right (%a)" (pp_with_paren (pp_term e_default PRight)) x
   | Tsome e -> Format.fprintf fmt "Some %a" (pp_with_paren (pp_term e_default PRight)) e
   | Tnot e -> Format.fprintf fmt "not %a" (pp_with_paren (pp_term outer pos)) e
   | Tpand (e1,e2) -> Format.fprintf fmt "(%a && %a)"
@@ -612,6 +628,22 @@ let rec pp_term outer pos fmt = function
       (pp_with_paren (pp_term outer pos)) e2
   | Tmod (_,e1,e2) ->
     Format.fprintf fmt "mod %a %a"
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
+  | Tdivmod (_,e1,e2) ->
+    Format.fprintf fmt "divmod %a %a"
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
+  | Tthreewaycmp (_,e1,e2) ->
+    Format.fprintf fmt "three_way_cmp_int %a %a"
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
+  | Tshiftleft (e1,e2) ->
+    Format.fprintf fmt "shift_left %a %a"
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
+  | Tshiftright (e1,e2) ->
+    Format.fprintf fmt "shift_right %a %a"
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
   | Tcnth (i,e1,e2) ->
@@ -765,6 +797,26 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "@[match %a with@\n| %a @\nend@]"
       (pp_term outer pos) t
       (pp_list "@\n|" pp_case) l
+  | Tmatchoption (x, i, ve, ne) ->
+    Format.fprintf fmt "@[match %a with@\n@[| Some %a -> (%a)@\n| None -> (%a)@] @\nend@]"
+      (pp_term outer pos) x
+      pp_str i
+      (pp_term outer pos) ve
+      (pp_term outer pos) ne
+  | Tmatchor (x, lid, le, rid, re) ->
+    Format.fprintf fmt "@[match %a with@\n@[| Left %a -> (%a)@\n| Right %a -> (%a)@] @\nend@]"
+      (pp_term outer pos) x
+      pp_str lid
+      (pp_term outer pos) le
+      pp_str rid
+      (pp_term outer pos) re
+  | Tmatchlist (x, hd, tl, a, b) ->
+    Format.fprintf fmt "@[match %a with@\n@[| L.Cons %a %a -> (%a)@\n| L.Nil -> (%a)@] @\nend@]"
+      (pp_term outer pos) x
+      pp_str hd
+      pp_str tl
+      (pp_term outer pos) a
+      (pp_term outer pos) b
   | Tcons (i,e1,e2) ->
     Format.fprintf fmt "%a.Cons %a %a"
       pp_str i
@@ -775,6 +827,25 @@ let rec pp_term outer pos fmt = function
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
+  | Tlistreverse (i, l) ->
+    Format.fprintf fmt "%a.reverse %a"
+      pp_str (String.capitalize_ascii i)
+      (pp_with_paren (pp_term outer pos)) l
+  | Tlistconcat (i, l1, l2) ->
+    Format.fprintf fmt "%a.concat %a %a"
+      pp_str (String.capitalize_ascii i)
+      (pp_with_paren (pp_term outer pos)) l1
+      (pp_with_paren (pp_term outer pos)) l2
+  | Tlistmap (_, x, i, e) ->
+    Format.fprintf fmt "(fun f l -> let rec map f l = match l with | L.Nil -> L.Nil | L.Cons x r -> L.Cons (f x) (map f r) end in map f l) (fun %a -> @[%a@]) %a"
+      pp_str i
+      (pp_term outer pos) e
+      (pp_term outer pos) x
+  | Tfold (x, i, e) ->
+    Format.fprintf fmt "(fun f x -> let rec fold f x = match x with | Left _ -> fold f x | Right v -> v end in fold f x) (fun %a -> @[%a@]) %a"
+      pp_str i
+      (pp_term outer pos) e
+      (pp_term outer pos) x
   | Tremove (i,e1,e2) ->
     Format.fprintf fmt "%a.remove %a %a"
       pp_str (String.capitalize_ascii i)
@@ -891,13 +962,13 @@ and pp_fails outer pos fmt fails =
   then pp_str fmt ""
   else
     Format.fprintf fmt "@[raises {@\n %a @\n}@\n@]"
-    (pp_list "@\n}@\nraises {@\n " (pp_fail outer pos)) fails
+      (pp_list "@\n}@\nraises {@\n " (pp_fail outer pos)) fails
 and pp_fail outer pos fmt fail =
   match fail with
   | Some _, t -> (* why3 does not allow annotation in raises section *)
-      Format.fprintf fmt "%a" (pp_term outer pos) t
+    Format.fprintf fmt "%a" (pp_term outer pos) t
   | None, t ->
-      Format.fprintf fmt "%a" (pp_term outer pos) t
+    Format.fprintf fmt "%a" (pp_term outer pos) t
 and pp_catch outer pos fmt (exn,e) =
   Format.fprintf fmt "| %a -> %a"
     (pp_exn outer pos) exn

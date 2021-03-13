@@ -6,11 +6,15 @@ function mynth(l : list<string>, idx : nat) : string {
   var ll = l;
   var r : option<string> = none;
   var i : nat = 0;
-  while i <= idx do
-    var e : (string * list<string>) = head_tail(ll);
-    r := some(e[0]);
-    ll := e[1];
-    i += 1;
+  while : while_label i <= idx do
+    match ll with
+    | hd::tl -> begin
+        r := some(hd);
+        ll := tl;
+        i += 1
+      end
+    | [] -> fail ("empty")
+    end
   done;
   return opt_get(r)
 }

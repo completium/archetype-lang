@@ -1,7 +1,7 @@
 #! /bin/bash
 
 BIN_RET=./extra/script/check_ret.sh
-BIN_EXEC=./extra/script/check_exec.sh
+BIN_EXEC=./extra/script/check_michelson.sh
 BIN_VERIF=./extra/script/check_verif.sh
 
 RET_CONTRACTS="\
@@ -72,8 +72,9 @@ escrow_basic.arl \
 escrow_penalty.arl \
 escrow_simple.arl \
 escrow_without_spec.arl \
-fa12.arl \
 fa12_inspector.arl \
+fa12.arl \
+fa2.arl \
 fizzy.arl \
 guarantee_fund.arl \
 health_care.arl \
@@ -94,10 +95,6 @@ unanimity.arl \
 voting_process.arl \
 zero_coupon_bond_with_insurance.arl \
 zero_coupon_bond.arl \
-"
-
-REMAINED_EXEC_CONTRACTS="\
-fa2.arl \
 "
 
 VERIF_CONTRACTS="\
@@ -171,18 +168,12 @@ echo ""
 echo "Check exec"
 
 echo ""
-echo "                                                             RET LP  LG  LS"
+echo "                                                                       RET OUT COMPILE"
 for i in $EXEC_CONTRACTS; do
     ${BIN_EXEC} ./contracts/$i
     if [ $? -ne 0 ]; then
         RET=1
     fi
-done
-
-echo ""
-echo "(not pass)                                                   RET LP  LG  LS"
-for i in $REMAINED_EXEC_CONTRACTS; do
-    ${BIN_EXEC} ./contracts/$i
 done
 
 echo ""

@@ -56,22 +56,26 @@ let to_model (ast : A.ast) : M.model =
   in
 
   let vtyp_to_btyp = function
-    | A.VTunit       -> M.Bunit
-    | A.VTbool       -> M.Bbool
-    | A.VTnat        -> M.Bnat
-    | A.VTint        -> M.Bint
-    | A.VTrational   -> M.Brational
-    | A.VTdate       -> M.Bdate
-    | A.VTduration   -> M.Bduration
-    | A.VTstring     -> M.Bstring
-    | A.VTaddress    -> M.Baddress
-    | A.VTrole       -> M.Brole
-    | A.VTcurrency   -> M.Bcurrency
-    | A.VTsignature  -> M.Bsignature
-    | A.VTkey        -> M.Bkey
-    | A.VTkeyhash    -> M.Bkeyhash
-    | A.VTbytes      -> M.Bbytes
-    | A.VTchainid    -> M.Bchainid
+    | A.VTunit         -> M.Bunit
+    | A.VTbool         -> M.Bbool
+    | A.VTnat          -> M.Bnat
+    | A.VTint          -> M.Bint
+    | A.VTrational     -> M.Brational
+    | A.VTdate         -> M.Bdate
+    | A.VTduration     -> M.Bduration
+    | A.VTstring       -> M.Bstring
+    | A.VTaddress      -> M.Baddress
+    | A.VTrole         -> M.Brole
+    | A.VTcurrency     -> M.Bcurrency
+    | A.VTsignature    -> M.Bsignature
+    | A.VTkey          -> M.Bkey
+    | A.VTkeyhash      -> M.Bkeyhash
+    | A.VTbytes        -> M.Bbytes
+    | A.VTchainid      -> M.Bchainid
+    | A.VTbls12_381_fr -> M.Bbls12_381_fr
+    | A.VTbls12_381_g1 -> M.Bbls12_381_g1
+    | A.VTbls12_381_g2 -> M.Bbls12_381_g2
+    | A.VTnever        -> M.Bnever
   in
 
   let to_trtyp = function
@@ -83,23 +87,26 @@ let to_model (ast : A.ast) : M.model =
 
   let rec type_to_type (t : A.type_) : M.type_ =
     let f = function
-      | A.Tnamed _           -> assert false
-      | A.Tasset id          -> M.Tasset id
-      | A.Trecord id         -> M.Trecord id
-      | A.Tenum id           -> M.Tenum id
-      | A.Tbuiltin b         -> M.Tbuiltin (vtyp_to_btyp b)
-      | A.Tcontainer (t, c)  -> M.Tcontainer (type_to_type t, to_container c)
-      | A.Tset t             -> M.Tset (type_to_type t)
-      | A.Tlist t            -> M.Tlist (type_to_type t)
-      | A.Tmap (k, v)        -> M.Tmap (false, type_to_type k, type_to_type v)
-      | A.Tbig_map (k, v)    -> M.Tmap (true, type_to_type k, type_to_type v)
-      | A.Tor (l, r)         -> M.Tor (type_to_type l, type_to_type r)
-      | A.Tlambda (a, r)     -> M.Tlambda (type_to_type a, type_to_type r)
-      | A.Ttuple l           -> M.Ttuple (List.map type_to_type l)
-      | A.Toperation         -> M.Toperation
-      | A.Tcontract t        -> M.Tcontract (type_to_type t)
-      | A.Toption t          -> M.Toption (type_to_type t)
-      | A.Ttrace tr          -> M.Ttrace (to_trtyp tr)
+      | A.Tnamed _               -> assert false
+      | A.Tasset id              -> M.Tasset id
+      | A.Trecord id             -> M.Trecord id
+      | A.Tenum id               -> M.Tenum id
+      | A.Tbuiltin b             -> M.Tbuiltin (vtyp_to_btyp b)
+      | A.Tcontainer (t, c)      -> M.Tcontainer (type_to_type t, to_container c)
+      | A.Tset t                 -> M.Tset (type_to_type t)
+      | A.Tlist t                -> M.Tlist (type_to_type t)
+      | A.Tmap (k, v)            -> M.Tmap (false, type_to_type k, type_to_type v)
+      | A.Tbig_map (k, v)        -> M.Tmap (true, type_to_type k, type_to_type v)
+      | A.Tor (l, r)             -> M.Tor (type_to_type l, type_to_type r)
+      | A.Tlambda (a, r)         -> M.Tlambda (type_to_type a, type_to_type r)
+      | A.Ttuple l               -> M.Ttuple (List.map type_to_type l)
+      | A.Toperation             -> M.Toperation
+      | A.Tcontract t            -> M.Tcontract (type_to_type t)
+      | A.Toption t              -> M.Toption (type_to_type t)
+      | A.Tticket t              -> M.Tticket (type_to_type t)
+      | A.Ttrace tr              -> M.Ttrace (to_trtyp tr)
+      | A.Tsapling_state n       -> M.Tsapling_state n
+      | A.Tsapling_transaction n -> M.Tsapling_transaction n
     in
     M.mktype (f t)
   in
@@ -116,8 +123,8 @@ let to_model (ast : A.ast) : M.model =
 
   let to_pattern_node (n : A.lident A.pattern_node) : 'id M.pattern_node =
     match n with
-    | A.Mconst id -> M.Pconst id
-    | A.Mwild    -> M.Pwild
+    | A.Mconst (id, xs) -> M.Pconst (id, xs)
+    | A.Mwild -> M.Pwild
   in
 
   let to_pattern (p : A.pattern) : M.pattern =
@@ -272,7 +279,7 @@ let to_model (ast : A.ast) : M.model =
       | A.Pmatchoption (x, id, ve, ne)      -> M.Mmatchoption   (f x, id, f ve, f ne)
       | A.Pmatchor (x, lid, le, rid, re)    -> M.Mmatchor       (f x, lid, f le, rid, f re)
       | A.Pmatchlist (x, hid, tid, hte, ee) -> M.Mmatchlist     (f x, hid, tid, f hte, f ee)
-      | A.Ploopleft (x, i, e)               -> M.Mloopleft      (f x, i, f e)
+      | A.Pfold (x, i, e)                   -> M.Mfold          (f x, i, f e)
       | A.Pmap (x, i, e)                    -> M.Mmap           (f x, i, f e)
       | A.Plogical (A.And, l, r)            -> M.Mand           (f l, f r)
       | A.Plogical (A.Or, l, r)             -> M.Mor            (f l, f r)
@@ -314,11 +321,16 @@ let to_model (ast : A.ast) : M.model =
       | A.Precupdate (e, l)                 -> M.Mrecupdate     (f e, List.map (fun (id, v) -> unloc id, f v) l)
       | A.Pletin (id, init, typ, body, o)   -> M.Mletin         ([id], f init, Option.map type_to_type typ, f body, Option.map f o)
       | A.Pdeclvar (i, t, v)                -> M.Mdeclvar       ([i], Option.map type_to_type t, f v)
+
+      (* enum value *)
+      | A.Pvar (_b, _vs, id) when A.Utils.is_enum_value ast id      -> M.Menumval (id, [], A.Utils.get_enum_values ast id |> Option.get |> unloc)
+      | A.Pcall (_, Cid id, args) when A.Utils.is_enum_value ast id -> M.Menumval (id, List.map (function | A.AExpr x -> f x | _ -> assert false) args, A.Utils.get_enum_values ast id |> Option.get |> unloc)
+
+
       | A.Pvar (b, vs, {pldesc = "state"; _})                -> M.Mvar (dumloc "", Vstate, to_temp b, to_delta vs)
       | A.Pvar (b, vs, id) when is_param env id              -> M.Mvar (id, Vparam, to_temp b, to_delta vs)
       | A.Pvar (b, vs, id) when A.Utils.is_variable ast id   -> M.Mvar (id, Vstorevar, to_temp b, to_delta vs)
       | A.Pvar (b, vs, id) when A.Utils.is_asset ast id      -> M.Mvar (id, Vstorecol, to_temp b, to_delta vs)
-      | A.Pvar (b, vs, id) when A.Utils.is_enum_value ast id -> M.Mvar (id, Venumval, to_temp b, to_delta vs)
       | A.Pvar (b, vs, id) when A.Utils.is_definition ast id -> M.Mvar (id, Vdefinition, to_temp b, to_delta vs)
       | A.Pvar (b, vs, id) when A.Utils.is_parameter ast id  -> M.Mvar (id, Vparameter, to_temp b, to_delta vs)
       | A.Pvar (b, vs, id)                                   -> M.Mvar (id, Vlocal, to_temp b, to_delta vs)
@@ -334,7 +346,6 @@ let to_model (ast : A.ast) : M.model =
       | A.Plit ({node = BVint i; _})           -> M.Mint i
       | A.Plit ({node = BVnat i; _})           -> M.Mnat i
       | A.Plit ({node = BVbool b; _})          -> M.Mbool b
-      | A.Plit ({node = BVenum s; _})          -> M.Menum s
       | A.Plit ({node = BVrational (d, n); _}) -> M.Mrational (d, n)
       | A.Plit ({node = BVdate s; _})          -> M.Mdate s
       | A.Plit ({node = BVstring s; _})        -> M.Mstring s
@@ -368,6 +379,8 @@ let to_model (ast : A.ast) : M.model =
       | A.Pconst Cchainid                      -> M.Mchainid
       | A.Pconst Coperations                   -> M.Moperations
       | A.Pconst Cmetadata                     -> M.Mmetadata
+      | A.Pconst Ctotalvotingpower             -> M.Mtotalvotingpower
+      | A.Pconst Clevel                        -> M.Mlevel
       | A.Pconst c                             ->
         Format.eprintf "expr const unkown: %a@." A.pp_const c;
         assert false
@@ -385,6 +398,7 @@ let to_model (ast : A.ast) : M.model =
           | A.Tbuiltin VTnat, A.Tbuiltin VTint, _                  -> M.Mnattoint v
           | A.Tbuiltin VTnat, A.Tbuiltin VTrational, _             -> M.Mnattorat v
           | A.Tbuiltin VTint, A.Tbuiltin VTrational, _             -> M.Minttorat v
+          | A.Tbuiltin VTbls12_381_fr, A.Tbuiltin VTint, _         -> M.Mnattoint v
           | _ -> M.Mcast (type_to_type src, type_to_type dst, v)
         end
       | A.Pquantifer (Forall, i, (coll, typ), term)    -> M.Mforall (i, type_to_type typ, Option.map f coll, f term)
@@ -399,7 +413,6 @@ let to_model (ast : A.ast) : M.model =
       (* | A.Pcall (Some p, A.Cconst A.Cunmoved,   []) -> M.Msetunmoved   (f p)
          | A.Pcall (Some p, A.Cconst A.Cadded,     []) -> M.Msetadded     (f p)
          | A.Pcall (Some p, A.Cconst A.Cremoved,   []) -> M.Msetremoved   (f p) *)
-
 
       (* Asset *)
 
@@ -500,11 +513,6 @@ let to_model (ast : A.ast) : M.model =
           let t = extract_builtin_type_list fp in
           M.Mlistprepend (t, fp, fq)
         )
-
-      | A.Pcall (None, A.Cconst (A.Cheadtail), [AExpr p]) when is_list p ->
-        let fp = f p in
-        let t = extract_builtin_type_list fp in
-        M.Mlistheadtail (t, fp)
 
       | A.Pcall (None, A.Cconst (A.Clength), [AExpr p]) when is_list p ->
         let fp = f p in
@@ -698,6 +706,14 @@ let to_model (ast : A.ast) : M.model =
         let fx = f x in
         M.Msha512 (fx)
 
+      | A.Pcall (None, A.Cconst A.Csha3, [AExpr x]) ->
+        let fx = f x in
+        M.Msha3 (fx)
+
+      | A.Pcall (None, A.Cconst A.Ckeccak, [AExpr x]) ->
+        let fx = f x in
+        M.Mkeccak (fx)
+
       | A.Pcall (None, A.Cconst A.Chashkey, [AExpr x]) ->
         let fx = f x in
         M.Mhashkey (fx)
@@ -723,6 +739,58 @@ let to_model (ast : A.ast) : M.model =
 
          | A.Pcall (None, A.Cconst (A.Cmaybeperformedbyaction), [AExpr l; AExpr r]) ->
          M.MsecMayBePerformedByEntry (f l, f r) *)
+
+
+      (* Voting *)
+
+      | A.Pcall (None, A.Cconst A.Cvotingpower, [AExpr x]) ->
+        let fx = f x in
+        M.Mvotingpower (fx)
+
+
+      (* Ticket *)
+
+      | A.Pcall (None, A.Cconst A.Ccreateticket, [AExpr a; AExpr b]) ->
+        let fa = f a in
+        let fb = f b in
+        M.Mcreateticket (fa, fb)
+
+      | A.Pcall (None, A.Cconst A.Creadticket, [AExpr x]) ->
+        let fx = f x in
+        M.Mreadticket fx
+
+      | A.Pcall (None, A.Cconst A.Csplitticket, [AExpr a; AExpr b; AExpr c]) ->
+        let fa = f a in
+        let fb = f b in
+        let fc = f c in
+        M.Msplitticket (fa, fb, fc)
+
+      | A.Pcall (None, A.Cconst A.Cjointickets, [AExpr a; AExpr b]) ->
+        let fa = f a in
+        let fb = f b in
+        M.Mjointickets (fa, fb)
+
+
+      (* Sapling *)
+
+      | A.Pcall (None, A.Cconst A.Csapling_empty_state, [AExpr x]) -> begin
+          let fx = f x in
+          match fx.node with
+          | M.Mnat n -> M.Msapling_empty_state (Big_int.int_of_big_int n)
+          | _ -> assert false
+        end
+
+      | A.Pcall (None, A.Cconst A.Csapling_verify_update, [AExpr x; AExpr y]) ->
+        let fx = f x in
+        let fy = f y in
+        M.Msapling_verify_update (fx, fy)
+
+
+      (* Bls curve *)
+
+      | A.Pcall (None, A.Cconst A.Cpairing_check, [AExpr x]) ->
+        let fx = f x in
+        M.Mpairing_check fx
 
 
       (* Operation *)
@@ -788,7 +856,7 @@ let to_model (ast : A.ast) : M.model =
   let process_enum (env : env) (e : A.enum) : M.decl_node =
     let values = List.map (fun (x : A.lident A.enum_item_struct) ->
         let id : M.lident = x.name in
-        M.mk_enum_item id ~invariants:(List.map (fun x -> to_label_lterm env x) x.invariants)
+        M.mk_enum_item id ~args:(List.map type_to_type x.args) ~invariants:(List.map (fun x -> to_label_lterm env x) x.invariants)
       ) e.items in
     let initial : A.lident option = List.fold_left (fun accu (x : A.lident A.enum_item_struct) -> match x.initial with | true -> Some x.name | _ -> accu) None e.items in
     (* let initial = (match initial with | Some x -> x | _ -> emit_error (NoInitialValueFor (unloc e.name))) in *)
@@ -1269,10 +1337,12 @@ let to_model (ast : A.ast) : M.model =
                  match p_on with
                  | Some (key_ident, key_type, an, enum_type) ->
                    let k : M.mterm = build_mvar env key_ident key_type ~loc:(Location.loc key_ident) in
-                   let v : M.mterm = M.mk_mterm (M.Mvar (id, Venumval, Tnone, Dnone)) enum_type ~loc:(Location.loc id) in
+                   let et = match M.get_ntype enum_type with | M.Tenum id -> unloc id | _ -> assert false in
+                   let v : M.mterm = M.mk_mterm (M.Menumval (id, [], et)) enum_type ~loc:(Location.loc id) in
                    M.mk_mterm (M.Massign (ValueAssign, v.type_, Aassetstate (an, k), v)) M.tunit
                  | _ ->
-                   let v : M.mterm = build_mvar env id M.tstate ~loc:(Location.loc id) in
+                   (* let v : M.mterm = build_mvar env id M.tstate ~loc:(Location.loc id) in *)
+                   let v : M.mterm = M.mk_mterm (Menumval (id, [], "state")) (M.tenum (dumloc "state")) ~loc:(Location.loc id) in
                    M.mk_mterm (M.Massign (ValueAssign, v.type_, Astate, v)) M.tunit
                in
                let code : M.mterm =
@@ -1293,7 +1363,7 @@ let to_model (ast : A.ast) : M.model =
             begin
               let rec compute_patterns (a : A.sexpr) : M.pattern list =
                 match a.node with
-                | Sref id -> [M.mk_pattern (M.Pconst id)]
+                | Sref id -> [M.mk_pattern (M.Pconst (id, []))]
                 | Sor (a, b) -> [a; b] |> List.map (fun x -> compute_patterns x) |> List.flatten
                 | Sany -> emit_error (a.loc, AnyNotAuthorizedInTransitionTo); bailout ()
               in

@@ -34,6 +34,10 @@ type vtyp =
   | VTsignature
   | VTbytes
   | VTchainid
+  | VTbls12_381_fr
+  | VTbls12_381_g1
+  | VTbls12_381_g2
+  | VTnever
 [@@deriving show {with_path = false}]
 
 type trtyp =
@@ -61,6 +65,9 @@ type ptyp =
   | Toperation
   | Tcontract of type_
   | Ttrace of trtyp
+  | Tticket of type_
+  | Tsapling_state       of int
+  | Tsapling_transaction of int
 [@@deriving show {with_path = false}]
 
 and type_ = ptyp (* * lident option *) (* type of pterm *)
@@ -139,6 +146,7 @@ type const =
   | Cchainid
   | Coperations
   | Cmetadata
+  | Clevel
   (* function *)
   | Cadd
   | Caddupdate
@@ -180,7 +188,6 @@ type const =
   | Ctail
   | Cabs
   | Cprepend
-  | Cheadtail
   | Creverse
   (* map *)
   | Cmput
@@ -193,8 +200,23 @@ type const =
   | Cblake2b
   | Csha256
   | Csha512
+  | Csha3
+  | Ckeccak
   | Cchecksignature
   | Chashkey
+  (* voting *)
+  | Ctotalvotingpower
+  | Cvotingpower
+    (* ticket *)
+  | Ccreateticket
+  | Creadticket
+  | Csplitticket
+  | Cjointickets
+  (* sapling *)
+  | Csapling_empty_state
+  | Csapling_verify_update
+  (* bls *)
+  | Cpairing_check
   (* vset *)
   | Cbefore
   | Citerated
@@ -254,7 +276,6 @@ and bval_node =
   | BVint          of Core.big_int
   | BVnat          of Core.big_int
   | BVbool         of bool
-  | BVenum         of string
   | BVrational     of Core.big_int * Core.big_int
   | BVdate         of Core.date
   | BVstring       of string
@@ -284,7 +305,7 @@ type 'id pattern_gen = ('id pattern_node) struct_poly
 
 and 'id pattern_node =
   | Mwild
-  | Mconst of 'id
+  | Mconst of 'id * 'id list
 [@@deriving show {with_path = false}]
 
 type pattern = lident pattern_gen
@@ -318,7 +339,7 @@ type 'id term_node  =
   | Pmatchoption of 'id term_gen * 'id * 'id term_gen * 'id term_gen
   | Pmatchor     of 'id term_gen * 'id * 'id term_gen * 'id * 'id term_gen
   | Pmatchlist   of 'id term_gen * 'id * 'id * 'id term_gen * 'id term_gen
-  | Ploopleft    of 'id term_gen * 'id * 'id term_gen
+  | Pfold        of 'id term_gen * 'id * 'id term_gen
   | Pmap         of 'id term_gen * 'id * 'id term_gen
   | Pcall of ('id term_gen option * 'id call_kind * ('id term_arg) list)
   | Plogical of logical_operator * 'id term_gen * 'id term_gen
@@ -632,6 +653,7 @@ type 'id enum_item_struct = {
   name : 'id;
   initial : bool;
   invariants : 'id label_term list;
+  args: ptyp list;
   loc : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -708,25 +730,29 @@ type 'id ast_struct = {
 and ast = lident ast_struct
 
 (* vtyp -> type_ *)
-let vtunit       = Tbuiltin (VTunit      )
-let vtbool       = Tbuiltin (VTbool      )
-let vtnat        = Tbuiltin (VTnat       )
-let vtint        = Tbuiltin (VTint       )
-let vtrational   = Tbuiltin (VTrational  )
-let vtdate       = Tbuiltin (VTdate      )
-let vtduration   = Tbuiltin (VTduration  )
-let vtstring     = Tbuiltin (VTstring    )
-let vtaddress    = Tbuiltin (VTaddress   )
-let vtrole       = Tbuiltin (VTrole      )
-let vtcurrency   = Tbuiltin (VTcurrency  )
-let vtsignature  = Tbuiltin (VTsignature )
-let vtkey        = Tbuiltin (VTkey       )
-let vtkeyhash    = Tbuiltin (VTkeyhash   )
-let vtbytes      = Tbuiltin (VTbytes     )
-let vtchainid    = Tbuiltin (VTchainid   )
+let vtunit         = Tbuiltin (VTunit         )
+let vtbool         = Tbuiltin (VTbool         )
+let vtnat          = Tbuiltin (VTnat          )
+let vtint          = Tbuiltin (VTint          )
+let vtrational     = Tbuiltin (VTrational     )
+let vtdate         = Tbuiltin (VTdate         )
+let vtduration     = Tbuiltin (VTduration     )
+let vtstring       = Tbuiltin (VTstring       )
+let vtaddress      = Tbuiltin (VTaddress      )
+let vtrole         = Tbuiltin (VTrole         )
+let vtcurrency     = Tbuiltin (VTcurrency     )
+let vtsignature    = Tbuiltin (VTsignature    )
+let vtkey          = Tbuiltin (VTkey          )
+let vtkeyhash      = Tbuiltin (VTkeyhash      )
+let vtbytes        = Tbuiltin (VTbytes        )
+let vtchainid      = Tbuiltin (VTchainid      )
+let vtbls12_381_fr = Tbuiltin (VTbls12_381_fr )
+let vtbls12_381_g1 = Tbuiltin (VTbls12_381_g1 )
+let vtbls12_381_g2 = Tbuiltin (VTbls12_381_g2 )
+let vtnever        = Tbuiltin (VTnever        )
+
 
 (* mk functions *)
-
 
 let mk_sp ?label ?(loc = Location.dummy) ?type_ node =
   { node; type_; label; loc; }
@@ -770,8 +796,8 @@ let mk_transition ?on ?(trs = []) from =
 let mk_transaction_struct ?(args = []) ?calledby ?(accept_transfer = false) ?require ?failif ?transition ?specification ?(functions = []) ?effect ?(loc = Location.dummy) name =
   { name; args; calledby; accept_transfer; require; failif; transition; specification; functions; effect; loc }
 
-let mk_enum_item ?(initial = false) ?(invariants = []) ?(loc = Location.dummy) name : 'id enum_item_struct =
-  { name; initial; invariants; loc }
+let mk_enum_item ?(initial = false) ?(args = []) ?(invariants = []) ?(loc = Location.dummy) name : 'id enum_item_struct =
+  { name; initial; args; invariants; loc }
 
 let mk_enum ?(items = []) ?(loc = Location.dummy) kind =
   { kind; items; loc }
@@ -807,6 +833,7 @@ module Utils : sig
   val is_definition             : ast -> lident -> bool
   val get_var_type              : ast -> lident -> type_
   val get_enum_name             : lident enum_struct -> lident
+  val get_enum_values           : ast -> lident -> lident option
 
 end = struct
   open Tools

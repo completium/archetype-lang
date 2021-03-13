@@ -1,0 +1,12 @@
+archetype test_fun_fail
+
+variable res : nat = 0
+
+function f() : nat {
+  fail ("error");
+  return 1
+}
+
+entry exec () {
+  res := f()
+}

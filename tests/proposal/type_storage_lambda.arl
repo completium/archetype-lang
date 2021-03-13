@@ -1,0 +1,8 @@
+archetype type_storage_lambda
+
+variable f : lambda<nat, string> = lambda<string>((x : nat) -> "mystr")
+variable r : string = ""
+
+entry exec() {
+  r := exec_lambda(f, 2)
+}

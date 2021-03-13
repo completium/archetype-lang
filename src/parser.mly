@@ -37,9 +37,9 @@
 %token ANY
 %token ARCHETYPE
 %token ASSERT
+%token AS
 %token ASSET
 %token AT
-%token AS
 %token AT_ADD
 %token AT_REMOVE
 %token AT_UPDATE
@@ -79,6 +79,7 @@
 %token FAILIF
 %token FAILS
 %token FALSE
+%token FOLD
 %token FOR
 %token FORALL
 %token FROM
@@ -106,13 +107,9 @@
 %token LESSEQUAL
 %token LET
 %token LIST
-%token LOOP_LEFT
 %token LPAREN
 %token MAP
 %token MATCH
-%token MATCH_LIST
-%token MATCH_OPTION
-%token MATCH_OR
 %token MINUS
 %token MINUSEQUAL
 %token MULT
@@ -121,6 +118,7 @@
 %token NEQUAL
 %token NONE
 %token NOT
+%token OF
 %token ON
 %token OPTION
 %token OR
@@ -146,6 +144,8 @@
 %token RETURN
 %token RIGHT
 %token RPAREN
+%token SAPLING_STATE
+%token SAPLING_TRANSACTION
 %token SECURITY
 %token SELF
 %token SEMI_COLON
@@ -158,12 +158,14 @@
 %token SPECIFICATION
 %token STATES
 %token THEN
+%token TICKET
 %token TO
 %token TRANSFER
 %token TRANSITION
 %token TRUE
 %token TYPE
 %token UNDERSCORE
+%token UNIT
 %token UNMOVED
 %token UNPACK
 %token USE
@@ -528,29 +530,18 @@ type_decl:
 | TYPE id=ident EQUAL t=type_t    { Dtype (id, t) }
 
 enum:
-| STATES exts=extensions? xs=equal_enum_values
-    {Denum (EKstate, (xs, exts))}
+| STATES exts=extensions? body=prefix(EQUAL, enum_body)?
+    {Denum (EKstate, (Tools.Option.get_dfl [] body, exts))}
 
-| ENUM exts=extensions? x=ident xs=equal_enum_values
-    {Denum (EKenum x, (xs, exts))}
+| ENUM exts=extensions? x=ident body=prefix(EQUAL, enum_body)?
+    {Denum (EKenum x, (Tools.Option.get_dfl [] body, exts))}
 
-equal_enum_values:
-| /*nothing*/          { [] }
-| EQUAL xs=enum_values { xs }
+enum_body:
+| xs=enum_cdecl* { xs }
 
-enum_values:
-| /*nothing*/    { [] }
-| xs=pipe_idents { xs }
-
-%inline pipe_idents:
-| xs=pipe_ident+ { xs }
-
-%inline pipe_ident:
-| PIPE x=ident opts=enum_options { (x, opts) }
-
-%inline enum_options:
-| /* nothing */    { [] }
-| xs=enum_option+  { xs }
+enum_cdecl:
+| PIPE x=ident tys=prefix(OF, separated_nonempty_list(MULT, type_s))? opts=enum_option*
+    { (x, Tools.Option.get_dfl [] tys, opts) }
 
 enum_option:
 | INITIAL                     { EOinitial }
@@ -568,18 +559,21 @@ type_r:
 | x=type_s_unloc          { x }
 
 type_s_unloc:
-| x=ident                                          { Tref x            }
-| c=container LESS x=type_t GREATER                { Tcontainer (x, c) }
-| PKEY        LESS x=type_t GREATER                { Tkeyof x          }
-| OPTION      LESS x=type_t GREATER                { Toption x         }
-| LIST        LESS x=type_t GREATER                { Tlist x           }
-| SET         LESS x=type_t GREATER                { Tset x            }
-| MAP         LESS k=type_t COMMA v=type_s GREATER { Tmap (k, v)       }
-| BIG_MAP     LESS k=type_t COMMA v=type_s GREATER { Tbig_map (k, v)   }
-| OR          LESS k=type_t COMMA v=type_s GREATER { Tor (k, v)        }
-| LAMBDA      LESS a=type_t COMMA r=type_s GREATER { Tlambda (a, r)    }
-| CONTRACT    LESS x=type_t GREATER                { Tcontract x       }
-| x=paren(type_r)                                  { x                 }
+| x=ident                                          { Tref x                 }
+| c=container LESS x=type_t GREATER                { Tcontainer (x, c)      }
+| PKEY        LESS x=type_t GREATER                { Tkeyof x               }
+| OPTION      LESS x=type_t GREATER                { Toption x              }
+| LIST        LESS x=type_t GREATER                { Tlist x                }
+| SET         LESS x=type_t GREATER                { Tset x                 }
+| MAP         LESS k=type_t COMMA v=type_s GREATER { Tmap (k, v)            }
+| BIG_MAP     LESS k=type_t COMMA v=type_s GREATER { Tbig_map (k, v)        }
+| OR          LESS k=type_t COMMA v=type_s GREATER { Tor (k, v)             }
+| LAMBDA      LESS a=type_t COMMA r=type_s GREATER { Tlambda (a, r)         }
+| CONTRACT    LESS x=type_t GREATER                { Tcontract x            }
+| TICKET      LESS x=type_t GREATER                { Tticket x              }
+| SAPLING_STATE       n=paren(NUMBERNAT)           { Tsapling_state       n }
+| SAPLING_TRANSACTION n=paren(NUMBERNAT)           { Tsapling_transaction n }
+| x=paren(type_r)                                  { x                      }
 
 %inline type_tuples:
 | xs=type_tuple+ { xs }
@@ -771,9 +765,32 @@ branch:
 %inline patterns:
  | xs=loc(pattern)+ { xs }
 
-pattern:
-  | PIPE UNDERSCORE { Pwild }
-  | PIPE i=ident    { Pref i }
+%inline pattern:
+ | PIPE p=pattern_r { p }
+
+%inline pattern_r:
+ | UNDERSCORE
+     { Pwild }
+
+ | i=loc(pname) x=ident
+     { Pref (i, [x]) }
+
+ | i=loc(pname) xs=paren(separated_nonempty_list(COMMA, ident))?
+     { Pref (i, Tools.Option.get_dfl [] xs) }
+
+| LBRACKET RBRACKET
+     { let lc = Location.make $startpos $endpos in
+       Pref (mkloc lc PNil, []) }
+
+| x1=ident lc=loc(COLONCOLON) x2=ident
+     { Pref (mkloc (loc lc) PCons, [x1; x2]) }
+
+pname:
+ | x=ident { PIdent (unloc x) }
+ | SOME    { PSome  }
+ | NONE    { PNone  }
+ | LEFT    { PLeft  }
+ | RIGHT   { PRight }
 
 %inline expr:
  | e=loc(expr_r) { e }
@@ -806,6 +823,9 @@ ident_typ_q:
 expr_r:
  | LPAREN RPAREN
      { Enothing }
+
+ | UNIT
+     { Eunit }
 
  | q=quantifier id=ident t=quant_kind COMMA y=expr
      { Equantifier (q, id, t, y) }
@@ -924,16 +944,9 @@ order_operations:
  | x=loc(simple_expr_r) { x }
 
 simple_expr_r:
-
  | MATCH x=expr WITH xs=branchs END { Ematchwith (x, xs) }
 
- | MATCH_OPTION x=expr WITH PIPE SOME id=paren(ident) IMPLY ve=expr PIPE NONE IMPLY ne=expr END { Ematchoption (x, id, ve, ne) }
-
- | MATCH_OR x=expr WITH PIPE LEFT lid=paren(ident) IMPLY le=expr PIPE RIGHT rid=paren(ident) IMPLY re=expr END { Ematchor (x, lid, le, rid, re) }
-
- | MATCH_LIST x=expr WITH PIPE hid=ident COLONCOLON tid=ident IMPLY hte=expr PIPE LBRACKET RBRACKET IMPLY ee=expr END { Ematchlist (x, hid, tid, hte, ee) }
-
- | LOOP_LEFT LPAREN x=expr COMMA id=ident IMPLY e=expr RPAREN { Eloopleft (x, id, e) }
+ | FOLD LPAREN x=expr COMMA id=ident IMPLY e=expr RPAREN { Efold (x, id, e) }
 
  | MAP LPAREN x=expr COMMA id=ident IMPLY e=expr RPAREN { Emap (x, id, e) }
 
@@ -1161,3 +1174,6 @@ security_arg_unloc:
 
 %inline postfix(X, P):
 | x=X P { x }
+
+%inline prefix(P, X):
+| P x=X { x }

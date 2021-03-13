@@ -96,11 +96,6 @@ let output (model : Model.model) =
     begin
       let printer =
         match !Options.target with
-        | Debug        -> Printer_model.pp_model
-        | Ligo         -> Printer_model_ligo.pp_model
-        | LigoStorage  -> Printer_model_ligo.pp_storage
-        | SmartPy      -> Printer_model_smartpy.pp_model
-        | Scaml        -> Printer_model_scaml.pp_model
         | Michelson
         | MichelsonStorage
         | Javascript -> begin
@@ -112,10 +107,10 @@ let output (model : Model.model) =
                 if !Options.opt_ir
                 then Format.fprintf fmt "%a@." Printer_michelson.pp_ir ir
                 else begin
+                  let michelson = Gen_michelson.to_michelson ir in
                   match !Options.target with
                   | MichelsonStorage -> Format.fprintf fmt "%a@." Printer_michelson.pp_data ir.storage_data
                   | Michelson ->
-                    let michelson = Gen_michelson.to_michelson ir in
                     if !Options.opt_raw_michelson
                     then Format.fprintf fmt "%a@." Michelson.pp_michelson michelson
                     else begin
@@ -137,8 +132,6 @@ let output (model : Model.model) =
                           Printer_michelson.pp_michelson michelson
                     end
                   | Javascript -> begin
-                      let ir = Gen_michelson.to_ir model in
-                      let michelson = Gen_michelson.to_michelson ir in
                       let micheline = Michelson.Utils.to_micheline michelson ir.storage_data in
                       Format.fprintf fmt "%a@\n@." Printer_michelson.pp_javascript micheline
                     end
@@ -195,103 +188,12 @@ let generate_api_storage      = Gen_api_storage.generate_api_storage
 
 let generate_target model =
 
+  let _print_model m =
+    Format.eprintf "%a@\n" Printer_model.pp_model m;
+    m
+  in
+
   match !Options.target with
-  | Ligo
-  | LigoStorage ->
-    model
-    |> replace_ligo_ident
-    |> getter_to_entry ~no_underscore:true
-    |> process_parameter
-    (* |> reverse_operations *)
-    |> process_multi_keys
-    |> replace_col_by_key_for_ckfield
-    |> process_asset_state
-    |> replace_assignfield_by_update
-    |> remove_add_update
-    |> remove_container_op_in_update
-    |> merge_update
-    |> remove_assign_operator
-    |> extract_item_collection_from_add_asset
-    |> process_internal_string
-    |> remove_rational
-    |> abs_tez
-    |> replace_date_duration_by_timestamp
-    |> eval_variable_initial_value
-    |> replace_dotassetfield_by_dot
-    |> generate_storage
-    |> replace_declvar_by_letin
-    |> remove_enum_matchwith
-    |> replace_lit_address_by_role
-    |> remove_label
-    |> flat_sequence
-    |> remove_cmp_bool
-    |> split_key_values
-    |> remove_duplicate_key
-    |> assign_loop_label
-    |> remove_letin_from_expr
-    |> remove_fun_dotasset
-    |> eval_storage
-    |> optimize
-    |> generate_api_storage
-    |> output
-
-  | SmartPy ->
-    model
-    |> replace_col_by_key_for_ckfield
-    |> getter_to_entry
-    |> process_parameter
-    (* |> reverse_operations *)
-    |> process_multi_keys
-    |> process_asset_state
-    |> replace_assignfield_by_update
-    |> remove_add_update
-    |> remove_container_op_in_update
-    |> merge_update
-    |> remove_assign_operator
-    |> extract_item_collection_from_add_asset
-    |> process_internal_string
-    |> remove_rational
-    |> abs_tez
-    |> replace_date_duration_by_timestamp
-    |> eval_variable_initial_value
-    |> replace_dotassetfield_by_dot
-    |> generate_storage
-    |> replace_declvar_by_letin
-    |> remove_enum_matchwith
-    |> replace_lit_address_by_role
-    |> remove_label
-    |> flat_sequence
-    |> remove_cmp_bool
-    |> split_key_values
-    (* |> remove_duplicate_key *)
-    |> assign_loop_label
-    |> remove_letin_from_expr
-    (* |> remove_fun_dotasset *)
-    |> remove_asset
-    |> optimize
-    |> generate_api_storage
-    |> output
-
-  | Scaml ->
-    model
-    |> remove_add_update
-    |> getter_to_entry
-    |> process_parameter
-    (* |> reverse_operations *)
-    |> process_multi_keys
-    |> replace_update_by_set
-    |> generate_storage
-    |> replace_declvar_by_letin
-    |> replace_lit_address_by_role
-    |> remove_label
-    |> flat_sequence
-    |> remove_cmp_bool
-    |> process_single_field_storage
-    |> split_key_values
-    |> optimize
-    |> generate_api_storage
-    |> output
-
   | Michelson
   | MichelsonStorage
   | Javascript ->
@@ -303,7 +205,7 @@ let generate_target model =
     |> process_multi_keys
     |> replace_col_by_key_for_ckfield
     |> move_partition_init_asset
-    |> process_asset_state
+    |> remove_enum
     |> replace_assignfield_by_update
     |> remove_add_update ~with_force:true
     |> merge_update
@@ -316,7 +218,6 @@ let generate_target model =
     |> replace_dotassetfield_by_dot
     |> generate_storage
     |> replace_declvar_by_letin
-    |> remove_enum_matchwith
     |> replace_lit_address_by_role
     |> remove_label
     |> flat_sequence
@@ -324,13 +225,11 @@ let generate_target model =
     |> split_key_values
     |> remove_duplicate_key
     |> assign_loop_label
-    |> remove_letin_from_expr
     |> remove_asset
     |> remove_storage_field_in_function
     |> remove_high_level_model
     |> normalize_storage
     |> remove_constant
-    |> remove_state
     |> eval_storage
     |> optimize
     |> generate_api_storage
@@ -341,10 +240,9 @@ let generate_target model =
     |> replace_whyml_ident
     |> getter_to_entry
     |> process_parameter
-    (* |> reverse_operations *)
     |> process_multi_keys
     |> replace_assignfield_by_update
-    |> process_asset_state
+    |> remove_enum
     |> remove_add_update ~isformula:true
     |> remove_container_op_in_update
     |> merge_update
@@ -356,40 +254,25 @@ let generate_target model =
     |> eval_variable_initial_value
     |> generate_storage
     |> replace_declvar_by_letin
-    (* |> add_explicit_sort *)
-    (* |> remove_enum_matchwith *)
-    (* |> remove_fun_dotasset *)
     |> replace_lit_address_by_role
     |> replace_label_by_mark
     |> flat_sequence
     |> remove_cmp_bool
     |> prune_properties
-    (* |> shallow_asset_verif *)
-    (* |> split_key_values *)
     |> Gen_transform.assign_loop_label
     |> create_var_before_for
     |> extend_loop_iter
     |> replace_for_to_iter
     |> replace_assignfield_by_update
     |> replace_update_by_set
-    |> remove_cmp_enum
     |> remove_cmp_bool
     |> replace_dotassetfield_by_dot
     |> transfer_shadow_variable_to_storage
-    (* |> replace_instr_verif *)
     |> eval_storage
     |> optimize
     |> generate_api_storage ~verif:true
     |> filter_api_storage
-    |> output
-
-  | Debug ->
-    model
-    |> raise_if_error post_model_error prune_properties
-    |> process_multi_keys
-    |> replace_declvar_by_letin
-    |> generate_api_storage
-    (* |> (fun (model : Model.model) -> Format.printf "%a@." (Printer_tools.pp_list "@\n" Printer_model.pp_type) (Model.Utils.get_all_fail_types model)) *)
+    |> fix_container
     |> output
 
   | _ -> ()
@@ -506,16 +389,11 @@ let process_expr_type_string (input : string) =
 let main () =
   set_margin 1000;
   let f = function
-    | "ligo"              -> Options.target := Ligo
-    | "ligo-storage"      -> Options.target := LigoStorage
-    | "smartpy"           -> Options.target := SmartPy
-    | "scaml"             -> Options.target := Scaml
-    | "whyml"             -> Options.target := Whyml
     | "michelson"         -> Options.target := Michelson
     | "michelson-storage" -> Options.target := MichelsonStorage
-    | "markdown"          -> Options.target := Markdown
+    | "whyml"             -> Options.target := Whyml
     | "javascript"        -> Options.target := Javascript
-    | "debug"             -> Options.target := Debug
+    | "markdown"          -> Options.target := Markdown
     |  s ->
       Format.eprintf
         "Unknown target %s (--list-target to see available target)@." s;
@@ -530,7 +408,7 @@ let main () =
       "--decompile", Arg.Set Options.opt_decomp, " Same as -d";
       "-t", Arg.String f, "<lang> Transcode to <lang> language";
       "--target", Arg.String f, " Same as -t";
-      "--list-target", Arg.Unit (fun _ -> Format.printf "target available:@\n  ligo@\n  scaml (beta)@\n  whyml@\n"; exit 0), " List available target languages";
+      "--list-target", Arg.Unit (fun _ -> Format.printf "target available:@\n  michelson@\n  michelson-storage@\n  whyml@\n  javascript@\n"; exit 0), " List available target languages";
       "-pt", Arg.Set Options.opt_pt, " Generate parse tree";
       "--parse-tree", Arg.Set Options.opt_pt, " Same as -pt";
       "-ast", Arg.Set Options.opt_ast, " Generate typed ast";

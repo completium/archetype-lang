@@ -16,22 +16,26 @@ let pp_currency fmt = function
   | Utz  -> Format.fprintf fmt "utz"
 
 let pp_vtyp fmt = function
-  | VTunit       -> Format.fprintf fmt "unit"
-  | VTbool       -> Format.fprintf fmt "bool"
-  | VTnat        -> Format.fprintf fmt "nat"
-  | VTint        -> Format.fprintf fmt "int"
-  | VTrational   -> Format.fprintf fmt "rational"
-  | VTdate       -> Format.fprintf fmt "date"
-  | VTduration   -> Format.fprintf fmt "duration"
-  | VTstring     -> Format.fprintf fmt "string"
-  | VTaddress    -> Format.fprintf fmt "address"
-  | VTrole       -> Format.fprintf fmt "role"
-  | VTcurrency   -> Format.fprintf fmt "tez"
-  | VTsignature  -> Format.fprintf fmt "signature"
-  | VTkey        -> Format.fprintf fmt "key"
-  | VTkeyhash    -> Format.fprintf fmt "key_hash"
-  | VTbytes      -> Format.fprintf fmt "bytes"
-  | VTchainid    -> Format.fprintf fmt "chain_id"
+  | VTunit         -> Format.fprintf fmt "unit"
+  | VTbool         -> Format.fprintf fmt "bool"
+  | VTnat          -> Format.fprintf fmt "nat"
+  | VTint          -> Format.fprintf fmt "int"
+  | VTrational     -> Format.fprintf fmt "rational"
+  | VTdate         -> Format.fprintf fmt "date"
+  | VTduration     -> Format.fprintf fmt "duration"
+  | VTstring       -> Format.fprintf fmt "string"
+  | VTaddress      -> Format.fprintf fmt "address"
+  | VTrole         -> Format.fprintf fmt "role"
+  | VTcurrency     -> Format.fprintf fmt "tez"
+  | VTsignature    -> Format.fprintf fmt "signature"
+  | VTkey          -> Format.fprintf fmt "key"
+  | VTkeyhash      -> Format.fprintf fmt "key_hash"
+  | VTbytes        -> Format.fprintf fmt "bytes"
+  | VTchainid      -> Format.fprintf fmt "chain_id"
+  | VTbls12_381_fr -> Format.fprintf fmt "bls12_381_fr"
+  | VTbls12_381_g1 -> Format.fprintf fmt "bls12_381_g1"
+  | VTbls12_381_g2 -> Format.fprintf fmt "bls12_381_g2"
+  | VTnever        -> Format.fprintf fmt "never"
 
 let pp_container fmt = function
   | Collection -> Format.fprintf fmt "collection"
@@ -89,6 +93,12 @@ let rec pp_ptyp fmt (t : ptyp) =
   | Ttrace t ->
     Format.fprintf fmt "%a"
       pp_trtyp t
+  | Tticket et ->
+    Format.fprintf fmt "ticket<%a>" pp_type et
+  | Tsapling_state n ->
+    Format.fprintf fmt "sapling_state(%i)" n
+  | Tsapling_transaction n ->
+    Format.fprintf fmt "sapling_transaction(%i)" n
 
 and pp_type fmt t = pp_ptyp fmt t
 (* match a with
@@ -108,7 +118,6 @@ let pp_bval fmt (bval : bval) =
     | BVint v           -> Format.fprintf fmt "%ai" pp_big_int v
     | BVnat v           -> pp_big_int fmt v
     | BVbool v          -> pp_str fmt (if v then "true" else "false")
-    | BVenum v          -> pp_str fmt v
     | BVrational (n, d) -> Format.fprintf fmt "(%a / %a)" pp_big_int n pp_big_int d
     | BVdate v          -> Core.pp_date fmt v
     | BVstring s        -> pp_str fmt s
@@ -116,7 +125,7 @@ let pp_bval fmt (bval : bval) =
     | BVaddress v       -> Format.fprintf fmt "@@%a" pp_str v
     | BVduration v      -> Core.pp_duration_for_printer fmt v
     | BVbytes s         -> Format.fprintf fmt "0x%a" pp_str s
-    | BVunit            -> Format.fprintf fmt "()"
+    | BVunit            -> Format.fprintf fmt "Unit"
   in
   pp_struct_poly pp_node fmt bval
 
@@ -183,8 +192,9 @@ let pp_quantifier fmt = function
 
 let pp_pattern fmt (p : pattern) =
   let pp_node fmt = function
-    | Mconst c -> pp_id fmt c
-    | Mwild    -> pp_str fmt "_"
+    | Mconst (c, []) -> pp_id fmt c
+    | Mconst (c, xs) -> Format.fprintf fmt "%a (%a)" pp_id c (pp_list ", " pp_id) xs
+    | Mwild -> pp_str fmt "_"
   in
   pp_struct_poly pp_node fmt p
 
@@ -207,6 +217,7 @@ let to_const = function
   | Cchainid        -> "chain_id"
   | Coperations     -> "operations"
   | Cmetadata       -> "metadata"
+  | Clevel          -> "level"
   (* function *)
   | Cadd            -> "add"
   | Caddupdate      -> "addupdate"
@@ -248,7 +259,6 @@ let to_const = function
   | Ctail           -> "tail"
   | Cabs            -> "abs"
   | Cprepend        -> "prepend"
-  | Cheadtail       -> "head_tail"
   | Creverse        -> "reverse"
   (* map *)
   | Cmput           -> "put"
@@ -261,8 +271,23 @@ let to_const = function
   | Cblake2b        -> "blake2b"
   | Csha256         -> "sha256"
   | Csha512         -> "sha512"
+  | Csha3           -> "sha3"
+  | Ckeccak         -> "keccak"
   | Cchecksignature -> "check_signature"
   | Chashkey        -> "hash_key"
+  (* voting *)
+  | Ctotalvotingpower -> "total_voting_power"
+  | Cvotingpower      -> "voting_power"
+  (* ticket *)
+  | Ccreateticket   -> "create_ticket"
+  | Creadticket     -> "read_ticket"
+  | Csplitticket    -> "split_ticket"
+  | Cjointickets    -> "join_tickets"
+  (* sapling *)
+  | Csapling_empty_state   -> "sapling_empty_state"
+  | Csapling_verify_update -> "sapling_verify_update"
+  (* bls curve *)
+  | Cpairing_check  -> "pairing_check"
   (* vset *)
   | Cbefore         -> "before"
   | Citerated       -> "iterated"
@@ -320,7 +345,7 @@ let rec pp_pterm fmt (pterm : pterm) =
 
     | Pmatchoption (x, id, ve, ne) ->
       let pp fmt (x, id, ve, ne) =
-        Format.fprintf fmt "match_option %a with@\n  | some (%a) -> (@[%a@])@\n  | none -> (@[%a@])@\nend"
+        Format.fprintf fmt "match %a with@\n  | some (%a) -> (@[%a@])@\n  | none -> (@[%a@])@\nend"
           pp_pterm x
           pp_id id
           pp_pterm ve
@@ -330,7 +355,7 @@ let rec pp_pterm fmt (pterm : pterm) =
 
     | Pmatchor (x, lid, le, rid, re) ->
       let pp fmt (x, lid, le, rid, re) =
-        Format.fprintf fmt "match_or %a with@\n  | left (%a) -> (@[%a@])@\n  | right (%a) -> (@[%a@])@\nend"
+        Format.fprintf fmt "match %a with@\n  | left (%a) -> (@[%a@])@\n  | right (%a) -> (@[%a@])@\nend"
           pp_pterm x
           pp_id lid
           pp_pterm le
@@ -341,7 +366,7 @@ let rec pp_pterm fmt (pterm : pterm) =
 
     | Pmatchlist (x, hid, tid, hte, ee) ->
       let pp fmt (x, hid, tid, hte, ee) =
-        Format.fprintf fmt "match_list %a with@\n  | %a::%a -> (@[%a@])@\n  | [] -> (@[%a@])@\nend"
+        Format.fprintf fmt "match %a with@\n  | %a::%a -> (@[%a@])@\n  | [] -> (@[%a@])@\nend"
           pp_pterm x
           pp_id hid
           pp_id tid
@@ -350,9 +375,9 @@ let rec pp_pterm fmt (pterm : pterm) =
       in
       (pp_with_paren pp) fmt (x, hid, tid, hte, ee)
 
-    | Ploopleft (x, id, e) ->
+    | Pfold (x, id, e) ->
       let pp fmt (x, id, e) =
-        Format.fprintf fmt "loop_left (%a, %a -> (@[%a@]))@\n"
+        Format.fprintf fmt "fold (%a, %a -> (@[%a@]))@\n"
           pp_pterm x
           pp_id id
           pp_pterm e
@@ -719,7 +744,7 @@ let rec pp_instruction fmt (i : instruction) =
 
     | Imatchoption (x, id, ve, ne) ->
       let pp fmt (x, id, ve, ne) =
-        Format.fprintf fmt "match_option %a with@\n  | some (%a) -> (@[%a@])@\n  | none -> (@[%a@])@\nend"
+        Format.fprintf fmt "match %a with@\n  | some (%a) -> (@[%a@])@\n  | none -> (@[%a@])@\nend"
           pp_pterm x
           pp_id id
           pp_instruction ve
@@ -729,7 +754,7 @@ let rec pp_instruction fmt (i : instruction) =
 
     | Imatchor (x, lid, le, rid, re) ->
       let pp fmt (x, lid, le, rid, re) =
-        Format.fprintf fmt "match_or %a with@\n  | left (%a) -> (@[%a@])@\n  | right (%a) -> (@[%a@])@\nend"
+        Format.fprintf fmt "match %a with@\n  | left (%a) -> (@[%a@])@\n  | right (%a) -> (@[%a@])@\nend"
           pp_pterm x
           pp_id lid
           pp_instruction le
@@ -740,7 +765,7 @@ let rec pp_instruction fmt (i : instruction) =
 
     | Imatchlist (x, hid, tid, hte, ee) ->
       let pp fmt (x, hid, tid, hte, ee) =
-        Format.fprintf fmt "match_list %a with@\n  | %a::%a -> (@[%a@])@\n  | [] -> (@[%a@])@\nend"
+        Format.fprintf fmt "match %a with@\n  | %a::%a -> (@[%a@])@\n  | [] -> (@[%a@])@\nend"
           pp_pterm x
           pp_id hid
           pp_id tid
@@ -1046,8 +1071,13 @@ let pp_record fmt (r : record) =
     (pp_position pp_id) r.pos
 
 let pp_enum_item fmt (ei : lident enum_item_struct) =
-  Format.fprintf fmt "| %a%a%a"
+  Format.fprintf fmt "| %a%a%a%a"
     pp_id ei.name
+    (fun fmt l ->
+       if List.is_empty l
+       then ()
+       else (Format.fprintf fmt " of %a" (pp_list " * " pp_type) l)
+    ) ei.args
     (pp_do_if ei.initial pp_str) " initial"
     (pp_do_if (not (List.is_empty ei.invariants)) (
         fun fmt ->

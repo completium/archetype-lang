@@ -11,38 +11,36 @@ let rec pp_type fmt (t : type_) =
     | _ -> pp_str fmt str
   in
   match t.node with
-  | Tkey                 -> pp_simple_a "key"
-  | Tunit                -> pp_simple_a "unit"
-  | Tsignature           -> pp_simple_a "signature"
-  | Toption    t         -> Format.fprintf fmt "(option%a %a)"     pp_annot_opt () pp_type t
-  | Tlist      t         -> Format.fprintf fmt "(list%a %a)"       pp_annot_opt () pp_type t
-  | Tset       t         -> Format.fprintf fmt "(set%a %a)"        pp_annot_opt () pp_type t
-  | Toperation           -> pp_simple_a "operation"
-  | Tcontract  t         -> Format.fprintf fmt "(contract%a %a)"   pp_annot_opt () pp_type t
-  | Tpair      (lt, rt)  -> Format.fprintf fmt "(pair%a %a %a)"    pp_annot_opt () pp_type lt  pp_type rt
-  | Tor        (lt, rt)  -> Format.fprintf fmt "(or%a %a %a)"      pp_annot_opt () pp_type lt  pp_type rt
-  | Tlambda    (at, rt)  -> Format.fprintf fmt "(lambda%a %a %a)"  pp_annot_opt () pp_type at  pp_type rt
-  | Tmap       (kt, vt)  -> Format.fprintf fmt "(map%a %a %a)"     pp_annot_opt () pp_type kt  pp_type vt
-  | Tbig_map   (kt, vt)  -> Format.fprintf fmt "(big_map%a %a %a)" pp_annot_opt () pp_type kt  pp_type vt
-  | Tchain_id            -> pp_simple_a "chain_id"
-  | Tint                 -> pp_simple_a "int"
-  | Tnat                 -> pp_simple_a "nat"
-  | Tstring              -> pp_simple_a "string"
-  | Tbytes               -> pp_simple_a "bytes"
-  | Tmutez               -> pp_simple_a "mutez"
-  | Tbool                -> pp_simple_a "bool"
-  | Tkey_hash            -> pp_simple_a "key_hash"
-  | Ttimestamp           -> pp_simple_a "timestamp"
-  | Taddress             -> pp_simple_a "address"
-  | Tsapling_transaction -> pp_simple_a "sapling_transaction"
-  | Tsapling_state       -> pp_simple_a "sapling_state"
-  | Tnever               -> pp_simple_a "never"
-  | Tbls12_381_g1        -> pp_simple_a "bls12_381_g1"
-  | Tbls12_381_g2        -> pp_simple_a "bls12_381_g2"
-  | Tbls12_381_fr        -> pp_simple_a "bls12_381_fr"
-  | Tbaker_hash          -> pp_simple_a "baker_hash"
-  | Tbaker_operation     -> pp_simple_a "baker_operation"
-  | Tpvss_key            -> pp_simple_a "pvss_key"
+  | Tkey                   -> pp_simple_a "key"
+  | Tunit                  -> pp_simple_a "unit"
+  | Tsignature             -> pp_simple_a "signature"
+  | Toption    t           -> Format.fprintf fmt "(option%a %a)"     pp_annot_opt () pp_type t
+  | Tlist      t           -> Format.fprintf fmt "(list%a %a)"       pp_annot_opt () pp_type t
+  | Tset       t           -> Format.fprintf fmt "(set%a %a)"        pp_annot_opt () pp_type t
+  | Toperation             -> pp_simple_a "operation"
+  | Tcontract  t           -> Format.fprintf fmt "(contract%a %a)"   pp_annot_opt () pp_type t
+  | Tpair      (lt, rt)    -> Format.fprintf fmt "(pair%a %a %a)"    pp_annot_opt () pp_type lt  pp_type rt
+  | Tor        (lt, rt)    -> Format.fprintf fmt "(or%a %a %a)"      pp_annot_opt () pp_type lt  pp_type rt
+  | Tlambda    (at, rt)    -> Format.fprintf fmt "(lambda%a %a %a)"  pp_annot_opt () pp_type at  pp_type rt
+  | Tmap       (kt, vt)    -> Format.fprintf fmt "(map%a %a %a)"     pp_annot_opt () pp_type kt  pp_type vt
+  | Tbig_map   (kt, vt)    -> Format.fprintf fmt "(big_map%a %a %a)" pp_annot_opt () pp_type kt  pp_type vt
+  | Tchain_id              -> pp_simple_a "chain_id"
+  | Tint                   -> pp_simple_a "int"
+  | Tnat                   -> pp_simple_a "nat"
+  | Tstring                -> pp_simple_a "string"
+  | Tbytes                 -> pp_simple_a "bytes"
+  | Tmutez                 -> pp_simple_a "mutez"
+  | Tbool                  -> pp_simple_a "bool"
+  | Tkey_hash              -> pp_simple_a "key_hash"
+  | Ttimestamp             -> pp_simple_a "timestamp"
+  | Taddress               -> pp_simple_a "address"
+  | Tticket       t        -> Format.fprintf fmt "(ticket%a %a)"        pp_annot_opt () pp_type t
+  | Tsapling_state       n -> Format.fprintf fmt "(sapling_state %i)" n
+  | Tsapling_transaction n -> Format.fprintf fmt "(sapling_transaction %i)" n
+  | Tbls12_381_fr          -> pp_simple_a "bls12_381_fr"
+  | Tbls12_381_g1          -> pp_simple_a "bls12_381_g1"
+  | Tbls12_381_g2          -> pp_simple_a "bls12_381_g2"
+  | Tnever                 -> pp_simple_a "never"
 
 let rec pp_pretty_type fmt (t : type_) =
   match t.node with
@@ -73,7 +71,7 @@ let rec pp_data fmt (d : data) =
   | Dnone           -> pp "None"
   | Dlist l         -> pp "{ %a }" (pp_list "; " pp_data) l
   | Delt (x, y)     -> pp "Elt %a %a" pp_data x pp_data y
-  | Dvar x          -> pp "%s" x
+  | Dvar (x, _)     -> pp "%s" x
 
 let rec pp_code fmt (i : code) =
   let pp s = Format.fprintf fmt s in
@@ -207,6 +205,11 @@ let rec pp_code fmt (i : code) =
   | UNIT                     -> pp "UNIT"
   | UNPACK t                 -> pp "UNPACK %a" pp_type t
   | UPDATE                   -> pp "UPDATE"
+  (* Operations on tickets *)
+  | JOIN_TICKETS             -> pp "JOIN_TICKETS"
+  | READ_TICKET              -> pp "READ_TICKET"
+  | SPLIT_TICKET             -> pp "SPLIT_TICKET"
+  | TICKET                   -> pp "TICKET"
   (* Other *)
   | UNPAIR                   -> pp "UNPAIR"
   | SELF_ADDRESS             -> pp "SELF_ADDRESS"
@@ -215,7 +218,7 @@ let rec pp_code fmt (i : code) =
   | RENAME                   -> pp "RENAME"
   | STEPS_TO_QUOTA           -> pp "STEPS_TO_QUOTA"
   | LEVEL                    -> pp "LEVEL"
-  | SAPLING_EMPTY_STATE      -> pp "SAPLING_EMPTY_STATE"
+  | SAPLING_EMPTY_STATE n    -> pp "SAPLING_EMPTY_STATE %i" n
   | SAPLING_VERIFY_UPDATE    -> pp "SAPLING_VERIFY_UPDATE"
   | NEVER                    -> pp "NEVER"
   | VOTING_POWER             -> pp "VOTING_POWER"
@@ -442,10 +445,93 @@ let rec pp_instruction fmt (i : instruction) =
   | Iiter (ids, c, b)          -> pp "iter %a on (%a) do@\n  @[%a@]@\ndone" (pp_list ", " pp_id) ids f c f b
   | Iloopleft (l, _, b)        -> pp "@[loop_left (%a) do@\n  @[%a@]@\ndone@]" f l f b
   | Ilambda (rt, id, at, e)    -> pp "lambda<%a>((%s : %a) -> %a)" pp_type rt id pp_type at f e
-  | Izop op                    -> pp_zop fmt op
-  | Iunop (op, e)              -> pp_uop f fmt (op, e)
-  | Ibinop (op, lhs, rhs)      -> pp_bop f fmt (op, lhs, rhs)
-  | Iterop (op, a1, a2, a3)    -> pp_top f fmt (op, a1, a2, a3)
+  | Izop op -> begin
+      match op with
+      | Znow                -> pp "now"
+      | Zamount             -> pp "amount"
+      | Zbalance            -> pp "balance"
+      | Zsource             -> pp "source"
+      | Zsender             -> pp "sender"
+      | Zaddress            -> pp "address"
+      | Zchain_id           -> pp "chain_id"
+      | Zself _             -> pp "self"
+      | Zself_address       -> pp "self_address"
+      | Znone t             -> pp "none(%a)" pp_type t
+      | Zunit               -> pp "unit"
+      | Znil t              -> pp "nil(%a)" pp_type t
+      | Zemptyset t         -> pp "emptyset(%a)" pp_type t
+      | Zemptymap (k, v)    -> pp "emptymap(%a, %a)" pp_type k pp_type v
+      | Zemptybigmap (k, v) -> pp "emptybigmap(%a, %a)" pp_type k pp_type v
+      | Ztotalvotingpower   -> pp "totalvotingpower"
+      | Zlevel              -> pp "level"
+      | Zsapling_empty_state n -> pp "sapling_empty_state(%i)" n
+    end
+  | Iunop (op, e) -> begin
+      match op with
+      | Ucar        -> pp "car(%a)"          f e
+      | Ucdr        -> pp "cdr(%a)"          f e
+      | Uleft  t    -> pp "left<%a>(%a)"     pp_type t f e
+      | Uright t    -> pp "right<%a>(%a)"    pp_type t f e
+      | Uneg        -> pp "neg(%a)"          f e
+      | Uint        -> pp "int(%a)"          f e
+      | Unot        -> pp "not(%a)"          f e
+      | Uabs        -> pp "abs(%a)"          f e
+      | Uisnat      -> pp "isnat(%a)"        f e
+      | Usome       -> pp "some(%a)"         f e
+      | Usize       -> pp "size(%a)"         f e
+      | Upack       -> pp "pack(%a)"         f e
+      | Uunpack t   -> pp "unpack<%a>(%a)"   pp_type t f e
+      | Ublake2b    -> pp "blake2b(%a)"      f e
+      | Usha256     -> pp "sha256(%a)"       f e
+      | Usha512     -> pp "sha512(%a)"       f e
+      | Usha3       -> pp "sha3(%a)"         f e
+      | Ukeccak     -> pp "keccak(%a)"       f e
+      | Uhash_key   -> pp "hash_key(%a)"     f e
+      | Ufail       -> pp "fail(%a)"         f e
+      | Ucontract (t, a) -> pp "contract%a<%a>(%a)" (pp_option (fun fmt x -> Format.fprintf fmt "%%%a" pp_id x)) a pp_type t f e
+      | Usetdelegate     -> pp "setdelegate(%a)" f e
+      | Uimplicitaccount -> pp "implicitaccount(%a)" f e
+      | Ueq        -> pp "eq(%a)"        f e
+      | Une        -> pp "ne(%a)"        f e
+      | Ugt        -> pp "gt(%a)"        f e
+      | Uge        -> pp "ge(%a)"        f e
+      | Ult        -> pp "lt(%a)"        f e
+      | Ule        -> pp "le(%a)"        f e
+      | Uvotingpower -> pp "voting_power(%a)" f e
+      | Ureadticket  -> pp "read_ticket(%a)"  f e
+      | Ujointickets -> pp "join_tickets(%a)" f e
+      | Upairing_check -> pp "pairing_check"
+    end
+  | Ibinop (op, lhs, rhs) -> begin
+      match op with
+      | Badd       -> pp "(%a) + (%a)"       f lhs f rhs
+      | Bsub       -> pp "(%a) - (%a)"       f lhs f rhs
+      | Bmul       -> pp "(%a) * (%a)"       f lhs f rhs
+      | Bediv      -> pp "(%a) / (%a)"       f lhs f rhs
+      | Blsl       -> pp "(%a) << (%a)"      f lhs f rhs
+      | Blsr       -> pp "(%a) >> (%a)"      f lhs f rhs
+      | Bor        -> pp "(%a) or (%a)"      f lhs f rhs
+      | Band       -> pp "(%a) and (%a)"     f lhs f rhs
+      | Bxor       -> pp "(%a) xor (%a)"     f lhs f rhs
+      | Bcompare   -> pp "compare (%a, %a)"  f lhs f rhs
+      | Bget       -> pp "get(%a, %a)"       f lhs f rhs
+      | Bmem       -> pp "mem(%a, %a)"       f lhs f rhs
+      | Bconcat    -> pp "concat(%a, %a)"    f lhs f rhs
+      | Bcons      -> pp "cons(%a, %a)"      f lhs f rhs
+      | Bpair      -> pp "pair(%a, %a)"      f lhs f rhs
+      | Bexec      -> pp "exec(%a, %a)"      f lhs f rhs
+      | Bapply     -> pp "apply(%a, %a)"     f lhs f rhs
+      | Bcreateticket -> pp "create_ticket(%a, %a)" f lhs f rhs
+      | Bsplitticket  -> pp "split_ticket(%a, %a)"  f lhs f rhs
+      | Bsapling_verify_update -> pp "sapling_verify_update"
+    end
+  | Iterop (op, a1, a2, a3) -> begin
+      match op with
+      | Tcheck_signature -> pp "check_signature(%a, %a, %a)" f a1 f a2 f a3
+      | Tslice           -> pp "slice(%a, %a, %a)"           f a1 f a2 f a3
+      | Tupdate          -> pp "update(%a, %a, %a)"          f a1 f a2 f a3
+      | Ttransfer_tokens -> pp "transfer_tokens(%a, %a, %a)" f a1 f a2 f a3
+    end
   | Icompare (op, lhs, rhs) -> begin
       match op with
       | Ceq        -> pp "(%a) = (%a)"       f lhs f rhs
@@ -517,6 +603,9 @@ let pp_michelson fmt (m : michelson) =
 let pp_a fmt (tag, value) =
   Format.fprintf fmt "\"%s\": \"%s\"" tag value
 
+let pp_b fmt (tag, value) =
+  Format.fprintf fmt "\"%s\": %s" tag value
+
 let pp_prim fmt pp (p : prim) =
   if List.is_empty p.args && List.is_empty p.annots
   then Format.fprintf fmt "{  %a  }" pp_a ("prim", p.prim)
@@ -542,7 +631,14 @@ let rec pp_obj_micheline fmt (o : obj_micheline) =
   | Obytes  v -> pp pp_a ("bytes", v)
   | Oint    v -> pp pp_a ("int", v)
   | Oarray  l -> Format.fprintf fmt "[  %a  ]" (pp_list ",@\n" pp_obj_micheline) l
-  | Ovar    x -> Format.fprintf fmt "%s" x
+  | Ovar    x -> begin
+      match x with
+      | OMVfree   x -> Format.fprintf fmt "%s" x
+      | OMVint    x -> Format.fprintf fmt "{\"int\": %s.toString()}" x
+      | OMVstring x -> pp pp_b ("string", x)
+      | OMVbytes  x -> pp pp_b ("bytes", x)
+      | OMVif (x, a, b) -> Format.fprintf fmt "(%s ? %a : %a)" x pp_obj_micheline a pp_obj_micheline b
+    end
 
 (* let rec pp_raw_prim fmt (p : prim) =
    let pp_space pp fmt l = if List.is_empty l then () else Format.fprintf fmt " %a" pp l in
@@ -576,18 +672,114 @@ let pp_micheline fmt (m : micheline) =
 
 (* -------------------------------------------------------------------------- *)
 
-let rec pp_dcode (fmt : Format.formatter) (c : dcode) =
-  match c with
-  | [] ->
-    Format.fprintf fmt "%s" "pass"
+let rec pp_dexpr fmt (de : dexpr) =
+  let pp x = Format.fprintf fmt x in
+  let f = pp_dexpr in
+  let seq x = (pp_list ";@\n" pp_dinstruction) x in
+  match de with
+  | Dalpha n           -> pp "x%i" n
+  | Dvar t             -> pp "var%a" (fun fmt -> (if Option.is_some t.annotation then pp_type fmt else (pp_paren pp_type) fmt)) t
+  | Dstorage t         -> pp "storage(%a)" pp_type t
+  | Doperations        -> pp "operations"
+  | Dlbdparam          -> pp "lambda_parameter"
+  | Dlbdresult         -> pp "lambda_result"
+  | Ddata d            -> pp "data(%a)" pp_data d
+  | Dzop op -> begin
+      match op with
+      | Znow                -> pp "now"
+      | Zamount             -> pp "amount"
+      | Zbalance            -> pp "balance"
+      | Zsource             -> pp "source"
+      | Zsender             -> pp "sender"
+      | Zaddress            -> pp "address"
+      | Zchain_id           -> pp "chain_id"
+      | Zself _             -> pp "self"
+      | Zself_address       -> pp "self_address"
+      | Znone t             -> pp "none(%a)" pp_type t
+      | Zunit               -> pp "unit"
+      | Znil t              -> pp "nil(%a)" pp_type t
+      | Zemptyset t         -> pp "emptyset(%a)" pp_type t
+      | Zemptymap (k, v)    -> pp "emptymap(%a, %a)" pp_type k pp_type v
+      | Zemptybigmap (k, v) -> pp "emptybigmap(%a, %a)" pp_type k pp_type v
+      | Ztotalvotingpower   -> pp "totalvotingpower"
+      | Zlevel              -> pp "level"
+      | Zsapling_empty_state n -> pp "sapling_empty_state(%i)" n
+    end
+  | Duop (op, e) -> begin
+      match op with
+      | Ucar        -> pp "car(%a)"          f e
+      | Ucdr        -> pp "cdr(%a)"          f e
+      | Uleft  t    -> pp "left<%a>(%a)"     pp_type t f e
+      | Uright t    -> pp "right<%a>(%a)"    pp_type t f e
+      | Uneg        -> pp "neg(%a)"          f e
+      | Uint        -> pp "int(%a)"          f e
+      | Unot        -> pp "not(%a)"          f e
+      | Uabs        -> pp "abs(%a)"          f e
+      | Uisnat      -> pp "isnat(%a)"        f e
+      | Usome       -> pp "some(%a)"         f e
+      | Usize       -> pp "size(%a)"         f e
+      | Upack       -> pp "pack(%a)"         f e
+      | Uunpack t   -> pp "unpack<%a>(%a)"   pp_type t f e
+      | Ublake2b    -> pp "blake2b(%a)"      f e
+      | Usha256     -> pp "sha256(%a)"       f e
+      | Usha512     -> pp "sha512(%a)"       f e
+      | Usha3       -> pp "sha3(%a)"         f e
+      | Ukeccak     -> pp "keccak(%a)"       f e
+      | Uhash_key   -> pp "hash_key(%a)"     f e
+      | Ufail       -> pp "fail(%a)"         f e
+      | Ucontract (t, a) -> pp "contract%a<%a>(%a)" (pp_option (fun fmt x -> Format.fprintf fmt "%%%a" pp_id x)) a pp_type t f e
+      | Usetdelegate     -> pp "setdelegate(%a)" f e
+      | Uimplicitaccount -> pp "implicitaccount(%a)" f e
+      | Ueq        -> pp "eq(%a)"        f e
+      | Une        -> pp "ne(%a)"        f e
+      | Ugt        -> pp "gt(%a)"        f e
+      | Uge        -> pp "ge(%a)"        f e
+      | Ult        -> pp "lt(%a)"        f e
+      | Ule        -> pp "le(%a)"        f e
+      | Uvotingpower -> pp "votingpower(%a)" f e
+      | Ureadticket  -> pp "read_ticket(%a)" f e
+      | Ujointickets -> pp "join_tickets(%a)" f e
+      | Upairing_check -> pp "pairing_check"
+    end
+  | Dbop (op, lhs, rhs) -> begin
+      match op with
+      | Badd          -> pp "(%a) + (%a)"            f lhs f rhs
+      | Bsub          -> pp "(%a) - (%a)"            f lhs f rhs
+      | Bmul          -> pp "(%a) * (%a)"            f lhs f rhs
+      | Bediv         -> pp "(%a) / (%a)"            f lhs f rhs
+      | Blsl          -> pp "(%a) << (%a)"           f lhs f rhs
+      | Blsr          -> pp "(%a) >> (%a)"           f lhs f rhs
+      | Bor           -> pp "(%a) or (%a)"           f lhs f rhs
+      | Band          -> pp "(%a) and (%a)"          f lhs f rhs
+      | Bxor          -> pp "(%a) xor (%a)"          f lhs f rhs
+      | Bcompare      -> pp "compare (%a, %a)"       f lhs f rhs
+      | Bget          -> pp "get(%a, %a)"            f lhs f rhs
+      | Bmem          -> pp "mem(%a, %a)"            f lhs f rhs
+      | Bconcat       -> pp "concat(%a, %a)"         f lhs f rhs
+      | Bcons         -> pp "cons(%a, %a)"           f lhs f rhs
+      | Bpair         -> pp "pair(%a, %a)"           f lhs f rhs
+      | Bexec         -> pp "exec(%a, %a)"           f lhs f rhs
+      | Bapply        -> pp "apply(%a, %a)"          f lhs f rhs
+      | Bcreateticket -> pp "create_tickets(%a, %a)" f lhs f rhs
+      | Bsplitticket  -> pp "split_ticket(%a, %a)"   f lhs f rhs
+      | Bsapling_verify_update -> pp "sapling_verify_update"
+    end
+  | Dtop (op, a1, a2, a3) -> begin
+      match op with
+      | Tcheck_signature -> pp "check_signature(%a, %a, %a)" f a1 f a2 f a3
+      | Tslice           -> pp "slice(%a, %a, %a)"           f a1 f a2 f a3
+      | Tupdate          -> pp "update(%a, %a, %a)"          f a1 f a2 f a3
+      | Ttransfer_tokens -> pp "transfer_tokens(%a, %a, %a)" f a1 f a2 f a3
+    end
+  | Dapply (l, a)            -> pp "apply(%a, %a)" f l f a
+  | Dexec (l, a)             -> pp "exec(%a, %a)" f l f a
+  | Dlambda (at, rt, instrs) -> pp "@[lambda<%a>(@[(_ : %a) ->@\n@[%a@]@])@]" pp_type at pp_type rt seq instrs
+  | Dloopleft (c, b)         -> pp "@[loopleft (%a) do@\n  @[%a@]@\ndone@]" pp_dexpr c seq b
+  | Dmap  (c, b)             -> pp "@[map (%a) do@\n  @[%a@]@\ndone@]" pp_dexpr c seq b
 
-  | _ ->
-    Format.fprintf fmt "%a"
-      (Format.pp_print_list
-         ~pp_sep:(fun fmt () -> Format.fprintf fmt "@\n") pp_dinstr)
-      c
-
-and pp_dinstr (fmt : Format.formatter) (i : dinstr) =
+and pp_dinstruction fmt i =
+  let pp x = Format.fprintf fmt x in
+  let seq is = (pp_list ";@\n" pp_dinstruction) is in
   match i with
   | DIAssign (x, e) ->
     Format.fprintf fmt "%a <- %a" pp_var x pp_expr e
@@ -668,15 +860,12 @@ let pp_dprogram fmt (d : dprogram) =
 let pp_javascript_header fmt _ =
   Format.fprintf fmt "\
   /* Utils functions */@\n@\n\
-  export const mk_int    = v  => { \"int\" : v }@\n\
-  export const mk_string = v  => { \"string\" : v }@\n\
-  export const mk_bytes  = v  => { \"bytes\" : v }@\n\
-  export const mk_some   = v  => { \"prim\": \"Some\", \"args\": [ v ] }@\n\
-  export const mk_none   = () => { \"prim\": \"None\" }@\n\
-  export const mk_rational = (n, d) => {  \"prim\": \"Pair\", \"args\": [ {  \"int\": n  }, {  \"int\": d  } ] }
-  @\n\
-  @\n\
-  "
+  export const mk_int    = v  => {return { \"int\" : v.toString() }}@\n\
+  export const mk_string = v  => {return { \"string\" : v }}@\n\
+  export const mk_bytes  = v  => {return { \"bytes\" : v.toString() }}@\n\
+  export const mk_some   = v  => {return { \"prim\": \"Some\", \"args\": [ v ] }}@\n\
+  export const mk_none   = () => {return { \"prim\": \"None\" }}@\n\
+  export const mk_rational = (n, d) => {return {  \"prim\": \"Pair\", \"args\": [ {  \"int\": n.toString()  }, {  \"int\": d.toString()  } ] }}@\n@\n"
 
 let pp_javascript_content fmt (micheline : Michelson.micheline) =
   let code : obj_micheline = Michelson.Oarray micheline.code in
@@ -691,6 +880,7 @@ let pp_javascript_content fmt (micheline : Michelson.micheline) =
     pp_obj_micheline storage
 
 let pp_javascript fmt (micheline : Michelson.micheline) =
+  Format.fprintf fmt "/* Javascript output generated by %a */@\n@\n" pp_bin ();
   if not !Options.opt_no_js_header then pp_javascript_header fmt ();
   pp_javascript_content fmt micheline
 
