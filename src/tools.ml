@@ -244,6 +244,7 @@ module List : sig
   val cut            : int -> 'a list -> ('a list * 'a list)
   val addput            : 'a -> 'b -> ('a * 'b) list -> ('a * 'b) list
   val find_map       : ('a -> 'b option) -> 'a list -> 'b option
+  val pop           : 'a list -> 'a * 'a list
 
   module Exn : sig
     val assoc     : 'a -> ('a * 'b) list -> 'b option

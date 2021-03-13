@@ -995,7 +995,7 @@ end = struct
 
     | SELF_ADDRESS -> decompile_op s (`Zop Zself_address )
 
-    | _ -> assert false
+    | _ -> (Format.eprintf "%a@\n" pp_code i; assert false)
 
   (***************************************************************************************** *)
 
