@@ -27,9 +27,11 @@ end = struct
     let x = find uf x in
     let y = find uf y in
 
-    if x <> y then
-      uf := Mint.add x y !uf;
-    y
+    if   x < y
+    then (uf := Mint.add y x !uf; x)
+    else if   x > y
+         then (uf := Mint.add x y !uf; y)
+         else x
 
   let dup (uf : uf) =
     ref !uf

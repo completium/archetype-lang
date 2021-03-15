@@ -491,10 +491,8 @@ end
 module Set = Set
 
 (* -------------------------------------------------------------------- *)
-module Mint = Map.Make(struct
-    type t = int
-    let compare = (Stdlib.compare : t -> t -> int)
-  end)
+module Sint = Set.Make(Int)
+module Mint = Map.Make(Int)
 
 (* -------------------------------------------------------------------- *)
 module Sstr = Set.Make(String)

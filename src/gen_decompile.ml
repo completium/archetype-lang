@@ -781,6 +781,9 @@ end = struct
   let vlocal  () : dvar = `VLocal (gen ())
   let vglobal x  : dvar = `VGlobal x
 
+  let as_vlocal (x : dvar) =
+    match x with `VLocal i -> i | _ -> assert false
+
   let rec pp_rstack1 fmt (x : rstack1) =
     match x with
     | `VLocal  i -> Format.fprintf fmt "#%d" i
@@ -1227,6 +1230,215 @@ end = struct
     { failure; stack; code = List.flatten (List.rev code); }
 
   (* -------------------------------------------------------------------- *)
+  let rec expr_fv (e : dexpr) =
+    match e with
+    | Dvar (`VLocal x) ->
+        Sint.singleton x
+
+    | Dvar _ ->
+        Sint.empty
+
+    | Depair (e1, e2) ->
+        Sint.union (expr_fv e1) (expr_fv e2)
+
+    | Ddata _ ->
+        Sint.empty
+
+    | Dfun (_, es) ->
+        List.fold_left Sint.union Sint.empty (List.map expr_fv es)
+
+  (* -------------------------------------------------------------------- *)
+  let rec pattern_fv (p : dpattern) =
+    match p with
+    | DVar i ->
+        Sint.singleton i
+
+    | DPair (p1, p2) ->
+        Sint.union (pattern_fv p1) (pattern_fv p2)
+
+  (* -------------------------------------------------------------------- *)
+  let rec instr_wr (i : dinstr) =
+    match i with
+    | DIAssign (`VLocal i, Dvar (`VLocal j)) when i = j ->
+        Sint.empty
+
+    | DIAssign (`VLocal i, _) ->
+        Sint.singleton i
+
+    | DIAssign _ ->
+        Sint.empty
+
+    | DIIf (_, (c1, c2)) ->
+        Sint.union (code_wr c1) (code_wr c2)
+
+    | DIWhile (_, c) ->
+        code_wr c
+
+    | DIIter (x, _, c) -> begin
+        let wr = code_wr c in
+
+        match x with
+        | `VLocal i -> Sint.remove i wr
+        | _ -> wr
+      end
+
+    | DIMatch (_, bs) ->
+        let for1 (_, ps, c) =
+          Sint.diff (code_wr c)
+            (List.fold_left
+               Sint.union Sint.empty
+               (List.map pattern_fv ps)) in
+
+        List.fold_left Sint.union Sint.empty (List.map for1 bs)
+
+    | DIFailwith _ ->
+        Sint.empty
+
+  and code_wr (c : dcode) =
+    List.fold_left Sint.union Sint.empty (List.map instr_wr c)
+
+  (* -------------------------------------------------------------------- *)
+  let rec expr_cttprop (env : dexpr Mint.t) (e : dexpr) =
+    match e with
+    | Dvar (`VLocal x) ->
+        Option.get_dfl e (Mint.find_opt x env)
+
+    | Dvar _ ->
+        e
+
+    | Depair (e1, e2) ->
+        let e1 = expr_cttprop env e1 in
+        let e2 = expr_cttprop env e2 in
+        Depair (e1, e2)
+
+    | Ddata _ ->
+        e
+
+    | Dfun (op, es) ->
+        let es = List.map (expr_cttprop env) es in
+        Dfun (op, es)
+
+  type cttenv = dexpr Mint.t
+
+  let rec instr_cttprop (env0 : cttenv) (code : dinstr) =
+    match code with
+    | DIAssign ((`VLocal i), Dvar (`VLocal j)) when i = j ->
+        env0, []
+
+    | DIAssign ((`VLocal i) as x, e) ->
+        let env = Mint.remove i env0 in
+        let e   = expr_cttprop env e in
+        let efv = expr_fv e in
+        let env = Mint.filter (fun j _ -> not (Sint.mem j efv)) env in
+
+        let env = Mint.add i e env in
+
+
+        env, [DIAssign (x, e)]
+
+    | DIAssign (x, e) ->
+        env0, [DIAssign (x, expr_cttprop env0 e)]
+
+    | DIIf (e, (c1, c2)) ->
+        let wr  = Sint.union (code_wr c1) (code_wr c2) in
+        let env = Sint.fold Mint.remove wr env0 in
+        let _, c1 = code_cttprop env0 c1 in
+        let _, c2 = code_cttprop env0 c2 in
+
+        env, [DIIf (expr_cttprop env0 e, (c1, c2))]
+          
+    | DIWhile (e, c) ->
+        let wr   = code_wr c in
+        let env  = Sint.fold Mint.remove wr env0 in
+        let _, c = code_cttprop env c in
+
+        env, [DIWhile (expr_cttprop env0 e, c)]
+
+    | DIIter (x, e, c) ->
+
+        let x    = as_vlocal x in
+        let wr   = Sint.remove x (code_wr c) in
+        let env  = Sint.fold Mint.remove wr env0 in
+        let _, c = code_cttprop env c in
+
+        env, [DIIter (`VLocal x, expr_cttprop env0 e, c)]
+
+    | DIMatch (e, bs) ->
+        let wr =
+          let for1 (_, p, c) =
+            let fv = List.map pattern_fv p in
+            let fv = List.fold_left Sint.union Sint.empty fv in
+            Sint.fold Sint.remove fv (code_wr c) in
+          List.fold_left Sint.union Sint.empty (List.map for1 bs) in
+
+        let env = Sint.fold Mint.remove wr env0 in
+
+        let bs =
+          let for1 (x, p, c) = (x, p, snd (code_cttprop env0 c)) in
+          List.map for1 bs in
+
+        env, [DIMatch (expr_cttprop env0 e, bs)]
+
+    | DIFailwith e ->
+        env0, [DIFailwith (expr_cttprop env0 e)]
+
+  and code_cttprop (env : cttenv) (code : dcode) =
+    let env, code =
+      List.fold_left_map instr_cttprop env code
+    in env, List.flatten code
+
+  (* -------------------------------------------------------------------- *)
+  let rec instr_kill (keep : Sint.t) (instr : dinstr) =
+    match instr with
+    | DIAssign (`VLocal i, e)
+          when not (Sint.mem i (Sint.union keep (expr_fv e)))
+      -> keep, []
+
+    | DIAssign (`VLocal i, e) ->
+        Sint.add i (Sint.union keep (expr_fv e)), [instr]
+
+    | DIAssign (_, e) ->
+        Sint.union keep (expr_fv e), [instr]
+
+    | DIIf (e, (c1, c2)) ->
+        let keep1, c1 = code_kill keep c1 in
+        let keep2, c2 = code_kill keep c2 in
+
+        Sint.union (expr_fv e) (Sint.union keep1 keep2),
+        [DIIf (e, (c1, c2))]
+
+    | DIWhile (e, c) ->
+        let keep, c =
+          code_kill (Sint.union keep (expr_fv e)) c
+        in keep, [DIWhile (e, c)]
+
+    | DIIter (x, e, c) ->
+        let x = as_vlocal x in
+        let keep, c =
+          code_kill (Sint.add x (Sint.union keep (expr_fv e))) c in
+
+        Sint.remove x keep, [DIIter (`VLocal x, e, c)]
+
+    | DIMatch (e, bs) ->
+        let for1 (x, pv, c) =
+          let pfv = List.map pattern_fv pv in
+          let pfv = List.fold_left Sint.union Sint.empty pfv in
+          let keep, c = code_kill (Sint.union keep pfv) c in
+          Sint.diff keep pfv, (x, pv, c) in
+
+        let keep, bs = List.split (List.map for1 bs) in
+        let keep = List.fold_left Sint.union Sint.empty keep in
+
+        keep, [DIMatch (e, bs)]
+
+    | DIFailwith e ->
+        Sint.union keep (expr_fv e), [instr]
+
+  and code_kill (keep : Sint.t) (code : dcode) =
+    let keep, code = List.fold_left_map instr_kill keep (List.rev code) in
+    keep, List.flatten (List.rev code)
+
+  (* -------------------------------------------------------------------- *)
   let decompile (michelson : michelson) =
     let aty = michelson.storage in
     let pty = michelson.parameter in
@@ -1255,8 +1467,12 @@ end = struct
         let pr1 = write_var (dexpr_of_rstack1 pst) px in
         let pr2 = write_var (dexpr_of_rstack1 ast) ax in
         pr1 @ pr2 @ dc
-      | _ -> assert false
-    in code
+      | _ -> assert false in
+
+    let _, code = code_cttprop Mint.empty code in
+    let _, code = code_kill Sint.empty code in
+
+    code
 end
 
 let to_dir (michelson, env : T.michelson * env) =
@@ -1405,7 +1621,7 @@ let to_dir (michelson, env : T.michelson * env) =
 
 
 (*
-let _to_red_dir (dir, env : T.dprogram * env) : T.dprogram * env =
+Dlet _to_red_dir (dir, env : T.dprogram * env) : T.dprogram * env =
   let rec doit (accu : T.dcode) (code : T.dcode) =
 
 
