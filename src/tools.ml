@@ -488,7 +488,24 @@ end = struct
 end
 
 (* -------------------------------------------------------------------- *)
-module Set = Set
+module Set : sig
+  module type OrderedType = Map.OrderedType
+
+  module Make(S : OrderedType) : sig
+    include module type of Set.Make(S)
+
+    val unions : t list -> t
+  end
+end = struct
+  module type OrderedType = Map.OrderedType
+
+  module Make(S : OrderedType) = struct
+    include Set.Make(S)
+
+    let unions (us : t list) : t=
+      List.fold_left union empty us
+  end
+end
 
 (* -------------------------------------------------------------------- *)
 module Sint = Set.Make(Int)
