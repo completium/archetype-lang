@@ -447,7 +447,7 @@ type dinstr =
   | DIMatch    of dexpr * (ident * dpattern list * dcode) list
   | DIFailwith of dexpr
   | DIWhile    of dexpr * dcode
-  | DIIter     of ident * dexpr * dcode
+  | DIIter     of dvar * dexpr * dcode
 
 and dpattern =
   | DVar  of int
@@ -862,6 +862,7 @@ and cmp_dexpr e1 e2 =
   match e1, e2 with
   | Dvar  v1, Dvar  v2 -> cmp_dvar v1 v2
   | Ddata d1, Ddata d2 -> cmp_data d1 d2
+  | Depair (e1, e'1), Depair (e2, e'2) -> cmp_dexpr e1 e2 && cmp_dexpr e'1 e'2
   | Dfun (op1, l1), Dfun (op2, l2) -> op1 = op2 && List.for_all2 cmp_dexpr l1 l2
   | _ -> false
 

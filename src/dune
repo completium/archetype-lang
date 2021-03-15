@@ -10,7 +10,8 @@
     (pps ppx_deriving.std ppx_deriving_yojson visitors.ppx)
   )
   (library_flags (-linkall))
-  (modules tools core ident options location parseTree parser lexer symbol
+
+  (modules tools uF core ident options location parseTree parser lexer symbol
   error position pureLexer parseError io printer_tools printer_pt
   printer_pt_markdown
   ast typing printer_ast

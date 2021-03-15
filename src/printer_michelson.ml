@@ -738,7 +738,7 @@ and pp_dinstr (fmt : Format.formatter) (i : dinstr) =
 
   | DIIter (i, c, b) ->
     Format.fprintf fmt "@[<v 2>iter %a in %a:@\n%a@]"
-      pp_id i pp_expr c pp_dcode b
+      pp_var i pp_expr c pp_dcode b
 
 and pp_expr (fmt : Format.formatter) (e : dexpr) =
   let f = pp_expr in
