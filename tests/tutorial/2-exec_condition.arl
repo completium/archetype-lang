@@ -1,0 +1,20 @@
+// Get instructions and commands at the following address:
+// https://completium.com/docs/dapp-tools/tutorials/archetype-execcond
+// (ctrl+click to follow link)
+
+archetype exec_condition
+
+variable value : nat = 0
+
+constant admin : address = @tz1MZrh8CvYkp7BfLQMcm6mg5FvL5HRZfACw
+
+entry main(v : nat) {
+  called by admin
+  require {
+      r1: 10 <= v < 20;
+      r2 otherwise "EXPECTED EVEN VALUE": value % 2 = 0
+  }
+  effect {
+     value := v;
+  }
+}

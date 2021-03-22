@@ -1,0 +1,11 @@
+// Get instructions and commands at the following address:
+// https://completium.com/docs/dapp-tools/tutorials/archetype-datearith
+// (ctrl+click to follow link)
+
+archetype weekday
+
+variable n : nat = 0
+
+entry weekday (d : date) {
+  n := (d + 3d) % 1w / 1d
+}

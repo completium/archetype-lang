@@ -1,0 +1,12 @@
+// Get instructions and commands at the following address:
+// https://completium.com/docs/dapp-tools/tutorials/archetype-hello
+// (ctrl+click to follow link)
+
+archetype hello
+
+variable value : string = ""
+
+
+entry main () {
+  value := "Hello Tezos world!"
+}

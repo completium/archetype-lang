@@ -1,0 +1,35 @@
+// Get instructions and commands at the following address:
+// https://completium.com/docs/dapp-tools/tutorials/archetype-statem
+// (ctrl+click to follow link)
+
+
+archetype state_machine
+
+states =
+| Created initial
+| InProgress
+| Interrupted
+| Completed
+
+variable value : nat = 0
+
+entry inc_value () {
+  value += 1
+}
+
+transition init () {
+  from Created to InProgress
+  when { transferred > 3tz }
+  with effect { () /* nothing */}
+}
+
+transition complete () {
+  from InProgress to Completed
+  when { value > 1 }
+  with effect { transfer balance to caller }
+}
+
+transition interrupt () {
+  from InProgress to Interrupted
+  with effect { transfer (50% * balance) to caller }
+}

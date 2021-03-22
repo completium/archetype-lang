@@ -1,0 +1,51 @@
+// Get instructions and commands at the following address:
+// https://completium.com/docs/dapp-tools/tutorials/archetype-assets
+// (ctrl+click to follow link)
+
+archetype assets
+
+enum color =
+| White
+| Yellow
+| Red
+| Blue
+
+asset vehicle {
+   vin : string;
+   c : color = Yellow;
+   nbrepairs : nat = 0;
+   lastrepair : date = 2020-01-01;
+} initialized by {
+  {"vin0000"; White;  0; 2020-01-01};
+  {"vin0001"; Yellow; 0; 2020-01-01};
+  {"vin0002"; White;  0; 2020-01-01};
+  {"vin0003"; Red;    0; 2020-01-01};
+  {"vin0004"; Red;    0; 2020-01-01};
+  {"vin0005"; Blue;   0; 2020-01-01};
+  {"vin0006"; White;  0; 2020-01-01};
+  {"vin0007"; Blue;   0; 2020-01-01};
+  {"vin0008"; Blue;   1; 2019-01-01};
+  {"vin0009"; Red;    3; 2019-04-01};
+  {"vin0010"; White;  2; 2019-03-01};
+  {"vin0011"; Yellow; 2; 2019-02-01}
+}
+
+entry addvehicle (pvin : string) {
+  vehicle.add({ vin = pvin })
+}
+
+entry repair (k : string) {
+  vehicle.update(k, { nbrepairs += 1; lastrepair = now})
+}
+
+entry repair_oldest() {
+  for v in vehicle.sort(desc(lastrepair)).head(3) do
+    vehicle.update(v, { nbrepairs += 1; lastrepair = now })
+  done
+}
+
+entry repaint_repaired (newc : color) {
+  for v in vehicle.select(the.nbrepairs >= 1) do
+    vehicle[v].c := newc
+  done
+}
