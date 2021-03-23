@@ -4,8 +4,8 @@
 
 archetype weekday
 
-variable n : nat = 0
+variable n : int = 0
 
 entry weekday (d : date) {
-  n := (d + 3d) % 1w / 1d
+  n := ((d - date_from_timestamp(0)) + 4d) % 7d div 1d
 }

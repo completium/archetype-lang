@@ -95,6 +95,7 @@ entry exec () {
     var dur_dur_minus  : duration = 1h - 2s;
     var dur_dur_div    : rational = 4h / 30m;
     var dur_dur_ediv   : int      = 4h div 30m;
+    var dur_dur_mod    : int      = 1h % 45m;
 
     var date_dur_plus  : date     = 2020-01-01 + 1d;
     var date_dur_minus : date     = 2020-01-01 - 1d;
