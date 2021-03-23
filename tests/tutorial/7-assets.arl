@@ -39,7 +39,7 @@ entry repair (k : string) {
 }
 
 entry repair_oldest() {
-  for v in vehicle.sort(desc(lastrepair)).head(3) do
+  for v in vehicle.sort(lastrepair).head(3) do
     vehicle.update(v, { nbrepairs += 1; lastrepair = now })
   done
 }
