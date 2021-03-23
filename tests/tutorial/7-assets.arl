@@ -14,7 +14,7 @@ asset vehicle {
    vin : string;
    c : color = Yellow;
    nbrepairs : nat = 0;
-   lastrepair : date = 2020-01-01;
+   lastrepair : date = now;
 } initialized by {
   {"vin0000"; White;  0; 2020-01-01};
   {"vin0001"; Yellow; 0; 2020-01-01};
