@@ -7,5 +7,5 @@ archetype weekday
 variable n : int = 0
 
 entry weekday (d : date) {
-  n := ((d - date_from_timestamp(0)) + 4d) % 7d div 1d
+  n := (((d - 1970-01-01) + 4d) % 1w) div 1d
 }
