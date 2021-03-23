@@ -814,6 +814,11 @@ let to_model (ast : A.ast) : M.model =
         let fb = f b in
         M.Mapplylambda (fa, fb)
 
+      (* Other *)
+
+      | A.Pcall (None, A.Cconst A.CdateFromTimestamp, [AExpr x]) ->
+        let fx = f x in
+        M.Mdatefromtimestamp (fx)
 
       (* Fail *)
 

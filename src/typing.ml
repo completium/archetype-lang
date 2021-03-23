@@ -1285,6 +1285,7 @@ let coreops : opinfo list =
   @ (List.map
        (fun x -> ("to_string", A.Ctostring, `Total, None, [x], A.vtstring, Mint.empty))
        [A.vtnat])
+  @ [("date_from_timestamp" , A.CdateFromTimestamp, `Total, None, [A.vtint], A.vtdate, Mint.empty)]
 
 (* -------------------------------------------------------------------- *)
 let optionops : opinfo list = [

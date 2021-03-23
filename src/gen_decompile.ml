@@ -1899,6 +1899,11 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mratdur (_c, _t)        -> assert false
 
 
+    (* utils *)
+
+    | Mdatefromtimestamp _ -> assert false
+
+
     (* quantifiers *)
 
     | Mforall (_i, _t, None, _e)    -> assert false

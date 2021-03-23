@@ -1318,6 +1318,16 @@ let pp_mterm fmt (mt : mterm) =
       pp fmt (c, t)
 
 
+    (* others *)
+
+    | Mdatefromtimestamp v ->
+      let pp fmt v =
+        Format.fprintf fmt "date_from_timestamp (%a)"
+          f v
+      in
+      pp fmt v
+
+
     (* quantifiers *)
 
     | Mforall (i, t, None, e) ->

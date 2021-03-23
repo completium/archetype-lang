@@ -178,6 +178,7 @@ type const =
   | Ctostring
   | Cexec
   | Capply
+  | CdateFromTimestamp
   (* set *)
   | Csadd
   | Csremove

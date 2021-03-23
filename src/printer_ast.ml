@@ -249,6 +249,7 @@ let to_const = function
   | Ctostring       -> "to_string"
   | Cexec           -> "exec"
   | Capply          -> "apply"
+  | CdateFromTimestamp -> "date_from_timestamp"
   (* set *)
   | Csadd           -> "set_add"
   | Csremove        -> "set_remove"
