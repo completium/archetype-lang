@@ -1,0 +1,11 @@
+{
+  storage unit;
+  parameter (list (pair (pair address nat) nat));
+  code { DUP;
+         CDR;
+         SWAP;
+         CAR;
+         DROP;
+         NIL operation;
+         PAIR };
+}
