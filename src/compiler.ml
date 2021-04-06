@@ -201,7 +201,6 @@ let generate_target model =
     |> prune_formula
     |> getter_to_entry ~extra:true
     |> process_parameter
-    (* |> reverse_operations *)
     |> process_multi_keys
     |> replace_col_by_key_for_ckfield
     |> move_partition_init_asset

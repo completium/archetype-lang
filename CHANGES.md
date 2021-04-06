@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    * add sapling types (`sapling_state` and `sapling_transaction`) and operations (`sapling_empty_state` and `sapling_verify_update`)
    * add bls curves types (`bls12_381_fr`, `bls12_381_g1` and `bls12_381_g2`), arthmetic (`+`, `*`, unary `-`) and operation (`pairing_check`)
   - `date_from_timestamp` function (convert a timestamp typed int to date)
+  - `const` for parameter, which processes like a constant instead of a variable by default
 
 ## [1.2.2] - 2021-03-09
 ### Added

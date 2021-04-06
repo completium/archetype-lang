@@ -682,13 +682,26 @@ let check_duplicated_keys_in_asset (model : model) : model =
     let asset : asset = Model.Utils.get_asset model an in
     let asset_keys = dasset.keys in
     let assoc_fields = List.map2 (fun (ai : asset_item) (x : mterm) -> (unloc ai.name, x)) asset.values l in
-    let value_key =  List.find (fun (id, _) -> List.exists (String.equal id) asset_keys) assoc_fields |> snd in
-    if not (is_literal value_key)
-    then errors := (value_key.loc, OnlyLiteralInAssetInit)::!errors
-    else (
-      if contains_key an value_key
-      then errors := (value_key.loc, DuplicatedKeyAsset an)::!errors
-      else add_key an value_key)
+    let value_key_opt =
+      match List.find (fun (id, _) -> List.exists (String.equal id) asset_keys) assoc_fields |> snd with
+      | {node = Mvar (id, _, _, _); _} -> begin
+          let const = Model.Utils.get_vars model |> List.find_opt (fun (x : var) -> cmp_ident (unloc id) (unloc x.name)) in
+          match const with
+          | Some c -> c.default
+          | None -> None
+        end
+      | x -> Some x
+    in
+    match value_key_opt with
+    | Some value_key -> begin
+        if not (is_literal value_key)
+        then errors := (value_key.loc, OnlyLiteralInAssetInit)::!errors
+        else (
+          if contains_key an value_key
+          then errors := (value_key.loc, DuplicatedKeyAsset an)::!errors
+          else add_key an value_key)
+      end
+    | None -> ()
   in
   List.iter
     (fun d ->
