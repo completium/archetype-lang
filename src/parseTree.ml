@@ -280,7 +280,7 @@ and entry_properties = {
 
 and transition = (lident * (expr * exts) option * (expr * exts) option) list
 
-and parameter = (lident * type_t * expr option) loced
+and parameter = (lident * type_t * expr option * bool) loced
 
 and parameters = parameter list loced option
 

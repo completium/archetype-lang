@@ -34,6 +34,7 @@
       "by"                  , BY                  ;
       "call"                , CALL                ;
       "called"              , CALLED              ;
+      "const"               , CONST               ;
       "constant"            , CONSTANT            ;
       "contract"            , CONTRACT            ;
       "definition"          , DEFINITION          ;

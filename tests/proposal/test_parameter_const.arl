@@ -1,4 +1,4 @@
-archetype test_parameter(const c : nat)
+archetype test_parameter_const(const c : nat)
 
 variable r : nat = 0
 

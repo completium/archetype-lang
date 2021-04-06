@@ -139,6 +139,7 @@ let string_of_token = function
   | DATE s               -> Printf.sprintf "DATE(%s)" s
   | CONTRACT             -> "CONTRACT"
   | CONSTANT             -> "CONSTANT"
+  | CONST                -> "CONST"
   | COMMA                -> "COMMA"
   | COLONEQUAL           -> "COLONEQUAL"
   | COLONCOLON           -> "COLONCOLON"
@@ -306,6 +307,7 @@ let string_of_symbol = function
   | X (T T_DATE) -> "a date"
   | X (T T_CONTRACT) -> "contract"
   | X (T T_CONSTANT) -> "constant"
+  | X (T T_CONST) -> "const"
   | X (T T_COMMA) -> ","
   | X (T T_COLONEQUAL) -> ":="
   | X (T T_COLONCOLON) -> "::"
@@ -465,6 +467,7 @@ let string_of_symbol = function
   | X (N N_calledby) -> "called by"
   | X (N N_branch) -> "branch"
   | X (N N_boption_REF_) -> "ref option"
+  | X (N N_boption_CONST_) -> "an optional const"
   | X (N N_asset) -> "an asset"
   | X (N N_asset_post_option) -> "asset post option"
   | X (N N_asset_option) -> "an asset option"

@@ -1158,8 +1158,9 @@ let pp_transition fmt (to_, conditions, effect) =
            pp_extensions exts
            pp_simple_expr e)) effect
 
-let pp_parameter fmt (id, ty, dv) =
-  Format.fprintf fmt "%a : %a%a"
+let pp_parameter fmt (id, ty, dv, c) =
+  Format.fprintf fmt "%a%a : %a%a"
+    (pp_do_if c (fun fmt _ -> pp_str fmt "const ")) ()
     pp_id id
     pp_type ty
     (pp_option (fun fmt x -> Format.fprintf fmt " = %a" pp_simple_expr x)) dv

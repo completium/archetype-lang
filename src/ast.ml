@@ -527,6 +527,7 @@ type 'id parameter = {
   typ     : type_;
   default : 'id term_gen option;
   value   : 'id term_gen option;
+  const   : bool;
   loc     : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]

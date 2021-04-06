@@ -1188,7 +1188,8 @@ let pp_fun_ fmt = function
   | Ftransaction t -> pp_transaction fmt t
 
 let pp_parameter fmt (p : lident parameter) =
-  Format.fprintf fmt "%a : %a%a"
+  Format.fprintf fmt "%a%a : %a%a"
+    (pp_do_if p.const (fun fmt _ -> pp_str fmt "const ")) ()
     pp_id p.name
     pp_type p.typ
     (pp_option (fun fmt x -> Format.fprintf fmt " = %a" pp_pterm x)) p.default

@@ -896,6 +896,7 @@ type 'id parameter_gen = {
   typ     : type_;
   default : 'id mterm_gen option;
   value   : 'id mterm_gen option;
+  const   : bool;
   loc     : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -1086,7 +1087,6 @@ let mlevel        = mk_mterm Mlevel       tnat
 let mk_mvar id t = mk_mterm (Mvar(id, Vlocal, Tnone, Dnone )) t
 let mk_pvar id t = mk_mterm (Mvar(id, Vparam, Tnone, Dnone )) t
 let mk_svar id t = mk_mterm (Mvar(id, Vstorevar, Tnone, Dnone )) t
-let mk_parameter id t = mk_mterm (Mvar(id, Vparameter, Tnone, Dnone )) t
 let mk_enum_value ?(args=[]) id e = mk_mterm (Menumval(id, args, unloc e)) (mktype (Tenum e))
 
 let mk_btez v = mk_mterm (Mcurrency (v, Utz)) ttez
@@ -3560,6 +3560,7 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
       typ     = for_type p.typ;
       default = Option.map for_mterm p.default;
       value   = Option.map for_mterm p.value;
+      const   = p.const;
       loc     = p.loc;
     }
   in

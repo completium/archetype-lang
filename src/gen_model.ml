@@ -1413,6 +1413,7 @@ let to_model (ast : A.ast) : M.model =
       typ     = type_to_type p.typ;
       default = Option.map (to_mterm env) p.default;
       value   = Option.map (to_mterm env) p.value;
+      const   = p.const;
       loc     = p.loc;
     }
   in
