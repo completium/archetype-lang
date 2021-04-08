@@ -200,7 +200,7 @@ let generate_target model =
     model
     |> prune_formula
     |> getter_to_entry ~extra:true
-    |> process_parameter
+    |> process_parameter ~js:(match !Options.target with | Javascript -> true | _ -> false)
     |> process_multi_keys
     |> replace_col_by_key_for_ckfield
     |> move_partition_init_asset

@@ -5377,7 +5377,7 @@ let reverse_operations (model : model) : model =
   in
   { model with functions = List.map for_functions model.functions }
 
-let process_parameter (model : model) : model =
+let process_parameter ?(js=false) (model : model) : model =
   let for_parameter (param : parameter) =
     let t = param.typ in
     let name = param.name in
@@ -5386,7 +5386,7 @@ let process_parameter (model : model) : model =
       match param.value, param.default with
       | Some v, _
       | _, Some v -> v
-      | _ when param.const -> (emit_error (param.loc, NoInitValueForConstParam (unloc name)); raise (Error.Stop 5))
+      | _ when param.const && not js -> (emit_error (param.loc, NoInitValueForConstParam (unloc name)); raise (Error.Stop 5))
       | _ -> mk_parameter name t
     in
     let var : var = mk_var name t t (if param.const then VKconstant else VKvariable) ~default ~loc:param.loc in
