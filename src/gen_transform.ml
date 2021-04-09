@@ -5288,7 +5288,10 @@ let process_metadata (model : model) : model =
     fold_model aux model false
   in
 
-  if check_if_not_metadata () && not (with_metadata ())
+  let js = match !Options.target with | Javascript -> true | _ -> false in
+  let simple_metadata = js && !Options.opt_with_metadata in
+
+  if check_if_not_metadata () && not (with_metadata ()) && not simple_metadata
   then model
   else begin
     let model =
@@ -5298,6 +5301,20 @@ let process_metadata (model : model) : model =
         | _ -> map_mterm (aux ctx) mt
       in
       map_mterm_model aux model
+    in
+    let model =
+      if simple_metadata
+      then
+        let param : parameter = {
+          name    = dumloc "metadata";
+          typ     = tbytes;
+          default = None;
+          value   = None;
+          const   = false;
+          loc     = Location.dummy;
+        } in
+        { model with parameters = model.parameters @ [param] }
+      else model
     in
     let dmap =
       let mk_map _ =
@@ -5329,10 +5346,16 @@ let process_metadata (model : model) : model =
         in
 
         let v =
-          match !Options.opt_metadata_uri, !Options.opt_metadata_storage with
-          | "", ""            -> []
-          | uri, ""           -> [mk_uri uri]
-          | "", metadata_path -> [mk_uri ("tezos-storage:" ^ key); mk_data metadata_path]
+          match !Options.opt_metadata_uri, !Options.opt_metadata_storage, simple_metadata with
+          | _, _, true        ->
+            let mk_m _ =
+              let vkey = mk_string key in
+              vkey, (mk_mterm (Mvar(dumloc "metadata", Vparameter, Tnone, Dnone)) tbytes)
+            in
+            [mk_uri ("tezos-storage:" ^ key); mk_m ()]
+          | "", "", _         -> []
+          | uri, "", _        -> [mk_uri uri]
+          | "", metadata_path, _ -> [mk_uri ("tezos-storage:" ^ key); mk_data metadata_path]
           | _ -> assert false
         in
 

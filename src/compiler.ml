@@ -193,6 +193,8 @@ let generate_target model =
     m
   in
 
+  let js = match !Options.target with | Javascript -> true | _ -> false in
+
   match !Options.target with
   | Michelson
   | MichelsonStorage
@@ -200,7 +202,7 @@ let generate_target model =
     model
     |> prune_formula
     |> getter_to_entry ~extra:true
-    |> process_parameter ~js:(match !Options.target with | Javascript -> true | _ -> false)
+    |> process_parameter ~js:js
     |> process_multi_keys
     |> replace_col_by_key_for_ckfield
     |> move_partition_init_asset
@@ -424,6 +426,8 @@ let main () =
       "--metadata-uri", Arg.String (fun s -> Options.opt_metadata_uri := s), " Same as -mu";
       "-ms", Arg.String (fun s -> Options.opt_metadata_storage := s), " Set metadata in storage";
       "--metadata-storage", Arg.String (fun s -> Options.opt_metadata_storage := s), " Same as -ms";
+      "-wmt", Arg.Set Options.opt_with_metadata, " Add metadata big_map for javascript output";
+      "--with-metadata", Arg.Set Options.opt_with_metadata, " Same as -wmt";
       "-lsp", Arg.String (fun s -> match s with
           | "errors" -> Options.opt_lsp := true; Lsp.kind := Errors
           | "outline" -> Options.opt_lsp := true; Lsp.kind := Outline
