@@ -1059,7 +1059,7 @@ let taggregate an  = mktype (Tcontainer (tasset an, Aggregate))
 let tpartition an  = mktype (Tcontainer (tasset an, Partition))
 let tview an       = mktype (Tcontainer (tasset an, View))
 let toperations    = tlist toperation
-let tmetadata      = tmap tstring tbytes
+let tmetadata      = tbig_map tstring tbytes
 
 let mk_bool     x = mk_mterm (Mbool x) tbool
 let mk_string   x = mk_mterm (Mstring x) tstring
@@ -1123,7 +1123,7 @@ let mk_none t = mk_mterm (Mnone) (toption t)
 let mk_brat n d  = mk_tuple [mk_bint n; mk_bnat d]
 let mk_rat n d   = mk_tuple [mk_int n; mk_nat d]
 
-let mk_metadata v = mk_mterm (Mlitmap(false, v)) tmetadata
+let mk_metadata v = mk_mterm (Mlitmap(true, v)) tmetadata
 
 let fail x  = mk_mterm (Mfail (Invalid (mk_string x))) tunit
 let failg x = mk_mterm (Mfail (Invalid (x))) tunit
