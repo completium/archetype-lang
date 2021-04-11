@@ -80,6 +80,75 @@ let to_michelson (input, env : T.obj_micheline * env) : T.michelson * env =
 
     let to_int = function | T.Oint x -> int_of_string x | o -> Format.eprintf "to_int unknown %a@." T.pp_obj_micheline o; assert false in
 
+    let is_dup input =
+      let r = Str.regexp "D[U]+P" in
+      Str.string_match r input 0
+    in
+
+    let extract_dup input =
+      if not (is_dup input)
+      then assert false;
+      let s = String.length input - 2 in
+      let l = Tools.foldi (fun accu -> T.DUP::accu) [] s in
+      T.SEQ l
+    in
+
+    let is_cadr input =
+      let r = Str.regexp "C[AD]+R" in
+      Str.string_match r input 0
+    in
+
+    let e_cadr input =
+      let ll = ref [] in
+      for i = 0 to String.length input - 1 do
+        match String.get input i with
+        | 'A' -> ll := !ll @ [ `A ]
+        | 'D' -> ll := !ll @ [ `D ]
+        | _ -> assert false
+      done;
+      !ll
+    in
+
+    let extract_cadr input =
+      if not (is_cadr input)
+      then assert false;
+
+      let l = e_cadr (String.sub input 1 (String.length input - 2)) in
+
+      T.SEQ (List.map (function | `A -> T.CAR | `D -> T.CDR) l)
+    in
+
+    (* let is_set_caadr input =
+      let r = Str.regexp "SET_CA[AD]+R" in
+      Str.string_match r input 0
+    in
+
+    let extract_set_caadr input =
+      if not (is_set_caadr input)
+      then assert false;
+
+      let l = e_cadr (String.sub input 5 (String.length input - 2)) in
+      let ll = (List.map (function | `A -> T.CAR | `D -> T.CDR) l) in
+
+      T.SEQ [DUP ; DIP (1, ([T.CAR] @ ll)) ; CDR ; SWAP ; PAIR ]
+    in
+
+
+    let is_set_cdadr input =
+      let r = Str.regexp "SET_CD[AD]+R" in
+      Str.string_match r input 0
+    in
+
+    let extract_set_cdadr input =
+      if not (is_set_cdadr input)
+      then assert false;
+
+      let l = e_cadr (String.sub input 5 (String.length input - 2)) in
+      let ll = (List.map (function | `A -> T.CAR | `D -> T.CDR) l) in
+
+      T.SEQ [DUP ; DIP (1, ([T.CAR] @ ll)) ; CDR ; SWAP ; PAIR ]
+    in *)
+
     let rec to_code (o : T.obj_micheline) : T.code =
       let f = to_code in
       let seq = function | T.Oarray l -> List.map f l | _ -> assert false in
@@ -169,8 +238,8 @@ let to_michelson (input, env : T.obj_micheline * env) : T.michelson * env =
       | Oprim ({prim = "SOURCE"; _})                         -> T.SOURCE
       | Oprim ({prim = "TRANSFER_TOKENS"; _})                -> T.TRANSFER_TOKENS
       (* Operations on data structures *)
-      | Oprim ({prim = "CAR"; _})                            -> T.CAR
-      | Oprim ({prim = "CDR"; _})                            -> T.CDR
+      | Oprim ({prim = "CAR"; args=[]; _})                   -> T.CAR
+      | Oprim ({prim = "CDR"; args=[]; _})                   -> T.CDR
       | Oprim ({prim = "CONCAT"; _})                         -> T.CONCAT
       | Oprim ({prim = "CONS"; _})                           -> T.CONS
       | Oprim ({prim = "EMPTY_BIG_MAP" ; args = k::v::_})    -> T.EMPTY_BIG_MAP (to_type k, to_type v)
@@ -254,6 +323,17 @@ let to_michelson (input, env : T.obj_micheline * env) : T.michelson * env =
       | Oprim ({prim = "ASSERT_GT"; _})                      -> T.SEQ [GT; IF ([], [UNIT; FAILWITH])]
       | Oprim ({prim = "ASSERT_LE"; _})                      -> T.SEQ [LE; IF ([], [UNIT; FAILWITH])]
       | Oprim ({prim = "ASSERT_GE"; _})                      -> T.SEQ [GE; IF ([], [UNIT; FAILWITH])]
+
+      | Oprim ({prim = "SET_CAR"; _})                        -> T.SEQ [CDR; SWAP; PAIR]
+      | Oprim ({prim = "SET_CDR"; _})                        -> T.SEQ [CAR; PAIR]
+
+      | Oprim ({prim = str; _})         when is_dup  str     -> extract_dup  str
+      | Oprim ({prim = str; _})         when is_cadr str     -> extract_cadr str
+
+      | Oprim ({prim = "SET_CAAR"; _})                       -> T.SEQ [DUP ; DIP (1, [ CAR; CDR; SWAP; PAIR ]) ; CDR; SWAP ; PAIR]
+      | Oprim ({prim = "SET_CADR"; _})                       -> T.SEQ [DUP ; DIP (1, [ CAR; CAR; PAIR ]) ; CDR; SWAP ; PAIR]
+      (* | Oprim ({prim = str; _})        when is_set_caadr str -> extract_set_caadr str *)
+      (* | Oprim ({prim = str; _})        when is_set_cdadr str -> extract_set_cdadr str *)
 
       | _ -> Format.eprintf "code unknown: %a@." T.pp_obj_micheline o; assert false
     in
@@ -853,7 +933,7 @@ end = struct
 
     | `VLocal x ->
       (DVar x, [])
- 
+
     | (`VGlobal _) as n ->
       let x = gen () in (DVar x, [DIAssign (n, Dvar (`VLocal x))])
 
@@ -1175,9 +1255,9 @@ end = struct
 
         let bd   = dcode_apply_uf uf bd1 in
         let s    = rstack_apply_uf uf (x1 :: s1) in
-        let x, s = List.pop s in 
+        let x, s = List.pop s in
 
-        let xs = vlocal () in 
+        let xs = vlocal () in
         mkdecomp
           ((xs :> rstack1) :: s)
           [DIIter (as_dvar x, Dvar xs, bd)]
@@ -1349,7 +1429,7 @@ end = struct
         let _, c2 = code_cttprop env0 c2 in
 
         env, [DIIf (expr_cttprop env0 e, (c1, c2))]
-          
+
     | DIWhile (e, c) ->
         let wr   = code_wr c in
         let env  = cttenv_remove_wr env0 wr in

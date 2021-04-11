@@ -1,0 +1,93 @@
+{
+  parameter (or (unit %pop) (nat %push));
+  storage (pair (pair (int %first) (int %last)) (map %saved int nat));
+  code
+    {
+      DUP;        # pair(params, storage).pair(params, storage)
+      CDR;        # storage.pair(params, storage)
+      SWAP;       # pair(params, storage).storage
+      CAR;        # params.storage
+      IF_LEFT
+        {
+          # Entry point: pop # params.storage
+          PAIR;       # pair(params, storage)
+          # sp.verify(self.data.first < self.data.last) # pair(params, storage)
+          DUP;        # pair(params, storage).pair(params, storage)
+          CDADR;      # int.pair(params, storage)
+          DUUP;       # pair(params, storage).int.pair(params, storage)
+          CDAAR;      # int.int.pair(params, storage)
+          COMPARE;    # int.pair(params, storage)
+          LT;         # bool.pair(params, storage)
+          IF
+            {}
+            {
+              PUSH string "WrongCondition: self.data.first < self.data.last"; # string.pair(params, storage)
+              FAILWITH;   # pair(params, storage)
+            }; # pair(params, storage)
+          # del self.data.saved[self.data.first] # pair(params, storage)
+          DUP;        # pair(params, storage).pair(params, storage)
+          CDR;        # storage.pair(params, storage)
+          DUP;        # storage.storage.pair(params, storage)
+          CDR;        # Map(int, nat).storage.pair(params, storage)
+          DUUP;       # storage.Map(int, nat).storage.pair(params, storage)
+          CAAR;       # int.Map(int, nat).storage.pair(params, storage)
+          NONE nat;   # Variant(None unit | Some nat).int.Map(int, nat).storage.pair(params, storage)
+          SWAP;       # int.Variant(None unit | Some nat).Map(int, nat).storage.pair(params, storage)
+          UPDATE;     # Map(int, nat).storage.pair(params, storage)
+          SWAP;       # storage.Map(int, nat).pair(params, storage)
+          CAR;        # int.Map(int, nat).pair(params, storage)
+          PAIR;       # pair(int, Map(int, nat)).pair(params, storage)
+          SWAP;       # pair(params, storage).storage
+          CAR;        # params.storage
+          PAIR;       # pair(params, storage)
+          # self.data.first += 1 # pair(params, storage)
+          DUP;        # pair(params, storage).pair(params, storage)
+          CDR;        # storage.pair(params, storage)
+          DUP;        # storage.storage.pair(params, storage)
+          CAAR;       # int.storage.pair(params, storage)
+          PUSH int 1; # int.int.storage.pair(params, storage)
+          ADD;        # int.storage.pair(params, storage)
+          SWAP;       # storage.int.pair(params, storage)
+          SET_CAAR;   # storage.pair(params, storage)
+          SWAP;       # pair(params, storage).storage
+          DROP;       # storage
+          NIL operation; # operations.storage
+          PAIR;       # pair(operations, storage)
+        }
+        {
+          # Entry point: push # params.storage
+          PAIR;       # pair(params, storage)
+          # self.data.last += 1 # pair(params, storage)
+          DUP;        # pair(params, storage).pair(params, storage)
+          CDR;        # storage.pair(params, storage)
+          DUP;        # storage.storage.pair(params, storage)
+          CADR;       # int.storage.pair(params, storage)
+          PUSH int 1; # int.int.storage.pair(params, storage)
+          ADD;        # int.storage.pair(params, storage)
+          SWAP;       # storage.int.pair(params, storage)
+          SET_CADR;   # storage.pair(params, storage)
+          SWAP;       # pair(params, storage).storage
+          CAR;        # params.storage
+          PAIR;       # pair(params, storage)
+          # self.data.saved[self.data.last] = params # pair(params, storage)
+          DUP;        # pair(params, storage).pair(params, storage)
+          CDR;        # storage.pair(params, storage)
+          DUP;        # storage.storage.pair(params, storage)
+          CDR;        # Map(int, nat).storage.pair(params, storage)
+          DUUP;       # storage.Map(int, nat).storage.pair(params, storage)
+          CADR;       # int.Map(int, nat).storage.pair(params, storage)
+          DUUUUP;     # pair(params, storage).int.Map(int, nat).storage.pair(params, storage)
+          CAR;        # params.int.Map(int, nat).storage.pair(params, storage)
+          SOME;       # option(params).int.Map(int, nat).storage.pair(params, storage)
+          SWAP;       # int.option(params).Map(int, nat).storage.pair(params, storage)
+          UPDATE;     # Map(int, nat).storage.pair(params, storage)
+          SWAP;       # storage.Map(int, nat).pair(params, storage)
+          CAR;        # int.Map(int, nat).pair(params, storage)
+          PAIR;       # pair(int, Map(int, nat)).pair(params, storage)
+          SWAP;       # pair(params, storage).storage
+          DROP;       # storage
+          NIL operation; # operations.storage
+          PAIR;       # pair(operations, storage)
+        }; # pair(operations, storage)
+    } # pair(operations, storage);
+}
