@@ -358,8 +358,9 @@ let process_expr (input : string) =
         output_obj_micheline micheline;
         match !Options.opt_type with
         | Some t -> begin
-            let micheline = Michelson.Utils.type_to_micheline (Gen_extra.string_to_ttype t) in
-            output_obj_micheline micheline;
+            if not !Options.opt_expr_only then
+              let micheline = Michelson.Utils.type_to_micheline (Gen_extra.string_to_ttype t) in
+              output_obj_micheline micheline;
           end
         | None -> ()
       end
@@ -473,6 +474,7 @@ let main () =
       "--show-entries", Arg.Set Options.opt_show_entries, " Show entries";
       "--entrypoint", Arg.String (fun s -> Options.opt_entrypoint := Some s), " ";
       "--only-code", Arg.Set Options.opt_code_only, " ";
+      "--only-expr", Arg.Set Options.opt_expr_only, " ";
       "--init", Arg.String (fun s -> Options.opt_init := s), " Initialize parameters";
       "--no-js-header", Arg.Set Options.opt_no_js_header, " No javascript header";
       "-V", Arg.String (fun s -> Options.add_vids s), "<id> process specication identifiers";
