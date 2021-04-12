@@ -1,4 +1,4 @@
-(lang dune 1.10)
+(lang dune 2.7)
 (using menhir 2.0)
 (name archetype)
 (allow_approximate_merlin)
@@ -24,7 +24,7 @@ on the Tezos blockchain, with a specific focus on contract security
 ")
  (depends
    (ocaml (>= 4.07.0))
-   (dune  (>= 1.10.0))
+   (dune  (>= 2.7))
     menhir
     num
     yojson
