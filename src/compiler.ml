@@ -193,6 +193,8 @@ let generate_target model =
     m
   in
 
+  let js = match !Options.target with | Javascript -> true | _ -> false in
+
   match !Options.target with
   | Michelson
   | MichelsonStorage
@@ -200,8 +202,7 @@ let generate_target model =
     model
     |> prune_formula
     |> getter_to_entry ~extra:true
-    |> process_parameter
-    (* |> reverse_operations *)
+    |> process_parameter ~js:js
     |> process_multi_keys
     |> replace_col_by_key_for_ckfield
     |> move_partition_init_asset
@@ -357,8 +358,9 @@ let process_expr (input : string) =
         output_obj_micheline micheline;
         match !Options.opt_type with
         | Some t -> begin
-            let micheline = Michelson.Utils.type_to_micheline (Gen_extra.string_to_ttype t) in
-            output_obj_micheline micheline;
+            if not !Options.opt_expr_only then
+              let micheline = Michelson.Utils.type_to_micheline (Gen_extra.string_to_ttype t) in
+              output_obj_micheline micheline;
           end
         | None -> ()
       end
@@ -425,6 +427,8 @@ let main () =
       "--metadata-uri", Arg.String (fun s -> Options.opt_metadata_uri := s), " Same as -mu";
       "-ms", Arg.String (fun s -> Options.opt_metadata_storage := s), " Set metadata in storage";
       "--metadata-storage", Arg.String (fun s -> Options.opt_metadata_storage := s), " Same as -ms";
+      "-wmt", Arg.Set Options.opt_with_metadata, " Add metadata big_map for javascript output";
+      "--with-metadata", Arg.Set Options.opt_with_metadata, " Same as -wmt";
       "-lsp", Arg.String (fun s -> match s with
           | "errors" -> Options.opt_lsp := true; Lsp.kind := Errors
           | "outline" -> Options.opt_lsp := true; Lsp.kind := Outline
@@ -470,6 +474,7 @@ let main () =
       "--show-entries", Arg.Set Options.opt_show_entries, " Show entries";
       "--entrypoint", Arg.String (fun s -> Options.opt_entrypoint := Some s), " ";
       "--only-code", Arg.Set Options.opt_code_only, " ";
+      "--only-expr", Arg.Set Options.opt_expr_only, " ";
       "--init", Arg.String (fun s -> Options.opt_init := s), " Initialize parameters";
       "--no-js-header", Arg.Set Options.opt_no_js_header, " No javascript header";
       "-V", Arg.String (fun s -> Options.add_vids s), "<id> process specication identifiers";

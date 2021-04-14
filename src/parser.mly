@@ -54,6 +54,7 @@
 %token COLONCOLON
 %token COLONEQUAL
 %token COMMA
+%token CONST
 %token CONSTANT
 %token CONTRACT
 %token DEFINITION
@@ -320,7 +321,7 @@ archetype:
  | x=loc(parameter_unloc)                  { x }
 
 %inline parameter_unloc:
- | id=ident COLON ty=type_t dv=parameter_init?  { (id, ty, dv) }
+ | c=boption(CONST) id=ident COLON ty=type_t dv=parameter_init?  { (id, ty, dv, c) }
 
 %inline parameter_init:
  | EQUAL x=simple_expr { x }

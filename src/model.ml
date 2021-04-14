@@ -896,6 +896,7 @@ type 'id parameter_gen = {
   typ     : type_;
   default : 'id mterm_gen option;
   value   : 'id mterm_gen option;
+  const   : bool;
   loc     : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -1058,7 +1059,7 @@ let taggregate an  = mktype (Tcontainer (tasset an, Aggregate))
 let tpartition an  = mktype (Tcontainer (tasset an, Partition))
 let tview an       = mktype (Tcontainer (tasset an, View))
 let toperations    = tlist toperation
-let tmetadata      = tmap tstring tbytes
+let tmetadata      = tbig_map tstring tbytes
 
 let mk_bool     x = mk_mterm (Mbool x) tbool
 let mk_string   x = mk_mterm (Mstring x) tstring
@@ -1086,7 +1087,6 @@ let mlevel        = mk_mterm Mlevel       tnat
 let mk_mvar id t = mk_mterm (Mvar(id, Vlocal, Tnone, Dnone )) t
 let mk_pvar id t = mk_mterm (Mvar(id, Vparam, Tnone, Dnone )) t
 let mk_svar id t = mk_mterm (Mvar(id, Vstorevar, Tnone, Dnone )) t
-let mk_parameter id t = mk_mterm (Mvar(id, Vparameter, Tnone, Dnone )) t
 let mk_enum_value ?(args=[]) id e = mk_mterm (Menumval(id, args, unloc e)) (mktype (Tenum e))
 
 let mk_btez v = mk_mterm (Mcurrency (v, Utz)) ttez
@@ -1123,7 +1123,7 @@ let mk_none t = mk_mterm (Mnone) (toption t)
 let mk_brat n d  = mk_tuple [mk_bint n; mk_bnat d]
 let mk_rat n d   = mk_tuple [mk_int n; mk_nat d]
 
-let mk_metadata v = mk_mterm (Mlitmap(false, v)) tmetadata
+let mk_metadata v = mk_mterm (Mlitmap(true, v)) tmetadata
 
 let fail x  = mk_mterm (Mfail (Invalid (mk_string x))) tunit
 let failg x = mk_mterm (Mfail (Invalid (x))) tunit
@@ -3560,6 +3560,7 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
       typ     = for_type p.typ;
       default = Option.map for_mterm p.default;
       value   = Option.map for_mterm p.value;
+      const   = p.const;
       loc     = p.loc;
     }
   in

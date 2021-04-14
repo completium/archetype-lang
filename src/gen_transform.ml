@@ -20,6 +20,7 @@ type error_desc =
   | NoSortOnKeyWithMultiKey of ident
   | NoInitValueForParameter of ident
   | NoInitForPartitionAsset of ident
+  | NoInitValueForConstParam of ident
 
 let pp_error_desc fmt = function
   | AssetPartitionnedby (i, l)         ->
@@ -64,6 +65,8 @@ let pp_error_desc fmt = function
   | NoInitValueForParameter id -> Format.fprintf fmt "No initialized value for parameter: %s" id
 
   | NoInitForPartitionAsset an -> Format.fprintf fmt "Asset '%s' is used in a partition, no asset must initialized" an
+
+  | NoInitValueForConstParam id -> Format.fprintf fmt "No initialized value for const parameter: %s" id
 
 type error = Location.t * error_desc
 
@@ -679,13 +682,26 @@ let check_duplicated_keys_in_asset (model : model) : model =
     let asset : asset = Model.Utils.get_asset model an in
     let asset_keys = dasset.keys in
     let assoc_fields = List.map2 (fun (ai : asset_item) (x : mterm) -> (unloc ai.name, x)) asset.values l in
-    let value_key =  List.find (fun (id, _) -> List.exists (String.equal id) asset_keys) assoc_fields |> snd in
-    if not (is_literal value_key)
-    then errors := (value_key.loc, OnlyLiteralInAssetInit)::!errors
-    else (
-      if contains_key an value_key
-      then errors := (value_key.loc, DuplicatedKeyAsset an)::!errors
-      else add_key an value_key)
+    let value_key_opt =
+      match List.find (fun (id, _) -> List.exists (String.equal id) asset_keys) assoc_fields |> snd with
+      | {node = Mvar (id, _, _, _); _} -> begin
+          let const = Model.Utils.get_vars model |> List.find_opt (fun (x : var) -> cmp_ident (unloc id) (unloc x.name)) in
+          match const with
+          | Some c -> c.default
+          | None -> None
+        end
+      | x -> Some x
+    in
+    match value_key_opt with
+    | Some value_key -> begin
+        if not (is_literal value_key)
+        then errors := (value_key.loc, OnlyLiteralInAssetInit)::!errors
+        else (
+          if contains_key an value_key
+          then errors := (value_key.loc, DuplicatedKeyAsset an)::!errors
+          else add_key an value_key)
+      end
+    | None -> ()
   in
   List.iter
     (fun d ->
@@ -1856,6 +1872,7 @@ let replace_date_duration_by_timestamp (model : model) : model =
     | Mminus (a, b) -> mk (Big_int.sub_big_int (g a) (g b))
     | Mdatefromtimestamp v -> mk (g v)
     | Mtimestamp _  -> x
+    | Mvar (_, _, _, _) -> x
     | _ ->
       begin
         Format.eprintf "cannot transform to timestamp: %a@.%a@." Printer_model.pp_mterm x pp_mterm x;
@@ -5272,7 +5289,10 @@ let process_metadata (model : model) : model =
     fold_model aux model false
   in
 
-  if check_if_not_metadata () && not (with_metadata ())
+  let js = match !Options.target with | Javascript -> true | _ -> false in
+  let simple_metadata = js && !Options.opt_with_metadata in
+
+  if check_if_not_metadata () && not (with_metadata ()) && not simple_metadata
   then model
   else begin
     let model =
@@ -5282,6 +5302,20 @@ let process_metadata (model : model) : model =
         | _ -> map_mterm (aux ctx) mt
       in
       map_mterm_model aux model
+    in
+    let model =
+      if simple_metadata
+      then
+        let param : parameter = {
+          name    = dumloc "metadata";
+          typ     = tbytes;
+          default = None;
+          value   = None;
+          const   = false;
+          loc     = Location.dummy;
+        } in
+        { model with parameters = model.parameters @ [param] }
+      else model
     in
     let dmap =
       let mk_map _ =
@@ -5313,10 +5347,16 @@ let process_metadata (model : model) : model =
         in
 
         let v =
-          match !Options.opt_metadata_uri, !Options.opt_metadata_storage with
-          | "", ""            -> []
-          | uri, ""           -> [mk_uri uri]
-          | "", metadata_path -> [mk_uri ("tezos-storage:" ^ key); mk_data metadata_path]
+          match !Options.opt_metadata_uri, !Options.opt_metadata_storage, simple_metadata with
+          | _, _, true        ->
+            let mk_m _ =
+              let vkey = mk_string key in
+              vkey, (mk_mterm (Mvar(dumloc "metadata", Vparameter, Tnone, Dnone)) tbytes)
+            in
+            [mk_uri ("tezos-storage:" ^ key); mk_m ()]
+          | "", "", _         -> []
+          | uri, "", _        -> [mk_uri uri]
+          | "", metadata_path, _ -> [mk_uri ("tezos-storage:" ^ key); mk_data metadata_path]
           | _ -> assert false
         in
 
@@ -5361,17 +5401,19 @@ let reverse_operations (model : model) : model =
   in
   { model with functions = List.map for_functions model.functions }
 
-let process_parameter (model : model) : model =
+let process_parameter ?(js=false) (model : model) : model =
   let for_parameter (param : parameter) =
     let t = param.typ in
     let name = param.name in
+    let mk_parameter id t = mk_mterm (Mvar(id, Vparameter, Tnone, Dnone )) t in
     let default : mterm =
       match param.value, param.default with
       | Some v, _
       | _, Some v -> v
+      | _ when param.const && not js -> (emit_error (param.loc, NoInitValueForConstParam (unloc name)); raise (Error.Stop 5))
       | _ -> mk_parameter name t
     in
-    let var : var = mk_var name t t VKvariable ~default ~loc:param.loc in
+    let var : var = mk_var name t t (if param.const then VKconstant else VKvariable) ~default ~loc:param.loc in
     Dvar var
   in
   let rec aux ctx (mt : mterm) : mterm =

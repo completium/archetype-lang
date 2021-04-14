@@ -6374,7 +6374,7 @@ let for_parameters ?init env params =
   | Some params -> begin
       let env, ps =
         List.fold_left (fun (env, accu) p ->
-            let pname, ptyp, pdv = unloc p in
+            let pname, ptyp, pdv, const = unloc p in
             let ety = for_type env ptyp in
             let dv = Option.map (for_xexpr (expr_mode `Concrete) ?ety env) pdv in
             let typ =
@@ -6385,7 +6385,7 @@ let for_parameters ?init env params =
             let decl = {
               vr_name = pname;
               vr_type = typ;
-              vr_kind = `Variable;
+              vr_kind = if const then `Constant else `Variable;
               vr_core = None;
               vr_invs = [];
               vr_def  = None;
@@ -6396,6 +6396,7 @@ let for_parameters ?init env params =
                 typ     = typ;
                 default = dv;
                 value   = None;
+                const   = const;
                 loc     = loc p;
               } in
             env, (accu @ [param])
