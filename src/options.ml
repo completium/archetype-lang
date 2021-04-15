@@ -23,7 +23,7 @@ type sorting_policy =
   | None
 [@@deriving show {with_path = false}]
 
-let version = "1.2.3"
+let version = "1.2.4"
 let url = "https://archetype-lang.org/"
 
 let target = ref (Michelson : target_lang)

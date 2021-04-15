@@ -40,12 +40,13 @@ install:
 clean:
 	@dune clean
 	$(MAKE) -C src clean
+	rm -f archetype.exe
 
 check:
 	./extra/script/check_pp.sh && ./extra/script/check_contracts.sh
 
 _opam:
-	opam switch create . 4.09.1 --no-install
+	opam switch create . 4.10.2 --no-install
 	eval $$(opam env)
 
 build-deps: _opam
