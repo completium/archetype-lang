@@ -91,6 +91,7 @@ entry updateUser (user : address, transferlistId : option<nat>) {
       | some tlv -> put(users, user, tlv)
       | none     -> remove(users, user)
       end
+      // users := update(users, user, transferlistId)
   }
 }
 

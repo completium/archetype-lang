@@ -1794,6 +1794,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     | Mmapput (_, _, _c, _k, _v)               -> assert false
     | Mmapremove (_, _, _c, _k)                -> assert false
+    | Mmapupdate (_, _, _c, _k, _v)            -> assert false
     | Mmapget (_, _, _c, _k)                   -> assert false
     | Mmapgetopt (_, _, _c, _k)                -> assert false
     | Mmapcontains (_, _, _c, _k)              -> assert false

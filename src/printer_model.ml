@@ -1030,6 +1030,12 @@ let pp_mterm fmt (mt : mterm) =
         f c
         f k
 
+    | Mmapupdate (_, _, c, k, v) ->
+      Format.fprintf fmt "map_update (%a, %a, %a)"
+        f c
+        f k
+        f v
+
     | Mmapget (_, _, c, k) ->
       Format.fprintf fmt "map_get (%a, %a)"
         f c

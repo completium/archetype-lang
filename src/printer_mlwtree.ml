@@ -286,6 +286,12 @@ let rec pp_term outer pos fmt = function
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
+  | Tupdate (i, k, v, c) ->
+    Format.fprintf fmt "%a.update %a %a %a"
+      pp_str (String.capitalize_ascii i)
+      (pp_with_paren (pp_term outer pos)) k
+      (pp_with_paren (pp_term outer pos)) v
+      (pp_with_paren (pp_term outer pos)) c
   | Tset (i,e1,e2,e3) ->
     Format.fprintf fmt "%a.set %a %a %a"
       pp_str (String.capitalize_ascii i)

@@ -2183,6 +2183,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       Tadd (dl (mk_map_name m c.type_), dl (Ttuple [ map_mterm m ctx k; map_mterm m ctx v]), map_mterm m ctx c)
     | Mmapremove (_, _, c, k)   ->
       Tremove (dl (mk_map_name m c.type_),map_mterm m ctx k, map_mterm m ctx c)
+    | Mmapupdate (_, _, c, k, v)   ->
+      Tupdate (dl (mk_map_name m c.type_), map_mterm m ctx k, map_mterm m ctx v, map_mterm m ctx c)
     | Mmapget (_, _, c, k)      -> Tsnd(
         dl (mk_get_force (dl (mk_map_name m c.type_)) (map_mterm m ctx k) (map_mterm m ctx c)))
     | Mmapgetopt (_, _, c, k)   -> Tsndopt(

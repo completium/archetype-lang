@@ -333,6 +333,7 @@ type ('id, 'term) mterm_node  =
   (* map api expression *)
   | Mmapput           of type_ * type_ * 'term * 'term * 'term
   | Mmapremove        of type_ * type_ * 'term * 'term
+  | Mmapupdate        of type_ * type_ * 'term * 'term * 'term
   | Mmapget           of type_ * type_ * 'term * 'term
   | Mmapgetopt        of type_ * type_ * 'term * 'term
   | Mmapcontains      of type_ * type_ * 'term * 'term
@@ -1443,6 +1444,7 @@ let cmp_mterm_node
     (* map api expression *)
     | Mmapput (tk1, tv1, c1, k1, v1), Mmapput (tk2, tv2, c2, k2, v2)                   -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2 && cmp v1 v2
     | Mmapremove (tk1, tv1, c1, k1), Mmapremove (tk2, tv2, c2, k2)                     -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2
+    | Mmapupdate (tk1, tv1, c1, k1, v1), Mmapupdate (tk2, tv2, c2, k2, v2)             -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2 && cmp v1 v2
     | Mmapget (tk1, tv1, c1, k1), Mmapget (tk2, tv2, c2, k2)                           -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2
     | Mmapgetopt (tk1, tv1, c1, k1), Mmapgetopt (tk2, tv2, c2, k2)                     -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2
     | Mmapcontains (tk1, tv1, c1, k1), Mmapcontains (tk2, tv2, c2, k2)                 -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2
@@ -1848,6 +1850,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   (* map api expression *)
   | Mmapput (tk, tv, c, k, v)      -> Mmapput (ft tk, ft tv, f c, f k, f v)
   | Mmapremove (tk, tv, c, k)      -> Mmapremove (ft tk, ft tv, f c, f k)
+  | Mmapupdate (tk, tv, c, k, v)   -> Mmapupdate (ft tk, ft tv, f c, f k, f v)
   | Mmapget (tk, tv, c, k)         -> Mmapget (ft tk, ft tv, f c, f k)
   | Mmapgetopt (tk, tv, c, k)      -> Mmapgetopt (ft tk, ft tv, f c, f k)
   | Mmapcontains (tk, tv, c, k)    -> Mmapcontains (ft tk, ft tv, f c, f k)
@@ -2249,6 +2252,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   (* map api expression *)
   | Mmapput (_, _, c, k, v)               -> f (f (f accu c) k) v
   | Mmapremove (_, _, c, k)               -> f (f accu c) k
+  | Mmapupdate (_, _, c, k, v)            -> f (f (f accu c) k) v
   | Mmapget (_, _, c, k)                  -> f (f accu c) k
   | Mmapgetopt (_, _, c, k)               -> f (f accu c) k
   | Mmapcontains (_, _, c, k)             -> f (f accu c) k
@@ -3087,6 +3091,12 @@ let fold_map_term
     let ce, ca = f accu c in
     let ke, ka = f ca k in
     g (Mmapremove (tk, tv, ce, ke)), ka
+
+  | Mmapupdate (tk, tv, c, k, v) ->
+    let ce, ca = f accu c in
+    let ke, ka = f ca k in
+    let ve, va = f ka v in
+    g (Mmapupdate (tk, tv, ce, ke, ve)), va
 
   | Mmapget (tk, tv, c, k) ->
     let ce, ca = f accu c in

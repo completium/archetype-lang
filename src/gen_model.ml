@@ -558,6 +558,13 @@ let to_model (ast : A.ast) : M.model =
         let kt, vt = extract_builtin_type_map fp in
         M.Mmapremove (kt, vt, fp, fq)
 
+      | A.Pcall (None, A.Cconst (A.Cmupdate), [AExpr p; AExpr q; AExpr r]) ->
+        let fp = f p in
+        let fq = f q in
+        let fr = f r in
+        let kt, vt = extract_builtin_type_map fp in
+        M.Mmapupdate (kt, vt, fp, fq, fr)
+
       | A.Pcall (None, A.Cconst (A.Cmget), [AExpr p; AExpr q]) ->
         let fp = f p in
         let fq = f q in

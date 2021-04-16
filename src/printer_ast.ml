@@ -264,6 +264,7 @@ let to_const = function
   (* map *)
   | Cmput           -> "put"
   | Cmremove        -> "remove"
+  | Cmupdate        -> "update"
   | Cmget           -> "get"
   | Cmgetopt        -> "getopt"
   | Cmcontains      -> "contains"

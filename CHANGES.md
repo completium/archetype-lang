@@ -6,13 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Added
- - edo features:
-   * add new cryptographic hash functions: `sha3` and `keccak`
-   * add `total_voting_power` constant and `voting_power` operation
-   * add `level` constant
-   * add `ticket` type and associated instructions (`create_ticket`, `read_ticket`, `split_ticket`, `join_tickets`)
-   * add sapling types (`sapling_state` and `sapling_transaction`) and operations (`sapling_empty_state` and `sapling_verify_update`)
-   * add bls curves types (`bls12_381_fr`, `bls12_381_g1` and `bls12_381_g2`), arthmetic (`+`, `*`, unary `-`) and operation (`pairing_check`)
+  - edo features:
+    * add new cryptographic hash functions: `sha3` and `keccak`
+    * add `total_voting_power` constant and `voting_power` operation
+    * add `level` constant
+    * add `ticket` type and associated instructions (`create_ticket`, `read_ticket`, `split_ticket`, `join_tickets`)
+    * add sapling types (`sapling_state` and `sapling_transaction`) and operations (`sapling_empty_state` and `sapling_verify_update`)
+    * add bls curves types (`bls12_381_fr`, `bls12_381_g1` and `bls12_381_g2`), arthmetic (`+`, `*`, unary `-`) and operation (`pairing_check`)
+  - `update` function for map (like `UPDATE` in michelson)
 
 ## [1.2.3] - 2021-04-12
 ### Added

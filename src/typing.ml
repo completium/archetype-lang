@@ -1323,6 +1323,7 @@ let mapops : opinfo list =
   let map  = A.Tmap (tkey, tval) in [
     ("put"      , A.Cmput      , `Total   , Some map, [ tkey; tval ], map           , Mint.empty);
     ("remove"   , A.Cmremove   , `Total   , Some map, [ tkey       ], map           , Mint.empty);
+    ("update"   , A.Cmupdate   , `Total   , Some map, [ tkey; A.Toption tval ], map , Mint.empty);
     ("getopt"   , A.Cmgetopt   , `Partial , Some map, [ tkey       ], A.Toption tval, Mint.empty);
     ("contains" , A.Cmcontains , `Total   , Some map, [ tkey       ], A.vtbool      , Mint.empty);
     ("length"   , A.Cmlength   , `Total   , Some map, [            ], A.vtnat       , Mint.empty);
@@ -1335,6 +1336,7 @@ let bigmapops : opinfo list =
   let big_map  = A.Tbig_map (tkey, tval) in [
     ("put"      , A.Cmput      , `Total   , Some big_map, [ tkey; tval ], big_map       , Mint.empty);
     ("remove"   , A.Cmremove   , `Total   , Some big_map, [ tkey       ], big_map       , Mint.empty);
+    ("update"   , A.Cmupdate   , `Total   , Some big_map, [ tkey; A.Toption tval ], big_map , Mint.empty);
     ("getopt"   , A.Cmgetopt   , `Partial , Some big_map, [ tkey       ], A.Toption tval, Mint.empty);
     ("contains" , A.Cmcontains , `Total   , Some big_map, [ tkey       ], A.vtbool      , Mint.empty);
   ]

@@ -193,6 +193,7 @@ type const =
   (* map *)
   | Cmput
   | Cmremove
+  | Cmupdate
   | Cmget
   | Cmgetopt
   | Cmcontains

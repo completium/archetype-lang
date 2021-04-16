@@ -1342,6 +1342,13 @@ module Collection
   mk (N.remove k c.content)
 
   (* ------------------------------------------------------------------------ *)
+  let function update (k : tk) (a : option 'a) (c : collection) : collection =
+  match a with
+  | Some v -> c (* TODO: replace it by the right expression *)
+  | None   -> remove k c
+  end
+
+  (* ------------------------------------------------------------------------ *)
   axiom card_remove : forall k c.
   not (contains k c) ->
   card (remove k c) = card c - 1

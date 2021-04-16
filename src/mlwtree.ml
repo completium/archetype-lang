@@ -144,6 +144,7 @@ type ('e,'t,'i) abstract_term =
   | Tvadd    of 'i * 'e * 'e
   | Tremove of 'i * 'e * 'e
   | Tvremove of 'i * 'e * 'e
+  | Tupdate    of 'i * 'e * 'e * 'e
   | Tget    of 'i * 'e * 'e
   | Tgetforce    of 'i * 'e * 'e
   | Tfget of 'i * 'e * 'e (* logical pure get; no fail *)
@@ -506,8 +507,9 @@ and map_abstract_term
   | Tvadd (i1,e1,e2)   -> Tvadd (map_i i1, map_e e1, map_e e2)
   | Tremove (i,e1,e2)  -> Tremove (map_i i,map_e e1, map_e e2)
   | Tvremove (i,e1,e2) -> Tvremove (map_i i,map_e e1, map_e e2)
+  | Tupdate (i1,k,v,c) -> Tupdate (map_i i1, map_e k, map_e v, map_e c)
   | Tget (i,e1,e2)     -> Tget (map_i i, map_e e1, map_e e2)
-  | Tgetforce (i,e1,e2)     -> Tgetforce (map_i i, map_e e1, map_e e2)
+  | Tgetforce (i,e1,e2)-> Tgetforce (map_i i, map_e e1, map_e e2)
   | Tfget (i,e1,e2)    -> Tfget (map_i i, map_e e1, map_e e2)
   | Tset (i, e1,e2,e3) -> Tset (map_i i, map_e e1, map_e e2, map_e e3)
   | Tvsum (i,e1,e2)    -> Tvsum (map_i i, map_e e1, map_e e2)
