@@ -33,7 +33,7 @@ function assertReceiver(addr : address) : bool {
 entry assertReceivers (addrs : list<address>) {
   for addr in addrs do
     if (addr <> issuer)
-    then dorequire(addr = issuer or assertReceiver(addr), "error")
+    then dorequire(assertReceiver(addr), "error")
   done
 }
 
