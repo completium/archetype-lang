@@ -1,0 +1,172 @@
+archetype a2(
+  admin  : address,
+  issuer : address
+)
+
+/* Informal specification:
+// https://gitlab.com/tzip/tzip/-/blob/master/proposals/tzip-15/tzip-15.md
+*/
+
+record transferlist {
+  unrestricted: bool;
+  allowedTransferlists: set<nat>;
+}
+
+variable users         : big_map<address, nat> = []
+variable transferlists : big_map<nat, transferlist> = []
+
+
+/*************/
+/* Assertion */
+/*************/
+
+function assertReceiver(addr : address) : bool {
+  return
+    match getopt(users, addr) with
+    | some v -> transferlists[v].unrestricted
+    | none   -> false
+    end
+}
+
+// (list %assertReceivers userId)
+
+entry assertReceivers (addrs : list<address>) {
+  for addr in addrs do
+    dorequire(assertReceiver(addr), "error")
+  done
+}
+
+// (list %assertTransfers (pair (userId %from)
+//                              (list %tos userId)))
+
+entry assertTransfers (input_list : list<(address * list<address>)>) {
+  for input_item in input_list do
+    var from_ = input_item[0];
+    var tos   = input_item[1];
+    for to_ in tos do
+      if (from_ = issuer)
+      then dorequire(assertReceiver(to_), "error")
+      else begin
+        dorequire(assertReceiver(from_),  "error");
+        dorequire(assertReceiver(to_),    "error");
+        dorequire(contains(transferlists[users[from_]].allowedTransferlists, users[to_]), "error")
+      end
+    done
+  done
+}
+
+
+
+/**************/
+/* Management */
+/**************/
+
+entry setAdmin (value : address) {
+  called by admin
+  effect {
+    admin := value;
+  }
+}
+
+// (userId %setIssuer)
+
+entry setIssuer (value : address) {
+  called by admin
+  effect {
+    issuer := value;
+  }
+}
+
+// (pair %updateUser (userId %user)
+//                   (option (nat %transferlistId)))
+
+entry updateUser (user : address, transferlistId : option<nat>) {
+  called by admin
+  require {
+    r0 otherwise "ISSUER_NOT_USER" : issuer <> user;
+  }
+  effect {
+    users :=
+      match transferlistId with
+      | some tlv -> put(users, user, tlv)
+      | none     -> remove(users, user)
+      end
+  }
+}
+
+// (pair %updateTransferlist (nat %transferlistId)
+//                         (option (pair (bool %unrestricted)
+//                                       (pair (list %disallowTransferlists nat)
+//                                             (set %allowTransferlists nat)))))
+
+entry updateTransferlist (transferlistId : nat, v : option<(bool * list<nat> * set<nat>)>) {
+  called by admin
+  effect {
+      match v with
+      | some vv -> begin
+        var ltransferlist = transferlists[transferlistId];
+
+        var lunrestricted          = vv[0];
+        var ldisallowTransferlists = vv[1];
+        var lallowTransferlists    = vv[2];
+
+
+        ltransferlist.unrestricted := lunrestricted;
+
+        for r in ldisallowTransferlists do
+          ltransferlist.allowedTransferlists := remove(ltransferlist.allowedTransferlists, r)
+        done;
+
+        for a in lallowTransferlists do
+          ltransferlist.allowedTransferlists := add(ltransferlist.allowedTransferlists, a)
+        done;
+
+        transferlists := put(transferlists, transferlistId, ltransferlist);
+
+      end
+      | none -> transferlists := remove(transferlists, transferlistId)
+      end
+  }
+}
+
+
+
+/***************/
+/* Informative */
+/***************/
+
+getter getAdmin () : address {
+  return admin
+}
+
+// (pair %getIssuer unit
+//                  (contract %callback userId))
+
+getter getIssuer () : address {
+  return issuer
+}
+
+// (pair %getUser (userId %user)
+//                (contract %callback (option %transferlistId nat)))
+
+getter getUser (user : address) : option<nat> {
+  return getopt(users, user)
+}
+
+// (pair %assertTransferlist (nat %transferlistId)
+//                         (option (pair (bool %unrestricted)
+//                                            (set %allowedTransferlists nat))))
+
+entry assertTransferlist (transferlistId : nat, input : option<transferlist>) {
+  match input with
+  | some vinput -> begin
+      dorequire(contains(transferlists, transferlistId), "TRANSFERLISTID_NOT_FOUNu");
+      var l = transferlists[transferlistId];
+      dorequire(l.unrestricted = vinput.unrestricted,    "INVALID_UNRESTRICTED_STATE");
+      for i in vinput.allowedTransferlists do
+        dorequire(contains(l.allowedTransferlists, i),   "IS_NOT_SUBSET")
+      done
+  end
+  | none -> dofailif(contains(transferlists, transferlistId), "EXISTS_TR_ID")
+  end
+}
