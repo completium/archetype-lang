@@ -1,0 +1,7 @@
+archetype instr_list_concat
+
+variable res : list<string> = ["1"; "2"; "3"]
+
+entry exec () {
+  res.concat(["4"; "5"; "6"])
+}

@@ -1475,6 +1475,7 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         | Tupdate          -> assert false
         | Ttransfer_tokens -> assert false
       end
+    | Iupdate (_ak, _aop)  -> assert false
     | Icompare (op, _lhs, _rhs) -> begin
         match op with
         | Ceq        -> assert false
@@ -1800,6 +1801,11 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mmapcontains (_, _, _c, _k)              -> assert false
     | Mmaplength (_, _, _c)                    -> assert false
     | Mmapfold (_t, _ik, _iv, _ia, _c, _a, _b) -> assert false
+
+
+    (* map api instruction *)
+
+    | Mmapinstrupdate (_, _, _c, _k, _v)       -> assert false
 
 
     (* builtin functions *)

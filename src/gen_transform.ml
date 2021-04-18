@@ -5444,3 +5444,17 @@ let fix_container (model : model) =
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
+
+let expr_to_instr  (model : model) =
+  let is_compatible (ak : assign_kind) (c : mterm) =
+  match ak, c.node with
+  | Avarstore id0, (Mvar (id1, Vstorevar, Tnone, Dnone)) -> String.equal (unloc id0) (unloc id1)
+  | _ -> false
+  in
+  let rec aux ctx (mt : mterm) =
+    match mt.node, mt.type_ with
+    | Massign (ValueAssign, _, ak, {node = Mmapupdate(tk, vk, c, k, v)}), tyinstr when is_compatible ak c  ->
+      mk_mterm (Mmapinstrupdate (tk, vk, ak, k, v)) tyinstr
+    | _ -> map_mterm (aux ctx) mt
+  in
+  map_mterm_model aux model

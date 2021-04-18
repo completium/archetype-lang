@@ -165,6 +165,15 @@ let pp_transfer_kind f fmt = function
   | TKself (x, id, args)    -> Format.fprintf fmt "transfer %a to entry self.%a(%a)" f x pp_str id (pp_list ", " (fun fmt (id, x) -> Format.fprintf fmt "%s = %a" id f x)) args
   | TKoperation x           -> Format.fprintf fmt "transfer %a" f x
 
+let pp_assign_kind f fmt = function
+  | Avar k               -> pp_id fmt k
+  | Avarstore l          -> Format.fprintf fmt "s.%a" pp_id l
+  | Aasset (an, fn, k)   -> Format.fprintf fmt "%a[%a].%a" pp_id an f k pp_id fn
+  | Arecord (_rn, fn, r) -> Format.fprintf fmt "%a.%a" f r pp_id fn
+  | Astate               -> Format.fprintf fmt "state"
+  | Aassetstate (an, k)  -> Format.fprintf fmt "state_%a(%a)" pp_ident an f k
+  | Aoperations          -> Format.fprintf fmt "operations"
+
 let pp_mterm fmt (mt : mterm) =
   let rec f fmt (mtt : mterm) =
     match mtt.node with
@@ -1064,6 +1073,16 @@ let pp_mterm fmt (mt : mterm) =
         pp_id ik
         pp_id iv
         f b
+
+
+    (* map api instruction *)
+
+    | Mmapinstrupdate (_, _, ak, k, v) ->
+      Format.fprintf fmt "%a.update(%a, %a)"
+        (pp_assign_kind f) ak
+        f k
+        f v
+
 
     (* builtin functions *)
 

@@ -330,6 +330,9 @@ let rec pp_instruction fmt (i : instruction) =
       | Tupdate          -> pp "update(%a, %a, %a)"          f a1 f a2 f a3
       | Ttransfer_tokens -> pp "transfer_tokens(%a, %a, %a)" f a1 f a2 f a3
     end
+  | Iupdate (_a, _b) -> begin
+      pp "update"
+    end
   | Icompare (op, lhs, rhs) -> begin
       match op with
       | Ceq        -> pp "(%a) = (%a)"       f lhs f rhs

@@ -391,6 +391,17 @@ let to_ir (model : M.model) : T.ir =
 
   let extra_args : (ident * (ident * T.type_) list) list ref  = ref [] in
 
+  let ak_to_id (ak : M.assign_kind) =
+    match ak with
+    | Avar id       -> unloc id
+    | Avarstore id  -> unloc id
+    | Aasset _      -> emit_error (UnsupportedTerm "Aasset")
+    | Arecord _     -> emit_error (UnsupportedTerm "Arecord")
+    | Astate        -> emit_error (UnsupportedTerm "Astate")
+    | Aassetstate _ -> emit_error (UnsupportedTerm "Aassetstate")
+    | Aoperations   -> operations
+  in
+
   let rec mterm_to_intruction env (mtt : M.mterm) : T.instruction =
     let f = mterm_to_intruction env in
     let ft = to_type in
@@ -802,6 +813,8 @@ let to_ir (model : M.model) : T.ir =
     | Mmaplength (_, _, c)        -> T.Iunop (Usize, f c)
     | Mmapfold (_, ik, iv, ia, c, a, b) -> T.Ifold (unloc ik, Some (unloc iv), unloc ia, f c, f a, T.Iassign (unloc ia, f b))
 
+    (* map api expression *)
+    | Mmapinstrupdate (_, _, ak, k, v) -> T.Iupdate (ak_to_id ak, Aterop (Tupdate, f k, f v) )
 
     (* builtin functions *)
 
@@ -1168,6 +1181,13 @@ let to_michelson (ir : T.ir) : T.michelson =
       c, env
     in
 
+    let ter_op_to_code = function
+      | T.Tcheck_signature -> T.CHECK_SIGNATURE
+      | T.Tslice           -> T.SLICE
+      | T.Tupdate          -> T.UPDATE
+      | T.Ttransfer_tokens -> T.TRANSFER_TOKENS
+    in
+
     match i with
     | Iseq l               -> seq env l
 
@@ -1412,6 +1432,25 @@ let to_michelson (ir : T.ir) : T.michelson =
         let a2, env = fe env a2 in
         let a1, env = fe env a1 in
         T.SEQ [a3; a2; a1; op], (dec_env (dec_env env))
+      end
+    | Iupdate (id, aop) -> begin
+        let n = get_sp_for_id env id in
+        let v =
+          match aop with
+          | Aunop   _op       -> assert false
+          | Abinop (_op, _)   -> assert false
+          | Aterop (op, a1, a2) ->
+            let a2, env = fe env a2 in
+            let a1, _env = fe env a1 in
+            let op = ter_op_to_code op in
+            [a2; a1; op]
+        in
+        let c =
+          if n <= 0
+          then T.SEQ v
+          else T.SEQ ([ T.DIG n ] @ v @ [ T.DUG n ])
+        in
+        c, env
       end
     | Iconst (t, e) -> T.PUSH (rar t, e), inc_env env
     | Icompare (op, lhs, rhs) -> begin

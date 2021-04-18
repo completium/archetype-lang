@@ -232,6 +232,7 @@ let generate_target model =
     |> normalize_storage
     |> remove_constant
     |> eval_storage
+    |> expr_to_instr
     |> optimize
     |> generate_api_storage
     |> output

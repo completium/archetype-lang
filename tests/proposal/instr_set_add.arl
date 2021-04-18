@@ -1,0 +1,5 @@
+archetype instr_set_add
+
+entry exec () {
+  res.add("0")
+}

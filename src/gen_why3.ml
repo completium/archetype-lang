@@ -2194,6 +2194,10 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mmaplength (_, _, c)      ->
       let tmap = mk_map_name m c.type_ in Tcard (dl tmap,map_mterm m ctx c)
     | Mmapfold _ -> error_not_translated "Mmapfold"
+
+    (* map api expression *)
+    | Mmapinstrupdate _ -> error_not_translated "Mmapinstrupdate"
+
     (* builtin functions *)
     | Mmax (l,r) ->
       begin match M.get_ntype mt.type_ with

@@ -87,12 +87,7 @@ entry updateUser (user : address, transferlistId : option<nat>) {
     r0 otherwise "ISSUER_NOT_USER" : issuer <> user;
   }
   effect {
-    users :=
-      match transferlistId with
-      | some tlv -> put(users, user, tlv)
-      | none     -> remove(users, user)
-      end
-      // users := update(users, user, transferlistId)
+    users := update(users, user, transferlistId)
   }
 }
 
