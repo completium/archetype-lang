@@ -988,7 +988,7 @@ and pp_exn outer pos fmt = function
   | Enotfound           -> pp_str fmt "NotFound"
   | Einvalidcaller      -> pp_str fmt "InvalidCaller"
   | Enegassignnat       -> pp_str fmt "NegAssignNat"
-  | Einvalidcondition   -> pp_str fmt "InvalidCondition"
+  | Einvalidcondition _ -> pp_str fmt "InvalidCondition"
   | Einvalidstate       -> pp_str fmt "InvalidState"
   | Enotransfer         -> pp_str fmt "NoTransfer"
   | Ebreak              -> pp_str fmt "Break"

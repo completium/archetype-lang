@@ -1288,7 +1288,7 @@ let to_model (ast : A.ast) : M.model =
         let a =
           match x.error with
           | Some v -> (M.Invalid (to_mterm env v))
-          | None   -> (M.InvalidCondition (Option.map unloc x.label))
+          | None   -> (M.InvalidCondition (x.label |> Option.get |> unloc))
         in
         fail a
       in

@@ -112,7 +112,7 @@ let pp_fail_type f fmt = function
   | Model.InvalidCaller -> Format.fprintf fmt "\"InvalidCaller\""
   | Model.InvalidCondition c ->
     Format.fprintf fmt "\"require %afailed\""
-      (pp_option (pp_postfix " " pp_str)) c
+      (pp_postfix " " pp_str) c
   | Model.NoTransfer -> Format.fprintf fmt "\"NoTransfer\""
   | Model.AssignNat -> Format.fprintf fmt "\"cannot assign negative value to nat\""
   | Model.InvalidState -> Format.fprintf fmt "\"InvalidState\""

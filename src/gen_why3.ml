@@ -1659,7 +1659,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Mfail InvalidCaller        -> Traise Einvalidcaller
     | Mfail NoTransfer           -> Traise Enotransfer
-    | Mfail (InvalidCondition _) -> Traise Einvalidcondition
+    | Mfail (InvalidCondition lbl) -> Traise (Einvalidcondition lbl)
     | Mfail InvalidState         -> Traise Einvalidstate
     | Mfail AssignNat -> Tseq [loc_term (Tassign (Tvar gs, cp_storage gsinit)); dl (Traise Enegassignnat)]
     | Mfail (Invalid v) ->
@@ -2831,7 +2831,7 @@ let fold_exns m body : term list =
     | M.Moptget _ -> acc @ [Texn Enotfound]
     | M.Mfail InvalidCaller -> acc @ [Texn Einvalidcaller]
     | M.Mfail NoTransfer -> acc @ [Texn Enotransfer]
-    | M.Mfail (InvalidCondition _) -> acc @ [Texn Einvalidcondition]
+    | M.Mfail (InvalidCondition lbl) -> acc @ [Texn (Einvalidcondition lbl)]
     | M.Mfail InvalidState -> acc @ [Texn Einvalidstate]
     | M.Mfail AssignNat -> acc @ [Texn Enegassignnat]
     | M.Mfail Invalid v ->

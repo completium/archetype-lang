@@ -455,7 +455,7 @@ and mterm__node = (lident, mterm) mterm_node
 and 'id fail_type_gen =
   | Invalid of 'id mterm_gen
   | InvalidCaller
-  | InvalidCondition of ident option
+  | InvalidCondition of ident
   | NoTransfer
   | AssignNat
   | InvalidState
@@ -1174,7 +1174,7 @@ let cmp_fail_type
   match ft1, ft2 with
   | Invalid mt1, Invalid mt2 -> cmp mt1 mt2
   | InvalidCaller, InvalidCaller -> true
-  | InvalidCondition c1, InvalidCondition c2 -> Option.cmp cmp_ident c1 c2
+  | InvalidCondition c1, InvalidCondition c2 -> cmp_ident c1 c2
   | _ -> false
 
 let rec cmp_ntype

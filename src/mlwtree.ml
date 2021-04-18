@@ -14,7 +14,7 @@ type 'e exn =
   | Ekeyexist
   | Enegassignnat
   | Einvalidcaller
-  | Einvalidcondition
+  | Einvalidcondition of string
   | Einvalidstate
   | Enotransfer
   | Ebreak
@@ -422,7 +422,7 @@ and map_exn (map_e : 'e1 -> 'e2) = function
   | Ekeyexist -> Ekeyexist
   | Enegassignnat -> Enegassignnat
   | Einvalidcaller -> Einvalidcaller
-  | Einvalidcondition -> Einvalidcondition
+  | Einvalidcondition lbl -> Einvalidcondition lbl
   | Einvalidstate -> Einvalidstate
   | Enotransfer -> Enotransfer
   | Ebreak -> Ebreak
@@ -1042,7 +1042,7 @@ and compare_exn cmpe e1 e2 =
   | Ekeyexist, Ekeyexist -> true
   | Einvalidcaller, Einvalidcaller -> true
   | Enegassignnat, Enegassignnat -> true
-  | Einvalidcondition, Einvalidcondition -> true
+  | Einvalidcondition lbl1, Einvalidcondition lbl2 -> String.equal lbl1 lbl2
   | Einvalidstate, Einvalidstate -> true
   | Ebreak, Ebreak -> true
   | Efail (i1,None), Efail (i2,None) -> compare i1 i2 = 0

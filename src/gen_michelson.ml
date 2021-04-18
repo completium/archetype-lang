@@ -567,7 +567,7 @@ let to_ir (model : M.model) : T.ir =
           match ft with
           | Invalid v            -> f v
           | InvalidCaller        -> T.istring "InvalidCaller"
-          | InvalidCondition lbl -> T.istring ("InvalidCondition" ^ (match lbl with | Some lbl -> ": " ^ lbl | _ -> ""))
+          | InvalidCondition lbl -> T.istring ("InvalidCondition" ^ ": " ^ lbl)
           | NoTransfer           -> T.istring "NoTransfer"
           | AssignNat            -> T.istring "AssignNat"
           | InvalidState         -> T.istring "InvalidState"
