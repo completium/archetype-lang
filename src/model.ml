@@ -322,6 +322,9 @@ type ('id, 'term) mterm_node  =
   | Msetcontains      of type_ * 'term * 'term
   | Msetlength        of type_ * 'term
   | Msetfold          of type_ * 'id   * 'id   * 'term * 'term * 'term
+  (* set api instruction *)
+  (* | Msetinstradd      of type_ * ('id, 'term) assign_kind_gen * 'term *)
+  (* | Msetinstrremove   of type_ * ('id, 'term) assign_kind_gen * 'term *)
   (* list api expression *)
   | Mlistprepend      of type_ * 'term * 'term
   | Mlistlength       of type_ * 'term
@@ -330,6 +333,9 @@ type ('id, 'term) mterm_node  =
   | Mlistreverse      of type_ * 'term
   | Mlistconcat       of type_ * 'term * 'term
   | Mlistfold         of type_ * 'id   * 'id   * 'term * 'term * 'term
+  (* list api instruction *)
+  (* | Mlistinstrprepend of type_ * ('id, 'term) assign_kind_gen * 'term *)
+  (* | Mlistinstrconcat  of type_ * ('id, 'term) assign_kind_gen * 'term *)
   (* map api expression *)
   | Mmapput           of type_ * type_ * 'term * 'term * 'term
   | Mmapremove        of type_ * type_ * 'term * 'term
@@ -340,6 +346,8 @@ type ('id, 'term) mterm_node  =
   | Mmaplength        of type_ * type_ * 'term
   | Mmapfold          of type_ * 'id   * 'id   * 'id   * 'term * 'term * 'term
   (* map api instruction *)
+  | Mmapinstrput      of type_ * type_ * ('id, 'term) assign_kind_gen * 'term * 'term
+  | Mmapinstrremove   of type_ * type_ * ('id, 'term) assign_kind_gen * 'term
   | Mmapinstrupdate   of type_ * type_ * ('id, 'term) assign_kind_gen * 'term * 'term
   (* builtin functions *)
   | Mmin              of 'term * 'term
@@ -1453,6 +1461,8 @@ let cmp_mterm_node
     | Mmaplength (tk1, tv1, c1), Mmaplength (tk2, tv2, c2)                             -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2
     | Mmapfold (t1, ik1, iv1, ia1, c1, a1, b1), Mmapfold (t2, ik2, iv2, ia2, c2, a2, b2) -> cmp_type t1 t2 && cmp_lident ik1 ik2 && cmp_lident iv1 iv2 && cmp_lident ia1 ia2 && cmp c1 c2 && cmp a1 a2 && cmp b1 b2
     (* map api instruction *)
+    | Mmapinstrput (tk1, tv1, ak1, k1, v1), Mmapinstrput (tk2, tv2, ak2, k2, v2)       -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp_assign_kind ak1 ak2 && cmp k1 k2 && cmp v1 v2
+    | Mmapinstrremove (tk1, tv1, ak1, k1), Mmapinstrremove (tk2, tv2, ak2, k2)         -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp_assign_kind ak1 ak2 && cmp k1 k2
     | Mmapinstrupdate (tk1, tv1, ak1, k1, v1), Mmapinstrupdate (tk2, tv2, ak2, k2, v2) -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp_assign_kind ak1 ak2 && cmp k1 k2 && cmp v1 v2
     (* builtin functions *)
     | Mmin (l1, r1), Mmin (l2, r2)                                                     -> cmp l1 l2 && cmp r1 r2
@@ -1861,6 +1871,8 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mmaplength (tk, tv, c)         -> Mmaplength (ft tk, ft tv, f c)
   | Mmapfold (t, ik, iv, ia, c, a, b) -> Mmapfold (ft t, g ik, g iv, g ia, f c, f a, f b)
   (* map api instruction *)
+  | Mmapinstrput (tk, tv, ak, k, v)    -> Mmapinstrput (ft tk, ft tv, map_assign_kind fi g f ak, f k, f v)
+  | Mmapinstrremove (tk, tv, ak, k)    -> Mmapinstrremove (ft tk, ft tv, map_assign_kind fi g f ak, f k)
   | Mmapinstrupdate (tk, tv, ak, k, v) -> Mmapinstrupdate (ft tk, ft tv, map_assign_kind fi g f ak, f k, f v)
   (* builtin functions *)
   | Mmin (l, r)                    -> Mmin (f l, f r)
@@ -2265,6 +2277,8 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mmaplength (_, _, c)                  -> f accu c
   | Mmapfold (_, _, _, _, c, a, b)        -> f (f (f accu c) a) b
   (* map api instruction *)
+  | Mmapinstrput (_, _, _, k, v)          -> f (f accu k) v
+  | Mmapinstrremove (_, _, _, k)          -> f accu k
   | Mmapinstrupdate (_, _, _, k, v)       -> f (f accu k) v
   (* builtin functions *)
   | Mmax (l, r)                           -> f (f accu l) r
@@ -3133,6 +3147,17 @@ let fold_map_term
 
 
   (* map api instruction *)
+
+  | Mmapinstrput (tk, tv, ak, k, v) ->
+    let ake, aka = fold_map_assign_kind f accu ak in
+    let ke, ka = f aka k in
+    let ve, va = f ka v in
+    g (Mmapinstrput (tk, tv, ake, ke, ve)), va
+
+  | Mmapinstrremove (tk, tv, ak, k) ->
+    let ake, aka = fold_map_assign_kind f accu ak in
+    let ke, ka = f aka k in
+    g (Mmapinstrremove (tk, tv, ake, ke)), ka
 
   | Mmapinstrupdate (tk, tv, ak, k, v) ->
     let ake, aka = fold_map_assign_kind f accu ak in

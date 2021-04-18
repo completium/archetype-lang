@@ -1805,6 +1805,8 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     (* map api instruction *)
 
+    | Mmapinstrput    (_, _, _c, _k, _v)       -> assert false
+    | Mmapinstrremove (_, _, _c, _k)           -> assert false
     | Mmapinstrupdate (_, _, _c, _k, _v)       -> assert false
 
 

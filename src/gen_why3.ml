@@ -2196,6 +2196,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mmapfold _ -> error_not_translated "Mmapfold"
 
     (* map api expression *)
+    | Mmapinstrput    _ -> error_not_translated "Mmapinstrput"
+    | Mmapinstrremove _ -> error_not_translated "Mmapinstrremove"
     | Mmapinstrupdate _ -> error_not_translated "Mmapinstrupdate"
 
     (* builtin functions *)

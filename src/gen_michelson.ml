@@ -813,8 +813,11 @@ let to_ir (model : M.model) : T.ir =
     | Mmaplength (_, _, c)        -> T.Iunop (Usize, f c)
     | Mmapfold (_, ik, iv, ia, c, a, b) -> T.Ifold (unloc ik, Some (unloc iv), unloc ia, f c, f a, T.Iassign (unloc ia, f b))
 
-    (* map api expression *)
-    | Mmapinstrupdate (_, _, ak, k, v) -> T.Iupdate (ak_to_id ak, Aterop (Tupdate, f k, f v) )
+    (* map api instruction *)
+
+    | Mmapinstrput    (_, _,  ak, k, v) -> T.Iupdate (ak_to_id ak, Aterop (Tupdate, f k, T.isome (f v)) )
+    | Mmapinstrremove (_, tv, ak, k)    -> T.Iupdate (ak_to_id ak, Aterop (Tupdate, f k, T.inone (ft tv)) )
+    | Mmapinstrupdate (_, _,  ak, k, v) -> T.Iupdate (ak_to_id ak, Aterop (Tupdate, f k, f v) )
 
     (* builtin functions *)
 
@@ -1181,6 +1184,86 @@ let to_michelson (ir : T.ir) : T.michelson =
       c, env
     in
 
+    let z_op_to_code = function
+      | T.Znow                   -> T.NOW
+      | T.Zamount                -> T.AMOUNT
+      | T.Zbalance               -> T.BALANCE
+      | T.Zsource                -> T.SOURCE
+      | T.Zsender                -> T.SENDER
+      | T.Zaddress               -> T.ADDRESS
+      | T.Zchain_id              -> T.CHAIN_ID
+      | T.Zself a                -> T.SELF a
+      | T.Zself_address          -> T.SEQ [T.SELF None; T.ADDRESS]
+      | T.Znone t                -> T.NONE (rar t)
+      | T.Zunit                  -> T.UNIT
+      | T.Znil t                 -> T.NIL (rar t)
+      | T.Zemptyset t            -> T.EMPTY_SET (rar t)
+      | T.Zemptymap (k, v)       -> T.EMPTY_MAP (rar k, rar v)
+      | T.Zemptybigmap (k, v)    -> T.EMPTY_BIG_MAP (rar k, rar v)
+      | T.Ztotalvotingpower      -> T.TOTAL_VOTING_POWER
+      | T.Zlevel                 -> T.LEVEL
+      | T.Zsapling_empty_state n -> T.SAPLING_EMPTY_STATE n
+    in
+
+    let un_op_to_code = function
+      | T.Ucar             -> T.CAR
+      | T.Ucdr             -> T.CDR
+      | T.Uleft t          -> T.LEFT (rar t)
+      | T.Uright t         -> T.RIGHT (rar t)
+      | T.Uneg             -> T.NEG
+      | T.Uint             -> T.INT
+      | T.Unot             -> T.NOT
+      | T.Uabs             -> T.ABS
+      | T.Uisnat           -> T.ISNAT
+      | T.Usome            -> T.SOME
+      | T.Usize            -> T.SIZE
+      | T.Upack            -> T.PACK
+      | T.Uunpack        t -> T.UNPACK (rar t)
+      | T.Ublake2b         -> T.BLAKE2B
+      | T.Usha256          -> T.SHA256
+      | T.Usha512          -> T.SHA512
+      | T.Usha3            -> T.SHA3
+      | T.Ukeccak          -> T.KECCAK
+      | T.Uhash_key        -> T.HASH_KEY
+      | T.Ufail            -> T.FAILWITH
+      | T.Ucontract (t, a) -> T.CONTRACT (rar t, a)
+      | T.Usetdelegate     -> T.SET_DELEGATE
+      | T.Uimplicitaccount -> T.IMPLICIT_ACCOUNT
+      | T.Ueq              -> T.EQ
+      | T.Une              -> T.NEQ
+      | T.Ugt              -> T.GT
+      | T.Uge              -> T.GE
+      | T.Ult              -> T.LT
+      | T.Ule              -> T.LE
+      | T.Uvotingpower     -> T.VOTING_POWER
+      | T.Ureadticket      -> T.READ_TICKET
+      | T.Ujointickets     -> T.JOIN_TICKETS
+      | T.Upairing_check   -> T.PAIRING_CHECK
+    in
+
+    let bin_op_to_code = function
+      | T.Badd                   -> T.ADD
+      | T.Bsub                   -> T.SUB
+      | T.Bmul                   -> T.MUL
+      | T.Bediv                  -> T.EDIV
+      | T.Blsl                   -> T.LSL
+      | T.Blsr                   -> T.LSR
+      | T.Bor                    -> T.OR
+      | T.Band                   -> T.AND
+      | T.Bxor                   -> T.XOR
+      | T.Bcompare               -> T.COMPARE
+      | T.Bget                   -> T.GET
+      | T.Bmem                   -> T.MEM
+      | T.Bconcat                -> T.CONCAT
+      | T.Bcons                  -> T.CONS
+      | T.Bpair                  -> T.PAIR
+      | T.Bexec                  -> T.EXEC
+      | T.Bapply                 -> T.APPLY
+      | T.Bcreateticket          -> T.TICKET
+      | T.Bsplitticket           -> T.SPLIT_TICKET
+      | T.Bsapling_verify_update -> T.SAPLING_VERIFY_UPDATE
+    in
+
     let ter_op_to_code = function
       | T.Tcheck_signature -> T.CHECK_SIGNATURE
       | T.Tslice           -> T.SLICE
@@ -1328,106 +1411,23 @@ let to_michelson (ir : T.ir) : T.michelson =
       end
 
     | Izop op -> begin
-        let c =
-          match op with
-          | Znow                -> T.NOW
-          | Zamount             -> T.AMOUNT
-          | Zbalance            -> T.BALANCE
-          | Zsource             -> T.SOURCE
-          | Zsender             -> T.SENDER
-          | Zaddress            -> T.ADDRESS
-          | Zchain_id           -> T.CHAIN_ID
-          | Zself a             -> T.SELF a
-          | Zself_address       -> T.SEQ [T.SELF None; T.ADDRESS]
-          | Znone t             -> T.NONE (rar t)
-          | Zunit               -> T.UNIT
-          | Znil t              -> T.NIL (rar t)
-          | Zemptyset t         -> T.EMPTY_SET (rar t)
-          | Zemptymap (k, v)    -> T.EMPTY_MAP (rar k, rar v)
-          | Zemptybigmap (k, v) -> T.EMPTY_BIG_MAP (rar k, rar v)
-          | Ztotalvotingpower   -> T.TOTAL_VOTING_POWER
-          | Zlevel              -> T.LEVEL
-          | Zsapling_empty_state n -> T.SAPLING_EMPTY_STATE n
-        in
+        let c = z_op_to_code op in
         c, inc_env env
       end
     | Iunop (op, e) -> begin
-        let op =
-          match op with
-          | Ucar             -> T.CAR
-          | Ucdr             -> T.CDR
-          | Uleft t          -> T.LEFT (rar t)
-          | Uright t         -> T.RIGHT (rar t)
-          | Uneg             -> T.NEG
-          | Uint             -> T.INT
-          | Unot             -> T.NOT
-          | Uabs             -> T.ABS
-          | Uisnat           -> T.ISNAT
-          | Usome            -> T.SOME
-          | Usize            -> T.SIZE
-          | Upack            -> T.PACK
-          | Uunpack        t -> T.UNPACK (rar t)
-          | Ublake2b         -> T.BLAKE2B
-          | Usha256          -> T.SHA256
-          | Usha512          -> T.SHA512
-          | Usha3            -> T.SHA3
-          | Ukeccak          -> T.KECCAK
-          | Uhash_key        -> T.HASH_KEY
-          | Ufail            -> T.FAILWITH
-          | Ucontract (t, a) -> T.CONTRACT (rar t, a)
-          | Usetdelegate     -> T.SET_DELEGATE
-          | Uimplicitaccount -> T.IMPLICIT_ACCOUNT
-          | Ueq              -> T.EQ
-          | Une              -> T.NEQ
-          | Ugt              -> T.GT
-          | Uge              -> T.GE
-          | Ult              -> T.LT
-          | Ule              -> T.LE
-          | Uvotingpower     -> T.VOTING_POWER
-          | Ureadticket      -> T.READ_TICKET
-          | Ujointickets     -> T.JOIN_TICKETS
-          | Upairing_check   -> T.PAIRING_CHECK
-        in
+        let op = un_op_to_code op in
         let e, env = fe env e in
         let env = match op with T.FAILWITH -> fail_env env | _ -> env in
         T.SEQ [e; op], env
       end
     | Ibinop (op, lhs, rhs) -> begin
-        let op =
-          match op with
-          | Badd       -> T.ADD
-          | Bsub       -> T.SUB
-          | Bmul       -> T.MUL
-          | Bediv      -> T.EDIV
-          | Blsl       -> T.LSL
-          | Blsr       -> T.LSR
-          | Bor        -> T.OR
-          | Band       -> T.AND
-          | Bxor       -> T.XOR
-          | Bcompare   -> T.COMPARE
-          | Bget       -> T.GET
-          | Bmem       -> T.MEM
-          | Bconcat    -> T.CONCAT
-          | Bcons      -> T.CONS
-          | Bpair      -> T.PAIR
-          | Bexec      -> T.EXEC
-          | Bapply     -> T.APPLY
-          | Bcreateticket -> T.TICKET
-          | Bsplitticket  -> T.SPLIT_TICKET
-          | Bsapling_verify_update -> T.SAPLING_VERIFY_UPDATE
-        in
+        let op = bin_op_to_code op in
         let rhs, env = fe env rhs in
         let lhs, env = fe env lhs in
         T.SEQ [rhs; lhs; op], (dec_env env)
       end
     | Iterop (op, a1, a2, a3) -> begin
-        let op =
-          match op with
-          | Tcheck_signature -> T.CHECK_SIGNATURE
-          | Tslice           -> T.SLICE
-          | Tupdate          -> T.UPDATE
-          | Ttransfer_tokens -> T.TRANSFER_TOKENS
-        in
+        let op = ter_op_to_code op in
         let a3, env = fe env a3 in
         let a2, env = fe env a2 in
         let a1, env = fe env a1 in
@@ -1437,10 +1437,15 @@ let to_michelson (ir : T.ir) : T.michelson =
         let n = get_sp_for_id env id in
         let v =
           match aop with
-          | Aunop   _op       -> assert false
-          | Abinop (_op, _)   -> assert false
+          | Aunop   op       ->
+            let op = un_op_to_code op in
+            [op]
+          | Abinop (op, a) ->
+            let a, _env = fe env a in
+            let op = bin_op_to_code op in
+            [a; op]
           | Aterop (op, a1, a2) ->
-            let a2, env = fe env a2 in
+            let a2, env  = fe env a2 in
             let a1, _env = fe env a1 in
             let op = ter_op_to_code op in
             [a2; a1; op]

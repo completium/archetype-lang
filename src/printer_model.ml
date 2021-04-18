@@ -1077,6 +1077,17 @@ let pp_mterm fmt (mt : mterm) =
 
     (* map api instruction *)
 
+    | Mmapinstrput (_, _, ak, k, v) ->
+      Format.fprintf fmt "%a.put(%a, %a)"
+        (pp_assign_kind f) ak
+        f k
+        f v
+
+    | Mmapinstrremove (_, _, ak, k) ->
+      Format.fprintf fmt "%a.remove(%a)"
+        (pp_assign_kind f) ak
+        f k
+
     | Mmapinstrupdate (_, _, ak, k, v) ->
       Format.fprintf fmt "%a.update(%a, %a)"
         (pp_assign_kind f) ak
