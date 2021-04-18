@@ -1780,6 +1780,12 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Msetfold (_t, _ix, _ia, _c, _a, _b) -> assert false
 
 
+    (* set api instruction *)
+
+    | Msetinstradd    _                   -> assert false
+    | Msetinstrremove _                   -> assert false
+
+
     (* list api expression *)
 
     | Mlistprepend (_, _c, _a)             -> assert false
@@ -1790,6 +1796,11 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mlistconcat (_, _l, _m)              -> assert false
     | Mlistfold (_t, _ix, _ia, _c, _a, _b) -> assert false
 
+
+    (* list api instruction *)
+
+    | Mlistinstrprepend _                  -> assert false
+    | Mlistinstrconcat  _                  -> assert false
 
     (* map api expression *)
 

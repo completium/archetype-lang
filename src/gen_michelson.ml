@@ -792,6 +792,11 @@ let to_ir (model : M.model) : T.ir =
     | Msetlength (_, c)             -> T.Iunop  (Usize, f c)
     | Msetfold (_, ix, ia, c, a, b) -> T.Ifold (unloc ix, None, unloc ia, f c, f a, T.Iassign (unloc ia, f b))
 
+    (* set api instruction *)
+
+    | Msetinstradd    (_, ak, v) -> T.Iupdate (ak_to_id ak, Aterop (Tupdate, f v, T.itrue))
+    | Msetinstrremove (_, ak, v) -> T.Iupdate (ak_to_id ak, Aterop (Tupdate, f v, T.ifalse))
+
     (* list api expression *)
 
     | Mlistprepend (_t, i, l)    -> T.Ibinop (Bcons, f l, f i)
@@ -801,6 +806,12 @@ let to_ir (model : M.model) : T.ir =
     | Mlistreverse _             -> emit_error (UnsupportedTerm ("Mlistreverse"))
     | Mlistconcat _              -> emit_error (UnsupportedTerm ("Mlistconcat"))
     | Mlistfold (_, ix, ia, c, a, b) -> T.Ifold (unloc ix, None, unloc ia, f c, f a, T.Iassign (unloc ia, f b))
+
+    (* list api instruction *)
+
+    | Mlistinstrprepend (_, ak, v) -> T.Iupdate (ak_to_id ak, Abinop (Bcons, f v))
+    | Mlistinstrconcat  (_, ak, v) -> T.Iupdate (ak_to_id ak, Abinop (Bconcat, f v))
+
 
     (* map api expression *)
 
@@ -815,8 +826,8 @@ let to_ir (model : M.model) : T.ir =
 
     (* map api instruction *)
 
-    | Mmapinstrput    (_, _,  ak, k, v) -> T.Iupdate (ak_to_id ak, Aterop (Tupdate, f k, T.isome (f v)) )
-    | Mmapinstrremove (_, tv, ak, k)    -> T.Iupdate (ak_to_id ak, Aterop (Tupdate, f k, T.inone (ft tv)) )
+    | Mmapinstrput    (_, _,  ak, k, v) -> T.Iupdate (ak_to_id ak, Aterop (Tupdate, f k, T.isome (f v)))
+    | Mmapinstrremove (_, tv, ak, k)    -> T.Iupdate (ak_to_id ak, Aterop (Tupdate, f k, T.inone (ft tv)))
     | Mmapinstrupdate (_, _,  ak, k, v) -> T.Iupdate (ak_to_id ak, Aterop (Tupdate, f k, f v) )
 
     (* builtin functions *)

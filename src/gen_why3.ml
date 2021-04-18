@@ -2162,6 +2162,12 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Msetlength (t, s)      -> Tcard (dl (mk_set_name m (M.tset t)), map_mterm m ctx s)
     | Msetfold _ -> error_not_translated "Mmapfold"
 
+    (* set api instruction *)
+
+    | Msetinstradd    _ -> error_not_translated "Msetinstradd"
+    | Msetinstrremove _ -> error_not_translated "Msetinstrremove"
+
+
     (* list api expression *)
 
     | Mlistprepend (t, l, e)  -> Tprepend (dl (mk_list_name m (M.tlist t)), map_mterm m ctx e, map_mterm m ctx l)
@@ -2176,6 +2182,11 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mlistreverse (t, l)      -> Tlistreverse (dl (mk_list_name m (M.tlist t)), map_mterm m ctx l)
     | Mlistconcat  (t, l1, l2) -> Tlistconcat (dl (mk_list_name m (M.tlist t)), map_mterm m ctx l1, map_mterm m ctx l2)
     | Mlistfold    _ -> error_not_translated "Mlistfold"
+
+
+    (* list api instruction *)
+    | Mlistinstrprepend _ -> error_not_translated "Mlistinstrprepend"
+    | Mlistinstrconcat  _ -> error_not_translated "Mlistinstrconcat"
 
     (* map api expression *)
 

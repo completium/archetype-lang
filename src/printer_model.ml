@@ -987,6 +987,19 @@ let pp_mterm fmt (mt : mterm) =
         f b
 
 
+    (* set api instruction *)
+
+    | Msetinstradd (_, ak, a) ->
+      Format.fprintf fmt "%a.add (%a)"
+        (pp_assign_kind f) ak
+        f a
+
+    | Msetinstrremove (_, ak, a) ->
+      Format.fprintf fmt "%a.remove (%a)"
+        (pp_assign_kind f) ak
+        f a
+
+
     (* list api expression *)
 
     | Mlistprepend (_, c, a) ->
@@ -1025,6 +1038,20 @@ let pp_mterm fmt (mt : mterm) =
         pp_id ix
         pp_id ia
         f b
+
+
+    (* list api instruction *)
+
+    | Mlistinstrprepend (_, ak, a) ->
+      Format.fprintf fmt "%a.prepend (%a)"
+        (pp_assign_kind f) ak
+        f a
+
+    | Mlistinstrconcat (_, ak, a) ->
+      Format.fprintf fmt "%a.concat (%a)"
+        (pp_assign_kind f) ak
+        f a
+
 
     (* map api expression *)
 

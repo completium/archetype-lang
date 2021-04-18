@@ -323,8 +323,8 @@ type ('id, 'term) mterm_node  =
   | Msetlength        of type_ * 'term
   | Msetfold          of type_ * 'id   * 'id   * 'term * 'term * 'term
   (* set api instruction *)
-  (* | Msetinstradd      of type_ * ('id, 'term) assign_kind_gen * 'term *)
-  (* | Msetinstrremove   of type_ * ('id, 'term) assign_kind_gen * 'term *)
+  | Msetinstradd      of type_ * ('id, 'term) assign_kind_gen * 'term
+  | Msetinstrremove   of type_ * ('id, 'term) assign_kind_gen * 'term
   (* list api expression *)
   | Mlistprepend      of type_ * 'term * 'term
   | Mlistlength       of type_ * 'term
@@ -334,8 +334,8 @@ type ('id, 'term) mterm_node  =
   | Mlistconcat       of type_ * 'term * 'term
   | Mlistfold         of type_ * 'id   * 'id   * 'term * 'term * 'term
   (* list api instruction *)
-  (* | Mlistinstrprepend of type_ * ('id, 'term) assign_kind_gen * 'term *)
-  (* | Mlistinstrconcat  of type_ * ('id, 'term) assign_kind_gen * 'term *)
+  | Mlistinstrprepend of type_ * ('id, 'term) assign_kind_gen * 'term
+  | Mlistinstrconcat  of type_ * ('id, 'term) assign_kind_gen * 'term
   (* map api expression *)
   | Mmapput           of type_ * type_ * 'term * 'term * 'term
   | Mmapremove        of type_ * type_ * 'term * 'term
@@ -1443,6 +1443,9 @@ let cmp_mterm_node
     | Msetcontains (t1, c1, a1), Msetcontains (t2, c2, a2)                             -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
     | Msetlength (t1, c1), Msetlength (t2, c2)                                         -> cmp_type t1 t2 && cmp c1 c2
     | Msetfold (t1, ix1, ia1, c1, a1, b1), Msetfold (t2, ix2, ia2, c2, a2, b2)         -> cmp_type t1 t2 && cmp_lident ix1 ix2 && cmp_lident ia1 ia2 && cmp c1 c2 && cmp a1 a2 && cmp b1 b2
+    (* set api instruction *)
+    | Msetinstradd (t1, ak1, a1),    Msetinstradd (t2, ak2, a2)                        -> cmp_type t1 t2 && cmp_assign_kind ak1 ak2 && cmp a1 a2
+    | Msetinstrremove (t1, ak1, a1), Msetinstrremove (t2, ak2, a2)                     -> cmp_type t1 t2 && cmp_assign_kind ak1 ak2 && cmp a1 a2
     (* list api expression *)
     | Mlistprepend (t1, c1, a1), Mlistprepend (t2, c2, a2)                             -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
     | Mlistlength (t1, c1), Mlistlength (t2, c2)                                       -> cmp_type t1 t2 && cmp c1 c2
@@ -1451,6 +1454,9 @@ let cmp_mterm_node
     | Mlistreverse (t1, l1), Mlistreverse (t2, l2)                                     -> cmp_type t1 t2 && cmp l1 l2
     | Mlistconcat (t1, l1, m1), Mlistconcat (t2, l2, m2)                               -> cmp_type t1 t2 && cmp l1 l2 && cmp m1 m2
     | Mlistfold (t1, ix1, ia1, c1, a1, b1), Mlistfold (t2, ix2, ia2, c2, a2, b2)       -> cmp_type t1 t2 && cmp_lident ix1 ix2 && cmp_lident ia1 ia2 && cmp c1 c2 && cmp a1 a2 && cmp b1 b2
+    (* list api instruction *)
+    | Mlistinstrprepend (t1, ak1, a1), Mlistinstrprepend (t2, ak2, a2)                 -> cmp_type t1 t2 && cmp_assign_kind ak1 ak2 && cmp a1 a2
+    | Mlistinstrconcat (t1, ak1, a1),  Mlistinstrconcat (t2, ak2, a2)                  -> cmp_type t1 t2 && cmp_assign_kind ak1 ak2 && cmp a1 a2
     (* map api expression *)
     | Mmapput (tk1, tv1, c1, k1, v1), Mmapput (tk2, tv2, c2, k2, v2)                   -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2 && cmp v1 v2
     | Mmapremove (tk1, tv1, c1, k1), Mmapremove (tk2, tv2, c2, k2)                     -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2
@@ -1853,6 +1859,9 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Msetcontains (t, c, a)         -> Msetcontains (ft t, f c, f a)
   | Msetlength (t, c)              -> Msetlength (ft t, f c)
   | Msetfold (t, ix, ia, c, a, b)  -> Msetfold (ft t, g ix, g ia, f c, f a, f b)
+  (* set api instruction *)
+  | Msetinstradd (t, ak, a)        -> Msetinstradd (ft t, map_assign_kind fi g f ak, f a)
+  | Msetinstrremove (t, ak, a)     -> Msetinstrremove (ft t, map_assign_kind fi g f ak, f a)
   (* list api expression *)
   | Mlistprepend (t, c, a)         -> Mlistprepend (ft t, f c, f a)
   | Mlistlength(t, c)              -> Mlistlength(t, f c)
@@ -1861,6 +1870,9 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mlistreverse(t, l)             -> Mlistreverse(t, f l)
   | Mlistconcat(t, l, m)           -> Mlistconcat(t, f l, f m)
   | Mlistfold (t, ix, ia, c, a, b) -> Mlistfold (ft t, g ix, g ia, f c, f a, f b)
+  (* list api instruction *)
+  | Mlistinstrprepend (t, ak, a)   -> Mlistinstrprepend (ft t, map_assign_kind fi g f ak, f a)
+  | Mlistinstrconcat (t, ak, a)    -> Mlistinstrconcat (ft t, map_assign_kind fi g f ak, f a)
   (* map api expression *)
   | Mmapput (tk, tv, c, k, v)      -> Mmapput (ft tk, ft tv, f c, f k, f v)
   | Mmapremove (tk, tv, c, k)      -> Mmapremove (ft tk, ft tv, f c, f k)
@@ -2259,6 +2271,9 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Msetcontains (_, c, a)                -> f (f accu c) a
   | Msetlength (_, c)                     -> f accu c
   | Msetfold (_, _, _, c, a, b)           -> f (f (f accu c) a) b
+  (* set api instruction *)
+  | Msetinstradd (_, _, a)                -> f accu a
+  | Msetinstrremove (_, _, a)             -> f accu a
   (* list api expression *)
   | Mlistprepend (_, c, a)                -> f (f accu c) a
   | Mlistlength (_, c)                    -> f accu c
@@ -2267,6 +2282,9 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mlistreverse (_, l)                   -> f accu l
   | Mlistconcat (_, l, m)                 -> f (f accu l) m
   | Mlistfold (_, _, _, c, a, b)          -> f (f (f accu c) a) b
+  (* list api instruction *)
+  | Mlistinstrprepend (_, _, a)           -> f accu a
+  | Mlistinstrconcat (_, _, a)            -> f accu a
   (* map api expression *)
   | Mmapput (_, _, c, k, v)               -> f (f (f accu c) k) v
   | Mmapremove (_, _, c, k)               -> f (f accu c) k
@@ -3064,6 +3082,19 @@ let fold_map_term
     g (Msetfold (t, ix, ia, ce, ae, be)), ba
 
 
+  (* set api instruction *)
+
+  | Msetinstradd (t, ak, a) ->
+    let ake, aka = fold_map_assign_kind f accu ak in
+    let ae, aa = f aka a in
+    g (Msetinstradd (t, ake, ae)), aa
+
+  | Msetinstrremove (t, ak, a) ->
+    let ake, aka = fold_map_assign_kind f accu ak in
+    let ae, aa = f aka a in
+    g (Msetinstrremove (t, ake, ae)), aa
+
+
   (* list api expression *)
 
   | Mlistprepend (t, c, a) ->
@@ -3099,6 +3130,19 @@ let fold_map_term
     let ae, aa = f ca a in
     let be, ba = f aa b in
     g (Mlistfold (t, ix, ia, ce, ae, be)), ba
+
+
+  (* list api instruction *)
+
+  | Mlistinstrprepend (t, ak, a) ->
+    let ake, aka = fold_map_assign_kind f accu ak in
+    let ae, aa = f aka a in
+    g (Mlistinstrprepend (t, ake, ae)), aa
+
+  | Mlistinstrconcat (t, ak, a) ->
+    let ake, aka = fold_map_assign_kind f accu ak in
+    let ae, aa = f aka a in
+    g (Mlistinstrconcat (t, ake, ae)), aa
 
 
   (* map api expression *)

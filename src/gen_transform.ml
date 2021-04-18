@@ -5447,14 +5447,31 @@ let fix_container (model : model) =
 
 let expr_to_instr  (model : model) =
   let is_compatible (ak : assign_kind) (c : mterm) =
-  match ak, c.node with
-  | Avarstore id0, (Mvar (id1, Vstorevar, Tnone, Dnone)) -> String.equal (unloc id0) (unloc id1)
-  | _ -> false
+    match ak, c.node with
+    | Avar id0, (Mvar (id1, Vlocal, Tnone, Dnone)) -> String.equal (unloc id0) (unloc id1)
+    | Avarstore id0, (Mvar (id1, Vstorevar, Tnone, Dnone)) -> String.equal (unloc id0) (unloc id1)
+    | _ -> false
   in
   let rec aux ctx (mt : mterm) =
     match mt.node, mt.type_ with
+
+    | Massign (ValueAssign, _, ak, {node = Msetadd(t, c, k)}), tyinstr when is_compatible ak c  ->
+      mk_mterm (Msetinstradd (t, ak, k)) tyinstr
+    | Massign (ValueAssign, _, ak, {node = Msetremove(t, c, k)}), tyinstr when is_compatible ak c  ->
+      mk_mterm (Msetinstrremove (t, ak, k)) tyinstr
+
+    | Massign (ValueAssign, _, ak, {node = Mlistprepend(t, c, k)}), tyinstr when is_compatible ak c  ->
+      mk_mterm (Mlistinstrprepend (t, ak, k)) tyinstr
+    | Massign (ValueAssign, _, ak, {node = Mlistconcat(t, c, k)}), tyinstr when is_compatible ak c  ->
+      mk_mterm (Mlistinstrconcat (t, ak, k)) tyinstr
+
+    | Massign (ValueAssign, _, ak, {node = Mmapput(tk, vk, c, k, v)}), tyinstr when is_compatible ak c  ->
+      mk_mterm (Mmapinstrput (tk, vk, ak, k, v)) tyinstr
+    | Massign (ValueAssign, _, ak, {node = Mmapremove(tk, vk, c, k)}), tyinstr when is_compatible ak c  ->
+      mk_mterm (Mmapinstrremove (tk, vk, ak, k)) tyinstr
     | Massign (ValueAssign, _, ak, {node = Mmapupdate(tk, vk, c, k, v)}), tyinstr when is_compatible ak c  ->
       mk_mterm (Mmapinstrupdate (tk, vk, ak, k, v)) tyinstr
+
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
