@@ -8,6 +8,8 @@ variable e : duration = 0s
 variable t : tez      = 0tz
 variable s : string   = ""
 variable b : bytes    = 0x00
+variable os : option<string> = none
+variable ob : option<bytes>  = none
 
 entry exec () {
   effect {
@@ -54,11 +56,11 @@ entry exec () {
     r := abs(-0.5);
 
     s := concat("abc", "def");
-    s := slice("abcdef", 1, 2);
+    os := slice("abcdef", 1, 2);
     n := length("abcdef");
 
     b := concat(0x12, 0xef);
-    b := slice(0xabcdef01, 1, 2);
+    ob := slice(0xabcdef01, 1, 2);
     n := length(0xabcdef01);
 
     s := to_string(42);

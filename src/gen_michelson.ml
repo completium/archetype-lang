@@ -838,7 +838,7 @@ let to_ir (model : M.model) : T.ir =
     | Mabs x             -> T.Iunop (Uabs, f x)
     | Mconcat (x, y)     -> T.Ibinop (Bconcat, f x, f y)
     | Mconcatlist x      -> T.Iunop (Uconcat, f x)
-    | Mslice (x, s, e)   -> T.Iifnone (T.Iterop (Tslice, f s, f e, f x), T.ifail "SliceError", "_x", Ivar "_x", ft mtt.type_)
+    | Mslice (x, s, e)   -> T.Iterop (Tslice, f s, f e, f x)
     | Mlength x          -> T.Iunop (Usize, f x)
     | Misnone x          -> T.Iifnone (f x, T.itrue,  "_var_ifnone", T.ifalse, T.tbool)
     | Missome x          -> T.Iifnone (f x, T.ifalse, "_var_ifnone", T.itrue, T.tbool)

@@ -60,6 +60,7 @@ bytes: (offset : nat, len : nat, input : bytes)
 fails:
 "SliceError" -> offset or offset + len is out of bound (offset + len >= length(input))
 
+TODO: faire opt
 
   | Mlength           of 'term
 length
@@ -84,7 +85,7 @@ bool : (option<?>)
 fails: none
 
   | Moptget           of 'term
-opt_get
+opt_get (to optget)
 sig:
 a : (v : option<a>)
 fails:
@@ -106,9 +107,12 @@ fails:
 
   | Mtostring         of type_ * 'term
 to_string
-"GetNoneValue" -> TODO
-"DivByZero"    -> TODO
-(apparait dans le code généré mais ne devrait jamais etre executé)
+sig:
+string : (nat)
+fails:
+none
+<!-- "GetNoneValue" -> TODO
+"DivByZero"    -> TODO -->
 
   | Mpack             of 'term
 pack
@@ -137,6 +141,7 @@ asset[]
 a : (k : pkey<a>)
 fails:
 "GetNoneValue" -> k is not found
+// NotFound + key value
 
   | Mselect           of ident * 'term container_kind_gen * (ident * type_) list * 'term * 'term list (* asset_name, view, lambda (args, body, apply_args) *)
   | Msort             of ident * 'term container_kind_gen * (ident * sort_kind) list
@@ -188,6 +193,13 @@ fails:
   | Mlistlength       of type_ * 'term
   | Mlistcontains     of type_ * 'term * 'term
   | Mlistnth          of type_ * 'term * 'term
+nth
+sig:
+t : (l : list<t>)
+fails:
+"NoneValue" ->
+"" -> empty list (length(l) = 0)
+
   | Mlistreverse      of type_ * 'term
   | Mlistconcat       of type_ * 'term * 'term
   | Mlistfold         of type_ * 'id   * 'id   * 'term * 'term * 'term
@@ -215,15 +227,54 @@ fails:
 
   (* crypto functions *)
   | Mblake2b          of 'term
+blake2b
+sig:
+bytes : (bytes)
+fails: none
+
   | Msha256           of 'term
+sha256
+sig:
+bytes : (bytes)
+fails: none
+
   | Msha512           of 'term
+sha512
+sig:
+bytes : (bytes)
+fails: none
+
   | Msha3             of 'term
+sha3
+sig:
+bytes : (bytes)
+fails: none
+
   | Mkeccak           of 'term
+keccak
+sig:
+bytes : (bytes)
+fails: none
+
   | Mhashkey          of 'term
+hash_key
+sig:
+hashkey : (key)
+fails: none
+
   | Mchecksignature   of 'term * 'term * 'term
+check_signature
+sig:
+bool : (key, signature, bytes)
+fails: none
+
 
   (* voting *)
   | Mvotingpower      of 'term
+voting_power
+sig:
+nat : (key_hash)
+fails: none
 
   (* ticket *)
   | Mcreateticket     of 'term * 'term
@@ -233,10 +284,23 @@ fails:
 
   (* sapling *)
   | Msapling_empty_state   of int
+sapling_empty_state
+sig:
+sapling_state<n> : (n : nat)
+fails: none
+
   | Msapling_verify_update of 'term * 'term
+sapling_verify_update
+sig:
+option<int * sapling_state<n>> : (sapling_transaction<n>, sapling_state<n>)
+fails: none
 
   (* bls curve *)
   | Mpairing_check of 'term
+pairing_check
+sig:
+bool : (list<bls12_381_g1 * bls12_381_g2>)
+fails: none
 
 ----
 operators
@@ -259,7 +323,7 @@ fails:
   (* rational *)
   | Mratarith         of rat_arith_op * 'term * 'term
 fails:
-"DivByZero"
+"DivByZero" -> TODO
 
   | Mrattez           of 'term * 'term
 fails:

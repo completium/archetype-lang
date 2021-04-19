@@ -1280,7 +1280,7 @@ let coreops : opinfo list =
        (fun x -> ("concat", A.Cconcat, `Total, None, [A.Tlist x], x, Mint.empty))
        [A.vtbytes; A.vtstring])
   @ (List.map
-       (fun x -> ("slice", A.Cslice, `Total, None, [x; A.vtnat; A.vtnat], x, Mint.empty))
+       (fun x -> ("slice", A.Cslice, `Total, None, [x; A.vtnat; A.vtnat], A.Toption x, Mint.empty))
        [A.vtbytes; A.vtstring])
   @ (List.map
        (fun x -> ("length", A.Clength, `Total, None, [x], A.vtnat, Mint.empty))
