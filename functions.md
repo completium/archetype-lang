@@ -172,56 +172,99 @@ fails:
   | Maddforce         of ident * 'term
 
 
-  (* utils *)
-  | Mcast             of type_ * type_ * 'term
-  | Mtupleaccess      of 'term * Core.big_int
-  | Mrecupdate        of 'term * (ident * 'term) list
-
   (* set api expression *)
   | Msetadd           of type_ * 'term * 'term
-  | Msetremove        of type_ * 'term * 'term
-  | Msetcontains      of type_ * 'term * 'term
-  | Msetlength        of type_ * 'term
-  | Msetfold          of type_ * 'id   * 'id   * 'term * 'term * 'term
+add:
+sig:
+set<t> : (set<t>, t)
+fails: none
 
-  (* set api instruction *)
-  | Msetinstradd      of type_ * ('id, 'term) assign_kind_gen * 'term
-  | Msetinstrremove   of type_ * ('id, 'term) assign_kind_gen * 'term
+  | Msetremove        of type_ * 'term * 'term
+remove:
+sig:
+set<t> : (set<t>, t)
+fails: none
+
+  | Msetcontains      of type_ * 'term * 'term
+contains
+sig:
+bool : (set<t>, t)
+fails: none
+
 
   (* list api expression *)
   | Mlistprepend      of type_ * 'term * 'term
-  | Mlistlength       of type_ * 'term
+prepend
+sig:
+list<t> : (list<t>, t)
+fails: none
+
   | Mlistcontains     of type_ * 'term * 'term
+contains
+sig:
+bool : (list<t>, t)
+fails: none
+
   | Mlistnth          of type_ * 'term * 'term
 nth
 sig:
 t : (l : list<t>)
 fails:
 "NoneValue" ->
-"" -> empty list (length(l) = 0)
+"EmptyList" -> empty list (length(l) = 0)
 
   | Mlistreverse      of type_ * 'term
-  | Mlistconcat       of type_ * 'term * 'term
-  | Mlistfold         of type_ * 'id   * 'id   * 'term * 'term * 'term
+reverse
+sig:
+list<t> : (list<t>)
+fails: none
 
-  (* list api instruction *)
-  | Mlistinstrprepend of type_ * ('id, 'term) assign_kind_gen * 'term
-  | Mlistinstrconcat  of type_ * ('id, 'term) assign_kind_gen * 'term
+  | Mlistconcat       of type_ * 'term * 'term
+concat
+sig:
+list<t> : (list<t>, list<t>)
+fails: none
 
   (* map api expression *)
   | Mmapput           of type_ * type_ * 'term * 'term * 'term
-  | Mmapremove        of type_ * type_ * 'term * 'term
-  | Mmapupdate        of type_ * type_ * 'term * 'term * 'term
-  | Mmapget           of type_ * type_ * 'term * 'term
-  | Mmapgetopt        of type_ * type_ * 'term * 'term
-  | Mmapcontains      of type_ * type_ * 'term * 'term
-  | Mmaplength        of type_ * type_ * 'term
-  | Mmapfold          of type_ * 'id   * 'id   * 'id   * 'term * 'term * 'term
+put
+sig:
+map<k, t> : (map<k, t>, k, t)
+big_map<k, t> : (big_map<k, t>, k, t)
+fails: none
 
-  (* map api instruction *)
-  | Mmapinstrput      of type_ * type_ * ('id, 'term) assign_kind_gen * 'term * 'term
-  | Mmapinstrremove   of type_ * type_ * ('id, 'term) assign_kind_gen * 'term
-  | Mmapinstrupdate   of type_ * type_ * ('id, 'term) assign_kind_gen * 'term * 'term
+  | Mmapremove        of type_ * type_ * 'term * 'term
+remove
+sig:
+map<k, t> : (map<k, t>, k)
+big_map<k, t> : (big_map<k, t>, k)
+fails: none
+
+  | Mmapupdate        of type_ * type_ * 'term * 'term * 'term
+update
+sig:
+map<k, t> : (map<k, t>, k, option<v>)
+big_map<k, t> : (big_map<k, t>, k, option<v>)
+fails: none
+
+  | Mmapget           of type_ * type_ * 'term * 'term
+operator[]
+sig:
+t : (map<k, t>, k)
+fails:
+"GetNoneValue" -> not found
+
+  | Mmapgetopt        of type_ * type_ * 'term * 'term
+getopt
+sig:
+option<t> : (map<k, t>, k)
+fails: none
+
+  | Mmapcontains      of type_ * type_ * 'term * 'term
+contains
+sig:
+bool : (map<k, t>, k)
+fails: none
 
 
 
@@ -278,9 +321,28 @@ fails: none
 
   (* ticket *)
   | Mcreateticket     of 'term * 'term
+create_ticket
+sig:
+ticket<t> : (nat)
+fails: none
+
   | Mreadticket       of 'term
+read_ticket
+sig:
+option<address * string * nat> : (ticket<t>)
+fails: none
+
   | Msplitticket      of 'term * 'term * 'term
+split_ticket
+sig:
+option<ticket<t> * ticket<t>> : (ticket<t>, nat, nat)
+fails: none
+
   | Mjointickets      of 'term * 'term
+join_tickets
+sig:
+option<ticket<t>> : (ticket<t>, ticket<t>)
+fails: none
 
   (* sapling *)
   | Msapling_empty_state   of int
