@@ -171,7 +171,7 @@ end = struct
       | A.Tasset               _ -> false
       | A.Trecord              _ -> true (* TODO: Check if first field is comparable *)
       | A.Tenum                _ -> true
-      | A.Tbuiltin VTunit        -> false
+      | A.Tbuiltin VTunit        -> true
       | A.Tbuiltin VTbool        -> true
       | A.Tbuiltin VTnat         -> true
       | A.Tbuiltin VTint         -> true
@@ -182,11 +182,11 @@ end = struct
       | A.Tbuiltin VTaddress     -> true
       | A.Tbuiltin VTrole        -> true
       | A.Tbuiltin VTcurrency    -> true
-      | A.Tbuiltin VTkey         -> false
+      | A.Tbuiltin VTkey         -> true
       | A.Tbuiltin VTkeyhash     -> true
-      | A.Tbuiltin VTsignature   -> false
+      | A.Tbuiltin VTsignature   -> true
       | A.Tbuiltin VTbytes       -> true
-      | A.Tbuiltin VTchainid     -> false
+      | A.Tbuiltin VTchainid     -> true
       | A.Tbuiltin VTbls12_381_fr-> false
       | A.Tbuiltin VTbls12_381_g1-> false
       | A.Tbuiltin VTbls12_381_g2-> false
@@ -196,10 +196,10 @@ end = struct
       | A.Tlist                _ -> false
       | A.Tmap                 _ -> false
       | A.Tbig_map             _ -> false
-      | A.Tor                  _ -> false
+      | A.Tor           (t1, t2) -> is_comparable t1 && is_comparable t2
       | A.Tlambda              _ -> false
       | A.Ttuple               l -> (match l with | e::_ -> is_comparable e | _ -> false)
-      | A.Toption              _ -> false
+      | A.Toption             ty -> is_comparable ty
       | A.Toperation             -> false
       | A.Tcontract            _ -> false
       | A.Ttrace               _ -> false
@@ -382,11 +382,9 @@ end = struct
   end
 
   let rec support_eq = function
-    | A.Tbuiltin (VTchainid | VTbls12_381_fr | VTbls12_381_g1 | VTbls12_381_g2) -> false
-    | A.Tbuiltin _ -> true
-    | A.Tenum _ -> true
     | A.Ttuple tys -> List.for_all support_eq tys
-    | _ -> false
+    | A.Tenum _ -> true
+    | ty -> Michelson.is_comparable ty
 
   let equal = ((=) : A.ptyp -> A.ptyp -> bool)
 
@@ -1040,6 +1038,8 @@ let rgtypes =
   [ A.VTint      ;
     A.VTrational ]
 
+let vt_comparable = List.filter Type.Michelson.is_comparable A.vts
+
 (* -------------------------------------------------------------------- *)
 let cmpsigs : (PT.operator * (A.vtyp list * A.vtyp)) list =
   let ops  = [PT.Gt; PT.Ge; PT.Lt; PT.Le] in
@@ -1271,10 +1271,13 @@ let coreops : opinfo list =
   @ (List.flatten (List.map (fun (name, cname) -> (
         List.map
           (fun x -> (name, cname, `Total, None, [x; x], x, Mint.empty))
-          [A.vtnat; A.vtint; A.vtrational; A.vtdate; A.vtduration; A.vtcurrency]))
+          vt_comparable))
       [("min", A.Cmin); ("max", A.Cmax)]))
   @ (List.map
        (fun x -> ("concat", A.Cconcat, `Total, None, [x; x], x, Mint.empty))
+       [A.vtbytes; A.vtstring])
+  @ (List.map
+       (fun x -> ("concat", A.Cconcat, `Total, None, [A.Tlist x], x, Mint.empty))
        [A.vtbytes; A.vtstring])
   @ (List.map
        (fun x -> ("slice", A.Cslice, `Total, None, [x; A.vtnat; A.vtnat], x, Mint.empty))

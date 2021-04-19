@@ -837,6 +837,7 @@ let to_ir (model : M.model) : T.ir =
     | Mabs x when is_rat x.type_ -> let b = T.Bratabs        in add_builtin b; T.Icall (get_fun_name b, [f x], is_inline b)
     | Mabs x             -> T.Iunop (Uabs, f x)
     | Mconcat (x, y)     -> T.Ibinop (Bconcat, f x, f y)
+    | Mconcatlist x      -> T.Iunop (Uconcat, f x)
     | Mslice (x, s, e)   -> T.Iifnone (T.Iterop (Tslice, f s, f e, f x), T.ifail "SliceError", "_x", Ivar "_x", ft mtt.type_)
     | Mlength x          -> T.Iunop (Usize, f x)
     | Misnone x          -> T.Iifnone (f x, T.itrue,  "_var_ifnone", T.ifalse, T.tbool)
@@ -1250,6 +1251,7 @@ let to_michelson (ir : T.ir) : T.michelson =
       | T.Ureadticket      -> T.READ_TICKET
       | T.Ujointickets     -> T.JOIN_TICKETS
       | T.Upairing_check   -> T.PAIRING_CHECK
+      | T.Uconcat          -> T.CONCAT
     in
 
     let bin_op_to_code = function

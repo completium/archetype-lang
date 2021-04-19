@@ -233,6 +233,7 @@ type un_operator =
   | Ureadticket
   | Ujointickets
   | Upairing_check
+  | Uconcat
 [@@deriving show {with_path = false}]
 
 type bin_operator =

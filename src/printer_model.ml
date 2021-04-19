@@ -1142,6 +1142,10 @@ let pp_mterm fmt (mt : mterm) =
         f x
         f y
 
+    | Mconcatlist x ->
+      Format.fprintf fmt "concat (%a)"
+        f x
+
     | Mslice (x, s, e) ->
       Format.fprintf fmt "slice (%a, %a, %a)"
         f x

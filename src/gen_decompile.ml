@@ -1444,6 +1444,7 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         | Ureadticket        -> assert false
         | Ujointickets       -> assert false
         | Upairing_check     -> assert false
+        | Uconcat            -> assert false
       end
     | Ibinop (op, a, b) -> begin
         match op with
@@ -1827,6 +1828,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mmin (_l, _r)       -> assert false
     | Mabs _a             -> assert false
     | Mconcat (_x, _y)    -> assert false
+    | Mconcatlist _x      -> assert false
     | Mslice (_x, _s, _e) -> assert false
     | Mlength x           -> A.eapp (A.Fident (dumloc "length")) [f x]
     | Misnone _x          -> assert false

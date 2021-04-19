@@ -209,7 +209,7 @@ type const =
   (* voting *)
   | Ctotalvotingpower
   | Cvotingpower
-    (* ticket *)
+  (* ticket *)
   | Ccreateticket
   | Creadticket
   | Csplitticket
@@ -733,28 +733,49 @@ type 'id ast_struct = {
 and ast = lident ast_struct
 
 (* vtyp -> type_ *)
-let vtunit         = Tbuiltin (VTunit         )
-let vtbool         = Tbuiltin (VTbool         )
-let vtnat          = Tbuiltin (VTnat          )
-let vtint          = Tbuiltin (VTint          )
-let vtrational     = Tbuiltin (VTrational     )
-let vtdate         = Tbuiltin (VTdate         )
-let vtduration     = Tbuiltin (VTduration     )
-let vtstring       = Tbuiltin (VTstring       )
 let vtaddress      = Tbuiltin (VTaddress      )
-let vtrole         = Tbuiltin (VTrole         )
-let vtcurrency     = Tbuiltin (VTcurrency     )
-let vtsignature    = Tbuiltin (VTsignature    )
-let vtkey          = Tbuiltin (VTkey          )
-let vtkeyhash      = Tbuiltin (VTkeyhash      )
-let vtbytes        = Tbuiltin (VTbytes        )
-let vtchainid      = Tbuiltin (VTchainid      )
 let vtbls12_381_fr = Tbuiltin (VTbls12_381_fr )
 let vtbls12_381_g1 = Tbuiltin (VTbls12_381_g1 )
 let vtbls12_381_g2 = Tbuiltin (VTbls12_381_g2 )
+let vtbool         = Tbuiltin (VTbool         )
+let vtbytes        = Tbuiltin (VTbytes        )
+let vtchainid      = Tbuiltin (VTchainid      )
+let vtcurrency     = Tbuiltin (VTcurrency     )
+let vtdate         = Tbuiltin (VTdate         )
+let vtduration     = Tbuiltin (VTduration     )
+let vtint          = Tbuiltin (VTint          )
+let vtkey          = Tbuiltin (VTkey          )
+let vtkeyhash      = Tbuiltin (VTkeyhash      )
+let vtnat          = Tbuiltin (VTnat          )
 let vtnever        = Tbuiltin (VTnever        )
+let vtrational     = Tbuiltin (VTrational     )
+let vtrole         = Tbuiltin (VTrole         )
+let vtsignature    = Tbuiltin (VTsignature    )
+let vtstring       = Tbuiltin (VTstring       )
+let vtunit         = Tbuiltin (VTunit         )
 
-
+let vts = [
+  vtaddress      ;
+  vtbls12_381_fr ;
+  vtbls12_381_g1 ;
+  vtbls12_381_g2 ;
+  vtbool         ;
+  vtbytes        ;
+  vtchainid      ;
+  vtcurrency     ;
+  vtdate         ;
+  vtduration     ;
+  vtint          ;
+  vtkey          ;
+  vtkeyhash      ;
+  vtnat          ;
+  vtnever        ;
+  vtrational     ;
+  vtrole         ;
+  vtsignature    ;
+  vtstring       ;
+  vtunit         ;
+]
 (* mk functions *)
 
 let mk_sp ?label ?(loc = Location.dummy) ?type_ node =

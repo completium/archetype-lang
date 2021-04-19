@@ -653,6 +653,10 @@ let to_model (ast : A.ast) : M.model =
         let fy = f y in
         M.Mconcat (fx, fy)
 
+      | A.Pcall (None, A.Cconst A.Cconcat, [AExpr x]) ->
+        let fx = f x in
+        M.Mconcatlist (fx)
+
       | A.Pcall (None, A.Cconst A.Cslice, [AExpr x; AExpr s; AExpr e]) ->
         let fx = f x in
         let fs = f s in

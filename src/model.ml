@@ -354,6 +354,7 @@ type ('id, 'term) mterm_node  =
   | Mmax              of 'term * 'term
   | Mabs              of 'term
   | Mconcat           of 'term * 'term
+  | Mconcatlist       of 'term
   | Mslice            of 'term * 'term * 'term
   | Mlength           of 'term
   | Misnone           of 'term
@@ -1475,6 +1476,7 @@ let cmp_mterm_node
     | Mmax (l1, r1), Mmax (l2, r2)                                                     -> cmp l1 l2 && cmp r1 r2
     | Mabs a1, Mabs a2                                                                 -> cmp a1 a2
     | Mconcat (x1, y1), Mconcat (x2, y2)                                               -> cmp x1 x2 && cmp y1 y2
+    | Mconcatlist (x1), Mconcatlist (x2)                                               -> cmp x1 x2
     | Mslice (x1, s1, e1), Mslice (x2, s2, e2)                                         -> cmp x1 x2 && cmp s1 s2 && cmp e1 e2
     | Mlength x1, Mlength x2                                                           -> cmp x1 x2
     | Misnone x1, Misnone x2                                                           -> cmp x1 x2
@@ -1891,6 +1893,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mmax (l, r)                    -> Mmax (f l, f r)
   | Mabs a                         -> Mabs (f a)
   | Mconcat (x, y)                 -> Mconcat (f x, f y)
+  | Mconcatlist (x)                -> Mconcatlist (f x)
   | Mslice (x, s, e)               -> Mslice (f x, f s, f e)
   | Mlength x                      -> Mlength (f x)
   | Misnone x                      -> Misnone (f x)
@@ -2303,6 +2306,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mmin (l, r)                           -> f (f accu l) r
   | Mabs a                                -> f accu a
   | Mconcat (x, y)                        -> f (f accu x) y
+  | Mconcatlist x                         -> f accu x
   | Mslice (x, s, e)                      -> f (f (f accu x) s) e
   | Mlength x                             -> f accu x
   | Misnone x                             -> f accu x
@@ -3230,6 +3234,10 @@ let fold_map_term
     let xe, xa = f accu x in
     let ye, ya = f xa y in
     g (Mconcat (xe, ye)), ya
+
+  | Mconcatlist x ->
+    let xe, xa = f accu x in
+    g (Mconcatlist xe), xa
 
   | Mslice (x, s, e) ->
     let xe, xa = f accu x in

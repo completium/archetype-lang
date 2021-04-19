@@ -2237,6 +2237,13 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | Tbuiltin Bbytes -> Tapp (loc_term (Tvar "str_concat"),[map_mterm m ctx x; map_mterm m ctx y])
         | _ -> error_not_translated "Mconcat"
       end
+    | Mconcatlist x ->
+      begin
+        match M.get_ntype mt.type_ with
+        | Tbuiltin Bstring -> Tapp (loc_term (Tvar "str_concat_list"),[map_mterm m ctx x])
+        | Tbuiltin Bbytes -> Tapp (loc_term (Tvar "str_concat_list"),[map_mterm m ctx x])
+        | _ -> error_not_translated "Mconcatlist"
+      end
     | Mslice (s, i1, i2) ->
       begin match M.get_ntype s.type_ with
         | Tbuiltin Bbytes -> Tapp (loc_term (Tvar "substring"),[map_mterm m ctx s; map_mterm m ctx i1; map_mterm m ctx i2])
