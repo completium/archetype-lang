@@ -1,0 +1,12 @@
+archetype instr_map_update_storage_record
+
+record my_record {
+  id: nat;
+  m: map<nat, string>;
+}
+
+variable res : my_record = {id = 0; m = []}
+
+entry exec () {
+  res.m.update(0, some("0"));
+}
