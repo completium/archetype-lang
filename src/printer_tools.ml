@@ -112,10 +112,10 @@ let pp_fail_type f fmt a =
   match a with
   | Model.Invalid e           -> f fmt e
   | Model.InvalidCaller       -> pp "\"InvalidCaller\""
-  | Model.InvalidCondition id -> pp "\"InvalidCondition: %a\"" pp_str id
-  | Model.NotFound k          -> pp "\"NotFound: %a\"" f k
+  | Model.InvalidCondition id -> pp "\"InvalidCondition\", %a" pp_str id
+  | Model.NotFound k          -> pp "\"NotFound\", %a" f k
   | Model.OutOfBound          -> pp "\"OutOfBound\""
-  | Model.KeyExists           -> pp "\"KeyExists\""
+  | Model.KeyExists k         -> pp "\"KeyExists\", %a" f k
   | Model.DivByZero           -> pp "\"DivByZero\""
   | Model.NatAssign           -> pp "\"NatAssign\""
   | Model.NoTransfer          -> pp "\"NoTransfer\""

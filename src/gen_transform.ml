@@ -3780,7 +3780,7 @@ let remove_asset (model : model) : model =
                   let c = List.fold_left (fun accu (an, x, _) -> mk_mterm (Mor (f an x, accu)) tbool) (f an k) t in
                   let linstrs = get_instrs_add_with_partition pts in
                   let seq = mk_mterm (Mseq (b::linstrs)) tunit in
-                  mk_mterm (Mif (c, fail msg_KeyAlreadyExists, Some seq)) tunit
+                  mk_mterm (Mif (c, failc (KeyExists k), Some seq)) tunit
                 end
               | (aan, aa)::at, pt ->
                 let f = create_contains_asset_key in
@@ -3795,7 +3795,7 @@ let remove_asset (model : model) : model =
 
         if force
         then assign
-        else mk_mterm (Mif (cond, fail msg_KeyAlreadyExists, Some assign)) tunit
+        else mk_mterm (Mif (cond, failc (KeyExists k), Some assign)) tunit
       end
     in
 

@@ -1663,9 +1663,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
           Tseq [loc_term (Tassign (Tvar gs, cp_storage gsinit)); dl (Traise (Efail (idx, Some (map_mterm m ctx v))))]
         | InvalidCaller        -> Traise EInvalidCaller
         | InvalidCondition lbl -> Traise (EInvalidCondition lbl)
-        | NotFound _v           -> Traise ENotFound
+        | NotFound _v          -> Traise ENotFound
         | OutOfBound           -> Traise EOutOfBound
-        | KeyExists            -> Traise EKeyExists
+        | KeyExists _v         -> Traise EKeyExists
         | DivByZero            -> Traise EDivByZero
         | NatAssign            -> Tseq [loc_term (Tassign (Tvar gs, cp_storage gsinit)); dl (Traise ENatAssign)]
         | NoTransfer           -> Traise ENoTransfer

@@ -459,7 +459,7 @@ and 'id fail_type_gen =
   | InvalidCondition of ident
   | NotFound of 'id mterm_gen
   | OutOfBound
-  | KeyExists
+  | KeyExists of 'id mterm_gen
   | DivByZero
   | NatAssign
   | NoTransfer

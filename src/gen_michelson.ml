@@ -570,7 +570,7 @@ let to_ir (model : M.model) : T.ir =
           | InvalidCondition lbl -> T.ipair (T.istring "InvalidCondition") (T.istring lbl)
           | NotFound v           -> T.ipair (T.istring "NotFound") (f v)
           | OutOfBound           -> T.istring "OutOfBound"
-          | KeyExists            -> T.istring "KeyExists"
+          | KeyExists v          -> T.ipair (T.istring "KeyExists") (f v)
           | DivByZero            -> T.istring "DivByZero"
           | NatAssign            -> T.istring "NatAssign"
           | NoTransfer           -> T.istring "NoTransfer"
