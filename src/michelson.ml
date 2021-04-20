@@ -532,6 +532,7 @@ let idiv l r         = Iifnone (Ibinop (Bediv, l, r), ifail "DivByZero", "_var_i
 let imod l r         = Iifnone (Ibinop (Bediv, l, r), ifail "DivByZero", "_var_ifnone", icdr (Ivar ("_var_ifnone")), tnat )
 let irecord ir       = Irecord ir
 let isrecord l       = irecord (Rtuple l)
+let ipair x y        = Ibinop (Bpair, x, y)
 
 (* -------------------------------------------------------------------- *)
 

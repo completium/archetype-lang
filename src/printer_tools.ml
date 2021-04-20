@@ -107,12 +107,16 @@ let pp_version fmt _ = pp_str fmt Options.version
 
 let pp_bin fmt _ = Format.fprintf fmt "archetype %a" pp_version ()
 
-let pp_fail_type f fmt = function
-  | Model.Invalid e -> f fmt e
-  | Model.InvalidCaller -> Format.fprintf fmt "\"InvalidCaller\""
-  | Model.InvalidCondition c ->
-    Format.fprintf fmt "\"require %afailed\""
-      (pp_postfix " " pp_str) c
-  | Model.NoTransfer -> Format.fprintf fmt "\"NoTransfer\""
-  | Model.AssignNat -> Format.fprintf fmt "\"cannot assign negative value to nat\""
-  | Model.InvalidState -> Format.fprintf fmt "\"InvalidState\""
+let pp_fail_type f fmt a =
+  let pp x = Format.fprintf fmt x in
+  match a with
+  | Model.Invalid e           -> f fmt e
+  | Model.InvalidCaller       -> pp "\"InvalidCaller\""
+  | Model.InvalidCondition id -> pp "\"InvalidCondition: %a\"" pp_str id
+  | Model.NotFound k          -> pp "\"NotFound: %a\"" f k
+  | Model.OutOfBound          -> pp "\"OutOfBound\""
+  | Model.KeyExists           -> pp "\"KeyExists\""
+  | Model.DivByZero           -> pp "\"DivByZero\""
+  | Model.NatAssign           -> pp "\"NatAssign\""
+  | Model.NoTransfer          -> pp "\"NoTransfer\""
+  | Model.InvalidState        -> pp "\"InvalidState\""

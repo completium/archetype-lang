@@ -457,8 +457,12 @@ and 'id fail_type_gen =
   | Invalid of 'id mterm_gen
   | InvalidCaller
   | InvalidCondition of ident
+  | NotFound of 'id mterm_gen
+  | OutOfBound
+  | KeyExists
+  | DivByZero
+  | NatAssign
   | NoTransfer
-  | AssignNat
   | InvalidState
 [@@deriving show {with_path = false}]
 
@@ -1139,6 +1143,7 @@ let mk_metadata v = mk_mterm (Mlitmap(true, v)) tmetadata
 
 let fail x  = mk_mterm (Mfail (Invalid (mk_string x))) tunit
 let failg x = mk_mterm (Mfail (Invalid (x))) tunit
+let failc x = mk_mterm (Mfail x) tunit
 let mnot x  = mk_mterm (Mnot x) tbool
 let seq x   = mk_mterm (Mseq x) tunit
 let skip    = seq []

@@ -134,7 +134,7 @@ let process_assign_op op (t : type_) (lhs : mterm) (v : mterm) : mterm =
       let zero = mk_mterm (Mint Big_int.zero_big_int) tint in
       let cond = mk_mterm (Mge (a, zero)) tbool in
       let v = mk_mterm (Mabs a) tnat in
-      let f = mk_mterm (Mfail AssignNat) tunit in
+      let f = mk_mterm (Mfail NatAssign) tunit in
       let c = mk_mterm (Mcast (tunit, tnat, f)) tnat in
       mk_mterm (Mexprif (cond, v, c)) tnat
     end
@@ -2781,8 +2781,7 @@ let add_contain_on_get (model : model) : model =
           let build_contains (an, k) : mterm =
             let contains = mk_mterm (Mcontains(an, CKcoll (Tnone, Dnone), k)) tbool in
             let not_contains = mk_mterm (Mnot contains) tbool in
-            let str_fail : mterm = mk_mterm (Mstring "get failed") tstring in
-            let fail = mk_mterm (Mfail (Invalid str_fail)) tunit in
+            let fail = mk_mterm (Mfail (NotFound k)) tunit in
             let mif : mterm = mk_mterm (Mif(not_contains, fail, None)) tunit in
             mif
           in
@@ -3774,7 +3773,7 @@ let remove_asset (model : model) : model =
               | (an, a)::t, [] -> begin
                   let f = create_contains_asset_key in
                   let c = List.fold_left (fun accu (an, x) -> mk_mterm (Mand (f an x, accu)) tbool) (f an a) t in
-                  mk_mterm (Mif (c, b, Some (fail msg_KeyNotFound))) tunit
+                  mk_mterm (Mif (c, b, Some (failc (NotFound k)))) tunit
                 end
               | [], (an, k, _)::t -> begin
                   let f = create_contains_asset_key in
@@ -4033,7 +4032,7 @@ let remove_asset (model : model) : model =
       | Mget (an, CKview c, k) -> begin
           let get = mk_mterm (Mget(an, CKcoll(Tnone, Dnone), k)) mt.type_ |> fm ctx in
           let cond = mk_mterm (Mcontains(an, CKview c, k)) tbool |> fm ctx in
-          mk_mterm (Mexprif(cond, get, fail "NotFound")) get.type_
+          mk_mterm (Mexprif(cond, get, failc (NotFound k))) get.type_
         end
 
       (* control *)
@@ -4107,7 +4106,7 @@ let remove_asset (model : model) : model =
             let bk = fm ctx b in
             let assign = mk_assign bk in
             let cond = create_contains_asset_key aan bk in
-            mk_mterm (Mif (cond, assign, Some (fail msg_KeyNotFound))) tunit
+            mk_mterm (Mif (cond, assign, Some (failc (NotFound bk)))) tunit
           | Partition ->
             let bk = extract_key b in
             let bk = fm ctx bk in
@@ -4412,7 +4411,7 @@ let remove_asset (model : model) : model =
                 let zero = mk_mterm (Mint Big_int.zero_big_int) tint in
                 let cond = mk_mterm (Mge (a, zero)) tbool in
                 let v = mk_mterm (Mabs a) tnat in
-                let f = mk_mterm (Mfail AssignNat) (tunit) in
+                let f = mk_mterm (Mfail NatAssign) (tunit) in
                 let c = mk_mterm (Mcast (tunit, tnat, f)) tnat in
                 mk_mterm (Mexprif (cond, v, c)) tnat
               end

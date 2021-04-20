@@ -10,16 +10,17 @@ type fmod =
 (* abstract types -------------------------------------------------------------*)
 
 type 'e exn =
-  | Enotfound
-  | Ekeyexist
-  | Enegassignnat
-  | Einvalidcaller
-  | Einvalidcondition of string
-  | Einvalidstate
-  | Enotransfer
-  | Ebreak
   | Einvalid of string option
   | Efail of int * 'e option
+  | EInvalidCaller
+  | EInvalidCondition of string
+  | ENotFound
+  | EOutOfBound
+  | EKeyExists
+  | EDivByZero
+  | ENatAssign
+  | ENoTransfer
+  | EInvalidState
 [@@deriving show {with_path = false}]
 
 type ('i,'t) abstract_type =
@@ -416,17 +417,17 @@ and map_abstract_fun_struct
   body     = map_e f.body;
 }
 and map_exn (map_e : 'e1 -> 'e2) = function
-  | Efail (i,None) -> Efail (i,None)
-  | Efail (i,Some t) -> Efail (i,Some (map_e t))
-  | Enotfound -> Enotfound
-  | Ekeyexist -> Ekeyexist
-  | Enegassignnat -> Enegassignnat
-  | Einvalidcaller -> Einvalidcaller
-  | Einvalidcondition lbl -> Einvalidcondition lbl
-  | Einvalidstate -> Einvalidstate
-  | Enotransfer -> Enotransfer
-  | Ebreak -> Ebreak
-  | Einvalid s -> Einvalid s
+  | Einvalid s            -> Einvalid s
+  | Efail (i, v)          -> Efail (i, Option.map map_e v)
+  | EInvalidCaller        -> EInvalidCaller
+  | EInvalidCondition lbl -> EInvalidCondition lbl
+  | ENotFound             -> ENotFound
+  | EOutOfBound           -> EOutOfBound
+  | EKeyExists            -> EKeyExists
+  | EDivByZero            -> EDivByZero
+  | ENatAssign            -> ENatAssign
+  | ENoTransfer           -> ENoTransfer
+  | EInvalidState         -> EInvalidState
 and map_abstract_term
     (map_e : 'e1 -> 'e2)
     (map_t : 't1 -> 't2)
@@ -1037,16 +1038,18 @@ let rec compare_abstract_term
   | Ttobereplaced, Ttobereplaced -> true
   | _ -> false (* TODO : compare exception ? *)
 and compare_exn cmpe e1 e2 =
-  match e1,e2 with
-  | Enotfound, Enotfound -> true
-  | Ekeyexist, Ekeyexist -> true
-  | Einvalidcaller, Einvalidcaller -> true
-  | Enegassignnat, Enegassignnat -> true
-  | Einvalidcondition lbl1, Einvalidcondition lbl2 -> String.equal lbl1 lbl2
-  | Einvalidstate, Einvalidstate -> true
-  | Ebreak, Ebreak -> true
-  | Efail (i1,None), Efail (i2,None) -> compare i1 i2 = 0
-  | Efail (i1, Some v1), Efail (i2, Some v2) -> compare i1 i2 = 0 && cmpe v1 v2
+  match e1, e2 with
+  | Einvalid s1, Einvalid s2                       -> Option.cmp String.equal s1 s2
+  | Efail (i1, v1), Efail (i2, v2)                 -> i1 == i2 && Option.cmp cmpe v1 v2
+  | EInvalidCaller, EInvalidCaller                 -> true
+  | EInvalidCondition lbl1, EInvalidCondition lbl2 -> String.equal lbl1 lbl2
+  | ENotFound    , ENotFound                       -> true
+  | EOutOfBound  , EOutOfBound                     -> true
+  | EKeyExists   , EKeyExists                      -> true
+  | EDivByZero   , EDivByZero                      -> true
+  | ENatAssign   , ENatAssign                      -> true
+  | ENoTransfer  , ENoTransfer                     -> true
+  | EInvalidState, EInvalidState                   -> true
   | _ -> false
 
 (* replace --------------------------------------------------------------------*)

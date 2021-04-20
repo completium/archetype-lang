@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `update` function for map (like `UPDATE` in michelson)
 ### Changed
   - `slice` returns `option<byte|string>`
+  - fail message and expression (see documentation)
 
 ## [1.2.3] - 2021-04-12
 ### Added

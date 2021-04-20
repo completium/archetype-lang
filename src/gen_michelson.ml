@@ -567,9 +567,13 @@ let to_ir (model : M.model) : T.ir =
           match ft with
           | Invalid v            -> f v
           | InvalidCaller        -> T.istring "InvalidCaller"
-          | InvalidCondition lbl -> T.istring ("InvalidCondition" ^ ": " ^ lbl)
+          | InvalidCondition lbl -> T.ipair (T.istring "InvalidCondition") (T.istring lbl)
+          | NotFound v           -> T.ipair (T.istring "NotFound") (f v)
+          | OutOfBound           -> T.istring "OutOfBound"
+          | KeyExists            -> T.istring "KeyExists"
+          | DivByZero            -> T.istring "DivByZero"
+          | NatAssign            -> T.istring "NatAssign"
           | NoTransfer           -> T.istring "NoTransfer"
-          | AssignNat            -> T.istring "AssignNat"
           | InvalidState         -> T.istring "InvalidState"
         in
         T.Iunop  (Ufail, x)

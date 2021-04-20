@@ -984,18 +984,19 @@ and pp_case fmt (p,t) =
     pp_pattern p
     (pp_term e_top PRight) t
 and pp_exn outer pos fmt = function
-  | Ekeyexist           -> pp_str fmt "KeyExist"
-  | Enotfound           -> pp_str fmt "NotFound"
-  | Einvalidcaller      -> pp_str fmt "InvalidCaller"
-  | Enegassignnat       -> pp_str fmt "NegAssignNat"
-  | Einvalidcondition _ -> pp_str fmt "InvalidCondition"
-  | Einvalidstate       -> pp_str fmt "InvalidState"
-  | Enotransfer         -> pp_str fmt "NoTransfer"
-  | Ebreak              -> pp_str fmt "Break"
   | Einvalid (Some msg) -> Format.fprintf fmt "(Invalid \"%a\")" pp_str msg
   | Einvalid None       -> pp_str fmt "Invalid"
-  | Efail (i,None)     -> Format.fprintf fmt "Fail%a" pp_int i
-  | Efail (i,Some m)         -> Format.fprintf fmt "Fail%a %a" pp_int i (pp_term outer pos) m
+  | Efail (i,None)      -> Format.fprintf fmt "Fail%a" pp_int i
+  | Efail (i,Some m)    -> Format.fprintf fmt "Fail%a %a" pp_int i (pp_term outer pos) m
+  | EInvalidCaller      -> pp_str fmt "InvalidCaller"
+  | EInvalidCondition _ -> pp_str fmt "InvalidCondition"
+  | ENotFound           -> pp_str fmt "NotFound"
+  | EOutOfBound         -> pp_str fmt "OutOfBound"
+  | EKeyExists          -> pp_str fmt "KeyExist"
+  | EDivByZero          -> pp_str fmt "DivByZero"
+  | ENatAssign          -> pp_str fmt "NegAssignNat"
+  | ENoTransfer         -> pp_str fmt "NoTransfer"
+  | EInvalidState       -> pp_str fmt "InvalidState"
 and pp_dexn fmt (i,t) =
   Format.fprintf fmt "exception Fail%a %a"
     pp_id i

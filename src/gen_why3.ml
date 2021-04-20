@@ -1402,7 +1402,7 @@ let fail_if_neg_nat_value (t : M.type_) left right op  =
   match M.get_ntype t with
   | M.Tbuiltin  Bnat -> dl (
       Tif (dl (Tge(dl Tyint, left, right)), op,
-           Some (loc_term (Tseq [Tassign (Tvar gs, cp_storage gsinit); Traise Enegassignnat])))
+           Some (loc_term (Tseq [Tassign (Tvar gs, cp_storage gsinit); Traise ENatAssign])))
     )
   | _ -> op
 
@@ -1424,7 +1424,7 @@ let is_partition m n f =
 
 let mk_get_force n k c = Tmatch (dl (Tget(n,k,c)),[
     Tpsome (dl "v"), loc_term (Tvar "v");
-    Twild, loc_term (Tseq [Tassign(Tvar gs, cp_storage gsinit); Traise Enotfound])
+    Twild, loc_term (Tseq [Tassign(Tvar gs, cp_storage gsinit); Traise ENotFound])
   ])
 
 let mk_match_get_some a k instr excn =
@@ -1656,16 +1656,21 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mmark (lbl, x) -> Tmark (map_lident lbl, map_mterm m ctx x)
 
     (* effect *)
-
-    | Mfail InvalidCaller        -> Traise Einvalidcaller
-    | Mfail NoTransfer           -> Traise Enotransfer
-    | Mfail (InvalidCondition lbl) -> Traise (Einvalidcondition lbl)
-    | Mfail InvalidState         -> Traise Einvalidstate
-    | Mfail AssignNat -> Tseq [loc_term (Tassign (Tvar gs, cp_storage gsinit)); dl (Traise Enegassignnat)]
-    | Mfail (Invalid v) ->
-      let idx = get_fail_idx m v.type_ in
-      Tseq [loc_term (Tassign (Tvar gs, cp_storage gsinit)); dl (Traise (Efail (idx,Some (map_mterm m ctx v))))]
-
+    | Mfail x -> begin
+        match x with
+        | Invalid v            ->
+          let idx = get_fail_idx m v.type_ in
+          Tseq [loc_term (Tassign (Tvar gs, cp_storage gsinit)); dl (Traise (Efail (idx, Some (map_mterm m ctx v))))]
+        | InvalidCaller        -> Traise EInvalidCaller
+        | InvalidCondition lbl -> Traise (EInvalidCondition lbl)
+        | NotFound _v           -> Traise ENotFound
+        | OutOfBound           -> Traise EOutOfBound
+        | KeyExists            -> Traise EKeyExists
+        | DivByZero            -> Traise EDivByZero
+        | NatAssign            -> Tseq [loc_term (Tassign (Tvar gs, cp_storage gsinit)); dl (Traise ENatAssign)]
+        | NoTransfer           -> Traise ENoTransfer
+        | InvalidState         -> Traise EInvalidState
+      end
     | Mtransfer tr ->
       begin
         match tr with
@@ -1891,7 +1896,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let assign_added = mk_add_assign (mk_ac_added n) in
       let assigns = dl (Tseq [assign; assign_added]) in
       mk_trace_seq m
-        (mk_match_get_none n key_value assigns Ekeyexist)
+        (mk_match_get_none n key_value assigns EKeyExists)
         [CAdd n]
 
     | Maddfield (a, f, k, kb) ->
@@ -1913,10 +1918,10 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
           let assign = mk_add_assign (mk_ac oasset) in
           let assign_added = mk_add_assign (mk_ac_added oasset) in
           let assigns = dl (Tseq [assign; assign_added]) in
-          dl (Tseq [assign; dl (mk_match_get_none oasset v assigns Ekeyexist)])
-        else dl (mk_match_get_some oasset v assign Enotfound) in
+          dl (Tseq [assign; dl (mk_match_get_none oasset v assigns EKeyExists)])
+        else dl (mk_match_get_some oasset v assign ENotFound) in
       mk_trace_seq m
-        (mk_match_get_some a (map_mterm m ctx k) instr Enotfound)
+        (mk_match_get_some a (map_mterm m ctx k) instr ENotFound)
         ([CUpdate f] @ if is_partition m a f then [CAdd oasset] else [])
 
     | Mremoveasset (n, i) ->
@@ -1974,7 +1979,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
           dl (Tseq [rm_assign; rm_assign_rmed; assign])
         else assign in
       mk_trace_seq m
-        (mk_match_get_some a (map_mterm m ctx k) instr Enotfound)
+        (mk_match_get_some a (map_mterm m ctx k) instr ENotFound)
         ([CUpdate f] @ if is_partition m a f then [CRm t] else [])
 
     | Mremoveall (a, f, v) ->
@@ -1987,8 +1992,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
           let capoasset = String.capitalize_ascii oasset in
           let rmif = dl (Tapp (loc_term (Tdoti(capoasset, "removeif_in_field")), [field; loc_term (mk_ac oasset)])) in
           let assign_rmif = dl (Tassign(loc_term (mk_ac oasset), rmif)) in
-          mk_match_get_some_id (dl "_a") a (map_mterm m ctx v) (dl (Tseq [assign_rmif; assign_rm_field])) Enotfound
-        else mk_match_get_some a (map_mterm m ctx v) assign_rm_field Enotfound in
+          mk_match_get_some_id (dl "_a") a (map_mterm m ctx v) (dl (Tseq [assign_rmif; assign_rm_field])) ENotFound
+        else mk_match_get_some a (map_mterm m ctx v) assign_rm_field ENotFound in
       mk_trace_seq m instr ([CUpdate f] @ if is_partition m a f then [CRm oasset] else [])
 
     | Mremoveif (_a, (CKview _l), _la, _lb, _) -> assert false
@@ -2007,9 +2012,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         let removecoll = loc_term (Tpremoveif(oasset, removeif_name, args |> List.map unloc_term, Tdoti("_a",field), mk_ac oasset)) in
         let assign_rmcoll = dl (Tassign (loc_term (mk_ac oasset),removecoll)) in
         let instr = dl (Tseq[assign_rmcoll; assign]) in
-        mk_trace_seq m (mk_match_get_some_id (dl "_a") a (map_mterm m ctx k) instr Enotfound) [CUpdate field; CRm oasset]
+        mk_trace_seq m (mk_match_get_some_id (dl "_a") a (map_mterm m ctx k) instr ENotFound) [CUpdate field; CRm oasset]
       else
-        mk_trace_seq m (mk_match_get_some a (map_mterm m ctx k) assign Enotfound) [CUpdate field]
+        mk_trace_seq m (mk_match_get_some a (map_mterm m ctx k) assign ENotFound) [CUpdate field]
 
     | Mremoveif (a, CKcoll _, args, tbody, _a) ->
 
@@ -2079,7 +2084,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mclear (_, CKdef _) -> assert false
     | Mclear (_n, CKfield (n, f, v, _, _)) ->
       let oasset,_ = M.Utils.get_field_container m n f in
-      let asset = dl (mk_match_get_some_id (dl "_a") n (map_mterm m ctx v) (loc_term (Tvar "_a")) Enotfound) in
+      let asset = dl (mk_match_get_some_id (dl "_a") n (map_mterm m ctx v) (loc_term (Tvar "_a")) ENotFound) in
       let field = dl (Tdot(asset, loc_term (Tvar f))) in
       let capoasset = String.capitalize_ascii oasset in
       let clear = dl (Tapp (loc_term (Tdoti(capoasset,"removeif_in_field")),[field; loc_term (mk_ac oasset)])) in
@@ -2119,7 +2124,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let nth = Tnth (dl (mk_view_id n), map_mterm m ctx k, mk_container_term m n ctx c) in
       begin match ctx.lctx with
         | Logic | Inv | Def -> nth
-        | _ ->  mk_match (dl nth) "_a" (loc_term (Tvar "_a")) Enotfound
+        | _ ->  mk_match (dl nth) "_a" (loc_term (Tvar "_a")) ENotFound
       end
 
     | Mcount (n, c) -> Tcard (dl (mk_view_id n), mk_container_term m n ctx c)
@@ -2177,7 +2182,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let nth = Tnth (dl (mk_list_name m (M.tlist t)), map_mterm m ctx n, map_mterm m ctx l) in
       begin match ctx.lctx with
         | Logic | Inv | Def -> nth
-        | _ -> mk_match (dl nth) "_a" (loc_term (Tvar "_a")) Enotfound
+        | _ -> mk_match (dl nth) "_a" (loc_term (Tvar "_a")) ENotFound
       end
     | Mlistreverse (t, l)      -> Tlistreverse (dl (mk_list_name m (M.tlist t)), map_mterm m ctx l)
     | Mlistconcat  (t, l1, l2) -> Tlistconcat (dl (mk_list_name m (M.tlist t)), map_mterm m ctx l1, map_mterm m ctx l2)
@@ -2820,34 +2825,34 @@ let fold_fails m ctx body : (loc_ident option * loc_term) list =
 let fold_exns m body : term list =
   let rec internal_fold_exn acc (term : M.mterm) =
     match term.M.node with
-    | M.Mget (_, _, k) -> internal_fold_exn (acc @ [Texn Enotfound]) k
-    | M.Mmapget (_ , _, c, k) -> internal_fold_exn (internal_fold_exn (acc @ [Texn Enotfound]) k) c
-    | M.Mnth (_, CKview c, k) -> internal_fold_exn (internal_fold_exn (acc @ [Texn Enotfound]) c) k
-    | M.Mnth (_, CKcoll _, k) -> internal_fold_exn ((acc @ [Texn Enotfound])) k
-    | M.Mset (_, _, k, v) -> internal_fold_exn (internal_fold_exn (acc @ [Texn Enotfound]) k) v
-    | M.Maddasset (_, i) -> internal_fold_exn (acc @ [Texn Ekeyexist]) i
+    | M.Mget (_, _, k) -> internal_fold_exn (acc @ [Texn ENotFound]) k
+    | M.Mmapget (_ , _, c, k) -> internal_fold_exn (internal_fold_exn (acc @ [Texn ENotFound]) k) c
+    | M.Mnth (_, CKview c, k) -> internal_fold_exn (internal_fold_exn (acc @ [Texn ENotFound]) c) k
+    | M.Mnth (_, CKcoll _, k) -> internal_fold_exn ((acc @ [Texn ENotFound])) k
+    | M.Mset (_, _, k, v) -> internal_fold_exn (internal_fold_exn (acc @ [Texn ENotFound]) k) v
+    | M.Maddasset (_, i) -> internal_fold_exn (acc @ [Texn EKeyExists]) i
     | M.Maddfield (a, f, c, i) ->
       internal_fold_exn
-        (internal_fold_exn (acc @ if (is_partition m a f) then [Texn Ekeyexist; Texn Enotfound]
-                            else [Texn Enotfound ]) c) i
+        (internal_fold_exn (acc @ if (is_partition m a f) then [Texn EKeyExists; Texn ENotFound]
+                            else [Texn ENotFound ]) c) i
     | M.Mremovefield (_,_,k,v) -> internal_fold_exn
-                                    (internal_fold_exn (acc @ [Texn Enotfound]) k) v
-    | M.Mremoveall (_a,_f,v) -> internal_fold_exn (acc @ [Texn Enotfound]) v
-    | M.Mremoveif (_, CKfield (_,_,k,_,_), _, _ ,_ ) -> internal_fold_exn (acc @ [Texn Enotfound]) k
-    | M.Mclear (_a,CKfield (_,_,k,_,_)) -> internal_fold_exn (acc @ [Texn Enotfound]) k
-    | M.Moptget _ -> acc @ [Texn Enotfound]
-    | M.Mfail InvalidCaller -> acc @ [Texn Einvalidcaller]
-    | M.Mfail NoTransfer -> acc @ [Texn Enotransfer]
-    | M.Mfail (InvalidCondition lbl) -> acc @ [Texn (Einvalidcondition lbl)]
-    | M.Mfail InvalidState -> acc @ [Texn Einvalidstate]
-    | M.Mfail AssignNat -> acc @ [Texn Enegassignnat]
+                                    (internal_fold_exn (acc @ [Texn ENotFound]) k) v
+    | M.Mremoveall (_a,_f,v) -> internal_fold_exn (acc @ [Texn ENotFound]) v
+    | M.Mremoveif (_, CKfield (_,_,k,_,_), _, _ ,_ ) -> internal_fold_exn (acc @ [Texn ENotFound]) k
+    | M.Mclear (_a,CKfield (_,_,k,_,_)) -> internal_fold_exn (acc @ [Texn ENotFound]) k
+    | M.Moptget _ -> acc @ [Texn ENotFound]
+    | M.Mfail InvalidCaller -> acc @ [Texn EInvalidCaller]
+    | M.Mfail NoTransfer -> acc @ [Texn ENoTransfer]
+    | M.Mfail (InvalidCondition lbl) -> acc @ [Texn (EInvalidCondition lbl)]
+    | M.Mfail InvalidState -> acc @ [Texn EInvalidState]
+    | M.Mfail NatAssign -> acc @ [Texn ENatAssign]
     | M.Mfail Invalid v ->
       let idx = get_fail_idx m v.type_ in
       acc @ [Texn (Efail (idx, None))]
-    | M.Mlistnth _ -> acc @ [Texn Enotfound]
-    | M.Mself _ -> acc @ [Texn Enotfound]
-    | M.Mcast ((Tbuiltin Baddress, _), (Tcontract _, _), v) -> internal_fold_exn (acc @ [Texn Enotfound]) v
-    | M.Mtransfer (TKself (v, _, _)) -> internal_fold_exn (acc @ [Texn Enotfound]) v
+    | M.Mlistnth _ -> acc @ [Texn ENotFound]
+    | M.Mself _ -> acc @ [Texn ENotFound]
+    | M.Mcast ((Tbuiltin Baddress, _), (Tcontract _, _), v) -> internal_fold_exn (acc @ [Texn ENotFound]) v
+    | M.Mtransfer (TKself (v, _, _)) -> internal_fold_exn (acc @ [Texn ENotFound]) v
     | M.Mtransfer (TKsimple (v, _))
     | M.Mtransfer (TKentry (v, _, _))
     | M.Mtransfer (TKcall      (v, _, _, _, _))
@@ -3053,8 +3058,8 @@ let mk_entries m =
 
 let rm_fail_exn = List.filter (fun e ->
     match unloc_term e with
-    | Texn Enotfound
-    | Texn Ekeyexist -> false
+    | Texn ENotFound
+    | Texn EKeyExists -> false
     | _ -> true)
 
 let process_no_fail m (d : (loc_term, loc_typ, loc_ident) abstract_decl) =
@@ -3068,8 +3073,8 @@ let process_no_fail m (d : (loc_term, loc_typ, loc_ident) abstract_decl) =
                body   =
                  let body =
                    loc_term (Ttry (unloc_term f.body, [
-                       Enotfound,Tassert (Some ("security_" ^ id),Tfalse);
-                       Ekeyexist,Tassert (Some ("security_" ^ id),Tfalse)
+                       ENotFound,Tassert (Some ("security_" ^ id),Tfalse);
+                       EKeyExists,Tassert (Some ("security_" ^ id),Tfalse)
                      ])) in
                  loc_term (
                    Tletin (false, gsinit, None, cp_storage gs, unloc_term body));
