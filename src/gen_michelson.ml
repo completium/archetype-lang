@@ -297,7 +297,7 @@ let to_ir (model : M.model) : T.ir =
           let vres      = T.Ivar res_name in
           let viter     = T.Ivar iter_name in
           let ve        = T.Ivar e_name in
-          let return    = T.Iassign (fun_result, T.Iifnone (vres, T.ifail "NoneValue", "_var_ifnone", Ivar "_var_ifnone", t)) in
+          let return    = T.Iassign (fun_result, T.Iifnone (vres, T.ifail "NotFound", "_var_ifnone", Ivar "_var_ifnone", t)) in
           let cond      = T.Icompare (Cle, viter, varg) in
           let vheadtail = T.Imichelson ([vlist], T.SEQ [ IF_CONS ([PAIR], [T.cstring "EmptyList"; T.FAILWITH])], []) in
           let ares      = T.Iassign (res_name, T.isome(T.icar ve)) in
@@ -337,7 +337,7 @@ let to_ir (model : M.model) : T.ir =
                                                           T.inat (Big_int.big_int_of_int 7), T.istring "7";
                                                           T.inat (Big_int.big_int_of_int 8), T.istring "8";
                                                           T.inat (Big_int.big_int_of_int 9), T.istring "9"]) in
-          let get_map    = T.Iifnone (T.Ibinop (Bget, T.Iunop (Ucdr, vpair), vmap), T.ifail "GetNoneValue", "_var_ifnone", Ivar "_var_ifnone", T.tstring) in
+          let get_map    = T.Iifnone (T.Ibinop (Bget, T.Iunop (Ucdr, vpair), vmap), T.ifail "NotFound", "_var_ifnone", Ivar "_var_ifnone", T.tstring) in
           let concat     = T.Ibinop (Bconcat, get_map, vres) in
           let assign_res = T.Iassign (res_name, concat) in
           let assign_arg = T.Iassign (arg_name, T.Iunop (Ucar, vpair)) in
@@ -407,7 +407,7 @@ let to_ir (model : M.model) : T.ir =
     let ft = to_type in
 
     let vops = T.Ivar operations in
-    let contract_internal a t d = T.Iifnone (T.Iunop (Ucontract (t, a), d), T.ifail "BadContract", "_var_ifnone", Ivar "_var_ifnone", T.tint) in
+    let contract_internal a t d = T.Iifnone (T.Iunop (Ucontract (t, a), d), T.ifail "NotFound", "_var_ifnone", Ivar "_var_ifnone", T.tint) in
     let get_contract      t d = contract_internal  None     t d in
     let get_entrypoint id t d = contract_internal (Some ("%" ^ id)) t d in
     let get_self_entrypoint id =
@@ -568,9 +568,10 @@ let to_ir (model : M.model) : T.ir =
           | Invalid v            -> f v
           | InvalidCaller        -> T.istring "InvalidCaller"
           | InvalidCondition lbl -> T.ipair (T.istring "InvalidCondition") (T.istring lbl)
-          | NotFound v           -> T.ipair (T.istring "NotFound") (f v)
+          | NotFound             -> T.istring "NotFound"
+          | KeyExists            -> T.istring "KeyExists"
+          | KeyExistsOrNotFound  -> T.istring "KeyExistsOrNotFound"
           | OutOfBound           -> T.istring "OutOfBound"
-          | KeyExists v          -> T.ipair (T.istring "KeyExists") (f v)
           | DivByZero            -> T.istring "DivByZero"
           | NatAssign            -> T.istring "NatAssign"
           | NoTransfer           -> T.istring "NoTransfer"
@@ -822,7 +823,7 @@ let to_ir (model : M.model) : T.ir =
     | Mmapput (_, _, c, k, v)     -> T.Iterop (Tupdate, f k, T.isome (f v),   f c)
     | Mmapremove (_, tv, c, k)    -> T.Iterop (Tupdate, f k, T.inone (ft tv), f c)
     | Mmapupdate (_, _, c, k, v)  -> T.Iterop (Tupdate, f k, f v, f c)
-    | Mmapget (_, _, c, k)        -> T.Iifnone (T.Ibinop (Bget, f k, f c), T.ifail "GetNoneValue", "_var_ifnone", Ivar "_var_ifnone", ft mtt.type_)
+    | Mmapget (_, _, c, k)        -> T.Iifnone (T.Ibinop (Bget, f k, f c), T.ifail "NotFound", "_var_ifnone", Ivar "_var_ifnone", ft mtt.type_)
     | Mmapgetopt (_, _, c, k)     -> T.Ibinop (Bget, f k, f c)
     | Mmapcontains (_, _, c, k)   -> T.Ibinop (Bmem, f k, f c)
     | Mmaplength (_, _, c)        -> T.Iunop (Usize, f c)

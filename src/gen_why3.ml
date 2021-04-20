@@ -1657,19 +1657,25 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     (* effect *)
     | Mfail x -> begin
-        match x with
-        | Invalid v            ->
-          let idx = get_fail_idx m v.type_ in
-          Tseq [loc_term (Tassign (Tvar gs, cp_storage gsinit)); dl (Traise (Efail (idx, Some (map_mterm m ctx v))))]
-        | InvalidCaller        -> Traise EInvalidCaller
-        | InvalidCondition lbl -> Traise (EInvalidCondition lbl)
-        | NotFound _v          -> Traise ENotFound
-        | OutOfBound           -> Traise EOutOfBound
-        | KeyExists _v         -> Traise EKeyExists
-        | DivByZero            -> Traise EDivByZero
-        | NatAssign            -> Tseq [loc_term (Tassign (Tvar gs, cp_storage gsinit)); dl (Traise ENatAssign)]
-        | NoTransfer           -> Traise ENoTransfer
-        | InvalidState         -> Traise EInvalidState
+        Tseq
+          [
+            loc_term (Tassign (Tvar gs, cp_storage gsinit));
+            dl (Traise
+                  (match x with
+                   | Invalid v            ->
+                     let idx = get_fail_idx m v.type_ in
+                     Efail (idx, Some (map_mterm m ctx v))
+                   | InvalidCaller        -> EInvalidCaller
+                   | InvalidCondition lbl -> (EInvalidCondition lbl)
+                   | NotFound             -> ENotFound
+                   | OutOfBound           -> EOutOfBound
+                   | KeyExists            -> EKeyExists
+                   | KeyExistsOrNotFound  -> EKeyExistsOrNotFound
+                   | DivByZero            -> EDivByZero
+                   | NatAssign            -> ENatAssign
+                   | NoTransfer           -> ENoTransfer
+                   | InvalidState         -> EInvalidState))
+          ]
       end
     | Mtransfer tr ->
       begin

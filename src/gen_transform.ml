@@ -2781,8 +2781,7 @@ let add_contain_on_get (model : model) : model =
           let build_contains (an, k) : mterm =
             let contains = mk_mterm (Mcontains(an, CKcoll (Tnone, Dnone), k)) tbool in
             let not_contains = mk_mterm (Mnot contains) tbool in
-            let fail = mk_mterm (Mfail (NotFound k)) tunit in
-            let mif : mterm = mk_mterm (Mif(not_contains, fail, None)) tunit in
+            let mif : mterm = mk_mterm (Mif(not_contains, failc NotFound, None)) tunit in
             mif
           in
           let cmp (an1, k1 : ident * mterm) (an2, k2 : ident * mterm) : bool =
@@ -3646,10 +3645,6 @@ let remove_asset (model : model) : model =
       mk_mterm node tbool
     in
 
-    let msg_KeyAlreadyExists              = "KeyAlreadyExists" in
-    let msg_KeyNotFound                   = "KeyNotFound" in
-    let msg_KeyNotFoundOrKeyAlreadyExists = "KeyNotFoundOrKeyAlreadyExists" in
-
     (* let get_asset_key_type x = Utils.get_asset_key model x |> snd in *)
 
     let extract_key x = Utils.extract_key_value_from_masset model x in
@@ -3773,14 +3768,14 @@ let remove_asset (model : model) : model =
               | (an, a)::t, [] -> begin
                   let f = create_contains_asset_key in
                   let c = List.fold_left (fun accu (an, x) -> mk_mterm (Mand (f an x, accu)) tbool) (f an a) t in
-                  mk_mterm (Mif (c, b, Some (failc (NotFound k)))) tunit
+                  mk_mterm (Mif (c, b, Some (failc NotFound))) tunit
                 end
               | [], (an, k, _)::t -> begin
                   let f = create_contains_asset_key in
                   let c = List.fold_left (fun accu (an, x, _) -> mk_mterm (Mor (f an x, accu)) tbool) (f an k) t in
                   let linstrs = get_instrs_add_with_partition pts in
                   let seq = mk_mterm (Mseq (b::linstrs)) tunit in
-                  mk_mterm (Mif (c, failc (KeyExists k), Some seq)) tunit
+                  mk_mterm (Mif (c, failc KeyExists, Some seq)) tunit
                 end
               | (aan, aa)::at, pt ->
                 let f = create_contains_asset_key in
@@ -3788,14 +3783,14 @@ let remove_asset (model : model) : model =
                 let c = List.fold_left (fun accu (an, x, _) -> mk_mterm (Mand (mnot (f an x), accu)) tbool) c pt in
                 let linstrs = get_instrs_add_with_partition pts in
                 let seq = mk_mterm (Mseq (b::linstrs)) tunit in
-                mk_mterm (Mif (c, seq, Some (fail msg_KeyNotFoundOrKeyAlreadyExists))) tunit
+                mk_mterm (Mif (c, seq, Some (failc KeyExistsOrNotFound))) tunit
             end
           | _ -> assert false
         in
 
         if force
         then assign
-        else mk_mterm (Mif (cond, failc (KeyExists k), Some assign)) tunit
+        else mk_mterm (Mif (cond, failc KeyExists, Some assign)) tunit
       end
     in
 
@@ -4032,7 +4027,7 @@ let remove_asset (model : model) : model =
       | Mget (an, CKview c, k) -> begin
           let get = mk_mterm (Mget(an, CKcoll(Tnone, Dnone), k)) mt.type_ |> fm ctx in
           let cond = mk_mterm (Mcontains(an, CKview c, k)) tbool |> fm ctx in
-          mk_mterm (Mexprif(cond, get, failc (NotFound k))) get.type_
+          mk_mterm (Mexprif(cond, get, failc NotFound)) get.type_
         end
 
       (* control *)
@@ -4106,7 +4101,7 @@ let remove_asset (model : model) : model =
             let bk = fm ctx b in
             let assign = mk_assign bk in
             let cond = create_contains_asset_key aan bk in
-            mk_mterm (Mif (cond, assign, Some (failc (NotFound bk)))) tunit
+            mk_mterm (Mif (cond, assign, Some (failc NotFound))) tunit
           | Partition ->
             let bk = extract_key b in
             let bk = fm ctx bk in
@@ -4618,12 +4613,12 @@ let remove_asset (model : model) : model =
 
           let msg = List.fold_left (fun accu x ->
               match accu, x with
-              | msg, ( _, _, `Aggregate, (`Add | `Replace), _) when String.equal msg msg_KeyAlreadyExists -> msg_KeyNotFoundOrKeyAlreadyExists
-              | msg, ( _, _, `Partition, (`Add | `Replace), _) when String.equal msg msg_KeyNotFound      -> msg_KeyNotFoundOrKeyAlreadyExists
-              | _, ( _, _, `Aggregate, (`Add | `Replace), _) -> msg_KeyNotFound
-              | _, ( _, _, `Partition, (`Add | `Replace), _) -> msg_KeyAlreadyExists
+              | msg, ( _, _, `Aggregate, (`Add | `Replace), _) when match msg with KeyExists -> true | _ -> false -> KeyExistsOrNotFound
+              | msg, ( _, _, `Partition, (`Add | `Replace), _) when match msg with NotFound  -> true | _ -> false -> KeyExistsOrNotFound
+              | _, ( _, _, `Aggregate, (`Add | `Replace), _) -> NotFound
+              | _, ( _, _, `Partition, (`Add | `Replace), _) -> KeyExists
               | _ -> accu
-            ) "" ags in
+            ) (Invalid (mk_string "")) ags in
 
           let assign : mterm =
             match elts_cond with
@@ -4632,7 +4627,7 @@ let remove_asset (model : model) : model =
                 let mk_cond b an mt = let x = create_contains_asset_key an mt in if b then x else mk_mterm (Mnot(x)) tbool in
                 let init : mterm = mk_cond b an mt in
                 let cond : mterm = List.fold_left (fun accu (b, an, x) -> mk_mterm (Mand(accu, mk_cond b an x)) tbool ) init l in
-                mk_mterm (Mif (cond, assign, Some (fail msg))) tunit
+                mk_mterm (Mif (cond, assign, Some (failc msg))) tunit
               end
           in
           assign

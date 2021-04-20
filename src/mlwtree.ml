@@ -17,6 +17,7 @@ type 'e exn =
   | ENotFound
   | EOutOfBound
   | EKeyExists
+  | EKeyExistsOrNotFound
   | EDivByZero
   | ENatAssign
   | ENoTransfer
@@ -424,6 +425,7 @@ and map_exn (map_e : 'e1 -> 'e2) = function
   | ENotFound             -> ENotFound
   | EOutOfBound           -> EOutOfBound
   | EKeyExists            -> EKeyExists
+  | EKeyExistsOrNotFound  -> EKeyExistsOrNotFound
   | EDivByZero            -> EDivByZero
   | ENatAssign            -> ENatAssign
   | ENoTransfer           -> ENoTransfer
@@ -1046,6 +1048,7 @@ and compare_exn cmpe e1 e2 =
   | ENotFound    , ENotFound                       -> true
   | EOutOfBound  , EOutOfBound                     -> true
   | EKeyExists   , EKeyExists                      -> true
+  | EKeyExistsOrNotFound, EKeyExistsOrNotFound     -> true
   | EDivByZero   , EDivByZero                      -> true
   | ENatAssign   , ENatAssign                      -> true
   | ENoTransfer  , ENoTransfer                     -> true

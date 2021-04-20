@@ -457,9 +457,10 @@ and 'id fail_type_gen =
   | Invalid of 'id mterm_gen
   | InvalidCaller
   | InvalidCondition of ident
-  | NotFound of 'id mterm_gen
+  | NotFound
+  | KeyExists
+  | KeyExistsOrNotFound
   | OutOfBound
-  | KeyExists of 'id mterm_gen
   | DivByZero
   | NatAssign
   | NoTransfer
@@ -1178,9 +1179,17 @@ let cmp_fail_type
     (ft1 : 'id fail_type_gen)
     (ft2 : 'id fail_type_gen) : bool =
   match ft1, ft2 with
-  | Invalid mt1, Invalid mt2 -> cmp mt1 mt2
-  | InvalidCaller, InvalidCaller -> true
+  | Invalid mt1, Invalid mt2                 -> cmp mt1 mt2
+  | InvalidCaller, InvalidCaller             -> true
   | InvalidCondition c1, InvalidCondition c2 -> cmp_ident c1 c2
+  | NotFound, NotFound                       -> true
+  | KeyExists, KeyExists                     -> true
+  | KeyExistsOrNotFound, KeyExistsOrNotFound -> true
+  | OutOfBound, OutOfBound                   -> true
+  | DivByZero, DivByZero                     -> true
+  | NatAssign, NatAssign                     -> true
+  | NoTransfer, NoTransfer                   -> true
+  | InvalidState, InvalidState               -> true
   | _ -> false
 
 let rec cmp_ntype
