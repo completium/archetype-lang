@@ -1098,6 +1098,7 @@ let pp_enum fmt (e : lident enum_struct) =
 let rec pp_rexpr fmt (r : rexpr) =
   let pp_node fmt = function
     | Rany -> pp_str fmt "any"
+    | Rasset a -> pp_id fmt a
     | Rexpr e -> pp_pterm fmt e
     | Ror (lhs, rhs) ->
       Format.fprintf fmt "%a or %a"

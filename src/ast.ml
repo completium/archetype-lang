@@ -618,6 +618,7 @@ type 'id rexpr_gen = ('id rexpr_node) struct_poly
 
 and 'id rexpr_node =
   | Rany
+  | Rasset of 'id
   | Rexpr of 'id term_gen
   | Ror of 'id rexpr_gen * 'id rexpr_gen
 [@@deriving show {with_path = false}]

@@ -6,7 +6,7 @@ asset my_asset {
 }
 
 entry exec () {
-   called by a my_asset
+   called by my_asset
    effect {
      ()
    }

@@ -25,6 +25,7 @@ module Type : sig
 
   val is_asset     : A.ptyp -> bool
   val is_numeric   : A.ptyp -> bool
+  val is_address   : A.ptyp -> bool
   val is_currency  : A.ptyp -> bool
   val is_primitive : A.ptyp -> bool
   val is_contract  : A.ptyp -> bool
@@ -91,6 +92,9 @@ end = struct
 
   let is_numeric = function
     | A.Tbuiltin (A.VTnat | A.VTint | A.VTrational) -> true |  _ -> false
+
+  let is_address = function
+    | A.Tbuiltin (A.VTaddress) -> true | _ -> false
 
   let is_currency = function
     | A.Tbuiltin (A.VTcurrency) -> true | _ -> false
@@ -652,6 +656,7 @@ type error_desc =
   | InvalidAssetCollectionExpr         of A.ptyp
   | InvalidAssetExpression
   | InvalidCallByExpression
+  | InvalidCallByAsset
   | InvalidEffectForCtn                of A.container * A.container list
   | InvalidEntryDescription
   | InvalidEntryExpression
@@ -864,6 +869,7 @@ let pp_error_desc fmt e =
   | InvalidAssetCollectionExpr ty      -> pp "Invalid asset collection expression: %a" A.pp_ptyp ty
   | InvalidAssetExpression             -> pp "Invalid asset expression"
   | InvalidCallByExpression            -> pp "Invalid 'Calledby' expression"
+  | InvalidCallByAsset                 -> pp "Invalid 'Calledby' asset, the key must be typed address"
   | InvalidEffectForCtn _              -> pp "Invalid effect for this container kind"
   | InvalidEntryDescription            -> pp "Invalid entry description"
   | InvalidEntryExpression             -> pp "Invalid entry expression"
@@ -5149,6 +5155,12 @@ let rec for_callby (env : env) (cb : PT.expr) =
   | Eapp (Foperator { pldesc = Logical Or }, [e1; e2]) ->
     (for_callby env e1) @ (for_callby env e2)
 
+  | Eterm (_, an) when Env.Asset.exists env (unloc an)->
+    let asset = Env.Asset.get env (unloc an) in
+    if (not (Type.is_address asset.as_pkty))
+    then Env.emit_error env (loc cb, InvalidCallByAsset);
+    [mkloc (loc cb) (Some (A.mk_sp ~loc:(loc an) ~type_:(A.Tcontainer(Tasset an, Collection)) (A.Pvar (VTnone, Vnone, an))))]
+
   | _ ->
     [mkloc (loc cb) (Some (for_expr `Concrete env ~ety:A.vtrole cb))]
 
@@ -6328,7 +6340,11 @@ let transentrys_of_tdecls tdecls =
 
       let for1 = fun (x : A.pterm option loced) ->
         let node =
-          Option.get_dfl A.Rany (Option.map (fun e -> A.Rexpr e) (unloc x))
+          Option.get_dfl A.Rany (Option.map (
+              fun (e : A.pterm) ->
+                match e with
+                | { node = Pvar (VTnone, Vnone, _); type_= Some (A.Tcontainer(Tasset an, Collection)) } -> A.Rasset an
+                | _ -> A.Rexpr e) (unloc x))
         in A.mk_sp ~loc:(loc x) node in
 
       let aout = List.fold_left

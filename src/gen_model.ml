@@ -1256,6 +1256,10 @@ let to_model (ast : A.ast) : M.model =
           let caller : M.mterm = M.mk_mterm M.Mcaller (M.taddress) in
           match rq.node with
           | Rany -> None
+          | Rasset a -> begin
+              let an = unloc a in
+              Some (M.mk_mterm (M.Mcontains(an, CKcoll(Tnone, Dnone), caller)) M.tbool ~loc:(loc a))
+            end
           | Rexpr e ->
             begin
               let mt = to_mterm env e in
