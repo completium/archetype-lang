@@ -5,7 +5,7 @@ states =
 | Running
 
 entry exec () {
-   state is Running // between call by and require
+   state is Running
    effect {
      ()
    }

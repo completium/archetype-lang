@@ -5155,7 +5155,7 @@ let rec for_callby (env : env) (cb : PT.expr) =
 (* -------------------------------------------------------------------- *)
 let for_entry_properties (env, poenv : env * env) (act : PT.entry_properties) =
   let calledby  = Option.map (fun (x, _) -> for_callby env x) act.calledby in
-  let stateis   = act.state_is in
+  let stateis   = Option.map (for_named_state env) act.state_is in
   let env, req  = Option.foldmap (for_rfs `Concrete) env (Option.fst act.require) in
   let env, fai  = Option.foldmap (for_rfs `Concrete) env (Option.fst act.failif) in
   let env, spec = Option.foldmap
