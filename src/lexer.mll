@@ -159,6 +159,8 @@ rule token = parse
   | refuse_transfer       { REFUSE_TRANSFER }
   | blank+                { token lexbuf }
 
+  | "state" blank+ "is"   { STATE_IS }
+
   | "@add"                { AT_ADD }
   | "@remove"             { AT_REMOVE }
   | "@update"             { AT_UPDATE }

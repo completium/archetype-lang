@@ -272,6 +272,7 @@ and s_function = {
 and entry_properties = {
   accept_transfer : bool;
   calledby        : (expr * exts) option;
+  state_is        : lident option;
   require         : ((lident * expr * expr option) list * exts) option;
   failif          : ((lident * expr * expr option) list * exts) option;
   spec_fun        : specification option;
@@ -540,8 +541,8 @@ let einvalid      ?(loc=dummy) _                  = mkloc loc (Einvalid)
 let mk_s_function name args ret_t spec body getter : s_function =
   {name; args; ret_t; spec; body; getter}
 
-let mk_entry_properties ?(accept_transfer = true) ?calledby ?require ?failif ?spec_fun ?(functions = []) _ : entry_properties =
-  { accept_transfer; calledby; require; failif; spec_fun; functions }
+let mk_entry_properties ?(accept_transfer = true) ?calledby ?state_is ?require ?failif ?spec_fun ?(functions = []) _ : entry_properties =
+  { accept_transfer; calledby; state_is; require; failif; spec_fun; functions }
 
 let mk_transition_item id eexto eexts : lident * (expr * exts) option * (expr * exts) option = id, eexto, eexts
 

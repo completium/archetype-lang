@@ -1104,7 +1104,10 @@ let mlevel        = mk_mterm Mlevel       tnat
 let mk_mvar id t = mk_mterm (Mvar(id, Vlocal, Tnone, Dnone )) t
 let mk_pvar id t = mk_mterm (Mvar(id, Vparam, Tnone, Dnone )) t
 let mk_svar id t = mk_mterm (Mvar(id, Vstorevar, Tnone, Dnone )) t
-let mk_enum_value ?(args=[]) id e = mk_mterm (Menumval(id, args, unloc e)) (mktype (Tenum e))
+let mk_state_var _ = mk_mterm (Mvar(dumloc "", Vstate, Tnone, Dnone )) ((Tenum (dumloc "state")), None)
+
+let mk_enum_value  ?(args=[]) id e = mk_mterm (Menumval(id, args, unloc e)) (mktype (Tenum e))
+let mk_state_value id = mk_enum_value id (dumloc "state")
 
 let mk_btez v = mk_mterm (Mcurrency (v, Utz)) ttez
 let mk_tez  v = mk_btez (Big_int.big_int_of_int v)

@@ -25,6 +25,7 @@ let string_of_token = function
   | THEN                 -> "THEN"
   | STRING s             -> Printf.sprintf "STRING(%s)" s
   | STATES               -> "STATES"
+  | STATE_IS             -> "STATE_IS"
   | SPECIFICATION        -> "SPECIFICATION"
   | SORTED               -> "SORTED"
   | SOME                 -> "SOME"
@@ -192,6 +193,7 @@ let string_of_symbol = function
   | X (T T_THEN) -> "then"
   | X (T T_STRING) -> "a string"
   | X (T T_STATES) -> "states"
+  | X (T T_STATE_IS) -> "state is"
   | X (T T_SPECIFICATION) -> "postcondition"
   | X (T T_SORTED) -> "sorted"
   | X (T T_SOME) -> "some"
@@ -391,6 +393,7 @@ let string_of_symbol = function
   | X (N N_order_operations) -> "order operations"
   | X (N N_order_operation) -> "an order operation"
   | X (N N_option_with_effect_) -> "a with effect option"
+  | X (N N_option_state_is_) -> "an option state is"
   | X (N N_option_specification_fun_) -> "a specification function option"
   | X (N N_option_simple_expr_) -> "a simple expression option"
   | X (N N_option_SEMI_COLON_) -> ""

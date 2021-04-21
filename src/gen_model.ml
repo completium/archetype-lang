@@ -1261,10 +1261,13 @@ let to_model (ast : A.ast) : M.model =
               let mt = to_mterm env e in
               Some (M.mk_mterm (M.Mequal (M.taddress, caller, mt)) (M.tbool) ~loc:rq.loc)
             end
-          | Ror (l, r) ->
-            let l = Option.get (process_rexpr l) in
-            let r = Option.get (process_rexpr r) in
-            Some (M.mk_mterm (M.Mor (l, r)) (M.tbool) ~loc:rq.loc)
+          | Ror (l, r) -> begin
+              let l = process_rexpr l in
+              let r = process_rexpr r in
+              match l, r with
+              | Some l, Some r -> Some (M.mk_mterm (M.Mor (l, r)) (M.tbool) ~loc:rq.loc)
+              | _ -> None
+            end
         in
         match process_rexpr cb with
         | Some a ->
@@ -1279,6 +1282,18 @@ let to_model (ast : A.ast) : M.model =
         | None -> body
         | Some cb -> process_cb cb body
       end
+    in
+
+    let process_state_is _env (body : M.mterm) : M.mterm =
+      match transaction.state_is with
+      | Some id -> begin
+          let var     = M.mk_state_value id in
+          let state   = M.mk_state_var () in
+          let c       = M.mk_mterm (M.Mnequal (M.tstate, var, state)) (M.tbool) ~loc:(loc id) in
+          let cond_if = M.mk_mterm (M.Mif (c, fail InvalidState, None)) M.tunit in
+          add_seq cond_if body
+        end
+      | _ -> body
     in
 
     let process env b (x : A.lident A.label_term) (body : M.mterm) : M.mterm =
@@ -1410,6 +1425,7 @@ let to_model (ast : A.ast) : M.model =
       body
       |> process_requires env
       |> process_accept_transfer env
+      |> process_state_is env
       |> process_calledby env
     in
     let loc   = transaction.loc in

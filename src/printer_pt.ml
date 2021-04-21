@@ -1130,6 +1130,9 @@ let pp_entry_properties fmt (props : entry_properties) =
       Format.fprintf fmt "called by%a %a@\n"
         pp_extensions exts
         (pp_expr e_default PNone) e) props.calledby;
+  map_option (fun x ->
+      Format.fprintf fmt "state is %a@\n"
+        pp_id x) props.state_is;
   let pp_rf s1 s2 fmt (l, exts) =
     Format.fprintf fmt "%s%a {@\n  @[%a@]@\n}@\n"
       s1
