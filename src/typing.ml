@@ -878,7 +878,7 @@ let pp_error_desc fmt e =
   | InvalidExpression                  -> pp "Invalid expression"
   | InvalidExpressionForEffect         -> pp "Invalid expression for effect"
   | InvalidExprressionForTupleAccess   -> pp "Invalid expression for tuple access, only int literals are allowed"
-  | InvalidFailIdType (id, e, t)       -> pp "Invalid '%s' fail id type, expected '%a' instead of '%a'" id Printer_ast.pp_ptyp e Printer_ast.pp_ptyp t
+  | InvalidFailIdType (id, e, _)       -> pp "'%s' type, expected '%a'" id Printer_ast.pp_ptyp e
   | InvalidFieldsCountInAssetOrRecordLiteral
     -> pp "Invalid fields count in asset or record literal"
   | InvalidFoldInit ty                 -> pp "Fold operator initializer should have a sum type, not %a" Printer_ast.pp_ptyp ty
