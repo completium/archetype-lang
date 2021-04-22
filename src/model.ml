@@ -801,6 +801,7 @@ type invariant = lident invariant_gen
 
 type 'id fail_gen = {
   label: 'id;
+  fid: 'id option;
   arg: 'id;
   atype: type_;
   formula: 'id mterm_gen;
@@ -965,8 +966,8 @@ let mk_definition ?(loc = Location.dummy) name typ var body =
 let mk_invariant ?(formulas = []) label =
   { label; formulas }
 
-let mk_fail ?(loc = Location.dummy) label arg atype formula =
-  { label; arg; atype; formula; loc }
+let mk_fail ?(loc = Location.dummy) label fid arg atype formula =
+  { label; fid; arg; atype; formula; loc }
 
 let mk_postcondition ?(invariants = []) ?(uses = []) name mode formula =
   { name; mode; formula; invariants; uses }
@@ -3667,6 +3668,7 @@ type kind_ident =
   | KIpostcondition
   | KIpostconditionuse
   | KIfaillabel
+  | KIfailfid
   | KIfailarg
   | KIsecurityad
   | KIsecurityrole
@@ -3876,6 +3878,7 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
     let for_fail (f : fail) : fail =
       {
         label        = g KIfaillabel f.label;
+        fid          = Option.map (g KIfailfid) f.fid;
         arg          = g KIfailarg   f.arg;
         atype        = for_type      f.atype;
         formula      = for_mterm     f.formula;

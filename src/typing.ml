@@ -663,6 +663,7 @@ type error_desc =
   | InvalidExpression
   | InvalidExpressionForEffect
   | InvalidExprressionForTupleAccess
+  | InvalidFailIdType                  of ident * A.ptyp * A.ptyp
   | InvalidFieldsCountInAssetOrRecordLiteral
   | InvalidFoldInit                    of A.ptyp
   | InvalidForIdentMap
@@ -763,6 +764,7 @@ type error_desc =
   | UnknownAssetToProperty             of ident
   | UnknownEntry                       of ident
   | UnknownEnum                        of ident
+  | UnknownFailId                      of ident
   | UnknownField                       of ident * ident
   | UnknownFieldName                   of ident
   | UnknownFunction                    of ident
@@ -876,6 +878,7 @@ let pp_error_desc fmt e =
   | InvalidExpression                  -> pp "Invalid expression"
   | InvalidExpressionForEffect         -> pp "Invalid expression for effect"
   | InvalidExprressionForTupleAccess   -> pp "Invalid expression for tuple access, only int literals are allowed"
+  | InvalidFailIdType (id, e, t)       -> pp "Invalid '%s' fail id type, expected '%a' instead of '%a'" id Printer_ast.pp_ptyp e Printer_ast.pp_ptyp t
   | InvalidFieldsCountInAssetOrRecordLiteral
     -> pp "Invalid fields count in asset or record literal"
   | InvalidFoldInit ty                 -> pp "Fold operator initializer should have a sum type, not %a" Printer_ast.pp_ptyp ty
@@ -976,6 +979,7 @@ let pp_error_desc fmt e =
   | UnknownAssetToProperty i           -> pp "Unknown asset to property: %a" pp_ident i
   | UnknownEntry i                     -> pp "Unknown entry: %a" pp_ident i
   | UnknownEnum i                      -> pp "Unknown enum: %a" pp_ident i
+  | UnknownFailId s                    -> pp "Unknown fail id: %s" s
   | UnknownField (i1, i2)              -> pp "Unknown field: asset %a does not have a field %a" pp_ident i1 pp_ident i2
   | UnknownFieldName i                 -> pp "Unknown field name: %a" pp_ident i
   | UnknownFunction  i                 -> pp "Unknown function name: %a" pp_ident i
@@ -1470,7 +1474,7 @@ type vardecl = {
 type 'env ispecification = [
   | `Predicate     of A.lident * (A.lident * A.ptyp) list * A.pterm
   | `Definition    of A.lident * (A.lident * A.ptyp) * A.pterm
-  | `Fails         of (A.lident * A.lident * A.ptyp * A.pterm) list
+  | `Fails         of (A.lident * A.lident option * A.lident * A.ptyp * A.pterm) list
   | `Variable      of A.lident * A.pterm option
   | `Asset         of A.lident * A.pterm * (A.lident * A.pterm list) list * A.lident list
   | `Effect        of 'env * A.instruction
@@ -4863,9 +4867,31 @@ let for_specification_item
     (env, poenv), [`Effect i]
 
   | PT.Vfails l -> begin
+      let failures = [
+        "InvalidCaller"       , A.vtstring;
+        "InvalidCondition"    , A.Ttuple [A.vtstring; A.vtstring];
+        "NotFound"            , A.vtstring;
+        "KeyExists"           , A.vtstring;
+        "KeyExistsOrNotFound" , A.vtstring;
+        "OutOfBound"          , A.Ttuple [A.vtstring; A.vtnat];
+        "DivByZero"           , A.vtstring;
+        "NatAssign"           , A.vtstring;
+        "NoTransfer"          , A.vtstring;
+        "InvalidState"        , A.vtstring;
+      ] in
       let l, env = List.fold_left (
-          fun (accu, aenv) (lbl, arg, atype, f) ->
+          fun (accu, aenv) (lbl, fid, arg, atype, f) ->
             let ty = for_type_exn aenv atype in
+            Option.iter (fun x ->
+                let vx = unloc x in
+                let tfid_opt : A.ptyp option = List.assoc_opt vx failures in
+                match tfid_opt with
+                | Some tfid -> begin
+                    if (not (Type.equal ty tfid))
+                    then (Env.emit_error env (loc (fst atype), InvalidFailIdType (vx, tfid, ty)))
+                  end
+                | None -> (Env.emit_error env (loc x, UnknownFailId (vx)))
+              ) fid;
             let env_internal = Env.Local.push env (arg, ty) in
             let f = for_formula env_internal f in
             let env =
@@ -4873,7 +4899,7 @@ let for_specification_item
               then Env.Label.push env (lbl, `Plain)
               else env
             in
-            (lbl, arg, ty, f)::accu, env
+            (lbl, fid, arg, ty, f)::accu, env
         ) ([], env) l in
 
       (env, poenv), [`Fails (List.rev l)]
@@ -6306,7 +6332,7 @@ let specifications_of_ispecifications =
       { env with A.definitions = env.definitions @ [def] }
 
     | `Fails fails ->
-      let fails = List.map (fun (id, arg, atype, f) -> A.mk_fail id arg atype f) fails in
+      let fails = List.map (fun (id, fid, arg, atype, f) -> A.mk_fail id fid arg atype f) fails in
       { env with A.fails = env.fails @ fails }
 
   in fun ispecs -> List.fold_left do1 env0 ispecs

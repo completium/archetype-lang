@@ -91,7 +91,7 @@ let extract_properties (pt : archetype) : property list =
     in
     match unloc spi with
     | Vfails l ->
-      List.map (fun (label, _, _, formula : lident * lident * type_t * expr) ->
+      List.map (fun (label, _, _, _, formula : lident * lident option * lident * type_t * expr) ->
           let formula = Format.asprintf "%a" Printer_pt.pp_simple_expr formula in
           mk_property ~invariants:[] Fails (unloc label) formula (mk_location (loc label))) l
     | Vassert (label, formula, invs, _) ->

@@ -13,9 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     * add `ticket` type and associated instructions (`create_ticket`, `read_ticket`, `split_ticket`, `join_tickets`)
     * add sapling types (`sapling_state` and `sapling_transaction`) and operations (`sapling_empty_state` and `sapling_verify_update`)
     * add bls curves types (`bls12_381_fr`, `bls12_381_g1` and `bls12_381_g2`), arthmetic (`+`, `*`, unary `-`) and operation (`pairing_check`)
+
+## Unreleased
+### Added
   - `update` function for map (like `UPDATE` in michelson)
   - `state is` section in entry
   - `called by` supports asset with a key typed address
+  - failure id in fails specification section (i.e. `... f1 with InvalidCaller(msg : string): ...`)
 
 ### Changed
   - `slice` returns `option<byte|string>`

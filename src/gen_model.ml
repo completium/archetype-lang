@@ -1118,7 +1118,7 @@ let to_model (ast : A.ast) : M.model =
   in
 
   let to_fail (env : env) (p : A.lident A.fail) : M.fail =
-    M.mk_fail p.label p.arg (type_to_type p.atype) (to_mterm { env with formula = true } p.formula) ~loc:p.loc
+    M.mk_fail p.label p.fid p.arg (type_to_type p.atype) (to_mterm { env with formula = true } p.formula) ~loc:p.loc
   in
 
   let to_variable (env : env) (v : A.lident A.variable) : M.variable =

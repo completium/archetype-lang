@@ -493,6 +493,7 @@ type 'id definition = {
 
 type 'id fail = {
   label: 'id;
+  fid: 'id option;
   arg: 'id;
   atype: type_;
   formula: 'id term_gen;
@@ -798,8 +799,8 @@ let mk_predicate ?(args = []) ?(loc = Location.dummy) name body =
 let mk_definition ?(loc = Location.dummy) name typ var body =
   { name; typ; var; body; loc }
 
-let mk_fail ?(loc = Location.dummy) label arg atype formula =
-  { label; arg; atype; formula; loc }
+let mk_fail ?(loc = Location.dummy) label fid arg atype formula =
+  { label; fid; arg; atype; formula; loc }
 
 let mk_invariant ?(formulas = []) label =
   { label; formulas }

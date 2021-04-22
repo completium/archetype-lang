@@ -416,8 +416,8 @@ getter_decl:
 | PREDICATE id=ident xs=function_args e=braced(expr) { Vpredicate (id, xs, e) }
 
 %inline spec_fail_item:
-| lbl=ident WITH LPAREN arg=ident COLON t=type_t RPAREN COLON f=expr SEMI_COLON
-{ (lbl, arg, t, f) }
+| lbl=ident WITH fid=ident? LPAREN arg=ident COLON t=type_t RPAREN COLON f=expr SEMI_COLON
+{ (lbl, fid, arg, t, f) }
 
 %inline spec_fail_items:
 | xs=spec_fail_item+ { xs }

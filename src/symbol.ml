@@ -407,6 +407,7 @@ let string_of_symbol = function
   | X (N N_option_paren_separated_nonempty_list_COMMA_ident___) -> "a list of constructor arguments"
   | X (N N_option_parameter_init_) -> "parameter initialization"
   | X (N N_option_on_value_) -> "a on value option"
+  | X (N N_option_ident_) -> "an option ident"
   | X (N N_option_function_return_) -> "a function return option"
   | X (N N_option_failif_) -> "a failif option"
   | X (N N_option_extensions_) -> "extensions option"

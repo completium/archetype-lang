@@ -995,9 +995,10 @@ let pp_specification_item fmt = function
      } *)
   | Vfails l ->
     Format.fprintf fmt "fails {@\n  @[%a@]@\n}"
-      (pp_list "" (fun fmt (lbl, arg, t, f) ->
-           Format.fprintf fmt "%a with (%a : %a):@\n  %a;"
+      (pp_list "" (fun fmt (lbl, fid, arg, t, f) ->
+           Format.fprintf fmt "%a with %a(%a : %a):@\n  %a;"
              pp_id lbl
+             (pp_option pp_id) fid
              pp_id arg
              pp_type t
              (pp_expr e_default PNone) f
