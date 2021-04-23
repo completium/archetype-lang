@@ -1,13 +1,12 @@
-archetype expr_fun_setdelegate
+archetype setdelegate
 
 variable res : option<string> = none
 
-entry exec () {
+entry exec (k : key) {
   specification {
     s0: length(operations) = 1
   }
   effect {
-    var k  : key = "edpkudMiaEXwK9EXcXufVjVkZmCRJLwQdSVYutAxfaySTgSnxXNLYj";
     var kh : key_hash = hash_key(k);
     var okh : option<key_hash> = some(kh);
     var op : operation = set_delegate(okh);
