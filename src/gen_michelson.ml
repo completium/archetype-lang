@@ -391,15 +391,20 @@ let to_ir (model : M.model) : T.ir =
 
   let extra_args : (ident * (ident * T.type_) list) list ref  = ref [] in
 
-  let ak_to_id (ak : M.assign_kind) =
+
+  let instr_update (ak : M.assign_kind) (op : T.aoperator) =
     match ak with
-    | Avar id       -> unloc id
-    | Avarstore id  -> unloc id
+    | Avar id       -> T.Iupdate (Uvar (unloc id), op)
+    | Avarstore id  -> T.Iupdate (Uvar (unloc id), op)
     | Aasset _      -> emit_error (UnsupportedTerm "Aasset")
+    | Arecord (rn, fn, {node = Mvar(id, _, _, _)}) -> begin
+        let l = Model.Utils.get_record_pos model (unloc rn) (unloc fn) in
+        T.Iupdate (Urec (unloc id, l), op)
+      end
     | Arecord _     -> emit_error (UnsupportedTerm "Arecord")
     | Astate        -> emit_error (UnsupportedTerm "Astate")
     | Aassetstate _ -> emit_error (UnsupportedTerm "Aassetstate")
-    | Aoperations   -> operations
+    | Aoperations   -> T.Iupdate (Uvar operations, op)
   in
 
   let rec mterm_to_intruction env (mtt : M.mterm) : T.instruction =
@@ -799,8 +804,8 @@ let to_ir (model : M.model) : T.ir =
 
     (* set api instruction *)
 
-    | Msetinstradd    (_, ak, v) -> T.Iupdate (ak_to_id ak, Aterop (Tupdate, f v, T.itrue))
-    | Msetinstrremove (_, ak, v) -> T.Iupdate (ak_to_id ak, Aterop (Tupdate, f v, T.ifalse))
+    | Msetinstradd    (_, ak, v) -> instr_update ak (Aterop (Tupdate, f v, T.itrue))
+    | Msetinstrremove (_, ak, v) -> instr_update ak (Aterop (Tupdate, f v, T.ifalse))
 
     (* list api expression *)
 
@@ -814,8 +819,8 @@ let to_ir (model : M.model) : T.ir =
 
     (* list api instruction *)
 
-    | Mlistinstrprepend (_, ak, v) -> T.Iupdate (ak_to_id ak, Abinop (Bcons, f v))
-    | Mlistinstrconcat  (_, ak, v) -> T.Iupdate (ak_to_id ak, Abinop (Bconcat, f v))
+    | Mlistinstrprepend (_, ak, v) -> instr_update ak (Abinop (Bcons, f v))
+    | Mlistinstrconcat  (_, ak, v) -> instr_update ak (Abinop (Bconcat, f v))
 
 
     (* map api expression *)
@@ -831,9 +836,9 @@ let to_ir (model : M.model) : T.ir =
 
     (* map api instruction *)
 
-    | Mmapinstrput    (_, _,  ak, k, v) -> T.Iupdate (ak_to_id ak, Aterop (Tupdate, f k, T.isome (f v)))
-    | Mmapinstrremove (_, tv, ak, k)    -> T.Iupdate (ak_to_id ak, Aterop (Tupdate, f k, T.inone (ft tv)))
-    | Mmapinstrupdate (_, _,  ak, k, v) -> T.Iupdate (ak_to_id ak, Aterop (Tupdate, f k, f v) )
+    | Mmapinstrput    (_, _,  ak, k, v) -> instr_update ak (Aterop (Tupdate, f k, T.isome (f v)))
+    | Mmapinstrremove (_, tv, ak, k)    -> instr_update ak (Aterop (Tupdate, f k, T.inone (ft tv)))
+    | Mmapinstrupdate (_, _,  ak, k, v) -> instr_update ak (Aterop (Tupdate, f k, f v) )
 
     (* builtin functions *)
 
@@ -1156,6 +1161,15 @@ let get_sp_for_id (env : env) id =
   match List.index_of (String.equal id) env.vars with
   | -1 -> emit_error (StackIdNotFound (id, env.vars))
   | v -> v
+let head_env (env : env) id =
+  let i = get_sp_for_id env id in
+  let rec remove i = function
+    | _::tl when i = 0 -> tl
+    | e::tl -> e::(remove (i - 1) tl)
+    | _ -> assert false
+  in
+  let l = remove i env.vars in
+  { env with vars = id::l }
 
 let print_env ?(str="") env =
   Format.eprintf "%s: %a@." str pp_env env
@@ -1287,6 +1301,21 @@ let to_michelson (ir : T.ir) : T.michelson =
       | T.Tslice           -> T.SLICE
       | T.Tupdate          -> T.UPDATE
       | T.Ttransfer_tokens -> T.TRANSFER_TOKENS
+    in
+
+    let aop_to_code env = function
+      | T.Aunop   op       ->
+        let op = un_op_to_code op in
+        [op]
+      | T.Abinop (op, a) ->
+        let a, _env = fe env a in
+        let op = bin_op_to_code op in
+        [a; op]
+      | T.Aterop (op, a1, a2) ->
+        let a2, env  = fe env a2 in
+        let a1, _env = fe env a1 in
+        let op = ter_op_to_code op in
+        [a2; a1; op]
     in
 
     match i with
@@ -1451,29 +1480,45 @@ let to_michelson (ir : T.ir) : T.michelson =
         let a1, env = fe env a1 in
         T.SEQ [a3; a2; a1; op], (dec_env (dec_env env))
       end
-    | Iupdate (id, aop) -> begin
-        let n = get_sp_for_id env id in
-        let v =
-          match aop with
-          | Aunop   op       ->
-            let op = un_op_to_code op in
-            [op]
-          | Abinop (op, a) ->
-            let a, _env = fe env a in
-            let op = bin_op_to_code op in
-            [a; op]
-          | Aterop (op, a1, a2) ->
-            let a2, env  = fe env a2 in
-            let a1, _env = fe env a1 in
-            let op = ter_op_to_code op in
-            [a2; a1; op]
-        in
-        let c =
-          if n <= 0
-          then T.SEQ v
-          else T.SEQ ([ T.DIG n ] @ v @ [ T.DUG n ])
-        in
-        c, env
+    | Iupdate (ku, aop) -> begin
+        match ku with
+        | Uvar id -> begin
+            let n = get_sp_for_id env id in
+            let f env = aop_to_code env aop in
+            let c =
+              if n <= 0
+              then T.SEQ (f env)
+              else T.SEQ ([ T.DIG n ] @ (f (head_env env id)) @ [ T.DUG n ])
+            in
+            c, env
+          end
+        | Urec (id, l) -> begin
+            let rec g env l x =
+              match l with
+              | [] -> assert false
+              | (n, k)::q -> begin
+                  if x = k
+                  then begin
+                    match q with
+                    | [] -> aop_to_code env aop
+                    | _ -> g env q 0
+                  end
+                  else begin
+                    if n = x + 2
+                    then [T.SWAP ] @ g env l (x + 1) @ [T.SWAP]
+                    else [T.UNPAIR; T.SWAP ] @ g (inc_env env) l (x + 1) @ [T.SWAP; T.PAIR]
+                  end
+                end
+            in
+
+            let c =
+              let n = get_sp_for_id env id in
+              if n <= 0
+              then T.SEQ (g env l 1)
+              else T.SEQ ([ T.DIG n ] @ (g (head_env env id) l 1) @ [ T.DUG n ])
+            in
+            c, env
+          end
       end
     | Iconst (t, e) -> T.PUSH (rar t, e), inc_env env
     | Icompare (op, lhs, rhs) -> begin
