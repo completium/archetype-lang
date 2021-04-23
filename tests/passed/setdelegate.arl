@@ -1,15 +1,11 @@
 archetype setdelegate
 
-variable res : option<string> = none
-
-entry exec (k : key) {
+entry exec (kh : key_hash) {
   specification {
     s0: length(operations) = 1
   }
   effect {
-    var kh : key_hash = hash_key(k);
-    var okh : option<key_hash> = some(kh);
-    var op : operation = set_delegate(okh);
+    var op : operation = set_delegate(some(kh));
     operations := prepend(operations, op)
   }
 }
