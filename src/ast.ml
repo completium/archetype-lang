@@ -179,6 +179,7 @@ type const =
   | Cexec
   | Capply
   | CdateFromTimestamp
+  | Csetdelegate
   (* set *)
   | Csadd
   | Csremove

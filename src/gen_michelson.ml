@@ -857,7 +857,8 @@ let to_ir (model : M.model) : T.ir =
     | Mceil   x          -> let b = T.Bceil            in add_builtin b; T.Icall (get_fun_name b, [f x], is_inline b)
     | Mtostring (t, x)   -> let b = T.Btostring (ft t) in add_builtin b; T.Icall (get_fun_name b, [f x], is_inline b)
     | Mpack x            -> T.Iunop (Upack,  f x)
-    | Munpack (t, x)     -> T.Iunop (Uunpack (ft t),  f x)
+    | Munpack (t, x)     -> T.Iunop (Uunpack (ft t), f x)
+    | Msetdelegate x     -> T.Iunop (Usetdelegate, f x)
 
     (* crypto functions *)
 

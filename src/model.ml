@@ -365,6 +365,7 @@ type ('id, 'term) mterm_node  =
   | Mtostring         of type_ * 'term
   | Mpack             of 'term
   | Munpack           of type_ * 'term
+  | Msetdelegate      of 'term
   (* crypto functions *)
   | Mblake2b          of 'term
   | Msha256           of 'term
@@ -1505,6 +1506,7 @@ let cmp_mterm_node
     | Mtostring(t1, x1), Mtostring (t2, x2)                                            -> cmp_type t1 t2 && cmp x1 x2
     | Mpack x1, Mpack x2                                                               -> cmp x1 x2
     | Munpack (t1, x1), Munpack (t2, x2)                                               -> cmp_type t1 t2 && cmp x1 x2
+    | Msetdelegate x1, Msetdelegate x2                                                 -> cmp x1 x2
     (* crypto functions *)
     | Mblake2b x1, Mblake2b x2                                                         -> cmp x1 x2
     | Msha256  x1, Msha256  x2                                                         -> cmp x1 x2
@@ -1922,6 +1924,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mtostring (t, x)               -> Mtostring (ft t, f x)
   | Mpack x                        -> Mpack (f x)
   | Munpack (t, x)                 -> Munpack (ft t, f x)
+  | Msetdelegate x                 -> Msetdelegate (f x)
   (* crypto functions *)
   | Mblake2b x                     -> Mblake2b (f x)
   | Msha256 x                      -> Msha256  (f x)
@@ -2335,6 +2338,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mtostring (_, x)                      -> f accu x
   | Mpack x                               -> f accu x
   | Munpack (_, x)                        -> f accu x
+  | Msetdelegate x                        -> f accu x
   (* crypto functions *)
   | Mblake2b x                            -> f accu x
   | Msha256  x                            -> f accu x
@@ -3298,6 +3302,10 @@ let fold_map_term
   | Munpack (t, x) ->
     let xe, xa = f accu x in
     g (Munpack (t, xe)), xa
+
+  | Msetdelegate x ->
+    let xe, xa = f accu x in
+    g (Msetdelegate xe), xa
 
   (* crypto functions *)
 

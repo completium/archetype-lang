@@ -705,6 +705,10 @@ let to_model (ast : A.ast) : M.model =
         in
         M.Munpack (t, fx)
 
+      | A.Pcall (None, A.Cconst A.Csetdelegate, [AExpr x]) ->
+        let fx = f x in
+        M.Msetdelegate (fx)
+
       | A.Pcall (None, A.Cconst A.Cblake2b, [AExpr x]) ->
         let fx = f x in
         M.Mblake2b (fx)
