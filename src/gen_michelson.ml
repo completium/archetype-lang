@@ -779,6 +779,7 @@ let to_ir (model : M.model) : T.ir =
         | M.Tbuiltin Baddress, M.Tcontract t, _                -> get_contract (to_type t) (f v)
         | M.Tbuiltin Bcurrency, M.Tbuiltin Bnat, _             -> T.idiv (f v) (T.imutez Big_int.unit_big_int)
         | M.Tbuiltin Bstring, M.Tbuiltin Bkey, Mstring s       -> T.Iconst (T.mk_type Tkey, Dstring s)
+        | M.Tbuiltin Bstring, M.Tbuiltin Bkeyhash, Mstring s   -> T.Iconst (T.mk_type Tkey_hash, Dstring s)
         | M.Tbuiltin Bstring, M.Tbuiltin Bsignature, Mstring s -> T.Iconst (T.mk_type Tsignature, Dstring s)
         | _ -> f v
       end
@@ -852,7 +853,7 @@ let to_ir (model : M.model) : T.ir =
     | Mlength x          -> T.Iunop (Usize, f x)
     | Misnone x          -> T.Iifnone (f x, T.itrue,  "_var_ifnone", T.ifalse, T.tbool)
     | Missome x          -> T.Iifnone (f x, T.ifalse, "_var_ifnone", T.itrue, T.tbool)
-    | Moptget x          -> T.Iifnone (f x, T.ifail "NoneValue", "_var_ifnone", Ivar "_var_ifnone", ft mtt.type_)
+    | Moptget x          -> T.Iifnone (f x, T.ifail "NotFound", "_var_ifnone", Ivar "_var_ifnone", ft mtt.type_)
     | Mfloor  x          -> let b = T.Bfloor           in add_builtin b; T.Icall (get_fun_name b, [f x], is_inline b)
     | Mceil   x          -> let b = T.Bceil            in add_builtin b; T.Icall (get_fun_name b, [f x], is_inline b)
     | Mtostring (t, x)   -> let b = T.Btostring (ft t) in add_builtin b; T.Icall (get_fun_name b, [f x], is_inline b)

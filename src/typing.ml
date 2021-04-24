@@ -405,6 +405,7 @@ end = struct
         | A.VTnat      , A.VTrational   -> Some 2
         | A.VTint      , A.VTrational   -> Some 1
         | A.VTstring   , A.VTkey        -> Some 1
+        | A.VTstring   , A.VTkeyhash    -> Some 1
         | A.VTstring   , A.VTsignature  -> Some 1
 
         | A.VTbls12_381_fr, A.VTint -> Some 1
@@ -1299,9 +1300,7 @@ let coreops : opinfo list =
        (fun x -> ("to_string", A.Ctostring, `Total, None, [x], A.vtstring, Mint.empty))
        [A.vtnat])
   @ [
-    ("date_from_timestamp" , A.CdateFromTimestamp, `Total, None, [A.vtint]    , A.vtdate    , Mint.empty);
-    ("set_delegate"        , A.Csetdelegate,       `Total, None, [A.Toption A.vtkeyhash], A.Toperation, Mint.empty);
-    ("implicit_account"    , A.Cimplicitaccount,   `Total, None, [A.vtkeyhash], A.Tcontract A.vtunit, Mint.empty)
+    ("date_from_timestamp" , A.CdateFromTimestamp, `Total, None, [A.vtint]    , A.vtdate    , Mint.empty)
   ]
 
 (* -------------------------------------------------------------------- *)
@@ -1367,8 +1366,11 @@ let cryptoops : opinfo list =
      ("sha3"   , A.Csha3   );
      ("keccak" , A.Ckeccak )]
 
-  @ [("hash_key"       , A.Chashkey       , `Total, None, [A.vtkey]                          , A.vtkeyhash, Mint.empty);
-     ("check_signature", A.Cchecksignature, `Total, None, [A.vtkey; A.vtsignature; A.vtbytes], A.vtbool   , Mint.empty)]
+  @ [("hash_key"         , A.Chashkey       , `Total, None, [A.vtkey]                          , A.vtkeyhash         , Mint.empty);
+     ("check_signature"  , A.Cchecksignature, `Total, None, [A.vtkey; A.vtsignature; A.vtbytes], A.vtbool            , Mint.empty);
+     ("set_delegate"     , A.Csetdelegate,    `Total, None, [A.Toption A.vtkeyhash],             A.Toperation        , Mint.empty);
+     ("implicit_account" , A.Cimplicitaccount,`Total, None, [A.vtkeyhash],                       A.Tcontract A.vtunit, Mint.empty);
+     ("voting_power"     , A.Cvotingpower,    `Total, None, [A.vtkeyhash],                       A.vtnat             , Mint.empty)]
 
 (* -------------------------------------------------------------------- *)
 let packops : opinfo list =
@@ -1384,12 +1386,6 @@ let lambdaops : opinfo list = [
   ("exec_lambda",   A.Cexec, `Total  , Some (A.Tlambda (A.Tnamed 0, A.Tnamed 1)), [A.Tnamed 0], A.Tnamed 1, Mint.empty);
   (* ("apply_lambda",  A.Capply, `Total  , Some (A.Tlambda (A.Tnamed 0, A.Tnamed 1)), [A.Tnamed 0], A.Tnamed 1, Mint.empty) *)
 ]
-
-(* -------------------------------------------------------------------- *)
-let voting_ops : opinfo list =
-  [
-    ("voting_power" , A.Cvotingpower, `Total, None, [A.vtkeyhash], A.vtnat, Mint.empty)
-  ]
 
 (* -------------------------------------------------------------------- *)
 let ticket_ops : opinfo list =
@@ -1416,7 +1412,7 @@ let bls_ops : opinfo list =
 (* -------------------------------------------------------------------- *)
 let allops : opinfo list =
   coreops @ optionops @ setops @ listops @ mapops @ bigmapops @
-  cryptoops @ packops @ opsops @ lambdaops @ voting_ops @
+  cryptoops @ packops @ opsops @ lambdaops @
   ticket_ops @ sapling_ops @ bls_ops
 
 (* -------------------------------------------------------------------- *)

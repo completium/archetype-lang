@@ -15,4 +15,4 @@ storage=`./archetype.exe --set-caller-init="tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 
 storage=${4:-$storage}
 #tezos-client --endpoint https://mainnet-tezos.giganode.io:443 run script $id.tz on storage "$storage" and input "$arg" --entrypoint $entrypoint
-tezos-client --endpoint https://mainnet.smartpy.io run script $id.tz on storage "$storage" and input "$arg" --entrypoint $entrypoint
+tezos-client --endpoint https://edonet.smartpy.io run script $id.tz on storage "$storage" and input "$arg" --entrypoint $entrypoint

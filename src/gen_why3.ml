@@ -2285,8 +2285,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mchecksignature (k,s,b) -> Tapp (loc_term (Tvar "check_signature"),[map_mterm m ctx k;map_mterm m ctx s;map_mterm m ctx b])
 
     (* voting *)
-    | Mtotalvotingpower -> assert false
-    | Mvotingpower x -> Tapp (loc_term (Tvar "votingpower"),[map_mterm m ctx x])
+    | Mtotalvotingpower -> Tvar (loc_ident "total_voting_power")
+    | Mvotingpower x    -> Tapp (loc_term (Tvar "voting_power"), [map_mterm m ctx x])
 
     (* ticket *)
     | Mcreateticket (_x, _a)    -> assert false
