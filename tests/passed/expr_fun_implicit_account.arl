@@ -8,7 +8,7 @@ entry exec () {
     var k  : key = "edpkudMiaEXwK9EXcXufVjVkZmCRJLwQdSVYutAxfaySTgSnxXNLYj";
     var kh : key_hash = hash_key(k);
     var c : contract<unit> = implicit_account(kh);
-    var op  : operation = mkoperation(0tz, c, ());
+    var op  : operation = mkoperation(0tz, c, Unit);
     operations := prepend(operations, op);
   }
 }

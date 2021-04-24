@@ -405,6 +405,12 @@ theory Operation
     _call_ = Some { _name = e._entry_name; _args = l };
   }
 
+
+  (* ----------------------------------------------------------------------- *)
+  (* serialization *)
+  val function set_delegate (option key_hash) : operation
+  val function implicit_account key_hash : contract
+
 end
 
 (* source : http://toccata.lri.fr/gallery/insertion_sort_list.fr.html *)
