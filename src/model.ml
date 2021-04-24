@@ -366,6 +366,7 @@ type ('id, 'term) mterm_node  =
   | Mpack             of 'term
   | Munpack           of type_ * 'term
   | Msetdelegate      of 'term
+  | Mimplicitaccount  of 'term
   (* crypto functions *)
   | Mblake2b          of 'term
   | Msha256           of 'term
@@ -1507,6 +1508,7 @@ let cmp_mterm_node
     | Mpack x1, Mpack x2                                                               -> cmp x1 x2
     | Munpack (t1, x1), Munpack (t2, x2)                                               -> cmp_type t1 t2 && cmp x1 x2
     | Msetdelegate x1, Msetdelegate x2                                                 -> cmp x1 x2
+    | Mimplicitaccount x1, Mimplicitaccount x2                                         -> cmp x1 x2
     (* crypto functions *)
     | Mblake2b x1, Mblake2b x2                                                         -> cmp x1 x2
     | Msha256  x1, Msha256  x2                                                         -> cmp x1 x2
@@ -1925,6 +1927,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mpack x                        -> Mpack (f x)
   | Munpack (t, x)                 -> Munpack (ft t, f x)
   | Msetdelegate x                 -> Msetdelegate (f x)
+  | Mimplicitaccount x             -> Mimplicitaccount (f x)
   (* crypto functions *)
   | Mblake2b x                     -> Mblake2b (f x)
   | Msha256 x                      -> Msha256  (f x)
@@ -2339,6 +2342,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mpack x                               -> f accu x
   | Munpack (_, x)                        -> f accu x
   | Msetdelegate x                        -> f accu x
+  | Mimplicitaccount x                    -> f accu x
   (* crypto functions *)
   | Mblake2b x                            -> f accu x
   | Msha256  x                            -> f accu x
@@ -3306,6 +3310,11 @@ let fold_map_term
   | Msetdelegate x ->
     let xe, xa = f accu x in
     g (Msetdelegate xe), xa
+
+  | Mimplicitaccount x ->
+    let xe, xa = f accu x in
+    g (Mimplicitaccount xe), xa
+
 
   (* crypto functions *)
 

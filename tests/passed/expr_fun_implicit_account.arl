@@ -1,0 +1,14 @@
+archetype expr_fun_implicitaccount
+
+entry exec () {
+  specification {
+    s0: length(operations) = 1
+  }
+  effect {
+    var k  : key = "edpkudMiaEXwK9EXcXufVjVkZmCRJLwQdSVYutAxfaySTgSnxXNLYj";
+    var kh : key_hash = hash_key(k);
+    var c : contract<unit> = implicit_account(kh);
+    var op  : operation = mkoperation(0tz, c, ());
+    operations := prepend(operations, op);
+  }
+}

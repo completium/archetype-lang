@@ -1193,6 +1193,10 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "set_delegate (%a)"
         f x
 
+    | Mimplicitaccount x ->
+      Format.fprintf fmt "implicit_account (%a)"
+        f x
+
 
     (* crypto functions *)
 

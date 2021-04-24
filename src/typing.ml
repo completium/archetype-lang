@@ -1300,7 +1300,8 @@ let coreops : opinfo list =
        [A.vtnat])
   @ [
     ("date_from_timestamp" , A.CdateFromTimestamp, `Total, None, [A.vtint]    , A.vtdate    , Mint.empty);
-    ("set_delegate"        , A.Csetdelegate,       `Total, None, [A.Toption A.vtkeyhash], A.Toperation, Mint.empty)
+    ("set_delegate"        , A.Csetdelegate,       `Total, None, [A.Toption A.vtkeyhash], A.Toperation, Mint.empty);
+    ("implicit_account"    , A.Cimplicitaccount,   `Total, None, [A.vtkeyhash], A.Tcontract A.vtunit, Mint.empty)
   ]
 
 (* -------------------------------------------------------------------- *)

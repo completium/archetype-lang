@@ -709,6 +709,10 @@ let to_model (ast : A.ast) : M.model =
         let fx = f x in
         M.Msetdelegate (fx)
 
+      | A.Pcall (None, A.Cconst A.Cimplicitaccount, [AExpr x]) ->
+        let fx = f x in
+        M.Mimplicitaccount (fx)
+
       | A.Pcall (None, A.Cconst A.Cblake2b, [AExpr x]) ->
         let fx = f x in
         M.Mblake2b (fx)

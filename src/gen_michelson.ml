@@ -859,6 +859,7 @@ let to_ir (model : M.model) : T.ir =
     | Mpack x            -> T.Iunop (Upack,  f x)
     | Munpack (t, x)     -> T.Iunop (Uunpack (ft t), f x)
     | Msetdelegate x     -> T.Iunop (Usetdelegate, f x)
+    | Mimplicitaccount x -> T.Iunop (Uimplicitaccount, f x)
 
     (* crypto functions *)
 
@@ -1495,9 +1496,11 @@ let to_michelson (ir : T.ir) : T.michelson =
           end
         | Urec (id, l) -> begin
             let rec g env l x =
+              Format.eprintf "x: %i@\n" x;
               match l with
               | [] -> assert false
               | (n, k)::q -> begin
+                  Format.eprintf "n, k: (%i, %i)@\n" n k;
                   if x = k
                   then begin
                     match q with
@@ -1505,9 +1508,10 @@ let to_michelson (ir : T.ir) : T.michelson =
                     | _ -> g env q 0
                   end
                   else begin
-                    if n = x + 2
+                    (* if n = x + 2
                     then [T.SWAP ] @ g env l (x + 1) @ [T.SWAP]
-                    else [T.UNPAIR; T.SWAP ] @ g (inc_env env) l (x + 1) @ [T.SWAP; T.PAIR]
+                    else *)
+                     [T.UNPAIR; T.SWAP ] @ g (inc_env env) l (x + 1) @ [T.SWAP; T.PAIR]
                   end
                 end
             in
@@ -1515,8 +1519,8 @@ let to_michelson (ir : T.ir) : T.michelson =
             let c =
               let n = get_sp_for_id env id in
               if n <= 0
-              then T.SEQ (g env l 1)
-              else T.SEQ ([ T.DIG n ] @ (g (head_env env id) l 1) @ [ T.DUG n ])
+              then T.SEQ (g env l 0)
+              else T.SEQ ([ T.DIG n ] @ (g (head_env env id) l 0) @ [ T.DUG n ])
             in
             c, env
           end

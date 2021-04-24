@@ -2274,6 +2274,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mpack   s -> Tapp (loc_term (Tvar "pack"),[map_mterm m ctx s])
     | Munpack (_, s) -> Tapp (loc_term (Tvar "unpack"),[map_mterm m ctx s])
     | Msetdelegate s -> Tapp (loc_term (Tvar "set_delegate"),[map_mterm m ctx s])
+    | Mimplicitaccount s -> Tapp (loc_term (Tvar "implicit_account"),[map_mterm m ctx s])
 
     | Mblake2b x -> Tapp (loc_term (Tvar "blake2b"),[map_mterm m ctx x])
     | Msha256  x -> Tapp (loc_term (Tvar "sha256"),[map_mterm m ctx x])

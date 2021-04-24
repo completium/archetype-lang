@@ -180,6 +180,7 @@ type const =
   | Capply
   | CdateFromTimestamp
   | Csetdelegate
+  | Cimplicitaccount
   (* set *)
   | Csadd
   | Csremove

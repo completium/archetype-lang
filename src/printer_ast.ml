@@ -251,6 +251,7 @@ let to_const = function
   | Capply          -> "apply"
   | CdateFromTimestamp -> "date_from_timestamp"
   | Csetdelegate    -> "set_delegate"
+  | Cimplicitaccount-> "implicit_account"
   (* set *)
   | Csadd           -> "set_add"
   | Csremove        -> "set_remove"
