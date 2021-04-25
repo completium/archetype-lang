@@ -1117,9 +1117,14 @@ let map_implem = [
   get_fun_name T.Bfloor          , T.[UNPAIR; EDIV; IF_NONE ([T.cfail "DivByZero"], [CAR])];
   get_fun_name T.Bceil           , T.[UNPAIR; EDIV; IF_NONE ([T.cfail "DivByZero"], [UNPAIR; SWAP; INT; EQ; IF ([], [PUSH (T.tint, T.Dint Big_int.unit_big_int); ADD])])];
   get_fun_name T.Bratnorm        ,   [];
-  get_fun_name T.Brataddsub      , T.[UNPAIR; UNPAIR; DIP (1, [UNPAIR; SWAP; DUP]); UNPAIR; SWAP; DUP; DIG 3; MUL; DUG 4; DIG 3; MUL; DIP (1, [MUL]); DIG 3; IF_LEFT ([DROP 1; ADD], [DROP 1; SWAP; SUB]); PAIR;];
-  get_fun_name T.Bratmul         , T.[UNPAIR; DIP (1, [UNPAIR]); UNPAIR; DIP (1, [SWAP]); MUL; DIP (1, [MUL]); PAIR ];
-  get_fun_name T.Bratdiv         , T.[UNPAIR; DIP (1, [UNPAIR]); UNPAIR; DIG 3; PUSH (T.tint, T.Dint Big_int.zero_big_int); DIG 4; DUP; DUG 5; COMPARE; GE; IF ([INT], [NEG]); MUL; DIP (1, [MUL; ABS]); PAIR ];
+  get_fun_name T.Brataddsub      , T.[UNPAIR; UNPAIR; DIP (1, [UNPAIR; SWAP; DUP]); UNPAIR; SWAP; DUP; DIG 3; MUL; DUP; PUSH (T.tnat, T.Dint Big_int.zero_big_int);
+                                      COMPARE; EQ; IF ([T.cfail "DivByZero"], []); DUG 4; DIG 3; MUL; DIP (1, [MUL]); DIG 3; IF_LEFT ([DROP 1; ADD], [DROP 1; SWAP; SUB]); PAIR;];
+  get_fun_name T.Bratmul         , T.[UNPAIR; DIP (1, [UNPAIR]); UNPAIR; DIP (1, [SWAP]); MUL;
+                                      DIP (1, [MUL; DUP; PUSH (T.tnat, T.Dint Big_int.zero_big_int); COMPARE; EQ; IF ([T.cfail "DivByZero"], [])]); PAIR ];
+  get_fun_name T.Bratdiv         , T.[UNPAIR; DIP (1, [UNPAIR]); UNPAIR; DIG 3;
+                                      DUP; DIG 3; DUP; DUG 4; MUL;
+                                      PUSH (T.tnat, T.Dint Big_int.zero_big_int); COMPARE; EQ; IF ([T.cfail "DivByZero"], []);
+                                      PUSH (T.tint, T.Dint Big_int.zero_big_int); DIG 4; DUP; DUG 5; COMPARE; GE; IF ([INT], [NEG]); MUL; DIP (1, [MUL; ABS]); PAIR ];
   get_fun_name T.Bratuminus      , T.[UNPAIR; NEG; PAIR];
   get_fun_name T.Bratabs         , T.[UNPAIR; ABS; INT; PAIR];
   get_fun_name T.Brattez         , T.[UNPAIR; UNPAIR; ABS; DIG 2; MUL; EDIV; IF_NONE ([T.cfail "DivByZero"], []); CAR;];
