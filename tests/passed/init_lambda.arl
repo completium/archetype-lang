@@ -1,0 +1,11 @@
+archetype init_lambda
+
+variable res : int = 0i
+
+variable f : lambda<int, nat> = lambda<nat>((x : int) -> abs(x) + 1)
+
+entry exec (x : int) {
+  effect {
+    res := exec_lambda(f, x)
+  }
+}

@@ -4734,8 +4734,7 @@ end = struct
       | _ -> false
     in
 
-    let eval_expr mt :
-      mterm =
+    let eval_expr mt : mterm =
       let rec aux (mt : mterm) : mterm =
         let rec extract_big_int (i : mterm) : Big_int.big_int =
           let i = aux i in
@@ -5072,6 +5071,8 @@ end = struct
             | Tbuiltin Bbytes  -> let x = extract_bytes  x in mk_nat (String.length x)
             | _ -> assert false
           end
+
+        | Mlambda _, _ -> mt
 
         | _ -> map_mterm aux mt
       in

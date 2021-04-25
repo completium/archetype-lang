@@ -58,9 +58,11 @@ type data =
   | Dlist              of data list
   | Delt               of data * data
   | Dvar               of ident * type_
+  | DIrCode            of ident * instruction
+  | Dcode              of code
 [@@deriving show {with_path = false}]
 
-type code =
+and code =
   (* Control structures *)
   | SEQ                of code list
   | APPLY
@@ -175,10 +177,9 @@ type code =
   | TOGGLE_BAKER_DELEGATIONS
   | SET_BAKER_CONSENSUS_KEY
   | SET_BAKER_PVSS_KEY
-
 [@@deriving show {with_path = false}]
 
-type z_operator =
+and z_operator =
   | Znow
   | Zamount
   | Zbalance
@@ -199,7 +200,7 @@ type z_operator =
   | Zsapling_empty_state of int
 [@@deriving show {with_path = false}]
 
-type un_operator =
+and un_operator =
   | Ucar
   | Ucdr
   | Uleft  of type_
@@ -236,7 +237,7 @@ type un_operator =
   | Uconcat
 [@@deriving show {with_path = false}]
 
-type bin_operator =
+and bin_operator =
   | Badd
   | Bsub
   | Bmul
@@ -259,14 +260,14 @@ type bin_operator =
   | Bsapling_verify_update
 [@@deriving show {with_path = false}]
 
-type ter_operator =
+and ter_operator =
   | Tcheck_signature
   | Tslice
   | Tupdate
   | Ttransfer_tokens
 [@@deriving show {with_path = false}]
 
-type cmp_operator =
+and cmp_operator =
   | Ceq
   | Cne
   | Cgt
@@ -275,7 +276,7 @@ type cmp_operator =
   | Cle
 [@@deriving show {with_path = false}]
 
-type builtin =
+and builtin =
   | Bmin of type_
   | Bmax of type_
   | Bfloor
@@ -294,7 +295,7 @@ type builtin =
   | Bratdur
 [@@deriving show {with_path = false}]
 
-type instruction =
+and instruction =
   | Iseq        of instruction list
   | IletIn      of ident * instruction * instruction * bool
   | Ivar        of ident
@@ -856,6 +857,8 @@ let map_data (f : data -> data) = function
   | Dlist l      -> Dlist (List.map f l)
   | Delt (l, r)  -> Delt (f l, f r)
   | Dvar (c, t)  -> Dvar (c, t)
+  | DIrCode (id, c) -> DIrCode (id, c)
+  | Dcode c      -> Dcode c
 
 let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) = function
   (* Control structures *)
@@ -1301,8 +1304,10 @@ end = struct
         | Tbls12_381_fr           -> Ovar (OMVfree x)
         | Tticket       _t        -> Ovar (OMVfree x)
       end
+    | DIrCode (_id, _c) -> Oarray ([])
+    | Dcode c           -> code_to_micheline c
 
-  let rec code_to_micheline (c : code) : obj_micheline =
+  and code_to_micheline (c : code) : obj_micheline =
     let f = code_to_micheline in
     let ft = type_to_micheline in
     let fd = data_to_micheline in

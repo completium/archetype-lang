@@ -72,8 +72,10 @@ let rec pp_data fmt (d : data) =
   | Dlist l         -> pp "{ %a }" (pp_list "; " pp_data) l
   | Delt (x, y)     -> pp "Elt %a %a" pp_data x pp_data y
   | Dvar (x, _)     -> pp "%s" x
+  | DIrCode (_id, _c) -> pp "IrCode"
+  | Dcode c         -> pp "{ %a }" pp_code c
 
-let rec pp_code fmt (i : code) =
+and pp_code fmt (i : code) =
   let pp s = Format.fprintf fmt s in
   let pp_annot = pp_option (fun fmt -> Format.fprintf fmt " %s") in
   let pp_arg fmt i =

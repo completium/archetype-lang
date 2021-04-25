@@ -101,6 +101,7 @@ let output (model : Model.model) =
         | Javascript -> begin
             fun fmt model ->
               let ir = Gen_michelson.to_ir model in
+              let storage_data = Gen_michelson.process_data ir.storage_data in
               if !Options.opt_raw_ir
               then Format.fprintf fmt "%a@." Michelson.pp_ir ir
               else begin
@@ -109,13 +110,13 @@ let output (model : Model.model) =
                 else begin
                   let michelson = Gen_michelson.to_michelson ir in
                   match !Options.target with
-                  | MichelsonStorage -> Format.fprintf fmt "%a@." Printer_michelson.pp_data ir.storage_data
+                  | MichelsonStorage -> Format.fprintf fmt "%a@." Printer_michelson.pp_data storage_data
                   | Michelson ->
                     if !Options.opt_raw_michelson
                     then Format.fprintf fmt "%a@." Michelson.pp_michelson michelson
                     else begin
                       if !Options.opt_json then
-                        let micheline = Michelson.Utils.to_micheline michelson ir.storage_data in
+                        let micheline = Michelson.Utils.to_micheline michelson storage_data in
                         if !Options.opt_code_only
                         then begin
                           let code = micheline.code in
@@ -128,11 +129,11 @@ let output (model : Model.model) =
                         end
                       else
                         Format.fprintf fmt "# %a@.%a@."
-                          Printer_michelson.pp_data ir.storage_data
+                          Printer_michelson.pp_data storage_data
                           Printer_michelson.pp_michelson michelson
                     end
                   | Javascript -> begin
-                      let micheline = Michelson.Utils.to_micheline michelson ir.storage_data in
+                      let micheline = Michelson.Utils.to_micheline michelson storage_data in
                       Format.fprintf fmt "%a@\n@." Printer_michelson.pp_javascript micheline
                     end
                   | _ -> assert false
