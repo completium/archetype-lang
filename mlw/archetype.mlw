@@ -223,13 +223,13 @@ module Utils
 
   val function str_length arstring : int
 
-  axiom str_length_spec : forall s.
-  str_length s = S.length s
+  (* axiom str_length_spec : forall s.
+  str_length s = S.length s *)
 
   val function str_eq (_ : arstring) (_ : arstring) : bool
 
-  (* axiom str_eq_spec : forall s1 s2.
-  str_eq s1 s1 <-> s1 = s2 *)
+  axiom str_eq_spec : forall s1 s2.
+  str_eq s1 s1 <-> s1 = s2
 
   (* let function str_le (s1 : arstring) (s2 : arstring) : bool = s1 <= s2
   let function str_ge (s1 : arstring) (s2 : arstring) : bool = s1 >= s2
@@ -1338,6 +1338,7 @@ module Collection
   ensures { forall i. i <> k -> get i c = get i result }
   ensures { forall a. mem a result <-> mem a c /\ keyt a <> k }
   ensures { get k result = None }
+  ensures { not (contains k result) }
   =
   mk (N.remove k c.content)
 
