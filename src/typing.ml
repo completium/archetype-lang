@@ -2649,7 +2649,7 @@ let rec for_xexpr
 
             match decl.vr_def with
             | Some (body, `Inline) ->
-              body
+              { body with loc = loc tope }
             | _ ->
               mk_sp (Some decl.vr_type) (A.Pvar (vt, vs, x))
           end
