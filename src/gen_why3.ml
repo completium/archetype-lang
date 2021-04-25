@@ -2124,8 +2124,11 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Msort (n, c,l) -> Tvsort (dl (mk_sort_clone_id n l),mk_container_term m n ctx c,mk_lc_term n ctx)
 
-    | Mcontains (n, c, r) -> Tvcontains (dl (mk_view_id n), map_mterm m ctx r, mk_container_term m n ctx c)
-
+    | Mcontains (n, c, r) -> begin
+        match c with
+        | CKcoll (t,d) -> Tcontains (dl n, map_mterm m ctx r, mk_loc_coll_term n ctx (t,d))
+        | _ -> Tvcontains (dl (mk_view_id n), map_mterm m ctx r, mk_container_term m n ctx c)
+      end
     | Mnth (n, c, k) ->
       let nth = Tnth (dl (mk_view_id n), map_mterm m ctx k, mk_container_term m n ctx c) in
       begin match ctx.lctx with
