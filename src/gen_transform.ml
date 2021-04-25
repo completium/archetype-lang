@@ -5439,7 +5439,7 @@ let fix_container (model : model) =
   in
   map_mterm_model aux model
 
-let expr_to_instr  (model : model) =
+let expr_to_instr (model : model) =
   let is_compatible (ak : assign_kind) (c : mterm) =
     match ak, c.node with
     | Avar id0, (Mvar (id1, Vlocal, Tnone, Dnone))         -> String.equal (unloc id0) (unloc id1)
@@ -5467,6 +5467,53 @@ let expr_to_instr  (model : model) =
       mk_mterm (Mmapinstrremove (tk, vk, ak, k)) tyinstr
     | Massign (ValueAssign, _, ak, {node = Mmapupdate(tk, vk, c, k, v)}), tyinstr when is_compatible ak c  ->
       mk_mterm (Mmapinstrupdate (tk, vk, ak, k, v)) tyinstr
+
+    | _ -> map_mterm (aux ctx) mt
+  in
+  map_mterm_model aux model
+
+let instr_to_expr_exec (model : model) =
+  let is_used ak l =
+    match ak with
+    | Arecord (_, _, v) ->
+      List.exists (fold_term (fun accu x -> accu || cmp_mterm x v) false) l
+    | _ -> false
+  in
+
+  let extract_rev_var ak ty =
+    match ak with
+    | Arecord (_, fn, v) -> mk_mterm (Mdot (v, fn)) ty
+    | _ -> assert false
+  in
+
+  let mk ak ty fnode =
+    let rv : mterm = extract_rev_var ak ty in
+    let v : mterm = mk_mterm (fnode rv) ty in
+    mk_mterm (Massign (ValueAssign, ty, ak, v)) tunit
+  in
+
+  let rec aux ctx (mt : mterm) =
+    match mt.node with
+    | Msetinstradd (sty, ak, k) when is_used ak [k] ->
+        mk ak (tset sty) (fun x -> Msetadd(sty, x, k))
+
+    | Msetinstrremove (sty, ak, k) when is_used ak [k] ->
+        mk ak (tset sty) (fun x -> Msetremove(sty, x, k))
+
+    | Mlistinstrprepend (lty, ak, i) when is_used ak [i] ->
+        mk ak (tlist lty) (fun x -> Mlistprepend(lty, x, i))
+
+    | Mlistinstrconcat (lty, ak, i) when is_used ak [i] ->
+        mk ak (tlist lty) (fun x -> Mlistconcat(lty, x, i))
+
+    | Mmapinstrput(kty, vty, ak, k, v) when is_used ak [k; v] ->
+        mk ak (tmap kty vty) (fun x -> Mmapput(kty, vty, x, k, v))
+
+    | Mmapinstrremove(kty, vty, ak, k) when is_used ak [k] ->
+        mk ak (tmap kty vty) (fun x -> Mmapremove(kty, vty, x, k))
+
+    | Mmapinstrupdate (kty, vty, ak, k, v) when is_used ak [k; v] ->
+        mk ak (tmap kty vty) (fun x -> Mmapupdate(kty, vty, x, k, v))
 
     | _ -> map_mterm (aux ctx) mt
   in

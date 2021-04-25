@@ -1,0 +1,13 @@
+archetype expr_instr_rec_rollback
+
+record my_record {
+  m: map<nat, string>;
+  id: nat;
+  a: string;
+  b: int;
+}
+variable r : my_record = {id = 0; a = ""; m = []; b = 2i}
+
+entry exec () {
+  r.m := update(r.m, r.id, some(r.a));
+}

@@ -1,0 +1,15 @@
+archetype expr_instr_rec_3_1
+
+record my_record {
+  id: nat;
+  m: map<nat, string>;
+  a: string;
+}
+variable r : my_record = {id = 0; a = ""; m = []}
+
+entry exec () {
+  var o : nat = 1;
+  var t : nat = 2;
+  var str : string = "str";
+  r.m := update(r.m, o, some(str));
+}

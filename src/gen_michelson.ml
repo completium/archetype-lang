@@ -1497,22 +1497,32 @@ let to_michelson (ir : T.ir) : T.michelson =
           end
         | Urec (id, l) -> begin
             let rec g env l x =
-              Format.eprintf "x: %i@\n" x;
+              (* Format.eprintf "x: %i@\n" x; *)
               match l with
               | [] -> assert false
-              | (n, k)::q -> begin
-                  Format.eprintf "n, k: (%i, %i)@\n" n k;
-                  if x = k
-                  then begin
+              | (k, s)::q -> begin
+                  (* Format.eprintf "k, s: (%i, %i)@\n" k s; *)
+                  let unpair x = [T.UNPAIR] @ x @ [T.PAIR] in
+                  let swap   x = [T.SWAP]   @ x @ [T.SWAP] in
+                  let h env =
                     match q with
                     | [] -> aop_to_code env aop
-                    | _ -> g env q 0
+                    | _  -> g env q 0
+                  in
+                  if x = k
+                  then begin
+                    if x < s - 1
+                    then unpair (h (inc_env env))
+                    else h env
                   end
                   else begin
-                    (* if n = x + 2
-                    then [T.SWAP ] @ g env l (x + 1) @ [T.SWAP]
-                    else *)
-                     [T.UNPAIR; T.SWAP ] @ g (inc_env env) l (x + 1) @ [T.SWAP; T.PAIR]
+                    if s = 1
+                    then g env l (x + 1)
+                    else begin
+                      if x = s - 1
+                      then  swap            (g env l (x + 1))
+                      else (unpair |@ swap) (g (inc_env env) l (x + 1))
+                    end
                   end
                 end
             in
