@@ -312,7 +312,7 @@ type instruction =
   | Iunop       of un_operator * instruction
   | Ibinop      of bin_operator * instruction * instruction
   | Iterop      of ter_operator * instruction * instruction * instruction
-  | Iupdate     of ident * aoperator
+  | Iupdate     of ukind * aoperator
   | Iconst      of type_ * data
   | Icompare    of cmp_operator * instruction * instruction
   | Iset        of type_ * instruction list
@@ -336,10 +336,14 @@ and ruitem =
 [@@deriving show {with_path = false}]
 
 and aoperator =
-| Aunop  of un_operator
-| Abinop of bin_operator * instruction
-| Aterop of ter_operator * instruction * instruction
+  | Aunop  of un_operator
+  | Abinop of bin_operator * instruction
+  | Aterop of ter_operator * instruction * instruction
 [@@deriving show {with_path = false}]
+
+and ukind =
+  | Uvar of ident
+  | Urec of ident * (int * int) list
 
 type implem =
   | Concrete of (ident * type_) list * instruction

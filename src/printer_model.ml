@@ -1189,6 +1189,15 @@ let pp_mterm fmt (mt : mterm) =
         pp_type t
         f x
 
+    | Msetdelegate x ->
+      Format.fprintf fmt "set_delegate (%a)"
+        f x
+
+    | Mimplicitaccount x ->
+      Format.fprintf fmt "implicit_account (%a)"
+        f x
+
+
     (* crypto functions *)
 
     | Mblake2b x ->

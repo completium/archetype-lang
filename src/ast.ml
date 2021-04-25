@@ -179,6 +179,8 @@ type const =
   | Cexec
   | Capply
   | CdateFromTimestamp
+  | Csetdelegate
+  | Cimplicitaccount
   (* set *)
   | Csadd
   | Csremove

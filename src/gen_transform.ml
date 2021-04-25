@@ -5442,8 +5442,10 @@ let fix_container (model : model) =
 let expr_to_instr  (model : model) =
   let is_compatible (ak : assign_kind) (c : mterm) =
     match ak, c.node with
-    | Avar id0, (Mvar (id1, Vlocal, Tnone, Dnone)) -> String.equal (unloc id0) (unloc id1)
+    | Avar id0, (Mvar (id1, Vlocal, Tnone, Dnone))         -> String.equal (unloc id0) (unloc id1)
     | Avarstore id0, (Mvar (id1, Vstorevar, Tnone, Dnone)) -> String.equal (unloc id0) (unloc id1)
+    | Arecord (rn0, fn0, vr0), (Mdot (({ node = _; type_ = ((Trecord rn1), None)}) as vr1, fn1))
+      -> String.equal (unloc rn0) (unloc rn1) && String.equal (unloc fn0) (unloc fn1) && cmp_mterm vr0 vr1
     | _ -> false
   in
   let rec aux ctx (mt : mterm) =

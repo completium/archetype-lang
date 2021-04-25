@@ -1839,6 +1839,8 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mtostring (_, _x)   -> assert false
     | Mpack _x            -> assert false
     | Munpack (_t, _x)    -> assert false
+    | Msetdelegate _x     -> assert false
+    | Mimplicitaccount _x -> assert false
 
 
     (* crypto functions *)
