@@ -165,7 +165,7 @@ rule token = parse
   | "@add"                { AT_ADD }
   | "@remove"             { AT_REMOVE }
   | "@update"             { AT_UPDATE }
-  | tz_addr as a          { ADDRESS a }
+  | tz_addr as a          { if (String.length a <> 36) then lex_error lexbuf (Printf.sprintf "invalid address: %s" a); ADDRESS a }
   | ident as id           { try  Hashtbl.find keywords id with Not_found -> IDENT id }
   | pident as id          { PIDENT (String.sub id 1 ((String.length id) - 1)) }
   | tz as t               { TZ   (String.sub t 0 ((String.length t) - 2)) }
