@@ -151,6 +151,7 @@ let accept_transfer = "accept" blank+ "transfer"
 let refuse_transfer = "refuse" blank+ "transfer"
 let bytes    = "0x" ['0'-'9' 'a'-'f' 'A'-'F']+
 let percent  = (digit+ | dec) "%"
+let tz_addr  = (("tz" ('1' | '2' | '3')) | "KT1") ['0'-'9' 'a'-'z' 'A'-'Z']+
 
 (* -------------------------------------------------------------------- *)
 rule token = parse
@@ -164,6 +165,7 @@ rule token = parse
   | "@add"                { AT_ADD }
   | "@remove"             { AT_REMOVE }
   | "@update"             { AT_UPDATE }
+  | tz_addr as a          { ADDRESS a }
   | ident as id           { try  Hashtbl.find keywords id with Not_found -> IDENT id }
   | pident as id          { PIDENT (String.sub id 1 ((String.length id) - 1)) }
   | tz as t               { TZ   (String.sub t 0 ((String.length t) - 2)) }
