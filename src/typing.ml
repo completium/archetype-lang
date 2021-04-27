@@ -625,7 +625,7 @@ type error_desc =
   | CannotAssignArgument               of ident
   | CannotAssignLoopIndex              of ident
   | CannotAssignPatternVariable        of ident
-  | CannotCaptureLocal
+  | CannotCaptureVariables
   | CannotInfer
   | CannotInferAnonAssetOrRecord
   | CannotInferCollectionType
@@ -839,7 +839,7 @@ let pp_error_desc fmt e =
   | CannotAssignArgument  x            -> pp "Cannot assign argument `%s'" x
   | CannotAssignLoopIndex x            -> pp "Cannot assign loop index `%s'" x
   | CannotAssignPatternVariable x      -> pp "Cannot assign pattern variable `%s'" x
-  | CannotCaptureLocal                 -> pp "Cannot capture local variables in this context"
+  | CannotCaptureVariables             -> pp "Cannot capture variables in this context"
   | CannotInfer                        -> pp "Cannot infer type"
   | CannotInferAnonAssetOrRecord       -> pp "Cannot infer anonymous asset or record"
   | CannotInferCollectionType          -> pp "Cannot infer collection type"
@@ -2551,11 +2551,25 @@ let decompile_match_with kd (bsm : (A.pattern * 'a) list) =
   with E.Bailout -> None
 
 (* -------------------------------------------------------------------- *)
+type capture = {
+  cp_global : bool;
+  cp_local  : [
+    | `Only of Sid.t
+    | `Yes  of ((L.t * A.ptyp) Mid.t ref) option
+  ];
+}
+
+let capture0 : capture = {
+  cp_global = true; cp_local = `Yes None;
+}
+
+(* -------------------------------------------------------------------- *)
 let rec for_xexpr
-    (mode : emode_t) ?autoview ?(capture = `Yes None)
+    (mode : emode_t) ?autoview ?(capture = capture0)
     (env : env) ?(ety : A.ptyp option) (tope : PT.expr)
   =
-  let for_xexpr = for_xexpr mode ~capture in
+  let for_xexpr ?(capture = capture) e =
+    for_xexpr mode ~capture e in
 
   let module E = struct exception Bailout end in
 
@@ -2630,17 +2644,20 @@ let rec for_xexpr
               Env.emit_error env (loc tope, BeforeIrrelevant `Local); A.VTnone
             end else vt in
 
-          begin match capture with
-            | `No ->
-              Env.emit_error env (loc tope, CannotCaptureLocal);
+          begin match capture.cp_local with
+            | `Only m when not (Sid.mem (unloc x) m)  ->
+              Env.emit_error env (loc tope, CannotCaptureVariables);
             | `Yes (Some lmap) ->
               lmap := Mid.add (unloc x) (loc x, xty) !lmap
-            | `Yes None ->
+            | `Only _ | `Yes None ->
               () end;
 
           mk_sp (Some xty) (A.Pvar (vt, vs, x))
 
         | Some (`Global decl) -> begin
+            if not capture.cp_global then
+              Env.emit_error env (loc tope, CannotCaptureVariables);              
+            
             begin match mode.em_kind, decl.vr_kind with
               | `Expr `Concrete, `Ghost ->
                 Env.emit_error env (loc tope, InvalidShadowVariableAccess)
@@ -3439,6 +3456,11 @@ let rec for_xexpr
           | Some _ as at -> at
           | _ -> at in
 
+        let capture = {
+            cp_global = false;
+            cp_local  = `Only (Sid.singleton (unloc pid));
+        } in
+
         let _, e = Env.inscope env (fun env ->
             let env =
               match at with
@@ -3447,7 +3469,7 @@ let rec for_xexpr
                 env
               | Some at ->
                 Env.Local.push env (pid, at) in
-            env, for_xexpr env ?ety:rt pe) in
+            env, for_xexpr env ~capture ?ety:rt pe) in
 
         let oty =
           match rt, at with
@@ -3978,8 +4000,11 @@ and for_gen_method_call mode env theloc (the, m, args)
           let mode    = match sub with `Pred _ -> { mode with em_pred = true; } | _ -> mode in
           let ety     = match sub with `Pred _ -> Some A.vtbool | _ -> None in
           let map     = ref Mid.empty in
-          let lmap    = if capture then `Yes (Some map) else `No in
-          let body    = for_xexpr ~capture:lmap mode env ?ety arg in
+          let capture =
+            let cp_local =
+              if capture then `Yes (Some map) else `Only Sid.empty
+            in { cp_global = true; cp_local; } in
+          let body    = for_xexpr ~capture mode env ?ety arg in
           let closure =
             List.map
               (fun (x, (loc, xty)) ->
