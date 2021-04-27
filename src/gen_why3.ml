@@ -52,6 +52,7 @@ let mk_module_name id =
   else String.capitalize_ascii id
 
 let mk_id i          = "_" ^ i
+let mk_param_value i = "_param_value_" ^ i
 
 let mk_ac_id a        = mk_id (a ^ "_assets")
 let mk_ac_added_id a  = mk_id (a ^ "_assets_added")
@@ -2352,7 +2353,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | Inv -> loc_term (Tvar "state") |> Mlwtree.deloc
         | _ -> loc_term (Tdoti (gs, "state")) |> Mlwtree.deloc
       end
-    | Mvar (v, Vparameter, _, _) -> Tvar (map_lident v)
+    | Mvar (v, Vparameter, _, _) -> Tvar (v |> unloc |> mk_param_value |> loc_ident)
     | Menumval _ -> error_not_translated "Menumval"
 
 
@@ -2770,6 +2771,10 @@ let mk_get_sum_value asset id formula =
       mk_body formula
   }
 
+let parameter_to_val model (p : M.parameter) : (loc_term, loc_typ, loc_ident) abstract_decl =
+  let id = p.name |> unloc |> mk_param_value |> loc_ident in
+  Dval (false, id, map_mtype model p.typ)
+
 (* Storage API -------------------------------------------------------------- *)
 
 let mk_storage_api_before_storage (m : M.model) _records =
@@ -3126,6 +3131,7 @@ let to_whyml (m : M.model) : mlw_tree  =
   let aggregates       = assets |> List.map (mk_aggregates m) |> List.flatten in
   let init_records     = mlwassets |> unloc_decl |> List.map mk_default_init |> loc_decl in
   let mlwassets        = zip mlwassets eq_keys le_keys eq_assets init_records views fields colls |> deloc in
+  let parameters       = List.map (parameter_to_val m) m.parameters in
   let storage_api_bs   = mk_storage_api_before_storage m (records |> wdl) in
   let storage          = M.Utils.get_storage m |> mk_storage m in
   let cp_storage       = M.Utils.get_storage m |> mk_cp_storage m in
@@ -3152,6 +3158,7 @@ let to_whyml (m : M.model) : mlw_tree  =
               mlwassets              @
               aggregates             @
               storage_api_bs         @
+              parameters             @
               [storage;cp_storage;storageval]   @
               axioms                 @
               storage_api            @
