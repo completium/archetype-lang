@@ -1873,6 +1873,8 @@ let replace_date_duration_by_timestamp (model : model) : model =
     | Mdatefromtimestamp v -> mk (g v)
     | Mtimestamp _  -> x
     | Mvar (_, _, _, _) -> x
+    | Mmin _ -> x
+    | Mmax _ -> x
     | _ ->
       begin
         Format.eprintf "cannot transform to timestamp: %a@.%a@." Printer_model.pp_mterm x pp_mterm x;
