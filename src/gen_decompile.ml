@@ -1545,7 +1545,7 @@ end = struct
       | [`Paired (px, ax)] ->
         let pr1 = write_var (dexpr_of_rstack1 pst) px in
         let pr2 = write_var (dexpr_of_rstack1 ast) ax in
-        pr1 @ pr2 @ dc
+        pr1 @ dc @ pr2
       | _ -> assert false in
 
     let _, code = code_cttprop Mint.empty code in

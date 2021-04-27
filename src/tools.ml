@@ -244,7 +244,8 @@ module List : sig
   val cut            : int -> 'a list -> ('a list * 'a list)
   val addput            : 'a -> 'b -> ('a * 'b) list -> ('a * 'b) list
   val find_map       : ('a -> 'b option) -> 'a list -> 'b option
-  val pop           : 'a list -> 'a * 'a list
+  val pop            : 'a list -> 'a * 'a list
+  val split_at       : int -> 'a list -> 'a list * 'a list
 
   module Exn : sig
     val assoc     : 'a -> ('a * 'b) list -> 'b option
@@ -430,6 +431,13 @@ end = struct
     match xs with
     | [] -> invalid_arg "List.pop"
     | x :: xs -> (x, xs)
+
+  let split_at (n : int) (xs : 'a list) =
+    let rec doit acc n xs =
+      match n, xs with
+      | 0, _ | _, [] -> List.rev acc, xs
+      | _, x :: xs -> doit (x :: acc) (n-1) xs
+    in doit [] (max 0 n) xs
 
   module Exn = struct
     let assoc x xs =
