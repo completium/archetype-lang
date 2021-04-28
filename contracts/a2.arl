@@ -123,9 +123,10 @@ getter getUser (user : address) : option<nat> {
  specification function assertReceiver(addr: address) {
   postcondition p1 {
     let some tlid = users[addr] in
-      result = transferlists[tlid].unrestricted
-    otherwise
-      result = false
+    let some tl   = transferlists[tlid] in
+      result = tl.unrestricted
+    otherwise result = false
+    otherwise result = false
   }
 }
 
@@ -163,15 +164,14 @@ specification entry assertTransfers (input_list : list<address * list<address>>)
             msg = "TO_RESTRICTED" and
             assertReceiver(%to) = false
           ) or (
-            msg = "TO_NOT_ALLOWED"
-            /* let some fromid = users[%from] in
+            let some fromid = users[%from] in
             let some toid   = users[%to] in
             let some tl     = transferlists[%fromid] in
               msg = "TO_NOT_ALLOWED" and
               not contains(tl.allowedTransferlists, toid)
             otherwise msg = "NOT_FOUND"
             otherwise msg = "NOT_FOUND"
-            otherwise msg = "NOT_FOUND" */
+            otherwise msg = "NOT_FOUND"
           )));
   }
   postcondition p3 {
@@ -187,19 +187,17 @@ specification entry assertTransferlist (transferlistId : nat, input : option<tra
       msg = "TRANSFERLIST_NOT_FOUND" and
       not contains(transferlists, transferlistId)
     ) or (
-      msg = "INVALID_UNRESTRICTED_STATE" /*
       let some l = transferlists[transferlistId] in
         msg = "INVALID_UNRESTRICTED_STATE" and
         not l.unrestricted = tl.unrestricted
-      otherwise msg = "NOT_FOUND" */
+      otherwise msg = "NOT_FOUND"
     ) or (
-      msg = "IS_NOT_SUBSET"
-      /* exists i : nat,
+      exists i : nat,
         contains(tl.allowedTransferlists, i) and
         let some l = transferlists[transferlistId] in
         not contains(l.allowedTransferlists, i) and
         msg = "IS_NOT_SUBSET"
-        otherwise msg = "NOT_FOUND" */
+        otherwise msg = "NOT_FOUND"
     )
     otherwise
       msg = "EXISTS_TRANSFERLIST" and not contains(transferlists, transferlistId);
@@ -221,23 +219,22 @@ specification entry updateUser (user : address, transferlistId : option<nat>) {
   }
   postcondition p5 {
     let some i = transferlistId in
-      /* let some v = users[user] in
+      let some v = users[user] in
         v = i
-      otherwise false */ true
+      otherwise false
     otherwise
-      /* let some v = users[user] in
+      let some v = users[user] in
       false
-      otherwise true */ true
+      otherwise true
   }
   postcondition p6 {
     forall a : address,
-      true
-      /* a <> users ->
+      a <> user ->
       let some na  = users[a] in
       let some bna = before.users[a] in
       na = bna
       otherwise true
-      otherwise true */
+      otherwise true
   }
 }
 
