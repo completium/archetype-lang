@@ -252,7 +252,7 @@ specification entry updateTransferlist (
         let lunrestricted          = v[0] in
         let ldisallowTransferlists = v[1] in
         let lallowTransferlists    = v[2] in
-        tl.unrestricted := lunrestricted and
+        tl.unrestricted = lunrestricted and
         (forall r : nat,
           contains(ldisallowTransferlists, r) ->
           not contains(lallowTransferlists, r) ->
