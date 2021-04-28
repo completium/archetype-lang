@@ -1176,7 +1176,7 @@ let pp_parameters fmt = function
 let pp_metadata fmt (m : metadata) =
   match m with
   | Muri  v -> Format.fprintf fmt "\"%s\"" (unloc v)
-  | Mjson v -> Format.fprintf fmt "`{%s}`" (unloc v)
+  | Mjson v -> Format.fprintf fmt "`%s`" (unloc v)
 
 let rec pp_declaration fmt { pldesc = e; _ } =
   let is_empty_entry_properties_opt (ap : entry_properties) (a : 'a option) =

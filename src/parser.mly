@@ -188,6 +188,7 @@
 %token <string> IDENT
 %token <string> PIDENT
 %token <string> STRING
+%token <string> STRING_EXT
 %token <Big_int.big_int> NUMBERINT
 %token <Big_int.big_int> NUMBERNAT
 %token <string> DECIMAL
@@ -314,8 +315,9 @@ archetype:
 | ARCHETYPE exts=option(extensions) x=ident ps=parameters m=metadata { Darchetype (x, ps, m, exts) }
 
 %inline metadata:
-| WITH_METADATA v=loc(STRING) { Some (Muri v) }
-| /* empty */                 { None }
+| WITH_METADATA v=loc(STRING)     { Some (Muri v) }
+| WITH_METADATA v=loc(STRING_EXT) { Some (Mjson v) }
+| /* empty */                     { None }
 
 %inline parameters:
  | /* empty */                             { None }

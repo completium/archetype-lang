@@ -25,6 +25,7 @@ let string_of_token = function
   | TICKET               -> "TICKET"
   | THEN                 -> "THEN"
   | STRING s             -> Printf.sprintf "STRING(%s)" s
+  | STRING_EXT s         -> Printf.sprintf "STRING_EXT(%s)" s
   | STATES               -> "STATES"
   | STATE_IS             -> "STATE_IS"
   | SPECIFICATION        -> "SPECIFICATION"
@@ -194,6 +195,7 @@ let string_of_symbol = function
   | X (T T_TICKET) -> "ticket"
   | X (T T_THEN) -> "then"
   | X (T T_STRING) -> "a string"
+  | X (T T_STRING_EXT) -> "a string ext"
   | X (T T_STATES) -> "states"
   | X (T T_STATE_IS) -> "state is"
   | X (T T_SPECIFICATION) -> "postcondition"

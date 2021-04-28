@@ -1218,7 +1218,7 @@ let pp_parameter_values fmt (ps : 'id parameter list) =
 let pp_metadata fmt (m : metadata_kind) =
   match m with
   | MKuri  v -> Format.fprintf fmt "\"%s\"" (Location.unloc v)
-  | MKjson v -> Format.fprintf fmt "`{%s}`" (Location.unloc v)
+  | MKjson v -> Format.fprintf fmt "`%s`"   (Location.unloc v)
 
 let pp_ast fmt (ast : ast) =
   Format.fprintf fmt "archetype %a%a%a@\n@\n@."

@@ -187,6 +187,7 @@ rule token = parse
   | "//"                  { comment_line lexbuf; token lexbuf }
   | "(*"                  { comment lexbuf; token lexbuf }
   | "/*"                  { comment2 lexbuf; token lexbuf }
+  | "`"                   { STRING_EXT (Buffer.contents (string_ext (Buffer.create 0) lexbuf)) }
   | "\""                  { STRING (Buffer.contents (string (Buffer.create 0) lexbuf)) }
   | "("                   { LPAREN }
   | ")"                   { RPAREN }
@@ -260,3 +261,9 @@ and string buf = parse
   | newline       { Buffer.add_string buf (Lexing.lexeme lexbuf); string buf lexbuf }
   | _ as c        { Buffer.add_char buf c   ; string buf lexbuf }
   | eof           { lex_error lexbuf "unterminated string"  }
+
+and string_ext buf = parse
+  | "`"           { buf }
+  | newline       { Buffer.add_char buf '\n'; string_ext buf lexbuf }
+  | _ as c        { Buffer.add_char buf c   ; string_ext buf lexbuf }
+  | eof           { lex_error lexbuf "unterminated string_ext"  }

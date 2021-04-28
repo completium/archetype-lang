@@ -152,10 +152,13 @@ let output (model : Model.model) =
     end
 
 let parse (filename, channel) =
-  Io.parse_archetype ~name:filename channel
-(* if !Options.opt_cwse
-   then Io.parse_archetype
-   else Io.parse_archetype_strict) ~name:filename channel *)
+  let pt = Io.parse_archetype ~name:filename channel in
+  Pt_helper.check_json pt;
+  match !Error.errors with
+  | [] -> pt
+  | (_, str)::_ ->
+    Format.eprintf "%s" str;
+    raise (Error.ParseError !Error.errors)
 
 
 let preprocess_ext (pt : ParseTree.archetype) : ParseTree.archetype =

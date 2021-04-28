@@ -1916,7 +1916,7 @@ let pp_parameters fmt = function
 
 let pp_metadata fmt = function
   | MKuri  v -> Format.fprintf fmt "\"%s\"" (Location.unloc v)
-  | MKjson v -> Format.fprintf fmt "`{%s}`" (Location.unloc v)
+  | MKjson v -> Format.fprintf fmt "`%s`"   (Location.unloc v)
 
 let pp_model fmt (model : model) =
   Format.fprintf fmt "%a%a%a\

@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `state is` section in entry
   - `called by` supports asset with a key typed address
   - failure id in fails specification section (i.e. `... f1 with InvalidCaller(msg : string): ...`)
+  - metadata can be defined in the source file (`with metadata`)
 
 ### Changed
   - `slice` returns `option<byte|string>`

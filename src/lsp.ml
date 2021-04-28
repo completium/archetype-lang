@@ -256,6 +256,7 @@ let process (filename, channel) =
   | Errors ->
     try
       let pt = Io.parse_archetype ~name:filename channel in
+      Pt_helper.check_json pt;
       if (List.is_empty !Error.errors)
       then
         let ast = Typing.typing Typing.empty pt in
@@ -276,5 +277,7 @@ let process (filename, channel) =
           process_errors ()
         else
           process_errors ()
+      else
+        process_errors ()
     with
     | _ -> process_errors ()
