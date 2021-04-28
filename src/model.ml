@@ -924,9 +924,15 @@ type 'id parameter_gen = {
 type parameter = lident parameter_gen
 [@@deriving show {with_path = false}]
 
+type metadata_kind =
+  | MKuri  of string loced
+  | MKjson of string loced
+[@@deriving show {with_path = false}]
+
 type 'id model_gen = {
   name          : lident;
   parameters    : 'id parameter_gen list;
+  metadata      : metadata_kind option;
   api_items     : api_storage list;
   api_verif     : api_verif list;
   decls         : 'id decl_node_gen list;
@@ -1025,8 +1031,8 @@ let mk_signature ?(args = []) ?ret name : 'id signature_gen =
 let mk_api_item node_item api_loc =
   { node_item; api_loc }
 
-let mk_model ?(parameters = []) ?(api_items = []) ?(api_verif = []) ?(decls = []) ?(functions = []) ?(storage = []) ?(specification = mk_specification ()) ?(security = mk_security ()) ?(loc = Location.dummy) name : model =
-  { name; parameters; api_items; api_verif; storage; decls; functions; specification; security; loc }
+let mk_model ?(parameters = []) ?metadata ?(api_items = []) ?(api_verif = []) ?(decls = []) ?(functions = []) ?(storage = []) ?(specification = mk_specification ()) ?(security = mk_security ()) ?(loc = Location.dummy) name : model =
+  { name; parameters; metadata; api_items; api_verif; storage; decls; functions; specification; security; loc }
 
 (* -------------------------------------------------------------------- *)
 
@@ -3706,6 +3712,12 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
     }
   in
 
+  let for_metadata (m : metadata_kind) : metadata_kind =
+    match m with
+    | MKuri  x -> MKuri  x
+    | MKjson x -> MKjson x
+  in
+
   let for_api_item (ai : api_storage) : api_storage =
     let for_node_item (asn : api_storage_node) : api_storage_node =
       let for_api_asset (aasset : api_asset) : api_asset =
@@ -4017,6 +4029,7 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
   {
     name          = g KIarchetype model.name;
     parameters    = List.map for_parameter model.parameters;
+    metadata      = Option.map for_metadata model.metadata;
     api_items     = List.map for_api_item  model.api_items;
     api_verif     = List.map for_api_verif model.api_verif;
     decls         = List.map for_decl_node model.decls;

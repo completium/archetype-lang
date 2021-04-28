@@ -33,7 +33,7 @@ let pp_archetype fmt pt =
     let decls =  List.map unloc es in
 
     let pp_title fmt _ =
-      let name = List.fold_left (fun accu -> function | Darchetype (x, _, _) -> unloc x | _ -> accu) "" decls in
+      let name = List.fold_left (fun accu -> function | Darchetype (x, _, _, _) -> unloc x | _ -> accu) "" decls in
       Format.fprintf fmt "# %a@\n\
                           > Genrated with [Archetype](%a) v%a@\n@\n" (* date ? *)
         pp_str name

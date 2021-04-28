@@ -1173,17 +1173,23 @@ let pp_parameters fmt = function
   | None -> ()
   | Some xs -> Format.fprintf fmt "(%a)" (pp_list ", " (fun fmt x -> pp_parameter fmt (unloc x))) (unloc xs)
 
+let pp_metadata fmt (m : metadata) =
+  match m with
+  | Muri  v -> Format.fprintf fmt "\"%s\"" (unloc v)
+  | Mjson v -> Format.fprintf fmt "`{%s}`" (unloc v)
+
 let rec pp_declaration fmt { pldesc = e; _ } =
   let is_empty_entry_properties_opt (ap : entry_properties) (a : 'a option) =
     match ap.calledby, ap.require, ap.functions, ap.spec_fun, a with
     | None, None, [], None, None -> true
     | _ -> false in
   match e with
-  | Darchetype (id, ps, exts) ->
-    Format.fprintf fmt "archetype%a %a%a"
+  | Darchetype (id, ps, m, exts) ->
+    Format.fprintf fmt "archetype%a %a%a%a"
       pp_extensions exts
       pp_id id
       pp_parameters ps
+      (pp_option (fun fmt x -> Format.fprintf fmt "@\nwith metadata %a" pp_metadata x)) m
 
   | Dvariable (id, typ, dv, kind, invs, exts) ->
     Format.fprintf fmt "%a%a %a : %a%a%a"

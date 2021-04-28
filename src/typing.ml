@@ -2656,8 +2656,8 @@ let rec for_xexpr
 
         | Some (`Global decl) -> begin
             if not capture.cp_global then
-              Env.emit_error env (loc tope, CannotCaptureVariables);              
-            
+              Env.emit_error env (loc tope, CannotCaptureVariables);
+
             begin match mode.em_kind, decl.vr_kind with
               | `Expr `Concrete, `Ghost ->
                 Env.emit_error env (loc tope, InvalidShadowVariableAccess)
@@ -6044,7 +6044,7 @@ let group_declarations (decls : (PT.declaration list)) =
     let mk x = Location.mkloc loc x in
 
     match decl with
-    | PT.Darchetype (x, _, exts) ->
+    | PT.Darchetype (x, _, _, exts) ->
       { g with gr_archetypes = mk (x, exts) :: g.gr_archetypes }
 
     | PT.Dvariable infos ->
@@ -6510,13 +6510,15 @@ let for_declarations ?init (env : env) (decls : (PT.declaration list) loced) : A
   let toploc = loc decls in
 
   match unloc decls with
-  | { pldesc = Darchetype (x, params, _exts) } :: decls ->
+  | { pldesc = Darchetype (x, params, metadata, _exts) } :: decls ->
     let groups = group_declarations decls in
     let env, parameters = for_parameters env params ?init in
+    let metadata = Option.map (function | PT.Muri x -> A.MKuri x | PT.Mjson x -> A.MKjson x) metadata in
     let _env, decls = for_grouped_declarations env (toploc, groups) in
 
     A.mk_model
       ~parameters
+      ?metadata
       ~decls:(
         List.map (fun x -> A.Dvariable x) (variables_of_vdecls decls.variables)                            @
         List.map (fun x -> A.Denum x)     (enums_of_statedecl (List.pmap id (decls.state :: decls.enums))) @

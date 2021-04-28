@@ -285,6 +285,10 @@ and parameter = (lident * type_t * expr option * bool) loced
 
 and parameters = parameter list loced option
 
+and metadata =
+| Muri  of string loced
+| Mjson of string loced
+
 (* -------------------------------------------------------------------- *)
 and variable_kind =
   | VKvariable
@@ -296,7 +300,7 @@ and enum_kind =
 
 (* -------------------------------------------------------------------- *)
 and declaration_unloc =
-  | Darchetype     of lident * parameters * exts
+  | Darchetype     of lident * parameters * metadata option * exts
   | Dvariable      of variable_decl
   | Denum          of enum_kind * enum_decl
   | Dasset         of asset_decl
@@ -579,8 +583,8 @@ let mk_assetoperation aoes e : asset_operation = AssetOperation (aoes, e)
 
 (* declarations *)
 
-let mk_darchetype ?parameters ?exts ?(loc=dummy) id =
-  mkloc loc (Darchetype (id, parameters, exts))
+let mk_darchetype ?parameters ?metadata ?exts ?(loc=dummy) id =
+  mkloc loc (Darchetype (id, parameters, metadata, exts))
 
 let mk_variable ?(loc=dummy) vd =
   mkloc loc (Dvariable vd)

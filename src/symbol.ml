@@ -4,6 +4,7 @@ open Parser.MenhirInterpreter
 let string_of_token = function
   | XOR                  -> "XOR"
   | WITH                 -> "WITH"
+  | WITH_METADATA        -> "WITH_METADATA"
   | WHILE                -> "WHILE"
   | WHEN                 -> "WHEN"
   | VIEW                 -> "VIEW"
@@ -172,6 +173,7 @@ let string_of_token = function
 let string_of_symbol = function
   | X (T T_XOR) -> "xor"
   | X (T T_WITH) -> "with"
+  | X (T T_WITH_METADATA) -> "with metadata"
   | X (T T_WHILE) -> "while"
   | X (T T_WHEN) -> "when"
   | X (T T_VIEW) -> "view"

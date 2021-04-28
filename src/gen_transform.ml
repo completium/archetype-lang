@@ -5274,6 +5274,7 @@ let getter_to_entry ?(no_underscore=false) ?(extra=false) (model : model) : mode
 let process_metadata (model : model) : model =
   let check_if_not_metadata _ =
     List.for_all (String.equal "") [!Options.opt_metadata_uri; !Options.opt_metadata_storage]
+    && Option.is_none model.metadata
   in
 
   let with_metadata _ =
@@ -5327,32 +5328,42 @@ let process_metadata (model : model) : model =
           empty, uri
         in
 
-        let mk_data path =
+        let get_content path =
           let read_whole_file filename =
             let ch = open_in filename in
             let s = really_input_string ch (in_channel_length ch) in
             close_in ch;
             s
           in
+          read_whole_file path
+        in
+
+        let mk_data input =
           let vkey = mk_string key in
-          let input = read_whole_file path in
           let metadata =
             mk_bytes (match Hex.of_string input with `Hex str -> str)
           in
           vkey, metadata
         in
 
+        let do_uri             uri = [mk_uri uri] in
+        let do_json           data = [mk_uri ("tezos-storage:" ^ key); data] in
+        let do_json_with_path    p = do_json (p |> get_content |> mk_data) in
+        let do_json_with_content i = do_json (mk_data i) in
+
         let v =
-          match !Options.opt_metadata_uri, !Options.opt_metadata_storage, simple_metadata with
-          | _, _, true        ->
+          match !Options.opt_metadata_uri, !Options.opt_metadata_storage, model.metadata, simple_metadata with
+          | _, _, _, true        ->
             let mk_m _ =
               let vkey = mk_string key in
               vkey, (mk_mterm (Mvar(dumloc "metadata", Vparameter, Tnone, Dnone)) tbytes)
             in
-            [mk_uri ("tezos-storage:" ^ key); mk_m ()]
-          | "", "", _         -> []
-          | uri, "", _        -> [mk_uri uri]
-          | "", metadata_path, _ -> [mk_uri ("tezos-storage:" ^ key); mk_data metadata_path]
+            do_json (mk_m ())
+          | "", "", None, _         -> []
+          | uri, "", _, _           when not (String.equal "" uri) -> do_uri uri
+          | "", metadata_path, _, _ when not (String.equal "" metadata_path) -> do_json_with_path metadata_path
+          | _, _, Some MKuri uri, _ -> do_uri (unloc uri)
+          | _, _, Some MKjson i,  _ -> do_json_with_content (unloc i)
           | _ -> assert false
         in
 
@@ -5497,25 +5508,25 @@ let instr_to_expr_exec (model : model) =
   let rec aux ctx (mt : mterm) =
     match mt.node with
     | Msetinstradd (sty, ak, k) when is_used ak [k] ->
-        mk ak (tset sty) (fun x -> Msetadd(sty, x, k))
+      mk ak (tset sty) (fun x -> Msetadd(sty, x, k))
 
     | Msetinstrremove (sty, ak, k) when is_used ak [k] ->
-        mk ak (tset sty) (fun x -> Msetremove(sty, x, k))
+      mk ak (tset sty) (fun x -> Msetremove(sty, x, k))
 
     | Mlistinstrprepend (lty, ak, i) when is_used ak [i] ->
-        mk ak (tlist lty) (fun x -> Mlistprepend(lty, x, i))
+      mk ak (tlist lty) (fun x -> Mlistprepend(lty, x, i))
 
     | Mlistinstrconcat (lty, ak, i) when is_used ak [i] ->
-        mk ak (tlist lty) (fun x -> Mlistconcat(lty, x, i))
+      mk ak (tlist lty) (fun x -> Mlistconcat(lty, x, i))
 
     | Mmapinstrput(kty, vty, ak, k, v) when is_used ak [k; v] ->
-        mk ak (tmap kty vty) (fun x -> Mmapput(kty, vty, x, k, v))
+      mk ak (tmap kty vty) (fun x -> Mmapput(kty, vty, x, k, v))
 
     | Mmapinstrremove(kty, vty, ak, k) when is_used ak [k] ->
-        mk ak (tmap kty vty) (fun x -> Mmapremove(kty, vty, x, k))
+      mk ak (tmap kty vty) (fun x -> Mmapremove(kty, vty, x, k))
 
     | Mmapinstrupdate (kty, vty, ak, k, v) when is_used ak [k; v] ->
-        mk ak (tmap kty vty) (fun x -> Mmapupdate(kty, vty, x, k, v))
+      mk ak (tmap kty vty) (fun x -> Mmapupdate(kty, vty, x, k, v))
 
     | _ -> map_mterm (aux ctx) mt
   in

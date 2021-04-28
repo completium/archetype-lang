@@ -160,7 +160,8 @@ rule token = parse
   | refuse_transfer       { REFUSE_TRANSFER }
   | blank+                { token lexbuf }
 
-  | "state" blank+ "is"   { STATE_IS }
+  | "state" blank+ "is"      { STATE_IS }
+  | "with" blank+ "metadata" { WITH_METADATA }
 
   | "@add"                { AT_ADD }
   | "@remove"             { AT_REMOVE }

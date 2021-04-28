@@ -1215,8 +1215,16 @@ let pp_parameter_values fmt (ps : 'id parameter list) =
   | [] -> ()
   | _  -> Format.fprintf fmt "// %a@\n" (pp_list ", " pp_parameter_value) ps
 
+let pp_metadata fmt (m : metadata_kind) =
+  match m with
+  | MKuri  v -> Format.fprintf fmt "\"%s\"" (Location.unloc v)
+  | MKjson v -> Format.fprintf fmt "`{%s}`" (Location.unloc v)
+
 let pp_ast fmt (ast : ast) =
-  Format.fprintf fmt "archetype %a%a@\n@\n@." pp_id ast.name pp_parameters ast.parameters;
+  Format.fprintf fmt "archetype %a%a%a@\n@\n@."
+    pp_id ast.name
+    pp_parameters ast.parameters
+    (pp_option (fun fmt x -> Format.fprintf fmt "@\nwith metadata %a" pp_metadata x)) ast.metadata;
   pp_parameter_values fmt ast.parameters;
   (pp_no_empty_list2 pp_decl_) fmt ast.decls;
   (pp_no_empty_list2 pp_fun_) fmt ast.funs;

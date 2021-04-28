@@ -1473,6 +1473,7 @@ let to_model (ast : A.ast) : M.model =
   let env = mk_env () in
 
   let parameters = List.map (process_parameter env) ast.parameters in
+  let metadata = Option.map (function | A.MKuri x -> M.MKuri x | A.MKjson x -> M.MKjson x) ast.metadata in
   let decls = List.map (process_decl_ env) ast.decls in
   let functions = List.map (process_fun_ env) ast.funs in
 
@@ -1486,4 +1487,4 @@ let to_model (ast : A.ast) : M.model =
     |> (fun sec -> List.fold_left (fun accu x -> cont_security x accu) sec ast.securities)
   in
 
-  M.mk_model ~parameters:parameters ~decls:decls ~functions:functions ~specification:specification ~security:security ~loc:ast.loc name
+  M.mk_model ~parameters ?metadata ~decls ~functions ~specification ~security ~loc:ast.loc name

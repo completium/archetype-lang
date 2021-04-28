@@ -178,6 +178,7 @@
 %token WHEN
 %token WHILE
 %token WITH
+%token WITH_METADATA
 %token XOR
 
 %token INVALID_EXPR
@@ -310,7 +311,11 @@ declaration_r:
  | INVALID_DECL         { Dinvalid }
 
 archetype:
-| ARCHETYPE exts=option(extensions) x=ident ps=parameters { Darchetype (x, ps, exts) }
+| ARCHETYPE exts=option(extensions) x=ident ps=parameters m=metadata { Darchetype (x, ps, m, exts) }
+
+%inline metadata:
+| WITH_METADATA v=loc(STRING) { Some (Muri v) }
+| /* empty */                 { None }
 
 %inline parameters:
  | /* empty */                             { None }

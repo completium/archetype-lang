@@ -1914,8 +1914,12 @@ let pp_parameters fmt = function
           pp_type param.typ
           (pp_option (fun fmt x -> Format.fprintf fmt " = %a" pp_mterm x)) param.default)) params
 
+let pp_metadata fmt = function
+  | MKuri  v -> Format.fprintf fmt "\"%s\"" (Location.unloc v)
+  | MKjson v -> Format.fprintf fmt "`{%s}`" (Location.unloc v)
+
 let pp_model fmt (model : model) =
-  Format.fprintf fmt "%a%a\
+  Format.fprintf fmt "%a%a%a\
                       @\n@\n%a\
                       @\n@\n%a\
                       @\n@\n%a\
@@ -1926,6 +1930,7 @@ let pp_model fmt (model : model) =
                       @."
     pp_id model.name
     pp_parameters model.parameters
+    (pp_option (fun fmt x -> Format.fprintf fmt "@\nwith metadata %a" pp_metadata x)) model.metadata
     pp_api_items model.api_items
     (pp_list "@\n" pp_api_verif) model.api_verif
     (pp_list "@\n" pp_decl) model.decls
