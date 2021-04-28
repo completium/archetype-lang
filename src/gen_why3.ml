@@ -230,6 +230,9 @@ let rec mk_eq_type m e1 e2 = function
         ) r.fields in
       List.fold_left (fun acc cmp -> Tpand (acc,cmp)) (List.hd cmps) (List.tl cmps)
     end
+  | Tyset idx -> begin
+      Tapp (Tdoti (String.capitalize_ascii idx, "eq_set"),[Tvar e1; Tvar e2])
+    end
   | Tymap idx -> begin
       Tapp (Tdoti ("Map" ^ idx, "eq_collection"),[Tvar e1; Tvar e2])
     end
@@ -251,7 +254,6 @@ let rec mk_eq_type m e1 e2 = function
   | Tybls12_381_g2
   | Tynever
   | Tyview _
-  | Tyset _
   | Tylambda (_, _)
     -> Teq (Tyint, Tvar e1, Tvar e2)
 
@@ -1527,6 +1529,21 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                 Tpsome (map_lident id), map_mterm m ctx b;
                 Twild, map_mterm m ctx e
               ])
+    | Mletin ([id], { node = M.Mmapget (_kty, _vty, container, k); type_ = _ }, _, b, Some e) -> (* logical *)
+      let ctx = ctx in
+      let map_id = mk_map_name m container.type_ in
+      (* let t, d =
+         match container.node with
+         | Mvar (_, _, d, t) -> d, t
+         | _ -> M.Tnone, M.Dnone
+         in *)
+      Tmatch (Tsndopt (Tget (loc_ident map_id,
+                    map_mterm m ctx k,
+                    map_mterm m ctx container) |> dl) |> dl,[
+                (* mk_loc_coll_term map_id ctx (t, d)) |> dl,[ *)
+                Tpsome (map_lident id), map_mterm m ctx b;
+                Twild, map_mterm m ctx e
+              ])
     | Mletin ([id], { node = M.Mnth (n, CKview c,k); type_ = _ }, _, b, Some e) ->
       Tmatch (Tnth (dl (mk_view_id n),
                     map_mterm m ctx k,
@@ -2328,12 +2345,14 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Mvar(_, Vassetstate _, _, _) -> error_not_translated "Mvar(_, Vassetstate _)"
 
-    | Mvar (v, Vstorevar, _, _) ->
+    | Mvar (v, Vstorevar, t, _) ->
       begin
-        match ctx.lctx with
-        | Inv -> Tvar (map_lident v)
-        | Def -> Tdoti (dl gsarg, map_lident v)
-        | _ -> Tdoti (dl gs, map_lident v)
+        match ctx.lctx, t with
+        | Inv, _       -> Tvar (map_lident v)
+        | Def, _       -> Tdoti (dl gsarg, map_lident v)
+        | _, M.Tnone   -> Tdoti (dl gs, map_lident v)
+        | _, M.Tbefore -> Tdot (Told (Tvar gs), Tvar (unloc v)) |> loc_term |> Mlwtree.deloc
+        | _, M.Tat lbl -> Tat (dl lbl, Tdoti (gs, unloc v) |> loc_term)
       end
 
     | Mvar (n, Vstorecol, t, d) ->
@@ -3148,13 +3167,13 @@ let to_whyml (m : M.model) : mlw_tree  =
               useEuclDiv             @
               useMinMax              @
               traceutils             @
+              sets                   @
               records                @
               exns                   @
               enums                  @
               eq_enums               @
               lists                  @
               maps                   @
-              sets                   @
               mlwassets              @
               aggregates             @
               storage_api_bs         @

@@ -1686,6 +1686,19 @@ module Set
   ensures { forall e. contains e result <-> mem e l }
   = F.mk l
 
+  (* ------------------------------------------------------------------------ *)
+  let rec function eq_set (s1 : set) (s2 : set) : bool
+  =
+  let rec eq_list l1 l2 =
+    variant { l1, l2 }
+    match l1, l2 with
+    | Cons e1 tl1, Cons e2 tl2 ->
+      if eqt e1 e2 then true else eq_list tl1 tl2
+    | _ -> false
+    end
+  in
+  eq_list (elts s1) (elts s2)
+
 end
 
 module List
