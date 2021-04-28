@@ -3023,16 +3023,15 @@ let rec for_xexpr
             in
             mk_sp (Some (List.nth lt i)) (A.Ptupleaccess (ee, idx))
           end
-        | Some (A.Tmap (kt, vt)) -> begin
-            let pk = for_xexpr ?ety:(Some kt) env pk in
-            mk_sp
-              (Some vt)
-              (A.Pcall (None, A.Cconst A.Cmget, [A.AExpr ee; A.AExpr pk]))
-          end
+        | Some (A.Tmap     (kt, vt))
         | Some (A.Tbig_map (kt, vt)) -> begin
             let pk = for_xexpr ?ety:(Some kt) env pk in
+            let rty =
+              match mode.em_kind with
+              | `Formula _ -> Some (A.Toption vt)
+              | _ -> Some vt in
             mk_sp
-              (Some vt)
+              rty
               (A.Pcall (None, A.Cconst A.Cmget, [A.AExpr ee; A.AExpr pk]))
           end
         | _ -> begin
@@ -3457,8 +3456,8 @@ let rec for_xexpr
           | _ -> at in
 
         let capture = {
-            cp_global = false;
-            cp_local  = `Only (Sid.singleton (unloc pid));
+          cp_global = false;
+          cp_local  = `Only (Sid.singleton (unloc pid));
         } in
 
         let _, e = Env.inscope env (fun env ->
