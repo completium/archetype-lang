@@ -120,14 +120,14 @@ getter getUser (user : address) : option<nat> {
   return getopt(users, user)
 }
 
-/* specification function assertReceiver(addr: address) {
+ specification function assertReceiver(addr: address) {
   postcondition p1 {
     let some tlid = users[addr] in
       result = transferlists[tlid].unrestricted
     otherwise
       result = false
   }
-} */
+}
 
 specification entry assertReceivers (addrs : list<address>) {
   fails {
