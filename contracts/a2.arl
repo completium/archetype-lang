@@ -248,8 +248,7 @@ specification entry updateTransferlist (
   }
   postcondition p7 {
     let some v = u in
-      true
-      /* let some tl = transferlists[transferlistId] in
+      let some tl = transferlists[transferlistId] in
         let lunrestricted          = v[0] in
         let ldisallowTransferlists = v[1] in
         let lallowTransferlists    = v[2] in
@@ -261,22 +260,20 @@ specification entry updateTransferlist (
         (forall a : nat,
           contains(lallowTransferlists, a) ->
           contains(tl.allowedTransferlists, a))
-      otherwise true */
+      otherwise true
     otherwise
-      true
-      /* let some tl = transferlists[transferlistId] in
+      let some tl = transferlists[transferlistId] in
         false
-      otherwise true */
+      otherwise true
   }
   postcondition p8 {
     forall i : nat,
       i <> transferlistId ->
-      true
-      /* let some tl  = transferlists[i] in
+      let some tl  = transferlists[i] in
       let some btl = before.transferlists[i] in
       tl = btl
       otherwise true
-      otherwise true */
+      otherwise true
   }
 }
 
