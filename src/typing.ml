@@ -1253,74 +1253,76 @@ let methods : (string * method_) list =
 let methods = Mid.of_list methods
 
 (* -------------------------------------------------------------------- *)
-type opinfo =
-  string
-  * A.const
-  * [`Partial | `Total]
-  * A.type_ option
-  * A.type_ list
-  * A.type_
-  * Type.trestr Mint.t
+type opinfo = {
+  op_name    : string;
+  op_const   : A.const;
+  op_partial : [`Partial | `Total];
+  op_thety   : A.type_ option;
+  op_sig     : A.type_ list;
+  op_resty   : [`Self | `Ty of A.type_];
+  op_restr   : Type.trestr Mint.t;
+}
+
+let op op_name op_const op_partial op_thety op_sig op_resty op_restr =
+  { op_name; op_const; op_partial; op_thety; op_sig; op_resty; op_restr; }
 
 (* -------------------------------------------------------------------- *)
 let coreops : opinfo list =
   (List.map
-     (fun (x, y) -> ("abs", A.Cabs, `Total, None, [x], y, Mint.empty))
-     [(A.vtint, A.vtnat); (A.vtrational, A.vtrational)])
+     (fun (x, y) -> op "abs" A.Cabs `Total None [x] y Mint.empty)
+     [(A.vtint, `Ty A.vtnat); (A.vtrational, `Ty A.vtrational)])
   @ (List.map
-       (fun (x, y) -> (x, y, `Total, None, [A.vtrational], A.vtint, Mint.empty))
+       (fun (x, y) -> op x y `Total None [A.vtrational] (`Ty A.vtint) Mint.empty)
        ["floor", A.Cfloor ; "ceil", A.Cceil])
   @ (List.flatten (List.map (fun (name, cname) -> (
         List.map
-          (fun x -> (name, cname, `Total, None, [x; x], x, Mint.empty))
+          (fun x -> op name cname `Total None [x; x] (`Ty x) Mint.empty)
           vt_comparable))
       [("min", A.Cmin); ("max", A.Cmax)]))
   @ (List.map
-       (fun x -> ("concat", A.Cconcat, `Total, None, [x; x], x, Mint.empty))
+       (fun x -> op "concat" A.Cconcat `Total None [x; x] (`Ty x) Mint.empty)
        [A.vtbytes; A.vtstring])
   @ (List.map
-       (fun x -> ("concat", A.Cconcat, `Total, None, [A.Tlist x], x, Mint.empty))
+       (fun x -> op "concat" A.Cconcat `Total None [A.Tlist x] (`Ty x) Mint.empty)
        [A.vtbytes; A.vtstring])
   @ (List.map
-       (fun x -> ("slice", A.Cslice, `Total, None, [x; A.vtnat; A.vtnat], A.Toption x, Mint.empty))
+       (fun x -> op "slice" A.Cslice `Total None [x; A.vtnat; A.vtnat] (`Ty (A.Toption x)) Mint.empty)
        [A.vtbytes; A.vtstring])
   @ (List.map
-       (fun x -> ("length", A.Clength, `Total, None, [x], A.vtnat, Mint.empty))
+       (fun x -> op "length" A.Clength `Total None [x] (`Ty A.vtnat) Mint.empty)
        [A.vtstring; A.vtbytes])
   @ (List.map
-       (fun x -> ("to_string", A.Ctostring, `Total, None, [x], A.vtstring, Mint.empty))
+       (fun x -> op "to_string" A.Ctostring `Total None [x] (`Ty A.vtstring) Mint.empty)
        [A.vtnat])
-  @ [
-    ("date_from_timestamp" , A.CdateFromTimestamp, `Total, None, [A.vtint]    , A.vtdate    , Mint.empty)
-  ]
+  @ [op "date_from_timestamp" A.CdateFromTimestamp `Total None [A.vtint] (`Ty A.vtdate) Mint.empty]
 
 (* -------------------------------------------------------------------- *)
 let optionops : opinfo list = [
-  ("isnone",  A.Cisnone, `Total  , Some (A.Toption (A.Tnamed 0)), [], A.vtbool  , Mint.empty);
-  ("issome",  A.Cissome, `Total  , Some (A.Toption (A.Tnamed 0)), [], A.vtbool  , Mint.empty);
-  ("opt_get", A.Cgetopt, `Partial, Some (A.Toption (A.Tnamed 0)), [], A.Tnamed 0, Mint.empty);
+  op "isnone"  A.Cisnone `Total   (Some (A.Toption (A.Tnamed 0))) [] (`Ty A.vtbool)     Mint.empty;
+  op "issome"  A.Cissome `Total   (Some (A.Toption (A.Tnamed 0))) [] (`Ty A.vtbool)     Mint.empty;
+  op "opt_get" A.Cgetopt `Partial (Some (A.Toption (A.Tnamed 0))) [] (`Ty (A.Tnamed 0)) Mint.empty;
 ]
 
 (* -------------------------------------------------------------------- *)
 let setops : opinfo list =
   let elemt = A.Tnamed 0 in
   let set   = A.Tset elemt in [
-    ("add"      , A.Csadd      , `Total , Some set, [ elemt ], set     , Mint.empty);
-    ("remove"   , A.Csremove   , `Total , Some set, [ elemt ], set     , Mint.empty);
-    ("contains" , A.Cscontains , `Total , Some set, [ elemt ], A.vtbool, Mint.empty);
-    ("length"   , A.Cslength   , `Total , Some set, [       ], A.vtnat , Mint.empty);
+    op "add"      A.Csadd      `Total (Some set) [ elemt ] `Self          Mint.empty;
+    op "remove"   A.Csremove   `Total (Some set) [ elemt ] `Self          Mint.empty;
+    op "contains" A.Cscontains `Total (Some set) [ elemt ] (`Ty A.vtbool) Mint.empty;
+    op "length"   A.Cslength   `Total (Some set) [       ] (`Ty A.vtnat ) Mint.empty;
   ]
 
 (* -------------------------------------------------------------------- *)
 let listops : opinfo list =
   let elemt = A.Tnamed 0 in
   let lst   = A.Tlist elemt in [
-    ("prepend"        , A.Cprepend  , `Total  , Some lst, [elemt  ], lst                   , Mint.empty);
-    ("length"         , A.Clength   , `Total  , Some lst, [       ], A.vtnat               , Mint.empty);
-    ("contains"       , A.Ccontains , `Total  , Some lst, [elemt  ], A.vtbool              , Mint.empty);
-    ("nth"            , A.Cnth      , `Partial, Some lst, [A.vtnat], elemt                 , Mint.empty);
-    ("reverse"        , A.Creverse  , `Total  , Some lst, [       ], lst                   , Mint.empty);
-    ("concat"         , A.Cconcat   , `Total  , Some lst, [lst    ], lst                   , Mint.empty);
+    op "prepend"  A.Cprepend  `Total   (Some lst) [elemt  ] `Self          Mint.empty;
+    op "length"   A.Clength   `Total   (Some lst) [       ] (`Ty A.vtnat ) Mint.empty;
+    op "contains" A.Ccontains `Total   (Some lst) [elemt  ] (`Ty A.vtbool) Mint.empty;
+    op "nth"      A.Cnth      `Partial (Some lst) [A.vtnat] (`Ty elemt   ) Mint.empty;
+    op "reverse"  A.Creverse  `Total   (Some lst) [       ] `Self          Mint.empty;
+    op "concat"   A.Cconcat   `Total   (Some lst) [lst    ] `Self          Mint.empty;
   ]
 
 (* -------------------------------------------------------------------- *)
@@ -1328,12 +1330,12 @@ let mapops : opinfo list =
   let tkey = A.Tnamed 0 in
   let tval = A.Tnamed 1 in
   let map  = A.Tmap (tkey, tval) in [
-    ("put"      , A.Cmput      , `Total   , Some map, [ tkey; tval ], map           , Mint.empty);
-    ("remove"   , A.Cmremove   , `Total   , Some map, [ tkey       ], map           , Mint.empty);
-    ("update"   , A.Cmupdate   , `Total   , Some map, [ tkey; A.Toption tval ], map , Mint.empty);
-    ("getopt"   , A.Cmgetopt   , `Partial , Some map, [ tkey       ], A.Toption tval, Mint.empty);
-    ("contains" , A.Cmcontains , `Total   , Some map, [ tkey       ], A.vtbool      , Mint.empty);
-    ("length"   , A.Cmlength   , `Total   , Some map, [            ], A.vtnat       , Mint.empty);
+    op "put"      A.Cmput      `Total   (Some map) [ tkey; tval ]           `Self                  Mint.empty;
+    op "remove"   A.Cmremove   `Total   (Some map) [ tkey       ]           `Self                  Mint.empty;
+    op "update"   A.Cmupdate   `Total   (Some map) [ tkey; A.Toption tval ] `Self                  Mint.empty;
+    op "getopt"   A.Cmgetopt   `Partial (Some map) [ tkey       ]           (`Ty (A.Toption tval)) Mint.empty;
+    op "contains" A.Cmcontains `Total   (Some map) [ tkey       ]           (`Ty A.vtbool        ) Mint.empty;
+    op "length"   A.Cmlength   `Total   (Some map) [            ]           (`Ty A.vtnat         ) Mint.empty;
   ]
 
 (* -------------------------------------------------------------------- *)
@@ -1341,64 +1343,68 @@ let bigmapops : opinfo list =
   let tkey = A.Tnamed 0 in
   let tval = A.Tnamed 1 in
   let big_map  = A.Tbig_map (tkey, tval) in [
-    ("put"      , A.Cmput      , `Total   , Some big_map, [ tkey; tval ], big_map       , Mint.empty);
-    ("remove"   , A.Cmremove   , `Total   , Some big_map, [ tkey       ], big_map       , Mint.empty);
-    ("update"   , A.Cmupdate   , `Total   , Some big_map, [ tkey; A.Toption tval ], big_map , Mint.empty);
-    ("getopt"   , A.Cmgetopt   , `Partial , Some big_map, [ tkey       ], A.Toption tval, Mint.empty);
-    ("contains" , A.Cmcontains , `Total   , Some big_map, [ tkey       ], A.vtbool      , Mint.empty);
+    op "put"      A.Cmput      `Total   (Some big_map) [ tkey; tval ]           `Self                  Mint.empty;
+    op "remove"   A.Cmremove   `Total   (Some big_map) [ tkey       ]           `Self                  Mint.empty;
+    op "update"   A.Cmupdate   `Total   (Some big_map) [ tkey; A.Toption tval ] `Self                  Mint.empty;
+    op "getopt"   A.Cmgetopt   `Partial (Some big_map) [ tkey       ]           (`Ty (A.Toption tval)) Mint.empty;
+    op "contains" A.Cmcontains `Total   (Some big_map) [ tkey       ]           (`Ty A.vtbool        ) Mint.empty;
   ]
 
 (* -------------------------------------------------------------------- *)
 let cryptoops : opinfo list =
-  List.map (fun (x, y) -> x, y, `Total, None, [A.vtbytes], A.vtbytes, Mint.empty)
+  List.map (fun (x, y) -> op x y `Total None [A.vtbytes] (`Ty A.vtbytes) Mint.empty)
     [("blake2b", A.Cblake2b);
      ("sha256" , A.Csha256 );
      ("sha512" , A.Csha512 );
      ("sha3"   , A.Csha3   );
      ("keccak" , A.Ckeccak )]
 
-  @ [("hash_key"         , A.Chashkey       , `Total, None, [A.vtkey]                          , A.vtkeyhash         , Mint.empty);
-     ("check_signature"  , A.Cchecksignature, `Total, None, [A.vtkey; A.vtsignature; A.vtbytes], A.vtbool            , Mint.empty);
-     ("set_delegate"     , A.Csetdelegate,    `Total, None, [A.Toption A.vtkeyhash],             A.Toperation        , Mint.empty);
-     ("implicit_account" , A.Cimplicitaccount,`Total, None, [A.vtkeyhash],                       A.Tcontract A.vtunit, Mint.empty);
-     ("voting_power"     , A.Cvotingpower,    `Total, None, [A.vtkeyhash],                       A.vtnat             , Mint.empty)]
+  @ [op "hash_key"         A.Chashkey         `Total None [A.vtkey]                           (`Ty A.vtkeyhash           ) Mint.empty;
+     op "check_signature"  A.Cchecksignature  `Total None [A.vtkey; A.vtsignature; A.vtbytes] (`Ty A.vtbool              ) Mint.empty;
+     op "set_delegate"     A.Csetdelegate     `Total None [A.Toption A.vtkeyhash]             (`Ty A.Toperation          ) Mint.empty;
+     op "implicit_account" A.Cimplicitaccount `Total None [A.vtkeyhash]                       (`Ty (A.Tcontract A.vtunit)) Mint.empty;
+     op "voting_power"     A.Cvotingpower     `Total None [A.vtkeyhash]                       (`Ty A.vtnat               ) Mint.empty]
 
 (* -------------------------------------------------------------------- *)
 let packops : opinfo list =
-  ["pack", A.Cpack, `Total, None, [A.Tnamed 0], A.vtbytes, Mint.of_list [0, `MichelsonPackable]]
+  [op "pack" A.Cpack `Total None [A.Tnamed 0] (`Ty A.vtbytes) (Mint.of_list [0, `MichelsonPackable])]
 
 (* -------------------------------------------------------------------- *)
 let opsops : opinfo list =
-  [  "mkoperation", A.Cmkoperation, `Total, None,
-     [A.vtcurrency; A.Tcontract (A.Tnamed 0); A.Tnamed 0], A.Toperation, Mint.empty ]
+  [op "mkoperation" A.Cmkoperation `Total None
+         [A.vtcurrency; A.Tcontract (A.Tnamed 0); A.Tnamed 0] (`Ty A.Toperation) Mint.empty]
 
 (* -------------------------------------------------------------------- *)
 let lambdaops : opinfo list = [
-  ("exec_lambda",   A.Cexec, `Total  , Some (A.Tlambda (A.Tnamed 0, A.Tnamed 1)), [A.Tnamed 0], A.Tnamed 1, Mint.empty);
-  (* ("apply_lambda",  A.Capply, `Total  , Some (A.Tlambda (A.Tnamed 0, A.Tnamed 1)), [A.Tnamed 0], A.Tnamed 1, Mint.empty) *)
+  op "exec_lambda" A.Cexec `Total (Some (A.Tlambda (A.Tnamed 0, A.Tnamed 1))) [A.Tnamed 0] (`Ty (A.Tnamed 1)) Mint.empty;
 ]
 
 (* -------------------------------------------------------------------- *)
 let ticket_ops : opinfo list =
   [
-    ("create_ticket", A.Ccreateticket, `Total, None, [A.Tnamed 0; A.vtnat], A.Tticket (A.Tnamed 0), Mint.empty);
-    ("read_ticket",   A.Creadticket,   `Total, None, [A.Tticket (A.Tnamed 0)], A.Ttuple [A.vtaddress; A.Tnamed 0; A.vtnat], Mint.empty);
-    ("split_ticket",  A.Csplitticket,  `Total, None, [A.Tticket (A.Tnamed 0); A.vtnat; A.vtnat], A.Toption (A.Ttuple [A.Tticket (A.Tnamed 0); A.Tticket (A.Tnamed 0)]), Mint.empty);
-    ("join_tickets",  A.Cjointickets,  `Total, None, [A.Tticket (A.Tnamed 0); A.Tticket (A.Tnamed 0)], A.Toption (A.Tticket (A.Tnamed 0)), Mint.empty);
+    op "create_ticket" A.Ccreateticket `Total None[A.Tnamed 0; A.vtnat]
+      (`Ty (A.Tticket (A.Tnamed 0))) Mint.empty;
+    op "read_ticket" A.Creadticket `Total None [A.Tticket (A.Tnamed 0)]
+      (`Ty (A.Ttuple [A.vtaddress; A.Tnamed 0; A.vtnat])) Mint.empty;
+    op "split_ticket" A.Csplitticket `Total None [A.Tticket (A.Tnamed 0); A.vtnat; A.vtnat]
+      (`Ty (A.Toption (A.Ttuple [A.Tticket (A.Tnamed 0); A.Tticket (A.Tnamed 0)]))) Mint.empty;
+    op "join_tickets" A.Cjointickets `Total None [A.Tticket (A.Tnamed 0); A.Tticket (A.Tnamed 0)]
+      (`Ty (A.Toption (A.Tticket (A.Tnamed 0)))) Mint.empty;
   ]
 
 (* -------------------------------------------------------------------- *)
 let sapling_ops : opinfo list =
   [
-    ("sapling_empty_state",   A.Csapling_empty_state,   `Total, None, [A.vtnat], A.Tsapling_state 0, Mint.empty);
-    ("sapling_verify_update", A.Csapling_verify_update, `Total, None, [A.Tsapling_transaction 0; A.Tsapling_state 0], A.Toption (A.Ttuple [A.vtint; A.Tsapling_state 0]), Mint.empty)
+    op "sapling_empty_state" A.Csapling_empty_state `Total None [A.vtnat] (`Ty (A.Tsapling_state 0)) Mint.empty;
+    op "sapling_verify_update" A.Csapling_verify_update `Total None
+      [A.Tsapling_transaction 0; A.Tsapling_state 0] (`Ty (A.Toption (A.Ttuple [A.vtint; A.Tsapling_state 0]))) Mint.empty;
   ]
 
 let bls_ops : opinfo list =
   [
-    ("pairing_check", A.Cpairing_check, `Total, None, [A.Tlist (A.Ttuple [A.vtbls12_381_g1; A.vtbls12_381_g2])], A.vtbool, Mint.empty)
+    op "pairing_check" A.Cpairing_check `Total None
+      [A.Tlist (A.Ttuple [A.vtbls12_381_g1; A.vtbls12_381_g2])] (`Ty A.vtbool) Mint.empty;
   ]
-
 
 (* -------------------------------------------------------------------- *)
 let allops : opinfo list =
@@ -3229,39 +3235,7 @@ let rec for_xexpr
 
         let aty = List.map (fun a -> Option.get a.A.type_) args in
 
-        let select (name, cname, totality, thety, ety, rty, restr) =
-          let module E = struct exception Reject end in
-
-          try
-            if unloc f <> name then
-              raise E.Reject;
-
-            let ety = Option.get_as_list thety @ ety in
-
-            if List.length aty <> List.length ety then
-              raise E.Reject;
-
-            let map = ref Mint.empty in
-
-            List.iter2
-              (fun ety aty -> Type.unify ~restr ~ptn:ety ~tg:aty map)
-              ety aty;
-
-            let ety = List.map (Type.subst !map) ety in
-            let rty = Type.subst !map rty in
-
-            let rty =
-              match totality, mode.em_kind with
-              | `Partial, `Formula _ -> A.Toption rty
-              | _, _ -> rty in
-
-            let d = Type.sig_distance ~from_:aty ~to_:ety in
-
-            Some (Option.get_exn E.Reject d, (cname, (ety, rty)))
-
-          with E.Reject | Type.UnificationFailure -> None in
-
-        let cd = List.pmap select allops in
+        let cd = List.pmap (select_mop mode.em_kind (unloc f) aty) allops in
         let cd = List.sort (fun (i, _) (j, _) -> compare i j) cd in
         let cd =
           let i0 = Option.get_dfl (-1) (Option.map fst (List.ohead cd)) in
@@ -3273,9 +3247,9 @@ let rec for_xexpr
           bailout ()
         | _::_::_ ->
           Env.emit_error env
-            (loc tope, MultipleMatchingFunction (unloc f, aty, List.map snd cd));
+            (loc tope, MultipleMatchingFunction (unloc f, aty, List.map proj3_3 cd));
           bailout ()
-        | [cname, (_, rty)] ->
+        | [cname, _, (_, rty)] ->
           let args = List.map (fun x -> A.AExpr x) args in
           mk_sp (Some rty) (A.Pcall (None, A.Cconst cname, args))
 
@@ -3299,67 +3273,59 @@ let rec for_xexpr
 
         let the = for_xexpr env the in
 
-        let the, asset, mname, (place, map_type, purity, totality), args, rty =
           match the.A.type_ with
-          | None ->
-            bailout ()
+          | None -> bailout () | Some ty ->
 
-          | Some ty -> begin
-              match Type.as_asset_collection ty with
-              | Some _ ->
-                let infos = for_gen_method_call mode env (loc tope) (`Typed the, m, args) in
-                let the, (asset, c), method_, args, amap = Option.get_fdfl bailout infos in
-                let rty = Option.bind (type_of_mthtype asset amap) (snd method_.mth_sig) in
+          match Type.as_asset_collection ty with
+          | Some _ -> begin
+            let infos = for_gen_method_call mode env (loc tope) (`Typed the, m, args) in
+            let the, (asset, c), method_, args, amap = Option.get_fdfl bailout infos in
+            let rty = Option.bind (type_of_mthtype asset amap) (snd method_.mth_sig) in
 
-                (the, Some (asset, c), method_.mth_name,
-                 (method_.mth_place, method_.mth_map_type, method_.mth_purity, method_.mth_totality), args, rty)
 
-              | None ->
-                let infos = for_api_call mode env (loc tope) (`Typed the, m, args) in
-                let the, method_, args = Option.get_fdfl bailout infos in
-                let rty =
-                  Option.map (fun ty -> let `T ty = ty in ty) (snd (method_.mth_sig)) in
-                (the, None, method_.mth_name,
-                 (method_.mth_place, method_.mth_map_type, method_.mth_purity, method_.mth_totality), args, rty)
+            if Option.is_none rty then
+              Env.emit_error env (loc tope, VoidMethodInExpr);
+
+            begin match method_.mth_place, mode.em_kind with
+            | `OnlyExec, `Formula _ ->
+                Env.emit_error env (loc tope, InvalidMethodInFormula)
+            | `OnlyFormula, (`Expr _) ->
+                Env.emit_error env (loc tope, InvalidMethodInExec)
+            | _, _ ->
+                ()
+            end;
+
+            begin match method_.mth_purity, mode.em_kind with
+            | `Effect _, `Formula _ ->
+                Env.emit_error env (loc tope, UnpureInFormula)
+            | `Effect allowed, _ when not (List.mem c allowed) ->
+                Env.emit_error env (loc tope, InvalidEffectForCtn (c, allowed))
+            | _, _ ->
+                ()
+            end;
+
+            begin match method_.mth_map_type with
+            | `Standard when asset.as_bm && not (is_form_kind mode.em_kind) ->
+                Env.emit_error env (loc tope, InvalidMethodWithBigMap (unloc m))
+            | _ -> ()
+            end;
+            
+            let rty =
+              match method_.mth_totality, mode.em_kind with
+              | `Partial, `Formula _ ->
+                  Option.map (fun x -> A.Toption x) rty
+              | _, _ ->
+                  rty in
+              
+              mk_sp rty (A.Pcall (Some the, A.Cconst method_.mth_name, args))
             end
-        in
 
-        if Option.is_none rty then begin
-          Env.emit_error env (loc tope, VoidMethodInExpr)
-        end;
-
-        begin match place, mode.em_kind with
-          | `OnlyExec, `Formula _ ->
-            Env.emit_error env (loc tope, InvalidMethodInFormula)
-          | `OnlyFormula, (`Expr _) ->
-            Env.emit_error env (loc tope, InvalidMethodInExec)
-          | _, _ ->
-            ()
-        end;
-
-        begin match asset, purity, mode.em_kind with
-          | _, `Effect _, `Formula _ ->
-            Env.emit_error env (loc tope, UnpureInFormula)
-          | Some (_, ctn), `Effect allowed, _ when not (List.mem ctn allowed) ->
-            Env.emit_error env (loc tope, InvalidEffectForCtn (ctn, allowed))
-          | _, _, _ ->
-            ()
-        end;
-
-        begin match asset, map_type with
-          | Some (asset, _), `Standard when asset.as_bm && not (is_form_kind mode.em_kind) ->
-            Env.emit_error env (loc tope, InvalidMethodWithBigMap (unloc m))
-          | _ -> ()
-        end;
-
-        let rty =
-          match totality, mode.em_kind with
-          | `Partial, `Formula _ ->
-            Option.map (fun x -> A.Toption x) rty
-          | _, _ ->
-            rty in
-
-        mk_sp rty (A.Pcall (Some the, A.Cconst mname, args))
+          | None ->
+            let infos =
+              for_api_call ~mode ~capture ?autoview env (`Typed the, m, args) in
+            let the, (name, _, sig_), args = Option.get_fdfl bailout infos in
+            let args = List.map (fun x -> A.AExpr x) args in
+            mk_sp (Some (snd sig_)) (A.Pcall (None, A.Cconst name, A.AExpr the :: args))
       end
 
     | Eif (c, et, Some ef) ->
@@ -3882,8 +3848,44 @@ and for_asset_collection_expr mode (env : env) tope =
   in (ast, typ)
 
 (* -------------------------------------------------------------------- *)
-and for_api_call mode env theloc (the, m, args)
-  : (A.pterm * smethod_ * A.pterm_arg list) option
+and select_mop em name aty (op : opinfo) =
+  let module E = struct exception Reject end in
+
+  try
+    if name <> op.op_name then
+      raise E.Reject;
+
+    let ety = Option.get_as_list op.op_thety @ op.op_sig in
+
+    if List.length aty <> List.length ety then
+      raise E.Reject;
+
+    let map = ref Mint.empty in
+
+    List.iter2
+      (fun ety aty -> Type.unify ~restr:op.op_restr ~ptn:ety ~tg:aty map)
+      ety aty;
+
+    let ety = List.map (Type.subst !map) ety in
+    let rty = Type.subst !map (
+      match op.op_resty with
+      | `Self  -> Option.get op.op_thety
+      | `Ty ty -> ty) in
+
+    let rty =
+      match op.op_partial, em with
+      | `Partial, `Formula _ -> A.Toption rty
+      | _, _ -> rty in
+
+    let d = Type.sig_distance ~from_:aty ~to_:ety in
+
+    Some (Option.get_exn E.Reject d, (op.op_const, (op.op_resty = `Self), (ety, rty)))
+
+  with E.Reject | Type.UnificationFailure -> None
+
+(* -------------------------------------------------------------------- *)
+and for_api_call ~mode ?autoview ?capture env (the, m, args)
+  : (A.pterm * (A.const * bool * (A.ptyp list * A.ptyp)) * A.pterm list) option
   =
   let module E = struct exception Bailout end in
 
@@ -3893,44 +3895,35 @@ and for_api_call mode env theloc (the, m, args)
       | `Typed  ast -> ast
       | `Parsed the -> for_xexpr mode env the in
 
-    let methods =
+    let args =
+      match args with
+      | [ { pldesc = PT.Etuple l; _ } ] -> l
+      | _ -> args in
+
+    let args = List.map (for_xexpr mode ?autoview ?capture env) args in
+
+    if List.exists (fun arg -> Option.is_none arg.A.type_) args then
+      raise E.Bailout;
+
+    let aty = List.map (fun a -> Option.get a.A.type_) args in
+
+    let method_ =
       match the.A.type_ with
       | None ->
         raise E.Bailout
 
-      | Some _ ->
-        Env.emit_error env (theloc, DoesNotSupportMethodCall);
-        raise E.Bailout in
-
-    let method_ =
-      match Mid.find_opt (unloc m) methods with
-      | None ->
-        Env.emit_error env (loc m, NoSuchMethod (unloc m));
-        raise E.Bailout
-      | Some method_ -> method_
-    in
-
-    let args =
-      match args with
-      | [ { pldesc = PT.Etuple l; _ } ] -> l
-      | _ -> args
-    in
-
-    let ne = List.length (fst method_.mth_sig) in
-    let ng = List.length args in
-
-    if ne <> ng then begin
-      Env.emit_error env (theloc, InvalidNumberOfArguments (ne, ng));
-      raise E.Bailout
-    end;
-
-    let doarg arg (aty : mthstyp) =
-      match aty with
-      | `T ty ->
-        A.AExpr (for_xexpr mode env ~ety:ty arg)
-    in
-
-    let args = List.map2 doarg args (fst method_.mth_sig) in
+      | Some ty ->
+          match
+            List.find_map
+              (fun op ->
+                if Option.is_some op.op_thety then
+                  select_mop mode.em_kind (unloc m) (ty :: aty) op
+                else None) allops
+          with
+          | None -> 
+              Env.emit_error env (loc m, NoSuchMethod (unloc m));
+              raise E.Bailout
+          | Some (_, method_) -> method_ in
 
     Some (the, method_, args)
 
@@ -4458,9 +4451,25 @@ let rec for_instruction_r
               env, mki (A.Icall (Some the, A.Cconst method_.mth_name, args))
 
             | _ ->
-              let infos = for_api_call (expr_mode kind) env (loc i) (`Typed the, m, args) in
-              let the, method_, args = Option.get_fdfl bailout infos in
-              env, mki (A.Icall (Some the, A.Cconst method_.mth_name, args))
+              let infos =
+                for_api_call ~mode:(expr_mode kind) env (`Typed the, m, args) in
+              let the, (name, se, _), args = Option.get_fdfl bailout infos in
+              let args = List.map (fun x -> A.AExpr x) args in
+              let aout = mki (A.Icall (None, A.Cconst name, A.AExpr the :: args)) in
+              let aout =
+                if se then begin
+                  match the.node with
+                  | Pvar (VTnone, Vnone, x) ->
+                      mki (A.Iassign (
+                          ValueAssign, Option.get the.type_, `Var x,
+                          A.mk_sp ~loc:(loc i) ?type_:the.type_
+                            (A.Pcall (None, A.Cconst name, A.AExpr the :: args))))
+                  | _ ->
+                      Env.emit_error env (loc i, assert false); aout
+                end else
+                  mki (A.Icall (None, A.Cconst name, A.AExpr the :: args)) in
+
+              env, aout
           end
 
         | None -> bailout ()
