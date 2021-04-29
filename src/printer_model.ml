@@ -19,7 +19,6 @@ let pp_btyp fmt = function
   | Btimestamp    -> Format.fprintf fmt "timestamp"
   | Bstring       -> Format.fprintf fmt "string"
   | Baddress      -> Format.fprintf fmt "address"
-  | Brole         -> Format.fprintf fmt "role"
   | Bcurrency     -> Format.fprintf fmt "tez"
   | Bsignature    -> Format.fprintf fmt "signature"
   | Bkey          -> Format.fprintf fmt "key"

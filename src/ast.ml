@@ -27,7 +27,6 @@ type vtyp =
   | VTduration
   | VTstring
   | VTaddress
-  | VTrole
   | VTcurrency
   | VTkey
   | VTkeyhash
@@ -760,7 +759,6 @@ let vtkeyhash      = Tbuiltin (VTkeyhash      )
 let vtnat          = Tbuiltin (VTnat          )
 let vtnever        = Tbuiltin (VTnever        )
 let vtrational     = Tbuiltin (VTrational     )
-let vtrole         = Tbuiltin (VTrole         )
 let vtsignature    = Tbuiltin (VTsignature    )
 let vtstring       = Tbuiltin (VTstring       )
 let vtunit         = Tbuiltin (VTunit         )
@@ -782,7 +780,6 @@ let vts = [
   vtnat          ;
   vtnever        ;
   vtrational     ;
-  vtrole         ;
   vtsignature    ;
   vtstring       ;
   vtunit         ;

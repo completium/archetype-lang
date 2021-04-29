@@ -1,6 +1,6 @@
 archetype miles_with_expiration
 
-variable admin : role = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
+variable admin : address = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 
 (* id is a string because it is generated off-chain *)
 asset mile identified by id {
@@ -11,7 +11,7 @@ asset mile identified by id {
 
 (* a partition ensures there is no direct access to mile collection *)
 asset owner identified by addr {
-  addr  : role;
+  addr  : address;
   miles : partition<mile> = []
 }
 

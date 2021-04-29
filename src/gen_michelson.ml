@@ -97,7 +97,6 @@ let to_ir (model : M.model) : T.ir =
         | Btimestamp    -> T.Ttimestamp
         | Bstring       -> T.Tstring
         | Baddress      -> T.Taddress
-        | Brole         -> T.Taddress
         | Bcurrency     -> T.Tmutez
         | Bsignature    -> T.Tsignature
         | Bkey          -> T.Tkey

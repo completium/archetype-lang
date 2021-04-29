@@ -136,7 +136,6 @@ let pp_type fmt typ =
       | Tystring      -> "arstring"
       | Tydate        -> "date"
       | Tyaddr        -> "address"
-      | Tyrole        -> "role"
       | Tytez         -> "tez"
       | Tybytes       -> "bytes"
       | Tychainid     -> "chain_id"
@@ -344,7 +343,7 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "%a && %a"
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
-  | Teq ((Tystring | Tyaddr | Tyrole | Tykey | Tysignature | Tybytes), e1, e2) ->
+  | Teq ((Tystring | Tyaddr | Tykey | Tysignature | Tybytes), e1, e2) ->
     Format.fprintf fmt "str_eq %a %a"
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
@@ -356,7 +355,7 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "not (%a && %a)"
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
-  | Tneq ((Tystring | Tyaddr | Tyrole | Tykey | Tysignature | Tybytes), e1, e2) ->
+  | Tneq ((Tystring | Tyaddr | Tykey | Tysignature | Tybytes), e1, e2) ->
     Format.fprintf fmt "not (str_eq %a %a)"
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
@@ -435,7 +434,7 @@ let rec pp_term outer pos fmt = function
       (pp_term e_default PRight) e1
       (pp_term e_default PRight) e2
   | Txor (_, _, _) -> assert false
-  | Tgt ((Tystring | Tyaddr | Tyrole | Tykey | Tysignature | Tybytes),e1,e2) ->
+  | Tgt ((Tystring | Tyaddr | Tykey | Tysignature | Tybytes),e1,e2) ->
     Format.fprintf fmt "str_gt %a %a"
       (pp_term e_default PRight) e1
       (pp_term e_default PRight) e2
@@ -443,7 +442,7 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "%a > %a"
       (pp_term e_default PRight) e1
       (pp_term e_default PRight) e2
-  | Tge ((Tystring | Tyaddr | Tyrole | Tykey | Tysignature | Tybytes),e1,e2) ->
+  | Tge ((Tystring | Tyaddr | Tykey | Tysignature | Tybytes),e1,e2) ->
     Format.fprintf fmt "str_ge %a %a"
       (pp_term e_default PRight) e1
       (pp_term e_default PRight) e2
@@ -451,7 +450,7 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "%a >= %a"
       (pp_term e_default PRight) e1
       (pp_term e_default PRight) e2
-  | Tlt ((Tystring | Tyaddr | Tyrole | Tykey | Tysignature | Tybytes),e1,e2) ->
+  | Tlt ((Tystring | Tyaddr | Tykey | Tysignature | Tybytes),e1,e2) ->
     Format.fprintf fmt "str_lt %a %a"
       (pp_term e_default PRight) e1
       (pp_term e_default PRight) e2
@@ -459,7 +458,7 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "%a < %a"
       (pp_term e_default PRight) e1
       (pp_term e_default PRight) e2
-  | Tle ((Tystring | Tyaddr | Tyrole | Tykey | Tysignature | Tybytes),e1,e2) ->
+  | Tle ((Tystring | Tyaddr | Tykey | Tysignature | Tybytes),e1,e2) ->
     Format.fprintf fmt "str_le %a %a"
       (pp_term e_default PRight) e1
       (pp_term e_default PRight) e2

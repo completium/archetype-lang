@@ -1543,7 +1543,6 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Tbuiltin Btimestamp    -> assert false
     | Tbuiltin Bstring       -> A.tstring
     | Tbuiltin Baddress      -> A.taddress
-    | Tbuiltin Brole         -> A.trole
     | Tbuiltin Bcurrency     -> A.ttez
     | Tbuiltin Bsignature    -> A.tsignature
     | Tbuiltin Bkey          -> A.tkey

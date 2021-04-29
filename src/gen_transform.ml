@@ -380,14 +380,6 @@ let remove_label (model : model) : model =
   in
   map_mterm_model aux model
 
-let replace_lit_address_by_role (model : model) : model =
-  let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
-    match mt.node with
-    | Maddress _ as node -> mk_mterm node trole
-    | _ -> map_mterm (aux ctx) mt
-  in
-  map_mterm_model aux model
-
 (* transforms vars "to_iter" and "itereated" to M.toiterated and M.iterated
    with iterated collection as argument
    it works if loop lables are unique over the contract

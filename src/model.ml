@@ -28,7 +28,6 @@ type btyp =
   | Btimestamp
   | Bstring
   | Baddress
-  | Brole
   | Bcurrency
   | Bsignature
   | Bkey
@@ -1053,7 +1052,6 @@ let tkeyhash       = mktype (Tbuiltin Bkeyhash)
 let tdate          = mktype (Tbuiltin Bdate)
 let ttimestamp     = mktype (Tbuiltin Btimestamp)
 let taddress       = mktype (Tbuiltin Baddress)
-let trole          = mktype (Tbuiltin Brole)
 let tenum v        = mktype (Tenum v)
 let tstate         = mktype (Tstate)
 let tstorage       = mktype (Tstorage)

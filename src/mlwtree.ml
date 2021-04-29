@@ -31,7 +31,6 @@ type ('i,'t) abstract_type =
   | Tystring
   | Tyrational
   | Tyaddr
-  | Tyrole
   | Tykey
   | Tykeyhash
   | Tydate
@@ -343,7 +342,6 @@ let map_abstract_type (map_i : 'i1 -> 'i2) (map_t : 't1 -> 't2) = function
   | Tyint         -> Tyint
   | Tystring      -> Tystring
   | Tyaddr        -> Tyaddr
-  | Tyrole        -> Tyrole
   | Tydate        -> Tydate
   | Tytez         -> Tytez
   | Tybytes       -> Tybytes
@@ -798,7 +796,6 @@ let compare_abstract_type
   | Tystring, Tystring -> true
   | Tyrational, Tyrational -> true
   | Tyaddr, Tyaddr -> true
-  | Tyrole, Tyrole -> true
   | Tykey, Tykey -> true
   | Tydate, Tydate -> true
   | Tyduration, Tyduration -> true

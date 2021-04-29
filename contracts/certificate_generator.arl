@@ -1,8 +1,8 @@
 archetype certificate_generator
 
-variable admin : role = @tz1aazS5ms5cbGkb6FN1wvWmN7yrMTTcr6wB
+variable admin : address = @tz1aazS5ms5cbGkb6FN1wvWmN7yrMTTcr6wB
 
-variable admin_tmp : role = @tz1aazS5ms5cbGkb6FN1wvWmN7yrMTTcr6wB
+variable admin_tmp : address = @tz1aazS5ms5cbGkb6FN1wvWmN7yrMTTcr6wB
 
 asset certificate identified by id {
   id : string;
@@ -20,7 +20,7 @@ entry add (cid : string, cdescription : string, cformula : string, curl : string
   }
 }
 
-entry assign_new_admin (newrole : role) {
+entry assign_new_admin (newrole : address) {
   called by admin
   effect {
     admin_tmp := newrole;

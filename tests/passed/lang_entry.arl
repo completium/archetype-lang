@@ -1,6 +1,6 @@
 archetype lang_entry
 
-constant admin : role = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
+constant admin : address = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 
 entry exec () {
   specification {

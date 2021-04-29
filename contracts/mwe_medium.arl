@@ -1,6 +1,6 @@
 archetype mwe_medium
 
-constant admin : role = @tz1aazS5ms5cbGkb6FN1wvWmN7yrMTTcr6wB
+constant admin : address = @tz1aazS5ms5cbGkb6FN1wvWmN7yrMTTcr6wB
 
 asset mile identified by id {
     id : string;

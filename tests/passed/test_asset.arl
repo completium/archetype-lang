@@ -20,7 +20,7 @@ enum my_enums =
 | Completed
 
 asset my_asset_all identified by id {
-  id : role;
+  id : address;
   k : int;
   b : bool;
 }

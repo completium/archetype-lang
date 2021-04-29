@@ -1,10 +1,10 @@
 archetype escrow_without_spec
 
-constant buyer : role  = @tz1bfVgcJC4ukaQSHUe1EbrUd5SekXeP9CWk
+constant buyer : address  = @tz1bfVgcJC4ukaQSHUe1EbrUd5SekXeP9CWk
 
-constant seller : role = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
+constant seller : address = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 
-constant oracle : role = @tz1iawHeddgggn6P5r5jtq2wDRqcJVksGVSa
+constant oracle : address = @tz1iawHeddgggn6P5r5jtq2wDRqcJVksGVSa
 
 constant price : tez = 10tz
 

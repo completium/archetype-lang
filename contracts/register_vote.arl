@@ -1,7 +1,7 @@
 archetype register_vote
 
 // set contract caller address here
-constant admin : role = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
+constant admin : address = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 
 variable quorum : rational = 0.2
 variable threshold : rational = 0.5

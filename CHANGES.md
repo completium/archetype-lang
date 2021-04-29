@@ -26,6 +26,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `slice` returns `option<byte|string>`
   - fail message and expression (see documentation)
 
+### Removed
+  - `role` type
+
 ## [1.2.3] - 2021-04-12
 ### Added
   - `date_from_timestamp` function (convert a timestamp typed int to date)

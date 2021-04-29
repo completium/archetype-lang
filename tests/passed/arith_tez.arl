@@ -2,7 +2,7 @@ archetype arith_tez
 
 constant a : tez = 1tz
 
-entry exec (r : role) {
+entry exec (r : address) {
   accept transfer
   effect {
     var c : int = 0;

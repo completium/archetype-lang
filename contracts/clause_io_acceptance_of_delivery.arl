@@ -1,8 +1,8 @@
 archetype clause_io_acceptance_of_delivery
 
-variable shipper : role = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
+variable shipper : address = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 
-variable receiver : role = @tz1bfVgcJC4ukaQSHUe1EbrUd5SekXeP9CWk
+variable receiver : address = @tz1bfVgcJC4ukaQSHUe1EbrUd5SekXeP9CWk
 
 variable payment : tez = 10tz
 

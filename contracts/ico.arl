@@ -24,13 +24,13 @@ variable nb_tez_raised : tez = 0tz
 
 (* Roles *)
 
-variable owner : role = @tz1XZ7s6uStC2hZVpPQhXgcdXPwxifByF3Ao
+variable owner : address = @tz1XZ7s6uStC2hZVpPQhXgcdXPwxifByF3Ao
 
-variable whitelister : role = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
+variable whitelister : address = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 
-variable reserve : role = @tz1bfVgcJC4ukaQSHUe1EbrUd5SekXeP9CWk
+variable reserve : address = @tz1bfVgcJC4ukaQSHUe1EbrUd5SekXeP9CWk
 
-variable community : role = @tz1iawHeddgggn6P5r5jtq2wDRqcJVksGVSa
+variable community : address = @tz1iawHeddgggn6P5r5jtq2wDRqcJVksGVSa
 
 (* contributor *)
 

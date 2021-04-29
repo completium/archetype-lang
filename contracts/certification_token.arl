@@ -1,7 +1,7 @@
 archetype certification_token
 
 asset learner {
-  lid : role;
+  lid : address;
   ltokens : int = 0;
 }
 
@@ -42,7 +42,7 @@ entry register_learner (do_add : bool) {
   }
 }
 
-entry register_learners (llid : role, lltokens : int, do_add : bool) {
+entry register_learners (llid : address, lltokens : int, do_add : bool) {
   effect {
     if do_add then (
       learner.addupdate(llid, {ltokens = lltokens});

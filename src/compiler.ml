@@ -223,7 +223,6 @@ let generate_target model =
     |> replace_dotassetfield_by_dot
     |> generate_storage
     |> replace_declvar_by_letin
-    |> replace_lit_address_by_role
     |> remove_label
     |> flat_sequence
     |> remove_cmp_bool
@@ -261,7 +260,6 @@ let generate_target model =
     |> eval_variable_initial_value
     |> generate_storage
     |> replace_declvar_by_letin
-    |> replace_lit_address_by_role
     |> replace_label_by_mark
     |> flat_sequence
     |> remove_cmp_bool

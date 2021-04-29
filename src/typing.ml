@@ -142,7 +142,6 @@ end = struct
       | A.Tbuiltin VTduration    -> true
       | A.Tbuiltin VTstring      -> true
       | A.Tbuiltin VTaddress     -> true
-      | A.Tbuiltin VTrole        -> true
       | A.Tbuiltin VTcurrency    -> true
       | A.Tbuiltin VTkey         -> true
       | A.Tbuiltin VTkeyhash     -> true
@@ -184,7 +183,6 @@ end = struct
       | A.Tbuiltin VTduration    -> true
       | A.Tbuiltin VTstring      -> true
       | A.Tbuiltin VTaddress     -> true
-      | A.Tbuiltin VTrole        -> true
       | A.Tbuiltin VTcurrency    -> true
       | A.Tbuiltin VTkey         -> true
       | A.Tbuiltin VTkeyhash     -> true
@@ -226,7 +224,6 @@ end = struct
       | A.Tbuiltin VTduration    -> true
       | A.Tbuiltin VTstring      -> true
       | A.Tbuiltin VTaddress     -> true
-      | A.Tbuiltin VTrole        -> true
       | A.Tbuiltin VTcurrency    -> true
       | A.Tbuiltin VTkey         -> true
       | A.Tbuiltin VTkeyhash     -> true
@@ -268,7 +265,6 @@ end = struct
       | A.Tbuiltin VTduration    -> true
       | A.Tbuiltin VTstring      -> true
       | A.Tbuiltin VTaddress     -> true
-      | A.Tbuiltin VTrole        -> true
       | A.Tbuiltin VTcurrency    -> true
       | A.Tbuiltin VTkey         -> true
       | A.Tbuiltin VTkeyhash     -> true
@@ -310,7 +306,6 @@ end = struct
       | A.Tbuiltin VTduration    -> true
       | A.Tbuiltin VTstring      -> true
       | A.Tbuiltin VTaddress     -> true
-      | A.Tbuiltin VTrole        -> true
       | A.Tbuiltin VTcurrency    -> true
       | A.Tbuiltin VTkey         -> true
       | A.Tbuiltin VTkeyhash     -> true
@@ -352,7 +347,6 @@ end = struct
       | A.Tbuiltin VTduration    -> true
       | A.Tbuiltin VTstring      -> true
       | A.Tbuiltin VTaddress     -> true
-      | A.Tbuiltin VTrole        -> true
       | A.Tbuiltin VTcurrency    -> true
       | A.Tbuiltin VTkey         -> true
       | A.Tbuiltin VTkeyhash     -> true
@@ -399,8 +393,6 @@ end = struct
 
     | A.Tbuiltin bfrom, A.Tbuiltin bto -> begin
         match bfrom, bto with
-        | A.VTaddress  , A.VTrole       -> Some 1
-        | A.VTrole     , A.VTaddress    -> Some 1
         | A.VTnat      , A.VTint        -> Some 1
         | A.VTnat      , A.VTrational   -> Some 2
         | A.VTint      , A.VTrational   -> Some 1
@@ -420,7 +412,7 @@ end = struct
         | _, _ -> None
       end
 
-    | A.Tbuiltin (A.VTaddress | A.VTrole), A.Tcontract Tbuiltin (VTunit) ->
+    | A.Tbuiltin A.VTaddress, A.Tcontract Tbuiltin (VTunit) ->
       Some 1
 
     | A.Tcontainer (ty1, cf), A.Tcontainer (ty2, ct) ->
@@ -587,7 +579,6 @@ end = struct
       | VTdate
       | VTstring
       | VTaddress
-      | VTrole
       | VTcurrency
       | VTbytes
       ) -> true
@@ -1552,7 +1543,6 @@ let core_types = [
   ("int"          , A.vtint              );
   ("rational"     , A.vtrational         );
   ("bool"         , A.vtbool             );
-  ("role"         , A.vtrole             );
   ("address"      , A.vtaddress          );
   ("date"         , A.vtdate             );
   ("tez"          , A.vtcurrency         );
@@ -4253,7 +4243,7 @@ and for_role (env : env) (name : PT.lident) =
     None
 
   | Some nty ->
-    if not (Type.compatible ~autoview:false ~for_eq:false ~from_:nty.vr_type ~to_:A.vtrole) then
+    if not (Type.compatible ~autoview:false ~for_eq:false ~from_:nty.vr_type ~to_:A.vtaddress) then
       (Env.emit_error env (loc name, NotARole (unloc name)); None)
     else Some name
 
@@ -4506,7 +4496,7 @@ let rec for_instruction_r
         match tr with
         | TTsimple (e, to_) ->
           let e  = for_expr kind env ~ety:A.vtcurrency e in
-          A.TTsimple (e, for_expr kind env ~ety:A.vtrole to_)
+          A.TTsimple (e, for_expr kind env ~ety:A.vtaddress to_)
 
         | TTcontract (e, to_, name, ty, arg) -> begin
             let e  = for_expr kind env ~ety:A.vtcurrency e in
@@ -5212,7 +5202,7 @@ let rec for_callby (env : env) (cb : PT.expr) =
     [mkloc (loc cb) (Some (A.mk_sp ~loc:(loc an) ~type_:(A.Tcontainer(Tasset an, Collection)) (A.Pvar (VTnone, Vnone, an))))]
 
   | _ ->
-    [mkloc (loc cb) (Some (for_expr `Concrete env ~ety:A.vtrole cb))]
+    [mkloc (loc cb) (Some (for_expr `Concrete env ~ety:A.vtaddress cb))]
 
 (* -------------------------------------------------------------------- *)
 let for_entry_properties (env, poenv : env * env) (act : PT.entry_properties) =

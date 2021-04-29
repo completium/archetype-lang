@@ -120,7 +120,6 @@ let map_btype = function
   | M.Btimestamp     -> Tyint
   | M.Bstring        -> Tystring
   | M.Baddress       -> Tyaddr
-  | M.Brole          -> Tyrole
   | M.Bcurrency      -> Tytez
   | M.Bsignature     -> Tysignature
   | M.Bkey           -> Tykey
@@ -186,7 +185,6 @@ let rec mk_eq_type m e1 e2 = function
   | Tystring -> Teq (Tystring, Tvar e1, Tvar e2)
   | Tybytes -> Teq (Tybytes, Tvar e1, Tvar e2)
   | Tyaddr -> Teq (Tyaddr, Tvar e1, Tvar e2)
-  | Tyrole -> Teq (Tyrole, Tvar e1, Tvar e2)
   | Tyasset a -> Tapp (Tvar ("eq_"^a),[Tvar e1; Tvar e2])
   | Typartition a -> Teqfield(a, Tvar e1, Tvar e2)
   | Tyaggregate a -> Teqfield(a, Tvar e1, Tvar e2)
@@ -263,7 +261,6 @@ let rec mk_le_type e1 e2 = function
   | Tyrational -> Tapp (Tvar "rat_cmp",[Tvar "OpCmpLe"; Tvar e1; Tvar e2])
   | Tystring -> Tle (Tystring, Tvar e1, Tvar e2)
   | Tyaddr -> Tle (Tyaddr, Tvar e1, Tvar e2)
-  | Tyrole -> Tle (Tyrole, Tvar e1, Tvar e2)
   | Tytuple l ->
     let cmps = List.mapi (fun i t ->
         let e1i = e1^(string_of_int i) in
@@ -812,7 +809,6 @@ let rec type_to_init m (typ : loc_typ) : loc_term =
       | Tytuple l     -> Ttuple (List.map (type_to_init m) l)
       | Tybool        -> Ttrue
       | Tystring      -> Temptystr
-      | Tyrole        -> Tdefaultaddr
       | Tyaddr        -> Tdefaultaddr
       | Tyoption _    -> Tnone
       | Tyunit        -> Tunit
