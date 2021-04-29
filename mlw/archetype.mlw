@@ -210,6 +210,7 @@ module Utils
   (* String *)
 
   use string.String as S
+  use list.List as L
 
   val function str_concat arstring arstring : arstring
 
@@ -220,6 +221,8 @@ module Utils
 
   (* axiom substring_spec : forall s i j.
   substring s i j = S.substring s i j *)
+
+  val function str_concat_list (L.list arstring) : arstring
 
   val function str_length arstring : int
 

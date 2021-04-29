@@ -182,6 +182,7 @@ let rec mk_eq_type m e1 e2 = function
   | Tyunit -> Ttrue
   | Tybool -> Tor (Tpand (Tvar e1,Tvar e2),Tpand(Tnot (Tvar e1), Tnot (Tvar e2)))
   | Tyrational -> Tapp (Tvar "rat_eq",[Tvar e1; Tvar e2])
+  | Tykeyhash -> Teq (Tykeyhash, Tvar e1, Tvar e2)
   | Tystring -> Teq (Tystring, Tvar e1, Tvar e2)
   | Tybytes -> Teq (Tybytes, Tvar e1, Tvar e2)
   | Tyaddr -> Teq (Tyaddr, Tvar e1, Tvar e2)
@@ -238,7 +239,6 @@ let rec mk_eq_type m e1 e2 = function
   | Tyint
   | Tyuint
   | Tykey
-  | Tykeyhash
   | Tydate
   | Tyduration
   | Tytez
