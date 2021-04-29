@@ -1534,8 +1534,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
          | _ -> M.Tnone, M.Dnone
          in *)
       Tmatch (Tsndopt (Tget (loc_ident map_id,
-                    map_mterm m ctx k,
-                    map_mterm m ctx container) |> dl) |> dl,[
+                             map_mterm m ctx k,
+                             map_mterm m ctx container) |> dl) |> dl,[
                 (* mk_loc_coll_term map_id ctx (t, d)) |> dl,[ *)
                 Tpsome (map_lident id), map_mterm m ctx b;
                 Twild, map_mterm m ctx e
@@ -3120,7 +3120,89 @@ let process_no_fail m (d : (loc_term, loc_typ, loc_ident) abstract_decl) =
 
 (* ----------------------------------------------------------------------------*)
 
+type desc_container =
+  | Dset    of M.type_
+  | Dlist   of M.type_
+  | Dmap    of M.type_
+  | Dasset  of M.asset
+  | Denum   of M.enum
+  | Drecord of M.record
+[@@deriving show {with_path = false}]
+
+let pp_desc_container fmt dc =
+  let pp = Format.fprintf fmt in
+  match dc with
+  | Dset    v -> pp "%a" Printer_model.pp_type v
+  | Dlist   v -> pp "%a" Printer_model.pp_type v
+  | Dmap    v -> pp "%a" Printer_model.pp_type v
+  | Dasset  a -> Format.fprintf fmt "%s" (unloc a.name)
+  | Denum   e -> Format.fprintf fmt "%s" (unloc e.name)
+  | Drecord r -> Format.fprintf fmt "%s" (unloc r.name)
+
+let cmp_desc_container (d1 : desc_container) (d2 : desc_container) : bool =
+  match d1, d2 with
+  | Dset    t1, Dset    t2 -> M.cmp_type t1 t2
+  | Dlist   t1, Dlist   t2 -> M.cmp_type t1 t2
+  | Dmap    t1, Dmap    t2 -> M.cmp_type t1 t2
+  | Dasset  a1, Dasset  a2 -> M.cmp_ident (unloc a1.name) (unloc a2.name)
+  | Denum   e1, Denum   e2 -> M.cmp_ident (unloc e1.name) (unloc e2.name)
+  | Drecord r1, Drecord r2 -> M.cmp_ident (unloc r1.name) (unloc r2.name)
+  | _ -> false
+
+let mk_decls (model : M.model) =
+
+  let push x l =
+    if List.exists (cmp_desc_container x) l
+    then l
+    else l @ [x]
+  in
+
+  let rec for_type (accu : desc_container list) (t : M.type_) : desc_container list =
+    match M.get_ntype t with
+    | Tlist ty           -> for_type accu ty |> push (Dlist t)
+    | Tset    ty         -> for_type accu ty |> push (Dset t)
+    | Tmap (_, kty, vty) -> for_type (for_type accu kty) vty |> push (Dmap t)
+    | Toption t          -> for_type accu t
+    | Ttuple  ts         -> List.fold_left (for_type) accu ts
+    | Tor (a, b)         -> for_type (for_type accu a) b
+    | Tlambda (a, b)     -> for_type (for_type accu a) b
+    | Tcontract t        -> for_type accu t
+    | Tticket t          -> for_type accu t
+    | Tprog t            -> for_type accu t
+    | Tvset (_, t)       -> for_type accu t
+    | _                  -> accu
+  in
+
+  let for_decl (d : M.decl_node) (accu : desc_container list) : desc_container list =
+    match d with
+    | Dvar    _v -> accu
+    | Denum    e -> push (Denum e)   accu
+    | Dasset   a -> push (Dasset a)  accu
+    | Drecord  r -> push (Drecord r) accu
+  in
+
+  let desc_containers = M.Utils.get_all_gen_mterm_type (fun x _ -> x) for_type for_decl model in
+  (* Format.printf "desc_containers: [%a]@\n" (Printer_tools.pp_list "; " pp_desc_container) desc_containers; *)
+
+  let for_decl accu d =
+    let ds =
+      match d with
+      | Dset    t ->  mk_set_type  model t
+      | Dlist   t ->  mk_list_type model t
+      | Dmap    t ->  mk_map_type  model t
+      | Dasset  a -> [mk_asset     model a]
+      | Denum   e -> [mk_enum      model e]
+      | Drecord r -> [mk_record    model r]
+    in
+    accu @ ds
+  in
+
+  List.fold_left for_decl [] desc_containers
+
 let to_whyml (m : M.model) : mlw_tree  =
+  (* let env    = Env.create m in *)
+  let _decls = mk_decls m in
+
   let assets           = M.Utils.get_assets m in
   let storage_module   = dl ((mk_module_name m.name.pldesc) ^ "_storage") in
   let uselib           = mk_use in

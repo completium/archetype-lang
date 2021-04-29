@@ -1372,7 +1372,7 @@ let packops : opinfo list =
 (* -------------------------------------------------------------------- *)
 let opsops : opinfo list =
   [op "mkoperation" A.Cmkoperation `Total None
-         [A.vtcurrency; A.Tcontract (A.Tnamed 0); A.Tnamed 0] (`Ty A.Toperation) Mint.empty]
+     [A.vtcurrency; A.Tcontract (A.Tnamed 0); A.Tnamed 0] (`Ty A.Toperation) Mint.empty]
 
 (* -------------------------------------------------------------------- *)
 let lambdaops : opinfo list = [
@@ -3273,50 +3273,50 @@ let rec for_xexpr
 
         let the = for_xexpr env the in
 
-          match the.A.type_ with
-          | None -> bailout () | Some ty ->
+        match the.A.type_ with
+        | None -> bailout () | Some ty ->
 
           match Type.as_asset_collection ty with
           | Some _ -> begin
-            let infos = for_gen_method_call mode env (loc tope) (`Typed the, m, args) in
-            let the, (asset, c), method_, args, amap = Option.get_fdfl bailout infos in
-            let rty = Option.bind (type_of_mthtype asset amap) (snd method_.mth_sig) in
+              let infos = for_gen_method_call mode env (loc tope) (`Typed the, m, args) in
+              let the, (asset, c), method_, args, amap = Option.get_fdfl bailout infos in
+              let rty = Option.bind (type_of_mthtype asset amap) (snd method_.mth_sig) in
 
 
-            if Option.is_none rty then
-              Env.emit_error env (loc tope, VoidMethodInExpr);
+              if Option.is_none rty then
+                Env.emit_error env (loc tope, VoidMethodInExpr);
 
-            begin match method_.mth_place, mode.em_kind with
-            | `OnlyExec, `Formula _ ->
-                Env.emit_error env (loc tope, InvalidMethodInFormula)
-            | `OnlyFormula, (`Expr _) ->
-                Env.emit_error env (loc tope, InvalidMethodInExec)
-            | _, _ ->
-                ()
-            end;
+              begin match method_.mth_place, mode.em_kind with
+                | `OnlyExec, `Formula _ ->
+                  Env.emit_error env (loc tope, InvalidMethodInFormula)
+                | `OnlyFormula, (`Expr _) ->
+                  Env.emit_error env (loc tope, InvalidMethodInExec)
+                | _, _ ->
+                  ()
+              end;
 
-            begin match method_.mth_purity, mode.em_kind with
-            | `Effect _, `Formula _ ->
-                Env.emit_error env (loc tope, UnpureInFormula)
-            | `Effect allowed, _ when not (List.mem c allowed) ->
-                Env.emit_error env (loc tope, InvalidEffectForCtn (c, allowed))
-            | _, _ ->
-                ()
-            end;
+              begin match method_.mth_purity, mode.em_kind with
+                | `Effect _, `Formula _ ->
+                  Env.emit_error env (loc tope, UnpureInFormula)
+                | `Effect allowed, _ when not (List.mem c allowed) ->
+                  Env.emit_error env (loc tope, InvalidEffectForCtn (c, allowed))
+                | _, _ ->
+                  ()
+              end;
 
-            begin match method_.mth_map_type with
-            | `Standard when asset.as_bm && not (is_form_kind mode.em_kind) ->
-                Env.emit_error env (loc tope, InvalidMethodWithBigMap (unloc m))
-            | _ -> ()
-            end;
-            
-            let rty =
-              match method_.mth_totality, mode.em_kind with
-              | `Partial, `Formula _ ->
+              begin match method_.mth_map_type with
+                | `Standard when asset.as_bm && not (is_form_kind mode.em_kind) ->
+                  Env.emit_error env (loc tope, InvalidMethodWithBigMap (unloc m))
+                | _ -> ()
+              end;
+
+              let rty =
+                match method_.mth_totality, mode.em_kind with
+                | `Partial, `Formula _ ->
                   Option.map (fun x -> A.Toption x) rty
-              | _, _ ->
+                | _, _ ->
                   rty in
-              
+
               mk_sp rty (A.Pcall (Some the, A.Cconst method_.mth_name, args))
             end
 
@@ -3868,9 +3868,9 @@ and select_mop em name aty (op : opinfo) =
 
     let ety = List.map (Type.subst !map) ety in
     let rty = Type.subst !map (
-      match op.op_resty with
-      | `Self  -> Option.get op.op_thety
-      | `Ty ty -> ty) in
+        match op.op_resty with
+        | `Self  -> Option.get op.op_thety
+        | `Ty ty -> ty) in
 
     let rty =
       match op.op_partial, em with
@@ -3913,17 +3913,17 @@ and for_api_call ~mode ?autoview ?capture env (the, m, args)
         raise E.Bailout
 
       | Some ty ->
-          match
-            List.find_map
-              (fun op ->
-                if Option.is_some op.op_thety then
-                  select_mop mode.em_kind (unloc m) (ty :: aty) op
-                else None) allops
-          with
-          | None -> 
-              Env.emit_error env (loc m, NoSuchMethod (unloc m));
-              raise E.Bailout
-          | Some (_, method_) -> method_ in
+        match
+          List.find_map
+            (fun op ->
+               if Option.is_some op.op_thety then
+                 select_mop mode.em_kind (unloc m) (ty :: aty) op
+               else None) allops
+        with
+        | None ->
+          Env.emit_error env (loc m, NoSuchMethod (unloc m));
+          raise E.Bailout
+        | Some (_, method_) -> method_ in
 
     Some (the, method_, args)
 
@@ -4460,12 +4460,12 @@ let rec for_instruction_r
                 if se then begin
                   match the.node with
                   | Pvar (VTnone, Vnone, x) ->
-                      mki (A.Iassign (
-                          ValueAssign, Option.get the.type_, `Var x,
-                          A.mk_sp ~loc:(loc i) ?type_:the.type_
-                            (A.Pcall (None, A.Cconst name, A.AExpr the :: args))))
+                    mki (A.Iassign (
+                        ValueAssign, Option.get the.type_, `Var x,
+                        A.mk_sp ~loc:(loc i) ?type_:the.type_
+                          (A.Pcall (None, A.Cconst name, A.AExpr the :: args))))
                   | _ ->
-                      Env.emit_error env (loc i, assert false); aout
+                    Env.emit_error env (loc i, assert false); aout
                 end else
                   mki (A.Icall (None, A.Cconst name, A.AExpr the :: args)) in
 
@@ -6538,6 +6538,7 @@ let for_declarations ?init (env : env) (decls : (PT.declaration list) loced) : A
 
 (* -------------------------------------------------------------------- *)
 let typing ?init (env : env) (cmd : PT.archetype) =
+
   match unloc cmd with
   | Marchetype decls ->
     for_declarations env (mkloc (loc cmd) decls) ?init
