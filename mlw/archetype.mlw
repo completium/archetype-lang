@@ -216,7 +216,7 @@ module Utils
   (* axiom str_concat_spec : forall s1 s2.
   str_concat s1 s2 = S.concat s1 s2 *)
 
-  val function substring arstring int int : arstring
+  val function slice arstring int int : option arstring
 
   (* axiom substring_spec : forall s i j.
   substring s i j = S.substring s i j *)

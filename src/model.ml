@@ -5071,8 +5071,8 @@ end = struct
             let b = extract_big_int b |> Big_int.int_of_big_int in
 
             match get_ntype t with
-            | Tbuiltin Bstring -> let s = extract_string s in mk_string (String.sub s a b)
-            | Tbuiltin Bbytes  -> let s = extract_bytes  s in mk_bytes  (String.sub s (2 * a) (2 * b))
+            | Toption ((Tbuiltin Bstring, _)) -> let s = extract_string s in mk_string (String.sub s a b) |> mk_some
+            | Toption ((Tbuiltin Bbytes , _)) -> let s = extract_bytes  s in mk_bytes  (String.sub s (2 * a) (2 * b)) |> mk_some
             | _ -> assert false
           end
 

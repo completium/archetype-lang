@@ -1,4 +1,4 @@
-archetype asset_init_by_const_key_parameter(const k : nat)
+archetype asset_init_by_const_key_parameter(const k : nat = 1)
 
 asset my_asset identified by n {
   n : nat;

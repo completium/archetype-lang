@@ -2274,8 +2274,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       end
     | Mslice (s, i1, i2) ->
       begin match M.get_ntype s.type_ with
-        | Tbuiltin Bbytes -> Tapp (loc_term (Tvar "substring"),[map_mterm m ctx s; map_mterm m ctx i1; map_mterm m ctx i2])
-        | _ -> Tapp (loc_term (Tvar "substring"),[map_mterm m ctx s; map_mterm m ctx i1; map_mterm m ctx i2])
+        | Toption (Tbuiltin Bbytes, _) -> Tapp (loc_term (Tvar "slice"),[map_mterm m ctx s; map_mterm m ctx i1; map_mterm m ctx i2])
+        | _ -> Tapp (loc_term (Tvar "slice"),[map_mterm m ctx s; map_mterm m ctx i1; map_mterm m ctx i2])
       end
     | Mlength s ->
       begin match M.get_ntype s.type_ with
