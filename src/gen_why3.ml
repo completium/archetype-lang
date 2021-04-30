@@ -1405,6 +1405,11 @@ let init_ctx = {
   fails    = false;
 }
 
+let mk_sid ctx =
+  match ctx.fun_ with
+  | true -> gsarg
+  | false -> gsinit
+
 let add_local id ctx = { ctx with locals = id::ctx.locals }
 
 let mk_trace_seq m t chs =
@@ -1456,21 +1461,25 @@ let is_partition m n f =
   | _,Partition -> true
   | _ -> false
 
-let mk_get_force n k c = Tmatch (dl (Tget(n,k,c)),[
-    Tpsome (dl "v"), loc_term (Tvar "v");
-    Twild, loc_term (Tseq [Tassign(Tvar gs, cp_storage gsinit); Traise ENotFound])
-  ])
-
-let mk_match_get_some a k instr excn =
-  Tmatch (dl (Tget (dl a, k, loc_term (mk_ac a))), [
-      Tpignore, instr;
-      Twild, loc_term (Tseq [Tassign (Tvar gs, cp_storage gsinit); Traise excn])
+let mk_get_force ctx n k c =
+  let sid = mk_sid ctx in
+  Tmatch (dl (Tget(n,k,c)),[
+      Tpsome (dl "v"), loc_term (Tvar "v");
+      Twild, loc_term (Tseq [Tassign(Tvar gs, cp_storage sid); Traise ENotFound])
     ])
 
-let mk_match_get_some_id id a k instr excn =
+let mk_match_get_some ctx a k instr excn =
+  let sid = mk_sid ctx in
+  Tmatch (dl (Tget (dl a, k, loc_term (mk_ac a))), [
+      Tpignore, instr;
+      Twild, loc_term (Tseq [Tassign (Tvar gs, cp_storage sid); Traise excn])
+    ])
+
+let mk_match_get_some_id ctx id a k instr excn =
+  let sid = mk_sid ctx in
   Tmatch (dl (Tget (dl a, k, loc_term (mk_ac a))), [
       Tpsome id, instr;
-      Twild, loc_term (Tseq [Tassign (Tvar gs, cp_storage gsinit); Traise excn])
+      Twild, loc_term (Tseq [Tassign (Tvar gs, cp_storage sid); Traise excn])
     ])
 
 let mk_match_get_some_id_nil id a k instr =
@@ -1479,16 +1488,18 @@ let mk_match_get_some_id_nil id a k instr =
       Twild, dl Tunit
     ])
 
-let mk_match_get_none a k instr excn =
+let mk_match_get_none ctx a k instr excn =
+  let sid = mk_sid ctx in
   Tmatch (dl (Tget (dl a, k, loc_term (mk_ac a))), [
-      Tpignore, loc_term (Tseq [Tassign (Tvar gs, cp_storage gsinit); Traise excn]);
+      Tpignore, loc_term (Tseq [Tassign (Tvar gs, cp_storage sid); Traise excn]);
       Twild, instr
     ])
 
-let mk_match matched id instr excn =
+let mk_match ctx matched id instr excn =
+  let sid = mk_sid ctx in
   Tmatch (matched, [
       Tpsome (dl id), instr;
-      Twild, loc_term (Tseq [Tassign (Tvar gs, cp_storage gsinit); Traise excn])
+      Twild, loc_term (Tseq [Tassign (Tvar gs, cp_storage sid); Traise excn])
     ])
 
 let mk_storage_id ctx =
@@ -1718,9 +1729,10 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     (* effect *)
     | Mfail x -> begin
+        let sid = mk_sid ctx in
         Tseq
           [
-            loc_term (Tassign (Tvar gs, cp_storage gsinit));
+            loc_term (Tassign (Tvar gs, cp_storage sid));
             dl (Traise
                   (match x with
                    | Invalid v            ->
@@ -1963,7 +1975,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let assign_added = mk_add_assign (mk_ac_added n) in
       let assigns = dl (Tseq [assign; assign_added]) in
       mk_trace_seq m
-        (mk_match_get_none n key_value assigns EKeyExists)
+        (mk_match_get_none ctx n key_value assigns EKeyExists)
         [CAdd n]
 
     | Maddfield (a, f, k, kb) ->
@@ -1985,10 +1997,10 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
           let assign = mk_add_assign (mk_ac oasset) in
           let assign_added = mk_add_assign (mk_ac_added oasset) in
           let assigns = dl (Tseq [assign; assign_added]) in
-          dl (Tseq [assign; dl (mk_match_get_none oasset v assigns EKeyExists)])
-        else dl (mk_match_get_some oasset v assign ENotFound) in
+          dl (Tseq [assign; dl (mk_match_get_none ctx oasset v assigns EKeyExists)])
+        else dl (mk_match_get_some ctx oasset v assign ENotFound) in
       mk_trace_seq m
-        (mk_match_get_some a (map_mterm m ctx k) instr ENotFound)
+        (mk_match_get_some ctx a (map_mterm m ctx k) instr ENotFound)
         ([CUpdate f] @ if is_partition m a f then [CAdd oasset] else [])
 
     | Mremoveasset (n, i) ->
@@ -2046,7 +2058,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
           dl (Tseq [rm_assign; rm_assign_rmed; assign])
         else assign in
       mk_trace_seq m
-        (mk_match_get_some a (map_mterm m ctx k) instr ENotFound)
+        (mk_match_get_some ctx a (map_mterm m ctx k) instr ENotFound)
         ([CUpdate f] @ if is_partition m a f then [CRm t] else [])
 
     | Mremoveall (a, f, v) ->
@@ -2059,8 +2071,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
           let capoasset = String.capitalize_ascii oasset in
           let rmif = dl (Tapp (loc_term (Tdoti(capoasset, "removeif_in_field")), [field; loc_term (mk_ac oasset)])) in
           let assign_rmif = dl (Tassign(loc_term (mk_ac oasset), rmif)) in
-          mk_match_get_some_id (dl "_a") a (map_mterm m ctx v) (dl (Tseq [assign_rmif; assign_rm_field])) ENotFound
-        else mk_match_get_some a (map_mterm m ctx v) assign_rm_field ENotFound in
+          mk_match_get_some_id ctx (dl "_a") a (map_mterm m ctx v) (dl (Tseq [assign_rmif; assign_rm_field])) ENotFound
+        else mk_match_get_some ctx a (map_mterm m ctx v) assign_rm_field ENotFound in
       mk_trace_seq m instr ([CUpdate f] @ if is_partition m a f then [CRm oasset] else [])
 
     | Mremoveif (_a, (CKview _l), _la, _lb, _) -> assert false
@@ -2079,9 +2091,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         let removecoll = loc_term (Tpremoveif(oasset, removeif_name, args |> List.map unloc_term, Tdoti("_a",field), mk_ac oasset)) in
         let assign_rmcoll = dl (Tassign (loc_term (mk_ac oasset),removecoll)) in
         let instr = dl (Tseq[assign_rmcoll; assign]) in
-        mk_trace_seq m (mk_match_get_some_id (dl "_a") a (map_mterm m ctx k) instr ENotFound) [CUpdate field; CRm oasset]
+        mk_trace_seq m (mk_match_get_some_id ctx (dl "_a") a (map_mterm m ctx k) instr ENotFound) [CUpdate field; CRm oasset]
       else
-        mk_trace_seq m (mk_match_get_some a (map_mterm m ctx k) assign ENotFound) [CUpdate field]
+        mk_trace_seq m (mk_match_get_some ctx a (map_mterm m ctx k) assign ENotFound) [CUpdate field]
 
     | Mremoveif (a, CKcoll _, args, tbody, _a) ->
 
@@ -2151,7 +2163,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mclear (_, CKdef _) -> assert false
     | Mclear (_n, CKfield (n, f, v, _, _)) ->
       let oasset,_ = M.Utils.get_field_container m n f in
-      let asset = dl (mk_match_get_some_id (dl "_a") n (map_mterm m ctx v) (loc_term (Tvar "_a")) ENotFound) in
+      let asset = dl (mk_match_get_some_id ctx (dl "_a") n (map_mterm m ctx v) (loc_term (Tvar "_a")) ENotFound) in
       let field = dl (Tdot(asset, loc_term (Tvar f))) in
       let capoasset = String.capitalize_ascii oasset in
       let clear = dl (Tapp (loc_term (Tdoti(capoasset,"removeif_in_field")),[field; loc_term (mk_ac oasset)])) in
@@ -2171,7 +2183,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mget (an, _c, k) ->
       begin match ctx.lctx with
         | Inv | Logic | Def -> Tget(dl an, map_mterm m ctx k,mk_lc_term an ctx)
-        | _ -> mk_get_force (dl an) (map_mterm m ctx k) (mk_lc_term an ctx)
+        | _ -> mk_get_force ctx (dl an) (map_mterm m ctx k) (mk_lc_term an ctx)
       end
     (* view api ------------------------------------------------------------- *)
 
@@ -2194,7 +2206,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let nth = Tnth (dl (mk_view_id n), map_mterm m ctx k, mk_container_term m n ctx c) in
       begin match ctx.lctx with
         | Logic | Inv | Def -> nth
-        | _ ->  mk_match (dl nth) "_a" (loc_term (Tvar "_a")) ENotFound
+        | _ ->  mk_match ctx (dl nth) "_a" (loc_term (Tvar "_a")) ENotFound
       end
 
     | Mcount (n, c) -> Tcard (dl (mk_view_id n), mk_container_term m n ctx c)
@@ -2252,7 +2264,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let nth = Tnth (dl (mk_list_name m (M.tlist t)), map_mterm m ctx n, map_mterm m ctx l) in
       begin match ctx.lctx with
         | Logic | Inv | Def -> nth
-        | _ -> mk_match (dl nth) "_a" (loc_term (Tvar "_a")) ENotFound
+        | _ -> mk_match ctx (dl nth) "_a" (loc_term (Tvar "_a")) ENotFound
       end
     | Mlistreverse (t, l)      -> Tlistreverse (dl (mk_list_name m (M.tlist t)), map_mterm m ctx l)
     | Mlistconcat  (t, l1, l2) -> Tlistconcat (dl (mk_list_name m (M.tlist t)), map_mterm m ctx l1, map_mterm m ctx l2)
@@ -2272,7 +2284,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mmapupdate (_, _, c, k, v)   ->
       Tupdate (dl (mk_map_name m c.type_), map_mterm m ctx k, map_mterm m ctx v, map_mterm m ctx c)
     | Mmapget (_, _, c, k)      -> Tsnd(
-        dl (mk_get_force (dl (mk_map_name m c.type_)) (map_mterm m ctx k) (map_mterm m ctx c)))
+        dl (mk_get_force ctx (dl (mk_map_name m c.type_)) (map_mterm m ctx k) (map_mterm m ctx c)))
     | Mmapgetopt (_, _, c, k)   -> Tsndopt(
         dl (Tget (dl (mk_map_name m c.type_),map_mterm m ctx k, map_mterm m ctx c)))
     | Mmapcontains (_, _, c, k) ->
@@ -3095,9 +3107,42 @@ let mk_functions m =
           (map_lident i, map_mtype m t)
         ) s.args) in
       let ctx = { init_ctx with entry_id = Some (unloc s.name); fun_ = true } in
+      let with_side_effect =
+        let rec aux (accu : bool) (mt : M.mterm) : bool =
+          match mt.node with
+          | Mfail _          -> Format.eprintf "Mfail"; true
+          | Moperations      -> Format.eprintf "Moperations"; true
+          | Moptget           _ -> Format.eprintf "Moptget     "; true
+          | Mmap              _ -> Format.eprintf "Mmap        "; true
+          | Mlistnth          _ -> Format.eprintf "Mlistnth    "; true
+          | Mmapget           _ -> Format.eprintf "Mmapget     "; true
+          | Maddasset         _ -> Format.eprintf "Maddasset   "; true
+          | Maddfield         _ -> Format.eprintf "Maddfield   "; true
+          | Mremoveasset      _ -> Format.eprintf "Mremoveasset"; true
+          | Mremovefield      _ -> Format.eprintf "Mremovefield"; true
+          | Mremoveall        _ -> Format.eprintf "Mremoveall  "; true
+          | Mremoveif         _ -> Format.eprintf "Mremoveif   "; true
+          | Mclear            _ -> Format.eprintf "Mclear      "; true
+          | Mset              _ -> Format.eprintf "Mset        "; true
+          | Mupdate           _ -> Format.eprintf "Mupdate     "; true
+          | Maddupdate        _ -> Format.eprintf "Maddupdate  "; true
+          | Maddforce         _ -> Format.eprintf "Maddforce   "; true
+          | Mget              _ -> Format.eprintf "Mget        "; true
+          | Mselect           _ -> Format.eprintf "Mselect     "; true
+          | Msort             _ -> Format.eprintf "Msort       "; true
+          | Mcontains         _ -> Format.eprintf "Mcontains   "; true
+          | Mnth              _ -> Format.eprintf "Mnth        "; true
+          | Mcount            _ -> Format.eprintf "Mcount      "; true
+          | Msum              _ -> Format.eprintf "Msum        "; true
+          | Mhead             _ -> Format.eprintf "Mhead       "; true
+          | Mtail             _ -> Format.eprintf "Mtail       "; true
+          | _ -> accu || M.fold_term aux accu mt
+        in
+        aux false s.body
+      in
       Dfun {
         name     = map_lident s.name;
-        logic    = Logic;
+        logic    = if with_side_effect then NoMod else Logic;
         args     = [dl gsarg, loc_type Tystorage] @ args;
         returns  = map_mtype m t;
         raises   = fold_exns m s.body |> List.map loc_term;
