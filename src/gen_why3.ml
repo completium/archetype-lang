@@ -1361,6 +1361,8 @@ type logical_context = {
   entry_id : ident option;
   locals   : ident list;
   loop_id  : ident option;
+  fun_     : bool;
+  fails    : bool;
 }
 
 let init_ctx = {
@@ -1368,6 +1370,8 @@ let init_ctx = {
   entry_id = None;
   locals   = [];
   loop_id  = None;
+  fun_     = false;
+  fails    = false;
 }
 
 let add_local id ctx = { ctx with locals = id::ctx.locals }
@@ -1460,6 +1464,12 @@ let mk_storage_id ctx =
   match ctx.lctx with
   | Def -> gsarg
   | _ -> gs
+
+(* let mk_storage_id ctx =
+   match ctx.fun_, ctx.lctx with
+   | true, _
+   | _, Def -> gsarg
+   | _ -> gs *)
 
 let mk_coll_term n ctx (t,d) =
   let s = mk_storage_id ctx in
@@ -1582,7 +1592,13 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         let params = get_pred_params m (unloc f) |> List.map loc_term in
         Tapp (mk_loc (map_lident f).loc (Tvar (map_lident f)), [storage] @ params @ args)
       else
-        Tapp (mk_loc (map_lident f).loc (Tvar (map_lident f)), [loc_term (Tvar gsinit)] @ args)
+        let sid =
+          match ctx.fails, ctx.fun_ with
+          | true, _ -> gs
+          | _, true -> gsarg
+          | _       -> gsinit
+        in
+        Tapp (mk_loc (map_lident f).loc (Tvar (map_lident f)), [loc_term (Tvar sid)] @ args)
 
     (* assign *)
 
@@ -2343,12 +2359,13 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Mvar (v, Vstorevar, t, _) ->
       begin
-        match ctx.lctx, t with
-        | Inv, _       -> Tvar (map_lident v)
-        | Def, _       -> Tdoti (dl gsarg, map_lident v)
-        | _, M.Tnone   -> Tdoti (dl gs, map_lident v)
-        | _, M.Tbefore -> Tdot (Told (Tvar gs), Tvar (unloc v)) |> loc_term |> Mlwtree.deloc
-        | _, M.Tat lbl -> Tat (dl lbl, Tdoti (gs, unloc v) |> loc_term)
+        match ctx.fun_, ctx.lctx, t with
+        | true, _, _      -> Tdoti (dl gsarg, map_lident v)
+        | _, Inv, _       -> Tvar (map_lident v)
+        | _, Def, _       -> Tdoti (dl gsarg, map_lident v)
+        | _, _, M.Tnone   -> Tdoti (dl gs, map_lident v)
+        | _, _, M.Tbefore -> Tdot (Told (Tvar gs), Tvar (unloc v)) |> loc_term |> Mlwtree.deloc
+        | _, _, M.Tat lbl -> Tat (dl lbl, Tdoti (gs, unloc v) |> loc_term)
       end
 
     | Mvar (n, Vstorecol, t, d) ->
@@ -2843,7 +2860,7 @@ let fold_fails m ctx body : (loc_ident option * loc_term) list =
           if compare idx fidx = 0 then
             acc @ [
               Some (map_lident fail.label),
-              dl (Timpl (loc_term (Texn (Efail (idx, Some (Tvar (unloc fail.arg))))), map_mterm m ctx (fail.formula)))
+              dl (Timpl (loc_term (Texn (Efail (idx, Some (Tvar (unloc fail.arg))))), map_mterm m {ctx with fails = true} (fail.formula)))
             ]
           else acc
         ) [] fails in
@@ -2946,10 +2963,10 @@ let flatten_if_fail m ctx (t : M.mterm) : loc_term =
     | _ -> acc @ [map_mterm m ctx t] in
   mk_loc t.loc (Tseq (rec_flat [] t))
 
-let mk_ensures m acc (v : M.specification) =
+let mk_ensures m ctx acc (v : M.specification) =
   acc @ (List.map (fun (spec : M.postcondition) -> {
         id = spec.name |> map_lident;
-        form = map_mterm m { init_ctx with lctx = Logic } spec.formula
+        form = map_mterm m { ctx with lctx = Logic } spec.formula
       }) (v.postconditions |> List.filter M.Utils.is_post))
 
 let mk_delta_requires m =
@@ -3046,11 +3063,11 @@ let mk_functions m =
       let args = (List.map (fun (i, t, _) ->
           (map_lident i, map_mtype m t)
         ) s.args) in
-      let ctx = { init_ctx with entry_id = Some (unloc s.name) } in
+      let ctx = { init_ctx with entry_id = Some (unloc s.name); fun_ = true } in
       Dfun {
         name     = map_lident s.name;
-        logic    = NoMod;
-        args     = [dl gsinit, loc_type Tystorage] @ args;
+        logic    = Logic;
+        args     = [dl gsarg, loc_type Tystorage] @ args;
         returns  = map_mtype m t;
         raises   = fold_exns m s.body |> List.map loc_term;
         fails    = fold_fails m { ctx with lctx = Logic } s.body;
@@ -3059,8 +3076,8 @@ let mk_functions m =
           (mk_entry_require m (M.Utils.get_callers m (unloc s.name))) @
           (* (mk_delta_requires m) @ *)
           (mk_preconds m s.args s.body);
-        ensures  = Option.fold (mk_ensures m) [] v;
-        body     = flatten_if_fail m ctx s.body;
+        ensures  = Option.fold (mk_ensures m ctx) [] v;
+        body     = flatten_if_fail m { ctx with fun_ = true } s.body;
       }
   )
 
@@ -3077,12 +3094,12 @@ let mk_entries m =
           ) s.args);
         returns  = dl Tyunit;
         raises   = fold_exns m s.body |> List.map loc_term;
-        fails    = fold_fails m { ctx with lctx = Logic } s.body;
+        fails    = fold_fails m { ctx with lctx = Logic; fails = true } s.body;
         variants = [];
         requires =
           (mk_entry_require m [unloc s.name]) @
           (mk_delta_requires m);
-        ensures  = Option.fold (mk_ensures m) [] v;
+        ensures  = Option.fold (mk_ensures m ctx) [] v;
         body     = flatten_if_fail m ctx s.body;
       }
   )
