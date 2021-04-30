@@ -1,11 +1,11 @@
 archetype enum_all
 
 enum t =
-| A of string
-| B of nat
+| A <string>
+| B <nat>
 | C
-| D of address
-| E of int
+| D <address>
+| E <int>
 
 variable res : nat = 0
 

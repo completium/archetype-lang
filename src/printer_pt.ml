@@ -914,7 +914,7 @@ let pp_ident_state fmt item =
       (fun fmt l ->
          if List.length l = 0
          then ()
-         else (Format.fprintf fmt " of %a" (pp_list " * " pp_type) l)
+         else (Format.fprintf fmt " <%a>" (pp_list " * " pp_type) l)
       ) lt
       (pp_prefix " " (pp_list " " pp_enum_option)) opts
 

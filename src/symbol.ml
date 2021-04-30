@@ -67,7 +67,6 @@ let string_of_token = function
   | OR                   -> "OR"
   | OPTION               -> "OPTION"
   | ON                   -> "ON"
-  | OF                   -> "OF"
   | NUMBERNAT n          -> Printf.sprintf "NUMBERNAT(%s)" (Big_int.string_of_big_int n)
   | NUMBERINT n          -> Printf.sprintf "NUMBERINT(%s)" (Big_int.string_of_big_int n)
   | NOT                  -> "NOT"
@@ -237,7 +236,6 @@ let string_of_symbol = function
   | X (T T_OR) -> "or"
   | X (T T_OPTION) -> "option"
   | X (T T_ON) -> "on"
-  | X (T T_OF) -> "of"
   | X (T T_NUMBERNAT) -> "a nat number"
   | X (T T_NUMBERINT) -> "a int number"
   | X (T T_NOT) -> "not"
@@ -406,7 +404,6 @@ let string_of_symbol = function
   | X (N N_option_require_value_) -> "a require option"
   | X (N N_option_require_) -> "a require option"
   | X (N N_option_record_position_) -> "an option record position"
-  | X (N N_option_prefix_OF_separated_nonempty_list_MULT_type_s___) -> "a constructor signature"
   | X (N N_option_prefix_EQUAL_enum_body__) -> "an optional enum body"
   | X (N N_option_paren_separated_nonempty_list_COMMA_ident___) -> "a list of constructor arguments"
   | X (N N_option_parameter_init_) -> "parameter initialization"

@@ -1,8 +1,8 @@
 archetype enum_with_args
 
 enum t =
-| A of nat * string
-| B of nat
+| A <nat * string>
+| B <nat>
 | C
 
 variable res : nat = 0

@@ -120,7 +120,6 @@
 %token NEQUAL
 %token NONE
 %token NOT
-%token OF
 %token ON
 %token OPTION
 %token OR
@@ -549,8 +548,12 @@ enum_body:
 | xs=enum_cdecl* { xs }
 
 enum_cdecl:
-| PIPE x=ident tys=prefix(OF, separated_nonempty_list(MULT, type_s))? opts=enum_option*
+| PIPE x=ident tys=enum_types opts=enum_option*
     { (x, Tools.Option.get_dfl [] tys, opts) }
+
+%inline enum_types:
+| LESS tys=separated_nonempty_list(MULT, type_s) GREATER { Some tys }
+| /* empty */                                            { None }
 
 enum_option:
 | INITIAL                     { EOinitial }

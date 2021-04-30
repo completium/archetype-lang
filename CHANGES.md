@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
   - `slice` returns `option<byte|string>`
   - fail message and expression (see documentation)
+  - syntax `enum` declaration with args (`enum my_enum = | A <nat> | B <string>`)
 
 ### Removed
   - `role` type
