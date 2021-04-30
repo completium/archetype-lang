@@ -639,3 +639,25 @@ let mk_invalid ?(loc=dummy) () =
 
 let mk_archetype ?(decls=[]) ?(loc=dummy) () =
   mkloc loc (Marchetype decls)
+
+(* utils *)
+
+let get_name = function
+  | Darchetype  _                      -> "archetype"
+  | Dvariable (id, _, _, _, _, _)      -> unloc id
+  | Denum (EKenum id, _)               -> unloc id
+  | Denum (EKstate, _)                 -> "_state"
+  | Dasset (id, _, _, _, _, _, _)      -> unloc id
+  | Drecord (id, _, _, _)              -> unloc id
+  | Dentry (id, _, _, _, _)            -> unloc id
+  | Dtransition (id, _, _, _, _, _, _) -> unloc id
+  | Dextension (id, _)                 -> unloc id
+  | Dnamespace (id, _)                 -> unloc id
+  | Dfunction fs                       -> unloc fs.name
+  | Dspecification _                   -> ""
+  | Dspecasset _                       -> ""
+  | Dspecfun _                         -> ""
+  | Dspecvariable _                    -> ""
+  | Dsecurity _                        -> ""
+  | Dtype  (id, _)                     -> unloc id
+  | Dinvalid                           -> ""

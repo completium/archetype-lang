@@ -4167,6 +4167,7 @@ module Utils : sig
   val get_all_map_types                  : model -> type_ list
   val get_all_fail_types                 : model -> type_ list
   val get_all_gen_mterm_type             : ('a list -> mterm -> 'a list) -> ('a list -> type_ -> 'a list) -> (decl_node -> 'a list -> 'a list) -> model -> 'a list
+  val get_all_type_for_mterm             : ('a -> type_ -> 'a ) -> 'a -> mterm  -> 'a
   val extract_key_value_from_masset      : model -> mterm -> mterm
   val is_not_string_nat_int              : type_ -> bool
   val get_function                       : model -> ident -> function_struct
@@ -5424,28 +5425,28 @@ end = struct
   let get_all_gen_mterm_type_internal for_mterm for_type (model : model) =
     get_all_gen_mterm_type for_mterm for_type (fun _ a -> a) model
 
-  let get_all_gen_type for_type (model : model) =
-    let for_mterm (accu : 'a) (mt : mterm) : 'a =
-      let rec aux accu (mt : mterm) =
-        let accu = for_type accu mt.type_ in
-        match mt.node with
-        | Mletin (_, x, ot, b, o) -> begin
-            accu
-            |> (fun accu -> aux accu x)
-            |> (fun accu -> Option.map_dfl (for_type accu) accu ot)
-            |> (fun accu -> aux accu b)
-            |> (fun accu -> Option.map_dfl (aux accu) accu o)
-          end
-        | Mdeclvar (_, Some t, v) -> begin
-            accu
-            |> (fun accu -> for_type accu t)
-            |> (fun accu -> aux accu v)
-          end
-        | _ -> fold_term aux accu mt
-      in
-      aux accu mt
+  let get_all_type_for_mterm for_type (accu : 'a) (mt : mterm) : 'a =
+    let rec aux accu (mt : mterm) =
+      let accu = for_type accu mt.type_ in
+      match mt.node with
+      | Mletin (_, x, ot, b, o) -> begin
+          accu
+          |> (fun accu -> aux accu x)
+          |> (fun accu -> Option.map_dfl (for_type accu) accu ot)
+          |> (fun accu -> aux accu b)
+          |> (fun accu -> Option.map_dfl (aux accu) accu o)
+        end
+      | Mdeclvar (_, Some t, v) -> begin
+          accu
+          |> (fun accu -> for_type accu t)
+          |> (fun accu -> aux accu v)
+        end
+      | _ -> fold_term aux accu mt
     in
-    get_all_gen_mterm_type_internal for_mterm for_type model
+    aux accu mt
+
+  let get_all_gen_type for_type (model : model) =
+    get_all_gen_mterm_type_internal (get_all_type_for_mterm for_type) for_type model
 
   let add_type (l : type_ list) (x : type_) =
     if List.exists (cmp_type x) l

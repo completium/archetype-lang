@@ -255,7 +255,7 @@ let rec mk_eq_type m e1 e2 = function
   | Tylambda (_, _)
     -> Teq (Tyint, Tvar e1, Tvar e2)
 
-let rec mk_le_type e1 e2 = function
+let rec mk_le_type m e1 e2 = function
   | Tyunit -> Ttrue
   | Tybool -> Tor ((Tnot (Tvar e1), (Tvar e2)))
   | Tyrational -> Tapp (Tvar "rat_cmp",[Tvar "OpCmpLe"; Tvar e1; Tvar e2])
@@ -265,7 +265,7 @@ let rec mk_le_type e1 e2 = function
     let cmps = List.mapi (fun i t ->
         let e1i = e1^(string_of_int i) in
         let e2i = e2^(string_of_int i) in
-        mk_le_type e1i e2i t
+        mk_le_type m e1i e2i t
       ) l in
     let cmp = List.fold_left (fun acc cmp -> Tpand(cmp,acc)) (List.hd cmps) (List.tl cmps) in
     Tmatch (
@@ -276,6 +276,35 @@ let rec mk_le_type e1 e2 = function
         ], Tif (cmp, Ttrue, Some Tfalse);
         Tpatt_tuple [Twild;Twild], Tfalse
       ])
+  | Tyset idx -> Tapp (Tdoti (String.capitalize_ascii idx, "eq_set"),[Tvar e1; Tvar e2])
+  | Tylist t -> Tapp (Tdoti (mk_list_name_from_mlwtype m t,"eq_list"),[Tvar e1; Tvar e2])
+  | Tymap idx -> Tapp (Tdoti ("Map" ^ idx, "eq_collection"),[Tvar e1; Tvar e2])
+  | Tycoll idx -> Tapp (Tdoti (String.capitalize_ascii idx, "eq_collection"),[Tvar e1; Tvar e2])
+  | Tyrecord id -> begin
+      let r = Model.Utils.get_record m id in
+
+      let mk g (f : M.record_field) =
+        let fn = unloc f.name in
+        let e1i = e1 ^ "." ^ fn in
+        let e2i = e2 ^ "." ^ fn in
+        let t : typ = unloc_type (map_mtype m f.type_) in
+        g m e1i e2i t
+      in
+
+      let mk_le = mk mk_le_type in
+      let mk_eq = mk mk_eq_type in
+
+      let mk_if x accu =
+        Tif (mk_eq x, accu, Some (mk_le x))
+      in
+
+      match List.rev r.fields with
+      | []   -> Ttrue
+      | [x]  -> mk_le x
+      | x::tl -> List.fold_right mk_if (List.rev tl) (mk_le x)
+
+    end
+
   | _ -> Tle (Tyint, Tvar e1, Tvar e2)
 
 (* Trace -------------------------------------------------------------------------*)
@@ -698,7 +727,7 @@ let mk_eq_type_fun m id t = Dfun {
     body = loc_term (mk_eq_type m "e1" "e2" (unloc_type t));
   }
 
-let mk_le_type_fun _m id t = Dfun {
+let mk_le_type_fun m id t = Dfun {
     name = "le_" ^ id |> dl;
     logic = Logic;
     args = [
@@ -711,7 +740,7 @@ let mk_le_type_fun _m id t = Dfun {
     variants = [];
     requires = [];
     ensures = [];
-    body = loc_term (mk_le_type "e1" "e2" (unloc_type t));
+    body = loc_term (mk_le_type m "e1" "e2" (unloc_type t));
   }
 
 let mk_map_clone id k t =
@@ -1115,7 +1144,7 @@ let mk_le_key m (r : M.asset) =
     variants = [];
     requires = [];
     ensures = [];
-    body = loc_term (mk_le_type "k1" "k2" (unloc_type tkey));
+    body = loc_term (mk_le_type m "k1" "k2" (unloc_type tkey));
   }
 
 let mk_eq_asset m (r : M.asset) =
@@ -3198,7 +3227,7 @@ let mk_decls (model : M.model) =
     | Drecord  r -> push (Drecord r) accu
   in
 
-  let desc_containers = M.Utils.get_all_gen_mterm_type (fun x _ -> x) for_type for_decl model in
+  let desc_containers = M.Utils.get_all_gen_mterm_type (M.Utils.get_all_type_for_mterm for_type) for_type for_decl model in
   (* Format.printf "desc_containers: [%a]@\n" (Printer_tools.pp_list "; " pp_desc_container) desc_containers; *)
 
   let for_decl accu d =
@@ -3207,8 +3236,8 @@ let mk_decls (model : M.model) =
       | Dset    t ->  mk_set_type  model t
       | Dlist   t ->  mk_list_type model t
       | Dmap    t ->  mk_map_type  model t
-      | Dasset  a -> [mk_asset     model a]
-      | Denum   e -> [mk_enum      model e]
+      | Dasset  _a -> [](* [mk_asset     model a] *)
+      | Denum   _e -> [](* [mk_enum      model e] *)
       | Drecord r -> [mk_record    model r]
     in
     accu @ ds
@@ -3218,7 +3247,7 @@ let mk_decls (model : M.model) =
 
 let to_whyml (m : M.model) : mlw_tree  =
   (* let env    = Env.create m in *)
-  let _decls = mk_decls m in
+  let decls = mk_decls m in
 
   let assets           = M.Utils.get_assets m in
   let storage_module   = dl ((mk_module_name m.name.pldesc) ^ "_storage") in
@@ -3231,9 +3260,9 @@ let to_whyml (m : M.model) : mlw_tree  =
   let enums            = M.Utils.get_enums m |> List.map (mk_enum m) in
   let exns             = M.Utils.get_all_fail_types m |> List.mapi (mk_exn m) in
   let records          = M.Utils.get_records m |> List.map (mk_record m) in
-  let lists            = M.Utils.get_all_list_types m |> List.map (mk_list_type m) |> List.flatten in
-  let maps             = M.Utils.get_all_map_types m |> List.map (mk_map_type m) |> List.flatten in
-  let sets             = M.Utils.get_all_set_types m |> List.map (mk_set_type m) |> List.flatten in
+  (* let lists            = M.Utils.get_all_list_types m |> List.map (mk_list_type m) |> List.flatten in *)
+  (* let maps             = M.Utils.get_all_map_types m |> List.map (mk_map_type m) |> List.flatten in *)
+  (* let sets             = M.Utils.get_all_set_types m |> List.map (mk_set_type m) |> List.flatten in *)
   let mlwassets        = assets |> List.map (mk_asset m) |> wdl in
   let eq_enums         = assets |> List.map (mk_eq_enums m) |> List.flatten in
   let eq_keys          = assets |> List.map (mk_eq_key m) |> wdl in
@@ -3262,13 +3291,14 @@ let to_whyml (m : M.model) : mlw_tree  =
               useEuclDiv             @
               useMinMax              @
               traceutils             @
-              sets                   @
-              records                @
+              decls                  @
+              (* sets                   @ *)
+              (* records                @ *)
               exns                   @
               enums                  @
               eq_enums               @
-              lists                  @
-              maps                   @
+              (* lists                  @ *)
+              (* maps                   @ *)
               mlwassets              @
               aggregates             @
               storage_api_bs         @

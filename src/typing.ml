@@ -6503,8 +6503,29 @@ let for_parameters ?init env params =
         end
     end
 
+let sort_decl refs l =
+  let get_name = function
+    | A.Dvariable x -> unloc x.decl.name
+    | A.Denum {kind = EKenum id}  -> unloc id
+    | A.Denum {kind = EKstate}  -> "_state"
+    | A.Drecord x   -> unloc x.name
+    | A.Dasset x    -> unloc x.name
+  in
+  if l |> List.map get_name |> List.exists (fun x -> not (List.mem x refs))
+  then l
+  else
+    let cmp d1 d2 : int =
+      let fidx d = get_name d |> fun x -> List.index_of (String.equal x) refs in
+      let idx1 = fidx d1 in
+      let idx2 = fidx d2 in
+      idx1 - idx2
+    in
+    List.sort cmp l
+
 (* -------------------------------------------------------------------- *)
 let for_declarations ?init (env : env) (decls : (PT.declaration list) loced) : A.ast =
+  let sorted_decl_ids = List.map (PT.get_name |@ unloc) (unloc decls) in
+  (* Format.printf "[%a]@\n" (Printer_tools.pp_list "; " (fun fmt x -> Format.fprintf fmt "%s" x)) _sorted_decl_ids; *)
   let toploc = loc decls in
 
   match unloc decls with
@@ -6517,12 +6538,12 @@ let for_declarations ?init (env : env) (decls : (PT.declaration list) loced) : A
     A.mk_model
       ~parameters
       ?metadata
-      ~decls:(
+      ~decls:((
         List.map (fun x -> A.Dvariable x) (variables_of_vdecls decls.variables)                            @
         List.map (fun x -> A.Denum x)     (enums_of_statedecl (List.pmap id (decls.state :: decls.enums))) @
         List.map (fun x -> A.Drecord x)   (records_of_rdecls (List.pmap id decls.records))                 @
         List.map (fun x -> A.Dasset x)    (assets_of_adecls decls.assets)
-      )
+      ) |> sort_decl sorted_decl_ids)
       ~funs:(
         List.map (fun x -> A.Ffunction x)    (functions_of_fdecls decls.functions) @
         List.map (fun x -> A.Ftransaction x) (transentrys_of_tdecls decls.acttxs)
