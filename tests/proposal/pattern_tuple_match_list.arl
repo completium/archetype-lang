@@ -1,0 +1,14 @@
+archetype pattern_tuple_match_list
+
+variable res : nat = 0
+
+entry exec () {
+  effect {
+    var l : list<nat * string> = [(1, "")];
+    match l with
+    // | hd::t -> res := hd[0]
+    | (a, b)::t -> res := a
+    | []    -> ()
+    end
+  }
+}

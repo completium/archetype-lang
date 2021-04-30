@@ -1,0 +1,14 @@
+archetype pattern_tuple_match_or
+
+variable res : nat = 0
+
+entry exec () {
+  effect {
+    var v : or<(nat * string), (nat * string)> = left<nat * string>((1, ""));
+    match v with
+    // | left x -> ()
+    | left (a, b) -> res := a
+    | right a -> ()
+    end
+  }
+}
