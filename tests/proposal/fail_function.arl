@@ -1,0 +1,11 @@
+archetype fail_function
+
+function f (a : address) : nat {
+  if true
+  then fail ("error");
+  return 1
+}
+
+entry exec () {
+  var n = f(caller);
+}

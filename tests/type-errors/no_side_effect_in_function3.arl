@@ -7,5 +7,10 @@ function f (a : address) : nat {
 }
 
 entry exec () {
-  ()
+  specification {
+    p1: forall a : address, f(a) = 1
+  }
+  effect {
+    ()
+  }
 }
