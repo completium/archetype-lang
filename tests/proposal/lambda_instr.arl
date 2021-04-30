@@ -3,10 +3,14 @@ archetype lambda_instr
 variable res : string = ""
 
 entry exec () {
-  var f : lambda<nat, string> = lambda<string>((x : nat) ->
-    if (x = 0)
-    then fail ("Zero");
-    return "str");
+  var f : lambda<nat, int> = lambda<int>((x : nat) -> begin
+    var res =
+      if (x = 0) then
+        x + 1
+      else
+        x + 2;
 
+    return res
+    end);
   res := exec_lambda(f, 1)
 }
