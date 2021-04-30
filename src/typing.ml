@@ -1099,7 +1099,7 @@ let opsigs =
       PT.Arith PT.Minus  , ([A.VTdate    ; A.VTduration      ], A.VTdate    )  ;
       PT.Arith PT.Minus  , ([A.VTdate    ; A.VTdate          ], A.VTduration)  ;
       PT.Arith PT.Mult   , ([A.VTnat     ; A.VTcurrency      ], A.VTcurrency)  ;
-      PT.Arith PT.Mult   , ([A.VTcurrency; A.VTint           ], A.VTcurrency)  ;
+      PT.Arith PT.Mult   , ([A.VTcurrency; A.VTnat           ], A.VTcurrency)  ;
       PT.Arith PT.Mult   , ([A.VTrational; A.VTcurrency      ], A.VTcurrency)  ;
       PT.Arith PT.Mult   , ([A.VTint     ; A.VTduration      ], A.VTduration)  ;
       PT.Arith PT.Mult   , ([A.VTrational; A.VTduration      ], A.VTduration)  ;

@@ -4443,6 +4443,7 @@ end = struct
     let rec rec_search_assign _ (t : mterm) =
       match t.node with
       | Massign (_, _, Avar i,_) when String.equal (unloc i) id -> raise FoundAssign
+      | Massign (_, _, Arecord (_, _, { node = (Mvar (i, _, _, _)) }), _) when String.equal (unloc i) id -> raise FoundAssign
       | _ -> fold_term rec_search_assign false t in
     try rec_search_assign false b
     with FoundAssign -> true

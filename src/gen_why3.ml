@@ -276,10 +276,12 @@ let rec mk_le_type m e1 e2 = function
         ], Tif (cmp, Ttrue, Some Tfalse);
         Tpatt_tuple [Twild;Twild], Tfalse
       ])
+  (* TODO: implements `le` function in archetype.mlw *)
   | Tyset idx -> Tapp (Tdoti (String.capitalize_ascii idx, "eq_set"),[Tvar e1; Tvar e2])
   | Tylist t -> Tapp (Tdoti (mk_list_name_from_mlwtype m t,"eq_list"),[Tvar e1; Tvar e2])
   | Tymap idx -> Tapp (Tdoti ("Map" ^ idx, "eq_collection"),[Tvar e1; Tvar e2])
   | Tycoll idx -> Tapp (Tdoti (String.capitalize_ascii idx, "eq_collection"),[Tvar e1; Tvar e2])
+  (* *)
   | Tyrecord id -> begin
       let r = Model.Utils.get_record m id in
 
