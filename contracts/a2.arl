@@ -1,6 +1,6 @@
 archetype a2(
-  admin  : address,
-  issuer : address
+  admin  : address = tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg,
+  issuer : address = tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 )
 
 variable users         : big_map<address, nat>      = []
@@ -69,7 +69,7 @@ entry updateUser (user : address, transferlistId : option<nat>) {
     r0 otherwise "ISSUER_NOT_USER" : issuer <> user;
   }
   effect {
-    users := update(users, user, transferlistId)
+    users.update(user, transferlistId)
   }
 }
 
@@ -86,14 +86,14 @@ entry updateTransferlist (
       var lallowTransferlists    = v[2];
       ltransferlist.unrestricted := lunrestricted;
       for r in ldisallowTransferlists do
-        ltransferlist.allowedTransferlists := remove(ltransferlist.allowedTransferlists, r)
+        ltransferlist.allowedTransferlists.remove(r)
       done;
       for a in lallowTransferlists do
-        ltransferlist.allowedTransferlists := add(ltransferlist.allowedTransferlists, a)
+        ltransferlist.allowedTransferlists.add(a)
       done;
-      transferlists := put(transferlists, transferlistId, ltransferlist)
+      transferlists.put(transferlistId, ltransferlist)
       end
-    | none -> transferlists := remove(transferlists, transferlistId)
+    | none -> transferlists.remove(transferlistId)
     end
   }
 }
