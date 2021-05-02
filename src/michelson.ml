@@ -1162,6 +1162,7 @@ end = struct
       | LOOP x            -> g x (fun l -> LOOP (l))
       | LOOP_LEFT x       -> g x (fun l -> LOOP_LEFT (l))
       | DIP (n, x)        -> g x (fun l -> DIP (n, l))
+      | LAMBDA (a, b, c)  -> g c (fun l -> LAMBDA (a, b, l))
       | _                 -> false, c
     in
     aux c |> snd
