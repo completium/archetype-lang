@@ -697,6 +697,7 @@ type error_desc =
   | InvalidTypeForPk
   | InvalidTypeForSet
   | InvalidValueForCurrency
+  | InvalidVariableForMethod
   | InvalidVarOrArgType
   | InvalidValueForMemoSize
   | LabelInNonInvariant
@@ -913,6 +914,7 @@ let pp_error_desc fmt e =
   | InvalidTypeForPk                   -> pp "Invalid type for primary key"
   | InvalidTypeForSet                  -> pp "Invalid type for set"
   | InvalidValueForCurrency            -> pp "Invalid value for currency"
+  | InvalidVariableForMethod           -> pp "Invalid variable for method"
   | InvalidVarOrArgType                -> pp "A variable / argument type cannot be an asset or a collection"
   | InvalidValueForMemoSize            -> pp "Invalid value for memo size (0 <= n <= 65535)"
   | LabelInNonInvariant                -> pp "The label modifier can only be used in invariants"
@@ -4456,16 +4458,19 @@ let rec for_instruction_r
               let the, (name, se, _), args = Option.get_fdfl bailout infos in
               let args = List.map (fun x -> A.AExpr x) args in
               let aout = mki (A.Icall (None, A.Cconst name, A.AExpr the :: args)) in
+              let assign kind =
+                mki (A.Iassign (
+                    ValueAssign, Option.get the.type_, kind,
+                    A.mk_sp ~loc:(loc i) ?type_:the.type_
+                      (A.Pcall (None, A.Cconst name, A.AExpr the :: args))))
+              in
               let aout =
                 if se then begin
                   match the.node with
-                  | Pvar (VTnone, Vnone, x) ->
-                    mki (A.Iassign (
-                        ValueAssign, Option.get the.type_, `Var x,
-                        A.mk_sp ~loc:(loc i) ?type_:the.type_
-                          (A.Pcall (None, A.Cconst name, A.AExpr the :: args))))
+                  | Pvar (VTnone, Vnone, x) -> assign (`Var x)
+                  | Pdot ({node = Pvar (VTnone, Vnone, _); type_ = Some (Trecord rn)} as x, fn) -> assign (`Field (rn, x, fn))
                   | _ ->
-                    Env.emit_error env (loc i, assert false); aout
+                    Env.emit_error env (the.loc, InvalidVariableForMethod); aout
                 end else
                   mki (A.Icall (None, A.Cconst name, A.AExpr the :: args)) in
 
@@ -6539,11 +6544,11 @@ let for_declarations ?init (env : env) (decls : (PT.declaration list) loced) : A
       ~parameters
       ?metadata
       ~decls:((
-        List.map (fun x -> A.Dvariable x) (variables_of_vdecls decls.variables)                            @
-        List.map (fun x -> A.Denum x)     (enums_of_statedecl (List.pmap id (decls.state :: decls.enums))) @
-        List.map (fun x -> A.Drecord x)   (records_of_rdecls (List.pmap id decls.records))                 @
-        List.map (fun x -> A.Dasset x)    (assets_of_adecls decls.assets)
-      ) |> sort_decl sorted_decl_ids)
+          List.map (fun x -> A.Dvariable x) (variables_of_vdecls decls.variables)                            @
+          List.map (fun x -> A.Denum x)     (enums_of_statedecl (List.pmap id (decls.state :: decls.enums))) @
+          List.map (fun x -> A.Drecord x)   (records_of_rdecls (List.pmap id decls.records))                 @
+          List.map (fun x -> A.Dasset x)    (assets_of_adecls decls.assets)
+        ) |> sort_decl sorted_decl_ids)
       ~funs:(
         List.map (fun x -> A.Ffunction x)    (functions_of_fdecls decls.functions) @
         List.map (fun x -> A.Ftransaction x) (transentrys_of_tdecls decls.acttxs)
