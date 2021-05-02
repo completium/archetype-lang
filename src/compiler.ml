@@ -88,6 +88,29 @@ let output_obj_micheline (x : Michelson.obj_micheline) =
   then Format.printf "%a@." Michelson.pp_obj_micheline x
   else Format.printf "%a@." Printer_michelson.pp_obj_micheline x
 
+let remove_newline (input : string) : string =
+  let a : string ref = ref "" in
+  let w : bool ref = ref false in
+  for i = 0 to String.length input - 1 do
+    let c : char = input.[i] in
+    if c == '\n'
+    then ()
+    else begin
+      if c == ' '
+      then begin
+        if !w
+        then ()
+        else a := !a ^ " ";
+        w := true
+      end
+      else begin
+        w := false;
+        a := !a ^ (String.make 1 c)
+      end
+    end
+  done;
+  !a
+
 let output (model : Model.model) =
   match !Options.opt_raw, !Options.opt_m with
   | true, _ -> Format.printf "%a@." Model.pp_model model
@@ -110,7 +133,9 @@ let output (model : Model.model) =
                 else begin
                   let michelson = Gen_michelson.to_michelson ir in
                   match !Options.target with
-                  | MichelsonStorage -> Format.fprintf fmt "%a@." Printer_michelson.pp_data storage_data
+                  | MichelsonStorage ->
+                    let output = Format.asprintf "%a" Printer_michelson.pp_data storage_data |> remove_newline in
+                    Format.fprintf fmt "%s" output
                   | Michelson ->
                     if !Options.opt_raw_michelson
                     then Format.fprintf fmt "%a@." Michelson.pp_michelson michelson
@@ -128,8 +153,9 @@ let output (model : Model.model) =
                           else Format.fprintf fmt "%a@." Printer_michelson.pp_micheline micheline
                         end
                       else
-                        Format.fprintf fmt "# %a@.%a@."
-                          Printer_michelson.pp_data storage_data
+                        let sdata = Format.asprintf "%a" Printer_michelson.pp_data storage_data |> remove_newline in
+                        Format.fprintf fmt "# %s@.%a@."
+                          sdata
                           Printer_michelson.pp_michelson michelson
                     end
                   | Javascript -> begin

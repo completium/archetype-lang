@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `called by` supports asset with a key typed address
   - failure id in fails specification section (i.e. `... f1 with InvalidCaller(msg : string): ...`)
   - metadata can be defined in the source file (`with metadata`)
+  - instruction for container (`my_map.update(key, some(value))`)
 
 ### Changed
   - `slice` returns `option<byte|string>`
