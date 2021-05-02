@@ -3,7 +3,8 @@ archetype test_fun_fail
 variable res : nat = 0
 
 function f() : nat {
-  fail ("error");
+  if true
+  then fail ("error");
   return 1
 }
 
