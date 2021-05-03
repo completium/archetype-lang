@@ -4457,6 +4457,7 @@ end = struct
       | Mtransfer _
       | Moperations
       | Mmkoperation _
+      | Massign (_, _, Aoperations,_)
         -> raise FoundOperations
       | _ -> fold_term aux accu t in
     aux accu mt
