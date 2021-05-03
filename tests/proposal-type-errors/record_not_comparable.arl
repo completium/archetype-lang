@@ -6,9 +6,7 @@ record my_record {
   m: map<nat, string>;
 }
 
-// variable vs: set<my_record> = []
-variable vl: list<my_record> = []
-variable vm: map<nat, my_record> = []
+variable vs: set<my_record> = [] // should type error `my_record` because this type is not comparable
 
 entry exec () {
   ()
