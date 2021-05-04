@@ -1128,6 +1128,10 @@ let pp_entry_properties fmt (props : entry_properties) =
   if (not props.accept_transfer)
   then Format.fprintf fmt "refuse transfer@\n";
   map_option (fun (e, exts) ->
+      Format.fprintf fmt "sourced by%a %a@\n"
+        pp_extensions exts
+        (pp_expr e_default PNone) e) props.sourcedby;
+  map_option (fun (e, exts) ->
       Format.fprintf fmt "called by%a %a@\n"
         pp_extensions exts
         (pp_expr e_default PNone) e) props.calledby;
@@ -1180,8 +1184,8 @@ let pp_metadata fmt (m : metadata) =
 
 let rec pp_declaration fmt { pldesc = e; _ } =
   let is_empty_entry_properties_opt (ap : entry_properties) (a : 'a option) =
-    match ap.calledby, ap.require, ap.functions, ap.spec_fun, a with
-    | None, None, [], None, None -> true
+    match ap.sourcedby, ap.calledby, ap.require, ap.functions, ap.spec_fun, a with
+    | None, None, None, [], None, None -> true
     | _ -> false in
   match e with
   | Darchetype (id, ps, m, exts) ->

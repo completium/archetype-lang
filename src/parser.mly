@@ -13,15 +13,7 @@
     let pos : Position.t list = [Tools.location_to_position loc] in
     Error.error_alert pos str (fun _ -> ())
 
-  let dummy_entry_properties = {
-      accept_transfer = true;
-      calledby        = None;
-      state_is        = None;
-      require         = None;
-      failif          = None;
-      spec_fun        = None;
-      functions       = [];
-    }
+  let dummy_entry_properties = mk_entry_properties ()
 
   let rec split_seq e =
     match unloc e with
@@ -156,6 +148,7 @@
 %token SLASHPERCENT
 %token SOME
 %token SORTED
+%token SOURCED
 %token SPECIFICATION
 %token STATE_IS
 %token STATES
@@ -696,10 +689,11 @@ transition:
 | ACCEPT_TRANSFER { true }
 
 entry_properties:
-  sp=specification_fun? at=accept_transfer cb=calledby? si=state_is? cs=require? fi=failif? fs=function_item*
+  sp=specification_fun? at=accept_transfer sb=sourcedby? cb=calledby? si=state_is? cs=require? fi=failif? fs=function_item*
   {
     {
       accept_transfer = at;
+      sourcedby       = sb;
       calledby        = cb;
       state_is        = si;
       require         = cs;
@@ -711,6 +705,9 @@ entry_properties:
 
 calledby:
  | CALLED BY exts=option(extensions) x=expr { (x, exts) }
+
+sourcedby:
+ | SOURCED BY exts=option(extensions) x=expr { (x, exts) }
 
 %inline state_is:
  | STATE_IS id=ident { id }
