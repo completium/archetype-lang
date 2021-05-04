@@ -1258,9 +1258,8 @@ let to_model (ast : A.ast) : M.model =
 
   let process_transaction (env : env) (transaction : A.transaction) : M.function__ =
     let process_calledby env (body : M.mterm) : M.mterm =
-      let process_cb (cb : A.rexpr) (body : M.mterm) : M.mterm =
+      let process_cb caller (cb : A.rexpr) (body : M.mterm) : M.mterm =
         let rec process_rexpr (rq : A.rexpr) : M.mterm option =
-          let caller : M.mterm = M.mk_mterm M.Mcaller (M.taddress) in
           match rq.node with
           | Rany -> None
           | Rasset a -> begin
@@ -1289,9 +1288,15 @@ let to_model (ast : A.ast) : M.model =
         | _ -> body
       in
       begin
-        match transaction.calledby with
-        | None -> body
-        | Some cb -> process_cb cb body
+        let process tc caller body =
+          match tc with
+          | None -> body
+          | Some cb -> process_cb caller cb body
+        in
+
+        body
+        |> process transaction.calledby  M.mcaller
+        |> process transaction.sourcedby M.msource
       end
     in
 

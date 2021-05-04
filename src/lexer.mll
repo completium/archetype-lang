@@ -100,6 +100,7 @@
       "shadow"              , SHADOW              ;
       "some"                , SOME                ;
       "sorted"              , SORTED              ;
+      "sourced"             , SOURCED             ;
       "specification"       , SPECIFICATION       ;
       "states"              , STATES              ;
       "then"                , THEN                ;
