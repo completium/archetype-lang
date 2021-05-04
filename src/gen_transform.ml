@@ -4407,6 +4407,8 @@ let remove_asset (model : model) : model =
             | _ ->  mk_mterm (Mminus  (get_val id, x)) x.type_
           in
 
+          let arith_rval op id x = mk_mterm (Mratarith (op, get_val id, x)) x.type_ in
+
           let mul_val id x = mk_mterm (Mmult   (get_val id, x)) x.type_ in
           let div_val id x = mk_mterm (Mdiveuc (get_val id, x)) x.type_ in
           let and_val id x = mk_mterm (Mand    (get_val id, x)) x.type_ in
@@ -4427,6 +4429,7 @@ let remove_asset (model : model) : model =
           let l, b, ags = List.fold_right (fun (id, op, v) (accu, b, ags) ->
               let _, ts, _ = Utils.get_asset_field model (an, unloc id) in
               let v = fm ctx v in
+              let is_rat t = match get_ntype t with | Ttuple [(Tbuiltin Bint, _); (Tbuiltin Bnat, _)] -> true     | _ -> false in
               match get_ntype ts, op with
               | Tcontainer((Tasset aan, _), Aggregate), ValueAssign -> begin
                   let aan = unloc aan in
@@ -4487,6 +4490,11 @@ let remove_asset (model : model) : model =
                   let set = List.fold_left (fun accu (x : mterm) -> mk_mterm (Msetremove (tk, accu, x)) ts) get ll in
                   (id, ValueAssign, set)::accu, true, (unloc id, aan, `Partition, `Remove, ll)::ags
                 end
+
+              | _, PlusAssign  when is_rat ts  -> (id, ValueAssign, arith_rval Rplus  id v)::accu , true, ags
+              | _, MinusAssign when is_rat ts  -> (id, ValueAssign, arith_rval Rminus id v)::accu , true, ags
+              | _, MultAssign  when is_rat ts  -> (id, ValueAssign, arith_rval Rmult  id v)::accu , true, ags
+              | _, DivAssign   when is_rat ts  -> (id, ValueAssign, arith_rval Rdiv   id v)::accu , true, ags
 
               | _, ValueAssign  -> (id, op, v)::accu, b, ags
               | _, PlusAssign   -> (id, ValueAssign, add_val id v)::accu , true, ags
