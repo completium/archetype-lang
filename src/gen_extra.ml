@@ -95,7 +95,7 @@ let to_model_expr (e : PT.expr) : T.data =
         Dint n
       end
     | Eliteral (Ldecimal  s) -> begin
-        cc [T.tpair T.tnat T.tint];
+        cc [T.tpair T.tint T.tnat];
         let n, d = Core.decimal_string_to_rational s in Dpair (Dint n, Dint d)
       end
     | Eliteral (Ltz       n) -> cc [T.tmutez]; Dint (string_to_big_int_tz Ktz  n)

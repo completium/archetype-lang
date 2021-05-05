@@ -16,8 +16,8 @@ homepage: "https://github.com/edukera/archetype-lang"
 doc: "https://docs.archetype-lang.org/"
 bug-reports: "https://github.com/edukera/archetype-lang/issues"
 depends: [
-  "ocaml" {>= "4.07.0"}
   "dune" {>= "2.7"}
+  "ocaml" {>= "4.07.0"}
   "menhir"
   "num"
   "yojson"

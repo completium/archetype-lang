@@ -24,7 +24,6 @@ on the Tezos blockchain, with a specific focus on contract security
 ")
  (depends
    (ocaml (>= 4.07.0))
-   (dune  (>= 2.7))
     menhir
     num
     yojson
