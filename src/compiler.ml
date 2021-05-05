@@ -507,6 +507,7 @@ let main () =
       "--only-expr", Arg.Set Options.opt_expr_only, " ";
       "--init", Arg.String (fun s -> Options.opt_init := s), " Initialize parameters";
       "--no-js-header", Arg.Set Options.opt_no_js_header, " No javascript header";
+      "--to-micheline", Arg.String (fun s -> Options.opt_to_micheline := Some s), " Convert michelson to micheline";
       "-V", Arg.String (fun s -> Options.add_vids s), "<id> process specication identifiers";
       "-v", Arg.Unit (fun () -> print_version ()), " Show version number and exit";
       "--version", Arg.Unit (fun () -> print_version ()), " Same as -v";
@@ -538,12 +539,13 @@ let main () =
 
       try
         begin
-          match !Options.opt_lsp, !Options.opt_service, !Options.opt_decomp, !Options.opt_show_entries, !Options.opt_expr with
-          | true, _, _, _, _ -> Lsp.process (filename, channel)
-          | _, true, _, _, _ -> Services.process (filename, channel)
-          | _, _, true, _, _ -> decompile (filename, channel)
-          | _, _, _, true, _ -> showEntries (filename, channel)
-          | _, _, _, _, Some v -> process_expr_type_channel (filename, channel) v
+          match !Options.opt_lsp, !Options.opt_service, !Options.opt_decomp, !Options.opt_show_entries, !Options.opt_expr, !Options.opt_to_micheline with
+          | true, _, _, _, _, _   -> Lsp.process (filename, channel)
+          | _, true, _, _, _, _   -> Services.process (filename, channel)
+          | _, _, true, _, _, _   -> decompile (filename, channel)
+          | _, _, _, true, _, _   -> showEntries (filename, channel)
+          | _, _, _, _, Some v, _ -> process_expr_type_channel (filename, channel) v
+          | _, _, _, _, _, Some v -> Gen_extra.to_micheline v
           | _ -> compile (filename, channel)
         end;
         close dispose channel
