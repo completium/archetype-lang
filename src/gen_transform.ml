@@ -5328,16 +5328,6 @@ let process_metadata (model : model) : model =
           empty, uri
         in
 
-        let get_content path =
-          let read_whole_file filename =
-            let ch = open_in filename in
-            let s = really_input_string ch (in_channel_length ch) in
-            close_in ch;
-            s
-          in
-          read_whole_file path
-        in
-
         let mk_data input =
           let vkey = mk_string key in
           let metadata =
@@ -5348,7 +5338,7 @@ let process_metadata (model : model) : model =
 
         let do_uri             uri = [mk_uri uri] in
         let do_json           data = [mk_uri ("tezos-storage:" ^ key); data] in
-        let do_json_with_path    p = do_json (p |> get_content |> mk_data) in
+        let do_json_with_path    p = do_json (p |> Tools.get_content |> mk_data) in
         let do_json_with_content i = do_json (mk_data i) in
 
         let v =

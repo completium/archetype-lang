@@ -25,6 +25,7 @@ depends: [
   "ppx_deriving_yojson"
   "visitors"
   "hex"
+  "xmlm"
   "odoc" {with-doc}
 ]
 build: [

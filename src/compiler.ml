@@ -310,7 +310,7 @@ let generate_target model =
 
 (* -------------------------------------------------------------------- *)
 
-let compile (filename, channel) =
+let compile_model (filename, channel) =
   let cont c a x = if c then (a x; raise Stop) else x in
 
   (filename, channel)
@@ -333,6 +333,10 @@ let compile (filename, channel) =
   |> raise_if_error post_model_error check_asset_key
   |> process_metadata
   |> cont !Options.opt_mdl output_tmdl
+
+let compile (filename, channel) =
+  (filename, channel)
+  |> compile_model
   |> generate_target
 
 let decompile (filename, channel) =
@@ -416,6 +420,11 @@ let process_expr_type_string (input : string) =
   | Stop_error n -> exit n
   | Error.ParseError _ -> assert false
   | _ -> ()
+
+(* -------------------------------------------------------------------- *)
+let extract_why3session a path_xml =
+  let model = compile_model a in
+  Extract_w.process model path_xml
 
 (* -------------------------------------------------------------------- *)
 let main () =
@@ -508,6 +517,7 @@ let main () =
       "--init", Arg.String (fun s -> Options.opt_init := s), " Initialize parameters";
       "--no-js-header", Arg.Set Options.opt_no_js_header, " No javascript header";
       "--to-micheline", Arg.String (fun s -> Options.opt_to_micheline := Some s), " Convert michelson to micheline";
+      "--extract-why3session", Arg.String (fun s -> Options.opt_why3session := Some s), " Extract result from why3session.xml";
       "-V", Arg.String (fun s -> Options.add_vids s), "<id> process specication identifiers";
       "-v", Arg.Unit (fun () -> print_version ()), " Show version number and exit";
       "--version", Arg.Unit (fun () -> print_version ()), " Same as -v";
@@ -539,13 +549,14 @@ let main () =
 
       try
         begin
-          match !Options.opt_lsp, !Options.opt_service, !Options.opt_decomp, !Options.opt_show_entries, !Options.opt_expr, !Options.opt_to_micheline with
-          | true, _, _, _, _, _   -> Lsp.process (filename, channel)
-          | _, true, _, _, _, _   -> Services.process (filename, channel)
-          | _, _, true, _, _, _   -> decompile (filename, channel)
-          | _, _, _, true, _, _   -> showEntries (filename, channel)
-          | _, _, _, _, Some v, _ -> process_expr_type_channel (filename, channel) v
-          | _, _, _, _, _, Some v -> Gen_extra.to_micheline v
+          match !Options.opt_lsp, !Options.opt_service, !Options.opt_decomp, !Options.opt_show_entries, !Options.opt_expr, !Options.opt_to_micheline, !Options.opt_why3session with
+          | true, _, _, _, _, _, _   -> Lsp.process (filename, channel)
+          | _, true, _, _, _, _, _   -> Services.process (filename, channel)
+          | _, _, true, _, _, _, _   -> decompile (filename, channel)
+          | _, _, _, true, _, _, _   -> showEntries (filename, channel)
+          | _, _, _, _, Some v, _, _ -> process_expr_type_channel (filename, channel) v
+          | _, _, _, _, _, Some v, _ -> Gen_extra.to_micheline v
+          | _, _, _, _, _, _, Some v -> extract_why3session (filename, channel) v
           | _ -> compile (filename, channel)
         end;
         close dispose channel
