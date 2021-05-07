@@ -1,3 +1,6 @@
+open Location
+open Tools
+
 module M = Model
 
 module MapString = Map.Make(String)
@@ -283,27 +286,142 @@ let to_whysession (ic : in_channel) : why3session =
   in
   w3s
 
-let test path =
-  let id ic oc =
-    let i = Xmlm.make_input (`Channel ic) in
-    let o = Xmlm.make_output (`Channel oc) in
-    let rec pull i o depth =
-      Xmlm.output o (Xmlm.peek i);
-      match Xmlm.input i with
-      | `El_start _ -> pull i o (depth + 1)
-      | `El_end -> if depth = 1 then () else pull i o (depth - 1)
-      | `Data _ -> pull i o depth
-      | `Dtd _ -> assert false
-    in
-    Xmlm.output o (Xmlm.input i); (* `Dtd *)
-    pull i o 0;
-    if not (Xmlm.eoi i) then invalid_arg "document not well-formed"
-  in
-  let ch = open_in path in
-  let oc = Stdlib.stdout in
-  id ch oc
+(* -------------------------------------------------------------------- *)
 
-let process (_m : M.model) (path_xml : string) =
+type status =
+  | Ssuccessful
+  | Sfail of int
+[@@deriving yojson, show {with_path = false}]
+
+type res = {
+  name: string;
+  total: int;
+  status: status;
+}
+[@@deriving yojson, show {with_path = false}]
+
+type kind =
+  | Kvariable       of string
+  | Kasset          of string
+  | KassetField     of string * string
+  | KenumField      of string * string
+  | KentryPostcond  of string * string
+  | KentryInv       of string * string
+[@@deriving yojson, show {with_path = false}]
+
+type item = {
+  id: string;
+  kind: kind;
+  formula: string option;
+  res: res;
+}
+[@@deriving yojson, show {with_path = false}]
+
+type report = {
+  name: string;
+  items: item list;
+}
+[@@deriving yojson, show {with_path = false}]
+
+(* -------------------------------------------------------------------- *)
+
+let mk_res name total status : res =
+  { name; total; status }
+
+let mk_item id kind formula res : item =
+  { id; kind; formula; res }
+
+let mk_report ?(items = []) name : report =
+  { name; items }
+
+(* -------------------------------------------------------------------- *)
+
+let extract (m : M.model) (w3s : why3session) =
+  let compute_res _w3s _id _kind : res =
+    mk_res "" 0 (Sfail 0)
+  in
+
+  let for_specification ?fname accu (spec : M.specification) =
+    List.fold_left (fun accu (postcondition : M.postcondition) ->
+        let kind =
+          match fname with
+          | Some fname -> KentryPostcond (fname, unloc postcondition.name)
+          | None -> assert false
+        in
+
+
+        let formula = Some "" in
+        let label = unloc postcondition.name in
+        let res = compute_res w3s label kind in
+        let item = mk_item label kind formula res in
+        item::accu
+
+       (* List.fold_left (fun accu (invariant : M.invariant) ->
+           assert false;
+
+          ) accu postcondition.invariants *)
+      ) accu spec.postconditions
+
+
+  (* List.fold_left (fun accu (x, invs) ->
+      let kind =
+        match fname with
+        | Some fname -> KentryPostcond (fname, unloc x)
+        | None -> assert false
+      in
+      List.fold_left (fun accu (y : M.label_term) ->
+          let formula = Some "" in
+          let label = unloc y.label in
+          let res = compute_res w3s label kind in
+          let item = mk_item label kind formula res in
+          item::accu
+        ) accu invs
+     ) accu spec.invariants *)
+  in
+
+  let for_decl accu (d : M.decl_node) =
+    let for_dvar accu (v : M.var) =
+      let kind = Kvariable (unloc v.name) in
+      List.fold_left (fun accu (x : M.label_term) ->
+          let formula = Some "" in
+          let label = unloc x.label in
+          let res = compute_res w3s label kind in
+          let item = mk_item label kind formula res in
+          item::accu
+        ) accu v.invariants
+    in
+    match d with
+    | Dvar v     -> for_dvar accu v
+    | Denum _e   -> accu
+    | Dasset _a  -> accu
+    | Drecord _r -> accu
+  in
+
+  let for_function accu (function__ : M.function__) =
+    let spec = function__.spec in
+    let fname =
+      match function__.node with
+      | Entry  fn        -> unloc fn.name
+      | Function (fn, _) -> unloc fn.name
+      | Getter (fn, _)   -> unloc fn.name
+    in
+    match spec with
+    | Some spec -> for_specification ~fname accu spec
+    | None -> accu
+  in
+
+  let items =
+    []
+    |> (fun x -> List.fold_left for_decl x m.decls)
+    |> (fun x -> List.fold_left for_function x m.functions)
+  in
+
+  mk_report ~items (unloc m.name)
+
+
+(* -------------------------------------------------------------------- *)
+
+let process (m : M.model) (path_xml : string) =
   let w3s: why3session =
     path_xml
     |> open_in
@@ -311,3 +429,6 @@ let process (_m : M.model) (path_xml : string) =
   in
 
   Format.printf "%s@\n" (Yojson.Safe.to_string (why3session_to_yojson w3s))
+
+  (* let report = extract m w3s in *)
+  (* Format.printf "%s@\n" (Yojson.Safe.to_string (report_to_yojson report)) *)

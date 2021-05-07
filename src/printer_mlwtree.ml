@@ -1,7 +1,5 @@
+open Printer_tools
 open Mlwtree
-
-let pp_str fmt str =
-  Format.fprintf fmt "%s" str
 
 let pp_int fmt i =
   Format.fprintf fmt "%i" i
@@ -9,11 +7,6 @@ let pp_int fmt i =
 let pp_id = pp_str
 
 (* -------------------------------------------------------------------------- *)
-
-let pp_list sep pp =
-  Format.pp_print_list
-    ~pp_sep:(fun fmt () -> Format.fprintf fmt "%(%)" sep)
-    pp
 
 let pp_enclose pre post pp fmt x =
   Format.fprintf fmt "%(%)%a%(%)" pre pp x post
@@ -958,16 +951,26 @@ and pp_fun fmt (s : fun_struct) =
     (pp_term e_top PRight) s.body
 and pp_raise outer pos fmt raises =
   if List.length raises = 0
-  then pp_str fmt ""
+  then ()
   else
     Format.fprintf fmt "@[raises { %a }@\n@]"
       (pp_list " }@\nraises { " (pp_term outer pos)) raises
 and pp_fails outer pos fmt fails =
+  let pp_fail fmt (fail : ('e, 'i) abstract_struct_fail) =
+    match fail.expr with
+    | None -> (pp_term outer pos) fmt fail.fid
+    | Some _ -> begin
+        Format.fprintf fmt "%a ->@\n%a%a"
+          (pp_term outer pos) fail.fid
+          (pp_option (fun fmt -> Format.fprintf fmt " [@expl:%a]@\n" pp_id)) fail.expl
+          (pp_option (fun fmt -> Format.fprintf fmt " @[%a@]" (pp_term outer pos))) fail.expr
+      end
+  in
   if List.length fails = 0
-  then pp_str fmt ""
+  then ()
   else
     Format.fprintf fmt "@[raises {@\n %a @\n}@\n@]"
-      (pp_list "@\n}@\nraises {@\n " (pp_fail outer pos)) fails
+      (pp_list "@\n}@\nraises {@\n " pp_fail) fails
 and pp_fail outer pos fmt fail =
   match fail with
   | Some _, t -> (* why3 does not allow annotation in raises section *)

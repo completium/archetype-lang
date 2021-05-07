@@ -1835,6 +1835,37 @@ let remove_rational (model : model) : model =
   |> map_model (fun _ x -> x) for_type for_mterm
   |> update_nat_int_rat
 
+let remove_rational_update (model : model) : model =
+  let rec aux ctx (mt : mterm) : mterm=
+    match mt.node with
+    | Mupdate (an, k, l) -> begin
+        let l : (lident * assignment_operator * mterm) list = List.map (
+            fun (fn, op, v) : (lident * assignment_operator * mterm) ->
+              let v : mterm = v in
+              match get_ntype v.type_ with
+              | Ttuple [(Tbuiltin Bint, _); (Tbuiltin Bnat, _)] -> begin
+
+                  let get_val id : mterm =
+                    let _, ts, _ = Utils.get_asset_field model (an, unloc id) in
+                    let node = Mdotassetfield(dumloc an, k, id) in
+                    mk_mterm node ts
+                  in
+
+                  match op with
+                  | PlusAssign  -> (fn, ValueAssign, mk_mterm (Mratarith (Rplus,  get_val fn, v)) v.type_)
+                  | MinusAssign -> (fn, ValueAssign, mk_mterm (Mratarith (Rminus, get_val fn, v)) v.type_)
+                  | MultAssign  -> (fn, ValueAssign, mk_mterm (Mratarith (Rmult,  get_val fn, v)) v.type_)
+                  | DivAssign   -> (fn, ValueAssign, mk_mterm (Mratarith (Rdiv,   get_val fn, v)) v.type_)
+                  | _           -> (fn, op, v)
+                end
+              | _ -> (fn, op, v)
+          ) l in
+        { mt with node = Mupdate (an, k, l) }
+      end
+    | _ -> map_mterm (aux ctx) mt
+  in
+  map_mterm_model aux model
+
 
 let replace_date_duration_by_timestamp (model : model) : model =
   let is_rat      t = match get_ntype t with | Ttuple [(Tbuiltin Bint, _); (Tbuiltin Bnat, _)] -> true     | _ -> false in

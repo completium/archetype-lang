@@ -2889,7 +2889,7 @@ let mk_storage_api (m : M.model) _records =
 
 (* Entries --------------------------------------------------------------------*)
 
-let fold_fails m ctx body : (loc_ident option * loc_term) list =
+let fold_fails m ctx body : struct_fail list =
   let rec internal_fold_fails acc (term : M.mterm) =
     match term.M.node with
     | M.Mfail (Invalid v) ->
@@ -2898,17 +2898,23 @@ let fold_fails m ctx body : (loc_ident option * loc_term) list =
         Option.fold (fun acc (spec : M.specification) -> acc @ spec.fails) []
           (Option.fold (fun _ id -> M.Utils.get_specification m id) None ctx.entry_id) in
       (* retrieve fails with same arg type *)
-      let formulas = List.fold_left (fun acc (fail : M.fail) ->
+      let formulas : struct_fail list =
+        let f_acc (accu : struct_fail list) (fail : M.fail) : struct_fail list =
           let fidx = get_fail_idx m fail.atype in
-          if compare idx fidx = 0 then
-            acc @ [
-              Some (map_lident fail.label),
-              dl (Timpl (loc_term (Texn (Efail (idx, Some (Tvar (unloc fail.arg))))), map_mterm m {ctx with fails = true} (fail.formula)))
-            ]
-          else acc
-        ) [] fails in
-      if compare (List.length formulas) 0 = 0 then
-        acc @ [None, loc_term (Texn (Efail (idx, None)))]
+          if compare idx fidx = 0 then begin
+            let fid  : loc_term    = loc_term (Texn (Efail (idx, Some (Tvar (unloc fail.arg))))) in
+            let expl : loc_ident   = map_lident fail.label in
+            let expr : loc_term    = map_mterm m {ctx with fails = true} (fail.formula) in
+            let sf   : struct_fail = mk_struct_fail fid ~expl ~expr in
+            accu @ [ sf ]
+          end
+          else accu
+        in
+        List.fold_left f_acc [] fails
+      in
+      if List.length formulas = 0 then
+        let a  : struct_fail list = [ mk_struct_fail (loc_term (Texn (Efail (idx, None)))) ] in
+        acc @ a
       else acc @ formulas
     | _ ->  M.fold_term internal_fold_fails acc term in
   internal_fold_fails [] body

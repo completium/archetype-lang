@@ -282,6 +282,7 @@ let generate_target model =
     |> extract_item_collection_from_add_asset
     |> process_internal_string
     |> remove_rational
+    |> remove_rational_update
     |> replace_date_duration_by_timestamp
     |> eval_variable_initial_value
     |> generate_storage
