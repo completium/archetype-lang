@@ -366,6 +366,15 @@ let showEntries (filename, channel) =
   |> parse_micheline
   |> (fun (m, _) -> Gen_extra.show_entries m)
 
+let with_parameters (filename, channel) =
+  let res =
+    (filename, channel)
+    |> compile_model
+    |> (fun m -> List.length m.parameters > 0)
+  in
+
+  Format.printf "%b@\n" res
+
 let close dispose channel =
   if dispose then close_in channel
 
@@ -511,6 +520,7 @@ let main () =
       "--expr", Arg.String (fun s -> Options.opt_expr := Some s), " ";
       "--type", Arg.String (fun s -> Options.opt_type := Some s), " ";
       "--with-contract", Arg.Set Options.opt_with_contract, " ";
+      "--with-parameters", Arg.Set Options.opt_with_parameters, " Check if contract have parameters";
       "--show-entries", Arg.Set Options.opt_show_entries, " Show entries";
       "--entrypoint", Arg.String (fun s -> Options.opt_entrypoint := Some s), " ";
       "--only-code", Arg.Set Options.opt_code_only, " ";
@@ -550,14 +560,15 @@ let main () =
 
       try
         begin
-          match !Options.opt_lsp, !Options.opt_service, !Options.opt_decomp, !Options.opt_show_entries, !Options.opt_expr, !Options.opt_to_micheline, !Options.opt_why3session with
-          | true, _, _, _, _, _, _   -> Lsp.process (filename, channel)
-          | _, true, _, _, _, _, _   -> Services.process (filename, channel)
-          | _, _, true, _, _, _, _   -> decompile (filename, channel)
-          | _, _, _, true, _, _, _   -> showEntries (filename, channel)
-          | _, _, _, _, Some v, _, _ -> process_expr_type_channel (filename, channel) v
-          | _, _, _, _, _, Some v, _ -> Gen_extra.to_micheline v
-          | _, _, _, _, _, _, Some v -> extract_why3session (filename, channel) v
+          match !Options.opt_with_parameters, !Options.opt_lsp, !Options.opt_service, !Options.opt_decomp, !Options.opt_show_entries, !Options.opt_expr, !Options.opt_to_micheline, !Options.opt_why3session with
+          | true, _, _, _, _, _, _, _   -> with_parameters (filename, channel)
+          | _, true, _, _, _, _, _, _   -> Lsp.process (filename, channel)
+          | _, _, true, _, _, _, _, _   -> Services.process (filename, channel)
+          | _, _, _, true, _, _, _, _   -> decompile (filename, channel)
+          | _, _, _, _, true, _, _, _   -> showEntries (filename, channel)
+          | _, _, _, _, _, Some v, _, _ -> process_expr_type_channel (filename, channel) v
+          | _, _, _, _, _, _, Some v, _ -> Gen_extra.to_micheline v
+          | _, _, _, _, _, _, _, Some v -> extract_why3session (filename, channel) v
           | _ -> compile (filename, channel)
         end;
         close dispose channel

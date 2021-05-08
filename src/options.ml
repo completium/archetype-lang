@@ -74,6 +74,7 @@ let opt_no_js_header = ref false
 let opt_to_micheline = ref (None : string option)
 let opt_why3session = ref (None : string option)
 let opt_sdir = ref false
+let opt_with_parameters = ref false
 
 let opt_property_focused = ref ""
 

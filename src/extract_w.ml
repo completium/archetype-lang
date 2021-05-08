@@ -421,7 +421,7 @@ let extract (m : M.model) (w3s : why3session) =
 
 (* -------------------------------------------------------------------- *)
 
-let process (m : M.model) (path_xml : string) =
+let process (_m : M.model) (path_xml : string) =
   let w3s: why3session =
     path_xml
     |> open_in
