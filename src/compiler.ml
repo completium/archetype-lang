@@ -366,14 +366,23 @@ let showEntries (filename, channel) =
   |> parse_micheline
   |> (fun (m, _) -> Gen_extra.show_entries m)
 
-let with_parameters (filename, channel) =
-  let res =
+let get_parameters (filename, channel) =
+  let parameters =
     (filename, channel)
     |> compile_model
-    |> (fun m -> List.length m.parameters > 0)
+    |> (fun m -> m.parameters)
   in
 
-  Format.printf "%b@\n" res
+  match parameters with
+  | [] -> ()
+  | _ ->
+    Format.printf "(%a)@\n"
+      (
+        Printer_tools.pp_list ", " (fun fmt (p : Model.parameter) ->
+            Format.fprintf fmt "%a : %a"
+              Printer_tools.pp_id p.name
+              Printer_model.pp_type p.typ
+          )) parameters
 
 let close dispose channel =
   if dispose then close_in channel
@@ -520,7 +529,7 @@ let main () =
       "--expr", Arg.String (fun s -> Options.opt_expr := Some s), " ";
       "--type", Arg.String (fun s -> Options.opt_type := Some s), " ";
       "--with-contract", Arg.Set Options.opt_with_contract, " ";
-      "--with-parameters", Arg.Set Options.opt_with_parameters, " Check if contract have parameters";
+      "--get-parameters", Arg.Set Options.opt_get_parameters, " Get parameters";
       "--show-entries", Arg.Set Options.opt_show_entries, " Show entries";
       "--entrypoint", Arg.String (fun s -> Options.opt_entrypoint := Some s), " ";
       "--only-code", Arg.Set Options.opt_code_only, " ";
@@ -560,8 +569,8 @@ let main () =
 
       try
         begin
-          match !Options.opt_with_parameters, !Options.opt_lsp, !Options.opt_service, !Options.opt_decomp, !Options.opt_show_entries, !Options.opt_expr, !Options.opt_to_micheline, !Options.opt_why3session with
-          | true, _, _, _, _, _, _, _   -> with_parameters (filename, channel)
+          match !Options.opt_get_parameters, !Options.opt_lsp, !Options.opt_service, !Options.opt_decomp, !Options.opt_show_entries, !Options.opt_expr, !Options.opt_to_micheline, !Options.opt_why3session with
+          | true, _, _, _, _, _, _, _   -> get_parameters (filename, channel)
           | _, true, _, _, _, _, _, _   -> Lsp.process (filename, channel)
           | _, _, true, _, _, _, _, _   -> Services.process (filename, channel)
           | _, _, _, true, _, _, _, _   -> decompile (filename, channel)
