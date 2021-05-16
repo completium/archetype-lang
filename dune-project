@@ -23,13 +23,13 @@ Archetype is a domain-specific language (DSL) to develop smart contracts
 on the Tezos blockchain, with a specific focus on contract security
 ")
  (depends
-   (ocaml (>= 4.07.0))
-    menhir
+   (ocaml (>= 4.08.0))
+   (menhir (>= 20180523))
     num
-    yojson
+   (yojson (>= 1.6.0))
     ppx_deriving
     ppx_deriving_yojson
-    visitors
+   (visitors (>= 20200207))
     hex
     xmlm
   )
