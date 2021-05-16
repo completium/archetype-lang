@@ -14,8 +14,6 @@ env:
   - OPAMYES="true"
   - OPAMVERBOSE="true"
   matrix:
-  - OCAML_VERSION=4.07.0
-  - OCAML_VERSION=4.07.1
   - OCAML_VERSION=4.08.0
   - OCAML_VERSION=4.08.1
   - OCAML_VERSION=4.09.0
