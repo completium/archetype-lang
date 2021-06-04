@@ -1,0 +1,14 @@
+archetype pkey_in_asset
+
+asset my_asset {
+  a : string;
+  b : address;
+}
+
+asset my_asset_2 {
+  c : pkey<my_asset>;
+  d : bytes;
+}
+
+entry exec () {
+}
