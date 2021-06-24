@@ -233,6 +233,7 @@ let generate_target model =
     |> prune_formula
     |> getter_to_entry ~extra:true
     |> process_parameter ~js:js
+    |> test_mode
     |> process_multi_keys
     |> replace_col_by_key_for_ckfield
     |> move_partition_init_asset
@@ -540,6 +541,7 @@ let main () =
       "--extract-why3session", Arg.String (fun s -> Options.opt_why3session := Some s), " Extract result from why3session.xml";
       "-V", Arg.String (fun s -> Options.add_vids s), "<id> process specication identifiers";
       "-v", Arg.Unit (fun () -> print_version ()), " Show version number and exit";
+      "--test-mode", Arg.Set Options.opt_test_mode, " Test mode";
       "--version", Arg.Unit (fun () -> print_version ()), " Same as -v";
     ] in
   let arg_usage = String.concat "\n" [
