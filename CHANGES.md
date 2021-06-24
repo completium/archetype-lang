@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.2.6] - 2021-06-24
+## Unreleased
 ### Added
   - edo features:
     * add new cryptographic hash functions: `sha3` and `keccak`
@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     * add sapling types (`sapling_state` and `sapling_transaction`) and operations (`sapling_empty_state` and `sapling_verify_update`)
     * add bls curves types (`bls12_381_fr`, `bls12_381_g1` and `bls12_381_g2`), arthmetic (`+`, `*`, unary `-`) and operation (`pairing_check`)
 
-## Unreleased
+## 1.2.6] - 2021-06-24
 ### Added
   - test mode
 
