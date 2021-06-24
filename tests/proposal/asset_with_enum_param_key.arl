@@ -1,0 +1,14 @@
+archetype asset_with_enum_param_key
+
+enum e =
+| A<nat>
+| B<string>
+
+asset a {
+  k : e;
+  v : int;
+}
+
+entry exec() {
+  ()
+}

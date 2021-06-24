@@ -1,0 +1,14 @@
+archetype asset_key_in_record
+
+asset my_asset {
+  a : string;
+  b : address;
+}
+
+record my_record {
+  c : nat;
+  d : pkey<my_asset>;
+}
+
+entry exec () {
+}

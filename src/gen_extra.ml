@@ -35,8 +35,8 @@ let string_to_ttype ?entrypoint (input : string) : T.type_ =
   | Some e -> begin
       let rec aux accu (t : T.type_) =
         match t.node with
-        | T.Tor (l, r) -> aux (aux accu l) r
         | _ when Option.map_dfl (String.equal e) false t.annotation -> Some t
+        | T.Tor (l, r) -> aux (aux accu l) r
         | _ -> accu
       in
       let t = aux None typ in

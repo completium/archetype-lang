@@ -23,7 +23,7 @@ type sorting_policy =
   | None
 [@@deriving show {with_path = false}]
 
-let version = "1.2.5"
+let version = "1.2.6"
 let url = "https://archetype-lang.org/"
 
 let target = ref (Michelson : target_lang)
@@ -75,6 +75,7 @@ let opt_to_micheline = ref (None : string option)
 let opt_why3session = ref (None : string option)
 let opt_sdir = ref false
 let opt_get_parameters = ref false
+let opt_test_mode = ref false
 
 let opt_property_focused = ref ""
 

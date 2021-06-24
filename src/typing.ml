@@ -200,7 +200,7 @@ end = struct
       | A.Tbig_map             _ -> false
       | A.Tor           (t1, t2) -> is_comparable t1 && is_comparable t2
       | A.Tlambda              _ -> false
-      | A.Ttuple               l -> (match l with | e::_ -> is_comparable e | _ -> false)
+      | A.Ttuple               l -> List.for_all is_comparable l
       | A.Toption             ty -> is_comparable ty
       | A.Toperation             -> false
       | A.Tcontract            _ -> false
@@ -379,10 +379,7 @@ end = struct
       | _           -> true
   end
 
-  let rec support_eq = function
-    | A.Ttuple tys -> List.for_all support_eq tys
-    | A.Tenum _ -> true
-    | ty -> Michelson.is_comparable ty
+  let support_eq = Michelson.is_comparable
 
   let equal = ((=) : A.ptyp -> A.ptyp -> bool)
 
@@ -566,24 +563,7 @@ end = struct
 
     in doit ty
 
-  let rec pktype = function
-    | A.Ttuple tys -> List.for_all pktype_simpl tys
-    | (A.Tbuiltin _) as ty -> pktype_simpl ty
-    | _ -> false
-
-  and pktype_simpl = function
-    | Tbuiltin (
-        VTbool
-      | VTnat
-      | VTint
-      | VTdate
-      | VTstring
-      | VTaddress
-      | VTcurrency
-      | VTbytes
-      ) -> true
-    | _ -> false
-
+  let pktype = Michelson.is_comparable
 
   let create_tuple (tys : A.ptyp list) =
     match tys with

@@ -1,0 +1,8 @@
+archetype cmp_test
+
+variable res : bool = false
+
+entry exec () {
+  var l : list<nat> = [];
+  res := (1, l) = (1, l)
+}

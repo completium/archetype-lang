@@ -1,0 +1,16 @@
+archetype id_redefinition
+
+enum e =
+| A<nat>
+| B<string>
+
+entry ident () {
+  effect {
+    var v = A(0);
+    var a = 0;
+    match v with
+    | A(a) -> ()
+    | _ -> ()
+    end
+  }
+}
