@@ -720,7 +720,9 @@ sourcedby:
 | l=snl(SEMI_COLON, rf(X)) { l }
 
 rf(X):
-| id=ident f=rfi(X)? COLON e=expr %prec prec_labelexpr { (id, e, f) }
+| id=ident COLON e=expr %prec prec_labelexpr { (id, e, None) }
+| id=ident f=rfi(X) COLON e=expr %prec prec_labelexpr { (id, e, Some f) }
+| id=ident COLON e=expr f=rfi(X) %prec prec_labelexpr { (id, e, Some f) }
 
 %inline rfi(X):
 | X e=expr { e }

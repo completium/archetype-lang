@@ -403,8 +403,6 @@ let string_of_symbol = function
   | X (N N_option_sourcedby_) -> "an option sourced by"
   | X (N N_option_simple_expr_) -> "a simple expression option"
   | X (N N_option_SEMI_COLON_) -> ""
-  | X (N N_option_rfi_WITH__) -> "rfi with"
-  | X (N N_option_rfi_OTHERWISE__) -> "rfi otherwise"
   | X (N N_option_require_value_) -> "a require option"
   | X (N N_option_require_) -> "a require option"
   | X (N N_option_record_position_) -> "an option record position"
