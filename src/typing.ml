@@ -661,6 +661,7 @@ type error_desc =
   | InvalidSourcedByExpression
   | InvalidSourcedByAsset
   | InvalidStateExpression
+  | InvalidStringValue
   | InvalidTypeForBigMapKey
   | InvalidTypeForBigMapValue
   | InvalidTypeForContract
@@ -880,6 +881,7 @@ let pp_error_desc fmt e =
   | InvalidSourcedByExpression         -> pp "Invalid 'Sourcedby' expression"
   | InvalidSourcedByAsset              -> pp "Invalid 'Sourcedby' asset, the key must be typed address"
   | InvalidStateExpression             -> pp "Invalid state expression"
+  | InvalidStringValue                 -> pp "Invalid string value"
   | InvalidTypeForBigMapKey            -> pp "Invalid type for big map key"
   | InvalidTypeForBigMapValue          -> pp "Invalid type for big map value"
   | InvalidTypeForContract             -> pp "Invalid type for contract"
@@ -2443,6 +2445,8 @@ let for_literal (env : env) (_ety : A.type_ option) (topv : PT.literal loced) : 
     end
 
   | Lstring s ->
+    if (not (Core.is_valid_string s))
+    then  Env.emit_error env (loc topv, InvalidStringValue);
     mk_sp A.vtstring (A.BVstring s)
 
   | Ltz tz ->

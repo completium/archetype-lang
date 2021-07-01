@@ -416,3 +416,15 @@ let string_to_big_int_percent input =
     else Big_int.big_int_of_string input, Big_int.unit_big_int
   in
   compute_irr_fract (n, Big_int.mult_int_big_int 100 d)
+
+let is_valid_string v =
+  let rec check_printable_ascii i =
+    if (i < 0) then true
+    else
+      match v.[i] with
+      | '\n' | '\x20' .. '\x7E' ->
+        check_printable_ascii (i - 1)
+      | _ ->
+        false
+  in
+  check_printable_ascii (String.length v - 1)
