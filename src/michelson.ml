@@ -508,6 +508,7 @@ let tbool         = mk_type Tbool
 let tmutez        = mk_type Tmutez
 let taddress      = mk_type Taddress
 let ttimestamp    = mk_type Ttimestamp
+let tchain_id     = mk_type Tchain_id
 let tbytes        = mk_type Tbytes
 let tpair t1 t2   = mk_type (Tpair (t1, t2))
 let tor t1 t2     = mk_type (Tor (t1, t2))
@@ -516,6 +517,10 @@ let tlist t       = mk_type (Tlist t)
 let tset t        = mk_type (Tlist t)
 let tmap t1 t2    = mk_type (Tmap (t1, t2))
 let tlambda t1 t2 = mk_type (Tlambda (t1, t2))
+let toption t     = mk_type (Toption t)
+let tcontract t   = mk_type (Tcontract t)
+let tkey_hash     = mk_type (Tkey_hash)
+let tticket t     = mk_type (Tticket t)
 
 (* -------------------------------------------------------------------- *)
 
