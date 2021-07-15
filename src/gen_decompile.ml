@@ -960,7 +960,7 @@ end = struct
         unify_dexpr uf e2 f2
 
     | Ddata d1, Ddata d2 ->
-        if d1 <> d2 then
+        if not (cmp_data d1 d2) then
           raise UnificationFailure
 
     | Dfun (o1, es1), Dfun (o2, es2) ->
@@ -1236,7 +1236,7 @@ end = struct
       let y, s = List.pop s in
       mkdecomp (`Paired (x, y) :: s) []
 
-    | SELF_ADDRESS -> decompile_op s (`Zop Zself_address )
+    | SELF_ADDRESS -> decompile_op s (`Zop Zself_address)
 
     | ITER cs ->
         let { failure; stack = s; code = bd1 } = decompile_s s cs in
@@ -1261,6 +1261,26 @@ end = struct
         mkdecomp
           ((xs :> rstack1) :: s)
           [DIIter (as_dvar x, Dvar xs, bd)]
+
+    | LOOP cs ->
+        let cond = vlocal () in
+
+        let { failure; stack = s1; code = bd1 } =
+          decompile_s ((cond :> rstack1) :: s) cs in
+
+        if failure then
+          assert false;
+
+        let bd2 = (decompile_s ((cond :> rstack1) :: s1) cs).code in
+
+        let uf = UF.create () in
+
+        unify_dcode uf bd1 bd2;
+
+        let _bd = dcode_apply_uf uf bd1 in
+        let s = rstack_apply_uf uf ((cond :> rstack1) :: s1) in
+
+        mkdecomp s []
 
     | IF_CONS (c1, c2) ->
       compile_match s [("cons", 1), c1; ("nil", 0), c2]
