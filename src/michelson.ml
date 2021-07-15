@@ -60,7 +60,7 @@ type data =
   | Dvar               of ident * type_
 [@@deriving show {with_path = false}]
 
-type code =
+type code_node =
   (* Control structures *)
   | SEQ                of code list
   | APPLY
@@ -177,6 +177,8 @@ type code =
   | SET_BAKER_PVSS_KEY
 
 [@@deriving show {with_path = false}]
+
+and code = { node : code_node; type_: type_ option; }
 
 type z_operator =
   | Znow
@@ -434,23 +436,29 @@ map (ident -> vkind)
 
 type dvar   = [`VLocal of int | `VGlobal of ident]
 
-and  dexpr =
+and  dexpr_node =
   | Dvar       of dvar
   | Depair     of dexpr * dexpr
   | Ddata      of data
   | Dfun       of g_operator * dexpr list
 [@@deriving show {with_path = false}]
 
+and dexpr = { node : dexpr_node; type_ : type_ }
+
 type dinstr =
-  | DIAssign   of dvar * dexpr
+  | DIAssign   of dtyvar * dexpr
   | DIIf       of dexpr * (dcode * dcode)
   | DIMatch    of dexpr * (ident * dpattern list * dcode) list
   | DIFailwith of dexpr
   | DIWhile    of dexpr * dcode
-  | DIIter     of dvar * dexpr * dcode
+  | DIIter     of dtyvar * dexpr * dcode
+  | DILoopL    of dtyvar * dcode
+  | DICall     of ident * dexpr list
+
+and dtyvar = dvar * type_
 
 and dpattern =
-  | DVar  of int
+  | DVar  of int * type_
   | DPair of dpattern * dpattern
 
 and dcode = dinstr list
@@ -462,6 +470,7 @@ type dprogram = {
   parameter: type_;
   storage_data: data;
   code: dcode;
+  procs: (string * (string * type_) list * dcode) list;
 }
 [@@deriving show {with_path = false}]
 
@@ -494,8 +503,8 @@ let mk_prim ?(args=[]) ?(annots=[]) prim : prim =
 let mk_micheline ?(parameters = []) code storage : micheline =
   { code; storage; parameters }
 
-let mk_dprogram storage parameter storage_data name code =
-  { name; storage; parameter; storage_data; code }
+let mk_dprogram storage parameter storage_data name code procs =
+  { name; storage; parameter; storage_data; code; procs }
 
 (* -------------------------------------------------------------------- *)
 
