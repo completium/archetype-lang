@@ -267,6 +267,9 @@ and ter_operator =
   | Ttransfer_tokens
 [@@deriving show {with_path = false}]
 
+and g_operator = [`Zop of z_operator | `Uop of un_operator  | `Bop of bin_operator  | `Top of ter_operator ]
+[@@deriving show {with_path = false}]
+
 and cmp_operator =
   | Ceq
   | Cne
@@ -444,29 +447,33 @@ map (ident -> vkind)
 
 type dvar   = [`VLocal of int | `VGlobal of ident]
 
-and  dexpr_node =
+(* and  dexpr_node = *)
+and  dexpr =
   | Dvar       of dvar
   | Depair     of dexpr * dexpr
   | Ddata      of data
   | Dfun       of g_operator * dexpr list
 [@@deriving show {with_path = false}]
 
-and dexpr = { node : dexpr_node; type_ : type_ }
+(* and dexpr = { node : dexpr_node; type_ : type_ } *)
 
 type dinstr =
-  | DIAssign   of dtyvar * dexpr
+  (* | DIAssign   of dtyvar * dexpr *)
+  | DIAssign   of dvar * dexpr
   | DIIf       of dexpr * (dcode * dcode)
   | DIMatch    of dexpr * (ident * dpattern list * dcode) list
   | DIFailwith of dexpr
   | DIWhile    of dexpr * dcode
   | DIIter     of dtyvar * dexpr * dcode
-  | DILoopL    of dtyvar * dcode
-  | DICall     of ident * dexpr list
+  (* | DILoopL    of dtyvar * dcode *)
+  (* | DICall     of ident * dexpr list *)
 
-and dtyvar = dvar * type_
+(* and dtyvar = dvar * type_ *)
+and dtyvar = dvar
 
 and dpattern =
-  | DVar  of int * type_
+  (* | DVar  of int * type_ *)
+  | DVar  of int
   | DPair of dpattern * dpattern
 
 and dcode = dinstr list
@@ -511,7 +518,7 @@ let mk_prim ?(args=[]) ?(annots=[]) prim : prim =
 let mk_micheline ?(parameters = []) code storage : micheline =
   { code; storage; parameters }
 
-let mk_dprogram storage parameter storage_data name code procs =
+let mk_dprogram ?(procs = []) storage parameter storage_data name code =
   { name; storage; parameter; storage_data; code; procs }
 
 (* -------------------------------------------------------------------- *)
@@ -584,8 +591,8 @@ let cskip     = SEQ []
 
 let cmp_ident = String.equal
 
-let cmp_type lhs rhs =
-  let rec f lhs rhs =
+let cmp_type (lhs : type_) (rhs : type_) =
+  let rec f (lhs : type_) (rhs : type_) =
     match lhs.node, rhs.node with
     | Taddress, Taddress                               -> true
     | Tbig_map (a1, b1), Tbig_map (a2, b2)             -> f a1 a2 && f b1 b2

@@ -24,7 +24,7 @@ depends: [
   "ppx_deriving"
   "ppx_deriving_yojson"
   "uri"
-  "visitors"
+  "visitors" {>= "20200207"}
   "hex"
   "xmlm"
   "odoc" {with-doc}

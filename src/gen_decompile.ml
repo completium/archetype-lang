@@ -2161,6 +2161,8 @@ end = struct
     | Dlist  _l        -> assert false
     | Delt _           -> assert false
     | Dvar _           -> assert false
+    | DIrCode _        -> assert false
+    | Dcode _          -> assert false
 
   let get_storage_list tstorage =
     let rec aux (x : T.type_) =
