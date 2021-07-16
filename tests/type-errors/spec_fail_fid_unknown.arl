@@ -1,0 +1,12 @@
+archetype spec_fail_fid_unknown
+
+entry exec () {
+  specification {
+    fails  {
+      f1 with BadFailureId(msg : nat) : true;
+    }
+  }
+  effect {
+    ()
+  }
+}

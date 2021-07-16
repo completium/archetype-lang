@@ -88,6 +88,29 @@ let output_obj_micheline (x : Michelson.obj_micheline) =
   then Format.printf "%a@." Michelson.pp_obj_micheline x
   else Format.printf "%a@." Printer_michelson.pp_obj_micheline x
 
+let remove_newline (input : string) : string =
+  let a : string ref = ref "" in
+  let w : bool ref = ref false in
+  for i = 0 to String.length input - 1 do
+    let c : char = input.[i] in
+    if c == '\n'
+    then ()
+    else begin
+      if c == ' '
+      then begin
+        if !w
+        then ()
+        else a := !a ^ " ";
+        w := true
+      end
+      else begin
+        w := false;
+        a := !a ^ (String.make 1 c)
+      end
+    end
+  done;
+  !a
+
 let output (model : Model.model) =
   match !Options.opt_raw, !Options.opt_m with
   | true, _ -> Format.printf "%a@." Model.pp_model model
@@ -101,6 +124,7 @@ let output (model : Model.model) =
         | Javascript -> begin
             fun fmt model ->
               let ir = Gen_michelson.to_ir model in
+              let storage_data = Gen_michelson.process_data ir.storage_data in
               if !Options.opt_raw_ir
               then Format.fprintf fmt "%a@." Michelson.pp_ir ir
               else begin
@@ -109,13 +133,15 @@ let output (model : Model.model) =
                 else begin
                   let michelson = Gen_michelson.to_michelson ir in
                   match !Options.target with
-                  | MichelsonStorage -> Format.fprintf fmt "%a@." Printer_michelson.pp_data ir.storage_data
+                  | MichelsonStorage ->
+                    let output = Format.asprintf "%a" Printer_michelson.pp_data storage_data |> remove_newline in
+                    Format.fprintf fmt "%s" output
                   | Michelson ->
                     if !Options.opt_raw_michelson
                     then Format.fprintf fmt "%a@." Michelson.pp_michelson michelson
                     else begin
                       if !Options.opt_json then
-                        let micheline = Michelson.Utils.to_micheline michelson ir.storage_data in
+                        let micheline = Michelson.Utils.to_micheline michelson storage_data in
                         if !Options.opt_code_only
                         then begin
                           let code = micheline.code in
@@ -127,12 +153,13 @@ let output (model : Model.model) =
                           else Format.fprintf fmt "%a@." Printer_michelson.pp_micheline micheline
                         end
                       else
-                        Format.fprintf fmt "# %a@.%a@."
-                          Printer_michelson.pp_data ir.storage_data
+                        let sdata = Format.asprintf "%a" Printer_michelson.pp_data storage_data |> remove_newline in
+                        Format.fprintf fmt "# %s@.%a@."
+                          sdata
                           Printer_michelson.pp_michelson michelson
                     end
                   | Javascript -> begin
-                      let micheline = Michelson.Utils.to_micheline michelson ir.storage_data in
+                      let micheline = Michelson.Utils.to_micheline michelson storage_data in
                       Format.fprintf fmt "%a@\n@." Printer_michelson.pp_javascript micheline
                     end
                   | _ -> assert false
@@ -151,10 +178,13 @@ let output (model : Model.model) =
     end
 
 let parse (filename, channel) =
-  Io.parse_archetype ~name:filename channel
-(* if !Options.opt_cwse
-   then Io.parse_archetype
-   else Io.parse_archetype_strict) ~name:filename channel *)
+  let pt = Io.parse_archetype ~name:filename channel in
+  Pt_helper.check_json pt;
+  match !Error.errors with
+  | [] -> pt
+  | (_, str)::_ ->
+    Format.eprintf "%s" str;
+    raise (Error.ParseError !Error.errors)
 
 
 let preprocess_ext (pt : ParseTree.archetype) : ParseTree.archetype =
@@ -193,6 +223,8 @@ let generate_target model =
     m
   in
 
+  let js = match !Options.target with | Javascript -> true | _ -> false in
+
   match !Options.target with
   | Michelson
   | MichelsonStorage
@@ -200,8 +232,8 @@ let generate_target model =
     model
     |> prune_formula
     |> getter_to_entry ~extra:true
-    |> process_parameter
-    (* |> reverse_operations *)
+    |> process_parameter ~js:js
+    |> test_mode
     |> process_multi_keys
     |> replace_col_by_key_for_ckfield
     |> move_partition_init_asset
@@ -218,7 +250,6 @@ let generate_target model =
     |> replace_dotassetfield_by_dot
     |> generate_storage
     |> replace_declvar_by_letin
-    |> replace_lit_address_by_role
     |> remove_label
     |> flat_sequence
     |> remove_cmp_bool
@@ -231,6 +262,8 @@ let generate_target model =
     |> normalize_storage
     |> remove_constant
     |> eval_storage
+    |> expr_to_instr
+    |> instr_to_expr_exec
     |> optimize
     |> generate_api_storage
     |> output
@@ -250,11 +283,11 @@ let generate_target model =
     |> extract_item_collection_from_add_asset
     |> process_internal_string
     |> remove_rational
+    |> remove_rational_update
     |> replace_date_duration_by_timestamp
     |> eval_variable_initial_value
     |> generate_storage
     |> replace_declvar_by_letin
-    |> replace_lit_address_by_role
     |> replace_label_by_mark
     |> flat_sequence
     |> remove_cmp_bool
@@ -279,7 +312,7 @@ let generate_target model =
 
 (* -------------------------------------------------------------------- *)
 
-let compile (filename, channel) =
+let compile_model (filename, channel) =
   let cont c a x = if c then (a x; raise Stop) else x in
 
   (filename, channel)
@@ -302,6 +335,10 @@ let compile (filename, channel) =
   |> raise_if_error post_model_error check_asset_key
   |> process_metadata
   |> cont !Options.opt_mdl output_tmdl
+
+let compile (filename, channel) =
+  (filename, channel)
+  |> compile_model
   |> generate_target
 
 let decompile (filename, channel) =
@@ -330,6 +367,24 @@ let showEntries (filename, channel) =
   |> parse_micheline
   |> (fun (m, _) -> Gen_extra.show_entries m)
 
+let get_parameters (filename, channel) =
+  let parameters =
+    (filename, channel)
+    |> compile_model
+    |> (fun m -> m.parameters)
+  in
+
+  match parameters with
+  | [] -> ()
+  | _ ->
+    Format.printf "(%a)@\n"
+      (
+        Printer_tools.pp_list ", " (fun fmt (p : Model.parameter) ->
+            Format.fprintf fmt "%a : %a"
+              Printer_tools.pp_id p.name
+              Printer_model.pp_type p.typ
+          )) parameters
+
 let close dispose channel =
   if dispose then close_in channel
 
@@ -357,8 +412,9 @@ let process_expr (input : string) =
         output_obj_micheline micheline;
         match !Options.opt_type with
         | Some t -> begin
-            let micheline = Michelson.Utils.type_to_micheline (Gen_extra.string_to_ttype t) in
-            output_obj_micheline micheline;
+            if not !Options.opt_expr_only then
+              let micheline = Michelson.Utils.type_to_micheline (Gen_extra.string_to_ttype t) in
+              output_obj_micheline micheline;
           end
         | None -> ()
       end
@@ -384,6 +440,11 @@ let process_expr_type_string (input : string) =
   | Stop_error n -> exit n
   | Error.ParseError _ -> assert false
   | _ -> ()
+
+(* -------------------------------------------------------------------- *)
+let extract_why3session a path_xml =
+  let model = compile_model a in
+  Extract_w.process model path_xml
 
 (* -------------------------------------------------------------------- *)
 let main () =
@@ -425,6 +486,8 @@ let main () =
       "--metadata-uri", Arg.String (fun s -> Options.opt_metadata_uri := s), " Same as -mu";
       "-ms", Arg.String (fun s -> Options.opt_metadata_storage := s), " Set metadata in storage";
       "--metadata-storage", Arg.String (fun s -> Options.opt_metadata_storage := s), " Same as -ms";
+      "-wmt", Arg.Set Options.opt_with_metadata, " Add metadata big_map for javascript output";
+      "--with-metadata", Arg.Set Options.opt_with_metadata, " Same as -wmt";
       "-lsp", Arg.String (fun s -> match s with
           | "errors" -> Options.opt_lsp := true; Lsp.kind := Errors
           | "outline" -> Options.opt_lsp := true; Lsp.kind := Outline
@@ -467,13 +530,18 @@ let main () =
       "--expr", Arg.String (fun s -> Options.opt_expr := Some s), " ";
       "--type", Arg.String (fun s -> Options.opt_type := Some s), " ";
       "--with-contract", Arg.Set Options.opt_with_contract, " ";
+      "--get-parameters", Arg.Set Options.opt_get_parameters, " Get parameters";
       "--show-entries", Arg.Set Options.opt_show_entries, " Show entries";
       "--entrypoint", Arg.String (fun s -> Options.opt_entrypoint := Some s), " ";
       "--only-code", Arg.Set Options.opt_code_only, " ";
+      "--only-expr", Arg.Set Options.opt_expr_only, " ";
       "--init", Arg.String (fun s -> Options.opt_init := s), " Initialize parameters";
       "--no-js-header", Arg.Set Options.opt_no_js_header, " No javascript header";
+      "--to-micheline", Arg.String (fun s -> Options.opt_to_micheline := Some s), " Convert michelson to micheline";
+      "--extract-why3session", Arg.String (fun s -> Options.opt_why3session := Some s), " Extract result from why3session.xml";
       "-V", Arg.String (fun s -> Options.add_vids s), "<id> process specication identifiers";
       "-v", Arg.Unit (fun () -> print_version ()), " Show version number and exit";
+      "--test-mode", Arg.Set Options.opt_test_mode, " Test mode";
       "--version", Arg.Unit (fun () -> print_version ()), " Same as -v";
     ] in
   let arg_usage = String.concat "\n" [
@@ -506,12 +574,15 @@ let main () =
 
       try
         begin
-          match !Options.opt_lsp, !Options.opt_service, !Options.opt_decomp, !Options.opt_show_entries, !Options.opt_expr with
-          | true, _, _, _, _ -> Lsp.process (filename, channel)
-          | _, true, _, _, _ -> Services.process (filename, channel)
-          | _, _, true, _, _ -> decompile (filename, channel)
-          | _, _, _, true, _ -> showEntries (filename, channel)
-          | _, _, _, _, Some v -> process_expr_type_channel (filename, channel) v
+          match !Options.opt_get_parameters, !Options.opt_lsp, !Options.opt_service, !Options.opt_decomp, !Options.opt_show_entries, !Options.opt_expr, !Options.opt_to_micheline, !Options.opt_why3session with
+          | true, _, _, _, _, _, _, _   -> get_parameters (filename, channel)
+          | _, true, _, _, _, _, _, _   -> Lsp.process (filename, channel)
+          | _, _, true, _, _, _, _, _   -> Services.process (filename, channel)
+          | _, _, _, true, _, _, _, _   -> decompile (filename, channel)
+          | _, _, _, _, true, _, _, _   -> showEntries (filename, channel)
+          | _, _, _, _, _, Some v, _, _ -> process_expr_type_channel (filename, channel) v
+          | _, _, _, _, _, _, Some v, _ -> Gen_extra.to_micheline v
+          | _, _, _, _, _, _, _, Some v -> extract_why3session (filename, channel) v
           | _ -> compile (filename, channel)
         end;
         close dispose channel

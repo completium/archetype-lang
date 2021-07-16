@@ -65,7 +65,6 @@ let to_model (ast : A.ast) : M.model =
     | A.VTduration     -> M.Bduration
     | A.VTstring       -> M.Bstring
     | A.VTaddress      -> M.Baddress
-    | A.VTrole         -> M.Brole
     | A.VTcurrency     -> M.Bcurrency
     | A.VTsignature    -> M.Bsignature
     | A.VTkey          -> M.Bkey
@@ -558,6 +557,13 @@ let to_model (ast : A.ast) : M.model =
         let kt, vt = extract_builtin_type_map fp in
         M.Mmapremove (kt, vt, fp, fq)
 
+      | A.Pcall (None, A.Cconst (A.Cmupdate), [AExpr p; AExpr q; AExpr r]) ->
+        let fp = f p in
+        let fq = f q in
+        let fr = f r in
+        let kt, vt = extract_builtin_type_map fp in
+        M.Mmapupdate (kt, vt, fp, fq, fr)
+
       | A.Pcall (None, A.Cconst (A.Cmget), [AExpr p; AExpr q]) ->
         let fp = f p in
         let fq = f q in
@@ -646,6 +652,10 @@ let to_model (ast : A.ast) : M.model =
         let fy = f y in
         M.Mconcat (fx, fy)
 
+      | A.Pcall (None, A.Cconst A.Cconcat, [AExpr x]) ->
+        let fx = f x in
+        M.Mconcatlist (fx)
+
       | A.Pcall (None, A.Cconst A.Cslice, [AExpr x; AExpr s; AExpr e]) ->
         let fx = f x in
         let fs = f s in
@@ -693,6 +703,14 @@ let to_model (ast : A.ast) : M.model =
           | _ -> assert false
         in
         M.Munpack (t, fx)
+
+      | A.Pcall (None, A.Cconst A.Csetdelegate, [AExpr x]) ->
+        let fx = f x in
+        M.Msetdelegate (fx)
+
+      | A.Pcall (None, A.Cconst A.Cimplicitaccount, [AExpr x]) ->
+        let fx = f x in
+        M.Mimplicitaccount (fx)
 
       | A.Pcall (None, A.Cconst A.Cblake2b, [AExpr x]) ->
         let fx = f x in
@@ -814,6 +832,11 @@ let to_model (ast : A.ast) : M.model =
         let fb = f b in
         M.Mapplylambda (fa, fb)
 
+      (* Other *)
+
+      | A.Pcall (None, A.Cconst A.CdateFromTimestamp, [AExpr x]) ->
+        let fx = f x in
+        M.Mdatefromtimestamp (fx)
 
       (* Fail *)
 
@@ -1102,7 +1125,7 @@ let to_model (ast : A.ast) : M.model =
   in
 
   let to_fail (env : env) (p : A.lident A.fail) : M.fail =
-    M.mk_fail p.label p.arg (type_to_type p.atype) (to_mterm { env with formula = true } p.formula) ~loc:p.loc
+    M.mk_fail p.label p.fid p.arg (type_to_type p.atype) (to_mterm { env with formula = true } p.formula) ~loc:p.loc
   in
 
   let to_variable (env : env) (v : A.lident A.variable) : M.variable =
@@ -1235,20 +1258,26 @@ let to_model (ast : A.ast) : M.model =
 
   let process_transaction (env : env) (transaction : A.transaction) : M.function__ =
     let process_calledby env (body : M.mterm) : M.mterm =
-      let process_cb (cb : A.rexpr) (body : M.mterm) : M.mterm =
+      let process_cb caller (cb : A.rexpr) (body : M.mterm) : M.mterm =
         let rec process_rexpr (rq : A.rexpr) : M.mterm option =
-          let caller : M.mterm = M.mk_mterm M.Mcaller (M.taddress) in
           match rq.node with
           | Rany -> None
+          | Rasset a -> begin
+              let an = unloc a in
+              Some (M.mk_mterm (M.Mcontains(an, CKcoll(Tnone, Dnone), caller)) M.tbool ~loc:(loc a))
+            end
           | Rexpr e ->
             begin
               let mt = to_mterm env e in
               Some (M.mk_mterm (M.Mequal (M.taddress, caller, mt)) (M.tbool) ~loc:rq.loc)
             end
-          | Ror (l, r) ->
-            let l = Option.get (process_rexpr l) in
-            let r = Option.get (process_rexpr r) in
-            Some (M.mk_mterm (M.Mor (l, r)) (M.tbool) ~loc:rq.loc)
+          | Ror (l, r) -> begin
+              let l = process_rexpr l in
+              let r = process_rexpr r in
+              match l, r with
+              | Some l, Some r -> Some (M.mk_mterm (M.Mor (l, r)) (M.tbool) ~loc:rq.loc)
+              | _ -> None
+            end
         in
         match process_rexpr cb with
         | Some a ->
@@ -1259,10 +1288,28 @@ let to_model (ast : A.ast) : M.model =
         | _ -> body
       in
       begin
-        match transaction.calledby with
-        | None -> body
-        | Some cb -> process_cb cb body
+        let process tc caller body =
+          match tc with
+          | None -> body
+          | Some cb -> process_cb caller cb body
+        in
+
+        body
+        |> process transaction.calledby  M.mcaller
+        |> process transaction.sourcedby M.msource
       end
+    in
+
+    let process_state_is _env (body : M.mterm) : M.mterm =
+      match transaction.state_is with
+      | Some id -> begin
+          let var     = M.mk_state_value id in
+          let state   = M.mk_state_var () in
+          let c       = M.mk_mterm (M.Mnequal (M.tstate, var, state)) (M.tbool) ~loc:(loc id) in
+          let cond_if = M.mk_mterm (M.Mif (c, fail InvalidState, None)) M.tunit in
+          add_seq cond_if body
+        end
+      | _ -> body
     in
 
     let process env b (x : A.lident A.label_term) (body : M.mterm) : M.mterm =
@@ -1276,7 +1323,7 @@ let to_model (ast : A.ast) : M.model =
         let a =
           match x.error with
           | Some v -> (M.Invalid (to_mterm env v))
-          | None   -> (M.InvalidCondition (Option.map unloc x.label))
+          | None   -> (M.InvalidCondition (x.label |> Option.get |> unloc))
         in
         fail a
       in
@@ -1394,6 +1441,7 @@ let to_model (ast : A.ast) : M.model =
       body
       |> process_requires env
       |> process_accept_transfer env
+      |> process_state_is env
       |> process_calledby env
     in
     let loc   = transaction.loc in
@@ -1408,6 +1456,7 @@ let to_model (ast : A.ast) : M.model =
       typ     = type_to_type p.typ;
       default = Option.map (to_mterm env) p.default;
       value   = Option.map (to_mterm env) p.value;
+      const   = p.const;
       loc     = p.loc;
     }
   in
@@ -1428,6 +1477,7 @@ let to_model (ast : A.ast) : M.model =
   let env = mk_env () in
 
   let parameters = List.map (process_parameter env) ast.parameters in
+  let metadata = Option.map (function | A.MKuri x -> M.MKuri x | A.MKjson x -> M.MKjson x) ast.metadata in
   let decls = List.map (process_decl_ env) ast.decls in
   let functions = List.map (process_fun_ env) ast.funs in
 
@@ -1441,4 +1491,4 @@ let to_model (ast : A.ast) : M.model =
     |> (fun sec -> List.fold_left (fun accu x -> cont_security x accu) sec ast.securities)
   in
 
-  M.mk_model ~parameters:parameters ~decls:decls ~functions:functions ~specification:specification ~security:security ~loc:ast.loc name
+  M.mk_model ~parameters ?metadata ~decls ~functions ~specification ~security ~loc:ast.loc name

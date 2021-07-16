@@ -1,0 +1,13 @@
+// Get instructions and commands at the following address:
+// https://completium.com/docs/dapp-tools/tutorials/archetype-callcontr
+// (ctrl+click to follow link)
+
+archetype contract_called
+
+variable n : nat = 0
+
+entry set_n(p : nat) {
+  n := p
+}
+
+getter get_n () : nat { return n }

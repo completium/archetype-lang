@@ -46,7 +46,6 @@ let generate_storage (model : model) : model =
       | Tbuiltin Btimestamp    -> emit_error (NoInitExprFor "timestamp")
       | Tbuiltin Bstring       -> mk_mterm (Mstring "") ty
       | Tbuiltin Baddress      -> emit_error (NoInitExprFor "address")
-      | Tbuiltin Brole         -> emit_error (NoInitExprFor "role")
       | Tbuiltin Bcurrency     -> mk_mterm (Mcurrency (Big_int.zero_big_int, Utz)) ty
       | Tbuiltin Bkey          -> emit_error (NoInitExprFor "key")
       | Tbuiltin Bkeyhash      -> emit_error (NoInitExprFor "key_hash")

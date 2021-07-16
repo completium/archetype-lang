@@ -6,7 +6,7 @@ theory Types
   type arstring  = string
 
   type key       = arstring
-  type key_hash  = int
+  type key_hash  = arstring
   type role      = arstring
   type address   = arstring
   type tez       = int
@@ -210,26 +210,29 @@ module Utils
   (* String *)
 
   use string.String as S
+  use list.List as L
 
   val function str_concat arstring arstring : arstring
 
   (* axiom str_concat_spec : forall s1 s2.
   str_concat s1 s2 = S.concat s1 s2 *)
 
-  val function substring arstring int int : arstring
+  val function slice arstring int int : option arstring
 
   (* axiom substring_spec : forall s i j.
   substring s i j = S.substring s i j *)
 
+  val function str_concat_list (L.list arstring) : arstring
+
   val function str_length arstring : int
 
-  axiom str_length_spec : forall s.
-  str_length s = S.length s
+  (* axiom str_length_spec : forall s.
+  str_length s = S.length s *)
 
   val function str_eq (_ : arstring) (_ : arstring) : bool
 
-  (* axiom str_eq_spec : forall s1 s2.
-  str_eq s1 s1 <-> s1 = s2 *)
+  axiom str_eq_spec : forall s1 s2.
+  str_eq s1 s1 <-> s1 = s2
 
   (* let function str_le (s1 : arstring) (s2 : arstring) : bool = s1 <= s2
   let function str_ge (s1 : arstring) (s2 : arstring) : bool = s1 >= s2
@@ -293,7 +296,7 @@ module Utils
   let function sha512 (b : bytes) : bytes = b
   let function sha3 (b : bytes) : bytes = b
   let function keccak (b : bytes) : bytes = b
-  let function hash_key (_k : key) : key_hash = 0
+  let function hash_key (_k : key) : key_hash = ""
   let check_signature (_k : key) (_s : signature) (_b : bytes) = true
 
   (* ----------------------------------------------------------------------- *)
@@ -404,6 +407,14 @@ theory Operation
     _amount_ = a;
     _call_ = Some { _name = e._entry_name; _args = l };
   }
+
+
+  (* ----------------------------------------------------------------------- *)
+  (* blockchain operations *)
+  val function set_delegate (option key_hash) : operation
+  val function implicit_account key_hash : contract
+  val function voting_power key_hash : nat
+  val total_voting_power : nat
 
 end
 
@@ -1338,8 +1349,16 @@ module Collection
   ensures { forall i. i <> k -> get i c = get i result }
   ensures { forall a. mem a result <-> mem a c /\ keyt a <> k }
   ensures { get k result = None }
+  ensures { not (contains k result) }
   =
   mk (N.remove k c.content)
+
+  (* ------------------------------------------------------------------------ *)
+  let function update (k : tk) (a : option 'a) (c : collection) : collection =
+  match a with
+  | Some v -> c (* TODO: replace it by the right expression *)
+  | None   -> remove k c
+  end
 
   (* ------------------------------------------------------------------------ *)
   axiom card_remove : forall k c.
@@ -1669,6 +1688,19 @@ module Set
   let function from_list (l : list t) : set
   ensures { forall e. contains e result <-> mem e l }
   = F.mk l
+
+  (* ------------------------------------------------------------------------ *)
+  let rec function eq_set (s1 : set) (s2 : set) : bool
+  =
+  let rec eq_list l1 l2 =
+    variant { l1, l2 }
+    match l1, l2 with
+    | Cons e1 tl1, Cons e2 tl2 ->
+      if eqt e1 e2 then true else eq_list tl1 tl2
+    | _ -> false
+    end
+  in
+  eq_list (elts s1) (elts s2)
 
 end
 

@@ -1,7 +1,7 @@
 archetype vehicle_lifecycle
 
 asset owner {
-  ido : role;
+  ido : address;
   fn  : string;
   ln  : string;
 }

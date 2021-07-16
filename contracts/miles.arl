@@ -1,13 +1,13 @@
 archetype miles
 
-variable validator : role = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
+variable validator : address = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 
 asset account identified by owner {
-  owner  : role;
+  owner  : address;
   amount : int;
 }
 
-entry add (ow : role, value : int) {
+entry add (ow : address, value : int) {
   called by validator
   effect {
     if account.contains(ow) then
@@ -17,7 +17,7 @@ entry add (ow : role, value : int) {
   }
 }
 
-entry consume (ow : role, value : int) {
+entry consume (ow : address, value : int) {
   specification {
     postcondition s1 {
       let some ba = before.account[ow] in

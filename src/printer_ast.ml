@@ -25,7 +25,6 @@ let pp_vtyp fmt = function
   | VTduration     -> Format.fprintf fmt "duration"
   | VTstring       -> Format.fprintf fmt "string"
   | VTaddress      -> Format.fprintf fmt "address"
-  | VTrole         -> Format.fprintf fmt "role"
   | VTcurrency     -> Format.fprintf fmt "tez"
   | VTsignature    -> Format.fprintf fmt "signature"
   | VTkey          -> Format.fprintf fmt "key"
@@ -249,6 +248,9 @@ let to_const = function
   | Ctostring       -> "to_string"
   | Cexec           -> "exec"
   | Capply          -> "apply"
+  | CdateFromTimestamp -> "date_from_timestamp"
+  | Csetdelegate    -> "set_delegate"
+  | Cimplicitaccount-> "implicit_account"
   (* set *)
   | Csadd           -> "set_add"
   | Csremove        -> "set_remove"
@@ -263,6 +265,7 @@ let to_const = function
   (* map *)
   | Cmput           -> "put"
   | Cmremove        -> "remove"
+  | Cmupdate        -> "update"
   | Cmget           -> "get"
   | Cmgetopt        -> "getopt"
   | Cmcontains      -> "contains"
@@ -876,8 +879,9 @@ let pp_specification fmt (v : lident specification) =
       pp_pterm d.body
   in
   let pp_fail fmt (f : lident fail) =
-    Format.fprintf fmt "%a with (%a : %a):@\n  @[%a@];@\n"
+    Format.fprintf fmt "%a with %a(%a : %a):@\n  @[%a@];@\n"
       pp_id f.label
+      (pp_option pp_id) f.fid
       pp_id f.arg
       pp_type f.atype
       pp_pterm f.formula
@@ -1096,6 +1100,7 @@ let pp_enum fmt (e : lident enum_struct) =
 let rec pp_rexpr fmt (r : rexpr) =
   let pp_node fmt = function
     | Rany -> pp_str fmt "any"
+    | Rasset a -> pp_id fmt a
     | Rexpr e -> pp_pterm fmt e
     | Ror (lhs, rhs) ->
       Format.fprintf fmt "%a or %a"
@@ -1134,12 +1139,14 @@ let pp_function fmt (f : function_) =
     pp_instruction f.body
 
 let pp_transaction_entry fmt (t : transaction) =
-  Format.fprintf fmt "entry %a%a {@\n  @[%a%a%a%a%a%a%a@]@\n}@\n"
+  Format.fprintf fmt "entry %a%a {@\n  @[%a%a%a%a%a%a%a%a%a@]@\n}@\n"
     pp_id t.name
     pp_fun_args t.args
     (pp_option pp_specification) t.specification
     (pp_do_if (not t.accept_transfer) (fun fmt _ -> Format.fprintf fmt "refuse transfer@\n")) ()
+    (pp_option (fun fmt -> Format.fprintf fmt "sourced by %a@\n" pp_rexpr)) t.sourcedby
     (pp_option (fun fmt -> Format.fprintf fmt "called by %a@\n" pp_rexpr)) t.calledby
+    (pp_option (fun fmt -> Format.fprintf fmt "state is %a@\n" pp_id)) t.state_is
     (pp_option (pp_list "@\n " (fun fmt -> Format.fprintf fmt "require {@\n  @[%a@]@\n}@\n" pp_label_term))) t.require
     (pp_option (pp_list "@\n " (fun fmt -> Format.fprintf fmt "failif {@\n  @[%a@]@\n}@\n" pp_label_term))) t.failif
     (pp_list "@\n" pp_function) t.functions
@@ -1187,7 +1194,8 @@ let pp_fun_ fmt = function
   | Ftransaction t -> pp_transaction fmt t
 
 let pp_parameter fmt (p : lident parameter) =
-  Format.fprintf fmt "%a : %a%a"
+  Format.fprintf fmt "%a%a : %a%a"
+    (pp_do_if p.const (fun fmt _ -> pp_str fmt "const ")) ()
     pp_id p.name
     pp_type p.typ
     (pp_option (fun fmt x -> Format.fprintf fmt " = %a" pp_pterm x)) p.default
@@ -1207,8 +1215,16 @@ let pp_parameter_values fmt (ps : 'id parameter list) =
   | [] -> ()
   | _  -> Format.fprintf fmt "// %a@\n" (pp_list ", " pp_parameter_value) ps
 
+let pp_metadata fmt (m : metadata_kind) =
+  match m with
+  | MKuri  v -> Format.fprintf fmt "\"%s\"" (Location.unloc v)
+  | MKjson v -> Format.fprintf fmt "`%s`"   (Location.unloc v)
+
 let pp_ast fmt (ast : ast) =
-  Format.fprintf fmt "archetype %a%a@\n@\n@." pp_id ast.name pp_parameters ast.parameters;
+  Format.fprintf fmt "archetype %a%a%a@\n@\n@."
+    pp_id ast.name
+    pp_parameters ast.parameters
+    (pp_option (fun fmt x -> Format.fprintf fmt "@\nwith metadata %a" pp_metadata x)) ast.metadata;
   pp_parameter_values fmt ast.parameters;
   (pp_no_empty_list2 pp_decl_) fmt ast.decls;
   (pp_no_empty_list2 pp_fun_) fmt ast.funs;

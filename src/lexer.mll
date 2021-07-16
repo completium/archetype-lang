@@ -34,6 +34,7 @@
       "by"                  , BY                  ;
       "call"                , CALL                ;
       "called"              , CALLED              ;
+      "const"               , CONST               ;
       "constant"            , CONSTANT            ;
       "contract"            , CONTRACT            ;
       "definition"          , DEFINITION          ;
@@ -77,7 +78,6 @@
       "namespace"           , NAMESPACE           ;
       "none"                , NONE                ;
       "not"                 , NOT                 ;
-      "of"                  , OF                  ;
       "on"                  , ON                  ;
       "option"              , OPTION              ;
       "or"                  , OR                  ;
@@ -100,6 +100,7 @@
       "shadow"              , SHADOW              ;
       "some"                , SOME                ;
       "sorted"              , SORTED              ;
+      "sourced"             , SOURCED             ;
       "specification"       , SPECIFICATION       ;
       "states"              , STATES              ;
       "then"                , THEN                ;
@@ -150,6 +151,7 @@ let accept_transfer = "accept" blank+ "transfer"
 let refuse_transfer = "refuse" blank+ "transfer"
 let bytes    = "0x" ['0'-'9' 'a'-'f' 'A'-'F']+
 let percent  = (digit+ | dec) "%"
+let tz_addr  = (("tz" ('1' | '2' | '3')) | "KT1") ['0'-'9' 'a'-'z' 'A'-'Z']+
 
 (* -------------------------------------------------------------------- *)
 rule token = parse
@@ -158,9 +160,13 @@ rule token = parse
   | refuse_transfer       { REFUSE_TRANSFER }
   | blank+                { token lexbuf }
 
+  | "state" blank+ "is"      { STATE_IS }
+  | "with" blank+ "metadata" { WITH_METADATA }
+
   | "@add"                { AT_ADD }
   | "@remove"             { AT_REMOVE }
   | "@update"             { AT_UPDATE }
+  | tz_addr as a          { if (String.length a <> 36) then lex_error lexbuf (Printf.sprintf "invalid address: %s" a); ADDRESS a }
   | ident as id           { try  Hashtbl.find keywords id with Not_found -> IDENT id }
   | pident as id          { PIDENT (String.sub id 1 ((String.length id) - 1)) }
   | tz as t               { TZ   (String.sub t 0 ((String.length t) - 2)) }
@@ -181,6 +187,7 @@ rule token = parse
   | "//"                  { comment_line lexbuf; token lexbuf }
   | "(*"                  { comment lexbuf; token lexbuf }
   | "/*"                  { comment2 lexbuf; token lexbuf }
+  | "`"                   { STRING_EXT (Buffer.contents (string_ext (Buffer.create 0) lexbuf)) }
   | "\""                  { STRING (Buffer.contents (string (Buffer.create 0) lexbuf)) }
   | "("                   { LPAREN }
   | ")"                   { RPAREN }
@@ -254,3 +261,9 @@ and string buf = parse
   | newline       { Buffer.add_string buf (Lexing.lexeme lexbuf); string buf lexbuf }
   | _ as c        { Buffer.add_char buf c   ; string buf lexbuf }
   | eof           { lex_error lexbuf "unterminated string"  }
+
+and string_ext buf = parse
+  | "`"           { buf }
+  | newline       { Buffer.add_char buf '\n'; string_ext buf lexbuf }
+  | _ as c        { Buffer.add_char buf c   ; string_ext buf lexbuf }
+  | eof           { lex_error lexbuf "unterminated string_ext"  }

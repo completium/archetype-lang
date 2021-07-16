@@ -231,7 +231,7 @@ and specification_item_unloc =
   | Vvariable      of lident * type_t * expr option
   | Veffect        of expr
   | Vassert        of (lident * expr * invariants * lident list)
-  | Vfails         of (lident * lident * type_t * expr) list
+  | Vfails         of (lident * lident option * lident * type_t * expr) list
   | Vpostcondition of (lident * expr * invariants * lident list * postkind option)
 
 and postkind = PKPost | PKInv
@@ -271,7 +271,9 @@ and s_function = {
 
 and entry_properties = {
   accept_transfer : bool;
+  sourcedby       : (expr * exts) option;
   calledby        : (expr * exts) option;
+  state_is        : lident option;
   require         : ((lident * expr * expr option) list * exts) option;
   failif          : ((lident * expr * expr option) list * exts) option;
   spec_fun        : specification option;
@@ -280,9 +282,13 @@ and entry_properties = {
 
 and transition = (lident * (expr * exts) option * (expr * exts) option) list
 
-and parameter = (lident * type_t * expr option) loced
+and parameter = (lident * type_t * expr option * bool) loced
 
 and parameters = parameter list loced option
+
+and metadata =
+| Muri  of string loced
+| Mjson of string loced
 
 (* -------------------------------------------------------------------- *)
 and variable_kind =
@@ -295,7 +301,7 @@ and enum_kind =
 
 (* -------------------------------------------------------------------- *)
 and declaration_unloc =
-  | Darchetype     of lident * parameters * exts
+  | Darchetype     of lident * parameters * metadata option * exts
   | Dvariable      of variable_decl
   | Denum          of enum_kind * enum_decl
   | Dasset         of asset_decl
@@ -540,8 +546,8 @@ let einvalid      ?(loc=dummy) _                  = mkloc loc (Einvalid)
 let mk_s_function name args ret_t spec body getter : s_function =
   {name; args; ret_t; spec; body; getter}
 
-let mk_entry_properties ?(accept_transfer = true) ?calledby ?require ?failif ?spec_fun ?(functions = []) _ : entry_properties =
-  { accept_transfer; calledby; require; failif; spec_fun; functions }
+let mk_entry_properties ?(accept_transfer = true) ?sourcedby ?calledby ?state_is ?require ?failif ?spec_fun ?(functions = []) _ : entry_properties =
+  { accept_transfer; sourcedby; calledby; state_is; require; failif; spec_fun; functions }
 
 let mk_transition_item id eexto eexts : lident * (expr * exts) option * (expr * exts) option = id, eexto, eexts
 
@@ -578,8 +584,8 @@ let mk_assetoperation aoes e : asset_operation = AssetOperation (aoes, e)
 
 (* declarations *)
 
-let mk_darchetype ?parameters ?exts ?(loc=dummy) id =
-  mkloc loc (Darchetype (id, parameters, exts))
+let mk_darchetype ?parameters ?metadata ?exts ?(loc=dummy) id =
+  mkloc loc (Darchetype (id, parameters, metadata, exts))
 
 let mk_variable ?(loc=dummy) vd =
   mkloc loc (Dvariable vd)
@@ -642,3 +648,26 @@ let cst_source      = "source"
 let cst_selfaddress = "selfaddress"
 let cst_chainid     = "chainid"
 let cst_metadata    = "metadata"
+
+
+(* utils *)
+
+let get_name = function
+  | Darchetype  _                      -> "archetype"
+  | Dvariable (id, _, _, _, _, _)      -> unloc id
+  | Denum (EKenum id, _)               -> unloc id
+  | Denum (EKstate, _)                 -> "_state"
+  | Dasset (id, _, _, _, _, _, _)      -> unloc id
+  | Drecord (id, _, _, _)              -> unloc id
+  | Dentry (id, _, _, _, _)            -> unloc id
+  | Dtransition (id, _, _, _, _, _, _) -> unloc id
+  | Dextension (id, _)                 -> unloc id
+  | Dnamespace (id, _)                 -> unloc id
+  | Dfunction fs                       -> unloc fs.name
+  | Dspecification _                   -> ""
+  | Dspecasset _                       -> ""
+  | Dspecfun _                         -> ""
+  | Dspecvariable _                    -> ""
+  | Dsecurity _                        -> ""
+  | Dtype  (id, _)                     -> unloc id
+  | Dinvalid                           -> ""

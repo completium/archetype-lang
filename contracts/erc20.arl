@@ -1,12 +1,12 @@
 archetype erc20
 
-constant total : nat = 1_000_000_000_000_000
+variable total : nat = 1_000_000_000_000_000
 variable onetoken : nat = 1_000_000
 
 asset allowance identified by owner spender {
-  owner     : address;
-  spender     : address;
-  amount      : nat;
+  owner   : address;
+  spender : address;
+  amount  : nat;
 }
 
 asset tokenHolder identified by holder {

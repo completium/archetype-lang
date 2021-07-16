@@ -1,0 +1,14 @@
+archetype pattern_tuple_match_option
+
+variable res : nat = 0
+
+entry exec () {
+  effect {
+    var v : option<nat * string> = some(((1, "")));
+    match v with
+    // | some x -> res := x[0]
+    | some (a, b)  -> res := a
+    | none -> ()
+    end
+  }
+}

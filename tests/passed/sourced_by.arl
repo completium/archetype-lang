@@ -1,0 +1,27 @@
+archetype sourced_by
+
+asset my_asset {
+  id: address;
+  v: string;
+}
+
+entry e0 () {
+   sourced by tz1bfVgcJC4ukaQSHUe1EbrUd5SekXeP9CWk
+   effect {
+     ()
+   }
+}
+
+entry e1 () {
+   sourced by tz1bfVgcJC4ukaQSHUe1EbrUd5SekXeP9CWk or tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
+   effect {
+     ()
+   }
+}
+
+entry e2 () {
+   sourced by my_asset
+   effect {
+     ()
+   }
+}

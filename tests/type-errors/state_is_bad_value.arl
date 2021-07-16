@@ -1,0 +1,12 @@
+archetype state_is_bad_value
+
+states =
+| Init
+| Running
+
+entry exec () {
+   state is Created
+   effect {
+     ()
+   }
+}

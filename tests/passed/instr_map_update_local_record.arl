@@ -1,0 +1,14 @@
+archetype instr_map_update
+
+record my_record {
+  id: nat;
+  m: map<nat, string>;
+}
+
+variable res : map<nat, string> = []
+
+entry exec () {
+  var r : my_record = {id = 0; m = []};
+  r.m.update(0, some("0"));
+  res := r.m
+}

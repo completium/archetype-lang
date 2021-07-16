@@ -15,8 +15,8 @@ entry exec () {
     var nat_nat_modulo : nat      = 1 %   2;
     var nat_nat_xor    : nat      = 1 xor 2;
     var nat_nat_div    : rational = 1 /   2;
-    var nat_nat_lsl    : nat      = 1 <<| 2;
-    var nat_nat_lsr    : nat      = 1 |>> 2;
+    var nat_nat_lsl    : nat      = 1 <<| 2; // 4
+    var nat_nat_lsr    : nat      = 1 |>> 2; // 0
     var nat_nat_divmod : option<nat * nat> = 1 /%  2;
 
     /* int int */
@@ -95,6 +95,7 @@ entry exec () {
     var dur_dur_minus  : duration = 1h - 2s;
     var dur_dur_div    : rational = 4h / 30m;
     var dur_dur_ediv   : int      = 4h div 30m;
+    var dur_dur_mod    : int      = 1h % 45m;
 
     var date_dur_plus  : date     = 2020-01-01 + 1d;
     var date_dur_minus : date     = 2020-01-01 - 1d;

@@ -13,14 +13,7 @@
     let pos : Position.t list = [Tools.location_to_position loc] in
     Error.error_alert pos str (fun _ -> ())
 
-  let dummy_entry_properties = {
-      accept_transfer = true;
-      calledby        = None;
-      require         = None;
-      failif          = None;
-      spec_fun        = None;
-      functions       = [];
-    }
+  let dummy_entry_properties = mk_entry_properties ()
 
   let rec split_seq e =
     match unloc e with
@@ -54,6 +47,7 @@
 %token COLONCOLON
 %token COLONEQUAL
 %token COMMA
+%token CONST
 %token CONSTANT
 %token CONTRACT
 %token DEFINITION
@@ -118,7 +112,6 @@
 %token NEQUAL
 %token NONE
 %token NOT
-%token OF
 %token ON
 %token OPTION
 %token OR
@@ -155,7 +148,9 @@
 %token SLASHPERCENT
 %token SOME
 %token SORTED
+%token SOURCED
 %token SPECIFICATION
+%token STATE_IS
 %token STATES
 %token THEN
 %token TICKET
@@ -175,6 +170,7 @@
 %token WHEN
 %token WHILE
 %token WITH
+%token WITH_METADATA
 %token XOR
 
 %token INVALID_EXPR
@@ -184,6 +180,7 @@
 %token <string> IDENT
 %token <string> PIDENT
 %token <string> STRING
+%token <string> STRING_EXT
 %token <Big_int.big_int> NUMBERINT
 %token <Big_int.big_int> NUMBERNAT
 %token <string> DECIMAL
@@ -220,8 +217,7 @@
 %left GREATER GREATEREQUAL LESS LESSEQUAL
 
 %left PLUS MINUS
-%left MULT SLASH PERCENT
-%left DIV SLASHPERCENT
+%left MULT SLASH PERCENT DIV SLASHPERCENT
 
 %right NOT
 
@@ -308,7 +304,12 @@ declaration_r:
  | INVALID_DECL         { Dinvalid }
 
 archetype:
-| ARCHETYPE exts=option(extensions) x=ident ps=parameters { Darchetype (x, ps, exts) }
+| ARCHETYPE exts=option(extensions) x=ident ps=parameters m=metadata { Darchetype (x, ps, m, exts) }
+
+%inline metadata:
+| WITH_METADATA v=loc(STRING)     { Some (Muri v) }
+| WITH_METADATA v=loc(STRING_EXT) { Some (Mjson v) }
+| /* empty */                     { None }
 
 %inline parameters:
  | /* empty */                             { None }
@@ -321,7 +322,7 @@ archetype:
  | x=loc(parameter_unloc)                  { x }
 
 %inline parameter_unloc:
- | id=ident COLON ty=type_t dv=parameter_init?  { (id, ty, dv) }
+ | c=boption(CONST) id=ident COLON ty=type_t dv=parameter_init?  { (id, ty, dv, c) }
 
 %inline parameter_init:
  | EQUAL x=simple_expr { x }
@@ -414,8 +415,8 @@ getter_decl:
 | PREDICATE id=ident xs=function_args e=braced(expr) { Vpredicate (id, xs, e) }
 
 %inline spec_fail_item:
-| lbl=ident WITH LPAREN arg=ident COLON t=type_t RPAREN COLON f=expr SEMI_COLON
-{ (lbl, arg, t, f) }
+| lbl=ident WITH fid=ident? LPAREN arg=ident COLON t=type_t RPAREN COLON f=expr SEMI_COLON
+{ (lbl, fid, arg, t, f) }
 
 %inline spec_fail_items:
 | xs=spec_fail_item+ { xs }
@@ -540,8 +541,12 @@ enum_body:
 | xs=enum_cdecl* { xs }
 
 enum_cdecl:
-| PIPE x=ident tys=prefix(OF, separated_nonempty_list(MULT, type_s))? opts=enum_option*
+| PIPE x=ident tys=enum_types opts=enum_option*
     { (x, Tools.Option.get_dfl [] tys, opts) }
+
+%inline enum_types:
+| LESS tys=separated_nonempty_list(MULT, type_s) GREATER { Some tys }
+| /* empty */                                            { None }
 
 enum_option:
 | INITIAL                     { EOinitial }
@@ -684,11 +689,13 @@ transition:
 | ACCEPT_TRANSFER { true }
 
 entry_properties:
-  sp=specification_fun? at=accept_transfer cb=calledby? cs=require? fi=failif? fs=function_item*
+  sp=specification_fun? at=accept_transfer sb=sourcedby? cb=calledby? si=state_is? cs=require? fi=failif? fs=function_item*
   {
     {
       accept_transfer = at;
+      sourcedby       = sb;
       calledby        = cb;
+      state_is        = si;
       require         = cs;
       failif          = fi;
       functions       = fs;
@@ -698,6 +705,12 @@ entry_properties:
 
 calledby:
  | CALLED BY exts=option(extensions) x=expr { (x, exts) }
+
+sourcedby:
+ | SOURCED BY exts=option(extensions) x=expr { (x, exts) }
+
+%inline state_is:
+ | STATE_IS id=ident { id }
 
 %inline rfs(X):
 | /* empty */   { [] }

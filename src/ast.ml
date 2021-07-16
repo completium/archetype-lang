@@ -27,7 +27,6 @@ type vtyp =
   | VTduration
   | VTstring
   | VTaddress
-  | VTrole
   | VTcurrency
   | VTkey
   | VTkeyhash
@@ -178,6 +177,9 @@ type const =
   | Ctostring
   | Cexec
   | Capply
+  | CdateFromTimestamp
+  | Csetdelegate
+  | Cimplicitaccount
   (* set *)
   | Csadd
   | Csremove
@@ -192,6 +194,7 @@ type const =
   (* map *)
   | Cmput
   | Cmremove
+  | Cmupdate
   | Cmget
   | Cmgetopt
   | Cmcontains
@@ -207,7 +210,7 @@ type const =
   (* voting *)
   | Ctotalvotingpower
   | Cvotingpower
-    (* ticket *)
+  (* ticket *)
   | Ccreateticket
   | Creadticket
   | Csplitticket
@@ -491,6 +494,7 @@ type 'id definition = {
 
 type 'id fail = {
   label: 'id;
+  fid: 'id option;
   arg: 'id;
   atype: type_;
   formula: 'id term_gen;
@@ -526,6 +530,7 @@ type 'id parameter = {
   typ     : type_;
   default : 'id term_gen option;
   value   : 'id term_gen option;
+  const   : bool;
   loc     : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -615,6 +620,7 @@ type 'id rexpr_gen = ('id rexpr_node) struct_poly
 
 and 'id rexpr_node =
   | Rany
+  | Rasset of 'id
   | Rexpr of 'id term_gen
   | Ror of 'id rexpr_gen * 'id rexpr_gen
 [@@deriving show {with_path = false}]
@@ -634,7 +640,9 @@ type 'id transition = {
 type 'id transaction_struct = {
   name            : 'id;
   args            : ('id decl_gen) list;
+  sourcedby       : 'id rexpr_gen option;
   calledby        : 'id rexpr_gen option;
+  state_is        : 'id option;
   accept_transfer : bool;
   require         : 'id label_term list option;
   failif          : 'id label_term list option;
@@ -716,9 +724,15 @@ type 'id fun_ =
   | Ftransaction of 'id transaction_struct
 [@@deriving show {with_path = false}]
 
+type metadata_kind =
+| MKuri  of string loced
+| MKjson of string loced
+[@@deriving show {with_path = false}]
+
 type 'id ast_struct = {
   name           : 'id;
   parameters     : 'id parameter list;
+  metadata       : metadata_kind option;
   decls          : 'id decl_ list;
   funs           : 'id fun_ list;
   specifications : 'id specification list;
@@ -730,28 +744,47 @@ type 'id ast_struct = {
 and ast = lident ast_struct
 
 (* vtyp -> type_ *)
-let vtunit         = Tbuiltin (VTunit         )
-let vtbool         = Tbuiltin (VTbool         )
-let vtnat          = Tbuiltin (VTnat          )
-let vtint          = Tbuiltin (VTint          )
-let vtrational     = Tbuiltin (VTrational     )
-let vtdate         = Tbuiltin (VTdate         )
-let vtduration     = Tbuiltin (VTduration     )
-let vtstring       = Tbuiltin (VTstring       )
 let vtaddress      = Tbuiltin (VTaddress      )
-let vtrole         = Tbuiltin (VTrole         )
-let vtcurrency     = Tbuiltin (VTcurrency     )
-let vtsignature    = Tbuiltin (VTsignature    )
-let vtkey          = Tbuiltin (VTkey          )
-let vtkeyhash      = Tbuiltin (VTkeyhash      )
-let vtbytes        = Tbuiltin (VTbytes        )
-let vtchainid      = Tbuiltin (VTchainid      )
 let vtbls12_381_fr = Tbuiltin (VTbls12_381_fr )
 let vtbls12_381_g1 = Tbuiltin (VTbls12_381_g1 )
 let vtbls12_381_g2 = Tbuiltin (VTbls12_381_g2 )
+let vtbool         = Tbuiltin (VTbool         )
+let vtbytes        = Tbuiltin (VTbytes        )
+let vtchainid      = Tbuiltin (VTchainid      )
+let vtcurrency     = Tbuiltin (VTcurrency     )
+let vtdate         = Tbuiltin (VTdate         )
+let vtduration     = Tbuiltin (VTduration     )
+let vtint          = Tbuiltin (VTint          )
+let vtkey          = Tbuiltin (VTkey          )
+let vtkeyhash      = Tbuiltin (VTkeyhash      )
+let vtnat          = Tbuiltin (VTnat          )
 let vtnever        = Tbuiltin (VTnever        )
+let vtrational     = Tbuiltin (VTrational     )
+let vtsignature    = Tbuiltin (VTsignature    )
+let vtstring       = Tbuiltin (VTstring       )
+let vtunit         = Tbuiltin (VTunit         )
 
-
+let vts = [
+  vtaddress      ;
+  vtbls12_381_fr ;
+  vtbls12_381_g1 ;
+  vtbls12_381_g2 ;
+  vtbool         ;
+  vtbytes        ;
+  vtchainid      ;
+  vtcurrency     ;
+  vtdate         ;
+  vtduration     ;
+  vtint          ;
+  vtkey          ;
+  vtkeyhash      ;
+  vtnat          ;
+  vtnever        ;
+  vtrational     ;
+  vtsignature    ;
+  vtstring       ;
+  vtunit         ;
+]
 (* mk functions *)
 
 let mk_sp ?label ?(loc = Location.dummy) ?type_ node =
@@ -772,8 +805,8 @@ let mk_predicate ?(args = []) ?(loc = Location.dummy) name body =
 let mk_definition ?(loc = Location.dummy) name typ var body =
   { name; typ; var; body; loc }
 
-let mk_fail ?(loc = Location.dummy) label arg atype formula =
-  { label; arg; atype; formula; loc }
+let mk_fail ?(loc = Location.dummy) label fid arg atype formula =
+  { label; fid; arg; atype; formula; loc }
 
 let mk_invariant ?(formulas = []) label =
   { label; formulas }
@@ -793,8 +826,8 @@ let mk_function_struct ?(args = []) ?specification ?(loc = Location.dummy) name 
 let mk_transition ?on ?(trs = []) from =
   { from; on; trs }
 
-let mk_transaction_struct ?(args = []) ?calledby ?(accept_transfer = false) ?require ?failif ?transition ?specification ?(functions = []) ?effect ?(loc = Location.dummy) name =
-  { name; args; calledby; accept_transfer; require; failif; transition; specification; functions; effect; loc }
+let mk_transaction_struct ?(args = []) ?sourcedby ?calledby ?state_is ?(accept_transfer = false) ?require ?failif ?transition ?specification ?(functions = []) ?effect ?(loc = Location.dummy) name =
+  { name; args; sourcedby; calledby; state_is; accept_transfer; require; failif; transition; specification; functions; effect; loc }
 
 let mk_enum_item ?(initial = false) ?(args = []) ?(invariants = []) ?(loc = Location.dummy) name : 'id enum_item_struct =
   { name; initial; args; invariants; loc }
@@ -808,8 +841,8 @@ let mk_decl ?typ ?default ?(shadow=false) ?(loc = Location.dummy) name =
 let mk_asset ?(fields = []) ?(keys = []) ?(sort = []) ?(big_map = false) ?state ?(init = []) ?(specs = []) ?(loc = Location.dummy) name   =
   { name; fields; keys; sort; big_map; state; init; specs; loc }
 
-let mk_model ?(parameters = []) ?(decls = []) ?(funs = []) ?(specifications = []) ?(securities = []) ?(loc = Location.dummy) name =
-  { name; parameters; decls; funs; specifications; securities; loc }
+let mk_model ?(parameters = []) ?metadata ?(decls = []) ?(funs = []) ?(specifications = []) ?(securities = []) ?(loc = Location.dummy) name =
+  { name; parameters; metadata; decls; funs; specifications; securities; loc }
 
 let mk_id type_ id : qualid =
   { type_ = Some type_;

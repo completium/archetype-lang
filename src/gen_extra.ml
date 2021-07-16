@@ -35,8 +35,8 @@ let string_to_ttype ?entrypoint (input : string) : T.type_ =
   | Some e -> begin
       let rec aux accu (t : T.type_) =
         match t.node with
-        | T.Tor (l, r) -> aux (aux accu l) r
         | _ when Option.map_dfl (String.equal e) false t.annotation -> Some t
+        | T.Tor (l, r) -> aux (aux accu l) r
         | _ -> accu
       in
       let t = aux None typ in
@@ -95,7 +95,7 @@ let to_model_expr (e : PT.expr) : T.data =
         Dint n
       end
     | Eliteral (Ldecimal  s) -> begin
-        cc [T.tpair T.tnat T.tint];
+        cc [T.tpair T.tint T.tnat];
         let n, d = Core.decimal_string_to_rational s in Dpair (Dint n, Dint d)
       end
     | Eliteral (Ltz       n) -> cc [T.tmutez]; Dint (string_to_big_int_tz Ktz  n)
@@ -212,3 +212,8 @@ let show_entries (input : T.obj_micheline) =
             ) l
        )
     ) l
+
+let to_micheline (input : string) =
+  let tokens = Lexing.from_string input in
+  let m = Michelson_parser.main Michelson_lexer.token tokens in
+  Format.printf "%a@." Printer_michelson.pp_obj_micheline m

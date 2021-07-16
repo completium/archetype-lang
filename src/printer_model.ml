@@ -19,7 +19,6 @@ let pp_btyp fmt = function
   | Btimestamp    -> Format.fprintf fmt "timestamp"
   | Bstring       -> Format.fprintf fmt "string"
   | Baddress      -> Format.fprintf fmt "address"
-  | Brole         -> Format.fprintf fmt "role"
   | Bcurrency     -> Format.fprintf fmt "tez"
   | Bsignature    -> Format.fprintf fmt "signature"
   | Bkey          -> Format.fprintf fmt "key"
@@ -164,6 +163,15 @@ let pp_transfer_kind f fmt = function
   | TKentry (x, e, a)       -> Format.fprintf fmt "transfer %a to entry %a(%a)" f x f e f a
   | TKself (x, id, args)    -> Format.fprintf fmt "transfer %a to entry self.%a(%a)" f x pp_str id (pp_list ", " (fun fmt (id, x) -> Format.fprintf fmt "%s = %a" id f x)) args
   | TKoperation x           -> Format.fprintf fmt "transfer %a" f x
+
+let pp_assign_kind f fmt = function
+  | Avar k               -> pp_id fmt k
+  | Avarstore l          -> Format.fprintf fmt "s.%a" pp_id l
+  | Aasset (an, fn, k)   -> Format.fprintf fmt "%a[%a].%a" pp_id an f k pp_id fn
+  | Arecord (_rn, fn, r) -> Format.fprintf fmt "%a.%a" f r pp_id fn
+  | Astate               -> Format.fprintf fmt "state"
+  | Aassetstate (an, k)  -> Format.fprintf fmt "state_%a(%a)" pp_ident an f k
+  | Aoperations          -> Format.fprintf fmt "operations"
 
 let pp_mterm fmt (mt : mterm) =
   let rec f fmt (mtt : mterm) =
@@ -978,6 +986,19 @@ let pp_mterm fmt (mt : mterm) =
         f b
 
 
+    (* set api instruction *)
+
+    | Msetinstradd (_, ak, a) ->
+      Format.fprintf fmt "%a.add (%a)"
+        (pp_assign_kind f) ak
+        f a
+
+    | Msetinstrremove (_, ak, a) ->
+      Format.fprintf fmt "%a.remove (%a)"
+        (pp_assign_kind f) ak
+        f a
+
+
     (* list api expression *)
 
     | Mlistprepend (_, c, a) ->
@@ -1017,6 +1038,20 @@ let pp_mterm fmt (mt : mterm) =
         pp_id ia
         f b
 
+
+    (* list api instruction *)
+
+    | Mlistinstrprepend (_, ak, a) ->
+      Format.fprintf fmt "%a.prepend (%a)"
+        (pp_assign_kind f) ak
+        f a
+
+    | Mlistinstrconcat (_, ak, a) ->
+      Format.fprintf fmt "%a.concat (%a)"
+        (pp_assign_kind f) ak
+        f a
+
+
     (* map api expression *)
 
     | Mmapput (_, _, c, k, v) ->
@@ -1029,6 +1064,12 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "map_remove (%a, %a)"
         f c
         f k
+
+    | Mmapupdate (_, _, c, k, v) ->
+      Format.fprintf fmt "map_update (%a, %a, %a)"
+        f c
+        f k
+        f v
 
     | Mmapget (_, _, c, k) ->
       Format.fprintf fmt "map_get (%a, %a)"
@@ -1059,6 +1100,27 @@ let pp_mterm fmt (mt : mterm) =
         pp_id iv
         f b
 
+
+    (* map api instruction *)
+
+    | Mmapinstrput (_, _, ak, k, v) ->
+      Format.fprintf fmt "%a.put(%a, %a)"
+        (pp_assign_kind f) ak
+        f k
+        f v
+
+    | Mmapinstrremove (_, _, ak, k) ->
+      Format.fprintf fmt "%a.remove(%a)"
+        (pp_assign_kind f) ak
+        f k
+
+    | Mmapinstrupdate (_, _, ak, k, v) ->
+      Format.fprintf fmt "%a.update(%a, %a)"
+        (pp_assign_kind f) ak
+        f k
+        f v
+
+
     (* builtin functions *)
 
     | Mmax (l, r) ->
@@ -1078,6 +1140,10 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "concat (%a, %a)"
         f x
         f y
+
+    | Mconcatlist x ->
+      Format.fprintf fmt "concat (%a)"
+        f x
 
     | Mslice (x, s, e) ->
       Format.fprintf fmt "slice (%a, %a, %a)"
@@ -1121,6 +1187,15 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "unpack<%a>(%a)"
         pp_type t
         f x
+
+    | Msetdelegate x ->
+      Format.fprintf fmt "set_delegate (%a)"
+        f x
+
+    | Mimplicitaccount x ->
+      Format.fprintf fmt "implicit_account (%a)"
+        f x
+
 
     (* crypto functions *)
 
@@ -1316,6 +1391,16 @@ let pp_mterm fmt (mt : mterm) =
           f t
       in
       pp fmt (c, t)
+
+
+    (* others *)
+
+    | Mdatefromtimestamp v ->
+      let pp fmt v =
+        Format.fprintf fmt "date_from_timestamp (%a)"
+          f v
+      in
+      pp fmt v
 
 
     (* quantifiers *)
@@ -1822,13 +1907,18 @@ let pp_parameters fmt = function
   | [] -> ()
   | params -> Format.fprintf fmt "(%a)" (pp_list ", " (
       fun fmt (param : parameter) ->
-        Format.fprintf fmt "%a : %a%a"
+        Format.fprintf fmt "%a%a : %a%a"
+          (pp_do_if param.const (fun fmt _ -> pp_str fmt "const ")) ()
           pp_id param.name
           pp_type param.typ
           (pp_option (fun fmt x -> Format.fprintf fmt " = %a" pp_mterm x)) param.default)) params
 
+let pp_metadata fmt = function
+  | MKuri  v -> Format.fprintf fmt "\"%s\"" (Location.unloc v)
+  | MKjson v -> Format.fprintf fmt "`%s`"   (Location.unloc v)
+
 let pp_model fmt (model : model) =
-  Format.fprintf fmt "%a%a\
+  Format.fprintf fmt "%a%a%a\
                       @\n@\n%a\
                       @\n@\n%a\
                       @\n@\n%a\
@@ -1839,6 +1929,7 @@ let pp_model fmt (model : model) =
                       @."
     pp_id model.name
     pp_parameters model.parameters
+    (pp_option (fun fmt x -> Format.fprintf fmt "@\nwith metadata %a" pp_metadata x)) model.metadata
     pp_api_items model.api_items
     (pp_list "@\n" pp_api_verif) model.api_verif
     (pp_list "@\n" pp_decl) model.decls

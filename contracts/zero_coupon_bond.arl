@@ -1,8 +1,8 @@
 archetype zero_coupon_bond
 
-variable issuer : role  = @tz1bfVgcJC4ukaQSHUe1EbrUd5SekXeP9CWk (* seller 'Alice' *)
+variable issuer : address  = @tz1bfVgcJC4ukaQSHUe1EbrUd5SekXeP9CWk (* seller 'Alice' *)
 
-variable owner : role = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
+variable owner : address = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 (* buyer 'Bob'; receives 11 tez in one-year *)
 
 

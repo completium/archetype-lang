@@ -1,0 +1,9 @@
+archetype expr_lambda_error1
+
+
+entry exec () {
+  var n : nat = 0;
+  var f : lambda<nat, nat> = lambda<nat>((x : nat) -> n);
+
+  n := exec_lambda(f, 1)
+}

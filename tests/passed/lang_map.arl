@@ -10,6 +10,7 @@ entry exec () {
     (* expr *)
     var new_map1 : map<string, nat> = put(my_map, "mystr4", 4);
     var new_map2 : map<string, nat> = remove(my_map, "mystr0");
+    var new_map3 : map<string, nat> = update(my_map, "mystr5", some(4));
     var val_opt  : nat              = my_map["0"];
     var val      : option<nat>      = getopt(my_map, "mystr0");
     var c        : bool             = contains(my_map, "mystr0");

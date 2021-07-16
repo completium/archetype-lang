@@ -1,0 +1,13 @@
+archetype called_by_an_asset
+
+asset my_asset {
+  id: address;
+  v: string;
+}
+
+entry exec () {
+   called by my_asset
+   effect {
+     ()
+   }
+}

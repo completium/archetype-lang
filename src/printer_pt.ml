@@ -32,9 +32,9 @@ let e_opspec3       =  (35,  NonAssoc) (* op spec 3  *)
 let e_opspec4       =  (35,  NonAssoc) (* op spec 4  *)
 let e_imply         =  (40,  Right)    (* ->  *)
 let e_equiv         =  (50,  NonAssoc) (* <-> *)
-let e_and           =  (60,  Left)     (* and *)
-let e_or            =  (70,  Left)     (* or  *)
-let e_xor           =  (70,  Left)     (* xor *)
+let e_or            =  (60,  Left)     (* or  *)
+let e_xor           =  (60,  Left)     (* xor *)
+let e_and           =  (70,  Left)     (* and *)
 let e_equal         =  (80,  NonAssoc) (* =   *)
 let e_nequal        =  (80,  NonAssoc) (* <>  *)
 let e_gt            =  (90,  Left)     (* >   *)
@@ -914,7 +914,7 @@ let pp_ident_state fmt item =
       (fun fmt l ->
          if List.length l = 0
          then ()
-         else (Format.fprintf fmt " of %a" (pp_list " * " pp_type) l)
+         else (Format.fprintf fmt " <%a>" (pp_list " * " pp_type) l)
       ) lt
       (pp_prefix " " (pp_list " " pp_enum_option)) opts
 
@@ -995,9 +995,10 @@ let pp_specification_item fmt = function
      } *)
   | Vfails l ->
     Format.fprintf fmt "fails {@\n  @[%a@]@\n}"
-      (pp_list "" (fun fmt (lbl, arg, t, f) ->
-           Format.fprintf fmt "%a with (%a : %a):@\n  %a;"
+      (pp_list "" (fun fmt (lbl, fid, arg, t, f) ->
+           Format.fprintf fmt "%a with %a(%a : %a):@\n  %a;"
              pp_id lbl
+             (pp_option pp_id) fid
              pp_id arg
              pp_type t
              (pp_expr e_default PNone) f
@@ -1127,9 +1128,16 @@ let pp_entry_properties fmt (props : entry_properties) =
   if (not props.accept_transfer)
   then Format.fprintf fmt "refuse transfer@\n";
   map_option (fun (e, exts) ->
+      Format.fprintf fmt "sourced by%a %a@\n"
+        pp_extensions exts
+        (pp_expr e_default PNone) e) props.sourcedby;
+  map_option (fun (e, exts) ->
       Format.fprintf fmt "called by%a %a@\n"
         pp_extensions exts
         (pp_expr e_default PNone) e) props.calledby;
+  map_option (fun x ->
+      Format.fprintf fmt "state is %a@\n"
+        pp_id x) props.state_is;
   let pp_rf s1 s2 fmt (l, exts) =
     Format.fprintf fmt "%s%a {@\n  @[%a@]@\n}@\n"
       s1
@@ -1158,8 +1166,9 @@ let pp_transition fmt (to_, conditions, effect) =
            pp_extensions exts
            pp_simple_expr e)) effect
 
-let pp_parameter fmt (id, ty, dv) =
-  Format.fprintf fmt "%a : %a%a"
+let pp_parameter fmt (id, ty, dv, c) =
+  Format.fprintf fmt "%a%a : %a%a"
+    (pp_do_if c (fun fmt _ -> pp_str fmt "const ")) ()
     pp_id id
     pp_type ty
     (pp_option (fun fmt x -> Format.fprintf fmt " = %a" pp_simple_expr x)) dv
@@ -1168,17 +1177,23 @@ let pp_parameters fmt = function
   | None -> ()
   | Some xs -> Format.fprintf fmt "(%a)" (pp_list ", " (fun fmt x -> pp_parameter fmt (unloc x))) (unloc xs)
 
+let pp_metadata fmt (m : metadata) =
+  match m with
+  | Muri  v -> Format.fprintf fmt "\"%s\"" (unloc v)
+  | Mjson v -> Format.fprintf fmt "`%s`" (unloc v)
+
 let rec pp_declaration fmt { pldesc = e; _ } =
   let is_empty_entry_properties_opt (ap : entry_properties) (a : 'a option) =
-    match ap.calledby, ap.require, ap.functions, ap.spec_fun, a with
-    | None, None, [], None, None -> true
+    match ap.sourcedby, ap.calledby, ap.require, ap.functions, ap.spec_fun, a with
+    | None, None, None, [], None, None -> true
     | _ -> false in
   match e with
-  | Darchetype (id, ps, exts) ->
-    Format.fprintf fmt "archetype%a %a%a"
+  | Darchetype (id, ps, m, exts) ->
+    Format.fprintf fmt "archetype%a %a%a%a"
       pp_extensions exts
       pp_id id
       pp_parameters ps
+      (pp_option (fun fmt x -> Format.fprintf fmt "@\nwith metadata %a" pp_metadata x)) m
 
   | Dvariable (id, typ, dv, kind, invs, exts) ->
     Format.fprintf fmt "%a%a %a : %a%a%a"

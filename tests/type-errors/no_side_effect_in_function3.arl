@@ -1,0 +1,16 @@
+archetype no_side_effect_in_function3
+
+function f (a : address) : nat {
+  if true
+  then fail ("error");
+  return 1
+}
+
+entry exec () {
+  specification {
+    p1: forall a : address, f(a) = 1
+  }
+  effect {
+    ()
+  }
+}

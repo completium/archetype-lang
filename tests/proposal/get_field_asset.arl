@@ -1,0 +1,23 @@
+archetype get_field_asset
+
+variable n : nat = 0
+
+asset my_asset {
+  a : nat;
+  b : nat;
+  c : nat;
+}
+
+function f(k : nat) : nat {
+  // return my_asset[k].b
+
+  return
+    match my_asset.get(k).b with
+    | some v -> v
+    | none -> 0
+    end
+}
+
+entry ident () {
+  n := f(0);
+}

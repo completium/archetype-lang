@@ -1,8 +1,8 @@
 archetype voting_process
 
-variable chairperson : role = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
+variable chairperson : address = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 
-variable chairperson_tmp : role = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
+variable chairperson_tmp : address = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 
 (* vote start *)
 variable startDate : date = 2019-11-12T00:00:00
@@ -11,7 +11,7 @@ variable startDate : date = 2019-11-12T00:00:00
 variable deadline : date = 2020-11-12T00:00:00
 
 asset voter identified by addr {
-  addr : role;
+  addr : address;
   hasVoted : bool
 }
 
@@ -30,7 +30,7 @@ states =
  | Voting          with { s2 : winner.isempty(); }
  | Buried
 
-entry register (v : role) {
+entry register (v : address) {
   called by chairperson
   require {
     c1 : state = Created;
@@ -95,7 +95,7 @@ specification {
   }
 }
 
-entry assign_new_chairperson (newrole : role) {
+entry assign_new_chairperson (newrole : address) {
   called by chairperson
   effect {
     chairperson_tmp := newrole;

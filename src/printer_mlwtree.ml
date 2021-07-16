@@ -1,7 +1,5 @@
+open Printer_tools
 open Mlwtree
-
-let pp_str fmt str =
-  Format.fprintf fmt "%s" str
 
 let pp_int fmt i =
   Format.fprintf fmt "%i" i
@@ -9,11 +7,6 @@ let pp_int fmt i =
 let pp_id = pp_str
 
 (* -------------------------------------------------------------------------- *)
-
-let pp_list sep pp =
-  Format.pp_print_list
-    ~pp_sep:(fun fmt () -> Format.fprintf fmt "%(%)" sep)
-    pp
 
 let pp_enclose pre post pp fmt x =
   Format.fprintf fmt "%(%)%a%(%)" pre pp x post
@@ -136,7 +129,6 @@ let pp_type fmt typ =
       | Tystring      -> "arstring"
       | Tydate        -> "date"
       | Tyaddr        -> "address"
-      | Tyrole        -> "role"
       | Tytez         -> "tez"
       | Tybytes       -> "bytes"
       | Tychainid     -> "chain_id"
@@ -286,6 +278,12 @@ let rec pp_term outer pos fmt = function
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
+  | Tupdate (i, k, v, c) ->
+    Format.fprintf fmt "%a.update %a %a %a"
+      pp_str (String.capitalize_ascii i)
+      (pp_with_paren (pp_term outer pos)) k
+      (pp_with_paren (pp_term outer pos)) v
+      (pp_with_paren (pp_term outer pos)) c
   | Tset (i,e1,e2,e3) ->
     Format.fprintf fmt "%a.set %a %a %a"
       pp_str (String.capitalize_ascii i)
@@ -338,7 +336,7 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "%a && %a"
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
-  | Teq ((Tystring | Tyaddr | Tyrole | Tykey | Tysignature | Tybytes), e1, e2) ->
+  | Teq ((Tystring | Tyaddr | Tykey | Tykeyhash | Tysignature | Tybytes), e1, e2) ->
     Format.fprintf fmt "str_eq %a %a"
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
@@ -350,7 +348,7 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "not (%a && %a)"
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
-  | Tneq ((Tystring | Tyaddr | Tyrole | Tykey | Tysignature | Tybytes), e1, e2) ->
+  | Tneq ((Tystring | Tyaddr | Tykey | Tykeyhash | Tysignature | Tybytes), e1, e2) ->
     Format.fprintf fmt "not (str_eq %a %a)"
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
@@ -429,7 +427,7 @@ let rec pp_term outer pos fmt = function
       (pp_term e_default PRight) e1
       (pp_term e_default PRight) e2
   | Txor (_, _, _) -> assert false
-  | Tgt ((Tystring | Tyaddr | Tyrole | Tykey | Tysignature | Tybytes),e1,e2) ->
+  | Tgt ((Tystring | Tyaddr | Tykey | Tykeyhash | Tysignature | Tybytes),e1,e2) ->
     Format.fprintf fmt "str_gt %a %a"
       (pp_term e_default PRight) e1
       (pp_term e_default PRight) e2
@@ -437,7 +435,7 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "%a > %a"
       (pp_term e_default PRight) e1
       (pp_term e_default PRight) e2
-  | Tge ((Tystring | Tyaddr | Tyrole | Tykey | Tysignature | Tybytes),e1,e2) ->
+  | Tge ((Tystring | Tyaddr | Tykey | Tykeyhash | Tysignature | Tybytes),e1,e2) ->
     Format.fprintf fmt "str_ge %a %a"
       (pp_term e_default PRight) e1
       (pp_term e_default PRight) e2
@@ -445,7 +443,7 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "%a >= %a"
       (pp_term e_default PRight) e1
       (pp_term e_default PRight) e2
-  | Tlt ((Tystring | Tyaddr | Tyrole | Tykey | Tysignature | Tybytes),e1,e2) ->
+  | Tlt ((Tystring | Tyaddr | Tykey | Tykeyhash | Tysignature | Tybytes),e1,e2) ->
     Format.fprintf fmt "str_lt %a %a"
       (pp_term e_default PRight) e1
       (pp_term e_default PRight) e2
@@ -453,7 +451,7 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "%a < %a"
       (pp_term e_default PRight) e1
       (pp_term e_default PRight) e2
-  | Tle ((Tystring | Tyaddr | Tyrole | Tykey | Tysignature | Tybytes),e1,e2) ->
+  | Tle ((Tystring | Tyaddr | Tykey | Tykeyhash | Tysignature | Tybytes),e1,e2) ->
     Format.fprintf fmt "str_le %a %a"
       (pp_term e_default PRight) e1
       (pp_term e_default PRight) e2
@@ -953,16 +951,26 @@ and pp_fun fmt (s : fun_struct) =
     (pp_term e_top PRight) s.body
 and pp_raise outer pos fmt raises =
   if List.length raises = 0
-  then pp_str fmt ""
+  then ()
   else
     Format.fprintf fmt "@[raises { %a }@\n@]"
       (pp_list " }@\nraises { " (pp_term outer pos)) raises
 and pp_fails outer pos fmt fails =
+  let pp_fail fmt (fail : ('e, 'i) abstract_struct_fail) =
+    match fail.expr with
+    | None -> (pp_term outer pos) fmt fail.fid
+    | Some _ -> begin
+        Format.fprintf fmt "%a ->@\n%a%a"
+          (pp_term outer pos) fail.fid
+          (pp_option (fun fmt -> Format.fprintf fmt " [@expl:%a]@\n" pp_id)) fail.expl
+          (pp_option (fun fmt -> Format.fprintf fmt " @[%a@]" (pp_term outer pos))) fail.expr
+      end
+  in
   if List.length fails = 0
-  then pp_str fmt ""
+  then ()
   else
     Format.fprintf fmt "@[raises {@\n %a @\n}@\n@]"
-      (pp_list "@\n}@\nraises {@\n " (pp_fail outer pos)) fails
+      (pp_list "@\n}@\nraises {@\n " pp_fail) fails
 and pp_fail outer pos fmt fail =
   match fail with
   | Some _, t -> (* why3 does not allow annotation in raises section *)
@@ -978,18 +986,20 @@ and pp_case fmt (p,t) =
     pp_pattern p
     (pp_term e_top PRight) t
 and pp_exn outer pos fmt = function
-  | Ekeyexist           -> pp_str fmt "KeyExist"
-  | Enotfound           -> pp_str fmt "NotFound"
-  | Einvalidcaller      -> pp_str fmt "InvalidCaller"
-  | Enegassignnat       -> pp_str fmt "NegAssignNat"
-  | Einvalidcondition   -> pp_str fmt "InvalidCondition"
-  | Einvalidstate       -> pp_str fmt "InvalidState"
-  | Enotransfer         -> pp_str fmt "NoTransfer"
-  | Ebreak              -> pp_str fmt "Break"
   | Einvalid (Some msg) -> Format.fprintf fmt "(Invalid \"%a\")" pp_str msg
   | Einvalid None       -> pp_str fmt "Invalid"
-  | Efail (i,None)     -> Format.fprintf fmt "Fail%a" pp_int i
-  | Efail (i,Some m)         -> Format.fprintf fmt "Fail%a %a" pp_int i (pp_term outer pos) m
+  | Efail (i,None)      -> Format.fprintf fmt "Fail%a" pp_int i
+  | Efail (i,Some m)    -> Format.fprintf fmt "Fail%a %a" pp_int i (pp_term outer pos) m
+  | EInvalidCaller      -> pp_str fmt "InvalidCaller"
+  | EInvalidCondition _ -> pp_str fmt "InvalidCondition"
+  | ENotFound           -> pp_str fmt "NotFound"
+  | EKeyExists          -> pp_str fmt "KeyExist"
+  | EKeyExistsOrNotFound-> pp_str fmt "KeyExistsOrNotFound"
+  | EOutOfBound         -> pp_str fmt "OutOfBound"
+  | EDivByZero          -> pp_str fmt "DivByZero"
+  | ENatAssign          -> pp_str fmt "NegAssignNat"
+  | ENoTransfer         -> pp_str fmt "NoTransfer"
+  | EInvalidState       -> pp_str fmt "InvalidState"
 and pp_dexn fmt (i,t) =
   Format.fprintf fmt "exception Fail%a %a"
     pp_id i

@@ -28,7 +28,6 @@ type btyp =
   | Btimestamp
   | Bstring
   | Baddress
-  | Brole
   | Bcurrency
   | Bsignature
   | Bkey
@@ -322,6 +321,9 @@ type ('id, 'term) mterm_node  =
   | Msetcontains      of type_ * 'term * 'term
   | Msetlength        of type_ * 'term
   | Msetfold          of type_ * 'id   * 'id   * 'term * 'term * 'term
+  (* set api instruction *)
+  | Msetinstradd      of type_ * ('id, 'term) assign_kind_gen * 'term
+  | Msetinstrremove   of type_ * ('id, 'term) assign_kind_gen * 'term
   (* list api expression *)
   | Mlistprepend      of type_ * 'term * 'term
   | Mlistlength       of type_ * 'term
@@ -330,19 +332,28 @@ type ('id, 'term) mterm_node  =
   | Mlistreverse      of type_ * 'term
   | Mlistconcat       of type_ * 'term * 'term
   | Mlistfold         of type_ * 'id   * 'id   * 'term * 'term * 'term
+  (* list api instruction *)
+  | Mlistinstrprepend of type_ * ('id, 'term) assign_kind_gen * 'term
+  | Mlistinstrconcat  of type_ * ('id, 'term) assign_kind_gen * 'term
   (* map api expression *)
   | Mmapput           of type_ * type_ * 'term * 'term * 'term
   | Mmapremove        of type_ * type_ * 'term * 'term
+  | Mmapupdate        of type_ * type_ * 'term * 'term * 'term
   | Mmapget           of type_ * type_ * 'term * 'term
   | Mmapgetopt        of type_ * type_ * 'term * 'term
   | Mmapcontains      of type_ * type_ * 'term * 'term
   | Mmaplength        of type_ * type_ * 'term
   | Mmapfold          of type_ * 'id   * 'id   * 'id   * 'term * 'term * 'term
+  (* map api instruction *)
+  | Mmapinstrput      of type_ * type_ * ('id, 'term) assign_kind_gen * 'term * 'term
+  | Mmapinstrremove   of type_ * type_ * ('id, 'term) assign_kind_gen * 'term
+  | Mmapinstrupdate   of type_ * type_ * ('id, 'term) assign_kind_gen * 'term * 'term
   (* builtin functions *)
   | Mmin              of 'term * 'term
   | Mmax              of 'term * 'term
   | Mabs              of 'term
   | Mconcat           of 'term * 'term
+  | Mconcatlist       of 'term
   | Mslice            of 'term * 'term * 'term
   | Mlength           of 'term
   | Misnone           of 'term
@@ -353,6 +364,8 @@ type ('id, 'term) mterm_node  =
   | Mtostring         of type_ * 'term
   | Mpack             of 'term
   | Munpack           of type_ * 'term
+  | Msetdelegate      of 'term
+  | Mimplicitaccount  of 'term
   (* crypto functions *)
   | Mblake2b          of 'term
   | Msha256           of 'term
@@ -397,6 +410,8 @@ type ('id, 'term) mterm_node  =
   | Mnattorat         of 'term
   | Minttorat         of 'term
   | Mratdur           of 'term * 'term
+  (* others *)
+  | Mdatefromtimestamp of 'term
   (* quantifiers *)
   | Mforall           of 'id * type_ * 'term option * 'term
   | Mexists           of 'id * type_ * 'term option * 'term
@@ -442,9 +457,14 @@ and mterm__node = (lident, mterm) mterm_node
 and 'id fail_type_gen =
   | Invalid of 'id mterm_gen
   | InvalidCaller
-  | InvalidCondition of ident option
+  | InvalidCondition of ident
+  | NotFound
+  | KeyExists
+  | KeyExistsOrNotFound
+  | OutOfBound
+  | DivByZero
+  | NatAssign
   | NoTransfer
-  | AssignNat
   | InvalidState
 [@@deriving show {with_path = false}]
 
@@ -782,6 +802,7 @@ type invariant = lident invariant_gen
 
 type 'id fail_gen = {
   label: 'id;
+  fid: 'id option;
   arg: 'id;
   atype: type_;
   formula: 'id mterm_gen;
@@ -894,6 +915,7 @@ type 'id parameter_gen = {
   typ     : type_;
   default : 'id mterm_gen option;
   value   : 'id mterm_gen option;
+  const   : bool;
   loc     : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -901,9 +923,15 @@ type 'id parameter_gen = {
 type parameter = lident parameter_gen
 [@@deriving show {with_path = false}]
 
+type metadata_kind =
+  | MKuri  of string loced
+  | MKjson of string loced
+[@@deriving show {with_path = false}]
+
 type 'id model_gen = {
   name          : lident;
   parameters    : 'id parameter_gen list;
+  metadata      : metadata_kind option;
   api_items     : api_storage list;
   api_verif     : api_verif list;
   decls         : 'id decl_node_gen list;
@@ -945,8 +973,8 @@ let mk_definition ?(loc = Location.dummy) name typ var body =
 let mk_invariant ?(formulas = []) label =
   { label; formulas }
 
-let mk_fail ?(loc = Location.dummy) label arg atype formula =
-  { label; arg; atype; formula; loc }
+let mk_fail ?(loc = Location.dummy) label fid arg atype formula =
+  { label; fid; arg; atype; formula; loc }
 
 let mk_postcondition ?(invariants = []) ?(uses = []) name mode formula =
   { name; mode; formula; invariants; uses }
@@ -1002,8 +1030,8 @@ let mk_signature ?(args = []) ?ret name : 'id signature_gen =
 let mk_api_item node_item api_loc =
   { node_item; api_loc }
 
-let mk_model ?(parameters = []) ?(api_items = []) ?(api_verif = []) ?(decls = []) ?(functions = []) ?(storage = []) ?(specification = mk_specification ()) ?(security = mk_security ()) ?(loc = Location.dummy) name : model =
-  { name; parameters; api_items; api_verif; storage; decls; functions; specification; security; loc }
+let mk_model ?(parameters = []) ?metadata ?(api_items = []) ?(api_verif = []) ?(decls = []) ?(functions = []) ?(storage = []) ?(specification = mk_specification ()) ?(security = mk_security ()) ?(loc = Location.dummy) name : model =
+  { name; parameters; metadata; api_items; api_verif; storage; decls; functions; specification; security; loc }
 
 (* -------------------------------------------------------------------- *)
 
@@ -1024,7 +1052,6 @@ let tkeyhash       = mktype (Tbuiltin Bkeyhash)
 let tdate          = mktype (Tbuiltin Bdate)
 let ttimestamp     = mktype (Tbuiltin Btimestamp)
 let taddress       = mktype (Tbuiltin Baddress)
-let trole          = mktype (Tbuiltin Brole)
 let tenum v        = mktype (Tenum v)
 let tstate         = mktype (Tstate)
 let tstorage       = mktype (Tstorage)
@@ -1056,7 +1083,7 @@ let taggregate an  = mktype (Tcontainer (tasset an, Aggregate))
 let tpartition an  = mktype (Tcontainer (tasset an, Partition))
 let tview an       = mktype (Tcontainer (tasset an, View))
 let toperations    = tlist toperation
-let tmetadata      = tmap tstring tbytes
+let tmetadata      = tbig_map tstring tbytes
 
 let mk_bool     x = mk_mterm (Mbool x) tbool
 let mk_string   x = mk_mterm (Mstring x) tstring
@@ -1084,8 +1111,10 @@ let mlevel        = mk_mterm Mlevel       tnat
 let mk_mvar id t = mk_mterm (Mvar(id, Vlocal, Tnone, Dnone )) t
 let mk_pvar id t = mk_mterm (Mvar(id, Vparam, Tnone, Dnone )) t
 let mk_svar id t = mk_mterm (Mvar(id, Vstorevar, Tnone, Dnone )) t
-let mk_parameter id t = mk_mterm (Mvar(id, Vparameter, Tnone, Dnone )) t
-let mk_enum_value ?(args=[]) id e = mk_mterm (Menumval(id, args, unloc e)) (mktype (Tenum e))
+let mk_state_var _ = mk_mterm (Mvar(dumloc "", Vstate, Tnone, Dnone )) ((Tenum (dumloc "state")), None)
+
+let mk_enum_value  ?(args=[]) id e = mk_mterm (Menumval(id, args, unloc e)) (mktype (Tenum e))
+let mk_state_value id = mk_enum_value id (dumloc "state")
 
 let mk_btez v = mk_mterm (Mcurrency (v, Utz)) ttez
 let mk_tez  v = mk_btez (Big_int.big_int_of_int v)
@@ -1130,10 +1159,11 @@ let mk_checksignature a b c = mk_mterm (Mchecksignature (a, b, c)) tbool
 let mk_brat n d  = mk_tuple [mk_bint n; mk_bnat d]
 let mk_rat n d   = mk_tuple [mk_int n; mk_nat d]
 
-let mk_metadata v = mk_mterm (Mlitmap(false, v)) tmetadata
+let mk_metadata v = mk_mterm (Mlitmap(true, v)) tmetadata
 
 let fail x  = mk_mterm (Mfail (Invalid (mk_string x))) tunit
 let failg x = mk_mterm (Mfail (Invalid (x))) tunit
+let failc x = mk_mterm (Mfail x) tunit
 let mnot x  = mk_mterm (Mnot x) tbool
 let seq x   = mk_mterm (Mseq x) tunit
 let skip    = seq []
@@ -1168,9 +1198,17 @@ let cmp_fail_type
     (ft1 : 'id fail_type_gen)
     (ft2 : 'id fail_type_gen) : bool =
   match ft1, ft2 with
-  | Invalid mt1, Invalid mt2 -> cmp mt1 mt2
-  | InvalidCaller, InvalidCaller -> true
-  | InvalidCondition c1, InvalidCondition c2 -> Option.cmp cmp_ident c1 c2
+  | Invalid mt1, Invalid mt2                 -> cmp mt1 mt2
+  | InvalidCaller, InvalidCaller             -> true
+  | InvalidCondition c1, InvalidCondition c2 -> cmp_ident c1 c2
+  | NotFound, NotFound                       -> true
+  | KeyExists, KeyExists                     -> true
+  | KeyExistsOrNotFound, KeyExistsOrNotFound -> true
+  | OutOfBound, OutOfBound                   -> true
+  | DivByZero, DivByZero                     -> true
+  | NatAssign, NatAssign                     -> true
+  | NoTransfer, NoTransfer                   -> true
+  | InvalidState, InvalidState               -> true
   | _ -> false
 
 let rec cmp_ntype
@@ -1439,6 +1477,9 @@ let cmp_mterm_node
     | Msetcontains (t1, c1, a1), Msetcontains (t2, c2, a2)                             -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
     | Msetlength (t1, c1), Msetlength (t2, c2)                                         -> cmp_type t1 t2 && cmp c1 c2
     | Msetfold (t1, ix1, ia1, c1, a1, b1), Msetfold (t2, ix2, ia2, c2, a2, b2)         -> cmp_type t1 t2 && cmp_lident ix1 ix2 && cmp_lident ia1 ia2 && cmp c1 c2 && cmp a1 a2 && cmp b1 b2
+    (* set api instruction *)
+    | Msetinstradd (t1, ak1, a1),    Msetinstradd (t2, ak2, a2)                        -> cmp_type t1 t2 && cmp_assign_kind ak1 ak2 && cmp a1 a2
+    | Msetinstrremove (t1, ak1, a1), Msetinstrremove (t2, ak2, a2)                     -> cmp_type t1 t2 && cmp_assign_kind ak1 ak2 && cmp a1 a2
     (* list api expression *)
     | Mlistprepend (t1, c1, a1), Mlistprepend (t2, c2, a2)                             -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
     | Mlistlength (t1, c1), Mlistlength (t2, c2)                                       -> cmp_type t1 t2 && cmp c1 c2
@@ -1447,19 +1488,28 @@ let cmp_mterm_node
     | Mlistreverse (t1, l1), Mlistreverse (t2, l2)                                     -> cmp_type t1 t2 && cmp l1 l2
     | Mlistconcat (t1, l1, m1), Mlistconcat (t2, l2, m2)                               -> cmp_type t1 t2 && cmp l1 l2 && cmp m1 m2
     | Mlistfold (t1, ix1, ia1, c1, a1, b1), Mlistfold (t2, ix2, ia2, c2, a2, b2)       -> cmp_type t1 t2 && cmp_lident ix1 ix2 && cmp_lident ia1 ia2 && cmp c1 c2 && cmp a1 a2 && cmp b1 b2
+    (* list api instruction *)
+    | Mlistinstrprepend (t1, ak1, a1), Mlistinstrprepend (t2, ak2, a2)                 -> cmp_type t1 t2 && cmp_assign_kind ak1 ak2 && cmp a1 a2
+    | Mlistinstrconcat (t1, ak1, a1),  Mlistinstrconcat (t2, ak2, a2)                  -> cmp_type t1 t2 && cmp_assign_kind ak1 ak2 && cmp a1 a2
     (* map api expression *)
     | Mmapput (tk1, tv1, c1, k1, v1), Mmapput (tk2, tv2, c2, k2, v2)                   -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2 && cmp v1 v2
     | Mmapremove (tk1, tv1, c1, k1), Mmapremove (tk2, tv2, c2, k2)                     -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2
+    | Mmapupdate (tk1, tv1, c1, k1, v1), Mmapupdate (tk2, tv2, c2, k2, v2)             -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2 && cmp v1 v2
     | Mmapget (tk1, tv1, c1, k1), Mmapget (tk2, tv2, c2, k2)                           -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2
     | Mmapgetopt (tk1, tv1, c1, k1), Mmapgetopt (tk2, tv2, c2, k2)                     -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2
     | Mmapcontains (tk1, tv1, c1, k1), Mmapcontains (tk2, tv2, c2, k2)                 -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2
     | Mmaplength (tk1, tv1, c1), Mmaplength (tk2, tv2, c2)                             -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2
     | Mmapfold (t1, ik1, iv1, ia1, c1, a1, b1), Mmapfold (t2, ik2, iv2, ia2, c2, a2, b2) -> cmp_type t1 t2 && cmp_lident ik1 ik2 && cmp_lident iv1 iv2 && cmp_lident ia1 ia2 && cmp c1 c2 && cmp a1 a2 && cmp b1 b2
+    (* map api instruction *)
+    | Mmapinstrput (tk1, tv1, ak1, k1, v1), Mmapinstrput (tk2, tv2, ak2, k2, v2)       -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp_assign_kind ak1 ak2 && cmp k1 k2 && cmp v1 v2
+    | Mmapinstrremove (tk1, tv1, ak1, k1), Mmapinstrremove (tk2, tv2, ak2, k2)         -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp_assign_kind ak1 ak2 && cmp k1 k2
+    | Mmapinstrupdate (tk1, tv1, ak1, k1, v1), Mmapinstrupdate (tk2, tv2, ak2, k2, v2) -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp_assign_kind ak1 ak2 && cmp k1 k2 && cmp v1 v2
     (* builtin functions *)
     | Mmin (l1, r1), Mmin (l2, r2)                                                     -> cmp l1 l2 && cmp r1 r2
     | Mmax (l1, r1), Mmax (l2, r2)                                                     -> cmp l1 l2 && cmp r1 r2
     | Mabs a1, Mabs a2                                                                 -> cmp a1 a2
     | Mconcat (x1, y1), Mconcat (x2, y2)                                               -> cmp x1 x2 && cmp y1 y2
+    | Mconcatlist (x1), Mconcatlist (x2)                                               -> cmp x1 x2
     | Mslice (x1, s1, e1), Mslice (x2, s2, e2)                                         -> cmp x1 x2 && cmp s1 s2 && cmp e1 e2
     | Mlength x1, Mlength x2                                                           -> cmp x1 x2
     | Misnone x1, Misnone x2                                                           -> cmp x1 x2
@@ -1470,6 +1520,8 @@ let cmp_mterm_node
     | Mtostring(t1, x1), Mtostring (t2, x2)                                            -> cmp_type t1 t2 && cmp x1 x2
     | Mpack x1, Mpack x2                                                               -> cmp x1 x2
     | Munpack (t1, x1), Munpack (t2, x2)                                               -> cmp_type t1 t2 && cmp x1 x2
+    | Msetdelegate x1, Msetdelegate x2                                                 -> cmp x1 x2
+    | Mimplicitaccount x1, Mimplicitaccount x2                                         -> cmp x1 x2
     (* crypto functions *)
     | Mblake2b x1, Mblake2b x2                                                         -> cmp x1 x2
     | Msha256  x1, Msha256  x2                                                         -> cmp x1 x2
@@ -1513,6 +1565,8 @@ let cmp_mterm_node
     | Mnattorat e1, Mnattorat e2                                                       -> cmp e1 e2
     | Minttorat e1, Minttorat e2                                                       -> cmp e1 e2
     | Mratdur (c1, t1), Mratdur (c2, t2)                                               -> cmp c1 c2 && cmp t1 t2
+    (* others *)
+    | Mdatefromtimestamp v1, Mdatefromtimestamp v2                                     -> cmp v1 v2
     (* quantifiers *)
     | Mforall (i1, t1, t2, e1), Mforall (i2, t3, t4, e2)                               -> cmpi i1 i2 && cmp_type t1 t3 && Option.cmp cmp t2 t4 && cmp e1 e2
     | Mexists (i1, t1, t2, e1), Mforall (i2, t3, t4, e2)                               -> cmpi i1 i2 && cmp_type t1 t3 && Option.cmp cmp t2 t4 && cmp e1 e2
@@ -1842,6 +1896,9 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Msetcontains (t, c, a)         -> Msetcontains (ft t, f c, f a)
   | Msetlength (t, c)              -> Msetlength (ft t, f c)
   | Msetfold (t, ix, ia, c, a, b)  -> Msetfold (ft t, g ix, g ia, f c, f a, f b)
+  (* set api instruction *)
+  | Msetinstradd (t, ak, a)        -> Msetinstradd (ft t, map_assign_kind fi g f ak, f a)
+  | Msetinstrremove (t, ak, a)     -> Msetinstrremove (ft t, map_assign_kind fi g f ak, f a)
   (* list api expression *)
   | Mlistprepend (t, c, a)         -> Mlistprepend (ft t, f c, f a)
   | Mlistlength(t, c)              -> Mlistlength(t, f c)
@@ -1850,19 +1907,28 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mlistreverse(t, l)             -> Mlistreverse(t, f l)
   | Mlistconcat(t, l, m)           -> Mlistconcat(t, f l, f m)
   | Mlistfold (t, ix, ia, c, a, b) -> Mlistfold (ft t, g ix, g ia, f c, f a, f b)
+  (* list api instruction *)
+  | Mlistinstrprepend (t, ak, a)   -> Mlistinstrprepend (ft t, map_assign_kind fi g f ak, f a)
+  | Mlistinstrconcat (t, ak, a)    -> Mlistinstrconcat (ft t, map_assign_kind fi g f ak, f a)
   (* map api expression *)
   | Mmapput (tk, tv, c, k, v)      -> Mmapput (ft tk, ft tv, f c, f k, f v)
   | Mmapremove (tk, tv, c, k)      -> Mmapremove (ft tk, ft tv, f c, f k)
+  | Mmapupdate (tk, tv, c, k, v)   -> Mmapupdate (ft tk, ft tv, f c, f k, f v)
   | Mmapget (tk, tv, c, k)         -> Mmapget (ft tk, ft tv, f c, f k)
   | Mmapgetopt (tk, tv, c, k)      -> Mmapgetopt (ft tk, ft tv, f c, f k)
   | Mmapcontains (tk, tv, c, k)    -> Mmapcontains (ft tk, ft tv, f c, f k)
   | Mmaplength (tk, tv, c)         -> Mmaplength (ft tk, ft tv, f c)
   | Mmapfold (t, ik, iv, ia, c, a, b) -> Mmapfold (ft t, g ik, g iv, g ia, f c, f a, f b)
+  (* map api instruction *)
+  | Mmapinstrput (tk, tv, ak, k, v)    -> Mmapinstrput (ft tk, ft tv, map_assign_kind fi g f ak, f k, f v)
+  | Mmapinstrremove (tk, tv, ak, k)    -> Mmapinstrremove (ft tk, ft tv, map_assign_kind fi g f ak, f k)
+  | Mmapinstrupdate (tk, tv, ak, k, v) -> Mmapinstrupdate (ft tk, ft tv, map_assign_kind fi g f ak, f k, f v)
   (* builtin functions *)
   | Mmin (l, r)                    -> Mmin (f l, f r)
   | Mmax (l, r)                    -> Mmax (f l, f r)
   | Mabs a                         -> Mabs (f a)
   | Mconcat (x, y)                 -> Mconcat (f x, f y)
+  | Mconcatlist (x)                -> Mconcatlist (f x)
   | Mslice (x, s, e)               -> Mslice (f x, f s, f e)
   | Mlength x                      -> Mlength (f x)
   | Misnone x                      -> Misnone (f x)
@@ -1873,6 +1939,8 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mtostring (t, x)               -> Mtostring (ft t, f x)
   | Mpack x                        -> Mpack (f x)
   | Munpack (t, x)                 -> Munpack (ft t, f x)
+  | Msetdelegate x                 -> Msetdelegate (f x)
+  | Mimplicitaccount x             -> Mimplicitaccount (f x)
   (* crypto functions *)
   | Mblake2b x                     -> Mblake2b (f x)
   | Msha256 x                      -> Msha256  (f x)
@@ -1917,6 +1985,8 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mnattorat e                    -> Mnattorat (f e)
   | Minttorat e                    -> Minttorat (f e)
   | Mratdur (c, t)                 -> Mratdur (f c, f t)
+  (* others *)
+  | Mdatefromtimestamp v           -> Mdatefromtimestamp (f v)
   (* quantifiers *)
   | Mforall (i, t, s, e)           -> Mforall (g i, ft t, Option.map f s, f e)
   | Mexists (i, t, s, e)           -> Mexists (g i, ft t, Option.map f s, f e)
@@ -2241,6 +2311,9 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Msetcontains (_, c, a)                -> f (f accu c) a
   | Msetlength (_, c)                     -> f accu c
   | Msetfold (_, _, _, c, a, b)           -> f (f (f accu c) a) b
+  (* set api instruction *)
+  | Msetinstradd (_, _, a)                -> f accu a
+  | Msetinstrremove (_, _, a)             -> f accu a
   (* list api expression *)
   | Mlistprepend (_, c, a)                -> f (f accu c) a
   | Mlistlength (_, c)                    -> f accu c
@@ -2249,19 +2322,28 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mlistreverse (_, l)                   -> f accu l
   | Mlistconcat (_, l, m)                 -> f (f accu l) m
   | Mlistfold (_, _, _, c, a, b)          -> f (f (f accu c) a) b
+  (* list api instruction *)
+  | Mlistinstrprepend (_, _, a)           -> f accu a
+  | Mlistinstrconcat (_, _, a)            -> f accu a
   (* map api expression *)
   | Mmapput (_, _, c, k, v)               -> f (f (f accu c) k) v
   | Mmapremove (_, _, c, k)               -> f (f accu c) k
+  | Mmapupdate (_, _, c, k, v)            -> f (f (f accu c) k) v
   | Mmapget (_, _, c, k)                  -> f (f accu c) k
   | Mmapgetopt (_, _, c, k)               -> f (f accu c) k
   | Mmapcontains (_, _, c, k)             -> f (f accu c) k
   | Mmaplength (_, _, c)                  -> f accu c
   | Mmapfold (_, _, _, _, c, a, b)        -> f (f (f accu c) a) b
+  (* map api instruction *)
+  | Mmapinstrput (_, _, _, k, v)          -> f (f accu k) v
+  | Mmapinstrremove (_, _, _, k)          -> f accu k
+  | Mmapinstrupdate (_, _, _, k, v)       -> f (f accu k) v
   (* builtin functions *)
   | Mmax (l, r)                           -> f (f accu l) r
   | Mmin (l, r)                           -> f (f accu l) r
   | Mabs a                                -> f accu a
   | Mconcat (x, y)                        -> f (f accu x) y
+  | Mconcatlist x                         -> f accu x
   | Mslice (x, s, e)                      -> f (f (f accu x) s) e
   | Mlength x                             -> f accu x
   | Misnone x                             -> f accu x
@@ -2272,6 +2354,8 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mtostring (_, x)                      -> f accu x
   | Mpack x                               -> f accu x
   | Munpack (_, x)                        -> f accu x
+  | Msetdelegate x                        -> f accu x
+  | Mimplicitaccount x                    -> f accu x
   (* crypto functions *)
   | Mblake2b x                            -> f accu x
   | Msha256  x                            -> f accu x
@@ -2316,6 +2400,8 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mnattorat e                           -> f accu e
   | Minttorat e                           -> f accu e
   | Mratdur (c, t)                        -> f (f accu c) t
+  (* others *)
+  | Mdatefromtimestamp v                  -> f accu v
   (* quantifiers *)
   | Mforall (_, _, s, e)                  -> f (opt f accu s) e
   | Mexists (_, _, s, e)                  -> f (opt f accu s) e
@@ -3039,6 +3125,19 @@ let fold_map_term
     g (Msetfold (t, ix, ia, ce, ae, be)), ba
 
 
+  (* set api instruction *)
+
+  | Msetinstradd (t, ak, a) ->
+    let ake, aka = fold_map_assign_kind f accu ak in
+    let ae, aa = f aka a in
+    g (Msetinstradd (t, ake, ae)), aa
+
+  | Msetinstrremove (t, ak, a) ->
+    let ake, aka = fold_map_assign_kind f accu ak in
+    let ae, aa = f aka a in
+    g (Msetinstrremove (t, ake, ae)), aa
+
+
   (* list api expression *)
 
   | Mlistprepend (t, c, a) ->
@@ -3076,6 +3175,19 @@ let fold_map_term
     g (Mlistfold (t, ix, ia, ce, ae, be)), ba
 
 
+  (* list api instruction *)
+
+  | Mlistinstrprepend (t, ak, a) ->
+    let ake, aka = fold_map_assign_kind f accu ak in
+    let ae, aa = f aka a in
+    g (Mlistinstrprepend (t, ake, ae)), aa
+
+  | Mlistinstrconcat (t, ak, a) ->
+    let ake, aka = fold_map_assign_kind f accu ak in
+    let ae, aa = f aka a in
+    g (Mlistinstrconcat (t, ake, ae)), aa
+
+
   (* map api expression *)
 
   | Mmapput (tk, tv, c, k, v) ->
@@ -3088,6 +3200,12 @@ let fold_map_term
     let ce, ca = f accu c in
     let ke, ka = f ca k in
     g (Mmapremove (tk, tv, ce, ke)), ka
+
+  | Mmapupdate (tk, tv, c, k, v) ->
+    let ce, ca = f accu c in
+    let ke, ka = f ca k in
+    let ve, va = f ka v in
+    g (Mmapupdate (tk, tv, ce, ke, ve)), va
 
   | Mmapget (tk, tv, c, k) ->
     let ce, ca = f accu c in
@@ -3114,6 +3232,27 @@ let fold_map_term
     let be, ba = f aa b in
     g (Mmapfold (t, ik, iv, ia, ce, ae, be)), ba
 
+
+  (* map api instruction *)
+
+  | Mmapinstrput (tk, tv, ak, k, v) ->
+    let ake, aka = fold_map_assign_kind f accu ak in
+    let ke, ka = f aka k in
+    let ve, va = f ka v in
+    g (Mmapinstrput (tk, tv, ake, ke, ve)), va
+
+  | Mmapinstrremove (tk, tv, ak, k) ->
+    let ake, aka = fold_map_assign_kind f accu ak in
+    let ke, ka = f aka k in
+    g (Mmapinstrremove (tk, tv, ake, ke)), ka
+
+  | Mmapinstrupdate (tk, tv, ak, k, v) ->
+    let ake, aka = fold_map_assign_kind f accu ak in
+    let ke, ka = f aka k in
+    let ve, va = f ka v in
+    g (Mmapinstrupdate (tk, tv, ake, ke, ve)), va
+
+
   (* builtin functions *)
 
   | Mmin (l, r) ->
@@ -3134,6 +3273,10 @@ let fold_map_term
     let xe, xa = f accu x in
     let ye, ya = f xa y in
     g (Mconcat (xe, ye)), ya
+
+  | Mconcatlist x ->
+    let xe, xa = f accu x in
+    g (Mconcatlist xe), xa
 
   | Mslice (x, s, e) ->
     let xe, xa = f accu x in
@@ -3176,6 +3319,15 @@ let fold_map_term
   | Munpack (t, x) ->
     let xe, xa = f accu x in
     g (Munpack (t, xe)), xa
+
+  | Msetdelegate x ->
+    let xe, xa = f accu x in
+    g (Msetdelegate xe), xa
+
+  | Mimplicitaccount x ->
+    let xe, xa = f accu x in
+    g (Mimplicitaccount xe), xa
+
 
   (* crypto functions *)
 
@@ -3348,6 +3500,13 @@ let fold_map_term
     let ce, ca = f accu c in
     let te, ta = f ca t in
     g (Mratdur (ce, te)), ta
+
+
+  (* others *)
+
+  | Mdatefromtimestamp v ->
+    let ve, va = f accu v in
+    g (Mdatefromtimestamp ve), va
 
 
   (* quantifiers *)
@@ -3539,6 +3698,7 @@ type kind_ident =
   | KIpostcondition
   | KIpostconditionuse
   | KIfaillabel
+  | KIfailfid
   | KIfailarg
   | KIsecurityad
   | KIsecurityrole
@@ -3554,8 +3714,15 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
       typ     = for_type p.typ;
       default = Option.map for_mterm p.default;
       value   = Option.map for_mterm p.value;
+      const   = p.const;
       loc     = p.loc;
     }
+  in
+
+  let for_metadata (m : metadata_kind) : metadata_kind =
+    match m with
+    | MKuri  x -> MKuri  x
+    | MKjson x -> MKjson x
   in
 
   let for_api_item (ai : api_storage) : api_storage =
@@ -3747,6 +3914,7 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
     let for_fail (f : fail) : fail =
       {
         label        = g KIfaillabel f.label;
+        fid          = Option.map (g KIfailfid) f.fid;
         arg          = g KIfailarg   f.arg;
         atype        = for_type      f.atype;
         formula      = for_mterm     f.formula;
@@ -3868,6 +4036,7 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
   {
     name          = g KIarchetype model.name;
     parameters    = List.map for_parameter model.parameters;
+    metadata      = Option.map for_metadata model.metadata;
     api_items     = List.map for_api_item  model.api_items;
     api_verif     = List.map for_api_verif model.api_verif;
     decls         = List.map for_decl_node model.decls;
@@ -4006,6 +4175,8 @@ module Utils : sig
   val get_all_list_types                 : model -> type_ list
   val get_all_map_types                  : model -> type_ list
   val get_all_fail_types                 : model -> type_ list
+  val get_all_gen_mterm_type             : ('a list -> mterm -> 'a list) -> ('a list -> type_ -> 'a list) -> (decl_node -> 'a list -> 'a list) -> model -> 'a list
+  val get_all_type_for_mterm             : ('a -> type_ -> 'a ) -> 'a -> mterm  -> 'a
   val extract_key_value_from_masset      : model -> mterm -> mterm
   val is_not_string_nat_int              : type_ -> bool
   val get_function                       : model -> ident -> function_struct
@@ -4281,6 +4452,7 @@ end = struct
     let rec rec_search_assign _ (t : mterm) =
       match t.node with
       | Massign (_, _, Avar i,_) when String.equal (unloc i) id -> raise FoundAssign
+      | Massign (_, _, Arecord (_, _, { node = (Mvar (i, _, _, _)) }), _) when String.equal (unloc i) id -> raise FoundAssign
       | _ -> fold_term rec_search_assign false t in
     try rec_search_assign false b
     with FoundAssign -> true
@@ -4294,6 +4466,7 @@ end = struct
       | Mtransfer _
       | Moperations
       | Mmkoperation _
+      | Massign (_, _, Aoperations,_)
         -> raise FoundOperations
       | _ -> fold_term aux accu t in
     aux accu mt
@@ -4585,8 +4758,7 @@ end = struct
       | _ -> false
     in
 
-    let eval_expr mt :
-      mterm =
+    let eval_expr mt : mterm =
       let rec aux (mt : mterm) : mterm =
         let rec extract_big_int (i : mterm) : Big_int.big_int =
           let i = aux i in
@@ -4912,8 +5084,8 @@ end = struct
             let b = extract_big_int b |> Big_int.int_of_big_int in
 
             match get_ntype t with
-            | Tbuiltin Bstring -> let s = extract_string s in mk_string (String.sub s a b)
-            | Tbuiltin Bbytes  -> let s = extract_bytes  s in mk_bytes  (String.sub s (2 * a) (2 * b))
+            | Toption ((Tbuiltin Bstring, _)) -> let s = extract_string s in mk_string (String.sub s a b) |> mk_some
+            | Toption ((Tbuiltin Bbytes , _)) -> let s = extract_bytes  s in mk_bytes  (String.sub s (2 * a) (2 * b)) |> mk_some
             | _ -> assert false
           end
 
@@ -4923,6 +5095,8 @@ end = struct
             | Tbuiltin Bbytes  -> let x = extract_bytes  x in mk_nat (String.length x)
             | _ -> assert false
           end
+
+        | Mlambda _, _ -> mt
 
         | _ -> map_mterm aux mt
       in
@@ -5143,7 +5317,7 @@ end = struct
          else c1
       )
 
-  let get_all_gen_mterm_type for_mterm for_type (model : model) =
+  let get_all_gen_mterm_type for_mterm for_type for_decl (model : model) =
     let for_label_term accu (lt : label_term) = for_mterm accu lt.term in
     let for_decl_node accu (d : decl_node) =
       let for_var accu (v : var) =
@@ -5176,10 +5350,10 @@ end = struct
         List.fold_left for_record_field accu r.fields;
       in
       match d with
-      | Dvar v      -> for_var    accu v
-      | Denum e     -> for_enum   accu e
-      | Dasset a    -> for_asset  accu a
-      | Drecord r   -> for_record accu r
+      | Dvar v      -> for_var    accu v |> for_decl d
+      | Denum e     -> for_enum   accu e |> for_decl d
+      | Dasset a    -> for_asset  accu a |> for_decl d
+      | Drecord r   -> for_record accu r |> for_decl d
     in
     let for_storage_item accu (si : storage_item) =
       accu
@@ -5259,28 +5433,31 @@ end = struct
     |> (fun accu -> List.fold_left for_function__   accu model.functions)
     |> (fun accu -> for_specification               accu model.specification)
 
-  let get_all_gen_type for_type (model : model) =
-    let for_mterm (accu : 'a) (mt : mterm) : 'a =
-      let rec aux accu (mt : mterm) =
-        let accu = for_type accu mt.type_ in
-        match mt.node with
-        | Mletin (_, x, ot, b, o) -> begin
-            accu
-            |> (fun accu -> aux accu x)
-            |> (fun accu -> Option.map_dfl (for_type accu) accu ot)
-            |> (fun accu -> aux accu b)
-            |> (fun accu -> Option.map_dfl (aux accu) accu o)
-          end
-        | Mdeclvar (_, Some t, v) -> begin
-            accu
-            |> (fun accu -> for_type accu t)
-            |> (fun accu -> aux accu v)
-          end
-        | _ -> fold_term aux accu mt
-      in
-      aux accu mt
+  let get_all_gen_mterm_type_internal for_mterm for_type (model : model) =
+    get_all_gen_mterm_type for_mterm for_type (fun _ a -> a) model
+
+  let get_all_type_for_mterm for_type (accu : 'a) (mt : mterm) : 'a =
+    let rec aux accu (mt : mterm) =
+      let accu = for_type accu mt.type_ in
+      match mt.node with
+      | Mletin (_, x, ot, b, o) -> begin
+          accu
+          |> (fun accu -> aux accu x)
+          |> (fun accu -> Option.map_dfl (for_type accu) accu ot)
+          |> (fun accu -> aux accu b)
+          |> (fun accu -> Option.map_dfl (aux accu) accu o)
+        end
+      | Mdeclvar (_, Some t, v) -> begin
+          accu
+          |> (fun accu -> for_type accu t)
+          |> (fun accu -> aux accu v)
+        end
+      | _ -> fold_term aux accu mt
     in
-    get_all_gen_mterm_type for_mterm for_type model
+    aux accu mt
+
+  let get_all_gen_type for_type (model : model) =
+    get_all_gen_mterm_type_internal (get_all_type_for_mterm for_type) for_type model
 
   let add_type (l : type_ list) (x : type_) =
     if List.exists (cmp_type x) l
@@ -5345,8 +5522,7 @@ end = struct
       in
       aux accu mt
     in
-
-    get_all_gen_mterm_type for_mterm for_type model
+    get_all_gen_mterm_type_internal for_mterm for_type model
 
   let extract_key_value_from_masset (model : model) (v : mterm) : mterm =
     match v with

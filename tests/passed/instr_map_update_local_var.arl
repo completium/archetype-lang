@@ -1,0 +1,9 @@
+archetype instr_map_update
+
+variable res : map<nat, string> = []
+
+entry exec () {
+  var m : map<nat, string> = [];
+  m.update(0, some("0"));
+  res := m
+}

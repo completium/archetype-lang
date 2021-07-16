@@ -97,7 +97,6 @@ let to_ir (model : M.model) : T.ir =
         | Btimestamp    -> T.Ttimestamp
         | Bstring       -> T.Tstring
         | Baddress      -> T.Taddress
-        | Brole         -> T.Taddress
         | Bcurrency     -> T.Tmutez
         | Bsignature    -> T.Tsignature
         | Bkey          -> T.Tkey
@@ -161,79 +160,7 @@ let to_ir (model : M.model) : T.ir =
 
   in
 
-  let rec to_data (mt : M.mterm) : T.data =
-    match mt.node with
-    | Munit             -> T.Dunit
-    | Mbool      true   -> T.Dtrue
-    | Mbool      false  -> T.Dfalse
-    | Mint       n      -> T.Dint n
-    | Mnat       n      -> T.Dint n
-    | Mstring    s      -> T.Dstring s
-    | Mcurrency  (v, _) -> T.Dint v
-    | Maddress   v      -> T.Dstring v
-    | Mdate      v      -> T.Dint (Core.date_to_timestamp v)
-    | Mduration  n      -> T.Dint (Core.duration_to_timestamp n)
-    | Mtimestamp v      -> T.Dint v
-    | Mbytes     b      -> T.Dbytes b
-    | Mnone             -> T.Dnone
-    | Msome      v      -> T.Dsome (to_data v)
-    | Mtuple     l      -> to_one_data (List.map to_data l)
-    | Mlitset    l      -> T.Dlist (List.map to_data l)
-    | Mlitlist   l      -> T.Dlist (List.map to_data l)
-    | Mlitmap    (_, l) -> T.Dlist (List.map (fun (x, y) -> T.Delt (to_data x, to_data y)) l)
-    | Muminus    v      -> to_data v |> (function | T.Dint n -> T.Dint (Big_int.mult_int_big_int (-1) n) | _ -> assert false )
-    | Mnow              -> T.Dint (Unix.time () |> int_of_float |> Big_int.big_int_of_int)
-    | Mlitrecord l      -> begin
-        let data = List.map (to_data |@ snd) l in
-        match M.get_ntype mt.type_ with
-        | Trecord rn -> begin
-            let r = M.Utils.get_record model (unloc rn) in
-            match r.pos with
-            | Pnode [] -> to_one_data data
-            | _ -> begin
-                let ndata = ref data in
-
-                let rec aux p =
-                  match p with
-                  | M.Ptuple ids  -> begin
-                      let l = List.length ids in
-                      let ll0, ll1 = List.cut l !ndata in
-                      ndata := ll1;
-                      to_one_data ll0
-                    end
-                  | M.Pnode  nodes -> begin
-                      to_one_data (List.map aux nodes)
-                    end
-                in
-
-                aux r.pos
-              end
-          end
-        | _ -> to_one_data data
-      end
-    | Mleft (_, x)      -> T.Dleft (to_data x)
-    | Mright (_, x)     -> T.Dright (to_data x)
-    | Mcast (_, _, v)   -> to_data v
-    | Mvar (x, Vparameter, _, _) -> T.Dvar (unloc x, to_type mt.type_)
-    | Mlambda (_rt, _id, _at, _e) -> assert false
-    | _ -> Format.printf "%a@." M.pp_mterm mt; assert false
-
-  in
-
-  let l = List.map (
-      fun (si : M.storage_item) ->
-        (unloc si.id), to_type ~annotation:(mk_fannot (unloc si.id)) si.typ, to_data si.default)
-      model.storage
-  in
-
   let remove_annot (t : T.type_) = {t with annotation = None} in
-
-  let storage_type, storage_data =
-    match l with
-    | []  -> T.mk_type Tunit, T.Dunit
-    | [_, t, d] -> remove_annot t, d
-    | _   -> let _, lt, ld = List.split3 l in to_one_type lt, to_one_data ld
-  in
 
   let builtins = ref [] in
 
@@ -297,7 +224,7 @@ let to_ir (model : M.model) : T.ir =
           let vres      = T.Ivar res_name in
           let viter     = T.Ivar iter_name in
           let ve        = T.Ivar e_name in
-          let return    = T.Iassign (fun_result, T.Iifnone (vres, T.ifail "NoneValue", "_var_ifnone", Ivar "_var_ifnone", t)) in
+          let return    = T.Iassign (fun_result, T.Iifnone (vres, T.ifail "NotFound", "_var_ifnone", Ivar "_var_ifnone", t)) in
           let cond      = T.Icompare (Cle, viter, varg) in
           let vheadtail = T.Imichelson ([vlist], T.SEQ [ IF_CONS ([PAIR], [T.cstring "EmptyList"; T.FAILWITH])], []) in
           let ares      = T.Iassign (res_name, T.isome(T.icar ve)) in
@@ -337,7 +264,7 @@ let to_ir (model : M.model) : T.ir =
                                                           T.inat (Big_int.big_int_of_int 7), T.istring "7";
                                                           T.inat (Big_int.big_int_of_int 8), T.istring "8";
                                                           T.inat (Big_int.big_int_of_int 9), T.istring "9"]) in
-          let get_map    = T.Iifnone (T.Ibinop (Bget, T.Iunop (Ucdr, vpair), vmap), T.ifail "GetNoneValue", "_var_ifnone", Ivar "_var_ifnone", T.tstring) in
+          let get_map    = T.Iifnone (T.Ibinop (Bget, T.Iunop (Ucdr, vpair), vmap), T.ifail "NotFound", "_var_ifnone", Ivar "_var_ifnone", T.tstring) in
           let concat     = T.Ibinop (Bconcat, get_map, vres) in
           let assign_res = T.Iassign (res_name, concat) in
           let assign_arg = T.Iassign (arg_name, T.Iunop (Ucar, vpair)) in
@@ -391,12 +318,89 @@ let to_ir (model : M.model) : T.ir =
 
   let extra_args : (ident * (ident * T.type_) list) list ref  = ref [] in
 
-  let rec mterm_to_intruction env (mtt : M.mterm) : T.instruction =
+
+  let instr_update (ak : M.assign_kind) (op : T.aoperator) =
+    match ak with
+    | Avar id       -> T.Iupdate (Uvar (unloc id), op)
+    | Avarstore id  -> T.Iupdate (Uvar (unloc id), op)
+    | Aasset _      -> emit_error (UnsupportedTerm "Aasset")
+    | Arecord (rn, fn, {node = Mvar(id, _, _, _)}) -> begin
+        let l = Model.Utils.get_record_pos model (unloc rn) (unloc fn) in
+        T.Iupdate (Urec (unloc id, l), op)
+      end
+    | Arecord _     -> emit_error (UnsupportedTerm "Arecord")
+    | Astate        -> emit_error (UnsupportedTerm "Astate")
+    | Aassetstate _ -> emit_error (UnsupportedTerm "Aassetstate")
+    | Aoperations   -> T.Iupdate (Uvar operations, op)
+  in
+
+  let rec to_data (mt : M.mterm) : T.data =
+    match mt.node with
+    | Munit             -> T.Dunit
+    | Mbool      true   -> T.Dtrue
+    | Mbool      false  -> T.Dfalse
+    | Mint       n      -> T.Dint n
+    | Mnat       n      -> T.Dint n
+    | Mstring    s      -> T.Dstring s
+    | Mcurrency  (v, _) -> T.Dint v
+    | Maddress   v      -> T.Dstring v
+    | Mdate      v      -> T.Dint (Core.date_to_timestamp v)
+    | Mduration  n      -> T.Dint (Core.duration_to_timestamp n)
+    | Mtimestamp v      -> T.Dint v
+    | Mbytes     b      -> T.Dbytes b
+    | Mnone             -> T.Dnone
+    | Msome      v      -> T.Dsome (to_data v)
+    | Mtuple     l      -> to_one_data (List.map to_data l)
+    | Mlitset    l      -> T.Dlist (List.map to_data l)
+    | Mlitlist   l      -> T.Dlist (List.map to_data l)
+    | Mlitmap    (_, l) -> T.Dlist (List.map (fun (x, y) -> T.Delt (to_data x, to_data y)) l)
+    | Muminus    v      -> to_data v |> (function | T.Dint n -> T.Dint (Big_int.mult_int_big_int (-1) n) | _ -> assert false )
+    | Mnow              -> T.Dint (Unix.time () |> int_of_float |> Big_int.big_int_of_int)
+    | Mlitrecord l      -> begin
+        let data = List.map (to_data |@ snd) l in
+        match M.get_ntype mt.type_ with
+        | Trecord rn -> begin
+            let r = M.Utils.get_record model (unloc rn) in
+            match r.pos with
+            | Pnode [] -> to_one_data data
+            | _ -> begin
+                let ndata = ref data in
+
+                let rec aux p =
+                  match p with
+                  | M.Ptuple ids  -> begin
+                      let l = List.length ids in
+                      let ll0, ll1 = List.cut l !ndata in
+                      ndata := ll1;
+                      to_one_data ll0
+                    end
+                  | M.Pnode  nodes -> begin
+                      to_one_data (List.map aux nodes)
+                    end
+                in
+
+                aux r.pos
+              end
+          end
+        | _ -> to_one_data data
+      end
+    | Mleft (_, x)      -> T.Dleft (to_data x)
+    | Mright (_, x)     -> T.Dright (to_data x)
+    | Mcast (_, _, v)   -> to_data v
+    | Mvar (x, Vparameter, _, _) -> T.Dvar (unloc x, to_type mt.type_)
+    | Mlambda (_rt, id, _at, e) -> begin
+        let env = mk_env () in
+        let ir = mterm_to_intruction env e in
+        T.DIrCode (unloc id, ir)
+      end
+    | _ -> Format.printf "%a@." M.pp_mterm mt; assert false
+
+  and mterm_to_intruction env (mtt : M.mterm) : T.instruction =
     let f = mterm_to_intruction env in
     let ft = to_type in
 
     let vops = T.Ivar operations in
-    let contract_internal a t d = T.Iifnone (T.Iunop (Ucontract (t, a), d), T.ifail "BadContract", "_var_ifnone", Ivar "_var_ifnone", T.tint) in
+    let contract_internal a t d = T.Iifnone (T.Iunop (Ucontract (t, a), d), T.ifail "NotFound", "_var_ifnone", Ivar "_var_ifnone", T.tint) in
     let get_contract      t d = contract_internal  None     t d in
     let get_entrypoint id t d = contract_internal (Some ("%" ^ id)) t d in
     let get_self_entrypoint id =
@@ -556,9 +560,14 @@ let to_ir (model : M.model) : T.ir =
           match ft with
           | Invalid v            -> f v
           | InvalidCaller        -> T.istring "InvalidCaller"
-          | InvalidCondition lbl -> T.istring ("InvalidCondition" ^ (match lbl with | Some lbl -> ": " ^ lbl | _ -> ""))
+          | InvalidCondition lbl -> T.ipair (T.istring "InvalidCondition") (T.istring lbl)
+          | NotFound             -> T.istring "NotFound"
+          | KeyExists            -> T.istring "KeyExists"
+          | KeyExistsOrNotFound  -> T.istring "KeyExistsOrNotFound"
+          | OutOfBound           -> T.istring "OutOfBound"
+          | DivByZero            -> T.istring "DivByZero"
+          | NatAssign            -> T.istring "NatAssign"
           | NoTransfer           -> T.istring "NoTransfer"
-          | AssignNat            -> T.istring "AssignNat"
           | InvalidState         -> T.istring "InvalidState"
         in
         T.Iunop  (Ufail, x)
@@ -758,6 +767,7 @@ let to_ir (model : M.model) : T.ir =
         | M.Tbuiltin Baddress, M.Tcontract t, _                -> get_contract (to_type t) (f v)
         | M.Tbuiltin Bcurrency, M.Tbuiltin Bnat, _             -> T.idiv (f v) (T.imutez Big_int.unit_big_int)
         | M.Tbuiltin Bstring, M.Tbuiltin Bkey, Mstring s       -> T.Iconst (T.mk_type Tkey, Dstring s)
+        | M.Tbuiltin Bstring, M.Tbuiltin Bkeyhash, Mstring s   -> T.Iconst (T.mk_type Tkey_hash, Dstring s)
         | M.Tbuiltin Bstring, M.Tbuiltin Bsignature, Mstring s -> T.Iconst (T.mk_type Tsignature, Dstring s)
         | _ -> f v
       end
@@ -781,6 +791,11 @@ let to_ir (model : M.model) : T.ir =
     | Msetlength (_, c)             -> T.Iunop  (Usize, f c)
     | Msetfold (_, ix, ia, c, a, b) -> T.Ifold (unloc ix, None, unloc ia, f c, f a, T.Iassign (unloc ia, f b))
 
+    (* set api instruction *)
+
+    | Msetinstradd    (_, ak, v) -> instr_update ak (Aterop (Tupdate, f v, T.itrue))
+    | Msetinstrremove (_, ak, v) -> instr_update ak (Aterop (Tupdate, f v, T.ifalse))
+
     (* list api expression *)
 
     | Mlistprepend (_t, i, l)    -> T.Ibinop (Bcons, f l, f i)
@@ -791,16 +806,28 @@ let to_ir (model : M.model) : T.ir =
     | Mlistconcat _              -> emit_error (UnsupportedTerm ("Mlistconcat"))
     | Mlistfold (_, ix, ia, c, a, b) -> T.Ifold (unloc ix, None, unloc ia, f c, f a, T.Iassign (unloc ia, f b))
 
+    (* list api instruction *)
+
+    | Mlistinstrprepend (_, ak, v) -> instr_update ak (Abinop (Bcons, f v))
+    | Mlistinstrconcat  (_, ak, v) -> instr_update ak (Abinop (Bconcat, f v))
+
+
     (* map api expression *)
 
     | Mmapput (_, _, c, k, v)     -> T.Iterop (Tupdate, f k, T.isome (f v),   f c)
     | Mmapremove (_, tv, c, k)    -> T.Iterop (Tupdate, f k, T.inone (ft tv), f c)
-    | Mmapget (_, _, c, k)        -> T.Iifnone (T.Ibinop (Bget, f k, f c), T.ifail "GetNoneValue", "_var_ifnone", Ivar "_var_ifnone", ft mtt.type_)
+    | Mmapupdate (_, _, c, k, v)  -> T.Iterop (Tupdate, f k, f v, f c)
+    | Mmapget (_, _, c, k)        -> T.Iifnone (T.Ibinop (Bget, f k, f c), T.ifail "NotFound", "_var_ifnone", Ivar "_var_ifnone", ft mtt.type_)
     | Mmapgetopt (_, _, c, k)     -> T.Ibinop (Bget, f k, f c)
     | Mmapcontains (_, _, c, k)   -> T.Ibinop (Bmem, f k, f c)
     | Mmaplength (_, _, c)        -> T.Iunop (Usize, f c)
     | Mmapfold (_, ik, iv, ia, c, a, b) -> T.Ifold (unloc ik, Some (unloc iv), unloc ia, f c, f a, T.Iassign (unloc ia, f b))
 
+    (* map api instruction *)
+
+    | Mmapinstrput    (_, _,  ak, k, v) -> instr_update ak (Aterop (Tupdate, f k, T.isome (f v)))
+    | Mmapinstrremove (_, tv, ak, k)    -> instr_update ak (Aterop (Tupdate, f k, T.inone (ft tv)))
+    | Mmapinstrupdate (_, _,  ak, k, v) -> instr_update ak (Aterop (Tupdate, f k, f v) )
 
     (* builtin functions *)
 
@@ -809,16 +836,19 @@ let to_ir (model : M.model) : T.ir =
     | Mabs x when is_rat x.type_ -> let b = T.Bratabs        in add_builtin b; T.Icall (get_fun_name b, [f x], is_inline b)
     | Mabs x             -> T.Iunop (Uabs, f x)
     | Mconcat (x, y)     -> T.Ibinop (Bconcat, f x, f y)
-    | Mslice (x, s, e)   -> T.Iifnone (T.Iterop (Tslice, f s, f e, f x), T.ifail "SliceError", "_x", Ivar "_x", ft mtt.type_)
+    | Mconcatlist x      -> T.Iunop (Uconcat, f x)
+    | Mslice (x, s, e)   -> T.Iterop (Tslice, f s, f e, f x)
     | Mlength x          -> T.Iunop (Usize, f x)
     | Misnone x          -> T.Iifnone (f x, T.itrue,  "_var_ifnone", T.ifalse, T.tbool)
     | Missome x          -> T.Iifnone (f x, T.ifalse, "_var_ifnone", T.itrue, T.tbool)
-    | Moptget x          -> T.Iifnone (f x, T.ifail "NoneValue", "_var_ifnone", Ivar "_var_ifnone", ft mtt.type_)
+    | Moptget x          -> T.Iifnone (f x, T.ifail "NotFound", "_var_ifnone", Ivar "_var_ifnone", ft mtt.type_)
     | Mfloor  x          -> let b = T.Bfloor           in add_builtin b; T.Icall (get_fun_name b, [f x], is_inline b)
     | Mceil   x          -> let b = T.Bceil            in add_builtin b; T.Icall (get_fun_name b, [f x], is_inline b)
     | Mtostring (t, x)   -> let b = T.Btostring (ft t) in add_builtin b; T.Icall (get_fun_name b, [f x], is_inline b)
     | Mpack x            -> T.Iunop (Upack,  f x)
-    | Munpack (t, x)     -> T.Iunop (Uunpack (ft t),  f x)
+    | Munpack (t, x)     -> T.Iunop (Uunpack (ft t), f x)
+    | Msetdelegate x     -> T.Iunop (Usetdelegate, f x)
+    | Mimplicitaccount x -> T.Iunop (Uimplicitaccount, f x)
 
     (* crypto functions *)
 
@@ -916,6 +946,11 @@ let to_ir (model : M.model) : T.ir =
     | Mratdur  (c, t)         -> let b = T.Bratdur    in add_builtin b; T.Icall (get_fun_name b, [f c; f t], is_inline b)
 
 
+    (* utils *)
+
+    | Mdatefromtimestamp _ -> emit_error (UnsupportedTerm ("Mdatefromtimestamp"))
+
+
     (* quantifiers *)
 
     | Mforall _ -> emit_error (UnsupportedTerm ("Mforall"))
@@ -943,6 +978,19 @@ let to_ir (model : M.model) : T.ir =
     | Munion     _ -> emit_error (UnsupportedTerm ("Munion"))
     | Minter     _ -> emit_error (UnsupportedTerm ("Minter"))
     | Mdiff      _ -> emit_error (UnsupportedTerm ("Mdiff"))
+  in
+
+  let l = List.map (
+      fun (si : M.storage_item) ->
+        (unloc si.id), to_type ~annotation:(mk_fannot (unloc si.id)) si.typ, to_data si.default)
+      model.storage
+  in
+
+  let storage_type, storage_data =
+    match l with
+    | []  -> T.mk_type Tunit, T.Dunit
+    | [_, t, d] -> remove_annot t, d
+    | _   -> let _, lt, ld = List.split3 l in to_one_type lt, to_one_data ld
   in
 
   let env = mk_env () in
@@ -1070,9 +1118,14 @@ let map_implem = [
   get_fun_name T.Bfloor          , T.[UNPAIR; EDIV; IF_NONE ([T.cfail "DivByZero"], [CAR])];
   get_fun_name T.Bceil           , T.[UNPAIR; EDIV; IF_NONE ([T.cfail "DivByZero"], [UNPAIR; SWAP; INT; EQ; IF ([], [PUSH (T.tint, T.Dint Big_int.unit_big_int); ADD])])];
   get_fun_name T.Bratnorm        ,   [];
-  get_fun_name T.Brataddsub      , T.[UNPAIR; UNPAIR; DIP (1, [UNPAIR; SWAP; DUP]); UNPAIR; SWAP; DUP; DIG 3; MUL; DUG 4; DIG 3; MUL; DIP (1, [MUL]); DIG 3; IF_LEFT ([DROP 1; ADD], [DROP 1; SWAP; SUB]); PAIR;];
-  get_fun_name T.Bratmul         , T.[UNPAIR; DIP (1, [UNPAIR]); UNPAIR; DIP (1, [SWAP]); MUL; DIP (1, [MUL]); PAIR ];
-  get_fun_name T.Bratdiv         , T.[UNPAIR; DIP (1, [UNPAIR]); UNPAIR; DIG 3; PUSH (T.tint, T.Dint Big_int.zero_big_int); DIG 4; DUP; DUG 5; COMPARE; GE; IF ([INT], [NEG]); MUL; DIP (1, [MUL; ABS]); PAIR ];
+  get_fun_name T.Brataddsub      , T.[UNPAIR; UNPAIR; DIP (1, [UNPAIR; SWAP; DUP]); UNPAIR; SWAP; DUP; DIG 3; MUL; DUP; PUSH (T.tnat, T.Dint Big_int.zero_big_int);
+                                      COMPARE; EQ; IF ([T.cfail "DivByZero"], []); DUG 4; DIG 3; MUL; DIP (1, [MUL]); DIG 3; IF_LEFT ([DROP 1; ADD], [DROP 1; SWAP; SUB]); PAIR;];
+  get_fun_name T.Bratmul         , T.[UNPAIR; DIP (1, [UNPAIR]); UNPAIR; DIP (1, [SWAP]); MUL;
+                                      DIP (1, [MUL; DUP; PUSH (T.tnat, T.Dint Big_int.zero_big_int); COMPARE; EQ; IF ([T.cfail "DivByZero"], [])]); PAIR ];
+  get_fun_name T.Bratdiv         , T.[UNPAIR; DIP (1, [UNPAIR]); UNPAIR; DIG 3;
+                                      DUP; DIG 3; DUP; DUG 4; MUL;
+                                      PUSH (T.tnat, T.Dint Big_int.zero_big_int); COMPARE; EQ; IF ([T.cfail "DivByZero"], []);
+                                      PUSH (T.tint, T.Dint Big_int.zero_big_int); DIG 4; DUP; DUG 5; COMPARE; GE; IF ([INT], [NEG]); MUL; DIP (1, [MUL; ABS]); PAIR ];
   get_fun_name T.Bratuminus      , T.[UNPAIR; NEG; PAIR];
   get_fun_name T.Bratabs         , T.[UNPAIR; ABS; INT; PAIR];
   get_fun_name T.Brattez         , T.[UNPAIR; UNPAIR; ABS; DIG 2; MUL; EDIV; IF_NONE ([T.cfail "DivByZero"], []); CAR;];
@@ -1117,399 +1170,497 @@ let get_sp_for_id (env : env) id =
   match List.index_of (String.equal id) env.vars with
   | -1 -> emit_error (StackIdNotFound (id, env.vars))
   | v -> v
+let head_env (env : env) id =
+  let i = get_sp_for_id env id in
+  let rec remove i = function
+    | _::tl when i = 0 -> tl
+    | e::tl -> e::(remove (i - 1) tl)
+    | _ -> assert false
+  in
+  let l = remove i env.vars in
+  { env with vars = id::l }
 
 let print_env ?(str="") env =
   Format.eprintf "%s: %a@." str pp_env env
 (* Format.eprintf "var %s: %i@." id n; *)
 
-let to_michelson (ir : T.ir) : T.michelson =
-  let storage = ir.storage_type in
-  (* let default = T.SEQ [T.CDR; T.NIL (T.mk_type Toperation); T.PAIR ] in *)
+let rec instruction_to_code env (i : T.instruction) : T.code * env =
+  let fe env = instruction_to_code env in
+  let f = fe env in
 
-  let rec instruction_to_code env (i : T.instruction) : T.code * env =
-    let fe env = instruction_to_code env in
-    let f = fe env in
+  let seq env l =
+    match l with
+    | []   -> T.SEQ [], env
+    | [e]  -> fe env e
+    | e::t ->
+      List.fold_left (fun (a, env) x -> begin
+            let v, env = fe env x in (T.SEQ [a; v], env)
+          end ) (fe env e) t
+  in
 
-    let seq env l =
-      match l with
-      | []   -> T.SEQ [], env
-      | [e]  -> fe env e
-      | e::t ->
-        List.fold_left (fun (a, env) x -> begin
-              let v, env = fe env x in (T.SEQ [a; v], env)
-            end ) (fe env e) t
+  let fold_gen g env l =
+    match List.rev l with
+    | []   -> T.SEQ [], env
+    | [e]  -> g env e
+    | e::t ->
+      List.fold_left (fun (a, env) x -> begin
+            let v, env = g env x in (T.SEQ [a; v; T.PAIR], dec_env env)
+          end ) (g env e) t
+  in
+
+  let fold env l = fold_gen fe env l in
+
+  let assign env id v =
+    let n = get_sp_for_id env id in
+    let c =
+      if n <= 0
+      then T.SEQ [ v; T.SWAP; T.DROP 1 ]
+      else T.SEQ [ v; (T.DIP (1, [T.DIG n; T.DROP 1])); T.DUG n]
     in
+    c, env
+  in
 
-    let fold_gen g env l =
-      match List.rev l with
-      | []   -> T.SEQ [], env
-      | [e]  -> g env e
-      | e::t ->
-        List.fold_left (fun (a, env) x -> begin
-              let v, env = g env x in (T.SEQ [a; v; T.PAIR], dec_env env)
-            end ) (g env e) t
-    in
+  let z_op_to_code = function
+    | T.Znow                   -> T.NOW
+    | T.Zamount                -> T.AMOUNT
+    | T.Zbalance               -> T.BALANCE
+    | T.Zsource                -> T.SOURCE
+    | T.Zsender                -> T.SENDER
+    | T.Zaddress               -> T.ADDRESS
+    | T.Zchain_id              -> T.CHAIN_ID
+    | T.Zself a                -> T.SELF a
+    | T.Zself_address          -> T.SEQ [T.SELF None; T.ADDRESS]
+    | T.Znone t                -> T.NONE (rar t)
+    | T.Zunit                  -> T.UNIT
+    | T.Znil t                 -> T.NIL (rar t)
+    | T.Zemptyset t            -> T.EMPTY_SET (rar t)
+    | T.Zemptymap (k, v)       -> T.EMPTY_MAP (rar k, rar v)
+    | T.Zemptybigmap (k, v)    -> T.EMPTY_BIG_MAP (rar k, rar v)
+    | T.Ztotalvotingpower      -> T.TOTAL_VOTING_POWER
+    | T.Zlevel                 -> T.LEVEL
+    | T.Zsapling_empty_state n -> T.SAPLING_EMPTY_STATE n
+  in
 
-    let fold env l = fold_gen fe env l in
+  let un_op_to_code = function
+    | T.Ucar             -> T.CAR
+    | T.Ucdr             -> T.CDR
+    | T.Uleft t          -> T.LEFT (rar t)
+    | T.Uright t         -> T.RIGHT (rar t)
+    | T.Uneg             -> T.NEG
+    | T.Uint             -> T.INT
+    | T.Unot             -> T.NOT
+    | T.Uabs             -> T.ABS
+    | T.Uisnat           -> T.ISNAT
+    | T.Usome            -> T.SOME
+    | T.Usize            -> T.SIZE
+    | T.Upack            -> T.PACK
+    | T.Uunpack        t -> T.UNPACK (rar t)
+    | T.Ublake2b         -> T.BLAKE2B
+    | T.Usha256          -> T.SHA256
+    | T.Usha512          -> T.SHA512
+    | T.Usha3            -> T.SHA3
+    | T.Ukeccak          -> T.KECCAK
+    | T.Uhash_key        -> T.HASH_KEY
+    | T.Ufail            -> T.FAILWITH
+    | T.Ucontract (t, a) -> T.CONTRACT (rar t, a)
+    | T.Usetdelegate     -> T.SET_DELEGATE
+    | T.Uimplicitaccount -> T.IMPLICIT_ACCOUNT
+    | T.Ueq              -> T.EQ
+    | T.Une              -> T.NEQ
+    | T.Ugt              -> T.GT
+    | T.Uge              -> T.GE
+    | T.Ult              -> T.LT
+    | T.Ule              -> T.LE
+    | T.Uvotingpower     -> T.VOTING_POWER
+    | T.Ureadticket      -> T.READ_TICKET
+    | T.Ujointickets     -> T.JOIN_TICKETS
+    | T.Upairing_check   -> T.PAIRING_CHECK
+    | T.Uconcat          -> T.CONCAT
+  in
 
-    let assign env id v =
+  let bin_op_to_code = function
+    | T.Badd                   -> T.ADD
+    | T.Bsub                   -> T.SUB
+    | T.Bmul                   -> T.MUL
+    | T.Bediv                  -> T.EDIV
+    | T.Blsl                   -> T.LSL
+    | T.Blsr                   -> T.LSR
+    | T.Bor                    -> T.OR
+    | T.Band                   -> T.AND
+    | T.Bxor                   -> T.XOR
+    | T.Bcompare               -> T.COMPARE
+    | T.Bget                   -> T.GET
+    | T.Bmem                   -> T.MEM
+    | T.Bconcat                -> T.CONCAT
+    | T.Bcons                  -> T.CONS
+    | T.Bpair                  -> T.PAIR
+    | T.Bexec                  -> T.EXEC
+    | T.Bapply                 -> T.APPLY
+    | T.Bcreateticket          -> T.TICKET
+    | T.Bsplitticket           -> T.SPLIT_TICKET
+    | T.Bsapling_verify_update -> T.SAPLING_VERIFY_UPDATE
+  in
+
+  let ter_op_to_code = function
+    | T.Tcheck_signature -> T.CHECK_SIGNATURE
+    | T.Tslice           -> T.SLICE
+    | T.Tupdate          -> T.UPDATE
+    | T.Ttransfer_tokens -> T.TRANSFER_TOKENS
+  in
+
+  let aop_to_code env = function
+    | T.Aunop   op       ->
+      let op = un_op_to_code op in
+      [op]
+    | T.Abinop (op, a) ->
+      let a, _env = fe env a in
+      let op = bin_op_to_code op in
+      [a; op]
+    | T.Aterop (op, a1, a2) ->
+      let a2, env  = fe env a2 in
+      let a1, _env = fe env a1 in
+      let op = ter_op_to_code op in
+      [a2; a1; op]
+  in
+
+  match i with
+  | Iseq l               -> seq env l
+
+  | IletIn (id, v, b, u)    -> begin
+      let v, _ = f v in
+      let env0 = add_var_env env id in
+      let b, _ = fe env0 b in
+      if u
+      then T.SEQ [v; b; T.DROP 1], env
+      else T.SEQ [v; b; T.DIP (1, [T.DROP 1])], inc_env env
+    end
+
+  | Ivar id -> begin
       let n = get_sp_for_id env id in
       let c =
-        if n <= 0
-        then T.SEQ [ v; T.SWAP; T.DROP 1 ]
-        else T.SEQ [ v; (T.DIP (1, [T.DIG n; T.DROP 1])); T.DUG n]
+        if n = 0
+        then T.DUP
+        else T.SEQ [ T.DIG n; T.DUP; T.DUG (n + 1)]
       in
-      c, env
-    in
+      c, inc_env env
+    end
 
-    match i with
-    | Iseq l               -> seq env l
-
-    | IletIn (id, v, b, u)    -> begin
-        let v, _ = f v in
-        let env0 = add_var_env env id in
-        let b, _ = fe env0 b in
-        if u
-        then T.SEQ [v; b; T.DROP 1], env
-        else T.SEQ [v; b; T.DIP (1, [T.DROP 1])], inc_env env
-      end
-
-    | Ivar id -> begin
-        let n = get_sp_for_id env id in
-        let c =
-          if n = 0
-          then T.DUP
-          else T.SEQ [ T.DIG n; T.DUP; T.DUG (n + 1)]
-        in
-        c, inc_env env
-      end
-
-    | Icall (id, args, inline)   -> begin
-        let get_args env =
-          match args with
-          | [] -> T.UNIT, inc_env env
-          | _ -> fold env args
-        in
-        match inline, List.assoc_opt id map_implem with
-        | true, Some body_fun ->
+  | Icall (id, args, inline)   -> begin
+      let get_args env =
+        match args with
+        | [] -> T.UNIT, inc_env env
+        | _ -> fold env args
+      in
+      match inline, List.assoc_opt id map_implem with
+      | true, Some body_fun ->
+        let cargs, env = get_args env in
+        T.SEQ (cargs::body_fun), env
+      | _ -> begin
+          let fid, env   = fe env (Ivar id) in
           let cargs, env = get_args env in
-          T.SEQ (cargs::body_fun), env
-        | _ -> begin
-            let fid, env   = fe env (Ivar id) in
-            let cargs, env = get_args env in
-            T.SEQ [fid; cargs; T.EXEC], dec_env env
-          end
-      end
+          T.SEQ [fid; cargs; T.EXEC], dec_env env
+        end
+    end
 
-    | Iassign (id, v)  -> begin
-        let v, _ = f v in
-        assign env id v
-      end
+  | Iassign (id, v)  -> begin
+      let v, _ = f v in
+      assign env id v
+    end
 
-    | Iif (c, t, e, ty) -> begin
-        let c, env0 = fe env c in
-        let t, envt = fe (dec_env env0) t in
-        let e, enve = fe (dec_env env0) e in
+  | Iif (c, t, e, ty) -> begin
+      let c, env0 = fe env c in
+      let t, envt = fe (dec_env env0) t in
+      let e, enve = fe (dec_env env0) e in
 
-        let env =
-          match envt.fail, enve.fail with
-          | true, true  -> {env with fail = true}
-          | _           -> env
-        in
-        let env =
-          match ty.node with
-          | T.Tunit -> env
-          | _ -> inc_env env
-        in
-        T.SEQ [ c; T.IF ([t], [e]) ], env
-      end
+      let env =
+        match envt.fail, enve.fail with
+        | true, true  -> {env with fail = true}
+        | _           -> env
+      in
+      let env =
+        match ty.node with
+        | T.Tunit -> env
+        | _ -> inc_env env
+      in
+      T.SEQ [ c; T.IF ([t], [e]) ], env
+    end
 
-    | Iifnone (v, t, id, s, ty) -> begin
-        let v, _ = fe env v in
-        let t, _ = fe env t in
-        let e, _ = fe (add_var_env env id) s in
+  | Iifnone (v, t, id, s, ty) -> begin
+      let v, _ = fe env v in
+      let t, _ = fe env t in
+      let e, _ = fe (add_var_env env id) s in
 
-        let ee, env =
-          match ty.node with
-          | T.Tunit -> [T.DROP 1], env
-          | _       -> [T.SWAP; T.DROP 1], inc_env env
-        in
+      let ee, env =
+        match ty.node with
+        | T.Tunit -> [T.DROP 1], env
+        | _       -> [T.SWAP; T.DROP 1], inc_env env
+      in
 
-        T.SEQ [ v; T.IF_NONE ([t], [e] @ ee) ], env
-      end
+      T.SEQ [ v; T.IF_NONE ([t], [e] @ ee) ], env
+    end
 
-    | Iifleft (v, lid, le, rid, re, ty) -> begin
-        let v, _ = fe env v in
-        let l, _ = fe (add_var_env env lid) le in
-        let r, _ = fe (add_var_env env rid) re in
+  | Iifleft (v, lid, le, rid, re, ty) -> begin
+      let v, _ = fe env v in
+      let l, _ = fe (add_var_env env lid) le in
+      let r, _ = fe (add_var_env env rid) re in
 
-        let ee, env =
-          match ty.node with
-          | T.Tunit -> [T.DROP 1], env
-          | _       -> [T.SWAP; T.DROP 1], inc_env env
-        in
+      let ee, env =
+        match ty.node with
+        | T.Tunit -> [T.DROP 1], env
+        | _       -> [T.SWAP; T.DROP 1], inc_env env
+      in
 
-        T.SEQ [ v; T.IF_LEFT ([l] @ ee, [r] @ ee) ], env
-      end
+      T.SEQ [ v; T.IF_LEFT ([l] @ ee, [r] @ ee) ], env
+    end
 
-    | Iifcons (x, hd, tl, hte, ne, ty) -> begin
-        let x, _ = fe env x in
-        let t, _ = fe (add_var_env (add_var_env env tl) hd) hte in
-        let n, _ = fe env ne in
+  | Iifcons (x, hd, tl, hte, ne, ty) -> begin
+      let x, _ = fe env x in
+      let t, _ = fe (add_var_env (add_var_env env tl) hd) hte in
+      let n, _ = fe env ne in
 
-        let ee, env =
-          match ty.node with
-          | T.Tunit -> [T.DROP 2], env
-          | _       -> [T.DUG 2; T.DROP 2], inc_env env
-        in
+      let ee, env =
+        match ty.node with
+        | T.Tunit -> [T.DROP 2], env
+        | _       -> [T.DUG 2; T.DROP 2], inc_env env
+      in
 
-        T.SEQ [ x; T.IF_CONS ([t] @ ee, [n]) ], env
-      end
+      T.SEQ [ x; T.IF_CONS ([t] @ ee, [n]) ], env
+    end
 
-    | Iloop (c, b) -> begin
-        let c, _ = f c in
-        let b, _ = f b in
-        T.SEQ [c; T.LOOP [b; c]] , env
-      end
+  | Iloop (c, b) -> begin
+      let c, _ = f c in
+      let b, _ = f b in
+      T.SEQ [c; T.LOOP [b; c]] , env
+    end
 
-    | Iiter (ids, c, b) -> begin
-        let c, _ = f c in
-        match ids with
-        | [id] -> begin
-            let env0 = add_var_env env id in
-            let b, _ = fe env0 b in
-            T.SEQ [c; T.ITER [b; T.DROP 1]] , env
-          end
-        | [k; v] -> begin
-            let env0 = add_var_env (add_var_env env v) k in
-            let b, _ = fe env0 b in
-            T.SEQ [c; T.ITER [T.UNPAIR; b; T.DROP 2]] , env
-          end
-        | _ -> assert false
-      end
+  | Iiter (ids, c, b) -> begin
+      let c, _ = f c in
+      match ids with
+      | [id] -> begin
+          let env0 = add_var_env env id in
+          let b, _ = fe env0 b in
+          T.SEQ [c; T.ITER [b; T.DROP 1]] , env
+        end
+      | [k; v] -> begin
+          let env0 = add_var_env (add_var_env env v) k in
+          let b, _ = fe env0 b in
+          T.SEQ [c; T.ITER [T.UNPAIR; b; T.DROP 2]] , env
+        end
+      | _ -> assert false
+    end
 
-    | Iloopleft (l, i, b) -> begin
-        let l, _ = f l in
-        let b, env = fe (add_var_env env i) b in
+  | Iloopleft (l, i, b) -> begin
+      let l, _ = f l in
+      let b, env = fe (add_var_env env i) b in
 
-        T.SEQ [l; T.LOOP_LEFT [b; SWAP; DROP 1]], env
-      end
+      T.SEQ [l; T.LOOP_LEFT [b; SWAP; DROP 1]], env
+    end
 
-    | Ilambda (rt, id, at, e) -> begin
-        let e, _env = fe (add_var_env env id) e in
+  | Ilambda (rt, id, at, e) -> begin
+      let e, _env = fe (add_var_env env id) e in
 
-        T.LAMBDA (rt, at, [e; SWAP; DROP 1]), env
-      end
+      T.LAMBDA (rt, at, [e; SWAP; DROP 1]), env
+    end
 
-    | Izop op -> begin
-        let c =
-          match op with
-          | Znow                -> T.NOW
-          | Zamount             -> T.AMOUNT
-          | Zbalance            -> T.BALANCE
-          | Zsource             -> T.SOURCE
-          | Zsender             -> T.SENDER
-          | Zaddress            -> T.ADDRESS
-          | Zchain_id           -> T.CHAIN_ID
-          | Zself a             -> T.SELF a
-          | Zself_address       -> T.SEQ [T.SELF None; T.ADDRESS]
-          | Znone t             -> T.NONE (rar t)
-          | Zunit               -> T.UNIT
-          | Znil t              -> T.NIL (rar t)
-          | Zemptyset t         -> T.EMPTY_SET (rar t)
-          | Zemptymap (k, v)    -> T.EMPTY_MAP (rar k, rar v)
-          | Zemptybigmap (k, v) -> T.EMPTY_BIG_MAP (rar k, rar v)
-          | Ztotalvotingpower   -> T.TOTAL_VOTING_POWER
-          | Zlevel              -> T.LEVEL
-          | Zsapling_empty_state n -> T.SAPLING_EMPTY_STATE n
-        in
-        c, inc_env env
-      end
-    | Iunop (op, e) -> begin
-        let op =
-          match op with
-          | Ucar             -> T.CAR
-          | Ucdr             -> T.CDR
-          | Uleft t          -> T.LEFT (rar t)
-          | Uright t         -> T.RIGHT (rar t)
-          | Uneg             -> T.NEG
-          | Uint             -> T.INT
-          | Unot             -> T.NOT
-          | Uabs             -> T.ABS
-          | Uisnat           -> T.ISNAT
-          | Usome            -> T.SOME
-          | Usize            -> T.SIZE
-          | Upack            -> T.PACK
-          | Uunpack        t -> T.UNPACK (rar t)
-          | Ublake2b         -> T.BLAKE2B
-          | Usha256          -> T.SHA256
-          | Usha512          -> T.SHA512
-          | Usha3            -> T.SHA3
-          | Ukeccak          -> T.KECCAK
-          | Uhash_key        -> T.HASH_KEY
-          | Ufail            -> T.FAILWITH
-          | Ucontract (t, a) -> T.CONTRACT (rar t, a)
-          | Usetdelegate     -> T.SET_DELEGATE
-          | Uimplicitaccount -> T.IMPLICIT_ACCOUNT
-          | Ueq              -> T.EQ
-          | Une              -> T.NEQ
-          | Ugt              -> T.GT
-          | Uge              -> T.GE
-          | Ult              -> T.LT
-          | Ule              -> T.LE
-          | Uvotingpower     -> T.VOTING_POWER
-          | Ureadticket      -> T.READ_TICKET
-          | Ujointickets     -> T.JOIN_TICKETS
-          | Upairing_check   -> T.PAIRING_CHECK
-        in
-        let e, env = fe env e in
-        let env = match op with T.FAILWITH -> fail_env env | _ -> env in
-        T.SEQ [e; op], env
-      end
-    | Ibinop (op, lhs, rhs) -> begin
-        let op =
-          match op with
-          | Badd       -> T.ADD
-          | Bsub       -> T.SUB
-          | Bmul       -> T.MUL
-          | Bediv      -> T.EDIV
-          | Blsl       -> T.LSL
-          | Blsr       -> T.LSR
-          | Bor        -> T.OR
-          | Band       -> T.AND
-          | Bxor       -> T.XOR
-          | Bcompare   -> T.COMPARE
-          | Bget       -> T.GET
-          | Bmem       -> T.MEM
-          | Bconcat    -> T.CONCAT
-          | Bcons      -> T.CONS
-          | Bpair      -> T.PAIR
-          | Bexec      -> T.EXEC
-          | Bapply     -> T.APPLY
-          | Bcreateticket -> T.TICKET
-          | Bsplitticket  -> T.SPLIT_TICKET
-          | Bsapling_verify_update -> T.SAPLING_VERIFY_UPDATE
-        in
-        let rhs, env = fe env rhs in
-        let lhs, env = fe env lhs in
-        T.SEQ [rhs; lhs; op], (dec_env env)
-      end
-    | Iterop (op, a1, a2, a3) -> begin
-        let op =
-          match op with
-          | Tcheck_signature -> T.CHECK_SIGNATURE
-          | Tslice           -> T.SLICE
-          | Tupdate          -> T.UPDATE
-          | Ttransfer_tokens -> T.TRANSFER_TOKENS
-        in
-        let a3, env = fe env a3 in
-        let a2, env = fe env a2 in
-        let a1, env = fe env a1 in
-        T.SEQ [a3; a2; a1; op], (dec_env (dec_env env))
-      end
-    | Iconst (t, e) -> T.PUSH (rar t, e), inc_env env
-    | Icompare (op, lhs, rhs) -> begin
-        let op =
-          match op with
-          | Ceq -> T.EQ
-          | Cne -> T.NEQ
-          | Clt -> T.LT
-          | Cle -> T.LE
-          | Cgt -> T.GT
-          | Cge -> T.GE
-        in
-        let r, env = fe env rhs in
-        let l, env = fe env lhs in
-        T.SEQ [r; l; T.COMPARE; op], dec_env env
-      end
-
-    | Iset (t, l) -> begin
-        T.SEQ ((T.EMPTY_SET t)::(l |> List.rev |> List.map (fun x -> let x, _ = fe (inc_env (inc_env env)) x in T.SEQ [T.ctrue; x; T.UPDATE ] ))), inc_env env
-      end
-    | Ilist (t, l) -> begin
-        T.SEQ ((T.NIL t)::(l |> List.rev |> List.map (fun x -> let x, _ = fe (inc_env env) x in T.SEQ [ x; T.CONS ] ))), inc_env env
-      end
-    | Imap (b, k, v, l) -> begin
-        let a = if b then T.EMPTY_BIG_MAP (k, v) else T.EMPTY_MAP (k, v) in
-        T.SEQ ([a] @
-               (l
-                |> List.rev
-                |> List.map (fun (x, y) ->
-                    let y, _ = fe (inc_env env) y in
-                    let x, _ = fe (inc_env (inc_env env)) x in
-                    T.SEQ [y; T.SOME; x; T.UPDATE ] ))), inc_env env
-      end
-    | Irecord ri -> begin
-        let rec aux env = function
-          | T.Rtuple l -> fold env l
-          | T.Rnodes l -> fold_gen aux env l
-        in
-        aux env ri
-      end
-    | Irecupdate (x, ru) -> begin
-        let x, env = fe env x in
-        let assign env s l h =
-          let rec g (l, env) x =
+  | Izop op -> begin
+      let c = z_op_to_code op in
+      c, inc_env env
+    end
+  | Iunop (op, e) -> begin
+      let op = un_op_to_code op in
+      let e, env = fe env e in
+      let env = match op with T.FAILWITH -> fail_env env | _ -> env in
+      T.SEQ [e; op], env
+    end
+  | Ibinop (op, lhs, rhs) -> begin
+      let op = bin_op_to_code op in
+      let rhs, env = fe env rhs in
+      let lhs, env = fe env lhs in
+      T.SEQ [rhs; lhs; op], (dec_env env)
+    end
+  | Iterop (op, a1, a2, a3) -> begin
+      let op = ter_op_to_code op in
+      let a3, env = fe env a3 in
+      let a2, env = fe env a2 in
+      let a1, env = fe env a1 in
+      T.SEQ [a3; a2; a1; op], (dec_env (dec_env env))
+    end
+  | Iupdate (ku, aop) -> begin
+      match ku with
+      | Uvar id -> begin
+          let n = get_sp_for_id env id in
+          let f env = aop_to_code env aop in
+          let c =
+            if n <= 0
+            then T.SEQ (f env)
+            else T.SEQ ([ T.DIG n ] @ (f (head_env env id)) @ [ T.DUG n ])
+          in
+          c, env
+        end
+      | Urec (id, l) -> begin
+          let rec g env l x =
+            (* Format.eprintf "x: %i@\n" x; *)
             match l with
-            | [] -> []
-            | (n, v)::q -> begin
-                if x = n
-                then h env v s @ g (q, env) x
+            | [] -> assert false
+            | (k, s)::q -> begin
+                (* Format.eprintf "k, s: (%i, %i)@\n" k s; *)
+                let unpair x = [T.UNPAIR] @ x @ [T.PAIR] in
+                let swap   x = [T.SWAP]   @ x @ [T.SWAP] in
+                let h env =
+                  match q with
+                  | [] -> aop_to_code env aop
+                  | _  -> g env q 0
+                in
+                if x = k
+                then begin
+                  if x < s - 1
+                  then unpair (h (inc_env env))
+                  else h env
+                end
                 else begin
-                  if s = x + 2
-                  then [T.SWAP ] @ g (l, env) (x + 1) @ [T.SWAP]
-                  else [T.SWAP; T.UNPAIR ] @ g (l, inc_env env) (x + 1) @ [T.PAIR; T.SWAP]
+                  if s = 1
+                  then g env l (x + 1)
+                  else begin
+                    if x = s - 1
+                    then  swap            (g env l (x + 1))
+                    else (unpair |@ swap) (g (inc_env env) l (x + 1))
+                  end
                 end
               end
           in
-          let a = g (l, env) 0 in
-          let b =
-            if s = 1
-            then a
-            else [T.UNPAIR] @ a @ [T.PAIR]
+
+          let c =
+            let n = get_sp_for_id env id in
+            if n <= 0
+            then T.SEQ (g env l 0)
+            else T.SEQ ([ T.DIG n ] @ (g (head_env env id) l 0) @ [ T.DUG n ])
           in
-          T.SEQ b, env
-        in
-        let rec aux env ru =
-          match ru with
-          | T.RUassign (s, l) -> assign env s l (fun env v s ->
-              let env = if s = 1 then dec_env env else env in
-              let v, _ = fe env v in
-              [T.DROP 1; v]
-            )
-          | T.RUnodes  (s, l) -> assign env s l (fun env v _ ->
-              let v, _ = aux (inc_env env) v in
-              [v]
-            )
-        in
-        let v, _ = aux env ru in
-        T.SEQ ([x; v]), env
-      end
+          c, env
+        end
+    end
+  | Iconst (t, e) -> T.PUSH (rar t, e), inc_env env
+  | Icompare (op, lhs, rhs) -> begin
+      let op =
+        match op with
+        | Ceq -> T.EQ
+        | Cne -> T.NEQ
+        | Clt -> T.LT
+        | Cle -> T.LE
+        | Cgt -> T.GT
+        | Cge -> T.GE
+      in
+      let r, env = fe env rhs in
+      let l, env = fe env lhs in
+      T.SEQ [r; l; T.COMPARE; op], dec_env env
+    end
 
-    | Ifold (ix, iy, ia, c, a, b) -> begin
-        let a, _env0 = fe env a in
-        let c, _env1 = fe (add_var_env env ia) c in
-        let env2, pi, n =
-          let env_= add_var_env env ia in
-          match iy with
-          | Some iy -> add_var_env (add_var_env env_ iy) ix, T.UNPAIR, 2
-          | None -> add_var_env env_ ix, T.cskip, 1
+  | Iset (t, l) -> begin
+      T.SEQ ((T.EMPTY_SET t)::(l |> List.rev |> List.map (fun x -> let x, _ = fe (inc_env (inc_env env)) x in T.SEQ [T.ctrue; x; T.UPDATE ] ))), inc_env env
+    end
+  | Ilist (t, l) -> begin
+      T.SEQ ((T.NIL t)::(l |> List.rev |> List.map (fun x -> let x, _ = fe (inc_env env) x in T.SEQ [ x; T.CONS ] ))), inc_env env
+    end
+  | Imap (b, k, v, l) -> begin
+      let a = if b then T.EMPTY_BIG_MAP (k, v) else T.EMPTY_MAP (k, v) in
+      T.SEQ ([a] @
+             (l
+              |> List.rev
+              |> List.map (fun (x, y) ->
+                  let y, _ = fe (inc_env env) y in
+                  let x, _ = fe (inc_env (inc_env env)) x in
+                  T.SEQ [y; T.SOME; x; T.UPDATE ] ))), inc_env env
+    end
+  | Irecord ri -> begin
+      let rec aux env = function
+        | T.Rtuple l -> fold env l
+        | T.Rnodes l -> fold_gen aux env l
+      in
+      aux env ri
+    end
+  | Irecupdate (x, ru) -> begin
+      let x, env = fe env x in
+      let assign env s l h =
+        let rec g (l, env) x =
+          match l with
+          | [] -> []
+          | (n, v)::q -> begin
+              if x = n
+              then h env v s @ g (q, env) x
+              else begin
+                if s = x + 2
+                then [T.SWAP ] @ g (l, env) (x + 1) @ [T.SWAP]
+                else [T.SWAP; T.UNPAIR ] @ g (l, inc_env env) (x + 1) @ [T.PAIR; T.SWAP]
+              end
+            end
         in
-        let b, _env2 = fe env2 b in
-        T.SEQ [a; c; T.ITER [pi; b; T.DROP n]], inc_env env
-      end
+        let a = g (l, env) 0 in
+        let b =
+          if s = 1
+          then a
+          else [T.UNPAIR] @ a @ [T.PAIR]
+        in
+        T.SEQ b, env
+      in
+      let rec aux env ru =
+        match ru with
+        | T.RUassign (s, l) -> assign env s l (fun env v s ->
+            let env = if s = 1 then dec_env env else env in
+            let v, _ = fe env v in
+            [T.DROP 1; v]
+          )
+        | T.RUnodes  (s, l) -> assign env s l (fun env v _ ->
+            let v, _ = aux (inc_env env) v in
+            [v]
+          )
+      in
+      let v, _ = aux env ru in
+      T.SEQ ([x; v]), env
+    end
 
-    | Imap_ (x, id, e) -> begin
-        let x, _env0 = fe env x in
-        let e, _env1 = fe (add_var_env env id) e in
-        T.SEQ [x; T.MAP [e; T.SWAP; T.DROP 1]], inc_env env
-      end
+  | Ifold (ix, iy, ia, c, a, b) -> begin
+      let a, _env0 = fe env a in
+      let c, _env1 = fe (add_var_env env ia) c in
+      let env2, pi, n =
+        let env_= add_var_env env ia in
+        match iy with
+        | Some iy -> add_var_env (add_var_env env_ iy) ix, T.UNPAIR, 2
+        | None -> add_var_env env_ ix, T.cskip, 1
+      in
+      let b, _env2 = fe env2 b in
+      T.SEQ [a; c; T.ITER [pi; b; T.DROP n]], inc_env env
+    end
 
-    | Imichelson (a, c, v) -> begin
-        let a, _ = seq env a in
-        T.SEQ [a; c], { env with vars = v @ env.vars }
+  | Imap_ (x, id, e) -> begin
+      let x, _env0 = fe env x in
+      let e, _env1 = fe (add_var_env env id) e in
+      T.SEQ [x; T.MAP [e; T.SWAP; T.DROP 1]], inc_env env
+    end
+
+  | Imichelson (a, c, v) -> begin
+      let a, _ = seq env a in
+      T.SEQ [a; c], { env with vars = v @ env.vars }
+    end
+
+and process_data (d : T.data) : T.data =
+  let rec aux (d : T.data) : T.data =
+    match d with
+    | DIrCode (id, ir) -> begin
+        let env = mk_env () in
+        let env = add_var_env env id in
+        let code, _env = instruction_to_code env ir in
+        let code = T.SEQ [code; DIP (1, [DROP 1])]
+                   |> T.Utils.flat
+                   |> T.Utils.optim
+        in
+        Dcode code
       end
+    | _ -> T.map_data aux d
   in
+  aux d
+
+and to_michelson (ir : T.ir) : T.michelson =
+  let storage = ir.storage_type in
+  (* let default = T.SEQ [T.CDR; T.NIL (T.mk_type Toperation); T.PAIR ] in *)
 
   let build_code _ =
 

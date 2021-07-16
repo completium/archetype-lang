@@ -1,0 +1,7 @@
+archetype instr_map_put
+
+variable res : map<nat, string> = []
+
+entry exec () {
+  res.put(0, "0");
+}

@@ -1,6 +1,6 @@
 archetype security_pred_only_in_entry
 
-constant admin : role = @tz1aazS5ms5cbGkb6FN1wvWmN7yrMTTcr6wB
+constant admin : address = @tz1aazS5ms5cbGkb6FN1wvWmN7yrMTTcr6wB
 
 asset my_asset identified by id {
   id : string;

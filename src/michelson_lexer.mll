@@ -30,7 +30,7 @@ rule token = parse
   | newline               { Lexing.new_line lexbuf; token lexbuf }
   | blank+                { token lexbuf }
 
-  | (bytes as v)          { BYTES v }
+  | (bytes as v)          { BYTES (String.sub v 2 ((String.length v) - 2)) }
   | number as n           { NUMBER n }
   | ident as s            { IDENT s}
   | annot as s            { ANNOTATION (s)}

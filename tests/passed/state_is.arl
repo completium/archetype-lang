@@ -1,0 +1,12 @@
+archetype state_is
+
+states =
+| Init
+| Running
+
+entry exec () {
+   state is Running
+   effect {
+     ()
+   }
+}

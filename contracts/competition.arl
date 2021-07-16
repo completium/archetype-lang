@@ -1,6 +1,6 @@
 archetype competition
 
-variable organizer : role = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
+variable organizer : address = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 
 (* start date *)
 variable startdate : date = 2019-11-12T00:00:00
@@ -10,10 +10,10 @@ variable deadline : date = 2020-11-12T00:00:00
 
 variable prize : tez = 3500tz
 
-variable oracle : role = @tz1bfVgcJC4ukaQSHUe1EbrUd5SekXeP9CWk
+variable oracle : address = @tz1bfVgcJC4ukaQSHUe1EbrUd5SekXeP9CWk
 
 asset submission {
-  competitor : role;
+  competitor : address;
   score      : int;
   timestamp  : date;
 }

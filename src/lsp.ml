@@ -204,7 +204,7 @@ let make_outline_from_enum ((ek, li, l) : (PT.enum_kind * 'a * 'b) ) =
 let make_outline_from_decl (d : PT.declaration) gl =
   let l, v = Location.deloc d in
   match v with
-  | Darchetype (id, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Class, gl)]
+  | Darchetype (id, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Class, gl)]
   | Dvariable (id, _, _, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Variable, l)]
   | Denum (ek, (li, _)) -> make_outline_from_enum (ek, li, l)
   | Dasset (id, _, _, _, post_options, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Struct, l)] @ mk_outline_post_options post_options
@@ -256,6 +256,7 @@ let process (filename, channel) =
   | Errors ->
     try
       let pt = Io.parse_archetype ~name:filename channel in
+      Pt_helper.check_json pt;
       if (List.is_empty !Error.errors)
       then
         let ast = Typing.typing Typing.empty pt in
@@ -276,5 +277,7 @@ let process (filename, channel) =
           process_errors ()
         else
           process_errors ()
+      else
+        process_errors ()
     with
     | _ -> process_errors ()

@@ -1,0 +1,7 @@
+archetype instr_map_remove
+
+variable res : map<nat, string> = [(0, "0")]
+
+entry exec () {
+  res.remove(0);
+}

@@ -119,6 +119,7 @@ escrow_simple.arl \
 escrow_without_spec.arl \
 fa12.arl \
 fa12_inspector.arl \
+fa2.arl \
 fizzy.arl \
 guarantee_fund.arl \
 health_care.arl \
@@ -142,7 +143,6 @@ zero_coupon_bond.arl \
 "
 
 REMAINED_VERIF_CONTRACTS="\
-fa2.arl \
 "
 
 RET=0
@@ -163,18 +163,18 @@ for i in $REMAINED_RET_CONTRACTS; do
     ${BIN_RET} ./contracts/$i
 done
 
-echo ""
-echo ""
-echo "Check exec"
-
-echo ""
-echo "                                                                       RET OUT COMPILE"
-for i in $EXEC_CONTRACTS; do
-    ${BIN_EXEC} ./contracts/$i
-    if [ $? -ne 0 ]; then
-        RET=1
-    fi
-done
+#echo ""
+#echo ""
+#echo "Check exec"
+#
+#echo ""
+#echo "                                                                       RET OUT COMPILE"
+#for i in $EXEC_CONTRACTS; do
+#    ${BIN_EXEC} ./contracts/$i
+#    if [ $? -ne 0 ]; then
+#        RET=1
+#    fi
+#done
 
 echo ""
 echo ""

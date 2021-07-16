@@ -541,3 +541,14 @@ let location_to_position (l : Location.t) : Position.t =
     l.loc_end |> fst, l.loc_echar, l.loc_end |> snd
   in
   Position.mk_position fname start end_
+
+(* -------------------------------------------------------------------- *)
+
+let get_content path =
+  let read_whole_file filename =
+    let ch = open_in filename in
+    let s = really_input_string ch (in_channel_length ch) in
+    close_in ch;
+    s
+  in
+  read_whole_file path

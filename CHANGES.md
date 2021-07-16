@@ -6,13 +6,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Added
- - edo features:
-   * add new cryptographic hash functions: `sha3` and `keccak`
-   * add `total_voting_power` constant and `voting_power` operation
-   * add `level` constant
-   * add `ticket` type and associated instructions (`create_ticket`, `read_ticket`, `split_ticket`, `join_tickets`)
-   * add sapling types (`sapling_state` and `sapling_transaction`) and operations (`sapling_empty_state` and `sapling_verify_update`)
-   * add bls curves types (`bls12_381_fr`, `bls12_381_g1` and `bls12_381_g2`), arthmetic (`+`, `*`, unary `-`) and operation (`pairing_check`)
+  - edo features:
+    * add new cryptographic hash functions: `sha3` and `keccak`
+    * add `total_voting_power` constant and `voting_power` operation
+    * add `level` constant
+    * add `ticket` type and associated instructions (`create_ticket`, `read_ticket`, `split_ticket`, `join_tickets`)
+    * add sapling types (`sapling_state` and `sapling_transaction`) and operations (`sapling_empty_state` and `sapling_verify_update`)
+    * add bls curves types (`bls12_381_fr`, `bls12_381_g1` and `bls12_381_g2`), arthmetic (`+`, `*`, unary `-`) and operation (`pairing_check`)
+
+## [1.2.6] - 2021-06-24
+### Added
+  - test mode
+
+## [1.2.5] - 2021-05-08
+### Added
+  - `sourced by`, same as `called by` with source
+### Changed
+  - minor fixes
+
+## [1.2.4] - 2021-05-03
+### Added
+  - `update` function for map (like `UPDATE` in michelson)
+  - `state is` section in entry
+  - `called by` supports asset with a key typed address
+  - failure id in fails specification section (i.e. `... f1 with InvalidCaller(msg : string): ...`)
+  - metadata can be defined in the source file (`with metadata`)
+  - instruction for container (`my_map.update(key, some(value))`)
+
+### Changed
+  - `slice` returns `option<byte|string>`
+  - fail message and expression (see documentation)
+  - syntax `enum` declaration with args (`enum my_enum = | A <nat> | B <string>`)
+
+### Removed
+  - `role` type
+
+## [1.2.3] - 2021-04-12
+### Added
+  - `date_from_timestamp` function (convert a timestamp typed int to date)
+  - `const` for parameter, which processes like a constant instead of a variable by default
+### Changed
+  - Improve js ouptut
 
 ## [1.2.2] - 2021-03-09
 ### Added

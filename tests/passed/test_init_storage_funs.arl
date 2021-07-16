@@ -31,11 +31,11 @@ variable abs_int : int          = abs(-1)
 variable abs_rat : rational     = abs(-1 / 2)
 
 variable concat_str : string    = concat("abc", "def")
-variable slice_str  : string    = slice("abcdef", 1, 2)
+variable slice_str  : option<string> = slice("abcdef", 1, 2)
 variable length_str : nat       = length("abcdef")
 
 variable concat_byt : bytes = concat(0x12, 0xef)
-variable slice_byt  : bytes = slice(0xabcdef01, 1, 2)
+variable slice_byt  : option<bytes> = slice(0xabcdef01, 1, 2)
 
 entry exec () {
   effect {

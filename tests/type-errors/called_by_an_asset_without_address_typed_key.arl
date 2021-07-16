@@ -1,0 +1,13 @@
+archetype called_by_an_asset_without_address_typed_key
+
+asset my_asset {
+  id: nat;
+  v: string;
+}
+
+entry exec () {
+   called by my_asset
+   effect {
+     ()
+   }
+}

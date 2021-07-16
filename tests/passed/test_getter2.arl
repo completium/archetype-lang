@@ -1,0 +1,11 @@
+archetype test_getter
+
+variable n : nat = 2
+
+entry a() {
+  ()
+}
+
+getter getN () : nat {
+  return n
+}

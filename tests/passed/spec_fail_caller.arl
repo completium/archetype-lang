@@ -1,0 +1,16 @@
+archetype spec_fail_caller
+
+variable admin : address = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
+
+entry exec () {
+  specification {
+    fails  {
+      f1 with InvalidCaller(msg : string):
+        caller <> admin;
+    }
+  }
+  called by admin
+  effect {
+    ()
+  }
+}

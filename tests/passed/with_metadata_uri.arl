@@ -1,0 +1,6 @@
+archetype with_metadata_uri
+with metadata "https://completium.com/metadata/token_metadata.json"
+
+entry exec () {
+  ()
+}

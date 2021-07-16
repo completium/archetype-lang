@@ -13,15 +13,15 @@ enum shipmentStatus =
  | Arrived
 
 asset grower identified by gid {
-  gid : role
+  gid : address
 }
 
 asset importer identified by iid {
-  iid : role;
+  iid : address;
 }
 
 asset shipper identified by sid {
-  sid : role;
+  sid : address;
 }
 
 asset p_contract {

@@ -1,0 +1,13 @@
+archetype record_container
+
+record my_record {
+  s: set<nat>;
+  l: list<nat>;
+  m: map<nat, string>;
+}
+
+variable vs: set<my_record> = [] // should type error `my_record` because this type is not comparable
+
+entry exec () {
+  ()
+}

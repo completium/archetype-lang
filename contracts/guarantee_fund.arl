@@ -1,6 +1,6 @@
 archetype guarantee_fund
 
-variable admin : role = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
+variable admin : address = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 
 asset insured_contract identified by addr {
   addr : address;

@@ -1,9 +1,9 @@
 archetype enum_with_args_multi
 
 enum t =
-| A of nat * string
-| B of nat * string
-| C of int * nat * string
+| A <nat * string>
+| B <nat * string>
+| C <int * nat * string>
 
 variable res : nat = 0
 

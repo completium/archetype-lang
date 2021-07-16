@@ -20,6 +20,7 @@ type error_desc =
   | NoSortOnKeyWithMultiKey of ident
   | NoInitValueForParameter of ident
   | NoInitForPartitionAsset of ident
+  | NoInitValueForConstParam of ident
 
 let pp_error_desc fmt = function
   | AssetPartitionnedby (i, l)         ->
@@ -64,6 +65,8 @@ let pp_error_desc fmt = function
   | NoInitValueForParameter id -> Format.fprintf fmt "No initialized value for parameter: %s" id
 
   | NoInitForPartitionAsset an -> Format.fprintf fmt "Asset '%s' is used in a partition, no asset must initialized" an
+
+  | NoInitValueForConstParam id -> Format.fprintf fmt "No initialized value for const parameter: %s" id
 
 type error = Location.t * error_desc
 
@@ -131,7 +134,7 @@ let process_assign_op op (t : type_) (lhs : mterm) (v : mterm) : mterm =
       let zero = mk_mterm (Mint Big_int.zero_big_int) tint in
       let cond = mk_mterm (Mge (a, zero)) tbool in
       let v = mk_mterm (Mabs a) tnat in
-      let f = mk_mterm (Mfail AssignNat) tunit in
+      let f = mk_mterm (Mfail NatAssign) tunit in
       let c = mk_mterm (Mcast (tunit, tnat, f)) tnat in
       mk_mterm (Mexprif (cond, v, c)) tnat
     end
@@ -373,14 +376,6 @@ let remove_label (model : model) : model =
   let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
     match mt.node with
     | Mlabel _ -> mk_mterm (Mseq []) tunit
-    | _ -> map_mterm (aux ctx) mt
-  in
-  map_mterm_model aux model
-
-let replace_lit_address_by_role (model : model) : model =
-  let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
-    match mt.node with
-    | Maddress _ as node -> mk_mterm node trole
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
@@ -679,13 +674,26 @@ let check_duplicated_keys_in_asset (model : model) : model =
     let asset : asset = Model.Utils.get_asset model an in
     let asset_keys = dasset.keys in
     let assoc_fields = List.map2 (fun (ai : asset_item) (x : mterm) -> (unloc ai.name, x)) asset.values l in
-    let value_key =  List.find (fun (id, _) -> List.exists (String.equal id) asset_keys) assoc_fields |> snd in
-    if not (is_literal value_key)
-    then errors := (value_key.loc, OnlyLiteralInAssetInit)::!errors
-    else (
-      if contains_key an value_key
-      then errors := (value_key.loc, DuplicatedKeyAsset an)::!errors
-      else add_key an value_key)
+    let value_key_opt =
+      match List.find (fun (id, _) -> List.exists (String.equal id) asset_keys) assoc_fields |> snd with
+      | {node = Mvar (id, _, _, _); _} -> begin
+          let const = Model.Utils.get_vars model |> List.find_opt (fun (x : var) -> cmp_ident (unloc id) (unloc x.name)) in
+          match const with
+          | Some c -> c.default
+          | None -> None
+        end
+      | x -> Some x
+    in
+    match value_key_opt with
+    | Some value_key -> begin
+        if not (is_literal value_key)
+        then errors := (value_key.loc, OnlyLiteralInAssetInit)::!errors
+        else (
+          if contains_key an value_key
+          then errors := (value_key.loc, DuplicatedKeyAsset an)::!errors
+          else add_key an value_key)
+      end
+    | None -> ()
   in
   List.iter
     (fun d ->
@@ -1827,6 +1835,37 @@ let remove_rational (model : model) : model =
   |> map_model (fun _ x -> x) for_type for_mterm
   |> update_nat_int_rat
 
+let remove_rational_update (model : model) : model =
+  let rec aux ctx (mt : mterm) : mterm=
+    match mt.node with
+    | Mupdate (an, k, l) -> begin
+        let l : (lident * assignment_operator * mterm) list = List.map (
+            fun (fn, op, v) : (lident * assignment_operator * mterm) ->
+              let v : mterm = v in
+              match get_ntype v.type_ with
+              | Ttuple [(Tbuiltin Bint, _); (Tbuiltin Bnat, _)] -> begin
+
+                  let get_val id : mterm =
+                    let _, ts, _ = Utils.get_asset_field model (an, unloc id) in
+                    let node = Mdotassetfield(dumloc an, k, id) in
+                    mk_mterm node ts
+                  in
+
+                  match op with
+                  | PlusAssign  -> (fn, ValueAssign, mk_mterm (Mratarith (Rplus,  get_val fn, v)) v.type_)
+                  | MinusAssign -> (fn, ValueAssign, mk_mterm (Mratarith (Rminus, get_val fn, v)) v.type_)
+                  | MultAssign  -> (fn, ValueAssign, mk_mterm (Mratarith (Rmult,  get_val fn, v)) v.type_)
+                  | DivAssign   -> (fn, ValueAssign, mk_mterm (Mratarith (Rdiv,   get_val fn, v)) v.type_)
+                  | _           -> (fn, op, v)
+                end
+              | _ -> (fn, op, v)
+          ) l in
+        { mt with node = Mupdate (an, k, l) }
+      end
+    | _ -> map_mterm (aux ctx) mt
+  in
+  map_mterm_model aux model
+
 
 let replace_date_duration_by_timestamp (model : model) : model =
   let is_rat      t = match get_ntype t with | Ttuple [(Tbuiltin Bint, _); (Tbuiltin Bnat, _)] -> true     | _ -> false in
@@ -1854,7 +1893,11 @@ let replace_date_duration_by_timestamp (model : model) : model =
     | Mnow          -> mk (Unix.time () |> int_of_float |> Big_int.big_int_of_int)
     | Mplus  (a, b) -> mk (Big_int.add_big_int (g a) (g b))
     | Mminus (a, b) -> mk (Big_int.sub_big_int (g a) (g b))
+    | Mdatefromtimestamp v -> mk (g v)
     | Mtimestamp _  -> x
+    | Mvar (_, _, _, _) -> x
+    | Mmin _ -> x
+    | Mmax _ -> x
     | _ ->
       begin
         Format.eprintf "cannot transform to timestamp: %a@.%a@." Printer_model.pp_mterm x pp_mterm x;
@@ -1866,6 +1909,7 @@ let replace_date_duration_by_timestamp (model : model) : model =
       match mt.node, mt.type_ with
       | Mdate d,_      -> mk_mterm (Mtimestamp (Core.date_to_timestamp d)) ttimestamp
       | Mduration d, _ -> mk_mterm (Mint (Core.duration_to_timestamp d)) tint
+      | Mdatefromtimestamp _, _ -> to_timestamp mt
       | Mnow, _        -> mk_mterm (Mnow) ttimestamp
       | Mmult (a, b), t when is_duration t && is_rat a.type_ && is_duration b.type_ ->
         let a = aux a in
@@ -2762,9 +2806,7 @@ let add_contain_on_get (model : model) : model =
           let build_contains (an, k) : mterm =
             let contains = mk_mterm (Mcontains(an, CKcoll (Tnone, Dnone), k)) tbool in
             let not_contains = mk_mterm (Mnot contains) tbool in
-            let str_fail : mterm = mk_mterm (Mstring "get failed") tstring in
-            let fail = mk_mterm (Mfail (Invalid str_fail)) tunit in
-            let mif : mterm = mk_mterm (Mif(not_contains, fail, None)) tunit in
+            let mif : mterm = mk_mterm (Mif(not_contains, failc NotFound, None)) tunit in
             mif
           in
           let cmp (an1, k1 : ident * mterm) (an2, k2 : ident * mterm) : bool =
@@ -3628,10 +3670,6 @@ let remove_asset (model : model) : model =
       mk_mterm node tbool
     in
 
-    let msg_KeyAlreadyExists              = "KeyAlreadyExists" in
-    let msg_KeyNotFound                   = "KeyNotFound" in
-    let msg_KeyNotFoundOrKeyAlreadyExists = "KeyNotFoundOrKeyAlreadyExists" in
-
     (* let get_asset_key_type x = Utils.get_asset_key model x |> snd in *)
 
     let extract_key x = Utils.extract_key_value_from_masset model x in
@@ -3755,14 +3793,14 @@ let remove_asset (model : model) : model =
               | (an, a)::t, [] -> begin
                   let f = create_contains_asset_key in
                   let c = List.fold_left (fun accu (an, x) -> mk_mterm (Mand (f an x, accu)) tbool) (f an a) t in
-                  mk_mterm (Mif (c, b, Some (fail msg_KeyNotFound))) tunit
+                  mk_mterm (Mif (c, b, Some (failc NotFound))) tunit
                 end
               | [], (an, k, _)::t -> begin
                   let f = create_contains_asset_key in
                   let c = List.fold_left (fun accu (an, x, _) -> mk_mterm (Mor (f an x, accu)) tbool) (f an k) t in
                   let linstrs = get_instrs_add_with_partition pts in
                   let seq = mk_mterm (Mseq (b::linstrs)) tunit in
-                  mk_mterm (Mif (c, fail msg_KeyAlreadyExists, Some seq)) tunit
+                  mk_mterm (Mif (c, failc KeyExists, Some seq)) tunit
                 end
               | (aan, aa)::at, pt ->
                 let f = create_contains_asset_key in
@@ -3770,14 +3808,14 @@ let remove_asset (model : model) : model =
                 let c = List.fold_left (fun accu (an, x, _) -> mk_mterm (Mand (mnot (f an x), accu)) tbool) c pt in
                 let linstrs = get_instrs_add_with_partition pts in
                 let seq = mk_mterm (Mseq (b::linstrs)) tunit in
-                mk_mterm (Mif (c, seq, Some (fail msg_KeyNotFoundOrKeyAlreadyExists))) tunit
+                mk_mterm (Mif (c, seq, Some (failc KeyExistsOrNotFound))) tunit
             end
           | _ -> assert false
         in
 
         if force
         then assign
-        else mk_mterm (Mif (cond, fail msg_KeyAlreadyExists, Some assign)) tunit
+        else mk_mterm (Mif (cond, failc KeyExists, Some assign)) tunit
       end
     in
 
@@ -4014,7 +4052,7 @@ let remove_asset (model : model) : model =
       | Mget (an, CKview c, k) -> begin
           let get = mk_mterm (Mget(an, CKcoll(Tnone, Dnone), k)) mt.type_ |> fm ctx in
           let cond = mk_mterm (Mcontains(an, CKview c, k)) tbool |> fm ctx in
-          mk_mterm (Mexprif(cond, get, fail "NotFound")) get.type_
+          mk_mterm (Mexprif(cond, get, failc NotFound)) get.type_
         end
 
       (* control *)
@@ -4088,7 +4126,7 @@ let remove_asset (model : model) : model =
             let bk = fm ctx b in
             let assign = mk_assign bk in
             let cond = create_contains_asset_key aan bk in
-            mk_mterm (Mif (cond, assign, Some (fail msg_KeyNotFound))) tunit
+            mk_mterm (Mif (cond, assign, Some (failc NotFound))) tunit
           | Partition ->
             let bk = extract_key b in
             let bk = fm ctx bk in
@@ -4393,12 +4431,14 @@ let remove_asset (model : model) : model =
                 let zero = mk_mterm (Mint Big_int.zero_big_int) tint in
                 let cond = mk_mterm (Mge (a, zero)) tbool in
                 let v = mk_mterm (Mabs a) tnat in
-                let f = mk_mterm (Mfail AssignNat) (tunit) in
+                let f = mk_mterm (Mfail NatAssign) (tunit) in
                 let c = mk_mterm (Mcast (tunit, tnat, f)) tnat in
                 mk_mterm (Mexprif (cond, v, c)) tnat
               end
             | _ ->  mk_mterm (Mminus  (get_val id, x)) x.type_
           in
+
+          let arith_rval op id x = mk_mterm (Mratarith (op, get_val id, x)) x.type_ in
 
           let mul_val id x = mk_mterm (Mmult   (get_val id, x)) x.type_ in
           let div_val id x = mk_mterm (Mdiveuc (get_val id, x)) x.type_ in
@@ -4420,6 +4460,7 @@ let remove_asset (model : model) : model =
           let l, b, ags = List.fold_right (fun (id, op, v) (accu, b, ags) ->
               let _, ts, _ = Utils.get_asset_field model (an, unloc id) in
               let v = fm ctx v in
+              let is_rat t = match get_ntype t with | Ttuple [(Tbuiltin Bint, _); (Tbuiltin Bnat, _)] -> true     | _ -> false in
               match get_ntype ts, op with
               | Tcontainer((Tasset aan, _), Aggregate), ValueAssign -> begin
                   let aan = unloc aan in
@@ -4480,6 +4521,11 @@ let remove_asset (model : model) : model =
                   let set = List.fold_left (fun accu (x : mterm) -> mk_mterm (Msetremove (tk, accu, x)) ts) get ll in
                   (id, ValueAssign, set)::accu, true, (unloc id, aan, `Partition, `Remove, ll)::ags
                 end
+
+              | _, PlusAssign  when is_rat ts  -> (id, ValueAssign, arith_rval Rplus  id v)::accu , true, ags
+              | _, MinusAssign when is_rat ts  -> (id, ValueAssign, arith_rval Rminus id v)::accu , true, ags
+              | _, MultAssign  when is_rat ts  -> (id, ValueAssign, arith_rval Rmult  id v)::accu , true, ags
+              | _, DivAssign   when is_rat ts  -> (id, ValueAssign, arith_rval Rdiv   id v)::accu , true, ags
 
               | _, ValueAssign  -> (id, op, v)::accu, b, ags
               | _, PlusAssign   -> (id, ValueAssign, add_val id v)::accu , true, ags
@@ -4600,12 +4646,12 @@ let remove_asset (model : model) : model =
 
           let msg = List.fold_left (fun accu x ->
               match accu, x with
-              | msg, ( _, _, `Aggregate, (`Add | `Replace), _) when String.equal msg msg_KeyAlreadyExists -> msg_KeyNotFoundOrKeyAlreadyExists
-              | msg, ( _, _, `Partition, (`Add | `Replace), _) when String.equal msg msg_KeyNotFound      -> msg_KeyNotFoundOrKeyAlreadyExists
-              | _, ( _, _, `Aggregate, (`Add | `Replace), _) -> msg_KeyNotFound
-              | _, ( _, _, `Partition, (`Add | `Replace), _) -> msg_KeyAlreadyExists
+              | msg, ( _, _, `Aggregate, (`Add | `Replace), _) when match msg with KeyExists -> true | _ -> false -> KeyExistsOrNotFound
+              | msg, ( _, _, `Partition, (`Add | `Replace), _) when match msg with NotFound  -> true | _ -> false -> KeyExistsOrNotFound
+              | _, ( _, _, `Aggregate, (`Add | `Replace), _) -> NotFound
+              | _, ( _, _, `Partition, (`Add | `Replace), _) -> KeyExists
               | _ -> accu
-            ) "" ags in
+            ) (Invalid (mk_string "")) ags in
 
           let assign : mterm =
             match elts_cond with
@@ -4614,7 +4660,7 @@ let remove_asset (model : model) : model =
                 let mk_cond b an mt = let x = create_contains_asset_key an mt in if b then x else mk_mterm (Mnot(x)) tbool in
                 let init : mterm = mk_cond b an mt in
                 let cond : mterm = List.fold_left (fun accu (b, an, x) -> mk_mterm (Mand(accu, mk_cond b an x)) tbool ) init l in
-                mk_mterm (Mif (cond, assign, Some (fail msg))) tunit
+                mk_mterm (Mif (cond, assign, Some (failc msg))) tunit
               end
           in
           assign
@@ -5259,6 +5305,7 @@ let getter_to_entry ?(no_underscore=false) ?(extra=false) (model : model) : mode
 let process_metadata (model : model) : model =
   let check_if_not_metadata _ =
     List.for_all (String.equal "") [!Options.opt_metadata_uri; !Options.opt_metadata_storage]
+    && Option.is_none model.metadata
   in
 
   let with_metadata _ =
@@ -5270,7 +5317,10 @@ let process_metadata (model : model) : model =
     fold_model aux model false
   in
 
-  if check_if_not_metadata () && not (with_metadata ())
+  let js = match !Options.target with | Javascript -> true | _ -> false in
+  let simple_metadata = js && !Options.opt_with_metadata in
+
+  if check_if_not_metadata () && not (with_metadata ()) && not simple_metadata
   then model
   else begin
     let model =
@@ -5280,6 +5330,20 @@ let process_metadata (model : model) : model =
         | _ -> map_mterm (aux ctx) mt
       in
       map_mterm_model aux model
+    in
+    let model =
+      if simple_metadata
+      then
+        let param : parameter = {
+          name    = dumloc "metadata";
+          typ     = tbytes;
+          default = None;
+          value   = None;
+          const   = false;
+          loc     = Location.dummy;
+        } in
+        { model with parameters = model.parameters @ [param] }
+      else model
     in
     let dmap =
       let mk_map _ =
@@ -5295,26 +5359,32 @@ let process_metadata (model : model) : model =
           empty, uri
         in
 
-        let mk_data path =
-          let read_whole_file filename =
-            let ch = open_in filename in
-            let s = really_input_string ch (in_channel_length ch) in
-            close_in ch;
-            s
-          in
+        let mk_data input =
           let vkey = mk_string key in
-          let input = read_whole_file path in
           let metadata =
             mk_bytes (match Hex.of_string input with `Hex str -> str)
           in
           vkey, metadata
         in
 
+        let do_uri             uri = [mk_uri uri] in
+        let do_json           data = [mk_uri ("tezos-storage:" ^ key); data] in
+        let do_json_with_path    p = do_json (p |> Tools.get_content |> mk_data) in
+        let do_json_with_content i = do_json (mk_data i) in
+
         let v =
-          match !Options.opt_metadata_uri, !Options.opt_metadata_storage with
-          | "", ""            -> []
-          | uri, ""           -> [mk_uri uri]
-          | "", metadata_path -> [mk_uri ("tezos-storage:" ^ key); mk_data metadata_path]
+          match !Options.opt_metadata_uri, !Options.opt_metadata_storage, model.metadata, simple_metadata with
+          | _, _, _, true        ->
+            let mk_m _ =
+              let vkey = mk_string key in
+              vkey, (mk_mterm (Mvar(dumloc "metadata", Vparameter, Tnone, Dnone)) tbytes)
+            in
+            do_json (mk_m ())
+          | "", "", None, _         -> []
+          | uri, "", _, _           when not (String.equal "" uri) -> do_uri uri
+          | "", metadata_path, _, _ when not (String.equal "" metadata_path) -> do_json_with_path metadata_path
+          | _, _, Some MKuri uri, _ -> do_uri (unloc uri)
+          | _, _, Some MKjson i,  _ -> do_json_with_content (unloc i)
           | _ -> assert false
         in
 
@@ -5359,17 +5429,19 @@ let reverse_operations (model : model) : model =
   in
   { model with functions = List.map for_functions model.functions }
 
-let process_parameter (model : model) : model =
+let process_parameter ?(js=false) (model : model) : model =
   let for_parameter (param : parameter) =
     let t = param.typ in
     let name = param.name in
+    let mk_parameter id t = mk_mterm (Mvar(id, Vparameter, Tnone, Dnone )) t in
     let default : mterm =
       match param.value, param.default with
       | Some v, _
       | _, Some v -> v
+      | _ when param.const && not js -> (emit_error (param.loc, NoInitValueForConstParam (unloc name)); raise (Error.Stop 5))
       | _ -> mk_parameter name t
     in
-    let var : var = mk_var name t t VKvariable ~default ~loc:param.loc in
+    let var : var = mk_var name t t (if param.const then VKconstant else VKvariable) ~default ~loc:param.loc in
     Dvar var
   in
   let rec aux ctx (mt : mterm) : mterm =
@@ -5400,3 +5472,124 @@ let fix_container (model : model) =
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
+
+let expr_to_instr (model : model) =
+  let is_compatible (ak : assign_kind) (c : mterm) =
+    match ak, c.node with
+    | Avar id0, (Mvar (id1, Vlocal, Tnone, Dnone))         -> String.equal (unloc id0) (unloc id1)
+    | Avarstore id0, (Mvar (id1, Vstorevar, Tnone, Dnone)) -> String.equal (unloc id0) (unloc id1)
+    | Arecord (rn0, fn0, vr0), (Mdot (({ node = _; type_ = ((Trecord rn1), None)}) as vr1, fn1))
+      -> String.equal (unloc rn0) (unloc rn1) && String.equal (unloc fn0) (unloc fn1) && cmp_mterm vr0 vr1
+    | _ -> false
+  in
+  let rec aux ctx (mt : mterm) =
+    match mt.node, mt.type_ with
+
+    | Massign (ValueAssign, _, ak, {node = Msetadd(t, c, k)}), tyinstr when is_compatible ak c  ->
+      mk_mterm (Msetinstradd (t, ak, k)) tyinstr
+    | Massign (ValueAssign, _, ak, {node = Msetremove(t, c, k)}), tyinstr when is_compatible ak c  ->
+      mk_mterm (Msetinstrremove (t, ak, k)) tyinstr
+
+    | Massign (ValueAssign, _, ak, {node = Mlistprepend(t, c, k)}), tyinstr when is_compatible ak c  ->
+      mk_mterm (Mlistinstrprepend (t, ak, k)) tyinstr
+    | Massign (ValueAssign, _, ak, {node = Mlistconcat(t, c, k)}), tyinstr when is_compatible ak c  ->
+      mk_mterm (Mlistinstrconcat (t, ak, k)) tyinstr
+
+    | Massign (ValueAssign, _, ak, {node = Mmapput(tk, vk, c, k, v)}), tyinstr when is_compatible ak c  ->
+      mk_mterm (Mmapinstrput (tk, vk, ak, k, v)) tyinstr
+    | Massign (ValueAssign, _, ak, {node = Mmapremove(tk, vk, c, k)}), tyinstr when is_compatible ak c  ->
+      mk_mterm (Mmapinstrremove (tk, vk, ak, k)) tyinstr
+    | Massign (ValueAssign, _, ak, {node = Mmapupdate(tk, vk, c, k, v)}), tyinstr when is_compatible ak c  ->
+      mk_mterm (Mmapinstrupdate (tk, vk, ak, k, v)) tyinstr
+
+    | _ -> map_mterm (aux ctx) mt
+  in
+  map_mterm_model aux model
+
+let instr_to_expr_exec (model : model) =
+  let is_used ak l =
+    match ak with
+    | Arecord (_, _, v) ->
+      List.exists (fold_term (fun accu x -> accu || cmp_mterm x v) false) l
+    | _ -> false
+  in
+
+  let extract_rev_var ak ty =
+    match ak with
+    | Arecord (_, fn, v) -> mk_mterm (Mdot (v, fn)) ty
+    | _ -> assert false
+  in
+
+  let mk ak ty fnode =
+    let rv : mterm = extract_rev_var ak ty in
+    let v : mterm = mk_mterm (fnode rv) ty in
+    mk_mterm (Massign (ValueAssign, ty, ak, v)) tunit
+  in
+
+  let rec aux ctx (mt : mterm) =
+    match mt.node with
+    | Msetinstradd (sty, ak, k) when is_used ak [k] ->
+      mk ak (tset sty) (fun x -> Msetadd(sty, x, k))
+
+    | Msetinstrremove (sty, ak, k) when is_used ak [k] ->
+      mk ak (tset sty) (fun x -> Msetremove(sty, x, k))
+
+    | Mlistinstrprepend (lty, ak, i) when is_used ak [i] ->
+      mk ak (tlist lty) (fun x -> Mlistprepend(lty, x, i))
+
+    | Mlistinstrconcat (lty, ak, i) when is_used ak [i] ->
+      mk ak (tlist lty) (fun x -> Mlistconcat(lty, x, i))
+
+    | Mmapinstrput(kty, vty, ak, k, v) when is_used ak [k; v] ->
+      mk ak (tmap kty vty) (fun x -> Mmapput(kty, vty, x, k, v))
+
+    | Mmapinstrremove(kty, vty, ak, k) when is_used ak [k] ->
+      mk ak (tmap kty vty) (fun x -> Mmapremove(kty, vty, x, k))
+
+    | Mmapinstrupdate (kty, vty, ak, k, v) when is_used ak [k; v] ->
+      mk ak (tmap kty vty) (fun x -> Mmapupdate(kty, vty, x, k, v))
+
+    | _ -> map_mterm (aux ctx) mt
+  in
+  map_mterm_model aux model
+
+let test_mode (model : model) =
+  if !Options.opt_test_mode then begin
+    let nid = dumloc "_now" in
+
+    let svariable =
+      let var : var =
+        mk_var nid tdate tdate VKvariable ~default:(mk_mterm Mnow tdate) in
+      Dvar var
+    in
+
+    let entry =
+      let name = dumloc "_set_now" in
+      let v = dumloc "v" in
+      let arg : argument =
+        v, tdate, None
+      in
+      let body = mk_mterm (Massign (ValueAssign, tdate, Avar nid, mk_pvar v tdate)) tunit in
+      let node = mk_function_struct name body ~args:[arg] in
+      Entry node
+      |> mk_function
+    in
+
+    let now : mterm = mk_svar nid tdate in
+
+    let model =
+      { model with
+        decls = model.decls @ [svariable];
+        functions = model.functions @ [entry]
+      }
+    in
+
+    let rec aux ctx (mt : mterm) =
+      match mt.node with
+      | Mnow -> now
+      | _ -> map_mterm (aux ctx) mt
+    in
+    map_mterm_model aux model
+  end
+  else
+    model

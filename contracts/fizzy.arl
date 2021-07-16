@@ -1,6 +1,6 @@
 archetype fizzy
 
-variable creator : role = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
+variable creator : address = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 
 enum status =
 | Created

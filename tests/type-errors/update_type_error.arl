@@ -1,0 +1,14 @@
+archetype update_type_error
+
+asset my_asset {
+  id    : nat;
+  oaddr : nat;
+}
+
+entry bid() {
+  effect {
+    my_asset.update(0, {
+      oaddr = caller
+    })
+  }
+}

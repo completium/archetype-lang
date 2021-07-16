@@ -1942,6 +1942,8 @@ let to_model (ir, env : T.ir * env) : M.model * env =
     | Dlist  _l        -> assert false
     | Delt _           -> assert false
     | Dvar (_x, _t)    -> assert false
+    | DIrCode _        -> assert false
+    | Dcode _c         -> assert false
   in
 
   let rec for_instr (i : T.instruction) : M.mterm =
@@ -2051,6 +2053,7 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         | Ureadticket        -> assert false
         | Ujointickets       -> assert false
         | Upairing_check     -> assert false
+        | Uconcat            -> assert false
       end
     | Ibinop (op, a, b) -> begin
         match op with
@@ -2082,6 +2085,7 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         | Tupdate          -> assert false
         | Ttransfer_tokens -> assert false
       end
+    | Iupdate (_ak, _aop)  -> assert false
     | Icompare (op, _lhs, _rhs) -> begin
         match op with
         | Ceq        -> assert false
@@ -2357,7 +2361,6 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Tbuiltin Btimestamp    -> assert false
     | Tbuiltin Bstring       -> A.tstring
     | Tbuiltin Baddress      -> A.taddress
-    | Tbuiltin Brole         -> A.trole
     | Tbuiltin Bcurrency     -> A.ttez
     | Tbuiltin Bsignature    -> A.tsignature
     | Tbuiltin Bkey          -> A.tkey
@@ -2604,6 +2607,12 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Msetfold (_t, _ix, _ia, _c, _a, _b) -> assert false
 
 
+    (* set api instruction *)
+
+    | Msetinstradd    _                   -> assert false
+    | Msetinstrremove _                   -> assert false
+
+
     (* list api expression *)
 
     | Mlistprepend (_, _c, _a)             -> assert false
@@ -2615,15 +2624,28 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mlistfold (_t, _ix, _ia, _c, _a, _b) -> assert false
 
 
+    (* list api instruction *)
+
+    | Mlistinstrprepend _                  -> assert false
+    | Mlistinstrconcat  _                  -> assert false
+
     (* map api expression *)
 
     | Mmapput (_, _, c, k, v)               -> A.eapp (A.Fident (dumloc "put")) [f c; f k; f v]
     | Mmapremove (_, _, _c, _k)                -> assert false
+    | Mmapupdate (_, _, _c, _k, _v)            -> assert false
     | Mmapget (_, _, _c, _k)                   -> assert false
     | Mmapgetopt (_, _, _c, _k)                -> assert false
     | Mmapcontains (_, _, _c, _k)              -> assert false
     | Mmaplength (_, _, _c)                    -> assert false
     | Mmapfold (_t, _ik, _iv, _ia, _c, _a, _b) -> assert false
+
+
+    (* map api instruction *)
+
+    | Mmapinstrput    (_, _, _c, _k, _v)       -> assert false
+    | Mmapinstrremove (_, _, _c, _k)           -> assert false
+    | Mmapinstrupdate (_, _, _c, _k, _v)       -> assert false
 
 
     (* builtin functions *)
@@ -2632,6 +2654,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mmin (_l, _r)       -> assert false
     | Mabs _a             -> assert false
     | Mconcat (_x, _y)    -> assert false
+    | Mconcatlist _x      -> assert false
     | Mslice (_x, _s, _e) -> assert false
     | Mlength x           -> A.eapp (A.Fident (dumloc "length")) [f x]
     | Misnone _x          -> assert false
@@ -2642,6 +2665,8 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mtostring (_, _x)   -> assert false
     | Mpack _x            -> assert false
     | Munpack (_t, _x)    -> assert false
+    | Msetdelegate _x     -> assert false
+    | Mimplicitaccount _x -> assert false
 
 
     (* crypto functions *)
@@ -2722,6 +2747,11 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mnattorat _e            -> assert false
     | Minttorat _e            -> assert false
     | Mratdur (_c, _t)        -> assert false
+
+
+    (* utils *)
+
+    | Mdatefromtimestamp _ -> assert false
 
 
     (* quantifiers *)

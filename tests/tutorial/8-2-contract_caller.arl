@@ -1,0 +1,16 @@
+// Get instructions and commands at the following address:
+// https://completium.com/docs/dapp-tools/tutorials/archetype-callcontr
+// (ctrl+click to follow link)
+
+
+archetype contract_caller
+
+variable r : nat = 0
+
+entry set_r(p : nat) {
+  r := p
+}
+
+entry inspect(addr : address) {
+  transfer 0tz to addr call get_n<unit * contract<nat>>((Unit, self.set_r))
+}

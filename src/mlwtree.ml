@@ -10,16 +10,18 @@ type fmod =
 (* abstract types -------------------------------------------------------------*)
 
 type 'e exn =
-  | Enotfound
-  | Ekeyexist
-  | Enegassignnat
-  | Einvalidcaller
-  | Einvalidcondition
-  | Einvalidstate
-  | Enotransfer
-  | Ebreak
   | Einvalid of string option
   | Efail of int * 'e option
+  | EInvalidCaller
+  | EInvalidCondition of string
+  | ENotFound
+  | EOutOfBound
+  | EKeyExists
+  | EKeyExistsOrNotFound
+  | EDivByZero
+  | ENatAssign
+  | ENoTransfer
+  | EInvalidState
 [@@deriving show {with_path = false}]
 
 type ('i,'t) abstract_type =
@@ -29,7 +31,6 @@ type ('i,'t) abstract_type =
   | Tystring
   | Tyrational
   | Tyaddr
-  | Tyrole
   | Tykey
   | Tykeyhash
   | Tydate
@@ -144,6 +145,7 @@ type ('e,'t,'i) abstract_term =
   | Tvadd    of 'i * 'e * 'e
   | Tremove of 'i * 'e * 'e
   | Tvremove of 'i * 'e * 'e
+  | Tupdate    of 'i * 'e * 'e * 'e
   | Tget    of 'i * 'e * 'e
   | Tgetforce    of 'i * 'e * 'e
   | Tfget of 'i * 'e * 'e (* logical pure get; no fail *)
@@ -268,14 +270,19 @@ and ('e,'t,'i) abstract_fun_struct = {
   args     : ('i * 't) list;
   returns  : 't;
   raises   : 'e list;
-  fails    : ('i option * 'e) list;
+  fails    : ('e, 'i) abstract_struct_fail list;
   variants : 'e list;
   requires : (('e,'i) abstract_formula) list;
   ensures  : (('e,'i) abstract_formula) list;
   body     : 'e;
 }
 [@@deriving show {with_path = false}]
-
+and ('e, 'i) abstract_struct_fail = {
+  fid : 'e;
+  expl: 'i option;
+  expr: 'e option;
+}
+[@@deriving show {with_path = false}]
 type ('e,'t,'i) abstract_field = {
   name     : 'i;
   typ      : 't;
@@ -340,7 +347,6 @@ let map_abstract_type (map_i : 'i1 -> 'i2) (map_t : 't1 -> 't2) = function
   | Tyint         -> Tyint
   | Tystring      -> Tystring
   | Tyaddr        -> Tyaddr
-  | Tyrole        -> Tyrole
   | Tydate        -> Tydate
   | Tytez         -> Tytez
   | Tybytes       -> Tybytes
@@ -408,24 +414,33 @@ and map_abstract_fun_struct
   args     = List.map (fun (a,t) -> (map_i a, map_t t)) f.args;
   returns  = map_t f.returns;
   raises   = List.map map_e f.raises;
-  fails    = List.map (fun (i,e) -> (Option.map map_i i,map_e e)) f.fails;
+  fails    = List.map (map_abstract_struct_fail map_e map_i) f.fails;
   variants = List.map map_e f.variants;
   requires = List.map (map_abstract_formula map_e map_i) f.requires;
   ensures  = List.map (map_abstract_formula map_e map_i) f.ensures;
   body     = map_e f.body;
 }
+and map_abstract_struct_fail
+    (map_e : 'e1 -> 'e2)
+    (map_i : 'i1 -> 'i2)
+    (f : ('e1, 'i1) abstract_struct_fail) = {
+  fid  = map_e f.fid;
+  expl = Option.map map_i f.expl;
+  expr = Option.map map_e f.expr;
+}
 and map_exn (map_e : 'e1 -> 'e2) = function
-  | Efail (i,None) -> Efail (i,None)
-  | Efail (i,Some t) -> Efail (i,Some (map_e t))
-  | Enotfound -> Enotfound
-  | Ekeyexist -> Ekeyexist
-  | Enegassignnat -> Enegassignnat
-  | Einvalidcaller -> Einvalidcaller
-  | Einvalidcondition -> Einvalidcondition
-  | Einvalidstate -> Einvalidstate
-  | Enotransfer -> Enotransfer
-  | Ebreak -> Ebreak
-  | Einvalid s -> Einvalid s
+  | Einvalid s            -> Einvalid s
+  | Efail (i, v)          -> Efail (i, Option.map map_e v)
+  | EInvalidCaller        -> EInvalidCaller
+  | EInvalidCondition lbl -> EInvalidCondition lbl
+  | ENotFound             -> ENotFound
+  | EOutOfBound           -> EOutOfBound
+  | EKeyExists            -> EKeyExists
+  | EKeyExistsOrNotFound  -> EKeyExistsOrNotFound
+  | EDivByZero            -> EDivByZero
+  | ENatAssign            -> ENatAssign
+  | ENoTransfer           -> ENoTransfer
+  | EInvalidState         -> EInvalidState
 and map_abstract_term
     (map_e : 'e1 -> 'e2)
     (map_t : 't1 -> 't2)
@@ -506,8 +521,9 @@ and map_abstract_term
   | Tvadd (i1,e1,e2)   -> Tvadd (map_i i1, map_e e1, map_e e2)
   | Tremove (i,e1,e2)  -> Tremove (map_i i,map_e e1, map_e e2)
   | Tvremove (i,e1,e2) -> Tvremove (map_i i,map_e e1, map_e e2)
+  | Tupdate (i1,k,v,c) -> Tupdate (map_i i1, map_e k, map_e v, map_e c)
   | Tget (i,e1,e2)     -> Tget (map_i i, map_e e1, map_e e2)
-  | Tgetforce (i,e1,e2)     -> Tgetforce (map_i i, map_e e1, map_e e2)
+  | Tgetforce (i,e1,e2)-> Tgetforce (map_i i, map_e e1, map_e e2)
   | Tfget (i,e1,e2)    -> Tfget (map_i i, map_e e1, map_e e2)
   | Tset (i, e1,e2,e3) -> Tset (map_i i, map_e e1, map_e e2, map_e e3)
   | Tvsum (i,e1,e2)    -> Tvsum (map_i i, map_e e1, map_e e2)
@@ -750,7 +766,15 @@ type loc_mlw_module    = (loc_term,loc_typ,loc_ident) abstract_module
 type loc_mlw_tree      = (loc_term,loc_typ,loc_ident) abstract_mlw_tree
 [@@deriving show {with_path = false}]
 
-(* loc/unloc -------------------------------------------------------------------*)
+type struct_fail = (loc_term, loc_ident) abstract_struct_fail
+
+(* -------------------------------------------------------------------- *)
+
+let mk_struct_fail ?expl ?expr fid : struct_fail =
+  { fid; expl; expr }
+
+
+(* loc/unloc ------------------------------ -------------------------------------*)
 
 let rec unloc_tree (lt : loc_mlw_tree) : mlw_tree = map_abstract_mlw_tree unloc_term unloc_type unloc_ident lt
 and unloc_term (t : loc_term) : term = map_abstract_term unloc_term unloc_type unloc_ident t.obj
@@ -793,7 +817,6 @@ let compare_abstract_type
   | Tystring, Tystring -> true
   | Tyrational, Tyrational -> true
   | Tyaddr, Tyaddr -> true
-  | Tyrole, Tyrole -> true
   | Tykey, Tykey -> true
   | Tydate, Tydate -> true
   | Tyduration, Tyduration -> true
@@ -1035,16 +1058,19 @@ let rec compare_abstract_term
   | Ttobereplaced, Ttobereplaced -> true
   | _ -> false (* TODO : compare exception ? *)
 and compare_exn cmpe e1 e2 =
-  match e1,e2 with
-  | Enotfound, Enotfound -> true
-  | Ekeyexist, Ekeyexist -> true
-  | Einvalidcaller, Einvalidcaller -> true
-  | Enegassignnat, Enegassignnat -> true
-  | Einvalidcondition, Einvalidcondition -> true
-  | Einvalidstate, Einvalidstate -> true
-  | Ebreak, Ebreak -> true
-  | Efail (i1,None), Efail (i2,None) -> compare i1 i2 = 0
-  | Efail (i1, Some v1), Efail (i2, Some v2) -> compare i1 i2 = 0 && cmpe v1 v2
+  match e1, e2 with
+  | Einvalid s1, Einvalid s2                       -> Option.cmp String.equal s1 s2
+  | Efail (i1, v1), Efail (i2, v2)                 -> i1 == i2 && Option.cmp cmpe v1 v2
+  | EInvalidCaller, EInvalidCaller                 -> true
+  | EInvalidCondition lbl1, EInvalidCondition lbl2 -> String.equal lbl1 lbl2
+  | ENotFound    , ENotFound                       -> true
+  | EOutOfBound  , EOutOfBound                     -> true
+  | EKeyExists   , EKeyExists                      -> true
+  | EKeyExistsOrNotFound, EKeyExistsOrNotFound     -> true
+  | EDivByZero   , EDivByZero                      -> true
+  | ENatAssign   , ENatAssign                      -> true
+  | ENoTransfer  , ENoTransfer                     -> true
+  | EInvalidState, EInvalidState                   -> true
   | _ -> false
 
 (* replace --------------------------------------------------------------------*)
