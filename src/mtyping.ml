@@ -343,7 +343,7 @@ and op_DIG (stack : stack) (n : int) =
 (* -------------------------------------------------------------------- *)
 and op_DIP (stack : stack) (n : int) (code : M.code list) =
   let pre, stack = Stack.split n stack in
-  match tycheck stack (M.SEQ code) with
+  match tycheck stack (M.cseq code) with
   | None -> None
   | Some substack -> Some (pre @ substack)
 
@@ -442,8 +442,8 @@ and op_IF (stack : stack) (ct : M.code list) (ce : M.code list) =
 
   Ty.check_bool cond;
 
-  let stt = tycheck stack (M.SEQ ct) in
-  let ste = tycheck stack (M.SEQ ce) in
+  let stt = tycheck stack (M.cseq ct) in
+  let ste = tycheck stack (M.cseq ce) in
 
   Stack.merge stt ste
 
@@ -453,8 +453,8 @@ and op_IF_CONS (stack : stack) (ccons : M.code list) (cnil : M.code list) =
 
   let ty = Ty.check_list cond in
 
-  let scons = tycheck (ty :: M.tlist ty :: stack) (M.SEQ ccons) in
-  let snil  = tycheck stack (M.SEQ cnil) in
+  let scons = tycheck (ty :: M.tlist ty :: stack) (M.cseq ccons) in
+  let snil  = tycheck stack (M.cseq cnil) in
 
   Stack.merge scons snil
 
@@ -464,8 +464,8 @@ and op_IF_LEFT (stack : stack) (cl : M.code list) (cr : M.code list) =
 
   let tyl, tyr = Ty.check_or cond in
 
-  let sl = tycheck (tyl :: stack) (M.SEQ cl) in
-  let sr = tycheck (tyr :: stack) (M.SEQ cr) in
+  let sl = tycheck (tyl :: stack) (M.cseq cl) in
+  let sr = tycheck (tyr :: stack) (M.cseq cr) in
 
   Stack.merge sl sr
 
@@ -475,8 +475,8 @@ and op_IF_NONE (stack : stack) (cnone : M.code list) (csome : M.code list) =
 
   let ty = Ty.check_option cond in
 
-  let snone = tycheck stack (M.SEQ cnone) in
-  let ssome = tycheck (ty :: stack) (M.SEQ csome) in
+  let snone = tycheck stack (M.cseq cnone) in
+  let ssome = tycheck (ty :: stack) (M.cseq csome) in
 
   Stack.merge snone ssome
 
@@ -512,7 +512,7 @@ and op_ITER (stack : stack) (code : M.code list) =
     | M.Tmap (kty, vty) ->
         M.tpair kty vty
     | _ -> raise MichelsonTypingError in
-  let substack = tycheck (inty :: stack) (M.SEQ code) in
+  let substack = tycheck (inty :: stack) (M.cseq code) in
   Stack.merge (Some stack) substack
 
 (* -------------------------------------------------------------------- *)
@@ -534,7 +534,7 @@ and op_KECCAK (stack : stack) =
 and op_LAMBDA
   (stack : stack) (dom : stack1) (codom : stack1) (code : M.code list)
 =
-  let substack = tycheck [dom] (M.SEQ code) in
+  let substack = tycheck [dom] (M.cseq code) in
   begin match substack with
   | Some [codom'] -> Ty.check_eq codom codom'
   | _ -> raise MichelsonTypingError end;
@@ -565,7 +565,7 @@ and op_LEVEL (stack : stack) =
 and op_LOOP (stack : stack) (code : M.code list) =
   let cond, stack = Stack.pop stack in
   let () = Ty.check_bool cond in
-  let substack = tycheck stack (M.SEQ code) in
+  let substack = tycheck stack (M.cseq code) in
   let substack =
     match substack with
     | None -> None
@@ -579,7 +579,7 @@ and op_LOOP (stack : stack) (code : M.code list) =
 and op_LOOP_LEFT (stack : stack) (code : M.code list) =
   let cond, stack = Stack.pop stack in
   let ty1, ty2 = Ty.check_or cond in
-  let substack = tycheck (ty1 :: stack) (M.SEQ code) in
+  let substack = tycheck (ty1 :: stack) (M.cseq code) in
   let substack =
     match substack with
     | None -> None
@@ -613,7 +613,7 @@ and op_MAP (stack : stack) (code : M.code list) =
     | M.Tmap (kty, vty) ->
         (M.tpair kty vty, (M.tmap kty))
     | _ -> raise MichelsonTypingError in
-  let substack = tycheck (inty :: stack) (M.SEQ code) in
+  let substack = tycheck (inty :: stack) (M.cseq code) in
   let outty, substack =
     match substack with
     | None -> raise MichelsonTypingError
@@ -674,7 +674,7 @@ and op_NEG (stack : stack) =
     | M.Tint -> M.Tint
     | M.Tbls12_381_g1 -> M.Tbls12_381_g1
     | M.Tbls12_381_g2 -> M.Tbls12_381_g2
-    | M.Tbls12_381_fr -> M.Tbls12_381_fr 
+    | M.Tbls12_381_fr -> M.Tbls12_381_fr
     | _ -> raise MichelsonTypingError in
 
   Some (M.mk_type aout :: stack)
@@ -943,7 +943,7 @@ and op_XOR (stack : stack) =
 
 (* -------------------------------------------------------------------- *)
 and tycheck (stack : stack) (code : M.code) : stack option =
-  match code with
+  match code.node with
   | SEQ cs ->
       List.fold_left (fun stack c ->
         match stack with
@@ -961,7 +961,7 @@ and tycheck (stack : stack) (code : M.code) : stack option =
 
   | IF (ct, ce) ->
       op_IF stack ct ce
-      
+
   | IF_CONS (ccons, cnil) ->
       op_IF_CONS stack ccons cnil
 
@@ -1079,7 +1079,7 @@ and tycheck (stack : stack) (code : M.code) : stack option =
 
   | HASH_KEY ->
       op_HASH_KEY stack
-      
+
   | SHA256 ->
       op_SHA256 stack
 

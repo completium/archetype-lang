@@ -88,7 +88,8 @@ and pp_code fmt (i : code) =
     | 0 -> ()
     | _ -> Format.fprintf fmt " %i" i
   in
-  let rec with_complex_instr = function
+  let rec with_complex_instr (c : code) =
+    match c.node with
     | SEQ _
     | IF _
     | IF_CONS _
@@ -119,7 +120,7 @@ and pp_code fmt (i : code) =
       else Format.fprintf fmt "%i %a" i pp_aux l
     end
   in
-  match i with
+  match i.node with
   (* Control structures *)
   | SEQ l                    -> fs fmt l
   | APPLY                    -> pp "APPLY"

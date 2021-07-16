@@ -62,7 +62,7 @@ type data =
   | Dcode              of code
 [@@deriving show {with_path = false}]
 
-and code =
+and code_node =
   (* Control structures *)
   | SEQ                of code list
   | APPLY
@@ -178,6 +178,8 @@ and code =
   | SET_BAKER_CONSENSUS_KEY
   | SET_BAKER_PVSS_KEY
 [@@deriving show {with_path = false}]
+
+and code = { node : code_node; type_: type_ option; }
 
 and z_operator =
   | Znow
@@ -424,26 +426,26 @@ type micheline = {
 (* -------------------------------------------------------------------- *)
 
 (***
-type proposal :
+   type proposal :
 
-```
-type dvar = ident
+   ```
+   type dvar = ident
 
-and dvkind =
-  | DVKvar of ident
-  | DVKdup
-  | DVKexpr of dexpr option
+   and dvkind =
+   | DVKvar of ident
+   | DVKdup
+   | DVKexpr of dexpr option
 
-and  dexpr =
-  | Dvar       of dvar
-  | Ddata      of data
-  | Dfun       of g_operator * dexpr list
-```
+   and  dexpr =
+   | Dvar       of dvar
+   | Ddata      of data
+   | Dfun       of g_operator * dexpr list
+   ```
 
-with an environment which contains a map
-map (ident -> vkind)
+   with an environment which contains a map
+   map (ident -> vkind)
 
-***)
+ ***)
 
 type dvar   = [`VLocal of int | `VGlobal of ident]
 
@@ -466,7 +468,7 @@ type dinstr =
   | DIWhile    of dexpr * dcode
   | DIIter     of dtyvar * dexpr * dcode
   (* | DILoopL    of dtyvar * dcode *)
-  (* | DICall     of ident * dexpr list *)
+(* | DICall     of ident * dexpr list *)
 
 (* and dtyvar = dvar * type_ *)
 and dtyvar = dvar
@@ -499,6 +501,9 @@ type rstack  = rstack1 list
 
 let mk_type ?annotation node : type_ =
   { node; annotation }
+
+let mk_code ?type_ node : code =
+  { node; type_ }
 
 let mk_func name targ tret body : func =
   { name; targ; tret; body }
@@ -579,13 +584,128 @@ let ipair x y        = Ibinop (Bpair, x, y)
 
 (* -------------------------------------------------------------------- *)
 
-let ctrue     = PUSH (mk_type Tbool, Dtrue)
-let cfalse    = PUSH (mk_type Tbool, Dfalse)
-let cint n    = PUSH (mk_type Tint,  Dint n)
-let cnat n    = PUSH (mk_type Tnat,  Dint n)
-let cstring s = PUSH (mk_type Tstring,  Dstring s)
-let cfail msg = SEQ [PUSH (mk_type Tstring,  Dstring msg); FAILWITH]
-let cskip     = SEQ []
+let ctrue     = mk_code (PUSH (mk_type Tbool, Dtrue))
+let cfalse    = mk_code (PUSH (mk_type Tbool, Dfalse))
+let cint n    = mk_code (PUSH (mk_type Tint,  Dint n))
+let cnat n    = mk_code (PUSH (mk_type Tnat,  Dint n))
+let cstring s = mk_code (PUSH (mk_type Tstring,  Dstring s))
+let cfail msg = mk_code (SEQ [mk_code (PUSH (mk_type Tstring,  Dstring msg)); mk_code FAILWITH])
+let cskip     = mk_code (SEQ [])
+
+(* Control structures *)
+let cseq            a             = mk_code (SEQ a)
+let capply                        = mk_code  APPLY
+let cexec                         = mk_code  EXEC
+let cfailwith                     = mk_code  FAILWITH
+let cif            (a, b)         = mk_code (IF (a, b))
+let cifcons        (a, b)         = mk_code (IF_CONS (a, b))
+let cifleft        (a, b)         = mk_code (IF_LEFT (a, b))
+let cifnone        (a, b)         = mk_code (IF_NONE (a, b))
+let citer           a             = mk_code (ITER a)
+let clambda        (a, b, c)      = mk_code (LAMBDA (a, b, c))
+let cloop           a             = mk_code (LOOP a)
+let cloop_left      a             = mk_code (LOOP_LEFT a)
+  (* Stack manipulation *)
+let cdig            a             = mk_code (DIG a)
+let cdip           (a, b)         = mk_code (DIP (a, b))
+let cdrop           a             = mk_code (DROP a)
+let cdug            a             = mk_code (DUG a)
+let cdup                          = mk_code  DUP
+let cpush          (a, b)         = mk_code (PUSH (a, b))
+let cswap                         = mk_code  SWAP
+  (* Arthmetic operations *)
+let cabs                          = mk_code  ABS
+let cadd                          = mk_code  ADD
+let ccompare                      = mk_code  COMPARE
+let cediv                         = mk_code  EDIV
+let ceq                           = mk_code  EQ
+let cge                           = mk_code  GE
+let cgt                           = mk_code  GT
+let cint                          = mk_code  INT
+let cisnat                        = mk_code  ISNAT
+let cle                           = mk_code  LE
+let clsl                          = mk_code  LSL
+let clsr                          = mk_code  LSR
+let clt                           = mk_code  LT
+let cmul                          = mk_code  MUL
+let cneg                          = mk_code  NEG
+let cneq                          = mk_code  NEQ
+let csub                          = mk_code  SUB
+  (* Boolean operations *)
+let cand                          = mk_code  AND
+let cnot                          = mk_code  NOT
+let cor                           = mk_code  OR
+let cxor                          = mk_code  XOR
+  (* Cryptographic operations *)
+let cblake2b                      = mk_code  BLAKE2B
+let ccheck_signature              = mk_code  CHECK_SIGNATURE
+let chash_key                     = mk_code  HASH_KEY
+let csha256                       = mk_code  SHA256
+let csha512                       = mk_code  SHA512
+  (* Blockchain operations *)
+let caddress                      = mk_code  ADDRESS
+let camount                       = mk_code  AMOUNT
+let cbalance                      = mk_code  BALANCE
+let cchain_id                     = mk_code  CHAIN_ID
+let ccontract           (a, b)    = mk_code (CONTRACT (a, b))
+let ccreate_contract    (a, b, c) = mk_code (CREATE_CONTRACT (a, b, c))
+let cimplicit_account             = mk_code  IMPLICIT_ACCOUNT
+let cnow                          = mk_code  NOW
+let cself                a        = mk_code (SELF a)
+let csender                       = mk_code SENDER
+let cset_delegate                 = mk_code SET_DELEGATE
+let csource                       = mk_code SOURCE
+let ctransfer_tokens              = mk_code TRANSFER_TOKENS
+  (* Operations on data structures *)
+let ccar                          = mk_code  CAR
+let ccdr                          = mk_code  CDR
+let cconcat                       = mk_code  CONCAT
+let ccons                         = mk_code  CONS
+let cempty_big_map       (a, b)   = mk_code (EMPTY_BIG_MAP (a, b))
+let cempty_map           (a, b)   = mk_code (EMPTY_MAP (a, b))
+let cempty_set            a       = mk_code (EMPTY_SET a)
+let cget                          = mk_code  GET
+let cleft                 a       = mk_code (LEFT a)
+let cmap                  a       = mk_code (MAP a)
+let cmem                          = mk_code  MEM
+let cnil                  a       = mk_code (NIL a)
+let cnone                 a       = mk_code (NONE a)
+let cpack                         = mk_code  PACK
+let cpair                         = mk_code  PAIR
+let cright                a       = mk_code (RIGHT a)
+let csize                         = mk_code  SIZE
+let cslice                        = mk_code  SLICE
+let csome                         = mk_code  SOME
+let cunit                         = mk_code  UNIT
+let cunpack               a       = mk_code (UNPACK a)
+let cupdate                       = mk_code  UPDATE
+  (* Operations on tickets *)
+let cjoin_tickets                 = mk_code JOIN_TICKETS
+let cread_ticket                  = mk_code READ_TICKET
+let csplit_ticket                 = mk_code SPLIT_TICKET
+let cticket                       = mk_code TICKET
+  (* Other *)
+let cunpair                       = mk_code UNPAIR
+let cself_address                 = mk_code SELF_ADDRESS
+let ccast                  a      = mk_code (CAST a)
+let ccreate_account               = mk_code CREATE_ACCOUNT
+let crename                       = mk_code RENAME
+let csteps_to_quota               = mk_code STEPS_TO_QUOTA
+let clevel                        = mk_code LEVEL
+let csapling_empty_state   a      = mk_code (SAPLING_EMPTY_STATE a)
+let csapling_verify_update        = mk_code SAPLING_VERIFY_UPDATE
+let cnever                        = mk_code NEVER
+let cvoting_power                 = mk_code VOTING_POWER
+let ctotal_voting_power           = mk_code TOTAL_VOTING_POWER
+let ckeccak                       = mk_code KECCAK
+let csha3                         = mk_code SHA3
+let cpairing_check                = mk_code PAIRING_CHECK
+let csubmit_proposals             = mk_code SUBMIT_PROPOSALS
+let csubmit_ballot                = mk_code SUBMIT_BALLOT
+let cset_baker_active             = mk_code SET_BAKER_ACTIVE
+let ctoggle_baker_delegations     = mk_code TOGGLE_BAKER_DELEGATIONS
+let cset_baker_consensus_key      = mk_code SET_BAKER_CONSENSUS_KEY
+let cset_baker_pvss_key           = mk_code SET_BAKER_PVSS_KEY
 
 (* -------------------------------------------------------------------- *)
 
@@ -727,9 +847,9 @@ let cmp_ter_operator lhs rhs =
   | Ttransfer_tokens, Ttransfer_tokens -> true
   | _ -> false
 
-let cmp_code lhs rhs =
-  let rec f lhs rhs =
-    match lhs, rhs with
+let cmp_code (lhs : code) (rhs : code) =
+  let rec f (lhs : code) (rhs : code) =
+    match lhs.node, rhs.node with
     | SEQ l1, SEQ l2                                 -> List.for_all2 f l1 l2
     | DROP n1, DROP n2                               -> n1 = n2
     | DUP, DUP                                       -> true
@@ -917,140 +1037,145 @@ let map_data (f : data -> data) = function
   | DIrCode (id, c) -> DIrCode (id, c)
   | Dcode c      -> Dcode c
 
-let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) = function
-  (* Control structures *)
-  | SEQ l                    -> SEQ (List.map fc l)
-  | APPLY                    -> APPLY
-  | EXEC                     -> EXEC
-  | FAILWITH                 -> FAILWITH
-  | IF (then_, else_)        -> IF (List.map fc then_, List.map fc else_)
-  | IF_CONS (then_, else_)   -> IF_CONS (List.map fc then_, List.map fc else_)
-  | IF_LEFT (then_, else_)   -> IF_LEFT (List.map fc then_, List.map fc else_)
-  | IF_NONE (then_, else_)   -> IF_NONE (List.map fc then_, List.map fc else_)
-  | ITER l                   -> ITER (List.map fc l)
-  | LAMBDA (at, rt, body)    -> LAMBDA (ft at, ft rt, List.map fc body)
-  | LOOP l                   -> LOOP (List.map fc l)
-  | LOOP_LEFT l              -> LOOP_LEFT (List.map fc l)
-  (* Stack manipulation *)
-  | DIG n                    -> DIG n
-  | DIP (n, l)               -> DIP (n, List.map fc l)
-  | DROP n                   -> DROP n
-  | DUG n                    -> DUG n
-  | DUP                      -> DUP
-  | PUSH (t, d)              -> PUSH (ft t, fd d)
-  | SWAP                     -> SWAP
-  (* Arthmetic operations *)
-  | ABS                      -> ABS
-  | ADD                      -> ADD
-  | COMPARE                  -> COMPARE
-  | EDIV                     -> EDIV
-  | EQ                       -> EQ
-  | GE                       -> GE
-  | GT                       -> GT
-  | INT                      -> INT
-  | ISNAT                    -> ISNAT
-  | LE                       -> LE
-  | LSL                      -> LSL
-  | LSR                      -> LSR
-  | LT                       -> LT
-  | MUL                      -> MUL
-  | NEG                      -> NEG
-  | NEQ                      -> NEQ
-  | SUB                      -> SUB
-  (* Boolean operations *)
-  | AND                      -> AND
-  | NOT                      -> NOT
-  | OR                       -> OR
-  | XOR                      -> XOR
-  (* Cryptographic operations *)
-  | BLAKE2B                  -> BLAKE2B
-  | CHECK_SIGNATURE          -> CHECK_SIGNATURE
-  | HASH_KEY                 -> HASH_KEY
-  | SHA256                   -> SHA256
-  | SHA512                   -> SHA512
-  (* Blockchain operations *)
-  | ADDRESS                  -> ADDRESS
-  | AMOUNT                   -> AMOUNT
-  | BALANCE                  -> BALANCE
-  | CHAIN_ID                 -> CHAIN_ID
-  | CONTRACT (t, a)          -> CONTRACT (ft t, a)
-  | CREATE_CONTRACT (p, s, c)-> CREATE_CONTRACT (ft p, ft s, fc c)
-  | IMPLICIT_ACCOUNT         -> IMPLICIT_ACCOUNT
-  | NOW                      -> NOW
-  | SELF a                   -> SELF a
-  | SENDER                   -> SENDER
-  | SET_DELEGATE             -> SET_DELEGATE
-  | SOURCE                   -> SOURCE
-  | TRANSFER_TOKENS          -> TRANSFER_TOKENS
-  (* Operations on data structures *)
-  | CAR                      -> CAR
-  | CDR                      -> CDR
-  | CONCAT                   -> CONCAT
-  | CONS                     -> CONS
-  | EMPTY_BIG_MAP  (k, v)    -> EMPTY_BIG_MAP (ft k, ft v)
-  | EMPTY_MAP      (k, v)    -> EMPTY_MAP     (ft k, ft v)
-  | EMPTY_SET      t         -> EMPTY_SET     (ft t)
-  | GET                      -> GET
-  | LEFT t                   -> LEFT (ft t)
-  | MAP  l                   -> MAP  (List.map fc l)
-  | MEM                      -> MEM
-  | NIL t                    -> NIL (ft t)
-  | NONE t                   -> NONE (ft t)
-  | PACK                     -> PACK
-  | PAIR                     -> PAIR
-  | RIGHT t                  -> RIGHT (ft t)
-  | SIZE                     -> SIZE
-  | SLICE                    -> SLICE
-  | SOME                     -> SOME
-  | UNIT                     -> UNIT
-  | UNPACK t                 -> UNPACK (ft t)
-  | UPDATE                   -> UPDATE
-  (* Operations on tickets *)
-  | JOIN_TICKETS             -> JOIN_TICKETS
-  | READ_TICKET              -> READ_TICKET
-  | SPLIT_TICKET             -> SPLIT_TICKET
-  | TICKET                   -> TICKET
-  (* Other *)
-  | UNPAIR                   -> UNPAIR
-  | SELF_ADDRESS             -> SELF_ADDRESS
-  | CAST t                   -> CAST (ft t)
-  | CREATE_ACCOUNT           -> CREATE_ACCOUNT
-  | RENAME                   -> RENAME
-  | STEPS_TO_QUOTA           -> STEPS_TO_QUOTA
-  | LEVEL                    -> LEVEL
-  | SAPLING_EMPTY_STATE n    -> SAPLING_EMPTY_STATE n
-  | SAPLING_VERIFY_UPDATE    -> SAPLING_VERIFY_UPDATE
-  | NEVER                    -> NEVER
-  | VOTING_POWER             -> VOTING_POWER
-  | TOTAL_VOTING_POWER       -> TOTAL_VOTING_POWER
-  | KECCAK                   -> KECCAK
-  | SHA3                     -> SHA3
-  | PAIRING_CHECK            -> PAIRING_CHECK
-  | SUBMIT_PROPOSALS         -> SUBMIT_PROPOSALS
-  | SUBMIT_BALLOT            -> SUBMIT_BALLOT
-  | SET_BAKER_ACTIVE         -> SET_BAKER_ACTIVE
-  | TOGGLE_BAKER_DELEGATIONS -> TOGGLE_BAKER_DELEGATIONS
-  | SET_BAKER_CONSENSUS_KEY  -> SET_BAKER_CONSENSUS_KEY
-  | SET_BAKER_PVSS_KEY       -> SET_BAKER_PVSS_KEY
+let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) (x : code) : code =
+  let node =
+    match x.node with
+    (* Control structures *)
+    | SEQ l                    -> SEQ (List.map fc l)
+    | APPLY                    -> APPLY
+    | EXEC                     -> EXEC
+    | FAILWITH                 -> FAILWITH
+    | IF (then_, else_)        -> IF (List.map fc then_, List.map fc else_)
+    | IF_CONS (then_, else_)   -> IF_CONS (List.map fc then_, List.map fc else_)
+    | IF_LEFT (then_, else_)   -> IF_LEFT (List.map fc then_, List.map fc else_)
+    | IF_NONE (then_, else_)   -> IF_NONE (List.map fc then_, List.map fc else_)
+    | ITER l                   -> ITER (List.map fc l)
+    | LAMBDA (at, rt, body)    -> LAMBDA (ft at, ft rt, List.map fc body)
+    | LOOP l                   -> LOOP (List.map fc l)
+    | LOOP_LEFT l              -> LOOP_LEFT (List.map fc l)
+    (* Stack manipulation *)
+    | DIG n                    -> DIG n
+    | DIP (n, l)               -> DIP (n, List.map fc l)
+    | DROP n                   -> DROP n
+    | DUG n                    -> DUG n
+    | DUP                      -> DUP
+    | PUSH (t, d)              -> PUSH (ft t, fd d)
+    | SWAP                     -> SWAP
+    (* Arthmetic operations *)
+    | ABS                      -> ABS
+    | ADD                      -> ADD
+    | COMPARE                  -> COMPARE
+    | EDIV                     -> EDIV
+    | EQ                       -> EQ
+    | GE                       -> GE
+    | GT                       -> GT
+    | INT                      -> INT
+    | ISNAT                    -> ISNAT
+    | LE                       -> LE
+    | LSL                      -> LSL
+    | LSR                      -> LSR
+    | LT                       -> LT
+    | MUL                      -> MUL
+    | NEG                      -> NEG
+    | NEQ                      -> NEQ
+    | SUB                      -> SUB
+    (* Boolean operations *)
+    | AND                      -> AND
+    | NOT                      -> NOT
+    | OR                       -> OR
+    | XOR                      -> XOR
+    (* Cryptographic operations *)
+    | BLAKE2B                  -> BLAKE2B
+    | CHECK_SIGNATURE          -> CHECK_SIGNATURE
+    | HASH_KEY                 -> HASH_KEY
+    | SHA256                   -> SHA256
+    | SHA512                   -> SHA512
+    (* Blockchain operations *)
+    | ADDRESS                  -> ADDRESS
+    | AMOUNT                   -> AMOUNT
+    | BALANCE                  -> BALANCE
+    | CHAIN_ID                 -> CHAIN_ID
+    | CONTRACT (t, a)          -> CONTRACT (ft t, a)
+    | CREATE_CONTRACT (p, s, c)-> CREATE_CONTRACT (ft p, ft s, fc c)
+    | IMPLICIT_ACCOUNT         -> IMPLICIT_ACCOUNT
+    | NOW                      -> NOW
+    | SELF a                   -> SELF a
+    | SENDER                   -> SENDER
+    | SET_DELEGATE             -> SET_DELEGATE
+    | SOURCE                   -> SOURCE
+    | TRANSFER_TOKENS          -> TRANSFER_TOKENS
+    (* Operations on data structures *)
+    | CAR                      -> CAR
+    | CDR                      -> CDR
+    | CONCAT                   -> CONCAT
+    | CONS                     -> CONS
+    | EMPTY_BIG_MAP  (k, v)    -> EMPTY_BIG_MAP (ft k, ft v)
+    | EMPTY_MAP      (k, v)    -> EMPTY_MAP     (ft k, ft v)
+    | EMPTY_SET      t         -> EMPTY_SET     (ft t)
+    | GET                      -> GET
+    | LEFT t                   -> LEFT (ft t)
+    | MAP  l                   -> MAP  (List.map fc l)
+    | MEM                      -> MEM
+    | NIL t                    -> NIL (ft t)
+    | NONE t                   -> NONE (ft t)
+    | PACK                     -> PACK
+    | PAIR                     -> PAIR
+    | RIGHT t                  -> RIGHT (ft t)
+    | SIZE                     -> SIZE
+    | SLICE                    -> SLICE
+    | SOME                     -> SOME
+    | UNIT                     -> UNIT
+    | UNPACK t                 -> UNPACK (ft t)
+    | UPDATE                   -> UPDATE
+    (* Operations on tickets *)
+    | JOIN_TICKETS             -> JOIN_TICKETS
+    | READ_TICKET              -> READ_TICKET
+    | SPLIT_TICKET             -> SPLIT_TICKET
+    | TICKET                   -> TICKET
+    (* Other *)
+    | UNPAIR                   -> UNPAIR
+    | SELF_ADDRESS             -> SELF_ADDRESS
+    | CAST t                   -> CAST (ft t)
+    | CREATE_ACCOUNT           -> CREATE_ACCOUNT
+    | RENAME                   -> RENAME
+    | STEPS_TO_QUOTA           -> STEPS_TO_QUOTA
+    | LEVEL                    -> LEVEL
+    | SAPLING_EMPTY_STATE n    -> SAPLING_EMPTY_STATE n
+    | SAPLING_VERIFY_UPDATE    -> SAPLING_VERIFY_UPDATE
+    | NEVER                    -> NEVER
+    | VOTING_POWER             -> VOTING_POWER
+    | TOTAL_VOTING_POWER       -> TOTAL_VOTING_POWER
+    | KECCAK                   -> KECCAK
+    | SHA3                     -> SHA3
+    | PAIRING_CHECK            -> PAIRING_CHECK
+    | SUBMIT_PROPOSALS         -> SUBMIT_PROPOSALS
+    | SUBMIT_BALLOT            -> SUBMIT_BALLOT
+    | SET_BAKER_ACTIVE         -> SET_BAKER_ACTIVE
+    | TOGGLE_BAKER_DELEGATIONS -> TOGGLE_BAKER_DELEGATIONS
+    | SET_BAKER_CONSENSUS_KEY  -> SET_BAKER_CONSENSUS_KEY
+    | SET_BAKER_PVSS_KEY       -> SET_BAKER_PVSS_KEY
+  in
+  let type_ = Option.map ft x.type_ in
+  mk_code ?type_ node
 
 
 let map_code (fc : code -> code) = map_code_gen fc id id
 
-let rec map_seq f x =
+let rec map_seq (f : code list -> code list) (code : code) =
   let g x = f (List.map (map_seq f) x) in
-  match x with
-  | SEQ l             -> SEQ (g l)
-  | IF_NONE (x, y)    -> IF_NONE (g x, g y)
-  | IF_LEFT (x, y)    -> IF_LEFT (g x, g y)
-  | IF_CONS (x, y)    -> IF_CONS (g x, g y)
-  | MAP x             -> MAP (g x)
-  | ITER x            -> ITER (g x)
-  | IF (x, y)         -> IF (g x, g y)
-  | LOOP x            -> LOOP (g x)
-  | LOOP_LEFT x       -> LOOP_LEFT (g x)
-  | LAMBDA (a, b, x)  -> LAMBDA (a, b, g x)
-  | DIP (n, x)        -> DIP (n, g x)
-  | x -> map_code (map_seq f) x
+  match code.node with
+  | SEQ l             -> {code with node = SEQ (g l)}
+  | IF_NONE (x, y)    -> {code with node = IF_NONE (g x, g y)}
+  | IF_LEFT (x, y)    -> {code with node = IF_LEFT (g x, g y)}
+  | IF_CONS (x, y)    -> {code with node = IF_CONS (g x, g y)}
+  | MAP x             -> {code with node = MAP (g x)}
+  | ITER x            -> {code with node = ITER (g x)}
+  | IF (x, y)         -> {code with node = IF (g x, g y)}
+  | LOOP x            -> {code with node = LOOP (g x)}
+  | LOOP_LEFT x       -> {code with node = LOOP_LEFT (g x)}
+  | LAMBDA (a, b, x)  -> {code with node = LAMBDA (a, b, g x)}
+  | DIP (n, x)        -> {code with node = DIP (n, g x)}
+  | _ -> map_code (map_seq f) code
 
 
 (* -------------------------------------------------------------------- *)
@@ -1180,15 +1305,15 @@ end = struct
     | Bratdur         -> "_ratdur"
 
   let rec flat (c : code) : code =
-    let f l = List.fold_right (fun x accu -> match flat x with | SEQ l -> l @ accu | a -> a::accu) l [] in
+    let f l = List.fold_right (fun x accu -> let fc = flat x in match fc.node with | SEQ l -> l @ accu | _ -> fc::accu) l [] in
     map_seq f c
 
   let handle_failwith (c : code) : code =
     let init = (false, []) in
     let rec aux (c : code) =
-      let rec for_seq ((b, accu) : bool * code list) l : bool * code list =
+      let rec for_seq ((b, accu) : bool * code list) (l : code list) : bool * code list =
         match l with
-        | FAILWITH::_ -> for_seq (true, FAILWITH::accu) []
+        | {node = FAILWITH}::_ -> for_seq (true, (mk_code FAILWITH)::accu) []
         | e::t        -> begin
             let bb, a = aux e in
             let t = if bb then [] else t in
@@ -1208,30 +1333,30 @@ end = struct
         b0 && b1, f x y
       in
 
-      match c with
-      | SEQ x             -> g x (fun l -> SEQ (l))
-      | IF (x, y)         -> h x y (fun a b -> IF (a, b))
-      | IF_NONE (x, y)    -> h x y (fun a b -> IF_NONE (a, b))
-      | IF_LEFT (x, y)    -> h x y (fun a b -> IF_LEFT (a, b))
-      | IF_CONS (x, y)    -> h x y (fun a b -> IF_CONS (a, b))
-      | MAP x             -> g x (fun l -> MAP (l))
-      | ITER x            -> g x (fun l -> ITER (l))
-      | LOOP x            -> g x (fun l -> LOOP (l))
-      | LOOP_LEFT x       -> g x (fun l -> LOOP_LEFT (l))
-      | DIP (n, x)        -> g x (fun l -> DIP (n, l))
-      | LAMBDA (a, b, c)  -> g c (fun l -> LAMBDA (a, b, l))
+      match c.node with
+      | SEQ x             -> g x (fun l -> mk_code (SEQ (l)))
+      | IF (x, y)         -> h x y (fun a b -> mk_code (IF (a, b)))
+      | IF_NONE (x, y)    -> h x y (fun a b -> mk_code (IF_NONE (a, b)))
+      | IF_LEFT (x, y)    -> h x y (fun a b -> mk_code (IF_LEFT (a, b)))
+      | IF_CONS (x, y)    -> h x y (fun a b -> mk_code (IF_CONS (a, b)))
+      | MAP x             -> g x (fun l -> mk_code (MAP (l)))
+      | ITER x            -> g x (fun l -> mk_code (ITER (l)))
+      | LOOP x            -> g x (fun l -> mk_code (LOOP (l)))
+      | LOOP_LEFT x       -> g x (fun l -> mk_code (LOOP_LEFT (l)))
+      | DIP (n, x)        -> g x (fun l -> mk_code (DIP (n, l)))
+      | LAMBDA (a, b, c)  -> g c (fun l -> mk_code (LAMBDA (a, b, l)))
       | _                 -> false, c
     in
     aux c |> snd
 
   let factorize_instrs (c : code) : code =
     let f l =
-      let rec aux accu l =
+      let rec aux accu (l : code list) =
         match l with
-        | (DROP x)::(DROP y)::t -> aux accu ((DROP (x + y))::t)
-        | (DUP)::(DROP x)::t    -> aux accu ((DROP (x - 1))::t)
-        | (DUP)::(SWAP)::t      -> aux accu ((DUP)::t)
-        | (DROP 0)::t           -> aux accu t
+        | ({node = DROP x})::({node = DROP y})::t -> aux accu ((mk_code (DROP (x + y)))::t)
+        | ({node = DUP})::({node = DROP x})::t    -> aux accu ((mk_code (DROP (x - 1)))::t)
+        | ({node = DUP})::({node = SWAP})::t      -> aux accu ((mk_code DUP)::t)
+        | ({node = DROP 0})::t           -> aux accu t
         | e::t -> aux (e::accu) t
         | [] -> List.rev accu
       in
@@ -1239,37 +1364,15 @@ end = struct
     in
     map_seq f c
 
-  let rec factorize_double_branches (c : code) : code =
-    let g = List.map factorize_double_branches in
-    let rec map f x =
-      match x with
-      | IF (x, y)      -> let a, x, y = f (g x) (g y) in SEQ ([IF (x, y)] @ a)
-      | IF_NONE (x, y) -> let a, x, y = f (g x) (g y) in SEQ ([IF_NONE (x, y)] @ a)
-      | IF_LEFT (x, y) -> let a, x, y = f (g x) (g y) in SEQ ([IF_LEFT (x, y)] @ a)
-      | IF_CONS (x, y) -> let a, x, y = f (g x) (g y) in SEQ ([IF_CONS (x, y)] @ a)
-      | x -> map_code (map f) x
-    in
-    let f x y =
-      let rec aux accu a b =
-        match a, b with
-        | x::t, y::u when cmp_code x y -> aux (x::accu) t u
-        | _ -> accu, List.rev a, List.rev b
-      in
-      aux [] (List.rev x) (List.rev y)
-    in
-    map f c
-    |> flat
-
   let optim c =
     c
     |> handle_failwith
     |> factorize_instrs
-  (* |> factorize_double_branches *)
 
-  let replace_macro c =
-    let rec aux c =
-      match c with
-      | UNPAIR -> SEQ [DUP; CAR; DIP (1, [CDR])]
+  let replace_macro (c : code) : code =
+    let rec aux (c : code) : code  =
+      match c.node with
+      | UNPAIR -> mk_code (SEQ [mk_code DUP; mk_code CAR; mk_code (DIP (1, [mk_code CDR]))])
       | _ -> map_code aux c
     in
     aux c
@@ -1373,7 +1476,7 @@ end = struct
     let mk_int n = Oint (string_of_int n) in
     let mk_array l = Oarray (List.map f l) in
     let fan = function | Some v -> [v] | None -> [] in
-    match c with
+    match c.node with
     (* Control structures *)
     | SEQ l                    -> mk_array l
     | APPLY                    -> mk "APPLY"
