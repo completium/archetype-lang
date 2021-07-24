@@ -348,6 +348,11 @@ let to_michelson (input, env : T.obj_micheline * env) : T.michelson * env =
   in
   ff input, env
 
+let tycheck_michelson ((input, env) : T.michelson * env) : T.michelson * env =
+  let stack = [T.tpair input.parameter input.storage] in
+  let _ : Mtyping.stack option = Mtyping.tycheck stack input.code in
+  input, env
+
 (* -------------------------------------------------------------------- *)
 
 (*
@@ -844,7 +849,6 @@ let _to_dir (michelson, env : T.michelson * env) =
   (T.mk_dprogram tstorage tparameter storage_data name sys), env *)
 
 (* -------------------------------------------------------------------- *)
-
 module Decomp_dir : sig
   val decompile : T.michelson -> T.dcode
 end = struct

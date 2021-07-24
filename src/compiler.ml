@@ -348,6 +348,7 @@ let decompile (filename, channel) =
   |> parse_micheline
   |> cont !Options.opt_mici output_obj_micheline
   |> to_michelson
+  |> tycheck_michelson
   |> cont !Options.opt_mic output_michelson
   |> to_dir
   |> cont !Options.opt_dir output_dprogram
