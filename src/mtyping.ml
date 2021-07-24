@@ -942,8 +942,8 @@ and op_XOR (stack : stack) =
   Some (M.mk_type aout :: stack)
 
 (* -------------------------------------------------------------------- *)
-and tycheck (stack : stack) (code : M.code) : stack option =
-  match code.node with
+and tycheck_r (stack : stack) (code : M.code_node) : stack option =
+  match code with
   | SEQ cs ->
       List.fold_left (fun stack c ->
         match stack with
@@ -1253,3 +1253,9 @@ and tycheck (stack : stack) (code : M.code) : stack option =
   | SUBMIT_BALLOT            -> assert false
   | SUBMIT_PROPOSALS         -> assert false
   | TOGGLE_BAKER_DELEGATIONS -> assert false
+
+(* -------------------------------------------------------------------- *)
+and tycheck (stack : stack) (code : M.code) : stack option =
+  let stk = tycheck_r stack code.node in
+  let stk = Stack.merge stk !(code.type_) in
+  code.type_ := stk; stk

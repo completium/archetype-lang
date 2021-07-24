@@ -179,7 +179,7 @@ and code_node =
   | SET_BAKER_PVSS_KEY
 [@@deriving show {with_path = false}]
 
-and code = { node : code_node; type_: type_ option; }
+and code = { node : code_node; type_: (type_ list) option ref; }
 
 and z_operator =
   | Znow
@@ -503,7 +503,7 @@ let mk_type ?annotation node : type_ =
   { node; annotation }
 
 let mk_code ?type_ node : code =
-  { node; type_ }
+  { node; type_ = ref type_ }
 
 let mk_func name targ tret body : func =
   { name; targ; tret; body }
@@ -1155,7 +1155,7 @@ let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) (
     | SET_BAKER_CONSENSUS_KEY  -> SET_BAKER_CONSENSUS_KEY
     | SET_BAKER_PVSS_KEY       -> SET_BAKER_PVSS_KEY
   in
-  let type_ = Option.map ft x.type_ in
+  let type_ = Option.map (List.map ft) !(x.type_) in
   mk_code ?type_ node
 
 
