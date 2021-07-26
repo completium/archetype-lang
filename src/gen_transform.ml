@@ -5011,6 +5011,7 @@ let remove_asset (model : model) : model =
             | Tbuiltin Bnat -> mk_mterm (Mnat Big_int.zero_big_int) tnat
             | Tbuiltin Bint -> mk_mterm (Mint Big_int.zero_big_int) tint
             | Ttuple [(Tbuiltin Bint, _); (Tbuiltin Bnat, _)] -> Utils.mk_rat Big_int.zero_big_int Big_int.unit_big_int
+            | Tbuiltin Bcurrency -> mk_mterm (Mcurrency (Big_int.zero_big_int, Utz)) ttez
             | _ -> assert false
           in
           fold_ck (fm ctx) (an, ck) init mk

@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Added
-  - new feature
+  - support `tez` type for `sum` method
 
 ## [1.2.6] - 2021-06-24
 ### Added
