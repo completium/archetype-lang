@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ### Added
   - support `tez` type for `sum` method
+### Changed
+  - default call contract (`transfer 0tz to addr call default<nat>(2)`)
 
 ## [1.2.6] - 2021-06-24
 ### Added

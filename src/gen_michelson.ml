@@ -399,10 +399,18 @@ let to_ir (model : M.model) : T.ir =
     let f = mterm_to_intruction env in
     let ft = to_type in
 
+    let get_entrypoint_annot ?(pref="") id =
+      match id with
+      | "" | "default" | "%default" -> None
+      | _ -> Some (pref ^ id)
+    in
+
     let vops = T.Ivar operations in
     let contract_internal a t d = T.Iifnone (T.Iunop (Ucontract (t, a), d), T.ifail "NotFound", "_var_ifnone", Ivar "_var_ifnone", T.tint) in
     let get_contract      t d = contract_internal  None     t d in
-    let get_entrypoint id t d = contract_internal (Some ("%" ^ id)) t d in
+    let get_entrypoint id t d =
+      let annot = get_entrypoint_annot ~pref:"%" id in
+      contract_internal annot t d in
     let get_self_entrypoint id =
       let fs = M.Utils.get_fs model id in
       let ts = List.map proj3_2 fs.args in
@@ -594,7 +602,9 @@ let to_ir (model : M.model) : T.ir =
 
     (* entrypoint *)
 
-    | Mentrypoint (t, id, d)  -> T.Iunop (Ucontract (to_type t, Some (unloc id)), f d)
+    | Mentrypoint (t, id, d)  ->
+      let annot = get_entrypoint_annot (unloc id) in
+      T.Iunop (Ucontract (to_type t, annot), f d)
     | Mself id                -> get_self_entrypoint (unloc id)
 
 
