@@ -202,7 +202,7 @@ let show_entries (input : T.obj_micheline) =
   |> do_or
   |> List.map (fun (x, y) -> x, do_pair y)
   |> fun (l : (ident * (ident * Model.type_) list) list) ->
-  Format.printf "%a@."
+  Format.asprintf "%a@."
     (Printer_tools.pp_list "@\n"
        (fun fmt (id, l : ident * (ident * Model.type_) list) ->
           Format.fprintf fmt "%s (%a)" id

@@ -1,0 +1,27 @@
+{
+  "name": "archetype",
+  "version": "0.1",
+  "description": "Archetype language is a DSL (Domain Specific Language) to describe blockchain business processes.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/edukera/archetype-lang.git"
+  },
+  "keywords": [
+    "smart",
+    "contract",
+    "tezos",
+    "completium",
+    "formal",
+    "verification"
+  ],
+  "author": "Benoit Rognier <benoit.rognier@edukera.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/edukera/archetype-lang/issues"
+  },
+  "homepage": "https://github.com/edukera/archetype-lang#readme"
+}

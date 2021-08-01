@@ -14,6 +14,11 @@
   module Lexing  = BatLexing*)
 
 (* -------------------------------------------------------------------- *)
+type from_input =
+  | FIChannel of string * in_channel
+  | FIString  of string
+
+(* -------------------------------------------------------------------- *)
 module Format = struct
   include Format
 

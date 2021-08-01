@@ -65,17 +65,14 @@ let opt_with_metadata = ref false
 let opt_expr : (string option) ref = ref (None : string option)
 let opt_entrypoint : (string option) ref = ref (None : string option)
 let opt_type : (string option) ref = ref (None : string option)
-let opt_show_entries = ref false
 let opt_with_contract = ref false
 let opt_code_only = ref false
 let opt_expr_only = ref false
 let opt_init = ref ""
 let opt_no_js_header = ref false
-let opt_to_micheline = ref (None : string option)
-let opt_why3session = ref (None : string option)
 let opt_sdir = ref false
-let opt_get_parameters = ref false
 let opt_test_mode = ref false
+let opt_fmt = ref (None : Format.formatter option)
 
 let opt_property_focused = ref ""
 

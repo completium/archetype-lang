@@ -201,6 +201,11 @@ let parse_archetype ?(name = "") (inc : in_channel) =
   let lexbuf = lexbuf_from_channel name inc in
   parse main lexbuf
 
+let parse_archetype_from_string ?(name = "") (input : string) =
+  Error.resume_on_error ();
+  let lexbuf = lexbuf_from_string name input in
+  parse main lexbuf
+
 let parse_archetype_strict ?(name = "") (inc : in_channel) =
   let pt = parse_archetype inc ?name:(Some name) in
   match !Error.errors with
