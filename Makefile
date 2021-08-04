@@ -19,7 +19,7 @@ compiler:
 
 js:
 	$(MAKE) -C src api.bc.js
-	cp -f _build/default/src/api.bc.js npm-package/src/
+	cp -f _build/default/src/api.bc.js npm-package/dist/
 
 mlw:
 	$(MAKE) -C src mlw.exe
@@ -40,7 +40,7 @@ install:
 clean:
 	@dune clean
 	$(MAKE) -C src clean
-	rm -f archetype.exe npm-package/src/api.bc.js
+	rm -f archetype.exe npm-package/dist/api.bc.js
 
 check:
 	./extra/script/check_pp.sh && ./extra/script/check_contracts.sh
