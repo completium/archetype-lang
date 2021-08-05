@@ -171,7 +171,7 @@ let print_json f p =
     (Yojson.Safe.to_string (f p))
 
 
-let process (filename, channel) =
+let process input =
   match !service with
   | GetProperties ->
     let print_error () =
@@ -180,7 +180,7 @@ let process (filename, channel) =
     in
 
     try
-      let pt = Io.parse_archetype_strict ~name:filename channel in
+      let pt = Io.parse_archetype_strict input in
       match !Error.errors with
       | [] ->
         let properties = extract_properties pt in

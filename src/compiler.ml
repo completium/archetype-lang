@@ -1,8 +1,20 @@
 open Archetype
 open Compile
+open Core
 
 (* -------------------------------------------------------------------- *)
-let main () =
+
+let close dispose channel =
+  if dispose then close_in channel
+
+let set_margin i =
+  Format.pp_set_margin Format.std_formatter i;
+  Format.pp_set_margin Format.err_formatter i
+
+
+(* -------------------------------------------------------------------- *)
+
+let main () : unit =
   set_margin 300;
   let f = function
     | "michelson"         -> Options.target := Michelson
@@ -111,8 +123,13 @@ let main () =
   Arg.parse arg_list (fun s -> (ofilename := s;
                                 ochannel := Some (open_in s))) arg_usage;
 
+  let output str =
+    let fmt = Format.std_formatter
+    in Format.fprintf fmt "%s" str
+  in
+
   match !Options.opt_expr with
-  | Some v when not !Options.opt_with_contract -> process_expr v
+  | Some v when not !Options.opt_with_contract -> output (process_expr v)
   | _ -> begin
 
       let filename, channel, dispose =
@@ -122,19 +139,14 @@ let main () =
 
       try
         begin
+          let input = FIChannel (filename, channel) in
           match !Options.opt_lsp, !Options.opt_service, !Options.opt_decomp, !Options.opt_expr with
-          | true, _, _, _   -> Lsp.process (filename, channel)
-          | _, true, _, _   -> Services.process (filename, channel)
-          | _, _, true, _   -> decompile (filename, channel)
-          | _, _, _, Some v -> process_expr_type_channel (filename, channel) v
-          | _ ->
-            let res = compile_from_channel (filename, channel) in
-            let fmt =
-              match !Options.opt_fmt with
-              | Some v -> v
-              | _ -> Format.std_formatter
-            in Format.fprintf fmt "%s" res
-          end;
+          | true, _, _, _   -> Lsp.process input
+          | _, true, _, _   -> Services.process input
+          | _, _, true, _   -> output (decompile input)
+          | _, _, _, Some v -> output (process_expr ~tinput:input v)
+          | _ -> output (compile input)
+        end;
         close dispose channel
 
       with

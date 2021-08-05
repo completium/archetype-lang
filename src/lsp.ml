@@ -234,10 +234,10 @@ let process_errors () =
           mk_item loc str) l)
     )))
 
-let process (filename, channel) =
+let process input =
   match !kind with
   | Outline -> (
-      let pt = Io.parse_archetype ~name:filename channel in
+      let pt = Io.parse_archetype input in
       let gl, v =  Location.deloc pt in
       match v with
       | Marchetype m -> (
@@ -255,7 +255,7 @@ let process (filename, channel) =
     )
   | Errors ->
     try
-      let pt = Io.parse_archetype ~name:filename channel in
+      let pt = Io.parse_archetype input in
       Pt_helper.check_json pt;
       if (List.is_empty !Error.errors)
       then

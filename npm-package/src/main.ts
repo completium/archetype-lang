@@ -4,23 +4,26 @@ export function version() {
   return api.version;
 }
 
-export function compile(src : string, settings? : any) {
+export function compile(src : string, settings : object = {}) {
   return api.compile()(src, settings);
 }
 
-export function compileJS(src) {
-  return api.compileJS()(src)
+export function decompile(src : string, settings : object = {}) {
+  return api.decompile()(src, settings);
 }
 
-export function getWhyml(src) {
-  return api.getWhyml()(src)
+export function get_expr(data, settings : object = {}) {
+  return api.get_expr()(data, settings);
 }
 
-export function getParameters(src) {
-  return api.getParameters()(src)
+export function get_expr_type(data, type, settings : object = {}) {
+  return api.get_expr_type()(data, type, settings);
 }
 
-export function showEntries(src) {
-  return api.showEntries()(src)
+export function with_parameters(src, settings : object = {}) {
+  return api.with_parameters()(src, settings);
 }
 
+export function show_entries(src, settings : object = {}) {
+  return api.show_entries()(src, settings);
+}

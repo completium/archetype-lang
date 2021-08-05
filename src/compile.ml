@@ -23,6 +23,13 @@ let raise_if_error code f x =
   else
     res
 
+let extract_pt (pt : ParseTree.archetype) : string =
+  if !Options.opt_json
+  then Yojson.Safe.to_string (ParseTree.archetype_to_yojson pt)
+  else if !Options.opt_raw
+  then Format.asprintf "%a@." ParseTree.pp_archetype pt
+  else Format.asprintf "%a@." Printer_pt.pp_archetype pt
+
 let output_pt (pt : ParseTree.archetype) =
   if !Options.opt_json
   then (Format.printf "%s\n" (Yojson.Safe.to_string (ParseTree.archetype_to_yojson pt)); raise Stop)
@@ -77,10 +84,20 @@ let output_michelson (m : Michelson.michelson) =
   then Format.printf "%a@." Michelson.pp_michelson m
   else Format.printf "%a@." Printer_michelson.pp_michelson m
 
+let extract_data (d : Michelson.data) : string  =
+  if !Options.opt_raw
+  then Format.asprintf "%a@." Michelson.pp_data d
+  else Format.asprintf "%a@." Printer_michelson.pp_data d
+
 let output_data (d : Michelson.data) =
   if !Options.opt_raw
   then Format.printf "%a@." Michelson.pp_data d
   else Format.printf "%a@." Printer_michelson.pp_data d
+
+let extract_obj_micheline (x : Michelson.obj_micheline) : string =
+  if !Options.opt_rjson
+  then Format.asprintf "%a@." Michelson.pp_obj_micheline x
+  else Format.asprintf "%a@." Printer_michelson.pp_obj_micheline x
 
 let output_obj_micheline (x : Michelson.obj_micheline) =
   if !Options.opt_rjson
@@ -177,41 +194,19 @@ let output (model : Model.model) : string =
       res
     end
 
-let parse pt =
+let parse input =
+  let pt = Io.parse_archetype input in
   Pt_helper.check_json pt;
   match !Error.errors with
   | [] -> pt
   | (_, str)::_ ->
     Format.eprintf "%s" str;
     raise (Error.ParseError !Error.errors)
-
-let parse_from_channel (filename, channel) =
-  let pt = Io.parse_archetype ~name:filename channel in
-  parse pt
-
-let parse_from_string input =
-  let pt = Io.parse_archetype_strict_from_string input in
-  Pt_helper.check_json pt;
-  match !Error.errors with
-  | [] -> pt
-  | (_, str)::_ ->
-    Format.eprintf "%s" str;
-    raise (Error.ParseError !Error.errors)
-
-let preprocess_ext (pt : ParseTree.archetype) : ParseTree.archetype =
-  pt (* TODO: add extension process *)
-
-(* let type_ (pt : ParseTree.archetype) : Ast.model =
-   if !Options.fake_ast
-   then Ast.create_miles_with_expiration_ast ()
-   else if !Options.fake_ast2
-   then Ast.create_test_shallow_ast ()
-   else Typing.typing Typing.empty pt *)
 
 let type_ (pt : ParseTree.archetype) : Ast.ast =
   let init = match !Options.opt_init with
     | "" -> None
-    | x  -> Some (Io.parse_expr x)
+    | x  -> Some (Io.parse_expr (FIString x))
   in
   Typing.typing Typing.empty pt ?init
 
@@ -326,7 +321,6 @@ let generate_target model =
 let compile_model pt =
   let cont c a x = if c then (a x; raise Stop) else x in
   pt
-  |> raise_if_error parse_error preprocess_ext
   |> cont !Options.opt_extpt output_pt
   |> raise_if_error parse_error generate_target_pt
   |> raise_if_error type_error type_
@@ -344,39 +338,26 @@ let compile_model pt =
   |> process_metadata
   |> cont !Options.opt_mdl output_tmdl
 
-let parse_from_channel (filename, channel) =
+let parse input =
   let cont c a x = if c then (a x; raise Stop) else x in
-  (filename, channel)
-  |> raise_if_error parse_error parse_from_channel
+  input
+  |> raise_if_error parse_error parse
   |> cont !Options.opt_pt output_pt
 
-let compile_from_channel (filename, channel) =
-  (filename, channel)
-  |> parse_from_channel
+let compile input =
+  input
+  |> parse
   |> compile_model
   |> generate_target
 
-let parse_from_string input =
-  let cont c a x = if c then (a x; raise Stop) else x in
-  input
-  |> raise_if_error parse_error parse_from_string
-  |> cont !Options.opt_pt output_pt
+let compile_from_string input = compile (FIString input)
 
-let compile_from_string (input : string) : string =
-  input
-  |> parse_from_string
-  |> compile_model
-  |> generate_target
+(* -------------------------------------------------------------------- *)
 
-let compile_with_channel (input : in_channel) =
-  let filename = "<string>" in
-  (* Options.opt_fmt := Some (Format.formatter_of_out_channel output); *)
-  compile_from_channel (filename, input)
-
-let decompile (filename, channel) =
+let decompile input : string =
   let cont c p (m, e) = if c then (p m; raise Stop); (m, e) in
 
-  FIChannel (filename, channel)
+  input
   |> parse_micheline
   |> cont !Options.opt_mici output_obj_micheline
   |> to_michelson
@@ -392,17 +373,80 @@ let decompile (filename, channel) =
   |> Opt_model.optimize
   |> cont !Options.opt_omdl output_tmdl
   |> to_archetype
-  |> output_pt
+  |> extract_pt
+
+let decompile_from_string (input : string) = decompile (FIString input)
+
+(* -------------------------------------------------------------------- *)
+
+let print_version () =
+  Format.printf "%s@\n" Options.version;
+  exit 0
+(* -------------------------------------------------------------------- *)
+
+let process_expr ?tinput (input : string) : string =
+  let cont c p x = if c then (p x; raise Stop); x in
+
+  Option.iter (fun tinput ->
+      Options.opt_type :=
+        tinput
+        |> parse_micheline ~ijson:true
+        |> (fun (x, _) -> Gen_extra.extract_from_micheline "parameter" x)
+        |> (fun x -> Michelson.to_type x)
+        |> (fun x -> Format.asprintf "%a@." Printer_michelson.pp_type x)
+        |> (fun x -> Some x)) tinput;
+
+  FIString input
+  |> Io.parse_expr
+  |> cont !Options.opt_pt output_expr_pt
+  |> Gen_extra.to_model_expr
+  |> begin
+    fun x ->
+      if !Options.opt_json then begin
+        let micheline = Michelson.Utils.data_to_micheline x in
+        output_obj_micheline micheline;
+        match !Options.opt_type with
+        | Some t -> begin
+            if not !Options.opt_expr_only then
+              let micheline = Michelson.Utils.type_to_micheline (Gen_extra.string_to_ttype t) in
+              extract_obj_micheline micheline
+            else ""
+          end
+        | None -> ""
+      end
+      else extract_data x
+  end
+
+let process_expr_type_from_string ?(tinput : string option) (input : string) =
+  let tinput =
+    match tinput with
+    | Some v -> Some (FIString v)
+    | None -> None
+  in
+  process_expr input ?tinput
+
+(* let process_expr_type_string (input : string) =
+   try
+    process_expr input
+   with
+   | Stop -> ()
+   | Stop_error n -> exit n
+   | Error.ParseError _ -> assert false
+   | _ -> () *)
+
+(* -------------------------------------------------------------------- *)
 
 let show_entries (input : string) =
   FIString input
   |> parse_micheline
   |> (fun (m, _) -> Gen_extra.show_entries m)
 
+(* -------------------------------------------------------------------- *)
+
 let get_parameters (input : string) : string =
   let parameters =
-    input
-    |> parse_from_string
+    FIString input
+    |> parse
     |> compile_model
     |> (fun m -> m.parameters)
   in
@@ -418,64 +462,14 @@ let get_parameters (input : string) : string =
               Printer_model.pp_type p.typ
           )) parameters
 
-let close dispose channel =
-  if dispose then close_in channel
-
 (* -------------------------------------------------------------------- *)
-let set_margin i =
-  Format.pp_set_margin Format.std_formatter i;
-  Format.pp_set_margin Format.err_formatter i
 
 let print_version () =
   Format.printf "%s@\n" Options.version;
   exit 0
-(* -------------------------------------------------------------------- *)
-
-let process_expr (input : string) =
-  let cont c p x = if c then (p x; raise Stop); x in
-
-  input
-  |> Io.parse_expr
-  |> cont !Options.opt_pt output_expr_pt
-  |> Gen_extra.to_model_expr
-  |> begin
-    fun x ->
-      if !Options.opt_json then begin
-        let micheline = Michelson.Utils.data_to_micheline x in
-        output_obj_micheline micheline;
-        match !Options.opt_type with
-        | Some t -> begin
-            if not !Options.opt_expr_only then
-              let micheline = Michelson.Utils.type_to_micheline (Gen_extra.string_to_ttype t) in
-              output_obj_micheline micheline;
-          end
-        | None -> ()
-      end
-      else output_data x
-  end
-
-let process_expr_type_channel (filename, channel) (input : string) =
-  Options.opt_type :=
-    FIChannel (filename, channel)
-    |> parse_micheline ~ijson:true
-    |> (fun (x, _) -> Gen_extra.extract_from_micheline "parameter" x)
-    |> (fun x -> Michelson.to_type x)
-    |> (fun x -> Format.asprintf "%a@." Printer_michelson.pp_type x)
-    |> (fun x -> Some x);
-  (* Format.printf "%s@\n@." (!Options.opt_type |> Option.get) *)
-  process_expr input
-
-let process_expr_type_string (input : string) =
-  try
-    process_expr input
-  with
-  | Stop -> ()
-  | Stop_error n -> exit n
-  | Error.ParseError _ -> assert false
-  | _ -> ()
 
 (* -------------------------------------------------------------------- *)
 (* let extract_why3session a path_xml =
-  let pt = parse_from_channel a in
-  let model = compile_model pt in
-  Extract_w.process model path_xml *)
+   let pt = parse_from_channel a in
+   let model = compile_model pt in
+   Extract_w.process model path_xml *)
