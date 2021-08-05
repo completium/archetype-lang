@@ -5,25 +5,25 @@ export function version() {
 }
 
 export function compile(src : string, settings : object = {}) {
-  return api.compile()(src, settings);
+  return api.compile()(src, settings).trim();
 }
 
 export function decompile(src : string, settings : object = {}) {
-  return api.decompile()(src, settings);
+  return api.decompile()(src, settings).trim();
 }
 
 export function get_expr(data, settings : object = {}) {
-  return api.get_expr()(data, settings);
+  return api.getExpr()(data, settings).trim();
 }
 
 export function get_expr_type(data, type, settings : object = {}) {
-  return api.get_expr_type()(data, type, settings);
+  return api.getExprType()(data, type, settings).trim();
 }
 
 export function with_parameters(src, settings : object = {}) {
-  return api.with_parameters()(src, settings);
+  return api.withParameters()(src, settings).trim();
 }
 
 export function show_entries(src, settings : object = {}) {
-  return api.show_entries()(src, settings);
+  return api.showEntries()(src, settings).trim();
 }

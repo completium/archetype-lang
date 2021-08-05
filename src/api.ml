@@ -92,20 +92,20 @@ let _ =
         set_options s;
         doit Compile.decompile_from_string i
       end
-      method get_expr i s = begin
+      method getExpr i s = begin
         set_options s;
         doit Compile.process_expr i
       end
-      method get_expr_type i t s = begin
+      method getExprType i t s = begin
         set_options s;
         let tinput = Js.to_string t in
         doit (Compile.process_expr_type_from_string ~tinput) i
       end
-      method with_parameters i s = begin
+      method withParameters i s = begin
         set_options s;
         doit Compile.get_parameters i
       end
-      method show_entries i s = begin
+      method showEntries i s = begin
         set_options s;
         doit Compile.show_entries i
       end
