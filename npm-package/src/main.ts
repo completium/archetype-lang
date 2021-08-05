@@ -4,8 +4,8 @@ export function version() {
   return api.version;
 }
 
-export function compile(src) {
-  return api.compile()(src);
+export function compile(src : string, settings? : any) {
+  return api.compile()(src, settings);
 }
 
 export function compileJS(src) {

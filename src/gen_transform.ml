@@ -808,8 +808,7 @@ let prune_properties (model : model) : model =
         | Getter   (fs, r) -> Getter   (prune_function_struct fs, r)
         | Entry     fs     -> Entry    (prune_function_struct fs)
       in
-      { f with
-        node = prune_function_node f.node;
+      { node = prune_function_node f.node;
         spec = Option.map prune_specs f.spec; }
     in
     let prune_secs (sec : security) : security =
@@ -3220,8 +3219,7 @@ let concat_shadown_effect_to_exec (model : model) : model =
       |> map_specification (mk_ctx_model ()) for_mterm
       |> (fun spec -> {spec with effects = [] })
     in
-    { f__ with
-      node = for_function_node f__.node;
+    { node = for_function_node f__.node;
       spec = Option.map remove_shadow_effect f__.spec}
   in
   { model with
