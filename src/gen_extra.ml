@@ -6,6 +6,7 @@ open Core
 module PT = ParseTree
 module T  = Michelson
 
+exception TypeEntrypointNotFound of string
 type error_desc =
   | TypeNotCompatible of T.type_ * PT.expr
 
@@ -42,7 +43,7 @@ let string_to_ttype ?entrypoint (input : string) : T.type_ =
       let t = aux None typ in
       match t with
       | Some v -> v
-      | None -> assert false
+      | None -> raise (TypeEntrypointNotFound e)
     end
   | _ -> typ
 
@@ -109,6 +110,7 @@ let to_model_expr (e : PT.expr) : T.data =
     | Eliteral (Ldate     s) -> cc [T.ttimestamp]; Dint (s |> Core.string_to_date |> Core.date_to_timestamp)
     | Eliteral (Lbytes    s) -> cc [T.tbytes]; Dbytes s
     | Eliteral (Lpercent  n) -> cc [T.tpair T.tint T.tnat]; let n, d = string_to_big_int_percent n in Dpair (Dint n, Dint d)
+    | Eunit
     | Enothing               -> cc [T.tunit]; Dunit
     | Earray         l       -> begin
         let ll =

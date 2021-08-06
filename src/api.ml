@@ -19,7 +19,7 @@ let set_options settings =
 
   let process_boolean = process Js.to_bool in
   let process_string = process Js.to_string in
-  let process_string_option = process (Option.map Js.to_string) None in
+  let process_string_option = process (fun x -> x |> Js.to_string |> Option.some) None in
 
   let process_boolean_false = process_boolean false in
   let process_string_empty  = process_string "" in

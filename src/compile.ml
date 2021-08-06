@@ -404,15 +404,15 @@ let process_expr ?tinput (input : string) : string =
     fun x ->
       if !Options.opt_json then begin
         let micheline = Michelson.Utils.data_to_micheline x in
-        output_obj_micheline micheline;
+        let y = extract_obj_micheline micheline in
         match !Options.opt_type with
         | Some t -> begin
             if not !Options.opt_expr_only then
               let micheline = Michelson.Utils.type_to_micheline (Gen_extra.string_to_ttype t) in
-              extract_obj_micheline micheline
-            else ""
+              String.concat "" [y; extract_obj_micheline micheline]
+            else y
           end
-        | None -> ""
+        | None -> y
       end
       else extract_data x
   end
