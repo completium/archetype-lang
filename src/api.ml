@@ -26,7 +26,6 @@ let set_options settings =
 
   Archetype.Options.target               := process_target ();
   Archetype.Options.with_init_caller     := process_boolean true "with_init_caller";
-  Archetype.Options.opt_service          := process_boolean_false "service";
   Archetype.Options.opt_json             := process_boolean_false "json";
   Archetype.Options.opt_rjson            := process_boolean_false "rjson";
   Archetype.Options.opt_pt               := process_boolean_false "pt";
@@ -72,7 +71,13 @@ let get_lsp_kind k =
   |> Js.to_string
   |> Options.string_to_kind
 
+let get_service_kind s =
+  s
+  |> Js.to_string
+  |> Options.string_to_service_kind
+
 let _ =
+  Archetype.Options.quiet := true;
   let doit f input =
     try
       input
@@ -116,6 +121,10 @@ let _ =
       method lsp k i = begin
         let kind = get_lsp_kind k in
         doit (Lsp.process_from_string kind) i
+      end
+      method services s i = begin
+        let service = get_service_kind s in
+        doit (Services.process_from_string service) i
       end
       val version = Js.string Options.version
     end)

@@ -31,3 +31,7 @@ export function show_entries(src, settings : object = {}) {
 export function lsp(kind, src) {
   return api.lsp()(kind, src);
 }
+
+export function services(service, src) {
+  return api.services()(service, src);
+}

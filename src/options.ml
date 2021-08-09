@@ -21,9 +21,9 @@ let url = "https://archetype-lang.org/"
 
 let target = ref (Michelson : target_lang)
 
+let quiet = ref false
 let with_init_caller = ref true
 
-let opt_service = ref false
 let opt_json    = ref false
 let opt_rjson   = ref false
 let opt_pt      = ref false
@@ -81,3 +81,16 @@ let string_to_kind k =
   | v -> raise (UnknownLspKind v)
 
 let opt_lsp_kind = ref (None : lsp_kind option)
+
+type service_kind =
+  | GetProperties
+[@@deriving yojson, show {with_path = false}]
+
+exception UnknownServiceKind of string
+
+let string_to_service_kind k =
+  match k with
+  | "get_properties" -> GetProperties
+  | v -> raise (UnknownServiceKind v)
+
+let opt_service_kind = ref (None : service_kind option)

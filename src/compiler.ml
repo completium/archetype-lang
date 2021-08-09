@@ -64,9 +64,11 @@ let main () : unit =
               "Unknown lsp commands %s (use errors, outline)@." s;
             exit 2), "<request> Generate language server protocol response to <resquest>";
       "--list-lsp-request", Arg.Unit (fun _ -> Format.printf "request available:@\n  errors@\n  outline@\n"; exit 0), " List available request for lsp";
-      "--service", Arg.String (fun s -> match s with
-          | "get_properties" -> Options.opt_service := true; Options.with_init_caller := false; Services.service := GetProperties
-          |  s ->
+      "--service", Arg.String (fun s ->
+          try
+            Options.opt_service_kind := Some (Options.string_to_service_kind s)
+          with
+          | _ ->
             Format.eprintf
               "Unknown service %s (--list-services to view all services)@." s;
             exit 2), "<service> Generate service response to <service>";
@@ -139,14 +141,17 @@ let main () : unit =
         | _ -> ("<stdin>", stdin, false) in
 
       try
+        let input = FIChannel (filename, channel) in
         begin
-          let input = FIChannel (filename, channel) in
-          match !Options.opt_lsp_kind, !Options.opt_service, !Options.opt_decomp, !Options.opt_expr with
-          | Some k, _, _, _   -> output (Lsp.process k input)
-          | _, true, _, _   -> Services.process input
-          | _, _, true, _   -> output (decompile input)
-          | _, _, _, Some v -> output (process_expr ~tinput:input v)
-          | _ -> output (compile input)
+          let res =
+            match !Options.opt_lsp_kind, !Options.opt_service_kind, !Options.opt_decomp, !Options.opt_expr with
+            | Some k, _, _, _ -> Lsp.process k input
+            | _, Some s, _, _ -> Services.process s input
+            | _, _, true, _   -> decompile input
+            | _, _, _, Some v -> process_expr ~tinput:input v
+            | _               -> compile input
+          in
+          output res
         end;
         close dispose channel
 
