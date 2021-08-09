@@ -523,3 +523,8 @@ let get_content path =
     s
   in
   read_whole_file path
+
+let string_to_big_int str =
+  let res = ref Big_int.zero_big_int in
+  String.iter (fun x -> res := !res |> Big_int.mult_int_big_int 256 |> Big_int.add_int_big_int (Char.code x)) str;
+  !res
