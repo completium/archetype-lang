@@ -1775,7 +1775,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
           let t = map_mterm m ctx v in
           let l = loc_term (Tnil gListAs) (*map_mterm m ctx a*) in
           let a = map_mterm m ctx d in
-          let n = loc_term (Tstring id) in
+          let n = loc_term (Tint (Tools.string_to_big_int id) (* Tstring id *)) in
           Tassign (
             loc_term (Tdoti(gs,"_ops")),
             dl (Tcons (dl gListAs,

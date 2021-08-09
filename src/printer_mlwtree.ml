@@ -879,8 +879,9 @@ let rec pp_term outer pos fmt = function
       (pp_with_paren (pp_term outer pos)) v
   (* (pp_with_paren (pp_term outer pos)) l *)
   | Tentrypoint (i,v) ->
-    Format.fprintf fmt "entrypoint \"%a\" %a"
-      pp_str i
+    Format.fprintf fmt "entrypoint %a %a"
+      (* pp_str i *)
+      pp_big_int (Tools.string_to_big_int i)
       (pp_with_paren (pp_term outer pos)) v
   | Tmktr (_, _) -> pp_str fmt "TODO_Tmktr"
   | Ttradd _ -> pp_str fmt "TODO_Ttradd"
