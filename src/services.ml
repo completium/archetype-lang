@@ -1,4 +1,3 @@
-open Archetype
 open Tools
 open Location
 open ParseTree

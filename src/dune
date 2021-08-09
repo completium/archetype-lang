@@ -22,6 +22,7 @@
   gen_why3 mlwtree printer_mlwtree
   gen_extra
   compile
+  lsp services
   )
   (libraries menhirLib num str ppx_deriving yojson ppx_deriving_yojson.runtime hex unix xmlm)
  (flags :standard -w -30  ; Allow sharing of record labels between distinct types.
@@ -43,7 +44,7 @@
   (preprocess
     (pps ppx_deriving.std ppx_deriving_yojson)
   )
-  (modules lsp services compiler)
+  (modules compiler)
   (libraries archetype menhirLib unix)
   (public_name archetype)
   (name     compiler))

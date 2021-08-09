@@ -55,10 +55,11 @@ let main () : unit =
       "--metadata-storage", Arg.String (fun s -> Options.opt_metadata_storage := s), " Same as -ms";
       "-wmt", Arg.Set Options.opt_with_metadata, " Add metadata big_map for javascript output";
       "--with-metadata", Arg.Set Options.opt_with_metadata, " Same as -wmt";
-      "-lsp", Arg.String (fun s -> match s with
-          | "errors" -> Options.opt_lsp := true; Lsp.kind := Errors
-          | "outline" -> Options.opt_lsp := true; Lsp.kind := Outline
-          |  s ->
+      "-lsp", Arg.String (fun s ->
+          try
+            Options.opt_lsp_kind := Some (Options.string_to_kind s)
+          with
+          | _ ->
             Format.eprintf
               "Unknown lsp commands %s (use errors, outline)@." s;
             exit 2), "<request> Generate language server protocol response to <resquest>";
@@ -140,8 +141,8 @@ let main () : unit =
       try
         begin
           let input = FIChannel (filename, channel) in
-          match !Options.opt_lsp, !Options.opt_service, !Options.opt_decomp, !Options.opt_expr with
-          | true, _, _, _   -> Lsp.process input
+          match !Options.opt_lsp_kind, !Options.opt_service, !Options.opt_decomp, !Options.opt_expr with
+          | Some k, _, _, _   -> output (Lsp.process k input)
           | _, true, _, _   -> Services.process input
           | _, _, true, _   -> output (decompile input)
           | _, _, _, Some v -> output (process_expr ~tinput:input v)

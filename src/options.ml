@@ -23,7 +23,6 @@ let target = ref (Michelson : target_lang)
 
 let with_init_caller = ref true
 
-let opt_lsp     = ref false
 let opt_service = ref false
 let opt_json    = ref false
 let opt_rjson   = ref false
@@ -67,3 +66,18 @@ let opt_property_focused = ref ""
 let opt_vids : (string list) ref = ref []
 let add_vids s =
   opt_vids := s::!opt_vids
+
+type lsp_kind =
+  | Errors
+  | Outline
+[@@deriving yojson, show {with_path = false}]
+
+exception UnknownLspKind of string
+
+let string_to_kind k =
+  match k with
+  | "errors" -> Errors
+  | "outline" -> Outline
+  | v -> raise (UnknownLspKind v)
+
+let opt_lsp_kind = ref (None : lsp_kind option)

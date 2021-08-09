@@ -26,7 +26,6 @@ let set_options settings =
 
   Archetype.Options.target               := process_target ();
   Archetype.Options.with_init_caller     := process_boolean true "with_init_caller";
-  Archetype.Options.opt_lsp              := process_boolean_false "lsp";
   Archetype.Options.opt_service          := process_boolean_false "service";
   Archetype.Options.opt_json             := process_boolean_false "json";
   Archetype.Options.opt_rjson            := process_boolean_false "rjson";
@@ -68,6 +67,11 @@ let set_options settings =
   (* Archetype.Options.opt_vids             := "vids" []; *)
   ()
 
+let get_lsp_kind k =
+  k
+  |> Js.to_string
+  |> Options.string_to_kind
+
 let _ =
   let doit f input =
     try
@@ -108,6 +112,10 @@ let _ =
       method showEntries i s = begin
         set_options s;
         doit Compile.show_entries i
+      end
+      method lsp k i = begin
+        let kind = get_lsp_kind k in
+        doit (Lsp.process_from_string kind) i
       end
       val version = Js.string Options.version
     end)

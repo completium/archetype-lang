@@ -1,14 +1,7 @@
-open Archetype
+open Options
 open Tools
 
 module PT = ParseTree
-
-type kind =
-  | Errors
-  | Outline
-[@@deriving yojson, show {with_path = false}]
-
-let kind = ref Errors
 
 type status =
   | Passed
@@ -217,7 +210,7 @@ let make_outline_from_decl (d : PT.declaration) gl =
   | _ -> []
 
 let process_errors () =
-  Format.printf "%s\n" (Yojson.Safe.to_string (result_to_yojson (
+  Format.asprintf "%s\n" (Yojson.Safe.to_string (result_to_yojson (
       let li = Error.errors in
       match !li with
       | [] -> mk_result Passed []
@@ -234,8 +227,9 @@ let process_errors () =
           mk_item loc str) l)
     )))
 
-let process input =
-  match !kind with
+let process (kind : lsp_kind) (input : Core.from_input) : string =
+  Error.errors := [];
+  match kind with
   | Outline -> (
       let pt = Io.parse_archetype input in
       let gl, v =  Location.deloc pt in
@@ -250,8 +244,8 @@ let process input =
             status = Passed;
             outlines = lis;
           } in
-          Format.printf "%s\n" (Yojson.Safe.to_string (result_outline_to_yojson res)))
-      | _ -> ()
+          Format.asprintf "%s\n" (Yojson.Safe.to_string (result_outline_to_yojson res)))
+      | _ -> ""
     )
   | Errors ->
     try
@@ -281,3 +275,5 @@ let process input =
         process_errors ()
     with
     | _ -> process_errors ()
+
+let process_from_string (kind : lsp_kind) input = process kind (FIString input)

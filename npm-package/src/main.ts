@@ -27,3 +27,7 @@ export function with_parameters(src, settings : object = {}) {
 export function show_entries(src, settings : object = {}) {
   return api.showEntries()(src, settings).trim();
 }
+
+export function lsp(kind, src) {
+  return api.lsp()(kind, src);
+}
