@@ -77,7 +77,8 @@ let get_service_kind s =
   |> Options.string_to_service_kind
 
 let _ =
-  Archetype.Options.quiet := true;
+  Options.quiet := true;
+  Options.opt_no_js_header := true;
   let doit f input =
     try
       input
@@ -90,7 +91,6 @@ let _ =
       | None -> raise exn
       | Some err -> Js.raise_js_error err
   in
-  Options.opt_no_js_header := true;
   Js.export_all
     (object%js
       method compile i s = begin
