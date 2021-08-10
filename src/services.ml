@@ -164,6 +164,7 @@ let extract_properties (pt : archetype) : property list =
 let print_json f p = Yojson.Safe.to_string (f p)
 
 let process (service : service_kind) (input : from_input) : string =
+  Error.errors := [];
   match service with
   | GetProperties ->
     let print_error () =

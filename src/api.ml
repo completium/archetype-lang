@@ -3,6 +3,7 @@ open Options
 open Js_of_ocaml
 
 let set_options settings =
+  Error.errors := [];
   let process_target () : target_lang =
     let target_value = Js.Unsafe.get settings "target" in
     if (Js.Opt.test target_value)
