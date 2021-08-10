@@ -1,0 +1,29 @@
+{
+  "name": "@completium/archetype",
+  "version": "0.0.6",
+  "description": "Archetype language is a DSL (Domain Specific Language) to describe blockchain business processes.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "/dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/edukera/archetype-lang.git"
+  },
+  "keywords": [
+    "archetype",
+    "tezos",
+    "smart-contract",
+    "completium",
+    "formal-verification"
+  ],
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/edukera/archetype-lang/issues"
+  },
+  "homepage": "https://github.com/edukera/archetype-lang/npm-package/#readme"
+}

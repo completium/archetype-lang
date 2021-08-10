@@ -1,5 +1,6 @@
 open Location
 open Tools
+open Core
 
 module T = Michelson
 module M = Model
@@ -11,11 +12,15 @@ type env = {
 
 let mk_env ?(name="") _ : env = { name }
 
-let parse_micheline ?ijson (filename, ic) : T.obj_micheline * env =
+let parse_micheline ?ijson (input : from_input)  : T.obj_micheline * env =
   let name =
-    match filename with
-    | "<stdin>" -> "noname"
-    | _ -> filename |> Filename.basename |> Filename.chop_extension
+    match input with
+    | FIChannel (filename, _) -> begin
+        match filename with
+        | "<stdin>" -> "noname"
+        | _ -> filename |> Filename.basename |> Filename.chop_extension
+      end
+    | FIString _ -> "noname"
   in
   let env = mk_env ~name:name () in
 
@@ -61,11 +66,19 @@ let parse_micheline ?ijson (filename, ic) : T.obj_micheline * env =
         | _ -> Format.printf "%s@." (to_string i); assert false
       in
       let open Util in
-      let json = from_channel ic in
+      let json =
+        match input with
+        | FIChannel (_, ic) -> from_channel ic
+        | FIString content -> from_string content
+      in
       let code = json |> member "code" |> to_list in
       T.Oarray (List.map aux code)
     else
-      let tokens = Lexing.from_channel ic in
+      let tokens =
+        match input with
+        | FIChannel (_, ic) -> Lexing.from_channel ic
+        | FIString content -> Lexing.from_string content
+      in
       Michelson_parser.main Michelson_lexer.token tokens
   in
   input, env

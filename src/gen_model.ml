@@ -1221,7 +1221,7 @@ let to_model (ast : A.ast) : M.model =
         ~loc:s.loc
         ()
     in
-    { sec with items = sec.items @ new_s.items; loc = new_s.loc; }
+    { items = sec.items @ new_s.items; loc = new_s.loc; }
   in
 
   let process_fun_gen name args (body : M.mterm) loc spec f : M.function__ =

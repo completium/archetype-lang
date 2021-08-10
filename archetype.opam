@@ -24,6 +24,8 @@ depends: [
   "ppx_deriving"
   "ppx_deriving_yojson"
   "visitors" {>= "20200207"}
+  "js_of_ocaml"
+  "js_of_ocaml-ppx"
   "hex"
   "xmlm"
   "odoc" {with-doc}

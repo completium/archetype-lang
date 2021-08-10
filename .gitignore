@@ -36,3 +36,4 @@ extra/script/internal_check_ligo.sh
 _opam
 tests/passed/test.arl
 repo_contracts
+npm-package/src/api.bc.js

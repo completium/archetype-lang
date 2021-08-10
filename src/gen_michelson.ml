@@ -1007,11 +1007,11 @@ let to_ir (model : M.model) : T.ir =
 
   let funs, entries =
 
-    let for_fs env (fs : M.function_struct) =
+    let for_fs _env (fs : M.function_struct) =
       let name = unloc fs.name in
       let args = List.map (fun (id, t, _) -> unloc id, to_type t) fs.args in
       let eargs = List.map (fun (id, t, _) -> unloc id, to_type t) fs.eargs in
-      let env = {env with function_p = Some (name, args)} in
+      let env = {function_p = Some (name, args)} in
       let body = mterm_to_intruction env fs.body in
       name, args, eargs, body
     in

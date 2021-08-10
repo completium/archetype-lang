@@ -4,7 +4,7 @@
 .PHONY: all merlin build build-deps run clean
 
 # --------------------------------------------------------------------
-all: build compiler # plugin
+all: build compiler js # plugin
 
 build:
 	@dune build
@@ -18,8 +18,8 @@ compiler:
 	ln -fs _build/default/src/compiler.exe archetype.exe
 
 js:
-	$(MAKE) -C src compiler.bc.js
-	ln -fs _build/default/src/compiler.bc.js archetype.js
+	$(MAKE) -C src api.bc.js
+	cp -f _build/default/src/api.bc.js npm-package/dist/
 
 mlw:
 	$(MAKE) -C src mlw.exe
@@ -40,7 +40,7 @@ install:
 clean:
 	@dune clean
 	$(MAKE) -C src clean
-	rm -f archetype.exe
+	rm -f archetype.exe npm-package/dist/api.bc.js
 
 check:
 	./extra/script/check_pp.sh && ./extra/script/check_contracts.sh

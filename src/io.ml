@@ -5,6 +5,7 @@ open Parser.MenhirInterpreter
 open Lexing
 open PureLexer
 open ParseError
+open Core
 
 exception ParenError
 
@@ -196,28 +197,28 @@ let parse r lexbuf =
     end
   | _ -> raise (Error.ParseError !Error.errors)
 
-let parse_archetype ?(name = "") (inc : in_channel) =
+let parse_archetype input =
   Error.resume_on_error ();
-  let lexbuf = lexbuf_from_channel name inc in
+  let lexbuf =
+    match input with
+    | FIChannel (name, inc) -> lexbuf_from_channel name inc
+    | FIString input -> lexbuf_from_string "" input
+  in
   parse main lexbuf
 
-let parse_archetype_strict ?(name = "") (inc : in_channel) =
-  let pt = parse_archetype inc ?name:(Some name) in
+let parse_archetype_strict input =
+  let pt = parse_archetype input in
   match !Error.errors with
   | [] -> pt
   | _ -> raise (Error.ParseError !Error.errors)
 
-let parse_archetype_strict_from_string ?(name = "") (input : string) =
+let parse_expr input =
   Error.resume_on_error ();
-  let lexbuf = lexbuf_from_string name input in
-  let pt = parse main lexbuf in
-  match !Error.errors with
-  | [] -> pt
-  | _ -> raise (Error.ParseError !Error.errors)
-
-let parse_expr (input : string) =
-  Error.resume_on_error ();
-  let lexbuf = lexbuf_from_string "" input in
+    let lexbuf =
+    match input with
+    | FIChannel (name, inc) -> lexbuf_from_channel name inc
+    | FIString input -> lexbuf_from_string "" input
+  in
   let e = parse start_expr lexbuf in
   match !Error.errors with
   | [] -> e
