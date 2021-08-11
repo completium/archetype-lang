@@ -16,7 +16,7 @@ let string_to_target_lang = function
   | "markdown"          -> Markdown
   | v                   -> raise (UnknownTarget v)
 
-let version = "1.2.7"
+let version = "1.2.8"
 let url = "https://archetype-lang.org/"
 
 let target = ref (Michelson : target_lang)
