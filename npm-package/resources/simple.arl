@@ -1,0 +1,7 @@
+archetype simple
+
+variable n : nat = 0
+
+entry exec() {
+  n := 2
+}
