@@ -14,12 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     * add sapling types (`sapling_state` and `sapling_transaction`) and operations (`sapling_empty_state` and `sapling_verify_update`)
     * add bls curves types (`bls12_381_fr`, `bls12_381_g1` and `bls12_381_g2`), arthmetic (`+`, `*`, unary `-`) and operation (`pairing_check`)
 
-## Unreleased
+## [1.2.7] - 2021-08-11
 ### Added
-  - npm package for archetype compiler (@completium/archetype)
+  - npm package for archetype compiler (https://www.npmjs.com/package/@completium/archetype)
   - support `tez` type for `sum` method
 ### Changed
   - default call contract (`transfer 0tz to addr call default<nat>(2)`)
+  - change type of string in mlw archetype library
 
 ## [1.2.6] - 2021-06-24
 ### Added

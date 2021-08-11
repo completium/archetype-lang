@@ -104,25 +104,27 @@ and pp_code fmt (i : code) =
     | _ -> false
   in
   let with_complex_instrs l = List.exists with_complex_instr l in
-  let fs fmt = Format.fprintf fmt "{ @[%a@] }" (pp_list ";@\n" pp_code) in
+  let fsv fmt = Format.fprintf fmt "{ @[%a@] }" (pp_list ";@\n" pp_code) in
+  let fsh fmt = Format.fprintf fmt "{ %a }" (pp_list "; " pp_code) in
   let fsl fmt l =
     if with_complex_instrs l
-    then fs fmt l
-    else Format.fprintf fmt "{ @[%a@] }" (pp_list "; " pp_code) l in
+    then fsv fmt l
+    else fsh fmt l
+  in
   match i with
   (* Control structures *)
-  | SEQ l                    -> fs fmt l
+  | SEQ l                    -> fsv fmt l
   | APPLY                    -> pp "APPLY"
   | EXEC                     -> pp "EXEC"
   | FAILWITH                 -> pp "FAILWITH"
-  | IF (ti, ei)              -> pp "IF@\n  @[%a@]@\n  @[%a@]" fs ti fs ei
-  | IF_CONS (ti, ei)         -> pp "IF_CONS@\n  @[%a@]@\n  @[%a@]" fs ti fs ei
-  | IF_LEFT (ti, ei)         -> pp "IF_LEFT@\n  @[%a@]@\n  @[%a@]" fs ti fs ei
-  | IF_NONE (ti, ei)         -> pp "IF_NONE@\n  @[%a@]@\n  @[%a@]" fs ti fs ei
-  | ITER is                  -> pp "ITER %a" fs is
-  | LAMBDA (at, rt, is)      -> pp "LAMBDA@\n  @[%a@]@\n  @[%a@]@\n  @[%a@]" pp_type at pp_type rt fs is
-  | LOOP is                  -> pp "LOOP %a" fs is
-  | LOOP_LEFT is             -> pp "LOOP_LEFT %a" fs is
+  | IF (ti, ei)              -> pp "IF@\n  @[%a@]@\n  @[%a@]" fsv ti fsv ei
+  | IF_CONS (ti, ei)         -> pp "IF_CONS@\n  @[%a@]@\n  @[%a@]" fsv ti fsv ei
+  | IF_LEFT (ti, ei)         -> pp "IF_LEFT@\n  @[%a@]@\n  @[%a@]" fsv ti fsv ei
+  | IF_NONE (ti, ei)         -> pp "IF_NONE@\n  @[%a@]@\n  @[%a@]" fsv ti fsv ei
+  | ITER is                  -> pp "ITER %a" fsv is
+  | LAMBDA (at, rt, is)      -> pp "LAMBDA@\n  @[%a@]@\n  @[%a@]@\n  @[%a@]" pp_type at pp_type rt fsv is
+  | LOOP is                  -> pp "LOOP %a" fsv is
+  | LOOP_LEFT is             -> pp "LOOP_LEFT %a" fsv is
   (* Stack manipulation *)
   | DIG i                    -> pp "DIG%a" pp_arg2 i
   | DIP (i, is)              -> pp "DIP%a %a" pp_arg i fsl is
@@ -184,7 +186,7 @@ and pp_code fmt (i : code) =
   | EMPTY_SET     t          -> pp "EMPTY_SET %a" pp_type t
   | GET                      -> pp "GET"
   | LEFT  t                  -> pp "LEFT %a" pp_type t
-  | MAP  is                  -> pp "MAP %a" fs is
+  | MAP  is                  -> pp "MAP %a" fsv is
   | MEM                      -> pp "MEM"
   | NIL t                    -> pp "NIL %a" pp_type t
   | NONE t                   -> pp "NONE %a" pp_type t
