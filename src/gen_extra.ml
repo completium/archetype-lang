@@ -167,6 +167,21 @@ let extract_from_micheline tag input =
   |> seek tag
   |> get_arg
 
+type eargs = {
+  id: string;
+  typ: string;
+}
+[@@deriving yojson, show {with_path = false}]
+
+type entry = {
+  name: string;
+  args : eargs list;
+}
+[@@deriving yojson, show {with_path = false}]
+
+type entries = entry list
+[@@deriving yojson, show {with_path = false}]
+
 let show_entries (input : T.obj_micheline) =
   let with_annot (t : T.type_) : bool = Option.is_some t.annotation in
 
@@ -204,16 +219,23 @@ let show_entries (input : T.obj_micheline) =
   |> do_or
   |> List.map (fun (x, y) -> x, do_pair y)
   |> fun (l : (ident * (ident * Model.type_) list) list) ->
-  Format.asprintf "%a@."
-    (Printer_tools.pp_list "@\n"
-       (fun fmt (id, l : ident * (ident * Model.type_) list) ->
-          Format.fprintf fmt "%s (%a)" id
-            (Printer_tools.pp_list ", " (fun fmt (id, t) ->
-                 Format.fprintf fmt "%s : %a" id Printer_model.pp_type t
-               )
-            ) l
-       )
-    ) l
+  if !Options.opt_rjson
+  then
+    let res : entries = List.fold_right (fun (id, args) accu ->
+        {name = id; args = (List.fold_right (fun (id, typ) accu -> {id = id; typ = Format.asprintf "%a" Printer_model.pp_type typ}::accu) args [])}::accu) l [] in
+    (Yojson.Safe.to_string (entries_to_yojson res))
+  else begin
+    Format.asprintf "%a@."
+      (Printer_tools.pp_list "@\n"
+         (fun fmt (id, l : ident * (ident * Model.type_) list) ->
+            Format.fprintf fmt "%s (%a)" id
+              (Printer_tools.pp_list ", " (fun fmt (id, t) ->
+                   Format.fprintf fmt "%s : %a" id Printer_model.pp_type t
+                 )
+              ) l
+         )
+      ) l
+  end
 
 let to_micheline (input : string) =
   let tokens = Lexing.from_string input in
