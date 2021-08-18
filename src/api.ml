@@ -115,6 +115,10 @@ let _ =
         set_options s;
         doit Compile.get_parameters i
       end
+      method getStorageValues i s = begin
+        set_options s;
+        doit Compile.get_storage_values i
+      end
       method showEntries i s = begin
         set_options s;
         doit Compile.show_entries i

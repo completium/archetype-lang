@@ -244,3 +244,41 @@ let to_micheline (input : string) =
   let tokens = Lexing.from_string input in
   let m = Michelson_parser.main Michelson_lexer.token tokens in
   Format.printf "%a@." Printer_michelson.pp_obj_micheline m
+
+
+type storage_value = {
+  id: string;
+  value: string;
+}
+[@@deriving yojson, show {with_path = false}]
+
+type storage_values = storage_value list
+[@@deriving yojson, show {with_path = false}]
+
+let get_storage_values (model : Model.model) =
+  let pp_mterm fmt (mt : Model.mterm) =
+    let pp = Format.fprintf fmt in
+    match mt.node with
+    (* literals *)
+    | Mint v -> Core.pp_big_int fmt v
+    | Mnat v -> Core.pp_big_int fmt v
+    (* | Mbool             of bool *)
+    (* | Mrational         of Core.big_int * Core.big_int *)
+    | Mstring str -> pp "%s" str
+    (* | Mcurrency         of Core.big_int * currency *)
+    (* | Maddress          of string *)
+    (* | Mdate             of Core.date *)
+    (* | Mduration         of Core.duration *)
+    (* | Mtimestamp        of Core.big_int *)
+    (* | Mbytes            of string *)
+    (* | Munit *)
+
+    | _ -> ()
+  in
+  let storage_values : storage_values =
+    List.map (fun (x : Model.storage_item) ->
+        let v = Format.asprintf "%a" pp_mterm x.default in
+        {id = (unloc x.id); value = v}) model.storage
+  in
+  Yojson.Safe.to_string (storage_values_to_yojson storage_values)
+

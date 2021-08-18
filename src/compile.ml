@@ -222,6 +222,45 @@ let generate_model            = Gen_model.to_model
 let generate_storage          = Gen_storage.generate_storage
 let generate_api_storage      = Gen_api_storage.generate_api_storage
 
+let toolchain ?(js=false) model =
+  model
+  |> prune_formula
+  |> getter_to_entry ~extra:true
+  |> process_parameter ~js:js
+  |> test_mode
+  |> process_multi_keys
+  |> replace_col_by_key_for_ckfield
+  |> move_partition_init_asset
+  |> remove_enum
+  |> replace_assignfield_by_update
+  |> remove_add_update ~with_force:true
+  |> merge_update
+  |> remove_assign_operator
+  |> process_internal_string
+  |> remove_rational
+  |> abs_tez
+  |> replace_date_duration_by_timestamp
+  |> eval_variable_initial_value
+  |> replace_dotassetfield_by_dot
+  |> generate_storage
+  |> replace_declvar_by_letin
+  |> remove_label
+  |> flat_sequence
+  |> remove_cmp_bool
+  |> split_key_values
+  |> remove_duplicate_key
+  |> assign_loop_label
+  |> remove_asset
+  |> remove_storage_field_in_function
+  |> remove_high_level_model
+  |> normalize_storage
+  |> remove_constant
+  |> eval_storage
+  |> expr_to_instr
+  |> instr_to_expr_exec
+  |> optimize
+  |> generate_api_storage
+
 let generate_target model =
 
   let _print_model m =
@@ -236,42 +275,7 @@ let generate_target model =
   | MichelsonStorage
   | Javascript ->
     model
-    |> prune_formula
-    |> getter_to_entry ~extra:true
-    |> process_parameter ~js:js
-    |> test_mode
-    |> process_multi_keys
-    |> replace_col_by_key_for_ckfield
-    |> move_partition_init_asset
-    |> remove_enum
-    |> replace_assignfield_by_update
-    |> remove_add_update ~with_force:true
-    |> merge_update
-    |> remove_assign_operator
-    |> process_internal_string
-    |> remove_rational
-    |> abs_tez
-    |> replace_date_duration_by_timestamp
-    |> eval_variable_initial_value
-    |> replace_dotassetfield_by_dot
-    |> generate_storage
-    |> replace_declvar_by_letin
-    |> remove_label
-    |> flat_sequence
-    |> remove_cmp_bool
-    |> split_key_values
-    |> remove_duplicate_key
-    |> assign_loop_label
-    |> remove_asset
-    |> remove_storage_field_in_function
-    |> remove_high_level_model
-    |> normalize_storage
-    |> remove_constant
-    |> eval_storage
-    |> expr_to_instr
-    |> instr_to_expr_exec
-    |> optimize
-    |> generate_api_storage
+    |> toolchain ~js
     |> output
 
   | Whyml ->
@@ -461,6 +465,17 @@ let get_parameters (input : string) : string =
               Printer_tools.pp_id p.name
               Printer_model.pp_type p.typ
           )) parameters
+
+(* -------------------------------------------------------------------- *)
+
+let get_storage_values (input : string) : string =
+  let model =
+    FIString input
+    |> parse
+    |> compile_model
+    |> toolchain
+  in
+  Gen_extra.get_storage_values model
 
 (* -------------------------------------------------------------------- *)
 
