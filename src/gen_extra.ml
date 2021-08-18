@@ -176,6 +176,7 @@ type eargs = {
 type entry = {
   name: string;
   args : eargs list;
+  typ: string;
 }
 [@@deriving yojson, show {with_path = false}]
 
@@ -217,17 +218,19 @@ let show_entries (input : T.obj_micheline) =
   |> get_arg
   |> T.to_type
   |> do_or
-  |> List.map (fun (x, y) -> x, do_pair y)
-  |> fun (l : (ident * (ident * Model.type_) list) list) ->
+  |> List.map (fun (x, y) -> (x, y, do_pair y))
+  |> fun (l : (ident * T.type_ * ((ident * Model.type_) list)) list) ->
   if !Options.opt_rjson
   then
-    let res : entries = List.fold_right (fun (id, args) accu ->
-        {name = id; args = (List.fold_right (fun (id, typ) accu -> {id = id; typ = Format.asprintf "%a" Printer_model.pp_type typ}::accu) args [])}::accu) l [] in
+    let res : entries = List.fold_right (fun (id, t, args) accu ->
+        {name = id;
+         typ = Format.asprintf "%a" Printer_michelson.pp_type t;
+         args = (List.fold_right (fun (id, typ) accu -> {id = id; typ = Format.asprintf "%a" Printer_model.pp_type typ}::accu) args [])}::accu) l [] in
     (Yojson.Safe.to_string (entries_to_yojson res))
   else begin
     Format.asprintf "%a@."
       (Printer_tools.pp_list "@\n"
-         (fun fmt (id, l : ident * (ident * Model.type_) list) ->
+         (fun fmt (id, _, l : ident * T.type_ * (ident * Model.type_) list) ->
             Format.fprintf fmt "%s (%a)" id
               (Printer_tools.pp_list ", " (fun fmt (id, t) ->
                    Format.fprintf fmt "%s : %a" id Printer_model.pp_type t
