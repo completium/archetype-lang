@@ -990,17 +990,17 @@ let to_ir (model : M.model) : T.ir =
     | Mdiff      _ -> emit_error (UnsupportedTerm ("Mdiff"))
   in
 
-  let l = List.map (
+  let storage_list = List.map (
       fun (si : M.storage_item) ->
         (unloc si.id), to_type ~annotation:(mk_fannot (unloc si.id)) si.typ, to_data si.default)
       model.storage
   in
 
   let storage_type, storage_data =
-    match l with
+    match storage_list with
     | []  -> T.mk_type Tunit, T.Dunit
     | [_, t, d] -> remove_annot t, d
-    | _   -> let _, lt, ld = List.split3 l in to_one_type lt, to_one_data ld
+    | _   -> let _, lt, ld = List.split3 storage_list in to_one_type lt, to_one_data ld
   in
 
   let env = mk_env () in
@@ -1082,7 +1082,6 @@ let to_ir (model : M.model) : T.ir =
         | Function (fs, ret) -> funs @ [for_fs_fun env fs ret], entries) ([], []) model.functions
   in
   let annot a (t : T.type_) = { t with annotation = Some (mk_fannot a)} in
-  let l = List.map (fun (x, y, _) -> (x, y)) l in
   let parameter : T.type_ =
     let for_entry (e : T.entry) =
       let f l =
@@ -1114,7 +1113,7 @@ let to_ir (model : M.model) : T.ir =
 
   let name = unloc model.name in
   let parameters = List.map (fun (x : M.parameter) -> unloc x.name) model.parameters in
-  T.mk_ir name storage_type storage_data l parameter funs entries ~with_operations:with_operations ~parameters
+  T.mk_ir name storage_type storage_data storage_list parameter funs entries ~with_operations:with_operations ~parameters
 
 
 (* -------------------------------------------------------------------- *)
@@ -1709,7 +1708,7 @@ and to_michelson (ir : T.ir) : T.michelson =
 
     let fff, eee = let n = df + opsf in (if n > 0 then [T.DIG n] else []), (if df > 0 then [T.DIP (1, [T.DROP df]) ] else []) in
 
-    let vars = List.rev (let l = ir.storage_list in if List.is_empty l then ["_"] else List.map fst l) @ ops_var @ List.rev funids in
+    let vars = List.rev (let l = ir.storage_list in if List.is_empty l then ["_"] else List.map (fun (x, _, _) -> x) l) @ ops_var @ List.rev funids in
     let env = mk_env () ~vars in
     let nb_storage_item = List.length ir.storage_list in
     let nb_fs = nb_storage_item - 1 in

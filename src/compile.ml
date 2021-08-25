@@ -468,14 +468,16 @@ let get_parameters (input : string) : string =
 
 (* -------------------------------------------------------------------- *)
 
-let get_storage_values (input : string) : string =
+let get_storage_values input : string =
   let model =
-    FIString input
+    input
     |> parse
     |> compile_model
     |> toolchain
   in
   Gen_extra.get_storage_values model
+
+let get_storage_values_from_string (input : string) : string = get_storage_values (FIString input)
 
 (* -------------------------------------------------------------------- *)
 

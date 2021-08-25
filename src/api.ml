@@ -117,7 +117,7 @@ let _ =
       end
       method getStorageValues i s = begin
         set_options s;
-        doit Compile.get_storage_values i
+        doit Compile.get_storage_values_from_string i
       end
       method showEntries i s = begin
         set_options s;

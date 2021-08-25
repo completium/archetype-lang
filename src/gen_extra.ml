@@ -256,29 +256,6 @@ type storage_values = storage_value list
 [@@deriving yojson, show {with_path = false}]
 
 let get_storage_values (model : Model.model) =
-  let pp_mterm fmt (mt : Model.mterm) =
-    let pp = Format.fprintf fmt in
-    match mt.node with
-    (* literals *)
-    | Mint v -> Core.pp_big_int fmt v
-    | Mnat v -> Core.pp_big_int fmt v
-    (* | Mbool             of bool *)
-    (* | Mrational         of Core.big_int * Core.big_int *)
-    | Mstring str -> pp "%s" str
-    (* | Mcurrency         of Core.big_int * currency *)
-    (* | Maddress          of string *)
-    (* | Mdate             of Core.date *)
-    (* | Mduration         of Core.duration *)
-    (* | Mtimestamp        of Core.big_int *)
-    (* | Mbytes            of string *)
-    (* | Munit *)
-
-    | _ -> ()
-  in
-  let storage_values : storage_values =
-    List.map (fun (x : Model.storage_item) ->
-        let v = Format.asprintf "%a" pp_mterm x.default in
-        {id = (unloc x.id); value = v}) model.storage
-  in
+  let ir = Gen_michelson.to_ir model in
+  let storage_values : storage_values = List.map (fun (id, _, v) -> {id = id; value = Format.asprintf "%a" Printer_michelson.pp_data v}) ir.storage_list in
   Yojson.Safe.to_string (storage_values_to_yojson storage_values)
-
