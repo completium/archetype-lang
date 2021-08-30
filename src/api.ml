@@ -1,6 +1,7 @@
 open Archetype
 open Options
 open Js_of_ocaml
+open Tools
 
 let set_options settings =
   Error.errors := [];
@@ -88,9 +89,24 @@ let _ =
       |> Js.string
     with
     | exn ->
-      match Js.Opt.to_option (Js.js_error_of_exn exn) with
-      | None -> raise exn
-      | Some err -> Js.raise_js_error err
+      let errors = !Error.errors in
+      if not (List.is_empty errors)
+      then begin
+        let f x = Js.Unsafe.js_expr "(function (exn) { throw (new Error(exn)) })" x in
+        let positions_to_string (ps : Position.t list) : string =
+          Format.asprintf "%a" (Printer_tools.pp_list " " (fun fmt x ->
+              Format.fprintf fmt "%s" (Position.string_of_pos x))
+            ) ps
+        in
+        let perrors = List.map (fun (ps, e : Position.t list * string) -> Format.asprintf "%s: %s" (positions_to_string ps) e) errors in
+        let input = String.concat "\n" perrors in
+        f (Js.string input)
+      end
+      else begin
+        match Js.Opt.to_option (Js.js_error_of_exn exn) with
+        | None -> raise exn
+        | Some err -> Js.raise_js_error err
+      end
   in
   Js.export_all
     (object%js
