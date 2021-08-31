@@ -1,0 +1,9 @@
+archetype fun_unit
+
+function f () : unit {
+  return Unit
+}
+
+entry exec () {
+  var n = f();
+}
