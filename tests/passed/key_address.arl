@@ -1,0 +1,11 @@
+archetype key_address
+
+variable res : option<address> = none
+
+entry exec () {
+  effect {
+   var k : key = "edpkurLzuFFL1XyP3fed4u7MsgeywQoQmHM45Bz91PBzDvUjQ9bvdn";
+   var a : address = key_address(k);
+   res := some(a);
+  }
+}
