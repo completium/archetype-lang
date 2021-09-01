@@ -1460,6 +1460,7 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         | Ujointickets       -> assert false
         | Upairing_check     -> assert false
         | Uconcat            -> assert false
+        | Uaddress           -> M.mk_mterm (Mcontractaddress (f e)) M.taddress
       end
     | Ibinop (op, a, b) -> begin
         match op with
@@ -1855,6 +1856,8 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Munpack (_t, _x)    -> assert false
     | Msetdelegate _x     -> assert false
     | Mimplicitaccount _x -> assert false
+    | Mcontractaddress _x -> assert false
+    | Mkeyaddress _x      -> assert false
 
 
     (* crypto functions *)

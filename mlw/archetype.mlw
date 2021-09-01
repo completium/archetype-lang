@@ -413,6 +413,8 @@ theory Operation
   (* blockchain operations *)
   val function set_delegate (option key_hash) : operation
   val function implicit_account key_hash : contract
+  val function contract_address contract : address
+  val function key_address key : address
   val function voting_power key_hash : nat
   val total_voting_power : nat
 

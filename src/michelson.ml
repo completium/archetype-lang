@@ -235,6 +235,7 @@ and un_operator =
   | Ujointickets
   | Upairing_check
   | Uconcat
+  | Uaddress
 [@@deriving show {with_path = false}]
 
 and bin_operator =

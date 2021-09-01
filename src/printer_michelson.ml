@@ -304,6 +304,7 @@ let rec pp_instruction fmt (i : instruction) =
       | Ujointickets -> pp "join_tickets(%a)" f e
       | Upairing_check -> pp "pairing_check"
       | Uconcat      -> pp "concat"
+      | Uaddress     -> pp "address"
     end
   | Ibinop (op, lhs, rhs) -> begin
       match op with
@@ -546,7 +547,8 @@ let rec pp_dexpr fmt (de : dexpr) =
       | Ureadticket  -> pp "read_ticket(%a)" f e
       | Ujointickets -> pp "join_tickets(%a)" f e
       | Upairing_check -> pp "pairing_check"
-      | Uconcat      -> pp "concat"
+      | Uconcat        -> pp "concat"
+      | Uaddress       -> pp "address"
     end
   | Dbop (op, lhs, rhs) -> begin
       match op with

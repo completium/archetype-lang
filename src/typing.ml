@@ -1351,7 +1351,10 @@ let cryptoops : opinfo list =
      op "check_signature"  A.Cchecksignature  `Total None [A.vtkey; A.vtsignature; A.vtbytes] (`Ty A.vtbool              ) Mint.empty;
      op "set_delegate"     A.Csetdelegate     `Total None [A.Toption A.vtkeyhash]             (`Ty A.Toperation          ) Mint.empty;
      op "implicit_account" A.Cimplicitaccount `Total None [A.vtkeyhash]                       (`Ty (A.Tcontract A.vtunit)) Mint.empty;
-     op "voting_power"     A.Cvotingpower     `Total None [A.vtkeyhash]                       (`Ty A.vtnat               ) Mint.empty]
+     op "voting_power"     A.Cvotingpower     `Total None [A.vtkeyhash]                       (`Ty A.vtnat               ) Mint.empty;
+     op "contract_address" A.Ccontractaddress `Total None [A.Tcontract A.vtunit]              (`Ty A.vtaddress           ) Mint.empty;
+     op "key_address"      A.Ckeyaddress      `Total None [A.vtkey]                           (`Ty A.vtaddress           ) Mint.empty]
+
 
 (* -------------------------------------------------------------------- *)
 let packops : opinfo list =

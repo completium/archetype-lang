@@ -1196,6 +1196,14 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "implicit_account (%a)"
         f x
 
+    | Mcontractaddress x ->
+      Format.fprintf fmt "contract_address (%a)"
+        f x
+
+    | Mkeyaddress x ->
+      Format.fprintf fmt "key_address (%a)"
+        f x
+
 
     (* crypto functions *)
 

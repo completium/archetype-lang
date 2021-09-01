@@ -859,6 +859,8 @@ let to_ir (model : M.model) : T.ir =
     | Munpack (t, x)     -> T.Iunop (Uunpack (ft t), f x)
     | Msetdelegate x     -> T.Iunop (Usetdelegate, f x)
     | Mimplicitaccount x -> T.Iunop (Uimplicitaccount, f x)
+    | Mcontractaddress x -> T.Iunop (Uaddress, f x)
+    | Mkeyaddress      x -> T.Iunop (Uaddress, T.Iunop (Uimplicitaccount, T.Iunop  (Uhash_key, f x)))
 
     (* crypto functions *)
 
@@ -1285,6 +1287,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
     | T.Ujointickets     -> T.JOIN_TICKETS
     | T.Upairing_check   -> T.PAIRING_CHECK
     | T.Uconcat          -> T.CONCAT
+    | T.Uaddress         -> T.ADDRESS
   in
 
   let bin_op_to_code = function

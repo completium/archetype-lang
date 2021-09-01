@@ -278,6 +278,8 @@ let to_const = function
   | Ckeccak         -> "keccak"
   | Cchecksignature -> "check_signature"
   | Chashkey        -> "hash_key"
+  | Ccontractaddress-> "contract_address"
+  | Ckeyaddress     -> "key_address"
   (* voting *)
   | Ctotalvotingpower -> "total_voting_power"
   | Cvotingpower      -> "voting_power"

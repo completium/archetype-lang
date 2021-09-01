@@ -742,6 +742,14 @@ let to_model (ast : A.ast) : M.model =
         let fx = f x in
         M.Mchecksignature (fk, fs, fx)
 
+      | A.Pcall (None, A.Cconst A.Ccontractaddress, [AExpr x]) ->
+        let fx = f x in
+        M.Mcontractaddress (fx)
+
+      | A.Pcall (None, A.Cconst A.Ckeyaddress, [AExpr x]) ->
+        let fx = f x in
+        M.Mkeyaddress (fx)
+
       | A.Pcall (_, A.Cid id, args) ->
         M.Mapp (id, List.map (fun x -> term_arg_to_expr f x) args)
 
