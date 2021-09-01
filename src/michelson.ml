@@ -371,7 +371,7 @@ type ir = {
   name: ident;
   storage_type: type_;
   storage_data : data;
-  storage_list: (ident * type_) list;
+  storage_list: (ident * type_ * data) list;
   with_operations: bool;
   parameter: type_;
   funs: func list;

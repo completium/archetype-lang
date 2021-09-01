@@ -167,6 +167,22 @@ let extract_from_micheline tag input =
   |> seek tag
   |> get_arg
 
+type eargs = {
+  id: string;
+  typ: string;
+}
+[@@deriving yojson, show {with_path = false}]
+
+type entry = {
+  name: string;
+  args : eargs list;
+  typ: string;
+}
+[@@deriving yojson, show {with_path = false}]
+
+type entries = entry list
+[@@deriving yojson, show {with_path = false}]
+
 let show_entries (input : T.obj_micheline) =
   let with_annot (t : T.type_) : bool = Option.is_some t.annotation in
 
@@ -202,20 +218,44 @@ let show_entries (input : T.obj_micheline) =
   |> get_arg
   |> T.to_type
   |> do_or
-  |> List.map (fun (x, y) -> x, do_pair y)
-  |> fun (l : (ident * (ident * Model.type_) list) list) ->
-  Format.asprintf "%a@."
-    (Printer_tools.pp_list "@\n"
-       (fun fmt (id, l : ident * (ident * Model.type_) list) ->
-          Format.fprintf fmt "%s (%a)" id
-            (Printer_tools.pp_list ", " (fun fmt (id, t) ->
-                 Format.fprintf fmt "%s : %a" id Printer_model.pp_type t
-               )
-            ) l
-       )
-    ) l
+  |> List.map (fun (x, y) -> (x, y, do_pair y))
+  |> fun (l : (ident * T.type_ * ((ident * Model.type_) list)) list) ->
+  if !Options.opt_rjson
+  then
+    let res : entries = List.fold_right (fun (id, t, args) accu ->
+        {name = id;
+         typ = Format.asprintf "%a" Printer_michelson.pp_type t;
+         args = (List.fold_right (fun (id, typ) accu -> {id = id; typ = Format.asprintf "%a" Printer_model.pp_type typ}::accu) args [])}::accu) l [] in
+    (Yojson.Safe.to_string (entries_to_yojson res))
+  else begin
+    Format.asprintf "%a@."
+      (Printer_tools.pp_list "@\n"
+         (fun fmt (id, _, l : ident * T.type_ * (ident * Model.type_) list) ->
+            Format.fprintf fmt "%s (%a)" id
+              (Printer_tools.pp_list ", " (fun fmt (id, t) ->
+                   Format.fprintf fmt "%s : %a" id Printer_model.pp_type t
+                 )
+              ) l
+         )
+      ) l
+  end
 
 let to_micheline (input : string) =
   let tokens = Lexing.from_string input in
   let m = Michelson_parser.main Michelson_lexer.token tokens in
   Format.printf "%a@." Printer_michelson.pp_obj_micheline m
+
+
+type storage_value = {
+  id: string;
+  value: string;
+}
+[@@deriving yojson, show {with_path = false}]
+
+type storage_values = storage_value list
+[@@deriving yojson, show {with_path = false}]
+
+let get_storage_values (model : Model.model) =
+  let ir = Gen_michelson.to_ir model in
+  let storage_values : storage_values = List.map (fun (id, _, v) -> {id = id; value = Format.asprintf "%a" Printer_michelson.pp_data v}) ir.storage_list in
+  Yojson.Safe.to_string (storage_values_to_yojson storage_values)

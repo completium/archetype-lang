@@ -1,0 +1,5 @@
+archetype syntax_error
+
+entry a() {
+  ;
+}

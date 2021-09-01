@@ -1251,7 +1251,7 @@ let to_ir (dir, env : T.dprogram * env) : T.ir * env =
   let storage_list =
     let rec aux (x : T.type_) =
       match x.node, x.annotation with
-      | _, Some a  -> [a, x]
+      | _, Some a  -> [a, x, T.Dunit]
       | T.Tpair (a, b), _ -> begin
           match aux a, aux b with
           | [], _
@@ -1262,7 +1262,7 @@ let to_ir (dir, env : T.dprogram * env) : T.ir * env =
     in
     let r = aux tstorage in
     match r with
-    | [] -> ["storage", tstorage]
+    | [] -> ["storage", tstorage, T.Dunit]
     | _  -> r
   in
 
@@ -1522,7 +1522,7 @@ let to_model (ir, env : T.ir * env) : M.model * env =
     | _ -> assert false
   in
   let storage =
-    List.map (fun (id, t) ->
+    List.map (fun (id, t, _) ->
         M.mk_storage_item (dumloc id) MTvar (for_type t) (for_data ~t:t (get_default_value t))
       ) ir.storage_list
   in
