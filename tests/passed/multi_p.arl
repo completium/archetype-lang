@@ -1,0 +1,37 @@
+archetype multi_p
+
+entry e1() {
+  var a = 0;
+}
+
+entry e2() {
+
+}
+
+entry e3() {
+
+}
+
+entry e4() {
+
+}
+
+entry e5() {
+
+}
+
+entry e6() {
+
+}
+
+entry e7() {
+
+}
+
+entry e8() {
+
+}
+
+entry e9() {
+
+}

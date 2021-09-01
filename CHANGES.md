@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ### Added
   - `contract_address` (contract -> address) and `key_address` (key -> address)
+### Changed
+  - entrypoints are generated with a complete binary tree.
 
 ## [1.2.7] - 2021-08-11
 ### Added

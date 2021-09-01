@@ -10,6 +10,7 @@ module MapString = Map.Make(String)
 
 exception Anomaly of string
 
+let complete_tree_entrypoints = true
 type error_desc =
   | FieldNotFoundFor of string * string
   | UnsupportedTerm of string
@@ -55,6 +56,19 @@ type env_ir = {
 
 let mk_env ?function_p _ =
   { function_p }
+
+let shape_entrypoints f n l =
+  match List.rev l with
+  | [] -> n
+  | [e] -> e
+  | i::t -> begin
+      if complete_tree_entrypoints
+      then begin
+        let l = List.rev (i::t) in
+        make_full_tree f l
+      end
+      else List.fold_left f (i) t
+    end
 
 let to_ir (model : M.model) : T.ir =
 
@@ -1101,13 +1115,10 @@ let to_ir (model : M.model) : T.ir =
       | T.Tunit, _       -> T.tpair T.tunit eargs
       | _                -> T.tpair args eargs
     in
-    match List.rev entries with
-    | [] -> T.tunit
-    | [e] -> for_entry e
-    | i::t -> begin
-        let for_entry e = e |> for_entry |> (fun (x : T.type_) -> annot e.name x) in
-        List.fold_left (fun accu x -> (T.mk_type (T.Tor (for_entry x, accu)))) (for_entry i) t
-      end
+    let for_entry e = e |> for_entry |> (fun (x : T.type_) -> annot e.name x) in
+    entries
+    |> List.map for_entry
+    |> shape_entrypoints (fun x y -> T.mk_type (T.Tor(x, y))) T.tunit
   in
   let with_operations = M.Utils.with_operations model in
 
@@ -1748,13 +1759,9 @@ and to_michelson (ir : T.ir) : T.michelson =
     in
 
     let code =
-      match List.rev ir.entries with
-      | []   -> assert false
-      | [e]  -> T.SEQ [for_entry e]
-      | e::l -> begin
-          let c : T.code = List.fold_left (fun accu x -> T.IF_LEFT ([for_entry x], [accu])) (for_entry e) l in
-          T.SEQ ([c])
-        end
+      ir.entries
+      |> List.map for_entry
+      |> shape_entrypoints (fun x y -> T.IF_LEFT ([x], [y])) (T.SEQ [])
     in
     let us = if nb_storage_item > 1 then [T.DIP (1, unfold_storage)] else [] in
     T.SEQ (cfuns @ ops @ fff @ [T.UNPAIR] @ us @ [code] @ eee)
