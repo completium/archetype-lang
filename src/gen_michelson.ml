@@ -195,7 +195,7 @@ let to_ir (model : M.model) : T.ir =
     | T.Bratabs          -> true
     | T.Brattez          -> true
     | T.Bratdur          -> true
-    | T.Bsubnat          -> false
+    | T.Bsubnat          -> true
   in
 
   let add_builtin b =
