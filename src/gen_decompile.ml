@@ -1849,6 +1849,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Misnone _x          -> assert false
     | Missome _x          -> assert false
     | Moptget _x          -> assert false
+    | Mrequiresome (_x, _y) -> assert false
     | Mfloor  _x          -> assert false
     | Mceil   _x          -> assert false
     | Mtostring (_, _x)   -> assert false

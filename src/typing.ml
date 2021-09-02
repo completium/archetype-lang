@@ -1285,11 +1285,16 @@ let coreops : opinfo list =
   @ [op "date_from_timestamp" A.CdateFromTimestamp `Total None [A.vtint] (`Ty A.vtdate) Mint.empty]
 
 (* -------------------------------------------------------------------- *)
-let optionops : opinfo list = [
-  op "isnone"  A.Cisnone `Total   (Some (A.Toption (A.Tnamed 0))) [] (`Ty A.vtbool)     Mint.empty;
-  op "issome"  A.Cissome `Total   (Some (A.Toption (A.Tnamed 0))) [] (`Ty A.vtbool)     Mint.empty;
-  op "opt_get" A.Cgetopt `Partial (Some (A.Toption (A.Tnamed 0))) [] (`Ty (A.Tnamed 0)) Mint.empty;
-]
+let optionops : opinfo list =
+  let ty = A.Tnamed 0 in
+  let top = A.Toption ty in
+  let ty2 = A.Tnamed 1 in
+  [
+    op "isnone"       A.Cisnone      `Total   (Some top) [] (`Ty A.vtbool) Mint.empty;
+    op "issome"       A.Cissome      `Total   (Some top) [] (`Ty A.vtbool) Mint.empty;
+    op "opt_get"      A.Cgetopt      `Partial (Some top) [] (`Ty ty)       Mint.empty;
+    op "require_some" A.Crequiresome `Partial (Some top) [ty2] (`Ty ty)       Mint.empty
+  ]
 
 (* -------------------------------------------------------------------- *)
 let setops : opinfo list =

@@ -157,6 +157,7 @@ type const =
   | Cfloor
   | Cget
   | Cgetopt
+  | Crequiresome
   | Cisnone
   | Cissome
   | Clength

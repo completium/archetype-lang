@@ -289,6 +289,8 @@ module Utils
   | None -> raise NotFound
   end
 
+  let require_some (o : option 'a) (_ : 'b') : 'a = getopt o
+
   (* ----------------------------------------------------------------------- *)
   (* crypto *)
   let function blake2b (b : bytes) : bytes = b

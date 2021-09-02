@@ -359,6 +359,7 @@ type ('id, 'term) mterm_node  =
   | Misnone           of 'term
   | Missome           of 'term
   | Moptget           of 'term
+  | Mrequiresome      of 'term * 'term
   | Mfloor            of 'term
   | Mceil             of 'term
   | Mtostring         of type_ * 'term
@@ -1508,6 +1509,7 @@ let cmp_mterm_node
     | Misnone x1, Misnone x2                                                           -> cmp x1 x2
     | Missome x1, Missome x2                                                           -> cmp x1 x2
     | Moptget x1, Moptget x2                                                           -> cmp x1 x2
+    | Mrequiresome (x1, y1), Mrequiresome (x2, y2)                                     -> cmp x1 x2 && cmp y1 y2
     | Mfloor x1, Mfloor x2                                                             -> cmp x1 x2
     | Mceil x1, Mceil x2                                                               -> cmp x1 x2
     | Mtostring(t1, x1), Mtostring (t2, x2)                                            -> cmp_type t1 t2 && cmp x1 x2
@@ -1929,6 +1931,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Misnone x                      -> Misnone (f x)
   | Missome x                      -> Missome (f x)
   | Moptget x                      -> Moptget (f x)
+  | Mrequiresome (x, y)            -> Mrequiresome (f x, f y)
   | Mfloor x                       -> Mfloor (f x)
   | Mceil x                        -> Mceil (f x)
   | Mtostring (t, x)               -> Mtostring (ft t, f x)
@@ -2346,6 +2349,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Misnone x                             -> f accu x
   | Missome x                             -> f accu x
   | Moptget x                             -> f accu x
+  | Mrequiresome (x, y)                   -> f (f accu x) y
   | Mfloor x                              -> f accu x
   | Mceil x                               -> f accu x
   | Mtostring (_, x)                      -> f accu x
@@ -3298,6 +3302,11 @@ let fold_map_term
   | Moptget x ->
     let xe, xa = f accu x in
     g (Moptget xe), xa
+
+  | Mrequiresome (x, y) ->
+    let xe, xa = f accu x in
+    let ye, ya = f xa y in
+    g (Mrequiresome (xe, ye)), ya
 
   | Mfloor x ->
     let xe, xa = f accu x in

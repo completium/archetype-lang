@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ### Added
   - `contract_address` (contract -> address) and `key_address` (key -> address)
+  - `require_some`, same as `opt_get` with an extra arg for custom failed
 ### Changed
   - entrypoints are generated with a complete binary tree.
 

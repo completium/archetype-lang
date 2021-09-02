@@ -1167,6 +1167,10 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "opt_get (%a)"
         f x
 
+    | Mrequiresome (x, y) ->
+      Format.fprintf fmt "require_some (%a, %a)"
+        f x f y
+
     | Mfloor x ->
       Format.fprintf fmt "floor (%a)"
         f x

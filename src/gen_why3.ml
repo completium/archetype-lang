@@ -2344,6 +2344,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Misnone s -> Tapp (loc_term (Tvar "isnone"),[map_mterm m ctx s])
     | Missome s -> Tapp (loc_term (Tvar "issome"),[map_mterm m ctx s])
     | Moptget s -> Tapp (loc_term (Tvar "getopt"),[map_mterm m ctx s])
+    | Mrequiresome (s, t) -> Tapp (loc_term (Tvar "require_some"),[map_mterm m ctx s; map_mterm m ctx t])
     | Mfloor  s -> Tapp (loc_term (Tvar "floor"),[map_mterm m ctx s])
     | Mceil   s -> Tapp (loc_term (Tvar "ceil"),[map_mterm m ctx s])
     | Mtostring (_, s) -> Tapp (loc_term (Tvar "from_int"),[map_mterm m ctx s])
@@ -2940,6 +2941,7 @@ let fold_exns m body : term list =
     | M.Mremoveif (_, CKfield (_,_,k,_,_), _, _ ,_ ) -> internal_fold_exn (acc @ [Texn ENotFound]) k
     | M.Mclear (_a,CKfield (_,_,k,_,_)) -> internal_fold_exn (acc @ [Texn ENotFound]) k
     | M.Moptget _ -> acc @ [Texn ENotFound]
+    | M.Mrequiresome _ -> acc @ [Texn ENotFound]
     | M.Mfail InvalidCaller -> acc @ [Texn EInvalidCaller]
     | M.Mfail NoTransfer -> acc @ [Texn ENoTransfer]
     | M.Mfail (InvalidCondition lbl) -> acc @ [Texn (EInvalidCondition lbl)]
