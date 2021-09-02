@@ -252,6 +252,7 @@ let to_const = function
   | CdateFromTimestamp -> "date_from_timestamp"
   | Csetdelegate    -> "set_delegate"
   | Cimplicitaccount-> "implicit_account"
+  | Csubnat         -> "sub_nat"
   (* set *)
   | Csadd           -> "set_add"
   | Csremove        -> "set_remove"

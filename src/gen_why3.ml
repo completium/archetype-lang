@@ -1962,6 +1962,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | MthreeWayCmp (l, r) -> Tthreewaycmp (dl Tyint, map_mterm m ctx l, map_mterm m ctx r)
     | Mshiftleft   (l, r) -> Tshiftleft (map_mterm m ctx l, map_mterm m ctx r)
     | Mshiftright  (l, r) -> Tshiftright (map_mterm m ctx l, map_mterm m ctx r)
+    | Msubnat (_l, _r) -> error_not_translated "Msubnat"
 
 
     (* asset api effect *)

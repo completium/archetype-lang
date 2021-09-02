@@ -1360,6 +1360,11 @@ let cryptoops : opinfo list =
      op "contract_address" A.Ccontractaddress `Total None [A.Tcontract (A.Tnamed 0)]          (`Ty A.vtaddress           ) Mint.empty;
      op "key_address"      A.Ckeyaddress      `Total None [A.vtkey]                           (`Ty A.vtaddress           ) Mint.empty]
 
+(* -------------------------------------------------------------------- *)
+let mathops : opinfo list =
+[
+  op "sub_nat" A.Csubnat `Partial (Some A.vtnat) [ A.vtnat ] (`Ty A.vtnat) Mint.empty
+]
 
 (* -------------------------------------------------------------------- *)
 let packops : opinfo list =
@@ -1406,7 +1411,7 @@ let bls_ops : opinfo list =
 let allops : opinfo list =
   coreops @ optionops @ setops @ listops @ mapops @ bigmapops @
   cryptoops @ packops @ opsops @ lambdaops @
-  ticket_ops @ sapling_ops @ bls_ops
+  ticket_ops @ sapling_ops @ bls_ops @ mathops
 
 (* -------------------------------------------------------------------- *)
 type assetdecl = {

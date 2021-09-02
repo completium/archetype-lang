@@ -181,6 +181,7 @@ type const =
   | CdateFromTimestamp
   | Csetdelegate
   | Cimplicitaccount
+  | Csubnat
   (* set *)
   | Csadd
   | Csremove

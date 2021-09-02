@@ -195,6 +195,7 @@ let to_ir (model : M.model) : T.ir =
     | T.Bratabs          -> true
     | T.Brattez          -> true
     | T.Bratdur          -> true
+    | T.Bsubnat          -> false
   in
 
   let add_builtin b =
@@ -326,6 +327,11 @@ let to_ir (model : M.model) : T.ir =
     | Bratdur -> begin
         let targ = T.tpair T.trat T.tint in
         let tret = T.tint in
+        T.mk_func name targ tret (T.Abstract b)
+      end
+    | Bsubnat -> begin
+        let targ = T.tpair T.tnat T.tnat in
+        let tret = T.tnat in
         T.mk_func name targ tret (T.Abstract b)
       end
   in
@@ -754,6 +760,7 @@ let to_ir (model : M.model) : T.ir =
     | MthreeWayCmp (l, r)-> T.Ibinop (Bcompare, f l, f r)
     | Mshiftleft (l, r)  -> T.Ibinop (Blsl, f l, f r)
     | Mshiftright (l, r) -> T.Ibinop (Blsr, f l, f r)
+    | Msubnat (l, r)     -> let b = T.Bsubnat in add_builtin b; T.Icall (get_fun_name b, [f l; f r], is_inline b)
 
 
     (* asset api effect *)
@@ -1153,6 +1160,7 @@ let map_implem = [
   get_fun_name T.Bratabs         , T.[UNPAIR; ABS; INT; PAIR];
   get_fun_name T.Brattez         , T.[UNPAIR; UNPAIR; ABS; DIG 2; MUL; EDIV; IF_NONE ([T.cfail "DivByZero"], []); CAR;];
   get_fun_name T.Bratdur         , T.[UNPAIR; UNPAIR; DIG 2; MUL; EDIV; IF_NONE ([T.cfail "DivByZero"], []); CAR;];
+  get_fun_name T.Bsubnat         , T.[UNPAIR; SUB; DUP; PUSH (T.tint, T.Dint Big_int.zero_big_int); COMPARE; GT; IF ([T.cfail "NegResult"], []); ABS ];
 ]
 
 let concrete_michelson b =
@@ -1177,6 +1185,7 @@ let concrete_michelson b =
   | T.Bratabs         -> T.SEQ (get_implem b)
   | T.Brattez         -> T.SEQ (get_implem b)
   | T.Bratdur         -> T.SEQ (get_implem b)
+  | T.Bsubnat         -> T.SEQ (get_implem b)
 
 type env = {
   vars : ident list;

@@ -740,6 +740,14 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (l, r)
 
+    | Msubnat (l, r) ->
+      let pp fmt (l, r) =
+        Format.fprintf fmt "sub_nat(%a, %a)"
+          f l
+          f r
+      in
+      pp fmt (l, r)
+
 
     (* asset api effect *)
 

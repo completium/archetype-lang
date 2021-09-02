@@ -1,0 +1,12 @@
+archetype expr_fun_sub_nat_zero
+
+variable res : nat = 0
+
+entry exec () {
+  specification {
+    s0: res = 0;
+  }
+  effect {
+    res := sub_nat(2, 2)
+  }
+}

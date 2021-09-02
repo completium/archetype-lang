@@ -294,6 +294,7 @@ and builtin =
   | Bratabs
   | Brattez
   | Bratdur
+  | Bsubnat
 [@@deriving show {with_path = false}]
 
 and instruction =
@@ -1122,6 +1123,7 @@ end = struct
     | Bratabs         -> "_ratabs"
     | Brattez         -> "_rattez"
     | Bratdur         -> "_ratdur"
+    | Bsubnat         -> "_subnat"
 
   let rec flat (c : code) : code =
     let f l = List.fold_right (fun x accu -> match flat x with | SEQ l -> l @ accu | a -> a::accu) l [] in
