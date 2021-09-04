@@ -112,9 +112,17 @@ let _ =
     (object%js
       method compile i s = begin
         set_options s;
+        doit Compile.compile_from_path i
+      end
+      method compile_from_string i s = begin
+        set_options s;
         doit Compile.compile_from_string i
       end
       method decompile i s = begin
+        set_options s;
+        doit Compile.decompile_from_path i
+      end
+      method decompile_from_string i s = begin
         set_options s;
         doit Compile.decompile_from_string i
       end

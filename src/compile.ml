@@ -356,6 +356,12 @@ let compile input =
 
 let compile_from_string input = compile (FIString input)
 
+let compile_from_path path =
+  let inc = open_in path in
+  let output = compile (FIChannel (path, inc)) in
+  close_in inc;
+  output
+
 (* -------------------------------------------------------------------- *)
 
 let decompile input : string =
@@ -380,6 +386,12 @@ let decompile input : string =
   |> extract_pt
 
 let decompile_from_string (input : string) = decompile (FIString input)
+
+let decompile_from_path path =
+  let inc = open_in path in
+  let output = decompile (FIChannel (path, inc)) in
+  close_in inc;
+  output
 
 (* -------------------------------------------------------------------- *)
 
