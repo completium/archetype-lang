@@ -354,14 +354,6 @@ let compile input =
   |> compile_model
   |> generate_target
 
-let compile_from_string input = compile (FIString input)
-
-let compile_from_path path =
-  let inc = open_in path in
-  let output = compile (FIChannel (path, inc)) in
-  close_in inc;
-  output
-
 (* -------------------------------------------------------------------- *)
 
 let decompile input : string =
@@ -502,3 +494,19 @@ let print_version () =
    let pt = parse_from_channel a in
    let model = compile_model pt in
    Extract_w.process model path_xml *)
+
+
+let compile_gen input =
+  match !Options.opt_get_storage_values, !Options.opt_with_parameters with
+  | true, _ -> get_storage_values input
+  | _, true -> with_parameters input
+  | _       -> compile input
+
+let compile_from_string input = compile (FIString input)
+
+let compile_from_path path =
+  let inc = open_in path in
+  let fi = FIChannel (path, inc) in
+  let output = compile_gen fi in
+  close_in inc;
+  output

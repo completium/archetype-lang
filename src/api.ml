@@ -66,6 +66,7 @@ let set_options settings =
   Archetype.Options.opt_test_mode        := process_boolean_false "test_mode";
   Archetype.Options.opt_property_focused := process_string_empty "property_focused";
   Archetype.Options.opt_get_storage_values := process_boolean_false "get_storage_values";
+  Archetype.Options.opt_with_parameters := process_boolean_false "with_parameters";
 
   (* Archetype.Options.opt_vids             := "vids" []; *)
   ()
