@@ -105,6 +105,7 @@ let main () : unit =
       "--only-expr", Arg.Set Options.opt_expr_only, " ";
       "--init", Arg.String (fun s -> Options.opt_init := s), " Initialize parameters";
       "--no-js-header", Arg.Set Options.opt_no_js_header, " No javascript header";
+      "--with-parameters", Arg.Set Options.opt_with_parameters, " With parameters";
       "--get-storage-values", Arg.Set Options.opt_get_storage_values, " Get storage values";
       "-V", Arg.String (fun s -> Options.add_vids s), "<id> process specication identifiers";
       "-v", Arg.Unit (fun () -> print_version ()), " Show version number and exit";
@@ -145,12 +146,13 @@ let main () : unit =
         let input = FIChannel (filename, channel) in
         begin
           let res =
-            match !Options.opt_lsp_kind, !Options.opt_service_kind, !Options.opt_decomp, !Options.opt_expr, !Options.opt_get_storage_values with
-            | _, _, _, _, true   -> get_storage_values input
-            | Some k, _, _, _, _ -> Lsp.process k input
-            | _, Some s, _, _, _ -> Services.process s input
-            | _, _, true, _  , _ -> decompile input
-            | _, _, _, Some v, _ -> process_expr ~tinput:input v
+            match !Options.opt_lsp_kind, !Options.opt_service_kind, !Options.opt_decomp, !Options.opt_expr, !Options.opt_get_storage_values, !Options.opt_with_parameters with
+            | _, _, _, _, true, _   -> get_storage_values input
+            | _, _, _, _, _, true   -> with_parameters input
+            | Some k, _, _, _, _, _ -> Lsp.process k input
+            | _, Some s, _, _, _, _ -> Services.process s input
+            | _, _, true, _  , _, _ -> decompile input
+            | _, _, _, Some v, _, _ -> process_expr ~tinput:input v
             | _               -> compile input
           in
           output res

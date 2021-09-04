@@ -65,6 +65,8 @@ let set_options settings =
   Archetype.Options.opt_sdir             := process_boolean_false "sdir";
   Archetype.Options.opt_test_mode        := process_boolean_false "test_mode";
   Archetype.Options.opt_property_focused := process_string_empty "property_focused";
+  Archetype.Options.opt_get_storage_values := process_boolean_false "get_storage_values";
+
   (* Archetype.Options.opt_vids             := "vids" []; *)
   ()
 
@@ -134,14 +136,6 @@ let _ =
         set_options s;
         let tinput = Js.to_string t in
         doit (Compile.process_expr_type_from_string ~tinput) i
-      end
-      method withParameters i s = begin
-        set_options s;
-        doit Compile.get_parameters i
-      end
-      method getStorageValues i s = begin
-        set_options s;
-        doit Compile.get_storage_values_from_string i
       end
       method showEntries i s = begin
         set_options s;

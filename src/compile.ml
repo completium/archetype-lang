@@ -459,9 +459,9 @@ let show_entries (input : string) =
 
 (* -------------------------------------------------------------------- *)
 
-let get_parameters (input : string) : string =
+let with_parameters input : string =
   let parameters =
-    FIString input
+    input
     |> parse
     |> compile_model
     |> (fun m -> m.parameters)
