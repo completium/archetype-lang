@@ -11,8 +11,7 @@ See https://archetype-lang.org for more details.
 const archetype = require('@completium/archetype');
 const fs = require('fs');
 
-const input = fs.readFileSync('resources/simple.arl').toString();
-const output = archetype.compile(input, {
+const output = archetype.compile('./resources/simple.arl', {
   target: 'michelson'
 });
 console.log(output);
