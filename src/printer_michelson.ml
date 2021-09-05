@@ -177,8 +177,8 @@ and pp_code fmt (i : code) =
   | SOURCE                   -> pp "SOURCE"
   | TRANSFER_TOKENS          -> pp "TRANSFER_TOKENS"
   (* Operations on data structures *)
-  | CAR                      -> pp "CAR"
-  | CDR                      -> pp "CDR"
+  | CAR n                    -> pp "CAR%a" pp_arg2 n
+  | CDR n                    -> pp "CDR%a" pp_arg n
   | CONCAT                   -> pp "CONCAT"
   | CONS                     -> pp "CONS"
   | EMPTY_BIG_MAP (k, v)     -> pp "EMPTY_BIG_MAP %a %a" pp_type k pp_type v
@@ -270,8 +270,8 @@ let rec pp_instruction fmt (i : instruction) =
     end
   | Iunop (op, e) -> begin
       match op with
-      | Ucar        -> pp "car(%a)"          f e
-      | Ucdr        -> pp "cdr(%a)"          f e
+      | Ucar n      -> pp "car(%i, %a)"      n f e
+      | Ucdr n      -> pp "cdr(%i, %a)"      n f e
       | Uleft  t    -> pp "left<%a>(%a)"     pp_type t f e
       | Uright t    -> pp "right<%a>(%a)"    pp_type t f e
       | Uneg        -> pp "neg(%a)"          f e
@@ -514,8 +514,8 @@ let rec pp_dexpr fmt (de : dexpr) =
     end
   | Duop (op, e) -> begin
       match op with
-      | Ucar        -> pp "car(%a)"          f e
-      | Ucdr        -> pp "cdr(%a)"          f e
+      | Ucar n      -> pp "car(%i, %a)"      n f e
+      | Ucdr n      -> pp "cdr(%i, %a)"      n f e
       | Uleft  t    -> pp "left<%a>(%a)"     pp_type t f e
       | Uright t    -> pp "right<%a>(%a)"    pp_type t f e
       | Uneg        -> pp "neg(%a)"          f e

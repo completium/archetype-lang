@@ -128,8 +128,8 @@ and code =
   | SOURCE
   | TRANSFER_TOKENS
   (* Operations on data structures *)
-  | CAR
-  | CDR
+  | CAR                of int
+  | CDR                of int
   | CONCAT
   | CONS
   | EMPTY_BIG_MAP      of type_ * type_
@@ -201,8 +201,8 @@ and z_operator =
 [@@deriving show {with_path = false}]
 
 and un_operator =
-  | Ucar
-  | Ucdr
+  | Ucar of int
+  | Ucdr of int
   | Uleft  of type_
   | Uright of type_
   | Uneg
@@ -525,8 +525,8 @@ let inil t           = Izop (Znil t)
 let iemptyset t      = Izop (Zemptyset t)
 let iemptymap k v    = Izop (Zemptymap (k, v))
 let iemptybigmap k v = Izop (Zemptybigmap (k, v))
-let icar x           = Iunop  (Ucar, x)
-let icdr x           = Iunop  (Ucdr, x)
+let icar n x         = Iunop (Ucar n, x)
+let icdr n x         = Iunop (Ucdr n, x)
 let ifail msg        = Iunop (Ufail, istring msg)
 let iskip            = Iseq []
 let ileft t x        = Iunop  (Uleft t, x)
@@ -535,8 +535,8 @@ let ieq  l r         = Icompare (Ceq, l, r)
 let iadd l r         = Ibinop (Badd, l, r)
 let isub l r         = Ibinop (Bsub, l, r)
 let imul l r         = Ibinop (Bmul, l, r)
-let idiv l r         = Iifnone (Ibinop (Bediv, l, r), ifail "DivByZero", "_var_ifnone", icar (Ivar ("_var_ifnone")), tint )
-let imod l r         = Iifnone (Ibinop (Bediv, l, r), ifail "DivByZero", "_var_ifnone", icdr (Ivar ("_var_ifnone")), tnat )
+let idiv l r         = Iifnone (Ibinop (Bediv, l, r), ifail "DivByZero", "_var_ifnone", icar 0 (Ivar ("_var_ifnone")), tint )
+let imod l r         = Iifnone (Ibinop (Bediv, l, r), ifail "DivByZero", "_var_ifnone", icdr 0 (Ivar ("_var_ifnone")), tnat )
 let irecord ir       = Irecord ir
 let isrecord l       = irecord (Rtuple l)
 let ipair x y        = Ibinop (Bpair, x, y)
@@ -637,8 +637,8 @@ let cmp_z_operator lhs rhs =
 
 let cmp_un_operator lhs rhs =
   match lhs, rhs with
-  | Ucar, Ucar                             -> true
-  | Ucdr, Ucdr                             -> true
+  | Ucar n1, Ucar n2                       -> n1 = n2
+  | Ucdr n1, Ucdr n2                       -> n1 = n2
   | Uleft t1, Uleft t2                     -> cmp_type t1 t2
   | Uright t1, Uright t2                   -> cmp_type t1 t2
   | Uneg, Uneg                             -> true
@@ -710,8 +710,8 @@ let cmp_code lhs rhs =
     | UNIT, UNIT                                     -> true
     | IF_NONE (t1, e1), IF_NONE (t2, e2)             -> List.for_all2 f t1 t2 && List.for_all2 f e1 e2
     | PAIR, PAIR                                     -> true
-    | CAR, CAR                                       -> true
-    | CDR, CDR                                       -> true
+    | CAR n1, CAR n2                                 -> n1 = n2
+    | CDR n1, CDR n2                                 -> n1 = n2
     | UNPAIR, UNPAIR                                 -> true
     | SELF_ADDRESS, SELF_ADDRESS                     -> true
     | APPLY, APPLY                                   -> true
@@ -928,8 +928,8 @@ let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) =
   | SOURCE                   -> SOURCE
   | TRANSFER_TOKENS          -> TRANSFER_TOKENS
   (* Operations on data structures *)
-  | CAR                      -> CAR
-  | CDR                      -> CDR
+  | CAR n                    -> CAR n
+  | CDR n                    -> CDR n
   | CONCAT                   -> CONCAT
   | CONS                     -> CONS
   | EMPTY_BIG_MAP  (k, v)    -> EMPTY_BIG_MAP (ft k, ft v)
@@ -1175,6 +1175,8 @@ end = struct
       let rec aux accu l =
         match l with
         | (DROP x)::(DROP y)::t -> aux accu ((DROP (x + y))::t)
+        (* | (CAR x)::(CAR y)::t   -> aux accu ((CAR (x + y))::t) *)
+        | (CDR x)::(CDR y)::t   -> aux accu ((CDR (x + y))::t)
         | (DUP)::(DROP x)::t    -> aux accu ((DROP (x - 1))::t)
         | (DUP)::(SWAP)::t      -> aux accu ((DUP)::t)
         | (DROP 0)::t           -> aux accu t
@@ -1215,7 +1217,7 @@ end = struct
   let replace_macro c =
     let rec aux c =
       match c with
-      | UNPAIR -> SEQ [DUP; CAR; DIP (1, [CDR])]
+      | UNPAIR -> SEQ [DUP; CAR 1; DIP (1, [CDR 1])]
       | _ -> map_code aux c
     in
     aux c
@@ -1385,8 +1387,8 @@ end = struct
     | SOURCE                   -> mk "SOURCE"
     | TRANSFER_TOKENS          -> mk "TRANSFER_TOKENS"
     (* Operations on data structures *)
-    | CAR                      -> mk "CAR"
-    | CDR                      -> mk "CDR"
+    | CAR n                    -> mk ~args:[mk_int n] "CAR"
+    | CDR n                    -> mk ~args:[mk_int n] "CDR"
     | CONCAT                   -> mk "CONCAT"
     | CONS                     -> mk "CONS"
     | EMPTY_BIG_MAP  (k, v)    -> mk ~args:[ft k; ft v] "EMPTY_BIG_MAP"

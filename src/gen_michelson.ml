@@ -242,8 +242,8 @@ let to_ir (model : M.model) : T.ir =
           let return    = T.Iassign (fun_result, T.Iifnone (vres, T.ifail "NotFound", "_var_ifnone", Ivar "_var_ifnone", t)) in
           let cond      = T.Icompare (Cle, viter, varg) in
           let vheadtail = T.Imichelson ([vlist], T.SEQ [ IF_CONS ([PAIR], [T.cstring "EmptyList"; T.FAILWITH])], []) in
-          let ares      = T.Iassign (res_name, T.isome(T.icar ve)) in
-          let alist     = T.Iassign (list_name, T.icdr ve) in
+          let ares      = T.Iassign (res_name, T.isome(T.icar 0 ve)) in
+          let alist     = T.Iassign (list_name, T.icdr 1 ve) in
           let aiter     = T.Iassign (iter_name, T.Ibinop (Badd, viter, T.inat Big_int.unit_big_int)) in
           let bloop     = T.IletIn(e_name, vheadtail, T.Iseq [ares; alist; aiter], true) in
           let loop      = T.Iloop (cond, bloop) in
@@ -279,10 +279,10 @@ let to_ir (model : M.model) : T.ir =
                                                           T.inat (Big_int.big_int_of_int 7), T.istring "7";
                                                           T.inat (Big_int.big_int_of_int 8), T.istring "8";
                                                           T.inat (Big_int.big_int_of_int 9), T.istring "9"]) in
-          let get_map    = T.Iifnone (T.Ibinop (Bget, T.Iunop (Ucdr, vpair), vmap), T.ifail "NotFound", "_var_ifnone", Ivar "_var_ifnone", T.tstring) in
+          let get_map    = T.Iifnone (T.Ibinop (Bget, T.Iunop (Ucdr 1, vpair), vmap), T.ifail "NotFound", "_var_ifnone", Ivar "_var_ifnone", T.tstring) in
           let concat     = T.Ibinop (Bconcat, get_map, vres) in
           let assign_res = T.Iassign (res_name, concat) in
-          let assign_arg = T.Iassign (arg_name, T.Iunop (Ucar, vpair)) in
+          let assign_arg = T.Iassign (arg_name, T.Iunop (Ucar 0, vpair)) in
           let vpair      = T.Iifnone (T.Ibinop (Bediv, varg, ten), T.ifail "DivByZero", "_var_ifnone", Ivar "_var_ifnone", T.tpair T.tint T.tnat) in
           let b          = T.IletIn(pair_name, vpair, T.Iseq [assign_res; assign_arg], true) in
           let loop       = T.Iloop (cond, b) in
@@ -447,15 +447,18 @@ let to_ir (model : M.model) : T.ir =
     let access_tuple s i x =
       if i = 0 && s = 1
       then x
-      else begin
-        let x = Tools.foldi T.icdr x i in
-        let x =
+      else if i + 1 = s
+      then T.icdr i x
+      else T.icar i x
+      (* else begin
+         let x = Tools.foldi (T.icdr 1) x i in
+         let x =
           if i < s - 1
-          then T.icar x
+          then T.icar 0 x
           else x
-        in
-        x
-      end
+         in
+         x *)
+      (* end *)
     in
 
     let access_record (e : M.mterm) fn =
@@ -1140,12 +1143,12 @@ let to_ir (model : M.model) : T.ir =
 (* -------------------------------------------------------------------- *)
 
 let map_implem = [
-  get_fun_name (T.Bmin T.tunit)  , T.[DUP; UNPAIR; COMPARE; LT; IF ([CAR], [CDR])];
-  get_fun_name (T.Bmax T.tunit)  , T.[DUP; UNPAIR; COMPARE; LT; IF ([CDR], [CAR])];
+  get_fun_name (T.Bmin T.tunit)  , T.[DUP; UNPAIR; COMPARE; LT; IF ([CAR 0], [CDR 1])];
+  get_fun_name (T.Bmax T.tunit)  , T.[DUP; UNPAIR; COMPARE; LT; IF ([CDR 1], [CAR 0])];
   get_fun_name T.Bratcmp         , T.[UNPAIR; UNPAIR; DIP (1, [UNPAIR]); UNPAIR; DUG 3; MUL; DIP (1, [MUL]); SWAP; COMPARE; SWAP;
                                       IF_LEFT ([DROP 1; EQ], [IF_LEFT ([IF_LEFT ([DROP 1; LT], [DROP 1; LE])],
                                                                        [IF_LEFT ([DROP 1; GT], [DROP 1; GE])])])];
-  get_fun_name T.Bfloor          , T.[UNPAIR; EDIV; IF_NONE ([T.cfail "DivByZero"], [CAR])];
+  get_fun_name T.Bfloor          , T.[UNPAIR; EDIV; IF_NONE ([T.cfail "DivByZero"], [CAR 0])];
   get_fun_name T.Bceil           , T.[UNPAIR; EDIV; IF_NONE ([T.cfail "DivByZero"], [UNPAIR; SWAP; INT; EQ; IF ([], [PUSH (T.tint, T.Dint Big_int.unit_big_int); ADD])])];
   get_fun_name T.Bratnorm        ,   [];
   get_fun_name T.Brataddsub      , T.[UNPAIR; UNPAIR; DIP (1, [UNPAIR; SWAP; DUP]); UNPAIR; SWAP; DUP; DIG 3; MUL; DUP; PUSH (T.tnat, T.Dint Big_int.zero_big_int);
@@ -1158,8 +1161,8 @@ let map_implem = [
                                       PUSH (T.tint, T.Dint Big_int.zero_big_int); DIG 4; DUP; DUG 5; COMPARE; GE; IF ([INT], [NEG]); MUL; DIP (1, [MUL; ABS]); PAIR ];
   get_fun_name T.Bratuminus      , T.[UNPAIR; NEG; PAIR];
   get_fun_name T.Bratabs         , T.[UNPAIR; ABS; INT; PAIR];
-  get_fun_name T.Brattez         , T.[UNPAIR; UNPAIR; ABS; DIG 2; MUL; EDIV; IF_NONE ([T.cfail "DivByZero"], []); CAR;];
-  get_fun_name T.Bratdur         , T.[UNPAIR; UNPAIR; DIG 2; MUL; EDIV; IF_NONE ([T.cfail "DivByZero"], []); CAR;];
+  get_fun_name T.Brattez         , T.[UNPAIR; UNPAIR; ABS; DIG 2; MUL; EDIV; IF_NONE ([T.cfail "DivByZero"], []); CAR 0;];
+  get_fun_name T.Bratdur         , T.[UNPAIR; UNPAIR; DIG 2; MUL; EDIV; IF_NONE ([T.cfail "DivByZero"], []); CAR 0;];
   get_fun_name T.Bsubnat         , T.[UNPAIR; SUB; DUP; PUSH (T.tint, T.Dint Big_int.zero_big_int); COMPARE; GT; IF ([T.cfail "NegResult"], []); ABS ];
 ]
 
@@ -1274,8 +1277,8 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
   in
 
   let un_op_to_code = function
-    | T.Ucar             -> T.CAR
-    | T.Ucdr             -> T.CDR
+    | T.Ucar n           -> T.CAR n
+    | T.Ucdr n           -> T.CDR n
     | T.Uleft t          -> T.LEFT (rar t)
     | T.Uright t         -> T.RIGHT (rar t)
     | T.Uneg             -> T.NEG
