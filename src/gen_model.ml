@@ -406,7 +406,7 @@ let to_model (ast : A.ast) : M.model =
       | A.Pself id -> M.Mself id
 
 
-      | A.Pentrypoint (t, a, b) -> M.Mentrypoint (type_to_type t, a, f b)
+      | A.Pentrypoint (t, a, b, r) -> M.Mentrypoint (type_to_type t, a, f b, Option.map f r)
 
       (* | A.Pcall (Some p, A.Cconst A.Cbefore,    []) -> M.Msetbefore    (f p) *)
       (* | A.Pcall (Some p, A.Cconst A.Cunmoved,   []) -> M.Msetunmoved   (f p)

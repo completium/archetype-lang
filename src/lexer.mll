@@ -90,6 +90,7 @@
       "ref"                 , REF                 ;
       "removed"             , REMOVED             ;
       "require"             , REQUIRE             ;
+      "require_entrypoint"  , REQUIRE_ENTRYPOINT  ;
       "return"              , RETURN              ;
       "right"               , RIGHT               ;
       "sapling_state"       , SAPLING_STATE       ;

@@ -625,9 +625,14 @@ let to_ir (model : M.model) : T.ir =
 
     (* entrypoint *)
 
-    | Mentrypoint (t, id, d)  ->
+    | Mentrypoint (t, id, d, r)  ->
       let annot = get_entrypoint_annot (unloc id) in
-      T.Iunop (Ucontract (to_type t, annot), f d)
+      let a = T.Iunop (Ucontract (to_type t, annot), f d) in
+      begin
+        match r with
+        | Some r -> T.Iifnone (a, Iunop (Ufail, f r), "_var_ifnone", Ivar "_var_ifnone", ft mtt.type_)
+        | None -> a
+      end
     | Mself id                -> get_self_entrypoint (unloc id)
 
 

@@ -1664,7 +1664,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     (* entrypoint *)
 
-    | Mentrypoint (_t, _a, _s) -> assert false
+    | Mentrypoint (_t, _a, _s, _r) -> assert false
     | Mself _id                -> assert false
 
 

@@ -85,6 +85,11 @@ let pp_maybe c tx pp fmt x =
 let pp_maybe_paren c pp =
   pp_maybe c pp_paren pp
 
+let pp_some pp fmt x =
+  match x with
+  | Some x -> pp fmt x
+  | None -> ()
+
 (* -------------------------------------------------------------------------- *)
 type assoc  = Left | Right | NonAssoc
 type pos    = PLeft | PRight | PInfix | PNone

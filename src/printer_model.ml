@@ -352,11 +352,13 @@ let pp_mterm fmt (mt : mterm) =
 
     (* entrypoint *)
 
-    | Mentrypoint (t, a, s) ->
-      Format.fprintf fmt "entrypoint<%a>(%a, %a)"
+    | Mentrypoint (t, a, s, r) ->
+      Format.fprintf fmt "%s<%a>(%a, %a%a)"
+        (if Option.is_some r then "require_entrypoint" else "entrypoint")
         pp_type t
         pp_id a
         f s
+        (pp_some (fun fmt a -> Format.fprintf fmt ", %a" f a)) r
 
     | Mself id ->
       Format.fprintf fmt "self.%a"

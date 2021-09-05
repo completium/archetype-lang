@@ -1800,8 +1800,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     (* entrypoint *)
 
-    | Mentrypoint (_t, a, s) -> Tentrypoint (map_lident a, map_mterm m ctx s)
-    | Mself id               -> Tapp (loc_term (Tvar "getopt"), [loc_term (Tentrypoint (unloc id, Tdefaultaddr))])
+    | Mentrypoint (_t, a, s, _) -> Tentrypoint (map_lident a, map_mterm m ctx s)
+    | Mself id                  -> Tapp (loc_term (Tvar "getopt"), [loc_term (Tentrypoint (unloc id, Tdefaultaddr))])
 
 
     (* operation *)

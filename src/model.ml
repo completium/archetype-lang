@@ -221,7 +221,7 @@ type ('id, 'term) mterm_node  =
   | Mfail             of 'id fail_type_gen
   | Mtransfer         of 'term transfer_kind_gen
   (* entrypoint *)
-  | Mentrypoint       of type_ * 'id * 'term   (* type * address * string *)
+  | Mentrypoint       of type_ * 'id * 'term * 'term option  (* type * address * string * require fail *)
   | Mself             of 'id                   (* entryname *)
   (* operation *)
   | Moperations
@@ -1372,7 +1372,7 @@ let cmp_mterm_node
     | Mfail ft1, Mfail ft2                                                             -> cmp_fail_type cmp ft1 ft2
     | Mtransfer tr1, Mtransfer tr2                                                     -> cmp_transfer_kind tr1 tr2
     (* entrypoint *)
-    | Mentrypoint (t1, a1, s1), Mentrypoint (t2, a2, s2)                               -> cmp_type t1 t2 && cmpi a1 a2 && cmp s1 s2
+    | Mentrypoint (t1, a1, s1, r1), Mentrypoint (t2, a2, s2, r2)                       -> cmp_type t1 t2 && cmpi a1 a2 && cmp s1 s2 && Option.cmp cmp r1 r2
     | Mself id1, Mself id2                                                             -> cmpi id1 id2
     (* operation *)
     | Moperations, Moperations                                                         -> true
@@ -1795,7 +1795,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mfail v                        -> Mfail (match v with | Invalid v -> Invalid (f v) | _ -> v)
   | Mtransfer tr                   -> Mtransfer (map_transfer_kind fi ft f tr)
   (* entrypoint *)
-  | Mentrypoint (t, a, s)          -> Mentrypoint (ft t, g a, f s)
+  | Mentrypoint (t, a, s, r)       -> Mentrypoint (ft t, g a, f s, Option.map f r)
   | Mself id                       -> Mself (g id)
   (* operation *)
   | Moperations                    -> Moperations
@@ -2214,7 +2214,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mfail v                               -> (match v with | Invalid v -> f accu v | _ -> accu)
   | Mtransfer tr                          -> fold_transfer_kind f accu tr
   (* entrypoint *)
-  | Mentrypoint (_, _, s)                 -> f accu s
+  | Mentrypoint (_, _, s, r)              -> let tmp = f accu s in Option.map_dfl (f tmp) tmp r
   | Mself _                               -> accu
   (* operation *)
   | Moperations                           -> accu
@@ -2648,9 +2648,14 @@ let fold_map_term
 
   (* entrypoint *)
 
-  | Mentrypoint (t, a, s) ->
+  | Mentrypoint (t, a, s, r) ->
     let se, sa = f accu s in
-    g (Mentrypoint (t, a, se)), sa
+    let re, ra =
+      match r with
+      | Some r -> f sa r |> (fun (x, y) -> (Some x, y))
+      | None -> (None, sa)
+    in
+    g (Mentrypoint (t, a, se, re)), ra
 
   | Mself id ->
     g (Mself id), accu
