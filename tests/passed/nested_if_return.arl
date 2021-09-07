@@ -1,0 +1,19 @@
+archetype nested_if_return
+
+variable a : nat = 0
+variable b : nat = 0
+variable c : nat = 0
+
+function f(n : nat) : nat {
+  if n = 1
+  then return 1
+  else if n = 2
+  then return 2
+  else return 3
+}
+
+entry exec () {
+  a := f(1);
+  b := f(2);
+  c := f(0);
+}

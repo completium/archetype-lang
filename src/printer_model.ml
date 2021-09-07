@@ -1424,6 +1424,12 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt v
 
+    | Mmuteztonat v ->
+      let pp fmt v =
+        Format.fprintf fmt "mutez_to_nat (%a)"
+          f v
+      in
+      pp fmt v
 
     (* quantifiers *)
 

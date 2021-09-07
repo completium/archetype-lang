@@ -856,6 +856,10 @@ let to_model (ast : A.ast) : M.model =
         let fx = f x in
         M.Mdatefromtimestamp (fx)
 
+      | A.Pcall (None, A.Cconst A.CmutezToNat, [AExpr x]) ->
+        let fx = f x in
+        M.Mmuteztonat (fx)
+
       (* Fail *)
 
       | A.Pcall (aux, A.Cconst c, args) ->

@@ -416,6 +416,7 @@ type ('id, 'term) mterm_node  =
   | Mratdur           of 'term * 'term
   (* others *)
   | Mdatefromtimestamp of 'term
+  | Mmuteztonat        of 'term
   (* quantifiers *)
   | Mforall           of 'id * type_ * 'term option * 'term
   | Mexists           of 'id * type_ * 'term option * 'term
@@ -1566,6 +1567,7 @@ let cmp_mterm_node
     | Mratdur (c1, t1), Mratdur (c2, t2)                                               -> cmp c1 c2 && cmp t1 t2
     (* others *)
     | Mdatefromtimestamp v1, Mdatefromtimestamp v2                                     -> cmp v1 v2
+    | Mmuteztonat v1, Mmuteztonat v2                                                   -> cmp v1 v2
     (* quantifiers *)
     | Mforall (i1, t1, t2, e1), Mforall (i2, t3, t4, e2)                               -> cmpi i1 i2 && cmp_type t1 t3 && Option.cmp cmp t2 t4 && cmp e1 e2
     | Mexists (i1, t1, t2, e1), Mforall (i2, t3, t4, e2)                               -> cmpi i1 i2 && cmp_type t1 t3 && Option.cmp cmp t2 t4 && cmp e1 e2
@@ -1990,6 +1992,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mratdur (c, t)                 -> Mratdur (f c, f t)
   (* others *)
   | Mdatefromtimestamp v           -> Mdatefromtimestamp (f v)
+  | Mmuteztonat v                  -> Mmuteztonat (f v)
   (* quantifiers *)
   | Mforall (i, t, s, e)           -> Mforall (g i, ft t, Option.map f s, f e)
   | Mexists (i, t, s, e)           -> Mexists (g i, ft t, Option.map f s, f e)
@@ -2409,6 +2412,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mratdur (c, t)                        -> f (f accu c) t
   (* others *)
   | Mdatefromtimestamp v                  -> f accu v
+  | Mmuteztonat v                         -> f accu v
   (* quantifiers *)
   | Mforall (_, _, s, e)                  -> f (opt f accu s) e
   | Mexists (_, _, s, e)                  -> f (opt f accu s) e
@@ -3536,6 +3540,10 @@ let fold_map_term
   | Mdatefromtimestamp v ->
     let ve, va = f accu v in
     g (Mdatefromtimestamp ve), va
+
+  | Mmuteztonat v ->
+    let ve, va = f accu v in
+    g (Mmuteztonat ve), va
 
 
   (* quantifiers *)

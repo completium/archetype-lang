@@ -295,6 +295,7 @@ and builtin =
   | Brattez
   | Bratdur
   | Bsubnat
+  | Bmuteztonat
 [@@deriving show {with_path = false}]
 
 and instruction =
@@ -1124,6 +1125,7 @@ end = struct
     | Brattez         -> "_rattez"
     | Bratdur         -> "_ratdur"
     | Bsubnat         -> "_subnat"
+    | Bmuteztonat     -> "_muteztonat"
 
   let rec flat (c : code) : code =
     let f l = List.fold_right (fun x accu -> match flat x with | SEQ l -> l @ accu | a -> a::accu) l [] in
@@ -1176,6 +1178,7 @@ end = struct
         match l with
         | (DROP x)::(DROP y)::t -> aux accu ((DROP (x + y))::t)
         (* | (CAR x)::(CAR y)::t   -> aux accu ((CAR (x + y))::t) *)
+        (* | (PAIR)::(UNPAIR)::t   -> aux accu t *)
         | (CDR x)::(CDR y)::t   -> aux accu ((CDR (x + y))::t)
         | (DUP)::(DROP x)::t    -> aux accu ((DROP (x - 1))::t)
         | (DUP)::(SWAP)::t      -> aux accu ((DUP)::t)

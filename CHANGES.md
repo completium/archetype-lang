@@ -20,9 +20,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `require_some`, same as `opt_get` with an extra arg for custom failed
   - `sub_nat` substraction which returns `nat`
   - `require_entrypoint`, same as `require_some(entrypoint<...>(...))`
+  - `mutez_to_nat`, convert `tez` to `nat` in mutez
   - michelson optimizations
 ### Changed
   - entrypoints are generated with a complete binary tree.
+### Removed
+  - Breaking : remove implicit cast from `tez` to `nat` (c.f. `mutez_to_nat`)
 
 ## [1.2.7] - 2021-08-11
 ### Added

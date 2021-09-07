@@ -403,7 +403,7 @@ end = struct
         | A.VTint, A.VTbls12_381_fr -> Some 1
         | A.VTnat, A.VTbls12_381_fr -> Some 2
 
-        | A.VTcurrency , A.VTnat when not for_eq -> Some 1
+        (* | A.VTcurrency , A.VTnat when not for_eq -> Some 1 *)
         | A.VTduration , A.VTint when not for_eq -> Some 1
 
         | _, _ -> None
@@ -1282,7 +1282,9 @@ let coreops : opinfo list =
   @ (List.map
        (fun x -> op "to_string" A.Ctostring `Total None [x] (`Ty A.vtstring) Mint.empty)
        [A.vtnat])
-  @ [op "date_from_timestamp" A.CdateFromTimestamp `Total None [A.vtint] (`Ty A.vtdate) Mint.empty]
+  @ [op "date_from_timestamp" A.CdateFromTimestamp `Total None [A.vtint] (`Ty A.vtdate) Mint.empty;
+     op "mutez_to_nat" A.CmutezToNat `Total None [A.vtcurrency] (`Ty A.vtnat) Mint.empty]
+
 
 (* -------------------------------------------------------------------- *)
 let optionops : opinfo list =
@@ -1362,9 +1364,9 @@ let cryptoops : opinfo list =
 
 (* -------------------------------------------------------------------- *)
 let mathops : opinfo list =
-[
-  op "sub_nat" A.Csubnat `Partial (Some A.vtnat) [ A.vtnat ] (`Ty A.vtnat) Mint.empty
-]
+  [
+    op "sub_nat" A.Csubnat `Partial (Some A.vtnat) [ A.vtnat ] (`Ty A.vtnat) Mint.empty
+  ]
 
 (* -------------------------------------------------------------------- *)
 let packops : opinfo list =

@@ -196,6 +196,7 @@ let to_ir (model : M.model) : T.ir =
     | T.Brattez          -> true
     | T.Bratdur          -> true
     | T.Bsubnat          -> true
+    | T.Bmuteztonat      -> true
   in
 
   let add_builtin b =
@@ -331,6 +332,11 @@ let to_ir (model : M.model) : T.ir =
       end
     | Bsubnat -> begin
         let targ = T.tpair T.tnat T.tnat in
+        let tret = T.tnat in
+        T.mk_func name targ tret (T.Abstract b)
+      end
+    | Bmuteztonat -> begin
+        let targ = T.tmutez in
         let tret = T.tnat in
         T.mk_func name targ tret (T.Abstract b)
       end
@@ -991,6 +997,7 @@ let to_ir (model : M.model) : T.ir =
     (* utils *)
 
     | Mdatefromtimestamp _ -> emit_error (UnsupportedTerm ("Mdatefromtimestamp"))
+    | Mmuteztonat v        -> let b = T.Bmuteztonat in add_builtin b; T.Icall (get_fun_name b, [f v], is_inline b)
 
 
     (* quantifiers *)
@@ -1169,6 +1176,7 @@ let map_implem = [
   get_fun_name T.Brattez         , T.[UNPAIR; UNPAIR; ABS; DIG 2; MUL; EDIV; IF_NONE ([T.cfail "DivByZero"], []); CAR 0;];
   get_fun_name T.Bratdur         , T.[UNPAIR; UNPAIR; DIG 2; MUL; EDIV; IF_NONE ([T.cfail "DivByZero"], []); CAR 0;];
   get_fun_name T.Bsubnat         , T.[UNPAIR; SUB; DUP; PUSH (T.tint, T.Dint Big_int.zero_big_int); COMPARE; GT; IF ([T.cfail "NegResult"], []); ABS ];
+  get_fun_name T.Bmuteztonat     , T.[PUSH (T.tmutez, T.Dint Big_int.unit_big_int); SWAP; EDIV; IF_NONE ([T.cfail "DivByZero"], []); CAR 0;];
 ]
 
 let concrete_michelson b =
@@ -1194,6 +1202,7 @@ let concrete_michelson b =
   | T.Brattez         -> T.SEQ (get_implem b)
   | T.Bratdur         -> T.SEQ (get_implem b)
   | T.Bsubnat         -> T.SEQ (get_implem b)
+  | T.Bmuteztonat     -> T.SEQ (get_implem b)
 
 type env = {
   vars : ident list;

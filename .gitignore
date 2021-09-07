@@ -37,3 +37,4 @@ _opam
 tests/passed/test.arl
 repo_contracts
 npm-package/src/api.bc.js
+.vscode/

@@ -179,6 +179,7 @@ type const =
   | Cexec
   | Capply
   | CdateFromTimestamp
+  | CmutezToNat
   | Csetdelegate
   | Cimplicitaccount
   | Csubnat

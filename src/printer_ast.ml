@@ -250,6 +250,7 @@ let to_const = function
   | Cexec           -> "exec"
   | Capply          -> "apply"
   | CdateFromTimestamp -> "date_from_timestamp"
+  | CmutezToNat     -> "mutez_to_nat"
   | Csetdelegate    -> "set_delegate"
   | Cimplicitaccount-> "implicit_account"
   | Csubnat         -> "sub_nat"

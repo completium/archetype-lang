@@ -2461,7 +2461,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mratdur (r,t) -> Tapp (loc_term (Tvar "rat_dur"),[map_mterm m ctx r; map_mterm m ctx t])
 
     (* others ---------------------------------------------------------- *)
-    | Mdatefromtimestamp _ -> assert false
+    | Mdatefromtimestamp _ -> assert false (* TODO *)
+    | Mmuteztonat        _ -> assert false (* TODO *)
 
     (* quantifiers ---------------------------------------------------------- *)
 

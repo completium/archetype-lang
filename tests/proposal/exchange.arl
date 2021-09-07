@@ -1,0 +1,45 @@
+archetype exchange(admin : address, admin_candidate : address = admin, oracle_addr : address, wrc_addr : address, sbk_account : address)
+
+//mainnet
+//oracle=KT1AdbYiPYb5hDuEuVrfxmFehtnBCXv4Np7r
+
+//florencenet
+//oracle=KT1SUP27JhX24Kvr11oUdWswk7FnCW78ZyUn
+
+entry update_value(p : string * date * nat) {
+  called by oracle_addr
+  effect {
+    var a : nat = transferred * p[2] div 1_000_000;
+    transfer 0tz to wrc_addr call %transfer<address * address * nat>((sbk_account, source, a));
+  }
+}
+
+entry change () {
+  require {
+    r1: transferred > 0tz;
+  }
+  effect {
+    transfer transferred to oracle_addr call get<string * contract<string * date * nat>>(("XTZ-USD", self.update_value))
+  }
+}
+
+entry collect(a : address) {
+  called by admin
+  effect {
+    transfer balance to a
+  }
+}
+
+entry transfer_admin (pnew_admin : address) {
+  called by admin
+  effect {
+    admin_candidate := pnew_admin;
+  }
+}
+
+entry accept_admin () {
+  called by admin_candidate
+  effect {
+    admin := admin_candidate
+  }
+}

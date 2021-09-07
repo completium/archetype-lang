@@ -1,0 +1,18 @@
+archetype big_map_partition
+
+asset b to big_map {
+  bid : nat;
+  v   : string;
+}
+
+asset a to big_map {
+  aid : nat;
+  p   : partition<b>;
+}
+
+entry exec(i : nat) {
+  for k in a[i].p do
+    var c = a[i].p[k].v;
+    fail(c);
+  done;
+}
