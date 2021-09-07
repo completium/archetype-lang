@@ -1178,7 +1178,8 @@ end = struct
         match l with
         | (DROP x)::(DROP y)::t -> aux accu ((DROP (x + y))::t)
         (* | (CAR x)::(CAR y)::t   -> aux accu ((CAR (x + y))::t) *)
-        (* | (PAIR)::(UNPAIR)::t   -> aux accu t *)
+        | (PAIR)::(UNPAIR)::t   -> aux accu t
+        | (UNPAIR)::(PAIR)::t   -> aux accu t
         | (CDR x)::(CDR y)::t   -> aux accu ((CDR (x + y))::t)
         | (DUP)::(DROP x)::t    -> aux accu ((DROP (x - 1))::t)
         | (DUP)::(SWAP)::t      -> aux accu ((DUP)::t)
