@@ -8,8 +8,16 @@ export function compile(src : string, settings : object = {}) {
   return api.compile()(src, settings).trim();
 }
 
+export function compile_from_string(src : string, settings : object = {}) {
+  return api.compile_from_string()(src, settings).trim();
+}
+
 export function decompile(src : string, settings : object = {}) {
   return api.decompile()(src, settings).trim();
+}
+
+export function decompile_from_string(src : string, settings : object = {}) {
+  return api.decompile_from_string()(src, settings).trim();
 }
 
 export function get_expr(data, settings : object = {}) {
