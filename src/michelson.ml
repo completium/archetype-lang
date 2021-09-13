@@ -1176,6 +1176,7 @@ end = struct
     let f l =
       let rec aux accu l =
         match l with
+        (* | (DIP (x, y))::(DROP z)::t -> aux accu ((DROP (z - 1))::y::t) *)
         | (DROP x)::(DROP y)::t -> aux accu ((DROP (x + y))::t)
         (* | (CAR x)::(CAR y)::t   -> aux accu ((CAR (x + y))::t) *)
         | (PAIR)::(UNPAIR)::t   -> aux accu t
