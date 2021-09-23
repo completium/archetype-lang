@@ -3,7 +3,7 @@ const archetype = require('./dist/index.js');
 const fs = require('fs');
 
 // const input = fs.readFileSync('resources/type_error.arl').toString();
-const input = fs.readFileSync('/home/guillaume/archetype/archetype-lang/npm-package/resources/simple.arl').toString();
+const input = fs.readFileSync('resources/simple.arl').toString();
 try {
 const output = archetype.compile(input, {
   target: 'michelson'

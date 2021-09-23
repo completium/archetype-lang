@@ -4443,7 +4443,7 @@ let rec for_instruction_r
             match Type.as_asset_collection ty with
             | Some _ ->
               let infos = for_gen_method_call (expr_mode kind) env (loc i) (`Typed the, m, args) in
-              let the, (assetdecl , c), method_, args, _ = Option.get_fdfl bailout infos in
+              let the, (_assetdecl , c), method_, args, _ = Option.get_fdfl bailout infos in
 
               begin match c, method_.mth_purity with
                 | ctn, `Effect allowed when not (List.mem ctn allowed) ->
@@ -4451,10 +4451,10 @@ let rec for_instruction_r
                 | _, _ ->
                   () end;
 
-              begin match assetdecl.as_bm, method_.mth_map_type with
+              (* begin match assetdecl.as_bm, method_.mth_map_type with
                 | true, `Standard -> Env.emit_error env (loc i, InvalidMethodWithBigMap (unloc m))
                 | _ -> ()
-              end;
+              end; *)
 
               env, mki (A.Icall (Some the, A.Cconst method_.mth_name, args))
 
