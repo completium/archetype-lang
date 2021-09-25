@@ -1,0 +1,11 @@
+archetype rat_op_divbyzero
+
+variable r : rational = 0.0
+
+entry exec () {
+  var z1 = 0;
+  var z2 = 3;
+  var r1 = 1 / z1;
+  var r2 = 2 / z2;
+  r := r1 / r2
+}

@@ -1,0 +1,11 @@
+archetype test_view
+
+variable n : nat = 2
+
+entry setN(v : nat) {
+  n := v
+}
+
+view getN() : nat {
+  return n
+}
