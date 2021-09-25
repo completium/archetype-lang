@@ -639,6 +639,10 @@ let to_ir (model : M.model) : T.ir =
         | Some r -> T.Iifnone (a, Iunop (Ufail, f r), "_var_ifnone", Ivar "_var_ifnone", ft mtt.type_)
         | None -> a
       end
+
+    | Mcallview (t, a, b, c)  -> begin
+        T.Ibinop (Bview (unloc b, to_type t), f c, f a)
+      end
     | Mself id                -> get_self_entrypoint (unloc id)
 
 
@@ -1349,6 +1353,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
     | T.Bcreateticket          -> T.TICKET
     | T.Bsplitticket           -> T.SPLIT_TICKET
     | T.Bsapling_verify_update -> T.SAPLING_VERIFY_UPDATE
+    | T.Bview (c, t)           -> T.VIEW (c, t)
   in
 
   let ter_op_to_code = function

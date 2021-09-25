@@ -34,6 +34,7 @@
       "by"                  , BY                  ;
       "call"                , CALL                ;
       "called"              , CALLED              ;
+      "callview"            , CALLVIEW            ;
       "const"               , CONST               ;
       "constant"            , CONSTANT            ;
       "contract"            , CONTRACT            ;

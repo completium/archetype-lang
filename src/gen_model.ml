@@ -408,6 +408,8 @@ let to_model (ast : A.ast) : M.model =
 
       | A.Pentrypoint (t, a, b, r) -> M.Mentrypoint (type_to_type t, a, f b, Option.map f r)
 
+      | A.Pcallview (t, a, b, c) -> M.Mcallview (type_to_type t, f a, b,f c)
+
       (* | A.Pcall (Some p, A.Cconst A.Cbefore,    []) -> M.Msetbefore    (f p) *)
       (* | A.Pcall (Some p, A.Cconst A.Cunmoved,   []) -> M.Msetunmoved   (f p)
          | A.Pcall (Some p, A.Cconst A.Cadded,     []) -> M.Msetadded     (f p)

@@ -155,6 +155,8 @@ and code =
   | READ_TICKET
   | SPLIT_TICKET
   | TICKET
+  (* view *)
+  | VIEW               of ident * type_
   (* Other *)
   | UNPAIR
   | SELF_ADDRESS
@@ -259,6 +261,7 @@ and bin_operator =
   | Bcreateticket
   | Bsplitticket
   | Bsapling_verify_update
+  | Bview of ident * type_
 [@@deriving show {with_path = false}]
 
 and ter_operator =
@@ -956,6 +959,8 @@ let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) =
   | READ_TICKET              -> READ_TICKET
   | SPLIT_TICKET             -> SPLIT_TICKET
   | TICKET                   -> TICKET
+  (* View *)
+  | VIEW (c, t)              -> VIEW (c, ft t)
   (* Other *)
   | UNPAIR                   -> UNPAIR
   | SELF_ADDRESS             -> SELF_ADDRESS
@@ -1324,6 +1329,7 @@ end = struct
     let fd = data_to_micheline in
     let mk ?(args=[]) ?(annots=[]) x = Oprim (mk_prim ~args ~annots x) in
     let mk_int n = Oint (string_of_int n) in
+    let mk_string s = Ostring s in
     let mk_array l = Oarray (List.map f l) in
     let fan = function | Some v -> [v] | None -> [] in
     match c with
@@ -1419,6 +1425,8 @@ end = struct
     | READ_TICKET              -> mk "READ_TICKET"
     | SPLIT_TICKET             -> mk "SPLIT_TICKET"
     | TICKET                   -> mk "TICKET"
+    (* View *)
+    | VIEW (c, t)              -> mk ~args:[mk_string c; ft t] "VIEW"
     (* Other *)
     | UNPAIR                   -> mk "UNPAIR"
     | SELF_ADDRESS             -> mk "SELF_ADDRESS"

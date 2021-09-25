@@ -664,6 +664,7 @@ type error_desc =
   | InvalidStringValue
   | InvalidTypeForBigMapKey
   | InvalidTypeForBigMapValue
+  | InvalidTypeForCallview
   | InvalidTypeForContract
   | InvalidTypeForDoFailIf
   | InvalidTypeForDoRequire
@@ -884,6 +885,7 @@ let pp_error_desc fmt e =
   | InvalidStringValue                 -> pp "Invalid string value"
   | InvalidTypeForBigMapKey            -> pp "Invalid type for big map key"
   | InvalidTypeForBigMapValue          -> pp "Invalid type for big map value"
+  | InvalidTypeForCallview             -> pp "Invalid type for callview"
   | InvalidTypeForContract             -> pp "Invalid type for contract"
   | InvalidTypeForDoFailIf             -> pp "Invalid type for dofailif"
   | InvalidTypeForDoRequire            -> pp "Invalid type for dorequire"
@@ -3612,6 +3614,26 @@ let rec for_xexpr
           (A.Pentrypoint (ty, id, b, c))
       end
 
+    | Ecallview (ty, a, b, c) -> begin
+        let ty = for_type_exn env ty in
+        let a  = for_xexpr env ~ety:A.vtaddress a in
+        let b  = for_xexpr env ~ety:A.vtstring b in
+        let c  = for_xexpr env c in
+
+        if not (Type.Michelson.is_type ty) then
+          Env.emit_error env (loc tope, InvalidTypeForCallview);
+
+        let id =
+          match b.node with
+          | A.Plit { node = (BVstring str); _ } -> mkloc b.loc str
+          | _ -> (Env.emit_error env (b.loc, StringLiteralExpected); bailout ())
+        in
+
+        let rt = A.Toption ty in
+        mk_sp
+          (Some rt)
+          (A.Pcallview (ty, a, id, c))
+      end
     | Eself      _
     | Evar       _
     | Efail      _

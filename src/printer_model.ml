@@ -360,6 +360,13 @@ let pp_mterm fmt (mt : mterm) =
         f s
         (pp_some (fun fmt a -> Format.fprintf fmt ", %a" f a)) r
 
+    | Mcallview (t, a, b, c) ->
+      Format.fprintf fmt "callview<%a>(%a, %a, %a)"
+        pp_type t
+        f a
+        pp_id b
+        f c
+
     | Mself id ->
       Format.fprintf fmt "self.%a"
         pp_id id

@@ -631,6 +631,16 @@ let rec pp_pterm fmt (pterm : pterm) =
           (pp_some (fun fmt a -> Format.fprintf fmt ", %a" pp_pterm a)) r
       in
       (pp_no_paren pp) fmt (t, a, b, r)
+
+    | Pcallview (t, a, b, c) ->
+      let pp fmt (t, a, b, c) =
+        Format.fprintf fmt "callview<%a>(%a, \"%a\", %a)"
+          pp_type  t
+          pp_pterm a
+          pp_id b
+          pp_pterm c
+      in
+      (pp_no_paren pp) fmt (t, a, b, c)
   in
   pp_struct_poly pp_node fmt pterm
 

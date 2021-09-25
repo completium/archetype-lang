@@ -149,6 +149,7 @@ and expr_unloc =
   | Eor            of or_
   | Elambda        of type_t option * lident * type_t option * expr
   | Eentrypoint    of type_t * expr * expr * expr option
+  | Ecallview      of type_t * expr * expr * expr
   | Eunpack        of type_t * expr
   | Eself          of lident
   | Eany

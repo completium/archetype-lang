@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Added
-- new feature
+- `callview`, call on-chain view
 
 ## [1.2.8] - 2021-09-07
 ### Added

@@ -744,6 +744,16 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_colon pos pp) fmt (t, a, b, r)
 
+  | Ecallview (t, a, b, c) ->
+    let pp fmt (t, a, b, c) =
+      Format.fprintf fmt "callview<%a>(%a, %a, %a)"
+        pp_type t
+        (pp_expr e_default PNone) a
+        (pp_expr e_default PNone) b
+        (pp_expr e_default PNone) c
+    in
+    (maybe_paren outer e_colon pos pp) fmt (t, a, b, c)
+
   | Eself x -> Format.fprintf fmt "(self.%a)" pp_id x
 
   | Eany -> Format.fprintf fmt "any"

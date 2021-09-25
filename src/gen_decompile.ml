@@ -980,6 +980,11 @@ let to_dir (michelson, env : T.michelson * env) =
     | TICKET::it               -> interp_bop env Bcreateticket it stack
 
 
+    (* View *)
+
+    | VIEW _::_it         -> assert false
+
+
     (* Other *)
 
     | UNPAIR::it  -> begin
@@ -1486,6 +1491,7 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         | Bcreateticket -> assert false
         | Bsplitticket  -> assert false
         | Bsapling_verify_update -> M.mk_mterm (Msapling_verify_update (f a, f b)) (M.toption (M.ttuple [M.tint; M.tsapling_state 0]))
+        | Bview _  -> assert false
       end
     | Iterop (op, _a1, _a2, _a3) -> begin
         match op with
@@ -1665,6 +1671,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     (* entrypoint *)
 
     | Mentrypoint (_t, _a, _s, _r) -> assert false
+    | Mcallview (_t, _a, _b, _c) -> assert false
     | Mself _id                -> assert false
 
 

@@ -204,6 +204,7 @@ and pp_code fmt (i : code) =
   | READ_TICKET              -> pp "READ_TICKET"
   | SPLIT_TICKET             -> pp "SPLIT_TICKET"
   | TICKET                   -> pp "TICKET"
+  | VIEW (c, t)              -> pp "VIEW \"%s\" %a" c pp_type t
   (* Other *)
   | UNPAIR                   -> pp "UNPAIR"
   | SELF_ADDRESS             -> pp "SELF_ADDRESS"
@@ -328,6 +329,7 @@ let rec pp_instruction fmt (i : instruction) =
       | Bcreateticket -> pp "create_ticket(%a, %a)" f lhs f rhs
       | Bsplitticket  -> pp "split_ticket(%a, %a)"  f lhs f rhs
       | Bsapling_verify_update -> pp "sapling_verify_update"
+      | Bview (c, t)  -> pp "view<%a, %s>(%a, %a)" pp_type t c f lhs f rhs
     end
   | Iterop (op, a1, a2, a3) -> begin
       match op with
@@ -572,6 +574,7 @@ let rec pp_dexpr fmt (de : dexpr) =
       | Bcreateticket -> pp "create_tickets(%a, %a)" f lhs f rhs
       | Bsplitticket  -> pp "split_ticket(%a, %a)"   f lhs f rhs
       | Bsapling_verify_update -> pp "sapling_verify_update"
+      | Bview (c, t)  -> pp "view<%a, %s>(%a, %a)" pp_type t c f lhs f rhs
     end
   | Dtop (op, a1, a2, a3) -> begin
       match op with
