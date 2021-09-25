@@ -381,6 +381,7 @@ type ir = {
   with_operations: bool;
   parameter: type_;
   funs: func list;
+  views: func list;
   entries: entry list;
   parameters: ident list;
 }
@@ -479,8 +480,8 @@ let mk_func name targ tret body : func =
 let mk_entry name args eargs body : entry =
   { name; args; eargs; body }
 
-let mk_ir ?(parameters = []) name storage_type storage_data storage_list ?(with_operations = false) parameter funs entries : ir =
-  { name; storage_type; storage_data; storage_list; with_operations; parameter; funs; entries; parameters }
+let mk_ir ?(parameters = []) name storage_type storage_data storage_list ?(with_operations = false) parameter funs views entries : ir =
+  { name; storage_type; storage_data; storage_list; with_operations; parameter; funs; views; entries; parameters }
 
 let mk_michelson ?(parameters = []) storage parameter code : michelson =
   { storage; parameter; code; parameters }

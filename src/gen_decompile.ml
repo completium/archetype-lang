@@ -1295,9 +1295,10 @@ let to_ir (dir, env : T.dprogram * env) : T.ir * env =
   let entry = T.mk_entry "default" args [] code in
 
   let funs = [] in
+  let views = [] in
   let entries = [entry] in
 
-  T.mk_ir name tstorage storage_data storage_list tparameter funs entries, env
+  T.mk_ir name tstorage storage_data storage_list tparameter funs views entries, env
 
 let rec ttype_to_mtype (t : T.type_) : M.type_ =
   let f = ttype_to_mtype in

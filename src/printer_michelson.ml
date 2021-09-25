@@ -394,8 +394,8 @@ let pp_ir fmt (ir : ir) =
   Format.fprintf fmt "storage_type: %a@\n@\n" pp_type ir.storage_type;
   Format.fprintf fmt "storage_data: %a@\n@\n" pp_data ir.storage_data;
   (pp_list "@\n@\n" pp_func) fmt ir.funs;
-  (if (List.is_not_empty ir.funs) then (pp "@\n"));
-  (pp_list "@\n@\n" pp_entry) fmt ir.entries
+  (pp_list "@\n@\n" pp_func) fmt ir.views;
+  (if (List.is_not_empty ir.views) then (pp "@\n"))
 
 let pp_michelson fmt (m : michelson) =
   Format.fprintf fmt

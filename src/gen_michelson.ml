@@ -1048,7 +1048,7 @@ let to_ir (model : M.model) : T.ir =
 
   let env = mk_env () in
 
-  let funs, entries =
+  let funs, entries, views =
 
     let for_fs _env (fs : M.function_struct) =
       let name = unloc fs.name in
@@ -1118,13 +1118,13 @@ let to_ir (model : M.model) : T.ir =
       T.mk_entry name args eargs body
     in
 
-    List.fold_left (fun (funs, entries) (x : M.function__) ->
+    List.fold_left (fun (funs, entries, views) (x : M.function__) ->
         match x.node with
-        | Entry fs -> (funs, entries @ [for_fs_entry env fs])
+        | Entry fs -> (funs, entries @ [for_fs_entry env fs], views)
         | Getter _ -> emit_error (UnsupportedTerm ("Getter"))
-        | Function (fs, ret) -> funs @ [for_fs_fun env fs ret], entries
-        | View (_fs, _ret) -> (funs, entries)
-      ) ([], []) model.functions
+        | Function (fs, ret) -> funs @ [for_fs_fun env fs ret], entries, views
+        | View (fs, ret) -> (funs, entries, views @ [for_fs_fun env fs ret])
+      ) ([], [], []) model.functions
   in
   let annot a (t : T.type_) = { t with annotation = Some (mk_fannot a)} in
   let parameter : T.type_ =
@@ -1155,7 +1155,7 @@ let to_ir (model : M.model) : T.ir =
 
   let name = unloc model.name in
   let parameters = List.map (fun (x : M.parameter) -> unloc x.name) model.parameters in
-  T.mk_ir name storage_type storage_data storage_list parameter funs entries ~with_operations:with_operations ~parameters
+  T.mk_ir name storage_type storage_data storage_list parameter funs views entries ~with_operations:with_operations ~parameters
 
 
 (* -------------------------------------------------------------------- *)
