@@ -1122,7 +1122,9 @@ let to_ir (model : M.model) : T.ir =
         match x.node with
         | Entry fs -> (funs, entries @ [for_fs_entry env fs])
         | Getter _ -> emit_error (UnsupportedTerm ("Getter"))
-        | Function (fs, ret) -> funs @ [for_fs_fun env fs ret], entries) ([], []) model.functions
+        | Function (fs, ret) -> funs @ [for_fs_fun env fs ret], entries
+        | View (_fs, _ret) -> (funs, entries)
+      ) ([], []) model.functions
   in
   let annot a (t : T.type_) = { t with annotation = Some (mk_fannot a)} in
   let parameter : T.type_ =

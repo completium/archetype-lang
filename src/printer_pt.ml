@@ -1041,7 +1041,7 @@ let pp_specification_items = pp_list "@\n@\n" pp_specification_item
 
 let pp_function fmt (f : s_function) =
   Format.fprintf fmt "%s %a %a%a %a@\n"
-    (if f.getter then "getter" else "function")
+    (if f.getter then "getter" else if f.view then "view" else "function")
     pp_id f.name
     pp_fun_args f.args
     (pp_option (pp_prefix " : " pp_type)) f.ret_t
@@ -1304,7 +1304,7 @@ let rec pp_declaration fmt { pldesc = e; _ } =
 
   | Dspecfun (sfk, id, args, s) ->
     Format.fprintf fmt "specification %s %a%a {@\n  @[%a@]@\n}"
-      (match sfk with | SKentry -> "entry"  | SKgetter -> "getter"  | SKfunction -> "function")
+      (match sfk with | SKentry -> "entry"  | SKgetter -> "getter"  | SKview -> "view"  | SKfunction -> "function")
       pp_id id
       pp_fun_args args
       pp_specification_items (s |> unloc |> fst |> List.map unloc)

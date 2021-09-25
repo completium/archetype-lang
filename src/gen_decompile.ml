@@ -2003,6 +2003,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     match f.node with
     | Function (_fs, _t)
     | Getter (_fs, _t) -> assert false
+    | View (_fs, _t) -> assert false
     | Entry fs -> begin
         let id = fs.name in
         let body = for_expr fs.body in

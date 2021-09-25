@@ -603,6 +603,7 @@ type security = {
 type fun_kind =
   | FKfunction
   | FKgetter
+  | FKview
 [@@deriving show {with_path = false}]
 
 type 'id function_struct = {

@@ -746,6 +746,7 @@ type error_desc =
   | UnknownFieldName                   of ident
   | UnknownFunction                    of ident
   | UnknownGetter                      of ident
+  | UnknownView                        of ident
   | UnknownLabel                       of ident
   | UnknownLocalOrVariable             of ident
   | UnknownProcedure                   of ident
@@ -966,6 +967,7 @@ let pp_error_desc fmt e =
   | UnknownFieldName i                 -> pp "Unknown field name: %a" pp_ident i
   | UnknownFunction  i                 -> pp "Unknown function name: %a" pp_ident i
   | UnknownGetter  i                   -> pp "Unknown getter name: %a" pp_ident i
+  | UnknownView  i                     -> pp "Unknown view name: %a" pp_ident i
   | UnknownLabel i                     -> pp "Unknown label: %a" pp_ident i
   | UnknownLocalOrVariable i           -> pp "Unknown local or variable: %a" pp_ident i
   | UnknownProcedure i                 -> pp "Unknown procedure: %a" pp_ident i
@@ -5221,7 +5223,7 @@ let for_function
         if check_and_emit_name_free env fdecl.name then
           (env, Some {
               fs_name  = fdecl.name;
-              fs_kind  = if fdecl.getter then FKgetter else FKfunction;
+              fs_kind  = if fdecl.getter then FKgetter else if fdecl.view then FKview else FKfunction;
               fs_args  = List.pmap id args;
               fs_retty = Option.get rty;
               fs_body  = body;
@@ -5441,6 +5443,15 @@ let for_fun_specs (env : env) (specs : PT.specfun loced list) =
     | PT.SKgetter -> begin
         match Env.Function.lookup env (unloc x) with
         | Some fund when fund.fs_kind = A.FKgetter ->
+          ()
+
+        | _ ->
+          Env.emit_error env (loc x, UnknownGetter (unloc x));
+      end
+
+    | PT.SKview -> begin
+        match Env.Function.lookup env (unloc x) with
+        | Some fund when fund.fs_kind = A.FKview ->
           ()
 
         | _ ->

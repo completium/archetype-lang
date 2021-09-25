@@ -295,6 +295,7 @@ declaration_r:
  | x=namespace          { x }
  | x=function_decl      { x }
  | x=getter_decl        { x }
+ | x=view_decl          { x }
  | x=specification_decl { x }
  | x=specasset          { x }
  | x=specfun            { x }
@@ -384,6 +385,7 @@ namespace:
     spec   = s;
     body   = e;
     getter = false;
+    view   = false;
   }
 }
 
@@ -406,11 +408,31 @@ function_decl:
     spec   = s;
     body   = e;
     getter = true;
+    view   = false;
+  }
+}
+
+%inline view_gen:
+ | VIEW id=ident xs=function_args
+     r=function_return? LBRACE b=fun_body RBRACE {
+  let (s, e) = b in
+  {
+    name   = id;
+    args   = xs;
+    ret_t  = r;
+    spec   = s;
+    body   = e;
+    getter = false;
+    view   = true;
   }
 }
 
 getter_decl:
 | f=getter_gen
+    { Dfunction f }
+
+view_decl:
+| f=view_gen
     { Dfunction f }
 
 %inline spec_predicate:

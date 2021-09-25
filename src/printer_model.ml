@@ -1928,6 +1928,7 @@ let pp_function fmt f =
   let k, fs, ret = match f.node with
     | Entry f         -> "entry",    f, None
     | Getter (f, a)   -> "getter",   f, Some a
+    | View (f, a)     -> "view",     f, Some a
     | Function (f, a) -> "function", f, Some a
   in
   Format.fprintf fmt "%a %a %a%a {@\n@[<v 2>  %a%a@]@\n}@\n"

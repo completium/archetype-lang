@@ -268,6 +268,7 @@ and s_function = {
   spec  : specification option;
   body  : expr;
   getter: bool;
+  view  : bool;
 }
 
 and entry_properties = {
@@ -324,6 +325,7 @@ and specfun_kind =
   | SKentry
   | SKfunction
   | SKgetter
+  | SKview
 
 and specfun = specfun_kind * lident * args * specification
 
@@ -544,8 +546,8 @@ let einvalid      ?(loc=dummy) _                  = mkloc loc (Einvalid)
 
 (* declarations utils *)
 
-let mk_s_function name args ret_t spec body getter : s_function =
-  {name; args; ret_t; spec; body; getter}
+let mk_s_function name args ret_t spec body getter view : s_function =
+  {name; args; ret_t; spec; body; getter; view}
 
 let mk_entry_properties ?(accept_transfer = true) ?sourcedby ?calledby ?state_is ?require ?failif ?spec_fun ?(functions = []) _ : entry_properties =
   { accept_transfer; sourcedby; calledby; state_is; require; failif; spec_fun; functions }

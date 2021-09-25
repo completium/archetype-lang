@@ -345,6 +345,7 @@ let string_of_symbol = function
   | X (T T_ADDRESS) -> "an address"
   | X (T T_ADDED) -> "added"
   | X (T T_ACCEPT_TRANSFER) -> "accept address"
+  | X (N N_view_decl) -> "a view declaration"
   | X (N N_vc_decl_VARIABLE_) -> "a variable declaration"
   | X (N N_vc_decl_CONSTANT_) -> "a constant declaration"
   | X (N N_variable) -> "a variable"
