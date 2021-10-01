@@ -1,0 +1,12 @@
+archetype map_asset_effect
+
+asset myasset {
+  id : nat;
+  m : map<string, nat>;
+}
+
+variable ma : map<string, nat> = []
+
+entry exec() {
+  myasset[0].m.remove("0")
+}
