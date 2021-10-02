@@ -15,8 +15,6 @@ asset my_asset {
   {"id2"; 2; []}
 }
 
-variable res : int = 0
-
 entry exec () {
   specification {
 

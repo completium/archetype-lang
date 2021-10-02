@@ -1,4 +1,4 @@
-archetype addupdate_partition
+archetype addupdate_desuggared_partition
 
 asset o_asset {
   oid : string;
