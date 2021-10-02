@@ -1,0 +1,19 @@
+archetype map_partition
+
+asset oasset {
+  oid : nat;
+  m : map<string, nat>;
+}
+
+asset myasset {
+  id : string;
+  p : partition<oasset>;
+} initialized by {
+  {"0"; []}
+}
+
+variable ma : map<string, nat> = []
+
+entry exec() {
+  myasset["0"].p[0].m.put("toto", 0)
+}

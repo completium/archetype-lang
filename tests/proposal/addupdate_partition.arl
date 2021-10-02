@@ -1,11 +1,11 @@
 archetype addupdate_partition
 
-asset o_asset identified by oid {
+asset o_asset {
   oid : string;
   v : nat = 0;
 }
 
-asset my_asset identified by id {
+asset my_asset {
   id     : string;
   value  : nat;
   col    : partition<o_asset>;
