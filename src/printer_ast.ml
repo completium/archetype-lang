@@ -803,7 +803,18 @@ let rec pp_instruction fmt (i : instruction) =
       in
       (pp_with_paren pp) fmt (op, id, value)
 
-    | Iassign (op, _, `Field (an, k, fn), value) ->
+    | Iassign (op, _, `Field (rn, k, fn), value) ->
+      let pp fmt (op, rn, k, fn, value) =
+        Format.fprintf fmt "%a[%a].%a %a %a"
+          pp_id rn
+          pp_pterm k
+          pp_id fn
+          pp_assignment_operator op
+          pp_pterm value
+      in
+      (pp_with_paren pp) fmt (op, rn, k, fn, value)
+
+    | Iassign (op, _, `Asset (an, k, fn), value) ->
       let pp fmt (op, an, k, fn, value) =
         Format.fprintf fmt "%a[%a].%a %a %a"
           pp_id an
@@ -813,6 +824,7 @@ let rec pp_instruction fmt (i : instruction) =
           pp_pterm value
       in
       (pp_with_paren pp) fmt (op, an, k, fn, value)
+
 
     | Irequire (k, pt, f) ->
       let pp fmt (k, pt, f) =

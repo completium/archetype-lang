@@ -4476,9 +4476,9 @@ let rec for_instruction_r
                   () end;
 
               (* begin match assetdecl.as_bm, method_.mth_map_type with
-                | true, `Standard -> Env.emit_error env (loc i, InvalidMethodWithBigMap (unloc m))
-                | _ -> ()
-              end; *)
+                 | true, `Standard -> Env.emit_error env (loc i, InvalidMethodWithBigMap (unloc m))
+                 | _ -> ()
+                 end; *)
 
               env, mki (A.Icall (Some the, A.Cconst method_.mth_name, args))
 
@@ -4499,8 +4499,9 @@ let rec for_instruction_r
                   match the.node with
                   | Pvar (VTnone, Vnone, x) -> assign (`Var x)
                   | Pdot ({node = Pvar (VTnone, Vnone, _); type_ = Some (Trecord rn)} as x, fn) -> assign (`Field (rn, x, fn))
-                  | _ ->
-                    Env.emit_error env (the.loc, InvalidVariableForMethod); aout
+                  | Pdot ({node = Pcall (Some {type_ = Some (Tcontainer ((Tasset _), Collection))}, Cconst Cget, [AExpr k]); type_ = Some (Tasset an)}, fn) -> assign (`Asset (an, k, fn))
+                  (* TODO: handle partition *)
+                  | _ -> Env.emit_error env (the.loc, InvalidVariableForMethod); aout
                 end else
                   mki (A.Icall (None, A.Cconst name, A.AExpr the :: args)) in
 

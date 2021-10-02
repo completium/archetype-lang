@@ -445,6 +445,7 @@ and instruction = lident instruction_poly
 and 'id lvalue_gen = [
   | `Var   of 'id
   | `Field of 'id * 'id term_gen * 'id
+  | `Asset of 'id * 'id term_gen * 'id
 ]
 
 and lvalue = lident lvalue_gen

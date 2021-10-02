@@ -1013,14 +1013,20 @@ let to_model (ast : A.ast) : M.model =
           in
           M.Massign (to_assignment_operator op, t, assign_kind, e)
         end
-      | A.Iassign (op, t, `Field (an, o, fn), v) -> begin
+      | A.Iassign (op, t, `Field (rn, o, fn), v) -> begin
           let v = f v in
           let t = type_to_type t in
           let ak =
             match o.type_ with
             | Some (A.Trecord rn) -> M.Arecord(rn, fn, f o)
-            | _ -> M.Aasset (an, fn, f o)
+            | _ -> M.Aasset (rn, fn, f o)
           in
+          M.Massign (to_assignment_operator op, t, ak, v)
+        end
+      | A.Iassign (op, t, `Asset (an, k, fn), v) -> begin
+          let v = f v in
+          let t = type_to_type t in
+          let ak = M.Aasset (an, fn, f k) in
           M.Massign (to_assignment_operator op, t, ak, v)
         end
       | A.Irequire (b, t, e) ->
