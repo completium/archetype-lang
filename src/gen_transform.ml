@@ -204,7 +204,7 @@ let remove_add_update ?(with_force = false) ?(isformula = false) (model : model)
             let cond_nested = mk_mterm (Mcontains(an, CKfield (unloc dan, ckcol, dk, kft, kfd), k)) tbool in
             let update = mk_mterm (Mupdate (an, k, l)) tunit in
             let if_nested = mk_mterm (Mif (cond_nested, update, Some fail_)) tunit in
-            let add = mk_mterm (Maddfield (unloc dan, unloc dfn, k, asset)) tunit in
+            let add = mk_mterm (Maddfield (unloc dan, unloc dfn, dk, asset)) tunit in
             let r = mk_mterm (Mif (cond, if_nested, Some add)) tunit in
             r
           end
