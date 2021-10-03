@@ -14,9 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     * add sapling types (`sapling_state` and `sapling_transaction`) and operations (`sapling_empty_state` and `sapling_verify_update`)
     * add bls curves types (`bls12_381_fr`, `bls12_381_g1` and `bls12_381_g2`), arthmetic (`+`, `*`, unary `-`) and operation (`pairing_check`)
 
-## Unreleased
+## [1.2.9] - 2021-10-03
 ### Added
-- `callview`, call on-chain view
+  - `callview`, call on-chain view
+### Fixed
+  - `addupdate` on partition
 
 ## [1.2.8] - 2021-09-07
 ### Added
