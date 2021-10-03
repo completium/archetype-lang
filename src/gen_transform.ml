@@ -196,18 +196,28 @@ let remove_add_update ?(with_force = false) ?(isformula = false) (model : model)
             | CKcoll _ -> Mcontains (an, c, k)
             | _ -> assert false) tunit in
         let asset  = mk_asset (an, k, l) in
-        if with_force && is_standalone
-        then mk_mterm (Maddforce (an, asset)) tunit
-        else begin
-          let add = mk_mterm (
-              match c with
-              | CKfield (_, _, {node = Mdotassetfield (an, k, fn)}, _, _) -> Maddfield (unloc an, unloc fn, k, asset)
-              | CKcoll _ -> Maddasset (an, asset)
-              | _ -> assert false) tunit in
-          let update = mk_mterm (Mupdate (an, k, l)) tunit in
-          let if_node = Mif (cond, update, Some add) in
-          mk_mterm if_node tunit
-        end
+        match c with
+        | CKcoll _  when with_force && is_standalone -> mk_mterm (Maddforce (an, asset)) tunit
+        | CKfield (_, ckcol, {node = Mdotassetfield (dan, dk, dfn)}, kft, kfd) when Utils.is_partition model (unloc dan) (unloc dfn) -> begin
+            let cond = mk_mterm (Mcontains(an, CKcoll (kft, kfd), k)) tbool in
+            let fail_ = failc (Invalid (mk_tuple [mk_string "KeyNotFound"; k])) in
+            let cond_nested = mk_mterm (Mcontains(an, CKfield (unloc dan, ckcol, dk, kft, kfd), k)) tbool in
+            let update = mk_mterm (Mupdate (an, k, l)) tunit in
+            let if_nested = mk_mterm (Mif (cond_nested, update, Some fail_)) tunit in
+            let add = mk_mterm (Maddfield (unloc dan, unloc dfn, k, asset)) tunit in
+            let r = mk_mterm (Mif (cond, if_nested, Some add)) tunit in
+            r
+          end
+        | _ -> begin
+            let add = mk_mterm (
+                match c with
+                | CKfield (_, _, {node = Mdotassetfield (an, k, fn)}, _, _) -> Maddfield (unloc an, unloc fn, k, asset)
+                | CKcoll _ -> Maddasset (an, asset)
+                | _ -> assert false) tunit in
+            let update = mk_mterm (Mupdate (an, k, l)) tunit in
+            let if_node = Mif (cond, update, Some add) in
+            mk_mterm if_node tunit
+          end
       end
     | _ -> map_mterm (aux ctx) mt
   in
@@ -276,6 +286,14 @@ let remove_container_op_in_update (model : model) : model =
   in
   map_mterm_model aux model
   |> flat_sequence
+
+let remove_empty_update (model : model) : model =
+  let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
+    match mt.node with
+    | Mupdate (_, _, l) when List.is_empty l-> skip
+    | _ -> map_mterm (aux ctx) mt
+  in
+  map_mterm_model aux model
 
 let build_col_asset (an : ident) =
   let dan = dumloc an in

@@ -12,10 +12,5 @@ asset my_asset {
 variable res : int = 0
 
 entry exec () {
-  specification {
-
-  }
-  effect {
-    my_asset.addupdate("id3", { value = 3 });
-  }
+  my_asset.addupdate("id3", { value = 3 });
 }

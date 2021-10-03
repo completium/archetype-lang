@@ -4241,6 +4241,7 @@ module Utils : sig
   val extract_asset_effect               : model -> mterm -> effect list
   val extract_var_idents                 : model -> mterm -> ident list
   val get_record_pos                     : model -> ident -> ident -> (int * int) list
+  val is_partition                       : model -> ident -> ident -> bool
 
 end = struct
 
@@ -5764,5 +5765,11 @@ end = struct
         with
           Found res -> res
       end
+
+  let is_partition model an fn : bool =
+    try
+      get_field_container model an fn |> (fun (_, x) -> match x with | Partition -> true | _ -> false)
+    with
+    | Not_found -> false
 
 end

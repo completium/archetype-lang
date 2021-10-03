@@ -235,6 +235,7 @@ let toolchain ?(js=false) model =
   |> replace_assignfield_by_update
   |> remove_add_update ~with_force:true
   |> merge_update
+  |> remove_empty_update
   |> remove_assign_operator
   |> process_internal_string
   |> remove_rational
