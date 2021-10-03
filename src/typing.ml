@@ -3314,8 +3314,8 @@ let rec for_xexpr
                   ()
               end;
 
-              begin match method_.mth_map_type with
-                | `Standard when asset.as_bm && not (is_form_kind mode.em_kind) ->
+              begin match method_.mth_map_type, ty with
+                | `Standard, Tcontainer (Tasset _, Collection) when asset.as_bm && not (is_form_kind mode.em_kind) ->
                   Env.emit_error env (loc tope, InvalidMethodWithBigMap (unloc m))
                 | _ -> ()
               end;
