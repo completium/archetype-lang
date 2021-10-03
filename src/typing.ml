@@ -4631,9 +4631,9 @@ let rec for_instruction_r
           | _ -> false
         in
         match e.A.type_ with
-        | Some (A.Tcontainer (A.Tasset asset, _)) ->
+        | Some (A.Tcontainer (A.Tasset asset, c)) ->
           let asset = Env.Asset.get env (unloc asset) in
-          if asset.as_bm then
+          if asset.as_bm && (match c with | Collection -> true | _ -> false) then
             Env.emit_error env (loc pe, NonIterableBigMapAsset (unloc asset.as_name));
           if   is_for_ident `Double
           then (Env.emit_error env (loc x, InvalidForIdentSimple); None)
