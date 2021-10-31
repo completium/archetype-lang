@@ -5618,3 +5618,34 @@ let test_mode (model : model) =
   end
   else
     model
+
+let fill_stovars (model : model) : model =
+  let for_function_struct (fs : function_struct) : function_struct =
+    let rec aux acc (mt : mterm) : ident list =
+      match mt.node with
+      | Mvar (id, Vstorevar, _, _) -> (unloc id)::acc
+      | Mvar (id, Vstorecol, _, _) -> (unloc id)::acc
+      | _ -> fold_term aux acc mt
+    in
+    {
+      fs with
+      stovars = aux [] fs.body
+    }
+  in
+  let for_function_node (fn : function_node) : function_node =
+    match fn with
+    | Function (fs, t) -> Function (for_function_struct fs, t)
+    | Getter   (fs, t) -> Getter   (for_function_struct fs, t)
+    | View     (fs, t) -> View     (for_function_struct fs, t)
+    | Entry     fs     -> Entry    (for_function_struct fs)
+  in
+  let for_functions (functions_ : function__) =
+    {
+      node = for_function_node functions_.node;
+      spec = functions_.spec
+    }
+  in
+  {
+    model with
+    functions = List.map for_functions model.functions
+  }

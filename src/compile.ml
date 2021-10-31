@@ -261,6 +261,7 @@ let toolchain ?(js=false) model =
   |> instr_to_expr_exec
   |> optimize
   |> generate_api_storage
+  |> fill_stovars
 
 let generate_target model =
 

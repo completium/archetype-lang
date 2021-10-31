@@ -737,6 +737,7 @@ type 'id function_struct_gen = {
   name:  'id;
   args:  'id argument_gen list;
   eargs: 'id argument_gen list;
+  stovars: ident list;
   body:  'id mterm_gen;
   loc :  Location.t [@opaque];
 }
@@ -1025,8 +1026,8 @@ let mk_record_field ?(loc = Location.dummy) name type_ : 'id record_field_gen =
 let mk_storage_item ?(const=false) ?(ghost = false) ?(loc = Location.dummy) id model_type typ default : 'id storage_item_gen =
   { id; model_type; typ; const; ghost; default; loc }
 
-let mk_function_struct ?(args = []) ?(eargs = []) ?(loc = Location.dummy) name body : function_struct =
-  { name; args; eargs; body; loc }
+let mk_function_struct ?(args = []) ?(eargs = []) ?(stovars = []) ?(loc = Location.dummy) name body : function_struct =
+  { name; args; eargs; stovars; body; loc }
 
 let mk_function ?spec node : 'id function__gen =
   { node; spec }
@@ -4022,6 +4023,7 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
           name  = g (match fn with | Function _ -> KIfunction | Getter _ -> KIgetter | View _ -> KIview | Entry _ -> KIentry) fs.name;
           args  = List.map for_argument fs.args;
           eargs = List.map for_argument fs.eargs;
+          stovars = fs.stovars;
           body  = for_mterm fs.body;
           loc   = fs.loc;
         }
