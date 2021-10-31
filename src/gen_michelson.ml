@@ -417,13 +417,13 @@ let to_ir (model : M.model) : T.ir =
     | Mvar (x, Vparameter, _, _) -> T.Dvar (unloc x, to_type mt.type_)
     | Mlambda (_rt, id, _at, e) -> begin
         let env = mk_env () in
-        let ir = mterm_to_intruction env e in
+        let ir = mterm_to_intruction env e ~view:false in
         T.DIrCode (unloc id, ir)
       end
     | _ -> Format.printf "%a@." M.pp_mterm mt; assert false
 
-  and mterm_to_intruction env (mtt : M.mterm) : T.instruction =
-    let f = mterm_to_intruction env in
+  and mterm_to_intruction env (mtt : M.mterm) ?(view = false) : T.instruction =
+    let f = mterm_to_intruction env ~view in
     let ft = to_type in
 
     let get_entrypoint_annot ?(pref="") id =
@@ -586,6 +586,7 @@ let to_ir (model : M.model) : T.ir =
     | Miter (_i, _a, _b, _c, _)  -> emit_error TODO
     | Mwhile (c, b, _)           -> T.Iloop (f c, f b)
     | Mseq is                    -> T.Iseq (List.map f is)
+    (* | Mreturn x when view        -> f x *)
     | Mreturn x                  -> T.Iassign (fun_result, f x)
     | Mlabel _                   -> T.iskip
     | Mmark  _                   -> T.iskip
@@ -1051,12 +1052,12 @@ let to_ir (model : M.model) : T.ir =
 
   let funs, entries, views =
 
-    let for_fs _env (fs : M.function_struct) =
+    let for_fs _env (fs : M.function_struct) ?(view= false) =
       let name = unloc fs.name in
       let args = List.map (fun (id, t, _) -> unloc id, to_type t) fs.args in
       let eargs = List.map (fun (id, t, _) -> unloc id, to_type t) fs.eargs in
       let env = {function_p = Some (name, args)} in
-      let body = mterm_to_intruction env fs.body in
+      let body = mterm_to_intruction env fs.body ~view in
       name, args, eargs, body
     in
 
@@ -1102,30 +1103,30 @@ let to_ir (model : M.model) : T.ir =
       aux [] mt |> List.dedup
     in
 
-    let for_fs_fun env (fs : M.function_struct) ret : T.func =
+    let for_fs_fun env (fs : M.function_struct) ret ?(view : bool = false) : T.func =
       let fid = unloc fs.name in
       let tret = to_type ret in
-      let name, args, _eargs, body = for_fs env fs in
+      let name, args, _eargs, body = for_fs env fs ~view in
       let eargs = get_extra_args fs.body in
       extra_args := (fid, eargs)::!extra_args;
       let args = args @ eargs in
       let targ = to_one_type (List.map snd args) in
-      let ctx = T.mk_ctx_func () ~stovars:fs.stovars in
+      let ctx = T.mk_ctx_func () ~args ~stovars:fs.stovars in
       mapargs := MapString.add fid (targ, tret) !mapargs;
       T.mk_func name targ tret ctx (T.Concrete (args, body))
     in
 
-    let for_fs_entry env (fs : M.function_struct) : T.entry =
-      let name, args, eargs, body = for_fs env fs in
+    let for_fs_entry env (fs : M.function_struct) ?(view= false) : T.entry =
+      let name, args, eargs, body = for_fs env fs ~view in
       T.mk_entry name args eargs body
     in
 
     List.fold_left (fun (funs, entries, views) (x : M.function__) ->
         match x.node with
-        | Entry fs -> (funs, entries @ [for_fs_entry env fs], views)
+        | Entry fs -> (funs, entries @ [for_fs_entry env fs ~view:false], views)
         | Getter _ -> emit_error (UnsupportedTerm ("Getter"))
-        | Function (fs, ret) -> funs @ [for_fs_fun env fs ret], entries, views
-        | View (fs, ret) -> (funs, entries, views @ [for_fs_fun env fs ret])
+        | Function (fs, ret) -> funs @ [for_fs_fun env fs ret ~view:false], entries, views
+        | View (fs, ret) -> (funs, entries, views @ [for_fs_fun env fs ret ~view:true ])
       ) ([], [], []) model.functions
   in
   let annot a (t : T.type_) = { t with annotation = Some (mk_fannot a)} in
@@ -1805,15 +1806,98 @@ and to_michelson (ir : T.ir) : T.michelson =
     |> T.Utils.optim
   in
 
-  let build_view (v : T.func) =
+  let build_view storage_list (v : T.func) =
     let id    = v.name in
-    let param : T.type_ = T.tunit in (* v.targ in *)
-    let ret   : T.type_ = T.tnat in (* v.tret in *)
-    let body  : T.code  = T.SEQ [T.DROP 1; T.PUSH (T.tnat, Dint Big_int.zero_big_int)] in
+    let param : T.type_ = v.targ in
+    let ret   : T.type_ = v.tret in
+
+    let unfold_all args =
+      let rec aux x =
+        match x with
+        | []     -> []
+        | [_]    -> []
+        | [_; _] -> [T.UNPAIR]
+        | _::l   -> [T.UNPAIR; T.SWAP] @ aux l
+      in
+      aux args
+    in
+
+    let extract_storage_vars stovars =
+
+      let stos : (int * ident) list =
+        storage_list
+        |> List.filter (fun (x, _, _) -> List.mem x stovars)
+        |> List.mapi (fun i (x, _, _) -> (i, x))
+      in
+
+      let rec doit (n : int) (s : int) code stos : T.code list =
+        match stos with
+        | (k, _)::q -> begin
+            let found = k = n in
+            let last = n = s - 1 in
+            match found, last with
+            | false, false -> doit (n + 1) s (code @ [T.CDR 1]) q
+            | false, true  -> code @ [T.DROP 1]
+            | true, false  -> doit (n + 1) s (code @ [T.UNPAIR]) q
+            | true, true   -> code
+          end
+        | [] -> [T.DROP 1]
+      in
+
+      let code = doit 0 (List.length stos) [] stos in
+      let ids = List.map snd stos in
+      code, ids
+    in
+
+    let env = mk_env () in
+
+    let fold_vars, env, nb_args =
+      match v.ctx.args, v.ctx.stovars with
+      | [], [] -> [T.DROP 1], env, 0
+
+      | args, [] ->
+        let code = [T.CAR 0] @ unfold_all args in
+        let env = { env with vars = List.map fst args @ env.vars } in
+        code, env, List.length args
+
+      | [], stovars ->
+        let scode, svs = extract_storage_vars stovars in
+        let code = [T.CDR 0] @ scode in
+        let env = { env with vars = svs @ env.vars } in
+        code, env, List.length svs
+
+      | args, stovars ->
+        let acode = unfold_all args in
+        let scode, svs = extract_storage_vars stovars in
+        let avs = List.map fst args in
+        let code = [T.UNPAIR; T.DIP (1, acode)] @ scode in
+        let env = { env with vars = svs @ avs @ env.vars } in
+        code, env, List.length svs
+
+    in
+
+    let fold_vars = fold_vars @ [T.UNIT] in
+
+    let env = add_var_env env fun_result in
+    (* print_env env; *)
+
+    let code, _env =
+      match v.body with
+      | Concrete (_args, instr) -> instruction_to_code env instr
+      | Abstract _ -> assert false
+    in
+
+    let code = T.SEQ (code::[T.DROP nb_args]) in
+
+    let body  : T.code  =
+      T.SEQ (fold_vars @ [code])
+      |> T.Utils.flat
+      |> T.Utils.optim
+    in
     T.mk_view_struct id param ret body
   in
 
   let code = build_code () in
   let parameters = ir.parameters in
-  let views = List.map build_view ir.views in
+  let views = List.map (build_view ir.storage_list) ir.views in
   T.mk_michelson ~parameters ~views storage ir.parameter code

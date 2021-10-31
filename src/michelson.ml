@@ -358,6 +358,7 @@ type implem =
 [@@deriving show {with_path = false}]
 
 type ctx_func = {
+  args: (ident * type_) list;
   stovars: ident list;
 }
 [@@deriving show {with_path = false}]
@@ -498,8 +499,8 @@ type dprogram = {
 let mk_type ?annotation node : type_ =
   { node; annotation }
 
-let mk_ctx_func ?(stovars = []) _ : ctx_func =
-  { stovars }
+let mk_ctx_func ?(args = []) ?(stovars = []) _ : ctx_func =
+  { args; stovars }
 
 let mk_func name targ tret ctx body : func =
   { name; targ; tret; ctx; body }
