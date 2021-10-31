@@ -357,10 +357,16 @@ type implem =
   | Abstract of builtin
 [@@deriving show {with_path = false}]
 
+type ctx_func = {
+  stovars: ident list;
+}
+[@@deriving show {with_path = false}]
+
 type func = {
   name: ident;
   targ: type_;
   tret: type_;
+  ctx: ctx_func;
   body: implem;
 }
 [@@deriving show {with_path = false}]
@@ -387,10 +393,19 @@ type ir = {
 }
 [@@deriving show {with_path = false}]
 
+type view_struct = {
+  id: ident;
+  param: type_;
+  ret: type_;
+  body: code;
+}
+[@@deriving show {with_path = false}]
+
 type michelson = {
   storage: type_;
   parameter: type_;
   code: code;
+  views: view_struct list;
   parameters: ident list;
 }
 [@@deriving show {with_path = false}]
@@ -460,12 +475,21 @@ and dinstruction =
   | Diter     of dexpr * dinstruction list
 [@@deriving show {with_path = false}]
 
+type dview = {
+  id : ident;
+  param: type_;
+  ret: type_;
+  body: dinstruction list;
+}
+[@@deriving show {with_path = false}]
+
 type dprogram = {
   name: ident;
   storage: type_;
   parameter: type_;
   storage_data: data;
   code: dinstruction list;
+  views: dview list;
 }
 [@@deriving show {with_path = false}]
 
@@ -474,8 +498,11 @@ type dprogram = {
 let mk_type ?annotation node : type_ =
   { node; annotation }
 
-let mk_func name targ tret body : func =
-  { name; targ; tret; body }
+let mk_ctx_func ?(stovars = []) _ : ctx_func =
+  { stovars }
+
+let mk_func name targ tret ctx body : func =
+  { name; targ; tret; ctx; body }
 
 let mk_entry name args eargs body : entry =
   { name; args; eargs; body }
@@ -483,8 +510,11 @@ let mk_entry name args eargs body : entry =
 let mk_ir ?(parameters = []) name storage_type storage_data storage_list ?(with_operations = false) parameter funs views entries : ir =
   { name; storage_type; storage_data; storage_list; with_operations; parameter; funs; views; entries; parameters }
 
-let mk_michelson ?(parameters = []) storage parameter code : michelson =
-  { storage; parameter; code; parameters }
+let mk_view_struct id param ret body : view_struct =
+  { id; param; ret; body }
+
+let mk_michelson ?(parameters = []) storage parameter ?(views = []) code : michelson =
+  { storage; parameter; code; views; parameters }
 
 let mk_prim ?(args=[]) ?(annots=[]) prim : prim =
   { prim; args; annots }
@@ -492,8 +522,11 @@ let mk_prim ?(args=[]) ?(annots=[]) prim : prim =
 let mk_micheline ?(parameters = []) code storage : micheline =
   { code; storage; parameters }
 
-let mk_dprogram storage parameter storage_data name code =
-  { name; storage; parameter; storage_data; code }
+let mk_dview id param ret body : dview =
+  { id; param; ret; body }
+
+let mk_dprogram storage parameter storage_data name code ?(views = []) : dprogram =
+  { name; storage; parameter; storage_data; code; views }
 
 (* -------------------------------------------------------------------- *)
 

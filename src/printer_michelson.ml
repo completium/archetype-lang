@@ -397,16 +397,24 @@ let pp_ir fmt (ir : ir) =
   (pp_list "@\n@\n" pp_func) fmt ir.views;
   (if (List.is_not_empty ir.views) then (pp "@\n"))
 
+let pp_view_struct fmt (vs : view_struct) =
+  Format.fprintf fmt "@\n  view@\n    \"%s\"@\n    %a@\n    %a@\n    @[%a@]"
+  vs.id
+  pp_type vs.param
+  pp_type vs.ret
+  pp_code vs.body
+
 let pp_michelson fmt (m : michelson) =
   Format.fprintf fmt
     "{@\n  \
      storage %a;@\n  \
      parameter %a;@\n  \
-     code %a;@\n\
-     }"
+     code %a;%a\
+     @\n}"
     pp_type m.storage
     pp_type m.parameter
     pp_code m.code
+    (pp_list ";" pp_view_struct) m.views
 (* -------------------------------------------------------------------------- *)
 
 let pp_a fmt (tag, value) =
@@ -606,18 +614,26 @@ and pp_dinstruction fmt i =
 let pp_dinstructions fmt (s : dinstruction list) =
   (pp_list "@\n" pp_dinstruction) fmt s
 
-let pp_dprogram fmt (d : dprogram) =
+let pp_dview fmt (dv : dview) : unit =
+  Format.fprintf fmt "view@\n  ident=\"%s\"@\n  param=%a@\n  ret=%a@\n  body=@\n    @[%a@]@\n"
+  dv.id
+  pp_type dv.param
+  pp_type dv.ret
+  (pp_list ";@\n" pp_dinstruction) dv.body
+
+let pp_dprogram fmt (d : dprogram) : unit =
   Format.fprintf fmt
     "{@\n  name: %s@\n  \
      storage: %a@\n  \
      parameter: %a@\n  \
      storage_data: %a@\n  \
-     code:@\n    @[%a@]@\n}"
+     code:@\n    @[%a@]%a@\n}"
     d.name
     pp_type d.storage
     pp_type d.parameter
     pp_data d.storage_data
     (pp_list ";@\n" pp_dinstruction) d.code
+    (pp_list ";@\n" pp_dview) d.views
 
 (* -------------------------------------------------------------------------- *)
 

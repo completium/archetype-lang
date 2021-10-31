@@ -1046,7 +1046,12 @@ let to_dir (michelson, env : T.michelson * env) =
       end
     | _ -> Format.eprintf "error: stack not empty@."; assert false
   in
-  (T.mk_dprogram tstorage tparameter storage_data name sys), env
+  (* let to_view (v : T.view_struct) : T.dview =
+    T.mk_dview v.id v.param v.ret v.body
+  in
+  let views = List.map to_view michelson.views in *)
+  let views = [] in (* TODO *)
+  (T.mk_dprogram tstorage tparameter storage_data name sys ~views), env
 
 (* let map_dinstruction_gen (fe : dexpr -> dexpr) (f : dinstruction -> dinstruction) = function
    | Ddecl     (id, v)            -> Ddecl     (id, Option.map fe v)

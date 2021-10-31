@@ -204,26 +204,27 @@ let to_ir (model : M.model) : T.ir =
     then builtins := b::!builtins;
   in
 
-  let get_builtin_fun b =
+  let get_builtin_fun b : T.func =
     let return x = T.Iassign (fun_result, x) in
     let name = T.Utils.get_fun_name Printer_michelson.show_pretty_type b in
+    let ctx = T.mk_ctx_func () in
     match b with
     | Bmin t
     | Bmax t -> begin
         let targ = T.tpair t t in
         let tret = t in
-        T.mk_func name targ tret (T.Abstract b)
+        T.mk_func name targ tret ctx (T.Abstract b)
       end
     | Bfloor
     | Bceil -> begin
         let targ = T.trat in
         let tret  = T.tint in
-        T.mk_func name targ tret (T.Abstract b)
+        T.mk_func name targ tret ctx (T.Abstract b)
       end
     | BlistContains t -> begin
         let targ = T.tpair (T.tlist t) t in
         let tret = T.tbool in
-        T.mk_func name targ tret (T.Abstract b)
+        T.mk_func name targ tret ctx (T.Abstract b)
       end
     | BlistNth t -> begin
         let targ = T.tpair (T.tlist t) T.tnat in
@@ -252,7 +253,7 @@ let to_ir (model : M.model) : T.ir =
           args, body
         end
         in
-        T.mk_func name targ tret (T.Concrete (args, body))
+        T.mk_func name targ tret ctx (T.Concrete (args, body))
       end
     | Btostring t -> begin
         let targ = t in
@@ -291,54 +292,54 @@ let to_ir (model : M.model) : T.ir =
           args, T.Iif (cond, a, return (T.istring "0"), T.tunit)
         end
         in
-        T.mk_func name targ tret (T.Concrete (args, body))
+        T.mk_func name targ tret ctx (T.Concrete (args, body))
       end
     | Bratcmp -> begin
         let targ = T.tpair (T.tpair T.trat T.trat) (T.tor T.tunit (T.tor (T.tor T.tunit T.tunit) (T.tor T.tunit T.tunit))) in
         let tret = T.tbool in
-        T.mk_func name targ tret (T.Abstract b)
+        T.mk_func name targ tret ctx (T.Abstract b)
       end
     | Bratnorm -> begin
         let targ = T.trat in
         let tret = T.trat in
-        T.mk_func name targ tret (T.Abstract b)
+        T.mk_func name targ tret ctx (T.Abstract b)
       end
     | Brataddsub -> begin
         let targ = T.tpair (T.tpair T.trat T.trat) (T.tor T.tunit T.tunit) in
         let tret = T.trat in
-        T.mk_func name targ tret (T.Abstract b)
+        T.mk_func name targ tret ctx (T.Abstract b)
       end
     | Bratmul
     | Bratdiv -> begin
         let targ = T.tpair T.trat T.trat in
         let tret = T.trat in
-        T.mk_func name targ tret (T.Abstract b)
+        T.mk_func name targ tret ctx (T.Abstract b)
       end
     | Bratuminus
     | Bratabs -> begin
         let targ = T.trat in
         let tret = T.trat in
-        T.mk_func name targ tret (T.Abstract b)
+        T.mk_func name targ tret ctx (T.Abstract b)
       end
     | Brattez -> begin
         let targ = T.tpair T.trat T.tmutez in
         let tret = T.tmutez in
-        T.mk_func name targ tret (T.Abstract b)
+        T.mk_func name targ tret ctx (T.Abstract b)
       end
     | Bratdur -> begin
         let targ = T.tpair T.trat T.tint in
         let tret = T.tint in
-        T.mk_func name targ tret (T.Abstract b)
+        T.mk_func name targ tret ctx (T.Abstract b)
       end
     | Bsubnat -> begin
         let targ = T.tpair T.tnat T.tnat in
         let tret = T.tnat in
-        T.mk_func name targ tret (T.Abstract b)
+        T.mk_func name targ tret ctx (T.Abstract b)
       end
     | Bmuteztonat -> begin
         let targ = T.tmutez in
         let tret = T.tnat in
-        T.mk_func name targ tret (T.Abstract b)
+        T.mk_func name targ tret ctx (T.Abstract b)
       end
   in
 
@@ -1109,8 +1110,9 @@ let to_ir (model : M.model) : T.ir =
       extra_args := (fid, eargs)::!extra_args;
       let args = args @ eargs in
       let targ = to_one_type (List.map snd args) in
+      let ctx = T.mk_ctx_func () ~stovars:fs.stovars in
       mapargs := MapString.add fid (targ, tret) !mapargs;
-      T.mk_func name targ tret (T.Concrete (args, body))
+      T.mk_func name targ tret ctx (T.Concrete (args, body))
     in
 
     let for_fs_entry env (fs : M.function_struct) : T.entry =
@@ -1803,6 +1805,15 @@ and to_michelson (ir : T.ir) : T.michelson =
     |> T.Utils.optim
   in
 
+  let build_view (v : T.func) =
+    let id    = v.name in
+    let param : T.type_ = T.tunit in (* v.targ in *)
+    let ret   : T.type_ = T.tnat in (* v.tret in *)
+    let body  : T.code  = T.SEQ [T.DROP 1; T.PUSH (T.tnat, Dint Big_int.zero_big_int)] in
+    T.mk_view_struct id param ret body
+  in
+
   let code = build_code () in
   let parameters = ir.parameters in
-  T.mk_michelson ~parameters storage ir.parameter code
+  let views = List.map build_view ir.views in
+  T.mk_michelson ~parameters ~views storage ir.parameter code

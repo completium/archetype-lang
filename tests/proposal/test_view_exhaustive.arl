@@ -1,0 +1,39 @@
+archetype test_view
+
+asset my_asset {
+  id : nat;
+  v : string
+} initialized by {
+  {0; "value"}
+}
+
+variable n : nat = 2
+
+variable r : nat = 0
+
+states =
+| One
+| Two
+
+view getN() : nat {
+  return n
+}
+
+view getMyasset0() : string {
+  return my_asset[0].v
+}
+
+view getMyasset(i : nat) : string {
+  return my_asset[i].v
+}
+
+// view getState() : int {
+//   return state
+// }
+
+entry exec() {
+  match callview<nat>(selfaddress, "getN", Unit) with
+  | some(v) -> r := v
+  | none -> fail("not_found")
+  end
+}
