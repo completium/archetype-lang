@@ -177,8 +177,8 @@ and pp_code fmt (i : code) =
   | SOURCE                   -> pp "SOURCE"
   | TRANSFER_TOKENS          -> pp "TRANSFER_TOKENS"
   (* Operations on data structures *)
-  | CAR n                    -> pp "CAR%a" pp_arg2 n
-  | CDR n                    -> pp "CDR%a" pp_arg n
+  | CAR                      -> pp "CAR"
+  | CDR                      -> pp "CDR"
   | CONCAT                   -> pp "CONCAT"
   | CONS                     -> pp "CONS"
   | EMPTY_BIG_MAP (k, v)     -> pp "EMPTY_BIG_MAP %a %a" pp_type k pp_type v
@@ -228,6 +228,9 @@ and pp_code fmt (i : code) =
   | TOGGLE_BAKER_DELEGATIONS -> pp "TOGGLE_BAKER_DELEGATIONS"
   | SET_BAKER_CONSENSUS_KEY  -> pp "SET_BAKER_CONSENSUS_KEY"
   | SET_BAKER_PVSS_KEY       -> pp "SET_BAKER_PVSS_KEY"
+  (* Macro *)
+  | CAR_N n                    -> pp "CAR%a" pp_arg2 n
+  | CDR_N n                    -> pp "CDR%a" pp_arg n
 
 let pp_id fmt i = Format.fprintf fmt "%s" i
 
@@ -272,8 +275,8 @@ let rec pp_instruction fmt (i : instruction) =
     end
   | Iunop (op, e) -> begin
       match op with
-      | Ucar n      -> pp "car(%i, %a)"      n f e
-      | Ucdr n      -> pp "cdr(%i, %a)"      n f e
+      | Ucar        -> pp "car(%a)"          f e
+      | Ucdr        -> pp "cdr(%a)"          f e
       | Uleft  t    -> pp "left<%a>(%a)"     pp_type t f e
       | Uright t    -> pp "right<%a>(%a)"    pp_type t f e
       | Uneg        -> pp "neg(%a)"          f e
@@ -307,6 +310,8 @@ let rec pp_instruction fmt (i : instruction) =
       | Upairing_check -> pp "pairing_check"
       | Uconcat      -> pp "concat"
       | Uaddress     -> pp "address"
+      | UcarN n      -> pp "car(%i, %a)"      n f e
+      | UcdrN n      -> pp "cdr(%i, %a)"      n f e
     end
   | Ibinop (op, lhs, rhs) -> begin
       match op with
@@ -525,8 +530,8 @@ let rec pp_dexpr fmt (de : dexpr) =
     end
   | Duop (op, e) -> begin
       match op with
-      | Ucar n      -> pp "car(%i, %a)"      n f e
-      | Ucdr n      -> pp "cdr(%i, %a)"      n f e
+      | Ucar        -> pp "car(%a)"          f e
+      | Ucdr        -> pp "cdr(%a)"          f e
       | Uleft  t    -> pp "left<%a>(%a)"     pp_type t f e
       | Uright t    -> pp "right<%a>(%a)"    pp_type t f e
       | Uneg        -> pp "neg(%a)"          f e
@@ -560,6 +565,8 @@ let rec pp_dexpr fmt (de : dexpr) =
       | Upairing_check -> pp "pairing_check"
       | Uconcat        -> pp "concat"
       | Uaddress       -> pp "address"
+      | UcarN n      -> pp "car(%i, %a)"      n f e
+      | UcdrN n      -> pp "cdr(%i, %a)"      n f e
     end
   | Dbop (op, lhs, rhs) -> begin
       match op with

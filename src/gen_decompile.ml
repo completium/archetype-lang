@@ -181,10 +181,10 @@ let to_michelson (input, env : T.obj_micheline * env) : T.michelson * env =
       | Oprim ({prim = "SOURCE"; _})                         -> T.SOURCE
       | Oprim ({prim = "TRANSFER_TOKENS"; _})                -> T.TRANSFER_TOKENS
       (* Operations on data structures *)
-      | Oprim ({prim = "CAR"; args = n::_})                  -> T.CAR (to_int n)
-      | Oprim ({prim = "CAR"; _})                            -> T.CAR 0
-      | Oprim ({prim = "CDR"; args = n::_})                  -> T.CDR (to_int n)
-      | Oprim ({prim = "CDR"; _})                            -> T.CDR 1
+      | Oprim ({prim = "CAR"; args = n::_})                  -> T.CAR_N (to_int n)
+      | Oprim ({prim = "CAR"; _})                            -> T.CAR
+      | Oprim ({prim = "CDR"; args = n::_})                  -> T.CDR_N (to_int n)
+      | Oprim ({prim = "CDR"; _})                            -> T.CDR
       | Oprim ({prim = "CONCAT"; _})                         -> T.CONCAT
       | Oprim ({prim = "CONS"; _})                           -> T.CONS
       | Oprim ({prim = "EMPTY_BIG_MAP" ; args = k::v::_})    -> T.EMPTY_BIG_MAP (to_type k, to_type v)
@@ -476,12 +476,12 @@ let to_dir (michelson, env : T.michelson * env) =
           | T.Dbop (Bpair, a1, b1), _ -> begin
               let f op =
                 match b, op with
-                | T.Dbop (Bpair, x, _), T.Ucar _ -> x
-                | T.Dbop (Bpair, _, y), T.Ucdr _ -> y
+                | T.Dbop (Bpair, x, _), T.Ucar -> x
+                | T.Dbop (Bpair, _, y), T.Ucdr -> y
                 | _ -> T.Duop (op, b)
               in
-              let car = f (Ucar 0) in
-              let cdr = f (Ucdr 1) in
+              let car = f Ucar in
+              let cdr = f Ucdr in
               aux (aux accu (a1, car)) (b1, cdr)
             end
           | _ -> (a, b)::accu
@@ -534,8 +534,8 @@ let to_dir (michelson, env : T.michelson * env) =
                       List.map (fun instr -> begin
                             let rec fe (expr : T.dexpr) =
                               match expr with
-                              | T.Duop (T.Ucar 0, T.Dbop (Bpair, x, _)) -> fe x
-                              | T.Duop (T.Ucdr 1, T.Dbop (Bpair, _, y)) -> fe y
+                              | T.Duop (T.Ucar, T.Dbop (Bpair, x, _)) -> fe x
+                              | T.Duop (T.Ucdr, T.Dbop (Bpair, _, y)) -> fe y
                               | _ -> T.map_dexpr fe id id expr
                             in
                             let rec f (x : T.dinstruction) : T.dinstruction = T.map_dexpr_dinstr f fe id x in
@@ -936,8 +936,8 @@ let to_dir (michelson, env : T.michelson * env) =
 
     (* Operations on data structures *)
 
-    | CAR n::it               -> interp_uop env (Ucar n) it stack
-    | CDR n::it               -> interp_uop env (Ucdr n) it stack
+    | CAR::it                  -> interp_uop env Ucar it stack
+    | CDR::it                  -> interp_uop env Ucdr it stack
     | CONCAT::it               -> interp_bop env Bconcat it stack
     | CONS::it                 -> interp_bop env Bcons it stack
     | EMPTY_BIG_MAP (k, v)::it -> interp_zop env (Zemptybigmap (k, v)) it stack
@@ -1016,6 +1016,11 @@ let to_dir (michelson, env : T.michelson * env) =
     | SET_BAKER_CONSENSUS_KEY::_  -> assert false
     | SET_BAKER_PVSS_KEY::_       -> assert false
 
+    (* Macro *)
+
+    | CAR_N n::it                -> interp_uop env (UcarN n) it stack
+    | CDR_N n::it                -> interp_uop env (UcdrN n) it stack
+
     | [] -> sys, stack, env
   in
 
@@ -1049,9 +1054,9 @@ let to_dir (michelson, env : T.michelson * env) =
     | _ -> Format.eprintf "error: stack not empty@."; assert false
   in
   (* let to_view (v : T.view_struct) : T.dview =
-    T.mk_dview v.id v.param v.ret v.body
-  in
-  let views = List.map to_view michelson.views in *)
+     T.mk_dview v.id v.param v.ret v.body
+     in
+     let views = List.map to_view michelson.views in *)
   let views = [] in (* TODO *)
   (T.mk_dprogram tstorage tparameter storage_data name sys ~views), env
 
@@ -1441,8 +1446,8 @@ let to_model (ir, env : T.ir * env) : M.model * env =
       end
     | Iunop (op, e) -> begin
         match op with
-        | Ucar _n            -> M.mk_mterm (Mtupleaccess (f e, Big_int.zero_big_int)) (M.tunit)
-        | Ucdr _n            -> M.mk_mterm (Mtupleaccess (f e, Big_int.unit_big_int)) (M.tunit)
+        | Ucar               -> M.mk_mterm (Mtupleaccess (f e, Big_int.zero_big_int)) (M.tunit)
+        | Ucdr               -> M.mk_mterm (Mtupleaccess (f e, Big_int.unit_big_int)) (M.tunit)
         | Uleft  t           -> let ee = f e in let t = for_type t in M.mk_mterm (Mleft  (t, f e)) (M.tor ee.type_ t)
         | Uright t           -> let ee = f e in let t = for_type t in M.mk_mterm (Mright (t, f e)) (M.tor t ee.type_)
         | Uneg               -> M.mk_mterm (Muminus (f e)) M.tint
@@ -1476,6 +1481,8 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         | Upairing_check     -> assert false
         | Uconcat            -> assert false
         | Uaddress           -> M.mk_mterm (Mcontractaddress (f e)) M.taddress
+        | UcarN _n           -> assert false
+        | UcdrN _n           -> assert false
       end
     | Ibinop (op, a, b) -> begin
         match op with

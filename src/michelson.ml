@@ -128,8 +128,8 @@ and code =
   | SOURCE
   | TRANSFER_TOKENS
   (* Operations on data structures *)
-  | CAR                of int
-  | CDR                of int
+  | CAR
+  | CDR
   | CONCAT
   | CONS
   | EMPTY_BIG_MAP      of type_ * type_
@@ -180,6 +180,9 @@ and code =
   | TOGGLE_BAKER_DELEGATIONS
   | SET_BAKER_CONSENSUS_KEY
   | SET_BAKER_PVSS_KEY
+  (* Macro *)
+  | CAR_N              of int
+  | CDR_N              of int
 [@@deriving show {with_path = false}]
 
 and z_operator =
@@ -204,8 +207,8 @@ and z_operator =
 [@@deriving show {with_path = false}]
 
 and un_operator =
-  | Ucar of int
-  | Ucdr of int
+  | Ucar
+  | Ucdr
   | Uleft  of type_
   | Uright of type_
   | Uneg
@@ -239,6 +242,8 @@ and un_operator =
   | Upairing_check
   | Uconcat
   | Uaddress
+  | UcarN of int
+  | UcdrN of int
 [@@deriving show {with_path = false}]
 
 and bin_operator =
@@ -565,8 +570,8 @@ let inil t           = Izop (Znil t)
 let iemptyset t      = Izop (Zemptyset t)
 let iemptymap k v    = Izop (Zemptymap (k, v))
 let iemptybigmap k v = Izop (Zemptybigmap (k, v))
-let icar n x         = Iunop (Ucar n, x)
-let icdr n x         = Iunop (Ucdr n, x)
+let icar x           = Iunop (Ucar, x)
+let icdr x           = Iunop (Ucdr, x)
 let ifail msg        = Iunop (Ufail, istring msg)
 let iskip            = Iseq []
 let ileft t x        = Iunop  (Uleft t, x)
@@ -575,11 +580,13 @@ let ieq  l r         = Icompare (Ceq, l, r)
 let iadd l r         = Ibinop (Badd, l, r)
 let isub l r         = Ibinop (Bsub, l, r)
 let imul l r         = Ibinop (Bmul, l, r)
-let idiv l r         = Iifnone (Ibinop (Bediv, l, r), ifail "DivByZero", "_var_ifnone", icar 0 (Ivar ("_var_ifnone")), tint )
-let imod l r         = Iifnone (Ibinop (Bediv, l, r), ifail "DivByZero", "_var_ifnone", icdr 0 (Ivar ("_var_ifnone")), tnat )
+let idiv l r         = Iifnone (Ibinop (Bediv, l, r), ifail "DivByZero", "_var_ifnone", icar (Ivar ("_var_ifnone")), tint )
+let imod l r         = Iifnone (Ibinop (Bediv, l, r), ifail "DivByZero", "_var_ifnone", icdr (Ivar ("_var_ifnone")), tnat )
 let irecord ir       = Irecord ir
 let isrecord l       = irecord (Rtuple l)
 let ipair x y        = Ibinop (Bpair, x, y)
+let icarn n x        = Iunop (UcarN n, x)
+let icdrn n x        = Iunop (UcdrN n, x)
 
 (* -------------------------------------------------------------------- *)
 
@@ -677,8 +684,8 @@ let cmp_z_operator lhs rhs =
 
 let cmp_un_operator lhs rhs =
   match lhs, rhs with
-  | Ucar n1, Ucar n2                       -> n1 = n2
-  | Ucdr n1, Ucdr n2                       -> n1 = n2
+  | Ucar, Ucar                             -> true
+  | Ucdr, Ucdr                             -> true
   | Uleft t1, Uleft t2                     -> cmp_type t1 t2
   | Uright t1, Uright t2                   -> cmp_type t1 t2
   | Uneg, Uneg                             -> true
@@ -704,6 +711,8 @@ let cmp_un_operator lhs rhs =
   | Uge, Uge                               -> true
   | Ult, Ult                               -> true
   | Ule, Ule                               -> true
+  | UcarN n1, UcarN n2                     -> n1 = n2
+  | UcdrN n1, UcdrN n2                     -> n1 = n2
   | _ -> false
 
 let cmp_bin_operator lhs rhs =
@@ -750,8 +759,8 @@ let cmp_code lhs rhs =
     | UNIT, UNIT                                     -> true
     | IF_NONE (t1, e1), IF_NONE (t2, e2)             -> List.for_all2 f t1 t2 && List.for_all2 f e1 e2
     | PAIR, PAIR                                     -> true
-    | CAR n1, CAR n2                                 -> n1 = n2
-    | CDR n1, CDR n2                                 -> n1 = n2
+    | CAR, CAR                                       -> true
+    | CDR, CDR                                       -> true
     | UNPAIR, UNPAIR                                 -> true
     | UNPAIR_N n1, UNPAIR_N n2                       -> n1 = n2
     | SELF_ADDRESS, SELF_ADDRESS                     -> true
@@ -825,6 +834,8 @@ let cmp_code lhs rhs =
     | SENDER, SENDER                                 -> true
     | ADDRESS, ADDRESS                               -> true
     | CHAIN_ID, CHAIN_ID                             -> true
+    | CAR_N n1, CAR_N n2                             -> n1 = n2
+    | CDR_N n1, CDR_N n2                             -> n1 = n2
     | _ -> false
   in
   f lhs rhs
@@ -969,8 +980,8 @@ let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) =
   | SOURCE                   -> SOURCE
   | TRANSFER_TOKENS          -> TRANSFER_TOKENS
   (* Operations on data structures *)
-  | CAR n                    -> CAR n
-  | CDR n                    -> CDR n
+  | CAR                      -> CAR
+  | CDR                      -> CDR
   | CONCAT                   -> CONCAT
   | CONS                     -> CONS
   | EMPTY_BIG_MAP  (k, v)    -> EMPTY_BIG_MAP (ft k, ft v)
@@ -1021,6 +1032,9 @@ let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) =
   | TOGGLE_BAKER_DELEGATIONS -> TOGGLE_BAKER_DELEGATIONS
   | SET_BAKER_CONSENSUS_KEY  -> SET_BAKER_CONSENSUS_KEY
   | SET_BAKER_PVSS_KEY       -> SET_BAKER_PVSS_KEY
+  (* Macro *)
+  | CAR_N n                  -> CAR_N n
+  | CDR_N n                  -> CDR_N n
 
 
 let map_code (fc : code -> code) = map_code_gen fc id id
@@ -1220,14 +1234,14 @@ end = struct
       let rec aux accu l =
         match l with
         (* | (DIP (x, y))::(DROP z)::t -> aux accu ((DROP (z - 1))::y::t) *)
-        | (DROP x)::(DROP y)::t -> aux accu ((DROP (x + y))::t)
+        | (DROP x)::(DROP y)::t   -> aux accu ((DROP (x + y))::t)
         (* | (CAR x)::(CAR y)::t   -> aux accu ((CAR (x + y))::t) *)
-        | (PAIR)::(UNPAIR)::t   -> aux accu t
-        | (UNPAIR)::(PAIR)::t   -> aux accu t
-        | (CDR x)::(CDR y)::t   -> aux accu ((CDR (x + y))::t)
-        | (DUP)::(DROP x)::t    -> aux accu ((DROP (x - 1))::t)
-        | (DUP)::(SWAP)::t      -> aux accu ((DUP)::t)
-        | (DROP 0)::t           -> aux accu t
+        | (PAIR)::(UNPAIR)::t     -> aux accu t
+        | (UNPAIR)::(PAIR)::t     -> aux accu t
+        | (CDR_N x)::(CDR_N y)::t -> aux accu ((CDR_N (x + y))::t)
+        | (DUP)::(DROP x)::t      -> aux accu ((DROP (x - 1))::t)
+        | (DUP)::(SWAP)::t        -> aux accu ((DUP)::t)
+        | (DROP 0)::t             -> aux accu t
         | e::t -> aux (e::accu) t
         | [] -> List.rev accu
       in
@@ -1265,7 +1279,7 @@ end = struct
   let replace_macro c =
     let rec aux c =
       match c with
-      | UNPAIR -> SEQ [DUP; CAR 1; DIP (1, [CDR 1])]
+      | UNPAIR -> SEQ [DUP; CAR; DIP (1, [CDR])]
       | _ -> map_code aux c
     in
     aux c
@@ -1436,8 +1450,8 @@ end = struct
     | SOURCE                   -> mk "SOURCE"
     | TRANSFER_TOKENS          -> mk "TRANSFER_TOKENS"
     (* Operations on data structures *)
-    | CAR n                    -> mk ~args:[mk_int n] "CAR"
-    | CDR n                    -> mk ~args:[mk_int n] "CDR"
+    | CAR                      -> mk "CAR"
+    | CDR                      -> mk "CDR"
     | CONCAT                   -> mk "CONCAT"
     | CONS                     -> mk "CONS"
     | EMPTY_BIG_MAP  (k, v)    -> mk ~args:[ft k; ft v] "EMPTY_BIG_MAP"
@@ -1488,6 +1502,9 @@ end = struct
     | TOGGLE_BAKER_DELEGATIONS -> mk "TOGGLE_BAKER_DELEGATIONS"
     | SET_BAKER_CONSENSUS_KEY  -> mk "SET_BAKER_CONSENSUS_KEY"
     | SET_BAKER_PVSS_KEY       -> mk "SET_BAKER_PVSS_KEY"
+    (* Macro *)
+    | CAR_N n                  -> mk ~args:[mk_int n] "CAR"
+    | CDR_N n                  -> mk ~args:[mk_int n] "CDR"
 
 
   let to_micheline (m : michelson) (s : data) : micheline =
