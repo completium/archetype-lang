@@ -1208,6 +1208,8 @@ and tycheck_r (stack : stack) (code : M.code_node) : stack option =
   | UNPAIR ->
       op_UNPAIR stack
 
+  | UNPAIR_N _ -> assert false (* TODO *)
+
   | UPDATE ->
       op_UPDATE stack
 
@@ -1223,6 +1225,9 @@ and tycheck_r (stack : stack) (code : M.code_node) : stack option =
 
   | TICKET ->
       op_TICKET stack
+
+  (* view *)
+  | VIEW (_, _) -> assert false (* TODO *)
 
   (* Other *)
   | LEVEL ->
@@ -1242,6 +1247,12 @@ and tycheck_r (stack : stack) (code : M.code_node) : stack option =
 
   | VOTING_POWER ->
       op_VOTING_POWER stack
+
+  (* Macro *)
+
+  | CAR_N _ -> assert false (* TODO *)
+
+  | CDR_N _ -> assert false (* TODO *)
 
     (* Unused? *)
   | CREATE_ACCOUNT           -> assert false

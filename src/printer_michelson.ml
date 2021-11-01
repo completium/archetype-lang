@@ -117,7 +117,7 @@ and pp_code fmt (i : code) =
   let pp_dip_arg fmt (i, l) =
     let pp_aux fmt l =
       if with_complex_instrs l
-      then fs fmt l
+      then fsv fmt l
       else Format.fprintf fmt "{ @[%a@] }" (pp_list "; " pp_code) l
     in
     if i = 1
@@ -248,7 +248,7 @@ and pp_code fmt (i : code) =
   (* Macro *)
   | CAR_N n                    -> pp "CAR%a" pp_arg2 n
   | CDR_N n                    -> pp "CDR%a" pp_arg n
-
+(*
 let pp_simple_code fmt c =
   let pp s = Format.fprintf fmt s in
   match c with
@@ -366,6 +366,11 @@ let pp_simple_code fmt c =
   | TOGGLE_BAKER_DELEGATIONS -> pp "TOGGLE_BAKER_DELEGATIONS"
   | SET_BAKER_CONSENSUS_KEY  -> pp "SET_BAKER_CONSENSUS_KEY"
   | SET_BAKER_PVSS_KEY       -> pp "SET_BAKER_PVSS_KEY"
+  (* View *)
+  | VIEW _ -> pp ""
+  (* Macro *)
+  | CAR_N n                    -> pp "CAR%a" pp_arg2 n
+  | CDR_N n                    -> pp "CDR%a" pp_arg n *)
 
 let pp_id fmt i = Format.fprintf fmt "%s" i
 
@@ -428,6 +433,9 @@ let pp_uop f fmt (op, e) =
   | Ujointickets -> pp "join_tickets(%a)" f e
   | Upairing_check -> pp "pairing_check"
   | Uconcat      -> pp "concat"
+  | Uaddress     -> pp "address"
+  | UcarN n      -> pp "carN(%i,%a)" n f e
+  | UcdrN n      -> pp "carN(%i,%a)" n f e
 
 let pp_bop f fmt (op, lhs, rhs) =
   let pp s = Format.fprintf fmt s in
@@ -452,6 +460,7 @@ let pp_bop f fmt (op, lhs, rhs) =
   | Bcreateticket -> pp "create_tickets(%a, %a)" f lhs f rhs
   | Bsplitticket  -> pp "split_ticket(%a, %a)"   f lhs f rhs
   | Bsapling_verify_update -> pp "sapling_verify_update"
+  | Bview (_, _) -> pp ""
 
 let pp_top f fmt (op, a1, a2, a3) =
   let pp s = Format.fprintf fmt s in
@@ -796,12 +805,12 @@ and pp_var (fmt : Format.formatter) (v : dvar) =
   | `VLocal x ->
     Format.fprintf fmt "#%d" x
 
-let pp_dview fmt (dv : dview) : unit =
+(* let pp_dview fmt (dv : dview) : unit =
   Format.fprintf fmt "view@\n  ident=\"%s\"@\n  param=%a@\n  ret=%a@\n  body=@\n    @[%a@]@\n"
   dv.id
   pp_type dv.param
   pp_type dv.ret
-  (pp_list ";@\n" pp_dinstruction) dv.body
+  (pp_list ";@\n" pp_dinstruction) dv.body *)
 
 let pp_dprogram fmt (d : dprogram) : unit =
   Format.fprintf fmt
@@ -809,7 +818,7 @@ let pp_dprogram fmt (d : dprogram) : unit =
      storage: %a@\n  \
      parameter: %a@\n  \
      storage_data: %a@\n  \
-     code:@\n    @[%a@]%a@\n}"
+     code:@\n    @[%a@]@\n}"
     d.name
     pp_type d.storage
     pp_type d.parameter

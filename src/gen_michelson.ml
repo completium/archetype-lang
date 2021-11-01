@@ -1339,8 +1339,8 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
     | T.Upairing_check   -> T.cpairing_check
     | T.Uconcat          -> T.cconcat
     | T.Uaddress         -> T.caddress
-    | T.UcarN n          -> T.carn n
-    | T.UcdrN n          -> T.cdrn n  in
+    | T.UcarN n          -> T.ccarn n
+    | T.UcdrN n          -> T.ccdrn n  in
 
   let bin_op_to_code = function
     | T.Badd                   -> T.cadd
@@ -1850,7 +1850,7 @@ and to_michelson (ir : T.ir) : T.michelson =
             | true, false  -> doit (n + 1) s (code @ [T.cunpair; T.cswap], id::ids) q
             | true, true   -> code, id::ids
           end
-        | [] -> code @ [T.DROP 1], ids
+        | [] -> code @ [T.cdrop 1], ids
       in
 
       let n = List.length storage_list in
@@ -1866,14 +1866,14 @@ and to_michelson (ir : T.ir) : T.michelson =
       | [], [] -> [T.cdrop 1], env, 0
 
       | args, [] ->
-        let code = [T.ccar 0] @ unfold_all args in
+        let code = [T.ccar] @ unfold_all args in
         let env = { env with vars = List.map fst args @ env.vars } in
         code, env, List.length args
 
       | [], stovars ->
         let scode, svs = extract_storage_vars stovars in
         (* Format.eprintf "RES: scode: @[%a@], sys: [%a]@\n" (pp_list "; " Printer_michelson.pp_code) scode (pp_list "; " pp_ident) svs; *)
-        let code = [T.ccdr 1] @ scode in
+        let code = [T.ccdr] @ scode in
         let env = { env with vars = svs @ env.vars } in
         code, env, List.length svs
 
@@ -1902,13 +1902,13 @@ and to_michelson (ir : T.ir) : T.michelson =
     let post =
       match nb_args with
       | 0 -> []
-      | _ -> [T.DIP (1, [T.DROP nb_args])]
+      | _ -> [T.cdip (1, [T.cdrop nb_args])]
     in
 
-    let code = T.SEQ (code::post) in
+    let code = T.cseq (code::post) in
 
     let body  : T.code  =
-      T.SEQ (fold_vars @ [code])
+      T.cseq (fold_vars @ [code])
       |> T.Utils.flat
       |> T.Utils.optim
     in

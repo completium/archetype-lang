@@ -365,14 +365,15 @@ let decompile input : string =
   |> parse_micheline
   |> cont !Options.opt_mici output_obj_micheline
   |> to_michelson
+  |> tycheck_michelson
   |> cont !Options.opt_mic output_michelson
   |> to_dir
   |> cont !Options.opt_dir output_dprogram
   |> to_red_dir
   |> cont !Options.opt_red_dir output_dprogram
-  |> to_ir
-  |> cont !Options.opt_ir  output_ir
-  |> to_model
+  (* |> to_ir *)
+  (* |> cont !Options.opt_ir  output_ir *)
+  |> dir_to_model
   |> cont !Options.opt_mdl output_tmdl
   |> Opt_model.optimize
   |> cont !Options.opt_omdl output_tmdl

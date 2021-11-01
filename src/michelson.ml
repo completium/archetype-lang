@@ -531,6 +531,9 @@ type rstack  = rstack1 list
 let mk_type ?annotation node : type_ =
   { node; annotation }
 
+let mk_ctx_func ?(args = []) ?(stovars = []) _ : ctx_func =
+  { args; stovars }
+
 let mk_code ?type_ node : code =
   { node; type_ = ref type_ }
 
@@ -720,6 +723,7 @@ let csplit_ticket                 = mk_code SPLIT_TICKET
 let cticket                       = mk_code TICKET
   (* Other *)
 let cunpair                       = mk_code UNPAIR
+let cunpairn               n      = mk_code (UNPAIR_N n)
 let cself_address                 = mk_code SELF_ADDRESS
 let ccast                  a      = mk_code (CAST a)
 let ccreate_account               = mk_code CREATE_ACCOUNT
@@ -740,6 +744,10 @@ let cset_baker_active             = mk_code SET_BAKER_ACTIVE
 let ctoggle_baker_delegations     = mk_code TOGGLE_BAKER_DELEGATIONS
 let cset_baker_consensus_key      = mk_code SET_BAKER_CONSENSUS_KEY
 let cset_baker_pvss_key           = mk_code SET_BAKER_PVSS_KEY
+let cview (c, t)                  = mk_code (VIEW (c, t))
+(* Macro *)
+let ccarn                      k  = mk_code (CAR_N k)
+let ccdrn                      k  = mk_code (CDR_N k)
 
 (* -------------------------------------------------------------------- *)
 
