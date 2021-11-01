@@ -1,7 +1,0 @@
-archetype test_view_caller
-
-variable n : option<nat> = none
-
-entry exec(a : address) {
-  n := callview<nat>(a, "getN", Unit)
-}

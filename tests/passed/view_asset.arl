@@ -1,0 +1,18 @@
+archetype test_view
+
+asset my_asset {
+  id : nat;
+  v : string
+} initialized by {
+  {0; "value"}
+}
+
+variable res : option<nat> = none
+
+view get(i : nat) : string {
+  return my_asset[i].v
+}
+
+entry exec(a : nat) {
+  res := callview<nat>(selfaddress, "get", a)
+}

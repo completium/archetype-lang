@@ -6,6 +6,6 @@ entry setN(v : nat) {
   n := v
 }
 
-view getN() : nat {
+view get() : nat {
   return n
 }
