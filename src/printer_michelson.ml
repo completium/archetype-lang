@@ -207,6 +207,7 @@ and pp_code fmt (i : code) =
   | VIEW (c, t)              -> pp "VIEW \"%s\" %a" c pp_type t
   (* Other *)
   | UNPAIR                   -> pp "UNPAIR"
+  | UNPAIR_N n               -> pp "UNPAIR%a" pp_arg2 n
   | SELF_ADDRESS             -> pp "SELF_ADDRESS"
   | CAST t                   -> pp "CAST %a" pp_type t
   | CREATE_ACCOUNT           -> pp "CREATE_ACCOUNT"

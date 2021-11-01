@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unrealeased
 ### Added
-  - new feature
+  - on-chain view
 
 ## [1.2.9] - 2021-10-03
 ### Added

@@ -206,6 +206,7 @@ let to_michelson (input, env : T.obj_micheline * env) : T.michelson * env =
       | Oprim ({prim = "UNPACK" ; args = t::_})              -> T.UNPACK (to_type t)
       | Oprim ({prim = "UPDATE"; _})                         -> T.UPDATE
       (* Other *)
+      | Oprim ({prim = "UNPAIR"; args = n::_})               -> T.UNPAIR_N (to_int n)
       | Oprim ({prim = "UNPAIR"; _})                         -> T.UNPAIR
       | Oprim ({prim = "SELF_ADDRESS"; _})                   -> T.SELF_ADDRESS
       | Oprim ({prim = "CAST"; args = t::_})                 -> T.CAST (to_type t)
@@ -992,6 +993,7 @@ let to_dir (michelson, env : T.michelson * env) =
         | x::y::st -> f env sys it (T.Dbop (Bpair, x, y)::st)
         | _ -> emit_error ()
       end
+    | UNPAIR_N _::_  -> assert false (* TODO *)
     | SELF_ADDRESS::it   -> interp_zop env (Zself_address) it stack
 
     | CAST _::_                   -> assert false

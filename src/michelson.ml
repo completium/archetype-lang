@@ -159,6 +159,7 @@ and code =
   | VIEW               of ident * type_
   (* Other *)
   | UNPAIR
+  | UNPAIR_N           of int
   | SELF_ADDRESS
   | CAST               of type_
   | CREATE_ACCOUNT
@@ -752,6 +753,7 @@ let cmp_code lhs rhs =
     | CAR n1, CAR n2                                 -> n1 = n2
     | CDR n1, CDR n2                                 -> n1 = n2
     | UNPAIR, UNPAIR                                 -> true
+    | UNPAIR_N n1, UNPAIR_N n2                       -> n1 = n2
     | SELF_ADDRESS, SELF_ADDRESS                     -> true
     | APPLY, APPLY                                   -> true
     | LEFT t1, LEFT t2                               -> cmp_type t1 t2
@@ -998,6 +1000,7 @@ let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) =
   | VIEW (c, t)              -> VIEW (c, ft t)
   (* Other *)
   | UNPAIR                   -> UNPAIR
+  | UNPAIR_N n               -> UNPAIR_N n
   | SELF_ADDRESS             -> SELF_ADDRESS
   | CAST t                   -> CAST (ft t)
   | CREATE_ACCOUNT           -> CREATE_ACCOUNT
@@ -1464,6 +1467,7 @@ end = struct
     | VIEW (c, t)              -> mk ~args:[mk_string c; ft t] "VIEW"
     (* Other *)
     | UNPAIR                   -> mk "UNPAIR"
+    | UNPAIR_N n               -> mk ~args:[mk_int n] "UNPAIR"
     | SELF_ADDRESS             -> mk "SELF_ADDRESS"
     | CAST t                   -> mk ~args:[ft t] "CAST"
     | CREATE_ACCOUNT           -> mk "CREATE_ACCOUNT"

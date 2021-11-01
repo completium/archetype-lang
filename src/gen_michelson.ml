@@ -1811,21 +1811,17 @@ and to_michelson (ir : T.ir) : T.michelson =
     let param : T.type_ = v.targ in
     let ret   : T.type_ = v.tret in
 
-    let unfold_all args =
-      let rec aux x =
-        match x with
-        | []     -> []
-        | [_]    -> []
-        | [_; _] -> [T.UNPAIR]
-        | _::l   -> [T.UNPAIR; T.SWAP] @ aux l
-      in
-      aux args
+    let unfold_all = function
+      | []     -> []
+      | [_]    -> []
+      | [_; _] -> [T.UNPAIR]
+      | l      -> [T.UNPAIR_N (List.length l)]
     in
 
     let extract_storage_vars stovars =
 
-      Format.eprintf "extract_storage_vars: storage_list: [%a]@\n" (pp_list "; " (fun fmt (x, _, _) -> Format.fprintf fmt "%s" x) ) storage_list;
-      Format.eprintf "extract_storage_vars: stovars: [%a]@\n" (pp_list "; " (fun fmt x -> Format.fprintf fmt "%s" x) ) stovars;
+      (* Format.eprintf "extract_storage_vars: storage_list: [%a]@\n" (pp_list "; " (fun fmt (x, _, _) -> Format.fprintf fmt "%s" x) ) storage_list; *)
+      (* Format.eprintf "extract_storage_vars: stovars: [%a]@\n" (pp_list "; " (fun fmt x -> Format.fprintf fmt "%s" x) ) stovars; *)
 
       let stos : (int * ident) list =
         storage_list
@@ -1833,29 +1829,28 @@ and to_michelson (ir : T.ir) : T.michelson =
         |> List.filter (fun (_, x) -> List.mem x stovars)
       in
 
-      Format.eprintf "extract_storage_vars: stos: [%a]@\n" (pp_list "; " (fun fmt (x, y) -> Format.fprintf fmt "(%i, %s)" x y) ) stos;
+      (* Format.eprintf "extract_storage_vars: stos: [%a]@\n" (pp_list "; " (fun fmt (x, y) -> Format.fprintf fmt "(%i, %s)" x y) ) stos; *)
 
-      let rec doit (n : int) (s : int) code stos : T.code list =
+      let rec doit (n : int) (s : int) (code, ids) stos : T.code list * ident list =
         match stos with
-        | (k, _)::q -> begin
-            Format.eprintf "extract_storage_vars: k: %i@\n" k;
+        | (k, id)::q -> begin
+            (* Format.eprintf "extract_storage_vars: k: %i@\n" k; *)
             let found = k = n in
-            Format.eprintf "extract_storage_vars: found: %b@\n" found;
+            (* Format.eprintf "extract_storage_vars: found: %b@\n" found; *)
             let last = n = s - 1 in
-            Format.eprintf "extract_storage_vars: last: %b@\n" last;
+            (* Format.eprintf "extract_storage_vars: last: %b@\n" last; *)
             match found, last with
-            | false, false -> doit (n + 1) s (code @ [T.CDR 1]) stos
-            | false, true  -> code @ [T.DROP 1]
-            | true, false  -> doit (n + 1) s (code @ [T.UNPAIR]) q
-            | true, true   -> code
+            | false, false -> doit (n + 1) s (code @ [T.CDR 1], ids) stos
+            | false, true  -> code @ [T.DROP 1], ids
+            | true, false  -> doit (n + 1) s (code @ [T.UNPAIR; T.SWAP], id::ids) q
+            | true, true   -> code, id::ids
           end
-        | [] -> [T.DROP 1]
+        | [] -> code @ [T.DROP 1], ids
       in
 
       let n = List.length storage_list in
-      Format.eprintf "extract_storage_vars: n: %i@\n" n;
-      let code = doit 0 n [] stos in
-      let ids = List.map snd stos in
+      (* Format.eprintf "extract_storage_vars: n: %i@\n" n; *)
+      let code, ids = doit 0 n ([], []) stos in
       code, ids
     in
 
@@ -1872,7 +1867,7 @@ and to_michelson (ir : T.ir) : T.michelson =
 
       | [], stovars ->
         let scode, svs = extract_storage_vars stovars in
-        Format.eprintf "RES: scode: @[%a@], sys: [%a]@\n" (pp_list "; " Printer_michelson.pp_code) scode (pp_list "; " pp_ident) svs;
+        (* Format.eprintf "RES: scode: @[%a@], sys: [%a]@\n" (pp_list "; " Printer_michelson.pp_code) scode (pp_list "; " pp_ident) svs; *)
         let code = [T.CDR 1] @ scode in
         let env = { env with vars = svs @ env.vars } in
         code, env, List.length svs
@@ -1899,7 +1894,13 @@ and to_michelson (ir : T.ir) : T.michelson =
       | Abstract _ -> assert false
     in
 
-    let code = T.SEQ (code::[T.DROP nb_args]) in
+    let post =
+      match nb_args with
+      | 0 -> []
+      | _ -> [T.DIP (1, [T.DROP nb_args])]
+    in
+
+    let code = T.SEQ (code::post) in
 
     let body  : T.code  =
       T.SEQ (fold_vars @ [code])
