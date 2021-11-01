@@ -1,0 +1,5 @@
+{
+  storage unit;
+  parameter (or (nat %viewNat) (or (string %viewString) (address %viewAddress)));
+  code { FAILWITH };
+}

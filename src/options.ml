@@ -1,4 +1,7 @@
 type target_lang =
+  | Solidity
+  | Liquidity
+  | LiquidityUrl
   | Markdown
   | Michelson
   | MichelsonStorage

@@ -21,6 +21,10 @@ js:
 	$(MAKE) -C src api.bc.js
 	cp -f _build/default/src/api.bc.js npm-package/dist/
 
+demich:
+	$(MAKE) -C src2 demich.exe
+	ln -fs _build/default/src2/demich.exe demich.exe
+
 mlw:
 	$(MAKE) -C src mlw.exe
 	cp -f _build/default/src/mlw.exe .

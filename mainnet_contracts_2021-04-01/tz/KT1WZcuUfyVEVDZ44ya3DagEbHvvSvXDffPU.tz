@@ -1,0 +1,7 @@
+{
+  storage unit;
+  parameter bytes;
+  code { CDR;
+         NIL operation;
+         PAIR };
+}

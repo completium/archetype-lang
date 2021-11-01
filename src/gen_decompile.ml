@@ -1,6 +1,7 @@
 open Location
 open Tools
 open Core
+open UF
 
 module T = Michelson
 module M = Model
@@ -92,70 +93,139 @@ let to_michelson (input, env : T.obj_micheline * env) : T.michelson * env =
 
     let to_int = function | T.Oint x -> int_of_string x | o -> Format.eprintf "to_int unknown %a@." T.pp_obj_micheline o; assert false in
 
+    let is_dup input =
+      let r = Str.regexp "D[U]+P" in
+      Str.string_match r input 0
+    in
+
+    let extract_dup input =
+      if not (is_dup input)
+      then assert false;
+      let s = String.length input - 2 in
+      let l = Tools.foldi (fun accu -> (T.mk_code T.DUP)::accu) [] s in
+      T.mk_code (T.SEQ l)
+    in
+
+    let is_cadr input =
+      let r = Str.regexp "C[AD]+R" in
+      Str.string_match r input 0
+    in
+
+    let e_cadr input =
+      let ll = ref [] in
+      for i = 0 to String.length input - 1 do
+        match String.get input i with
+        | 'A' -> ll := !ll @ [ `A ]
+        | 'D' -> ll := !ll @ [ `D ]
+        | _ -> assert false
+      done;
+      !ll
+    in
+
+    let extract_cadr input : T.code =
+      if not (is_cadr input)
+      then assert false;
+
+      let l = e_cadr (String.sub input 1 (String.length input - 2)) in
+
+      T.mk_code (T.SEQ (List.map (function | `A -> T.mk_code T.CAR | `D -> T.mk_code T.CDR) l))
+    in
+
+    (* let is_set_caadr input =
+       let r = Str.regexp "SET_CA[AD]+R" in
+       Str.string_match r input 0
+       in
+
+       let extract_set_caadr input =
+       if not (is_set_caadr input)
+       then assert false;
+
+       let l = e_cadr (String.sub input 5 (String.length input - 2)) in
+       let ll = (List.map (function | `A -> T.CAR | `D -> T.CDR) l) in
+
+       T.SEQ [DUP ; DIP (1, ([T.CAR] @ ll)) ; CDR ; SWAP ; PAIR ]
+       in
+
+
+       let is_set_cdadr input =
+       let r = Str.regexp "SET_CD[AD]+R" in
+       Str.string_match r input 0
+       in
+
+       let extract_set_cdadr input =
+       if not (is_set_cdadr input)
+       then assert false;
+
+       let l = e_cadr (String.sub input 5 (String.length input - 2)) in
+       let ll = (List.map (function | `A -> T.CAR | `D -> T.CDR) l) in
+
+       T.SEQ [DUP ; DIP (1, ([T.CAR] @ ll)) ; CDR ; SWAP ; PAIR ]
+       in *)
+
     let rec to_code (o : T.obj_micheline) : T.code =
       let f = to_code in
       let seq = function | T.Oarray l -> List.map f l | _ -> assert false in
       match o with
       (* Control structures *)
-      | Oarray l                                             -> T.SEQ (List.map f l)
-      | Oprim ({prim = "APPLY"; _})                          -> T.APPLY
-      | Oprim ({prim = "EXEC"; _})                           -> T.EXEC
-      | Oprim ({prim = "FAILWITH"; _})                       -> T.FAILWITH
-      | Oprim ({prim = "IF"; args = t::e::_; _})             -> T.IF        (seq t, seq e)
-      | Oprim ({prim = "IF_CONS"; args = t::e::_; _})        -> T.IF_CONS   (seq t, seq e)
-      | Oprim ({prim = "IF_LEFT"; args = t::e::_; _})        -> T.IF_LEFT   (seq t, seq e)
-      | Oprim ({prim = "IF_NONE"; args = t::e::_; _})        -> T.IF_NONE   (seq t, seq e)
-      | Oprim ({prim = "ITER"; args = l::_; _})              -> T.ITER      (seq l)
-      | Oprim ({prim = "LAMBDA"; args = a::r::b; _})         -> T.LAMBDA    (to_type a, to_type r, List.map f b)
-      | Oprim ({prim = "LOOP"; args = l::_; _})              -> T.LOOP      (seq l)
-      | Oprim ({prim = "LOOP_LEFT"; args = l::_; _})         -> T.LOOP_LEFT (seq l)
+      | Oarray l                                             -> T.mk_code (T.SEQ (List.map f l))
+      | Oprim ({prim = "APPLY"; _})                          -> T.mk_code (T.APPLY)
+      | Oprim ({prim = "EXEC"; _})                           -> T.mk_code (T.EXEC)
+      | Oprim ({prim = "FAILWITH"; _})                       -> T.mk_code (T.FAILWITH)
+      | Oprim ({prim = "IF"; args = t::e::_; _})             -> T.mk_code (T.IF        (seq t, seq e))
+      | Oprim ({prim = "IF_CONS"; args = t::e::_; _})        -> T.mk_code (T.IF_CONS   (seq t, seq e))
+      | Oprim ({prim = "IF_LEFT"; args = t::e::_; _})        -> T.mk_code (T.IF_LEFT   (seq t, seq e))
+      | Oprim ({prim = "IF_NONE"; args = t::e::_; _})        -> T.mk_code (T.IF_NONE   (seq t, seq e))
+      | Oprim ({prim = "ITER"; args = l::_; _})              -> T.mk_code (T.ITER      (seq l))
+      | Oprim ({prim = "LAMBDA"; args = a::r::b; _})         -> T.mk_code (T.LAMBDA    (to_type a, to_type r, List.map f b))
+      | Oprim ({prim = "LOOP"; args = l::_; _})              -> T.mk_code (T.LOOP      (seq l))
+      | Oprim ({prim = "LOOP_LEFT"; args = l::_; _})         -> T.mk_code (T.LOOP_LEFT (seq l))
       (* Stack manipulation *)
-      | Oprim ({prim = "DIG"; args = n::_})                  -> T.DIG (to_int n)
-      | Oprim ({prim = "DIG"; _})                            -> T.DIG 1
-      | Oprim ({prim = "DIP"; args = n::l::_})               -> T.DIP (to_int n, seq l)
-      | Oprim ({prim = "DIP"; args = l::_})                  -> T.DIP (1, seq l)
-      | Oprim ({prim = "DROP"; args = n::_})                 -> T.DROP (to_int n)
-      | Oprim ({prim = "DROP"; _})                           -> T.DROP 1
-      | Oprim ({prim = "DUG"; args = n::_})                  -> T.DUG (to_int n)
-      | Oprim ({prim = "DUG"; _})                            -> T.DUG 1
-      | Oprim ({prim = "DUP"; _})                            -> T.DUP
-      | Oprim ({prim = "PUSH"; args = t::v::_})              -> T.PUSH (to_type t, to_data v)
-      | Oprim ({prim = "SWAP"; _})                           -> T.SWAP
+      | Oprim ({prim = "DIG"; args = n::_})                  -> T.mk_code (T.DIG (to_int n))
+      | Oprim ({prim = "DIG"; _})                            -> T.mk_code (T.DIG 1)
+      | Oprim ({prim = "DIP"; args = n::l::_})               -> T.mk_code (T.DIP (to_int n, seq l))
+      | Oprim ({prim = "DIP"; args = l::_})                  -> T.mk_code (T.DIP (1, seq l))
+      | Oprim ({prim = "DROP"; args = n::_})                 -> T.mk_code (T.DROP (to_int n))
+      | Oprim ({prim = "DROP"; _})                           -> T.mk_code (T.DROP 1)
+      | Oprim ({prim = "DUG"; args = n::_})                  -> T.mk_code (T.DUG (to_int n))
+      | Oprim ({prim = "DUG"; _})                            -> T.mk_code (T.DUG 1)
+      | Oprim ({prim = "DUP"; _})                            -> T.mk_code (T.DUP)
+      | Oprim ({prim = "PUSH"; args = t::v::_})              -> T.mk_code (T.PUSH (to_type t, to_data v))
+      | Oprim ({prim = "SWAP"; _})                           -> T.mk_code (T.SWAP)
       (* Arthmetic operations *)
-      | Oprim ({prim = "ABS"; _})                            -> T.ABS
-      | Oprim ({prim = "ADD"; _})                            -> T.ADD
-      | Oprim ({prim = "COMPARE"; _})                        -> T.COMPARE
-      | Oprim ({prim = "EDIV"; _})                           -> T.EDIV
-      | Oprim ({prim = "EQ"; _})                             -> T.EQ
-      | Oprim ({prim = "GE"; _})                             -> T.GE
-      | Oprim ({prim = "GT"; _})                             -> T.GT
-      | Oprim ({prim = "INT"; _})                            -> T.INT
-      | Oprim ({prim = "ISNAT"; _})                          -> T.ISNAT
-      | Oprim ({prim = "LE"; _})                             -> T.LE
-      | Oprim ({prim = "LSL"; _})                            -> T.LSL
-      | Oprim ({prim = "LSR"; _})                            -> T.LSR
-      | Oprim ({prim = "LT"; _})                             -> T.LT
-      | Oprim ({prim = "MUL"; _})                            -> T.MUL
-      | Oprim ({prim = "NEG"; _})                            -> T.NEG
-      | Oprim ({prim = "NEQ"; _})                            -> T.NEQ
-      | Oprim ({prim = "SUB"; _})                            -> T.SUB
+      | Oprim ({prim = "ABS"; _})                            -> T.mk_code T.ABS
+      | Oprim ({prim = "ADD"; _})                            -> T.mk_code T.ADD
+      | Oprim ({prim = "COMPARE"; _})                        -> T.mk_code T.COMPARE
+      | Oprim ({prim = "EDIV"; _})                           -> T.mk_code T.EDIV
+      | Oprim ({prim = "EQ"; _})                             -> T.mk_code T.EQ
+      | Oprim ({prim = "GE"; _})                             -> T.mk_code T.GE
+      | Oprim ({prim = "GT"; _})                             -> T.mk_code T.GT
+      | Oprim ({prim = "INT"; _})                            -> T.mk_code T.INT
+      | Oprim ({prim = "ISNAT"; _})                          -> T.mk_code T.ISNAT
+      | Oprim ({prim = "LE"; _})                             -> T.mk_code T.LE
+      | Oprim ({prim = "LSL"; _})                            -> T.mk_code T.LSL
+      | Oprim ({prim = "LSR"; _})                            -> T.mk_code T.LSR
+      | Oprim ({prim = "LT"; _})                             -> T.mk_code T.LT
+      | Oprim ({prim = "MUL"; _})                            -> T.mk_code T.MUL
+      | Oprim ({prim = "NEG"; _})                            -> T.mk_code T.NEG
+      | Oprim ({prim = "NEQ"; _})                            -> T.mk_code T.NEQ
+      | Oprim ({prim = "SUB"; _})                            -> T.mk_code T.SUB
       (* Boolean operations *)
-      | Oprim ({prim = "AND"; _})                            -> T.AND
-      | Oprim ({prim = "NOT"; _})                            -> T.NOT
-      | Oprim ({prim = "OR"; _})                             -> T.OR
-      | Oprim ({prim = "XOR"; _})                            -> T.XOR
+      | Oprim ({prim = "AND"; _})                            -> T.mk_code T.AND
+      | Oprim ({prim = "NOT"; _})                            -> T.mk_code T.NOT
+      | Oprim ({prim = "OR"; _})                             -> T.mk_code T.OR
+      | Oprim ({prim = "XOR"; _})                            -> T.mk_code T.XOR
       (* Cryptographic operations *)
-      | Oprim ({prim = "BLAKE2B"; _})                        -> T.BLAKE2B
-      | Oprim ({prim = "CHECK_SIGNATURE"; _})                -> T.CHECK_SIGNATURE
-      | Oprim ({prim = "HASH_KEY"; _})                       -> T.HASH_KEY
-      | Oprim ({prim = "SHA256"; _})                         -> T.SHA256
-      | Oprim ({prim = "SHA512"; _})                         -> T.SHA512
+      | Oprim ({prim = "BLAKE2B"; _})                        -> T.mk_code T.BLAKE2B
+      | Oprim ({prim = "CHECK_SIGNATURE"; _})                -> T.mk_code T.CHECK_SIGNATURE
+      | Oprim ({prim = "HASH_KEY"; _})                       -> T.mk_code T.HASH_KEY
+      | Oprim ({prim = "SHA256"; _})                         -> T.mk_code T.SHA256
+      | Oprim ({prim = "SHA512"; _})                         -> T.mk_code T.SHA512
       (* Blockchain operations *)
-      | Oprim ({prim = "ADDRESS"; _})                        -> T.ADDRESS
-      | Oprim ({prim = "AMOUNT"; _})                         -> T.AMOUNT
-      | Oprim ({prim = "BALANCE"; _})                        -> T.BALANCE
-      | Oprim ({prim = "CHAIN_ID"; _})                       -> T.CHAIN_ID
-      | Oprim ({prim = "CONTRACT"; args = t::_; annots = a}) -> T.CONTRACT (to_type t, fa a)
+      | Oprim ({prim = "ADDRESS"; _})                        -> T.mk_code T.ADDRESS
+      | Oprim ({prim = "AMOUNT"; _})                         -> T.mk_code T.AMOUNT
+      | Oprim ({prim = "BALANCE"; _})                        -> T.mk_code T.BALANCE
+      | Oprim ({prim = "CHAIN_ID"; _})                       -> T.mk_code T.CHAIN_ID
+      | Oprim ({prim = "CONTRACT"; args = t::_; annots = a}) -> T.mk_code (T.CONTRACT (to_type t, fa a))
       | Oprim ({prim = "CREATE_CONTRACT"; args = a::_; _})   -> begin
           let seek tag a =
             let rec aux tag accu (a : T.obj_micheline) =
@@ -171,17 +241,17 @@ let to_michelson (input, env : T.obj_micheline * env) : T.michelson * env =
           let p = seek "parameter" a in
           let s = seek "storage" a in
           let c = seek "code" a in
-          T.CREATE_CONTRACT (to_type p, to_type s, f c)
+          T.mk_code (T.CREATE_CONTRACT (to_type p, to_type s, f c))
         end
-      | Oprim ({prim = "IMPLICIT_ACCOUNT"; _})               -> T.IMPLICIT_ACCOUNT
-      | Oprim ({prim = "NOW"; _})                            -> T.NOW
-      | Oprim ({prim = "SELF"; annots = a; _})               -> T.SELF (fa a)
-      | Oprim ({prim = "SENDER"; _})                         -> T.SENDER
-      | Oprim ({prim = "SET_DELEGATE"; _})                   -> T.SET_DELEGATE
-      | Oprim ({prim = "SOURCE"; _})                         -> T.SOURCE
-      | Oprim ({prim = "TRANSFER_TOKENS"; _})                -> T.TRANSFER_TOKENS
+      | Oprim ({prim = "IMPLICIT_ACCOUNT"; _})               -> T.mk_code T.IMPLICIT_ACCOUNT
+      | Oprim ({prim = "NOW"; _})                            -> T.mk_code T.NOW
+      | Oprim ({prim = "SELF"; annots = a; _})               -> T.mk_code (T.SELF (fa a))
+      | Oprim ({prim = "SENDER"; _})                         -> T.mk_code T.SENDER
+      | Oprim ({prim = "SET_DELEGATE"; _})                   -> T.mk_code T.SET_DELEGATE
+      | Oprim ({prim = "SOURCE"; _})                         -> T.mk_code T.SOURCE
+      | Oprim ({prim = "TRANSFER_TOKENS"; _})                -> T.mk_code T.TRANSFER_TOKENS
       (* Operations on data structures *)
-      | Oprim ({prim = "CAR"; args = n::_})                  -> T.CAR_N (to_int n)
+      (* | Oprim ({prim = "CAR"; args = n::_})                  -> T.CAR_N (to_int n)
       | Oprim ({prim = "CAR"; _})                            -> T.CAR
       | Oprim ({prim = "CDR"; args = n::_})                  -> T.CDR_N (to_int n)
       | Oprim ({prim = "CDR"; _})                            -> T.CDR
@@ -227,48 +297,103 @@ let to_michelson (input, env : T.obj_micheline * env) : T.michelson * env =
       | Oprim ({prim = "SET_BAKER_ACTIVE"; _})               -> T.SET_BAKER_ACTIVE
       | Oprim ({prim = "TOGGLE_BAKER_DELEGATIONS"; _})       -> T.TOGGLE_BAKER_DELEGATIONS
       | Oprim ({prim = "SET_BAKER_CONSENSUS_KEY"; _})        -> T.SET_BAKER_CONSENSUS_KEY
-      | Oprim ({prim = "SET_BAKER_PVSS_KEY"; _})             -> T.SET_BAKER_PVSS_KEY
+      | Oprim ({prim = "SET_BAKER_PVSS_KEY"; _})             -> T.SET_BAKER_PVSS_KEY *)
+      | Oprim ({prim = "CAR"; args=[]; _})                   -> T.mk_code (T.CAR)
+      | Oprim ({prim = "CDR"; args=[]; _})                   -> T.mk_code (T.CDR)
+      | Oprim ({prim = "CONCAT"; _})                         -> T.mk_code (T.CONCAT)
+      | Oprim ({prim = "CONS"; _})                           -> T.mk_code (T.CONS)
+      | Oprim ({prim = "EMPTY_BIG_MAP" ; args = k::v::_})    -> T.mk_code (T.EMPTY_BIG_MAP (to_type k, to_type v))
+      | Oprim ({prim = "EMPTY_MAP" ; args = k::v::_})        -> T.mk_code (T.EMPTY_MAP (to_type k, to_type v))
+      | Oprim ({prim = "EMPTY_SET" ; args = t::_})           -> T.mk_code (T.EMPTY_SET (to_type t))
+      | Oprim ({prim = "GET"; _})                            -> T.mk_code (T.GET)
+      | Oprim ({prim = "LEFT" ; args = t::_})                -> T.mk_code (T.LEFT (to_type t))
+      | Oprim ({prim = "MAP"; args = s::_})                  -> T.mk_code (T.MAP (seq s))
+      | Oprim ({prim = "MEM"; _})                            -> T.mk_code (T.MEM)
+      | Oprim ({prim = "NIL" ; args = t::_})                 -> T.mk_code (T.NIL (to_type t))
+      | Oprim ({prim = "NONE" ; args = t::_})                -> T.mk_code (T.NONE (to_type t))
+      | Oprim ({prim = "PACK"; _})                           -> T.mk_code (T.PACK)
+      | Oprim ({prim = "PAIR"; _})                           -> T.mk_code (T.PAIR)
+      | Oprim ({prim = "RIGHT" ; args = t::_})               -> T.mk_code (T.RIGHT (to_type t))
+      | Oprim ({prim = "SIZE"; _})                           -> T.mk_code (T.SIZE)
+      | Oprim ({prim = "SLICE"; _})                          -> T.mk_code (T.SLICE)
+      | Oprim ({prim = "SOME"; _})                           -> T.mk_code (T.SOME)
+      | Oprim ({prim = "UNIT"; _})                           -> T.mk_code (T.UNIT)
+      | Oprim ({prim = "UNPACK" ; args = t::_})              -> T.mk_code (T.UNPACK (to_type t))
+      | Oprim ({prim = "UPDATE"; _})                         -> T.mk_code (T.UPDATE)
+      (* Other *)
+      | Oprim ({prim = "UNPAIR"; _})                         -> T.mk_code T.UNPAIR
+      | Oprim ({prim = "SELF_ADDRESS"; _})                   -> T.mk_code T.SELF_ADDRESS
+      | Oprim ({prim = "CAST"; args = t::_})                 -> T.mk_code (T.CAST (to_type t))
+      | Oprim ({prim = "CREATE_ACCOUNT"; _})                 -> T.mk_code T.CREATE_ACCOUNT
+      | Oprim ({prim = "RENAME"; _})                         -> T.mk_code T.RENAME
+      | Oprim ({prim = "STEPS_TO_QUOTA"; _})                 -> T.mk_code T.STEPS_TO_QUOTA
+      | Oprim ({prim = "LEVEL"; _})                          -> T.mk_code T.LEVEL
+      | Oprim ({prim = "SAPLING_EMPTY_STATE"; args = (Oint n)::_}) -> T.mk_code (T.SAPLING_EMPTY_STATE (int_of_string n))
+      | Oprim ({prim = "SAPLING_VERIFY_UPDATE"; _})          -> T.mk_code T.SAPLING_VERIFY_UPDATE
+      | Oprim ({prim = "NEVER"; _})                          -> T.mk_code T.NEVER
+      | Oprim ({prim = "VOTING_POWER"; _})                   -> T.mk_code T.VOTING_POWER
+      | Oprim ({prim = "TOTAL_VOTING_POWER"; _})             -> T.mk_code T.TOTAL_VOTING_POWER
+      | Oprim ({prim = "KECCAK"; _})                         -> T.mk_code T.KECCAK
+      | Oprim ({prim = "SHA3"; _})                           -> T.mk_code T.SHA3
+      | Oprim ({prim = "PAIRING_CHECK"; _})                  -> T.mk_code T.PAIRING_CHECK
+      | Oprim ({prim = "SUBMIT_PROPOSALS"; _})               -> T.mk_code T.SUBMIT_PROPOSALS
+      | Oprim ({prim = "SUBMIT_BALLOT"; _})                  -> T.mk_code T.SUBMIT_BALLOT
+      | Oprim ({prim = "SET_BAKER_ACTIVE"; _})               -> T.mk_code T.SET_BAKER_ACTIVE
+      | Oprim ({prim = "TOGGLE_BAKER_DELEGATIONS"; _})       -> T.mk_code T.TOGGLE_BAKER_DELEGATIONS
+      | Oprim ({prim = "SET_BAKER_CONSENSUS_KEY"; _})        -> T.mk_code T.SET_BAKER_CONSENSUS_KEY
+      | Oprim ({prim = "SET_BAKER_PVSS_KEY"; _})             -> T.mk_code T.SET_BAKER_PVSS_KEY
       (* Macro *)
-      | Oprim ({prim = "IFCMPEQ"; args = [l; r]})            -> T.SEQ [COMPARE; EQ; T.IF (seq l, seq r)]
-      | Oprim ({prim = "IFCMPNEQ"; args = [l; r]})           -> T.SEQ [COMPARE; NEQ; T.IF (seq l, seq r)]
-      | Oprim ({prim = "IFCMPLT"; args = [l; r]})            -> T.SEQ [COMPARE; LT; T.IF (seq l, seq r)]
-      | Oprim ({prim = "IFCMPGT"; args = [l; r]})            -> T.SEQ [COMPARE; GT; T.IF (seq l, seq r)]
-      | Oprim ({prim = "IFCMPLE"; args = [l; r]})            -> T.SEQ [COMPARE; LE; T.IF (seq l, seq r)]
-      | Oprim ({prim = "IFCMPGE"; args = [l; r]})            -> T.SEQ [COMPARE; GE; T.IF (seq l, seq r)]
+      | Oprim ({prim = "IFCMPEQ"; args = [l; r]})            -> T.mk_code (T.SEQ [T.mk_code COMPARE; T.mk_code EQ;  T.mk_code (T.IF (seq l, seq r))])
+      | Oprim ({prim = "IFCMPNEQ"; args = [l; r]})           -> T.mk_code (T.SEQ [T.mk_code COMPARE; T.mk_code NEQ; T.mk_code (T.IF (seq l, seq r))])
+      | Oprim ({prim = "IFCMPLT"; args = [l; r]})            -> T.mk_code (T.SEQ [T.mk_code COMPARE; T.mk_code LT;  T.mk_code (T.IF (seq l, seq r))])
+      | Oprim ({prim = "IFCMPGT"; args = [l; r]})            -> T.mk_code (T.SEQ [T.mk_code COMPARE; T.mk_code GT;  T.mk_code (T.IF (seq l, seq r))])
+      | Oprim ({prim = "IFCMPLE"; args = [l; r]})            -> T.mk_code (T.SEQ [T.mk_code COMPARE; T.mk_code LE;  T.mk_code (T.IF (seq l, seq r))])
+      | Oprim ({prim = "IFCMPGE"; args = [l; r]})            -> T.mk_code (T.SEQ [T.mk_code COMPARE; T.mk_code GE;  T.mk_code (T.IF (seq l, seq r))])
 
-      | Oprim ({prim = "IFEQ"; args = [l; r]})               -> T.SEQ [EQ; T.IF (seq l, seq r)]
-      | Oprim ({prim = "IFNEQ"; args = [l; r]})              -> T.SEQ [NEQ; T.IF (seq l, seq r)]
-      | Oprim ({prim = "IFLT"; args = [l; r]})               -> T.SEQ [LT; T.IF (seq l, seq r)]
-      | Oprim ({prim = "IFGT"; args = [l; r]})               -> T.SEQ [GT; T.IF (seq l, seq r)]
-      | Oprim ({prim = "IFLE"; args = [l; r]})               -> T.SEQ [LE; T.IF (seq l, seq r)]
-      | Oprim ({prim = "IFGE"; args = [l; r]})               -> T.SEQ [GE; T.IF (seq l, seq r)]
+      | Oprim ({prim = "IFEQ"; args = [l; r]})               -> T.mk_code (T.SEQ [T.mk_code EQ;  T.mk_code (T.IF (seq l, seq r))])
+      | Oprim ({prim = "IFNEQ"; args = [l; r]})              -> T.mk_code (T.SEQ [T.mk_code NEQ; T.mk_code (T.IF (seq l, seq r))])
+      | Oprim ({prim = "IFLT"; args = [l; r]})               -> T.mk_code (T.SEQ [T.mk_code LT;  T.mk_code (T.IF (seq l, seq r))])
+      | Oprim ({prim = "IFGT"; args = [l; r]})               -> T.mk_code (T.SEQ [T.mk_code GT;  T.mk_code (T.IF (seq l, seq r))])
+      | Oprim ({prim = "IFLE"; args = [l; r]})               -> T.mk_code (T.SEQ [T.mk_code LE;  T.mk_code (T.IF (seq l, seq r))])
+      | Oprim ({prim = "IFGE"; args = [l; r]})               -> T.mk_code (T.SEQ [T.mk_code GE;  T.mk_code (T.IF (seq l, seq r))])
 
-      | Oprim ({prim = "CMPEQ"; _})                          -> T.SEQ [COMPARE; EQ]
-      | Oprim ({prim = "CMPNEQ"; _})                         -> T.SEQ [COMPARE; NEQ]
-      | Oprim ({prim = "CMPLT"; _})                          -> T.SEQ [COMPARE; LT]
-      | Oprim ({prim = "CMPGT"; _})                          -> T.SEQ [COMPARE; GT]
-      | Oprim ({prim = "CMPLE"; _})                          -> T.SEQ [COMPARE; LE]
-      | Oprim ({prim = "CMPGE"; _})                          -> T.SEQ [COMPARE; GE]
+      | Oprim ({prim = "CMPEQ"; _})                          -> T.mk_code (T.SEQ [T.mk_code COMPARE; T.mk_code EQ])
+      | Oprim ({prim = "CMPNEQ"; _})                         -> T.mk_code (T.SEQ [T.mk_code COMPARE; T.mk_code NEQ])
+      | Oprim ({prim = "CMPLT"; _})                          -> T.mk_code (T.SEQ [T.mk_code COMPARE; T.mk_code LT])
+      | Oprim ({prim = "CMPGT"; _})                          -> T.mk_code (T.SEQ [T.mk_code COMPARE; T.mk_code GT])
+      | Oprim ({prim = "CMPLE"; _})                          -> T.mk_code (T.SEQ [T.mk_code COMPARE; T.mk_code LE])
+      | Oprim ({prim = "CMPGE"; _})                          -> T.mk_code (T.SEQ [T.mk_code COMPARE; T.mk_code GE])
 
-      | Oprim ({prim = "ASSERT"; _})                         -> T.IF ([], [UNIT; FAILWITH])
-      | Oprim ({prim = "ASSERT_NONE"; _})                    -> T.IF_NONE ([], [UNIT; FAILWITH])
-      | Oprim ({prim = "ASSERT_SOME"; _})                    -> T.IF_NONE ([UNIT; FAILWITH], [])
-      | Oprim ({prim = "ASSERT_LEFT"; _})                    -> T.IF_LEFT ([], [UNIT; FAILWITH])
-      | Oprim ({prim = "ASSERT_RIGHT"; _})                   -> T.IF_LEFT ([UNIT; FAILWITH], [])
+      | Oprim ({prim = "ASSERT"; _})                         -> T.mk_code (T.IF ([], [T.mk_code UNIT; T.mk_code FAILWITH]))
+      | Oprim ({prim = "ASSERT_NONE"; _})                    -> T.mk_code (T.IF_NONE ([], [T.mk_code UNIT; T.mk_code FAILWITH]))
+      | Oprim ({prim = "ASSERT_SOME"; _})                    -> T.mk_code (T.IF_NONE ([T.mk_code UNIT; T.mk_code FAILWITH], []))
+      | Oprim ({prim = "ASSERT_LEFT"; _})                    -> T.mk_code (T.IF_LEFT ([], [T.mk_code UNIT; T.mk_code FAILWITH]))
+      | Oprim ({prim = "ASSERT_RIGHT"; _})                   -> T.mk_code (T.IF_LEFT ([T.mk_code UNIT; T.mk_code FAILWITH], []))
 
-      | Oprim ({prim = "ASSERT_CMPEQ"; _})                   -> T.SEQ [COMPARE; EQ; IF ([], [UNIT; FAILWITH])]
-      | Oprim ({prim = "ASSERT_CMPNEQ"; _})                  -> T.SEQ [COMPARE; NEQ; IF ([], [UNIT; FAILWITH])]
-      | Oprim ({prim = "ASSERT_CMPLT"; _})                   -> T.SEQ [COMPARE; LT; IF ([], [UNIT; FAILWITH])]
-      | Oprim ({prim = "ASSERT_CMPGT"; _})                   -> T.SEQ [COMPARE; GT; IF ([], [UNIT; FAILWITH])]
-      | Oprim ({prim = "ASSERT_CMPLE"; _})                   -> T.SEQ [COMPARE; LE; IF ([], [UNIT; FAILWITH])]
-      | Oprim ({prim = "ASSERT_CMPGE"; _})                   -> T.SEQ [COMPARE; GE; IF ([], [UNIT; FAILWITH])]
+      | Oprim ({prim = "ASSERT_CMPEQ"; _})                   -> T.mk_code (T.SEQ [T.mk_code COMPARE; T.mk_code EQ;  T.mk_code (IF ([], [T.mk_code UNIT; T.mk_code FAILWITH]))])
+      | Oprim ({prim = "ASSERT_CMPNEQ"; _})                  -> T.mk_code (T.SEQ [T.mk_code COMPARE; T.mk_code NEQ; T.mk_code (IF ([], [T.mk_code UNIT; T.mk_code FAILWITH]))])
+      | Oprim ({prim = "ASSERT_CMPLT"; _})                   -> T.mk_code (T.SEQ [T.mk_code COMPARE; T.mk_code LT;  T.mk_code (IF ([], [T.mk_code UNIT; T.mk_code FAILWITH]))])
+      | Oprim ({prim = "ASSERT_CMPGT"; _})                   -> T.mk_code (T.SEQ [T.mk_code COMPARE; T.mk_code GT;  T.mk_code (IF ([], [T.mk_code UNIT; T.mk_code FAILWITH]))])
+      | Oprim ({prim = "ASSERT_CMPLE"; _})                   -> T.mk_code (T.SEQ [T.mk_code COMPARE; T.mk_code LE;  T.mk_code (IF ([], [T.mk_code UNIT; T.mk_code FAILWITH]))])
+      | Oprim ({prim = "ASSERT_CMPGE"; _})                   -> T.mk_code (T.SEQ [T.mk_code COMPARE; T.mk_code GE;  T.mk_code (IF ([], [T.mk_code UNIT; T.mk_code FAILWITH]))])
 
-      | Oprim ({prim = "ASSERT_EQ"; _})                      -> T.SEQ [EQ; IF ([], [UNIT; FAILWITH])]
-      | Oprim ({prim = "ASSERT_NEQ"; _})                     -> T.SEQ [NEQ; IF ([], [UNIT; FAILWITH])]
-      | Oprim ({prim = "ASSERT_LT"; _})                      -> T.SEQ [LT; IF ([], [UNIT; FAILWITH])]
-      | Oprim ({prim = "ASSERT_GT"; _})                      -> T.SEQ [GT; IF ([], [UNIT; FAILWITH])]
-      | Oprim ({prim = "ASSERT_LE"; _})                      -> T.SEQ [LE; IF ([], [UNIT; FAILWITH])]
-      | Oprim ({prim = "ASSERT_GE"; _})                      -> T.SEQ [GE; IF ([], [UNIT; FAILWITH])]
+      | Oprim ({prim = "ASSERT_EQ"; _})                      -> T.mk_code (T.SEQ [T.mk_code EQ;  T.mk_code (IF ([], [T.mk_code UNIT; T.mk_code FAILWITH]))])
+      | Oprim ({prim = "ASSERT_NEQ"; _})                     -> T.mk_code (T.SEQ [T.mk_code NEQ; T.mk_code (IF ([], [T.mk_code UNIT; T.mk_code FAILWITH]))])
+      | Oprim ({prim = "ASSERT_LT"; _})                      -> T.mk_code (T.SEQ [T.mk_code LT;  T.mk_code (IF ([], [T.mk_code UNIT; T.mk_code FAILWITH]))])
+      | Oprim ({prim = "ASSERT_GT"; _})                      -> T.mk_code (T.SEQ [T.mk_code GT;  T.mk_code (IF ([], [T.mk_code UNIT; T.mk_code FAILWITH]))])
+      | Oprim ({prim = "ASSERT_LE"; _})                      -> T.mk_code (T.SEQ [T.mk_code LE;  T.mk_code (IF ([], [T.mk_code UNIT; T.mk_code FAILWITH]))])
+      | Oprim ({prim = "ASSERT_GE"; _})                      -> T.mk_code (T.SEQ [T.mk_code GE;  T.mk_code (IF ([], [T.mk_code UNIT; T.mk_code FAILWITH]))])
+
+      | Oprim ({prim = "SET_CAR"; _})                        -> T.mk_code (T.SEQ [T.mk_code CDR; T.mk_code SWAP; T.mk_code PAIR])
+      | Oprim ({prim = "SET_CDR"; _})                        -> T.mk_code (T.SEQ [T.mk_code CAR; T.mk_code PAIR])
+
+      | Oprim ({prim = str; _})         when is_dup  str     -> extract_dup  str
+      | Oprim ({prim = str; _})         when is_cadr str     -> extract_cadr str
+
+      | Oprim ({prim = "SET_CAAR"; _})                       -> T.mk_code (T.SEQ [T.mk_code DUP ; T.mk_code (DIP (1, [ T.mk_code CAR; T.mk_code CDR; T.mk_code SWAP; T.mk_code PAIR ])) ; T.mk_code CDR; T.mk_code SWAP ; T.mk_code PAIR])
+      | Oprim ({prim = "SET_CADR"; _})                       -> T.mk_code (T.SEQ [T.mk_code DUP ; T.mk_code (DIP (1, [ T.mk_code CAR; T.mk_code CAR; T.mk_code PAIR ])); T.mk_code CDR; T.mk_code SWAP ; T.mk_code PAIR])
+      (* | Oprim ({prim = str; _})        when is_set_caadr str -> extract_set_caadr str *)
+      (* | Oprim ({prim = str; _})        when is_set_cdadr str -> extract_set_cdadr str *)
 
       | _ -> Format.eprintf "code unknown: %a@." T.pp_obj_micheline o; assert false
     in
@@ -283,282 +408,21 @@ let to_michelson (input, env : T.obj_micheline * env) : T.michelson * env =
   in
   ff input, env
 
-type ir_env = {
-  cpt_alpha: int;
-  deep:      int;
-  fail:      bool;
-  scopes:    (T.dinstruction list) list;
-}
+let tycheck_michelson ((input, env) : T.michelson * env) : T.michelson * env =
+  let stack = [T.tpair input.parameter input.storage] in
+  let _ : Mtyping.stack option = Mtyping.tycheck stack input.code in
+  input, env
 
-let mk_ir_env ?(cpt_alpha=0) ?(deep=0) ?(fail=false) ?(scopes=[]) _ : ir_env =
-  { cpt_alpha; deep; fail; scopes }
+(* -------------------------------------------------------------------- *)
+
+(*
+let mk_ir_env ?(cpt_alpha=0) ?(deep=0) ?(fail=false) _ : ir_env =
+  { cpt_alpha; deep; fail }
 
 let inc_deep (env : ir_env) : ir_env = { env with deep = env.deep + 1 }
 let dec_deep (env : ir_env) : ir_env = { env with deep = env.deep - 1 }
 
-let to_dir (michelson, env : T.michelson * env) =
-  let tstorage   = michelson.storage in
-  let tparameter = michelson.parameter in
-
-  let storage_data =
-    match tstorage.node with
-    | T.Tunit   -> T.Dunit
-    | T.Tnat
-    | T.Tint    -> T.Dint Big_int.zero_big_int
-    | T.Tstring -> T.Dstring ""
-    | _ -> T.Dunit (* FIXME*)
-  in
-
-  let inc_cpt_alpha env = { env with cpt_alpha = env.cpt_alpha + 1 } in
-
-  let pp_stack fmt (st : T.dexpr list) =
-    List.iteri (fun i (c : T.dexpr) ->
-        Format.fprintf fmt "%i. %a@\n" i Printer_michelson.pp_dexpr c) st
-  in
-
-  let pp_trace fmt (instr, stack, sys : T.code option * (T.dexpr) list * T.dinstruction list) =
-    Format.fprintf fmt "@\nsys:@\n%a@\n@\n" Printer_michelson.pp_dinstructions sys;
-    Format.fprintf fmt "@\nstack:@\n%a" pp_stack stack;
-    (Printer_tools.pp_option (fun fmt -> Format.fprintf fmt "@\ninstr: %a" Printer_michelson.pp_code)) fmt instr;
-    Format.fprintf fmt "@."
-  in
-
-  let trace (env : ir_env) (instrs : T.code list) (stack : (T.dexpr) list)  (sys : T.dinstruction list) =
-    let print_indent fmt n =
-      for _i = 1 to n do
-        Format.fprintf fmt "  "
-      done
-    in
-    match !Options.opt_trace, instrs with
-    | true, i::_ -> Format.eprintf "%a@[%a@]@." print_indent env.deep pp_trace (Some i, stack, sys)
-    | true, [] -> Format.eprintf "%a@[%a@]@." print_indent env.deep pp_trace (None, stack, sys)
-    | _ -> ()
-  in
-
-  (* let _add_instruction (_env : ir_env) (sys : T.dinstruction list) (i : T.dinstruction) =
-     let assigns =
-      let rec aux accu (a, b : T.dexpr * T.dexpr) =
-        match a, b with
-        | _ when T.cmp_dexpr a b -> accu
-        | T.Dbop (Bpair, a1, b1), _ -> begin
-            let f op =
-              match b, op with
-              | T.Dbop (Bpair, x, _), T.Ucar -> x
-              | T.Dbop (Bpair, _, y), T.Ucdr -> y
-              | _ -> T.Duop (op, b)
-            in
-            let car = f Ucar in
-            let cdr = f Ucdr in
-            aux (aux accu (a1, car)) (b1, cdr)
-          end
-        | _ -> (a, b)::accu
-      in
-      match i with
-      | T.Dassign (a, b) -> aux [] (a, b)
-      | _                -> []
-     in
-
-     match assigns with
-     | [] -> i::sys
-     | _ -> begin
-        List.fold_right (
-          fun (a, b) (accu : T.dinstruction list) ->
-
-            let _cpt =
-              let rec f accu (e : T.dexpr) = if T.cmp_dexpr a e then accu + 1 else T.fold_dexpr f accu e in
-              let fi accu (i : T.dinstruction) =
-                match i with
-                | T.Dassign (_, x) -> f accu x
-                | _ -> T.fold_dinstruction_dexpr f accu i
-              in
-              List.fold_left fi 0 (accu @ (List.flatten _env.scopes))
-            in
-
-            let is_outside =
-              let rec f accu (e : T.dexpr) = if T.cmp_dexpr a e then true else T.fold_dexpr f accu e in
-              let fi accu (i : T.dinstruction) = T.fold_dinstruction_dexpr f accu i in
-              List.fold_left fi false (List.flatten _env.scopes)
-            in
-
-            let _cost =
-              match b with
-              | T.Dalpha      _ -> 0
-              | T.Dvar        _ -> 0
-              | T.Dstorage    _ -> 0
-              | T.Doperations   -> 0
-              | T.Dlbdparam     -> 0
-              | T.Dlbdresult    -> 0
-              | T.Ddata       _ -> 0
-              | T.Dzop        _ -> 1
-              | T.Duop        _ -> 1
-              | T.Dbop        _ -> 1
-              | T.Dtop        _ -> 1
-              | T.Dapply      _ -> 1
-              | T.Dexec       _ -> 1
-              | T.Dlambda     _ -> 1
-              | T.Dloopleft   _ -> 1
-              | T.Dmap        _ -> 1
-            in
-
-            let is_assigned_a =
-              let rec aux accu x =
-                match x with
-                | T.Dassign (z, _) when T.cmp_dexpr a z -> true
-                | _ -> T.fold_dinstruction aux accu x
-              in
-
-              List.fold_left aux false (accu @ (List.flatten _env.scopes))
-            in
-
-            match _cpt, a, is_assigned_a, is_outside with
-            | _, Dalpha _, false, false -> begin
-                let replace instrs = List.map (
-                    fun x ->
-                      let rec fe (x : T.dexpr) : T.dexpr =
-                        if T.cmp_dexpr a x then b else T.map_dexpr fe x
-                      in
-                      let rec f (x : T.dinstruction) : T.dinstruction = T.map_dinstruction_gen fe f x in
-                      f x) instrs in
-                let opt_expr sys =
-                  List.map (fun instr -> begin
-                        let rec fe (expr : T.dexpr) =
-                          match expr with
-                          | T.Duop (T.Ucar, T.Dbop (Bpair, x, _)) -> fe x
-                          | T.Duop (T.Ucdr, T.Dbop (Bpair, _, y)) -> fe y
-                          | _ -> T.map_dexpr fe expr
-                        in
-                        let rec f (x : T.dinstruction) : T.dinstruction = T.map_dinstruction_gen fe f x in
-                        f instr
-                      end) sys
-                in
-                let opt_instr (sys  : T.dinstruction list) =
-                  let rec aux (instrs : T.dinstruction list) =
-                    List.fold_right (fun instr accu ->
-                        match instr with
-                        | T.Dassign (a, b) when T.cmp_dexpr a b -> accu
-                        | T.Dif     (c, t, e)  -> (T.Dif (c, aux t, aux e))::accu
-                        | _ -> instr::accu) instrs []
-                  in
-                  aux sys
-                in
-                accu |> replace |> opt_expr |> opt_instr
-              end
-            | _ -> (T.Dassign (a, b))::accu
-
-          (* match _cpt, a, _env.scopes with
-             (* | 0, _, _ -> accu *)
-             | 1, Dalpha _, []
-             | _, Dalpha _, [] when _cost = 0 -> begin
-              let replace instrs = List.map (
-                  fun x ->
-                    let rec fe (x : T.dexpr) : T.dexpr =
-                      if T.cmp_dexpr a x then b else T.map_dexpr fe x
-                    in
-                    let rec f (x : T.dinstruction) : T.dinstruction = T.map_dinstruction_gen fe f x in
-                    f x) instrs in
-              replace accu
-             end
-             | _ -> (T.Dassign (a, b))::accu *)
-
-        ) assigns sys
-      end
-
-     in *)
-
-  let add_instruction _env (sys : T.dinstruction list) (i : T.dinstruction) =
-    if !Options.opt_sdir
-    then i::sys
-    else begin
-      let assigns =
-        let rec aux accu (a, b : T.dexpr * T.dexpr) =
-          match a, b with
-          | _ when T.cmp_dexpr a b -> accu
-          | T.Dbop (Bpair, a1, b1), _ -> begin
-              let f op =
-                match b, op with
-                | T.Dbop (Bpair, x, _), T.Ucar -> x
-                | T.Dbop (Bpair, _, y), T.Ucdr -> y
-                | _ -> T.Duop (op, b)
-              in
-              let car = f Ucar in
-              let cdr = f Ucdr in
-              aux (aux accu (a1, car)) (b1, cdr)
-            end
-          | _ -> (a, b)::accu
-        in
-        match i with
-        | T.Dassign (a, b) -> aux [] (a, b)
-        | _                -> []
-      in
-
-      match assigns with
-      | [] -> i::sys
-      | _ -> begin
-          let compute_cpt a sys =
-            match a with
-            | T.Dalpha id ->
-              let inc  accu x  = if x = id then accu + 1 else accu in
-              let incs accu xs = List.fold_left inc accu xs in
-
-              let rec cpt_dexpr accu = function
-                | T.Dalpha id -> inc accu id
-                | v -> T.fold_dexpr cpt_dexpr cpt_instr accu v
-              and cpt_instr accu = function
-                | Ddecl   (id, _)           -> inc  accu id
-                | Difcons (_, hd, tl, _, _) -> incs accu [hd; tl]
-                | Difleft (_,  e, _,  l, _) -> incs accu [e; l]
-                | Difnone (_, _, v, _)      -> inc  accu v
-                | v -> T.fold_dexpr_dinstr cpt_instr cpt_dexpr accu v
-              in
-
-              List.fold_left cpt_instr 0 sys
-            | _ -> 0
-          in
-          List.fold_right (
-            fun (a, b) (accu : T.dinstruction list) ->
-              let do_neutral _ = (T.Dassign (a, b))::accu in
-              let cpt = compute_cpt a sys in
-              if cpt = 0
-              then do_neutral ()
-              else
-                match a, b with
-                | T.Dalpha _, _ -> begin
-                    let replace instrs = List.map (
-                        fun x ->
-                          let rec fe (x : T.dexpr) : T.dexpr =
-                            if T.cmp_dexpr a x then b else T.map_dexpr fe id id x
-                          in
-                          let rec f (x : T.dinstruction) : T.dinstruction = T.map_dexpr_dinstr f fe id x in
-                          f x) instrs in
-                    let opt_expr sys =
-                      List.map (fun instr -> begin
-                            let rec fe (expr : T.dexpr) =
-                              match expr with
-                              | T.Duop (T.Ucar, T.Dbop (Bpair, x, _)) -> fe x
-                              | T.Duop (T.Ucdr, T.Dbop (Bpair, _, y)) -> fe y
-                              | _ -> T.map_dexpr fe id id expr
-                            in
-                            let rec f (x : T.dinstruction) : T.dinstruction = T.map_dexpr_dinstr f fe id x in
-                            f instr
-                          end) sys
-                    in
-                    let opt_instr (sys  : T.dinstruction list) =
-                      let rec aux (instrs : T.dinstruction list) =
-                        List.fold_right (fun instr accu ->
-                            match instr with
-                            | T.Dassign (a, b) when T.cmp_dexpr a b -> accu
-                            | T.Dif     (c, t, e)  -> (T.Dif (c, aux t, aux e))::accu
-                            | _ -> instr::accu) instrs []
-                      in
-                      aux sys
-                    in
-                    accu |> replace |> opt_expr |> opt_instr
-                  end
-                | _ -> do_neutral ()
-          ) assigns sys
-        end
-    end
-  in
+let _to_dir (michelson, env : T.michelson * env) =
 
   let rec interp (env : ir_env) (sys : T.dinstruction list) (instrs : T.code list) (stack : (T.dexpr) list) =
     let f = interp in
@@ -1022,8 +886,8 @@ let to_dir (michelson, env : T.michelson * env) =
     | CDR_N n::it                -> interp_uop env (UcdrN n) it stack
 
     | [] -> sys, stack, env
-  in
-
+  in *)
+(*
   let name = env.name in
   let irenv = mk_ir_env () in
   let type_to_dexpr (a : string) (x : T.type_) =
@@ -1059,6 +923,797 @@ let to_dir (michelson, env : T.michelson * env) =
      let views = List.map to_view michelson.views in *)
   let views = [] in (* TODO *)
   (T.mk_dprogram tstorage tparameter storage_data name sys ~views), env
+  (T.mk_dprogram tstorage tparameter storage_data name sys), env *)
+
+(* -------------------------------------------------------------------- *)
+module Decomp_dir : sig
+  val decompile : T.michelson -> T.dcode
+end = struct
+  open Michelson
+
+  (* ------------------------------------------------------------------ *)
+  let gen () = Oo.id (object end)
+
+  type dvar = [
+    | `VLocal  of int
+    | `VGlobal of string
+  ]
+
+  let vlocal  () : dvar = `VLocal (gen ())
+  let vglobal x  : dvar = `VGlobal x
+
+  let as_vlocal (x : dvar) =
+    match x with `VLocal i -> i | _ -> assert false
+
+  let rec pp_rstack1 fmt (x : rstack1) =
+    match x with
+    | `VLocal  i -> Format.fprintf fmt "#%d" i
+    | `VGlobal n -> Format.fprintf fmt "%s" n
+
+    | `Paired(x, y) ->
+      Format.fprintf fmt "(%a, %a)" pp_rstack1 x pp_rstack1 y
+
+  let pp_rstack fmt (x : rstack) =
+    Format.fprintf fmt "[%a]" (Printer_tools.pp_list ", " pp_rstack1) x
+
+  let as_dvar (x : rstack1) : dvar =
+    match x with
+    | #dvar as x -> x
+    | _ -> assert false
+
+  let rec write_var (e : dexpr) (x : rstack1) =
+    match x, e with
+    | #dvar as x, e -> [DIAssign (x, e)]
+    | `Paired (x1, x2), Depair (e1, e2) ->
+      let a = vlocal () in
+      write_var e1 (a :> rstack1)
+      @ write_var e2 x2
+      @ write_var (Dvar a) x1
+    | _ -> assert false
+
+  let rec dexpr_of_rstack1 (x : rstack1) =
+    match x with
+    | #dvar as x -> Dvar x
+    | `Paired (x, y) -> Depair (dexpr_of_rstack1 x, dexpr_of_rstack1 y)
+
+  let rec merge_rstack (s1 : rstack) (s2 : rstack) =
+    assert (List.length s1 = List.length s2);
+
+    match s1, s2 with
+    | (#dvar as x) :: s1, (#dvar as y) :: s2 ->
+      let (is1, is2), s = merge_rstack s1 s2 in
+      let a = vlocal () in
+      (([DIAssign (a, Dvar x)] @ is1), is2), y :: s
+
+    | `Paired (x1, y1) :: s1, `Paired (x2, y2) :: s2 ->
+      merge_rstack (x1 :: y1 :: s1) (x2 :: y2 :: s2)
+
+    | `Paired (x1, y1) :: s1, (#dvar as xy2) :: s2 ->
+      let i1 = write_var (dexpr_of_rstack1 (`Paired (x1, y1))) xy2 in
+      let (is1, is2), s = merge_rstack s1 s2 in
+      ((i1 @ is1), is2), `Paired (x1, y1) :: s
+
+    | #dvar :: _, `Paired _ :: _ ->
+      let (is2, is1), s = merge_rstack s2 s1 in
+      (is1, is2), s
+
+    | [], [] ->
+      ([], []), []
+
+    | _, _ -> assert false
+
+  let merge_rstack (s1 : rstack) (s2 : rstack) =
+    merge_rstack s1 s2
+
+  let rec dptn_of_rstack1 (r : rstack1) =
+    match r with
+    | `Paired (r1, r2) ->
+      let p1, c1 = dptn_of_rstack1 r1 in
+      let p2, c2 = dptn_of_rstack1 r2 in
+      (DPair (p1, p2), c1 @ c2)
+
+    | `VLocal x ->
+      (DVar x, [])
+
+    | (`VGlobal _) as n ->
+      let x = gen () in (DVar x, [DIAssign (n, Dvar (`VLocal x))])
+
+  exception UnificationFailure
+
+  let unify_dvar (uf : UF.uf) (x : dvar) (y : dvar) =
+    match x, y with
+    | `VGlobal m, `VGlobal n ->
+      if m <> n then raise UnificationFailure
+
+    | `VLocal i, `VLocal j ->
+      ignore (UF.union uf i j : int)
+
+    | _, _ ->
+      raise UnificationFailure
+
+  let rec unify_dexpr (uf : UF.uf) (e1 : dexpr) (e2 : dexpr) =
+    match e1, e2 with
+    | Dvar x, Dvar y ->
+      unify_dvar uf x y
+
+    | Depair (e1, e2), Depair (f1, f2) ->
+      unify_dexpr uf e1 f1;
+      unify_dexpr uf e2 f2
+
+    | Ddata d1, Ddata d2 ->
+      if not (cmp_data d1 d2) then
+        raise UnificationFailure
+
+    | Dfun (o1, es1), Dfun (o2, es2) ->
+      if o1 <> o2 || List.length es1 <> List.length es2 then
+        raise UnificationFailure;
+      List.iter2 (unify_dexpr uf) es1 es2
+
+    | _, _ ->
+      raise UnificationFailure
+
+  let unify_dinstr (uf : UF.uf) (i1 : dinstr) (i2 : dinstr) =
+    match i1, i2 with
+    | DIAssign (x1, e1), DIAssign (x2, e2) ->
+      unify_dvar  uf x1 x2;
+      unify_dexpr uf e1 e2
+
+    | _, _ -> raise UnificationFailure
+
+  let unify_dcode (uf : UF.uf) (is1 : dcode) (is2 : dcode) =
+    if List.length is1 <> List.length is2 then
+      raise UnificationFailure;
+    List.iter2 (unify_dinstr uf) is1 is2
+
+  let dvar_apply_uf (uf : UF.uf) (x : dvar) : dvar =
+    match x with
+    | `VGlobal _ -> x
+    | `VLocal  i -> `VLocal (UF.find uf i)
+
+  let rec dexpr_apply_uf (uf : UF.uf) (e : dexpr) : dexpr =
+    match e with
+    | Dvar x ->
+      Dvar (dvar_apply_uf uf x)
+
+    | Depair (e1, e2) ->
+      let e1 = dexpr_apply_uf uf e1 in
+      let e2 = dexpr_apply_uf uf e2 in
+      Depair (e1, e2)
+
+    | Ddata _ ->
+      e
+
+    | Dfun (o, es) ->
+      Dfun (o, List.map (dexpr_apply_uf uf) es)
+
+  let dpattern_apply_uf (_uf : UF.uf) (p : dpattern) : dpattern =
+    p
+
+  let rec dinstr_apply_uf (uf : UF.uf) (is : dinstr) : dinstr =
+    match is with
+    | DIAssign (x, e) ->
+      DIAssign (dvar_apply_uf uf x, dexpr_apply_uf uf e)
+
+    | DIIf (e, (c1, c2)) ->
+      let e  = dexpr_apply_uf uf e  in
+      let c1 = dcode_apply_uf uf c1 in
+      let c2 = dcode_apply_uf uf c2 in
+      DIIf (e, (c1, c2))
+
+    | DIMatch (e, bs) ->
+      let for_branch (x, ps, c) =
+        let ps = List.map (dpattern_apply_uf uf) ps in
+        let c  = dcode_apply_uf uf c in
+        (x, ps, c) in
+
+      let e  = dexpr_apply_uf uf e in
+      let bs = List.map for_branch bs in
+      DIMatch (e, bs)
+
+    | DIFailwith e ->
+      DIFailwith (dexpr_apply_uf uf e)
+
+    | DIWhile (e, c) ->
+      let e = dexpr_apply_uf uf e in
+      let c = dcode_apply_uf uf c in
+      DIWhile (e, c)
+
+    | DIIter (x, e, c) ->
+      let x = dvar_apply_uf  uf x in
+      let e = dexpr_apply_uf uf e in
+      let c = dcode_apply_uf uf c in
+      DIIter (x, e, c)
+
+  and dcode_apply_uf (uf : UF.uf) (is : dcode) : dcode =
+    List.map (dinstr_apply_uf uf) is
+
+  let rec rstack1_apply_uf (uf : UF.uf) (r : rstack1) : rstack1 =
+    match r with
+    | `Paired (r1, r2) ->
+      let r1 = rstack1_apply_uf uf r1 in
+      let r2 = rstack1_apply_uf uf r2 in
+      `Paired (r1, r2)
+
+    | #dvar as r ->
+      (dvar_apply_uf uf r :> rstack1)
+
+  let rstack_apply_uf (uf : UF.uf) (r : rstack) : rstack =
+    List.map (rstack1_apply_uf uf) r
+
+  (* ------------------------------------------------------------------ *)
+  type decomp = {
+    stack   : rstack;
+    code    : dcode;
+    failure : bool;
+  }
+
+  let mkdecomp ?(failure = false) stack code =
+    { code; stack; failure; }
+
+  let rec decompile_i (s : rstack) (i : code) : decomp =
+    match i.node with
+
+    (* Control structures *)
+
+    | SEQ l -> decompile_s s l
+
+    | IF (c1, c2) -> begin
+        let { failure = f1; stack = s1; code = b1; } = decompile_s s c1 in
+        let { failure = f2; stack = s2; code = b2; } = decompile_s s c2 in
+
+        let (pr1, pr2), s =
+          match f1, f2 with
+          | false, false -> merge_rstack s1 s2
+          | true , false -> ([], []), s2
+          | false, true  -> ([], []), s1
+          | true , true  -> assert false in
+        let x = vlocal () in
+        mkdecomp ((x :> rstack1) :: s) [DIIf (Dvar x, (pr1 @ b1, pr2 @ b2))]
+      end
+
+    (* Stack manipulation *)
+
+    | DIG n ->
+      assert (List.length s >= n + 1);
+      let x, s1 = List.hd s, List.tl s in
+      let s1, s2 = List.cut n s1 in
+      mkdecomp (s1 @ (x :: s2)) []
+
+    | DIP (n, c) ->
+      assert (List.length s >= n);
+      let s1, s2 = List.cut n s in
+      let { failure; stack = s2; code = ops; } = decompile_s s2 c in
+      mkdecomp ~failure (s1 @ s2) ops
+
+    | DROP n ->
+      let pre = List.init n (fun _ -> (vlocal () :> rstack1)) in
+      mkdecomp (pre @ s) []
+
+    | DUG n ->
+      assert (List.length s >= n + 1);
+      let s1, s2 = List.cut n s in
+      let x, s2 = List.hd s2, List.tl s2 in
+      mkdecomp (x :: (s1 @ s2)) []
+
+    | DUP ->
+      let x, s = List.pop s in
+      let y, s = List.pop s in
+      let a = vlocal () in
+      let wri1 = write_var (Dvar a) x in
+      let wri2 = write_var (Dvar a) y in
+      mkdecomp ((a :> rstack1) :: s) (wri1 @ wri2)
+
+    | PUSH (_t, d) ->
+      let x, s = List.pop s in
+      let wri = write_var (Ddata d) x in
+      mkdecomp s wri
+
+    | SWAP ->
+      let x, s = List.pop s in
+      let y, s = List.pop s in
+      mkdecomp (y :: x :: s) []
+
+    (* Arthmetic operations *)
+
+    | ABS      -> decompile_op s (`Uop Uabs     )
+    | ADD      -> decompile_op s (`Bop Badd     )
+    | COMPARE  -> decompile_op s (`Bop Bcompare )
+    | EDIV     -> decompile_op s (`Bop Bediv    )
+    | EQ       -> decompile_op s (`Uop Ueq      )
+    | GE       -> decompile_op s (`Uop Uge      )
+    | GT       -> decompile_op s (`Uop Ugt      )
+    | INT      -> decompile_op s (`Uop Uint     )
+    | ISNAT    -> decompile_op s (`Uop Uisnat   )
+    | LE       -> decompile_op s (`Uop Ule      )
+    | LSL      -> decompile_op s (`Bop Blsl     )
+    | LSR      -> decompile_op s (`Bop Blsr     )
+    | LT       -> decompile_op s (`Uop Ult      )
+    | MUL      -> decompile_op s (`Bop Bmul     )
+    | NEG      -> decompile_op s (`Uop Uneg     )
+    | NEQ      -> decompile_op s (`Uop Une      )
+    | SUB      -> decompile_op s (`Bop Bsub     )
+
+
+    (* Boolean operations *)
+
+    | AND     -> decompile_op s (`Bop Band )
+    | NOT     -> decompile_op s (`Uop Unot )
+    | OR      -> decompile_op s (`Bop Bor  )
+    | XOR     -> decompile_op s (`Bop Bxor )
+
+
+    (* Cryptographic operations *)
+
+    | BLAKE2B          -> decompile_op s (`Uop Ublake2b         )
+    | CHECK_SIGNATURE  -> decompile_op s (`Top Tcheck_signature )
+    | HASH_KEY         -> decompile_op s (`Uop Uhash_key        )
+    | SHA256           -> decompile_op s (`Uop Usha256          )
+    | SHA512           -> decompile_op s (`Uop Usha512          )
+
+
+    (* Blockchain operations *)
+
+    | ADDRESS            -> decompile_op s (`Zop  Zaddress          )
+    | AMOUNT             -> decompile_op s (`Zop  Zamount           )
+    | BALANCE            -> decompile_op s (`Zop  Zbalance          )
+    | CHAIN_ID           -> decompile_op s (`Zop  Zchain_id         )
+    | CONTRACT (t, a)    -> decompile_op s (`Uop (Ucontract (t, a)) )
+    | CREATE_CONTRACT _  -> assert false
+    | IMPLICIT_ACCOUNT   -> decompile_op s (`Uop (Uimplicitaccount) )
+    | NOW                -> decompile_op s (`Zop Znow               )
+    | SELF a             -> decompile_op s (`Zop (Zself a)          )
+    | SENDER             -> decompile_op s (`Zop Zsender            )
+    | SET_DELEGATE       -> decompile_op s (`Uop Usetdelegate       )
+    | SOURCE             -> decompile_op s (`Zop Zsource            )
+    | TRANSFER_TOKENS    -> decompile_op s (`Top Ttransfer_tokens   )
+
+
+    (* Operations on data structures *)
+
+    | CAR ->
+      let x, s = List.pop s in
+      mkdecomp (`Paired (x, (vlocal () :> rstack1)) :: s) []
+    | CDR ->
+      let y, s = List.pop s in
+      mkdecomp (`Paired ((vlocal () :> rstack1), y) :: s) []
+    | CONCAT               -> decompile_op s (`Bop Bconcat               )
+    | CONS                 -> decompile_op s (`Bop Bcons                 )
+    | EMPTY_BIG_MAP (k, v) -> decompile_op s (`Zop (Zemptybigmap (k, v)) )
+    | EMPTY_MAP (k, v)     -> decompile_op s (`Zop (Zemptymap (k, v))    )
+    | EMPTY_SET t          -> decompile_op s (`Zop (Zemptyset t)         )
+    | GET                  -> decompile_op s (`Bop Bget                  )
+    | LEFT t               -> decompile_op s (`Uop (Uleft t)             )
+    | MAP _cs              -> assert false
+    | MEM                  -> decompile_op s (`Bop Bmem                  )
+    | NIL t                -> decompile_op s (`Zop (Znil t)              )
+    | NONE t               -> decompile_op s (`Zop (Znone t)             )
+    | PACK                 -> decompile_op s (`Uop Upack                 )
+    | PAIR                 ->  begin
+        let x, s = List.pop s in
+
+        match x with
+        | `Paired (x1, x2) ->
+          mkdecomp (x1 :: x2 :: s) []
+
+        | #dvar as v ->
+          let x1 = vlocal () in
+          let x2 = vlocal () in
+          let op = DIAssign (v, Dfun (`Bop Bpair, [Dvar x1; Dvar x2])) in
+          mkdecomp ((x1 :> rstack1) :: (x2 :> rstack1) :: s) [op]
+      end
+    | RIGHT t              -> decompile_op s (`Uop (Uright t)  )
+    | SIZE                 -> decompile_op s (`Uop Usize       )
+    | SLICE                -> decompile_op s (`Top Tslice      )
+    | SOME                 -> decompile_op s (`Uop (Usome)     )
+    | UNIT                 -> decompile_op s (`Zop (Zunit)     )
+    | UNPACK t             -> decompile_op s (`Uop (Uunpack t) )
+    | UPDATE               -> decompile_op s (`Top Tupdate     )
+
+
+    (* Other *)
+
+    | UNPAIR ->
+      let x, s = List.pop s in
+      let y, s = List.pop s in
+      mkdecomp (`Paired (x, y) :: s) []
+
+    | SELF_ADDRESS -> decompile_op s (`Zop Zself_address)
+
+    | ITER cs ->
+      let { failure; stack = s; code = bd1 } = decompile_s s cs in
+
+      if failure then
+        assert false;
+
+      (* FIXME: iterate this ad nauseum: we need to find a fixpoint *)
+
+      let x1, s1  = List.pop s in
+      let bd2 = (decompile_s s1 cs).code in
+
+      let uf = UF.create () in
+
+      unify_dcode uf bd1 bd2;
+
+      let bd   = dcode_apply_uf uf bd1 in
+      let s    = rstack_apply_uf uf (x1 :: s1) in
+      let x, s = List.pop s in
+
+      let xs = vlocal () in
+      mkdecomp
+        ((xs :> rstack1) :: s)
+        [DIIter (as_dvar x, Dvar xs, bd)]
+
+    | LOOP cs ->
+      let cond = vlocal () in
+
+      let { failure; stack = s1; code = bd1 } =
+        decompile_s ((cond :> rstack1) :: s) cs in
+
+      if failure then
+        assert false;
+
+      let bd2 = (decompile_s ((cond :> rstack1) :: s1) cs).code in
+
+      let uf = UF.create () in
+
+      unify_dcode uf bd1 bd2;
+
+      let _bd = dcode_apply_uf uf bd1 in
+      let s = rstack_apply_uf uf ((cond :> rstack1) :: s1) in
+
+      mkdecomp s []
+
+    | IF_CONS (c1, c2) ->
+      compile_match s [("cons", 1), c1; ("nil", 0), c2]
+
+    | IF_LEFT (c1, c2) ->
+      compile_match s [("left", 1), c1; ("right", 1), c2]
+
+    | IF_NONE (c1, c2) ->
+      compile_match s [("none", 0), c1; ("some", 1), c2]
+
+    | FAILWITH ->
+      let s    = List.map (fun _ -> (vlocal () :> rstack1)) s in
+      let x, _ = List.pop s in
+      mkdecomp ~failure:true s [DIFailwith (dexpr_of_rstack1 x)]
+
+    | _ -> (Format.eprintf "%a@\n" pp_code i; assert false)
+
+  (***************************************************************************************** *)
+
+  and decompile_op (s : rstack) (op : g_operator) =
+    let n = match op with | `Zop _ -> 0 | `Uop _ -> 1 | `Bop _ -> 2 | `Top _ -> 3 in
+    let x, s = List.pop s in
+    let args = List.init n (fun _ -> vlocal ()) in
+    mkdecomp
+      ((args :> rstack) @ s)
+      (write_var (Dfun (op, List.map (fun v -> Dvar v) args)) x)
+
+  and compile_match (s : rstack) (bs : ((string * int) * code list) list) =
+    let sc, subs = List.split (List.map (fun ((name, n), b) ->
+        (* FIXME: check for failures *)
+        let { stack = sc; code = bc } = decompile_s s b in
+        assert (List.length sc >= n);
+        let p, sc = List.cut n sc in
+        let p, dp = List.split (List.map dptn_of_rstack1 p) in
+        (sc, (name, p, List.flatten dp @ bc))) bs) in
+
+    let x  = vlocal () in
+    let sc = List.fold_left (fun x y -> snd (merge_rstack x y)) (List.hd sc) (List.tl sc) in
+
+    mkdecomp ((x :> rstack1) :: sc) [DIMatch (Dvar x, subs)]
+
+  and decompile_s (s : rstack) (c : code list) : decomp =
+    let (failure, stack), code = List.fold_left_map (fun (oldfail, stack) code ->
+        let { failure; stack; code; } = decompile_i stack code in
+        (oldfail || failure, stack), code) (false, s) (List.rev c) in
+
+    { failure; stack; code = List.flatten (List.rev code); }
+
+  (* -------------------------------------------------------------------- *)
+  module DvarCompare : Map.OrderedType with type t = dvar = struct
+    type t = dvar
+
+    let compare = (Stdlib.compare : t -> t -> int)
+  end
+
+  module Mdvar = Tools.Map.Make(DvarCompare)
+  module Sdvar = Tools.Set.Make(DvarCompare)
+
+  (* -------------------------------------------------------------------- *)
+  let rec expr_fv (e : dexpr) : Sdvar.t =
+    match e with
+    | Dvar x ->
+      Sdvar.singleton x
+
+    | Depair (e1, e2) ->
+      Sdvar.union (expr_fv e1) (expr_fv e2)
+
+    | Ddata _ ->
+      Sdvar.empty
+
+    | Dfun (_, es) ->
+      Sdvar.unions (List.map expr_fv es)
+
+  (* -------------------------------------------------------------------- *)
+  let rec pattern_fv (p : dpattern) =
+    match p with
+    | DVar i ->
+      Sdvar.singleton (`VLocal i)
+
+    | DPair (p1, p2) ->
+      Sdvar.union (pattern_fv p1) (pattern_fv p2)
+
+  (* -------------------------------------------------------------------- *)
+  let rec instr_wr (i : dinstr) =
+    match i with
+    | DIAssign (x, Dvar y) when x = y ->
+      Sdvar.empty
+
+    | DIAssign (x, _) ->
+      Sdvar.singleton x
+
+    | DIIf (_, (c1, c2)) ->
+      Sdvar.union (code_wr c1) (code_wr c2)
+
+    | DIWhile (_, c) ->
+      code_wr c
+
+    | DIIter (x, _, c) ->
+      Sdvar.remove x (code_wr c)
+
+    | DIMatch (_, bs) ->
+      let for1 (_, ps, c) =
+        Sdvar.diff
+          (code_wr c)
+          (Sdvar.unions (List.map pattern_fv ps)) in
+
+      Sdvar.unions (List.map for1 bs)
+
+    | DIFailwith _ ->
+      Sdvar.empty
+
+  and code_wr (c : dcode) =
+    Sdvar.unions (List.map instr_wr c)
+
+  (* -------------------------------------------------------------------- *)
+  let rec expr_cttprop (env : dexpr Mint.t) (e : dexpr) =
+    match e with
+    | Dvar (`VLocal x) ->
+      Option.get_dfl e (Mint.find_opt x env)
+
+    | Dvar _ ->
+      e
+
+    | Depair (e1, e2) ->
+      let e1 = expr_cttprop env e1 in
+      let e2 = expr_cttprop env e2 in
+      Depair (e1, e2)
+
+    | Ddata _ ->
+      e
+
+    | Dfun (op, es) ->
+      let es = List.map (expr_cttprop env) es in
+      Dfun (op, es)
+
+  type cttenv = dexpr Mint.t
+
+  let cttenv_remove_wr (env : cttenv) (wr : Sdvar.t) =
+    Sdvar.fold (fun x env ->
+        match x with
+        | `VLocal  i -> Mint.remove i env
+        | `VGlobal _ -> env) wr env
+
+  let rec instr_cttprop (env0 : cttenv) (code : dinstr) =
+    match code with
+    | DIAssign ((`VLocal i), Dvar (`VLocal j)) when i = j ->
+      env0, []
+
+    | DIAssign ((`VLocal i) as x, e) ->
+      let env = Mint.remove i env0 in
+      let e   = expr_cttprop env e in
+      let env = Mint.filter (fun _ se -> not (Sdvar.mem x (expr_fv se))) env in
+      let env = Mint.add i e env in
+
+      env, [DIAssign (x, e)]
+
+    | DIAssign ((`VGlobal _) as x, e) ->
+      let e   = expr_cttprop env0 e in
+      let env = Mint.filter (fun _ se -> not (Sdvar.mem x (expr_fv se))) env0 in
+      env, [DIAssign (x, e)]
+
+    | DIIf (e, (c1, c2)) ->
+      let wr    = Sdvar.union (code_wr c1) (code_wr c2) in
+      let env   = cttenv_remove_wr env0 wr in
+      let _, c1 = code_cttprop env0 c1 in
+      let _, c2 = code_cttprop env0 c2 in
+
+      env, [DIIf (expr_cttprop env0 e, (c1, c2))]
+
+    | DIWhile (e, c) ->
+      let wr   = code_wr c in
+      let env  = cttenv_remove_wr env0 wr in
+      let _, c = code_cttprop env c in
+
+      env, [DIWhile (expr_cttprop env0 e, c)]
+
+    | DIIter (x, e, c) ->
+      let wr   = Sdvar.remove x (code_wr c) in
+      let env  = cttenv_remove_wr env0 wr in
+      let _, c = code_cttprop env c in
+
+      env, [DIIter (x, expr_cttprop env0 e, c)]
+
+    | DIMatch (e, bs) ->
+      let wr =
+        let for1 (_, p, c) =
+          let fv = Sdvar.unions (List.map pattern_fv p) in
+          Sdvar.fold Sdvar.remove fv (code_wr c) in
+        Sdvar.unions (List.map for1 bs) in
+
+      let env = cttenv_remove_wr env0 wr in
+
+      let bs =
+        let for1 (x, p, c) = (x, p, snd (code_cttprop env0 c)) in
+        List.map for1 bs in
+
+      env, [DIMatch (expr_cttprop env0 e, bs)]
+
+    | DIFailwith e ->
+      env0, [DIFailwith (expr_cttprop env0 e)]
+
+  and code_cttprop (env : cttenv) (code : dcode) =
+    let env, code =
+      List.fold_left_map instr_cttprop env code
+    in env, List.flatten code
+
+  (* -------------------------------------------------------------------- *)
+  let rec instr_kill (keep : Sdvar.t) (instr : dinstr) =
+    match instr with
+    | DIAssign ((`VLocal _) as x, e)
+      when not (Sdvar.mem x (Sdvar.union keep (expr_fv e)))
+      -> keep, []
+
+    | DIAssign ((`VLocal _) as x, e) ->
+      Sdvar.add x (Sdvar.union keep (expr_fv e)), [instr]
+
+    | DIAssign (_, e) ->
+      Sdvar.union keep (expr_fv e), [instr]
+
+    | DIIf (e, (c1, c2)) ->
+      let keep1, c1 = code_kill keep c1 in
+      let keep2, c2 = code_kill keep c2 in
+
+      Sdvar.union (expr_fv e) (Sdvar.union keep1 keep2),
+      [DIIf (e, (c1, c2))]
+
+    | DIWhile (e, c) ->
+      let keep, c =
+        code_kill (Sdvar.union keep (expr_fv e)) c
+      in keep, [DIWhile (e, c)]
+
+    | DIIter (x, e, c) ->
+      let keep, c =
+        code_kill (Sdvar.add x (Sdvar.union keep (expr_fv e))) c in
+
+      Sdvar.remove x keep, [DIIter (x, e, c)]
+
+    | DIMatch (e, bs) ->
+      let for1 (x, pv, c) =
+        let pfv = List.map pattern_fv pv in
+        let pfv = Sdvar.unions pfv in
+        let keep, c = code_kill (Sdvar.union keep pfv) c in
+        Sdvar.diff keep pfv, (x, pv, c) in
+
+      let keep, bs = List.split (List.map for1 bs) in
+      let keep = Sdvar.unions keep in
+
+      keep, [DIMatch (e, bs)]
+
+    | DIFailwith e ->
+      Sdvar.union keep (expr_fv e), [instr]
+
+  and code_kill (keep : Sdvar.t) (code : dcode) =
+    let keep, code = List.fold_left_map instr_kill keep (List.rev code) in
+    keep, List.flatten (List.rev code)
+
+  (* -------------------------------------------------------------------- *)
+  let decompile (michelson : michelson) =
+    let aty = michelson.storage in
+    let pty = michelson.parameter in
+    let code = let c = michelson.code in match c.node with | SEQ l -> l | _ -> [c] in
+
+    let args prefix =
+      let mkvar i : rstack1 =
+        `VGlobal (Printf.sprintf "%s%d" prefix i) in
+
+      let rec create i : _ -> rstack1 = fun (ty : T.type_) ->
+        match ty with
+        | { node = Tpair (_, ty); _} ->
+          `Paired (mkvar i, create (i + 1) ty)
+        | _ ->
+          mkvar i
+      in create 1 in
+
+    let pst = args "args_" pty in
+    let ast = args "sto_"  aty in
+
+    let { stack = ost; code = dc; } =
+      decompile_s [`Paired (`VGlobal "ops", ast)] code in
+
+    let code =
+      match ost with
+      | [`Paired (px, ax)] ->
+        let pr1 = write_var (dexpr_of_rstack1 pst) px in
+        let pr2 = write_var (dexpr_of_rstack1 ast) ax in
+        pr1 @ dc @ pr2
+      | _ -> assert false in
+
+    let _, code = code_cttprop Mint.empty code in
+    let _, code = code_kill Sdvar.empty code in
+
+    code
+end
+
+let to_dir (michelson, env : T.michelson * env) =
+  let tstorage   = michelson.storage in
+  let tparameter = michelson.parameter in
+  let name = env.name in
+
+  let storage_data =
+    match tstorage.node with
+    | T.Tunit   -> T.Dunit
+    | T.Tnat
+    | T.Tint    -> T.Dint Big_int.zero_big_int
+    | T.Tstring -> T.Dstring ""
+    | _ -> T.Dunit (* FIXME*)
+  in
+
+  let code = Decomp_dir.decompile michelson in
+
+  (T.mk_dprogram tstorage tparameter storage_data name code), env
+
+
+
+
+(* let rec interp (env : ir_env) (sys : T.dinstruction list) (instrs : T.code list) (stack : (T.dexpr) list) =
+   ()
+   in ()
+
+   let args prefix =
+   let mkvar i : rstack1 =
+    `VGlobal (Printf.sprintf "%s%d" prefix i) in
+
+   let rec create i : _ -> rstack1 = function
+    | T_Pair (_, ty) ->
+      `Paired (mkvar i, create (i+1) ty)
+    | _ ->
+      mkvar i
+   in create 1 in
+
+   let pst = args "args_" pty in
+   let ast = args "sto_"  aty in
+
+   let ost, dc = decompile [`Paired (`VGlobal "ops", ast)] code in
+
+   let dc =
+   match ost with
+   | [`Paired (px, ax)] ->
+      let (pr1 , pr2 ), _ = unify pst px in
+      let (pr'1, pr'2), _ = unify ast ax in
+      let pr = List.map (fun pr ->
+          List.map (fun (x, e) -> DIAssign (`VGlobal x, `Dup e)) pr
+        ) [pr1; pr'1; pr2; pr'2] in
+      List.flatten pr @ dc
+   | _ -> assert false in
+
+   Format.eprintf "%a@." pp_dcmd (compress_c dc) *)
+
+(* -------------------------------------------------------------------- *)
+
+
+
 
 (* let map_dinstruction_gen (fe : dexpr -> dexpr) (f : dinstruction -> dinstruction) = function
    | Ddecl     (id, v)            -> Ddecl     (id, Option.map fe v)
@@ -1146,9 +1801,9 @@ let to_dir (michelson, env : T.michelson * env) =
    | Diter     (_, b)          -> List.fold_left f accu b *)
 
 
-
-let _to_red_dir (dir, env : T.dprogram * env) : T.dprogram * env =
-  let rec doit (accu : T.dinstruction list) (code : T.dinstruction list) =
+(*
+Dlet _to_red_dir (dir, env : T.dprogram * env) : T.dprogram * env =
+  let rec doit (accu : T.dcode) (code : T.dcode) =
 
 
     let replace src dst instrs =
@@ -1210,7 +1865,7 @@ let _to_red_dir (dir, env : T.dprogram * env) : T.dprogram * env =
   in
   { dir with
     code = dir.code |> List.rev |> doit []
-  }, env
+  }, env *)
 
 let to_red_dir (dir, env : T.dprogram * env) : T.dprogram * env = dir, env
 
@@ -1219,53 +1874,52 @@ let to_ir (dir, env : T.dprogram * env) : T.ir * env =
   let tparameter   = dir.parameter in
   let storage_data = dir.storage_data in
 
-  let rec for_expr (e : T.dexpr) : T.instruction =
-    let f = for_expr in
-    let g = for_instr in
-    let seq x = T.Iseq (List.map g x) in
+  (* let rec for_expr (e : T.dexpr) : T.instruction =
+     let f = for_expr in
+     let g = for_instr in
+     let seq x = T.Iseq (List.map g x) in
 
-    match e with
-    | Dalpha _i              -> assert false
-    | Dvar t                 -> Ivar (Option.get t.annotation)
-    | Dstorage _t            -> assert false
-    | Doperations            -> assert false
-    | Dlbdparam              -> assert false
-    | Dlbdresult             -> assert false
-    | Ddata d                -> Iconst (T.tnat, d)
-    | Dzop op                -> Izop op
-    | Duop (op, a)           -> Iunop (op, f a)
-    | Dbop (op, a, b)        -> Ibinop (op, f a, f b)
-    | Dtop (op, a, b, c)     -> Iterop (op, f a, f b, f c)
-    | Dapply (a, l)          -> Ibinop (Bapply, f a, f l)
-    | Dexec (a, l)           -> Ibinop (Bexec, f a, f l)
-    | Dlambda (at, rt, l)    -> Ilambda (at, "", rt, seq l)
-    | Dloopleft (c, b)       -> Iloopleft (f c, "", seq b)
-    | Dmap (c, b)            -> Imap_ (f c, "", seq b)
-  and for_instr (i : T.dinstruction) : T.instruction =
-    let f = for_expr in
-    let g = for_instr in
-    let seq x = T.Iseq (List.map g x) in
+     match e with
+     (* | Dalpha _i              -> assert false
+     | Dvar t                 -> Ivar (Option.get t.annotation)
+     | Dstorage _t            -> assert false
+     | Doperations            -> assert false
+     | Dlbdparam              -> assert false
+     | Dlbdresult             -> assert false
+     | Ddata d                -> Iconst (T.tnat, d)
+     | Dzop op                -> Izop op
+     | Duop (op, a)           -> Iunop (op, f a)
+     | Dbop (op, a, b)        -> Ibinop (op, f a, f b)
+     | Dtop (op, a, b, c)     -> Iterop (op, f a, f b, f c)
+     | Dapply (a, l)          -> Ibinop (Bapply, f a, f l)
+     | Dexec (a, l)           -> Ibinop (Bexec, f a, f l)
+     | Dlambda (at, rt, l)    -> Ilambda (at, "", rt, seq l)
+     | Dloopleft (c, b)       -> Iloopleft (f c, "", seq b)
+     | Dmap (c, b)            -> Imap_ (f c, "", seq b) *)
+     | _ -> assert false
+     and for_instr (i : T.dinstr) : T.dinstr =
+     let f = for_expr in
+     let g = for_instr in
+     let seq x = T.Iseq (List.map g x) in
 
-    let to_ident n = Format.sprintf "x%i" n in
-    match i with
-    | Ddecl     (_id, _v)    -> assert false
-    | Dassign   (e, v)       -> begin
+     let to_ident n = Format.sprintf "x%i" n in
+     match i with
+     | Ddecl     (_id, _v)    -> assert false
+     | Dassign   (e, v)       -> begin
         let v = f v in
         match e with
         | Dvar t when Option.is_some t.annotation -> Iassign(Option.get t.annotation, v)
         | Doperations -> Iassign("operations", v)
         | _ -> assert false
       end
-    | Dfail      e                 -> Iunop   (Ufail, f e)
-    | Dif       (c, t, e)          -> Iif     (f c, seq t, seq e, T.tunit)
-    | Difcons   (c, ihd, it, t, e) -> Iifcons (f c, to_ident ihd, to_ident it, seq t, seq e, T.tunit)
-    | Difleft   (c, il, l, ir, r)  -> Iifleft (f c, to_ident il, seq l, to_ident ir, seq r, T.tunit)
-    | Difnone   (c, n, iv, v)      -> Iifnone (f c, seq n, to_ident iv, seq v, T.tunit)
-    | Dloop     (c, b)             -> Iloop   (f c, seq b)
-    | Diter     (c, b)             -> Iiter   ([], f c,  seq b)
-  in
-
-  let name = dir.name in
+     | Dfail      e                 -> Iunop   (Ufail, f e)
+     | Dif       (c, t, e)          -> Iif     (f c, seq t, seq e, T.tunit)
+     | Difcons   (c, ihd, it, t, e) -> Iifcons (f c, to_ident ihd, to_ident it, seq t, seq e, T.tunit)
+     | Difleft   (c, il, l, ir, r)  -> Iifleft (f c, to_ident il, seq l, to_ident ir, seq r, T.tunit)
+     | Difnone   (c, n, iv, v)      -> Iifnone (f c, seq n, to_ident iv, seq v, T.tunit)
+     | Dloop     (c, b)             -> Iloop   (f c, seq b)
+     | Diter     (c, b)             -> Iiter   ([], f c,  seq b)
+     in *)
 
   let storage_list =
     let rec aux (x : T.type_) =
@@ -1285,8 +1939,8 @@ let to_ir (dir, env : T.dprogram * env) : T.ir * env =
     | _  -> r
   in
 
-  let args =
-    let rec aux (x : T.type_) =
+  (* let args =
+     let rec aux (x : T.type_) =
       match x.node, x.annotation with
       | _, Some a  -> [a, x]
       | T.Tpair (a, b), _ -> begin
@@ -1296,19 +1950,20 @@ let to_ir (dir, env : T.dprogram * env) : T.ir * env =
           | x, y  -> x @ y
         end
       | _ -> []
-    in
-    let r = aux tparameter in
-    match r with
-    | [] -> ["storage", tparameter]
-    | _  -> r
-  in
+     in
+     let r = aux tparameter in
+     match r with
+     | [] -> ["storage", tparameter]
+     | _  -> r
+     in *)
 
-  let code = T.Iseq (List.map for_instr dir.code) in
-  let entry = T.mk_entry "default" args [] code in
+  (* let code = T.Iseq (List.map for_instr dir.code) in *)
+  (* let entry = T.mk_entry "default" args [] code in *)
 
+  let name = dir.name in
   let funs = [] in
   let views = [] in
-  let entries = [entry] in
+  let entries = [] in
 
   T.mk_ir name tstorage storage_data storage_list tparameter funs views entries, env
 
@@ -1347,6 +2002,8 @@ let rec ttype_to_mtype (t : T.type_) : M.type_ =
   | Tnever                 -> assert false
 
 let to_model (ir, env : T.ir * env) : M.model * env =
+
+  let tunknown = M.tunit in
 
   let for_type (t : T.type_) : M.type_ = ttype_to_mtype t in
 
@@ -1451,7 +2108,7 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         | Uleft  t           -> let ee = f e in let t = for_type t in M.mk_mterm (Mleft  (t, f e)) (M.tor ee.type_ t)
         | Uright t           -> let ee = f e in let t = for_type t in M.mk_mterm (Mright (t, f e)) (M.tor t ee.type_)
         | Uneg               -> M.mk_mterm (Muminus (f e)) M.tint
-        | Uint               -> f e
+        | Uint               -> M.mk_mterm (Mnattoint (f e)) M.tint
         | Unot               -> M.mk_mterm (Mnot (f e)) M.tbool
         | Uabs               -> M.mk_mterm (Mabs (f e)) (M.tnat)
         | Uisnat             -> assert false
@@ -1489,13 +2146,13 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         | Badd       -> M.mk_mterm (Mplus (f a, f b)) M.tnat
         | Bsub       -> M.mk_mterm (Mminus (f a, f b)) M.tint
         | Bmul       -> M.mk_mterm (Mmult (f a, f b)) M.tint
-        | Bediv      -> assert false
-        | Blsl       -> assert false
-        | Blsr       -> assert false
-        | Bor        -> assert false
-        | Band       -> assert false
-        | Bxor       -> assert false
-        | Bcompare   -> assert false
+        | Bediv      -> M.mk_mterm (Mdivmod (f a, f b)) tunknown
+        | Blsl       -> M.mk_mterm (Mshiftleft (f a, f b)) M.tnat
+        | Blsr       -> M.mk_mterm (Mshiftright (f a, f b)) M.tnat
+        | Bor        -> M.mk_mterm (Mand (f a, f b)) M.tbool
+        | Band       -> M.mk_mterm (Mor (f a, f b)) M.tbool
+        | Bxor       -> M.mk_mterm (Mxor (f a, f b)) tunknown
+        | Bcompare   -> M.mk_mterm (MthreeWayCmp (f a, f b)) M.tint
         | Bget       -> assert false
         | Bmem       -> assert false
         | Bconcat    -> assert false
@@ -1563,6 +2220,219 @@ let to_model (ir, env : T.ir * env) : M.model * env =
 
   let model = M.mk_model (dumloc ir.name) ~functions:functions ~storage:storage in
   model, env
+
+module Decomp_model : sig
+  val decompile : T.dprogram * env -> M.model * env
+end = struct
+  open Ident
+  open Michelson
+  open Model
+
+  let for_type (t : T.type_) : M.type_ = ttype_to_mtype t
+
+  let for_data ?t (d : T.data) : M.mterm =
+    let is_nat = Option.map_dfl (fun (t : T.type_) -> match t.node with | T.Tnat -> true | _ -> false) false in
+    match d with
+    | Dint v when is_nat t -> M.mk_bnat v
+    | Dint    v        -> mk_bint v
+    | Dstring v        -> mk_string v
+    | Dbytes  v        -> mk_bytes v
+    | Dunit            -> unit
+    | Dtrue            -> mtrue
+    | Dfalse           -> mfalse
+    | Dpair  (_ld, _rd)-> assert false
+    | Dleft   _d       -> assert false
+    | Dright  _d       -> assert false
+    | Dsome   _d       -> assert false
+    | Dnone            -> assert false
+    | Dlist  _l        -> assert false
+    | Delt _           -> assert false
+    | Dvar _           -> assert false
+    | DIrCode _        -> assert false
+    | Dcode _          -> assert false
+
+  let get_storage_list tstorage =
+    let rec aux (x : T.type_) =
+      match x.node, x.annotation with
+      | _, Some a  -> [a, x]
+      | T.Tpair (a, b), _ -> begin
+          match aux a, aux b with
+          | [], _
+          | _, [] -> []
+          | x, y  -> x @ y
+        end
+      | _ -> []
+    in
+    let r = aux tstorage in
+    match r with
+    | [] -> ["storage", tstorage]
+    | _  -> r
+
+  let rec get_default_value (t : T.type_) =
+    let f = get_default_value in
+    match t.node with
+    | Tnat
+    | Tint         -> T.Dint Big_int.zero_big_int
+    | Tstring      -> T.Dstring ""
+    | Tpair (a, b) -> T.Dpair (f a, f b)
+    | _ -> T.Dint Big_int.zero_big_int(* assert false *)
+
+  let for_code (code : dcode) : mterm =
+    let ft = for_type in
+
+    let for_dvar (v : dvar) : ident =
+      match v with
+      | `VLocal  x  -> "$" ^ (string_of_int x)
+      | `VGlobal id -> id
+    in
+
+    let rec for_expr (e : dexpr) : mterm =
+      let f = for_expr in
+      let tunknown = tunit in
+      match e with
+      | Dvar v          -> mk_mvar (dumloc (for_dvar v)) tunit
+      | Ddata d         -> for_data d
+      | Depair _        -> assert false
+      | Dfun (`Uop Ueq, [Dfun (`Bop Bcompare, [a; b])]) -> mk_mterm (Mequal  (tint, f a, f b)) tbool
+      | Dfun (`Uop Une, [Dfun (`Bop Bcompare, [a; b])]) -> mk_mterm (Mnequal (tint, f a, f b)) tbool
+      | Dfun (`Uop Ugt, [Dfun (`Bop Bcompare, [a; b])]) -> mk_mterm (Mgt     (f a, f b)) tbool
+      | Dfun (`Uop Uge, [Dfun (`Bop Bcompare, [a; b])]) -> mk_mterm (Mge     (f a, f b)) tbool
+      | Dfun (`Uop Ult, [Dfun (`Bop Bcompare, [a; b])]) -> mk_mterm (Mlt     (f a, f b)) tbool
+      | Dfun (`Uop Ule, [Dfun (`Bop Bcompare, [a; b])]) -> mk_mterm (Mle     (f a, f b)) tbool
+      | Dfun (op, args) -> begin
+          match op, args with
+          | `Zop Znow,                       [] -> mnow
+          | `Zop Zamount,                    [] -> mtransferred
+          | `Zop Zbalance,                   [] -> mbalance
+          | `Zop Zsource,                    [] -> msource
+          | `Zop Zsender,                    [] -> mcaller
+          | `Zop Zaddress,                   [] -> assert false
+          | `Zop Zchain_id,                  [] -> mchainid
+          | `Zop Zself _a,                   [] -> assert false
+          | `Zop Zself_address,              [] -> mselfaddress
+          | `Zop Znone t,                    [] -> mk_none (ft t)
+          | `Zop Zunit,                      [] -> unit
+          | `Zop Znil t,                     [] -> mk_mterm (Mlitlist []) (tlist (ft t))
+          | `Zop Zemptyset  t,               [] -> mk_mterm (Mlitset [])  (tlist (ft t))
+          | `Zop Zemptymap (tk, tv),         [] -> mk_mterm (Mlitmap (false, [])) (tmap (ft tk) (ft tv))
+          | `Zop Zemptybigmap (tk, tv),      [] -> mk_mterm (Mlitmap (true, [])) (tmap (ft tk) (ft tv))
+          | `Uop Ucar,                    [ a ] -> mk_tupleaccess 0 (f a)
+          | `Uop Ucdr,                    [ a ] -> mk_tupleaccess 1 (f a)
+          | `Uop Uleft t,                 [ a ] -> mk_left  (ft t) (f a)
+          | `Uop Uright t,                [ a ] -> mk_right (ft t) (f a)
+          | `Uop Uneg,                    [ a ] -> mk_mterm (Muminus (f a)) tint
+          | `Uop Uint,                    [ a ] -> mk_nat_to_int (f a)
+          | `Uop Unot,                    [ a ] -> mnot (f a)
+          | `Uop Uabs,                    [ a ] -> mk_mterm (Mabs (f a)) tnat
+          | `Uop Uisnat,                  [ _a ] -> assert false
+          | `Uop Usome,                   [ a ] -> mk_some (f a)
+          | `Uop Usize,                   [ a ] -> mk_mterm (Mlistlength (tunknown, f a)) tnat
+          | `Uop Upack,                   [ a ] -> mk_pack (f a)
+          | `Uop Uunpack t,               [ a ] -> mk_unpack (ft t) (f a)
+          | `Uop Ublake2b,                [ a ] -> mk_blake2b (f a)
+          | `Uop Usha256,                 [ a ] -> mk_sha256 (f a)
+          | `Uop Usha512,                 [ a ] -> mk_sha512 (f a)
+          | `Uop Uhash_key,               [ a ] -> mk_hashkey (f a)
+          | `Uop Ufail,                   [ a ] -> failg (f a)
+          | `Uop Ucontract (_t, _an),     [ _a ] -> assert false
+          | `Uop Usetdelegate,            [ _a ] -> assert false
+          | `Uop Uimplicitaccount,        [ _a ] -> assert false
+          | `Uop Ueq,                     [ _ ] -> assert false
+          | `Uop Une,                     [ _ ] -> assert false
+          | `Uop Ugt,                     [ _ ] -> assert false
+          | `Uop Uge,                     [ _ ] -> assert false
+          | `Uop Ult,                     [ _ ] -> assert false
+          | `Uop Ule,                     [ _ ] -> assert false
+          | `Bop Badd,                 [ a; b ] -> mk_mterm (Mplus (f a, f b)) tint
+          | `Bop Bsub,                 [ a; b ] -> mk_mterm (Mminus (f a, f b)) tint
+          | `Bop Bmul,                 [ a; b ] -> mk_mterm (Mmult (f a, f b)) tint
+          | `Bop Bediv,                [ _a; _b ] -> assert false
+          | `Bop Blsl,                 [ _a; _b ] -> assert false
+          | `Bop Blsr,                 [ _a; _b ] -> assert false
+          | `Bop Bor,                  [ a; b ] -> mk_mterm (Mor  (f a, f b)) tbool
+          | `Bop Band,                 [ a; b ] -> mk_mterm (Mand (f a, f b)) tbool
+          | `Bop Bxor,                 [ a; b ] -> mk_mterm (Mxor (f a, f b)) tbool
+          | `Bop Bcompare,             [ _; _ ] -> assert false
+          | `Bop Bget,                 [ a; b ] -> mk_mterm (Mmapget (tunknown, tunknown, f a, f b)) tunknown
+          | `Bop Bmem,                 [ a; b ] -> mk_mterm (Mmapcontains(tunknown, tunknown, f a, f b)) tunknown
+          | `Bop Bconcat,              [ a; b ] -> mk_mterm (Mconcat (f a, f b)) tunknown
+          | `Bop Bcons,                [ a; b ] -> mk_mterm (Mlistprepend (tunknown, f a, f b)) tunknown
+          | `Bop Bpair,                [ a; b ] -> mk_tuple [f a; f b]
+          | `Bop Bexec,                [ _a; _b ] -> assert false
+          | `Bop Bapply,               [ _a; _b ] -> assert false
+          | `Top Tcheck_signature,  [ a; b; c ] -> mk_checksignature (f a) (f b) (f c)
+          | `Top Tslice,            [ a; b; c ] -> mk_mterm (Mslice (f a, f b, f c)) tunknown
+          | `Top Tupdate,           [ a; b; c ] -> mk_mterm (Mmapput (tunknown, tunknown, f a, f b, f c)) tunknown
+          | `Top Ttransfer_tokens,  [ _a; _b; _c ] -> assert false
+          | _ -> assert false
+        end
+
+    in
+
+    let rec for_instr i : mterm =
+      let f = for_instr in
+      let g = for_expr in
+      let seq (c : dcode) : mterm =
+        let instrs = List.map f c in
+        seq instrs
+      in
+      begin
+        match i with
+        | DIAssign (x, e) ->
+          let id = for_dvar x in
+          let e = g e in
+          mk_mterm (Massign (ValueAssign, tunit, Avar (dumloc id), e)) tunit
+
+        | DIIf (c, (b1, b2)) ->
+          mk_mterm (Mif (g c, seq b1, Some (seq b2))) tunit
+
+        (* | DIMatch (c, bs) ->
+           let rec pp_pattern fmt = function
+            | DVar x ->
+              Format.fprintf fmt "%a" pp_var (`VLocal x)
+            | DPair (p1, p2) ->
+              Format.fprintf fmt "(%a, %a)" pp_pattern p1 pp_pattern p2 in
+
+           let pp_branch fmt (c, ptn, body)  =
+            Format.fprintf fmt "@[<v 2>%s %a =>@\n%a@]" c
+              (Format.pp_print_list
+                 ~pp_sep:(fun fmt () -> Format.fprintf fmt " ")
+                 pp_pattern) ptn
+              pp_dcode body
+           in
+
+           Format.fprintf fmt "match (%a) with@\n%a@\nend" pp_expr c
+            (Format.pp_print_list
+               ~pp_sep:(fun fmt () -> Format.fprintf fmt "@\n")
+               pp_branch) bs *)
+
+        | DIMatch (c, [("left", _lv, lc) ; ("right", _rv, rc)]) ->
+          mk_mterm (Minstrmatchor (g c, dumloc "_", seq rc, dumloc "_", seq lc)) tunit
+
+        | DIFailwith e -> failg (for_expr e)
+        | _ -> assert false
+      end
+    in
+    let instrs = List.map for_instr code in
+    seq instrs
+
+  let decompile (dprogram, env : dprogram * env) =
+    let code = for_code dprogram.code in
+    let functions = [mk_function (Entry (mk_function_struct (dumloc "default") code ~args:[dumloc "arg", for_type dprogram.parameter, None])) ] in
+
+    let storage_list = get_storage_list dprogram.storage in
+
+    let storage =
+      List.map (fun (id, t) ->
+          M.mk_storage_item (dumloc id) MTvar (for_type t) (for_data ~t:t (get_default_value t))
+        ) storage_list
+    in
+    let model = M.mk_model (dumloc dprogram.name) ~functions:functions ~storage:storage in
+    model, env
+end
+
+let dir_to_model (dir, env : T.dprogram * env) : M.model * env =
+  Decomp_model.decompile (dir, env)
 
 let to_archetype (model, _env : M.model * env) : A.archetype =
   let rec for_type (t : M.type_) : A.type_t =
@@ -1658,7 +2528,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     (* control *)
 
-    | Mif (_c, _t, _e)           -> assert false
+    | Mif (c, t, e)              -> A.eif ?e:(Option.map f e) (f c) (f t)
     | Mmatchwith (_e, _l)        -> assert false
     | Minstrmatchoption _        -> assert false
     | Minstrmatchor     _        -> assert false
@@ -1679,7 +2549,14 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     (* effect *)
 
-    | Mfail _ft          -> assert false
+    | Mfail ft           -> begin
+        let v =
+          match ft with
+          | Invalid e -> f e
+          | _ -> assert false
+        in
+        A.efail v
+      end
     | Mtransfer _tr      -> assert false
 
 
@@ -1730,9 +2607,9 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     | Mleft (_t, _x)  -> assert false
     | Mright (_t, _x) -> assert false
-    | Mnone           -> assert false
-    | Msome _v        -> assert false
-    | Mtuple _l       -> assert false
+    | Mnone           -> A.eoption (ONone None)
+    | Msome v         -> A.eoption (OSome (f v))
+    | Mtuple l        -> A.etuple (List.map f l)
     | Masset _l       -> assert false
     | Massets _l      -> assert false
     | Mlitset _l      -> assert false
@@ -1749,12 +2626,12 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     (* comparison operators *)
 
-    | Mequal (_t, _l, _r)  -> assert false
-    | Mnequal (_t, _l, _r) -> assert false
-    | Mgt (_l, _r)         -> assert false
-    | Mge (_l, _r)         -> assert false
-    | Mlt (_l, _r)         -> assert false
-    | Mle (_l, _r)         -> assert false
+    | Mequal (_t, l, r)  -> A.eapp (Foperator (dumloc (A.Cmp Equal))) [f l; f r]
+    | Mnequal (_t, l, r) -> A.eapp (Foperator (dumloc (A.Cmp Nequal))) [f l; f r]
+    | Mgt (l, r)         -> A.eapp (Foperator (dumloc (A.Cmp Gt))) [f l; f r]
+    | Mge (l, r)         -> A.eapp (Foperator (dumloc (A.Cmp Ge))) [f l; f r]
+    | Mlt (l, r)         -> A.eapp (Foperator (dumloc (A.Cmp Lt))) [f l; f r]
+    | Mle (l, r)         -> A.eapp (Foperator (dumloc (A.Cmp Le))) [f l; f r]
     | Mmulticomp (_e, _l)  -> assert false
 
 
@@ -1845,7 +2722,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     (* map api expression *)
 
-    | Mmapput (_, _, _c, _k, _v)               -> assert false
+    | Mmapput (_, _, c, k, v)               -> A.eapp (A.Fident (dumloc "put")) [f c; f k; f v]
     | Mmapremove (_, _, _c, _k)                -> assert false
     | Mmapupdate (_, _, _c, _k, _v)            -> assert false
     | Mmapget (_, _, _c, _k)                   -> assert false
@@ -1924,14 +2801,14 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     (* constants *)
 
-    | Mnow           -> assert false
-    | Mtransferred   -> assert false
-    | Mcaller        -> assert false
-    | Mbalance       -> assert false
-    | Msource        -> assert false
-    | Mselfaddress   -> assert false
-    | Mchainid       -> assert false
-    | Mmetadata      -> assert false
+    | Mnow           -> A.eterm (dumloc A.cst_now)
+    | Mtransferred   -> A.eterm (dumloc A.cst_transferred)
+    | Mcaller        -> A.eterm (dumloc A.cst_caller)
+    | Mbalance       -> A.eterm (dumloc A.cst_balance)
+    | Msource        -> A.eterm (dumloc A.cst_source)
+    | Mselfaddress   -> A.eterm (dumloc A.cst_selfaddress)
+    | Mchainid       -> A.eterm (dumloc A.cst_chainid)
+    | Mmetadata      -> A.eterm (dumloc A.cst_metadata)
     | Mlevel         -> assert false
 
 

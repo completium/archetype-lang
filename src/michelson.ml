@@ -62,7 +62,7 @@ type data =
   | Dcode              of code
 [@@deriving show {with_path = false}]
 
-and code =
+and code_node =
   (* Control structures *)
   | SEQ                of code list
   | APPLY
@@ -185,6 +185,8 @@ and code =
   | CDR_N              of int
 [@@deriving show {with_path = false}]
 
+and code = { node : code_node; type_: (type_ list) option ref; }
+
 and z_operator =
   | Znow
   | Zamount
@@ -275,6 +277,9 @@ and ter_operator =
   | Tslice
   | Tupdate
   | Ttransfer_tokens
+[@@deriving show {with_path = false}]
+
+and g_operator = [`Zop of z_operator | `Uop of un_operator  | `Bop of bin_operator  | `Top of ter_operator ]
 [@@deriving show {with_path = false}]
 
 and cmp_operator =
@@ -448,46 +453,61 @@ type micheline = {
 [@@deriving show {with_path = false}]
 
 (* -------------------------------------------------------------------- *)
-type alpha_ident = int
+
+(***
+   type proposal :
+
+   ```
+   type dvar = ident
+
+   and dvkind =
+   | DVKvar of ident
+   | DVKdup
+   | DVKexpr of dexpr option
+
+   and  dexpr =
+   | Dvar       of dvar
+   | Ddata      of data
+   | Dfun       of g_operator * dexpr list
+   ```
+
+   with an environment which contains a map
+   map (ident -> vkind)
+
+ ***)
+
+type dvar   = [`VLocal of int | `VGlobal of ident]
+
+(* and  dexpr_node = *)
+and  dexpr =
+  | Dvar       of dvar
+  | Depair     of dexpr * dexpr
+  | Ddata      of data
+  | Dfun       of g_operator * dexpr list
 [@@deriving show {with_path = false}]
 
-type dexpr =
-  | Dalpha    of alpha_ident
-  | Dvar      of type_
-  | Dstorage  of type_
-  | Doperations
-  | Dlbdparam
-  | Dlbdresult
-  | Ddata     of data
-  | Dzop      of z_operator
-  | Duop      of un_operator  * dexpr
-  | Dbop      of bin_operator * dexpr * dexpr
-  | Dtop      of ter_operator * dexpr * dexpr * dexpr
-  | Dapply    of dexpr * dexpr
-  | Dexec     of dexpr * dexpr
-  | Dlambda   of type_ * type_ * dinstruction list
-  | Dloopleft of dexpr * dinstruction list
-  | Dmap      of dexpr * dinstruction list
-[@@deriving show {with_path = false}]
+(* and dexpr = { node : dexpr_node; type_ : type_ } *)
 
-and dinstruction =
-  | Ddecl     of alpha_ident * dexpr option
-  | Dassign   of dexpr * dexpr
-  | Dfail     of dexpr
-  | Dif       of dexpr * dinstruction list * dinstruction list
-  | Difcons   of dexpr * alpha_ident * alpha_ident * dinstruction list * dinstruction list
-  | Difleft   of dexpr * alpha_ident * dinstruction list * alpha_ident * dinstruction list
-  | Difnone   of dexpr * dinstruction list * alpha_ident * dinstruction list
-  | Dloop     of dexpr * dinstruction list
-  | Diter     of dexpr * dinstruction list
-[@@deriving show {with_path = false}]
+type dinstr =
+  (* | DIAssign   of dtyvar * dexpr *)
+  | DIAssign   of dvar * dexpr
+  | DIIf       of dexpr * (dcode * dcode)
+  | DIMatch    of dexpr * (ident * dpattern list * dcode) list
+  | DIFailwith of dexpr
+  | DIWhile    of dexpr * dcode
+  | DIIter     of dtyvar * dexpr * dcode
+  (* | DILoopL    of dtyvar * dcode *)
+(* | DICall     of ident * dexpr list *)
 
-type dview = {
-  id : ident;
-  param: type_;
-  ret: type_;
-  body: dinstruction list;
-}
+(* and dtyvar = dvar * type_ *)
+and dtyvar = dvar
+
+and dpattern =
+  (* | DVar  of int * type_ *)
+  | DVar  of int
+  | DPair of dpattern * dpattern
+
+and dcode = dinstr list
 [@@deriving show {with_path = false}]
 
 type dprogram = {
@@ -495,18 +515,24 @@ type dprogram = {
   storage: type_;
   parameter: type_;
   storage_data: data;
-  code: dinstruction list;
-  views: dview list;
+  code: dcode;
+  procs: (string * (string * type_) list * dcode) list;
 }
 [@@deriving show {with_path = false}]
 
 (* -------------------------------------------------------------------- *)
 
+type rstack1 = [dvar | `Paired of rstack1 * rstack1]
+[@@deriving show {with_path = false}]
+
+type rstack  = rstack1 list
+[@@deriving show {with_path = false}]
+
 let mk_type ?annotation node : type_ =
   { node; annotation }
 
-let mk_ctx_func ?(args = []) ?(stovars = []) _ : ctx_func =
-  { args; stovars }
+let mk_code ?type_ node : code =
+  { node; type_ = ref type_ }
 
 let mk_func name targ tret ctx body : func =
   { name; targ; tret; ctx; body }
@@ -529,11 +555,8 @@ let mk_prim ?(args=[]) ?(annots=[]) prim : prim =
 let mk_micheline ?(parameters = []) code storage : micheline =
   { code; storage; parameters }
 
-let mk_dview id param ret body : dview =
-  { id; param; ret; body }
-
-let mk_dprogram storage parameter storage_data name code ?(views = []) : dprogram =
-  { name; storage; parameter; storage_data; code; views }
+let mk_dprogram ?(procs = []) storage parameter storage_data name code =
+  { name; storage; parameter; storage_data; code; procs }
 
 (* -------------------------------------------------------------------- *)
 
@@ -546,6 +569,7 @@ let tbool         = mk_type Tbool
 let tmutez        = mk_type Tmutez
 let taddress      = mk_type Taddress
 let ttimestamp    = mk_type Ttimestamp
+let tchain_id     = mk_type Tchain_id
 let tbytes        = mk_type Tbytes
 let tpair t1 t2   = mk_type (Tpair (t1, t2))
 let tor t1 t2     = mk_type (Tor (t1, t2))
@@ -554,6 +578,10 @@ let tlist t       = mk_type (Tlist t)
 let tset t        = mk_type (Tlist t)
 let tmap t1 t2    = mk_type (Tmap (t1, t2))
 let tlambda t1 t2 = mk_type (Tlambda (t1, t2))
+let toption t     = mk_type (Toption t)
+let tcontract t   = mk_type (Tcontract t)
+let tkey_hash     = mk_type (Tkey_hash)
+let tticket t     = mk_type (Tticket t)
 
 (* -------------------------------------------------------------------- *)
 
@@ -590,24 +618,135 @@ let icdrn n x        = Iunop (UcdrN n, x)
 
 (* -------------------------------------------------------------------- *)
 
-let ctrue     = PUSH (mk_type Tbool, Dtrue)
-let cfalse    = PUSH (mk_type Tbool, Dfalse)
-let cint n    = PUSH (mk_type Tint,  Dint n)
-let cnat n    = PUSH (mk_type Tnat,  Dint n)
-let cstring s = PUSH (mk_type Tstring,  Dstring s)
-let cfail msg = SEQ [PUSH (mk_type Tstring,  Dstring msg); FAILWITH]
-let cskip     = SEQ []
+let ctrue     = mk_code (PUSH (mk_type Tbool, Dtrue))
+let cfalse    = mk_code (PUSH (mk_type Tbool, Dfalse))
+let cint n    = mk_code (PUSH (mk_type Tint,  Dint n))
+let cnat n    = mk_code (PUSH (mk_type Tnat,  Dint n))
+let cstring s = mk_code (PUSH (mk_type Tstring,  Dstring s))
+let cfail msg = mk_code (SEQ [mk_code (PUSH (mk_type Tstring,  Dstring msg)); mk_code FAILWITH])
+let cskip     = mk_code (SEQ [])
 
-(* -------------------------------------------------------------------- *)
-
-let dalpha n  = Dalpha n
+(* Control structures *)
+let cseq            a             = mk_code (SEQ a)
+let capply                        = mk_code  APPLY
+let cexec                         = mk_code  EXEC
+let cfailwith                     = mk_code  FAILWITH
+let cif            (a, b)         = mk_code (IF (a, b))
+let cifcons        (a, b)         = mk_code (IF_CONS (a, b))
+let cifleft        (a, b)         = mk_code (IF_LEFT (a, b))
+let cifnone        (a, b)         = mk_code (IF_NONE (a, b))
+let citer           a             = mk_code (ITER a)
+let clambda        (a, b, c)      = mk_code (LAMBDA (a, b, c))
+let cloop           a             = mk_code (LOOP a)
+let cloop_left      a             = mk_code (LOOP_LEFT a)
+  (* Stack manipulation *)
+let cdig            a             = mk_code (DIG a)
+let cdip           (a, b)         = mk_code (DIP (a, b))
+let cdrop           a             = mk_code (DROP a)
+let cdug            a             = mk_code (DUG a)
+let cdup                          = mk_code  DUP
+let cpush          (a, b)         = mk_code (PUSH (a, b))
+let cswap                         = mk_code  SWAP
+  (* Arthmetic operations *)
+let cabs                          = mk_code  ABS
+let cadd                          = mk_code  ADD
+let ccompare                      = mk_code  COMPARE
+let cediv                         = mk_code  EDIV
+let ceq                           = mk_code  EQ
+let cge                           = mk_code  GE
+let cgt                           = mk_code  GT
+let cint                          = mk_code  INT
+let cisnat                        = mk_code  ISNAT
+let cle                           = mk_code  LE
+let clsl                          = mk_code  LSL
+let clsr                          = mk_code  LSR
+let clt                           = mk_code  LT
+let cmul                          = mk_code  MUL
+let cneg                          = mk_code  NEG
+let cneq                          = mk_code  NEQ
+let csub                          = mk_code  SUB
+  (* Boolean operations *)
+let cand                          = mk_code  AND
+let cnot                          = mk_code  NOT
+let cor                           = mk_code  OR
+let cxor                          = mk_code  XOR
+  (* Cryptographic operations *)
+let cblake2b                      = mk_code  BLAKE2B
+let ccheck_signature              = mk_code  CHECK_SIGNATURE
+let chash_key                     = mk_code  HASH_KEY
+let csha256                       = mk_code  SHA256
+let csha512                       = mk_code  SHA512
+  (* Blockchain operations *)
+let caddress                      = mk_code  ADDRESS
+let camount                       = mk_code  AMOUNT
+let cbalance                      = mk_code  BALANCE
+let cchain_id                     = mk_code  CHAIN_ID
+let ccontract           (a, b)    = mk_code (CONTRACT (a, b))
+let ccreate_contract    (a, b, c) = mk_code (CREATE_CONTRACT (a, b, c))
+let cimplicit_account             = mk_code  IMPLICIT_ACCOUNT
+let cnow                          = mk_code  NOW
+let cself                a        = mk_code (SELF a)
+let csender                       = mk_code SENDER
+let cset_delegate                 = mk_code SET_DELEGATE
+let csource                       = mk_code SOURCE
+let ctransfer_tokens              = mk_code TRANSFER_TOKENS
+  (* Operations on data structures *)
+let ccar                          = mk_code  CAR
+let ccdr                          = mk_code  CDR
+let cconcat                       = mk_code  CONCAT
+let ccons                         = mk_code  CONS
+let cempty_big_map       (a, b)   = mk_code (EMPTY_BIG_MAP (a, b))
+let cempty_map           (a, b)   = mk_code (EMPTY_MAP (a, b))
+let cempty_set            a       = mk_code (EMPTY_SET a)
+let cget                          = mk_code  GET
+let cleft                 a       = mk_code (LEFT a)
+let cmap                  a       = mk_code (MAP a)
+let cmem                          = mk_code  MEM
+let cnil                  a       = mk_code (NIL a)
+let cnone                 a       = mk_code (NONE a)
+let cpack                         = mk_code  PACK
+let cpair                         = mk_code  PAIR
+let cright                a       = mk_code (RIGHT a)
+let csize                         = mk_code  SIZE
+let cslice                        = mk_code  SLICE
+let csome                         = mk_code  SOME
+let cunit                         = mk_code  UNIT
+let cunpack               a       = mk_code (UNPACK a)
+let cupdate                       = mk_code  UPDATE
+  (* Operations on tickets *)
+let cjoin_tickets                 = mk_code JOIN_TICKETS
+let cread_ticket                  = mk_code READ_TICKET
+let csplit_ticket                 = mk_code SPLIT_TICKET
+let cticket                       = mk_code TICKET
+  (* Other *)
+let cunpair                       = mk_code UNPAIR
+let cself_address                 = mk_code SELF_ADDRESS
+let ccast                  a      = mk_code (CAST a)
+let ccreate_account               = mk_code CREATE_ACCOUNT
+let crename                       = mk_code RENAME
+let csteps_to_quota               = mk_code STEPS_TO_QUOTA
+let clevel                        = mk_code LEVEL
+let csapling_empty_state   a      = mk_code (SAPLING_EMPTY_STATE a)
+let csapling_verify_update        = mk_code SAPLING_VERIFY_UPDATE
+let cnever                        = mk_code NEVER
+let cvoting_power                 = mk_code VOTING_POWER
+let ctotal_voting_power           = mk_code TOTAL_VOTING_POWER
+let ckeccak                       = mk_code KECCAK
+let csha3                         = mk_code SHA3
+let cpairing_check                = mk_code PAIRING_CHECK
+let csubmit_proposals             = mk_code SUBMIT_PROPOSALS
+let csubmit_ballot                = mk_code SUBMIT_BALLOT
+let cset_baker_active             = mk_code SET_BAKER_ACTIVE
+let ctoggle_baker_delegations     = mk_code TOGGLE_BAKER_DELEGATIONS
+let cset_baker_consensus_key      = mk_code SET_BAKER_CONSENSUS_KEY
+let cset_baker_pvss_key           = mk_code SET_BAKER_PVSS_KEY
 
 (* -------------------------------------------------------------------- *)
 
 let cmp_ident = String.equal
 
-let cmp_type lhs rhs =
-  let rec f lhs rhs =
+let cmp_type (lhs : type_) (rhs : type_) =
+  let rec f (lhs : type_) (rhs : type_) =
     match lhs.node, rhs.node with
     | Taddress, Taddress                               -> true
     | Tbig_map (a1, b1), Tbig_map (a2, b2)             -> f a1 a2 && f b1 b2
@@ -744,9 +883,9 @@ let cmp_ter_operator lhs rhs =
   | Ttransfer_tokens, Ttransfer_tokens -> true
   | _ -> false
 
-let cmp_code lhs rhs =
-  let rec f lhs rhs =
-    match lhs, rhs with
+let cmp_code (lhs : code) (rhs : code) =
+  let rec f (lhs : code) (rhs : code) =
+    match lhs.node, rhs.node with
     | SEQ l1, SEQ l2                                 -> List.for_all2 f l1 l2
     | DROP n1, DROP n2                               -> n1 = n2
     | DUP, DUP                                       -> true
@@ -896,6 +1035,29 @@ let map_type (f : type_ -> type_) (t : type_) : type_ =
   in
   {node = node; annotation = t.annotation}
 
+
+(* -------------------------------------------------------------------- *)
+
+let rec cmp_dvar (v1 : dvar) (v2 : dvar) =
+  match v1, v2 with
+  | `VLocal  l1, `VLocal l2  -> l1 = l2
+  | `VGlobal g1, `VGlobal g2 -> String.equal g1 g2
+  | _ -> false
+
+and cmp_dlocal l1 l2 =
+  Option.cmp cmp_dexpr !l1 !l2
+
+and cmp_dexpr e1 e2 =
+  match e1, e2 with
+  | Dvar  v1, Dvar  v2 -> cmp_dvar v1 v2
+  | Ddata d1, Ddata d2 -> cmp_data d1 d2
+  | Depair (e1, e'1), Depair (e2, e'2) -> cmp_dexpr e1 e2 && cmp_dexpr e'1 e'2
+  | Dfun (op1, l1), Dfun (op2, l2) -> op1 = op2 && List.for_all2 cmp_dexpr l1 l2
+  | _ -> false
+
+
+(* -------------------------------------------------------------------- *)
+
 let map_data (f : data -> data) = function
   | Dint n       -> Dint n
   | Dstring v    -> Dstring v
@@ -914,8 +1076,10 @@ let map_data (f : data -> data) = function
   | DIrCode (id, c) -> DIrCode (id, c)
   | Dcode c      -> Dcode c
 
-let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) = function
-  (* Control structures *)
+let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) (x : code) : code =
+  let node =
+    match x.node with
+    (* Control structures *)
   | SEQ l                    -> SEQ (List.map fc l)
   | APPLY                    -> APPLY
   | EXEC                     -> EXEC
@@ -1035,122 +1199,125 @@ let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) =
   (* Macro *)
   | CAR_N n                  -> CAR_N n
   | CDR_N n                  -> CDR_N n
+  in
+  let type_ = Option.map (List.map ft) !(x.type_) in
+  mk_code ?type_ node
 
 
 let map_code (fc : code -> code) = map_code_gen fc id id
 
-let rec map_seq f x =
+let rec map_seq (f : code list -> code list) (code : code) =
   let g x = f (List.map (map_seq f) x) in
-  match x with
-  | SEQ l             -> SEQ (g l)
-  | IF_NONE (x, y)    -> IF_NONE (g x, g y)
-  | IF_LEFT (x, y)    -> IF_LEFT (g x, g y)
-  | IF_CONS (x, y)    -> IF_CONS (g x, g y)
-  | MAP x             -> MAP (g x)
-  | ITER x            -> ITER (g x)
-  | IF (x, y)         -> IF (g x, g y)
-  | LOOP x            -> LOOP (g x)
-  | LOOP_LEFT x       -> LOOP_LEFT (g x)
-  | LAMBDA (a, b, x)  -> LAMBDA (a, b, g x)
-  | DIP (n, x)        -> DIP (n, g x)
-  | x -> map_code (map_seq f) x
+  match code.node with
+  | SEQ l             -> {code with node = SEQ (g l)}
+  | IF_NONE (x, y)    -> {code with node = IF_NONE (g x, g y)}
+  | IF_LEFT (x, y)    -> {code with node = IF_LEFT (g x, g y)}
+  | IF_CONS (x, y)    -> {code with node = IF_CONS (g x, g y)}
+  | MAP x             -> {code with node = MAP (g x)}
+  | ITER x            -> {code with node = ITER (g x)}
+  | IF (x, y)         -> {code with node = IF (g x, g y)}
+  | LOOP x            -> {code with node = LOOP (g x)}
+  | LOOP_LEFT x       -> {code with node = LOOP_LEFT (g x)}
+  | LAMBDA (a, b, x)  -> {code with node = LAMBDA (a, b, g x)}
+  | DIP (n, x)        -> {code with node = DIP (n, g x)}
+  | _ -> map_code (map_seq f) code
 
 
 (* -------------------------------------------------------------------- *)
 
-let rec cmp_dexpr (lhs : dexpr) (rhs : dexpr) =
-  match lhs, rhs with
-  | Dalpha i1, Dalpha i2                             -> i1 = i2
-  | Dvar t1, Dvar t2                                 -> cmp_type t1 t2
-  | Dstorage t1, Dstorage t2                         -> cmp_type t1 t2
-  | Doperations, Doperations                         -> true
-  | Dlbdparam, Dlbdparam                             -> true
-  | Dlbdresult, Dlbdresult                           -> true
-  | Ddata d1, Ddata d2                               -> cmp_data d1 d2
-  | Dzop op1, Dzop op2                               -> cmp_z_operator op1 op2
-  | Duop (op1, x1), Duop (op2, x2)                   -> cmp_un_operator op1 op2 && cmp_dexpr x1 x2
-  | Dbop (op1, x1, y1), Dbop (op2, x2, y2)           -> cmp_bin_operator op1 op2 && cmp_dexpr x1 x2 && cmp_dexpr y1 y2
-  | Dtop (op1, x1, y1, z1), Dtop (op2, x2, y2, z2)   -> cmp_ter_operator op1 op2 && cmp_dexpr x1 x2 && cmp_dexpr y1 y2 && cmp_dexpr z1 z2
-  | Dapply (l1, a1), Dapply (l2, a2)                 -> cmp_dexpr l1 l2 && cmp_dexpr a1 a2
-  | Dexec (l1, a1), Dexec (l2, a2)                   -> cmp_dexpr l1 l2 && cmp_dexpr a1 a2
-  | Dlambda (at1, rt1, is1), Dlambda (at2, rt2, is2) -> cmp_type at1 at2 && cmp_type rt1 rt2 && List.for_all2 cmp_dinstruction is1 is2
-  | Dloopleft (l1, is1), Dloopleft (l2, is2)         -> cmp_dexpr l1 l2 && List.for_all2 cmp_dinstruction is1 is2
-  | Dmap (l1, is1), Dmap (l2, is2)                   -> cmp_dexpr l1 l2 && List.for_all2 cmp_dinstruction is1 is2
-  | _ -> false
+(* let rec cmp_dexpr (lhs : dexpr) (rhs : dexpr) =
+   match lhs, rhs with
+   | Dalpha i1, Dalpha i2                             -> i1 = i2
+   | Dvar t1, Dvar t2                                 -> cmp_type t1 t2
+   | Dstorage t1, Dstorage t2                         -> cmp_type t1 t2
+   | Doperations, Doperations                         -> true
+   | Dlbdparam, Dlbdparam                             -> true
+   | Dlbdresult, Dlbdresult                           -> true
+   | Ddata d1, Ddata d2                               -> cmp_data d1 d2
+   | Dzop op1, Dzop op2                               -> cmp_z_operator op1 op2
+   | Duop (op1, x1), Duop (op2, x2)                   -> cmp_un_operator op1 op2 && cmp_dexpr x1 x2
+   | Dbop (op1, x1, y1), Dbop (op2, x2, y2)           -> cmp_bin_operator op1 op2 && cmp_dexpr x1 x2 && cmp_dexpr y1 y2
+   | Dtop (op1, x1, y1, z1), Dtop (op2, x2, y2, z2)   -> cmp_ter_operator op1 op2 && cmp_dexpr x1 x2 && cmp_dexpr y1 y2 && cmp_dexpr z1 z2
+   | Dapply (l1, a1), Dapply (l2, a2)                 -> cmp_dexpr l1 l2 && cmp_dexpr a1 a2
+   | Dexec (l1, a1), Dexec (l2, a2)                   -> cmp_dexpr l1 l2 && cmp_dexpr a1 a2
+   | Dlambda (at1, rt1, is1), Dlambda (at2, rt2, is2) -> cmp_type at1 at2 && cmp_type rt1 rt2 && List.for_all2 cmp_dinstruction is1 is2
+   | Dloopleft (l1, is1), Dloopleft (l2, is2)         -> cmp_dexpr l1 l2 && List.for_all2 cmp_dinstruction is1 is2
+   | Dmap (l1, is1), Dmap (l2, is2)                   -> cmp_dexpr l1 l2 && List.for_all2 cmp_dinstruction is1 is2
+   | _ -> false
 
-and cmp_dinstruction (lhs : dinstruction) (rhs : dinstruction) =
-  match lhs, rhs with
-  | Dassign (e1, v1), Dassign (e2, v2) -> cmp_dexpr e1 e2 && cmp_dexpr v1 v2
-  | Dif (c1, t1, e1), Dif (c2, t2, e2) -> cmp_dexpr c1 c2 && List.for_all2 cmp_dinstruction t1 t2 && List.for_all2 cmp_dinstruction e1 e2
-  | Dfail e1, Dfail e2                 -> cmp_dexpr e1 e2
-  | _ -> false
+   and cmp_dinstruction (lhs : dinstruction) (rhs : dinstruction) =
+   match lhs, rhs with
+   | Dassign (e1, v1), Dassign (e2, v2) -> cmp_dexpr e1 e2 && cmp_dexpr v1 v2
+   | Dif (c1, t1, e1), Dif (c2, t2, e2) -> cmp_dexpr c1 c2 && List.for_all2 cmp_dinstruction t1 t2 && List.for_all2 cmp_dinstruction e1 e2
+   | Dfail e1, Dfail e2                 -> cmp_dexpr e1 e2
+   | _ -> false
 
 
-let map_dexpr f fi fai x =
-  let g = List.map fi in
-  match x with
-  | Dalpha     i            -> Dalpha      (fai i)
-  | Dvar       t            -> Dvar         t
-  | Dstorage   t            -> Dstorage     t
-  | Doperations             -> Doperations
-  | Dlbdparam               -> Dlbdparam
-  | Dlbdresult              -> Dlbdresult
-  | Ddata      d            -> Ddata      d
-  | Dzop       op           -> Dzop       op
-  | Duop      (op, x)       -> Duop      (op, f x)
-  | Dbop      (op, x, y)    -> Dbop      (op, f x, f y)
-  | Dtop      (op, x, y, z) -> Dtop      (op, f x, f y, f z)
-  | Dapply    (l, a)        -> Dapply    (f l, f a)
-  | Dexec     (l, a)        -> Dexec     (f l, f a)
-  | Dlambda   (at, rt, is)  -> Dlambda   (at, rt, g is)
-  | Dloopleft (l, is)       -> Dloopleft (f l, g is)
-  | Dmap      (l, is)       -> Dmap      (f l, g is)
+   let map_dexpr f fi fai x =
+   let g = List.map fi in
+   match x with
+   | Dalpha     i            -> Dalpha      (fai i)
+   | Dvar       t            -> Dvar         t
+   | Dstorage   t            -> Dstorage     t
+   | Doperations             -> Doperations
+   | Dlbdparam               -> Dlbdparam
+   | Dlbdresult              -> Dlbdresult
+   | Ddata      d            -> Ddata      d
+   | Dzop       op           -> Dzop       op
+   | Duop      (op, x)       -> Duop      (op, f x)
+   | Dbop      (op, x, y)    -> Dbop      (op, f x, f y)
+   | Dtop      (op, x, y, z) -> Dtop      (op, f x, f y, f z)
+   | Dapply    (l, a)        -> Dapply    (f l, f a)
+   | Dexec     (l, a)        -> Dexec     (f l, f a)
+   | Dlambda   (at, rt, is)  -> Dlambda   (at, rt, g is)
+   | Dloopleft (l, is)       -> Dloopleft (f l, g is)
+   | Dmap      (l, is)       -> Dmap      (f l, g is)
 
-let map_dexpr_dinstr fi fe fai x =
-  let g = List.map fi in
-  match x with
-  | Ddecl   (i, e)              -> Ddecl   (fai i, Option.map fe e)
-  | Dassign (e, v)              -> Dassign (fe e, fe v)
-  | Dfail    v                  -> Dfail   (fe v)
-  | Dif     (c, t, e)           -> Dif     (fe c, g t, g e)
-  | Difcons (c, hd, tl, ti, ei) -> Difcons (fe c, fai hd, fai tl, g ti, g ei)
-  | Difleft (c,  l, ti,  r, ei) -> Difleft (fe c, fai l, g ti, fai r, g ei)
-  | Difnone (c, ti, v, ei)      -> Difnone (fe c, g ti, fai v, g ei)
-  | Dloop   (e, is)             -> Dloop   (fe e, g is)
-  | Diter   (e, is)             -> Diter   (fe e, g is)
+   let map_dexpr_dinstr fi fe fai x =
+   let g = List.map fi in
+   match x with
+   | Ddecl   (i, e)              -> Ddecl   (fai i, Option.map fe e)
+   | Dassign (e, v)              -> Dassign (fe e, fe v)
+   | Dfail    v                  -> Dfail   (fe v)
+   | Dif     (c, t, e)           -> Dif     (fe c, g t, g e)
+   | Difcons (c, hd, tl, ti, ei) -> Difcons (fe c, fai hd, fai tl, g ti, g ei)
+   | Difleft (c,  l, ti,  r, ei) -> Difleft (fe c, fai l, g ti, fai r, g ei)
+   | Difnone (c, ti, v, ei)      -> Difnone (fe c, g ti, fai v, g ei)
+   | Dloop   (e, is)             -> Dloop   (fe e, g is)
+   | Diter   (e, is)             -> Diter   (fe e, g is)
 
-let fold_dexpr f fi accu x =
-  let g accu is = List.fold_left (fun accu x -> fi accu x) accu is in
-  match x with
-  | Dalpha     _            -> accu
-  | Dvar       _            -> accu
-  | Dstorage   _            -> accu
-  | Doperations             -> accu
-  | Dlbdparam               -> accu
-  | Dlbdresult              -> accu
-  | Ddata      _            -> accu
-  | Dzop       _            -> accu
-  | Duop      (_, x)        -> f accu x
-  | Dbop      (_, x, y)     -> f (f accu x) y
-  | Dtop      (_, x, y, z)  -> f (f (f accu x) y) z
-  | Dapply    (l, a)        -> f (f accu l) a
-  | Dexec     (l, a)        -> f (f accu l) a
-  | Dlambda   (_, _, is)    -> g accu is
-  | Dloopleft (l, is)       -> g (f accu l) is
-  | Dmap      (l, is)       -> g (f accu l) is
+   let fold_dexpr f fi accu x =
+   let g accu is = List.fold_left (fun accu x -> fi accu x) accu is in
+   match x with
+   | Dalpha     _            -> accu
+   | Dvar       _            -> accu
+   | Dstorage   _            -> accu
+   | Doperations             -> accu
+   | Dlbdparam               -> accu
+   | Dlbdresult              -> accu
+   | Ddata      _            -> accu
+   | Dzop       _            -> accu
+   | Duop      (_, x)        -> f accu x
+   | Dbop      (_, x, y)     -> f (f accu x) y
+   | Dtop      (_, x, y, z)  -> f (f (f accu x) y) z
+   | Dapply    (l, a)        -> f (f accu l) a
+   | Dexec     (l, a)        -> f (f accu l) a
+   | Dlambda   (_, _, is)    -> g accu is
+   | Dloopleft (l, is)       -> g (f accu l) is
+   | Dmap      (l, is)       -> g (f accu l) is
 
-let fold_dexpr_dinstr fi fe accu x =
-  let g accu is = List.fold_left (fun accu x -> fi accu x) accu is in
-  match x with
-  | Ddecl   (_, e)              -> Option.fold fe accu e
-  | Dassign (e, v)              -> fe (fe accu e) v
-  | Dfail    v                  -> fe accu v
-  | Dif     (c, t, e)           -> g (g (fe accu c) t) e
-  | Difcons (c, _, _, ti, ei)   -> g (g (fe accu c) ti) ei
-  | Difleft (c,  _, ti,  _, ei) -> g (g (fe accu c) ti) ei
-  | Difnone (c, ti, _, ei)      -> g (g (fe accu c) ti) ei
-  | Dloop   (e, is)             -> g (fe accu e) is
-  | Diter   (e, is)             -> g (fe accu e) is
+   let fold_dexpr_dinstr fi fe accu x =
+   let g accu is = List.fold_left (fun accu x -> fi accu x) accu is in
+   match x with
+   | Ddecl   (_, e)              -> Option.fold fe accu e
+   | Dassign (e, v)              -> fe (fe accu e) v
+   | Dfail    v                  -> fe accu v
+   | Dif     (c, t, e)           -> g (g (fe accu c) t) e
+   | Difcons (c, _, _, ti, ei)   -> g (g (fe accu c) ti) ei
+   | Difleft (c,  _, ti,  _, ei) -> g (g (fe accu c) ti) ei
+   | Difnone (c, ti, _, ei)      -> g (g (fe accu c) ti) ei
+   | Dloop   (e, is)             -> g (fe accu e) is
+   | Diter   (e, is)             -> g (fe accu e) is *)
 
 module Utils : sig
 
@@ -1185,15 +1352,15 @@ end = struct
     | Bmuteztonat     -> "_muteztonat"
 
   let rec flat (c : code) : code =
-    let f l = List.fold_right (fun x accu -> match flat x with | SEQ l -> l @ accu | a -> a::accu) l [] in
+    let f l = List.fold_right (fun x accu -> let fc = flat x in match fc.node with | SEQ l -> l @ accu | _ -> fc::accu) l [] in
     map_seq f c
 
   let handle_failwith (c : code) : code =
     let init = (false, []) in
     let rec aux (c : code) =
-      let rec for_seq ((b, accu) : bool * code list) l : bool * code list =
+      let rec for_seq ((b, accu) : bool * code list) (l : code list) : bool * code list =
         match l with
-        | FAILWITH::_ -> for_seq (true, FAILWITH::accu) []
+        | {node = FAILWITH}::_ -> for_seq (true, (mk_code FAILWITH)::accu) []
         | e::t        -> begin
             let bb, a = aux e in
             let t = if bb then [] else t in
@@ -1213,35 +1380,39 @@ end = struct
         b0 && b1, f x y
       in
 
-      match c with
-      | SEQ x             -> g x (fun l -> SEQ (l))
-      | IF (x, y)         -> h x y (fun a b -> IF (a, b))
-      | IF_NONE (x, y)    -> h x y (fun a b -> IF_NONE (a, b))
-      | IF_LEFT (x, y)    -> h x y (fun a b -> IF_LEFT (a, b))
-      | IF_CONS (x, y)    -> h x y (fun a b -> IF_CONS (a, b))
-      | MAP x             -> g x (fun l -> MAP (l))
-      | ITER x            -> g x (fun l -> ITER (l))
-      | LOOP x            -> g x (fun l -> LOOP (l))
-      | LOOP_LEFT x       -> g x (fun l -> LOOP_LEFT (l))
-      | DIP (n, x)        -> g x (fun l -> DIP (n, l))
-      | LAMBDA (a, b, c)  -> g c (fun l -> LAMBDA (a, b, l))
+      match c.node with
+      | SEQ x             -> g x (fun l -> mk_code (SEQ (l)))
+      | IF (x, y)         -> h x y (fun a b -> mk_code (IF (a, b)))
+      | IF_NONE (x, y)    -> h x y (fun a b -> mk_code (IF_NONE (a, b)))
+      | IF_LEFT (x, y)    -> h x y (fun a b -> mk_code (IF_LEFT (a, b)))
+      | IF_CONS (x, y)    -> h x y (fun a b -> mk_code (IF_CONS (a, b)))
+      | MAP x             -> g x (fun l -> mk_code (MAP (l)))
+      | ITER x            -> g x (fun l -> mk_code (ITER (l)))
+      | LOOP x            -> g x (fun l -> mk_code (LOOP (l)))
+      | LOOP_LEFT x       -> g x (fun l -> mk_code (LOOP_LEFT (l)))
+      | DIP (n, x)        -> g x (fun l -> mk_code (DIP (n, l)))
+      | LAMBDA (a, b, c)  -> g c (fun l -> mk_code (LAMBDA (a, b, l)))
       | _                 -> false, c
     in
     aux c |> snd
 
   let factorize_instrs (c : code) : code =
     let f l =
-      let rec aux accu l =
+      let rec aux accu (l : code list) =
         match l with
         (* | (DIP (x, y))::(DROP z)::t -> aux accu ((DROP (z - 1))::y::t) *)
-        | (DROP x)::(DROP y)::t   -> aux accu ((DROP (x + y))::t)
+        (* | (DROP x)::(DROP y)::t   -> aux accu ((DROP (x + y))::t)
         (* | (CAR x)::(CAR y)::t   -> aux accu ((CAR (x + y))::t) *)
         | (PAIR)::(UNPAIR)::t     -> aux accu t
         | (UNPAIR)::(PAIR)::t     -> aux accu t
         | (CDR_N x)::(CDR_N y)::t -> aux accu ((CDR_N (x + y))::t)
         | (DUP)::(DROP x)::t      -> aux accu ((DROP (x - 1))::t)
         | (DUP)::(SWAP)::t        -> aux accu ((DUP)::t)
-        | (DROP 0)::t             -> aux accu t
+        | (DROP 0)::t             -> aux accu t *)
+        | ({node = DROP x})::({node = DROP y})::t -> aux accu ((mk_code (DROP (x + y)))::t)
+        | ({node = DUP})::({node = DROP x})::t    -> aux accu ((mk_code (DROP (x - 1)))::t)
+        | ({node = DUP})::({node = SWAP})::t      -> aux accu ((mk_code DUP)::t)
+        | ({node = DROP 0})::t           -> aux accu t
         | e::t -> aux (e::accu) t
         | [] -> List.rev accu
       in
@@ -1249,37 +1420,15 @@ end = struct
     in
     map_seq f c
 
-  let rec factorize_double_branches (c : code) : code =
-    let g = List.map factorize_double_branches in
-    let rec map f x =
-      match x with
-      | IF (x, y)      -> let a, x, y = f (g x) (g y) in SEQ ([IF (x, y)] @ a)
-      | IF_NONE (x, y) -> let a, x, y = f (g x) (g y) in SEQ ([IF_NONE (x, y)] @ a)
-      | IF_LEFT (x, y) -> let a, x, y = f (g x) (g y) in SEQ ([IF_LEFT (x, y)] @ a)
-      | IF_CONS (x, y) -> let a, x, y = f (g x) (g y) in SEQ ([IF_CONS (x, y)] @ a)
-      | x -> map_code (map f) x
-    in
-    let f x y =
-      let rec aux accu a b =
-        match a, b with
-        | x::t, y::u when cmp_code x y -> aux (x::accu) t u
-        | _ -> accu, List.rev a, List.rev b
-      in
-      aux [] (List.rev x) (List.rev y)
-    in
-    map f c
-    |> flat
-
   let optim c =
     c
     |> handle_failwith
     |> factorize_instrs
-  (* |> factorize_double_branches *)
 
-  let replace_macro c =
-    let rec aux c =
-      match c with
-      | UNPAIR -> SEQ [DUP; CAR; DIP (1, [CDR])]
+  let replace_macro (c : code) : code =
+    let rec aux (c : code) : code  =
+      match c.node with
+      | UNPAIR -> mk_code (SEQ [mk_code DUP; mk_code CAR; mk_code (DIP (1, [mk_code CDR]))])
       | _ -> map_code aux c
     in
     aux c
@@ -1384,7 +1533,7 @@ end = struct
     let mk_string s = Ostring s in
     let mk_array l = Oarray (List.map f l) in
     let fan = function | Some v -> [v] | None -> [] in
-    match c with
+    match c.node with
     (* Control structures *)
     | SEQ l                    -> mk_array l
     | APPLY                    -> mk "APPLY"

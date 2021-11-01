@@ -1,0 +1,231 @@
+{
+  storage (pair key_hash (pair :storage (big_map string (pair :identity (list %userRecord bytes) (list %clients (pair :client (bytes %encryptedName) (bytes %encryptedKey))))) address));
+  parameter (or (lambda %do unit (list operation)) (or %default (address %_Liq_entry_change_owner) (or (pair %_Liq_entry_add_identity string bytes) (or (pair %_Liq_entry_update_identity string bytes) (pair %_Liq_entry_add_client string (pair :client (bytes %encryptedName) (bytes %encryptedKey)))))));
+  code { DUP;
+         CAR;
+         IF_LEFT
+           { PUSH mutez 0;
+             AMOUNT;
+             COMPARE;
+             EQ;
+             IF
+               {  }
+               { UNIT;
+                 FAILWITH };
+             DIP { DUP };
+             SWAP;
+             CDR;
+             CAR;
+             IMPLICIT_ACCOUNT;
+             ADDRESS;
+             SENDER;
+             COMPARE;
+             NEQ;
+             IF
+               { SENDER;
+                 PUSH string "Only the owner can operate.";
+                 PAIR;
+                 FAILWITH }
+               { UNIT;
+                 EXEC;
+                 DIP { CDR };
+                 PAIR } }
+           { DIP { CDR; DUP; CDR };
+             PAIR;
+             DUP;
+             DIP { CDR };
+             CAR;
+             LAMBDA
+               (pair :storage (big_map string (pair :identity (list %userRecord bytes) (list %clients (pair :client (bytes %encryptedName) (bytes %encryptedKey))))) address)
+               unit
+               { RENAME;
+                 DUP;
+                 CDR;
+                 SENDER;
+                 COMPARE;
+                 NEQ;
+                 IF
+                   { PUSH string "only available to owner";
+                     FAILWITH }
+                   { UNIT };
+                 DROP;
+                 DROP;
+                 UNIT };
+             DIP { DUP };
+             SWAP;
+             IF_LEFT
+               { RENAME;
+                 DIP { DIP { DIP { DUP }; SWAP }; SWAP };
+                 SWAP;
+                 DIP { DIP { DUP }; SWAP };
+                 SWAP;
+                 DIP { DUP };
+                 SWAP;
+                 EXEC;
+                 DROP;
+                 DUP;
+                 CAR;
+                 SWAP;
+                 DROP;
+                 PAIR;
+                 NIL operation;
+                 PAIR }
+               { IF_LEFT
+                   { RENAME;
+                     DIP { DIP { DIP { DUP }; SWAP }; SWAP };
+                     SWAP;
+                     DIP { DUP };
+                     SWAP;
+                     CAR;
+                     DIP { DIP { DIP { DUP }; SWAP }; SWAP };
+                     SWAP;
+                     DIP { DIP { DUP }; SWAP };
+                     SWAP;
+                     EXEC;
+                     DROP;
+                     DIP { DUP };
+                     SWAP;
+                     CAR;
+                     DIP { DUP };
+                     SWAP;
+                     MEM;
+                     IF
+                       { PUSH string "userKey already used";
+                         FAILWITH }
+                       { UNIT };
+                     DROP;
+                     DIP { DUP };
+                     SWAP;
+                     CDR;
+                     DIP { DIP { DUP }; SWAP };
+                     SWAP;
+                     CAR;
+                     NIL (pair :client (bytes %encryptedName) (bytes %encryptedKey));
+                     NIL bytes;
+                     DIP { DIP { DIP { DIP { DIP { DIP { DUP }; SWAP }; SWAP }; SWAP }; SWAP }; SWAP };
+                     SWAP;
+                     CDR;
+                     CONS;
+                     PAIR;
+                     DIP { DIP { DIP { DUP }; SWAP }; SWAP };
+                     SWAP;
+                     DIP { SOME };
+                     DIP { DIP { DIP { DIP { DROP; DROP; DROP } } } };
+                     UPDATE;
+                     PAIR;
+                     NIL operation;
+                     PAIR }
+                   { IF_LEFT
+                       { RENAME;
+                         DIP { DIP { DIP { DUP }; SWAP }; SWAP };
+                         SWAP;
+                         DIP { DUP };
+                         SWAP;
+                         CAR;
+                         DIP { DIP { DIP { DUP }; SWAP }; SWAP };
+                         SWAP;
+                         DIP { DIP { DUP }; SWAP };
+                         SWAP;
+                         EXEC;
+                         DROP;
+                         DIP { DUP };
+                         SWAP;
+                         CAR;
+                         DIP { DUP };
+                         SWAP;
+                         GET;
+                         IF_NONE
+                           { PUSH string "no user found for userKey";
+                             FAILWITH }
+                           {  };
+                         RENAME;
+                         DIP { DIP { DUP }; SWAP };
+                         SWAP;
+                         CDR;
+                         DIP { DIP { DIP { DUP }; SWAP }; SWAP };
+                         SWAP;
+                         CAR;
+                         DIP { DIP { DUP }; SWAP };
+                         SWAP;
+                         CDR;
+                         DIP { DIP { DIP { DUP }; SWAP }; SWAP };
+                         SWAP;
+                         DIP { DIP { DIP { DIP { DROP } } } };
+                         DIP { DIP { DIP { DIP { DIP { DROP } } } } };
+                         CAR;
+                         DIP { DIP { DIP { DIP { DIP { DUP }; SWAP }; SWAP }; SWAP }; SWAP };
+                         SWAP;
+                         DIP { DIP { DIP { DIP { DIP { DIP { DROP } } } } } };
+                         CDR;
+                         CONS;
+                         PAIR;
+                         SOME;
+                         DIP { DIP { DIP { DUP }; SWAP }; SWAP };
+                         SWAP;
+                         DIP { DIP { DIP { DIP { DROP } } } };
+                         UPDATE;
+                         PAIR;
+                         NIL operation;
+                         PAIR }
+                       { RENAME;
+                         DIP { DIP { DIP { DUP }; SWAP }; SWAP };
+                         SWAP;
+                         DIP { DUP };
+                         SWAP;
+                         CAR;
+                         DIP { DIP { DIP { DUP }; SWAP }; SWAP };
+                         SWAP;
+                         DIP { DIP { DUP }; SWAP };
+                         SWAP;
+                         EXEC;
+                         DROP;
+                         DIP { DUP };
+                         SWAP;
+                         CAR;
+                         DIP { DUP };
+                         SWAP;
+                         GET;
+                         IF_NONE
+                           { PUSH string "no user found for userKey";
+                             FAILWITH }
+                           {  };
+                         RENAME;
+                         DIP { DIP { DUP }; SWAP };
+                         SWAP;
+                         CDR;
+                         DIP { DIP { DIP { DUP }; SWAP }; SWAP };
+                         SWAP;
+                         CAR;
+                         DIP { DIP { DUP }; SWAP };
+                         SWAP;
+                         CAR;
+                         DIP { DIP { DIP { DUP }; SWAP }; SWAP };
+                         SWAP;
+                         DIP { DIP { DIP { DIP { DROP } } } };
+                         DIP { DIP { DIP { DIP { DIP { DROP } } } } };
+                         CDR;
+                         DIP { DIP { DIP { DIP { DIP { DUP }; SWAP }; SWAP }; SWAP }; SWAP };
+                         SWAP;
+                         DIP { DIP { DIP { DIP { DIP { DIP { DROP } } } } } };
+                         CDR;
+                         CONS;
+                         SWAP;
+                         PAIR;
+                         SOME;
+                         DIP { DIP { DIP { DUP }; SWAP }; SWAP };
+                         SWAP;
+                         DIP { DIP { DIP { DIP { DROP } } } };
+                         UPDATE;
+                         PAIR;
+                         NIL operation;
+                         PAIR } } };
+             DIP { DROP; DROP; DROP };
+             SWAP;
+             CAR;
+             SWAP;
+             DUP;
+             CAR;
+             DIP { CDR };
+             DIP { SWAP; PAIR };
+             PAIR } };
+}

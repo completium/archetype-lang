@@ -4,6 +4,80 @@ open Core
 
 (* -------------------------------------------------------------------- *)
 
+(* let compile_model (filename, channel) =
+  let cont c a x = if c then (a x; raise Stop) else x in
+
+  (filename, channel)
+  |> raise_if_error parse_error parse
+  |> cont !Options.opt_pt output_pt
+  |> raise_if_error parse_error preprocess_ext
+  |> cont !Options.opt_extpt output_pt
+  |> raise_if_error parse_error generate_target_pt
+  |> raise_if_error type_error type_
+  |> cont !Options.opt_ast output_tast
+  |> raise_if_error model_error generate_model
+  |> raise_if_error post_model_error check_number_entrypoint
+  |> raise_if_error post_model_error check_partition_access
+  |> raise_if_error post_model_error check_containers_asset
+  (* |> raise_if_error post_model_error check_empty_container_on_initializedby *)
+  |> raise_if_error post_model_error check_empty_container_on_asset_default_value
+  |> raise_if_error post_model_error (check_and_replace_init_caller ~doit:!Options.with_init_caller)
+  |> raise_if_error post_model_error check_init_partition_in_asset
+  |> raise_if_error post_model_error check_duplicated_keys_in_asset
+  |> raise_if_error post_model_error check_asset_key
+  |> process_metadata
+  |> cont !Options.opt_mdl output_tmdl
+
+let compile (filename, channel) =
+  (filename, channel)
+  |> compile_model
+  |> generate_target
+
+let decompile (filename, channel) =
+  let cont c p (m, e) = if c then (p m; raise Stop); (m, e) in
+
+  (filename, channel)
+  |> parse_micheline
+  |> cont !Options.opt_mici output_obj_micheline
+  |> to_michelson
+  |> tycheck_michelson
+  |> cont !Options.opt_mic output_michelson
+  |> to_dir
+  |> cont !Options.opt_dir output_dprogram
+  |> to_red_dir
+  |> cont !Options.opt_red_dir output_dprogram
+  (* |> to_ir *)
+  (* |> cont !Options.opt_ir  output_ir *)
+  |> dir_to_model
+  |> cont !Options.opt_mdl output_tmdl
+  |> Opt_model.optimize
+  |> cont !Options.opt_omdl output_tmdl
+  |> to_archetype
+  |> output_pt
+
+let showEntries (filename, channel) =
+  (filename, channel)
+  |> parse_micheline
+  |> (fun (m, _) -> Gen_extra.show_entries m)
+
+let get_parameters (filename, channel) =
+  let parameters =
+    (filename, channel)
+    |> compile_model
+    |> (fun m -> m.parameters)
+  in
+
+  match parameters with
+  | [] -> ()
+  | _ ->
+    Format.printf "(%a)@\n"
+      (
+        Printer_tools.pp_list ", " (fun fmt (p : Model.parameter) ->
+            Format.fprintf fmt "%a : %a"
+              Printer_tools.pp_id p.name
+              Printer_model.pp_type p.typ
+          )) parameters *)
+
 let close dispose channel =
   if dispose then close_in channel
 
@@ -15,7 +89,7 @@ let set_margin i =
 (* -------------------------------------------------------------------- *)
 
 let main () : unit =
-  set_margin 300;
+  set_margin 1000;
   let f = function
     | "michelson"         -> Options.target := Michelson
     | "michelson-storage" -> Options.target := MichelsonStorage
@@ -132,6 +206,8 @@ let main () : unit =
     let fmt = Format.std_formatter
     in Format.fprintf fmt "%s" str
   in
+  if (!Options.opt_trace)
+  then set_margin 3000;
 
   match !Options.opt_expr with
   | Some v when not !Options.opt_with_contract -> output (process_expr v)

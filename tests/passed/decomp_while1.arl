@@ -1,0 +1,8 @@
+archetype decomp_while1
+
+entry exec () {
+  var i = 0;
+  while i < 10 do
+    i := i + 1;
+  done;
+}

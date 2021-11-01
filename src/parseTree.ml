@@ -635,14 +635,23 @@ let mk_security ?(loc=dummy) s =
 let mk_dtype ?(loc=dummy) id t =
   mkloc loc (Dtype (id, t))
 
-
 let mk_invalid ?(loc=dummy) () =
   mkloc loc Dinvalid
 
-
-
 let mk_archetype ?(decls=[]) ?(loc=dummy) () =
   mkloc loc (Marchetype decls)
+
+(* -------------------------------------------------------------------- *)
+
+let cst_now         = "now"
+let cst_transferred = "transferred"
+let cst_caller      = "caller"
+let cst_balance     = "balance"
+let cst_source      = "source"
+let cst_selfaddress = "selfaddress"
+let cst_chainid     = "chainid"
+let cst_metadata    = "metadata"
+
 
 (* utils *)
 

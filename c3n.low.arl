@@ -1,0 +1,19 @@
+archetype c3n_low
+
+variable admin : list<address> = [@tz1gAAXEEUWhWmYDMYDCQqpeBMVUbKfngend]
+variable hash : string = "8ff9d4e37da2e1f5fb511a114a926a27decd9782"
+
+entry default(param_admin : option<list<address>>, param_oldhash : string, param_newhash : string) {
+  if (param_oldhash = hash)
+  then ()
+  else fail(());
+  var at_admin = false;
+  for i in admin do
+    at_admin := i = caller or at_admin;
+  done;
+  if (at_admin)
+  then ()
+  else fail(());
+  admin := match param_admin with | some(v) -> v | none -> admin end;
+  hash := param_newhash
+}

@@ -244,6 +244,8 @@ module List : sig
   val cut            : int -> 'a list -> ('a list * 'a list)
   val addput            : 'a -> 'b -> ('a * 'b) list -> ('a * 'b) list
   val find_map       : ('a -> 'b option) -> 'a list -> 'b option
+  val pop            : 'a list -> 'a * 'a list
+  val split_at       : int -> 'a list -> 'a list * 'a list
 
   module Exn : sig
     val assoc     : 'a -> ('a * 'b) list -> 'b option
@@ -425,6 +427,18 @@ end = struct
         | None -> find_map f l
       end
 
+  let pop (xs : 'a list) =
+    match xs with
+    | [] -> invalid_arg "List.pop"
+    | x :: xs -> (x, xs)
+
+  let split_at (n : int) (xs : 'a list) =
+    let rec doit acc n xs =
+      match n, xs with
+      | 0, _ | _, [] -> List.rev acc, xs
+      | _, x :: xs -> doit (x :: acc) (n-1) xs
+    in doit [] (max 0 n) xs
+
   module Exn = struct
     let assoc x xs =
       try Some (List.assoc x xs) with Not_found -> None
@@ -521,13 +535,28 @@ end = struct
 end
 
 (* -------------------------------------------------------------------- *)
-module Set = Set
+module Set : sig
+  module type OrderedType = Map.OrderedType
+
+  module Make(S : OrderedType) : sig
+    include module type of Set.Make(S)
+
+    val unions : t list -> t
+  end
+end = struct
+  module type OrderedType = Map.OrderedType
+
+  module Make(S : OrderedType) = struct
+    include Set.Make(S)
+
+    let unions (us : t list) : t=
+      List.fold_left union empty us
+  end
+end
 
 (* -------------------------------------------------------------------- *)
-module Mint = Map.Make(struct
-    type t = int
-    let compare = (Stdlib.compare : t -> t -> int)
-  end)
+module Sint = Set.Make(Int)
+module Mint = Map.Make(Int)
 
 (* -------------------------------------------------------------------- *)
 module Sstr = Set.Make(String)
