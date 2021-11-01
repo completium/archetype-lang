@@ -1824,19 +1824,27 @@ and to_michelson (ir : T.ir) : T.michelson =
 
     let extract_storage_vars stovars =
 
+      Format.eprintf "extract_storage_vars: storage_list: [%a]@\n" (pp_list "; " (fun fmt (x, _, _) -> Format.fprintf fmt "%s" x) ) storage_list;
+      Format.eprintf "extract_storage_vars: stovars: [%a]@\n" (pp_list "; " (fun fmt x -> Format.fprintf fmt "%s" x) ) stovars;
+
       let stos : (int * ident) list =
         storage_list
-        |> List.filter (fun (x, _, _) -> List.mem x stovars)
         |> List.mapi (fun i (x, _, _) -> (i, x))
+        |> List.filter (fun (_, x) -> List.mem x stovars)
       in
+
+      Format.eprintf "extract_storage_vars: stos: [%a]@\n" (pp_list "; " (fun fmt (x, y) -> Format.fprintf fmt "(%i, %s)" x y) ) stos;
 
       let rec doit (n : int) (s : int) code stos : T.code list =
         match stos with
         | (k, _)::q -> begin
+            Format.eprintf "extract_storage_vars: k: %i@\n" k;
             let found = k = n in
+            Format.eprintf "extract_storage_vars: found: %b@\n" found;
             let last = n = s - 1 in
+            Format.eprintf "extract_storage_vars: last: %b@\n" last;
             match found, last with
-            | false, false -> doit (n + 1) s (code @ [T.CDR 1]) q
+            | false, false -> doit (n + 1) s (code @ [T.CDR 1]) stos
             | false, true  -> code @ [T.DROP 1]
             | true, false  -> doit (n + 1) s (code @ [T.UNPAIR]) q
             | true, true   -> code
@@ -1844,7 +1852,9 @@ and to_michelson (ir : T.ir) : T.michelson =
         | [] -> [T.DROP 1]
       in
 
-      let code = doit 0 (List.length stos) [] stos in
+      let n = List.length storage_list in
+      Format.eprintf "extract_storage_vars: n: %i@\n" n;
+      let code = doit 0 n [] stos in
       let ids = List.map snd stos in
       code, ids
     in
@@ -1862,24 +1872,26 @@ and to_michelson (ir : T.ir) : T.michelson =
 
       | [], stovars ->
         let scode, svs = extract_storage_vars stovars in
-        let code = [T.CDR 0] @ scode in
+        Format.eprintf "RES: scode: @[%a@], sys: [%a]@\n" (pp_list "; " Printer_michelson.pp_code) scode (pp_list "; " pp_ident) svs;
+        let code = [T.CDR 1] @ scode in
         let env = { env with vars = svs @ env.vars } in
         code, env, List.length svs
 
       | args, stovars ->
-        let acode = unfold_all args in
         let scode, svs = extract_storage_vars stovars in
+        let acode = unfold_all args in
+        let scode = match scode with | [] -> [] | _ -> [T.DIP (1, scode)] in
+        let code = [T.UNPAIR] @ scode @ acode in
         let avs = List.map fst args in
-        let code = [T.UNPAIR; T.DIP (1, acode)] @ scode in
-        let env = { env with vars = svs @ avs @ env.vars } in
-        code, env, List.length svs
+        let env = { env with vars = avs @ svs @ env.vars } in
+        code, env, List.length (svs @ avs)
 
     in
 
     let fold_vars = fold_vars @ [T.UNIT] in
 
     let env = add_var_env env fun_result in
-    (* print_env env; *)
+    print_env env;
 
     let code, _env =
       match v.body with
