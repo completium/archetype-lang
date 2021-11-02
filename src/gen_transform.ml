@@ -1351,11 +1351,12 @@ let remove_enum (model : model) : model =
   let map =
     let mk_enum_info (e : enum) : enum_info =
       let without_args = List.for_all (fun (x : enum_item) -> List.is_empty x.args) e.values in
-      let mk_args_type args =
+      let mk_args_type (annot : lident) (args : type_ list) =
+        let annot = mkfannot annot in
         match args with
-        | []  -> tunit
-        | [t] -> t
-        | _   -> ttuple args
+        | []  -> mktype Tunit ?annot
+        | [t] -> mktype (get_ntype t) ?annot
+        | _   -> mktype (get_ntype (ttuple args)) ?annot
       in
       let mk_or l =
         match List.rev l with
@@ -1367,7 +1368,7 @@ let remove_enum (model : model) : model =
         then tnat
         else begin
           let f = mk_args_type in
-          let l = List.map (fun (x : enum_item) -> f x.args) e.values in
+          let l = List.map (fun (x : enum_item) -> f x.name x.args) e.values in
           match List.rev l with
           | []        -> assert false
           | [a]       -> a
@@ -1391,7 +1392,7 @@ let remove_enum (model : model) : model =
             | _ -> mk_tuple xs
           in
           let values = e.values in
-          let l = List.map (fun (x : enum_item) -> f x.args) values in
+          let l = List.map (fun (x : enum_item) -> f x.name x.args) values in
           List.fold_lefti (fun i accu (x : enum_item) ->
               let fr l init = List.fold_right (fun x accu -> mk_right x accu) l init in
               let remove_last l =

@@ -1046,6 +1046,9 @@ let mk_model ?(parameters = []) ?metadata ?(api_items = []) ?(api_verif = []) ?(
 let mktype ?annot n : type_ = n, annot
 let get_ntype t : ntype = fst t
 let get_atype t : lident option = snd t
+let mkannot prefix (id : lident) : lident option = match unloc id with | "" -> None | v -> Some (mkloc (loc id) (prefix ^ v))
+let mkfannot = mkannot "%"
+let mkvannot = mkannot "@"
 
 let tunit          = mktype (Tunit)
 let tbool          = mktype (Tbuiltin Bbool)
