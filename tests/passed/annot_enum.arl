@@ -1,0 +1,12 @@
+archetype annot_enum
+
+enum myenum =
+| abc <nat>
+| xyz <nat>
+
+variable r : myenum = abc(1)
+variable z : nat = 0
+
+entry exec (a : list<myenum>) {
+
+}
