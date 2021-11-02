@@ -1,0 +1,18 @@
+archetype record_in_enum
+
+enum myenum =
+| abc <nat>
+| xyz <nat>
+
+record myrec {
+  f : myenum;
+  g : nat;
+}
+
+variable r : myenum = abc(1)
+variable z : nat = 0
+
+
+entry exec (a : list<myrec>) {
+
+}
