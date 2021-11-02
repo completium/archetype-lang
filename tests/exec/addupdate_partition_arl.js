@@ -1,8 +1,6 @@
 const { deploy, getValueFromBigMap, setAccount, setEndpoint, setQuiet, jsonMichelineToExpr } = require('@completium/completium-cli');
 const assert = require('assert');
 
-const prefix_path = "/home/guillaume/archetype/archetype-lang/tests/proposal"
-
 let contract;
 
 setEndpoint('mockup');
@@ -11,7 +9,7 @@ setQuiet(true);
 
 describe("Deploy", async () => {
   it("addupdate_desuggared_partition", async () => {
-    [contract, _] = await deploy(prefix_path + '/addupdate_partition.arl', {
+    [contract, _] = await deploy('./tests/passed/addupdate_partition.arl', {
       // as: admin.pkh
     });
   });

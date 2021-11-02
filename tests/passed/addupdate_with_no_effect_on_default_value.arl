@@ -1,0 +1,19 @@
+archetype addupdate_with_no_effect_on_default_value
+
+variable r : nat = 0
+
+asset my_asset {
+  id : string;
+  v  : nat = 0;
+  c  : nat = 0
+} initialized by {
+  {"id0"; 0; 1}
+}
+
+entry exec () {
+  my_asset.addupdate("id0", { });
+}
+
+entry exec2 () {
+  my_asset.addupdate("id0", { v = 1 });
+}

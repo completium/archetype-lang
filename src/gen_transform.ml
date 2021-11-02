@@ -197,7 +197,6 @@ let remove_add_update ?(with_force = false) ?(isformula = false) (model : model)
             | _ -> assert false) tunit in
         let asset  = mk_asset (an, k, l) in
         match c with
-        | CKcoll _  when with_force && is_standalone -> mk_mterm (Maddforce (an, asset)) tunit
         | CKfield (_, ckcol, {node = Mdotassetfield (dan, dk, dfn)}, kft, kfd) when Utils.is_partition model (unloc dan) (unloc dfn) -> begin
             let cond = mk_mterm (Mcontains(an, CKcoll (kft, kfd), k)) tbool in
             let fail_ = failc (Invalid (mk_tuple [mk_string "KeyNotFound"; k])) in
