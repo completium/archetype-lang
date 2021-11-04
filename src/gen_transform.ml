@@ -1379,7 +1379,7 @@ let remove_enum (model : model) : model =
         then
           begin
             List.fold_lefti (fun i accu (x : enum_item) ->
-                MapString.add (unloc x.name) (fun _ -> mk_nat i) accu)
+                MapString.add (unloc x.name) (fun _ -> mk_int i) accu)
               MapString.empty e.values
           end
         else begin
@@ -1429,12 +1429,12 @@ let remove_enum (model : model) : model =
                 let map : mterm MapString.t =
                   List.fold_lefti
                     (fun i accu (x : enum_item) ->
-                       MapString.add (unloc x.name) (mk_nat i) accu)
+                       MapString.add (unloc x.name) (mk_int i) accu)
                     MapString.empty e.values
                 in
                 let ivar = dumloc "_tmp" in
-                let mvar : mterm = mk_mvar ivar tnat in
-                let mk_cond (id : ident) = mk_mterm (Mequal (tnat, MapString.find id map, mvar)) tbool in
+                let mvar : mterm = mk_mvar ivar tint in
+                let mk_cond (id : ident) = mk_mterm (Mequal (tint, MapString.find id map, mvar)) tbool in
                 let mk_if (id : ident) (v : mterm) (accu : mterm) : mterm =
                   match rt with
                   | None    -> mk_mterm (Mif (mk_cond id, v, Some accu)) tunit
@@ -1523,7 +1523,7 @@ let remove_enum (model : model) : model =
   let for_type t : type_ =
     let rec aux t =
       match get_ntype t with
-      | Tstate -> tnat
+      | Tstate -> tint
       | Tenum id -> begin
           let info : enum_info = get_info (unloc id) in
           info.type_
@@ -1545,8 +1545,8 @@ let remove_enum (model : model) : model =
         info.fmatch rt e ps
       in
       match mt.node with
-      | Mvar (_, Vstate, _, _)    -> mk_svar dstate tnat
-      | Massign (_, _, Astate, v) -> {mt with node = Massign (ValueAssign, tnat, Avarstore dstate, aux v)}
+      | Mvar (_, Vstate, _, _)    -> mk_svar dstate tint
+      | Massign (_, _, Astate, v) -> {mt with node = Massign (ValueAssign, tint, Avarstore dstate, aux v)}
       | Menumval (id, args, eid)  -> begin
           let args = List.map aux args in
           let info : enum_info = get_info eid in
@@ -1568,7 +1568,7 @@ let remove_enum (model : model) : model =
             let initial = e.initial in
             let info : enum_info = get_info "state" in
             let dv = (MapString.find (unloc initial) info.fitems) [] in
-            (Dvar (mk_var (dumloc "_state") tnat tnat VKvariable ~default:dv ))::accu
+            (Dvar (mk_var (dumloc "_state") tint tint VKvariable ~default:dv ))::accu
           | Denum _ -> accu
           | x -> x::accu
         ) model.decls []
