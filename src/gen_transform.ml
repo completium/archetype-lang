@@ -1364,7 +1364,7 @@ let remove_enum (model : model) : model =
       in
       let mk_type _  =
         if without_args
-        then tnat
+        then tint
         else begin
           let f = mk_args_type in
           let l = List.map (fun (x : enum_item) -> f x.name x.args) e.values in
