@@ -1,0 +1,16 @@
+archetype exp
+
+/* Horner's method to compute exponential function */
+function exp(x : rational, steps : nat) : rational {
+    var r : rational = 1 + x / steps;
+    iter i to steps - 1 do
+        r := 1 + x * r / (steps - i)
+    done;
+    return r
+}
+
+variable res : rational = 0
+
+entry exec () {
+    res := exp(0.55, 20)
+}

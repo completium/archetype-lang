@@ -1,0 +1,13 @@
+archetype enum_key
+
+enum stake_kind =
+| Tier1
+| Tier2
+| Tier3
+| Tier4
+
+variable tvls : map<stake_kind, nat> = [ (Tier1, 0); (Tier2, 0); (Tier3, 0); (Tier4, 0) ]
+
+entry update(isk : stake_kind) {
+    tvls.put(isk, 0)
+}
