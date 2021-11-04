@@ -1,0 +1,21 @@
+archetype compare_enum
+
+enum stake_kind =
+| Tier1
+| Tier2
+| Tier3
+| Tier4
+
+function getLockedDuration(isk : stake_kind) : duration {
+  return
+    match isk with
+    | Tier1 -> 0d
+    | Tier2 -> 7d
+    | Tier3 -> 30d
+    | Tier4 -> 90d
+    end
+}
+
+entry exec () {
+
+}
