@@ -604,6 +604,7 @@ let iemptybigmap k v = Izop (Zemptybigmap (k, v))
 let icar x           = Iunop (Ucar, x)
 let icdr x           = Iunop (Ucdr, x)
 let ifail msg        = Iunop (Ufail, istring msg)
+let ifaild data      = Iunop (Ufail, data)
 let iskip            = Iseq []
 let ileft t x        = Iunop  (Uleft t, x)
 let iright t x       = Iunop  (Uright t, x)

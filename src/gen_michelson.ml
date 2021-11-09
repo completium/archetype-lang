@@ -434,12 +434,20 @@ let to_ir (model : M.model) : T.ir =
       | _ -> Some (pref ^ id)
     in
 
-    let vops = T.Ivar operations in
-    let contract_internal a t d = T.Iifnone (T.Iunop (Ucontract (t, a), d), T.ifail "NotFound", "_var_ifnone", Ivar "_var_ifnone", T.tint) in
-    let get_contract      t d = contract_internal  None     t d in
+    let contract_internal id a t d =
+      let fdata =
+        match id with
+        | Some v -> (T.ipair (T.istring "EntryNotFound") (T.istring v))
+        | None -> T.istring "EntryNotFound"
+      in
+      T.Iifnone (T.Iunop (Ucontract (t, a), d), T.ifaild fdata, "_var_ifnone", Ivar "_var_ifnone", T.tint) in
     let get_entrypoint id t d =
       let annot = get_entrypoint_annot ~pref:"%" id in
-      contract_internal annot t d in
+      contract_internal (Some id) annot t d
+    in
+
+    let vops = T.Ivar operations in
+    let get_contract   id t d = contract_internal id None     t d in
     let get_self_entrypoint id =
       let fs = M.Utils.get_fs model id in
       let ts = List.map proj3_2 fs.args in
@@ -618,7 +626,7 @@ let to_ir (model : M.model) : T.ir =
     | Mtransfer tr -> begin
         let op =
           match tr with
-          | TKsimple (v, d)         -> T.Iterop (Ttransfer_tokens, T.iunit, f v, get_contract T.tunit (f d))
+          | TKsimple (v, d)         -> T.Iterop (Ttransfer_tokens, T.iunit, f v, get_contract None T.tunit (f d))
           | TKcall (v, id, t, d, a) -> T.Iterop (Ttransfer_tokens, f a, f v, get_entrypoint id (to_type t) (f d))
           | TKentry (v, e, a)       -> T.Iterop (Ttransfer_tokens, f a, f v, f e)
           | TKself (v, id, args)    -> begin
@@ -819,7 +827,7 @@ let to_ir (model : M.model) : T.ir =
 
     | Mcast (src, dst, v) -> begin
         match M.get_ntype src, M.get_ntype dst, v.node with
-        | M.Tbuiltin Baddress, M.Tcontract t, _                -> get_contract (to_type t) (f v)
+        | M.Tbuiltin Baddress, M.Tcontract t, _                -> get_contract None (to_type t) (f v)
         | M.Tbuiltin Bcurrency, M.Tbuiltin Bnat, _             -> T.idiv (f v) (T.imutez Big_int.unit_big_int)
         | M.Tbuiltin Bstring, M.Tbuiltin Bkey, Mstring s       -> T.Iconst (T.mk_type Tkey, Dstring s)
         | M.Tbuiltin Bstring, M.Tbuiltin Bkeyhash, Mstring s   -> T.Iconst (T.mk_type Tkey_hash, Dstring s)
@@ -1172,7 +1180,7 @@ let map_implem : (string * T.code list) list = [
   get_fun_name (T.Bmax T.tunit)  , T.[cdup; cunpair; ccompare; clt; cif ([ccdr], [ccar])];
   get_fun_name T.Bratcmp         , T.[cunpair; cunpair; cdip (1, [cunpair]); cunpair; cdug 3; cmul; cdip (1, [cmul]); cswap; ccompare; cswap;
                                       cifleft ([cdrop 1; ceq], [cifleft ([cifleft ([cdrop 1; clt], [cdrop 1; cle])],
-                                                                       [cifleft ([cdrop 1; cgt], [cdrop 1; cge])])])];
+                                                                         [cifleft ([cdrop 1; cgt], [cdrop 1; cge])])])];
   get_fun_name T.Bfloor          , T.[cunpair; cediv; cifnone ([cfail divbyzero], [ccar])];
   get_fun_name T.Bceil           , T.[cunpair; cediv; cifnone ([cfail divbyzero], [cunpair; cswap; cint; ceq; cif ([], [cpush (tint, Dint Big_int.unit_big_int); cadd])])];
   get_fun_name T.Bratnorm        ,   [];
@@ -1205,7 +1213,7 @@ let concrete_michelson b : T.code =
   | T.Btostring _     -> error ()
   | T.Bratcmp         -> T.cseq T.[cunpair; cunpair; cdip (1, [cunpair]); cunpair; cdug 3; cmul; cdip (1, [cmul]); cswap; ccompare; cswap;
                                    cifleft ([cdrop 1; ceq], [cifleft ([cifleft ([cdrop 1; clt], [cdrop 1; cle])],
-                                                                   [cifleft ([cdrop 1; cgt], [cdrop 1; cge])])])]
+                                                                      [cifleft ([cdrop 1; cgt], [cdrop 1; cge])])])]
   | T.Bratnorm        -> T.cseq (get_implem b)
   | T.Brataddsub      -> T.cseq (get_implem b)
   | T.Bratmul         -> T.cseq (get_implem b)
@@ -1628,12 +1636,12 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
   | Imap (b, k, v, l) -> begin
       let a = if b then T.cempty_big_map (k, v) else T.cempty_map (k, v) in
       T.cseq ([a] @
-             (l
-              |> List.rev
-              |> List.map (fun (x, y) ->
-                  let y, _ = fe (inc_env env) y in
-                  let x, _ = fe (inc_env (inc_env env)) x in
-                  T.cseq [y; T.csome; x; T.cupdate ] ))), inc_env env
+              (l
+               |> List.rev
+               |> List.map (fun (x, y) ->
+                   let y, _ = fe (inc_env env) y in
+                   let x, _ = fe (inc_env (inc_env env)) x in
+                   T.cseq [y; T.csome; x; T.cupdate ] ))), inc_env env
     end
   | Irecord ri -> begin
       let rec aux env = function
