@@ -613,7 +613,7 @@ let to_ir (model : M.model) : T.ir =
           | InvalidCaller        -> T.istring "InvalidCaller"
           | InvalidCondition lbl -> T.ipair (T.istring "InvalidCondition") (T.istring lbl)
           | NotFound             -> T.istring "NotFound"
-          | KeyExists            -> T.istring "KeyExists"
+          | KeyExists an         -> T.ipair (T.istring "KeyExists") (T.istring an)
           | KeyExistsOrNotFound  -> T.istring "KeyExistsOrNotFound"
           | OutOfBound           -> T.istring "OutOfBound"
           | DivByZero            -> T.istring divbyzero

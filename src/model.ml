@@ -465,7 +465,7 @@ and 'id fail_type_gen =
   | InvalidCaller
   | InvalidCondition of ident
   | NotFound
-  | KeyExists
+  | KeyExists of ident
   | KeyExistsOrNotFound
   | OutOfBound
   | DivByZero
@@ -1213,7 +1213,7 @@ let cmp_fail_type
   | InvalidCaller, InvalidCaller             -> true
   | InvalidCondition c1, InvalidCondition c2 -> cmp_ident c1 c2
   | NotFound, NotFound                       -> true
-  | KeyExists, KeyExists                     -> true
+  | KeyExists an1, KeyExists an2             -> cmp_ident an1 an2
   | KeyExistsOrNotFound, KeyExistsOrNotFound -> true
   | OutOfBound, OutOfBound                   -> true
   | DivByZero, DivByZero                     -> true

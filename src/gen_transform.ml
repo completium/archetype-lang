@@ -3823,7 +3823,7 @@ let remove_asset (model : model) : model =
                   let c = List.fold_left (fun accu (an, x, _) -> mk_mterm (Mor (f an x, accu)) tbool) (f an k) t in
                   let linstrs = get_instrs_add_with_partition pts in
                   let seq = mk_mterm (Mseq (b::linstrs)) tunit in
-                  mk_mterm (Mif (c, failc KeyExists, Some seq)) tunit
+                  mk_mterm (Mif (c, failc (KeyExists an), Some seq)) tunit
                 end
               | (aan, aa)::at, pt ->
                 let f = create_contains_asset_key in
@@ -3838,7 +3838,7 @@ let remove_asset (model : model) : model =
 
         if force
         then assign
-        else mk_mterm (Mif (cond, failc KeyExists, Some assign)) tunit
+        else mk_mterm (Mif (cond, failc (KeyExists an), Some assign)) tunit
       end
     in
 
@@ -4669,10 +4669,10 @@ let remove_asset (model : model) : model =
 
           let msg = List.fold_left (fun accu x ->
               match accu, x with
-              | msg, ( _, _, `Aggregate, (`Add | `Replace), _) when match msg with KeyExists -> true | _ -> false -> KeyExistsOrNotFound
+              | msg, ( _, _, `Aggregate, (`Add | `Replace), _) when match msg with (KeyExists _) -> true | _ -> false -> KeyExistsOrNotFound
               | msg, ( _, _, `Partition, (`Add | `Replace), _) when match msg with NotFound  -> true | _ -> false -> KeyExistsOrNotFound
               | _, ( _, _, `Aggregate, (`Add | `Replace), _) -> NotFound
-              | _, ( _, _, `Partition, (`Add | `Replace), _) -> KeyExists
+              | _, ( _, _, `Partition, (`Add | `Replace), _) -> KeyExists an
               | _ -> accu
             ) (Invalid (mk_string "")) ags in
 
