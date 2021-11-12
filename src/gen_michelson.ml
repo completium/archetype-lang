@@ -1745,6 +1745,18 @@ and to_michelson (ir : T.ir) : T.michelson =
 
     let unfold = foldi (fun x -> T.cunpair::T.cswap::x ) [] in
 
+    let unfold_n x =
+      match x with
+      | 0 | 1 -> []
+      | _ -> [T.cunpair_n x]
+    in
+
+    let fold_n x =
+      match x with
+      | 0 | 1 -> []
+      | _ -> [T.cpair_n x]
+    in
+
     let get_funs _ : T.code list * ident list =
       let funs = List.map (
           fun (x : T.func) ->
@@ -1778,12 +1790,11 @@ and to_michelson (ir : T.ir) : T.michelson =
 
     let fff, eee = let n = df + opsf in (if n > 0 then [T.cdig n] else []), (if df > 0 then [T.cdip (1, [T.cdrop df]) ] else []) in
 
-    let vars = List.rev (let l = ir.storage_list in if List.is_empty l then ["_"] else List.map (fun (x, _, _) -> x) l) @ ops_var @ List.rev funids in
-    let env = mk_env () ~vars in
+    let vars            = (let l = ir.storage_list in if List.is_empty l then ["_"] else List.map (fun (x, _, _) -> x) l) @ ops_var @ List.rev funids in
+    let env             = mk_env () ~vars in
     let nb_storage_item = List.length ir.storage_list in
-    let nb_fs = nb_storage_item - 1 in
-    let unfold_storage = unfold nb_fs  in
-    let fold_storage = foldi (fun x -> T.cswap::T.cpair::x ) [] nb_fs in
+    let unfold_storage  = unfold_n nb_storage_item  in
+    let fold_storage    = fold_n nb_storage_item in
 
 
     let for_entry (e : T.entry) =
