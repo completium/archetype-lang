@@ -1419,7 +1419,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       let c =
         if n = 0
         then T.cdup
-        else T.cseq [ T.cdig n; T.cdup; T.cdug (n + 1)]
+        else T.cdup_n (n + 1)
       in
       c, inc_env env
     end
