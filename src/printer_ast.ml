@@ -35,6 +35,8 @@ let pp_vtyp fmt = function
   | VTbls12_381_g1 -> Format.fprintf fmt "bls12_381_g1"
   | VTbls12_381_g2 -> Format.fprintf fmt "bls12_381_g2"
   | VTnever        -> Format.fprintf fmt "never"
+  | VTchest        -> Format.fprintf fmt "chest"
+  | VTchest_key    -> Format.fprintf fmt "chest_key"
 
 let pp_container fmt = function
   | Collection -> Format.fprintf fmt "collection"

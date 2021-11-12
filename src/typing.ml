@@ -152,6 +152,8 @@ end = struct
       | A.Tbuiltin VTbls12_381_g1-> true
       | A.Tbuiltin VTbls12_381_g2-> true
       | A.Tbuiltin VTnever       -> true
+      | A.Tbuiltin VTchest       -> true
+      | A.Tbuiltin VTchest_key   -> true
       | A.Tcontainer           _ -> false
       | A.Tset                 _ -> true
       | A.Tlist                _ -> true
@@ -193,6 +195,8 @@ end = struct
       | A.Tbuiltin VTbls12_381_g1-> false
       | A.Tbuiltin VTbls12_381_g2-> false
       | A.Tbuiltin VTnever       -> true
+      | A.Tbuiltin VTchest       -> true
+      | A.Tbuiltin VTchest_key   -> true
       | A.Tcontainer           _ -> false
       | A.Tset                 _ -> false
       | A.Tlist                _ -> false
@@ -234,6 +238,8 @@ end = struct
       | A.Tbuiltin VTbls12_381_g1-> true
       | A.Tbuiltin VTbls12_381_g2-> true
       | A.Tbuiltin VTnever       -> true
+      | A.Tbuiltin VTchest       -> true
+      | A.Tbuiltin VTchest_key   -> true
       | A.Tcontainer           _ -> false
       | A.Tset                 _ -> true
       | A.Tlist                _ -> true
@@ -275,6 +281,8 @@ end = struct
       | A.Tbuiltin VTbls12_381_g1-> true
       | A.Tbuiltin VTbls12_381_g2-> true
       | A.Tbuiltin VTnever       -> true
+      | A.Tbuiltin VTchest       -> true
+      | A.Tbuiltin VTchest_key   -> true
       | A.Tcontainer           _ -> false
       | A.Tset                 t -> is_storable t
       | A.Tlist                t -> is_storable t
@@ -316,6 +324,8 @@ end = struct
       | A.Tbuiltin VTbls12_381_g1-> true
       | A.Tbuiltin VTbls12_381_g2-> true
       | A.Tbuiltin VTnever       -> true
+      | A.Tbuiltin VTchest       -> true
+      | A.Tbuiltin VTchest_key   -> true
       | A.Tcontainer           _ -> false
       | A.Tset                 t -> is_packable t
       | A.Tlist                t -> is_packable t
@@ -357,6 +367,8 @@ end = struct
       | A.Tbuiltin VTbls12_381_g1-> true
       | A.Tbuiltin VTbls12_381_g2-> true
       | A.Tbuiltin VTnever       -> true
+      | A.Tbuiltin VTchest       -> true
+      | A.Tbuiltin VTchest_key   -> true
       | A.Tcontainer           _ -> false
       | A.Tset                 t -> is_big_map_value t
       | A.Tlist                t -> is_big_map_value t
@@ -1570,7 +1582,9 @@ let core_types = [
   ("bls12_381_fr" , A.vtbls12_381_fr     );
   ("bls12_381_g1" , A.vtbls12_381_g1     );
   ("bls12_381_g2" , A.vtbls12_381_g2     );
-  ("never"        , A.vtnever            )
+  ("never"        , A.vtnever            );
+  ("chest"        , A.vtchest            );
+  ("chest_key"    , A.vtchest_key        )
 ]
 
 (* -------------------------------------------------------------------- *)

@@ -125,6 +125,8 @@ let to_ir (model : M.model) : T.ir =
         | Bbls12_381_g1 -> T.Tbls12_381_g1
         | Bbls12_381_g2 -> T.Tbls12_381_g2
         | Bnever        -> T.Tnever
+        | Bchest        -> T.Tchest
+        | Bchest_key    -> T.Tchest_key
       end
     | Tcontainer _   -> assert false
     | Tlist t        -> T.mk_type ?annotation (T.Tlist (to_type t))
@@ -1832,7 +1834,7 @@ and to_michelson (ir : T.ir) : T.michelson =
       | []     -> []
       | [_]    -> []
       | [_; _] -> [T.cunpair]
-      | l      -> [T.cunpairn (List.length l)]
+      | l      -> [T.cunpair_n (List.length l)]
     in
 
     let extract_storage_vars stovars =

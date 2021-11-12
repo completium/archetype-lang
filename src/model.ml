@@ -39,6 +39,8 @@ type btyp =
   | Bbls12_381_g1
   | Bbls12_381_g2
   | Bnever
+  | Bchest
+  | Bchest_key
 [@@deriving show {with_path = false}]
 
 type vset =
@@ -1089,6 +1091,8 @@ let tbls12_381_fr  = mktype (Tbuiltin Bbls12_381_fr)
 let tbls12_381_g1  = mktype (Tbuiltin Bbls12_381_g1)
 let tbls12_381_g2  = mktype (Tbuiltin Bbls12_381_g2)
 let tnever         = mktype (Tbuiltin Bnever)
+let tchest         = mktype (Tbuiltin Bchest)
+let tchest_key     = mktype (Tbuiltin Bchest_key)
 let tasset an      = mktype (Tasset an)
 let tcollection an = mktype (Tcontainer (tasset an, Collection))
 let taggregate an  = mktype (Tcontainer (tasset an, Aggregate))

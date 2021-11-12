@@ -75,6 +75,8 @@ let to_model (ast : A.ast) : M.model =
     | A.VTbls12_381_g1 -> M.Bbls12_381_g1
     | A.VTbls12_381_g2 -> M.Bbls12_381_g2
     | A.VTnever        -> M.Bnever
+    | A.VTchest        -> M.Bchest
+    | A.VTchest_key    -> M.Bchest_key
   in
 
   let to_trtyp = function

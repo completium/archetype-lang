@@ -164,6 +164,8 @@ let pp_type fmt typ =
       | Tybls12_381_g1 -> "bls12_381_g1"
       | Tybls12_381_g2 -> "bls12_381_g2"
       | Tynever        -> "never"
+      | Tychest        -> "chest"
+      | Tychest_key    -> "chest_key"
     in
     if pparen && (needs_paren t) then
       "("^str^")"

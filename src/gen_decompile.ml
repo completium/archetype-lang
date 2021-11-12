@@ -324,9 +324,7 @@ let to_michelson (input, env : T.obj_micheline * env) : T.michelson * env =
       | Oprim ({prim = "UNPAIR"; _})                         -> T.mk_code T.UNPAIR
       | Oprim ({prim = "SELF_ADDRESS"; _})                   -> T.mk_code T.SELF_ADDRESS
       | Oprim ({prim = "CAST"; args = t::_})                 -> T.mk_code (T.CAST (to_type t))
-      | Oprim ({prim = "CREATE_ACCOUNT"; _})                 -> T.mk_code T.CREATE_ACCOUNT
       | Oprim ({prim = "RENAME"; _})                         -> T.mk_code T.RENAME
-      | Oprim ({prim = "STEPS_TO_QUOTA"; _})                 -> T.mk_code T.STEPS_TO_QUOTA
       | Oprim ({prim = "LEVEL"; _})                          -> T.mk_code T.LEVEL
       | Oprim ({prim = "SAPLING_EMPTY_STATE"; args = (Oint n)::_}) -> T.mk_code (T.SAPLING_EMPTY_STATE (int_of_string n))
       | Oprim ({prim = "SAPLING_VERIFY_UPDATE"; _})          -> T.mk_code T.SAPLING_VERIFY_UPDATE
@@ -336,12 +334,6 @@ let to_michelson (input, env : T.obj_micheline * env) : T.michelson * env =
       | Oprim ({prim = "KECCAK"; _})                         -> T.mk_code T.KECCAK
       | Oprim ({prim = "SHA3"; _})                           -> T.mk_code T.SHA3
       | Oprim ({prim = "PAIRING_CHECK"; _})                  -> T.mk_code T.PAIRING_CHECK
-      | Oprim ({prim = "SUBMIT_PROPOSALS"; _})               -> T.mk_code T.SUBMIT_PROPOSALS
-      | Oprim ({prim = "SUBMIT_BALLOT"; _})                  -> T.mk_code T.SUBMIT_BALLOT
-      | Oprim ({prim = "SET_BAKER_ACTIVE"; _})               -> T.mk_code T.SET_BAKER_ACTIVE
-      | Oprim ({prim = "TOGGLE_BAKER_DELEGATIONS"; _})       -> T.mk_code T.TOGGLE_BAKER_DELEGATIONS
-      | Oprim ({prim = "SET_BAKER_CONSENSUS_KEY"; _})        -> T.mk_code T.SET_BAKER_CONSENSUS_KEY
-      | Oprim ({prim = "SET_BAKER_PVSS_KEY"; _})             -> T.mk_code T.SET_BAKER_PVSS_KEY
       (* Macro *)
       | Oprim ({prim = "IFCMPEQ"; args = [l; r]})            -> T.mk_code (T.SEQ [T.mk_code COMPARE; T.mk_code EQ;  T.mk_code (T.IF (seq l, seq r))])
       | Oprim ({prim = "IFCMPNEQ"; args = [l; r]})           -> T.mk_code (T.SEQ [T.mk_code COMPARE; T.mk_code NEQ; T.mk_code (T.IF (seq l, seq r))])
@@ -2000,6 +1992,8 @@ let rec ttype_to_mtype (t : T.type_) : M.type_ =
   | Tbls12_381_g1          -> assert false
   | Tbls12_381_g2          -> assert false
   | Tnever                 -> assert false
+  | Tchest                 -> assert false
+  | Tchest_key             -> assert false
 
 let to_model (ir, env : T.ir * env) : M.model * env =
 
@@ -2461,6 +2455,8 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Tbuiltin Bbls12_381_g1 -> A.tbls12_381_g1
     | Tbuiltin Bbls12_381_g2 -> A.tbls12_381_g2
     | Tbuiltin Bnever        -> A.tnever
+    | Tbuiltin Bchest        -> A.tchest
+    | Tbuiltin Bchest_key    -> A.tchest_key
     | Tcontainer (t, c)      -> A.mk_tcontainer (f t) (match c with | Collection -> assert false | Aggregate -> A.Aggregate | Partition -> A.Partition | View -> A.View)
     | Tlist t                -> A.mk_tlist (f t)
     | Toption t              -> A.mk_toption (f t)

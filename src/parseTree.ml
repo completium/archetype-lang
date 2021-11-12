@@ -442,6 +442,8 @@ let tbls12_381_fr = tref "bls12_381_fr"
 let tbls12_381_g1 = tref "bls12_381_g1"
 let tbls12_381_g2 = tref "bls12_381_g2"
 let tnever        = tref "never"
+let tchest        = tref "chest"
+let tchest_key    = tref "chest_key"
 
 let mk_tcontainer ?(loc=dummy) ?a t c : type_t =
   mkloc loc (Tcontainer (t, c)), a

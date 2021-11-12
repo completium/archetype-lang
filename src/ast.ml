@@ -37,6 +37,8 @@ type vtyp =
   | VTbls12_381_g1
   | VTbls12_381_g2
   | VTnever
+  | VTchest
+  | VTchest_key
 [@@deriving show {with_path = false}]
 
 type trtyp =
@@ -766,11 +768,13 @@ let vtint          = Tbuiltin (VTint          )
 let vtkey          = Tbuiltin (VTkey          )
 let vtkeyhash      = Tbuiltin (VTkeyhash      )
 let vtnat          = Tbuiltin (VTnat          )
-let vtnever        = Tbuiltin (VTnever        )
 let vtrational     = Tbuiltin (VTrational     )
 let vtsignature    = Tbuiltin (VTsignature    )
 let vtstring       = Tbuiltin (VTstring       )
 let vtunit         = Tbuiltin (VTunit         )
+let vtnever        = Tbuiltin (VTnever        )
+let vtchest        = Tbuiltin (VTchest        )
+let vtchest_key    = Tbuiltin (VTchest_key    )
 
 let vts = [
   vtaddress      ;

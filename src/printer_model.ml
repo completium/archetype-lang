@@ -30,6 +30,8 @@ let pp_btyp fmt = function
   | Bbls12_381_g1 -> Format.fprintf fmt "bls12_381_g1"
   | Bbls12_381_g2 -> Format.fprintf fmt "bls12_381_g2"
   | Bnever        -> Format.fprintf fmt "never"
+  | Bchest        -> Format.fprintf fmt "chest"
+  | Bchest_key    -> Format.fprintf fmt "chest_key"
 
 let pp_container fmt = function
   | Collection -> Format.fprintf fmt "collection"

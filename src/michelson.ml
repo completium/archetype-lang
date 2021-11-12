@@ -38,6 +38,8 @@ type type_node =
   | Tbls12_381_g1
   | Tbls12_381_g2
   | Tnever
+  | Tchest
+  | Tchest_key
 [@@deriving show {with_path = false}]
 
 and type_ = type_node with_annot
@@ -82,6 +84,7 @@ and code_node =
   | DROP               of int
   | DUG                of int
   | DUP
+  | DUP_N              of int
   | PUSH               of type_* data
   | SWAP
   (* Arthmetic operations *)
@@ -111,8 +114,13 @@ and code_node =
   | BLAKE2B
   | CHECK_SIGNATURE
   | HASH_KEY
+  | KECCAK
+  | PAIRING_CHECK
+  | SAPLING_EMPTY_STATE of int
+  | SAPLING_VERIFY_UPDATE
   | SHA256
   | SHA512
+  | SHA3
   (* Blockchain operations *)
   | ADDRESS
   | AMOUNT
@@ -121,12 +129,16 @@ and code_node =
   | CONTRACT           of type_ * ident option
   | CREATE_CONTRACT    of type_ * type_ * code
   | IMPLICIT_ACCOUNT
+  | LEVEL
   | NOW
   | SELF               of ident option
+  | SELF_ADDRESS
   | SENDER
   | SET_DELEGATE
   | SOURCE
+  | TOTAL_VOTING_POWER
   | TRANSFER_TOKENS
+  | VOTING_POWER
   (* Operations on data structures *)
   | CAR
   | CDR
@@ -136,50 +148,37 @@ and code_node =
   | EMPTY_MAP          of type_ * type_
   | EMPTY_SET          of type_
   | GET
+  | GET_N              of int
+  | GET_AND_UPDATE
   | LEFT               of type_
   | MAP                of code list
   | MEM
+  | NEVER
   | NIL                of type_
   | NONE               of type_
   | PACK
   | PAIR
+  | PAIR_N             of int
   | RIGHT              of type_
   | SIZE
   | SLICE
   | SOME
   | UNIT
   | UNPACK             of type_
+  | UNPAIR
+  | UNPAIR_N           of int
   | UPDATE
+  | UPDATE_N           of int
   (* Operations on tickets *)
   | JOIN_TICKETS
   | READ_TICKET
   | SPLIT_TICKET
   | TICKET
-  (* view *)
-  | VIEW               of ident * type_
   (* Other *)
-  | UNPAIR
-  | UNPAIR_N           of int
-  | SELF_ADDRESS
   | CAST               of type_
-  | CREATE_ACCOUNT
   | RENAME
-  | STEPS_TO_QUOTA
-  | LEVEL
-  | SAPLING_EMPTY_STATE of int
-  | SAPLING_VERIFY_UPDATE
-  | NEVER
-  | VOTING_POWER
-  | TOTAL_VOTING_POWER
-  | KECCAK
-  | SHA3
-  | PAIRING_CHECK
-  | SUBMIT_PROPOSALS
-  | SUBMIT_BALLOT
-  | SET_BAKER_ACTIVE
-  | TOGGLE_BAKER_DELEGATIONS
-  | SET_BAKER_CONSENSUS_KEY
-  | SET_BAKER_PVSS_KEY
+  | VIEW               of ident * type_
+  | OPEN_CHEST
   (* Macro *)
   | CAR_N              of int
   | CDR_N              of int
@@ -643,15 +642,16 @@ let citer           a             = mk_code (ITER a)
 let clambda        (a, b, c)      = mk_code (LAMBDA (a, b, c))
 let cloop           a             = mk_code (LOOP a)
 let cloop_left      a             = mk_code (LOOP_LEFT a)
-  (* Stack manipulation *)
+(* Stack manipulation *)
 let cdig            a             = mk_code (DIG a)
 let cdip           (a, b)         = mk_code (DIP (a, b))
 let cdrop           a             = mk_code (DROP a)
 let cdug            a             = mk_code (DUG a)
 let cdup                          = mk_code  DUP
+let cdup_n          a             = mk_code (DUP_N a)
 let cpush          (a, b)         = mk_code (PUSH (a, b))
 let cswap                         = mk_code  SWAP
-  (* Arthmetic operations *)
+(* Arthmetic operations *)
 let cabs                          = mk_code  ABS
 let cadd                          = mk_code  ADD
 let ccompare                      = mk_code  COMPARE
@@ -669,18 +669,23 @@ let cmul                          = mk_code  MUL
 let cneg                          = mk_code  NEG
 let cneq                          = mk_code  NEQ
 let csub                          = mk_code  SUB
-  (* Boolean operations *)
+(* Boolean operations *)
 let cand                          = mk_code  AND
 let cnot                          = mk_code  NOT
 let cor                           = mk_code  OR
 let cxor                          = mk_code  XOR
-  (* Cryptographic operations *)
+(* Cryptographic operations *)
 let cblake2b                      = mk_code  BLAKE2B
 let ccheck_signature              = mk_code  CHECK_SIGNATURE
 let chash_key                     = mk_code  HASH_KEY
+let ckeccak                       = mk_code  KECCAK
+let cpairing_check                = mk_code  PAIRING_CHECK
+let csapling_empty_state   a      = mk_code (SAPLING_EMPTY_STATE a)
+let csapling_verify_update        = mk_code  SAPLING_VERIFY_UPDATE
 let csha256                       = mk_code  SHA256
 let csha512                       = mk_code  SHA512
-  (* Blockchain operations *)
+let csha3                         = mk_code  SHA3
+(* Blockchain operations *)
 let caddress                      = mk_code  ADDRESS
 let camount                       = mk_code  AMOUNT
 let cbalance                      = mk_code  BALANCE
@@ -688,13 +693,17 @@ let cchain_id                     = mk_code  CHAIN_ID
 let ccontract           (a, b)    = mk_code (CONTRACT (a, b))
 let ccreate_contract    (a, b, c) = mk_code (CREATE_CONTRACT (a, b, c))
 let cimplicit_account             = mk_code  IMPLICIT_ACCOUNT
+let clevel                        = mk_code  LEVEL
 let cnow                          = mk_code  NOW
 let cself                a        = mk_code (SELF a)
-let csender                       = mk_code SENDER
-let cset_delegate                 = mk_code SET_DELEGATE
-let csource                       = mk_code SOURCE
-let ctransfer_tokens              = mk_code TRANSFER_TOKENS
-  (* Operations on data structures *)
+let cself_address                 = mk_code  SELF_ADDRESS
+let csender                       = mk_code  SENDER
+let cset_delegate                 = mk_code  SET_DELEGATE
+let csource                       = mk_code  SOURCE
+let ctotal_voting_power           = mk_code  TOTAL_VOTING_POWER
+let ctransfer_tokens              = mk_code  TRANSFER_TOKENS
+let cvoting_power                 = mk_code  VOTING_POWER
+(* Operations on data structures *)
 let ccar                          = mk_code  CAR
 let ccdr                          = mk_code  CDR
 let cconcat                       = mk_code  CONCAT
@@ -703,49 +712,37 @@ let cempty_big_map       (a, b)   = mk_code (EMPTY_BIG_MAP (a, b))
 let cempty_map           (a, b)   = mk_code (EMPTY_MAP (a, b))
 let cempty_set            a       = mk_code (EMPTY_SET a)
 let cget                          = mk_code  GET
+let cget_n                n       = mk_code (GET_N n)
+let cget_and_update               = mk_code  GET_AND_UPDATE
 let cleft                 a       = mk_code (LEFT a)
 let cmap                  a       = mk_code (MAP a)
 let cmem                          = mk_code  MEM
+let cnever                        = mk_code  NEVER
 let cnil                  a       = mk_code (NIL a)
 let cnone                 a       = mk_code (NONE a)
 let cpack                         = mk_code  PACK
 let cpair                         = mk_code  PAIR
+let cpair_n               n       = mk_code (PAIR_N n)
 let cright                a       = mk_code (RIGHT a)
 let csize                         = mk_code  SIZE
 let cslice                        = mk_code  SLICE
 let csome                         = mk_code  SOME
 let cunit                         = mk_code  UNIT
+let cunpair                       = mk_code  UNPAIR
+let cunpair_n             n       = mk_code (UNPAIR_N n)
 let cunpack               a       = mk_code (UNPACK a)
 let cupdate                       = mk_code  UPDATE
-  (* Operations on tickets *)
+let cupdate_n             n       = mk_code (UPDATE_N n)
+(* Operations on tickets *)
 let cjoin_tickets                 = mk_code JOIN_TICKETS
 let cread_ticket                  = mk_code READ_TICKET
 let csplit_ticket                 = mk_code SPLIT_TICKET
 let cticket                       = mk_code TICKET
-  (* Other *)
-let cunpair                       = mk_code UNPAIR
-let cunpairn               n      = mk_code (UNPAIR_N n)
-let cself_address                 = mk_code SELF_ADDRESS
+(* Other *)
 let ccast                  a      = mk_code (CAST a)
-let ccreate_account               = mk_code CREATE_ACCOUNT
 let crename                       = mk_code RENAME
-let csteps_to_quota               = mk_code STEPS_TO_QUOTA
-let clevel                        = mk_code LEVEL
-let csapling_empty_state   a      = mk_code (SAPLING_EMPTY_STATE a)
-let csapling_verify_update        = mk_code SAPLING_VERIFY_UPDATE
-let cnever                        = mk_code NEVER
-let cvoting_power                 = mk_code VOTING_POWER
-let ctotal_voting_power           = mk_code TOTAL_VOTING_POWER
-let ckeccak                       = mk_code KECCAK
-let csha3                         = mk_code SHA3
-let cpairing_check                = mk_code PAIRING_CHECK
-let csubmit_proposals             = mk_code SUBMIT_PROPOSALS
-let csubmit_ballot                = mk_code SUBMIT_BALLOT
-let cset_baker_active             = mk_code SET_BAKER_ACTIVE
-let ctoggle_baker_delegations     = mk_code TOGGLE_BAKER_DELEGATIONS
-let cset_baker_consensus_key      = mk_code SET_BAKER_CONSENSUS_KEY
-let cset_baker_pvss_key           = mk_code SET_BAKER_PVSS_KEY
 let cview (c, t)                  = mk_code (VIEW (c, t))
+let copen_chest                   = mk_code OPEN_CHEST
 (* Macro *)
 let ccarn                      k  = mk_code (CAR_N k)
 let ccdrn                      k  = mk_code (CDR_N k)
@@ -787,6 +784,8 @@ let cmp_type (lhs : type_) (rhs : type_) =
     | Tbls12_381_g2, Tbls12_381_g2                     -> true
     | Tbls12_381_fr, Tbls12_381_fr                     -> true
     | Tnever, Tnever                                   -> true
+    | Tchest, Tchest                                   -> true
+    | Tchest_key, Tchest_key                           -> true
     | _ -> false
   in
   f lhs rhs
@@ -966,7 +965,6 @@ let cmp_code (lhs : code) (rhs : code) =
     | CONTRACT (t1, a1), CONTRACT (t2, a2)           -> cmp_type t1 t2 && Option.cmp cmp_ident a1 a2
     | TRANSFER_TOKENS, TRANSFER_TOKENS               -> true
     | SET_DELEGATE, SET_DELEGATE                     -> true
-    | CREATE_ACCOUNT, CREATE_ACCOUNT                 -> true
     | CREATE_CONTRACT (p1, s1, c1), CREATE_CONTRACT (p2, s2, c2) -> cmp_type p1 p2 && cmp_type s1 s2 && f c1 c2
     | IMPLICIT_ACCOUNT, IMPLICIT_ACCOUNT             -> true
     | NOW, NOW                                       -> true
@@ -977,7 +975,6 @@ let cmp_code (lhs : code) (rhs : code) =
     | SHA256, SHA256                                 -> true
     | SHA512, SHA512                                 -> true
     | HASH_KEY, HASH_KEY                             -> true
-    | STEPS_TO_QUOTA, STEPS_TO_QUOTA                 -> true
     | SOURCE, SOURCE                                 -> true
     | SENDER, SENDER                                 -> true
     | ADDRESS, ADDRESS                               -> true
@@ -1034,13 +1031,15 @@ let map_type (f : type_ -> type_) (t : type_) : type_ =
     | Tstring                -> Tstring
     | Ttimestamp             -> Ttimestamp
     | Tunit                  -> Tunit
-    | Tsapling_transaction n -> Tsapling_transaction n
+    | Tticket       t        -> Tticket    (f t)
     | Tsapling_state       n -> Tsapling_state n
-    | Tnever                 -> Tnever
+    | Tsapling_transaction n -> Tsapling_transaction n
+    | Tbls12_381_fr          -> Tbls12_381_fr
     | Tbls12_381_g1          -> Tbls12_381_g1
     | Tbls12_381_g2          -> Tbls12_381_g2
-    | Tbls12_381_fr          -> Tbls12_381_fr
-    | Tticket       t        -> Tticket    (f t)
+    | Tnever                 -> Tnever
+    | Tchest                 -> Tchest
+    | Tchest_key             -> Tchest_key
   in
   {node = node; annotation = t.annotation}
 
@@ -1089,125 +1088,122 @@ let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) (
   let node =
     match x.node with
     (* Control structures *)
-  | SEQ l                    -> SEQ (List.map fc l)
-  | APPLY                    -> APPLY
-  | EXEC                     -> EXEC
-  | FAILWITH                 -> FAILWITH
-  | IF (then_, else_)        -> IF (List.map fc then_, List.map fc else_)
-  | IF_CONS (then_, else_)   -> IF_CONS (List.map fc then_, List.map fc else_)
-  | IF_LEFT (then_, else_)   -> IF_LEFT (List.map fc then_, List.map fc else_)
-  | IF_NONE (then_, else_)   -> IF_NONE (List.map fc then_, List.map fc else_)
-  | ITER l                   -> ITER (List.map fc l)
-  | LAMBDA (at, rt, body)    -> LAMBDA (ft at, ft rt, List.map fc body)
-  | LOOP l                   -> LOOP (List.map fc l)
-  | LOOP_LEFT l              -> LOOP_LEFT (List.map fc l)
-  (* Stack manipulation *)
-  | DIG n                    -> DIG n
-  | DIP (n, l)               -> DIP (n, List.map fc l)
-  | DROP n                   -> DROP n
-  | DUG n                    -> DUG n
-  | DUP                      -> DUP
-  | PUSH (t, d)              -> PUSH (ft t, fd d)
-  | SWAP                     -> SWAP
-  (* Arthmetic operations *)
-  | ABS                      -> ABS
-  | ADD                      -> ADD
-  | COMPARE                  -> COMPARE
-  | EDIV                     -> EDIV
-  | EQ                       -> EQ
-  | GE                       -> GE
-  | GT                       -> GT
-  | INT                      -> INT
-  | ISNAT                    -> ISNAT
-  | LE                       -> LE
-  | LSL                      -> LSL
-  | LSR                      -> LSR
-  | LT                       -> LT
-  | MUL                      -> MUL
-  | NEG                      -> NEG
-  | NEQ                      -> NEQ
-  | SUB                      -> SUB
-  (* Boolean operations *)
-  | AND                      -> AND
-  | NOT                      -> NOT
-  | OR                       -> OR
-  | XOR                      -> XOR
-  (* Cryptographic operations *)
-  | BLAKE2B                  -> BLAKE2B
-  | CHECK_SIGNATURE          -> CHECK_SIGNATURE
-  | HASH_KEY                 -> HASH_KEY
-  | SHA256                   -> SHA256
-  | SHA512                   -> SHA512
-  (* Blockchain operations *)
-  | ADDRESS                  -> ADDRESS
-  | AMOUNT                   -> AMOUNT
-  | BALANCE                  -> BALANCE
-  | CHAIN_ID                 -> CHAIN_ID
-  | CONTRACT (t, a)          -> CONTRACT (ft t, a)
-  | CREATE_CONTRACT (p, s, c)-> CREATE_CONTRACT (ft p, ft s, fc c)
-  | IMPLICIT_ACCOUNT         -> IMPLICIT_ACCOUNT
-  | NOW                      -> NOW
-  | SELF a                   -> SELF a
-  | SENDER                   -> SENDER
-  | SET_DELEGATE             -> SET_DELEGATE
-  | SOURCE                   -> SOURCE
-  | TRANSFER_TOKENS          -> TRANSFER_TOKENS
-  (* Operations on data structures *)
-  | CAR                      -> CAR
-  | CDR                      -> CDR
-  | CONCAT                   -> CONCAT
-  | CONS                     -> CONS
-  | EMPTY_BIG_MAP  (k, v)    -> EMPTY_BIG_MAP (ft k, ft v)
-  | EMPTY_MAP      (k, v)    -> EMPTY_MAP     (ft k, ft v)
-  | EMPTY_SET      t         -> EMPTY_SET     (ft t)
-  | GET                      -> GET
-  | LEFT t                   -> LEFT (ft t)
-  | MAP  l                   -> MAP  (List.map fc l)
-  | MEM                      -> MEM
-  | NIL t                    -> NIL (ft t)
-  | NONE t                   -> NONE (ft t)
-  | PACK                     -> PACK
-  | PAIR                     -> PAIR
-  | RIGHT t                  -> RIGHT (ft t)
-  | SIZE                     -> SIZE
-  | SLICE                    -> SLICE
-  | SOME                     -> SOME
-  | UNIT                     -> UNIT
-  | UNPACK t                 -> UNPACK (ft t)
-  | UPDATE                   -> UPDATE
-  (* Operations on tickets *)
-  | JOIN_TICKETS             -> JOIN_TICKETS
-  | READ_TICKET              -> READ_TICKET
-  | SPLIT_TICKET             -> SPLIT_TICKET
-  | TICKET                   -> TICKET
-  (* View *)
-  | VIEW (c, t)              -> VIEW (c, ft t)
-  (* Other *)
-  | UNPAIR                   -> UNPAIR
-  | UNPAIR_N n               -> UNPAIR_N n
-  | SELF_ADDRESS             -> SELF_ADDRESS
-  | CAST t                   -> CAST (ft t)
-  | CREATE_ACCOUNT           -> CREATE_ACCOUNT
-  | RENAME                   -> RENAME
-  | STEPS_TO_QUOTA           -> STEPS_TO_QUOTA
-  | LEVEL                    -> LEVEL
-  | SAPLING_EMPTY_STATE n    -> SAPLING_EMPTY_STATE n
-  | SAPLING_VERIFY_UPDATE    -> SAPLING_VERIFY_UPDATE
-  | NEVER                    -> NEVER
-  | VOTING_POWER             -> VOTING_POWER
-  | TOTAL_VOTING_POWER       -> TOTAL_VOTING_POWER
-  | KECCAK                   -> KECCAK
-  | SHA3                     -> SHA3
-  | PAIRING_CHECK            -> PAIRING_CHECK
-  | SUBMIT_PROPOSALS         -> SUBMIT_PROPOSALS
-  | SUBMIT_BALLOT            -> SUBMIT_BALLOT
-  | SET_BAKER_ACTIVE         -> SET_BAKER_ACTIVE
-  | TOGGLE_BAKER_DELEGATIONS -> TOGGLE_BAKER_DELEGATIONS
-  | SET_BAKER_CONSENSUS_KEY  -> SET_BAKER_CONSENSUS_KEY
-  | SET_BAKER_PVSS_KEY       -> SET_BAKER_PVSS_KEY
-  (* Macro *)
-  | CAR_N n                  -> CAR_N n
-  | CDR_N n                  -> CDR_N n
+    | SEQ l                    -> SEQ (List.map fc l)
+    | APPLY                    -> APPLY
+    | EXEC                     -> EXEC
+    | FAILWITH                 -> FAILWITH
+    | IF (then_, else_)        -> IF (List.map fc then_, List.map fc else_)
+    | IF_CONS (then_, else_)   -> IF_CONS (List.map fc then_, List.map fc else_)
+    | IF_LEFT (then_, else_)   -> IF_LEFT (List.map fc then_, List.map fc else_)
+    | IF_NONE (then_, else_)   -> IF_NONE (List.map fc then_, List.map fc else_)
+    | ITER l                   -> ITER (List.map fc l)
+    | LAMBDA (at, rt, body)    -> LAMBDA (ft at, ft rt, List.map fc body)
+    | LOOP l                   -> LOOP (List.map fc l)
+    | LOOP_LEFT l              -> LOOP_LEFT (List.map fc l)
+    (* Stack manipulation *)
+    | DIG n                    -> DIG n
+    | DIP (n, l)               -> DIP (n, List.map fc l)
+    | DROP n                   -> DROP n
+    | DUG n                    -> DUG n
+    | DUP                      -> DUP
+    | DUP_N n                  -> DUP_N n
+    | PUSH (t, d)              -> PUSH (ft t, fd d)
+    | SWAP                     -> SWAP
+    (* Arthmetic operations *)
+    | ABS                      -> ABS
+    | ADD                      -> ADD
+    | COMPARE                  -> COMPARE
+    | EDIV                     -> EDIV
+    | EQ                       -> EQ
+    | GE                       -> GE
+    | GT                       -> GT
+    | INT                      -> INT
+    | ISNAT                    -> ISNAT
+    | LE                       -> LE
+    | LSL                      -> LSL
+    | LSR                      -> LSR
+    | LT                       -> LT
+    | MUL                      -> MUL
+    | NEG                      -> NEG
+    | NEQ                      -> NEQ
+    | SUB                      -> SUB
+    (* Boolean operations *)
+    | AND                      -> AND
+    | NOT                      -> NOT
+    | OR                       -> OR
+    | XOR                      -> XOR
+    (* Cryptographic operations *)
+    | BLAKE2B                  -> BLAKE2B
+    | CHECK_SIGNATURE          -> CHECK_SIGNATURE
+    | HASH_KEY                 -> HASH_KEY
+    | KECCAK                   -> KECCAK
+    | PAIRING_CHECK            -> PAIRING_CHECK
+    | SAPLING_EMPTY_STATE n    -> SAPLING_EMPTY_STATE n
+    | SAPLING_VERIFY_UPDATE    -> SAPLING_VERIFY_UPDATE
+    | SHA256                   -> SHA256
+    | SHA512                   -> SHA512
+    | SHA3                     -> SHA3
+    (* Blockchain operations *)
+    | ADDRESS                  -> ADDRESS
+    | AMOUNT                   -> AMOUNT
+    | BALANCE                  -> BALANCE
+    | CHAIN_ID                 -> CHAIN_ID
+    | CONTRACT (t, a)          -> CONTRACT (ft t, a)
+    | CREATE_CONTRACT (p, s, c)-> CREATE_CONTRACT (ft p, ft s, fc c)
+    | IMPLICIT_ACCOUNT         -> IMPLICIT_ACCOUNT
+    | LEVEL                    -> LEVEL
+    | NOW                      -> NOW
+    | SELF a                   -> SELF a
+    | SELF_ADDRESS             -> SELF_ADDRESS
+    | SENDER                   -> SENDER
+    | SET_DELEGATE             -> SET_DELEGATE
+    | SOURCE                   -> SOURCE
+    | TOTAL_VOTING_POWER       -> TOTAL_VOTING_POWER
+    | TRANSFER_TOKENS          -> TRANSFER_TOKENS
+    | VOTING_POWER             -> VOTING_POWER
+    (* Operations on data structures *)
+    | CAR                      -> CAR
+    | CDR                      -> CDR
+    | CONCAT                   -> CONCAT
+    | CONS                     -> CONS
+    | EMPTY_BIG_MAP  (k, v)    -> EMPTY_BIG_MAP (ft k, ft v)
+    | EMPTY_MAP      (k, v)    -> EMPTY_MAP     (ft k, ft v)
+    | EMPTY_SET      t         -> EMPTY_SET     (ft t)
+    | GET                      -> GET
+    | GET_N n                  -> GET_N n
+    | GET_AND_UPDATE           -> GET_AND_UPDATE
+    | LEFT t                   -> LEFT (ft t)
+    | MAP  l                   -> MAP  (List.map fc l)
+    | MEM                      -> MEM
+    | NEVER                    -> NEVER
+    | NIL t                    -> NIL (ft t)
+    | NONE t                   -> NONE (ft t)
+    | PACK                     -> PACK
+    | PAIR                     -> PAIR
+    | PAIR_N n                 -> PAIR_N n
+    | RIGHT t                  -> RIGHT (ft t)
+    | SIZE                     -> SIZE
+    | SLICE                    -> SLICE
+    | SOME                     -> SOME
+    | UNIT                     -> UNIT
+    | UNPACK t                 -> UNPACK (ft t)
+    | UNPAIR                   -> UNPAIR
+    | UNPAIR_N n               -> UNPAIR_N n
+    | UPDATE                   -> UPDATE
+    | UPDATE_N n               -> UPDATE_N n
+    (* Operations on tickets *)
+    | JOIN_TICKETS             -> JOIN_TICKETS
+    | READ_TICKET              -> READ_TICKET
+    | SPLIT_TICKET             -> SPLIT_TICKET
+    | TICKET                   -> TICKET
+    (* Other *)
+    | CAST t                   -> CAST (ft t)
+    | RENAME                   -> RENAME
+    | VIEW (c, t)              -> VIEW (c, ft t)
+    | OPEN_CHEST               -> OPEN_CHEST
+    (* Macro *)
+    | CAR_N n                  -> CAR_N n
+    | CDR_N n                  -> CDR_N n
   in
   let type_ = Option.map (List.map ft) !(x.type_) in
   mk_code ?type_ node
@@ -1411,13 +1407,13 @@ end = struct
         match l with
         (* | (DIP (x, y))::(DROP z)::t -> aux accu ((DROP (z - 1))::y::t) *)
         (* | (DROP x)::(DROP y)::t   -> aux accu ((DROP (x + y))::t)
-        (* | (CAR x)::(CAR y)::t   -> aux accu ((CAR (x + y))::t) *)
-        | (PAIR)::(UNPAIR)::t     -> aux accu t
-        | (UNPAIR)::(PAIR)::t     -> aux accu t
-        | (CDR_N x)::(CDR_N y)::t -> aux accu ((CDR_N (x + y))::t)
-        | (DUP)::(DROP x)::t      -> aux accu ((DROP (x - 1))::t)
-        | (DUP)::(SWAP)::t        -> aux accu ((DUP)::t)
-        | (DROP 0)::t             -> aux accu t *)
+           (* | (CAR x)::(CAR y)::t   -> aux accu ((CAR (x + y))::t) *)
+           | (PAIR)::(UNPAIR)::t     -> aux accu t
+           | (UNPAIR)::(PAIR)::t     -> aux accu t
+           | (CDR_N x)::(CDR_N y)::t -> aux accu ((CDR_N (x + y))::t)
+           | (DUP)::(DROP x)::t      -> aux accu ((DROP (x - 1))::t)
+           | (DUP)::(SWAP)::t        -> aux accu ((DUP)::t)
+           | (DROP 0)::t             -> aux accu t *)
         | ({node = DROP x})::({node = DROP y})::t -> aux accu ((mk_code (DROP (x + y)))::t)
         | ({node = DUP})::({node = DROP x})::t    -> aux accu ((mk_code (DROP (x - 1)))::t)
         | ({node = DUP})::({node = SWAP})::t      -> aux accu ((mk_code DUP)::t)
@@ -1475,6 +1471,8 @@ end = struct
       | Tbls12_381_g2          -> "bls12_381_g2", []
       | Tbls12_381_fr          -> "bls12_381_fr", []
       | Tnever                 -> "never", []
+      | Tchest                 -> "chest", []
+      | Tchest_key             -> "chest_key", []
     in
     let args = if List.is_empty args then None else Some (List.map type_to_micheline args) in
     let annots = Option.bind (fun x -> Some [x]) t.annotation in
@@ -1522,13 +1520,15 @@ end = struct
         | Tstring                 -> Ovar (OMVstring x)
         | Ttimestamp              -> Ovar (OMVint x)
         | Tunit                   -> Oprim (mk_prim "Unit")
-        | Tsapling_transaction _n -> Ovar (OMVfree x)
+        | Tticket       _t        -> Ovar (OMVfree x)
         | Tsapling_state       _n -> Ovar (OMVfree x)
-        | Tnever                  -> Ovar (OMVfree x)
+        | Tsapling_transaction _n -> Ovar (OMVfree x)
         | Tbls12_381_g1           -> Ovar (OMVfree x)
         | Tbls12_381_g2           -> Ovar (OMVfree x)
         | Tbls12_381_fr           -> Ovar (OMVfree x)
-        | Tticket       _t        -> Ovar (OMVfree x)
+        | Tnever                  -> Ovar (OMVfree x)
+        | Tchest                  -> Ovar (OMVfree x)
+        | Tchest_key              -> Ovar (OMVfree x)
       end
     | DIrCode (_id, _c) -> Oarray ([])
     | Dcode c           -> code_to_micheline c
@@ -1562,6 +1562,7 @@ end = struct
     | DROP n                   -> mk ~args:[mk_int n] "DROP"
     | DUG n                    -> mk ~args:[mk_int n] "DUG"
     | DUP                      -> mk "DUP"
+    | DUP_N n                  -> mk ~args:[mk_int n] "DUP"
     | PUSH (t, d)              -> mk ~args:[ft t; fd d] "PUSH"
     | SWAP                     -> mk "SWAP"
     (* Arthmetic operations *)
@@ -1591,8 +1592,13 @@ end = struct
     | BLAKE2B                  -> mk "BLAKE2B"
     | CHECK_SIGNATURE          -> mk "CHECK_SIGNATURE"
     | HASH_KEY                 -> mk "HASH_KEY"
+    | KECCAK                   -> mk "KECCAK"
+    | PAIRING_CHECK            -> mk "PAIRING_CHECK"
+    | SAPLING_EMPTY_STATE n    -> mk "SAPLING_EMPTY_STATE" ~args:[Oint (string_of_int n)]
+    | SAPLING_VERIFY_UPDATE    -> mk "SAPLING_VERIFY_UPDATE"
     | SHA256                   -> mk "SHA256"
     | SHA512                   -> mk "SHA512"
+    | SHA3                     -> mk "SHA3"
     (* Blockchain operations *)
     | ADDRESS                  -> mk "ADDRESS"
     | AMOUNT                   -> mk "AMOUNT"
@@ -1601,12 +1607,16 @@ end = struct
     | CONTRACT (t, a)          -> mk ~args:[ft t] ~annots:(fan a) "CONTRACT"
     | CREATE_CONTRACT (p, s, c)-> mk ~args:[mk ~args:[ft p] "parameter"; mk ~args:[ft s] "storage"; mk ~args:[f c] "code"] "CREATE_CONTRACT"
     | IMPLICIT_ACCOUNT         -> mk "IMPLICIT_ACCOUNT"
+    | LEVEL                    -> mk "LEVEL"
     | NOW                      -> mk "NOW"
     | SELF a                   -> mk ~annots:(fan a) "SELF"
+    | SELF_ADDRESS             -> mk "SELF_ADDRESS"
     | SENDER                   -> mk "SENDER"
     | SET_DELEGATE             -> mk "SET_DELEGATE"
     | SOURCE                   -> mk "SOURCE"
+    | TOTAL_VOTING_POWER       -> mk "TOTAL_VOTING_POWER"
     | TRANSFER_TOKENS          -> mk "TRANSFER_TOKENS"
+    | VOTING_POWER             -> mk "VOTING_POWER"
     (* Operations on data structures *)
     | CAR                      -> mk "CAR"
     | CDR                      -> mk "CDR"
@@ -1616,50 +1626,37 @@ end = struct
     | EMPTY_MAP      (k, v)    -> mk ~args:[ft k; ft v] "EMPTY_MAP"
     | EMPTY_SET      t         -> mk ~args:[ft t] "EMPTY_SET"
     | GET                      -> mk "GET"
+    | GET_N n                  -> mk ~args:[mk_int n] "GET"
+    | GET_AND_UPDATE           -> mk "GET_AND_UPDATE"
     | LEFT t                   -> mk ~args:[ft t] "LEFT"
     | MAP  l                   -> mk ~args:[mk_array l] "MAP"
     | MEM                      -> mk "MEM"
+    | NEVER                    -> mk "NEVER"
     | NIL t                    -> mk ~args:[ft t] "NIL"
     | NONE t                   -> mk ~args:[ft t] "NONE"
     | PACK                     -> mk "PACK"
     | PAIR                     -> mk "PAIR"
+    | PAIR_N n                 -> mk ~args:[mk_int n] "PAIR"
     | RIGHT t                  -> mk ~args:[ft t] "RIGHT"
     | SIZE                     -> mk "SIZE"
     | SLICE                    -> mk "SLICE"
     | SOME                     -> mk "SOME"
     | UNIT                     -> mk "UNIT"
     | UNPACK t                 -> mk ~args:[ft t] "UNPACK"
+    | UNPAIR                   -> mk "UNPAIR"
+    | UNPAIR_N n               -> mk ~args:[mk_int n] "UNPAIR"
     | UPDATE                   -> mk "UPDATE"
+    | UPDATE_N n               -> mk ~args:[mk_int n] "UPDATE"
     (* Operations on tickets *)
     | JOIN_TICKETS             -> mk "JOIN_TICKETS"
     | READ_TICKET              -> mk "READ_TICKET"
     | SPLIT_TICKET             -> mk "SPLIT_TICKET"
     | TICKET                   -> mk "TICKET"
-    (* View *)
-    | VIEW (c, t)              -> mk ~args:[mk_string c; ft t] "VIEW"
     (* Other *)
-    | UNPAIR                   -> mk "UNPAIR"
-    | UNPAIR_N n               -> mk ~args:[mk_int n] "UNPAIR"
-    | SELF_ADDRESS             -> mk "SELF_ADDRESS"
     | CAST t                   -> mk ~args:[ft t] "CAST"
-    | CREATE_ACCOUNT           -> mk "CREATE_ACCOUNT"
     | RENAME                   -> mk "RENAME"
-    | STEPS_TO_QUOTA           -> mk "STEPS_TO_QUOTA"
-    | LEVEL                    -> mk "LEVEL"
-    | SAPLING_EMPTY_STATE n    -> mk "SAPLING_EMPTY_STATE" ~args:[Oint (string_of_int n)]
-    | SAPLING_VERIFY_UPDATE    -> mk "SAPLING_VERIFY_UPDATE"
-    | NEVER                    -> mk "NEVER"
-    | VOTING_POWER             -> mk "VOTING_POWER"
-    | TOTAL_VOTING_POWER       -> mk "TOTAL_VOTING_POWER"
-    | KECCAK                   -> mk "KECCAK"
-    | SHA3                     -> mk "SHA3"
-    | PAIRING_CHECK            -> mk "PAIRING_CHECK"
-    | SUBMIT_PROPOSALS         -> mk "SUBMIT_PROPOSALS"
-    | SUBMIT_BALLOT            -> mk "SUBMIT_BALLOT"
-    | SET_BAKER_ACTIVE         -> mk "SET_BAKER_ACTIVE"
-    | TOGGLE_BAKER_DELEGATIONS -> mk "TOGGLE_BAKER_DELEGATIONS"
-    | SET_BAKER_CONSENSUS_KEY  -> mk "SET_BAKER_CONSENSUS_KEY"
-    | SET_BAKER_PVSS_KEY       -> mk "SET_BAKER_PVSS_KEY"
+    | VIEW (c, t)              -> mk ~args:[mk_string c; ft t] "VIEW"
+    | OPEN_CHEST               -> mk "OPEN_CHEST"
     (* Macro *)
     | CAR_N n                  -> mk ~args:[mk_int n] "CAR"
     | CDR_N n                  -> mk ~args:[mk_int n] "CDR"
@@ -1681,36 +1678,38 @@ let rec to_type (o : obj_micheline) : type_ =
   let fa l = match l with | a::_ -> Some a | [] -> None in
   let f = to_type in
   match o with
-  | Oprim ({prim = "address"; annots; _})                                 -> mk_type ?annotation:(fa annots) Taddress
+  | Oprim ({prim = "address"; annots; _})                                 -> mk_type ?annotation:(fa annots)  Taddress
   | Oprim ({prim = "big_map"; annots; args = k::v::_})                    -> mk_type ?annotation:(fa annots) (Tbig_map (f k, f v))
-  | Oprim ({prim = "bool"; annots; _})                                    -> mk_type ?annotation:(fa annots) Tbool
-  | Oprim ({prim = "bytes"; annots; _})                                   -> mk_type ?annotation:(fa annots) Tbytes
-  | Oprim ({prim = "chain_id"; annots; _})                                -> mk_type ?annotation:(fa annots) Tchain_id
+  | Oprim ({prim = "bool"; annots; _})                                    -> mk_type ?annotation:(fa annots)  Tbool
+  | Oprim ({prim = "bytes"; annots; _})                                   -> mk_type ?annotation:(fa annots)  Tbytes
+  | Oprim ({prim = "chain_id"; annots; _})                                -> mk_type ?annotation:(fa annots)  Tchain_id
   | Oprim ({prim = "contract"; annots; args = t::_})                      -> mk_type ?annotation:(fa annots) (Tcontract (f t))
-  | Oprim ({prim = "int"; annots; _})                                     -> mk_type ?annotation:(fa annots) Tint
-  | Oprim ({prim = "key"; annots; _})                                     -> mk_type ?annotation:(fa annots) Tkey
-  | Oprim ({prim = "key_hash"; annots; _})                                -> mk_type ?annotation:(fa annots) Tkey_hash
+  | Oprim ({prim = "int"; annots; _})                                     -> mk_type ?annotation:(fa annots)  Tint
+  | Oprim ({prim = "key"; annots; _})                                     -> mk_type ?annotation:(fa annots)  Tkey
+  | Oprim ({prim = "key_hash"; annots; _})                                -> mk_type ?annotation:(fa annots)  Tkey_hash
   | Oprim ({prim = "lambda"; annots; args = a::r::_})                     -> mk_type ?annotation:(fa annots) (Tlambda (f a, f r))
   | Oprim ({prim = "list"; annots; args = t::_})                          -> mk_type ?annotation:(fa annots) (Tlist (f t))
   | Oprim ({prim = "map"; annots; args = k::v::_})                        -> mk_type ?annotation:(fa annots) (Tmap (f k, f v))
-  | Oprim ({prim = "mutez"; annots; _})                                   -> mk_type ?annotation:(fa annots) Tmutez
-  | Oprim ({prim = "nat"; annots; _})                                     -> mk_type ?annotation:(fa annots) Tnat
-  | Oprim ({prim = "operation"; annots; _})                               -> mk_type ?annotation:(fa annots) Toperation
+  | Oprim ({prim = "mutez"; annots; _})                                   -> mk_type ?annotation:(fa annots)  Tmutez
+  | Oprim ({prim = "nat"; annots; _})                                     -> mk_type ?annotation:(fa annots)  Tnat
+  | Oprim ({prim = "operation"; annots; _})                               -> mk_type ?annotation:(fa annots)  Toperation
   | Oprim ({prim = "option"; annots; args = t::_})                        -> mk_type ?annotation:(fa annots) (Toption (f t))
   | Oprim ({prim = "or"; annots; args = a::b::_})                         -> mk_type ?annotation:(fa annots) (Tor (f a, f b))
   | Oprim ({prim = "pair"; annots; args = a::l::_})                       -> mk_type ?annotation:(fa annots) (Tpair (f a, f l))
   | Oprim ({prim = "set"; annots; args = t::_})                           -> mk_type ?annotation:(fa annots) (Tset (f t))
-  | Oprim ({prim = "signature"; annots; _})                               -> mk_type ?annotation:(fa annots) Tsignature
-  | Oprim ({prim = "string"; annots; _})                                  -> mk_type ?annotation:(fa annots) Tstring
-  | Oprim ({prim = "timestamp"; annots; _})                               -> mk_type ?annotation:(fa annots) Ttimestamp
-  | Oprim ({prim = "unit"; annots; _})                                    -> mk_type ?annotation:(fa annots) Tunit
+  | Oprim ({prim = "signature"; annots; _})                               -> mk_type ?annotation:(fa annots)  Tsignature
+  | Oprim ({prim = "string"; annots; _})                                  -> mk_type ?annotation:(fa annots)  Tstring
+  | Oprim ({prim = "timestamp"; annots; _})                               -> mk_type ?annotation:(fa annots)  Ttimestamp
+  | Oprim ({prim = "unit"; annots; _})                                    -> mk_type ?annotation:(fa annots)  Tunit
   | Oprim ({prim = "ticket"; annots; args = t::_})                        -> mk_type ?annotation:(fa annots) (Tticket (f t))
   | Oprim ({prim = "sapling_state"; annots; args = (Oint n)::_; _})       -> mk_type ?annotation:(fa annots) (Tsapling_state (int_of_string n))
   | Oprim ({prim = "sapling_transaction"; annots; args = (Oint n)::_; _}) -> mk_type ?annotation:(fa annots) (Tsapling_transaction (int_of_string n))
-  | Oprim ({prim = "bls12_381_g1"; annots; _})                            -> mk_type ?annotation:(fa annots) Tbls12_381_g1
-  | Oprim ({prim = "bls12_381_g2"; annots; _})                            -> mk_type ?annotation:(fa annots) Tbls12_381_g2
-  | Oprim ({prim = "bls12_381_fr"; annots; _})                            -> mk_type ?annotation:(fa annots) Tbls12_381_fr
-  | Oprim ({prim = "never"; annots; _})                                   -> mk_type ?annotation:(fa annots) Tnever
+  | Oprim ({prim = "bls12_381_fr"; annots; _})                            -> mk_type ?annotation:(fa annots)  Tbls12_381_fr
+  | Oprim ({prim = "bls12_381_g1"; annots; _})                            -> mk_type ?annotation:(fa annots)  Tbls12_381_g1
+  | Oprim ({prim = "bls12_381_g2"; annots; _})                            -> mk_type ?annotation:(fa annots)  Tbls12_381_g2
+  | Oprim ({prim = "never"; annots; _})                                   -> mk_type ?annotation:(fa annots)  Tnever
+  | Oprim ({prim = "chest"; annots; _})                                   -> mk_type ?annotation:(fa annots)  Tchest
+  | Oprim ({prim = "chest_key"; annots; _})                               -> mk_type ?annotation:(fa annots)  Tchest_key
   | _ -> Format.eprintf "type unknown %a@." pp_obj_micheline o; assert false
 
 

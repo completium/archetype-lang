@@ -999,6 +999,8 @@ and tycheck_r (stack : stack) (code : M.code_node) : stack option =
   | DUP ->
       op_DUP stack
 
+  | DUP_N _n -> assert false (* TODO *)
+
   | PUSH (ty, v) ->
       op_PUSH stack (ty, v)
 
@@ -1123,11 +1125,17 @@ and tycheck_r (stack : stack) (code : M.code_node) : stack option =
   | IMPLICIT_ACCOUNT ->
       op_IMPLICIT_ACCOUNT stack
 
+  | LEVEL ->
+      op_LEVEL stack
+
   | NOW ->
       op_NOW stack
 
   | SELF _ ->
       assert false
+
+  | SELF_ADDRESS ->
+      op_SELF_ADDRESS stack
 
   | SENDER ->
       op_SENDER stack
@@ -1138,8 +1146,14 @@ and tycheck_r (stack : stack) (code : M.code_node) : stack option =
   | SOURCE ->
       op_SOURCE stack
 
+  | TOTAL_VOTING_POWER ->
+      op_TOTAL_VOTING_POWER stack
+
   | TRANSFER_TOKENS ->
       op_TRANSFER_TOKENS stack
+
+  | VOTING_POWER ->
+      op_VOTING_POWER stack
 
   (* Operations on data structures *)
   | CAR ->
@@ -1166,6 +1180,10 @@ and tycheck_r (stack : stack) (code : M.code_node) : stack option =
   | GET ->
       op_GET stack
 
+  | GET_N _n -> assert false (* TODO *)
+
+  | GET_AND_UPDATE -> assert false (* TODO *)
+
   | LEFT tyr ->
       op_LEFT stack tyr
 
@@ -1174,6 +1192,9 @@ and tycheck_r (stack : stack) (code : M.code_node) : stack option =
 
   | MEM ->
       op_MEM stack
+
+  | NEVER ->
+      None
 
   | NIL ty ->
       op_NIL stack ty
@@ -1186,6 +1207,8 @@ and tycheck_r (stack : stack) (code : M.code_node) : stack option =
 
   | PAIR ->
       op_PAIR stack
+
+  | PAIR_N _n -> assert false (* TODO *)
 
   | RIGHT tyl ->
       op_RIGHT stack tyl
@@ -1213,6 +1236,8 @@ and tycheck_r (stack : stack) (code : M.code_node) : stack option =
   | UPDATE ->
       op_UPDATE stack
 
+  | UPDATE_N _n -> assert false (* TODO *)
+
   (* Operations on tickets *)
   | JOIN_TICKETS ->
       op_JOIN_TICKETS stack
@@ -1226,27 +1251,14 @@ and tycheck_r (stack : stack) (code : M.code_node) : stack option =
   | TICKET ->
       op_TICKET stack
 
-  (* view *)
-  | VIEW (_, _) -> assert false (* TODO *)
-
   (* Other *)
-  | LEVEL ->
-      op_LEVEL stack
-
-  | SELF_ADDRESS ->
-      op_SELF_ADDRESS stack
 
   | CAST _ ->
       Some stack                (* ? *)
 
-  | NEVER ->
-      None
+  | VIEW (_, _) -> assert false (* TODO *)
 
-  | TOTAL_VOTING_POWER ->
-      op_TOTAL_VOTING_POWER stack
-
-  | VOTING_POWER ->
-      op_VOTING_POWER stack
+  | OPEN_CHEST -> assert false (* TODO *)
 
   (* Macro *)
 
@@ -1255,15 +1267,7 @@ and tycheck_r (stack : stack) (code : M.code_node) : stack option =
   | CDR_N _ -> assert false (* TODO *)
 
     (* Unused? *)
-  | CREATE_ACCOUNT           -> assert false
   | RENAME                   -> assert false
-  | SET_BAKER_ACTIVE         -> assert false
-  | SET_BAKER_CONSENSUS_KEY  -> assert false
-  | SET_BAKER_PVSS_KEY       -> assert false
-  | STEPS_TO_QUOTA           -> assert false
-  | SUBMIT_BALLOT            -> assert false
-  | SUBMIT_PROPOSALS         -> assert false
-  | TOGGLE_BAKER_DELEGATIONS -> assert false
 
 (* -------------------------------------------------------------------- *)
 and tycheck (stack : stack) (code : M.code) : stack option =

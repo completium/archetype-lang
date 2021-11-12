@@ -131,6 +131,8 @@ let map_btype = function
   | M.Bbls12_381_g1  -> Tybls12_381_g1
   | M.Bbls12_381_g2  -> Tybls12_381_g2
   | M.Bnever         -> Tynever
+  | M.Bchest         -> Tychest
+  | M.Bchest_key     -> Tychest_key
 
 let get_type_idx t = List.index_of (M.cmp_type t)
 
@@ -253,6 +255,8 @@ let rec mk_eq_type m e1 e2 = function
   | Tynever
   | Tyview _
   | Tylambda (_, _)
+  | Tychest
+  | Tychest_key
     -> Teq (Tyint, Tvar e1, Tvar e2)
 
 let rec mk_le_type m e1 e2 = function
@@ -866,6 +870,8 @@ let rec type_to_init m (typ : loc_typ) : loc_term =
       | Tybls12_381_g1
       | Tybls12_381_g2
       | Tynever
+      | Tychest
+      | Tychest_key
         -> Tint Big_int.zero_big_int)
 
 let is_local_invariant _m an t =

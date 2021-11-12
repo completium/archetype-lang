@@ -41,6 +41,8 @@ let rec pp_type fmt (t : type_) =
   | Tbls12_381_g1          -> pp_simple_a "bls12_381_g1"
   | Tbls12_381_g2          -> pp_simple_a "bls12_381_g2"
   | Tnever                 -> pp_simple_a "never"
+  | Tchest                 -> pp_simple_a "chest"
+  | Tchest_key             -> pp_simple_a "chest_key"
 
 let rec pp_pretty_type fmt (t : type_) =
   match t.node with
@@ -148,6 +150,7 @@ and pp_code fmt (i : code) =
   | DROP i                   -> pp "DROP%a" pp_arg i
   | DUG i                    -> pp "DUG%a" pp_arg2 i
   | DUP                      -> pp "DUP"
+  | DUP_N i                  -> pp "DUP%a" pp_arg2 i
   | PUSH (t, d)              -> pp "PUSH %a %a" pp_type t pp_data d
   | SWAP                     -> pp "SWAP"
   (* Arthmetic operations *)
@@ -177,8 +180,13 @@ and pp_code fmt (i : code) =
   | BLAKE2B                  -> pp "BLAKE2B"
   | CHECK_SIGNATURE          -> pp "CHECK_SIGNATURE"
   | HASH_KEY                 -> pp "HASH_KEY"
+  | KECCAK                   -> pp "KECCAK"
+  | PAIRING_CHECK            -> pp "PAIRING_CHECK"
+  | SAPLING_EMPTY_STATE n    -> pp "SAPLING_EMPTY_STATE %i" n
+  | SAPLING_VERIFY_UPDATE    -> pp "SAPLING_VERIFY_UPDATE"
   | SHA256                   -> pp "SHA256"
   | SHA512                   -> pp "SHA512"
+  | SHA3                     -> pp "SHA3"
   (* Blockchain operations *)
   | ADDRESS                  -> pp "ADDRESS"
   | AMOUNT                   -> pp "AMOUNT"
@@ -187,12 +195,16 @@ and pp_code fmt (i : code) =
   | CONTRACT (t, a)          -> pp "CONTRACT%a %a" pp_annot a pp_type t
   | CREATE_CONTRACT (p, s, c)-> pp "CREATE_CONTRACT@\n  {@[ parameter %a ;@\n storage %a ;@\n code %a@] }" pp_type p pp_type s pp_code c
   | IMPLICIT_ACCOUNT         -> pp "IMPLICIT_ACCOUNT"
+  | LEVEL                    -> pp "LEVEL"
   | NOW                      -> pp "NOW"
   | SELF a                   -> pp "SELF%a" pp_annot a
+  | SELF_ADDRESS             -> pp "SELF_ADDRESS"
   | SENDER                   -> pp "SENDER"
   | SET_DELEGATE             -> pp "SET_DELEGATE"
   | SOURCE                   -> pp "SOURCE"
+  | TOTAL_VOTING_POWER       -> pp "TOTAL_VOTING_POWER"
   | TRANSFER_TOKENS          -> pp "TRANSFER_TOKENS"
+  | VOTING_POWER             -> pp "VOTING_POWER"
   (* Operations on data structures *)
   | CAR                      -> pp "CAR"
   | CDR                      -> pp "CDR"
@@ -202,49 +214,37 @@ and pp_code fmt (i : code) =
   | EMPTY_MAP     (k, v)     -> pp "EMPTY_MAP %a %a" pp_type k pp_type v
   | EMPTY_SET     t          -> pp "EMPTY_SET %a" pp_type t
   | GET                      -> pp "GET"
+  | GET_N n                  -> pp "GET%a" pp_arg2 n
+  | GET_AND_UPDATE           -> pp "GET_AND_UPDATE"
   | LEFT  t                  -> pp "LEFT %a" pp_type t
   | MAP  is                  -> pp "MAP %a" fsv is
   | MEM                      -> pp "MEM"
+  | NEVER                    -> pp "NEVER"
   | NIL t                    -> pp "NIL %a" pp_type t
   | NONE t                   -> pp "NONE %a" pp_type t
   | PACK                     -> pp "PACK"
   | PAIR                     -> pp "PAIR"
+  | PAIR_N n                 -> pp "PAIR%a" pp_arg2 n
   | RIGHT t                  -> pp "RIGHT %a" pp_type t
   | SIZE                     -> pp "SIZE"
   | SLICE                    -> pp "SLICE"
   | SOME                     -> pp "SOME"
   | UNIT                     -> pp "UNIT"
   | UNPACK t                 -> pp "UNPACK %a" pp_type t
+  | UNPAIR                   -> pp "UNPAIR"
+  | UNPAIR_N n               -> pp "UNPAIR%a" pp_arg2 n
   | UPDATE                   -> pp "UPDATE"
+  | UPDATE_N n               -> pp "UPDATE%a" pp_arg2 n
   (* Operations on tickets *)
   | JOIN_TICKETS             -> pp "JOIN_TICKETS"
   | READ_TICKET              -> pp "READ_TICKET"
   | SPLIT_TICKET             -> pp "SPLIT_TICKET"
   | TICKET                   -> pp "TICKET"
-  | VIEW (c, t)              -> pp "VIEW \"%s\" %a" c pp_type t
   (* Other *)
-  | UNPAIR                   -> pp "UNPAIR"
-  | UNPAIR_N n               -> pp "UNPAIR%a" pp_arg2 n
-  | SELF_ADDRESS             -> pp "SELF_ADDRESS"
   | CAST t                   -> pp "CAST %a" pp_type t
-  | CREATE_ACCOUNT           -> pp "CREATE_ACCOUNT"
   | RENAME                   -> pp "RENAME"
-  | STEPS_TO_QUOTA           -> pp "STEPS_TO_QUOTA"
-  | LEVEL                    -> pp "LEVEL"
-  | SAPLING_EMPTY_STATE n    -> pp "SAPLING_EMPTY_STATE %i" n
-  | SAPLING_VERIFY_UPDATE    -> pp "SAPLING_VERIFY_UPDATE"
-  | NEVER                    -> pp "NEVER"
-  | VOTING_POWER             -> pp "VOTING_POWER"
-  | TOTAL_VOTING_POWER       -> pp "TOTAL_VOTING_POWER"
-  | KECCAK                   -> pp "KECCAK"
-  | SHA3                     -> pp "SHA3"
-  | PAIRING_CHECK            -> pp "PAIRING_CHECK"
-  | SUBMIT_PROPOSALS         -> pp "SUBMIT_PROPOSALS"
-  | SUBMIT_BALLOT            -> pp "SUBMIT_BALLOT"
-  | SET_BAKER_ACTIVE         -> pp "SET_BAKER_ACTIVE"
-  | TOGGLE_BAKER_DELEGATIONS -> pp "TOGGLE_BAKER_DELEGATIONS"
-  | SET_BAKER_CONSENSUS_KEY  -> pp "SET_BAKER_CONSENSUS_KEY"
-  | SET_BAKER_PVSS_KEY       -> pp "SET_BAKER_PVSS_KEY"
+  | VIEW (c, t)              -> pp "VIEW \"%s\" %a" c pp_type t
+  | OPEN_CHEST               -> pp "OPEN_CHEST"
   (* Macro *)
   | CAR_N n                    -> pp "CAR%a" pp_arg2 n
   | CDR_N n                    -> pp "CDR%a" pp_arg n
