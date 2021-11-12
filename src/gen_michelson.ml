@@ -13,6 +13,7 @@ exception Anomaly of string
 let complete_tree_entrypoints = true
 let with_macro = false
 let divbyzero = "DivByZero"
+let entrynotfound = "EntryNotFound"
 type error_desc =
   | FieldNotFoundFor of string * string
   | UnsupportedTerm of string
@@ -437,8 +438,8 @@ let to_ir (model : M.model) : T.ir =
     let contract_internal id a t d =
       let fdata =
         match id with
-        | Some v -> (T.ipair (T.istring "EntryNotFound") (T.istring v))
-        | None -> T.istring "EntryNotFound"
+        | Some v -> (T.ipair (T.istring entrynotfound) (T.istring v))
+        | None -> T.istring entrynotfound
       in
       T.Iifnone (T.Iunop (Ucontract (t, a), d), T.ifaild fdata, "_var_ifnone", Ivar "_var_ifnone", T.tint) in
     let get_entrypoint id t d =
@@ -609,17 +610,17 @@ let to_ir (model : M.model) : T.ir =
     | Mfail ft          -> begin
         let x =
           match ft with
-          | Invalid v            -> f v
-          | InvalidCaller        -> T.istring "InvalidCaller"
-          | InvalidCondition lbl -> T.ipair (T.istring "InvalidCondition") (T.istring lbl)
-          | NotFound             -> T.istring "NotFound"
-          | KeyExists an         -> T.ipair (T.istring "KeyExists") (T.istring an)
-          | KeyExistsOrNotFound  -> T.istring "KeyExistsOrNotFound"
-          | OutOfBound           -> T.istring "OutOfBound"
-          | DivByZero            -> T.istring divbyzero
-          | NatAssign            -> T.istring "NatAssign"
-          | NoTransfer           -> T.istring "NoTransfer"
-          | InvalidState         -> T.istring "InvalidState"
+          | Invalid v              -> f v
+          | InvalidCaller          -> T.istring "InvalidCaller"
+          | InvalidCondition lbl   -> T.ipair (T.istring "InvalidCondition") (T.istring lbl)
+          | NotFound               -> T.istring "NotFound"
+          | KeyExists an           -> T.ipair (T.istring "KeyExists") (T.istring an)
+          | KeyExistsOrNotFound an -> T.ipair (T.istring "KeyExistsOrNotFound") (T.istring an)
+          | OutOfBound             -> T.istring "OutOfBound"
+          | DivByZero              -> T.istring divbyzero
+          | NatAssign              -> T.istring "NatAssign"
+          | NoTransfer             -> T.istring "NoTransfer"
+          | InvalidState           -> T.istring "InvalidState"
         in
         T.Iunop  (Ufail, x)
       end

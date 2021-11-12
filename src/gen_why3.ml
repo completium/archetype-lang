@@ -1738,16 +1738,16 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                    | Invalid v            ->
                      let idx = get_fail_idx m v.type_ in
                      Efail (idx, Some (map_mterm m ctx v))
-                   | InvalidCaller        -> EInvalidCaller
-                   | InvalidCondition lbl -> (EInvalidCondition lbl)
-                   | NotFound             -> ENotFound
-                   | OutOfBound           -> EOutOfBound
-                   | KeyExists _          -> EKeyExists
-                   | KeyExistsOrNotFound  -> EKeyExistsOrNotFound
-                   | DivByZero            -> EDivByZero
-                   | NatAssign            -> ENatAssign
-                   | NoTransfer           -> ENoTransfer
-                   | InvalidState         -> EInvalidState))
+                   | InvalidCaller         -> EInvalidCaller
+                   | InvalidCondition lbl  -> (EInvalidCondition lbl)
+                   | NotFound              -> ENotFound
+                   | OutOfBound            -> EOutOfBound
+                   | KeyExists _           -> EKeyExists
+                   | KeyExistsOrNotFound _ -> EKeyExistsOrNotFound
+                   | DivByZero             -> EDivByZero
+                   | NatAssign             -> ENatAssign
+                   | NoTransfer            -> ENoTransfer
+                   | InvalidState          -> EInvalidState))
           ]
       end
     | Mtransfer tr ->

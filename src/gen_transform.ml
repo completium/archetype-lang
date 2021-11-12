@@ -3831,7 +3831,7 @@ let remove_asset (model : model) : model =
                 let c = List.fold_left (fun accu (an, x, _) -> mk_mterm (Mand (mnot (f an x), accu)) tbool) c pt in
                 let linstrs = get_instrs_add_with_partition pts in
                 let seq = mk_mterm (Mseq (b::linstrs)) tunit in
-                mk_mterm (Mif (c, seq, Some (failc KeyExistsOrNotFound))) tunit
+                mk_mterm (Mif (c, seq, Some (failc (KeyExistsOrNotFound aan)))) tunit
             end
           | _ -> assert false
         in
@@ -4669,8 +4669,8 @@ let remove_asset (model : model) : model =
 
           let msg = List.fold_left (fun accu x ->
               match accu, x with
-              | msg, ( _, _, `Aggregate, (`Add | `Replace), _) when match msg with (KeyExists _) -> true | _ -> false -> KeyExistsOrNotFound
-              | msg, ( _, _, `Partition, (`Add | `Replace), _) when match msg with NotFound  -> true | _ -> false -> KeyExistsOrNotFound
+              | msg, ( _, _, `Aggregate, (`Add | `Replace), _) when match msg with (KeyExists _) -> true | _ -> false -> (KeyExistsOrNotFound an)
+              | msg, ( _, _, `Partition, (`Add | `Replace), _) when match msg with NotFound  -> true | _ -> false -> (KeyExistsOrNotFound an)
               | _, ( _, _, `Aggregate, (`Add | `Replace), _) -> NotFound
               | _, ( _, _, `Partition, (`Add | `Replace), _) -> KeyExists an
               | _ -> accu

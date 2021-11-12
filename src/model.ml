@@ -466,7 +466,7 @@ and 'id fail_type_gen =
   | InvalidCondition of ident
   | NotFound
   | KeyExists of ident
-  | KeyExistsOrNotFound
+  | KeyExistsOrNotFound of ident
   | OutOfBound
   | DivByZero
   | NatAssign
@@ -1209,17 +1209,17 @@ let cmp_fail_type
     (ft1 : 'id fail_type_gen)
     (ft2 : 'id fail_type_gen) : bool =
   match ft1, ft2 with
-  | Invalid mt1, Invalid mt2                 -> cmp mt1 mt2
-  | InvalidCaller, InvalidCaller             -> true
-  | InvalidCondition c1, InvalidCondition c2 -> cmp_ident c1 c2
-  | NotFound, NotFound                       -> true
-  | KeyExists an1, KeyExists an2             -> cmp_ident an1 an2
-  | KeyExistsOrNotFound, KeyExistsOrNotFound -> true
-  | OutOfBound, OutOfBound                   -> true
-  | DivByZero, DivByZero                     -> true
-  | NatAssign, NatAssign                     -> true
-  | NoTransfer, NoTransfer                   -> true
-  | InvalidState, InvalidState               -> true
+  | Invalid mt1, Invalid mt2                         -> cmp mt1 mt2
+  | InvalidCaller, InvalidCaller                     -> true
+  | InvalidCondition c1, InvalidCondition c2         -> cmp_ident c1 c2
+  | NotFound, NotFound                               -> true
+  | KeyExists an1, KeyExists an2                     -> cmp_ident an1 an2
+  | KeyExistsOrNotFound an1, KeyExistsOrNotFound an2 -> cmp_ident an1 an2
+  | OutOfBound, OutOfBound                           -> true
+  | DivByZero, DivByZero                             -> true
+  | NatAssign, NatAssign                             -> true
+  | NoTransfer, NoTransfer                           -> true
+  | InvalidState, InvalidState                       -> true
   | _ -> false
 
 let rec cmp_ntype
