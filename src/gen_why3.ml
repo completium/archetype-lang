@@ -1577,7 +1577,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                 Tpsome (map_lident id), map_mterm m ctx b;
                 Twild, map_mterm m ctx e
               ])
-    | Mletin ([id], { node = M.Mmapget (_kty, _vty, container, k); type_ = _ }, _, b, Some e) -> (* logical *)
+    | Mletin ([id], { node = M.Mmapget (_kty, _vty, container, k, _); type_ = _ }, _, b, Some e) -> (* logical *)
       let ctx = ctx in
       let map_id = mk_map_name m container.type_ in
       (* let t, d =
@@ -1741,6 +1741,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                    | InvalidCaller         -> EInvalidCaller
                    | InvalidCondition lbl  -> (EInvalidCondition lbl)
                    | NotFound              -> ENotFound
+                   | AssetNotFound _       -> ENotFound
                    | OutOfBound            -> EOutOfBound
                    | KeyExists _           -> EKeyExists
                    | KeyExistsOrNotFound _ -> EKeyExistsOrNotFound
@@ -2285,7 +2286,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       Tremove (dl (mk_map_name m c.type_),map_mterm m ctx k, map_mterm m ctx c)
     | Mmapupdate (_, _, c, k, v)   ->
       Tupdate (dl (mk_map_name m c.type_), map_mterm m ctx k, map_mterm m ctx v, map_mterm m ctx c)
-    | Mmapget (_, _, c, k)      -> Tsnd(
+    | Mmapget (_, _, c, k, _)   -> Tsnd(
         dl (mk_get_force ctx (dl (mk_map_name m c.type_)) (map_mterm m ctx k) (map_mterm m ctx c)))
     | Mmapgetopt (_, _, c, k)   -> Tsndopt(
         dl (Tget (dl (mk_map_name m c.type_),map_mterm m ctx k, map_mterm m ctx c)))
@@ -2929,7 +2930,7 @@ let fold_exns m body : term list =
   let rec internal_fold_exn acc (term : M.mterm) =
     match term.M.node with
     | M.Mget (_, _, k) -> internal_fold_exn (acc @ [Texn ENotFound]) k
-    | M.Mmapget (_ , _, c, k) -> internal_fold_exn (internal_fold_exn (acc @ [Texn ENotFound]) k) c
+    | M.Mmapget (_ , _, c, k, _) -> internal_fold_exn (internal_fold_exn (acc @ [Texn ENotFound]) k) c
     | M.Mnth (_, CKview c, k) -> internal_fold_exn (internal_fold_exn (acc @ [Texn ENotFound]) c) k
     | M.Mnth (_, CKcoll _, k) -> internal_fold_exn ((acc @ [Texn ENotFound])) k
     | M.Mset (_, _, k, v) -> internal_fold_exn (internal_fold_exn (acc @ [Texn ENotFound]) k) v

@@ -144,7 +144,7 @@ let process_assign_op op (t : type_) (lhs : mterm) (v : mterm) : mterm =
   | AndAssign   , _ -> mk_mterm (Mand (lhs, v)) t
   | OrAssign    , _ -> mk_mterm (Mor (lhs, v)) t
 
-let remove_add_update ?(with_force = false) ?(isformula = false) (model : model) : model =
+let remove_add_update ?(isformula = false) (model : model) : model =
   let error = ref false in
   let f_error (l : Location.t) (an : string) (fn : string) = emit_error(l, CannotBuildAsset (an, fn)); error := true in
   let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
@@ -152,7 +152,6 @@ let remove_add_update ?(with_force = false) ?(isformula = false) (model : model)
     | Maddupdate (an, c, k, l) ->
       begin
         let type_asset = tasset (dumloc an) in
-        let is_standalone = List.fold_left (fun accu (_, op, _) -> match op with | ValueAssign -> accu | _ -> false) true l in
         let mk_asset (an, k, l) =
           let dummy_mterm = mk_mterm (Mseq []) tunit in
           let asset = Utils.get_asset model an in
@@ -3894,7 +3893,7 @@ let remove_asset (model : model) : model =
       let mk_assign bk =
         let ts = tset atk in
         let remove_set set = mk_mterm (Msetremove (atk, set, bk)) ts in
-        let get_ t = mk_mterm (Mmapget(kt, vt, va, ak)) t in
+        let get_ t = mk_mterm (Mmapget(kt, vt, va, ak, Some an)) t in
         let v : mterm =
           if is_record
           then begin
@@ -3958,7 +3957,7 @@ let remove_asset (model : model) : model =
           let va = get_asset_global an in
           let get =
             match get_ntype va.type_ with
-            | Tmap (_, kt, vt) -> mk_mterm (Mmapget (kt, vt, va, f k)) vt
+            | Tmap (_, kt, vt) -> mk_mterm (Mmapget (kt, vt, va, f k, Some an)) vt
             | _ -> assert false
           in
 
@@ -3981,7 +3980,7 @@ let remove_asset (model : model) : model =
           let vaa = get_asset_global aan in
           let geta =
             match get_ntype vaa.type_ with
-            | Tmap (_, kt, vt) -> Some (mk_mterm (Mmapget (kt, vt, vaa, vid)) vt)
+            | Tmap (_, kt, vt) -> Some (mk_mterm (Mmapget (kt, vt, vaa, vid, Some an)) vt)
             | _ -> None
           in
 
@@ -4016,7 +4015,7 @@ let remove_asset (model : model) : model =
           let vaa = get_asset_global an in
           let geta =
             match get_ntype vaa.type_ with
-            | Tmap (_, kt, vt) -> Some (mk_mterm (Mmapget (kt, vt, vaa, vid)) vt)
+            | Tmap (_, kt, vt) -> Some (mk_mterm (Mmapget (kt, vt, vaa, vid, Some an)) vt)
             | _ -> None
           in
 
@@ -4068,14 +4067,14 @@ let remove_asset (model : model) : model =
             | Tmap (_, kt, vt) -> kt, vt
             | _ -> assert false
           in
-          let map_get = Mmapget (kt, vt, va, k) in
+          let map_get = Mmapget (kt, vt, va, k, Some an) in
           mk_mterm map_get vt
         end
 
       | Mget (an, CKview c, k) -> begin
           let get = mk_mterm (Mget(an, CKcoll(Tnone, Dnone), k)) mt.type_ |> fm ctx in
           let cond = mk_mterm (Mcontains(an, CKview c, k)) tbool |> fm ctx in
-          mk_mterm (Mexprif(cond, get, failc NotFound)) get.type_
+          mk_mterm (Mexprif(cond, get, failc (AssetNotFound an))) get.type_
         end
 
       (* control *)
@@ -4127,7 +4126,7 @@ let remove_asset (model : model) : model =
           let mk_assign bk =
             let ts = tset atk in
             let add_set set = mk_mterm (Msetadd (atk, set, bk)) ts in
-            let get_ t = mk_mterm (Mmapget(kt, vt, va, ak)) t in
+            let get_ t = mk_mterm (Mmapget(kt, vt, va, ak, Some an)) t in
             let v : mterm =
               if is_record
               then begin
@@ -4177,7 +4176,7 @@ let remove_asset (model : model) : model =
           let atk = Utils.get_asset_key model aan |> snd in
 
 
-          let get_ t = mk_mterm (Mmapget(kt, vt, va, kk)) t in
+          let get_ t = mk_mterm (Mmapget(kt, vt, va, kk, Some an)) t in
 
           let mk_loop _ =
             let iter_var = dumloc "_iter_var" in
@@ -4277,7 +4276,7 @@ let remove_asset (model : model) : model =
               let va = get_asset_global an in
               let get =
                 match get_ntype va.type_ with
-                | Tmap (_, kt, vt) -> mk_mterm (Mmapget (kt, vt, va, fm ctx k)) vt
+                | Tmap (_, kt, vt) -> mk_mterm (Mmapget (kt, vt, va, fm ctx k, Some an)) vt
                 | _ -> assert false
               in
 
@@ -4298,7 +4297,7 @@ let remove_asset (model : model) : model =
               let vaa = get_asset_global aan in
               let geta =
                 match get_ntype vaa.type_ with
-                | Tmap (_, kt, vt) -> Some (mk_mterm (Mmapget (kt, vt, vaa, vkey)) vt)
+                | Tmap (_, kt, vt) -> Some (mk_mterm (Mmapget (kt, vt, vaa, vkey, Some an)) vt)
                 | _ -> None
               in
 
@@ -4386,7 +4385,7 @@ let remove_asset (model : model) : model =
               in
 
               let set =
-                let get = mk_mterm (Mmapget (tk, tv, va, kk)) tv in
+                let get = mk_mterm (Mmapget (tk, tv, va, kk, Some an)) tv in
                 if is_record
                 then get
                 else mk_mterm (Mdot(get, dumloc fn)) (tset atk)
@@ -4430,7 +4429,7 @@ let remove_asset (model : model) : model =
           let var_id = dumloc "_asset" in
 
           let mk_letin x =
-            let get = mk_mterm (Mmapget(kt, tasset, va, k)) tasset in
+            let get = mk_mterm (Mmapget(kt, tasset, va, k, Some an)) tasset in
             mk_mterm (Mletin ([var_id], get, Some tasset, x, None)) tunit
           in
 
@@ -4573,7 +4572,7 @@ let remove_asset (model : model) : model =
               | _ -> assert false
             end
             else begin
-              let get : mterm = mk_mterm (Mmapget(kt, tasset, va, k)) tasset in
+              let get : mterm = mk_mterm (Mmapget(kt, tasset, va, k, Some an)) tasset in
               let ll = List.map (fun (id, op, v) ->
                   match op with
                   | ValueAssign -> begin
@@ -4794,7 +4793,7 @@ let remove_asset (model : model) : model =
                 match get_ntype va.type_ with
                 | Tset _ -> x
                 | Tmap (_, kt, vt) ->
-                  let mk_get x = mk_mterm (Mmapget (kt, vt, va, x)) vt in
+                  let mk_get x = mk_mterm (Mmapget (kt, vt, va, x, Some an)) vt in
                   x |> mk_letin ivb (mk_get vxins)
                 | _ -> assert false
               in
@@ -4910,7 +4909,7 @@ let remove_asset (model : model) : model =
                 in
 
                 let set =
-                  let get = mk_mterm (Mmapget (tk, tv, va, kk)) tv in
+                  let get = mk_mterm (Mmapget (tk, tv, va, kk, Some an)) tv in
                   if is_record
                   then get
                   else mk_mterm (Mdot(get, dumloc fn)) (tset atk)
@@ -4984,7 +4983,7 @@ let remove_asset (model : model) : model =
                 in
 
                 let set =
-                  let get = mk_mterm (Mmapget (tk, tv, va, kk)) tv in
+                  let get = mk_mterm (Mmapget (tk, tv, va, kk, Some an)) tv in
                   if is_record
                   then get
                   else mk_mterm (Mdot(get, dumloc fn)) (tset atk)

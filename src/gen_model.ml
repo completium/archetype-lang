@@ -570,7 +570,7 @@ let to_model (ast : A.ast) : M.model =
         let fp = f p in
         let fq = f q in
         let kt, vt = extract_builtin_type_map fp in
-        M.Mmapget (kt, vt, fp, fq)
+        M.Mmapget (kt, vt, fp, fq, None)
 
       | A.Pcall (None, A.Cconst (A.Cmgetopt), [AExpr p; AExpr q]) ->
         let fp = f p in

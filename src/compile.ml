@@ -233,7 +233,7 @@ let toolchain ?(js=false) model =
   |> move_partition_init_asset
   |> remove_enum
   |> replace_assignfield_by_update
-  |> remove_add_update ~with_force:true
+  |> remove_add_update
   |> merge_update
   |> remove_empty_update
   |> remove_assign_operator

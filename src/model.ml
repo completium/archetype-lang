@@ -341,7 +341,7 @@ type ('id, 'term) mterm_node  =
   | Mmapput           of type_ * type_ * 'term * 'term * 'term
   | Mmapremove        of type_ * type_ * 'term * 'term
   | Mmapupdate        of type_ * type_ * 'term * 'term * 'term
-  | Mmapget           of type_ * type_ * 'term * 'term
+  | Mmapget           of type_ * type_ * 'term * 'term * ident option
   | Mmapgetopt        of type_ * type_ * 'term * 'term
   | Mmapcontains      of type_ * type_ * 'term * 'term
   | Mmaplength        of type_ * type_ * 'term
@@ -465,6 +465,7 @@ and 'id fail_type_gen =
   | InvalidCaller
   | InvalidCondition of ident
   | NotFound
+  | AssetNotFound of ident
   | KeyExists of ident
   | KeyExistsOrNotFound of ident
   | OutOfBound
@@ -1213,6 +1214,7 @@ let cmp_fail_type
   | InvalidCaller, InvalidCaller                     -> true
   | InvalidCondition c1, InvalidCondition c2         -> cmp_ident c1 c2
   | NotFound, NotFound                               -> true
+  | AssetNotFound an1, AssetNotFound an2             -> cmp_ident an1 an2
   | KeyExists an1, KeyExists an2                     -> cmp_ident an1 an2
   | KeyExistsOrNotFound an1, KeyExistsOrNotFound an2 -> cmp_ident an1 an2
   | OutOfBound, OutOfBound                           -> true
@@ -1508,7 +1510,7 @@ let cmp_mterm_node
     | Mmapput (tk1, tv1, c1, k1, v1), Mmapput (tk2, tv2, c2, k2, v2)                   -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2 && cmp v1 v2
     | Mmapremove (tk1, tv1, c1, k1), Mmapremove (tk2, tv2, c2, k2)                     -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2
     | Mmapupdate (tk1, tv1, c1, k1, v1), Mmapupdate (tk2, tv2, c2, k2, v2)             -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2 && cmp v1 v2
-    | Mmapget (tk1, tv1, c1, k1), Mmapget (tk2, tv2, c2, k2)                           -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2
+    | Mmapget (tk1, tv1, c1, k1, an1), Mmapget (tk2, tv2, c2, k2, an2)                 -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2 && Option.cmp cmp_ident an1 an2
     | Mmapgetopt (tk1, tv1, c1, k1), Mmapgetopt (tk2, tv2, c2, k2)                     -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2
     | Mmapcontains (tk1, tv1, c1, k1), Mmapcontains (tk2, tv2, c2, k2)                 -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2
     | Mmaplength (tk1, tv1, c1), Mmaplength (tk2, tv2, c2)                             -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2
@@ -1933,7 +1935,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mmapput (tk, tv, c, k, v)      -> Mmapput (ft tk, ft tv, f c, f k, f v)
   | Mmapremove (tk, tv, c, k)      -> Mmapremove (ft tk, ft tv, f c, f k)
   | Mmapupdate (tk, tv, c, k, v)   -> Mmapupdate (ft tk, ft tv, f c, f k, f v)
-  | Mmapget (tk, tv, c, k)         -> Mmapget (ft tk, ft tv, f c, f k)
+  | Mmapget (tk, tv, c, k, an)     -> Mmapget (ft tk, ft tv, f c, f k, Option.map fi an)
   | Mmapgetopt (tk, tv, c, k)      -> Mmapgetopt (ft tk, ft tv, f c, f k)
   | Mmapcontains (tk, tv, c, k)    -> Mmapcontains (ft tk, ft tv, f c, f k)
   | Mmaplength (tk, tv, c)         -> Mmaplength (ft tk, ft tv, f c)
@@ -2356,7 +2358,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mmapput (_, _, c, k, v)               -> f (f (f accu c) k) v
   | Mmapremove (_, _, c, k)               -> f (f accu c) k
   | Mmapupdate (_, _, c, k, v)            -> f (f (f accu c) k) v
-  | Mmapget (_, _, c, k)                  -> f (f accu c) k
+  | Mmapget (_, _, c, k, _)               -> f (f accu c) k
   | Mmapgetopt (_, _, c, k)               -> f (f accu c) k
   | Mmapcontains (_, _, c, k)             -> f (f accu c) k
   | Mmaplength (_, _, c)                  -> f accu c
@@ -3253,10 +3255,10 @@ let fold_map_term
     let ve, va = f ka v in
     g (Mmapupdate (tk, tv, ce, ke, ve)), va
 
-  | Mmapget (tk, tv, c, k) ->
+  | Mmapget (tk, tv, c, k, an) ->
     let ce, ca = f accu c in
     let ke, ka = f ca k in
-    g (Mmapget (tk, tv, ce, ke)), ka
+    g (Mmapget (tk, tv, ce, ke, an)), ka
 
   | Mmapgetopt (tk, tv, c, k) ->
     let ce, ca = f accu c in

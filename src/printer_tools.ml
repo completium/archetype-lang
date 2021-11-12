@@ -121,6 +121,7 @@ let pp_fail_type f fmt a =
   | Model.InvalidCaller          -> pp "\"InvalidCaller\""
   | Model.InvalidCondition id    -> pp "\"InvalidCondition\", %a" pp_str id
   | Model.NotFound               -> pp "\"NotFound\""
+  | Model.AssetNotFound id       -> pp "\"AssetNotFound\", %a" pp_str id
   | Model.KeyExists id           -> pp "\"KeyExists\", %a" pp_str id
   | Model.KeyExistsOrNotFound id -> pp "\"KeyExistsOrNotFound\", %a" pp_str id
   | Model.OutOfBound             -> pp "\"OutOfBound\""

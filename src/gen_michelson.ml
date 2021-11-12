@@ -614,6 +614,7 @@ let to_ir (model : M.model) : T.ir =
           | InvalidCaller          -> T.istring "InvalidCaller"
           | InvalidCondition lbl   -> T.ipair (T.istring "InvalidCondition") (T.istring lbl)
           | NotFound               -> T.istring "NotFound"
+          | AssetNotFound an       -> T.ipair (T.istring "AssetNotFound") (T.istring an)
           | KeyExists an           -> T.ipair (T.istring "KeyExists") (T.istring an)
           | KeyExistsOrNotFound an -> T.ipair (T.istring "KeyExistsOrNotFound") (T.istring an)
           | OutOfBound             -> T.istring "OutOfBound"
@@ -881,7 +882,9 @@ let to_ir (model : M.model) : T.ir =
     | Mmapput (_, _, c, k, v)     -> T.Iterop (Tupdate, f k, T.isome (f v),   f c)
     | Mmapremove (_, tv, c, k)    -> T.Iterop (Tupdate, f k, T.inone (ft tv), f c)
     | Mmapupdate (_, _, c, k, v)  -> T.Iterop (Tupdate, f k, f v, f c)
-    | Mmapget (_, _, c, k)        -> T.Iifnone (T.Ibinop (Bget, f k, f c), T.ifail "NotFound", "_var_ifnone", Ivar "_var_ifnone", ft mtt.type_)
+    | Mmapget (_, _, c, k, oan)   ->
+      let err = match oan with | Some an -> T.ipair (T.istring "AssetNotFound") (T.istring an) | None -> T.istring "NotFound" in
+      T.Iifnone (T.Ibinop (Bget, f k, f c), T.ifaild err, "_var_ifnone", Ivar "_var_ifnone", ft mtt.type_)
     | Mmapgetopt (_, _, c, k)     -> T.Ibinop (Bget, f k, f c)
     | Mmapcontains (_, _, c, k)   -> T.Ibinop (Bmem, f k, f c)
     | Mmaplength (_, _, c)        -> T.Iunop (Usize, f c)

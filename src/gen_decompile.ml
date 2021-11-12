@@ -2353,7 +2353,7 @@ end = struct
           | `Bop Band,                 [ a; b ] -> mk_mterm (Mand (f a, f b)) tbool
           | `Bop Bxor,                 [ a; b ] -> mk_mterm (Mxor (f a, f b)) tbool
           | `Bop Bcompare,             [ _; _ ] -> assert false
-          | `Bop Bget,                 [ a; b ] -> mk_mterm (Mmapget (tunknown, tunknown, f a, f b)) tunknown
+          | `Bop Bget,                 [ a; b ] -> mk_mterm (Mmapget (tunknown, tunknown, f a, f b, None)) tunknown
           | `Bop Bmem,                 [ a; b ] -> mk_mterm (Mmapcontains(tunknown, tunknown, f a, f b)) tunknown
           | `Bop Bconcat,              [ a; b ] -> mk_mterm (Mconcat (f a, f b)) tunknown
           | `Bop Bcons,                [ a; b ] -> mk_mterm (Mlistprepend (tunknown, f a, f b)) tunknown
@@ -2725,7 +2725,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mmapput (_, _, c, k, v)               -> A.eapp (A.Fident (dumloc "put")) [f c; f k; f v]
     | Mmapremove (_, _, _c, _k)                -> assert false
     | Mmapupdate (_, _, _c, _k, _v)            -> assert false
-    | Mmapget (_, _, _c, _k)                   -> assert false
+    | Mmapget (_, _, _c, _k, _an)              -> assert false
     | Mmapgetopt (_, _, _c, _k)                -> assert false
     | Mmapcontains (_, _, _c, _k)              -> assert false
     | Mmaplength (_, _, _c)                    -> assert false

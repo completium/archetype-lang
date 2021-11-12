@@ -1088,7 +1088,7 @@ let pp_mterm fmt (mt : mterm) =
         f k
         f v
 
-    | Mmapget (_, _, c, k) ->
+    | Mmapget (_, _, c, k, _) ->
       Format.fprintf fmt "map_get (%a, %a)"
         f c
         f k
