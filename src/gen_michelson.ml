@@ -1763,10 +1763,10 @@ and to_michelson (ir : T.ir) : T.michelson =
             let code =
               match x.body with
               | Concrete (args, body) ->
-                let env = mk_env ~vars:(args |> List.map fst |> List.rev) () in
+                let env = mk_env ~vars:(args |> List.map fst) () in
                 let nb_args = List.length args in
-                let nb_as = nb_args - 1 in
-                let unfold_args = unfold nb_as in
+                (* let nb_as = nb_args - 1 in *)
+                let unfold_args = unfold_n nb_args in
                 let res = T.cpush (T.tunit, T.Dunit) in
                 let env = add_var_env env fun_result in
                 let es = if nb_args = 0 then T.[cswap; cdrop 1] else T.[cdug nb_args; T.cdrop nb_args] in
