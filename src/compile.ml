@@ -158,6 +158,9 @@ let output (model : Model.model) : string =
                     else begin
                       if !Options.opt_json then
                         let micheline = Michelson.Utils.to_micheline michelson storage_data in
+                        (* let m_ = Michelson.to_micheline_ micheline in
+                        let ppf = Format.std_formatter in
+                        Micheline_printer.print_expr ppf m_ *)
                         if !Options.opt_code_only
                         then begin
                           let code = micheline.code in

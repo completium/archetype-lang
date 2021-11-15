@@ -895,123 +895,123 @@ let cmp_code (lhs : code) (rhs : code) =
   let rec f (lhs : code) (rhs : code) =
     match lhs.node, rhs.node with
     (* Control structures *)
-  | SEQ l1, SEQ l2                                 -> List.for_all2 f l1 l2
-  | APPLY, APPLY                                   -> true
-  | EXEC, EXEC                                     -> true
-  | FAILWITH, FAILWITH                             -> true
-  | IF (t1, e1), IF (t2, e2)                       -> List.for_all2 f t1 t2 && List.for_all2 f e1 e2
-  | IF_CONS (t1, e1), IF_CONS (t2, e2)             -> List.for_all2 f t1 t2 && List.for_all2 f e1 e2
-  | IF_LEFT (t1, e1), IF_LEFT (t2, e2)             -> List.for_all2 f t1 t2 && List.for_all2 f e1 e2
-  | IF_NONE (t1, e1), IF_NONE (t2, e2)             -> List.for_all2 f t1 t2 && List.for_all2 f e1 e2
-  | ITER l1, ITER l2                               -> List.for_all2 f l1 l2
-  | LAMBDA (a1, r1, b1), LAMBDA (a2, r2, b2)       -> cmp_type a1 a2 && cmp_type r1 r2 && List.for_all2 f b1 b2
-  | LOOP l1, LOOP l2                               -> List.for_all2 f l1 l2
-  | LOOP_LEFT l1, LOOP_LEFT l2                     -> List.for_all2 f l1 l2
-  (* Stack manipulation *)
-  | DIG n1, DIG n2                                 -> n1 = n2
-  | DIP (n1, l1), DIP (n2, l2)                     -> n1 = n2 && List.for_all2 f l1 l2
-  | DROP n1, DROP n2                               -> n1 = n2
-  | DUG n1, DUG n2                                 -> n1 = n2
-  | DUP, DUP                                       -> true
-  | DUP_N n1, DUP_N n2                             -> n1 = n2
-  | PUSH (t1, d1), PUSH (t2, d2)                   -> cmp_type t1 t2 && cmp_data d1 d2
-  | SWAP, SWAP                                     -> true
-  (* Arthmetic operations *)
-  | ABS, ABS                                       -> true
-  | ADD, ADD                                       -> true
-  | COMPARE, COMPARE                               -> true
-  | EDIV, EDIV                                     -> true
-  | EQ, EQ                                         -> true
-  | GE, GE                                         -> true
-  | GT, GT                                         -> true
-  | INT, INT                                       -> true
-  | ISNAT, ISNAT                                   -> true
-  | LE, LE                                         -> true
-  | LSL, LSL                                       -> true
-  | LSR, LSR                                       -> true
-  | LT, LT                                         -> true
-  | MUL, MUL                                       -> true
-  | NEG, NEG                                       -> true
-  | NEQ, NEQ                                       -> true
-  | SUB, SUB                                       -> true
-  (* Boolean operations *)
-  | AND, AND                                       -> true
-  | NOT, NOT                                       -> true
-  | OR, OR                                         -> true
-  | XOR, XOR                                       -> true
-  (* Cryptographic operations *)
-  | BLAKE2B, BLAKE2B                               -> true
-  | CHECK_SIGNATURE, CHECK_SIGNATURE               -> true
-  | HASH_KEY, HASH_KEY                             -> true
-  | KECCAK, KECCAK                                 -> true
-  | PAIRING_CHECK, PAIRING_CHECK                   -> true
-  | SAPLING_EMPTY_STATE n1, SAPLING_EMPTY_STATE n2 -> n1 = n2
-  | SAPLING_VERIFY_UPDATE, SAPLING_VERIFY_UPDATE   -> true
-  | SHA256, SHA256                                 -> true
-  | SHA512, SHA512                                 -> true
-  | SHA3, SHA3                                     -> true
-  (* Blockchain operations *)
-  | ADDRESS, ADDRESS                               -> true
-  | AMOUNT, AMOUNT                                 -> true
-  | BALANCE, BALANCE                               -> true
-  | CHAIN_ID, CHAIN_ID                             -> true
-  | CONTRACT (t1, a1), CONTRACT (t2, a2)           -> cmp_type t1 t2 && Option.cmp cmp_ident a1 a2
-  | CREATE_CONTRACT (p1, s1, c1), CREATE_CONTRACT (p2, s2, c2) -> cmp_type p1 p2 && cmp_type s1 s2 && f c1 c2
-  | IMPLICIT_ACCOUNT, IMPLICIT_ACCOUNT             -> true
-  | LEVEL, LEVEL                                   -> true
-  | NOW, NOW                                       -> true
-  | SELF a1, SELF a2                               -> Option.cmp String.equal a1 a2
-  | SELF_ADDRESS, SELF_ADDRESS                     -> true
-  | SENDER, SENDER                                 -> true
-  | SET_DELEGATE, SET_DELEGATE                     -> true
-  | SOURCE, SOURCE                                 -> true
-  | TOTAL_VOTING_POWER, TOTAL_VOTING_POWER         -> true
-  | TRANSFER_TOKENS, TRANSFER_TOKENS               -> true
-  | VOTING_POWER, VOTING_POWER                     -> true
-  (* Operations on data structures *)
-  | CAR, CAR                                       -> true
-  | CDR, CDR                                       -> true
-  | CONCAT, CONCAT                                 -> true
-  | CONS, CONS                                     -> true
-  | EMPTY_BIG_MAP (k1, v1), EMPTY_BIG_MAP (k2, v2) -> cmp_type k1 k2 && cmp_type v1 v2
-  | EMPTY_MAP (k1, v1), EMPTY_MAP (k2, v2)         -> cmp_type k1 k2 && cmp_type v1 v2
-  | EMPTY_SET t1, EMPTY_SET t2                     -> cmp_type t1 t2
-  | GET, GET                                       -> true
-  | GET_N n1, GET_N n2                             -> n1 = n2
-  | GET_AND_UPDATE, GET_AND_UPDATE                 -> true
-  | LEFT t1, LEFT t2                               -> cmp_type t1 t2
-  | MAP  l1, MAP  l2                               -> List.for_all2 f l1 l2
-  | MEM, MEM                                       -> true
-  | NEVER, NEVER                                   -> true
-  | NIL t1, NIL t2                                 -> cmp_type t1 t2
-  | NONE t1, NONE t2                               -> cmp_type t1 t2
-  | PACK, PACK                                     -> true
-  | PAIR, PAIR                                     -> true
-  | PAIR_N n1, PAIR_N n2                           -> n1 = n2
-  | RIGHT t1, RIGHT t2                             -> cmp_type t1 t2
-  | SIZE, SIZE                                     -> true
-  | SLICE, SLICE                                   -> true
-  | SOME, SOME                                     -> true
-  | UNIT, UNIT                                     -> true
-  | UNPACK t1, UNPACK t2                           -> cmp_type t1 t2
-  | UNPAIR, UNPAIR                                 -> true
-  | UNPAIR_N n1, UNPAIR_N n2                       -> n1 = n2
-  | UPDATE, UPDATE                                 -> true
-  | UPDATE_N n1, UPDATE_N n2                       -> n1 = n2
-  (* Operations on tickets *)
-  | JOIN_TICKETS, JOIN_TICKETS                     -> true
-  | READ_TICKET, READ_TICKET                       -> true
-  | SPLIT_TICKET, SPLIT_TICKET                     -> true
-  | TICKET, TICKET                                 -> true
-  (* Other *)
-  | CAST t1, CAST t2                               -> cmp_type t1 t2
-  | RENAME, RENAME                                 -> true
-  | VIEW (i1, t1), VIEW (i2, t2)                   -> cmp_ident i1 i2 && cmp_type t1 t2
-  | OPEN_CHEST, OPEN_CHEST                         -> true
-  (* Macro *)
-  | CAR_N n1, CAR_N n2                             -> n1 = n2
-  | CDR_N n1, CDR_N n2                             -> n1 = n2
-  | _ -> false
+    | SEQ l1, SEQ l2                                 -> List.for_all2 f l1 l2
+    | APPLY, APPLY                                   -> true
+    | EXEC, EXEC                                     -> true
+    | FAILWITH, FAILWITH                             -> true
+    | IF (t1, e1), IF (t2, e2)                       -> List.for_all2 f t1 t2 && List.for_all2 f e1 e2
+    | IF_CONS (t1, e1), IF_CONS (t2, e2)             -> List.for_all2 f t1 t2 && List.for_all2 f e1 e2
+    | IF_LEFT (t1, e1), IF_LEFT (t2, e2)             -> List.for_all2 f t1 t2 && List.for_all2 f e1 e2
+    | IF_NONE (t1, e1), IF_NONE (t2, e2)             -> List.for_all2 f t1 t2 && List.for_all2 f e1 e2
+    | ITER l1, ITER l2                               -> List.for_all2 f l1 l2
+    | LAMBDA (a1, r1, b1), LAMBDA (a2, r2, b2)       -> cmp_type a1 a2 && cmp_type r1 r2 && List.for_all2 f b1 b2
+    | LOOP l1, LOOP l2                               -> List.for_all2 f l1 l2
+    | LOOP_LEFT l1, LOOP_LEFT l2                     -> List.for_all2 f l1 l2
+    (* Stack manipulation *)
+    | DIG n1, DIG n2                                 -> n1 = n2
+    | DIP (n1, l1), DIP (n2, l2)                     -> n1 = n2 && List.for_all2 f l1 l2
+    | DROP n1, DROP n2                               -> n1 = n2
+    | DUG n1, DUG n2                                 -> n1 = n2
+    | DUP, DUP                                       -> true
+    | DUP_N n1, DUP_N n2                             -> n1 = n2
+    | PUSH (t1, d1), PUSH (t2, d2)                   -> cmp_type t1 t2 && cmp_data d1 d2
+    | SWAP, SWAP                                     -> true
+    (* Arthmetic operations *)
+    | ABS, ABS                                       -> true
+    | ADD, ADD                                       -> true
+    | COMPARE, COMPARE                               -> true
+    | EDIV, EDIV                                     -> true
+    | EQ, EQ                                         -> true
+    | GE, GE                                         -> true
+    | GT, GT                                         -> true
+    | INT, INT                                       -> true
+    | ISNAT, ISNAT                                   -> true
+    | LE, LE                                         -> true
+    | LSL, LSL                                       -> true
+    | LSR, LSR                                       -> true
+    | LT, LT                                         -> true
+    | MUL, MUL                                       -> true
+    | NEG, NEG                                       -> true
+    | NEQ, NEQ                                       -> true
+    | SUB, SUB                                       -> true
+    (* Boolean operations *)
+    | AND, AND                                       -> true
+    | NOT, NOT                                       -> true
+    | OR, OR                                         -> true
+    | XOR, XOR                                       -> true
+    (* Cryptographic operations *)
+    | BLAKE2B, BLAKE2B                               -> true
+    | CHECK_SIGNATURE, CHECK_SIGNATURE               -> true
+    | HASH_KEY, HASH_KEY                             -> true
+    | KECCAK, KECCAK                                 -> true
+    | PAIRING_CHECK, PAIRING_CHECK                   -> true
+    | SAPLING_EMPTY_STATE n1, SAPLING_EMPTY_STATE n2 -> n1 = n2
+    | SAPLING_VERIFY_UPDATE, SAPLING_VERIFY_UPDATE   -> true
+    | SHA256, SHA256                                 -> true
+    | SHA512, SHA512                                 -> true
+    | SHA3, SHA3                                     -> true
+    (* Blockchain operations *)
+    | ADDRESS, ADDRESS                               -> true
+    | AMOUNT, AMOUNT                                 -> true
+    | BALANCE, BALANCE                               -> true
+    | CHAIN_ID, CHAIN_ID                             -> true
+    | CONTRACT (t1, a1), CONTRACT (t2, a2)           -> cmp_type t1 t2 && Option.cmp cmp_ident a1 a2
+    | CREATE_CONTRACT (p1, s1, c1), CREATE_CONTRACT (p2, s2, c2) -> cmp_type p1 p2 && cmp_type s1 s2 && f c1 c2
+    | IMPLICIT_ACCOUNT, IMPLICIT_ACCOUNT             -> true
+    | LEVEL, LEVEL                                   -> true
+    | NOW, NOW                                       -> true
+    | SELF a1, SELF a2                               -> Option.cmp String.equal a1 a2
+    | SELF_ADDRESS, SELF_ADDRESS                     -> true
+    | SENDER, SENDER                                 -> true
+    | SET_DELEGATE, SET_DELEGATE                     -> true
+    | SOURCE, SOURCE                                 -> true
+    | TOTAL_VOTING_POWER, TOTAL_VOTING_POWER         -> true
+    | TRANSFER_TOKENS, TRANSFER_TOKENS               -> true
+    | VOTING_POWER, VOTING_POWER                     -> true
+    (* Operations on data structures *)
+    | CAR, CAR                                       -> true
+    | CDR, CDR                                       -> true
+    | CONCAT, CONCAT                                 -> true
+    | CONS, CONS                                     -> true
+    | EMPTY_BIG_MAP (k1, v1), EMPTY_BIG_MAP (k2, v2) -> cmp_type k1 k2 && cmp_type v1 v2
+    | EMPTY_MAP (k1, v1), EMPTY_MAP (k2, v2)         -> cmp_type k1 k2 && cmp_type v1 v2
+    | EMPTY_SET t1, EMPTY_SET t2                     -> cmp_type t1 t2
+    | GET, GET                                       -> true
+    | GET_N n1, GET_N n2                             -> n1 = n2
+    | GET_AND_UPDATE, GET_AND_UPDATE                 -> true
+    | LEFT t1, LEFT t2                               -> cmp_type t1 t2
+    | MAP  l1, MAP  l2                               -> List.for_all2 f l1 l2
+    | MEM, MEM                                       -> true
+    | NEVER, NEVER                                   -> true
+    | NIL t1, NIL t2                                 -> cmp_type t1 t2
+    | NONE t1, NONE t2                               -> cmp_type t1 t2
+    | PACK, PACK                                     -> true
+    | PAIR, PAIR                                     -> true
+    | PAIR_N n1, PAIR_N n2                           -> n1 = n2
+    | RIGHT t1, RIGHT t2                             -> cmp_type t1 t2
+    | SIZE, SIZE                                     -> true
+    | SLICE, SLICE                                   -> true
+    | SOME, SOME                                     -> true
+    | UNIT, UNIT                                     -> true
+    | UNPACK t1, UNPACK t2                           -> cmp_type t1 t2
+    | UNPAIR, UNPAIR                                 -> true
+    | UNPAIR_N n1, UNPAIR_N n2                       -> n1 = n2
+    | UPDATE, UPDATE                                 -> true
+    | UPDATE_N n1, UPDATE_N n2                       -> n1 = n2
+    (* Operations on tickets *)
+    | JOIN_TICKETS, JOIN_TICKETS                     -> true
+    | READ_TICKET, READ_TICKET                       -> true
+    | SPLIT_TICKET, SPLIT_TICKET                     -> true
+    | TICKET, TICKET                                 -> true
+    (* Other *)
+    | CAST t1, CAST t2                               -> cmp_type t1 t2
+    | RENAME, RENAME                                 -> true
+    | VIEW (i1, t1), VIEW (i2, t2)                   -> cmp_ident i1 i2 && cmp_type t1 t2
+    | OPEN_CHEST, OPEN_CHEST                         -> true
+    (* Macro *)
+    | CAR_N n1, CAR_N n2                             -> n1 = n2
+    | CDR_N n1, CDR_N n2                             -> n1 = n2
+    | _ -> false
   in
   f lhs rhs
 
@@ -1760,3 +1760,32 @@ let rec to_data (o : obj_micheline) : data =
   | Oarray l                                  -> Dlist (List.map f l)
   | Oprim ({prim = "Elt"; args = a::b::_ })   -> Delt  (f a, f b)
   | _ -> Format.eprintf "data unknown %a@." pp_obj_micheline o; assert false
+
+type micheline_ = (Micheline_printer.location, string) Micheline.node
+
+let to_micheline_ (input : micheline) : micheline_ =
+
+  let emptyloc : Micheline_printer.location = {comment = None} in
+
+  let mkint     v = Micheline.Int (emptyloc, v) in
+  let mkstring  v = Micheline.String (emptyloc, v) in
+  let mkbytes   v = Micheline.Bytes (emptyloc, v) in
+  let mkprim    (p, args, annot) = Micheline.Prim (emptyloc, p, args, annot) in
+  let mkseq nodes = Micheline.Seq (emptyloc, nodes) in
+
+  let rec doit (i : obj_micheline) : micheline_ =
+    match i with
+    | Oprim p -> mkprim (p.prim, List.map doit p.args, p.annots)
+    | Ostring v -> mkstring v
+    | Obytes _v -> mkbytes (Bytes.empty) (* TODO *)
+    | Oint v -> mkint (Big_int.big_int_of_string v)
+    | Oarray v -> mkseq (List.map doit v)
+    | Ovar _ -> assert false
+  in
+
+  (* let storage = doit input.storage in *)
+  (* let parameter = doit input.parameter in *)
+  let code = mkseq (List.map doit input.code) in
+  code
+
+(* mkseq [storage; parameter; code] *)
