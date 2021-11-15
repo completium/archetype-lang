@@ -20,6 +20,7 @@
   printer_model_tools
   michelson gen_michelson printer_michelson
   michelson_parser michelson_lexer gen_decompile opt_model
+  micheline micheline_printer
   gen_why3 mlwtree printer_mlwtree
   gen_extra mtyping extract_w
   compile
