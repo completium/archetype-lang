@@ -1761,7 +1761,7 @@ let rec to_data (o : obj_micheline) : data =
   | Oprim ({prim = "Elt"; args = a::b::_ })   -> Delt  (f a, f b)
   | _ -> Format.eprintf "data unknown %a@." pp_obj_micheline o; assert false
 
-type micheline_ = (Micheline_printer.location, string) Micheline.node
+type micheline_ = Micheline_printer.node
 
 let to_micheline_ (input : micheline) : micheline_ =
 
