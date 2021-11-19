@@ -14,9 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     * add sapling types (`sapling_state` and `sapling_transaction`) and operations (`sapling_empty_state` and `sapling_verify_update`)
     * add bls curves types (`bls12_381_fr`, `bls12_381_g1` and `bls12_381_g2`), arthmetic (`+`, `*`, unary `-`) and operation (`pairing_check`)
 
-## Unrealeased
+## [1.2.10] - 2021-11-10
 ### Added
   - on-chain view
+### Changed
+  - improve michelson output
+### Fixed
+  - `addupdate` when there is default value in asset
 
 ## [1.2.9] - 2021-10-03
 ### Added

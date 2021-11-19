@@ -1916,7 +1916,7 @@ and to_michelson (ir : T.ir) : T.michelson =
     let fold_vars = fold_vars @ [T.cunit] in
 
     let env = add_var_env env fun_result in
-    print_env env;
+    (* print_env env; *)
 
     let code, _env =
       match v.body with
