@@ -1,7 +1,0 @@
-{
-  storage nat;
-  parameter nat;
-  code { CAR;
-         NIL operation;
-         PAIR };
-}

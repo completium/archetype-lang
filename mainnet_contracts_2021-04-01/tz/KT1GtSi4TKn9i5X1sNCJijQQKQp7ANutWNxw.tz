@@ -1,7 +1,0 @@
-{
-  storage bytes;
-  parameter bytes;
-  code { CAR;
-         NIL operation;
-         PAIR };
-}

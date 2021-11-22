@@ -1,6 +1,0 @@
-{
-  storage unit;
-  parameter nat;
-  code { CAR;
-         FAILWITH };
-}
