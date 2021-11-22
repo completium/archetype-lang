@@ -1,0 +1,11 @@
+{
+  storage unit;
+  parameter address;
+  code { DUP;
+         CDR;
+         SWAP;
+         CAR;
+         DROP;
+         NIL operation;
+         PAIR };
+}

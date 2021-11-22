@@ -1,0 +1,7 @@
+{
+  storage unit;
+  parameter (lambda unit (pair (list operation) unit));
+  code { CAR;
+         UNIT;
+         EXEC };
+}
