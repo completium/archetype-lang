@@ -1,0 +1,13 @@
+archetype reverse_with_enum
+
+enum myenum =
+| entry1<int>
+| entry2<string>
+
+variable res : list<myenum> = []
+
+entry exec () {
+    var ops : list<myenum> = [];
+    ops.reverse();
+    res := ops
+}
