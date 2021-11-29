@@ -1,0 +1,16 @@
+archetype expr_lambda
+
+variable res : int = 0
+
+entry exec () {
+  specification {
+    s0: res = 1;
+  }
+  effect {
+    var g : lambda<(nat * string), int> = lambda<int>((x : nat * string) -> length(x[1]) - x[0]);
+
+    var f = apply_lambda(g, 2);
+
+    res := exec_lambda(f, "mystring")
+  }
+}

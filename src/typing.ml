@@ -1396,6 +1396,7 @@ let opsops : opinfo list =
 (* -------------------------------------------------------------------- *)
 let lambdaops : opinfo list = [
   op "exec_lambda" A.Cexec `Total (Some (A.Tlambda (A.Tnamed 0, A.Tnamed 1))) [A.Tnamed 0] (`Ty (A.Tnamed 1)) Mint.empty;
+  op "apply_lambda" A.Capply `Total (Some (A.Tlambda (A.Ttuple [A.Tnamed 0; A.Tnamed 1], A.Tnamed 2))) [A.Tnamed 0] (`Ty (A.Tlambda (A.Tnamed 1, A.Tnamed 2))) Mint.empty;
 ]
 
 (* -------------------------------------------------------------------- *)
