@@ -284,6 +284,7 @@ let to_const = function
   | Cchecksignature -> "check_signature"
   | Chashkey        -> "hash_key"
   | Ccontractaddress-> "contract_address"
+  | Caddresscontract-> "address_contract"
   | Ckeyaddress     -> "key_address"
   (* voting *)
   | Ctotalvotingpower -> "total_voting_power"

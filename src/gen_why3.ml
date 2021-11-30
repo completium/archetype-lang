@@ -2362,6 +2362,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Msetdelegate s -> Tapp (loc_term (Tvar "set_delegate"),[map_mterm m ctx s])
     | Mimplicitaccount s -> Tapp (loc_term (Tvar "implicit_account"),[map_mterm m ctx s])
     | Mcontractaddress s -> Tapp (loc_term (Tvar "contract_address"),[map_mterm m ctx s])
+    | Maddresscontract s -> Tapp (loc_term (Tvar "address_contract"),[map_mterm m ctx s])
     | Mkeyaddress s -> Tapp (loc_term (Tvar "key_address"),[map_mterm m ctx s])
 
     | Mblake2b x -> Tapp (loc_term (Tvar "blake2b"),[map_mterm m ctx x])

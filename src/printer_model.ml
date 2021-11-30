@@ -1223,6 +1223,10 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "contract_address (%a)"
         f x
 
+    | Maddresscontract x ->
+      Format.fprintf fmt "address_contract (%a)"
+        f x
+
     | Mkeyaddress x ->
       Format.fprintf fmt "key_address (%a)"
         f x

@@ -1,0 +1,9 @@
+archetype contract_address_contract
+
+variable res : option<contract<unit>> = none
+
+entry exec () {
+  effect {
+    res := some(address_to_contract(tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg));
+  }
+}

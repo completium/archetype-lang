@@ -213,6 +213,7 @@ type const =
   | Cchecksignature
   | Chashkey
   | Ccontractaddress
+  | Caddresscontract
   | Ckeyaddress
   (* voting *)
   | Ctotalvotingpower

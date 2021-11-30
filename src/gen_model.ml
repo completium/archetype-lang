@@ -760,6 +760,10 @@ let to_model (ast : A.ast) : M.model =
         let fx = f x in
         M.Mcontractaddress (fx)
 
+      | A.Pcall (None, A.Cconst A.Caddresscontract, [AExpr x]) ->
+        let fx = f x in
+        M.Maddresscontract (fx)
+
       | A.Pcall (None, A.Cconst A.Ckeyaddress, [AExpr x]) ->
         let fx = f x in
         M.Mkeyaddress (fx)

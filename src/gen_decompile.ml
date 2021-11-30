@@ -2756,6 +2756,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Msetdelegate _x     -> assert false
     | Mimplicitaccount _x -> assert false
     | Mcontractaddress _x -> assert false
+    | Maddresscontract _x -> assert false
     | Mkeyaddress _x      -> assert false
 
 
