@@ -748,6 +748,10 @@ and pp_dinstr (fmt : Format.formatter) (i : dinstr) =
     Format.fprintf fmt "@[<v 2>iter %a in %a:@\n%a@]"
       pp_var i pp_expr c pp_dcode b
 
+  | DILoop (i, b) ->
+    Format.fprintf fmt "@[<v 2>loop %a:@\n%a@]"
+      pp_var i pp_dcode b
+
 and pp_expr (fmt : Format.formatter) (e : dexpr) =
   let f = pp_expr in
   match e with

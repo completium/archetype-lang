@@ -1047,6 +1047,11 @@ end = struct
       let c = dcode_apply_uf uf c in
       DIIter (x, e, c)
 
+    | DILoop (x, c) ->
+      let x = dvar_apply_uf  uf x in
+      let c = dcode_apply_uf uf c in
+      DILoop (x, c)
+
   and dcode_apply_uf (uf : UF.uf) (is : dcode) : dcode =
     List.map (dinstr_apply_uf uf) is
 
@@ -1281,10 +1286,11 @@ end = struct
 
       unify_dcode uf bd1 bd2;
 
-      let _bd = dcode_apply_uf uf bd1 in
+      let bd = dcode_apply_uf uf bd1 in
       let s = rstack_apply_uf uf ((cond :> rstack1) :: s1) in
+      let cond, _ = List.pop s in
 
-      mkdecomp s []
+      mkdecomp s [DILoop (as_dvar cond, bd)]
 
     | IF_CONS (c1, c2) ->
       compile_match s [("cons", 1), c1; ("nil", 0), c2]
@@ -1385,6 +1391,9 @@ end = struct
     | DIIter (x, _, c) ->
       Sdvar.remove x (code_wr c)
 
+    | DILoop (x, c) ->
+      Sdvar.add x (code_wr c)
+
     | DIMatch (_, bs) ->
       let for1 (_, ps, c) =
         Sdvar.diff
@@ -1468,6 +1477,13 @@ end = struct
 
       env, [DIIter (x, expr_cttprop env0 e, c)]
 
+    | DILoop (x, c) ->
+      let wr   = Sdvar.remove x (code_wr c) in
+      let env  = cttenv_remove_wr env0 wr in
+      let _, c = code_cttprop env c in
+
+      env, [DILoop (x, c)]
+
     | DIMatch (e, bs) ->
       let wr =
         let for1 (_, p, c) =
@@ -1522,6 +1538,10 @@ end = struct
 
       Sdvar.remove x keep, [DIIter (x, e, c)]
 
+    | DILoop (x, c) ->
+      let keep, c = code_kill (Sdvar.add x keep) c in
+      keep, [DILoop (x, c)]
+
     | DIMatch (e, bs) ->
       let for1 (x, pv, c) =
         let pfv = List.map pattern_fv pv in
@@ -1573,8 +1593,9 @@ end = struct
         pr1 @ dc @ pr2
       | _ -> assert false in
 
-    let _, code = code_cttprop Mint.empty code in
-    let _, code = code_kill Sdvar.empty code in
+(*    let _, code = code_kill Sdvar.empty code in*)
+(*    let _, code = code_cttprop Mint.empty code in*)
+(*    let _, code = code_kill Sdvar.empty code in*)
 
     code
 end

@@ -467,7 +467,7 @@ type dinstr =
   | DIFailwith of dexpr
   | DIWhile    of dexpr * dcode
   | DIIter     of dtyvar * dexpr * dcode
-  (* | DILoopL    of dtyvar * dcode *)
+  | DILoop     of dtyvar * dcode
 (* | DICall     of ident * dexpr list *)
 
 (* and dtyvar = dvar * type_ *)
