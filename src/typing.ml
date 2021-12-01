@@ -3540,7 +3540,11 @@ let rec for_xexpr
             Option.fold
               (fun env lt -> Env.Local.push ~kind:`LoopIndex env (x, lt))
               env lt
-          in for_xexpr env ?ety pe in
+          in
+          let capture =
+            extend_capture capture (List.map (fun (x, _) -> unloc x) [(x, lt)])
+          in
+          for_xexpr ~capture env ?ety pe in
 
         let rty =
           match mode.em_kind with
