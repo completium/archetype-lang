@@ -2585,6 +2585,13 @@ let capture0 : capture = {
   cp_global = true; cp_local = `Yes None;
 }
 
+let extend_capture (capture : capture) (xs : ident list) =
+  let cp_local =
+    match capture.cp_local with
+    | `Yes _ -> capture.cp_local
+    | `Only ids -> `Only (List.fold_right Sid.add xs ids)
+  in { capture with cp_local; }
+
 (* -------------------------------------------------------------------- *)
 let rec for_xexpr
     (mode : emode_t) ?autoview ?(capture = capture0)
@@ -3473,11 +3480,13 @@ let rec for_xexpr
       end
 
     | Ematchwith (e, bs) -> begin
-        match for_gen_matchwith mode env (loc tope) e bs with
+        match for_gen_matchwith mode capture env (loc tope) e bs with
         | None -> bailout () | Some (kd, ctors, me, (wd, bsm, args), es) ->
           let es = List.map2 (fun e xs ->
               let env = Env.Local.pushn ~kind:`Pattern env xs in
-              for_xexpr env e) es args in
+              let capture =
+                extend_capture capture (List.map (fun (x, _) -> unloc x) xs)
+              in for_xexpr ~capture env e) es args in
           let bty, es = join_expr env ety es in
 
           let aout = List.pmap (fun (cname, _, _) ->
@@ -3736,8 +3745,8 @@ and join_expr ?autoview (env : env) (ety : A.ptyp option) (es : A.pterm list) =
     end
 
 (* -------------------------------------------------------------------- *)
-and for_gen_matchwith (mode : emode_t) (env : env) theloc pe bs =
-  let me = for_xexpr mode env pe in
+and for_gen_matchwith (mode : emode_t) (capture : capture) (env : env) theloc pe bs =
+  let me = for_xexpr mode ~capture env pe in
 
   let ctors =
     match me.A.type_ with
@@ -4764,7 +4773,7 @@ let rec for_instruction_r
       env, mki (Ilabel lbl)
 
     | Ematchwith (e, bs) -> begin
-        match for_gen_matchwith (expr_mode kind) env (loc i) e bs with
+        match for_gen_matchwith (expr_mode kind) capture0 env (loc i) e bs with
         | None -> bailout () | Some (kd, ctors, me, (wd, bsm, args), is) ->
 
           let env, is = List.fold_left_map (fun env (i, xtys) ->
