@@ -61,6 +61,7 @@
 %token DOT
 %token EFFECT
 %token ELSE
+%token EMPTYLIST
 %token END
 %token ENTRY
 %token ENTRYPOINT
@@ -991,6 +992,9 @@ simple_expr_r:
 
  | id=ident a=app_args
      { Eapp ( Fident id, a) }
+
+ | EMPTYLIST LESS t=type_t GREATER a=app_args
+     { Eappt ( Fident (dumloc "emptylist"), [t], a) }
 
  | x=simple_expr DOT y=ident
      { Edot (x, y) }

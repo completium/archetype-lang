@@ -46,6 +46,7 @@
       "dorequire"           , DOREQUIRE           ;
       "effect"              , EFFECT              ;
       "else"                , ELSE                ;
+      "emptylist"           , EMPTYLIST           ;
       "end"                 , END                 ;
       "entry"               , ENTRY               ;
       "entrypoint"          , ENTRYPOINT          ;

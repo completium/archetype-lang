@@ -3281,6 +3281,17 @@ let rec for_xexpr
 
       end
 
+    | Eappt (Foperator _, _, _) -> assert false
+
+    | Eappt (Fident id, ts, args) -> begin
+        match unloc id, ts, args with
+        | "emptylist", [t], [] -> begin
+            let ety = match for_type env t with | Some v -> Some (A.Tlist v) | None -> None in
+            mk_sp ety (A.Parray [])
+          end
+        | _ -> assert false
+      end
+
     | Emethod (the, m, args) -> begin
         let type_of_mthtype asset amap = function
           | `T typ   -> Some typ

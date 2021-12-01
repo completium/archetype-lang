@@ -124,6 +124,7 @@ and expr_unloc =
   | Esqapp         of expr * expr
   | Emulticomp     of expr * (comparison_operator loced * expr) list
   | Eapp           of function_ * expr list
+  | Eappt          of function_ * type_t list * expr list
   | Emethod        of expr * lident * expr list
   | Etransfer      of transfer_t
   | Edorequire     of expr * expr

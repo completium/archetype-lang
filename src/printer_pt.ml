@@ -446,6 +446,24 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_app pos pp) fmt (id, args)
 
+  | Eappt (Foperator _, _, _) -> assert false
+
+  | Eappt (Fident id, ts, args) -> begin
+      let pp fmt (id, args) =
+        Format.fprintf fmt "%a%a%a"
+          pp_id id
+          (fun fmt ts ->
+             match ts with
+             | [] -> Format.fprintf fmt ""
+             | _  -> Format.fprintf fmt "<%a>" (pp_list ", " pp_type) ts) ts
+          (fun fmt args ->
+             match args with
+             | [] -> Format.fprintf fmt "()"
+             | _ -> Format.fprintf fmt " (%a)" (pp_list ", " pp_simple_expr) args) args
+      in
+      (maybe_paren outer e_app pos pp) fmt (id, args)
+    end
+
   | Emethod (e, id, args) ->
 
     let pp fmt (e, id, args) =
