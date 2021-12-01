@@ -1892,9 +1892,10 @@ let replace_date_duration_by_timestamp (model : model) : model =
   let is_duration t = match get_ntype t with | Tbuiltin Bduration -> true | _ -> false in
   let process_type t : type_ =
     let rec aux t =
+      let annot = get_atype t in
       match get_ntype t with
-      | Tbuiltin Bdate     -> ttimestamp
-      | Tbuiltin Bduration -> tint
+      | Tbuiltin Bdate     -> mktype ?annot (Tbuiltin Btimestamp)
+      | Tbuiltin Bduration -> mktype ?annot (Tbuiltin Bint)
       | _ -> map_type aux t
     in
     aux t
