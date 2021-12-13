@@ -448,6 +448,7 @@ type micheline = {
   code: obj_micheline list;
   storage: obj_micheline;
   parameters: ident list;
+  views: obj_micheline list;
 }
 [@@deriving show {with_path = false}]
 
@@ -554,8 +555,8 @@ let mk_michelson ?(parameters = []) storage parameter ?(views = []) code : miche
 let mk_prim ?(args=[]) ?(annots=[]) prim : prim =
   { prim; args; annots }
 
-let mk_micheline ?(parameters = []) code storage : micheline =
-  { code; storage; parameters }
+let mk_micheline ?(parameters = []) ?(views = []) code storage : micheline =
+  { code; storage; parameters; views }
 
 let mk_dprogram ?(procs = []) storage parameter storage_data name code =
   { name; storage; parameter; storage_data; code; procs }
@@ -1691,14 +1692,31 @@ end = struct
     | CAR_N n                  -> mk ~args:[mk_int n] "CAR"
     | CDR_N n                  -> mk ~args:[mk_int n] "CDR"
 
+  let view_to_micheline (view : view_struct) : obj_micheline =
+
+    let mk ?(args=[]) ?(annots=[]) x : obj_micheline = Oprim (mk_prim ~args ~annots x) in
+    let mk_string s = Ostring s in
+
+    let id    = view.id in
+    let param = type_to_micheline view.param in
+    let ret   = type_to_micheline view.ret in
+    let body  = code_to_micheline view.body in
+
+    mk ~args:[
+      mk_string id;
+      param;
+      ret;
+      body
+    ] "view"
 
   let to_micheline (m : michelson) (s : data) : micheline =
     let storage   = type_to_micheline m.storage in
     let parameter = type_to_micheline m.parameter in
     let code      = code_to_micheline m.code in
+    let views     = List.map view_to_micheline m.views in
     let f tag x   = Oprim (mk_prim ~args:[x] tag) in
     let parameters = m.parameters in
-    mk_micheline ~parameters [f "storage" storage; f "parameter" parameter; f "code" code] (data_to_micheline s)
+    mk_micheline ~parameters ~views [f "storage" storage; f "parameter" parameter; f "code" code] (data_to_micheline s)
 
 end
 

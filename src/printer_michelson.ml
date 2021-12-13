@@ -838,7 +838,7 @@ let pp_javascript_header fmt _ =
   export const mk_rational = (n, d) => {return {  \"prim\": \"Pair\", \"args\": [ {  \"int\": n.toString()  }, {  \"int\": d.toString()  } ] }}@\n@\n"
 
 let pp_javascript_content fmt (micheline : Michelson.micheline) =
-  let code : obj_micheline = Michelson.Oarray micheline.code in
+  let code : obj_micheline = Michelson.Oarray (micheline.code @ micheline.views) in
   let storage : obj_micheline = micheline.storage in
   let parameters = micheline.parameters in
   Format.fprintf fmt "\
