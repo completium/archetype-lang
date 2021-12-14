@@ -159,8 +159,8 @@ let output (model : Model.model) : string =
                       if !Options.opt_json then
                         let micheline = Michelson.Utils.to_micheline michelson storage_data in
                         (* let m_ = Michelson.to_micheline_ micheline in
-                        let ppf = Format.std_formatter in
-                        Micheline_printer.print_expr ppf m_ *)
+                           let ppf = Format.std_formatter in
+                           Micheline_printer.print_expr ppf m_ *)
                         if !Options.opt_code_only
                         then begin
                           let code = micheline.code in
@@ -265,6 +265,7 @@ let toolchain ?(js=false) model =
   |> optimize
   |> generate_api_storage
   |> fill_stovars
+  |> patch_fa2
 
 let generate_target model =
 

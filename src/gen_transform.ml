@@ -5649,3 +5649,40 @@ let fill_stovars (model : model) : model =
     model with
     functions = List.map for_functions model.functions
   }
+
+
+let patch_fa2 (model : model) : model =
+  let for_function__ (f__ : function__) : function__ =
+    let for_function_node (fn : function_node) : function_node =
+      let for_fs (fs : function_struct) : function_struct =
+        let args =
+          match unloc fs.name with
+          | s when String.equal s "update_operators" -> begin
+              match fs.args with
+              | [(arga, argt, argd)] -> begin
+                  match argt with
+                  | Tlist (Tor ((c, _), (d, _)), x), z ->
+                    [(arga, (Tlist (Tor ((c, Some (dumloc "%add_operator")), (d, Some (dumloc "%remove_operator"))), x), z), argd)]
+                  | _ -> fs.args
+                end;
+              | _ -> fs.args
+
+            end
+          | _ -> fs.args
+        in
+        {
+          fs with
+          args  = args;
+        }
+      in
+      match fn with
+      | Entry(fs) -> Entry (for_fs fs)
+      | _ -> fn
+    in
+    { f__ with
+      node = for_function_node f__.node;
+    }
+  in
+  { model with
+    functions = List.map for_function__ model.functions;
+  }

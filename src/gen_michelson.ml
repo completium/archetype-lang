@@ -162,7 +162,8 @@ let to_ir (model : M.model) : T.ir =
                 end
               | M.Pnode l -> to_one_type (List.map aux l)
             in
-            aux p
+            let res = aux p in
+            { res with annotation = Option.map unloc (M.get_atype t) }
           end
       end
     | Tlambda (a, r) -> T.mk_type ?annotation (Tlambda (to_type a, to_type r))
@@ -921,7 +922,7 @@ let to_ir (model : M.model) : T.ir =
     | Mimplicitaccount x -> T.Iunop (Uimplicitaccount, f x)
     | Mcontractaddress x -> T.Iunop (Uaddress, f x)
     | Maddresscontract x ->
-    T.Iifnone (T.Iunop (Ucontract(T.tunit, None), f x), T.ifail "NotImplicitContract", "_var_ifnone", Ivar "_var_ifnone", ft mtt.type_)
+      T.Iifnone (T.Iunop (Ucontract(T.tunit, None), f x), T.ifail "NotImplicitContract", "_var_ifnone", Ivar "_var_ifnone", ft mtt.type_)
     | Mkeyaddress      x -> T.Iunop (Uaddress, T.Iunop (Uimplicitaccount, T.Iunop  (Uhash_key, f x)))
 
     (* crypto functions *)
