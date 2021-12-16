@@ -1,6 +1,6 @@
 {
   "name": "@completium/archetype",
-  "version": "0.3.6",
+  "version": "0.3.8",
   "description": "Archetype language is a DSL (Domain Specific Language) to describe blockchain business processes.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
