@@ -5296,7 +5296,7 @@ let getter_to_entry ?(no_underscore=false) ?(extra=false) (model : model) : mode
       let for_function_struct (t : type_) (fs : function_struct) : function_struct =
         let process () =
           let icallback = dumloc ((if no_underscore then "" else "_") ^ "cb" )in
-          let tcallback = tcontract t in
+          let tcallback = mktype (Tcontract t) ~annot:(dumloc "%callback") in
           let vcallback = mk_pvar icallback tcallback in
           let rec aux (mt : mterm) : mterm =
             match mt.node with

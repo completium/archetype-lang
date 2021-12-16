@@ -1150,7 +1150,7 @@ let to_ir (model : M.model) : T.ir =
         | View (fs, ret) -> (funs, entries, views @ [for_fs_fun env fs ret ~view:true ])
       ) ([], [], []) model.functions
   in
-  let annot a (t : T.type_) = { t with annotation = Some (mk_fannot a)} in
+  let annot a (t : T.type_) = id{ t with annotation = Some (mk_fannot a)} in
   let parameter : T.type_ =
     let for_entry (e : T.entry) =
       let f l =
@@ -1160,7 +1160,12 @@ let to_ir (model : M.model) : T.ir =
         | (id, te)::t -> List.fold_left (fun accu (id, te) -> T.mk_type (T.Tpair (annot id te, accu))) (annot id te) t
       in
       let  args : T.type_ = f e.args in
-      let eargs : T.type_ = f e.eargs |> remove_annot in
+      let eargs : T.type_ =
+        match e.eargs with
+        | [] -> T.tunit
+        | [t] -> snd t
+        | ts -> f ts |> remove_annot
+      in
 
       match args.node, eargs.node with
       | T.Tunit, T.Tunit -> T.tunit
