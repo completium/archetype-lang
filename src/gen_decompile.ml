@@ -2245,7 +2245,7 @@ end = struct
 
   let for_type (t : T.type_) : M.type_ = ttype_to_mtype t
 
-  let for_data ?t (d : T.data) : M.mterm =
+  let rec for_data ?t (d : T.data) : M.mterm =
     let is_nat = Option.map_dfl (fun (t : T.type_) -> match t.node with | T.Tnat -> true | _ -> false) false in
     match d with
     | Dint v when is_nat t -> M.mk_bnat v
@@ -2255,7 +2255,7 @@ end = struct
     | Dunit            -> unit
     | Dtrue            -> mtrue
     | Dfalse           -> mfalse
-    | Dpair  (_ld, _rd)-> assert false
+    | Dpair  (ld, rd)  -> mk_pair (for_data ld) (for_data rd)
     | Dleft   _d       -> assert false
     | Dright  _d       -> assert false
     | Dsome   _d       -> assert false
