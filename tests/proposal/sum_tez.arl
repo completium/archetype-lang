@@ -1,0 +1,16 @@
+archetype sum_tez
+
+asset my_asset {
+  id : nat;
+  t : tez
+} initialized by {
+  {0; 1tz};
+  {1; 2tz};
+  {2; 3tz}
+}
+
+variable res : tez = 0tz
+
+entry exec() {
+  res := my_asset.sum(t);
+}

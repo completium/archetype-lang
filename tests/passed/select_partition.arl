@@ -1,0 +1,21 @@
+archetype select_partition
+
+asset o_asset {
+  oid : string;
+  v   : nat = 0;
+}
+
+asset my_asset to big_map {
+  id     : string;
+  p      : partition<o_asset>;
+}
+
+variable res : list<string> = []
+
+entry init() {
+  my_asset.add({id = "toto"; p = [{"tutu"; 2}]})
+}
+
+entry exec() {
+  res := my_asset["toto"].p.select(v = 2)
+}

@@ -1,0 +1,12 @@
+archetype missing_return
+
+variable r : nat = 0
+
+function f() : nat {
+  dorequire(r = 1, "error")
+}
+
+entry exec() {
+  var a = f();
+  r := a
+}

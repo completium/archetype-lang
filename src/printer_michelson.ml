@@ -41,6 +41,8 @@ let rec pp_type fmt (t : type_) =
   | Tbls12_381_g1          -> pp_simple_a "bls12_381_g1"
   | Tbls12_381_g2          -> pp_simple_a "bls12_381_g2"
   | Tnever                 -> pp_simple_a "never"
+  | Tchest                 -> pp_simple_a "chest"
+  | Tchest_key             -> pp_simple_a "chest_key"
 
 let rec pp_pretty_type fmt (t : type_) =
   match t.node with
@@ -105,11 +107,19 @@ and pp_code fmt (i : code) =
     | _ -> false
   in
   let with_complex_instrs l = List.exists with_complex_instr l in
-  let fs fmt = Format.fprintf fmt "{ @[%a@] }" (pp_list ";@\n" pp_code) in
+  (* let fsv fmt = Format.fprintf fmt "{ @[%a@] }" (pp_list ";@\n" pp_code) in
+  let fsh fmt = Format.fprintf fmt "{ %a }" (pp_list "; " pp_code) in
+  let fsl fmt l =
+    if with_complex_instrs l
+    then fsv fmt l
+    else fsh fmt l
+  in
+  match i with *)
+  let fsv fmt = Format.fprintf fmt "{ @[%a@] }" (pp_list ";@\n" pp_code) in
   let pp_dip_arg fmt (i, l) =
     let pp_aux fmt l =
       if with_complex_instrs l
-      then fs fmt l
+      then fsv fmt l
       else Format.fprintf fmt "{ @[%a@] }" (pp_list "; " pp_code) l
     in
     if i = 1
@@ -122,24 +132,25 @@ and pp_code fmt (i : code) =
   in
   match i.node with
   (* Control structures *)
-  | SEQ l                    -> fs fmt l
+  | SEQ l                    -> fsv fmt l
   | APPLY                    -> pp "APPLY"
   | EXEC                     -> pp "EXEC"
   | FAILWITH                 -> pp "FAILWITH"
-  | IF (ti, ei)              -> pp "IF@\n  @[%a@]@\n  @[%a@]" fs ti fs ei
-  | IF_CONS (ti, ei)         -> pp "IF_CONS@\n  @[%a@]@\n  @[%a@]" fs ti fs ei
-  | IF_LEFT (ti, ei)         -> pp "IF_LEFT@\n  @[%a@]@\n  @[%a@]" fs ti fs ei
-  | IF_NONE (ti, ei)         -> pp "IF_NONE@\n  @[%a@]@\n  @[%a@]" fs ti fs ei
-  | ITER is                  -> pp "ITER %a" fs is
-  | LAMBDA (at, rt, is)      -> pp "LAMBDA@\n  @[%a@]@\n  @[%a@]@\n  @[%a@]" pp_type at pp_type rt fs is
-  | LOOP is                  -> pp "LOOP %a" fs is
-  | LOOP_LEFT is             -> pp "LOOP_LEFT %a" fs is
+  | IF (ti, ei)              -> pp "IF@\n  @[%a@]@\n  @[%a@]" fsv ti fsv ei
+  | IF_CONS (ti, ei)         -> pp "IF_CONS@\n  @[%a@]@\n  @[%a@]" fsv ti fsv ei
+  | IF_LEFT (ti, ei)         -> pp "IF_LEFT@\n  @[%a@]@\n  @[%a@]" fsv ti fsv ei
+  | IF_NONE (ti, ei)         -> pp "IF_NONE@\n  @[%a@]@\n  @[%a@]" fsv ti fsv ei
+  | ITER is                  -> pp "ITER %a" fsv is
+  | LAMBDA (at, rt, is)      -> pp "LAMBDA@\n  @[%a@]@\n  @[%a@]@\n  @[%a@]" pp_type at pp_type rt fsv is
+  | LOOP is                  -> pp "LOOP %a" fsv is
+  | LOOP_LEFT is             -> pp "LOOP_LEFT %a" fsv is
   (* Stack manipulation *)
   | DIG i                    -> pp "DIG%a" pp_arg2 i
   | DIP (i, is)              -> pp "DIP %a" pp_dip_arg (i, is)
   | DROP i                   -> pp "DROP%a" pp_arg i
   | DUG i                    -> pp "DUG%a" pp_arg2 i
   | DUP                      -> pp "DUP"
+  | DUP_N i                  -> pp "DUP%a" pp_arg2 i
   | PUSH (t, d)              -> pp "PUSH %a %a" pp_type t pp_data d
   | SWAP                     -> pp "SWAP"
   (* Arthmetic operations *)
@@ -169,8 +180,13 @@ and pp_code fmt (i : code) =
   | BLAKE2B                  -> pp "BLAKE2B"
   | CHECK_SIGNATURE          -> pp "CHECK_SIGNATURE"
   | HASH_KEY                 -> pp "HASH_KEY"
+  | KECCAK                   -> pp "KECCAK"
+  | PAIRING_CHECK            -> pp "PAIRING_CHECK"
+  | SAPLING_EMPTY_STATE n    -> pp "SAPLING_EMPTY_STATE %i" n
+  | SAPLING_VERIFY_UPDATE    -> pp "SAPLING_VERIFY_UPDATE"
   | SHA256                   -> pp "SHA256"
   | SHA512                   -> pp "SHA512"
+  | SHA3                     -> pp "SHA3"
   (* Blockchain operations *)
   | ADDRESS                  -> pp "ADDRESS"
   | AMOUNT                   -> pp "AMOUNT"
@@ -179,12 +195,16 @@ and pp_code fmt (i : code) =
   | CONTRACT (t, a)          -> pp "CONTRACT%a %a" pp_annot a pp_type t
   | CREATE_CONTRACT (p, s, c)-> pp "CREATE_CONTRACT@\n  {@[ parameter %a ;@\n storage %a ;@\n code %a@] }" pp_type p pp_type s pp_code c
   | IMPLICIT_ACCOUNT         -> pp "IMPLICIT_ACCOUNT"
+  | LEVEL                    -> pp "LEVEL"
   | NOW                      -> pp "NOW"
   | SELF a                   -> pp "SELF%a" pp_annot a
+  | SELF_ADDRESS             -> pp "SELF_ADDRESS"
   | SENDER                   -> pp "SENDER"
   | SET_DELEGATE             -> pp "SET_DELEGATE"
   | SOURCE                   -> pp "SOURCE"
+  | TOTAL_VOTING_POWER       -> pp "TOTAL_VOTING_POWER"
   | TRANSFER_TOKENS          -> pp "TRANSFER_TOKENS"
+  | VOTING_POWER             -> pp "VOTING_POWER"
   (* Operations on data structures *)
   | CAR                      -> pp "CAR"
   | CDR                      -> pp "CDR"
@@ -194,48 +214,41 @@ and pp_code fmt (i : code) =
   | EMPTY_MAP     (k, v)     -> pp "EMPTY_MAP %a %a" pp_type k pp_type v
   | EMPTY_SET     t          -> pp "EMPTY_SET %a" pp_type t
   | GET                      -> pp "GET"
+  | GET_N n                  -> pp "GET%a" pp_arg2 n
+  | GET_AND_UPDATE           -> pp "GET_AND_UPDATE"
   | LEFT  t                  -> pp "LEFT %a" pp_type t
-  | MAP  is                  -> pp "MAP %a" fs is
+  | MAP  is                  -> pp "MAP %a" fsv is
   | MEM                      -> pp "MEM"
+  | NEVER                    -> pp "NEVER"
   | NIL t                    -> pp "NIL %a" pp_type t
   | NONE t                   -> pp "NONE %a" pp_type t
   | PACK                     -> pp "PACK"
   | PAIR                     -> pp "PAIR"
+  | PAIR_N n                 -> pp "PAIR%a" pp_arg2 n
   | RIGHT t                  -> pp "RIGHT %a" pp_type t
   | SIZE                     -> pp "SIZE"
   | SLICE                    -> pp "SLICE"
   | SOME                     -> pp "SOME"
   | UNIT                     -> pp "UNIT"
   | UNPACK t                 -> pp "UNPACK %a" pp_type t
+  | UNPAIR                   -> pp "UNPAIR"
+  | UNPAIR_N n               -> pp "UNPAIR%a" pp_arg2 n
   | UPDATE                   -> pp "UPDATE"
+  | UPDATE_N n               -> pp "UPDATE%a" pp_arg2 n
   (* Operations on tickets *)
   | JOIN_TICKETS             -> pp "JOIN_TICKETS"
   | READ_TICKET              -> pp "READ_TICKET"
   | SPLIT_TICKET             -> pp "SPLIT_TICKET"
   | TICKET                   -> pp "TICKET"
   (* Other *)
-  | UNPAIR                   -> pp "UNPAIR"
-  | SELF_ADDRESS             -> pp "SELF_ADDRESS"
   | CAST t                   -> pp "CAST %a" pp_type t
-  | CREATE_ACCOUNT           -> pp "CREATE_ACCOUNT"
   | RENAME                   -> pp "RENAME"
-  | STEPS_TO_QUOTA           -> pp "STEPS_TO_QUOTA"
-  | LEVEL                    -> pp "LEVEL"
-  | SAPLING_EMPTY_STATE n    -> pp "SAPLING_EMPTY_STATE %i" n
-  | SAPLING_VERIFY_UPDATE    -> pp "SAPLING_VERIFY_UPDATE"
-  | NEVER                    -> pp "NEVER"
-  | VOTING_POWER             -> pp "VOTING_POWER"
-  | TOTAL_VOTING_POWER       -> pp "TOTAL_VOTING_POWER"
-  | KECCAK                   -> pp "KECCAK"
-  | SHA3                     -> pp "SHA3"
-  | PAIRING_CHECK            -> pp "PAIRING_CHECK"
-  | SUBMIT_PROPOSALS         -> pp "SUBMIT_PROPOSALS"
-  | SUBMIT_BALLOT            -> pp "SUBMIT_BALLOT"
-  | SET_BAKER_ACTIVE         -> pp "SET_BAKER_ACTIVE"
-  | TOGGLE_BAKER_DELEGATIONS -> pp "TOGGLE_BAKER_DELEGATIONS"
-  | SET_BAKER_CONSENSUS_KEY  -> pp "SET_BAKER_CONSENSUS_KEY"
-  | SET_BAKER_PVSS_KEY       -> pp "SET_BAKER_PVSS_KEY"
-
+  | VIEW (c, t)              -> pp "VIEW \"%s\" %a" c pp_type t
+  | OPEN_CHEST               -> pp "OPEN_CHEST"
+  (* Macro *)
+  | CAR_N n                    -> pp "CAR%a" pp_arg2 n
+  | CDR_N n                    -> pp "CDR%a" pp_arg n
+(*
 let pp_simple_code fmt c =
   let pp s = Format.fprintf fmt s in
   match c with
@@ -353,6 +366,11 @@ let pp_simple_code fmt c =
   | TOGGLE_BAKER_DELEGATIONS -> pp "TOGGLE_BAKER_DELEGATIONS"
   | SET_BAKER_CONSENSUS_KEY  -> pp "SET_BAKER_CONSENSUS_KEY"
   | SET_BAKER_PVSS_KEY       -> pp "SET_BAKER_PVSS_KEY"
+  (* View *)
+  | VIEW _ -> pp ""
+  (* Macro *)
+  | CAR_N n                    -> pp "CAR%a" pp_arg2 n
+  | CDR_N n                    -> pp "CDR%a" pp_arg n *)
 
 let pp_id fmt i = Format.fprintf fmt "%s" i
 
@@ -415,6 +433,9 @@ let pp_uop f fmt (op, e) =
   | Ujointickets -> pp "join_tickets(%a)" f e
   | Upairing_check -> pp "pairing_check"
   | Uconcat      -> pp "concat"
+  | Uaddress     -> pp "address"
+  | UcarN n      -> pp "carN(%i,%a)" n f e
+  | UcdrN n      -> pp "carN(%i,%a)" n f e
 
 let pp_bop f fmt (op, lhs, rhs) =
   let pp s = Format.fprintf fmt s in
@@ -439,6 +460,7 @@ let pp_bop f fmt (op, lhs, rhs) =
   | Bcreateticket -> pp "create_tickets(%a, %a)" f lhs f rhs
   | Bsplitticket  -> pp "split_ticket(%a, %a)"   f lhs f rhs
   | Bsapling_verify_update -> pp "sapling_verify_update"
+  | Bview (_, _) -> pp ""
 
 let pp_top f fmt (op, a1, a2, a3) =
   let pp s = Format.fprintf fmt s in
@@ -523,6 +545,9 @@ let rec pp_instruction fmt (i : instruction) =
       | Ujointickets -> pp "join_tickets(%a)" f e
       | Upairing_check -> pp "pairing_check"
       | Uconcat      -> pp "concat"
+      | Uaddress     -> pp "address"
+      | UcarN n      -> pp "car(%i, %a)"      n f e
+      | UcdrN n      -> pp "cdr(%i, %a)"      n f e
     end
   | Ibinop (op, lhs, rhs) -> begin
       match op with
@@ -546,6 +571,7 @@ let rec pp_instruction fmt (i : instruction) =
       | Bcreateticket -> pp "create_ticket(%a, %a)" f lhs f rhs
       | Bsplitticket  -> pp "split_ticket(%a, %a)"  f lhs f rhs
       | Bsapling_verify_update -> pp "sapling_verify_update"
+      | Bview (c, t)  -> pp "view<%a, %s>(%a, %a)" pp_type t c f lhs f rhs
     end
   | Iterop (op, a1, a2, a3) -> begin
       match op with
@@ -610,19 +636,27 @@ let pp_ir fmt (ir : ir) =
   Format.fprintf fmt "storage_type: %a@\n@\n" pp_type ir.storage_type;
   Format.fprintf fmt "storage_data: %a@\n@\n" pp_data ir.storage_data;
   (pp_list "@\n@\n" pp_func) fmt ir.funs;
-  (if (List.is_not_empty ir.funs) then (pp "@\n"));
-  (pp_list "@\n@\n" pp_entry) fmt ir.entries
+  (pp_list "@\n@\n" pp_func) fmt ir.views;
+  (if (List.is_not_empty ir.views) then (pp "@\n"))
+
+let pp_view_struct fmt (vs : view_struct) =
+  Format.fprintf fmt "@\n  view@\n    \"%s\"@\n    %a@\n    %a@\n    @[%a@]"
+  vs.id
+  pp_type vs.param
+  pp_type vs.ret
+  pp_code vs.body
 
 let pp_michelson fmt (m : michelson) =
   Format.fprintf fmt
     "{@\n  \
      storage %a;@\n  \
      parameter %a;@\n  \
-     code %a;@\n\
-     }"
+     code %a;%a\
+     @\n}"
     pp_type m.storage
     pp_type m.parameter
     pp_code m.code
+    (pp_list ";" pp_view_struct) m.views
 (* -------------------------------------------------------------------------- *)
 
 let pp_a fmt (tag, value) =
@@ -775,7 +809,14 @@ and pp_var (fmt : Format.formatter) (v : dvar) =
   | `VLocal x ->
     Format.fprintf fmt "#%d" x
 
-let pp_dprogram fmt (d : dprogram) =
+(* let pp_dview fmt (dv : dview) : unit =
+  Format.fprintf fmt "view@\n  ident=\"%s\"@\n  param=%a@\n  ret=%a@\n  body=@\n    @[%a@]@\n"
+  dv.id
+  pp_type dv.param
+  pp_type dv.ret
+  (pp_list ";@\n" pp_dinstruction) dv.body *)
+
+let pp_dprogram fmt (d : dprogram) : unit =
   Format.fprintf fmt
     "{@\n  name: %s@\n  \
      storage: %a@\n  \
@@ -801,7 +842,7 @@ let pp_javascript_header fmt _ =
   export const mk_rational = (n, d) => {return {  \"prim\": \"Pair\", \"args\": [ {  \"int\": n.toString()  }, {  \"int\": d.toString()  } ] }}@\n@\n"
 
 let pp_javascript_content fmt (micheline : Michelson.micheline) =
-  let code : obj_micheline = Michelson.Oarray micheline.code in
+  let code : obj_micheline = Michelson.Oarray (micheline.code @ micheline.views) in
   let storage : obj_micheline = micheline.storage in
   let parameters = micheline.parameters in
   Format.fprintf fmt "\

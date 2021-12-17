@@ -1,8 +1,0 @@
-(executable
-  (preprocess
-    (pps ppx_deriving.std ppx_deriving_yojson)
-  )
-  (modules demich)
-  (libraries batteries ppx_deriving)
-  (public_name poc)
-  (name     demich))

@@ -131,6 +131,8 @@ let map_btype = function
   | M.Bbls12_381_g1  -> Tybls12_381_g1
   | M.Bbls12_381_g2  -> Tybls12_381_g2
   | M.Bnever         -> Tynever
+  | M.Bchest         -> Tychest
+  | M.Bchest_key     -> Tychest_key
 
 let get_type_idx t = List.index_of (M.cmp_type t)
 
@@ -253,6 +255,8 @@ let rec mk_eq_type m e1 e2 = function
   | Tynever
   | Tyview _
   | Tylambda (_, _)
+  | Tychest
+  | Tychest_key
     -> Teq (Tyint, Tvar e1, Tvar e2)
 
 let rec mk_le_type m e1 e2 = function
@@ -866,6 +870,8 @@ let rec type_to_init m (typ : loc_typ) : loc_term =
       | Tybls12_381_g1
       | Tybls12_381_g2
       | Tynever
+      | Tychest
+      | Tychest_key
         -> Tint Big_int.zero_big_int)
 
 let is_local_invariant _m an t =
@@ -1577,7 +1583,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                 Tpsome (map_lident id), map_mterm m ctx b;
                 Twild, map_mterm m ctx e
               ])
-    | Mletin ([id], { node = M.Mmapget (_kty, _vty, container, k); type_ = _ }, _, b, Some e) -> (* logical *)
+    | Mletin ([id], { node = M.Mmapget (_kty, _vty, container, k, _); type_ = _ }, _, b, Some e) -> (* logical *)
       let ctx = ctx in
       let map_id = mk_map_name m container.type_ in
       (* let t, d =
@@ -1738,16 +1744,17 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                    | Invalid v            ->
                      let idx = get_fail_idx m v.type_ in
                      Efail (idx, Some (map_mterm m ctx v))
-                   | InvalidCaller        -> EInvalidCaller
-                   | InvalidCondition lbl -> (EInvalidCondition lbl)
-                   | NotFound             -> ENotFound
-                   | OutOfBound           -> EOutOfBound
-                   | KeyExists            -> EKeyExists
-                   | KeyExistsOrNotFound  -> EKeyExistsOrNotFound
-                   | DivByZero            -> EDivByZero
-                   | NatAssign            -> ENatAssign
-                   | NoTransfer           -> ENoTransfer
-                   | InvalidState         -> EInvalidState))
+                   | InvalidCaller         -> EInvalidCaller
+                   | InvalidCondition lbl  -> (EInvalidCondition lbl)
+                   | NotFound              -> ENotFound
+                   | AssetNotFound _       -> ENotFound
+                   | OutOfBound            -> EOutOfBound
+                   | KeyExists _           -> EKeyExists
+                   | KeyExistsOrNotFound _ -> EKeyExistsOrNotFound
+                   | DivByZero             -> EDivByZero
+                   | NatAssign             -> ENatAssign
+                   | NoTransfer            -> ENoTransfer
+                   | InvalidState          -> EInvalidState))
           ]
       end
     | Mtransfer tr ->
@@ -1775,7 +1782,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
           let t = map_mterm m ctx v in
           let l = loc_term (Tnil gListAs) (*map_mterm m ctx a*) in
           let a = map_mterm m ctx d in
-          let n = loc_term (Tstring id) in
+          let n = loc_term (Tint (Tools.string_to_big_int id) (* Tstring id *)) in
           Tassign (
             loc_term (Tdoti(gs,"_ops")),
             dl (Tcons (dl gListAs,
@@ -1800,8 +1807,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     (* entrypoint *)
 
-    | Mentrypoint (_t, a, s) -> Tentrypoint (map_lident a, map_mterm m ctx s)
-    | Mself id               -> Tapp (loc_term (Tvar "getopt"), [loc_term (Tentrypoint (unloc id, Tdefaultaddr))])
+    | Mentrypoint (_t, a, s, _) -> Tentrypoint (map_lident a, map_mterm m ctx s)
+    | Mcallview (_t, _a, _v, _c) -> assert false (* TODO *)
+    | Mself id                  -> Tapp (loc_term (Tvar "getopt"), [loc_term (Tentrypoint (unloc id, Tdefaultaddr))])
 
 
     (* operation *)
@@ -1825,9 +1833,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mbool true -> Ttrue
     | Mrational (l,r) -> Ttuple([ loc_term (Tint l); loc_term (Tint r)])
     | Mcurrency (i, Utz)  -> Tint i
-    | Mstring v ->  (* Tint (Tools.sha v) *) Tstring v
-    | Maddress v -> (* Tint (Tools.sha v) *) Tstring v
-    | Mbytes v ->   (* Tint (Tools.sha v) *) Tstring v
+    | Mstring v ->  Tint (Tools.string_to_big_int v) (* Tstring v *)
+    | Maddress v -> Tint (Tools.string_to_big_int v) (* Tstring v *)
+    | Mbytes v ->   Tint (Tools.string_to_big_int v) (* Tstring v *)
     | Mdate s -> Tint (Core.date_to_timestamp s)
     | Mduration v -> Tint (Core.duration_to_timestamp v)
     | Mtimestamp v -> Tint v
@@ -1962,6 +1970,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | MthreeWayCmp (l, r) -> Tthreewaycmp (dl Tyint, map_mterm m ctx l, map_mterm m ctx r)
     | Mshiftleft   (l, r) -> Tshiftleft (map_mterm m ctx l, map_mterm m ctx r)
     | Mshiftright  (l, r) -> Tshiftright (map_mterm m ctx l, map_mterm m ctx r)
+    | Msubnat (_l, _r) -> error_not_translated "Msubnat"
 
 
     (* asset api effect *)
@@ -2283,7 +2292,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       Tremove (dl (mk_map_name m c.type_),map_mterm m ctx k, map_mterm m ctx c)
     | Mmapupdate (_, _, c, k, v)   ->
       Tupdate (dl (mk_map_name m c.type_), map_mterm m ctx k, map_mterm m ctx v, map_mterm m ctx c)
-    | Mmapget (_, _, c, k)      -> Tsnd(
+    | Mmapget (_, _, c, k, _)   -> Tsnd(
         dl (mk_get_force ctx (dl (mk_map_name m c.type_)) (map_mterm m ctx k) (map_mterm m ctx c)))
     | Mmapgetopt (_, _, c, k)   -> Tsndopt(
         dl (Tget (dl (mk_map_name m c.type_),map_mterm m ctx k, map_mterm m ctx c)))
@@ -2344,6 +2353,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Misnone s -> Tapp (loc_term (Tvar "isnone"),[map_mterm m ctx s])
     | Missome s -> Tapp (loc_term (Tvar "issome"),[map_mterm m ctx s])
     | Moptget s -> Tapp (loc_term (Tvar "getopt"),[map_mterm m ctx s])
+    | Mrequiresome (s, t) -> Tapp (loc_term (Tvar "require_some"),[map_mterm m ctx s; map_mterm m ctx t])
     | Mfloor  s -> Tapp (loc_term (Tvar "floor"),[map_mterm m ctx s])
     | Mceil   s -> Tapp (loc_term (Tvar "ceil"),[map_mterm m ctx s])
     | Mtostring (_, s) -> Tapp (loc_term (Tvar "from_int"),[map_mterm m ctx s])
@@ -2351,6 +2361,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Munpack (_, s) -> Tapp (loc_term (Tvar "unpack"),[map_mterm m ctx s])
     | Msetdelegate s -> Tapp (loc_term (Tvar "set_delegate"),[map_mterm m ctx s])
     | Mimplicitaccount s -> Tapp (loc_term (Tvar "implicit_account"),[map_mterm m ctx s])
+    | Mcontractaddress s -> Tapp (loc_term (Tvar "contract_address"),[map_mterm m ctx s])
+    | Maddresscontract s -> Tapp (loc_term (Tvar "address_contract"),[map_mterm m ctx s])
+    | Mkeyaddress s -> Tapp (loc_term (Tvar "key_address"),[map_mterm m ctx s])
 
     | Mblake2b x -> Tapp (loc_term (Tvar "blake2b"),[map_mterm m ctx x])
     | Msha256  x -> Tapp (loc_term (Tvar "sha256"),[map_mterm m ctx x])
@@ -2457,7 +2470,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mratdur (r,t) -> Tapp (loc_term (Tvar "rat_dur"),[map_mterm m ctx r; map_mterm m ctx t])
 
     (* others ---------------------------------------------------------- *)
-    | Mdatefromtimestamp _ -> assert false
+    | Mdatefromtimestamp _ -> assert false (* TODO *)
+    | Mmuteztonat        _ -> assert false (* TODO *)
 
     (* quantifiers ---------------------------------------------------------- *)
 
@@ -2923,7 +2937,7 @@ let fold_exns m body : term list =
   let rec internal_fold_exn acc (term : M.mterm) =
     match term.M.node with
     | M.Mget (_, _, k) -> internal_fold_exn (acc @ [Texn ENotFound]) k
-    | M.Mmapget (_ , _, c, k) -> internal_fold_exn (internal_fold_exn (acc @ [Texn ENotFound]) k) c
+    | M.Mmapget (_ , _, c, k, _) -> internal_fold_exn (internal_fold_exn (acc @ [Texn ENotFound]) k) c
     | M.Mnth (_, CKview c, k) -> internal_fold_exn (internal_fold_exn (acc @ [Texn ENotFound]) c) k
     | M.Mnth (_, CKcoll _, k) -> internal_fold_exn ((acc @ [Texn ENotFound])) k
     | M.Mset (_, _, k, v) -> internal_fold_exn (internal_fold_exn (acc @ [Texn ENotFound]) k) v
@@ -2938,6 +2952,7 @@ let fold_exns m body : term list =
     | M.Mremoveif (_, CKfield (_,_,k,_,_), _, _ ,_ ) -> internal_fold_exn (acc @ [Texn ENotFound]) k
     | M.Mclear (_a,CKfield (_,_,k,_,_)) -> internal_fold_exn (acc @ [Texn ENotFound]) k
     | M.Moptget _ -> acc @ [Texn ENotFound]
+    | M.Mrequiresome _ -> acc @ [Texn ENotFound]
     | M.Mfail InvalidCaller -> acc @ [Texn EInvalidCaller]
     | M.Mfail NoTransfer -> acc @ [Texn ENoTransfer]
     | M.Mfail (InvalidCondition lbl) -> acc @ [Texn (EInvalidCondition lbl)]

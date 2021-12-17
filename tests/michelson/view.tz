@@ -1,0 +1,8 @@
+{ parameter nat ;
+  storage nat ;
+  code
+    { CAR;
+      NIL operation;
+      PAIR; } ;
+  view "getN" unit nat { CDR; } ;
+ }

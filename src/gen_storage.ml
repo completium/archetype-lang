@@ -79,6 +79,8 @@ let generate_storage (model : model) : model =
       | Tbuiltin Bbls12_381_g1 -> mk_mterm (Mint (Big_int.zero_big_int)) ty
       | Tbuiltin Bbls12_381_g2 -> mk_mterm (Mint (Big_int.zero_big_int)) ty
       | Tbuiltin Bnever        -> emit_error (NoInitExprFor "never")
+      | Tbuiltin Bchest        -> emit_error (NoInitExprFor "chest")
+      | Tbuiltin Bchest_key    -> emit_error (NoInitExprFor "chest_key")
     in
 
     let constant = match var.kind with | VKconstant -> true | _ -> false in

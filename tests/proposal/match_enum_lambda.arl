@@ -1,0 +1,13 @@
+archetype match_enum_lamda
+
+enum e =
+| E1<nat>
+| E2<string>
+
+entry exec () {
+    var l = lambda<nat>((x:e) ->
+    match x with
+    | E1(n) -> n
+    | E2(s) -> length(s)
+    end)
+}

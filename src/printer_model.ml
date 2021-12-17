@@ -30,6 +30,8 @@ let pp_btyp fmt = function
   | Bbls12_381_g1 -> Format.fprintf fmt "bls12_381_g1"
   | Bbls12_381_g2 -> Format.fprintf fmt "bls12_381_g2"
   | Bnever        -> Format.fprintf fmt "never"
+  | Bchest        -> Format.fprintf fmt "chest"
+  | Bchest_key    -> Format.fprintf fmt "chest_key"
 
 let pp_container fmt = function
   | Collection -> Format.fprintf fmt "collection"
@@ -352,11 +354,20 @@ let pp_mterm fmt (mt : mterm) =
 
     (* entrypoint *)
 
-    | Mentrypoint (t, a, s) ->
-      Format.fprintf fmt "entrypoint<%a>(%a, %a)"
+    | Mentrypoint (t, a, s, r) ->
+      Format.fprintf fmt "%s<%a>(%a, %a%a)"
+        (if Option.is_some r then "require_entrypoint" else "entrypoint")
         pp_type t
         pp_id a
         f s
+        (pp_some (fun fmt a -> Format.fprintf fmt ", %a" f a)) r
+
+    | Mcallview (t, a, b, c) ->
+      Format.fprintf fmt "callview<%a>(%a, %a, %a)"
+        pp_type t
+        f a
+        pp_id b
+        f c
 
     | Mself id ->
       Format.fprintf fmt "self.%a"
@@ -740,6 +751,14 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (l, r)
 
+    | Msubnat (l, r) ->
+      let pp fmt (l, r) =
+        Format.fprintf fmt "sub_nat(%a, %a)"
+          f l
+          f r
+      in
+      pp fmt (l, r)
+
 
     (* asset api effect *)
 
@@ -1071,7 +1090,7 @@ let pp_mterm fmt (mt : mterm) =
         f k
         f v
 
-    | Mmapget (_, _, c, k) ->
+    | Mmapget (_, _, c, k, _) ->
       Format.fprintf fmt "map_get (%a, %a)"
         f c
         f k
@@ -1167,6 +1186,10 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "opt_get (%a)"
         f x
 
+    | Mrequiresome (x, y) ->
+      Format.fprintf fmt "require_some (%a, %a)"
+        f x f y
+
     | Mfloor x ->
       Format.fprintf fmt "floor (%a)"
         f x
@@ -1194,6 +1217,18 @@ let pp_mterm fmt (mt : mterm) =
 
     | Mimplicitaccount x ->
       Format.fprintf fmt "implicit_account (%a)"
+        f x
+
+    | Mcontractaddress x ->
+      Format.fprintf fmt "contract_address (%a)"
+        f x
+
+    | Maddresscontract x ->
+      Format.fprintf fmt "address_contract (%a)"
+        f x
+
+    | Mkeyaddress x ->
+      Format.fprintf fmt "key_address (%a)"
         f x
 
 
@@ -1402,6 +1437,12 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt v
 
+    | Mmuteztonat v ->
+      let pp fmt v =
+        Format.fprintf fmt "mutez_to_nat (%a)"
+          f v
+      in
+      pp fmt v
 
     (* quantifiers *)
 
@@ -1893,6 +1934,7 @@ let pp_function fmt f =
   let k, fs, ret = match f.node with
     | Entry f         -> "entry",    f, None
     | Getter (f, a)   -> "getter",   f, Some a
+    | View (f, a)     -> "view",     f, Some a
     | Function (f, a) -> "function", f, Some a
   in
   Format.fprintf fmt "%a %a %a%a {@\n@[<v 2>  %a%a@]@\n}@\n"

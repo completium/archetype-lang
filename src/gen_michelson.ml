@@ -10,7 +10,10 @@ module MapString = Map.Make(String)
 
 exception Anomaly of string
 
+let complete_tree_entrypoints = true
+let with_macro = false
 let divbyzero = "DivByZero"
+let entrynotfound = "EntryNotFound"
 type error_desc =
   | FieldNotFoundFor of string * string
   | UnsupportedTerm of string
@@ -56,6 +59,19 @@ type env_ir = {
 
 let mk_env ?function_p _ =
   { function_p }
+
+let shape_entrypoints f n l =
+  match List.rev l with
+  | [] -> n
+  | [e] -> e
+  | i::t -> begin
+      if complete_tree_entrypoints
+      then begin
+        let l = List.rev (i::t) in
+        make_full_tree f l
+      end
+      else List.fold_left f (i) t
+    end
 
 let to_ir (model : M.model) : T.ir =
 
@@ -109,6 +125,8 @@ let to_ir (model : M.model) : T.ir =
         | Bbls12_381_g1 -> T.Tbls12_381_g1
         | Bbls12_381_g2 -> T.Tbls12_381_g2
         | Bnever        -> T.Tnever
+        | Bchest        -> T.Tchest
+        | Bchest_key    -> T.Tchest_key
       end
     | Tcontainer _   -> assert false
     | Tlist t        -> T.mk_type ?annotation (T.Tlist (to_type t))
@@ -144,7 +162,8 @@ let to_ir (model : M.model) : T.ir =
                 end
               | M.Pnode l -> to_one_type (List.map aux l)
             in
-            aux p
+            let res = aux p in
+            { res with annotation = Option.map unloc (M.get_atype t) }
           end
       end
     | Tlambda (a, r) -> T.mk_type ?annotation (Tlambda (to_type a, to_type r))
@@ -182,6 +201,8 @@ let to_ir (model : M.model) : T.ir =
     | T.Bratabs          -> true
     | T.Brattez          -> true
     | T.Bratdur          -> true
+    | T.Bsubnat          -> true
+    | T.Bmuteztonat      -> true
   in
 
   let add_builtin b =
@@ -189,26 +210,27 @@ let to_ir (model : M.model) : T.ir =
     then builtins := b::!builtins;
   in
 
-  let get_builtin_fun b =
+  let get_builtin_fun b : T.func =
     let return x = T.Iassign (fun_result, x) in
     let name = T.Utils.get_fun_name Printer_michelson.show_pretty_type b in
+    let ctx = T.mk_ctx_func () in
     match b with
     | Bmin t
     | Bmax t -> begin
         let targ = T.tpair t t in
         let tret = t in
-        T.mk_func name targ tret (T.Abstract b)
+        T.mk_func name targ tret ctx (T.Abstract b)
       end
     | Bfloor
     | Bceil -> begin
         let targ = T.trat in
         let tret  = T.tint in
-        T.mk_func name targ tret (T.Abstract b)
+        T.mk_func name targ tret ctx (T.Abstract b)
       end
     | BlistContains t -> begin
         let targ = T.tpair (T.tlist t) t in
         let tret = T.tbool in
-        T.mk_func name targ tret (T.Abstract b)
+        T.mk_func name targ tret ctx (T.Abstract b)
       end
     | BlistNth t -> begin
         let targ = T.tpair (T.tlist t) T.tnat in
@@ -237,7 +259,7 @@ let to_ir (model : M.model) : T.ir =
           args, body
         end
         in
-        T.mk_func name targ tret (T.Concrete (args, body))
+        T.mk_func name targ tret ctx (T.Concrete (args, body))
       end
     | Btostring t -> begin
         let targ = t in
@@ -276,44 +298,54 @@ let to_ir (model : M.model) : T.ir =
           args, T.Iif (cond, a, return (T.istring "0"), T.tunit)
         end
         in
-        T.mk_func name targ tret (T.Concrete (args, body))
+        T.mk_func name targ tret ctx (T.Concrete (args, body))
       end
     | Bratcmp -> begin
         let targ = T.tpair (T.tpair T.trat T.trat) (T.tor T.tunit (T.tor (T.tor T.tunit T.tunit) (T.tor T.tunit T.tunit))) in
         let tret = T.tbool in
-        T.mk_func name targ tret (T.Abstract b)
+        T.mk_func name targ tret ctx (T.Abstract b)
       end
     | Bratnorm -> begin
         let targ = T.trat in
         let tret = T.trat in
-        T.mk_func name targ tret (T.Abstract b)
+        T.mk_func name targ tret ctx (T.Abstract b)
       end
     | Brataddsub -> begin
         let targ = T.tpair (T.tpair T.trat T.trat) (T.tor T.tunit T.tunit) in
         let tret = T.trat in
-        T.mk_func name targ tret (T.Abstract b)
+        T.mk_func name targ tret ctx (T.Abstract b)
       end
     | Bratmul
     | Bratdiv -> begin
         let targ = T.tpair T.trat T.trat in
         let tret = T.trat in
-        T.mk_func name targ tret (T.Abstract b)
+        T.mk_func name targ tret ctx (T.Abstract b)
       end
     | Bratuminus
     | Bratabs -> begin
         let targ = T.trat in
         let tret = T.trat in
-        T.mk_func name targ tret (T.Abstract b)
+        T.mk_func name targ tret ctx (T.Abstract b)
       end
     | Brattez -> begin
         let targ = T.tpair T.trat T.tmutez in
         let tret = T.tmutez in
-        T.mk_func name targ tret (T.Abstract b)
+        T.mk_func name targ tret ctx (T.Abstract b)
       end
     | Bratdur -> begin
         let targ = T.tpair T.trat T.tint in
         let tret = T.tint in
-        T.mk_func name targ tret (T.Abstract b)
+        T.mk_func name targ tret ctx (T.Abstract b)
+      end
+    | Bsubnat -> begin
+        let targ = T.tpair T.tnat T.tnat in
+        let tret = T.tnat in
+        T.mk_func name targ tret ctx (T.Abstract b)
+      end
+    | Bmuteztonat -> begin
+        let targ = T.tmutez in
+        let tret = T.tnat in
+        T.mk_func name targ tret ctx (T.Abstract b)
       end
   in
 
@@ -391,19 +423,35 @@ let to_ir (model : M.model) : T.ir =
     | Mvar (x, Vparameter, _, _) -> T.Dvar (unloc x, to_type mt.type_)
     | Mlambda (_rt, id, _at, e) -> begin
         let env = mk_env () in
-        let ir = mterm_to_intruction env e in
+        let ir = mterm_to_intruction env e ~view:false in
         T.DIrCode (unloc id, ir)
       end
     | _ -> Format.printf "%a@." M.pp_mterm mt; assert false
 
-  and mterm_to_intruction env (mtt : M.mterm) : T.instruction =
-    let f = mterm_to_intruction env in
+  and mterm_to_intruction env (mtt : M.mterm) ?(view = false) : T.instruction =
+    let f = mterm_to_intruction env ~view in
     let ft = to_type in
 
+    let get_entrypoint_annot ?(pref="") id =
+      match id with
+      | "" | "default" | "%default" -> None
+      | _ -> Some (pref ^ id)
+    in
+
+    let contract_internal id a t d =
+      let fdata =
+        match id with
+        | Some v -> (T.ipair (T.istring entrynotfound) (T.istring v))
+        | None -> T.istring entrynotfound
+      in
+      T.Iifnone (T.Iunop (Ucontract (t, a), d), T.ifaild fdata, "_var_ifnone", Ivar "_var_ifnone", T.tint) in
+    let get_entrypoint id t d =
+      let annot = get_entrypoint_annot ~pref:"%" id in
+      contract_internal (Some id) annot t d
+    in
+
     let vops = T.Ivar operations in
-    let contract_internal a t d = T.Iifnone (T.Iunop (Ucontract (t, a), d), T.ifail "NotFound", "_var_ifnone", Ivar "_var_ifnone", T.tint) in
-    let get_contract      t d = contract_internal  None     t d in
-    let get_entrypoint id t d = contract_internal (Some ("%" ^ id)) t d in
+    let get_contract   id t d = contract_internal id None     t d in
     let get_self_entrypoint id =
       let fs = M.Utils.get_fs model id in
       let ts = List.map proj3_2 fs.args in
@@ -420,8 +468,13 @@ let to_ir (model : M.model) : T.ir =
     let access_tuple s i x =
       if i = 0 && s = 1
       then x
+      else if with_macro then begin
+        if i + 1 = s
+        then T.icdrn i x
+        else T.icarn i x
+      end
       else begin
-        let x = Tools.foldi T.icdr x i in
+        let x = Tools.foldi (T.icdr) x i in
         let x =
           if i < s - 1
           then T.icar x
@@ -549,6 +602,7 @@ let to_ir (model : M.model) : T.ir =
     | Miter (_i, _a, _b, _c, _)  -> emit_error TODO
     | Mwhile (c, b, _)           -> T.Iloop (f c, f b)
     | Mseq is                    -> T.Iseq (List.map f is)
+    (* | Mreturn x when view        -> f x *)
     | Mreturn x                  -> T.Iassign (fun_result, f x)
     | Mlabel _                   -> T.iskip
     | Mmark  _                   -> T.iskip
@@ -559,24 +613,25 @@ let to_ir (model : M.model) : T.ir =
     | Mfail ft          -> begin
         let x =
           match ft with
-          | Invalid v            -> f v
-          | InvalidCaller        -> T.istring "InvalidCaller"
-          | InvalidCondition lbl -> T.ipair (T.istring "InvalidCondition") (T.istring lbl)
-          | NotFound             -> T.istring "NotFound"
-          | KeyExists            -> T.istring "KeyExists"
-          | KeyExistsOrNotFound  -> T.istring "KeyExistsOrNotFound"
-          | OutOfBound           -> T.istring "OutOfBound"
-          | DivByZero            -> T.istring divbyzero
-          | NatAssign            -> T.istring "NatAssign"
-          | NoTransfer           -> T.istring "NoTransfer"
-          | InvalidState         -> T.istring "InvalidState"
+          | Invalid v              -> f v
+          | InvalidCaller          -> T.istring "InvalidCaller"
+          | InvalidCondition lbl   -> T.ipair (T.istring "InvalidCondition") (T.istring lbl)
+          | NotFound               -> T.istring "NotFound"
+          | AssetNotFound an       -> T.ipair (T.istring "AssetNotFound") (T.istring an)
+          | KeyExists an           -> T.ipair (T.istring "KeyExists") (T.istring an)
+          | KeyExistsOrNotFound an -> T.ipair (T.istring "KeyExistsOrNotFound") (T.istring an)
+          | OutOfBound             -> T.istring "OutOfBound"
+          | DivByZero              -> T.istring divbyzero
+          | NatAssign              -> T.istring "NatAssign"
+          | NoTransfer             -> T.istring "NoTransfer"
+          | InvalidState           -> T.istring "InvalidState"
         in
         T.Iunop  (Ufail, x)
       end
     | Mtransfer tr -> begin
         let op =
           match tr with
-          | TKsimple (v, d)         -> T.Iterop (Ttransfer_tokens, T.iunit, f v, get_contract T.tunit (f d))
+          | TKsimple (v, d)         -> T.Iterop (Ttransfer_tokens, T.iunit, f v, get_contract None T.tunit (f d))
           | TKcall (v, id, t, d, a) -> T.Iterop (Ttransfer_tokens, f a, f v, get_entrypoint id (to_type t) (f d))
           | TKentry (v, e, a)       -> T.Iterop (Ttransfer_tokens, f a, f v, f e)
           | TKself (v, id, args)    -> begin
@@ -595,7 +650,18 @@ let to_ir (model : M.model) : T.ir =
 
     (* entrypoint *)
 
-    | Mentrypoint (t, id, d)  -> T.Iunop (Ucontract (to_type t, Some (unloc id)), f d)
+    | Mentrypoint (t, id, d, r)  ->
+      let annot = get_entrypoint_annot (unloc id) in
+      let a = T.Iunop (Ucontract (to_type t, annot), f d) in
+      begin
+        match r with
+        | Some r -> T.Iifnone (a, Iunop (Ufail, f r), "_var_ifnone", Ivar "_var_ifnone", ft mtt.type_)
+        | None -> a
+      end
+
+    | Mcallview (t, a, b, c)  -> begin
+        T.Ibinop (Bview (unloc b, to_type t), f c, f a)
+      end
     | Mself id                -> get_self_entrypoint (unloc id)
 
 
@@ -731,6 +797,7 @@ let to_ir (model : M.model) : T.ir =
     | MthreeWayCmp (l, r)-> T.Ibinop (Bcompare, f l, f r)
     | Mshiftleft (l, r)  -> T.Ibinop (Blsl, f l, f r)
     | Mshiftright (l, r) -> T.Ibinop (Blsr, f l, f r)
+    | Msubnat (l, r)     -> let b = T.Bsubnat in add_builtin b; T.Icall (get_fun_name b, [f l; f r], is_inline b)
 
 
     (* asset api effect *)
@@ -765,7 +832,7 @@ let to_ir (model : M.model) : T.ir =
 
     | Mcast (src, dst, v) -> begin
         match M.get_ntype src, M.get_ntype dst, v.node with
-        | M.Tbuiltin Baddress, M.Tcontract t, _                -> get_contract (to_type t) (f v)
+        | M.Tbuiltin Baddress, M.Tcontract t, _                -> get_contract None (to_type t) (f v)
         | M.Tbuiltin Bcurrency, M.Tbuiltin Bnat, _             -> T.idiv (f v) (T.imutez Big_int.unit_big_int)
         | M.Tbuiltin Bstring, M.Tbuiltin Bkey, Mstring s       -> T.Iconst (T.mk_type Tkey, Dstring s)
         | M.Tbuiltin Bstring, M.Tbuiltin Bkeyhash, Mstring s   -> T.Iconst (T.mk_type Tkey_hash, Dstring s)
@@ -818,7 +885,9 @@ let to_ir (model : M.model) : T.ir =
     | Mmapput (_, _, c, k, v)     -> T.Iterop (Tupdate, f k, T.isome (f v),   f c)
     | Mmapremove (_, tv, c, k)    -> T.Iterop (Tupdate, f k, T.inone (ft tv), f c)
     | Mmapupdate (_, _, c, k, v)  -> T.Iterop (Tupdate, f k, f v, f c)
-    | Mmapget (_, _, c, k)        -> T.Iifnone (T.Ibinop (Bget, f k, f c), T.ifail "NotFound", "_var_ifnone", Ivar "_var_ifnone", ft mtt.type_)
+    | Mmapget (_, _, c, k, oan)   ->
+      let err = match oan with | Some an -> T.ipair (T.istring "AssetNotFound") (T.istring an) | None -> T.istring "NotFound" in
+      T.Iifnone (T.Ibinop (Bget, f k, f c), T.ifaild err, "_var_ifnone", Ivar "_var_ifnone", ft mtt.type_)
     | Mmapgetopt (_, _, c, k)     -> T.Ibinop (Bget, f k, f c)
     | Mmapcontains (_, _, c, k)   -> T.Ibinop (Bmem, f k, f c)
     | Mmaplength (_, _, c)        -> T.Iunop (Usize, f c)
@@ -843,6 +912,7 @@ let to_ir (model : M.model) : T.ir =
     | Misnone x          -> T.Iifnone (f x, T.itrue,  "_var_ifnone", T.ifalse, T.tbool)
     | Missome x          -> T.Iifnone (f x, T.ifalse, "_var_ifnone", T.itrue, T.tbool)
     | Moptget x          -> T.Iifnone (f x, T.ifail "NotFound", "_var_ifnone", Ivar "_var_ifnone", ft mtt.type_)
+    | Mrequiresome (x, y)-> T.Iifnone (f x, Iunop (Ufail, f y), "_var_ifnone", Ivar "_var_ifnone", ft mtt.type_)
     | Mfloor  x          -> let b = T.Bfloor           in add_builtin b; T.Icall (get_fun_name b, [f x], is_inline b)
     | Mceil   x          -> let b = T.Bceil            in add_builtin b; T.Icall (get_fun_name b, [f x], is_inline b)
     | Mtostring (t, x)   -> let b = T.Btostring (ft t) in add_builtin b; T.Icall (get_fun_name b, [f x], is_inline b)
@@ -850,6 +920,10 @@ let to_ir (model : M.model) : T.ir =
     | Munpack (t, x)     -> T.Iunop (Uunpack (ft t), f x)
     | Msetdelegate x     -> T.Iunop (Usetdelegate, f x)
     | Mimplicitaccount x -> T.Iunop (Uimplicitaccount, f x)
+    | Mcontractaddress x -> T.Iunop (Uaddress, f x)
+    | Maddresscontract x ->
+      T.Iifnone (T.Iunop (Ucontract(T.tunit, None), f x), T.ifail "NotImplicitContract", "_var_ifnone", Ivar "_var_ifnone", ft mtt.type_)
+    | Mkeyaddress      x -> T.Iunop (Uaddress, T.Iunop (Uimplicitaccount, T.Iunop  (Uhash_key, f x)))
 
     (* crypto functions *)
 
@@ -950,6 +1024,7 @@ let to_ir (model : M.model) : T.ir =
     (* utils *)
 
     | Mdatefromtimestamp _ -> emit_error (UnsupportedTerm ("Mdatefromtimestamp"))
+    | Mmuteztonat v        -> let b = T.Bmuteztonat in add_builtin b; T.Icall (get_fun_name b, [f v], is_inline b)
 
 
     (* quantifiers *)
@@ -981,29 +1056,29 @@ let to_ir (model : M.model) : T.ir =
     | Mdiff      _ -> emit_error (UnsupportedTerm ("Mdiff"))
   in
 
-  let l = List.map (
+  let storage_list = List.map (
       fun (si : M.storage_item) ->
         (unloc si.id), to_type ~annotation:(mk_fannot (unloc si.id)) si.typ, to_data si.default)
       model.storage
   in
 
   let storage_type, storage_data =
-    match l with
+    match storage_list with
     | []  -> T.mk_type Tunit, T.Dunit
     | [_, t, d] -> remove_annot t, d
-    | _   -> let _, lt, ld = List.split3 l in to_one_type lt, to_one_data ld
+    | _   -> let _, lt, ld = List.split3 storage_list in to_one_type lt, to_one_data ld
   in
 
   let env = mk_env () in
 
-  let funs, entries =
+  let funs, entries, views =
 
-    let for_fs env (fs : M.function_struct) =
+    let for_fs _env (fs : M.function_struct) ?(view= false) =
       let name = unloc fs.name in
       let args = List.map (fun (id, t, _) -> unloc id, to_type t) fs.args in
       let eargs = List.map (fun (id, t, _) -> unloc id, to_type t) fs.eargs in
-      let env = {env with function_p = Some (name, args)} in
-      let body = mterm_to_intruction env fs.body in
+      let env = {function_p = Some (name, args)} in
+      let body = mterm_to_intruction env fs.body ~view in
       name, args, eargs, body
     in
 
@@ -1049,31 +1124,33 @@ let to_ir (model : M.model) : T.ir =
       aux [] mt |> List.dedup
     in
 
-    let for_fs_fun env (fs : M.function_struct) ret : T.func =
+    let for_fs_fun env (fs : M.function_struct) ret ?(view : bool = false) : T.func =
       let fid = unloc fs.name in
       let tret = to_type ret in
-      let name, args, _eargs, body = for_fs env fs in
+      let name, args, _eargs, body = for_fs env fs ~view in
       let eargs = get_extra_args fs.body in
       extra_args := (fid, eargs)::!extra_args;
       let args = args @ eargs in
       let targ = to_one_type (List.map snd args) in
+      let ctx = T.mk_ctx_func () ~args ~stovars:fs.stovars in
       mapargs := MapString.add fid (targ, tret) !mapargs;
-      T.mk_func name targ tret (T.Concrete (args, body))
+      T.mk_func name targ tret ctx (T.Concrete (args, body))
     in
 
-    let for_fs_entry env (fs : M.function_struct) : T.entry =
-      let name, args, eargs, body = for_fs env fs in
+    let for_fs_entry env (fs : M.function_struct) ?(view= false) : T.entry =
+      let name, args, eargs, body = for_fs env fs ~view in
       T.mk_entry name args eargs body
     in
 
-    List.fold_left (fun (funs, entries) (x : M.function__) ->
+    List.fold_left (fun (funs, entries, views) (x : M.function__) ->
         match x.node with
-        | Entry fs -> (funs, entries @ [for_fs_entry env fs])
+        | Entry fs -> (funs, entries @ [for_fs_entry env fs ~view:false], views)
         | Getter _ -> emit_error (UnsupportedTerm ("Getter"))
-        | Function (fs, ret) -> funs @ [for_fs_fun env fs ret], entries) ([], []) model.functions
+        | Function (fs, ret) -> funs @ [for_fs_fun env fs ret ~view:false], entries, views
+        | View (fs, ret) -> (funs, entries, views @ [for_fs_fun env fs ret ~view:true ])
+      ) ([], [], []) model.functions
   in
-  let annot a (t : T.type_) = { t with annotation = Some (mk_fannot a)} in
-  let l = List.map (fun (x, y, _) -> (x, y)) l in
+  let annot a (t : T.type_) = id{ t with annotation = Some (mk_fannot a)} in
   let parameter : T.type_ =
     let for_entry (e : T.entry) =
       let f l =
@@ -1083,7 +1160,12 @@ let to_ir (model : M.model) : T.ir =
         | (id, te)::t -> List.fold_left (fun accu (id, te) -> T.mk_type (T.Tpair (annot id te, accu))) (annot id te) t
       in
       let  args : T.type_ = f e.args in
-      let eargs : T.type_ = f e.eargs |> remove_annot in
+      let eargs : T.type_ =
+        match e.eargs with
+        | [] -> T.tunit
+        | [t] -> snd t
+        | ts -> f ts |> remove_annot
+      in
 
       match args.node, eargs.node with
       | T.Tunit, T.Tunit -> T.tunit
@@ -1091,13 +1173,10 @@ let to_ir (model : M.model) : T.ir =
       | T.Tunit, _       -> T.tpair T.tunit eargs
       | _                -> T.tpair args eargs
     in
-    match List.rev entries with
-    | [] -> T.tunit
-    | [e] -> for_entry e
-    | i::t -> begin
-        let for_entry e = e |> for_entry |> (fun (x : T.type_) -> annot e.name x) in
-        List.fold_left (fun accu x -> (T.mk_type (T.Tor (for_entry x, accu)))) (for_entry i) t
-      end
+    let for_entry e = e |> for_entry |> (fun (x : T.type_) -> annot e.name x) in
+    entries
+    |> List.map for_entry
+    |> shape_entrypoints (fun x y -> T.mk_type (T.Tor(x, y))) T.tunit
   in
   let with_operations = M.Utils.with_operations model in
 
@@ -1105,7 +1184,7 @@ let to_ir (model : M.model) : T.ir =
 
   let name = unloc model.name in
   let parameters = List.map (fun (x : M.parameter) -> unloc x.name) model.parameters in
-  T.mk_ir name storage_type storage_data l parameter funs entries ~with_operations:with_operations ~parameters
+  T.mk_ir name storage_type storage_data storage_list parameter funs views entries ~with_operations:with_operations ~parameters
 
 
 (* -------------------------------------------------------------------- *)
@@ -1115,7 +1194,7 @@ let map_implem : (string * T.code list) list = [
   get_fun_name (T.Bmax T.tunit)  , T.[cdup; cunpair; ccompare; clt; cif ([ccdr], [ccar])];
   get_fun_name T.Bratcmp         , T.[cunpair; cunpair; cdip (1, [cunpair]); cunpair; cdug 3; cmul; cdip (1, [cmul]); cswap; ccompare; cswap;
                                       cifleft ([cdrop 1; ceq], [cifleft ([cifleft ([cdrop 1; clt], [cdrop 1; cle])],
-                                                                       [cifleft ([cdrop 1; cgt], [cdrop 1; cge])])])];
+                                                                         [cifleft ([cdrop 1; cgt], [cdrop 1; cge])])])];
   get_fun_name T.Bfloor          , T.[cunpair; cediv; cifnone ([cfail divbyzero], [ccar])];
   get_fun_name T.Bceil           , T.[cunpair; cediv; cifnone ([cfail divbyzero], [cunpair; cswap; cint; ceq; cif ([], [cpush (tint, Dint Big_int.unit_big_int); cadd])])];
   get_fun_name T.Bratnorm        ,   [];
@@ -1131,6 +1210,8 @@ let map_implem : (string * T.code list) list = [
   get_fun_name T.Bratabs         , T.[cunpair; cabs; cint; cpair];
   get_fun_name T.Brattez         , T.[cunpair; cunpair; cabs; cdig 2; cmul; cediv; cifnone ([cfail divbyzero], []); ccar;];
   get_fun_name T.Bratdur         , T.[cunpair; cunpair; cdig 2; cmul; cediv; cifnone ([cfail divbyzero], []); ccar;];
+  get_fun_name T.Bsubnat         , T.[cunpair; csub; cdup; cpush (T.tint, T.Dint Big_int.zero_big_int); ccompare; cgt; cif ([cfail "NegResult"], []); cabs ];
+  get_fun_name T.Bmuteztonat     , T.[cpush (tmutez, T.Dint Big_int.unit_big_int); cswap; cediv; cifnone ([T.cfail "DivByZero"], []); ccar;];
 ]
 
 let concrete_michelson b : T.code =
@@ -1146,7 +1227,7 @@ let concrete_michelson b : T.code =
   | T.Btostring _     -> error ()
   | T.Bratcmp         -> T.cseq T.[cunpair; cunpair; cdip (1, [cunpair]); cunpair; cdug 3; cmul; cdip (1, [cmul]); cswap; ccompare; cswap;
                                    cifleft ([cdrop 1; ceq], [cifleft ([cifleft ([cdrop 1; clt], [cdrop 1; cle])],
-                                                                   [cifleft ([cdrop 1; cgt], [cdrop 1; cge])])])]
+                                                                      [cifleft ([cdrop 1; cgt], [cdrop 1; cge])])])]
   | T.Bratnorm        -> T.cseq (get_implem b)
   | T.Brataddsub      -> T.cseq (get_implem b)
   | T.Bratmul         -> T.cseq (get_implem b)
@@ -1155,6 +1236,8 @@ let concrete_michelson b : T.code =
   | T.Bratabs         -> T.cseq (get_implem b)
   | T.Brattez         -> T.cseq (get_implem b)
   | T.Bratdur         -> T.cseq (get_implem b)
+  | T.Bsubnat         -> T.cseq (get_implem b)
+  | T.Bmuteztonat     -> T.cseq (get_implem b)
 
 type env = {
   vars : ident list;
@@ -1277,7 +1360,9 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
     | T.Ujointickets     -> T.cjoin_tickets
     | T.Upairing_check   -> T.cpairing_check
     | T.Uconcat          -> T.cconcat
-  in
+    | T.Uaddress         -> T.caddress
+    | T.UcarN n          -> T.ccarn n
+    | T.UcdrN n          -> T.ccdrn n  in
 
   let bin_op_to_code = function
     | T.Badd                   -> T.cadd
@@ -1300,6 +1385,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
     | T.Bcreateticket          -> T.cticket
     | T.Bsplitticket           -> T.csplit_ticket
     | T.Bsapling_verify_update -> T.csapling_verify_update
+    | T.Bview (c, t)           -> T.cview (c, t)
   in
 
   let ter_op_to_code = function
@@ -1341,7 +1427,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       let c =
         if n = 0
         then T.cdup
-        else T.cseq [ T.cdig n; T.cdup; T.cdug (n + 1)]
+        else T.cdup_n (n + 1)
       in
       c, inc_env env
     end
@@ -1564,12 +1650,12 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
   | Imap (b, k, v, l) -> begin
       let a = if b then T.cempty_big_map (k, v) else T.cempty_map (k, v) in
       T.cseq ([a] @
-             (l
-              |> List.rev
-              |> List.map (fun (x, y) ->
-                  let y, _ = fe (inc_env env) y in
-                  let x, _ = fe (inc_env (inc_env env)) x in
-                  T.cseq [y; T.csome; x; T.cupdate ] ))), inc_env env
+              (l
+               |> List.rev
+               |> List.map (fun (x, y) ->
+                   let y, _ = fe (inc_env env) y in
+                   let x, _ = fe (inc_env (inc_env env)) x in
+                   T.cseq [y; T.csome; x; T.cupdate ] ))), inc_env env
     end
   | Irecord ri -> begin
       let rec aux env = function
@@ -1667,16 +1753,28 @@ and to_michelson (ir : T.ir) : T.michelson =
 
     let unfold = foldi (fun x -> T.cunpair::T.cswap::x ) [] in
 
+    let unfold_n x =
+      match x with
+      | 0 | 1 -> []
+      | _ -> [T.cunpair_n x]
+    in
+
+    let fold_n x =
+      match x with
+      | 0 | 1 -> []
+      | _ -> [T.cpair_n x]
+    in
+
     let get_funs _ : T.code list * ident list =
       let funs = List.map (
           fun (x : T.func) ->
             let code =
               match x.body with
               | Concrete (args, body) ->
-                let env = mk_env ~vars:(args |> List.map fst |> List.rev) () in
+                let env = mk_env ~vars:(args |> List.map fst) () in
                 let nb_args = List.length args in
-                let nb_as = nb_args - 1 in
-                let unfold_args = unfold nb_as in
+                (* let nb_as = nb_args - 1 in *)
+                let unfold_args = unfold_n nb_args in
                 let res = T.cpush (T.tunit, T.Dunit) in
                 let env = add_var_env env fun_result in
                 let es = if nb_args = 0 then T.[cswap; cdrop 1] else T.[cdug nb_args; T.cdrop nb_args] in
@@ -1700,12 +1798,11 @@ and to_michelson (ir : T.ir) : T.michelson =
 
     let fff, eee = let n = df + opsf in (if n > 0 then [T.cdig n] else []), (if df > 0 then [T.cdip (1, [T.cdrop df]) ] else []) in
 
-    let vars = List.rev (let l = ir.storage_list in if List.is_empty l then ["_"] else List.map fst l) @ ops_var @ List.rev funids in
-    let env = mk_env () ~vars in
+    let vars            = (let l = ir.storage_list in if List.is_empty l then ["_"] else List.map (fun (x, _, _) -> x) l) @ ops_var @ List.rev funids in
+    let env             = mk_env () ~vars in
     let nb_storage_item = List.length ir.storage_list in
-    let nb_fs = nb_storage_item - 1 in
-    let unfold_storage = unfold nb_fs  in
-    let fold_storage = foldi (fun x -> T.cswap::T.cpair::x ) [] nb_fs in
+    let unfold_storage  = unfold_n nb_storage_item  in
+    let fold_storage    = fold_n nb_storage_item in
 
 
     let for_entry (e : T.entry) =
@@ -1737,13 +1834,9 @@ and to_michelson (ir : T.ir) : T.michelson =
     in
 
     let code =
-      match List.rev ir.entries with
-      | []   -> assert false
-      | [e]  -> T.cseq [for_entry e]
-      | e::l -> begin
-          let c : T.code = List.fold_left (fun accu x -> T.cifleft ([for_entry x], [accu])) (for_entry e) l in
-          T.cseq ([c])
-        end
+      ir.entries
+      |> List.map for_entry
+      |> shape_entrypoints (fun x y -> T.cifleft ([x], [y])) (T.cseq [])
     in
     let us = if nb_storage_item > 1 then [T.cdip (1, unfold_storage)] else [] in
     T.cseq (cfuns @ ops @ fff @ [T.cunpair] @ us @ [code] @ eee)
@@ -1751,6 +1844,111 @@ and to_michelson (ir : T.ir) : T.michelson =
     |> T.Utils.optim
   in
 
+  let build_view storage_list (v : T.func) =
+    let id    = v.name in
+    let param : T.type_ = v.targ in
+    let ret   : T.type_ = v.tret in
+
+    let unfold_all = function
+      | []     -> []
+      | [_]    -> []
+      | [_; _] -> [T.cunpair]
+      | l      -> [T.cunpair_n (List.length l)]
+    in
+
+    let extract_storage_vars stovars =
+
+      (* Format.eprintf "extract_storage_vars: storage_list: [%a]@\n" (pp_list "; " (fun fmt (x, _, _) -> Format.fprintf fmt "%s" x) ) storage_list; *)
+      (* Format.eprintf "extract_storage_vars: stovars: [%a]@\n" (pp_list "; " (fun fmt x -> Format.fprintf fmt "%s" x) ) stovars; *)
+
+      let stos : (int * ident) list =
+        storage_list
+        |> List.mapi (fun i (x, _, _) -> (i, x))
+        |> List.filter (fun (_, x) -> List.mem x stovars)
+      in
+
+      (* Format.eprintf "extract_storage_vars: stos: [%a]@\n" (pp_list "; " (fun fmt (x, y) -> Format.fprintf fmt "(%i, %s)" x y) ) stos; *)
+
+      let rec doit (n : int) (s : int) (code, ids) stos : T.code list * ident list =
+        match stos with
+        | (k, id)::q -> begin
+            (* Format.eprintf "extract_storage_vars: k: %i@\n" k; *)
+            let found = k = n in
+            (* Format.eprintf "extract_storage_vars: found: %b@\n" found; *)
+            let last = n = s - 1 in
+            (* Format.eprintf "extract_storage_vars: last: %b@\n" last; *)
+            match found, last with
+            | false, false -> doit (n + 1) s (code @ [T.ccdr], ids) stos
+            | false, true  -> code @ [T.cdrop 1], ids
+            | true, false  -> doit (n + 1) s (code @ [T.cunpair; T.cswap], id::ids) q
+            | true, true   -> code, id::ids
+          end
+        | [] -> code @ [T.cdrop 1], ids
+      in
+
+      let n = List.length storage_list in
+      (* Format.eprintf "extract_storage_vars: n: %i@\n" n; *)
+      let code, ids = doit 0 n ([], []) stos in
+      code, ids
+    in
+
+    let env = mk_env () in
+
+    let fold_vars, env, nb_args =
+      match v.ctx.args, v.ctx.stovars with
+      | [], [] -> [T.cdrop 1], env, 0
+
+      | args, [] ->
+        let code = [T.ccar] @ unfold_all args in
+        let env = { env with vars = List.map fst args @ env.vars } in
+        code, env, List.length args
+
+      | [], stovars ->
+        let scode, svs = extract_storage_vars stovars in
+        (* Format.eprintf "RES: scode: @[%a@], sys: [%a]@\n" (pp_list "; " Printer_michelson.pp_code) scode (pp_list "; " pp_ident) svs; *)
+        let code = [T.ccdr] @ scode in
+        let env = { env with vars = svs @ env.vars } in
+        code, env, List.length svs
+
+      | args, stovars ->
+        let scode, svs = extract_storage_vars stovars in
+        let acode = unfold_all args in
+        let scode = match scode with | [] -> [] | _ -> [T.cdip (1, scode)] in
+        let code = [T.cunpair] @ scode @ acode in
+        let avs = List.map fst args in
+        let env = { env with vars = avs @ svs @ env.vars } in
+        code, env, List.length (svs @ avs)
+
+    in
+
+    let fold_vars = fold_vars @ [T.cunit] in
+
+    let env = add_var_env env fun_result in
+    (* print_env env; *)
+
+    let code, _env =
+      match v.body with
+      | Concrete (_args, instr) -> instruction_to_code env instr
+      | Abstract _ -> assert false
+    in
+
+    let post =
+      match nb_args with
+      | 0 -> []
+      | _ -> [T.cdip (1, [T.cdrop nb_args])]
+    in
+
+    let code = T.cseq (code::post) in
+
+    let body  : T.code  =
+      T.cseq (fold_vars @ [code])
+      |> T.Utils.flat
+      |> T.Utils.optim
+    in
+    T.mk_view_struct id param ret body
+  in
+
   let code = build_code () in
   let parameters = ir.parameters in
-  T.mk_michelson ~parameters storage ir.parameter code
+  let views = List.map (build_view ir.storage_list) ir.views in
+  T.mk_michelson ~parameters ~views storage ir.parameter code

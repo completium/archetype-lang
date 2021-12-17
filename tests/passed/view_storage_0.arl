@@ -1,0 +1,13 @@
+archetype view_args_storage_no_yes
+
+variable res : option<nat> = none
+
+variable n : nat = 2
+
+view get() : nat {
+  return n
+}
+
+entry exec() {
+  res := callview<nat>(selfaddress, "get", Unit)
+}

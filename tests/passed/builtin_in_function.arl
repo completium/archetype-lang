@@ -1,0 +1,12 @@
+archetype builtin_in_function
+
+variable res : nat = 0
+
+function f(a : nat, b : nat) : nat {
+  var r = sub_nat(a, b);
+  return r
+}
+
+entry exec () {
+  res := f(3, 2)
+}

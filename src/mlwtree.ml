@@ -62,6 +62,8 @@ type ('i,'t) abstract_type =
   | Tybls12_381_g1
   | Tybls12_381_g2
   | Tynever
+  | Tychest
+  | Tychest_key
   (* ... *)
 [@@deriving show {with_path = false}]
 
@@ -381,6 +383,8 @@ let map_abstract_type (map_i : 'i1 -> 'i2) (map_t : 't1 -> 't2) = function
   | Tybls12_381_g1-> Tybls12_381_g1
   | Tybls12_381_g2-> Tybls12_381_g2
   | Tynever       -> Tynever
+  | Tychest       -> Tychest
+  | Tychest_key   -> Tychest_key
 
 let map_abstract_univ_decl
     (map_t : 't1 -> 't2)

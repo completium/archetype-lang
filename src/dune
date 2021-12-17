@@ -18,10 +18,13 @@
   model gen_model gen_transform mtools
   printer_model gen_storage gen_api_storage
   printer_model_tools
+  micheline micheline_printer
   michelson gen_michelson printer_michelson
   michelson_parser michelson_lexer gen_decompile opt_model
   gen_why3 mlwtree printer_mlwtree
   gen_extra mtyping extract_w
+  compile
+  lsp services
   )
   (libraries menhirLib num str ppx_deriving yojson ppx_deriving_yojson.runtime hex unix xmlm)
  (flags :standard -w -30  ; Allow sharing of record labels between distinct types.
@@ -31,9 +34,19 @@
 
 (executable
   (preprocess
+    (pps ppx_deriving.std ppx_deriving_yojson js_of_ocaml-ppx)
+  )
+  (modules api)
+  (libraries js_of_ocaml archetype menhirLib unix)
+  (public_name api)
+  (modes native js)
+  (name  api))
+
+(executable
+  (preprocess
     (pps ppx_deriving.std ppx_deriving_yojson)
   )
-  (modules lsp services compiler)
+  (modules compiler)
   (libraries archetype menhirLib unix)
   (public_name archetype)
   (name     compiler))

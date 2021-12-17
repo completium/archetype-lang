@@ -124,6 +124,7 @@ and expr_unloc =
   | Esqapp         of expr * expr
   | Emulticomp     of expr * (comparison_operator loced * expr) list
   | Eapp           of function_ * expr list
+  | Eappt          of function_ * type_t list * expr list
   | Emethod        of expr * lident * expr list
   | Etransfer      of transfer_t
   | Edorequire     of expr * expr
@@ -148,7 +149,8 @@ and expr_unloc =
   | Eoption        of option_
   | Eor            of or_
   | Elambda        of type_t option * lident * type_t option * expr
-  | Eentrypoint    of type_t * expr * expr
+  | Eentrypoint    of type_t * expr * expr * expr option
+  | Ecallview      of type_t * expr * expr * expr
   | Eunpack        of type_t * expr
   | Eself          of lident
   | Eany
@@ -267,6 +269,7 @@ and s_function = {
   spec  : specification option;
   body  : expr;
   getter: bool;
+  view  : bool;
 }
 
 and entry_properties = {
@@ -323,6 +326,7 @@ and specfun_kind =
   | SKentry
   | SKfunction
   | SKgetter
+  | SKview
 
 and specfun = specfun_kind * lident * args * specification
 
@@ -439,6 +443,8 @@ let tbls12_381_fr = tref "bls12_381_fr"
 let tbls12_381_g1 = tref "bls12_381_g1"
 let tbls12_381_g2 = tref "bls12_381_g2"
 let tnever        = tref "never"
+let tchest        = tref "chest"
+let tchest_key    = tref "chest_key"
 
 let mk_tcontainer ?(loc=dummy) ?a t c : type_t =
   mkloc loc (Tcontainer (t, c)), a
@@ -534,7 +540,7 @@ let eassert       ?(loc=dummy) id                 = mkloc loc (Eassert id)
 let elabel        ?(loc=dummy) id                 = mkloc loc (Elabel id)
 let ereturn       ?(loc=dummy) e                  = mkloc loc (Ereturn e)
 let eoption       ?(loc=dummy) e                  = mkloc loc (Eoption e)
-let eentrypoint   ?(loc=dummy) t e v              = mkloc loc (Eentrypoint (t, e, v))
+let eentrypoint   ?(loc=dummy) t e v b            = mkloc loc (Eentrypoint (t, e, v, b))
 let eunpack       ?(loc=dummy) t e                = mkloc loc (Eunpack (t, e))
 let eself         ?(loc=dummy) id                 = mkloc loc (Eself id)
 let eany          ?(loc=dummy) _                  = mkloc loc (Eany)
@@ -543,8 +549,8 @@ let einvalid      ?(loc=dummy) _                  = mkloc loc (Einvalid)
 
 (* declarations utils *)
 
-let mk_s_function name args ret_t spec body getter : s_function =
-  {name; args; ret_t; spec; body; getter}
+let mk_s_function name args ret_t spec body getter view : s_function =
+  {name; args; ret_t; spec; body; getter; view}
 
 let mk_entry_properties ?(accept_transfer = true) ?sourcedby ?calledby ?state_is ?require ?failif ?spec_fun ?(functions = []) _ : entry_properties =
   { accept_transfer; sourcedby; calledby; state_is; require; failif; spec_fun; functions }

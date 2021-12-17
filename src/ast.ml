@@ -37,6 +37,8 @@ type vtyp =
   | VTbls12_381_g1
   | VTbls12_381_g2
   | VTnever
+  | VTchest
+  | VTchest_key
 [@@deriving show {with_path = false}]
 
 type trtyp =
@@ -157,6 +159,7 @@ type const =
   | Cfloor
   | Cget
   | Cgetopt
+  | Crequiresome
   | Cisnone
   | Cissome
   | Clength
@@ -178,8 +181,10 @@ type const =
   | Cexec
   | Capply
   | CdateFromTimestamp
+  | CmutezToNat
   | Csetdelegate
   | Cimplicitaccount
+  | Csubnat
   (* set *)
   | Csadd
   | Csremove
@@ -207,6 +212,9 @@ type const =
   | Ckeccak
   | Cchecksignature
   | Chashkey
+  | Ccontractaddress
+  | Caddresscontract
+  | Ckeyaddress
   (* voting *)
   | Ctotalvotingpower
   | Cvotingpower
@@ -369,7 +377,8 @@ type 'id term_node  =
   | Plambda of type_ * 'id * type_ * 'id term_gen
   | Pcast of type_ * type_ * 'id term_gen
   | Pself of 'id
-  | Pentrypoint of type_ * 'id * 'id term_gen
+  | Pentrypoint of type_ * 'id * 'id term_gen * ('id term_gen) option
+  | Pcallview of type_ * 'id term_gen * 'id * 'id term_gen
 [@@deriving show {with_path = false}]
 
 and 'id term_arg =
@@ -439,6 +448,7 @@ and instruction = lident instruction_poly
 and 'id lvalue_gen = [
   | `Var   of 'id
   | `Field of 'id * 'id term_gen * 'id
+  | `Asset of 'id * 'id term_gen * 'id
 ]
 
 and lvalue = lident lvalue_gen
@@ -597,6 +607,7 @@ type security = {
 type fun_kind =
   | FKfunction
   | FKgetter
+  | FKview
 [@@deriving show {with_path = false}]
 
 type 'id function_struct = {
@@ -758,11 +769,13 @@ let vtint          = Tbuiltin (VTint          )
 let vtkey          = Tbuiltin (VTkey          )
 let vtkeyhash      = Tbuiltin (VTkeyhash      )
 let vtnat          = Tbuiltin (VTnat          )
-let vtnever        = Tbuiltin (VTnever        )
 let vtrational     = Tbuiltin (VTrational     )
 let vtsignature    = Tbuiltin (VTsignature    )
 let vtstring       = Tbuiltin (VTstring       )
 let vtunit         = Tbuiltin (VTunit         )
+let vtnever        = Tbuiltin (VTnever        )
+let vtchest        = Tbuiltin (VTchest        )
+let vtchest_key    = Tbuiltin (VTchest_key    )
 
 let vts = [
   vtaddress      ;

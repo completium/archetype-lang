@@ -1,0 +1,10 @@
+archetype fun_inline
+
+function f() inline : bool {
+  return true
+}
+
+entry ident () {
+  var a : bool = f();
+  dorequire(a, "ko")
+}

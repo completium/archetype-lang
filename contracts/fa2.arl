@@ -81,7 +81,7 @@ record operator_param {
   opp_owner    : address;
   opp_operator : address;
   opp_token_id : nat
-}
+} as ((owner, (operator, token_id)))
 
 /* STORAGE ------------------------------------------------------------------ */
 

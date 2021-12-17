@@ -452,6 +452,45 @@ end = struct
 end
 
 (* -------------------------------------------------------------------- *)
+
+let make_full_tree f l =
+  let split l =
+    let log2 n =
+      let rec a n i =
+        if n > 1
+        then a (n / 2) (i + 1)
+        else i
+      in
+      a n 0
+    in
+    let exp2 n =
+      let rec a n =
+        if n = 0
+        then 1
+        else 2 * a (n - 1)
+      in
+      a n
+    in
+    let le = List.length l in
+    if le = 0
+    then assert false
+    else begin
+      let lo = log2 le in
+      let n = exp2 (if (le mod 2 = 0) then lo - 1 else lo) in
+      (* Format.printf("length: %i, log: %i, n: %i@\n") le lo n; *)
+      List.cut n l
+    end
+  in
+  let rec aux l =
+    match l with
+    | [x], [] -> x
+    | [a], [b] -> f a b
+    | a, [b] -> f (aux (split a)) b
+    | a, b -> f (aux (split a)) (aux (split b))
+  in
+  aux (split l)
+
+(* -------------------------------------------------------------------- *)
 module Map : sig
   module type OrderedType = Map.OrderedType
 
@@ -552,3 +591,8 @@ let get_content path =
     s
   in
   read_whole_file path
+
+let string_to_big_int str =
+  let res = ref Big_int.zero_big_int in
+  String.iter (fun x -> res := !res |> Big_int.mult_int_big_int 256 |> Big_int.add_int_big_int (Char.code x)) str;
+  !res

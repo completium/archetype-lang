@@ -1,0 +1,10 @@
+archetype reverse_otherwise
+
+entry exec() {
+  failif {
+    r0: true with "false";
+  }
+  effect {
+    ()
+  }
+}

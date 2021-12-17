@@ -1,0 +1,33 @@
+archetype big_map_partition
+
+variable res : set<string> = []
+
+asset b to big_map {
+  bid : nat;
+  v   : string;
+}
+
+asset a to big_map {
+  aid : nat;
+  p   : partition<b>;
+}
+
+entry init() {
+  a.add({0; [{2; "toto"}; {4; "tata"}; {5; "titi"}]});
+  a.add({1; [{3; "tutu"}]});
+}
+
+entry fillWithIteration() {
+  for k in a[0].p do
+    var c = a[0].p[k].v;
+    res.add(c);
+  done
+}
+
+function isEven(n : nat) : bool {
+  return (n % 2 = 0)
+}
+
+entry removeEven() {
+  a[0].p.removeif(isEven(the.bid));
+}

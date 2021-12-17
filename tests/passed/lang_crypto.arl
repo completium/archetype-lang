@@ -10,6 +10,8 @@ entry exec () {
     dorequire (h2 = h2, "ko");
     var h3 : bytes = sha512(b);
     dorequire (h3 = h3, "ko");
+    var h4 : bytes = sha3(b);
+    var h5 : bytes = keccak(b);
 
     var k   : key       = "edpkurLzuFFL1XyP3fed4u7MsgeywQoQmHM45Bz91PBzDvUjQ9bvdn";
     var sig : signature = "edsigtqrQGP5wwzZhYDr1WcDrh7YdEH9JecM6BD1scrmYHP4aJ98izGUeQT5MmqSk9gtgTZvBacAncxgCyBnX9UjJCokUYYaapq";
@@ -17,6 +19,14 @@ entry exec () {
     dorequire (cs, "ko");
 
     var kh : key_hash = hash_key(k);
-    dorequire (kh = kh, "ko")
+    dorequire (kh = kh, "ko");
+
+    var addr = tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg;
+    var a : address = key_address(k);
+    dorequire (a = addr, "ko");
+
+    var c : contract<unit> = tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg;
+    var d : address = contract_address(c);
+    dorequire (d = addr, "ko");
   }
 }

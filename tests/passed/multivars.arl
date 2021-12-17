@@ -1,0 +1,12 @@
+archetype multivars
+
+variable u : nat = 0
+variable v : string = ""
+variable w : int = 0
+variable x : bytes = 0x00
+variable y : nat = 1
+variable z : nat = 0
+
+entry exec () {
+  z := length(v) + u + length(x) + y
+}

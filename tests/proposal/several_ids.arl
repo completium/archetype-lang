@@ -1,0 +1,10 @@
+archetype several_ids
+
+variable x : nat = 0
+variable y : nat = 0
+
+entry exec() {
+  var a, b = (1, 2);
+  x := a;
+  y := b
+}

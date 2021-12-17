@@ -1,0 +1,11 @@
+archetype multi_var_storage
+
+variable a : string = ""
+variable b : option<nat> = none
+variable c : nat = 0
+variable d : int = 1i
+
+
+entry exec () {
+  c := 2
+}

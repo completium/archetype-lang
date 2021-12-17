@@ -1,18 +1,13 @@
-open Archetype
 open Tools
 open Location
 open ParseTree
+open Options
+open Core
 
 type status =
   | Passed
   | Error
 [@@deriving yojson, show {with_path = false}]
-
-type service =
-  | GetProperties
-[@@deriving yojson, show {with_path = false}]
-
-let service = ref GetProperties
 
 type position = {
   line : int;
@@ -166,13 +161,11 @@ let extract_properties (pt : archetype) : property list =
   | Marchetype decls -> List.map (fun x -> x |> unloc |> ep_decl) decls |> List.flatten
   | _ -> []
 
-let print_json f p =
-  Format.printf "%s@\n"
-    (Yojson.Safe.to_string (f p))
+let print_json f p = Yojson.Safe.to_string (f p)
 
-
-let process (filename, channel) =
-  match !service with
+let process (service : service_kind) (input : from_input) : string =
+  Error.errors := [];
+  match service with
   | GetProperties ->
     let print_error () =
       let e = mk_property_get_property Error [] in
@@ -180,7 +173,7 @@ let process (filename, channel) =
     in
 
     try
-      let pt = Io.parse_archetype_strict ~name:filename channel in
+      let pt = Io.parse_archetype_strict input in
       match !Error.errors with
       | [] ->
         let properties = extract_properties pt in
@@ -189,3 +182,5 @@ let process (filename, channel) =
       | _ -> print_error ()
     with
       _ -> print_error ()
+
+let process_from_string service input = process service (FIString input)

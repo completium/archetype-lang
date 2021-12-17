@@ -3,7 +3,7 @@ theory Types
   use int.Int
 
   (* default type mapping *)
-  type arstring  = string
+  type arstring  = int
 
   type key       = arstring
   type key_hash  = arstring
@@ -231,8 +231,8 @@ module Utils
 
   val function str_eq (_ : arstring) (_ : arstring) : bool
 
-  axiom str_eq_spec : forall s1 s2.
-  str_eq s1 s1 <-> s1 = s2
+  (* axiom str_eq_spec : forall s1 s2.
+  str_eq s1 s1 <-> s1 = s2 *)
 
   (* let function str_le (s1 : arstring) (s2 : arstring) : bool = s1 <= s2
   let function str_ge (s1 : arstring) (s2 : arstring) : bool = s1 >= s2
@@ -251,8 +251,8 @@ module Utils
 
   val function str_lt arstring arstring : bool
 
-  axiom str_lt_spec : forall s1 s2.
-  str_lt s1 s2 = S.lt s1 s2
+  (* axiom str_lt_spec : forall s1 s2.
+  str_lt s1 s2 = S.lt s1 s2 *)
 
   val function str_gt arstring arstring : bool
 
@@ -289,6 +289,8 @@ module Utils
   | None -> raise NotFound
   end
 
+  let require_some (o : option 'a) (_ : 'b') : 'a = getopt o
+
   (* ----------------------------------------------------------------------- *)
   (* crypto *)
   let function blake2b (b : bytes) : bytes = b
@@ -296,7 +298,7 @@ module Utils
   let function sha512 (b : bytes) : bytes = b
   let function sha3 (b : bytes) : bytes = b
   let function keccak (b : bytes) : bytes = b
-  let function hash_key (_k : key) : key_hash = ""
+  let function hash_key (_k : key) : key_hash = 0
   let check_signature (_k : key) (_s : signature) (_b : bytes) = true
 
   (* ----------------------------------------------------------------------- *)
@@ -413,6 +415,9 @@ theory Operation
   (* blockchain operations *)
   val function set_delegate (option key_hash) : operation
   val function implicit_account key_hash : contract
+  val function contract_address contract : address
+  val function address_contract address  : contract
+  val function key_address key : address
   val function voting_power key_hash : nat
   val total_voting_power : nat
 

@@ -75,6 +75,8 @@ let to_model (ast : A.ast) : M.model =
     | A.VTbls12_381_g1 -> M.Bbls12_381_g1
     | A.VTbls12_381_g2 -> M.Bbls12_381_g2
     | A.VTnever        -> M.Bnever
+    | A.VTchest        -> M.Bchest
+    | A.VTchest_key    -> M.Bchest_key
   in
 
   let to_trtyp = function
@@ -406,7 +408,9 @@ let to_model (ast : A.ast) : M.model =
       | A.Pself id -> M.Mself id
 
 
-      | A.Pentrypoint (t, a, b) -> M.Mentrypoint (type_to_type t, a, f b)
+      | A.Pentrypoint (t, a, b, r) -> M.Mentrypoint (type_to_type t, a, f b, Option.map f r)
+
+      | A.Pcallview (t, a, b, c) -> M.Mcallview (type_to_type t, f a, b,f c)
 
       (* | A.Pcall (Some p, A.Cconst A.Cbefore,    []) -> M.Msetbefore    (f p) *)
       (* | A.Pcall (Some p, A.Cconst A.Cunmoved,   []) -> M.Msetunmoved   (f p)
@@ -568,7 +572,7 @@ let to_model (ast : A.ast) : M.model =
         let fp = f p in
         let fq = f q in
         let kt, vt = extract_builtin_type_map fp in
-        M.Mmapget (kt, vt, fp, fq)
+        M.Mmapget (kt, vt, fp, fq, None)
 
       | A.Pcall (None, A.Cconst (A.Cmgetopt), [AExpr p; AExpr q]) ->
         let fp = f p in
@@ -678,6 +682,11 @@ let to_model (ast : A.ast) : M.model =
         let fx = f x in
         M.Moptget (fx)
 
+      | A.Pcall (None, A.Cconst A.Crequiresome, [AExpr x; AExpr y]) ->
+        let fx = f x in
+        let fy = f y in
+        M.Mrequiresome (fx, fy)
+
       | A.Pcall (None, A.Cconst A.Cfloor, [AExpr x]) ->
         let fx = f x in
         M.Mfloor (fx)
@@ -712,6 +721,11 @@ let to_model (ast : A.ast) : M.model =
         let fx = f x in
         M.Mimplicitaccount (fx)
 
+      | A.Pcall (None, A.Cconst A.Csubnat, [AExpr x; AExpr y]) ->
+        let fx = f x in
+        let fy = f y in
+        M.Msubnat (fx, fy)
+
       | A.Pcall (None, A.Cconst A.Cblake2b, [AExpr x]) ->
         let fx = f x in
         M.Mblake2b (fx)
@@ -741,6 +755,18 @@ let to_model (ast : A.ast) : M.model =
         let fs = f s in
         let fx = f x in
         M.Mchecksignature (fk, fs, fx)
+
+      | A.Pcall (None, A.Cconst A.Ccontractaddress, [AExpr x]) ->
+        let fx = f x in
+        M.Mcontractaddress (fx)
+
+      | A.Pcall (None, A.Cconst A.Caddresscontract, [AExpr x]) ->
+        let fx = f x in
+        M.Maddresscontract (fx)
+
+      | A.Pcall (None, A.Cconst A.Ckeyaddress, [AExpr x]) ->
+        let fx = f x in
+        M.Mkeyaddress (fx)
 
       | A.Pcall (_, A.Cid id, args) ->
         M.Mapp (id, List.map (fun x -> term_arg_to_expr f x) args)
@@ -837,6 +863,10 @@ let to_model (ast : A.ast) : M.model =
       | A.Pcall (None, A.Cconst A.CdateFromTimestamp, [AExpr x]) ->
         let fx = f x in
         M.Mdatefromtimestamp (fx)
+
+      | A.Pcall (None, A.Cconst A.CmutezToNat, [AExpr x]) ->
+        let fx = f x in
+        M.Mmuteztonat (fx)
 
       (* Fail *)
 
@@ -989,14 +1019,20 @@ let to_model (ast : A.ast) : M.model =
           in
           M.Massign (to_assignment_operator op, t, assign_kind, e)
         end
-      | A.Iassign (op, t, `Field (an, o, fn), v) -> begin
+      | A.Iassign (op, t, `Field (rn, o, fn), v) -> begin
           let v = f v in
           let t = type_to_type t in
           let ak =
             match o.type_ with
             | Some (A.Trecord rn) -> M.Arecord(rn, fn, f o)
-            | _ -> M.Aasset (an, fn, f o)
+            | _ -> M.Aasset (rn, fn, f o)
           in
+          M.Massign (to_assignment_operator op, t, ak, v)
+        end
+      | A.Iassign (op, t, `Asset (an, k, fn), v) -> begin
+          let v = f v in
+          let t = type_to_type t in
+          let ak = M.Aasset (an, fn, f k) in
           M.Massign (to_assignment_operator op, t, ak, v)
         end
       | A.Irequire (b, t, e) ->
@@ -1221,7 +1257,7 @@ let to_model (ast : A.ast) : M.model =
         ~loc:s.loc
         ()
     in
-    { sec with items = sec.items @ new_s.items; loc = new_s.loc; }
+    { items = sec.items @ new_s.items; loc = new_s.loc; }
   in
 
   let process_fun_gen name args (body : M.mterm) loc spec f : M.function__ =
@@ -1239,7 +1275,11 @@ let to_model (ast : A.ast) : M.model =
     let loc   = function_.loc in
     let ret   = type_to_type function_.return in
     let spec : M.specification option = Option.map (to_specification env) function_.specification in
-    let f     = match function_.kind with | FKfunction -> (fun x -> M.Function (x, ret)) | FKgetter -> (fun x -> M.Getter (x, ret)) in
+    let f     = match function_.kind with
+      | FKfunction -> (fun x -> M.Function (x, ret))
+      | FKgetter -> (fun x -> M.Getter (x, ret))
+      | FKview -> (fun x -> M.View (x, ret))
+    in
     process_fun_gen name args body loc spec f
   in
 

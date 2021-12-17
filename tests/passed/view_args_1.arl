@@ -1,0 +1,11 @@
+archetype view_args_several_args
+
+variable res : option<nat> = none
+
+view get(i : nat, s : string, b : bytes) : nat {
+  return (i + length(s) + length(b))
+}
+
+entry exec() {
+  res := callview<nat>(selfaddress, "get", (1, "toto", 0x123456))
+}

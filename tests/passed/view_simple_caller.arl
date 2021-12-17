@@ -1,0 +1,7 @@
+archetype view_simple_caller
+
+variable n : option<nat> = none
+
+entry exec(a : address) {
+  n := callview<nat>(a, "get", Unit)
+}

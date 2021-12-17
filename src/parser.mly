@@ -43,6 +43,7 @@
 %token BY
 %token CALL
 %token CALLED
+%token CALLVIEW
 %token COLON
 %token COLONCOLON
 %token COLONEQUAL
@@ -60,6 +61,7 @@
 %token DOT
 %token EFFECT
 %token ELSE
+%token EMPTYLIST
 %token END
 %token ENTRY
 %token ENTRYPOINT
@@ -134,6 +136,7 @@
 %token REFUSE_TRANSFER
 %token REMOVED
 %token REQUIRE
+%token REQUIRE_ENTRYPOINT
 %token RETURN
 %token RIGHT
 %token RPAREN
@@ -293,6 +296,7 @@ declaration_r:
  | x=namespace          { x }
  | x=function_decl      { x }
  | x=getter_decl        { x }
+ | x=view_decl          { x }
  | x=specification_decl { x }
  | x=specasset          { x }
  | x=specfun            { x }
@@ -382,6 +386,7 @@ namespace:
     spec   = s;
     body   = e;
     getter = false;
+    view   = false;
   }
 }
 
@@ -404,11 +409,31 @@ function_decl:
     spec   = s;
     body   = e;
     getter = true;
+    view   = false;
+  }
+}
+
+%inline view_gen:
+ | VIEW id=ident xs=function_args
+     r=function_return? LBRACE b=fun_body RBRACE {
+  let (s, e) = b in
+  {
+    name   = id;
+    args   = xs;
+    ret_t  = r;
+    spec   = s;
+    body   = e;
+    getter = false;
+    view   = true;
   }
 }
 
 getter_decl:
 | f=getter_gen
+    { Dfunction f }
+
+view_decl:
+| f=view_gen
     { Dfunction f }
 
 %inline spec_predicate:
@@ -720,7 +745,9 @@ sourcedby:
 | l=snl(SEMI_COLON, rf(X)) { l }
 
 rf(X):
-| id=ident f=rfi(X)? COLON e=expr %prec prec_labelexpr { (id, e, f) }
+| id=ident COLON e=expr %prec prec_labelexpr { (id, e, None) }
+| id=ident f=rfi(X) COLON e=expr %prec prec_labelexpr { (id, e, Some f) }
+| id=ident COLON e=expr f=rfi(X) %prec prec_labelexpr { (id, e, Some f) }
 
 %inline rfi(X):
 | X e=expr { e }
@@ -966,6 +993,9 @@ simple_expr_r:
  | id=ident a=app_args
      { Eapp ( Fident id, a) }
 
+ | EMPTYLIST LESS t=type_t GREATER a=app_args
+     { Eappt ( Fident (dumloc "emptylist"), [t], a) }
+
  | x=simple_expr DOT y=ident
      { Edot (x, y) }
 
@@ -1039,7 +1069,13 @@ simple_expr_r:
      { Eself x }
 
  | ENTRYPOINT LESS t=type_t GREATER LPAREN a=expr COMMA b=expr RPAREN
-     { Eentrypoint (t, a, b) }
+     { Eentrypoint (t, a, b, None) }
+
+ | REQUIRE_ENTRYPOINT LESS t=type_t GREATER LPAREN a=expr COMMA b=expr COMMA c=expr RPAREN
+     { Eentrypoint (t, a, b, Some c) }
+
+ | CALLVIEW LESS t=type_t GREATER LPAREN a=expr COMMA b=expr COMMA c=expr RPAREN
+     { Ecallview (t, a, b, c) }
 
  | ANY
      { Eany }

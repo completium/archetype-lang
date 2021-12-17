@@ -68,6 +68,6 @@ let expr_to_mterm (e : P.expr) : M.mterm =
   | _ -> assert false
 
 let string_to_mterm (input : string) : M.mterm =
-  input
+  FIString input
   |> Io.parse_expr
   |> expr_to_mterm

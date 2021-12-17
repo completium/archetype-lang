@@ -152,6 +152,8 @@ end = struct
       | A.Tbuiltin VTbls12_381_g1-> true
       | A.Tbuiltin VTbls12_381_g2-> true
       | A.Tbuiltin VTnever       -> true
+      | A.Tbuiltin VTchest       -> true
+      | A.Tbuiltin VTchest_key   -> true
       | A.Tcontainer           _ -> false
       | A.Tset                 _ -> true
       | A.Tlist                _ -> true
@@ -193,6 +195,8 @@ end = struct
       | A.Tbuiltin VTbls12_381_g1-> false
       | A.Tbuiltin VTbls12_381_g2-> false
       | A.Tbuiltin VTnever       -> true
+      | A.Tbuiltin VTchest       -> true
+      | A.Tbuiltin VTchest_key   -> true
       | A.Tcontainer           _ -> false
       | A.Tset                 _ -> false
       | A.Tlist                _ -> false
@@ -234,6 +238,8 @@ end = struct
       | A.Tbuiltin VTbls12_381_g1-> true
       | A.Tbuiltin VTbls12_381_g2-> true
       | A.Tbuiltin VTnever       -> true
+      | A.Tbuiltin VTchest       -> true
+      | A.Tbuiltin VTchest_key   -> true
       | A.Tcontainer           _ -> false
       | A.Tset                 _ -> true
       | A.Tlist                _ -> true
@@ -275,6 +281,8 @@ end = struct
       | A.Tbuiltin VTbls12_381_g1-> true
       | A.Tbuiltin VTbls12_381_g2-> true
       | A.Tbuiltin VTnever       -> true
+      | A.Tbuiltin VTchest       -> true
+      | A.Tbuiltin VTchest_key   -> true
       | A.Tcontainer           _ -> false
       | A.Tset                 t -> is_storable t
       | A.Tlist                t -> is_storable t
@@ -316,6 +324,8 @@ end = struct
       | A.Tbuiltin VTbls12_381_g1-> true
       | A.Tbuiltin VTbls12_381_g2-> true
       | A.Tbuiltin VTnever       -> true
+      | A.Tbuiltin VTchest       -> true
+      | A.Tbuiltin VTchest_key   -> true
       | A.Tcontainer           _ -> false
       | A.Tset                 t -> is_packable t
       | A.Tlist                t -> is_packable t
@@ -357,6 +367,8 @@ end = struct
       | A.Tbuiltin VTbls12_381_g1-> true
       | A.Tbuiltin VTbls12_381_g2-> true
       | A.Tbuiltin VTnever       -> true
+      | A.Tbuiltin VTchest       -> true
+      | A.Tbuiltin VTchest_key   -> true
       | A.Tcontainer           _ -> false
       | A.Tset                 t -> is_big_map_value t
       | A.Tlist                t -> is_big_map_value t
@@ -403,7 +415,7 @@ end = struct
         | A.VTint, A.VTbls12_381_fr -> Some 1
         | A.VTnat, A.VTbls12_381_fr -> Some 2
 
-        | A.VTcurrency , A.VTnat when not for_eq -> Some 1
+        (* | A.VTcurrency , A.VTnat when not for_eq -> Some 1 *)
         | A.VTduration , A.VTint when not for_eq -> Some 1
 
         | _, _ -> None
@@ -661,8 +673,10 @@ type error_desc =
   | InvalidSourcedByExpression
   | InvalidSourcedByAsset
   | InvalidStateExpression
+  | InvalidStringValue
   | InvalidTypeForBigMapKey
   | InvalidTypeForBigMapValue
+  | InvalidTypeForCallview
   | InvalidTypeForContract
   | InvalidTypeForDoFailIf
   | InvalidTypeForDoRequire
@@ -744,6 +758,7 @@ type error_desc =
   | UnknownFieldName                   of ident
   | UnknownFunction                    of ident
   | UnknownGetter                      of ident
+  | UnknownView                        of ident
   | UnknownLabel                       of ident
   | UnknownLocalOrVariable             of ident
   | UnknownProcedure                   of ident
@@ -880,8 +895,10 @@ let pp_error_desc fmt e =
   | InvalidSourcedByExpression         -> pp "Invalid 'Sourcedby' expression"
   | InvalidSourcedByAsset              -> pp "Invalid 'Sourcedby' asset, the key must be typed address"
   | InvalidStateExpression             -> pp "Invalid state expression"
+  | InvalidStringValue                 -> pp "Invalid string value"
   | InvalidTypeForBigMapKey            -> pp "Invalid type for big map key"
   | InvalidTypeForBigMapValue          -> pp "Invalid type for big map value"
+  | InvalidTypeForCallview             -> pp "Invalid type for callview"
   | InvalidTypeForContract             -> pp "Invalid type for contract"
   | InvalidTypeForDoFailIf             -> pp "Invalid type for dofailif"
   | InvalidTypeForDoRequire            -> pp "Invalid type for dorequire"
@@ -962,6 +979,7 @@ let pp_error_desc fmt e =
   | UnknownFieldName i                 -> pp "Unknown field name: %a" pp_ident i
   | UnknownFunction  i                 -> pp "Unknown function name: %a" pp_ident i
   | UnknownGetter  i                   -> pp "Unknown getter name: %a" pp_ident i
+  | UnknownView  i                     -> pp "Unknown view name: %a" pp_ident i
   | UnknownLabel i                     -> pp "Unknown label: %a" pp_ident i
   | UnknownLocalOrVariable i           -> pp "Unknown local or variable: %a" pp_ident i
   | UnknownProcedure i                 -> pp "Unknown procedure: %a" pp_ident i
@@ -1280,14 +1298,21 @@ let coreops : opinfo list =
   @ (List.map
        (fun x -> op "to_string" A.Ctostring `Total None [x] (`Ty A.vtstring) Mint.empty)
        [A.vtnat])
-  @ [op "date_from_timestamp" A.CdateFromTimestamp `Total None [A.vtint] (`Ty A.vtdate) Mint.empty]
+  @ [op "date_from_timestamp" A.CdateFromTimestamp `Total None [A.vtint] (`Ty A.vtdate) Mint.empty;
+     op "mutez_to_nat" A.CmutezToNat `Total None [A.vtcurrency] (`Ty A.vtnat) Mint.empty]
+
 
 (* -------------------------------------------------------------------- *)
-let optionops : opinfo list = [
-  op "isnone"  A.Cisnone `Total   (Some (A.Toption (A.Tnamed 0))) [] (`Ty A.vtbool)     Mint.empty;
-  op "issome"  A.Cissome `Total   (Some (A.Toption (A.Tnamed 0))) [] (`Ty A.vtbool)     Mint.empty;
-  op "opt_get" A.Cgetopt `Partial (Some (A.Toption (A.Tnamed 0))) [] (`Ty (A.Tnamed 0)) Mint.empty;
-]
+let optionops : opinfo list =
+  let ty = A.Tnamed 0 in
+  let top = A.Toption ty in
+  let ty2 = A.Tnamed 1 in
+  [
+    op "isnone"       A.Cisnone      `Total   (Some top) [] (`Ty A.vtbool) Mint.empty;
+    op "issome"       A.Cissome      `Total   (Some top) [] (`Ty A.vtbool) Mint.empty;
+    op "opt_get"      A.Cgetopt      `Partial (Some top) [] (`Ty ty)       Mint.empty;
+    op "require_some" A.Crequiresome `Partial (Some top) [ty2] (`Ty ty)       Mint.empty
+  ]
 
 (* -------------------------------------------------------------------- *)
 let setops : opinfo list =
@@ -1345,11 +1370,20 @@ let cryptoops : opinfo list =
      ("sha3"   , A.Csha3   );
      ("keccak" , A.Ckeccak )]
 
-  @ [op "hash_key"         A.Chashkey         `Total None [A.vtkey]                           (`Ty A.vtkeyhash           ) Mint.empty;
-     op "check_signature"  A.Cchecksignature  `Total None [A.vtkey; A.vtsignature; A.vtbytes] (`Ty A.vtbool              ) Mint.empty;
-     op "set_delegate"     A.Csetdelegate     `Total None [A.Toption A.vtkeyhash]             (`Ty A.Toperation          ) Mint.empty;
-     op "implicit_account" A.Cimplicitaccount `Total None [A.vtkeyhash]                       (`Ty (A.Tcontract A.vtunit)) Mint.empty;
-     op "voting_power"     A.Cvotingpower     `Total None [A.vtkeyhash]                       (`Ty A.vtnat               ) Mint.empty]
+  @ [op "hash_key"            A.Chashkey         `Total None [A.vtkey]                           (`Ty A.vtkeyhash           ) Mint.empty;
+     op "check_signature"     A.Cchecksignature  `Total None [A.vtkey; A.vtsignature; A.vtbytes] (`Ty A.vtbool              ) Mint.empty;
+     op "set_delegate"        A.Csetdelegate     `Total None [A.Toption A.vtkeyhash]             (`Ty A.Toperation          ) Mint.empty;
+     op "implicit_account"    A.Cimplicitaccount `Total None [A.vtkeyhash]                       (`Ty (A.Tcontract A.vtunit)) Mint.empty;
+     op "address_to_contract" A.Caddresscontract `Total None [A.vtaddress]                       (`Ty (A.Tcontract A.vtunit)) Mint.empty;
+     op "voting_power"        A.Cvotingpower     `Total None [A.vtkeyhash]                       (`Ty A.vtnat               ) Mint.empty;
+     op "contract_address"    A.Ccontractaddress `Total None [A.Tcontract (A.Tnamed 0)]          (`Ty A.vtaddress           ) Mint.empty;
+     op "key_address"         A.Ckeyaddress      `Total None [A.vtkey]                           (`Ty A.vtaddress           ) Mint.empty]
+
+(* -------------------------------------------------------------------- *)
+let mathops : opinfo list =
+  [
+    op "sub_nat" A.Csubnat `Partial (Some A.vtnat) [ A.vtnat ] (`Ty A.vtnat) Mint.empty
+  ]
 
 (* -------------------------------------------------------------------- *)
 let packops : opinfo list =
@@ -1363,6 +1397,7 @@ let opsops : opinfo list =
 (* -------------------------------------------------------------------- *)
 let lambdaops : opinfo list = [
   op "exec_lambda" A.Cexec `Total (Some (A.Tlambda (A.Tnamed 0, A.Tnamed 1))) [A.Tnamed 0] (`Ty (A.Tnamed 1)) Mint.empty;
+  op "apply_lambda" A.Capply `Total (Some (A.Tlambda (A.Ttuple [A.Tnamed 0; A.Tnamed 1], A.Tnamed 2))) [A.Tnamed 0] (`Ty (A.Tlambda (A.Tnamed 1, A.Tnamed 2))) Mint.empty;
 ]
 
 (* -------------------------------------------------------------------- *)
@@ -1396,7 +1431,7 @@ let bls_ops : opinfo list =
 let allops : opinfo list =
   coreops @ optionops @ setops @ listops @ mapops @ bigmapops @
   cryptoops @ packops @ opsops @ lambdaops @
-  ticket_ops @ sapling_ops @ bls_ops
+  ticket_ops @ sapling_ops @ bls_ops @ mathops
 
 (* -------------------------------------------------------------------- *)
 type assetdecl = {
@@ -1549,7 +1584,9 @@ let core_types = [
   ("bls12_381_fr" , A.vtbls12_381_fr     );
   ("bls12_381_g1" , A.vtbls12_381_g1     );
   ("bls12_381_g2" , A.vtbls12_381_g2     );
-  ("never"        , A.vtnever            )
+  ("never"        , A.vtnever            );
+  ("chest"        , A.vtchest            );
+  ("chest_key"    , A.vtchest_key        )
 ]
 
 (* -------------------------------------------------------------------- *)
@@ -2443,6 +2480,8 @@ let for_literal (env : env) (_ety : A.type_ option) (topv : PT.literal loced) : 
     end
 
   | Lstring s ->
+    if (not (Core.is_valid_string s))
+    then  Env.emit_error env (loc topv, InvalidStringValue);
     mk_sp A.vtstring (A.BVstring s)
 
   | Ltz tz ->
@@ -2545,6 +2584,13 @@ type capture = {
 let capture0 : capture = {
   cp_global = true; cp_local = `Yes None;
 }
+
+let extend_capture (capture : capture) (xs : ident list) =
+  let cp_local =
+    match capture.cp_local with
+    | `Yes _ -> capture.cp_local
+    | `Only ids -> `Only (List.fold_right Sid.add xs ids)
+  in { capture with cp_local; }
 
 (* -------------------------------------------------------------------- *)
 let rec for_xexpr
@@ -3242,6 +3288,17 @@ let rec for_xexpr
 
       end
 
+    | Eappt (Foperator _, _, _) -> assert false
+
+    | Eappt (Fident id, ts, args) -> begin
+        match unloc id, ts, args with
+        | "emptylist", [t], [] -> begin
+            let ety = match for_type env t with | Some v -> Some (A.Tlist v) | None -> None in
+            mk_sp ety (A.Parray [])
+          end
+        | _ -> assert false
+      end
+
     | Emethod (the, m, args) -> begin
         let type_of_mthtype asset amap = function
           | `T typ   -> Some typ
@@ -3291,8 +3348,8 @@ let rec for_xexpr
                   ()
               end;
 
-              begin match method_.mth_map_type with
-                | `Standard when asset.as_bm && not (is_form_kind mode.em_kind) ->
+              begin match method_.mth_map_type, ty with
+                | `Standard, Tcontainer (Tasset _, Collection) when asset.as_bm && not (is_form_kind mode.em_kind) ->
                   Env.emit_error env (loc tope, InvalidMethodWithBigMap (unloc m))
                 | _ -> ()
               end;
@@ -3423,11 +3480,13 @@ let rec for_xexpr
       end
 
     | Ematchwith (e, bs) -> begin
-        match for_gen_matchwith mode env (loc tope) e bs with
+        match for_gen_matchwith mode capture env (loc tope) e bs with
         | None -> bailout () | Some (kd, ctors, me, (wd, bsm, args), es) ->
           let es = List.map2 (fun e xs ->
               let env = Env.Local.pushn ~kind:`Pattern env xs in
-              for_xexpr env e) es args in
+              let capture =
+                extend_capture capture (List.map (fun (x, _) -> unloc x) xs)
+              in for_xexpr ~capture env e) es args in
           let bty, es = join_expr env ety es in
 
           let aout = List.pmap (fun (cname, _, _) ->
@@ -3481,7 +3540,11 @@ let rec for_xexpr
             Option.fold
               (fun env lt -> Env.Local.push ~kind:`LoopIndex env (x, lt))
               env lt
-          in for_xexpr env ?ety pe in
+          in
+          let capture =
+            extend_capture capture (List.map (fun (x, _) -> unloc x) [(x, lt)])
+          in
+          for_xexpr ~capture env ?ety pe in
 
         let rty =
           match mode.em_kind with
@@ -3572,10 +3635,11 @@ let rec for_xexpr
         mk_sp (Some (A.Tcontract rty)) (A.Pself name)
       end
 
-    | Eentrypoint (ty, a, b) -> begin
+    | Eentrypoint (ty, a, b, r) -> begin
         let ty = for_type_exn env ty in
         let a  = for_xexpr env ~ety:A.vtstring a in
         let b  = for_xexpr env ~ety:A.vtaddress b in
+        let c = Option.map (for_xexpr env) r in
 
         if not (Type.Michelson.is_type ty) then
           Env.emit_error env (loc tope, InvalidTypeForEntrypoint);
@@ -3586,11 +3650,32 @@ let rec for_xexpr
           | _ -> (Env.emit_error env (a.loc, StringLiteralExpected); bailout ())
         in
 
+        let rt = if Option.is_some c then (A.Tcontract ty) else (A.Toption (A.Tcontract ty)) in
         mk_sp
-          (Some (A.Toption (A.Tcontract ty)))
-          (A.Pentrypoint (ty, id, b))
+          (Some rt)
+          (A.Pentrypoint (ty, id, b, c))
       end
 
+    | Ecallview (ty, a, b, c) -> begin
+        let ty = for_type_exn env ty in
+        let a  = for_xexpr env ~ety:A.vtaddress a in
+        let b  = for_xexpr env ~ety:A.vtstring b in
+        let c  = for_xexpr env c in
+
+        if not (Type.Michelson.is_type ty) then
+          Env.emit_error env (loc tope, InvalidTypeForCallview);
+
+        let id =
+          match b.node with
+          | A.Plit { node = (BVstring str); _ } -> mkloc b.loc str
+          | _ -> (Env.emit_error env (b.loc, StringLiteralExpected); bailout ())
+        in
+
+        let rt = A.Toption ty in
+        mk_sp
+          (Some rt)
+          (A.Pcallview (ty, a, id, c))
+      end
     | Eself      _
     | Evar       _
     | Efail      _
@@ -3664,8 +3749,8 @@ and join_expr ?autoview (env : env) (ety : A.ptyp option) (es : A.pterm list) =
     end
 
 (* -------------------------------------------------------------------- *)
-and for_gen_matchwith (mode : emode_t) (env : env) theloc pe bs =
-  let me = for_xexpr mode env pe in
+and for_gen_matchwith (mode : emode_t) (capture : capture) (env : env) theloc pe bs =
+  let me = for_xexpr mode ~capture env pe in
 
   let ctors =
     match me.A.type_ with
@@ -4422,7 +4507,7 @@ let rec for_instruction_r
             match Type.as_asset_collection ty with
             | Some _ ->
               let infos = for_gen_method_call (expr_mode kind) env (loc i) (`Typed the, m, args) in
-              let the, (assetdecl , c), method_, args, _ = Option.get_fdfl bailout infos in
+              let the, (_assetdecl , c), method_, args, _ = Option.get_fdfl bailout infos in
 
               begin match c, method_.mth_purity with
                 | ctn, `Effect allowed when not (List.mem ctn allowed) ->
@@ -4430,10 +4515,10 @@ let rec for_instruction_r
                 | _, _ ->
                   () end;
 
-              begin match assetdecl.as_bm, method_.mth_map_type with
-                | true, `Standard -> Env.emit_error env (loc i, InvalidMethodWithBigMap (unloc m))
-                | _ -> ()
-              end;
+              (* begin match assetdecl.as_bm, method_.mth_map_type with
+                 | true, `Standard -> Env.emit_error env (loc i, InvalidMethodWithBigMap (unloc m))
+                 | _ -> ()
+                 end; *)
 
               env, mki (A.Icall (Some the, A.Cconst method_.mth_name, args))
 
@@ -4454,8 +4539,9 @@ let rec for_instruction_r
                   match the.node with
                   | Pvar (VTnone, Vnone, x) -> assign (`Var x)
                   | Pdot ({node = Pvar (VTnone, Vnone, _); type_ = Some (Trecord rn)} as x, fn) -> assign (`Field (rn, x, fn))
-                  | _ ->
-                    Env.emit_error env (the.loc, InvalidVariableForMethod); aout
+                  | Pdot ({node = Pcall (Some {type_ = Some (Tcontainer ((Tasset _), Collection))}, Cconst Cget, [AExpr k]); type_ = Some (Tasset an)}, fn) -> assign (`Asset (an, k, fn))
+                  (* TODO: handle partition, issue: #245 *)
+                  | _ -> Env.emit_error env (the.loc, InvalidVariableForMethod); aout
                 end else
                   mki (A.Icall (None, A.Cconst name, A.AExpr the :: args)) in
 
@@ -4585,9 +4671,9 @@ let rec for_instruction_r
           | _ -> false
         in
         match e.A.type_ with
-        | Some (A.Tcontainer (A.Tasset asset, _)) ->
+        | Some (A.Tcontainer (A.Tasset asset, c)) ->
           let asset = Env.Asset.get env (unloc asset) in
-          if asset.as_bm then
+          if asset.as_bm && (match c with | Collection -> true | _ -> false) then
             Env.emit_error env (loc pe, NonIterableBigMapAsset (unloc asset.as_name));
           if   is_for_ident `Double
           then (Env.emit_error env (loc x, InvalidForIdentSimple); None)
@@ -4691,7 +4777,7 @@ let rec for_instruction_r
       env, mki (Ilabel lbl)
 
     | Ematchwith (e, bs) -> begin
-        match for_gen_matchwith (expr_mode kind) env (loc i) e bs with
+        match for_gen_matchwith (expr_mode kind) capture0 env (loc i) e bs with
         | None -> bailout () | Some (kd, ctors, me, (wd, bsm, args), is) ->
 
           let env, is = List.fold_left_map (fun env (i, xtys) ->
@@ -5178,7 +5264,7 @@ let for_function
         if check_and_emit_name_free env fdecl.name then
           (env, Some {
               fs_name  = fdecl.name;
-              fs_kind  = if fdecl.getter then FKgetter else FKfunction;
+              fs_kind  = if fdecl.getter then FKgetter else if fdecl.view then FKview else FKfunction;
               fs_args  = List.pmap id args;
               fs_retty = Option.get rty;
               fs_body  = body;
@@ -5398,6 +5484,15 @@ let for_fun_specs (env : env) (specs : PT.specfun loced list) =
     | PT.SKgetter -> begin
         match Env.Function.lookup env (unloc x) with
         | Some fund when fund.fs_kind = A.FKgetter ->
+          ()
+
+        | _ ->
+          Env.emit_error env (loc x, UnknownGetter (unloc x));
+      end
+
+    | PT.SKview -> begin
+        match Env.Function.lookup env (unloc x) with
+        | Some fund when fund.fs_kind = A.FKview ->
           ()
 
         | _ ->

@@ -1,0 +1,9 @@
+archetype multivars1
+
+variable u : nat = 0
+variable v : string = ""
+variable r : nat = 0
+
+entry exec () {
+  u := length(v) + u
+}

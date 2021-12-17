@@ -21,7 +21,8 @@ let print_error positions msg =
     msg
 
 let error_alert positions msg continue =
-  output_string stderr (print_error positions msg);
+  if not !Options.quiet
+  then output_string stderr (print_error positions msg);
   match !flag with
   | `Exit -> exit 1
   | `Raise -> raise (Error (positions, msg))

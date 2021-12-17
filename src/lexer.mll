@@ -34,6 +34,7 @@
       "by"                  , BY                  ;
       "call"                , CALL                ;
       "called"              , CALLED              ;
+      "callview"            , CALLVIEW            ;
       "const"               , CONST               ;
       "constant"            , CONSTANT            ;
       "contract"            , CONTRACT            ;
@@ -45,6 +46,7 @@
       "dorequire"           , DOREQUIRE           ;
       "effect"              , EFFECT              ;
       "else"                , ELSE                ;
+      "emptylist"           , EMPTYLIST           ;
       "end"                 , END                 ;
       "entry"               , ENTRY               ;
       "entrypoint"          , ENTRYPOINT          ;
@@ -90,6 +92,7 @@
       "ref"                 , REF                 ;
       "removed"             , REMOVED             ;
       "require"             , REQUIRE             ;
+      "require_entrypoint"  , REQUIRE_ENTRYPOINT  ;
       "return"              , RETURN              ;
       "right"               , RIGHT               ;
       "sapling_state"       , SAPLING_STATE       ;

@@ -87,6 +87,11 @@ let pp_maybe c tx pp fmt x =
 let pp_maybe_paren c pp =
   pp_maybe c pp_paren pp
 
+let pp_some pp fmt x =
+  match x with
+  | Some x -> pp fmt x
+  | None -> ()
+
 (* -------------------------------------------------------------------------- *)
 type assoc  = Left | Right | NonAssoc
 type pos    = PLeft | PRight | PInfix | PNone
@@ -112,14 +117,15 @@ let pp_bin fmt _ = Format.fprintf fmt "archetype %a" pp_version ()
 let pp_fail_type f fmt a =
   let pp x = Format.fprintf fmt x in
   match a with
-  | Model.Invalid e           -> f fmt e
-  | Model.InvalidCaller       -> pp "\"InvalidCaller\""
-  | Model.InvalidCondition id -> pp "\"InvalidCondition\", %a" pp_str id
-  | Model.NotFound            -> pp "\"NotFound\""
-  | Model.KeyExists           -> pp "\"KeyExists\""
-  | Model.KeyExistsOrNotFound -> pp "\"KeyExistsOrNotFound\""
-  | Model.OutOfBound          -> pp "\"OutOfBound\""
-  | Model.DivByZero           -> pp "\"DivByZero\""
-  | Model.NatAssign           -> pp "\"NatAssign\""
-  | Model.NoTransfer          -> pp "\"NoTransfer\""
-  | Model.InvalidState        -> pp "\"InvalidState\""
+  | Model.Invalid e              -> f fmt e
+  | Model.InvalidCaller          -> pp "\"InvalidCaller\""
+  | Model.InvalidCondition id    -> pp "\"InvalidCondition\", %a" pp_str id
+  | Model.NotFound               -> pp "\"NotFound\""
+  | Model.AssetNotFound id       -> pp "\"AssetNotFound\", %a" pp_str id
+  | Model.KeyExists id           -> pp "\"KeyExists\", %a" pp_str id
+  | Model.KeyExistsOrNotFound id -> pp "\"KeyExistsOrNotFound\", %a" pp_str id
+  | Model.OutOfBound             -> pp "\"OutOfBound\""
+  | Model.DivByZero              -> pp "\"DivByZero\""
+  | Model.NatAssign              -> pp "\"NatAssign\""
+  | Model.NoTransfer             -> pp "\"NoTransfer\""
+  | Model.InvalidState           -> pp "\"InvalidState\""

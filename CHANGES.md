@@ -14,6 +14,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     * add sapling types (`sapling_state` and `sapling_transaction`) and operations (`sapling_empty_state` and `sapling_verify_update`)
     * add bls curves types (`bls12_381_fr`, `bls12_381_g1` and `bls12_381_g2`), arthmetic (`+`, `*`, unary `-`) and operation (`pairing_check`)
 
+## Unreleased
+### Added
+  - new features
+
+## [1.2.11] - 2021-12-14
+### Added
+  - emptylist<t> as literal of empty list
+### Fixed
+  - views are now present in javascript output
+  - match ... with nested in lambda body
+
+## [1.2.10] - 2021-11-10
+### Added
+  - on-chain view
+### Changed
+  - improve michelson output
+### Fixed
+  - `addupdate` when there is default value in asset
+
+## [1.2.9] - 2021-10-03
+### Added
+  - `callview`, call on-chain view
+### Fixed
+  - `addupdate` on partition
+
+## [1.2.8] - 2021-09-07
+### Added
+  - `contract_address` (contract -> address) and `key_address` (key -> address)
+  - `require_some`, same as `opt_get` with an extra arg for custom failed
+  - `sub_nat` substraction which returns `nat`
+  - `require_entrypoint`, same as `require_some(entrypoint<...>(...))`
+  - `mutez_to_nat`, convert `tez` to `nat` in mutez
+  - michelson optimizations
+### Changed
+  - entrypoints are generated with a complete binary tree.
+### Removed
+  - Breaking : remove implicit cast from `tez` to `nat` (c.f. `mutez_to_nat`)
+
+## [1.2.7] - 2021-08-11
+### Added
+  - npm package for archetype compiler (https://www.npmjs.com/package/@completium/archetype)
+  - support `tez` type for `sum` method
+### Changed
+  - default call contract (`transfer 0tz to addr call default<nat>(2)`)
+  - change type of string in mlw archetype library
+
 ## [1.2.6] - 2021-06-24
 ### Added
   - test mode

@@ -446,6 +446,24 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_app pos pp) fmt (id, args)
 
+  | Eappt (Foperator _, _, _) -> assert false
+
+  | Eappt (Fident id, ts, args) -> begin
+      let pp fmt (id, args) =
+        Format.fprintf fmt "%a%a%a"
+          pp_id id
+          (fun fmt ts ->
+             match ts with
+             | [] -> Format.fprintf fmt ""
+             | _  -> Format.fprintf fmt "<%a>" (pp_list ", " pp_type) ts) ts
+          (fun fmt args ->
+             match args with
+             | [] -> Format.fprintf fmt "()"
+             | _ -> Format.fprintf fmt " (%a)" (pp_list ", " pp_simple_expr) args) args
+      in
+      (maybe_paren outer e_app pos pp) fmt (id, args)
+    end
+
   | Emethod (e, id, args) ->
 
     let pp fmt (e, id, args) =
@@ -733,14 +751,26 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_colon pos pp) fmt (t, arg)
 
-  | Eentrypoint (t, a, b) ->
-    let pp fmt (t, a, b) =
-      Format.fprintf fmt "entrypoint<%a>(%a, %a)"
+  | Eentrypoint (t, a, b, r) ->
+    let pp fmt (t, a, b, r) =
+      Format.fprintf fmt "%s<%a>(%a, %a%a)"
+        (if Option.is_some r then "require_entrypoint" else "entrypoint")
         pp_type t
         (pp_expr e_default PNone) a
         (pp_expr e_default PNone) b
+        (pp_some (fun fmt a -> Format.fprintf fmt ", %a" (pp_expr e_default PNone) a)) r
     in
-    (maybe_paren outer e_colon pos pp) fmt (t, a, b)
+    (maybe_paren outer e_colon pos pp) fmt (t, a, b, r)
+
+  | Ecallview (t, a, b, c) ->
+    let pp fmt (t, a, b, c) =
+      Format.fprintf fmt "callview<%a>(%a, %a, %a)"
+        pp_type t
+        (pp_expr e_default PNone) a
+        (pp_expr e_default PNone) b
+        (pp_expr e_default PNone) c
+    in
+    (maybe_paren outer e_colon pos pp) fmt (t, a, b, c)
 
   | Eself x -> Format.fprintf fmt "(self.%a)" pp_id x
 
@@ -1029,7 +1059,7 @@ let pp_specification_items = pp_list "@\n@\n" pp_specification_item
 
 let pp_function fmt (f : s_function) =
   Format.fprintf fmt "%s %a %a%a %a@\n"
-    (if f.getter then "getter" else "function")
+    (if f.getter then "getter" else if f.view then "view" else "function")
     pp_id f.name
     pp_fun_args f.args
     (pp_option (pp_prefix " : " pp_type)) f.ret_t
@@ -1292,7 +1322,7 @@ let rec pp_declaration fmt { pldesc = e; _ } =
 
   | Dspecfun (sfk, id, args, s) ->
     Format.fprintf fmt "specification %s %a%a {@\n  @[%a@]@\n}"
-      (match sfk with | SKentry -> "entry"  | SKgetter -> "getter"  | SKfunction -> "function")
+      (match sfk with | SKentry -> "entry"  | SKgetter -> "getter"  | SKview -> "view"  | SKfunction -> "function")
       pp_id id
       pp_fun_args args
       pp_specification_items (s |> unloc |> fst |> List.map unloc)

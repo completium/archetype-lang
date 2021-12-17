@@ -1,0 +1,22 @@
+archetype removeif_with_big_map
+
+asset b to big_map {
+  id : nat
+}
+
+asset a to big_map {
+  aid : nat;
+  p   : partition<b> = [];
+}
+
+entry exec() {
+  // specification {
+  //   s1: a[0].p.count() = 1
+  // }
+  effect {
+    a[0].p.add({0});
+    a[0].p.add({1});
+    a[0].p.add({2});
+    a[0].p.removeif(id >= 1);
+  }
+}

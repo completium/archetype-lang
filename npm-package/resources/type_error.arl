@@ -1,0 +1,7 @@
+archetype type_error
+
+variable str : string = ""
+
+entry exec() {
+  str := 2;
+}

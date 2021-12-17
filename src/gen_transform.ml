@@ -144,7 +144,7 @@ let process_assign_op op (t : type_) (lhs : mterm) (v : mterm) : mterm =
   | AndAssign   , _ -> mk_mterm (Mand (lhs, v)) t
   | OrAssign    , _ -> mk_mterm (Mor (lhs, v)) t
 
-let remove_add_update ?(with_force = false) ?(isformula = false) (model : model) : model =
+let remove_add_update ?(isformula = false) (model : model) : model =
   let error = ref false in
   let f_error (l : Location.t) (an : string) (fn : string) = emit_error(l, CannotBuildAsset (an, fn)); error := true in
   let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
@@ -152,7 +152,6 @@ let remove_add_update ?(with_force = false) ?(isformula = false) (model : model)
     | Maddupdate (an, c, k, l) ->
       begin
         let type_asset = tasset (dumloc an) in
-        let is_standalone = List.fold_left (fun accu (_, op, _) -> match op with | ValueAssign -> accu | _ -> false) true l in
         let mk_asset (an, k, l) =
           let dummy_mterm = mk_mterm (Mseq []) tunit in
           let asset = Utils.get_asset model an in
@@ -196,18 +195,27 @@ let remove_add_update ?(with_force = false) ?(isformula = false) (model : model)
             | CKcoll _ -> Mcontains (an, c, k)
             | _ -> assert false) tunit in
         let asset  = mk_asset (an, k, l) in
-        if with_force && is_standalone
-        then mk_mterm (Maddforce (an, asset)) tunit
-        else begin
-          let add = mk_mterm (
-              match c with
-              | CKfield (_, _, {node = Mdotassetfield (an, k, fn)}, _, _) -> Maddfield (unloc an, unloc fn, k, asset)
-              | CKcoll _ -> Maddasset (an, asset)
-              | _ -> assert false) tunit in
-          let update = mk_mterm (Mupdate (an, k, l)) tunit in
-          let if_node = Mif (cond, update, Some add) in
-          mk_mterm if_node tunit
-        end
+        match c with
+        | CKfield (_, ckcol, {node = Mdotassetfield (dan, dk, dfn)}, kft, kfd) when Utils.is_partition model (unloc dan) (unloc dfn) -> begin
+            let cond = mk_mterm (Mcontains(an, CKcoll (kft, kfd), k)) tbool in
+            let fail_ = failc (Invalid (mk_tuple [mk_string "KeyNotFound"; k])) in
+            let cond_nested = mk_mterm (Mcontains(an, CKfield (unloc dan, ckcol, dk, kft, kfd), k)) tbool in
+            let update = mk_mterm (Mupdate (an, k, l)) tunit in
+            let if_nested = mk_mterm (Mif (cond_nested, update, Some fail_)) tunit in
+            let add = mk_mterm (Maddfield (unloc dan, unloc dfn, dk, asset)) tunit in
+            let r = mk_mterm (Mif (cond, if_nested, Some add)) tunit in
+            r
+          end
+        | _ -> begin
+            let add = mk_mterm (
+                match c with
+                | CKfield (_, _, {node = Mdotassetfield (an, k, fn)}, _, _) -> Maddfield (unloc an, unloc fn, k, asset)
+                | CKcoll _ -> Maddasset (an, asset)
+                | _ -> assert false) tunit in
+            let update = mk_mterm (Mupdate (an, k, l)) tunit in
+            let if_node = Mif (cond, update, Some add) in
+            mk_mterm if_node tunit
+          end
       end
     | _ -> map_mterm (aux ctx) mt
   in
@@ -276,6 +284,14 @@ let remove_container_op_in_update (model : model) : model =
   in
   map_mterm_model aux model
   |> flat_sequence
+
+let remove_empty_update (model : model) : model =
+  let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
+    match mt.node with
+    | Mupdate (_, _, l) when List.is_empty l-> skip
+    | _ -> map_mterm (aux ctx) mt
+  in
+  map_mterm_model aux model
 
 let build_col_asset (an : ident) =
   let dan = dumloc an in
@@ -472,7 +488,7 @@ let check_partition_access (model : model) : model =
   model
 
 let check_number_entrypoint (model : model) : model =
-  let nb_entrypoints = model.functions |> List.filter (fun (f : function__) -> match f.node with | Entry _ | Getter _-> true | _ -> false) |> List.length in
+  let nb_entrypoints = model.functions |> List.filter (fun (f : function__) -> match f.node with | Entry _ | Getter _-> true | View _ | Function _ -> false) |> List.length in
   if nb_entrypoints = 0 then (emit_error (model.loc, NoEntrypoint); raise (Error.Stop 5));
   model
 
@@ -743,7 +759,7 @@ let prune_properties (model : model) : model =
         let all_funs =
           model.functions
           |> List.map (fun (x : function__) -> x.node)
-          |> List.map ((function | Entry fs -> fs | Getter (fs, _) | Function (fs, _) -> fs))
+          |> List.map ((function | Entry fs -> fs | Getter (fs, _) | View (fs, _) | Function (fs, _) -> fs))
           |> List.map (fun (x : function_struct) -> unloc x.name) in
         let add l x = if List.mem x l then l else x::l in
         List.fold_left (fun accu _p_id ->
@@ -806,10 +822,10 @@ let prune_properties (model : model) : model =
         match fn with
         | Function (fs, r) -> Function (prune_function_struct fs, r)
         | Getter   (fs, r) -> Getter   (prune_function_struct fs, r)
+        | View     (fs, r) -> View     (prune_function_struct fs, r)
         | Entry     fs     -> Entry    (prune_function_struct fs)
       in
-      { f with
-        node = prune_function_node f.node;
+      { node = prune_function_node f.node;
         spec = Option.map prune_specs f.spec; }
     in
     let prune_secs (sec : security) : security =
@@ -817,7 +833,7 @@ let prune_properties (model : model) : model =
         items = List.filter (fun (x : security_item) -> remain_id (unloc x.label)) sec.items
       } in
     let f1 = (fun (fs : function_struct) -> remain_function (unloc fs.name)) in
-    let f2 = (fun (x : function__) -> match x.node with | Entry fs -> fs | Getter (fs, _) | Function (fs, _) -> fs) in
+    let f2 = (fun (x : function__) -> match x.node with | Entry fs -> fs | Getter (fs, _) | View (fs, _)| Function (fs, _) -> fs) in
     { model with
       api_verif = api_verifs;
       decls = List.map prune_decl model.decls;
@@ -1159,6 +1175,7 @@ let remove_enum000 (model : model) : model =
       match node with
       | Function (fs, type_) -> Function (process_fs fs, process_type type_)
       | Getter   (fs, type_) -> Getter   (process_fs fs, process_type type_)
+      | View     (fs, type_) -> View     (process_fs fs, process_type type_)
       | Entry     fs         -> Entry    (process_fs fs)
     in
     { f with
@@ -1195,6 +1212,7 @@ let remove_enum000 (model : model) : model =
         match node with
         | Function (fs, type_) -> Function (for_fs fs, for_type type_)
         | Getter   (fs, type_) -> Getter   (for_fs fs, for_type type_)
+        | View     (fs, type_) -> View     (for_fs fs, for_type type_)
         | Entry     fs         -> Entry    (for_fs fs)
       in
       { f with
@@ -1331,11 +1349,12 @@ let remove_enum (model : model) : model =
   let map =
     let mk_enum_info (e : enum) : enum_info =
       let without_args = List.for_all (fun (x : enum_item) -> List.is_empty x.args) e.values in
-      let mk_args_type args =
+      let mk_args_type (annot : lident) (args : type_ list) =
+        let annot = mkfannot annot in
         match args with
-        | []  -> tunit
-        | [t] -> t
-        | _   -> ttuple args
+        | []  -> mktype Tunit ?annot
+        | [t] -> mktype (get_ntype t) ?annot
+        | _   -> mktype (get_ntype (ttuple args)) ?annot
       in
       let mk_or l =
         match List.rev l with
@@ -1344,10 +1363,10 @@ let remove_enum (model : model) : model =
       in
       let mk_type _  =
         if without_args
-        then tnat
+        then tint
         else begin
           let f = mk_args_type in
-          let l = List.map (fun (x : enum_item) -> f x.args) e.values in
+          let l = List.map (fun (x : enum_item) -> f x.name x.args) e.values in
           match List.rev l with
           | []        -> assert false
           | [a]       -> a
@@ -1359,7 +1378,7 @@ let remove_enum (model : model) : model =
         then
           begin
             List.fold_lefti (fun i accu (x : enum_item) ->
-                MapString.add (unloc x.name) (fun _ -> mk_nat i) accu)
+                MapString.add (unloc x.name) (fun _ -> mk_int i) accu)
               MapString.empty e.values
           end
         else begin
@@ -1371,7 +1390,7 @@ let remove_enum (model : model) : model =
             | _ -> mk_tuple xs
           in
           let values = e.values in
-          let l = List.map (fun (x : enum_item) -> f x.args) values in
+          let l = List.map (fun (x : enum_item) -> f x.name x.args) values in
           List.fold_lefti (fun i accu (x : enum_item) ->
               let fr l init = List.fold_right (fun x accu -> mk_right x accu) l init in
               let remove_last l =
@@ -1409,12 +1428,12 @@ let remove_enum (model : model) : model =
                 let map : mterm MapString.t =
                   List.fold_lefti
                     (fun i accu (x : enum_item) ->
-                       MapString.add (unloc x.name) (mk_nat i) accu)
+                       MapString.add (unloc x.name) (mk_int i) accu)
                     MapString.empty e.values
                 in
                 let ivar = dumloc "_tmp" in
-                let mvar : mterm = mk_mvar ivar tnat in
-                let mk_cond (id : ident) = mk_mterm (Mequal (tnat, MapString.find id map, mvar)) tbool in
+                let mvar : mterm = mk_mvar ivar tint in
+                let mk_cond (id : ident) = mk_mterm (Mequal (tint, MapString.find id map, mvar)) tbool in
                 let mk_if (id : ident) (v : mterm) (accu : mterm) : mterm =
                   match rt with
                   | None    -> mk_mterm (Mif (mk_cond id, v, Some accu)) tunit
@@ -1503,7 +1522,7 @@ let remove_enum (model : model) : model =
   let for_type t : type_ =
     let rec aux t =
       match get_ntype t with
-      | Tstate -> tnat
+      | Tstate -> tint
       | Tenum id -> begin
           let info : enum_info = get_info (unloc id) in
           info.type_
@@ -1525,8 +1544,8 @@ let remove_enum (model : model) : model =
         info.fmatch rt e ps
       in
       match mt.node with
-      | Mvar (_, Vstate, _, _)    -> mk_svar dstate tnat
-      | Massign (_, _, Astate, v) -> {mt with node = Massign (ValueAssign, tnat, Avarstore dstate, aux v)}
+      | Mvar (_, Vstate, _, _)    -> mk_svar dstate tint
+      | Massign (_, _, Astate, v) -> {mt with node = Massign (ValueAssign, tint, Avarstore dstate, aux v)}
       | Menumval (id, args, eid)  -> begin
           let args = List.map aux args in
           let info : enum_info = get_info eid in
@@ -1548,7 +1567,7 @@ let remove_enum (model : model) : model =
             let initial = e.initial in
             let info : enum_info = get_info "state" in
             let dv = (MapString.find (unloc initial) info.fitems) [] in
-            (Dvar (mk_var (dumloc "_state") tnat tnat VKvariable ~default:dv ))::accu
+            (Dvar (mk_var (dumloc "_state") tint tint VKvariable ~default:dv ))::accu
           | Denum _ -> accu
           | x -> x::accu
         ) model.decls []
@@ -1873,9 +1892,10 @@ let replace_date_duration_by_timestamp (model : model) : model =
   let is_duration t = match get_ntype t with | Tbuiltin Bduration -> true | _ -> false in
   let process_type t : type_ =
     let rec aux t =
+      let annot = get_atype t in
       match get_ntype t with
-      | Tbuiltin Bdate     -> ttimestamp
-      | Tbuiltin Bduration -> tint
+      | Tbuiltin Bdate     -> mktype ?annot (Tbuiltin Btimestamp)
+      | Tbuiltin Bduration -> mktype ?annot (Tbuiltin Bint)
       | _ -> map_type aux t
     in
     aux t
@@ -1987,6 +2007,7 @@ let replace_date_duration_by_timestamp (model : model) : model =
            match f.node with
            | Function (fs, ret) -> Function (process_fs fs, process_type ret)
            | Getter (fs, ret)   -> Getter   (process_fs fs, process_type ret)
+           | View (fs, ret)     -> View     (process_fs fs, process_type ret)
            | Entry fs           -> Entry    (process_fs fs)
          );
         })
@@ -2835,6 +2856,7 @@ let add_contain_on_get (model : model) : model =
       match fn with
       | Entry     fs       -> Entry    (for_function_struct fs)
       | Getter   (fs, ret) -> Getter   (for_function_struct fs, ret)
+      | View     (fs, ret) -> View     (for_function_struct fs, ret)
       | Function (fs, ret) -> Function (for_function_struct fs, ret)
     in
     { f with node = for_function_node f.node; }
@@ -3109,6 +3131,7 @@ let check_if_asset_in_function (model : model) : model =
       match fn with
       | Entry     fs     -> for_function_struct fs
       | Getter   (fs, _) -> for_function_struct fs
+      | View     (fs, _) -> for_function_struct fs
       | Function (fs, _) -> for_function_struct fs
     in
     for_function_node f.node
@@ -3133,7 +3156,7 @@ let replace_instr_verif (model : model) : model =
 
 let rename_shadow_variable (model : model) : model =
   let for_function__ (f__ : function__) : function__ =
-    let fun_id =  match f__.node with | Entry fs | Getter (fs, _) | Function (fs, _) -> unloc fs.name in
+    let fun_id =  match f__.node with | Entry fs | Getter (fs, _) | View (fs, _) | Function (fs, _) -> unloc fs.name in
     let for_specification spec : specification =
       let map_ids = ref MapString.empty in
       let rename_variables spec : specification =
@@ -3213,6 +3236,7 @@ let concat_shadown_effect_to_exec (model : model) : model =
       match fn with
       | Function (fs, t) -> Function (for_function_struct fs, t)
       | Getter   (fs, t) -> Getter   (for_function_struct fs, t)
+      | View     (fs, t) -> View     (for_function_struct fs, t)
       | Entry     fs     -> Entry    (for_function_struct fs)
     in
     let remove_shadow_effect (spec : specification) : specification =
@@ -3220,8 +3244,7 @@ let concat_shadown_effect_to_exec (model : model) : model =
       |> map_specification (mk_ctx_model ()) for_mterm
       |> (fun spec -> {spec with effects = [] })
     in
-    { f__ with
-      node = for_function_node f__.node;
+    { node = for_function_node f__.node;
       spec = Option.map remove_shadow_effect f__.spec}
   in
   { model with
@@ -3800,7 +3823,7 @@ let remove_asset (model : model) : model =
                   let c = List.fold_left (fun accu (an, x, _) -> mk_mterm (Mor (f an x, accu)) tbool) (f an k) t in
                   let linstrs = get_instrs_add_with_partition pts in
                   let seq = mk_mterm (Mseq (b::linstrs)) tunit in
-                  mk_mterm (Mif (c, failc KeyExists, Some seq)) tunit
+                  mk_mterm (Mif (c, failc (KeyExists an), Some seq)) tunit
                 end
               | (aan, aa)::at, pt ->
                 let f = create_contains_asset_key in
@@ -3808,14 +3831,14 @@ let remove_asset (model : model) : model =
                 let c = List.fold_left (fun accu (an, x, _) -> mk_mterm (Mand (mnot (f an x), accu)) tbool) c pt in
                 let linstrs = get_instrs_add_with_partition pts in
                 let seq = mk_mterm (Mseq (b::linstrs)) tunit in
-                mk_mterm (Mif (c, seq, Some (failc KeyExistsOrNotFound))) tunit
+                mk_mterm (Mif (c, seq, Some (failc (KeyExistsOrNotFound aan)))) tunit
             end
           | _ -> assert false
         in
 
         if force
         then assign
-        else mk_mterm (Mif (cond, failc KeyExists, Some assign)) tunit
+        else mk_mterm (Mif (cond, failc (KeyExists an), Some assign)) tunit
       end
     in
 
@@ -3871,7 +3894,7 @@ let remove_asset (model : model) : model =
       let mk_assign bk =
         let ts = tset atk in
         let remove_set set = mk_mterm (Msetremove (atk, set, bk)) ts in
-        let get_ t = mk_mterm (Mmapget(kt, vt, va, ak)) t in
+        let get_ t = mk_mterm (Mmapget(kt, vt, va, ak, Some an)) t in
         let v : mterm =
           if is_record
           then begin
@@ -3935,7 +3958,7 @@ let remove_asset (model : model) : model =
           let va = get_asset_global an in
           let get =
             match get_ntype va.type_ with
-            | Tmap (_, kt, vt) -> mk_mterm (Mmapget (kt, vt, va, f k)) vt
+            | Tmap (_, kt, vt) -> mk_mterm (Mmapget (kt, vt, va, f k, Some an)) vt
             | _ -> assert false
           in
 
@@ -3958,7 +3981,7 @@ let remove_asset (model : model) : model =
           let vaa = get_asset_global aan in
           let geta =
             match get_ntype vaa.type_ with
-            | Tmap (_, kt, vt) -> Some (mk_mterm (Mmapget (kt, vt, vaa, vid)) vt)
+            | Tmap (_, kt, vt) -> Some (mk_mterm (Mmapget (kt, vt, vaa, vid, Some an)) vt)
             | _ -> None
           in
 
@@ -3993,7 +4016,7 @@ let remove_asset (model : model) : model =
           let vaa = get_asset_global an in
           let geta =
             match get_ntype vaa.type_ with
-            | Tmap (_, kt, vt) -> Some (mk_mterm (Mmapget (kt, vt, vaa, vid)) vt)
+            | Tmap (_, kt, vt) -> Some (mk_mterm (Mmapget (kt, vt, vaa, vid, Some an)) vt)
             | _ -> None
           in
 
@@ -4045,14 +4068,14 @@ let remove_asset (model : model) : model =
             | Tmap (_, kt, vt) -> kt, vt
             | _ -> assert false
           in
-          let map_get = Mmapget (kt, vt, va, k) in
+          let map_get = Mmapget (kt, vt, va, k, Some an) in
           mk_mterm map_get vt
         end
 
       | Mget (an, CKview c, k) -> begin
           let get = mk_mterm (Mget(an, CKcoll(Tnone, Dnone), k)) mt.type_ |> fm ctx in
           let cond = mk_mterm (Mcontains(an, CKview c, k)) tbool |> fm ctx in
-          mk_mterm (Mexprif(cond, get, failc NotFound)) get.type_
+          mk_mterm (Mexprif(cond, get, failc (AssetNotFound an))) get.type_
         end
 
       (* control *)
@@ -4104,7 +4127,7 @@ let remove_asset (model : model) : model =
           let mk_assign bk =
             let ts = tset atk in
             let add_set set = mk_mterm (Msetadd (atk, set, bk)) ts in
-            let get_ t = mk_mterm (Mmapget(kt, vt, va, ak)) t in
+            let get_ t = mk_mterm (Mmapget(kt, vt, va, ak, Some an)) t in
             let v : mterm =
               if is_record
               then begin
@@ -4154,7 +4177,7 @@ let remove_asset (model : model) : model =
           let atk = Utils.get_asset_key model aan |> snd in
 
 
-          let get_ t = mk_mterm (Mmapget(kt, vt, va, kk)) t in
+          let get_ t = mk_mterm (Mmapget(kt, vt, va, kk, Some an)) t in
 
           let mk_loop _ =
             let iter_var = dumloc "_iter_var" in
@@ -4254,7 +4277,7 @@ let remove_asset (model : model) : model =
               let va = get_asset_global an in
               let get =
                 match get_ntype va.type_ with
-                | Tmap (_, kt, vt) -> mk_mterm (Mmapget (kt, vt, va, fm ctx k)) vt
+                | Tmap (_, kt, vt) -> mk_mterm (Mmapget (kt, vt, va, fm ctx k, Some an)) vt
                 | _ -> assert false
               in
 
@@ -4275,7 +4298,7 @@ let remove_asset (model : model) : model =
               let vaa = get_asset_global aan in
               let geta =
                 match get_ntype vaa.type_ with
-                | Tmap (_, kt, vt) -> Some (mk_mterm (Mmapget (kt, vt, vaa, vkey)) vt)
+                | Tmap (_, kt, vt) -> Some (mk_mterm (Mmapget (kt, vt, vaa, vkey, Some an)) vt)
                 | _ -> None
               in
 
@@ -4363,7 +4386,7 @@ let remove_asset (model : model) : model =
               in
 
               let set =
-                let get = mk_mterm (Mmapget (tk, tv, va, kk)) tv in
+                let get = mk_mterm (Mmapget (tk, tv, va, kk, Some an)) tv in
                 if is_record
                 then get
                 else mk_mterm (Mdot(get, dumloc fn)) (tset atk)
@@ -4407,7 +4430,7 @@ let remove_asset (model : model) : model =
           let var_id = dumloc "_asset" in
 
           let mk_letin x =
-            let get = mk_mterm (Mmapget(kt, tasset, va, k)) tasset in
+            let get = mk_mterm (Mmapget(kt, tasset, va, k, Some an)) tasset in
             mk_mterm (Mletin ([var_id], get, Some tasset, x, None)) tunit
           in
 
@@ -4550,7 +4573,7 @@ let remove_asset (model : model) : model =
               | _ -> assert false
             end
             else begin
-              let get : mterm = mk_mterm (Mmapget(kt, tasset, va, k)) tasset in
+              let get : mterm = mk_mterm (Mmapget(kt, tasset, va, k, Some an)) tasset in
               let ll = List.map (fun (id, op, v) ->
                   match op with
                   | ValueAssign -> begin
@@ -4646,10 +4669,10 @@ let remove_asset (model : model) : model =
 
           let msg = List.fold_left (fun accu x ->
               match accu, x with
-              | msg, ( _, _, `Aggregate, (`Add | `Replace), _) when match msg with KeyExists -> true | _ -> false -> KeyExistsOrNotFound
-              | msg, ( _, _, `Partition, (`Add | `Replace), _) when match msg with NotFound  -> true | _ -> false -> KeyExistsOrNotFound
+              | msg, ( _, _, `Aggregate, (`Add | `Replace), _) when match msg with (KeyExists _) -> true | _ -> false -> (KeyExistsOrNotFound an)
+              | msg, ( _, _, `Partition, (`Add | `Replace), _) when match msg with NotFound  -> true | _ -> false -> (KeyExistsOrNotFound an)
               | _, ( _, _, `Aggregate, (`Add | `Replace), _) -> NotFound
-              | _, ( _, _, `Partition, (`Add | `Replace), _) -> KeyExists
+              | _, ( _, _, `Partition, (`Add | `Replace), _) -> KeyExists an
               | _ -> accu
             ) (Invalid (mk_string "")) ags in
 
@@ -4771,7 +4794,7 @@ let remove_asset (model : model) : model =
                 match get_ntype va.type_ with
                 | Tset _ -> x
                 | Tmap (_, kt, vt) ->
-                  let mk_get x = mk_mterm (Mmapget (kt, vt, va, x)) vt in
+                  let mk_get x = mk_mterm (Mmapget (kt, vt, va, x, Some an)) vt in
                   x |> mk_letin ivb (mk_get vxins)
                 | _ -> assert false
               in
@@ -4887,7 +4910,7 @@ let remove_asset (model : model) : model =
                 in
 
                 let set =
-                  let get = mk_mterm (Mmapget (tk, tv, va, kk)) tv in
+                  let get = mk_mterm (Mmapget (tk, tv, va, kk, Some an)) tv in
                   if is_record
                   then get
                   else mk_mterm (Mdot(get, dumloc fn)) (tset atk)
@@ -4961,7 +4984,7 @@ let remove_asset (model : model) : model =
                 in
 
                 let set =
-                  let get = mk_mterm (Mmapget (tk, tv, va, kk)) tv in
+                  let get = mk_mterm (Mmapget (tk, tv, va, kk, Some an)) tv in
                   if is_record
                   then get
                   else mk_mterm (Mdot(get, dumloc fn)) (tset atk)
@@ -5011,6 +5034,7 @@ let remove_asset (model : model) : model =
             | Tbuiltin Bnat -> mk_mterm (Mnat Big_int.zero_big_int) tnat
             | Tbuiltin Bint -> mk_mterm (Mint Big_int.zero_big_int) tint
             | Ttuple [(Tbuiltin Bint, _); (Tbuiltin Bnat, _)] -> Utils.mk_rat Big_int.zero_big_int Big_int.unit_big_int
+            | Tbuiltin Bcurrency -> mk_mterm (Mcurrency (Big_int.zero_big_int, Utz)) ttez
             | _ -> assert false
           in
           fold_ck (fm ctx) (an, ck) init mk
@@ -5272,7 +5296,7 @@ let getter_to_entry ?(no_underscore=false) ?(extra=false) (model : model) : mode
       let for_function_struct (t : type_) (fs : function_struct) : function_struct =
         let process () =
           let icallback = dumloc ((if no_underscore then "" else "_") ^ "cb" )in
-          let tcallback = tcontract t in
+          let tcallback = mktype (Tcontract t) ~annot:(dumloc "%callback") in
           let vcallback = mk_pvar icallback tcallback in
           let rec aux (mt : mterm) : mterm =
             match mt.node with
@@ -5421,6 +5445,7 @@ let reverse_operations (model : model) : model =
       match node with
       | Function (fs, type_) -> Function (for_fs fs, type_)
       | Getter   (fs, type_) -> Getter   (for_fs fs, type_)
+      | View     (fs, type_) -> View     (for_fs fs, type_)
       | Entry     fs         -> Entry    (for_fs fs)
     in
     { f with
@@ -5593,3 +5618,71 @@ let test_mode (model : model) =
   end
   else
     model
+
+let fill_stovars (model : model) : model =
+  let for_function_struct (fs : function_struct) : function_struct =
+    let rec aux acc (mt : mterm) : ident list =
+      match mt.node with
+      | Mvar (id, Vstorevar, _, _) -> (unloc id)::acc
+      | Mvar (id, Vstorecol, _, _) -> (unloc id)::acc
+      | _ -> fold_term aux acc mt
+    in
+    {
+      fs with
+      stovars = aux [] fs.body
+    }
+  in
+  let for_function_node (fn : function_node) : function_node =
+    match fn with
+    | Function (fs, t) -> Function (for_function_struct fs, t)
+    | Getter   (fs, t) -> Getter   (for_function_struct fs, t)
+    | View     (fs, t) -> View     (for_function_struct fs, t)
+    | Entry     fs     -> Entry    (for_function_struct fs)
+  in
+  let for_functions (functions_ : function__) =
+    {
+      node = for_function_node functions_.node;
+      spec = functions_.spec
+    }
+  in
+  {
+    model with
+    functions = List.map for_functions model.functions
+  }
+
+
+let patch_fa2 (model : model) : model =
+  let for_function__ (f__ : function__) : function__ =
+    let for_function_node (fn : function_node) : function_node =
+      let for_fs (fs : function_struct) : function_struct =
+        let args =
+          match unloc fs.name with
+          | s when String.equal s "update_operators" -> begin
+              match fs.args with
+              | [(arga, argt, argd)] -> begin
+                  match argt with
+                  | Tlist (Tor ((c, _), (d, _)), x), z ->
+                    [(arga, (Tlist (Tor ((c, Some (dumloc "%add_operator")), (d, Some (dumloc "%remove_operator"))), x), z), argd)]
+                  | _ -> fs.args
+                end;
+              | _ -> fs.args
+
+            end
+          | _ -> fs.args
+        in
+        {
+          fs with
+          args  = args;
+        }
+      in
+      match fn with
+      | Entry(fs) -> Entry (for_fs fs)
+      | _ -> fn
+    in
+    { f__ with
+      node = for_function_node f__.node;
+    }
+  in
+  { model with
+    functions = List.map for_function__ model.functions;
+  }

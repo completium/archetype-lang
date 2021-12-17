@@ -1,5 +1,6 @@
 open Location
 open Tools
+open Core
 open UF
 
 module T = Michelson
@@ -12,11 +13,15 @@ type env = {
 
 let mk_env ?(name="") _ : env = { name }
 
-let parse_micheline ?ijson (filename, ic) : T.obj_micheline * env =
+let parse_micheline ?ijson (input : from_input)  : T.obj_micheline * env =
   let name =
-    match filename with
-    | "<stdin>" -> "noname"
-    | _ -> filename |> Filename.basename |> Filename.chop_extension
+    match input with
+    | FIChannel (filename, _) -> begin
+        match filename with
+        | "<stdin>" -> "noname"
+        | _ -> filename |> Filename.basename |> Filename.chop_extension
+      end
+    | FIString _ -> "noname"
   in
   let env = mk_env ~name:name () in
 
@@ -62,11 +67,19 @@ let parse_micheline ?ijson (filename, ic) : T.obj_micheline * env =
         | _ -> Format.printf "%s@." (to_string i); assert false
       in
       let open Util in
-      let json = from_channel ic in
+      let json =
+        match input with
+        | FIChannel (_, ic) -> from_channel ic
+        | FIString content -> from_string content
+      in
       let code = json |> member "code" |> to_list in
       T.Oarray (List.map aux code)
     else
-      let tokens = Lexing.from_channel ic in
+      let tokens =
+        match input with
+        | FIChannel (_, ic) -> Lexing.from_channel ic
+        | FIString content -> Lexing.from_string content
+      in
       Michelson_parser.main Michelson_lexer.token tokens
   in
   input, env
@@ -238,6 +251,53 @@ let to_michelson (input, env : T.obj_micheline * env) : T.michelson * env =
       | Oprim ({prim = "SOURCE"; _})                         -> T.mk_code T.SOURCE
       | Oprim ({prim = "TRANSFER_TOKENS"; _})                -> T.mk_code T.TRANSFER_TOKENS
       (* Operations on data structures *)
+      (* | Oprim ({prim = "CAR"; args = n::_})                  -> T.CAR_N (to_int n)
+      | Oprim ({prim = "CAR"; _})                            -> T.CAR
+      | Oprim ({prim = "CDR"; args = n::_})                  -> T.CDR_N (to_int n)
+      | Oprim ({prim = "CDR"; _})                            -> T.CDR
+      | Oprim ({prim = "CONCAT"; _})                         -> T.CONCAT
+      | Oprim ({prim = "CONS"; _})                           -> T.CONS
+      | Oprim ({prim = "EMPTY_BIG_MAP" ; args = k::v::_})    -> T.EMPTY_BIG_MAP (to_type k, to_type v)
+      | Oprim ({prim = "EMPTY_MAP" ; args = k::v::_})        -> T.EMPTY_MAP (to_type k, to_type v)
+      | Oprim ({prim = "EMPTY_SET" ; args = t::_})           -> T.EMPTY_SET (to_type t)
+      | Oprim ({prim = "GET"; _})                            -> T.GET
+      | Oprim ({prim = "LEFT" ; args = t::_})                -> T.LEFT (to_type t)
+      | Oprim ({prim = "MAP"; args = s::_})                  -> T.MAP (seq s)
+      | Oprim ({prim = "MEM"; _})                            -> T.MEM
+      | Oprim ({prim = "NIL" ; args = t::_})                 -> T.NIL (to_type t)
+      | Oprim ({prim = "NONE" ; args = t::_})                -> T.NONE (to_type t)
+      | Oprim ({prim = "PACK"; _})                           -> T.PACK
+      | Oprim ({prim = "PAIR"; _})                           -> T.PAIR
+      | Oprim ({prim = "RIGHT" ; args = t::_})               -> T.RIGHT (to_type t)
+      | Oprim ({prim = "SIZE"; _})                           -> T.SIZE
+      | Oprim ({prim = "SLICE"; _})                          -> T.SLICE
+      | Oprim ({prim = "SOME"; _})                           -> T.SOME
+      | Oprim ({prim = "UNIT"; _})                           -> T.UNIT
+      | Oprim ({prim = "UNPACK" ; args = t::_})              -> T.UNPACK (to_type t)
+      | Oprim ({prim = "UPDATE"; _})                         -> T.UPDATE
+      (* Other *)
+      | Oprim ({prim = "UNPAIR"; args = n::_})               -> T.UNPAIR_N (to_int n)
+      | Oprim ({prim = "UNPAIR"; _})                         -> T.UNPAIR
+      | Oprim ({prim = "SELF_ADDRESS"; _})                   -> T.SELF_ADDRESS
+      | Oprim ({prim = "CAST"; args = t::_})                 -> T.CAST (to_type t)
+      | Oprim ({prim = "CREATE_ACCOUNT"; _})                 -> T.CREATE_ACCOUNT
+      | Oprim ({prim = "RENAME"; _})                         -> T.RENAME
+      | Oprim ({prim = "STEPS_TO_QUOTA"; _})                 -> T.STEPS_TO_QUOTA
+      | Oprim ({prim = "LEVEL"; _})                          -> T.LEVEL
+      | Oprim ({prim = "SAPLING_EMPTY_STATE"; args = (Oint n)::_}) -> T.SAPLING_EMPTY_STATE (int_of_string n)
+      | Oprim ({prim = "SAPLING_VERIFY_UPDATE"; _})          -> T.SAPLING_VERIFY_UPDATE
+      | Oprim ({prim = "NEVER"; _})                          -> T.NEVER
+      | Oprim ({prim = "VOTING_POWER"; _})                   -> T.VOTING_POWER
+      | Oprim ({prim = "TOTAL_VOTING_POWER"; _})             -> T.TOTAL_VOTING_POWER
+      | Oprim ({prim = "KECCAK"; _})                         -> T.KECCAK
+      | Oprim ({prim = "SHA3"; _})                           -> T.SHA3
+      | Oprim ({prim = "PAIRING_CHECK"; _})                  -> T.PAIRING_CHECK
+      | Oprim ({prim = "SUBMIT_PROPOSALS"; _})               -> T.SUBMIT_PROPOSALS
+      | Oprim ({prim = "SUBMIT_BALLOT"; _})                  -> T.SUBMIT_BALLOT
+      | Oprim ({prim = "SET_BAKER_ACTIVE"; _})               -> T.SET_BAKER_ACTIVE
+      | Oprim ({prim = "TOGGLE_BAKER_DELEGATIONS"; _})       -> T.TOGGLE_BAKER_DELEGATIONS
+      | Oprim ({prim = "SET_BAKER_CONSENSUS_KEY"; _})        -> T.SET_BAKER_CONSENSUS_KEY
+      | Oprim ({prim = "SET_BAKER_PVSS_KEY"; _})             -> T.SET_BAKER_PVSS_KEY *)
       | Oprim ({prim = "CAR"; args=[]; _})                   -> T.mk_code (T.CAR)
       | Oprim ({prim = "CDR"; args=[]; _})                   -> T.mk_code (T.CDR)
       | Oprim ({prim = "CONCAT"; _})                         -> T.mk_code (T.CONCAT)
@@ -264,9 +324,7 @@ let to_michelson (input, env : T.obj_micheline * env) : T.michelson * env =
       | Oprim ({prim = "UNPAIR"; _})                         -> T.mk_code T.UNPAIR
       | Oprim ({prim = "SELF_ADDRESS"; _})                   -> T.mk_code T.SELF_ADDRESS
       | Oprim ({prim = "CAST"; args = t::_})                 -> T.mk_code (T.CAST (to_type t))
-      | Oprim ({prim = "CREATE_ACCOUNT"; _})                 -> T.mk_code T.CREATE_ACCOUNT
       | Oprim ({prim = "RENAME"; _})                         -> T.mk_code T.RENAME
-      | Oprim ({prim = "STEPS_TO_QUOTA"; _})                 -> T.mk_code T.STEPS_TO_QUOTA
       | Oprim ({prim = "LEVEL"; _})                          -> T.mk_code T.LEVEL
       | Oprim ({prim = "SAPLING_EMPTY_STATE"; args = (Oint n)::_}) -> T.mk_code (T.SAPLING_EMPTY_STATE (int_of_string n))
       | Oprim ({prim = "SAPLING_VERIFY_UPDATE"; _})          -> T.mk_code T.SAPLING_VERIFY_UPDATE
@@ -276,12 +334,6 @@ let to_michelson (input, env : T.obj_micheline * env) : T.michelson * env =
       | Oprim ({prim = "KECCAK"; _})                         -> T.mk_code T.KECCAK
       | Oprim ({prim = "SHA3"; _})                           -> T.mk_code T.SHA3
       | Oprim ({prim = "PAIRING_CHECK"; _})                  -> T.mk_code T.PAIRING_CHECK
-      | Oprim ({prim = "SUBMIT_PROPOSALS"; _})               -> T.mk_code T.SUBMIT_PROPOSALS
-      | Oprim ({prim = "SUBMIT_BALLOT"; _})                  -> T.mk_code T.SUBMIT_BALLOT
-      | Oprim ({prim = "SET_BAKER_ACTIVE"; _})               -> T.mk_code T.SET_BAKER_ACTIVE
-      | Oprim ({prim = "TOGGLE_BAKER_DELEGATIONS"; _})       -> T.mk_code T.TOGGLE_BAKER_DELEGATIONS
-      | Oprim ({prim = "SET_BAKER_CONSENSUS_KEY"; _})        -> T.mk_code T.SET_BAKER_CONSENSUS_KEY
-      | Oprim ({prim = "SET_BAKER_PVSS_KEY"; _})             -> T.mk_code T.SET_BAKER_PVSS_KEY
       (* Macro *)
       | Oprim ({prim = "IFCMPEQ"; args = [l; r]})            -> T.mk_code (T.SEQ [T.mk_code COMPARE; T.mk_code EQ;  T.mk_code (T.IF (seq l, seq r))])
       | Oprim ({prim = "IFCMPNEQ"; args = [l; r]})           -> T.mk_code (T.SEQ [T.mk_code COMPARE; T.mk_code NEQ; T.mk_code (T.IF (seq l, seq r))])
@@ -785,6 +837,11 @@ let _to_dir (michelson, env : T.michelson * env) =
     | TICKET::it               -> interp_bop env Bcreateticket it stack
 
 
+    (* View *)
+
+    | VIEW _::_it         -> assert false
+
+
     (* Other *)
 
     | UNPAIR::it  -> begin
@@ -792,6 +849,7 @@ let _to_dir (michelson, env : T.michelson * env) =
         | x::y::st -> f env sys it (T.Dbop (Bpair, x, y)::st)
         | _ -> emit_error ()
       end
+    | UNPAIR_N _::_  -> assert false (* TODO *)
     | SELF_ADDRESS::it   -> interp_zop env (Zself_address) it stack
 
     | CAST _::_                   -> assert false
@@ -813,6 +871,11 @@ let _to_dir (michelson, env : T.michelson * env) =
     | TOGGLE_BAKER_DELEGATIONS::_ -> assert false
     | SET_BAKER_CONSENSUS_KEY::_  -> assert false
     | SET_BAKER_PVSS_KEY::_       -> assert false
+
+    (* Macro *)
+
+    | CAR_N n::it                -> interp_uop env (UcarN n) it stack
+    | CDR_N n::it                -> interp_uop env (UcdrN n) it stack
 
     | [] -> sys, stack, env
   in *)
@@ -846,6 +909,12 @@ let _to_dir (michelson, env : T.michelson * env) =
       end
     | _ -> Format.eprintf "error: stack not empty@."; assert false
   in
+  (* let to_view (v : T.view_struct) : T.dview =
+     T.mk_dview v.id v.param v.ret v.body
+     in
+     let views = List.map to_view michelson.views in *)
+  let views = [] in (* TODO *)
+  (T.mk_dprogram tstorage tparameter storage_data name sys ~views), env
   (T.mk_dprogram tstorage tparameter storage_data name sys), env *)
 
 (* -------------------------------------------------------------------- *)
@@ -1868,7 +1937,7 @@ let to_ir (dir, env : T.dprogram * env) : T.ir * env =
   let storage_list =
     let rec aux (x : T.type_) =
       match x.node, x.annotation with
-      | _, Some a  -> [a, x]
+      | _, Some a  -> [a, x, T.Dunit]
       | T.Tpair (a, b), _ -> begin
           match aux a, aux b with
           | [], _
@@ -1879,7 +1948,7 @@ let to_ir (dir, env : T.dprogram * env) : T.ir * env =
     in
     let r = aux tstorage in
     match r with
-    | [] -> ["storage", tstorage]
+    | [] -> ["storage", tstorage, T.Dunit]
     | _  -> r
   in
 
@@ -1906,9 +1975,10 @@ let to_ir (dir, env : T.dprogram * env) : T.ir * env =
 
   let name = dir.name in
   let funs = [] in
+  let views = [] in
   let entries = [] in
 
-  T.mk_ir name tstorage storage_data storage_list tparameter funs entries, env
+  T.mk_ir name tstorage storage_data storage_list tparameter funs views entries, env
 
 let rec ttype_to_mtype (t : T.type_) : M.type_ =
   let f = ttype_to_mtype in
@@ -1943,6 +2013,8 @@ let rec ttype_to_mtype (t : T.type_) : M.type_ =
   | Tbls12_381_g1          -> assert false
   | Tbls12_381_g2          -> assert false
   | Tnever                 -> assert false
+  | Tchest                 -> assert false
+  | Tchest_key             -> assert false
 
 let to_model (ir, env : T.ir * env) : M.model * env =
 
@@ -2046,8 +2118,8 @@ let to_model (ir, env : T.ir * env) : M.model * env =
       end
     | Iunop (op, e) -> begin
         match op with
-        | Ucar               -> M.mk_mterm (Mtupleaccess (f e, Big_int.zero_big_int))  (M.tunit)
-        | Ucdr               -> M.mk_mterm (Mtupleaccess (f e, Big_int.unit_big_int))  (M.tunit)
+        | Ucar               -> M.mk_mterm (Mtupleaccess (f e, Big_int.zero_big_int)) (M.tunit)
+        | Ucdr               -> M.mk_mterm (Mtupleaccess (f e, Big_int.unit_big_int)) (M.tunit)
         | Uleft  t           -> let ee = f e in let t = for_type t in M.mk_mterm (Mleft  (t, f e)) (M.tor ee.type_ t)
         | Uright t           -> let ee = f e in let t = for_type t in M.mk_mterm (Mright (t, f e)) (M.tor t ee.type_)
         | Uneg               -> M.mk_mterm (Muminus (f e)) M.tint
@@ -2080,6 +2152,9 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         | Ujointickets       -> assert false
         | Upairing_check     -> assert false
         | Uconcat            -> assert false
+        | Uaddress           -> M.mk_mterm (Mcontractaddress (f e)) M.taddress
+        | UcarN _n           -> assert false
+        | UcdrN _n           -> assert false
       end
     | Ibinop (op, a, b) -> begin
         match op with
@@ -2103,6 +2178,7 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         | Bcreateticket -> assert false
         | Bsplitticket  -> assert false
         | Bsapling_verify_update -> M.mk_mterm (Msapling_verify_update (f a, f b)) (M.toption (M.ttuple [M.tint; M.tsapling_state 0]))
+        | Bview _  -> assert false
       end
     | Iterop (op, _a1, _a2, _a3) -> begin
         match op with
@@ -2142,7 +2218,7 @@ let to_model (ir, env : T.ir * env) : M.model * env =
     | _ -> assert false
   in
   let storage =
-    List.map (fun (id, t) ->
+    List.map (fun (id, t, _) ->
         M.mk_storage_item (dumloc id) MTvar (for_type t) (for_data ~t:t (get_default_value t))
       ) ir.storage_list
   in
@@ -2292,7 +2368,7 @@ end = struct
           | `Bop Band,                 [ a; b ] -> mk_mterm (Mand (f a, f b)) tbool
           | `Bop Bxor,                 [ a; b ] -> mk_mterm (Mxor (f a, f b)) tbool
           | `Bop Bcompare,             [ _; _ ] -> assert false
-          | `Bop Bget,                 [ a; b ] -> mk_mterm (Mmapget (tunknown, tunknown, f a, f b)) tunknown
+          | `Bop Bget,                 [ a; b ] -> mk_mterm (Mmapget (tunknown, tunknown, f a, f b, None)) tunknown
           | `Bop Bmem,                 [ a; b ] -> mk_mterm (Mmapcontains(tunknown, tunknown, f a, f b)) tunknown
           | `Bop Bconcat,              [ a; b ] -> mk_mterm (Mconcat (f a, f b)) tunknown
           | `Bop Bcons,                [ a; b ] -> mk_mterm (Mlistprepend (tunknown, f a, f b)) tunknown
@@ -2400,6 +2476,8 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Tbuiltin Bbls12_381_g1 -> A.tbls12_381_g1
     | Tbuiltin Bbls12_381_g2 -> A.tbls12_381_g2
     | Tbuiltin Bnever        -> A.tnever
+    | Tbuiltin Bchest        -> A.tchest
+    | Tbuiltin Bchest_key    -> A.tchest_key
     | Tcontainer (t, c)      -> A.mk_tcontainer (f t) (match c with | Collection -> assert false | Aggregate -> A.Aggregate | Partition -> A.Partition | View -> A.View)
     | Tlist t                -> A.mk_tlist (f t)
     | Toption t              -> A.mk_toption (f t)
@@ -2501,7 +2579,8 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     (* entrypoint *)
 
-    | Mentrypoint (_t, _a, _s) -> assert false
+    | Mentrypoint (_t, _a, _s, _r) -> assert false
+    | Mcallview (_t, _a, _b, _c) -> assert false
     | Mself _id                -> assert false
 
 
@@ -2590,6 +2669,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | MthreeWayCmp (_l, _r) -> assert false
     | Mshiftleft   (_l, _r) -> assert false
     | Mshiftright  (_l, _r) -> assert false
+    | Msubnat  (_l, _r) -> assert false
 
     (* asset api effect *)
 
@@ -2662,7 +2742,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mmapput (_, _, c, k, v)               -> A.eapp (A.Fident (dumloc "put")) [f c; f k; f v]
     | Mmapremove (_, _, _c, _k)                -> assert false
     | Mmapupdate (_, _, _c, _k, _v)            -> assert false
-    | Mmapget (_, _, _c, _k)                   -> assert false
+    | Mmapget (_, _, _c, _k, _an)              -> assert false
     | Mmapgetopt (_, _, _c, _k)                -> assert false
     | Mmapcontains (_, _, _c, _k)              -> assert false
     | Mmaplength (_, _, _c)                    -> assert false
@@ -2688,6 +2768,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Misnone _x          -> assert false
     | Missome _x          -> assert false
     | Moptget _x          -> assert false
+    | Mrequiresome (_x, _y) -> assert false
     | Mfloor  _x          -> assert false
     | Mceil   _x          -> assert false
     | Mtostring (_, _x)   -> assert false
@@ -2695,6 +2776,9 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Munpack (_t, _x)    -> assert false
     | Msetdelegate _x     -> assert false
     | Mimplicitaccount _x -> assert false
+    | Mcontractaddress _x -> assert false
+    | Maddresscontract _x -> assert false
+    | Mkeyaddress _x      -> assert false
 
 
     (* crypto functions *)
@@ -2780,6 +2864,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     (* utils *)
 
     | Mdatefromtimestamp _ -> assert false
+    | Mmuteztonat        _ -> assert false
 
 
     (* quantifiers *)
@@ -2828,6 +2913,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     match f.node with
     | Function (_fs, _t)
     | Getter (_fs, _t) -> assert false
+    | View (_fs, _t) -> assert false
     | Entry fs -> begin
         let id = fs.name in
         let body = for_expr fs.body in

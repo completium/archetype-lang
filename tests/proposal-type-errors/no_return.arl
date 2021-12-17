@@ -1,0 +1,15 @@
+archetype test
+
+variable a : nat = 0
+variable b : nat = 0
+
+function f(p : bool) : nat {
+  if p
+  then return 1;
+  return 2
+}
+
+entry exec () {
+  a := f(true);
+  b := f(false);
+}

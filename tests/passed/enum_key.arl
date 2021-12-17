@@ -1,0 +1,24 @@
+archetype enum_key
+
+enum stake_kind =
+| Tier1
+| Tier2
+| Tier3
+| Tier4
+
+variable tvls : map<stake_kind, nat> = [ (Tier1, 0); (Tier2, 0); (Tier3, 0); (Tier4, 0) ]
+
+function getLockedDuration(isk : stake_kind) : duration {
+  return
+    match isk with
+    | Tier1 -> 0d
+    | Tier2 -> 7d
+    | Tier3 -> 30d
+    | Tier4 -> 90d
+    end
+}
+
+entry update(isk : stake_kind) {
+  var d = getLockedDuration(isk);
+  tvls.put(isk, 0)
+}

@@ -1,0 +1,12 @@
+archetype asset_ternary_access
+
+asset myasset {
+  id : string;
+  v : nat = 0;
+}
+
+variable s : nat = 0
+
+entry exec() {
+  var n = myasset["nokey"]?.v:2
+}

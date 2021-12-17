@@ -6,6 +6,8 @@ let pp_int fmt i =
 
 let pp_id = pp_str
 
+let empty_string = "0"
+
 (* -------------------------------------------------------------------------- *)
 
 let pp_enclose pre post pp fmt x =
@@ -162,6 +164,8 @@ let pp_type fmt typ =
       | Tybls12_381_g1 -> "bls12_381_g1"
       | Tybls12_381_g2 -> "bls12_381_g2"
       | Tynever        -> "never"
+      | Tychest        -> "chest"
+      | Tychest_key    -> "chest_key"
     in
     if pparen && (needs_paren t) then
       "("^str^")"
@@ -778,8 +782,8 @@ let rec pp_term outer pos fmt = function
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
   | Tnow i -> Format.fprintf fmt "%a._now" pp_str i
-  | Temptystr -> Format.fprintf fmt "%s" "\"\""
-  | Tdefaultaddr -> Format.fprintf fmt "%s" "\"\""
+  | Temptystr -> Format.fprintf fmt "%s" empty_string
+  | Tdefaultaddr -> Format.fprintf fmt "%s" empty_string
   | Tchainid i -> Format.fprintf fmt "%a._chainid" pp_str i
   | Tselfaddress i -> Format.fprintf fmt "%a._selfaddress" pp_str i
   | Tmlist (l,e1,i1,i2,i3,e2) ->
@@ -877,8 +881,9 @@ let rec pp_term outer pos fmt = function
       (pp_with_paren (pp_term outer pos)) v
   (* (pp_with_paren (pp_term outer pos)) l *)
   | Tentrypoint (i,v) ->
-    Format.fprintf fmt "entrypoint \"%a\" %a"
-      pp_str i
+    Format.fprintf fmt "entrypoint %a %a"
+      (* pp_str i *)
+      pp_big_int (Tools.string_to_big_int i)
       (pp_with_paren (pp_term outer pos)) v
   | Tmktr (_, _) -> pp_str fmt "TODO_Tmktr"
   | Ttradd _ -> pp_str fmt "TODO_Ttradd"

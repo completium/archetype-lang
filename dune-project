@@ -31,7 +31,9 @@ on the Tezos blockchain, with a specific focus on contract security
     ppx_deriving_yojson
     uri
    (visitors (>= 20200207))
-    hex
+   (js_of_ocaml (>= 3.9.0))
+   (js_of_ocaml-ppx (>= 3.9.0))
+   (hex (>= 1.4.0))
     xmlm
   )
 )

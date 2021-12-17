@@ -1,0 +1,8 @@
+archetype import_contract
+
+import "import_types.ard"
+
+entry exec () {
+  var s : r = {0; "mystr"};
+  s.a := 1
+}

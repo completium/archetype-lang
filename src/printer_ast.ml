@@ -35,6 +35,8 @@ let pp_vtyp fmt = function
   | VTbls12_381_g1 -> Format.fprintf fmt "bls12_381_g1"
   | VTbls12_381_g2 -> Format.fprintf fmt "bls12_381_g2"
   | VTnever        -> Format.fprintf fmt "never"
+  | VTchest        -> Format.fprintf fmt "chest"
+  | VTchest_key    -> Format.fprintf fmt "chest_key"
 
 let pp_container fmt = function
   | Collection -> Format.fprintf fmt "collection"
@@ -227,7 +229,8 @@ let to_const = function
   | Ccount          -> "count"
   | Cfloor          -> "floor"
   | Cget            -> "get"
-  | Cgetopt         -> "getopt"
+  | Cgetopt         -> "opt_get"
+  | Crequiresome    -> "require_some"
   | Cisnone         -> "isnone"
   | Cissome         -> "issome"
   | Clength         -> "length"
@@ -249,8 +252,10 @@ let to_const = function
   | Cexec           -> "exec"
   | Capply          -> "apply"
   | CdateFromTimestamp -> "date_from_timestamp"
+  | CmutezToNat     -> "mutez_to_nat"
   | Csetdelegate    -> "set_delegate"
   | Cimplicitaccount-> "implicit_account"
+  | Csubnat         -> "sub_nat"
   (* set *)
   | Csadd           -> "set_add"
   | Csremove        -> "set_remove"
@@ -278,6 +283,9 @@ let to_const = function
   | Ckeccak         -> "keccak"
   | Cchecksignature -> "check_signature"
   | Chashkey        -> "hash_key"
+  | Ccontractaddress-> "contract_address"
+  | Caddresscontract-> "address_contract"
+  | Ckeyaddress     -> "key_address"
   (* voting *)
   | Ctotalvotingpower -> "total_voting_power"
   | Cvotingpower      -> "voting_power"
@@ -616,14 +624,26 @@ let rec pp_pterm fmt (pterm : pterm) =
       in
       (pp_no_paren pp) fmt id
 
-    | Pentrypoint (t, a, b) ->
-      let pp fmt (t, a, b) =
-        Format.fprintf fmt "entrypoint<%a>(%a, %a)"
+    | Pentrypoint (t, a, b, r) ->
+      let pp fmt (t, a, b, r) =
+        Format.fprintf fmt "%s<%a>(%a, %a%a)"
+          (if Option.is_some r then "require_entrypoint" else "entrypoint")
           pp_type  t
           pp_id a
           pp_pterm b
+          (pp_some (fun fmt a -> Format.fprintf fmt ", %a" pp_pterm a)) r
       in
-      (pp_no_paren pp) fmt (t, a, b)
+      (pp_no_paren pp) fmt (t, a, b, r)
+
+    | Pcallview (t, a, b, c) ->
+      let pp fmt (t, a, b, c) =
+        Format.fprintf fmt "callview<%a>(%a, \"%a\", %a)"
+          pp_type  t
+          pp_pterm a
+          pp_id b
+          pp_pterm c
+      in
+      (pp_no_paren pp) fmt (t, a, b, c)
   in
   pp_struct_poly pp_node fmt pterm
 
@@ -786,7 +806,18 @@ let rec pp_instruction fmt (i : instruction) =
       in
       (pp_with_paren pp) fmt (op, id, value)
 
-    | Iassign (op, _, `Field (an, k, fn), value) ->
+    | Iassign (op, _, `Field (rn, k, fn), value) ->
+      let pp fmt (op, rn, k, fn, value) =
+        Format.fprintf fmt "%a[%a].%a %a %a"
+          pp_id rn
+          pp_pterm k
+          pp_id fn
+          pp_assignment_operator op
+          pp_pterm value
+      in
+      (pp_with_paren pp) fmt (op, rn, k, fn, value)
+
+    | Iassign (op, _, `Asset (an, k, fn), value) ->
       let pp fmt (op, an, k, fn, value) =
         Format.fprintf fmt "%a[%a].%a %a %a"
           pp_id an
@@ -796,6 +827,7 @@ let rec pp_instruction fmt (i : instruction) =
           pp_pterm value
       in
       (pp_with_paren pp) fmt (op, an, k, fn, value)
+
 
     | Irequire (k, pt, f) ->
       let pp fmt (k, pt, f) =
@@ -1131,7 +1163,7 @@ let pp_fun_args fmt args =
 
 let pp_function fmt (f : function_) =
   Format.fprintf fmt "%s %a%a : %a =@\n  @[%a%a@]@\n"
-    (match f.kind with | FKfunction -> "function" | FKgetter -> "getter")
+    (match f.kind with | FKfunction -> "function" | FKgetter -> "getter" | FKview -> "view")
     pp_id f.name
     pp_fun_args f.args
     pp_type f.return
