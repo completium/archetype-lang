@@ -791,7 +791,7 @@ and pp_expr (fmt : Format.formatter) (e : dexpr) =
   match e with
   | Dvar v              -> pp_var fmt v
   | Depair (e1, e2)     -> Format.fprintf fmt "(%a, %a)" pp_expr e1 pp_expr e2
-  | Ddata d             -> pp_data fmt d
+  | Ddata (_, d)        -> pp_data fmt d
   | Dfun (op, args)     -> begin
       match op, args with
       | `Zop op, []         -> pp_zop fmt op

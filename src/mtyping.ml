@@ -4,7 +4,7 @@ open Tools
 module M = Michelson
 
 (* -------------------------------------------------------------------- *)
-type stack1 = M.type_
+type stack1 = M.type_ [@@deriving  show {with_path = false}]
 
 type arg1 = [
 | `Int  of int
@@ -12,7 +12,7 @@ type arg1 = [
 | `Type of M.type_
 ]
 
-type stack = stack1 list
+type stack = stack1 list [@@deriving  show {with_path = false}]
 type args  = arg1   list
 
 type s_Int   = SInt
@@ -362,6 +362,13 @@ and op_DUG (stack : stack) (n : int) =
 and op_DUP (stack : stack) =
   let x, stack = Stack.pop stack in
   Some (x :: x :: stack)
+
+(* -------------------------------------------------------------------- *)
+and op_DUP_N (stack : stack) (n : int) =
+  if n < 1 then raise MichelsonTypingError;
+  let pre, stack = Stack.split (n-1) stack in
+  let x, stack = Stack.pop stack in
+  Some (x :: pre @ x :: stack)
 
 (* -------------------------------------------------------------------- *)
 and op_EDIV (stack : stack) =
@@ -729,6 +736,18 @@ and op_PAIR (stack : stack) =
   Some (M.tpair ty1 ty2 :: stack)
 
 (* -------------------------------------------------------------------- *)
+and op_PAIR_N (stack : stack) (n : int) =
+  if n <= 1 then raise MichelsonTypingError;
+
+  let tys, stack = Stack.split n stack in
+  let aout =
+    match List.rev tys with
+    | [] -> assert false
+    | ty :: tys -> List.fold_right M.tpair (List.rev tys) ty in
+
+  Some (aout :: stack)
+
+(* -------------------------------------------------------------------- *)
 and op_PAIRING_CHECK (stack : stack) =
   let ty, stack = Stack.pop stack in
   let ty1, ty2 = Ty.check_pair ty in
@@ -805,7 +824,7 @@ and op_SHA3 (stack : stack) =
 (* -------------------------------------------------------------------- *)
 and op_SIZE (stack : stack) =
   let ty, stack = Stack.pop stack in
-
+  
   begin match ty.node with
   | M.Tset _ | M.Tmap _ | M.Tlist _ | M.Tstring | M.Tbytes -> ()
   | _ -> raise MichelsonTypingError end;
@@ -897,6 +916,21 @@ and op_UNPAIR (stack : stack) =
   Some (ty1 :: ty2 :: stack)
 
 (* -------------------------------------------------------------------- *)
+and op_UNPAIR_N (stack : stack) (n : int) =
+  if n < 2 then raise MichelsonTypingError;
+
+  let ty, stack = Stack.pop stack in
+
+  let rec doit acc ty n =
+    if n <= 1 then
+      List.rev acc @ [ty]
+    else
+      let ty1, ty = Ty.check_pair ty in
+      doit (ty1::acc) ty (n-1) in
+
+  Some (doit [] ty n @ stack)
+
+(* -------------------------------------------------------------------- *)
 and op_UPDATE (stack : stack) =
   let kty, stack = Stack.pop stack in
 
@@ -943,6 +977,8 @@ and op_XOR (stack : stack) =
 
 (* -------------------------------------------------------------------- *)
 and tycheck_r (stack : stack) (code : M.code_node) : stack option =
+  (* Format.eprintf "%a@." pp_stack stack; *)
+
   match code with
   | SEQ cs ->
       List.fold_left (fun stack c ->
@@ -999,7 +1035,8 @@ and tycheck_r (stack : stack) (code : M.code_node) : stack option =
   | DUP ->
       op_DUP stack
 
-  | DUP_N _n -> assert false (* TODO *)
+  | DUP_N n ->
+      op_DUP_N stack n
 
   | PUSH (ty, v) ->
       op_PUSH stack (ty, v)
@@ -1208,7 +1245,8 @@ and tycheck_r (stack : stack) (code : M.code_node) : stack option =
   | PAIR ->
       op_PAIR stack
 
-  | PAIR_N _n -> assert false (* TODO *)
+  | PAIR_N n ->
+      op_PAIR_N stack n
 
   | RIGHT tyl ->
       op_RIGHT stack tyl
@@ -1231,7 +1269,8 @@ and tycheck_r (stack : stack) (code : M.code_node) : stack option =
   | UNPAIR ->
       op_UNPAIR stack
 
-  | UNPAIR_N _ -> assert false (* TODO *)
+  | UNPAIR_N n ->
+      op_UNPAIR_N stack n
 
   | UPDATE ->
       op_UPDATE stack

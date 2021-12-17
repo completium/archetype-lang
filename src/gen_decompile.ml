@@ -188,6 +188,7 @@ let to_michelson (input, env : T.obj_micheline * env) : T.michelson * env =
       | Oprim ({prim = "DROP"; _})                           -> T.mk_code (T.DROP 1)
       | Oprim ({prim = "DUG"; args = n::_})                  -> T.mk_code (T.DUG (to_int n))
       | Oprim ({prim = "DUG"; _})                            -> T.mk_code (T.DUG 1)
+      | Oprim ({prim = "DUP"; args = n::_})                  -> T.mk_code (T.DUP_N (to_int n))
       | Oprim ({prim = "DUP"; _})                            -> T.mk_code (T.DUP)
       | Oprim ({prim = "PUSH"; args = t::v::_})              -> T.mk_code (T.PUSH (to_type t, to_data v))
       | Oprim ({prim = "SWAP"; _})                           -> T.mk_code (T.SWAP)
@@ -312,6 +313,7 @@ let to_michelson (input, env : T.obj_micheline * env) : T.michelson * env =
       | Oprim ({prim = "NIL" ; args = t::_})                 -> T.mk_code (T.NIL (to_type t))
       | Oprim ({prim = "NONE" ; args = t::_})                -> T.mk_code (T.NONE (to_type t))
       | Oprim ({prim = "PACK"; _})                           -> T.mk_code (T.PACK)
+      | Oprim ({prim = "PAIR"; args = n::_})                 -> T.mk_code (T.PAIR_N (to_int n))
       | Oprim ({prim = "PAIR"; _})                           -> T.mk_code (T.PAIR)
       | Oprim ({prim = "RIGHT" ; args = t::_})               -> T.mk_code (T.RIGHT (to_type t))
       | Oprim ({prim = "SIZE"; _})                           -> T.mk_code (T.SIZE)
@@ -321,6 +323,7 @@ let to_michelson (input, env : T.obj_micheline * env) : T.michelson * env =
       | Oprim ({prim = "UNPACK" ; args = t::_})              -> T.mk_code (T.UNPACK (to_type t))
       | Oprim ({prim = "UPDATE"; _})                         -> T.mk_code (T.UPDATE)
       (* Other *)
+      | Oprim ({prim = "UNPAIR"; args = n::_})               -> T.mk_code (T.UNPAIR_N (to_int n))
       | Oprim ({prim = "UNPAIR"; _})                         -> T.mk_code T.UNPAIR
       | Oprim ({prim = "SELF_ADDRESS"; _})                   -> T.mk_code T.SELF_ADDRESS
       | Oprim ({prim = "CAST"; args = t::_})                 -> T.mk_code (T.CAST (to_type t))
@@ -1032,7 +1035,7 @@ end = struct
       unify_dexpr uf e1 f1;
       unify_dexpr uf e2 f2
 
-    | Ddata d1, Ddata d2 ->
+    | Ddata (_, d1), Ddata (_, d2) ->
       if not (cmp_data d1 d2) then
         raise UnificationFailure
 
@@ -1200,9 +1203,19 @@ end = struct
       let wri2 = write_var (Dvar a) y in
       mkdecomp ((a :> rstack1) :: s) (wri1 @ wri2)
 
-    | PUSH (_t, d) ->
+    | DUP_N n ->
+      assert (1 <= n);
       let x, s = List.pop s in
-      let wri = write_var (Ddata d) x in
+      let pre, s = List.split_at (n-1) s in
+      let y, s = List.pop s in
+      let a = vlocal () in
+      let wri1 = write_var (Dvar a) x in
+      let wri2 = write_var (Dvar a) y in
+      mkdecomp (pre @ (a :> rstack1) :: s) (wri1 @ wri2)
+
+    | PUSH (t, d) ->
+      let x, s = List.pop s in
+      let wri = write_var (Ddata (t, d)) x in
       mkdecomp s wri
 
     | SWAP ->
@@ -1298,6 +1311,33 @@ end = struct
           let op = DIAssign (v, Dfun (`Bop Bpair, [Dvar x1; Dvar x2])) in
           mkdecomp ((x1 :> rstack1) :: (x2 :> rstack1) :: s) [op]
       end
+
+    | PAIR_N n ->
+        assert (2 <= n);
+        let rec doit s n =
+          if n <= 1 then s, [] else
+
+          let x, s = List.pop s in
+
+          let x1, s, ops =
+            match x with
+            | `Paired (x1, x2) ->
+                x1, x2 :: s, []
+  
+            | #dvar as v ->
+              let x1 = vlocal () in
+              let x2 = vlocal () in
+              let op = DIAssign (v, Dfun (`Bop Bpair, [Dvar x1; Dvar x2])) in
+              (x1 :> rstack1), (x2 :> rstack1) :: s, [op]
+          in
+
+          let s, ops' = doit s (n-1) in
+
+          x1 :: s, ops @ ops' in
+                                                      
+        let s, ops = doit s n in
+        mkdecomp s ops
+
     | RIGHT t              -> decompile_op s (`Uop (Uright t)  )
     | SIZE                 -> decompile_op s (`Uop Usize       )
     | SLICE                -> decompile_op s (`Top Tslice      )
@@ -1313,6 +1353,19 @@ end = struct
       let x, s = List.pop s in
       let y, s = List.pop s in
       mkdecomp (`Paired (x, y) :: s) []
+
+    | UNPAIR_N n ->
+        assert (2 <= n);
+        let rec doit s n =
+          if n <= 1 then
+            List.pop s
+          else
+            let x, s = List.pop s in
+            let y, s = doit s (n-1) in
+            `Paired (x, y), s in
+
+        let top, s = doit s n in
+        mkdecomp (top :: s) []
 
     | SELF_ADDRESS -> decompile_op s (`Zop Zself_address)
 
@@ -1660,7 +1713,7 @@ end = struct
         let pr1 = write_var (dexpr_of_rstack1 pst) px in
         let pr2 = write_var (dexpr_of_rstack1 ast) ax in
         pr1 @ dc @ pr2
-      | _ -> assert false in
+      | _ -> Format.eprintf "%a@." pp_rstack ost; assert false in
 
     let _, code = code_kill Sdvar.empty code in
     let _, code = code_cttprop Mint.empty code in
@@ -2256,8 +2309,16 @@ end = struct
     | Dtrue            -> mtrue
     | Dfalse           -> mfalse
     | Dpair  (ld, rd)  -> mk_pair (for_data ld) (for_data rd)
-    | Dleft   _d       -> assert false
-    | Dright  _d       -> assert false
+    | Dleft    d       -> begin
+        match t with
+        | Some { node = Tor (tl, tr) } -> mk_left (for_type tr) (for_data ~t:tl d)
+        | _ -> assert false
+      end
+    | Dright d          -> begin
+        match t with
+        | Some { node = Tor (tl, tr) } -> mk_right (for_type tl) (for_data ~t:tr d)
+        | _ -> assert false
+      end
     | Dsome   _d       -> assert false
     | Dnone            -> assert false
     | Dlist  _l        -> assert false
@@ -2306,7 +2367,7 @@ end = struct
       let tunknown = tunit in
       match e with
       | Dvar v          -> mk_mvar (dumloc (for_dvar v)) tunit
-      | Ddata d         -> for_data d
+      | Ddata (t, d)    -> for_data ~t d
       | Depair _        -> assert false
       | Dfun (`Uop Ueq, [Dfun (`Bop Bcompare, [a; b])]) -> mk_mterm (Mequal  (tint, f a, f b)) tbool
       | Dfun (`Uop Une, [Dfun (`Bop Bcompare, [a; b])]) -> mk_mterm (Mnequal (tint, f a, f b)) tbool
@@ -2548,7 +2609,13 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mif (c, t, e)              -> A.eif ?e:(Option.map f e) (f c) (f t)
     | Mmatchwith (_e, _l)        -> assert false
     | Minstrmatchoption _        -> assert false
-    | Minstrmatchor     _        -> assert false
+
+    | Minstrmatchor (e, xl, bl, xr, br) ->
+        A.ematchwith (f e) [
+          ([dumloc (A.Pref (dumloc A.PLeft , [xl]))], f bl);
+          ([dumloc (A.Pref (dumloc A.PRight, [xr]))], f br)
+        ]
+
     | Minstrmatchlist   _        -> assert false
     | Mfor (_i, _c, _b, _l)      -> assert false
     | Miter (_i, _a, _b, _c, _l) -> assert false
@@ -2622,8 +2689,8 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     (* composite type constructors *)
 
-    | Mleft (_t, _x)  -> assert false
-    | Mright (_t, _x) -> assert false
+    | Mleft (t, x)    -> A.eleft (for_type t) (f x)
+    | Mright (t, x)   -> A.eright (for_type t) (f x)
     | Mnone           -> A.eoption (ONone None)
     | Msome v         -> A.eoption (OSome (f v))
     | Mtuple l        -> A.etuple (List.map f l)
@@ -2724,7 +2791,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     (* list api expression *)
 
     | Mlistprepend (_, _c, _a)             -> assert false
-    | Mlistlength (_, _c)                  -> assert false
+    | Mlistlength (_, c)                   -> A.eapp (A.Fident (dumloc "size")) [f c]
     | Mlistcontains (_, _c, _a)            -> assert false
     | Mlistnth (_, _c, _a)                 -> assert false
     | Mlistreverse (_, _l)                 -> assert false
