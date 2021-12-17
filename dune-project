@@ -19,7 +19,7 @@
  (name archetype)
  (synopsis "Archetype language compiler")
  (description "\
-Archetype is a domain-specific language (DSL) to develop smart contracts
+Archetype is a general purpose language to develop smart contracts
 on the Tezos blockchain, with a specific focus on contract security
 ")
  (depends
