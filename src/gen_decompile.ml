@@ -1662,9 +1662,9 @@ end = struct
         pr1 @ dc @ pr2
       | _ -> assert false in
 
-(*    let _, code = code_kill Sdvar.empty code in*)
-(*    let _, code = code_cttprop Mint.empty code in*)
-(*    let _, code = code_kill Sdvar.empty code in*)
+    let _, code = code_kill Sdvar.empty code in
+    let _, code = code_cttprop Mint.empty code in
+    let _, code = code_kill Sdvar.empty code in
 
     code
 end
