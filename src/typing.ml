@@ -1427,11 +1427,17 @@ let bls_ops : opinfo list =
       [A.Tlist (A.Ttuple [A.vtbls12_381_g1; A.vtbls12_381_g2])] (`Ty A.vtbool) Mint.empty;
   ]
 
+let timelock_ops : opinfo list =
+  [
+    op "open_chest" A.Copen_chest `Total None
+      [A.vtchest_key; A.vtchest; A.vtnat] (`Ty (A.Tor (A.vtbytes, A.vtbool))) Mint.empty;
+  ]
+
 (* -------------------------------------------------------------------- *)
 let allops : opinfo list =
   coreops @ optionops @ setops @ listops @ mapops @ bigmapops @
   cryptoops @ packops @ opsops @ lambdaops @
-  ticket_ops @ sapling_ops @ bls_ops @ mathops
+  ticket_ops @ sapling_ops @ bls_ops @ mathops @ timelock_ops
 
 (* -------------------------------------------------------------------- *)
 type assetdecl = {

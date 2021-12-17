@@ -837,6 +837,15 @@ let to_model (ast : A.ast) : M.model =
         M.Mpairing_check fx
 
 
+      (* Timelock *)
+
+      | A.Pcall (None, A.Cconst A.Copen_chest, [AExpr x; AExpr y; AExpr z]) ->
+        let fx = f x in
+        let fy = f y in
+        let fz = f z in
+        M.Mopen_chest(fx, fy, fz)
+
+
       (* Operation *)
 
       | A.Pcall (None, A.Cconst (A.Cmkoperation), [AExpr a; AExpr b; AExpr c]) ->

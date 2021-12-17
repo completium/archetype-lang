@@ -299,6 +299,8 @@ let to_const = function
   | Csapling_verify_update -> "sapling_verify_update"
   (* bls curve *)
   | Cpairing_check  -> "pairing_check"
+  (* timelock *)
+  | Copen_chest     -> "open_chest"
   (* vset *)
   | Cbefore         -> "before"
   | Citerated       -> "iterated"

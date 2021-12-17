@@ -1307,6 +1307,11 @@ let pp_mterm fmt (mt : mterm) =
     | Mpairing_check x -> Format.fprintf fmt "pairing_check (%a)" f x
 
 
+    (* timelock *)
+
+    | Mopen_chest (x, y, z) -> Format.fprintf fmt "open_chest (%a, %a, %a)" f x f y f z
+
+
     (* constants *)
 
     | Mnow           -> pp_str fmt "now"

@@ -961,6 +961,11 @@ let to_ir (model : M.model) : T.ir =
     | Mpairing_check x -> T.Iunop (Upairing_check, f x)
 
 
+    (* timelock *)
+
+    | Mopen_chest (x, y, z) -> T.Iterop (Topen_chest, f x, f y, f z)
+
+
     (* constants *)
 
     | Mnow           -> T.Izop Znow
@@ -1393,6 +1398,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
     | T.Tslice           -> T.cslice
     | T.Tupdate          -> T.cupdate
     | T.Ttransfer_tokens -> T.ctransfer_tokens
+    | T.Topen_chest      -> T.copen_chest
   in
 
   let aop_to_code env = function

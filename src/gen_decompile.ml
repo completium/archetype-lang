@@ -1323,7 +1323,7 @@ end = struct
             match x with
             | `Paired (x1, x2) ->
                 x1, x2 :: s, []
-  
+
             | #dvar as v ->
               let x1 = vlocal () in
               let x2 = vlocal () in
@@ -1334,7 +1334,7 @@ end = struct
           let s, ops' = doit s (n-1) in
 
           x1 :: s, ops @ ops' in
-                                                      
+
         let s, ops = doit s n in
         mkdecomp s ops
 
@@ -2239,6 +2239,7 @@ let to_model (ir, env : T.ir * env) : M.model * env =
         | Tslice           -> assert false
         | Tupdate          -> assert false
         | Ttransfer_tokens -> assert false
+        | Topen_chest      -> assert false
       end
     | Iupdate (_ak, _aop)  -> assert false
     | Icompare (op, _lhs, _rhs) -> begin
@@ -2882,6 +2883,11 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     (* bls curve *)
 
     | Mpairing_check _ -> assert false
+
+
+    (* timelock *)
+
+    | Mopen_chest _ -> assert false
 
 
     (* constants *)

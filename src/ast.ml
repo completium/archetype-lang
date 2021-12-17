@@ -228,6 +228,8 @@ type const =
   | Csapling_verify_update
   (* bls *)
   | Cpairing_check
+  (* timelock *)
+  | Copen_chest
   (* vset *)
   | Cbefore
   | Citerated

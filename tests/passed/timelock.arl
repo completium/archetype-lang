@@ -1,0 +1,11 @@
+archetype timelock
+
+variable res : bytes = 0x00
+
+entry exec(k : chest_key, c : chest) {
+  res :=
+    match open_chest(k, c, 1000) with
+    | left(v) -> v
+    | right(v) -> if v then 0x01 else 0x02
+    end
+}

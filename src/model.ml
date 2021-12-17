@@ -395,6 +395,8 @@ type ('id, 'term) mterm_node  =
   | Msapling_verify_update of 'term * 'term
   (* bls curve *)
   | Mpairing_check of 'term
+  (* timelock *)
+  | Mopen_chest of 'term * 'term * 'term
   (* constants *)
   | Mnow
   | Mtransferred
@@ -1570,6 +1572,8 @@ let cmp_mterm_node
     | Msapling_verify_update (s1, t1), Msapling_verify_update (s2, t2)                 -> cmp s1 s2 && cmp t1 t2
     (* bls curve *)
     | Mpairing_check x1, Mpairing_check x2                                             -> cmp x1 x2
+    (* timelock *)
+    | Mopen_chest (x1, y1, z1), Mopen_chest (x2, y2, z2)                               -> cmp x1 x2 && cmp y1 y2 && cmp z1 z2
     (* constants *)
     | Mnow, Mnow                                                                       -> true
     | Mtransferred, Mtransferred                                                       -> true
@@ -1996,6 +2000,8 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Msapling_verify_update (s, t)  -> Msapling_verify_update (f s, f t)
   (* bls curve *)
   | Mpairing_check x               -> Mpairing_check (f x)
+  (* timelock *)
+  | Mopen_chest (x, y, z)          -> Mopen_chest (f x, f y, f z)
   (* constants *)
   | Mnow                           -> Mnow
   | Mtransferred                   -> Mtransferred
@@ -2420,6 +2426,8 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Msapling_verify_update (s, t)         -> f (f accu s) t
   (* bls curve *)
   | Mpairing_check x                      -> f accu x
+    (* timelock *)
+  | Mopen_chest (x, y, z)                 -> f (f (f accu x) y) z
   (* constants *)
   | Mnow                                  -> accu
   | Mtransferred                          -> accu
@@ -3485,6 +3493,15 @@ let fold_map_term
   | Mpairing_check x ->
     let xe, xa = f accu x in
     g (Mpairing_check xe), xa
+
+
+  (* bls curve *)
+
+  | Mopen_chest (x, y, z) ->
+    let xe, xa = f accu x in
+    let ye, ya = f xa y in
+    let ze, za = f ya z in
+    g (Mopen_chest (xe, ye, ze)), za
 
 
   (* constants *)

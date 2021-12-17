@@ -2390,6 +2390,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     (* bls curve *)
     | Mpairing_check _x -> assert false
 
+    (* timelock *)
+    | Mopen_chest (_x, _y, _z) -> assert false
+
     (* constants *)
 
     | Mnow -> Tnow (dl gs)

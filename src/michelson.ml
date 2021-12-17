@@ -276,6 +276,7 @@ and ter_operator =
   | Tslice
   | Tupdate
   | Ttransfer_tokens
+  | Topen_chest
 [@@deriving show {with_path = false}]
 
 and g_operator = [`Zop of z_operator | `Uop of un_operator  | `Bop of bin_operator  | `Top of ter_operator ]
