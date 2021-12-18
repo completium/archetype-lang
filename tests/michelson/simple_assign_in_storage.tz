@@ -1,0 +1,15 @@
+# (Pair 0 (Pair 0 0))
+{
+  storage (pair (nat %a) (pair (nat %b) (nat %c)));
+  parameter (unit %exec);
+  code { UNPAIR;
+         DIP { UNPAIR 3 };
+         DROP;
+         PUSH nat 1;
+         DIP { DIG 1; DROP };
+         DUG 1;
+         PAIR 3;
+         NIL operation;
+         PAIR };
+}
+
