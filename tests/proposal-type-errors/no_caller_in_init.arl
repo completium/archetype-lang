@@ -1,0 +1,7 @@
+archetype no_caller_in_init
+
+variable addr : address = caller
+
+entry exec() {
+
+}

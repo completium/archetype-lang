@@ -1,0 +1,7 @@
+archetype no_source_in_init
+
+variable addr : address = source
+
+entry exec() {
+
+}
