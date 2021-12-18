@@ -39,7 +39,6 @@ let set_options settings =
   Archetype.Options.opt_typed            := process_boolean_false "typed";
   Archetype.Options.opt_ir               := process_boolean_false "ir";
   Archetype.Options.opt_dir              := process_boolean_false "dir";
-  Archetype.Options.opt_red_dir          := process_boolean_false "red_dir";
   Archetype.Options.opt_mic              := process_boolean_false "mic";
   Archetype.Options.opt_mici             := process_boolean_false "mici";
   Archetype.Options.opt_all_parenthesis  := process_boolean_false "all_parenthesis";

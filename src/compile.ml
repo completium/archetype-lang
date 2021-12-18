@@ -373,10 +373,6 @@ let decompile input : string =
   |> cont !Options.opt_mic output_michelson
   |> to_dir
   |> cont !Options.opt_dir output_dprogram
-  |> to_red_dir
-  |> cont !Options.opt_red_dir output_dprogram
-  (* |> to_ir *)
-  (* |> cont !Options.opt_ir  output_ir *)
   |> dir_to_model
   |> cont !Options.opt_mdl output_tmdl
   |> Opt_model.optimize

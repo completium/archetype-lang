@@ -656,6 +656,7 @@ let cst_source      = "source"
 let cst_selfaddress = "selfaddress"
 let cst_chainid     = "chainid"
 let cst_metadata    = "metadata"
+let cst_level       = "level"
 
 
 (* utils *)

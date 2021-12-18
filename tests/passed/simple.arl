@@ -1,7 +1,9 @@
 archetype simple
 
-variable n : nat = 0
+variable a : nat = 0
+variable b : nat = 0
+variable c : nat = 0
 
-entry exec () {
-  n := 2
+entry exec (x : nat, y : nat, z : nat) {
+  b := y
 }
