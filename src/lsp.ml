@@ -258,7 +258,6 @@ let process (kind : lsp_kind) (input : Core.from_input) : string =
         then
           let _ = ast
                   |> Gen_model.to_model
-                  |> Gen_transform.check_number_entrypoint
                   |> Gen_transform.check_partition_access
                   |> Gen_transform.check_containers_asset
                   |> Gen_transform.check_empty_container_on_asset_default_value

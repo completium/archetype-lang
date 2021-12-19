@@ -487,11 +487,6 @@ let check_partition_access (model : model) : model =
   let _ = raise_access_error () in
   model
 
-let check_number_entrypoint (model : model) : model =
-  let nb_entrypoints = model.functions |> List.filter (fun (f : function__) -> match f.node with | Entry _ | Getter _-> true | View _ | Function _ -> false) |> List.length in
-  if nb_entrypoints = 0 then (emit_error (model.loc, NoEntrypoint); raise (Error.Stop 5));
-  model
-
 let check_containers_asset (model : model) : model =
   let assets = Utils.get_assets model in
   let is_container t =

@@ -1,0 +1,3 @@
+archetype no_entrypoint
+
+variable v : nat = 0

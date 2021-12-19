@@ -1,3 +1,0 @@
-archetype no_entrypoint
-
-constant myconstant : string = ""

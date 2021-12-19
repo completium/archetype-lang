@@ -1840,12 +1840,18 @@ and to_michelson (ir : T.ir) : T.michelson =
     in
 
     let code =
-      ir.entries
-      |> List.map for_entry
-      |> shape_entrypoints (fun x y -> T.cifleft ([x], [y])) (T.cseq [])
+      match ir.entries with
+      | [] -> [T.ccdr; T.cnil (T.toperation); T.cpair]
+      | entries ->
+        let us = if nb_storage_item > 1 then [T.cdip (1, unfold_storage)] else [] in
+        let e =
+          entries
+          |> List.map for_entry
+          |> shape_entrypoints (fun x y -> T.cifleft ([x], [y])) (T.cseq [])
+        in
+        [T.cunpair] @ us @ [e]
     in
-    let us = if nb_storage_item > 1 then [T.cdip (1, unfold_storage)] else [] in
-    T.cseq (cfuns @ ops @ fff @ [T.cunpair] @ us @ [code] @ eee)
+    T.cseq (cfuns @ ops @ fff @ code @ eee)
     |> T.Utils.flat
     |> T.Utils.optim
   in
