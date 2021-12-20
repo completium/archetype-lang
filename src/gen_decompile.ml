@@ -228,6 +228,7 @@ let to_michelson (input, env : T.obj_micheline * env) : T.michelson * env =
       | Oprim ({prim = "EMPTY_BIG_MAP" ; args = k::v::_})    -> T.mk_code (T.EMPTY_BIG_MAP (to_type k, to_type v))
       | Oprim ({prim = "EMPTY_MAP" ; args = k::v::_})        -> T.mk_code (T.EMPTY_MAP (to_type k, to_type v))
       | Oprim ({prim = "EMPTY_SET" ; args = t::_})           -> T.mk_code (T.EMPTY_SET (to_type t))
+      | Oprim ({prim = "GET"; args = n::_})                  -> T.mk_code (T.GET_N (to_int n))
       | Oprim ({prim = "GET"; _})                            -> T.mk_code (T.GET)
       | Oprim ({prim = "LEFT" ; args = t::_})                -> T.mk_code (T.LEFT (to_type t))
       | Oprim ({prim = "MAP"; args = s::_})                  -> T.mk_code (T.MAP (seq s))
@@ -243,6 +244,7 @@ let to_michelson (input, env : T.obj_micheline * env) : T.michelson * env =
       | Oprim ({prim = "SOME"; _})                           -> T.mk_code (T.SOME)
       | Oprim ({prim = "UNIT"; _})                           -> T.mk_code (T.UNIT)
       | Oprim ({prim = "UNPACK" ; args = t::_})              -> T.mk_code (T.UNPACK (to_type t))
+      | Oprim ({prim = "UPDATE"; args = n::_})               -> T.mk_code (T.UPDATE_N (to_int n))
       | Oprim ({prim = "UPDATE"; _})                         -> T.mk_code (T.UPDATE)
       (* Other *)
       | Oprim ({prim = "UNPAIR"; args = n::_})               -> T.mk_code (T.UNPAIR_N (to_int n))
@@ -756,6 +758,47 @@ end = struct
     | UNPACK t             -> decompile_op s (`Uop (Uunpack t) )
     | UPDATE               -> decompile_op s (`Top Tupdate     )
 
+    | UPDATE_N n -> begin
+        let x, s = List.pop s in
+
+        let rec doit b n va (a : rstack1) =
+          match n with
+          | 0 when not b ->
+              va
+          | 0 ->
+              let x2 = vlocal () in
+              `Paired (a, (x2 :> rstack1))
+          | _ ->
+              let x1 = vlocal () in
+              let a  = doit b (n-1) va a in
+              `Paired ((x1 :> rstack1), a) in
+
+        let a = vlocal () in
+        let y = doit (n mod 2 <> 0) (n / 2) (a :> rstack1) x in
+
+        let wri1 = write_var (Dvar a) x in
+        let wri2 = write_var (Dvar a) y in
+
+        mkdecomp ((a :> rstack1) :: x :: s) (wri1 @ wri2)
+      end
+
+    | GET_N n -> begin
+        let x, s = List.pop s in
+
+        let rec doit b n (a : rstack1) =
+          match n with
+          | 0 when not b ->
+              a
+          | 0 ->
+              let x2 = vlocal () in
+              `Paired (a, (x2 :> rstack1))
+          | _ ->
+              let x1 = vlocal () in
+              let a  = doit b (n-1) a in
+              `Paired ((x1 :> rstack1), a) in
+
+        mkdecomp ((doit (n mod 2 <> 0) (n / 2) x) :: s) []
+      end
 
     (* Other *)
 
@@ -1125,7 +1168,7 @@ end = struct
         pr1 @ dc @ pr2
       | _ -> Format.eprintf "%a@." pp_rstack ost; assert false in
 
-    let _, code = code_kill Sdvar.empty code in
+(*    let _, code = code_kill Sdvar.empty code in*)
     let _, code = code_cttprop Mint.empty code in
     let _, code = code_kill Sdvar.empty code in
 
@@ -1265,7 +1308,7 @@ end = struct
       match e with
       | Dvar v          -> mk_mvar (dumloc (for_dvar v)) tunit
       | Ddata (t, d)    -> for_data ~t d
-      | Depair _        -> assert false
+      | Depair (e1, e2) -> mk_pair (for_expr e1) (for_expr e2)
       | Dfun (`Uop Ueq, [Dfun (`Bop Bcompare, [a; b])]) -> mk_mterm (Mequal  (tint, f a, f b)) tbool
       | Dfun (`Uop Une, [Dfun (`Bop Bcompare, [a; b])]) -> mk_mterm (Mnequal (tint, f a, f b)) tbool
       | Dfun (`Uop Ugt, [Dfun (`Bop Bcompare, [a; b])]) -> mk_mterm (Mgt     (f a, f b)) tbool

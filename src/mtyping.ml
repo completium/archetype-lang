@@ -432,6 +432,20 @@ and op_GET (stack : stack) =
   Some (M.toption vty :: stack)
 
 (* -------------------------------------------------------------------- *)
+and op_GET_N (stack : stack) (n : int) =
+  let ty, stack = Stack.pop stack in
+
+  let rec unpairR n ty =
+    if   n <= 0
+    then ty
+    else unpairR (n-1) (snd (Ty.check_pair ty)) in
+
+  let ty = unpairR (n / 2) ty in
+  let ty = if n mod 2 <> 0 then fst (Ty.check_pair ty) else ty in
+
+  Some (ty :: stack)
+
+(* -------------------------------------------------------------------- *)
 and op_GT (stack : stack) =
   let ty, stack = Stack.pop stack in
   let () = Ty.check_int ty in
@@ -957,6 +971,21 @@ and op_UPDATE (stack : stack) =
   Some (M.mk_type aout :: stack)
 
 (* -------------------------------------------------------------------- *)
+and op_UPDATE_N (stack : stack) (n : int) =
+  let (tys, tyd), stack = Stack.pop2 stack in
+  let aout = tyd :: stack in
+
+  let rec unpairR n tyd =
+    if   n <= 0
+    then tyd
+    else unpairR (n-1) (snd (Ty.check_pair tyd)) in
+
+  let tyd = unpairR (n / 2) tyd in
+  let tyd = if n mod 2 <> 0 then fst (Ty.check_pair tyd) else tyd in
+
+  Ty.check_eq tys tyd; Some aout
+
+(* -------------------------------------------------------------------- *)
 and op_VOTING_POWER (stack : stack) =
   let kty, stack = Stack.pop stack in
   let () = Ty.check_key_hash kty in
@@ -1217,7 +1246,8 @@ and tycheck_r (stack : stack) (code : M.code_node) : stack option =
   | GET ->
       op_GET stack
 
-  | GET_N _n -> assert false (* TODO *)
+  | GET_N n ->
+      op_GET_N stack n
 
   | GET_AND_UPDATE -> assert false (* TODO *)
 
@@ -1275,7 +1305,8 @@ and tycheck_r (stack : stack) (code : M.code_node) : stack option =
   | UPDATE ->
       op_UPDATE stack
 
-  | UPDATE_N _n -> assert false (* TODO *)
+  | UPDATE_N n ->
+      op_UPDATE_N stack n
 
   (* Operations on tickets *)
   | JOIN_TICKETS ->
