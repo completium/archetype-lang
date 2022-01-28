@@ -1,0 +1,11 @@
+archetype tz_contract_bindings(myaddrcontract : address)
+
+bind "./tz_contract_callable.tz" as my_kind_contract
+
+entry exec () {
+  transfer 0tz to myaddrcontract call my_kind_contract.assign(1)
+}
+
+// entry exec_error () {
+//   transfer 0tz to myaddrcontract call my_kind_contract.assign("mystr")
+// }

@@ -1,8 +1,10 @@
 archetype import_contract
 
-import "import_types.ard"
+import { myrecord } from "./tz_contract_import.arl"
+
+variable res : nat = 0
 
 entry exec () {
-  var s : r = {0; "mystr"};
-  s.a := 1
+  var r : myrecord = {n = 2; s = ""};
+  res := r.n
 }

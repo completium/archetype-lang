@@ -54,3 +54,24 @@ entry retrieveAllowanceFor(owner : address, spender : address) {
   var pair : (address * address) = (owner, spender);
   transfer 0tz to fa12 call getAllowance<(address * address) * contract<nat>> ((pair, (self.setAllowanceValue)))
 }
+
+// record operator_param {
+//   opp_owner    : address;
+//   opp_operator : address;
+//   opp_token_id : nat
+// } as ((owner, (operator, token_id)))
+
+
+// entry updateOperator(owner : address, spender : address) {
+//   // var l : list<or<(address * address * nat), (address * address * nat)>> = [left<address * address * nat>((caller, selfaddress, 0))];
+//   // transfer 0tz to @KT1 call update_operators<list<or<(address * address * nat), (address * address * nat)>>> (l)
+
+
+// var l : list<or<operator_param, operator_param>> = [
+//                 left<operator_param> ({ opp_owner = auction_custody; opp_operator = selfaddress; opp_token_id = auction_asset_id})
+//             ];
+//         transfer 0tz to sa_auction.auction_sell_asset.asset_contract call update_operators<list<or<operator_param, operator_param>>>(l);
+
+// }
+
+

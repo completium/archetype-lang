@@ -1,0 +1,13 @@
+# 0
+{
+  storage nat;
+  parameter (nat %assign);
+  code { UNPAIR;
+         DUP;
+         DIP { DIG 1; DROP };
+         DUG 1;
+         DROP;
+         NIL operation;
+         PAIR };
+}
+

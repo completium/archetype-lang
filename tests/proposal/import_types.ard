@@ -1,4 +1,0 @@
-record r {
-  a : nat;
-  b : string;
-}

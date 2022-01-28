@@ -1,0 +1,7 @@
+archetype tz_contract_callable
+
+variable res : nat = 0
+
+entry assign(v : nat) {
+  res := v
+}
