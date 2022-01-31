@@ -1,0 +1,19 @@
+archetype no_acces_to_field_in_partition
+
+asset a {
+  k : nat;
+  v : string;
+}
+
+asset b {
+  n : nat;
+  p : partition<a>;
+}
+
+
+variable res : string = ""
+
+entry exec () {
+  res := b[0].p[0].v
+  // res := a[0].v
+}
