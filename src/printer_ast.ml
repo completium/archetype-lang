@@ -646,6 +646,130 @@ let rec pp_pterm fmt (pterm : pterm) =
           pp_pterm c
       in
       (pp_no_paren pp) fmt (t, a, b, c)
+
+    (* instructions *)
+    | Pfor (fid, c, body) ->
+      let pp fmt (fid, c, body : lident for_ident_pterm * 'a * 'b) =
+        Format.fprintf fmt "for %a%a in %a do@\n  @[%a@]@\ndone"
+          (fun fmt x -> match x with Some v -> (Format.fprintf fmt ": %a " pp_str v) | _ -> ()) pterm.label
+          (fun fmt (fid : lident for_ident_pterm) ->
+             match fid with
+             | FIsimple i -> pp_id fmt i
+             | FIdouble (x, y) -> Format.fprintf fmt "(%a, %a)" pp_id x pp_id y) fid
+          pp_pterm c
+          pp_pterm body
+      in
+      (pp_with_paren pp) fmt (fid, c, body)
+
+    | Piter (id, a, b, body) ->
+      let pp fmt (id, a, b, body) =
+        Format.fprintf fmt "iter %a%a from %a to %a do@\n  @[%a@]@\ndone"
+          (fun fmt x -> match x with Some v -> (Format.fprintf fmt ": %a " pp_str v) | _ -> ()) pterm.label
+          pp_id id
+          pp_pterm a
+          pp_pterm b
+          pp_pterm body
+      in
+      (pp_with_paren pp) fmt (id, a, b, body)
+
+    | Pwhile (cond, body) ->
+      let pp fmt (cond, body) =
+        Format.fprintf fmt "while %a block{@\n  @[%a@]@\n}"
+          pp_pterm cond
+          pp_pterm body
+      in
+      (pp_with_paren pp) fmt (cond, body)
+
+    | Pseq l ->
+      let pp fmt l =
+        if List.is_empty l
+        then pp_str fmt "()"
+        else pp_paren (pp_list ";@\n" pp_pterm) fmt l
+      in
+      (pp_with_paren pp) fmt l
+
+    | Passign (op, _, `Var id, value) ->
+      let pp fmt (op, id, value) =
+        Format.fprintf fmt "%a %a %a"
+          pp_id id
+          pp_assignment_operator op
+          pp_pterm value
+      in
+      (pp_with_paren pp) fmt (op, id, value)
+
+    | Passign (op, _, `Field (rn, k, fn), value) ->
+      let pp fmt (op, rn, k, fn, value) =
+        Format.fprintf fmt "%a[%a].%a %a %a"
+          pp_id rn
+          pp_pterm k
+          pp_id fn
+          pp_assignment_operator op
+          pp_pterm value
+      in
+      (pp_with_paren pp) fmt (op, rn, k, fn, value)
+
+    | Passign (op, _, `Asset (an, k, fn), value) ->
+      let pp fmt (op, an, k, fn, value) =
+        Format.fprintf fmt "%a[%a].%a %a %a"
+          pp_id an
+          pp_pterm k
+          pp_id fn
+          pp_assignment_operator op
+          pp_pterm value
+      in
+      (pp_with_paren pp) fmt (op, an, k, fn, value)
+
+
+    | Prequire (k, pt, f) ->
+      let pp fmt (k, pt, f) =
+        Format.fprintf fmt "%a (%a, %a)"
+          pp_str (if k then "dorequire" else "dofailif")
+          pp_pterm pt
+          pp_pterm f
+      in
+      (pp_with_paren pp) fmt (k, pt, f)
+
+    | Ptransfer tr ->
+      let pp fmt (tr : lident transfer_t_pterm) =
+        match tr with
+        | TTsimple (x, dst)               -> Format.fprintf fmt "transfer %a to %a" pp_pterm x pp_pterm dst
+        | TTcontract (x, dst, id, t, arg) -> Format.fprintf fmt "transfer %a to %a call %a<%a>(%a)" pp_pterm x pp_pterm dst pp_id id pp_type t pp_pterm arg
+        | TTentry (x, e, arg)             -> Format.fprintf fmt "transfer %a to entry %a(%a)" pp_pterm x pp_pterm e pp_pterm arg
+        | TTself (x, id, args)            -> Format.fprintf fmt "transfer %a to entry self.%a(%a)" pp_pterm x pp_id id (pp_list "," (fun fmt (id, v) ->  Format.fprintf fmt "%a = %a" pp_id id pp_pterm v)) args
+        | TToperation x                   -> Format.fprintf fmt "transfer %a" pp_pterm x
+      in
+      (pp_with_paren pp) fmt tr
+
+    | Preturn pt ->
+      let pp fmt pt =
+        Format.fprintf fmt "return %a"
+          pp_pterm pt
+      in
+      (pp_with_paren pp) fmt pt
+
+    | Plabel id ->
+      let pp fmt id =
+        Format.fprintf fmt "assert %a" (** TODO: must be label *)
+          pp_id id
+      in
+      (pp_with_paren pp) fmt id
+
+    | Pfail pt ->
+      let pp fmt pt =
+        Format.fprintf fmt "fail (%a)"
+          pp_pterm pt
+      in
+      (pp_with_paren pp) fmt pt
+
+  (* | Piter of ('id * 'id term_gen* 'id term_gen * 'id term_gen)                 (* id * bound_min * bound_max * body *)
+     | Pwhile of ('id term_gen * 'id term_gen)                                    (* condition * body *)
+     | Pseq of 'id term_gen list                                                  (* lhs ; rhs *)
+     | Passign of (assignment_operator * type_ * 'id lvalue_gen_pterm * 'id term_gen)   (* $2 assignment_operator $3 *)
+     | Prequire of (bool * 'id term_gen * 'id term_gen)                           (* $1 ? require : failif *)
+     | Ptransfer of ('id transfer_t_pterm)
+     | Preturn of 'id term_gen
+     | Plabel of 'id
+     | Pfail of 'id term_gen *)
   in
   pp_struct_poly pp_node fmt pterm
 

@@ -888,6 +888,88 @@ let to_model (ast : A.ast) : M.model =
                Printer_tools.pp_str fmt str)) args
           (match aux with | Some _ -> "with aux" | _ -> "without aux");
         assert false
+
+      (* instructions *)
+
+      | Pfor (i, col, body)     ->
+        begin
+          let ncol =
+            let x = f col in
+            match x.node, M.get_ntype x.type_ with
+            | _, M.Tset  _ -> M.ICKset x
+            | _, M.Tlist _ -> M.ICKlist x
+            | _, M.Tmap  _ -> M.ICKmap x
+            | _, M.Tcontainer ((Tasset an, _), Collection) -> M.ICKcoll (unloc an)
+            | M.Mdotassetfield (an, _k, fn), M.Tcontainer ((Tasset _, _), (Aggregate | Partition)) -> M.ICKfield (unloc an, unloc fn, x)
+            | _ -> M.ICKview x
+          in
+          let i =
+            match i with
+            | A.FIsimple x      -> M.FIsimple x
+            | A.FIdouble (x, y) -> M.FIdouble (x, y)
+          in
+          M.Mfor (i, ncol, f body, pterm.label)
+        end
+
+      | Piter (i, a, b, body)   -> M.Miter (i, f a, f b, f body, pterm.label)
+
+      | Pwhile (c, body)        -> M.Mwhile (f c, f body, pterm.label)
+
+      | Pseq l -> M.Mseq (List.map f l)
+
+      | Passign (op, t, `Var x, e) -> begin
+          let e = f e in
+          let t = type_to_type t in
+          let assign_kind =
+            match unloc x with
+            | "operations" -> M.Aoperations
+            | _            -> M.Avar x
+          in
+          M.Massign (to_assignment_operator op, t, assign_kind, e)
+        end
+
+      | Passign (op, t, `Field (rn, o, fn), v) -> begin
+          let v = f v in
+          let t = type_to_type t in
+          let ak =
+            match o.type_ with
+            | Some (A.Trecord rn) -> M.Arecord(rn, fn, f o)
+            | _ -> M.Aasset (rn, fn, f o)
+          in
+          M.Massign (to_assignment_operator op, t, ak, v)
+        end
+
+      | Passign (op, t, `Asset (an, k, fn), v) -> begin
+          let v = f v in
+          let t = type_to_type t in
+          let ak = M.Aasset (an, fn, f k) in
+          M.Massign (to_assignment_operator op, t, ak, v)
+        end
+
+      | Prequire (b, t, e) ->
+        let cond : M.mterm =
+          if b
+          then term_not (f t)
+          else (f t)
+        in
+        let e : M.mterm = f e in
+        M.Mif (cond, fail (Invalid e), None)
+
+      | Ptransfer tr ->  begin
+          let tr =
+            match tr with
+            | TTsimple (v, d)               -> M.TKsimple (f v, f d)
+            | TTcontract (v, d, id, t, arg) -> M.TKcall (f v, unloc id, type_to_type t, f d, f arg)
+            | TTentry (v, e, arg)           -> M.TKentry (f v, f e, f arg)
+            | TTself (v, id, args)          -> M.TKself (f v, unloc id, List.map (fun (id, v) -> unloc id, f v) args)
+            | TToperation v                 -> M.TKoperation (f v)
+          in
+          M.Mtransfer tr
+        end
+
+      | Preturn e -> M.Mreturn (f e)
+      | Plabel i -> M.Mlabel i
+      | Pfail m -> M.Mfail (Invalid (f m))
     in
     M.mk_mterm node type_ ~loc:pterm.loc
   in

@@ -381,6 +381,17 @@ type 'id term_node  =
   | Pself of 'id
   | Pentrypoint of type_ * 'id * 'id term_gen * ('id term_gen) option
   | Pcallview of type_ * 'id term_gen * 'id * 'id term_gen
+  (* instructions *)
+  | Pfor of ('id for_ident_pterm * 'id term_gen * 'id term_gen)                      (* id * collection * body *)
+  | Piter of ('id * 'id term_gen* 'id term_gen * 'id term_gen)                       (* id * bound_min * bound_max * body *)
+  | Pwhile of ('id term_gen * 'id term_gen)                                          (* condition * body *)
+  | Pseq of 'id term_gen list                                                        (* lhs ; rhs *)
+  | Passign of (assignment_operator * type_ * 'id lvalue_gen_pterm * 'id term_gen)   (* $2 assignment_operator $3 *)
+  | Prequire of (bool * 'id term_gen * 'id term_gen)                                 (* $1 ? require : failif *)
+  | Ptransfer of ('id transfer_t_pterm)
+  | Preturn of 'id term_gen
+  | Plabel of 'id
+  | Pfail of 'id term_gen
 [@@deriving show {with_path = false}]
 
 and 'id term_arg =
@@ -389,6 +400,23 @@ and 'id term_arg =
   | AEffect  of ('id * operator * 'id term_gen) list
   | ASorting of bool * 'id
 [@@deriving show {with_path = false}]
+
+and 'id for_ident_pterm = FIsimple of 'id | FIdouble of 'id * 'id
+
+and 'id transfer_t_pterm =
+  | TTsimple    of 'id term_gen * 'id term_gen
+  | TTcontract  of 'id term_gen * 'id term_gen * 'id * type_ * 'id term_gen
+  | TTentry     of 'id term_gen * 'id term_gen * 'id term_gen
+  | TTself      of 'id term_gen * 'id * ('id * 'id term_gen) list
+  | TToperation of 'id term_gen
+
+and 'id lvalue_gen_pterm = [
+  | `Var   of 'id
+  | `Field of 'id * 'id term_gen * 'id
+  | `Asset of 'id * 'id term_gen * 'id
+]
+
+and lvalue_pterm = lident lvalue_gen_pterm
 
 (* -------------------------------------------------------------------- *)
 
