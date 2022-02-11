@@ -451,6 +451,11 @@ let show_entries (input : string) =
   |> parse_micheline
   |> (fun (m, _) -> Gen_extra.show_entries m)
 
+let show_entries_from_input (input : from_input) =
+  input
+  |> parse_micheline
+  |> (fun (m, _) -> Gen_extra.show_entries m)
+
 (* -------------------------------------------------------------------- *)
 
 let with_parameters input : string =
