@@ -152,7 +152,7 @@ let timezone = (('+' | '-') digit digit ':' digit digit | 'Z')
 let date     = day ('T' hour ( timezone )?)?
 let accept_transfer = "accept" blank+ "transfer"
 let refuse_transfer = "refuse" blank+ "transfer"
-let bytes    = "0x" ['0'-'9' 'a'-'f' 'A'-'F']+
+let bytes    = "0x" ['0'-'9' 'a'-'f' 'A'-'F']*
 let percent  = (digit+ | dec) "%"
 let tz_addr  = (("tz" ('1' | '2' | '3')) | "KT1") ['0'-'9' 'a'-'z' 'A'-'Z']+
 
