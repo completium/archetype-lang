@@ -1,0 +1,26 @@
+archetype unlock_chest
+
+variable res : nat = 0
+
+
+// function unlock_chest<T>(k : chest_key, c : chest, d : duration) : or<nat, bool> {
+//   return
+//     match open_chest(k, c, d) with
+//     | left(unlocked) ->
+//       match unpack<nat>(unlocked) with
+//       | some(v) -> left<T, bool>(v)
+//       | none -> fail("INVALID_RAFFLE_KEY_TYPE")
+//       end
+//     | right(v) -> right<T, bool>(v)
+//     end
+// }
+
+entry process(k : chest_key, c : chest, d : duration) {
+
+  var r : or<nat, bool> = unlock_chest<nat>(k, c, d);
+
+  match r with
+  | left(v) -> res := v
+  | right(b) -> fail("INVALID_TIMELOCK")
+  end
+}
