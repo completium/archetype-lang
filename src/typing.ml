@@ -665,6 +665,7 @@ type error_desc =
   | InvalidPackingFormat
   | InvalidRecordFieldType
   | InvalidRoleExpression
+  | InvalidSaplingEmptyStateArg
   | InvalidSecurityEntry
   | InvalidSecurityRole
   | InvalidShadowFieldAccess
@@ -887,6 +888,7 @@ let pp_error_desc fmt e =
   | InvalidPackingFormat               -> pp "Invalid packing format"
   | InvalidRecordFieldType             -> pp "Invalid record field's type"
   | InvalidRoleExpression              -> pp "Invalid role expression"
+  | InvalidSaplingEmptyStateArg        -> pp "Invalid sapling empty state argument, it must be a literal"
   | InvalidSecurityEntry               -> pp "Invalid security entry"
   | InvalidSecurityRole                -> pp "Invalid security role"
   | InvalidShadowFieldAccess           -> pp "Shadow field access in non-shadow code"
@@ -1265,10 +1267,11 @@ type opinfo = {
   op_sig     : A.type_ list;
   op_resty   : [`Self | `Ty of A.type_];
   op_restr   : Type.trestr Mint.t;
+  op_filter  : (A.type_ list -> A.pterm list -> bool) option
 }
 
-let op op_name op_const op_partial op_thety op_sig op_resty op_restr =
-  { op_name; op_const; op_partial; op_thety; op_sig; op_resty; op_restr; }
+let op ?op_filter op_name op_const op_partial op_thety op_sig op_resty op_restr =
+  { op_name; op_const; op_partial; op_thety; op_sig; op_resty; op_restr; op_filter }
 
 (* -------------------------------------------------------------------- *)
 let coreops : opinfo list =
@@ -1415,11 +1418,31 @@ let ticket_ops : opinfo list =
 
 (* -------------------------------------------------------------------- *)
 let sapling_ops : opinfo list =
-  [
-    op "sapling_empty_state" A.Csapling_empty_state `Total None [A.vtnat] (`Ty (A.Tsapling_state 0)) Mint.empty;
+  let g f : opinfo list =
+    let foldni f accu n =
+      let rec aux f accu n =
+        if n <= 0
+        then accu
+        else aux f (f accu n) (n - 1)
+      in
+      aux f accu n
+    in
+    let h (accu : opinfo list) (x : int) : opinfo list = (f x) :: accu  in
+    let max = 65535 in
+    foldni h [] max
+  in
+  let f_svu k =
     op "sapling_verify_update" A.Csapling_verify_update `Total None
-      [A.Tsapling_transaction 0; A.Tsapling_state 0] (`Ty (A.Toption (A.Ttuple [A.vtint; A.Tsapling_state 0]))) Mint.empty;
-  ]
+      [A.Tsapling_transaction k; A.Tsapling_state k] (`Ty (A.Toption (A.Ttuple [A.vtint; A.Tsapling_state k]))) Mint.empty
+  in
+  (* let op_filter (typs : A.type_ list) (args : A.pterm list) : bool =
+     match typs, args with
+     | [A.Tsapling_state a], [ { node = A.Plit {node = A.BVnat b; _} } ] -> a = Big_int.int_of_big_int b
+     | _ -> false
+     in *)
+  (* [op "sapling_empty_state" A.Csapling_empty_state `Total None [A.vtnat] (`Ty (A.Tsapling_state 0)) Mint.empty (* ~op_filter *)]
+     @ *)
+  (g f_svu)
 
 let bls_ops : opinfo list =
   [
@@ -3274,24 +3297,41 @@ let rec for_xexpr
 
         let aty = List.map (fun a -> Option.get a.A.type_) args in
 
-        let cd = List.pmap (select_mop mode.em_kind (unloc f) aty) allops in
-        let cd = List.sort (fun (i, _) (j, _) -> compare i j) cd in
-        let cd =
-          let i0 = Option.get_dfl (-1) (Option.map fst (List.ohead cd)) in
-          List.map snd (List.filter (fun (i, _) -> i = i0) cd) in
+        match unloc f with
+        | "sapling_empty_state" -> begin
+            match aty, args with
+            | [A.Tbuiltin VTnat], [ { node = A.Plit {node = A.BVnat n; _} } as arg ] ->
+              if (Big_int.lt_big_int n Big_int.zero_big_int) || (Big_int.ge_big_int n (Big_int.big_int_of_int 65536))
+              then (Env.emit_error env (loc tope, InvalidValueForMemoSize); bailout ());
+              let i = Big_int.int_of_big_int n in
+              mk_sp (Some (A.Tsapling_state i)) (A.Pcall (None, A.Cconst A.Csapling_empty_state, [A.AExpr arg]))
+            | [A.Tbuiltin VTnat], _ ->
+              Env.emit_error env (loc tope, InvalidSaplingEmptyStateArg);
+              bailout ()
+            | _ ->
+              Env.emit_error env (loc tope, NoMatchingFunction (unloc f, aty));
+              bailout ()
+          end
+        | _ -> begin
 
-        match cd with
-        | [] ->
-          Env.emit_error env (loc tope, NoMatchingFunction (unloc f, aty));
-          bailout ()
-        | _::_::_ ->
-          Env.emit_error env
-            (loc tope, MultipleMatchingFunction (unloc f, aty, List.map proj3_3 cd));
-          bailout ()
-        | [cname, _, (_, rty)] ->
-          let args = List.map (fun x -> A.AExpr x) args in
-          mk_sp (Some rty) (A.Pcall (None, A.Cconst cname, args))
+            let cd = List.pmap (select_mop mode.em_kind (unloc f) aty args) allops in
+            let cd = List.sort (fun (i, _) (j, _) -> compare i j) cd in
+            let cd =
+              let i0 = Option.get_dfl (-1) (Option.map fst (List.ohead cd)) in
+              List.map snd (List.filter (fun (i, _) -> i = i0) cd) in
 
+            match cd with
+            | [] ->
+              Env.emit_error env (loc tope, NoMatchingFunction (unloc f, aty));
+              bailout ()
+            | _::_::_ ->
+              Env.emit_error env
+                (loc tope, MultipleMatchingFunction (unloc f, aty, List.map proj3_3 cd));
+              bailout ()
+            | [cname, _, (_, rty)] ->
+              let args = List.map (fun x -> A.AExpr x) args in
+              mk_sp (Some rty) (A.Pcall (None, A.Cconst cname, args))
+          end
       end
 
     | Eappt (Foperator _, _, _) -> assert false
@@ -3926,7 +3966,7 @@ and for_asset_collection_expr mode (env : env) tope =
   in (ast, typ)
 
 (* -------------------------------------------------------------------- *)
-and select_mop em name aty (op : opinfo) =
+and select_mop em name aty (args : A.pterm list) (op : opinfo) =
   let module E = struct exception Reject end in
 
   try
@@ -3937,6 +3977,15 @@ and select_mop em name aty (op : opinfo) =
 
     if List.length aty <> List.length ety then
       raise E.Reject;
+
+    let filter =
+      match op.op_filter with
+      | Some f -> f aty args
+      | None -> false;
+    in
+
+    if filter
+    then raise E.Reject;
 
     let map = ref Mint.empty in
 
@@ -3995,7 +4044,7 @@ and for_api_call ~mode ?autoview ?capture env (the, m, args)
           List.find_map
             (fun op ->
                if Option.is_some op.op_thety then
-                 select_mop mode.em_kind (unloc m) (ty :: aty) op
+                 select_mop mode.em_kind (unloc m) (ty :: aty) args op
                else None) allops
         with
         | None ->
