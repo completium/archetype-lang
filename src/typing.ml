@@ -2423,13 +2423,13 @@ let for_type_exn ?pkey (env : env) =
       A.Tticket (doit ty)
 
     | Tsapling_state n -> begin
-        if (Big_int.lt_big_int n Big_int.zero_big_int) && (Big_int.ge_big_int n (Big_int.big_int_of_int 65536))
+        if (Big_int.lt_big_int n Big_int.zero_big_int) || (Big_int.ge_big_int n (Big_int.big_int_of_int 65536))
         then (Env.emit_error env (loc ty, InvalidValueForMemoSize));
         A.Tsapling_state (Big_int.int_of_big_int n)
       end
 
     | Tsapling_transaction n -> begin
-        if (Big_int.lt_big_int n Big_int.zero_big_int) && (Big_int.ge_big_int n (Big_int.big_int_of_int 65536))
+        if (Big_int.lt_big_int n Big_int.zero_big_int) || (Big_int.ge_big_int n (Big_int.big_int_of_int 65536))
         then (Env.emit_error env (loc ty, InvalidValueForMemoSize));
         A.Tsapling_transaction (Big_int.int_of_big_int n)
       end
