@@ -65,7 +65,7 @@ let opt_test_mode = ref false
 let opt_get_storage_values = ref false
 let opt_with_parameters = ref false
 let opt_show_entries = ref false
-
+let opt_out = ref ""
 
 let opt_property_focused = ref ""
 

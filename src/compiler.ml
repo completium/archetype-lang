@@ -37,6 +37,8 @@ let main () : unit =
       "-t", Arg.String f, "<lang> Transcode to <lang> language";
       "--target", Arg.String f, " Same as -t";
       "--list-target", Arg.Unit (fun _ -> Format.printf "target available:@\n  michelson@\n  michelson-storage@\n  whyml@\n  javascript@\n"; exit 0), " List available target languages";
+      "-o", Arg.String (fun s -> Options.opt_out := s), " Place the output into <file>";
+      "--output", Arg.String (fun s -> Options.opt_out := s), " Same as -o";
       "-pt", Arg.Set Options.opt_pt, " Generate parse tree";
       "--parse-tree", Arg.Set Options.opt_pt, " Same as -pt";
       "-ast", Arg.Set Options.opt_ast, " Generate typed ast";
@@ -128,8 +130,14 @@ let main () : unit =
                                 ochannel := Some (open_in s))) arg_usage;
 
   let output str =
-    let fmt = Format.std_formatter
-    in Format.fprintf fmt "%s" str
+    let fmt =
+      match !Options.opt_out with
+      | "" -> Format.std_formatter
+      | v ->
+        let oc = open_out v in
+        Format.formatter_of_out_channel oc
+    in
+    Format.fprintf fmt "%s" str
   in
   if (!Options.opt_trace)
   then set_margin 3000;
