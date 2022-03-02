@@ -629,6 +629,7 @@ type error_desc =
   | CollectionExpected
   | ContainerOfNonAsset
   | ContractInvariantInLocalSpec
+  | DifferentMemoSizeForSaplingVerifyUpdate of int * int
   | DivergentExpr
   | DoesNotSupportMethodCall
   | DuplicatedArgName                  of ident
@@ -850,6 +851,7 @@ let pp_error_desc fmt e =
   | CollectionExpected                 -> pp "Collection expected"
   | ContainerOfNonAsset                -> pp "The base type of a container must be an asset type"
   | ContractInvariantInLocalSpec       -> pp "Contract invariants at local levl are forbidden"
+  | DifferentMemoSizeForSaplingVerifyUpdate (n1, n2) -> pp "Different memo size for sapling_verify_update (%i <> %i)" n1 n2
   | DivergentExpr                      -> pp "Divergent expression"
   | DoesNotSupportMethodCall           -> pp "Cannot use method calls on this kind of objects"
   | DuplicatedArgName x                -> pp "Duplicated argument name: %s" x
@@ -1428,34 +1430,6 @@ let ticket_ops : opinfo list =
       (`Ty (A.Toption (A.Tticket (A.Tnamed 0)))) Mint.empty;
   ]
 
-(* -------------------------------------------------------------------- *)
-let sapling_ops : opinfo list =
-  let g f : opinfo list =
-    let foldni f accu n =
-      let rec aux f accu n =
-        if n <= 0
-        then accu
-        else aux f (f accu n) (n - 1)
-      in
-      aux f accu n
-    in
-    let h (accu : opinfo list) (x : int) : opinfo list = (f x) :: accu  in
-    let max = 65535 in
-    foldni h [] max
-  in
-  let f_svu k =
-    op "sapling_verify_update" A.Csapling_verify_update `Total None
-      [A.Tsapling_transaction k; A.Tsapling_state k] (`Ty (A.Toption (A.Ttuple [A.vtint; A.Tsapling_state k]))) Mint.empty
-  in
-  (* let op_filter (typs : A.type_ list) (args : A.pterm list) : bool =
-     match typs, args with
-     | [A.Tsapling_state a], [ { node = A.Plit {node = A.BVnat b; _} } ] -> a = Big_int.int_of_big_int b
-     | _ -> false
-     in *)
-  (* [op "sapling_empty_state" A.Csapling_empty_state `Total None [A.vtnat] (`Ty (A.Tsapling_state 0)) Mint.empty (* ~op_filter *)]
-     @ *)
-  (g f_svu)
-
 let bls_ops : opinfo list =
   [
     op "pairing_check" A.Cpairing_check `Total None
@@ -1472,7 +1446,7 @@ let timelock_ops : opinfo list =
 let allops : opinfo list =
   coreops @ optionops @ setops @ listops @ mapops @ bigmapops @
   cryptoops @ packops @ opsops @ lambdaops @
-  ticket_ops @ sapling_ops @ bls_ops @ mathops @ timelock_ops
+  ticket_ops @ bls_ops @ mathops @ timelock_ops
 
 (* -------------------------------------------------------------------- *)
 type assetdecl = {
@@ -3320,6 +3294,17 @@ let rec for_xexpr
             | [A.Tbuiltin VTnat], _ ->
               Env.emit_error env (loc tope, InvalidSaplingEmptyStateArg);
               bailout ()
+            | _ ->
+              Env.emit_error env (loc tope, NoMatchingFunction (unloc f, aty));
+              bailout ()
+          end
+
+        | "sapling_verify_update" -> begin
+            match aty, args with
+            | [A.Tsapling_transaction n1; A.Tsapling_state n2], [arg1; arg2] ->
+              if n1 <> n2
+              then (Env.emit_error env (loc tope, DifferentMemoSizeForSaplingVerifyUpdate(n1, n2)); bailout ());
+              mk_sp (Some (A.Toption (A.Ttuple [A.vtint; A.Tsapling_state n1]))) (A.Pcall (None, A.Cconst A.Csapling_verify_update, [A.AExpr arg1; A.AExpr arg2]))
             | _ ->
               Env.emit_error env (loc tope, NoMatchingFunction (unloc f, aty));
               bailout ()
