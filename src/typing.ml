@@ -415,11 +415,23 @@ end = struct
         | A.VTint, A.VTbls12_381_fr -> Some 1
         | A.VTnat, A.VTbls12_381_fr -> Some 2
 
+        | A.VTstring, A.VTchainid -> Some 1
+        | A.VTbytes, A.VTchainid -> Some 1
+
+        | A.VTbytes, A.VTbls12_381_fr -> Some 1
+        | A.VTbytes, A.VTbls12_381_g2 -> Some 1
+        | A.VTbytes, A.VTbls12_381_g1 -> Some 1
+
+        | A.VTbytes, A.VTchest -> Some 1
+        | A.VTbytes, A.VTchest_key -> Some 1
+
         (* | A.VTcurrency , A.VTnat when not for_eq -> Some 1 *)
         | A.VTduration , A.VTint when not for_eq -> Some 1
 
         | _, _ -> None
       end
+
+    | A.Tbuiltin A.VTbytes, A.Tsapling_transaction _ -> Some 1
 
     | A.Tbuiltin A.VTaddress, A.Tcontract Tbuiltin (VTunit) ->
       Some 1
@@ -5476,7 +5488,7 @@ let for_var_decl (env : env) (decl : PT.variable_decl loced) =
     | VKvariable  -> `Variable
   in
 
-  if Option.is_none pe then
+  if Option.is_none pe && (match dty with | Some A.Tsapling_state _ -> false | _ -> true) then
     Env.emit_error env (loc decl, UninitializedVar);
 
   match dty with

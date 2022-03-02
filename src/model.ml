@@ -242,6 +242,10 @@ type ('id, 'term) mterm_node  =
   | Mtimestamp        of Core.big_int
   | Mbytes            of string
   | Munit
+  | MsaplingStateEmpty of int
+  | MsaplingTransaction of int * string
+  | Mchest            of string
+  | Mchest_key        of string
   (* control expression *)
   | Mexprif           of 'term * 'term * 'term
   | Mexprmatchwith    of 'term * ('id pattern_gen * 'term) list
@@ -1113,11 +1117,15 @@ let mk_bint     x = mk_mterm (Mint x) tint
 let mk_int      x = mk_bint  (Big_int.big_int_of_int x)
 let mk_address  x = mk_mterm (Maddress x) taddress
 let unit          = mk_mterm (Munit) tunit
+let mk_sapling_state_empty n = mk_mterm (MsaplingStateEmpty n) (tsapling_state n)
+let mk_sapling_transaction n x = mk_mterm (MsaplingTransaction (n, x)) (tsapling_transaction n)
+let mk_chest    x = mk_mterm (Mchest x) tchest
+let mk_chest_key  x = mk_mterm (Mchest_key x) tchest_key
 let mk_date     x = mk_mterm (Mdate x) tdate
 let mk_duration x = mk_mterm (Mduration x) tduration
 let mk_pair   x y = mk_mterm (Mtuple [x; y]) (ttuple [x.type_; y.type_])
 (* let mk_left     x = mk_mterm (Mleft x) tdate
-let mk_right    x = mk_mterm (Mright x) tduration *)
+   let mk_right    x = mk_mterm (Mright x) tduration *)
 let mtrue         = mk_bool true
 let mfalse        = mk_bool false
 let mnow          = mk_mterm Mnow         tdate
@@ -1419,6 +1427,10 @@ let cmp_mterm_node
     | Mtimestamp v1, Mtimestamp v2                                                     -> Big_int.eq_big_int v1 v2
     | Mbytes v1, Mbytes v2                                                             -> cmp_ident v1 v2
     | Munit, Munit                                                                     -> true
+    | MsaplingStateEmpty n1, MsaplingStateEmpty n2                                     -> cmp_int n1 n2
+    | MsaplingTransaction (n1, v1), MsaplingTransaction (n2, v2)                       -> cmp_int n1 n2 && cmp_ident v1 v2
+    | Mchest v1, Mchest v2                                                             -> cmp_ident v1 v2
+    | Mchest_key v1, Mchest_key v2                                                     -> cmp_ident v1 v2
     (* control expression *)
     | Mexprif (c1, t1, e1), Mexprif (c2, t2, e2)                                       -> cmp c1 c2 && cmp t1 t2 && cmp e1 e2
     | Mexprmatchwith (e1, l1), Mexprmatchwith (e2, l2)                                 -> cmp e1 e2 && List.for_all2 (fun (p1, t1) (p2, t2) -> cmp_pattern p1 p2 && cmp t1 t2) l1 l2
@@ -1847,6 +1859,10 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mtimestamp v                   -> Mtimestamp v
   | Mbytes v                       -> Mbytes v
   | Munit                          -> Munit
+  | MsaplingStateEmpty n           -> MsaplingStateEmpty n
+  | MsaplingTransaction (n, v)     -> MsaplingTransaction (n, v)
+  | Mchest v                       -> Mchest v
+  | Mchest_key v                   -> Mchest_key v
   (* control expression *)
   | Mexprif (c, t, e)              -> Mexprif        (f c, f t, f e)
   | Mexprmatchwith (e, l)          -> Mexprmatchwith (f e, List.map (fun (p, e) -> (p, f e)) l)
@@ -2273,6 +2289,10 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mtimestamp _                          -> accu
   | Mbytes _                              -> accu
   | Munit                                 -> accu
+  | MsaplingStateEmpty _                  -> accu
+  | MsaplingTransaction _                 -> accu
+  | Mchest _                              -> accu
+  | Mchest_key _                          -> accu
   (* control expression *)
   | Mexprif (c, t, e)                     -> f (f (f accu c) t) e
   | Mexprmatchwith (e, l)                 -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
@@ -2426,7 +2446,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Msapling_verify_update (s, t)         -> f (f accu s) t
   (* bls curve *)
   | Mpairing_check x                      -> f accu x
-    (* timelock *)
+  (* timelock *)
   | Mopen_chest (x, y, z)                 -> f (f (f accu x) y) z
   (* constants *)
   | Mnow                                  -> accu
@@ -2760,6 +2780,18 @@ let fold_map_term
 
   | Munit ->
     g (Munit), accu
+
+  | MsaplingStateEmpty n ->
+    g (MsaplingStateEmpty n), accu
+
+  | MsaplingTransaction (n, v) ->
+    g (MsaplingTransaction (n, v)), accu
+
+  | Mchest v ->
+    g (Mchest v), accu
+
+  | Mchest_key v ->
+    g (Mchest_key v), accu
 
 
   (* control expression *)

@@ -1614,6 +1614,10 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mtimestamp _v      -> assert false
     | Mbytes v           -> A.ebytes v
     | Munit              -> A.etuple []
+    | MsaplingStateEmpty _ -> assert false
+    | MsaplingTransaction (_, v) -> A.ebytes v
+    | Mchest v           -> A.ebytes v
+    | Mchest_key v       -> A.ebytes v
 
 
     (* control expression *)

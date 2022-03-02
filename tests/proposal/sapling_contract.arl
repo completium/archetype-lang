@@ -1,0 +1,19 @@
+archetype test_sapling_verify_update(s : sapling_state(8))
+
+entry init (l : list<sapling_transaction(8) * option<key_hash>>) {
+  for i in l do
+    var transaction  = i[0];
+    var kh = opt_get(i[1]);
+    var r : (int * sapling_state(8)) = require_some(sapling_verify_update(transaction, s), "INVALID_TRANSACTION");
+    var balance_ = r[0];
+    if (abs(balance_) * 1utz > transferred) then begin
+      var e : contract<unit> = implicit_account(kh);
+      var op  : operation = mkoperation(0tz, e, ());
+      operations := [op]
+    end else begin
+      ()
+    end
+
+  done
+
+}

@@ -381,6 +381,10 @@ let to_ir (model : M.model) : T.ir =
     | Mduration  n      -> T.Dint (Core.duration_to_timestamp n)
     | Mtimestamp v      -> T.Dint v
     | Mbytes     b      -> T.Dbytes b
+    | MsaplingStateEmpty _ -> T.Dlist []
+    | MsaplingTransaction (_, b) -> T.Dbytes b
+    | Mchest     b      -> T.Dbytes b
+    | Mchest_key b      -> T.Dbytes b
     | Mnone             -> T.Dnone
     | Msome      v      -> T.Dsome (to_data v)
     | Mtuple     l      -> to_one_data (List.map to_data l)
@@ -686,6 +690,10 @@ let to_ir (model : M.model) : T.ir =
     | Mtimestamp v       -> T.Iconst (T.mk_type Ttimestamp, Dint v)
     | Mbytes v           -> T.Iconst (T.mk_type Tbytes, Dbytes v)
     | Munit              -> T.Iconst (T.mk_type Tunit, Dunit)
+    | MsaplingStateEmpty n -> T.Iconst (T.mk_type (Tsapling_state n), Dlist [])
+    | MsaplingTransaction (n, v) -> T.Iconst (T.mk_type (Tsapling_transaction n), Dbytes v)
+    | Mchest v           -> T.Iconst (T.mk_type Tchest, Dbytes v)
+    | Mchest_key v       -> T.Iconst (T.mk_type Tchest_key, Dbytes v)
 
     (* control expression *)
 

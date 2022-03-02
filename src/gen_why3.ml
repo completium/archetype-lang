@@ -1840,6 +1840,10 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mduration v -> Tint (Core.duration_to_timestamp v)
     | Mtimestamp v -> Tint v
     | Munit -> Tunit
+    | MsaplingStateEmpty _ -> Tint (Tools.string_to_big_int "") (* Tstring v *)
+    | MsaplingTransaction (_, v) -> Tint (Tools.string_to_big_int v) (* Tstring v *)
+    | Mchest v ->   Tint (Tools.string_to_big_int v) (* Tstring v *)
+    | Mchest_key v ->   Tint (Tools.string_to_big_int v) (* Tstring v *)
 
     (* control expression *)
 

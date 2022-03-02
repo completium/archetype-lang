@@ -408,7 +408,10 @@ let pp_mterm fmt (mt : mterm) =
     | Mtimestamp v -> pp_big_int fmt v
     | Mbytes v -> Format.fprintf fmt "0x%s" v
     | Munit -> Format.fprintf fmt "Unit"
-
+    | MsaplingStateEmpty _ -> Format.fprintf fmt "0x00"
+    | MsaplingTransaction (_, v) -> Format.fprintf fmt "0x%s" v
+    | Mchest v -> Format.fprintf fmt "0x%s" v
+    | Mchest_key v -> Format.fprintf fmt "0x%s" v
 
     (* control expression *)
 

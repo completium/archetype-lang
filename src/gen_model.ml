@@ -400,6 +400,9 @@ let to_model (ast : A.ast) : M.model =
           | A.Tbuiltin VTnat, A.Tbuiltin VTrational, _             -> M.Mnattorat v
           | A.Tbuiltin VTint, A.Tbuiltin VTrational, _             -> M.Minttorat v
           | A.Tbuiltin VTbls12_381_fr, A.Tbuiltin VTint, _         -> M.Mnattoint v
+          | A.Tbuiltin VTbytes, A.Tsapling_transaction n, { node = Mbytes v; _} -> M.MsaplingTransaction (n, v)
+          | A.Tbuiltin VTbytes, A.Tbuiltin VTchest, { node = Mbytes v; _}       -> M.Mchest v
+          | A.Tbuiltin VTbytes, A.Tbuiltin VTchest_key, { node = Mbytes v; _}   -> M.Mchest_key v
           | _ -> M.Mcast (type_to_type src, type_to_type dst, v)
         end
       | A.Pquantifer (Forall, i, (coll, typ), term)    -> M.Mforall (i, type_to_type typ, Option.map f coll, f term)

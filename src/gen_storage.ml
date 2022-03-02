@@ -73,7 +73,7 @@ let generate_storage (model : model) : model =
       | Ttrace _               -> emit_error (NoInitExprFor "trace")
       | Tstate                 -> emit_error (NoInitExprFor "state")
       | Tticket _              -> emit_error (NoInitExprFor "ticket")
-      | Tsapling_state _       -> emit_error (NoInitExprFor "sapling_state")
+      | Tsapling_state n       -> mk_mterm   (MsaplingStateEmpty n) ty
       | Tsapling_transaction _ -> emit_error (NoInitExprFor "sapling_transaction")
       | Tbuiltin Bbls12_381_fr -> mk_mterm (Mint (Big_int.zero_big_int)) ty
       | Tbuiltin Bbls12_381_g1 -> mk_mterm (Mint (Big_int.zero_big_int)) ty
