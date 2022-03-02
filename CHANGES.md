@@ -4,19 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [1.2.12] - 2022-03-02
 ### Added
-  - edo features:
-    * add new cryptographic hash functions: `sha3` and `keccak`
-    * add `total_voting_power` constant and `voting_power` operation
-    * add `level` constant
-    * add `ticket` type and associated instructions (`create_ticket`, `read_ticket`, `split_ticket`, `join_tickets`)
-    * add sapling types (`sapling_state` and `sapling_transaction`) and operations (`sapling_empty_state` and `sapling_verify_update`)
-    * add bls curves types (`bls12_381_fr`, `bls12_381_g1` and `bls12_381_g2`), arthmetic (`+`, `*`, unary `-`) and operation (`pairing_check`)
-
-## Unreleased
-### Added
-  - new features
+  - Sapling and timelock support
+  - Show entry command
+  - Output option in cli
+### Fixed
+  - Empty bytes literal
 
 ## [1.2.11] - 2021-12-14
 ### Added

@@ -1,0 +1,7 @@
+archetype sapling_empty_state
+
+variable res : sapling_state(8)
+
+entry exec () {
+  res := sapling_empty_state(8);
+}

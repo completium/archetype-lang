@@ -1,7 +1,0 @@
-archetype test_sapling_empty_state
-
-variable res : option<sapling_state(8)> = none
-
-entry exec () {
-  res := some(sapling_empty_state(8));
-}
