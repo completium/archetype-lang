@@ -301,6 +301,8 @@ let to_const = function
   | Cpairing_check  -> "pairing_check"
   (* timelock *)
   | Copen_chest     -> "open_chest"
+  (* event *)
+  | Cemit           -> "emit"
   (* vset *)
   | Cbefore         -> "before"
   | Citerated       -> "iterated"

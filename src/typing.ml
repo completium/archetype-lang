@@ -3667,7 +3667,7 @@ let rec for_xexpr
       (* TODO *)
       mk_sp
         (Option.map (fun ty -> A.Toption ty) ty)
-        (A.Pcall (None, A.Cconst A.Cunpack, [AExpr e]))
+        (A.Pcall (None, A.Cconst A.Cemit, [AExpr e]))
 
     | Enothing
     | Eunit ->

@@ -230,6 +230,8 @@ type const =
   | Cpairing_check
   (* timelock *)
   | Copen_chest
+  (* event *)
+  | Cemit
   (* vset *)
   | Cbefore
   | Citerated
