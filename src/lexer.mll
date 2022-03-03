@@ -46,11 +46,13 @@
       "dorequire"           , DOREQUIRE           ;
       "effect"              , EFFECT              ;
       "else"                , ELSE                ;
+      "emit"                , EMIT                ;
       "emptylist"           , EMPTYLIST           ;
       "end"                 , END                 ;
       "entry"               , ENTRY               ;
       "entrypoint"          , ENTRYPOINT          ;
       "enum"                , ENUM                ;
+      "event"               , EVENT               ;
       "exists"              , EXISTS              ;
       "extension"           , EXTENSION           ;
       "fail"                , FAIL                ;

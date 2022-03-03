@@ -152,6 +152,7 @@ and expr_unloc =
   | Eentrypoint    of type_t * expr * expr * expr option
   | Ecallview      of type_t * expr * expr * expr
   | Eunpack        of type_t * expr
+  | Eemit          of type_t * expr
   | Eself          of lident
   | Eany
   | Enothing
@@ -320,6 +321,7 @@ and declaration_unloc =
   | Dspecvariable  of (lident * label_exprs)
   | Dsecurity      of security
   | Dtype          of lident * type_t
+  | Devent         of lident * ((lident * type_t * expr option) loced) list
   | Dinvalid
 
 and specfun_kind =
@@ -668,6 +670,7 @@ let get_name = function
   | Denum (EKstate, _)                 -> "_state"
   | Dasset (id, _, _, _, _, _, _)      -> unloc id
   | Drecord (id, _, _, _)              -> unloc id
+  | Devent (id, _)                     -> unloc id
   | Dentry (id, _, _, _, _)            -> unloc id
   | Dtransition (id, _, _, _, _, _, _) -> unloc id
   | Dextension (id, _)                 -> unloc id

@@ -1,0 +1,17 @@
+archetype bulb(shaft : address)
+
+event even {
+  from_ : address;
+  time : date
+}
+
+event odd {
+  from_ : address;
+  time : date
+}
+
+entry e1(n : nat) {
+  if (n % 2 = 0)
+  then emit<even>({ caller; now })
+  else emit<odd>({ caller; now })
+}

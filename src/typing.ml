@@ -3660,6 +3660,15 @@ let rec for_xexpr
         (Option.map (fun ty -> A.Toption ty) ty)
         (A.Pcall (None, A.Cconst A.Cunpack, [AExpr e]))
 
+    | Eemit (ty, e) ->
+      let ty = for_type env ty in
+      let e  = for_xexpr env ~ety:A.vtbytes e in
+
+      (* TODO *)
+      mk_sp
+        (Option.map (fun ty -> A.Toption ty) ty)
+        (A.Pcall (None, A.Cconst A.Cunpack, [AExpr e]))
+
     | Enothing
     | Eunit ->
       let lit = A.mk_sp ~type_:A.vtunit ~loc:(loc tope) (A.BVunit) in
@@ -6199,6 +6208,8 @@ let group_declarations (decls : (PT.declaration list)) =
 
     | PT.Drecord infos ->
       { g with gr_records = mk infos :: g.gr_records }
+
+    | PT.Devent (_id, _) -> g
 
     | PT.Dentry infos ->
       { g with gr_acttxs = mk (`Entry infos) :: g.gr_acttxs }

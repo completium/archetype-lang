@@ -743,9 +743,16 @@ let rec pp_expr outer pos fmt a =
     (maybe_paren outer e_colon pos pp) fmt i
 
   | Eunpack (t, arg) ->
-
     let pp fmt (t, arg) =
       Format.fprintf fmt "unpack<%a>(%a)"
+        pp_type t
+        (pp_expr e_default PNone) arg
+    in
+    (maybe_paren outer e_colon pos pp) fmt (t, arg)
+
+  | Eemit (t, arg) ->
+    let pp fmt (t, arg) =
+      Format.fprintf fmt "emit<%a>(%a)"
         pp_type t
         (pp_expr e_default PNone) arg
     in
@@ -1264,6 +1271,18 @@ let rec pp_declaration fmt { pldesc = e; _ } =
       pp_id id
       (pp_do_if (List.length fields > 0) ((fun fmt -> Format.fprintf fmt " {@\n  @[%a@]@\n}" (pp_list ";@\n" pp_field)))) fields
       (pp_option (fun fmt x -> Format.fprintf fmt " as (%a)" (pp_expr e_default PNone) x)) pos
+
+  | Devent (id, fields) ->
+    let pp_efield fmt ef =
+      let (id, typ, dv) = unloc ef in
+      Format.fprintf fmt "%a : %a%a"
+        pp_id id
+        pp_type typ
+        (pp_option (pp_prefix " = " (pp_expr e_equal PRight))) dv
+    in
+    Format.fprintf fmt "event %a%a@\n"
+      pp_id id
+      (pp_do_if (List.length fields > 0) ((fun fmt -> Format.fprintf fmt " {@\n  @[%a@]@\n}" (pp_list ";@\n" pp_efield)))) fields
 
   | Dentry (id, args, props, code, exts) ->
     Format.fprintf fmt "entry%a %a%a%a"

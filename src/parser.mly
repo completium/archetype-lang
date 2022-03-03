@@ -61,6 +61,7 @@
 %token DOT
 %token EFFECT
 %token ELSE
+%token EMIT
 %token EMPTYLIST
 %token END
 %token ENTRY
@@ -69,6 +70,7 @@
 %token EOF
 %token EQUAL
 %token EQUIV
+%token EVENT
 %token EXISTS
 %token EXTENSION
 %token FAIL
@@ -289,6 +291,7 @@ declaration_r:
  | x=enum               { x }
  | x=asset              { x }
  | x=record             { x }
+ | x=event              { x }
  | x=entry              { x }
  | x=entry_simple       { x }
  | x=transition         { x }
@@ -627,6 +630,23 @@ record:
 | RECORD exts=extensions? x=ident fields=asset_fields? pos=record_position?
 { let fs = match fields with | None -> [] | Some x -> x in
   Drecord (x, fs, pos, exts) }
+
+%inline efield_r:
+| x=ident COLON y=type_t boption(REF) dv=default_value? { (x, y, dv) }
+
+%inline efield:
+| f=loc(efield_r) { f }
+
+%inline efields:
+| xs=sl(SEMI_COLON, efield) { xs }
+
+%inline event_fields:
+| xs=braced(efields) { xs }
+
+event:
+| EVENT x=ident fields=event_fields?
+{ let fs = match fields with | None -> [] | Some x -> x in
+  Devent (x, fs) }
 
 asset:
 | ASSET exts=extensions? ops=bracket(asset_operation)? x=ident opts=asset_options?
@@ -1064,6 +1084,9 @@ simple_expr_r:
 
  | UNPACK LESS t=type_t GREATER x=paren(expr)
      { Eunpack (t, x) }
+
+ | EMIT LESS t=type_t GREATER x=paren(expr)
+     { Eemit (t, x) }
 
  | SELF DOT x=ident
      { Eself x }
