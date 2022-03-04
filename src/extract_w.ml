@@ -395,6 +395,7 @@ let extract (m : M.model) (w3s : why3session) =
     | Denum _e   -> accu
     | Dasset _a  -> accu
     | Drecord _r -> accu
+    | Devent  _r -> accu
   in
 
   let for_function accu (function__ : M.function__) =

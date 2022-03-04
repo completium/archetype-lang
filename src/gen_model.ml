@@ -92,7 +92,7 @@ let to_model (ast : A.ast) : M.model =
       | A.Tasset id              -> M.Tasset id
       | A.Trecord id             -> M.Trecord id
       | A.Tenum id               -> M.Tenum id
-      | A.Tevent _id              -> assert false (*TODO: M.Tevent id*)
+      | A.Tevent id              -> M.Tevent id
       | A.Tbuiltin b             -> M.Tbuiltin (vtyp_to_btyp b)
       | A.Tcontainer (t, c)      -> M.Tcontainer (type_to_type t, to_container c)
       | A.Tset t                 -> M.Tset (type_to_type t)
@@ -942,7 +942,7 @@ let to_model (ast : A.ast) : M.model =
     M.Dasset r
   in
 
-  let process_record (r : A.record) : M.decl_node =
+  let process_record (r : A.record) : M.record =
     let rec for_pos (pos : A.lident A.position) : M.position =
       match pos with
       | A.Pleaf id -> M.Ptuple [unloc id]
@@ -977,7 +977,7 @@ let to_model (ast : A.ast) : M.model =
           let typ = Option.get (Option.map type_to_type x.typ) in
           M.mk_record_field x.name typ ~loc:x.loc) r.fields
     in
-    M.Drecord (M.mk_record r.name ~fields:fs ~pos ~loc:r.loc)
+    M.mk_record r.name ~fields:fs ~pos ~loc:r.loc
   in
 
   let rec to_instruction (env : env) (instr : A.instruction) : M.mterm =
@@ -1517,9 +1517,9 @@ let to_model (ast : A.ast) : M.model =
   let process_decl_ (env : env) = function
     | A.Dvariable v -> process_var env v
     | A.Dasset    a -> process_asset env a
-    | A.Drecord   r -> process_record r
+    | A.Drecord   r -> M.Drecord (process_record r)
     | A.Denum     e -> process_enum env e
-    | A.Devent    e -> process_record e
+    | A.Devent    e -> M.Devent (process_record e)
   in
 
   let process_fun_ (env : env) = function

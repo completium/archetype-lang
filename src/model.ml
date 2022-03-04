@@ -72,6 +72,7 @@ type ntype =
   | Tmap of bool * type_ * type_
   | Tor of type_ * type_
   | Trecord of lident
+  | Tevent of lident
   | Tlambda of type_ * type_
   | Tunit
   | Tstorage
@@ -923,6 +924,7 @@ type 'id decl_node_gen =
   | Denum of 'id enum_gen
   | Dasset of 'id asset_gen
   | Drecord of 'id record_gen
+  | Devent of 'id record_gen
 [@@deriving show {with_path = false}]
 
 type decl_node = lident decl_node_gen
@@ -1077,6 +1079,7 @@ let tenum v        = mktype (Tenum v)
 let tstate         = mktype (Tstate)
 let tstorage       = mktype (Tstorage)
 let trecord rn     = mktype (Trecord rn)
+let tevent e       = mktype (Tevent e)
 let toption t      = mktype (Toption t)
 let tset t         = mktype (Tset t)
 let tlist t        = mktype (Tlist t)
@@ -1259,6 +1262,7 @@ let rec cmp_ntype
   | Tmap (b1, k1, v1), Tmap (b2, k2, v2)     -> b1 = b2 && cmp_type k1 k2 && cmp_type v1 v2
   | Tor (l1, r1), Tor (l2, r2)               -> cmp_type l1 l2 && cmp_type r1 r2
   | Trecord i1, Trecord i2                   -> cmp_lident i1 i2
+  | Tevent e1, Tevent e2                     -> cmp_lident e1 e2
   | Tlambda (a1, r1), Tlambda (a2, r2)       -> cmp_type a1 a2 && cmp_type r1 r2
   | Tunit, Tunit                             -> true
   | Tstorage, Tstorage                       -> true
@@ -1742,6 +1746,7 @@ let map_ptyp (f : type_ -> type_) (nt : ntype) : ntype =
   | Tmap (b, k, v)    -> Tmap (b, k, f v)
   | Tor (l, r)        -> Tor (f l, f r)
   | Trecord id        -> Trecord id
+  | Tevent id         -> Tevent id
   | Tlambda (a, r)    -> Tlambda (f a, f r)
   | Tunit             -> Tunit
   | Tstorage          -> Tstorage
@@ -4003,6 +4008,7 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
     | Denum e     -> Denum     (for_enum e)
     | Dasset a    -> Dasset    (for_asset a)
     | Drecord r   -> Drecord   (for_record r)
+    | Devent e    -> Devent    (for_record e)
   in
   let for_storage_item (si : storage_item) : storage_item =
     let for_model_type (mt : model_type) : model_type =
@@ -4196,6 +4202,7 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
       | Tmap (b, k, v)    -> Tmap (b, k, for_type v)
       | Tor (l, r)        -> Tor (for_type l, for_type r)
       | Trecord id        -> Trecord (g KIrecordname id)
+      | Tevent id         -> Tevent (g KIrecordname id)
       | Tlambda (a, r)    -> Tlambda (for_type a, for_type r)
       | Tunit             -> nt
       | Tstorage          -> nt
@@ -4245,6 +4252,7 @@ module Utils : sig
   val get_enum_values                    : model -> ident -> ident list
   val get_asset                          : model -> ident -> asset
   val get_record                         : model -> ident -> record
+  val get_event                          : model -> ident -> record
   val get_storage                        : model -> storage
   val get_asset_field                    : model -> (ident * ident) -> (ident * type_ * mterm option)
   val get_asset_key                      : model -> ident -> (ident * type_)
@@ -4413,6 +4421,15 @@ end = struct
     | Drecord r -> r
     | _  -> emit_error NotFound
 
+  let is_event (d : decl_node) : bool =
+    match d with
+    | Devent _ -> true
+    | _         -> false
+
+  let dest_event = function
+    | Devent r -> r
+    | _  -> emit_error NotFound
+
   let is_asset (d : decl_node) : bool =
     match d with
     | Dasset _ -> true
@@ -4440,10 +4457,11 @@ end = struct
     | Dvar v -> v
     | _ -> emit_error NotFound
 
-  let get_vars m    = m.decls |> List.filter is_var    |> List.map dest_var
-  let get_enums m   = m.decls |> List.filter is_enum   |> List.map dest_enum
-  let get_assets m  = m.decls |> List.filter is_asset  |> List.map dest_asset
+  let get_vars    m = m.decls |> List.filter is_var    |> List.map dest_var
+  let get_enums   m = m.decls |> List.filter is_enum   |> List.map dest_enum
+  let get_assets  m = m.decls |> List.filter is_asset  |> List.map dest_asset
   let get_records m = m.decls |> List.filter is_record |> List.map dest_record
+  let get_events  m = m.decls |> List.filter is_event  |> List.map dest_event
 
   let get_var   m id : var   = get_vars m   |> List.find (fun (x : var)   -> cmp_ident id (unloc x.name))
   let get_enum  m id : enum  = get_enums m  |> List.find (fun (x : enum)  -> cmp_ident id (unloc x.name))
@@ -4453,6 +4471,7 @@ end = struct
                                                        |> List.map (fun (v : enum_item) -> unloc (v.name))
   let get_asset  m id : asset = get_assets m |> List.find (fun (x : asset) -> cmp_ident id (unloc x.name))
   let get_record m id : record = get_records m |> List.find (fun (x : record) -> cmp_ident id (unloc x.name))
+  let get_event  m id : record = get_events m |> List.find (fun (x : record) -> cmp_ident id (unloc x.name))
 
   let get_containers_internal f m : (ident * ident * type_) list =
     get_assets m |> List.fold_left (fun acc (asset : asset) ->
@@ -5494,6 +5513,7 @@ end = struct
       | Denum e     -> for_enum   accu e |> for_decl d
       | Dasset a    -> for_asset  accu a |> for_decl d
       | Drecord r   -> for_record accu r |> for_decl d
+      | Devent e    -> for_record accu e |> for_decl d
     in
     let for_storage_item accu (si : storage_item) =
       accu

@@ -163,6 +163,7 @@ let rec map_mtype m (t : M.type_) : loc_typ =
       | M.Tlist t                                  -> Tylist (map_mtype m t)
       | M.Tcontract _                              -> Tycontract
       | M.Trecord id                               -> Tyrecord (map_lident id)
+      | M.Tevent id                                -> Tyrecord (map_lident id)
       | M.Tor (a, b)                               -> Tyor (map_mtype m a, map_mtype m b)
       | M.Tlambda (a, b)                           -> Tylambda (map_mtype m a, map_mtype m b)
 
@@ -3248,6 +3249,7 @@ type desc_container =
   | Dasset  of M.asset
   | Denum   of M.enum
   | Drecord of M.record
+  | Devent  of M.record
 [@@deriving show {with_path = false}]
 
 let pp_desc_container fmt dc =
@@ -3259,6 +3261,7 @@ let pp_desc_container fmt dc =
   | Dasset  a -> Format.fprintf fmt "%s" (unloc a.name)
   | Denum   e -> Format.fprintf fmt "%s" (unloc e.name)
   | Drecord r -> Format.fprintf fmt "%s" (unloc r.name)
+  | Devent r -> Format.fprintf fmt "%s" (unloc r.name)
 
 let cmp_desc_container (d1 : desc_container) (d2 : desc_container) : bool =
   match d1, d2 with
@@ -3268,6 +3271,7 @@ let cmp_desc_container (d1 : desc_container) (d2 : desc_container) : bool =
   | Dasset  a1, Dasset  a2 -> M.cmp_ident (unloc a1.name) (unloc a2.name)
   | Denum   e1, Denum   e2 -> M.cmp_ident (unloc e1.name) (unloc e2.name)
   | Drecord r1, Drecord r2 -> M.cmp_ident (unloc r1.name) (unloc r2.name)
+  | Devent  e1, Devent  e2 -> M.cmp_ident (unloc e1.name) (unloc e2.name)
   | _ -> false
 
 let mk_decls (model : M.model) =
@@ -3300,6 +3304,7 @@ let mk_decls (model : M.model) =
     | Denum    e -> push (Denum e)   accu
     | Dasset   a -> push (Dasset a)  accu
     | Drecord  r -> push (Drecord r) accu
+    | Devent   r -> push (Devent r) accu
   in
 
   let desc_containers = M.Utils.get_all_gen_mterm_type (M.Utils.get_all_type_for_mterm for_type) for_type for_decl model in
@@ -3314,6 +3319,7 @@ let mk_decls (model : M.model) =
       | Dasset  _a -> [](* [mk_asset     model a] *)
       | Denum   _e -> [](* [mk_enum      model e] *)
       | Drecord r -> [mk_record    model r]
+      | Devent  r -> [mk_record    model r]
     in
     accu @ ds
   in

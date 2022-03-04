@@ -79,6 +79,8 @@ let rec pp_type fmt t =
         pp_type r
     | Trecord id ->
       Format.fprintf fmt "%a" pp_id id
+    | Tevent id ->
+      Format.fprintf fmt "%a" pp_id id
     | Tlambda (a, r) ->
       Format.fprintf fmt "(%a -> %a)" pp_type a pp_type r
     | Tunit ->
@@ -1727,6 +1729,7 @@ let pp_decl fmt = function
   | Denum e -> pp_enum fmt e
   | Dasset a -> pp_asset fmt a
   | Drecord r -> pp_record fmt r
+  | Devent r -> pp_record fmt r
 
 let pp_storage_item fmt (si : storage_item) =
   Format.fprintf fmt "%a : %a%a"

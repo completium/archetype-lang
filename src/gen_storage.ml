@@ -63,6 +63,7 @@ let generate_storage (model : model) : model =
       | Tmap (b, _, _)         -> mk_mterm   (Mlitmap (b, [])) ty
       | Tor _                  -> emit_error (NoInitExprFor "or")
       | Trecord _              -> emit_error (NoInitExprFor "record")
+      | Tevent _               -> emit_error (NoInitExprFor "event")
       | Tlambda _              -> emit_error (NoInitExprFor "lambda")
       | Tunit                  -> emit_error (NoInitExprFor "unit")
       | Tstorage               -> emit_error (NoInitExprFor "storage")
@@ -100,6 +101,7 @@ let generate_storage (model : model) : model =
     | Denum e     -> state_to_storage_items e
     | Dasset a    -> [asset_to_storage_items a]
     | Drecord _   -> []
+    | Devent  _   -> []
   in
 
   let storage = List.map process_storage_item model.decls |> List.flatten in

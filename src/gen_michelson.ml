@@ -99,6 +99,38 @@ let to_ir (model : M.model) : T.ir =
         end
     in
 
+    let process_record (f : M.model -> ident -> M.record) (id : M.lident)  =
+      let r = f model (unloc id) in
+      let lt = List.map (fun (x : M.record_field) ->
+          match snd x.type_ with
+          | Some _ -> x.type_
+          | None -> fst x.type_, Some (dumloc (mk_fannot (unloc x.name)))) r.fields in
+      match r.pos with
+      | Pnode [] -> T.mk_type ?annotation (to_one_type (List.map to_type lt) |> fun x -> x.node)
+      | p -> begin
+          let ltt = ref lt in
+          let rec aux p =
+            match p with
+            | M.Ptuple ids -> begin
+                let length = List.length ids in
+                let ll0, ll1 = List.cut length !ltt in
+                ltt := ll1;
+                let ll0 : M.type_ list = List.map2 (fun id (x : M.type_) ->
+                    let annot =
+                      match id with
+                      | "_" -> None
+                      | _ -> Some (dumloc ("%" ^ id))
+                    in
+                    M.mktype ?annot (M.get_ntype x)) ids ll0 in
+                to_one_type (List.map to_type ll0)
+              end
+            | M.Pnode l -> to_one_type (List.map aux l)
+          in
+          let res = aux p in
+          { res with annotation = Option.map unloc (M.get_atype t) }
+        end
+    in
+
     match M.get_ntype t with
     | Tasset _   -> assert false
     | Tenum _    -> T.mk_type ?annotation T.Tint
@@ -135,37 +167,8 @@ let to_ir (model : M.model) : T.ir =
     | Tset t         -> T.mk_type ?annotation (T.Tset (to_type t))
     | Tmap (b, k, v) -> T.mk_type ?annotation (if b then T.Tbig_map (to_type k, to_type v) else T.Tmap (to_type k, to_type v))
     | Tor (l, r)     -> T.mk_type ?annotation (T.Tor (to_type l, to_type r))
-    | Trecord id     -> begin
-        let r = M.Utils.get_record model (unloc id) in
-        let lt = List.map (fun (x : M.record_field) ->
-            match snd x.type_ with
-            | Some _ -> x.type_
-            | None -> fst x.type_, Some (dumloc (mk_fannot (unloc x.name)))) r.fields in
-        match r.pos with
-        | Pnode [] -> T.mk_type ?annotation (to_one_type (List.map to_type lt) |> fun x -> x.node)
-        | p -> begin
-            let ltt = ref lt in
-            let rec aux p =
-              match p with
-              | M.Ptuple ids -> begin
-                  let length = List.length ids in
-                  let ll0, ll1 = List.cut length !ltt in
-                  ltt := ll1;
-                  let ll0 : M.type_ list = List.map2 (fun id (x : M.type_) ->
-                      let annot =
-                        match id with
-                        | "_" -> None
-                        | _ -> Some (dumloc ("%" ^ id))
-                      in
-                      M.mktype ?annot (M.get_ntype x)) ids ll0 in
-                  to_one_type (List.map to_type ll0)
-                end
-              | M.Pnode l -> to_one_type (List.map aux l)
-            in
-            let res = aux p in
-            { res with annotation = Option.map unloc (M.get_atype t) }
-          end
-      end
+    | Trecord id     -> process_record M.Utils.get_record id
+    | Tevent id      -> process_record M.Utils.get_event id
     | Tlambda (a, r) -> T.mk_type ?annotation (Tlambda (to_type a, to_type r))
     | Tunit          -> T.mk_type ?annotation (T.Tunit)
     | Toperation     -> T.mk_type ?annotation (T.Toperation)

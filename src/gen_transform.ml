@@ -84,6 +84,7 @@ let prune_formula (model : model) : model =
     | Dasset dasset   -> Dasset {dasset with invariants = [] }
     | Denum denum     -> Denum  {denum with values = List.map (fun (ei : enum_item) -> {ei with invariants = []}) denum.values }
     | Drecord drecord -> Drecord drecord
+    | Devent drecord  -> Devent drecord
   in
   let prune_function_ (f : function__) : function__ = { f with spec = None; }
   in

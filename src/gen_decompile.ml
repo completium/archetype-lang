@@ -1489,6 +1489,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Tmap (_, kt, vt)       -> A.mk_tmap (f kt) (f vt)
     | Tor (lt, rt)           -> A.mk_tor (f lt) (f rt)
     | Trecord id             -> A.tref (unloc id)
+    | Tevent id              -> A.tref (unloc id)
     | Tlambda _              -> assert false
     | Tunit                  -> A.tunit
     | Tstorage               -> assert false
