@@ -1205,6 +1205,11 @@ let skip    = seq []
 
 let operations = mk_mterm Moperations (tlist toperation)
 
+let mk_entrypoint (ty: type_) (entry_name: lident) (addr : mterm) (error_msg : mterm option) : mterm =
+  mk_mterm (Mentrypoint (ty, entry_name, addr, error_msg)) (tcontract ty)
+let mk_mkoperation a b c = mk_mterm (Mmkoperation (a, b, c)) tunit
+let mk_transfer_op op = mk_mterm (Mtransfer (TKoperation op)) tunit
+
 (* -------------------------------------------------------------------- *)
 
 let cmp_ident (i1 : ident) (i2 : ident) : bool = String.equal i1 i2

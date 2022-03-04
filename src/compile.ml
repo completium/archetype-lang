@@ -235,6 +235,7 @@ let toolchain ?(js=false) model =
   |> replace_col_by_key_for_ckfield
   |> move_partition_init_asset
   |> remove_enum
+  |> process_event
   |> replace_assignfield_by_update
   |> remove_add_update
   |> merge_update
@@ -292,6 +293,7 @@ let generate_target model =
     |> process_multi_keys
     |> replace_assignfield_by_update
     |> remove_enum
+    |> process_event
     |> remove_add_update ~isformula:true
     |> remove_container_op_in_update
     |> merge_update

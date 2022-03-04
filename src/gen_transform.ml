@@ -5682,3 +5682,24 @@ let patch_fa2 (model : model) : model =
   { model with
     functions = List.map for_function__ model.functions;
   }
+
+let process_event (model : model) : model =
+  let rec aux ctx (mt : mterm) =
+    match mt.node with
+    | Memit (e, value) -> begin
+        let op =
+          let zerotz = mk_tez 0 in
+          let entry : mterm =
+            let addr : mterm = mk_address !Options.opt_event_contract in
+            let entry_name = dumloc "%event" in
+            let error_msg = Some (mk_string "BAD_EVENT_CONTRACT") in
+            mk_entrypoint tbytes entry_name addr error_msg
+          in
+          let data = mk_pack (mk_tuple [mk_string (unloc e); value]) in
+          mk_mkoperation zerotz entry data
+        in
+        mk_transfer_op op
+      end
+    | _ -> map_mterm (aux ctx) mt
+  in
+  map_mterm_model aux model
