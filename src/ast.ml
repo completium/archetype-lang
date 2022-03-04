@@ -52,6 +52,7 @@ type ptyp =
   | Tnamed of int
   | Tasset of lident
   | Trecord of lident
+  | Tevent of lident
   | Tenum of lident
   | Tbuiltin of vtyp
   | Tcontainer of type_ * container
@@ -437,6 +438,7 @@ and 'id instruction_node =
   | Iassign of (assignment_operator * type_ * 'id lvalue_gen * 'id term_gen)         (* $2 assignment_operator $3 *)
   | Irequire of (bool * 'id term_gen * 'id term_gen)                                               (* $1 ? require : failif *)
   | Itransfer of ('id transfer_t)
+  | Iemit of 'id * 'id term_gen
   | Icall of ('id term_gen option * 'id call_kind * ('id term_arg) list)
   | Ireturn of 'id term_gen
   | Ilabel of 'id
@@ -732,6 +734,7 @@ type 'id decl_ =
   | Dasset    of 'id asset_struct
   | Drecord   of 'id record_struct
   | Denum     of 'id enum_struct
+  | Devent    of 'id record_struct
 [@@deriving show {with_path = false}]
 
 type 'id fun_ =

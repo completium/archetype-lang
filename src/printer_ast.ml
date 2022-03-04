@@ -54,6 +54,8 @@ let rec pp_ptyp fmt (t : ptyp) =
     Format.fprintf fmt "%a" pp_id i
   | Tenum en ->
     Format.fprintf fmt "%a" pp_id en
+  | Tevent ev ->
+    Format.fprintf fmt "%a" pp_id ev
   | Tbuiltin b -> pp_vtyp fmt b
   | Tcontainer (t, c) ->
     Format.fprintf fmt "%a<%a>"
@@ -851,7 +853,11 @@ let rec pp_instruction fmt (i : instruction) =
         | TToperation x                   -> Format.fprintf fmt "transfer %a" pp_pterm x
       in
       (pp_with_paren pp) fmt tr
-
+    | Iemit (e, v) ->
+      let pp fmt (e, v) =
+        Format.fprintf fmt "emit<%a>(%a)" pp_id e pp_pterm v
+      in
+      (pp_with_paren pp) fmt (e, v)
     | Icall (meth, kind, args) ->
       let pp fmt (meth, kind, args) =
         Format.fprintf fmt "%a%a(%a)"
@@ -1110,6 +1116,12 @@ let pp_record fmt (r : record) =
     (pp_list "@\n" pp_field) r.fields
     (pp_position pp_id) r.pos
 
+let pp_event fmt (r : record) =
+  Format.fprintf fmt "event %a {@\n  @[%a@]@\n}@\nas %a@\n"
+    pp_id r.name
+    (pp_list "@\n" pp_field) r.fields
+    (pp_position pp_id) r.pos
+
 let pp_enum_item fmt (ei : lident enum_item_struct) =
   Format.fprintf fmt "| %a%a%a%a"
     pp_id ei.name
@@ -1224,6 +1236,7 @@ let pp_decl_ fmt = function
   | Dasset    a -> pp_asset fmt a
   | Drecord   r -> pp_record fmt r
   | Denum     e -> pp_enum fmt e
+  | Devent    e -> pp_event fmt e
 
 let pp_fun_ fmt = function
   | Ffunction f    -> pp_function fmt f

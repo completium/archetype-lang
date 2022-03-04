@@ -631,22 +631,10 @@ record:
 { let fs = match fields with | None -> [] | Some x -> x in
   Drecord (x, fs, pos, exts) }
 
-%inline efield_r:
-| x=ident COLON y=type_t boption(REF) dv=default_value? { (x, y, dv) }
-
-%inline efield:
-| f=loc(efield_r) { f }
-
-%inline efields:
-| xs=sl(SEMI_COLON, efield) { xs }
-
-%inline event_fields:
-| xs=braced(efields) { xs }
-
 event:
-| EVENT x=ident fields=event_fields?
+| EVENT exts=extensions? x=ident fields=asset_fields? pos=record_position?
 { let fs = match fields with | None -> [] | Some x -> x in
-  Devent (x, fs) }
+  Devent (x, fs, pos, exts) }
 
 asset:
 | ASSET exts=extensions? ops=bracket(asset_operation)? x=ident opts=asset_options?

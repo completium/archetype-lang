@@ -1,4 +1,4 @@
-archetype test_event
+archetype event_dup
 
 event even {
   from_ : address;

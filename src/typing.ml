@@ -133,6 +133,7 @@ end = struct
       | A.Tasset               _ -> false
       | A.Trecord              _ -> true (* all record fields got a michelson type *)
       | A.Tenum                _ -> true
+      | A.Tevent               _ -> true (* all record fields got a michelson type *)
       | A.Tbuiltin VTunit        -> true
       | A.Tbuiltin VTbool        -> true
       | A.Tbuiltin VTnat         -> true
@@ -176,6 +177,7 @@ end = struct
       | A.Tasset               _ -> false
       | A.Trecord              _ -> true (* TODO: Check if first field is comparable *)
       | A.Tenum                _ -> true
+      | A.Tevent               _ -> true (* TODO: Check if first field is comparable *)
       | A.Tbuiltin VTunit        -> true
       | A.Tbuiltin VTbool        -> true
       | A.Tbuiltin VTnat         -> true
@@ -219,6 +221,7 @@ end = struct
       | A.Tasset               _ -> false
       | A.Trecord              _ -> true
       | A.Tenum                _ -> true
+      | A.Tevent               _ -> true
       | A.Tbuiltin VTunit        -> true
       | A.Tbuiltin VTbool        -> true
       | A.Tbuiltin VTnat         -> true
@@ -262,6 +265,7 @@ end = struct
       | A.Tasset               _ -> false
       | A.Trecord              _ -> true (* TODO: Check if all fields are storable *)
       | A.Tenum                _ -> true
+      | A.Tevent               _ -> true (* TODO: Check if all fields are storable *)
       | A.Tbuiltin VTunit        -> true
       | A.Tbuiltin VTbool        -> true
       | A.Tbuiltin VTnat         -> true
@@ -305,6 +309,7 @@ end = struct
       | A.Tasset               _ -> false
       | A.Trecord              _ -> true (* TODO: check if all fields are packable *)
       | A.Tenum                _ -> true
+      | A.Tevent               _ -> true (* TODO: check if all fields are packable *)
       | A.Tbuiltin VTunit        -> true
       | A.Tbuiltin VTbool        -> true
       | A.Tbuiltin VTnat         -> true
@@ -348,6 +353,7 @@ end = struct
       | A.Tasset        _        -> false
       | A.Trecord       _        -> true (* TODO: check if all fields are typed for big map value *)
       | A.Tenum         _        -> true
+      | A.Tevent        _        -> true (* TODO: check if all fields are typed for big map value *)
       | A.Tbuiltin VTunit        -> true
       | A.Tbuiltin VTbool        -> true
       | A.Tbuiltin VTnat         -> true
@@ -568,6 +574,7 @@ end = struct
       | Tasset    _
       | Trecord   _
       | Tenum     _
+      | Tevent    _
       | Toperation
       | Ttrace    _
       | Tsapling_state _
@@ -660,6 +667,7 @@ type error_desc =
   | InvalidExpression
   | InvalidExpressionForEffect
   | InvalidExprressionForTupleAccess
+  | InvalidEventType
   | InvalidFailIdType                  of ident * A.ptyp * A.ptyp
   | InvalidFieldsCountInAssetOrRecordLiteral
   | InvalidFoldInit                    of A.ptyp
@@ -883,6 +891,7 @@ let pp_error_desc fmt e =
   | InvalidExpression                  -> pp "Invalid expression"
   | InvalidExpressionForEffect         -> pp "Invalid expression for effect"
   | InvalidExprressionForTupleAccess   -> pp "Invalid expression for tuple access, only int literals are allowed"
+  | InvalidEventType                   -> pp "Invalid type, only event type are allowed"
   | InvalidFailIdType (id, e, _)       -> pp "'%s' type, expected '%a'" id Printer_ast.pp_ptyp e
   | InvalidFieldsCountInAssetOrRecordLiteral
     -> pp "Invalid fields count in asset or record literal"
@@ -1174,6 +1183,7 @@ type groups = {
   gr_enums       : (PT.lident * PT.enum_decl)   loced list;
   gr_assets      : PT.asset_decl                loced list;
   gr_records     : PT.record_decl               loced list;
+  gr_events      : PT.record_decl               loced list;
   gr_vars        : PT.variable_decl             loced list;
   gr_funs        : PT.s_function                loced list;
   gr_acttxs      : acttx                        loced list;
@@ -1631,10 +1641,11 @@ module Env : sig
     | `Definition  of definitiondecl
     | `Asset       of assetdecl
     | `Record      of recorddecl
+    | `Event       of recorddecl
     | `Entry       of t tentrydecl
     | `Function    of t fundecl
     | `Predicate   of preddecl
-    | `Field       of ident * [`Asset | `Record]
+    | `Field       of ident * [`Asset | `Record | `Event]
     | `Context     of assetdecl * ident option
   ]
 
@@ -1716,6 +1727,14 @@ module Env : sig
     val push    : t -> recorddecl -> t
   end
 
+  module Event : sig
+    val lookup  : t -> ident -> recorddecl option
+    val get     : t -> ident -> recorddecl
+    val exists  : t -> ident -> bool
+    val byfield : t -> ident -> (recorddecl * rfielddecl) option
+    val push    : t -> recorddecl -> t
+  end
+
   module Asset : sig
     val lookup  : t -> ident -> assetdecl option
     val get     : t -> ident -> assetdecl
@@ -1750,10 +1769,11 @@ end = struct
     | `Definition  of definitiondecl
     | `Asset       of assetdecl
     | `Record      of recorddecl
+    | `Event       of recorddecl
     | `Entry       of t tentrydecl
     | `Function    of t fundecl
     | `Predicate   of preddecl
-    | `Field       of ident * [`Asset | `Record]
+    | `Field       of ident * [`Asset | `Record | `Event ]
     | `Context     of assetdecl * ident option
   ]
 
@@ -1845,6 +1865,7 @@ end = struct
       | `Asset decl   -> Some (A.Tasset decl.as_name)
       | `State decl   -> Some (A.Tenum decl.sd_name)
       | `Record decl  -> Some (A.Trecord decl.rd_name)
+      | `Event  decl  -> Some (A.Tevent decl.rd_name)
       | _             -> None
 
     let lookup (env : t) (name : ident) =
@@ -2060,6 +2081,36 @@ end = struct
         env decl.rd_fields
   end
 
+  module Event = struct
+    let proj = function `Event x -> Some x | _ -> None
+
+    let lookup (env : t) (name : ident) =
+      lookup_gen proj env name
+
+    let exists (env : t) (name : ident) =
+      Option.is_some (lookup env name)
+
+    let get (env : t) (name : ident) =
+      Option.get (lookup env name)
+
+    let byfield (env : t) (fname : ident) =
+      Option.bind
+        (function
+          | `Field (nm, `Event) ->
+            let decl  = get env nm in
+            let field = get_rfield fname decl in
+            Some (decl, Option.get field)
+          | _ -> None)
+        (lookup_entry env fname)
+
+    let push (env : t) ({ rd_name = nm } as decl : recorddecl) : t =
+      let env = push env ~loc:(loc nm) (unloc nm) (`Event decl) in
+      List.fold_left
+        (fun env fd -> push env ~loc:(loc fd.rfd_name)
+            (unloc fd.rfd_name) (`Field (unloc nm, `Event)))
+        env decl.rd_fields
+  end
+
   module Tentry = struct
     let proj = function `Entry x -> Some x | _ -> None
 
@@ -2252,6 +2303,7 @@ let rec valid_var_or_arg_type (ty : A.ptyp) =
   | Tasset    _     -> false
   | Trecord   _     -> true
   | Tenum     _     -> true
+  | Tevent    _     -> true
   | Tbuiltin  _     -> true
   | Tset      ty    -> valid_var_or_arg_type ty
   | Tlist     ty    -> valid_var_or_arg_type ty
@@ -2867,6 +2919,10 @@ let rec for_xexpr
               let record = Env.Record.get env (unloc record) in
               List.map (fun fd -> fd.rfd_type) record.rd_fields
 
+            | Some (A.Tevent record) ->
+              let event = Env.Event.get env (unloc record) in
+              List.map (fun fd -> fd.rfd_type) event.rd_fields
+
             | _ ->
               Env.emit_error env (loc tope, CannotInferAnonAssetOrRecord);
               bailout () in
@@ -2903,6 +2959,11 @@ let rec for_xexpr
                         Some ((Some (`Record (unloc record.rd_name), fd.rfd_type), [e]))
                       end
 
+                    | None when Option.is_some (Env.Event.byfield env fname) -> begin
+                        let record, fd = Option.get (Env.Event.byfield env fname) in
+                        Some ((Some (`Event (unloc record.rd_name), fd.rfd_type), [e]))
+                      end
+
                     | None ->
                       Env.emit_error env (loc tope, UnknownFieldName fname);
                       Some (None, [e])
@@ -2933,7 +2994,7 @@ let rec for_xexpr
 
             | _ :: _ :: _ ->
               let err =
-                let for1 = function `Record x | `Asset x -> x in
+                let for1 = function `Record x | `Event x | `Asset x -> x in
                 MixedFieldNamesInAssetOrRecordLiteral (List.map for1 sources) in
               Env.emit_error env (loc tope, err); bailout ()
 
@@ -2955,6 +3016,14 @@ let rec for_xexpr
                       (fun fd -> fd.rfd_name, fd.rfd_type, fd.rfd_dfl)
                       record.rd_fields
                   in (sfields, A.Trecord record.rd_name)
+
+                | `Event rname ->
+                  let record = Env.Event.get env rname in
+                  let sfields =
+                    List.map
+                      (fun fd -> fd.rfd_name, fd.rfd_type, fd.rfd_dfl)
+                      record.rd_fields
+                  in (sfields, A.Tevent record.rd_name)
               in
 
               let fields =
@@ -2983,6 +3052,13 @@ let rec for_xexpr
           match e.A.type_ with
           | Some Trecord { pldesc = rname } -> begin
               let recd = Env.Record.get env rname in
+              let fields = List.map
+                  (fun fd -> unloc fd.rfd_name, fd.rfd_type) recd.rd_fields in
+              (fields, None)
+            end
+
+          | Some Tevent { pldesc = rname } -> begin
+              let recd = Env.Event.get env rname in
               let fields = List.map
                   (fun fd -> unloc fd.rfd_name, fd.rfd_type) recd.rd_fields in
               (fields, None)
@@ -3660,15 +3736,6 @@ let rec for_xexpr
         (Option.map (fun ty -> A.Toption ty) ty)
         (A.Pcall (None, A.Cconst A.Cunpack, [AExpr e]))
 
-    | Eemit (ty, e) ->
-      let ty = for_type env ty in
-      let e  = for_xexpr env ~ety:A.vtbytes e in
-
-      (* TODO *)
-      mk_sp
-        (Option.map (fun ty -> A.Toption ty) ty)
-        (A.Pcall (None, A.Cconst A.Cemit, [AExpr e]))
-
     | Enothing
     | Eunit ->
       let lit = A.mk_sp ~type_:A.vtunit ~loc:(loc tope) (A.BVunit) in
@@ -3743,6 +3810,7 @@ let rec for_xexpr
     | Ereturn    _
     | Eseq       _
     | Etransfer  _
+    | Eemit      _
     | Eany
     | Einvalid ->
       Env.emit_error env (loc tope, InvalidExpression);
@@ -4709,6 +4777,19 @@ let rec for_instruction_r
           A.TToperation (e)
 
       in env, mki (Itransfer tr)
+
+    | Eemit (ty, arg) ->
+
+      let idt, ety =
+        match for_type env ty with
+        | Some ((A.Tevent v) as t) -> (v, t)
+        | _ ->
+          Env.emit_error env (loc i, InvalidEventType);
+          bailout ()
+
+      in
+      let e   = for_expr ~ety kind env arg in
+      env, mki (A.Iemit (idt, e))
 
     | Eif (c, bit, bif) ->
       let c        = for_expr kind env ~ety:A.vtbool c in
@@ -5936,7 +6017,7 @@ let for_asset_specs
     specs
 
 (* -------------------------------------------------------------------- *)
-let for_record_decl (env : env) (decl : PT.record_decl loced) =
+let for_record_decl k (env : env) (decl : PT.record_decl loced) =
   let name, fields, packing, _ = unloc decl in
   let fields =
     let get_field { pldesc = PT.Ffield (x, ty, e, _) } = (x, ty, e) in
@@ -6018,12 +6099,17 @@ let for_record_decl (env : env) (decl : PT.record_decl loced) =
     let rdecl = { rd_name    = name   ;
                   rd_fields  = fields ;
                   rd_packing = packing; } in
-    Env.Record.push env rdecl, Some rdecl
+    match k with
+    | `Record -> Env.Record.push env rdecl, Some rdecl
+    | `Event  -> Env.Event.push env rdecl, Some rdecl
   else (env, None)
 
 (* -------------------------------------------------------------------- *)
 let for_records_decl (env : env) (decls : PT.record_decl loced list) =
-  List.fold_left_map for_record_decl env decls
+  List.fold_left_map (for_record_decl `Record) env decls
+
+let for_events_decl (env : env) (decls : PT.record_decl loced list) =
+  List.fold_left_map (for_record_decl `Event) env decls
 
 (* -------------------------------------------------------------------- *)
 let for_acttx_decl
@@ -6177,6 +6263,7 @@ let group_declarations (decls : (PT.declaration list)) =
     gr_enums      = [];
     gr_assets     = [];
     gr_records    = [];
+    gr_events     = [];
     gr_vars       = [];
     gr_funs       = [];
     gr_acttxs     = [];
@@ -6209,7 +6296,8 @@ let group_declarations (decls : (PT.declaration list)) =
     | PT.Drecord infos ->
       { g with gr_records = mk infos :: g.gr_records }
 
-    | PT.Devent (_id, _) -> g
+    | PT.Devent infos ->
+      { g with gr_events = mk infos :: g.gr_events }
 
     | PT.Dentry infos ->
       { g with gr_acttxs = mk (`Entry infos) :: g.gr_acttxs }
@@ -6249,6 +6337,7 @@ type decls = {
   variables : vardecl option list;
   enums     : statedecl option list;
   records   : recorddecl option list;
+  events    : recorddecl option list;
   assets    : assetdecl option list;
   functions : env fundecl option list;
   acttxs    : env tentrydecl option list;
@@ -6291,6 +6380,7 @@ let for_grouped_declarations (env : env) (toploc, g) =
 
   let env, enums        = for_enums_decl     env g.gr_enums   in
   let env, records      = for_records_decl   env g.gr_records in
+  let env, events       = for_events_decl    env g.gr_events in
   let enums, especs     = List.split enums                    in
   let env, variables    = for_vars_decl      env g.gr_vars    in
   let variables, vspecs = List.split variables                in
@@ -6357,7 +6447,7 @@ let for_grouped_declarations (env : env) (toploc, g) =
 
   let output =
     { state    ; variables; enums   ; assets ; functions;
-      acttxs   ; specs    ; secspecs; records; }
+      acttxs   ; specs    ; secspecs; records; events }
 
   in (env, output)
 
@@ -6662,6 +6752,7 @@ let sort_decl refs l =
     | A.Denum {kind = EKstate}  -> "_state"
     | A.Drecord x   -> unloc x.name
     | A.Dasset x    -> unloc x.name
+    | A.Devent x    -> unloc x.name
   in
   if l |> List.map get_name |> List.exists (fun x -> not (List.mem x refs))
   then l
@@ -6694,7 +6785,8 @@ let for_declarations ?init (env : env) (decls : (PT.declaration list) loced) : A
           List.map (fun x -> A.Dvariable x) (variables_of_vdecls decls.variables)                            @
           List.map (fun x -> A.Denum x)     (enums_of_statedecl (List.pmap id (decls.state :: decls.enums))) @
           List.map (fun x -> A.Drecord x)   (records_of_rdecls (List.pmap id decls.records))                 @
-          List.map (fun x -> A.Dasset x)    (assets_of_adecls decls.assets)
+          List.map (fun x -> A.Dasset x)    (assets_of_adecls decls.assets)                                  @
+          List.map (fun x -> A.Devent x)    (records_of_rdecls (List.pmap id decls.events))
         ) |> sort_decl sorted_decl_ids)
       ~funs:(
         List.map (fun x -> A.Ffunction x)    (functions_of_fdecls decls.functions) @

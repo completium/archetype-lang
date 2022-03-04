@@ -92,6 +92,7 @@ let to_model (ast : A.ast) : M.model =
       | A.Tasset id              -> M.Tasset id
       | A.Trecord id             -> M.Trecord id
       | A.Tenum id               -> M.Tenum id
+      | A.Tevent _id              -> assert false (*TODO: M.Tevent id*)
       | A.Tbuiltin b             -> M.Tbuiltin (vtyp_to_btyp b)
       | A.Tcontainer (t, c)      -> M.Tcontainer (type_to_type t, to_container c)
       | A.Tset t                 -> M.Tset (type_to_type t)
@@ -1067,7 +1068,7 @@ let to_model (ast : A.ast) : M.model =
           in
           M.Mtransfer tr
         end
-
+      | A.Iemit (_e, _v) -> assert false (* TODO *)
       | A.Ireturn e -> M.Mreturn (f e)
       | A.Ilabel  i -> M.Mlabel i
       | A.Ifail   m -> M.Mfail (Invalid (f m))
@@ -1518,6 +1519,7 @@ let to_model (ast : A.ast) : M.model =
     | A.Dasset    a -> process_asset env a
     | A.Drecord   r -> process_record r
     | A.Denum     e -> process_enum env e
+    | A.Devent    e -> process_record e
   in
 
   let process_fun_ (env : env) = function

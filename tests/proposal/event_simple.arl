@@ -1,0 +1,11 @@
+archetype event_simple
+
+event even {
+  from_ : address;
+  time : date
+}
+
+entry e1(n : nat) {
+  var e : even = { caller; now };
+  emit<even>(e)
+}

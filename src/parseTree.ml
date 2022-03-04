@@ -321,7 +321,7 @@ and declaration_unloc =
   | Dspecvariable  of (lident * label_exprs)
   | Dsecurity      of security
   | Dtype          of lident * type_t
-  | Devent         of lident * ((lident * type_t * expr option) loced) list
+  | Devent         of record_decl
   | Dinvalid
 
 and specfun_kind =
@@ -670,7 +670,7 @@ let get_name = function
   | Denum (EKstate, _)                 -> "_state"
   | Dasset (id, _, _, _, _, _, _)      -> unloc id
   | Drecord (id, _, _, _)              -> unloc id
-  | Devent (id, _)                     -> unloc id
+  | Devent  (id, _, _, _)              -> unloc id
   | Dentry (id, _, _, _, _)            -> unloc id
   | Dtransition (id, _, _, _, _, _, _) -> unloc id
   | Dextension (id, _)                 -> unloc id
