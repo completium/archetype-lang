@@ -654,6 +654,7 @@ let to_ir (model : M.model) : T.ir =
         in
         T.Iassign (operations, T.Ibinop (Bcons, op, vops))
       end
+    | Memit _                       -> T.iskip
 
     (* entrypoint *)
 
@@ -743,32 +744,35 @@ let to_ir (model : M.model) : T.ir =
         | M.Tmap (b, k, v) -> T.Imap (b, ft k, ft v, List.map (fun (x, y) -> f x, f y) l)
         | _ -> assert false
       end
-    | Mlitrecord l -> begin
+    | Mlitrecord l
+    | Mlitevent l -> begin
         let ri =
           let ll = List.map (fun (_, x) -> f x) l in
           let mk_default _ = T.Rtuple ll in
+          let doit f rn =
+            let r : M.record = f model (unloc rn) in
+            match r.pos with
+            | Pnode [] -> mk_default ()
+            | _ -> begin
+                let ndata = ref ll in
+
+                let rec aux p =
+                  match p with
+                  | M.Ptuple ids  -> begin
+                      let l = List.length ids in
+                      let ll0, ll1 = List.cut l !ndata in
+                      ndata := ll1;
+                      T.Rtuple ll0
+                    end
+                  | M.Pnode l -> T.Rnodes (List.map aux l)
+                in
+
+                aux r.pos
+              end
+          in
           match M.get_ntype mtt.type_ with
-          | M.Trecord rn -> begin
-              let r = M.Utils.get_record model (unloc rn) in
-              match r.pos with
-              | Pnode [] -> mk_default ()
-              | _ -> begin
-                  let ndata = ref ll in
-
-                  let rec aux p =
-                    match p with
-                    | M.Ptuple ids  -> begin
-                        let l = List.length ids in
-                        let ll0, ll1 = List.cut l !ndata in
-                        ndata := ll1;
-                        T.Rtuple ll0
-                      end
-                    | M.Pnode l -> T.Rnodes (List.map aux l)
-                  in
-
-                  aux r.pos
-                end
-            end
+          | M.Trecord rn -> doit M.Utils.get_record rn
+          | M.Tevent  rn -> doit M.Utils.get_event  rn
           | _ -> mk_default ()
         in
         T.Irecord ri

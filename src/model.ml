@@ -223,6 +223,7 @@ type ('id, 'term) mterm_node  =
   (* effect *)
   | Mfail             of 'id fail_type_gen
   | Mtransfer         of 'term transfer_kind_gen
+  | Memit             of 'id * 'term
   (* entrypoint *)
   | Mentrypoint       of type_ * 'id * 'term * 'term option  (* type * address * string * require fail *)
   | Mcallview         of type_ * 'term * 'id * 'term         (* type * string * address * argument *)
@@ -269,6 +270,7 @@ type ('id, 'term) mterm_node  =
   | Mlitlist          of 'term list
   | Mlitmap           of bool * ('term * 'term) list
   | Mlitrecord        of (ident * 'term) list
+  | Mlitevent         of (ident * 'term) list
   | Mlambda           of type_ * 'id * type_ * 'term
   (* access *)
   | Mdot              of 'term * 'id
@@ -1411,6 +1413,7 @@ let cmp_mterm_node
     (* effect *)
     | Mfail ft1, Mfail ft2                                                             -> cmp_fail_type cmp ft1 ft2
     | Mtransfer tr1, Mtransfer tr2                                                     -> cmp_transfer_kind tr1 tr2
+    | Memit (e1, x1), Memit (e2, x2)                                                   -> cmpi e1 e2 && cmp x1 x2
     (* entrypoint *)
     | Mentrypoint (t1, a1, s1, r1), Mentrypoint (t2, a2, s2, r2)                       -> cmp_type t1 t2 && cmpi a1 a2 && cmp s1 s2 && Option.cmp cmp r1 r2
     | Mcallview (t1, a1, b1, c1), Mcallview (t2, a2, b2, c2)                           -> cmp_type t1 t2 && cmp a1 a2 && cmpi b1 b2 && cmp c1 c2
@@ -1457,6 +1460,7 @@ let cmp_mterm_node
     | Mlitlist l1, Mlitlist l2                                                         -> List.for_all2 cmp l1 l2
     | Mlitmap (b1, l1), Mlitmap (b2, l2)                                               -> cmp_bool b1 b2 && List.for_all2 (fun (k1, v1) (k2, v2) -> (cmp k1 k2 && cmp v1 v2)) l1 l2
     | Mlitrecord l1, Mlitrecord l2                                                     -> List.for_all2 (fun (i1, v1) (i2, v2) -> (cmp_ident i1 i2 && cmp v1 v2)) l1 l2
+    | Mlitevent l1, Mlitevent l2                                                       -> List.for_all2 (fun (i1, v1) (i2, v2) -> (cmp_ident i1 i2 && cmp v1 v2)) l1 l2
     | Mlambda (rt1, id1, at1, e1), Mlambda (rt2, id2, at2, e2)                         -> cmp_type rt1 rt2 && cmpi id1 id2 && cmp_type at1 at2 && cmp e1 e2
     (* access *)
     | Mdot (e1, i1), Mdot (e2, i2)                                                     -> cmp e1 e2 && cmpi i1 i2
@@ -1844,6 +1848,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   (* effect *)
   | Mfail v                        -> Mfail (match v with | Invalid v -> Invalid (f v) | _ -> v)
   | Mtransfer tr                   -> Mtransfer (map_transfer_kind fi ft f tr)
+  | Memit (e, x)                   -> Memit (g e, f x)
   (* entrypoint *)
   | Mentrypoint (t, a, s, r)       -> Mentrypoint (ft t, g a, f s, Option.map f r)
   | Mcallview (t, a, b, c)         -> Mcallview (ft t, f a, g b, f c)
@@ -1890,6 +1895,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mlitlist l                     -> Mlitlist (List.map f l)
   | Mlitmap (b, l)                 -> Mlitmap (b, List.map (pair_sigle_map f) l)
   | Mlitrecord l                   -> Mlitrecord (List.map ((fun (x, y) -> (x, f y))) l)
+  | Mlitevent l                    -> Mlitevent (List.map ((fun (x, y) -> (x, f y))) l)
   | Mlambda (rt, id, at, e)        -> Mlambda (ft rt, g id, ft at, f e)
   (* access *)
   | Mdot (e, i)                    -> Mdot (f e, g i)
@@ -2274,6 +2280,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   (* effect *)
   | Mfail v                               -> (match v with | Invalid v -> f accu v | _ -> accu)
   | Mtransfer tr                          -> fold_transfer_kind f accu tr
+  | Memit (_, x)                          -> f accu x
   (* entrypoint *)
   | Mentrypoint (_, _, s, r)              -> let tmp = f accu s in Option.map_dfl (f tmp) tmp r
   | Mcallview (_, a, _, c)                -> f (f accu a) c
@@ -2320,6 +2327,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mlitlist l                            -> List.fold_left f accu l
   | Mlitmap (_, l)                        -> List.fold_left (fun accu (k, v) -> f (f accu k) v) accu l
   | Mlitrecord l                          -> List.fold_left (fun accu (_, v) -> f accu v) accu l
+  | Mlitevent l                           -> List.fold_left (fun accu (_, v) -> f accu v) accu l
   | Mlambda (_, _, _, e)                  -> f accu e
   (* access *)
   | Mdot (e, _)                           -> f accu e
@@ -2715,6 +2723,10 @@ let fold_map_term
     let tre, tra = fold_map_transfer_kind f accu tr in
     g (Mtransfer tre), tra
 
+  | Memit (e, x) ->
+    let xe, xa = f accu x in
+    g (Memit (e, xe)), xa
+
 
   (* entrypoint *)
 
@@ -2912,6 +2924,15 @@ let fold_map_term
            pterms @ [i, vn], accu) ([], accu) l
     in
     g (Mlitrecord le), la
+
+  | Mlitevent l ->
+    let le, la =
+      List.fold_left
+        (fun (pterms, accu) (i, v) ->
+           let vn, accu = f accu v in
+           pterms @ [i, vn], accu) ([], accu) l
+    in
+    g (Mlitevent le), la
 
   | Mlambda (rt, id, at, e) ->
     let ee, ea = f accu e in

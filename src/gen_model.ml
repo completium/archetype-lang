@@ -271,7 +271,7 @@ let to_model (ast : A.ast) : M.model =
       | A.Vunmoved -> M.Dunmoved
       | A.Vnone    -> M.Dnone
     in
-    let is_record t = match M.get_ntype t with | M.Trecord _ -> true | _ -> false in
+    let is_record t = match M.get_ntype t with | M.Trecord _ | M.Tevent _ -> true | _ -> false in
     let type_ = type_to_type (Option.get pterm.type_) in
     let f x = to_mterm env x in
     let node =
@@ -308,16 +308,20 @@ let to_model (ast : A.ast) : M.model =
       | A.Parith (A.ShiftLeft, l, r)        -> M.Mshiftleft     (f l, f r)
       | A.Parith (A.ShiftRight, l, r)       -> M.Mshiftright    (f l, f r)
       | A.Precord l when is_record type_    -> begin
-          let record_name =  match M.get_ntype type_ with | M.Trecord name -> unloc name | _ -> assert false in
-          let ids : ident list =
+          let record_name =  match M.get_ntype type_ with | M.Trecord name | M.Tevent name -> unloc name | _ -> assert false in
+          let ids, k =
             List.fold_left (fun accu (x : A.lident A.decl_) ->
                 match x with
-                | A.Drecord r when String.equal (unloc r.name) record_name -> List.map (fun (x : A.lident A.decl_gen) -> unloc x.name) r.fields
-                | _ -> accu) [] ast.decls
+                | A.Drecord r when String.equal (unloc r.name) record_name -> (List.map (fun (x : A.lident A.decl_gen) -> unloc x.name) r.fields, `Record)
+                | A.Devent  r when String.equal (unloc r.name) record_name -> (List.map (fun (x : A.lident A.decl_gen) -> unloc x.name) r.fields, `Event)
+                | _ -> accu) ([], `None) ast.decls
           in
           if List.length ids <> List.length l
           then (emit_error (pterm.loc, RecordNotFound record_name); bailout ());
-          M.Mlitrecord (List.map2 (fun x y -> x, f y) ids l)
+          match k with
+          | `Record -> M.Mlitrecord (List.map2 (fun x y -> x, f y) ids l)
+          | `Event  -> M.Mlitevent  (List.map2 (fun x y -> x, f y) ids l)
+          | `None   -> assert false
         end
       | A.Precord l                         -> M.Masset         (List.map f l)
       | A.Precupdate (e, l)                 -> M.Mrecupdate     (f e, List.map (fun (id, v) -> unloc id, f v) l)
@@ -1068,7 +1072,7 @@ let to_model (ast : A.ast) : M.model =
           in
           M.Mtransfer tr
         end
-      | A.Iemit (_e, _v) -> assert false (* TODO *)
+      | A.Iemit (e, v) -> M.Memit (e, f v)
       | A.Ireturn e -> M.Mreturn (f e)
       | A.Ilabel  i -> M.Mlabel i
       | A.Ifail   m -> M.Mfail (Invalid (f m))

@@ -353,6 +353,11 @@ let pp_mterm fmt (mt : mterm) =
 
     | Mtransfer tr -> pp_transfer_kind f fmt tr
 
+    | Memit (e, x) ->
+      Format.fprintf fmt "emit<%a>(%a)"
+        pp_id e
+        f x
+
 
     (* entrypoint *)
 
@@ -543,6 +548,12 @@ let pp_mterm fmt (mt : mterm) =
 
     | Mlitrecord l ->
       Format.fprintf fmt "record(%a)"
+        (pp_list "; " (fun fmt (k, v) -> Format.fprintf fmt "%s = %a"
+                          k
+                          f v)) l
+
+    | Mlitevent l ->
+      Format.fprintf fmt "event(%a)"
         (pp_list "; " (fun fmt (k, v) -> Format.fprintf fmt "%s = %a"
                           k
                           f v)) l

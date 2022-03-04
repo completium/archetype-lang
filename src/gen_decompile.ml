@@ -1585,6 +1585,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
         A.efail v
       end
     | Mtransfer _tr      -> assert false
+    | Memit (_, _)       -> assert false
 
 
     (* entrypoint *)
@@ -1647,6 +1648,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mlitlist l      -> A.earray (List.map f l)
     | Mlitmap (_b, _l)-> assert false
     | Mlitrecord _l   -> assert false
+    | Mlitevent  _l   -> assert false
     | Mlambda (_rt, _id, _at, _e) -> assert false
 
     (* access *)

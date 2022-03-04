@@ -1806,6 +1806,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                       )))
       end
 
+    | Memit (_e, _v) -> assert false
+
     (* entrypoint *)
 
     | Mentrypoint (_t, a, s, _) -> Tentrypoint (map_lident a, map_mterm m ctx s)
@@ -1924,6 +1926,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                    ) ([] : loc_term list) l)
       else Temptycoll (dl map)
     | Mlitrecord l -> Trecord (None, List.map (fun (n,v) -> (dl n, map_mterm m ctx v)) l)
+    | Mlitevent l -> Trecord (None, List.map (fun (n,v) -> (dl n, map_mterm m ctx v)) l)
     | Mlambda (rt, id, at, e) -> Tvlambda (map_mtype m rt, map_lident id, map_mtype m at, map_mterm m ctx e)
 
 
