@@ -6044,10 +6044,20 @@ let for_record_decl k (env : env) (decl : PT.record_decl loced) =
 
   let fields =
     let for1 (x, ty, e) =
-      match check_and_emit_name_free env x, ty with
-      | true, Some ty -> Some { rfd_name = x; rfd_type = ty; rfd_dfl = e }
-      | _   , _       -> None in
-    List.pmap for1 fields in
+      match k with
+      | `Record -> begin
+          match check_and_emit_name_free env x, ty with
+          | true, Some ty -> Some { rfd_name = x; rfd_type = ty; rfd_dfl = e }
+          | _, _          -> None
+        end
+      | `Event -> begin
+          match ty with
+          | Some ty -> Some { rfd_name = x; rfd_type = ty; rfd_dfl = e }
+          | _       -> None
+        end
+    in
+    List.pmap for1 fields
+  in
 
   let packing =
     let module E = struct
