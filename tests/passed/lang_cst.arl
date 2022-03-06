@@ -14,7 +14,9 @@ entry exec () {
     dorequire(e = e, "ko");
     var f : chain_id = chainid;       (* CHAIN_ID *)
     dorequire(f = f, "ko");
-    var g : address  = selfaddress;   (* SELF; ADDRESS *)
+    var g : address  = selfaddress;   (* SELF_ADDRESS *)
     dorequire(g = g, "ko");
+    var h : nat      = level;         (* LEVEL *)
+    dorequire(h = h, "ko");
   }
 }
