@@ -303,7 +303,11 @@ let to_model (ast : A.ast) : M.model =
       | A.Parith (A.DivEuc, l, r)           -> M.Mdiveuc        (f l, f r)
       | A.Parith (A.Modulo, l, r)           -> M.Mmodulo        (f l, f r)
       | A.Parith (A.DivMod, l, r)           -> M.Mdivmod        (f l, f r)
-      | A.Puarith (A.Uminus, e)             -> M.Muminus        (f e)
+      | A.Puarith (A.Uminus, e)             -> begin
+          match f e with
+          | {node = Mint n } -> M.Mint (Big_int.minus_big_int n)
+          | v -> M.Muminus v
+        end
       | A.Parith (A.ThreeWayCmp, l, r)      -> M.MthreeWayCmp   (f l, f r)
       | A.Parith (A.ShiftLeft, l, r)        -> M.Mshiftleft     (f l, f r)
       | A.Parith (A.ShiftRight, l, r)       -> M.Mshiftright    (f l, f r)
@@ -401,10 +405,16 @@ let to_model (ast : A.ast) : M.model =
       | A.Pcast (src, dst, v)                  -> begin
           let v = f v in
           match src, dst, v with
+          | A.Tbuiltin VTnat, A.Tbuiltin VTint, { node = Mnat v; _} -> M.Mint v
           | A.Tbuiltin VTnat, A.Tbuiltin VTint, _                  -> M.Mnattoint v
           | A.Tbuiltin VTnat, A.Tbuiltin VTrational, _             -> M.Mnattorat v
           | A.Tbuiltin VTint, A.Tbuiltin VTrational, _             -> M.Minttorat v
-          | A.Tbuiltin VTbls12_381_fr, A.Tbuiltin VTint, _         -> M.Mnattoint v
+          (* | A.Tbuiltin VTbls12_381_fr, A.Tbuiltin VTint, _         -> M.Mnattoint v *)
+          | A.Tbuiltin VTbytes, A.Tbuiltin VTbls12_381_fr, { node = Mbytes v; _}   -> M.Mbls12_381_fr v
+          | A.Tbuiltin VTnat,   A.Tbuiltin VTbls12_381_fr, { node = Mnat v; _}     -> M.Mbls12_381_fr_n v
+          | A.Tbuiltin VTint,   A.Tbuiltin VTbls12_381_fr, { node = Mint v; _}     -> M.Mbls12_381_fr_n v
+          | A.Tbuiltin VTbytes, A.Tbuiltin VTbls12_381_g1, { node = Mbytes v; _}   -> M.Mbls12_381_g1 v
+          | A.Tbuiltin VTbytes, A.Tbuiltin VTbls12_381_g2, { node = Mbytes v; _}   -> M.Mbls12_381_g2 v
           | A.Tbuiltin VTbytes, A.Tsapling_transaction n, { node = Mbytes v; _} -> M.MsaplingTransaction (n, v)
           | A.Tbuiltin VTbytes, A.Tbuiltin VTchest, { node = Mbytes v; _}       -> M.Mchest v
           | A.Tbuiltin VTbytes, A.Tbuiltin VTchest_key, { node = Mbytes v; _}   -> M.Mchest_key v

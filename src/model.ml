@@ -243,6 +243,10 @@ type ('id, 'term) mterm_node  =
   | Mduration         of Core.duration
   | Mtimestamp        of Core.big_int
   | Mbytes            of string
+  | Mbls12_381_fr     of string
+  | Mbls12_381_fr_n   of Core.big_int
+  | Mbls12_381_g1     of string
+  | Mbls12_381_g2     of string
   | Munit
   | MsaplingStateEmpty of int
   | MsaplingTransaction of int * string
@@ -1113,15 +1117,19 @@ let tview an       = mktype (Tcontainer (tasset an, View))
 let toperations    = tlist toperation
 let tmetadata      = tbig_map tstring tbytes
 
-let mk_bool     x = mk_mterm (Mbool x) tbool
-let mk_string   x = mk_mterm (Mstring x) tstring
-let mk_bytes    x = mk_mterm (Mbytes x) tbytes
-let mk_bnat     x = mk_mterm (Mnat x) tnat
-let mk_nat      x = mk_bnat  (Big_int.big_int_of_int x)
-let mk_bint     x = mk_mterm (Mint x) tint
-let mk_int      x = mk_bint  (Big_int.big_int_of_int x)
-let mk_address  x = mk_mterm (Maddress x) taddress
-let unit          = mk_mterm (Munit) tunit
+let mk_bool         x = mk_mterm (Mbool x) tbool
+let mk_string       x = mk_mterm (Mstring x) tstring
+let mk_bytes        x = mk_mterm (Mbytes x) tbytes
+let mk_bls12_381_fr x = mk_mterm (Mbls12_381_fr x) tbls12_381_fr
+let mk_bls12_381_fr_n x = mk_mterm (Mbls12_381_fr_n x) tbls12_381_fr
+let mk_bls12_381_g1 x = mk_mterm (Mbls12_381_g1 x) tbls12_381_g1
+let mk_bls12_381_g2 x = mk_mterm (Mbls12_381_g2 x) tbls12_381_g2
+let mk_bnat         x = mk_mterm (Mnat x) tnat
+let mk_nat          x = mk_bnat  (Big_int.big_int_of_int x)
+let mk_bint         x = mk_mterm (Mint x) tint
+let mk_int          x = mk_bint  (Big_int.big_int_of_int x)
+let mk_address      x = mk_mterm (Maddress x) taddress
+let unit              = mk_mterm (Munit) tunit
 let mk_sapling_state_empty n = mk_mterm (MsaplingStateEmpty n) (tsapling_state n)
 let mk_sapling_transaction n x = mk_mterm (MsaplingTransaction (n, x)) (tsapling_transaction n)
 let mk_chest    x = mk_mterm (Mchest x) tchest
@@ -1438,6 +1446,10 @@ let cmp_mterm_node
     | Mduration v1, Mduration v2                                                       -> Core.cmp_duration v1 v2
     | Mtimestamp v1, Mtimestamp v2                                                     -> Big_int.eq_big_int v1 v2
     | Mbytes v1, Mbytes v2                                                             -> cmp_ident v1 v2
+    | Mbls12_381_fr v1, Mbls12_381_fr v2                                               -> cmp_ident v1 v2
+    | Mbls12_381_fr_n v1, Mbls12_381_fr_n v2                                           -> Big_int.eq_big_int v1 v2
+    | Mbls12_381_g1 v1, Mbls12_381_g1 v2                                               -> cmp_ident v1 v2
+    | Mbls12_381_g2 v1, Mbls12_381_g2 v2                                               -> cmp_ident v1 v2
     | Munit, Munit                                                                     -> true
     | MsaplingStateEmpty n1, MsaplingStateEmpty n2                                     -> cmp_int n1 n2
     | MsaplingTransaction (n1, v1), MsaplingTransaction (n2, v2)                       -> cmp_int n1 n2 && cmp_ident v1 v2
@@ -1873,6 +1885,10 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mduration v                    -> Mduration v
   | Mtimestamp v                   -> Mtimestamp v
   | Mbytes v                       -> Mbytes v
+  | Mbls12_381_fr v                -> Mbls12_381_fr v
+  | Mbls12_381_fr_n v              -> Mbls12_381_fr_n v
+  | Mbls12_381_g1 v                -> Mbls12_381_g1 v
+  | Mbls12_381_g2 v                -> Mbls12_381_g2 v
   | Munit                          -> Munit
   | MsaplingStateEmpty n           -> MsaplingStateEmpty n
   | MsaplingTransaction (n, v)     -> MsaplingTransaction (n, v)
@@ -2305,6 +2321,10 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mduration _                           -> accu
   | Mtimestamp _                          -> accu
   | Mbytes _                              -> accu
+  | Mbls12_381_fr _                       -> accu
+  | Mbls12_381_fr_n _                     -> accu
+  | Mbls12_381_g1 _                       -> accu
+  | Mbls12_381_g2 _                       -> accu
   | Munit                                 -> accu
   | MsaplingStateEmpty _                  -> accu
   | MsaplingTransaction _                 -> accu
@@ -2799,6 +2819,18 @@ let fold_map_term
 
   | Mbytes v ->
     g (Mbytes v), accu
+
+  | Mbls12_381_fr v ->
+    g (Mbls12_381_fr v), accu
+
+  | Mbls12_381_fr_n v ->
+    g (Mbls12_381_fr_n v), accu
+
+  | Mbls12_381_g1 v ->
+    g (Mbls12_381_g1 v), accu
+
+  | Mbls12_381_g2 v ->
+    g (Mbls12_381_g2 v), accu
 
   | Munit ->
     g (Munit), accu
@@ -4894,6 +4926,10 @@ end = struct
     | Mdate      v1, Mdate      v2 -> Big_int.compare_big_int (Core.date_to_timestamp v1) (Core.date_to_timestamp v2)
     | Mtimestamp v1, Mtimestamp v2 -> Big_int.compare_big_int v1 v2
     | Mbytes     v1, Mbytes     v2 -> String.compare v1 v2
+    | Mbls12_381_fr v1, Mbls12_381_fr v2 -> String.compare v1 v2
+    | Mbls12_381_fr_n v1, Mbls12_381_fr_n v2 -> Big_int.compare_big_int v1 v2
+    | Mbls12_381_g1 v1, Mbls12_381_g1 v2 -> String.compare v1 v2
+    | Mbls12_381_g2 v1, Mbls12_381_g2 v2 -> String.compare v1 v2
     | Mtuple l1, Mtuple l2 when List.length l1 = List.length l2 ->
       List.fold_left2 (fun accu x y ->
           match accu with
@@ -5038,10 +5074,14 @@ end = struct
             | Mint n1,     Mnat n2
             | Mint n1,     Mint n2
             | Mcurrency (n1, Utz), Mcurrency (n2, Utz)
+            | Mbls12_381_fr_n n1, Mbls12_381_fr_n n2
             | Mtimestamp n1, Mtimestamp n2 -> Big_int.compare_big_int n1 n2
 
             | Maddress s1,  Maddress s2
             | Mbytes s1,    Mbytes s2
+            | Mbls12_381_fr s1, Mbls12_381_fr s2
+            | Mbls12_381_g1 s1, Mbls12_381_g1 s2
+            | Mbls12_381_g2 s1, Mbls12_381_g2 s2
             | Mstring s1,   Mstring  s2 -> String.compare s1 s2
 
             | Mdate d1,     Mdate d2 -> Big_int.compare_big_int (Core.date_to_timestamp d1) (Core.date_to_timestamp d2)

@@ -1839,6 +1839,10 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mstring v ->  Tint (Tools.string_to_big_int v) (* Tstring v *)
     | Maddress v -> Tint (Tools.string_to_big_int v) (* Tstring v *)
     | Mbytes v ->   Tint (Tools.string_to_big_int v) (* Tstring v *)
+    | Mbls12_381_fr v ->   Tint (Tools.string_to_big_int v) (* Tstring v *)
+    | Mbls12_381_fr_n v ->   Tint v (* Tstring v *)
+    | Mbls12_381_g1 v ->   Tint (Tools.string_to_big_int v) (* Tstring v *)
+    | Mbls12_381_g2 v ->   Tint (Tools.string_to_big_int v) (* Tstring v *)
     | Mdate s -> Tint (Core.date_to_timestamp s)
     | Mduration v -> Tint (Core.duration_to_timestamp v)
     | Mtimestamp v -> Tint v

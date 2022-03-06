@@ -1144,11 +1144,19 @@ let opsigs =
     ] in
 
   let bls_curves : (PT.operator * (A.vtyp list * A.vtyp)) list =
-    List.map (fun x -> [ PT.Arith PT.Plus,   ([x; x], x);
+    (
+      List.map (fun x -> [ PT.Arith PT.Plus,   ([x; x], x);
                          PT.Arith PT.Mult,   ([x; A.VTbls12_381_fr], x);
                          PT.Unary PT.Uminus, ([x], x)])
       [A.VTbls12_381_fr; A.VTbls12_381_g1; A.VTbls12_381_g2]
-    |> List.flatten
+    |> List.flatten)
+    @
+    [
+      PT.Arith PT.Mult, ([A.VTnat; A.VTbls12_381_fr], A.VTbls12_381_fr) ;
+      PT.Arith PT.Mult, ([A.VTint; A.VTbls12_381_fr], A.VTbls12_381_fr) ;
+      PT.Arith PT.Mult, ([A.VTbls12_381_fr; A.VTnat], A.VTbls12_381_fr) ;
+      PT.Arith PT.Mult, ([A.VTbls12_381_fr; A.VTint], A.VTbls12_381_fr) ;
+    ]
   in
 
   cmpsigs @ tsigs @ grptypes @ rgtypes @ ariths @ nat @ bools @ others @ bls_curves

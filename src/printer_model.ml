@@ -414,6 +414,10 @@ let pp_mterm fmt (mt : mterm) =
     | Mduration v -> Core.pp_duration_for_printer fmt v
     | Mtimestamp v -> pp_big_int fmt v
     | Mbytes v -> Format.fprintf fmt "0x%s" v
+    | Mbls12_381_fr v -> Format.fprintf fmt "0x%s" v
+    | Mbls12_381_fr_n v -> pp_big_int fmt v
+    | Mbls12_381_g1 v -> Format.fprintf fmt "0x%s" v
+    | Mbls12_381_g2 v -> Format.fprintf fmt "0x%s" v
     | Munit -> Format.fprintf fmt "Unit"
     | MsaplingStateEmpty _ -> Format.fprintf fmt "0x00"
     | MsaplingTransaction (_, v) -> Format.fprintf fmt "0x%s" v
