@@ -326,6 +326,9 @@ let generate_target model =
     |> fix_container
     |> output
 
+  | BindingsTs ->
+    Binding.process model
+
   | _ -> ""
 
 (* -------------------------------------------------------------------- *)

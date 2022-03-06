@@ -7,6 +7,7 @@ type target_lang =
   | MichelsonStorage
   | Whyml
   | Javascript
+  | BindingsTs
 [@@deriving show {with_path = false}]
 
 exception UnknownTarget of string

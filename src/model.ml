@@ -4279,6 +4279,7 @@ module Utils : sig
   val get_asset                          : model -> ident -> asset
   val get_record                         : model -> ident -> record
   val get_event                          : model -> ident -> record
+  val get_events                         : model -> record list
   val get_storage                        : model -> storage
   val get_asset_field                    : model -> (ident * ident) -> (ident * type_ * mterm option)
   val get_asset_key                      : model -> ident -> (ident * type_)

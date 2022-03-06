@@ -106,5 +106,7 @@ entry exec () {
 
     var tez_tez_plus   : tez      = 2tz + 1tz;
     var tez_tez_minus  : tez      = 2tz - 1tz;
+
+    var bytes_bytes_xor    : nat      = 0x01 xor 0x02;
   }
 }

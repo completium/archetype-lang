@@ -73,115 +73,117 @@ let shape_entrypoints f n l =
       else List.fold_left f (i) t
     end
 
-let to_ir (model : M.model) : T.ir =
+let to_one_gen init f l =
+  match List.rev l with
+  | [] -> init
+  | i::q -> List.fold_left (fun accu x -> f x accu) i q
 
-  let to_one_gen init f l =
-    match List.rev l with
-    | [] -> init
-    | i::q -> List.fold_left (fun accu x -> f x accu) i q
-  in
+let to_one_type (l : T.type_ list) : T.type_ = to_one_gen T.tunit (fun x accu -> (T.mk_type (T.Tpair (x, accu)))) l
 
-  let to_one_type (l : T.type_ list) : T.type_ = to_one_gen T.tunit (fun x accu -> (T.mk_type (T.Tpair (x, accu)))) l in
+let to_one_data (l : T.data list) : T.data = to_one_gen (T.Dunit) (fun x accu -> (T.Dpair (x, accu))) l
 
-  let to_one_data (l : T.data list) : T.data = to_one_gen (T.Dunit) (fun x accu -> (T.Dpair (x, accu))) l in
+let to_one_gen init f l =
+  match List.rev l with
+  | [] -> init
+  | i::q -> List.fold_left (fun accu x -> f x accu) i q
 
-
-  let rec to_type ?annotation (t : M.type_) : T.type_ =
-
-    let annotation =
-      match annotation with
-      | Some _ -> annotation
-      | _ -> begin
-          match snd t with
-          | Some a when String.equal "%_" (unloc a) -> None
-          | Some a -> Some (unloc a)
-          | None -> None
-        end
-    in
-
-    let process_record (f : M.model -> ident -> M.record) (id : M.lident)  =
-      let r = f model (unloc id) in
-      let lt = List.map (fun (x : M.record_field) ->
-          match snd x.type_ with
-          | Some _ -> x.type_
-          | None -> fst x.type_, Some (dumloc (mk_fannot (unloc x.name)))) r.fields in
-      match r.pos with
-      | Pnode [] -> T.mk_type ?annotation (to_one_type (List.map to_type lt) |> fun x -> x.node)
-      | p -> begin
-          let ltt = ref lt in
-          let rec aux p =
-            match p with
-            | M.Ptuple ids -> begin
-                let length = List.length ids in
-                let ll0, ll1 = List.cut length !ltt in
-                ltt := ll1;
-                let ll0 : M.type_ list = List.map2 (fun id (x : M.type_) ->
-                    let annot =
-                      match id with
-                      | "_" -> None
-                      | _ -> Some (dumloc ("%" ^ id))
-                    in
-                    M.mktype ?annot (M.get_ntype x)) ids ll0 in
-                to_one_type (List.map to_type ll0)
-              end
-            | M.Pnode l -> to_one_type (List.map aux l)
-          in
-          let res = aux p in
-          { res with annotation = Option.map unloc (M.get_atype t) }
-        end
-    in
-
-    match M.get_ntype t with
-    | Tasset _   -> assert false
-    | Tenum _    -> T.mk_type ?annotation T.Tint
-    | Tstate     -> T.mk_type ?annotation T.Tint
-    | Tbuiltin b -> T.mk_type ?annotation begin
-        match b with
-        | Bunit         -> T.Tunit
-        | Bbool         -> T.Tbool
-        | Bint          -> T.Tint
-        | Brational     -> assert false
-        | Bdate         -> T.Ttimestamp
-        | Bduration     -> T.Tint
-        | Btimestamp    -> T.Ttimestamp
-        | Bstring       -> T.Tstring
-        | Baddress      -> T.Taddress
-        | Bcurrency     -> T.Tmutez
-        | Bsignature    -> T.Tsignature
-        | Bkey          -> T.Tkey
-        | Bkeyhash      -> T.Tkey_hash
-        | Bbytes        -> T.Tbytes
-        | Bnat          -> T.Tnat
-        | Bchainid      -> T.Tchain_id
-        | Bbls12_381_fr -> T.Tbls12_381_fr
-        | Bbls12_381_g1 -> T.Tbls12_381_g1
-        | Bbls12_381_g2 -> T.Tbls12_381_g2
-        | Bnever        -> T.Tnever
-        | Bchest        -> T.Tchest
-        | Bchest_key    -> T.Tchest_key
+let rec to_type (model : M.model) ?annotation (t : M.type_) : T.type_ =
+  let to_type = to_type model in
+  let annotation =
+    match annotation with
+    | Some _ -> annotation
+    | _ -> begin
+        match snd t with
+        | Some a when String.equal "%_" (unloc a) -> None
+        | Some a -> Some (unloc a)
+        | None -> None
       end
-    | Tcontainer _   -> assert false
-    | Tlist t        -> T.mk_type ?annotation (T.Tlist (to_type t))
-    | Toption t      -> T.mk_type ?annotation (T.Toption (to_type t))
-    | Ttuple lt      -> T.mk_type ?annotation (to_one_type (List.map to_type lt) |> fun x -> x.node)
-    | Tset t         -> T.mk_type ?annotation (T.Tset (to_type t))
-    | Tmap (b, k, v) -> T.mk_type ?annotation (if b then T.Tbig_map (to_type k, to_type v) else T.Tmap (to_type k, to_type v))
-    | Tor (l, r)     -> T.mk_type ?annotation (T.Tor (to_type l, to_type r))
-    | Trecord id     -> process_record M.Utils.get_record id
-    | Tevent id      -> process_record M.Utils.get_event id
-    | Tlambda (a, r) -> T.mk_type ?annotation (Tlambda (to_type a, to_type r))
-    | Tunit          -> T.mk_type ?annotation (T.Tunit)
-    | Toperation     -> T.mk_type ?annotation (T.Toperation)
-    | Tcontract t    -> T.mk_type ?annotation (T.Tcontract (to_type t))
-    | Tstorage       -> assert false
-    | Tprog  _       -> assert false
-    | Tvset  _       -> assert false
-    | Ttrace _       -> assert false
-    | Tticket t      -> T.mk_type ?annotation (T.Tticket (to_type t))
-    | Tsapling_state n       -> T.mk_type ?annotation (T.Tsapling_state n)
-    | Tsapling_transaction n -> T.mk_type ?annotation (T.Tsapling_transaction n)
-
   in
+
+  let process_record (f : M.model -> ident -> M.record) (id : M.lident)  =
+    let r = f model (unloc id) in
+    let lt = List.map (fun (x : M.record_field) ->
+        match snd x.type_ with
+        | Some _ -> x.type_
+        | None -> fst x.type_, Some (dumloc (mk_fannot (unloc x.name)))) r.fields in
+    match r.pos with
+    | Pnode [] -> T.mk_type ?annotation (to_one_type (List.map to_type lt) |> fun x -> x.node)
+    | p -> begin
+        let ltt = ref lt in
+        let rec aux p =
+          match p with
+          | M.Ptuple ids -> begin
+              let length = List.length ids in
+              let ll0, ll1 = List.cut length !ltt in
+              ltt := ll1;
+              let ll0 : M.type_ list = List.map2 (fun id (x : M.type_) ->
+                  let annot =
+                    match id with
+                    | "_" -> None
+                    | _ -> Some (dumloc ("%" ^ id))
+                  in
+                  M.mktype ?annot (M.get_ntype x)) ids ll0 in
+              to_one_type (List.map to_type ll0)
+            end
+          | M.Pnode l -> to_one_type (List.map aux l)
+        in
+        let res = aux p in
+        { res with annotation = Option.map unloc (M.get_atype t) }
+      end
+  in
+
+  match M.get_ntype t with
+  | Tasset _   -> assert false
+  | Tenum _    -> T.mk_type ?annotation T.Tint
+  | Tstate     -> T.mk_type ?annotation T.Tint
+  | Tbuiltin b -> T.mk_type ?annotation begin
+      match b with
+      | Bunit         -> T.Tunit
+      | Bbool         -> T.Tbool
+      | Bint          -> T.Tint
+      | Brational     -> assert false
+      | Bdate         -> T.Ttimestamp
+      | Bduration     -> T.Tint
+      | Btimestamp    -> T.Ttimestamp
+      | Bstring       -> T.Tstring
+      | Baddress      -> T.Taddress
+      | Bcurrency     -> T.Tmutez
+      | Bsignature    -> T.Tsignature
+      | Bkey          -> T.Tkey
+      | Bkeyhash      -> T.Tkey_hash
+      | Bbytes        -> T.Tbytes
+      | Bnat          -> T.Tnat
+      | Bchainid      -> T.Tchain_id
+      | Bbls12_381_fr -> T.Tbls12_381_fr
+      | Bbls12_381_g1 -> T.Tbls12_381_g1
+      | Bbls12_381_g2 -> T.Tbls12_381_g2
+      | Bnever        -> T.Tnever
+      | Bchest        -> T.Tchest
+      | Bchest_key    -> T.Tchest_key
+    end
+  | Tcontainer _   -> assert false
+  | Tlist t        -> T.mk_type ?annotation (T.Tlist (to_type t))
+  | Toption t      -> T.mk_type ?annotation (T.Toption (to_type t))
+  | Ttuple lt      -> T.mk_type ?annotation (to_one_type (List.map to_type lt) |> fun x -> x.node)
+  | Tset t         -> T.mk_type ?annotation (T.Tset (to_type t))
+  | Tmap (b, k, v) -> T.mk_type ?annotation (if b then T.Tbig_map (to_type k, to_type v) else T.Tmap (to_type k, to_type v))
+  | Tor (l, r)     -> T.mk_type ?annotation (T.Tor (to_type l, to_type r))
+  | Trecord id     -> process_record M.Utils.get_record id
+  | Tevent id      -> process_record M.Utils.get_event id
+  | Tlambda (a, r) -> T.mk_type ?annotation (Tlambda (to_type a, to_type r))
+  | Tunit          -> T.mk_type ?annotation (T.Tunit)
+  | Toperation     -> T.mk_type ?annotation (T.Toperation)
+  | Tcontract t    -> T.mk_type ?annotation (T.Tcontract (to_type t))
+  | Tstorage       -> assert false
+  | Tprog  _       -> assert false
+  | Tvset  _       -> assert false
+  | Ttrace _       -> assert false
+  | Tticket t      -> T.mk_type ?annotation (T.Tticket (to_type t))
+  | Tsapling_state n       -> T.mk_type ?annotation (T.Tsapling_state n)
+  | Tsapling_transaction n -> T.mk_type ?annotation (T.Tsapling_transaction n)
+
+
+let to_ir (model : M.model) : T.ir =
 
   let remove_annot (t : T.type_) = {t with annotation = None} in
 
@@ -427,7 +429,7 @@ let to_ir (model : M.model) : T.ir =
     | Mleft (_, x)      -> T.Dleft (to_data x)
     | Mright (_, x)     -> T.Dright (to_data x)
     | Mcast (_, _, v)   -> to_data v
-    | Mvar (x, Vparameter, _, _) -> T.Dvar (unloc x, to_type mt.type_)
+    | Mvar (x, Vparameter, _, _) -> T.Dvar (unloc x, to_type model mt.type_)
     | Mlambda (_rt, id, _at, e) -> begin
         let env = mk_env () in
         let ir = mterm_to_intruction env e ~view:false in
@@ -437,7 +439,7 @@ let to_ir (model : M.model) : T.ir =
 
   and mterm_to_intruction env (mtt : M.mterm) ?(view = false) : T.instruction =
     let f = mterm_to_intruction env ~view in
-    let ft = to_type in
+    let ft = to_type model in
 
     let get_entrypoint_annot ?(pref="") id =
       match id with
@@ -462,7 +464,7 @@ let to_ir (model : M.model) : T.ir =
     let get_self_entrypoint id =
       let fs = M.Utils.get_fs model id in
       let ts = List.map proj3_2 fs.args in
-      get_entrypoint id (to_one_type (List.map to_type ts)) (T.Izop Zself_address)
+      get_entrypoint id (to_one_type (List.map (to_type model) ts)) (T.Izop Zself_address)
     in
 
     let mk_tuple l =
@@ -639,7 +641,7 @@ let to_ir (model : M.model) : T.ir =
         let op =
           match tr with
           | TKsimple (v, d)         -> T.Iterop (Ttransfer_tokens, T.iunit, f v, get_contract None T.tunit (f d))
-          | TKcall (v, id, t, d, a) -> T.Iterop (Ttransfer_tokens, f a, f v, get_entrypoint id (to_type t) (f d))
+          | TKcall (v, id, t, d, a) -> T.Iterop (Ttransfer_tokens, f a, f v, get_entrypoint id (to_type model t) (f d))
           | TKentry (v, e, a)       -> T.Iterop (Ttransfer_tokens, f a, f v, f e)
           | TKself (v, id, args)    -> begin
               let a =
@@ -660,7 +662,7 @@ let to_ir (model : M.model) : T.ir =
 
     | Mentrypoint (t, id, d, r)  ->
       let annot = get_entrypoint_annot (unloc id) in
-      let a = T.Iunop (Ucontract (to_type t, annot), f d) in
+      let a = T.Iunop (Ucontract (to_type model t, annot), f d) in
       begin
         match r with
         | Some r -> T.Iifnone (a, Iunop (Ufail, f r), "_var_ifnone", Ivar "_var_ifnone", ft mtt.type_)
@@ -668,7 +670,7 @@ let to_ir (model : M.model) : T.ir =
       end
 
     | Mcallview (t, a, b, c)  -> begin
-        T.Ibinop (Bview (unloc b, to_type t), f c, f a)
+        T.Ibinop (Bview (unloc b, to_type model t), f c, f a)
       end
     | Mself id                -> get_self_entrypoint (unloc id)
 
@@ -718,7 +720,7 @@ let to_ir (model : M.model) : T.ir =
     | Mnone    -> begin
         let t =
           match M.get_ntype mtt.type_ with
-          | M.Toption t -> to_type t
+          | M.Toption t -> to_type model t
           | _ -> assert false
         in
         T.Izop (T.Znone t)
@@ -847,7 +849,7 @@ let to_ir (model : M.model) : T.ir =
 
     | Mcast (src, dst, v) -> begin
         match M.get_ntype src, M.get_ntype dst, v.node with
-        | M.Tbuiltin Baddress, M.Tcontract t, _                -> get_contract None (to_type t) (f v)
+        | M.Tbuiltin Baddress, M.Tcontract t, _                -> get_contract None (to_type model t) (f v)
         | M.Tbuiltin Bcurrency, M.Tbuiltin Bnat, _             -> T.idiv (f v) (T.imutez Big_int.unit_big_int)
         | M.Tbuiltin Bstring, M.Tbuiltin Bkey, Mstring s       -> T.Iconst (T.mk_type Tkey, Dstring s)
         | M.Tbuiltin Bstring, M.Tbuiltin Bkeyhash, Mstring s   -> T.Iconst (T.mk_type Tkey_hash, Dstring s)
@@ -883,8 +885,8 @@ let to_ir (model : M.model) : T.ir =
 
     | Mlistprepend (_t, i, l)    -> T.Ibinop (Bcons, f l, f i)
     | Mlistlength (_, l)         -> T.Iunop (Usize, f l)
-    | Mlistcontains (t, c, a)    -> let b = T.BlistContains (to_type t) in add_builtin b; T.Icall (get_fun_name b, [f c; f a], is_inline b)
-    | Mlistnth (t, c, a)         -> let b = T.BlistNth (to_type t) in add_builtin b; T.Icall (get_fun_name b, [f c; f a], is_inline b)
+    | Mlistcontains (t, c, a)    -> let b = T.BlistContains (to_type model t) in add_builtin b; T.Icall (get_fun_name b, [f c; f a], is_inline b)
+    | Mlistnth (t, c, a)         -> let b = T.BlistNth (to_type model t) in add_builtin b; T.Icall (get_fun_name b, [f c; f a], is_inline b)
     | Mlistreverse _             -> emit_error (UnsupportedTerm ("Mlistreverse"))
     | Mlistconcat _              -> emit_error (UnsupportedTerm ("Mlistconcat"))
     | Mlistfold (_, ix, ia, c, a, b) -> T.Ifold (unloc ix, None, unloc ia, f c, f a, T.Iassign (unloc ia, f b))
@@ -916,8 +918,8 @@ let to_ir (model : M.model) : T.ir =
 
     (* builtin functions *)
 
-    | Mmax (l, r)        -> let b = T.Bmax (to_type l.type_) in add_builtin b; T.Icall (get_fun_name b, [f l; f r], is_inline b)
-    | Mmin (l, r)        -> let b = T.Bmin (to_type l.type_) in add_builtin b; T.Icall (get_fun_name b, [f l; f r], is_inline b)
+    | Mmax (l, r)        -> let b = T.Bmax (to_type model l.type_) in add_builtin b; T.Icall (get_fun_name b, [f l; f r], is_inline b)
+    | Mmin (l, r)        -> let b = T.Bmin (to_type model l.type_) in add_builtin b; T.Icall (get_fun_name b, [f l; f r], is_inline b)
     | Mabs x when is_rat x.type_ -> let b = T.Bratabs        in add_builtin b; T.Icall (get_fun_name b, [f x], is_inline b)
     | Mabs x             -> T.Iunop (Uabs, f x)
     | Mconcat (x, y)     -> T.Ibinop (Bconcat, f x, f y)
@@ -1078,7 +1080,7 @@ let to_ir (model : M.model) : T.ir =
 
   let storage_list = List.map (
       fun (si : M.storage_item) ->
-        (unloc si.id), to_type ~annotation:(mk_fannot (unloc si.id)) si.typ, to_data si.default)
+        (unloc si.id), to_type model ~annotation:(mk_fannot (unloc si.id)) si.typ, to_data si.default)
       model.storage
   in
 
@@ -1095,8 +1097,8 @@ let to_ir (model : M.model) : T.ir =
 
     let for_fs _env (fs : M.function_struct) ?(view= false) =
       let name = unloc fs.name in
-      let args = List.map (fun (id, t, _) -> unloc id, to_type t) fs.args in
-      let eargs = List.map (fun (id, t, _) -> unloc id, to_type t) fs.eargs in
+      let args = List.map (fun (id, t, _) -> unloc id, to_type model t) fs.args in
+      let eargs = List.map (fun (id, t, _) -> unloc id, to_type model t) fs.eargs in
       let env = {function_p = Some (name, args)} in
       let body = mterm_to_intruction env fs.body ~view in
       name, args, eargs, body
@@ -1115,13 +1117,13 @@ let to_ir (model : M.model) : T.ir =
         in
 
         match mt.node with
-        | Mmax _                  -> (doit accu mt (T.Bmax (to_type mt.type_)))
-        | Mmin _                  -> (doit accu mt (T.Bmin (to_type mt.type_)))
+        | Mmax _                  -> (doit accu mt (T.Bmax (to_type model mt.type_)))
+        | Mmin _                  -> (doit accu mt (T.Bmin (to_type model mt.type_)))
         | Mfloor _                -> (doit accu mt (T.Bfloor                ))
         | Mceil  _                -> (doit accu mt (T.Bceil                 ))
-        | Mlistcontains (t, _, _) -> (doit accu mt (T.BlistContains (to_type t)))
-        | Mlistnth (t, _, _)      -> (doit accu mt (T.BlistNth (to_type t)))
-        | Mtostring (t, _)        -> (doit accu mt (T.Btostring (to_type t) ))
+        | Mlistcontains (t, _, _) -> (doit accu mt (T.BlistContains (to_type model t)))
+        | Mlistnth (t, _, _)      -> (doit accu mt (T.BlistNth (to_type model t)))
+        | Mtostring (t, _)        -> (doit accu mt (T.Btostring (to_type model t) ))
 
         | Mrateq _
         | Mratcmp _                          -> (doit accu mt (T.Bratcmp   ))
@@ -1146,7 +1148,7 @@ let to_ir (model : M.model) : T.ir =
 
     let for_fs_fun env (fs : M.function_struct) ret ?(view : bool = false) : T.func =
       let fid = unloc fs.name in
-      let tret = to_type ret in
+      let tret = to_type model ret in
       let name, args, _eargs, body = for_fs env fs ~view in
       let eargs = get_extra_args fs.body in
       extra_args := (fid, eargs)::!extra_args;

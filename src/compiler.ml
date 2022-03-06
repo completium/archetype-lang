@@ -22,6 +22,7 @@ let main () : unit =
     | "whyml"             -> Options.target := Whyml
     | "javascript"        -> Options.target := Javascript
     | "markdown"          -> Options.target := Markdown
+    | "bindings-ts"       -> Options.target := BindingsTs
     |  s ->
       Format.eprintf
         "Unknown target %s (--list-target to see available target)@." s;
