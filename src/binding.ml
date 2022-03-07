@@ -32,6 +32,7 @@ let rec to_type (tk : type_kind) fmt (t : type_) =
     | Type -> a ()
     | Init f -> b f
   in
+  let id_f = (fun f -> Format.fprintf fmt "%s" f ) in
   match get_ntype t with
   | Tasset _                        -> todo()
   | Tenum _                         -> todo()
@@ -43,8 +44,8 @@ let rec to_type (tk : type_kind) fmt (t : type_) =
   | Tbuiltin Bdate                  -> doit date   (fun f -> Format.fprintf fmt "new Date(parseInt(%s, 10) * 1000)" f )
   | Tbuiltin Bduration              -> doit number todo
   | Tbuiltin Btimestamp             -> doit date   todo
-  | Tbuiltin Bstring                -> doit string todo
-  | Tbuiltin Baddress               -> doit string (fun f -> Format.fprintf fmt "to_address(%s)" f )
+  | Tbuiltin Bstring                -> doit string id_f
+  | Tbuiltin Baddress               -> doit string id_f
   | Tbuiltin Bcurrency              -> doit number todo
   | Tbuiltin Bsignature             -> doit string todo
   | Tbuiltin Bkey                   -> doit string todo
@@ -105,7 +106,7 @@ let pp_event fmt (ie : input_event) =
     let pp_field fmt (f : record_field) =
       Format.fprintf fmt "%a : %a" pp_id f.name (to_type (Init ("data." ^ unloc f.name))) f.type_
     in
-    Format.fprintf fmt "function make_%a(input: string): %a {
+    Format.fprintf fmt "function make_%a(input: string): %a | undefined {
   const data = hex_to_data(michelsonType_%a, input)
 
   if (data._kind !== '%a') {
