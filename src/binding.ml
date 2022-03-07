@@ -142,7 +142,9 @@ let pp_event fmt (ie : input_event) =
 
 let process(model : model) : string =
   let events = List.map (fun (r : record) ->
-      mk_input_event r (Michelson.Utils.type_to_micheline (Gen_michelson.to_type model (mktype (Tevent r.name))))
+      let kt = mktype (Tbuiltin Bstring) ~annot:(dumloc "%kind") in
+      let ty = mktype (Tevent r.name) in
+      mk_input_event r (Michelson.Utils.type_to_micheline (Gen_michelson.to_type model (ttuple [kt ; ty])))
     ) (Model.Utils.get_events model)
   in
   Format.asprintf "%a@\n%a@."
