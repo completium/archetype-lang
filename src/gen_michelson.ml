@@ -141,7 +141,7 @@ let rec to_type (model : M.model) ?annotation (t : M.type_) : T.type_ =
       | Bunit         -> T.Tunit
       | Bbool         -> T.Tbool
       | Bint          -> T.Tint
-      | Brational     -> assert false
+      | Brational     -> T.Tpair (T.mk_type Tint, T.mk_type Tnat)
       | Bdate         -> T.Ttimestamp
       | Bduration     -> T.Tint
       | Btimestamp    -> T.Ttimestamp
