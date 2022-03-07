@@ -386,6 +386,14 @@ let to_ir (model : M.model) : T.ir =
     | Mduration  n      -> T.Dint (Core.duration_to_timestamp n)
     | Mtimestamp v      -> T.Dint v
     | Mbytes     b      -> T.Dbytes b
+    | Mchain_id  v      -> T.Dstring v
+    | Mkey       v      -> T.Dstring v
+    | Mkey_hash  v      -> T.Dstring v
+    | Msignature v      -> T.Dstring v
+    | Mbls12_381_fr   v -> T.Dbytes v
+    | Mbls12_381_fr_n n -> T.Dint n
+    | Mbls12_381_g1   v -> T.Dbytes v
+    | Mbls12_381_g2   v -> T.Dbytes v
     | MsaplingStateEmpty _ -> T.Dlist []
     | MsaplingTransaction (_, b) -> T.Dbytes b
     | Mchest     b      -> T.Dbytes b
@@ -693,8 +701,12 @@ let to_ir (model : M.model) : T.ir =
     | Maddress v         -> T.Iconst (T.mk_type Taddress, Dstring v)
     | Mdate v            -> T.Iconst (T.mk_type Ttimestamp, Dint (Core.date_to_timestamp v))
     | Mduration v        -> T.Iconst (T.mk_type Tint, Dint (Core.duration_to_timestamp v))
-    | Mtimestamp v       -> T.Iconst (T.mk_type Ttimestamp, Dint v)
-    | Mbytes v           -> T.Iconst (T.mk_type Tbytes, Dbytes v)
+    | Mtimestamp v       -> T.Iconst (T.mk_type Ttimestamp,    Dint v)
+    | Mbytes v           -> T.Iconst (T.mk_type Tbytes,        Dbytes v)
+    | Mchain_id v        -> T.Iconst (T.mk_type Tchain_id,     Dstring v)
+    | Mkey v             -> T.Iconst (T.mk_type Tkey,          Dstring v)
+    | Mkey_hash v        -> T.Iconst (T.mk_type Tkey_hash,     Dstring v)
+    | Msignature v       -> T.Iconst (T.mk_type Tsignature,    Dstring v)
     | Mbls12_381_fr v    -> T.Iconst (T.mk_type Tbls12_381_fr, Dbytes v)
     | Mbls12_381_fr_n v  -> T.Iconst (T.mk_type Tbls12_381_fr, Dint v)
     | Mbls12_381_g1 v    -> T.Iconst (T.mk_type Tbls12_381_g1, Dbytes v)
@@ -855,9 +867,6 @@ let to_ir (model : M.model) : T.ir =
         match M.get_ntype src, M.get_ntype dst, v.node with
         | M.Tbuiltin Baddress, M.Tcontract t, _                -> get_contract None (to_type model t) (f v)
         | M.Tbuiltin Bcurrency, M.Tbuiltin Bnat, _             -> T.idiv (f v) (T.imutez Big_int.unit_big_int)
-        | M.Tbuiltin Bstring, M.Tbuiltin Bkey, Mstring s       -> T.Iconst (T.mk_type Tkey, Dstring s)
-        | M.Tbuiltin Bstring, M.Tbuiltin Bkeyhash, Mstring s   -> T.Iconst (T.mk_type Tkey_hash, Dstring s)
-        | M.Tbuiltin Bstring, M.Tbuiltin Bsignature, Mstring s -> T.Iconst (T.mk_type Tsignature, Dstring s)
         | _ -> f v
       end
     | Mtupleaccess (x, n) -> let s = (match M.get_ntype x.type_ with | Ttuple l -> List.length l | _ -> 0) in access_tuple s (Big_int.int_of_big_int n) (f x)

@@ -1615,6 +1615,10 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mduration _v       -> assert false
     | Mtimestamp _v      -> assert false
     | Mbytes v           -> A.ebytes v
+    | Mchain_id _v       -> assert false
+    | Mkey _v            -> assert false
+    | Mkey_hash _v       -> assert false
+    | Msignature _v      -> assert false
     | Mbls12_381_fr _    -> assert false
     | Mbls12_381_fr_n _  -> assert false
     | Mbls12_381_g1 _    -> assert false

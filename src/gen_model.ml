@@ -410,14 +410,18 @@ let to_model (ast : A.ast) : M.model =
           | A.Tbuiltin VTnat, A.Tbuiltin VTrational, _             -> M.Mnattorat v
           | A.Tbuiltin VTint, A.Tbuiltin VTrational, _             -> M.Minttorat v
           (* | A.Tbuiltin VTbls12_381_fr, A.Tbuiltin VTint, _         -> M.Mnattoint v *)
-          | A.Tbuiltin VTbytes, A.Tbuiltin VTbls12_381_fr, { node = Mbytes v; _}   -> M.Mbls12_381_fr v
-          | A.Tbuiltin VTnat,   A.Tbuiltin VTbls12_381_fr, { node = Mnat v; _}     -> M.Mbls12_381_fr_n v
-          | A.Tbuiltin VTint,   A.Tbuiltin VTbls12_381_fr, { node = Mint v; _}     -> M.Mbls12_381_fr_n v
-          | A.Tbuiltin VTbytes, A.Tbuiltin VTbls12_381_g1, { node = Mbytes v; _}   -> M.Mbls12_381_g1 v
-          | A.Tbuiltin VTbytes, A.Tbuiltin VTbls12_381_g2, { node = Mbytes v; _}   -> M.Mbls12_381_g2 v
-          | A.Tbuiltin VTbytes, A.Tsapling_transaction n, { node = Mbytes v; _} -> M.MsaplingTransaction (n, v)
-          | A.Tbuiltin VTbytes, A.Tbuiltin VTchest, { node = Mbytes v; _}       -> M.Mchest v
-          | A.Tbuiltin VTbytes, A.Tbuiltin VTchest_key, { node = Mbytes v; _}   -> M.Mchest_key v
+          | A.Tbuiltin VTstring, A.Tbuiltin VTchainid,     { node = Mstring v; _}  -> M.Mchain_id v
+          | A.Tbuiltin VTstring, A.Tbuiltin VTkey,         { node = Mstring v; _}  -> M.Mkey v
+          | A.Tbuiltin VTstring, A.Tbuiltin VTkeyhash,     { node = Mstring v; _}  -> M.Mkey_hash v
+          | A.Tbuiltin VTstring, A.Tbuiltin VTsignature,   { node = Mstring v; _}  -> M.Msignature v
+          | A.Tbuiltin VTbytes,  A.Tbuiltin VTbls12_381_fr, { node = Mbytes v; _}   -> M.Mbls12_381_fr v
+          | A.Tbuiltin VTnat,    A.Tbuiltin VTbls12_381_fr, { node = Mnat v; _}     -> M.Mbls12_381_fr_n v
+          | A.Tbuiltin VTint,    A.Tbuiltin VTbls12_381_fr, { node = Mint v; _}     -> M.Mbls12_381_fr_n v
+          | A.Tbuiltin VTbytes,  A.Tbuiltin VTbls12_381_g1, { node = Mbytes v; _}   -> M.Mbls12_381_g1 v
+          | A.Tbuiltin VTbytes,  A.Tbuiltin VTbls12_381_g2, { node = Mbytes v; _}   -> M.Mbls12_381_g2 v
+          | A.Tbuiltin VTbytes,  A.Tsapling_transaction n, { node = Mbytes v; _} -> M.MsaplingTransaction (n, v)
+          | A.Tbuiltin VTbytes,  A.Tbuiltin VTchest, { node = Mbytes v; _}       -> M.Mchest v
+          | A.Tbuiltin VTbytes,  A.Tbuiltin VTchest_key, { node = Mbytes v; _}   -> M.Mchest_key v
           | _ -> M.Mcast (type_to_type src, type_to_type dst, v)
         end
       | A.Pquantifer (Forall, i, (coll, typ), term)    -> M.Mforall (i, type_to_type typ, Option.map f coll, f term)
