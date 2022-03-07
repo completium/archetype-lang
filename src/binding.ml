@@ -95,7 +95,7 @@ let pp_event fmt (ie : input_event) =
     let pp_field fmt (f : record_field) =
       Format.fprintf fmt "%a : %a" pp_id f.name (to_type Type) f.type_
     in
-    Format.fprintf fmt "export interface %a {@\n  @[%a@]@\n}"
+    Format.fprintf fmt "export interface %a extends ShaftEvent {@\n  @[%a@]@\n}"
       pp_id ie.r.name
       (pp_list ",@\n" pp_field) ie.r.fields
   in
