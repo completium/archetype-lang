@@ -1152,10 +1152,10 @@ let opsigs =
     |> List.flatten)
     @
     [
-      PT.Arith PT.Mult, ([A.VTnat; A.VTbls12_381_fr], A.VTbls12_381_fr) ;
+      (* PT.Arith PT.Mult, ([A.VTnat; A.VTbls12_381_fr], A.VTbls12_381_fr) ;
       PT.Arith PT.Mult, ([A.VTint; A.VTbls12_381_fr], A.VTbls12_381_fr) ;
       PT.Arith PT.Mult, ([A.VTbls12_381_fr; A.VTnat], A.VTbls12_381_fr) ;
-      PT.Arith PT.Mult, ([A.VTbls12_381_fr; A.VTint], A.VTbls12_381_fr) ;
+      PT.Arith PT.Mult, ([A.VTbls12_381_fr; A.VTint], A.VTbls12_381_fr) ; *)
     ]
   in
 

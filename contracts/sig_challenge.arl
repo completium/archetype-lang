@@ -6,7 +6,7 @@ asset challenge {
   solved : bool = false;
 }
 
-entry emit (c_id : string, addr_ : address) {
+entry %emit (c_id : string, addr_ : address) {
   effect {
     challenge.add({id = c_id; addr = addr_})
   }
