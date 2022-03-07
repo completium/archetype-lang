@@ -22,6 +22,7 @@ module Type : sig
   val as_big_map          : A.ptyp -> (A.ptyp * A.ptyp) option
   val as_or               : A.ptyp -> (A.ptyp * A.ptyp) option
   val as_lambda           : A.ptyp -> (A.ptyp * A.ptyp) option
+  val as_content_array    : A.ptyp -> A.ptyp option
 
   val is_asset     : A.ptyp -> bool
   val is_numeric   : A.ptyp -> bool
@@ -82,6 +83,14 @@ end = struct
   let as_big_map   = function A.Tbig_map   (a, r)  -> Some (a, r)  | _ -> None
   let as_or        = function A.Tor        (l, r)  -> Some (l, r)  | _ -> None
   let as_lambda    = function A.Tlambda    (a, r)  -> Some (a, r)  | _ -> None
+
+  let as_content_array = function
+      A.Tcontainer (ty, _) -> Some ty
+    | A.Tset       t       -> Some t
+    | A.Tlist      t       -> Some t
+    | A.Tmap       (k, v)  -> Some (A.Ttuple [k; v])
+    | A.Tbig_map   (k, v)  -> Some (A.Ttuple [k; v])
+    | _ -> None
 
   let as_asset_collection = function
     | A.Tcontainer (A.Tasset asset, c) -> Some (asset, c)
@@ -1146,16 +1155,16 @@ let opsigs =
   let bls_curves : (PT.operator * (A.vtyp list * A.vtyp)) list =
     (
       List.map (fun x -> [ PT.Arith PT.Plus,   ([x; x], x);
-                         PT.Arith PT.Mult,   ([x; A.VTbls12_381_fr], x);
-                         PT.Unary PT.Uminus, ([x], x)])
-      [A.VTbls12_381_fr; A.VTbls12_381_g1; A.VTbls12_381_g2]
-    |> List.flatten)
+                           PT.Arith PT.Mult,   ([x; A.VTbls12_381_fr], x);
+                           PT.Unary PT.Uminus, ([x], x)])
+        [A.VTbls12_381_fr; A.VTbls12_381_g1; A.VTbls12_381_g2]
+      |> List.flatten)
     @
     [
       (* PT.Arith PT.Mult, ([A.VTnat; A.VTbls12_381_fr], A.VTbls12_381_fr) ;
-      PT.Arith PT.Mult, ([A.VTint; A.VTbls12_381_fr], A.VTbls12_381_fr) ;
-      PT.Arith PT.Mult, ([A.VTbls12_381_fr; A.VTnat], A.VTbls12_381_fr) ;
-      PT.Arith PT.Mult, ([A.VTbls12_381_fr; A.VTint], A.VTbls12_381_fr) ; *)
+         PT.Arith PT.Mult, ([A.VTint; A.VTbls12_381_fr], A.VTbls12_381_fr) ;
+         PT.Arith PT.Mult, ([A.VTbls12_381_fr; A.VTnat], A.VTbls12_381_fr) ;
+         PT.Arith PT.Mult, ([A.VTbls12_381_fr; A.VTint], A.VTbls12_381_fr) ; *)
     ]
   in
 
@@ -2834,7 +2843,7 @@ let rec for_xexpr
       end
 
     | Earray (e :: es) -> begin
-        let elty = Option.bind (Option.map fst |@ Type.as_container) ety in
+        let elty = Option.bind Type.as_content_array ety in
         let e    = for_xexpr env ?ety:elty e in
         let elty = if Option.is_some e.A.type_ then e.A.type_ else elty in
         let es   = List.map (fun e -> for_xexpr env ?ety:elty e) es in
