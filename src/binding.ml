@@ -38,27 +38,27 @@ let rec to_type (tk : type_kind) fmt (t : type_) =
   | Tenum _                         -> todo()
   | Tstate                          -> todo()
   | Tbuiltin Bunit                  -> todo()
-  | Tbuiltin Bbool                  -> doit bool   todo
-  | Tbuiltin Bint                   -> doit number todo
+  | Tbuiltin Bbool                  -> doit bool   id_f
+  | Tbuiltin Bint                   -> doit number id_f
   | Tbuiltin Brational              -> todo()
-  | Tbuiltin Bdate                  -> doit date   (fun f -> Format.fprintf fmt "new Date(parseInt(%s, 10) * 1000)" f )
-  | Tbuiltin Bduration              -> doit number todo
-  | Tbuiltin Btimestamp             -> doit date   todo
+  | Tbuiltin Bdate                  -> doit date   (fun f -> Format.fprintf fmt "new Date(%s)" f )
+  | Tbuiltin Bduration              -> doit number id_f
+  | Tbuiltin Btimestamp             -> doit date   (fun f -> Format.fprintf fmt "new Date(%s)" f )
   | Tbuiltin Bstring                -> doit string id_f
   | Tbuiltin Baddress               -> doit string id_f
-  | Tbuiltin Bcurrency              -> doit number todo
-  | Tbuiltin Bsignature             -> doit string todo
-  | Tbuiltin Bkey                   -> doit string todo
-  | Tbuiltin Bkeyhash               -> doit string todo
-  | Tbuiltin Bbytes                 -> doit bytes  todo
-  | Tbuiltin Bnat                   -> doit number todo
-  | Tbuiltin Bchainid               -> doit string todo
-  | Tbuiltin Bbls12_381_fr          -> doit bytes  todo
-  | Tbuiltin Bbls12_381_g1          -> doit bytes  todo
-  | Tbuiltin Bbls12_381_g2          -> doit bytes  todo
+  | Tbuiltin Bcurrency              -> doit number id_f
+  | Tbuiltin Bsignature             -> doit string id_f
+  | Tbuiltin Bkey                   -> doit string id_f
+  | Tbuiltin Bkeyhash               -> doit string id_f
+  | Tbuiltin Bbytes                 -> doit bytes  id_f
+  | Tbuiltin Bnat                   -> doit number id_f
+  | Tbuiltin Bchainid               -> doit string id_f
+  | Tbuiltin Bbls12_381_fr          -> doit bytes  id_f
+  | Tbuiltin Bbls12_381_g1          -> doit bytes  id_f
+  | Tbuiltin Bbls12_381_g2          -> doit bytes  id_f
   | Tbuiltin Bnever                 -> unsupported()
-  | Tbuiltin Bchest                 -> doit bytes  todo
-  | Tbuiltin Bchest_key             -> doit bytes  todo
+  | Tbuiltin Bchest                 -> doit bytes  id_f
+  | Tbuiltin Bchest_key             -> doit bytes  id_f
   | Tcontainer _                    -> unsupported()
   | Tlist _ty                       -> todo()
   | Toption ty                      -> self ty
