@@ -327,10 +327,10 @@ let generate_target model =
     |> output
 
   | BindingsJs ->
-    Binding_js.process model
+    Binding.process Options.Javascript model
 
   | BindingsTs ->
-    Binding_ts.process model
+    Binding.process Options.Typescript model
 
   | _ -> ""
 

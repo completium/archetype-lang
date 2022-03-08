@@ -103,3 +103,11 @@ let string_to_service_kind k =
   | v -> raise (UnknownServiceKind v)
 
 let opt_service_kind = ref (None : service_kind option)
+
+type language =
+  | Typescript
+  | Javascript
+
+let language_to_string = function
+  | Typescript -> "typescript"
+  | Javascript -> "javascript"

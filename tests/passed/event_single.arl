@@ -1,0 +1,10 @@
+archetype event_simple
+
+event ev {
+  v : nat
+}
+
+entry e1(n : nat) {
+  var e : ev = { 2 };
+  emit<ev>(e)
+}
