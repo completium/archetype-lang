@@ -764,36 +764,39 @@ let to_ir (model : M.model) : T.ir =
       end
     | Mlitrecord l
     | Mlitevent l -> begin
-        let ri =
-          let ll = List.map (fun (_, x) -> f x) l in
-          let mk_default _ = T.Rtuple ll in
-          let doit f rn =
-            let r : M.record = f model (unloc rn) in
-            match r.pos with
-            | Pnode [] -> mk_default ()
-            | _ -> begin
-                let ndata = ref ll in
+        match l with
+        | [] -> T.Iconst (T.mk_type Tunit, Dunit)
+        | _ ->
+          let ri =
+            let ll = List.map (fun (_, x) -> f x) l in
+            let mk_default _ = T.Rtuple ll in
+            let doit f rn =
+              let r : M.record = f model (unloc rn) in
+              match r.pos with
+              | Pnode [] -> mk_default ()
+              | _ -> begin
+                  let ndata = ref ll in
 
-                let rec aux p =
-                  match p with
-                  | M.Ptuple ids  -> begin
-                      let l = List.length ids in
-                      let ll0, ll1 = List.cut l !ndata in
-                      ndata := ll1;
-                      T.Rtuple ll0
-                    end
-                  | M.Pnode l -> T.Rnodes (List.map aux l)
-                in
+                  let rec aux p =
+                    match p with
+                    | M.Ptuple ids  -> begin
+                        let l = List.length ids in
+                        let ll0, ll1 = List.cut l !ndata in
+                        ndata := ll1;
+                        T.Rtuple ll0
+                      end
+                    | M.Pnode l -> T.Rnodes (List.map aux l)
+                  in
 
-                aux r.pos
-              end
+                  aux r.pos
+                end
+            in
+            match M.get_ntype mtt.type_ with
+            | M.Trecord rn -> doit M.Utils.get_record rn
+            | M.Tevent  rn -> doit M.Utils.get_event  rn
+            | _ -> mk_default ()
           in
-          match M.get_ntype mtt.type_ with
-          | M.Trecord rn -> doit M.Utils.get_record rn
-          | M.Tevent  rn -> doit M.Utils.get_event  rn
-          | _ -> mk_default ()
-        in
-        T.Irecord ri
+          T.Irecord ri
       end
     | Mlambda (rt, id, at, e) -> T.Ilambda (ft rt, unloc id, ft at, f e)
 
