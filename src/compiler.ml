@@ -37,7 +37,7 @@ let main () : unit =
       "--decompile", Arg.Set Options.opt_decomp, " Same as -d";
       "-t", Arg.String f, "<lang> Transcode to <lang> language";
       "--target", Arg.String f, " Same as -t";
-      "--list-target", Arg.Unit (fun _ -> Format.printf "target available:@\n  michelson@\n  michelson-storage@\n  whyml@\n  javascript@\n"; exit 0), " List available target languages";
+      "--list-target", Arg.Unit (fun _ -> Format.printf "target available:@\n  michelson@\n  michelson-storage@\n  whyml@\n  javascript@\n  bindings-ts@\n"; exit 0), " List available target languages";
       "-o", Arg.String (fun s -> Options.opt_out := s), " Place the output into <file>";
       "--output", Arg.String (fun s -> Options.opt_out := s), " Same as -o";
       "-pt", Arg.Set Options.opt_pt, " Generate parse tree";
