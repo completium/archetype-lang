@@ -1,6 +1,7 @@
 open Location
 open Model
 open Printer_tools
+open Binding_tools
 
 module T = Michelson
 
@@ -141,12 +142,7 @@ let pp_event fmt (ie : input_event) =
   pp_register fmt
 
 let process(model : model) : string =
-  let events = List.map (fun (r : record) ->
-      let kt = mktype (Tbuiltin Bstring) ~annot:(dumloc "%_kind") in
-      let ty = mktype (Tevent r.name) in
-      mk_input_event r (Michelson.Utils.type_to_micheline (Gen_michelson.to_type model (ttuple [kt ; ty])))
-    ) (Model.Utils.get_events model)
-  in
+  let events = List.map (fun (r : record) -> mk_input_event r (compute_type model r)) (Model.Utils.get_events model) in
   Format.asprintf "%a@\n%a@."
     prelude ()
     (pp_list "@\n@\n@\n" pp_event) events
