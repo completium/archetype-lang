@@ -15,9 +15,9 @@ let rec to_type (tk : type_kind) fmt (t : type_) =
   let unsupported _ = pp "Unsupported" in
   let number      _ = pp "BigNumber" in
   let string      _ = pp "string" in
-  let bytes       _ = pp "Bytes" in
+  let bytes       _ = pp "string" in
   let date        _ = pp "Date" in
-  let bool        _ = pp "bool" in
+  let bool        _ = pp "boolean" in
   let self = to_type tk fmt in
   let doit a b =
     match tk with
