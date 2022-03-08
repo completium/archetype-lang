@@ -1,12 +1,10 @@
 type target_lang =
-  | Solidity
-  | Liquidity
-  | LiquidityUrl
-  | Markdown
   | Michelson
   | MichelsonStorage
   | Whyml
   | Javascript
+  | Markdown
+  | BindingsJs
   | BindingsTs
 [@@deriving show {with_path = false}]
 
@@ -18,6 +16,8 @@ let string_to_target_lang = function
   | "whyml"             -> Whyml
   | "javascript"        -> Javascript
   | "markdown"          -> Markdown
+  | "bindings-js"       -> BindingsJs
+  | "bindings-ts"       -> BindingsTs
   | v                   -> raise (UnknownTarget v)
 
 let version = "1.2.13-rc0"

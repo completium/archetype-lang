@@ -23,7 +23,7 @@
   michelson_parser michelson_lexer gen_decompile opt_model
   gen_why3 mlwtree printer_mlwtree
   gen_extra mtyping extract_w
-  binding compile
+  binding_js binding_ts compile
   lsp services
   )
   (libraries menhirLib num str ppx_deriving yojson ppx_deriving_yojson.runtime hex unix xmlm)
