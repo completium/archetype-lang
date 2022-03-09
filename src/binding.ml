@@ -11,7 +11,6 @@ type type_kind =
 
 let rec to_type (tk : type_kind) fmt (t : type_) =
   let pp = Format.fprintf fmt in
-  let todo        _ = pp "TODO" in
   let unsupported _ = pp "Unsupported" in
   let number      _ = pp "BigNumber" in
   let string      _ = pp "string" in
