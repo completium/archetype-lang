@@ -80,6 +80,8 @@ let to_one_gen init f l =
 
 let to_one_type (l : T.type_ list) : T.type_ = to_one_gen T.tunit (fun x accu -> (T.mk_type (T.Tpair (x, accu)))) l
 
+let to_one_type_or (l : T.type_ list) : T.type_ = to_one_gen T.tunit (fun x accu -> (T.mk_type (T.Tor (x, accu)))) l
+
 let to_one_data (l : T.data list) : T.data = to_one_gen (T.Dunit) (fun x accu -> (T.Dpair (x, accu))) l
 
 let to_one_gen init f l =
@@ -132,9 +134,24 @@ let rec to_type (model : M.model) ?annotation (t : M.type_) : T.type_ =
       end
   in
 
+  let process_enum ?annotation (id : lident) =
+    let e : M.enum = M.Utils.get_enum model (unloc id) in
+    let simple = List.for_all (fun (x : M.enum_item) -> List.is_empty x.args) e.values in
+    if simple
+    then T.mk_type ?annotation T.Tint
+    else begin
+      let lt = List.map (fun (x : M.enum_item) : T.type_ ->
+          T.mk_type ~annotation:(mk_fannot (unloc x.name)) (to_one_type (List.map to_type x.args) |> fun x -> x.node)
+        ) e.values
+      in
+
+      T.mk_type ?annotation (to_one_type_or lt |> fun x -> x.node)
+    end
+  in
+
   match M.get_ntype t with
   | Tasset _   -> assert false
-  | Tenum _    -> T.mk_type ?annotation T.Tint
+  | Tenum id   -> process_enum ?annotation id
   | Tstate     -> T.mk_type ?annotation T.Tint
   | Tbuiltin b -> T.mk_type ?annotation begin
       match b with
