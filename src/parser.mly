@@ -872,9 +872,6 @@ expr_r:
  | LPAREN RPAREN
      { Enothing }
 
- | UNIT
-     { Eunit }
-
  | q=quantifier id=ident t=quant_kind COMMA y=expr
      { Equantifier (q, id, t, y) }
 
@@ -1090,6 +1087,9 @@ simple_expr_r:
 
  | ANY
      { Eany }
+
+ | UNIT
+     { Eunit }
 
  | INVALID_EXPR
      { Einvalid }

@@ -18,6 +18,7 @@ let rec to_type (tk : type_kind) fmt (t : type_) =
   let bytes       _ = pp "string" in
   let date        _ = pp "Date" in
   let bool        _ = pp "boolean" in
+  let any         _ = pp "any" in
   let self = to_type tk fmt in
   let doit a b =
     match tk with
@@ -26,13 +27,13 @@ let rec to_type (tk : type_kind) fmt (t : type_) =
   in
   let id_f = (fun f -> Format.fprintf fmt "%s" f ) in
   match get_ntype t with
-  | Tasset _                        -> todo()
-  | Tenum _                         -> todo()
-  | Tstate                          -> todo()
-  | Tbuiltin Bunit                  -> todo()
+  | Tasset _                        -> unsupported()
+  | Tenum _                         -> doit any    id_f
+  | Tstate                          -> doit any    id_f
+  | Tbuiltin Bunit                  -> doit any    id_f
   | Tbuiltin Bbool                  -> doit bool   id_f
   | Tbuiltin Bint                   -> doit number id_f
-  | Tbuiltin Brational              -> doit number (fun f -> Format.fprintf fmt "%s.dividedby(%s)" f f )
+  | Tbuiltin Brational              -> doit any    id_f(*fun f -> Format.fprintf fmt "%s.dividedby(%s)" f f *)
   | Tbuiltin Bdate                  -> doit date   (fun f -> Format.fprintf fmt "new Date(%s)" f )
   | Tbuiltin Bduration              -> doit number id_f
   | Tbuiltin Btimestamp             -> doit date   (fun f -> Format.fprintf fmt "new Date(%s)" f )
@@ -52,17 +53,17 @@ let rec to_type (tk : type_kind) fmt (t : type_) =
   | Tbuiltin Bchest                 -> doit bytes  id_f
   | Tbuiltin Bchest_key             -> doit bytes  id_f
   | Tcontainer _                    -> unsupported()
-  | Tlist _ty                       -> todo()
+  | Tlist _ty                       -> doit any    id_f
   | Toption ty                      -> self ty
-  | Ttuple _tys                     -> todo()
-  | Tset _ty                        -> todo()
-  | Tmap (false, _kty, _vty)        -> todo()
+  | Ttuple _tys                     -> doit any    id_f
+  | Tset _ty                        -> doit any    id_f
+  | Tmap (false, _kty, _vty)        -> doit any    id_f
   | Tmap (true, _kty, _vty)         -> unsupported()
-  | Tor (_lty, _rty)                -> todo()
-  | Trecord _id                     -> todo()
+  | Tor (_lty, _rty)                -> doit any    id_f
+  | Trecord _id                     -> doit any    id_f
   | Tevent _id                      -> unsupported()
-  | Tlambda (_ity, _rty)            -> todo()
-  | Tunit                           -> todo()
+  | Tlambda (_ity, _rty)            -> doit any    id_f
+  | Tunit                           -> doit any    id_f
   | Tstorage                        -> unsupported()
   | Toperation                      -> unsupported()
   | Tcontract _                     -> unsupported()
@@ -71,7 +72,7 @@ let rec to_type (tk : type_kind) fmt (t : type_) =
   | Ttrace _                        -> unsupported()
   | Tticket _                       -> unsupported()
   | Tsapling_state _                -> unsupported()
-  | Tsapling_transaction _          -> todo()
+  | Tsapling_transaction _          -> doit bytes  id_f
 
 let compute_type (model : model) (r : record) =
   let kt = mktype (Tbuiltin Bstring) ~annot:(dumloc "%_kind") in
