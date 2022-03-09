@@ -70,7 +70,7 @@ let opt_out = ref ""
 
 let opt_property_focused = ref ""
 
-let opt_event_contract = ref "KT1AHVF5m8XaWPQCGgfAsZ9eSJJZ7WVGV2hE"
+let opt_event_well_address = ref "KT1AHVF5m8XaWPQCGgfAsZ9eSJJZ7WVGV2hE" (* mainnet address *)
 
 let opt_vids : (string list) ref = ref []
 let add_vids s =

@@ -5690,7 +5690,7 @@ let process_event (model : model) : model =
         let op =
           let zerotz = mk_tez 0 in
           let entry : mterm =
-            let addr : mterm = mk_address !Options.opt_event_contract in
+            let addr : mterm = mk_address !Options.opt_event_well_address in
             let entry_name = dumloc "%event" in
             let error_msg = Some (mk_string "BAD_EVENT_CONTRACT") in
             mk_entrypoint tbytes entry_name addr error_msg
