@@ -32,7 +32,7 @@ let rec to_type (tk : type_kind) fmt (t : type_) =
   | Tbuiltin Bunit                  -> doit any    id_f
   | Tbuiltin Bbool                  -> doit bool   id_f
   | Tbuiltin Bint                   -> doit number id_f
-  | Tbuiltin Brational              -> doit any    id_f(*fun f -> Format.fprintf fmt "%s.dividedby(%s)" f f *)
+  | Tbuiltin Brational              -> doit number (fun f -> Format.fprintf fmt "%s[Object.keys(%s)[0]].dividedBy(%s[Object.keys(%s)[1]])" f f f f)
   | Tbuiltin Bdate                  -> doit date   (fun f -> Format.fprintf fmt "new Date(%s)" f )
   | Tbuiltin Bduration              -> doit number id_f
   | Tbuiltin Btimestamp             -> doit date   (fun f -> Format.fprintf fmt "new Date(%s)" f )
@@ -48,7 +48,7 @@ let rec to_type (tk : type_kind) fmt (t : type_) =
   | Tbuiltin Bbls12_381_fr          -> doit bytes  id_f
   | Tbuiltin Bbls12_381_g1          -> doit bytes  id_f
   | Tbuiltin Bbls12_381_g2          -> doit bytes  id_f
-  | Tbuiltin Bnever                 -> unsupported()
+  | Tbuiltin Bnever                 -> doit any    id_f
   | Tbuiltin Bchest                 -> doit bytes  id_f
   | Tbuiltin Bchest_key             -> doit bytes  id_f
   | Tcontainer _                    -> unsupported()
