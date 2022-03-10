@@ -112,8 +112,8 @@ let process (l : language) (model : model) : string =
 
 %aimport { registerEvent, %ahex_to_data } from '@completium/event-well-crank';%a
 " (language_to_string l) version
-      (pp_language pp_none pp_str) "WellEvent, WellEventProcessor, "
       (pp_language pp_none pp_str) "import { MichelsonType } from '@taquito/michel-codec';\n"
+      (pp_language pp_none pp_str) "WellEvent, WellEventProcessor, "
       (pp_language pp_none pp_str) (if with_number then "\nimport BigNumber from 'bignumber.js';" else "")
   in
 
