@@ -424,11 +424,11 @@ end = struct
         | A.VTstring   , A.VTkeyhash    -> Some 1
         | A.VTstring   , A.VTsignature  -> Some 1
 
-        | A.VTbls12_381_fr, A.VTint -> Some 1
-        | A.VTbls12_381_fr, A.VTnat -> Some 2
+        | A.VTbls12_381_fr, A.VTnat -> Some 3
+        | A.VTbls12_381_fr, A.VTint -> Some 2
 
-        | A.VTint, A.VTbls12_381_fr -> Some 3
-        | A.VTnat, A.VTbls12_381_fr -> Some 4
+        | A.VTint, A.VTbls12_381_fr -> Some 1
+        | A.VTnat, A.VTbls12_381_fr -> Some 2
 
         | A.VTstring, A.VTchainid -> Some 1
         | A.VTbytes, A.VTchainid -> Some 1
@@ -1159,13 +1159,6 @@ let opsigs =
                            PT.Unary PT.Uminus, ([x], x)])
         [A.VTbls12_381_fr; A.VTbls12_381_g1; A.VTbls12_381_g2]
       |> List.flatten)
-    @
-    [
-      PT.Arith PT.Mult, ([A.VTnat; A.VTbls12_381_fr], A.VTbls12_381_fr) ;
-      PT.Arith PT.Mult, ([A.VTint; A.VTbls12_381_fr], A.VTbls12_381_fr) ;
-      PT.Arith PT.Mult, ([A.VTbls12_381_fr; A.VTnat], A.VTbls12_381_fr) ;
-      PT.Arith PT.Mult, ([A.VTbls12_381_fr; A.VTint], A.VTbls12_381_fr) ;
-    ]
   in
 
   cmpsigs @ tsigs @ grptypes @ rgtypes @ ariths @ nat @ bools @ others @ bls_curves
