@@ -135,18 +135,16 @@ let rec to_type (model : M.model) ?annotation (t : M.type_) : T.type_ =
   in
 
   let process_enum ?annotation (id : lident) =
-    let e : M.enum = M.Utils.get_enum model (unloc id) in
-    let simple = List.for_all (fun (x : M.enum_item) -> List.is_empty x.args) e.values in
-    if simple
-    then T.mk_type ?annotation T.Tint
-    else begin
-      let lt = List.map (fun (x : M.enum_item) : T.type_ ->
-          T.mk_type ~annotation:(mk_fannot (unloc x.name)) (to_one_type (List.map to_type x.args) |> fun x -> x.node)
-        ) e.values
-      in
-
-      T.mk_type ?annotation (to_one_type_or lt |> fun x -> x.node)
-    end
+    let e_opt : M.enum option = M.Utils.get_enum_opt model (unloc id) in
+    match e_opt with
+    | Some e when  List.for_all (fun (x : M.enum_item) -> List.is_empty x.args) e.values -> begin
+        let lt = List.map (fun (x : M.enum_item) : T.type_ ->
+            T.mk_type ~annotation:(mk_fannot (unloc x.name)) (to_one_type (List.map to_type x.args) |> fun x -> x.node)
+          ) e.values
+        in
+        T.mk_type ?annotation (to_one_type_or lt |> fun x -> x.node)
+      end
+    | _ -> T.mk_type ?annotation T.Tint
   in
 
   match M.get_ntype t with

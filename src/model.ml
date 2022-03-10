@@ -4339,6 +4339,7 @@ module Utils : sig
   val get_records                        : model -> record list
   val get_var                            : model -> ident -> var
   val get_enum                           : model -> ident -> enum
+  val get_enum_opt                       : model -> ident -> enum option
   val get_enum_values                    : model -> ident -> ident list
   val get_asset                          : model -> ident -> asset
   val get_record                         : model -> ident -> record
@@ -4556,6 +4557,7 @@ end = struct
 
   let get_var   m id : var   = get_vars m   |> List.find (fun (x : var)   -> cmp_ident id (unloc x.name))
   let get_enum  m id : enum  = get_enums m  |> List.find (fun (x : enum)  -> cmp_ident id (unloc x.name))
+  let get_enum_opt m id : enum option  = get_enums m |> List.find_opt (fun (x : enum)  -> cmp_ident id (unloc x.name))
   let get_enum_values m id : ident list  = get_enums m
                                            |> List.find (fun (x : enum)  -> cmp_ident id (unloc x.name))
                                            |> fun e -> e.values

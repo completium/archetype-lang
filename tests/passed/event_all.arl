@@ -1,0 +1,88 @@
+archetype event_all
+
+record rtype {
+  f1 : nat;
+  f2 : string;
+}
+
+enum my_enum =
+| aaa
+| bbb
+
+enum eaparam =
+| xxx <nat>
+| yyy <string>
+
+event ev {
+  u : unit;
+  b : bool;
+  i : int;
+  n : nat;
+  r : rational;
+  date_ : date;
+  du : duration;
+  str : string;
+  addr : address;
+  cur : tez;
+  sig : signature;
+  k : key;
+  kh : key_hash;
+  byt : bytes;
+  cid : chain_id;
+
+  // fr : bls12_381_fr;
+  // g1 : bls12_381_g1;
+  // g2 : bls12_381_g2;
+  // nev : never;
+  // ch : chest;
+  // chk : chest_key;
+
+  s : set<nat>;
+  l : list<nat>;
+  m : map<nat, string>;
+  o : option<nat>;
+
+  tu : nat * string;
+  oal : or<nat, string>;
+  oar : or<nat, string>;
+  rr : rtype;
+  ee :  my_enum;
+  eee : eaparam;
+
+  // la : lambda<string, nat>;
+  // st : sapling_transaction(8);
+
+}
+
+entry exec() {
+  var e : ev = {
+     u = Unit;
+     b = true;
+     i = 1i;
+     n = 2;
+     r = 80%;
+     date_ = 2020-01-01;
+     du = 1s;
+     str = "string";
+     addr = tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg;
+     cur = 1tz;
+     sig = "edsigtvwtJaiM7phNNkZjazqKtthDxc3WswYNL961GKgz7VxvPJmWJ8WEkmEZd9oFM1RvwABYW3uYgwGRP7nuBns5WrqyfYsUaB";
+     k = "edpkurLzuFFL1XyP3fed4u7MsgeywQoQmHM45Bz91PBzDvUjQ9bvdn";
+     kh  = "tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg";
+     byt = 0x01;
+     cid = "NetXdQprcVkpaWU";
+
+     s = [1];
+     l  = [2];
+     m  = [(3, "mystr")];
+     o  = none;
+
+     tu = ((4, "mystring"));
+     oal = left<nat, string>(5);
+     oar = right<nat, string>("m0");
+     rr = { f1 = 6; f2 = "m1"};
+     ee = aaa;
+     eee = xxx(1)
+  };
+  emit<ev>(e)
+}
