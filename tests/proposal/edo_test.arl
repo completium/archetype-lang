@@ -1,8 +1,0 @@
-archetype edo_test
-
-entry exec () {
-  effect {
-    var v : bls12_381_fr = 0;
-
-  }
-}

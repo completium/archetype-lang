@@ -7,7 +7,7 @@ entry init () {
   myticket := some(create_ticket ("myticket", 1_000_000));
 }
 
-entry emit (e : contract<ticket<string>>) {
+entry %emit (e : contract<ticket<string>>) {
   match myticket with
   | none -> fail("error: my ticket is not initialized")
   | some (tick) -> begin

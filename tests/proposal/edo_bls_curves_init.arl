@@ -1,9 +1,0 @@
-archetype edo_bls_curves_init
-
-entry exec () {
-  var fr_nat : bls12_381_fr = 0;
-  var fr_int : bls12_381_fr = 0i;
-  var fr_bytes : bls12_381_fr = 0x00;
-  var g1 : bls12_381_g1 = 0x00;
-  var g2 : bls12_381_g2 = 0x00;
-}

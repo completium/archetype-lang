@@ -1,9 +1,0 @@
-archetype edo_crypto
-
-variable l : nat = 0
-
-entry exec () {
-  effect {
-    l := level
-  }
-}
