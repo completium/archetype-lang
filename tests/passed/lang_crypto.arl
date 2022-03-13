@@ -21,11 +21,12 @@ entry exec () {
     var kh : key_hash = hash_key(k);
     dorequire (kh = kh, "ko");
 
+    var c : contract<unit> = implicit_account(kh);
+
     var addr = tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg;
     var a : address = key_address(k);
     dorequire (a = addr, "ko");
 
-    var c : contract<unit> = tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg;
     var d : address = contract_address(c);
     dorequire (d = addr, "ko");
   }
