@@ -2,21 +2,23 @@ archetype lang_cst
 
 entry exec () {
   effect {
-    var a : tez      = balance;       (* BALANCE *)
+    var a : tez      = balance;             (* BALANCE *)
     dorequire(a = a, "ko");
-    var b : address  = caller;        (* SENDER *)
+    var b : address  = caller;              (* SENDER *)
     dorequire(b = b, "ko");
-    var c : date     = now;           (* NOW *)
+    var c : date     = now;                 (* NOW *)
     dorequire(c = c, "ko");
-    var d : address  = source;        (* SOURCE *)
+    var d : address  = source;              (* SOURCE *)
     dorequire(d = d, "ko");
-    var e : tez      = transferred;   (* AMOUNT *)
+    var e : tez      = transferred;         (* AMOUNT *)
     dorequire(e = e, "ko");
-    var f : chain_id = chainid;       (* CHAIN_ID *)
+    var f : chain_id = chainid;             (* CHAIN_ID *)
     dorequire(f = f, "ko");
-    var g : address  = selfaddress;   (* SELF_ADDRESS *)
+    var g : address  = selfaddress;         (* SELF_ADDRESS *)
     dorequire(g = g, "ko");
-    var h : nat      = level;         (* LEVEL *)
+    var h : nat      = level;               (* LEVEL *)
     dorequire(h = h, "ko");
+    var i : nat      = total_voting_power;  (* TOTAL_VOTING_POWER *)
+    dorequire(i = i, "ko");
   }
 }
