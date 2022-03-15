@@ -1,4 +1,4 @@
-archetype date_to_timestamp
+archetype date_from_timestamp
 
 variable res : date = 2000-01-01
 
