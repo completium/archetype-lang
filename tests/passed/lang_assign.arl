@@ -7,6 +7,8 @@ variable da : date = 2020-01-01
 variable du : duration = 0s
 variable tz : tez = 0tz
 
+variable b : bool = false
+
 entry exec () {
   effect {
     n += 1;
@@ -40,5 +42,8 @@ entry exec () {
 
     tz += 1tz;
     tz -= 1tz;
+
+    b &= true;
+    b |= true
   }
 }

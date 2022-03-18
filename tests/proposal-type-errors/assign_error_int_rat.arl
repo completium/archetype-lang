@@ -1,0 +1,7 @@
+archetype assign_error_int_rat
+
+variable i : int = 1
+
+entry exec () {
+  i += 1.1;
+}
