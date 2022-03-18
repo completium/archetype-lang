@@ -705,6 +705,7 @@ type error_desc =
   | InvalidSourcedByAsset
   | InvalidStateExpression
   | InvalidStringValue
+  | InvalidTezValueOverflow
   | InvalidTypeForBigMapKey
   | InvalidTypeForBigMapValue
   | InvalidTypeForCallview
@@ -930,6 +931,7 @@ let pp_error_desc fmt e =
   | InvalidSourcedByAsset              -> pp "Invalid 'Sourcedby' asset, the key must be typed address"
   | InvalidStateExpression             -> pp "Invalid state expression"
   | InvalidStringValue                 -> pp "Invalid string value"
+  | InvalidTezValueOverflow            -> pp "Overflow tez value"
   | InvalidTypeForBigMapKey            -> pp "Invalid type for big map key"
   | InvalidTypeForBigMapValue          -> pp "Invalid type for big map value"
   | InvalidTypeForCallview             -> pp "Invalid type for callview"
@@ -2537,7 +2539,11 @@ let for_literal (env : env) (_ety : A.type_ option) (topv : PT.literal loced) : 
 
   let get_tz_value k tz =
     try
-      Core.string_to_big_int_tz k tz
+      let res = Core.string_to_big_int_tz k tz in
+      let max = Big_int.big_int_of_string "9223372036854775807" in
+      if Big_int.gt_big_int res max
+      then Env.emit_error env (loc topv, InvalidTezValueOverflow);
+      res
     with _
       -> Env.emit_error env (loc topv, InvalidValueForCurrency);
       Big_int.zero_big_int
