@@ -1,0 +1,12 @@
+archetype expr_arith_not_nat
+
+variable res : int = 0
+
+entry exec () {
+  specification {
+    s0: res = -3;
+  }
+  effect {
+    res := not 2
+  }
+}

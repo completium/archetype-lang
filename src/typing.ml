@@ -1152,6 +1152,8 @@ let opsigs =
       PT.Arith PT.Plus   , ([A.VTstring  ; A.VTstring        ], A.VTstring  )  ;
       PT.Logical PT.Xor  , ([A.VTbool    ; A.VTbool          ], A.VTbool    )  ;
       PT.Logical PT.Xor  , ([A.VTnat     ; A.VTnat           ], A.VTnat     )  ;
+      PT.Unary PT.Not    , ([A.VTnat                         ], A.VTint     )  ;
+      PT.Unary PT.Not    , ([A.VTint                         ], A.VTint     )  ;
     ] in
 
   let bls_curves : (PT.operator * (A.vtyp list * A.vtyp)) list =

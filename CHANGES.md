@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ### Added
   - builtins: `isnat`, `to_nat`
+  - `not` operator for `int` and `nat`
 
 ## [1.2.13] - 2022-03-10
 ### Added
