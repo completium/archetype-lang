@@ -1206,6 +1206,14 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "issome (%a)"
         f x
 
+    | Misnat x ->
+      Format.fprintf fmt "isnat (%a)"
+        f x
+
+    | Mtonat x ->
+      Format.fprintf fmt "to_nat (%a)"
+        f x
+
     | Moptget x ->
       Format.fprintf fmt "opt_get (%a)"
         f x

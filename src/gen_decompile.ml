@@ -1791,6 +1791,8 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mlength x           -> A.eapp (A.Fident (dumloc "length")) [f x]
     | Misnone _x          -> assert false
     | Missome _x          -> assert false
+    | Misnat _x           -> assert false
+    | Mtonat _x           -> assert false
     | Moptget _x          -> assert false
     | Mrequiresome (_x, _y) -> assert false
     | Mfloor  _x          -> assert false

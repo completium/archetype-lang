@@ -701,6 +701,14 @@ let to_model (ast : A.ast) : M.model =
         let fx = f x in
         M.Missome (fx)
 
+      | A.Pcall (None, A.Cconst A.Cisnat, [AExpr x]) ->
+        let fx = f x in
+        M.Misnat (fx)
+
+      | A.Pcall (None, A.Cconst A.Ctonat, [AExpr x]) ->
+        let fx = f x in
+        M.Mtonat (fx)
+
       | A.Pcall (None, A.Cconst A.Cgetopt, [AExpr x]) ->
         let fx = f x in
         M.Moptget (fx)

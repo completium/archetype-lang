@@ -235,6 +235,8 @@ let to_const = function
   | Crequiresome    -> "require_some"
   | Cisnone         -> "isnone"
   | Cissome         -> "issome"
+  | Cisnat          -> "isnat"
+  | Ctonat          -> "to_nat"
   | Clength         -> "length"
   | Cmax            -> "max"
   | Cmin            -> "min"

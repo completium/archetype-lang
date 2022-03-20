@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Added
-  - new features
+  - builtins: `isnat`, `to_nat`
 
 ## [1.2.13] - 2022-03-10
 ### Added

@@ -1,0 +1,12 @@
+archetype expr_fun_isnat
+
+variable res : option<nat> = none
+
+entry exec () {
+  specification {
+    s0: res = some(2);
+  }
+  effect {
+    res := isnat(2i)
+  }
+}

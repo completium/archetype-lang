@@ -163,6 +163,8 @@ type const =
   | Crequiresome
   | Cisnone
   | Cissome
+  | Cisnat
+  | Ctonat
   | Clength
   | Cmax
   | Cmin
