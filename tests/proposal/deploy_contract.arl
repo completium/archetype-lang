@@ -1,0 +1,26 @@
+archetype deploy_contract
+
+/*
+archetype dummy (owner : address)
+
+var n : nat = 0
+
+entry default(i : nat) {
+  called by none
+  effect {
+     n := i
+  }
+}
+*/
+
+import "./dummy.arl" as dummy
+
+entry exec () {
+  var okh : option<key_hash> = none;
+
+  var oaddr : option<address> = none;
+  transfer 0tz to deploy dummy with (selfaddress) at oaddr
+
+  var op_addr : (operation * address) = mkcontract(0tz, dummy, (selfaddress))
+
+}
