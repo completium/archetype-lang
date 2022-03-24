@@ -1,4 +1,4 @@
-archetype cast_view_pklist
+archetype view_literal
 
 asset my_asset identified by id {
   id : string;
