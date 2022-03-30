@@ -1,0 +1,17 @@
+archetype asset_update_with_basic_container_map
+
+asset my_asset identified by id {
+  id : string;
+  v0 : nat;
+  c  : map<nat, string>;
+} initialized by {
+  {"id0"; 0; []};
+  {"id1"; 1; []};
+  {"id2"; 2; []}
+}
+
+entry exec (n : nat) {
+  my_asset.update("id1", {c += [(0, "0"); (1, "1"); (2, "2")]});
+
+  my_asset.update("id1", {c -= [2]})
+}
