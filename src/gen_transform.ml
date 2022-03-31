@@ -5697,7 +5697,7 @@ let process_event (model : model) : model =
             let error_msg = Some (mk_string "BAD_EVENT_CONTRACT") in
             mk_entrypoint tbytes entry_name addr error_msg
           in
-          let data = mk_pack (mk_tuple [mk_string (unloc e); mk_string typ; value]) in
+          let data = mk_pack (mk_tuple [mk_string (unloc e); mk_string typ; mk_pack value]) in
           mk_mkoperation zerotz entry data
         in
         mk_transfer_op op
