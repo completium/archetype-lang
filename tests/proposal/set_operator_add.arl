@@ -1,0 +1,10 @@
+archetype list_operator_prepend
+
+variable s : set<string> = []
+
+entry exec () {
+  effect {
+    // s.add("2");
+    s += "2"
+  }
+}

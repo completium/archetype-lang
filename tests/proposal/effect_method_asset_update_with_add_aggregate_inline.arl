@@ -1,0 +1,22 @@
+archetype effect_method_asset_update_with_add_aggregate_inline
+
+asset my_asset_simple identified by oid {
+  oid : nat;
+} initialized by {
+  {oid = 1};
+  {oid = 2};
+  {oid = 3}
+}
+
+asset my_asset identified by id {
+  id : string;
+  value : int;
+  myaggregate : aggregate<my_asset_simple>;
+} initialized by {
+  { "my_id"; 0; [] }
+}
+
+entry exec () {
+  // my_asset.update ("my_id", {value = 3; myaggregate += [1; 2; 3] });
+  my_asset["my_id"].myaggregate += [1; 2; 3]
+}

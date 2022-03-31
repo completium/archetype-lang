@@ -1,0 +1,10 @@
+archetype list_operator_prepend
+
+variable m : map<nat, string> = []
+
+entry exec () {
+  effect {
+    // m.put(2, "2");
+    m += (2, "2")
+  }
+}

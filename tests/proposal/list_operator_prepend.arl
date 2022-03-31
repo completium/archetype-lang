@@ -1,0 +1,10 @@
+archetype list_operator_prepend
+
+variable l : list<string> = []
+
+entry exec () {
+  effect {
+    // l.prepend("2");
+    l += "2"
+  }
+}

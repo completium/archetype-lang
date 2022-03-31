@@ -5,7 +5,7 @@ event even {
   time : date
 }
 
-entry e1(n : nat) {
+entry exec() {
   var e : even = { caller; now };
   emit<even>(e)
 }

@@ -5687,6 +5687,8 @@ let process_event (model : model) : model =
   let rec aux ctx (mt : mterm) =
     match mt.node with
     | Memit (e, value) -> begin
+        let type_ = Gen_michelson.to_type model (tevent e) in
+        let typ = Format.asprintf "%a" Printer_michelson.pp_type type_ in
         let op =
           let zerotz = mk_tez 0 in
           let entry : mterm =
@@ -5695,7 +5697,7 @@ let process_event (model : model) : model =
             let error_msg = Some (mk_string "BAD_EVENT_CONTRACT") in
             mk_entrypoint tbytes entry_name addr error_msg
           in
-          let data = mk_pack (mk_tuple [mk_string (unloc e); value]) in
+          let data = mk_pack (mk_tuple [mk_string (unloc e); mk_string typ; value]) in
           mk_mkoperation zerotz entry data
         in
         mk_transfer_op op
