@@ -1,0 +1,3 @@
+archetype event_well
+
+entry %event(arg : bytes) {}
