@@ -4,6 +4,6 @@
 [![Build Status](https://travis-ci.org/edukera/archetype-lang.svg?branch=master)](https://travis-ci.org/edukera/archetype-lang)
 
 
-Archetype language is a DSL (Domain Specific Language) to describe blockchain business processes.
+Archetype is a general purpose language to develop Smart Contracts on the Tezos blockchain.
 
 [Online documentation](https://docs.archetype-lang.org/)
