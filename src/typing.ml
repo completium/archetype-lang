@@ -942,7 +942,7 @@ let pp_error_desc fmt e =
   | InvalidTypeForFail                 -> pp "Invalid type for fail"
   | InvalidTypeForLambdaArgument       -> pp "Invalid type for lambda argument"
   | InvalidTypeForLambdaReturn         -> pp "Invalid type for lambda return"
-  | InvalidTypeForMapOperator ty       -> pp "Map operator should be applied to a list, not %a" Printer_ast.pp_ptyp ty
+  | InvalidTypeForMapOperator ty       -> pp "Map operator should be applied to a list or an option, not %a" Printer_ast.pp_ptyp ty
   | InvalidTypeForMapKey               -> pp "Invalid type for map key"
   | InvalidTypeForMapValue             -> pp "Invalid type for map value"
   | InvalidTypeForParameter            -> pp "Invalid type for parameter"
@@ -3699,8 +3699,15 @@ let rec for_xexpr
     | Emap (plst, x, pbody) -> begin
         let lst = for_xexpr env plst in
 
+        let f_as, f_ty =
+          match lst.type_ with
+          | Some (A.Tlist _)   -> (fun t -> Type.as_list t), (fun ty -> A.Tlist ty)
+          | Some (A.Toption _) -> (fun t -> Type.as_option t), (fun ty -> A.Toption ty)
+          | _ -> (fun _ -> None), (fun ty -> ty)
+        in
+
         let oty = lst.type_ |> Option.bind (fun ty ->
-            let oty = Type.as_list ty in
+            let oty = f_as ty in
             if Option.is_none oty then
               Env.emit_error env (loc plst, InvalidTypeForMapOperator ty);
             oty) in
@@ -3712,7 +3719,7 @@ let rec for_xexpr
               env oty
           in for_xexpr env pbody in
 
-        let rty = Option.map (fun ty -> A.Tlist ty) body.type_ in
+        let rty = Option.map f_ty body.type_ in
 
         mk_sp rty (A.Pmap (lst, x, body))
       end

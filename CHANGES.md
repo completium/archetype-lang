@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Added
-  - Ithaca support: `sub_mutez`
+  - Ithaca support: `sub_mutez`, `map` for `option` type
   - builtins: `isnat`, `to_nat`
   - `not` operator for `int` and `nat`
 ### Changed
