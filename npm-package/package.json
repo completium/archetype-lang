@@ -1,7 +1,7 @@
 {
   "name": "@completium/archetype",
-  "version": "0.3.15",
-  "description": "Archetype language is a DSL (Domain Specific Language) to describe blockchain business processes.",
+  "version": "0.3.16",
+  "description": "Archetype is a general purpose language to develop Smart Contracts on the Tezos blockchain.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
