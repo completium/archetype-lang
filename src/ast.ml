@@ -188,6 +188,7 @@ type const =
   | Csetdelegate
   | Cimplicitaccount
   | Csubnat
+  | Csubmutez
   (* set *)
   | Csadd
   | Csremove

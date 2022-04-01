@@ -1987,6 +1987,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mshiftleft   (l, r) -> Tshiftleft (map_mterm m ctx l, map_mterm m ctx r)
     | Mshiftright  (l, r) -> Tshiftright (map_mterm m ctx l, map_mterm m ctx r)
     | Msubnat (_l, _r) -> error_not_translated "Msubnat"
+    | Msubmutez (_l, _r) -> error_not_translated "Msubmutez"
 
 
     (* asset api effect *)

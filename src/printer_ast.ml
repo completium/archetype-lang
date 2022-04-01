@@ -260,6 +260,7 @@ let to_const = function
   | Csetdelegate    -> "set_delegate"
   | Cimplicitaccount-> "implicit_account"
   | Csubnat         -> "sub_nat"
+  | Csubmutez       -> "sub_mutez"
   (* set *)
   | Csadd           -> "set_add"
   | Csremove        -> "set_remove"

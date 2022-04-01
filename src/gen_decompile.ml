@@ -1693,7 +1693,8 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | MthreeWayCmp (_l, _r) -> assert false
     | Mshiftleft   (_l, _r) -> assert false
     | Mshiftright  (_l, _r) -> assert false
-    | Msubnat  (_l, _r) -> assert false
+    | Msubnat      (_l, _r) -> assert false
+    | Msubmutez    (_l, _r) -> assert false
 
     (* asset api effect *)
 
