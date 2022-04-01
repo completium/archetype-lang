@@ -20,7 +20,7 @@ let string_to_target_lang = function
   | "bindings-ts"       -> BindingsTs
   | v                   -> raise (UnknownTarget v)
 
-let version = "1.2.14-dev"
+let version = "1.2.14"
 let url = "https://archetype-lang.org/"
 
 let target = ref (Michelson : target_lang)
