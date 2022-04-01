@@ -5,7 +5,7 @@ TEZ_ADDRESS=tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx
 BIN_TEZOS_CLIENT=tezos-client
 BIN_ARCHETYPE="./archetype.exe --set-caller-init=$TEZ_ADDRESS"
 
-PROTOCOL=PtHangz2aRngywmSRGGvrcTyMbbdpWdpFKuS4uMWxg2RaH9i1qx
+PROTOCOL=Psithaca2MLRFYargivpo7YvUr7wUDqyxrdhC5CQq78mRvimz6A
 MOCKUP_PATH=/tmp/mockup
 MOCKUP_NAME=mockup
 MOCKUP_CLIENT="$BIN_TEZOS_CLIENT --mode mockup --base-dir $MOCKUP_PATH"

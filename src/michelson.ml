@@ -105,6 +105,7 @@ and code_node =
   | NEG
   | NEQ
   | SUB
+  | SUB_MUTEZ
   (* Boolean operations *)
   | AND
   | NOT
@@ -269,6 +270,7 @@ and bin_operator =
   | Bsplitticket
   | Bsapling_verify_update
   | Bview of ident * type_
+  | Bsubmutez
 [@@deriving show {with_path = false}]
 
 and ter_operator =
@@ -612,6 +614,7 @@ let iright t x       = Iunop  (Uright t, x)
 let ieq  l r         = Icompare (Ceq, l, r)
 let iadd l r         = Ibinop (Badd, l, r)
 let isub l r         = Ibinop (Bsub, l, r)
+let isub_mutez l r   = Ibinop (Bsubmutez, l, r)
 let imul l r         = Ibinop (Bmul, l, r)
 let idiv l r         = Iifnone (Ibinop (Bediv, l, r), ifail "DivByZero", "_var_ifnone", icar (Ivar ("_var_ifnone")), tint )
 let imod l r         = Iifnone (Ibinop (Bediv, l, r), ifail "DivByZero", "_var_ifnone", icdr (Ivar ("_var_ifnone")), tnat )
@@ -671,6 +674,8 @@ let cmul                          = mk_code  MUL
 let cneg                          = mk_code  NEG
 let cneq                          = mk_code  NEQ
 let csub                          = mk_code  SUB
+let csub_mutez                    = mk_code  SUB_MUTEZ
+
 (* Boolean operations *)
 let cand                          = mk_code  AND
 let cnot                          = mk_code  NOT
@@ -866,23 +871,24 @@ let cmp_un_operator lhs rhs =
 
 let cmp_bin_operator lhs rhs =
   match lhs, rhs with
-  | Badd, Badd         -> true
-  | Bsub, Bsub         -> true
-  | Bmul, Bmul         -> true
-  | Bediv, Bediv       -> true
-  | Blsl, Blsl         -> true
-  | Blsr, Blsr         -> true
-  | Bor, Bor           -> true
-  | Band, Band         -> true
-  | Bxor, Bxor         -> true
-  | Bcompare, Bcompare -> true
-  | Bget, Bget         -> true
-  | Bmem, Bmem         -> true
-  | Bconcat, Bconcat   -> true
-  | Bcons, Bcons       -> true
-  | Bpair, Bpair       -> true
-  | Bexec, Bexec       -> true
-  | Bapply, Bapply     -> true
+  | Badd, Badd           -> true
+  | Bsub, Bsub           -> true
+  | Bsubmutez, Bsubmutez -> true
+  | Bmul, Bmul           -> true
+  | Bediv, Bediv         -> true
+  | Blsl, Blsl           -> true
+  | Blsr, Blsr           -> true
+  | Bor, Bor             -> true
+  | Band, Band           -> true
+  | Bxor, Bxor           -> true
+  | Bcompare, Bcompare   -> true
+  | Bget, Bget           -> true
+  | Bmem, Bmem           -> true
+  | Bconcat, Bconcat     -> true
+  | Bcons, Bcons         -> true
+  | Bpair, Bpair         -> true
+  | Bexec, Bexec         -> true
+  | Bapply, Bapply       -> true
   | _ -> false
 
 let cmp_ter_operator lhs rhs =
@@ -936,6 +942,7 @@ let cmp_code (lhs : code) (rhs : code) =
     | NEG, NEG                                       -> true
     | NEQ, NEQ                                       -> true
     | SUB, SUB                                       -> true
+    | SUB_MUTEZ, SUB_MUTEZ                           -> true
     (* Boolean operations *)
     | AND, AND                                       -> true
     | NOT, NOT                                       -> true
@@ -1159,6 +1166,7 @@ let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) (
     | NEG                      -> NEG
     | NEQ                      -> NEQ
     | SUB                      -> SUB
+    | SUB_MUTEZ                -> SUB_MUTEZ
     (* Boolean operations *)
     | AND                      -> AND
     | NOT                      -> NOT
@@ -1615,6 +1623,7 @@ end = struct
     | NEG                      -> mk "NEG"
     | NEQ                      -> mk "NEQ"
     | SUB                      -> mk "SUB"
+    | SUB_MUTEZ                -> mk "SUB_MUTEZ"
     (* Boolean operations *)
     | AND                      -> mk "AND"
     | NOT                      -> mk "NOT"

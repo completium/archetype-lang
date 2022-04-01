@@ -680,21 +680,21 @@ let to_ir (model : M.model) : T.ir =
         T.Iassign (operations, T.Ibinop (Bcons, op, vops))
       end
     (* | Memit (e, value) ->
-      let zerotz : M.mterm = M.mk_tez 0 in
-      let data : M.mterm =
+       let zerotz : M.mterm = M.mk_tez 0 in
+       let data : M.mterm =
         let type_ = to_type model (M.tevent e) in
         let typ = Format.asprintf "%a" Printer_michelson.pp_type type_ in
         M.mk_pack (M.mk_tuple [M.mk_string (unloc e); M.mk_string typ; value])
-      in
-      let entry : M.mterm =
+       in
+       let entry : M.mterm =
         let addr : M.mterm = M.mk_address !Options.opt_event_well_address in
         let entry_name = dumloc "%event" in
         let error_msg = Some (M.mk_string "BAD_EVENT_CONTRACT") in
         M.mk_entrypoint M.tbytes entry_name addr error_msg
-      in
+       in
 
-      let op = T.Iterop (Ttransfer_tokens, f zerotz, f data, f entry) in
-      T.Iassign (operations, T.Ibinop (Bcons, op, vops)) *)
+       let op = T.Iterop (Ttransfer_tokens, f zerotz, f data, f entry) in
+       T.Iassign (operations, T.Ibinop (Bcons, op, vops)) *)
     | Memit _                       -> T.iskip
 
     (* entrypoint *)
@@ -854,7 +854,11 @@ let to_ir (model : M.model) : T.ir =
     | Mxor (l, r)        -> T.Ibinop (Bxor, f l, f r)
     | Mnot e             -> T.Iunop  (Unot, f e)
     | Mplus (l, r)       -> T.iadd (f l) (f r)
-    | Mminus (l, r)      -> T.isub (f l) (f r)
+    | Mminus (l, r)      -> begin
+        match M.get_ntype mtt.type_ with
+        | M.Tbuiltin Bcurrency -> T.Iifnone (T.isub_mutez (f l) (f r), T.ifail "INVALID_NEGATIVE_TEZ", "_var_ifnone", Ivar "_var_ifnone", ft mtt.type_)
+        | _ -> T.isub (f l) (f r)
+      end
     | Mmult (l, r)       -> T.imul (f l) (f r)
     | Mdivrat _          -> emit_error (UnsupportedTerm ("Mdivrat"))
     | Mdiveuc (l, r)     -> T.idiv (f l) (f r)
@@ -1457,6 +1461,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
     | T.Bsplitticket           -> T.csplit_ticket
     | T.Bsapling_verify_update -> T.csapling_verify_update
     | T.Bview (c, t)           -> T.cview (c, t)
+    | T.Bsubmutez              -> T.csub_mutez
   in
 
   let ter_op_to_code = function

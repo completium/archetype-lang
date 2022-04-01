@@ -171,6 +171,7 @@ and pp_code fmt (i : code) =
   | NEG                      -> pp "NEG"
   | NEQ                      -> pp "NEQ"
   | SUB                      -> pp "SUB"
+  | SUB_MUTEZ                -> pp "SUB_MUTEZ"
   (* Boolean operations *)
   | AND                      -> pp "AND"
   | NOT                      -> pp "NOT"
@@ -461,6 +462,7 @@ let pp_bop f fmt (op, lhs, rhs) =
   | Bsplitticket  -> pp "split_ticket(%a, %a)"   f lhs f rhs
   | Bsapling_verify_update -> pp "sapling_verify_update"
   | Bview (_, _) -> pp ""
+  | Bsubmutez  -> pp "sub_mutez(%a, %a)" f lhs f rhs
 
 let pp_top f fmt (op, a1, a2, a3) =
   let pp s = Format.fprintf fmt s in
@@ -573,6 +575,7 @@ let rec pp_instruction fmt (i : instruction) =
       | Bsplitticket  -> pp "split_ticket(%a, %a)"  f lhs f rhs
       | Bsapling_verify_update -> pp "sapling_verify_update"
       | Bview (c, t)  -> pp "view<%a, %s>(%a, %a)" pp_type t c f lhs f rhs
+      | Bsubmutez  -> pp "sub_mutez(%a, %a)" f lhs f rhs
     end
   | Iterop (op, a1, a2, a3) -> begin
       match op with

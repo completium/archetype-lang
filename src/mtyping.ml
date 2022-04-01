@@ -838,7 +838,7 @@ and op_SHA3 (stack : stack) =
 (* -------------------------------------------------------------------- *)
 and op_SIZE (stack : stack) =
   let ty, stack = Stack.pop stack in
-  
+
   begin match ty.node with
   | M.Tset _ | M.Tmap _ | M.Tlist _ | M.Tstring | M.Tbytes -> ()
   | _ -> raise MichelsonTypingError end;
@@ -892,6 +892,17 @@ and op_SUB (stack : stack) =
     | M.Ttimestamp, M.Ttimestamp -> M.Tint
 
     | M.Tmutez, M.Tmutez -> M.Tmutez
+
+    | _, _ -> raise MichelsonTypingError in
+
+  Some (M.mk_type aout :: stack)
+
+and op_SUB_MUTEZ (stack : stack) =
+  let (ty1, ty2), stack = Stack.pop2 stack in
+  let aout =
+    match ty1.node, ty2.node with
+
+    | M.Tmutez, M.Tmutez -> M.Toption M.tmutez
 
     | _, _ -> raise MichelsonTypingError in
 
@@ -1124,6 +1135,9 @@ and tycheck_r (stack : stack) (code : M.code_node) : stack option =
 
   | SUB ->
       op_SUB stack
+
+  | SUB_MUTEZ ->
+      op_SUB_MUTEZ stack
 
   (* Boolean operations *)
   | AND ->

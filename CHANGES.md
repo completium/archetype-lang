@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
   - builtins: `isnat`, `to_nat`
   - `not` operator for `int` and `nat`
+### Changed
+  - Add type in event
 
 ## [1.2.13] - 2022-03-10
 ### Added
