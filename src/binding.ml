@@ -135,12 +135,17 @@ import { registerEvent%a } from '@completium/event-well-crank';%a
       let pp_field fmt (f : record_field) =
         Format.fprintf fmt "%a : %a" pp_id f.name (to_type (Init ("event." ^ unloc f.name))) f.type_
       in
+      let pp_f fmt (l : record_field list) =
+        if List.length l = 1
+        then let f = List.nth l 0 in Format.fprintf fmt "%a : %a" pp_id f.name (to_type (Init ("event"))) f.type_
+        else (pp_list ",@\n" pp_field) fmt l
+      in
       Format.fprintf fmt "const handle_%a = (handler%a) => (event%a, data%a) => {@\n  handler({@[%a@]}, data)@\n}"
         pp_id ie.r.name
         (pp_language pp_none pp_str) (" : WellEventProcessor<" ^ (unloc ie.r.name) ^ ">")
         (pp_language pp_none pp_str) " : any"
         (pp_language pp_none pp_str) " ?: WellEventData"
-        (pp_list ",@\n" pp_field) ie.r.fields
+        pp_f ie.r.fields
     in
     let pp_register fmt =
       Format.fprintf fmt "export function register_%a(source%a, handler%a) {
