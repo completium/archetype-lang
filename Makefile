@@ -1,7 +1,7 @@
 # -*- Makefile -*-
 
 # --------------------------------------------------------------------
-.PHONY: all js merlin build build-deps run clean
+.PHONY: all merlin build build-deps run clean
 
 # --------------------------------------------------------------------
 all: build compiler # plugin
