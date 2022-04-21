@@ -1,0 +1,17 @@
+archetype asset_with_as
+
+asset myasset identified by a b c {
+  a : nat;
+  b : string;
+  c : bytes;
+  d : string;
+  e : nat;
+  f : string;
+  g : bytes;
+}
+key as   (((x, y), z))
+value as (((a, b), (c, d)))
+
+entry exec() {
+
+}
