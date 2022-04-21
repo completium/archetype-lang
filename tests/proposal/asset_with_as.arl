@@ -1,6 +1,6 @@
 archetype asset_with_as
 
-asset myasset identified by a b c {
+asset myasset identified by a b c as (((x, y), z)) {
   a : nat;
   b : string;
   c : bytes;
@@ -9,8 +9,7 @@ asset myasset identified by a b c {
   f : string;
   g : bytes;
 }
-key as   (((x, y), z))
-value as (((a, b), (c, d)))
+as (((a, b), (c, d)))
 
 entry exec() {
 
