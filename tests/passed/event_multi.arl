@@ -1,0 +1,13 @@
+archetype event_multi
+
+event ev {
+  v : nat
+}
+
+entry exec() {
+  emit<ev>({ 1 });
+  emit<ev>({ 2 });
+  emit<ev>({ 3 });
+  emit<ev>({ 4 });
+  emit<ev>({ 5 })
+}

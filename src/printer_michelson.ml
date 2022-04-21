@@ -605,6 +605,7 @@ let rec pp_instruction fmt (i : instruction) =
   | Irecupdate (x, r)       -> pp "recupdate[%a with [@[%a@]]]" f x pp_ruitem r
   | Ifold (ix, iy, ia, c, a, b) -> pp "fold %a with (%a) do (%s, %a) ->@\n  @[%a@]@\ndone" f c f a ia (fun fmt _-> match iy with | Some iy -> Format.fprintf fmt "(%s, %s)" ix iy  | None -> Format.fprintf fmt "%s" ix) () f b
   | Imap_ (x, id, e)        -> pp "map(%a, %s -> @[%a@])" f x id f e
+  | Ireverse (t, x)         -> pp "reverse<%a>(%a)" pp_type t f x
   | Imichelson (a, c, v)    -> pp "michelson [%a] (%a) {%a}" (pp_list "; " pp_id) v (pp_list "; " f) a pp_code c
 
 and pp_ritem fmt = function

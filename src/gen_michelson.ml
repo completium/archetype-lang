@@ -483,6 +483,7 @@ let to_ir (model : M.model) : T.ir =
     in
 
     let vops = T.Ivar operations in
+
     let get_contract   id t d = contract_internal id None     t d in
     let get_self_entrypoint id =
       let fs = M.Utils.get_fs model id in
@@ -677,7 +678,7 @@ let to_ir (model : M.model) : T.ir =
             end
           | TKoperation op -> f op
         in
-        T.Iassign (operations, T.Ibinop (Bcons, op, vops))
+        T.Iassign (operations, T.Ireverse (T.toperation, (T.Ibinop (Bcons, op, T.Ireverse (T.toperation, vops)))))
       end
     (* | Memit (e, value) ->
        let zerotz : M.mterm = M.mk_tez 0 in
@@ -1799,6 +1800,11 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       let x, _env0 = fe env x in
       let e, _env1 = fe (add_var_env env id) e in
       T.cseq [x; T.cmap [e; T.cswap; T.cdrop 1]], inc_env env
+    end
+
+  | Ireverse (t, x) -> begin
+      let x, _env0 = fe (inc_env env) x in
+      T.cseq [T.cnil t; x; T.citer [T.ccons]], inc_env env
     end
 
   | Imichelson (a, c, v) -> begin
