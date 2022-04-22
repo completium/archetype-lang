@@ -11,7 +11,7 @@ asset my_asset identified by id {
 
 variable res : nat = 0
 
-function f (v : view<my_asset>) : nat {
+function f (v : asset_view<my_asset>) : nat {
   return v.count()
 }
 
