@@ -10,7 +10,7 @@ type container =
   | Collection
   | Aggregate
   | Partition
-  | View
+  | AssetView
 [@@deriving show {with_path = false}]
 
 type currency =

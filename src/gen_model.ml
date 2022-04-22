@@ -47,7 +47,7 @@ let to_model (ast : A.ast) : M.model =
     | A.Collection -> M.Collection
     | A.Aggregate  -> M.Aggregate
     | A.Partition  -> M.Partition
-    | A.View       -> M.View
+    | A.AssetView  -> M.View
     (* | _            -> emit_error (NotSupportedContainer (Format.asprintf "%a@." A.pp_container c)) *)
   in
 

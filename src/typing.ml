@@ -452,7 +452,7 @@ end = struct
       Some 1
 
     | A.Tcontainer (ty1, cf), A.Tcontainer (ty2, ct) ->
-      if   equal ty1 ty2 && (cf = ct || (autoview && ct = A.View))
+      if   equal ty1 ty2 && (cf = ct || (autoview && ct = A.AssetView))
       then Some 0
       else None
 
@@ -1262,7 +1262,7 @@ type method_  = (mthatyp     , mthtyp ) gmethod_
 
 let methods : (string * method_) list =
   let cap  = [A.Collection; Aggregate; Partition]  in
-  let capv = [A.Collection; Aggregate; Partition; View]  in
+  let capv = [A.Collection; Aggregate; Partition; AssetView]  in
   let  ap  = [A.Aggregate; Partition] in
   let c    = [A.Collection] in
   let c_p  = [A.Collection; Partition] in
@@ -1987,7 +1987,7 @@ end = struct
 
       | `Definition def ->
         Some { vr_name = def.df_name;
-               vr_type = A.Tcontainer (A.Tasset def.df_asset, A.View);
+               vr_type = A.Tcontainer (A.Tasset def.df_asset, A.AssetView);
                vr_kind = `Ghost;
                vr_invs = [];
                vr_core = None;
@@ -2336,7 +2336,7 @@ let rec valid_var_or_arg_type (ty : A.ptyp) =
   | Toperation      -> true
   | Ttrace     _    -> false
 
-  | Tcontainer (_, A.View) -> true
+  | Tcontainer (_, A.AssetView) -> true
   | Tcontainer (_,      _) -> false
 
   | Tticket             ty -> valid_var_or_arg_type ty
@@ -2347,7 +2347,7 @@ let rec valid_var_or_arg_type (ty : A.ptyp) =
 let for_container (_ : env) = function
   | PT.Aggregate -> A.Aggregate
   | PT.Partition -> A.Partition
-  | PT.View      -> A.View
+  | PT.AssetView -> A.AssetView
 
 (* -------------------------------------------------------------------- *)
 let for_assignment_operator = function
@@ -2795,7 +2795,7 @@ let rec for_xexpr
           mk_sp (Some typ) (A.Pvar (vt, vs, x))
 
         | Some (`Definition decl) ->
-          let typ = A.Tcontainer ((A.Tasset decl.df_asset), A.View) in
+          let typ = A.Tcontainer ((A.Tasset decl.df_asset), A.AssetView) in
           mk_sp (Some typ) (A.Pvar (vt, vs, x))
 
         | Some (`StateByCtor (decl, ctor)) ->
@@ -3447,7 +3447,7 @@ let rec for_xexpr
           | `The     -> Some (A.Tasset asset.as_name)
           | `Asset   -> Some (A.Tasset asset.as_name)
           | `Coll    -> Some (A.Tcontainer (A.Tasset asset.as_name, A.Collection))
-          | `SubColl -> Some (A.Tcontainer (A.Tasset asset.as_name, A.View))
+          | `SubColl -> Some (A.Tcontainer (A.Tasset asset.as_name, A.AssetView))
           | `Ref i   -> Mint.find_opt i amap
           | `Pk      -> Some (asset.as_pkty)
           | `PkOrAsset -> begin
@@ -3858,15 +3858,15 @@ and cast_expr ?(autoview = false) (env : env) (to_ : A.ptyp option) (e : A.pterm
   let to_ =
     if not autoview then to_ else begin
       match e.A.type_, to_ with
-      | Some (A.Tcontainer (asset, ctn)), None when ctn <> A.View ->
-        Some (A.Tcontainer (asset, A.View))
+      | Some (A.Tcontainer (asset, ctn)), None when ctn <> A.AssetView ->
+        Some (A.Tcontainer (asset, A.AssetView))
       | _, _ -> to_
     end
   in
 
   match to_, e with
   | Some (A.Tlist xty as to_),
-    { type_ = Some (A.Tcontainer (A.Tasset asset, A.View) as from_) } ->
+    { type_ = Some (A.Tcontainer (A.Tasset asset, A.AssetView) as from_) } ->
 
     let decl = Env.Asset.get env (unloc asset) in
 
@@ -4244,7 +4244,7 @@ and for_gen_method_call mode env theloc (the, m, args)
         A.AExpr (for_xexpr ~autoview:true mode env ~ety:ty arg)
 
       | `SubColl ->
-        let ty = A.Tcontainer (Tasset asset.as_name, A.View) in
+        let ty = A.Tcontainer (Tasset asset.as_name, A.AssetView) in
         A.AExpr (for_xexpr ~autoview:true mode env ~ety:ty arg)
 
       | `T ty ->
@@ -5193,7 +5193,7 @@ let for_specification_item
           | Some (env, `Loop lblty) ->
             Option.fold (fun env (aname, _) ->
                 let ty = A.Tasset (mkloc (loc lbl) (unloc aname)) in
-                let ty = A.Tcontainer (ty, A.View) in
+                let ty = A.Tcontainer (ty, A.AssetView) in
                 let env = Env.Local.push env (mkloc coreloc "toiterate", ty) in
                 let env = Env.Local.push env (mkloc coreloc "iterated", ty) in
                 env) env (Type.as_asset_collection lblty)

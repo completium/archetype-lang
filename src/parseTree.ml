@@ -13,7 +13,7 @@ type lident = ident loced
 and container =
   | Aggregate
   | Partition
-  | View
+  | AssetView
 
 and type_r =
   | Tref                 of lident

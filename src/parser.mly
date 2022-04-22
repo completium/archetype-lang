@@ -32,6 +32,7 @@
 %token ASSERT
 %token AS
 %token ASSET
+%token ASSET_VIEW
 %token AT
 %token AT_ADD
 %token AT_REMOVE
@@ -615,9 +616,9 @@ type_s_unloc:
 | MULT x=type_s { x }
 
 %inline container:
-| AGGREGATE  { Aggregate }
-| PARTITION  { Partition }
-| VIEW       { View      }
+| AGGREGATE   { Aggregate }
+| PARTITION   { Partition }
+| ASSET_VIEW  { AssetView }
 
 %inline shadow_asset_fields:
 | /* empty */ { [] }

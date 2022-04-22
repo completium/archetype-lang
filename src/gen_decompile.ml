@@ -1481,7 +1481,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Tbuiltin Bnever        -> A.tnever
     | Tbuiltin Bchest        -> A.tchest
     | Tbuiltin Bchest_key    -> A.tchest_key
-    | Tcontainer (t, c)      -> A.mk_tcontainer (f t) (match c with | Collection -> assert false | Aggregate -> A.Aggregate | Partition -> A.Partition | View -> A.View)
+    | Tcontainer (t, c)      -> A.mk_tcontainer (f t) (match c with | Collection -> assert false | Aggregate -> A.Aggregate | Partition -> A.Partition | View -> A.AssetView)
     | Tlist t                -> A.mk_tlist (f t)
     | Toption t              -> A.mk_toption (f t)
     | Ttuple tl              -> A.mk_ttuple (List.map f tl)

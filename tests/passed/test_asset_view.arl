@@ -1,0 +1,19 @@
+archetype test_asset_view
+
+asset my_asset identified by id {
+  id : string;
+  value : int;
+} initialized by {
+  {"id0"; 0};
+  {"id1"; 1};
+  {"id2"; 2}
+}
+
+variable res : list<string> = []
+
+entry exec () {
+  effect {
+    var v : asset_view<my_asset> = my_asset.select(the.value > 0);
+    res := v
+  }
+}

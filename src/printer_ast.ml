@@ -42,7 +42,7 @@ let pp_container fmt = function
   | Collection -> Format.fprintf fmt "collection"
   | Aggregate  -> Format.fprintf fmt "aggregate"
   | Partition  -> Format.fprintf fmt "partition"
-  | View       -> Format.fprintf fmt "view"
+  | AssetView  -> Format.fprintf fmt "asset_view"
 
 let rec pp_ptyp fmt (t : ptyp) =
   match t with

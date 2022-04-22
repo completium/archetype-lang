@@ -26,6 +26,7 @@
       "as"                  , AS                  ;
       "assert"              , ASSERT              ;
       "asset"               , ASSET               ;
+      "asset_view"          , ASSET_VIEW          ;
       "at"                  , AT                  ;
       "before"              , BEFORE              ;
       "begin"               , BEGIN               ;
