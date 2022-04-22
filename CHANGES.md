@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.2.15] - 2022-04-22
 ### Changed
-  - BREAKING: `transfer` and `emit` instructions is executed in the declaration order
+  - BREAKING: `transfer` and `emit` instructions are executed in the declaration order
   - replace `view` type by `asset_view`
 
 ## [1.2.14] - 2022-04-01
