@@ -228,6 +228,7 @@ let process_errors () =
     )))
 
 let process (kind : lsp_kind) (input : Core.from_input) : string =
+  Options.quiet := true;
   Error.errors := [];
   match kind with
   | Outline -> (
