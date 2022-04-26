@@ -11,5 +11,12 @@ entry exec () {
     var n  : string                  = nth(l, 0);
     var r  : list<string>            = reverse(l);
     var ll : list<string>            = concat(l, l);
+
+    (* control *)
+    var res : nat = 0;
+    for v in l do
+      res += length(v);
+    done;
+    dorequire (res = 3, "ko")
   }
 }
