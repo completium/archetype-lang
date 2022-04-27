@@ -137,7 +137,7 @@ and expr_unloc =
   | Ewhile         of lident option * expr * expr
   | Eseq           of expr * expr
   | Eletin         of lident * type_t option * expr * expr * expr option
-  | Evar           of lident * type_t option * expr
+  | Evar           of lident * type_t option * expr * bool (* const or not *)
   | Ematchwith     of expr * branch list
   | Efold          of expr * lident * expr
   | Emap           of expr * lident * expr
@@ -534,7 +534,7 @@ let eiter         ?(loc=dummy) ?lbl ?min id max e = mkloc loc (Eiter(lbl, id, mi
 let ewhile        ?(loc=dummy) ?lbl c b           = mkloc loc (Ewhile(lbl, c, b))
 let eseq          ?(loc=dummy) e1 e2              = mkloc loc (Eseq(e1, e2))
 let eletin        ?(loc=dummy) ?t ?o id v b       = mkloc loc (Eletin(id, t, v, b, o))
-let evar          ?(loc=dummy) ?t id e            = mkloc loc (Evar(id, t, e))
+let evar          ?(loc=dummy) ?t id e c          = mkloc loc (Evar(id, t, e, c))
 let ematchwith    ?(loc=dummy) e l                = mkloc loc (Ematchwith(e, l))
 let erecupdate    ?(loc=dummy) e l                = mkloc loc (Erecupdate(e, l))
 let equantifier   ?(loc=dummy) q id qk e          = mkloc loc (Equantifier(q, id, qk, e))

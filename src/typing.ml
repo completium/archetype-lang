@@ -5006,7 +5006,7 @@ let rec for_instruction_r
         Env.emit_error env (loc re, ReturnInVoidContext);
       env, mki (Ireturn (for_expr ?ety:ret  kind env re))
 
-    | Evar (x, ty, v) ->
+    | Evar (x, ty, v, _c) ->
       let ty = Option.bind (for_type env) ty in
       let v  = for_expr kind env ?ety:ty v in
       let env =

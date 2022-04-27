@@ -890,7 +890,10 @@ expr_r:
      { Eletin (i, t, e, y, None) }
 
  | VAR i=ident t=colon_type_opt EQUAL e=expr %prec prec_var
-     { Evar (i, t, e) }
+     { Evar (i, t, e, false) }
+
+ | CONST i=ident t=colon_type_opt EQUAL e=expr %prec prec_var
+     { Evar (i, t, e, true) }
 
  | e1=expr SEMI_COLON e2=expr
      { Eseq (e1, e2) }
