@@ -1,0 +1,8 @@
+archetype dangling_else
+
+variable res : nat = 0
+
+entry exec () {
+  if true then if false then () else res := 42;
+  dorequire(res = 42, "INVALID_VALUE")
+}

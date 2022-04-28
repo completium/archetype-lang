@@ -1,0 +1,6 @@
+archetype const_assign
+
+entry exec() {
+  const pkh : address = caller;
+  pkh := source
+}
