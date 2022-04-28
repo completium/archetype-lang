@@ -173,7 +173,7 @@ rule token = parse
   | "@remove"             { AT_REMOVE }
   | "@update"             { AT_UPDATE }
   | tz_addr as a          { if (String.length a <> 36) then lex_error lexbuf (Printf.sprintf "invalid address: %s" a); ADDRESS a }
-  | ident as id           { try  Hashtbl.find keywords id with Not_found -> IDENT id }
+  | ident as id           { try  Hashtbl.find keywords id with Not_found -> (if (String.length id > 254) then lex_error lexbuf "Invalid identifier size, must be less than 255 charaters"; IDENT id) }
   | pident as id          { PIDENT (String.sub id 1 ((String.length id) - 1)) }
   | tz as t               { TZ   (String.sub t 0 ((String.length t) - 2)) }
   | mtz as t              { MTZ  (String.sub t 0 ((String.length t) - 3)) }
