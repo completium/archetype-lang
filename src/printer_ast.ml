@@ -503,9 +503,10 @@ let rec pp_pterm fmt (pterm : pterm) =
       in
       (pp_with_paren pp) fmt (id, init, t, body)
 
-    | Pdeclvar (i, t, v) ->
+    | Pdeclvar (i, t, v, c) ->
       let pp fmt (i, t, v) =
-        Format.fprintf fmt "var %a%a = %a"
+        Format.fprintf fmt "%s %a%a = %a"
+          (if c then "const" else "var")
           pp_id i
           (pp_option (pp_prefix " : " pp_type)) t
           pp_pterm v
@@ -746,14 +747,15 @@ let rec pp_instruction fmt (i : instruction) =
       in
       (pp_with_paren pp) fmt (id, init, body)
 
-    | Ideclvar (i, v) ->
-      let pp fmt (i, v) =
-        Format.fprintf fmt "var %a%a = %a"
+    | Ideclvar (i, v, c) ->
+      let pp fmt (i, v, c) =
+        Format.fprintf fmt "%s %a%a = %a"
+          (if c then "const" else "var")
           pp_id i
           (pp_option (pp_prefix " : " pp_type)) v.type_
           pp_pterm v
       in
-      (pp_with_paren pp) fmt (i, v)
+      (pp_with_paren pp) fmt (i, v, c)
 
     | Iseq l ->
       let pp fmt l =

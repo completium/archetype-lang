@@ -923,7 +923,7 @@ let replace_declvar_by_letin (model : model) : model =
     | Mseq l ->
       let ll = List.fold_right (fun (x : mterm) accu ->
           match x.node with
-          | Mdeclvar (ids, t, v) ->
+          | Mdeclvar (ids, t, v, _) ->
             let res =  process_declvar (ids, t, v) (aux c) accu in
             [ res ]
           | _ ->
@@ -933,7 +933,7 @@ let replace_declvar_by_letin (model : model) : model =
             end
         ) l [] in
       { mt with node = Mseq ll }
-    | Mdeclvar (ids, t, v) -> process_declvar (ids, t, v) (aux c) []
+    | Mdeclvar (ids, t, v, _) -> process_declvar (ids, t, v) (aux c) []
     | _ -> map_mterm (aux c) mt
   in
   Model.map_mterm_model aux model
@@ -1943,9 +1943,9 @@ let replace_date_duration_by_timestamp (model : model) : model =
         { mt with
           node = Mletin (ids, aux v, Option.map process_type t, aux body, Option.map aux o)
         }
-      | Mdeclvar (ids, t, v), _ ->
+      | Mdeclvar (ids, t, v, c), _ ->
         { mt with
-          node = Mdeclvar (ids, Option.map process_type t, aux v)
+          node = Mdeclvar (ids, Option.map process_type t, aux v, c)
         }
       | Mforall (id, t, a, b), _ ->
         { mt with
@@ -2340,9 +2340,9 @@ let extract_term_from_instruction f (model : model) : model =
       let oe = Option.map (aux ctx) o in
       process (mk_mterm (Mletin (i, ae, t, be, oe)) mt.type_) aa
 
-    | Mdeclvar (i, t, v) ->
+    | Mdeclvar (i, t, v, c) ->
       let ve, va = f v in
-      process (mk_mterm (Mdeclvar (i, t, ve)) mt.type_) va
+      process (mk_mterm (Mdeclvar (i, t, ve, c)) mt.type_) va
 
 
     (* assign *)
@@ -2638,7 +2638,7 @@ let add_contain_on_get (model : model) : model =
         let oe = Option.map aux o in
         gg accu (mk_mterm (Mletin (i, a, t, be, oe)) mt.type_)
 
-      | Mdeclvar (_i, _t, v) ->
+      | Mdeclvar (_i, _t, v, _) ->
         let accu = f accu v in
         gg accu mt
 

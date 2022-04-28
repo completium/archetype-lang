@@ -1532,7 +1532,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     (* lambda *)
 
     | Mletin (_ids, _a, _t, _b, _o) -> assert false
-    | Mdeclvar (_ids, _t, _v)       -> assert false
+    | Mdeclvar (_ids, _t, _v, _c)   -> assert false
     | Mapp (_e, _args)              -> assert false
 
 

@@ -330,7 +330,7 @@ let to_model (ast : A.ast) : M.model =
       | A.Precord l                         -> M.Masset         (List.map f l)
       | A.Precupdate (e, l)                 -> M.Mrecupdate     (f e, List.map (fun (id, v) -> unloc id, f v) l)
       | A.Pletin (id, init, typ, body, o)   -> M.Mletin         ([id], f init, Option.map type_to_type typ, f body, Option.map f o)
-      | A.Pdeclvar (i, t, v)                -> M.Mdeclvar       ([i], Option.map type_to_type t, f v)
+      | A.Pdeclvar (i, t, v, c)             -> M.Mdeclvar       ([i], Option.map type_to_type t, f v, c)
 
       (* enum value *)
       | A.Pvar (_b, _vs, id) when A.Utils.is_enum_value ast id      -> M.Menumval (id, [], A.Utils.get_enum_values ast id |> Option.get |> unloc)
@@ -1048,7 +1048,7 @@ let to_model (ast : A.ast) : M.model =
       | A.Iiter (i, a, b, body)   -> M.Miter (i, f a, f b, g body, instr.label)
       | A.Iwhile (c, body)        -> M.Mwhile (f c, g body, instr.label)
       | A.Iletin (i, init, cont)  -> M.Mletin ([i], f init, Option.map type_to_type init.type_, g cont, None) (* TODO *)
-      | A.Ideclvar (i, v)         -> M.Mdeclvar ([i], Option.map type_to_type v.type_, f v) (* TODO *)
+      | A.Ideclvar (i, v, c)      -> M.Mdeclvar ([i], Option.map type_to_type v.type_, f v, c) (* TODO *)
       | A.Iseq l                  -> M.Mseq (List.map g l)
       | A.Imatchwith (m, l)       -> M.Mmatchwith (f m, List.map (fun (p, i) -> (to_pattern p, g i)) l)
       | A.Imatchoption (x, id, ve, ne)      -> M.Minstrmatchoption   (f x, id, g ve, g ne)

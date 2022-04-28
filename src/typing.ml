@@ -634,6 +634,7 @@ type error_desc =
   | BeforeOrLabelInExpr
   | BindingInExpr
   | CannotAssignArgument               of ident
+  | CannotAssignConstVar               of ident
   | CannotAssignLoopIndex              of ident
   | CannotAssignPatternVariable        of ident
   | CannotCaptureVariables
@@ -858,6 +859,7 @@ let pp_error_desc fmt e =
   | BeforeOrLabelInExpr                -> pp "The `before' or label modifiers can only be used in formulas"
   | BindingInExpr                      -> pp "Binding in expression"
   | CannotAssignArgument  x            -> pp "Cannot assign argument `%s'" x
+  | CannotAssignConstVar x             -> pp "Cannot assign to `%s' because it is a constant" x
   | CannotAssignLoopIndex x            -> pp "Cannot assign loop index `%s'" x
   | CannotAssignPatternVariable x      -> pp "Cannot assign pattern variable `%s'" x
   | CannotCaptureVariables             -> pp "Cannot capture variables in this context"
@@ -1668,7 +1670,7 @@ module Env : sig
     | `Context     of assetdecl * ident option
   ]
 
-  and locvarkind = [`Standard | `Argument | `Pattern | `LoopIndex]
+  and locvarkind = [`Standard | `Const | `Argument | `Pattern | `LoopIndex]
 
   type ecallback = error -> unit
 
@@ -1796,7 +1798,7 @@ end = struct
     | `Context     of assetdecl * ident option
   ]
 
-  and locvarkind = [`Standard | `Argument | `Pattern | `LoopIndex]
+  and locvarkind = [`Standard | `Const | `Argument | `Pattern | `LoopIndex]
 
   and t = {
     env_error    : ecallback;
@@ -4576,6 +4578,9 @@ let for_lvalue kind (env : env) (e : PT.expr) : (A.lvalue * A.ptyp) option =
           | `Pattern ->
             Env.emit_error env (loc e, CannotAssignPatternVariable (unloc x));
             None
+          | `Const ->
+            Env.emit_error env (loc e, CannotAssignConstVar (unloc x));
+            None
           | `Standard ->
             Some (`Var x, xty)
         end
@@ -5006,20 +5011,21 @@ let rec for_instruction_r
         Env.emit_error env (loc re, ReturnInVoidContext);
       env, mki (Ireturn (for_expr ?ety:ret  kind env re))
 
-    | Evar (x, ty, v, _c) ->
+    | Evar (x, ty, v, c) ->
       let ty = Option.bind (for_type env) ty in
       let v  = for_expr kind env ?ety:ty v in
       let env =
         let _ : bool = check_and_emit_name_free env x in
         if Option.is_some v.A.type_ then
-          Env.Local.push env (x, Option.get v.A.type_)
+          let kind = if c then `Const else `Standard in
+          Env.Local.push env (x, Option.get v.A.type_) ~kind
         else env in
 
       Option.iter (fun ty ->
           if not (valid_var_or_arg_type ty) then
             Env.emit_error env (loc x, InvalidVarOrArgType)) v.A.type_;
 
-      env, mki (A.Ideclvar (x, v))
+      env, mki (A.Ideclvar (x, v, c))
 
     | _ ->
       Env.emit_error env (loc i, InvalidInstruction);

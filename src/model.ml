@@ -203,7 +203,7 @@ type 'term transfer_kind_gen =
 type ('id, 'term) mterm_node  =
   (* lambda *)
   | Mletin            of 'id list * 'term * type_ option * 'term * 'term option
-  | Mdeclvar          of 'id list * type_ option * 'term
+  | Mdeclvar          of 'id list * type_ option * 'term * bool
   | Mapp              of 'id * 'term list
   (* assign *)
   | Massign           of (assignment_operator * type_ * ('id, 'term) assign_kind_gen * 'term) (* assignment kind value*)
@@ -1417,7 +1417,7 @@ let cmp_mterm_node
     match term1, term2 with
     (* lambda *)
     | Mletin (i1, a1, t1, b1, o1), Mletin (i2, a2, t2, b2, o2)                         -> List.for_all2 cmpi i1 i2 && cmp a1 a2 && Option.cmp cmp_type t1 t2 && cmp b1 b2 && Option.cmp cmp o1 o2
-    | Mdeclvar (i1, t1, v1), Mdeclvar (i2, t2, v2)                                     -> List.for_all2 cmpi i1 i2 && Option.cmp cmp_type t1 t2 && cmp v1 v2
+    | Mdeclvar (i1, t1, v1, c1), Mdeclvar (i2, t2, v2, c2)                             -> List.for_all2 cmpi i1 i2 && Option.cmp cmp_type t1 t2 && cmp v1 v2 && cmp_bool c1 c2
     | Mapp (e1, args1), Mapp (e2, args2)                                               -> cmpi e1 e2 && List.for_all2 cmp args1 args2
     (* assign *)
     | Massign (op1, t1, k1, v1), Massign (op2, t2, k2, v2)                             -> cmp_assign_op op1 op2 && cmp_type t1 t2 && cmp_assign_kind k1 k2 && cmp v1 v2
@@ -1863,7 +1863,7 @@ let map_transfer_kind (fi : ident -> ident) (ft : type_ -> type_) f = function
 let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ -> type_) (f : 'id mterm_gen -> 'id mterm_gen) = function
   (* lambda *)
   | Mletin (i, a, t, b, o)         -> Mletin (List.map g i, f a, Option.map ft t, f b, Option.map f o)
-  | Mdeclvar (i, t, v)             -> Mdeclvar (List.map g i, Option.map ft t, f v)
+  | Mdeclvar (i, t, v, c)          -> Mdeclvar (List.map g i, Option.map ft t, f v, c)
   | Mapp (e, args)                 -> Mapp (g e, List.map f args)
   (* assign *)
   | Massign (op, t, k, v)          -> Massign (op, ft t, map_assign_kind fi g f k, f v)
@@ -2306,7 +2306,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   match term.node with
   (* lambda *)
   | Mletin (_, a, _, b, o)                -> let tmp = f (f accu a) b in Option.map_dfl (f tmp) tmp o
-  | Mdeclvar (_, _, v)                    -> f accu v
+  | Mdeclvar (_, _, v, _)                 -> f accu v
   | Mapp (_, args)                        -> List.fold_left f accu args
   (* assign *)
   | Massign (_, _, k, e)                  -> f (fold_assign_kind f accu k) e
@@ -2664,9 +2664,9 @@ let fold_map_term
       | None -> (None, ba) in
     g (Mletin (idd, ie, t, be, oe)), oa
 
-  | Mdeclvar (ids, t, v) ->
+  | Mdeclvar (ids, t, v, c) ->
     let ve, va = f accu v in
-    g (Mdeclvar (ids, t, ve)), va
+    g (Mdeclvar (ids, t, ve, c)), va
 
   | Mapp (id, args) ->
     let ((argss, argsa) : 'c list * 'a) =
@@ -5742,7 +5742,7 @@ end = struct
           |> (fun accu -> aux accu b)
           |> (fun accu -> Option.map_dfl (aux accu) accu o)
         end
-      | Mdeclvar (_, Some t, v) -> begin
+      | Mdeclvar (_, Some t, v, _) -> begin
           accu
           |> (fun accu -> for_type accu t)
           |> (fun accu -> aux accu v)

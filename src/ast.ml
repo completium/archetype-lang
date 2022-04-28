@@ -370,7 +370,7 @@ type 'id term_node  =
   | Precord of 'id term_gen list
   | Precupdate of 'id term_gen * ('id * 'id term_gen) list
   | Pletin of 'id * 'id term_gen * type_ option * 'id term_gen * 'id term_gen option (* ident * init * type * body * otherwise *)
-  | Pdeclvar of 'id * type_ option * 'id term_gen
+  | Pdeclvar of 'id * type_ option * 'id term_gen * bool
   | Pvar of var_temporality * vset * 'id
   | Parray of 'id term_gen list
   | Plit of bval
@@ -432,7 +432,7 @@ and 'id instruction_node =
   | Iiter of ('id * 'id term_gen* 'id term_gen * 'id instruction_gen)               (* id * bound_min * bound_max * body *)
   | Iwhile of ('id term_gen * 'id instruction_gen)                                  (* condition * body *)
   | Iletin of ('id * 'id term_gen * 'id instruction_gen)                            (* id * init * body *)
-  | Ideclvar of 'id * 'id term_gen                                                  (* id * init *)
+  | Ideclvar of 'id * 'id term_gen * bool                                           (* id * init * constant *)
   | Iseq of 'id instruction_gen list                                                (* lhs ; rhs *)
   | Imatchwith   of 'id term_gen * ('id pattern_gen * 'id instruction_gen) list     (* match term with ('pattern * 'id instruction_gen) list *)
   | Imatchoption of 'id term_gen * 'id * 'id instruction_gen * 'id instruction_gen

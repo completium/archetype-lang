@@ -190,8 +190,9 @@ let pp_mterm fmt (mt : mterm) =
         f b
         (pp_option (fun fmt -> Format.fprintf fmt " otherwise %a" f)) o
 
-    | Mdeclvar (ids, t, v) ->
-      Format.fprintf fmt "var %a%a = %a"
+    | Mdeclvar (ids, t, v, c) ->
+      Format.fprintf fmt "%s %a%a = %a"
+        (if c then "const" else "var")
         (pp_list ", " pp_id) ids
         (pp_option (fun fmt -> Format.fprintf fmt  " : %a" pp_type)) t
         f v
