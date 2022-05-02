@@ -1,0 +1,7 @@
+archetype iterable_big_map_remove
+
+variable my_map : iterable_big_map<string, nat> = [ ("mystr0", 0) ; ("mystr1", 1) ; ("mystr2", 2) ; ("mystr3", 3) ]
+
+entry exec () {
+  my_map.remove("mystr3")
+}
