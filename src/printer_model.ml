@@ -70,7 +70,11 @@ let rec pp_type fmt t =
         pp_type k
         pp_type v
     | Tmap (true, k, v) ->
-      Format.fprintf fmt "bigmap<%a, %a>"
+      Format.fprintf fmt "big_map<%a, %a>"
+        pp_type k
+        pp_type v
+    | Titerable_big_map (k, v) ->
+      Format.fprintf fmt "iterable_big_map<%a, %a>"
         pp_type k
         pp_type v
     | Tor (l, r) ->
@@ -548,9 +552,14 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "list(%a)"
         (pp_list "; " f) l
 
-    | Mlitmap (b, l) ->
-      Format.fprintf fmt "%amap(%a)"
-        (fun fmt b -> if b then Format.fprintf fmt "big_" else Format.fprintf fmt "") b
+    | Mlitmap (k, l) ->
+      let str_map_kind = function
+        | MKMap -> "map"
+        | MKBigMap -> "big_map"
+        | MKIterableBigMap -> "iterable_big_map"
+      in
+      Format.fprintf fmt "%s(%a)"
+        (str_map_kind k)
         (pp_list "; " (fun fmt (k, v) -> Format.fprintf fmt "%a : %a"
                           f k
                           f v)) l

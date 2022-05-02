@@ -292,8 +292,8 @@ and parameter = (lident * type_t * expr option * bool) loced
 and parameters = parameter list loced option
 
 and metadata =
-| Muri  of string loced
-| Mjson of string loced
+  | Muri  of string loced
+  | Mjson of string loced
 
 (* -------------------------------------------------------------------- *)
 and variable_kind =
@@ -466,6 +466,12 @@ let mk_tlist ?(loc=dummy) ?a t : type_t =
 
 let mk_tmap ?(loc=dummy) ?a k v : type_t =
   mkloc loc (Tmap (k, v)), a
+
+let mk_tbig_map ?(loc=dummy) ?a k v : type_t =
+  mkloc loc (Tbig_map (k, v)), a
+
+let mk_titerable_big_map ?(loc=dummy) ?a k v : type_t =
+  mkloc loc (Titerable_big_map (k, v)), a
 
 let mk_tor ?(loc=dummy) ?a k v : type_t =
   mkloc loc (Tor (k, v)), a

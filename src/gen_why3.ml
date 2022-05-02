@@ -154,6 +154,7 @@ let rec map_mtype m (t : M.type_) : loc_typ =
       | M.Tunit                                    -> Tyunit
       | M.Tstate                                   -> Tystate
       | M.Tmap (_, _, _)                           -> Tycoll (dl (mk_map_name m t))
+      | M.Titerable_big_map (_, _)                 -> Tycoll (dl (mk_map_name m t))
       | M.Tstorage                                 -> Tystorage
       | M.Toperation                               -> Tyoperation (* TODO: replace by the right type *)
       | M.Tprog _                                  -> Tyunit (* TODO: replace bmy the right type *)

@@ -176,26 +176,27 @@ let rec to_type (model : M.model) ?annotation (t : M.type_) : T.type_ =
       | Bchest        -> T.Tchest
       | Bchest_key    -> T.Tchest_key
     end
-  | Tcontainer _   -> assert false
-  | Tlist t        -> T.mk_type ?annotation (T.Tlist (to_type t))
-  | Toption t      -> T.mk_type ?annotation (T.Toption (to_type t))
-  | Ttuple lt      -> T.mk_type ?annotation (to_one_type (List.map to_type lt) |> fun x -> x.node)
-  | Tset t         -> T.mk_type ?annotation (T.Tset (to_type t))
-  | Tmap (b, k, v) -> T.mk_type ?annotation (if b then T.Tbig_map (to_type k, to_type v) else T.Tmap (to_type k, to_type v))
-  | Tor (l, r)     -> T.mk_type ?annotation (T.Tor (to_type l, to_type r))
-  | Trecord id     -> process_record M.Utils.get_record id
-  | Tevent id      -> process_record M.Utils.get_event id
-  | Tlambda (a, r) -> T.mk_type ?annotation (Tlambda (to_type a, to_type r))
-  | Tunit          -> T.mk_type ?annotation (T.Tunit)
-  | Toperation     -> T.mk_type ?annotation (T.Toperation)
-  | Tcontract t    -> T.mk_type ?annotation (T.Tcontract (to_type t))
-  | Tstorage       -> assert false
-  | Tprog  _       -> assert false
-  | Tvset  _       -> assert false
-  | Ttrace _       -> assert false
-  | Tticket t      -> T.mk_type ?annotation (T.Tticket (to_type t))
-  | Tsapling_state n       -> T.mk_type ?annotation (T.Tsapling_state n)
-  | Tsapling_transaction n -> T.mk_type ?annotation (T.Tsapling_transaction n)
+  | Tcontainer _               -> assert false
+  | Tlist t                    -> T.mk_type ?annotation (T.Tlist (to_type t))
+  | Toption t                  -> T.mk_type ?annotation (T.Toption (to_type t))
+  | Ttuple lt                  -> T.mk_type ?annotation (to_one_type (List.map to_type lt) |> fun x -> x.node)
+  | Tset t                     -> T.mk_type ?annotation (T.Tset (to_type t))
+  | Tmap (b, k, v)             -> T.mk_type ?annotation (if b then T.Tbig_map (to_type k, to_type v) else T.Tmap (to_type k, to_type v))
+  | Titerable_big_map (_k, _v) -> assert false
+  | Tor (l, r)                 -> T.mk_type ?annotation (T.Tor (to_type l, to_type r))
+  | Trecord id                 -> process_record M.Utils.get_record id
+  | Tevent id                  -> process_record M.Utils.get_event id
+  | Tlambda (a, r)             -> T.mk_type ?annotation (Tlambda (to_type a, to_type r))
+  | Tunit                      -> T.mk_type ?annotation (T.Tunit)
+  | Toperation                 -> T.mk_type ?annotation (T.Toperation)
+  | Tcontract t                -> T.mk_type ?annotation (T.Tcontract (to_type t))
+  | Tstorage                   -> assert false
+  | Tprog  _                   -> assert false
+  | Tvset  _                   -> assert false
+  | Ttrace _                   -> assert false
+  | Tticket t                  -> T.mk_type ?annotation (T.Tticket (to_type t))
+  | Tsapling_state n           -> T.mk_type ?annotation (T.Tsapling_state n)
+  | Tsapling_transaction n     -> T.mk_type ?annotation (T.Tsapling_transaction n)
 
 
 let to_ir (model : M.model) : T.ir =

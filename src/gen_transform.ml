@@ -2893,7 +2893,7 @@ let split_key_values (model : model) : model =
           let type_asset = tbmap asset.big_map t (tasset an) in
           let default =
             match x.default.node with
-            | Massets l -> mk_mterm (Mlitmap (asset.big_map, List.map (fun x -> get_asset_assoc_key_value (unloc an) x) l)) type_asset
+            | Massets l -> mk_mterm (Mlitmap ((if asset.big_map then MKBigMap else MKMap), List.map (fun x -> get_asset_assoc_key_value (unloc an) x) l)) type_asset
             | _ -> assert false
           in
           let asset_assets =
@@ -3023,7 +3023,7 @@ let remove_duplicate_key (model : model) : model =
               match x.default.node, get_ntype x.typ with
               | Mlitmap (_, l), Tmap (b, kt, (Tasset an, _)) ->
                 let t = tbmap b kt (tasset (dumloc ((unloc an) ^ "_storage"))) in
-                let mt = mk_mterm (Mlitmap (b, List.map (fun (k, v) -> (k, remove_key_value_for_asset_node v)) l)) t in
+                let mt = mk_mterm (Mlitmap ((if b then MKBigMap else MKMap), List.map (fun (k, v) -> (k, remove_key_value_for_asset_node v)) l)) t in
                 mt, t
               | _ -> x.default, x.typ
             in
@@ -4331,7 +4331,7 @@ let remove_asset (model : model) : model =
                 let node =
                   match get_ntype va.type_ with
                   | Tset _ -> Mlitset []
-                  | Tmap (b, _, _) -> Mlitmap (b, [])
+                  | Tmap (b, _, _) -> Mlitmap ((if b then MKBigMap else MKMap), [])
                   | _ -> assert false
                 in
                 mk_mterm node va.type_

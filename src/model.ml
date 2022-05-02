@@ -70,6 +70,7 @@ type ntype =
   | Ttuple of type_ list
   | Tset of type_
   | Tmap of bool * type_ * type_
+  | Titerable_big_map of type_ * type_
   | Tor of type_ * type_
   | Trecord of lident
   | Tevent of lident
@@ -200,6 +201,12 @@ type 'term transfer_kind_gen =
   | TKoperation of 'term
 [@@deriving show {with_path = false}]
 
+type map_kind =
+  | MKMap
+  | MKBigMap
+  | MKIterableBigMap
+[@@deriving show {with_path = false}]
+
 type ('id, 'term) mterm_node  =
   (* lambda *)
   | Mletin            of 'id list * 'term * type_ option * 'term * 'term option
@@ -276,7 +283,7 @@ type ('id, 'term) mterm_node  =
   | Massets           of 'term list
   | Mlitset           of 'term list
   | Mlitlist          of 'term list
-  | Mlitmap           of bool * ('term * 'term) list
+  | Mlitmap           of map_kind * ('term * 'term) list
   | Mlitrecord        of (ident * 'term) list
   | Mlitevent         of (ident * 'term) list
   | Mlambda           of type_ * 'id * type_ * 'term
@@ -1075,54 +1082,55 @@ let mkannot prefix (id : lident) : lident option = match unloc id with | "" -> N
 let mkfannot = mkannot "%"
 let mkvannot = mkannot "@"
 
-let tunit          = mktype (Tunit)
-let tbool          = mktype (Tbuiltin Bbool)
-let tnat           = mktype (Tbuiltin Bnat)
-let tint           = mktype (Tbuiltin Bint)
-let tstring        = mktype (Tbuiltin Bstring)
-let tbytes         = mktype (Tbuiltin Bbytes)
-let ttez           = mktype (Tbuiltin Bcurrency)
-let tduration      = mktype (Tbuiltin Bduration)
-let tkey           = mktype (Tbuiltin Bkey)
-let tkeyhash       = mktype (Tbuiltin Bkeyhash)
-let tdate          = mktype (Tbuiltin Bdate)
-let ttimestamp     = mktype (Tbuiltin Btimestamp)
-let taddress       = mktype (Tbuiltin Baddress)
-let tenum v        = mktype (Tenum v)
-let tstate         = mktype (Tstate)
-let tstorage       = mktype (Tstorage)
-let trecord rn     = mktype (Trecord rn)
-let tevent e       = mktype (Tevent e)
-let toption t      = mktype (Toption t)
-let tset t         = mktype (Tset t)
-let tlist t        = mktype (Tlist t)
-let tbmap b k v    = mktype (Tmap (b, k, v))
-let tmap k v       = mktype (Tmap (false, k, v))
-let tbig_map k v   = mktype (Tmap (true, k, v))
-let tor l r        = mktype (Tor (l, r))
-let tlambda a r    = mktype (Tlambda (a, r))
-let ttuple l       = mktype (Ttuple l)
-let trat           = ttuple [tint; tnat]
-let toperation     = mktype (Toperation)
-let tsignature     = mktype (Tbuiltin Bsignature)
-let tcontract t    = mktype (Tcontract t)
-let tticket t      = mktype (Tticket t)
+let tunit                  = mktype (Tunit)
+let tbool                  = mktype (Tbuiltin Bbool)
+let tnat                   = mktype (Tbuiltin Bnat)
+let tint                   = mktype (Tbuiltin Bint)
+let tstring                = mktype (Tbuiltin Bstring)
+let tbytes                 = mktype (Tbuiltin Bbytes)
+let ttez                   = mktype (Tbuiltin Bcurrency)
+let tduration              = mktype (Tbuiltin Bduration)
+let tkey                   = mktype (Tbuiltin Bkey)
+let tkeyhash               = mktype (Tbuiltin Bkeyhash)
+let tdate                  = mktype (Tbuiltin Bdate)
+let ttimestamp             = mktype (Tbuiltin Btimestamp)
+let taddress               = mktype (Tbuiltin Baddress)
+let tenum v                = mktype (Tenum v)
+let tstate                 = mktype (Tstate)
+let tstorage               = mktype (Tstorage)
+let trecord rn             = mktype (Trecord rn)
+let tevent e               = mktype (Tevent e)
+let toption t              = mktype (Toption t)
+let tset t                 = mktype (Tset t)
+let tlist t                = mktype (Tlist t)
+let tbmap b k v            = mktype (Tmap (b, k, v))
+let tmap k v               = mktype (Tmap (false, k, v))
+let tbig_map k v           = mktype (Tmap (true, k, v))
+let titerable_big_map k v  = mktype (Titerable_big_map (k, v))
+let tor l r                = mktype (Tor (l, r))
+let tlambda a r            = mktype (Tlambda (a, r))
+let ttuple l               = mktype (Ttuple l)
+let trat                   = ttuple [tint; tnat]
+let toperation             = mktype (Toperation)
+let tsignature             = mktype (Tbuiltin Bsignature)
+let tcontract t            = mktype (Tcontract t)
+let tticket t              = mktype (Tticket t)
 let tsapling_state       n = mktype (Tsapling_state n)
 let tsapling_transaction n = mktype (Tsapling_transaction n)
-let tchainid       = mktype (Tbuiltin Bchainid)
-let tbls12_381_fr  = mktype (Tbuiltin Bbls12_381_fr)
-let tbls12_381_g1  = mktype (Tbuiltin Bbls12_381_g1)
-let tbls12_381_g2  = mktype (Tbuiltin Bbls12_381_g2)
-let tnever         = mktype (Tbuiltin Bnever)
-let tchest         = mktype (Tbuiltin Bchest)
-let tchest_key     = mktype (Tbuiltin Bchest_key)
-let tasset an      = mktype (Tasset an)
-let tcollection an = mktype (Tcontainer (tasset an, Collection))
-let taggregate an  = mktype (Tcontainer (tasset an, Aggregate))
-let tpartition an  = mktype (Tcontainer (tasset an, Partition))
-let tview an       = mktype (Tcontainer (tasset an, View))
-let toperations    = tlist toperation
-let tmetadata      = tbig_map tstring tbytes
+let tchainid               = mktype (Tbuiltin Bchainid)
+let tbls12_381_fr          = mktype (Tbuiltin Bbls12_381_fr)
+let tbls12_381_g1          = mktype (Tbuiltin Bbls12_381_g1)
+let tbls12_381_g2          = mktype (Tbuiltin Bbls12_381_g2)
+let tnever                 = mktype (Tbuiltin Bnever)
+let tchest                 = mktype (Tbuiltin Bchest)
+let tchest_key             = mktype (Tbuiltin Bchest_key)
+let tasset an              = mktype (Tasset an)
+let tcollection an         = mktype (Tcontainer (tasset an, Collection))
+let taggregate an          = mktype (Tcontainer (tasset an, Aggregate))
+let tpartition an          = mktype (Tcontainer (tasset an, Partition))
+let tview an               = mktype (Tcontainer (tasset an, View))
+let toperations            = tlist toperation
+let tmetadata              = tbig_map tstring tbytes
 
 let mk_bool         x = mk_mterm (Mbool x) tbool
 let mk_string       x = mk_mterm (Mstring x) tstring
@@ -1213,7 +1221,7 @@ let mk_checksignature a b c = mk_mterm (Mchecksignature (a, b, c)) tbool
 let mk_brat n d  = mk_tuple [mk_bint n; mk_bnat d]
 let mk_rat n d   = mk_tuple [mk_int n; mk_nat d]
 
-let mk_metadata v = mk_mterm (Mlitmap(true, v)) tmetadata
+let mk_metadata v = mk_mterm (Mlitmap(MKBigMap, v)) tmetadata
 
 let fail x  = mk_mterm (Mfail (Invalid (mk_string x))) tunit
 let failg x = mk_mterm (Mfail (Invalid (x))) tunit
@@ -1276,30 +1284,31 @@ let rec cmp_ntype
     (t2 : ntype)
   : bool =
   match t1, t2 with
-  | Tasset i1, Tasset i2                     -> cmp_lident i1 i2
-  | Tenum i1, Tenum i2                       -> cmp_lident i1 i2
-  | Tstate, Tstate                           -> true
-  | Tbuiltin b1, Tbuiltin b2                 -> cmp_btyp b1 b2
-  | Tcontainer (t1, c1), Tcontainer (t2, c2) -> cmp_type t1 t2 && cmp_container c1 c2
-  | Tlist t1, Tlist t2                       -> cmp_type t1 t2
-  | Toption t1, Toption t2                   -> cmp_type t1 t2
-  | Ttuple l1, Ttuple l2                     -> List.for_all2 cmp_type l1 l2
-  | Tset b1, Tset b2                         -> cmp_type b1 b2
-  | Tmap (b1, k1, v1), Tmap (b2, k2, v2)     -> b1 = b2 && cmp_type k1 k2 && cmp_type v1 v2
-  | Tor (l1, r1), Tor (l2, r2)               -> cmp_type l1 l2 && cmp_type r1 r2
-  | Trecord i1, Trecord i2                   -> cmp_lident i1 i2
-  | Tevent e1, Tevent e2                     -> cmp_lident e1 e2
-  | Tlambda (a1, r1), Tlambda (a2, r2)       -> cmp_type a1 a2 && cmp_type r1 r2
-  | Tunit, Tunit                             -> true
-  | Tstorage, Tstorage                       -> true
-  | Toperation, Toperation                   -> true
-  | Tcontract t1, Tcontract t2               -> cmp_type t1 t2
-  | Tprog t1, Tprog t2                       -> cmp_type t1 t2
-  | Tvset (v1, t1), Tvset (v2, t2)           -> cmp_vset v1 v2 && cmp_type t1 t2
-  | Ttrace t1, Ttrace t2                     -> cmp_trtyp t1 t2
-  | Tticket t1, Tticket t2                   -> cmp_type t1 t2
-  | Tsapling_state n1, Tsapling_state n2     -> cmp_int n1 n2
-  | Tsapling_transaction n1, Tsapling_transaction n2 -> cmp_int n1 n2
+  | Tasset i1, Tasset i2                                   -> cmp_lident i1 i2
+  | Tenum i1, Tenum i2                                     -> cmp_lident i1 i2
+  | Tstate, Tstate                                         -> true
+  | Tbuiltin b1, Tbuiltin b2                               -> cmp_btyp b1 b2
+  | Tcontainer (t1, c1), Tcontainer (t2, c2)               -> cmp_type t1 t2 && cmp_container c1 c2
+  | Tlist t1, Tlist t2                                     -> cmp_type t1 t2
+  | Toption t1, Toption t2                                 -> cmp_type t1 t2
+  | Ttuple l1, Ttuple l2                                   -> List.for_all2 cmp_type l1 l2
+  | Tset b1, Tset b2                                       -> cmp_type b1 b2
+  | Tmap (b1, k1, v1), Tmap (b2, k2, v2)                   -> b1 = b2 && cmp_type k1 k2 && cmp_type v1 v2
+  | Titerable_big_map (k1, v1), Titerable_big_map (k2, v2) -> cmp_type k1 k2 && cmp_type v1 v2
+  | Tor (l1, r1), Tor (l2, r2)                             -> cmp_type l1 l2 && cmp_type r1 r2
+  | Trecord i1, Trecord i2                                 -> cmp_lident i1 i2
+  | Tevent e1, Tevent e2                                   -> cmp_lident e1 e2
+  | Tlambda (a1, r1), Tlambda (a2, r2)                     -> cmp_type a1 a2 && cmp_type r1 r2
+  | Tunit, Tunit                                           -> true
+  | Tstorage, Tstorage                                     -> true
+  | Toperation, Toperation                                 -> true
+  | Tcontract t1, Tcontract t2                             -> cmp_type t1 t2
+  | Tprog t1, Tprog t2                                     -> cmp_type t1 t2
+  | Tvset (v1, t1), Tvset (v2, t2)                         -> cmp_vset v1 v2 && cmp_type t1 t2
+  | Ttrace t1, Ttrace t2                                   -> cmp_trtyp t1 t2
+  | Tticket t1, Tticket t2                                 -> cmp_type t1 t2
+  | Tsapling_state n1, Tsapling_state n2                   -> cmp_int n1 n2
+  | Tsapling_transaction n1, Tsapling_transaction n2       -> cmp_int n1 n2
   | _ -> false
 
 and cmp_type
@@ -1413,6 +1422,10 @@ let cmp_mterm_node
     | TKoperation x1, TKoperation x2                           -> cmp x1 x2
     | _ -> false
   in
+  let cmp_map_kind (lhs : map_kind) (rhs : map_kind) : bool =
+    match lhs, rhs with
+    | _ -> false
+  in
   try
     match term1, term2 with
     (* lambda *)
@@ -1490,7 +1503,7 @@ let cmp_mterm_node
     | Massets l1, Massets l2                                                           -> List.for_all2 cmp l1 l2
     | Mlitset l1, Mlitset l2                                                           -> List.for_all2 cmp l1 l2
     | Mlitlist l1, Mlitlist l2                                                         -> List.for_all2 cmp l1 l2
-    | Mlitmap (b1, l1), Mlitmap (b2, l2)                                               -> cmp_bool b1 b2 && List.for_all2 (fun (k1, v1) (k2, v2) -> (cmp k1 k2 && cmp v1 v2)) l1 l2
+    | Mlitmap (b1, l1), Mlitmap (b2, l2)                                               -> cmp_map_kind b1 b2 && List.for_all2 (fun (k1, v1) (k2, v2) -> (cmp k1 k2 && cmp v1 v2)) l1 l2
     | Mlitrecord l1, Mlitrecord l2                                                     -> List.for_all2 (fun (i1, v1) (i2, v2) -> (cmp_ident i1 i2 && cmp v1 v2)) l1 l2
     | Mlitevent l1, Mlitevent l2                                                       -> List.for_all2 (fun (i1, v1) (i2, v2) -> (cmp_ident i1 i2 && cmp v1 v2)) l1 l2
     | Mlambda (rt1, id1, at1, e1), Mlambda (rt2, id2, at2, e2)                         -> cmp_type rt1 rt2 && cmpi id1 id2 && cmp_type at1 at2 && cmp e1 e2
@@ -1773,30 +1786,31 @@ let cmp_api_verif (v1 : api_verif) (v2 : api_verif) : bool =
 (* -------------------------------------------------------------------- *)
 let map_ptyp (f : type_ -> type_) (nt : ntype) : ntype =
   match nt with
-  | Tasset id         -> Tasset id
-  | Tenum id          -> Tenum id
-  | Tstate            -> Tstate
-  | Tbuiltin b        -> Tbuiltin b
-  | Tcontainer (t, c) -> Tcontainer (f t, c)
-  | Tlist t           -> Tlist (f t)
-  | Toption t         -> Toption (f t)
-  | Ttuple l          -> Ttuple (List.map f l)
-  | Tset k            -> Tset k
-  | Tmap (b, k, v)    -> Tmap (b, k, f v)
-  | Tor (l, r)        -> Tor (f l, f r)
-  | Trecord id        -> Trecord id
-  | Tevent id         -> Tevent id
-  | Tlambda (a, r)    -> Tlambda (f a, f r)
-  | Tunit             -> Tunit
-  | Tstorage          -> Tstorage
-  | Toperation        -> Toperation
-  | Tcontract t       -> Tcontract (f t)
-  | Tticket t         -> Tticket (f t)
-  | Tsapling_state n  -> Tsapling_state n
-  | Tsapling_transaction n -> Tsapling_transaction n
-  | Tprog t           -> Tprog (f t)
-  | Tvset (v, t)      -> Tvset (v, t)
-  | Ttrace t          -> Ttrace t
+  | Tasset id                -> Tasset id
+  | Tenum id                 -> Tenum id
+  | Tstate                   -> Tstate
+  | Tbuiltin b               -> Tbuiltin b
+  | Tcontainer (t, c)        -> Tcontainer (f t, c)
+  | Tlist t                  -> Tlist (f t)
+  | Toption t                -> Toption (f t)
+  | Ttuple l                 -> Ttuple (List.map f l)
+  | Tset k                   -> Tset k
+  | Tmap (b, k, v)           -> Tmap (b, f k, f v)
+  | Titerable_big_map (k, v) -> Titerable_big_map (f k, f v)
+  | Tor (l, r)               -> Tor (f l, f r)
+  | Trecord id               -> Trecord id
+  | Tevent id                -> Tevent id
+  | Tlambda (a, r)           -> Tlambda (f a, f r)
+  | Tunit                    -> Tunit
+  | Tstorage                 -> Tstorage
+  | Toperation               -> Toperation
+  | Tcontract t              -> Tcontract (f t)
+  | Tticket t                -> Tticket (f t)
+  | Tsapling_state n         -> Tsapling_state n
+  | Tsapling_transaction n   -> Tsapling_transaction n
+  | Tprog t                  -> Tprog (f t)
+  | Tvset (v, t)             -> Tvset (v, f t)
+  | Ttrace t                 -> Ttrace t
 
 let map_type (f : type_ -> type_) (t : type_) : type_ =
   mktype ?annot:(get_atype t) (map_ptyp f (get_ntype t))
@@ -4305,30 +4319,31 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
   let rec for_type (t : type_) : type_ =
     let for_ntype (nt : ntype) : ntype =
       match nt with
-      | Tasset id         -> Tasset (g KIassetname id)
-      | Tenum id          -> Tenum (g KIenumname id)
-      | Tstate            -> nt
-      | Tbuiltin _        -> nt
-      | Tcontainer (a, c) -> Tcontainer (for_type a, c)
-      | Tlist a           -> Tlist (for_type a)
-      | Toption a         -> Toption (for_type a)
-      | Ttuple l          -> Ttuple (List.map for_type l)
-      | Tset k            -> Tset k
-      | Tmap (b, k, v)    -> Tmap (b, k, for_type v)
-      | Tor (l, r)        -> Tor (for_type l, for_type r)
-      | Trecord id        -> Trecord (g KIrecordname id)
-      | Tevent id         -> Tevent (g KIrecordname id)
-      | Tlambda (a, r)    -> Tlambda (for_type a, for_type r)
-      | Tunit             -> nt
-      | Tstorage          -> nt
-      | Toperation        -> nt
-      | Tcontract t       -> Tcontract (for_type t)
-      | Tticket t         -> Tticket (for_type t)
-      | Tsapling_state _  -> nt
-      | Tsapling_transaction _ -> nt
-      | Tprog a           -> Tprog (for_type a)
-      | Tvset (v, a)      -> Tvset (v, for_type a)
-      | Ttrace _          -> nt
+      | Tasset id                -> Tasset (g KIassetname id)
+      | Tenum id                 -> Tenum (g KIenumname id)
+      | Tstate                   -> nt
+      | Tbuiltin _               -> nt
+      | Tcontainer (a, c)        -> Tcontainer (for_type a, c)
+      | Tlist a                  -> Tlist (for_type a)
+      | Toption a                -> Toption (for_type a)
+      | Ttuple l                 -> Ttuple (List.map for_type l)
+      | Tset k                   -> Tset k
+      | Tmap (b, k, v)           -> Tmap (b, k, for_type v)
+      | Titerable_big_map (k, v) -> Titerable_big_map (k, for_type v)
+      | Tor (l, r)               -> Tor (for_type l, for_type r)
+      | Trecord id               -> Trecord (g KIrecordname id)
+      | Tevent id                -> Tevent (g KIrecordname id)
+      | Tlambda (a, r)           -> Tlambda (for_type a, for_type r)
+      | Tunit                    -> nt
+      | Tstorage                 -> nt
+      | Toperation               -> nt
+      | Tcontract t              -> Tcontract (for_type t)
+      | Tticket t                -> Tticket (for_type t)
+      | Tsapling_state _         -> nt
+      | Tsapling_transaction _   -> nt
+      | Tprog a                  -> Tprog (for_type a)
+      | Tvset (v, a)             -> Tvset (v, for_type a)
+      | Ttrace _                 -> nt
     in
     mktype ?annot:(get_atype t) (for_ntype (get_ntype t))
   in
@@ -5762,15 +5777,16 @@ end = struct
   let get_all_set_types (model : model) : type_ list =
     let rec for_type accu t =
       match get_ntype t with
-      | Tset _         -> add_type accu t
-      | Tlist   t      -> for_type accu t
-      | Toption t      -> for_type accu t
-      | Ttuple  ts     -> List.fold_left (for_type) accu ts
-      | Tmap (_, _, t) -> for_type accu t
-      | Tcontract t    -> for_type accu t
-      | Tticket t      -> for_type accu t
-      | Tprog t        -> for_type accu t
-      | Tvset (_, t)   -> for_type accu t
+      | Tset _                   -> add_type accu t
+      | Tlist   t                -> for_type accu t
+      | Toption t                -> for_type accu t
+      | Ttuple  ts               -> List.fold_left (for_type) accu ts
+      | Tmap (_, _, t)           -> for_type accu t
+      | Titerable_big_map (_, t) -> for_type accu t
+      | Tcontract t              -> for_type accu t
+      | Tticket t                -> for_type accu t
+      | Tprog t                  -> for_type accu t
+      | Tvset (_, t)             -> for_type accu t
       | _ -> accu
     in
     get_all_gen_type for_type model
@@ -5778,14 +5794,15 @@ end = struct
   let get_all_list_types (model : model) : type_ list =
     let rec for_type accu t =
       match get_ntype t with
-      | Tlist   tv     -> add_type (for_type accu tv) t
-      | Toption t      -> for_type accu t
-      | Ttuple  ts     -> List.fold_left (for_type) accu ts
-      | Tmap (_, _, t) -> for_type accu t
-      | Tcontract t    -> for_type accu t
-      | Tticket t      -> for_type accu t
-      | Tprog t        -> for_type accu t
-      | Tvset (_, t)   -> for_type accu t
+      | Tlist   tv               -> add_type (for_type accu tv) t
+      | Toption t                -> for_type accu t
+      | Ttuple  ts               -> List.fold_left (for_type) accu ts
+      | Tmap (_, _, t)           -> for_type accu t
+      | Titerable_big_map (_, t) -> for_type accu t
+      | Tcontract t              -> for_type accu t
+      | Tticket t                -> for_type accu t
+      | Tprog t                  -> for_type accu t
+      | Tvset (_, t)             -> for_type accu t
       | _ -> accu
     in
     get_all_gen_type for_type model
@@ -5793,14 +5810,15 @@ end = struct
   let get_all_map_types (model : model) : type_ list =
     let rec for_type accu t =
       match get_ntype t with
-      | Tlist     t          -> for_type accu t
-      | Toption   t          -> for_type accu t
-      | Ttuple    ts         -> List.fold_left (for_type) accu ts
-      | Tmap      (_, _, tv) -> add_type (for_type accu tv) t
-      | Tcontract t          -> for_type accu t
-      | Tticket t            -> for_type accu t
-      | Tprog     t          -> for_type accu t
-      | Tvset     (_, t)     -> for_type accu t
+      | Tlist     t               -> for_type accu t
+      | Toption   t               -> for_type accu t
+      | Ttuple    ts              -> List.fold_left (for_type) accu ts
+      | Tmap      (_, _, tv)      -> add_type (for_type accu tv) t
+      | Titerable_big_map (_, tv) -> add_type (for_type accu tv) t
+      | Tcontract t               -> for_type accu t
+      | Tticket t                 -> for_type accu t
+      | Tprog     t               -> for_type accu t
+      | Tvset     (_, t)          -> for_type accu t
       | _ -> accu
     in
     get_all_gen_type for_type model

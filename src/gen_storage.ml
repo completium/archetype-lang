@@ -37,51 +37,53 @@ let generate_storage (model : model) : model =
 
     let init_default_value ty =
       match get_ntype ty with
-      | Tbuiltin Bunit         -> mk_mterm (Munit) ty
-      | Tbuiltin Bbool         -> mk_mterm (Mbool false) ty
-      | Tbuiltin Bint          -> mk_mterm (Mint (Big_int.zero_big_int)) ty
-      | Tbuiltin Brational     -> mk_mterm (Mrational (Big_int.zero_big_int, Big_int.unit_big_int)) ty
-      | Tbuiltin Bdate         -> emit_error (NoInitExprFor "date")
-      | Tbuiltin Bduration     -> mk_mterm (Mduration (Core.mk_duration ())) ty
-      | Tbuiltin Btimestamp    -> emit_error (NoInitExprFor "timestamp")
-      | Tbuiltin Bstring       -> mk_mterm (Mstring "") ty
-      | Tbuiltin Baddress      -> emit_error (NoInitExprFor "address")
-      | Tbuiltin Bcurrency     -> mk_mterm (Mcurrency (Big_int.zero_big_int, Utz)) ty
-      | Tbuiltin Bkey          -> emit_error (NoInitExprFor "key")
-      | Tbuiltin Bkeyhash      -> emit_error (NoInitExprFor "key_hash")
-      | Tbuiltin Bsignature    -> emit_error (NoInitExprFor "signature")
-      | Tbuiltin Bbytes        -> mk_mterm (Mbytes ("0x0")) ty
-      | Tbuiltin Bnat          -> mk_mterm (Mint (Big_int.zero_big_int)) ty
-      | Tbuiltin Bchainid      -> emit_error (NoInitExprFor "chainid")
-      | Tcontainer _           -> mk_mterm (Massets []) ty
-      | Tlist _                -> mk_mterm (Mlitlist []) ty
-      | Toption _              -> mk_mterm (Mnone) ty
+      | Tbuiltin Bunit           -> mk_mterm (Munit) ty
+      | Tbuiltin Bbool           -> mk_mterm (Mbool false) ty
+      | Tbuiltin Bint            -> mk_mterm (Mint (Big_int.zero_big_int)) ty
+      | Tbuiltin Brational       -> mk_mterm (Mrational (Big_int.zero_big_int, Big_int.unit_big_int)) ty
+      | Tbuiltin Bdate           -> emit_error (NoInitExprFor "date")
+      | Tbuiltin Bduration       -> mk_mterm (Mduration (Core.mk_duration ())) ty
+      | Tbuiltin Btimestamp      -> emit_error (NoInitExprFor "timestamp")
+      | Tbuiltin Bstring         -> mk_mterm (Mstring "") ty
+      | Tbuiltin Baddress        -> emit_error (NoInitExprFor "address")
+      | Tbuiltin Bcurrency       -> mk_mterm (Mcurrency (Big_int.zero_big_int, Utz)) ty
+      | Tbuiltin Bkey            -> emit_error (NoInitExprFor "key")
+      | Tbuiltin Bkeyhash        -> emit_error (NoInitExprFor "key_hash")
+      | Tbuiltin Bsignature      -> emit_error (NoInitExprFor "signature")
+      | Tbuiltin Bbytes          -> mk_mterm (Mbytes ("0x0")) ty
+      | Tbuiltin Bnat            -> mk_mterm (Mint (Big_int.zero_big_int)) ty
+      | Tbuiltin Bchainid        -> emit_error (NoInitExprFor "chainid")
+      | Tcontainer _             -> mk_mterm (Massets []) ty
+      | Tlist _                  -> mk_mterm (Mlitlist []) ty
+      | Toption _                -> mk_mterm (Mnone) ty
       | Tasset v
-      | Tenum v                -> emit_error (NoInitExprFor (unloc v))
-      | Ttuple _               -> emit_error (NoInitExprFor "tuple")
-      | Tset _                 -> mk_mterm   (Mlitset []) ty
-      | Tmap (b, _, _)         -> mk_mterm   (Mlitmap (b, [])) ty
-      | Tor _                  -> emit_error (NoInitExprFor "or")
-      | Trecord _              -> emit_error (NoInitExprFor "record")
-      | Tevent _               -> emit_error (NoInitExprFor "event")
-      | Tlambda _              -> emit_error (NoInitExprFor "lambda")
-      | Tunit                  -> emit_error (NoInitExprFor "unit")
-      | Tstorage               -> emit_error (NoInitExprFor "storage")
-      | Toperation             -> emit_error (NoInitExprFor "operation")
-      | Tcontract _            -> emit_error (NoInitExprFor "contract")
-      | Tprog _                -> emit_error (NoInitExprFor "prog")
-      | Tvset _                -> emit_error (NoInitExprFor "vset")
-      | Ttrace _               -> emit_error (NoInitExprFor "trace")
-      | Tstate                 -> emit_error (NoInitExprFor "state")
-      | Tticket _              -> emit_error (NoInitExprFor "ticket")
-      | Tsapling_state n       -> mk_mterm   (MsaplingStateEmpty n) ty
-      | Tsapling_transaction _ -> emit_error (NoInitExprFor "sapling_transaction")
-      | Tbuiltin Bbls12_381_fr -> mk_mterm (Mint (Big_int.zero_big_int)) ty
-      | Tbuiltin Bbls12_381_g1 -> mk_mterm (Mint (Big_int.zero_big_int)) ty
-      | Tbuiltin Bbls12_381_g2 -> mk_mterm (Mint (Big_int.zero_big_int)) ty
-      | Tbuiltin Bnever        -> emit_error (NoInitExprFor "never")
-      | Tbuiltin Bchest        -> emit_error (NoInitExprFor "chest")
-      | Tbuiltin Bchest_key    -> emit_error (NoInitExprFor "chest_key")
+      | Tenum v                  -> emit_error (NoInitExprFor (unloc v))
+      | Ttuple _                 -> emit_error (NoInitExprFor "tuple")
+      | Tset _                   -> mk_mterm   (Mlitset []) ty
+      | Tmap (false, _, _)       -> mk_mterm   (Mlitmap (MKMap, [])) ty
+      | Tmap (true, _, _)        -> mk_mterm   (Mlitmap (MKBigMap, [])) ty
+      | Titerable_big_map (_, _) -> mk_mterm   (Mlitmap (MKIterableBigMap, [])) ty
+      | Tor _                    -> emit_error (NoInitExprFor "or")
+      | Trecord _                -> emit_error (NoInitExprFor "record")
+      | Tevent _                 -> emit_error (NoInitExprFor "event")
+      | Tlambda _                -> emit_error (NoInitExprFor "lambda")
+      | Tunit                    -> emit_error (NoInitExprFor "unit")
+      | Tstorage                 -> emit_error (NoInitExprFor "storage")
+      | Toperation               -> emit_error (NoInitExprFor "operation")
+      | Tcontract _              -> emit_error (NoInitExprFor "contract")
+      | Tprog _                  -> emit_error (NoInitExprFor "prog")
+      | Tvset _                  -> emit_error (NoInitExprFor "vset")
+      | Ttrace _                 -> emit_error (NoInitExprFor "trace")
+      | Tstate                   -> emit_error (NoInitExprFor "state")
+      | Tticket _                -> emit_error (NoInitExprFor "ticket")
+      | Tsapling_state n         -> mk_mterm   (MsaplingStateEmpty n) ty
+      | Tsapling_transaction _   -> emit_error (NoInitExprFor "sapling_transaction")
+      | Tbuiltin Bbls12_381_fr   -> mk_mterm (Mint (Big_int.zero_big_int)) ty
+      | Tbuiltin Bbls12_381_g1   -> mk_mterm (Mint (Big_int.zero_big_int)) ty
+      | Tbuiltin Bbls12_381_g2   -> mk_mterm (Mint (Big_int.zero_big_int)) ty
+      | Tbuiltin Bnever          -> emit_error (NoInitExprFor "never")
+      | Tbuiltin Bchest          -> emit_error (NoInitExprFor "chest")
+      | Tbuiltin Bchest_key      -> emit_error (NoInitExprFor "chest_key")
     in
 
     let constant = match var.kind with | VKconstant -> true | _ -> false in
