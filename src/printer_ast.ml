@@ -75,6 +75,10 @@ let rec pp_ptyp fmt (t : ptyp) =
     Format.fprintf fmt "big_map<%a, %a>"
       pp_type k
       pp_type v
+  | Titerable_big_map (k, v) ->
+    Format.fprintf fmt "iterable_big_map<%a, %a>"
+      pp_type k
+      pp_type v
   | Tor (k, v) ->
     Format.fprintf fmt "or<%a, %a>"
       pp_type k

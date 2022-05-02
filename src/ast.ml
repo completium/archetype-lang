@@ -60,6 +60,7 @@ type ptyp =
   | Tlist of type_
   | Tmap of type_ * type_
   | Tbig_map of type_ * type_
+  | Titerable_big_map of type_ * type_
   | Tor of type_ * type_
   | Tlambda of type_ * type_
   | Ttuple of type_ list

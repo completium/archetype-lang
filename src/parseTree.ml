@@ -24,6 +24,7 @@ and type_r =
   | Tlist                of type_t
   | Tmap                 of type_t * type_t
   | Tbig_map             of type_t * type_t
+  | Titerable_big_map    of type_t * type_t
   | Tor                  of type_t * type_t
   | Tlambda              of type_t * type_t
   | Tcontract            of type_t

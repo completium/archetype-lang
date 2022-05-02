@@ -602,7 +602,7 @@ type_s_unloc:
 | SET                 LESS x=type_t GREATER                { Tset x                   }
 | MAP                 LESS k=type_t COMMA v=type_s GREATER { Tmap (k, v)              }
 | BIG_MAP             LESS k=type_t COMMA v=type_s GREATER { Tbig_map (k, v)          }
-| ITERABLE_BIG_MAP    LESS k=type_t COMMA v=type_s GREATER { Tbig_map (k, v) }
+| ITERABLE_BIG_MAP    LESS k=type_t COMMA v=type_s GREATER { Titerable_big_map (k, v) }
 | OR                  LESS k=type_t COMMA v=type_s GREATER { Tor (k, v)               }
 | LAMBDA              LESS a=type_t COMMA r=type_s GREATER { Tlambda (a, r)           }
 | CONTRACT            LESS x=type_t GREATER                { Tcontract x              }
