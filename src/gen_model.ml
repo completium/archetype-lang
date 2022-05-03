@@ -208,10 +208,11 @@ let to_model (ast : A.ast) : M.model =
     | _ -> assert false
   in
 
-  let extract_builtin_type_map (v : M.mterm) : M.type_ * M.type_ =
+  let extract_builtin_type_map (v : M.mterm) : M.map_kind * M.type_ * M.type_ =
     match v with
-    | {type_ = (Tmap (_, k, v), _); _} -> k, v
-    | {type_ = (Titerable_big_map (k, v), _); _} -> k, v
+    | {type_ = (Tmap (false, k, v), _); _}       -> MKMap, k, v
+    | {type_ = (Tmap (true, k, v), _); _}        -> MKBigMap, k, v
+    | {type_ = (Titerable_big_map (k, v), _); _} -> MKIterableBigMap, k, v
     | _ -> assert false
   in
 
@@ -578,44 +579,44 @@ let to_model (ast : A.ast) : M.model =
         let fp = f p in
         let fq = f q in
         let fr = f r in
-        let kt, vt = extract_builtin_type_map fp in
-        M.Mmapput (kt, vt, fp, fq, fr)
+        let mk, kt, vt = extract_builtin_type_map fp in
+        M.Mmapput (mk, kt, vt, fp, fq, fr)
 
       | A.Pcall (None, A.Cconst (A.Cmremove), [AExpr p; AExpr q]) ->
         let fp = f p in
         let fq = f q in
-        let kt, vt = extract_builtin_type_map fp in
-        M.Mmapremove (kt, vt, fp, fq)
+        let mk, kt, vt = extract_builtin_type_map fp in
+        M.Mmapremove (mk, kt, vt, fp, fq)
 
       | A.Pcall (None, A.Cconst (A.Cmupdate), [AExpr p; AExpr q; AExpr r]) ->
         let fp = f p in
         let fq = f q in
         let fr = f r in
-        let kt, vt = extract_builtin_type_map fp in
-        M.Mmapupdate (kt, vt, fp, fq, fr)
+        let mk, kt, vt = extract_builtin_type_map fp in
+        M.Mmapupdate (mk, kt, vt, fp, fq, fr)
 
       | A.Pcall (None, A.Cconst (A.Cmget), [AExpr p; AExpr q]) ->
         let fp = f p in
         let fq = f q in
-        let kt, vt = extract_builtin_type_map fp in
-        M.Mmapget (kt, vt, fp, fq, None)
+        let mk, kt, vt = extract_builtin_type_map fp in
+        M.Mmapget (mk, kt, vt, fp, fq, None)
 
       | A.Pcall (None, A.Cconst (A.Cmgetopt), [AExpr p; AExpr q]) ->
         let fp = f p in
         let fq = f q in
-        let kt, vt = extract_builtin_type_map fp in
-        M.Mmapgetopt (kt, vt, fp, fq)
+        let mk, kt, vt = extract_builtin_type_map fp in
+        M.Mmapgetopt (mk, kt, vt, fp, fq)
 
       | A.Pcall (None, A.Cconst (A.Cmcontains), [AExpr p; AExpr q]) ->
         let fp = f p in
         let fq = f q in
-        let kt, vt = extract_builtin_type_map fp in
-        M.Mmapcontains (kt, vt, fp, fq)
+        let mk, kt, vt = extract_builtin_type_map fp in
+        M.Mmapcontains (mk, kt, vt, fp, fq)
 
       | A.Pcall (None, A.Cconst (A.Cmlength), [AExpr p]) ->
         let fp = f p in
-        let kt, vt = extract_builtin_type_map fp in
-        M.Mmaplength (kt, vt, fp)
+        let mk, kt, vt = extract_builtin_type_map fp in
+        M.Mmaplength (mk, kt, vt, fp)
 
 
       (* Formula *)

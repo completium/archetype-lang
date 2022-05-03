@@ -3683,7 +3683,7 @@ let remove_asset (model : model) : model =
       let node =
         match get_ntype va.type_ with
         | Tset kt          -> Msetcontains (kt, va, k)
-        | Tmap (_, kt, kv) -> Mmapcontains (kt, kv, va, k)
+        | Tmap (b, kt, kv) -> Mmapcontains ((if b then MKBigMap else MKMap), kt, kv, va, k)
         | _ -> assert false
       in
       mk_mterm node tbool
@@ -3768,8 +3768,8 @@ let remove_asset (model : model) : model =
                 match get_ntype va.type_ with
                 | Tset kt          ->
                   mk_mterm (Msetadd (kt, accu, k)) va.type_
-                | Tmap (_, kt, vt) ->
-                  mk_mterm (Mmapput (kt, vt, accu, k, v)) va.type_
+                | Tmap (b, kt, vt) ->
+                  mk_mterm (Mmapput ((if b then MKBigMap else MKMap), kt, vt, accu, k, v)) va.type_
                 | _ -> assert false
               end
             ) va l in
@@ -3783,7 +3783,7 @@ let remove_asset (model : model) : model =
       let f x =
         match get_ntype va.type_ with
         | Tset tk          -> Msetcontains (tk, va, x)
-        | Tmap (_, tk, tv) -> Mmapcontains (tk, tv, va, x)
+        | Tmap (b, tk, tv) -> Mmapcontains ((if b then MKBigMap else MKMap), tk, tv, va, x)
         | _ -> Format.eprintf "%a@." pp_type_ va.type_; assert false
       in
       mk_mterm (f x) tbool
@@ -3804,8 +3804,8 @@ let remove_asset (model : model) : model =
               let a = mk_mterm (Msetadd (kt, va, k)) va.type_ in
               mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), a)) tunit
             end
-          | Tmap (_, kt, kv) -> begin
-              let a = mk_mterm (Mmapput (kt, kv, va, k, v)) va.type_ in
+          | Tmap (b, kt, kv) -> begin
+              let a = mk_mterm (Mmapput ((if b then MKBigMap else MKMap), kt, kv, va, k, v)) va.type_ in
               let b = mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), a)) tunit in
               match ags, pts with
               | [], []   -> b
@@ -3846,7 +3846,7 @@ let remove_asset (model : model) : model =
         let node =
           match get_ntype va.type_ with
           | Tset kt          -> Msetremove (kt, va, k)
-          | Tmap (_, kt, kv) -> Mmapremove (kt, kv, va, k)
+          | Tmap (b, kt, kv) -> Mmapremove ((if b then MKBigMap else MKMap), kt, kv, va, k)
           | _ -> assert false
         in
         mk_mterm node va.type_
@@ -3886,11 +3886,13 @@ let remove_asset (model : model) : model =
       let _, is_record = is_single_simple_record an in
       let aan, c = Utils.get_field_container model an fn in
       let atk = Utils.get_asset_key model aan |> snd in
+      let aasset = Utils.get_asset model an in
+      let bm = aasset.big_map in
 
       let mk_assign bk =
         let ts = tset atk in
         let remove_set set = mk_mterm (Msetremove (atk, set, bk)) ts in
-        let get_ t = mk_mterm (Mmapget(kt, vt, va, ak, Some an)) t in
+        let get_ t = mk_mterm (Mmapget((if bm then MKBigMap else MKMap), kt, vt, va, ak, Some an)) t in
         let v : mterm =
           if is_record
           then begin
@@ -3903,7 +3905,7 @@ let remove_asset (model : model) : model =
             mk_mterm (Mrecupdate(get, [fn, remove_set set])) tr
           end
         in
-        let nmap : mterm = mk_mterm (Mmapput (kt, vt, va, ak, v) ) va.type_ in
+        let nmap : mterm = mk_mterm (Mmapput ((if bm then MKBigMap else MKMap), kt, vt, va, ak, v) ) va.type_ in
         mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), nmap)) tunit
       in
 
@@ -3918,6 +3920,8 @@ let remove_asset (model : model) : model =
     let fold_ck ?(with_value=true) f (an, ck : ident * container_kind) (init : mterm) mk =
       let tr = init.type_ in
       let atk = Utils.get_asset_key model an |> snd in
+      let aasset = Utils.get_asset model an in
+      let bm = aasset.big_map in
 
       match ck with
       | CKcoll _ -> begin
@@ -3946,7 +3950,7 @@ let remove_asset (model : model) : model =
               let vaccu = mk_mterm (Mvar (iaccu, Vlocal, Tnone, Dnone)) tr in
 
               let act = mk vkid (Some vvid) vaccu in
-              mk_mterm (Mmapfold(atk, ikid, ivid, iaccu, va, init, act)) tr
+              mk_mterm (Mmapfold((if bm then MKBigMap else MKMap), atk, ikid, ivid, iaccu, va, init, act)) tr
             end
           | _ -> assert false
         end
@@ -3954,7 +3958,7 @@ let remove_asset (model : model) : model =
           let va = get_asset_global an in
           let get =
             match get_ntype va.type_ with
-            | Tmap (_, kt, vt) -> mk_mterm (Mmapget (kt, vt, va, f k, Some an)) vt
+            | Tmap (b, kt, vt) -> mk_mterm (Mmapget ((if b then MKBigMap else MKMap), kt, vt, va, f k, Some an)) vt
             | _ -> assert false
           in
 
@@ -3977,7 +3981,7 @@ let remove_asset (model : model) : model =
           let vaa = get_asset_global aan in
           let geta =
             match get_ntype vaa.type_ with
-            | Tmap (_, kt, vt) -> Some (mk_mterm (Mmapget (kt, vt, vaa, vid, Some an)) vt)
+            | Tmap (b, kt, vt) -> Some (mk_mterm (Mmapget ((if b then MKBigMap else MKMap), kt, vt, vaa, vid, Some an)) vt)
             | _ -> None
           in
 
@@ -4012,7 +4016,7 @@ let remove_asset (model : model) : model =
           let vaa = get_asset_global an in
           let geta =
             match get_ntype vaa.type_ with
-            | Tmap (_, kt, vt) -> Some (mk_mterm (Mmapget (kt, vt, vaa, vid, Some an)) vt)
+            | Tmap (b, kt, vt) -> Some (mk_mterm (Mmapget ((if b then MKBigMap else MKMap), kt, vt, vaa, vid, Some an)) vt)
             | _ -> None
           in
 
@@ -4059,12 +4063,13 @@ let remove_asset (model : model) : model =
       | Mget (an, CKcoll _, k) -> begin
           let k = fm ctx k in
           let va = get_asset_global an in
-          let kt, vt =
+
+          let b, kt, vt =
             match get_ntype va.type_ with
-            | Tmap (_, kt, vt) -> kt, vt
+            | Tmap (b, kt, vt) -> b, kt, vt
             | _ -> assert false
           in
-          let map_get = Mmapget (kt, vt, va, k, Some an) in
+          let map_get = Mmapget ((if b then MKBigMap else MKMap), kt, vt, va, k, Some an) in
           mk_mterm map_get vt
         end
 
@@ -4110,9 +4115,9 @@ let remove_asset (model : model) : model =
           let ak = fm ctx ak in
 
           let va = get_asset_global an in
-          let kt, vt =
+          let bm, kt, vt =
             match get_ntype va.type_ with
-            | Tmap (_, kt, vt) -> kt, vt
+            | Tmap (b, kt, vt) -> b, kt, vt
             | _ -> assert false
           in
 
@@ -4123,7 +4128,7 @@ let remove_asset (model : model) : model =
           let mk_assign bk =
             let ts = tset atk in
             let add_set set = mk_mterm (Msetadd (atk, set, bk)) ts in
-            let get_ t = mk_mterm (Mmapget(kt, vt, va, ak, Some an)) t in
+            let get_ t = mk_mterm (Mmapget((if bm then MKBigMap else MKMap), kt, vt, va, ak, Some an)) t in
             let v : mterm =
               if is_record
               then begin
@@ -4136,7 +4141,7 @@ let remove_asset (model : model) : model =
                 mk_mterm (Mrecupdate(get, [fn, add_set set])) tr
               end
             in
-            let nmap : mterm = mk_mterm (Mmapput (kt, vt, va, ak, v) ) va.type_ in
+            let nmap : mterm = mk_mterm (Mmapput ((if bm then MKBigMap else MKMap), kt, vt, va, ak, v) ) va.type_ in
             mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), nmap)) tunit
           in
 
@@ -4162,9 +4167,9 @@ let remove_asset (model : model) : model =
           let kk = fm ctx k in
 
           let va = get_asset_global an in
-          let kt, vt =
+          let bm, kt, vt =
             match get_ntype va.type_ with
-            | Tmap (_, kt, vt) -> kt, vt
+            | Tmap (b, kt, vt) -> b, kt, vt
             | _ -> assert false
           in
 
@@ -4173,7 +4178,7 @@ let remove_asset (model : model) : model =
           let atk = Utils.get_asset_key model aan |> snd in
 
 
-          let get_ t = mk_mterm (Mmapget(kt, vt, va, kk, Some an)) t in
+          let get_ t = mk_mterm (Mmapget((if bm then MKBigMap else MKMap), kt, vt, va, kk, Some an)) t in
 
           let mk_loop _ =
             let iter_var = dumloc "_iter_var" in
@@ -4207,7 +4212,7 @@ let remove_asset (model : model) : model =
                 mk_mterm (Mrecupdate(get, [fn, empty])) tr
               end
             in
-            let nmap : mterm = mk_mterm (Mmapput (kt, vt, va, kk, v) ) va.type_ in
+            let nmap : mterm = mk_mterm (Mmapput ((if bm then MKBigMap else MKMap), kt, vt, va, kk, v) ) va.type_ in
             mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), nmap)) tunit
           in
 
@@ -4273,7 +4278,7 @@ let remove_asset (model : model) : model =
               let va = get_asset_global an in
               let get =
                 match get_ntype va.type_ with
-                | Tmap (_, kt, vt) -> mk_mterm (Mmapget (kt, vt, va, fm ctx k, Some an)) vt
+                | Tmap (b, kt, vt) -> mk_mterm (Mmapget ((if b then MKBigMap else MKMap), kt, vt, va, fm ctx k, Some an)) vt
                 | _ -> assert false
               in
 
@@ -4294,7 +4299,7 @@ let remove_asset (model : model) : model =
               let vaa = get_asset_global aan in
               let geta =
                 match get_ntype vaa.type_ with
-                | Tmap (_, kt, vt) -> Some (mk_mterm (Mmapget (kt, vt, vaa, vkey, Some an)) vt)
+                | Tmap (b, kt, vt) -> Some (mk_mterm (Mmapget ((if b then MKBigMap else MKMap), kt, vt, vaa, vkey, Some an)) vt)
                 | _ -> None
               in
 
@@ -4375,14 +4380,14 @@ let remove_asset (model : model) : model =
               let aan, _ = Utils.get_field_container model an fn in
               let atk = Utils.get_asset_key model aan |> snd in
 
-              let tk, tv =
+              let bm, tk, tv =
                 match get_ntype va.type_ with
-                | Tmap (_, tk, tv) -> tk, tv
+                | Tmap (b, tk, tv) -> b, tk, tv
                 | _ -> assert false
               in
 
               let set =
-                let get = mk_mterm (Mmapget (tk, tv, va, kk, Some an)) tv in
+                let get = mk_mterm (Mmapget ((if bm then MKBigMap else MKMap), tk, tv, va, kk, Some an)) tv in
                 if is_record
                 then get
                 else mk_mterm (Mdot(get, dumloc fn)) (tset atk)
@@ -4417,16 +4422,16 @@ let remove_asset (model : model) : model =
 
           let _, is_record = is_single_simple_record an in
 
-          let kt, tasset =
+          let bm, kt, tasset =
             match get_ntype (get_type_for_asset_container an) with
-            | Tmap (_, kt, vt) -> kt, vt
+            | Tmap (b, kt, vt) -> b, kt, vt
             | _ -> assert false
           in
 
           let var_id = dumloc "_asset" in
 
           let mk_letin x =
-            let get = mk_mterm (Mmapget(kt, tasset, va, k, Some an)) tasset in
+            let get = mk_mterm (Mmapget((if bm then MKBigMap else MKMap), kt, tasset, va, k, Some an)) tasset in
             mk_mterm (Mletin ([var_id], get, Some tasset, x, None)) tunit
           in
 
@@ -4569,7 +4574,7 @@ let remove_asset (model : model) : model =
               | _ -> assert false
             end
             else begin
-              let get : mterm = mk_mterm (Mmapget(kt, tasset, va, k, Some an)) tasset in
+              let get : mterm = mk_mterm (Mmapget((if bm then MKBigMap else MKMap), kt, tasset, va, k, Some an)) tasset in
               let ll = List.map (fun (id, op, v) ->
                   match op with
                   | ValueAssign -> begin
@@ -4582,7 +4587,7 @@ let remove_asset (model : model) : model =
             end
           in
 
-          let nmap = mk_mterm (Mmapput (kt, tasset, va, k, v)) va.type_ in
+          let nmap = mk_mterm (Mmapput ((if bm then MKBigMap else MKMap), kt, tasset, va, k, v)) va.type_ in
 
           let assign = mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), nmap)) tunit in
 
@@ -4616,8 +4621,8 @@ let remove_asset (model : model) : model =
                         let a, b, _, _ = extract_key_value v in
                         match get_ntype vaa.type_ with
                         | Tset kt          -> Msetadd (kt, c, a)
-                        | Tmap (_, kt, kv) -> begin
-                            Mmapput (kt, kv, c, a, b)
+                        | Tmap (bm, kt, kv) -> begin
+                            Mmapput ((if bm then MKBigMap else MKMap), kt, kv, c, a, b)
                           end
                         | _ -> assert false
                       in
@@ -4632,7 +4637,7 @@ let remove_asset (model : model) : model =
                       let node =
                         match get_ntype vaa.type_ with
                         | Tset kt          -> Msetremove (kt, c, k)
-                        | Tmap (_, kt, kv) -> Mmapremove (kt, kv, c, k)
+                        | Tmap (b, kt, kv) -> Mmapremove ((if b then MKBigMap else MKMap), kt, kv, c, k)
                         | _ -> assert false
                       in
                       mk_mterm node vaa.type_
@@ -4789,8 +4794,8 @@ let remove_asset (model : model) : model =
               let add_letin x =
                 match get_ntype va.type_ with
                 | Tset _ -> x
-                | Tmap (_, kt, vt) ->
-                  let mk_get x = mk_mterm (Mmapget (kt, vt, va, x, Some an)) vt in
+                | Tmap (bm, kt, vt) ->
+                  let mk_get x = mk_mterm (Mmapget ((if bm then MKBigMap else MKMap), kt, vt, va, x, Some an)) vt in
                   x |> mk_letin ivb (mk_get vxins)
                 | _ -> assert false
               in
@@ -4882,7 +4887,7 @@ let remove_asset (model : model) : model =
                 let va = get_asset_global an in
                 match get_ntype va.type_ with
                 | Tset tk          -> Msetcontains (tk, va, k)
-                | Tmap (_, tk, tv) -> Mmapcontains (tk, tv, va, k)
+                | Tmap (b, tk, tv) -> Mmapcontains ((if b then MKBigMap else MKMap), tk, tv, va, k)
                 | _ -> assert false
               end
             | CKview v -> begin
@@ -4899,14 +4904,14 @@ let remove_asset (model : model) : model =
                 let aan, _ = Utils.get_field_container model an fn in
                 let atk = Utils.get_asset_key model aan |> snd in
 
-                let tk, tv =
+                let bm, tk, tv =
                   match get_ntype va.type_ with
-                  | Tmap (_, tk, tv) -> tk, tv
+                  | Tmap (b, tk, tv) -> b, tk, tv
                   | _ -> assert false
                 in
 
                 let set =
-                  let get = mk_mterm (Mmapget (tk, tv, va, kk, Some an)) tv in
+                  let get = mk_mterm (Mmapget ((if bm then MKBigMap else MKMap), tk, tv, va, kk, Some an)) tv in
                   if is_record
                   then get
                   else mk_mterm (Mdot(get, dumloc fn)) (tset atk)
@@ -4956,7 +4961,7 @@ let remove_asset (model : model) : model =
                 let va = get_asset_global an in
                 match get_ntype va.type_ with
                 | Tset tk          -> Msetlength (tk, va)
-                | Tmap (_, tk, tv) -> Mmaplength (tk, tv, va)
+                | Tmap (b, tk, tv) -> Mmaplength ((if b then MKBigMap else MKMap), tk, tv, va)
                 | _ -> assert false
               end
             | CKview v -> begin
@@ -4973,14 +4978,14 @@ let remove_asset (model : model) : model =
                 let aan, _ = Utils.get_field_container model an fn in
                 let atk = Utils.get_asset_key model aan |> snd in
 
-                let tk, tv =
+                let bm, tk, tv =
                   match get_ntype va.type_ with
-                  | Tmap (_, tk, tv) -> tk, tv
+                  | Tmap (b, tk, tv) -> b, tk, tv
                   | _ -> assert false
                 in
 
                 let set =
-                  let get = mk_mterm (Mmapget (tk, tv, va, kk, Some an)) tv in
+                  let get = mk_mterm (Mmapget ((if bm then MKBigMap else MKMap), tk, tv, va, kk, Some an)) tv in
                   if is_record
                   then get
                   else mk_mterm (Mdot(get, dumloc fn)) (tset atk)
@@ -5516,12 +5521,12 @@ let expr_to_instr (model : model) =
     | Massign (ValueAssign, _, ak, {node = Mlistconcat(t, c, k)}), tyinstr when is_compatible ak c  ->
       mk_mterm (Mlistinstrconcat (t, ak, k)) tyinstr
 
-    | Massign (ValueAssign, _, ak, {node = Mmapput(tk, vk, c, k, v)}), tyinstr when is_compatible ak c  ->
-      mk_mterm (Mmapinstrput (tk, vk, ak, k, v)) tyinstr
-    | Massign (ValueAssign, _, ak, {node = Mmapremove(tk, vk, c, k)}), tyinstr when is_compatible ak c  ->
-      mk_mterm (Mmapinstrremove (tk, vk, ak, k)) tyinstr
-    | Massign (ValueAssign, _, ak, {node = Mmapupdate(tk, vk, c, k, v)}), tyinstr when is_compatible ak c  ->
-      mk_mterm (Mmapinstrupdate (tk, vk, ak, k, v)) tyinstr
+    | Massign (ValueAssign, _, ak, {node = Mmapput(mky, tk, vk, c, k, v)}), tyinstr when is_compatible ak c  ->
+      mk_mterm (Mmapinstrput (mky, tk, vk, ak, k, v)) tyinstr
+    | Massign (ValueAssign, _, ak, {node = Mmapremove(mky, tk, vk, c, k)}), tyinstr when is_compatible ak c  ->
+      mk_mterm (Mmapinstrremove (mky, tk, vk, ak, k)) tyinstr
+    | Massign (ValueAssign, _, ak, {node = Mmapupdate(mky, tk, vk, c, k, v)}), tyinstr when is_compatible ak c  ->
+      mk_mterm (Mmapinstrupdate (mky, tk, vk, ak, k, v)) tyinstr
 
     | _ -> map_mterm (aux ctx) mt
   in
@@ -5561,14 +5566,14 @@ let instr_to_expr_exec (model : model) =
     | Mlistinstrconcat (lty, ak, i) when is_used ak [i] ->
       mk ak (tlist lty) (fun x -> Mlistconcat(lty, x, i))
 
-    | Mmapinstrput(kty, vty, ak, k, v) when is_used ak [k; v] ->
-      mk ak (tmap kty vty) (fun x -> Mmapput(kty, vty, x, k, v))
+    | Mmapinstrput(mky, kty, vty, ak, k, v) when is_used ak [k; v] ->
+      mk ak (tmap kty vty) (fun x -> Mmapput(mky, kty, vty, x, k, v))
 
-    | Mmapinstrremove(kty, vty, ak, k) when is_used ak [k] ->
-      mk ak (tmap kty vty) (fun x -> Mmapremove(kty, vty, x, k))
+    | Mmapinstrremove(mky, kty, vty, ak, k) when is_used ak [k] ->
+      mk ak (tmap kty vty) (fun x -> Mmapremove(mky, kty, vty, x, k))
 
-    | Mmapinstrupdate (kty, vty, ak, k, v) when is_used ak [k; v] ->
-      mk ak (tmap kty vty) (fun x -> Mmapupdate(kty, vty, x, k, v))
+    | Mmapinstrupdate (mky, kty, vty, ak, k, v) when is_used ak [k; v] ->
+      mk ak (tmap kty vty) (fun x -> Mmapupdate(mky, kty, vty, x, k, v))
 
     | _ -> map_mterm (aux ctx) mt
   in

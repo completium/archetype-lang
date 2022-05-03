@@ -363,18 +363,18 @@ type ('id, 'term) mterm_node  =
   | Mlistinstrprepend of type_ * ('id, 'term) assign_kind_gen * 'term
   | Mlistinstrconcat  of type_ * ('id, 'term) assign_kind_gen * 'term
   (* map api expression *)
-  | Mmapput           of type_ * type_ * 'term * 'term * 'term
-  | Mmapremove        of type_ * type_ * 'term * 'term
-  | Mmapupdate        of type_ * type_ * 'term * 'term * 'term
-  | Mmapget           of type_ * type_ * 'term * 'term * ident option
-  | Mmapgetopt        of type_ * type_ * 'term * 'term
-  | Mmapcontains      of type_ * type_ * 'term * 'term
-  | Mmaplength        of type_ * type_ * 'term
-  | Mmapfold          of type_ * 'id   * 'id   * 'id   * 'term * 'term * 'term
+  | Mmapput           of map_kind * type_ * type_ * 'term * 'term * 'term
+  | Mmapremove        of map_kind * type_ * type_ * 'term * 'term
+  | Mmapupdate        of map_kind * type_ * type_ * 'term * 'term * 'term
+  | Mmapget           of map_kind * type_ * type_ * 'term * 'term * ident option
+  | Mmapgetopt        of map_kind * type_ * type_ * 'term * 'term
+  | Mmapcontains      of map_kind * type_ * type_ * 'term * 'term
+  | Mmaplength        of map_kind * type_ * type_ * 'term
+  | Mmapfold          of map_kind * type_ * 'id   * 'id   * 'id   * 'term * 'term * 'term
   (* map api instruction *)
-  | Mmapinstrput      of type_ * type_ * ('id, 'term) assign_kind_gen * 'term * 'term
-  | Mmapinstrremove   of type_ * type_ * ('id, 'term) assign_kind_gen * 'term
-  | Mmapinstrupdate   of type_ * type_ * ('id, 'term) assign_kind_gen * 'term * 'term
+  | Mmapinstrput      of map_kind * type_ * type_ * ('id, 'term) assign_kind_gen * 'term * 'term
+  | Mmapinstrremove   of map_kind * type_ * type_ * ('id, 'term) assign_kind_gen * 'term
+  | Mmapinstrupdate   of map_kind * type_ * type_ * ('id, 'term) assign_kind_gen * 'term * 'term
   (* builtin functions *)
   | Mmin              of 'term * 'term
   | Mmax              of 'term * 'term
@@ -1583,18 +1583,18 @@ let cmp_mterm_node
     | Mlistinstrprepend (t1, ak1, a1), Mlistinstrprepend (t2, ak2, a2)                 -> cmp_type t1 t2 && cmp_assign_kind ak1 ak2 && cmp a1 a2
     | Mlistinstrconcat (t1, ak1, a1),  Mlistinstrconcat (t2, ak2, a2)                  -> cmp_type t1 t2 && cmp_assign_kind ak1 ak2 && cmp a1 a2
     (* map api expression *)
-    | Mmapput (tk1, tv1, c1, k1, v1), Mmapput (tk2, tv2, c2, k2, v2)                   -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2 && cmp v1 v2
-    | Mmapremove (tk1, tv1, c1, k1), Mmapremove (tk2, tv2, c2, k2)                     -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2
-    | Mmapupdate (tk1, tv1, c1, k1, v1), Mmapupdate (tk2, tv2, c2, k2, v2)             -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2 && cmp v1 v2
-    | Mmapget (tk1, tv1, c1, k1, an1), Mmapget (tk2, tv2, c2, k2, an2)                 -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2 && Option.cmp cmp_ident an1 an2
-    | Mmapgetopt (tk1, tv1, c1, k1), Mmapgetopt (tk2, tv2, c2, k2)                     -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2
-    | Mmapcontains (tk1, tv1, c1, k1), Mmapcontains (tk2, tv2, c2, k2)                 -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2
-    | Mmaplength (tk1, tv1, c1), Mmaplength (tk2, tv2, c2)                             -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2
-    | Mmapfold (t1, ik1, iv1, ia1, c1, a1, b1), Mmapfold (t2, ik2, iv2, ia2, c2, a2, b2) -> cmp_type t1 t2 && cmp_lident ik1 ik2 && cmp_lident iv1 iv2 && cmp_lident ia1 ia2 && cmp c1 c2 && cmp a1 a2 && cmp b1 b2
+    | Mmapput (mk1, tk1, tv1, c1, k1, v1), Mmapput (mk2, tk2, tv2, c2, k2, v2)                     -> cmp_map_kind mk1 mk2 && cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2 && cmp v1 v2
+    | Mmapremove (mk1, tk1, tv1, c1, k1), Mmapremove (mk2, tk2, tv2, c2, k2)                       -> cmp_map_kind mk1 mk2 && cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2
+    | Mmapupdate (mk1, tk1, tv1, c1, k1, v1), Mmapupdate (mk2, tk2, tv2, c2, k2, v2)               -> cmp_map_kind mk1 mk2 && cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2 && cmp v1 v2
+    | Mmapget (mk1, tk1, tv1, c1, k1, an1), Mmapget (mk2, tk2, tv2, c2, k2, an2)                   -> cmp_map_kind mk1 mk2 && cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2 && Option.cmp cmp_ident an1 an2
+    | Mmapgetopt (mk1, tk1, tv1, c1, k1), Mmapgetopt (mk2, tk2, tv2, c2, k2)                       -> cmp_map_kind mk1 mk2 && cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2
+    | Mmapcontains (mk1, tk1, tv1, c1, k1), Mmapcontains (mk2, tk2, tv2, c2, k2)                   -> cmp_map_kind mk1 mk2 && cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2
+    | Mmaplength (mk1, tk1, tv1, c1), Mmaplength (mk2, tk2, tv2, c2)                               -> cmp_map_kind mk1 mk2 && cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2
+    | Mmapfold (mk1, t1, ik1, iv1, ia1, c1, a1, b1), Mmapfold (mk2, t2, ik2, iv2, ia2, c2, a2, b2) -> cmp_map_kind mk1 mk2 && cmp_type t1 t2 && cmp_lident ik1 ik2 && cmp_lident iv1 iv2 && cmp_lident ia1 ia2 && cmp c1 c2 && cmp a1 a2 && cmp b1 b2
     (* map api instruction *)
-    | Mmapinstrput (tk1, tv1, ak1, k1, v1), Mmapinstrput (tk2, tv2, ak2, k2, v2)       -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp_assign_kind ak1 ak2 && cmp k1 k2 && cmp v1 v2
-    | Mmapinstrremove (tk1, tv1, ak1, k1), Mmapinstrremove (tk2, tv2, ak2, k2)         -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp_assign_kind ak1 ak2 && cmp k1 k2
-    | Mmapinstrupdate (tk1, tv1, ak1, k1, v1), Mmapinstrupdate (tk2, tv2, ak2, k2, v2) -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp_assign_kind ak1 ak2 && cmp k1 k2 && cmp v1 v2
+    | Mmapinstrput (mk1, tk1, tv1, ak1, k1, v1), Mmapinstrput (mk2, tk2, tv2, ak2, k2, v2)         -> cmp_map_kind mk1 mk2 && cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp_assign_kind ak1 ak2 && cmp k1 k2 && cmp v1 v2
+    | Mmapinstrremove (mk1, tk1, tv1, ak1, k1), Mmapinstrremove (mk2, tk2, tv2, ak2, k2)           -> cmp_map_kind mk1 mk2 && cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp_assign_kind ak1 ak2 && cmp k1 k2
+    | Mmapinstrupdate (mk1, tk1, tv1, ak1, k1, v1), Mmapinstrupdate (mk2, tk2, tv2, ak2, k2, v2)   -> cmp_map_kind mk1 mk2 && cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp_assign_kind ak1 ak2 && cmp k1 k2 && cmp v1 v2
     (* builtin functions *)
     | Mmin (l1, r1), Mmin (l2, r2)                                                     -> cmp l1 l2 && cmp r1 r2
     | Mmax (l1, r1), Mmax (l2, r2)                                                     -> cmp l1 l2 && cmp r1 r2
@@ -2030,18 +2030,18 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mlistinstrprepend (t, ak, a)   -> Mlistinstrprepend (ft t, map_assign_kind fi g f ak, f a)
   | Mlistinstrconcat (t, ak, a)    -> Mlistinstrconcat (ft t, map_assign_kind fi g f ak, f a)
   (* map api expression *)
-  | Mmapput (tk, tv, c, k, v)      -> Mmapput (ft tk, ft tv, f c, f k, f v)
-  | Mmapremove (tk, tv, c, k)      -> Mmapremove (ft tk, ft tv, f c, f k)
-  | Mmapupdate (tk, tv, c, k, v)   -> Mmapupdate (ft tk, ft tv, f c, f k, f v)
-  | Mmapget (tk, tv, c, k, an)     -> Mmapget (ft tk, ft tv, f c, f k, Option.map fi an)
-  | Mmapgetopt (tk, tv, c, k)      -> Mmapgetopt (ft tk, ft tv, f c, f k)
-  | Mmapcontains (tk, tv, c, k)    -> Mmapcontains (ft tk, ft tv, f c, f k)
-  | Mmaplength (tk, tv, c)         -> Mmaplength (ft tk, ft tv, f c)
-  | Mmapfold (t, ik, iv, ia, c, a, b) -> Mmapfold (ft t, g ik, g iv, g ia, f c, f a, f b)
+  | Mmapput (mk, tk, tv, c, k, v)      -> Mmapput (mk, ft tk, ft tv, f c, f k, f v)
+  | Mmapremove (mk, tk, tv, c, k)      -> Mmapremove (mk, ft tk, ft tv, f c, f k)
+  | Mmapupdate (mk, tk, tv, c, k, v)   -> Mmapupdate (mk, ft tk, ft tv, f c, f k, f v)
+  | Mmapget (mk, tk, tv, c, k, an)     -> Mmapget (mk, ft tk, ft tv, f c, f k, Option.map fi an)
+  | Mmapgetopt (mk, tk, tv, c, k)      -> Mmapgetopt (mk, ft tk, ft tv, f c, f k)
+  | Mmapcontains (mk, tk, tv, c, k)    -> Mmapcontains (mk, ft tk, ft tv, f c, f k)
+  | Mmaplength (mk, tk, tv, c)         -> Mmaplength (mk, ft tk, ft tv, f c)
+  | Mmapfold (mk, t, ik, iv, ia, c, a, b) -> Mmapfold (mk, ft t, g ik, g iv, g ia, f c, f a, f b)
   (* map api instruction *)
-  | Mmapinstrput (tk, tv, ak, k, v)    -> Mmapinstrput (ft tk, ft tv, map_assign_kind fi g f ak, f k, f v)
-  | Mmapinstrremove (tk, tv, ak, k)    -> Mmapinstrremove (ft tk, ft tv, map_assign_kind fi g f ak, f k)
-  | Mmapinstrupdate (tk, tv, ak, k, v) -> Mmapinstrupdate (ft tk, ft tv, map_assign_kind fi g f ak, f k, f v)
+  | Mmapinstrput (mk, tk, tv, ak, k, v)    -> Mmapinstrput (mk, ft tk, ft tv, map_assign_kind fi g f ak, f k, f v)
+  | Mmapinstrremove (mk, tk, tv, ak, k)    -> Mmapinstrremove (mk, ft tk, ft tv, map_assign_kind fi g f ak, f k)
+  | Mmapinstrupdate (mk, tk, tv, ak, k, v) -> Mmapinstrupdate (mk, ft tk, ft tv, map_assign_kind fi g f ak, f k, f v)
   (* builtin functions *)
   | Mmin (l, r)                    -> Mmin (f l, f r)
   | Mmax (l, r)                    -> Mmax (f l, f r)
@@ -2473,18 +2473,18 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mlistinstrprepend (_, _, a)           -> f accu a
   | Mlistinstrconcat (_, _, a)            -> f accu a
   (* map api expression *)
-  | Mmapput (_, _, c, k, v)               -> f (f (f accu c) k) v
-  | Mmapremove (_, _, c, k)               -> f (f accu c) k
-  | Mmapupdate (_, _, c, k, v)            -> f (f (f accu c) k) v
-  | Mmapget (_, _, c, k, _)               -> f (f accu c) k
-  | Mmapgetopt (_, _, c, k)               -> f (f accu c) k
-  | Mmapcontains (_, _, c, k)             -> f (f accu c) k
-  | Mmaplength (_, _, c)                  -> f accu c
-  | Mmapfold (_, _, _, _, c, a, b)        -> f (f (f accu c) a) b
+  | Mmapput (_, _, _, c, k, v)            -> f (f (f accu c) k) v
+  | Mmapremove (_, _, _, c, k)            -> f (f accu c) k
+  | Mmapupdate (_, _, _, c, k, v)         -> f (f (f accu c) k) v
+  | Mmapget (_, _, _, c, k, _)            -> f (f accu c) k
+  | Mmapgetopt (_, _, _, c, k)            -> f (f accu c) k
+  | Mmapcontains (_, _, _, c, k)          -> f (f accu c) k
+  | Mmaplength (_, _, _, c)               -> f accu c
+  | Mmapfold (_, _, _, _, _, c, a, b)     -> f (f (f accu c) a) b
   (* map api instruction *)
-  | Mmapinstrput (_, _, _, k, v)          -> f (f accu k) v
-  | Mmapinstrremove (_, _, _, k)          -> f accu k
-  | Mmapinstrupdate (_, _, _, k, v)       -> f (f accu k) v
+  | Mmapinstrput (_, _, _, _, k, v)       -> f (f accu k) v
+  | Mmapinstrremove (_, _, _, _, k)       -> f accu k
+  | Mmapinstrupdate (_, _, _, _, k, v)    -> f (f accu k) v
   (* builtin functions *)
   | Mmax (l, r)                           -> f (f accu l) r
   | Mmin (l, r)                           -> f (f accu l) r
@@ -3415,67 +3415,67 @@ let fold_map_term
 
   (* map api expression *)
 
-  | Mmapput (tk, tv, c, k, v) ->
+  | Mmapput (mk, tk, tv, c, k, v) ->
     let ce, ca = f accu c in
     let ke, ka = f ca k in
     let ve, va = f ka v in
-    g (Mmapput (tk, tv, ce, ke, ve)), va
+    g (Mmapput (mk, tk, tv, ce, ke, ve)), va
 
-  | Mmapremove (tk, tv, c, k) ->
+  | Mmapremove (mk, tk, tv, c, k) ->
     let ce, ca = f accu c in
     let ke, ka = f ca k in
-    g (Mmapremove (tk, tv, ce, ke)), ka
+    g (Mmapremove (mk, tk, tv, ce, ke)), ka
 
-  | Mmapupdate (tk, tv, c, k, v) ->
+  | Mmapupdate (mk, tk, tv, c, k, v) ->
     let ce, ca = f accu c in
     let ke, ka = f ca k in
     let ve, va = f ka v in
-    g (Mmapupdate (tk, tv, ce, ke, ve)), va
+    g (Mmapupdate (mk, tk, tv, ce, ke, ve)), va
 
-  | Mmapget (tk, tv, c, k, an) ->
+  | Mmapget (mk, tk, tv, c, k, an) ->
     let ce, ca = f accu c in
     let ke, ka = f ca k in
-    g (Mmapget (tk, tv, ce, ke, an)), ka
+    g (Mmapget (mk, tk, tv, ce, ke, an)), ka
 
-  | Mmapgetopt (tk, tv, c, k) ->
+  | Mmapgetopt (mk, tk, tv, c, k) ->
     let ce, ca = f accu c in
     let ke, ka = f ca k in
-    g (Mmapgetopt (tk, tv, ce, ke)), ka
+    g (Mmapgetopt (mk, tk, tv, ce, ke)), ka
 
-  | Mmapcontains (tk, tv, c, k) ->
+  | Mmapcontains (mk, tk, tv, c, k) ->
     let ce, ca = f accu c in
     let ke, ka = f ca k in
-    g (Mmapcontains (tk, tv, ce, ke)), ka
+    g (Mmapcontains (mk, tk, tv, ce, ke)), ka
 
-  | Mmaplength (tk, tv, c) ->
+  | Mmaplength (mk, tk, tv, c) ->
     let ce, ca = f accu c in
-    g (Mmaplength (tk, tv, ce)), ca
+    g (Mmaplength (mk, tk, tv, ce)), ca
 
-  | Mmapfold (t, ik, iv, ia, c, a, b) ->
+  | Mmapfold (mk, t, ik, iv, ia, c, a, b) ->
     let ce, ca = f accu c in
     let ae, aa = f ca a in
     let be, ba = f aa b in
-    g (Mmapfold (t, ik, iv, ia, ce, ae, be)), ba
+    g (Mmapfold (mk, t, ik, iv, ia, ce, ae, be)), ba
 
 
   (* map api instruction *)
 
-  | Mmapinstrput (tk, tv, ak, k, v) ->
+  | Mmapinstrput (mk, tk, tv, ak, k, v) ->
     let ake, aka = fold_map_assign_kind f accu ak in
     let ke, ka = f aka k in
     let ve, va = f ka v in
-    g (Mmapinstrput (tk, tv, ake, ke, ve)), va
+    g (Mmapinstrput (mk, tk, tv, ake, ke, ve)), va
 
-  | Mmapinstrremove (tk, tv, ak, k) ->
+  | Mmapinstrremove (mk, tk, tv, ak, k) ->
     let ake, aka = fold_map_assign_kind f accu ak in
     let ke, ka = f aka k in
-    g (Mmapinstrremove (tk, tv, ake, ke)), ka
+    g (Mmapinstrremove (mk, tk, tv, ake, ke)), ka
 
-  | Mmapinstrupdate (tk, tv, ak, k, v) ->
+  | Mmapinstrupdate (mk, tk, tv, ak, k, v) ->
     let ake, aka = fold_map_assign_kind f accu ak in
     let ke, ka = f aka k in
     let ve, va = f ka v in
-    g (Mmapinstrupdate (tk, tv, ake, ke, ve)), va
+    g (Mmapinstrupdate (mk, tk, tv, ake, ke, ve)), va
 
 
   (* builtin functions *)

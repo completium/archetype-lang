@@ -953,22 +953,22 @@ let to_ir (model : M.model) : T.ir =
 
     (* map api expression *)
 
-    | Mmapput (_, _, c, k, v)     -> T.Iterop (Tupdate, f k, T.isome (f v),   f c)
-    | Mmapremove (_, tv, c, k)    -> T.Iterop (Tupdate, f k, T.inone (ft tv), f c)
-    | Mmapupdate (_, _, c, k, v)  -> T.Iterop (Tupdate, f k, f v, f c)
-    | Mmapget (_, _, c, k, oan)   ->
+    | Mmapput (_, _, _, c, k, v)     -> T.Iterop (Tupdate, f k, T.isome (f v),   f c)
+    | Mmapremove (_, _, tv, c, k)    -> T.Iterop (Tupdate, f k, T.inone (ft tv), f c)
+    | Mmapupdate (_, _, _, c, k, v)  -> T.Iterop (Tupdate, f k, f v, f c)
+    | Mmapget (_, _, _, c, k, oan)   ->
       let err = match oan with | Some an -> T.ipair (T.istring "AssetNotFound") (T.istring an) | None -> T.istring "NotFound" in
       T.Iifnone (T.Ibinop (Bget, f k, f c), T.ifaild err, "_var_ifnone", Ivar "_var_ifnone", ft mtt.type_)
-    | Mmapgetopt (_, _, c, k)     -> T.Ibinop (Bget, f k, f c)
-    | Mmapcontains (_, _, c, k)   -> T.Ibinop (Bmem, f k, f c)
-    | Mmaplength (_, _, c)        -> T.Iunop (Usize, f c)
-    | Mmapfold (_, ik, iv, ia, c, a, b) -> T.Ifold (unloc ik, Some (unloc iv), unloc ia, f c, f a, T.Iassign (unloc ia, f b))
+    | Mmapgetopt (_, _, _, c, k)     -> T.Ibinop (Bget, f k, f c)
+    | Mmapcontains (_, _, _, c, k)   -> T.Ibinop (Bmem, f k, f c)
+    | Mmaplength (_, _, _, c)        -> T.Iunop (Usize, f c)
+    | Mmapfold (_, _, ik, iv, ia, c, a, b) -> T.Ifold (unloc ik, Some (unloc iv), unloc ia, f c, f a, T.Iassign (unloc ia, f b))
 
     (* map api instruction *)
 
-    | Mmapinstrput    (_, _,  ak, k, v) -> instr_update ak (Aterop (Tupdate, f k, T.isome (f v)))
-    | Mmapinstrremove (_, tv, ak, k)    -> instr_update ak (Aterop (Tupdate, f k, T.inone (ft tv)))
-    | Mmapinstrupdate (_, _,  ak, k, v) -> instr_update ak (Aterop (Tupdate, f k, f v) )
+    | Mmapinstrput    (_, _, _,  ak, k, v) -> instr_update ak (Aterop (Tupdate, f k, T.isome (f v)))
+    | Mmapinstrremove (_, _, tv, ak, k)    -> instr_update ak (Aterop (Tupdate, f k, T.inone (ft tv)))
+    | Mmapinstrupdate (_, _, _,  ak, k, v) -> instr_update ak (Aterop (Tupdate, f k, f v) )
 
     (* builtin functions *)
 

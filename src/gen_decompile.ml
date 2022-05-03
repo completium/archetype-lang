@@ -1305,6 +1305,7 @@ end = struct
     let rec for_expr (e : dexpr) : mterm =
       let f = for_expr in
       let tunknown = tunit in
+      let mk_map = MKMap in
       match e with
       | Dvar v          -> mk_mvar (dumloc (for_dvar v)) tunit
       | Ddata (t, d)    -> for_data ~t d
@@ -1369,8 +1370,8 @@ end = struct
           | `Bop Band,                 [ a; b ] -> mk_mterm (Mand (f a, f b)) tbool
           | `Bop Bxor,                 [ a; b ] -> mk_mterm (Mxor (f a, f b)) tbool
           | `Bop Bcompare,             [ _; _ ] -> assert false
-          | `Bop Bget,                 [ a; b ] -> mk_mterm (Mmapget (tunknown, tunknown, f a, f b, None)) tunknown
-          | `Bop Bmem,                 [ a; b ] -> mk_mterm (Mmapcontains(tunknown, tunknown, f a, f b)) tunknown
+          | `Bop Bget,                 [ a; b ] -> mk_mterm (Mmapget (mk_map, tunknown, tunknown, f a, f b, None)) tunknown
+          | `Bop Bmem,                 [ a; b ] -> mk_mterm (Mmapcontains(mk_map, tunknown, tunknown, f a, f b)) tunknown
           | `Bop Bconcat,              [ a; b ] -> mk_mterm (Mconcat (f a, f b)) tunknown
           | `Bop Bcons,                [ a; b ] -> mk_mterm (Mlistprepend (tunknown, f a, f b)) tunknown
           | `Bop Bpair,                [ a; b ] -> mk_tuple [f a; f b]
@@ -1378,7 +1379,7 @@ end = struct
           | `Bop Bapply,               [ _a; _b ] -> assert false
           | `Top Tcheck_signature,  [ a; b; c ] -> mk_checksignature (f a) (f b) (f c)
           | `Top Tslice,            [ a; b; c ] -> mk_mterm (Mslice (f a, f b, f c)) tunknown
-          | `Top Tupdate,           [ a; b; c ] -> mk_mterm (Mmapput (tunknown, tunknown, f a, f b, f c)) tunknown
+          | `Top Tupdate,           [ a; b; c ] -> mk_mterm (Mmapput (mk_map, tunknown, tunknown, f a, f b, f c)) tunknown
           | `Top Ttransfer_tokens,  [ _a; _b; _c ] -> assert false
           | _ -> assert false
         end
@@ -1766,21 +1767,21 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     (* map api expression *)
 
-    | Mmapput (_, _, c, k, v)               -> A.eapp (A.Fident (dumloc "put")) [f c; f k; f v]
-    | Mmapremove (_, _, _c, _k)                -> assert false
-    | Mmapupdate (_, _, _c, _k, _v)            -> assert false
-    | Mmapget (_, _, _c, _k, _an)              -> assert false
-    | Mmapgetopt (_, _, _c, _k)                -> assert false
-    | Mmapcontains (_, _, _c, _k)              -> assert false
-    | Mmaplength (_, _, _c)                    -> assert false
-    | Mmapfold (_t, _ik, _iv, _ia, _c, _a, _b) -> assert false
+    | Mmapput (_, _, _, c, k, v)               -> A.eapp (A.Fident (dumloc "put")) [f c; f k; f v]
+    | Mmapremove (_, _, _, _c, _k)                -> assert false
+    | Mmapupdate (_, _, _, _c, _k, _v)            -> assert false
+    | Mmapget (_, _, _, _c, _k, _an)              -> assert false
+    | Mmapgetopt (_, _, _, _c, _k)                -> assert false
+    | Mmapcontains (_, _, _, _c, _k)              -> assert false
+    | Mmaplength (_, _, _, _c)                    -> assert false
+    | Mmapfold (_, _t, _ik, _iv, _ia, _c, _a, _b) -> assert false
 
 
     (* map api instruction *)
 
-    | Mmapinstrput    (_, _, _c, _k, _v)       -> assert false
-    | Mmapinstrremove (_, _, _c, _k)           -> assert false
-    | Mmapinstrupdate (_, _, _c, _k, _v)       -> assert false
+    | Mmapinstrput    (_, _, _, _c, _k, _v)       -> assert false
+    | Mmapinstrremove (_, _, _, _c, _k)           -> assert false
+    | Mmapinstrupdate (_, _, _, _c, _k, _v)       -> assert false
 
 
     (* builtin functions *)

@@ -1585,7 +1585,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                 Tpsome (map_lident id), map_mterm m ctx b;
                 Twild, map_mterm m ctx e
               ])
-    | Mletin ([id], { node = M.Mmapget (_kty, _vty, container, k, _); type_ = _ }, _, b, Some e) -> (* logical *)
+    | Mletin ([id], { node = M.Mmapget (_, _kty, _vty, container, k, _); type_ = _ }, _, b, Some e) -> (* logical *)
       let ctx = ctx in
       let map_id = mk_map_name m container.type_ in
       (* let t, d =
@@ -2304,19 +2304,19 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     (* map api expression *)
 
-    | Mmapput (_, _, c, k, v)   ->
+    | Mmapput (_, _, _, c, k, v)   ->
       Tadd (dl (mk_map_name m c.type_), dl (Ttuple [ map_mterm m ctx k; map_mterm m ctx v]), map_mterm m ctx c)
-    | Mmapremove (_, _, c, k)   ->
+    | Mmapremove (_, _, _, c, k)   ->
       Tremove (dl (mk_map_name m c.type_),map_mterm m ctx k, map_mterm m ctx c)
-    | Mmapupdate (_, _, c, k, v)   ->
+    | Mmapupdate (_, _, _, c, k, v)   ->
       Tupdate (dl (mk_map_name m c.type_), map_mterm m ctx k, map_mterm m ctx v, map_mterm m ctx c)
-    | Mmapget (_, _, c, k, _)   -> Tsnd(
+    | Mmapget (_, _, _, c, k, _)   -> Tsnd(
         dl (mk_get_force ctx (dl (mk_map_name m c.type_)) (map_mterm m ctx k) (map_mterm m ctx c)))
-    | Mmapgetopt (_, _, c, k)   -> Tsndopt(
+    | Mmapgetopt (_, _, _, c, k)   -> Tsndopt(
         dl (Tget (dl (mk_map_name m c.type_),map_mterm m ctx k, map_mterm m ctx c)))
-    | Mmapcontains (_, _, c, k) ->
+    | Mmapcontains (_, _, _, c, k) ->
       Tcontains (dl (mk_map_name m c.type_),map_mterm m ctx k, map_mterm m ctx c)
-    | Mmaplength (_, _, c)      ->
+    | Mmaplength (_, _, _, c)      ->
       let tmap = mk_map_name m c.type_ in Tcard (dl tmap,map_mterm m ctx c)
     | Mmapfold _ -> error_not_translated "Mmapfold"
 
@@ -2960,7 +2960,7 @@ let fold_exns m body : term list =
   let rec internal_fold_exn acc (term : M.mterm) =
     match term.M.node with
     | M.Mget (_, _, k) -> internal_fold_exn (acc @ [Texn ENotFound]) k
-    | M.Mmapget (_ , _, c, k, _) -> internal_fold_exn (internal_fold_exn (acc @ [Texn ENotFound]) k) c
+    | M.Mmapget (_, _ , _, c, k, _) -> internal_fold_exn (internal_fold_exn (acc @ [Texn ENotFound]) k) c
     | M.Mnth (_, CKview c, k) -> internal_fold_exn (internal_fold_exn (acc @ [Texn ENotFound]) c) k
     | M.Mnth (_, CKcoll _, k) -> internal_fold_exn ((acc @ [Texn ENotFound])) k
     | M.Mset (_, _, k, v) -> internal_fold_exn (internal_fold_exn (acc @ [Texn ENotFound]) k) v

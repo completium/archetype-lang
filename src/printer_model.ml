@@ -1115,43 +1115,43 @@ let pp_mterm fmt (mt : mterm) =
 
     (* map api expression *)
 
-    | Mmapput (_, _, c, k, v) ->
+    | Mmapput (_, _, _, c, k, v) ->
       Format.fprintf fmt "map_put (%a, %a, %a)"
         f c
         f k
         f v
 
-    | Mmapremove (_, _, c, k) ->
+    | Mmapremove (_, _, _, c, k) ->
       Format.fprintf fmt "map_remove (%a, %a)"
         f c
         f k
 
-    | Mmapupdate (_, _, c, k, v) ->
+    | Mmapupdate (_, _, _, c, k, v) ->
       Format.fprintf fmt "map_update (%a, %a, %a)"
         f c
         f k
         f v
 
-    | Mmapget (_, _, c, k, _) ->
+    | Mmapget (_, _, _, c, k, _) ->
       Format.fprintf fmt "map_get (%a, %a)"
         f c
         f k
 
-    | Mmapgetopt (_, _, c, k) ->
+    | Mmapgetopt (_, _, _, c, k) ->
       Format.fprintf fmt "map_getopt (%a, %a)"
         f c
         f k
 
-    | Mmapcontains (_, _, c, k) ->
+    | Mmapcontains (_, _, _, c, k) ->
       Format.fprintf fmt "map_contains (%a, %a)"
         f c
         f k
 
-    | Mmaplength (_, _, c) ->
+    | Mmaplength (_, _, _, c) ->
       Format.fprintf fmt "map_length (%a)"
         f c
 
-    | Mmapfold (t, ik, iv, ia, c, a, b) ->
+    | Mmapfold (_, t, ik, iv, ia, c, a, b) ->
       Format.fprintf fmt "map_%a_fold (%a, %a, (%a, (%a, %a)) ->@\n  @[%a@])"
         pp_type t
         f c
@@ -1164,18 +1164,18 @@ let pp_mterm fmt (mt : mterm) =
 
     (* map api instruction *)
 
-    | Mmapinstrput (_, _, ak, k, v) ->
+    | Mmapinstrput (_, _, _, ak, k, v) ->
       Format.fprintf fmt "%a.put(%a, %a)"
         (pp_assign_kind f) ak
         f k
         f v
 
-    | Mmapinstrremove (_, _, ak, k) ->
+    | Mmapinstrremove (_, _, _, ak, k) ->
       Format.fprintf fmt "%a.remove(%a)"
         (pp_assign_kind f) ak
         f k
 
-    | Mmapinstrupdate (_, _, ak, k, v) ->
+    | Mmapinstrupdate (_, _, _, ak, k, v) ->
       Format.fprintf fmt "%a.update(%a, %a)"
         (pp_assign_kind f) ak
         f k
