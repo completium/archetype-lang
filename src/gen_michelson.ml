@@ -634,7 +634,7 @@ let to_ir (model : M.model) : T.ir =
         let b = f b in
         T.Iiter (ids, c, b)
       end
-    | Miter (_i, _a, _b, _c, _)  -> emit_error TODO
+    | Miter (_i, _a, _b, _c, _, _) -> emit_error (UnsupportedTerm ("Miter"))
     | Mwhile (c, b, _)           -> T.Iloop (f c, f b)
     | Mseq is                    -> T.Iseq (List.map f is)
     (* | Mreturn x when view        -> f x *)

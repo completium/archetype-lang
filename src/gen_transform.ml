@@ -991,7 +991,7 @@ let assign_loop_label (model : model) : model =
               let accu = aux ctx accu body in
               label::accu
             end
-          | Miter (_, min, max, body, Some label) ->
+          | Miter (_, min, max, body, Some label, _) ->
             begin
               let accu = aux ctx accu min in
               let accu = aux ctx accu max in
@@ -1041,12 +1041,12 @@ let assign_loop_label (model : model) : model =
       let label = get_loop_label ctx in
       { mt with node = Mfor (a, nc, nbody, Some label)}
 
-    | Miter (a, min, max, body, None) ->
+    | Miter (a, min, max, body, None, n) ->
       let nmin  = aux ctx min in
       let nmax  = aux ctx max in
       let nbody = aux ctx body in
       let label = get_loop_label ctx in
-      { mt with node = Miter (a, nmin, nmax, nbody, Some label)}
+      { mt with node = Miter (a, nmin, nmax, nbody, Some label, n)}
 
     | Mwhile (cond, body, None) ->
       let ncond = aux ctx cond in
@@ -2415,11 +2415,11 @@ let extract_term_from_instruction f (model : model) : model =
       let be = aux ctx b in
       process (mk_mterm (Mfor (i, ce, be, lbl)) mt.type_) ca
 
-    | Miter (i, a, b, c, lbl) ->
+    | Miter (i, a, b, c, lbl, n) ->
       let ae, aa = f a in
       let be, ba = f b in
       let ce = aux ctx c in
-      process (mk_mterm (Miter (i, ae, be, ce, lbl)) mt.type_) (aa @ ba)
+      process (mk_mterm (Miter (i, ae, be, ce, lbl, n)) mt.type_) (aa @ ba)
 
     | Mwhile (c, b, lbl) ->
       let ce, ca = f c in
@@ -2713,11 +2713,11 @@ let add_contain_on_get (model : model) : model =
         let be = aux b in
         gg accu (mk_mterm (Mfor (i, c, be, lbl)) mt.type_)
 
-      | Miter (i, a, b, c, lbl) ->
+      | Miter (i, a, b, c, lbl, n) ->
         let accu = f accu a in
         let accu = f accu b in
         let ce = aux c in
-        gg accu (mk_mterm (Miter (i, a, b, ce, lbl)) mt.type_)
+        gg accu (mk_mterm (Miter (i, a, b, ce, lbl, n)) mt.type_)
 
       | Mwhile (c, b, lbl) ->
         let accu = f accu c in
@@ -2940,7 +2940,8 @@ let replace_for_to_iter (model : model) : model =
       let letin = mk_mterm (Mletin (ids, nth, Some t, nbody, None)) tunit in
       let bound_min = mk_mterm (Mint Big_int.zero_big_int) tint in
       let bound_max = mk_mterm (Mlistlength (t, col)) tint in
-      let iter = Miter (dumloc idx_id, bound_min, bound_max, letin, Some lbl) in
+      let strict = false in
+      let iter = Miter (dumloc idx_id, bound_min, bound_max, letin, Some lbl, strict) in
       mk_mterm iter mt.type_
     in
     match mt.node with
@@ -2974,7 +2975,8 @@ let replace_for_to_iter (model : model) : model =
       let letin = mk_mterm (Mletin ([id], nth, Some type_asset, nbody, None)) tunit in
       let bound_min = mk_mterm (Mint Big_int.zero_big_int) tint in
       let bound_max = mk_mterm (Mcount (an, ck)) tint in
-      let iter = Miter (dumloc idx_id, bound_min, bound_max, letin, Some lbl) in
+      let nat = false in
+      let iter = Miter (dumloc idx_id, bound_min, bound_max, letin, Some lbl, nat) in
       mk_mterm iter mt.type_
     | _ -> map_mterm (aux ctx) mt
   in
@@ -5204,7 +5206,7 @@ let remove_high_level_model (model : model)  =
         let b =  mk_mterm (Mlistprepend(t, vaccu, vid)) tl in
         mk_mterm (Mlistfold(t, iid, iaccu, iter, f m, b)) tl
       end
-    | Miter (i, a, b, c, lbl) -> begin
+    | Miter (i, a, b, c, lbl, nat) -> begin
         let a = f a in
         let b = f b in
         let c = f c in
@@ -5214,7 +5216,7 @@ let remove_high_level_model (model : model)  =
         let ie = dumloc "_e" in
         let ve = mk_mvar ie b.type_ in
 
-        let vinc : mterm = mk_mterm (Mplus(vi, mk_int 1)) tint in
+        let vinc : mterm = mk_mterm (Mplus(vi, (if nat then mk_nat else mk_int) 1)) tint in
         let inc  : mterm = mk_mterm (Massign(ValueAssign, tint, Avar i, vinc)) tunit in
         let body : mterm = mk_mterm (Mseq([c; inc])) tunit |> flat_sequence_mterm in
         let cond : mterm = mk_mterm (Mle (vi, ve)) tbool in
@@ -5744,6 +5746,8 @@ let process_event (model : model) : model =
   map_mterm_model aux model
 
 let remove_iterable_big_map (model : model) : model =
+  let get_index_id x = "_" ^ x ^ "_index" in
+  let get_counter_id x = "_" ^ x ^ "_counter" in
   let map_decl x =
     match x with
     | Dvar dvar -> begin
@@ -5773,7 +5777,7 @@ let remove_iterable_big_map (model : model) : model =
               let content = List.mapi (fun i (k, _) -> (mk_nat (i + 1), k)) default_value_content in
               let d = mk_mterm (Mlitmap (MKBigMap, content)) tbm in
               Dvar {
-                name = dumloc ("_" ^ name ^ "_index");
+                name = dumloc (get_index_id name);
                 type_ = tbm;
                 original_type = tbm;
                 kind = VKvariable;
@@ -5784,7 +5788,7 @@ let remove_iterable_big_map (model : model) : model =
             in
             let counter =
               Dvar {
-                name = dumloc ("_" ^ name ^ "_counter");
+                name = dumloc (get_counter_id name);
                 type_ = tnat;
                 original_type = tnat;
                 kind = VKvariable;
@@ -5813,23 +5817,45 @@ let remove_iterable_big_map (model : model) : model =
     | Mmapinstrupdate (MKIterableBigMap, _, _, _, _, _), _ -> mt (* TODO *)
 
     (* expression *)
-    (* map_kind * type_ * type_ * 'term * 'term * ident option *)
     | Mmapget (MKIterableBigMap, kt, vt, map, k, io), _ ->
       mk_mterm (Mmapget (MKBigMap, kt, vt, aux ctx map, aux ctx k, io)) (ttuple [tnat; vt]) |> mk_tupleaccess 1
 
     | Mmapgetopt (MKIterableBigMap, kt, vt, map, k) , _ ->
       mk_mterm (Mmapgetopt (MKBigMap, kt, vt, aux ctx map, aux ctx k)) (ttuple [tnat; vt])
       |> (fun (x : mterm) ->
-          let var = dumloc "_var" in
+          let var = dumloc "_var_iterable_getopt" in
           let mvar : mterm = mk_mvar var (ttuple [tnat; vt]) in
           mk_mterm (Mmap (x, var, mk_tupleaccess 1 mvar)) (toption vt))
 
-    | Mmapcontains (MKIterableBigMap, _, _, _, _)     , _ -> mt (* TODO *)
+    | Mmapcontains (MKIterableBigMap, kt, vt, map, k)     , _ ->
+      mk_mterm (Mmapcontains (MKBigMap, kt, vt, aux ctx map, aux ctx k)) (tbool)
+
     | Mmaplength (MKIterableBigMap, _, _, _)          , _ -> mt (* TODO *)
     | Mmapfold (MKIterableBigMap, _, _, _, _, _, _, _), _ -> mt (* TODO *)
 
     (* control *)
-    (* | Mfor (_, _, _, _) -> mt (* TODO *) *)
+    | Mfor (FIdouble(id_k, id_v), ICKmap ({
+        node = (Mvar (id_map, Vstorevar, Tnone, Dnone));
+        type_ = (Titerable_big_map (kt, vt), _) }), body, lbl), _ -> begin
+        let map = mk_svar id_map (tbig_map kt (ttuple [tnat; vt])) in
+        let map_index : mterm  = mk_svar (dumloc (get_index_id (unloc id_map))) (tbig_map kt (ttuple [tnat; vt])) in
+        let map_counter : mterm = mk_svar (dumloc (get_counter_id (unloc id_map))) tnat in
+        let idx_id = dumloc ("_idx_" ^ (unloc id_map)) in
+        let var_idx : mterm  = mk_mvar idx_id tint in
+        let var_k : mterm  = mk_mvar id_k tnat in
+        let one = mk_nat 1 in
+        let bound_min = one in
+        let bound_max : mterm = map_counter in
+        let value_k = mk_mterm (Mmapget (MKBigMap, tnat, kt, map_index, var_idx, None)) kt in
+        let value_v = mk_mterm (Mmapget (MKBigMap, kt, ttuple [tnat; vt], map, var_k, None)) (ttuple [tnat; vt]) |> mk_tupleaccess 1 in
+        let letin =
+          body
+          |> (fun x -> mk_mterm (Mletin ([id_v], value_v, Some vt, x, None)) tunit)
+          |> (fun x -> mk_mterm (Mletin ([id_k], value_k, Some kt, x, None)) tunit)
+        in
+
+        mk_mterm (Miter (idx_id, bound_min, bound_max, letin, lbl, true)) tunit
+      end
 
     | _, (Titerable_big_map (kt, vt), oa) -> {mt with type_ = (Tbig_map (kt, ttuple [tnat; vt]), oa)}
 

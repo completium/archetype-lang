@@ -314,12 +314,13 @@ let pp_mterm fmt (mt : mterm) =
         (pp_iter_container_kind f) c
         f b
 
-    | Miter (i, a, b, c, l) ->
-      Format.fprintf fmt "iter %a%a from %a to %a do@\n  @[%a@]@\ndone"
+    | Miter (i, a, b, c, l, s) ->
+      Format.fprintf fmt "iter %a%a from %a to %a%s do@\n  @[%a@]@\ndone"
         (pp_option (fun fmt -> Format.fprintf fmt ": %a " pp_str)) l
         pp_id i
         f a
         f b
+        (if s then " (excluded)" else "")
         f c
 
     | Mwhile (c, b, l) ->

@@ -1,8 +1,9 @@
 archetype iterable_big_map_contains
 
 variable my_map : iterable_big_map<string, bytes> = [ ("mystr0", 0x00) ; ("mystr1", 0x01) ; ("mystr2", 0x02) ; ("mystr3", 0x03) ]
+variable res : bool = false
 
 entry exec () {
-  var c = my_map.contains("mystr0");
-  dorequire(c, "INVALID_VALUE")
+  res := my_map.contains("mystr0");
+  dorequire(res, "INVALID_VALUE")
 }

@@ -222,7 +222,7 @@ type ('id, 'term) mterm_node  =
   | Minstrmatchor     of 'term * 'id * 'term * 'id * 'term
   | Minstrmatchlist   of 'term * 'id * 'id * 'term * 'term
   | Mfor              of ('id for_ident_gen * 'term iter_container_kind_gen * 'term * ident option)
-  | Miter             of ('id * 'term * 'term * 'term * ident option)
+  | Miter             of ('id * 'term * 'term * 'term * ident option * bool (* true of id is nat else int *))
   | Mwhile            of ('term * 'term * ident option)
   | Mseq              of 'term list
   | Mreturn           of 'term
@@ -1442,7 +1442,7 @@ let cmp_mterm_node
     | Minstrmatchor (x1, lid1, le1, rid1, re1), Minstrmatchor (x2, lid2, le2, rid2, re2)       -> cmp x1 x2 && cmpi lid1 lid2 && cmp le1 le2 && cmpi rid1 rid2 && cmp re1 re2
     | Minstrmatchlist (x1, hid1, tid1, hte1, ee1), Minstrmatchlist (x2, hid2, tid2, hte2, ee2) -> cmp x1 x2 && cmpi hid1 hid2 && cmpi tid1 tid2 && cmp hte1 hte2 && cmp ee1 ee2
     | Mfor (i1, c1, b1, lbl1), Mfor (i2, c2, b2, lbl2)                                 -> cmp_for_ident cmpi i1 i2 && cmp_iter_container_kind c1 c2 && cmp b1 b2 && Option.cmp cmp_ident lbl1 lbl2
-    | Miter (i1, a1, b1, c1, lbl1), Miter (i2, a2, b2, c2, lbl2)                       -> cmpi i1 i2 && cmp a1 a2 && cmp b1 b2 && cmp c1 c2 && Option.cmp cmp_ident lbl1 lbl2
+    | Miter (i1, a1, b1, c1, lbl1, strict1), Miter (i2, a2, b2, c2, lbl2, strict2)     -> cmpi i1 i2 && cmp a1 a2 && cmp b1 b2 && cmp c1 c2 && Option.cmp cmp_ident lbl1 lbl2 && cmp_bool strict1 strict2
     | Mwhile (c1, b1, lbl1), Mwhile (c2, b2, lbl2)                                     -> cmp c1 c2 && cmp b1 b2 && Option.cmp cmp_ident lbl1 lbl2
     | Mseq is1, Mseq is2                                                               -> List.for_all2 cmp is1 is2
     | Mreturn x1, Mreturn x2                                                           -> cmp x1 x2
@@ -1890,7 +1890,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Minstrmatchor (x, lid, le, rid, re)    -> Minstrmatchor     (f x, g lid, f le, g rid, f re)
   | Minstrmatchlist (x, hid, tid, hte, ee) -> Minstrmatchlist   (f x, g hid, g tid, f hte, f ee)
   | Mfor (i, c, b, lbl)            -> Mfor (map_for_ident g i, map_iter_container_kind fi f c, f b, lbl)
-  | Miter (i, a, b, c, lbl)        -> Miter (g i, f a, f b, f c, lbl)
+  | Miter (i, a, b, c, lbl, strict)-> Miter (g i, f a, f b, f c, lbl, strict)
   | Mwhile (c, b, lbl)             -> Mwhile (f c, f b, lbl)
   | Mseq is                        -> Mseq (List.map f is)
   | Mreturn x                      -> Mreturn (f x)
@@ -2333,7 +2333,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Minstrmatchor (x, _, le, _, re)       -> f (f (f accu x) le) re
   | Minstrmatchlist (x, _, _, hte, ee)    -> f (f (f accu x) hte) ee
   | Mfor (_, c, b, _)                     -> f (fold_iter_container_kind f accu c) b
-  | Miter (_, a, b, c, _)                 -> f (f (f accu a) b) c
+  | Miter (_, a, b, c, _, _)              -> f (f (f accu a) b) c
   | Mwhile (c, b, _)                      -> f (f accu c) b
   | Mseq is                               -> List.fold_left f accu is
   | Mreturn x                             -> f accu x
@@ -2750,11 +2750,11 @@ let fold_map_term
     let be, ba = f ca b in
     g (Mfor (fi, ce, be, lbl)), ba
 
-  | Miter (i, a, b, c, lbl) ->
+  | Miter (i, a, b, c, lbl, strict) ->
     let ae, aa = f accu a in
     let be, ba = f aa b in
     let ce, ca = f ba c in
-    g (Miter (i, ae, be, ce, lbl)), ca
+    g (Miter (i, ae, be, ce, lbl, strict)), ca
 
   | Mwhile (c, b, lbl) ->
     let ce, ca = f accu c in

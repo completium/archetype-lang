@@ -1038,7 +1038,9 @@ let to_model (ast : A.ast) : M.model =
             match x.node, M.get_ntype x.type_ with
             | _, M.Tset  _ -> M.ICKset x
             | _, M.Tlist _ -> M.ICKlist x
-            | _, M.Tmap  _ -> M.ICKmap x
+            | _, M.Tmap  _
+            | _, M.Tbig_map  _
+            | _, M.Titerable_big_map  _ -> M.ICKmap x
             | _, M.Tcontainer ((Tasset an, _), Collection) -> M.ICKcoll (unloc an)
             | M.Mdotassetfield (an, _k, fn), M.Tcontainer ((Tasset _, _), (Aggregate | Partition)) -> M.ICKfield (unloc an, unloc fn, x)
             | _ -> M.ICKview x
@@ -1050,7 +1052,7 @@ let to_model (ast : A.ast) : M.model =
           in
           M.Mfor (i, ncol, g body, instr.label)
         end
-      | A.Iiter (i, a, b, body)   -> M.Miter (i, f a, f b, g body, instr.label)
+      | A.Iiter (i, a, b, body)   -> M.Miter (i, f a, f b, g body, instr.label, false)
       | A.Iwhile (c, body)        -> M.Mwhile (f c, g body, instr.label)
       | A.Iletin (i, init, cont)  -> M.Mletin ([i], f init, Option.map type_to_type init.type_, g cont, None) (* TODO *)
       | A.Ideclvar (i, v, c)      -> M.Mdeclvar ([i], Option.map type_to_type v.type_, f v, c) (* TODO *)
