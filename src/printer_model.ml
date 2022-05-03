@@ -65,11 +65,11 @@ let rec pp_type fmt t =
     | Tset k ->
       Format.fprintf fmt "set<%a>"
         pp_type k
-    | Tmap (false, k, v) ->
+    | Tmap (k, v) ->
       Format.fprintf fmt "map<%a, %a>"
         pp_type k
         pp_type v
-    | Tmap (true, k, v) ->
+    | Tbig_map (k, v) ->
       Format.fprintf fmt "big_map<%a, %a>"
         pp_type k
         pp_type v

@@ -153,7 +153,8 @@ let rec map_mtype m (t : M.type_) : loc_typ =
       | M.Ttuple l                                 -> Tytuple (l |> List.map (map_mtype m))
       | M.Tunit                                    -> Tyunit
       | M.Tstate                                   -> Tystate
-      | M.Tmap (_, _, _)                           -> Tycoll (dl (mk_map_name m t))
+      | M.Tmap ( _, _)                             -> Tycoll (dl (mk_map_name m t))
+      | M.Tbig_map (_, _)                          -> Tycoll (dl (mk_map_name m t))
       | M.Titerable_big_map (_, _)                 -> Tycoll (dl (mk_map_name m t))
       | M.Tstorage                                 -> Tystorage
       | M.Toperation                               -> Tyoperation (* TODO: replace by the right type *)
@@ -764,7 +765,8 @@ let mk_map_clone id k t =
 
 let mk_map_type m (t : M.type_) =
   match M.get_ntype t with
-  | Tmap (_, k, v) ->
+  | Tmap (k, v)
+  | Tbig_map (k, v) ->
     let map_name = mk_map_name m t in
     let t = M.ttuple [k; v] in
     let typ = map_mtype m t in
@@ -3301,7 +3303,8 @@ let mk_decls (model : M.model) =
     match M.get_ntype t with
     | Tlist ty           -> for_type accu ty |> push (Dlist t)
     | Tset    ty         -> for_type accu ty |> push (Dset t)
-    | Tmap (_, kty, vty) -> for_type (for_type accu kty) vty |> push (Dmap t)
+    | Tmap (kty, vty)
+    | Tbig_map (kty, vty)-> for_type (for_type accu kty) vty |> push (Dmap t)
     | Toption t          -> for_type accu t
     | Ttuple  ts         -> List.fold_left (for_type) accu ts
     | Tor (a, b)         -> for_type (for_type accu a) b

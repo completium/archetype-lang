@@ -97,8 +97,8 @@ let to_model (ast : A.ast) : M.model =
       | A.Tcontainer (t, c)        -> M.Tcontainer (type_to_type t, to_container c)
       | A.Tset t                   -> M.Tset (type_to_type t)
       | A.Tlist t                  -> M.Tlist (type_to_type t)
-      | A.Tmap (k, v)              -> M.Tmap (false, type_to_type k, type_to_type v)
-      | A.Tbig_map (k, v)          -> M.Tmap (true, type_to_type k, type_to_type v)
+      | A.Tmap (k, v)              -> M.Tmap (type_to_type k, type_to_type v)
+      | A.Tbig_map (k, v)          -> M.Tbig_map (type_to_type k, type_to_type v)
       | A.Titerable_big_map (k, v) -> M.Titerable_big_map (type_to_type k, type_to_type v)
       | A.Tor (l, r)               -> M.Tor (type_to_type l, type_to_type r)
       | A.Tlambda (a, r)           -> M.Tlambda (type_to_type a, type_to_type r)
@@ -210,8 +210,8 @@ let to_model (ast : A.ast) : M.model =
 
   let extract_builtin_type_map (v : M.mterm) : M.map_kind * M.type_ * M.type_ =
     match v with
-    | {type_ = (Tmap (false, k, v), _); _}       -> MKMap, k, v
-    | {type_ = (Tmap (true, k, v), _); _}        -> MKBigMap, k, v
+    | {type_ = (Tmap (k, v), _); _}              -> MKMap, k, v
+    | {type_ = (Tbig_map (k, v), _); _}          -> MKBigMap, k, v
     | {type_ = (Titerable_big_map (k, v), _); _} -> MKIterableBigMap, k, v
     | _ -> assert false
   in
@@ -353,7 +353,8 @@ let to_model (ast : A.ast) : M.model =
           match M.get_ntype type_ with
           | Tcontainer ((Tasset _, _), _)   -> M.Massets l
           | Tset _ -> M.Mlitset l
-          | Tmap (b, _, _) -> M.Mlitmap ((if b then MKBigMap else MKMap), List.map (fun (x : M.mterm) -> match x.node with | M.Mtuple [k; v] -> (k, v)  | _ -> assert false) l)
+          | Tmap ( _, _) -> M.Mlitmap (MKMap, List.map (fun (x : M.mterm) -> match x.node with | M.Mtuple [k; v] -> (k, v)  | _ -> assert false) l)
+          | Tbig_map ( _, _) -> M.Mlitmap (MKBigMap, List.map (fun (x : M.mterm) -> match x.node with | M.Mtuple [k; v] -> (k, v)  | _ -> assert false) l)
           | Titerable_big_map (_, _) -> M.Mlitmap (MKIterableBigMap, List.map (fun (x : M.mterm) -> match x.node with | M.Mtuple [k; v] -> (k, v)  | _ -> assert false) l)
           | _ -> M.Mlitlist l
         end

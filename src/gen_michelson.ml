@@ -181,7 +181,8 @@ let rec to_type (model : M.model) ?annotation (t : M.type_) : T.type_ =
   | Toption t                  -> T.mk_type ?annotation (T.Toption (to_type t))
   | Ttuple lt                  -> T.mk_type ?annotation (to_one_type (List.map to_type lt) |> fun x -> x.node)
   | Tset t                     -> T.mk_type ?annotation (T.Tset (to_type t))
-  | Tmap (b, k, v)             -> T.mk_type ?annotation (if b then T.Tbig_map (to_type k, to_type v) else T.Tmap (to_type k, to_type v))
+  | Tmap (k, v)                -> T.mk_type ?annotation (T.Tmap (to_type k, to_type v))
+  | Tbig_map (k, v)            -> T.mk_type ?annotation (T.Tbig_map (to_type k, to_type v))
   | Titerable_big_map (_k, _v) -> assert false
   | Tor (l, r)                 -> T.mk_type ?annotation (T.Tor (to_type l, to_type r))
   | Trecord id                 -> process_record M.Utils.get_record id
@@ -792,7 +793,8 @@ let to_ir (model : M.model) : T.ir =
       end
     | Mlitmap (_, l) -> begin
         match M.get_ntype mtt.type_ with
-        | M.Tmap (b, k, v) -> T.Imap (b, ft k, ft v, List.map (fun (x, y) -> f x, f y) l)
+        | M.Tmap (k, v) -> T.Imap (false, ft k, ft v, List.map (fun (x, y) -> f x, f y) l)
+        | M.Tbig_map (k, v) -> T.Imap (true, ft k, ft v, List.map (fun (x, y) -> f x, f y) l)
         | _ -> assert false
       end
     | Mlitrecord l

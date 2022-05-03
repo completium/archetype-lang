@@ -69,7 +69,8 @@ type ntype =
   | Toption of type_
   | Ttuple of type_ list
   | Tset of type_
-  | Tmap of bool * type_ * type_
+  | Tmap of type_ * type_
+  | Tbig_map of type_ * type_
   | Titerable_big_map of type_ * type_
   | Tor of type_ * type_
   | Trecord of lident
@@ -1103,9 +1104,8 @@ let tevent e               = mktype (Tevent e)
 let toption t              = mktype (Toption t)
 let tset t                 = mktype (Tset t)
 let tlist t                = mktype (Tlist t)
-let tbmap b k v            = mktype (Tmap (b, k, v))
-let tmap k v               = mktype (Tmap (false, k, v))
-let tbig_map k v           = mktype (Tmap (true, k, v))
+let tmap k v               = mktype (Tmap (k, v))
+let tbig_map k v           = mktype (Tbig_map (k, v))
 let titerable_big_map k v  = mktype (Titerable_big_map (k, v))
 let tor l r                = mktype (Tor (l, r))
 let tlambda a r            = mktype (Tlambda (a, r))
@@ -1293,7 +1293,8 @@ let rec cmp_ntype
   | Toption t1, Toption t2                                 -> cmp_type t1 t2
   | Ttuple l1, Ttuple l2                                   -> List.for_all2 cmp_type l1 l2
   | Tset b1, Tset b2                                       -> cmp_type b1 b2
-  | Tmap (b1, k1, v1), Tmap (b2, k2, v2)                   -> b1 = b2 && cmp_type k1 k2 && cmp_type v1 v2
+  | Tmap (k1, v1), Tmap (k2, v2)                           -> cmp_type k1 k2 && cmp_type v1 v2
+  | Tbig_map (k1, v1), Tbig_map (k2, v2)                   -> cmp_type k1 k2 && cmp_type v1 v2
   | Titerable_big_map (k1, v1), Titerable_big_map (k2, v2) -> cmp_type k1 k2 && cmp_type v1 v2
   | Tor (l1, r1), Tor (l2, r2)                             -> cmp_type l1 l2 && cmp_type r1 r2
   | Trecord i1, Trecord i2                                 -> cmp_lident i1 i2
@@ -1795,7 +1796,8 @@ let map_ptyp (f : type_ -> type_) (nt : ntype) : ntype =
   | Toption t                -> Toption (f t)
   | Ttuple l                 -> Ttuple (List.map f l)
   | Tset k                   -> Tset k
-  | Tmap (b, k, v)           -> Tmap (b, f k, f v)
+  | Tmap (k, v)              -> Tmap (f k, f v)
+  | Tbig_map (k, v)          -> Tbig_map (f k, f v)
   | Titerable_big_map (k, v) -> Titerable_big_map (f k, f v)
   | Tor (l, r)               -> Tor (f l, f r)
   | Trecord id               -> Trecord id
@@ -4328,7 +4330,8 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
       | Toption a                -> Toption (for_type a)
       | Ttuple l                 -> Ttuple (List.map for_type l)
       | Tset k                   -> Tset k
-      | Tmap (b, k, v)           -> Tmap (b, k, for_type v)
+      | Tmap (k, v)              -> Tmap (k, for_type v)
+      | Tbig_map (k, v)          -> Tbig_map (k, for_type v)
       | Titerable_big_map (k, v) -> Titerable_big_map (k, for_type v)
       | Tor (l, r)               -> Tor (for_type l, for_type r)
       | Trecord id               -> Trecord (g KIrecordname id)
@@ -4973,7 +4976,7 @@ end = struct
       begin
         let l, an = deloc an in
         let idparam = mkloc l (an ^ "_values") in
-        Some (mk_mterm (Mvar(idparam, Vparam, t, d) ) (mktype (Tmap(false, tint, tasset (dumloc "myasset")))))
+        Some (mk_mterm (Mvar(idparam, Vparam, t, d) ) (mktype (Tmap(tint, tasset (dumloc "myasset")))))
       end
     | _ -> None
 
@@ -5781,7 +5784,8 @@ end = struct
       | Tlist   t                -> for_type accu t
       | Toption t                -> for_type accu t
       | Ttuple  ts               -> List.fold_left (for_type) accu ts
-      | Tmap (_, _, t)           -> for_type accu t
+      | Tmap (_, t)              -> for_type accu t
+      | Tbig_map (_, t)          -> for_type accu t
       | Titerable_big_map (_, t) -> for_type accu t
       | Tcontract t              -> for_type accu t
       | Tticket t                -> for_type accu t
@@ -5797,7 +5801,8 @@ end = struct
       | Tlist   tv               -> add_type (for_type accu tv) t
       | Toption t                -> for_type accu t
       | Ttuple  ts               -> List.fold_left (for_type) accu ts
-      | Tmap (_, _, t)           -> for_type accu t
+      | Tmap (_, t)              -> for_type accu t
+      | Tbig_map (_, t)          -> for_type accu t
       | Titerable_big_map (_, t) -> for_type accu t
       | Tcontract t              -> for_type accu t
       | Tticket t                -> for_type accu t
@@ -5813,7 +5818,8 @@ end = struct
       | Tlist     t               -> for_type accu t
       | Toption   t               -> for_type accu t
       | Ttuple    ts              -> List.fold_left (for_type) accu ts
-      | Tmap      (_, _, tv)      -> add_type (for_type accu tv) t
+      | Tmap      (_, tv)         -> add_type (for_type accu tv) t
+      | Tbig_map  (_, tv)         -> add_type (for_type accu tv) t
       | Titerable_big_map (_, tv) -> add_type (for_type accu tv) t
       | Tcontract t               -> for_type accu t
       | Tticket t                 -> for_type accu t

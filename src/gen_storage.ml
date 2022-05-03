@@ -60,8 +60,8 @@ let generate_storage (model : model) : model =
       | Tenum v                  -> emit_error (NoInitExprFor (unloc v))
       | Ttuple _                 -> emit_error (NoInitExprFor "tuple")
       | Tset _                   -> mk_mterm   (Mlitset []) ty
-      | Tmap (false, _, _)       -> mk_mterm   (Mlitmap (MKMap, [])) ty
-      | Tmap (true, _, _)        -> mk_mterm   (Mlitmap (MKBigMap, [])) ty
+      | Tmap (_, _)              -> mk_mterm   (Mlitmap (MKMap, [])) ty
+      | Tbig_map (_, _)          -> mk_mterm   (Mlitmap (MKBigMap, [])) ty
       | Titerable_big_map (_, _) -> mk_mterm   (Mlitmap (MKIterableBigMap, [])) ty
       | Tor _                    -> emit_error (NoInitExprFor "or")
       | Trecord _                -> emit_error (NoInitExprFor "record")
