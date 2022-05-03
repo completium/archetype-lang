@@ -1,8 +1,9 @@
 archetype iterable_big_map_getopt
 
-variable my_map : iterable_big_map<string, nat> = [ ("mystr0", 0) ; ("mystr1", 1) ; ("mystr2", 2) ; ("mystr3", 3) ]
+variable my_map : iterable_big_map<string, bytes> = [ ("mystr0", 0x00) ; ("mystr1", 0x01) ; ("mystr2", 0x02) ; ("mystr3", 0x03) ]
+variable res : option<bytes> = none
 
 entry exec () {
-  var r = my_map.getopt("mystr2");
-  dorequire(r = some(2), "INVALID_VALUE")
+  res := my_map.getopt("mystr2");
+  dorequire(res = some(0x02), "INVALID_VALUE")
 }

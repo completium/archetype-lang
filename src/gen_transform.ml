@@ -5759,8 +5759,9 @@ let remove_iterable_big_map (model : model) : model =
             let length_default_value_content = List.length default_value_content in
 
             let bm =
-              let tbm = tbig_map k v in
-              let d = mk_mterm (Mlitmap (MKBigMap, default_value_content)) tbm in
+              let tbm = tbig_map k (ttuple [tnat; v]) in
+              let content = List.mapi (fun i (k, v) -> (k, mk_tuple[mk_nat (i + 1); v])) default_value_content in
+              let d = mk_mterm (Mlitmap (MKBigMap, content)) tbm in
               Dvar { dvar with
                      type_ = tbm;
                      original_type = tbm;
@@ -5769,7 +5770,7 @@ let remove_iterable_big_map (model : model) : model =
             in
             let bm_index =
               let tbm = tbig_map tnat k in
-              let content = List.mapi (fun i (k, _) -> (mk_nat i, k)) default_value_content in
+              let content = List.mapi (fun i (k, _) -> (mk_nat (i + 1), k)) default_value_content in
               let d = mk_mterm (Mlitmap (MKBigMap, content)) tbm in
               Dvar {
                 name = dumloc ("_" ^ name ^ "_index");
@@ -5799,6 +5800,39 @@ let remove_iterable_big_map (model : model) : model =
       end
     | _ -> [x]
   in
-  { model with
-    decls = List.map map_decl model.decls |> List.flatten
-  }
+  let model =
+    { model with
+      decls = List.map map_decl model.decls |> List.flatten
+    }
+  in
+  let rec aux ctx (mt : mterm) =
+    match mt.node, mt.type_ with
+    (* instruction *)
+    | Mmapinstrput (MKIterableBigMap, _, _, _, _, _)   , _ -> mt (* TODO *)
+    | Mmapinstrremove (MKIterableBigMap, _, _, _, _)   , _ -> mt (* TODO *)
+    | Mmapinstrupdate (MKIterableBigMap, _, _, _, _, _), _ -> mt (* TODO *)
+
+    (* expression *)
+    (* map_kind * type_ * type_ * 'term * 'term * ident option *)
+    | Mmapget (MKIterableBigMap, kt, vt, map, k, io), _ ->
+      mk_mterm (Mmapget (MKBigMap, kt, vt, aux ctx map, aux ctx k, io)) (ttuple [tnat; vt]) |> mk_tupleaccess 1
+
+    | Mmapgetopt (MKIterableBigMap, kt, vt, map, k) , _ ->
+      mk_mterm (Mmapgetopt (MKBigMap, kt, vt, aux ctx map, aux ctx k)) (ttuple [tnat; vt])
+      |> (fun (x : mterm) ->
+          let var = dumloc "_var" in
+          let mvar : mterm = mk_mvar var (ttuple [tnat; vt]) in
+          mk_mterm (Mmap (x, var, mk_tupleaccess 1 mvar)) (toption vt))
+
+    | Mmapcontains (MKIterableBigMap, _, _, _, _)     , _ -> mt (* TODO *)
+    | Mmaplength (MKIterableBigMap, _, _, _)          , _ -> mt (* TODO *)
+    | Mmapfold (MKIterableBigMap, _, _, _, _, _, _, _), _ -> mt (* TODO *)
+
+    (* control *)
+    (* | Mfor (_, _, _, _) -> mt (* TODO *) *)
+
+    | _, (Titerable_big_map (kt, vt), oa) -> {mt with type_ = (Tbig_map (kt, ttuple [tnat; vt]), oa)}
+
+    | _ -> map_mterm (aux ctx) mt
+  in
+  map_mterm_model aux model

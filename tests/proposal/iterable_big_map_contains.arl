@@ -1,6 +1,6 @@
 archetype iterable_big_map_contains
 
-variable my_map : iterable_big_map<string, nat> = [ ("mystr0", 0) ; ("mystr1", 1) ; ("mystr2", 2) ; ("mystr3", 3) ]
+variable my_map : iterable_big_map<string, bytes> = [ ("mystr0", 0x00) ; ("mystr1", 0x01) ; ("mystr2", 0x02) ; ("mystr3", 0x03) ]
 
 entry exec () {
   var c = my_map.contains("mystr0");

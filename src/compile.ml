@@ -247,6 +247,7 @@ let toolchain ?(js=false) model =
   |> replace_date_duration_by_timestamp
   |> eval_variable_initial_value
   |> replace_dotassetfield_by_dot
+  |> expr_to_instr
   |> remove_iterable_big_map
   |> generate_storage
   |> replace_declvar_by_letin
@@ -262,7 +263,6 @@ let toolchain ?(js=false) model =
   |> normalize_storage
   |> remove_constant
   |> eval_storage
-  |> expr_to_instr
   |> instr_to_expr_exec
   |> optimize
   |> generate_api_storage
