@@ -5866,7 +5866,69 @@ let remove_iterable_big_map (model : model) : model =
         let body : mterm = seq [matchinstr; update_map] in
         mk_mterm (Mletin ([idx_id_loced], init_value, Some tnat, body, None)) tunit
       end
-    | Mmapinstrremove (MKIterableBigMap, _, _, _, _)   , _ -> mt (* TODO *)
+
+    | Massign (ValueAssign, ((Titerable_big_map (_, _)), _), (Avar id_map),
+               { node = (Mmapremove (MKIterableBigMap, kt, vt, map, key));
+                 type_ = ((Titerable_big_map (_, _)), _); }), _ when is_same_map id_map map -> begin
+        let vvt = ttuple [tnat; vt] in
+        let tbm = (Tbig_map(kt, vvt), None) in
+
+        let map_content = mk_svar id_map tbm in
+        let id_bmi = (dumloc (get_index_id (unloc id_map))) in
+        let tbmi = (tbig_map tnat kt) in
+        let map_index : mterm  = mk_svar id_bmi tbmi in
+        let counter_id_loced = dumloc (get_counter_id (unloc id_map)) in
+        let map_counter : mterm = mk_svar counter_id_loced tnat in
+
+        let key = aux ctx key in
+
+        let matchinstr : mterm =
+          let getopt : mterm = mk_mterm (Mmapgetopt (MKBigMap, kt, vt, map_content, key)) (toption vvt) in
+          let tmp_id = "_tmp_id" in
+          let tmp_id_loced = dumloc tmp_id in
+          let tmp_var : mterm = mk_mvar tmp_id_loced vvt in
+
+          let some_value : mterm =
+            let idx_id = "_idx" in
+            let idx_id_loced = dumloc idx_id in
+            let idx_var : mterm = mk_mvar idx_id_loced tnat in
+
+            let last_key_id = "_last_key" in
+            let last_key_id_loced = dumloc last_key_id in
+            let last_key_var : mterm = mk_mvar last_key_id_loced kt in
+
+            let last_value_id = "_last_value" in
+            let last_value_id_loced = dumloc last_value_id in
+            let last_value_var : mterm = mk_mvar last_value_id_loced vvt in
+
+            let remove_content =
+              let rem = mk_mterm (Mmapremove (MKBigMap, kt, vvt, map_content, key)) tbm in
+              mk_mterm (Massign (ValueAssign, tbm, (Avar id_map), rem)) tunit
+            in
+            let update_last_value =
+              let put = mk_mterm (Mmapput (MKBigMap, kt, vvt, map_content, last_key_var, mk_tuple [idx_var; mk_tupleaccess 1 last_value_var])) tbm in
+              mk_mterm (Massign (ValueAssign, tbm, (Avar id_map), put)) tunit
+            in
+            let remove_index_counter =
+              let rem = mk_mterm (Mmapremove (MKBigMap, tnat, kt, map_index, map_counter)) tbm in
+              mk_mterm (Massign (ValueAssign, tbmi, (Avar id_bmi), rem)) tunit
+            in
+            let put_index =
+              let put = mk_mterm (Mmapput (MKBigMap, tnat, kt, map_index, idx_var, last_key_var)) tbm in
+              mk_mterm (Massign (ValueAssign, tbmi, (Avar id_bmi), put)) tunit
+            in
+            let dec = mk_mterm (Massign (MinusAssign, tnat, (Avar counter_id_loced), mk_nat 1)) tunit in
+            seq [remove_content; put_index; update_last_value; remove_index_counter; dec]
+            |> (fun x -> mk_mterm (Mletin ([last_value_id_loced], mk_mterm (Mmapget(MKBigMap, kt, vvt, map_content, last_key_var, None)) vvt, Some vvt, x, None)) tunit)
+            |> (fun x -> mk_mterm (Mletin ([last_key_id_loced], mk_mterm (Mmapget(MKBigMap, tnat, kt, map_index, map_counter, None)) kt, Some kt, x, None)) tunit)
+            |> (fun x -> mk_mterm (Mletin ([idx_id_loced], mk_tupleaccess 0 tmp_var, Some tnat, x, None)) tunit)
+          in
+          let none_value : mterm = seq [] in
+          mk_mterm (Minstrmatchoption (getopt, tmp_id_loced, some_value, none_value)) tunit
+        in
+        matchinstr
+      end
+
     | Mmapinstrupdate (MKIterableBigMap, _, _, _, _, _), _ -> mt (* TODO *)
 
     (* expression *)
