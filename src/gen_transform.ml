@@ -5705,3 +5705,63 @@ let process_event (model : model) : model =
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
+
+let remove_iterable_big_map (model : model) : model =
+  let map_decl x =
+    match x with
+    | Dvar dvar -> begin
+        match dvar.type_ with
+        | (Titerable_big_map (k, v), _) -> begin
+            let loc = dvar.loc in
+            let name = unloc dvar.name in
+            let default_value_content =
+              match dvar.default with
+              | Some { node = Mlitmap (_, d); _} -> d
+              | _ -> []
+            in
+            let length_default_value_content = List.length default_value_content in
+
+            let bm =
+              let tbm = tbig_map k v in
+              let d = mk_mterm (Mlitmap (MKBigMap, default_value_content)) tbm in
+              Dvar { dvar with
+                     type_ = tbm;
+                     original_type = tbm;
+                     default = Some d;
+                   }
+            in
+            let bm_index =
+              let tbm = tbig_map tnat k in
+              let content = List.mapi (fun i (k, _) -> (mk_nat i, k)) default_value_content in
+              let d = mk_mterm (Mlitmap (MKBigMap, content)) tbm in
+              Dvar {
+                name = dumloc ("_" ^ name ^ "_index");
+                type_ = tbm;
+                original_type = tbm;
+                kind = VKvariable;
+                default = Some d;
+                invariants = [];
+                loc = loc;
+              }
+            in
+            let counter =
+              Dvar {
+                name = dumloc ("_" ^ name ^ "_counter");
+                type_ = tnat;
+                original_type = tnat;
+                kind = VKvariable;
+                default = Some (mk_nat length_default_value_content);
+                invariants = [];
+                loc = loc;
+              }
+            in
+
+            [bm; bm_index; counter]
+          end
+        | _ -> [x]
+      end
+    | _ -> [x]
+  in
+  { model with
+    decls = List.map map_decl model.decls |> List.flatten
+  }

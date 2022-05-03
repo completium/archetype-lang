@@ -247,6 +247,7 @@ let toolchain ?(js=false) model =
   |> replace_date_duration_by_timestamp
   |> eval_variable_initial_value
   |> replace_dotassetfield_by_dot
+  |> remove_iterable_big_map
   |> generate_storage
   |> replace_declvar_by_letin
   |> remove_label
