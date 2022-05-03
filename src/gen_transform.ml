@@ -5917,7 +5917,7 @@ let remove_iterable_big_map (model : model) : model =
               let put = mk_mterm (Mmapput (MKBigMap, tnat, kt, map_index, idx_var, last_key_var)) tbm in
               mk_mterm (Massign (ValueAssign, tbmi, (Avar id_bmi), put)) tunit
             in
-            let dec = mk_mterm (Massign (MinusAssign, tnat, (Avar counter_id_loced), mk_nat 1)) tunit in
+            let dec = mk_mterm (Massign (ValueAssign, tnat, (Avar counter_id_loced), mk_mterm (Msubnat (map_counter, mk_nat 1)) tnat)) tunit in
             seq [remove_content; put_index; update_last_value; remove_index_counter; dec]
             |> (fun x -> mk_mterm (Mletin ([last_value_id_loced], mk_mterm (Mmapget(MKBigMap, kt, vvt, map_content, last_key_var, None)) vvt, Some vvt, x, None)) tunit)
             |> (fun x -> mk_mterm (Mletin ([last_key_id_loced], mk_mterm (Mmapget(MKBigMap, tnat, kt, map_index, map_counter, None)) kt, Some kt, x, None)) tunit)
