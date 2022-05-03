@@ -277,7 +277,7 @@ let pp_mterm fmt (mt : mterm) =
 
     | Minstrmatchoption (x, i, ve, ne) ->
       let pp fmt (x, i, ve, ne) =
-        Format.fprintf fmt "match %a with@\n| some (%a) -> @[%a@]@\n| none -> @[%a@]"
+        Format.fprintf fmt "match %a with@\n| some (%a) -> @[%a@]@\n| none -> @[%a@]@\nend"
           f x
           pp_id i
           f ve
