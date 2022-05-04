@@ -1,0 +1,19 @@
+archetype iterable_big_map_test
+
+variable my_map : iterable_big_map<string, bytes> = [ ("mystr0", 0x00) ; ("mystr1", 0x01) ; ("mystr2", 0x02) ; ("mystr3", 0x03) ]
+variable res_concat : bytes = 0x
+
+entry put (k : string, v : bytes) {
+  my_map.put(k, v)
+}
+
+entry remove (k : string) {
+  my_map.remove(k)
+}
+
+entry iterate () {
+  res_concat := 0x;
+  for (k, v) in my_map do
+    res_concat := concat(res_concat, v)
+  done
+}
