@@ -1,0 +1,14 @@
+archetype asset_simple_to_iterable_big_map
+
+asset my_asset to iterable_big_map {
+  id : nat;
+  v : string;
+} initialized by {
+  { 0; "mystr_0" };
+  { 1; "mystr_1" };
+  { 2; "mystr_2" }
+}
+
+entry exec () {
+  ()
+}

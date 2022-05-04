@@ -703,16 +703,22 @@ type 'id enum_struct = {
 type enum = lident enum_struct
 [@@deriving show {with_path = false}]
 
+type map_kind =
+  | MKMap
+  | MKBigMap
+  | MKIterableBigMap
+[@@deriving show {with_path = false}]
+
 type 'id asset_struct = {
-  name    : 'id;
-  fields  : 'id decl_gen list;
-  keys    : 'id list;   (* TODO: option ? *)
-  sort    : 'id list;
-  big_map : bool;
-  state   : 'id option;
-  init    : 'id term_gen list list;
-  specs   : 'id label_term list;
-  loc     : Location.t [@opaque];
+  name     : 'id;
+  fields   : 'id decl_gen list;
+  keys     : 'id list;   (* TODO: option ? *)
+  sort     : 'id list;
+  map_kind : map_kind;
+  state    : 'id option;
+  init     : 'id term_gen list list;
+  specs    : 'id label_term list;
+  loc      : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
@@ -862,8 +868,8 @@ let mk_enum ?(items = []) ?(loc = Location.dummy) kind =
 let mk_decl ?typ ?default ?(shadow=false) ?(loc = Location.dummy) name =
   { name; typ; default; shadow; loc }
 
-let mk_asset ?(fields = []) ?(keys = []) ?(sort = []) ?(big_map = false) ?state ?(init = []) ?(specs = []) ?(loc = Location.dummy) name   =
-  { name; fields; keys; sort; big_map; state; init; specs; loc }
+let mk_asset ?(fields = []) ?(keys = []) ?(sort = []) ?(map_kind = MKMap) ?state ?(init = []) ?(specs = []) ?(loc = Location.dummy) name   =
+  { name; fields; keys; sort; map_kind; state; init; specs; loc }
 
 let mk_model ?(parameters = []) ?metadata ?(decls = []) ?(funs = []) ?(specifications = []) ?(securities = []) ?(loc = Location.dummy) name =
   { name; parameters; metadata; decls; funs; specifications; securities; loc }

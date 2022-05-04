@@ -1,0 +1,35 @@
+archetype asset_iterable_big_map
+
+asset my_asset to iterable_big_map {
+  id : string;
+  value : nat = 0;
+} initialized by {
+  { "id0"; 0 };
+  { "id1"; 1 };
+  { "id2"; 2 }
+}
+
+entry exec () {
+    var my_asset_id = "id0";
+
+    my_asset.add({ id = my_asset_id; value = 0 });
+    my_asset.remove(my_asset_id);
+
+    // my_asset.update(my_asset_id, {value += 2});
+    // my_asset.addupdate(my_asset_id, {value += 3});
+
+    var val : nat = my_asset[my_asset_id].value;
+    dorequire(val = 0, "ko");
+
+    var b = my_asset.contains(my_asset_id);
+    dorequire(b, "ko");
+
+    var l = my_asset.count();
+    dorequire(l = 3, "ko");
+
+    var counter = 0;
+    for k in my_asset do
+      counter := my_asset[k].value
+    done;
+    dorequire(counter = 3, "ko")
+}

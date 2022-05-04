@@ -381,10 +381,15 @@ and extension_decl =
 and namespace_decl =
   lident * declaration list
 
+and map_kind =
+  | MKMap
+  | MKBigMap
+  | MKIterableBigMap
+
 and asset_option =
   | AOidentifiedby of lident list
   | AOsortedby of lident
-  | AOtoBigMap
+  | AOtoMapKind of map_kind
 
 and asset_post_option =
   | APOstates of lident
@@ -586,7 +591,7 @@ let mk_namespace_decl ?(ds=[]) id : namespace_decl = id, ds
 
 let mk_asset_option_identifiedby ids = AOidentifiedby ids
 let mk_asset_option_sortedby id      = AOsortedby id
-let mk_asset_option_to_big_map       = AOtoBigMap
+let mk_asset_option_to_map_kind x    = AOtoMapKind x
 
 let mk_asset_post_option_states id      = APOstates id
 let mk_asset_post_option_constraints ls = APOconstraints ls

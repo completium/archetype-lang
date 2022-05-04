@@ -913,11 +913,17 @@ let pp_specification_variable fmt (sv : (lident * type_t * expr option) loced) =
 
 (* -------------------------------------------------------------------------- *)
 
+let pp_map_kind fmt x =
+  match x with
+  | MKMap            -> Format.fprintf fmt "map"
+  | MKBigMap         -> Format.fprintf fmt "big_map"
+  | MKIterableBigMap -> Format.fprintf fmt "iterable_big_map"
+
 let pp_asset_option fmt opt =
   match opt with
   | AOidentifiedby ids -> Format.fprintf fmt "identified by %a" (pp_list " " pp_id) ids
   | AOsortedby id      -> Format.fprintf fmt "sorted by %a" pp_id id
-  | AOtoBigMap         -> Format.fprintf fmt "to big_map"
+  | AOtoMapKind x      -> Format.fprintf fmt "to %a" pp_map_kind x
 
 let operation_enum_to_str e =
   match e with

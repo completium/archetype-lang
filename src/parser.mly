@@ -670,10 +670,15 @@ asset_post_option:
 %inline asset_options:
 | xs=asset_option+ { xs }
 
+%inline map_kind:
+| MAP              { MKMap }
+| BIG_MAP          { MKBigMap }
+| ITERABLE_BIG_MAP { MKIterableBigMap }
+
 asset_option:
 | IDENTIFIED BY xs=ident+ { AOidentifiedby xs }
 | SORTED BY x=ident       { AOsortedby x }
-| TO BIG_MAP              { AOtoBigMap }
+| TO x=map_kind           { AOtoMapKind x }
 
 %inline fields:
 | xs=sl(SEMI_COLON, field) { xs }

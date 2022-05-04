@@ -707,6 +707,7 @@ type error_desc =
   | InvalidMethodInExec
   | InvalidMethodInFormula
   | InvalidMethodWithBigMap            of ident
+  | InvalidMethodWithIterableBigMap    of ident
   | InvalidNumberOfArguments           of int * int
   | InvalidNumberOfParameters          of int * int
   | InvalidPackingExpr
@@ -933,6 +934,7 @@ let pp_error_desc fmt e =
   | InvalidMapType                     -> pp "Invalid map type"
   | InvalidMethodInExec                -> pp "Invalid method in execution"
   | InvalidMethodInFormula             -> pp "Invalid method in formula"
+  | InvalidMethodWithIterableBigMap id -> pp "Invalid method with iterable big map asset: %s" id
   | InvalidMethodWithBigMap id         -> pp "Invalid method with big map asset: %s" id
   | InvalidNumberOfArguments (n1, n2)  -> pp "Invalid number of arguments: found '%i', but expected '%i'" n2 n1
   | InvalidNumberOfParameters (n1, n2) -> pp "Invalid number of parameters: found '%i', but expected '%i'" n2 n1
@@ -1515,7 +1517,7 @@ type assetdecl = {
   as_pkty   : A.ptyp;
   as_pk     : A.lident list;
   as_sortk  : A.lident list;
-  as_bm     : bool;
+  as_bm     : A.map_kind;
   as_invs   : (A.lident option * A.pterm) list;
   as_state  : A.lident option;
   as_init   : (A.pterm list) list;
@@ -3552,7 +3554,7 @@ let rec for_xexpr
               end;
 
               begin match method_.mth_map_type, ty with
-                | `Standard, Tcontainer (Tasset _, Collection) when asset.as_bm && not (is_form_kind mode.em_kind) ->
+                | `Standard, Tcontainer (Tasset _, Collection) when (match asset.as_bm with | A.MKBigMap -> true | _ -> false) && not (is_form_kind mode.em_kind) ->
                   Env.emit_error env (loc tope, InvalidMethodWithBigMap (unloc m))
                 | _ -> ()
               end;
@@ -4909,7 +4911,7 @@ let rec for_instruction_r
         match e.A.type_ with
         | Some (A.Tcontainer (A.Tasset asset, c)) ->
           let asset = Env.Asset.get env (unloc asset) in
-          if asset.as_bm && (match c with | Collection -> true | _ -> false) then
+          if (match asset.as_bm with | A.MKBigMap -> true | _ -> false) && (match c with | Collection -> true | _ -> false) then
             Env.emit_error env (loc pe, NonIterableBigMapAsset (unloc asset.as_name));
           if   is_for_ident `Double
           then (Env.emit_error env (loc x, InvalidForIdentSimple); None)
@@ -5751,7 +5753,7 @@ type pre_assetdecl = {
   pas_pkty   : A.ptyp;
   pas_pk     : A.lident list;
   pas_sortk  : A.lident list;
-  pas_bm     : bool;
+  pas_bm     : A.map_kind;
   pas_invs   : PT.label_exprs list;
   pas_state  : statedecl option;
   pas_init   : PT.expr list;
@@ -5806,7 +5808,12 @@ let for_asset_decl
           if xname = unloc adecl.as_name then Some xinv else None) xspecs in
     invs @ xinvs in
 
-  let bigmaps = List.exists (function PT.AOtoBigMap -> true | _ -> false) opts in
+  let to_a_map_kind = function
+    | PT.MKMap -> A.MKMap
+    | PT.MKBigMap -> A.MKBigMap
+    | PT.MKIterableBigMap -> A.MKIterableBigMap in
+
+  let bigmaps : A.map_kind = List.fold_left (fun accu x -> match x with | PT.AOtoMapKind x -> to_a_map_kind x | _ -> accu) A.MKMap opts in
 
   let pks =
     let dokey key =
@@ -5932,7 +5939,7 @@ let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) xspec
                 as_pkty   = A.vtunit;
                 as_pk     = [];
                 as_sortk  = [];
-                as_bm     = false;
+                as_bm     = A.MKMap;
                 as_invs   = [];
                 as_state  = None;
                 as_init   = []; } in
@@ -6590,15 +6597,15 @@ let assets_of_adecls adecls =
     let spec (l, f) =
       A.{ label = l; term = f; error = None; loc = f.loc } in
 
-    A.{ name    = decl.as_name;
-        fields  = List.map for_field decl.as_fields;
-        keys    = decl.as_pk;
-        sort    = decl.as_sortk;
-        big_map = decl.as_bm;
-        state   = decl.as_state;
-        init    = decl.as_init;
-        specs   = List.map spec decl.as_invs;
-        loc     = loc decl.as_name; }
+    A.{ name     = decl.as_name;
+        fields   = List.map for_field decl.as_fields;
+        keys     = decl.as_pk;
+        sort     = decl.as_sortk;
+        map_kind = decl.as_bm;
+        state    = decl.as_state;
+        init     = decl.as_init;
+        specs    = List.map spec decl.as_invs;
+        loc      = loc decl.as_name; }
 
   in List.map for1 (List.pmap (fun x -> x) adecls)
 

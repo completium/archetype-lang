@@ -975,7 +975,8 @@ let to_model (ast : A.ast) : M.model =
         M.mk_asset_item x.name typ typ ?default:default ~shadow:x.shadow ~loc:x.loc) a.fields
     in
     let mk_asset an l = let l = List.map (to_mterm env) l in M.mk_mterm (M.Masset l) (M.tasset an) ~loc:(Location.mergeall (List.map (fun (x : M.mterm) -> x.loc) l)) in
-    let r : M.asset = M.mk_asset a.name ~keys:(List.map unloc (a.keys)) ~values:values ~sort:a.sort ~big_map:a.big_map ?state:a.state ~invariants:(List.map (fun x -> (to_label_lterm env) x) a.specs) ~init:(List.map (fun x -> (mk_asset a.name) x) a.init) ~loc:a.loc in
+    let lbm = match a.map_kind with | A.MKMap -> false | _ -> true in
+    let r : M.asset = M.mk_asset a.name ~keys:(List.map unloc (a.keys)) ~values:values ~sort:a.sort ~big_map:lbm ?state:a.state ~invariants:(List.map (fun x -> (to_label_lterm env) x) a.specs) ~init:(List.map (fun x -> (mk_asset a.name) x) a.init) ~loc:a.loc in
     M.Dasset r
   in
 
