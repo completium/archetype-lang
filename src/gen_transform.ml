@@ -2890,10 +2890,10 @@ let split_key_values (model : model) : model =
           let an = dumloc an in
           let asset = Utils.get_asset model (unloc an) in
           let _k, t = Utils.get_asset_key model (unloc an) in
-          let type_asset = (if asset.big_map then tbig_map else tmap) t (tasset an) in
+          let type_asset = (match asset.map_kind with | MKBigMap -> tbig_map | _ -> tmap) t (tasset an) in
           let default =
             match x.default.node with
-            | Massets l -> mk_mterm (Mlitmap ((if asset.big_map then MKBigMap else MKMap), List.map (fun x -> get_asset_assoc_key_value (unloc an) x) l)) type_asset
+            | Massets l -> mk_mterm (Mlitmap (asset.map_kind, List.map (fun x -> get_asset_assoc_key_value (unloc an) x) l)) type_asset
             | _ -> assert false
           in
           let asset_assets =
@@ -3899,12 +3899,11 @@ let remove_asset (model : model) : model =
       let aan, c = Utils.get_field_container model an fn in
       let atk = Utils.get_asset_key model aan |> snd in
       let aasset = Utils.get_asset model an in
-      let bm = aasset.big_map in
 
       let mk_assign bk =
         let ts = tset atk in
         let remove_set set = mk_mterm (Msetremove (atk, set, bk)) ts in
-        let get_ t = mk_mterm (Mmapget((if bm then MKBigMap else MKMap), kt, vt, va, ak, Some an)) t in
+        let get_ t = mk_mterm (Mmapget(aasset.map_kind, kt, vt, va, ak, Some an)) t in
         let v : mterm =
           if is_record
           then begin
@@ -3917,7 +3916,7 @@ let remove_asset (model : model) : model =
             mk_mterm (Mrecupdate(get, [fn, remove_set set])) tr
           end
         in
-        let nmap : mterm = mk_mterm (Mmapput ((if bm then MKBigMap else MKMap), kt, vt, va, ak, v) ) va.type_ in
+        let nmap : mterm = mk_mterm (Mmapput (aasset.map_kind, kt, vt, va, ak, v) ) va.type_ in
         mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), nmap)) tunit
       in
 
@@ -3933,7 +3932,6 @@ let remove_asset (model : model) : model =
       let tr = init.type_ in
       let atk = Utils.get_asset_key model an |> snd in
       let aasset = Utils.get_asset model an in
-      let bm = aasset.big_map in
 
       match ck with
       | CKcoll _ -> begin
@@ -3963,7 +3961,7 @@ let remove_asset (model : model) : model =
               let vaccu = mk_mterm (Mvar (iaccu, Vlocal, Tnone, Dnone)) tr in
 
               let act = mk vkid (Some vvid) vaccu in
-              mk_mterm (Mmapfold((if bm then MKBigMap else MKMap), atk, ikid, ivid, iaccu, va, init, act)) tr
+              mk_mterm (Mmapfold(aasset.map_kind, atk, ikid, ivid, iaccu, va, init, act)) tr
             end
           | _ -> assert false
         end

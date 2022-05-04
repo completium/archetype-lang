@@ -1735,14 +1735,19 @@ let pp_asset_item fmt (item : asset_item) =
     pp_type item.type_
     (pp_option (fun fmt -> Format.fprintf fmt " = %a" pp_mterm)) item.default
 
+let pp_map_kind fmt = function
+  | MKMap            -> Format.fprintf fmt "map"
+  | MKBigMap         -> Format.fprintf fmt "big_map"
+  | MKIterableBigMap -> Format.fprintf fmt "iterable_big_map"
+
 let pp_asset fmt (asset : asset) =
   let fields = List.filter (fun f -> not f.shadow) asset.values in
   let shadow_fields = List.filter (fun f -> f.shadow) asset.values in
-  Format.fprintf fmt "asset %a identified by %a%a%a {@\n  @[%a@]@\n}%a%a%a%a@\n"
+  Format.fprintf fmt "asset %a identified by %a%a to %a {@\n  @[%a@]@\n}%a%a%a%a@\n"
     pp_id asset.name
     (pp_list " " pp_str) asset.keys
-    (pp_do_if (asset.big_map) (pp_str)) " to big_map"
     (pp_do_if (not (List.is_empty asset.sort)) (fun fmt xs -> Format.fprintf fmt " sorted by %a" (pp_list ";@\n" pp_id) xs)) asset.sort
+    pp_map_kind asset.map_kind
     (pp_list "@\n" pp_asset_item) fields
     (pp_do_if (not (List.is_empty shadow_fields)) (fun fmt xs -> Format.fprintf fmt "@\nshadow {@\n  @[%a@]@\n}@\n" (pp_list ";@\n" pp_asset_item) xs)) shadow_fields
     (pp_do_if (not (List.is_empty asset.init)) (fun fmt xs -> Format.fprintf fmt "@\ninitialized by {@\n  @[%a@]@\n}@\n" (pp_list ";@\n" pp_mterm) xs)) asset.init

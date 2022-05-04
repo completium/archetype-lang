@@ -712,7 +712,7 @@ type 'id asset_gen = {
   values: 'id asset_item_gen list;
   keys: ident list;
   sort: 'id list;
-  big_map: bool;
+  map_kind: map_kind;
   state: lident option;
   invariants  : lident label_term_gen list;
   init: 'id mterm_gen list;
@@ -1044,8 +1044,8 @@ let mk_enum ?(values = []) name initial : 'id enum_gen =
 let mk_enum_item ?(args = []) ?(invariants = []) name : 'id enum_item_gen =
   { name; args; invariants }
 
-let mk_asset ?(values = []) ?(sort=[]) ?(big_map = false) ?state ?(keys = []) ?(invariants = []) ?(init = []) ?(loc = Location.dummy) name : 'id asset_gen =
-  { name; values; sort; big_map; state; keys; invariants; init; loc }
+let mk_asset ?(values = []) ?(sort=[]) ?(map_kind = MKMap) ?state ?(keys = []) ?(invariants = []) ?(init = []) ?(loc = Location.dummy) name : 'id asset_gen =
+  { name; values; sort; map_kind; state; keys; invariants; init; loc }
 
 let mk_asset_item ?default ?(shadow=false) ?(loc = Location.dummy) name type_ original_type : 'id asset_item_gen =
   { name; type_; original_type; default; shadow; loc }
@@ -4112,7 +4112,7 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
         values        = List.map for_asset_item a.values;
         keys          = List.map (f KIassetfield) a.keys;
         sort          = List.map (g KIassetfield) a.sort;
-        big_map       = a.big_map;
+        map_kind      = a.map_kind;
         state         = Option.map (g KIassetstate) a.state;
         invariants    = List.map for_label_term a.invariants;
         init          = List.map for_mterm a.init;
