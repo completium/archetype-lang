@@ -9,7 +9,7 @@ setQuiet(true);
 
 describe("Deploy", async () => {
   it("iterable_big_map_put_arl", async () => {
-    [contract, _] = await deploy('./tests/proposal/iterable_big_map_put.arl', {
+    [contract, _] = await deploy('./tests/passed/iterable_big_map_put.arl', {
       // as: admin.pkh
     });
   });

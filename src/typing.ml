@@ -1432,7 +1432,6 @@ let iterablebigmapops : opinfo list =
   let iterablebigmap  = A.Titerable_big_map (tkey, tval) in [
     op "put"      A.Cmput      `Total   (Some iterablebigmap) [ tkey; tval ]           `Self                  Mint.empty;
     op "remove"   A.Cmremove   `Total   (Some iterablebigmap) [ tkey       ]           `Self                  Mint.empty;
-    op "update"   A.Cmupdate   `Total   (Some iterablebigmap) [ tkey; A.Toption tval ] `Self                  Mint.empty;
     op "getopt"   A.Cmgetopt   `Partial (Some iterablebigmap) [ tkey       ]           (`Ty (A.Toption tval)) Mint.empty;
     op "contains" A.Cmcontains `Total   (Some iterablebigmap) [ tkey       ]           (`Ty A.vtbool        ) Mint.empty;
     op "length"   A.Cmlength   `Total   (Some iterablebigmap) [            ]           (`Ty A.vtnat         ) Mint.empty;
