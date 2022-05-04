@@ -1,0 +1,7 @@
+archetype iterable_big_map_put
+
+variable my_map : iterable_big_map<string, bytes> = [ ("mystr0", 0x00) ; ("mystr1", 0x01) ; ("mystr2", 0x02) ; ("mystr3", 0x03) ]
+
+entry exec () {
+  my_map.put("mystr4", 0x04)
+}

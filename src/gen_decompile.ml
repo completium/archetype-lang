@@ -1305,6 +1305,7 @@ end = struct
     let rec for_expr (e : dexpr) : mterm =
       let f = for_expr in
       let tunknown = tunit in
+      let mk_map = MKMap in
       match e with
       | Dvar v          -> mk_mvar (dumloc (for_dvar v)) tunit
       | Ddata (t, d)    -> for_data ~t d
@@ -1330,8 +1331,8 @@ end = struct
           | `Zop Zunit,                      [] -> unit
           | `Zop Znil t,                     [] -> mk_mterm (Mlitlist []) (tlist (ft t))
           | `Zop Zemptyset  t,               [] -> mk_mterm (Mlitset [])  (tlist (ft t))
-          | `Zop Zemptymap (tk, tv),         [] -> mk_mterm (Mlitmap (false, [])) (tmap (ft tk) (ft tv))
-          | `Zop Zemptybigmap (tk, tv),      [] -> mk_mterm (Mlitmap (true, [])) (tmap (ft tk) (ft tv))
+          | `Zop Zemptymap (tk, tv),         [] -> mk_mterm (Mlitmap (MKMap, [])) (tmap (ft tk) (ft tv))
+          | `Zop Zemptybigmap (tk, tv),      [] -> mk_mterm (Mlitmap (MKBigMap, [])) (tmap (ft tk) (ft tv))
           | `Uop Ucar,                    [ a ] -> mk_tupleaccess 0 (f a)
           | `Uop Ucdr,                    [ a ] -> mk_tupleaccess 1 (f a)
           | `Uop Uleft t,                 [ a ] -> mk_left  (ft t) (f a)
@@ -1369,8 +1370,8 @@ end = struct
           | `Bop Band,                 [ a; b ] -> mk_mterm (Mand (f a, f b)) tbool
           | `Bop Bxor,                 [ a; b ] -> mk_mterm (Mxor (f a, f b)) tbool
           | `Bop Bcompare,             [ _; _ ] -> assert false
-          | `Bop Bget,                 [ a; b ] -> mk_mterm (Mmapget (tunknown, tunknown, f a, f b, None)) tunknown
-          | `Bop Bmem,                 [ a; b ] -> mk_mterm (Mmapcontains(tunknown, tunknown, f a, f b)) tunknown
+          | `Bop Bget,                 [ a; b ] -> mk_mterm (Mmapget (mk_map, tunknown, tunknown, f a, f b, None)) tunknown
+          | `Bop Bmem,                 [ a; b ] -> mk_mterm (Mmapcontains(mk_map, tunknown, tunknown, f a, f b)) tunknown
           | `Bop Bconcat,              [ a; b ] -> mk_mterm (Mconcat (f a, f b)) tunknown
           | `Bop Bcons,                [ a; b ] -> mk_mterm (Mlistprepend (tunknown, f a, f b)) tunknown
           | `Bop Bpair,                [ a; b ] -> mk_tuple [f a; f b]
@@ -1378,7 +1379,7 @@ end = struct
           | `Bop Bapply,               [ _a; _b ] -> assert false
           | `Top Tcheck_signature,  [ a; b; c ] -> mk_checksignature (f a) (f b) (f c)
           | `Top Tslice,            [ a; b; c ] -> mk_mterm (Mslice (f a, f b, f c)) tunknown
-          | `Top Tupdate,           [ a; b; c ] -> mk_mterm (Mmapput (tunknown, tunknown, f a, f b, f c)) tunknown
+          | `Top Tupdate,           [ a; b; c ] -> mk_mterm (Mmapput (mk_map, tunknown, tunknown, f a, f b, f c)) tunknown
           | `Top Ttransfer_tokens,  [ _a; _b; _c ] -> assert false
           | _ -> assert false
         end
@@ -1456,51 +1457,53 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
   let rec for_type (t : M.type_) : A.type_t =
     let f = for_type in
     match M.get_ntype t with
-    | Tasset id              -> A.tref (unloc id)
-    | Tenum id               -> A.tref (unloc id)
-    | Tstate                 -> assert false
-    | Tbuiltin Bunit         -> A.tunit
-    | Tbuiltin Bbool         -> A.tbool
-    | Tbuiltin Bint          -> A.tint
-    | Tbuiltin Brational     -> A.trational
-    | Tbuiltin Bdate         -> A.tdate
-    | Tbuiltin Bduration     -> A.tduration
-    | Tbuiltin Btimestamp    -> assert false
-    | Tbuiltin Bstring       -> A.tstring
-    | Tbuiltin Baddress      -> A.taddress
-    | Tbuiltin Bcurrency     -> A.ttez
-    | Tbuiltin Bsignature    -> A.tsignature
-    | Tbuiltin Bkey          -> A.tkey
-    | Tbuiltin Bkeyhash      -> A.tkey_hash
-    | Tbuiltin Bbytes        -> A.tbytes
-    | Tbuiltin Bnat          -> A.tnat
-    | Tbuiltin Bchainid      -> A.tchain_id
-    | Tbuiltin Bbls12_381_fr -> A.tbls12_381_fr
-    | Tbuiltin Bbls12_381_g1 -> A.tbls12_381_g1
-    | Tbuiltin Bbls12_381_g2 -> A.tbls12_381_g2
-    | Tbuiltin Bnever        -> A.tnever
-    | Tbuiltin Bchest        -> A.tchest
-    | Tbuiltin Bchest_key    -> A.tchest_key
-    | Tcontainer (t, c)      -> A.mk_tcontainer (f t) (match c with | Collection -> assert false | Aggregate -> A.Aggregate | Partition -> A.Partition | View -> A.AssetView)
-    | Tlist t                -> A.mk_tlist (f t)
-    | Toption t              -> A.mk_toption (f t)
-    | Ttuple tl              -> A.mk_ttuple (List.map f tl)
-    | Tset t                 -> A.mk_tset (f t)
-    | Tmap (_, kt, vt)       -> A.mk_tmap (f kt) (f vt)
-    | Tor (lt, rt)           -> A.mk_tor (f lt) (f rt)
-    | Trecord id             -> A.tref (unloc id)
-    | Tevent id              -> A.tref (unloc id)
-    | Tlambda _              -> assert false
-    | Tunit                  -> A.tunit
-    | Tstorage               -> assert false
-    | Toperation             -> A.toperation
-    | Tcontract t            -> A.mk_tcontract (f t)
-    | Tprog _                -> assert false
-    | Tvset _                -> assert false
-    | Ttrace _               -> assert false
-    | Tticket t              -> A.mk_tticket (f t)
-    | Tsapling_state n       -> A.mk_sapling_state (Big_int.big_int_of_int n)
-    | Tsapling_transaction n -> A.mk_sapling_transaction (Big_int.big_int_of_int n)
+    | Tasset id                  -> A.tref (unloc id)
+    | Tenum id                   -> A.tref (unloc id)
+    | Tstate                     -> assert false
+    | Tbuiltin Bunit             -> A.tunit
+    | Tbuiltin Bbool             -> A.tbool
+    | Tbuiltin Bint              -> A.tint
+    | Tbuiltin Brational         -> A.trational
+    | Tbuiltin Bdate             -> A.tdate
+    | Tbuiltin Bduration         -> A.tduration
+    | Tbuiltin Btimestamp        -> assert false
+    | Tbuiltin Bstring           -> A.tstring
+    | Tbuiltin Baddress          -> A.taddress
+    | Tbuiltin Bcurrency         -> A.ttez
+    | Tbuiltin Bsignature        -> A.tsignature
+    | Tbuiltin Bkey              -> A.tkey
+    | Tbuiltin Bkeyhash          -> A.tkey_hash
+    | Tbuiltin Bbytes            -> A.tbytes
+    | Tbuiltin Bnat              -> A.tnat
+    | Tbuiltin Bchainid          -> A.tchain_id
+    | Tbuiltin Bbls12_381_fr     -> A.tbls12_381_fr
+    | Tbuiltin Bbls12_381_g1     -> A.tbls12_381_g1
+    | Tbuiltin Bbls12_381_g2     -> A.tbls12_381_g2
+    | Tbuiltin Bnever            -> A.tnever
+    | Tbuiltin Bchest            -> A.tchest
+    | Tbuiltin Bchest_key        -> A.tchest_key
+    | Tcontainer (t, c)          -> A.mk_tcontainer (f t) (match c with | Collection -> assert false | Aggregate -> A.Aggregate | Partition -> A.Partition | View -> A.AssetView)
+    | Tlist t                    -> A.mk_tlist (f t)
+    | Toption t                  -> A.mk_toption (f t)
+    | Ttuple tl                  -> A.mk_ttuple (List.map f tl)
+    | Tset t                     -> A.mk_tset (f t)
+    | Tmap (kt, vt)              -> A.mk_tmap (f kt) (f vt)
+    | Tbig_map (kt, vt)          -> A.mk_tbig_map (f kt) (f vt)
+    | Titerable_big_map (kt, vt) -> A.mk_titerable_big_map (f kt) (f vt)
+    | Tor (lt, rt)               -> A.mk_tor (f lt) (f rt)
+    | Trecord id                 -> A.tref (unloc id)
+    | Tevent id                  -> A.tref (unloc id)
+    | Tlambda _                  -> assert false
+    | Tunit                      -> A.tunit
+    | Tstorage                   -> assert false
+    | Toperation                 -> A.toperation
+    | Tcontract t                -> A.mk_tcontract (f t)
+    | Tprog _                    -> assert false
+    | Tvset _                    -> assert false
+    | Ttrace _                   -> assert false
+    | Tticket t                  -> A.mk_tticket (f t)
+    | Tsapling_state n           -> A.mk_sapling_state (Big_int.big_int_of_int n)
+    | Tsapling_transaction n     -> A.mk_sapling_transaction (Big_int.big_int_of_int n)
   in
 
   let for_op = function
@@ -1561,7 +1564,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     | Minstrmatchlist   _        -> assert false
     | Mfor (_i, _c, _b, _l)      -> assert false
-    | Miter (_i, _a, _b, _c, _l) -> assert false
+    | Miter (_i, _a, _b, _c, _l, _n) -> assert false
     | Mwhile (_c, _b, _l)        -> assert false
     | Mseq l                     -> begin
         match List.rev l with
@@ -1764,21 +1767,21 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     (* map api expression *)
 
-    | Mmapput (_, _, c, k, v)               -> A.eapp (A.Fident (dumloc "put")) [f c; f k; f v]
-    | Mmapremove (_, _, _c, _k)                -> assert false
-    | Mmapupdate (_, _, _c, _k, _v)            -> assert false
-    | Mmapget (_, _, _c, _k, _an)              -> assert false
-    | Mmapgetopt (_, _, _c, _k)                -> assert false
-    | Mmapcontains (_, _, _c, _k)              -> assert false
-    | Mmaplength (_, _, _c)                    -> assert false
-    | Mmapfold (_t, _ik, _iv, _ia, _c, _a, _b) -> assert false
+    | Mmapput (_, _, _, c, k, v)               -> A.eapp (A.Fident (dumloc "put")) [f c; f k; f v]
+    | Mmapremove (_, _, _, _c, _k)                -> assert false
+    | Mmapupdate (_, _, _, _c, _k, _v)            -> assert false
+    | Mmapget (_, _, _, _c, _k, _an)              -> assert false
+    | Mmapgetopt (_, _, _, _c, _k)                -> assert false
+    | Mmapcontains (_, _, _, _c, _k)              -> assert false
+    | Mmaplength (_, _, _, _c)                    -> assert false
+    | Mmapfold (_, _t, _ik, _iv, _ia, _c, _a, _b) -> assert false
 
 
     (* map api instruction *)
 
-    | Mmapinstrput    (_, _, _c, _k, _v)       -> assert false
-    | Mmapinstrremove (_, _, _c, _k)           -> assert false
-    | Mmapinstrupdate (_, _, _c, _k, _v)       -> assert false
+    | Mmapinstrput    (_, _, _, _c, _k, _v)       -> assert false
+    | Mmapinstrremove (_, _, _, _c, _k)           -> assert false
+    | Mmapinstrupdate (_, _, _, _c, _k, _v)       -> assert false
 
 
     (* builtin functions *)

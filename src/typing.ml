@@ -20,6 +20,7 @@ module Type : sig
   val as_list             : A.ptyp -> A.ptyp option
   val as_map              : A.ptyp -> (A.ptyp * A.ptyp) option
   val as_big_map          : A.ptyp -> (A.ptyp * A.ptyp) option
+  val as_iterable_big_map : A.ptyp -> (A.ptyp * A.ptyp) option
   val as_or               : A.ptyp -> (A.ptyp * A.ptyp) option
   val as_lambda           : A.ptyp -> (A.ptyp * A.ptyp) option
   val as_content_array    : A.ptyp -> A.ptyp option
@@ -35,6 +36,7 @@ module Type : sig
   val is_list      : A.ptyp -> bool
   val is_map       : A.ptyp -> bool
   val is_big_map   : A.ptyp -> bool
+  val is_iterable_big_map : A.ptyp -> bool
   val is_lambda    : A.ptyp -> bool
   val is_or        : A.ptyp -> bool
 
@@ -81,6 +83,7 @@ end = struct
   let as_list      = function A.Tlist      t       -> Some t       | _ -> None
   let as_map       = function A.Tmap       (k, v)  -> Some (k, v)  | _ -> None
   let as_big_map   = function A.Tbig_map   (a, r)  -> Some (a, r)  | _ -> None
+  let as_iterable_big_map   = function A.Titerable_big_map   (a, r)  -> Some (a, r)  | _ -> None
   let as_or        = function A.Tor        (l, r)  -> Some (l, r)  | _ -> None
   let as_lambda    = function A.Tlambda    (a, r)  -> Some (a, r)  | _ -> None
 
@@ -90,6 +93,7 @@ end = struct
     | A.Tlist      t       -> Some t
     | A.Tmap       (k, v)  -> Some (A.Ttuple [k; v])
     | A.Tbig_map   (k, v)  -> Some (A.Ttuple [k; v])
+    | A.Titerable_big_map   (k, v)  -> Some (A.Ttuple [k; v])
     | _ -> None
 
   let as_asset_collection = function
@@ -128,6 +132,9 @@ end = struct
 
   let is_big_map = function
     | A.Tbig_map _ -> true | _ -> false
+
+  let is_iterable_big_map = function
+    | A.Titerable_big_map _ -> true | _ -> false
 
   let is_or = function
     | A.Tor _ -> true | _ -> false
@@ -169,6 +176,7 @@ end = struct
       | A.Tlist                _ -> true
       | A.Tmap                 _ -> true
       | A.Tbig_map             _ -> true
+      | A.Titerable_big_map    _ -> true
       | A.Tor                  _ -> true
       | A.Tlambda              _ -> true
       | A.Ttuple               _ -> true
@@ -213,6 +221,7 @@ end = struct
       | A.Tlist                _ -> false
       | A.Tmap                 _ -> false
       | A.Tbig_map             _ -> false
+      | A.Titerable_big_map    _ -> false
       | A.Tor           (t1, t2) -> is_comparable t1 && is_comparable t2
       | A.Tlambda              _ -> false
       | A.Ttuple               l -> List.for_all is_comparable l
@@ -257,6 +266,7 @@ end = struct
       | A.Tlist                _ -> true
       | A.Tmap                 _ -> true
       | A.Tbig_map             _ -> true
+      | A.Titerable_big_map    _ -> true
       | A.Tor                  _ -> true
       | A.Tlambda              _ -> true
       | A.Ttuple               l -> List.for_all is_passable l
@@ -301,6 +311,7 @@ end = struct
       | A.Tlist                t -> is_storable t
       | A.Tmap            (k, v) -> List.for_all is_storable [k; v]
       | A.Tbig_map        (k, v) -> List.for_all is_storable [k; v]
+      | A.Titerable_big_map(k, v)-> List.for_all is_storable [k; v]
       | A.Tor             (l, r) -> List.for_all is_storable [l; r]
       | A.Tlambda              _ -> true
       | A.Ttuple               l -> List.for_all is_storable l
@@ -345,6 +356,7 @@ end = struct
       | A.Tlist                t -> is_packable t
       | A.Tmap            (k, v) -> List.for_all is_packable [k; v]
       | A.Tbig_map             _ -> false
+      | A.Titerable_big_map    _ -> false
       | A.Tor             (l, r) -> List.for_all is_packable [l; r]
       | A.Tlambda              _ -> true
       | A.Ttuple               l -> List.for_all is_packable l
@@ -389,6 +401,7 @@ end = struct
       | A.Tlist                t -> is_big_map_value t
       | A.Tmap            (k, v) -> List.for_all is_big_map_value [k; v]
       | A.Tbig_map             _ -> false
+      | A.Titerable_big_map    _ -> false
       | A.Tor             (l, r) -> List.for_all is_big_map_value [l; r]
       | A.Tlambda              _ -> true
       | A.Ttuple               l -> List.for_all is_big_map_value l
@@ -554,6 +567,9 @@ end = struct
         | Tbig_map (kptn, vptn), Tbig_map (ktg, vtg) ->
           List.iter2 doit [kptn; vptn] [ktg; vtg]
 
+        | Titerable_big_map (kptn, vptn), Titerable_big_map (ktg, vtg) ->
+          List.iter2 doit [kptn; vptn] [ktg; vtg]
+
         | Tor (lptn, rptn), Tor (ltg, rtg) ->
           List.iter2 doit [lptn; rptn] [ltg; rtg]
 
@@ -594,6 +610,7 @@ end = struct
       | Tlist       ty     -> Tlist      (doit ty)
       | Tmap       (k, v)  -> Tmap       (doit k, doit v)
       | Tbig_map   (k, v)  -> Tbig_map   (doit k, doit v)
+      | Titerable_big_map   (k, v)  -> Titerable_big_map   (doit k, doit v)
       | Tor        (l, r)  -> Tor        (doit l, doit r)
       | Tlambda    (a, r)  -> Tlambda    (doit a, doit r)
       | Ttuple      ty     -> Ttuple     (List.map doit ty)
@@ -1409,6 +1426,19 @@ let bigmapops : opinfo list =
   ]
 
 (* -------------------------------------------------------------------- *)
+let iterablebigmapops : opinfo list =
+  let tkey = A.Tnamed 0 in
+  let tval = A.Tnamed 1 in
+  let iterablebigmap  = A.Titerable_big_map (tkey, tval) in [
+    op "put"      A.Cmput      `Total   (Some iterablebigmap) [ tkey; tval ]           `Self                  Mint.empty;
+    op "remove"   A.Cmremove   `Total   (Some iterablebigmap) [ tkey       ]           `Self                  Mint.empty;
+    op "update"   A.Cmupdate   `Total   (Some iterablebigmap) [ tkey; A.Toption tval ] `Self                  Mint.empty;
+    op "getopt"   A.Cmgetopt   `Partial (Some iterablebigmap) [ tkey       ]           (`Ty (A.Toption tval)) Mint.empty;
+    op "contains" A.Cmcontains `Total   (Some iterablebigmap) [ tkey       ]           (`Ty A.vtbool        ) Mint.empty;
+    op "length"   A.Cmlength   `Total   (Some iterablebigmap) [            ]           (`Ty A.vtnat         ) Mint.empty;
+  ]
+
+(* -------------------------------------------------------------------- *)
 let cryptoops : opinfo list =
   List.map (fun (x, y) -> op x y `Total None [A.vtbytes] (`Ty A.vtbytes) Mint.empty)
     [("blake2b", A.Cblake2b);
@@ -1475,7 +1505,7 @@ let timelock_ops : opinfo list =
 
 (* -------------------------------------------------------------------- *)
 let allops : opinfo list =
-  coreops @ optionops @ setops @ listops @ mapops @ bigmapops @
+  coreops @ optionops @ setops @ listops @ mapops @ bigmapops @ iterablebigmapops @
   cryptoops @ packops @ opsops @ lambdaops @
   ticket_ops @ bls_ops @ mathops @ timelock_ops
 
@@ -2330,6 +2360,7 @@ let rec valid_var_or_arg_type (ty : A.ptyp) =
   | Tlist     ty    -> valid_var_or_arg_type ty
   | Tmap     (k, v) -> List.for_all valid_var_or_arg_type [k; v]
   | Tbig_map (k, v) -> List.for_all valid_var_or_arg_type [k; v]
+  | Titerable_big_map (k, v) -> List.for_all valid_var_or_arg_type [k; v]
   | Tor      (l, r) -> List.for_all valid_var_or_arg_type [l; r]
   | Tlambda  (a, r) -> List.for_all valid_var_or_arg_type [a; r]
   | Ttuple    ty    -> List.for_all valid_var_or_arg_type ty
@@ -2451,6 +2482,17 @@ let for_type_exn ?pkey (env : env) =
         Env.emit_error env (loc (fst v), InvalidTypeForBigMapValue);
 
       A.Tbig_map (nk, nv)
+
+    | Titerable_big_map (k, v) ->
+      let nk, nv = doit k, doit v in
+
+      if not (Type.Michelson.is_comparable nk) then
+        Env.emit_error env (loc (fst k), InvalidTypeForBigMapKey);
+
+      if not (Type.Michelson.is_big_map_value nv) then
+        Env.emit_error env (loc (fst v), InvalidTypeForBigMapValue);
+
+      A.Titerable_big_map (nk, nv)
 
     | Tor (l, r) ->
       let nl, nr = doit l, doit r in
@@ -2842,7 +2884,7 @@ let rec for_xexpr
     | Earray [] -> begin
         match ety with
         | Some (A.Tcontainer (_, _))
-        | Some (A.Tset _ | A.Tlist _ | A.Tmap _ | A.Tbig_map _) ->
+        | Some (A.Tset _ | A.Tlist _ | A.Tmap _ | A.Tbig_map _ | A.Titerable_big_map _) ->
           mk_sp ety (A.Parray [])
 
         | _ ->
@@ -2881,6 +2923,14 @@ let rec for_xexpr
             | _ -> (Env.emit_error env (loc tope, InvalidMapType); bailout ())
           in
           mk_sp (Some (A.Tbig_map (k, v))) (A.Parray (e :: es))
+
+        | Some Titerable_big_map _, Some ty ->
+          let k, v  =
+            match ty with
+            | Ttuple [k; v] -> (k, v)
+            | _ -> (Env.emit_error env (loc tope, InvalidMapType); bailout ())
+          in
+          mk_sp (Some (A.Titerable_big_map (k, v))) (A.Parray (e :: es))
 
         | _, Some ty ->
           mk_sp (Some (A.Tlist ty)) (A.Parray (e :: es))
@@ -3170,6 +3220,16 @@ let rec for_xexpr
           end
         | Some (A.Tmap     (kt, vt))
         | Some (A.Tbig_map (kt, vt)) -> begin
+            let pk = for_xexpr ?ety:(Some kt) env pk in
+            let rty =
+              match mode.em_kind with
+              | `Formula _ -> Some (A.Toption vt)
+              | _ -> Some vt in
+            mk_sp
+              rty
+              (A.Pcall (None, A.Cconst A.Cmget, [A.AExpr ee; A.AExpr pk]))
+          end
+        | Some (A.Titerable_big_map (kt, vt)) -> begin
             let pk = for_xexpr ?ety:(Some kt) env pk in
             let rty =
               match mode.em_kind with
@@ -4856,7 +4916,8 @@ let rec for_instruction_r
           then (Env.emit_error env (loc x, InvalidForIdentSimple); None)
           else Some [asset.as_pkty]
 
-        | Some (A.Tmap (kt, vt)) ->
+        | Some (A.Tmap (kt, vt))
+        | Some (A.Titerable_big_map (kt, vt)) ->
           if   is_for_ident `Simple
           then (Env.emit_error env (loc x, InvalidForIdentMap); None)
           else Some [kt; vt]

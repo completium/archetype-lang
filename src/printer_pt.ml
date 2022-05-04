@@ -162,6 +162,12 @@ let rec pp_type fmt (e, a) =
         f k
         f v
 
+    | Titerable_big_map (k, v) ->
+      Format.fprintf fmt
+        "iterable_big_map<%a, %a>"
+        f k
+        f v
+
     | Tor (k, v) ->
       Format.fprintf fmt
         "or<%a, %a>"

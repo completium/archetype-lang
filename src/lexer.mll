@@ -73,6 +73,7 @@
       "initialized"         , INITIALIZED         ;
       "invariant"           , INVARIANT           ;
       "iter"                , ITER                ;
+      "iterable_big_map"    , ITERABLE_BIG_MAP    ;
       "label"               , LABEL               ;
       "lambda"              , LAMBDA              ;
       "left"                , LEFT                ;

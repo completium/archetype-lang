@@ -56,8 +56,9 @@ let rec to_type (tk : type_kind) fmt (t : type_) =
   | Toption ty                      -> self ty
   | Ttuple _tys                     -> doit any    id_f
   | Tset _ty                        -> doit any    id_f
-  | Tmap (false, _kty, _vty)        -> doit any    id_f
-  | Tmap (true, _kty, _vty)         -> unsupported()
+  | Tmap (_kty, _vty)               -> doit any    id_f
+  | Tbig_map (_kty, _vty)           -> unsupported()
+  | Titerable_big_map ( _kty, _vty) -> unsupported()
   | Tor (_lty, _rty)                -> doit any    id_f
   | Trecord _id                     -> doit any    id_f
   | Tevent _id                      -> unsupported()

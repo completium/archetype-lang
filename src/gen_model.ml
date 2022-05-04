@@ -88,27 +88,28 @@ let to_model (ast : A.ast) : M.model =
 
   let rec type_to_type (t : A.type_) : M.type_ =
     let f = function
-      | A.Tnamed _               -> assert false
-      | A.Tasset id              -> M.Tasset id
-      | A.Trecord id             -> M.Trecord id
-      | A.Tenum id               -> M.Tenum id
-      | A.Tevent id              -> M.Tevent id
-      | A.Tbuiltin b             -> M.Tbuiltin (vtyp_to_btyp b)
-      | A.Tcontainer (t, c)      -> M.Tcontainer (type_to_type t, to_container c)
-      | A.Tset t                 -> M.Tset (type_to_type t)
-      | A.Tlist t                -> M.Tlist (type_to_type t)
-      | A.Tmap (k, v)            -> M.Tmap (false, type_to_type k, type_to_type v)
-      | A.Tbig_map (k, v)        -> M.Tmap (true, type_to_type k, type_to_type v)
-      | A.Tor (l, r)             -> M.Tor (type_to_type l, type_to_type r)
-      | A.Tlambda (a, r)         -> M.Tlambda (type_to_type a, type_to_type r)
-      | A.Ttuple l               -> M.Ttuple (List.map type_to_type l)
-      | A.Toperation             -> M.Toperation
-      | A.Tcontract t            -> M.Tcontract (type_to_type t)
-      | A.Toption t              -> M.Toption (type_to_type t)
-      | A.Tticket t              -> M.Tticket (type_to_type t)
-      | A.Ttrace tr              -> M.Ttrace (to_trtyp tr)
-      | A.Tsapling_state n       -> M.Tsapling_state n
-      | A.Tsapling_transaction n -> M.Tsapling_transaction n
+      | A.Tnamed _                 -> assert false
+      | A.Tasset id                -> M.Tasset id
+      | A.Trecord id               -> M.Trecord id
+      | A.Tenum id                 -> M.Tenum id
+      | A.Tevent id                -> M.Tevent id
+      | A.Tbuiltin b               -> M.Tbuiltin (vtyp_to_btyp b)
+      | A.Tcontainer (t, c)        -> M.Tcontainer (type_to_type t, to_container c)
+      | A.Tset t                   -> M.Tset (type_to_type t)
+      | A.Tlist t                  -> M.Tlist (type_to_type t)
+      | A.Tmap (k, v)              -> M.Tmap (type_to_type k, type_to_type v)
+      | A.Tbig_map (k, v)          -> M.Tbig_map (type_to_type k, type_to_type v)
+      | A.Titerable_big_map (k, v) -> M.Titerable_big_map (type_to_type k, type_to_type v)
+      | A.Tor (l, r)               -> M.Tor (type_to_type l, type_to_type r)
+      | A.Tlambda (a, r)           -> M.Tlambda (type_to_type a, type_to_type r)
+      | A.Ttuple l                 -> M.Ttuple (List.map type_to_type l)
+      | A.Toperation               -> M.Toperation
+      | A.Tcontract t              -> M.Tcontract (type_to_type t)
+      | A.Toption t                -> M.Toption (type_to_type t)
+      | A.Tticket t                -> M.Tticket (type_to_type t)
+      | A.Ttrace tr                -> M.Ttrace (to_trtyp tr)
+      | A.Tsapling_state n         -> M.Tsapling_state n
+      | A.Tsapling_transaction n   -> M.Tsapling_transaction n
     in
     M.mktype (f t)
   in
@@ -207,9 +208,11 @@ let to_model (ast : A.ast) : M.model =
     | _ -> assert false
   in
 
-  let extract_builtin_type_map (v : M.mterm) : M.type_ * M.type_ =
+  let extract_builtin_type_map (v : M.mterm) : M.map_kind * M.type_ * M.type_ =
     match v with
-    | {type_ = (Tmap (_, k, v), _); _} -> k, v
+    | {type_ = (Tmap (k, v), _); _}              -> MKMap, k, v
+    | {type_ = (Tbig_map (k, v), _); _}          -> MKBigMap, k, v
+    | {type_ = (Titerable_big_map (k, v), _); _} -> MKIterableBigMap, k, v
     | _ -> assert false
   in
 
@@ -350,7 +353,9 @@ let to_model (ast : A.ast) : M.model =
           match M.get_ntype type_ with
           | Tcontainer ((Tasset _, _), _)   -> M.Massets l
           | Tset _ -> M.Mlitset l
-          | Tmap (b, _, _) -> M.Mlitmap (b, List.map (fun (x : M.mterm) -> match x.node with | M.Mtuple [k; v] -> (k, v)  | _ -> assert false) l)
+          | Tmap ( _, _) -> M.Mlitmap (MKMap, List.map (fun (x : M.mterm) -> match x.node with | M.Mtuple [k; v] -> (k, v)  | _ -> assert false) l)
+          | Tbig_map ( _, _) -> M.Mlitmap (MKBigMap, List.map (fun (x : M.mterm) -> match x.node with | M.Mtuple [k; v] -> (k, v)  | _ -> assert false) l)
+          | Titerable_big_map (_, _) -> M.Mlitmap (MKIterableBigMap, List.map (fun (x : M.mterm) -> match x.node with | M.Mtuple [k; v] -> (k, v)  | _ -> assert false) l)
           | _ -> M.Mlitlist l
         end
       | A.Plit ({node = BVint i; _})           -> M.Mint i
@@ -575,44 +580,44 @@ let to_model (ast : A.ast) : M.model =
         let fp = f p in
         let fq = f q in
         let fr = f r in
-        let kt, vt = extract_builtin_type_map fp in
-        M.Mmapput (kt, vt, fp, fq, fr)
+        let mk, kt, vt = extract_builtin_type_map fp in
+        M.Mmapput (mk, kt, vt, fp, fq, fr)
 
       | A.Pcall (None, A.Cconst (A.Cmremove), [AExpr p; AExpr q]) ->
         let fp = f p in
         let fq = f q in
-        let kt, vt = extract_builtin_type_map fp in
-        M.Mmapremove (kt, vt, fp, fq)
+        let mk, kt, vt = extract_builtin_type_map fp in
+        M.Mmapremove (mk, kt, vt, fp, fq)
 
       | A.Pcall (None, A.Cconst (A.Cmupdate), [AExpr p; AExpr q; AExpr r]) ->
         let fp = f p in
         let fq = f q in
         let fr = f r in
-        let kt, vt = extract_builtin_type_map fp in
-        M.Mmapupdate (kt, vt, fp, fq, fr)
+        let mk, kt, vt = extract_builtin_type_map fp in
+        M.Mmapupdate (mk, kt, vt, fp, fq, fr)
 
       | A.Pcall (None, A.Cconst (A.Cmget), [AExpr p; AExpr q]) ->
         let fp = f p in
         let fq = f q in
-        let kt, vt = extract_builtin_type_map fp in
-        M.Mmapget (kt, vt, fp, fq, None)
+        let mk, kt, vt = extract_builtin_type_map fp in
+        M.Mmapget (mk, kt, vt, fp, fq, None)
 
       | A.Pcall (None, A.Cconst (A.Cmgetopt), [AExpr p; AExpr q]) ->
         let fp = f p in
         let fq = f q in
-        let kt, vt = extract_builtin_type_map fp in
-        M.Mmapgetopt (kt, vt, fp, fq)
+        let mk, kt, vt = extract_builtin_type_map fp in
+        M.Mmapgetopt (mk, kt, vt, fp, fq)
 
       | A.Pcall (None, A.Cconst (A.Cmcontains), [AExpr p; AExpr q]) ->
         let fp = f p in
         let fq = f q in
-        let kt, vt = extract_builtin_type_map fp in
-        M.Mmapcontains (kt, vt, fp, fq)
+        let mk, kt, vt = extract_builtin_type_map fp in
+        M.Mmapcontains (mk, kt, vt, fp, fq)
 
       | A.Pcall (None, A.Cconst (A.Cmlength), [AExpr p]) ->
         let fp = f p in
-        let kt, vt = extract_builtin_type_map fp in
-        M.Mmaplength (kt, vt, fp)
+        let mk, kt, vt = extract_builtin_type_map fp in
+        M.Mmaplength (mk, kt, vt, fp)
 
 
       (* Formula *)
@@ -1033,7 +1038,9 @@ let to_model (ast : A.ast) : M.model =
             match x.node, M.get_ntype x.type_ with
             | _, M.Tset  _ -> M.ICKset x
             | _, M.Tlist _ -> M.ICKlist x
-            | _, M.Tmap  _ -> M.ICKmap x
+            | _, M.Tmap  _
+            | _, M.Tbig_map  _
+            | _, M.Titerable_big_map  _ -> M.ICKmap x
             | _, M.Tcontainer ((Tasset an, _), Collection) -> M.ICKcoll (unloc an)
             | M.Mdotassetfield (an, _k, fn), M.Tcontainer ((Tasset _, _), (Aggregate | Partition)) -> M.ICKfield (unloc an, unloc fn, x)
             | _ -> M.ICKview x
@@ -1045,7 +1052,7 @@ let to_model (ast : A.ast) : M.model =
           in
           M.Mfor (i, ncol, g body, instr.label)
         end
-      | A.Iiter (i, a, b, body)   -> M.Miter (i, f a, f b, g body, instr.label)
+      | A.Iiter (i, a, b, body)   -> M.Miter (i, f a, f b, g body, instr.label, false)
       | A.Iwhile (c, body)        -> M.Mwhile (f c, g body, instr.label)
       | A.Iletin (i, init, cont)  -> M.Mletin ([i], f init, Option.map type_to_type init.type_, g cont, None) (* TODO *)
       | A.Ideclvar (i, v, c)      -> M.Mdeclvar ([i], Option.map type_to_type v.type_, f v, c) (* TODO *)

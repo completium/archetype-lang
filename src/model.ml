@@ -69,7 +69,9 @@ type ntype =
   | Toption of type_
   | Ttuple of type_ list
   | Tset of type_
-  | Tmap of bool * type_ * type_
+  | Tmap of type_ * type_
+  | Tbig_map of type_ * type_
+  | Titerable_big_map of type_ * type_
   | Tor of type_ * type_
   | Trecord of lident
   | Tevent of lident
@@ -200,6 +202,12 @@ type 'term transfer_kind_gen =
   | TKoperation of 'term
 [@@deriving show {with_path = false}]
 
+type map_kind =
+  | MKMap
+  | MKBigMap
+  | MKIterableBigMap
+[@@deriving show {with_path = false}]
+
 type ('id, 'term) mterm_node  =
   (* lambda *)
   | Mletin            of 'id list * 'term * type_ option * 'term * 'term option
@@ -214,7 +222,7 @@ type ('id, 'term) mterm_node  =
   | Minstrmatchor     of 'term * 'id * 'term * 'id * 'term
   | Minstrmatchlist   of 'term * 'id * 'id * 'term * 'term
   | Mfor              of ('id for_ident_gen * 'term iter_container_kind_gen * 'term * ident option)
-  | Miter             of ('id * 'term * 'term * 'term * ident option)
+  | Miter             of ('id * 'term * 'term * 'term * ident option * bool (* true of id is nat else int *))
   | Mwhile            of ('term * 'term * ident option)
   | Mseq              of 'term list
   | Mreturn           of 'term
@@ -276,7 +284,7 @@ type ('id, 'term) mterm_node  =
   | Massets           of 'term list
   | Mlitset           of 'term list
   | Mlitlist          of 'term list
-  | Mlitmap           of bool * ('term * 'term) list
+  | Mlitmap           of map_kind * ('term * 'term) list
   | Mlitrecord        of (ident * 'term) list
   | Mlitevent         of (ident * 'term) list
   | Mlambda           of type_ * 'id * type_ * 'term
@@ -356,18 +364,18 @@ type ('id, 'term) mterm_node  =
   | Mlistinstrprepend of type_ * ('id, 'term) assign_kind_gen * 'term
   | Mlistinstrconcat  of type_ * ('id, 'term) assign_kind_gen * 'term
   (* map api expression *)
-  | Mmapput           of type_ * type_ * 'term * 'term * 'term
-  | Mmapremove        of type_ * type_ * 'term * 'term
-  | Mmapupdate        of type_ * type_ * 'term * 'term * 'term
-  | Mmapget           of type_ * type_ * 'term * 'term * ident option
-  | Mmapgetopt        of type_ * type_ * 'term * 'term
-  | Mmapcontains      of type_ * type_ * 'term * 'term
-  | Mmaplength        of type_ * type_ * 'term
-  | Mmapfold          of type_ * 'id   * 'id   * 'id   * 'term * 'term * 'term
+  | Mmapput           of map_kind * type_ * type_ * 'term * 'term * 'term
+  | Mmapremove        of map_kind * type_ * type_ * 'term * 'term
+  | Mmapupdate        of map_kind * type_ * type_ * 'term * 'term * 'term
+  | Mmapget           of map_kind * type_ * type_ * 'term * 'term * ident option
+  | Mmapgetopt        of map_kind * type_ * type_ * 'term * 'term
+  | Mmapcontains      of map_kind * type_ * type_ * 'term * 'term
+  | Mmaplength        of map_kind * type_ * type_ * 'term
+  | Mmapfold          of map_kind * type_ * 'id   * 'id   * 'id   * 'term * 'term * 'term
   (* map api instruction *)
-  | Mmapinstrput      of type_ * type_ * ('id, 'term) assign_kind_gen * 'term * 'term
-  | Mmapinstrremove   of type_ * type_ * ('id, 'term) assign_kind_gen * 'term
-  | Mmapinstrupdate   of type_ * type_ * ('id, 'term) assign_kind_gen * 'term * 'term
+  | Mmapinstrput      of map_kind * type_ * type_ * ('id, 'term) assign_kind_gen * 'term * 'term
+  | Mmapinstrremove   of map_kind * type_ * type_ * ('id, 'term) assign_kind_gen * 'term
+  | Mmapinstrupdate   of map_kind * type_ * type_ * ('id, 'term) assign_kind_gen * 'term * 'term
   (* builtin functions *)
   | Mmin              of 'term * 'term
   | Mmax              of 'term * 'term
@@ -1075,54 +1083,54 @@ let mkannot prefix (id : lident) : lident option = match unloc id with | "" -> N
 let mkfannot = mkannot "%"
 let mkvannot = mkannot "@"
 
-let tunit          = mktype (Tunit)
-let tbool          = mktype (Tbuiltin Bbool)
-let tnat           = mktype (Tbuiltin Bnat)
-let tint           = mktype (Tbuiltin Bint)
-let tstring        = mktype (Tbuiltin Bstring)
-let tbytes         = mktype (Tbuiltin Bbytes)
-let ttez           = mktype (Tbuiltin Bcurrency)
-let tduration      = mktype (Tbuiltin Bduration)
-let tkey           = mktype (Tbuiltin Bkey)
-let tkeyhash       = mktype (Tbuiltin Bkeyhash)
-let tdate          = mktype (Tbuiltin Bdate)
-let ttimestamp     = mktype (Tbuiltin Btimestamp)
-let taddress       = mktype (Tbuiltin Baddress)
-let tenum v        = mktype (Tenum v)
-let tstate         = mktype (Tstate)
-let tstorage       = mktype (Tstorage)
-let trecord rn     = mktype (Trecord rn)
-let tevent e       = mktype (Tevent e)
-let toption t      = mktype (Toption t)
-let tset t         = mktype (Tset t)
-let tlist t        = mktype (Tlist t)
-let tbmap b k v    = mktype (Tmap (b, k, v))
-let tmap k v       = mktype (Tmap (false, k, v))
-let tbig_map k v   = mktype (Tmap (true, k, v))
-let tor l r        = mktype (Tor (l, r))
-let tlambda a r    = mktype (Tlambda (a, r))
-let ttuple l       = mktype (Ttuple l)
-let trat           = ttuple [tint; tnat]
-let toperation     = mktype (Toperation)
-let tsignature     = mktype (Tbuiltin Bsignature)
-let tcontract t    = mktype (Tcontract t)
-let tticket t      = mktype (Tticket t)
+let tunit                  = mktype (Tunit)
+let tbool                  = mktype (Tbuiltin Bbool)
+let tnat                   = mktype (Tbuiltin Bnat)
+let tint                   = mktype (Tbuiltin Bint)
+let tstring                = mktype (Tbuiltin Bstring)
+let tbytes                 = mktype (Tbuiltin Bbytes)
+let ttez                   = mktype (Tbuiltin Bcurrency)
+let tduration              = mktype (Tbuiltin Bduration)
+let tkey                   = mktype (Tbuiltin Bkey)
+let tkeyhash               = mktype (Tbuiltin Bkeyhash)
+let tdate                  = mktype (Tbuiltin Bdate)
+let ttimestamp             = mktype (Tbuiltin Btimestamp)
+let taddress               = mktype (Tbuiltin Baddress)
+let tenum v                = mktype (Tenum v)
+let tstate                 = mktype (Tstate)
+let tstorage               = mktype (Tstorage)
+let trecord rn             = mktype (Trecord rn)
+let tevent e               = mktype (Tevent e)
+let toption t              = mktype (Toption t)
+let tset t                 = mktype (Tset t)
+let tlist t                = mktype (Tlist t)
+let tmap k v               = mktype (Tmap (k, v))
+let tbig_map k v           = mktype (Tbig_map (k, v))
+let titerable_big_map k v  = mktype (Titerable_big_map (k, v))
+let tor l r                = mktype (Tor (l, r))
+let tlambda a r            = mktype (Tlambda (a, r))
+let ttuple l               = mktype (Ttuple l)
+let trat                   = ttuple [tint; tnat]
+let toperation             = mktype (Toperation)
+let tsignature             = mktype (Tbuiltin Bsignature)
+let tcontract t            = mktype (Tcontract t)
+let tticket t              = mktype (Tticket t)
 let tsapling_state       n = mktype (Tsapling_state n)
 let tsapling_transaction n = mktype (Tsapling_transaction n)
-let tchainid       = mktype (Tbuiltin Bchainid)
-let tbls12_381_fr  = mktype (Tbuiltin Bbls12_381_fr)
-let tbls12_381_g1  = mktype (Tbuiltin Bbls12_381_g1)
-let tbls12_381_g2  = mktype (Tbuiltin Bbls12_381_g2)
-let tnever         = mktype (Tbuiltin Bnever)
-let tchest         = mktype (Tbuiltin Bchest)
-let tchest_key     = mktype (Tbuiltin Bchest_key)
-let tasset an      = mktype (Tasset an)
-let tcollection an = mktype (Tcontainer (tasset an, Collection))
-let taggregate an  = mktype (Tcontainer (tasset an, Aggregate))
-let tpartition an  = mktype (Tcontainer (tasset an, Partition))
-let tview an       = mktype (Tcontainer (tasset an, View))
-let toperations    = tlist toperation
-let tmetadata      = tbig_map tstring tbytes
+let tchainid               = mktype (Tbuiltin Bchainid)
+let tbls12_381_fr          = mktype (Tbuiltin Bbls12_381_fr)
+let tbls12_381_g1          = mktype (Tbuiltin Bbls12_381_g1)
+let tbls12_381_g2          = mktype (Tbuiltin Bbls12_381_g2)
+let tnever                 = mktype (Tbuiltin Bnever)
+let tchest                 = mktype (Tbuiltin Bchest)
+let tchest_key             = mktype (Tbuiltin Bchest_key)
+let tasset an              = mktype (Tasset an)
+let tcollection an         = mktype (Tcontainer (tasset an, Collection))
+let taggregate an          = mktype (Tcontainer (tasset an, Aggregate))
+let tpartition an          = mktype (Tcontainer (tasset an, Partition))
+let tview an               = mktype (Tcontainer (tasset an, View))
+let toperations            = tlist toperation
+let tmetadata              = tbig_map tstring tbytes
 
 let mk_bool         x = mk_mterm (Mbool x) tbool
 let mk_string       x = mk_mterm (Mstring x) tstring
@@ -1213,7 +1221,7 @@ let mk_checksignature a b c = mk_mterm (Mchecksignature (a, b, c)) tbool
 let mk_brat n d  = mk_tuple [mk_bint n; mk_bnat d]
 let mk_rat n d   = mk_tuple [mk_int n; mk_nat d]
 
-let mk_metadata v = mk_mterm (Mlitmap(true, v)) tmetadata
+let mk_metadata v = mk_mterm (Mlitmap(MKBigMap, v)) tmetadata
 
 let fail x  = mk_mterm (Mfail (Invalid (mk_string x))) tunit
 let failg x = mk_mterm (Mfail (Invalid (x))) tunit
@@ -1276,30 +1284,32 @@ let rec cmp_ntype
     (t2 : ntype)
   : bool =
   match t1, t2 with
-  | Tasset i1, Tasset i2                     -> cmp_lident i1 i2
-  | Tenum i1, Tenum i2                       -> cmp_lident i1 i2
-  | Tstate, Tstate                           -> true
-  | Tbuiltin b1, Tbuiltin b2                 -> cmp_btyp b1 b2
-  | Tcontainer (t1, c1), Tcontainer (t2, c2) -> cmp_type t1 t2 && cmp_container c1 c2
-  | Tlist t1, Tlist t2                       -> cmp_type t1 t2
-  | Toption t1, Toption t2                   -> cmp_type t1 t2
-  | Ttuple l1, Ttuple l2                     -> List.for_all2 cmp_type l1 l2
-  | Tset b1, Tset b2                         -> cmp_type b1 b2
-  | Tmap (b1, k1, v1), Tmap (b2, k2, v2)     -> b1 = b2 && cmp_type k1 k2 && cmp_type v1 v2
-  | Tor (l1, r1), Tor (l2, r2)               -> cmp_type l1 l2 && cmp_type r1 r2
-  | Trecord i1, Trecord i2                   -> cmp_lident i1 i2
-  | Tevent e1, Tevent e2                     -> cmp_lident e1 e2
-  | Tlambda (a1, r1), Tlambda (a2, r2)       -> cmp_type a1 a2 && cmp_type r1 r2
-  | Tunit, Tunit                             -> true
-  | Tstorage, Tstorage                       -> true
-  | Toperation, Toperation                   -> true
-  | Tcontract t1, Tcontract t2               -> cmp_type t1 t2
-  | Tprog t1, Tprog t2                       -> cmp_type t1 t2
-  | Tvset (v1, t1), Tvset (v2, t2)           -> cmp_vset v1 v2 && cmp_type t1 t2
-  | Ttrace t1, Ttrace t2                     -> cmp_trtyp t1 t2
-  | Tticket t1, Tticket t2                   -> cmp_type t1 t2
-  | Tsapling_state n1, Tsapling_state n2     -> cmp_int n1 n2
-  | Tsapling_transaction n1, Tsapling_transaction n2 -> cmp_int n1 n2
+  | Tasset i1, Tasset i2                                   -> cmp_lident i1 i2
+  | Tenum i1, Tenum i2                                     -> cmp_lident i1 i2
+  | Tstate, Tstate                                         -> true
+  | Tbuiltin b1, Tbuiltin b2                               -> cmp_btyp b1 b2
+  | Tcontainer (t1, c1), Tcontainer (t2, c2)               -> cmp_type t1 t2 && cmp_container c1 c2
+  | Tlist t1, Tlist t2                                     -> cmp_type t1 t2
+  | Toption t1, Toption t2                                 -> cmp_type t1 t2
+  | Ttuple l1, Ttuple l2                                   -> List.for_all2 cmp_type l1 l2
+  | Tset b1, Tset b2                                       -> cmp_type b1 b2
+  | Tmap (k1, v1), Tmap (k2, v2)                           -> cmp_type k1 k2 && cmp_type v1 v2
+  | Tbig_map (k1, v1), Tbig_map (k2, v2)                   -> cmp_type k1 k2 && cmp_type v1 v2
+  | Titerable_big_map (k1, v1), Titerable_big_map (k2, v2) -> cmp_type k1 k2 && cmp_type v1 v2
+  | Tor (l1, r1), Tor (l2, r2)                             -> cmp_type l1 l2 && cmp_type r1 r2
+  | Trecord i1, Trecord i2                                 -> cmp_lident i1 i2
+  | Tevent e1, Tevent e2                                   -> cmp_lident e1 e2
+  | Tlambda (a1, r1), Tlambda (a2, r2)                     -> cmp_type a1 a2 && cmp_type r1 r2
+  | Tunit, Tunit                                           -> true
+  | Tstorage, Tstorage                                     -> true
+  | Toperation, Toperation                                 -> true
+  | Tcontract t1, Tcontract t2                             -> cmp_type t1 t2
+  | Tprog t1, Tprog t2                                     -> cmp_type t1 t2
+  | Tvset (v1, t1), Tvset (v2, t2)                         -> cmp_vset v1 v2 && cmp_type t1 t2
+  | Ttrace t1, Ttrace t2                                   -> cmp_trtyp t1 t2
+  | Tticket t1, Tticket t2                                 -> cmp_type t1 t2
+  | Tsapling_state n1, Tsapling_state n2                   -> cmp_int n1 n2
+  | Tsapling_transaction n1, Tsapling_transaction n2       -> cmp_int n1 n2
   | _ -> false
 
 and cmp_type
@@ -1413,6 +1423,10 @@ let cmp_mterm_node
     | TKoperation x1, TKoperation x2                           -> cmp x1 x2
     | _ -> false
   in
+  let cmp_map_kind (lhs : map_kind) (rhs : map_kind) : bool =
+    match lhs, rhs with
+    | _ -> false
+  in
   try
     match term1, term2 with
     (* lambda *)
@@ -1428,7 +1442,7 @@ let cmp_mterm_node
     | Minstrmatchor (x1, lid1, le1, rid1, re1), Minstrmatchor (x2, lid2, le2, rid2, re2)       -> cmp x1 x2 && cmpi lid1 lid2 && cmp le1 le2 && cmpi rid1 rid2 && cmp re1 re2
     | Minstrmatchlist (x1, hid1, tid1, hte1, ee1), Minstrmatchlist (x2, hid2, tid2, hte2, ee2) -> cmp x1 x2 && cmpi hid1 hid2 && cmpi tid1 tid2 && cmp hte1 hte2 && cmp ee1 ee2
     | Mfor (i1, c1, b1, lbl1), Mfor (i2, c2, b2, lbl2)                                 -> cmp_for_ident cmpi i1 i2 && cmp_iter_container_kind c1 c2 && cmp b1 b2 && Option.cmp cmp_ident lbl1 lbl2
-    | Miter (i1, a1, b1, c1, lbl1), Miter (i2, a2, b2, c2, lbl2)                       -> cmpi i1 i2 && cmp a1 a2 && cmp b1 b2 && cmp c1 c2 && Option.cmp cmp_ident lbl1 lbl2
+    | Miter (i1, a1, b1, c1, lbl1, strict1), Miter (i2, a2, b2, c2, lbl2, strict2)     -> cmpi i1 i2 && cmp a1 a2 && cmp b1 b2 && cmp c1 c2 && Option.cmp cmp_ident lbl1 lbl2 && cmp_bool strict1 strict2
     | Mwhile (c1, b1, lbl1), Mwhile (c2, b2, lbl2)                                     -> cmp c1 c2 && cmp b1 b2 && Option.cmp cmp_ident lbl1 lbl2
     | Mseq is1, Mseq is2                                                               -> List.for_all2 cmp is1 is2
     | Mreturn x1, Mreturn x2                                                           -> cmp x1 x2
@@ -1490,7 +1504,7 @@ let cmp_mterm_node
     | Massets l1, Massets l2                                                           -> List.for_all2 cmp l1 l2
     | Mlitset l1, Mlitset l2                                                           -> List.for_all2 cmp l1 l2
     | Mlitlist l1, Mlitlist l2                                                         -> List.for_all2 cmp l1 l2
-    | Mlitmap (b1, l1), Mlitmap (b2, l2)                                               -> cmp_bool b1 b2 && List.for_all2 (fun (k1, v1) (k2, v2) -> (cmp k1 k2 && cmp v1 v2)) l1 l2
+    | Mlitmap (b1, l1), Mlitmap (b2, l2)                                               -> cmp_map_kind b1 b2 && List.for_all2 (fun (k1, v1) (k2, v2) -> (cmp k1 k2 && cmp v1 v2)) l1 l2
     | Mlitrecord l1, Mlitrecord l2                                                     -> List.for_all2 (fun (i1, v1) (i2, v2) -> (cmp_ident i1 i2 && cmp v1 v2)) l1 l2
     | Mlitevent l1, Mlitevent l2                                                       -> List.for_all2 (fun (i1, v1) (i2, v2) -> (cmp_ident i1 i2 && cmp v1 v2)) l1 l2
     | Mlambda (rt1, id1, at1, e1), Mlambda (rt2, id2, at2, e2)                         -> cmp_type rt1 rt2 && cmpi id1 id2 && cmp_type at1 at2 && cmp e1 e2
@@ -1570,18 +1584,18 @@ let cmp_mterm_node
     | Mlistinstrprepend (t1, ak1, a1), Mlistinstrprepend (t2, ak2, a2)                 -> cmp_type t1 t2 && cmp_assign_kind ak1 ak2 && cmp a1 a2
     | Mlistinstrconcat (t1, ak1, a1),  Mlistinstrconcat (t2, ak2, a2)                  -> cmp_type t1 t2 && cmp_assign_kind ak1 ak2 && cmp a1 a2
     (* map api expression *)
-    | Mmapput (tk1, tv1, c1, k1, v1), Mmapput (tk2, tv2, c2, k2, v2)                   -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2 && cmp v1 v2
-    | Mmapremove (tk1, tv1, c1, k1), Mmapremove (tk2, tv2, c2, k2)                     -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2
-    | Mmapupdate (tk1, tv1, c1, k1, v1), Mmapupdate (tk2, tv2, c2, k2, v2)             -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2 && cmp v1 v2
-    | Mmapget (tk1, tv1, c1, k1, an1), Mmapget (tk2, tv2, c2, k2, an2)                 -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2 && Option.cmp cmp_ident an1 an2
-    | Mmapgetopt (tk1, tv1, c1, k1), Mmapgetopt (tk2, tv2, c2, k2)                     -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2
-    | Mmapcontains (tk1, tv1, c1, k1), Mmapcontains (tk2, tv2, c2, k2)                 -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2
-    | Mmaplength (tk1, tv1, c1), Mmaplength (tk2, tv2, c2)                             -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2
-    | Mmapfold (t1, ik1, iv1, ia1, c1, a1, b1), Mmapfold (t2, ik2, iv2, ia2, c2, a2, b2) -> cmp_type t1 t2 && cmp_lident ik1 ik2 && cmp_lident iv1 iv2 && cmp_lident ia1 ia2 && cmp c1 c2 && cmp a1 a2 && cmp b1 b2
+    | Mmapput (mk1, tk1, tv1, c1, k1, v1), Mmapput (mk2, tk2, tv2, c2, k2, v2)                     -> cmp_map_kind mk1 mk2 && cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2 && cmp v1 v2
+    | Mmapremove (mk1, tk1, tv1, c1, k1), Mmapremove (mk2, tk2, tv2, c2, k2)                       -> cmp_map_kind mk1 mk2 && cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2
+    | Mmapupdate (mk1, tk1, tv1, c1, k1, v1), Mmapupdate (mk2, tk2, tv2, c2, k2, v2)               -> cmp_map_kind mk1 mk2 && cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2 && cmp v1 v2
+    | Mmapget (mk1, tk1, tv1, c1, k1, an1), Mmapget (mk2, tk2, tv2, c2, k2, an2)                   -> cmp_map_kind mk1 mk2 && cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2 && Option.cmp cmp_ident an1 an2
+    | Mmapgetopt (mk1, tk1, tv1, c1, k1), Mmapgetopt (mk2, tk2, tv2, c2, k2)                       -> cmp_map_kind mk1 mk2 && cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2
+    | Mmapcontains (mk1, tk1, tv1, c1, k1), Mmapcontains (mk2, tk2, tv2, c2, k2)                   -> cmp_map_kind mk1 mk2 && cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2
+    | Mmaplength (mk1, tk1, tv1, c1), Mmaplength (mk2, tk2, tv2, c2)                               -> cmp_map_kind mk1 mk2 && cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2
+    | Mmapfold (mk1, t1, ik1, iv1, ia1, c1, a1, b1), Mmapfold (mk2, t2, ik2, iv2, ia2, c2, a2, b2) -> cmp_map_kind mk1 mk2 && cmp_type t1 t2 && cmp_lident ik1 ik2 && cmp_lident iv1 iv2 && cmp_lident ia1 ia2 && cmp c1 c2 && cmp a1 a2 && cmp b1 b2
     (* map api instruction *)
-    | Mmapinstrput (tk1, tv1, ak1, k1, v1), Mmapinstrput (tk2, tv2, ak2, k2, v2)       -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp_assign_kind ak1 ak2 && cmp k1 k2 && cmp v1 v2
-    | Mmapinstrremove (tk1, tv1, ak1, k1), Mmapinstrremove (tk2, tv2, ak2, k2)         -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp_assign_kind ak1 ak2 && cmp k1 k2
-    | Mmapinstrupdate (tk1, tv1, ak1, k1, v1), Mmapinstrupdate (tk2, tv2, ak2, k2, v2) -> cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp_assign_kind ak1 ak2 && cmp k1 k2 && cmp v1 v2
+    | Mmapinstrput (mk1, tk1, tv1, ak1, k1, v1), Mmapinstrput (mk2, tk2, tv2, ak2, k2, v2)         -> cmp_map_kind mk1 mk2 && cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp_assign_kind ak1 ak2 && cmp k1 k2 && cmp v1 v2
+    | Mmapinstrremove (mk1, tk1, tv1, ak1, k1), Mmapinstrremove (mk2, tk2, tv2, ak2, k2)           -> cmp_map_kind mk1 mk2 && cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp_assign_kind ak1 ak2 && cmp k1 k2
+    | Mmapinstrupdate (mk1, tk1, tv1, ak1, k1, v1), Mmapinstrupdate (mk2, tk2, tv2, ak2, k2, v2)   -> cmp_map_kind mk1 mk2 && cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp_assign_kind ak1 ak2 && cmp k1 k2 && cmp v1 v2
     (* builtin functions *)
     | Mmin (l1, r1), Mmin (l2, r2)                                                     -> cmp l1 l2 && cmp r1 r2
     | Mmax (l1, r1), Mmax (l2, r2)                                                     -> cmp l1 l2 && cmp r1 r2
@@ -1773,30 +1787,32 @@ let cmp_api_verif (v1 : api_verif) (v2 : api_verif) : bool =
 (* -------------------------------------------------------------------- *)
 let map_ptyp (f : type_ -> type_) (nt : ntype) : ntype =
   match nt with
-  | Tasset id         -> Tasset id
-  | Tenum id          -> Tenum id
-  | Tstate            -> Tstate
-  | Tbuiltin b        -> Tbuiltin b
-  | Tcontainer (t, c) -> Tcontainer (f t, c)
-  | Tlist t           -> Tlist (f t)
-  | Toption t         -> Toption (f t)
-  | Ttuple l          -> Ttuple (List.map f l)
-  | Tset k            -> Tset k
-  | Tmap (b, k, v)    -> Tmap (b, k, f v)
-  | Tor (l, r)        -> Tor (f l, f r)
-  | Trecord id        -> Trecord id
-  | Tevent id         -> Tevent id
-  | Tlambda (a, r)    -> Tlambda (f a, f r)
-  | Tunit             -> Tunit
-  | Tstorage          -> Tstorage
-  | Toperation        -> Toperation
-  | Tcontract t       -> Tcontract (f t)
-  | Tticket t         -> Tticket (f t)
-  | Tsapling_state n  -> Tsapling_state n
-  | Tsapling_transaction n -> Tsapling_transaction n
-  | Tprog t           -> Tprog (f t)
-  | Tvset (v, t)      -> Tvset (v, t)
-  | Ttrace t          -> Ttrace t
+  | Tasset id                -> Tasset id
+  | Tenum id                 -> Tenum id
+  | Tstate                   -> Tstate
+  | Tbuiltin b               -> Tbuiltin b
+  | Tcontainer (t, c)        -> Tcontainer (f t, c)
+  | Tlist t                  -> Tlist (f t)
+  | Toption t                -> Toption (f t)
+  | Ttuple l                 -> Ttuple (List.map f l)
+  | Tset k                   -> Tset k
+  | Tmap (k, v)              -> Tmap (f k, f v)
+  | Tbig_map (k, v)          -> Tbig_map (f k, f v)
+  | Titerable_big_map (k, v) -> Titerable_big_map (f k, f v)
+  | Tor (l, r)               -> Tor (f l, f r)
+  | Trecord id               -> Trecord id
+  | Tevent id                -> Tevent id
+  | Tlambda (a, r)           -> Tlambda (f a, f r)
+  | Tunit                    -> Tunit
+  | Tstorage                 -> Tstorage
+  | Toperation               -> Toperation
+  | Tcontract t              -> Tcontract (f t)
+  | Tticket t                -> Tticket (f t)
+  | Tsapling_state n         -> Tsapling_state n
+  | Tsapling_transaction n   -> Tsapling_transaction n
+  | Tprog t                  -> Tprog (f t)
+  | Tvset (v, t)             -> Tvset (v, f t)
+  | Ttrace t                 -> Ttrace t
 
 let map_type (f : type_ -> type_) (t : type_) : type_ =
   mktype ?annot:(get_atype t) (map_ptyp f (get_ntype t))
@@ -1874,7 +1890,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Minstrmatchor (x, lid, le, rid, re)    -> Minstrmatchor     (f x, g lid, f le, g rid, f re)
   | Minstrmatchlist (x, hid, tid, hte, ee) -> Minstrmatchlist   (f x, g hid, g tid, f hte, f ee)
   | Mfor (i, c, b, lbl)            -> Mfor (map_for_ident g i, map_iter_container_kind fi f c, f b, lbl)
-  | Miter (i, a, b, c, lbl)        -> Miter (g i, f a, f b, f c, lbl)
+  | Miter (i, a, b, c, lbl, strict)-> Miter (g i, f a, f b, f c, lbl, strict)
   | Mwhile (c, b, lbl)             -> Mwhile (f c, f b, lbl)
   | Mseq is                        -> Mseq (List.map f is)
   | Mreturn x                      -> Mreturn (f x)
@@ -2016,18 +2032,18 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mlistinstrprepend (t, ak, a)   -> Mlistinstrprepend (ft t, map_assign_kind fi g f ak, f a)
   | Mlistinstrconcat (t, ak, a)    -> Mlistinstrconcat (ft t, map_assign_kind fi g f ak, f a)
   (* map api expression *)
-  | Mmapput (tk, tv, c, k, v)      -> Mmapput (ft tk, ft tv, f c, f k, f v)
-  | Mmapremove (tk, tv, c, k)      -> Mmapremove (ft tk, ft tv, f c, f k)
-  | Mmapupdate (tk, tv, c, k, v)   -> Mmapupdate (ft tk, ft tv, f c, f k, f v)
-  | Mmapget (tk, tv, c, k, an)     -> Mmapget (ft tk, ft tv, f c, f k, Option.map fi an)
-  | Mmapgetopt (tk, tv, c, k)      -> Mmapgetopt (ft tk, ft tv, f c, f k)
-  | Mmapcontains (tk, tv, c, k)    -> Mmapcontains (ft tk, ft tv, f c, f k)
-  | Mmaplength (tk, tv, c)         -> Mmaplength (ft tk, ft tv, f c)
-  | Mmapfold (t, ik, iv, ia, c, a, b) -> Mmapfold (ft t, g ik, g iv, g ia, f c, f a, f b)
+  | Mmapput (mk, tk, tv, c, k, v)      -> Mmapput (mk, ft tk, ft tv, f c, f k, f v)
+  | Mmapremove (mk, tk, tv, c, k)      -> Mmapremove (mk, ft tk, ft tv, f c, f k)
+  | Mmapupdate (mk, tk, tv, c, k, v)   -> Mmapupdate (mk, ft tk, ft tv, f c, f k, f v)
+  | Mmapget (mk, tk, tv, c, k, an)     -> Mmapget (mk, ft tk, ft tv, f c, f k, Option.map fi an)
+  | Mmapgetopt (mk, tk, tv, c, k)      -> Mmapgetopt (mk, ft tk, ft tv, f c, f k)
+  | Mmapcontains (mk, tk, tv, c, k)    -> Mmapcontains (mk, ft tk, ft tv, f c, f k)
+  | Mmaplength (mk, tk, tv, c)         -> Mmaplength (mk, ft tk, ft tv, f c)
+  | Mmapfold (mk, t, ik, iv, ia, c, a, b) -> Mmapfold (mk, ft t, g ik, g iv, g ia, f c, f a, f b)
   (* map api instruction *)
-  | Mmapinstrput (tk, tv, ak, k, v)    -> Mmapinstrput (ft tk, ft tv, map_assign_kind fi g f ak, f k, f v)
-  | Mmapinstrremove (tk, tv, ak, k)    -> Mmapinstrremove (ft tk, ft tv, map_assign_kind fi g f ak, f k)
-  | Mmapinstrupdate (tk, tv, ak, k, v) -> Mmapinstrupdate (ft tk, ft tv, map_assign_kind fi g f ak, f k, f v)
+  | Mmapinstrput (mk, tk, tv, ak, k, v)    -> Mmapinstrput (mk, ft tk, ft tv, map_assign_kind fi g f ak, f k, f v)
+  | Mmapinstrremove (mk, tk, tv, ak, k)    -> Mmapinstrremove (mk, ft tk, ft tv, map_assign_kind fi g f ak, f k)
+  | Mmapinstrupdate (mk, tk, tv, ak, k, v) -> Mmapinstrupdate (mk, ft tk, ft tv, map_assign_kind fi g f ak, f k, f v)
   (* builtin functions *)
   | Mmin (l, r)                    -> Mmin (f l, f r)
   | Mmax (l, r)                    -> Mmax (f l, f r)
@@ -2317,7 +2333,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Minstrmatchor (x, _, le, _, re)       -> f (f (f accu x) le) re
   | Minstrmatchlist (x, _, _, hte, ee)    -> f (f (f accu x) hte) ee
   | Mfor (_, c, b, _)                     -> f (fold_iter_container_kind f accu c) b
-  | Miter (_, a, b, c, _)                 -> f (f (f accu a) b) c
+  | Miter (_, a, b, c, _, _)              -> f (f (f accu a) b) c
   | Mwhile (c, b, _)                      -> f (f accu c) b
   | Mseq is                               -> List.fold_left f accu is
   | Mreturn x                             -> f accu x
@@ -2459,18 +2475,18 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mlistinstrprepend (_, _, a)           -> f accu a
   | Mlistinstrconcat (_, _, a)            -> f accu a
   (* map api expression *)
-  | Mmapput (_, _, c, k, v)               -> f (f (f accu c) k) v
-  | Mmapremove (_, _, c, k)               -> f (f accu c) k
-  | Mmapupdate (_, _, c, k, v)            -> f (f (f accu c) k) v
-  | Mmapget (_, _, c, k, _)               -> f (f accu c) k
-  | Mmapgetopt (_, _, c, k)               -> f (f accu c) k
-  | Mmapcontains (_, _, c, k)             -> f (f accu c) k
-  | Mmaplength (_, _, c)                  -> f accu c
-  | Mmapfold (_, _, _, _, c, a, b)        -> f (f (f accu c) a) b
+  | Mmapput (_, _, _, c, k, v)            -> f (f (f accu c) k) v
+  | Mmapremove (_, _, _, c, k)            -> f (f accu c) k
+  | Mmapupdate (_, _, _, c, k, v)         -> f (f (f accu c) k) v
+  | Mmapget (_, _, _, c, k, _)            -> f (f accu c) k
+  | Mmapgetopt (_, _, _, c, k)            -> f (f accu c) k
+  | Mmapcontains (_, _, _, c, k)          -> f (f accu c) k
+  | Mmaplength (_, _, _, c)               -> f accu c
+  | Mmapfold (_, _, _, _, _, c, a, b)     -> f (f (f accu c) a) b
   (* map api instruction *)
-  | Mmapinstrput (_, _, _, k, v)          -> f (f accu k) v
-  | Mmapinstrremove (_, _, _, k)          -> f accu k
-  | Mmapinstrupdate (_, _, _, k, v)       -> f (f accu k) v
+  | Mmapinstrput (_, _, _, _, k, v)       -> f (f accu k) v
+  | Mmapinstrremove (_, _, _, _, k)       -> f accu k
+  | Mmapinstrupdate (_, _, _, _, k, v)    -> f (f accu k) v
   (* builtin functions *)
   | Mmax (l, r)                           -> f (f accu l) r
   | Mmin (l, r)                           -> f (f accu l) r
@@ -2734,11 +2750,11 @@ let fold_map_term
     let be, ba = f ca b in
     g (Mfor (fi, ce, be, lbl)), ba
 
-  | Miter (i, a, b, c, lbl) ->
+  | Miter (i, a, b, c, lbl, strict) ->
     let ae, aa = f accu a in
     let be, ba = f aa b in
     let ce, ca = f ba c in
-    g (Miter (i, ae, be, ce, lbl)), ca
+    g (Miter (i, ae, be, ce, lbl, strict)), ca
 
   | Mwhile (c, b, lbl) ->
     let ce, ca = f accu c in
@@ -3401,67 +3417,67 @@ let fold_map_term
 
   (* map api expression *)
 
-  | Mmapput (tk, tv, c, k, v) ->
+  | Mmapput (mk, tk, tv, c, k, v) ->
     let ce, ca = f accu c in
     let ke, ka = f ca k in
     let ve, va = f ka v in
-    g (Mmapput (tk, tv, ce, ke, ve)), va
+    g (Mmapput (mk, tk, tv, ce, ke, ve)), va
 
-  | Mmapremove (tk, tv, c, k) ->
+  | Mmapremove (mk, tk, tv, c, k) ->
     let ce, ca = f accu c in
     let ke, ka = f ca k in
-    g (Mmapremove (tk, tv, ce, ke)), ka
+    g (Mmapremove (mk, tk, tv, ce, ke)), ka
 
-  | Mmapupdate (tk, tv, c, k, v) ->
+  | Mmapupdate (mk, tk, tv, c, k, v) ->
     let ce, ca = f accu c in
     let ke, ka = f ca k in
     let ve, va = f ka v in
-    g (Mmapupdate (tk, tv, ce, ke, ve)), va
+    g (Mmapupdate (mk, tk, tv, ce, ke, ve)), va
 
-  | Mmapget (tk, tv, c, k, an) ->
+  | Mmapget (mk, tk, tv, c, k, an) ->
     let ce, ca = f accu c in
     let ke, ka = f ca k in
-    g (Mmapget (tk, tv, ce, ke, an)), ka
+    g (Mmapget (mk, tk, tv, ce, ke, an)), ka
 
-  | Mmapgetopt (tk, tv, c, k) ->
+  | Mmapgetopt (mk, tk, tv, c, k) ->
     let ce, ca = f accu c in
     let ke, ka = f ca k in
-    g (Mmapgetopt (tk, tv, ce, ke)), ka
+    g (Mmapgetopt (mk, tk, tv, ce, ke)), ka
 
-  | Mmapcontains (tk, tv, c, k) ->
+  | Mmapcontains (mk, tk, tv, c, k) ->
     let ce, ca = f accu c in
     let ke, ka = f ca k in
-    g (Mmapcontains (tk, tv, ce, ke)), ka
+    g (Mmapcontains (mk, tk, tv, ce, ke)), ka
 
-  | Mmaplength (tk, tv, c) ->
+  | Mmaplength (mk, tk, tv, c) ->
     let ce, ca = f accu c in
-    g (Mmaplength (tk, tv, ce)), ca
+    g (Mmaplength (mk, tk, tv, ce)), ca
 
-  | Mmapfold (t, ik, iv, ia, c, a, b) ->
+  | Mmapfold (mk, t, ik, iv, ia, c, a, b) ->
     let ce, ca = f accu c in
     let ae, aa = f ca a in
     let be, ba = f aa b in
-    g (Mmapfold (t, ik, iv, ia, ce, ae, be)), ba
+    g (Mmapfold (mk, t, ik, iv, ia, ce, ae, be)), ba
 
 
   (* map api instruction *)
 
-  | Mmapinstrput (tk, tv, ak, k, v) ->
+  | Mmapinstrput (mk, tk, tv, ak, k, v) ->
     let ake, aka = fold_map_assign_kind f accu ak in
     let ke, ka = f aka k in
     let ve, va = f ka v in
-    g (Mmapinstrput (tk, tv, ake, ke, ve)), va
+    g (Mmapinstrput (mk, tk, tv, ake, ke, ve)), va
 
-  | Mmapinstrremove (tk, tv, ak, k) ->
+  | Mmapinstrremove (mk, tk, tv, ak, k) ->
     let ake, aka = fold_map_assign_kind f accu ak in
     let ke, ka = f aka k in
-    g (Mmapinstrremove (tk, tv, ake, ke)), ka
+    g (Mmapinstrremove (mk, tk, tv, ake, ke)), ka
 
-  | Mmapinstrupdate (tk, tv, ak, k, v) ->
+  | Mmapinstrupdate (mk, tk, tv, ak, k, v) ->
     let ake, aka = fold_map_assign_kind f accu ak in
     let ke, ka = f aka k in
     let ve, va = f ka v in
-    g (Mmapinstrupdate (tk, tv, ake, ke, ve)), va
+    g (Mmapinstrupdate (mk, tk, tv, ake, ke, ve)), va
 
 
   (* builtin functions *)
@@ -4305,30 +4321,32 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
   let rec for_type (t : type_) : type_ =
     let for_ntype (nt : ntype) : ntype =
       match nt with
-      | Tasset id         -> Tasset (g KIassetname id)
-      | Tenum id          -> Tenum (g KIenumname id)
-      | Tstate            -> nt
-      | Tbuiltin _        -> nt
-      | Tcontainer (a, c) -> Tcontainer (for_type a, c)
-      | Tlist a           -> Tlist (for_type a)
-      | Toption a         -> Toption (for_type a)
-      | Ttuple l          -> Ttuple (List.map for_type l)
-      | Tset k            -> Tset k
-      | Tmap (b, k, v)    -> Tmap (b, k, for_type v)
-      | Tor (l, r)        -> Tor (for_type l, for_type r)
-      | Trecord id        -> Trecord (g KIrecordname id)
-      | Tevent id         -> Tevent (g KIrecordname id)
-      | Tlambda (a, r)    -> Tlambda (for_type a, for_type r)
-      | Tunit             -> nt
-      | Tstorage          -> nt
-      | Toperation        -> nt
-      | Tcontract t       -> Tcontract (for_type t)
-      | Tticket t         -> Tticket (for_type t)
-      | Tsapling_state _  -> nt
-      | Tsapling_transaction _ -> nt
-      | Tprog a           -> Tprog (for_type a)
-      | Tvset (v, a)      -> Tvset (v, for_type a)
-      | Ttrace _          -> nt
+      | Tasset id                -> Tasset (g KIassetname id)
+      | Tenum id                 -> Tenum (g KIenumname id)
+      | Tstate                   -> nt
+      | Tbuiltin _               -> nt
+      | Tcontainer (a, c)        -> Tcontainer (for_type a, c)
+      | Tlist a                  -> Tlist (for_type a)
+      | Toption a                -> Toption (for_type a)
+      | Ttuple l                 -> Ttuple (List.map for_type l)
+      | Tset k                   -> Tset k
+      | Tmap (k, v)              -> Tmap (k, for_type v)
+      | Tbig_map (k, v)          -> Tbig_map (k, for_type v)
+      | Titerable_big_map (k, v) -> Titerable_big_map (k, for_type v)
+      | Tor (l, r)               -> Tor (for_type l, for_type r)
+      | Trecord id               -> Trecord (g KIrecordname id)
+      | Tevent id                -> Tevent (g KIrecordname id)
+      | Tlambda (a, r)           -> Tlambda (for_type a, for_type r)
+      | Tunit                    -> nt
+      | Tstorage                 -> nt
+      | Toperation               -> nt
+      | Tcontract t              -> Tcontract (for_type t)
+      | Tticket t                -> Tticket (for_type t)
+      | Tsapling_state _         -> nt
+      | Tsapling_transaction _   -> nt
+      | Tprog a                  -> Tprog (for_type a)
+      | Tvset (v, a)             -> Tvset (v, for_type a)
+      | Ttrace _                 -> nt
     in
     mktype ?annot:(get_atype t) (for_ntype (get_ntype t))
   in
@@ -4958,7 +4976,7 @@ end = struct
       begin
         let l, an = deloc an in
         let idparam = mkloc l (an ^ "_values") in
-        Some (mk_mterm (Mvar(idparam, Vparam, t, d) ) (mktype (Tmap(false, tint, tasset (dumloc "myasset")))))
+        Some (mk_mterm (Mvar(idparam, Vparam, t, d) ) (mktype (Tmap(tint, tasset (dumloc "myasset")))))
       end
     | _ -> None
 
@@ -5762,15 +5780,17 @@ end = struct
   let get_all_set_types (model : model) : type_ list =
     let rec for_type accu t =
       match get_ntype t with
-      | Tset _         -> add_type accu t
-      | Tlist   t      -> for_type accu t
-      | Toption t      -> for_type accu t
-      | Ttuple  ts     -> List.fold_left (for_type) accu ts
-      | Tmap (_, _, t) -> for_type accu t
-      | Tcontract t    -> for_type accu t
-      | Tticket t      -> for_type accu t
-      | Tprog t        -> for_type accu t
-      | Tvset (_, t)   -> for_type accu t
+      | Tset _                   -> add_type accu t
+      | Tlist   t                -> for_type accu t
+      | Toption t                -> for_type accu t
+      | Ttuple  ts               -> List.fold_left (for_type) accu ts
+      | Tmap (_, t)              -> for_type accu t
+      | Tbig_map (_, t)          -> for_type accu t
+      | Titerable_big_map (_, t) -> for_type accu t
+      | Tcontract t              -> for_type accu t
+      | Tticket t                -> for_type accu t
+      | Tprog t                  -> for_type accu t
+      | Tvset (_, t)             -> for_type accu t
       | _ -> accu
     in
     get_all_gen_type for_type model
@@ -5778,14 +5798,16 @@ end = struct
   let get_all_list_types (model : model) : type_ list =
     let rec for_type accu t =
       match get_ntype t with
-      | Tlist   tv     -> add_type (for_type accu tv) t
-      | Toption t      -> for_type accu t
-      | Ttuple  ts     -> List.fold_left (for_type) accu ts
-      | Tmap (_, _, t) -> for_type accu t
-      | Tcontract t    -> for_type accu t
-      | Tticket t      -> for_type accu t
-      | Tprog t        -> for_type accu t
-      | Tvset (_, t)   -> for_type accu t
+      | Tlist   tv               -> add_type (for_type accu tv) t
+      | Toption t                -> for_type accu t
+      | Ttuple  ts               -> List.fold_left (for_type) accu ts
+      | Tmap (_, t)              -> for_type accu t
+      | Tbig_map (_, t)          -> for_type accu t
+      | Titerable_big_map (_, t) -> for_type accu t
+      | Tcontract t              -> for_type accu t
+      | Tticket t                -> for_type accu t
+      | Tprog t                  -> for_type accu t
+      | Tvset (_, t)             -> for_type accu t
       | _ -> accu
     in
     get_all_gen_type for_type model
@@ -5793,14 +5815,16 @@ end = struct
   let get_all_map_types (model : model) : type_ list =
     let rec for_type accu t =
       match get_ntype t with
-      | Tlist     t          -> for_type accu t
-      | Toption   t          -> for_type accu t
-      | Ttuple    ts         -> List.fold_left (for_type) accu ts
-      | Tmap      (_, _, tv) -> add_type (for_type accu tv) t
-      | Tcontract t          -> for_type accu t
-      | Tticket t            -> for_type accu t
-      | Tprog     t          -> for_type accu t
-      | Tvset     (_, t)     -> for_type accu t
+      | Tlist     t               -> for_type accu t
+      | Toption   t               -> for_type accu t
+      | Ttuple    ts              -> List.fold_left (for_type) accu ts
+      | Tmap      (_, tv)         -> add_type (for_type accu tv) t
+      | Tbig_map  (_, tv)         -> add_type (for_type accu tv) t
+      | Titerable_big_map (_, tv) -> add_type (for_type accu tv) t
+      | Tcontract t               -> for_type accu t
+      | Tticket t                 -> for_type accu t
+      | Tprog     t               -> for_type accu t
+      | Tvset     (_, t)          -> for_type accu t
       | _ -> accu
     in
     get_all_gen_type for_type model
