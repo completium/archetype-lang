@@ -5746,65 +5746,54 @@ let process_event (model : model) : model =
 let remove_iterable_big_map (model : model) : model =
   let get_index_id x = "_" ^ x ^ "_index" in
   let get_counter_id x = "_" ^ x ^ "_counter" in
-  let map_decl x =
+  let process_type (t : type_) (id : lident option) : type_ =
+    match t with
+    | (Titerable_big_map (kt, vt), annot) ->
+      let id =
+        match Option.map unloc id, annot with
+        | Some id, _ -> id
+        | _, Some annot -> unloc annot
+        | _ -> assert false
+      in
+
+      let content = mktype (Tbig_map (kt, ttuple [tnat; vt])) ~annot:(dumloc "%content") in
+      let index   = mktype (Tbig_map (tnat, kt)) ~annot:(dumloc "%index") in
+      let counter = mktype (Tbuiltin Bnat)   ~annot:(dumloc "%counter") in
+      (Ttuple [content; index; counter], Some (dumloc id))
+    | _ -> t
+  in
+  let process_mterm (input : mterm) : mterm =
+    match input with
+    | { node = Mlitmap (MKIterableBigMap, original_values); type_ = (Titerable_big_map (kt, vt), _); _ } ->
+      let content_type = tbig_map kt (ttuple [tnat; vt]) in
+      let index_type   = tbig_map tnat kt in
+      let content_value = mk_mterm (Mlitmap (MKBigMap, (List.mapi (fun i (k, v) -> (k, mk_tuple[mk_nat (i + 1); v]))) original_values)) content_type in
+      let index_value   = mk_mterm (Mlitmap (MKBigMap, (List.mapi (fun i (k, _) -> (mk_nat (i + 1), k))               original_values))) index_type in
+      let counter_value = mk_nat (List.length original_values) in
+      mk_tuple [content_value; index_value; counter_value]
+    | { type_ = (Titerable_big_map (_, _), _); _ } ->
+      { input with type_ = process_type input.type_ None }
+    | _ -> input
+  in
+  let map_decl (x : decl_node) : decl_node =
     match x with
     | Dvar dvar -> begin
         match dvar.type_ with
-        | (Titerable_big_map (k, v), _) -> begin
-            let loc = dvar.loc in
-            let name = unloc dvar.name in
-            let default_value_content =
-              match dvar.default with
-              | Some { node = Mlitmap (_, d); _} -> d
-              | _ -> []
-            in
-            let length_default_value_content = List.length default_value_content in
-
-            let bm =
-              let tbm = tbig_map k (ttuple [tnat; v]) in
-              let content = List.mapi (fun i (k, v) -> (k, mk_tuple[mk_nat (i + 1); v])) default_value_content in
-              let d = mk_mterm (Mlitmap (MKBigMap, content)) tbm in
-              Dvar { dvar with
-                     type_ = tbm;
-                     original_type = tbm;
-                     default = Some d;
-                   }
-            in
-            let bm_index =
-              let tbm = tbig_map tnat k in
-              let content = List.mapi (fun i (k, _) -> (mk_nat (i + 1), k)) default_value_content in
-              let d = mk_mterm (Mlitmap (MKBigMap, content)) tbm in
-              Dvar {
-                name = dumloc (get_index_id name);
-                type_ = tbm;
-                original_type = tbm;
-                kind = VKvariable;
-                default = Some d;
-                invariants = [];
-                loc = loc;
-              }
-            in
-            let counter =
-              Dvar {
-                name = dumloc (get_counter_id name);
-                type_ = tnat;
-                original_type = tnat;
-                kind = VKvariable;
-                default = Some (mk_nat length_default_value_content);
-                invariants = [];
-                loc = loc;
-              }
-            in
-
-            [bm; bm_index; counter]
+        | (Titerable_big_map (_k, _v), _) -> begin
+            (* let loc = dvar.loc in *)
+            let name = dvar.name in
+            Dvar { dvar with
+                   type_ = process_type dvar.type_ (Some name);
+                   default = Option.map process_mterm dvar.default;
+                 }
           end
-        | _ -> [x]
+        | _ -> x
       end
-    | _ -> [x]
+    | _ -> x
   in
   let model =
     { model with
-      decls = List.map map_decl model.decls |> List.flatten
+      decls = List.map map_decl model.decls
     }
   in
   let is_same_map id (mt : mterm) : bool =
@@ -5926,8 +5915,6 @@ let remove_iterable_big_map (model : model) : model =
         in
         matchinstr
       end
-
-    | Mmapinstrupdate (MKIterableBigMap, _, _, _, _, _), _ -> mt (* TODO *)
 
     (* expression *)
     | Mmapget (MKIterableBigMap, kt, vt, map, k, io), _ ->
