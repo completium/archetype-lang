@@ -5744,8 +5744,6 @@ let process_event (model : model) : model =
   map_mterm_model aux model
 
 let remove_iterable_big_map (model : model) : model =
-  let get_index_id x = "_" ^ x ^ "_index" in
-  let get_counter_id x = "_" ^ x ^ "_counter" in
   let process_type ?(id : lident option) (t : type_) : type_ =
     match t with
     | (Titerable_big_map (kt, vt), annot) ->
@@ -5798,17 +5796,12 @@ let remove_iterable_big_map (model : model) : model =
       decls = List.map map_decl model.decls
     }
   in
-  let is_same_map id (mt : mterm) : bool =
-    match mt.node with
-    | Mvar (var_id, Vstorevar, Tnone, Dnone) -> String.equal (unloc var_id) (unloc id)
-    | _ -> false
-  in
   let rec aux ctx (mt : mterm) =
     match mt.node, mt.type_ with
     (* instruction *)
-    | Massign (ValueAssign, ((Titerable_big_map (_, _)), _), ((Avar id_map | Avarstore id_map) as assign_value),
+    | Massign (ValueAssign, ((Titerable_big_map (_, _)), _), ((Avar _ | Avarstore _) as assign_value),
                { node = (Mmapput (MKIterableBigMap, kt, vt, map, key, value));
-                 type_ = ((Titerable_big_map (_, _)), _); }), _ when is_same_map id_map map -> begin
+                 type_ = ((Titerable_big_map (_, _)), _); }), _ -> begin
         let ibm_id = dumloc "_ibm" in
         let ibm_type : type_ = process_type map.type_ in
         let ibm_value = mk_mvar ibm_id ibm_type in
@@ -5864,18 +5857,23 @@ let remove_iterable_big_map (model : model) : model =
         |> (fun x -> mk_mterm (Mletin ([ibm_id], ibm_init, Some ibm_type, x, None)) tunit)
       end
 
-    | Massign (ValueAssign, ((Titerable_big_map (_, _)), _), (Avar id_map),
+    | Massign (ValueAssign, ((Titerable_big_map (_, _)), _), ((Avar _ | Avarstore _) as assign_value),
                { node = (Mmapremove (MKIterableBigMap, kt, vt, map, key));
-                 type_ = ((Titerable_big_map (_, _)), _); }), _ when is_same_map id_map map -> begin
-        let vvt = ttuple [tnat; vt] in
-        let tbm = (Tbig_map(kt, vvt), None) in
+                 type_ = ((Titerable_big_map (_, _)), _); }), _ -> begin
+        let map = aux ctx map in
 
-        let map_content = mk_svar id_map tbm in
-        let id_bmi = (dumloc (get_index_id (unloc id_map))) in
-        let tbmi = (tbig_map tnat kt) in
-        let map_index : mterm  = mk_svar id_bmi tbmi in
-        let counter_id_loced = dumloc (get_counter_id (unloc id_map)) in
-        let map_counter : mterm = mk_svar counter_id_loced tnat in
+        let ibm_id = dumloc "_ibm" in
+        let ibm_type : type_ = process_type map.type_ in
+        let ibm_value = mk_mvar ibm_id ibm_type in
+        let ibm_init : mterm = aux ctx map in
+
+        let vvt  = ttuple [tnat; vt] in
+        let tbm  = tbig_map kt  vvt in
+        let tbmi = tbig_map tnat kt in
+
+        let map_content : mterm = mk_tupleaccess 0 ibm_value in
+        let map_index   : mterm = mk_tupleaccess 1 ibm_value in
+        let map_counter : mterm = mk_tupleaccess 2 ibm_value in
 
         let key = aux ctx key in
 
@@ -5900,22 +5898,27 @@ let remove_iterable_big_map (model : model) : model =
 
             let remove_content =
               let rem = mk_mterm (Mmapremove (MKBigMap, kt, vvt, map_content, key)) tbm in
-              mk_mterm (Massign (ValueAssign, tbm, (Avar id_map), rem)) tunit
+              mk_mterm (Massign (ValueAssign, tbm, (Avartuple (ibm_id, 1)), rem)) tunit
             in
             let update_last_value =
               let put = mk_mterm (Mmapput (MKBigMap, kt, vvt, map_content, last_key_var, mk_tuple [idx_var; mk_tupleaccess 1 last_value_var])) tbm in
-              mk_mterm (Massign (ValueAssign, tbm, (Avar id_map), put)) tunit
+              mk_mterm (Massign (ValueAssign, tbm, (Avartuple (ibm_id, 1)), put)) tunit
             in
             let remove_index_counter =
               let rem = mk_mterm (Mmapremove (MKBigMap, tnat, kt, map_index, map_counter)) tbm in
-              mk_mterm (Massign (ValueAssign, tbmi, (Avar id_bmi), rem)) tunit
+              mk_mterm (Massign (ValueAssign, tbmi, (Avartuple (ibm_id, 3)), rem)) tunit
             in
             let put_index =
               let put = mk_mterm (Mmapput (MKBigMap, tnat, kt, map_index, idx_var, last_key_var)) tbm in
-              mk_mterm (Massign (ValueAssign, tbmi, (Avar id_bmi), put)) tunit
+              mk_mterm (Massign (ValueAssign, tbmi, (Avartuple (ibm_id, 3)), put)) tunit
             in
-            let dec = mk_mterm (Massign (ValueAssign, tnat, (Avar counter_id_loced), mk_mterm (Msubnat (map_counter, mk_nat 1)) tnat)) tunit in
-            seq [remove_content; put_index; update_last_value; remove_index_counter; dec]
+            let dec :mterm =
+              mk_mterm (Massign (ValueAssign, tnat, (Avartuple (ibm_id, 4)), mk_mterm (Msubnat (map_counter, mk_nat 1)) tnat)) tunit
+            in
+            let instr_assign : mterm =
+              mk_mterm (Massign (ValueAssign, ibm_value.type_, assign_value, ibm_value)) tunit
+            in
+            seq [remove_content; put_index; update_last_value; remove_index_counter; dec; instr_assign]
             |> (fun x -> mk_mterm (Mletin ([last_value_id_loced], mk_mterm (Mmapget(MKBigMap, kt, vvt, map_content, last_key_var, None)) vvt, Some vvt, x, None)) tunit)
             |> (fun x -> mk_mterm (Mletin ([last_key_id_loced], mk_mterm (Mmapget(MKBigMap, tnat, kt, map_index, map_counter, None)) kt, Some kt, x, None)) tunit)
             |> (fun x -> mk_mterm (Mletin ([idx_id_loced], mk_tupleaccess 0 tmp_var, Some tnat, x, None)) tunit)
@@ -5924,6 +5927,7 @@ let remove_iterable_big_map (model : model) : model =
           mk_mterm (Minstrmatchoption (getopt, tmp_id_loced, some_value, none_value)) tunit
         in
         matchinstr
+        |> (fun x -> mk_mterm (Mletin ([ibm_id], ibm_init, Some ibm_type, x, None)) tunit)
       end
 
     (* expression *)
@@ -5972,8 +5976,6 @@ let remove_iterable_big_map (model : model) : model =
         mk_mterm (Miter (idx_id, bound_min, bound_max, letin, lbl, true)) tunit
         |> (fun x -> mk_mterm (Mletin ([ibm_id], ibm_init, Some ibm_type, x, None)) tunit)
       end
-
-    (* | _, (Titerable_big_map (kt, vt), oa) -> {mt with type_ = (Tbig_map (kt, ttuple [tnat; vt]), oa)} *)
 
     | _ -> map_mterm (aux ctx) mt |> process_mterm
   in
