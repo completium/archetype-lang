@@ -1,0 +1,10 @@
+archetype assign_tuple
+
+variable res : (nat * string * bytes) = (0, "mystring", 0x0001)
+
+entry exec () {
+  effect {
+    // res[1] := "";
+    dorequire (res = (0, "mystring", 0x0001), "ko")
+  }
+}

@@ -483,6 +483,7 @@ let rec pp_instruction fmt (i : instruction) =
   | Ivar id -> pp_id fmt id
   | Icall (id, args, _)        -> Format.fprintf fmt "%a(%a)" pp_id id (pp_list ", " f) args
   | Iassign (id, v)            -> Format.fprintf fmt "%a := @[%a@]" pp_id id f v
+  | Iassigntuple (id, n, v)    -> Format.fprintf fmt "%a[%d] := @[%a@]" pp_id id n f v
   | Iif (c, t, e, _)           -> pp "if (%a)@\nthen @[%a@]@\nelse @[%a@]" f c f t f e
   | Iifnone (v, t, id, s, _)   -> pp "if_none (%a)@\nthen @[%a@]@\nelse @[fun %s -> %a@]" f v f t id f s
   | Iifleft (v, _, l, _, r, _) -> pp "if_left (%a)@\nthen @[%a@]@\nelse @[%a@]" f v f l f r

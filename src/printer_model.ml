@@ -177,6 +177,7 @@ let pp_assign_kind f fmt = function
   | Avarstore l          -> Format.fprintf fmt "s.%a" pp_id l
   | Aasset (an, fn, k)   -> Format.fprintf fmt "%a[%a].%a" pp_id an f k pp_id fn
   | Arecord (_rn, fn, r) -> Format.fprintf fmt "%a.%a" f r pp_id fn
+  | Avartuple (id, n)    -> Format.fprintf fmt "%a[%d]" pp_id id n
   | Astate               -> Format.fprintf fmt "state"
   | Aassetstate (an, k)  -> Format.fprintf fmt "state_%a(%a)" pp_ident an f k
   | Aoperations          -> Format.fprintf fmt "operations"
@@ -236,6 +237,13 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "%a.%a %a %a"
         f r
         pp_id fn
+        pp_operator op
+        f v
+
+    | Massign (op, _, Avartuple (id, n), v) ->
+      Format.fprintf fmt "%a[%d] %a %a"
+        pp_id id
+        n
         pp_operator op
         f v
 

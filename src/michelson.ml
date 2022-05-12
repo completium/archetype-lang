@@ -315,35 +315,36 @@ and builtin =
 [@@deriving show {with_path = false}]
 
 and instruction =
-  | Iseq        of instruction list
-  | IletIn      of ident * instruction * instruction * bool
-  | Ivar        of ident
-  | Icall       of ident * instruction list * bool
-  | Iassign     of ident * instruction
-  | Iif         of instruction * instruction * instruction * type_
-  | Iifnone     of instruction * instruction * ident * instruction * type_
-  | Iifleft     of instruction * ident * instruction * ident * instruction * type_
-  | Iifcons     of instruction * ident * ident * instruction * instruction * type_
-  | Iloop       of instruction * instruction
-  | Iiter       of ident list * instruction * instruction
-  | Iloopleft   of instruction * ident * instruction
-  | Ilambda     of type_ * ident * type_ * instruction
-  | Izop        of z_operator
-  | Iunop       of un_operator * instruction
-  | Ibinop      of bin_operator * instruction * instruction
-  | Iterop      of ter_operator * instruction * instruction * instruction
-  | Iupdate     of ukind * aoperator
-  | Iconst      of type_ * data
-  | Icompare    of cmp_operator * instruction * instruction
-  | Iset        of type_ * instruction list
-  | Ilist       of type_ * instruction list
-  | Imap        of bool * type_ * type_ * (instruction * instruction) list
-  | Irecord     of ritem
-  | Irecupdate  of instruction * ruitem
-  | Imap_       of instruction * ident * instruction
-  | Ifold       of ident * ident option * ident * instruction * instruction * instruction (* var_iterated * var_accu * container * init * code*)
-  | Ireverse    of type_ * instruction
-  | Imichelson  of instruction list * code * ident list
+  | Iseq         of instruction list
+  | IletIn       of ident * instruction * instruction * bool
+  | Ivar         of ident
+  | Icall        of ident * instruction list * bool
+  | Iassign      of ident * instruction
+  | Iassigntuple of ident * int * instruction
+  | Iif          of instruction * instruction * instruction * type_
+  | Iifnone      of instruction * instruction * ident * instruction * type_
+  | Iifleft      of instruction * ident * instruction * ident * instruction * type_
+  | Iifcons      of instruction * ident * ident * instruction * instruction * type_
+  | Iloop        of instruction * instruction
+  | Iiter        of ident list * instruction * instruction
+  | Iloopleft    of instruction * ident * instruction
+  | Ilambda      of type_ * ident * type_ * instruction
+  | Izop         of z_operator
+  | Iunop        of un_operator * instruction
+  | Ibinop       of bin_operator * instruction * instruction
+  | Iterop       of ter_operator * instruction * instruction * instruction
+  | Iupdate      of ukind * aoperator
+  | Iconst       of type_ * data
+  | Icompare     of cmp_operator * instruction * instruction
+  | Iset         of type_ * instruction list
+  | Ilist        of type_ * instruction list
+  | Imap         of bool * type_ * type_ * (instruction * instruction) list
+  | Irecord      of ritem
+  | Irecupdate   of instruction * ruitem
+  | Imap_        of instruction * ident * instruction
+  | Ifold        of ident * ident option * ident * instruction * instruction * instruction (* var_iterated * var_accu * container * init * code*)
+  | Ireverse     of type_ * instruction
+  | Imichelson   of instruction list * code * ident list
 [@@deriving show {with_path = false}]
 
 and ritem =

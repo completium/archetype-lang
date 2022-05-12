@@ -1545,6 +1545,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Massign (op, _, Avarstore id, v)             -> A.eassign (for_op op) (A.eterm id) (f v)
     | Massign (_op, _, Aasset (_an, _fn, _k), _v)  -> assert false
     | Massign (_op, _, Arecord (_rn, _fn, _r), _v) -> assert false
+    | Massign (_op, _, Avartuple (_id, _n), _v)    -> assert false
     | Massign (_op, _, Astate, _x)                 -> assert false
     | Massign (_op, _, Aassetstate (_an, _k), _v)  -> assert false
     | Massign (_op, _, Aoperations, _v)            -> assert false

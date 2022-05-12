@@ -5756,9 +5756,11 @@ let remove_iterable_big_map (model : model) : model =
         | _ -> None
       in
 
-      let content = mktype (Tbig_map (kt, ttuple [tnat; vt])) ~annot:(dumloc "%content") in
-      let index   = mktype (Tbig_map (tnat, kt)) ~annot:(dumloc "%index") in
-      let counter = mktype (Tbuiltin Bnat)   ~annot:(dumloc "%counter") in
+      let with_annot = Option.is_some annot in
+
+      let content = mktype (Tbig_map (kt, ttuple [tnat; vt])) ?annot:(if with_annot then Some (dumloc "%content") else None) in
+      let index   = mktype (Tbig_map (tnat, kt))              ?annot:(if with_annot then Some (dumloc "%index")   else None) in
+      let counter = mktype (Tbuiltin Bnat)                    ?annot:(if with_annot then Some (dumloc "%counter") else None) in
       (Ttuple [content; index; counter], Option.map dumloc id)
     | _ -> t
   in
@@ -5804,18 +5806,20 @@ let remove_iterable_big_map (model : model) : model =
   let rec aux ctx (mt : mterm) =
     match mt.node, mt.type_ with
     (* instruction *)
-    | Massign (ValueAssign, ((Titerable_big_map (_, _)), _), (Avar id_map),
+    | Massign (ValueAssign, ((Titerable_big_map (_, _)), _), ((Avar id_map | Avarstore id_map) as assign_value),
                { node = (Mmapput (MKIterableBigMap, kt, vt, map, key, value));
                  type_ = ((Titerable_big_map (_, _)), _); }), _ when is_same_map id_map map -> begin
+        let ibm_id = dumloc "_ibm" in
+        let ibm_type : type_ = process_type map.type_ in
+        let ibm_value = mk_mvar ibm_id ibm_type in
+        let ibm_init : mterm = aux ctx map in
+
         let vvt = ttuple [tnat; vt] in
         let tbm = (Tbig_map(kt, vvt), None) in
 
-        let map_content = mk_svar id_map tbm in
-        let id_bmi = (dumloc (get_index_id (unloc id_map))) in
-        let tbmi = (tbig_map tnat kt) in
-        let map_index : mterm  = mk_svar id_bmi tbmi in
-        let counter_id_loced = dumloc (get_counter_id (unloc id_map)) in
-        let map_counter : mterm = mk_svar counter_id_loced tnat in
+        let map_content : mterm = mk_tupleaccess 0 ibm_value in
+        let map_index   : mterm = mk_tupleaccess 1 ibm_value in
+        let map_counter : mterm = mk_tupleaccess 2 ibm_value in
 
         let key = aux ctx key in
         let value = aux ctx value in
@@ -5836,11 +5840,11 @@ let remove_iterable_big_map (model : model) : model =
           in
           let none_value : mterm =
             let assign_counter : mterm =
-              mk_mterm (Massign (ValueAssign, tnat, (Avar counter_id_loced), idx_var)) tunit
+              mk_mterm (Massign (ValueAssign, tnat, (Avartuple (ibm_id, 4)), idx_var)) tunit
             in
             let put =
               let put = mk_mterm (Mmapput (MKBigMap, tnat, kt, map_index, map_counter, key)) tbm in
-              mk_mterm (Massign (ValueAssign, tbmi, (Avar id_bmi), put)) tunit
+              mk_mterm (Massign (ValueAssign, map_index.type_, (Avartuple (ibm_id, 3)), put)) tunit
             in
             seq [assign_counter; put]
           in
@@ -5848,10 +5852,16 @@ let remove_iterable_big_map (model : model) : model =
         in
         let update_map : mterm =
           let put = mk_mterm (Mmapput (MKBigMap, kt, vvt, map_content, key, mk_tuple [idx_var; value])) tbm in
-          mk_mterm (Massign (ValueAssign, tbm, (Avar id_map), put)) tunit
+          mk_mterm (Massign (ValueAssign, tbm, (Avartuple (ibm_id, 1)), put)) tunit
         in
-        let body : mterm = seq [matchinstr; update_map] in
-        mk_mterm (Mletin ([idx_id_loced], init_value, Some tnat, body, None)) tunit
+        let instr_assign : mterm =
+          mk_mterm (Massign (ValueAssign, ibm_value.type_, assign_value, ibm_value)) tunit
+        in
+        let body : mterm = seq [matchinstr; update_map; instr_assign] in
+
+        body
+        |> (fun x -> mk_mterm (Mletin ([idx_id_loced], init_value, Some tnat, x, None)) tunit)
+        |> (fun x -> mk_mterm (Mletin ([ibm_id], ibm_init, Some ibm_type, x, None)) tunit)
       end
 
     | Massign (ValueAssign, ((Titerable_big_map (_, _)), _), (Avar id_map),

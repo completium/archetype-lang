@@ -147,6 +147,7 @@ type ('id, 'term) assign_kind_gen =
   | Avarstore    of 'id
   | Aasset       of 'id * 'id * 'term (* asset name * field name * key *)
   | Arecord      of 'id * 'id * 'term (* record name * field name * record *)
+  | Avartuple    of 'id * int         (* var name * index *)
   | Astate
   | Aassetstate of ident * 'term     (* asset name * key *)
   | Aoperations
@@ -1363,6 +1364,7 @@ let cmp_mterm_node
     | Avarstore id1, Avarstore id2                   -> cmpi id1 id2
     | Aasset (an1, fn1, k1), Aasset (an2, fn2, k2)   -> cmpi an1 an2 && cmpi fn1 fn2 && cmp k1 k2
     | Arecord (rn1, fn1, r1), Arecord (rn2, fn2, r2) -> cmpi rn1 rn2 && cmpi fn1 fn2 && cmp r1 r2
+    | Avartuple (id1, n1), Avartuple (id2, n2)       -> cmpi id1 id2 && cmp_int n1 n2
     | Astate, Astate                                 -> true
     | Aassetstate (id1, v1), Aassetstate (id2, v2)   -> cmp_ident id1 id2 && cmp v1 v2
     | Aoperations, Aoperations                       -> true
@@ -1828,6 +1830,7 @@ let map_assign_kind (fi : ident -> ident) (g : 'id -> 'id) f = function
   | Avarstore id        -> Avarstore (g id)
   | Aasset (an, fn, k)  -> Aasset (g an, g fn, f k)
   | Arecord (rn, fn, r) -> Arecord (g rn, g fn, f r)
+  | Avartuple (id, n)   -> Avartuple (g id, n)
   | Astate              -> Astate
   | Aassetstate (id, v) -> Aassetstate (fi id, f v)
   | Aoperations         -> Aoperations
@@ -2280,6 +2283,7 @@ let fold_assign_kind f accu = function
   | Avarstore _         -> accu
   | Aasset  (_, _, mt)  -> f accu mt
   | Arecord (_, _, mt)  -> f accu mt
+  | Avartuple _         -> accu
   | Astate              -> accu
   | Aassetstate (_, mt) -> f accu mt
   | Aoperations         -> accu
@@ -2590,6 +2594,7 @@ let fold_map_assign_kind f accu = function
   | Avarstore id        -> Avarstore id, accu
   | Aasset (an, fn, k)  -> let ke, ka = f accu k in Aasset  (an, fn, ke), ka
   | Arecord (rn, fn, r) -> let re, ra = f accu r in Arecord (rn, fn, re), ra
+  | Avartuple (id, n)   -> Avartuple (id, n), accu
   | Astate              -> Astate, accu
   | Aassetstate (id, v) -> let ve, va = f accu v in Aassetstate (id, ve), va
   | Aoperations         -> Aoperations, accu
