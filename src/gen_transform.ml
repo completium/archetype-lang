@@ -5746,20 +5746,20 @@ let process_event (model : model) : model =
 let remove_iterable_big_map (model : model) : model =
   let get_index_id x = "_" ^ x ^ "_index" in
   let get_counter_id x = "_" ^ x ^ "_counter" in
-  let process_type (t : type_) (id : lident option) : type_ =
+  let process_type ?(id : lident option) (t : type_) : type_ =
     match t with
     | (Titerable_big_map (kt, vt), annot) ->
       let id =
         match Option.map unloc id, annot with
-        | Some id, _ -> id
-        | _, Some annot -> unloc annot
-        | _ -> assert false
+        | Some id, _ -> Some id
+        | _, Some annot -> Some (unloc annot)
+        | _ -> None
       in
 
       let content = mktype (Tbig_map (kt, ttuple [tnat; vt])) ~annot:(dumloc "%content") in
       let index   = mktype (Tbig_map (tnat, kt)) ~annot:(dumloc "%index") in
       let counter = mktype (Tbuiltin Bnat)   ~annot:(dumloc "%counter") in
-      (Ttuple [content; index; counter], Some (dumloc id))
+      (Ttuple [content; index; counter], Option.map dumloc id)
     | _ -> t
   in
   let process_mterm (input : mterm) : mterm =
@@ -5772,7 +5772,7 @@ let remove_iterable_big_map (model : model) : model =
       let counter_value = mk_nat (List.length original_values) in
       mk_tuple [content_value; index_value; counter_value]
     | { type_ = (Titerable_big_map (_, _), _); _ } ->
-      { input with type_ = process_type input.type_ None }
+      { input with type_ = process_type input.type_ }
     | _ -> input
   in
   let map_decl (x : decl_node) : decl_node =
@@ -5783,7 +5783,7 @@ let remove_iterable_big_map (model : model) : model =
             (* let loc = dvar.loc in *)
             let name = dvar.name in
             Dvar { dvar with
-                   type_ = process_type dvar.type_ (Some name);
+                   type_ = process_type dvar.type_ ~id:name;
                    default = Option.map process_mterm dvar.default;
                  }
           end
@@ -5918,35 +5918,34 @@ let remove_iterable_big_map (model : model) : model =
 
     (* expression *)
     | Mmapget (MKIterableBigMap, kt, vt, map, k, io), _ ->
-      mk_mterm (Mmapget (MKBigMap, kt, vt, aux ctx map, aux ctx k, io)) (ttuple [tnat; vt]) |> mk_tupleaccess 1
+      mk_mterm (Mmapget (MKBigMap, kt, vt, aux ctx map |> mk_tupleaccess 0, aux ctx k, io)) (ttuple [tnat; vt]) |> mk_tupleaccess 1
 
     | Mmapgetopt (MKIterableBigMap, kt, vt, map, k) , _ ->
-      mk_mterm (Mmapgetopt (MKBigMap, kt, vt, aux ctx map, aux ctx k)) (toption (ttuple [tnat; vt]))
+      mk_mterm (Mmapgetopt (MKBigMap, kt, vt, aux ctx map |> mk_tupleaccess 0, aux ctx k)) (toption (ttuple [tnat; vt]))
       |> (fun (x : mterm) ->
-          let var = dumloc "_var_iterable_getopt" in
+          let var = dumloc "_var_ibm_getopt" in
           let mvar : mterm = mk_mvar var (ttuple [tnat; vt]) in
           mk_mterm (Mmap (x, var, mk_tupleaccess 1 mvar)) (toption vt))
 
     | Mmapcontains (MKIterableBigMap, kt, vt, map, k)     , _ ->
-      mk_mterm (Mmapcontains (MKBigMap, kt, vt, aux ctx map, aux ctx k)) (tbool)
+      mk_mterm (Mmapcontains (MKBigMap, kt, vt, aux ctx map |> mk_tupleaccess 0, aux ctx k)) (tbool)
 
-    | Mmaplength (MKIterableBigMap, _, _,
-                  { node = Mvar (id_map, Vstorevar, Tnone, Dnone);
-                    type_ = ((Titerable_big_map (_, _)), _) }), _ -> begin
-        let counter_id_loced = dumloc (get_counter_id (unloc id_map)) in
-        let map_counter : mterm = mk_svar counter_id_loced tnat in
-        map_counter
+    | Mmaplength (MKIterableBigMap, _, _, map), _ -> begin
+        aux ctx map |> mk_tupleaccess 2
       end
     (*| Mmapfold (MKIterableBigMap, _, _, _, _, _, _, _), _ -> mt (* TODO *)*)
 
     (* control *)
-    | Mfor (FIdouble(id_k, id_v), ICKmap ({
-        node = (Mvar (id_map, Vstorevar, Tnone, Dnone));
-        type_ = (Titerable_big_map (kt, vt), _) }), body, lbl), _ -> begin
-        let map_content = mk_svar id_map (tbig_map kt (ttuple [tnat; vt])) in
-        let map_index : mterm  = mk_svar (dumloc (get_index_id (unloc id_map))) (tbig_map tnat kt) in
-        let map_counter : mterm = mk_svar (dumloc (get_counter_id (unloc id_map))) tnat in
-        let idx_id = dumloc ("_idx_" ^ (unloc id_map)) in
+    | Mfor (FIdouble(id_k, id_v), (ICKmap ({ type_ = (Titerable_big_map (kt, vt), _) } as map)), body, lbl), _ -> begin
+        let ibm_id = dumloc "_ibm" in
+        let ibm_type : type_ = process_type map.type_ in
+        let ibm_value = mk_mvar ibm_id ibm_type in
+        let ibm_init : mterm = aux ctx map in
+
+        let map_content : mterm = mk_tupleaccess 0 ibm_value in
+        let map_index   : mterm = mk_tupleaccess 1 ibm_value in
+        let map_counter : mterm = mk_tupleaccess 2 ibm_value in
+        let idx_id = dumloc ("_idx_ibm") in
         let var_idx : mterm  = mk_mvar idx_id tint in
         let var_k : mterm  = mk_mvar id_k tnat in
         let one = mk_nat 1 in
@@ -5961,10 +5960,11 @@ let remove_iterable_big_map (model : model) : model =
         in
 
         mk_mterm (Miter (idx_id, bound_min, bound_max, letin, lbl, true)) tunit
+        |> (fun x -> mk_mterm (Mletin ([ibm_id], ibm_init, Some ibm_type, x, None)) tunit)
       end
 
-    | _, (Titerable_big_map (kt, vt), oa) -> {mt with type_ = (Tbig_map (kt, ttuple [tnat; vt]), oa)}
+    (* | _, (Titerable_big_map (kt, vt), oa) -> {mt with type_ = (Tbig_map (kt, ttuple [tnat; vt]), oa)} *)
 
-    | _ -> map_mterm (aux ctx) mt
+    | _ -> map_mterm (aux ctx) mt |> process_mterm
   in
   map_mterm_model aux model
