@@ -2952,10 +2952,16 @@ let replace_for_to_iter (model : model) : model =
     | Mfor (FIsimple id, ICKlist ({node = _; type_ = (Tlist t, _)} as col), body, Some lbl) ->
       process [id] col t body lbl
 
-    | Mfor (FIdouble (kid, vid), ICKmap ({node = _; type_ = ((Tbig_map (kt, vt) | Tmap (kt, vt)), _)  } as col), body, Some lbl) ->
-      let bm = match fst col.type_ with | Tbig_map _ -> true | Tmap _ -> false | _ -> assert false in
+    | Mfor (FIdouble (kid, vid), ICKmap ({node = _; type_ = ((Titerable_big_map (kt, vt) | Tbig_map (kt, vt) | Tmap (kt, vt)), _)  } as col), body, Some lbl) ->
+      let bm =
+        match fst col.type_ with
+        | Titerable_big_map _ -> titerable_big_map
+        | Tbig_map _ -> tbig_map
+        | Tmap _ -> tmap
+        | _ -> assert false
+      in
       let t = ttuple [kt; vt] in
-      let col = mk_mterm (Mcast((if bm then tbig_map else tmap) kt vt, (tlist t), col)) (tlist t) in
+      let col = mk_mterm (Mcast(bm kt vt, (tlist t), col)) (tlist t) in
       process [kid; vid] col t body lbl
 
     | Mfor (FIsimple id, col, body, Some lbl) ->
@@ -3024,8 +3030,14 @@ let remove_duplicate_key (model : model) : model =
           else
             let default, typ =
               match x.default.node, get_ntype x.typ with
-              | Mlitmap (_, l), ((Tbig_map (kt, (Tasset an, _)) | (Tmap (kt, (Tasset an, _)))) as map) ->
-                let mkm, mkmm = match map with Tbig_map _ -> tbig_map, MKBigMap | Tmap _ -> tmap, MKMap | _ -> assert false in
+              | Mlitmap (_, l), ((Titerable_big_map (kt, (Tasset an, _)) | Tbig_map (kt, (Tasset an, _)) | (Tmap (kt, (Tasset an, _)))) as map) ->
+                let mkm, mkmm =
+                  match map with
+                  | Titerable_big_map _ -> titerable_big_map, MKIterableBigMap
+                  | Tbig_map _ -> tbig_map, MKBigMap
+                  | Tmap _ -> tmap, MKMap
+                  | _ -> assert false
+                in
                 let t = mkm kt (tasset (dumloc ((unloc an) ^ "_storage"))) in
                 let mt = mk_mterm (Mlitmap (mkmm, List.map (fun (k, v) -> (k, remove_key_value_for_asset_node v)) l)) t in
                 mt, t
@@ -3637,8 +3649,8 @@ let remove_asset (model : model) : model =
         | _ -> mt
       in
       match x.model_type, get_ntype x.typ with
-      | MTasset an, ((Tmap (k, (Tasset _, _)) | Tbig_map (k, (Tasset _, _))) as mmap) -> begin
-          let mkmm = match mmap with | Tmap _ -> tmap | Tbig_map _ -> tbig_map | _ -> assert false in
+      | MTasset an, ((Tmap (k, (Tasset _, _)) | Tbig_map (k, (Tasset _, _)) | Titerable_big_map (k, (Tasset _, _))) as mmap) -> begin
+          let mkmm = match mmap with | Tmap _ -> tmap | Tbig_map _ -> tbig_map | Titerable_big_map _ -> titerable_big_map | _ -> assert false in
           let ts, fields, is_single_record = for_type an in
           let type_ = mkmm k ts in
           let default = map_storage_mterm x.default in
@@ -3687,9 +3699,10 @@ let remove_asset (model : model) : model =
     let get_contains_va (va : mterm) (k : mterm) : mterm =
       let node =
         match get_ntype va.type_ with
-        | Tset kt           -> Msetcontains (kt, va, k)
-        | Tmap (kt, kv)     -> Mmapcontains (MKMap, kt, kv, va, k)
-        | Tbig_map (kt, kv) -> Mmapcontains (MKBigMap, kt, kv, va, k)
+        | Tset kt                    -> Msetcontains (kt, va, k)
+        | Tmap (kt, kv)              -> Mmapcontains (MKMap, kt, kv, va, k)
+        | Tbig_map (kt, kv)          -> Mmapcontains (MKBigMap, kt, kv, va, k)
+        | Titerable_big_map (kt, kv) -> Mmapcontains (MKIterableBigMap, kt, kv, va, k)
         | _ -> assert false
       in
       mk_mterm node tbool
@@ -3778,6 +3791,8 @@ let remove_asset (model : model) : model =
                   mk_mterm (Mmapput (MKMap, kt, vt, accu, k, v)) va.type_
                 | Tbig_map (kt, vt) ->
                   mk_mterm (Mmapput (MKBigMap, kt, vt, accu, k, v)) va.type_
+                | Titerable_big_map (kt, vt) ->
+                  mk_mterm (Mmapput (MKIterableBigMap, kt, vt, accu, k, v)) va.type_
                 | _ -> assert false
               end
             ) va l in
@@ -3793,6 +3808,7 @@ let remove_asset (model : model) : model =
         | Tset tk           -> Msetcontains (tk, va, x)
         | Tmap (tk, tv)     -> Mmapcontains (MKMap, tk, tv, va, x)
         | Tbig_map (tk, tv) -> Mmapcontains (MKBigMap, tk, tv, va, x)
+        | Titerable_big_map (tk, tv) -> Mmapcontains (MKIterableBigMap, tk, tv, va, x)
         | _ -> Format.eprintf "%a@." pp_type_ va.type_; assert false
       in
       mk_mterm (f x) tbool
@@ -3813,8 +3829,8 @@ let remove_asset (model : model) : model =
               let a = mk_mterm (Msetadd (kt, va, k)) va.type_ in
               mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), a)) tunit
             end
-          | ((Tmap (kt, kv) | Tbig_map (kt, kv)) as bmap) -> begin
-              let mkm = match bmap with | Tmap _ -> MKMap | Tbig_map _ -> MKBigMap | _ -> assert false in
+          | ((Tmap (kt, kv) | Tbig_map (kt, kv) | Titerable_big_map (kt, kv)) as bmap) -> begin
+              let mkm = match bmap with | Tmap _ -> MKMap | Tbig_map _ -> MKBigMap | Titerable_big_map _ -> MKIterableBigMap | _ -> assert false in
               let a = mk_mterm (Mmapput (mkm, kt, kv, va, k, v)) va.type_ in
               let b = mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), a)) tunit in
               match ags, pts with
@@ -3858,6 +3874,7 @@ let remove_asset (model : model) : model =
           | Tset kt           -> Msetremove (kt, va, k)
           | Tmap (kt, kv)     -> Mmapremove (MKMap, kt, kv, va, k)
           | Tbig_map (kt, kv) -> Mmapremove (MKBigMap, kt, kv, va, k)
+          | Titerable_big_map (kt, kv) -> Mmapremove (MKIterableBigMap, kt, kv, va, k)
           | _ -> assert false
         in
         mk_mterm node va.type_
@@ -3892,6 +3909,7 @@ let remove_asset (model : model) : model =
         match get_ntype va.type_ with
         | Tmap (kt, vt)
         | Tbig_map (kt, vt) -> kt, vt
+        | Titerable_big_map (kt, vt) -> kt, vt
         | _ -> assert false
       in
 
@@ -3963,6 +3981,7 @@ let remove_asset (model : model) : model =
               let act = mk vkid (Some vvid) vaccu in
               mk_mterm (Mmapfold(aasset.map_kind, atk, ikid, ivid, iaccu, va, init, act)) tr
             end
+          | Titerable_big_map _ -> assert false
           | _ -> assert false
         end
       | CKfield (an, fn, k, _, _) -> begin
@@ -3971,6 +3990,7 @@ let remove_asset (model : model) : model =
             match get_ntype va.type_ with
             | Tmap (kt, vt) -> mk_mterm (Mmapget (MKMap, kt, vt, va, f k, Some an)) vt
             | Tbig_map (kt, vt) -> mk_mterm (Mmapget (MKBigMap, kt, vt, va, f k, Some an)) vt
+            | Titerable_big_map (kt, vt) -> mk_mterm (Mmapget (MKIterableBigMap, kt, vt, va, f k, Some an)) vt
             | _ -> assert false
           in
 
@@ -3995,6 +4015,7 @@ let remove_asset (model : model) : model =
             match get_ntype vaa.type_ with
             | Tmap (kt, vt)     -> Some (mk_mterm (Mmapget (MKMap, kt, vt, vaa, vid, Some an)) vt)
             | Tbig_map (kt, vt) -> Some (mk_mterm (Mmapget (MKBigMap, kt, vt, vaa, vid, Some an)) vt)
+            | Titerable_big_map (kt, vt) -> Some (mk_mterm (Mmapget (MKIterableBigMap, kt, vt, vaa, vid, Some an)) vt)
             | _ -> None
           in
 
@@ -4031,6 +4052,7 @@ let remove_asset (model : model) : model =
             match get_ntype vaa.type_ with
             | Tmap (kt, vt) -> Some (mk_mterm (Mmapget (MKMap, kt, vt, vaa, vid, Some an)) vt)
             | Tbig_map (kt, vt) -> Some (mk_mterm (Mmapget (MKBigMap, kt, vt, vaa, vid, Some an)) vt)
+            | Titerable_big_map (kt, vt) -> Some (mk_mterm (Mmapget (MKIterableBigMap, kt, vt, vaa, vid, Some an)) vt)
             | _ -> None
           in
 
@@ -4082,6 +4104,7 @@ let remove_asset (model : model) : model =
             match get_ntype va.type_ with
             | Tmap (kt, vt) -> MKMap, kt, vt
             | Tbig_map (kt, vt) -> MKBigMap, kt, vt
+            | Titerable_big_map (kt, vt) -> MKIterableBigMap, kt, vt
             | _ -> assert false
           in
           let map_get = Mmapget (mkm, kt, vt, va, k, Some an) in
@@ -4134,6 +4157,7 @@ let remove_asset (model : model) : model =
             match get_ntype va.type_ with
             | Tmap (kt, vt) -> MKMap, kt, vt
             | Tbig_map (kt, vt) -> MKBigMap, kt, vt
+            | Titerable_big_map (kt, vt) -> MKIterableBigMap, kt, vt
             | _ -> assert false
           in
 
@@ -4187,6 +4211,7 @@ let remove_asset (model : model) : model =
             match get_ntype va.type_ with
             | Tmap (kt, vt) -> MKMap, kt, vt
             | Tbig_map (kt, vt) -> MKBigMap, kt, vt
+            | Titerable_big_map (kt, vt) -> MKIterableBigMap, kt, vt
             | _ -> assert false
           in
 
@@ -4276,7 +4301,8 @@ let remove_asset (model : model) : model =
                   loop
                 end
               | Tmap (kt, vt)
-              | Tbig_map (kt, vt) -> begin
+              | Tbig_map (kt, vt)
+              | Titerable_big_map (kt, vt) -> begin
                   let ikey = dumloc "_k" in
                   let vkey = mk_mterm (Mvar(ikey, Vlocal, Tnone, Dnone)) kt in
 
@@ -4298,6 +4324,7 @@ let remove_asset (model : model) : model =
                 match get_ntype va.type_ with
                 | Tmap (kt, vt) -> mk_mterm (Mmapget (MKMap, kt, vt, va, fm ctx k, Some an)) vt
                 | Tbig_map (kt, vt) -> mk_mterm (Mmapget (MKBigMap, kt, vt, va, fm ctx k, Some an)) vt
+                | Titerable_big_map (kt, vt) -> mk_mterm (Mmapget (MKIterableBigMap, kt, vt, va, fm ctx k, Some an)) vt
                 | _ -> assert false
               in
 
@@ -4320,6 +4347,7 @@ let remove_asset (model : model) : model =
                 match get_ntype vaa.type_ with
                 | Tmap (kt, vt) -> Some (mk_mterm (Mmapget (MKMap, kt, vt, vaa, vkey, Some an)) vt)
                 | Tbig_map (kt, vt) -> Some (mk_mterm (Mmapget (MKBigMap, kt, vt, vaa, vkey, Some an)) vt)
+                | Titerable_big_map (kt, vt) -> Some (mk_mterm (Mmapget (MKIterableBigMap, kt, vt, vaa, vkey, Some an)) vt)
                 | _ -> None
               in
 
@@ -4358,6 +4386,7 @@ let remove_asset (model : model) : model =
                   | Tset _ -> Mlitset []
                   | Tmap (_, _) -> Mlitmap (MKMap, [])
                   | Tbig_map (_, _) -> Mlitmap (MKBigMap, [])
+                  | Titerable_big_map (_, _) -> Mlitmap (MKIterableBigMap, [])
                   | _ -> assert false
                 in
                 mk_mterm node va.type_
@@ -4368,6 +4397,7 @@ let remove_asset (model : model) : model =
                   match get_ntype va.type_ with
                   | Tmap (_, tv)
                   | Tbig_map (_, tv) -> tv
+                  | Titerable_big_map (_, tv) -> tv
                   | _ -> assert false
                 in
                 let var_id = dumloc "_v" in
@@ -4406,6 +4436,7 @@ let remove_asset (model : model) : model =
                 match get_ntype va.type_ with
                 | Tmap (tk, tv) -> MKMap, tk, tv
                 | Tbig_map (tk, tv) -> MKBigMap, tk, tv
+                | Titerable_big_map (tk, tv) -> MKIterableBigMap, tk, tv
                 | _ -> assert false
               in
 
@@ -4449,6 +4480,7 @@ let remove_asset (model : model) : model =
             match get_ntype (get_type_for_asset_container an) with
             | Tmap (kt, vt) -> MKMap, kt, vt
             | Tbig_map (kt, vt) -> MKBigMap, kt, vt
+            | Titerable_big_map (kt, vt) -> MKIterableBigMap, kt, vt
             | _ -> assert false
           in
 
@@ -4647,6 +4679,7 @@ let remove_asset (model : model) : model =
                         | Tset kt           -> Msetadd (kt, c, a)
                         | Tmap (kt, kv)     -> Mmapput (MKMap, kt, kv, c, a, b)
                         | Tbig_map (kt, kv) -> Mmapput (MKBigMap, kt, kv, c, a, b)
+                        | Titerable_big_map (kt, kv) -> Mmapput (MKIterableBigMap, kt, kv, c, a, b)
                         | _ -> assert false
                       in
                       mk_mterm node vaa.type_
@@ -4662,6 +4695,7 @@ let remove_asset (model : model) : model =
                         | Tset kt           -> Msetremove (kt, c, k)
                         | Tmap (kt, kv)     -> Mmapremove (MKMap, kt, kv, c, k)
                         | Tbig_map (kt, kv) -> Mmapremove (MKBigMap, kt, kv, c, k)
+                        | Titerable_big_map (kt, kv) -> Mmapremove (MKIterableBigMap, kt, kv, c, k)
                         | _ -> assert false
                       in
                       mk_mterm node vaa.type_
@@ -4824,6 +4858,9 @@ let remove_asset (model : model) : model =
                 | Tbig_map (kt, vt) ->
                   let mk_get x = mk_mterm (Mmapget (MKBigMap, kt, vt, va, x, Some an)) vt in
                   x |> mk_letin ivb (mk_get vxins)
+                | Titerable_big_map (kt, vt) ->
+                  let mk_get x = mk_mterm (Mmapget (MKIterableBigMap, kt, vt, va, x, Some an)) vt in
+                  x |> mk_letin ivb (mk_get vxins)
                 | _ -> assert false
               in
 
@@ -4831,7 +4868,8 @@ let remove_asset (model : model) : model =
                 match get_ntype va.type_ with
                 | Tset _ -> None
                 | Tmap (_, vt)
-                | Tbig_map (_, vt) -> Some (mk_mvar ivb vt)
+                | Tbig_map (_, vt)
+                | Titerable_big_map (_, vt) -> Some (mk_mvar ivb vt)
                 | _ -> assert false
               in
 
@@ -4917,6 +4955,7 @@ let remove_asset (model : model) : model =
                 | Tset tk           -> Msetcontains (tk, va, k)
                 | Tmap (tk, tv)     -> Mmapcontains (MKMap, tk, tv, va, k)
                 | Tbig_map (tk, tv) -> Mmapcontains (MKBigMap, tk, tv, va, k)
+                | Titerable_big_map (tk, tv) -> Mmapcontains (MKIterableBigMap, tk, tv, va, k)
                 | _ -> assert false
               end
             | CKview v -> begin
@@ -4937,6 +4976,7 @@ let remove_asset (model : model) : model =
                   match get_ntype va.type_ with
                   | Tmap (tk, tv)     -> MKMap, tk, tv
                   | Tbig_map (tk, tv) -> MKBigMap, tk, tv
+                  | Titerable_big_map (tk, tv) -> MKIterableBigMap, tk, tv
                   | _ -> assert false
                 in
 
@@ -4993,6 +5033,7 @@ let remove_asset (model : model) : model =
                 | Tset tk           -> Msetlength (tk, va)
                 | Tmap (tk, tv)     -> Mmaplength (MKMap, tk, tv, va)
                 | Tbig_map (tk, tv) -> Mmaplength (MKBigMap, tk, tv, va)
+                | Titerable_big_map (tk, tv) -> Mmaplength (MKIterableBigMap, tk, tv, va)
                 | _ -> assert false
               end
             | CKview v -> begin
@@ -5009,15 +5050,16 @@ let remove_asset (model : model) : model =
                 let aan, _ = Utils.get_field_container model an fn in
                 let atk = Utils.get_asset_key model aan |> snd in
 
-                let bm, tk, tv =
+                let mkm, tk, tv =
                   match get_ntype va.type_ with
-                  | Tmap (tk, tv) -> false, tk, tv
-                  | Tbig_map (tk, tv) -> true, tk, tv
+                  | Tmap (tk, tv) -> MKMap, tk, tv
+                  | Tbig_map (tk, tv) -> MKBigMap, tk, tv
+                  | Titerable_big_map (tk, tv) -> MKIterableBigMap, tk, tv
                   | _ -> assert false
                 in
 
                 let set =
-                  let get = mk_mterm (Mmapget ((if bm then MKBigMap else MKMap), tk, tv, va, kk, Some an)) tv in
+                  let get = mk_mterm (Mmapget (mkm, tk, tv, va, kk, Some an)) tv in
                   if is_record
                   then get
                   else mk_mterm (Mdot(get, dumloc fn)) (tset atk)
