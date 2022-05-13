@@ -4126,6 +4126,7 @@ let remove_asset (model : model) : model =
             match get_ntype va.type_ with
             | Tset _ -> Mfor (FIsimple id, ICKset va, b, lbl)
             | Tmap _ -> Mfor (FIdouble (id, dumloc "_v"), ICKmap va, b, lbl)
+            | Titerable_big_map _ -> Mfor (FIdouble (id, dumloc "_v"), ICKmap va, b, lbl)
             | _ -> assert false
           in
           { mt with node = node }
