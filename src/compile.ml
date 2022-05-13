@@ -248,7 +248,6 @@ let toolchain ?(js=false) model =
   |> eval_variable_initial_value
   |> replace_dotassetfield_by_dot
   |> expr_to_instr
-  |> remove_iterable_big_map
   |> generate_storage
   |> replace_declvar_by_letin
   |> remove_label
@@ -258,6 +257,7 @@ let toolchain ?(js=false) model =
   |> remove_duplicate_key
   |> assign_loop_label
   |> remove_asset
+  |> remove_iterable_big_map
   |> remove_storage_field_in_function
   |> remove_high_level_model
   |> normalize_storage

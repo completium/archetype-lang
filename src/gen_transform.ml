@@ -5979,7 +5979,8 @@ let remove_iterable_big_map (model : model) : model =
   in
   let model =
     { model with
-      decls = List.map map_decl model.decls
+      decls = List.map map_decl model.decls;
+      storage = List.map (fun (x : storage_item) -> { x with typ = process_type x.typ; default = process_mterm x.default }) model.storage
     }
   in
   map_mterm_model aux model
