@@ -5754,11 +5754,14 @@ let remove_iterable_big_map (model : model) : model =
         | _ -> None
       in
 
-      let with_annot = Option.is_some annot in
+      let with_annot = Option.is_some id in
 
-      let content = mktype (Tbig_map (kt, ttuple [tnat; vt])) ?annot:(if with_annot then Some (dumloc "%content") else None) in
-      let index   = mktype (Tbig_map (tnat, kt))              ?annot:(if with_annot then Some (dumloc "%index")   else None) in
-      let counter = mktype (Tbuiltin Bnat)                    ?annot:(if with_annot then Some (dumloc "%counter") else None) in
+      let content = mktype (Tbig_map (kt, ttuple [
+          mktype (Tbuiltin Bnat) ?annot:(if with_annot then Some (dumloc "%index") else None);
+          mktype  (get_ntype vt) ?annot:(if with_annot then Some (dumloc "%value") else None)
+        ])) ?annot:(if with_annot then Some (dumloc "%values") else None) in
+      let index   = mktype (Tbig_map (tnat, kt))              ?annot:(if with_annot then Some (dumloc "%keys")   else None) in
+      let counter = mktype (Tbuiltin Bnat)                    ?annot:(if with_annot then Some (dumloc "%size") else None) in
       (Ttuple [content; index; counter], Option.map dumloc id)
     | _ -> t
   in
