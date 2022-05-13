@@ -2890,7 +2890,7 @@ let split_key_values (model : model) : model =
           let an = dumloc an in
           let asset = Utils.get_asset model (unloc an) in
           let _k, t = Utils.get_asset_key model (unloc an) in
-          let type_asset = (match asset.map_kind with | MKBigMap -> tbig_map | _ -> tmap) t (tasset an) in
+          let type_asset = (match asset.map_kind with | MKIterableBigMap -> titerable_big_map | MKBigMap -> tbig_map | MKMap -> tmap) t (tasset an) in
           let default =
             match x.default.node with
             | Massets l -> mk_mterm (Mlitmap (asset.map_kind, List.map (fun x -> get_asset_assoc_key_value (unloc an) x) l)) type_asset
@@ -3967,7 +3967,8 @@ let remove_asset (model : model) : model =
               mk_mterm (Msetfold(atk, iid, iaccu, va, init, act)) tr
             end
           | Tmap (mkt, mkv)
-          | Tbig_map (mkt, mkv) -> begin
+          | Tbig_map (mkt, mkv)
+          | Titerable_big_map (mkt, mkv) -> begin
 
               let ikid = dumloc "_kid" in
               let vkid = mk_mterm (Mvar (ikid, Vlocal, Tnone, Dnone)) mkt in
@@ -3981,7 +3982,6 @@ let remove_asset (model : model) : model =
               let act = mk vkid (Some vvid) vaccu in
               mk_mterm (Mmapfold(aasset.map_kind, atk, ikid, ivid, iaccu, va, init, act)) tr
             end
-          | Titerable_big_map _ -> assert false
           | _ -> assert false
         end
       | CKfield (an, fn, k, _, _) -> begin
@@ -5957,6 +5957,13 @@ let remove_iterable_big_map (model : model) : model =
 
     | { node = Mmaplength (MKIterableBigMap, _, _, map)} -> begin
         aux ctx map |> mk_tupleaccess 2
+      end
+
+    (* map_kind * type_ * 'id   * 'id   * 'id   * 'term * 'term * 'term*)
+    | { node = Mmapfold (MKIterableBigMap, kt, ikid, ivid, iaccu, map, init, act); type_ = vt } -> begin
+        let body = mk_mterm (Mfor (FIdouble(ikid, ivid), ICKmap map, mk_mterm (Massign (ValueAssign, kt, Avar iaccu, act)) tunit, None)) tunit in
+        seq [aux ctx body; mk_mvar iaccu kt]
+        |> (fun x -> mk_mterm (Mletin ([iaccu], init, Some vt, x, None)) tunit)
       end
 
     (* control *)
