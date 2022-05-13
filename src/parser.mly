@@ -136,7 +136,6 @@
 %token RBRACE
 %token RBRACKET
 %token RECORD
-%token REF
 %token REFUSE_TRANSFER
 %token REMOVED
 %token REQUIRE
@@ -685,7 +684,7 @@ asset_option:
 
 field_r:
 | x=ident exts=option(extensions)
-      COLON y=type_t boption(REF)
+      COLON y=type_t
           dv=default_value?
     { Ffield (x, y, dv, exts) }
 

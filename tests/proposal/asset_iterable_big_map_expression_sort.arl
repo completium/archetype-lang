@@ -1,0 +1,17 @@
+archetype asset_iterable_big_map_expression_sort
+
+asset my_asset to iterable_big_map {
+  id : string;
+  value : nat = 0;
+} initialized by {
+  { "id0"; 0 };
+  { "id1"; 1 };
+  { "id2"; 2 }
+}
+
+variable res : list<string> = []
+
+entry exec () {
+  res := my_asset.sort(desc(value));
+  // dorequire(res = ["id2"; "id1"; "id0"], "ko")
+}

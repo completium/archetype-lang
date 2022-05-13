@@ -1,0 +1,10 @@
+archetype asset_iterable_big_map
+
+asset my_asset to iterable_big_map {
+  id : string;
+  value : nat = 0;
+} initialized by {
+  { "id0"; 0 };
+  { "id1"; 1 };
+  { "id2"; 2 }
+}

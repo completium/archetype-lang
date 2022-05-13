@@ -93,7 +93,6 @@
       "postcondition"       , POSTCONDITION       ;
       "predicate"           , PREDICATE           ;
       "record"              , RECORD              ;
-      "ref"                 , REF                 ;
       "removed"             , REMOVED             ;
       "require"             , REQUIRE             ;
       "require_entrypoint"  , REQUIRE_ENTRYPOINT  ;

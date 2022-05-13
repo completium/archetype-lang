@@ -1,0 +1,19 @@
+archetype asset_iterable_big_map_Instruction_for
+
+asset my_asset to iterable_big_map {
+  id : string;
+  value : nat = 0;
+} initialized by {
+  { "id0"; 0 };
+  { "id1"; 1 };
+  { "id2"; 2 }
+}
+
+variable counter : nat = 0
+
+entry exec () {
+  for k in my_asset do
+    counter += my_asset[k].value
+  done;
+  dorequire(counter = 3, "ko")
+}
