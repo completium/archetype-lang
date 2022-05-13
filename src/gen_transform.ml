@@ -5985,7 +5985,7 @@ let remove_iterable_big_map (model : model) : model =
         let value_k = mk_mterm (Mmapget (MKBigMap, tnat, kt, map_index, var_idx, None)) kt in
         let value_v = mk_mterm (Mmapget (MKBigMap, kt, ttuple [tnat; vt], map_content, var_k, None)) (ttuple [tnat; vt]) |> mk_tupleaccess 1 in
         let letin =
-          body
+          aux ctx body
           |> (fun x -> mk_mterm (Mletin ([id_v], value_v, Some vt, x, None)) tunit)
           |> (fun x -> mk_mterm (Mletin ([id_k], value_k, Some kt, x, None)) tunit)
         in
