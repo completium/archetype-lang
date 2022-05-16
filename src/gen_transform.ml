@@ -3604,7 +3604,7 @@ let remove_asset (model : model) : model =
         )) [] asset.values
     in
     match fields with
-    | [] -> assert false
+    | [] -> tunit, ["_v", tunit], false
     | [_, t] -> t, fields, true
     | _ -> (trecord (dumloc an)), fields, false
   in
