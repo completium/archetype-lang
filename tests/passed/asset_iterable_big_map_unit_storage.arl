@@ -1,0 +1,9 @@
+archetype asset_iterable_big_map_unit_storage
+
+asset my_asset to iterable_big_map {
+  id : nat;
+} initialized by {
+  { 0 };
+  { 1 };
+  { 2 }
+}

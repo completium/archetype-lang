@@ -1,0 +1,16 @@
+archetype asset_iterable_big_map_unit_expression_nth
+
+asset my_asset to iterable_big_map {
+  id : nat;
+} initialized by {
+  { 0 };
+  { 1 };
+  { 2 }
+}
+
+variable res : nat = 0
+
+entry exec () {
+  res := my_asset.nth(1);
+  dorequire(res = 1, "ko")
+}
