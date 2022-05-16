@@ -4448,6 +4448,7 @@ module Utils : sig
   val with_count                         : model -> ident -> bool
   val get_asset_collection               : ident -> mterm
   val is_asset_single_field              : model -> ident -> bool
+  val is_asset_map                       : model -> ident -> bool
   val get_labeled_value_from             : model -> ident -> mterm list -> (ident * mterm) list
   val add_api_storage_in_list            : api_storage list -> api_storage -> api_storage list
   val sort_api_storage                   : model -> bool -> api_storage list -> api_storage list
@@ -5513,6 +5514,9 @@ end = struct
 
   let is_asset_single_field (model : model) (an : ident) : bool =
     get_asset model an |> fun x -> x.values |> List.filter (fun (x : asset_item) -> not x.shadow) |> List.length = 1
+
+  let is_asset_map (model : model) (an : ident) : bool =
+    get_asset model an |> fun x -> match x.map_kind with | MKMap -> true | _ -> false
 
   let get_labeled_value_from (model : model) (an : ident) (values : mterm list) : (ident * mterm) list =
     let asset = get_asset model an in

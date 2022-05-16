@@ -3008,14 +3008,14 @@ let remove_duplicate_key (model : model) : model =
     List.fold_right (fun x accu ->
         match x.model_type with
         | MTasset an ->
-          if Utils.is_asset_single_field model an
+          if Utils.is_asset_single_field model an && Utils.is_asset_map model an
           then
             begin
               let _k, t = Utils.get_asset_key model an in
               let type_asset = tset t in
               let default =
                 match x.default.node with
-                | Mlitmap (_, l) ->  mk_mterm (Mlitset (List.map fst l)) type_asset
+                | Mlitmap (_, l) -> mk_mterm (Mlitset (List.map fst l)) type_asset
                 | _ -> assert false
               in
               let asset_assets =
@@ -3611,7 +3611,7 @@ let remove_asset (model : model) : model =
 
   let for_asset_type an =
     let _, kt = Utils.get_asset_key model an in
-    if Utils.is_asset_single_field model an
+    if Utils.is_asset_single_field model an && Utils.is_asset_map model an
     then kt
     else ttuple [kt; proj3_1 (for_type an)]
   in
@@ -4082,7 +4082,8 @@ let remove_asset (model : model) : model =
 
       (* access *)
 
-      | Mdot (({node = _; type_ = (Tasset an, _)} as a), _) when Utils.is_asset_single_field model (unloc an) -> fm ctx a
+      | Mdot (({node = _; type_ = (Tasset an, _)} as a), _)
+        when Utils.is_asset_single_field model (unloc an) && Utils.is_asset_map model (unloc an) -> fm ctx a
       | Mdot ({node = Mget (_, CKcoll _, k); type_ = (Tasset an, _)}, fn) when is_key (unloc an) (unloc fn) -> begin
           fm ctx k
         end
@@ -4094,7 +4095,7 @@ let remove_asset (model : model) : model =
           else
             mk_mterm (Mdot(mt_get, fn)) mt.type_
         end
-      | Mget (an, CKcoll _, k) when Utils.is_asset_single_field model an -> fm ctx k
+      | Mget (an, CKcoll _, k) when Utils.is_asset_single_field model an && Utils.is_asset_map model an -> fm ctx k
 
       | Mget (an, CKcoll _, k) -> begin
           let k = fm ctx k in

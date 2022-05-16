@@ -1,0 +1,16 @@
+archetype asset_big_map_unit_expression_contains
+
+asset my_asset to big_map {
+  id : nat
+} initialized by {
+  { 0 };
+  { 1 };
+  { 2 }
+}
+
+variable res : bool = false
+
+entry exec () {
+  res := my_asset.contains(2);
+  dorequire(res, "ko")
+}
