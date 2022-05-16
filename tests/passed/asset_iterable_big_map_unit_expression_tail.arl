@@ -1,0 +1,16 @@
+archetype asset_iterable_big_map_unit_expression_tail
+
+asset my_asset to iterable_big_map {
+  id : nat;
+} initialized by {
+  { 0 };
+  { 1 };
+  { 2 }
+}
+
+variable res : list<nat> = []
+
+entry exec () {
+  res := my_asset.tail(2);
+  // dorequire(res = [1; 2], "ko")
+}

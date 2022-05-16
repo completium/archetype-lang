@@ -1,0 +1,13 @@
+archetype asset_big_map_unit_effect_add
+
+asset my_asset to big_map {
+  id : nat
+} initialized by {
+  { 0 };
+  { 1 };
+  { 2 }
+}
+
+entry exec () {
+  my_asset.add({3});
+}

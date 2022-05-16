@@ -1,0 +1,18 @@
+archetype asset_iterable_big_map_unit_instruction_for
+
+asset my_asset to iterable_big_map {
+  id : nat;
+} initialized by {
+  { 0 };
+  { 1 };
+  { 2 }
+}
+
+variable counter : nat = 0
+
+entry exec () {
+  for k in my_asset do
+    counter += my_asset[k].id
+  done;
+  dorequire(counter = 3, "ko")
+}
