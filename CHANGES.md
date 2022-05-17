@@ -6,10 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Added
-  - `iterable_big_map` type
-  - Add `const` declaration
+  - New high-level type: `iterable_big_map`
+  - Add `const` declaration in code block
 ### Changed
-  - asset flagged `big_map` with one field generates a `big_map` instead of `set`
+  - Asset flagged `big_map` with one field generates a `big_map` instead of `set`
 
 ## [1.2.15] - 2022-04-22
 ### Changed
