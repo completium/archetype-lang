@@ -1,0 +1,17 @@
+archetype option_record_field_access
+
+record r {
+  a : nat;
+  b : string;
+}
+
+entry get_value() {
+  const vnone : option<r> = none;
+  const val0 = vnone ? f : 0x00;
+  dorequire(val0 = 0x00, "INVALID_VALUE");
+
+
+  const vsome : option<r> = some({a = 2; b = 0x02});
+  const val1 = vnone ? f : 0x00;
+  dorequire(val1 = 0x02, "INVALID_VALUE");
+}

@@ -1,0 +1,18 @@
+archetype asset_types
+
+asset A {
+  a : nat;
+  b : string;
+  c : bytes;
+  d : address;
+  e : signature;
+}
+
+entry get_value() {
+  const k : nat = 0;
+
+  const z : bytes = my_asset[k].c;
+  const y : option<bytes> = my_asset[k]?c;
+  const x : bytes = A[k] ? f : 0x00;
+
+}
