@@ -1,0 +1,25 @@
+archetype asset_types
+
+asset my_asset identified by a b {
+  a : nat;
+  b : string;
+  c : bytes;
+  d : address;
+  e : signature;
+}
+
+// record my_asset_key {
+//   a : nat;
+//   b : string;
+// }
+
+// record my_asset_value {
+//   c : bytes;
+//   d : address;
+//   e : signature;
+// }
+
+entry get_value() {
+  const k : my_asset_key = {a = 0; b = "mystr"};
+  const v : my_asset_value = my_asset[k]
+}
