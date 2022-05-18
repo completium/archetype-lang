@@ -32,6 +32,8 @@
 %token ASSERT
 %token AS
 %token ASSET
+%token ASSET_KEY
+%token ASSET_VALUE
 %token ASSET_VIEW
 %token AT
 %token AT_ADD
@@ -619,6 +621,8 @@ type_s_unloc:
 %inline container:
 | AGGREGATE   { Aggregate }
 | PARTITION   { Partition }
+| ASSET_KEY   { AssetKey }
+| ASSET_VALUE { AssetValue }
 | ASSET_VIEW  { AssetView }
 
 %inline shadow_asset_fields:

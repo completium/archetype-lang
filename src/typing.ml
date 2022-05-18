@@ -2379,9 +2379,11 @@ let rec valid_var_or_arg_type (ty : A.ptyp) =
 
 (* -------------------------------------------------------------------- *)
 let for_container (_ : env) = function
-  | PT.Aggregate -> A.Aggregate
-  | PT.Partition -> A.Partition
-  | PT.AssetView -> A.AssetView
+  | PT.Aggregate  -> A.Aggregate
+  | PT.Partition  -> A.Partition
+  | PT.AssetKey   -> A.AssetKey
+  | PT.AssetValue -> A.AssetValue
+  | PT.AssetView  -> A.AssetView
 
 (* -------------------------------------------------------------------- *)
 let for_assignment_operator = function

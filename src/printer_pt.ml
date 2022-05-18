@@ -104,7 +104,9 @@ let container_to_str c =
   match c with
   | Aggregate  -> "aggregate"
   | Partition  -> "partition"
+  | AssetValue -> "asset_value"
   | AssetView  -> "asset_view"
+  | AssetKey   -> "asset_key"
 
 let is_percent_prefix str = (String.length str >= 1 && String.equal "_" (String.sub str 0 1)) || is_keyword str
 

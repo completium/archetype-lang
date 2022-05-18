@@ -10,6 +10,8 @@ type container =
   | Collection
   | Aggregate
   | Partition
+  | AssetKey
+  | AssetValue
   | AssetView
 [@@deriving show {with_path = false}]
 
