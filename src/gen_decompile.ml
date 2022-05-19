@@ -1725,6 +1725,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     (* asset api expression *)
 
     | Mget      (_an, _c, _k)           -> assert false
+    | Mgetopt   (_an, _c, _k)           -> assert false
     | Mselect   (_an, _c, _la, _lb, _a) -> assert false
     | Msort     (_an, _c, _l)           -> assert false
     | Mcontains (_an, _c, _i)           -> assert false

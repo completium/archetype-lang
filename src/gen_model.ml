@@ -455,6 +455,12 @@ let to_model (ast : A.ast) : M.model =
         let asset_name = extract_asset_name fp in
         M.Mget (asset_name, to_ck env fp, fq)
 
+      | A.Pcall (Some p, A.Cconst (A.Cgetopt), [AExpr q]) when is_asset_container p ->
+        let fp = f p in
+        let fq = f q in
+        let asset_name = extract_asset_name fp in
+        M.Mgetopt (asset_name, to_ck env fp, fq)
+
       | A.Pcall (Some p, A.Cconst (A.Cselect), [AFun (_id, _type, l, q)]) when is_asset_container p ->
         let fp = f p in
         let lambda_body = f q in

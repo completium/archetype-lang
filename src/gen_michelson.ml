@@ -896,6 +896,7 @@ let to_ir (model : M.model) : T.ir =
     (* asset api expression *)
 
     | Mget      _ -> emit_error (UnsupportedTerm ("Mget"))
+    | Mgetopt   _ -> emit_error (UnsupportedTerm ("Mgetopt"))
     | Mselect   _ -> emit_error (UnsupportedTerm ("Mselect"))
     | Msort     _ -> emit_error (UnsupportedTerm ("Msort"))
     | Mcontains _ -> emit_error (UnsupportedTerm ("Mcontains"))

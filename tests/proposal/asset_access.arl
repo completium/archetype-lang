@@ -1,6 +1,6 @@
 archetype asset_access
 
-asset A {
+asset my_asset {
   a : nat;
   b : string;
   c : bytes;
@@ -13,6 +13,6 @@ entry get_value() {
 
   const z : bytes = my_asset[k].c;
   const y : option<bytes> = my_asset[k]?c;
-  const x : bytes = A[k] ? f : 0x00;
+  const x : bytes = my_asset[k] ? f : 0x00;
 
 }

@@ -4118,6 +4118,10 @@ let remove_asset (model : model) : model =
           mk_mterm (Mexprif(cond, get, failc (AssetNotFound an))) get.type_
         end
 
+      | Mgetopt (an, _, k) -> begin
+          mk_mterm (Mget(an, CKcoll(Tnone, Dnone), k)) mt.type_ |> fm ctx
+        end
+
       (* control *)
 
       | Mfor (FIsimple id, ICKcoll an, b, lbl) -> begin

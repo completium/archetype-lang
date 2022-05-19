@@ -927,6 +927,15 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (an, k)
 
+    | Mgetopt (an, c, k) ->
+      let pp fmt (an, k) =
+        Format.fprintf fmt "getopt_%a (%a, %a)"
+          pp_str an
+          (pp_container_kind f) c
+          f k
+      in
+      pp fmt (an, k)
+
     | Mselect (an, c, la, lb, a) ->
       let pp fmt (an, c, la, lb, a) =
         Format.fprintf fmt "select_%a (%a, (%a) -> %a)(%a)"

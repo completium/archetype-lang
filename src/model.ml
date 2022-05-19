@@ -334,6 +334,7 @@ type ('id, 'term) mterm_node  =
   | Maddforce         of ident * 'term
   (* asset api expression *)
   | Mget              of ident * 'term container_kind_gen * 'term
+  | Mgetopt           of ident * 'term container_kind_gen * 'term
   | Mselect           of ident * 'term container_kind_gen * (ident * type_) list * 'term * 'term list (* asset_name, view, lambda (args, body, apply_args) *)
   | Msort             of ident * 'term container_kind_gen * (ident * sort_kind) list
   | Mcontains         of ident * 'term container_kind_gen * 'term
@@ -1557,6 +1558,7 @@ let cmp_mterm_node
     | Maddforce (an1, v1), Maddforce (an2, v2)                                         -> cmp_ident an1 an2 && cmp v1 v2
     (* asset api expression *)
     | Mget (an1, c1, k1), Mget (an2, c2, k2)                                           -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && cmp k1 k2
+    | Mgetopt (an1, c1, k1), Mgetopt (an2, c2, k2)                                     -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && cmp k1 k2
     | Mselect (an1, c1, la1, lb1, a1), Mselect (an2, c2, la2, lb2, a2)                 -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && List.for_all2 (fun (i1, t1) (i2, t2) -> cmp_ident i1 i2 && cmp_type t1 t2) la1 la2 && cmp lb1 lb2 && List.for_all2 cmp a1 a2
     | Msort (an1, c1, l1), Msort (an2, c2, l2)                                         -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && List.for_all2 (fun (fn1, k1) (fn2, k2) -> cmp_ident fn1 fn2 && k1 = k2) l1 l2
     | Mcontains (an1, c1, i1), Mcontains (an2, c2, i2)                                 -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && cmp i1 i2
@@ -2006,6 +2008,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Maddforce (an, v)              -> Maddforce (fi an, f v)
   (* asset api expression *)
   | Mget (an, c, k)                -> Mget (fi an, map_container_kind fi f c, f k)
+  | Mgetopt (an, c, k)             -> Mgetopt (fi an, map_container_kind fi f c, f k)
   | Mselect (an, c, la, lb, a)     -> Mselect (fi an, map_container_kind fi f c, List.map (fun (i, t) -> (fi i, ft t)) la, f lb, List.map f a)
   | Msort (an, c, l)               -> Msort (fi an, map_container_kind fi f c, l)
   | Mcontains (an, c, i)           -> Mcontains (fi an, map_container_kind fi f c, f i)
@@ -2450,6 +2453,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Maddforce (_, v)                      -> f accu v
   (* asset api expression *)
   | Mget (_, c, k)                        -> f (fold_container_kind f accu c) k
+  | Mgetopt (_, c, k)                     -> f (fold_container_kind f accu c) k
   | Mselect (_, c, _, lb, a)              -> List.fold_left (fun accu x -> f accu x) (f (fold_container_kind f accu c) lb) a
   | Msort (_, c,_)                        -> fold_container_kind f accu c
   | Mcontains (_, c, i)                   -> f (fold_container_kind f accu c) i
@@ -3264,6 +3268,11 @@ let fold_map_term
     let ce, ca = fold_map_container_kind f accu c in
     let ke, ka = f ca k in
     g (Mget (an, ce, ke)), ka
+
+  | Mgetopt (an, c, k) ->
+    let ce, ca = fold_map_container_kind f accu c in
+    let ke, ka = f ca k in
+    g (Mgetopt (an, ce, ke)), ka
 
   | Mselect (an, c, la, lb, a) ->
     let ce, ca = fold_map_container_kind f accu c in

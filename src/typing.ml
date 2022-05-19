@@ -1269,6 +1269,7 @@ type mthtyp = [
   | `Coll
   | `SubColl
   | `PkOrAsset
+  | `OptVal
   | `Cmp
   | `Pred  of bool
   | `RExpr of bool
@@ -1313,6 +1314,7 @@ let methods : (string * method_) list =
     ("sum"         , mk A.Csum          `Both        (`Pure       ) `Total   `Standard (`Fixed [`RExpr false       ], Some (`Ref 0)));
     ("head"        , mk A.Chead         `Both        (`Pure       ) `Total   `Standard (`Fixed [`T A.vtnat         ], Some (`SubColl)));
     ("tail"        , mk A.Ctail         `Both        (`Pure       ) `Total   `Standard (`Fixed [`T A.vtnat         ], Some (`SubColl)));
+    ("getopt"      , mk A.Cgetopt       `Both        (`Pure       ) `Total   `Standard (`Fixed [`Pk                ], Some (`OptVal)));
   ]
 
 let methods = Mid.of_list methods
@@ -2370,7 +2372,9 @@ let rec valid_var_or_arg_type (ty : A.ptyp) =
   | Toperation      -> true
   | Ttrace     _    -> false
 
-  | Tcontainer (_, A.AssetView) -> true
+  | Tcontainer (_, A.AssetView)  -> true
+  | Tcontainer (_, A.AssetKey)   -> true
+  | Tcontainer (_, A.AssetValue) -> true
   | Tcontainer (_,      _) -> false
 
   | Tticket             ty -> valid_var_or_arg_type ty
@@ -3247,10 +3251,11 @@ let rec for_xexpr
             let pkty = asset |> Option.map (fun (asset, _) -> asset.as_pkty) in
             let pk = for_xexpr ?ety:pkty env pk in
 
-            let aoutty = Option.map (fun (asset, _) -> A.Tasset asset.as_name) asset in
-            let aoutty = aoutty |> Option.map (fun aoutty ->
+            let aoutty = Option.map (fun (asset, _) ->
+                let a =  A.Tasset asset.as_name in a, A.Tcontainer(a, AssetValue)) asset in
+            let aoutty = aoutty |> Option.map (fun (aoutty, aouttyv) ->
                 match mode.em_kind with
-                | `Expr    _ -> aoutty
+                | `Expr    _ -> aouttyv
                 | `Formula _ -> A.Toption aoutty)in
 
             mk_sp
@@ -3289,6 +3294,21 @@ let rec for_xexpr
               Env.emit_error env (loc x, err); bailout ()
 
             | Some { rfd_type = fty } ->
+              mk_sp (Some fty) (A.Pdot (e, x))
+          end
+
+        | Some (A.Tcontainer (A.Tasset asset, AssetValue)) -> begin
+            (* TODO: reject if the field is or contains pk *)
+            let asset = Env.Asset.get env (unloc asset) in
+
+            match get_field (unloc x) asset with
+            | None ->
+              let err = UnknownField (unloc asset.as_name, unloc x) in
+              Env.emit_error env (loc x, err); bailout ()
+
+            | Some { fd_type = fty; fd_ghost = ghost } ->
+              if ghost && not (is_form_kind mode.em_kind) then
+                Env.emit_error env (loc x, InvalidShadowFieldAccess);
               mk_sp (Some fty) (A.Pdot (e, x))
           end
 
@@ -3513,6 +3533,7 @@ let rec for_xexpr
           | `Asset   -> Some (A.Tasset asset.as_name)
           | `Coll    -> Some (A.Tcontainer (A.Tasset asset.as_name, A.Collection))
           | `SubColl -> Some (A.Tcontainer (A.Tasset asset.as_name, A.AssetView))
+          | `OptVal  -> Some (A.Toption (A.Tcontainer (A.Tasset asset.as_name, A.AssetValue)))
           | `Ref i   -> Mint.find_opt i amap
           | `Pk      -> Some (asset.as_pkty)
           | `PkOrAsset -> begin
@@ -4311,6 +4332,10 @@ and for_gen_method_call mode env theloc (the, m, args)
       | `SubColl ->
         let ty = A.Tcontainer (Tasset asset.as_name, A.AssetView) in
         A.AExpr (for_xexpr ~autoview:true mode env ~ety:ty arg)
+
+      | `OptVal ->
+        let ty = A.Toption (A.Tcontainer (Tasset asset.as_name, A.AssetValue)) in
+        A.AExpr (for_xexpr mode env ~ety:ty arg)
 
       | `T ty ->
         A.AExpr (for_xexpr mode env ~ety:ty arg)

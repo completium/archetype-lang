@@ -2216,6 +2216,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | Inv | Logic | Def -> Tget(dl an, map_mterm m ctx k,mk_lc_term an ctx)
         | _ -> mk_get_force ctx (dl an) (map_mterm m ctx k) (mk_lc_term an ctx)
       end
+
+    | Mgetopt (_an, _c, _k) -> error_not_translated "Mgetopt"
+
     (* view api ------------------------------------------------------------- *)
 
     | Mselect (n, c, args, tbody, _a) -> begin
@@ -2964,6 +2967,7 @@ let fold_exns m body : term list =
   let rec internal_fold_exn acc (term : M.mterm) =
     match term.M.node with
     | M.Mget (_, _, k) -> internal_fold_exn (acc @ [Texn ENotFound]) k
+    | M.Mgetopt (_, _, k) -> internal_fold_exn (acc @ [Texn ENotFound]) k
     | M.Mmapget (_, _ , _, c, k, _) -> internal_fold_exn (internal_fold_exn (acc @ [Texn ENotFound]) k) c
     | M.Mnth (_, CKview c, k) -> internal_fold_exn (internal_fold_exn (acc @ [Texn ENotFound]) c) k
     | M.Mnth (_, CKcoll _, k) -> internal_fold_exn ((acc @ [Texn ENotFound])) k
@@ -3176,6 +3180,7 @@ let mk_functions m =
           | Maddupdate        _ -> Format.eprintf "Maddupdate  "; true
           | Maddforce         _ -> Format.eprintf "Maddforce   "; true
           | Mget              _ -> Format.eprintf "Mget        "; true
+          | Mgetopt           _ -> Format.eprintf "Mgetopt     "; true
           | Mselect           _ -> Format.eprintf "Mselect     "; true
           | Msort             _ -> Format.eprintf "Msort       "; true
           | Mcontains         _ -> Format.eprintf "Mcontains   "; true
