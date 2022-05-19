@@ -15,6 +15,8 @@ type container =
   | Collection
   | Aggregate
   | Partition
+  | AssetKey
+  | AssetValue
   | View
 [@@deriving show {with_path = false}]
 
@@ -1129,6 +1131,8 @@ let tasset an              = mktype (Tasset an)
 let tcollection an         = mktype (Tcontainer (tasset an, Collection))
 let taggregate an          = mktype (Tcontainer (tasset an, Aggregate))
 let tpartition an          = mktype (Tcontainer (tasset an, Partition))
+let tassetkey an           = mktype (Tcontainer (tasset an, AssetKey))
+let tassetvalue an         = mktype (Tcontainer (tasset an, AssetValue))
 let tview an               = mktype (Tcontainer (tasset an, View))
 let toperations            = tlist toperation
 let tmetadata              = tbig_map tstring tbytes

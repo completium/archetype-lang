@@ -764,14 +764,14 @@ end = struct
         let rec doit b n va (a : rstack1) =
           match n with
           | 0 when not b ->
-              va
+            va
           | 0 ->
-              let x2 = vlocal () in
-              `Paired (a, (x2 :> rstack1))
+            let x2 = vlocal () in
+            `Paired (a, (x2 :> rstack1))
           | _ ->
-              let x1 = vlocal () in
-              let a  = doit b (n-1) va a in
-              `Paired ((x1 :> rstack1), a) in
+            let x1 = vlocal () in
+            let a  = doit b (n-1) va a in
+            `Paired ((x1 :> rstack1), a) in
 
         let a = vlocal () in
         let y = doit (n mod 2 <> 0) (n / 2) (a :> rstack1) x in
@@ -788,14 +788,14 @@ end = struct
         let rec doit b n (a : rstack1) =
           match n with
           | 0 when not b ->
-              a
+            a
           | 0 ->
-              let x2 = vlocal () in
-              `Paired (a, (x2 :> rstack1))
+            let x2 = vlocal () in
+            `Paired (a, (x2 :> rstack1))
           | _ ->
-              let x1 = vlocal () in
-              let a  = doit b (n-1) a in
-              `Paired ((x1 :> rstack1), a) in
+            let x1 = vlocal () in
+            let a  = doit b (n-1) a in
+            `Paired ((x1 :> rstack1), a) in
 
         mkdecomp ((doit (n mod 2 <> 0) (n / 2) x) :: s) []
       end
@@ -1168,7 +1168,7 @@ end = struct
         pr1 @ dc @ pr2
       | _ -> Format.eprintf "%a@." pp_rstack ost; assert false in
 
-(*    let _, code = code_kill Sdvar.empty code in*)
+    (*    let _, code = code_kill Sdvar.empty code in*)
     let _, code = code_cttprop Mint.empty code in
     let _, code = code_kill Sdvar.empty code in
 
@@ -1482,7 +1482,14 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Tbuiltin Bnever            -> A.tnever
     | Tbuiltin Bchest            -> A.tchest
     | Tbuiltin Bchest_key        -> A.tchest_key
-    | Tcontainer (t, c)          -> A.mk_tcontainer (f t) (match c with | Collection -> assert false | Aggregate -> A.Aggregate | Partition -> A.Partition | View -> A.AssetView)
+    | Tcontainer (t, c)          -> A.mk_tcontainer (f t)
+                                      (match c with
+                                       | Collection -> assert false
+                                       | Aggregate  -> A.Aggregate
+                                       | Partition  -> A.Partition
+                                       | AssetKey   -> A.AssetKey
+                                       | AssetValue -> A.AssetValue
+                                       | View       -> A.AssetView)
     | Tlist t                    -> A.mk_tlist (f t)
     | Toption t                  -> A.mk_toption (f t)
     | Ttuple tl                  -> A.mk_ttuple (List.map f tl)
