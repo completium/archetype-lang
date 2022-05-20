@@ -4119,7 +4119,18 @@ let remove_asset (model : model) : model =
         end
 
       | Mgetopt (an, _, k) -> begin
-          mk_mterm (Mget(an, CKcoll(Tnone, Dnone), k)) mt.type_ |> fm ctx
+          let k = fm ctx k in
+          let va = get_asset_global an in
+
+          let mkm, kt, vt =
+            match get_ntype va.type_ with
+            | Tmap (kt, vt) -> MKMap, kt, vt
+            | Tbig_map (kt, vt) -> MKBigMap, kt, vt
+            | Titerable_big_map (kt, vt) -> MKIterableBigMap, kt, vt
+            | _ -> assert false
+          in
+          let map_get_opt = Mmapgetopt (mkm, kt, vt, va, k) in
+          mk_mterm map_get_opt vt
         end
 
       (* control *)
@@ -5272,6 +5283,14 @@ let remove_high_level_model (model : model)  =
         |> mk_letin i  a
         |> mk_letin ie b
       end
+      | Mmapget (mkm, kt, vt, m, k, oan) ->
+        let mapgetopt = mk_mterm (Mmapgetopt (mkm, kt, vt, f m, f k)) (toption vt) in
+        let id = dumloc "_map_getopt_value" in
+        let some_value = mk_mvar id vt in
+        let none_value = match oan with | Some an -> failg (mk_tuple [mk_string "AssetNotFound"; mk_string an]) | None -> fail "NotFound" in
+
+        mk_mterm (Mmatchoption (mapgetopt, id, some_value, none_value)) vt
+
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model

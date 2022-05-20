@@ -961,9 +961,7 @@ let to_ir (model : M.model) : T.ir =
     | Mmapput (_, _, _, c, k, v)     -> T.Iterop (Tupdate, f k, T.isome (f v),   f c)
     | Mmapremove (_, _, tv, c, k)    -> T.Iterop (Tupdate, f k, T.inone (ft tv), f c)
     | Mmapupdate (_, _, _, c, k, v)  -> T.Iterop (Tupdate, f k, f v, f c)
-    | Mmapget (_, _, _, c, k, oan)   ->
-      let err = match oan with | Some an -> T.ipair (T.istring "AssetNotFound") (T.istring an) | None -> T.istring "NotFound" in
-      T.Iifnone (T.Ibinop (Bget, f k, f c), T.ifaild err, "_var_ifnone", Ivar "_var_ifnone", ft mtt.type_)
+    | Mmapget (_, _, _, _, _, _)     -> emit_error (UnsupportedTerm ("Mmapget"))
     | Mmapgetopt (_, _, _, c, k)     -> T.Ibinop (Bget, f k, f c)
     | Mmapcontains (_, _, _, c, k)   -> T.Ibinop (Bmem, f k, f c)
     | Mmaplength (_, _, _, c)        -> T.Iunop (Usize, f c)

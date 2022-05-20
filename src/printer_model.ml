@@ -39,7 +39,7 @@ let pp_container fmt = function
   | Partition  -> Format.fprintf fmt "partition"
   | AssetKey   -> Format.fprintf fmt "asset_key"
   | AssetValue -> Format.fprintf fmt "asset_value"
-  | View       -> Format.fprintf fmt "view"
+  | View       -> Format.fprintf fmt "asset_view"
 
 let rec pp_type fmt t =
   let pp_ntype fmt nt =
@@ -52,9 +52,9 @@ let rec pp_type fmt t =
       Format.fprintf fmt "%a" pp_id en
     | Tbuiltin b -> pp_btyp fmt b
     | Tcontainer (t, c) ->
-      Format.fprintf fmt "%a %a"
-        pp_type t
+      Format.fprintf fmt "%a<%a>"
         pp_container c
+        pp_type t
     | Tlist t ->
       Format.fprintf fmt "list<%a>"
         pp_type t
