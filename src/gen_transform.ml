@@ -2999,7 +2999,7 @@ let remove_duplicate_key (model : model) : model =
           Utils.get_labeled_value_from model an l
           |> List.filter (fun (lbl, _) -> not (String.equal lbl k))
         in
-        mk_mterm (Mlitrecord l) (tasset (dumloc (an ^ "_storage")))
+        mk_mterm (Mlitrecord l) (tasset (dumloc (an)))
       end
     | _ -> mt
   in
@@ -3038,7 +3038,7 @@ let remove_duplicate_key (model : model) : model =
                   | Tmap _ -> tmap, MKMap
                   | _ -> assert false
                 in
-                let t = mkm kt (tasset (dumloc ((unloc an) ^ "_storage"))) in
+                let t = mkm kt (tasset (dumloc (unloc an))) in
                 let mt = mk_mterm (Mlitmap (mkmm, List.map (fun (k, v) -> (k, remove_key_value_for_asset_node v)) l)) t in
                 mt, t
               | _ -> x.default, x.typ
@@ -4093,7 +4093,7 @@ let remove_asset (model : model) : model =
           if is_simple_record an
           then mt_get
           else
-            mk_mterm (Mdot(mt_get, fn)) mt.type_
+            mk_mterm (Mdot({mt_get with type_ = trecord (dumloc an)}, fn)) mt.type_
         end
       | Mget (an, CKcoll _, k) when Utils.is_asset_single_field model an && Utils.is_asset_map model an -> fm ctx k
 
@@ -4130,7 +4130,7 @@ let remove_asset (model : model) : model =
             | _ -> assert false
           in
           let map_get_opt = Mmapgetopt (mkm, kt, vt, va, k) in
-          mk_mterm map_get_opt vt
+          mk_mterm map_get_opt (toption vt)
         end
 
       (* control *)
@@ -5229,15 +5229,21 @@ let remove_asset (model : model) : model =
     let rec ft t : type_ =
       match get_ntype t with
       | Tcontainer ((Tasset an, _), View) -> tlist (Utils.get_asset_key model (unloc an) |> snd)
+      | Tcontainer ((Tasset an, _), AssetValue) -> trecord an
       | Tasset an -> for_asset_type (unloc an)
       | _ -> map_type ft t
     in
-    map_model (fun _ -> id) ft id model
+    map_model (fun _ -> id) ft (map_mterm id ~ft) model
+  in
+
+  let remove_decl_asset (model : model) : model =
+    {model with decls = List.remove_if (function | Dasset _ -> true | _ -> false) model.decls }
   in
 
   let model, map = process_storage model in
   process_mterm map model
   |> remove_type_asset
+  |> remove_decl_asset
 
 let remove_high_level_model (model : model)  =
   let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
@@ -5283,13 +5289,13 @@ let remove_high_level_model (model : model)  =
         |> mk_letin i  a
         |> mk_letin ie b
       end
-      | Mmapget (mkm, kt, vt, m, k, oan) ->
-        let mapgetopt = mk_mterm (Mmapgetopt (mkm, kt, vt, f m, f k)) (toption vt) in
-        let id = dumloc "_map_getopt_value" in
-        let some_value = mk_mvar id vt in
-        let none_value = match oan with | Some an -> failg (mk_tuple [mk_string "AssetNotFound"; mk_string an]) | None -> fail "NotFound" in
+    | Mmapget (mkm, kt, vt, m, k, oan) ->
+      let mapgetopt = mk_mterm (Mmapgetopt (mkm, kt, vt, f m, f k)) (toption vt) in
+      let id = dumloc "_map_getopt_value" in
+      let some_value = mk_mvar id vt in
+      let none_value = match oan with | Some an -> failg (mk_tuple [mk_string "AssetNotFound"; mk_string an]) | None -> fail "NotFound" in
 
-        mk_mterm (Mmatchoption (mapgetopt, id, some_value, none_value)) vt
+      mk_mterm (Mmatchoption (mapgetopt, id, some_value, none_value)) vt
 
     | _ -> map_mterm (aux ctx) mt
   in

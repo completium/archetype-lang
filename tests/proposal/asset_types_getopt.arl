@@ -1,6 +1,6 @@
 archetype asset_types
 
-asset my_asset {
+asset abc {
   a : nat;
   b : string;
   c : bytes;
@@ -9,7 +9,7 @@ asset my_asset {
 }
 
 entry get_value() {
-  const ov : option<asset_value<my_asset>> = my_asset.getopt(0);
+  const ov : option<asset_value<abc>> = abc.getopt(0);
   const v = match ov with | some(v) -> v.b | none -> "" end;
-  dorequire(v = "mystr", "INVALID_VALUE")
+  // dorequire(v = "mystr", "INVALID_VALUE")
 }
