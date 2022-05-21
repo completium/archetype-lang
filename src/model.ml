@@ -2145,15 +2145,14 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Minter (an, l, r)              -> Minter     (fi an, f l, f r)
   | Mdiff (an, l, r)               -> Mdiff      (fi an, f l, f r)
 
-let rec map_gen_mterm g f (ft : type_ -> type_) (mt : 'id mterm_gen) : 'id mterm_gen =
+let map_gen_mterm f (ft : type_ -> type_) (mt : 'id mterm_gen) : 'id mterm_gen =
   {
     mt with
-    node  = g (map_gen_mterm g f ft) mt.node;
+    node  = map_term_node_internal id id ft f mt.node;
     type_ = ft mt.type_;
   }
 
-let map_mterm f ?(ft = id) (mt : mterm)  =
-  map_gen_mterm (map_term_node_internal id id ft) f ft mt
+let map_mterm (f : mterm -> mterm) ?(ft = id) = map_gen_mterm f ft
 
 type ('id, 't) ctx_model_gen = {
   formula: bool;

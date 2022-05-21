@@ -11,5 +11,5 @@ asset abc {
 entry get_value() {
   const ov : option<asset_value<abc>> = abc.getopt(0);
   const v = match ov with | some(v) -> v.b | none -> "" end;
-  // dorequire(v = "mystr", "INVALID_VALUE")
+  dorequire(v = "mystr", "INVALID_VALUE")
 }

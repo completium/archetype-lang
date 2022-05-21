@@ -5233,7 +5233,8 @@ let remove_asset (model : model) : model =
       | Tasset an -> for_asset_type (unloc an)
       | _ -> map_type ft t
     in
-    map_model (fun _ -> id) ft (map_mterm id ~ft) model
+    let rec fm x = map_mterm ~ft fm x in
+    map_model (fun _ -> id) ft fm model
   in
 
   let remove_decl_asset (model : model) : model =
