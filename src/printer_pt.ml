@@ -385,7 +385,7 @@ let rec pp_expr outer pos fmt a =
   | Equestion (lhs, rhs, dv) ->
 
     let pp fmt (lhs, rhs) =
-      Format.fprintf fmt "%a?%a%a"
+      Format.fprintf fmt "%a.?%a%a"
         pp_simple_expr lhs
         pp_id rhs
         (pp_option (fun fmt -> Format.fprintf fmt ":%a" pp_simple_expr)) dv

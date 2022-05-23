@@ -570,7 +570,7 @@ let rec pp_pterm fmt (pterm : pterm) =
 
     | Pquestion (e, i, dv) ->
       let pp fmt (e, i) =
-        Format.fprintf fmt "%a?%a%a"
+        Format.fprintf fmt "%a.?%a%a"
           pp_pterm e
           pp_id i
           (pp_option (fun fmt -> Format.fprintf fmt ":%a" pp_pterm)) dv

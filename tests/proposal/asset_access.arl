@@ -12,7 +12,7 @@ entry get_value() {
   const k : nat = 0;
 
   const z : bytes = my_asset[k].c;
-  const y : option<bytes> = my_asset[k]?c;
-  const x : bytes = my_asset[k] ? f : 0x00;
+  const y : option<bytes> = my_asset[k].?c;
+  const x : bytes = my_asset[k] .? c : 0x00;
 
 }

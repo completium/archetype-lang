@@ -11,6 +11,6 @@ asset abc {
 variable res : option<string> = none
 
 entry get_value() {
-  res := abc[0]?b;
+  res := abc[0].?b;
   dorequire(res = some("mystr"), "INVALID_VALUE")
 }

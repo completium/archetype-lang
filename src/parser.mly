@@ -62,6 +62,7 @@
 %token DONE
 %token DOREQUIRE
 %token DOT
+%token DOTQUESTION
 %token EFFECT
 %token ELSE
 %token EMIT
@@ -135,7 +136,6 @@
 %token PLUSEQUAL
 %token POSTCONDITION
 %token PREDICATE
-%token QUESTION
 %token RBRACE
 %token RBRACKET
 %token RECORD
@@ -883,7 +883,7 @@ expr_r:
  | LPAREN RPAREN
      { Enothing }
 
- | x=simple_expr QUESTION y=ident COLON e=simple_expr
+ | x=simple_expr DOTQUESTION y=ident COLON e=simple_expr
      { Equestion (x, y, Some e) }
 
  | q=quantifier id=ident t=quant_kind COMMA y=expr
@@ -1027,7 +1027,7 @@ simple_expr_r:
  | x=simple_expr DOT id=ident a=app_args
      { Emethod (x, id, a) }
 
- | x=simple_expr QUESTION y=ident
+ | x=simple_expr DOTQUESTION y=ident
      { Equestion (x, y, None) }
 
  | LBRACKET RBRACKET

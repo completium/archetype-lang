@@ -612,12 +612,12 @@ let pp_mterm fmt (mt : mterm) =
         pp_id fn
 
     | Mquestionoption (a, fn) ->
-      Format.fprintf fmt "%a.%a"
+      Format.fprintf fmt "%a.?%a"
         f a
         pp_id fn
 
     | Mquestiondefault (a, fn, dv) ->
-      Format.fprintf fmt "%a ? %a : %a"
+      Format.fprintf fmt "%a .? %a : %a"
         f a
         pp_id fn
         f dv
