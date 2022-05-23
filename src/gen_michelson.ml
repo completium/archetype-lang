@@ -841,6 +841,8 @@ let to_ir (model : M.model) : T.ir =
 
     | Mdot (e, i)           -> access_record e i
     | Mdotassetfield _      -> emit_error (UnsupportedTerm ("Mdotassetfield"))
+    | Mquestionoption _     -> emit_error (UnsupportedTerm ("Mquestionoption"))
+    | Mquestiondefault _    -> emit_error (UnsupportedTerm ("Mquestiondefault"))
 
     (* comparison operators *)
 

@@ -366,7 +366,7 @@ let to_model (ast : A.ast) : M.model =
       | A.Plit ({node = BVbytes v; _})         -> M.Mbytes v
       | A.Plit ({node = BVunit; _})            -> M.Munit
 
-| A.Pquestion (e, id, _)
+
       | A.Pdot (e, id) -> begin
           match e with
           | {node = Pcall (Some a, Cconst Cget, [AExpr k])} -> begin
@@ -381,6 +381,12 @@ let to_model (ast : A.ast) : M.model =
             M.Mdot (f e, id)
         end
       (* | A.Pquestion (e, id, edv) -> assert false *)
+
+      | A.Pquestion (e, id, dv) -> begin
+          match dv with
+          | None -> M.Mquestionoption (f e, id)
+          | Some dv -> M.Mquestiondefault (f e, id, f dv)
+        end
 
       | A.Pconst Cstate                        -> M.Mvar(dumloc "", Vstate, Tnone, Dnone)
       | A.Pconst Cnow                          -> M.Mnow

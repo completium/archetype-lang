@@ -8,8 +8,10 @@ asset abc {
   { 0; "mystr"; 0x }
 }
 
+variable res : option<string> = none
 
 entry get_value() {
   const v : string = abc[1]? b : "not_found";
   dorequire(v = "not_found", "INVALID_VALUE");
+  res := some(v)
 }

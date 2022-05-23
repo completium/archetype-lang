@@ -294,6 +294,8 @@ type ('id, 'term) mterm_node  =
   (* access *)
   | Mdot              of 'term * 'id
   | Mdotassetfield    of 'id * 'term * 'id
+  | Mquestionoption   of 'term * 'id
+  | Mquestiondefault  of 'term * 'id * 'term
   (* comparison operators *)
   | Mequal            of type_ * 'term * 'term
   | Mnequal           of type_ * 'term * 'term
@@ -1518,6 +1520,8 @@ let cmp_mterm_node
     (* access *)
     | Mdot (e1, i1), Mdot (e2, i2)                                                     -> cmp e1 e2 && cmpi i1 i2
     | Mdotassetfield (an1, k1, fn1), Mdotassetfield (an2, k2, fn2)                     -> cmpi an1 an2 && cmp k1 k2 && cmpi fn1 fn2
+    | Mquestionoption (a1, fn1), Mquestionoption (a2, fn2)                             -> cmp a1 a2 && cmpi fn1 fn2
+    | Mquestiondefault (a1, fn1, dv1), Mquestiondefault (a2, fn2, dv2)                 -> cmp a1 a2 && cmpi fn1 fn2 && cmp dv1 dv2
     (* comparison operators *)
     | Mequal (t1, l1, r1), Mequal (t2, l2, r2)                                         -> cmp_type t1 t2 && cmp l1 l2 && cmp r1 r2
     | Mnequal (t1, l1, r1), Mnequal (t2, l2, r2)                                       -> cmp_type t1 t2 && cmp l1 l2 && cmp r1 r2
@@ -1968,6 +1972,8 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   (* access *)
   | Mdot (e, i)                    -> Mdot (f e, g i)
   | Mdotassetfield (an, k, fn)     -> Mdotassetfield (g an, f k, g fn)
+  | Mquestionoption (a, fn)        -> Mquestionoption (f a, g fn)
+  | Mquestiondefault (a, fn, dv)   -> Mquestiondefault (f a, g fn, f dv)
   (* comparison operators *)
   | Mequal (t, l, r)               -> Mequal (ft t, f l, f r)
   | Mnequal (t, l, r)              -> Mnequal (ft t, f l, f r)
@@ -2415,6 +2421,8 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   (* access *)
   | Mdot (e, _)                           -> f accu e
   | Mdotassetfield (_, k, _)              -> f accu k
+  | Mquestionoption (a, _)                -> f accu a
+  | Mquestiondefault (a, _, dv)           -> f (f accu a) dv
   (* comparison operators *)
   | Mequal (_, l, r)                      -> f (f accu l) r
   | Mnequal (_, l, r)                     -> f (f accu l) r
@@ -3061,6 +3069,14 @@ let fold_map_term
     let ke, ka = f accu k in
     g (Mdotassetfield (an, ke, fn)), ka
 
+  | Mquestionoption (a, fn) ->
+    let ae, aa = f accu a in
+    g (Mquestionoption (ae, fn)), aa
+
+  | Mquestiondefault (a, fn, dv) ->
+    let ae, aa = f accu a in
+    let dve, dva = f aa dv in
+    g (Mquestiondefault (ae, fn, dve)), dva
 
   (* comparison operators *)
 

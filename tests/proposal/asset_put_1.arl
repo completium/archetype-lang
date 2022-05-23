@@ -1,0 +1,13 @@
+archetype asset_access_basic
+
+asset abc {
+  a : nat;
+  b : string = "toto";
+  c : bytes;
+} initialized by {
+  { 0; "mystr"; 0x }
+}
+
+entry exec() {
+  abc.put({ a = 0; b = "toto"; c = 0x })
+}
