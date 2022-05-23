@@ -57,6 +57,7 @@ let string_of_token = function
   | PLUS                 -> "PLUS"
   | PKEY                 -> "PKEY"
   | PIPEEQUAL            -> "OREQUAL"
+  | QUESTION             -> "QUESTION"
   | PIPE_GREATER_GREATER -> "PIPE_GREATER_GREATER"
   | PIPE                 -> "PIPE"
   | PIDENT s             -> Printf.sprintf "PIDENT(%s)" s
@@ -229,6 +230,7 @@ let string_of_symbol = function
   | X (T T_RECORD) -> "record"
   | X (T T_RBRACKET) -> "]"
   | X (T T_RBRACE) -> "}"
+  | X (T T_QUESTION) -> "question"
   | X (T T_PREDICATE) -> "predicate"
   | X (T T_POSTCONDITION) -> "postcondition"
   | X (T T_PLUSEQUAL) -> "+="

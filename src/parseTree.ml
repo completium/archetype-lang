@@ -124,6 +124,7 @@ and expr_unloc =
   | Erecord        of record_item list
   | Etuple         of expr list
   | Edot           of expr * lident
+  | Equestion      of expr * lident * expr option
   | Esqapp         of expr * expr
   | Emulticomp     of expr * (comparison_operator loced * expr) list
   | Eapp           of function_ * expr list

@@ -3264,7 +3264,8 @@ let rec for_xexpr
           end
       end
 
-    | Edot (pe, x) -> begin
+    | Edot (pe, x)
+    | Equestion (pe, x, _) -> begin
         let e = for_xexpr env pe in
 
         match e.A.type_ with

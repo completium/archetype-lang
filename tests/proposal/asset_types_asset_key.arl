@@ -1,0 +1,15 @@
+archetype asset_types_get
+
+asset abc identified by a b {
+  a : nat;
+  b : string;
+  c : bytes;
+} initialized by {
+  { 0; "mystr"; 0x }
+}
+
+entry get_value() {
+  const r : asset_key<abc> = { a = 0; b = "toto"}
+  // const r : asset_key<abc> = (0, "toto");
+
+}

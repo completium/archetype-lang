@@ -135,6 +135,7 @@
 %token PLUSEQUAL
 %token POSTCONDITION
 %token PREDICATE
+%token QUESTION
 %token RBRACE
 %token RBRACKET
 %token RECORD
@@ -765,7 +766,6 @@ sourcedby:
 
 rf(X):
 | id=ident COLON e=expr %prec prec_labelexpr { (id, e, None) }
-| id=ident f=rfi(X) COLON e=expr %prec prec_labelexpr { (id, e, Some f) }
 | id=ident COLON e=expr f=rfi(X) %prec prec_labelexpr { (id, e, Some f) }
 
 %inline rfi(X):
@@ -882,6 +882,9 @@ ident_typ_q:
 expr_r:
  | LPAREN RPAREN
      { Enothing }
+
+ | x=simple_expr QUESTION y=ident COLON e=simple_expr
+     { Equestion (x, y, Some e) }
 
  | q=quantifier id=ident t=quant_kind COMMA y=expr
      { Equantifier (q, id, t, y) }
@@ -1023,6 +1026,9 @@ simple_expr_r:
 
  | x=simple_expr DOT id=ident a=app_args
      { Emethod (x, id, a) }
+
+ | x=simple_expr QUESTION y=ident
+     { Equestion (x, y, None) }
 
  | LBRACKET RBRACKET
      { Earray [] }

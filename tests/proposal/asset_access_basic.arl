@@ -1,0 +1,15 @@
+archetype asset_access_basic
+
+asset abc {
+  a : nat;
+  b : string;
+  c : bytes;
+} initialized by {
+  { 0; "mystr"; 0x }
+}
+
+
+entry get_value() {
+  const v : string = abc[0].b;
+  dorequire(v = "mystr", "INVALID_VALUE")
+}

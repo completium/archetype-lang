@@ -1,0 +1,15 @@
+archetype asset_access_option_found
+
+asset abc {
+  a : nat;
+  b : string;
+  c : bytes;
+} initialized by {
+  { 0; "mystr"; 0x }
+}
+
+
+entry get_value() {
+  const v : option<string> = abc[0]?b;
+  dorequire(v = some("mystr"), "INVALID_VALUE")
+}
