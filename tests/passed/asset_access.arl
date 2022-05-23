@@ -1,0 +1,21 @@
+archetype asset_access
+
+asset my_asset {
+  a : nat;
+  b : string;
+  c : bytes;
+} initialized by {
+  {0; "mystr"; 0x02 }
+}
+
+variable z : bytes = 0x
+variable y : option<bytes> = none<bytes>
+variable x : bytes = 0x
+
+entry get_value() {
+  const k : nat = 0;
+
+  z := my_asset[k].c;
+  y := my_asset[k].?c;
+  x := my_asset[k] .? c : 0x00;
+}
