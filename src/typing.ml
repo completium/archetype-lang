@@ -686,8 +686,9 @@ type error_desc =
   | InvalidArcheTypeDecl
   | InvalidAssetCollectionExpr         of A.ptyp
   | InvalidAssetExpression
-  | InvalidCallByExpression
+  | InvalidAssetGetContainer           of A.container
   | InvalidCallByAsset
+  | InvalidCallByExpression
   | InvalidEffectForCtn                of A.container * A.container list
   | InvalidEntryDescription
   | InvalidEntryExpression
@@ -913,6 +914,7 @@ let pp_error_desc fmt e =
   | InvalidArcheTypeDecl               -> pp "Invalid Archetype declaration"
   | InvalidAssetCollectionExpr ty      -> pp "Invalid asset collection expression: %a" A.pp_ptyp ty
   | InvalidAssetExpression             -> pp "Invalid asset expression"
+  | InvalidAssetGetContainer c         -> pp "Operator `[]` is not available for %a" Printer_ast.pp_container c
   | InvalidCallByExpression            -> pp "Invalid 'Calledby' expression"
   | InvalidCallByAsset                 -> pp "Invalid 'Calledby' asset, the key must be typed address"
   | InvalidEffectForCtn _              -> pp "Invalid effect for this container kind"
@@ -3226,16 +3228,7 @@ let rec for_xexpr
             mk_sp (Some (List.nth lt i)) (A.Ptupleaccess (ee, idx))
           end
         | Some (A.Tmap     (kt, vt))
-        | Some (A.Tbig_map (kt, vt)) -> begin
-            let pk = for_xexpr ?ety:(Some kt) env pk in
-            let rty =
-              match mode.em_kind with
-              | `Formula _ -> Some (A.Toption vt)
-              | _ -> Some vt in
-            mk_sp
-              rty
-              (A.Pcall (None, A.Cconst A.Cmget, [A.AExpr ee; A.AExpr pk]))
-          end
+        | Some (A.Tbig_map (kt, vt))
         | Some (A.Titerable_big_map (kt, vt)) -> begin
             let pk = for_xexpr ?ety:(Some kt) env pk in
             let rty =
@@ -3257,6 +3250,13 @@ let rec for_xexpr
                 match mode.em_kind with
                 | `Expr    _ -> aouttyv
                 | `Formula _ -> A.Toption aoutty)in
+
+            asset |> Option.iter (
+              fun x ->
+                x
+                |> snd
+                |> (fun c -> match c with | A.Collection -> () | _ -> Env.emit_error env (loc tope, InvalidAssetGetContainer(c)))
+            );
 
             mk_sp
               aoutty
