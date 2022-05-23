@@ -10,6 +10,6 @@ asset abc {
 
 
 entry get_value() {
-  const v : string = abc[0]?b:"not_found";
-  dorequire(v = some("mystr"), "INVALID_VALUE");
+  const v : string = abc[0]?b : "not_found";
+  dorequire(v = "mystr", "INVALID_VALUE");
 }

@@ -3264,8 +3264,7 @@ let rec for_xexpr
           end
       end
 
-    | Edot (pe, x)
-    | Equestion (pe, x, _) -> begin
+    | Edot (pe, x) -> begin
         let e = for_xexpr env pe in
 
         match e.A.type_ with
@@ -3311,6 +3310,50 @@ let rec for_xexpr
               if ghost && not (is_form_kind mode.em_kind) then
                 Env.emit_error env (loc x, InvalidShadowFieldAccess);
               mk_sp (Some fty) (A.Pdot (e, x))
+          end
+
+        | Some ty ->
+          Env.emit_error env (loc pe, AssetOrRecordExpected ty);
+          bailout ()
+      end
+
+    | Equestion (pe, x, dv) -> begin
+        let e = for_xexpr env pe in
+        let get_type fty x = match x with | Some _ -> fty | None -> A.Toption fty in
+
+        match e.A.type_ with
+        | None ->
+          bailout ()
+
+        | Some (A.Tasset asset) -> begin
+            let asset = Env.Asset.get env (unloc asset) in
+
+            match get_field (unloc x) asset with
+            | None ->
+              let err = UnknownField (unloc asset.as_name, unloc x) in
+              Env.emit_error env (loc x, err); bailout ()
+
+            | Some { fd_type = fty; fd_ghost = ghost } ->
+              if ghost && not (is_form_kind mode.em_kind) then
+                Env.emit_error env (loc x, InvalidShadowFieldAccess);
+              let edv = Option.map (for_xexpr ~ety:fty env) dv in
+              mk_sp (Some (get_type fty edv)) (A.Pquestion (e, x, edv))
+          end
+
+        | Some (A.Tcontainer (A.Tasset asset, AssetValue)) -> begin
+            (* TODO: reject if the field is or contains pk *)
+            let asset = Env.Asset.get env (unloc asset) in
+
+            match get_field (unloc x) asset with
+            | None ->
+              let err = UnknownField (unloc asset.as_name, unloc x) in
+              Env.emit_error env (loc x, err); bailout ()
+
+            | Some { fd_type = fty; fd_ghost = ghost } ->
+              if ghost && not (is_form_kind mode.em_kind) then
+                Env.emit_error env (loc x, InvalidShadowFieldAccess);
+              let edv = Option.map (for_xexpr ~ety:fty env) dv in
+              mk_sp (Some (get_type fty edv)) (A.Pquestion (e, x, edv))
           end
 
         | Some ty ->

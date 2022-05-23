@@ -568,6 +568,15 @@ let rec pp_pterm fmt (pterm : pterm) =
       in
       (pp_with_paren pp) fmt (e, i)
 
+    | Pquestion (e, i, dv) ->
+      let pp fmt (e, i) =
+        Format.fprintf fmt "%a?%a%a"
+          pp_pterm e
+          pp_id i
+          (pp_option (fun fmt -> Format.fprintf fmt ":%a" pp_pterm)) dv
+      in
+      (pp_with_paren pp) fmt (e, i)
+
     | Pconst c ->
       let pp fmt c =
         pp_str fmt (to_const c)
