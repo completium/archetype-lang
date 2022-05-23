@@ -7,7 +7,7 @@ asset my_asset {
 
 record my_record {
   c : nat;
-  d : pkey<my_asset>;
+  d : asset_key<my_asset>;
 }
 
 entry exec () {

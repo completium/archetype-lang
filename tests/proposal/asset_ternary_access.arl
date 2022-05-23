@@ -8,5 +8,5 @@ asset myasset {
 variable s : nat = 0
 
 entry exec() {
-  var n = myasset["nokey"]?.v:2
+  var n = myasset["nokey"]?v:2
 }
