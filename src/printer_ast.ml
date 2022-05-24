@@ -229,6 +229,7 @@ let to_const = function
   | Clevel          -> "level"
   (* function *)
   | Cadd            -> "add"
+  | Cput            -> "put"
   | Caddupdate      -> "addupdate"
   | Cceil           -> "ceil"
   | Cclear          -> "clear"

@@ -2011,6 +2011,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         (mk_match_get_none ctx n key_value assigns EKeyExists)
         [CAdd n]
 
+    | Mputsingleasset _ -> error_not_translated "Mputsingleasset"
+    | Mputasset _       -> error_not_translated "Mputasset"
+
     | Maddfield (a, f, k, kb) ->
       let oasset, _, _ = M.Utils.get_container_asset_key m a f in
       let mk_add_id = loc_term (Tdoti (mk_aggregate_id f, "add")) in

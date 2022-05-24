@@ -4190,6 +4190,8 @@ let remove_asset (model : model) : model =
 
       | Maddasset (an, v) -> add_asset (fm ctx) an v
 
+      | Mputsingleasset (an, v) -> add_asset (fm ctx) an v ~force:true
+
       | Maddfield (an, fn, ak, b) -> begin
           let ak = fm ctx ak in
 

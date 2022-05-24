@@ -834,6 +834,23 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (an, i)
 
+    | Mputsingleasset (an, i) ->
+      let pp fmt (an, i) =
+        Format.fprintf fmt "put_%a (%a)"
+          pp_str an
+          f i
+      in
+      pp fmt (an, i)
+
+    | Mputasset (an, k, v) ->
+      let pp fmt (an, k, v) =
+        Format.fprintf fmt "put_%a (%a, %a)"
+          pp_str an
+          f k
+          f v
+      in
+      pp fmt (an, k, v)
+
     | Maddfield (an, fn, c, i) ->
       let pp fmt (an, fn, c, i) =
         Format.fprintf fmt "add_%a_%a (%a, %a)"

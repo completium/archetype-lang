@@ -1137,6 +1137,23 @@ let to_model (ast : A.ast) : M.model =
           | _ -> assert false
         )
 
+      | A.Icall (Some p, A.Cconst (A.Cput), [AExpr q]) when is_asset_container p -> (
+          let fp = f p in
+          let fq = f q in
+          match fp with
+          | {node = M.Mvar (asset_name, Vstorecol, _, _); _} -> M.Mputsingleasset (unloc asset_name, fq)
+          | _ -> assert false
+        )
+
+      | A.Icall (Some p, A.Cconst (A.Cput), [AExpr k; AExpr v]) when is_asset_container p -> (
+          let fp = f p in
+          let fk = f k in
+          let fv = f v in
+          match fp with
+          | {node = M.Mvar (asset_name, Vstorecol, _, _); _} -> M.Mputasset (unloc asset_name, fk, fv)
+          | _ -> assert false
+        )
+
       | A.Icall (Some p, A.Cconst (A.Cremove), [AExpr q]) when is_asset_container p -> (
           let fp = f p in
           let fq = f q in

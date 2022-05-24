@@ -154,6 +154,7 @@ type const =
   | Clevel
   (* function *)
   | Cadd
+  | Cput
   | Caddupdate
   | Cceil
   | Cclear

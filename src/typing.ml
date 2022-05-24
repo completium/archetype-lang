@@ -1302,6 +1302,7 @@ let methods : (string * method_) list =
     ("inter"       , mk A.Cinter        `OnlyFormula (`Pure       ) `Total   `Standard (`Fixed [`Coll              ], Some (`Coll)));
     ("diff"        , mk A.Cdiff         `OnlyFormula (`Pure       ) `Total   `Standard (`Fixed [`Coll              ], Some (`Coll)));
     ("add"         , mk A.Cadd          `Both        (`Effect cap ) `Total   `Both     (`Fixed [`ThePkForAggregate ], None));
+    ("put"         , mk A.Cput          `Both        (`Effect c   ) `Total   `Both     (`Fixed [`ThePkForAggregate ], None));
     ("remove"      , mk A.Cremove       `Both        (`Effect cap ) `Total   `Both     (`Fixed [`Pk                ], None));
     ("clear"       , mk A.Cclear        `Both        (`Effect capv) `Total   `Standard (`Fixed [                   ], None));
     ("removeif"    , mk A.Cremoveif     `Both        (`Effect cap ) `Total   `Standard (`Fixed [`Pred true         ], None));

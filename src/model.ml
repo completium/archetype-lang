@@ -324,6 +324,8 @@ type ('id, 'term) mterm_node  =
   | Msubmutez         of 'term * 'term
   (* asset api effect *)
   | Maddasset         of ident * 'term
+  | Mputsingleasset   of ident * 'term
+  | Mputasset         of ident * 'term * 'term
   | Maddfield         of ident * ident * 'term * 'term (* asset_name * field_name * asset instance * item *)
   | Mremoveasset      of ident * 'term
   | Mremovefield      of ident * ident * 'term * 'term
@@ -1550,6 +1552,8 @@ let cmp_mterm_node
     | Msubmutez (l1, r1), Msubmutez (l2, r2)                                           -> cmp l1 l2 && cmp r1 r2
     (* asset api effect *)
     | Maddasset (an1, i1), Maddasset (an2, i2)                                         -> cmp_ident an1 an2 && cmp i1 i2
+    | Mputsingleasset (an1, i1), Mputsingleasset (an2, i2)                             -> cmp_ident an1 an2 && cmp i1 i2
+    | Mputasset (an1, k1, v1), Mputasset (an2, k2, v2)                                 -> cmp_ident an1 an2 && cmp k1 k2 && cmp v1 v2
     | Maddfield (an1, fn1, c1, i1), Maddfield (an2, fn2, c2, i2)                       -> cmp_ident an1 an2 && cmp_ident fn1 fn2 && cmp c1 c2 && cmp i1 i2
     | Mremoveasset (an1, i1), Mremoveasset (an2, i2)                                   -> cmp_ident an1 an2 && cmp i1 i2
     | Mremovefield (an1, fn1, c1, i1), Mremovefield (an2, fn2, c2, i2)                 -> cmp_ident an1 an2 && cmp_ident fn1 fn2 && cmp c1 c2 && cmp i1 i2
@@ -2002,6 +2006,8 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Msubmutez (l, r)               -> Msubmutez (f l, f r)
   (* asset api effect *)
   | Maddasset (an, i)              -> Maddasset (fi an, f i)
+  | Mputsingleasset (an, i)        -> Mputsingleasset (fi an, f i)
+  | Mputasset (an, k, v)           -> Mputasset (fi an, f k, f v)
   | Maddfield (an, fn, c, i)       -> Maddfield (fi an, fi fn, f c, f i)
   | Mremoveasset (an, i)           -> Mremoveasset (fi an, f i)
   | Mremovefield (an, fn, c, i)    -> Mremovefield (fi an, fi fn, f c, f i)
@@ -2451,6 +2457,8 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Msubmutez (l, r)                      -> f (f accu l) r
   (* asset api effect *)
   | Maddasset (_, i)                      -> f accu i
+  | Mputsingleasset (_, i)                -> f accu i
+  | Mputasset (_, k, v)                   -> f (f accu k) v
   | Maddfield (_, _, c, i)                -> f (f accu c) i
   | Mremoveasset (_, i)                   -> f accu i
   | Mremovefield (_, _, c, i)             -> f (f accu c) i
@@ -3212,6 +3220,15 @@ let fold_map_term
   | Maddasset (an, i) ->
     let ie, ia = f accu i in
     g (Maddasset (an, ie)), ia
+
+  | Mputsingleasset (an, i) ->
+    let ie, ia = f accu i in
+    g (Mputsingleasset (an, ie)), ia
+
+  | Mputasset (an, k, v) ->
+    let ke, ka = f accu k in
+    let ve, va = f ka v in
+    g (Mputasset (an, ke, ve)), va
 
   | Maddfield (an, fn, c, i) ->
     let ce, ca = f accu c in

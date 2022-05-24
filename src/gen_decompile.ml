@@ -1711,17 +1711,19 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     (* asset api effect *)
 
-    | Maddasset    (_an, _i)               -> assert false
-    | Maddfield    (_an, _fn, _c, _i)      -> assert false
-    | Mremoveasset (_an, _i)               -> assert false
-    | Mremovefield (_an, _fn, _c, _i)      -> assert false
-    | Mremoveall   (_an, _fn, _a)          -> assert false
-    | Mremoveif    (_an, _c, _la, _lb, _a) -> assert false
-    | Mclear       (_an, _v)               -> assert false
-    | Mset         (_c,  _l, _k, _v)       -> assert false
-    | Mupdate      (_an, _k, _l)           -> assert false
-    | Maddupdate   (_an, _c, _k, _l)       -> assert false
-    | Maddforce    (_an, _v)               -> assert false
+    | Maddasset       (_an, _i)               -> assert false
+    | Mputsingleasset (_an, _i)               -> assert false
+    | Mputasset       (_an, _k, _v)           -> assert false
+    | Maddfield       (_an, _fn, _c, _i)      -> assert false
+    | Mremoveasset    (_an, _i)               -> assert false
+    | Mremovefield    (_an, _fn, _c, _i)      -> assert false
+    | Mremoveall      (_an, _fn, _a)          -> assert false
+    | Mremoveif       (_an, _c, _la, _lb, _a) -> assert false
+    | Mclear          (_an, _v)               -> assert false
+    | Mset            (_c,  _l, _k, _v)       -> assert false
+    | Mupdate         (_an, _k, _l)           -> assert false
+    | Maddupdate      (_an, _c, _k, _l)       -> assert false
+    | Maddforce       (_an, _v)               -> assert false
 
 
     (* asset api expression *)
