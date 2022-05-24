@@ -443,7 +443,7 @@ entry update_operators (upl : list<or<operator_param, operator_param>>) {
 
 entry approve (spender : address, value : nat, itoken_id : nat) {
   require {
-    r1 otherwise "NOT_A_FA1_2" : token[itoken_id].token_typ = FA1_2
+    r1 : token[itoken_id].token_typ = FA1_2 otherwise "NOT_A_FA1_2"
   }
   effect {
     match get_transfer_policy(itoken_id) with

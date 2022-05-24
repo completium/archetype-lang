@@ -1723,7 +1723,6 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mset            (_c,  _l, _k, _v)       -> assert false
     | Mupdate         (_an, _k, _l)           -> assert false
     | Maddupdate      (_an, _c, _k, _l)       -> assert false
-    | Maddforce       (_an, _v)               -> assert false
 
 
     (* asset api expression *)

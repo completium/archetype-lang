@@ -894,7 +894,6 @@ let to_ir (model : M.model) : T.ir =
     | Mset _            -> emit_error (UnsupportedTerm ("Mset"))
     | Mupdate _         -> emit_error (UnsupportedTerm ("Mupdate"))
     | Maddupdate _      -> emit_error (UnsupportedTerm ("Maddupdate"))
-    | Maddforce _       -> emit_error (UnsupportedTerm ("Maddforce"))
 
 
     (* asset api expression *)

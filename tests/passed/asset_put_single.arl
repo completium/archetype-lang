@@ -1,4 +1,4 @@
-archetype asset_access_basic
+archetype asset_put_single
 
 asset abc {
   a : nat;
@@ -9,5 +9,5 @@ asset abc {
 }
 
 entry exec() {
-  abc.put({ a = 0; b = "toto"; c = 0x })
+  abc.put({ a = 2; b = "toto"; c = 0x02 })
 }

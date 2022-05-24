@@ -15,7 +15,7 @@ asset ledger identified by holder to big_map {
 
 entry %transfer (%from : address, %to : address, value : nat) {
   require {
-    r1 otherwise "NotEnoughBalance" : ledger[%from].tokens >= value;
+    r1 : ledger[%from].tokens >= value otherwise "NotEnoughBalance";
   }
   effect {
     if caller <> %from then (

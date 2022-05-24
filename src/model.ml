@@ -335,7 +335,6 @@ type ('id, 'term) mterm_node  =
   | Mset              of ident * ident list * 'term * 'term (*asset_name * field_name modified * ... *)
   | Mupdate           of ident * 'term * ('id * assignment_operator * 'term) list
   | Maddupdate        of ident * 'term container_kind_gen * 'term * ('id * assignment_operator * 'term) list
-  | Maddforce         of ident * 'term
   (* asset api expression *)
   | Mget              of ident * 'term container_kind_gen * 'term
   | Mgetopt           of ident * 'term container_kind_gen * 'term
@@ -1563,7 +1562,6 @@ let cmp_mterm_node
     | Mset (c1, l1, k1, v1), Mset (c2, l2, k2, v2)                                     -> cmp_ident c1 c2 && List.for_all2 cmp_ident l1 l2 && cmp k1 k2 && cmp v1 v2
     | Mupdate (an1, k1, l1), Mupdate (an2, k2, l2)                                     -> cmp_ident an1 an2 && cmp k1 k2 && List.for_all2 (fun (id1, op1, v1) (id2, op2, v2) -> cmpi id1 id2 && cmp_assign_op op1 op2 && cmp v1 v2) l1 l2
     | Maddupdate (an1, c1, k1, l1), Maddupdate (an2, c2, k2, l2)                       -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && cmp k1 k2 && List.for_all2 (fun (id1, op1, v1) (id2, op2, v2) -> cmpi id1 id2 && cmp_assign_op op1 op2 && cmp v1 v2) l1 l2
-    | Maddforce (an1, v1), Maddforce (an2, v2)                                         -> cmp_ident an1 an2 && cmp v1 v2
     (* asset api expression *)
     | Mget (an1, c1, k1), Mget (an2, c2, k2)                                           -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && cmp k1 k2
     | Mgetopt (an1, c1, k1), Mgetopt (an2, c2, k2)                                     -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && cmp k1 k2
@@ -2017,7 +2015,6 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mset (an, l, k, v)             -> Mset (fi an, List.map fi l, f k, f v)
   | Mupdate (an, k, l)             -> Mupdate (fi an, f k, List.map (fun (id, op, v) -> (g id, op, f v)) l)
   | Maddupdate (an, c, k, l)       -> Maddupdate (fi an, map_container_kind fi f c, f k, List.map (fun (id, op, v) -> (g id, op, f v)) l)
-  | Maddforce (an, v)              -> Maddforce (fi an, f v)
   (* asset api expression *)
   | Mget (an, c, k)                -> Mget (fi an, map_container_kind fi f c, f k)
   | Mgetopt (an, c, k)             -> Mgetopt (fi an, map_container_kind fi f c, f k)
@@ -2468,7 +2465,6 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mset (_, _, k, v)                     -> f (f accu v) k
   | Mupdate (_, k, l)                     -> List.fold_left (fun accu (_, _, v) -> f accu v) (f accu k) l
   | Maddupdate (_, c, k, l)               -> List.fold_left (fun accu (_, _, v) -> f accu v) (f (fold_container_kind f accu c) k) l
-  | Maddforce (_, v)                      -> f accu v
   (* asset api expression *)
   | Mget (_, c, k)                        -> f (fold_container_kind f accu c) k
   | Mgetopt (_, c, k)                     -> f (fold_container_kind f accu c) k
@@ -3291,10 +3287,6 @@ let fold_map_term
       |> (fun (x, y) -> (List.rev x, y))
     in
     g (Maddupdate (an, ce, ke, le)), la
-
-  | Maddforce (an, v) ->
-    let ve, va = f accu v in
-    g (Maddforce (an, ve)), va
 
 
   (* asset api expression *)
@@ -5984,6 +5976,8 @@ end = struct
     let rec aux accu (t : mterm) =
       match t.node with
       | Maddasset (an, _)                                 -> (Eadded an)::accu
+      | Mputsingleasset (an, _)                           -> (Eadded an)::accu
+      | Mputasset (an, _, _)                              -> (Eadded an)::accu
       | Maddfield (an, fn, _, _)                          -> with_partition accu an fn `Updated `Added
       | Mremoveasset (an, _)                              -> (Eremoved an)::accu
       | Mremovefield (an, fn, _, _)                       -> with_partition accu an fn `Updated `Removed
@@ -5994,7 +5988,6 @@ end = struct
       | Mclear (an, CKview _)                             -> all_partition accu an `Removed `Removed
       | Mclear (an, CKfield (_, fn, _, _, _))             -> with_partition accu an fn `Updated `Removed
       | Mset (an, _, _, _)                                -> (Eupdated an)::accu
-      | Maddforce (an, _)                                 -> all_partition accu an `Added `Added
       | _ -> fold_term aux accu t in
     aux [] mt
 

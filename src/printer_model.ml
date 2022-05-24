@@ -935,14 +935,6 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (an, c, k, l)
 
-    | Maddforce (an, v) ->
-      let pp fmt (an, v) =
-        Format.fprintf fmt "add_force_%a (%a)"
-          pp_str an
-          f v
-      in
-      pp fmt (an, v)
-
 
     (* asset api expression *)
 

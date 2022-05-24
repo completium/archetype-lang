@@ -2214,7 +2214,6 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Mupdate             _ -> error_not_translated "Mupdate"
     | Maddupdate          _ -> error_not_translated "Maddupdate"
-    | Maddforce           _ -> error_not_translated "Maddforce"
 
     | Mget (an, _c, k) ->
       begin match ctx.lctx with
@@ -3183,7 +3182,6 @@ let mk_functions m =
           | Mset              _ -> Format.eprintf "Mset        "; true
           | Mupdate           _ -> Format.eprintf "Mupdate     "; true
           | Maddupdate        _ -> Format.eprintf "Maddupdate  "; true
-          | Maddforce         _ -> Format.eprintf "Maddforce   "; true
           | Mget              _ -> Format.eprintf "Mget        "; true
           | Mgetopt           _ -> Format.eprintf "Mgetopt     "; true
           | Mselect           _ -> Format.eprintf "Mselect     "; true
