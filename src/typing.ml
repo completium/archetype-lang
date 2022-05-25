@@ -4836,7 +4836,7 @@ let rec for_instruction_r
                   match the.node with
                   | Pvar (VTnone, Vnone, x) -> assign (`Var x)
                   | Pdot ({node = Pvar (VTnone, Vnone, _); type_ = Some (Trecord rn)} as x, fn) -> assign (`Field (rn, x, fn))
-                  | Pdot ({node = Pcall (Some {type_ = Some (Tcontainer ((Tasset _), Collection))}, Cconst Cget, [AExpr k]); type_ = Some (Tasset an)}, fn) -> assign (`Asset (an, k, fn))
+                  | Pdot ({node = Pcall (Some {type_ = Some (Tcontainer ((Tasset _), Collection))}, Cconst Cget, [AExpr k]); type_ = Some (Tasset an | Tcontainer (Tasset an, AssetValue))}, fn) -> assign (`Asset (an, k, fn))
                   (* TODO: handle partition, issue: #245 *)
                   | _ -> Env.emit_error env (the.loc, InvalidVariableForMethod); aout
                 end else
