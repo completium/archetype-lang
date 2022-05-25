@@ -6035,3 +6035,14 @@ let remove_iterable_big_map (model : model) : model =
     }
   in
   map_mterm_model aux model
+
+let lazy_eval_condition (model : model) : model =
+  let mk_if (cond : mterm) (then_ : mterm) (else_ : mterm) : mterm = mk_mterm (Mexprif(cond, then_, else_)) tbool in
+  let rec aux ctx (mt : mterm) : mterm =
+    let f = aux ctx in
+    match mt with
+    | { node = Mand(a, b); type_ = (Tbuiltin Bbool, _) } -> mk_if (f a) (mk_if (f b) mtrue mfalse) mfalse
+    | { node = Mor(a, b); type_ = (Tbuiltin Bbool, _) }  -> mk_if (f a) mtrue (mk_if (f b) mtrue mfalse)
+    | _ -> map_mterm (aux ctx) mt
+  in
+  map_mterm_model aux model
