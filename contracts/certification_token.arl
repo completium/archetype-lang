@@ -19,9 +19,9 @@ asset certification {
   cid : string;
   cdate : date;
   ccer : string;
-  clea : pkey<learner>;
-  cins : pkey<institution>;
-  ccertifier: pkey<certifier>;
+  clea : asset_key<learner>;
+  cins : asset_key<institution>;
+  ccertifier: asset_key<certifier>;
 }
 
 constant dtkl : int = 1
@@ -86,9 +86,9 @@ entry certify (
   cert_cid : string,
   cert_cdate : date,
   cert_ccer : string,
-  cert_clea : pkey<learner>,
-  cert_cins : pkey<institution>,
-  cert_ccertifier: pkey<certifier>) {
+  cert_clea : asset_key<learner>,
+  cert_cins : asset_key<institution>,
+  cert_ccertifier: asset_key<certifier>) {
   require {
     r1: certifier.contains(caller);
   }

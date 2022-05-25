@@ -3,4 +3,5 @@ archetype test_emptylist
 entry exec() {
   // var l : list<nat> = []
   var l : list<nat> = emptylist<nat>();
+  ()
 }

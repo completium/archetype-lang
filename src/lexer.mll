@@ -91,7 +91,6 @@
       "or"                  , OR                  ;
       "otherwise"           , OTHERWISE           ;
       "partition"           , PARTITION           ;
-      "pkey"                , PKEY                ;
       "postcondition"       , POSTCONDITION       ;
       "predicate"           , PREDICATE           ;
       "record"              , RECORD              ;

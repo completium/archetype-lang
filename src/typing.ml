@@ -2453,6 +2453,24 @@ let for_type_exn ?pkey (env : env) =
         | Some ty -> ty
       end
 
+    | Tcontainer (ty, AssetKey) -> begin
+        match doit ~canasset:true ty with
+        | A.Tasset x -> begin
+            let decl = Env.Asset.get env (unloc x) in
+
+            match pkey with
+            | Some map when List.mem (unloc x) map ->
+              Tnamed (List.index_of ((=) (unloc x)) map)
+
+            | _ ->
+              decl.as_pkty
+          end
+
+        | _ ->
+          Env.emit_error env (loc (fst ty), NotAnAssetType);
+          raise InvalidType
+      end
+
     | Tcontainer (pty, ctn) ->
       let ty = doit ~canasset:true pty in
 
@@ -2535,24 +2553,6 @@ let for_type_exn ?pkey (env : env) =
     | Tcontract ty ->
       A.Tcontract (doit ty)
 
-    | Tkeyof ty -> begin
-        match doit ~canasset:true ty with
-        | A.Tasset x -> begin
-            let decl = Env.Asset.get env (unloc x) in
-
-            match pkey with
-            | Some map when List.mem (unloc x) map ->
-              Tnamed (List.index_of ((=) (unloc x)) map)
-
-            | _ ->
-              decl.as_pkty
-          end
-
-        | _ ->
-          Env.emit_error env (loc (fst ty), NotAnAssetType);
-          raise InvalidType
-      end
-
     | Tticket ty ->
       A.Tticket (doit ty)
 
@@ -2588,7 +2588,7 @@ let for_asset_type (env : env) (ty : PT.type_t) : A.lident option =
 (* -------------------------------------------------------------------- *)
 let for_asset_keyof_type (env : env) (ty : PT.type_t) : A.lident option =
   match unloc (fst ty) with
-  | PT.Tkeyof t ->
+  | PT.Tcontainer(t, AssetKey) ->
     for_asset_type env t
   | _ ->
     Env.emit_error env (loc (fst ty), NotAKeyOfType);

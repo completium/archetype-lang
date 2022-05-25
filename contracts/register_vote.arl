@@ -22,7 +22,7 @@ asset vote {
   i0 : vcount > 0;
 }
 
-entry addvoter (voter_id : pkey<voter>) {
+entry addvoter (voter_id : asset_key<voter>) {
   called by admin
   effect {
     voter.add({voter_id})

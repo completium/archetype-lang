@@ -24,9 +24,9 @@ asset manufacturer {
 
 asset order {
   oid           : string;
-  amanufacturer : pkey<manufacturer>;
-  orderer       : pkey<owner>;
-  details       : pkey<vehicledetail>;
+  amanufacturer : asset_key<manufacturer>;
+  orderer       : asset_key<owner>;
+  details       : asset_key<vehicledetail>;
 } with states order_state
 
 enum vehicle_state =
@@ -36,23 +36,23 @@ enum vehicle_state =
 
 asset vehicle identified by vin {
    vin          : string;
-   aowner       : pkey<owner>;
-   detail       : pkey<vehicledetail>;
+   aowner       : asset_key<owner>;
+   detail       : asset_key<vehicledetail>;
    color        : string;
    vstate       : vehicle_state = Off_the_road;
 }
 
 entry placeOrder (iid           : string,
-                  imanufacturer : pkey<manufacturer>,
-                  iorderer      : pkey<owner>,
-                  idetails      : pkey<vehicledetail>) {
+                  imanufacturer : asset_key<manufacturer>,
+                  iorderer      : asset_key<owner>,
+                  idetails      : asset_key<vehicledetail>) {
   called by iorderer
   effect {
     order.add({ iid; imanufacturer; iorderer; idetails})
   }
 }
 
-transition assign_vin (avin : string, adetail : pkey<vehicledetail>) on (ok : pkey<order>) {
+transition assign_vin (avin : string, adetail : asset_key<vehicledetail>) on (ok : asset_key<order>) {
   called by order[ok].orderer
 
   from Placed
@@ -62,7 +62,7 @@ transition assign_vin (avin : string, adetail : pkey<vehicledetail>) on (ok : pk
   }
 }
 
-transition assign_owner () on (ok : pkey<order>) {
+transition assign_owner () on (ok : asset_key<order>) {
   from any
   to Owner_assigned
   with effect {
@@ -71,14 +71,14 @@ transition assign_owner () on (ok : pkey<order>) {
   }
 }
 
-entry vehicleTransfer (buyer : pkey<owner>, vk : pkey<vehicle>) {
+entry vehicleTransfer (buyer : asset_key<owner>, vk : asset_key<vehicle>) {
   called by vehicle[vk].aowner
   effect {
     vehicle[vk].aowner := buyer
   }
 }
 
-entry scrapVehicle (vk : pkey<vehicle>) {
+entry scrapVehicle (vk : asset_key<vehicle>) {
   called by vehicle[vk].aowner
   require {
       r1: vehicle[vk].vstate = Off_the_road or vehicle[vk].vstate = Active

@@ -8,7 +8,7 @@ asset myasset {
   a1: s >= 0;
 }
 
-entry main (k : pkey<myasset>) {
+entry main (k : asset_key<myasset>) {
   effect {
     myasset.update(k, {s = 2}); (* cannot update shadow field in execution instruction *)
   }

@@ -30,7 +30,7 @@ transition confirm () {
   to InProgress when { now > startdate }
 }
 
-entry submit (ckey : pkey<submission>, pscore : int) {
+entry submit (ckey : asset_key<submission>, pscore : int) {
   require {
     c1 : state = InProgress;
   }

@@ -131,7 +131,6 @@
 %token PIPE
 %token PIPE_GREATER_GREATER
 %token PIPEEQUAL
-%token PKEY
 %token PLUS
 %token PLUSEQUAL
 %token POSTCONDITION
@@ -598,7 +597,6 @@ type_r:
 type_s_unloc:
 | x=ident                                                  { Tref x                   }
 | c=container         LESS x=type_t GREATER                { Tcontainer (x, c)        }
-| PKEY                LESS x=type_t GREATER                { Tkeyof x                 }
 | OPTION              LESS x=type_t GREATER                { Toption x                }
 | LIST                LESS x=type_t GREATER                { Tlist x                  }
 | SET                 LESS x=type_t GREATER                { Tset x                   }

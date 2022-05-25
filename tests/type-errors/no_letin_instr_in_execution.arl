@@ -1,4 +1,4 @@
-archetype no_letin_in_execution
+archetype no_letin_instr_in_execution
 
 entry exec () {
   effect {

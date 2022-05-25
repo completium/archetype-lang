@@ -187,11 +187,6 @@ let rec pp_type fmt (e, a) =
         "contract<%a>"
         f t
 
-    | Tkeyof t ->
-      Format.fprintf fmt
-        "pkey<%a>"
-        f t
-
     | Tticket t ->
       Format.fprintf fmt
         "ticket<%a>"
@@ -1205,10 +1200,10 @@ let pp_entry_properties fmt (props : entry_properties) =
       s1
       pp_extensions exts
       (pp_list ";@\n" (fun fmt (id, e, f) ->
-           Format.fprintf fmt "%a%a: %a"
+           Format.fprintf fmt "%a: %a%a"
              pp_id id
-             (pp_option (fun fmt x -> Format.fprintf fmt " %s %a" s2 (pp_expr e_default PNone) x)) f
              (pp_expr e_default PNone) e
+             (pp_option (fun fmt x -> Format.fprintf fmt " %s %a" s2 (pp_expr e_default PNone) x)) f
          )) l
   in
   pp_option (pp_rf "require" "otherwise") fmt props.require;

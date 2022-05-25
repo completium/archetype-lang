@@ -16,7 +16,7 @@ asset tokenHolder identified by holder {
   { holder = caller; tokens = total }
 }
 
-entry dotransfer (dest : pkey<tokenHolder>, value : nat) {
+entry dotransfer (dest : asset_key<tokenHolder>, value : nat) {
   require {
     d0 : tokenHolder[caller].tokens >= value
   }
