@@ -1,4 +1,4 @@
-archetype lazy_and
+archetype lazy_or_3
 
 variable res : bool = false
 
