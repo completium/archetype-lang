@@ -252,6 +252,7 @@ let toolchain ?(js=false) model =
   |> replace_declvar_by_letin
   |> remove_label
   |> flat_sequence
+  |> lazy_eval_condition
   |> remove_cmp_bool
   |> split_key_values
   |> remove_duplicate_key

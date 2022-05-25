@@ -1,0 +1,13 @@
+archetype lazy_and_3
+
+variable res : bool = false
+
+function f() : bool {
+  fail("ERROR_EVAL")
+}
+
+entry exec() {
+  if (true and false and f())
+  then fail("ERROR_COND")
+  else res := true
+}
