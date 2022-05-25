@@ -1,0 +1,32 @@
+archetype asset_types
+
+asset my_asset {
+  a : nat;
+  b : string;
+  c : bytes;
+  d : address;
+  e : signature;
+}
+
+enum toto =
+| A <nat>
+| B <pkey<my_asset>>
+
+// type asset_key<my_asset> =
+// record {
+//   a : nat;
+//   b : string;
+// }
+
+// type asset_value<my_asset> =
+// record {
+//   c : bytes;
+//   d : address;
+//   e : signature;
+// }
+
+entry get_value() {
+  const k : pkey<my_asset> = 0;
+  const v : asset_value<my_asset> = my_asset[k];
+  const ov : option<asset_value<my_asset>> = my_asset.getopt(0)
+}

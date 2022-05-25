@@ -1,0 +1,9 @@
+archetype tern_opt
+
+variable res : bool = false
+
+entry exec() {
+  if (let c = true in c)
+  then res := true
+  else fail ("ERROR")
+}

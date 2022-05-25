@@ -9,5 +9,5 @@ asset abc {
 }
 
 entry exec() {
-  abc.put({ a = 2; b = "toto"; c = 0x02 })
+  abc.put({ a = 0; b = "toto"; c = 0x02 })
 }

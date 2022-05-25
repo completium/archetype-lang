@@ -96,7 +96,7 @@ function compute_expected (d : date) : tez {
       forall f in fixing,
         (* retrieving the first element of etrigger *)
         let some key_efirst = etrigger.nth(0) in
-        let some efirst = etrigger[key_efirst] in
+        let some efirst = early[key_efirst] in
           if i.iobservation = f.fobservation and i.iobservation <= efirst.eobservation
           then (* barrier condition *)
                     f.bac >= bac_strike

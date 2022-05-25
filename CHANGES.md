@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ### Added
   - New feature
+### Changed
+  - Short-circuit evaluation for boolean condition (`and` and `or`)
 
 ## [1.2.16] - 2022-05-17
 ### Added
