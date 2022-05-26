@@ -3362,6 +3362,10 @@ let rec for_xexpr
           bailout ()
       end
 
+    | Etern (_pe, _x, _dv) -> begin
+        assert false
+      end
+
     | Emulticomp (e, l) ->
       let e = for_xexpr env e in
       let l = List.map (snd_map (for_xexpr env)) l in

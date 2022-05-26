@@ -235,6 +235,7 @@ rule token = parse
   | "/"                   { SLASH }
   | "/%"                  { SLASHPERCENT }
   | "_"                   { UNDERSCORE }
+  | "?"                   { QUESTION }
   | ".?"                  { DOTQUESTION }
   | eof                   { EOF }
   | _ as c                {

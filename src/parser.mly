@@ -135,6 +135,7 @@
 %token PLUSEQUAL
 %token POSTCONDITION
 %token PREDICATE
+%token QUESTION
 %token RBRACE
 %token RBRACKET
 %token RECORD
@@ -214,12 +215,16 @@
 %right IMPLY
 %nonassoc EQUIV
 
+%nonassoc QUESTION
+
 %left OR XOR
 %left AND
 
 %nonassoc EQUAL NEQUAL
 %nonassoc prec_order
 %nonassoc prec_labelexpr
+%nonassoc prec_tern
+%nonassoc prec_asset
 %left LESS_LESS_PIPE PIPE_GREATER_GREATER
 %left LESS_EQUAL_GREATER
 %left GREATER GREATEREQUAL LESS LESSEQUAL
@@ -881,8 +886,11 @@ expr_r:
  | LPAREN RPAREN
      { Enothing }
 
- | x=simple_expr DOTQUESTION y=ident COLON e=simple_expr
+ | x=simple_expr DOTQUESTION y=ident COLON e=expr %prec prec_asset
      { Equestion (x, y, Some e) }
+
+ | c=expr QUESTION x=simple_expr COLON y=expr %prec prec_tern
+     { Etern (c, x, y) }
 
  | q=quantifier id=ident t=quant_kind COMMA y=expr
      { Equantifier (q, id, t, y) }
