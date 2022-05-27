@@ -1678,7 +1678,6 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mdot (_e, _i)                   -> assert false
     | Mdotassetfield (_an, _k, _fn)   -> assert false
     | Mquestionoption (_a, _fn)       -> assert false
-    | Mquestiondefault (_a, _fn, _dv) -> assert false
 
 
     (* comparison operators *)

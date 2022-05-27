@@ -379,7 +379,7 @@ type 'id term_node  =
   | Parray of 'id term_gen list
   | Plit of bval
   | Pdot of 'id term_gen * 'id
-  | Pquestion of 'id term_gen * 'id * 'id term_gen option
+  | Pdotquestion of 'id term_gen * 'id
   | Pconst of const
   | Ptuple of 'id term_gen list
   | Ptupleaccess of 'id term_gen * Core.big_int

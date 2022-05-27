@@ -224,7 +224,6 @@
 %nonassoc prec_order
 %nonassoc prec_labelexpr
 %nonassoc prec_tern
-%nonassoc prec_asset
 %left LESS_LESS_PIPE PIPE_GREATER_GREATER
 %left LESS_EQUAL_GREATER
 %left GREATER GREATEREQUAL LESS LESSEQUAL
@@ -886,10 +885,7 @@ expr_r:
  | LPAREN RPAREN
      { Enothing }
 
- | x=simple_expr DOTQUESTION y=ident COLON e=expr %prec prec_asset
-     { Equestion (x, y, Some e) }
-
- | c=expr QUESTION x=simple_expr COLON y=expr %prec prec_tern
+ | c=expr QUESTION x=expr COLON y=expr %prec prec_tern
      { Eternary (c, x, y) }
 
  | q=quantifier id=ident t=quant_kind COMMA y=expr
@@ -1034,7 +1030,7 @@ simple_expr_r:
      { Emethod (x, id, a) }
 
  | x=simple_expr DOTQUESTION y=ident
-     { Equestion (x, y, None) }
+     { Edotquestion (x, y) }
 
  | LBRACKET RBRACKET
      { Earray [] }

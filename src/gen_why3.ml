@@ -1953,7 +1953,6 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       Tdot(
         dl (Tapp (loc_term (Tvar ("get_"^(unloc an))),[map_mterm m ctx k])),
         loc_term (Tvar (unloc fn)))
-    | Mquestiondefault _ -> error_not_translated "Mquestiondefault"
     | Mquestionoption _ -> error_not_translated "Mquestionoption"
 
     (* comparison operators *)

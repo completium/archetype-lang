@@ -10,7 +10,7 @@ asset abc {
 variable res : bool = true
 
 entry exec() {
-  const v : bool = abc[1] ? (the.amount > 1) : false;
+  const v : bool = abc[1] ? the.amount > 1 : false;
   dorequire(not v, "INVALID_VALUE");
   res := v
 }

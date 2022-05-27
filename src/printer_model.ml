@@ -635,12 +635,6 @@ let pp_mterm fmt (mt : mterm) =
         f a
         pp_id fn
 
-    | Mquestiondefault (a, fn, dv) ->
-      Format.fprintf fmt "%a .? %a : %a"
-        f a
-        pp_id fn
-        f dv
-
 
     (* comparison operators *)
 

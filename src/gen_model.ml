@@ -382,11 +382,7 @@ let to_model (ast : A.ast) : M.model =
         end
       (* | A.Pquestion (e, id, edv) -> assert false *)
 
-      | A.Pquestion (e, id, dv) -> begin
-          match dv with
-          | None -> M.Mquestionoption (f e, id)
-          | Some dv -> M.Mquestiondefault (f e, id, f dv)
-        end
+      | A.Pdotquestion (e, id) -> M.Mquestionoption (f e, id)
 
       | A.Pconst Cstate                        -> M.Mvar(dumloc "", Vstate, Tnone, Dnone)
       | A.Pconst Cnow                          -> M.Mnow

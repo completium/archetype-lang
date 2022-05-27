@@ -4121,17 +4121,6 @@ let remove_asset (model : model) : model =
           mk_mterm (Mmatchoption(mt, id, vt, nonevalue)) otyp
         end
 
-      | Mquestiondefault ({node = Mget (an, c, k); _}, fn, dv) -> begin
-          let typ = mt.type_ in
-
-          let mt = mk_mterm (Mgetopt(an, c, k)) (toption (tassetvalue (dumloc an))) |> fm ctx in
-          let id = dumloc "_q_def" in
-          let vid = mk_mvar id (tassetvalue (dumloc an)) in
-          let vt = mk_mterm (Mdot (vid, fn)) typ |> fm ctx in
-          let nonevalue = fm ctx dv in
-          mk_mterm (Mmatchoption(mt, id, vt, nonevalue)) typ
-        end
-
       | Mget (an, CKcoll _, k) when Utils.is_asset_single_field model an && Utils.is_asset_map model an -> fm ctx k
 
       | Mget (an, CKcoll _, k) -> begin

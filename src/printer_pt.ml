@@ -377,13 +377,12 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_dot pos pp) fmt (lhs, rhs)
 
-  | Equestion (lhs, rhs, dv) ->
+  | Edotquestion (lhs, rhs) ->
 
     let pp fmt (lhs, rhs) =
-      Format.fprintf fmt "%a.?%a%a"
+      Format.fprintf fmt "%a.?%a"
         pp_simple_expr lhs
         pp_id rhs
-        (pp_option (fun fmt -> Format.fprintf fmt ":%a" pp_simple_expr)) dv
     in
     (maybe_paren outer e_dot pos pp) fmt (lhs, rhs)
 
