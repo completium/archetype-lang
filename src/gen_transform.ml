@@ -6119,7 +6119,8 @@ let remove_ternary_opeartor (model : model) : model =
   let rec aux ctx (mt : mterm) : mterm =
     let f = aux ctx in
     match mt with
-    | { node = Mternarybool (c, a, b) } -> { mt with node = Mexprif(f c, f a, f b) }
+    | { node = Mternarybool (c, a, b) }   -> { mt with node = Mexprif(f c, f a, f b) }
+    | { node = Mternaryoption (c, a, b) } -> { mt with node = Mmatchoption (f c, dumloc "thea", f a, f b) }
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
