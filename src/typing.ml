@@ -1866,7 +1866,11 @@ end = struct
 
   let lookup_entry (env : t) (name : ident) : entry option =
     if   name = ctxtname
-    then Option.map (fun x -> `Context (x, None)) (List.ohead env.env_context)
+    then begin
+      match Mid.find_opt name env.env_bindings with
+      | Some v -> Some (snd v)
+      | _ -> Option.map (fun x -> `Context (x, None)) (List.ohead env.env_context)
+    end
     else Option.map snd (Mid.find_opt name env.env_bindings)
 
   let lookup_gen (proj : entry -> 'a option) (env : t) (name : ident) : 'a option =
@@ -2197,6 +2201,15 @@ end = struct
             Mid.add (unloc fd.fd_name)
               (None, `Context (asset, Some (unloc fd.fd_name))) bds
           ) env.env_bindings asset.as_fields; }
+
+    (* let push_gen (env : t) (pty : A.type_) =
+      { env with
+        env_bindings =
+        env.env_bindings
+        List.fold_left (fun bds fd ->
+            Mid.add (unloc fd.fd_name)
+              (None, `Context (asset, Some (unloc fd.fd_name))) bds
+          )  asset.as_fields; } *)
   end
 end
 
@@ -3375,7 +3388,7 @@ let rec for_xexpr
             mk_sp ty (A.Pternary (c, a, b))
           end
         | Some (A.Toption xty) -> begin
-            let a = for_xexpr (Env.Local.push env (dumloc "thea", xty)) a in
+            let a = for_xexpr (Env.Local.push env (dumloc "the", xty)) a in
             let b = for_xexpr env b in
             let ty, es = join_expr ?autoview env ety [a; b] in
             let a, b = Option.get (List.as_seq2 es) in

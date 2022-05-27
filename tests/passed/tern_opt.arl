@@ -4,6 +4,6 @@ variable res : nat = 0
 
 entry exec() {
   var o : option<nat> = some(1);
-  res := o ? (thea + 1) : 0;
+  res := o ? (the + 1) : 0;
   dorequire(res = 2, "INVALID_VALUE")
 }
