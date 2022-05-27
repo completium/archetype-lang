@@ -6,9 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Added
-  - New feature
+  - Asset access
+  - Type `asset_value`
 ### Changed
   - Short-circuit evaluation for boolean condition (`and` and `or`)
+  - Optimize simple `add_update`
+  - BREAKING: `pkey` is replaced by `asset_key`
 
 ## [1.2.16] - 2022-05-17
 ### Added

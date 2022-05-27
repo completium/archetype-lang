@@ -153,6 +153,22 @@ let remove_add_update ?(isformula = false) (model : model) : model =
     | Maddupdate (an, c, k, l) ->
       begin
         let type_asset = tasset (dumloc an) in
+        let is_put =
+          let asset = Utils.get_asset model an in
+          let fields_ref =
+            asset.values
+            |> List.remove_if (fun (x : asset_item) -> x.shadow || Option.is_some x.default)
+            |> List.map (fun (x : asset_item) -> unloc x.name)
+          in
+
+          let fields_actual = List.map (fun (id,_,_) -> unloc id) l in
+
+          let is_all = List.for_all (fun (f : ident) -> List.exists (String.equal f) fields_ref) fields_actual in
+
+          let is_standalone = List.fold_left (fun accu (_, op, _) -> match op with | ValueAssign -> accu | _ -> false) true l in
+
+          is_all && is_standalone
+        in
         let mk_asset (an, k, l) =
           let dummy_mterm = mk_mterm (Mseq []) tunit in
           let asset = Utils.get_asset model an in
@@ -189,34 +205,39 @@ let remove_add_update ?(isformula = false) (model : model) : model =
             ) asset.values in
           mk_mterm (Masset l) type_asset
         in
-        let cond   = mk_mterm (
-            match c with
-            | CKfield (_, _, ({node = Mdotassetfield (andat, kdat, fn)} as a), t, d) ->
-              let c = (if isformula then a else kdat) in Mcontains (an, CKfield(unloc andat, unloc fn, c, t, d), k)
-            | CKcoll _ -> Mcontains (an, c, k)
-            | _ -> assert false) tunit in
-        let asset  = mk_asset (an, k, l) in
-        match c with
-        | CKfield (_, ckcol, {node = Mdotassetfield (dan, dk, dfn)}, kft, kfd) when Utils.is_partition model (unloc dan) (unloc dfn) -> begin
-            let cond = mk_mterm (Mcontains(an, CKcoll (kft, kfd), k)) tbool in
-            let fail_ = failc (Invalid (mk_tuple [mk_string "KeyNotFound"; k])) in
-            let cond_nested = mk_mterm (Mcontains(an, CKfield (unloc dan, ckcol, dk, kft, kfd), k)) tbool in
-            let update = mk_mterm (Mupdate (an, k, l)) tunit in
-            let if_nested = mk_mterm (Mif (cond_nested, update, Some fail_)) tunit in
-            let add = mk_mterm (Maddfield (unloc dan, unloc dfn, dk, asset)) tunit in
-            let r = mk_mterm (Mif (cond, if_nested, Some add)) tunit in
-            r
-          end
-        | _ -> begin
-            let add = mk_mterm (
-                match c with
-                | CKfield (_, _, {node = Mdotassetfield (an, k, fn)}, _, _) -> Maddfield (unloc an, unloc fn, k, asset)
-                | CKcoll _ -> Maddasset (an, asset)
-                | _ -> assert false) tunit in
-            let update = mk_mterm (Mupdate (an, k, l)) tunit in
-            let if_node = Mif (cond, update, Some add) in
-            mk_mterm if_node tunit
-          end
+
+        let asset = mk_asset (an, k, l) in
+        if is_put
+        then mk_mterm (Mputsingleasset (an, asset)) tunit
+        else
+          let cond = mk_mterm (
+              match c with
+              | CKfield (_, _, ({node = Mdotassetfield (andat, kdat, fn)} as a), t, d) ->
+                let c = (if isformula then a else kdat) in Mcontains (an, CKfield(unloc andat, unloc fn, c, t, d), k)
+              | CKcoll _ -> Mcontains (an, c, k)
+              | _ -> assert false) tunit
+          in
+          match c with
+          | CKfield (_, ckcol, {node = Mdotassetfield (dan, dk, dfn)}, kft, kfd) when Utils.is_partition model (unloc dan) (unloc dfn) -> begin
+              let cond = mk_mterm (Mcontains(an, CKcoll (kft, kfd), k)) tbool in
+              let fail_ = failc (Invalid (mk_tuple [mk_string "KeyNotFound"; k])) in
+              let cond_nested = mk_mterm (Mcontains(an, CKfield (unloc dan, ckcol, dk, kft, kfd), k)) tbool in
+              let update = mk_mterm (Mupdate (an, k, l)) tunit in
+              let if_nested = mk_mterm (Mif (cond_nested, update, Some fail_)) tunit in
+              let add = mk_mterm (Maddfield (unloc dan, unloc dfn, dk, asset)) tunit in
+              let r = mk_mterm (Mif (cond, if_nested, Some add)) tunit in
+              r
+            end
+          | _ -> begin
+              let add = mk_mterm (
+                  match c with
+                  | CKfield (_, _, {node = Mdotassetfield (an, k, fn)}, _, _) -> Maddfield (unloc an, unloc fn, k, asset)
+                  | CKcoll _ -> Maddasset (an, asset)
+                  | _ -> assert false) tunit in
+              let update = mk_mterm (Mupdate (an, k, l)) tunit in
+              let if_node = Mif (cond, update, Some add) in
+              mk_mterm if_node tunit
+            end
       end
     | _ -> map_mterm (aux ctx) mt
   in

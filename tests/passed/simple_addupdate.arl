@@ -1,0 +1,15 @@
+archetype effect_method_asset_addupdate
+
+asset my_asset identified by id {
+  id : string;
+  v1 : nat = 0;
+  v2 : int = 0;
+} initialized by {
+  {"id0"; 0; 0};
+  {"id1"; 1; 1};
+  {"id2"; 2; 2}
+}
+
+entry exec () {
+  my_asset.addupdate("id3", {v1 += 3})
+}
