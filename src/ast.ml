@@ -392,6 +392,7 @@ type 'id term_node  =
   | Pself of 'id
   | Pentrypoint of type_ * 'id * 'id term_gen * ('id term_gen) option
   | Pcallview of type_ * 'id term_gen * 'id * 'id term_gen
+  | Pternary of 'id term_gen * 'id term_gen * 'id term_gen
 [@@deriving show {with_path = false}]
 
 and 'id term_arg =

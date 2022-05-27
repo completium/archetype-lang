@@ -387,7 +387,7 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_dot pos pp) fmt (lhs, rhs)
 
-  | Etern (c, x, y) ->
+  | Eternary (c, x, y) ->
 
     let pp fmt (c, x, y) =
       Format.fprintf fmt "%a ? %a : %a"

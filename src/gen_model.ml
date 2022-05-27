@@ -444,6 +444,8 @@ let to_model (ast : A.ast) : M.model =
 
       | A.Pcallview (t, a, b, c) -> M.Mcallview (type_to_type t, f a, b,f c)
 
+      | A.Pternary (_c, _a, _b) -> assert false
+
       (* | A.Pcall (Some p, A.Cconst A.Cbefore,    []) -> M.Msetbefore    (f p) *)
       (* | A.Pcall (Some p, A.Cconst A.Cunmoved,   []) -> M.Msetunmoved   (f p)
          | A.Pcall (Some p, A.Cconst A.Cadded,     []) -> M.Msetadded     (f p)

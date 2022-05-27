@@ -157,7 +157,7 @@ and expr_unloc =
   | Eunpack        of type_t * expr
   | Eemit          of type_t * expr
   | Eself          of lident
-  | Etern          of expr * expr * expr
+  | Eternary       of expr * expr * expr
   | Eany
   | Enothing
   | Eunit

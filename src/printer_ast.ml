@@ -670,6 +670,15 @@ let rec pp_pterm fmt (pterm : pterm) =
           pp_pterm c
       in
       (pp_no_paren pp) fmt (t, a, b, c)
+
+    | Pternary (c, a, b) ->
+      let pp fmt (c, a, b) =
+        Format.fprintf fmt "%a ? %a : %a"
+          pp_pterm c
+          pp_pterm a
+          pp_pterm b
+      in
+      (pp_no_paren pp) fmt (c, a, b)
   in
   pp_struct_poly pp_node fmt pterm
 

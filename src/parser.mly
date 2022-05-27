@@ -890,7 +890,7 @@ expr_r:
      { Equestion (x, y, Some e) }
 
  | c=expr QUESTION x=simple_expr COLON y=expr %prec prec_tern
-     { Etern (c, x, y) }
+     { Eternary (c, x, y) }
 
  | q=quantifier id=ident t=quant_kind COMMA y=expr
      { Equantifier (q, id, t, y) }

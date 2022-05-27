@@ -744,6 +744,7 @@ type error_desc =
   | InvalidTypeForOrRight
   | InvalidTypeForPk
   | InvalidTypeForSet
+  | InvalidTypeForTernaryOperator
   | InvalidValueForCurrency
   | InvalidVariableForMethod
   | InvalidVarOrArgType
@@ -973,6 +974,7 @@ let pp_error_desc fmt e =
   | InvalidTypeForOrRight              -> pp "Invalid type for or right"
   | InvalidTypeForPk                   -> pp "Invalid type for primary key"
   | InvalidTypeForSet                  -> pp "Invalid type for set"
+  | InvalidTypeForTernaryOperator      -> pp "Invalid type for ternary operator"
   | InvalidValueForCurrency            -> pp "Invalid value for currency"
   | InvalidVariableForMethod           -> pp "Invalid variable for method"
   | InvalidVarOrArgType                -> pp "A variable / argument type cannot be an asset or a collection"
@@ -3362,8 +3364,19 @@ let rec for_xexpr
           bailout ()
       end
 
-    | Etern (_pe, _x, _dv) -> begin
-        assert false
+    | Eternary (c, a, b) -> begin
+        let c = for_xexpr env c in
+        match c.type_ with
+        | Some (A.Tbuiltin VTbool) -> begin
+            let a     = for_xexpr env a in
+            let b     = for_xexpr env b in
+            let ty, es = join_expr ?autoview env ety [a; b] in
+            let a, b = Option.get (List.as_seq2 es) in
+
+            mk_sp ty (A.Pternary (c, a, b))
+          end
+        (* | Top *)
+        | _ -> (Env.emit_error env (c.loc, InvalidTypeForTernaryOperator); bailout ())
       end
 
     | Emulticomp (e, l) ->
