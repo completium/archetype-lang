@@ -275,6 +275,7 @@ type ('id, 'term) mterm_node  =
   | Mmatchlist        of 'term * 'id * 'id * 'term * 'term
   | Mternarybool      of 'term * 'term * 'term
   | Mternaryoption    of 'term * 'term * 'term
+  | Mternaryasset     of ident * 'term * 'term * 'term
   | Mfold             of 'term * 'id * 'term
   | Mmap              of 'term * 'id * 'term
   | Mexeclambda       of 'term * 'term
@@ -1504,6 +1505,7 @@ let cmp_mterm_node
     | Mmatchlist (x1, hid1, tid1, hte1, ee1), Mmatchlist (x2, hid2, tid2, hte2, ee2)   -> cmp x1 x2 && cmpi hid1 hid2 && cmpi tid1 tid2 && cmp hte1 hte2 && cmp ee1 ee2
     | Mternarybool (c1, a1, b1), Mternarybool (c2, a2, b2)                             -> cmp c1 c2 && cmp a1 a2 && cmp b1 b2
     | Mternaryoption (c1, a1, b1), Mternaryoption (c2, a2, b2)                         -> cmp c1 c2 && cmp a1 a2 && cmp b1 b2
+    | Mternaryasset (an1, k1, a1, b1), Mternaryasset (an2, k2, a2, b2)                 -> cmp_ident an1 an2 && cmp k1 k2 && cmp a1 a2 && cmp b1 b2
     | Mfold (x1, i1, e1), Mfold (x2, i2, e2)                                           -> cmp x1 x2 && cmpi i1 i2 && cmp e1 e2
     | Mmap (x1, i1, e1), Mmap (x2, i2, e2)                                             -> cmp x1 x2 && cmpi i1 i2 && cmp e1 e2
     | Mexeclambda  (l1, a1), Mexeclambda  (l2, a2)                                     -> cmp l1 l2 && cmp a1 a2
@@ -1959,6 +1961,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mmatchlist (x, hid, tid, hte, ee) -> Mmatchlist  (f x, g hid, g tid, f hte, f ee)
   | Mternarybool (c, a, b)         -> Mternarybool   (f c, f a, f b)
   | Mternaryoption (c, a, b)       -> Mternaryoption (f c, f a, f b)
+  | Mternaryasset (an, k, a, b)    -> Mternaryasset  (fi an, f k, f a, f b)
   | Mfold (x, i, e)                -> Mfold (f x, g i, f e)
   | Mmap (x, i, e)                 -> Mmap           (f x, g i, f e)
   | Mexeclambda  (l, a)            -> Mexeclambda    (f l, f a)
@@ -2411,6 +2414,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mmatchlist (x, _, _, hte, ee)         -> f (f (f accu x) hte) ee
   | Mternarybool (c, a, b)                -> f (f (f accu c) a) b
   | Mternaryoption (c, a, b)              -> f (f (f accu c) a) b
+  | Mternaryasset (_, k, a, b)            -> f (f (f accu k) a) b
   | Mfold (x, _, e)                       -> f (f accu x) e
   | Mmap (x, _, e)                        -> f (f accu x) e
   | Mexeclambda  (l, a)                   -> f (f accu l) a
@@ -2991,6 +2995,12 @@ let fold_map_term
     let ae, aa = f ca a in
     let be, ba = f aa b in
     g (Mternaryoption (ce, ae, be)), ba
+
+  | Mternaryasset (an, k, a, b) ->
+    let ke, ka = f accu k in
+    let ae, aa = f ka a in
+    let be, ba = f aa b in
+    g (Mternaryasset (an, ke, ae, be)), ba
 
   | Mfold (x, i, e) ->
     let xe, xa = f accu x in

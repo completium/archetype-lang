@@ -3379,15 +3379,22 @@ let rec for_xexpr
 
     | Eternary (c, a, b) -> begin
         let c = for_xexpr env c in
-        match c.type_ with
-        | Some (A.Tbuiltin VTbool) -> begin
+        match c with
+        | { node = A.Pcall (Some _, A.Cconst (A.Cget), [AExpr _]); type_ = Some (A.Tcontainer (Tasset an, AssetValue))} -> begin
+            let a = for_xexpr (Env.Context.push env (unloc an)) a in
+            let b = for_xexpr env b in
+            let ty, es = join_expr ?autoview env ety [a; b] in
+            let a, b = Option.get (List.as_seq2 es) in
+            mk_sp ty (A.Pternary (c, a, b))
+          end
+        | { type_ = Some (A.Tbuiltin VTbool)} -> begin
             let a = for_xexpr env a in
             let b = for_xexpr env b in
             let ty, es = join_expr ?autoview env ety [a; b] in
             let a, b = Option.get (List.as_seq2 es) in
             mk_sp ty (A.Pternary (c, a, b))
           end
-        | Some (A.Toption xty) -> begin
+        | { type_ = Some (A.Toption xty)} -> begin
             let a = for_xexpr (Env.Local.push env (dumloc "the", xty)) a in
             let b = for_xexpr env b in
             let ty, es = join_expr ?autoview env ety [a; b] in

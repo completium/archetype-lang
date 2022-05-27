@@ -1,0 +1,16 @@
+archetype asset_access_ternary_found
+
+asset abc {
+  k : nat;
+  amount: nat;
+} initialized by {
+  { 0; 2 }
+}
+
+variable res : bool = true
+
+entry exec() {
+  const v : bool = abc[1] ? (the.amount > 1) : false;
+  dorequire(not v, "INVALID_VALUE");
+  res := v
+}

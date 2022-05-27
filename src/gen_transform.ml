@@ -6121,6 +6121,11 @@ let remove_ternary_opeartor (model : model) : model =
     match mt with
     | { node = Mternarybool (c, a, b) }   -> { mt with node = Mexprif(f c, f a, f b) }
     | { node = Mternaryoption (c, a, b) } -> { mt with node = Mmatchoption (f c, dumloc "the", f a, f b) }
+    | { node = Mternaryasset (an, k, a, b) } -> begin
+        (* let asset = Utils.get_asset model an in *)
+        let getopt = mk_mterm (Mgetopt(an, CKcoll (Tnone, Dnone), f k)) (toption (tassetvalue (dumloc an))) in
+        { mt with node = Mmatchoption (getopt, dumloc "the", f a, f b) }
+      end
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
