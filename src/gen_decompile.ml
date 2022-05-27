@@ -1648,6 +1648,8 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mmatchoption (_x, _i, _ve, _ne)        -> assert false
     | Mmatchor (_x, _lid, _le, _rid, _re)    -> assert false
     | Mmatchlist (_x, _hid, _tid, _hte, _ee) -> assert false
+    | Mternarybool (_c, _a, _b)              -> assert false
+    | Mternaryoption (_c, _a, _b)            -> assert false
     | Mfold (_e, _i, _l)                     -> assert false
     | Mmap (_e, _i, _l)                      -> assert false
     | Mexeclambda (_l, _a)                   -> assert false

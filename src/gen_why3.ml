@@ -1877,6 +1877,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       Tmatchor     (map_mterm m ctx x, map_lident lid, map_mterm m ctx le, map_lident rid, map_mterm m ctx re)
     | Mmatchlist (x, hid, tid, hte, ee) ->
       Tmatchlist (map_mterm m ctx x, map_lident hid, map_lident tid, map_mterm m ctx hte, map_mterm m ctx ee)
+    | Mternarybool _ -> error_not_translated "Mternarybool"
+    | Mternaryoption _ -> error_not_translated "Mternaryoption"
     | Mfold (x, i, e) -> Tfold (map_mterm m ctx x, map_lident i, map_mterm m ctx e)
     | Mmap (x, i, e) ->
       let st, _dt =

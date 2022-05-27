@@ -6114,3 +6114,12 @@ let lazy_eval_condition (model : model) : model =
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
+
+let remove_ternary_opeartor (model : model) : model =
+  let rec aux ctx (mt : mterm) : mterm =
+    let f = aux ctx in
+    match mt with
+    | { node = Mternarybool (c, a, b) } -> { mt with node = Mexprif(f c, f a, f b) }
+    | _ -> map_mterm (aux ctx) mt
+  in
+  map_mterm_model aux model

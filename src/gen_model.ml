@@ -444,7 +444,15 @@ let to_model (ast : A.ast) : M.model =
 
       | A.Pcallview (t, a, b, c) -> M.Mcallview (type_to_type t, f a, b,f c)
 
-      | A.Pternary (_c, _a, _b) -> assert false
+      | A.Pternary (c, a, b) -> begin
+          let c = f c in
+          let a = f a in
+          let b = f b in
+          match c.type_ with
+          | (M.Tbuiltin Bbool, _) -> M.Mternarybool   (c, a, b)
+          | (M.Toption _, _)      -> M.Mternaryoption (c, a, b)
+          | _ -> assert false
+        end
 
       (* | A.Pcall (Some p, A.Cconst A.Cbefore,    []) -> M.Msetbefore    (f p) *)
       (* | A.Pcall (Some p, A.Cconst A.Cunmoved,   []) -> M.Msetunmoved   (f p)

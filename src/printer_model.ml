@@ -496,6 +496,18 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (x, hid, tid, hte, ee)
 
+    | Mternarybool (c, a, b) ->
+      Format.fprintf fmt "%a ? %a : %a"
+        f c
+        f a
+        f b
+
+    | Mternaryoption (c, a, b) ->
+      Format.fprintf fmt "%a ? %a : %a"
+        f c
+        f a
+        f b
+
     | Mfold (x, id, e) ->
       let pp fmt (x, id, e) =
         Format.fprintf fmt "fold (%a, %a -> (@[%a@]))@\n"
