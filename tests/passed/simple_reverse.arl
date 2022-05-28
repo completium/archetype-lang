@@ -1,0 +1,10 @@
+archetype expr_lambda
+
+variable s : string = "a"
+variable res : list<string> = []
+
+entry exec () {
+  effect {
+    res := reverse(["i0"; "i1"; "i2"])
+  }
+}
