@@ -1,0 +1,8 @@
+archetype expr_map_map
+
+variable res : map<string, nat> = []
+
+entry exec () {
+  const m : map<string, int> = [ ("abc", 0i); ("def", 1i); ("ijk", 2i) ];
+  res := map(m, x -> abs(x[1]) + 2)
+}
