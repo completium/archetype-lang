@@ -3,14 +3,14 @@ archetype test_init_storage_funs
 variable min_int_int : int = min(1, 2)
 variable max_int_int : int = max(1, 2)
 
-variable min_rat_int : rational = min(1 / 2, 1)
-variable max_rat_int : rational = max(1 / 2, 1)
+// variable min_rat_int : rational = min(1 / 2, 1)
+// variable max_rat_int : rational = max(1 / 2, 1)
 
-variable min_int_rat : rational = min(2, 1 / 3)
-variable max_int_rat : rational = max(2, 1 / 3)
+// variable min_int_rat : rational = min(2, 1 / 3)
+// variable max_int_rat : rational = max(2, 1 / 3)
 
-variable min_rat_rat : rational = min(1 / 2, 1 / 3)
-variable max_rat_rat : rational = max(1 / 2, 1 / 3)
+// variable min_rat_rat : rational = min(1 / 2, 1 / 3)
+// variable max_rat_rat : rational = max(1 / 2, 1 / 3)
 
 // variable min_dat_dat : date     = min(2020-01-01, 2020-12-31)
 // variable max_dat_dat : date     = max(2020-01-01, 2020-12-31)

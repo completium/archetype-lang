@@ -5294,16 +5294,6 @@ let remove_high_level_model (model : model)  =
   let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
     let f = aux ctx in
     match mt.node with
-    | Mlistreverse (t, l) -> begin
-        let tl = tlist t in
-        let empty = mk_mterm (Mlitlist []) tl in
-        let iid = dumloc "_liid" in
-        let vid = mk_mvar iid t in
-        let iaccu = dumloc "_accu" in
-        let vaccu = mk_mvar iaccu t in
-        let b =  mk_mterm (Mlistprepend(t, vaccu, vid)) tl in
-        mk_mterm (Mlistfold(t, iid, iaccu, f l, empty, b)) tl
-      end
     | Mlistconcat (t, l, m) -> begin
         let tl = tlist t in
         let iter = f (mk_mterm (Mlistreverse (t, f l)) tl) in

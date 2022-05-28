@@ -951,7 +951,7 @@ let to_ir (model : M.model) : T.ir =
     | Mlistlength (_, l)         -> T.Iunop (Usize, f l)
     | Mlistcontains (t, c, a)    -> let b = T.BlistContains (to_type model t) in add_builtin b; T.Icall (get_fun_name b, [f c; f a], is_inline b)
     | Mlistnth (t, c, a)         -> let b = T.BlistNth (to_type model t) in add_builtin b; T.Icall (get_fun_name b, [f c; f a], is_inline b)
-    | Mlistreverse _             -> emit_error (UnsupportedTerm ("Mlistreverse"))
+    | Mlistreverse (t, l)        -> T.Ireverse (to_type model t, f l)
     | Mlistconcat _              -> emit_error (UnsupportedTerm ("Mlistconcat"))
     | Mlistfold (_, ix, ia, c, a, b) -> T.Ifold (unloc ix, None, unloc ia, f c, f a, T.Iassign (unloc ia, f b))
 
