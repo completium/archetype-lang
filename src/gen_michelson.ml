@@ -1294,7 +1294,9 @@ let map_implem : (string * T.code list) list = [
                                       cpush (tint, T.Dint Big_int.zero_big_int); cdig 4; cdup; cdug 5; ccompare; cge; cif ([cint], [cneg]); cmul; cdip (1, [cmul; cabs]); cpair ];
   get_fun_name T.Bratuminus      , T.[cunpair; cneg; cpair];
   get_fun_name T.Bratabs         , T.[cunpair; cabs; cint; cpair];
-  get_fun_name T.Brattez         , T.[cunpair; cunpair; cabs; cdig 2; cmul; cediv; cifnone ([cfail divbyzero], []); ccar;];
+  get_fun_name T.Brattez         , T.[cunpair; cunpair;
+                                      cdip(2, [cpush (tmutez, T.Dint Big_int.unit_big_int); cswap; cediv; cifnone ([T.cfail "DivByZero"], []) ;ccar]);
+                                      cabs; cdig 2; cmul; cediv; cifnone ([cfail divbyzero], []); ccar; cpush (tmutez, T.Dint Big_int.unit_big_int); cmul ];
   get_fun_name T.Bratdur         , T.[cunpair; cunpair; cdig 2; cmul; cediv; cifnone ([cfail divbyzero], []); ccar;];
   get_fun_name T.Bsubnat         , T.[cunpair; csub; cdup; cpush (T.tint, T.Dint Big_int.zero_big_int); ccompare; cgt; cif ([cfail "NegResult"], []); cabs ];
   get_fun_name T.Bmuteztonat     , T.[cpush (tmutez, T.Dint Big_int.unit_big_int); cswap; cediv; cifnone ([T.cfail "DivByZero"], []); ccar;];

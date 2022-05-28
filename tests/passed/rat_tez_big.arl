@@ -1,0 +1,7 @@
+archetype rat_tez
+
+variable res : tez = 0tz
+
+entry exec() {
+  res := (2 / 3) * 9223372036854775807utz;
+}

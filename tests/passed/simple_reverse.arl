@@ -1,6 +1,5 @@
-archetype expr_lambda
+archetype simple_reverse
 
-variable s : string = "a"
 variable res : list<string> = []
 
 entry exec () {

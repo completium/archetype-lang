@@ -11,7 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
   - Short-circuit evaluation for boolean condition (`and` and `or`)
   - Optimize simple `add_update`
+  - Optimize `reverse` for list
   - BREAKING: `pkey` is replaced by `asset_key`
+### Fixed
+  - Multiplication between rational and tez with big value
 
 ## [1.2.16] - 2022-05-17
 ### Added
