@@ -389,12 +389,12 @@ let rec pp_expr outer pos fmt a =
   | Eternary (c, x, y) ->
 
     let pp fmt (c, x, y) =
-      Format.fprintf fmt "%a ? %a : %a"
+      Format.fprintf fmt "(%a ? %a : %a)"
         pp_simple_expr c
         pp_simple_expr x
         pp_simple_expr y
     in
-    (maybe_paren outer e_dot pos pp) fmt (c, x, y)
+    pp fmt (c, x, y)
 
   | Esqapp (i, e) ->
 

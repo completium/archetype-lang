@@ -1698,6 +1698,7 @@ let remove_rational (model : model) : model =
   let one           = mk_mterm (Mnat (Big_int.unit_big_int)) tnat in
   let mk_rat_one x  = mk_mterm (Mtuple [x ; one]) trat in
   let nat_to_int e  = mk_mterm (Mnattoint e) tint in
+  let is_rat      t = match get_ntype t with | Tbuiltin Brational -> true | _ -> false in
 
   let for_type (t : type_) : type_ =
     let rec aux t =
@@ -1845,6 +1846,20 @@ let remove_rational (model : model) : model =
         | _ -> map_mterm aux mt
       in
 
+      let do_fun op (lhs : mterm) (rhs : mterm) : mterm =
+        let id_lhs = dumloc "_lhs" in
+        let id_rhs = dumloc "_rhs" in
+        let vlhs = mk_mvar id_lhs trat in
+        let vrhs = mk_mvar id_rhs trat in
+        let lhs = lhs |> aux |> to_rat in
+        let rhs = rhs |> aux |> to_rat in
+        let c : mterm = mk_mterm (Mratcmp ((match op with | `Min -> Lt | `Max -> Gt), vlhs, vrhs)) tbool in
+        let mt : mterm = mk_mterm (Mexprif (c, vlhs, vrhs)) trat in
+        mt
+        |> mk_letin id_rhs rhs
+        |> mk_letin id_lhs lhs
+      in
+
       match mt.node with
       | Mrational (n, d)   -> Utils.mk_rat n d
       | Mplus     (a, b)   -> for_arith `Plus   (a, b)
@@ -1854,6 +1869,8 @@ let remove_rational (model : model) : model =
       | Mdiveuc   (a, b)   -> for_arith `Diveuc (a, b)
       | Mmodulo   (a, b)   -> for_arith `Modulo (a, b)
       | Muminus    v       -> for_unary `Uminus v
+      | Mmax      (a, b) when is_rat mt.type_  -> do_fun `Max a b
+      | Mmin      (a, b) when is_rat mt.type_  -> do_fun `Min a b
       | Mmax      (a, b)   -> for_fun (fun l ret -> mk_mterm (Mmax(List.nth l 0, List.nth l 1)) ret) [a; b]
       | Mmin      (a, b)   -> for_fun (fun l ret -> mk_mterm (Mmin(List.nth l 0, List.nth l 1)) ret) [a; b]
       | Mequal  (_, a, b)  -> for_cmp `Eq (a, b)

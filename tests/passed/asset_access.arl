@@ -17,5 +17,4 @@ entry get_value() {
 
   z := my_asset[k].c;
   y := my_asset[k].?c;
-  x := my_asset[k] .? c : 0x00;
 }

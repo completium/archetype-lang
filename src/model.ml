@@ -1208,6 +1208,10 @@ let mk_optget (x : mterm) =
   | Toption t -> mk_mterm (Moptget x) t
   | _ -> assert false
 
+let mk_min (lhs : mterm) (rhs : mterm) (t : type_) = mk_mterm (Mmin (lhs, rhs)) t
+
+let mk_max (lhs : mterm) (rhs : mterm) (t : type_) = mk_mterm (Mmax (lhs, rhs)) t
+
 let mk_abs (x : mterm) = mk_mterm (Mabs x) tnat
 
 let mk_nat_to_int (x : mterm) = mk_mterm (Mnattoint x) tint
