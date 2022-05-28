@@ -3861,8 +3861,9 @@ let rec for_xexpr
 
         let f_as, f_ty =
           match lst.type_ with
-          | Some (A.Tlist _)   -> (fun t -> Type.as_list t), (fun ty -> A.Tlist ty)
-          | Some (A.Toption _) -> (fun t -> Type.as_option t), (fun ty -> A.Toption ty)
+          | Some (A.Tlist _)      -> (fun t -> Type.as_list t), (fun ty -> A.Tlist ty)
+          | Some (A.Toption _)    -> (fun t -> Type.as_option t), (fun ty -> A.Toption ty)
+          | Some (A.Tmap (kt, _)) -> (fun t -> Type.as_map t |> Option.map (fun (x, y) -> A.Ttuple [x; y])), (fun ty -> A.Tmap (kt, ty))
           | _ -> (fun _ -> None), (fun ty -> ty)
         in
 
