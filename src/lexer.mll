@@ -236,7 +236,7 @@ rule token = parse
   | "/%"                  { SLASHPERCENT }
   | "_"                   { UNDERSCORE }
   | "?"                   { QUESTION }
-  | ".?"                  { DOTQUESTION }
+  | "?."                  { QUESTIONDOT }
   | eof                   { EOF }
   | _ as c                {
       lex_error lexbuf (Printf.sprintf "unexpected char: %c" c)

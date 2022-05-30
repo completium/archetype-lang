@@ -3333,7 +3333,7 @@ let rec for_xexpr
           bailout ()
       end
 
-    | Edotquestion (pe, x) -> begin
+    | Equestiondot (pe, x) -> begin
         let e = for_xexpr env pe in
 
         match e.A.type_ with
@@ -3351,7 +3351,7 @@ let rec for_xexpr
             | Some { fd_type = fty; fd_ghost = ghost } ->
               if ghost && not (is_form_kind mode.em_kind) then
                 Env.emit_error env (loc x, InvalidShadowFieldAccess);
-              mk_sp (Some (A.Toption fty)) (A.Pdotquestion (e, x))
+              mk_sp (Some (A.Toption fty)) (A.Pquestiondot (e, x))
           end
 
         | Some (A.Tcontainer (A.Tasset asset, AssetValue)) -> begin
@@ -3366,7 +3366,7 @@ let rec for_xexpr
             | Some { fd_type = fty; fd_ghost = ghost } ->
               if ghost && not (is_form_kind mode.em_kind) then
                 Env.emit_error env (loc x, InvalidShadowFieldAccess);
-              mk_sp (Some (A.Toption fty)) (A.Pdotquestion (e, x))
+              mk_sp (Some (A.Toption fty)) (A.Pquestiondot (e, x))
           end
 
         | Some ty ->

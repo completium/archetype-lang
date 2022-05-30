@@ -62,7 +62,6 @@
 %token DONE
 %token DOREQUIRE
 %token DOT
-%token DOTQUESTION
 %token EFFECT
 %token ELSE
 %token EMIT
@@ -136,6 +135,7 @@
 %token POSTCONDITION
 %token PREDICATE
 %token QUESTION
+%token QUESTIONDOT
 %token RBRACE
 %token RBRACKET
 %token RECORD
@@ -1029,8 +1029,8 @@ simple_expr_r:
  | x=simple_expr DOT id=ident a=app_args
      { Emethod (x, id, a) }
 
- | x=simple_expr DOTQUESTION y=ident
-     { Edotquestion (x, y) }
+ | x=simple_expr QUESTIONDOT y=ident
+     { Equestiondot (x, y) }
 
  | LBRACKET RBRACKET
      { Earray [] }

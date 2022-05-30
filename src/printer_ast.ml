@@ -569,9 +569,9 @@ let rec pp_pterm fmt (pterm : pterm) =
       in
       (pp_with_paren pp) fmt (e, i)
 
-    | Pdotquestion (e, i) ->
+    | Pquestiondot (e, i) ->
       let pp fmt (e, i) =
-        Format.fprintf fmt "%a.?%a"
+        Format.fprintf fmt "%a?.%a"
           pp_pterm e
           pp_id i
       in

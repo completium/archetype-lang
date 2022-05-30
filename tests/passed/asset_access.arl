@@ -16,5 +16,5 @@ entry get_value() {
   const k : nat = 0;
 
   z := my_asset[k].c;
-  y := my_asset[k].?c;
+  y := my_asset[k]?.c;
 }
