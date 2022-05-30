@@ -1191,19 +1191,29 @@ let pp_entry_properties fmt (props : entry_properties) =
       let items, exts = v |> unloc in
       pp_spec fmt (items, exts)
   ) props.spec_fun;
-  if (not props.accept_transfer)
-  then Format.fprintf fmt "refuse transfer@\n";
-  map_option (fun (e, exts) ->
-      Format.fprintf fmt "sourced by%a %a@\n"
+
+  if (not (fst props.accept_transfer))
+  then begin
+    Format.fprintf fmt "refuse transfer%a@\n"
+      (pp_option (fun fmt o -> Format.fprintf fmt " otherwise %a" (pp_expr e_default PNone) o )) (snd props.accept_transfer)
+  end;
+  map_option (fun (e, o, exts) ->
+      Format.fprintf fmt "sourced by%a %a%a@\n"
         pp_extensions exts
-        (pp_expr e_default PNone) e) props.sourcedby;
-  map_option (fun (e, exts) ->
-      Format.fprintf fmt "called by%a %a@\n"
+        (pp_expr e_default PNone) e
+        (pp_option (fun fmt o -> Format.fprintf fmt " otherwise %a" (pp_expr e_default PNone) o )) o
+    ) props.sourcedby;
+  map_option (fun (e, o, exts) ->
+      Format.fprintf fmt "called by%a %a%a@\n"
         pp_extensions exts
-        (pp_expr e_default PNone) e) props.calledby;
-  map_option (fun x ->
-      Format.fprintf fmt "state is %a@\n"
-        pp_id x) props.state_is;
+        (pp_expr e_default PNone) e
+        (pp_option (fun fmt o -> Format.fprintf fmt " otherwise %a" (pp_expr e_default PNone) o )) o
+    ) props.calledby;
+  map_option (fun (x, o) ->
+      Format.fprintf fmt "state is %a%a@\n"
+        pp_id x
+        (pp_option (fun fmt o -> Format.fprintf fmt " otherwise %a" (pp_expr e_default PNone) o )) o
+    ) props.state_is;
   let pp_rf s1 s2 fmt (l, exts) =
     Format.fprintf fmt "%s%a {@\n  @[%a@]@\n}@\n"
       s1

@@ -1384,7 +1384,7 @@ let optionops : opinfo list =
     op "isnone"       A.Cisnone      `Total   (Some top) [] (`Ty A.vtbool) Mint.empty;
     op "issome"       A.Cissome      `Total   (Some top) [] (`Ty A.vtbool) Mint.empty;
     op "opt_get"      A.Cgetopt      `Partial (Some top) [] (`Ty ty)       Mint.empty;
-    op "require_some" A.Crequiresome `Partial (Some top) [ty2] (`Ty ty)       Mint.empty
+    op "require_some" A.Crequiresome `Partial (Some top) [ty2] (`Ty ty)    Mint.empty
   ]
 
 (* -------------------------------------------------------------------- *)
@@ -4398,6 +4398,7 @@ and for_gen_method_call mode env theloc (the, m, args)
         end
 
       | `Ef update ->
+        let env     = Env.Context.push env (unloc asset.as_name) in
         A.AEffect (Option.get_dfl [] (for_arg_effect mode env ~update asset arg))
 
       | `Coll ->
@@ -5633,9 +5634,9 @@ let rec for_callby (env : env) kind (cb : PT.expr) =
 
 (* -------------------------------------------------------------------- *)
 let for_entry_properties (env, poenv : env * env) (act : PT.entry_properties) =
-  let sourcedby = Option.map (fun (x, _) -> for_callby env `Sourced x) act.sourcedby in
-  let calledby  = Option.map (fun (x, _) -> for_callby env  `Called x) act.calledby in
-  let stateis   = Option.map (for_named_state env) act.state_is in
+  let sourcedby = Option.map (fun (x, _, _) -> for_callby env `Sourced x) act.sourcedby in
+  let calledby  = Option.map (fun (x, _, _) -> for_callby env  `Called x) act.calledby in
+  let stateis   = Option.map (fun (x, _) -> for_named_state env x) act.state_is in
   let env, req  = Option.foldmap (for_rfs `Concrete) env (Option.fst act.require) in
   let env, fai  = Option.foldmap (for_rfs `Concrete) env (Option.fst act.failif) in
   let env, spec = Option.foldmap
@@ -6374,7 +6375,7 @@ let for_acttx_decl
                 ad_reqs   = Option.get_dfl [] reqs;
                 ad_fais   = Option.get_dfl [] fais;
                 ad_spec   = Option.get_dfl [] spec @ xspec;
-                ad_actfs  = pt.accept_transfer; } in
+                ad_actfs  = fst pt.accept_transfer; } in
 
             (env, decl))
 
@@ -6442,7 +6443,7 @@ let for_acttx_decl
               ad_reqs   = Option.get_dfl [] reqs;
               ad_fais   = Option.get_dfl [] fais;
               ad_spec   = Option.get_dfl [] spec @ xspec;
-              ad_actfs  = entrys.accept_transfer; }
+              ad_actfs  = fst entrys.accept_transfer; }
 
           in (env, decl))
 

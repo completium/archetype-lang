@@ -122,7 +122,7 @@ let pp_archetype fmt pt =
           (pp_list "@\n" pp_asset_decl) assets
     in
 
-    let pp_called_by = (pp_option (fun fmt (x, _) -> Format.fprintf fmt "`called by ` %a@\n" pp_expr x)) in
+    let pp_called_by = (pp_option (fun fmt (x, _, _) -> Format.fprintf fmt "`called by ` %a@\n" pp_expr x)) in
     let pp_entries fmt _ =
       let pp_entry_decl fmt ((name, args, entry_properties, _ , _exts) : entry_decl) =
         let pp_formula fmt (label, f : ident * expr) =

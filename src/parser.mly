@@ -730,10 +730,13 @@ transition:
 | { (dummy_entry_properties, None) }
 | LBRACE xs=entry_properties e=effect? RBRACE { (xs, e) }
 
+%inline otherwise_section:
+| OTHERWISE x=simple_expr { x }
+
 %inline accept_transfer:
-| /* empty */     { true }
-| REFUSE_TRANSFER { false }
-| ACCEPT_TRANSFER { true }
+| /* empty */     { (true, None) }
+| REFUSE_TRANSFER o=otherwise_section? { (false, o) }
+| ACCEPT_TRANSFER o=otherwise_section? { (true, o) }
 
 entry_properties:
   sp=specification_fun? at=accept_transfer sb=sourcedby? cb=calledby? si=state_is? cs=require? fi=failif? fs=function_item*
@@ -751,13 +754,13 @@ entry_properties:
   }
 
 calledby:
- | CALLED BY exts=option(extensions) x=expr { (x, exts) }
+| CALLED BY exts=option(extensions) x=expr o=otherwise_section? { (x, o, exts) }
 
 sourcedby:
- | SOURCED BY exts=option(extensions) x=expr { (x, exts) }
+| SOURCED BY exts=option(extensions) x=expr o=otherwise_section? { (x, o, exts) }
 
 %inline state_is:
- | STATE_IS id=ident { id }
+| STATE_IS id=ident o=otherwise_section? { (id, o) }
 
 %inline rfs(X):
 | /* empty */   { [] }
