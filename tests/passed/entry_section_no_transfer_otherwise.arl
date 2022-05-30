@@ -1,0 +1,10 @@
+archetype entry_section_no_transfer_otherwise
+
+variable owner : address = tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
+
+entry exec() {
+  refuse transfer otherwise "INVALID_VALUE"
+  effect {
+    ()
+  }
+}

@@ -1,0 +1,12 @@
+archetype entry_section_state_is_otherwise
+
+states =
+| First
+| Second
+
+entry exec() {
+  state is First otherwise "INVALID_STATE"
+  effect {
+    ()
+  }
+}
