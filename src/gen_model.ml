@@ -1385,7 +1385,7 @@ let to_model (ast : A.ast) : M.model =
 
   let process_transaction (env : env) (transaction : A.transaction) : M.function__ =
     let process_calledby env (body : M.mterm) : M.mterm =
-      let process_cb caller (cb : A.rexpr) (body : M.mterm) : M.mterm =
+      let process_cb caller (cb : (A.rexpr * A.pterm option)) (body : M.mterm) : M.mterm =
         let rec process_rexpr (rq : A.rexpr) : M.mterm option =
           match rq.node with
           | Rany -> None
@@ -1406,10 +1406,15 @@ let to_model (ast : A.ast) : M.model =
               | _ -> None
             end
         in
-        match process_rexpr cb with
+        let rexpr = fst cb in
+        match process_rexpr rexpr with
         | Some a ->
-          let require : M.mterm = M.mk_mterm (M.Mnot (a)) (M.tbool) ~loc:cb.loc in
-          let fail_auth : M.mterm = fail InvalidCaller in
+          let require : M.mterm = M.mk_mterm (M.Mnot (a)) (M.tbool) ~loc:rexpr.loc in
+          let fail_auth : M.mterm =
+            match snd cb with
+            | Some o -> fail (Invalid (to_mterm env o))
+            | None -> fail InvalidCaller
+          in
           let cond_if = M.mk_mterm (M.Mif (require, fail_auth, None)) M.tunit in
           add_seq cond_if body
         | _ -> body
@@ -1427,13 +1432,15 @@ let to_model (ast : A.ast) : M.model =
       end
     in
 
-    let process_state_is _env (body : M.mterm) : M.mterm =
+    let process_state_is env (body : M.mterm) : M.mterm =
       match transaction.state_is with
-      | Some id -> begin
+      | Some (id, o) -> begin
           let var     = M.mk_state_value id in
           let state   = M.mk_state_var () in
           let c       = M.mk_mterm (M.Mnequal (M.tstate, var, state)) (M.tbool) ~loc:(loc id) in
-          let cond_if = M.mk_mterm (M.Mif (c, fail InvalidState, None)) M.tunit in
+          let cond_if =
+            let fail = match o with Some o -> fail (Invalid (to_mterm env o)) | None -> fail InvalidState in
+            M.mk_mterm (M.Mif (c, fail, None)) M.tunit in
           add_seq cond_if body
         end
       | _ -> body
@@ -1468,14 +1475,15 @@ let to_model (ast : A.ast) : M.model =
       |>  apply env `Require transaction.require
     in
 
-    let process_accept_transfer _env (body : M.mterm) : M.mterm =
-      if (not transaction.accept_transfer)
+    let process_accept_transfer env (body : M.mterm) : M.mterm =
+      if (not (fst transaction.accept_transfer))
       then
         let lhs : M.mterm = M.mk_mterm (M.Mtransferred) M.ttez in
         let rhs : M.mterm = M.mk_mterm (M.Mcurrency (Big_int.zero_big_int, Utz)) M.ttez in
         let eq : M.mterm = M.mk_mterm (M.Mequal (M.ttez, lhs, rhs)) M.tbool in
         let cond : M.mterm = M.mk_mterm (M.Mnot eq) M.tbool in
-        let cond_if : M.mterm = M.mk_mterm (M.Mif (cond, fail (NoTransfer), None)) M.tunit in
+        let fail = match snd transaction.accept_transfer with | Some o -> fail (Invalid (to_mterm env o)) | None -> fail NoTransfer in
+        let cond_if : M.mterm = M.mk_mterm (M.Mif (cond, fail, None)) M.tunit in
         add_seq cond_if body
       else
         body

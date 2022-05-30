@@ -1612,13 +1612,13 @@ type 'env tentrydecl = {
   ad_args   : (A.lident * A.ptyp) list;
   ad_srcby  : (A.pterm option) loced list;
   ad_callby : (A.pterm option) loced list;
-  ad_stateis: A.lident option;
+  ad_stateis: (A.lident * A.pterm option) option;
   ad_effect : [`Raw of A.instruction | `Tx of transition] option;
   ad_funs   : 'env fundecl option list;
   ad_reqs   : (A.lident option * A.pterm * A.pterm option) list;
   ad_fais   : (A.lident option * A.pterm * A.pterm option) list;
   ad_spec   : 'env ispecification list;
-  ad_actfs  : bool;
+  ad_actfs  : bool * A.pterm option;
 }
 
 and transition = A.sexpr * (A.lident * assetdecl) option * txeffect list
@@ -5636,14 +5636,15 @@ let rec for_callby (env : env) kind (cb : PT.expr) =
 let for_entry_properties (env, poenv : env * env) (act : PT.entry_properties) =
   let sourcedby = Option.map (fun (x, _, _) -> for_callby env `Sourced x) act.sourcedby in
   let calledby  = Option.map (fun (x, _, _) -> for_callby env  `Called x) act.calledby in
-  let stateis   = Option.map (fun (x, _) -> for_named_state env x) act.state_is in
+  let stateis   = Option.map (fun (x, _) -> for_named_state env x, None) act.state_is in
+  let actfs    : bool * A.pterm option = fst act.accept_transfer, None in
   let env, req  = Option.foldmap (for_rfs `Concrete) env (Option.fst act.require) in
   let env, fai  = Option.foldmap (for_rfs `Concrete) env (Option.fst act.failif) in
   let env, spec = Option.foldmap
       (fun env x -> for_specification `Local (env, poenv) x) env act.spec_fun in
   let env, funs = List.fold_left_map for_function env act.functions in
 
-  (env, (sourcedby, calledby, stateis, req, fai, spec, funs))
+  (env, (sourcedby, calledby, stateis, actfs, req, fai, spec, funs))
 
 (* -------------------------------------------------------------------- *)
 let for_transition ?enum (env : env) (state, when_, effect) =
@@ -6340,7 +6341,7 @@ let for_acttx_decl
               Option.foldmap (for_effect `Concrete) env (Option.fst i_exts) in
             let effect = Option.map snd poeffect in
             let poenv  = Option.get_dfl env (Option.map fst poeffect) in
-            let env, (srcby, callby, stateis, reqs, fais, spec, funs) =
+            let env, (srcby, callby, stateis, actfs, reqs, fais, spec, funs) =
               for_entry_properties (env, poenv) pt in
 
             let env, xspec =
@@ -6375,7 +6376,7 @@ let for_acttx_decl
                 ad_reqs   = Option.get_dfl [] reqs;
                 ad_fais   = Option.get_dfl [] fais;
                 ad_spec   = Option.get_dfl [] spec @ xspec;
-                ad_actfs  = fst pt.accept_transfer; } in
+                ad_actfs  = actfs; } in
 
             (env, decl))
 
@@ -6406,7 +6407,7 @@ let for_acttx_decl
             env, Option.map fst aout, Option.map snd aout in
 
           let from_ = for_state_formula ?enum env from_ in
-          let env, (srcby, callby, stateis, reqs, fais, spec, funs) =
+          let env, (srcby, callby, stateis, actfs, reqs, fais, spec, funs) =
             for_entry_properties (env, env) entrys in
 
           let env, xspec =
@@ -6443,7 +6444,7 @@ let for_acttx_decl
               ad_reqs   = Option.get_dfl [] reqs;
               ad_fais   = Option.get_dfl [] fais;
               ad_spec   = Option.get_dfl [] spec @ xspec;
-              ad_actfs  = fst entrys.accept_transfer; }
+              ad_actfs  = actfs; }
 
           in (env, decl))
 
@@ -6841,7 +6842,7 @@ let functions_of_fdecls fdecls =
 
 (* -------------------------------------------------------------------- *)
 let transentrys_of_tdecls tdecls =
-  let for_calledby cb : A.rexpr option =
+  let for_calledby cb : (A.rexpr * A.pterm option) option =
     match cb with [] -> None | c :: cb ->
 
       let for1 = fun (x : A.pterm option loced) ->
@@ -6856,7 +6857,7 @@ let transentrys_of_tdecls tdecls =
       let aout = List.fold_left
           (fun acc c' ->  A.mk_sp (A.Ror (acc, for1 c')))
           (for1 c) cb
-      in Some aout
+      in Some (aout, None)
   in
 
   let for1 tdecl =

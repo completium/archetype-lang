@@ -1215,15 +1215,17 @@ let pp_function fmt (f : function_) =
     (pp_option pp_specification) f.specification
     pp_instruction f.body
 
+let pp_otherwise fmt o = pp_option (fun fmt x -> Format.fprintf fmt " otherwise %a" pp_pterm x) fmt o
+
 let pp_transaction_entry fmt (t : transaction) =
   Format.fprintf fmt "entry %a%a {@\n  @[%a%a%a%a%a%a%a%a%a@]@\n}@\n"
     pp_id t.name
     pp_fun_args t.args
     (pp_option pp_specification) t.specification
-    (pp_do_if (not t.accept_transfer) (fun fmt _ -> Format.fprintf fmt "refuse transfer@\n")) ()
-    (pp_option (fun fmt -> Format.fprintf fmt "sourced by %a@\n" pp_rexpr)) t.sourcedby
-    (pp_option (fun fmt -> Format.fprintf fmt "called by %a@\n" pp_rexpr)) t.calledby
-    (pp_option (fun fmt -> Format.fprintf fmt "state is %a@\n" pp_id)) t.state_is
+    (pp_do_if (not (fst t.accept_transfer)) (fun fmt (_, o) -> Format.fprintf fmt "refuse transfer%a@\n" pp_otherwise o)) t.accept_transfer
+    (pp_option (fun fmt (x, o) -> Format.fprintf fmt "sourced by %a%a@\n" pp_rexpr x pp_otherwise o)) t.sourcedby
+    (pp_option (fun fmt (x, o) -> Format.fprintf fmt "called by %a%a@\n" pp_rexpr x pp_otherwise o)) t.calledby
+    (pp_option (fun fmt (x ,o) -> Format.fprintf fmt "state is %a%a@\n" pp_id x pp_otherwise o )) t.state_is
     (pp_option (pp_list "@\n " (fun fmt -> Format.fprintf fmt "require {@\n  @[%a@]@\n}@\n" pp_label_term))) t.require
     (pp_option (pp_list "@\n " (fun fmt -> Format.fprintf fmt "failif {@\n  @[%a@]@\n}@\n" pp_label_term))) t.failif
     (pp_list "@\n" pp_function) t.functions
@@ -1239,10 +1241,10 @@ let pp_transaction_transition fmt (t : transaction) (tr : lident transition) =
   Format.fprintf fmt "transition %a%a%a {@\n  @[%a%a%a%a%a%a%a@]@\n}@\n"
     pp_id t.name
     pp_fun_args t.args
-    (pp_option (pp_prefix " on " (fun fmt (k, _, an, _) -> Format.fprintf fmt "(%a : pkey of %a)" pp_id k pp_id an))) tr.on
+    (pp_option (pp_prefix " on " (fun fmt (k, _, an, _) -> Format.fprintf fmt "(%a : asset_key<%a>)" pp_id k pp_id an))) tr.on
     (pp_option pp_specification) t.specification
-    (pp_option (fun fmt -> Format.fprintf fmt "called by %a@\n" pp_rexpr)) t.calledby
-    (pp_do_if t.accept_transfer (fun fmt _ -> Format.fprintf fmt "accept transfer@\n")) ()
+    (pp_option (fun fmt (x, _) -> Format.fprintf fmt "called by %a@\n" pp_rexpr x)) t.calledby
+    (pp_do_if (not (fst t.accept_transfer)) (fun fmt (_, o) -> Format.fprintf fmt "refuse transfer%a@\n" pp_otherwise o)) t.accept_transfer
     (pp_option (pp_list "@\n " (fun fmt -> Format.fprintf fmt "require {@\n  @[%a@]@\n}@\n" pp_label_term))) t.require
     (pp_list "@\n" pp_function) t.functions
     (fun fmt from -> Format.fprintf fmt " from %a@\n"
