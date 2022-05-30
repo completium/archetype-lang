@@ -1610,8 +1610,8 @@ type txeffect = {
 type 'env tentrydecl = {
   ad_name   : A.lident;
   ad_args   : (A.lident * A.ptyp) list;
-  ad_srcby  : (A.pterm option) loced list;
-  ad_callby : (A.pterm option) loced list;
+  ad_srcby  : (A.pterm option) loced list * A.pterm option;
+  ad_callby : (A.pterm option) loced list * A.pterm option;
   ad_stateis: (A.lident * A.pterm option) option;
   ad_effect : [`Raw of A.instruction | `Tx of transition] option;
   ad_funs   : 'env fundecl option list;
@@ -5634,10 +5634,11 @@ let rec for_callby (env : env) kind (cb : PT.expr) =
 
 (* -------------------------------------------------------------------- *)
 let for_entry_properties (env, poenv : env * env) (act : PT.entry_properties) =
-  let sourcedby = Option.map (fun (x, _, _) -> for_callby env `Sourced x) act.sourcedby in
-  let calledby  = Option.map (fun (x, _, _) -> for_callby env  `Called x) act.calledby in
-  let stateis   = Option.map (fun (x, _) -> for_named_state env x, None) act.state_is in
-  let actfs    : bool * A.pterm option = fst act.accept_transfer, None in
+  let fe = for_expr `Concrete env in
+  let sourcedby = Option.map (fun (x, _, _) -> for_callby env `Sourced x) act.sourcedby , Option.bind (Option.map fe |@ proj3_2) act.sourcedby in
+  let calledby  = Option.map (fun (x, _, _) -> for_callby env `Called x)  act.calledby  , Option.bind (Option.map fe |@ proj3_2) act.calledby  in
+  let stateis   = Option.map (fun (x, o) -> for_named_state env x, Option.map fe o) act.state_is in
+  let actfs     = fst act.accept_transfer, Option.map fe (snd act.accept_transfer) in
   let env, req  = Option.foldmap (for_rfs `Concrete) env (Option.fst act.require) in
   let env, fai  = Option.foldmap (for_rfs `Concrete) env (Option.fst act.failif) in
   let env, spec = Option.foldmap
@@ -6368,8 +6369,8 @@ let for_acttx_decl
             let decl =
               { ad_name   = x;
                 ad_args   = List.pmap (fun x -> x) args;
-                ad_srcby  = Option.get_dfl [] srcby;
-                ad_callby = Option.get_dfl [] callby;
+                ad_srcby  = Option.get_dfl [] (fst srcby), snd srcby;
+                ad_callby = Option.get_dfl [] (fst callby), snd callby;
                 ad_stateis= stateis;
                 ad_effect = Option.map (fun x -> `Raw x) effect;
                 ad_funs   = funs;
@@ -6436,8 +6437,8 @@ let for_acttx_decl
           let decl =
             { ad_name   = x;
               ad_args   = List.pmap (fun x -> x) args;
-              ad_srcby  = Option.get_dfl [] srcby;
-              ad_callby = Option.get_dfl [] callby;
+              ad_srcby  = Option.get_dfl [] (fst srcby),  snd srcby;
+              ad_callby = Option.get_dfl [] (fst callby), snd callby;
               ad_stateis= stateis;
               ad_effect = Some (`Tx (from_, tgt, tx));
               ad_funs   = funs;
@@ -6842,8 +6843,8 @@ let functions_of_fdecls fdecls =
 
 (* -------------------------------------------------------------------- *)
 let transentrys_of_tdecls tdecls =
-  let for_calledby cb : (A.rexpr * A.pterm option) option =
-    match cb with [] -> None | c :: cb ->
+  let for_calledby ocb : (A.rexpr * A.pterm option) option =
+    match fst ocb with [] -> None | c :: cb ->
 
       let for1 = fun (x : A.pterm option loced) ->
         let node =
@@ -6857,7 +6858,7 @@ let transentrys_of_tdecls tdecls =
       let aout = List.fold_left
           (fun acc c' ->  A.mk_sp (A.Ror (acc, for1 c')))
           (for1 c) cb
-      in Some (aout, None)
+      in Some (aout, snd ocb)
   in
 
   let for1 tdecl =
