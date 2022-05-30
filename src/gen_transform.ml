@@ -4601,7 +4601,19 @@ let remove_asset (model : model) : model =
 
           let l, b, ags = List.fold_right (fun (id, op, v) (accu, b, ags) ->
               let _, ts, _ = Utils.get_asset_field model (an, unloc id) in
+
+              let v =
+                let rec aux (mt : mterm) : mterm =
+                  match mt.node with
+                  (* | Mdot ({node = Mvar ({pldesc = "the"}, _, _, _); _}, fn) when String.equal (unloc fn) akn -> vkey *)
+                  | Mdot ({node = Mvar ({pldesc = "the"}, _, _, _); _}, fn) -> get_val fn
+                  | _ -> map_mterm aux mt
+                in
+                aux v
+              in
+
               let v = fm ctx v in
+
               let is_rat t = match get_ntype t with | Ttuple [(Tbuiltin Bint, _); (Tbuiltin Bnat, _)] -> true     | _ -> false in
               match get_ntype ts, op with
               | Tcontainer((Tasset aan, _), Aggregate), ValueAssign -> begin

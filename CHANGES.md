@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
   - Asset access
   - Type `asset_value`
+  - Add `otherwise` in `no transfer`, `called by`, `source by` and `state is` section
 ### Changed
   - Short-circuit evaluation for boolean condition (`and` and `or`)
   - Optimize simple `add_update`
