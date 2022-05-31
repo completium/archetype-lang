@@ -1,0 +1,7 @@
+archetype greedy_and
+
+variable res : bool = false
+
+entry exec() {
+  res := greedy_and(true, true)
+}

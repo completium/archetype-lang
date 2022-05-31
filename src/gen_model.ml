@@ -829,6 +829,15 @@ let to_model (ast : A.ast) : M.model =
       | A.Pcall (_, A.Cid id, args) ->
         M.Mapp (id, List.map (fun x -> term_arg_to_expr f x) args)
 
+      | A.Pcall (None, A.Cconst A.Cgreedyand, [AExpr a; AExpr b]) ->
+        let fa = f a in
+        let fb = f b in
+        M.Mgreedyand (fa, fb)
+
+      | A.Pcall (None, A.Cconst A.Cgreedyor, [AExpr a; AExpr b]) ->
+        let fa = f a in
+        let fb = f b in
+        M.Mgreedyor (fa, fb)
 
       (* | A.Pcall (None, A.Cconst (A.Cmaybeperformedonlybyrole), [AExpr l; AExpr r]) ->
          M.MsecMayBePerformedOnlyByRole (f l, f r)

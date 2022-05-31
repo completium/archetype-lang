@@ -1367,8 +1367,8 @@ end = struct
           | `Bop Blsl,                 [ _a; _b ] -> assert false
           | `Bop Blsr,                 [ _a; _b ] -> assert false
           | `Bop Bor,                  [ a; b ] -> mk_mterm (Mor  (f a, f b)) tbool
-          | `Bop Band,                 [ a; b ] -> mk_mterm (Mand (f a, f b)) tbool
-          | `Bop Bxor,                 [ a; b ] -> mk_mterm (Mxor (f a, f b)) tbool
+          | `Bop Band,                 [ a; b ] -> mk_mterm (Mgreedyand (f a, f b)) tbool
+          | `Bop Bxor,                 [ a; b ] -> mk_mterm (Mgreedyor (f a, f b)) tbool
           | `Bop Bcompare,             [ _; _ ] -> assert false
           | `Bop Bget,                 [ a; b ] -> mk_mterm (Mmapget (mk_map, tunknown, tunknown, f a, f b, None)) tunknown
           | `Bop Bmem,                 [ a; b ] -> mk_mterm (Mmapcontains(mk_map, tunknown, tunknown, f a, f b)) tunknown
@@ -1695,6 +1695,8 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     | Mand (_l, _r)    -> assert false
     | Mor (_l, _r)     -> assert false
+    | Mgreedyand (_l, _r)-> assert false
+    | Mgreedyor (_l, _r) -> assert false
     | Mxor (_l, _r)    -> assert false
     | Mnot _e          -> assert false
     | Mplus (l, r)     -> A.eapp (A.Foperator (dumloc (A.Arith A.Plus))) [f l; f r]

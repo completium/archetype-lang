@@ -193,6 +193,8 @@ type const =
   | Cimplicitaccount
   | Csubnat
   | Csubmutez
+  | Cgreedyand
+  | Cgreedyor
   (* set *)
   | Csadd
   | Csremove

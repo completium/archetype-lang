@@ -268,6 +268,8 @@ let to_const = function
   | Cimplicitaccount-> "implicit_account"
   | Csubnat         -> "sub_nat"
   | Csubmutez       -> "sub_mutez"
+  | Cgreedyand      -> "greedy_and"
+  | Cgreedyor       -> "greedy_or"
   (* set *)
   | Csadd           -> "set_add"
   | Csremove        -> "set_remove"

@@ -718,6 +718,22 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (l, r)
 
+    | Mgreedyand (l, r) ->
+      let pp fmt (l, r) =
+        Format.fprintf fmt "greedy_and(%a, %a)"
+          f l
+          f r
+      in
+      pp fmt (l, r)
+
+    | Mgreedyor (l, r) ->
+      let pp fmt (l, r) =
+        Format.fprintf fmt "greedy_or(%a, %a)"
+          f l
+          f r
+      in
+      pp fmt (l, r)
+
     | Mxor (l, r) ->
       let pp fmt (l, r) =
         Format.fprintf fmt "%a xor %a"

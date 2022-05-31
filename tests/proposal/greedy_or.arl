@@ -1,0 +1,7 @@
+archetype greedy_or
+
+variable res : bool = false
+
+entry exec() {
+  res := greedy_or(true, false)
+}

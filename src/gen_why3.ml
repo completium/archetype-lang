@@ -1980,6 +1980,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Mand (l, r) -> Tpand (map_mterm m ctx l, map_mterm m ctx r)
     | Mor (a, b) -> Tor (map_mterm m ctx a, map_mterm m ctx b)
+    | Mgreedyand (l, r) -> Tpand (map_mterm m ctx l, map_mterm m ctx r)
+    | Mgreedyor (a, b) -> Tor (map_mterm m ctx a, map_mterm m ctx b)
     | Mxor (a, b) ->
       let t = map_mtype m (mt.type_) in
       Txor (t, map_mterm m ctx a, map_mterm m ctx b)

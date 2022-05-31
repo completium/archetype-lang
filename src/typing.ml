@@ -1468,7 +1468,9 @@ let cryptoops : opinfo list =
 let mathops : opinfo list =
   [
     op "sub_nat" A.Csubnat `Partial (Some A.vtnat) [ A.vtnat ] (`Ty A.vtnat) Mint.empty;
-    op "sub_mutez" A.Csubmutez `Total (Some A.vtcurrency) [ A.vtcurrency ] (`Ty (A.Toption A.vtcurrency)) Mint.empty
+    op "sub_mutez" A.Csubmutez `Total (Some A.vtcurrency) [ A.vtcurrency ] (`Ty (A.Toption A.vtcurrency)) Mint.empty;
+    op "greedy_and" A.Cgreedyand `Total (Some A.vtbool) [ A.vtbool ] (`Ty A.vtbool) Mint.empty;
+    op "greedy_or" A.Cgreedyor `Total (Some A.vtbool) [ A.vtbool ] (`Ty A.vtbool) Mint.empty
   ]
 
 (* -------------------------------------------------------------------- *)
