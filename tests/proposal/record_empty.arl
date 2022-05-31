@@ -1,0 +1,11 @@
+archetype record_empty
+
+record my_record {
+  a : nat = 0;
+  b : string = "";
+}
+
+entry exec () {
+  var r : my_record = {};
+  ()
+}
