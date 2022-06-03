@@ -1,0 +1,6 @@
+archetype expr_fail_some_pass
+
+entry exec() {
+  const msg = none<string>;
+  fail_some(msg)
+}

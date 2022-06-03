@@ -1,0 +1,4 @@
+archetype init_constant_with_variable(p : nat)
+
+constant c : nat = p
+
