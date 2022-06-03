@@ -149,7 +149,7 @@ type ('id, 'term) assign_kind_gen =
   | Avarstore    of 'id
   | Aasset       of 'id * 'id * 'term (* asset name * field name * key *)
   | Arecord      of 'id * 'id * 'term (* record name * field name * record *)
-  | Avartuple    of 'id * int * int  (* var name * index * length *)
+  | Avartuple    of 'id * int * int   (* var name * index * length *)
   | Astate
   | Aassetstate of ident * 'term     (* asset name * key *)
   | Aoperations

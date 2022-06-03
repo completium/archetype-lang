@@ -1050,6 +1050,7 @@ let to_model (ast : A.ast) : M.model =
       | A.Iseq [] -> true
       | _ -> false
     in
+
     let node =
       let f = to_mterm env in
       let g = to_instruction env in
@@ -1088,38 +1089,17 @@ let to_model (ast : A.ast) : M.model =
       | A.Imatchoption (x, id, ve, ne)      -> M.Minstrmatchoption   (f x, id, g ve, g ne)
       | A.Imatchor (x, lid, le, rid, re)    -> M.Minstrmatchor       (f x, lid, g le, rid, g re)
       | A.Imatchlist (x, hid, tid, hte, ee) -> M.Minstrmatchlist     (f x, hid, tid, g hte, g ee)
-      | A.Iassign (op, t, `Var x, e) -> begin
+      | A.Iassign (op, t, lv, e) -> begin
+          let to_ak (lv : A.lvalue) =
+            match lv with
+            | `Var x -> (match unloc x with | "operations" -> M.Aoperations | _ -> M.Avar x)
+            | `Field (rn, o, fn) -> (match o.type_ with | Some (A.Trecord rn) -> M.Arecord(rn, fn, f o) | _ -> M.Aasset (rn, fn, f o))
+            | `Asset (an, k, fn) -> M.Aasset (an, fn, f k)
+            | `Tuple (_lv, i, l) ->  M.Avartuple (dumloc "r", i, l)
+          in
           let e = f e in
           let t = type_to_type t in
-          let assign_kind =
-            match unloc x with
-            | "operations" -> M.Aoperations
-            | _            -> M.Avar x
-          in
-          M.Massign (to_assignment_operator op, t, assign_kind, e)
-        end
-      | A.Iassign (op, t, `Field (rn, o, fn), v) -> begin
-          let v = f v in
-          let t = type_to_type t in
-          let ak =
-            match o.type_ with
-            | Some (A.Trecord rn) -> M.Arecord(rn, fn, f o)
-            | _ -> M.Aasset (rn, fn, f o)
-          in
-          M.Massign (to_assignment_operator op, t, ak, v)
-        end
-      | A.Iassign (op, t, `Asset (an, k, fn), v) -> begin
-          let v = f v in
-          let t = type_to_type t in
-          let ak = M.Aasset (an, fn, f k) in
-          M.Massign (to_assignment_operator op, t, ak, v)
-        end
-      | A.Iassign (op, t, `Tuple (lv, i, l), v) -> begin
-          let _lv = f lv in
-          let v = f v in
-          let t = type_to_type t in
-          let ak = M.Avartuple (dumloc "t", i, l) in
-          M.Massign (to_assignment_operator op, t, ak, v)
+          M.Massign (to_assignment_operator op, t, to_ak lv, e)
         end
       | A.Irequire (b, t, e) ->
         let cond : M.mterm =
