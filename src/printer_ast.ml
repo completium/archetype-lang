@@ -865,6 +865,16 @@ let rec pp_instruction fmt (i : instruction) =
       in
       (pp_with_paren pp) fmt (op, an, k, fn, value)
 
+    | Iassign (op, _, `Tuple (e, i, l), value) ->
+      let pp fmt (op, e, i, l, value) =
+        Format.fprintf fmt "%a[%d/%d] %a %a"
+          pp_pterm e
+          i
+          l
+          pp_assignment_operator op
+          pp_pterm value
+      in
+      (pp_with_paren pp) fmt (op, e, i, l, value)
 
     | Irequire (k, pt, f) ->
       let pp fmt (k, pt, f) =

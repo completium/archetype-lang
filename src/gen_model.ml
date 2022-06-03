@@ -1114,6 +1114,13 @@ let to_model (ast : A.ast) : M.model =
           let ak = M.Aasset (an, fn, f k) in
           M.Massign (to_assignment_operator op, t, ak, v)
         end
+      | A.Iassign (op, t, `Tuple (lv, i, l), v) -> begin
+          let _lv = f lv in
+          let v = f v in
+          let t = type_to_type t in
+          let ak = M.Avartuple (dumloc "t", i, l) in
+          M.Massign (to_assignment_operator op, t, ak, v)
+        end
       | A.Irequire (b, t, e) ->
         let cond : M.mterm =
           if b

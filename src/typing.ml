@@ -745,6 +745,7 @@ type error_desc =
   | InvalidTypeForPk
   | InvalidTypeForSet
   | InvalidTypeForTernaryOperator
+  | InvalidTypeForTuple
   | InvalidValueForCurrency
   | InvalidVariableForMethod
   | InvalidVarOrArgType
@@ -975,6 +976,7 @@ let pp_error_desc fmt e =
   | InvalidTypeForPk                   -> pp "Invalid type for primary key"
   | InvalidTypeForSet                  -> pp "Invalid type for set"
   | InvalidTypeForTernaryOperator      -> pp "Invalid type for ternary operator"
+  | InvalidTypeForTuple                -> pp "Invalid type for tuple"
   | InvalidValueForCurrency            -> pp "Invalid value for currency"
   | InvalidVariableForMethod           -> pp "Invalid variable for method"
   | InvalidVarOrArgType                -> pp "A variable / argument type cannot be an asset or a collection"
@@ -4806,7 +4808,28 @@ let for_lvalue kind (env : env) (e : PT.expr) : (A.lvalue * A.ptyp) option =
       | None ->
         None
     end
-
+  | Esqapp (e, pk) -> begin
+      let ee = for_expr kind env e in
+      match ee.type_ with
+      | Some (A.Ttuple lt) -> begin
+          let pk = for_expr ?ety:(Some A.vtnat) kind env pk in
+          let idx : Core.big_int =
+            match pk.node with
+            | A.Plit ({node = A.BVnat idx}) -> idx
+            | _ -> Env.emit_error env (pk.loc, InvalidExprressionForTupleAccess); Big_int.zero_big_int
+          in
+          let i =
+            if      Big_int.lt_big_int idx Big_int.zero_big_int
+                 || Big_int.ge_big_int idx (Big_int.big_int_of_int (List.length lt))
+            then (Env.emit_error env (pk.loc, IndexOutOfBoundForTuple); 0)
+            else (Big_int.int_of_big_int idx)
+          in
+          let l = List.length lt in
+          let fty = List.nth lt i in
+          Some (`Tuple (ee, i, l), fty)
+        end
+      | _ -> Env.emit_error env (loc e, InvalidTypeForTuple); None
+    end
   | _ ->
     Env.emit_error env (loc e, InvalidLValue); None
 

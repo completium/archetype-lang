@@ -466,6 +466,7 @@ and 'id lvalue_gen = [
   | `Var   of 'id
   | `Field of 'id * 'id term_gen * 'id
   | `Asset of 'id * 'id term_gen * 'id
+  | `Tuple of 'id term_gen * int * int
 ]
 
 and lvalue = lident lvalue_gen
