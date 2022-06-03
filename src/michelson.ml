@@ -320,7 +320,7 @@ and instruction =
   | Ivar         of ident
   | Icall        of ident * instruction list * bool
   | Iassign      of ident * instruction
-  | Iassigntuple of ident * int * instruction
+  | Iassigntuple of ident * int * int * instruction
   | Iif          of instruction * instruction * instruction * type_
   | Iifnone      of instruction * instruction * ident * instruction * type_
   | Iifleft      of instruction * ident * instruction * ident * instruction * type_

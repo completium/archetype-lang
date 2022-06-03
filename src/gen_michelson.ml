@@ -383,7 +383,7 @@ let to_ir (model : M.model) : T.ir =
         let l = Model.Utils.get_record_pos model (unloc rn) (unloc fn) in
         T.Iupdate (Urec (unloc id, l), op)
       end
-    | Avartuple (id, n) -> T.Iupdate (Urec (unloc id, [n, 3]), op)
+    | Avartuple (id, n, l) -> T.Iupdate (Urec (unloc id, [n, l]), op)
     | Arecord _     -> emit_error (UnsupportedTerm "Arecord")
     | Astate        -> emit_error (UnsupportedTerm "Astate")
     | Aassetstate _ -> emit_error (UnsupportedTerm "Aassetstate")
@@ -604,7 +604,7 @@ let to_ir (model : M.model) : T.ir =
         T.Iassign (id, a)
       end
     | Massign (_op, _, Arecord _, _v)              -> T.iskip
-    | Massign (_op, _, Avartuple (id, n), v)       -> let id = unloc id in T.Iassigntuple (id, n, f v)
+    | Massign (_op, _, Avartuple (id, n, l), v)    -> let id = unloc id in T.Iassigntuple (id, n, l, f v)
     | Massign (_op, _, Astate, _x)                 -> emit_error (UnsupportedTerm ("Massign: Astate"))
     | Massign (_op, _, Aassetstate (_an, _k), _v)  -> emit_error (UnsupportedTerm ("Massign: Aassetstate"))
     | Massign (_op, _, Aoperations, v)             -> T.Iassign (operations, f v)
@@ -1546,9 +1546,10 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
       assign env id v
     end
 
-  | Iassigntuple (id, n, v) -> begin
+  | Iassigntuple (id, i, l, v) -> begin
       let fid, env0   = fe env (Ivar id) in
       let v, _ = fe env0 v in
+      let n = if i = l - 1 then i * 2 else i * 2 + 1 in
       assign env id (T.cseq [fid; v; T.cupdate_n n])
     end
 

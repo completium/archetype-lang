@@ -5922,11 +5922,11 @@ let remove_iterable_big_map (model : model) : model =
           in
           let none_value : mterm =
             let assign_counter : mterm =
-              mk_mterm (Massign (ValueAssign, tnat, (Avartuple (ibm_id, 4)), idx_var)) tunit
+              mk_mterm (Massign (ValueAssign, tnat, (Avartuple (ibm_id, 2, 3)), idx_var)) tunit
             in
             let put =
               let put = mk_mterm (Mmapput (MKBigMap, tnat, kt, map_index, map_counter, key)) tbm in
-              mk_mterm (Massign (ValueAssign, map_index.type_, (Avartuple (ibm_id, 3)), put)) tunit
+              mk_mterm (Massign (ValueAssign, map_index.type_, (Avartuple (ibm_id, 1, 3)), put)) tunit
             in
             seq [assign_counter; put]
           in
@@ -5934,7 +5934,7 @@ let remove_iterable_big_map (model : model) : model =
         in
         let update_map : mterm =
           let put = mk_mterm (Mmapput (MKBigMap, kt, vvt, map_content, key, mk_tuple [idx_var; value])) tbm in
-          mk_mterm (Massign (ValueAssign, tbm, (Avartuple (ibm_id, 1)), put)) tunit
+          mk_mterm (Massign (ValueAssign, tbm, (Avartuple (ibm_id, 0, 3)), put)) tunit
         in
         let instr_assign : mterm =
           mk_mterm (Massign (ValueAssign, ibm_value.type_, assign_value, ibm_value)) tunit
@@ -5987,22 +5987,22 @@ let remove_iterable_big_map (model : model) : model =
 
             let remove_content =
               let rem = mk_mterm (Mmapremove (MKBigMap, kt, vvt, map_content, key)) tbm in
-              mk_mterm (Massign (ValueAssign, tbm, (Avartuple (ibm_id, 1)), rem)) tunit
+              mk_mterm (Massign (ValueAssign, tbm, (Avartuple (ibm_id, 0, 3)), rem)) tunit
             in
             let update_last_value =
               let put = mk_mterm (Mmapput (MKBigMap, kt, vvt, map_content, last_key_var, mk_tuple [idx_var; mk_tupleaccess 1 last_value_var])) tbm in
-              mk_mterm (Massign (ValueAssign, tbm, (Avartuple (ibm_id, 1)), put)) tunit
+              mk_mterm (Massign (ValueAssign, tbm, (Avartuple (ibm_id, 0, 3)), put)) tunit
             in
             let remove_index_counter =
               let rem = mk_mterm (Mmapremove (MKBigMap, tnat, kt, map_index, map_counter)) tbm in
-              mk_mterm (Massign (ValueAssign, tbmi, (Avartuple (ibm_id, 3)), rem)) tunit
+              mk_mterm (Massign (ValueAssign, tbmi, (Avartuple (ibm_id, 1, 3)), rem)) tunit
             in
             let put_index =
               let put = mk_mterm (Mmapput (MKBigMap, tnat, kt, map_index, idx_var, last_key_var)) tbm in
-              mk_mterm (Massign (ValueAssign, tbmi, (Avartuple (ibm_id, 3)), put)) tunit
+              mk_mterm (Massign (ValueAssign, tbmi, (Avartuple (ibm_id, 1, 3)), put)) tunit
             in
             let dec :mterm =
-              mk_mterm (Massign (ValueAssign, tnat, (Avartuple (ibm_id, 4)), mk_mterm (Msubnat (map_counter, mk_nat 1)) tnat)) tunit
+              mk_mterm (Massign (ValueAssign, tnat, (Avartuple (ibm_id, 2, 3)), mk_mterm (Msubnat (map_counter, mk_nat 1)) tnat)) tunit
             in
             let instr_assign : mterm =
               mk_mterm (Massign (ValueAssign, ibm_value.type_, assign_value, ibm_value)) tunit
