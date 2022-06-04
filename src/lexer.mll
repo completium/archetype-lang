@@ -60,6 +60,7 @@
       "extension"           , EXTENSION           ;
       "fail"                , FAIL                ;
       "failif"              , FAILIF              ;
+      "fail_some"           , FAILSOME            ;
       "fails"               , FAILS               ;
       "false"               , FALSE               ;
       "fold"                , FOLD                ;

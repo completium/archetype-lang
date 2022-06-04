@@ -233,6 +233,7 @@ type ('id, 'term) mterm_node  =
   | Mmark             of 'id * 'term
   (* effect *)
   | Mfail             of 'id fail_type_gen
+  | Mfailsome         of 'term
   | Mtransfer         of 'term transfer_kind_gen
   | Memit             of 'id * 'term
   (* entrypoint *)
@@ -1468,6 +1469,7 @@ let cmp_mterm_node
     | Mmark (i1, x1), Mmark (i2, x2)                                                   -> cmpi i1 i2 && cmp x1 x2
     (* effect *)
     | Mfail ft1, Mfail ft2                                                             -> cmp_fail_type cmp ft1 ft2
+    | Mfailsome v1, Mfailsome v2                                                       -> cmp v1 v2
     | Mtransfer tr1, Mtransfer tr2                                                     -> cmp_transfer_kind tr1 tr2
     | Memit (e1, x1), Memit (e2, x2)                                                   -> cmpi e1 e2 && cmp x1 x2
     (* entrypoint *)
@@ -1925,6 +1927,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mmark (i, x)                   -> Mmark (g i, f x)
   (* effect *)
   | Mfail v                        -> Mfail (match v with | Invalid v -> Invalid (f v) | _ -> v)
+  | Mfailsome v                    -> Mfailsome (f v)
   | Mtransfer tr                   -> Mtransfer (map_transfer_kind fi ft f tr)
   | Memit (e, x)                   -> Memit (g e, f x)
   (* entrypoint *)
@@ -2379,6 +2382,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mmark (_, x)                          -> f accu x
   (* effect *)
   | Mfail v                               -> (match v with | Invalid v -> f accu v | _ -> accu)
+  | Mfailsome v                           -> f accu v
   | Mtransfer tr                          -> fold_transfer_kind f accu tr
   | Memit (_, x)                          -> f accu x
   (* entrypoint *)
@@ -2838,6 +2842,10 @@ let fold_map_term
       | _ -> ft, accu
     in
     g (Mfail fte), fta
+
+  | Mfailsome v ->
+    let ve, va = f accu v in
+    g (Mfailsome ve), va
 
   | Mtransfer tr ->
     let tre, tra = fold_map_transfer_kind f accu tr in

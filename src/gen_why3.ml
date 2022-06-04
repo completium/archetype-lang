@@ -1810,6 +1810,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                        loc_term (Tdoti(gs,"_ops"))
                       )))
       end
+    | Mfailsome _ -> assert false
 
     | Memit (_e, _v) -> assert false
 

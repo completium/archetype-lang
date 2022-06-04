@@ -665,6 +665,7 @@ let to_ir (model : M.model) : T.ir =
         in
         T.Iunop  (Ufail, x)
       end
+    | Mfailsome _ -> emit_error (UnsupportedTerm ("Mfailsome"))
     | Mtransfer tr -> begin
         let op =
           match tr with

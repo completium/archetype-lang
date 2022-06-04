@@ -133,6 +133,7 @@ and expr_unloc =
   | Edorequire     of expr * expr
   | Edofailif      of expr * expr
   | Efail          of expr
+  | Efailsome      of expr
   | Eassign        of assignment_operator * expr * expr
   | Eif            of expr * expr * expr option
   | Efor           of lident option * for_ident * expr * expr

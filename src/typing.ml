@@ -734,6 +734,7 @@ type error_desc =
   | InvalidTypeForDoRequire
   | InvalidTypeForEntrypoint
   | InvalidTypeForFail
+  | InvalidTypeForFailSome
   | InvalidTypeForLambdaArgument
   | InvalidTypeForLambdaReturn
   | InvalidTypeForMapOperator          of A.ptyp
@@ -964,7 +965,8 @@ let pp_error_desc fmt e =
   | InvalidTypeForDoFailIf             -> pp "Invalid type for dofailif"
   | InvalidTypeForDoRequire            -> pp "Invalid type for dorequire"
   | InvalidTypeForEntrypoint           -> pp "Invalid type for entrypoint"
-  | InvalidTypeForFail                 -> pp "Invalid type for fail"
+  | InvalidTypeForFail                 -> pp "Invalid type for fail, must be typed packable type"
+  | InvalidTypeForFailSome             -> pp "Invalid type for fail_some, must be typed option of packable type"
   | InvalidTypeForLambdaArgument       -> pp "Invalid type for lambda argument"
   | InvalidTypeForLambdaReturn         -> pp "Invalid type for lambda return"
   | InvalidTypeForMapOperator ty       -> pp "Map operator should be applied to a list or an option, not %a" Printer_ast.pp_ptyp ty
@@ -3993,6 +3995,7 @@ let rec for_xexpr
     | Eself      _
     | Evar       _
     | Efail      _
+    | Efailsome  _
     | Eassert    _
     | Elabel     _
     | Eassign    _
@@ -5131,10 +5134,20 @@ let rec for_instruction_r
       let e = for_expr kind env e in
 
       e.type_ |> Option.iter (fun ty ->
-          if (not (Type.Michelson.is_type ty))
+          if (not (Type.Michelson.is_packable ty))
           then (Env.emit_error env (e.loc, InvalidTypeForFail)));
 
       env, mki (A.Ifail e)
+
+    | Efailsome e ->
+      let e = for_expr kind env e in
+
+      e.type_ |> Option.iter (fun ty ->
+          match ty with
+          | A.Toption (ty) when Type.Michelson.is_packable ty-> ()
+          | _ -> Env.emit_error env (e.loc, InvalidTypeForFailSome));
+
+      env, mki (A.Ifailsome e)
 
     | Eassert lbl ->
       let env =

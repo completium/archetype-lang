@@ -1,4 +1,4 @@
-archetype expr_fail_some_pass
+archetype expr_fail_some_some
 
 entry exec() {
   const msg = some("ERROR");

@@ -1125,6 +1125,7 @@ let to_model (ast : A.ast) : M.model =
       | A.Ireturn e -> M.Mreturn (f e)
       | A.Ilabel  i -> M.Mlabel i
       | A.Ifail   m -> M.Mfail (Invalid (f m))
+      | A.Ifailsome v -> M.Mfailsome (f v)
 
       | A.Icall (i, Cid id, args) -> M.Mapp (id, Option.map_dfl (fun v -> [f v]) [] i @ List.map (term_arg_to_expr f) args)
 

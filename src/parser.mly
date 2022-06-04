@@ -78,6 +78,7 @@
 %token EXTENSION
 %token FAIL
 %token FAILIF
+%token FAILSOME
 %token FAILS
 %token FALSE
 %token FOLD
@@ -966,6 +967,9 @@ expr_r:
 
  | FAIL e=paren(expr)
      { Efail e }
+
+ | FAILSOME e=paren(expr)
+     { Efailsome e }
 
  | RETURN x=simple_expr
      { Ereturn x }

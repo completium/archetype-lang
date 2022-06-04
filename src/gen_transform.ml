@@ -5344,6 +5344,13 @@ let remove_high_level_model (model : model)  =
 
       mk_mterm (Mmatchoption (mapgetopt, id, some_value, none_value)) vt
 
+    | Mfailsome v ->
+      let v = f v in
+      let vt = v.type_ in
+      let id = dumloc "_v" in
+      let some_value = failg (mk_mvar id vt) in
+      let none_value = seq[] in
+      mk_mterm (Mmatchoption (v, id, some_value, none_value)) vt
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model

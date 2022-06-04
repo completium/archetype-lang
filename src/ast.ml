@@ -454,6 +454,7 @@ and 'id instruction_node =
   | Ireturn of 'id term_gen
   | Ilabel of 'id
   | Ifail of 'id term_gen
+  | Ifailsome of 'id term_gen
 [@@deriving show {with_path = false}]
 
 and 'id for_ident = FIsimple of 'id | FIdouble of 'id * 'id
