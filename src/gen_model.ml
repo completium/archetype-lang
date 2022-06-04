@@ -1222,6 +1222,16 @@ let to_model (ast : A.ast) : M.model =
         let asset_name = extract_asset_name fp in
         M.Mupdate (asset_name, fk, fe)
 
+      | A.Icall (Some p, A.Cconst (A.Cupdateall), [AEffect e]) when is_asset_container p ->
+        let to_op = function
+          | `Assign op -> to_assignment_operator op
+          | _ -> emit_error (instr.loc, CannotConvertToAssignOperator); bailout ()
+        in
+        let fp = f p in
+        let fe = List.map (fun (id, op, c) -> (id, to_op op, f c)) e in
+        let asset_name = extract_asset_name fp in
+        M.Mupdateall (asset_name, fe)
+
       | A.Icall (aux, A.Cconst c, args) ->
         Format.eprintf "instr const unkown: %a with nb args: %d [%a] %s@."
           A.pp_const c

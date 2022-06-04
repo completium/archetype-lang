@@ -1727,6 +1727,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mclear          (_an, _v)               -> assert false
     | Mset            (_c,  _l, _k, _v)       -> assert false
     | Mupdate         (_an, _k, _l)           -> assert false
+    | Mupdateall      (_an, _l)               -> assert false
     | Maddupdate      (_an, _c, _k, _l)       -> assert false
 
 

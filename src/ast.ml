@@ -183,6 +183,7 @@ type const =
   | Csum
   | Cunpack
   | Cupdate
+  | Cupdateall
   | Cmkoperation
   | Ctostring
   | Cexec

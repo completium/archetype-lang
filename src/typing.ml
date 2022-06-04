@@ -1314,6 +1314,7 @@ let methods : (string * method_) list =
     ("removeif"    , mk A.Cremoveif     `Both        (`Effect cap ) `Total   `Standard (`Fixed [`Pred true         ], None));
     ("removeall"   , mk A.Cremoveall    `Both        (`Effect  ap ) `Total   `Standard (`Fixed [                   ], None));
     ("update"      , mk A.Cupdate       `Both        (`Effect c   ) `Total   `Both     (`Fixed [`Pk; `Ef true      ], None));
+    ("update_all"  , mk A.Cupdateall    `Both        (`Effect c   ) `Total   `Both     (`Fixed [`Ef true           ], None));
     ("addupdate"   , mk A.Caddupdate    `Both        (`Effect c_p ) `Total   `Both     (`Fixed [`Pk; `Ef false     ], None));
     ("contains"    , mk A.Ccontains     `Both        (`Pure       ) `Total   `Both     (`Fixed [`Pk                ], Some (`T A.vtbool)));
     ("nth"         , mk A.Cnth          `Both        (`Pure       ) `Partial `Standard (`Fixed [`T A.vtnat         ], Some (`Pk)));

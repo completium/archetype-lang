@@ -311,6 +311,7 @@ let remove_empty_update (model : model) : model =
   let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
     match mt.node with
     | Mupdate (_, _, l) when List.is_empty l-> skip
+    | Mupdateall (_, l) when List.is_empty l-> skip
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
@@ -2548,6 +2549,12 @@ let extract_term_from_instruction f (model : model) : model =
           ((id, op, ve)::xe, va @ xa)) l ([], []) in
       process (mk_mterm (Mupdate (an, ke, le)) mt.type_) (ka @ la)
 
+    | Mupdateall (an, l) ->
+      let le, la = List.fold_right (fun (id, op, v) (xe, xa) ->
+          let ve, va = f v in
+          ((id, op, ve)::xe, va @ xa)) l ([], []) in
+      process (mk_mterm (Mupdateall (an, le)) mt.type_) la
+
     | Maddupdate (an, c, k, l) ->
       let ce, ca =
         match c with
@@ -2826,6 +2833,10 @@ let add_contain_on_get (model : model) : model =
 
       | Mupdate (_an, k, l) ->
         let accu = f accu k in
+        let accu = List.fold_right (fun (_, _, v) accu -> f accu v) l accu in
+        gg accu mt
+
+      | Mupdateall (_an, l) ->
         let accu = List.fold_right (fun (_, _, v) accu -> f accu v) l accu in
         gg accu mt
 

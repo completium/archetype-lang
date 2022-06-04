@@ -898,6 +898,7 @@ let to_ir (model : M.model) : T.ir =
     | Mclear _          -> emit_error (UnsupportedTerm ("Mclear"))
     | Mset _            -> emit_error (UnsupportedTerm ("Mset"))
     | Mupdate _         -> emit_error (UnsupportedTerm ("Mupdate"))
+    | Mupdateall _      -> emit_error (UnsupportedTerm ("Mupdateall"))
     | Maddupdate _      -> emit_error (UnsupportedTerm ("Maddupdate"))
 
 

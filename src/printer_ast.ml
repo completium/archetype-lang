@@ -258,6 +258,7 @@ let to_const = function
   | Csum            -> "sum"
   | Cunpack         -> "unpack"
   | Cupdate         -> "update"
+  | Cupdateall      -> "update_all"
   | Cmkoperation    -> "mkoperation"
   | Ctostring       -> "to_string"
   | Cexec           -> "exec"
