@@ -1,0 +1,13 @@
+archetype effect_method_asset_update_all_coll_0
+
+asset my_asset {
+  id : nat
+} initialized by {
+  {0};
+  {1};
+  {2}
+}
+
+entry exec () {
+  my_asset.update_all({ id += 2 })
+}

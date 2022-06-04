@@ -238,6 +238,7 @@ let toolchain ?(js=false) model =
   |> remove_enum
   |> process_event
   |> replace_assignfield_by_update
+  |> remove_update_all
   |> remove_add_update
   |> merge_update
   |> remove_empty_update

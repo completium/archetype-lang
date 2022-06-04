@@ -1,4 +1,4 @@
-archetype effect_method_asset_update_all_coll_2
+archetype effect_method_asset_update_all_view_1
 
 asset my_asset {
   mid : string;
@@ -11,5 +11,5 @@ asset my_asset {
 }
 
 entry exec () {
-  my_asset.update_all({ v += 2 })
+  my_asset.select(the.v % 2 = 0).update_all({ v += 2 })
 }

@@ -1229,8 +1229,13 @@ let to_model (ast : A.ast) : M.model =
         in
         let fp = f p in
         let fe = List.map (fun (id, op, c) -> (id, to_op op, f c)) e in
-        let asset_name = extract_asset_name fp in
-        M.Mupdateall (asset_name, fe)
+        begin
+          match fp.node, M.get_ntype fp.type_ with
+          | Mdotassetfield (_, _k, fn), Tcontainer ((Tasset an, _), (Aggregate | Partition)) -> M.Mupdateall (unloc an, CKfield (unloc an, unloc fn, fp, Tnone, Dnone), fe)
+          | _, Tcontainer ((Tasset an, _), View) -> M.Mupdateall (unloc an, CKview fp, fe)
+          | _, Tcontainer ((Tasset an, _), Collection)  -> M.Mupdateall (unloc an, CKcoll (Tnone, Dnone), fe)
+          | _ -> assert false
+        end
 
       | A.Icall (aux, A.Cconst c, args) ->
         Format.eprintf "instr const unkown: %a with nb args: %d [%a] %s@."

@@ -311,7 +311,7 @@ let remove_empty_update (model : model) : model =
   let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
     match mt.node with
     | Mupdate (_, _, l) when List.is_empty l-> skip
-    | Mupdateall (_, l) when List.is_empty l-> skip
+    | Mupdateall (_, _, l) when List.is_empty l-> skip
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
@@ -2549,11 +2549,18 @@ let extract_term_from_instruction f (model : model) : model =
           ((id, op, ve)::xe, va @ xa)) l ([], []) in
       process (mk_mterm (Mupdate (an, ke, le)) mt.type_) (ka @ la)
 
-    | Mupdateall (an, l) ->
+    | Mupdateall (an, c, l) ->
+      let ce, ca =
+        match c with
+        | CKcoll (d, t) -> CKcoll (d, t), []
+        | CKview c  -> let ce, ca = f c in CKview ce, ca
+        | CKfield (an, fn, c, d, t) -> let ce, ca = f c in CKfield (an, fn, ce, d, t), ca
+        | CKdef v -> CKdef v, []
+      in
       let le, la = List.fold_right (fun (id, op, v) (xe, xa) ->
           let ve, va = f v in
           ((id, op, ve)::xe, va @ xa)) l ([], []) in
-      process (mk_mterm (Mupdateall (an, le)) mt.type_) la
+      process (mk_mterm (Mupdateall (an, ce, le)) mt.type_) (ca @ la)
 
     | Maddupdate (an, c, k, l) ->
       let ce, ca =
@@ -2836,7 +2843,14 @@ let add_contain_on_get (model : model) : model =
         let accu = List.fold_right (fun (_, _, v) accu -> f accu v) l accu in
         gg accu mt
 
-      | Mupdateall (_an, l) ->
+      | Mupdateall (_an, c, l) ->
+        let accu =
+          match c with
+          | CKcoll _                -> accu
+          | CKview c                -> f accu c
+          | CKfield (_, _, c, _, _) -> f accu c
+          | CKdef _                 -> accu
+        in
         let accu = List.fold_right (fun (_, _, v) accu -> f accu v) l accu in
         gg accu mt
 
@@ -6151,6 +6165,28 @@ let remove_ternary_opeartor (model : model) : model =
         (* let asset = Utils.get_asset model an in *)
         let getopt = mk_mterm (Mgetopt(an, CKcoll (Tnone, Dnone), f k)) (toption (tassetvalue (dumloc an))) in
         { mt with node = Mmatchoption (getopt, dumloc "the", f a, f b) }
+      end
+    | _ -> map_mterm (aux ctx) mt
+  in
+  map_mterm_model aux model
+
+let remove_update_all (model : model) =
+  let rec aux ctx (mt : mterm) : mterm =
+    let f = aux ctx in
+    match mt.node with
+    | Mupdateall (an, c, l) -> begin
+        let ick =
+          match c with
+          | CKcoll (_, _) -> ICKcoll an
+          | CKview v -> ICKview (f v)
+          | CKfield (an, fn, v, _, _) -> ICKfield (an, fn, f v)
+          | CKdef _ -> assert false
+        in
+        let k_id = dumloc "_update_all_key" in
+        let (_, kt) = Utils.get_asset_key model an in
+        let k = mk_mvar k_id kt in
+        let update = mk_mterm (Mupdate(an, k, l)) tunit in
+        { mt with node = Mfor(FIsimple k_id, ick, update, None)}
       end
     | _ -> map_mterm (aux ctx) mt
   in
