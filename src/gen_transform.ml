@@ -2361,225 +2361,6 @@ let merge_update (model : model) : model =
   in
   Model.map_mterm_model aux model
 
-let extract_term_from_instruction f (model : model) : model =
-  let rec aux ctx (mt : mterm) : mterm =
-    let process (mt : mterm) l : mterm =
-      List.fold_right
-        (fun (id, v) accu ->
-           mk_mterm (Mletin ([id], v, Some v.type_, accu, None)) accu.type_
-        ) l mt
-    in
-
-    match mt.node with
-    (* lambda *)
-
-    | Mletin (i, a, t, b, o) ->
-      let ae, aa = f a in
-      let be = aux ctx b in
-      let oe = Option.map (aux ctx) o in
-      process (mk_mterm (Mletin (i, ae, t, be, oe)) mt.type_) aa
-
-    | Mdeclvar (i, t, v, c) ->
-      let ve, va = f v in
-      process (mk_mterm (Mdeclvar (i, t, ve, c)) mt.type_) va
-
-
-    (* assign *)
-
-    | Massign (op, t, Avar l, r) ->
-      let re, ra = f r in
-      process (mk_mterm (Massign (op, t, Avar l, re)) mt.type_) ra
-
-    | Massign (op, t, Avarstore l, r)  ->
-      let re, ra = f r in
-      process (mk_mterm (Massign (op, t, Avarstore l, re)) mt.type_) ra
-
-    | Massign (op, t, Aasset (an, fn, k), v) ->
-      let ke, ka = f k in
-      let ve, va = f v in
-      process (mk_mterm (Massign (op, t, Aasset (an, fn, ke), ve)) mt.type_) (ka @ va)
-
-    | Massign (op, t, Arecord (lv, rn, fn), v) ->
-      let re, ra = f r in
-      let ve, va = f v in
-      process (mk_mterm (Massign (op, t, Arecord (lv, rn, fn), ve)) mt.type_) (ra @ va)
-
-    | Massign (op, t, Astate, x) ->
-      let xe, xa = f x in
-      process (mk_mterm (Massign (op, t, Astate, xe)) mt.type_) xa
-
-    | Massign (op, t, Aassetstate (an, k), v) ->
-      let ke, ka = f k in
-      let ve, va = f v in
-      process (mk_mterm (Massign (op, t, Aassetstate (an, ke), ve)) mt.type_) (ka @ va)
-
-
-    (* control *)
-
-    | Mif (c, t, e) ->
-      let ce, ca = f c in
-      let te = aux ctx t in
-      let ee = Option.map (aux ctx) e in
-      process (mk_mterm (Mif (ce, te, ee)) mt.type_) ca
-
-    | Mmatchwith (e, l) ->
-      let ee, ea = f e in
-      let ll = List.map (fun (p, e) -> (p, aux ctx e)) l in
-      process (mk_mterm (Mmatchwith (ee, ll)) mt.type_) ea
-
-    | Minstrmatchoption (x, i, ve, ne) ->
-      let xe, xa   = f x  in
-      let vee, vea = f ve in
-      let nee, nea = f ne in
-      process (mk_mterm (Minstrmatchoption (xe, i, vee, nee)) mt.type_) (xa @ vea @ nea)
-
-    | Minstrmatchor (x, lid, le, rid, re) ->
-      let xe, xa   = f x  in
-      process (mk_mterm (Minstrmatchor (xe, lid, le, rid, re)) mt.type_) (xa)
-
-    | Minstrmatchlist (x, hid, tid, hte, ee) ->
-      let xe, xa     = f x  in
-      process (mk_mterm (Minstrmatchlist (xe, hid, tid, hte, ee)) mt.type_) (xa)
-
-    | Mfor (i, c, b, lbl) ->
-      let ce, ca =
-        match c with
-        | ICKcoll  an          -> ICKcoll an, []
-        | ICKview  v           -> let ve, va = f v in ICKview  ve, va
-        | ICKfield (an, fn, v) -> let ve, va = f v in ICKfield (an, fn, ve), va
-        | ICKset   v           -> let ve, va = f v in ICKset   ve, va
-        | ICKlist  v           -> let ve, va = f v in ICKlist  ve, va
-        | ICKmap   v           -> let ve, va = f v in ICKmap   ve, va
-      in
-      let be = aux ctx b in
-      process (mk_mterm (Mfor (i, ce, be, lbl)) mt.type_) ca
-
-    | Miter (i, a, b, c, lbl, n) ->
-      let ae, aa = f a in
-      let be, ba = f b in
-      let ce = aux ctx c in
-      process (mk_mterm (Miter (i, ae, be, ce, lbl, n)) mt.type_) (aa @ ba)
-
-    | Mwhile (c, b, lbl) ->
-      let ce, ca = f c in
-      let be = aux ctx b in
-      process (mk_mterm (Mwhile (ce, be, lbl)) mt.type_) ca
-
-    | Mreturn x ->
-      let xe, xa = f x in
-      process (mk_mterm (Mreturn (xe)) mt.type_) xa
-
-
-    (* effect *)
-
-    | Mfail v ->
-      let ve, va = match v with
-        | Invalid x ->
-          let xe, xa = f x in
-          Invalid (xe), xa
-        | _ -> v, []
-      in
-      process (mk_mterm (Mfail (ve)) mt.type_) va
-
-    | Mtransfer (k) ->
-      let tre, tra =
-        match k with
-        | TKsimple (v, d)         -> let ve, va = f v in let de, da = f d in TKsimple (ve, de), va @ da
-        | TKcall (v, id, t, d, a) -> let ve, va = f v in let de, da = f d in let ae, aa = f a in TKcall (ve, id, t, de, ae), va @ da @ aa
-        | TKentry (v, e, a)       -> let ve, va = f v in let ee, ea = f e in let ae, aa = f a in TKentry (ve, ee, ae), va @ ea @ aa
-        | TKself (v, id, args)    -> let ve, va = f v in let args, accu = List.fold_left (fun (args, accu) (id, a) -> let ae, aa = f a in (args @ [id, ae], accu @ aa)) ([], []) args  in TKself (ve, id, args), va @ accu
-        | TKoperation op          -> let ope, opa = f op in TKoperation ope, opa
-      in
-      process (mk_mterm (Mtransfer tre) mt.type_) tra
-
-
-    (* asset api effect *)
-
-    | Maddasset (an, i) ->
-      let ie, ia = f i in
-      process (mk_mterm (Maddasset (an, ie)) mt.type_) ia
-
-    | Maddfield (an, fn, c, i) ->
-      let ce, ca = f c in
-      let ie, ia = f i in
-      process (mk_mterm (Maddfield (an, fn, ce, ie)) mt.type_) (ca @ ia)
-
-    | Mremoveasset (an, i) ->
-      let ie, ia = f i in
-      process (mk_mterm (Mremoveasset (an, ie)) mt.type_) ia
-
-    | Mremovefield (an, fn, c, i) ->
-      let ce, ca = f c in
-      let ie, ia = f i in
-      process (mk_mterm (Mremovefield (an, fn, ce, ie)) mt.type_) (ca @ ia)
-
-    | Mclear (an, v) ->
-      let ve, va =
-        match v with
-        | CKcoll (d, t) -> CKcoll (d, t), []
-        | CKview v  -> let ve, va = f v in CKview ve, va
-        | CKfield (an, fn, v, d, t) -> let ve, va = f v in CKfield (an, fn, ve, d, t), va
-        | CKdef v -> CKdef v, []
-      in
-      process (mk_mterm (Mclear (an, ve)) mt.type_) va
-
-    | Mremoveif (an, v, la, b, a) ->
-      let ve, va =
-        match v with
-        | CKcoll (d, t) -> CKcoll (d, t), []
-        | CKview v  -> let ve, va = f v in CKview ve, va
-        | CKfield (an, fn, v, d, t) -> let ve, va = f v in CKfield (an, fn, ve, d, t), va
-        | CKdef v -> CKdef v, []
-      in
-      let be, ba = f b in
-      let ae, aa = List.fold_right (fun v (xe, xa) ->
-          let ve, va = f v in
-          (ve::xe, va @ xa)) a ([], []) in
-      process (mk_mterm (Mremoveif (an, ve, la, be, ae)) mt.type_) (va @ ba @ aa)
-
-    | Mset (an, l, k, v) ->
-      let ke, ka = f k in
-      let ve, va = f v in
-      process (mk_mterm (Mset (an, l, ke, ve)) mt.type_) (ka @ va)
-
-    | Mupdate (an, k, l) ->
-      let ke, ka = f k in
-      let le, la = List.fold_right (fun (id, op, v) (xe, xa) ->
-          let ve, va = f v in
-          ((id, op, ve)::xe, va @ xa)) l ([], []) in
-      process (mk_mterm (Mupdate (an, ke, le)) mt.type_) (ka @ la)
-
-    | Mupdateall (an, c, l) ->
-      let ce, ca =
-        match c with
-        | CKcoll (d, t) -> CKcoll (d, t), []
-        | CKview c  -> let ce, ca = f c in CKview ce, ca
-        | CKfield (an, fn, c, d, t) -> let ce, ca = f c in CKfield (an, fn, ce, d, t), ca
-        | CKdef v -> CKdef v, []
-      in
-      let le, la = List.fold_right (fun (id, op, v) (xe, xa) ->
-          let ve, va = f v in
-          ((id, op, ve)::xe, va @ xa)) l ([], []) in
-      process (mk_mterm (Mupdateall (an, ce, le)) mt.type_) (ca @ la)
-
-    | Maddupdate (an, c, k, l) ->
-      let ce, ca =
-        match c with
-        | CKcoll (d, t) -> CKcoll (d, t), []
-        | CKview c  -> let ce, ca = f c in CKview ce, ca
-        | CKfield (an, fn, c, d, t) -> let ce, ca = f c in CKfield (an, fn, ce, d, t), ca
-        | CKdef v -> CKdef v, []
-      in
-      let ke, ka = f k in
-      let le, la = List.fold_right (fun (id, op, v) (xe, xa) ->
-          let ve, va = f v in
-          ((id, op, ve)::xe, va @ xa)) l ([], []) in
-      process (mk_mterm (Maddupdate (an, ce, ke, le)) mt.type_) (ca @ ka @ la)
-
-    | _ -> map_mterm (aux ctx) mt
-  in
-  Model.map_mterm_model aux model
-
 let replace_dotassetfield_by_dot (model : model) : model =
   let rec aux ctx (mt : mterm) : mterm =
     match mt.node with
@@ -2592,51 +2373,6 @@ let replace_dotassetfield_by_dot (model : model) : model =
     | _ -> map_mterm (aux ctx) mt
   in
   Model.map_mterm_model aux model
-
-let remove_fun_dotasset (model : model) : model =
-  let extract_fun_dotasset (mt: mterm) : mterm * (lident * mterm) list =
-    let cpt : int ref = ref 0 in
-    let prefix = "tmp_" in
-
-    let rec efd_aux (accu : (lident * mterm) list) (mt : mterm) : mterm * (lident * mterm) list =
-      let is_fun (mt : mterm) : bool =
-        match mt.node with
-        | Mget _ | Mnth _-> true
-        | _ -> false
-      in
-      match mt.node with
-      | Mdot (l, r) when is_fun l ->
-        begin
-          let l, accu = efd_aux accu l in
-          let var_id = prefix ^ string_of_int (!cpt) in
-          cpt := !cpt + 1;
-          let var = mk_mterm (Mvar (dumloc var_id, Vlocal, Tnone, Dnone)) l.type_ in
-          let nmt = mk_mterm (Mdot (var, r)) mt.type_ in
-          nmt, accu @ [(dumloc var_id, l)]
-        end
-      | _ ->
-        let g (x : mterm__node) : mterm = { mt with node = x; } in
-        Model.fold_map_term g efd_aux accu mt
-    in
-    efd_aux [] mt
-  in
-  extract_term_from_instruction extract_fun_dotasset model
-
-let remove_letin_from_expr (model : model) : model =
-  let aux (mt: mterm) : mterm * (lident * mterm) list =
-    let rec f (accu : (lident * mterm) list) (mt : mterm) : mterm * (lident * mterm) list =
-      match mt.node with
-      | Mletin ([i], a, _, b, None) ->
-        let b, accu = f accu b in
-        b, (i, a)::accu
-      | _ ->
-        let g (x : mterm__node) : mterm = { mt with node = x; } in
-        Model.fold_map_term g f accu mt
-    in
-    f [] mt
-  in
-  extract_term_from_instruction aux model
-
 
 let process_internal_string (model : model) : model =
   let rec aux ctx (mt : mterm) : mterm =
@@ -2664,255 +2400,6 @@ let change_type_of_nth (model : model) : model =
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
-
-let add_contain_on_get (model : model) : model =
-
-  let for_mterm (mt : mterm) : mterm =
-
-    let rec for_instruction
-        (g : 'b -> 'a -> mterm -> mterm)
-        (f : 'a -> mterm -> 'a)
-        (env : 'b)
-        (accu : 'a)
-        (mt : mterm) : mterm =
-      let aux_env env = for_instruction g f env [] in
-      let aux = for_instruction g f env [] in
-      let gg = g env in
-      match mt.node with
-
-      | Mletin (i, a, t, b, o) ->
-        let accu = f accu a in
-        let be = aux b in
-        let oe = Option.map aux o in
-        gg accu (mk_mterm (Mletin (i, a, t, be, oe)) mt.type_)
-
-      | Mdeclvar (_i, _t, v, _) ->
-        let accu = f accu v in
-        gg accu mt
-
-      (* assign *)
-
-      | Massign (_op, _, Avar _l, r) ->
-        let accu = f accu r in
-        gg accu mt
-
-      | Massign (_op, _, Avarstore _l, r)  ->
-        let accu = f accu r in
-        gg accu mt
-
-      | Massign (_op, _, Aasset (_an, _fn, k), v) ->
-        let accu = f accu k in
-        let accu = f accu v in
-        gg accu mt
-
-      | Massign (_op, _, Arecord (_rn, _fn, r), v) ->
-        let accu = f accu r in
-        let accu = f accu v in
-        gg accu mt
-
-      | Massign (_op, _, Astate, x) ->
-        let accu = f accu x in
-        gg accu mt
-
-      | Massign (_op, _, Aassetstate (_an, k), v) ->
-        let accu = f accu k in
-        let accu = f accu v in
-        gg accu mt
-
-
-      (* control *)
-
-      | Mif (c, t, e) ->
-        let accu = f accu c in
-        let env =
-          match c.node with
-          | Mcontains(an, _, k) -> [an, k]
-          | _ -> []
-        in
-        let te = aux_env env t in
-        let ee = Option.map aux e in
-        g env accu (mk_mterm (Mif (c, te, ee)) mt.type_)
-
-      | Mmatchwith (e, l) ->
-        let accu = f accu e in
-        let ll = List.map (fun (p, e) -> (p, aux e)) l in
-        gg accu (mk_mterm (Mmatchwith (e, ll)) mt.type_)
-
-      | Minstrmatchoption (x, i, ve, ne) ->
-        let accu = f accu x in
-        let vee = aux_env env ve in
-        let nee = aux_env env ne in
-        gg accu (mk_mterm (Minstrmatchoption (x, i, vee, nee)) mt.type_)
-
-      | Minstrmatchor (x, lid, le, rid, re) ->
-        let accu = f accu x in
-        let lee = aux_env env le in
-        let ree = aux_env env re in
-        gg accu (mk_mterm (Minstrmatchor (x, lid, lee, rid, ree)) mt.type_)
-
-      | Minstrmatchlist (x, hid, tid, hte, ee) ->
-        let accu = f accu x in
-        let htee = aux_env env hte in
-        let eee = aux_env env ee in
-        gg accu (mk_mterm (Minstrmatchlist (x, hid, tid, htee, eee)) mt.type_)
-
-      | Mfor (i, c, b, lbl) ->
-        let accu = fold_iter_container_kind f accu c in
-        let be = aux b in
-        gg accu (mk_mterm (Mfor (i, c, be, lbl)) mt.type_)
-
-      | Miter (i, a, b, c, lbl, n) ->
-        let accu = f accu a in
-        let accu = f accu b in
-        let ce = aux c in
-        gg accu (mk_mterm (Miter (i, a, b, ce, lbl, n)) mt.type_)
-
-      | Mwhile (c, b, lbl) ->
-        let accu = f accu c in
-        let be = aux b in
-        gg accu (mk_mterm (Mwhile (c, be, lbl)) mt.type_)
-
-      | Mreturn x ->
-        let accu = f accu x in
-        gg accu (mk_mterm (Mreturn (x)) mt.type_)
-
-
-      (* effect *)
-
-      | Mfail v ->
-        let accu = match v with
-          | Invalid x -> f accu x
-          | _ -> []
-        in
-        gg accu mt
-
-      | Mtransfer tr ->
-        let accu = fold_transfer_kind f accu tr in
-        gg accu mt
-
-
-      (* asset api effect *)
-
-      | Maddasset (_an, i) ->
-        let accu = f accu i in
-        gg accu mt
-
-      | Maddfield (_an, _fn, c, i) ->
-        let accu = f accu c in
-        let accu = f accu i in
-        gg accu mt
-
-      | Mremoveasset (_an, i) ->
-        let accu = f accu i in
-        gg accu mt
-
-      | Mremovefield (_an, _fn, c, i) ->
-        let accu = f accu c in
-        let accu = f accu i in
-        gg accu mt
-
-      | Mremoveif (_an, v, _la, b, a) ->
-        let accu =
-          match v with
-          | CKcoll _                 -> accu
-          | CKview c                 -> f accu c
-          | CKfield (_, _, c, _, _)  -> f accu c
-          | CKdef _                  -> accu
-        in
-        let accu = f accu b in
-        let accu = List.fold_right (fun v accu -> f accu v) a accu in
-        gg accu mt
-
-      | Mclear (_an, v) ->
-        let accu =
-          match v with
-          | CKcoll _                -> accu
-          | CKview c                -> f accu c
-          | CKfield (_, _, c, _, _) -> f accu c
-          | CKdef _                 -> accu
-        in
-        gg accu mt
-
-      | Mset (_an, _l, k, v) ->
-        let accu = f accu k in
-        let accu = f accu v in
-        gg accu mt
-
-      | Mupdate (_an, k, l) ->
-        let accu = f accu k in
-        let accu = List.fold_right (fun (_, _, v) accu -> f accu v) l accu in
-        gg accu mt
-
-      | Mupdateall (_an, c, l) ->
-        let accu =
-          match c with
-          | CKcoll _                -> accu
-          | CKview c                -> f accu c
-          | CKfield (_, _, c, _, _) -> f accu c
-          | CKdef _                 -> accu
-        in
-        let accu = List.fold_right (fun (_, _, v) accu -> f accu v) l accu in
-        gg accu mt
-
-      | Maddupdate (_an, c, k, l) ->
-        let accu =
-          match c with
-          | CKcoll _                -> accu
-          | CKview c                -> f accu c
-          | CKfield (_, _, c, _, _) -> f accu c
-          | CKdef _                 -> accu
-        in
-        let accu = f accu k in
-        let accu = List.fold_right (fun (_, _, v) accu -> f accu v) l accu in
-        gg accu mt
-
-      | _ -> map_mterm (for_instruction g f env accu) mt
-
-    in
-
-    let g (env : (ident * mterm) list) (accu : (ident * mterm) list) (mt : mterm) : mterm =
-      match accu with
-      | [] -> mt
-      | _ ->
-        begin
-          let build_contains (an, k) : mterm =
-            let contains = mk_mterm (Mcontains(an, CKcoll (Tnone, Dnone), k)) tbool in
-            let not_contains = mk_mterm (Mnot contains) tbool in
-            let mif : mterm = mk_mterm (Mif(not_contains, failc NotFound, None)) tunit in
-            mif
-          in
-          let cmp (an1, k1 : ident * mterm) (an2, k2 : ident * mterm) : bool =
-            cmp_ident an1 an2 && cmp_mterm k1 k2
-          in
-          let ll = List.filter (fun x -> not (List.exists (cmp x) env)) accu in
-          let l = List.map build_contains ll @ [mt] in
-          mk_mterm (Mseq l) mt.type_
-        end
-    in
-    let rec f (accu : (ident * mterm) list) (mt : mterm) : (ident * mterm) list =
-      match mt.node with
-      | Mget(an, _, k) ->
-        let accu = f accu k in
-        (an, k)::accu
-      | _ -> fold_term f accu mt
-    in
-    for_instruction g f [] [] mt
-  in
-
-  let for_function (f : function__) =
-    let for_function_node (fn : function_node) =
-      let for_function_struct (fs : function_struct) =
-        {fs with body = for_mterm fs.body }
-      in
-      match fn with
-      | Entry     fs       -> Entry    (for_function_struct fs)
-      | Getter   (fs, ret) -> Getter   (for_function_struct fs, ret)
-      | View     (fs, ret) -> View     (for_function_struct fs, ret)
-      | Function (fs, ret) -> Function (for_function_struct fs, ret)
-    in
-    { f with node = for_function_node f.node; }
-  in
-  { model with functions = List.map for_function model.functions }
 
 let split_key_values (model : model) : model =
 
@@ -3108,23 +2595,23 @@ let remove_duplicate_key (model : model) : model =
   }
 
 let remove_assign_operator (model : model) : model =
+  let get_lv = function
+    | Avar id -> mk_mterm (Mvar (id, Vlocal, Tnone, Dnone)) tunit (* v.type_ *)
+    | Avarstore id -> mk_mterm (Mvar (id, Vstorevar, Tnone, Dnone)) tunit (* v.type_ *)
+    (* | Aasset (an, fn, k) -> mk_mterm (Mdotassetfield (an, k, fn)) v.type_
+    | Arecord (lv, rn, fn) -> mk_mterm (Mdotassetfield (an, get_lv lv, fn)) v.type_
+    | Atuple (lv, i, l) -> mk_mterm (Mdotassetfield (an, get_lv lv, fn)) v.type_
+    | Astate -> msource
+    | Aassetstate (an, _) -> msource *)
+    | Aoperations -> operations
+    | _ -> assert false
+  in
   let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
     match mt.node with
-    | Massign (op, t, Avar id, v) ->
-      let lhs = mk_mterm (Mvar (id, Vlocal, Tnone, Dnone)) v.type_ in
+    | Massign (op, t, lv, v) when (match op with | ValueAssign -> false | _ -> true) ->
+      let lhs = get_lv lv in
       let v = process_assign_op op t lhs v in
-      mk_mterm (Massign (ValueAssign, t, Avar id, v)) mt.type_
-    | Massign (op, t, Avarstore id, v) ->
-      let lhs = mk_mterm (Mvar (id, Vstorevar, Tnone, Dnone)) v.type_ in
-      let v = process_assign_op op t lhs v in
-      mk_mterm (Massign (ValueAssign, t, Avarstore id, v)) mt.type_
-    | Massign (op, t, Aasset (an, fn, k), v) ->
-      let lhs = mk_mterm (Mdotassetfield (an, k, fn)) v.type_ in
-      let v = process_assign_op op t lhs v in
-      mk_mterm (Massign (ValueAssign, t, Aasset (an, fn, k), v)) mt.type_
-    | Massign (op, t, Arecord (rn, fn, r), v) ->
-      let v = process_assign_op op t r v in
-      mk_mterm (Massign (ValueAssign, t, Arecord (rn, fn, r), v)) mt.type_
+      mk_mterm (Massign (ValueAssign, t, lv, v)) mt.type_
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
@@ -5688,8 +5175,8 @@ let expr_to_instr (model : model) =
     match ak, c.node with
     | Avar id0, (Mvar (id1, Vlocal, Tnone, Dnone))         -> String.equal (unloc id0) (unloc id1)
     | Avarstore id0, (Mvar (id1, Vstorevar, Tnone, Dnone)) -> String.equal (unloc id0) (unloc id1)
-    | Arecord (rn0, fn0, vr0), (Mdot (({ node = _; type_ = ((Trecord rn1), None)}) as vr1, fn1))
-      -> String.equal (unloc rn0) (unloc rn1) && String.equal (unloc fn0) (unloc fn1) && cmp_mterm vr0 vr1
+    (* | Arecord (rn0, fn0, vr0), (Mdot (({ node = _; type_ = ((Trecord rn1), None)}) as vr1, fn1))
+      -> String.equal (unloc rn0) (unloc rn1) && String.equal (unloc fn0) (unloc fn1) && cmp_mterm vr0 vr1 *)
     | _ -> false
   in
   let rec aux ctx (mt : mterm) =
@@ -5719,8 +5206,8 @@ let expr_to_instr (model : model) =
 let instr_to_expr_exec (model : model) =
   let is_used ak l =
     match ak with
-    | Arecord (_, _, v) ->
-      List.exists (fold_term (fun accu x -> accu || cmp_mterm x v) false) l
+    (* | Arecord (_, _, v) ->
+      List.exists (fold_term (fun accu x -> accu || cmp_mterm x v) false) l *)
     | _ -> false
   in
 
@@ -5728,8 +5215,8 @@ let instr_to_expr_exec (model : model) =
     match ak with
     | Avar id -> mk_mvar id tunit
     | Avarstore id -> mk_mvar id tunit
-    | Arecord (lv, rn, fn) -> mk_mterm (Mdot (v, fn)) ty
-    | Atuple (lv, l, n) -> mk_tupleaccess l (extract_rev_var lv ) ty
+    (* | Arecord (lv, rn, fn) -> mk_mterm (Mdot (v, fn)) ty
+    | Atuple (lv, l, n) -> mk_tupleaccess l (extract_rev_var lv ) ty *)
     | _ -> assert false
   in
 
@@ -5957,11 +5444,11 @@ let remove_iterable_big_map (model : model) : model =
           in
           let none_value : mterm =
             let assign_counter : mterm =
-              mk_mterm (Massign (ValueAssign, tnat, (Avartuple (ibm_id, 2, 3)), idx_var)) tunit
+              mk_mterm (Massign (ValueAssign, tnat, (Atuple (Avar ibm_id, 2, 3)), idx_var)) tunit
             in
             let put =
               let put = mk_mterm (Mmapput (MKBigMap, tnat, kt, map_index, map_counter, key)) tbm in
-              mk_mterm (Massign (ValueAssign, map_index.type_, (Avartuple (ibm_id, 1, 3)), put)) tunit
+              mk_mterm (Massign (ValueAssign, map_index.type_, (Atuple (Avar ibm_id, 1, 3)), put)) tunit
             in
             seq [assign_counter; put]
           in
@@ -5969,7 +5456,7 @@ let remove_iterable_big_map (model : model) : model =
         in
         let update_map : mterm =
           let put = mk_mterm (Mmapput (MKBigMap, kt, vvt, map_content, key, mk_tuple [idx_var; value])) tbm in
-          mk_mterm (Massign (ValueAssign, tbm, (Avartuple (ibm_id, 0, 3)), put)) tunit
+          mk_mterm (Massign (ValueAssign, tbm, (Atuple (Avar ibm_id, 0, 3)), put)) tunit
         in
         let instr_assign : mterm =
           mk_mterm (Massign (ValueAssign, ibm_value.type_, assign_value, ibm_value)) tunit
@@ -6022,22 +5509,22 @@ let remove_iterable_big_map (model : model) : model =
 
             let remove_content =
               let rem = mk_mterm (Mmapremove (MKBigMap, kt, vvt, map_content, key)) tbm in
-              mk_mterm (Massign (ValueAssign, tbm, (Avartuple (ibm_id, 0, 3)), rem)) tunit
+              mk_mterm (Massign (ValueAssign, tbm, (Atuple (Avar ibm_id, 0, 3)), rem)) tunit
             in
             let update_last_value =
               let put = mk_mterm (Mmapput (MKBigMap, kt, vvt, map_content, last_key_var, mk_tuple [idx_var; mk_tupleaccess 1 last_value_var])) tbm in
-              mk_mterm (Massign (ValueAssign, tbm, (Avartuple (ibm_id, 0, 3)), put)) tunit
+              mk_mterm (Massign (ValueAssign, tbm, (Atuple (Avar ibm_id, 0, 3)), put)) tunit
             in
             let remove_index_counter =
               let rem = mk_mterm (Mmapremove (MKBigMap, tnat, kt, map_index, map_counter)) tbm in
-              mk_mterm (Massign (ValueAssign, tbmi, (Avartuple (ibm_id, 1, 3)), rem)) tunit
+              mk_mterm (Massign (ValueAssign, tbmi, (Atuple (Avar ibm_id, 1, 3)), rem)) tunit
             in
             let put_index =
               let put = mk_mterm (Mmapput (MKBigMap, tnat, kt, map_index, idx_var, last_key_var)) tbm in
-              mk_mterm (Massign (ValueAssign, tbmi, (Avartuple (ibm_id, 1, 3)), put)) tunit
+              mk_mterm (Massign (ValueAssign, tbmi, (Atuple (Avar ibm_id, 1, 3)), put)) tunit
             in
             let dec :mterm =
-              mk_mterm (Massign (ValueAssign, tnat, (Avartuple (ibm_id, 2, 3)), mk_mterm (Msubnat (map_counter, mk_nat 1)) tnat)) tunit
+              mk_mterm (Massign (ValueAssign, tnat, (Atuple (Avar ibm_id, 2, 3)), mk_mterm (Msubnat (map_counter, mk_nat 1)) tnat)) tunit
             in
             let instr_assign : mterm =
               mk_mterm (Massign (ValueAssign, ibm_value.type_, assign_value, ibm_value)) tunit

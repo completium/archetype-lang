@@ -1548,12 +1548,9 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
 
   | Iassign (lv, v)  -> begin
       let v, _ = f v in
-      let id =
-        match lv with
-        | Uvar id -> id
-        | Utuple _ -> assert false
-      in
-      assign env id v
+      match lv with
+      | Uvar id -> assign env id v
+      | Utuple (lv, i, l) -> assert false
     end
 
   | Iif (c, t, e, ty) -> begin
@@ -1726,7 +1723,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
             else T.cseq ([ T.cdig n ] @ (g (head_env env id) l 0) @ [ T.cdug n ])
           in
           c, env
-        end *)
+         end *)
     end
   | Iconst (t, e) -> T.cpush (rar t, e), inc_env env
   | Icompare (op, lhs, rhs) -> begin
