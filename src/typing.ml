@@ -4735,7 +4735,7 @@ let for_args_decl ?can_asset (env : env) (xs : PT.args) =
   List.fold_left_map (for_arg_decl ?can_asset) env xs
 
 (* -------------------------------------------------------------------- *)
-let for_lvalue kind (env : env) (e : PT.expr) : (A.lvalue * A.ptyp) option =
+let rec for_lvalue kind (env : env) (e : PT.expr) : (A.lvalue * A.ptyp) option =
   match unloc e with
   | Eterm ((None, None), x) -> begin
       match Env.lookup_entry env (unloc x) with
@@ -4813,9 +4813,9 @@ let for_lvalue kind (env : env) (e : PT.expr) : (A.lvalue * A.ptyp) option =
         None
     end
   | Esqapp (e, pk) -> begin
-      let ee = for_expr kind env e in
-      match ee.type_ with
-      | Some (A.Ttuple lt) -> begin
+      let lv = for_lvalue kind env e in
+      match lv with
+      | Some (lv, A.Ttuple lt) -> begin
           let pk = for_expr ?ety:(Some A.vtnat) kind env pk in
           let idx : Core.big_int =
             match pk.node with
@@ -4830,7 +4830,8 @@ let for_lvalue kind (env : env) (e : PT.expr) : (A.lvalue * A.ptyp) option =
           in
           let l = List.length lt in
           let fty = List.nth lt i in
-          Some (`Tuple (ee, i, l), fty)
+
+          Some (`Tuple (lv, i, l), fty)
         end
       | _ -> Env.emit_error env (loc e, InvalidTypeForTuple); None
     end

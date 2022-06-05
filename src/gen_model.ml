@@ -1090,12 +1090,12 @@ let to_model (ast : A.ast) : M.model =
       | A.Imatchor (x, lid, le, rid, re)    -> M.Minstrmatchor       (f x, lid, g le, rid, g re)
       | A.Imatchlist (x, hid, tid, hte, ee) -> M.Minstrmatchlist     (f x, hid, tid, g hte, g ee)
       | A.Iassign (op, t, lv, e) -> begin
-          let to_ak (lv : A.lvalue) =
+          let rec to_ak (lv : A.lvalue) =
             match lv with
             | `Var x -> (match unloc x with | "operations" -> M.Aoperations | _ -> M.Avar x)
-            | `Field (rn, o, fn) -> (match o.type_ with | Some (A.Trecord rn) -> M.Arecord(rn, fn, f o) | _ -> M.Aasset (rn, fn, f o))
+            | `Field (rn, o, fn) -> (match o.type_ with | Some (A.Trecord rn) -> M.Arecord(M.Avar (dumloc "fixme"), rn, fn) | _ -> M.Aasset (rn, fn, f o))
             | `Asset (an, k, fn) -> M.Aasset (an, fn, f k)
-            | `Tuple (_lv, i, l) ->  M.Avartuple (dumloc "r", i, l)
+            | `Tuple (lv, i, l) ->  M.Atuple (to_ak lv, i, l)
           in
           let e = f e in
           let t = type_to_type t in

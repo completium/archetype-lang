@@ -177,6 +177,12 @@ let pp_assignment_operator fmt = function
   | AndAssign   -> pp_str fmt "&="
   | OrAssign    -> pp_str fmt "|="
 
+let rec pp_lvalue fmt = function
+  | `Var id            -> pp_id fmt id
+  | `Field (rn, k, fn) -> Format.fprintf fmt "%a[%a].%a" pp_id rn pp_pterm k pp_id fn
+  | `Asset (an, k, fn) -> Format.fprintf fmt "%a[%a].%a" pp_id an pp_pterm k pp_id fn
+  | `Tuple (lv, i, l)  -> Format.fprintf fmt "%a[%d/%d]" pp_lvalue lv i l
+
 let pp_operator fmt = function
   | `Logical op -> pp_logical_operator fmt op
   | `Cmp     op -> pp_comparison_operator fmt op
@@ -835,47 +841,14 @@ let rec pp_instruction fmt (i : instruction) =
       in
       (pp_with_paren pp) fmt (x, hid, tid, hte, ee)
 
-    | Iassign (op, _, `Var id, value) ->
-      let pp fmt (op, id, value) =
+    | Iassign (op, _, lv, value) ->
+      let pp fmt (op, lv, value) =
         Format.fprintf fmt "%a %a %a"
-          pp_id id
+          pp_lvalue lv
           pp_assignment_operator op
           pp_pterm value
       in
-      (pp_with_paren pp) fmt (op, id, value)
-
-    | Iassign (op, _, `Field (rn, k, fn), value) ->
-      let pp fmt (op, rn, k, fn, value) =
-        Format.fprintf fmt "%a[%a].%a %a %a"
-          pp_id rn
-          pp_pterm k
-          pp_id fn
-          pp_assignment_operator op
-          pp_pterm value
-      in
-      (pp_with_paren pp) fmt (op, rn, k, fn, value)
-
-    | Iassign (op, _, `Asset (an, k, fn), value) ->
-      let pp fmt (op, an, k, fn, value) =
-        Format.fprintf fmt "%a[%a].%a %a %a"
-          pp_id an
-          pp_pterm k
-          pp_id fn
-          pp_assignment_operator op
-          pp_pterm value
-      in
-      (pp_with_paren pp) fmt (op, an, k, fn, value)
-
-    | Iassign (op, _, `Tuple (e, i, l), value) ->
-      let pp fmt (op, e, i, l, value) =
-        Format.fprintf fmt "%a[%d/%d] %a %a"
-          pp_pterm e
-          i
-          l
-          pp_assignment_operator op
-          pp_pterm value
-      in
-      (pp_with_paren pp) fmt (op, e, i, l, value)
+      (pp_with_paren pp) fmt (op, lv, value)
 
     | Irequire (k, pt, f) ->
       let pp fmt (k, pt, f) =

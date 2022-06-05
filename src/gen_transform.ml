@@ -2399,10 +2399,10 @@ let extract_term_from_instruction f (model : model) : model =
       let ve, va = f v in
       process (mk_mterm (Massign (op, t, Aasset (an, fn, ke), ve)) mt.type_) (ka @ va)
 
-    | Massign (op, t, Arecord (rn, fn, r), v) ->
+    | Massign (op, t, Arecord (lv, rn, fn), v) ->
       let re, ra = f r in
       let ve, va = f v in
-      process (mk_mterm (Massign (op, t, Arecord (rn, fn, re), ve)) mt.type_) (ra @ va)
+      process (mk_mterm (Massign (op, t, Arecord (lv, rn, fn), ve)) mt.type_) (ra @ va)
 
     | Massign (op, t, Astate, x) ->
       let xe, xa = f x in
@@ -5724,9 +5724,12 @@ let instr_to_expr_exec (model : model) =
     | _ -> false
   in
 
-  let extract_rev_var ak ty =
+  let rec extract_rev_var ak ty =
     match ak with
-    | Arecord (_, fn, v) -> mk_mterm (Mdot (v, fn)) ty
+    | Avar id -> mk_mvar id tunit
+    | Avarstore id -> mk_mvar id tunit
+    | Arecord (lv, rn, fn) -> mk_mterm (Mdot (v, fn)) ty
+    | Atuple (lv, l, n) -> mk_tupleaccess l (extract_rev_var lv ) ty
     | _ -> assert false
   in
 

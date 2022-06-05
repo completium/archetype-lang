@@ -473,6 +473,10 @@ let pp_top f fmt (op, a1, a2, a3) =
   | Ttransfer_tokens -> pp "transfer_tokens(%a, %a, %a)" f a1 f a2 f a3
   | Topen_chest      -> pp "open_chest(%a, %a, %a)"      f a1 f a2 f a3
 
+let rec pp_ukind fmt = function
+| Uvar id           -> pp_str fmt id
+| Utuple (lv, i, l) -> Format.fprintf fmt "%a[%d/%d]" pp_ukind lv i l
+
 let rec pp_instruction fmt (i : instruction) =
   let pp s = Format.fprintf fmt s in
   let f = pp_instruction in
@@ -482,8 +486,7 @@ let rec pp_instruction fmt (i : instruction) =
   | IletIn (id, v, b, _) -> Format.fprintf fmt "let %a = %a in@\n  @[%a@]" pp_id id f v f b
   | Ivar id -> pp_id fmt id
   | Icall (id, args, _)        -> Format.fprintf fmt "%a(%a)" pp_id id (pp_list ", " f) args
-  | Iassign (id, v)            -> Format.fprintf fmt "%a := @[%a@]" pp_id id f v
-  | Iassigntuple (id, i, l, v) -> Format.fprintf fmt "%a[%d/%d] := @[%a@]" pp_id id i l f v
+  | Iassign (lv, v)            -> Format.fprintf fmt "%a := @[%a@]" pp_ukind lv f v
   | Iif (c, t, e, _)           -> pp "if (%a)@\nthen @[%a@]@\nelse @[%a@]" f c f t f e
   | Iifnone (v, t, id, s, _)   -> pp "if_none (%a)@\nthen @[%a@]@\nelse @[fun %s -> %a@]" f v f t id f s
   | Iifleft (v, _, l, _, r, _) -> pp "if_left (%a)@\nthen @[%a@]@\nelse @[%a@]" f v f l f r

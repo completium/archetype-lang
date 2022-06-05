@@ -145,11 +145,11 @@ type sort_kind =
 [@@deriving show {with_path = false}]
 
 type ('id, 'term) assign_kind_gen =
-  | Avar         of 'id
-  | Avarstore    of 'id
-  | Aasset       of 'id * 'id * 'term (* asset name * field name * key *)
-  | Arecord      of 'id * 'id * 'term (* record name * field name * record *)
-  | Avartuple    of 'id * int * int   (* var name * index * length *)
+  | Avar        of 'id
+  | Avarstore   of 'id
+  | Aasset      of 'id * 'id * 'term (* asset name * field name * key *)
+  | Arecord     of ('id, 'term) assign_kind_gen * 'id * 'id (* record name * record name * field name *)
+  | Atuple      of ('id, 'term) assign_kind_gen * int * int (* var name * index * length *)
   | Astate
   | Aassetstate of ident * 'term     (* asset name * key *)
   | Aoperations
@@ -1376,13 +1376,13 @@ let cmp_mterm_node
     (term1 : ('id, 'term) mterm_node)
     (term2 : ('id, 'term) mterm_node)
   : bool =
-  let cmp_assign_kind (lhs : assign_kind) (rhs : assign_kind) : bool =
+  let rec cmp_assign_kind (lhs : assign_kind) (rhs : assign_kind) : bool =
     match lhs, rhs with
     | Avar id1, Avar id2                               -> cmpi id1 id2
     | Avarstore id1, Avarstore id2                     -> cmpi id1 id2
     | Aasset (an1, fn1, k1), Aasset (an2, fn2, k2)     -> cmpi an1 an2 && cmpi fn1 fn2 && cmp k1 k2
-    | Arecord (rn1, fn1, r1), Arecord (rn2, fn2, r2)   -> cmpi rn1 rn2 && cmpi fn1 fn2 && cmp r1 r2
-    | Avartuple (id1, n1, l1), Avartuple (id2, n2, l2) -> cmpi id1 id2 && cmp_int n1 n2 && cmp_int l1 l2
+    | Arecord (lv1, rn1, fn1), Arecord (lv2, rn2, fn2) -> cmp_assign_kind lv1 lv2 && cmpi rn1 rn2 && cmpi fn1 fn2
+    | Atuple (lv1, n1, l1), Atuple (lv2, n2, l2)       -> cmp_assign_kind lv1 lv2 && cmp_int n1 n2 && cmp_int l1 l2
     | Astate, Astate                                   -> true
     | Aassetstate (id1, v1), Aassetstate (id2, v2)     -> cmp_ident id1 id2 && cmp v1 v2
     | Aoperations, Aoperations                         -> true
@@ -1853,12 +1853,12 @@ let map_for_ident (g : 'id -> 'id) = function
   | FIsimple i             -> FIsimple (g i)
   | FIdouble (x, y)        -> FIdouble (g x, g y)
 
-let map_assign_kind (fi : ident -> ident) (g : 'id -> 'id) f = function
+let rec map_assign_kind (fi : ident -> ident) (g : 'id -> 'id) f = function
   | Avar id             -> Avar (g id)
   | Avarstore id        -> Avarstore (g id)
   | Aasset (an, fn, k)  -> Aasset (g an, g fn, f k)
-  | Arecord (rn, fn, r) -> Arecord (g rn, g fn, f r)
-  | Avartuple (id, n, l)-> Avartuple (g id, n, l)
+  | Arecord (lv, rn, fn)-> Arecord (map_assign_kind fi g f lv, g rn, g fn)
+  | Atuple (lv, n, l)   -> Atuple (map_assign_kind fi g f lv, n, l)
   | Astate              -> Astate
   | Aassetstate (id, v) -> Aassetstate (fi id, f v)
   | Aoperations         -> Aoperations
@@ -2318,12 +2318,12 @@ let map_mterm_model_gen custom (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (
 let map_mterm_model (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (model : model) : model =
   map_mterm_model_gen () f model
 
-let fold_assign_kind f accu = function
+let rec fold_assign_kind f accu = function
   | Avar _              -> accu
   | Avarstore _         -> accu
   | Aasset  (_, _, mt)  -> f accu mt
-  | Arecord (_, _, mt)  -> f accu mt
-  | Avartuple _         -> accu
+  | Arecord (lv, _, _)  -> fold_assign_kind f accu lv
+  | Atuple (lv, _, _)   -> fold_assign_kind f accu lv
   | Astate              -> accu
   | Aassetstate (_, mt) -> f accu mt
   | Aoperations         -> accu
@@ -2639,12 +2639,12 @@ let fold_map_term_list f acc l : 'term list * 'a =
        let p, accu = f accu x in
        pterms @ [p], accu) ([], acc) l
 
-let fold_map_assign_kind f accu = function
+let rec fold_map_assign_kind f accu = function
   | Avar id             -> Avar id, accu
   | Avarstore id        -> Avarstore id, accu
   | Aasset (an, fn, k)  -> let ke, ka = f accu k in Aasset  (an, fn, ke), ka
-  | Arecord (rn, fn, r) -> let re, ra = f accu r in Arecord (rn, fn, re), ra
-  | Avartuple (id, n, l)-> Avartuple (id, n, l), accu
+  | Arecord (lv, rn, fn)-> let lve, lva = fold_map_assign_kind f accu lv in Arecord (lve, rn, fn), lva
+  | Atuple (lv, n, l)   -> let lve, lva = fold_map_assign_kind f accu lv in Atuple (lve, n, l), lva
   | Astate              -> Astate, accu
   | Aassetstate (id, v) -> let ve, va = f accu v in Aassetstate (id, ve), va
   | Aoperations         -> Aoperations, accu
@@ -4852,10 +4852,19 @@ end = struct
   exception FoundAssign
 
   let is_local_assigned (id : ident) (b : mterm) =
+    let rec is_found = function
+      | Avar i -> String.equal (unloc i) id
+      | Avarstore i -> String.equal (unloc i) id
+      | Aasset _ -> false
+      | Arecord (lv, _, _) -> is_found lv
+      | Atuple (lv, _, _) -> is_found lv
+      | Astate -> false
+      | Aassetstate _ -> false
+      | Aoperations -> false
+    in
     let rec rec_search_assign _ (t : mterm) =
       match t.node with
-      | Massign (_, _, Avar i,_) when String.equal (unloc i) id -> raise FoundAssign
-      | Massign (_, _, Arecord (_, _, { node = (Mvar (i, _, _, _)) }), _) when String.equal (unloc i) id -> raise FoundAssign
+      | Massign (_, _, lv,_) when is_found lv -> raise FoundAssign
       | _ -> fold_term rec_search_assign false t in
     try rec_search_assign false b
     with FoundAssign -> true

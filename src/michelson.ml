@@ -319,8 +319,7 @@ and instruction =
   | IletIn       of ident * instruction * instruction * bool
   | Ivar         of ident
   | Icall        of ident * instruction list * bool
-  | Iassign      of ident * instruction
-  | Iassigntuple of ident * int * int * instruction
+  | Iassign      of ukind * instruction
   | Iif          of instruction * instruction * instruction * type_
   | Iifnone      of instruction * instruction * ident * instruction * type_
   | Iifleft      of instruction * ident * instruction * ident * instruction * type_
@@ -365,7 +364,7 @@ and aoperator =
 
 and ukind =
   | Uvar of ident
-  | Urec of ident * (int * int) list
+  | Utuple of ukind * int * int
 
 type implem =
   | Concrete of (ident * type_) list * instruction

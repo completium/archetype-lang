@@ -121,6 +121,16 @@ let pp_operator fmt op =
   in
   pp_str fmt (to_str op)
 
+let rec pp_lvalue f fmt = function
+  | Avar id              -> pp_id fmt id
+  | Avarstore id         -> pp_id fmt id
+  | Aasset (an, fn, k)   -> Format.fprintf fmt "%a[%a].%a" pp_id an f k pp_id fn
+  | Arecord (lv, fn, _r) -> Format.fprintf fmt "%a.%a" (pp_lvalue f) lv pp_id fn
+  | Atuple (lv, i, l)    -> Format.fprintf fmt "%a[%d/%d]" (pp_lvalue f) lv i l
+  | Astate               -> pp_str fmt "state"
+  | Aassetstate (an, k)  -> Format.fprintf fmt "state_%a(%a)" pp_ident an f k
+  | Aoperations          -> pp_str fmt "operations"
+
 let pp_pattern fmt (p : pattern) =
   match p.node with
   | Pconst (i, []) -> pp_id fmt i
@@ -174,12 +184,12 @@ let pp_transfer_kind f fmt = function
   | TKself (x, id, args)    -> Format.fprintf fmt "transfer %a to entry self.%a(%a)" f x pp_str id (pp_list ", " (fun fmt (id, x) -> Format.fprintf fmt "%s = %a" id f x)) args
   | TKoperation x           -> Format.fprintf fmt "transfer %a" f x
 
-let pp_assign_kind f fmt = function
+let rec pp_assign_kind f fmt = function
   | Avar k               -> pp_id fmt k
   | Avarstore l          -> Format.fprintf fmt "s.%a" pp_id l
   | Aasset (an, fn, k)   -> Format.fprintf fmt "%a[%a].%a" pp_id an f k pp_id fn
-  | Arecord (_rn, fn, r) -> Format.fprintf fmt "%a.%a" f r pp_id fn
-  | Avartuple (id, n, _l)-> Format.fprintf fmt "%a[%d]" pp_id id n
+  | Arecord (lv, _rn, fn)-> Format.fprintf fmt "%a.%a" (pp_assign_kind f) lv pp_id fn
+  | Atuple (lv, n, l)    -> Format.fprintf fmt "%a[%d/%d]" (pp_assign_kind f) lv n l
   | Astate               -> Format.fprintf fmt "state"
   | Aassetstate (an, k)  -> Format.fprintf fmt "state_%a(%a)" pp_ident an f k
   | Aoperations          -> Format.fprintf fmt "operations"
@@ -215,56 +225,11 @@ let pp_mterm fmt (mt : mterm) =
 
     (* assign *)
 
-    | Massign (op, _, Avar k, v) ->
+    | Massign (op, _, lv, v) ->
       Format.fprintf fmt "%a %a %a"
-        pp_id k
+        (pp_lvalue f) lv
         pp_operator op
         f v
-
-    | Massign (op, _, Avarstore l, r) ->
-      Format.fprintf fmt "s.%a %a %a"
-        pp_id l
-        pp_operator op
-        f r
-
-    | Massign (op, _, Aasset (an, fn, k), v) ->
-      Format.fprintf fmt "%a[%a].%a %a %a"
-        pp_id an
-        f k
-        pp_id fn
-        pp_operator op
-        f v
-
-    | Massign (op, _, Arecord (_rn, fn, r), v) ->
-      Format.fprintf fmt "%a.%a %a %a"
-        f r
-        pp_id fn
-        pp_operator op
-        f v
-
-    | Massign (op, _, Avartuple (id, i, l), v) ->
-      Format.fprintf fmt "%a[%d/%d] %a %a"
-        pp_id id
-        i
-        l
-        pp_operator op
-        f v
-
-    | Massign (_op, _, Astate, x) ->
-      Format.fprintf fmt "state = %a"
-        f x
-
-    | Massign (_op, _, Aassetstate (an, k), v) ->
-      Format.fprintf fmt "state_%a(%a) = %a"
-        pp_ident an
-        f k
-        f v
-
-    | Massign (_op, _, Aoperations, v) ->
-      Format.fprintf fmt "operations = %a"
-        f v
-
-
 
     (* control *)
 

@@ -233,7 +233,7 @@ let to_ir (model : M.model) : T.ir =
   in
 
   let get_builtin_fun b : T.func =
-    let return x = T.Iassign (fun_result, x) in
+    let return x = T.Iassign (T.Uvar fun_result, x) in
     let name = T.Utils.get_fun_name Printer_michelson.show_pretty_type b in
     let ctx = T.mk_ctx_func () in
     match b with
@@ -269,12 +269,12 @@ let to_ir (model : M.model) : T.ir =
           let vres      = T.Ivar res_name in
           let viter     = T.Ivar iter_name in
           let ve        = T.Ivar e_name in
-          let return    = T.Iassign (fun_result, T.Iifnone (vres, T.ifail "NotFound", "_var_ifnone", Ivar "_var_ifnone", t)) in
+          let return    = T.Iassign (T.Uvar fun_result, T.Iifnone (vres, T.ifail "NotFound", "_var_ifnone", Ivar "_var_ifnone", t)) in
           let cond      = T.Icompare (Cle, viter, varg) in
           let vheadtail = T.Imichelson ([vlist], T.cseq [ T.mk_code (IF_CONS ([T.mk_code PAIR], [T.cstring "EmptyList"; T.cfailwith]))], []) in
-          let ares      = T.Iassign (res_name, T.isome(T.icar ve)) in
-          let alist     = T.Iassign (list_name, T.icdr ve) in
-          let aiter     = T.Iassign (iter_name, T.Ibinop (Badd, viter, T.inat Big_int.unit_big_int)) in
+          let ares      = T.Iassign (T.Uvar res_name, T.isome(T.icar ve)) in
+          let alist     = T.Iassign (T.Uvar list_name, T.icdr ve) in
+          let aiter     = T.Iassign (T.Uvar iter_name, T.Ibinop (Badd, viter, T.inat Big_int.unit_big_int)) in
           let bloop     = T.IletIn(e_name, vheadtail, T.Iseq [ares; alist; aiter], true) in
           let loop      = T.Iloop (cond, bloop) in
           let body      = T.IletIn(res_name, T.inone t, IletIn(iter_name, T.inat Big_int.zero_big_int, T.Iseq [loop; return], true), true) in
@@ -311,8 +311,8 @@ let to_ir (model : M.model) : T.ir =
                                                           T.inat (Big_int.big_int_of_int 9), T.istring "9"]) in
           let get_map    = T.Iifnone (T.Ibinop (Bget, T.Iunop (Ucdr, vpair), vmap), T.ifail "NotFound", "_var_ifnone", Ivar "_var_ifnone", T.tstring) in
           let concat     = T.Ibinop (Bconcat, get_map, vres) in
-          let assign_res = T.Iassign (res_name, concat) in
-          let assign_arg = T.Iassign (arg_name, T.Iunop (Ucar, vpair)) in
+          let assign_res = T.Iassign (T.Uvar res_name, concat) in
+          let assign_arg = T.Iassign (T.Uvar arg_name, T.Iunop (Ucar, vpair)) in
           let vpair      = T.Iifnone (T.Ibinop (Bediv, varg, ten), T.ifail divbyzero, "_var_ifnone", Ivar "_var_ifnone", T.tpair T.tint T.tnat) in
           let b          = T.IletIn(pair_name, vpair, T.Iseq [assign_res; assign_arg], true) in
           let loop       = T.Iloop (cond, b) in
@@ -373,21 +373,22 @@ let to_ir (model : M.model) : T.ir =
 
   let extra_args : (ident * (ident * T.type_) list) list ref  = ref [] in
 
+  let rec to_ukind = function
+    | M.Avar id       -> T.Uvar (unloc id)
+    | M.Avarstore id  -> T.Uvar (unloc id)
+    | M.Aasset _      -> assert false
+    | M.Arecord (lv, rn, fn) ->
+      let l = Model.Utils.get_record_pos model (unloc rn) (unloc fn) in
+      let u = to_ukind lv in
+      List.fold_left (fun accu (i, l)-> T.Utuple (accu, i, l)) u l
+    | M.Atuple (lv, i, l) -> T.Utuple (to_ukind lv, i, l)
+    | M.Astate        -> assert false
+    | M.Aassetstate _ -> assert false
+    | M.Aoperations   -> T.Uvar operations
+  in
 
   let instr_update (ak : M.assign_kind) (op : T.aoperator) =
-    match ak with
-    | Avar id       -> T.Iupdate (Uvar (unloc id), op)
-    | Avarstore id  -> T.Iupdate (Uvar (unloc id), op)
-    | Aasset _      -> emit_error (UnsupportedTerm "Aasset")
-    | Arecord (rn, fn, {node = Mvar(id, _, _, _)}) -> begin
-        let l = Model.Utils.get_record_pos model (unloc rn) (unloc fn) in
-        T.Iupdate (Urec (unloc id, l), op)
-      end
-    | Avartuple (id, n, l) -> T.Iupdate (Urec (unloc id, [n, l]), op)
-    | Arecord _     -> emit_error (UnsupportedTerm "Arecord")
-    | Astate        -> emit_error (UnsupportedTerm "Astate")
-    | Aassetstate _ -> emit_error (UnsupportedTerm "Aassetstate")
-    | Aoperations   -> T.Iupdate (Uvar operations, op)
+    T.Iupdate (to_ukind ak, op)
   in
 
   let rec to_data (mt : M.mterm) : T.data =
@@ -589,10 +590,12 @@ let to_ir (model : M.model) : T.ir =
 
     (* assign *)
 
-    | Massign (_op, _, Avar id, v)                 -> T.Iassign (unloc id, f v)
-    | Massign (_op, _, Avarstore id, v)            -> T.Iassign (unloc id, f v)
-    | Massign (_op, _, Aasset (_an, _fn, _k), _v)  -> emit_error (UnsupportedTerm ("Massign: Aasset"))
-    | Massign (_op, _, Arecord (_rn, fn, {node = Mvar (id, _, _, _); type_ = t}), v) -> begin
+    | Massign (_op, _, lv, v) -> T.Iassign (to_ukind lv, f v)
+
+    (* | Massign (_op, _, Avar id, v)                 -> T.Iassign (unloc id, f v)
+       | Massign (_op, _, Avarstore id, v)            -> T.Iassign (unloc id, f v)
+       | Massign (_op, _, Aasset (_an, _fn, _k), _v)  -> emit_error (UnsupportedTerm ("Massign: Aasset")) *)
+    (* | Massign (_op, _, Arecord (_rn, fn, {node = Mvar (id, _, _, _); type_ = t}), v) -> begin
         let id = unloc id in
         let rn =
           match M.get_ntype t with
@@ -602,12 +605,12 @@ let to_ir (model : M.model) : T.ir =
         let ru = make_ru rn (unloc fn) v in
         let a = T.Irecupdate (T.Ivar id, ru) in
         T.Iassign (id, a)
-      end
-    | Massign (_op, _, Arecord _, _v)              -> T.iskip
-    | Massign (_op, _, Avartuple (id, n, l), v)    -> let id = unloc id in T.Iassigntuple (id, n, l, f v)
-    | Massign (_op, _, Astate, _x)                 -> emit_error (UnsupportedTerm ("Massign: Astate"))
-    | Massign (_op, _, Aassetstate (_an, _k), _v)  -> emit_error (UnsupportedTerm ("Massign: Aassetstate"))
-    | Massign (_op, _, Aoperations, v)             -> T.Iassign (operations, f v)
+       end *)
+    (* | Massign (_op, _, Arecord (lv, rn, fn), _v)   -> T.iskip
+       | Massign (_op, _, Atuple (lv, n, l), v)       -> let id = unloc id in T.Iassigntuple (id, n, l, f v)
+       | Massign (_op, _, Astate, _x)                 -> emit_error (UnsupportedTerm ("Massign: Astate"))
+       | Massign (_op, _, Aassetstate (_an, _k), _v)  -> emit_error (UnsupportedTerm ("Massign: Aassetstate"))
+       | Massign (_op, _, Aoperations, v)             -> T.Iassign (operations, f v) *)
 
     (* control *)
 
@@ -640,7 +643,7 @@ let to_ir (model : M.model) : T.ir =
     | Mwhile (c, b, _)           -> T.Iloop (f c, f b)
     | Mseq is                    -> T.Iseq (List.map f is)
     (* | Mreturn x when view        -> f x *)
-    | Mreturn x                  -> T.Iassign (fun_result, f x)
+    | Mreturn x                  -> T.Iassign (T.Uvar fun_result, f x)
     | Mlabel _                   -> T.iskip
     | Mmark  _                   -> T.iskip
 
@@ -683,7 +686,7 @@ let to_ir (model : M.model) : T.ir =
             end
           | TKoperation op -> f op
         in
-        T.Iassign (operations, T.Ireverse (T.toperation, (T.Ibinop (Bcons, op, T.Ireverse (T.toperation, vops)))))
+        T.Iassign (T.Uvar operations, T.Ireverse (T.toperation, (T.Ibinop (Bcons, op, T.Ireverse (T.toperation, vops)))))
       end
     (* | Memit (e, value) ->
        let zerotz : M.mterm = M.mk_tez 0 in
@@ -942,7 +945,7 @@ let to_ir (model : M.model) : T.ir =
     | Msetremove (_, c, a)          -> T.Iterop (Tupdate, f a, T.ifalse, f c)
     | Msetcontains (_, c, k)        -> T.Ibinop (Bmem, f k, f c)
     | Msetlength (_, c)             -> T.Iunop  (Usize, f c)
-    | Msetfold (_, ix, ia, c, a, b) -> T.Ifold (unloc ix, None, unloc ia, f c, f a, T.Iassign (unloc ia, f b))
+    | Msetfold (_, ix, ia, c, a, b) -> T.Ifold (unloc ix, None, unloc ia, f c, f a, T.Iassign (T.Uvar (unloc ia), f b))
 
     (* set api instruction *)
 
@@ -957,7 +960,7 @@ let to_ir (model : M.model) : T.ir =
     | Mlistnth (t, c, a)         -> let b = T.BlistNth (to_type model t) in add_builtin b; T.Icall (get_fun_name b, [f c; f a], is_inline b)
     | Mlistreverse (t, l)        -> T.Ireverse (to_type model t, f l)
     | Mlistconcat _              -> emit_error (UnsupportedTerm ("Mlistconcat"))
-    | Mlistfold (_, ix, ia, c, a, b) -> T.Ifold (unloc ix, None, unloc ia, f c, f a, T.Iassign (unloc ia, f b))
+    | Mlistfold (_, ix, ia, c, a, b) -> T.Ifold (unloc ix, None, unloc ia, f c, f a, T.Iassign (T.Uvar (unloc ia), f b))
 
     (* list api instruction *)
 
@@ -974,7 +977,7 @@ let to_ir (model : M.model) : T.ir =
     | Mmapgetopt (_, _, _, c, k)     -> T.Ibinop (Bget, f k, f c)
     | Mmapcontains (_, _, _, c, k)   -> T.Ibinop (Bmem, f k, f c)
     | Mmaplength (_, _, _, c)        -> T.Iunop (Usize, f c)
-    | Mmapfold (_, _, ik, iv, ia, c, a, b) -> T.Ifold (unloc ik, Some (unloc iv), unloc ia, f c, f a, T.Iassign (unloc ia, f b))
+    | Mmapfold (_, _, ik, iv, ia, c, a, b) -> T.Ifold (unloc ik, Some (unloc iv), unloc ia, f c, f a, T.Iassign (T.Uvar (unloc ia), f b))
 
     (* map api instruction *)
 
@@ -1543,16 +1546,14 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
         end
     end
 
-  | Iassign (id, v)  -> begin
+  | Iassign (lv, v)  -> begin
       let v, _ = f v in
+      let id =
+        match lv with
+        | Uvar id -> id
+        | Utuple _ -> assert false
+      in
       assign env id v
-    end
-
-  | Iassigntuple (id, i, l, v) -> begin
-      let fid, env0   = fe env (Ivar id) in
-      let v, _ = fe env0 v in
-      let n = if i = l - 1 then i * 2 else i * 2 + 1 in
-      assign env id (T.cseq [fid; v; T.cupdate_n n])
     end
 
   | Iif (c, t, e, ty) -> begin
@@ -1685,7 +1686,8 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
           in
           c, env
         end
-      | Urec (id, l) -> begin
+      | Utuple _ -> assert false
+      (* | Urec (id, l) -> begin
           let rec g env l x =
             (* Format.eprintf "x: %i@\n" x; *)
             match l with
@@ -1724,7 +1726,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
             else T.cseq ([ T.cdig n ] @ (g (head_env env id) l 0) @ [ T.cdug n ])
           in
           c, env
-        end
+        end *)
     end
   | Iconst (t, e) -> T.cpush (rar t, e), inc_env env
   | Icompare (op, lhs, rhs) -> begin
