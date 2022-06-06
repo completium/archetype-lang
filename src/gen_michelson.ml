@@ -603,7 +603,7 @@ let to_ir (model : M.model) : T.ir =
         let a = T.Irecupdate (T.Ivar id, ru) in
         T.Iassign (id, a)
       end
-    | Massign (_op, _, Arecord _, _v)              -> T.iskip
+    | Massign (_op, _, Arecord _, _v)              -> emit_error (UnsupportedTerm ("Record is not a var"))
     | Massign (_op, _, Avartuple (id, n, l), v)    -> let id = unloc id in T.Iassigntuple (id, n, l, f v)
     | Massign (_op, _, Astate, _x)                 -> emit_error (UnsupportedTerm ("Massign: Astate"))
     | Massign (_op, _, Aassetstate (_an, _k), _v)  -> emit_error (UnsupportedTerm ("Massign: Aassetstate"))
