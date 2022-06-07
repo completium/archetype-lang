@@ -13,7 +13,7 @@ entry exec () {
 
   // dynamically from an address and string
   var a : address = @KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm;
-  var e2_opt : option<contract<int>> = entrypoint<int>("%an_entry", a);
+  var e2_opt : option<contract<int>> = get_entrypoint<int>("%an_entry", a);
   var e2 = get_some(e2_opt);
   transfer 0tz to entry e2(2);
 

@@ -1,4 +1,4 @@
-archetype match_entrypoint
+archetype match_get_entrypoint
 
 variable res : nat = 0
 
@@ -9,7 +9,7 @@ entry set_value(n : nat) {
 entry exec () {
   var n : nat = res + 1;
 
-  match entrypoint<nat>("%set_value", self_address) with
+  match get_entrypoint<nat>("%set_value", self_address) with
   | some(e) -> transfer 0tz to entry e(n)
   | none -> fail("KO")
   end

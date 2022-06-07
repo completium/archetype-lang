@@ -9,7 +9,7 @@ entry callback(k : nat) {
 
 entry main() {
   n := 1;
-  match entrypoint<(unit * contract<nat>)>("%getN", @KT1V6R5EQRfipGY1AgigYrgbb1tfbGBJ9B4s) with
+  match get_entrypoint<(unit * contract<nat>)>("%getN", @KT1V6R5EQRfipGY1AgigYrgbb1tfbGBJ9B4s) with
     | some(c) ->
       transfer 0tz to entry c((Unit, self.callback))
     | none -> fail("INVALID_ENTRY")

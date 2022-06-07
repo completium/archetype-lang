@@ -246,8 +246,8 @@ function mk_op (
   ot : owner_type) : or<option<operation>,string> {
   var e =
     match ot with
-    | Sender   -> entrypoint<transfer_descriptor_param>("%fa2_token_sender", a)
-    | Receiver -> entrypoint<transfer_descriptor_param>("%fa2_token_receiver", a)
+    | Sender   -> get_entrypoint<transfer_descriptor_param>("%fa2_token_sender", a)
+    | Receiver -> get_entrypoint<transfer_descriptor_param>("%fa2_token_receiver", a)
     end;
   return left<_,string>(some(make_operation(0tz, get_some(e), tp)))
 }
