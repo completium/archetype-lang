@@ -2397,7 +2397,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mpack   s -> Tapp (loc_term (Tvar "pack"),[map_mterm m ctx s])
     | Munpack (_, s) -> Tapp (loc_term (Tvar "unpack"),[map_mterm m ctx s])
     | Msetdelegate s -> Tapp (loc_term (Tvar "set_delegate"),[map_mterm m ctx s])
-    | Mimplicitaccount s -> Tapp (loc_term (Tvar "implicit_account"),[map_mterm m ctx s])
+    | Mkeyhashtocontract s -> Tapp (loc_term (Tvar "implicit_account"),[map_mterm m ctx s])
     | Mcontracttoaddress s -> Tapp (loc_term (Tvar "contract_address"),[map_mterm m ctx s])
     | Maddresscontract s -> Tapp (loc_term (Tvar "address_contract"),[map_mterm m ctx s])
     | Mkeyaddress s -> Tapp (loc_term (Tvar "key_address"),[map_mterm m ctx s])

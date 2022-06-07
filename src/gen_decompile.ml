@@ -1823,7 +1823,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mpack _x            -> assert false
     | Munpack (_t, _x)    -> assert false
     | Msetdelegate _x     -> assert false
-    | Mimplicitaccount _x -> assert false
+    | Mkeyhashtocontract _x -> assert false
     | Mcontracttoaddress _x -> assert false
     | Maddresscontract _x -> assert false
     | Mkeyaddress _x      -> assert false

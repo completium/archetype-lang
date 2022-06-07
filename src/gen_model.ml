@@ -770,9 +770,9 @@ let to_model (ast : A.ast) : M.model =
         let fx = f x in
         M.Msetdelegate (fx)
 
-      | A.Pcall (None, A.Cconst A.Cimplicitaccount, [AExpr x]) ->
+      | A.Pcall (None, A.Cconst A.Ckeyhashtocontract, [AExpr x]) ->
         let fx = f x in
-        M.Mimplicitaccount (fx)
+        M.Mkeyhashtocontract (fx)
 
       | A.Pcall (None, A.Cconst A.Csubnat, [AExpr x; AExpr y]) ->
         let fx = f x in

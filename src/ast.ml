@@ -191,7 +191,7 @@ type const =
   | Cinttodate
   | CmutezToNat
   | Csetdelegate
-  | Cimplicitaccount
+  | Ckeyhashtocontract
   | Csubnat
   | Csubmutez
   | Cgreedyand

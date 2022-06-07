@@ -1348,8 +1348,8 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "set_delegate (%a)"
         f x
 
-    | Mimplicitaccount x ->
-      Format.fprintf fmt "implicit_account (%a)"
+    | Mkeyhashtocontract x ->
+      Format.fprintf fmt "key_hash_to_contract (%a)"
         f x
 
     | Mcontracttoaddress x ->

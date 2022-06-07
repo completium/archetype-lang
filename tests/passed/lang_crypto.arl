@@ -21,7 +21,7 @@ entry exec () {
     var kh : key_hash = key_to_key_hash(k);
     do_require (kh = kh, "ko");
 
-    var c : contract<unit> = implicit_account(kh);
+    var c : contract<unit> = key_hash_to_contract(kh);
 
     var addr = tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg;
     var a : address = key_address(k);

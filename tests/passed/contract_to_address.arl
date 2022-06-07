@@ -6,7 +6,7 @@ entry exec () {
   effect {
     // var k : key = "edpkurLzuFFL1XyP3fed4u7MsgeywQoQmHM45Bz91PBzDvUjQ9bvdn";
     // var pkh : key_hash = key_to_key_hash(k);
-    // var c : contract<unit> = implicit_account(pkh);
+    // var c : contract<unit> = key_hash_to_contract(pkh);
 
     var input : address = tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg;
     var c : contract<unit> = input;

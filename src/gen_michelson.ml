@@ -1006,7 +1006,7 @@ let to_ir (model : M.model) : T.ir =
     | Mpack x            -> T.Iunop (Upack,  f x)
     | Munpack (t, x)     -> T.Iunop (Uunpack (ft t), f x)
     | Msetdelegate x     -> T.Iunop (Usetdelegate, f x)
-    | Mimplicitaccount x -> T.Iunop (Uimplicitaccount, f x)
+    | Mkeyhashtocontract x -> T.Iunop (Uimplicitaccount, f x)
     | Mcontracttoaddress x -> T.Iunop (Uaddress, f x)
     | Maddresscontract x ->
       T.Iifnone (T.Iunop (Ucontract(T.tunit, None), f x), T.ifail "NotImplicitContract", "_var_ifnone", Ivar "_var_ifnone", ft mtt.type_)

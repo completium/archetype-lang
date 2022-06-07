@@ -7,7 +7,7 @@ entry init (l : list<sapling_transaction(8) * option<key_hash>>) {
     var r : (int * sapling_state(8)) = require_some(sapling_verify_update(transaction, s), "INVALID_TRANSACTION");
     var balance_ = r[0];
     if (abs(balance_) * 1utz > transferred) then begin
-      var e : contract<unit> = implicit_account(kh);
+      var e : contract<unit> = key_hash_to_contract(kh);
       var op  : operation = mkoperation(0tz, e, ());
       operations := [op]
     end else begin

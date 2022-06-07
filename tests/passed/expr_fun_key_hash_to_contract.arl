@@ -1,4 +1,4 @@
-archetype expr_fun_implicitaccount
+archetype expr_fun_key_hash_to_contract
 
 entry exec () {
   specification {
@@ -7,7 +7,7 @@ entry exec () {
   effect {
     var k  : key = "edpkudMiaEXwK9EXcXufVjVkZmCRJLwQdSVYutAxfaySTgSnxXNLYj";
     var kh : key_hash = key_to_key_hash(k);
-    var c : contract<unit> = implicit_account(kh);
+    var c : contract<unit> = key_hash_to_contract(kh);
     var op  : operation = mkoperation(0tz, c, Unit);
     operations := prepend(operations, op);
   }
