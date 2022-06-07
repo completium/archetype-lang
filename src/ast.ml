@@ -167,7 +167,7 @@ type const =
   | Crequiresome
   | Cisnone
   | Cissome
-  | Cisnat
+  | Cinttonat
   | Ctonat
   | Clength
   | Cmax

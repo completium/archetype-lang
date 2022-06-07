@@ -2387,7 +2387,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       end
     | Misnone s -> Tapp (loc_term (Tvar "isnone"),[map_mterm m ctx s])
     | Missome s -> Tapp (loc_term (Tvar "issome"),[map_mterm m ctx s])
-    | Misnat s -> Tapp (loc_term (Tvar "isnat"),[map_mterm m ctx s])
+    | Minttonat s -> Tapp (loc_term (Tvar "isnat"),[map_mterm m ctx s])
     | Mtonat s -> Tapp (loc_term (Tvar "to_nat"),[map_mterm m ctx s])
     | Moptget s -> Tapp (loc_term (Tvar "getopt"),[map_mterm m ctx s])
     | Mrequiresome (s, t) -> Tapp (loc_term (Tvar "require_some"),[map_mterm m ctx s; map_mterm m ctx t])

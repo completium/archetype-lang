@@ -1375,7 +1375,7 @@ let coreops : opinfo list =
        (fun x -> op "to_string" A.Ctostring `Total None [x] (`Ty A.vtstring) Mint.empty)
        [A.vtnat])
   @ [
-    op "isnat"  A.Cisnat `Total None [A.vtint] (`Ty (A.Toption A.vtnat)) Mint.empty;
+    op "int_to_nat"  A.Cinttonat `Total None [A.vtint] (`Ty (A.Toption A.vtnat)) Mint.empty;
     op "to_nat" A.Ctonat `Total None [A.vtint] (`Ty A.vtnat) Mint.empty;
     op "int_to_date" A.Cinttodate `Total None [A.vtint] (`Ty A.vtdate) Mint.empty;
     op "mutez_to_nat" A.CmutezToNat `Total None [A.vtcurrency] (`Ty A.vtnat) Mint.empty

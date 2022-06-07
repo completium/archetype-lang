@@ -1307,8 +1307,8 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "issome (%a)"
         f x
 
-    | Misnat x ->
-      Format.fprintf fmt "isnat (%a)"
+    | Minttonat x ->
+      Format.fprintf fmt "int_to_nat (%a)"
         f x
 
     | Mtonat x ->

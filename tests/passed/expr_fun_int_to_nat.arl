@@ -1,4 +1,4 @@
-archetype expr_fun_isnat
+archetype expr_fun_int_to_nat
 
 variable res : option<nat> = none
 
@@ -7,6 +7,6 @@ entry exec () {
     s0: res = some(2);
   }
   effect {
-    res := isnat(2i)
+    res := int_to_nat(2i)
   }
 }

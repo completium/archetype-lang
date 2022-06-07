@@ -723,9 +723,9 @@ let to_model (ast : A.ast) : M.model =
         let fx = f x in
         M.Missome (fx)
 
-      | A.Pcall (None, A.Cconst A.Cisnat, [AExpr x]) ->
+      | A.Pcall (None, A.Cconst A.Cinttonat, [AExpr x]) ->
         let fx = f x in
-        M.Misnat (fx)
+        M.Minttonat (fx)
 
       | A.Pcall (None, A.Cconst A.Ctonat, [AExpr x]) ->
         let fx = f x in
