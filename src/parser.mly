@@ -119,6 +119,7 @@
 %token MULTEQUAL
 %token NAMESPACE
 %token NEQUAL
+%token NO_TRANSFER
 %token NONE
 %token NOT
 %token ON
@@ -140,7 +141,6 @@
 %token RBRACE
 %token RBRACKET
 %token RECORD
-%token REFUSE_TRANSFER
 %token REMOVED
 %token REQUIRE
 %token REQUIRE_ENTRYPOINT
@@ -736,7 +736,7 @@ transition:
 
 %inline accept_transfer:
 | /* empty */     { (true, None) }
-| REFUSE_TRANSFER o=otherwise_section? { (false, o) }
+| NO_TRANSFER o=otherwise_section? { (false, o) }
 | ACCEPT_TRANSFER o=otherwise_section? { (true, o) }
 
 entry_properties:

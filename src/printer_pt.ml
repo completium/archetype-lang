@@ -1202,7 +1202,7 @@ let pp_entry_properties fmt (props : entry_properties) =
 
   if (not (fst props.accept_transfer))
   then begin
-    Format.fprintf fmt "refuse transfer%a@\n"
+    Format.fprintf fmt "no transfer%a@\n"
       (pp_option (fun fmt o -> Format.fprintf fmt " otherwise %a" (pp_expr e_default PNone) o )) (snd props.accept_transfer)
   end;
   map_option (fun (e, o, exts) ->

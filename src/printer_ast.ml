@@ -1242,7 +1242,7 @@ let pp_transaction_entry fmt (t : transaction) =
     pp_id t.name
     pp_fun_args t.args
     (pp_option pp_specification) t.specification
-    (pp_do_if (not (fst t.accept_transfer)) (fun fmt (_, o) -> Format.fprintf fmt "refuse transfer%a@\n" pp_otherwise o)) t.accept_transfer
+    (pp_do_if (not (fst t.accept_transfer)) (fun fmt (_, o) -> Format.fprintf fmt "no transfer%a@\n" pp_otherwise o)) t.accept_transfer
     (pp_option (fun fmt (x, o) -> Format.fprintf fmt "sourced by %a%a@\n" pp_rexpr x pp_otherwise o)) t.sourcedby
     (pp_option (fun fmt (x, o) -> Format.fprintf fmt "called by %a%a@\n" pp_rexpr x pp_otherwise o)) t.calledby
     (pp_option (fun fmt (x ,o) -> Format.fprintf fmt "state is %a%a@\n" pp_id x pp_otherwise o )) t.state_is
@@ -1264,7 +1264,7 @@ let pp_transaction_transition fmt (t : transaction) (tr : lident transition) =
     (pp_option (pp_prefix " on " (fun fmt (k, _, an, _) -> Format.fprintf fmt "(%a : asset_key<%a>)" pp_id k pp_id an))) tr.on
     (pp_option pp_specification) t.specification
     (pp_option (fun fmt (x, _) -> Format.fprintf fmt "called by %a@\n" pp_rexpr x)) t.calledby
-    (pp_do_if (not (fst t.accept_transfer)) (fun fmt (_, o) -> Format.fprintf fmt "refuse transfer%a@\n" pp_otherwise o)) t.accept_transfer
+    (pp_do_if (not (fst t.accept_transfer)) (fun fmt (_, o) -> Format.fprintf fmt "no transfer%a@\n" pp_otherwise o)) t.accept_transfer
     (pp_option (pp_list "@\n " (fun fmt -> Format.fprintf fmt "require {@\n  @[%a@]@\n}@\n" pp_label_term))) t.require
     (pp_list "@\n" pp_function) t.functions
     (fun fmt from -> Format.fprintf fmt " from %a@\n"

@@ -156,7 +156,7 @@ let hour     = digit digit ':' digit digit ( ':' digit digit )?
 let timezone = (('+' | '-') digit digit ':' digit digit | 'Z')
 let date     = day ('T' hour ( timezone )?)?
 let accept_transfer = "accept" blank+ "transfer"
-let refuse_transfer = "refuse" blank+ "transfer"
+let no_transfer = "no" blank+ "transfer"
 let bytes    = "0x" ['0'-'9' 'a'-'f' 'A'-'F']*
 let percent  = (digit+ | dec) "%"
 let tz_addr  = (("tz" ('1' | '2' | '3')) | "KT1") ['0'-'9' 'a'-'z' 'A'-'Z']+
@@ -165,7 +165,7 @@ let tz_addr  = (("tz" ('1' | '2' | '3')) | "KT1") ['0'-'9' 'a'-'z' 'A'-'Z']+
 rule token = parse
   | newline               { Lexing.new_line lexbuf; token lexbuf }
   | accept_transfer       { ACCEPT_TRANSFER }
-  | refuse_transfer       { REFUSE_TRANSFER }
+  | no_transfer           { NO_TRANSFER }
   | blank+                { token lexbuf }
 
   | "state" blank+ "is"      { STATE_IS }
