@@ -1,0 +1,8 @@
+archetype int_to_date
+
+variable res : date = 2000-01-01
+
+entry exec () {
+  res := int_to_date(1609372800i);
+  do_require(res = 2020-12-31, "error")
+}

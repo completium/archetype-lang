@@ -1,0 +1,17 @@
+archetype contract_to_address
+
+variable res : option<address> = none
+
+entry exec () {
+  effect {
+    // var k : key = "edpkurLzuFFL1XyP3fed4u7MsgeywQoQmHM45Bz91PBzDvUjQ9bvdn";
+    // var pkh : key_hash = hash_key(k);
+    // var c : contract<unit> = implicit_account(pkh);
+
+    var input : address = tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg;
+    var c : contract<unit> = input;
+    var a : address = contract_to_address(c);
+    res := some(a);
+    do_require(a = input, "failed");
+  }
+}
