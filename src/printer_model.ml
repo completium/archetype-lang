@@ -1452,7 +1452,7 @@ let pp_mterm fmt (mt : mterm) =
     | Mcaller        -> pp_str fmt "caller"
     | Mbalance       -> pp_str fmt "balance"
     | Msource        -> pp_str fmt "source"
-    | Mselfaddress   -> pp_str fmt "selfaddress"
+    | Mselfaddress   -> pp_str fmt "self_address"
     | Mchainid       -> pp_str fmt "chain_id"
     | Mmetadata      -> pp_str fmt "metadata"
     | Mlevel         -> pp_str fmt "level"

@@ -19,8 +19,8 @@ entry exec () {
   var okh : option<key_hash> = none;
 
   var oaddr : option<address> = none;
-  transfer 0tz to deploy dummy with (selfaddress) at oaddr
+  transfer 0tz to deploy dummy with (self_address) at oaddr
 
-  var op_addr : (operation * address) = mkcontract(0tz, okh, dummy, (selfaddress))
+  var op_addr : (operation * address) = mkcontract(0tz, okh, dummy, (self_address))
 
 }

@@ -13,7 +13,7 @@ entry exec() {
   // equivalent to
   //
   // res :=
-  //   match callview<nat>(selfaddress, "get", Unit) with
+  //   match callview<nat>(self_address, "get", Unit) with
   //   | some(v) -> v
   //   | none -> fail (("CALLVIEW_ERROR", "get"))
   //   end

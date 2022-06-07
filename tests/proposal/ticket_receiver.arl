@@ -12,7 +12,7 @@ entry receive(t : ticket<string>) {
 }
 
 entry exec () {
-  var callback_opt : option<contract<ticket<string>>> = entrypoint<ticket<string>>("%receive", selfaddress);
+  var callback_opt : option<contract<ticket<string>>> = entrypoint<ticket<string>>("%receive", self_address);
   var callback = opt_get(callback_opt);
 
   var eopt : option<contract<contract<ticket<string>>>> = entrypoint<contract<ticket<string>>>("%emit", emitter);

@@ -32,7 +32,7 @@ view getMyasset(i : nat) : string {
 // }
 
 entry exec() {
-  match callview<nat>(selfaddress, "getN", Unit) with
+  match callview<nat>(self_address, "getN", Unit) with
   | some(v) -> r := v
   | none -> fail("not_found")
   end

@@ -10,5 +10,5 @@ view get() : nat {
 }
 
 entry exec() {
-  res := callview<nat>(selfaddress, "get", Unit)
+  res := callview<nat>(self_address, "get", Unit)
 }

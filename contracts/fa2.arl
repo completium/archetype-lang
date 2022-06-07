@@ -341,7 +341,7 @@ entry set_permissions_descriptor (
     var cust_pol =
       if withcustom then some({
         tag = per_token_policy;
-        config_api = some(selfaddress)
+        config_api = some(self_address)
       }) else none<custom_policy>;
     permissions_descriptor := {
       transfer_policy      = otp;
@@ -352,7 +352,7 @@ entry set_permissions_descriptor (
   }
 }
 
-entry token_metadata_registry (c : contract<address>) { transfer 0tz to entry c(selfaddress); }
+entry token_metadata_registry (c : contract<address>) { transfer 0tz to entry c(self_address); }
 
 entry set_hook (ti : nat, h : option<address>) {
   // if only 'update', it is impossble to set the hook if no token is possessed ...
