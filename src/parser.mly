@@ -77,7 +77,7 @@
 %token EXISTS
 %token EXTENSION
 %token FAIL
-%token FAILIF
+%token FAIL_IF
 %token FAILSOME
 %token FAILS
 %token FALSE
@@ -782,7 +782,7 @@ rf(X):
        { (xs, exts) }
 
 %inline failif:
- | FAILIF exts=option(extensions) xs=braced(rfs(WITH))
+ | FAIL_IF exts=option(extensions) xs=braced(rfs(WITH))
        { (xs, exts) }
 
 %inline require_value:

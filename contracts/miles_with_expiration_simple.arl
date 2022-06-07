@@ -17,7 +17,7 @@ asset owner identified by addr {
 
 entry add (ow : address, newmile_id : string, newmile_expiration : date, newmile_quantity : int) {
   called by admin
-  failif {
+  fail if {
     f1: mile.contains(newmile_id)
   }
   effect {

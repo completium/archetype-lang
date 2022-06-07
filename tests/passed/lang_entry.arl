@@ -13,7 +13,7 @@ entry exec () {
   require {
     r1: true;
   }
-  failif {
+  fail if {
     f1: false;
   }
   effect {

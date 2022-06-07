@@ -59,7 +59,6 @@
       "exists"              , EXISTS              ;
       "extension"           , EXTENSION           ;
       "fail"                , FAIL                ;
-      "failif"              , FAILIF              ;
       "fail_some"           , FAILSOME            ;
       "fails"               , FAILS               ;
       "false"               , FALSE               ;
@@ -157,6 +156,7 @@ let timezone = (('+' | '-') digit digit ':' digit digit | 'Z')
 let date     = day ('T' hour ( timezone )?)?
 let accept_transfer = "accept" blank+ "transfer"
 let no_transfer = "no" blank+ "transfer"
+let fail_if  = "fail" blank+ "if"
 let bytes    = "0x" ['0'-'9' 'a'-'f' 'A'-'F']*
 let percent  = (digit+ | dec) "%"
 let tz_addr  = (("tz" ('1' | '2' | '3')) | "KT1") ['0'-'9' 'a'-'z' 'A'-'Z']+
@@ -166,6 +166,7 @@ rule token = parse
   | newline               { Lexing.new_line lexbuf; token lexbuf }
   | accept_transfer       { ACCEPT_TRANSFER }
   | no_transfer           { NO_TRANSFER }
+  | fail_if               { FAIL_IF }
   | blank+                { token lexbuf }
 
   | "state" blank+ "is"      { STATE_IS }

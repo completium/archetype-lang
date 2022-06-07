@@ -319,7 +319,7 @@ entry add_token (
   new_decimals           : nat,
   new_token_permissions  : option<permissions>) {
   called by admin
-  failif {
+  fail if {
     f0 : token.contains(new_token_id);
     f1 : token_metadata.contains(new_token_id);
     f2 : new_token_type = NFT and totalsupply <> 1

@@ -40,7 +40,7 @@ entry do_vote (id : string, decision : bool) { // cannot name this 'vote'
   require {
     r1 : voter.contains(caller);
   }
-  failif {
+  fail if {
     f1 : vote[id].voters.contains(caller);
   }
   effect {

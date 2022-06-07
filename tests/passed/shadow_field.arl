@@ -17,7 +17,7 @@ entry exec (k : asset_key<myasset>) {
       forall a in myasset, a.s = 2
     }
   }
-  failif {
+  fail if {
     f1: not (myasset.contains(k));
   }
   effect {

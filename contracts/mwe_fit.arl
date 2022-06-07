@@ -24,7 +24,7 @@ entry add (ow : address, newmile_id : string, newmile_amount : int, newmile_expi
      c1 : newmile_amount > 0;
    }
 
-   failif {
+   fail if {
      c2 : mile.contains(newmile_id);
    }
 

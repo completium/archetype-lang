@@ -1,7 +1,7 @@
 archetype reverse_otherwise
 
 entry exec() {
-  failif {
+  fail if {
     r0: true with "false";
   }
   effect {

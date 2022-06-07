@@ -7,7 +7,7 @@ entry myaction () {
   called by any
   require {
   }
-  failif {
+  fail if {
   }
   effect {
     ()

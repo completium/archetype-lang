@@ -1234,7 +1234,7 @@ let pp_entry_properties fmt (props : entry_properties) =
          )) l
   in
   pp_option (pp_rf "require" "otherwise") fmt props.require;
-  pp_option (pp_rf "failif" "with") fmt props.failif;
+  pp_option (pp_rf "fail if" "with") fmt props.failif;
   (pp_list "@\n" pp_function) fmt (List.map unloc props.functions)
 
 let pp_transition fmt (to_, conditions, effect) =
