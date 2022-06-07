@@ -1,4 +1,4 @@
-archetype expr_fun_to_string_nat
+archetype expr_fun_nat_to_string
 
 variable res : string = ""
 
@@ -7,6 +7,6 @@ entry exec () {
     s0: res = "42";
   }
   effect {
-    res := to_string(42)
+    res := nat_to_string(42)
   }
 }

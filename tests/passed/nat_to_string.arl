@@ -1,9 +1,9 @@
-archetype to_string
+archetype nat_to_string
 
 variable res : string = ""
 
 entry exec (n : nat) {
   effect {
-    res := to_string(n)
+    res := nat_to_string(n)
   }
 }
