@@ -1678,12 +1678,12 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let right = map_mterm m ctx v in
       Tassign (left,get_assign_value t left right assignop)
 
-    | Massign (assignop, t, Arecord (_id1, id2, k), v) ->
+    | Massign (assignop, t, Arecord (k, _id1, id2), v) ->
       let left = map_mterm m ctx k in
       let right : loc_term = with_dummy_loc (Trecord (Some left, [map_lident id2, map_mterm m ctx v])) in
       Tassign (left, get_assign_value t left right assignop)
 
-    | Massign (_, _, Avartuple _, _) -> error_not_translated "Massign (_, _, Avartuple _, _)"
+    | Massign (_, _, Atuple _, _) -> error_not_translated "Massign (_, _, Avartuple _, _)"
 
     | Massign (_, _, Astate, v) -> Tassign (loc_term (Tdoti (gs, "state")), map_mterm m ctx v)
 

@@ -1093,9 +1093,9 @@ let to_model (ast : A.ast) : M.model =
           let to_ak (lv : A.lvalue) =
             match lv with
             | `Var x -> (match unloc x with | "operations" -> M.Aoperations | _ -> M.Avar x)
-            | `Field (rn, o, fn) -> (match o.type_ with | Some (A.Trecord rn) -> M.Arecord(rn, fn, f o) | _ -> M.Aasset (rn, fn, f o))
+            | `Field (rn, o, fn) -> (match o.type_ with | Some (A.Trecord rn) -> M.Arecord(f o, rn, fn) | _ -> M.Aasset (rn, fn, f o))
             | `Asset (an, k, fn) -> M.Aasset (an, fn, f k)
-            | `Tuple (_lv, i, l) ->  M.Avartuple (dumloc "r", i, l)
+            | `Tuple (lv, i, l) -> M.Atuple (f lv, i, l)
           in
           let e = f e in
           let t = type_to_type t in

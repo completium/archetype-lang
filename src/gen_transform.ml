@@ -2404,10 +2404,15 @@ let extract_term_from_instruction f (model : model) : model =
       let ve, va = f v in
       process (mk_mterm (Massign (op, t, Aasset (an, fn, ke), ve)) mt.type_) (ka @ va)
 
-    | Massign (op, t, Arecord (rn, fn, r), v) ->
-      let re, ra = f r in
+    | Massign (op, t, Arecord (lv, rn, fn), v) ->
+      let lve, lva = f lv in
       let ve, va = f v in
-      process (mk_mterm (Massign (op, t, Arecord (rn, fn, re), ve)) mt.type_) (ra @ va)
+      process (mk_mterm (Massign (op, t, Arecord (lve, rn, fn), ve)) mt.type_) (lva @ va)
+
+    | Massign (op, t, Atuple (lv, i, l), v) ->
+      let lve, lva = f lv in
+      let ve, va = f v in
+      process (mk_mterm (Massign (op, t, Atuple (lve, i, l), ve)) mt.type_) (lva @ va)
 
     | Massign (op, t, Astate, x) ->
       let xe, xa = f x in
@@ -2710,8 +2715,13 @@ let add_contain_on_get (model : model) : model =
         let accu = f accu v in
         gg accu mt
 
-      | Massign (_op, _, Arecord (_rn, _fn, r), v) ->
-        let accu = f accu r in
+      | Massign (_op, _, Arecord (lv, _rn, _fn), v) ->
+        let accu = f accu lv in
+        let accu = f accu v in
+        gg accu mt
+
+      | Massign (_op, _, Atuple (lv, _rn, _fn), v) ->
+        let accu = f accu lv in
         let accu = f accu v in
         gg accu mt
 
@@ -3127,9 +3137,12 @@ let remove_assign_operator (model : model) : model =
       let lhs = mk_mterm (Mdotassetfield (an, k, fn)) v.type_ in
       let v = process_assign_op op t lhs v in
       mk_mterm (Massign (ValueAssign, t, Aasset (an, fn, k), v)) mt.type_
-    | Massign (op, t, Arecord (rn, fn, r), v) ->
-      let v = process_assign_op op t r v in
-      mk_mterm (Massign (ValueAssign, t, Arecord (rn, fn, r), v)) mt.type_
+    | Massign (op, t, Arecord (lv, rn, fn), v) ->
+      let v = process_assign_op op t lv v in
+      mk_mterm (Massign (ValueAssign, t, Arecord (lv, rn, fn), v)) mt.type_
+    | Massign (op, t, Atuple (lv, i, l), v) ->
+      let v = process_assign_op op t lv v in
+      mk_mterm (Massign (ValueAssign, t, Atuple (lv, i, l), v)) mt.type_
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
@@ -5693,8 +5706,8 @@ let expr_to_instr (model : model) =
     match ak, c.node with
     | Avar id0, (Mvar (id1, Vlocal, Tnone, Dnone))         -> String.equal (unloc id0) (unloc id1)
     | Avarstore id0, (Mvar (id1, Vstorevar, Tnone, Dnone)) -> String.equal (unloc id0) (unloc id1)
-    | Arecord (rn0, fn0, vr0), (Mdot (({ node = _; type_ = ((Trecord rn1), None)}) as vr1, fn1))
-      -> String.equal (unloc rn0) (unloc rn1) && String.equal (unloc fn0) (unloc fn1) && cmp_mterm vr0 vr1
+    | Arecord (lv0, rn0, fn0), (Mdot (({ node = _; type_ = ((Trecord rn1), None)}) as lv1, fn1))
+      -> String.equal (unloc rn0) (unloc rn1) && String.equal (unloc fn0) (unloc fn1) && cmp_mterm lv0 lv1
     | _ -> false
   in
   let rec aux ctx (mt : mterm) =
@@ -5724,14 +5737,14 @@ let expr_to_instr (model : model) =
 let instr_to_expr_exec (model : model) =
   let is_used ak l =
     match ak with
-    | Arecord (_, _, v) ->
-      List.exists (fold_term (fun accu x -> accu || cmp_mterm x v) false) l
+    | Arecord (lv, _, _) ->
+      List.exists (fold_term (fun accu x -> accu || cmp_mterm x lv) false) l
     | _ -> false
   in
 
   let extract_rev_var ak ty =
     match ak with
-    | Arecord (_, fn, v) -> mk_mterm (Mdot (v, fn)) ty
+    | Arecord (lv, _, fn) -> mk_mterm (Mdot (lv, fn)) ty
     | _ -> assert false
   in
 
@@ -5959,11 +5972,11 @@ let remove_iterable_big_map (model : model) : model =
           in
           let none_value : mterm =
             let assign_counter : mterm =
-              mk_mterm (Massign (ValueAssign, tnat, (Avartuple (ibm_id, 2, 3)), idx_var)) tunit
+              mk_mterm (Massign (ValueAssign, tnat, (Atuple (mk_mvar ibm_id ibm_type, 2, 3)), idx_var)) tunit
             in
             let put =
               let put = mk_mterm (Mmapput (MKBigMap, tnat, kt, map_index, map_counter, key)) tbm in
-              mk_mterm (Massign (ValueAssign, map_index.type_, (Avartuple (ibm_id, 1, 3)), put)) tunit
+              mk_mterm (Massign (ValueAssign, map_index.type_, (Atuple (mk_mvar ibm_id ibm_type, 1, 3)), put)) tunit
             in
             seq [assign_counter; put]
           in
@@ -5971,7 +5984,7 @@ let remove_iterable_big_map (model : model) : model =
         in
         let update_map : mterm =
           let put = mk_mterm (Mmapput (MKBigMap, kt, vvt, map_content, key, mk_tuple [idx_var; value])) tbm in
-          mk_mterm (Massign (ValueAssign, tbm, (Avartuple (ibm_id, 0, 3)), put)) tunit
+          mk_mterm (Massign (ValueAssign, tbm, (Atuple (mk_mvar ibm_id ibm_type, 0, 3)), put)) tunit
         in
         let instr_assign : mterm =
           mk_mterm (Massign (ValueAssign, ibm_value.type_, assign_value, ibm_value)) tunit
@@ -6024,22 +6037,22 @@ let remove_iterable_big_map (model : model) : model =
 
             let remove_content =
               let rem = mk_mterm (Mmapremove (MKBigMap, kt, vvt, map_content, key)) tbm in
-              mk_mterm (Massign (ValueAssign, tbm, (Avartuple (ibm_id, 0, 3)), rem)) tunit
+              mk_mterm (Massign (ValueAssign, tbm, (Atuple (mk_mvar ibm_id ibm_type, 0, 3)), rem)) tunit
             in
             let update_last_value =
               let put = mk_mterm (Mmapput (MKBigMap, kt, vvt, map_content, last_key_var, mk_tuple [idx_var; mk_tupleaccess 1 last_value_var])) tbm in
-              mk_mterm (Massign (ValueAssign, tbm, (Avartuple (ibm_id, 0, 3)), put)) tunit
+              mk_mterm (Massign (ValueAssign, tbm, (Atuple (mk_mvar ibm_id ibm_type, 0, 3)), put)) tunit
             in
             let remove_index_counter =
               let rem = mk_mterm (Mmapremove (MKBigMap, tnat, kt, map_index, map_counter)) tbm in
-              mk_mterm (Massign (ValueAssign, tbmi, (Avartuple (ibm_id, 1, 3)), rem)) tunit
+              mk_mterm (Massign (ValueAssign, tbmi, (Atuple (mk_mvar ibm_id ibm_type, 1, 3)), rem)) tunit
             in
             let put_index =
               let put = mk_mterm (Mmapput (MKBigMap, tnat, kt, map_index, idx_var, last_key_var)) tbm in
-              mk_mterm (Massign (ValueAssign, tbmi, (Avartuple (ibm_id, 1, 3)), put)) tunit
+              mk_mterm (Massign (ValueAssign, tbmi, (Atuple (mk_mvar ibm_id ibm_type, 1, 3)), put)) tunit
             in
             let dec :mterm =
-              mk_mterm (Massign (ValueAssign, tnat, (Avartuple (ibm_id, 2, 3)), mk_mterm (Msubnat (map_counter, mk_nat 1)) tnat)) tunit
+              mk_mterm (Massign (ValueAssign, tnat, (Atuple (mk_mvar ibm_id ibm_type, 2, 3)), mk_mterm (Msubnat (map_counter, mk_nat 1)) tnat)) tunit
             in
             let instr_assign : mterm =
               mk_mterm (Massign (ValueAssign, ibm_value.type_, assign_value, ibm_value)) tunit

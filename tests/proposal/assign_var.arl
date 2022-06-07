@@ -1,0 +1,10 @@
+archetype assign_tuple
+
+variable res : string = "mystring"
+
+entry exec () {
+  effect {
+    res := "str";
+    // dorequire (res = "str", "ko")
+  }
+}

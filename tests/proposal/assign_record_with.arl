@@ -1,0 +1,20 @@
+archetype assign_record
+
+record myrecord {
+  a : nat;
+  b : string;
+  c : bytes;
+  d : nat;
+}
+
+variable v : myrecord = {0; ""; 0x; 0}
+
+entry exec () {
+  v := { v with
+    a = 1;
+    c = 0x01;
+    d = v.a
+  };
+
+  dorequire(v = {a = 1; b = ""; c = 0x01; d = 0}, "INVALID_VALUE")
+}

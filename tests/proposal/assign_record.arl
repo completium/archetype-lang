@@ -1,21 +1,15 @@
 archetype assign_record
 
-record myrecord2 {
+record myrecord {
   x : nat;
   y : string;
   z : int;
 }
 
-record myrecord {
-  a : nat;
-  b : string;
-  c : myrecord2;
-}
-
-variable v : myrecord = {0; ""; {0; ""; 0i}}
+variable v : myrecord = {0; ""; 0i}
 
 entry exec () {
-  v.c.y := "test";
-  const ref : myrecord = {0; ""; {0; "test"; 0i}};
+  v.y := "str";
+  const ref : myrecord = {0; "str"; 0i};
   dorequire(v = ref, "INVALID_VALUE")
 }

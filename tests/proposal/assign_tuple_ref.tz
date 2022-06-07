@@ -1,0 +1,11 @@
+# (Pair 0 (Pair "mystring" 0x0001))
+{
+  storage (pair nat (pair string bytes));
+  parameter (unit %exec);
+  code { DROP;
+         PUSH (pair nat (pair string bytes)) (Pair 0 "mystring" 0x00);
+         PUSH string "str";
+         UPDATE 3;
+         NIL operation;
+         PAIR };
+}

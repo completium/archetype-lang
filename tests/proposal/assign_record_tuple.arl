@@ -1,0 +1,15 @@
+archetype assign_record
+
+record myrecord {
+  a : nat;
+  b : string;
+  c : (nat * string * int);
+}
+
+variable v : myrecord = {0; ""; ((0, "str", 0i))}
+
+entry exec () {
+  v.c[1] := "test";
+  const ref : myrecord = {0; ""; ((0, "str", 0i))};
+  dorequire(v = ref, "INVALID_VALUE")
+}

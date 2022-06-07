@@ -379,12 +379,13 @@ let to_ir (model : M.model) : T.ir =
     | Avar id       -> T.Iupdate (Uvar (unloc id), op)
     | Avarstore id  -> T.Iupdate (Uvar (unloc id), op)
     | Aasset _      -> emit_error (UnsupportedTerm "Aasset")
-    | Arecord (rn, fn, {node = Mvar(id, _, _, _)}) -> begin
+    | Arecord ({node = Mvar(id, _, _, _)}, rn, fn) -> begin
         let l = Model.Utils.get_record_pos model (unloc rn) (unloc fn) in
         T.Iupdate (Urec (unloc id, l), op)
       end
-    | Avartuple (id, n, l) -> T.Iupdate (Urec (unloc id, [n, l]), op)
     | Arecord _     -> emit_error (UnsupportedTerm "Arecord")
+    | Atuple ({node = Mvar(id, _, _, _)}, n, l) -> T.Iupdate (Urec (unloc id, [n, l]), op)
+    | Atuple _     -> emit_error (UnsupportedTerm "Atuple")
     | Astate        -> emit_error (UnsupportedTerm "Astate")
     | Aassetstate _ -> emit_error (UnsupportedTerm "Aassetstate")
     | Aoperations   -> T.Iupdate (Uvar operations, op)
@@ -592,7 +593,7 @@ let to_ir (model : M.model) : T.ir =
     | Massign (_op, _, Avar id, v)                 -> T.Iassign (unloc id, f v)
     | Massign (_op, _, Avarstore id, v)            -> T.Iassign (unloc id, f v)
     | Massign (_op, _, Aasset (_an, _fn, _k), _v)  -> emit_error (UnsupportedTerm ("Massign: Aasset"))
-    | Massign (_op, _, Arecord (_rn, fn, {node = Mvar (id, _, _, _); type_ = t}), v) -> begin
+    | Massign (_op, _, Arecord ({node = Mvar (id, _, _, _); type_ = t}, _rn, fn), v) -> begin
         let id = unloc id in
         let rn =
           match M.get_ntype t with
@@ -604,7 +605,8 @@ let to_ir (model : M.model) : T.ir =
         T.Iassign (id, a)
       end
     | Massign (_op, _, Arecord _, _v)              -> emit_error (UnsupportedTerm ("Record is not a var"))
-    | Massign (_op, _, Avartuple (id, n, l), v)    -> let id = unloc id in T.Iassigntuple (id, n, l, f v)
+    | Massign (_op, _, Atuple ({node = Mvar (id, _, _, _)}, n, l), v)    -> let id = unloc id in T.Iassigntuple (id, n, l, f v)
+    | Massign (_op, _, Atuple _, _v)               -> emit_error (UnsupportedTerm ("Tuple is not a var"))
     | Massign (_op, _, Astate, _x)                 -> emit_error (UnsupportedTerm ("Massign: Astate"))
     | Massign (_op, _, Aassetstate (_an, _k), _v)  -> emit_error (UnsupportedTerm ("Massign: Aassetstate"))
     | Massign (_op, _, Aoperations, v)             -> T.Iassign (operations, f v)
