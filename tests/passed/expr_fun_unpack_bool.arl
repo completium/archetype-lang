@@ -4,7 +4,7 @@ variable res : option<bool> = none
 
 entry exec () {
   specification {
-    s0: issome(res);
+    s0: is_some(res);
     s1: let some r = opt_get(res) in r otherwise false;
   }
   effect {

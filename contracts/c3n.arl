@@ -13,6 +13,6 @@ entry register (newadmins : option<list<address>> , oldhash : bytes, newhash : b
     }
     effect {
         hash := newhash;
-        if issome(newadmins) then admins := opt_get(newadmins)
+        if is_some(newadmins) then admins := opt_get(newadmins)
     }
 }

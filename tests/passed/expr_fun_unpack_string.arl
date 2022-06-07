@@ -4,7 +4,7 @@ variable res : option<string> = none
 
 entry exec () {
   specification {
-    s0: issome(res);
+    s0: is_some(res);
     s1: let some str = opt_get(res) in str = "archetype" otherwise false;
   }
   effect {

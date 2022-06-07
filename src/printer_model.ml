@@ -1300,11 +1300,11 @@ let pp_mterm fmt (mt : mterm) =
         f x
 
     | Misnone x ->
-      Format.fprintf fmt "isnone (%a)"
+      Format.fprintf fmt "is_none (%a)"
         f x
 
     | Missome x ->
-      Format.fprintf fmt "issome (%a)"
+      Format.fprintf fmt "is_some (%a)"
         f x
 
     | Minttonat x ->

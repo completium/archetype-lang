@@ -1388,8 +1388,8 @@ let optionops : opinfo list =
   let top = A.Toption ty in
   let ty2 = A.Tnamed 1 in
   [
-    op "isnone"       A.Cisnone      `Total   (Some top) [] (`Ty A.vtbool) Mint.empty;
-    op "issome"       A.Cissome      `Total   (Some top) [] (`Ty A.vtbool) Mint.empty;
+    op "is_none"      A.Cisnone      `Total   (Some top) [] (`Ty A.vtbool) Mint.empty;
+    op "is_some"      A.Cissome      `Total   (Some top) [] (`Ty A.vtbool) Mint.empty;
     op "opt_get"      A.Cgetopt      `Partial (Some top) [] (`Ty ty)       Mint.empty;
     op "require_some" A.Crequiresome `Partial (Some top) [ty2] (`Ty ty)    Mint.empty
   ]

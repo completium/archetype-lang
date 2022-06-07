@@ -1,4 +1,4 @@
-archetype expr_fun_opt_issome
+archetype expr_fun_opt_is_some
 
 variable res : bool = false
 
@@ -8,6 +8,6 @@ entry exec () {
   }
   effect {
     var i_opt : option<nat> = some(1);
-    res := issome(i_opt);
+    res := is_some(i_opt);
   }
 }

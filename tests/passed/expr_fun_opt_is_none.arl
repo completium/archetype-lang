@@ -1,4 +1,4 @@
-archetype expr_fun_opt_isnone
+archetype expr_fun_opt_is_none
 
 variable res : bool = false
 
@@ -8,6 +8,6 @@ entry exec () {
   }
   effect {
     var i_opt : option<int> = none;
-    res := isnone(i_opt);
+    res := is_none(i_opt);
   }
 }
