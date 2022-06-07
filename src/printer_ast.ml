@@ -665,7 +665,7 @@ let rec pp_pterm fmt (pterm : pterm) =
 
     | Pcallview (t, a, b, c) ->
       let pp fmt (t, a, b, c) =
-        Format.fprintf fmt "callview<%a>(%a, \"%a\", %a)"
+        Format.fprintf fmt "call_view<%a>(%a, \"%a\", %a)"
           pp_type  t
           pp_pterm a
           pp_id b

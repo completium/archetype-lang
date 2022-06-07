@@ -46,7 +46,7 @@
 %token BY
 %token CALL
 %token CALLED
-%token CALLVIEW
+%token CALL_VIEW
 %token COLON
 %token COLONCOLON
 %token COLONEQUAL
@@ -1111,7 +1111,7 @@ simple_expr_r:
  | REQUIRE_ENTRYPOINT LESS t=type_t GREATER LPAREN a=expr COMMA b=expr COMMA c=expr RPAREN
      { Eentrypoint (t, a, b, Some c) }
 
- | CALLVIEW LESS t=type_t GREATER LPAREN a=expr COMMA b=expr COMMA c=expr RPAREN
+ | CALL_VIEW LESS t=type_t GREATER LPAREN a=expr COMMA b=expr COMMA c=expr RPAREN
      { Ecallview (t, a, b, c) }
 
  | ANY

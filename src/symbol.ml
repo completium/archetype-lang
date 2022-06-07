@@ -153,7 +153,7 @@ let string_of_token = function
   | COLONEQUAL           -> "COLONEQUAL"
   | COLONCOLON           -> "COLONCOLON"
   | COLON                -> "COLON"
-  | CALLVIEW             -> "CALLVIEW"
+  | CALL_VIEW            -> "CALL_VIEW"
   | CALLED               -> "CALLED"
   | CALL                 -> "CALL"
   | BYTES s              -> Printf.sprintf "BYTES(%s)" s
@@ -334,7 +334,7 @@ let string_of_symbol = function
   | X (T T_COLONEQUAL) -> ":="
   | X (T T_COLONCOLON) -> "::"
   | X (T T_COLON) -> ":"
-  | X (T T_CALLVIEW) -> "callview"
+  | X (T T_CALL_VIEW) -> "call_view"
   | X (T T_CALLED) -> "called"
   | X (T T_CALL) -> "call"
   | X (T T_BYTES) -> "bytes"

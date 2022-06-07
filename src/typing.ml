@@ -960,7 +960,7 @@ let pp_error_desc fmt e =
   | InvalidTezValueOverflow            -> pp "Overflow tez value"
   | InvalidTypeForBigMapKey            -> pp "Invalid type for big map key"
   | InvalidTypeForBigMapValue          -> pp "Invalid type for big map value"
-  | InvalidTypeForCallview             -> pp "Invalid type for callview"
+  | InvalidTypeForCallview             -> pp "Invalid type for call_view"
   | InvalidTypeForContract             -> pp "Invalid type for contract"
   | InvalidTypeForDoFailIf             -> pp "Invalid type for dofailif"
   | InvalidTypeForDoRequire            -> pp "Invalid type for dorequire"

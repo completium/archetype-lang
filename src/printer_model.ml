@@ -391,7 +391,7 @@ let pp_mterm fmt (mt : mterm) =
         (pp_some (fun fmt a -> Format.fprintf fmt ", %a" f a)) r
 
     | Mcallview (t, a, b, c) ->
-      Format.fprintf fmt "callview<%a>(%a, %a, %a)"
+      Format.fprintf fmt "call_view<%a>(%a, %a, %a)"
         pp_type t
         f a
         pp_id b

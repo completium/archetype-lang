@@ -802,7 +802,7 @@ let rec pp_expr outer pos fmt a =
 
   | Ecallview (t, a, b, c) ->
     let pp fmt (t, a, b, c) =
-      Format.fprintf fmt "callview<%a>(%a, %a, %a)"
+      Format.fprintf fmt "call_view<%a>(%a, %a, %a)"
         pp_type t
         (pp_expr e_default PNone) a
         (pp_expr e_default PNone) b

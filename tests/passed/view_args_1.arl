@@ -7,5 +7,5 @@ view get(i : nat, s : string, b : bytes) : nat {
 }
 
 entry exec() {
-  res := callview<nat>(self_address, "get", (1, "toto", 0x123456))
+  res := call_view<nat>(self_address, "get", (1, "toto", 0x123456))
 }
