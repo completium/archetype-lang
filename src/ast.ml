@@ -222,7 +222,7 @@ type const =
   | Csha3
   | Ckeccak
   | Cchecksignature
-  | Chashkey
+  | Ckeytokeyhash
   | Ccontracttoaddress
   | Caddresscontract
   | Ckeyaddress

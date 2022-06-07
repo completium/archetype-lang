@@ -5,7 +5,7 @@ variable res : option<address> = none
 entry exec () {
   effect {
     // var k : key = "edpkurLzuFFL1XyP3fed4u7MsgeywQoQmHM45Bz91PBzDvUjQ9bvdn";
-    // var pkh : key_hash = hash_key(k);
+    // var pkh : key_hash = key_to_key_hash(k);
     // var c : contract<unit> = implicit_account(pkh);
 
     var input : address = tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg;

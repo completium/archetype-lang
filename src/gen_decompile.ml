@@ -1349,7 +1349,7 @@ end = struct
           | `Uop Ublake2b,                [ a ] -> mk_blake2b (f a)
           | `Uop Usha256,                 [ a ] -> mk_sha256 (f a)
           | `Uop Usha512,                 [ a ] -> mk_sha512 (f a)
-          | `Uop Uhash_key,               [ a ] -> mk_hashkey (f a)
+          | `Uop Uhash_key,               [ a ] -> mk_keytokeyhash (f a)
           | `Uop Ufail,                   [ a ] -> failg (f a)
           | `Uop Ucontract (_t, _an),     [ _a ] -> assert false
           | `Uop Usetdelegate,            [ _a ] -> assert false
@@ -1836,7 +1836,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Msha512  _x                  -> assert false
     | Msha3    _x                  -> assert false
     | Mkeccak  _x                  -> assert false
-    | Mhashkey _x                  -> assert false
+    | Mkeytokeyhash _x             -> assert false
     | Mchecksignature (_k, _s, _x) -> assert false
 
 

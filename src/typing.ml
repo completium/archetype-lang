@@ -1462,7 +1462,7 @@ let cryptoops : opinfo list =
      ("sha3"   , A.Csha3   );
      ("keccak" , A.Ckeccak )]
 
-  @ [op "hash_key"            A.Chashkey         `Total None [A.vtkey]                           (`Ty A.vtkeyhash           ) Mint.empty;
+  @ [op "key_to_key_hash"     A.Ckeytokeyhash    `Total None [A.vtkey]                           (`Ty A.vtkeyhash           ) Mint.empty;
      op "check_signature"     A.Cchecksignature  `Total None [A.vtkey; A.vtsignature; A.vtbytes] (`Ty A.vtbool              ) Mint.empty;
      op "set_delegate"        A.Csetdelegate     `Total None [A.Toption A.vtkeyhash]             (`Ty A.Toperation          ) Mint.empty;
      op "implicit_account"    A.Cimplicitaccount `Total None [A.vtkeyhash]                       (`Ty (A.Tcontract A.vtunit)) Mint.empty;

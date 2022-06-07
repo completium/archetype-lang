@@ -297,7 +297,7 @@ let to_const = function
   | Csha3              -> "sha3"
   | Ckeccak            -> "keccak"
   | Cchecksignature    -> "check_signature"
-  | Chashkey           -> "hash_key"
+  | Ckeytokeyhash      -> "key_to_key_hash"
   | Ccontracttoaddress -> "contract_to_address"
   | Caddresscontract   -> "address_contract"
   | Ckeyaddress        -> "key_address"

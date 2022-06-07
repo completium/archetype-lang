@@ -1019,7 +1019,7 @@ let to_ir (model : M.model) : T.ir =
     | Msha512  x                -> T.Iunop  (Usha512,   f x)
     | Msha3    x                -> T.Iunop  (Usha3,   f x)
     | Mkeccak  x                -> T.Iunop  (Ukeccak,   f x)
-    | Mhashkey x                -> T.Iunop  (Uhash_key, f x)
+    | Mkeytokeyhash x           -> T.Iunop  (Uhash_key, f x)
     | Mchecksignature (k, s, x) -> T.Iterop (Tcheck_signature, f k, f s, f x)
 
 

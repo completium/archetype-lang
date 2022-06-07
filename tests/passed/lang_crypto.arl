@@ -18,7 +18,7 @@ entry exec () {
     var cs  : bool      = check_signature(k, sig, b);
     do_require (cs, "ko");
 
-    var kh : key_hash = hash_key(k);
+    var kh : key_hash = key_to_key_hash(k);
     do_require (kh = kh, "ko");
 
     var c : contract<unit> = implicit_account(kh);

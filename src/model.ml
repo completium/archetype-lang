@@ -419,7 +419,7 @@ type ('id, 'term) mterm_node  =
   | Msha512           of 'term
   | Msha3             of 'term
   | Mkeccak           of 'term
-  | Mhashkey          of 'term
+  | Mkeytokeyhash     of 'term
   | Mchecksignature   of 'term * 'term * 'term
   (* voting *)
   | Mtotalvotingpower
@@ -1234,7 +1234,7 @@ let mk_unpack t v = mk_mterm (Munpack (t, v)) t
 let mk_blake2b  v = mk_mterm (Mblake2b v) tbytes
 let mk_sha256   v = mk_mterm (Msha256  v) tbytes
 let mk_sha512   v = mk_mterm (Msha512  v) tbytes
-let mk_hashkey  v = mk_mterm (Mhashkey v) tkeyhash
+let mk_keytokeyhash v = mk_mterm (Mkeytokeyhash v) tkeyhash
 let mk_checksignature a b c = mk_mterm (Mchecksignature (a, b, c)) tbool
 
 let mk_brat n d  = mk_tuple [mk_bint n; mk_bnat d]
@@ -1659,7 +1659,7 @@ let cmp_mterm_node
     | Msha512  x1, Msha512  x2                                                         -> cmp x1 x2
     | Msha3    x1, Msha3    x2                                                         -> cmp x1 x2
     | Mkeccak  x1, Mkeccak  x2                                                         -> cmp x1 x2
-    | Mhashkey x1, Mhashkey  x2                                                        -> cmp x1 x2
+    | Mkeytokeyhash x1, Mkeytokeyhash  x2                                              -> cmp x1 x2
     | Mchecksignature (k1, s1, x1), Mchecksignature (k2, s2, x2)                       -> cmp k1 k2 && cmp s1 s2 && cmp x1 x2
     (* voting *)
     | Mtotalvotingpower, Mtotalvotingpower                                             -> true
@@ -2118,7 +2118,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Msha512 x                      -> Msha512  (f x)
   | Msha3 x                        -> Msha3    (f x)
   | Mkeccak x                      -> Mkeccak  (f x)
-  | Mhashkey x                     -> Mhashkey (f x)
+  | Mkeytokeyhash x                -> Mkeytokeyhash (f x)
   | Mchecksignature (k, s, x)      -> Mchecksignature (f k, f s, f x)
   (* voting *)
   | Mtotalvotingpower              -> Mtotalvotingpower
@@ -2574,7 +2574,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Msha512  x                            -> f accu x
   | Msha3    x                            -> f accu x
   | Mkeccak  x                            -> f accu x
-  | Mhashkey  x                           -> f accu x
+  | Mkeytokeyhash  x                      -> f accu x
   | Mchecksignature (k, s, x)             -> f (f (f accu k) s) x
   (* voting *)
   | Mtotalvotingpower                     -> accu
@@ -3717,9 +3717,9 @@ let fold_map_term
     let xe, xa = f accu x in
     g (Mkeccak xe), xa
 
-  | Mhashkey x ->
+  | Mkeytokeyhash x ->
     let xe, xa = f accu x in
-    g (Mhashkey xe), xa
+    g (Mkeytokeyhash xe), xa
 
   | Mchecksignature (k, s, x) ->
     let ke, ka = f accu k in

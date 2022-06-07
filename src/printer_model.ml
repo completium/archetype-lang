@@ -1387,8 +1387,8 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "keccak (%a)"
         f x
 
-    | Mhashkey x ->
-      Format.fprintf fmt "hash_key (%a)"
+    | Mkeytokeyhash x ->
+      Format.fprintf fmt "key_to_key_hash (%a)"
         f x
 
     | Mchecksignature (k, s, x) ->

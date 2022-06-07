@@ -804,9 +804,9 @@ let to_model (ast : A.ast) : M.model =
         let fx = f x in
         M.Mkeccak (fx)
 
-      | A.Pcall (None, A.Cconst A.Chashkey, [AExpr x]) ->
+      | A.Pcall (None, A.Cconst A.Ckeytokeyhash, [AExpr x]) ->
         let fx = f x in
-        M.Mhashkey (fx)
+        M.Mkeytokeyhash (fx)
 
       | A.Pcall (None, A.Cconst A.Cchecksignature, [AExpr k; AExpr s; AExpr x]) ->
         let fk = f k in
