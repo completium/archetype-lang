@@ -249,7 +249,7 @@ function mk_op (
     | Sender   -> entrypoint<transfer_descriptor_param>("%fa2_token_sender", a)
     | Receiver -> entrypoint<transfer_descriptor_param>("%fa2_token_receiver", a)
     end;
-  return left<_,string>(some(make_operation(0tz, opt_get(e), tp)))
+  return left<_,string>(some(make_operation(0tz, get_some(e), tp)))
 }
 
 function apply_hook (

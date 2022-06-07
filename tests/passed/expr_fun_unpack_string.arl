@@ -5,10 +5,10 @@ variable res : option<string> = none
 entry exec () {
   specification {
     s0: is_some(res);
-    s1: let some str = opt_get(res) in str = "archetype" otherwise false;
+    s1: let some str = get_some(res) in str = "archetype" otherwise false;
   }
   effect {
     res := unpack<string>(0x050100000009617263686574797065);
-    do_require (opt_get(res) = "archetype", "ko")
+    do_require (get_some(res) = "archetype", "ko")
   }
 }

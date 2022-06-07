@@ -8,6 +8,6 @@ entry balanceInquiry(v : nat) { total := v }
 
 entry exec () {
   var gbopt : option<contract<contract<nat>>> = entrypoint<contract<nat>>("%getBalance", token);
-  var gb : contract<contract<nat>> = opt_get(gbopt);
+  var gb : contract<contract<nat>> = get_some(gbopt);
   transfer 0tz to entry gb(self.balanceInquiry);
 }

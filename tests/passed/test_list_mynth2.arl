@@ -16,7 +16,7 @@ function mynth(l : list<string>, idx : nat) : string {
     | [] -> fail ("empty")
     end
   done;
-  return opt_get(r)
+  return get_some(r)
 }
 
 entry exec () {
