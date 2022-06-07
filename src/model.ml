@@ -1240,6 +1240,9 @@ let mk_checksignature a b c = mk_mterm (Mchecksignature (a, b, c)) tbool
 let mk_brat n d  = mk_tuple [mk_bint n; mk_bnat d]
 let mk_rat n d   = mk_tuple [mk_int n; mk_nat d]
 
+let mk_muteztonat c = mk_mterm (Mmuteztonat c) tnat
+let mk_nattoint c = mk_mterm (Mnattoint c) tint
+
 let mk_metadata v = mk_mterm (Mlitmap(MKBigMap, v)) tmetadata
 
 let fail x  = mk_mterm (Mfail (Invalid (mk_string x))) tunit

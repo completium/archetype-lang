@@ -1741,7 +1741,12 @@ let remove_rational (model : model) : model =
         match get_ntype ret with
         | Tbuiltin Brational
         | Ttuple [(Tbuiltin Bint, _); (Tbuiltin Bnat, _)] -> begin
-            match op, a.type_, b.type_ with
+            match op, get_ntype a.type_, get_ntype b.type_ with
+            | `Divrat, Tbuiltin Bcurrency, Tbuiltin Bcurrency -> begin
+                let lhs = a |> aux |> mk_muteztonat |> mk_nattoint in
+                let rhs = b |> aux |> mk_muteztonat in
+                mk_tuple [lhs; rhs]
+              end
             | _ -> begin
                 let f =
                   match op with
