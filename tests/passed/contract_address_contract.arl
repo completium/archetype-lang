@@ -1,4 +1,4 @@
-archetype contract_address_contract
+archetype contract_to_address_contract
 
 entry exec () {
   effect {

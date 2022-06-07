@@ -1352,8 +1352,8 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "implicit_account (%a)"
         f x
 
-    | Mcontractaddress x ->
-      Format.fprintf fmt "contract_address (%a)"
+    | Mcontracttoaddress x ->
+      Format.fprintf fmt "contract_to_address (%a)"
         f x
 
     | Maddresscontract x ->

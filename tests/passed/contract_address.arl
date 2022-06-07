@@ -1,4 +1,4 @@
-archetype contract_address
+archetype contract_to_address
 
 variable res : option<address> = none
 
@@ -10,7 +10,7 @@ entry exec () {
 
     var input : address = tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg;
     var c : contract<unit> = input;
-    var a : address = contract_address(c);
+    var a : address = contract_to_address(c);
     res := some(a);
     do_require(a = input, "failed");
   }

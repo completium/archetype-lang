@@ -410,7 +410,7 @@ type ('id, 'term) mterm_node  =
   | Munpack           of type_ * 'term
   | Msetdelegate      of 'term
   | Mimplicitaccount  of 'term
-  | Mcontractaddress  of 'term
+  | Mcontracttoaddress of 'term
   | Maddresscontract  of 'term
   | Mkeyaddress       of 'term
   (* crypto functions *)
@@ -1650,7 +1650,7 @@ let cmp_mterm_node
     | Munpack (t1, x1), Munpack (t2, x2)                                               -> cmp_type t1 t2 && cmp x1 x2
     | Msetdelegate x1, Msetdelegate x2                                                 -> cmp x1 x2
     | Mimplicitaccount x1, Mimplicitaccount x2                                         -> cmp x1 x2
-    | Mcontractaddress x1, Mcontractaddress x2                                         -> cmp x1 x2
+    | Mcontracttoaddress x1, Mcontracttoaddress x2                                         -> cmp x1 x2
     | Maddresscontract x1, Maddresscontract x2                                         -> cmp x1 x2
     | Mkeyaddress x1, Mkeyaddress x2                                                   -> cmp x1 x2
     (* crypto functions *)
@@ -2109,7 +2109,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Munpack (t, x)                 -> Munpack (ft t, f x)
   | Msetdelegate x                 -> Msetdelegate (f x)
   | Mimplicitaccount x             -> Mimplicitaccount (f x)
-  | Mcontractaddress x             -> Mcontractaddress (f x)
+  | Mcontracttoaddress x             -> Mcontracttoaddress (f x)
   | Maddresscontract x             -> Maddresscontract (f x)
   | Mkeyaddress x                  -> Mkeyaddress (f x)
   (* crypto functions *)
@@ -2565,7 +2565,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Munpack (_, x)                        -> f accu x
   | Msetdelegate x                        -> f accu x
   | Mimplicitaccount x                    -> f accu x
-  | Mcontractaddress x                    -> f accu x
+  | Mcontracttoaddress x                    -> f accu x
   | Maddresscontract x                    -> f accu x
   | Mkeyaddress x                         -> f accu x
   (* crypto functions *)
@@ -3683,9 +3683,9 @@ let fold_map_term
     let xe, xa = f accu x in
     g (Mimplicitaccount xe), xa
 
-  | Mcontractaddress x ->
+  | Mcontracttoaddress x ->
     let xe, xa = f accu x in
-    g (Mcontractaddress xe), xa
+    g (Mcontracttoaddress xe), xa
 
   | Maddresscontract x ->
     let xe, xa = f accu x in

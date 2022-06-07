@@ -27,7 +27,7 @@ entry exec () {
     var a : address = key_address(k);
     do_require (a = addr, "ko");
 
-    var d : address = contract_address(c);
+    var d : address = contract_to_address(c);
     do_require (d = addr, "ko");
   }
 }

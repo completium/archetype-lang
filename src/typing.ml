@@ -1468,7 +1468,7 @@ let cryptoops : opinfo list =
      op "implicit_account"    A.Cimplicitaccount `Total None [A.vtkeyhash]                       (`Ty (A.Tcontract A.vtunit)) Mint.empty;
      op "address_to_contract" A.Caddresscontract `Total None [A.vtaddress]                       (`Ty (A.Tcontract A.vtunit)) Mint.empty;
      op "voting_power"        A.Cvotingpower     `Total None [A.vtkeyhash]                       (`Ty A.vtnat               ) Mint.empty;
-     op "contract_address"    A.Ccontractaddress `Total None [A.Tcontract (A.Tnamed 0)]          (`Ty A.vtaddress           ) Mint.empty;
+     op "contract_to_address" A.Ccontracttoaddress `Total None [A.Tcontract (A.Tnamed 0)]          (`Ty A.vtaddress           ) Mint.empty;
      op "key_address"         A.Ckeyaddress      `Total None [A.vtkey]                           (`Ty A.vtaddress           ) Mint.empty]
 
 (* -------------------------------------------------------------------- *)

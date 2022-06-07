@@ -814,9 +814,9 @@ let to_model (ast : A.ast) : M.model =
         let fx = f x in
         M.Mchecksignature (fk, fs, fx)
 
-      | A.Pcall (None, A.Cconst A.Ccontractaddress, [AExpr x]) ->
+      | A.Pcall (None, A.Cconst A.Ccontracttoaddress, [AExpr x]) ->
         let fx = f x in
-        M.Mcontractaddress (fx)
+        M.Mcontracttoaddress (fx)
 
       | A.Pcall (None, A.Cconst A.Caddresscontract, [AExpr x]) ->
         let fx = f x in
