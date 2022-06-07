@@ -188,7 +188,7 @@ type const =
   | Ctostring
   | Cexec
   | Capply
-  | CdateFromTimestamp
+  | Cinttodate
   | CmutezToNat
   | Csetdelegate
   | Cimplicitaccount

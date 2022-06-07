@@ -936,9 +936,9 @@ let to_model (ast : A.ast) : M.model =
 
       (* Other *)
 
-      | A.Pcall (None, A.Cconst A.CdateFromTimestamp, [AExpr x]) ->
+      | A.Pcall (None, A.Cconst A.Cinttodate, [AExpr x]) ->
         let fx = f x in
-        M.Mdatefromtimestamp (fx)
+        M.Minttodate (fx)
 
       | A.Pcall (None, A.Cconst A.CmutezToNat, [AExpr x]) ->
         let fx = f x in

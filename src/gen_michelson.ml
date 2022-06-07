@@ -1115,7 +1115,7 @@ let to_ir (model : M.model) : T.ir =
 
     (* utils *)
 
-    | Mdatefromtimestamp _ -> emit_error (UnsupportedTerm ("Mdatefromtimestamp"))
+    | Minttodate _         -> emit_error (UnsupportedTerm ("Minttodate"))
     | Mmuteztonat v        -> let b = T.Bmuteztonat in add_builtin b; T.Icall (get_fun_name b, [f v], is_inline b)
 
 

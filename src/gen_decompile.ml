@@ -1916,7 +1916,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     (* utils *)
 
-    | Mdatefromtimestamp _ -> assert false
+    | Minttodate         _ -> assert false
     | Mmuteztonat        _ -> assert false
 
 

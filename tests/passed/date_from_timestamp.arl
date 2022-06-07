@@ -1,8 +1,0 @@
-archetype date_from_timestamp
-
-variable res : date = 2000-01-01
-
-entry exec () {
-  res := date_from_timestamp(1609372800i);
-  do_require(res = 2020-12-31, "error")
-}

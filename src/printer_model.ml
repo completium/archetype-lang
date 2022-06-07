@@ -1568,9 +1568,9 @@ let pp_mterm fmt (mt : mterm) =
 
     (* others *)
 
-    | Mdatefromtimestamp v ->
+    | Minttodate v ->
       let pp fmt v =
-        Format.fprintf fmt "date_from_timestamp (%a)"
+        Format.fprintf fmt "int_to_date (%a)"
           f v
       in
       pp fmt v

@@ -263,7 +263,7 @@ let to_const = function
   | Ctostring       -> "to_string"
   | Cexec           -> "exec"
   | Capply          -> "apply"
-  | CdateFromTimestamp -> "date_from_timestamp"
+  | Cinttodate      -> "int_to_date"
   | CmutezToNat     -> "mutez_to_nat"
   | Csetdelegate    -> "set_delegate"
   | Cimplicitaccount-> "implicit_account"

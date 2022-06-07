@@ -1953,7 +1953,7 @@ let replace_date_duration_by_timestamp (model : model) : model =
     | Mnow          -> mk (Unix.time () |> int_of_float |> Big_int.big_int_of_int)
     | Mplus  (a, b) -> mk (Big_int.add_big_int (g a) (g b))
     | Mminus (a, b) -> mk (Big_int.sub_big_int (g a) (g b))
-    | Mdatefromtimestamp v -> mk (g v)
+    | Minttodate v  -> mk (g v)
     | Mtimestamp _  -> x
     | Mvar (_, _, _, _) -> x
     | Mmin _ -> x
@@ -1969,7 +1969,7 @@ let replace_date_duration_by_timestamp (model : model) : model =
       match mt.node, mt.type_ with
       | Mdate d,_      -> mk_mterm (Mtimestamp (Core.date_to_timestamp d)) ttimestamp
       | Mduration d, _ -> mk_mterm (Mint (Core.duration_to_timestamp d)) tint
-      | Mdatefromtimestamp _, _ -> to_timestamp mt
+      | Minttodate _, _ -> to_timestamp mt
       | Mnow, _        -> mk_mterm (Mnow) ttimestamp
       | Mmult (a, b), t when is_duration t && is_rat a.type_ && is_duration b.type_ ->
         let a = aux a in
