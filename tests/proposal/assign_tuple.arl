@@ -5,6 +5,6 @@ variable res : (nat * string * bytes) = (0, "mystring", 0x0001)
 entry exec () {
   effect {
     res[1] := "str";
-    dorequire (res = (0, "str", 0x0001), "ko")
+    do_require (res = (0, "str", 0x0001), "ko")
   }
 }

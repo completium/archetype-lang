@@ -11,6 +11,6 @@ asset my_asset {
 entry exec (k : int) {
   effect {
     var local = my_asset["id"].f1 * my_asset["id"].f2;
-    dorequire (local > 0, "ko");
+    do_require (local > 0, "ko");
   }
 }

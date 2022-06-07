@@ -5,5 +5,5 @@ variable res : bool = false
 
 entry exec () {
   res := my_map.contains("mystr0");
-  dorequire(res, "INVALID_VALUE")
+  do_require(res, "INVALID_VALUE")
 }

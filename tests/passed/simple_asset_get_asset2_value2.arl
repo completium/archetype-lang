@@ -15,6 +15,6 @@ variable res : bool = false
 
 entry exec () {
   var v = my_asset["id1"].v1;
-  dorequire(v, "ko");
+  do_require(v, "ko");
   res := v;
 }

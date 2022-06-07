@@ -3,7 +3,7 @@ archetype unit_function
 variable r : nat = 0
 
 function f() {
-  dorequire(r = 1, "error")
+  do_require(r = 1, "error")
 }
 
 entry exec() {

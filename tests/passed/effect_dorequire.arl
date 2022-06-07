@@ -1,7 +1,7 @@
-archetype effect_dorequire
+archetype effect_do_require
 
 entry exec () {
   effect {
-    dorequire (true, "ko")
+    do_require (true, "ko")
   }
 }

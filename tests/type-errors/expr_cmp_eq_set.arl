@@ -3,5 +3,5 @@ archetype expr_cmp_eq_set
 entry exec () {
   var a : set<nat> = [1; 2; 3];
   var b : set<nat> = [1; 2; 3];
-  dorequire (a = b, "ko");
+  do_require (a = b, "ko");
 }

@@ -13,6 +13,6 @@ entry exec () {
   }
   effect {
     myasset[0].str := "mystr";
-    dorequire (myasset[0].str = "mystr", "ko")
+    do_require (myasset[0].str = "mystr", "ko")
   }
 }

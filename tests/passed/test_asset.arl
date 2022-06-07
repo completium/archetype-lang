@@ -35,6 +35,6 @@ with {
 
 entry exec () {
   effect {
-    dorequire(my_asset_all[@tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg].b, "ko")
+    do_require(my_asset_all[@tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg].b, "ko")
   }
 }

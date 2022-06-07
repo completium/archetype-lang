@@ -12,5 +12,5 @@ variable res : bool = false
 
 entry exec () {
   res := my_asset.contains(2);
-  dorequire(res, "ko")
+  do_require(res, "ko")
 }

@@ -6,5 +6,5 @@ entry exec() {
   var o1 : option<nat> = some(1);
   var o2 : option<nat> = some(2);
   res := o1 ? the + (o2 ? 2 * the : 0) : 0;
-  dorequire(res = 5, "INVALID_VALUE")
+  do_require(res = 5, "INVALID_VALUE")
 }

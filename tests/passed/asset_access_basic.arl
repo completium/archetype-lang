@@ -11,5 +11,5 @@ asset abc {
 
 entry get_value() {
   const v : string = abc[0].b;
-  dorequire(v = "mystr", "INVALID_VALUE")
+  do_require(v = "mystr", "INVALID_VALUE")
 }

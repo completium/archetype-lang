@@ -512,7 +512,7 @@ let rec pp_expr outer pos fmt a =
   | Edorequire (x, y) ->
 
     let pp fmt (x, y) =
-      Format.fprintf fmt "dorequire (%a, %a)"
+      Format.fprintf fmt "do_require (%a, %a)"
         pp_simple_expr x
         pp_simple_expr y
     in
@@ -521,7 +521,7 @@ let rec pp_expr outer pos fmt a =
   | Edofailif (x, y) ->
 
     let pp fmt (x, y) =
-      Format.fprintf fmt "dofailif (%a, %a)"
+      Format.fprintf fmt "do_fail_if (%a, %a)"
         pp_simple_expr x
         pp_simple_expr y
     in

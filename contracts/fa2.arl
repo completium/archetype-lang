@@ -375,8 +375,8 @@ entry %transfer (ts : list<address * list<transfer_destination>>) {
       | some(msg) -> fail(msg)
       | none -> begin
           /* basic checks ----------------------------------------------------- */
-          dorequire(token.contains(td.token_id_dest), "FA2_TOKEN_UNDEFINED");
-          dorequire(ledger[(td.token_id_dest, %from)].amount >= transfer_amount, "FA2_INSUFFICIENT_BALANCE");
+          do_require(token.contains(td.token_id_dest), "FA2_TOKEN_UNDEFINED");
+          do_require(ledger[(td.token_id_dest, %from)].amount >= transfer_amount, "FA2_INSUFFICIENT_BALANCE");
           /* apply sender hook ------------------------------------------------ */
           if not contains(applied_hooks, (%from, applied_hook_id)) then begin
             match apply_hook(td.token_id_dest, %from, hook_param, Sender) with
@@ -403,7 +403,7 @@ entry %transfer (ts : list<address * list<transfer_destination>>) {
           if apply_allowance(td.token_id_dest) then begin
             if caller <> %from then begin
               var current = allowance[(%from, caller,td.token_id_dest)].allowed_amount;
-              dofailif(current < transfer_amount, ("NotEnoughAllowance", ((transfer_amount, current))));
+              do_fail_if(current < transfer_amount, ("NotEnoughAllowance", ((transfer_amount, current))));
               allowance.update((%from, caller, td.token_id_dest), { allowed_amount -=  transfer_amount });
             end;
           end;
@@ -454,7 +454,7 @@ entry approve (spender : address, value : nat, itoken_id : nat) {
     var k = (caller, spender, itoken_id);
     if allowance.contains(k) then begin
       var previous = allowance[k].allowed_amount;
-      dofailif(previous > 0 and value > 0, (("UnsafeAllowanceChange", previous)));
+      do_fail_if(previous > 0 and value > 0, (("UnsafeAllowanceChange", previous)));
     end;
     allowance.addupdate( k, { allowed_amount = value });
   }

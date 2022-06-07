@@ -5,5 +5,5 @@ variable res : nat = 0
 
 entry exec () {
   res := my_map.length();
-  dorequire(res = 4, "INVALID_VALUE")
+  do_require(res = 4, "INVALID_VALUE")
 }

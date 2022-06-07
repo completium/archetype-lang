@@ -4,6 +4,6 @@ entry exec() {
   effect {
     var a : list<int> = [0i];
     var b : int = 1;
-    dorequire (a = b, "ko")
+    do_require (a = b, "ko")
   }
 }

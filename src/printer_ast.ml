@@ -880,7 +880,7 @@ let rec pp_instruction fmt (i : instruction) =
     | Irequire (k, pt, f) ->
       let pp fmt (k, pt, f) =
         Format.fprintf fmt "%a (%a, %a)"
-          pp_str (if k then "dorequire" else "dofailif")
+          pp_str (if k then "do_require" else "do_fail_if")
           pp_pterm pt
           pp_pterm f
       in

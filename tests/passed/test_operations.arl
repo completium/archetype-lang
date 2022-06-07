@@ -5,5 +5,5 @@ entry exec() {
   var e   : contract<unit> = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg;
   var op  : operation = mkoperation(0tz, e, ());
   operations := prepend(operations, op);
-  dorequire(res = 1, "ko")
+  do_require(res = 1, "ko")
 }

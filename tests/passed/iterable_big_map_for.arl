@@ -7,5 +7,5 @@ entry exec () {
   for (k, v) in my_map do
     res := concat(res, v)
   done;
-  dorequire (res = 0x00010203, "ko")
+  do_require (res = 0x00010203, "ko")
 }

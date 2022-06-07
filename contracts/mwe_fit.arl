@@ -67,7 +67,7 @@ entry consume (a : address, quantity : int) {
 
   effect {
     var by_expiration = owner[a].miles.sort(expiration).select(the.expiration >= now);
-    dorequire (by_expiration.sum(the.amount) >= quantity, "NotEnoughMiles");
+    do_require (by_expiration.sum(the.amount) >= quantity, "NotEnoughMiles");
     var remainder = quantity;
     for : loop m in by_expiration do
       if remainder > 0 then (

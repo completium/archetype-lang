@@ -9,5 +9,5 @@ asset my_asset {
 
 entry exec () {
   var str = my_asset[(3i, 4)].v;
-  dorequire(str = "value", "ko")
+  do_require(str = "value", "ko")
 }

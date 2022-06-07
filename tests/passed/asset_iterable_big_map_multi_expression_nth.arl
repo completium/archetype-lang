@@ -14,5 +14,5 @@ variable res : string = ""
 
 entry exec () {
   res := my_asset.nth(1);
-  dorequire(res = "id1", "ko")
+  do_require(res = "id1", "ko")
 }

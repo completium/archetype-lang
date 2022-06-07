@@ -15,6 +15,6 @@ variable res : nat = 0
 
 entry exec () {
   var v = my_asset["id1"].v0;
-  dorequire(v = 1, "ko");
+  do_require(v = 1, "ko");
   res := v;
 }

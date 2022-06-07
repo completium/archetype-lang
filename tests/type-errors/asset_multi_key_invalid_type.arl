@@ -10,6 +10,6 @@ asset my_asset identified by i s {
 
 entry exec () {
   var val = my_asset[(0, chainid)].v;
-  dorequire(val, "ko");
+  do_require(val, "ko");
   my_asset.update((0, chainid), { v = false})
 }

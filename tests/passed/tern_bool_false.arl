@@ -5,5 +5,5 @@ variable res : nat = 0
 entry exec() {
   var b : bool = false;
   res := b ? 2 : 1;
-  dorequire(res = 1, "INVALID_VALUE")
+  do_require(res = 1, "INVALID_VALUE")
 }

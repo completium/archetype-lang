@@ -11,6 +11,6 @@ entry exec () {
     while:loop res < 3 do
       res += 1
     done;
-    dorequire (res = 3, "ko")
+    do_require (res = 3, "ko")
   }
 }

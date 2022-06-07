@@ -12,5 +12,5 @@ variable res : list<nat> = []
 
 entry exec () {
   res := my_asset.head(2);
-  // dorequire(res = [0; 1], "ko")
+  // do_require(res = [0; 1], "ko")
 }

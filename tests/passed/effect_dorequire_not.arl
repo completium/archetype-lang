@@ -1,7 +1,7 @@
-archetype effect_dorequire_not
+archetype effect_do_require_not
 
 entry exec () {
   effect {
-    dorequire (not false, "ko")
+    do_require (not false, "ko")
   }
 }

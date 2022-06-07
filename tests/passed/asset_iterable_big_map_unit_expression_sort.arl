@@ -12,5 +12,5 @@ variable res : list<nat> = []
 
 entry exec () {
   res := my_asset.sort(desc(id));
-  // dorequire(res = [2; 1; 0], "ko")
+  // do_require(res = [2; 1; 0], "ko")
 }

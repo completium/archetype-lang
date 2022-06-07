@@ -14,5 +14,5 @@ variable res : nat = 0
 
 entry exec () {
   res := my_asset.count();
-  dorequire(res = 3, "ko")
+  do_require(res = 3, "ko")
 }

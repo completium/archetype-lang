@@ -26,7 +26,7 @@ function assertReceiver(addr : address) : bool {
 entry assertReceivers (addrs : list<address>) {
   for addr in addrs do
     if (addr <> issuer)
-    then dorequire(assertReceiver(addr), "USER_RESTRICTED")
+    then do_require(assertReceiver(addr), "USER_RESTRICTED")
   done
 }
 
@@ -36,14 +36,14 @@ entry assertTransfers (input_list : list<address * list<address>>) {
     var tos   = input_item[1];
     for %to in tos do
       if %from = issuer
-      then dorequire(assertReceiver(%to), "TO_RESTRICTED")
+      then do_require(assertReceiver(%to), "TO_RESTRICTED")
       else begin
-        dorequire(assertReceiver(%from), "FROM_RESTRICTED");
-        dorequire(assertReceiver(%to), "TO_RESTRICTED");
+        do_require(assertReceiver(%from), "FROM_RESTRICTED");
+        do_require(assertReceiver(%to), "TO_RESTRICTED");
         var fromid       = users[%from];
         var toid         = users[%to];
         var allowedlists = transferlists[fromid].allowedTransferlists;
-        dorequire(contains(allowedlists, toid), "TO_NOT_ALLOWED")
+        do_require(contains(allowedlists, toid), "TO_NOT_ALLOWED")
       end
     done
   done
@@ -52,14 +52,14 @@ entry assertTransfers (input_list : list<address * list<address>>) {
 entry assertTransferlist (transferlistId : nat, input : option<transferlist>) {
   match input with
   | some tl -> begin
-    dorequire(contains(transferlists, transferlistId), "TRANSFERLIST_NOT_FOUND");
+    do_require(contains(transferlists, transferlistId), "TRANSFERLIST_NOT_FOUND");
     var l = transferlists[transferlistId];
-    dorequire(l.unrestricted = tl.unrestricted, "INVALID_UNRESTRICTED_STATE");
+    do_require(l.unrestricted = tl.unrestricted, "INVALID_UNRESTRICTED_STATE");
     for i in tl.allowedTransferlists do
-      dorequire(contains(l.allowedTransferlists, i), "IS_NOT_SUBSET")
+      do_require(contains(l.allowedTransferlists, i), "IS_NOT_SUBSET")
     done
     end
-  | none -> dofailif(contains(transferlists, transferlistId), "EXISTS_TRANSFERLIST")
+  | none -> do_fail_if(contains(transferlists, transferlistId), "EXISTS_TRANSFERLIST")
   end
 }
 

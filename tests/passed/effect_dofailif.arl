@@ -1,7 +1,7 @@
-archetype effect_dofailif
+archetype effect_do_fail_if
 
 entry exec () {
   effect {
-    dofailif (false, "ko")
+    do_fail_if (false, "ko")
   }
 }

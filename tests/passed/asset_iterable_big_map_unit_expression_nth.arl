@@ -12,5 +12,5 @@ variable res : nat = 0
 
 entry exec () {
   res := my_asset.nth(1);
-  dorequire(res = 1, "ko")
+  do_require(res = 1, "ko")
 }

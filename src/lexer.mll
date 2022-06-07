@@ -44,9 +44,9 @@
       "definition"          , DEFINITION          ;
       "div"                 , DIV                 ;
       "do"                  , DO                  ;
-      "dofailif"            , DOFAILIF            ;
+      "do_fail_if"          , DO_FAIL_IF          ;
       "done"                , DONE                ;
-      "dorequire"           , DOREQUIRE           ;
+      "do_require"          , DO_REQUIRE          ;
       "effect"              , EFFECT              ;
       "else"                , ELSE                ;
       "emit"                , EMIT                ;

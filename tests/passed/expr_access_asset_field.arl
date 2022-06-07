@@ -19,6 +19,6 @@ entry exec () {
 
   effect {
     res := my_asset["id2"].value;
-    dorequire (res = 2, "ko")
+    do_require (res = 2, "ko")
   }
 }

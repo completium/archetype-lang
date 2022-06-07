@@ -6,6 +6,6 @@ entry exec () {
   effect {
     res[0][2][1] := "str";
     res[0][0] := 2;
-    dorequire (res = ((0, 0x0001, (0, "str", 0x0001)), 0, 0x0001), "ko")
+    do_require (res = ((0, 0x0001, (0, "str", 0x0001)), 0, 0x0001), "ko")
   }
 }

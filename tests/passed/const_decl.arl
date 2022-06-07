@@ -2,5 +2,5 @@ archetype const_decl
 
 entry exec() {
   const pkh : address = caller;
-  dorequire(pkh = caller, "INVALID_VALUE")
+  do_require(pkh = caller, "INVALID_VALUE")
 }

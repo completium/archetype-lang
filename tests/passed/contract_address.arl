@@ -12,6 +12,6 @@ entry exec () {
     var c : contract<unit> = input;
     var a : address = contract_address(c);
     res := some(a);
-    dorequire(a = input, "failed");
+    do_require(a = input, "failed");
   }
 }

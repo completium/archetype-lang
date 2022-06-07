@@ -16,5 +16,5 @@ entry exec () {
     d = v.a
   };
 
-  dorequire(v = {a = 1; b = ""; c = 0x01; d = 0}, "INVALID_VALUE")
+  do_require(v = {a = 1; b = ""; c = 0x01; d = 0}, "INVALID_VALUE")
 }

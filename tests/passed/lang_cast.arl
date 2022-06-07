@@ -3,6 +3,6 @@ archetype lang_cast
 entry exec () {
   effect {
     var dur_to_int : int = 1h; // convert to second (3600)
-    dorequire (dur_to_int = dur_to_int, "ko");
+    do_require (dur_to_int = dur_to_int, "ko");
   }
 }

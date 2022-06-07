@@ -16,5 +16,5 @@ entry exec () {
   for k in my_asset do
     counter += my_asset[k].value
   done;
-  dorequire(counter = 3, "ko")
+  do_require(counter = 3, "ko")
 }

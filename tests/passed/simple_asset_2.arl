@@ -22,6 +22,6 @@ entry remove_asset () {
 
 entry exec () {
   var v = my_asset["id1"].v0;
-  dorequire(v = 1, "ko");
+  do_require(v = 1, "ko");
   n := v;
 }

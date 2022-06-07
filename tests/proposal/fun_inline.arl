@@ -6,5 +6,5 @@ function f() inline : bool {
 
 entry ident () {
   var a : bool = f();
-  dorequire(a, "ko")
+  do_require(a, "ko")
 }

@@ -13,6 +13,6 @@ variable res : string = ""
 
 entry exec () {
   var v = my_asset["id1"].id;
-  dorequire(v = "id1", "ko");
+  do_require(v = "id1", "ko");
   res := v;
 }

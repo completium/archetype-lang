@@ -5,5 +5,5 @@ variable res : bytes = 0x
 
 entry exec () {
   res := my_map["mystr2"];
-  dorequire(res = 0x02, "INVALID_VALUE")
+  do_require(res = 0x02, "INVALID_VALUE")
 }

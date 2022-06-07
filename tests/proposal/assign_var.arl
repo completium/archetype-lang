@@ -5,6 +5,6 @@ variable res : string = "mystring"
 entry exec () {
   effect {
     res := "str";
-    // dorequire (res = "str", "ko")
+    // do_require (res = "str", "ko")
   }
 }

@@ -9,7 +9,7 @@ entry exec () {
   effect {
     for c in myasset do
       for d in myasset do
-        dorequire(myasset[c].v = myasset[d].v, "ko")
+        do_require(myasset[c].v = myasset[d].v, "ko")
       done
     done
   }

@@ -11,6 +11,6 @@ variable res : bool = true
 
 entry exec() {
   const v : bool = abc[1] ? the.amount > 1 : false;
-  dorequire(not v, "INVALID_VALUE");
+  do_require(not v, "INVALID_VALUE");
   res := v
 }

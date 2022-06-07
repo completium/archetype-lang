@@ -17,5 +17,5 @@ variable v : myrecord = {0; ""; {0; ""; 0i}}
 entry exec () {
   v.c.y := "test";
   const ref : myrecord = {0; ""; {0; "test"; 0i}};
-  dorequire(v = ref, "INVALID_VALUE")
+  do_require(v = ref, "INVALID_VALUE")
 }

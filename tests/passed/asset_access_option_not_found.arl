@@ -12,5 +12,5 @@ variable res : option<string> = none
 
 entry get_value() {
   res := abc[1]?.b;
-  dorequire(res = none<string>, "INVALID_VALUE")
+  do_require(res = none<string>, "INVALID_VALUE")
 }

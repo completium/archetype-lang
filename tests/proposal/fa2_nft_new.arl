@@ -4,7 +4,7 @@ with metadata ""
 variable pause_ : bool = false
 
 function mustBeUnpause() : bool {
-  dorequire(not pause_, "CONTRACT_PAUSED");
+  do_require(not pause_, "CONTRACT_PAUSED");
   return true
 }
 
@@ -50,10 +50,10 @@ entry update_operators (upl : list<update_operator_item>) {
     for up in upl do
       match up with
       | add_operator(param)  -> (* add *)
-        dorequire(ledger.contains((caller, param.opp_token_id)), "CALLER NOT OWNER");
+        do_require(ledger.contains((caller, param.opp_token_id)), "CALLER NOT OWNER");
         operator.add({oaddr = param.opp_operator; otoken = param.opp_token_id; oowner = param.opp_owner })
       | remove_operator(param) -> (* remove *)
-        dorequire(ledger.contains((caller, param.opp_token_id)), "CALLER NOT OWNER");
+        do_require(ledger.contains((caller, param.opp_token_id)), "CALLER NOT OWNER");
         operator.remove((param.opp_operator, param.opp_token_id, param.opp_owner))
       end;
     done
@@ -93,7 +93,7 @@ entry %transfer (txs : list<address * list<transfer_destination>>) {
       for td in tds do begin
         if caller <> %from then begin
           (* check operator *)
-          dorequire(operator.contains((caller,td.token_id_dest,%from)) or operator_for_all.contains((caller, %from)),"FA2_NOT_OPERATOR");
+          do_require(operator.contains((caller,td.token_id_dest,%from)) or operator_for_all.contains((caller, %from)),"FA2_NOT_OPERATOR");
         end;
         (* set token ownership *)
         var tokenid = td.token_id_dest;

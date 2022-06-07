@@ -13,5 +13,5 @@ variable res : list<string> = []
 
 entry exec () {
   res := my_asset.sort(desc(value));
-  // dorequire(res = ["id2"; "id1"; "id0"], "ko")
+  // do_require(res = ["id2"; "id1"; "id0"], "ko")
 }

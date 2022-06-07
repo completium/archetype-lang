@@ -13,5 +13,5 @@ variable res : bool = false
 
 entry exec () {
   res := my_asset.contains("id1");
-  dorequire(res, "ko")
+  do_require(res, "ko")
 }

@@ -7,5 +7,5 @@ record my_record {
 
 entry exec () {
   var r : my_record = { v = 0; id = "id" };
-  dorequire(r.v = 0, "ko")
+  do_require(r.v = 0, "ko")
 }

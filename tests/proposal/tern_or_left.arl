@@ -1,0 +1,9 @@
+archetype tern_or_left
+
+variable res : nat = 0
+
+entry exec() {
+  var o : or<nat, string> = left<nat, string>(2);
+  res := o ? the : length(the);
+  do_require(res = 2, "INVALID_VALUE")
+}

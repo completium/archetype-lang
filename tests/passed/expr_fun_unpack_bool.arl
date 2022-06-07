@@ -9,6 +9,6 @@ entry exec () {
   }
   effect {
     res := unpack<bool>(0x05030a);
-    dorequire (opt_get(res), "ko")
+    do_require (opt_get(res), "ko")
   }
 }

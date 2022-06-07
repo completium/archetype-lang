@@ -22,7 +22,7 @@ entry %transfer (from_ : address, to_ : address, value : nat) {
   effect {
     if caller <> from_ then (
       var current = allowance[(from_, caller)].amount;
-      dofailif(current < value, ("NotEnoughAllowance", ((value, current))));
+      do_fail_if(current < value, ("NotEnoughAllowance", ((value, current))));
       allowance.update((from_, caller), { amount -=  value });
     );
     ledger.update(from_, { tokens -= value });
@@ -34,7 +34,7 @@ entry approve(spender : address, value : nat) {
   var k = (caller, spender);
   if allowance.contains(k) then (
     var previous = allowance[k].amount;
-    dofailif(previous > 0 and value > 0, (("UnsafeAllowanceChange", previous)));
+    do_fail_if(previous > 0 and value > 0, (("UnsafeAllowanceChange", previous)));
   );
   allowance.addupdate( k, { amount = value });
 }

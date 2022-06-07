@@ -13,5 +13,5 @@ variable res : list<string> = []
 
 entry exec () {
   res := my_asset.head(2);
-  // dorequire(res = ["id0"; "id1"], "ko")
+  // do_require(res = ["id0"; "id1"], "ko")
 }

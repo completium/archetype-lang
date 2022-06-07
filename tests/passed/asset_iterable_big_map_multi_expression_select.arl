@@ -14,5 +14,5 @@ variable res : list<string> = []
 
 entry exec () {
   res := my_asset.select(value % 2 = 0);
-  // dorequire(res = ["id0"; "id2"], "ko")
+  // do_require(res = ["id0"; "id2"], "ko")
 }

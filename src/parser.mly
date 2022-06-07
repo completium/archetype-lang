@@ -58,9 +58,9 @@
 %token DIV
 %token DIVEQUAL
 %token DO
-%token DOFAILIF
+%token DO_FAIL_IF
 %token DONE
-%token DOREQUIRE
+%token DO_REQUIRE
 %token DOT
 %token EFFECT
 %token ELSE
@@ -959,10 +959,10 @@ expr_r:
  | TRANSFER x=simple_expr TO ENTRY SELF DOT id=ident args=paren(sl(COMMA, simple_expr))
      { Etransfer (TTself (x, id, args)) }
 
- | DOREQUIRE LPAREN x=expr COMMA y=expr RPAREN
+ | DO_REQUIRE LPAREN x=expr COMMA y=expr RPAREN
      { Edorequire (x, y) }
 
- | DOFAILIF LPAREN x=expr COMMA y=expr RPAREN
+ | DO_FAIL_IF LPAREN x=expr COMMA y=expr RPAREN
      { Edofailif (x, y) }
 
  | FAIL e=paren(expr)

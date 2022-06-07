@@ -17,6 +17,6 @@ entry exec () {
   effect {
     var k = my_asset.nth(1);
     res := my_asset[k].id;
-    dorequire (res = "id1", "ko")
+    do_require (res = "id1", "ko")
   }
 }
