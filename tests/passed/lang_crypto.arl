@@ -24,7 +24,7 @@ entry exec () {
     var c : contract<unit> = key_hash_to_contract(kh);
 
     var addr = tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg;
-    var a : address = key_address(k);
+    var a : address = key_to_address(k);
     do_require (a = addr, "ko");
 
     var d : address = contract_to_address(c);
