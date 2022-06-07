@@ -8,7 +8,7 @@ entry init (l : list<sapling_transaction(8) * option<key_hash>>) {
     var balance_ = r[0];
     if (abs(balance_) * 1utz > transferred) then begin
       var e : contract<unit> = key_hash_to_contract(kh);
-      var op  : operation = mkoperation(0tz, e, ());
+      var op  : operation = make_operation(0tz, e, ());
       operations := [op]
     end else begin
       ()
