@@ -10,7 +10,7 @@ asset my_asset {
 
 enum toto =
 | A <nat>
-| B <pkey<my_asset>>
+| B <asset_key<my_asset>>
 
 // type asset_key<my_asset> =
 // record {
@@ -26,7 +26,7 @@ enum toto =
 // }
 
 entry get_value() {
-  const k : pkey<my_asset> = 0;
+  const k : asset_key<my_asset> = 0;
   const v : asset_value<my_asset> = my_asset[k];
-  const ov : option<asset_value<my_asset>> = my_asset.getopt(0)
+  const ov : option<asset_value<my_asset>> = my_asset.get(0)
 }

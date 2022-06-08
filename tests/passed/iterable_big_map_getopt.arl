@@ -4,6 +4,6 @@ variable my_map : iterable_big_map<string, bytes> = [ ("mystr0", 0x00) ; ("mystr
 variable res : option<bytes> = none
 
 entry exec () {
-  res := my_map.getopt("mystr2");
+  res := my_map.get("mystr2");
   do_require(res = some(0x02), "INVALID_VALUE")
 }

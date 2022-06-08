@@ -24,5 +24,5 @@ asset my_asset identified by a b {
 entry get_value() {
   const k : asset_key<my_asset> = {a = 0; b = "mystr"};
   const v : asset_value<my_asset> = my_asset[k];
-  const ov : option<asset_value<my_asset>> = my_asset.getopt(k)
+  const ov : option<asset_value<my_asset>> = my_asset.get(k)
 }

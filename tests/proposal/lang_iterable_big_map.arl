@@ -12,7 +12,7 @@ entry exec () {
     var new_map2 : iterable_big_map<string, nat> = remove(my_map, "mystr0");
     var new_map3 : iterable_big_map<string, nat> = update(my_map, "mystr5", some(4));
     var val_opt  : nat                           = my_map["0"];
-    var val      : option<nat>                   = getopt(my_map, "mystr0");
+    var val      : option<nat>                   = get(my_map, "mystr0");
     var c        : bool                          = contains(my_map, "mystr0");
     var l        : nat                           = length(my_map);
 

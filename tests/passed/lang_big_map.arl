@@ -17,7 +17,7 @@ entry exec () {
     new_map1 := put(my_map, "mystr4", 4);
     new_map2 := remove(my_map, "mystr0");
     val_opt  := my_map["mystr4"];
-    val      := getopt(my_map, "mystr0");
+    val      := get(my_map, "mystr0");
     c        := contains(my_map, "mystr0");
   }
 }

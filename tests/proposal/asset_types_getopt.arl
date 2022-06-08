@@ -9,7 +9,7 @@ asset abc {
 }
 
 entry get_value() {
-  const ov : option<asset_value<abc>> = abc.getopt(0);
+  const ov : option<asset_value<abc>> = abc.get(0);
   const v = match ov with | some(v) -> v.b | none -> "" end;
   do_require(v = "mystr", "INVALID_VALUE")
 }

@@ -6,5 +6,5 @@ variable s : option<string> = none
 
 entry exec () {
   m := put(m, 0, "mystr0");
-  var v = getopt(m, 0);
+  var v = get(m, 0);
 }
