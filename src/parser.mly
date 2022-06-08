@@ -138,6 +138,7 @@
 %token PREDICATE
 %token QUESTION
 %token QUESTIONDOT
+%token QUESTIONEQUAL
 %token RBRACE
 %token RBRACKET
 %token RECORD
@@ -885,6 +886,10 @@ ident_typ_q:
 |                { None }
 | FROM e=simple_expr    { Some e }
 
+%inline get_const:
+ | VAR   { false }
+ | CONST { true  }
+
 expr_r:
  | LPAREN RPAREN
      { Enothing }
@@ -908,11 +913,11 @@ expr_r:
  | LET i=ident t=colon_type_opt EQUAL e=expr IN y=expr
      { Eletin (i, t, e, y, None) }
 
- | VAR i=ident t=colon_type_opt EQUAL e=expr %prec prec_var
-     { Evar (i, t, e, false) }
+ | c=get_const i=ident t=colon_type_opt EQUAL e=expr %prec prec_var
+     { Evar (i, t, e, c) }
 
- | CONST i=ident t=colon_type_opt EQUAL e=expr %prec prec_var
-     { Evar (i, t, e, true) }
+ | c=get_const i=ident t=colon_type_opt QUESTIONEQUAL e=expr COLON f=expr %prec prec_var
+     { Evaropt (i, t, e, f, c) }
 
  | e1=expr SEMI_COLON e2=expr
      { Eseq (e1, e2) }

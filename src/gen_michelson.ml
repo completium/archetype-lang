@@ -579,6 +579,7 @@ let to_ir (model : M.model) : T.ir =
     | Mletin ([id], v, _, b, _) -> let is_unit = match M.get_ntype mtt.type_ with Tunit -> true | _ -> false in T.IletIn (unloc id, f v, f b, is_unit)
     | Mletin _                  -> emit_error (UnsupportedTerm ("Mletin"))
     | Mdeclvar _                -> emit_error (UnsupportedTerm ("Mdeclvar"))
+    | Mdeclvaropt _             -> emit_error (UnsupportedTerm ("Mdeclvaropt"))
     | Mapp (e, args)            -> begin
         let eargs =
           match List.assoc_opt (unloc e) !extra_args with

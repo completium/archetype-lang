@@ -6209,3 +6209,18 @@ let remove_update_all (model : model) =
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
+
+let remove_decl_var_opt (model : model) =
+  let rec aux ctx (mt : mterm) : mterm =
+    let f = aux ctx in
+    match mt.node with
+    | Mdeclvaropt (ids, tyy, v, fa, c) -> begin
+        let ty = match tyy with | Some ty -> ty | None -> v.type_ in
+        let idv = dumloc "_v" in
+        let s = mk_mvar idv ty in
+        let mw = mk_mterm (Mmatchoption(f v, idv, s, failg (f fa))) ty in
+        { mt with node = Mdeclvar (ids, Some ty, mw, c) }
+      end
+    | _ -> map_mterm (aux ctx) mt
+  in
+  map_mterm_model aux model

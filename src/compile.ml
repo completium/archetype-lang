@@ -231,6 +231,7 @@ let toolchain ?(js=false) model =
   |> getter_to_entry ~extra:true
   |> process_parameter ~js:js
   |> test_mode
+  |> remove_decl_var_opt
   |> remove_ternary_opeartor
   |> process_multi_keys
   |> replace_col_by_key_for_ckfield

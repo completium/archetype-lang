@@ -3996,6 +3996,7 @@ let rec for_xexpr
       end
     | Eself      _
     | Evar       _
+    | Evaropt    _
     | Efail      _
     | Efailsome  _
     | Eassert    _
@@ -5231,6 +5232,32 @@ let rec for_instruction_r
             Env.emit_error env (loc x, InvalidVarOrArgType)) v.A.type_;
 
       env, mki (A.Ideclvar (x, v, c))
+
+    | Evaropt (x, ty, v, f, c) ->
+      let ty = Option.bind (for_type env) ty in
+      let oty = Option.bind (fun ty -> Some (A.Toption ty)) ty in
+      let v  = for_expr kind env ?ety:oty v in
+      let f  = for_expr kind env f in
+
+      f.type_ |> Option.iter (fun ty ->
+          if (not (Type.Michelson.is_packable ty))
+          then (Env.emit_error env (f.loc, InvalidTypeForFail)));
+
+      let env =
+        let _ : bool = check_and_emit_name_free env x in
+        match v.A.type_ with
+        | Some A.Toption ty -> begin
+            let kind = if c then `Const else `Standard in
+            Env.Local.push env (x, ty) ~kind
+          end
+        | _ -> env
+      in
+
+      Option.iter (fun ty ->
+          if not (valid_var_or_arg_type ty) then
+            Env.emit_error env (loc x, InvalidVarOrArgType)) v.A.type_;
+
+      env, mki (A.Ideclvaropt (x, v, f, c))
 
     | _ ->
       Env.emit_error env (loc i, InvalidInstruction);

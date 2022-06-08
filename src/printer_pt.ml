@@ -739,6 +739,23 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_default pos pp) fmt (id, t, e)
 
+  | Evaropt (id, t, e, f, c) ->
+
+    let pp fmt (id, t, e, fa) =
+      let f =
+        match t with
+        | Some ({pldesc= Ttuple _; _}, _) -> pp_paren
+        | _ -> pp_neutral
+      in
+      Format.fprintf fmt "%s %a%a ?= %a : %a"
+        (if c then "const" else "var")
+        pp_id id
+        (pp_option (pp_prefix " : " (f pp_type))) t
+        (pp_expr e_in PLeft) e
+        (pp_expr e_in PLeft) fa
+    in
+    (maybe_paren outer e_default pos pp) fmt (id, t, e, f)
+
   | Equantifier (q, id, t, body) ->
 
     let pp fmt (q, id, t, body) =

@@ -204,6 +204,14 @@ let pp_mterm fmt (mt : mterm) =
         (pp_option (fun fmt -> Format.fprintf fmt  " : %a" pp_type)) t
         f v
 
+    | Mdeclvaropt (ids, t, v, fa, c) ->
+      Format.fprintf fmt "%s %a%a ?= %a : %a"
+        (if c then "const" else "var")
+        (pp_list ", " pp_id) ids
+        (pp_option (fun fmt -> Format.fprintf fmt  " : %a" pp_type)) t
+        f v
+        f fa
+
     | Mapp (e, args) ->
       let pp fmt (e, args) =
         Format.fprintf fmt "%a (%a)"

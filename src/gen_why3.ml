@@ -1636,6 +1636,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       Tletin (false, dl id , None, map_mterm m ctx v, map_mterm m ctx b)
     | Mletin              _ -> Tvar (dl "TODO letin")
     | Mdeclvar            _ -> error_not_supported "Mdeclvar"
+    | Mdeclvaropt         _ -> error_not_supported "Mdeclvaropt"
 
     | Mapp (f, args) ->
       let args = args |> List.map (map_mterm m ctx) in

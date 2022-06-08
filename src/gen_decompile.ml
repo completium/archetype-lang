@@ -1541,9 +1541,10 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     match mt.node with
     (* lambda *)
 
-    | Mletin (_ids, _a, _t, _b, _o) -> assert false
-    | Mdeclvar (_ids, _t, _v, _c)   -> assert false
-    | Mapp (_e, _args)              -> assert false
+    | Mletin (_ids, _a, _t, _b, _o)       -> assert false
+    | Mdeclvar (_ids, _t, _v, _c)         -> assert false
+    | Mdeclvaropt (_ids, _t, _v, _fa, _c) -> assert false
+    | Mapp (_e, _args)                    -> assert false
 
 
     (* assign *)

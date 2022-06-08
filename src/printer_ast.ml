@@ -784,6 +784,17 @@ let rec pp_instruction fmt (i : instruction) =
       in
       (pp_with_paren pp) fmt (i, v, c)
 
+    | Ideclvaropt (i, v, f, c) ->
+      let pp fmt (i, v, c) =
+        Format.fprintf fmt "%s %a%a ?= %a : %a"
+          (if c then "const" else "var")
+          pp_id i
+          (pp_option (pp_prefix " : " pp_type)) v.type_
+          pp_pterm v
+          pp_pterm f
+      in
+      (pp_with_paren pp) fmt (i, v, c)
+
     | Iseq l ->
       let pp fmt l =
         if List.is_empty l
