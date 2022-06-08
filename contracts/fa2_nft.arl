@@ -100,7 +100,7 @@ entry %transfer (txs : list<address * list<transfer_destination>>) {
           ledger.remove((%from, tokenid))
         else
           ledger.update((%from, tokenid), { lamount -= td.token_amount_dest });
-        ledger.addupdate((td.to_dest, tokenid), { lamount += td.token_amount_dest })
+        ledger.add_update((td.to_dest, tokenid), { lamount += td.token_amount_dest })
       end done;
     done
   }
@@ -162,7 +162,7 @@ entry setMetadataUri(idata : bytes) {
 entry setTokenMetadata(iTokenId : nat, iExtras : map<string, bytes>) {
   called by owner
   effect {
-    token_metadata.addupdate(iTokenId, {extras = iExtras});
+    token_metadata.add_update(iTokenId, {extras = iExtras});
   }
 }
 

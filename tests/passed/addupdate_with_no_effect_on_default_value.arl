@@ -1,4 +1,4 @@
-archetype addupdate_with_no_effect_on_default_value
+archetype add_update_with_no_effect_on_default_value
 
 variable r : nat = 0
 
@@ -11,9 +11,9 @@ asset my_asset {
 }
 
 entry exec () {
-  my_asset.addupdate("id0", { });
+  my_asset.add_update("id0", { });
 }
 
 entry exec2 () {
-  my_asset.addupdate("id0", { v = 1 });
+  my_asset.add_update("id0", { v = 1 });
 }

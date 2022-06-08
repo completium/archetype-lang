@@ -230,7 +230,7 @@ let to_const = function
   (* function *)
   | Cadd                   -> "add"
   | Cput                   -> "put"
-  | Caddupdate             -> "addupdate"
+  | Caddupdate             -> "add_update"
   | Cceil                  -> "ceil"
   | Cclear                 -> "clear"
   | Cconcat                -> "concat"

@@ -26,7 +26,7 @@ entry %transfer (from_ : address, to_ : address, value : nat) {
       allowance.update((from_, caller), { amount -=  value });
     );
     ledger.update(from_, { tokens -= value });
-    ledger.addupdate(to_, { tokens += value });
+    ledger.add_update(to_, { tokens += value });
   }
 }
 
@@ -36,7 +36,7 @@ entry approve(spender : address, value : nat) {
     var previous = allowance[k].amount;
     do_fail_if(previous > 0 and value > 0, (("UnsafeAllowanceChange", previous)));
   );
-  allowance.addupdate( k, { amount = value });
+  allowance.add_update( k, { amount = value });
 }
 
 getter getAllowance (owner : address, spender : address) : nat {

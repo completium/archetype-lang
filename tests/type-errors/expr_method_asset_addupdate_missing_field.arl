@@ -1,4 +1,4 @@
-archetype expr_method_asset_addupdate_missing_field
+archetype expr_method_asset_add_update_missing_field
 
 asset my_asset identified by id {
   id : string;
@@ -14,6 +14,6 @@ variable res : int = 0
 
 entry exec () {
   effect {
-    my_asset.addupdate("id2", {value += 3})
+    my_asset.add_update("id2", {value += 3})
   }
 }

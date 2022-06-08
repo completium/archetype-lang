@@ -21,7 +21,7 @@ entry add (ow : address, newmile_id : string, newmile_expiration : date, newmile
     f1: mile.contains(newmile_id)
   }
   effect {
-    owner.addupdate(ow, { miles += [{id = newmile_id; expiration = newmile_expiration; quantity = newmile_quantity}] })
+    owner.add_update(ow, { miles += [{id = newmile_id; expiration = newmile_expiration; quantity = newmile_quantity}] })
   }
 }
 

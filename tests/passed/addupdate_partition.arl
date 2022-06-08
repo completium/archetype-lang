@@ -1,4 +1,4 @@
-archetype addupdate_partition
+archetype add_update_partition
 
 asset o_asset {
   oid : string;
@@ -16,7 +16,7 @@ asset my_asset {
 }
 
 entry exec () {
-  my_asset["id0"].col.addupdate("oid", { v = 0 });
+  my_asset["id0"].col.add_update("oid", { v = 0 });
 
   // if (o_asset.contains("oid"))
   // then begin

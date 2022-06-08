@@ -1,4 +1,4 @@
-archetype simple_addupdate_asset
+archetype simple_add_update_asset
 
 asset updatableMap identified by id {
       id : nat ;
@@ -7,5 +7,5 @@ asset updatableMap identified by id {
 }
 
 entry %update ( idToChange : nat, newValue1 : nat, newValue2 : string) {
-        updatableMap.addupdate(idToChange,{value1 = newValue1; value2 = newValue2})
+        updatableMap.add_update(idToChange,{value1 = newValue1; value2 = newValue2})
 }

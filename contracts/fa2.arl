@@ -358,7 +358,7 @@ entry set_hook (ti : nat, h : option<address>) {
   // if only 'update', it is impossble to set the hook if no token is possessed ...
   // how to prove that it is impossible not to set the hook ?
   // no fail and valid postcondition ?
-  ledger.addupdate ((ti, caller), { hook = h });
+  ledger.add_update ((ti, caller), { hook = h });
 }
 
 entry %transfer (ts : list<address * list<transfer_destination>>) {
@@ -409,7 +409,7 @@ entry %transfer (ts : list<address * list<transfer_destination>>) {
           end;
           /* update ledger ---------------------------------------------------- */
           ledger.update((td.token_id_dest, %from), { amount -= transfer_amount });
-          ledger.addupdate((td.token_id_dest, td.to_dest), { amount += transfer_amount });
+          ledger.add_update((td.token_id_dest, td.to_dest), { amount += transfer_amount });
         end
       end
     done
@@ -456,6 +456,6 @@ entry approve (spender : address, value : nat, itoken_id : nat) {
       var previous = allowance[k].allowed_amount;
       do_fail_if(previous > 0 and value > 0, (("UnsafeAllowanceChange", previous)));
     end;
-    allowance.addupdate( k, { allowed_amount = value });
+    allowance.add_update( k, { allowed_amount = value });
   }
 }

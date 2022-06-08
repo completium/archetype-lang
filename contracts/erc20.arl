@@ -21,7 +21,7 @@ entry dotransfer (dest : asset_key<tokenHolder>, value : nat) {
     d0 : tokenHolder[caller].tokens >= value
   }
   effect {
-    tokenHolder.addupdate( dest, { tokens += value });
+    tokenHolder.add_update( dest, { tokens += value });
     tokenHolder.update( caller, { tokens -= value })
   }
 }
@@ -31,7 +31,7 @@ entry approve(ispender : address, value : nat) {
     d1 : tokenHolder[caller].tokens >= value;
   }
   effect {
-    allowance.addupdate((caller, ispender), { amount = value });
+    allowance.add_update((caller, ispender), { amount = value });
   }
 }
 
@@ -45,7 +45,7 @@ entry transferFrom(from_ : address, to_ : address, value : nat) {
     (* update allowance *)
     allowance.update((from_,caller), { amount -=  value });
     (* update token *)
-    tokenHolder.addupdate(to_,   { tokens += value });
+    tokenHolder.add_update(to_,   { tokens += value });
     tokenHolder.update(from_, { tokens -= value });
   }
 }

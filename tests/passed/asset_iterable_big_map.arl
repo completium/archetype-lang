@@ -16,7 +16,7 @@ entry exec () {
   my_asset.remove("id3");
 
   // my_asset.update(my_asset_id, {value += 2});
-  // my_asset.addupdate(my_asset_id, {value += 3});
+  // my_asset.add_update(my_asset_id, {value += 3});
 
   var val : nat = my_asset[my_asset_id].value;
   do_require(val = 0, "ko");

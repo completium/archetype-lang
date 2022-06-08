@@ -1,4 +1,4 @@
-archetype addupdate_partition
+archetype add_update_partition
 
 asset my_asset {
   id     : string;
@@ -12,5 +12,5 @@ asset my_asset {
 variable res : int = 0
 
 entry exec () {
-  my_asset.addupdate("id3", { value = 3 });
+  my_asset.add_update("id3", { value = 3 });
 }

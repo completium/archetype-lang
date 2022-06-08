@@ -9,5 +9,5 @@ asset my_asset identified by a b {
 
 entry exec() {
   var z = (0, caller);
-  my_asset.addupdate(z, { c += 2 });
+  my_asset.add_update(z, { c += 2 });
 }

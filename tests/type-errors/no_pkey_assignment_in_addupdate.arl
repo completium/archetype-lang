@@ -1,4 +1,4 @@
-archetype no_pkey_assignment_in_addupdate
+archetype no_pkey_assignment_in_add_update
 
 asset myasset {
   id : string;
@@ -6,6 +6,6 @@ asset myasset {
 
 entry exec (k : string) {
   effect {
-    myasset.addupdate(k, {id = "key"})
+    myasset.add_update(k, {id = "key"})
   }
 }

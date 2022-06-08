@@ -29,7 +29,7 @@ entry add (ow : address, newmile_id : string, newmile_amount : int, newmile_expi
    }
 
    effect {
-     owner.addupdate (ow, { miles += [{id = newmile_id; amount = newmile_amount; expiration = newmile_expiration} ] })
+     owner.add_update (ow, { miles += [{id = newmile_id; amount = newmile_amount; expiration = newmile_expiration} ] })
    }
 }
 

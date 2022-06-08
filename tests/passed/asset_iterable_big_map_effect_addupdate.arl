@@ -1,4 +1,4 @@
-archetype asset_iterable_big_map_effect_addupdate
+archetype asset_iterable_big_map_effect_add_update
 
 asset my_asset to iterable_big_map {
   id : string;
@@ -10,5 +10,5 @@ asset my_asset to iterable_big_map {
 }
 
 entry exec () {
-  my_asset.addupdate("id0", {value += 2});
+  my_asset.add_update("id0", {value += 2});
 }

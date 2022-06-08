@@ -22,7 +22,7 @@ entry exec () {
     my_asset[my_asset_id].col.add({ id0 = asset0_id; value0 = 0 });
     my_asset[my_asset_id].col.remove(asset0_id);
     my_asset.update("key", {value += 2});
-    my_asset.addupdate("key", {value += 3});
+    my_asset.add_update("key", {value += 3});
     var v1 = my_asset[my_asset_id].value;
     var v2 = my_asset.select(the.value > 0);
     var v3 = my_asset.sort(value);

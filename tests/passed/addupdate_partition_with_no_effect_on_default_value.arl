@@ -1,4 +1,4 @@
-archetype addupdate_partition_with_no_effect_on_default_value
+archetype add_update_partition_with_no_effect_on_default_value
 
 asset o_asset {
   oid : string;
@@ -19,9 +19,9 @@ entry init () {
 }
 
 entry exec () {
-  my_asset["id0"].col.addupdate("oid", { });
+  my_asset["id0"].col.add_update("oid", { });
 }
 
 entry exec2 () {
-  my_asset["id0"].col.addupdate("oid", { v = 1 });
+  my_asset["id0"].col.add_update("oid", { v = 1 });
 }

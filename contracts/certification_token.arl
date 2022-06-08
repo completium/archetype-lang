@@ -45,7 +45,7 @@ entry register_learner (do_add : bool) {
 entry register_learners (llid : address, lltokens : int, do_add : bool) {
   effect {
     if do_add then (
-      learner.addupdate(llid, {ltokens = lltokens});
+      learner.add_update(llid, {ltokens = lltokens});
       institution[caller].ilearners.add(llid)
     ) else
       institution[caller].ilearners.remove(llid)
