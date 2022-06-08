@@ -605,6 +605,15 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer prec pos pp) fmt (op, lhs, rhs)
 
+  | Eassignopt (lhs, rhs, fa) ->
+    let prec = get_prec_from_assignment_operator ValueAssign in
+    let pp fmt (lhs, rhs, fa) =
+      Format.fprintf fmt "%a ?:= %a : %a"
+        (pp_expr prec PLeft) lhs
+        (pp_expr prec PRight) rhs
+        (pp_expr prec PRight) fa
+    in
+    (maybe_paren outer prec pos pp) fmt (lhs, rhs, fa)
 
   | Eif (cond, then_, else_) ->
 

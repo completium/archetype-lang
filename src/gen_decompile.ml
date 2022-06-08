@@ -1557,7 +1557,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Massign (_op, _, Astate, _x)                  -> assert false
     | Massign (_op, _, Aassetstate (_an, _k), _v)   -> assert false
     | Massign (_op, _, Aoperations, _v)             -> assert false
-
+    | Massignopt _ -> assert false
 
     (* control *)
 

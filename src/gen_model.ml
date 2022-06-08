@@ -1085,7 +1085,7 @@ let to_model (ast : A.ast) : M.model =
       | A.Imatchoption (x, id, ve, ne)      -> M.Minstrmatchoption   (f x, id, g ve, g ne)
       | A.Imatchor (x, lid, le, rid, re)    -> M.Minstrmatchor       (f x, lid, g le, rid, g re)
       | A.Imatchlist (x, hid, tid, hte, ee) -> M.Minstrmatchlist     (f x, hid, tid, g hte, g ee)
-      | A.Iassign (op, t, lv, e) -> begin
+      | A.Iassign (op, t, lv, e, fa) -> begin
           let to_ak (lv : A.lvalue) =
             match lv with
             | `Var x -> (match unloc x with | "operations" -> M.Aoperations | _ -> M.Avar x)
@@ -1095,7 +1095,9 @@ let to_model (ast : A.ast) : M.model =
           in
           let e = f e in
           let t = type_to_type t in
-          M.Massign (to_assignment_operator op, t, to_ak lv, e)
+          match fa with
+          | Some fa -> M.Massignopt (to_assignment_operator op, t, to_ak lv, e, f fa)
+          | None -> M.Massign (to_assignment_operator op, t, to_ak lv, e)
         end
       | A.Irequire (b, t, e) ->
         let cond : M.mterm =

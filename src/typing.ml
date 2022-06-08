@@ -743,6 +743,7 @@ type error_desc =
   | InvalidTypeForParameter
   | InvalidTypeForOrLeft
   | InvalidTypeForOrRight
+  | InvalidTypeForOptionalAssign
   | InvalidTypeForPk
   | InvalidTypeForSet
   | InvalidTypeForTernaryOperator
@@ -975,6 +976,7 @@ let pp_error_desc fmt e =
   | InvalidTypeForParameter            -> pp "Invalid type for parameter"
   | InvalidTypeForOrLeft               -> pp "Invalid type for or left"
   | InvalidTypeForOrRight              -> pp "Invalid type for or right"
+  | InvalidTypeForOptionalAssign       -> pp "Invalid type for optional assignment, must be an option type"
   | InvalidTypeForPk                   -> pp "Invalid type for primary key"
   | InvalidTypeForSet                  -> pp "Invalid type for set"
   | InvalidTypeForTernaryOperator      -> pp "Invalid type for ternary operator"
@@ -4002,6 +4004,7 @@ let rec for_xexpr
     | Eassert    _
     | Elabel     _
     | Eassign    _
+    | Eassignopt _
     | Edofailif  _
     | Efor       _
     | Eiter      _
@@ -4891,7 +4894,7 @@ let rec for_instruction_r
                 mki (A.Iassign (
                     ValueAssign, Option.get the.type_, kind,
                     A.mk_sp ~loc:(loc i) ?type_:the.type_
-                      (A.Pcall (None, A.Cconst name, A.AExpr the :: args))))
+                      (A.Pcall (None, A.Cconst name, A.AExpr the :: args)), None))
               in
               let aout =
                 if se then begin
@@ -4932,7 +4935,36 @@ let rec for_instruction_r
               (expr_mode kind) env (loc plv) (op, fty, fty) pe
         in
 
-        env, mki (A.Iassign (op, t, x, e))
+        env, mki (A.Iassign (op, t, x, e, None))
+      end
+
+    | Eassignopt (plv, pe, fa) -> begin
+        let lv = for_lvalue kind env plv in
+        let x, t  = Option.get_dfl
+            (`Var (mkloc (loc plv) "<error>"), A.vtunit)
+            (Option.map id lv) in
+        let op = A.ValueAssign in
+        let fa  = for_expr kind env fa in
+
+        fa.type_ |> Option.iter (fun ty ->
+            if (not (Type.Michelson.is_packable ty))
+            then (Env.emit_error env (fa.loc, InvalidTypeForFail)));
+
+        (* let t = match t with | A.Toption ty -> ty | _ -> Env.emit_error env (fa.loc, InvalidTypeForOptionalAssign); t in *)
+
+        let e  =
+          match lv with
+          | None ->
+            for_expr kind env pe
+
+          | Some (_, fty) ->
+            (* let fty = match fty with | A.Toption ty -> ty | _ -> Env.emit_error env (fa.loc, InvalidTypeForOptionalAssign); fty in *)
+            let fty = A.Toption fty in
+            for_assign_expr
+              (expr_mode kind) env (loc plv) (op, fty, fty) pe
+        in
+
+        env, mki (A.Iassign (op, t, x, e, Some fa))
       end
 
     | Etransfer tr ->

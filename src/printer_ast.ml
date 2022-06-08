@@ -129,7 +129,7 @@ let pp_bval fmt (bval : bval) =
     | BVbool v          -> pp_str fmt (if v then "true" else "false")
     | BVrational (n, d) -> Format.fprintf fmt "(%a / %a)" pp_big_int n pp_big_int d
     | BVdate v          -> Core.pp_date fmt v
-    | BVstring s        -> pp_str fmt s
+    | BVstring s        -> Format.fprintf fmt "\"%s\"" s
     | BVcurrency (c, v) -> Format.fprintf fmt "%a%a" pp_big_int v pp_currency c
     | BVaddress v       -> Format.fprintf fmt "@@%a" pp_str v
     | BVduration v      -> Core.pp_duration_for_printer fmt v
@@ -846,47 +846,51 @@ let rec pp_instruction fmt (i : instruction) =
       in
       (pp_with_paren pp) fmt (x, hid, tid, hte, ee)
 
-    | Iassign (op, _, `Var id, value) ->
-      let pp fmt (op, id, value) =
-        Format.fprintf fmt "%a %a %a"
+    | Iassign (op, _, `Var id, value, fa) ->
+      let pp fmt (op, id, value, fa) =
+        Format.fprintf fmt "%a %a %a%a"
           pp_id id
           pp_assignment_operator op
           pp_pterm value
+          (pp_option (fun fmt x -> Format.fprintf fmt " : %a" pp_pterm x)) fa
       in
-      (pp_with_paren pp) fmt (op, id, value)
+      (pp_with_paren pp) fmt (op, id, value, fa)
 
-    | Iassign (op, _, `Field (rn, k, fn), value) ->
-      let pp fmt (op, rn, k, fn, value) =
-        Format.fprintf fmt "%a[%a].%a %a %a"
+    | Iassign (op, _, `Field (rn, k, fn), value, fa) ->
+      let pp fmt (op, rn, k, fn, value, fa) =
+        Format.fprintf fmt "%a[%a].%a %a %a%a"
           pp_id rn
           pp_pterm k
           pp_id fn
           pp_assignment_operator op
           pp_pterm value
+          (pp_option (fun fmt x -> Format.fprintf fmt " : %a" pp_pterm x)) fa
       in
-      (pp_with_paren pp) fmt (op, rn, k, fn, value)
+      (pp_with_paren pp) fmt (op, rn, k, fn, value, fa)
 
-    | Iassign (op, _, `Asset (an, k, fn), value) ->
-      let pp fmt (op, an, k, fn, value) =
-        Format.fprintf fmt "%a[%a].%a %a %a"
+    | Iassign (op, _, `Asset (an, k, fn), value, fa) ->
+      let pp fmt (op, an, k, fn, value, fa) =
+        Format.fprintf fmt "%a[%a].%a %a %a%a"
           pp_id an
           pp_pterm k
           pp_id fn
           pp_assignment_operator op
           pp_pterm value
+          (pp_option (fun fmt x -> Format.fprintf fmt " : %a" pp_pterm x)) fa
       in
-      (pp_with_paren pp) fmt (op, an, k, fn, value)
+      (pp_with_paren pp) fmt (op, an, k, fn, value, fa)
 
-    | Iassign (op, _, `Tuple (e, i, l), value) ->
-      let pp fmt (op, e, i, l, value) =
-        Format.fprintf fmt "%a[%d/%d] %a %a"
+    | Iassign (op, _, `Tuple (e, i, l), value, fa) ->
+      let pp fmt (op, e, i, l, value, fa) =
+        Format.fprintf fmt "%a[%d/%d] %a %a%a"
           pp_pterm e
           i
           l
           pp_assignment_operator op
           pp_pterm value
+          (pp_option (fun fmt x -> Format.fprintf fmt " : %a" pp_pterm x)) fa
       in
-      (pp_with_paren pp) fmt (op, e, i, l, value)
+      (pp_with_paren pp) fmt (op, e, i, l, value, fa)
 
     | Irequire (k, pt, f) ->
       let pp fmt (k, pt, f) =

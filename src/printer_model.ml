@@ -272,6 +272,10 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "operations = %a"
         f v
 
+    | Massignopt (_op, _, _, v, fa) ->
+      Format.fprintf fmt "TODO ?:= %a : %a"
+        f v
+        f fa
 
 
     (* control *)

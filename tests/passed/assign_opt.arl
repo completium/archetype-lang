@@ -1,0 +1,11 @@
+archetype decl_var_opt
+
+variable res : nat = 0
+
+entry exec() {
+  // const o = some(2);
+
+  res ?:= some(2) : "ERROR";
+
+  // do_require(res = 2, "INVALID_VALUE")
+}

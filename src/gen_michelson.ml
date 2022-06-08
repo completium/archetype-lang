@@ -611,6 +611,7 @@ let to_ir (model : M.model) : T.ir =
     | Massign (_op, _, Astate, _x)                 -> emit_error (UnsupportedTerm ("Massign: Astate"))
     | Massign (_op, _, Aassetstate (_an, _k), _v)  -> emit_error (UnsupportedTerm ("Massign: Aassetstate"))
     | Massign (_op, _, Aoperations, v)             -> T.Iassign (operations, f v)
+    | Massignopt _ -> emit_error (UnsupportedTerm ("Massignopt"))
 
     (* control *)
 

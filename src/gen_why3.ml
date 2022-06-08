@@ -1692,6 +1692,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Massign (_, _, Aoperations, _) -> error_not_translated "Massign (_, _, Aoperations, _)"
 
+    | Massignopt _ -> error_not_translated "Massignopt"
 
     (* control *)
 

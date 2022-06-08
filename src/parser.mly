@@ -137,6 +137,7 @@
 %token POSTCONDITION
 %token PREDICATE
 %token QUESTION
+%token QUESTIONCOLONEQUAL
 %token QUESTIONDOT
 %token QUESTIONEQUAL
 %token RBRACE
@@ -212,7 +213,7 @@
 %right THEN ELSE
 
 %nonassoc prec_var
-%nonassoc COLONEQUAL PLUSEQUAL MINUSEQUAL MULTEQUAL DIVEQUAL AMPEQUAL PIPEEQUAL
+%nonassoc QUESTIONCOLONEQUAL COLONEQUAL PLUSEQUAL MINUSEQUAL MULTEQUAL DIVEQUAL AMPEQUAL PIPEEQUAL
 
 %right IMPLY
 %nonassoc EQUIV
@@ -948,6 +949,9 @@ expr_r:
 
  | x=expr op=assignment_operator_expr y=expr
      { Eassign (op, x, y) }
+
+ | x=expr QUESTIONCOLONEQUAL y=expr COLON z=simple_expr
+     { Eassignopt (x, y, z) }
 
  | TRANSFER x=simple_expr
      { Etransfer (TToperation (x)) }

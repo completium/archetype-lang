@@ -448,7 +448,7 @@ and 'id instruction_node =
   | Imatchoption of 'id term_gen * 'id * 'id instruction_gen * 'id instruction_gen
   | Imatchor     of 'id term_gen * 'id * 'id instruction_gen * 'id * 'id instruction_gen
   | Imatchlist   of 'id term_gen * 'id * 'id * 'id instruction_gen * 'id instruction_gen
-  | Iassign of (assignment_operator * type_ * 'id lvalue_gen * 'id term_gen)         (* $2 assignment_operator $3 *)
+  | Iassign of (assignment_operator * type_ * 'id lvalue_gen * 'id term_gen * 'id term_gen option) (* $2 assignment_operator $3 [ : $4]*)
   | Irequire of (bool * 'id term_gen * 'id term_gen)                                               (* $1 ? require : failif *)
   | Itransfer of ('id transfer_t)
   | Iemit of 'id * 'id term_gen

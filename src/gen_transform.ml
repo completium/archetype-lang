@@ -6221,6 +6221,12 @@ let remove_decl_var_opt (model : model) =
         let mw = mk_mterm (Mmatchoption(f v, idv, s, failg (f fa))) ty in
         { mt with node = Mdeclvar (ids, Some ty, mw, c) }
       end
+    | Massignopt (op, ty, k, v, fa) -> begin
+        let idv = dumloc "_v" in
+        let s = mk_mvar idv ty in
+        let mw = mk_mterm (Mmatchoption(f v, idv, s, failg (f fa))) ty in
+        { mt with node = Massign (op, ty, k, mw) }
+      end
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
