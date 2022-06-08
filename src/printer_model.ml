@@ -382,9 +382,9 @@ let pp_mterm fmt (mt : mterm) =
 
     (* entrypoint *)
 
-    | Mentrypoint (t, a, s, r) ->
+    | Mgetentrypoint (t, a, s, r) ->
       Format.fprintf fmt "%s<%a>(%a, %a%a)"
-        (if Option.is_some r then "require_entrypoint" else "entrypoint")
+        (if Option.is_some r then "require_entrypoint" else "get_entrypoint")
         pp_type t
         pp_id a
         f s
@@ -407,8 +407,8 @@ let pp_mterm fmt (mt : mterm) =
     | Moperations ->
       Format.fprintf fmt "operations"
 
-    | Mmkoperation (v, d, a) ->
-      Format.fprintf fmt "mkoperation(%a, %a, %a)"
+    | Mmakeoperation (v, d, a) ->
+      Format.fprintf fmt "make_operation(%a, %a, %a)"
         f v
         f d
         f a
@@ -990,9 +990,9 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (an, k)
 
-    | Mgetopt (an, c, k) ->
+    | Mgetsome (an, c, k) ->
       let pp fmt (an, k) =
-        Format.fprintf fmt "getopt_%a (%a, %a)"
+        Format.fprintf fmt "get_some_%a (%a, %a)"
           pp_str an
           (pp_container_kind f) c
           f k
@@ -1316,7 +1316,7 @@ let pp_mterm fmt (mt : mterm) =
         f x
 
     | Moptget x ->
-      Format.fprintf fmt "opt_get (%a)"
+      Format.fprintf fmt "get_some (%a)"
         f x
 
     | Mrequiresome (x, y) ->
@@ -1331,8 +1331,8 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "ceil (%a)"
         f x
 
-    | Mtostring (_, x) ->
-      Format.fprintf fmt "to_string (%a)"
+    | Mnattostring x ->
+      Format.fprintf fmt "nat_to_string (%a)"
         f x
 
     | Mpack x ->
@@ -1360,8 +1360,8 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "address_contract (%a)"
         f x
 
-    | Mkeyaddress x ->
-      Format.fprintf fmt "key_address (%a)"
+    | Mkeytoaddress x ->
+      Format.fprintf fmt "key_to_address (%a)"
         f x
 
 
@@ -1754,7 +1754,7 @@ let pp_api_builtin fmt = function
   | Boptget t   -> Format.fprintf fmt "getopt on %a" pp_type t
   | Bfloor      -> pp_str fmt "floor"
   | Bceil       -> pp_str fmt "ceil"
-  | Btostring t -> Format.fprintf fmt "to_string on %a" pp_type t
+  | Bnattostring-> Format.fprintf fmt "nat_to_string"
   | Bfail t     -> Format.fprintf fmt "fail on %a" pp_type t
 
 let pp_api_internal fmt = function

@@ -1816,7 +1816,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     (* entrypoint *)
 
-    | Mentrypoint (_t, a, s, _) -> Tentrypoint (map_lident a, map_mterm m ctx s)
+    | Mgetentrypoint (_t, a, s, _) -> Tentrypoint (map_lident a, map_mterm m ctx s)
     | Mcallview (_t, _a, _v, _c) -> assert false (* TODO *)
     | Mself id                  -> Tapp (loc_term (Tvar "getopt"), [loc_term (Tentrypoint (unloc id, Tdefaultaddr))])
 
@@ -1828,7 +1828,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | Inv -> Tvar (dl (mk_id gOperations))
         | _ -> Tdoti (dl gs, dl (mk_id gOperations))
       end
-    | Mmkoperation (v, d, _a)   ->
+    | Mmakeoperation (v, d, _a)   ->
       let a = map_mterm m ctx v in
       let e = map_mterm m ctx d in
       let l = loc_term (Tnil gListAs) in
@@ -2227,7 +2227,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | _ -> mk_get_force ctx (dl an) (map_mterm m ctx k) (mk_lc_term an ctx)
       end
 
-    | Mgetopt (_an, _c, _k) -> error_not_translated "Mgetopt"
+    | Mgetsome (_an, _c, _k) -> error_not_translated "Mgetsome"
 
     (* view api ------------------------------------------------------------- *)
 
@@ -2393,14 +2393,14 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mrequiresome (s, t) -> Tapp (loc_term (Tvar "require_some"),[map_mterm m ctx s; map_mterm m ctx t])
     | Mfloor  s -> Tapp (loc_term (Tvar "floor"),[map_mterm m ctx s])
     | Mceil   s -> Tapp (loc_term (Tvar "ceil"),[map_mterm m ctx s])
-    | Mtostring (_, s) -> Tapp (loc_term (Tvar "from_int"),[map_mterm m ctx s])
+    | Mnattostring s -> Tapp (loc_term (Tvar "from_int"),[map_mterm m ctx s])
     | Mpack   s -> Tapp (loc_term (Tvar "pack"),[map_mterm m ctx s])
     | Munpack (_, s) -> Tapp (loc_term (Tvar "unpack"),[map_mterm m ctx s])
     | Msetdelegate s -> Tapp (loc_term (Tvar "set_delegate"),[map_mterm m ctx s])
     | Mkeyhashtocontract s -> Tapp (loc_term (Tvar "implicit_account"),[map_mterm m ctx s])
     | Mcontracttoaddress s -> Tapp (loc_term (Tvar "contract_address"),[map_mterm m ctx s])
     | Maddresscontract s -> Tapp (loc_term (Tvar "address_contract"),[map_mterm m ctx s])
-    | Mkeyaddress s -> Tapp (loc_term (Tvar "key_address"),[map_mterm m ctx s])
+    | Mkeytoaddress s -> Tapp (loc_term (Tvar "key_address"),[map_mterm m ctx s])
 
     | Mblake2b x -> Tapp (loc_term (Tvar "blake2b"),[map_mterm m ctx x])
     | Msha256  x -> Tapp (loc_term (Tvar "sha256"),[map_mterm m ctx x])
@@ -2977,7 +2977,7 @@ let fold_exns m body : term list =
   let rec internal_fold_exn acc (term : M.mterm) =
     match term.M.node with
     | M.Mget (_, _, k) -> internal_fold_exn (acc @ [Texn ENotFound]) k
-    | M.Mgetopt (_, _, k) -> internal_fold_exn (acc @ [Texn ENotFound]) k
+    | M.Mgetsome (_, _, k) -> internal_fold_exn (acc @ [Texn ENotFound]) k
     | M.Mmapget (_, _ , _, c, k, _) -> internal_fold_exn (internal_fold_exn (acc @ [Texn ENotFound]) k) c
     | M.Mnth (_, CKview c, k) -> internal_fold_exn (internal_fold_exn (acc @ [Texn ENotFound]) c) k
     | M.Mnth (_, CKcoll _, k) -> internal_fold_exn ((acc @ [Texn ENotFound])) k
@@ -3189,7 +3189,7 @@ let mk_functions m =
           | Mupdate           _ -> Format.eprintf "Mupdate     "; true
           | Maddupdate        _ -> Format.eprintf "Maddupdate  "; true
           | Mget              _ -> Format.eprintf "Mget        "; true
-          | Mgetopt           _ -> Format.eprintf "Mgetopt     "; true
+          | Mgetsome          _ -> Format.eprintf "Mgetsome     "; true
           | Mselect           _ -> Format.eprintf "Mselect     "; true
           | Msort             _ -> Format.eprintf "Msort       "; true
           | Mcontains         _ -> Format.eprintf "Mcontains   "; true

@@ -68,7 +68,7 @@
 %token EMPTYLIST
 %token END
 %token ENTRY
-%token ENTRYPOINT
+%token GET_ENTRYPOINT
 %token ENUM
 %token EOF
 %token EQUAL
@@ -1105,7 +1105,7 @@ simple_expr_r:
  | SELF DOT x=ident
      { Eself x }
 
- | ENTRYPOINT LESS t=type_t GREATER LPAREN a=expr COMMA b=expr RPAREN
+ | GET_ENTRYPOINT LESS t=type_t GREATER LPAREN a=expr COMMA b=expr RPAREN
      { Eentrypoint (t, a, b, None) }
 
  | REQUIRE_ENTRYPOINT LESS t=type_t GREATER LPAREN a=expr COMMA b=expr COMMA c=expr RPAREN

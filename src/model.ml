@@ -237,12 +237,12 @@ type ('id, 'term) mterm_node  =
   | Mtransfer         of 'term transfer_kind_gen
   | Memit             of 'id * 'term
   (* entrypoint *)
-  | Mentrypoint       of type_ * 'id * 'term * 'term option  (* type * address * string * require fail *)
+  | Mgetentrypoint    of type_ * 'id * 'term * 'term option  (* type * address * string * require fail *)
   | Mcallview         of type_ * 'term * 'id * 'term         (* type * string * address * argument *)
   | Mself             of 'id                                 (* entryname *)
   (* operation *)
   | Moperations
-  | Mmkoperation      of 'term * 'term * 'term  (* value * address * args *)
+  | Mmakeoperation    of 'term * 'term * 'term  (* value * address * args *)
   (* literals *)
   | Mint              of Core.big_int
   | Mnat              of Core.big_int
@@ -343,7 +343,7 @@ type ('id, 'term) mterm_node  =
   | Maddupdate        of ident * 'term container_kind_gen * 'term * ('id * assignment_operator * 'term) list
   (* asset api expression *)
   | Mget              of ident * 'term container_kind_gen * 'term
-  | Mgetopt           of ident * 'term container_kind_gen * 'term
+  | Mgetsome          of ident * 'term container_kind_gen * 'term
   | Mselect           of ident * 'term container_kind_gen * (ident * type_) list * 'term * 'term list (* asset_name, view, lambda (args, body, apply_args) *)
   | Msort             of ident * 'term container_kind_gen * (ident * sort_kind) list
   | Mcontains         of ident * 'term container_kind_gen * 'term
@@ -405,14 +405,14 @@ type ('id, 'term) mterm_node  =
   | Mrequiresome      of 'term * 'term
   | Mfloor            of 'term
   | Mceil             of 'term
-  | Mtostring         of type_ * 'term
+  | Mnattostring      of 'term
   | Mpack             of 'term
   | Munpack           of type_ * 'term
   | Msetdelegate      of 'term
   | Mkeyhashtocontract of 'term
   | Mcontracttoaddress of 'term
   | Maddresscontract  of 'term
-  | Mkeyaddress       of 'term
+  | Mkeytoaddress     of 'term
   (* crypto functions *)
   | Mblake2b          of 'term
   | Msha256           of 'term
@@ -568,7 +568,7 @@ and api_builtin =
   | Boptget of type_
   | Bfloor
   | Bceil
-  | Btostring of type_
+  | Bnattostring
   | Bfail of type_
 [@@deriving show {with_path = false}]
 
@@ -1255,8 +1255,8 @@ let skip    = seq []
 let operations = mk_mterm Moperations (tlist toperation)
 
 let mk_entrypoint (ty: type_) (entry_name: lident) (addr : mterm) (error_msg : mterm option) : mterm =
-  mk_mterm (Mentrypoint (ty, entry_name, addr, error_msg)) (tcontract ty)
-let mk_mkoperation a b c = mk_mterm (Mmkoperation (a, b, c)) tunit
+  mk_mterm (Mgetentrypoint (ty, entry_name, addr, error_msg)) (tcontract ty)
+let mk_mkoperation a b c = mk_mterm (Mmakeoperation (a, b, c)) tunit
 let mk_transfer_op op = mk_mterm (Mtransfer (TKoperation op)) tunit
 
 (* -------------------------------------------------------------------- *)
@@ -1477,12 +1477,12 @@ let cmp_mterm_node
     | Mtransfer tr1, Mtransfer tr2                                                     -> cmp_transfer_kind tr1 tr2
     | Memit (e1, x1), Memit (e2, x2)                                                   -> cmpi e1 e2 && cmp x1 x2
     (* entrypoint *)
-    | Mentrypoint (t1, a1, s1, r1), Mentrypoint (t2, a2, s2, r2)                       -> cmp_type t1 t2 && cmpi a1 a2 && cmp s1 s2 && Option.cmp cmp r1 r2
+    | Mgetentrypoint (t1, a1, s1, r1), Mgetentrypoint (t2, a2, s2, r2)                 -> cmp_type t1 t2 && cmpi a1 a2 && cmp s1 s2 && Option.cmp cmp r1 r2
     | Mcallview (t1, a1, b1, c1), Mcallview (t2, a2, b2, c2)                           -> cmp_type t1 t2 && cmp a1 a2 && cmpi b1 b2 && cmp c1 c2
     | Mself id1, Mself id2                                                             -> cmpi id1 id2
     (* operation *)
     | Moperations, Moperations                                                         -> true
-    | Mmkoperation (v1, d1, a1), Mmkoperation (v2, d2, a2)                             -> cmp v1 v2 && cmp d1 d2 && cmp a1 a2
+    | Mmakeoperation (v1, d1, a1), Mmakeoperation (v2, d2, a2)                         -> cmp v1 v2 && cmp d1 d2 && cmp a1 a2
     (* literals *)
     | Mint v1, Mint v2                                                                 -> Big_int.eq_big_int v1 v2
     | Mnat v1, Mnat v2                                                                 -> Big_int.eq_big_int v1 v2
@@ -1583,7 +1583,7 @@ let cmp_mterm_node
     | Maddupdate (an1, c1, k1, l1), Maddupdate (an2, c2, k2, l2)                       -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && cmp k1 k2 && List.for_all2 (fun (id1, op1, v1) (id2, op2, v2) -> cmpi id1 id2 && cmp_assign_op op1 op2 && cmp v1 v2) l1 l2
     (* asset api expression *)
     | Mget (an1, c1, k1), Mget (an2, c2, k2)                                           -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && cmp k1 k2
-    | Mgetopt (an1, c1, k1), Mgetopt (an2, c2, k2)                                     -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && cmp k1 k2
+    | Mgetsome (an1, c1, k1), Mgetsome (an2, c2, k2)                                   -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && cmp k1 k2
     | Mselect (an1, c1, la1, lb1, a1), Mselect (an2, c2, la2, lb2, a2)                 -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && List.for_all2 (fun (i1, t1) (i2, t2) -> cmp_ident i1 i2 && cmp_type t1 t2) la1 la2 && cmp lb1 lb2 && List.for_all2 cmp a1 a2
     | Msort (an1, c1, l1), Msort (an2, c2, l2)                                         -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && List.for_all2 (fun (fn1, k1) (fn2, k2) -> cmp_ident fn1 fn2 && k1 = k2) l1 l2
     | Mcontains (an1, c1, i1), Mcontains (an2, c2, i2)                                 -> cmp_ident an1 an2 && cmp_container_kind c1 c2 && cmp i1 i2
@@ -1645,14 +1645,14 @@ let cmp_mterm_node
     | Mrequiresome (x1, y1), Mrequiresome (x2, y2)                                     -> cmp x1 x2 && cmp y1 y2
     | Mfloor x1, Mfloor x2                                                             -> cmp x1 x2
     | Mceil x1, Mceil x2                                                               -> cmp x1 x2
-    | Mtostring(t1, x1), Mtostring (t2, x2)                                            -> cmp_type t1 t2 && cmp x1 x2
+    | Mnattostring x1, Mnattostring x2                                                 -> cmp x1 x2
     | Mpack x1, Mpack x2                                                               -> cmp x1 x2
     | Munpack (t1, x1), Munpack (t2, x2)                                               -> cmp_type t1 t2 && cmp x1 x2
     | Msetdelegate x1, Msetdelegate x2                                                 -> cmp x1 x2
     | Mkeyhashtocontract x1, Mkeyhashtocontract x2                                     -> cmp x1 x2
     | Mcontracttoaddress x1, Mcontracttoaddress x2                                     -> cmp x1 x2
     | Maddresscontract x1, Maddresscontract x2                                         -> cmp x1 x2
-    | Mkeyaddress x1, Mkeyaddress x2                                                   -> cmp x1 x2
+    | Mkeytoaddress x1, Mkeytoaddress x2                                               -> cmp x1 x2
     (* crypto functions *)
     | Mblake2b x1, Mblake2b x2                                                         -> cmp x1 x2
     | Msha256  x1, Msha256  x2                                                         -> cmp x1 x2
@@ -1779,7 +1779,7 @@ let cmp_api_item_node (a1 : api_storage_node) (a2 : api_storage_node) : bool =
     | Boptget t1, Boptget t2 -> cmp_type t1 t2
     | Bfloor    , Bfloor     -> true
     | Bceil     , Bceil      -> true
-    | Btostring t1, Btostring t2 -> cmp_type t1 t2
+    | Bnattostring, Bnattostring -> true
     | Bfail t1, Bfail t2 -> cmp_type t1 t2
     | _ -> false
   in
@@ -1936,12 +1936,12 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mtransfer tr                   -> Mtransfer (map_transfer_kind fi ft f tr)
   | Memit (e, x)                   -> Memit (g e, f x)
   (* entrypoint *)
-  | Mentrypoint (t, a, s, r)       -> Mentrypoint (ft t, g a, f s, Option.map f r)
+  | Mgetentrypoint (t, a, s, r)    -> Mgetentrypoint (ft t, g a, f s, Option.map f r)
   | Mcallview (t, a, b, c)         -> Mcallview (ft t, f a, g b, f c)
   | Mself id                       -> Mself (g id)
   (* operation *)
   | Moperations                    -> Moperations
-  | Mmkoperation (v, d, a)         -> Mmkoperation (f v, f d, f a)
+  | Mmakeoperation (v, d, a)       -> Mmakeoperation (f v, f d, f a)
   (* literals *)
   | Mint v                         -> Mint v
   | Mnat v                         -> Mnat v
@@ -2042,7 +2042,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Maddupdate (an, c, k, l)       -> Maddupdate (fi an, map_container_kind fi f c, f k, List.map (fun (id, op, v) -> (g id, op, f v)) l)
   (* asset api expression *)
   | Mget (an, c, k)                -> Mget (fi an, map_container_kind fi f c, f k)
-  | Mgetopt (an, c, k)             -> Mgetopt (fi an, map_container_kind fi f c, f k)
+  | Mgetsome (an, c, k)            -> Mgetsome (fi an, map_container_kind fi f c, f k)
   | Mselect (an, c, la, lb, a)     -> Mselect (fi an, map_container_kind fi f c, List.map (fun (i, t) -> (fi i, ft t)) la, f lb, List.map f a)
   | Msort (an, c, l)               -> Msort (fi an, map_container_kind fi f c, l)
   | Mcontains (an, c, i)           -> Mcontains (fi an, map_container_kind fi f c, f i)
@@ -2104,14 +2104,14 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mrequiresome (x, y)            -> Mrequiresome (f x, f y)
   | Mfloor x                       -> Mfloor (f x)
   | Mceil x                        -> Mceil (f x)
-  | Mtostring (t, x)               -> Mtostring (ft t, f x)
+  | Mnattostring x                 -> Mnattostring (f x)
   | Mpack x                        -> Mpack (f x)
   | Munpack (t, x)                 -> Munpack (ft t, f x)
   | Msetdelegate x                 -> Msetdelegate (f x)
   | Mkeyhashtocontract x           -> Mkeyhashtocontract (f x)
   | Mcontracttoaddress x           -> Mcontracttoaddress (f x)
   | Maddresscontract x             -> Maddresscontract (f x)
-  | Mkeyaddress x                  -> Mkeyaddress (f x)
+  | Mkeytoaddress x                -> Mkeytoaddress (f x)
   (* crypto functions *)
   | Mblake2b x                     -> Mblake2b (f x)
   | Msha256 x                      -> Msha256  (f x)
@@ -2392,12 +2392,12 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mtransfer tr                          -> fold_transfer_kind f accu tr
   | Memit (_, x)                          -> f accu x
   (* entrypoint *)
-  | Mentrypoint (_, _, s, r)              -> let tmp = f accu s in Option.map_dfl (f tmp) tmp r
+  | Mgetentrypoint (_, _, s, r)           -> let tmp = f accu s in Option.map_dfl (f tmp) tmp r
   | Mcallview (_, a, _, c)                -> f (f accu a) c
   | Mself _                               -> accu
   (* operation *)
   | Moperations                           -> accu
-  | Mmkoperation (v, d, a)                -> f (f (f accu v) d) a
+  | Mmakeoperation (v, d, a)              -> f (f (f accu v) d) a
   (* literals *)
   | Mint _                                -> accu
   | Mnat _                                -> accu
@@ -2498,7 +2498,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Maddupdate (_, c, k, l)               -> List.fold_left (fun accu (_, _, v) -> f accu v) (f (fold_container_kind f accu c) k) l
   (* asset api expression *)
   | Mget (_, c, k)                        -> f (fold_container_kind f accu c) k
-  | Mgetopt (_, c, k)                     -> f (fold_container_kind f accu c) k
+  | Mgetsome (_, c, k)                    -> f (fold_container_kind f accu c) k
   | Mselect (_, c, _, lb, a)              -> List.fold_left (fun accu x -> f accu x) (f (fold_container_kind f accu c) lb) a
   | Msort (_, c,_)                        -> fold_container_kind f accu c
   | Mcontains (_, c, i)                   -> f (fold_container_kind f accu c) i
@@ -2560,14 +2560,14 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mrequiresome (x, y)                   -> f (f accu x) y
   | Mfloor x                              -> f accu x
   | Mceil x                               -> f accu x
-  | Mtostring (_, x)                      -> f accu x
+  | Mnattostring x                        -> f accu x
   | Mpack x                               -> f accu x
   | Munpack (_, x)                        -> f accu x
   | Msetdelegate x                        -> f accu x
   | Mkeyhashtocontract x                  -> f accu x
   | Mcontracttoaddress x                  -> f accu x
   | Maddresscontract x                    -> f accu x
-  | Mkeyaddress x                         -> f accu x
+  | Mkeytoaddress x                       -> f accu x
   (* crypto functions *)
   | Mblake2b x                            -> f accu x
   | Msha256  x                            -> f accu x
@@ -2865,14 +2865,14 @@ let fold_map_term
 
   (* entrypoint *)
 
-  | Mentrypoint (t, a, s, r) ->
+  | Mgetentrypoint (t, a, s, r) ->
     let se, sa = f accu s in
     let re, ra =
       match r with
       | Some r -> f sa r |> (fun (x, y) -> (Some x, y))
       | None -> (None, sa)
     in
-    g (Mentrypoint (t, a, se, re)), ra
+    g (Mgetentrypoint (t, a, se, re)), ra
 
   | Mcallview (t, a, b, c) ->
     let ae, aa = f accu a in
@@ -2888,11 +2888,11 @@ let fold_map_term
   | Moperations ->
     g (Moperations), accu
 
-  | Mmkoperation (v, d, a) ->
+  | Mmakeoperation (v, d, a) ->
     let ve, va = f accu v in
     let de, da = f va d in
     let ae, aa = f da a in
-    g (Mmkoperation (ve, de, ae)), aa
+    g (Mmakeoperation (ve, de, ae)), aa
 
 
   (* literals *)
@@ -3366,10 +3366,10 @@ let fold_map_term
     let ke, ka = f ca k in
     g (Mget (an, ce, ke)), ka
 
-  | Mgetopt (an, c, k) ->
+  | Mgetsome (an, c, k) ->
     let ce, ca = fold_map_container_kind f accu c in
     let ke, ka = f ca k in
-    g (Mgetopt (an, ce, ke)), ka
+    g (Mgetsome (an, ce, ke)), ka
 
   | Mselect (an, c, la, lb, a) ->
     let ce, ca = fold_map_container_kind f accu c in
@@ -3663,9 +3663,9 @@ let fold_map_term
     let xe, xa = f accu x in
     g (Mceil xe), xa
 
-  | Mtostring (t, x) ->
+  | Mnattostring x ->
     let xe, xa = f accu x in
-    g (Mtostring (t, xe)), xa
+    g (Mnattostring xe), xa
 
   | Mpack x ->
     let xe, xa = f accu x in
@@ -3691,9 +3691,9 @@ let fold_map_term
     let xe, xa = f accu x in
     g (Maddresscontract xe), xa
 
-  | Mkeyaddress x ->
+  | Mkeytoaddress x ->
     let xe, xa = f accu x in
-    g (Mkeyaddress xe), xa
+    g (Mkeytoaddress xe), xa
 
   (* crypto functions *)
 
@@ -4151,7 +4151,7 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
         | Boptget t -> Boptget (for_type t)
         | Bfloor    -> Bfloor
         | Bceil     -> Bceil
-        | Btostring t -> Btostring (for_type t)
+        | Bnattostring -> Bnattostring
         | Bfail t -> Bfail (for_type t)
       in
       let for_api_internal (ainternal : api_internal) : api_internal =
@@ -4872,7 +4872,7 @@ end = struct
       match t.node with
       | Mtransfer _
       | Moperations
-      | Mmkoperation _
+      | Mmakeoperation _
       | Massign (_, _, Aoperations,_)
       | Memit _
         -> raise FoundOperations
@@ -5734,7 +5734,7 @@ end = struct
              | APIBuiltin (Boptget       _) -> 38
              | APIBuiltin (Bfloor         ) -> 39
              | APIBuiltin (Bceil          ) -> 40
-             | APIBuiltin (Btostring     _) -> 41
+             | APIBuiltin (Bnattostring   ) -> 41
              | APIBuiltin (Bfail         _) -> 42
            in
            let idx1 = get_kind i1.node_item in

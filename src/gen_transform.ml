@@ -4172,7 +4172,7 @@ let remove_asset (model : model) : model =
           let otyp = mt.type_ in
           let typ = match get_ntype otyp with | Toption v -> v | _ -> assert false in
 
-          let mt = mk_mterm (Mgetopt(an, c, k)) (toption (tassetvalue (dumloc an))) |> fm ctx in
+          let mt = mk_mterm (Mgetsome(an, c, k)) (toption (tassetvalue (dumloc an))) |> fm ctx in
           let id = dumloc "_q_opt" in
           let vid = mk_mvar id (tassetvalue (dumloc an)) in
           let dt = mk_mterm (Mdot (vid, fn)) typ in
@@ -4204,7 +4204,7 @@ let remove_asset (model : model) : model =
           mk_mterm (Mexprif(cond, get, failc (AssetNotFound an))) get.type_
         end
 
-      | Mgetopt (an, _, k) -> begin
+      | Mgetsome (an, _, k) -> begin
           let k = fm ctx k in
           let va = get_asset_global an in
 
@@ -6181,7 +6181,7 @@ let remove_ternary_opeartor (model : model) : model =
     | { node = Mternaryoption (c, a, b) } -> { mt with node = Mmatchoption (f c, dumloc "the", f a, f b) }
     | { node = Mternaryasset (an, k, a, b) } -> begin
         (* let asset = Utils.get_asset model an in *)
-        let getopt = mk_mterm (Mgetopt(an, CKcoll (Tnone, Dnone), f k)) (toption (tassetvalue (dumloc an))) in
+        let getopt = mk_mterm (Mgetsome(an, CKcoll (Tnone, Dnone), f k)) (toption (tassetvalue (dumloc an))) in
         { mt with node = Mmatchoption (getopt, dumloc "the", f a, f b) }
       end
     | _ -> map_mterm (aux ctx) mt

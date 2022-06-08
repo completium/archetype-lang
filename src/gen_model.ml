@@ -436,7 +436,7 @@ let to_model (ast : A.ast) : M.model =
       | A.Pself id -> M.Mself id
 
 
-      | A.Pentrypoint (t, a, b, r) -> M.Mentrypoint (type_to_type t, a, f b, Option.map f r)
+      | A.Pgetentrypoint (t, a, b, r) -> M.Mgetentrypoint (type_to_type t, a, f b, Option.map f r)
 
       | A.Pcallview (t, a, b, c) -> M.Mcallview (type_to_type t, f a, b,f c)
 
@@ -468,7 +468,7 @@ let to_model (ast : A.ast) : M.model =
         let fp = f p in
         let fq = f q in
         let asset_name = extract_asset_name fp in
-        M.Mgetopt (asset_name, to_ck env fp, fq)
+        M.Mgetsome (asset_name, to_ck env fp, fq)
 
       | A.Pcall (Some p, A.Cconst (A.Cselect), [AFun (_id, _type, l, q)]) when is_asset_container p ->
         let fp = f p in
@@ -731,7 +731,7 @@ let to_model (ast : A.ast) : M.model =
         let fx = f x in
         M.Mtonat (fx)
 
-      | A.Pcall (None, A.Cconst A.Cgetopt, [AExpr x]) ->
+      | A.Pcall (None, A.Cconst A.Cgetsome, [AExpr x]) ->
         let fx = f x in
         M.Moptget (fx)
 
@@ -748,10 +748,9 @@ let to_model (ast : A.ast) : M.model =
         let fx = f x in
         M.Mceil (fx)
 
-      | A.Pcall (None, A.Cconst A.Ctostring, [AExpr x]) ->
+      | A.Pcall (None, A.Cconst A.Cnattostring, [AExpr x]) ->
         let fx = f x in
-        let t = fx.type_ in
-        M.Mtostring (t, fx)
+        M.Mnattostring fx
 
       | A.Pcall (None, A.Cconst A.Cpack, [AExpr x]) ->
         let fx = f x in
@@ -822,9 +821,9 @@ let to_model (ast : A.ast) : M.model =
         let fx = f x in
         M.Maddresscontract (fx)
 
-      | A.Pcall (None, A.Cconst A.Ckeyaddress, [AExpr x]) ->
+      | A.Pcall (None, A.Cconst A.Ckeytoaddress, [AExpr x]) ->
         let fx = f x in
-        M.Mkeyaddress (fx)
+        M.Mkeytoaddress (fx)
 
       | A.Pcall (_, A.Cid id, args) ->
         M.Mapp (id, List.map (fun x -> term_arg_to_expr f x) args)
@@ -915,11 +914,11 @@ let to_model (ast : A.ast) : M.model =
 
       (* Operation *)
 
-      | A.Pcall (None, A.Cconst (A.Cmkoperation), [AExpr a; AExpr b; AExpr c]) ->
+      | A.Pcall (None, A.Cconst (A.Cmakeoperation), [AExpr a; AExpr b; AExpr c]) ->
         let fa = f a in
         let fb = f b in
         let fc = f c in
-        M.Mmkoperation (fa, fb, fc)
+        M.Mmakeoperation (fa, fb, fc)
 
 
       (* Lambda *)

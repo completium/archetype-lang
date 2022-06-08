@@ -213,7 +213,7 @@ let to_ir (model : M.model) : T.ir =
     | T.Bceil            -> true
     | T.BlistContains  _ -> false
     | T.BlistNth       _ -> false
-    | T.Btostring      _ -> false
+    | T.Bnattostring     -> false
     | T.Bratcmp          -> false
     | T.Bratnorm         -> true
     | T.Brataddsub       -> true
@@ -283,12 +283,12 @@ let to_ir (model : M.model) : T.ir =
         in
         T.mk_func name targ tret ctx (T.Concrete (args, body))
       end
-    | Btostring t -> begin
-        let targ = t in
+    | Bnattostring -> begin
+        let targ = T.tnat in
         let tret = T.tstring in
         let args, body = begin
           let arg_name     = "x" in
-          let args         = [arg_name, t] in
+          let args         = [arg_name, targ] in
           let res_name     = "res" in
           let map_name     = "m" in
           let pair_name    = "p" in
@@ -707,7 +707,7 @@ let to_ir (model : M.model) : T.ir =
 
     (* entrypoint *)
 
-    | Mentrypoint (t, id, d, r)  ->
+    | Mgetentrypoint (t, id, d, r)  ->
       let annot = get_entrypoint_annot (unloc id) in
       let a = T.Iunop (Ucontract (to_type model t, annot), f d) in
       begin
@@ -724,8 +724,8 @@ let to_ir (model : M.model) : T.ir =
 
     (* operation *)
 
-    | Moperations            -> vops
-    | Mmkoperation (v, e, a) -> T.Iterop (Ttransfer_tokens, f a, f v, f e)
+    | Moperations              -> vops
+    | Mmakeoperation (v, e, a) -> T.Iterop (Ttransfer_tokens, f a, f v, f e)
 
 
     (* literals *)
@@ -907,7 +907,7 @@ let to_ir (model : M.model) : T.ir =
     (* asset api expression *)
 
     | Mget      _ -> emit_error (UnsupportedTerm ("Mget"))
-    | Mgetopt   _ -> emit_error (UnsupportedTerm ("Mgetopt"))
+    | Mgetsome  _ -> emit_error (UnsupportedTerm ("Mgetsome"))
     | Mselect   _ -> emit_error (UnsupportedTerm ("Mselect"))
     | Msort     _ -> emit_error (UnsupportedTerm ("Msort"))
     | Mcontains _ -> emit_error (UnsupportedTerm ("Mcontains"))
@@ -1000,9 +1000,9 @@ let to_ir (model : M.model) : T.ir =
     | Mtonat x           -> T.Iifnone (T.Iunop (Uisnat, f x), T.ifail "NEG_VALUE", "_var_to_nat", Ivar "_var_to_nat", ft mtt.type_)
     | Moptget x          -> T.Iifnone (f x, T.ifail "NotFound", "_var_ifnone", Ivar "_var_ifnone", ft mtt.type_)
     | Mrequiresome (x, y)-> T.Iifnone (f x, Iunop (Ufail, f y), "_var_ifnone", Ivar "_var_ifnone", ft mtt.type_)
-    | Mfloor  x          -> let b = T.Bfloor           in add_builtin b; T.Icall (get_fun_name b, [f x], is_inline b)
-    | Mceil   x          -> let b = T.Bceil            in add_builtin b; T.Icall (get_fun_name b, [f x], is_inline b)
-    | Mtostring (t, x)   -> let b = T.Btostring (ft t) in add_builtin b; T.Icall (get_fun_name b, [f x], is_inline b)
+    | Mfloor  x          -> let b = T.Bfloor       in add_builtin b; T.Icall (get_fun_name b, [f x], is_inline b)
+    | Mceil   x          -> let b = T.Bceil        in add_builtin b; T.Icall (get_fun_name b, [f x], is_inline b)
+    | Mnattostring x     -> let b = T.Bnattostring in add_builtin b; T.Icall (get_fun_name b, [f x], is_inline b)
     | Mpack x            -> T.Iunop (Upack,  f x)
     | Munpack (t, x)     -> T.Iunop (Uunpack (ft t), f x)
     | Msetdelegate x     -> T.Iunop (Usetdelegate, f x)
@@ -1010,7 +1010,7 @@ let to_ir (model : M.model) : T.ir =
     | Mcontracttoaddress x -> T.Iunop (Uaddress, f x)
     | Maddresscontract x ->
       T.Iifnone (T.Iunop (Ucontract(T.tunit, None), f x), T.ifail "NotImplicitContract", "_var_ifnone", Ivar "_var_ifnone", ft mtt.type_)
-    | Mkeyaddress      x -> T.Iunop (Uaddress, T.Iunop (Uimplicitaccount, T.Iunop  (Uhash_key, f x)))
+    | Mkeytoaddress    x -> T.Iunop (Uaddress, T.Iunop (Uimplicitaccount, T.Iunop  (Uhash_key, f x)))
 
     (* crypto functions *)
 
@@ -1189,11 +1189,11 @@ let to_ir (model : M.model) : T.ir =
         match mt.node with
         | Mmax _                  -> (doit accu mt (T.Bmax (to_type model mt.type_)))
         | Mmin _                  -> (doit accu mt (T.Bmin (to_type model mt.type_)))
-        | Mfloor _                -> (doit accu mt (T.Bfloor                ))
-        | Mceil  _                -> (doit accu mt (T.Bceil                 ))
+        | Mfloor _                -> (doit accu mt (T.Bfloor))
+        | Mceil  _                -> (doit accu mt (T.Bceil))
         | Mlistcontains (t, _, _) -> (doit accu mt (T.BlistContains (to_type model t)))
         | Mlistnth (t, _, _)      -> (doit accu mt (T.BlistNth (to_type model t)))
-        | Mtostring (t, _)        -> (doit accu mt (T.Btostring (to_type model t) ))
+        | Mnattostring _          -> (doit accu mt (T.Bnattostring))
 
         | Mrateq _
         | Mratcmp _                          -> (doit accu mt (T.Bratcmp   ))
@@ -1318,7 +1318,7 @@ let concrete_michelson b : T.code =
   | T.Bceil           -> T.cseq (get_implem b)
   | T.BlistContains _ -> T.cseq T.[cunpair; cfalse; cswap; citer [cdig 2; cdup; cdug 3; ccompare; ceq; cor; ]; cdip (1, [cdrop 1])]
   | T.BlistNth _      -> error ()
-  | T.Btostring _     -> error ()
+  | T.Bnattostring    -> error ()
   | T.Bratcmp         -> T.cseq T.[cunpair; cunpair; cdip (1, [cunpair]); cunpair; cdug 3; cmul; cdip (1, [cmul]); cswap; ccompare; cswap;
                                    cifleft ([cdrop 1; ceq], [cifleft ([cifleft ([cdrop 1; clt], [cdrop 1; cle])],
                                                                       [cifleft ([cdrop 1; cgt], [cdrop 1; cge])])])]

@@ -1602,15 +1602,15 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     (* entrypoint *)
 
-    | Mentrypoint (_t, _a, _s, _r) -> assert false
+    | Mgetentrypoint (_t, _a, _s, _r) -> assert false
     | Mcallview (_t, _a, _b, _c) -> assert false
     | Mself _id                -> assert false
 
 
     (* operation *)
 
-    | Moperations               -> assert false
-    | Mmkoperation (_v, _d, _a) -> assert false
+    | Moperations                 -> assert false
+    | Mmakeoperation (_v, _d, _a) -> assert false
 
 
     (* literals *)
@@ -1734,7 +1734,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     (* asset api expression *)
 
     | Mget      (_an, _c, _k)           -> assert false
-    | Mgetopt   (_an, _c, _k)           -> assert false
+    | Mgetsome  (_an, _c, _k)           -> assert false
     | Mselect   (_an, _c, _la, _lb, _a) -> assert false
     | Msort     (_an, _c, _l)           -> assert false
     | Mcontains (_an, _c, _i)           -> assert false
@@ -1819,14 +1819,14 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mrequiresome (_x, _y) -> assert false
     | Mfloor  _x          -> assert false
     | Mceil   _x          -> assert false
-    | Mtostring (_, _x)   -> assert false
+    | Mnattostring _x     -> assert false
     | Mpack _x            -> assert false
     | Munpack (_t, _x)    -> assert false
     | Msetdelegate _x     -> assert false
     | Mkeyhashtocontract _x -> assert false
     | Mcontracttoaddress _x -> assert false
     | Maddresscontract _x -> assert false
-    | Mkeyaddress _x      -> assert false
+    | Mkeytoaddress _x    -> assert false
 
 
     (* crypto functions *)

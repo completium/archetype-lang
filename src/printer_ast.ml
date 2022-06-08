@@ -238,7 +238,8 @@ let to_const = function
   | Ccount                 -> "count"
   | Cfloor                 -> "floor"
   | Cget                   -> "get"
-  | Cgetopt                -> "opt_get"
+  | Cgetsome               -> "get_some"
+  | Cgetopt                -> "getopt"
   | Crequiresome           -> "require_some"
   | Cisnone                -> "is_none"
   | Cissome                -> "is_some"
@@ -259,8 +260,8 @@ let to_const = function
   | Cunpack                -> "unpack"
   | Cupdate                -> "update"
   | Cupdateall             -> "update_all"
-  | Cmkoperation           -> "mkoperation"
-  | Ctostring              -> "to_string"
+  | Cmakeoperation         -> "make_operation"
+  | Cnattostring           -> "nat_to_string"
   | Cexec                  -> "exec"
   | Capply                 -> "apply"
   | Cinttodate             -> "int_to_date"
@@ -300,7 +301,7 @@ let to_const = function
   | Ckeytokeyhash          -> "key_to_key_hash"
   | Ccontracttoaddress     -> "contract_to_address"
   | Caddresscontract       -> "address_contract"
-  | Ckeyaddress            -> "key_address"
+  | Ckeytoaddress          -> "key_to_address"
   (* voting *)
   | Ctotalvotingpower      -> "total_voting_power"
   | Cvotingpower           -> "voting_power"
@@ -652,10 +653,10 @@ let rec pp_pterm fmt (pterm : pterm) =
       in
       (pp_no_paren pp) fmt id
 
-    | Pentrypoint (t, a, b, r) ->
+    | Pgetentrypoint (t, a, b, r) ->
       let pp fmt (t, a, b, r) =
         Format.fprintf fmt "%s<%a>(%a, %a%a)"
-          (if Option.is_some r then "require_entrypoint" else "entrypoint")
+          (if Option.is_some r then "require_entrypoint" else "get_entrypoint")
           pp_type  t
           pp_id a
           pp_pterm b

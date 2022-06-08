@@ -300,7 +300,7 @@ and builtin =
   | Bceil
   | BlistContains of type_
   | BlistNth of type_
-  | Btostring of type_
+  | Bnattostring
   | Bratcmp
   | Bratnorm
   | Brataddsub
@@ -1034,7 +1034,7 @@ let cmp_builtin lhs rhs =
   | Bceil, Bceil                       -> true
   | BlistContains t1, BlistContains t2 -> cmp_type t1 t2
   | BlistNth t1, BlistNth t2           -> cmp_type t1 t2
-  | Btostring t1, Btostring t2         -> cmp_type t1 t2
+  | Bnattostring, Bnattostring         -> true
   | Bratcmp, Bratcmp                   -> true
   | Bratnorm, Bratnorm                 -> true
   | Brataddsub, Brataddsub             -> true
@@ -1385,7 +1385,7 @@ end = struct
     | Bceil           -> "_ceil"
     | BlistContains t -> "_list_contains_" ^ (ft t)
     | BlistNth t      -> "_list_nth_"      ^ (ft t)
-    | Btostring t     -> "_to_string_"     ^ (ft t)
+    | Bnattostring    -> "_nat_to_string_"
     | Bratcmp         -> "_ratcmp"
     | Bratnorm        -> "_ratnorm"
     | Brataddsub      -> "_rataddsub"

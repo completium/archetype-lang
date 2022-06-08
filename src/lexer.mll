@@ -53,7 +53,7 @@
       "emptylist"           , EMPTYLIST           ;
       "end"                 , END                 ;
       "entry"               , ENTRY               ;
-      "entrypoint"          , ENTRYPOINT          ;
+      "get_entrypoint"      , GET_ENTRYPOINT      ;
       "enum"                , ENUM                ;
       "event"               , EVENT               ;
       "exists"              , EXISTS              ;

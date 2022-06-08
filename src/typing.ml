@@ -1372,7 +1372,7 @@ let coreops : opinfo list =
        (fun x -> op "length" A.Clength `Total None [x] (`Ty A.vtnat) Mint.empty)
        [A.vtstring; A.vtbytes])
   @ (List.map
-       (fun x -> op "to_string" A.Ctostring `Total None [x] (`Ty A.vtstring) Mint.empty)
+       (fun x -> op "nat_to_string" A.Cnattostring `Total None [x] (`Ty A.vtstring) Mint.empty)
        [A.vtnat])
   @ [
     op "int_to_nat"  A.Cinttonat `Total None [A.vtint] (`Ty (A.Toption A.vtnat)) Mint.empty;
@@ -1390,7 +1390,7 @@ let optionops : opinfo list =
   [
     op "is_none"      A.Cisnone      `Total   (Some top) [] (`Ty A.vtbool) Mint.empty;
     op "is_some"      A.Cissome      `Total   (Some top) [] (`Ty A.vtbool) Mint.empty;
-    op "opt_get"      A.Cgetopt      `Partial (Some top) [] (`Ty ty)       Mint.empty;
+    op "get_some"     A.Cgetsome     `Partial (Some top) [] (`Ty ty)       Mint.empty;
     op "require_some" A.Crequiresome `Partial (Some top) [ty2] (`Ty ty)    Mint.empty
   ]
 
@@ -1469,7 +1469,7 @@ let cryptoops : opinfo list =
      op "address_to_contract"  A.Caddresscontract   `Total None [A.vtaddress]                       (`Ty (A.Tcontract A.vtunit)) Mint.empty;
      op "voting_power"         A.Cvotingpower       `Total None [A.vtkeyhash]                       (`Ty A.vtnat               ) Mint.empty;
      op "contract_to_address"  A.Ccontracttoaddress `Total None [A.Tcontract (A.Tnamed 0)]          (`Ty A.vtaddress           ) Mint.empty;
-     op "key_address"          A.Ckeyaddress        `Total None [A.vtkey]                           (`Ty A.vtaddress           ) Mint.empty]
+     op "key_to_address"       A.Ckeytoaddress        `Total None [A.vtkey]                           (`Ty A.vtaddress           ) Mint.empty]
 
 (* -------------------------------------------------------------------- *)
 let mathops : opinfo list =
@@ -1486,7 +1486,7 @@ let packops : opinfo list =
 
 (* -------------------------------------------------------------------- *)
 let opsops : opinfo list =
-  [op "mkoperation" A.Cmkoperation `Total None
+  [op "make_operation" A.Cmakeoperation `Total None
      [A.vtcurrency; A.Tcontract (A.Tnamed 0); A.Tnamed 0] (`Ty A.Toperation) Mint.empty]
 
 (* -------------------------------------------------------------------- *)
@@ -3972,7 +3972,7 @@ let rec for_xexpr
         let rt = if Option.is_some c then (A.Tcontract ty) else (A.Toption (A.Tcontract ty)) in
         mk_sp
           (Some rt)
-          (A.Pentrypoint (ty, id, b, c))
+          (A.Pgetentrypoint (ty, id, b, c))
       end
 
     | Ecallview (ty, a, b, c) -> begin
