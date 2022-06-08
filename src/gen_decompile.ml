@@ -1324,7 +1324,7 @@ end = struct
           | `Zop Zsource,                    [] -> msource
           | `Zop Zsender,                    [] -> mcaller
           | `Zop Zaddress,                   [] -> assert false
-          | `Zop Zchain_id,                  [] -> mchainid
+          | `Zop Zchain_id,                  [] -> mselfchainid
           | `Zop Zself _a,                   [] -> assert false
           | `Zop Zself_address,              [] -> mselfaddress
           | `Zop Znone t,                    [] -> mk_none (ft t)
@@ -1877,7 +1877,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mbalance       -> A.eterm (dumloc A.cst_balance)
     | Msource        -> A.eterm (dumloc A.cst_source)
     | Mselfaddress   -> A.eterm (dumloc A.cst_selfaddress)
-    | Mchainid       -> A.eterm (dumloc A.cst_chainid)
+    | Mselfchainid   -> A.eterm (dumloc A.cst_chainid)
     | Mmetadata      -> A.eterm (dumloc A.cst_metadata)
     | Mlevel         -> A.eterm (dumloc A.cst_level)
 

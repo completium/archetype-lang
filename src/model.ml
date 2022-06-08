@@ -442,7 +442,7 @@ type ('id, 'term) mterm_node  =
   | Mbalance
   | Msource
   | Mselfaddress
-  | Mchainid
+  | Mselfchainid
   | Mmetadata
   | Mlevel
   (* variable *)
@@ -1180,7 +1180,7 @@ let mcaller       = mk_mterm Mcaller      taddress
 let mbalance      = mk_mterm Mbalance     ttez
 let msource       = mk_mterm Msource      taddress
 let mselfaddress  = mk_mterm Mselfaddress taddress
-let mchainid      = mk_mterm Mchainid     tchainid
+let mselfchainid  = mk_mterm Mselfchainid tchainid
 let mmetadata     = mk_mterm Mmetadata    (tmap tstring tbytes)
 let mlevel        = mk_mterm Mlevel       tnat
 
@@ -1681,7 +1681,7 @@ let cmp_mterm_node
     | Mbalance, Mbalance                                                               -> true
     | Msource, Msource                                                                 -> true
     | Mselfaddress, Mselfaddress                                                       -> true
-    | Mchainid, Mchainid                                                               -> true
+    | Mselfchainid, Mselfchainid                                                      -> true
     | Mmetadata, Mmetadata                                                             -> true
     | Mlevel, Mlevel                                                                   -> true
     (* variable *)
@@ -2139,7 +2139,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mbalance                       -> Mbalance
   | Msource                        -> Msource
   | Mselfaddress                   -> Mselfaddress
-  | Mchainid                       -> Mchainid
+  | Mselfchainid                   -> Mselfchainid
   | Mmetadata                      -> Mmetadata
   | Mlevel                         -> Mlevel
   (* variable *)
@@ -2594,7 +2594,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mbalance                              -> accu
   | Msource                               -> accu
   | Mselfaddress                          -> accu
-  | Mchainid                              -> accu
+  | Mselfchainid                          -> accu
   | Mmetadata                             -> accu
   | Mlevel                                -> accu
   (* variable *)
@@ -3799,8 +3799,8 @@ let fold_map_term
   | Mselfaddress ->
     g Mselfaddress, accu
 
-  | Mchainid ->
-    g Mchainid, accu
+  | Mselfchainid ->
+    g Mselfchainid, accu
 
   | Mmetadata ->
     g Mmetadata, accu
@@ -6084,8 +6084,8 @@ end = struct
       | Mcaller                    -> "caller"::accu
       | Mbalance                   -> "balance"::accu
       | Msource                    -> "source"::accu
-      | Mselfaddress               -> "selfaddress"::accu
-      | Mchainid                   -> "chainid"::accu
+      | Mselfaddress               -> "self_address"::accu
+      | Mselfchainid               -> "self_chain_id"::accu
       | Mmetadata                  -> "metadata"::accu
       | Mlevel                     -> "level"::accu
 

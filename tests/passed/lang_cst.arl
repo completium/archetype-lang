@@ -12,7 +12,7 @@ entry exec () {
     do_require(d = d, "ko");
     var e : tez      = transferred;         (* AMOUNT *)
     do_require(e = e, "ko");
-    var f : chain_id = chainid;             (* CHAIN_ID *)
+    var f : chain_id = self_chain_id;       (* CHAIN_ID *)
     do_require(f = f, "ko");
     var g : address  = self_address;        (* SELF_ADDRESS *)
     do_require(g = g, "ko");

@@ -1060,7 +1060,7 @@ let to_ir (model : M.model) : T.ir =
     | Mbalance       -> T.Izop Zbalance
     | Msource        -> T.Izop Zsource
     | Mselfaddress   -> T.Izop Zself_address
-    | Mchainid       -> T.Izop Zchain_id
+    | Mselfchainid   -> T.Izop Zchain_id
     | Mmetadata      -> assert false
     | Mlevel         -> T.Izop Zlevel
 

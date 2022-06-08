@@ -46,7 +46,7 @@ entry exec () {
     var op2 : option<nat> = some(0);
     my_asset.add({id = "key"; value = 2});
     var b : bytes = 0xff;
-    var vchain  : chain_id = chainid;
+    var vchain  : chain_id = self_chain_id;
     var vchainc : chain_id = "NetXdQprcVkpaWU";
     var edkey   : key = "edpkurLzuFFL1XyP3fed4u7MsgeywQoQmHM45Bz91PBzDvUjQ9bvdn";
     var edkh    : key_hash = "tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg";

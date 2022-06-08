@@ -1241,16 +1241,16 @@ type groups = {
 
 (* -------------------------------------------------------------------- *)
 let globals = [
-  ("balance"      , A.Cbalance     , A.vtcurrency);
-  ("caller"       , A.Ccaller      , A.vtaddress);
-  ("now"          , A.Cnow         , A.vtdate);
-  ("source"       , A.Csource      , A.vtaddress);
-  ("self_address" , A.Cselfaddress , A.vtaddress);
-  ("transferred"  , A.Ctransferred , A.vtcurrency);
-  ("chainid"      , A.Cchainid     , A.vtchainid);
-  ("operations"   , A.Coperations  , A.Tlist (A.Toperation));
-  ("metadata"     , A.Cmetadata    , A.Tmap (A.vtstring, A.vtbytes));
-  ("level"        , A.Clevel       , A.vtnat);
+  ("balance"       , A.Cbalance     , A.vtcurrency);
+  ("caller"        , A.Ccaller      , A.vtaddress);
+  ("now"           , A.Cnow         , A.vtdate);
+  ("source"        , A.Csource      , A.vtaddress);
+  ("self_address"  , A.Cselfaddress , A.vtaddress);
+  ("transferred"   , A.Ctransferred , A.vtcurrency);
+  ("self_chain_id" , A.Cselfchainid , A.vtchainid);
+  ("operations"    , A.Coperations  , A.Tlist (A.Toperation));
+  ("metadata"      , A.Cmetadata    , A.Tmap (A.vtstring, A.vtbytes));
+  ("level"         , A.Clevel       , A.vtnat);
   ("total_voting_power", A.Ctotalvotingpower, A.vtnat);
 ]
 

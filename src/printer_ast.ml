@@ -223,7 +223,7 @@ let to_const = function
   | Cany                   -> "any"
   | Canyentry              -> "anyentry"
   | Cresult                -> "result"
-  | Cchainid               -> "chain_id"
+  | Cselfchainid           -> "self_chain_id"
   | Coperations            -> "operations"
   | Cmetadata              -> "metadata"
   | Clevel                 -> "level"

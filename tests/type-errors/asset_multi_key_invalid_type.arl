@@ -9,7 +9,7 @@ asset my_asset identified by i s {
 }
 
 entry exec () {
-  var val = my_asset[(0, chainid)].v;
+  var val = my_asset[(0, self_chain_id)].v;
   do_require(val, "ko");
-  my_asset.update((0, chainid), { v = false})
+  my_asset.update((0, self_chain_id), { v = false})
 }

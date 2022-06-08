@@ -391,7 +391,7 @@ let to_model (ast : A.ast) : M.model =
       | A.Pconst Cbalance                      -> M.Mbalance
       | A.Pconst Csource                       -> M.Msource
       | A.Pconst Cselfaddress                  -> M.Mselfaddress
-      | A.Pconst Cchainid                      -> M.Mchainid
+      | A.Pconst Cselfchainid                  -> M.Mselfchainid
       | A.Pconst Coperations                   -> M.Moperations
       | A.Pconst Cmetadata                     -> M.Mmetadata
       | A.Pconst Ctotalvotingpower             -> M.Mtotalvotingpower

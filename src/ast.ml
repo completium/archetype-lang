@@ -148,7 +148,7 @@ type const =
   | Cany
   | Canyentry
   | Cresult
-  | Cchainid
+  | Cselfchainid
   | Coperations
   | Cmetadata
   | Clevel
