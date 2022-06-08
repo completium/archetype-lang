@@ -1,4 +1,4 @@
-archetype removeif_with_big_map
+archetype remove_if_with_big_map
 
 asset b to big_map {
   id : nat
@@ -17,6 +17,6 @@ entry exec() {
     a[0].p.add({0});
     a[0].p.add({1});
     a[0].p.add({2});
-    a[0].p.removeif(id >= 1);
+    a[0].p.remove_if(id >= 1);
   }
 }

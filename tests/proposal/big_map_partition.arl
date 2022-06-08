@@ -29,5 +29,5 @@ function isEven(n : nat) : bool {
 }
 
 entry removeEven() {
-  a[0].p.removeif(isEven(the.bid));
+  a[0].p.remove_if(isEven(the.bid));
 }

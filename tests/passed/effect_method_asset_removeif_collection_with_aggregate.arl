@@ -1,4 +1,4 @@
-archetype effect_method_asset_removeif_collection_with_aggregate
+archetype effect_method_asset_remove_if_collection_with_aggregate
 
 asset o_asset {
   oid : nat;
@@ -15,5 +15,5 @@ asset my_asset identified by id {
 }
 
 entry exec () {
-  my_asset.removeif(the.value = 1)
+  my_asset.remove_if(the.value = 1)
 }

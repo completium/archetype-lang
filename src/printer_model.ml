@@ -924,7 +924,7 @@ let pp_mterm fmt (mt : mterm) =
 
     | Mremoveif (an, c, la, lb, a) ->
       let pp fmt (an, c, la, lb, a) =
-        Format.fprintf fmt "removeif_%a (%a, (%a) -> %a)(%a)"
+        Format.fprintf fmt "remove_if_%a (%a, (%a) -> %a)(%a)"
           pp_str an
           (pp_container_kind f) c
           (pp_list ", " (fun fmt (id, t) -> Format.fprintf fmt "%s : %a" id pp_type t)) la
@@ -1725,7 +1725,7 @@ let pp_api_asset fmt = function
   | FieldAdd (an, fn)      -> pp_str fmt ("field_add\t " ^ an ^ " " ^ fn)
   | FieldRemove (an, fn)   -> pp_str fmt ("field_remove\t " ^ an ^ " " ^ fn)
   | RemoveAll (an, fn)     -> pp_str fmt ("removeall\t " ^ an ^ " " ^ fn)
-  | RemoveIf (an, c, _, p) -> Format.fprintf fmt "removeif %s %a on %a" an pp_mterm p pp_ck c
+  | RemoveIf (an, c, _, p) -> Format.fprintf fmt "remove_if %s %a on %a" an pp_mterm p pp_ck c
   | Contains (an, c)       -> Format.fprintf fmt "contains %s on %a" an pp_ck c
   | Nth (an, c)            -> Format.fprintf fmt "nth %s on %a" an pp_ck c
   | Select (an, c, _, p)   -> Format.fprintf fmt "select %s %a on %a" an pp_mterm p pp_ck c

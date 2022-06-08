@@ -1,4 +1,4 @@
-archetype collection_removeif
+archetype collection_remove_if
 
 asset my_asset identified by id {
   id     : string;
@@ -14,6 +14,6 @@ entry exec () {
 
   }
   effect {
-    my_asset.removeif(the.value = 1)
+    my_asset.remove_if(the.value = 1)
   }
 }

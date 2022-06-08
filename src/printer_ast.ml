@@ -252,7 +252,7 @@ let to_const = function
   | Cpack                  -> "pack"
   | Cremove                -> "remove"
   | Cremoveall             -> "removeall"
-  | Cremoveif              -> "removeif"
+  | Cremoveif              -> "remove_if"
   | Cselect                -> "select"
   | Cslice                 -> "slice"
   | Csort                  -> "sort"

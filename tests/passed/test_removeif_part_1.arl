@@ -1,4 +1,4 @@
-archetype test_removeif_part_1
+archetype test_remove_if_part_1
 
 asset my_asset identified by id {
   id     : nat;
@@ -15,5 +15,5 @@ asset s_asset identified by sid {
 }
 
 entry exec (n : nat, is : string) {
-  s_asset["id0"].c.removeif(the.id >= n or the.s = is)
+  s_asset["id0"].c.remove_if(the.id >= n or the.s = is)
 }

@@ -1313,7 +1313,7 @@ let methods : (string * method_) list =
     ("put"         , mk A.Cput          `Both        (`Effect c   ) `Total   `Both     (`Fixed [`ThePkForAggregate ], None));
     ("remove"      , mk A.Cremove       `Both        (`Effect cap ) `Total   `Both     (`Fixed [`Pk                ], None));
     ("clear"       , mk A.Cclear        `Both        (`Effect capv) `Total   `Standard (`Fixed [                   ], None));
-    ("removeif"    , mk A.Cremoveif     `Both        (`Effect cap ) `Total   `Standard (`Fixed [`Pred true         ], None));
+    ("remove_if"   , mk A.Cremoveif     `Both        (`Effect cap ) `Total   `Standard (`Fixed [`Pred true         ], None));
     ("removeall"   , mk A.Cremoveall    `Both        (`Effect  ap ) `Total   `Standard (`Fixed [                   ], None));
     ("update"      , mk A.Cupdate       `Both        (`Effect c   ) `Total   `Both     (`Fixed [`Pk; `Ef true      ], None));
     ("update_all"  , mk A.Cupdateall    `Both        (`Effect capv) `Total   `Both     (`Fixed [`Ef true           ], None));
