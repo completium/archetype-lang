@@ -239,7 +239,7 @@ type ('id, 'term) mterm_node  =
   | Mtransfer         of 'term transfer_kind_gen
   | Memit             of 'id * 'term
   (* entrypoint *)
-  | Mgetentrypoint    of type_ * 'id * 'term * 'term option  (* type * address * string * require fail *)
+  | Mgetentrypoint    of type_ * 'id * 'term                 (* type * address * string *)
   | Mcallview         of type_ * 'term * 'id * 'term         (* type * string * address * argument *)
   | Mself             of 'id                                 (* entryname *)
   (* operation *)
@@ -1255,8 +1255,8 @@ let skip    = seq []
 
 let operations = mk_mterm Moperations (tlist toperation)
 
-let mk_entrypoint (ty: type_) (entry_name: lident) (addr : mterm) (error_msg : mterm option) : mterm =
-  mk_mterm (Mgetentrypoint (ty, entry_name, addr, error_msg)) (tcontract ty)
+let mk_get_entrypoint (ty: type_) (entry_name: lident) (addr : mterm) : mterm =
+  mk_mterm (Mgetentrypoint (ty, entry_name, addr)) (toption (tcontract ty))
 let mk_mkoperation a b c = mk_mterm (Mmakeoperation (a, b, c)) tunit
 let mk_transfer_op op = mk_mterm (Mtransfer (TKoperation op)) tunit
 
@@ -1480,7 +1480,7 @@ let cmp_mterm_node
     | Mtransfer tr1, Mtransfer tr2                                                     -> cmp_transfer_kind tr1 tr2
     | Memit (e1, x1), Memit (e2, x2)                                                   -> cmpi e1 e2 && cmp x1 x2
     (* entrypoint *)
-    | Mgetentrypoint (t1, a1, s1, r1), Mgetentrypoint (t2, a2, s2, r2)                 -> cmp_type t1 t2 && cmpi a1 a2 && cmp s1 s2 && Option.cmp cmp r1 r2
+    | Mgetentrypoint (t1, a1, s1), Mgetentrypoint (t2, a2, s2)                         -> cmp_type t1 t2 && cmpi a1 a2 && cmp s1 s2
     | Mcallview (t1, a1, b1, c1), Mcallview (t2, a2, b2, c2)                           -> cmp_type t1 t2 && cmp a1 a2 && cmpi b1 b2 && cmp c1 c2
     | Mself id1, Mself id2                                                             -> cmpi id1 id2
     (* operation *)
@@ -1940,7 +1940,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mtransfer tr                   -> Mtransfer (map_transfer_kind fi ft f tr)
   | Memit (e, x)                   -> Memit (g e, f x)
   (* entrypoint *)
-  | Mgetentrypoint (t, a, s, r)    -> Mgetentrypoint (ft t, g a, f s, Option.map f r)
+  | Mgetentrypoint (t, a, s)       -> Mgetentrypoint (ft t, g a, f s)
   | Mcallview (t, a, b, c)         -> Mcallview (ft t, f a, g b, f c)
   | Mself id                       -> Mself (g id)
   (* operation *)
@@ -2397,7 +2397,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mtransfer tr                          -> fold_transfer_kind f accu tr
   | Memit (_, x)                          -> f accu x
   (* entrypoint *)
-  | Mgetentrypoint (_, _, s, r)           -> let tmp = f accu s in Option.map_dfl (f tmp) tmp r
+  | Mgetentrypoint (_, _, s)              -> f accu s
   | Mcallview (_, a, _, c)                -> f (f accu a) c
   | Mself _                               -> accu
   (* operation *)
@@ -2879,14 +2879,9 @@ let fold_map_term
 
   (* entrypoint *)
 
-  | Mgetentrypoint (t, a, s, r) ->
+  | Mgetentrypoint (t, a, s) ->
     let se, sa = f accu s in
-    let re, ra =
-      match r with
-      | Some r -> f sa r |> (fun (x, y) -> (Some x, y))
-      | None -> (None, sa)
-    in
-    g (Mgetentrypoint (t, a, se, re)), ra
+    g (Mgetentrypoint (t, a, se)), sa
 
   | Mcallview (t, a, b, c) ->
     let ae, aa = f accu a in

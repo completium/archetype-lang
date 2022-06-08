@@ -145,7 +145,6 @@
 %token RECORD
 %token REMOVED
 %token REQUIRE
-%token REQUIRE_ENTRYPOINT
 %token RETURN
 %token RIGHT
 %token RPAREN
@@ -1115,10 +1114,7 @@ simple_expr_r:
      { Eself x }
 
  | GET_ENTRYPOINT LESS t=type_t GREATER LPAREN a=expr COMMA b=expr RPAREN
-     { Eentrypoint (t, a, b, None) }
-
- | REQUIRE_ENTRYPOINT LESS t=type_t GREATER LPAREN a=expr COMMA b=expr COMMA c=expr RPAREN
-     { Eentrypoint (t, a, b, Some c) }
+     { Eentrypoint (t, a, b) }
 
  | CALL_VIEW LESS t=type_t GREATER LPAREN a=expr COMMA b=expr COMMA c=expr RPAREN
      { Ecallview (t, a, b, c) }

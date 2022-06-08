@@ -155,7 +155,7 @@ and expr_unloc =
   | Eoption        of option_
   | Eor            of or_
   | Elambda        of type_t option * lident * type_t option * expr
-  | Eentrypoint    of type_t * expr * expr * expr option
+  | Eentrypoint    of type_t * expr * expr
   | Ecallview      of type_t * expr * expr * expr
   | Eunpack        of type_t * expr
   | Eemit          of type_t * expr
@@ -561,7 +561,7 @@ let ereturn       ?(loc=dummy) e                  = mkloc loc (Ereturn e)
 let eoption       ?(loc=dummy) e                  = mkloc loc (Eoption e)
 let eleft         ?(loc=dummy) t e                = mkloc loc (Eor (Oleft (None, t, e)))
 let eright        ?(loc=dummy) t e                = mkloc loc (Eor (Oright (t, None, e)))
-let eentrypoint   ?(loc=dummy) t e v b            = mkloc loc (Eentrypoint (t, e, v, b))
+let eentrypoint   ?(loc=dummy) t e v              = mkloc loc (Eentrypoint (t, e, v))
 let eunpack       ?(loc=dummy) t e                = mkloc loc (Eunpack (t, e))
 let eself         ?(loc=dummy) id                 = mkloc loc (Eself id)
 let eany          ?(loc=dummy) _                  = mkloc loc (Eany)

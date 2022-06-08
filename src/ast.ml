@@ -393,7 +393,7 @@ type 'id term_node  =
   | Plambda of type_ * 'id * type_ * 'id term_gen
   | Pcast of type_ * type_ * 'id term_gen
   | Pself of 'id
-  | Pgetentrypoint of type_ * 'id * 'id term_gen * ('id term_gen) option
+  | Pgetentrypoint of type_ * 'id * 'id term_gen
   | Pcallview of type_ * 'id term_gen * 'id * 'id term_gen
   | Pternary of 'id term_gen * 'id term_gen * 'id term_gen
 [@@deriving show {with_path = false}]

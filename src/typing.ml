@@ -3955,11 +3955,10 @@ let rec for_xexpr
         mk_sp (Some (A.Tcontract rty)) (A.Pself name)
       end
 
-    | Eentrypoint (ty, a, b, r) -> begin
+    | Eentrypoint (ty, a, b) -> begin
         let ty = for_type_exn env ty in
         let a  = for_xexpr env ~ety:A.vtstring a in
         let b  = for_xexpr env ~ety:A.vtaddress b in
-        let c = Option.map (for_xexpr env) r in
 
         if not (Type.Michelson.is_type ty) then
           Env.emit_error env (loc tope, InvalidTypeForEntrypoint);
@@ -3970,10 +3969,9 @@ let rec for_xexpr
           | _ -> (Env.emit_error env (a.loc, StringLiteralExpected); bailout ())
         in
 
-        let rt = if Option.is_some c then (A.Tcontract ty) else (A.Toption (A.Tcontract ty)) in
         mk_sp
-          (Some rt)
-          (A.Pgetentrypoint (ty, id, b, c))
+          (Some (A.Toption (A.Tcontract ty)))
+          (A.Pgetentrypoint (ty, id, b))
       end
 
     | Ecallview (ty, a, b, c) -> begin

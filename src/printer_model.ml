@@ -394,13 +394,11 @@ let pp_mterm fmt (mt : mterm) =
 
     (* entrypoint *)
 
-    | Mgetentrypoint (t, a, s, r) ->
-      Format.fprintf fmt "%s<%a>(%a, %a%a)"
-        (if Option.is_some r then "require_entrypoint" else "get_entrypoint")
+    | Mgetentrypoint (t, a, s) ->
+      Format.fprintf fmt "get_entrypoint<%a>(%a, %a)"
         pp_type t
         pp_id a
         f s
-        (pp_some (fun fmt a -> Format.fprintf fmt ", %a" f a)) r
 
     | Mcallview (t, a, b, c) ->
       Format.fprintf fmt "call_view<%a>(%a, %a, %a)"

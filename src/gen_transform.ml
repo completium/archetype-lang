@@ -5901,8 +5901,12 @@ let process_event (model : model) : model =
           let entry : mterm =
             let addr : mterm = mk_address !Options.opt_event_well_address in
             let entry_name = dumloc "%event" in
-            let error_msg = Some (mk_string "BAD_EVENT_CONTRACT") in
-            mk_entrypoint tbytes entry_name addr error_msg
+            let getentrypoint = mk_get_entrypoint tbytes entry_name addr in
+            let idv = dumloc "_v" in
+            let tcb = tcontract tbytes in
+            let s = mk_mvar idv tcb in
+            let mw = mk_mterm (Mmatchoption(getentrypoint, idv, s, fail "BAD_EVENT_CONTRACT")) tcb in
+            mw
           in
           let data = mk_pack (mk_tuple [mk_string (unloc e); mk_string typ; mk_pack value]) in
           mk_mkoperation zerotz entry data

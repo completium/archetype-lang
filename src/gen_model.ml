@@ -436,7 +436,7 @@ let to_model (ast : A.ast) : M.model =
       | A.Pself id -> M.Mself id
 
 
-      | A.Pgetentrypoint (t, a, b, r) -> M.Mgetentrypoint (type_to_type t, a, f b, Option.map f r)
+      | A.Pgetentrypoint (t, a, b) -> M.Mgetentrypoint (type_to_type t, a, f b)
 
       | A.Pcallview (t, a, b, c) -> M.Mcallview (type_to_type t, f a, b,f c)
 

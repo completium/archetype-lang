@@ -709,14 +709,9 @@ let to_ir (model : M.model) : T.ir =
 
     (* entrypoint *)
 
-    | Mgetentrypoint (t, id, d, r)  ->
+    | Mgetentrypoint (t, id, d)  ->
       let annot = get_entrypoint_annot (unloc id) in
-      let a = T.Iunop (Ucontract (to_type model t, annot), f d) in
-      begin
-        match r with
-        | Some r -> T.Iifnone (a, Iunop (Ufail, f r), "_var_ifnone", Ivar "_var_ifnone", ft mtt.type_)
-        | None -> a
-      end
+      T.Iunop (Ucontract (to_type model t, annot), f d)
 
     | Mcallview (t, a, b, c)  -> begin
         T.Ibinop (Bview (unloc b, to_type model t), f c, f a)

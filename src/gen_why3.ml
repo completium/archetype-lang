@@ -1818,7 +1818,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     (* entrypoint *)
 
-    | Mgetentrypoint (_t, a, s, _) -> Tentrypoint (map_lident a, map_mterm m ctx s)
+    | Mgetentrypoint (_t, a, s) -> Tentrypoint (map_lident a, map_mterm m ctx s)
     | Mcallview (_t, _a, _v, _c) -> assert false (* TODO *)
     | Mself id                  -> Tapp (loc_term (Tvar "getopt"), [loc_term (Tentrypoint (unloc id, Tdefaultaddr))])
 

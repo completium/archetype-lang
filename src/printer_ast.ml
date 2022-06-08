@@ -652,16 +652,14 @@ let rec pp_pterm fmt (pterm : pterm) =
       in
       (pp_no_paren pp) fmt id
 
-    | Pgetentrypoint (t, a, b, r) ->
-      let pp fmt (t, a, b, r) =
-        Format.fprintf fmt "%s<%a>(%a, %a%a)"
-          (if Option.is_some r then "require_entrypoint" else "get_entrypoint")
+    | Pgetentrypoint (t, a, b) ->
+      let pp fmt (t, a, b) =
+        Format.fprintf fmt "get_entrypoint<%a>(%a, %a)"
           pp_type  t
           pp_id a
           pp_pterm b
-          (pp_some (fun fmt a -> Format.fprintf fmt ", %a" pp_pterm a)) r
       in
-      (pp_no_paren pp) fmt (t, a, b, r)
+      (pp_no_paren pp) fmt (t, a, b)
 
     | Pcallview (t, a, b, c) ->
       let pp fmt (t, a, b, c) =
