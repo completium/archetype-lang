@@ -1321,14 +1321,6 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "int_to_nat (%a)"
         f x
 
-    | Moptget x ->
-      Format.fprintf fmt "get_some (%a)"
-        f x
-
-    | Mrequiresome (x, y) ->
-      Format.fprintf fmt "require_some (%a, %a)"
-        f x f y
-
     | Mfloor x ->
       Format.fprintf fmt "floor (%a)"
         f x

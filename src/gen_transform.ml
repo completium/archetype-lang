@@ -5137,7 +5137,6 @@ let remove_asset (model : model) : model =
           let init   = mk_tuple [init_0; init_1] in
           fold_ck (fm ctx) (an, ck) init mk ~with_value:false
           |> mk_tupleaccess 1
-          |> mk_optget
         end
 
       | Mcount (an, ck) -> begin

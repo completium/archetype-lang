@@ -16,7 +16,7 @@ entry exec () {
     s0: res = 1;
   }
   effect {
-    var k = my_asset.nth(1);
+    var k ?= my_asset.nth(1) : "OUT_OF_BOUND";
     res := my_asset[k].value;
   }
 }

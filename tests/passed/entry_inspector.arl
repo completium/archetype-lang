@@ -7,7 +7,6 @@ variable token : address = @KT1TsdGVD11MBAULJJvaxKmS4YKe88mn3c87
 entry balanceInquiry(v : nat) { total := v }
 
 entry exec () {
-  var gbopt : option<contract<contract<nat>>> = get_entrypoint<contract<nat>>("%getBalance", token);
-  var gb : contract<contract<nat>> = get_some(gbopt);
+  var gb : contract<contract<nat>> ?= get_entrypoint<contract<nat>>("%getBalance", token) : "NOT_FOUND";
   transfer 0tz to entry gb(self.balanceInquiry);
 }

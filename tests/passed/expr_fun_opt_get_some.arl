@@ -8,7 +8,7 @@ entry exec () {
   }
   effect {
     var i_opt : option<nat> = some(1);
-    var i = get_some(i_opt);
+    var i ?= i_opt : "ERROR";
     res := i = 1
   }
 }

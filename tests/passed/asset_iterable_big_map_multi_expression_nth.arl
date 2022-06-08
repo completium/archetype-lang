@@ -13,6 +13,6 @@ asset my_asset to iterable_big_map {
 variable res : string = ""
 
 entry exec () {
-  res := my_asset.nth(1);
+  res ?:= my_asset.nth(1) : "OUT_OF_BOUND";
   do_require(res = "id1", "ko")
 }

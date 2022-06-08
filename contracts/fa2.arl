@@ -249,7 +249,8 @@ function mk_op (
     | Sender   -> get_entrypoint<transfer_descriptor_param>("%fa2_token_sender", a)
     | Receiver -> get_entrypoint<transfer_descriptor_param>("%fa2_token_receiver", a)
     end;
-  return left<_,string>(some(make_operation(0tz, get_some(e), tp)))
+  const ee ?= e : "NOT_FOUND";
+  return left<_,string>(some(make_operation(0tz, ee, tp)))
 }
 
 function apply_hook (

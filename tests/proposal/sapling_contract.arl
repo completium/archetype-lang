@@ -3,8 +3,8 @@ archetype test_sapling_verify_update(s : sapling_state(8))
 entry init (l : list<sapling_transaction(8) * option<key_hash>>) {
   for i in l do
     var transaction  = i[0];
-    var kh = get_some(i[1]);
-    var r : (int * sapling_state(8)) = require_some(sapling_verify_update(transaction, s), "INVALID_TRANSACTION");
+    var kh ?= i[1] : "NOT_FOUND";
+    var r : (int * sapling_state(8)) ?= sapling_verify_update(transaction, s) : "INVALID_TRANSACTION";
     var balance_ = r[0];
     if (abs(balance_) * 1utz > transferred) then begin
       var e : contract<unit> = key_hash_to_contract(kh);

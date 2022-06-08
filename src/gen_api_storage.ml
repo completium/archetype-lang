@@ -108,8 +108,6 @@ let generate_api_storage ?(verif=false) (model : model) : model =
         [APIBuiltin (Bisnone (extract_option_type x.type_))]
       | Missome x ->
         [APIBuiltin (Bissome (extract_option_type x.type_))]
-      | Moptget x ->
-        [APIBuiltin (Boptget (extract_option_type x.type_))]
       | Mfloor _ ->
         [APIBuiltin (Bfloor)]
       | Mceil _ ->

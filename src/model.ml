@@ -402,8 +402,6 @@ type ('id, 'term) mterm_node  =
   | Misnone           of 'term
   | Missome           of 'term
   | Minttonat         of 'term
-  | Moptget           of 'term
-  | Mrequiresome      of 'term * 'term
   | Mfloor            of 'term
   | Mceil             of 'term
   | Mnattostring      of 'term
@@ -1208,11 +1206,6 @@ let mk_tupleaccess n (x : mterm) =
     mk_mterm (Mtupleaccess (x, Big_int.big_int_of_int n)) t
   | v -> Format.eprintf "mk_tupleaccess type: %a@." pp_ntype v; assert false
 
-let mk_optget (x : mterm) =
-  match get_ntype x.type_ with
-  | Toption t -> mk_mterm (Moptget x) t
-  | _ -> assert false
-
 let mk_min (lhs : mterm) (rhs : mterm) (t : type_) = mk_mterm (Mmin (lhs, rhs)) t
 
 let mk_max (lhs : mterm) (rhs : mterm) (t : type_) = mk_mterm (Mmax (lhs, rhs)) t
@@ -1643,8 +1636,6 @@ let cmp_mterm_node
     | Misnone x1, Misnone x2                                                           -> cmp x1 x2
     | Missome x1, Missome x2                                                           -> cmp x1 x2
     | Minttonat x1, Minttonat x2                                                       -> cmp x1 x2
-    | Moptget x1, Moptget x2                                                           -> cmp x1 x2
-    | Mrequiresome (x1, y1), Mrequiresome (x2, y2)                                     -> cmp x1 x2 && cmp y1 y2
     | Mfloor x1, Mfloor x2                                                             -> cmp x1 x2
     | Mceil x1, Mceil x2                                                               -> cmp x1 x2
     | Mnattostring x1, Mnattostring x2                                                 -> cmp x1 x2
@@ -2103,8 +2094,6 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Misnone x                      -> Misnone (f x)
   | Missome x                      -> Missome (f x)
   | Minttonat x                    -> Minttonat (f x)
-  | Moptget x                      -> Moptget (f x)
-  | Mrequiresome (x, y)            -> Mrequiresome (f x, f y)
   | Mfloor x                       -> Mfloor (f x)
   | Mceil x                        -> Mceil (f x)
   | Mnattostring x                 -> Mnattostring (f x)
@@ -2560,8 +2549,6 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Misnone x                             -> f accu x
   | Missome x                             -> f accu x
   | Minttonat x                           -> f accu x
-  | Moptget x                             -> f accu x
-  | Mrequiresome (x, y)                   -> f (f accu x) y
   | Mfloor x                              -> f accu x
   | Mceil x                               -> f accu x
   | Mnattostring x                        -> f accu x
@@ -3650,15 +3637,6 @@ let fold_map_term
   | Misnone x ->
     let xe, xa = f accu x in
     g (Misnone xe), xa
-
-  | Moptget x ->
-    let xe, xa = f accu x in
-    g (Moptget xe), xa
-
-  | Mrequiresome (x, y) ->
-    let xe, xa = f accu x in
-    let ye, ya = f xa y in
-    g (Mrequiresome (xe, ye)), ya
 
   | Mfloor x ->
     let xe, xa = f accu x in

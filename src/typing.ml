@@ -1276,6 +1276,7 @@ type mthtyp = [
   | mthstyp
   | `The
   | `Pk
+  | `OPk
   | `ThePkForAggregate
   | `Asset
   | `Coll
@@ -1321,7 +1322,7 @@ let methods : (string * method_) list =
     ("update_all"  , mk A.Cupdateall    `Both        (`Effect capv) `Total   `Both     (`Fixed [`Ef true           ], None));
     ("add_update"  , mk A.Caddupdate    `Both        (`Effect c_p ) `Total   `Both     (`Fixed [`Pk; `Ef false     ], None));
     ("contains"    , mk A.Ccontains     `Both        (`Pure       ) `Total   `Both     (`Fixed [`Pk                ], Some (`T A.vtbool)));
-    ("nth"         , mk A.Cnth          `Both        (`Pure       ) `Partial `Standard (`Fixed [`T A.vtnat         ], Some (`Pk)));
+    ("nth"         , mk A.Cnth          `Both        (`Pure       ) `Total   `Standard (`Fixed [`T A.vtnat         ], Some (`OPk)));
     ("select"      , mk A.Cselect       `Both        (`Pure       ) `Total   `Standard (`Fixed [`Pred true         ], Some (`SubColl)));
     ("sort"        , mk A.Csort         `OnlyExec    (`Pure       ) `Total   `Standard (`Multi (`Cmp               ), Some (`SubColl)));
     ("count"       , mk A.Ccount        `Both        (`Pure       ) `Total   `Standard (`Fixed [                   ], Some (`T A.vtnat)));
@@ -1387,12 +1388,9 @@ let coreops : opinfo list =
 let optionops : opinfo list =
   let ty = A.Tnamed 0 in
   let top = A.Toption ty in
-  let ty2 = A.Tnamed 1 in
   [
     op "is_none"      A.Cisnone      `Total   (Some top) [] (`Ty A.vtbool) Mint.empty;
-    op "is_some"      A.Cissome      `Total   (Some top) [] (`Ty A.vtbool) Mint.empty;
-    op "get_some"     A.Cgetsome     `Partial (Some top) [] (`Ty ty)       Mint.empty;
-    op "require_some" A.Crequiresome `Partial (Some top) [ty2] (`Ty ty)    Mint.empty
+    op "is_some"      A.Cissome      `Total   (Some top) [] (`Ty A.vtbool) Mint.empty
   ]
 
 (* -------------------------------------------------------------------- *)
@@ -1412,7 +1410,7 @@ let listops : opinfo list =
     op "prepend"  A.Cprepend  `Total   (Some lst) [elemt  ] `Self          Mint.empty;
     op "length"   A.Clength   `Total   (Some lst) [       ] (`Ty A.vtnat ) Mint.empty;
     op "contains" A.Ccontains `Total   (Some lst) [elemt  ] (`Ty A.vtbool) Mint.empty;
-    op "nth"      A.Cnth      `Partial (Some lst) [A.vtnat] (`Ty elemt   ) Mint.empty;
+    op "nth"      A.Cnth      `Total   (Some lst) [A.vtnat] (`Ty (A.Toption elemt)) Mint.empty;
     op "reverse"  A.Creverse  `Total   (Some lst) [       ] `Self          Mint.empty;
     op "concat"   A.Cconcat   `Total   (Some lst) [lst    ] `Self          Mint.empty;
   ]
@@ -3620,6 +3618,7 @@ let rec for_xexpr
           | `OptVal  -> Some (A.Toption (A.Tcontainer (A.Tasset asset.as_name, A.AssetValue)))
           | `Ref i   -> Mint.find_opt i amap
           | `Pk      -> Some (asset.as_pkty)
+          | `OPk     -> Some (A.Toption asset.as_pkty)
           | `PkOrAsset -> begin
               match mode.em_kind with
               | `Formula _ -> Some (A.Tasset asset.as_name)

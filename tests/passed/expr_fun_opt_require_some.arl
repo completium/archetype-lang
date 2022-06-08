@@ -8,7 +8,7 @@ entry exec () {
   }
   effect {
     var i_opt : option<nat> = none;
-    var i = require_some(i_opt, "failed");
+    var i ?= i_opt : "failed";
     res := i = 1
   }
 }

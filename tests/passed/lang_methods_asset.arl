@@ -27,7 +27,7 @@ entry exec () {
     var v2 = my_asset.select(the.value > 0);
     var v3 = my_asset.sort(value);
     var v4 = my_asset.contains(my_asset_id);
-    var v5 = my_asset.nth(0);
+    var v5 ?= my_asset.nth(0) : "OUT_OF_BOUND";
     var v6 = my_asset.count();
     var v7 = my_asset.sum(the.value);
     var v8 = my_asset.head(2);

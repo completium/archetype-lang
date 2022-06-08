@@ -11,5 +11,5 @@ asset my_asset {
 variable res : string = ""
 
 entry exec (n : nat) {
-  res := my_asset.nth(n)
+  res ?:= my_asset.nth(n) : "OUT_OF_BOUND"
 }

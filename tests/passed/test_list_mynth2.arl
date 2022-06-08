@@ -16,7 +16,8 @@ function mynth(l : list<string>, idx : nat) : string {
     | [] -> fail ("empty")
     end
   done;
-  return get_some(r)
+  const rr ?= r : "NOT_FOUND";
+  return rr
 }
 
 entry exec () {

@@ -1618,11 +1618,6 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
           Tpsome (map_lident id), map_mterm m ctx b;
           Twild, map_mterm m ctx e
         ])
-    | Mletin ([id], { node = M.Moptget v; type_ = _ }, _, b, Some e) ->
-      Tmatch (map_mterm m ctx v,[
-          Tpsome (map_lident id), map_mterm m ctx b;
-          Twild, map_mterm m ctx e
-        ])
 
     | Mletin ([id], v, _, b, Some o) ->
       let ctx = ctx in
@@ -2390,8 +2385,6 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Misnone s -> Tapp (loc_term (Tvar "isnone"),[map_mterm m ctx s])
     | Missome s -> Tapp (loc_term (Tvar "issome"),[map_mterm m ctx s])
     | Minttonat s -> Tapp (loc_term (Tvar "isnat"),[map_mterm m ctx s])
-    | Moptget s -> Tapp (loc_term (Tvar "getopt"),[map_mterm m ctx s])
-    | Mrequiresome (s, t) -> Tapp (loc_term (Tvar "require_some"),[map_mterm m ctx s; map_mterm m ctx t])
     | Mfloor  s -> Tapp (loc_term (Tvar "floor"),[map_mterm m ctx s])
     | Mceil   s -> Tapp (loc_term (Tvar "ceil"),[map_mterm m ctx s])
     | Mnattostring s -> Tapp (loc_term (Tvar "from_int"),[map_mterm m ctx s])
@@ -2993,8 +2986,6 @@ let fold_exns m body : term list =
     | M.Mremoveall (_a,_f,v) -> internal_fold_exn (acc @ [Texn ENotFound]) v
     | M.Mremoveif (_, CKfield (_,_,k,_,_), _, _ ,_ ) -> internal_fold_exn (acc @ [Texn ENotFound]) k
     | M.Mclear (_a,CKfield (_,_,k,_,_)) -> internal_fold_exn (acc @ [Texn ENotFound]) k
-    | M.Moptget _ -> acc @ [Texn ENotFound]
-    | M.Mrequiresome _ -> acc @ [Texn ENotFound]
     | M.Mfail InvalidCaller -> acc @ [Texn EInvalidCaller]
     | M.Mfail NoTransfer -> acc @ [Texn ENoTransfer]
     | M.Mfail (InvalidCondition lbl) -> acc @ [Texn (EInvalidCondition lbl)]
@@ -3175,7 +3166,6 @@ let mk_functions m =
           match mt.node with
           | Mfail _          -> Format.eprintf "Mfail"; true
           | Moperations      -> Format.eprintf "Moperations"; true
-          | Moptget           _ -> Format.eprintf "Moptget     "; true
           | Mmap              _ -> Format.eprintf "Mmap        "; true
           | Mlistnth          _ -> Format.eprintf "Mlistnth    "; true
           | Mmapget           _ -> Format.eprintf "Mmapget     "; true

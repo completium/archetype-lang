@@ -52,9 +52,9 @@ transition decide () {
     var submissions = submission.sort(desc(score), timestamp);
       if submissions.count() >= 3
       then (
-        var first  = submissions.nth(0);
-        var second = submissions.nth(1);
-        var third  = submissions.nth(2);
+        var first  ?= submissions.nth(0) : "OUT_OF_BOUND";
+        var second ?= submissions.nth(1) : "OUT_OF_BOUND";
+        var third  ?= submissions.nth(2) : "OUT_OF_BOUND";
         var q1 = 0.5 * prize;
         var q2 = 0.3 * prize;
         var q3 = 0.2 * prize;
@@ -64,8 +64,8 @@ transition decide () {
         transfer (prize - q1 - q2 - q3) to organizer)
         else if (submissions.count() >= 2)
              then (
-               var first  = submissions.nth(0);
-               var second = submissions.nth(1);
+               var first  ?= submissions.nth(0) : "OUT_OF_BOUND";
+               var second ?= submissions.nth(1) : "OUT_OF_BOUND";
                var q1 = 0.6 * prize;
                var q2 = 0.4 * prize;
                transfer q1 to first;
@@ -73,7 +73,7 @@ transition decide () {
                transfer (prize - q1 - q2) to organizer)
              else if (submissions.count() >= 1)
                then (
-                 var first = submissions.nth(0);
+                 var first ?= submissions.nth(0) : "OUT_OF_BOUND";
                  transfer prize to first)
                else transfer prize to organizer
   }

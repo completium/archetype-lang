@@ -163,9 +163,7 @@ type const =
   | Ccount
   | Cfloor
   | Cget
-  | Cgetsome
   | Cgetopt
-  | Crequiresome
   | Cisnone
   | Cissome
   | Cinttonat

@@ -12,5 +12,5 @@ asset my_asset identified by id {
 variable res : string = ""
 
 entry exec (n : nat) {
-  res := my_asset.select(the.id <> "").nth(n);
+  res ?:= my_asset.select(the.id <> "").nth(n) : "OUT_OF_BOUND";
 }

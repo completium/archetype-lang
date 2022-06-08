@@ -256,7 +256,7 @@ let to_ir (model : M.model) : T.ir =
       end
     | BlistNth t -> begin
         let targ = T.tpair (T.tlist t) T.tnat in
-        let tret = t in
+        let tret = T.toption t in
         let args, body = begin
           let arg_name  = "idx" in
           let list_name = "l" in
@@ -269,7 +269,7 @@ let to_ir (model : M.model) : T.ir =
           let vres      = T.Ivar res_name in
           let viter     = T.Ivar iter_name in
           let ve        = T.Ivar e_name in
-          let return    = T.Iassign (fun_result, T.Iifnone (vres, T.ifail "NotFound", "_var_ifnone", Ivar "_var_ifnone", t)) in
+          let return    = T.Iassign (fun_result, vres) in
           let cond      = T.Icompare (Cle, viter, varg) in
           let vheadtail = T.Imichelson ([vlist], T.cseq [ T.mk_code (IF_CONS ([T.mk_code PAIR], [T.cstring "EmptyList"; T.cfailwith]))], []) in
           let ares      = T.Iassign (res_name, T.isome(T.icar ve)) in
@@ -994,8 +994,6 @@ let to_ir (model : M.model) : T.ir =
     | Misnone x          -> T.Iifnone (f x, T.itrue,  "_var_ifnone", T.ifalse, T.tbool)
     | Missome x          -> T.Iifnone (f x, T.ifalse, "_var_ifnone", T.itrue, T.tbool)
     | Minttonat x        -> T.Iunop (Uisnat, f x)
-    | Moptget x          -> T.Iifnone (f x, T.ifail "NotFound", "_var_ifnone", Ivar "_var_ifnone", ft mtt.type_)
-    | Mrequiresome (x, y)-> T.Iifnone (f x, Iunop (Ufail, f y), "_var_ifnone", Ivar "_var_ifnone", ft mtt.type_)
     | Mfloor  x          -> let b = T.Bfloor       in add_builtin b; T.Icall (get_fun_name b, [f x], is_inline b)
     | Mceil   x          -> let b = T.Bceil        in add_builtin b; T.Icall (get_fun_name b, [f x], is_inline b)
     | Mnattostring x     -> let b = T.Bnattostring in add_builtin b; T.Icall (get_fun_name b, [f x], is_inline b)
