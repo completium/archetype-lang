@@ -727,10 +727,6 @@ let to_model (ast : A.ast) : M.model =
         let fx = f x in
         M.Minttonat (fx)
 
-      | A.Pcall (None, A.Cconst A.Ctonat, [AExpr x]) ->
-        let fx = f x in
-        M.Mtonat (fx)
-
       | A.Pcall (None, A.Cconst A.Cgetsome, [AExpr x]) ->
         let fx = f x in
         M.Moptget (fx)

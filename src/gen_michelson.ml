@@ -997,7 +997,6 @@ let to_ir (model : M.model) : T.ir =
     | Misnone x          -> T.Iifnone (f x, T.itrue,  "_var_ifnone", T.ifalse, T.tbool)
     | Missome x          -> T.Iifnone (f x, T.ifalse, "_var_ifnone", T.itrue, T.tbool)
     | Minttonat x        -> T.Iunop (Uisnat, f x)
-    | Mtonat x           -> T.Iifnone (T.Iunop (Uisnat, f x), T.ifail "NEG_VALUE", "_var_to_nat", Ivar "_var_to_nat", ft mtt.type_)
     | Moptget x          -> T.Iifnone (f x, T.ifail "NotFound", "_var_ifnone", Ivar "_var_ifnone", ft mtt.type_)
     | Mrequiresome (x, y)-> T.Iifnone (f x, Iunop (Ufail, f y), "_var_ifnone", Ivar "_var_ifnone", ft mtt.type_)
     | Mfloor  x          -> let b = T.Bfloor       in add_builtin b; T.Icall (get_fun_name b, [f x], is_inline b)

@@ -400,7 +400,6 @@ type ('id, 'term) mterm_node  =
   | Misnone           of 'term
   | Missome           of 'term
   | Minttonat         of 'term
-  | Mtonat            of 'term
   | Moptget           of 'term
   | Mrequiresome      of 'term * 'term
   | Mfloor            of 'term
@@ -1640,7 +1639,6 @@ let cmp_mterm_node
     | Misnone x1, Misnone x2                                                           -> cmp x1 x2
     | Missome x1, Missome x2                                                           -> cmp x1 x2
     | Minttonat x1, Minttonat x2                                                       -> cmp x1 x2
-    | Mtonat x1, Mtonat x2                                                             -> cmp x1 x2
     | Moptget x1, Moptget x2                                                           -> cmp x1 x2
     | Mrequiresome (x1, y1), Mrequiresome (x2, y2)                                     -> cmp x1 x2 && cmp y1 y2
     | Mfloor x1, Mfloor x2                                                             -> cmp x1 x2
@@ -2099,7 +2097,6 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Misnone x                      -> Misnone (f x)
   | Missome x                      -> Missome (f x)
   | Minttonat x                    -> Minttonat (f x)
-  | Mtonat x                       -> Mtonat (f x)
   | Moptget x                      -> Moptget (f x)
   | Mrequiresome (x, y)            -> Mrequiresome (f x, f y)
   | Mfloor x                       -> Mfloor (f x)
@@ -2555,7 +2552,6 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Misnone x                             -> f accu x
   | Missome x                             -> f accu x
   | Minttonat x                           -> f accu x
-  | Mtonat x                              -> f accu x
   | Moptget x                             -> f accu x
   | Mrequiresome (x, y)                   -> f (f accu x) y
   | Mfloor x                              -> f accu x
@@ -3637,10 +3633,6 @@ let fold_map_term
   | Minttonat x ->
     let xe, xa = f accu x in
     g (Minttonat xe), xa
-
-  | Mtonat x ->
-    let xe, xa = f accu x in
-    g (Mtonat xe), xa
 
   | Misnone x ->
     let xe, xa = f accu x in

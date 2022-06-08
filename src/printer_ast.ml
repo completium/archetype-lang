@@ -244,7 +244,6 @@ let to_const = function
   | Cisnone                -> "is_none"
   | Cissome                -> "is_some"
   | Cinttonat              -> "int_to_nat"
-  | Ctonat                 -> "to_nat"
   | Clength                -> "length"
   | Cmax                   -> "max"
   | Cmin                   -> "min"

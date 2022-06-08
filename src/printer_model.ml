@@ -1311,10 +1311,6 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "int_to_nat (%a)"
         f x
 
-    | Mtonat x ->
-      Format.fprintf fmt "to_nat (%a)"
-        f x
-
     | Moptget x ->
       Format.fprintf fmt "get_some (%a)"
         f x

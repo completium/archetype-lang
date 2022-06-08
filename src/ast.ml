@@ -169,7 +169,6 @@ type const =
   | Cisnone
   | Cissome
   | Cinttonat
-  | Ctonat
   | Clength
   | Cmax
   | Cmin
