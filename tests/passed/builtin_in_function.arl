@@ -1,10 +1,9 @@
 archetype builtin_in_function
 
-variable res : nat = 0
+variable res : option<nat> = none<nat>
 
-function f(a : nat, b : nat) : nat {
-  var r = sub_nat(a, b);
-  return r
+function f(a : nat, b : nat) : option<nat> {
+  return sub_nat(a, b)
 }
 
 entry exec () {

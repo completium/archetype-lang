@@ -880,7 +880,7 @@ let to_ir (model : M.model) : T.ir =
     | MthreeWayCmp (l, r)-> T.Ibinop (Bcompare, f l, f r)
     | Mshiftleft (l, r)  -> T.Ibinop (Blsl, f l, f r)
     | Mshiftright (l, r) -> T.Ibinop (Blsr, f l, f r)
-    | Msubnat (l, r)     -> let b = T.Bsubnat in add_builtin b; T.Icall (get_fun_name b, [f l; f r], is_inline b)
+    | Msubnat (l, r)     -> T.Iunop (Uisnat, T.Ibinop (Bsub, f l, f r))
     | Msubmutez (l, r)   -> T.isub_mutez (f l) (f r)
 
 
