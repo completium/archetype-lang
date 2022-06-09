@@ -6055,7 +6055,11 @@ let remove_iterable_big_map (model : model) : model =
               mk_mterm (Massign (ValueAssign, tbmi, (Atuple (mk_mvar ibm_id ibm_type, 1, 3)), put)) tunit
             in
             let dec :mterm =
-              mk_mterm (Massign (ValueAssign, tnat, (Atuple (mk_mvar ibm_id ibm_type, 2, 3)), mk_mterm (Msubnat (map_counter, mk_nat 1)) tnat)) tunit
+              let subnat = mk_mterm (Msubnat (map_counter, mk_nat 1)) (toption tnat) in
+              let idv = dumloc "_v" in
+              let s = mk_mvar idv tnat in
+              let mw = mk_mterm (Mmatchoption(subnat, idv, s, fail "OPTION_IS_NONE")) tnat in
+              mk_mterm (Massign (ValueAssign, tnat, (Atuple (mk_mvar ibm_id ibm_type, 2, 3)), mw)) tunit
             in
             let instr_assign : mterm =
               mk_mterm (Massign (ValueAssign, ibm_value.type_, assign_value, ibm_value)) tunit
