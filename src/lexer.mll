@@ -50,7 +50,6 @@
       "effect"              , EFFECT              ;
       "else"                , ELSE                ;
       "emit"                , EMIT                ;
-      "emptylist"           , EMPTYLIST           ;
       "end"                 , END                 ;
       "entry"               , ENTRY               ;
       "get_entrypoint"      , GET_ENTRYPOINT      ;
@@ -83,6 +82,10 @@
       "list"                , LIST                ;
       "map"                 , MAP                 ;
       "match"               , MATCH               ;
+      "make_big_map"        , MAKE_BIG_MAP        ;
+      "make_list"           , MAKE_LIST           ;
+      "make_map"            , MAKE_MAP            ;
+      "make_set"            , MAKE_SET            ;
       "namespace"           , NAMESPACE           ;
       "none"                , NONE                ;
       "not"                 , NOT                 ;

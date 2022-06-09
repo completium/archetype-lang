@@ -65,7 +65,6 @@
 %token EFFECT
 %token ELSE
 %token EMIT
-%token EMPTYLIST
 %token END
 %token ENTRY
 %token GET_ENTRYPOINT
@@ -111,6 +110,10 @@
 %token LET
 %token LIST
 %token LPAREN
+%token MAKE_BIG_MAP
+%token MAKE_LIST
+%token MAKE_MAP
+%token MAKE_SET
 %token MAP
 %token MATCH
 %token MINUS
@@ -891,6 +894,12 @@ ident_typ_q:
  | VAR   { false }
  | CONST { true  }
 
+%inline get_make:
+| MAKE_SET     { Location.dumloc "make_set"     }
+| MAKE_LIST    { Location.dumloc "make_list"    }
+| MAKE_MAP     { Location.dumloc "make_map"     }
+| MAKE_BIG_MAP { Location.dumloc "make_big_map" }
+
 expr_r:
  | LPAREN RPAREN
      { Enothing }
@@ -1036,8 +1045,8 @@ simple_expr_r:
  | id=ident a=app_args
      { Eapp ( Fident id, a) }
 
- | EMPTYLIST LESS t=type_t GREATER a=app_args
-     { Eappt ( Fident (dumloc "emptylist"), [t], a) }
+ | id=get_make LESS ts=snl(COMMA, type_t) GREATER a=app_args
+     { Eappt ( Fident id, ts, a) }
 
  | x=simple_expr DOT y=ident
      { Edot (x, y) }

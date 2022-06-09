@@ -1,0 +1,7 @@
+archetype expr_mk_big_map
+
+variable res : big_map<nat, string> = []
+
+entry exec() {
+  res := make_big_map<nat, string>([(0, "0"); (1, "1"); (2, "2")])
+}

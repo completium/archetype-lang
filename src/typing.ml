@@ -737,6 +737,7 @@ type error_desc =
   | InvalidTypeForFailSome
   | InvalidTypeForLambdaArgument
   | InvalidTypeForLambdaReturn
+  | InvalidTypeForMake
   | InvalidTypeForMapOperator          of A.ptyp
   | InvalidTypeForMapKey
   | InvalidTypeForMapValue
@@ -970,6 +971,7 @@ let pp_error_desc fmt e =
   | InvalidTypeForFailSome             -> pp "Invalid type for fail_some, must be typed option of packable type"
   | InvalidTypeForLambdaArgument       -> pp "Invalid type for lambda argument"
   | InvalidTypeForLambdaReturn         -> pp "Invalid type for lambda return"
+  | InvalidTypeForMake                 -> pp "Invalid type for Make"
   | InvalidTypeForMapOperator ty       -> pp "Map operator should be applied to a list or an option, not %a" Printer_ast.pp_ptyp ty
   | InvalidTypeForMapKey               -> pp "Invalid type for map key"
   | InvalidTypeForMapValue             -> pp "Invalid type for map value"
@@ -3601,9 +3603,29 @@ let rec for_xexpr
 
     | Eappt (Fident id, ts, args) -> begin
         match unloc id, ts, args with
-        | "emptylist", [t], [] -> begin
-            let ety = match for_type env t with | Some v -> Some (A.Tlist v) | None -> None in
-            mk_sp ety (A.Parray [])
+        | "make_set", [t], [a] -> begin
+            let ety = for_type env t in
+            let ty = match ety with | Some ty -> ty | None -> Env.emit_error env (loc tope, InvalidTypeForMake); bailout() in
+            for_xexpr env ~ety:(A.Tset ty) a
+          end
+        | "make_list", [t], [a] -> begin
+            let ety = for_type env t in
+            let ty = match ety with | Some ty -> ty | None -> Env.emit_error env (loc tope, InvalidTypeForMake); bailout() in
+            for_xexpr env ~ety:(A.Tlist ty) a
+          end
+        | "make_map", [kt; vt], [a] -> begin
+            let ekty = for_type env kt in
+            let kty = match ekty with | Some ty -> ty | None -> Env.emit_error env (loc tope, InvalidTypeForMake); bailout() in
+            let evty = for_type env vt in
+            let vty = match evty with | Some ty -> ty | None -> Env.emit_error env (loc tope, InvalidTypeForMake); bailout() in
+            for_xexpr env ~ety:(A.Tmap (kty, vty)) a
+          end
+        | "make_big_map", [kt; vt], [a] -> begin
+            let ekty = for_type env kt in
+            let kty = match ekty with | Some ty -> ty | None -> Env.emit_error env (loc tope, InvalidTypeForMake); bailout() in
+            let evty = for_type env vt in
+            let vty = match evty with | Some ty -> ty | None -> Env.emit_error env (loc tope, InvalidTypeForMake); bailout() in
+            for_xexpr env ~ety:(A.Tbig_map (kty, vty)) a
           end
         | _ -> assert false
       end

@@ -1,0 +1,7 @@
+archetype expr_mk_list_empty
+
+variable res : list<nat> = [0; 1; 2]
+
+entry exec() {
+  res := make_list<nat>([])
+}

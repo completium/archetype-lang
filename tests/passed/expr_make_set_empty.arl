@@ -1,0 +1,7 @@
+archetype expr_mk_set
+
+variable res : set<nat> = [0; 1; 2]
+
+entry exec() {
+  res := make_set<nat>([])
+}
