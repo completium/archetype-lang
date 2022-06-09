@@ -5262,15 +5262,15 @@ let rec for_instruction_r
 
       env, mki (A.Ideclvar (x, v, c))
 
-    | Evaropt (x, ty, v, f, c) ->
+    | Evaropt (x, ty, v, fa, c) ->
       let ty = Option.bind (for_type env) ty in
       let oty = Option.bind (fun ty -> Some (A.Toption ty)) ty in
       let v  = for_expr kind env ?ety:oty v in
-      let f  = for_expr kind env f in
+      let fa  = Option.map (for_expr kind env) fa in
 
-      f.type_ |> Option.iter (fun ty ->
+      Option.iter (fun (fa : A.pterm) -> Option.iter (fun ty ->
           if (not (Type.Michelson.is_packable ty))
-          then (Env.emit_error env (f.loc, InvalidTypeForFail)));
+          then (Env.emit_error env (fa.loc, InvalidTypeForFail))) fa.type_) fa;
 
       let env =
         let _ : bool = check_and_emit_name_free env x in
@@ -5286,7 +5286,7 @@ let rec for_instruction_r
           if not (valid_var_or_arg_type ty) then
             Env.emit_error env (loc x, InvalidVarOrArgType)) v.A.type_;
 
-      env, mki (A.Ideclvaropt (x, v, f, c))
+      env, mki (A.Ideclvaropt (x, v, fa, c))
 
     | _ ->
       Env.emit_error env (loc i, InvalidInstruction);

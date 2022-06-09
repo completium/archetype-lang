@@ -780,16 +780,16 @@ let rec pp_instruction fmt (i : instruction) =
       in
       (pp_with_paren pp) fmt (i, v, c)
 
-    | Ideclvaropt (i, v, f, c) ->
-      let pp fmt (i, v, c) =
-        Format.fprintf fmt "%s %a%a ?= %a : %a"
+    | Ideclvaropt (i, v, fa, c) ->
+      let pp fmt (i, v, fa, c) =
+        Format.fprintf fmt "%s %a%a ?= %a%a"
           (if c then "const" else "var")
           pp_id i
           (pp_option (pp_prefix " : " pp_type)) v.type_
           pp_pterm v
-          pp_pterm f
+          (pp_option (fun fmt x -> Format.fprintf fmt " : %a" pp_pterm x)) fa
       in
-      (pp_with_paren pp) fmt (i, v, c)
+      (pp_with_paren pp) fmt (i, v, fa, c)
 
     | Iseq l ->
       let pp fmt l =

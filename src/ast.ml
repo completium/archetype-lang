@@ -440,7 +440,7 @@ and 'id instruction_node =
   | Iwhile of ('id term_gen * 'id instruction_gen)                                  (* condition * body *)
   | Iletin of ('id * 'id term_gen * 'id instruction_gen)                            (* id * init * body *)
   | Ideclvar of 'id * 'id term_gen * bool                                           (* id * init * constant *)
-  | Ideclvaropt of 'id * 'id term_gen * 'id term_gen * bool                         (* id * init * expr fail * constant *)
+  | Ideclvaropt of 'id * 'id term_gen * 'id term_gen option * bool                  (* id * init * expr fail * constant *)
   | Iseq of 'id instruction_gen list                                                (* lhs ; rhs *)
   | Imatchwith   of 'id term_gen * ('id pattern_gen * 'id instruction_gen) list     (* match term with ('pattern * 'id instruction_gen) list *)
   | Imatchoption of 'id term_gen * 'id * 'id instruction_gen * 'id instruction_gen

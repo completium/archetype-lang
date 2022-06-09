@@ -212,6 +212,7 @@
 %right THEN ELSE
 
 %nonassoc prec_var
+/*%nonassoc prec_var_question*/
 %nonassoc QUESTIONCOLONEQUAL COLONEQUAL PLUSEQUAL MINUSEQUAL MULTEQUAL DIVEQUAL AMPEQUAL PIPEEQUAL
 
 %right IMPLY
@@ -917,8 +918,11 @@ expr_r:
      { Evar (i, t, e, c) }
 
  | c=get_const i=ident t=colon_type_opt QUESTIONEQUAL e=expr COLON f=expr %prec prec_var
-     { Evaropt (i, t, e, f, c) }
-
+     { Evaropt (i, t, e, Some f, c) }
+/*
+ | c=get_const i=ident t=colon_type_opt QUESTIONEQUAL e=expr %prec prec_var
+     { Evaropt (i, t, e, None, c) }
+*/
  | e1=expr SEMI_COLON e2=expr
      { Eseq (e1, e2) }
 

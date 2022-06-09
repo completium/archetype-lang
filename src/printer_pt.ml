@@ -756,12 +756,12 @@ let rec pp_expr outer pos fmt a =
         | Some ({pldesc= Ttuple _; _}, _) -> pp_paren
         | _ -> pp_neutral
       in
-      Format.fprintf fmt "%s %a%a ?= %a : %a"
+      Format.fprintf fmt "%s %a%a ?= %a%a"
         (if c then "const" else "var")
         pp_id id
         (pp_option (pp_prefix " : " (f pp_type))) t
         (pp_expr e_in PLeft) e
-        (pp_expr e_in PLeft) fa
+        (pp_option (fun fmt x -> Format.fprintf fmt " : %a" (pp_expr e_in PLeft) x)) fa
     in
     (maybe_paren outer e_default pos pp) fmt (id, t, e, f)
 

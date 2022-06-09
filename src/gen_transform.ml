@@ -6221,7 +6221,12 @@ let remove_decl_var_opt (model : model) =
         let ty = match tyy with | Some ty -> ty | None -> v.type_ in
         let idv = dumloc "_v" in
         let s = mk_mvar idv ty in
-        let mw = mk_mterm (Mmatchoption(f v, idv, s, failg (f fa))) ty in
+        let fa =
+          match fa with
+          | Some fa -> failg (f fa)
+          | None    -> fail "OPTION_IS_NONE"
+        in
+        let mw = mk_mterm (Mmatchoption(f v, idv, s, fa)) ty in
         { mt with node = Mdeclvar (ids, Some ty, mw, c) }
       end
     | Massignopt (op, ty, k, v, fa) -> begin
