@@ -1,0 +1,9 @@
+archetype decl_var_opt_default
+
+entry exec() {
+  const o : option<nat> = some(2);
+
+  const n ?= o;
+
+  do_require(n = 2, "INVALID_VALUE")
+}
