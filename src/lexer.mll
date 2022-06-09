@@ -144,6 +144,9 @@ let mtz      = (digit+ | dec) "mtz"
 let utz      = (digit+ | dec) "utz"
 let pep515_item = '_' digit digit digit
 let pep515   = digit? digit? digit pep515_item+
+let ptz       = pep515 "tz"
+let pmtz      = pep515 "mtz"
+let putz      = pep515 "utz"
 let var      = "<%" ['a'-'z' 'A'-'Z'] ['a'-'z' 'A'-'Z' '0'-'9' '_' ]* '>'
 let ident    = (['a'-'z' 'A'-'Z'] | var)  (['a'-'z' 'A'-'Z' '0'-'9' '_' ] | var)*
 let pident   = '%' ['a'-'z' 'A'-'Z' '0'-'9' '_' ]+
@@ -180,6 +183,9 @@ rule token = parse
   | tz as t               { TZ   (String.sub t 0 ((String.length t) - 2)) }
   | mtz as t              { MTZ  (String.sub t 0 ((String.length t) - 3)) }
   | utz as t              { UTZ  (String.sub t 0 ((String.length t) - 3)) }
+  | ptz as t              { TZ   (Big_int.string_of_big_int (Big_int.big_int_of_string (String.sub t 0 ((String.length t) - 2)))) }
+  | pmtz as t             { MTZ  (Big_int.string_of_big_int (Big_int.big_int_of_string (String.sub t 0 ((String.length t) - 3)))) }
+  | putz as t             { UTZ  (Big_int.string_of_big_int (Big_int.big_int_of_string (String.sub t 0 ((String.length t) - 3)))) }
   | dec as input          { DECIMAL (input) }
   | (digit+ as n) 'i'     { NUMBERINT (Big_int.big_int_of_string n) }
   | (digit+ as n)         { NUMBERNAT (Big_int.big_int_of_string n) }

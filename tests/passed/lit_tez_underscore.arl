@@ -1,0 +1,9 @@
+archetype lit_tez_underscore
+
+variable res : tez = 0tz
+
+entry exec () {
+  res := 1_000tz;
+  res := 1_000_000mtz;
+  res := 1_000_000_000utz
+}
