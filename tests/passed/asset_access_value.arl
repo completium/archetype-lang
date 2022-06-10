@@ -1,0 +1,16 @@
+archetype asset_access_basic
+
+asset abc {
+  a : nat;
+  b : string;
+  c : bytes;
+} initialized by {
+  { 0; "mystr"; 0x }
+}
+
+
+entry get_value() {
+  const v : option<asset_value<abc>> = abc[0];
+  const x ?= v : "ERROR";
+  do_require(x.b = "mystr", "INVALID_VALUE")
+}

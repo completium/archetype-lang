@@ -3271,7 +3271,7 @@ let rec for_xexpr
             let pk = for_xexpr ?ety:pkty env pk in
 
             let aoutty = Option.map (fun (asset, _) ->
-                let a =  A.Tasset asset.as_name in a, A.Tcontainer(a, AssetValue)) asset in
+                let a =  A.Tasset asset.as_name in a, A.Toption (A.Tcontainer(a, AssetValue))) asset in
             let aoutty = aoutty |> Option.map (fun (aoutty, aouttyv) ->
                 match mode.em_kind with
                 | `Expr    _ -> aouttyv
@@ -3286,102 +3286,120 @@ let rec for_xexpr
 
             mk_sp
               aoutty
-              (A.Pcall (Some e, A.Cconst A.Cget, [A.AExpr pk]))
+              (A.Pcall (Some e, A.Cconst A.Cgetopt, [A.AExpr pk]))
           end
       end
 
     | Edot (pe, x) -> begin
+        let rec aux (e : A.pterm) =
+          match e with
+          | {type_ = None} ->
+            bailout ()
+
+          | {type_ = Some (A.Tasset asset) } -> begin
+              let asset = Env.Asset.get env (unloc asset) in
+
+              match get_field (unloc x) asset with
+              | None ->
+                let err = UnknownField (unloc asset.as_name, unloc x) in
+                Env.emit_error env (loc x, err); bailout ()
+
+              | Some { fd_type = fty; fd_ghost = ghost } ->
+                if ghost && not (is_form_kind mode.em_kind) then
+                  Env.emit_error env (loc x, InvalidShadowFieldAccess);
+                mk_sp (Some fty) (A.Pdot (e, x))
+            end
+
+          | {type_ = Some (A.Trecord record)} -> begin
+              let record = Env.Record.get env (unloc record) in
+
+              match get_rfield (unloc x) record with
+              | None ->
+                let err = UnknownField (unloc record.rd_name, unloc x) in
+                Env.emit_error env (loc x, err); bailout ()
+
+              | Some { rfd_type = fty } ->
+                mk_sp (Some fty) (A.Pdot (e, x))
+            end
+
+          | {type_ = Some (A.Toption (A.Tcontainer (A.Tasset asset, AssetValue))); node = A.Pcall (Some e, A.Cconst A.Cgetopt, [A.AExpr pk])} -> begin
+              mk_sp
+                (Some (A.Tcontainer (A.Tasset asset, AssetValue)))
+                (A.Pcall (Some e, A.Cconst A.Cget, [A.AExpr pk]))
+              |> aux
+            end
+
+          | {type_ = Some (A.Tcontainer (A.Tasset asset, AssetValue))} -> begin
+              (* TODO: reject if the field is or contains pk *)
+              let asset = Env.Asset.get env (unloc asset) in
+
+              match get_field (unloc x) asset with
+              | None ->
+                let err = UnknownField (unloc asset.as_name, unloc x) in
+                Env.emit_error env (loc x, err); bailout ()
+
+              | Some { fd_type = fty; fd_ghost = ghost } ->
+                if ghost && not (is_form_kind mode.em_kind) then
+                  Env.emit_error env (loc x, InvalidShadowFieldAccess);
+                mk_sp (Some fty) (A.Pdot (e, x))
+            end
+
+          | {type_ = Some ty} ->
+            Env.emit_error env (loc pe, AssetOrRecordExpected ty);
+            bailout ()
+        in
         let e = for_xexpr env pe in
-
-        match e.A.type_ with
-        | None ->
-          bailout ()
-
-        | Some (A.Tasset asset) -> begin
-            let asset = Env.Asset.get env (unloc asset) in
-
-            match get_field (unloc x) asset with
-            | None ->
-              let err = UnknownField (unloc asset.as_name, unloc x) in
-              Env.emit_error env (loc x, err); bailout ()
-
-            | Some { fd_type = fty; fd_ghost = ghost } ->
-              if ghost && not (is_form_kind mode.em_kind) then
-                Env.emit_error env (loc x, InvalidShadowFieldAccess);
-              mk_sp (Some fty) (A.Pdot (e, x))
-          end
-
-        | Some (A.Trecord record) -> begin
-            let record = Env.Record.get env (unloc record) in
-
-            match get_rfield (unloc x) record with
-            | None ->
-              let err = UnknownField (unloc record.rd_name, unloc x) in
-              Env.emit_error env (loc x, err); bailout ()
-
-            | Some { rfd_type = fty } ->
-              mk_sp (Some fty) (A.Pdot (e, x))
-          end
-
-        | Some (A.Tcontainer (A.Tasset asset, AssetValue)) -> begin
-            (* TODO: reject if the field is or contains pk *)
-            let asset = Env.Asset.get env (unloc asset) in
-
-            match get_field (unloc x) asset with
-            | None ->
-              let err = UnknownField (unloc asset.as_name, unloc x) in
-              Env.emit_error env (loc x, err); bailout ()
-
-            | Some { fd_type = fty; fd_ghost = ghost } ->
-              if ghost && not (is_form_kind mode.em_kind) then
-                Env.emit_error env (loc x, InvalidShadowFieldAccess);
-              mk_sp (Some fty) (A.Pdot (e, x))
-          end
-
-        | Some ty ->
-          Env.emit_error env (loc pe, AssetOrRecordExpected ty);
-          bailout ()
+        aux e
       end
 
     | Equestiondot (pe, x) -> begin
+        let rec aux (e : A.pterm) =
+          match e with
+          | {type_ = None} ->
+            bailout ()
+
+          | {type_ = Some (A.Tasset asset)} -> begin
+              let asset = Env.Asset.get env (unloc asset) in
+
+              match get_field (unloc x) asset with
+              | None ->
+                let err = UnknownField (unloc asset.as_name, unloc x) in
+                Env.emit_error env (loc x, err); bailout ()
+
+              | Some { fd_type = fty; fd_ghost = ghost } ->
+                if ghost && not (is_form_kind mode.em_kind) then
+                  Env.emit_error env (loc x, InvalidShadowFieldAccess);
+                mk_sp (Some (A.Toption fty)) (A.Pquestiondot (e, x))
+            end
+
+          | {type_ = Some (A.Toption (A.Tcontainer (A.Tasset asset, AssetValue))); node = A.Pcall (Some e, A.Cconst A.Cgetopt, [A.AExpr pk])} -> begin
+              mk_sp
+                (Some (A.Tcontainer (A.Tasset asset, AssetValue)))
+                (A.Pcall (Some e, A.Cconst A.Cget, [A.AExpr pk]))
+              |> aux
+            end
+
+          | {type_ = Some (A.Tcontainer (A.Tasset asset, AssetValue))} -> begin
+              (* TODO: reject if the field is or contains pk *)
+              let asset = Env.Asset.get env (unloc asset) in
+
+              match get_field (unloc x) asset with
+              | None ->
+                let err = UnknownField (unloc asset.as_name, unloc x) in
+                Env.emit_error env (loc x, err); bailout ()
+
+              | Some { fd_type = fty; fd_ghost = ghost } ->
+                if ghost && not (is_form_kind mode.em_kind) then
+                  Env.emit_error env (loc x, InvalidShadowFieldAccess);
+                mk_sp (Some (A.Toption fty)) (A.Pquestiondot (e, x))
+            end
+
+          | {type_ = Some ty} ->
+            Env.emit_error env (loc pe, AssetOrRecordExpected ty);
+            bailout ()
+        in
         let e = for_xexpr env pe in
-
-        match e.A.type_ with
-        | None ->
-          bailout ()
-
-        | Some (A.Tasset asset) -> begin
-            let asset = Env.Asset.get env (unloc asset) in
-
-            match get_field (unloc x) asset with
-            | None ->
-              let err = UnknownField (unloc asset.as_name, unloc x) in
-              Env.emit_error env (loc x, err); bailout ()
-
-            | Some { fd_type = fty; fd_ghost = ghost } ->
-              if ghost && not (is_form_kind mode.em_kind) then
-                Env.emit_error env (loc x, InvalidShadowFieldAccess);
-              mk_sp (Some (A.Toption fty)) (A.Pquestiondot (e, x))
-          end
-
-        | Some (A.Tcontainer (A.Tasset asset, AssetValue)) -> begin
-            (* TODO: reject if the field is or contains pk *)
-            let asset = Env.Asset.get env (unloc asset) in
-
-            match get_field (unloc x) asset with
-            | None ->
-              let err = UnknownField (unloc asset.as_name, unloc x) in
-              Env.emit_error env (loc x, err); bailout ()
-
-            | Some { fd_type = fty; fd_ghost = ghost } ->
-              if ghost && not (is_form_kind mode.em_kind) then
-                Env.emit_error env (loc x, InvalidShadowFieldAccess);
-              mk_sp (Some (A.Toption fty)) (A.Pquestiondot (e, x))
-          end
-
-        | Some ty ->
-          Env.emit_error env (loc pe, AssetOrRecordExpected ty);
-          bailout ()
+        aux e
       end
 
     | Eternary (c, a, b) -> begin

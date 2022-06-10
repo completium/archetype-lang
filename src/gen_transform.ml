@@ -4160,7 +4160,7 @@ let remove_asset (model : model) : model =
       | Mdot ({node = Mget (_, CKcoll _, k); type_ = (Tasset an, _)}, fn) when is_key (unloc an) (unloc fn) -> begin
           fm ctx k
         end
-      | Mdot (({node = _; type_ = (Tasset an, _)} as a), fn) -> begin
+      | Mdot (({node = _; type_ = ((Tasset an | (Tcontainer ((Tasset an, _), AssetValue))), _)} as a), fn) -> begin
           let an = unloc an in
           let mt_get = fm ctx a in
           if is_simple_record an
