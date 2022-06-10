@@ -445,7 +445,6 @@ let to_model (ast : A.ast) : M.model =
           let a = f a in
           let b = f b in
           match c with
-          | {node = M.Mget(_, _, k) ;type_ = (M.Tcontainer ((Tasset an, _), AssetValue), _)} -> M.Mternaryasset (unloc an, k, a, b)
           | {type_ = (M.Tbuiltin Bbool, _)} -> M.Mternarybool   (c, a, b)
           | {type_ = (M.Toption _, _)}      -> M.Mternaryoption (c, a, b)
           | _ -> assert false

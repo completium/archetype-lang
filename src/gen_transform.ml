@@ -6058,7 +6058,7 @@ let remove_iterable_big_map (model : model) : model =
               let subnat = mk_mterm (Msubnat (map_counter, mk_nat 1)) (toption tnat) in
               let idv = dumloc "_v" in
               let s = mk_mvar idv tnat in
-              let mw = mk_mterm (Mmatchoption(subnat, idv, s, fail "OPTION_IS_NONE")) tnat in
+              let mw = mk_mterm (Mmatchoption(subnat, idv, s, fail option_is_none)) tnat in
               mk_mterm (Massign (ValueAssign, tnat, (Atuple (mk_mvar ibm_id ibm_type, 2, 3)), mw)) tunit
             in
             let instr_assign : mterm =
@@ -6186,11 +6186,6 @@ let remove_ternary_opeartor (model : model) : model =
     match mt with
     | { node = Mternarybool (c, a, b) }   -> { mt with node = Mexprif(f c, f a, f b) }
     | { node = Mternaryoption (c, a, b) } -> { mt with node = Mmatchoption (f c, dumloc "the", f a, f b) }
-    | { node = Mternaryasset (an, k, a, b) } -> begin
-        (* let asset = Utils.get_asset model an in *)
-        let getopt = mk_mterm (Mgetsome(an, CKcoll (Tnone, Dnone), f k)) (toption (tassetvalue (dumloc an))) in
-        { mt with node = Mmatchoption (getopt, dumloc "the", f a, f b) }
-      end
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
@@ -6228,7 +6223,7 @@ let remove_decl_var_opt (model : model) =
         let fa =
           match fa with
           | Some fa -> failg (f fa)
-          | None    -> fail "OPTION_IS_NONE"
+          | None    -> fail option_is_none
         in
         let mw = mk_mterm (Mmatchoption(f v, idv, s, fa)) ty in
         { mt with node = Mdeclvar (ids, Some ty, mw, c) }

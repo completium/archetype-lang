@@ -523,13 +523,6 @@ let pp_mterm fmt (mt : mterm) =
         f a
         f b
 
-    | Mternaryasset (an, k, a, b) ->
-      Format.fprintf fmt "%s[%a] ? %a : %a"
-        an
-        f k
-        f a
-        f b
-
     | Mfold (x, id, e) ->
       let pp fmt (x, id, e) =
         Format.fprintf fmt "fold (%a, %a -> (@[%a@]))@\n"
