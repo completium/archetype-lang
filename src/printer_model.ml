@@ -377,6 +377,23 @@ let pp_mterm fmt (mt : mterm) =
     (* effect *)
 
     | Mfail ft ->
+      let pp_fail_type f fmt a =
+        let pp x = Format.fprintf fmt x in
+        match a with
+        | Invalid e              -> f fmt e
+        | InvalidCaller          -> pp "\"%s\"" fail_msg_INVALID_CALLER
+        | InvalidSource          -> pp "\"%s\"" fail_msg_INVALID_SOURCE
+        | InvalidCondition id    -> pp "\"%s\", %a" fail_msg_INVALID_CONDITION pp_str id
+        | NotFound               -> pp "\"%s\"" fail_msg_NOT_FOUND
+        | AssetNotFound id       -> pp "\"%s\", %a" fail_msg_ASSET_NOT_FOUND pp_str id
+        | KeyExists id           -> pp "\"%s\", %a" fail_msg_KEY_EXISTS pp_str id
+        | KeyExistsOrNotFound id -> pp "\"%s\", %a" fail_msg_KEY_EXISTS_OR_NOT_FOUND pp_str id
+        | OutOfBound             -> pp "\"%s\"" fail_msg_OUT_OF_BOUND
+        | DivByZero              -> pp "\"%s\"" fail_msg_DIV_BY_ZERO
+        | NatAssign              -> pp "\"%s\"" fail_msg_NAT_NEG_ASSIGN
+        | NoTransfer             -> pp "\"%s\"" fail_msg_NO_TRANSFER
+        | InvalidState           -> pp "\"%s\"" fail_msg_INVALID_STATE
+      in
       Format.fprintf fmt "fail (%a)"
         (pp_fail_type f) ft
 

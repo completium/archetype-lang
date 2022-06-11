@@ -113,20 +113,3 @@ let maybe_paren outer inner pos pp =
 let pp_version fmt _ = pp_str fmt Options.version
 
 let pp_bin fmt _ = Format.fprintf fmt "archetype %a" pp_version ()
-
-let pp_fail_type f fmt a =
-  let pp x = Format.fprintf fmt x in
-  match a with
-  | Model.Invalid e              -> f fmt e
-  | Model.InvalidCaller          -> pp "\"InvalidCaller\""
-  | Model.InvalidSource          -> pp "\"InvalidSource\""
-  | Model.InvalidCondition id    -> pp "\"InvalidCondition\", %a" pp_str id
-  | Model.NotFound               -> pp "\"NotFound\""
-  | Model.AssetNotFound id       -> pp "\"AssetNotFound\", %a" pp_str id
-  | Model.KeyExists id           -> pp "\"KeyExists\", %a" pp_str id
-  | Model.KeyExistsOrNotFound id -> pp "\"KeyExistsOrNotFound\", %a" pp_str id
-  | Model.OutOfBound             -> pp "\"OutOfBound\""
-  | Model.DivByZero              -> pp "\"DivByZero\""
-  | Model.NatAssign              -> pp "\"NatAssign\""
-  | Model.NoTransfer             -> pp "\"NoTransfer\""
-  | Model.InvalidState           -> pp "\"InvalidState\""

@@ -12,7 +12,6 @@ exception Anomaly of string
 
 let complete_tree_entrypoints = true
 let with_macro = false
-let divbyzero = "DivByZero"
 let entrynotfound = "EntryNotFound"
 type error_desc =
   | FieldNotFoundFor of string * string
@@ -313,7 +312,7 @@ let to_ir (model : M.model) : T.ir =
           let concat     = T.Ibinop (Bconcat, get_map, vres) in
           let assign_res = T.Iassign (res_name, concat) in
           let assign_arg = T.Iassign (arg_name, T.Iunop (Ucar, vpair)) in
-          let vpair      = T.Iifnone (T.Ibinop (Bediv, varg, ten), T.ifail divbyzero, "_var_ifnone", Ivar "_var_ifnone", T.tpair T.tint T.tnat) in
+          let vpair      = T.Iifnone (T.Ibinop (Bediv, varg, ten), T.ifail M.fail_msg_DIV_BY_ZERO, "_var_ifnone", Ivar "_var_ifnone", T.tpair T.tint T.tnat) in
           let b          = T.IletIn(pair_name, vpair, T.Iseq [assign_res; assign_arg], true) in
           let loop       = T.Iloop (cond, b) in
           let a          = T.IletIn(res_name, T.istring "", IletIn(map_name, map, T.Iseq [loop; return vres], true), true) in
@@ -655,18 +654,18 @@ let to_ir (model : M.model) : T.ir =
         let x =
           match ft with
           | Invalid v              -> f v
-          | InvalidCaller          -> T.istring "InvalidCaller"
-          | InvalidSource          -> T.istring "InvalidSource"
-          | InvalidCondition lbl   -> T.ipair (T.istring "InvalidCondition") (T.istring lbl)
-          | NotFound               -> T.istring "NotFound"
+          | InvalidCaller          -> T.istring M.fail_msg_INVALID_CALLER
+          | InvalidSource          -> T.istring M.fail_msg_INVALID_SOURCE
+          | InvalidCondition lbl   -> T.ipair (T.istring M.fail_msg_INVALID_CONDITION) (T.istring lbl)
+          | NotFound               -> T.istring M.fail_msg_NOT_FOUND
           | AssetNotFound an       -> T.ipair (T.istring "AssetNotFound") (T.istring an)
-          | KeyExists an           -> T.ipair (T.istring "KeyExists") (T.istring an)
-          | KeyExistsOrNotFound an -> T.ipair (T.istring "KeyExistsOrNotFound") (T.istring an)
-          | OutOfBound             -> T.istring "OutOfBound"
-          | DivByZero              -> T.istring divbyzero
-          | NatAssign              -> T.istring "NatAssign"
-          | NoTransfer             -> T.istring "NoTransfer"
-          | InvalidState           -> T.istring "InvalidState"
+          | KeyExists an           -> T.ipair (T.istring M.fail_msg_KEY_EXISTS) (T.istring an)
+          | KeyExistsOrNotFound an -> T.ipair (T.istring M.fail_msg_KEY_EXISTS_OR_NOT_FOUND) (T.istring an)
+          | OutOfBound             -> T.istring M.fail_msg_OUT_OF_BOUND
+          | DivByZero              -> T.istring M.fail_msg_DIV_BY_ZERO
+          | NatAssign              -> T.istring M.fail_msg_NAT_NEG_ASSIGN
+          | NoTransfer             -> T.istring M.fail_msg_NO_TRANSFER
+          | InvalidState           -> T.istring M.fail_msg_INVALID_STATE
         in
         T.Iunop  (Ufail, x)
       end
@@ -1281,23 +1280,23 @@ let map_implem : (string * T.code list) list = [
   get_fun_name T.Bratcmp         , T.[cunpair; cunpair; cdip (1, [cunpair]); cunpair; cdug 3; cmul; cdip (1, [cmul]); cswap; ccompare; cswap;
                                       cifleft ([cdrop 1; ceq], [cifleft ([cifleft ([cdrop 1; clt], [cdrop 1; cle])],
                                                                          [cifleft ([cdrop 1; cgt], [cdrop 1; cge])])])];
-  get_fun_name T.Bfloor          , T.[cunpair; cediv; cifnone ([cfail divbyzero], [ccar])];
-  get_fun_name T.Bceil           , T.[cunpair; cediv; cifnone ([cfail divbyzero], [cunpair; cswap; cint; ceq; cif ([], [cpush (tint, Dint Big_int.unit_big_int); cadd])])];
+  get_fun_name T.Bfloor          , T.[cunpair; cediv; cifnone ([cfail M.fail_msg_DIV_BY_ZERO], [ccar])];
+  get_fun_name T.Bceil           , T.[cunpair; cediv; cifnone ([cfail M.fail_msg_DIV_BY_ZERO], [cunpair; cswap; cint; ceq; cif ([], [cpush (tint, Dint Big_int.unit_big_int); cadd])])];
   get_fun_name T.Bratnorm        ,   [];
   get_fun_name T.Brataddsub      , T.[cunpair; cunpair; cdip (1, [cunpair; cswap; cdup]); cunpair; cswap; cdup; cdig 3; cmul; cdup; cpush (tnat, Dint Big_int.zero_big_int);
-                                      ccompare; ceq; cif ([cfail divbyzero], []); cdug 4; cdig 3; cmul; cdip (1, [cmul]); cdig 3; cifleft ([cdrop 1; cadd], [cdrop 1; cswap; csub]); cpair;];
+                                      ccompare; ceq; cif ([cfail M.fail_msg_DIV_BY_ZERO], []); cdug 4; cdig 3; cmul; cdip (1, [cmul]); cdig 3; cifleft ([cdrop 1; cadd], [cdrop 1; cswap; csub]); cpair;];
   get_fun_name T.Bratmul         , T.[cunpair; cdip (1, [cunpair]); cunpair; cdip (1, [cswap]); cmul;
-                                      cdip (1, [cmul; cdup; cpush (tnat, Dint Big_int.zero_big_int); ccompare; ceq; cif ([cfail divbyzero], [])]); cpair ];
+                                      cdip (1, [cmul; cdup; cpush (tnat, Dint Big_int.zero_big_int); ccompare; ceq; cif ([cfail M.fail_msg_DIV_BY_ZERO], [])]); cpair ];
   get_fun_name T.Bratdiv         , T.[cunpair; cdip (1, [cunpair]); cunpair; cdig 3;
                                       cdup; cdig 3; cdup; cdug 4; cmul;
-                                      cpush (tnat, T.Dint Big_int.zero_big_int); ccompare; ceq; cif ([cfail divbyzero], []);
+                                      cpush (tnat, T.Dint Big_int.zero_big_int); ccompare; ceq; cif ([cfail M.fail_msg_DIV_BY_ZERO], []);
                                       cpush (tint, T.Dint Big_int.zero_big_int); cdig 4; cdup; cdug 5; ccompare; cge; cif ([cint], [cneg]); cmul; cdip (1, [cmul; cabs]); cpair ];
   get_fun_name T.Bratuminus      , T.[cunpair; cneg; cpair];
   get_fun_name T.Bratabs         , T.[cunpair; cabs; cint; cpair];
   get_fun_name T.Brattez         , T.[cunpair; cunpair;
                                       cdip(2, [cpush (tmutez, T.Dint Big_int.unit_big_int); cswap; cediv; cifnone ([T.cfail "DivByZero"], []) ;ccar]);
-                                      cabs; cdig 2; cmul; cediv; cifnone ([cfail divbyzero], []); ccar; cpush (tmutez, T.Dint Big_int.unit_big_int); cmul ];
-  get_fun_name T.Bratdur         , T.[cunpair; cunpair; cdig 2; cmul; cediv; cifnone ([cfail divbyzero], []); ccar;];
+                                      cabs; cdig 2; cmul; cediv; cifnone ([cfail M.fail_msg_DIV_BY_ZERO], []); ccar; cpush (tmutez, T.Dint Big_int.unit_big_int); cmul ];
+  get_fun_name T.Bratdur         , T.[cunpair; cunpair; cdig 2; cmul; cediv; cifnone ([cfail M.fail_msg_DIV_BY_ZERO], []); ccar;];
   get_fun_name T.Bsubnat         , T.[cunpair; csub; cdup; cpush (T.tint, T.Dint Big_int.zero_big_int); ccompare; cgt; cif ([cfail "NegResult"], []); cabs ];
   get_fun_name T.Bmuteztonat     , T.[cpush (tmutez, T.Dint Big_int.unit_big_int); cswap; cediv; cifnone ([T.cfail "DivByZero"], []); ccar;];
 ]
