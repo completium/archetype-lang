@@ -5904,7 +5904,7 @@ let process_event (model : model) : model =
             let idv = dumloc "_v" in
             let tcb = tcontract tbytes in
             let s = mk_mvar idv tcb in
-            let mw = mk_mterm (Mmatchoption(getentrypoint, idv, s, fail fail_msg_BAD_EVENT_CONTRACT)) tcb in
+            let mw = mk_mterm (Mmatchoption(getentrypoint, idv, s, fail fail_msg_INVALID_EVENT_CONTRACT)) tcb in
             mw
           in
           let data = mk_pack (mk_tuple [mk_string (unloc e); mk_string typ; mk_pack value]) in

@@ -1272,7 +1272,7 @@ let fail_msg_ENTRY_NOT_FOUND         = "ENTRY_NOT_FOUND"
 let fail_msg_EMPTY_LIST              = "EMPTY_LIST"
 let fail_msg_NOT_IMPLICIT_CONTRACT   = "NOT_IMPLICIT_CONTRACT"
 let fail_msg_KEY_NOT_FOUND           = "KEY_NOT_FOUND"
-let fail_msg_BAD_EVENT_CONTRACT      = "BAD_EVENT_CONTRACT"
+let fail_msg_INVALID_EVENT_CONTRACT  = "INVALID_EVENT_CONTRACT"
 
 (* -------------------------------------------------------------------- *)
 
