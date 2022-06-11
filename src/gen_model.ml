@@ -1385,7 +1385,7 @@ let to_model (ast : A.ast) : M.model =
 
   let process_transaction (env : env) (transaction : A.transaction) : M.function__ =
     let process_calledby env (body : M.mterm) : M.mterm =
-      let process_cb caller (cb : (A.rexpr * A.pterm option)) (body : M.mterm) : M.mterm =
+      let process_cb ((caller, fa) : M.mterm * M.fail_type) (cb : (A.rexpr * A.pterm option)) (body : M.mterm) : M.mterm =
         let rec process_rexpr (rq : A.rexpr) : M.mterm option =
           match rq.node with
           | Rany -> None
@@ -1413,7 +1413,7 @@ let to_model (ast : A.ast) : M.model =
           let fail_auth : M.mterm =
             match snd cb with
             | Some o -> fail (Invalid (to_mterm env o))
-            | None -> fail InvalidCaller
+            | None -> fail fa
           in
           let cond_if = M.mk_mterm (M.Mif (require, fail_auth, None)) M.tunit in
           add_seq cond_if body
@@ -1427,8 +1427,8 @@ let to_model (ast : A.ast) : M.model =
         in
 
         body
-        |> process transaction.calledby  M.mcaller
-        |> process transaction.sourcedby M.msource
+        |> process transaction.calledby  (M.mcaller, M.InvalidCaller)
+        |> process transaction.sourcedby (M.msource, M.InvalidSource)
       end
     in
 

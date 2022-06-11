@@ -6058,7 +6058,7 @@ let remove_iterable_big_map (model : model) : model =
               let subnat = mk_mterm (Msubnat (map_counter, mk_nat 1)) (toption tnat) in
               let idv = dumloc "_v" in
               let s = mk_mvar idv tnat in
-              let mw = mk_mterm (Mmatchoption(subnat, idv, s, fail option_is_none)) tnat in
+              let mw = mk_mterm (Mmatchoption(subnat, idv, s, fail fail_msg_OPTION_IS_NONE)) tnat in
               mk_mterm (Massign (ValueAssign, tnat, (Atuple (mk_mvar ibm_id ibm_type, 2, 3)), mw)) tunit
             in
             let instr_assign : mterm =
@@ -6223,7 +6223,7 @@ let remove_decl_var_opt (model : model) =
         let fa =
           match fa with
           | Some fa -> failg (f fa)
-          | None    -> fail option_is_none
+          | None    -> fail fail_msg_OPTION_IS_NONE
         in
         let mw = mk_mterm (Mmatchoption(f v, idv, s, fa)) ty in
         { mt with node = Mdeclvar (ids, Some ty, mw, c) }

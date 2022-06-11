@@ -119,6 +119,7 @@ let pp_fail_type f fmt a =
   match a with
   | Model.Invalid e              -> f fmt e
   | Model.InvalidCaller          -> pp "\"InvalidCaller\""
+  | Model.InvalidSource          -> pp "\"InvalidSource\""
   | Model.InvalidCondition id    -> pp "\"InvalidCondition\", %a" pp_str id
   | Model.NotFound               -> pp "\"NotFound\""
   | Model.AssetNotFound id       -> pp "\"AssetNotFound\", %a" pp_str id

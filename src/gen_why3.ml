@@ -1748,6 +1748,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                      let idx = get_fail_idx m v.type_ in
                      Efail (idx, Some (map_mterm m ctx v))
                    | InvalidCaller         -> EInvalidCaller
+                   | InvalidSource         -> EInvalidSource
                    | InvalidCondition lbl  -> (EInvalidCondition lbl)
                    | NotFound              -> ENotFound
                    | AssetNotFound _       -> ENotFound
@@ -2986,6 +2987,7 @@ let fold_exns m body : term list =
     | M.Mremoveif (_, CKfield (_,_,k,_,_), _, _ ,_ ) -> internal_fold_exn (acc @ [Texn ENotFound]) k
     | M.Mclear (_a,CKfield (_,_,k,_,_)) -> internal_fold_exn (acc @ [Texn ENotFound]) k
     | M.Mfail InvalidCaller -> acc @ [Texn EInvalidCaller]
+    | M.Mfail InvalidSource -> acc @ [Texn EInvalidSource]
     | M.Mfail NoTransfer -> acc @ [Texn ENoTransfer]
     | M.Mfail (InvalidCondition lbl) -> acc @ [Texn (EInvalidCondition lbl)]
     | M.Mfail InvalidState -> acc @ [Texn EInvalidState]

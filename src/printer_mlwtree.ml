@@ -996,6 +996,7 @@ and pp_exn outer pos fmt = function
   | Efail (i,None)      -> Format.fprintf fmt "Fail%a" pp_int i
   | Efail (i,Some m)    -> Format.fprintf fmt "Fail%a %a" pp_int i (pp_term outer pos) m
   | EInvalidCaller      -> pp_str fmt "InvalidCaller"
+  | EInvalidSource      -> pp_str fmt "InvalidSource"
   | EInvalidCondition _ -> pp_str fmt "InvalidCondition"
   | ENotFound           -> pp_str fmt "NotFound"
   | EKeyExists          -> pp_str fmt "KeyExist"

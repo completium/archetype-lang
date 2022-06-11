@@ -656,6 +656,7 @@ let to_ir (model : M.model) : T.ir =
           match ft with
           | Invalid v              -> f v
           | InvalidCaller          -> T.istring "InvalidCaller"
+          | InvalidSource          -> T.istring "InvalidSource"
           | InvalidCondition lbl   -> T.ipair (T.istring "InvalidCondition") (T.istring lbl)
           | NotFound               -> T.istring "NotFound"
           | AssetNotFound an       -> T.ipair (T.istring "AssetNotFound") (T.istring an)

@@ -13,6 +13,7 @@ type 'e exn =
   | Einvalid of string option
   | Efail of int * 'e option
   | EInvalidCaller
+  | EInvalidSource
   | EInvalidCondition of string
   | ENotFound
   | EOutOfBound
@@ -436,6 +437,7 @@ and map_exn (map_e : 'e1 -> 'e2) = function
   | Einvalid s            -> Einvalid s
   | Efail (i, v)          -> Efail (i, Option.map map_e v)
   | EInvalidCaller        -> EInvalidCaller
+  | EInvalidSource        -> EInvalidSource
   | EInvalidCondition lbl -> EInvalidCondition lbl
   | ENotFound             -> ENotFound
   | EOutOfBound           -> EOutOfBound
@@ -1066,6 +1068,7 @@ and compare_exn cmpe e1 e2 =
   | Einvalid s1, Einvalid s2                       -> Option.cmp String.equal s1 s2
   | Efail (i1, v1), Efail (i2, v2)                 -> i1 == i2 && Option.cmp cmpe v1 v2
   | EInvalidCaller, EInvalidCaller                 -> true
+  | EInvalidSource, EInvalidSource                 -> true
   | EInvalidCondition lbl1, EInvalidCondition lbl2 -> String.equal lbl1 lbl2
   | ENotFound    , ENotFound                       -> true
   | EOutOfBound  , EOutOfBound                     -> true

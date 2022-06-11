@@ -505,6 +505,7 @@ and mterm__node = (lident, mterm) mterm_node
 and 'id fail_type_gen =
   | Invalid of 'id mterm_gen
   | InvalidCaller
+  | InvalidSource
   | InvalidCondition of ident
   | NotFound
   | AssetNotFound of ident
@@ -1254,7 +1255,19 @@ let mk_transfer_op op = mk_mterm (Mtransfer (TKoperation op)) tunit
 
 (* -------------------------------------------------------------------- *)
 
-let option_is_none = "OPTION_IS_NONE"
+let fail_msg_ASSET_NOT_FOUND         = "ASSET_NOT_FOUND"
+let fail_msg_DIV_BY_ZERO             = "DIV_BY_ZERO"
+let fail_msg_INVALID_CALLER          = "INVALID_CALLER"
+let fail_msg_INVALID_CONDITION       = "INVALID_CONDITION"
+let fail_msg_INVALID_SOURCE          = "INVALID_SOURCE"
+let fail_msg_INVALID_STATE           = "INVALID_STATE"
+let fail_msg_KEY_EXISTS              = "KEY_EXISTS"
+let fail_msg_KEY_EXISTS_OR_NOT_FOUND = "KEY_EXISTS_OR_NOT_FOUND"
+let fail_msg_NAT_NEG_ASSIGN          = "NAT_NEG_ASSIGN"
+let fail_msg_NO_TRANSFER             = "NO_TRANSFER"
+let fail_msg_NOT_FOUND               = "NOT_FOUND"
+let fail_msg_OPTION_IS_NONE          = "OPTION_IS_NONE"
+let fail_msg_OUT_OF_BOUND            = "OUT_OF_BOUND"
 
 
 (* -------------------------------------------------------------------- *)
@@ -1287,6 +1300,7 @@ let cmp_fail_type
   match ft1, ft2 with
   | Invalid mt1, Invalid mt2                         -> cmp mt1 mt2
   | InvalidCaller, InvalidCaller                     -> true
+  | InvalidSource, InvalidSource                     -> true
   | InvalidCondition c1, InvalidCondition c2         -> cmp_ident c1 c2
   | NotFound, NotFound                               -> true
   | AssetNotFound an1, AssetNotFound an2             -> cmp_ident an1 an2

@@ -5447,6 +5447,7 @@ let for_specification_item
   | PT.Vfails l -> begin
       let failures = [
         "InvalidCaller"       , A.vtstring;
+        "InvalidSource"       , A.vtstring;
         "InvalidCondition"    , A.Ttuple [A.vtstring; A.vtstring];
         "NotFound"            , A.vtstring;
         "KeyExists"           , A.vtstring;
