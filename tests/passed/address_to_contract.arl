@@ -1,7 +1,15 @@
-archetype contract_to_address_contract
+archetype address_to_contract
+
+variable res : nat = 0
+
+entry set_value(n : nat) {
+  res := n
+}
 
 entry exec () {
-  effect {
-    var a = address_to_contract(tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg);
-  }
+  var n : nat = res + 1;
+
+  const e ?= address_to_contract<or<nat,unit>>(self_address) : "ERROR";
+  transfer 0tz to entry e(left<unit>(n));
+
 }
