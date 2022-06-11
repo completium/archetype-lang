@@ -5452,7 +5452,6 @@ let for_specification_item
         "NotFound"            , A.vtstring;
         "KeyExists"           , A.vtstring;
         "KeyExistsOrNotFound" , A.vtstring;
-        "OutOfBound"          , A.Ttuple [A.vtstring; A.vtnat];
         "DivByZero"           , A.vtstring;
         "NatAssign"           , A.vtstring;
         "NoTransfer"          , A.vtstring;

@@ -16,7 +16,6 @@ type 'e exn =
   | EInvalidSource
   | EInvalidCondition of string
   | ENotFound
-  | EOutOfBound
   | EKeyExists
   | EKeyExistsOrNotFound
   | EDivByZero
@@ -440,7 +439,6 @@ and map_exn (map_e : 'e1 -> 'e2) = function
   | EInvalidSource        -> EInvalidSource
   | EInvalidCondition lbl -> EInvalidCondition lbl
   | ENotFound             -> ENotFound
-  | EOutOfBound           -> EOutOfBound
   | EKeyExists            -> EKeyExists
   | EKeyExistsOrNotFound  -> EKeyExistsOrNotFound
   | EDivByZero            -> EDivByZero
@@ -1071,7 +1069,6 @@ and compare_exn cmpe e1 e2 =
   | EInvalidSource, EInvalidSource                 -> true
   | EInvalidCondition lbl1, EInvalidCondition lbl2 -> String.equal lbl1 lbl2
   | ENotFound    , ENotFound                       -> true
-  | EOutOfBound  , EOutOfBound                     -> true
   | EKeyExists   , EKeyExists                      -> true
   | EKeyExistsOrNotFound, EKeyExistsOrNotFound     -> true
   | EDivByZero   , EDivByZero                      -> true

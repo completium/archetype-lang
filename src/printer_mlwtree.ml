@@ -1001,7 +1001,6 @@ and pp_exn outer pos fmt = function
   | ENotFound           -> pp_str fmt "NotFound"
   | EKeyExists          -> pp_str fmt "KeyExist"
   | EKeyExistsOrNotFound-> pp_str fmt "KeyExistsOrNotFound"
-  | EOutOfBound         -> pp_str fmt "OutOfBound"
   | EDivByZero          -> pp_str fmt "DivByZero"
   | ENatAssign          -> pp_str fmt "NegAssignNat"
   | ENoTransfer         -> pp_str fmt "NoTransfer"

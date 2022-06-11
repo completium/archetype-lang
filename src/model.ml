@@ -511,7 +511,6 @@ and 'id fail_type_gen =
   | AssetNotFound of ident
   | KeyExists of ident
   | KeyExistsOrNotFound of ident
-  | OutOfBound
   | DivByZero
   | NatAssign
   | NoTransfer
@@ -1306,7 +1305,6 @@ let cmp_fail_type
   | AssetNotFound an1, AssetNotFound an2             -> cmp_ident an1 an2
   | KeyExists an1, KeyExists an2                     -> cmp_ident an1 an2
   | KeyExistsOrNotFound an1, KeyExistsOrNotFound an2 -> cmp_ident an1 an2
-  | OutOfBound, OutOfBound                           -> true
   | DivByZero, DivByZero                             -> true
   | NatAssign, NatAssign                             -> true
   | NoTransfer, NoTransfer                           -> true

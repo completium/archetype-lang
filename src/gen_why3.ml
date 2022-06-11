@@ -1752,7 +1752,6 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                    | InvalidCondition lbl  -> (EInvalidCondition lbl)
                    | NotFound              -> ENotFound
                    | AssetNotFound _       -> ENotFound
-                   | OutOfBound            -> EOutOfBound
                    | KeyExists _           -> EKeyExists
                    | KeyExistsOrNotFound _ -> EKeyExistsOrNotFound
                    | DivByZero             -> EDivByZero

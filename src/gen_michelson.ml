@@ -661,7 +661,6 @@ let to_ir (model : M.model) : T.ir =
           | AssetNotFound an       -> T.ipair (T.istring "AssetNotFound") (T.istring an)
           | KeyExists an           -> T.ipair (T.istring M.fail_msg_KEY_EXISTS) (T.istring an)
           | KeyExistsOrNotFound an -> T.ipair (T.istring M.fail_msg_KEY_EXISTS_OR_NOT_FOUND) (T.istring an)
-          | OutOfBound             -> T.istring M.fail_msg_OUT_OF_BOUND
           | DivByZero              -> T.istring M.fail_msg_DIV_BY_ZERO
           | NatAssign              -> T.istring M.fail_msg_NAT_NEG_ASSIGN
           | NoTransfer             -> T.istring M.fail_msg_NO_TRANSFER
