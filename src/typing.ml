@@ -1333,7 +1333,6 @@ let methods : (string * method_) list =
     ("sum"         , mk A.Csum          `Both        (`Pure       ) `Total   `Standard (`Fixed [`RExpr false       ], Some (`Ref 0)));
     ("head"        , mk A.Chead         `Both        (`Pure       ) `Total   `Standard (`Fixed [`T A.vtnat         ], Some (`SubColl)));
     ("tail"        , mk A.Ctail         `Both        (`Pure       ) `Total   `Standard (`Fixed [`T A.vtnat         ], Some (`SubColl)));
-    ("get"         , mk A.Cgetopt       `Both        (`Pure       ) `Total   `Standard (`Fixed [`Pk                ], Some (`OptVal)));
   ]
 
 let methods = Mid.of_list methods
@@ -1427,7 +1426,6 @@ let mapops : opinfo list =
     op "put"      A.Cmput      `Total   (Some map) [ tkey; tval ]           `Self                  Mint.empty;
     op "remove"   A.Cmremove   `Total   (Some map) [ tkey       ]           `Self                  Mint.empty;
     op "update"   A.Cmupdate   `Total   (Some map) [ tkey; A.Toption tval ] `Self                  Mint.empty;
-    op "get"      A.Cmgetopt   `Total   (Some map) [ tkey       ]           (`Ty (A.Toption tval)) Mint.empty;
     op "contains" A.Cmcontains `Total   (Some map) [ tkey       ]           (`Ty A.vtbool        ) Mint.empty;
     op "length"   A.Cmlength   `Total   (Some map) [            ]           (`Ty A.vtnat         ) Mint.empty;
   ]
@@ -1440,7 +1438,6 @@ let bigmapops : opinfo list =
     op "put"      A.Cmput      `Total   (Some big_map) [ tkey; tval ]           `Self                  Mint.empty;
     op "remove"   A.Cmremove   `Total   (Some big_map) [ tkey       ]           `Self                  Mint.empty;
     op "update"   A.Cmupdate   `Total   (Some big_map) [ tkey; A.Toption tval ] `Self                  Mint.empty;
-    op "get"      A.Cmgetopt   `Total   (Some big_map) [ tkey       ]           (`Ty (A.Toption tval)) Mint.empty;
     op "contains" A.Cmcontains `Total   (Some big_map) [ tkey       ]           (`Ty A.vtbool        ) Mint.empty;
   ]
 
@@ -1451,7 +1448,6 @@ let iterablebigmapops : opinfo list =
   let iterablebigmap  = A.Titerable_big_map (tkey, tval) in [
     op "put"      A.Cmput      `Total   (Some iterablebigmap) [ tkey; tval ]    `Self                  Mint.empty;
     op "remove"   A.Cmremove   `Total   (Some iterablebigmap) [ tkey       ]    `Self                  Mint.empty;
-    op "get"      A.Cmgetopt   `Total   (Some iterablebigmap) [ tkey       ]    (`Ty (A.Toption tval)) Mint.empty;
     op "contains" A.Cmcontains `Total   (Some iterablebigmap) [ tkey       ]    (`Ty A.vtbool        ) Mint.empty;
     op "length"   A.Cmlength   `Total   (Some iterablebigmap) [            ]    (`Ty A.vtnat         ) Mint.empty;
   ]
@@ -3258,13 +3254,10 @@ let rec for_xexpr
         | Some (A.Tbig_map (kt, vt))
         | Some (A.Titerable_big_map (kt, vt)) -> begin
             let pk = for_xexpr ?ety:(Some kt) env pk in
-            let rty =
-              match mode.em_kind with
-              | `Formula _ -> Some (A.Toption vt)
-              | _ -> Some vt in
+            let rty = Some (A.Toption vt) in
             mk_sp
               rty
-              (A.Pcall (None, A.Cconst A.Cmget, [], [A.AExpr ee; A.AExpr pk]))
+              (A.Pcall (None, A.Cconst A.Cmgetopt, [], [A.AExpr ee; A.AExpr pk]))
           end
         | _ -> begin
             let e, asset = for_asset_collection_expr mode env (`Parsed e) in

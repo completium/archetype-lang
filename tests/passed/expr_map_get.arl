@@ -1,14 +1,14 @@
 archetype expr_map_get
 
-variable res : string = ""
+variable res : option<string> = none
 
 entry exec () {
   specification {
-    s0: res = "0";
+    s0: res = some("0");
   }
   effect {
     var m : map<nat, string> = [(0, "0")];
     res := m[0];
-    do_require(res = "0", "INVALID_VALUE")
+    do_require(res = some("0"), "INVALID_VALUE")
   }
 }

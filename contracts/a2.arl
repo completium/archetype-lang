@@ -13,9 +13,9 @@ variable transferlists : big_map<nat, transferlist> = []
 
 function assertReceiver(addr : address) : bool {
   return
-    match get(users, addr) with
+    match users[addr] with
     | some v ->
-        match get(transferlists, v) with
+        match transferlists[v] with
         | some(r) -> r.unrestricted
         | none -> false
         end
@@ -40,10 +40,10 @@ entry assertTransfers (input_list : list<address * list<address>>) {
       else begin
         do_require(assertReceiver(%from), "FROM_RESTRICTED");
         do_require(assertReceiver(%to), "TO_RESTRICTED");
-        var fromid       = users[%from];
-        var toid         = users[%to];
-        var allowedlists = transferlists[fromid].allowedTransferlists;
-        do_require(contains(allowedlists, toid), "TO_NOT_ALLOWED")
+        var fromid       ?= users[%from] : "NOT_FOUND";
+        var toid         ?= users[%to] : "NOT_FOUND";
+        var tl ?= transferlists[fromid] : "NOT_FOUND";
+        do_require(tl.allowedTransferlists.contains(toid), "TO_NOT_ALLOWED")
       end
     done
   done
@@ -53,7 +53,7 @@ entry assertTransferlist (transferlistId : nat, input : option<transferlist>) {
   match input with
   | some tl -> begin
     do_require(contains(transferlists, transferlistId), "TRANSFERLIST_NOT_FOUND");
-    var l = transferlists[transferlistId];
+    var l ?= transferlists[transferlistId] : "NOT_FOUND";
     do_require(l.unrestricted = tl.unrestricted, "INVALID_UNRESTRICTED_STATE");
     for i in tl.allowedTransferlists do
       do_require(contains(l.allowedTransferlists, i), "IS_NOT_SUBSET")
@@ -80,7 +80,7 @@ entry updateTransferlist (
   effect {
     match u with
     | some v -> begin
-      var ltransferlist = transferlists[transferlistId];
+      var ltransferlist ?= transferlists[transferlistId] : "NOT_FOUND";
       var lunrestricted          = v[0];
       var ldisallowTransferlists = v[1];
       var lallowTransferlists    = v[2];
@@ -121,7 +121,7 @@ getter getIssuer () : address {
 }
 
 getter getUser (user : address) : option<nat> {
-  return get(users, user)
+  return users[user]
 }
 
  specification function assertReceiver(addr: address) {

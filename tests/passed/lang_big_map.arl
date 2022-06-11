@@ -2,8 +2,7 @@ archetype lang_big_map
 
 variable new_map1 : big_map<string, nat> = []
 variable new_map2 : big_map<string, nat> = []
-variable val_opt  : nat                  = 0
-variable val      : option<nat>          = none
+variable val_opt  : option<nat>          = none
 variable c        : bool                 = false
 
 entry exec () {
@@ -17,7 +16,6 @@ entry exec () {
     new_map1 := put(my_map, "mystr4", 4);
     new_map2 := remove(my_map, "mystr0");
     val_opt  := my_map["mystr4"];
-    val      := get(my_map, "mystr0");
     c        := contains(my_map, "mystr0");
   }
 }

@@ -1,8 +1,8 @@
 archetype test_list_mynth2
 
-variable res : string = ""
+variable res : option<string> = none
 
-function mynth(l : list<string>, idx : nat) : string {
+function mynth(l : list<string>, idx : nat) : option<string> {
   var ll = l;
   var r : option<string> = none;
   var i : nat = 0;
@@ -16,13 +16,12 @@ function mynth(l : list<string>, idx : nat) : string {
     | [] -> fail ("empty")
     end
   done;
-  const rr ?= r : "NOT_FOUND";
-  return rr
+  return r
 }
 
 entry exec () {
   specification {
-    s0: res = "2";
+    s0: res = some("2");
   }
   effect {
     var l : list<string> = ["1"; "2"; "3"];

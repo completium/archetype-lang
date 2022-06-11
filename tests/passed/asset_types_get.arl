@@ -9,7 +9,7 @@ asset abc {
 }
 
 entry get_value() {
-  const r : asset_value<abc> = abc[0];
-  const v = r.b;
+  const r : option<asset_value<abc>> = abc[0];
+  const v = r ? the.b : "ERROR";
   do_require(v = "mystr", "INVALID_VALUE")
 }
