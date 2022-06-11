@@ -1,0 +1,6 @@
+archetype expr_fun_address_to_contract_unit
+
+entry exec () {
+  var e ?= address_to_contract<unit>(tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg) : "ERROR";
+  transfer 0tz to entry e(Unit)
+}

@@ -994,8 +994,7 @@ let to_ir (model : M.model) : T.ir =
     | Msetdelegate x     -> T.Iunop (Usetdelegate, f x)
     | Mkeyhashtocontract x -> T.Iunop (Uimplicitaccount, f x)
     | Mcontracttoaddress x -> T.Iunop (Uaddress, f x)
-    | Maddresscontract x ->
-      T.Iifnone (T.Iunop (Ucontract(T.tunit, None), f x), T.ifail M.fail_msg_NOT_IMPLICIT_CONTRACT, "_var_ifnone", Ivar "_var_ifnone", ft mtt.type_)
+    | Maddresstocontract (t, x) -> T.Iunop (Ucontract(ft t, None), f x)
     | Mkeytoaddress    x -> T.Iunop (Uaddress, T.Iunop (Uimplicitaccount, T.Iunop  (Uhash_key, f x)))
 
     (* crypto functions *)

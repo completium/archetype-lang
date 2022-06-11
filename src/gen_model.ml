@@ -805,7 +805,7 @@ let to_model (ast : A.ast) : M.model =
 
       | A.Pcall (None, A.Cconst A.Caddresscontract, [AExpr x]) ->
         let fx = f x in
-        M.Maddresscontract (fx)
+        M.Maddresstocontract (M.tunit, fx)
 
       | A.Pcall (None, A.Cconst A.Ckeytoaddress, [AExpr x]) ->
         let fx = f x in

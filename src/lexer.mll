@@ -19,6 +19,7 @@
   let keywords_ =
     [
       "added"               , ADDED               ;
+      "address_to_contract" , ADDRESS_TO_CONTRACT ;
       "aggregate"           , AGGREGATE           ;
       "and"                 , AND                 ;
       "any"                 , ANY                 ;

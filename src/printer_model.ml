@@ -1363,8 +1363,9 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "contract_to_address (%a)"
         f x
 
-    | Maddresscontract x ->
-      Format.fprintf fmt "address_contract (%a)"
+    | Maddresstocontract (t, x) ->
+      Format.fprintf fmt "address_to_contract<%a>(%a)"
+        pp_type t
         f x
 
     | Mkeytoaddress x ->

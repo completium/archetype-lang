@@ -726,6 +726,7 @@ type error_desc =
   | InvalidStateExpression
   | InvalidStringValue
   | InvalidTezValueOverflow
+  | InvalidTypeForAddressToContract
   | InvalidTypeForBigMapKey
   | InvalidTypeForBigMapValue
   | InvalidTypeForCallview
@@ -960,6 +961,7 @@ let pp_error_desc fmt e =
   | InvalidStateExpression             -> pp "Invalid state expression"
   | InvalidStringValue                 -> pp "Invalid string value"
   | InvalidTezValueOverflow            -> pp "Overflow tez value"
+  | InvalidTypeForAddressToContract    -> pp "Invalid type for address_to_contract"
   | InvalidTypeForBigMapKey            -> pp "Invalid type for big map key"
   | InvalidTypeForBigMapValue          -> pp "Invalid type for big map value"
   | InvalidTypeForCallview             -> pp "Invalid type for call_view"
@@ -1467,7 +1469,6 @@ let cryptoops : opinfo list =
      op "check_signature"      A.Cchecksignature    `Total None [A.vtkey; A.vtsignature; A.vtbytes] (`Ty A.vtbool              ) Mint.empty;
      op "set_delegate"         A.Csetdelegate       `Total None [A.Toption A.vtkeyhash]             (`Ty A.Toperation          ) Mint.empty;
      op "key_hash_to_contract" A.Ckeyhashtocontract `Total None [A.vtkeyhash]                       (`Ty (A.Tcontract A.vtunit)) Mint.empty;
-     op "address_to_contract"  A.Caddresscontract   `Total None [A.vtaddress]                       (`Ty (A.Tcontract A.vtunit)) Mint.empty;
      op "voting_power"         A.Cvotingpower       `Total None [A.vtkeyhash]                       (`Ty A.vtnat               ) Mint.empty;
      op "contract_to_address"  A.Ccontracttoaddress `Total None [A.Tcontract (A.Tnamed 0)]          (`Ty A.vtaddress           ) Mint.empty;
      op "key_to_address"       A.Ckeytoaddress      `Total None [A.vtkey]                           (`Ty A.vtaddress           ) Mint.empty]
@@ -1475,7 +1476,7 @@ let cryptoops : opinfo list =
 (* -------------------------------------------------------------------- *)
 let mathops : opinfo list =
   [
-    op "sub_nat" A.Csubnat `Partial (Some A.vtnat) [ A.vtnat ] (`Ty (A.Toption A.vtnat)) Mint.empty;
+    op "sub_nat" A.Csubnat `Total (Some A.vtnat) [ A.vtnat ] (`Ty (A.Toption A.vtnat)) Mint.empty;
     op "sub_mutez" A.Csubmutez `Total (Some A.vtcurrency) [ A.vtcurrency ] (`Ty (A.Toption A.vtcurrency)) Mint.empty;
     op "greedy_and" A.Cgreedyand `Total (Some A.vtbool) [ A.vtbool ] (`Ty A.vtbool) Mint.empty;
     op "greedy_or" A.Cgreedyor `Total (Some A.vtbool) [ A.vtbool ] (`Ty A.vtbool) Mint.empty
@@ -3621,6 +3622,13 @@ let rec for_xexpr
 
     | Eappt (Fident id, ts, args) -> begin
         match unloc id, ts, args with
+        | "address_to_contract", [t], [a] -> begin
+            let ety = for_type env t in
+            let ty = match ety with | Some ty -> ty | None -> Env.emit_error env (loc tope, InvalidTypeForAddressToContract); bailout() in
+            let a = for_xexpr env ~ety:(A.vtaddress) a in
+            mk_sp (Some (A.Toption (A.Tcontract ty))) (A.Pcall (None, A.Cconst Caddresscontract, [AExpr a]))
+          end
+
         | "make_set", [t], [a] -> begin
             let ety = for_type env t in
             let ty = match ety with | Some ty -> ty | None -> Env.emit_error env (loc tope, InvalidTypeForMake); bailout() in

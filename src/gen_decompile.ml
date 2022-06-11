@@ -1822,7 +1822,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Msetdelegate _x     -> assert false
     | Mkeyhashtocontract _x -> assert false
     | Mcontracttoaddress _x -> assert false
-    | Maddresscontract _x -> assert false
+    | Maddresstocontract (_t, _x) -> assert false
     | Mkeytoaddress _x    -> assert false
 
 

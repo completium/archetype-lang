@@ -182,6 +182,7 @@ let string_of_token = function
   | AMPEQUAL             -> "AMPEQUAL"
   | AGGREGATE            -> "AGGREGATE"
   | ADDRESS s            -> Printf.sprintf "DURATION(%s)" s
+  | ADDRESS_TO_CONTRACT  -> "ADDRESS_TO_CONTRACT"
   | ADDED                -> "ADDED"
   | ACCEPT_TRANSFER      -> "ACCEPT_TRANSFER"
 
@@ -367,6 +368,7 @@ let string_of_symbol = function
   | X (T T_AMPEQUAL) -> "%="
   | X (T T_AGGREGATE) -> "aggregate"
   | X (T T_ADDRESS) -> "an address"
+  | X (T T_ADDRESS_TO_CONTRACT) -> "address_to_contract"
   | X (T T_ADDED) -> "added"
   | X (T T_ACCEPT_TRANSFER) -> "accept address"
   | X (N N_view_decl) -> "a view declaration"

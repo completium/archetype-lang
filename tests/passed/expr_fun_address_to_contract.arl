@@ -1,4 +1,4 @@
-archetype address_to_contract
+archetype expr_fun_address_to_contract
 
 variable res : nat = 0
 
@@ -7,9 +7,8 @@ entry set_value(n : nat) {
 }
 
 entry exec () {
-  var n : nat = res + 1;
+  const n : nat = res + 1;
 
   const e ?= address_to_contract<or<nat,unit>>(self_address) : "ERROR";
-  transfer 0tz to entry e(left<unit>(n));
-
+  transfer 0tz to entry e(left<unit>(n))
 }
