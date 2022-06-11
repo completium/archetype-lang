@@ -1002,7 +1002,7 @@ and pp_exn outer pos fmt = function
   | EKeyExists          -> pp_str fmt "KeyExist"
   | EKeyExistsOrNotFound-> pp_str fmt "KeyExistsOrNotFound"
   | EDivByZero          -> pp_str fmt "DivByZero"
-  | ENatAssign          -> pp_str fmt "NegAssignNat"
+  | ENatNegAssign       -> pp_str fmt "NegAssignNat"
   | ENoTransfer         -> pp_str fmt "NoTransfer"
   | EInvalidState       -> pp_str fmt "InvalidState"
 and pp_dexn fmt (i,t) =

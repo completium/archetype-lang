@@ -135,7 +135,7 @@ let process_assign_op op (t : type_) (lhs : mterm) (v : mterm) : mterm =
       let zero = mk_mterm (Mint Big_int.zero_big_int) tint in
       let cond = mk_mterm (Mge (a, zero)) tbool in
       let v = mk_mterm (Mabs a) tnat in
-      let f = mk_mterm (Mfail NatAssign) tunit in
+      let f = mk_mterm (Mfail NatNegAssign) tunit in
       let c = mk_mterm (Mcast (tunit, tnat, f)) tnat in
       mk_mterm (Mexprif (cond, v, c)) tnat
     end
@@ -4616,7 +4616,7 @@ let remove_asset (model : model) : model =
                 let zero = mk_mterm (Mint Big_int.zero_big_int) tint in
                 let cond = mk_mterm (Mge (a, zero)) tbool in
                 let v = mk_mterm (Mabs a) tnat in
-                let f = mk_mterm (Mfail NatAssign) (tunit) in
+                let f = mk_mterm (Mfail NatNegAssign) (tunit) in
                 let c = mk_mterm (Mcast (tunit, tnat, f)) tnat in
                 mk_mterm (Mexprif (cond, v, c)) tnat
               end

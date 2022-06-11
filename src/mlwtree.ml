@@ -19,7 +19,7 @@ type 'e exn =
   | EKeyExists
   | EKeyExistsOrNotFound
   | EDivByZero
-  | ENatAssign
+  | ENatNegAssign
   | ENoTransfer
   | EInvalidState
 [@@deriving show {with_path = false}]
@@ -442,7 +442,7 @@ and map_exn (map_e : 'e1 -> 'e2) = function
   | EKeyExists            -> EKeyExists
   | EKeyExistsOrNotFound  -> EKeyExistsOrNotFound
   | EDivByZero            -> EDivByZero
-  | ENatAssign            -> ENatAssign
+  | ENatNegAssign         -> ENatNegAssign
   | ENoTransfer           -> ENoTransfer
   | EInvalidState         -> EInvalidState
 and map_abstract_term
@@ -1072,7 +1072,7 @@ and compare_exn cmpe e1 e2 =
   | EKeyExists   , EKeyExists                      -> true
   | EKeyExistsOrNotFound, EKeyExistsOrNotFound     -> true
   | EDivByZero   , EDivByZero                      -> true
-  | ENatAssign   , ENatAssign                      -> true
+  | ENatNegAssign, ENatNegAssign                   -> true
   | ENoTransfer  , ENoTransfer                     -> true
   | EInvalidState, EInvalidState                   -> true
   | _ -> false

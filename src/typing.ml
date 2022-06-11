@@ -5453,7 +5453,7 @@ let for_specification_item
         "KeyExists"           , A.vtstring;
         "KeyExistsOrNotFound" , A.vtstring;
         "DivByZero"           , A.vtstring;
-        "NatAssign"           , A.vtstring;
+        "NatNegAssign"        , A.vtstring;
         "NoTransfer"          , A.vtstring;
         "InvalidState"        , A.vtstring;
       ] in

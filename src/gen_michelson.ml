@@ -656,7 +656,7 @@ let to_ir (model : M.model) : T.ir =
           | KeyExists an           -> T.ipair (T.istring M.fail_msg_KEY_EXISTS) (T.istring an)
           | KeyExistsOrNotFound an -> T.ipair (T.istring M.fail_msg_KEY_EXISTS_OR_NOT_FOUND) (T.istring an)
           | DivByZero              -> T.istring M.fail_msg_DIV_BY_ZERO
-          | NatAssign              -> T.istring M.fail_msg_NAT_NEG_ASSIGN
+          | NatNegAssign           -> T.istring M.fail_msg_NAT_NEG_ASSIGN
           | NoTransfer             -> T.istring M.fail_msg_NO_TRANSFER
           | InvalidState           -> T.istring M.fail_msg_INVALID_STATE
         in

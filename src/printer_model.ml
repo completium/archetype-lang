@@ -389,7 +389,7 @@ let pp_mterm fmt (mt : mterm) =
         | KeyExists id           -> pp "\"%s\", %a" fail_msg_KEY_EXISTS pp_str id
         | KeyExistsOrNotFound id -> pp "\"%s\", %a" fail_msg_KEY_EXISTS_OR_NOT_FOUND pp_str id
         | DivByZero              -> pp "\"%s\"" fail_msg_DIV_BY_ZERO
-        | NatAssign              -> pp "\"%s\"" fail_msg_NAT_NEG_ASSIGN
+        | NatNegAssign           -> pp "\"%s\"" fail_msg_NAT_NEG_ASSIGN
         | NoTransfer             -> pp "\"%s\"" fail_msg_NO_TRANSFER
         | InvalidState           -> pp "\"%s\"" fail_msg_INVALID_STATE
       in

@@ -21,7 +21,7 @@ theory Types
   exception Break
   exception NotFound
   exception KeyExist
-  exception NegAssignNat
+  exception NatNegAssign
   exception InvalidCaller
   exception InvalidSource
   exception InvalidCondition

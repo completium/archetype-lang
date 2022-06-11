@@ -1451,7 +1451,7 @@ let fail_if_neg_nat_value (t : M.type_) left right op  =
   match M.get_ntype t with
   | M.Tbuiltin  Bnat -> dl (
       Tif (dl (Tge(dl Tyint, left, right)), op,
-           Some (loc_term (Tseq [Tassign (Tvar gs, cp_storage gsinit); Traise ENatAssign])))
+           Some (loc_term (Tseq [Tassign (Tvar gs, cp_storage gsinit); Traise ENatNegAssign])))
     )
   | _ -> op
 
@@ -1755,7 +1755,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                    | KeyExists _           -> EKeyExists
                    | KeyExistsOrNotFound _ -> EKeyExistsOrNotFound
                    | DivByZero             -> EDivByZero
-                   | NatAssign             -> ENatAssign
+                   | NatNegAssign          -> ENatNegAssign
                    | NoTransfer            -> ENoTransfer
                    | InvalidState          -> EInvalidState))
           ]
@@ -2990,7 +2990,7 @@ let fold_exns m body : term list =
     | M.Mfail NoTransfer -> acc @ [Texn ENoTransfer]
     | M.Mfail (InvalidCondition lbl) -> acc @ [Texn (EInvalidCondition lbl)]
     | M.Mfail InvalidState -> acc @ [Texn EInvalidState]
-    | M.Mfail NatAssign -> acc @ [Texn ENatAssign]
+    | M.Mfail NatNegAssign -> acc @ [Texn ENatNegAssign]
     | M.Mfail Invalid v ->
       let idx = get_fail_idx m v.type_ in
       acc @ [Texn (Efail (idx, None))]

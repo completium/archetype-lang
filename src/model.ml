@@ -512,7 +512,7 @@ and 'id fail_type_gen =
   | KeyExists of ident
   | KeyExistsOrNotFound of ident
   | DivByZero
-  | NatAssign
+  | NatNegAssign
   | NoTransfer
   | InvalidState
 [@@deriving show {with_path = false}]
@@ -1311,7 +1311,7 @@ let cmp_fail_type
   | KeyExists an1, KeyExists an2                     -> cmp_ident an1 an2
   | KeyExistsOrNotFound an1, KeyExistsOrNotFound an2 -> cmp_ident an1 an2
   | DivByZero, DivByZero                             -> true
-  | NatAssign, NatAssign                             -> true
+  | NatNegAssign, NatNegAssign                       -> true
   | NoTransfer, NoTransfer                           -> true
   | InvalidState, InvalidState                       -> true
   | _ -> false
