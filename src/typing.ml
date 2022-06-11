@@ -5032,7 +5032,7 @@ let rec for_instruction_r
             let x  = for_expr kind env ~ety:A.vtcurrency e in
             let nty =
               match Env.lookup_entry env (unloc name) with
-              | Some (`Local (nty, (`Standard | `Argument | `Pattern))) ->
+              | Some (`Local (nty, (`Standard | `Const | `Argument | `Pattern))) ->
                 nty
 
               | Some (`Global { vr_type = nty; vr_kind = `Variable }) ->
