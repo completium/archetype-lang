@@ -297,7 +297,7 @@ let to_const = function
   | Cchecksignature        -> "check_signature"
   | Ckeytokeyhash          -> "key_to_key_hash"
   | Ccontracttoaddress     -> "contract_to_address"
-  | Caddresscontract       -> "address_contract"
+  | Caddresstocontract     -> "address_to_contract"
   | Ckeytoaddress          -> "key_to_address"
   (* voting *)
   | Ctotalvotingpower      -> "total_voting_power"
@@ -421,14 +421,16 @@ let rec pp_pterm fmt (pterm : pterm) =
       in
       (pp_with_paren pp) fmt (x, id, e)
 
-    | Pcall (meth, kind, args) ->
-      let pp fmt (meth, kind, args) =
-        Format.fprintf fmt "%a%a(%a)"
+    | Pcall (meth, kind, types, args) ->
+      let pp_types fmt l = Format.fprintf fmt "<%a>" (pp_list ", " pp_type_) l in
+      let pp fmt (meth, kind, types, args) =
+        Format.fprintf fmt "%a%a%a(%a)"
           (pp_option (pp_postfix "." pp_pterm)) meth
+          (pp_if (List.length types > 0) pp_types pp_void) types
           pp_call_kind kind
           (pp_list ", " pp_term_arg) args
       in
-      (pp_with_paren pp) fmt (meth, kind, args)
+      (pp_with_paren pp) fmt (meth, kind, types, args)
 
     | Plogical (op, lhs, rhs) ->
       let pp fmt (op, lhs, rhs) =
@@ -553,7 +555,7 @@ let rec pp_pterm fmt (pterm : pterm) =
       (pp_no_paren pp) fmt v
 
     | Pdot ({ node = Pcall (Some { node = Pvar (VTnone, Vnone, an) },
-                            Cconst Cget, [AExpr k]) }, fn)
+                            Cconst Cget, [], [AExpr k]) }, fn)
       ->
       let pp fmt (an, k, fn) =
         Format.fprintf fmt "%a[%a].%a"

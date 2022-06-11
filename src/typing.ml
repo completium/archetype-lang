@@ -3264,7 +3264,7 @@ let rec for_xexpr
               | _ -> Some vt in
             mk_sp
               rty
-              (A.Pcall (None, A.Cconst A.Cmget, [A.AExpr ee; A.AExpr pk]))
+              (A.Pcall (None, A.Cconst A.Cmget, [], [A.AExpr ee; A.AExpr pk]))
           end
         | _ -> begin
             let e, asset = for_asset_collection_expr mode env (`Parsed e) in
@@ -3287,7 +3287,7 @@ let rec for_xexpr
 
             mk_sp
               aoutty
-              (A.Pcall (Some e, A.Cconst A.Cgetopt, [A.AExpr pk]))
+              (A.Pcall (Some e, A.Cconst A.Cgetopt, [], [A.AExpr pk]))
           end
       end
 
@@ -3323,10 +3323,10 @@ let rec for_xexpr
                 mk_sp (Some fty) (A.Pdot (e, x))
             end
 
-          | {type_ = Some (A.Toption (A.Tcontainer (A.Tasset asset, AssetValue))); node = A.Pcall (Some e, A.Cconst A.Cgetopt, [A.AExpr pk])} -> begin
+          | {type_ = Some (A.Toption (A.Tcontainer (A.Tasset asset, AssetValue))); node = A.Pcall (Some e, A.Cconst A.Cgetopt, [], [A.AExpr pk])} -> begin
               mk_sp
                 (Some (A.Tcontainer (A.Tasset asset, AssetValue)))
-                (A.Pcall (Some e, A.Cconst A.Cget, [A.AExpr pk]))
+                (A.Pcall (Some e, A.Cconst A.Cget, [], [A.AExpr pk]))
               |> aux
             end
 
@@ -3373,10 +3373,10 @@ let rec for_xexpr
                 mk_sp (Some (A.Toption fty)) (A.Pquestiondot (e, x))
             end
 
-          | {type_ = Some (A.Toption (A.Tcontainer (A.Tasset asset, AssetValue))); node = A.Pcall (Some e, A.Cconst A.Cgetopt, [A.AExpr pk])} -> begin
+          | {type_ = Some (A.Toption (A.Tcontainer (A.Tasset asset, AssetValue))); node = A.Pcall (Some e, A.Cconst A.Cgetopt, [], [A.AExpr pk])} -> begin
               mk_sp
                 (Some (A.Tcontainer (A.Tasset asset, AssetValue)))
-                (A.Pcall (Some e, A.Cconst A.Cget, [A.AExpr pk]))
+                (A.Pcall (Some e, A.Cconst A.Cget, [], [A.AExpr pk]))
               |> aux
             end
 
@@ -3406,7 +3406,7 @@ let rec for_xexpr
     | Eternary (c, a, b) -> begin
         let c = for_xexpr env c in
         let env_a = match c with
-          | { node = A.Pcall (Some _, A.Cconst (A.Cget), [AExpr _]); type_ = Some (A.Tcontainer (Tasset an, AssetValue))} -> Some (Env.Context.push env (unloc an))
+          | { node = A.Pcall (Some _, A.Cconst (A.Cget), [], [AExpr _]); type_ = Some (A.Tcontainer (Tasset an, AssetValue))} -> Some (Env.Context.push env (unloc an))
           | { type_ = Some (A.Tbuiltin VTbool)} -> Some env
           | { type_ = Some (A.Toption xty)} -> Some (Env.Local.push env (dumloc "the", xty))
           | _ -> None
@@ -3526,7 +3526,7 @@ let rec for_xexpr
       let args = List.map2 (fun ety e -> for_xexpr env ?ety e) tyargs args in
       let args = List.map  (fun x -> A.AExpr x) args in
 
-      mk_sp (Some A.vtbool) (A.Pcall (None, A.Cid f, args))
+      mk_sp (Some A.vtbool) (A.Pcall (None, A.Cid f, [], args))
 
     | Eapp (Fident f, args) when Env.Function.exists env (unloc f) ->
       let fun_ = Env.Function.get env (unloc f) in
@@ -3542,7 +3542,7 @@ let rec for_xexpr
       let args = List.map2 (fun ety e -> for_xexpr env ?ety e) tyargs args in
       let args = List.map  (fun x -> A.AExpr x) args in
 
-      mk_sp (Some fun_.fs_retty) (A.Pcall (None, A.Cid f, args))
+      mk_sp (Some fun_.fs_retty) (A.Pcall (None, A.Cid f, [], args))
 
     | Eapp (Fident f, args) when Option.is_some (Env.State.byctor env (unloc f)) ->
       let decl = Option.get (Env.State.byctor env (unloc f)) in
@@ -3560,7 +3560,7 @@ let rec for_xexpr
       let args = List.map  (fun x -> A.AExpr x) args in
 
       let typ = A.Tenum decl.sd_name in
-      mk_sp (Some typ) (A.Pcall (None, A.Cid f, args))
+      mk_sp (Some typ) (A.Pcall (None, A.Cid f, [], args))
 
     | Eapp (Fident f, args) -> begin
         let args = List.map (for_xexpr env) args in
@@ -3577,7 +3577,7 @@ let rec for_xexpr
               if (Big_int.lt_big_int n Big_int.zero_big_int) || (Big_int.ge_big_int n (Big_int.big_int_of_int 65536))
               then (Env.emit_error env (loc tope, InvalidValueForMemoSize); bailout ());
               let i = Big_int.int_of_big_int n in
-              mk_sp (Some (A.Tsapling_state i)) (A.Pcall (None, A.Cconst A.Csapling_empty_state, [A.AExpr arg]))
+              mk_sp (Some (A.Tsapling_state i)) (A.Pcall (None, A.Cconst A.Csapling_empty_state, [], [A.AExpr arg]))
             | [A.Tbuiltin VTnat], _ ->
               Env.emit_error env (loc tope, InvalidSaplingEmptyStateArg);
               bailout ()
@@ -3591,7 +3591,7 @@ let rec for_xexpr
             | [A.Tsapling_transaction n1; A.Tsapling_state n2], [arg1; arg2] ->
               if n1 <> n2
               then (Env.emit_error env (loc tope, DifferentMemoSizeForSaplingVerifyUpdate(n1, n2)); bailout ());
-              mk_sp (Some (A.Toption (A.Ttuple [A.vtint; A.Tsapling_state n1]))) (A.Pcall (None, A.Cconst A.Csapling_verify_update, [A.AExpr arg1; A.AExpr arg2]))
+              mk_sp (Some (A.Toption (A.Ttuple [A.vtint; A.Tsapling_state n1]))) (A.Pcall (None, A.Cconst A.Csapling_verify_update, [], [A.AExpr arg1; A.AExpr arg2]))
             | _ ->
               Env.emit_error env (loc tope, NoMatchingFunction (unloc f, aty));
               bailout ()
@@ -3614,7 +3614,7 @@ let rec for_xexpr
               bailout ()
             | [cname, _, (_, rty)] ->
               let args = List.map (fun x -> A.AExpr x) args in
-              mk_sp (Some rty) (A.Pcall (None, A.Cconst cname, args))
+              mk_sp (Some rty) (A.Pcall (None, A.Cconst cname, [], args))
           end
       end
 
@@ -3626,7 +3626,7 @@ let rec for_xexpr
             let ety = for_type env t in
             let ty = match ety with | Some ty -> ty | None -> Env.emit_error env (loc tope, InvalidTypeForAddressToContract); bailout() in
             let a = for_xexpr env ~ety:(A.vtaddress) a in
-            mk_sp (Some (A.Toption (A.Tcontract ty))) (A.Pcall (None, A.Cconst Caddresscontract, [AExpr a]))
+            mk_sp (Some (A.Toption (A.Tcontract ty))) (A.Pcall (None, A.Cconst Caddresstocontract, [ty], [AExpr a]))
           end
 
         | "make_set", [t], [a] -> begin
@@ -3720,7 +3720,7 @@ let rec for_xexpr
                 | _, _ ->
                   rty in
 
-              mk_sp rty (A.Pcall (Some the, A.Cconst method_.mth_name, args))
+              mk_sp rty (A.Pcall (Some the, A.Cconst method_.mth_name, [], args))
             end
 
           | None ->
@@ -3728,7 +3728,7 @@ let rec for_xexpr
               for_api_call ~mode ~capture ?autoview env (`Typed the, m, args) in
             let the, (name, _, sig_), args = Option.get_fdfl bailout infos in
             let args = List.map (fun x -> A.AExpr x) args in
-            mk_sp (Some (snd sig_)) (A.Pcall (None, A.Cconst name, A.AExpr the :: args))
+            mk_sp (Some (snd sig_)) (A.Pcall (None, A.Cconst name, [], A.AExpr the :: args))
       end
 
     | Eif (c, et, Some ef) ->
@@ -3982,7 +3982,7 @@ let rec for_xexpr
 
       mk_sp
         (Option.map (fun ty -> A.Toption ty) ty)
-        (A.Pcall (None, A.Cconst A.Cunpack, [AExpr e]))
+        (A.Pcall (None, A.Cconst A.Cunpack, [], [AExpr e]))
 
     | Enothing
     | Eunit ->
@@ -4939,14 +4939,14 @@ let rec for_instruction_r
                 mki (A.Iassign (
                     ValueAssign, Option.get the.type_, kind,
                     A.mk_sp ~loc:(loc i) ?type_:the.type_
-                      (A.Pcall (None, A.Cconst name, A.AExpr the :: args)), None))
+                      (A.Pcall (None, A.Cconst name, [], A.AExpr the :: args)), None))
               in
               let aout =
                 if se then begin
                   match the.node with
                   | Pvar (VTnone, Vnone, x) -> assign (`Var x)
                   | Pdot ({node = Pvar (VTnone, Vnone, _); type_ = Some (Trecord rn)} as x, fn) -> assign (`Field (rn, x, fn))
-                  | Pdot ({node = Pcall (Some {type_ = Some (Tcontainer ((Tasset _), Collection))}, Cconst Cget, [AExpr k]); type_ = Some (Tasset an | Tcontainer (Tasset an, AssetValue))}, fn) -> assign (`Asset (an, k, fn))
+                  | Pdot ({node = Pcall (Some {type_ = Some (Tcontainer ((Tasset _), Collection))}, Cconst Cget, [], [AExpr k]); type_ = Some (Tasset an | Tcontainer (Tasset an, AssetValue))}, fn) -> assign (`Asset (an, k, fn))
                   (* TODO: handle partition, issue: #245 *)
                   | _ -> Env.emit_error env (the.loc, InvalidVariableForMethod); aout
                 end else

@@ -222,7 +222,7 @@ type const =
   | Cchecksignature
   | Ckeytokeyhash
   | Ccontracttoaddress
-  | Caddresscontract
+  | Caddresstocontract
   | Ckeytoaddress
   (* voting *)
   | Ctotalvotingpower
@@ -365,7 +365,7 @@ type 'id term_node  =
   | Pmatchlist   of 'id term_gen * 'id * 'id * 'id term_gen * 'id term_gen
   | Pfold        of 'id term_gen * 'id * 'id term_gen
   | Pmap         of 'id term_gen * 'id * 'id term_gen
-  | Pcall of ('id term_gen option * 'id call_kind * ('id term_arg) list)
+  | Pcall of ('id term_gen option * 'id call_kind * type_ list * ('id term_arg) list)
   | Plogical of logical_operator * 'id term_gen * 'id term_gen
   | Pnot of 'id term_gen
   | Pmulticomp of 'id term_gen * (comparison_operator * 'id term_gen) list

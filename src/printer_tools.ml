@@ -7,6 +7,8 @@ exception Anomaly of string
 
 type lident = ident loced
 
+let pp_void _fmt _ = ()
+
 let pp_neutral pp fmt x =
   pp fmt x
 
