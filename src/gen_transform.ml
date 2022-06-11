@@ -220,7 +220,7 @@ let remove_add_update ?(isformula = false) (model : model) : model =
           match c with
           | CKfield (_, ckcol, {node = Mdotassetfield (dan, dk, dfn)}, kft, kfd) when Utils.is_partition model (unloc dan) (unloc dfn) -> begin
               let cond = mk_mterm (Mcontains(an, CKcoll (kft, kfd), k)) tbool in
-              let fail_ = failc (Invalid (mk_tuple [mk_string "KeyNotFound"; k])) in
+              let fail_ = failc (Invalid (mk_tuple [mk_string fail_msg_KEY_NOT_FOUND; k])) in
               let cond_nested = mk_mterm (Mcontains(an, CKfield (unloc dan, ckcol, dk, kft, kfd), k)) tbool in
               let update = mk_mterm (Mupdate (an, k, l)) tunit in
               let if_nested = mk_mterm (Mif (cond_nested, update, Some fail_)) tunit in
@@ -5382,7 +5382,7 @@ let remove_high_level_model (model : model)  =
       let mapgetopt = mk_mterm (Mmapgetopt (mkm, kt, vt, f m, f k)) (toption vt) in
       let id = dumloc "_map_getopt_value" in
       let some_value = mk_mvar id vt in
-      let none_value = match oan with | Some an -> failg (mk_tuple [mk_string "AssetNotFound"; mk_string an]) | None -> fail "NotFound" in
+      let none_value = match oan with | Some an -> failg (mk_tuple [mk_string fail_msg_ASSET_NOT_FOUND; mk_string an]) | None -> fail fail_msg_NOT_FOUND in
 
       mk_mterm (Mmatchoption (mapgetopt, id, some_value, none_value)) vt
 
@@ -5904,7 +5904,7 @@ let process_event (model : model) : model =
             let idv = dumloc "_v" in
             let tcb = tcontract tbytes in
             let s = mk_mvar idv tcb in
-            let mw = mk_mterm (Mmatchoption(getentrypoint, idv, s, fail "BAD_EVENT_CONTRACT")) tcb in
+            let mw = mk_mterm (Mmatchoption(getentrypoint, idv, s, fail fail_msg_BAD_EVENT_CONTRACT)) tcb in
             mw
           in
           let data = mk_pack (mk_tuple [mk_string (unloc e); mk_string typ; mk_pack value]) in

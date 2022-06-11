@@ -310,7 +310,6 @@ and builtin =
   | Bratabs
   | Brattez
   | Bratdur
-  | Bsubnat
   | Bmuteztonat
 [@@deriving show {with_path = false}]
 
@@ -1395,7 +1394,6 @@ end = struct
     | Bratabs         -> "_ratabs"
     | Brattez         -> "_rattez"
     | Bratdur         -> "_ratdur"
-    | Bsubnat         -> "_subnat"
     | Bmuteztonat     -> "_muteztonat"
 
   let rec flat (c : code) : code =

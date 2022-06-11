@@ -1268,6 +1268,11 @@ let fail_msg_NOT_FOUND               = "NOT_FOUND"
 let fail_msg_OPTION_IS_NONE          = "OPTION_IS_NONE"
 let fail_msg_OUT_OF_BOUND            = "OUT_OF_BOUND"
 
+let fail_msg_ENTRY_NOT_FOUND         = "ENTRY_NOT_FOUND"
+let fail_msg_EMPTY_LIST              = "EMPTY_LIST"
+let fail_msg_NOT_IMPLICIT_CONTRACT   = "NOT_IMPLICIT_CONTRACT"
+let fail_msg_KEY_NOT_FOUND           = "KEY_NOT_FOUND"
+let fail_msg_BAD_EVENT_CONTRACT      = "BAD_EVENT_CONTRACT"
 
 (* -------------------------------------------------------------------- *)
 

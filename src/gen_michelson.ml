@@ -12,7 +12,7 @@ exception Anomaly of string
 
 let complete_tree_entrypoints = true
 let with_macro = false
-let entrynotfound = "EntryNotFound"
+
 type error_desc =
   | FieldNotFoundFor of string * string
   | UnsupportedTerm of string
@@ -222,7 +222,6 @@ let to_ir (model : M.model) : T.ir =
     | T.Bratabs          -> true
     | T.Brattez          -> true
     | T.Bratdur          -> true
-    | T.Bsubnat          -> true
     | T.Bmuteztonat      -> true
   in
 
@@ -270,7 +269,7 @@ let to_ir (model : M.model) : T.ir =
           let ve        = T.Ivar e_name in
           let return    = T.Iassign (fun_result, vres) in
           let cond      = T.Icompare (Cle, viter, varg) in
-          let vheadtail = T.Imichelson ([vlist], T.cseq [ T.mk_code (IF_CONS ([T.mk_code PAIR], [T.cstring "EmptyList"; T.cfailwith]))], []) in
+          let vheadtail = T.Imichelson ([vlist], T.cseq [ T.mk_code (IF_CONS ([T.mk_code PAIR], [T.cstring M.fail_msg_EMPTY_LIST; T.cfailwith]))], []) in
           let ares      = T.Iassign (res_name, T.isome(T.icar ve)) in
           let alist     = T.Iassign (list_name, T.icdr ve) in
           let aiter     = T.Iassign (iter_name, T.Ibinop (Badd, viter, T.inat Big_int.unit_big_int)) in
@@ -308,7 +307,7 @@ let to_ir (model : M.model) : T.ir =
                                                           T.inat (Big_int.big_int_of_int 7), T.istring "7";
                                                           T.inat (Big_int.big_int_of_int 8), T.istring "8";
                                                           T.inat (Big_int.big_int_of_int 9), T.istring "9"]) in
-          let get_map    = T.Iifnone (T.Ibinop (Bget, T.Iunop (Ucdr, vpair), vmap), T.ifail "NotFound", "_var_ifnone", Ivar "_var_ifnone", T.tstring) in
+          let get_map    = T.Iifnone (T.Ibinop (Bget, T.Iunop (Ucdr, vpair), vmap), T.ifail M.fail_msg_NOT_FOUND, "_var_ifnone", Ivar "_var_ifnone", T.tstring) in
           let concat     = T.Ibinop (Bconcat, get_map, vres) in
           let assign_res = T.Iassign (res_name, concat) in
           let assign_arg = T.Iassign (arg_name, T.Iunop (Ucar, vpair)) in
@@ -356,11 +355,6 @@ let to_ir (model : M.model) : T.ir =
     | Bratdur -> begin
         let targ = T.tpair T.trat T.tint in
         let tret = T.tint in
-        T.mk_func name targ tret ctx (T.Abstract b)
-      end
-    | Bsubnat -> begin
-        let targ = T.tpair T.tnat T.tnat in
-        let tret = T.tnat in
         T.mk_func name targ tret ctx (T.Abstract b)
       end
     | Bmuteztonat -> begin
@@ -476,8 +470,8 @@ let to_ir (model : M.model) : T.ir =
     let contract_internal id a t d =
       let fdata =
         match id with
-        | Some v -> (T.ipair (T.istring entrynotfound) (T.istring v))
-        | None -> T.istring entrynotfound
+        | Some v -> (T.ipair (T.istring M.fail_msg_ENTRY_NOT_FOUND) (T.istring v))
+        | None -> T.istring M.fail_msg_ENTRY_NOT_FOUND
       in
       T.Iifnone (T.Iunop (Ucontract (t, a), d), T.ifaild fdata, "_var_ifnone", Ivar "_var_ifnone", T.tint) in
     let get_entrypoint id t d =
@@ -658,7 +652,7 @@ let to_ir (model : M.model) : T.ir =
           | InvalidSource          -> T.istring M.fail_msg_INVALID_SOURCE
           | InvalidCondition lbl   -> T.ipair (T.istring M.fail_msg_INVALID_CONDITION) (T.istring lbl)
           | NotFound               -> T.istring M.fail_msg_NOT_FOUND
-          | AssetNotFound an       -> T.ipair (T.istring "AssetNotFound") (T.istring an)
+          | AssetNotFound an       -> T.ipair (T.istring M.fail_msg_ASSET_NOT_FOUND) (T.istring an)
           | KeyExists an           -> T.ipair (T.istring M.fail_msg_KEY_EXISTS) (T.istring an)
           | KeyExistsOrNotFound an -> T.ipair (T.istring M.fail_msg_KEY_EXISTS_OR_NOT_FOUND) (T.istring an)
           | DivByZero              -> T.istring M.fail_msg_DIV_BY_ZERO
@@ -866,7 +860,7 @@ let to_ir (model : M.model) : T.ir =
     | Mplus (l, r)       -> T.iadd (f l) (f r)
     | Mminus (l, r)      -> begin
         match M.get_ntype mtt.type_ with
-        | M.Tbuiltin Bcurrency -> T.Iifnone (T.isub_mutez (f l) (f r), T.ifail "INVALID_NEGATIVE_TEZ", "_var_ifnone", Ivar "_var_ifnone", ft mtt.type_)
+        | M.Tbuiltin Bcurrency -> T.Iifnone (T.isub_mutez (f l) (f r), T.ifail M.fail_msg_NAT_NEG_ASSIGN, "_var_ifnone", Ivar "_var_ifnone", ft mtt.type_)
         | _ -> T.isub (f l) (f r)
       end
     | Mmult (l, r)       -> T.imul (f l) (f r)
@@ -1001,7 +995,7 @@ let to_ir (model : M.model) : T.ir =
     | Mkeyhashtocontract x -> T.Iunop (Uimplicitaccount, f x)
     | Mcontracttoaddress x -> T.Iunop (Uaddress, f x)
     | Maddresscontract x ->
-      T.Iifnone (T.Iunop (Ucontract(T.tunit, None), f x), T.ifail "NotImplicitContract", "_var_ifnone", Ivar "_var_ifnone", ft mtt.type_)
+      T.Iifnone (T.Iunop (Ucontract(T.tunit, None), f x), T.ifail M.fail_msg_NOT_IMPLICIT_CONTRACT, "_var_ifnone", Ivar "_var_ifnone", ft mtt.type_)
     | Mkeytoaddress    x -> T.Iunop (Uaddress, T.Iunop (Uimplicitaccount, T.Iunop  (Uhash_key, f x)))
 
     (* crypto functions *)
@@ -1293,11 +1287,10 @@ let map_implem : (string * T.code list) list = [
   get_fun_name T.Bratuminus      , T.[cunpair; cneg; cpair];
   get_fun_name T.Bratabs         , T.[cunpair; cabs; cint; cpair];
   get_fun_name T.Brattez         , T.[cunpair; cunpair;
-                                      cdip(2, [cpush (tmutez, T.Dint Big_int.unit_big_int); cswap; cediv; cifnone ([T.cfail "DivByZero"], []) ;ccar]);
+                                      cdip(2, [cpush (tmutez, T.Dint Big_int.unit_big_int); cswap; cediv; cifnone ([T.cfail M.fail_msg_DIV_BY_ZERO], []) ;ccar]);
                                       cabs; cdig 2; cmul; cediv; cifnone ([cfail M.fail_msg_DIV_BY_ZERO], []); ccar; cpush (tmutez, T.Dint Big_int.unit_big_int); cmul ];
   get_fun_name T.Bratdur         , T.[cunpair; cunpair; cdig 2; cmul; cediv; cifnone ([cfail M.fail_msg_DIV_BY_ZERO], []); ccar;];
-  get_fun_name T.Bsubnat         , T.[cunpair; csub; cdup; cpush (T.tint, T.Dint Big_int.zero_big_int); ccompare; cgt; cif ([cfail "NegResult"], []); cabs ];
-  get_fun_name T.Bmuteztonat     , T.[cpush (tmutez, T.Dint Big_int.unit_big_int); cswap; cediv; cifnone ([T.cfail "DivByZero"], []); ccar;];
+  get_fun_name T.Bmuteztonat     , T.[cpush (tmutez, T.Dint Big_int.unit_big_int); cswap; cediv; cifnone ([T.cfail M.fail_msg_DIV_BY_ZERO], []); ccar;];
 ]
 
 let concrete_michelson b : T.code =
@@ -1322,7 +1315,6 @@ let concrete_michelson b : T.code =
   | T.Bratabs         -> T.cseq (get_implem b)
   | T.Brattez         -> T.cseq (get_implem b)
   | T.Bratdur         -> T.cseq (get_implem b)
-  | T.Bsubnat         -> T.cseq (get_implem b)
   | T.Bmuteztonat     -> T.cseq (get_implem b)
 
 type env = {
