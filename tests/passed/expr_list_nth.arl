@@ -8,6 +8,7 @@ entry exec () {
   }
   effect {
     var l : list<string> = ["1"; "2"; "3"];
-    res ?:= nth(l, 1) : "OUT_OF_BOUND"
+    res ?:= nth(l, 1) : "OUT_OF_BOUND";
+    do_require(res = "2", "ERROR")
   }
 }

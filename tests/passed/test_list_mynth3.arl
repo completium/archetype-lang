@@ -1,0 +1,24 @@
+archetype test_list_mynth2
+
+variable res : option<string> = none
+
+function mynth(l : list<string>, idx : nat) : option<string> {
+  var i : nat = 0;
+  var r : option<string> = none;
+  for k in l do
+    if i = idx
+    then r := some(k);
+    i += 1
+  done;
+  return r
+}
+
+entry exec () {
+  specification {
+    s0: res = some("2");
+  }
+  effect {
+    var l : list<string> = ["1"; "2"; "3"];
+    res := mynth(l, 1)
+  }
+}

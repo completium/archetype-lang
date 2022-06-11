@@ -1,0 +1,8 @@
+archetype list_nth_out_of_bound
+
+variable res : option<string> = none
+
+entry exec () {
+  var l : list<string> = ["1"; "2"; "3"];
+  res := nth(l, 3);
+}

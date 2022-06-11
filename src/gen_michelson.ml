@@ -255,31 +255,7 @@ let to_ir (model : M.model) : T.ir =
     | BlistNth t -> begin
         let targ = T.tpair (T.tlist t) T.tnat in
         let tret = T.toption t in
-        let args, body = begin
-          let arg_name  = "idx" in
-          let list_name = "l" in
-          let args      = [list_name, T.tlist t; arg_name, T.tnat] in
-          let res_name  = "r" in
-          let iter_name = "i" in
-          let e_name    = "e" in
-          let varg      = T.Ivar arg_name in
-          let vlist     = T.Ivar list_name in
-          let vres      = T.Ivar res_name in
-          let viter     = T.Ivar iter_name in
-          let ve        = T.Ivar e_name in
-          let return    = T.Iassign (fun_result, vres) in
-          let cond      = T.Icompare (Cle, viter, varg) in
-          let vheadtail = T.Imichelson ([vlist], T.cseq [ T.mk_code (IF_CONS ([T.mk_code PAIR], [T.cstring M.fail_msg_EMPTY_LIST; T.cfailwith]))], []) in
-          let ares      = T.Iassign (res_name, T.isome(T.icar ve)) in
-          let alist     = T.Iassign (list_name, T.icdr ve) in
-          let aiter     = T.Iassign (iter_name, T.Ibinop (Badd, viter, T.inat Big_int.unit_big_int)) in
-          let bloop     = T.IletIn(e_name, vheadtail, T.Iseq [ares; alist; aiter], true) in
-          let loop      = T.Iloop (cond, bloop) in
-          let body      = T.IletIn(res_name, T.inone t, IletIn(iter_name, T.inat Big_int.zero_big_int, T.Iseq [loop; return], true), true) in
-          args, body
-        end
-        in
-        T.mk_func name targ tret ctx (T.Concrete (args, body))
+        T.mk_func name targ tret ctx (T.Abstract b)
       end
     | Bnattostring -> begin
         let targ = T.tnat in
@@ -1301,7 +1277,9 @@ let concrete_michelson b : T.code =
   | T.Bfloor          -> T.cseq (get_implem b)
   | T.Bceil           -> T.cseq (get_implem b)
   | T.BlistContains _ -> T.cseq T.[cunpair; cfalse; cswap; citer [cdig 2; cdup; cdug 3; ccompare; ceq; cor; ]; cdip (1, [cdrop 1])]
-  | T.BlistNth _      -> error ()
+  | T.BlistNth t      -> T.cseq T.[cunpair; cpush (tnat, T.Dint Big_int.zero_big_int); cpush (toption t, T.Dnone); cdig 2;
+                                   citer [cdup_n 3; cdup_n 5; ccompare; ceq; cif ([csome; cswap; cdrop 1], [cdrop 1]); cswap; cpush (tnat, T.Dint Big_int.unit_big_int); cadd; cswap];
+                                   cdip (1, [cdrop 2]) ]
   | T.Bnattostring    -> error ()
   | T.Bratcmp         -> T.cseq T.[cunpair; cunpair; cdip (1, [cunpair]); cunpair; cdug 3; cmul; cdip (1, [cmul]); cswap; ccompare; cswap;
                                    cifleft ([cdrop 1; ceq], [cifleft ([cifleft ([cdrop 1; clt], [cdrop 1; cle])],
