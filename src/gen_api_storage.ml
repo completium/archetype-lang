@@ -40,9 +40,12 @@ let generate_api_storage ?(verif=false) (model : model) : model =
       | Mremovefield (asset_name, field_name, _, _) ->
         let (pa,_,_) = Utils.get_container_asset_key model asset_name field_name in
         [APIAsset (Remove pa); APIAsset (FieldRemove (asset_name, field_name))]
-      | Mremoveall (asset_name, field_name, _) ->
-        let (pa,_,_) = Utils.get_container_asset_key model asset_name field_name in
-        [APIAsset (Get asset_name); APIAsset (Remove pa); APIAsset (FieldRemove (asset_name, field_name)); APIAsset (RemoveAll (asset_name, field_name))]
+      | Mremoveall (asset_name, ((CKcoll _) as c)) ->
+        let ans : ident list = Utils.get_asset_partitions model asset_name |> List.map snd in
+        List.map (fun x -> APIAsset (Remove x)) (asset_name::ans) @ [APIAsset (RemoveAll (asset_name, to_ck c))]
+      | Mremoveall (asset_name, ((CKfield (aan, field_name, _, _, _)) as c)) ->
+        let (pa,_,_) = Utils.get_container_asset_key model aan field_name in
+        [APIAsset (Get asset_name); APIAsset (Remove pa); APIAsset (FieldRemove (asset_name, field_name)); APIAsset (RemoveAll (asset_name, to_ck c))]
       | Mremoveif (asset_name, (CKcoll _ as c), la, lb, _) ->
         let ans : ident list = Utils.get_asset_partitions model asset_name |> List.map snd in
         let l = List.map (fun x -> APIAsset (Remove x)) (asset_name::ans) in
@@ -56,7 +59,7 @@ let generate_api_storage ?(verif=false) (model : model) : model =
           | _ -> assert false
         in
         [APIAsset (Get aan); APIAsset (FieldRemove (an, fn)); APIAsset (RemoveIf (an, to_ck c, la, lb))] @ l
-      | Mclear (an , ((CKcoll _ | CKview _) as c)) ->
+      | Mclear (an , ((CKview _) as c)) ->
         let ans : ident list = Utils.get_asset_partitions model an |> List.map snd in
         List.map (fun x -> APIAsset (Remove x)) (an::ans) @ [APIAsset (Clear (an, to_ck c))]
       | Mclear (an , ((CKfield (aan, fn, _, _, _)) as c)) ->

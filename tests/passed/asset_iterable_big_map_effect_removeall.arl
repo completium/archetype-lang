@@ -1,4 +1,4 @@
-archetype asset_iterable_big_map_effect_clear
+archetype asset_iterable_big_map_effect_removeall
 
 asset my_asset to iterable_big_map {
   id : string;
@@ -10,5 +10,5 @@ asset my_asset to iterable_big_map {
 }
 
 entry exec () {
-  my_asset.clear();
+  my_asset.remove_all();
 }

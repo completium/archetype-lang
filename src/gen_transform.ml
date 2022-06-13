@@ -283,8 +283,9 @@ let remove_container_op_in_update (model : model) : model =
                     end
                     in
                     let instrs =
+                      let aan, _ = Utils.get_field_container model an fn in
                       match with_remove with
-                      | true -> (mk_mterm (Mremoveall (an, fn, k)) tunit)::instrs
+                      | true -> (mk_mterm (Mremoveall (an, CKfield(aan, fn, k, Tnone, Dnone))) tunit)::instrs
                       | _ -> instrs
                     in
                     (accu_l, instrs @ accu_instrs)
@@ -4308,66 +4309,116 @@ let remove_asset (model : model) : model =
 
       | Mremovefield (an, fn, ak, b) -> remove_field (fm ctx) (an, fn, ak, b)
 
-      | Mremoveall (an, fn, k) -> begin
-          let kk = fm ctx k in
+      | Mremoveall (an, ck) -> begin
+          match ck with
+          | CKcoll _ -> begin
+              let va = get_asset_global an in
+              let _, is_record = is_single_simple_record an in
+              let empty =
+                let node =
+                  match get_ntype va.type_ with
+                  | Tset _ -> Mlitset []
+                  | Tmap (_, _) -> Mlitmap (MKMap, [])
+                  | Tbig_map (_, _) -> Mlitmap (MKBigMap, [])
+                  | Titerable_big_map (_, _) -> Mlitmap (MKIterableBigMap, [])
+                  | _ -> assert false
+                in
+                mk_mterm node va.type_
+              in
 
-          let va = get_asset_global an in
-          let mkm, kt, vt =
-            match get_ntype va.type_ with
-            | Tmap (kt, vt) -> MKMap, kt, vt
-            | Tbig_map (kt, vt) -> MKBigMap, kt, vt
-            | Titerable_big_map (kt, vt) -> MKIterableBigMap, kt, vt
-            | _ -> assert false
-          in
+              let mk_loop fn aan =
+                let tv =
+                  match get_ntype va.type_ with
+                  | Tmap (_, tv)
+                  | Tbig_map (_, tv) -> tv
+                  | Titerable_big_map (_, tv) -> tv
+                  | _ -> assert false
+                in
+                let var_id = dumloc "_v" in
+                let var_value : mterm = mk_mterm (Mvar (var_id, Vlocal, Tnone, Dnone)) tv in
+                let atk = Utils.get_asset_key model aan |> snd in
+                let set =
+                  if is_record
+                  then var_value
+                  else mk_mterm (Mdot (var_value, dumloc fn)) (tset atk)
+                in
+                let loop : mterm =
+                  let var_id = dumloc "_ak" in
+                  let var_value = mk_mvar var_id atk in
+                  let b : mterm = remove_asset (fm ctx) aan var_value in
+                  mk_mterm (Mfor (FIsimple var_id, ICKset set, b, None)) tunit
+                in
+                mk_mterm (Mfor (FIdouble (dumloc "_k", var_id), ICKmap va, loop, None)) tunit
+              in
 
-          let _, is_record = is_single_simple_record an in
-          let aan, c = Utils.get_field_container model an fn in
-          let atk = Utils.get_asset_key model aan |> snd in
+              let assign = mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), empty)) tunit in
+              let partitions = get_partitions an in
+              match partitions with
+              | [] -> assign
+              | _ -> mk_mterm (Mseq ((List.map (fun (fn, aan) -> mk_loop fn aan) partitions) @ [assign])) tunit
+            end
+          | CKfield (_, fn, k, _, _) -> begin
+              let kk = fm ctx k in
+
+              let va = get_asset_global an in
+              let mkm, kt, vt =
+                match get_ntype va.type_ with
+                | Tmap (kt, vt) -> MKMap, kt, vt
+                | Tbig_map (kt, vt) -> MKBigMap, kt, vt
+                | Titerable_big_map (kt, vt) -> MKIterableBigMap, kt, vt
+                | _ -> assert false
+              in
+
+              let _, is_record = is_single_simple_record an in
+              let aan, c = Utils.get_field_container model an fn in
+              let atk = Utils.get_asset_key model aan |> snd in
 
 
-          let get_ t = mk_mterm (Mmapget(mkm, kt, vt, va, kk, Some an)) t in
+              let get_ t = mk_mterm (Mmapget(mkm, kt, vt, va, kk, Some an)) t in
 
-          let mk_loop _ =
-            let iter_var = dumloc "_iter_var" in
-            let ivar = mk_mterm (Mvar(iter_var, Vlocal, Tnone, Dnone)) atk in
+              let mk_loop _ =
+                let iter_var = dumloc "_iter_var" in
+                let ivar = mk_mterm (Mvar(iter_var, Vlocal, Tnone, Dnone)) atk in
 
-            let body = remove_asset (fm ctx) aan ivar in
+                let body = remove_asset (fm ctx) aan ivar in
 
-            let set =
-              let ts = tset atk in
-              if is_record
-              then get_ ts
-              else begin
-                let tr = trecord (dumloc an) in
-                let get : mterm = get_ tr in
-                mk_mterm (Mdot(get, dumloc fn)) ts
-              end
-            in
+                let set =
+                  let ts = tset atk in
+                  if is_record
+                  then get_ ts
+                  else begin
+                    let tr = trecord (dumloc an) in
+                    let get : mterm = get_ tr in
+                    mk_mterm (Mdot(get, dumloc fn)) ts
+                  end
+                in
 
-            mk_mterm (Mfor (FIsimple iter_var, ICKset set, body, None)) tunit
-          in
+                mk_mterm (Mfor (FIsimple iter_var, ICKset set, body, None)) tunit
+              in
 
-          let mk_assign _ =
-            let ts = tset atk in
-            let empty = mk_mterm (Mlitset []) ts in
-            let v : mterm =
-              if is_record
-              then empty
-              else begin
-                let tr = trecord (dumloc an) in
-                let get : mterm = get_ tr in
-                mk_mterm (Mrecupdate(get, [fn, empty])) tr
-              end
-            in
-            let nmap : mterm = mk_mterm (Mmapput (mkm, kt, vt, va, kk, v) ) va.type_ in
-            mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), nmap)) tunit
-          in
+              let mk_assign _ =
+                let ts = tset atk in
+                let empty = mk_mterm (Mlitset []) ts in
+                let v : mterm =
+                  if is_record
+                  then empty
+                  else begin
+                    let tr = trecord (dumloc an) in
+                    let get : mterm = get_ tr in
+                    mk_mterm (Mrecupdate(get, [fn, empty])) tr
+                  end
+                in
+                let nmap : mterm = mk_mterm (Mmapput (mkm, kt, vt, va, kk, v) ) va.type_ in
+                mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), nmap)) tunit
+              in
 
-          let assign = mk_assign () in
+              let assign = mk_assign () in
 
-          match c with
-          | Aggregate -> assign
-          | Partition -> mk_mterm (Mseq [mk_loop (); assign]) tunit
+              match c with
+              | Aggregate -> assign
+              | Partition -> mk_mterm (Mseq [mk_loop (); assign]) tunit
+              | _ -> assert false
+            end
           | _ -> assert false
         end
 
@@ -4556,7 +4607,7 @@ let remove_asset (model : model) : model =
               let var_value = mk_mterm (Mvar (var_id, Vlocal, Tnone, Dnone)) atk in
               let b : mterm = remove_asset (fm ctx) aan var_value in
               let loop = mk_mterm (Mfor (FIsimple var_id, ICKset set, b, None)) tunit in
-              let assign = fm ctx (mk_mterm (Mremoveall (an, fn, k)) tunit) in
+              let assign = fm ctx (mk_mterm (Mremoveall (an, CKfield(aan, fn, k, Tnone, Dnone))) tunit) in
               mk_mterm (Mseq [loop; assign]) tunit
             end
           | CKview l -> begin

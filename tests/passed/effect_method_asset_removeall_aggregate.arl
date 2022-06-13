@@ -22,5 +22,5 @@ entry pre_exec () {
 }
 
 entry exec () {
-  my_asset["id0"].col.removeall()
+  my_asset["id0"].col.remove_all()
 }

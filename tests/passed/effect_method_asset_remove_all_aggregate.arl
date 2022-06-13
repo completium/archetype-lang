@@ -1,4 +1,4 @@
-archetype effect_method_asset_clear_aggregate
+archetype effect_method_asset_remove_all_aggregate
 
 asset o_asset identified by oid {
   oid : string;
@@ -16,7 +16,7 @@ asset my_asset identified by id {
 }
 
 entry exec () {
-  my_asset["id0"].col.clear()
+  my_asset["id0"].col.remove_all()
 }
 
 specification {

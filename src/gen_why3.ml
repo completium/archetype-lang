@@ -2098,7 +2098,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         (mk_match_get_some ctx a (map_mterm m ctx k) instr ENotFound)
         ([CUpdate f] @ if is_partition m a f then [CRm t] else [])
 
-    | Mremoveall (a, f, v) ->
+    | Mremoveall (a, CKfield (_, f, v, _, _)) ->
       let rm_field = dl (Tapp (loc_term (Tdoti (mk_aggregate_id f,"removeall")),[map_mterm m ctx v; loc_term (mk_ac a)])) in
       let assign_rm_field = dl (Tassign (loc_term (mk_ac a), rm_field)) in
       let oasset , _, _ = M.Utils.get_container_asset_key m a f in
@@ -2159,7 +2159,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       else
         mk_trace_seq m (Tassign (mk_lc_term a ctx, removeif)) [CRm a]
 
-    | Mclear (n, CKcoll _) ->
+    | Mremoveall (n, CKcoll _) ->
       let partitions = M.Utils.get_asset_partitions m n in
       let remove = List.map (fun (f, oasset) ->
           let capoasset = String.capitalize_ascii oasset in
@@ -2175,6 +2175,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         mk_trace_seq m (Tseq (remove @ [assign])) ([CRm n] @ tr_rm_oassets)
       else
         mk_trace_seq m (Tassign(loc_term (Tdoti(gs,mk_ac_id n)), loc_term (Temptycoll n))) [CRm n]
+    | Mremoveall (_, CKview _) -> assert false
+    | Mremoveall (_, CKdef _) -> assert false
+
     | Mclear (n, CKview v) ->
       let partitions = M.Utils.get_asset_partitions m n in
       let remove = List.map (fun (f, oasset) ->
@@ -2198,6 +2201,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       else
         mk_trace_seq m assign [CRm n]
     | Mclear (_, CKdef _) -> assert false
+    | Mclear (_, CKcoll _) -> assert false
     | Mclear (_n, CKfield (n, f, v, _, _)) ->
       let oasset,_ = M.Utils.get_field_container m n f in
       let asset = dl (mk_match_get_some_id ctx (dl "_a") n (map_mterm m ctx v) (loc_term (Tvar "_a")) ENotFound) in
@@ -2982,9 +2986,9 @@ let fold_exns m body : term list =
                             else [Texn ENotFound ]) c) i
     | M.Mremovefield (_,_,k,v) -> internal_fold_exn
                                     (internal_fold_exn (acc @ [Texn ENotFound]) k) v
-    | M.Mremoveall (_a,_f,v) -> internal_fold_exn (acc @ [Texn ENotFound]) v
+    | M.Mremoveall (_a,CKfield (_,_,k,_,_)) -> internal_fold_exn (acc @ [Texn ENotFound]) k
     | M.Mremoveif (_, CKfield (_,_,k,_,_), _, _ ,_ ) -> internal_fold_exn (acc @ [Texn ENotFound]) k
-    | M.Mclear (_a,CKfield (_,_,k,_,_)) -> internal_fold_exn (acc @ [Texn ENotFound]) k
+    | M.Mclear (_a, CKfield (_,_,k,_,_)) -> internal_fold_exn (acc @ [Texn ENotFound]) k
     | M.Mfail InvalidCaller -> acc @ [Texn EInvalidCaller]
     | M.Mfail InvalidSource -> acc @ [Texn EInvalidSource]
     | M.Mfail NoTransfer -> acc @ [Texn ENoTransfer]

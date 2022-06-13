@@ -1159,8 +1159,8 @@ let to_model (ast : A.ast) : M.model =
       | A.Icall (Some p, A.Cconst (A.Cremoveall), []) when is_asset_container p -> (
           let fp = f p in
           match fp with
-          | {node = M.Mvar (_, Vstorecol, _, _); _} -> emit_error (instr.loc, NoRemoveAllOnCollection); bailout ()
-          | {node = M.Mdotassetfield (asset_name , k, fn); _} -> M.Mremoveall (unloc asset_name, unloc fn, k)
+          | {node = M.Mdotassetfield (an , k, fn); _}       -> M.Mremoveall (unloc an, CKfield (unloc an, unloc fn, k, Tnone, Dnone))
+          | {type_ = (M.Tcontainer ((Tasset an, _), _), _)} -> M.Mremoveall (unloc an, to_ck env fp)
           | _ -> assert false
         )
 

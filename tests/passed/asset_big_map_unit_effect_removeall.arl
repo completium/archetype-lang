@@ -1,4 +1,4 @@
-archetype asset_big_map_unit_effect_clear
+archetype asset_big_map_unit_effect_removeall
 
 asset my_asset to big_map {
   id : nat
@@ -9,5 +9,5 @@ asset my_asset to big_map {
 }
 
 entry exec () {
-  my_asset.clear();
+  my_asset.remove_all();
 }

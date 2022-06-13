@@ -21,7 +21,7 @@ entry exec () {
   (*
   sugar for
   my_asset.update ("my_id", {value = 3});
-  my_asset["my_id"].myaggregate.removeall();
+  my_asset["my_id"].myaggregate.remove_all();
   my_asset["my_id"].myaggregate.add(1);
   my_asset["my_id"].myaggregate.add(2);
   my_asset["my_id"].myaggregate.add(3)

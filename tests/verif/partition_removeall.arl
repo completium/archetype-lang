@@ -26,6 +26,6 @@ entry exec () {
     s0: let some a = my_asset["id0"] in a.col.count() = 0 otherwise false;
   }
   effect {
-    my_asset["id0"].col.removeall()
+    my_asset["id0"].col.remove_all()
   }
 }

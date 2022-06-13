@@ -1300,11 +1300,11 @@ type smethod_ = (mthstyp list, mthstyp) gmethod_
 type method_  = (mthatyp     , mthtyp ) gmethod_
 
 let methods : (string * method_) list =
-  let cap  = [A.Collection; Aggregate; Partition]  in
-  let capv = [A.Collection; Aggregate; Partition; AssetView]  in
-  let  ap  = [A.Aggregate; Partition] in
-  let c    = [A.Collection] in
-  let c_p  = [A.Collection; Partition] in
+  let cap  = A.[Collection; Aggregate; Partition]  in
+  let capv = A.[Collection; Aggregate; Partition; AssetView]  in
+  let    v = A.[AssetView] in
+  let c    = A.[Collection] in
+  let c_p  = A.[Collection; Partition] in
 
   let mk mth_name mth_place mth_purity mth_totality mth_map_type mth_sig =
     { mth_name; mth_place; mth_purity; mth_totality; mth_map_type; mth_sig; }
@@ -1319,9 +1319,9 @@ let methods : (string * method_) list =
     ("add"         , mk A.Cadd          `Both        (`Effect cap ) `Total   `Both     (`Fixed [`ThePkForAggregate ], None));
     ("put"         , mk A.Cput          `Both        (`Effect c   ) `Total   `Both     (`Fixed [`ThePkForAggregate ], None));
     ("remove"      , mk A.Cremove       `Both        (`Effect cap ) `Total   `Both     (`Fixed [`Pk                ], None));
-    ("clear"       , mk A.Cclear        `Both        (`Effect capv) `Total   `Standard (`Fixed [                   ], None));
+    ("clear"       , mk A.Cclear        `Both        (`Effect    v) `Total   `Standard (`Fixed [                   ], None));
     ("remove_if"   , mk A.Cremoveif     `Both        (`Effect cap ) `Total   `Standard (`Fixed [`Pred true         ], None));
-    ("removeall"   , mk A.Cremoveall    `Both        (`Effect  ap ) `Total   `Standard (`Fixed [                   ], None));
+    ("remove_all"  , mk A.Cremoveall    `Both        (`Effect cap ) `Total   `Standard (`Fixed [                   ], None));
     ("update"      , mk A.Cupdate       `Both        (`Effect c   ) `Total   `Both     (`Fixed [`Pk; `Ef true      ], None));
     ("update_all"  , mk A.Cupdateall    `Both        (`Effect capv) `Total   `Both     (`Fixed [`Ef true           ], None));
     ("add_update"  , mk A.Caddupdate    `Both        (`Effect c_p ) `Total   `Both     (`Fixed [`Pk; `Ef false     ], None));

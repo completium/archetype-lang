@@ -1,4 +1,4 @@
-archetype test_clear_aggregate
+archetype test_removeall_aggregate
 
 asset o_asset identified by oid {
   oid : nat;
@@ -15,5 +15,5 @@ asset my_asset identified by id {
 }
 
 entry exec () {
-  my_asset["id0"].col.clear()
+  my_asset["id0"].col.remove_all()
 }
