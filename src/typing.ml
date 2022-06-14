@@ -748,7 +748,6 @@ type error_desc =
   | InvalidTypeForOptionalAssign
   | InvalidTypeForPk
   | InvalidTypeForSet
-  | InvalidTypeForTernaryOperator
   | InvalidTypeForTuple
   | InvalidValueForCurrency
   | InvalidVariableForMethod
@@ -983,7 +982,6 @@ let pp_error_desc fmt e =
   | InvalidTypeForOptionalAssign       -> pp "Invalid type for optional assignment, must be an option type"
   | InvalidTypeForPk                   -> pp "Invalid type for primary key"
   | InvalidTypeForSet                  -> pp "Invalid type for set"
-  | InvalidTypeForTernaryOperator      -> pp "Invalid type for ternary operator"
   | InvalidTypeForTuple                -> pp "Invalid type for tuple"
   | InvalidValueForCurrency            -> pp "Invalid value for currency"
   | InvalidVariableForMethod           -> pp "Invalid variable for method"
@@ -3405,9 +3403,7 @@ let rec for_xexpr
           | _ -> None
         in
         let a = for_xexpr (match env_a with | Some env -> env | _ -> env) a in
-        let b = for_xexpr env b in
-        if Option.is_none env_a
-        then (Env.emit_error env (c.loc, InvalidTypeForTernaryOperator); bailout ());
+        let b = for_xexpr env b ?ety:a.type_ in
         let ty, es = join_expr ?autoview env ety [a; b] in
         let a, b = Option.get (List.as_seq2 es) in
         mk_sp ty (A.Pternary (c, a, b))
