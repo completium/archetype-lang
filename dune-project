@@ -10,10 +10,10 @@
   "Guillaume Duhamel <guillaume.duhamel@edukera.com>"
   "Pierre-Yves Strub <pierre-yves.strub@polytechnique.edu>")
 (maintainers "The Archetype development team <archetype-dev@edukera.com>")
-(homepage "https://github.com/edukera/archetype-lang")
-(bug_reports "https://github.com/edukera/archetype-lang/issues")
-(documentation "https://docs.archetype-lang.org/")
-(source (uri "git+https://github.com/edukera/archetype-lang.git"))
+(homepage "https://archetype-lang.org")
+(bug_reports "https://github.com/completium/archetype-lang/issues")
+(documentation "https://archetype-lang.org")
+(source (uri "git+https://github.com/completium/archetype-lang.git"))
 
 (package
  (name archetype)

@@ -12,9 +12,9 @@ authors: [
   "Pierre-Yves Strub <pierre-yves.strub@polytechnique.edu>"
 ]
 license: "MIT"
-homepage: "https://github.com/edukera/archetype-lang"
-doc: "https://docs.archetype-lang.org/"
-bug-reports: "https://github.com/edukera/archetype-lang/issues"
+homepage: "https://archetype-lang.org"
+doc: "https://archetype-lang.org"
+bug-reports: "https://github.com/completium/archetype-lang/issues"
 depends: [
   "dune" {>= "2.7"}
   "ocaml" {>= "4.08.0"}
@@ -45,4 +45,4 @@ build: [
     "@doc" {with-doc}
   ]
 ]
-dev-repo: "git+https://github.com/edukera/archetype-lang.git"
+dev-repo: "git+https://github.com/completium/archetype-lang.git"
