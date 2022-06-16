@@ -6,16 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Added
-  - Asset access my_asset[``]
+  - Asset access `my_asset[]`
   - Type `asset_value`
   - Add `otherwise` in `no transfer`, `called by`, `source by` and `state is` section
   - Arithmetic operations `div` and `mod` between `tez`
-  - Ternary operator with `bool`, `option` and `asset`
+  - Ternary operator with `bool`, `option`
+  - `otherwise` for entry section
 ### Changed
   - Short-circuit evaluation for boolean condition (`and` and `or`)
   - Optimize simple `add_update`
   - Optimize `reverse` for list
-  - BREAKING: `pkey` is replaced by `asset_key`
+  - BREAKING: some identifiers and fail messages have been renamed, for more informations https://archetype-lang.org/blog/v13#renamings
 ### Fixed
   - Multiplication between rational and tez with big value
 
