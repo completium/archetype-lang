@@ -37,9 +37,6 @@
 %token ASSET_VALUE
 %token ASSET_VIEW
 %token AT
-%token AT_ADD
-%token AT_REMOVE
-%token AT_UPDATE
 %token BEFORE
 %token BEGIN
 %token BIG_MAP
@@ -654,14 +651,14 @@ event:
   Devent (x, fs, pos, exts) }
 
 asset:
-| ASSET exts=extensions? ops=bracket(asset_operation)? x=ident opts=asset_options?
+| ASSET exts=extensions? x=ident opts=asset_options?
         fields=asset_fields?
         sfields=shadow_asset_fields
                  apo=asset_post_options
                        {
                          let fs = match fields with | None -> [] | Some x -> x in
                          let os = match opts with | None -> [] | Some x -> x in
-                         Dasset (x, fs, sfields, os, apo, ops, exts) }
+                         Dasset (x, fs, sfields, os, apo, None, exts) }
 
 asset_post_option:
 | WITH STATES x=ident                                               { APOstates x }
@@ -814,6 +811,7 @@ effect:
 
 %inline assignment_operator_record:
  | EQUAL                    { ValueAssign }
+ | COLONEQUAL               { ValueAssign }
  | op=assignment_operator_extra { op }
 
 %inline assignment_operator_expr:
@@ -1258,14 +1256,6 @@ recupdate_item:
 
 %inline ord_operator:
 | op=ordering_operator   { Cmp op }
-
-%inline asset_operation_enum:
-| AT_ADD    { AOadd }
-| AT_REMOVE { AOremove }
-| AT_UPDATE { AOupdate }
-
-%inline asset_operation:
-| xs=asset_operation_enum+ args=option(simple_expr) { AssetOperation (xs, args) }
 
 %inline security_args:
 | args=paren(separated_list(COMMA, security_arg)) { args}

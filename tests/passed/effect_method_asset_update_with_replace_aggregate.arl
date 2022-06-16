@@ -17,7 +17,7 @@ asset my_asset identified by id {
 }
 
 entry exec () {
-  my_asset.update ("my_id", {value = 3; myaggregate = [1; 2; 3] });
+  my_asset.update ("my_id", {value := 3; myaggregate = [1; 2; 3] });
   (*
   sugar for
   my_asset.update ("my_id", {value = 3});

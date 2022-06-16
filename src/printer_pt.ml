@@ -258,7 +258,7 @@ let assignment_operator_extra_to_str = function
 
 let assignment_operator_record_to_str op =
   match op with
-  | ValueAssign  -> "="
+  | ValueAssign  -> ":="
   | _ -> assignment_operator_extra_to_str op
 
 let assignment_operator_expr_to_str op =

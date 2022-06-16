@@ -178,9 +178,6 @@ rule token = parse
   | "state" blank+ "is"      { STATE_IS }
   | "with" blank+ "metadata" { WITH_METADATA }
 
-  | "@add"                { AT_ADD }
-  | "@remove"             { AT_REMOVE }
-  | "@update"             { AT_UPDATE }
   | tz_addr as a          { if (String.length a <> 36) then lex_error lexbuf (Printf.sprintf "invalid address: %s" a); ADDRESS a }
   | ident as id           { try  Hashtbl.find keywords id with Not_found -> (if (String.length id > 254) then lex_error lexbuf "Invalid identifier size, must be less than 255 charaters"; IDENT id) }
   | pident as id          { PIDENT (String.sub id 1 ((String.length id) - 1)) }
