@@ -6,4 +6,4 @@
 
 Archetype is a general purpose language to develop Smart Contracts on the Tezos blockchain.
 
-[Online documentation](https://docs.archetype-lang.org/)
+[Online documentation](https://archetype-lang.org/)
