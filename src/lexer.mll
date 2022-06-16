@@ -19,7 +19,6 @@
   let keywords_ =
     [
       "added"               , ADDED               ;
-      "address_to_contract" , ADDRESS_TO_CONTRACT ;
       "aggregate"           , AGGREGATE           ;
       "and"                 , AND                 ;
       "any"                 , ANY                 ;
@@ -83,10 +82,6 @@
       "list"                , LIST                ;
       "map"                 , MAP                 ;
       "match"               , MATCH               ;
-      "make_big_map"        , MAKE_BIG_MAP        ;
-      "make_list"           , MAKE_LIST           ;
-      "make_map"            , MAKE_MAP            ;
-      "make_set"            , MAKE_SET            ;
       "namespace"           , NAMESPACE           ;
       "none"                , NONE                ;
       "not"                 , NOT                 ;

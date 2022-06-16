@@ -81,10 +81,6 @@ let string_of_token = function
   | MTZ n                -> Printf.sprintf "MTZ(%s)" n
   | MINUSEQUAL           -> "MINUSEQUAL"
   | MINUS                -> "MINUS"
-  | MAKE_BIG_MAP         -> "MAKE_BIG_MAP"
-  | MAKE_LIST            -> "MAKE_LIST"
-  | MAKE_MAP             -> "MAKE_MAP"
-  | MAKE_SET             -> "MAKE_SET"
   | MATCH                -> "MATCH"
   | MAP                  -> "MAP"
   | LPAREN               -> "LPAREN"
@@ -179,7 +175,6 @@ let string_of_token = function
   | AMPEQUAL             -> "AMPEQUAL"
   | AGGREGATE            -> "AGGREGATE"
   | ADDRESS s            -> Printf.sprintf "DURATION(%s)" s
-  | ADDRESS_TO_CONTRACT  -> "ADDRESS_TO_CONTRACT"
   | ADDED                -> "ADDED"
   | ACCEPT_TRANSFER      -> "ACCEPT_TRANSFER"
 
@@ -265,10 +260,6 @@ let string_of_symbol = function
   | X (T T_MINUS) -> "-"
   | X (T T_MATCH) -> "match"
   | X (T T_MAP) -> "map"
-  | X (T T_MAKE_SET) -> "make_set"
-  | X (T T_MAKE_MAP) -> "make_map"
-  | X (T T_MAKE_LIST) -> "make_list"
-  | X (T T_MAKE_BIG_MAP) -> "make_big_map"
   | X (T T_LPAREN) -> "("
   | X (T T_LIST) -> "list"
   | X (T T_LET) -> "let"
@@ -362,7 +353,6 @@ let string_of_symbol = function
   | X (T T_AMPEQUAL) -> "%="
   | X (T T_AGGREGATE) -> "aggregate"
   | X (T T_ADDRESS) -> "an address"
-  | X (T T_ADDRESS_TO_CONTRACT) -> "address_to_contract"
   | X (T T_ADDED) -> "added"
   | X (T T_ACCEPT_TRANSFER) -> "accept address"
   | X (N N_view_decl) -> "a view declaration"

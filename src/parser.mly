@@ -24,7 +24,6 @@
 
 %token ACCEPT_TRANSFER
 %token ADDED
-%token ADDRESS_TO_CONTRACT
 %token AGGREGATE
 %token AMPEQUAL
 %token AND
@@ -108,10 +107,6 @@
 %token LET
 %token LIST
 %token LPAREN
-%token MAKE_BIG_MAP
-%token MAKE_LIST
-%token MAKE_MAP
-%token MAKE_SET
 %token MAP
 %token MATCH
 %token MINUS
@@ -213,7 +208,8 @@
 %right THEN ELSE
 
 %nonassoc prec_var
-/*%nonassoc prec_var_question*/
+/*%nonassoc prec_appt
+%nonassoc prec_less*/
 %nonassoc QUESTIONCOLONEQUAL COLONEQUAL PLUSEQUAL MINUSEQUAL MULTEQUAL DIVEQUAL AMPEQUAL PIPEEQUAL
 %right COLON
 
@@ -894,13 +890,6 @@ ident_typ_q:
  | VAR   { false }
  | CONST { true  }
 
-%inline get_typed_id:
- | ADDRESS_TO_CONTRACT { Location.dumloc "address_to_contract" }
- | MAKE_SET            { Location.dumloc "make_set"            }
- | MAKE_LIST           { Location.dumloc "make_list"           }
- | MAKE_MAP            { Location.dumloc "make_map"            }
- | MAKE_BIG_MAP        { Location.dumloc "make_big_map"        }
-
 expr_r:
  | LPAREN RPAREN
      { Enothing }
@@ -1016,10 +1005,18 @@ expr_r:
 order_operation:
  | e1=expr op=loc(ord_operator) e2=expr
      { Eapp ( Foperator op, [e1; e2]) }
+/*
+order_operation2:
+ | e1=expr op=loc(ord_operator) %prec prec_less
+     { (e1, op) }
 
+order_operation:
+ | x=order_operation2 e2=expr
+     { let (e1, op) = x in Eapp ( Foperator op, [e1; e2]) }
+*/
 order_operations:
   | e=order_operation { e }
-  | ops=loc(order_operations) op=loc(ordering_operator) e=expr
+  | ops=loc(order_operations) op=loc(ordering_less_operator) e=expr
     {
       match unloc ops with
       | Eapp (Foperator ({pldesc = Cmp opa; plloc = lo}), [lhs; rhs]) ->
@@ -1035,7 +1032,10 @@ order_operations:
 
 %inline simple_expr:
  | x=loc(simple_expr_r) { x }
-
+/*
+aaa:
+| id=ident LESS %prec prec_appt { id }
+*/
 simple_expr_r:
  | MATCH x=expr WITH xs=branchs END { Ematchwith (x, xs) }
 
@@ -1046,7 +1046,7 @@ simple_expr_r:
  | id=ident a=app_args
      { Eapp ( Fident id, a) }
 
- | id=get_typed_id LESS ts=snl(COMMA, type_t) GREATER a=app_args
+ | id=ident LESS ts=snl(COMMA, type_t) GREATER a=app_args
      { Eappt ( Fident id, ts, a) }
 
  | x=simple_expr DOT y=ident
@@ -1229,6 +1229,10 @@ recupdate_item:
  | LESSEQUAL    { Le }
  | GREATER      { Gt }
  | GREATEREQUAL { Ge }
+
+%inline ordering_less_operator:
+ | LESS         { Lt }
+ | LESSEQUAL    { Le }
 
 %inline arithmetic_operator:
  | PLUS    { Plus   }
