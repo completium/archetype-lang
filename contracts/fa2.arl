@@ -135,12 +135,12 @@ asset allowance identified by addr_owner allowed_spender allowed_token_id to big
 /* custom policy folder when it is per_token_policy
   (3 functions because no polymorphism in Michelson) */
 
-function is_per_token_policy (is : bool, isnot : bool) : bool {
+function is_per_token_policy (isb : bool, isnot : bool) : bool {
   return
     match permissions_descriptor.custom with
     | some(c) ->
       if c.tag = per_token_policy then begin
-        is
+        isb
       end else begin
         isnot
       end
@@ -148,12 +148,12 @@ function is_per_token_policy (is : bool, isnot : bool) : bool {
     end
 }
 
-function is_per_token_transfer (is : operator_transfer_policy, isnot : operator_transfer_policy) : operator_transfer_policy {
+function is_per_token_transfer (isb : operator_transfer_policy, isnot : operator_transfer_policy) : operator_transfer_policy {
   return
     match permissions_descriptor.custom with
     | some(c) ->
       if c.tag = per_token_policy then begin
-        is
+        isb
       end else begin
         isnot
       end
@@ -161,12 +161,12 @@ function is_per_token_transfer (is : operator_transfer_policy, isnot : operator_
     end
 }
 
-function is_per_token_hook (is : owner_hook_policy, isnot : owner_hook_policy) : owner_hook_policy {
+function is_per_token_hook (isb : owner_hook_policy, isnot : owner_hook_policy) : owner_hook_policy {
   return
     match permissions_descriptor.custom with
     | some(c) ->
       if c.tag = per_token_policy then begin
-        is
+        isb
       end else begin
         isnot
       end

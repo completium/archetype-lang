@@ -9,6 +9,6 @@ asset my_asset identified by id {
   {2; "mystr2"}
 }
 
-entry exec (n : nat, is : string) {
-  my_asset.remove_if(the.id >= n or the.s = is)
+entry exec (n : nat, %is : string) {
+  my_asset.remove_if(the.id >= n or the.s = %is)
 }

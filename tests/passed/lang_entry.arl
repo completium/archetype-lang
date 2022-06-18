@@ -12,7 +12,7 @@ entry exec () {
   called by admin
   constant {
     c  is 0;
-    d ?is 0 otherwise "ERROR";
+    d ?is some(0) otherwise "ERROR";
   }
   require {
     r1: true;

@@ -6,7 +6,6 @@ entry myaction () {
   accept transfer
   called by any
   constant {
-
   }
   require {
   }

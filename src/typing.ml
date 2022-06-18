@@ -731,6 +731,7 @@ type error_desc =
   | InvalidTypeForBigMapValue
   | InvalidTypeForCallview
   | InvalidTypeForContract
+  | InvalidTypeDeclOpt
   | InvalidTypeForDoFailIf
   | InvalidTypeForDoRequire
   | InvalidTypeForEntrypoint
@@ -965,6 +966,7 @@ let pp_error_desc fmt e =
   | InvalidTypeForBigMapValue          -> pp "Invalid type for big map value"
   | InvalidTypeForCallview             -> pp "Invalid type for call_view"
   | InvalidTypeForContract             -> pp "Invalid type for contract"
+  | InvalidTypeDeclOpt                 -> pp "Invalid type optional declaration, must be typed option"
   | InvalidTypeForDoFailIf             -> pp "Invalid type for dofailif"
   | InvalidTypeForDoRequire            -> pp "Invalid type for dorequire"
   | InvalidTypeForEntrypoint           -> pp "Invalid type for entrypoint"
@@ -4752,7 +4754,14 @@ let for_cf
 
     if check_and_emit_name_free env id then
       let v = for_expr kind env ?ety e in
-      let env = Env.Local.push env (id, Option.get v.A.type_) ~kind:`Const in
+      let vty = v.A.type_ in
+      let ty = if Option.is_some error then begin
+          match vty with
+          | Some (A.Toption ty) -> Some ty
+          | _ -> Env.emit_error env (v.loc, InvalidTypeDeclOpt); vty
+        end else vty
+      in
+      let env = Env.Local.push env (id, Option.get ty) ~kind:`Const in
       env, (Some id, v, error)
     else
       env, (None, for_expr kind env ?ety e, error)
@@ -5342,7 +5351,7 @@ let rec for_instruction_r
             let kind = if c then `Const else `Standard in
             Env.Local.push env (x, ty) ~kind
           end
-        | _ -> env
+        | _ -> (Env.emit_error env (v.loc, InvalidTypeDeclOpt); env)
       in
 
       Option.iter (fun ty ->
@@ -5792,7 +5801,7 @@ let rec for_callby (env : env) kind (cb : PT.expr) =
     [mkloc (loc cb) (Some (for_expr `Concrete env ~ety:A.vtaddress cb))]
 
 (* -------------------------------------------------------------------- *)
-let for_entry_properties (env, poenv : env * env) (act : PT.entry_properties) =
+let for_entry (env : env) (act : PT.entry_properties) i_exts =
   let fe = for_expr `Concrete env in
   let sourcedby = Option.map (fun (x, _, _) -> for_callby env `Sourced x) act.sourcedby , Option.bind (Option.map fe |@ proj3_2) act.sourcedby in
   let calledby  = Option.map (fun (x, _, _) -> for_callby env `Called x)  act.calledby  , Option.bind (Option.map fe |@ proj3_2) act.calledby  in
@@ -5801,11 +5810,14 @@ let for_entry_properties (env, poenv : env * env) (act : PT.entry_properties) =
   let env, cst  = Option.foldmap (for_cfs `Concrete) env (Option.fst act.constants) in
   let env, req  = Option.foldmap (for_rfs `Concrete) env (Option.fst act.require) in
   let env, fai  = Option.foldmap (for_rfs `Concrete) env (Option.fst act.failif) in
+  let env, poeffect =
+    Option.foldmap (for_effect `Concrete) env (Option.fst i_exts) in
+  let effect = Option.map snd poeffect in
+  let env, funs = List.fold_left_map for_function env act.functions in
+  let poenv  = Option.get_dfl env (Option.map fst poeffect) in
   let env, spec = Option.foldmap
       (fun env x -> for_specification `Local (env, poenv) x) env act.spec_fun in
-  let env, funs = List.fold_left_map for_function env act.functions in
-
-  (env, (sourcedby, calledby, stateis, actfs, cst, req, fai, spec, funs))
+  (env, (sourcedby, calledby, stateis, actfs, cst, req, fai, spec, funs, effect))
 
 (* -------------------------------------------------------------------- *)
 let for_transition ?enum (env : env) (state, when_, effect) =
@@ -6498,12 +6510,8 @@ let for_acttx_decl
       let env, decl =
         Env.inscope env (fun env ->
             let env, args = for_args_decl env args in
-            let env, poeffect =
-              Option.foldmap (for_effect `Concrete) env (Option.fst i_exts) in
-            let effect = Option.map snd poeffect in
-            let poenv  = Option.get_dfl env (Option.map fst poeffect) in
-            let env, (srcby, callby, stateis, actfs, csts, reqs, fais, spec, funs) =
-              for_entry_properties (env, poenv) pt in
+            let env, (srcby, callby, stateis, actfs, csts, reqs, fais, spec, funs, effect) =
+              for_entry env pt i_exts in
 
             let env, xspec =
               let myspec { plloc = xloc; pldesc = (kind, xname, xargs, xspec) } =
@@ -6521,7 +6529,7 @@ let for_acttx_decl
 
               let env, items =
                 List.fold_left_map
-                  (fun env spec -> for_specification `Local (env, poenv) spec)
+                  (fun env spec -> for_specification `Local (env, env) spec)
                   env (List.pmap myspec (Option.get_dfl [] xspecs))
 
               in env, List.flatten items in
@@ -6569,8 +6577,8 @@ let for_acttx_decl
             env, Option.map fst aout, Option.map snd aout in
 
           let from_ = for_state_formula ?enum env from_ in
-          let env, (srcby, callby, stateis, actfs, csts, reqs, fais, spec, funs) =
-            for_entry_properties (env, env) entrys in
+          let env, (srcby, callby, stateis, actfs, csts, reqs, fais, spec, funs, _effect) =
+            for_entry env entrys None in
 
           let env, xspec =
             let myspec { plloc = xloc; pldesc = (kind, xname, xargs, xspec) } =

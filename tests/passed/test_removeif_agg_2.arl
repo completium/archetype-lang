@@ -19,6 +19,6 @@ asset s_asset identified by sid {
   {"id2"; []}
 }
 
-entry exec (n : nat, is : string) {
-  s_asset["id0"].c.remove_if(the.id >= n or the.s = is and the.b = false)
+entry exec (n : nat, %is : string) {
+  s_asset["id0"].c.remove_if(the.id >= n or the.s = %is and the.b = false)
 }

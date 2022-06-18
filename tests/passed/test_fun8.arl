@@ -49,9 +49,9 @@ variable permissions_descriptor : permissions = {
 }
 
 
-function is_per_token_hook (is : owner_hook_policy) : owner_hook_policy {
+function is_per_token_hook (%is : owner_hook_policy) : owner_hook_policy {
   var a = permissions_descriptor.custom;
-  return is
+  return %is
 }
 
 function get_hook_policy (tid : nat, ot : owner_type) : owner_hook_policy {
