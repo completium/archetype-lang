@@ -1,0 +1,20 @@
+archetype section_contant
+
+variable res2 : nat = 0
+variable res3 : nat = 0
+
+entry exec () {
+  constant {
+    c  is 2;
+    d ?is 3 otherwise "ERROR";
+  }
+  require {
+    r1 : c = 2;
+    r2 : d = 3;
+  }
+  effect {
+    ()
+    // res2 := c;
+    // res3 := d
+  }
+}

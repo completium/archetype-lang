@@ -1470,10 +1470,29 @@ let to_model (ast : A.ast) : M.model =
       | None -> body
       | Some l -> List.fold_right (fun (x : A.lident A.label_term) (accu : M.mterm) -> process env b x accu) l body
     in
+    let apply_cst env li body =
+      let process env (x : A.lident A.label_term) (body : M.mterm) : M.mterm =
+        let id    : M.lident       = Option.get x.label in
+        let value : M.mterm        = to_mterm env x.term in
+        let fa    : M.mterm option = Option.map (to_mterm env) x.error in
+        let node =
+          match fa with
+          | Some fa -> M.Mdeclvaropt([id], Some value.type_, value, Some fa, true)
+          | None    -> M.Mdeclvar   ([id], Some value.type_, value, true)
+        in
+        let term  = M.mk_mterm node M.tunit in
+        add_seq term body
+      in
+      match li with
+      | None -> body
+      | Some l -> List.fold_right (fun (x : A.lident A.label_term) (accu : M.mterm) -> process env x accu) l body
+    in
+
     let process_requires env (body : M.mterm) : M.mterm =
       body
       |>  apply env `Failif  transaction.failif
       |>  apply env `Require transaction.require
+      |>  apply_cst env transaction.constants
     in
 
     let process_accept_transfer env (body : M.mterm) : M.mterm =

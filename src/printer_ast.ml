@@ -1251,7 +1251,7 @@ let pp_function fmt (f : function_) =
 let pp_otherwise fmt o = pp_option (fun fmt x -> Format.fprintf fmt " otherwise %a" pp_pterm x) fmt o
 
 let pp_transaction_entry fmt (t : transaction) =
-  Format.fprintf fmt "entry %a%a {@\n  @[%a%a%a%a%a%a%a%a%a@]@\n}@\n"
+  Format.fprintf fmt "entry %a%a {@\n  @[%a%a%a%a%a%a%a%a%a%a@]@\n}@\n"
     pp_id t.name
     pp_fun_args t.args
     (pp_option pp_specification) t.specification
@@ -1259,6 +1259,7 @@ let pp_transaction_entry fmt (t : transaction) =
     (pp_option (fun fmt (x, o) -> Format.fprintf fmt "sourced by %a%a@\n" pp_rexpr x pp_otherwise o)) t.sourcedby
     (pp_option (fun fmt (x, o) -> Format.fprintf fmt "called by %a%a@\n" pp_rexpr x pp_otherwise o)) t.calledby
     (pp_option (fun fmt (x ,o) -> Format.fprintf fmt "state is %a%a@\n" pp_id x pp_otherwise o )) t.state_is
+    (pp_option (pp_list "@\n " (fun fmt -> Format.fprintf fmt "constant {@\n  @[%a@]@\n}@\n" pp_label_term))) t.constants
     (pp_option (pp_list "@\n " (fun fmt -> Format.fprintf fmt "require {@\n  @[%a@]@\n}@\n" pp_label_term))) t.require
     (pp_option (pp_list "@\n " (fun fmt -> Format.fprintf fmt "failif {@\n  @[%a@]@\n}@\n" pp_label_term))) t.failif
     (pp_list "@\n" pp_function) t.functions

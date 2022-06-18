@@ -674,6 +674,7 @@ type 'id transaction_struct = {
   calledby        : ('id rexpr_gen * 'id term_gen option) option;
   state_is        : ('id * 'id term_gen option) option;
   accept_transfer : bool * 'id term_gen option;
+  constants       : 'id label_term list option;
   require         : 'id label_term list option;
   failif          : 'id label_term list option;
   transition      : ('id transition) option;
@@ -865,8 +866,8 @@ let mk_function_struct ?(args = []) ?specification ?(loc = Location.dummy) name 
 let mk_transition ?on ?(trs = []) from =
   { from; on; trs }
 
-let mk_transaction_struct ?(args = []) ?sourcedby ?calledby ?state_is ?(accept_transfer = (false, None)) ?require ?failif ?transition ?specification ?(functions = []) ?effect ?(loc = Location.dummy) name =
-  { name; args; sourcedby; calledby; state_is; accept_transfer; require; failif; transition; specification; functions; effect; loc }
+let mk_transaction_struct ?(args = []) ?sourcedby ?calledby ?state_is ?(accept_transfer = (false, None)) ?constants ?require ?failif ?transition ?specification ?(functions = []) ?effect ?(loc = Location.dummy) name =
+  { name; args; sourcedby; calledby; state_is; accept_transfer; constants; require; failif; transition; specification; functions; effect; loc }
 
 let mk_enum_item ?(initial = false) ?(args = []) ?(invariants = []) ?(loc = Location.dummy) name : 'id enum_item_struct =
   { name; initial; args; invariants; loc }
