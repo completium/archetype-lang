@@ -1,3 +1,6 @@
 archetype event_well
+with metadata "ipfs://QmeujYaXRZtLPHo6bH17VnEFPmkKo9tLcurfNCA7fXvU7Q"
+
+variable u : unit = Unit
 
 entry %event(arg : bytes) {}
