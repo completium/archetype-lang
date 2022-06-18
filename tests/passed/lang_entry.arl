@@ -10,6 +10,10 @@ entry exec () {
   }
   accept transfer
   called by admin
+  constant {
+    c  is 0;
+    d ?is 0 otherwise "ERROR";
+  }
   require {
     r1: true;
   }

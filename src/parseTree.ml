@@ -285,6 +285,7 @@ and entry_properties = {
   sourcedby       : (expr * expr option * exts) option;
   calledby        : (expr * expr option * exts) option;
   state_is        : (lident * expr option) option;
+  constants       : ((lident * expr * expr option) list * exts) option;
   require         : ((lident * expr * expr option) list * exts) option;
   failif          : ((lident * expr * expr option) list * exts) option;
   spec_fun        : specification option;
@@ -573,8 +574,8 @@ let einvalid      ?(loc=dummy) _                  = mkloc loc (Einvalid)
 let mk_s_function name args ret_t spec body getter view : s_function =
   {name; args; ret_t; spec; body; getter; view}
 
-let mk_entry_properties ?(accept_transfer = (true, None)) ?sourcedby ?calledby ?state_is ?require ?failif ?spec_fun ?(functions = []) _ : entry_properties =
-  { accept_transfer; sourcedby; calledby; state_is; require; failif; spec_fun; functions }
+let mk_entry_properties ?(accept_transfer = (true, None)) ?sourcedby ?calledby ?state_is ?constants ?require ?failif ?spec_fun ?(functions = []) _ : entry_properties =
+  { accept_transfer; sourcedby; calledby; state_is; constants; require; failif; spec_fun; functions }
 
 let mk_transition_item id eexto eexts : lident * (expr * exts) option * (expr * exts) option = id, eexto, eexts
 

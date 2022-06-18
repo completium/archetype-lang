@@ -74,6 +74,7 @@
       "initial"             , INITIAL             ;
       "initialized"         , INITIALIZED         ;
       "invariant"           , INVARIANT           ;
+      "is"                  , IS                  ;
       "iter"                , ITER                ;
       "iterable_big_map"    , ITERABLE_BIG_MAP    ;
       "label"               , LABEL               ;
@@ -247,6 +248,7 @@ rule token = parse
   | "?."                  { QUESTIONDOT }
   | "?="                  { QUESTIONEQUAL }
   | "?:="                 { QUESTIONCOLONEQUAL }
+  | "?is"                 { QUESTIONIS }
   | eof                   { EOF }
   | _ as c                {
       lex_error lexbuf (Printf.sprintf "unexpected char: %c" c)

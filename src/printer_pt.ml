@@ -1257,6 +1257,18 @@ let pp_entry_properties fmt (props : entry_properties) =
              (pp_option (fun fmt x -> Format.fprintf fmt " %s %a" s2 (pp_expr e_default PNone) x)) f
          )) l
   in
+  let pp_cf fmt (l, exts) =
+    Format.fprintf fmt "constant%a {@\n  @[%a@]@\n}@\n"
+      pp_extensions exts
+      (pp_list ";@\n" (fun fmt (id, e, f) ->
+           Format.fprintf fmt "%a %s %a%a"
+             pp_id id
+             (if Option.is_some f then "?is" else "is")
+             (pp_expr e_default PNone) e
+             (pp_option (fun fmt x -> Format.fprintf fmt " otherwise %a" (pp_expr e_default PNone) x)) f
+         )) l
+  in
+  pp_option pp_cf fmt props.constants;
   pp_option (pp_rf "require" "otherwise") fmt props.require;
   pp_option (pp_rf "fail if" "with") fmt props.failif;
   (pp_list "@\n" pp_function) fmt (List.map unloc props.functions)

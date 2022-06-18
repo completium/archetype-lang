@@ -93,6 +93,7 @@
 %token INITIAL
 %token INITIALIZED
 %token INVARIANT
+%token IS
 %token ITER
 %token ITERABLE_BIG_MAP
 %token LABEL
@@ -141,6 +142,7 @@
 %token QUESTIONCOLONEQUAL
 %token QUESTIONDOT
 %token QUESTIONEQUAL
+%token QUESTIONIS
 %token RBRACE
 %token RBRACKET
 %token RECORD
@@ -744,13 +746,14 @@ transition:
 | ACCEPT_TRANSFER o=otherwise_section? { (true, o) }
 
 entry_properties:
-  sp=specification_fun? at=accept_transfer sb=sourcedby? cb=calledby? si=state_is? cs=require? fi=failif? fs=function_item*
+  sp=specification_fun? at=accept_transfer sb=sourcedby? cb=calledby? si=state_is? cst=constants? cs=require? fi=failif? fs=function_item*
   {
     {
       accept_transfer = at;
       sourcedby       = sb;
       calledby        = cb;
       state_is        = si;
+      constants       = cst;
       require         = cs;
       failif          = fi;
       functions       = fs;
@@ -780,6 +783,21 @@ rf(X):
 
 %inline rfi(X):
 | X e=expr { e }
+
+cfs:
+| /* empty */   { [] }
+| l=cfs_non_empty { l }
+
+%inline cfs_non_empty:
+| l=snl(SEMI_COLON, cf) { l }
+
+cf:
+| id=ident IS e=expr %prec prec_labelexpr                          { (id, e, None) }
+| id=ident QUESTIONIS e=expr OTHERWISE f=expr %prec prec_labelexpr { (id, e, Some f) }
+
+%inline constants:
+ | CONSTANT exts=option(extensions) xs=braced(cfs)
+       { (xs, exts) }
 
 %inline require:
  | REQUIRE exts=option(extensions) xs=braced(rfs(OTHERWISE))
