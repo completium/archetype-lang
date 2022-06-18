@@ -1,6 +1,6 @@
 archetype test_sapling_verify_update
 
-variable res : option<int * sapling_state(8)> = none
+variable res : option<bytes * int * sapling_state(8)> = none
 
 entry init (s : sapling_state(8), t : sapling_transaction(8)) {
   res := sapling_verify_update(t, s)

@@ -3580,7 +3580,7 @@ let rec for_xexpr
             | [A.Tsapling_transaction n1; A.Tsapling_state n2], [arg1; arg2] ->
               if n1 <> n2
               then (Env.emit_error env (loc tope, DifferentMemoSizeForSaplingVerifyUpdate(n1, n2)); bailout ());
-              mk_sp (Some (A.Toption (A.Ttuple [A.vtint; A.Tsapling_state n1]))) (A.Pcall (None, A.Cconst A.Csapling_verify_update, [], [A.AExpr arg1; A.AExpr arg2]))
+              mk_sp (Some (A.Toption (A.Ttuple [A.vtbytes; A.vtint; A.Tsapling_state n1]))) (A.Pcall (None, A.Cconst A.Csapling_verify_update, [], [A.AExpr arg1; A.AExpr arg2]))
             | _ ->
               Env.emit_error env (loc tope, NoMatchingFunction (unloc f, aty));
               bailout ()
