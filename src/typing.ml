@@ -2330,6 +2330,22 @@ let select_operator env ?(formula = false) ?(asset = false) loc (op, tys) =
               [{ osl_sig = tys; osl_ret = rty }]
             else []
 
+          | true, PT.Arith PT.Plus,
+            [Tmap (kt, vt) as rty; Tlist (Ttuple [kty; vty])]
+            when Type.compatible ~autoview:false ~for_eq:false ~from_:kty ~to_:kt
+              && Type.compatible ~autoview:false ~for_eq:false ~from_:vty ~to_:vt ->
+            [{ osl_sig = tys; osl_ret = rty }]
+
+          | true, PT.Arith PT.Plus,
+            [Tset kt as rty; Tlist (kty)]
+            when Type.compatible ~autoview:false ~for_eq:false ~from_:kty ~to_:kt ->
+            [{ osl_sig = tys; osl_ret = rty }]
+
+          | true, PT.Arith PT.Minus,
+            [(Tset kt | Tmap (kt, _)) as rty; Tlist (kty)]
+            when Type.compatible ~autoview:false ~for_eq:false ~from_:kty ~to_:kt ->
+            [{ osl_sig = tys; osl_ret = rty }]
+
           | _, _, _ -> []
 
         in ops @ extra

@@ -8,5 +8,5 @@ asset my_asset {
 }
 
 entry exec () {
-  my_asset.update(0, {s -= "k"});
+  my_asset.update(0, {s -= ["k"]});
 }

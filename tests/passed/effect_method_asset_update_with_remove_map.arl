@@ -8,5 +8,5 @@ asset my_asset {
 }
 
 entry exec (n : nat) {
-  my_asset.update(0, {m -= "k"});
+  my_asset.update(0, {m -= ["k"]});
 }
