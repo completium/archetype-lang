@@ -1255,7 +1255,7 @@ let globals = [
   ("transferred"   , A.Ctransferred , A.vtcurrency);
   ("self_chain_id" , A.Cselfchainid , A.vtchainid);
   ("operations"    , A.Coperations  , A.Tlist (A.Toperation));
-  ("metadata"      , A.Cmetadata    , A.Tmap (A.vtstring, A.vtbytes));
+  ("metadata"      , A.Cmetadata    , A.Tbig_map (A.vtstring, A.vtbytes));
   ("level"         , A.Clevel       , A.vtnat);
   ("total_voting_power", A.Ctotalvotingpower, A.vtnat);
 ]
