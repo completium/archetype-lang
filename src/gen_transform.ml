@@ -255,6 +255,12 @@ let remove_container_op_in_update (model : model) : model =
       | Tcontainer _ -> true
       | _ -> false
     in
+    let is_basic_container asset (fn, _, _) =
+      let f = List.find (fun (x : asset_item) -> String.equal (unloc x.name) (unloc fn)) asset.values in
+      match get_ntype f.original_type with
+      | Tset _ | Tmap _ -> true
+      | _ -> false
+    in
     let with_container an l =
       let asset = Model.Utils.get_asset model an in
       List.exists (is_field_container asset) l
@@ -264,39 +270,42 @@ let remove_container_op_in_update (model : model) : model =
         let asset = Model.Utils.get_asset model an in
         let newl, instrs =
           List.fold_right (fun (fn, op, v : lident * assignment_operator * mterm) (accu_l, accu_instrs) ->
-              match is_field_container asset (fn, op, v) with
-              | false -> ((fn, op, v)::accu_l, accu_instrs)
-              | true  -> begin
-                  let fn = unloc fn in
-                  let process ?(with_remove=false) kind =
-                    let fnode = begin
-                      match kind with
-                      | `Add    -> fun x -> Maddfield (an, fn, k, x)
-                      | `Remove -> fun x -> Mremovefield (an, fn, k, x)
-                    end
-                    in
-                    let instrs : mterm list = begin
-                      match v.node with
-                      | Massets  ll
-                      | Mlitlist ll -> List.map (fun a -> mk_mterm (fnode a) tunit) ll
-                      | _ -> []
-                    end
-                    in
-                    let instrs =
-                      let aan, _ = Utils.get_field_container model an fn in
-                      match with_remove with
-                      | true -> (mk_mterm (Mremoveall (an, CKfield(aan, fn, k, Tnone, Dnone))) tunit)::instrs
-                      | _ -> instrs
-                    in
-                    (accu_l, instrs @ accu_instrs)
+              if is_field_container asset (fn, op, v)
+              then begin
+                let fn = unloc fn in
+                let process ?(with_remove=false) kind =
+                  let fnode = begin
+                    match kind with
+                    | `Add    -> fun x -> Maddfield (an, fn, k, x)
+                    | `Remove -> fun x -> Mremovefield (an, fn, k, x)
+                  end
                   in
-                  match op with
-                  | ValueAssign -> process `Add ~with_remove:true
-                  | PlusAssign  -> process `Add
-                  | MinusAssign -> process `Remove
-                  | _ -> assert false
-                end
-            ) l ([], [])
+                  let instrs : mterm list = begin
+                    match v.node with
+                    | Massets  ll
+                    | Mlitlist ll -> List.map (fun a -> mk_mterm (fnode a) tunit) ll
+                    | _ -> []
+                  end
+                  in
+                  let instrs =
+                    let aan, _ = Utils.get_field_container model an fn in
+                    match with_remove with
+                    | true -> (mk_mterm (Mremoveall (an, CKfield(aan, fn, k, Tnone, Dnone))) tunit)::instrs
+                    | _ -> instrs
+                  in
+                  (accu_l, instrs @ accu_instrs)
+                in
+                match op with
+                | ValueAssign -> process `Add ~with_remove:true
+                | PlusAssign  -> process `Add
+                | MinusAssign -> process `Remove
+                | _ -> assert false
+              end
+              else if is_basic_container asset (fn, op, v)
+              then begin
+                ((fn, op, v)::accu_l, accu_instrs)
+              end
+              else ((fn, op, v)::accu_l, accu_instrs)) l ([], [])
         in
         let mterm_update = { mt with node = Mupdate (an, k, newl) } in
         match instrs with
