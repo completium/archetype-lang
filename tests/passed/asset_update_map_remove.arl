@@ -1,0 +1,12 @@
+archetype asset_update_map_remove
+
+asset my_asset {
+  id : nat;
+  m : map<string, bytes>;
+} initialized by {
+  {0; [("k", 0x00)]}
+}
+
+entry exec (n : nat) {
+  my_asset.update(0, {m -= "k"});
+}

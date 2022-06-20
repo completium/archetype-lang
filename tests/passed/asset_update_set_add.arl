@@ -1,0 +1,12 @@
+archetype asset_update_set_add
+
+asset my_asset {
+  id : nat;
+  s : set<string>;
+} initialized by {
+  {0; []}
+}
+
+entry exec () {
+  my_asset.update(0, {s += "k"});
+}
