@@ -241,6 +241,7 @@ let toolchain ?(js=false) model =
   |> replace_assignfield_by_update
   |> remove_update_all
   |> remove_add_update
+  |> remove_container_op_in_update_exec
   |> merge_update
   |> remove_empty_update
   |> remove_assign_operator

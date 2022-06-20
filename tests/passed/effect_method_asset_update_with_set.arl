@@ -1,0 +1,12 @@
+archetype effect_method_asset_update_with_set
+
+asset my_asset {
+  id : nat;
+  m : set<string>;
+} initialized by {
+  {0; []}
+}
+
+entry exec () {
+  my_asset.update(0, {m := ["k"]});
+}

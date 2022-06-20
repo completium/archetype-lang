@@ -255,12 +255,6 @@ let remove_container_op_in_update (model : model) : model =
       | Tcontainer _ -> true
       | _ -> false
     in
-    let is_basic_container asset (fn, _, _) =
-      let f = List.find (fun (x : asset_item) -> String.equal (unloc x.name) (unloc fn)) asset.values in
-      match get_ntype f.original_type with
-      | Tset _ | Tmap _ -> true
-      | _ -> false
-    in
     let with_container an l =
       let asset = Model.Utils.get_asset model an in
       List.exists (is_field_container asset) l
@@ -301,11 +295,79 @@ let remove_container_op_in_update (model : model) : model =
                 | MinusAssign -> process `Remove
                 | _ -> assert false
               end
-              else if is_basic_container asset (fn, op, v)
-              then begin
-                ((fn, op, v)::accu_l, accu_instrs)
-              end
               else ((fn, op, v)::accu_l, accu_instrs)) l ([], [])
+        in
+        let mterm_update = { mt with node = Mupdate (an, k, newl) } in
+        match instrs with
+        | [] -> mterm_update
+        | _ -> mk_mterm (Mseq (mterm_update::instrs)) tunit
+      end
+    | _ -> map_mterm (aux ctx) mt
+  in
+  map_mterm_model aux model
+  |> flat_sequence
+
+
+let remove_container_op_in_update_exec (model : model) : model =
+  let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
+    let is_basic_container asset (fn, _, _) =
+      let f = List.find (fun (x : asset_item) -> String.equal (unloc x.name) (unloc fn)) asset.values in
+      match get_ntype f.original_type with
+      | Tset _ | Tmap _ -> true
+      | _ -> false
+    in
+    let with_basic_container an l =
+      let asset = Model.Utils.get_asset model an in
+      List.exists (is_basic_container asset) l
+    in
+    match mt.node with
+    | Mupdate (an, k, l) when with_basic_container an l -> begin
+        let asset = Model.Utils.get_asset model an in
+        let newl, instrs =
+          List.fold_right (fun (fn, op, v : lident * assignment_operator * mterm) (accu_l, accu_instrs) ->
+              let def_value = ((fn, op, v)::accu_l, accu_instrs) in
+              if is_basic_container asset (fn, op, v)
+              then begin
+                let tty =
+                  let f = List.find (fun (x : asset_item) -> String.equal (unloc x.name) (unloc fn)) asset.values in
+                  match get_ntype f.original_type with
+                  | Tset ty       -> `Set ty
+                  | Tmap (kt, vt) -> `Map (kt, vt)
+                  | _ -> assert false
+                in
+
+                let ak = Aasset (dumloc an, fn, k) in
+
+                let process kind =
+                  let fnode (x : mterm) = begin
+                    match kind with
+                    | `Add    -> begin
+                        match tty with
+                        | `Set  ty      -> Msetinstradd (ty, ak, x)
+                        | `Map (kt, vt) -> Mmapinstrput (MKMap, kt, vt, ak, mk_tupleaccess 0 x, mk_tupleaccess 1 x)
+                      end
+                    | `Remove -> begin
+                        match tty with
+                        | `Set  ty      -> Msetinstrremove (ty, ak, x)
+                        | `Map (kt, vt) -> Mmapinstrremove (MKMap, kt, vt, ak, x)
+                      end
+                  end
+                  in
+                  let instrs : mterm list = begin
+                    match v.node with
+                    | Massets  ll
+                    | Mlitlist ll -> List.map (fun (a : mterm) -> mk_mterm (fnode a) tunit) ll
+                    | _ -> []
+                  end
+                  in
+                  (accu_l, instrs @ accu_instrs)
+                in
+                match op with
+                | PlusAssign  -> process `Add
+                | MinusAssign -> process `Remove
+                | _ -> def_value
+              end
+              else def_value) l ([], [])
         in
         let mterm_update = { mt with node = Mupdate (an, k, newl) } in
         match instrs with
