@@ -1,4 +1,4 @@
-archetype asset_update_map_add
+archetype effect_method_asset_update_with_add_map
 
 asset my_asset {
   id : nat;
@@ -8,5 +8,5 @@ asset my_asset {
 }
 
 entry exec () {
-  my_asset.update(0, {m += (("k", 0x00))});
+  my_asset.update(0, {m += [(("k", 0x00))]});
 }
