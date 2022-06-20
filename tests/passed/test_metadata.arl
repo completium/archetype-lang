@@ -1,18 +1,22 @@
 archetype test_metadata
 
-constant admin : address = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
-
-variable value : nat = 0
-
-entry addMetadata (ik : string, iv : bytes) {
-  called by admin
+entry exec () {
   effect {
-    /* put(metadata, ik, iv) */
-
-    // metadata.put(ik, iv)
-    metadata.update(ik, some(iv))
+    const k = "";
+    const v = 0x00;
+    metadata.update(k, some(v));
   }
 }
+
+// entry addMetadata (ik : string, iv : bytes) {
+//   called by admin
+//   effect {
+//     /* put(metadata, ik, iv) */
+
+//     // metadata.put(ik, iv)
+//     metadata.update(ik, some(iv));
+//   }
+// }
 
 // entry removeMetadata(ik : string) {
 //   called by admin
