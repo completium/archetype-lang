@@ -4,7 +4,7 @@ asset my_asset {
   id : nat;
   s : set<string>;
 } initialized by {
-  {0; ["k"]}
+  {0; ["k"; "l"; "m"]}
 }
 
 entry exec () {

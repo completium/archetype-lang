@@ -1,0 +1,12 @@
+archetype effect_instruction_put_in_asset
+
+asset my_asset {
+  id : nat;
+  m : map<string, bytes>;
+} initialized by {
+  {0; []}
+}
+
+entry exec () {
+  my_asset[0].m.put("k", 0x00)
+}

@@ -328,39 +328,39 @@ let remove_container_op_in_update_exec (model : model) : model =
               let def_value = ((fn, op, v)::accu_l, accu_instrs) in
               if is_basic_container asset (fn, op, v)
               then begin
-                let tty =
+                let a, tty =
                   let f = List.find (fun (x : asset_item) -> String.equal (unloc x.name) (unloc fn)) asset.values in
+                  mk_mterm (Mdotassetfield (dumloc an, k, f.name)) f.original_type,
                   match get_ntype f.original_type with
                   | Tset ty       -> `Set ty
                   | Tmap (kt, vt) -> `Map (kt, vt)
                   | _ -> assert false
                 in
 
-                let ak = Aasset (dumloc an, fn, k) in
-
                 let process kind =
-                  let fnode (x : mterm) = begin
+                  let mk accu (x : mterm) : mterm = begin
                     match kind with
                     | `Add    -> begin
                         match tty with
-                        | `Set  ty      -> Msetinstradd (ty, ak, x)
-                        | `Map (kt, vt) -> Mmapinstrput (MKMap, kt, vt, ak, mk_tupleaccess 0 x, mk_tupleaccess 1 x)
+                        | `Set  ty      -> mk_mterm (Msetadd (ty, accu, x)) (tset ty)
+                        | `Map (kt, vt) -> mk_mterm (Mmapput (MKMap, kt, vt, accu, mk_tupleaccess 0 x, mk_tupleaccess 1 x)) (tmap kt vt)
                       end
                     | `Remove -> begin
                         match tty with
-                        | `Set  ty      -> Msetinstrremove (ty, ak, x)
-                        | `Map (kt, vt) -> Mmapinstrremove (MKMap, kt, vt, ak, x)
+                        | `Set  ty      -> mk_mterm (Msetremove (ty, accu, x)) (tset ty)
+                        | `Map (kt, vt) -> mk_mterm (Mmapremove (MKMap, kt, vt, accu, x)) (tmap kt vt)
                       end
                   end
                   in
-                  let instrs : mterm list = begin
+
+                  let v : mterm = begin
                     match v.node with
                     | Massets  ll
-                    | Mlitlist ll -> List.map (fun (a : mterm) -> mk_mterm (fnode a) tunit) ll
-                    | _ -> []
+                    | Mlitlist ll -> List.fold_right (fun (a : mterm) accu -> mk accu a) ll a
+                    | _ -> a
                   end
                   in
-                  (accu_l, instrs @ accu_instrs)
+                  ((fn, ValueAssign, v)::accu_l, accu_instrs)
                 in
                 match op with
                 | PlusAssign  -> process `Add
@@ -3473,6 +3473,7 @@ let optimize (model : model) =
     match mt.node with
     (* asset api effect *)
     | Mnot ({node = Mnot x; _}) -> aux ctx x
+    | Mtupleaccess ({node = Mtuple l; _}, n) -> let x = List.nth l (Big_int.int_of_big_int n) in aux ctx x
     (* default *)
     | _ -> map_mterm (aux ctx) mt
   in

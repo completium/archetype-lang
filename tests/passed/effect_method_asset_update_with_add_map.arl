@@ -8,5 +8,5 @@ asset my_asset {
 }
 
 entry exec () {
-  my_asset.update(0, {m += [(("k", 0x00))]});
+  my_asset.update(0, {m += [("k", 0x00); ("l", 0x01); ("m", 0x02)]});
 }
