@@ -59,6 +59,11 @@ let output_mdl_mterm (mt : Model.mterm) =
   then Format.printf "%a@." Model.pp_mterm mt
   else Format.printf "%a@." Printer_model.pp_mterm mt
 
+let output_model (mdl : Model.model) =
+  if !Options.opt_raw
+  then Format.printf "%a@." Model.pp_model mdl
+  else Format.printf "%a@." Printer_model.pp_model mdl
+
 let output_ir (ir : Michelson.ir) =
   if !Options.opt_raw
   then Format.printf "%a@." Michelson.pp_ir ir
@@ -225,53 +230,59 @@ let generate_model            = Gen_model.to_model
 let generate_storage          = Gen_storage.generate_storage
 let generate_api_storage      = Gen_api_storage.generate_api_storage
 
-let toolchain ?(js=false) model =
+let print_debug b id  (f : M.model -> M.model) (model : M.model) : M.model =
+  let model = f model in
+  if b then (Format.printf "BEGIN TRANSFORMATION: %s@\n" id; output_model model; Format.printf "END TRANSFORMATION: %s@\n" id);
   model
-  |> prune_formula
-  |> getter_to_entry ~extra:true
-  |> process_parameter ~js:js
-  |> test_mode
-  |> remove_decl_var_opt
-  |> remove_ternary_opeartor
-  |> process_multi_keys
-  |> replace_col_by_key_for_ckfield
-  |> move_partition_init_asset
-  |> remove_enum
-  |> process_event
-  |> replace_assignfield_by_update
-  |> remove_update_all
-  |> remove_add_update
-  |> remove_container_op_in_update_exec
-  |> merge_update
-  |> remove_empty_update
-  |> remove_assign_operator
-  |> process_internal_string
-  |> remove_rational
-  |> abs_tez
-  |> replace_date_duration_by_timestamp
-  |> eval_variable_initial_value
-  |> replace_dotassetfield_by_dot
-  |> expr_to_instr
-  |> generate_storage
-  |> replace_declvar_by_letin
-  |> remove_label
-  |> flat_sequence
-  |> lazy_eval_condition
-  |> remove_cmp_bool
-  |> split_key_values
-  |> remove_duplicate_key
-  |> assign_loop_label
-  |> remove_asset
-  |> remove_iterable_big_map
-  |> remove_storage_field_in_function
-  |> remove_high_level_model
-  |> normalize_storage
-  |> remove_constant
-  |> eval_storage
-  |> instr_to_expr_exec
-  |> optimize
-  |> generate_api_storage
-  |> fill_stovars
+
+let toolchain ?(js=false) ?(debug=false) model =
+  let f = print_debug debug in
+  model
+  |> f "prune_formula" prune_formula
+  |> f "getter_to_entry" (getter_to_entry ~extra:true)
+  |> f "process_parameter" (process_parameter ~js:js)
+  |> f "test_mode" test_mode
+  |> f "remove_decl_var_opt" remove_decl_var_opt
+  |> f "remove_ternary_opeartor" remove_ternary_opeartor
+  |> f "process_multi_keys" process_multi_keys
+  |> f "replace_col_by_key_for_ckfield" replace_col_by_key_for_ckfield
+  |> f "move_partition_init_asset" move_partition_init_asset
+  |> f "remove_enum" remove_enum
+  |> f "process_event" process_event
+  |> f "replace_assignfield_by_update" replace_assignfield_by_update
+  |> f "remove_update_all" remove_update_all
+  |> f "remove_add_update" remove_add_update
+  |> f "remove_container_op_in_update_exec" remove_container_op_in_update_exec
+  |> f "merge_update" merge_update
+  |> f "remove_empty_update" remove_empty_update
+  |> f "remove_assign_operator" remove_assign_operator
+  |> f "process_internal_string" process_internal_string
+  |> f "remove_rational" remove_rational
+  |> f "abs_tez" abs_tez
+  |> f "replace_date_duration_by_timestamp" replace_date_duration_by_timestamp
+  |> f "eval_variable_initial_value" eval_variable_initial_value
+  |> f "replace_dotassetfield_by_dot" replace_dotassetfield_by_dot
+  |> f "expr_to_instr" expr_to_instr
+  |> f "generate_storage" generate_storage
+  |> f "replace_declvar_by_letin" replace_declvar_by_letin
+  |> f "remove_label" remove_label
+  |> f "flat_sequence" flat_sequence
+  |> f "lazy_eval_condition" lazy_eval_condition
+  |> f "remove_cmp_bool" remove_cmp_bool
+  |> f "split_key_values" split_key_values
+  |> f "remove_duplicate_key" remove_duplicate_key
+  |> f "assign_loop_label" assign_loop_label
+  |> f "remove_asset" remove_asset
+  |> f "remove_iterable_big_map" remove_iterable_big_map
+  |> f "remove_storage_field_in_function" remove_storage_field_in_function
+  |> f "remove_high_level_model" remove_high_level_model
+  |> f "normalize_storage" normalize_storage
+  |> f "remove_constant" remove_constant
+  |> f "eval_storage" eval_storage
+  |> f "instr_to_expr_exec" instr_to_expr_exec
+  |> f "optimize" optimize
+  |> f "generate_api_storage" generate_api_storage
+  |> f "fill_stovars" fill_stovars
   |> patch_fa2
 
 let generate_target model =
@@ -282,13 +293,14 @@ let generate_target model =
   in
 
   let js = match !Options.target with | Javascript -> true | _ -> false in
+  let debug = !Options.debug in
 
   match !Options.target with
   | Michelson
   | MichelsonStorage
   | Javascript ->
     model
-    |> toolchain ~js
+    |> toolchain ~js ~debug
     |> output
 
   | Whyml ->

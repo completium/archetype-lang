@@ -25,6 +25,7 @@ let url = "https://archetype-lang.org/"
 
 let target = ref (Michelson : target_lang)
 
+let debug = ref false
 let quiet = ref false
 let with_init_caller = ref true
 

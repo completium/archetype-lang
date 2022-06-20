@@ -114,6 +114,7 @@ let main () : unit =
       "-v", Arg.Unit (fun () -> print_version ()), " Show version number and exit";
       "--show-entries", Arg.Set Options.opt_show_entries, " Show entries from tz file";
       "--test-mode", Arg.Set Options.opt_test_mode, " Test mode";
+      "--debug", Arg.Set Options.debug, " Debug";
       "--version", Arg.Unit (fun () -> print_version ()), " Same as -v";
     ] in
   let arg_usage = String.concat "\n" [
