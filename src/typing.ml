@@ -4969,8 +4969,8 @@ let rec for_instruction_r
                 if se then begin
                   match the.node with
                   | Pvar (VTnone, Vnone, x) -> assign (`Var x)
-                  | Pconst Cmetadata -> assign (`Var (dumloc "metadata"))
-                  | Pconst Coperations -> assign (`Var (dumloc "operations"))
+                  | Pconst Cmetadata -> assign (`Var (mkloc the.loc "metadata"))
+                  | Pconst Coperations -> assign (`Var (mkloc the.loc "operations"))
                   | Pdot ({node = Pvar (VTnone, Vnone, _); type_ = Some (Trecord rn)} as x, fn) -> assign (`Field (rn, x, fn))
                   | Pdot ({node = Pcall (Some {type_ = Some (Tcontainer ((Tasset _), Collection))}, Cconst Cget, [], [AExpr k]); type_ = Some (Tasset an | Tcontainer (Tasset an, AssetValue))}, fn) -> assign (`Asset (an, k, fn))
                   (* TODO: handle partition, issue: #245 *)
