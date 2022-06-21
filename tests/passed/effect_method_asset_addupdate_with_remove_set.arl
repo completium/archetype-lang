@@ -1,0 +1,12 @@
+archetype effect_method_asset_update_with_remove_set
+
+asset my_asset {
+  id : nat;
+  s : set<string> = [];
+} initialized by {
+  {0; ["k"; "l"; "m"]}
+}
+
+entry exec () {
+  my_asset.add_update(0, {s -= ["k"]});
+}

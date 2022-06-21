@@ -6360,3 +6360,23 @@ let remove_decl_var_opt (model : model) =
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
+
+let process_arith_container (model : model) =
+  let rec aux ctx (mt : mterm) : mterm =
+    let f = aux ctx in
+    match mt.node with
+    | Mplus (({type_ = ((Tmap (kt, vt), _) as t)} as a), ({type_ = (Tlist (Ttuple [lkt; lvt], _), _); node = Mlitlist l})) when cmp_type kt lkt && cmp_type vt lvt -> begin
+        List.fold_right (fun x accu -> mk_mterm (Mmapput (MKMap, kt, vt, accu, mk_tupleaccess 0 x, mk_tupleaccess 1 x)) t) l (f a)
+      end
+    | Mplus (({type_ = ((Tset ty, _) as t)} as a), ({type_ = (Tlist lty, _); node = Mlitlist l})) when cmp_type ty lty -> begin
+        List.fold_right (fun x accu -> mk_mterm (Msetadd (ty, accu, x)) t) l (f a)
+      end
+    | Mminus (({type_ = ((Tmap (kt, vt), _) as t)} as a), ({type_ = (Tlist lty, _); node = Mlitlist l})) when cmp_type kt lty -> begin
+        List.fold_right (fun x accu -> mk_mterm (Mmapremove (MKMap, kt, vt, accu, x)) t) l (f a)
+      end
+    | Mminus (({type_ = ((Tset ty, _) as t)} as a), ({type_ = (Tlist lty, _); node = Mlitlist l})) when cmp_type ty lty -> begin
+        List.fold_right (fun x accu -> mk_mterm (Msetremove (ty, accu, x)) t) l (f a)
+      end
+    | _ -> map_mterm (aux ctx) mt
+  in
+  map_mterm_model aux model

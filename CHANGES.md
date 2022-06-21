@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ### Added
   - `constant` entry section
+  - `+=` and `-=` on `map`/`set` for `update`/`add_update`
 ### Changed
   - Jakarta protocol: update `sapling_verify_update` signature
   - `const` parameter behavior
