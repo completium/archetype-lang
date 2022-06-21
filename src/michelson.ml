@@ -344,6 +344,7 @@ and instruction =
   | Ifold        of ident * ident option * ident * instruction * instruction * instruction (* var_iterated * var_accu * container * init * code*)
   | Ireverse     of type_ * instruction
   | Imichelson   of instruction list * code * ident list
+  | Iwildcard    of type_ * ident
 [@@deriving show {with_path = false}]
 
 and ritem =

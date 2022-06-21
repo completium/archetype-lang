@@ -608,6 +608,7 @@ let rec pp_instruction fmt (i : instruction) =
   | Imap_ (x, id, e)        -> pp "map(%a, %s -> @[%a@])" f x id f e
   | Ireverse (t, x)         -> pp "reverse<%a>(%a)" pp_type t f x
   | Imichelson (a, c, v)    -> pp "michelson [%a] (%a) {%a}" (pp_list "; " pp_id) v (pp_list "; " f) a pp_code c
+  | Iwildcard (_, id)       -> pp "$$%s$$" id
 
 and pp_ritem fmt = function
   | Rtuple l -> Format.fprintf fmt "[%a]" (pp_list "; " pp_instruction) l

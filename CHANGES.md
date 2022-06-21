@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `constant` entry section
 ### Changed
   - Jakarta protocol: update `sapling_verify_update` signature
+  - `const` parameter behavior
 ### Fixed
   - Instructions for `operations` and `metadata`
 

@@ -235,12 +235,12 @@ let print_debug b id  (f : M.model -> M.model) (model : M.model) : M.model =
   if b then (Format.printf "BEGIN TRANSFORMATION: %s@\n" id; output_model model; Format.printf "END TRANSFORMATION: %s@\n" id);
   model
 
-let toolchain ?(js=false) ?(debug=false) model =
+let toolchain ?(debug=false) model =
   let f = print_debug debug in
   model
   |> f "prune_formula" prune_formula
   |> f "getter_to_entry" (getter_to_entry ~extra:true)
-  |> f "process_parameter" (process_parameter ~js:js)
+  |> f "process_parameter" process_parameter
   |> f "test_mode" test_mode
   |> f "remove_decl_var_opt" remove_decl_var_opt
   |> f "remove_ternary_opeartor" remove_ternary_opeartor
@@ -292,7 +292,7 @@ let generate_target model =
     m
   in
 
-  let js = match !Options.target with | Javascript -> true | _ -> false in
+  (* let js = match !Options.target with | Javascript -> true | _ -> false in *)
   let debug = !Options.debug in
 
   match !Options.target with
@@ -300,7 +300,7 @@ let generate_target model =
   | MichelsonStorage
   | Javascript ->
     model
-    |> toolchain ~js ~debug
+    |> toolchain ~debug
     |> output
 
   | Whyml ->
@@ -502,6 +502,40 @@ let with_parameters input : string =
               Printer_tools.pp_id p.name
               Printer_model.pp_type p.typ
           )) parameters
+
+(* -------------------------------------------------------------------- *)
+
+type parameter = {
+  name: string;
+  type_: string;
+  const: bool;
+  default_value: string option;
+}
+[@@deriving yojson, show {with_path = false}]
+
+let with_parameters input : string =
+  let mk_param (m : Model.model) (p : Model.parameter) : parameter =
+    let ty = Format.asprintf "%a" Printer_michelson.pp_type (Gen_michelson.to_type m p.typ) in
+    let dv : string option = None in (* Option.map (fun x -> Format.asprintf "%a" Printer_michelson.pp_data (Gen_michelson.to_data x)) p.default in *)
+    {
+      name  = Location.unloc p.name;
+      type_ = ty;
+      const = p.const;
+      default_value = dv;
+    } in
+
+  let parameters =
+    input
+    |> parse
+    |> compile_model
+    |> (fun m -> List.map (mk_param m) m.parameters)
+  in
+
+  match parameters with
+  | [] -> ""
+  | _ -> Format.asprintf "[@[%a@]]@\n"
+           (Printer_tools.pp_list ",@\n" (fun fmt p -> Format.fprintf fmt "%s" (Yojson.Safe.to_string (parameter_to_yojson p)))) parameters
+
 
 (* -------------------------------------------------------------------- *)
 

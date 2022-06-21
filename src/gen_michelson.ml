@@ -1038,7 +1038,7 @@ let to_ir (model : M.model) : T.ir =
     | Mvar (_v, Vfield, _, _)          -> assert false
     | Mvar (_, Vthe, _, _)             -> assert false
     | Mvar (_, Vstate, _, _)           -> assert false
-    | Mvar (_, Vparameter, _, _)       -> assert false
+    | Mvar (v, Vparameter, _, _)       -> T.Iwildcard (ft mtt.type_, unloc v)
     | Menumval (_id, _args, _e)        -> assert false
 
     (* rational *)
@@ -1795,6 +1795,12 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
   | Imichelson (a, c, v) -> begin
       let a, _ = seq env a in
       T.cseq [a; c], { env with vars = v @ env.vars }
+    end
+
+  | Iwildcard (ty, id) -> begin
+      let id = "$" ^ id ^ "$" in
+      let data : T.data = T.Dvar(id, ty) in
+      T.cpush (ty, data), inc_env env
     end
 
 and process_data (d : T.data) : T.data =
