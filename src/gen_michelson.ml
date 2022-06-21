@@ -1798,7 +1798,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
     end
 
   | Iwildcard (ty, id) -> begin
-      let id = "$" ^ id ^ "$" in
+      let id = "const_" ^ id ^ "__" in
       let data : T.data = T.Dvar(id, ty) in
       T.cpush (ty, data), inc_env env
     end
