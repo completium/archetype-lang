@@ -5244,7 +5244,7 @@ let rec for_instruction_r
       env, mki (A.Iwhile (c, i)) ?label:(Option.map unloc lbl)
 
     | Edorequire (e, f) ->
-      let e = for_expr kind env e in
+      let e = for_expr ~ety:A.vtbool kind env e in
       let f = for_expr kind env f in
       let ty = Option.get f.type_ in
 
@@ -5254,7 +5254,7 @@ let rec for_instruction_r
       env, mki (A.Irequire (true, e, f))
 
     | Edofailif (e, f) ->
-      let e = for_expr kind env e in
+      let e = for_expr ~ety:A.vtbool kind env e in
       let f = for_expr kind env f in
       let ty = Option.get f.type_ in
 
