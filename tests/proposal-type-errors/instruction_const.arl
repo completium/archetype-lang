@@ -1,0 +1,6 @@
+archetype instruction_const
+
+entry exec () {
+  const l : list<nat> = [];
+  l.prepend(0);
+}

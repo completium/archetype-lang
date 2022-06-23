@@ -655,6 +655,7 @@ type error_desc =
   | CannotAssignLoopIndex              of ident
   | CannotAssignPatternVariable        of ident
   | CannotCaptureVariables
+  | CannotEffectConstVar
   | CannotInfer
   | CannotInferAnonAssetOrRecord
   | CannotInferCollectionType
@@ -888,6 +889,7 @@ let pp_error_desc fmt e =
   | CannotAssignLoopIndex x            -> pp "Cannot assign loop index `%s'" x
   | CannotAssignPatternVariable x      -> pp "Cannot assign pattern variable `%s'" x
   | CannotCaptureVariables             -> pp "Cannot capture variables in this context"
+  | CannotEffectConstVar               -> pp "Cannot apply an effect on constant variable"
   | CannotInfer                        -> pp "Cannot infer type"
   | CannotInferAnonAssetOrRecord       -> pp "Cannot infer anonymous asset or record"
   | CannotInferCollectionType          -> pp "Cannot infer collection type"
@@ -4984,7 +4986,16 @@ let rec for_instruction_r
               let aout =
                 if se then begin
                   match the.node with
-                  | Pvar (VTnone, Vnone, x) -> assign (`Var x)
+                  | Pvar (VTnone, Vnone, x) -> begin
+                      (match Env.lookup_entry env (unloc x) with
+                       | Some (`Local (_, kind)) -> begin
+                           match kind with
+                           | `Const -> Env.emit_error env (the.loc, CannotEffectConstVar);
+                           | _ -> ()
+                         end
+                       | _ -> ());
+                      assign (`Var x)
+                    end
                   | Pconst Cmetadata -> assign (`Var (mkloc the.loc "metadata"))
                   | Pconst Coperations -> assign (`Var (mkloc the.loc "operations"))
                   | Pdot ({node = Pvar (VTnone, Vnone, _); type_ = Some (Trecord rn)} as x, fn) -> assign (`Field (rn, x, fn))
