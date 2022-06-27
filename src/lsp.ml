@@ -6,6 +6,7 @@ module PT = ParseTree
 type status =
   | Passed
   | Error
+  | Crash
 [@@deriving yojson, show {with_path = false}]
 
 type position = {
@@ -209,11 +210,13 @@ let make_outline_from_decl (d : PT.declaration) gl =
   | Dsecurity sec -> mk_outline_from_security sec
   | _ -> []
 
-let process_errors () =
+let process_crash () = Format.asprintf "%s\n" (Yojson.Safe.to_string (result_to_yojson (mk_result Crash [])))
+
+let process_errors  ?status () =
   Format.asprintf "%s\n" (Yojson.Safe.to_string (result_to_yojson (
       let li = Error.errors in
       match !li with
-      | [] -> mk_result Passed []
+      | [] -> mk_result (match status with | Some v -> v | None -> Passed) []
       | l -> mk_result Error (List.map (fun (p : (Position.t list * string)) ->
           let l, str = p in
           let p = (
@@ -250,29 +253,38 @@ let process (kind : lsp_kind) (input : Core.from_input) : string =
     )
   | Errors ->
     try
-      let pt = Io.parse_archetype input in
-      Pt_helper.check_json pt;
-      if (List.is_empty !Error.errors)
-      then
-        let ast = Typing.typing Typing.empty pt in
-        if List.is_empty !Error.errors
-        then
-          let _ = ast
-                  |> Gen_model.to_model
-                  |> Gen_transform.check_partition_access
-                  |> Gen_transform.check_containers_asset
-                  |> Gen_transform.check_empty_container_on_asset_default_value
-                  |> Gen_transform.remove_add_update
-                  |> Gen_transform.check_init_partition_in_asset
-                  |> Gen_transform.check_duplicated_keys_in_asset
-                  |> Gen_transform.check_asset_key
-          in
-          ();
-          process_errors ()
-        else
-          process_errors ()
-      else
-        process_errors ()
+      let opt =
+        try
+          Some (Io.parse_archetype input)
+        with
+        | _ -> None
+      in
+      match opt with
+      | Some pt -> begin
+          Pt_helper.check_json pt;
+          if (List.is_empty !Error.errors)
+          then
+            let ast = Typing.typing Typing.empty pt in
+            if List.is_empty !Error.errors
+            then
+              let _ = ast
+                      |> Gen_model.to_model
+                      |> Gen_transform.check_partition_access
+                      |> Gen_transform.check_containers_asset
+                      |> Gen_transform.check_empty_container_on_asset_default_value
+                      |> Gen_transform.remove_add_update
+                      |> Gen_transform.check_init_partition_in_asset
+                      |> Gen_transform.check_duplicated_keys_in_asset
+                      |> Gen_transform.check_asset_key
+              in
+              ();
+              process_errors ()
+            else
+              process_errors ()
+          else
+            process_errors ()
+        end
+      | None -> process_errors ~status:Crash ()
     with
     | _ -> process_errors ()
 
