@@ -7,6 +7,7 @@ let raise_on_error () = flag := `Raise
 let resume_on_error () = flag := `Resume
 
 let errors = ref []
+let warnings : (Position.t list * string) list ref = ref []
 
 exception Error of Position.t list * string
 
@@ -27,6 +28,9 @@ let error_alert positions msg continue =
   | `Exit -> exit 1
   | `Raise -> raise (Error (positions, msg))
   | `Resume -> errors := (positions, msg)::!errors; continue ()
+
+let add_warning positions msg continue =
+  warnings := (positions, msg)::!warnings; continue ()
 
 let global_error kind msg =
   error_alert [] (Printf.sprintf "Global Error (%s)\n  %s"  kind msg)

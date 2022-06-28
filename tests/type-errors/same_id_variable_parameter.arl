@@ -1,0 +1,3 @@
+archetype same_id_variable_parameter(n : nat)
+
+variable n : nat = 0

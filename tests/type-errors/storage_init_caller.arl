@@ -1,0 +1,3 @@
+archetype storage_init_caller
+
+variable a : address = caller

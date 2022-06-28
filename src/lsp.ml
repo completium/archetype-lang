@@ -22,7 +22,13 @@ type range = {
 }
 [@@deriving yojson, show {with_path = false}]
 
+let severity_error       = 1
+let severity_warning     = 2
+let severity_information = 3
+let severity_hint        = 4
+
 type item = {
+  severity: int;
   range : range;
   message : string;
 }
@@ -60,7 +66,8 @@ let mk_range (loc : Location.t) = {
   end_  = mk_position loc.loc_end loc.loc_echar;
 }
 
-let mk_item (loc : Location.t) msg = {
+let mk_item (loc : Location.t) severity msg = {
+  severity = severity;
   range = mk_range loc;
   message = msg;
 }
@@ -214,20 +221,20 @@ let process_crash () = Format.asprintf "%s\n" (Yojson.Safe.to_string (result_to_
 
 let process_errors  ?status () =
   Format.asprintf "%s\n" (Yojson.Safe.to_string (result_to_yojson (
-      let li = Error.errors in
-      match !li with
-      | [] -> mk_result (match status with | Some v -> v | None -> Passed) []
-      | l -> mk_result Error (List.map (fun (p : (Position.t list * string)) ->
-          let l, str = p in
-          let p = (
-            match l with
-            | [] -> Position.dummy
-            | i::_ -> i
-          ) in
-          let s : Lexing.position = Position.start_of_position p in
-          let e : Lexing.position = Position.end_of_position p in
-          let loc = Location.make s e in
-          mk_item loc str) l)
+      let process severity ((l, str) : (Position.t list * string)) =
+        let p = (
+          match l with
+          | [] -> Position.dummy
+          | i::_ -> i
+        ) in
+        let s : Lexing.position = Position.start_of_position p in
+        let e : Lexing.position = Position.end_of_position p in
+        let loc = Location.make s e in
+        mk_item loc severity str
+      in
+      if List.is_empty !Error.errors && List.is_empty !Error.warnings
+      then mk_result (match status with | Some v -> v | None -> Passed) []
+      else mk_result Error ((List.map (process severity_error) !Error.errors) @ (List.map (process severity_warning) !Error.warnings))
     )))
 
 let process (kind : lsp_kind) (input : Core.from_input) : string =
@@ -276,6 +283,7 @@ let process (kind : lsp_kind) (input : Core.from_input) : string =
                       |> Gen_transform.check_init_partition_in_asset
                       |> Gen_transform.check_duplicated_keys_in_asset
                       |> Gen_transform.check_asset_key
+                      |> Gen_transform.check_init_caller
               in
               ();
               process_errors ()

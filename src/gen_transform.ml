@@ -9,6 +9,7 @@ type error_desc =
   | AssetPartitionnedby of string * string list
   | CannotBuildAsset of string * string
   | ContainersInAssetContainers of string * string * string
+  | DeprecatedInitValue
   | NoEmptyContainerForDefaultValue of string * string * container
   | NoClearForPartitionAsset of ident
   | DefaultValueOnKeyAsset of ident
@@ -34,6 +35,8 @@ let pp_error_desc fmt = function
   | ContainersInAssetContainers (an, fn, an2) ->
     Format.fprintf fmt "Cannot build an asset '%s', '%s' is a container field, which refers to an asset '%s', which contains a container field itself."
       an fn an2
+
+  | DeprecatedInitValue -> Format.fprintf fmt "Deprecated value for initialization"
 
   | NoEmptyContainerForDefaultValue (an, fn, c) ->
     Format.fprintf fmt "Field '%s' of '%s' asset is a %a, which must be initialized by an empty container."
@@ -74,6 +77,11 @@ let emit_error (lc, error : Location.t * error_desc) =
   let str : string = Format.asprintf "%a@." pp_error_desc error in
   let pos : Position.t list = [location_to_position lc] in
   Error.error_alert pos str (fun _ -> ())
+
+let emit_warning (lc, error : Location.t * error_desc) =
+  let str : string = Format.asprintf "%a@." pp_error_desc error in
+  let pos : Position.t list = [location_to_position lc] in
+  Error.add_warning pos str (fun _ -> ())
 
 let prune_formula (model : model) : model =
   let empty_sec = mk_security () in
@@ -646,6 +654,26 @@ let check_asset_key (model : model) : model =
          end
        | _ -> ()) model.decls;
   List.iter emit_error !errors;
+  model
+
+let check_init_caller (model : model) : model =
+  let for_decl (d : decl_node) : unit =
+    let for_mterm (mt : mterm) : unit =
+      let rec aux accu (mt : mterm) : unit =
+        match mt.node with
+        | Mcaller
+        | Msource -> emit_warning (mt.loc, DeprecatedInitValue)
+        | _ ->
+          fold_term aux accu mt
+      in
+      aux () mt
+    in
+    match d with
+    | Dvar ({default = Some v}) -> for_mterm v
+    | Dasset a -> List.iter for_mterm a.init
+    | _ -> ()
+  in
+  List.iter for_decl model.decls;
   model
 
 let check_and_replace_init_caller ?(doit=false) (model : model) : model =
