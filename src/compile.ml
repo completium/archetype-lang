@@ -367,7 +367,7 @@ let compile_model pt =
   |> raise_if_error post_model_error check_containers_asset
   (* |> raise_if_error post_model_error check_empty_container_on_initializedby *)
   |> raise_if_error post_model_error check_empty_container_on_asset_default_value
-  |> raise_if_error post_model_error (check_and_replace_init_caller ~doit:!Options.with_init_caller)
+  |> raise_if_error post_model_error check_invalid_init_value
   |> raise_if_error post_model_error check_init_partition_in_asset
   |> raise_if_error post_model_error check_duplicated_keys_in_asset
   |> raise_if_error post_model_error check_asset_key

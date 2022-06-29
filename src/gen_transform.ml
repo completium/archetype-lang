@@ -7,69 +7,39 @@ open Tools
 
 type error_desc =
   | AssetPartitionnedby of string * string list
+  | CallerNotSetInInit
   | CannotBuildAsset of string * string
   | ContainersInAssetContainers of string * string * string
-  | DeprecatedInitValue
-  | NoEmptyContainerForDefaultValue of string * string * container
-  | NoClearForPartitionAsset of ident
   | DefaultValueOnKeyAsset of ident
-  | CallerNotSetInInit
   | DuplicatedKeyAsset of ident
-  | OnlyLiteralInAssetInit
+  | InvalidInitValue
+  | NoClearForPartitionAsset of ident
+  | NoEmptyContainerForDefaultValue of string * string * container
   | NoEntrypoint
-  | UnknownContract of ident
-  | NoSortOnKeyWithMultiKey of ident
-  | NoInitValueForParameter of ident
   | NoInitForPartitionAsset of ident
   | NoInitValueForConstParam of ident
+  | NoInitValueForParameter of ident
+  | NoSortOnKeyWithMultiKey of ident
+  | OnlyLiteralInAssetInit
+  | UnknownContract of ident
 
 let pp_error_desc fmt = function
-  | AssetPartitionnedby (i, l)         ->
-    Format.fprintf fmt
-      "Cannot access asset collection: asset %s is partitionned by field(s) (%a)."
-      i (Printer_tools.pp_list ", " Printer_tools.pp_str) l
-
-  | CannotBuildAsset (an, fn) ->
-    Format.fprintf fmt "Cannot build an asset %s, default value of field '%s' is missing." an fn
-
-  | ContainersInAssetContainers (an, fn, an2) ->
-    Format.fprintf fmt "Cannot build an asset '%s', '%s' is a container field, which refers to an asset '%s', which contains a container field itself."
-      an fn an2
-
-  | DeprecatedInitValue -> Format.fprintf fmt "Deprecated value for initialization"
-
-  | NoEmptyContainerForDefaultValue (an, fn, c) ->
-    Format.fprintf fmt "Field '%s' of '%s' asset is a %a, which must be initialized by an empty container."
-      fn an
-      Printer_model.pp_container c
-
-  | NoClearForPartitionAsset an ->
-    Format.fprintf fmt "Clear is not allowed for asset '%s', because this asset is used in a partition." an
-
-  | CallerNotSetInInit ->
-    Format.fprintf fmt "'caller' is used in initialization of contract, please set caller value with '--set-caller-init'"
-
-  | DuplicatedKeyAsset an ->
-    Format.fprintf fmt "duplicate key for '%s'" an
-
-  | OnlyLiteralInAssetInit ->
-    Format.fprintf fmt "only literal is allowed for asset field initialisation"
-
-  | DefaultValueOnKeyAsset an ->
-    Format.fprintf fmt "default value on key for asset \"%s\"" an
-
-  | UnknownContract id ->
-    Format.fprintf fmt "cannot find type for '%s'" id
-
+  | AssetPartitionnedby (i, l) -> Format.fprintf fmt "Cannot access asset collection: asset %s is partitionned by field(s) (%a)." i (Printer_tools.pp_list ", " Printer_tools.pp_str) l
+  | CallerNotSetInInit -> Format.fprintf fmt "'caller' is used in initialization of contract, please set caller value with '--set-caller-init'"
+  | CannotBuildAsset (an, fn) -> Format.fprintf fmt "Cannot build an asset %s, default value of field '%s' is missing." an fn
+  | ContainersInAssetContainers (an, fn, an2) -> Format.fprintf fmt "Cannot build an asset '%s', '%s' is a container field, which refers to an asset '%s', which contains a container field itself." an fn an2
+  | DefaultValueOnKeyAsset an -> Format.fprintf fmt "Default value on key for asset \"%s\"" an
+  | DuplicatedKeyAsset an -> Format.fprintf fmt "duplicate key for '%s'" an
+  | InvalidInitValue -> Format.fprintf fmt "Invalid value for initialization"
+  | NoClearForPartitionAsset an -> Format.fprintf fmt "Clear is not allowed for asset '%s', because this asset is used in a partition." an
+  | NoEmptyContainerForDefaultValue (an, fn, c) -> Format.fprintf fmt "Field '%s' of '%s' asset is a %a, which must be initialized by an empty container." fn an Printer_model.pp_container c
   | NoEntrypoint -> Format.fprintf fmt "No entrypoint found (action or transtion)"
-
-  | NoSortOnKeyWithMultiKey f -> Format.fprintf fmt "No sort on key with multi key: %s" f
-
-  | NoInitValueForParameter id -> Format.fprintf fmt "No initialized value for parameter: %s" id
-
   | NoInitForPartitionAsset an -> Format.fprintf fmt "Asset '%s' is used in a partition, no asset must initialized" an
-
   | NoInitValueForConstParam id -> Format.fprintf fmt "No initialized value for const parameter: %s" id
+  | NoInitValueForParameter id -> Format.fprintf fmt "No initialized value for parameter: %s" id
+  | NoSortOnKeyWithMultiKey f -> Format.fprintf fmt "No sort on key with multi key: %s" f
+  | OnlyLiteralInAssetInit -> Format.fprintf fmt "Only literal is allowed for asset field initialisation"
+  | UnknownContract id -> Format.fprintf fmt "Cannot find type for '%s'" id
 
 type error = Location.t * error_desc
 
@@ -656,13 +626,23 @@ let check_asset_key (model : model) : model =
   List.iter emit_error !errors;
   model
 
-let check_init_caller (model : model) : model =
+let check_invalid_init_value (model : model) : model =
   let for_decl (d : decl_node) : unit =
     let for_mterm (mt : mterm) : unit =
       let rec aux accu (mt : mterm) : unit =
         match mt.node with
+        | Mbalance
         | Mcaller
-        | Msource -> emit_warning (mt.loc, DeprecatedInitValue)
+        | Mlevel
+        | Mnow
+        | Mselfaddress
+        | Mselfchainid
+        | Msource
+        | Mtransferred
+        | Mtotalvotingpower
+        | Mpack _
+        | Munpack _
+        -> emit_error (mt.loc, InvalidInitValue)
         | _ ->
           fold_term aux accu mt
       in

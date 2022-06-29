@@ -283,7 +283,7 @@ let process (kind : lsp_kind) (input : Core.from_input) : string =
                       |> Gen_transform.check_init_partition_in_asset
                       |> Gen_transform.check_duplicated_keys_in_asset
                       |> Gen_transform.check_asset_key
-                      |> Gen_transform.check_init_caller
+                      |> Gen_transform.check_invalid_init_value
               in
               ();
               process_errors ()
