@@ -1,0 +1,7 @@
+archetype unused_argument
+
+variable n : nat = 0
+
+entry e(s : string, i : nat) {
+  n := i
+}

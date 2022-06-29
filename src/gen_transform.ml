@@ -22,6 +22,7 @@ type error_desc =
   | NoSortOnKeyWithMultiKey of ident
   | OnlyLiteralInAssetInit
   | UnknownContract of ident
+  | UnusedArgument of ident
 
 let pp_error_desc fmt = function
   | AssetPartitionnedby (i, l) -> Format.fprintf fmt "Cannot access asset collection: asset %s is partitionned by field(s) (%a)." i (Printer_tools.pp_list ", " Printer_tools.pp_str) l
@@ -40,6 +41,7 @@ let pp_error_desc fmt = function
   | NoSortOnKeyWithMultiKey f -> Format.fprintf fmt "No sort on key with multi key: %s" f
   | OnlyLiteralInAssetInit -> Format.fprintf fmt "Only literal is allowed for asset field initialisation"
   | UnknownContract id -> Format.fprintf fmt "Cannot find type for '%s'" id
+  | UnusedArgument id -> Format.fprintf fmt "Unused argument '%s'" id
 
 type error = Location.t * error_desc
 
@@ -642,7 +644,7 @@ let check_invalid_init_value (model : model) : model =
         | Mtotalvotingpower
         | Mpack _
         | Munpack _
-        -> emit_error (mt.loc, InvalidInitValue)
+          -> emit_error (mt.loc, InvalidInitValue)
         | _ ->
           fold_term aux accu mt
       in
@@ -6388,3 +6390,30 @@ let process_arith_container (model : model) =
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
+
+let check_unused_variables (model : model) =
+  let for_function (f : function__) =
+    let fs =
+      match f.node with
+      | Function (fs, _) -> fs
+      | Getter   (fs, _) -> fs
+      | View     (fs, _) -> fs
+      | Entry    fs      -> fs
+    in
+    let doit (fs : function_struct) =
+      let args = fs.args in
+      let ids = List.map proj3_1 args in
+      let contains id = List.exists (fun x -> String.equal (unloc id) (unloc x)) ids in
+      let rec aux accu (mt : mterm) =
+      match mt.node with
+      | Mvar (id, _, _, _) when contains id-> id::accu
+      | _ -> fold_term aux accu mt
+      in
+      let is = aux [] fs.body in
+      let js = List.fold_right (fun x accu -> if List.exists (fun y -> String.equal (unloc y) (unloc x)) is then accu else x::accu) ids [] in
+      List.iter (fun x -> emit_warning (loc x, UnusedArgument (unloc x))) js
+    in
+    doit fs
+  in
+  List.iter for_function model.functions;
+  model
