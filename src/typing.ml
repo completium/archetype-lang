@@ -400,7 +400,8 @@ end = struct
       | A.Tbuiltin VTnever       -> true
       | A.Tbuiltin VTchest       -> true
       | A.Tbuiltin VTchest_key   -> true
-      | A.Tcontainer           _ -> false
+      | A.Tcontainer (_, Collection) -> false
+      | A.Tcontainer _           -> true
       | A.Tset                 t -> is_big_map_value t
       | A.Tlist                t -> is_big_map_value t
       | A.Tmap            (k, v) -> List.for_all is_big_map_value [k; v]
