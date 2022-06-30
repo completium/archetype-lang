@@ -10,5 +10,5 @@ asset my_asset identified by k1 k2 k3 {
 
 entry exec(i : asset_value<my_asset>) {
   const k = (0, "id", 1i);
-  // my_asset.put(make_asset<my_asset>(k, i))
+  my_asset.put(make_asset<my_asset>(k, i))
 }

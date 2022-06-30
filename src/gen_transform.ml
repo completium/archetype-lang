@@ -3772,7 +3772,7 @@ let remove_asset (model : model) : model =
     else ttuple [kt; proj3_1 (for_type an)]
   in
 
-  let process_storage (model : model) : model * ((bool * bool) * type_) MapString.t =
+  let process_storage (model : model) : model * ((bool * bool) * (type_ * type_)) MapString.t =
     let for_storage_item map (x : storage_item) =
       let map_storage_mterm (mt : mterm) : mterm =
         match mt with
@@ -3811,9 +3811,9 @@ let remove_asset (model : model) : model =
           let type_ = mkmm k ts in
           let default = map_storage_mterm x.default in
           let d = match fields with | [] | [_] -> [] | _ -> [Drecord (mk_record (dumloc an) ~fields:(List.map (fun (id, t) -> mk_record_field (dumloc id) t) fields) )] in
-          { x with typ = type_; default = default; }, d, MapString.add an ((true, is_single_record), type_) map
+          { x with typ = type_; default = default; }, d, MapString.add an ((true, is_single_record), (type_, ts)) map
         end
-      | MTasset an, (Tset st) -> x, [], MapString.add an ((false, false), tset st) map
+      | MTasset an, (Tset st) -> x, [], MapString.add an ((false, false), (tset st, tunit)) map
       | _ -> x, [], map
     in
     let nstorage, decls, map = List.fold_left (fun (accu, decls, map) x -> let a, ds, map = for_storage_item map x in (accu @ [a], decls @ ds, map)) ([], [], MapString.empty) model.storage in
@@ -3824,18 +3824,23 @@ let remove_asset (model : model) : model =
   in
 
 
-  let is_single_simple_record (map : ((bool * bool) * type_) MapString.t) an =
+  let is_single_simple_record (map : ((bool * bool) * (type_ * type_)) MapString.t) an =
     MapString.find an map
     |> fst
   in
 
-  let is_simple_record (map : ((bool * bool) * type_) MapString.t) an =
+  let is_simple_record (map : ((bool * bool) * (type_ * type_)) MapString.t) an =
     is_single_simple_record map an |> snd
   in
 
-  let get_type_for_asset_container (map : ((bool * bool) * type_) MapString.t) an =
+  let get_type_for_asset_container (map : ((bool * bool) * (type_ * type_)) MapString.t) an =
     MapString.find an map
-    |> snd
+    |> snd |> fst
+  in
+
+  let get_type_for_asset_value (map : ((bool * bool) * (type_ * type_)) MapString.t) an =
+    MapString.find an map
+    |> snd |> snd
   in
 
   let is_key an fn =
@@ -3845,13 +3850,13 @@ let remove_asset (model : model) : model =
 
   let get_asset_global_id an = dumloc (an) in
 
-  let get_asset_global (map : ((bool * bool) * type_) MapString.t) an =
+  let get_asset_global (map : ((bool * bool) * (type_ * type_)) MapString.t) an =
     let type_ = get_type_for_asset_container map an in
     let id = get_asset_global_id an in
     mk_mterm (Mvar (id, Vstorecol, Tnone, Dnone)) type_
   in
 
-  let process_mterm (map : ((bool * bool) * type_) MapString.t) (model : model) : model =
+  let process_mterm (map : ((bool * bool) * (type_ * type_)) MapString.t) (model : model) : model =
 
     let is_single_simple_record an = is_single_simple_record map an in
     let is_simple_record an = is_simple_record map an in
@@ -5458,19 +5463,30 @@ let remove_asset (model : model) : model =
           |> mk_tupleaccess 1
         end
 
-      | Mmakeasset (an, k, _v) ->
-        let k = fm ctx k in
-        (* let v = fm ctx v in *)
+      | Mmakeasset (an, k, v) -> begin
+          let k = fm ctx k in
 
-        let res = mk_mterm (Masset [k]) (tasset (dumloc an)) in
-        fm ctx res
+          let mk l = mk_mterm (Masset l) (tasset (dumloc an)) in
+
+          let res =
+            if Utils.is_asset_single_field model an
+            then mk [k]
+            else begin
+              let v = fm ctx v in
+              if is_simple_record an
+              then mk [k; v]
+              else mk [k]
+            end
+          in
+          fm ctx res
+        end
 
       | _ -> map_mterm (fm ctx) mt
     in
     map_mterm_model fm model
   in
 
-  let remove_type_asset (map : ((bool * bool) * type_) MapString.t) (model : model) : model =
+  let remove_type_asset (map : ((bool * bool) * (type_ * type_)) MapString.t) (model : model) : model =
     let rec ft t : type_ =
       match get_ntype t with
       | Tcontainer ((Tasset an, _), View) -> tlist (Utils.get_asset_key model (unloc an) |> snd)
@@ -5480,7 +5496,7 @@ let remove_asset (model : model) : model =
         then tunit
         else begin
           if is_simple_record map uan
-          then get_type_for_asset_container map uan
+          then get_type_for_asset_value map uan
           else trecord an
         end
       | Tasset an -> for_asset_type (unloc an)
