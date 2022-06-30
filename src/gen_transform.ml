@@ -5475,7 +5475,19 @@ let remove_asset (model : model) : model =
               let v = fm ctx v in
               if is_simple_record an
               then mk [k; v]
-              else mk [k]
+              else begin
+                let asset = Utils.get_asset model an in
+                (* Format.eprintf "KEYS: [%a]@\n" (Printer_tools.pp_list "," (fun fmt x -> Format.fprintf fmt "%s" x)) asset.keys; *)
+                let vs = List.fold_right (fun x accu ->
+                    if x.shadow || List.exists (fun k -> String.equal (unloc x.name) k) asset.keys
+                    then accu
+                    else (x.name, x.type_)::accu
+                  ) asset.values [] in
+                (* Format.eprintf "VS: [%a]@\n" (Printer_tools.pp_list "," (fun fmt (x, t) -> Format.fprintf fmt "%s : %a" (unloc x) Printer_model.pp_type t)) vs; *)
+                let l = List.fold_right (fun (id, t) accu ->
+                    let mt = mk_mterm (Mdot (v, id)) t in mt::accu) vs [] in
+                mk (k::l)
+              end
             end
           in
           fm ctx res
