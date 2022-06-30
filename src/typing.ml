@@ -171,7 +171,8 @@ end = struct
       | A.Tbuiltin VTnever       -> true
       | A.Tbuiltin VTchest       -> true
       | A.Tbuiltin VTchest_key   -> true
-      | A.Tcontainer           _ -> false
+      | A.Tcontainer (_, Collection) -> false
+      | A.Tcontainer _           -> true
       | A.Tset                 _ -> true
       | A.Tlist                _ -> true
       | A.Tmap                 _ -> true
@@ -261,7 +262,8 @@ end = struct
       | A.Tbuiltin VTnever       -> true
       | A.Tbuiltin VTchest       -> true
       | A.Tbuiltin VTchest_key   -> true
-      | A.Tcontainer           _ -> false
+      | A.Tcontainer (_, Collection) -> false
+      | A.Tcontainer _           -> true
       | A.Tset                 _ -> true
       | A.Tlist                _ -> true
       | A.Tmap                 _ -> true
@@ -306,7 +308,8 @@ end = struct
       | A.Tbuiltin VTnever       -> true
       | A.Tbuiltin VTchest       -> true
       | A.Tbuiltin VTchest_key   -> true
-      | A.Tcontainer           _ -> false
+      | A.Tcontainer (_, Collection) -> false
+      | A.Tcontainer _           -> true
       | A.Tset                 t -> is_storable t
       | A.Tlist                t -> is_storable t
       | A.Tmap            (k, v) -> List.for_all is_storable [k; v]
@@ -351,7 +354,8 @@ end = struct
       | A.Tbuiltin VTnever       -> true
       | A.Tbuiltin VTchest       -> true
       | A.Tbuiltin VTchest_key   -> true
-      | A.Tcontainer           _ -> false
+      | A.Tcontainer (_, Collection) -> false
+      | A.Tcontainer _           -> true
       | A.Tset                 t -> is_packable t
       | A.Tlist                t -> is_packable t
       | A.Tmap            (k, v) -> List.for_all is_packable [k; v]
