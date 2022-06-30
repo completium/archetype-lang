@@ -6405,9 +6405,9 @@ let check_unused_variables (model : model) =
       let ids = List.map proj3_1 args in
       let contains id = List.exists (fun x -> String.equal (unloc id) (unloc x)) ids in
       let rec aux accu (mt : mterm) =
-      match mt.node with
-      | Mvar (id, _, _, _) when contains id-> id::accu
-      | _ -> fold_term aux accu mt
+        match mt.node with
+        | Mvar (id, _, _, _) when contains id-> id::accu
+        | _ -> fold_term aux accu mt
       in
       let is = aux [] fs.body in
       let js = List.fold_right (fun x accu -> if List.exists (fun y -> String.equal (unloc y) (unloc x)) is then accu else x::accu) ids [] in
