@@ -902,6 +902,7 @@ let to_ir (model : M.model) : T.ir =
       let ru = List.fold_left (fun (ru : T.ruitem option) (fn, v) -> Some (make_ru ?ru rn fn v)) None l in
       let ru = match ru with | None -> assert false | Some v -> v in
       T.Irecupdate (f x, ru)
+    | Mmakeasset _ -> emit_error (UnsupportedTerm ("Mmakeasset"))
 
     (* set api expression *)
 

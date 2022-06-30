@@ -3668,7 +3668,13 @@ let rec for_xexpr
             let vty = match evty with | Some ty -> ty | None -> Env.emit_error env (loc tope, InvalidTypeForMake); bailout() in
             for_xexpr env ~ety:(A.Tbig_map (kty, vty)) a
           end
-        | _ -> assert false
+        | "make_asset", [ta], [k; v] -> begin
+            let eta = for_type env ta in
+            let vk = for_xexpr env k in
+            let vv = for_xexpr env v in
+            mk_sp eta (A.Pcall (None, A.Cconst CmakeAsset, [Option.get eta], [AExpr vk; AExpr vv]))
+          end
+        | _ -> Env.emit_error env (loc tope, NoMatchingFunction (unloc id, [])); bailout ()
       end
 
     | Emethod (the, m, args) -> begin

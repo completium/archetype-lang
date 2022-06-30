@@ -357,6 +357,7 @@ type ('id, 'term) mterm_node  =
   | Mcast             of type_ * type_ * 'term
   | Mtupleaccess      of 'term * Core.big_int
   | Mrecupdate        of 'term * (ident * 'term) list
+  | Mmakeasset        of ident * 'term * 'term
   (* set api expression *)
   | Msetadd           of type_ * 'term * 'term
   | Msetremove        of type_ * 'term * 'term
@@ -1612,6 +1613,7 @@ let cmp_mterm_node
     | Mcast (src1, dst1, v1), Mcast (src2, dst2, v2)                                   -> cmp_type src1 src2 && cmp_type dst1 dst2 && cmp v1 v2
     | Mtupleaccess (x1, k1), Mtupleaccess (x2, k2)                                     -> cmp x1 x2 && Big_int.eq_big_int k1 k2
     | Mrecupdate (x1, l1), Mrecupdate (x2, l2)                                         -> cmp x1 x2 && List.for_all2 (fun (i1, v1) (i2, v2) -> cmp_ident i1 i2 && cmp v1 v2) l1 l2
+    | Mmakeasset (an1, k1, v1), Mmakeasset (an2, k2, v2)                               -> cmp_ident an1 an2 && cmp k1 k2 && cmp v1 v2
     (* set api expression *)
     | Msetadd (t1, c1, a1), Msetadd (t2, c2, a2)                                       -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
     | Msetremove (t1, c1, a1), Msetremove (t2, c2, a2)                                 -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
@@ -2069,6 +2071,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mcast (src, dst, v)            -> Mcast (ft src, ft dst, f v)
   | Mtupleaccess (x, k)            -> Mtupleaccess (f x, k)
   | Mrecupdate (x, l)              -> Mrecupdate (f x, List.map (fun (i, v) -> i, f v) l)
+  | Mmakeasset (an, k, v)          -> Mmakeasset (fi an, f k, f v)
   (* set api expression *)
   | Msetadd (t, c, a)              -> Msetadd (ft t, f c, f a)
   | Msetremove (t, c, a)           -> Msetremove (ft t, f c, f a)
@@ -2523,6 +2526,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mcast (_ , _, v)                      -> f accu v
   | Mtupleaccess (x, _)                   -> f accu x
   | Mrecupdate (x, l)                     -> List.fold_left (fun accu (_, v) -> f accu v) (f accu x) l
+  | Mmakeasset (_, k, v)                  -> f (f accu k) v
   (* set api expression *)
   | Msetadd (_, c, a)                     -> f (f accu c) a
   | Msetremove (_, c, a)                  -> f (f accu c) a
@@ -3449,6 +3453,10 @@ let fold_map_term
     in
     g (Mrecupdate (xe, le)), la
 
+  | Mmakeasset (an, c, i) ->
+    let ke, ka = f accu c in
+    let ve, va = f ka i in
+    g (Mmakeasset (an, ke, ve)), va
 
   (* set api expression *)
 

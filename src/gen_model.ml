@@ -526,6 +526,12 @@ let to_model (ast : A.ast) : M.model =
         M.Mtail (asset_name, to_ck env fp, fe)
 
 
+      | A.Pcall (None, A.Cconst (A.CmakeAsset), [A.Tasset an], [AExpr k; AExpr v]) ->
+        (* let vt = ft t in *)
+        let fk = f k in
+        let fv = f v in
+        M.Mmakeasset (unloc an, fk, fv)
+
       (* Set*)
 
       | A.Pcall (None, A.Cconst (A.Csadd), [], [AExpr p; AExpr q]) ->

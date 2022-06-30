@@ -269,6 +269,7 @@ let to_const = function
   | Csubmutez              -> "sub_mutez"
   | Cgreedyand             -> "greedy_and"
   | Cgreedyor              -> "greedy_or"
+  | CmakeAsset             -> "make_asset"
   (* set *)
   | Csadd                  -> "set_add"
   | Csremove               -> "set_remove"

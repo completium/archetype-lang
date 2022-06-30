@@ -194,6 +194,7 @@ type const =
   | Csubmutez
   | Cgreedyand
   | Cgreedyor
+  | CmakeAsset
   (* set *)
   | Csadd
   | Csremove

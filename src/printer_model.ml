@@ -1112,6 +1112,14 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (x, l)
 
+    | Mmakeasset (an, k, v) ->
+      let pp fmt (an, k, v) =
+        Format.fprintf fmt "make_asset<%s>(%a, %a)"
+          an
+          f k
+          f v
+      in
+      pp fmt (an, k, v)
 
     (* set api expression *)
 

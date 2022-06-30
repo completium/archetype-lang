@@ -109,6 +109,7 @@
 %token LET
 %token LIST
 %token LPAREN
+%token MAKE_ASSET
 %token MAKE_BIG_MAP
 %token MAKE_LIST
 %token MAKE_MAP
@@ -918,6 +919,7 @@ ident_typ_q:
  | MAKE_LIST           { Location.dumloc "make_list"           }
  | MAKE_MAP            { Location.dumloc "make_map"            }
  | MAKE_BIG_MAP        { Location.dumloc "make_big_map"        }
+ | MAKE_ASSET          { Location.dumloc "make_asset"          }
 
 expr_r:
  | LPAREN RPAREN

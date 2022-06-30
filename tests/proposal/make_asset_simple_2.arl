@@ -1,0 +1,12 @@
+archetype make_asset_simple_0
+
+asset my_asset {
+  mid : string;
+  v : nat;
+  p : int
+}
+
+entry exec(i : asset_value<my_asset>) {
+  const k = "id";
+  my_asset.put(make_asset<my_asset>(k, i))
+}

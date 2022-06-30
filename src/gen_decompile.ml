@@ -1750,6 +1750,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mcast (_src, _dst, _v) -> assert false
     | Mtupleaccess (x, k)    -> A.esqapp (f x) (A.ebnat k)
     | Mrecupdate (_x, _l)    -> assert false
+    | Mmakeasset (_an, _k, _v) -> assert false
 
 
     (* set api expression *)
