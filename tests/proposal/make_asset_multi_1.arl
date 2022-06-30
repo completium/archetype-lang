@@ -2,13 +2,12 @@ archetype make_asset_multi_1
 
 asset my_asset identified by k1 k2 k3 {
   k1 : nat;
-  k2 : bytes;
+  k2 : address;
   k3 : int;
   v  : string;
-  a  : address;
 }
 
 entry exec(i : asset_value<my_asset>) {
-  const k = (0, "id", 1i);
+  const k = (0, caller, 1i);
   my_asset.put(make_asset<my_asset>(k, i))
 }

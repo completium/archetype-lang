@@ -3670,7 +3670,12 @@ let rec for_xexpr
           end
         | "make_asset", [ta], [k; v] -> begin
             let eta = for_type env ta in
-            let vk = for_xexpr env k in
+            let asset =
+              match eta with
+              | Some (A.Tasset an) -> Env.Asset.get env (unloc an)
+              | _ -> Env.emit_error env (loc tope, InvalidTypeForMake); bailout()
+            in
+            let vk = for_xexpr ~ety:asset.as_pkty env k in
             let vv = for_xexpr env v in
             mk_sp eta (A.Pcall (None, A.Cconst CmakeAsset, [Option.get eta], [AExpr vk; AExpr vv]))
           end
