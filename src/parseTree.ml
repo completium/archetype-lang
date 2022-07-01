@@ -13,6 +13,7 @@ type lident = ident loced
 and container =
   | Aggregate
   | Partition
+  | AssetCollection
   | AssetKey
   | AssetValue
   | AssetView

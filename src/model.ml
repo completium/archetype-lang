@@ -15,6 +15,7 @@ type container =
   | Collection
   | Aggregate
   | Partition
+  | AssetCollection
   | AssetKey
   | AssetValue
   | View
@@ -1140,6 +1141,7 @@ let tasset an              = mktype (Tasset an)
 let tcollection an         = mktype (Tcontainer (tasset an, Collection))
 let taggregate an          = mktype (Tcontainer (tasset an, Aggregate))
 let tpartition an          = mktype (Tcontainer (tasset an, Partition))
+let tassetcollection an    = mktype (Tcontainer (tasset an, AssetCollection))
 let tassetkey an           = mktype (Tcontainer (tasset an, AssetKey))
 let tassetvalue an         = mktype (Tcontainer (tasset an, AssetValue))
 let tview an               = mktype (Tcontainer (tasset an, View))

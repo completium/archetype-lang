@@ -33,6 +33,7 @@
 %token ASSERT
 %token AS
 %token ASSET
+%token ASSET_COLLECTION
 %token ASSET_KEY
 %token ASSET_VALUE
 %token ASSET_VIEW
@@ -630,11 +631,12 @@ type_s_unloc:
 | MULT x=type_s { x }
 
 %inline container:
-| AGGREGATE   { Aggregate }
-| PARTITION   { Partition }
-| ASSET_KEY   { AssetKey }
-| ASSET_VALUE { AssetValue }
-| ASSET_VIEW  { AssetView }
+| AGGREGATE        { Aggregate }
+| PARTITION        { Partition }
+| ASSET_COLLECTION { AssetCollection }
+| ASSET_KEY        { AssetKey }
+| ASSET_VALUE      { AssetValue }
+| ASSET_VIEW       { AssetView }
 
 %inline shadow_asset_fields:
 | /* empty */ { [] }

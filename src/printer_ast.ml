@@ -39,12 +39,13 @@ let pp_vtyp fmt = function
   | VTchest_key    -> Format.fprintf fmt "chest_key"
 
 let pp_container fmt = function
-  | Collection -> Format.fprintf fmt "collection"
-  | Aggregate  -> Format.fprintf fmt "aggregate"
-  | Partition  -> Format.fprintf fmt "partition"
-  | AssetKey   -> Format.fprintf fmt "asset_key"
-  | AssetValue -> Format.fprintf fmt "asset_value"
-  | AssetView  -> Format.fprintf fmt "asset_view"
+  | Collection      -> Format.fprintf fmt "collection"
+  | Aggregate       -> Format.fprintf fmt "aggregate"
+  | Partition       -> Format.fprintf fmt "partition"
+  | AssetCollection -> Format.fprintf fmt "asset_collection"
+  | AssetKey        -> Format.fprintf fmt "asset_key"
+  | AssetValue      -> Format.fprintf fmt "asset_value"
+  | AssetView       -> Format.fprintf fmt "asset_view"
 
 let rec pp_ptyp fmt (t : ptyp) =
   match t with

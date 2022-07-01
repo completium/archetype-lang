@@ -79,33 +79,34 @@ let to_model (ast : A.ast) : M.model =
 
   let rec type_to_type (t : A.type_) : M.type_ =
     let f = function
-      | A.Tnamed _                  -> assert false
-      | A.Tasset id                 -> M.Tasset id
-      | A.Trecord id                -> M.Trecord id
-      | A.Tenum id                  -> M.Tenum id
-      | A.Tevent id                 -> M.Tevent id
-      | A.Tbuiltin b                -> M.Tbuiltin (vtyp_to_btyp b)
-      | A.Tcontainer (t, Collection)-> M.Tcontainer (type_to_type t, Collection)
-      | A.Tcontainer (t, Aggregate) -> M.Tcontainer (type_to_type t, Aggregate)
-      | A.Tcontainer (t, Partition) -> M.Tcontainer (type_to_type t, Partition)
-      | A.Tcontainer (t, AssetKey)  -> M.Tcontainer (type_to_type t, AssetKey)
-      | A.Tcontainer (t, AssetValue)-> M.Tcontainer (type_to_type t, AssetValue)
-      | A.Tcontainer (t, AssetView) -> M.Tcontainer (type_to_type t, View)
-      | A.Tset t                    -> M.Tset (type_to_type t)
-      | A.Tlist t                   -> M.Tlist (type_to_type t)
-      | A.Tmap (k, v)               -> M.Tmap (type_to_type k, type_to_type v)
-      | A.Tbig_map (k, v)           -> M.Tbig_map (type_to_type k, type_to_type v)
-      | A.Titerable_big_map (k, v)  -> M.Titerable_big_map (type_to_type k, type_to_type v)
-      | A.Tor (l, r)                -> M.Tor (type_to_type l, type_to_type r)
-      | A.Tlambda (a, r)            -> M.Tlambda (type_to_type a, type_to_type r)
-      | A.Ttuple l                  -> M.Ttuple (List.map type_to_type l)
-      | A.Toperation                -> M.Toperation
-      | A.Tcontract t               -> M.Tcontract (type_to_type t)
-      | A.Toption t                 -> M.Toption (type_to_type t)
-      | A.Tticket t                 -> M.Tticket (type_to_type t)
-      | A.Ttrace tr                 -> M.Ttrace (to_trtyp tr)
-      | A.Tsapling_state n          -> M.Tsapling_state n
-      | A.Tsapling_transaction n    -> M.Tsapling_transaction n
+      | A.Tnamed _                        -> assert false
+      | A.Tasset id                       -> M.Tasset id
+      | A.Trecord id                      -> M.Trecord id
+      | A.Tenum id                        -> M.Tenum id
+      | A.Tevent id                       -> M.Tevent id
+      | A.Tbuiltin b                      -> M.Tbuiltin (vtyp_to_btyp b)
+      | A.Tcontainer (t, Collection)      -> M.Tcontainer (type_to_type t, Collection)
+      | A.Tcontainer (t, Aggregate)       -> M.Tcontainer (type_to_type t, Aggregate)
+      | A.Tcontainer (t, Partition)       -> M.Tcontainer (type_to_type t, Partition)
+      | A.Tcontainer (t, AssetCollection) -> M.Tcontainer (type_to_type t, AssetCollection)
+      | A.Tcontainer (t, AssetKey)        -> M.Tcontainer (type_to_type t, AssetKey)
+      | A.Tcontainer (t, AssetValue)      -> M.Tcontainer (type_to_type t, AssetValue)
+      | A.Tcontainer (t, AssetView)       -> M.Tcontainer (type_to_type t, View)
+      | A.Tset t                          -> M.Tset (type_to_type t)
+      | A.Tlist t                         -> M.Tlist (type_to_type t)
+      | A.Tmap (k, v)                     -> M.Tmap (type_to_type k, type_to_type v)
+      | A.Tbig_map (k, v)                 -> M.Tbig_map (type_to_type k, type_to_type v)
+      | A.Titerable_big_map (k, v)        -> M.Titerable_big_map (type_to_type k, type_to_type v)
+      | A.Tor (l, r)                      -> M.Tor (type_to_type l, type_to_type r)
+      | A.Tlambda (a, r)                  -> M.Tlambda (type_to_type a, type_to_type r)
+      | A.Ttuple l                        -> M.Ttuple (List.map type_to_type l)
+      | A.Toperation                      -> M.Toperation
+      | A.Tcontract t                     -> M.Tcontract (type_to_type t)
+      | A.Toption t                       -> M.Toption (type_to_type t)
+      | A.Tticket t                       -> M.Tticket (type_to_type t)
+      | A.Ttrace tr                       -> M.Ttrace (to_trtyp tr)
+      | A.Tsapling_state n                -> M.Tsapling_state n
+      | A.Tsapling_transaction n          -> M.Tsapling_transaction n
     in
     M.mktype (f t)
   in

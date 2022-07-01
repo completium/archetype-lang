@@ -37,6 +37,7 @@ let pp_container fmt = function
   | Collection -> Format.fprintf fmt "collection"
   | Aggregate  -> Format.fprintf fmt "aggregate"
   | Partition  -> Format.fprintf fmt "partition"
+  | AssetCollection -> Format.fprintf fmt "asset_collection"
   | AssetKey   -> Format.fprintf fmt "asset_key"
   | AssetValue -> Format.fprintf fmt "asset_value"
   | View       -> Format.fprintf fmt "asset_view"
