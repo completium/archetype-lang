@@ -1292,6 +1292,7 @@ type mthtyp = [
   | `Asset
   | `Coll
   | `SubColl
+  | `Container
   | `PkOrAsset
   | `OptVal
   | `Cmp
@@ -1340,6 +1341,7 @@ let methods : (string * method_) list =
     ("sum"         , mk A.Csum          `Both        (`Pure       ) `Total   `Standard (`Fixed [`RExpr false       ], Some (`Ref 0)));
     ("head"        , mk A.Chead         `Both        (`Pure       ) `Total   `Standard (`Fixed [`T A.vtnat         ], Some (`SubColl)));
     ("tail"        , mk A.Ctail         `Both        (`Pure       ) `Total   `Standard (`Fixed [`T A.vtnat         ], Some (`SubColl)));
+    ("as_container", mk A.CasContainer  `Both        (`Pure       ) `Total   `Both     (`Fixed [                   ], Some (`Container)));
   ]
 
 let methods = Mid.of_list methods
@@ -3686,15 +3688,16 @@ let rec for_xexpr
 
     | Emethod (the, m, args) -> begin
         let type_of_mthtype asset amap = function
-          | `T typ   -> Some typ
-          | `The     -> Some (A.Tasset asset.as_name)
-          | `Asset   -> Some (A.Tasset asset.as_name)
-          | `Coll    -> Some (A.Tcontainer (A.Tasset asset.as_name, A.Collection))
-          | `SubColl -> Some (A.Tcontainer (A.Tasset asset.as_name, A.AssetView))
-          | `OptVal  -> Some (A.Toption (A.Tcontainer (A.Tasset asset.as_name, A.AssetValue)))
-          | `Ref i   -> Mint.find_opt i amap
-          | `Pk      -> Some (asset.as_pkty)
-          | `OPk     -> Some (A.Toption asset.as_pkty)
+          | `T typ     -> Some typ
+          | `The       -> Some (A.Tasset asset.as_name)
+          | `Asset     -> Some (A.Tasset asset.as_name)
+          | `Coll      -> Some (A.Tcontainer (A.Tasset asset.as_name, A.Collection))
+          | `SubColl   -> Some (A.Tcontainer (A.Tasset asset.as_name, A.AssetView))
+          | `Container -> Some (A.Tcontainer (A.Tasset asset.as_name, A.AssetCollection))
+          | `OptVal    -> Some (A.Toption (A.Tcontainer (A.Tasset asset.as_name, A.AssetValue)))
+          | `Ref i     -> Mint.find_opt i amap
+          | `Pk        -> Some (asset.as_pkty)
+          | `OPk       -> Some (A.Toption asset.as_pkty)
           | `PkOrAsset -> begin
               match mode.em_kind with
               | `Formula _ -> Some (A.Tasset asset.as_name)

@@ -196,6 +196,7 @@ type const =
   | Cgreedyand
   | Cgreedyor
   | CmakeAsset
+  | CasContainer
   (* set *)
   | Csadd
   | Csremove

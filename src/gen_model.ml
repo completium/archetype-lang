@@ -179,10 +179,14 @@ let to_model (ast : A.ast) : M.model =
     | _ -> false
   in
 
-  let extract_asset_name (mterm : M.mterm) : ident =
-    match mterm with
-    | {type_ = (Tcontainer ((Tasset asset_name, _), _), _); _} -> unloc asset_name
+  let extract_asset_name_from_type (t : M.type_) : ident =
+    match M.get_ntype t with
+    | M.Tcontainer ((Tasset asset_name, _), _) -> unloc asset_name
     | _ -> assert false
+  in
+
+  let extract_asset_name (mterm : M.mterm) : ident =
+    extract_asset_name_from_type mterm.type_
   in
 
   let _extract_field_name (_id, _type_, body : A.lident * A.ptyp * A.pterm) : M.lident =
@@ -532,6 +536,11 @@ let to_model (ast : A.ast) : M.model =
         let fk = f k in
         let fv = f v in
         M.Mmakeasset (unloc an, fk, fv)
+
+      | A.Pcall (Some p, A.Cconst (A.CasContainer), [], []) ->
+        let fp = f p in
+        let asset_name = extract_asset_name fp in
+        M.Mascontainer asset_name
 
       (* Set*)
 

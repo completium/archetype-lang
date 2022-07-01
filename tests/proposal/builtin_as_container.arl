@@ -1,0 +1,11 @@
+archetype type_asset_collection
+
+asset my_asset {
+  id : nat;
+  v : string;
+}
+
+entry exec() {
+  const k : asset_collection<my_asset> = my_asset.as_container();
+}
+

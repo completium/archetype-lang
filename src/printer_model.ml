@@ -1122,6 +1122,13 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (an, k, v)
 
+    | Mascontainer an ->
+      let pp fmt an =
+        Format.fprintf fmt "%s.as_container()"
+          an
+      in
+      pp fmt an
+
     (* set api expression *)
 
     | Msetadd (t, c, a) ->

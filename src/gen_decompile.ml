@@ -1752,6 +1752,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     | Mtupleaccess (x, k)    -> A.esqapp (f x) (A.ebnat k)
     | Mrecupdate (_x, _l)    -> assert false
     | Mmakeasset (_an, _k, _v) -> assert false
+    | Mascontainer _an         -> assert false
 
 
     (* set api expression *)
