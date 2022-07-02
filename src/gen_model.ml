@@ -556,6 +556,13 @@ let to_model (ast : A.ast) : M.model =
         let t = extract_builtin_type_set fp in
         M.Msetremove (t, fp, fq)
 
+      | A.Pcall (None, A.Cconst (A.Csupdate), [], [AExpr p; AExpr q; AExpr r]) ->
+        let fp = f p in
+        let fq = f q in
+        let fr = f r in
+        let t = extract_builtin_type_set fp in
+        M.Msetupdate (t, fp, fq, fr)
+
       | A.Pcall (None, A.Cconst (A.Cscontains), [], [AExpr p; AExpr q]) ->
         let fp = f p in
         let fq = f q in

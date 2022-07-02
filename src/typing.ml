@@ -1410,10 +1410,11 @@ let optionops : opinfo list =
 let setops : opinfo list =
   let elemt = A.Tnamed 0 in
   let set   = A.Tset elemt in [
-    op "add"      A.Csadd      `Total (Some set) [ elemt ] `Self          Mint.empty;
-    op "remove"   A.Csremove   `Total (Some set) [ elemt ] `Self          Mint.empty;
-    op "contains" A.Cscontains `Total (Some set) [ elemt ] (`Ty A.vtbool) Mint.empty;
-    op "length"   A.Cslength   `Total (Some set) [       ] (`Ty A.vtnat ) Mint.empty;
+    op "add"      A.Csadd      `Total (Some set) [ elemt           ] `Self          Mint.empty;
+    op "remove"   A.Csremove   `Total (Some set) [ elemt           ] `Self          Mint.empty;
+    op "update"   A.Csupdate   `Total (Some set) [ A.vtbool; elemt ] `Self          Mint.empty;
+    op "contains" A.Cscontains `Total (Some set) [ elemt           ] (`Ty A.vtbool) Mint.empty;
+    op "length"   A.Cslength   `Total (Some set) [                 ] (`Ty A.vtnat ) Mint.empty;
   ]
 
 (* -------------------------------------------------------------------- *)

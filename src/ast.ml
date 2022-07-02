@@ -201,6 +201,7 @@ type const =
   (* set *)
   | Csadd
   | Csremove
+  | Csupdate
   | Cscontains
   | Cslength
   (* list *)

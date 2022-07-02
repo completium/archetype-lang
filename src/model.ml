@@ -364,6 +364,7 @@ type ('id, 'term) mterm_node  =
   (* set api expression *)
   | Msetadd           of type_ * 'term * 'term
   | Msetremove        of type_ * 'term * 'term
+  | Msetupdate        of type_ * 'term * 'term * 'term
   | Msetcontains      of type_ * 'term * 'term
   | Msetlength        of type_ * 'term
   | Msetfold          of type_ * 'id   * 'id   * 'term * 'term * 'term
@@ -1623,6 +1624,7 @@ let cmp_mterm_node
     (* set api expression *)
     | Msetadd (t1, c1, a1), Msetadd (t2, c2, a2)                                       -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
     | Msetremove (t1, c1, a1), Msetremove (t2, c2, a2)                                 -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
+    | Msetupdate (t1, c1, b1, v1), Msetupdate (t2, c2, b2, v2)                         -> cmp_type t1 t2 && cmp c1 c2 && cmp b1 b2 && cmp v1 v2
     | Msetcontains (t1, c1, a1), Msetcontains (t2, c2, a2)                             -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
     | Msetlength (t1, c1), Msetlength (t2, c2)                                         -> cmp_type t1 t2 && cmp c1 c2
     | Msetfold (t1, ix1, ia1, c1, a1, b1), Msetfold (t2, ix2, ia2, c2, a2, b2)         -> cmp_type t1 t2 && cmp_lident ix1 ix2 && cmp_lident ia1 ia2 && cmp c1 c2 && cmp a1 a2 && cmp b1 b2
@@ -2083,6 +2085,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   (* set api expression *)
   | Msetadd (t, c, a)              -> Msetadd (ft t, f c, f a)
   | Msetremove (t, c, a)           -> Msetremove (ft t, f c, f a)
+  | Msetupdate (t, c, b, v)        -> Msetupdate (ft t, f c, f b, f v)
   | Msetcontains (t, c, a)         -> Msetcontains (ft t, f c, f a)
   | Msetlength (t, c)              -> Msetlength (ft t, f c)
   | Msetfold (t, ix, ia, c, a, b)  -> Msetfold (ft t, g ix, g ia, f c, f a, f b)
@@ -2540,6 +2543,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   (* set api expression *)
   | Msetadd (_, c, a)                     -> f (f accu c) a
   | Msetremove (_, c, a)                  -> f (f accu c) a
+  | Msetupdate (_, c, b, v)               -> f (f (f accu c) b) v
   | Msetcontains (_, c, a)                -> f (f accu c) a
   | Msetlength (_, c)                     -> f accu c
   | Msetfold (_, _, _, c, a, b)           -> f (f (f accu c) a) b
@@ -3487,6 +3491,12 @@ let fold_map_term
     let ce, ca = f accu c in
     let ae, aa = f ca a in
     g (Msetremove (t, ce, ae)), aa
+
+  | Msetupdate (t, c, b, v) ->
+    let ce, ca = f accu c in
+    let be, ba = f ca b in
+    let ve, va = f ba v in
+    g (Msetupdate (t, ce, be, ve)), va
 
   | Msetcontains (t, c, a) ->
     let ce, ca = f accu c in

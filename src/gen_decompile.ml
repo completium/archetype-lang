@@ -1760,6 +1760,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     | Msetadd (_t, _c, _a)                -> assert false
     | Msetremove (_t, _c, _a)             -> assert false
+    | Msetupdate (_t, _c, _b, _v)         -> assert false
     | Msetcontains (_t, _c, _a)           -> assert false
     | Msetlength (_t, _c)                 -> assert false
     | Msetfold (_t, _ix, _ia, _c, _a, _b) -> assert false

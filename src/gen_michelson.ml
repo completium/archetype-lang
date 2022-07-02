@@ -910,6 +910,7 @@ let to_ir (model : M.model) : T.ir =
 
     | Msetadd (_, c, a)             -> T.Iterop (Tupdate, f a, T.itrue,  f c)
     | Msetremove (_, c, a)          -> T.Iterop (Tupdate, f a, T.ifalse, f c)
+    | Msetupdate (_, c, b, v)       -> T.Iterop (Tupdate, f v, f b, f c)
     | Msetcontains (_, c, k)        -> T.Ibinop (Bmem, f k, f c)
     | Msetlength (_, c)             -> T.Iunop  (Usize, f c)
     | Msetfold (_, ix, ia, c, a, b) -> T.Ifold (unloc ix, None, unloc ia, f c, f a, T.Iassign (unloc ia, f b))

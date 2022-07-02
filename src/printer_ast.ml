@@ -276,6 +276,7 @@ let to_const = function
   (* set *)
   | Csadd                  -> "set_add"
   | Csremove               -> "set_remove"
+  | Csupdate               -> "set_update"
   | Cscontains             -> "set_contains"
   | Cslength               -> "set_length"
   (* list *)

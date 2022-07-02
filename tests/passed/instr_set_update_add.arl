@@ -1,0 +1,7 @@
+archetype instr_set_update_add
+
+variable res : set<string> = ["1"; "2"; "3"]
+
+entry exec () {
+  res.update(true, "4")
+}

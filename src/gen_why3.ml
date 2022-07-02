@@ -2292,6 +2292,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     (* set api expression *)
     | Msetadd (t, s, e)      -> Tadd (dl (mk_set_name m (M.tset t)), map_mterm m ctx e, map_mterm m ctx s)
     | Msetremove (t, s, e)   -> Tremove (dl (mk_set_name m (M.tset t)), map_mterm m ctx e, map_mterm m ctx s)
+    | Msetupdate _   -> error_not_translated "Msetupdate"
     | Msetcontains (t, s, e) -> Tcontains (dl (mk_set_name m (M.tset t)), map_mterm m ctx e, map_mterm m ctx s)
     | Msetlength (t, s)      -> Tcard (dl (mk_set_name m (M.tset t)), map_mterm m ctx s)
     | Msetfold _ -> error_not_translated "Mmapfold"

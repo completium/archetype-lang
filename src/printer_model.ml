@@ -1152,6 +1152,13 @@ let pp_mterm fmt (mt : mterm) =
         f c
         f a
 
+    | Msetupdate (t, c, b, v) ->
+      Format.fprintf fmt "set_%a_update (%a, %a, %a)"
+        pp_type t
+        f c
+        f b
+        f v
+
     | Msetcontains (t, c, a) ->
       Format.fprintf fmt "set_%a_contains (%a, %a)"
         pp_type t

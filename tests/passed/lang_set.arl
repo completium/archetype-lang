@@ -7,7 +7,8 @@ entry exec () {
     (* expr *)
     var new_set2 : set<nat> = add (my_set, 4);
     var new_set3 : set<nat> = remove(my_set, 0);
-    var new_set4 : set<nat> = update(my_set, some(0));
+    var new_set4 : set<nat> = update(my_set, true, 5);
+    var new_set5 : set<nat> = update(my_set, false, 5);
     var set_c    : bool     = contains(my_set, 2);
     var c        : int      = length(my_set);
 
