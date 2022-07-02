@@ -5010,6 +5010,35 @@ let remove_asset (model : model) : model =
           assign
         end
 
+      | Mputremove (an, _c, k, v) -> begin
+          let k = fm ctx k in
+          let v = fm ctx v in
+
+          let va = get_asset_global an in
+          let tmap = get_type_for_asset_container an in
+          let container = mk_mterm (Mvar (dumloc an, Vstorevar, Tnone, Dnone)) tmap in
+
+          let value =
+            match get_ntype tmap with
+            | Tset _t -> begin
+
+              (* mk_mterm (Msetupdate(t, container, v)) tmap *)
+              assert false
+            end
+            | t -> begin
+                let mkm, kt, tasset =
+                  match t with
+                  | Tmap (kt, vt) -> MKMap, kt, vt
+                  | Tbig_map (kt, vt) -> MKBigMap, kt, vt
+                  | Titerable_big_map (kt, vt) -> MKIterableBigMap, kt, vt
+                  | _ -> assert false
+                in
+
+                mk_mterm (Mmapupdate(mkm, kt, tasset, container, k, v)) tmap
+              end
+          in
+          mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), value)) tunit
+        end
 
       (* expression *)
 
@@ -5494,7 +5523,7 @@ let remove_asset (model : model) : model =
         end
 
       | Mascontainer an -> begin
-          mk_mterm (Mvar (dumloc an, Vlocal, Tnone, Dnone)) mt.type_
+          mk_mterm (Mvar (dumloc an, Vstorevar, Tnone, Dnone)) mt.type_
         end
 
       | _ -> map_mterm (fm ctx) mt

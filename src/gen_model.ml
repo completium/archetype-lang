@@ -1201,6 +1201,17 @@ let to_model (ast : A.ast) : M.model =
           end
         )
 
+      | A.Icall (Some p, A.Cconst (A.CputRemove), [AExpr k; AExpr v]) -> (
+          let fp = f p in
+          let fk = f k in
+          let fv = f v in
+          begin
+            match fp.node, M.get_ntype fp.type_ with
+            | _, Tcontainer ((Tasset an, _), _)  -> M.Mputremove (unloc an, to_ck env fp, fk, fv)
+            | _ -> assert false
+          end
+        )
+
       | A.Icall (Some p, A.Cconst (A.Caddupdate), [AExpr k; AEffect e]) when is_asset_container p ->
         let to_op = function
           | `Assign op -> to_assignment_operator op

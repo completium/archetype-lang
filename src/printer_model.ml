@@ -997,6 +997,15 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (an, c, k, l)
 
+    | Mputremove (an, c, k, v) ->
+      let pp fmt (an, c, k, v) =
+        Format.fprintf fmt "put_remove_%a (%a, %a, %a)"
+          pp_str an
+          (pp_container_kind f) c
+          f k
+          f v
+      in
+      pp fmt (an, c, k, v)
 
     (* asset api expression *)
 

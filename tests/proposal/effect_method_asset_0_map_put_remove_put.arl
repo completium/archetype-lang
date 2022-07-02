@@ -1,8 +1,7 @@
-archetype builtin_put_remove
+archetype effect_method_asset_0_map_put_remove_put
 
 asset my_asset {
   id : nat;
-  v : string;
 }
 
 entry exec(av : asset_value<my_asset>) {

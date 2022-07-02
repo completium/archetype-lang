@@ -232,6 +232,7 @@ let to_const = function
   | Cadd                   -> "add"
   | Cput                   -> "put"
   | Caddupdate             -> "add_update"
+  | CputRemove             -> "put_remove"
   | Cceil                  -> "ceil"
   | Cclear                 -> "clear"
   | Cconcat                -> "concat"

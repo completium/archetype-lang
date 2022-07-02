@@ -2222,6 +2222,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mupdate             _ -> error_not_translated "Mupdate"
     | Mupdateall          _ -> error_not_translated "Mupdateall"
     | Maddupdate          _ -> error_not_translated "Maddupdate"
+    | Mputremove          _ -> error_not_translated "Mputremove"
 
     | Mget (an, _c, k) ->
       begin match ctx.lctx with

@@ -1333,6 +1333,7 @@ let methods : (string * method_) list =
     ("update"      , mk A.Cupdate       `Both        (`Effect c   ) `Total   `Both     (`Fixed [`Pk; `Ef true      ], None));
     ("update_all"  , mk A.Cupdateall    `Both        (`Effect capv) `Total   `Both     (`Fixed [`Ef true           ], None));
     ("add_update"  , mk A.Caddupdate    `Both        (`Effect c_p ) `Total   `Both     (`Fixed [`Pk; `Ef false     ], None));
+    ("put_remove"  , mk A.CputRemove    `Both        (`Effect c   ) `Total   `Both     (`Fixed [`Pk; `OptVal       ], None));
     ("contains"    , mk A.Ccontains     `Both        (`Pure       ) `Total   `Both     (`Fixed [`Pk                ], Some (`T A.vtbool)));
     ("nth"         , mk A.Cnth          `Both        (`Pure       ) `Total   `Standard (`Fixed [`T A.vtnat         ], Some (`OPk)));
     ("select"      , mk A.Cselect       `Both        (`Pure       ) `Total   `Standard (`Fixed [`Pred true         ], Some (`SubColl)));
