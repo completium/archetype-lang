@@ -1,6 +1,6 @@
-archetype effect_method_asset_1_map_put_remove_put
+archetype effect_method_asset_big_map_1_put_remove_put
 
-asset my_asset {
+asset my_asset to big_map {
   id : nat;
   v : string;
 }

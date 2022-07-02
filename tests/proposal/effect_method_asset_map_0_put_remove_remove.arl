@@ -1,0 +1,13 @@
+archetype effect_method_asset_map_0_put_remove_remove
+
+asset my_asset {
+  id : nat;
+} initialized by {
+  {0};
+  {1};
+  {2}
+}
+
+entry exec() {
+  my_asset.put_remove(0, none)
+}

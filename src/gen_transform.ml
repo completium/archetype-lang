@@ -19,6 +19,7 @@ type error_desc =
   | NoInitForPartitionAsset of ident
   | NoInitValueForConstParam of ident
   | NoInitValueForParameter of ident
+  | NoPutRemoveForIterableBigMapAsset
   | NoSortOnKeyWithMultiKey of ident
   | OnlyLiteralInAssetInit
   | UnknownContract of ident
@@ -38,6 +39,7 @@ let pp_error_desc fmt = function
   | NoInitForPartitionAsset an -> Format.fprintf fmt "Asset '%s' is used in a partition, no asset must initialized" an
   | NoInitValueForConstParam id -> Format.fprintf fmt "No initialized value for const parameter: %s" id
   | NoInitValueForParameter id -> Format.fprintf fmt "No initialized value for parameter: %s" id
+  | NoPutRemoveForIterableBigMapAsset -> Format.fprintf fmt "NoPutRemoveForIterableBigMapAsset"
   | NoSortOnKeyWithMultiKey f -> Format.fprintf fmt "No sort on key with multi key: %s" f
   | OnlyLiteralInAssetInit -> Format.fprintf fmt "Only literal is allowed for asset field initialisation"
   | UnknownContract id -> Format.fprintf fmt "Cannot find type for '%s'" id
@@ -5020,22 +5022,21 @@ let remove_asset (model : model) : model =
 
           let value =
             match get_ntype tmap with
-            | Tset _t -> begin
-
-              (* mk_mterm (Msetupdate(t, container, v)) tmap *)
-              assert false
-            end
-            | t -> begin
-                let mkm, kt, tasset =
+            | Tset t -> begin
+                let b = mk_mterm (Missome v) tbool in
+                mk_mterm (Msetupdate(t, container, b, k)) tmap
+              end
+            | ((Tmap (kt, vt) | Tbig_map (kt, vt)) as t ) -> begin
+                let mkm =
                   match t with
-                  | Tmap (kt, vt) -> MKMap, kt, vt
-                  | Tbig_map (kt, vt) -> MKBigMap, kt, vt
-                  | Titerable_big_map (kt, vt) -> MKIterableBigMap, kt, vt
+                  | Tmap _ -> MKMap
+                  | Tbig_map _ -> MKBigMap
                   | _ -> assert false
                 in
-
-                mk_mterm (Mmapupdate(mkm, kt, tasset, container, k, v)) tmap
+                mk_mterm (Mmapupdate(mkm, kt, vt, container, k, v)) tmap
               end
+            | Titerable_big_map (_kt, _vt) -> (emit_error (mt.loc, NoPutRemoveForIterableBigMapAsset); raise (Error.Stop 5))
+            | _ -> assert false
           in
           mk_mterm (Massign (ValueAssign, va.type_, Avarstore (get_asset_global_id an), value)) tunit
         end
