@@ -1,0 +1,16 @@
+archetype asset_update_with_basic_container_set_var_set_add
+
+asset my_asset identified by id {
+  id : string;
+  v0 : nat;
+  c  : set<nat>;
+} initialized by {
+  {"id0"; 0; []};
+  {"id1"; 1; []};
+  {"id2"; 2; []}
+}
+
+entry exec () {
+  const d : set<nat> = [0; 1; 2];
+  my_asset.update("id1", {c += d});
+}

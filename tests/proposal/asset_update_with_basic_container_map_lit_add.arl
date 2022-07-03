@@ -1,4 +1,4 @@
-archetype asset_update_with_basic_container_map
+archetype asset_update_with_basic_container_map_lit_add
 
 asset my_asset identified by id {
   id : string;
@@ -10,8 +10,6 @@ asset my_asset identified by id {
   {"id2"; 2; []}
 }
 
-entry exec (n : nat) {
+entry exec () {
   my_asset.update("id1", {c += [(0, "0"); (1, "1"); (2, "2")]});
-
-  my_asset.update("id1", {c -= [2]})
 }
