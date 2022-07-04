@@ -113,6 +113,7 @@ let main () : unit =
       "-V", Arg.String (fun s -> Options.add_vids s), "<id> process specication identifiers";
       "-v", Arg.Unit (fun () -> print_version ()), " Show version number and exit";
       "--show-entries", Arg.Set Options.opt_show_entries, " Show entries from tz file";
+      "--show-contract-interface-ts", Arg.Set Options.opt_contract_interface_ts, " Show entries from tz file";
       "--test-mode", Arg.Set Options.opt_test_mode, " Test mode";
       "--debug", Arg.Set Options.debug, " Debug";
       "--version", Arg.Unit (fun () -> print_version ()), " Same as -v";
@@ -159,14 +160,15 @@ let main () : unit =
         let input = FIChannel (filename, channel) in
         begin
           let res =
-            match !Options.opt_lsp_kind, !Options.opt_service_kind, !Options.opt_decomp, !Options.opt_expr, !Options.opt_get_storage_values, !Options.opt_with_parameters, !Options.opt_show_entries with
-            | _, _, _, _, true, _  , _ -> get_storage_values input
-            | _, _, _, _, _, true  , _ -> with_parameters input
-            | Some k, _, _, _, _, _, _ -> Lsp.process k input
-            | _, Some s, _, _, _, _, _ -> Services.process s input
-            | _, _, true, _  , _, _, _ -> decompile input
-            | _, _, _, Some v, _, _, _ -> process_expr ~tinput:input v
-            | _, _, _, _, _, _, true   -> show_entries_from_input input
+            match !Options.opt_lsp_kind, !Options.opt_service_kind, !Options.opt_decomp, !Options.opt_expr, !Options.opt_get_storage_values, !Options.opt_with_parameters, !Options.opt_show_entries, !Options.opt_contract_interface_ts with
+            | _, _, _, _, true, _  , _, _ -> get_storage_values input
+            | _, _, _, _, _, true  , _, _ -> with_parameters input
+            | Some k, _, _, _, _, _, _, _ -> Lsp.process k input
+            | _, Some s, _, _, _, _, _, _ -> Services.process s input
+            | _, _, true, _  , _, _, _, _ -> decompile input
+            | _, _, _, Some v, _, _, _, _ -> process_expr ~tinput:input v
+            | _, _, _, _, _, _, true  , _ -> show_entries_from_input input
+            | _, _, _, _, _, _, _, true   -> show_contract_interface_ts input
             | _               -> compile input
           in
           output res

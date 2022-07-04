@@ -339,7 +339,7 @@ let remove_container_op_in_update_exec (model : model) : model =
                     match v.node with
                     | Massets  ll
                     | Mlitlist ll -> List.fold_right (fun (a : mterm) accu -> mk accu a) ll a
-                    | _ -> a
+                    | _ -> match kind with | `Add -> mk_mterm (Mplus (a, v)) a.type_ | `Remove -> mk_mterm (Mminus (a, v)) a.type_
                   end
                   in
                   ((fn, ValueAssign, v)::accu_l, accu_instrs)
@@ -6463,6 +6463,22 @@ let process_arith_container (model : model) =
     | Mplus (({type_ = ((Tmap (kt, vt), _) as t)} as a), ({type_ = (Tlist (Ttuple [lkt; lvt], _), _); node = Mlitlist l})) when cmp_type kt lkt && cmp_type vt lvt -> begin
         List.fold_right (fun x accu -> mk_mterm (Mmapput (MKMap, kt, vt, accu, mk_tupleaccess 0 x, mk_tupleaccess 1 x)) t) l (f a)
       end
+    (* | Mplus (_, _) -> assert false
+
+    | Mplus (({type_ = ((Tmap (kt, vt), _) as tmap)} as a), (({type_ = (Tlist (Ttuple [lkt; lvt], _), _)}) as c))(*  when cmp_type kt lkt && cmp_type vt lvt *) -> begin
+        assert false
+        let cid = "_l" in
+        let lcid = dumloc cid in
+        let container = mk_mvar lcid (ttuple [lkt; lvt]) in
+
+        let xid = dumloc "_x" in
+        let x = mk_mvar xid (ttuple [lkt; lvt]) in
+        let mapput : mterm = mk_mterm (Mmapput (MKMap, kt, vt, container, mk_tupleaccess 0 x, mk_tupleaccess 1 x)) tmap in
+        let assign : mterm = mk_mterm (Massign (ValueAssign, tmap, Avar lcid, mapput)) tunit in
+        let loop : mterm = mk_mterm (Mfor (FIsimple lcid, ICKlist c, assign, None)) tunit in
+        let seq = seq [loop; container] in
+        mk_letin lcid a seq *)
+      (* end *)
     | Mplus (({type_ = ((Tset ty, _) as t)} as a), ({type_ = (Tlist lty, _); node = Mlitlist l})) when cmp_type ty lty -> begin
         List.fold_right (fun x accu -> mk_mterm (Msetadd (ty, accu, x)) t) l (f a)
       end

@@ -506,6 +506,16 @@ let with_parameters input : string =
 
 (* -------------------------------------------------------------------- *)
 
+let show_contract_interface_ts input : string =
+  let model =
+    input
+    |> parse
+    |> compile_model
+  in
+  Gen_contract_interface.model_to_contract_interface_json model
+
+(* -------------------------------------------------------------------- *)
+
 type parameter = {
   name: string;
   type_: string;
@@ -537,6 +547,13 @@ let with_parameters input : string =
   | _ -> Format.asprintf "[@[%a@]]@\n"
            (Printer_tools.pp_list ",@\n" (fun fmt p -> Format.fprintf fmt "%s" (Yojson.Safe.to_string (parameter_to_yojson p)))) parameters
 
+(* -------------------------------------------------------------------- *)
+
+let contract_interface input : string =
+  input
+  |> parse
+  |> compile_model
+  |> Gen_contract_interface.model_to_contract_interface_json
 
 (* -------------------------------------------------------------------- *)
 
@@ -565,9 +582,10 @@ let print_version () =
 
 
 let compile_gen input =
-  match !Options.opt_get_storage_values, !Options.opt_with_parameters with
-  | true, _ -> get_storage_values input
-  | _, true -> with_parameters input
+  match !Options.opt_get_storage_values, !Options.opt_with_parameters, !Options.opt_contract_interface_ts with
+  | true, _, _ -> get_storage_values input
+  | _, true, _ -> with_parameters input
+  | _, _, true -> contract_interface input
   | _       -> compile input
 
 let compile_from_string input = compile (FIString input)
