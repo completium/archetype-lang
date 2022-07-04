@@ -5523,7 +5523,7 @@ let remove_asset (model : model) : model =
           fm ctx res
         end
 
-      | Mascontainer an -> begin
+      | Mtocontainer an -> begin
           mk_mterm (Mvar (dumloc an, Vstorevar, Tnone, Dnone)) mt.type_
         end
 

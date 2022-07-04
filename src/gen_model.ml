@@ -537,10 +537,10 @@ let to_model (ast : A.ast) : M.model =
         let fv = f v in
         M.Mmakeasset (unloc an, fk, fv)
 
-      | A.Pcall (Some p, A.Cconst (A.CasContainer), [], []) ->
+      | A.Pcall (Some p, A.Cconst (A.CtoContainer), [], []) ->
         let fp = f p in
         let asset_name = extract_asset_name fp in
-        M.Mascontainer asset_name
+        M.Mtocontainer asset_name
 
       (* Set*)
 

@@ -1342,7 +1342,7 @@ let methods : (string * method_) list =
     ("sum"         , mk A.Csum          `Both        (`Pure       ) `Total   `Standard (`Fixed [`RExpr false       ], Some (`Ref 0)));
     ("head"        , mk A.Chead         `Both        (`Pure       ) `Total   `Standard (`Fixed [`T A.vtnat         ], Some (`SubColl)));
     ("tail"        , mk A.Ctail         `Both        (`Pure       ) `Total   `Standard (`Fixed [`T A.vtnat         ], Some (`SubColl)));
-    ("as_container", mk A.CasContainer  `Both        (`Pure       ) `Total   `Both     (`Fixed [                   ], Some (`Container)));
+    ("to_container", mk A.CtoContainer  `Both        (`Pure       ) `Total   `Both     (`Fixed [                   ], Some (`Container)));
   ]
 
 let methods = Mid.of_list methods

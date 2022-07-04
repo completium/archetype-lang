@@ -260,7 +260,7 @@ let to_const = function
   | Cupdate                -> "update"
   | Cupdateall             -> "update_all"
   | Cmakeoperation         -> "make_operation"
-  | CasContainer           -> "as_container"
+  | CtoContainer           -> "to_container"
   | Cnattostring           -> "nat_to_string"
   | Cexec                  -> "exec"
   | Capply                 -> "apply"

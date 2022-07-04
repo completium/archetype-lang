@@ -1905,7 +1905,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mrecupdate (id, l) ->
       Trecord (Some (map_mterm m ctx id), List.map (fun (i,t) -> (dl i, map_mterm m ctx t)) l)
     | Mmakeasset _ -> error_not_translated "Mmakeasset"
-    | Mascontainer _ -> error_not_translated "Mascontainer"
+    | Mtocontainer _ -> error_not_translated "Mtocontainer"
     | Masset l ->
       let asset = M.Utils.get_asset_type mt in
       let fns = M.Utils.get_field_list m asset |> wdl in

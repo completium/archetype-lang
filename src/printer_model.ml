@@ -1131,9 +1131,9 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (an, k, v)
 
-    | Mascontainer an ->
+    | Mtocontainer an ->
       let pp fmt an =
-        Format.fprintf fmt "%s.as_container()"
+        Format.fprintf fmt "%s.to_container()"
           an
       in
       pp fmt an

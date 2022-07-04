@@ -904,7 +904,7 @@ let to_ir (model : M.model) : T.ir =
       let ru = match ru with | None -> assert false | Some v -> v in
       T.Irecupdate (f x, ru)
     | Mmakeasset _ -> emit_error (UnsupportedTerm ("Mmakeasset"))
-    | Mascontainer _ -> emit_error (UnsupportedTerm ("Mascontainer"))
+    | Mtocontainer _ -> emit_error (UnsupportedTerm ("Mtocontainer"))
 
     (* set api expression *)
 
