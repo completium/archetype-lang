@@ -235,7 +235,7 @@ let for_decl_type (ds : M.decl_node list) : decl_type =
   mk_decl_type assets enums records events
 
 let for_storage (d : M.decl_node) accu =
-  let for_var (var : M.var) : decl_storage = mk_storage (unloc var.name) (for_type var.type_) false in
+  let for_var (var : M.var) : decl_storage = mk_storage (unloc var.name) (for_type var.type_) (match var.kind with | VKconstant -> true | _ -> false) in
   let for_asset (asset : M.asset) : decl_storage = mk_storage (unloc asset.name) (mk_type "asset" (Some (unloc asset.name)) []) false in
   match d with
   | Dvar var     -> (for_var var)::accu
