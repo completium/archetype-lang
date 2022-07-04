@@ -34,13 +34,13 @@ let pp_btyp fmt = function
   | Bchest_key    -> Format.fprintf fmt "chest_key"
 
 let pp_container fmt = function
-  | Collection -> Format.fprintf fmt "collection"
-  | Aggregate  -> Format.fprintf fmt "aggregate"
-  | Partition  -> Format.fprintf fmt "partition"
-  | AssetCollection -> Format.fprintf fmt "asset_collection"
-  | AssetKey   -> Format.fprintf fmt "asset_key"
-  | AssetValue -> Format.fprintf fmt "asset_value"
-  | View       -> Format.fprintf fmt "asset_view"
+  | Collection     -> Format.fprintf fmt "collection"
+  | Aggregate      -> Format.fprintf fmt "aggregate"
+  | Partition      -> Format.fprintf fmt "partition"
+  | AssetContainer -> Format.fprintf fmt "asset_container"
+  | AssetKey       -> Format.fprintf fmt "asset_key"
+  | AssetValue     -> Format.fprintf fmt "asset_value"
+  | View           -> Format.fprintf fmt "asset_view"
 
 let rec pp_type fmt t =
   let pp_ntype fmt nt =

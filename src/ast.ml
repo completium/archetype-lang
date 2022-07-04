@@ -10,7 +10,7 @@ type container =
   | Collection
   | Aggregate
   | Partition
-  | AssetCollection
+  | AssetContainer
   | AssetKey
   | AssetValue
   | AssetView

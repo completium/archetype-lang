@@ -88,7 +88,7 @@ let to_model (ast : A.ast) : M.model =
       | A.Tcontainer (t, Collection)      -> M.Tcontainer (type_to_type t, Collection)
       | A.Tcontainer (t, Aggregate)       -> M.Tcontainer (type_to_type t, Aggregate)
       | A.Tcontainer (t, Partition)       -> M.Tcontainer (type_to_type t, Partition)
-      | A.Tcontainer (t, AssetCollection) -> M.Tcontainer (type_to_type t, AssetCollection)
+      | A.Tcontainer (t, AssetContainer)  -> M.Tcontainer (type_to_type t, AssetContainer)
       | A.Tcontainer (t, AssetKey)        -> M.Tcontainer (type_to_type t, AssetKey)
       | A.Tcontainer (t, AssetValue)      -> M.Tcontainer (type_to_type t, AssetValue)
       | A.Tcontainer (t, AssetView)       -> M.Tcontainer (type_to_type t, View)

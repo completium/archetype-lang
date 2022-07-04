@@ -1,0 +1,10 @@
+archetype type_asset_container
+
+asset my_asset {
+  id : nat;
+  v : string;
+}
+
+entry exec(k : asset_container<my_asset>) {
+
+}

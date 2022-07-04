@@ -2425,11 +2425,11 @@ let rec valid_var_or_arg_type (ty : A.ptyp) =
   | Toperation      -> true
   | Ttrace     _    -> false
 
-  | Tcontainer (_, A.AssetView)  -> true
-  | Tcontainer (_, A.AssetKey)   -> true
-  | Tcontainer (_, A.AssetValue) -> true
-  | Tcontainer (_, A.AssetCollection) -> true
-  | Tcontainer (_,      _) -> false
+  | Tcontainer (_, A.AssetView)      -> true
+  | Tcontainer (_, A.AssetKey)       -> true
+  | Tcontainer (_, A.AssetValue)     -> true
+  | Tcontainer (_, A.AssetContainer) -> true
+  | Tcontainer (_,      _)           -> false
 
   | Tticket             ty -> valid_var_or_arg_type ty
   | Tsapling_state       _ -> true
@@ -2439,7 +2439,7 @@ let rec valid_var_or_arg_type (ty : A.ptyp) =
 let for_container (_ : env) = function
   | PT.Aggregate       -> A.Aggregate
   | PT.Partition       -> A.Partition
-  | PT.AssetCollection -> A.AssetCollection
+  | PT.AssetContainer  -> A.AssetContainer
   | PT.AssetKey        -> A.AssetKey
   | PT.AssetValue      -> A.AssetValue
   | PT.AssetView       -> A.AssetView
@@ -3695,7 +3695,7 @@ let rec for_xexpr
           | `Asset     -> Some (A.Tasset asset.as_name)
           | `Coll      -> Some (A.Tcontainer (A.Tasset asset.as_name, A.Collection))
           | `SubColl   -> Some (A.Tcontainer (A.Tasset asset.as_name, A.AssetView))
-          | `Container -> Some (A.Tcontainer (A.Tasset asset.as_name, A.AssetCollection))
+          | `Container -> Some (A.Tcontainer (A.Tasset asset.as_name, A.AssetContainer))
           | `OptVal    -> Some (A.Toption (A.Tcontainer (A.Tasset asset.as_name, A.AssetValue)))
           | `Ref i     -> Mint.find_opt i amap
           | `Pk        -> Some (asset.as_pkty)

@@ -1487,7 +1487,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
                                        | Collection      -> assert false
                                        | Aggregate       -> A.Aggregate
                                        | Partition       -> A.Partition
-                                       | AssetCollection -> A.AssetCollection
+                                       | AssetContainer  -> A.AssetContainer
                                        | AssetKey        -> A.AssetKey
                                        | AssetValue      -> A.AssetValue
                                        | View            -> A.AssetView)

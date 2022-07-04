@@ -33,7 +33,7 @@
 %token ASSERT
 %token AS
 %token ASSET
-%token ASSET_COLLECTION
+%token ASSET_CONTAINER
 %token ASSET_KEY
 %token ASSET_VALUE
 %token ASSET_VIEW
@@ -633,7 +633,7 @@ type_s_unloc:
 %inline container:
 | AGGREGATE        { Aggregate }
 | PARTITION        { Partition }
-| ASSET_COLLECTION { AssetCollection }
+| ASSET_CONTAINER  { AssetContainer }
 | ASSET_KEY        { AssetKey }
 | ASSET_VALUE      { AssetValue }
 | ASSET_VIEW       { AssetView }

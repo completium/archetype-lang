@@ -6,9 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Added
-  - `asset_collection` type
+  - `asset_container` type
   - `make_asset` builtin, `update` on set type
-  - `as_container`, `put_remove` asset method
+  - `to_container`, `put_remove` asset method
 ### Changed
   - BREAKING: `caller` and `source` are not available as init value for storage fields
 

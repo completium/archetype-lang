@@ -5536,7 +5536,7 @@ let remove_asset (model : model) : model =
     let rec ft t : type_ =
       match get_ntype t with
       | Tcontainer ((Tasset an, _), View) -> tlist (Utils.get_asset_key model (unloc an) |> snd)
-      | Tcontainer ((Tasset an, _), AssetCollection) -> get_type_for_asset_container map (unloc an)
+      | Tcontainer ((Tasset an, _), AssetContainer) -> get_type_for_asset_container map (unloc an)
       | Tcontainer ((Tasset an, _), AssetValue) ->
         let uan = unloc an in
         if Utils.is_asset_single_field model uan
