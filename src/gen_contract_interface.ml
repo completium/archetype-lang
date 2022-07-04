@@ -32,8 +32,53 @@ type argument = {
 }
 [@@deriving yojson, show {with_path = false}]
 
+type decl_field = {
+  name: string;
+  type_: type_  [@key "type"];
+}
+[@@deriving yojson, show {with_path = false}]
+
+type decl_asset = {
+  name: string;
+  fields: decl_field list;
+}
+[@@deriving yojson, show {with_path = false}]
+
+type decl_record = {
+  name: string;
+  fields: decl_field list;
+}
+[@@deriving yojson, show {with_path = false}]
+
+type decl_constructor = {
+  name: string;
+  types: type_ list;
+}
+[@@deriving yojson, show {with_path = false}]
+type decl_enum = {
+  name: string;
+  constructors: decl_constructor list;
+}
+[@@deriving yojson, show {with_path = false}]
+
+type decl_event = {
+  name: string;
+  fields: decl_field list;
+}
+[@@deriving yojson, show {with_path = false}]
+
 type decl_type = {
-  kind: string
+  assets:  decl_asset list;
+  enums:   decl_enum list;
+  records: decl_record list;
+  events:  decl_event list;
+}
+[@@deriving yojson, show {with_path = false}]
+
+type decl_storage = {
+  name: string;
+  type_: type_  [@key "type"];
+  const: bool;
 }
 [@@deriving yojson, show {with_path = false}]
 
@@ -53,7 +98,8 @@ type decl_getter = {
 type contract_interface = {
   name : string;
   parameters: parameter list;
-  types: decl_type list;
+  types: decl_type;
+  storage: decl_storage list;
   entrypoints: decl_entrypoint list;
   getters: decl_getter list;
   errors: expression list;
@@ -62,6 +108,33 @@ type contract_interface = {
 
 let mk_type node name args : type_ =
   { node; name; args }
+
+let decl_type assets records enums events =
+  { assets; records; enums; events }
+
+let mk_decl_field name type_ : decl_field =
+  { name; type_ }
+
+let mk_decl_asset name fields : decl_asset =
+  { name; fields }
+
+let mk_decl_record name fields : decl_record =
+  { name; fields }
+
+let mk_decl_constructor name types : decl_constructor =
+  { name; types }
+
+let mk_decl_enum name constructors : decl_enum =
+  { name; constructors }
+
+let mk_decl_event name fields : decl_event =
+  { name; fields }
+
+let mk_decl_type assets enums records events =
+  { assets; enums; records; events }
+
+let mk_storage name type_ const : decl_storage =
+  { name; type_; const }
 
 let mk_argument name type_ : argument =
   { name; type_ }
@@ -75,8 +148,8 @@ let mk_getter name args return : decl_getter =
 let mk_parameter name type_ const default : parameter =
   { name; type_; const; default }
 
-let mk_contract_interface name parameters types entrypoints getters errors : contract_interface =
-  { name; parameters; types; entrypoints; getters; errors }
+let mk_contract_interface name parameters types storage entrypoints getters errors : contract_interface =
+  { name; parameters; types; storage; entrypoints; getters; errors }
 
 let rec for_type (t : M.type_) : type_ =
   match M.get_ntype t with
@@ -140,6 +213,37 @@ let for_parameter (p : M.parameter) : parameter =
 let for_argument (a: M.argument) : argument =
   mk_argument (unloc (Tools.proj3_1 a)) (for_type (Tools.proj3_2 a))
 
+let for_decl_type (d : M.decl_node) (assets, enums, records, events) =
+  let for_asset_item (x : M.asset_item)     = mk_decl_field (unloc x.name) (for_type x.type_) in
+  let for_record_field (x : M.record_field) = mk_decl_field (unloc x.name) (for_type x.type_) in
+  let for_enum_item (x : M.enum_item)       = mk_decl_constructor (unloc x.name) (List.map for_type x.args) in
+
+  let for_asset  (asset  : M.asset)  : decl_asset  = mk_decl_asset  (unloc asset.name)  (List.map for_asset_item asset.values) in
+  let for_enum   (enum   : M.enum)   : decl_enum   = mk_decl_enum   (unloc enum.name)   (List.map for_enum_item enum.values) in
+  let for_record (record : M.record) : decl_record = mk_decl_record (unloc record.name) (List.map for_record_field record.fields) in
+  let for_event  (event  : M.record) : decl_event  = mk_decl_event  (unloc event.name)  (List.map for_record_field event.fields) in
+
+  match d with
+  | Dvar _       -> (assets, enums, records, events)
+  | Denum enum   -> (assets, (for_enum enum)::enums, records, events)
+  | Dasset asset -> ((for_asset asset)::assets, enums, records, events)
+  | Drecord re   -> (assets, enums, (for_record re)::records, events)
+  | Devent re    -> (assets, enums, records, (for_event re)::events)
+
+let for_decl_type (ds : M.decl_node list) : decl_type =
+  let assets, enums, records, events = List.fold_right for_decl_type ds ([], [], [], []) in
+  mk_decl_type assets enums records events
+
+let for_storage (d : M.decl_node) accu =
+  let for_var (var : M.var) : decl_storage = mk_storage (unloc var.name) (for_type var.type_) false in
+  let for_asset (asset : M.asset) : decl_storage = mk_storage (unloc asset.name) (mk_type "asset" (Some (unloc asset.name)) []) false in
+  match d with
+  | Dvar var     -> (for_var var)::accu
+  | Denum _      -> accu
+  | Dasset asset -> (for_asset asset)::accu
+  | Drecord _    -> accu
+  | Devent _     -> accu
+
 let for_entrypoint (fs : M.function_struct) : decl_entrypoint =
   mk_entrypoint (unloc fs.name) (List.map for_argument fs.args)
 
@@ -148,11 +252,12 @@ let for_getter (fs, rt : M.function_struct * M.type_) : decl_getter =
 
 let model_to_contract_interface (model : M.model) : contract_interface =
   let parameters = List.map for_parameter model.parameters in
-  let types = [] in
+  let types = for_decl_type model.decls in
+  let storage = List.fold_right for_storage model.decls [] in
   let entrypoints = List.map for_entrypoint (List.fold_right (fun (x : M.function__) accu -> match x.node with | Entry fs -> fs::accu | _ -> accu) model.functions [])  in
   let getters = List.map for_getter (List.fold_right (fun (x : M.function__) accu -> match x.node with | Getter (fs, r) -> (fs, r)::accu | _ -> accu) model.functions [])  in
   let errors = [] in
-  mk_contract_interface (unloc model.name) parameters types entrypoints getters errors
+  mk_contract_interface (unloc model.name) parameters types storage entrypoints getters errors
 
 let model_to_contract_interface_json (model : M.model) : string =
   let ci = model_to_contract_interface model in
