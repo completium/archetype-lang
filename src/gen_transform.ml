@@ -24,6 +24,7 @@ type error_desc =
   | OnlyLiteralInAssetInit
   | UnknownContract of ident
   | UnusedArgument of ident
+  | UnusedVariable of ident
 
 let pp_error_desc fmt = function
   | AssetPartitionnedby (i, l) -> Format.fprintf fmt "Cannot access asset collection: asset %s is partitionned by field(s) (%a)." i (Printer_tools.pp_list ", " Printer_tools.pp_str) l
@@ -44,6 +45,7 @@ let pp_error_desc fmt = function
   | OnlyLiteralInAssetInit -> Format.fprintf fmt "Only literal is allowed for asset field initialisation"
   | UnknownContract id -> Format.fprintf fmt "Cannot find type for '%s'" id
   | UnusedArgument id -> Format.fprintf fmt "Unused argument '%s'" id
+  | UnusedVariable id -> Format.fprintf fmt "Unused variable '%s'" id
 
 type error = Location.t * error_desc
 
@@ -6510,7 +6512,7 @@ let check_unused_variables (model : model) =
       | View     (fs, _) -> fs
       | Entry    fs      -> fs
     in
-    let doit (fs : function_struct) =
+    let check_argument (fs : function_struct) =
       let args = fs.args in
       let ids = List.map proj3_1 args in
       let contains id = List.exists (fun x -> String.equal (unloc id) (unloc x)) ids in
@@ -6523,7 +6525,21 @@ let check_unused_variables (model : model) =
       let js = List.fold_right (fun x accu -> if List.exists (fun y -> String.equal (unloc y) (unloc x)) is then accu else x::accu) ids [] in
       List.iter (fun x -> emit_warning (loc x, UnusedArgument (unloc x))) js
     in
-    doit fs
+    let check_variables (fs : function_struct) =
+      let contains accu id = List.exists (fun x -> String.equal (unloc id) (unloc x)) accu in
+      let add accu ids = List.fold_left (fun accu id -> if contains accu id then accu else id::accu) accu ids in
+      let remove accu id = List.fold_right (fun iid accu -> if String.equal (unloc id) (unloc iid) then accu else iid::accu) accu [] in
+      let rec aux accu (mt : mterm) =
+        match mt.node with
+        | Mdeclvar (ids, _, _, _) -> add accu ids
+        | Mvar (id, _, _, _) -> remove accu id
+        | _ -> fold_term aux accu mt
+      in
+      let l = aux [] fs.body in
+      List.iter (fun x -> emit_warning (loc x, UnusedArgument (unloc x))) l
+    in
+    check_argument fs;
+    check_variables fs
   in
   List.iter for_function model.functions;
   model

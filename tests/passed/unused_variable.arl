@@ -1,0 +1,8 @@
+archetype unused_argument
+
+variable n : nat = 0
+
+entry e() {
+  const v = 0;
+  n := 2
+}
