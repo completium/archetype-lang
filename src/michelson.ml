@@ -246,6 +246,7 @@ and un_operator =
   | Uaddress
   | UcarN of int
   | UcdrN of int
+  | UforcePair
 [@@deriving show {with_path = false}]
 
 and bin_operator =
@@ -279,6 +280,7 @@ and ter_operator =
   | Tupdate
   | Ttransfer_tokens
   | Topen_chest
+  | Tcreate_contract
 [@@deriving show {with_path = false}]
 
 and g_operator = [`Zop of z_operator | `Uop of un_operator  | `Bop of bin_operator  | `Top of ter_operator ]
@@ -752,6 +754,7 @@ let ccast                  a      = mk_code (CAST a)
 let crename                       = mk_code RENAME
 let cview (c, t)                  = mk_code (VIEW (c, t))
 let copen_chest                   = mk_code OPEN_CHEST
+let ccreate_contract              = mk_code (CREATE_CONTRACT (tunit, tnat, cseq[ccdr; cnil toperation; cpair]))
 (* Macro *)
 let ccarn                      k  = mk_code (CAR_N k)
 let ccdrn                      k  = mk_code (CDR_N k)

@@ -1472,13 +1472,14 @@ let cryptoops : opinfo list =
      ("sha3"   , A.Csha3   );
      ("keccak" , A.Ckeccak )]
 
-  @ [op "key_to_key_hash"      A.Ckeytokeyhash      `Total None [A.vtkey]                           (`Ty A.vtkeyhash           ) Mint.empty;
-     op "check_signature"      A.Cchecksignature    `Total None [A.vtkey; A.vtsignature; A.vtbytes] (`Ty A.vtbool              ) Mint.empty;
-     op "set_delegate"         A.Csetdelegate       `Total None [A.Toption A.vtkeyhash]             (`Ty A.Toperation          ) Mint.empty;
-     op "key_hash_to_contract" A.Ckeyhashtocontract `Total None [A.vtkeyhash]                       (`Ty (A.Tcontract A.vtunit)) Mint.empty;
-     op "voting_power"         A.Cvotingpower       `Total None [A.vtkeyhash]                       (`Ty A.vtnat               ) Mint.empty;
-     op "contract_to_address"  A.Ccontracttoaddress `Total None [A.Tcontract (A.Tnamed 0)]          (`Ty A.vtaddress           ) Mint.empty;
-     op "key_to_address"       A.Ckeytoaddress      `Total None [A.vtkey]                           (`Ty A.vtaddress           ) Mint.empty]
+  @ [op "key_to_key_hash"      A.Ckeytokeyhash      `Total None [A.vtkey]                                                 (`Ty A.vtkeyhash           ) Mint.empty;
+     op "check_signature"      A.Cchecksignature    `Total None [A.vtkey; A.vtsignature; A.vtbytes]                       (`Ty A.vtbool              ) Mint.empty;
+     op "set_delegate"         A.Csetdelegate       `Total None [A.Toption A.vtkeyhash]                                   (`Ty A.Toperation          ) Mint.empty;
+     op "key_hash_to_contract" A.Ckeyhashtocontract `Total None [A.vtkeyhash]                                             (`Ty (A.Tcontract A.vtunit)) Mint.empty;
+     op "voting_power"         A.Cvotingpower       `Total None [A.vtkeyhash]                                             (`Ty A.vtnat               ) Mint.empty;
+     op "contract_to_address"  A.Ccontracttoaddress `Total None [A.Tcontract (A.Tnamed 0)]                                (`Ty A.vtaddress           ) Mint.empty;
+     op "key_to_address"       A.Ckeytoaddress      `Total None [A.vtkey]                                                 (`Ty A.vtaddress           ) Mint.empty;
+     op "create_contract"      A.Ccreatecontract    `Total None [A.vtstring; A.Toption A.vtkeyhash; A.vtcurrency; A.Tnamed 0] (`Ty (A.Ttuple [A.Toperation; A.vtaddress])) Mint.empty;]
 
 (* -------------------------------------------------------------------- *)
 let mathops : opinfo list =

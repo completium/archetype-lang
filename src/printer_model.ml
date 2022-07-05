@@ -440,6 +440,17 @@ let pp_mterm fmt (mt : mterm) =
         f d
         f a
 
+    | Mmakecontract (k, d, a, si) ->
+      let pp_create_contract_kind fmt x =
+        match x with
+        | CCpath path -> Format.fprintf fmt "\"%s\"" path
+        | CCcontent content -> Format.fprintf fmt "\"%s\"" content
+      in
+      Format.fprintf fmt "make_contract(%a, %a, %a, %a)"
+        pp_create_contract_kind k
+        f d
+        f a
+        f si
 
     (* literals *)
 

@@ -929,6 +929,13 @@ let to_model (ast : A.ast) : M.model =
         let fc = f c in
         M.Mmakeoperation (fa, fb, fc)
 
+      | A.Pcall (None, A.Cconst (A.Ccreatecontract), [], [AExpr k; AExpr d; AExpr a; AExpr si]) ->
+        let fk  = f k |> (fun x -> match x.node with | Mstring str -> str | _ -> assert false)  in
+        let fd  = f d  in
+        let fa  = f a  in
+        let fsi = f si in
+        M.Mmakecontract (M.CCpath fk, fd, fa, fsi)
+
 
       (* Lambda *)
 

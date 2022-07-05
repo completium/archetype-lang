@@ -1,0 +1,13 @@
+# 0
+{
+  storage nat;
+  parameter (unit %exec);
+  code { UNPAIR;
+         DROP;
+         PUSH nat 2;
+         SWAP;
+         DROP;
+         NIL operation;
+         PAIR };
+}
+

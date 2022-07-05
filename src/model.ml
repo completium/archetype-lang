@@ -212,6 +212,11 @@ type map_kind =
   | MKIterableBigMap
 [@@deriving show {with_path = false}]
 
+type create_contract_kind =
+  | CCpath    of string
+  | CCcontent of string
+[@@deriving show {with_path = false}]
+
 type ('id, 'term) mterm_node  =
   (* lambda *)
   | Mletin            of 'id list * 'term * type_ option * 'term * 'term option
@@ -246,6 +251,7 @@ type ('id, 'term) mterm_node  =
   (* operation *)
   | Moperations
   | Mmakeoperation    of 'term * 'term * 'term  (* value * address * args *)
+  | Mmakecontract     of create_contract_kind * 'term * 'term * 'term  (* value * option key_hash * address * init storage *)
   (* literals *)
   | Mint              of Core.big_int
   | Mnat              of Core.big_int
@@ -1471,6 +1477,12 @@ let cmp_mterm_node
     match lhs, rhs with
     | _ -> false
   in
+  let cmp_create_contract_kind (lhs : create_contract_kind) (rhs : create_contract_kind) : bool =
+    match lhs, rhs with
+    | CCpath p1, CCpath p2 -> String.equal p1 p2
+    | CCcontent p1, CCcontent p2 -> String.equal p1 p2
+    | _ -> false
+  in
   try
     match term1, term2 with
     (* lambda *)
@@ -1506,6 +1518,7 @@ let cmp_mterm_node
     (* operation *)
     | Moperations, Moperations                                                         -> true
     | Mmakeoperation (v1, d1, a1), Mmakeoperation (v2, d2, a2)                         -> cmp v1 v2 && cmp d1 d2 && cmp a1 a2
+    | Mmakecontract (k1, d1, a1, si1), Mmakecontract (k2, d2, a2, si2)                 -> cmp_create_contract_kind k1 k2 && cmp d1 d2 && cmp a1 a2 && cmp si1 si2
     (* literals *)
     | Mint v1, Mint v2                                                                 -> Big_int.eq_big_int v1 v2
     | Mnat v1, Mnat v2                                                                 -> Big_int.eq_big_int v1 v2
@@ -1967,6 +1980,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   (* operation *)
   | Moperations                    -> Moperations
   | Mmakeoperation (v, d, a)       -> Mmakeoperation (f v, f d, f a)
+  | Mmakecontract (k, d, a, si)    -> Mmakecontract (k, f d, f a, f si)
   (* literals *)
   | Mint v                         -> Mint v
   | Mnat v                         -> Mnat v
@@ -2425,6 +2439,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   (* operation *)
   | Moperations                           -> accu
   | Mmakeoperation (v, d, a)              -> f (f (f accu v) d) a
+  | Mmakecontract (_, d, a, si)           -> f (f (f accu d) a) si
   (* literals *)
   | Mint _                                -> accu
   | Mnat _                                -> accu
@@ -2929,6 +2944,11 @@ let fold_map_term
     let ae, aa = f da a in
     g (Mmakeoperation (ve, de, ae)), aa
 
+  | Mmakecontract (k, d, a, si) ->
+    let de, da = f accu d in
+    let ae, aa = f da a in
+    let sie, sia = f aa si in
+    g (Mmakecontract (k, de, ae, sie)), sia
 
   (* literals *)
 

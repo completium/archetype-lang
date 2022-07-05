@@ -690,8 +690,9 @@ let to_ir (model : M.model) : T.ir =
 
     (* operation *)
 
-    | Moperations              -> vops
-    | Mmakeoperation (v, e, a) -> T.Iterop (Ttransfer_tokens, f a, f v, f e)
+    | Moperations                  -> vops
+    | Mmakeoperation (v, e, a)     -> T.Iterop (Ttransfer_tokens, f a, f v, f e)
+    | Mmakecontract (_k, d, a, si) -> T.Iunop (UforcePair, T.Iterop (Tcreate_contract, f d, f a, f si))
 
 
     (* literals *)
@@ -1421,7 +1422,9 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
     | T.Uconcat          -> T.cconcat
     | T.Uaddress         -> T.caddress
     | T.UcarN n          -> T.ccarn n
-    | T.UcdrN n          -> T.ccdrn n  in
+    | T.UcdrN n          -> T.ccdrn n
+    | T.UforcePair       -> T.cpair
+  in
 
   let bin_op_to_code = function
     | T.Badd                   -> T.cadd
@@ -1454,6 +1457,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
     | T.Tupdate          -> T.cupdate
     | T.Ttransfer_tokens -> T.ctransfer_tokens
     | T.Topen_chest      -> T.copen_chest
+    | T.Tcreate_contract -> T.ccreate_contract
   in
 
   let aop_to_code env = function

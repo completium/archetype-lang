@@ -304,6 +304,7 @@ let to_const = function
   | Ccontracttoaddress     -> "contract_to_address"
   | Caddresstocontract     -> "address_to_contract"
   | Ckeytoaddress          -> "key_to_address"
+  | Ccreatecontract        -> "create_contract"
   (* voting *)
   | Ctotalvotingpower      -> "total_voting_power"
   | Cvotingpower           -> "voting_power"

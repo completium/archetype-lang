@@ -1611,8 +1611,9 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     (* operation *)
 
-    | Moperations                 -> assert false
-    | Mmakeoperation (_v, _d, _a) -> assert false
+    | Moperations                     -> assert false
+    | Mmakeoperation (_v, _d, _a)     -> assert false
+    | Mmakecontract (_k, _d, _a, _si) -> assert false
 
 
     (* literals *)

@@ -437,6 +437,7 @@ let pp_uop f fmt (op, e) =
   | Uaddress     -> pp "address"
   | UcarN n      -> pp "carN(%i,%a)" n f e
   | UcdrN n      -> pp "carN(%i,%a)" n f e
+  | UforcePair   -> pp "pair"
 
 let pp_bop f fmt (op, lhs, rhs) =
   let pp s = Format.fprintf fmt s in
@@ -472,6 +473,7 @@ let pp_top f fmt (op, a1, a2, a3) =
   | Tupdate          -> pp "update(%a, %a, %a)"          f a1 f a2 f a3
   | Ttransfer_tokens -> pp "transfer_tokens(%a, %a, %a)" f a1 f a2 f a3
   | Topen_chest      -> pp "open_chest(%a, %a, %a)"      f a1 f a2 f a3
+  | Tcreate_contract -> pp "create_contract(%a, %a, %a)"      f a1 f a2 f a3
 
 let rec pp_instruction fmt (i : instruction) =
   let pp s = Format.fprintf fmt s in
@@ -552,6 +554,7 @@ let rec pp_instruction fmt (i : instruction) =
       | Uaddress     -> pp "address"
       | UcarN n      -> pp "car(%i, %a)"      n f e
       | UcdrN n      -> pp "cdr(%i, %a)"      n f e
+      | UforcePair   -> pp "pair(%a)"         f e
     end
   | Ibinop (op, lhs, rhs) -> begin
       match op with
@@ -585,6 +588,7 @@ let rec pp_instruction fmt (i : instruction) =
       | Tupdate          -> pp "update(%a, %a, %a)"          f a1 f a2 f a3
       | Ttransfer_tokens -> pp "transfer_tokens(%a, %a, %a)" f a1 f a2 f a3
       | Topen_chest      -> pp "open_chest(%a, %a, %a)"      f a1 f a2 f a3
+      | Tcreate_contract -> pp "open_chest(%a, %a, %a)"      f a1 f a2 f a3
     end
   | Iupdate (_a, _b) -> begin
       pp "update"
