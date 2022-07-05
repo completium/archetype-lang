@@ -11,7 +11,7 @@ variable price : tez = 10tz
 
 variable payment : tez = 1.1 * price
 
-variable maturity : date = now
+variable maturity : date = 2020-01-01
 
 states =
  | Created initial

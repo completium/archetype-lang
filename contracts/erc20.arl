@@ -1,4 +1,4 @@
-archetype erc20
+archetype erc20(const initial_holder : address = tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg)
 
 variable total : nat = 1_000_000_000_000_000
 variable onetoken : nat = 1_000_000
@@ -13,7 +13,7 @@ asset tokenHolder identified by holder {
   holder     : address;
   tokens     : nat = 0;
 } initialized by {
-  { holder = caller; tokens = total }
+  { holder = initial_holder; tokens = total }
 }
 
 entry dotransfer (dest : asset_key<tokenHolder>, value : nat) {

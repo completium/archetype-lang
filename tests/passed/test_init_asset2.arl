@@ -11,7 +11,7 @@ asset my_asset {
 } with {
   i1: tokens >= 0;
 } initialized by {
-  { id = caller; tokens = total }
+  { id = tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg; tokens = total }
 }
 
 entry exec() {
