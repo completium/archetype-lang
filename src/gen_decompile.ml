@@ -197,7 +197,7 @@ let to_michelson (input, env : T.obj_micheline * env) : T.michelson * env =
       | Oprim ({prim = "CHAIN_ID"; _})                       -> T.mk_code T.CHAIN_ID
       | Oprim ({prim = "CONTRACT"; args = t::_; annots = a}) -> T.mk_code (T.CONTRACT (to_type t, fa a))
       | Oprim ({prim = "CREATE_CONTRACT"; args = a::_; _})   -> begin
-          let seek tag a =
+          (* let seek tag a =
             let rec aux tag accu (a : T.obj_micheline) =
               match a with
               | Oprim {prim=a; args=arg::_; _} when String.equal tag a -> Some arg
@@ -210,8 +210,8 @@ let to_michelson (input, env : T.obj_micheline * env) : T.michelson * env =
           in
           let p = seek "parameter" a in
           let s = seek "storage" a in
-          let c = seek "code" a in
-          T.mk_code (T.CREATE_CONTRACT (to_type p, to_type s, f c))
+          let c = seek "code" a in *)
+          T.mk_code (T.CREATE_CONTRACT a)
         end
       | Oprim ({prim = "IMPLICIT_ACCOUNT"; _})               -> T.mk_code T.IMPLICIT_ACCOUNT
       | Oprim ({prim = "NOW"; _})                            -> T.mk_code T.NOW

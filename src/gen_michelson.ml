@@ -692,7 +692,11 @@ let to_ir (model : M.model) : T.ir =
 
     | Moperations                    -> vops
     | Mmakeoperation (v, e, a)       -> T.Iterop (Ttransfer_tokens, f a, f v, f e)
-    | Mcreatecontract (_k, d, a, si) -> T.Iunop (UforcePair, T.Iterop (Tcreate_contract, f d, f a, f si))
+    | Mcreatecontract (k, d, a, si)  -> begin
+        match k with
+        | CCcontent c -> T.Iunop (UforcePair, T.Iterop (Tcreate_contract c, f d, f a, f si))
+        | CCpath _ -> emit_error (UnsupportedTerm ("Mcreatecontract CCpath"))
+      end
 
 
     (* literals *)
@@ -1452,12 +1456,12 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
   in
 
   let ter_op_to_code = function
-    | T.Tcheck_signature -> T.ccheck_signature
-    | T.Tslice           -> T.cslice
-    | T.Tupdate          -> T.cupdate
-    | T.Ttransfer_tokens -> T.ctransfer_tokens
-    | T.Topen_chest      -> T.copen_chest
-    | T.Tcreate_contract -> T.ccreate_contract
+    | T.Tcheck_signature   -> T.ccheck_signature
+    | T.Tslice             -> T.cslice
+    | T.Tupdate            -> T.cupdate
+    | T.Ttransfer_tokens   -> T.ctransfer_tokens
+    | T.Topen_chest        -> T.copen_chest
+    | T.Tcreate_contract c -> T.ccreate_contract c
   in
 
   let aop_to_code env = function

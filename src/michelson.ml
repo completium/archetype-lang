@@ -7,6 +7,30 @@ type 'a with_annot = {
 }
 [@@deriving show {with_path = false}]
 
+
+type prim = {
+  prim: ident;
+  args: obj_micheline list;
+  annots: ident list;
+}
+[@@deriving show {with_path = false}]
+
+and obj_micheline =
+  | Oprim of prim
+  | Ostring of string
+  | Obytes of string
+  | Oint of string
+  | Oarray of obj_micheline list
+  | Ovar of obj_micheline_var
+[@@deriving show {with_path = false}]
+
+and obj_micheline_var =
+  | OMVfree   of ident
+  | OMVint    of ident
+  | OMVstring of ident
+  | OMVbytes  of ident
+  | OMVif     of ident * obj_micheline * obj_micheline
+
 type type_node =
   | Taddress
   | Tbig_map   of type_ * type_
@@ -128,7 +152,7 @@ and code_node =
   | BALANCE
   | CHAIN_ID
   | CONTRACT           of type_ * ident option
-  | CREATE_CONTRACT    of type_ * type_ * code
+  | CREATE_CONTRACT    of obj_micheline
   | IMPLICIT_ACCOUNT
   | LEVEL
   | NOW
@@ -280,7 +304,7 @@ and ter_operator =
   | Tupdate
   | Ttransfer_tokens
   | Topen_chest
-  | Tcreate_contract
+  | Tcreate_contract of obj_micheline
 [@@deriving show {with_path = false}]
 
 and g_operator = [`Zop of z_operator | `Uop of un_operator  | `Bop of bin_operator  | `Top of ter_operator ]
@@ -427,29 +451,6 @@ type michelson = {
   parameters: ident list;
 }
 [@@deriving show {with_path = false}]
-
-type prim = {
-  prim: ident;
-  args: obj_micheline list;
-  annots: ident list;
-}
-[@@deriving show {with_path = false}]
-
-and obj_micheline =
-  | Oprim of prim
-  | Ostring of string
-  | Obytes of string
-  | Oint of string
-  | Oarray of obj_micheline list
-  | Ovar of obj_micheline_var
-[@@deriving show {with_path = false}]
-
-and obj_micheline_var =
-  | OMVfree   of ident
-  | OMVint    of ident
-  | OMVstring of ident
-  | OMVbytes  of ident
-  | OMVif     of ident * obj_micheline * obj_micheline
 
 type micheline = {
   code: obj_micheline list;
@@ -702,7 +703,7 @@ let camount                       = mk_code  AMOUNT
 let cbalance                      = mk_code  BALANCE
 let cchain_id                     = mk_code  CHAIN_ID
 let ccontract           (a, b)    = mk_code (CONTRACT (a, b))
-let ccreate_contract    (a, b, c) = mk_code (CREATE_CONTRACT (a, b, c))
+let ccreate_contract    c         = mk_code (CREATE_CONTRACT c)
 let cimplicit_account             = mk_code  IMPLICIT_ACCOUNT
 let clevel                        = mk_code  LEVEL
 let cnow                          = mk_code  NOW
@@ -754,7 +755,7 @@ let ccast                  a      = mk_code (CAST a)
 let crename                       = mk_code RENAME
 let cview (c, t)                  = mk_code (VIEW (c, t))
 let copen_chest                   = mk_code OPEN_CHEST
-let ccreate_contract              = mk_code (CREATE_CONTRACT (tunit, tnat, cseq[ccdr; cnil toperation; cpair]))
+let ccreate_contract c            = mk_code (CREATE_CONTRACT c)
 (* Macro *)
 let ccarn                      k  = mk_code (CAR_N k)
 let ccdrn                      k  = mk_code (CDR_N k)
@@ -970,7 +971,7 @@ let cmp_code (lhs : code) (rhs : code) =
     | BALANCE, BALANCE                               -> true
     | CHAIN_ID, CHAIN_ID                             -> true
     | CONTRACT (t1, a1), CONTRACT (t2, a2)           -> cmp_type t1 t2 && Option.cmp cmp_ident a1 a2
-    | CREATE_CONTRACT (p1, s1, c1), CREATE_CONTRACT (p2, s2, c2) -> cmp_type p1 p2 && cmp_type s1 s2 && f c1 c2
+    | CREATE_CONTRACT _c1, CREATE_CONTRACT _c2       -> true (* TODO *)
     | IMPLICIT_ACCOUNT, IMPLICIT_ACCOUNT             -> true
     | LEVEL, LEVEL                                   -> true
     | NOW, NOW                                       -> true
@@ -1194,7 +1195,7 @@ let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) (
     | BALANCE                  -> BALANCE
     | CHAIN_ID                 -> CHAIN_ID
     | CONTRACT (t, a)          -> CONTRACT (ft t, a)
-    | CREATE_CONTRACT (p, s, c)-> CREATE_CONTRACT (ft p, ft s, fc c)
+    | CREATE_CONTRACT c        -> CREATE_CONTRACT c
     | IMPLICIT_ACCOUNT         -> IMPLICIT_ACCOUNT
     | LEVEL                    -> LEVEL
     | NOW                      -> NOW
@@ -1650,7 +1651,7 @@ end = struct
     | BALANCE                  -> mk "BALANCE"
     | CHAIN_ID                 -> mk "CHAIN_ID"
     | CONTRACT (t, a)          -> mk ~args:[ft t] ~annots:(fan a) "CONTRACT"
-    | CREATE_CONTRACT (p, s, c)-> mk ~args:[mk ~args:[ft p] "parameter"; mk ~args:[ft s] "storage"; mk ~args:[f c] "code"] "CREATE_CONTRACT"
+    | CREATE_CONTRACT c        -> mk ~args:[c] "CREATE_CONTRACT"
     | IMPLICIT_ACCOUNT         -> mk "IMPLICIT_ACCOUNT"
     | LEVEL                    -> mk "LEVEL"
     | NOW                      -> mk "NOW"

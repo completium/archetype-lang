@@ -108,13 +108,13 @@ and pp_code fmt (i : code) =
   in
   let with_complex_instrs l = List.exists with_complex_instr l in
   (* let fsv fmt = Format.fprintf fmt "{ @[%a@] }" (pp_list ";@\n" pp_code) in
-  let fsh fmt = Format.fprintf fmt "{ %a }" (pp_list "; " pp_code) in
-  let fsl fmt l =
-    if with_complex_instrs l
-    then fsv fmt l
-    else fsh fmt l
-  in
-  match i with *)
+     let fsh fmt = Format.fprintf fmt "{ %a }" (pp_list "; " pp_code) in
+     let fsl fmt l =
+     if with_complex_instrs l
+     then fsv fmt l
+     else fsh fmt l
+     in
+     match i with *)
   let fsv fmt = Format.fprintf fmt "{ @[%a@] }" (pp_list ";@\n" pp_code) in
   let pp_dip_arg fmt (i, l) =
     let pp_aux fmt l =
@@ -129,6 +129,21 @@ and pp_code fmt (i : code) =
       then Format.fprintf fmt "@[%i@\n%a@]" i pp_aux l
       else Format.fprintf fmt "%i %a" i pp_aux l
     end
+  in
+  let rec pp_concrete_michelson fmt c =
+    let pp s = Format.fprintf fmt s in
+    let pp_empty pp fmt l =
+      if List.is_empty l
+      then ()
+      else (Format.fprintf fmt " "; pp fmt l)
+    in
+    match c with
+    | Oprim prim -> pp "%s%a%a" prim.prim (pp_empty (pp_list " " pp_str)) prim.annots (pp_empty (pp_list " " pp_concrete_michelson)) prim.args
+    | Ostring v  -> pp "\"%s\"" v
+    | Obytes v   -> pp "0x%s" v
+    | Oint v     -> pp "%s" v
+    | Oarray l   -> pp "{ %a }" (pp_list "; " pp_concrete_michelson) l
+    | Ovar _     -> assert false
   in
   match i.node with
   (* Control structures *)
@@ -194,7 +209,7 @@ and pp_code fmt (i : code) =
   | BALANCE                  -> pp "BALANCE"
   | CHAIN_ID                 -> pp "CHAIN_ID"
   | CONTRACT (t, a)          -> pp "CONTRACT%a %a" pp_annot a pp_type t
-  | CREATE_CONTRACT (p, s, c)-> pp "CREATE_CONTRACT@\n  {@[ parameter %a ;@\n storage %a ;@\n code %a@] }" pp_type p pp_type s pp_code c
+  | CREATE_CONTRACT c        -> pp "CREATE_CONTRACT@\n  @[%a@]" pp_concrete_michelson c
   | IMPLICIT_ACCOUNT         -> pp "IMPLICIT_ACCOUNT"
   | LEVEL                    -> pp "LEVEL"
   | NOW                      -> pp "NOW"
@@ -468,12 +483,12 @@ let pp_bop f fmt (op, lhs, rhs) =
 let pp_top f fmt (op, a1, a2, a3) =
   let pp s = Format.fprintf fmt s in
   match op with
-  | Tcheck_signature -> pp "check_signature(%a, %a, %a)" f a1 f a2 f a3
-  | Tslice           -> pp "slice(%a, %a, %a)"           f a1 f a2 f a3
-  | Tupdate          -> pp "update(%a, %a, %a)"          f a1 f a2 f a3
-  | Ttransfer_tokens -> pp "transfer_tokens(%a, %a, %a)" f a1 f a2 f a3
-  | Topen_chest      -> pp "open_chest(%a, %a, %a)"      f a1 f a2 f a3
-  | Tcreate_contract -> pp "create_contract(%a, %a, %a)"      f a1 f a2 f a3
+  | Tcheck_signature   -> pp "check_signature(%a, %a, %a)" f a1 f a2 f a3
+  | Tslice             -> pp "slice(%a, %a, %a)"           f a1 f a2 f a3
+  | Tupdate            -> pp "update(%a, %a, %a)"          f a1 f a2 f a3
+  | Ttransfer_tokens   -> pp "transfer_tokens(%a, %a, %a)" f a1 f a2 f a3
+  | Topen_chest        -> pp "open_chest(%a, %a, %a)"      f a1 f a2 f a3
+  | Tcreate_contract _ -> pp "create_contract(%a, %a, %a)" f a1 f a2 f a3
 
 let rec pp_instruction fmt (i : instruction) =
   let pp s = Format.fprintf fmt s in
@@ -583,12 +598,12 @@ let rec pp_instruction fmt (i : instruction) =
     end
   | Iterop (op, a1, a2, a3) -> begin
       match op with
-      | Tcheck_signature -> pp "check_signature(%a, %a, %a)" f a1 f a2 f a3
-      | Tslice           -> pp "slice(%a, %a, %a)"           f a1 f a2 f a3
-      | Tupdate          -> pp "update(%a, %a, %a)"          f a1 f a2 f a3
-      | Ttransfer_tokens -> pp "transfer_tokens(%a, %a, %a)" f a1 f a2 f a3
-      | Topen_chest      -> pp "open_chest(%a, %a, %a)"      f a1 f a2 f a3
-      | Tcreate_contract -> pp "open_chest(%a, %a, %a)"      f a1 f a2 f a3
+      | Tcheck_signature   -> pp "check_signature(%a, %a, %a)" f a1 f a2 f a3
+      | Tslice             -> pp "slice(%a, %a, %a)"           f a1 f a2 f a3
+      | Tupdate            -> pp "update(%a, %a, %a)"          f a1 f a2 f a3
+      | Ttransfer_tokens   -> pp "transfer_tokens(%a, %a, %a)" f a1 f a2 f a3
+      | Topen_chest        -> pp "open_chest(%a, %a, %a)"      f a1 f a2 f a3
+      | Tcreate_contract _ -> pp "create_contract(%a, %a, %a)" f a1 f a2 f a3
     end
   | Iupdate (_a, _b) -> begin
       pp "update"
@@ -653,10 +668,10 @@ let pp_ir fmt (ir : ir) =
 
 let pp_view_struct fmt (vs : view_struct) =
   Format.fprintf fmt "@\n  view@\n    \"%s\"@\n    %a@\n    %a@\n    @[%a@]"
-  vs.id
-  pp_type vs.param
-  pp_type vs.ret
-  pp_code vs.body
+    vs.id
+    pp_type vs.param
+    pp_type vs.ret
+    pp_code vs.body
 
 let pp_michelson fmt (m : michelson) =
   Format.fprintf fmt
@@ -822,11 +837,11 @@ and pp_var (fmt : Format.formatter) (v : dvar) =
     Format.fprintf fmt "#%d" x
 
 (* let pp_dview fmt (dv : dview) : unit =
-  Format.fprintf fmt "view@\n  ident=\"%s\"@\n  param=%a@\n  ret=%a@\n  body=@\n    @[%a@]@\n"
-  dv.id
-  pp_type dv.param
-  pp_type dv.ret
-  (pp_list ";@\n" pp_dinstruction) dv.body *)
+   Format.fprintf fmt "view@\n  ident=\"%s\"@\n  param=%a@\n  ret=%a@\n  body=@\n    @[%a@]@\n"
+   dv.id
+   pp_type dv.param
+   pp_type dv.ret
+   (pp_list ";@\n" pp_dinstruction) dv.body *)
 
 let pp_dprogram fmt (d : dprogram) : unit =
   Format.fprintf fmt
