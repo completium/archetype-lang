@@ -1,0 +1,13 @@
+# 0x
+{
+  storage bytes;
+  parameter (unit %exec);
+  code { UNPAIR;
+         DROP;
+         PUSH bytes 0x02;
+         SWAP;
+         DROP;
+         NIL operation;
+         PAIR };
+}
+

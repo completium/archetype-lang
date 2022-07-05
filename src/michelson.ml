@@ -1810,7 +1810,7 @@ let to_micheline_ (input : obj_micheline) : micheline_ =
     match i with
     | Oprim p -> mkprim (p.prim, List.map doit p.args, p.annots)
     | Ostring v -> mkstring v
-    | Obytes _v -> mkbytes (Bytes.empty) (* TODO *)
+    | Obytes v -> mkbytes (Hex.to_bytes (`Hex v))
     | Oint v -> mkint (Big_int.big_int_of_string v)
     | Oarray v -> mkseq (List.map doit v)
     | Ovar _ -> assert false
