@@ -444,7 +444,7 @@ let pp_mterm fmt (mt : mterm) =
       let pp_create_contract_kind fmt x =
         match x with
         | CCpath path -> Format.fprintf fmt "\"%s\"" path
-        | CCcontent content -> Format.fprintf fmt "\"%s\"" content
+        | CCcontent _ -> Format.fprintf fmt "content"
       in
       Format.fprintf fmt "make_contract(%a, %a, %a, %a)"
         pp_create_contract_kind k

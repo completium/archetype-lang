@@ -6465,7 +6465,7 @@ let process_arith_container (model : model) =
       end
     (* | Mplus (_, _) -> assert false
 
-    | Mplus (({type_ = ((Tmap (kt, vt), _) as tmap)} as a), (({type_ = (Tlist (Ttuple [lkt; lvt], _), _)}) as c))(*  when cmp_type kt lkt && cmp_type vt lvt *) -> begin
+       | Mplus (({type_ = ((Tmap (kt, vt), _) as tmap)} as a), (({type_ = (Tlist (Ttuple [lkt; lvt], _), _)}) as c))(*  when cmp_type kt lkt && cmp_type vt lvt *) -> begin
         assert false
         let cid = "_l" in
         let lcid = dumloc cid in
@@ -6478,7 +6478,7 @@ let process_arith_container (model : model) =
         let loop : mterm = mk_mterm (Mfor (FIsimple lcid, ICKlist c, assign, None)) tunit in
         let seq = seq [loop; container] in
         mk_letin lcid a seq *)
-      (* end *)
+    (* end *)
     | Mplus (({type_ = ((Tset ty, _) as t)} as a), ({type_ = (Tlist lty, _); node = Mlitlist l})) when cmp_type ty lty -> begin
         List.fold_right (fun x accu -> mk_mterm (Msetadd (ty, accu, x)) t) l (f a)
       end
@@ -6518,3 +6518,14 @@ let check_unused_variables (model : model) =
   in
   List.iter for_function model.functions;
   model
+
+let process_michelson_create_contract (model : model) =
+  let rec aux ctx (mt : mterm) : mterm =
+    match mt.node with
+    | Mcreatecontract(CCpath path, d, a, v) ->
+      let ic = open_in path in
+      let obj, _ = Gen_decompile.parse_micheline (FIChannel (path, ic)) in
+      {mt with node = Mcreatecontract(CCcontent obj, d, a, v) }
+    | _ -> map_mterm (aux ctx) mt
+  in
+  map_mterm_model aux model

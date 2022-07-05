@@ -214,7 +214,7 @@ type map_kind =
 
 type create_contract_kind =
   | CCpath    of string
-  | CCcontent of string
+  | CCcontent of Michelson.obj_micheline
 [@@deriving show {with_path = false}]
 
 type ('id, 'term) mterm_node  =
@@ -1480,7 +1480,7 @@ let cmp_mterm_node
   let cmp_create_contract_kind (lhs : create_contract_kind) (rhs : create_contract_kind) : bool =
     match lhs, rhs with
     | CCpath p1, CCpath p2 -> String.equal p1 p2
-    | CCcontent p1, CCcontent p2 -> String.equal p1 p2
+    | CCcontent _, CCcontent _ -> true
     | _ -> false
   in
   try
