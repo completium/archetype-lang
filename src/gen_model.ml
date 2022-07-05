@@ -934,7 +934,7 @@ let to_model (ast : A.ast) : M.model =
         let fd  = f d  in
         let fa  = f a  in
         let fsi = f si in
-        M.Mmakecontract (M.CCpath fk, fd, fa, fsi)
+        M.Mcreatecontract (M.CCpath fk, fd, fa, fsi)
 
 
       (* Lambda *)

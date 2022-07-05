@@ -440,7 +440,7 @@ let pp_mterm fmt (mt : mterm) =
         f d
         f a
 
-    | Mmakecontract (k, d, a, si) ->
+    | Mcreatecontract (k, d, a, si) ->
       let pp_create_contract_kind fmt x =
         match x with
         | CCpath path -> Format.fprintf fmt "\"%s\"" path

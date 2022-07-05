@@ -690,9 +690,9 @@ let to_ir (model : M.model) : T.ir =
 
     (* operation *)
 
-    | Moperations                  -> vops
-    | Mmakeoperation (v, e, a)     -> T.Iterop (Ttransfer_tokens, f a, f v, f e)
-    | Mmakecontract (_k, d, a, si) -> T.Iunop (UforcePair, T.Iterop (Tcreate_contract, f d, f a, f si))
+    | Moperations                    -> vops
+    | Mmakeoperation (v, e, a)       -> T.Iterop (Ttransfer_tokens, f a, f v, f e)
+    | Mcreatecontract (_k, d, a, si) -> T.Iunop (UforcePair, T.Iterop (Tcreate_contract, f d, f a, f si))
 
 
     (* literals *)

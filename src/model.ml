@@ -251,7 +251,7 @@ type ('id, 'term) mterm_node  =
   (* operation *)
   | Moperations
   | Mmakeoperation    of 'term * 'term * 'term  (* value * address * args *)
-  | Mmakecontract     of create_contract_kind * 'term * 'term * 'term  (* value * option key_hash * address * init storage *)
+  | Mcreatecontract   of create_contract_kind * 'term * 'term * 'term  (* value * option key_hash * address * init storage *)
   (* literals *)
   | Mint              of Core.big_int
   | Mnat              of Core.big_int
@@ -1518,7 +1518,7 @@ let cmp_mterm_node
     (* operation *)
     | Moperations, Moperations                                                         -> true
     | Mmakeoperation (v1, d1, a1), Mmakeoperation (v2, d2, a2)                         -> cmp v1 v2 && cmp d1 d2 && cmp a1 a2
-    | Mmakecontract (k1, d1, a1, si1), Mmakecontract (k2, d2, a2, si2)                 -> cmp_create_contract_kind k1 k2 && cmp d1 d2 && cmp a1 a2 && cmp si1 si2
+    | Mcreatecontract (k1, d1, a1, si1), Mcreatecontract (k2, d2, a2, si2)             -> cmp_create_contract_kind k1 k2 && cmp d1 d2 && cmp a1 a2 && cmp si1 si2
     (* literals *)
     | Mint v1, Mint v2                                                                 -> Big_int.eq_big_int v1 v2
     | Mnat v1, Mnat v2                                                                 -> Big_int.eq_big_int v1 v2
@@ -1980,7 +1980,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   (* operation *)
   | Moperations                    -> Moperations
   | Mmakeoperation (v, d, a)       -> Mmakeoperation (f v, f d, f a)
-  | Mmakecontract (k, d, a, si)    -> Mmakecontract (k, f d, f a, f si)
+  | Mcreatecontract (k, d, a, si)  -> Mcreatecontract (k, f d, f a, f si)
   (* literals *)
   | Mint v                         -> Mint v
   | Mnat v                         -> Mnat v
@@ -2439,7 +2439,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   (* operation *)
   | Moperations                           -> accu
   | Mmakeoperation (v, d, a)              -> f (f (f accu v) d) a
-  | Mmakecontract (_, d, a, si)           -> f (f (f accu d) a) si
+  | Mcreatecontract (_, d, a, si)         -> f (f (f accu d) a) si
   (* literals *)
   | Mint _                                -> accu
   | Mnat _                                -> accu
@@ -2944,11 +2944,11 @@ let fold_map_term
     let ae, aa = f da a in
     g (Mmakeoperation (ve, de, ae)), aa
 
-  | Mmakecontract (k, d, a, si) ->
+  | Mcreatecontract (k, d, a, si) ->
     let de, da = f accu d in
     let ae, aa = f da a in
     let sie, sia = f aa si in
-    g (Mmakecontract (k, de, ae, sie)), sia
+    g (Mcreatecontract (k, de, ae, sie)), sia
 
   (* literals *)
 

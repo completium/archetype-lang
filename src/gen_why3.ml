@@ -1830,7 +1830,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let e = map_mterm m ctx d in
       let l = loc_term (Tnil gListAs) in
       Tapp( loc_term (Tvar "_mk_operation"),[a; e; l])
-    | Mmakecontract _   -> error_not_translated "Mmakecontract"
+    | Mcreatecontract _   -> error_not_translated "Mcreatecontract"
 
     (* literals *)
 
