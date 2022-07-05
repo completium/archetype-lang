@@ -6,10 +6,10 @@ asset my_asset identified by id {
   c  : set<nat>;
 } initialized by {
   {"id0"; 0; []};
-  {"id1"; 1; []};
+  {"id1"; 1; [0; 1; 2]};
   {"id2"; 2; []}
 }
 
 entry exec () {
-  my_asset.update("id1", {c -= [2]})
+  my_asset.update("id1", {c -= [1]})
 }

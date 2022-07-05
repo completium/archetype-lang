@@ -6,7 +6,7 @@ asset my_asset identified by id {
   c  : list<nat>;
 } initialized by {
   {"id0"; 0; []};
-  {"id1"; 1; []};
+  {"id1"; 1; [0; 1; 2]};
   {"id2"; 2; []}
 }
 

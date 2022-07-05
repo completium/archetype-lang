@@ -11,6 +11,6 @@ asset my_asset identified by id {
 }
 
 entry exec () {
-  const m : list<nat> = [2];
+  const m : list<nat> = [1];
   my_asset.update("id1", {c -= m});
 }
