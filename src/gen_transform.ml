@@ -6463,10 +6463,7 @@ let process_arith_container (model : model) =
     | Mplus (({type_ = ((Tmap (kt, vt), _) as t)} as a), ({type_ = (Tlist (Ttuple [lkt; lvt], _), _); node = Mlitlist l})) when cmp_type kt lkt && cmp_type vt lvt -> begin
         List.fold_right (fun x accu -> mk_mterm (Mmapput (MKMap, kt, vt, accu, mk_tupleaccess 0 x, mk_tupleaccess 1 x)) t) l (f a)
       end
-    (* | Mplus (_, _) -> assert false
-
-       | Mplus (({type_ = ((Tmap (kt, vt), _) as tmap)} as a), (({type_ = (Tlist (Ttuple [lkt; lvt], _), _)}) as c))(*  when cmp_type kt lkt && cmp_type vt lvt *) -> begin
-        assert false
+    | Mplus (({type_ = ((Tmap (kt, vt), _) as tmap)} as a), (({type_ = (Tlist (Ttuple [lkt; lvt], _), _)}) as c))  when cmp_type kt lkt && cmp_type vt lvt -> begin
         let cid = "_l" in
         let lcid = dumloc cid in
         let container = mk_mvar lcid (ttuple [lkt; lvt]) in
@@ -6475,10 +6472,10 @@ let process_arith_container (model : model) =
         let x = mk_mvar xid (ttuple [lkt; lvt]) in
         let mapput : mterm = mk_mterm (Mmapput (MKMap, kt, vt, container, mk_tupleaccess 0 x, mk_tupleaccess 1 x)) tmap in
         let assign : mterm = mk_mterm (Massign (ValueAssign, tmap, Avar lcid, mapput)) tunit in
-        let loop : mterm = mk_mterm (Mfor (FIsimple lcid, ICKlist c, assign, None)) tunit in
+        let loop : mterm = mk_mterm (Mfor (FIsimple xid, ICKlist c, assign, None)) tunit in
         let seq = seq [loop; container] in
-        mk_letin lcid a seq *)
-    (* end *)
+        mk_letin lcid a seq
+     end
     | Mplus (({type_ = ((Tset ty, _) as t)} as a), ({type_ = (Tlist lty, _); node = Mlitlist l})) when cmp_type ty lty -> begin
         List.fold_right (fun x accu -> mk_mterm (Msetadd (ty, accu, x)) t) l (f a)
       end

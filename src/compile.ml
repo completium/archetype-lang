@@ -252,7 +252,6 @@ let toolchain ?(debug=false) model =
   |> f "replace_assignfield_by_update" replace_assignfield_by_update
   |> f "remove_update_all" remove_update_all
   |> f "remove_add_update" remove_add_update
-  |> f "process_arith_container" process_arith_container
   |> f "remove_container_op_in_update_exec" remove_container_op_in_update_exec
   |> f "merge_update" merge_update
   |> f "remove_empty_update" remove_empty_update
@@ -280,6 +279,7 @@ let toolchain ?(debug=false) model =
   |> f "normalize_storage" normalize_storage
   |> f "remove_constant" remove_constant
   |> f "eval_storage" eval_storage
+  |> f "process_arith_container" process_arith_container
   |> f "instr_to_expr_exec" instr_to_expr_exec
   |> f "optimize" optimize
   |> f "generate_api_storage" generate_api_storage
