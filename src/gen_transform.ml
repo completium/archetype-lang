@@ -6457,6 +6457,19 @@ let remove_decl_var_opt (model : model) =
   map_mterm_model aux model
 
 let process_arith_container (model : model) =
+  let doit_gen a c ctyp ityp fv : mterm =
+    let cid = "_l" in
+    let lcid = dumloc cid in
+    let container = mk_mvar lcid ctyp in
+
+    let xid = dumloc "_x" in
+    let x = mk_mvar xid ityp in
+    let mapput : mterm = fv container x in
+    let assign : mterm = mk_mterm (Massign (ValueAssign, ctyp, Avar lcid, mapput)) tunit in
+    let loop : mterm = mk_mterm (Mfor (FIsimple xid, ICKlist c, assign, None)) tunit in
+    let seq = seq [loop; container] in
+    mk_letin lcid a seq
+  in
   let rec aux ctx (mt : mterm) : mterm =
     let f = aux ctx in
     match mt.node with
@@ -6464,65 +6477,25 @@ let process_arith_container (model : model) =
         List.fold_right (fun x accu -> mk_mterm (Mmapput (MKMap, kt, vt, accu, mk_tupleaccess 0 x, mk_tupleaccess 1 x)) t) l (f a)
       end
     | Mplus (({type_ = ((Tmap (kt, vt), _) as tmap)} as a), (({type_ = (Tlist (Ttuple [lkt; lvt], _), _)}) as c))  when cmp_type kt lkt && cmp_type vt lvt -> begin
-        let cid = "_l" in
-        let lcid = dumloc cid in
-        let container = mk_mvar lcid (ttuple [lkt; lvt]) in
-
-        let xid = dumloc "_x" in
-        let x = mk_mvar xid (ttuple [lkt; lvt]) in
-        let mapput : mterm = mk_mterm (Mmapput (MKMap, kt, vt, container, mk_tupleaccess 0 x, mk_tupleaccess 1 x)) tmap in
-        let assign : mterm = mk_mterm (Massign (ValueAssign, tmap, Avar lcid, mapput)) tunit in
-        let loop : mterm = mk_mterm (Mfor (FIsimple xid, ICKlist c, assign, None)) tunit in
-        let seq = seq [loop; container] in
-        mk_letin lcid a seq
+        doit_gen a c tmap (ttuple [lkt; lvt]) (fun container x -> mk_mterm (Mmapput (MKMap, kt, vt, container, mk_tupleaccess 0 x, mk_tupleaccess 1 x)) tmap)
       end
     | Mplus (({type_ = ((Tset ty, _) as t)} as a), ({type_ = (Tlist lty, _); node = Mlitlist l})) when cmp_type ty lty -> begin
         List.fold_right (fun x accu -> mk_mterm (Msetadd (ty, accu, x)) t) l (f a)
       end
     | Mplus (({type_ = ((Tset ty, _) as tset)} as a), ({type_ = (Tlist lty, _)} as c)) when cmp_type ty lty -> begin
-        let cid = "_l" in
-        let lcid = dumloc cid in
-        let container = mk_mvar lcid lty in
-
-        let xid = dumloc "_x" in
-        let x = mk_mvar xid lty in
-        let setadd : mterm = mk_mterm (Msetadd (lty, container, x)) tset in
-        let assign : mterm = mk_mterm (Massign (ValueAssign, tset, Avar lcid, setadd)) tunit in
-        let loop : mterm = mk_mterm (Mfor (FIsimple xid, ICKlist c, assign, None)) tunit in
-        let seq = seq [loop; container] in
-        mk_letin lcid a seq
+        doit_gen a c tset lty (fun container x -> mk_mterm (Msetadd (lty, container, x)) tset)
       end
     | Mminus (({type_ = ((Tmap (kt, vt), _) as t)} as a), ({type_ = (Tlist lty, _); node = Mlitlist l})) when cmp_type kt lty -> begin
         List.fold_right (fun x accu -> mk_mterm (Mmapremove (MKMap, kt, vt, accu, x)) t) l (f a)
       end
     | Mminus (({type_ = ((Tmap (kt, vt), _) as tmap)} as a), ({type_ = (Tlist lty, _)} as c)) when cmp_type kt lty -> begin
-        let cid = "_l" in
-        let lcid = dumloc cid in
-        let container = mk_mvar lcid tmap in
-
-        let xid = dumloc "_x" in
-        let x = mk_mvar xid kt in
-        let mapput : mterm = mk_mterm (Mmapremove (MKMap, kt, vt, container, x)) tmap in
-        let assign : mterm = mk_mterm (Massign (ValueAssign, tmap, Avar lcid, mapput)) tunit in
-        let loop : mterm = mk_mterm (Mfor (FIsimple xid, ICKlist c, assign, None)) tunit in
-        let seq = seq [loop; container] in
-        mk_letin lcid a seq
+        doit_gen a c tmap kt (fun container x -> mk_mterm (Mmapremove (MKMap, kt, vt, container, x)) tmap)
       end
     | Mminus (({type_ = ((Tset ty, _) as t)} as a), ({type_ = (Tlist lty, _); node = Mlitlist l})) when cmp_type ty lty -> begin
         List.fold_right (fun x accu -> mk_mterm (Msetremove (ty, accu, x)) t) l (f a)
       end
     | Mminus (({type_ = ((Tset ty, _) as tset)} as a), ({type_ = (Tlist lty, _)} as c)) when cmp_type ty lty -> begin
-        let cid = "_l" in
-        let lcid = dumloc cid in
-        let container = mk_mvar lcid lty in
-
-        let xid = dumloc "_x" in
-        let x = mk_mvar xid lty in
-        let setremove : mterm = mk_mterm (Msetremove (lty, container, x)) tset in
-        let assign : mterm = mk_mterm (Massign (ValueAssign, tset, Avar lcid, setremove)) tunit in
-        let loop : mterm = mk_mterm (Mfor (FIsimple xid, ICKlist c, assign, None)) tunit in
-        let seq = seq [loop; container] in
-        mk_letin lcid a seq
+        doit_gen a c tset ty (fun container x -> mk_mterm (Msetremove (lty, container, x)) tset)
       end
     | _ -> map_mterm (aux ctx) mt
   in
