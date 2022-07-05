@@ -6475,9 +6475,22 @@ let process_arith_container (model : model) =
         let loop : mterm = mk_mterm (Mfor (FIsimple xid, ICKlist c, assign, None)) tunit in
         let seq = seq [loop; container] in
         mk_letin lcid a seq
-     end
+      end
     | Mplus (({type_ = ((Tset ty, _) as t)} as a), ({type_ = (Tlist lty, _); node = Mlitlist l})) when cmp_type ty lty -> begin
         List.fold_right (fun x accu -> mk_mterm (Msetadd (ty, accu, x)) t) l (f a)
+      end
+    | Mplus (({type_ = ((Tset ty, _) as tset)} as a), ({type_ = (Tlist lty, _)} as c)) when cmp_type ty lty -> begin
+        let cid = "_l" in
+        let lcid = dumloc cid in
+        let container = mk_mvar lcid lty in
+
+        let xid = dumloc "_x" in
+        let x = mk_mvar xid lty in
+        let setadd : mterm = mk_mterm (Msetadd (lty, container, x)) tset in
+        let assign : mterm = mk_mterm (Massign (ValueAssign, tset, Avar lcid, setadd)) tunit in
+        let loop : mterm = mk_mterm (Mfor (FIsimple xid, ICKlist c, assign, None)) tunit in
+        let seq = seq [loop; container] in
+        mk_letin lcid a seq
       end
     | Mminus (({type_ = ((Tmap (kt, vt), _) as t)} as a), ({type_ = (Tlist lty, _); node = Mlitlist l})) when cmp_type kt lty -> begin
         List.fold_right (fun x accu -> mk_mterm (Mmapremove (MKMap, kt, vt, accu, x)) t) l (f a)
