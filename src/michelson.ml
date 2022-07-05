@@ -1796,7 +1796,7 @@ let rec to_data (o : obj_micheline) : data =
 
 type micheline_ = Micheline_printer.node
 
-let to_micheline_ (input : micheline) : micheline_ =
+let to_micheline_ (input : obj_micheline) : micheline_ =
 
   let emptyloc : Micheline_printer.location = {comment = None} in
 
@@ -1816,9 +1816,7 @@ let to_micheline_ (input : micheline) : micheline_ =
     | Ovar _ -> assert false
   in
 
-  (* let storage = doit input.storage in *)
-  (* let parameter = doit input.parameter in *)
-  let code = mkseq (List.map doit input.code) in
-  code
+  doit input
+
 
 (* mkseq [storage; parameter; code] *)

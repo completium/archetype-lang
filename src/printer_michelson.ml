@@ -130,20 +130,24 @@ and pp_code fmt (i : code) =
       else Format.fprintf fmt "%i %a" i pp_aux l
     end
   in
-  let rec pp_concrete_michelson fmt c =
-    let pp s = Format.fprintf fmt s in
-    let pp_empty pp fmt l =
-      if List.is_empty l
-      then ()
-      else (Format.fprintf fmt " "; pp fmt l)
-    in
-    match c with
-    | Oprim prim -> pp "%s%a%a" prim.prim (pp_empty (pp_list " " pp_str)) prim.annots (pp_empty (pp_list " " pp_concrete_michelson)) prim.args
-    | Ostring v  -> pp "\"%s\"" v
-    | Obytes v   -> pp "0x%s" v
-    | Oint v     -> pp "%s" v
-    | Oarray l   -> pp "{ %a }" (pp_list "; " pp_concrete_michelson) l
-    | Ovar _     -> assert false
+  let pp_concrete_michelson fmt (c : obj_micheline) =
+    let m_ = Michelson.to_micheline_ c in
+    (* let ppf = Format.std_formatter in *)
+    Micheline_printer.print_expr fmt m_
+
+  (* let pp s = Format.fprintf fmt s in
+     let pp_empty pp fmt l =
+     if List.is_empty l
+     then ()
+     else (Format.fprintf fmt " "; pp fmt l)
+     in
+     match c with
+     | Oprim prim -> pp "%s%a%a" prim.prim (pp_empty (pp_list " " pp_str)) prim.annots (pp_empty (pp_list " " pp_concrete_michelson)) prim.args
+     | Ostring v  -> pp "\"%s\"" v
+     | Obytes v   -> pp "0x%s" v
+     | Oint v     -> pp "%s" v
+     | Oarray l   -> pp "{ %a }" (pp_list "; " pp_concrete_michelson) l
+     | Ovar _     -> assert false *)
   in
   match i.node with
   (* Control structures *)
