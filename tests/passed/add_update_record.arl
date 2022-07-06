@@ -1,0 +1,20 @@
+archetype add_update_record
+
+asset my_asset {
+  a : nat;
+  b : bool;
+  c : set<nat> = [];
+} initialized by {
+  {0; false; []}
+}
+
+record my_record {
+  x : bool;
+  y : list<nat>;
+  z : set<nat>
+}
+
+entry updateTransferlist () {
+  const up : my_record = {x = true; y = [0; 1; 2]; z = []};
+  my_asset.add_update(0, { b := up.x; c += up.y })
+}
