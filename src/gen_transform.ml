@@ -6533,6 +6533,7 @@ let check_unused_variables (model : model) =
       let rec aux accu (mt : mterm) =
         match mt.node with
         | Mdeclvar (ids, _, _, _) -> add accu ids
+        | Mdeclvaropt (ids, _, _, _, _) -> add accu ids
         | Mvar (id, _, _, _) -> remove accu id
         | _ -> fold_term aux accu mt
       in
