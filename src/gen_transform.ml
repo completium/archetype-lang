@@ -6536,7 +6536,7 @@ let check_unused_variables (model : model) =
         | _ -> fold_term aux accu mt
       in
       let l = aux [] fs.body in
-      List.iter (fun x -> emit_warning (loc x, UnusedArgument (unloc x))) l
+      List.iter (fun x -> emit_warning (loc x, UnusedVariable (unloc x))) l
     in
     check_argument fs;
     check_variables fs
