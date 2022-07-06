@@ -35,11 +35,13 @@ type argument = {
 type decl_field = {
   name: string;
   type_: type_  [@key "type"];
+  is_key: bool;
 }
 [@@deriving yojson, show {with_path = false}]
 
 type decl_asset = {
   name: string;
+  container_kind: string;
   fields: decl_field list;
 }
 [@@deriving yojson, show {with_path = false}]
@@ -112,11 +114,11 @@ let mk_type node name args : type_ =
 let decl_type assets records enums events =
   { assets; records; enums; events }
 
-let mk_decl_field name type_ : decl_field =
-  { name; type_ }
+let mk_decl_field name type_ is_key : decl_field =
+  { name; type_; is_key }
 
-let mk_decl_asset name fields : decl_asset =
-  { name; fields }
+let mk_decl_asset name container_kind fields : decl_asset =
+  { name; container_kind; fields }
 
 let mk_decl_record name fields : decl_record =
   { name; fields }
@@ -214,11 +216,12 @@ let for_argument (a: M.argument) : argument =
   mk_argument (unloc (Tools.proj3_1 a)) (for_type (Tools.proj3_2 a))
 
 let for_decl_type (d : M.decl_node) (assets, enums, records, events) =
-  let for_asset_item (x : M.asset_item)     = mk_decl_field (unloc x.name) (for_type x.type_) in
-  let for_record_field (x : M.record_field) = mk_decl_field (unloc x.name) (for_type x.type_) in
+  let for_asset_item (asset  : M.asset) (x : M.asset_item)     = mk_decl_field (unloc x.name) (for_type x.type_) (List.exists (String.equal (unloc x.name)) asset.keys) in
+  let for_record_field (x : M.record_field) = mk_decl_field (unloc x.name) (for_type x.type_) false in
   let for_enum_item (x : M.enum_item)       = mk_decl_constructor (unloc x.name) (List.map for_type x.args) in
+  let for_map_kind = function | M.MKMap -> "map" | M.MKBigMap -> "big_map" | M.MKIterableBigMap -> "iterable_big_map" in
 
-  let for_asset  (asset  : M.asset)  : decl_asset  = mk_decl_asset  (unloc asset.name)  (List.map for_asset_item asset.values) in
+  let for_asset  (asset  : M.asset)  : decl_asset  = mk_decl_asset  (unloc asset.name)  (for_map_kind asset.map_kind) (List.map (for_asset_item asset) asset.values) in
   let for_enum   (enum   : M.enum)   : decl_enum   = mk_decl_enum   (unloc enum.name)   (List.map for_enum_item enum.values) in
   let for_record (record : M.record) : decl_record = mk_decl_record (unloc record.name) (List.map for_record_field record.fields) in
   let for_event  (event  : M.record) : decl_event  = mk_decl_event  (unloc event.name)  (List.map for_record_field event.fields) in
