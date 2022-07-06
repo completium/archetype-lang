@@ -216,7 +216,7 @@ let remove_add_update ?(isformula = false) (model : model) : model =
               let add = mk_mterm (
                   match c with
                   | CKfield (_, _, {node = Mdotassetfield (an, k, fn)}, _, _) -> Maddfield (unloc an, unloc fn, k, asset)
-                  | CKcoll _ -> Maddasset (an, asset)
+                  | CKcoll _ -> Mputsingleasset (an, asset)
                   | _ -> assert false) tunit in
               let update = mk_mterm (Mupdate (an, k, l)) tunit in
               let if_node = Mif (cond, update, Some add) in
