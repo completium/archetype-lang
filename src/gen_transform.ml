@@ -6470,7 +6470,7 @@ let process_arith_container (model : model) =
     let assign : mterm = mk_mterm (Massign (ValueAssign, ctyp, Avar lcid, mapput)) tunit in
     let ick = match get_ntype c.type_ with | Tset _ -> ICKset c | Tlist _ -> ICKlist c | _ -> assert false in
     let loop : mterm = mk_mterm (Mfor (FIsimple xid, ick, assign, None)) tunit in
-    let seq = seq [loop; container] in
+    let seq = mk_mterm (Mseq [loop; container]) container.type_  in
     mk_letin lcid a seq
   in
   let rec aux ctx (mt : mterm) : mterm =

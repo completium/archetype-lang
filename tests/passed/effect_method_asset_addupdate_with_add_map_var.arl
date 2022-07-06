@@ -1,0 +1,13 @@
+archetype effect_method_asset_addupdate_with_add_map_var
+
+asset my_asset {
+  id : nat;
+  m : map<string, bytes> = [];
+} initialized by {
+  {0; []}
+}
+
+entry exec () {
+  const l = [("k", 0x00); ("l", 0x01); ("m", 0x02)];
+  my_asset.add_update(0, {m += l});
+}
