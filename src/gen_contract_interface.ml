@@ -32,23 +32,29 @@ type argument = {
 }
 [@@deriving yojson, show {with_path = false}]
 
-type decl_field = {
+type decl_asset_field = {
   name: string;
   type_: type_  [@key "type"];
   is_key: bool;
 }
 [@@deriving yojson, show {with_path = false}]
 
+type decl_record_field = {
+  name: string;
+  type_: type_  [@key "type"];
+}
+[@@deriving yojson, show {with_path = false}]
+
 type decl_asset = {
   name: string;
   container_kind: string;
-  fields: decl_field list;
+  fields: decl_asset_field list;
 }
 [@@deriving yojson, show {with_path = false}]
 
 type decl_record = {
   name: string;
-  fields: decl_field list;
+  fields: decl_record_field list;
 }
 [@@deriving yojson, show {with_path = false}]
 
@@ -65,7 +71,7 @@ type decl_enum = {
 
 type decl_event = {
   name: string;
-  fields: decl_field list;
+  fields: decl_record_field list;
 }
 [@@deriving yojson, show {with_path = false}]
 
@@ -114,8 +120,11 @@ let mk_type node name args : type_ =
 let decl_type assets records enums events =
   { assets; records; enums; events }
 
-let mk_decl_field name type_ is_key : decl_field =
+let mk_decl_asset_field name type_ is_key : decl_asset_field =
   { name; type_; is_key }
+
+let mk_decl_record_field name type_ : decl_record_field =
+  { name; type_ }
 
 let mk_decl_asset name container_kind fields : decl_asset =
   { name; container_kind; fields }
@@ -216,8 +225,8 @@ let for_argument (a: M.argument) : argument =
   mk_argument (unloc (Tools.proj3_1 a)) (for_type (Tools.proj3_2 a))
 
 let for_decl_type (d : M.decl_node) (assets, enums, records, events) =
-  let for_asset_item (asset  : M.asset) (x : M.asset_item)     = mk_decl_field (unloc x.name) (for_type x.type_) (List.exists (String.equal (unloc x.name)) asset.keys) in
-  let for_record_field (x : M.record_field) = mk_decl_field (unloc x.name) (for_type x.type_) false in
+  let for_asset_item (asset  : M.asset) (x : M.asset_item)     = mk_decl_asset_field (unloc x.name) (for_type x.type_) (List.exists (String.equal (unloc x.name)) asset.keys) in
+  let for_record_field (x : M.record_field) = mk_decl_record_field (unloc x.name) (for_type x.type_) in
   let for_enum_item (x : M.enum_item)       = mk_decl_constructor (unloc x.name) (List.map for_type x.args) in
   let for_map_kind = function | M.MKMap -> "map" | M.MKBigMap -> "big_map" | M.MKIterableBigMap -> "iterable_big_map" in
 
