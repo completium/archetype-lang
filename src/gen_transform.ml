@@ -6532,8 +6532,8 @@ let check_unused_variables (model : model) =
       let remove accu id = List.fold_right (fun iid accu -> if String.equal (unloc id) (unloc iid) then accu else iid::accu) accu [] in
       let rec aux accu (mt : mterm) =
         match mt.node with
-        | Mdeclvar (ids, _, _, _) -> add accu ids
-        | Mdeclvaropt (ids, _, _, _, _) -> add accu ids
+        | Mdeclvar (ids, _, v, _) -> add (aux accu v) ids
+        | Mdeclvaropt (ids, _, v, _, _) -> add (aux accu v) ids
         | Mvar (id, _, _, _) -> remove accu id
         | _ -> fold_term aux accu mt
       in
