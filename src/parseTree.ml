@@ -114,6 +114,7 @@ and transfer_t =
   | TTsimple    of expr * expr
   | TTcontract  of expr * expr * lident * type_t * expr
   | TTentry     of expr * lident * expr
+  | TTentry2    of expr * lident * expr * lident * expr
   | TTself      of expr * lident * expr list
   | TToperation of expr
 
@@ -315,6 +316,7 @@ and enum_kind =
 (* -------------------------------------------------------------------- *)
 and declaration_unloc =
   | Darchetype     of lident * parameters * metadata option * exts
+  | Dimport        of lident * lident
   | Dvariable      of variable_decl
   | Denum          of enum_kind * enum_decl
   | Dasset         of asset_decl
@@ -684,6 +686,7 @@ let cst_level       = "level"
 
 let get_name = function
   | Darchetype  _                      -> "archetype"
+  | Dimport (id, _)                    -> unloc id
   | Dvariable (id, _, _, _, _, _)      -> unloc id
   | Denum (EKenum id, _)               -> unloc id
   | Denum (EKstate, _)                 -> "_state"

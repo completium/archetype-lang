@@ -90,6 +90,7 @@
 %token IDENTIFIED
 %token IF
 %token IMPLY
+%token IMPORT
 %token IN
 %token INITIAL
 %token INITIALIZED
@@ -302,6 +303,7 @@ implementation_archetype:
 
 declaration_r:
  | x=archetype          { x }
+ | x=import             { x }
  | x=constant           { x }
  | x=variable           { x }
  | x=enum               { x }
@@ -328,6 +330,9 @@ declaration_r:
 
 archetype:
 | ARCHETYPE exts=option(extensions) x=ident ps=parameters m=metadata { Darchetype (x, ps, m, exts) }
+
+import:
+| IMPORT x=ident FROM y=loc(STRING) {Dimport (x, y)}
 
 %inline metadata:
 | WITH_METADATA v=loc(STRING)     { Some (Muri v) }
@@ -999,6 +1004,9 @@ expr_r:
 
  | TRANSFER x=simple_expr TO ENTRY id=ident arg=simple_expr
      { Etransfer (TTentry (x, id, arg)) }
+
+ | TRANSFER x=simple_expr TO ENTRY ENTRY ida=ident arga=paren(expr) DOT id=ident arg=simple_expr
+     { Etransfer (TTentry2 (x, ida, arga, id, arg)) }
 
  | TRANSFER x=simple_expr TO ENTRY SELF DOT id=ident args=paren(sl(COMMA, simple_expr))
      { Etransfer (TTself (x, id, args)) }

@@ -5105,6 +5105,7 @@ let rec for_instruction_r
             A.TTcontract (e, to_, name, ty, arg)
           end
 
+        | TTentry2 (e, _, _, name, arg)
         | TTentry (e, name, arg) -> begin
             let x  = for_expr kind env ~ety:A.vtcurrency e in
             let nty =
@@ -6721,6 +6722,9 @@ let group_declarations (decls : (PT.declaration list)) =
     match decl with
     | PT.Darchetype (x, _, _, exts) ->
       { g with gr_archetypes = mk (x, exts) :: g.gr_archetypes }
+
+    | PT.Dimport (_id, _path) ->
+      assert false
 
     | PT.Dvariable infos ->
       { g with gr_vars = mk infos :: g.gr_vars }

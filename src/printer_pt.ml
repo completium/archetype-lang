@@ -505,6 +505,7 @@ let rec pp_expr outer pos fmt a =
       | TTsimple (x, dst)               -> Format.fprintf fmt "transfer %a to %a" pp_simple_expr x pp_simple_expr dst
       | TTcontract (x, dst, id, t, arg) -> Format.fprintf fmt "transfer %a to %a call %a<%a>(%a)" pp_simple_expr x pp_simple_expr dst pp_id id pp_type t pp_simple_expr arg
       | TTentry (x, id, arg)            -> Format.fprintf fmt "transfer %a to entry %a(%a)" pp_simple_expr x pp_id id pp_simple_expr arg
+      | TTentry2 (x, ida, arga, id, arg)-> Format.fprintf fmt "transfer %a to entry entry %a(%a).%a(%a)" pp_simple_expr x pp_id ida pp_simple_expr arga pp_id id pp_simple_expr arg
       | TTself (x, id, args)            -> Format.fprintf fmt "transfer %a to entry self.%a(%a)" pp_simple_expr x pp_id id (pp_list "," pp_simple_expr) args
       | TToperation x                   -> Format.fprintf fmt "transfer %a" pp_simple_expr x
     in
@@ -1315,6 +1316,11 @@ let rec pp_declaration fmt { pldesc = e; _ } =
       pp_id id
       pp_parameters ps
       (pp_option (fun fmt x -> Format.fprintf fmt "@\nwith metadata %a" pp_metadata x)) m
+
+  | Dimport (id, path) ->
+    Format.fprintf fmt "import %a from \"%a\""
+      pp_id id
+      pp_id path
 
   | Dvariable (id, typ, dv, kind, invs, exts) ->
     Format.fprintf fmt "%a%a %a : %a%a%a"

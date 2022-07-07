@@ -71,6 +71,7 @@
       "getter"              , GETTER              ;
       "identified"          , IDENTIFIED          ;
       "if"                  , IF                  ;
+      "import"              , IMPORT              ;
       "in"                  , IN                  ;
       "initial"             , INITIAL             ;
       "initialized"         , INITIALIZED         ;
