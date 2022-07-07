@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `make_asset`, `create_contract` builtin, `update` on set type
   - `to_container`, `put_remove` asset method
 ### Changed
-  - BREAKING: `caller` and `source` are not available as init value for storage fields
+  - BREAKING: constant `caller` (and any other constant) are no longer available as initial storage value.
 
 ## [1.3.1] - 2022-06-22
 ### Added
