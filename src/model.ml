@@ -199,10 +199,11 @@ type 'term iter_container_kind_gen =
 [@@deriving show {with_path = false}]
 
 type 'term transfer_kind_gen =
-  | TKsimple    of 'term * 'term                         (* dest *)
-  | TKcall      of 'term * ident * type_ * 'term * 'term (* entry_id * type_entry * dest * args *)
-  | TKentry     of 'term * 'term * 'term                 (* entry * arg *)
-  | TKself      of 'term * ident * (ident * 'term) list  (* entry_id * args *)
+  | TKsimple    of 'term * 'term                                  (* dest *)
+  | TKcall      of 'term * ident * type_ * 'term * 'term          (* entry_id * type_entry * dest * args *)
+  | TKentry     of 'term * 'term * 'term                          (* entry * arg *)
+  | TKgen       of 'term * ident * ident * type_ * 'term * 'term  (* entry_id * contract_id * addr * args *)
+  | TKself      of 'term * ident * (ident * 'term) list           (* entry_id * args *)
   | TKoperation of 'term
 [@@deriving show {with_path = false}]
 
@@ -1520,6 +1521,7 @@ let cmp_mterm_node
     | TKsimple (x1, d1), TKsimple (x2, d2)                     -> cmp x1 x2 && cmp d1 d2
     | TKcall (x1, i1, t1, d1, a1), TKcall (x2, i2, t2, d2, a2) -> cmp x1 x2 && cmp_ident i1 i2 && cmp_type t1 t2 && cmp d1 d2 && cmp a1 a2
     | TKentry (x1, e1, a1), TKentry (x2, e2, a2)               -> cmp x1 x2 && cmp e1 e2 && cmp a1 a2
+    | TKgen (x1, en1, cn1, t1, ad1, a1), TKgen (x2, en2, cn2, t2, ad2, a2) -> cmp x1 x2 && cmp_ident en1 en2 && cmp_ident cn1 cn2 && cmp_type t1 t2 && cmp ad1 ad2 && cmp a1 a2
     | TKself (x1, i1, as1), TKself (x2, i2, as2)               -> cmp x1 x2 && cmp_ident i1 i2 && List.for_all2 (fun (id1, v1) (id2, v2) -> cmp_ident id1 id2 && cmp v1 v2) as1 as2
     | TKoperation x1, TKoperation x2                           -> cmp x1 x2
     | _ -> false
@@ -1994,6 +1996,7 @@ let map_transfer_kind (fi : ident -> ident) (ft : type_ -> type_) f = function
   | TKsimple (x, d)         -> TKsimple (f x, f d)
   | TKcall (x, id, t, d, a) -> TKcall (f x, fi id, ft t, f d, f a)
   | TKentry (x, e, a)       -> TKentry (f x, f e, f a)
+  | TKgen (x, en, cn, t, ad, a)-> TKgen (f x, en, cn, t, f ad, f a)
   | TKself (x, id, args)    -> TKself (f x, fi id, List.map (fun (id, v) -> fi id, f v) args)
   | TKoperation x           -> TKoperation (f x)
 
@@ -2451,6 +2454,7 @@ let fold_transfer_kind f accu = function
   | TKsimple (x, d)        -> f (f accu x) d
   | TKcall (x, _, _, d, a) -> f (f (f accu x) d) a
   | TKentry (x, e, a)      -> f (f (f accu x) e) a
+  | TKgen (x, _en, _cn, _t, ad, a)-> f (f (f accu x) ad) a
   | TKself (x, _, args)    -> List.fold_left f (f accu x) (List.map snd args)
   | TKoperation x          -> f accu x
 
@@ -2802,6 +2806,11 @@ let fold_map_transfer_kind f accu = function
     let ee, ea = f xa e in
     let ae, aa = f ea a in
     TKentry (xe, ee, ae), aa
+  | TKgen (x, en, cn, t, ad, a) ->
+    let xe, xa = f accu x in
+    let ade, ada = f xa ad in
+    let ae, aa = f ada a in
+    TKgen (xe, en, cn, t, ade, ae), aa
   | TKself (x, id, args)->
     let xe, xa = f accu x in
     let args, accu =

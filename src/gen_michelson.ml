@@ -645,6 +645,7 @@ let to_ir (model : M.model) : T.ir =
           | TKsimple (v, d)         -> T.Iterop (Ttransfer_tokens, T.iunit, f v, get_contract None T.tunit (f d))
           | TKcall (v, id, t, d, a) -> T.Iterop (Ttransfer_tokens, f a, f v, get_entrypoint id (to_type model t) (f d))
           | TKentry (v, e, a)       -> T.Iterop (Ttransfer_tokens, f a, f v, f e)
+          | TKgen (v, id, _cn, t, a, arg) -> T.Iterop (Ttransfer_tokens, f arg, f v, get_entrypoint id (to_type model t) (f a))
           | TKself (v, id, args)    -> begin
               let a =
                 match args with

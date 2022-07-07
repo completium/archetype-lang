@@ -1792,8 +1792,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                        dl (Tapp(loc_term (Tvar "_mk_call"),[a; t; n; l])),
                        loc_term (Tdoti(gs,"_ops"))
                       )))
-        | TKentry (v, e, _a)         ->
+        | TKentry (v, e, _a) ->
           assign_operation (map_mterm m ctx v) (map_mterm m ctx e) (loc_term (Tnil gListAs))(*(map_mterm m ctx a)*)
+        | TKgen _ -> assert false
         | TKself (v, id, _a)->
           assign_operation
             (map_mterm m ctx v)

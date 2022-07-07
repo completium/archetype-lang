@@ -172,6 +172,7 @@ let pp_transfer_kind f fmt = function
   | TKsimple (x, d)         -> Format.fprintf fmt "transfer %a to %a" f x f d
   | TKcall (x, id, _, d, a) -> Format.fprintf fmt "transfer %a to %a call %s(%a)" f x f d id f a
   | TKentry (x, e, a)       -> Format.fprintf fmt "transfer %a to entry %a(%a)" f x f e f a
+  | TKgen (x, cn, en, _t, a, args) -> Format.fprintf fmt "transfer %a to entry %s(%a).%s(%a)" f x cn f a en f args
   | TKself (x, id, args)    -> Format.fprintf fmt "transfer %a to entry self.%a(%a)" f x pp_str id (pp_list ", " (fun fmt (id, x) -> Format.fprintf fmt "%s = %a" id f x)) args
   | TKoperation x           -> Format.fprintf fmt "transfer %a" f x
 

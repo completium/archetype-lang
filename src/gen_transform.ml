@@ -2598,6 +2598,7 @@ let extract_term_from_instruction f (model : model) : model =
         | TKsimple (v, d)         -> let ve, va = f v in let de, da = f d in TKsimple (ve, de), va @ da
         | TKcall (v, id, t, d, a) -> let ve, va = f v in let de, da = f d in let ae, aa = f a in TKcall (ve, id, t, de, ae), va @ da @ aa
         | TKentry (v, e, a)       -> let ve, va = f v in let ee, ea = f e in let ae, aa = f a in TKentry (ve, ee, ae), va @ ea @ aa
+        | TKgen (v, en, cn, t, e, a) -> let ve, va = f v in let ee, ea = f e in let ae, aa = f a in TKgen (ve, en, cn, t, ee, ae), va @ ea @ aa
         | TKself (v, id, args)    -> let ve, va = f v in let args, accu = List.fold_left (fun (args, accu) (id, a) -> let ae, aa = f a in (args @ [id, ae], accu @ aa)) ([], []) args  in TKself (ve, id, args), va @ accu
         | TKoperation op          -> let ope, opa = f op in TKoperation ope, opa
       in
