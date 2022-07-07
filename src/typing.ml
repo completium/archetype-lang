@@ -643,6 +643,7 @@ type opsig = {
 (* -------------------------------------------------------------------- *)
 type error_desc =
   | TODO
+  | Custom                             of ident
   | AEntryExpected                     of A.ptyp
   | AlienPattern
   | AnonymousFieldInEffect
@@ -684,6 +685,7 @@ type error_desc =
   | EffectInGlobalSpec
   | EmptyEnumDecl
   | ExpressionExpected
+  | FileNotFound                       of ident
   | ForeignState                       of ident option * ident option
   | FormulaExpected
   | IncompatibleSpecSig
@@ -877,6 +879,7 @@ let pp_error_desc fmt e =
 
   match e with
   | TODO                               -> pp "TODO"
+  | Custom str                         -> pp "%s" str
   | AEntryExpected ty                  -> pp "Expecting an entry point, not a `%a'" Printer_ast.pp_ptyp ty
   | AlienPattern                       -> pp "This pattern does not belong to the enumeration"
   | AnonymousFieldInEffect             -> pp "Anonymous field in effect"
@@ -920,6 +923,7 @@ let pp_error_desc fmt e =
   | EffectInGlobalSpec                 -> pp "(Shadow) effects at global level are forbidden"
   | EmptyEnumDecl                      -> pp "Empty state/enum declaration"
   | ExpressionExpected                 -> pp "Expression expected"
+  | FileNotFound i                     -> pp "File not found: %s" i
   | ForeignState (i1, i2)              -> pp "Expecting a state of %a, not %a" pp_ident (Option.get_dfl "<global>" i1) pp_ident (Option.get_dfl "<global>" i2)
   | FormulaExpected                    -> pp "Formula expected"
   | IncompatibleSpecSig                -> pp "Specification's signature does not match the one of the targeted object"
@@ -5187,7 +5191,7 @@ let rec for_instruction_r
 
             let arg  = for_expr kind env arg ~ety:etyp in
 
-            TTgen (a, unloc en, unloc cn, A.vtnat, address_arg, arg)
+            TTgen (a, unloc en, unloc cn, etyp, address_arg, arg)
           end
 
         | TTself (e, name, args) -> begin
@@ -6028,9 +6032,18 @@ let for_enum_decl (env : env) (decl : (PT.lident * PT.enum_decl) loced) =
 (* -------------------------------------------------------------------- *)
 let for_import_decl (env : env) (decls : (PT.lident * PT.lident) loced list) =
   let importdecls = List.fold_right (fun (a : (PT.lident * PT.lident) loced) accu -> begin
-        let id, path = unloc a in
-        let importdecl = { id_name = id; id_path = path; id_entrypoints = ["%exec", A.vtnat] } in
-        importdecl::accu
+        let lo, (id, path) = deloc a in
+        if Core.is_valid_path (unloc path)
+        then begin
+          let entrypoints, errors = Gen_decompile.get_entrypoints_for_ast (unloc path) in
+          match errors with
+          | [] -> begin
+              let importdecl = { id_name = id; id_path = path; id_entrypoints = entrypoints } in
+              importdecl::accu
+            end
+          | _ -> List.iter (fun err ->  Env.emit_error env (lo, Custom err)) errors; accu
+        end
+        else accu
       end) decls [] in
   let env = List.fold_left (fun env (x : importdecl) -> Env.Import.push env x) env importdecls in
   env, importdecls

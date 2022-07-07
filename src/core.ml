@@ -433,3 +433,6 @@ let is_valid_string v =
         false
   in
   check_printable_ascii (String.length v - 1)
+
+let is_valid_path path =
+  Sys.file_exists path

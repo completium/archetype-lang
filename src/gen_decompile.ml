@@ -4,6 +4,7 @@ open Core
 open UF
 
 module T = Michelson
+module B = Ast
 module M = Model
 module A = ParseTree
 
@@ -198,19 +199,19 @@ let to_michelson (input, env : T.obj_micheline * env) : T.michelson * env =
       | Oprim ({prim = "CONTRACT"; args = t::_; annots = a}) -> T.mk_code (T.CONTRACT (to_type t, fa a))
       | Oprim ({prim = "CREATE_CONTRACT"; args = a::_; _})   -> begin
           (* let seek tag a =
-            let rec aux tag accu (a : T.obj_micheline) =
+             let rec aux tag accu (a : T.obj_micheline) =
               match a with
               | Oprim {prim=a; args=arg::_; _} when String.equal tag a -> Some arg
               | Oarray l -> List.fold_left (fun accu x -> match accu with | Some _ -> accu | None -> aux tag accu x) accu l
               | _ -> None
-            in
-            match aux tag None a with
-            | Some a -> a
-            | None -> assert false
-          in
-          let p = seek "parameter" a in
-          let s = seek "storage" a in
-          let c = seek "code" a in *)
+             in
+             match aux tag None a with
+             | Some a -> a
+             | None -> assert false
+             in
+             let p = seek "parameter" a in
+             let s = seek "storage" a in
+             let c = seek "code" a in *)
           T.mk_code (T.CREATE_CONTRACT a)
         end
       | Oprim ({prim = "IMPLICIT_ACCOUNT"; _})               -> T.mk_code T.IMPLICIT_ACCOUNT
@@ -1988,3 +1989,76 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
   in
 
   A.mk_archetype () ~decls:((A.mk_darchetype model.name)::decls)
+
+let get_entrypoints_for_ast (path : string) : (string * B.ptyp) list * string list =
+  let seek (obj : T.obj_micheline) prim : T.obj_micheline option =
+    match obj with
+    | T.Oarray l -> begin
+        let op = List.fold_left (fun accu x -> match x with | T.Oprim p when String.equal p.prim prim -> Some p | _ -> accu) None l in
+        match op with
+        | Some p -> Some (List.nth p.args 0)
+        | _ -> None
+      end
+    | _ -> None
+  in
+  let split (obj : T.obj_micheline) : (string * T.obj_micheline) list =
+    let rec aux obj =
+      match obj with
+      | T.Oprim {prim = "or"; args = l} -> List.map aux l |> List.flatten
+      | T.Oprim {annots=[a]} -> [a, obj]
+      | _ -> []
+    in
+
+    match obj with
+    | T.Oprim {prim = "or"} -> aux obj
+    | T.Oprim p when not (List.is_empty p.annots)  -> aux obj
+    | _ -> ["%default", obj]
+  in
+
+  let for_type (obj : T.obj_micheline) : B.ptyp =
+
+    let rec aux (t : T.type_) =
+      let f = aux in
+      match t.node with
+      | Tkey                   -> B.Tbuiltin VTkey
+      | Tunit                  -> B.Tbuiltin VTunit
+      | Tsignature             -> B.Tbuiltin VTsignature
+      | Toption    t           -> B.Toption (f t)
+      | Tlist      t           -> B.Tlist   (f t)
+      | Tset       t           -> B.Tset    (f t)
+      | Toperation             -> B.Toperation
+      | Tcontract  t           -> B.Tcontract (f t)
+      | Tpair      (lt, rt)    -> B.Ttuple [f lt; f rt]
+      | Tor        (lt, rt)    -> B.Tor (f lt, f rt)
+      | Tlambda    (at, rt)    -> B.Tlambda (f at, f rt)
+      | Tmap       (kt, vt)    -> B.Tmap (f kt, f vt)
+      | Tbig_map   (kt, vt)    -> B.Tbig_map (f kt, f vt)
+      | Tchain_id              -> B.Tbuiltin VTchainid
+      | Tint                   -> B.Tbuiltin VTint
+      | Tnat                   -> B.Tbuiltin VTnat
+      | Tstring                -> B.Tbuiltin VTstring
+      | Tbytes                 -> B.Tbuiltin VTbytes
+      | Tmutez                 -> B.Tbuiltin VTcurrency
+      | Tbool                  -> B.Tbuiltin VTbool
+      | Tkey_hash              -> B.Tbuiltin VTkeyhash
+      | Ttimestamp             -> B.Tbuiltin VTdate
+      | Taddress               -> B.Tbuiltin VTaddress
+      | Tticket t              -> B.Tticket (f t)
+      | Tsapling_transaction n -> B.Tsapling_transaction n
+      | Tsapling_state       n -> B.Tsapling_state n
+      | Tbls12_381_fr          -> B.Tbuiltin VTbls12_381_fr
+      | Tbls12_381_g1          -> B.Tbuiltin VTbls12_381_g1
+      | Tbls12_381_g2          -> B.Tbuiltin VTbls12_381_g2
+      | Tnever                 -> B.Tbuiltin VTnever
+      | Tchest                 -> B.Tbuiltin VTchest
+      | Tchest_key             -> B.Tbuiltin VTchest_key
+    in
+
+    aux (T.to_type obj)
+  in
+
+  let ic = open_in path in
+  let obj, _ = parse_micheline (FIChannel (path, ic)) in
+  match seek obj "parameter" with
+  | Some parameters -> List.map (fun (i, t) -> (i, for_type t)) (split parameters), []
+  | None -> [], ["Invalid tz file"]
