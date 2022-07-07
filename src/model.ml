@@ -991,6 +991,37 @@ type metadata_kind =
   | MKjson of string loced
 [@@deriving show {with_path = false}]
 
+type odel_asset = {
+  name: ident;
+  container_type: type_;
+  key_type: type_;
+  value_type: type_;
+}
+[@@deriving show {with_path = false}]
+
+type odel_record = {
+  name: ident;
+  current_type: type_;
+}
+[@@deriving show {with_path = false}]
+
+type odel_enum = {
+  name: ident;
+  current_type: type_;
+}
+[@@deriving show {with_path = false}]
+
+type original_decl =
+  | ODAsset of odel_asset
+  | ODRecord of odel_record
+  | ODEnum of odel_enum
+[@@deriving show {with_path = false}]
+
+type extra = {
+  original_decls: original_decl list
+}
+[@@deriving show {with_path = false}]
+
 type 'id model_gen = {
   name          : lident;
   parameters    : 'id parameter_gen list;
@@ -1002,6 +1033,7 @@ type 'id model_gen = {
   functions     : 'id function__gen list;
   specification : 'id specification_gen;
   security      : security;
+  extra         : extra;
   loc           : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -1093,8 +1125,20 @@ let mk_signature ?(args = []) ?ret name : 'id signature_gen =
 let mk_api_item node_item api_loc =
   { node_item; api_loc }
 
-let mk_model ?(parameters = []) ?metadata ?(api_items = []) ?(api_verif = []) ?(decls = []) ?(functions = []) ?(storage = []) ?(specification = mk_specification ()) ?(security = mk_security ()) ?(loc = Location.dummy) name : model =
-  { name; parameters; metadata; api_items; api_verif; storage; decls; functions; specification; security; loc }
+let mk_odel_asset name container_type key_type value_type : odel_asset =
+  { name; container_type; key_type; value_type }
+
+let mk_odel_record name current_type : odel_record =
+  { name; current_type }
+
+let mk_odel_enum name current_type : odel_enum =
+  { name; current_type }
+
+let mk_extra ?(original_decls = []) () : extra =
+  { original_decls }
+
+let mk_model ?(parameters = []) ?metadata ?(api_items = []) ?(api_verif = []) ?(decls = []) ?(functions = []) ?(storage = []) ?(specification = mk_specification ()) ?(security = mk_security ()) ?(extra = mk_extra ()) ?(loc = Location.dummy) name : model =
+  { name; parameters; metadata; api_items; api_verif; storage; decls; functions; specification; security; extra; loc }
 
 (* -------------------------------------------------------------------- *)
 
@@ -4482,6 +4526,7 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
     functions     = List.map for_function__ model.functions;
     specification = for_specification model.specification;
     security      = for_security model.security;
+    extra         = model.extra;
     loc           = model.loc;
   }
 

@@ -513,7 +513,9 @@ let show_contract_interface input : string =
     |> parse
     |> compile_model
   in
-  Gen_contract_interface.model_to_contract_interface_json model
+  let low_model = toolchain model in
+
+  Gen_contract_interface.model_to_contract_interface_json model low_model
 
 (* -------------------------------------------------------------------- *)
 
@@ -551,10 +553,13 @@ let with_parameters input : string =
 (* -------------------------------------------------------------------- *)
 
 let contract_interface input : string =
-  input
-  |> parse
-  |> compile_model
-  |> Gen_contract_interface.model_to_contract_interface_json
+  let model =
+    input
+    |> parse
+    |> compile_model
+  in
+  let low_model = toolchain model in
+  Gen_contract_interface.model_to_contract_interface_json model low_model
 
 (* -------------------------------------------------------------------- *)
 

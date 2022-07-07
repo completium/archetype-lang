@@ -5534,25 +5534,38 @@ let remove_asset (model : model) : model =
     map_mterm_model fm model
   in
 
+  let rec to_type_remove_asset (map : ((bool * bool) * (type_ * type_)) MapString.t) t : type_ =
+    let ft = to_type_remove_asset map in
+    match get_ntype t with
+    | Tcontainer ((Tasset an, _), View) -> tlist (Utils.get_asset_key model (unloc an) |> snd)
+    | Tcontainer ((Tasset an, _), AssetContainer) -> get_type_for_asset_container map (unloc an)
+    | Tcontainer ((Tasset an, _), AssetKey) -> Utils.get_asset_key model (unloc an) |> snd
+    | Tcontainer ((Tasset an, _), AssetValue) ->
+      let uan = unloc an in
+      if Utils.is_asset_single_field model uan
+      then tunit
+      else begin
+        if is_simple_record map uan
+        then get_type_for_asset_value map uan
+        else trecord an
+      end
+    | Tasset an -> for_asset_type (unloc an)
+    | _ -> map_type ft t
+  in
+
   let remove_type_asset (map : ((bool * bool) * (type_ * type_)) MapString.t) (model : model) : model =
-    let rec ft t : type_ =
-      match get_ntype t with
-      | Tcontainer ((Tasset an, _), View) -> tlist (Utils.get_asset_key model (unloc an) |> snd)
-      | Tcontainer ((Tasset an, _), AssetContainer) -> get_type_for_asset_container map (unloc an)
-      | Tcontainer ((Tasset an, _), AssetValue) ->
-        let uan = unloc an in
-        if Utils.is_asset_single_field model uan
-        then tunit
-        else begin
-          if is_simple_record map uan
-          then get_type_for_asset_value map uan
-          else trecord an
-        end
-      | Tasset an -> for_asset_type (unloc an)
-      | _ -> map_type ft t
-    in
+    let ft = to_type_remove_asset map in
     let rec fm x = map_mterm ~ft fm x in
     map_model (fun _ -> id) ft fm model
+  in
+
+  let add_extra_asset (map : ((bool * bool) * (type_ * type_)) MapString.t) (model : model) : model =
+    let ft = to_type_remove_asset map in
+    let assets = List.fold_right (fun x accu -> match x with | Dasset a -> a::accu | _ -> accu) model.decls [] in
+    let items = List.map (fun (x : asset) -> let an = x.name in ODAsset (mk_odel_asset (unloc an) (ft (tassetcontainer an)) (ft (tassetkey an)) (ft (tassetvalue an)))) assets in
+    let original_decls = model.extra.original_decls @ items in
+    let extra = model.extra in
+    { model with extra = { extra with original_decls = original_decls } }
   in
 
   let remove_decl_asset (model : model) : model =
@@ -5562,6 +5575,7 @@ let remove_asset (model : model) : model =
   let model, map = process_storage model in
   process_mterm map model
   |> remove_type_asset map
+  |> add_extra_asset map
   |> remove_decl_asset
 
 let remove_high_level_model (model : model)  =

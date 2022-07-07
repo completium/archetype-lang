@@ -1,6 +1,7 @@
 open Location
 
 module M = Model
+module T = Michelson
 
 type type_ = {
   node: string;
@@ -49,12 +50,16 @@ type decl_asset = {
   name: string;
   container_kind: string;
   fields: decl_asset_field list;
+  container_type_michelson: T.obj_micheline;
+  key_type_michelson: T.obj_micheline;
+  value_type_michelson: T.obj_micheline;
 }
 [@@deriving yojson, show {with_path = false}]
 
 type decl_record = {
   name: string;
   fields: decl_record_field list;
+  type_michelson: T.obj_micheline;
 }
 [@@deriving yojson, show {with_path = false}]
 
@@ -126,11 +131,11 @@ let mk_decl_asset_field name type_ is_key : decl_asset_field =
 let mk_decl_record_field name type_ : decl_record_field =
   { name; type_ }
 
-let mk_decl_asset name container_kind fields : decl_asset =
-  { name; container_kind; fields }
+let mk_decl_asset name container_kind fields container_type_michelson key_type_michelson value_type_michelson : decl_asset =
+  { name; container_kind; fields; container_type_michelson; key_type_michelson; value_type_michelson }
 
-let mk_decl_record name fields : decl_record =
-  { name; fields }
+let mk_decl_record name fields type_michelson : decl_record =
+  { name; fields; type_michelson }
 
 let mk_decl_constructor name types : decl_constructor =
   { name; types }
@@ -224,15 +229,39 @@ let for_parameter (p : M.parameter) : parameter =
 let for_argument (a: M.argument) : argument =
   mk_argument (unloc (Tools.proj3_1 a)) (for_type (Tools.proj3_2 a))
 
-let for_decl_type (d : M.decl_node) (assets, enums, records, events) =
+let to_michelson_type (model : M.model) (type_michelson : M.type_) : T.obj_micheline =
+  let type_michelson = Gen_michelson.to_type model type_michelson  in
+  T.Utils.type_to_micheline type_michelson
+
+let for_decl_type (model : M.model) (low_model : M.model) (d : M.decl_node) (assets, enums, records, events) =
   let for_asset_item (asset  : M.asset) (x : M.asset_item)     = mk_decl_asset_field (unloc x.name) (for_type x.type_) (List.exists (String.equal (unloc x.name)) asset.keys) in
   let for_record_field (x : M.record_field) = mk_decl_record_field (unloc x.name) (for_type x.type_) in
   let for_enum_item (x : M.enum_item)       = mk_decl_constructor (unloc x.name) (List.map for_type x.args) in
   let for_map_kind = function | M.MKMap -> "map" | M.MKBigMap -> "big_map" | M.MKIterableBigMap -> "iterable_big_map" in
 
-  let for_asset  (asset  : M.asset)  : decl_asset  = mk_decl_asset  (unloc asset.name)  (for_map_kind asset.map_kind) (List.map (for_asset_item asset) asset.values) in
+  let for_asset  (asset  : M.asset)  : decl_asset =
+    let ft x = to_michelson_type low_model x in
+    let lll = low_model.extra.original_decls in
+    let od : M.odel_asset option = List.fold_left (fun accu x ->
+        match x with
+        | M.ODAsset x when String.equal x.name (unloc asset.name)-> Some x
+        | _-> accu) None lll
+    in
+    let odasset : M.odel_asset = Option.get od in
+    let container_type = ft odasset.container_type in
+    let key_type       = ft odasset.key_type in
+    let value_type     = ft odasset.value_type in
+    mk_decl_asset (unloc asset.name)  (for_map_kind asset.map_kind) (List.map (for_asset_item asset) asset.values) container_type key_type value_type
+  in
+
   let for_enum   (enum   : M.enum)   : decl_enum   = mk_decl_enum   (unloc enum.name)   (List.map for_enum_item enum.values) in
-  let for_record (record : M.record) : decl_record = mk_decl_record (unloc record.name) (List.map for_record_field record.fields) in
+
+  let for_record (record : M.record) : decl_record =
+    let type_michelson = Gen_michelson.to_type model (M.trecord record.name)  in
+    let tm_obj = T.Utils.type_to_micheline type_michelson in
+    mk_decl_record (unloc record.name) (List.map for_record_field record.fields) tm_obj
+  in
+
   let for_event  (event  : M.record) : decl_event  = mk_decl_event  (unloc event.name)  (List.map for_record_field event.fields) in
 
   match d with
@@ -242,8 +271,8 @@ let for_decl_type (d : M.decl_node) (assets, enums, records, events) =
   | Drecord re   -> (assets, enums, (for_record re)::records, events)
   | Devent re    -> (assets, enums, records, (for_event re)::events)
 
-let for_decl_type (ds : M.decl_node list) : decl_type =
-  let assets, enums, records, events = List.fold_right for_decl_type ds ([], [], [], []) in
+let for_decl_type (model : M.model) (low_model : M.model) (ds : M.decl_node list) : decl_type =
+  let assets, enums, records, events = List.fold_right (for_decl_type model low_model) ds ([], [], [], []) in
   mk_decl_type assets enums records events
 
 let for_storage (d : M.decl_node) accu =
@@ -262,15 +291,15 @@ let for_entrypoint (fs : M.function_struct) : decl_entrypoint =
 let for_getter (fs, rt : M.function_struct * M.type_) : decl_getter =
   mk_getter (unloc fs.name) (List.map for_argument fs.args) (for_type rt)
 
-let model_to_contract_interface (model : M.model) : contract_interface =
+let model_to_contract_interface (model : M.model) (low_model : M.model) : contract_interface =
   let parameters = List.map for_parameter model.parameters in
-  let types = for_decl_type model.decls in
+  let types = for_decl_type model low_model model.decls in
   let storage = List.fold_right for_storage model.decls [] in
   let entrypoints = List.map for_entrypoint (List.fold_right (fun (x : M.function__) accu -> match x.node with | Entry fs -> fs::accu | _ -> accu) model.functions [])  in
   let getters = List.map for_getter (List.fold_right (fun (x : M.function__) accu -> match x.node with | Getter (fs, r) -> (fs, r)::accu | _ -> accu) model.functions [])  in
   let errors = [] in
   mk_contract_interface (unloc model.name) parameters types storage entrypoints getters errors
 
-let model_to_contract_interface_json (model : M.model) : string =
-  let ci = model_to_contract_interface model in
+let model_to_contract_interface_json (model : M.model) (low_model : M.model) : string =
+  let ci = model_to_contract_interface model low_model in
   Format.asprintf "%s\n" (Yojson.Safe.to_string (contract_interface_to_yojson ci))

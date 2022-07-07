@@ -13,7 +13,7 @@ type prim = {
   args: obj_micheline list;
   annots: ident list;
 }
-[@@deriving show {with_path = false}]
+[@@deriving yojson, show {with_path = false}]
 
 and obj_micheline =
   | Oprim of prim
@@ -22,7 +22,7 @@ and obj_micheline =
   | Oint of string
   | Oarray of obj_micheline list
   | Ovar of obj_micheline_var
-[@@deriving show {with_path = false}]
+[@@deriving yojson, show {with_path = false}]
 
 and obj_micheline_var =
   | OMVfree   of ident
@@ -30,6 +30,7 @@ and obj_micheline_var =
   | OMVstring of ident
   | OMVbytes  of ident
   | OMVif     of ident * obj_micheline * obj_micheline
+[@@deriving yojson, show {with_path = false}]
 
 type type_node =
   | Taddress
