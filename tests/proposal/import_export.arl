@@ -1,6 +1,0 @@
-archetype tz_contract_export
-
-record myrecord {
-  n : nat;
-  s : string;
-}

@@ -1,0 +1,14 @@
+archetype import_export
+
+record myrecord {
+  n : nat;
+  s : string;
+}
+
+entry e(i : nat) {
+
+}
+
+view get() : nat {
+  return 2
+}

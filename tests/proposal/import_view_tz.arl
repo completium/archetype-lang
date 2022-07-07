@@ -1,0 +1,9 @@
+archetype import_contract
+
+import contract_tz from "tests/michelson/view.tz"
+
+variable res : nat = 0
+
+entry exec () {
+  res := contract_tz(a).getN();
+}
