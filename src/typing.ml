@@ -1237,6 +1237,7 @@ type acttx = [
 
 type groups = {
   gr_archetypes  : (PT.lident * PT.exts)        loced list;
+  gr_imports     : (PT.lident * PT.lident)      loced list;
   gr_states      : PT.enum_decl                 loced list;
   gr_enums       : (PT.lident * PT.enum_decl)   loced list;
   gr_assets      : PT.asset_decl                loced list;
@@ -1535,6 +1536,13 @@ let allops : opinfo list =
   coreops @ optionops @ setops @ listops @ mapops @ bigmapops @ iterablebigmapops @
   cryptoops @ packops @ opsops @ lambdaops @
   ticket_ops @ bls_ops @ mathops @ timelock_ops
+
+(* -------------------------------------------------------------------- *)
+type importdecl = {
+  id_name  : A.lident;
+  id_path  : A.lident;
+}
+[@@deriving show {with_path = false}]
 
 (* -------------------------------------------------------------------- *)
 type assetdecl = {
@@ -5105,7 +5113,6 @@ let rec for_instruction_r
             A.TTcontract (e, to_, name, ty, arg)
           end
 
-        | TTentry2 (e, _, _, name, arg)
         | TTentry (e, name, arg) -> begin
             let x  = for_expr kind env ~ety:A.vtcurrency e in
             let nty =
@@ -5131,6 +5138,15 @@ let rec for_instruction_r
             let e = A.mk_sp ~type_:nty (A.Pvar (VTnone, Vnone, name)) in
 
             A.TTentry (x, e, arg)
+          end
+
+        | TTentry2 (a, contract_name, address_arg, name, arg) -> begin
+            let a  = for_expr kind env ~ety:A.vtcurrency a in
+            let address_arg  = for_expr kind env address_arg in
+            let arg  = for_expr kind env arg in
+            (* ident * type_ * 'id term_gen * 'id term_gen *)
+            (*  *)
+            TTgen (a, unloc name, unloc contract_name, A.vtnat, address_arg, arg)
           end
 
         | TTself (e, name, args) -> begin
@@ -5969,6 +5985,10 @@ let for_enum_decl (env : env) (decl : (PT.lident * PT.enum_decl) loced) =
   env, (decl, inv)
 
 (* -------------------------------------------------------------------- *)
+let for_import_decl (env : env) (decls : (PT.lident * PT.lident) loced list) =
+  env, List.map ((fun x -> let x, y = unloc x in {id_name = x; id_path = y} )) decls
+
+(* -------------------------------------------------------------------- *)
 let for_enums_decl (env : env) (decls : (PT.lident * PT.enum_decl) loced list) =
   List.fold_left_map for_enum_decl env decls
 
@@ -6701,6 +6721,7 @@ let for_secs_decl (env : env) (decls : PT.security loced list) =
 let group_declarations (decls : (PT.declaration list)) =
   let empty = {
     gr_archetypes = [];
+    gr_imports    = [];
     gr_states     = [];
     gr_enums      = [];
     gr_assets     = [];
@@ -6723,8 +6744,8 @@ let group_declarations (decls : (PT.declaration list)) =
     | PT.Darchetype (x, _, _, exts) ->
       { g with gr_archetypes = mk (x, exts) :: g.gr_archetypes }
 
-    | PT.Dimport (_id, _path) ->
-      assert false
+    | PT.Dimport (id, path) ->
+      { g with gr_imports = mk (id, path) :: g.gr_imports }
 
     | PT.Dvariable infos ->
       { g with gr_vars = mk infos :: g.gr_vars }
@@ -6778,6 +6799,7 @@ let group_declarations (decls : (PT.declaration list)) =
 
 (* -------------------------------------------------------------------- *)
 type decls = {
+  imports   : importdecl list;
   state     : statedecl option;
   variables : vardecl option list;
   enums     : statedecl option list;
@@ -6823,9 +6845,10 @@ let for_grouped_declarations (env : env) (toploc, g) =
     | _ ->
       (None, None, env) in
 
+  let env, imports      = for_import_decl    env g.gr_imports in
   let env, enums        = for_enums_decl     env g.gr_enums   in
   let env, records      = for_records_decl   env g.gr_records in
-  let env, events       = for_events_decl    env g.gr_events in
+  let env, events       = for_events_decl    env g.gr_events  in
   let enums, especs     = List.split enums                    in
   let env, variables    = for_vars_decl      env g.gr_vars    in
   let variables, vspecs = List.split variables                in
@@ -6892,7 +6915,7 @@ let for_grouped_declarations (env : env) (toploc, g) =
 
   let output =
     { state    ; variables; enums   ; assets ; functions;
-      acttxs   ; specs    ; secspecs; records; events }
+      acttxs   ; specs    ; secspecs; records; events; imports }
 
   in (env, output)
 
@@ -7226,6 +7249,7 @@ let for_declarations ?init (env : env) (decls : (PT.declaration list) loced) : A
 
     A.mk_model
       ~parameters
+      ~imports:(List.map (fun x -> x.id_name, x.id_path) decls.imports)
       ?metadata
       ~decls:((
           List.map (fun x -> A.Dvariable x) (variables_of_vdecls decls.variables)                            @

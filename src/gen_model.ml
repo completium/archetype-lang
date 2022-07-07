@@ -1135,6 +1135,7 @@ let to_model (ast : A.ast) : M.model =
             | TTsimple (v, d)               -> M.TKsimple (f v, f d)
             | TTcontract (v, d, id, t, arg) -> M.TKcall (f v, unloc id, type_to_type t, f d, f arg)
             | TTentry (v, e, arg)           -> M.TKentry (f v, f e, f arg)
+            | TTgen (x, c, cn, _t, e, arg)  -> assert false
             | TTself (v, id, args)          -> M.TKself (f v, unloc id, List.map (fun (id, v) -> unloc id, f v) args)
             | TToperation v                 -> M.TKoperation (f v)
           in

@@ -436,6 +436,7 @@ and 'id transfer_t =
   | TTsimple    of 'id term_gen * 'id term_gen
   | TTcontract  of 'id term_gen * 'id term_gen * 'id * type_ * 'id term_gen
   | TTentry     of 'id term_gen * 'id term_gen * 'id term_gen
+  | TTgen       of 'id term_gen * ident * ident * type_ * 'id term_gen * 'id term_gen
   | TTself      of 'id term_gen * 'id * ('id * 'id term_gen) list
   | TToperation of 'id term_gen
 
@@ -776,6 +777,7 @@ type metadata_kind =
 type 'id ast_struct = {
   name           : 'id;
   parameters     : 'id parameter list;
+  imports        : ('id * 'id) list;
   metadata       : metadata_kind option;
   decls          : 'id decl_ list;
   funs           : 'id fun_ list;
@@ -887,8 +889,8 @@ let mk_decl ?typ ?default ?(shadow=false) ?(loc = Location.dummy) name =
 let mk_asset ?(fields = []) ?(keys = []) ?(sort = []) ?(map_kind = MKMap) ?state ?(init = []) ?(specs = []) ?(loc = Location.dummy) name   =
   { name; fields; keys; sort; map_kind; state; init; specs; loc }
 
-let mk_model ?(parameters = []) ?metadata ?(decls = []) ?(funs = []) ?(specifications = []) ?(securities = []) ?(loc = Location.dummy) name =
-  { name; parameters; metadata; decls; funs; specifications; securities; loc }
+let mk_model ?(parameters = []) ?(imports = []) ?metadata ?(decls = []) ?(funs = []) ?(specifications = []) ?(securities = []) ?(loc = Location.dummy) name =
+  { name; parameters; imports; metadata; decls; funs; specifications; securities; loc }
 
 let mk_id type_ id : qualid =
   { type_ = Some type_;

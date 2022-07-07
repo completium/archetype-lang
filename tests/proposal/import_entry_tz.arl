@@ -5,6 +5,8 @@ import contract_tz from "tests/michelson/simple_nat.tz"
 variable res : nat = 0
 
 entry exec () {
+  const a = caller;
+  const n = 2;
   transfer 0tz to entry entry contract_tz(a).exec(n);
 
   // const c : contract<nat> = import_decl(a).e;
