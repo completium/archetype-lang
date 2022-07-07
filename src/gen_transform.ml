@@ -1663,6 +1663,20 @@ let remove_enum (model : model) : model =
     aux mt
   in
 
+  let add_od_enum (model : model) : model =
+    let lll = List.fold_left (fun accu x -> begin
+          match x with
+          | Denum e -> begin
+              let ename : string = unloc e.name in
+              let te = for_type (tenum (e.name)) in
+              ODEnum (mk_odel_enum ename te)::accu
+            end
+          | _ -> accu
+        end ) [] model.decls in
+
+    {model with extra = {model.extra with original_decls = (lll @ model.extra.original_decls)}}
+  in
+
   let clean model =
     let decls =
       List.fold_right (fun x accu ->
@@ -1680,6 +1694,7 @@ let remove_enum (model : model) : model =
   in
   model
   |> process_asset_state
+  |> add_od_enum
   |> clean
   |> map_model (fun _ x -> x) for_type for_mterm
 

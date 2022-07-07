@@ -71,6 +71,7 @@ type decl_constructor = {
 type decl_enum = {
   name: string;
   constructors: decl_constructor list;
+  type_michelson: T.obj_micheline;
 }
 [@@deriving yojson, show {with_path = false}]
 
@@ -140,8 +141,8 @@ let mk_decl_record name fields type_michelson : decl_record =
 let mk_decl_constructor name types : decl_constructor =
   { name; types }
 
-let mk_decl_enum name constructors : decl_enum =
-  { name; constructors }
+let mk_decl_enum name constructors type_michelson : decl_enum =
+  { name; constructors; type_michelson }
 
 let mk_decl_event name fields : decl_event =
   { name; fields }
@@ -239,22 +240,28 @@ let for_decl_type (model : M.model) (low_model : M.model) (d : M.decl_node) (ass
   let for_enum_item (x : M.enum_item)       = mk_decl_constructor (unloc x.name) (List.map for_type x.args) in
   let for_map_kind = function | M.MKMap -> "map" | M.MKBigMap -> "big_map" | M.MKIterableBigMap -> "iterable_big_map" in
 
+  let ft x = to_michelson_type low_model x in
   let for_asset  (asset  : M.asset)  : decl_asset =
-    let ft x = to_michelson_type low_model x in
-    let lll = low_model.extra.original_decls in
-    let od : M.odel_asset option = List.fold_left (fun accu x ->
+    let odasset : M.odel_asset = List.fold_left (fun accu x ->
         match x with
         | M.ODAsset x when String.equal x.name (unloc asset.name)-> Some x
-        | _-> accu) None lll
+        | _-> accu) None low_model.extra.original_decls |> Option.get
     in
-    let odasset : M.odel_asset = Option.get od in
     let container_type = ft odasset.container_type in
     let key_type       = ft odasset.key_type in
     let value_type     = ft odasset.value_type in
     mk_decl_asset (unloc asset.name)  (for_map_kind asset.map_kind) (List.map (for_asset_item asset) asset.values) container_type key_type value_type
   in
 
-  let for_enum   (enum   : M.enum)   : decl_enum   = mk_decl_enum   (unloc enum.name)   (List.map for_enum_item enum.values) in
+  let for_enum (enum : M.enum) : decl_enum   =
+    let odasset : M.odel_enum = List.fold_left (fun accu x ->
+        match x with
+        | M.ODEnum x when String.equal x.name (unloc enum.name)-> Some x
+        | _-> accu) None low_model.extra.original_decls |> Option.get
+    in
+    let michelson_type = ft odasset.current_type in
+    mk_decl_enum (unloc enum.name) (List.map for_enum_item enum.values) michelson_type
+  in
 
   let for_record (record : M.record) : decl_record =
     let type_michelson = Gen_michelson.to_type model (M.trecord record.name)  in
