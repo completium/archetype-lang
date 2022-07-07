@@ -822,6 +822,7 @@ type error_desc =
   | UnknownFieldName                   of ident
   | UnknownFunction                    of ident
   | UnknownGetter                      of ident
+  | UnknownImport                      of ident
   | UnknownView                        of ident
   | UnknownLabel                       of ident
   | UnknownLocalOrVariable             of ident
@@ -1057,6 +1058,7 @@ let pp_error_desc fmt e =
   | UnknownFieldName i                 -> pp "Unknown field name: %a" pp_ident i
   | UnknownFunction  i                 -> pp "Unknown function name: %a" pp_ident i
   | UnknownGetter  i                   -> pp "Unknown getter name: %a" pp_ident i
+  | UnknownImport i                    -> pp "Unknown import identifier name: %a" pp_ident i
   | UnknownView  i                     -> pp "Unknown view name: %a" pp_ident i
   | UnknownLabel i                     -> pp "Unknown label: %a" pp_ident i
   | UnknownLocalOrVariable i           -> pp "Unknown local or variable: %a" pp_ident i
@@ -1539,8 +1541,9 @@ let allops : opinfo list =
 
 (* -------------------------------------------------------------------- *)
 type importdecl = {
-  id_name  : A.lident;
-  id_path  : A.lident;
+  id_name        : A.lident;
+  id_path        : A.lident;
+  id_entrypoints : (ident * A.type_) list;
 }
 [@@deriving show {with_path = false}]
 
@@ -1734,6 +1737,7 @@ module Env : sig
     | `Predicate   of preddecl
     | `Field       of ident * [`Asset | `Record | `Event]
     | `Context     of assetdecl * ident option
+    | `Import      of importdecl
   ]
 
   and locvarkind = [`Standard | `Const | `Argument | `Pattern | `LoopIndex]
@@ -1841,6 +1845,12 @@ module Env : sig
     val the  : ident
     val push : t -> ident -> t
   end
+
+  module Import : sig
+    val lookup  : t -> ident -> importdecl option
+    val get     : t -> ident -> importdecl
+    val push    : t -> importdecl -> t
+  end
 end = struct
   type ecallback = error -> unit
 
@@ -1862,6 +1872,7 @@ end = struct
     | `Predicate   of preddecl
     | `Field       of ident * [`Asset | `Record | `Event ]
     | `Context     of assetdecl * ident option
+    | `Import      of importdecl
   ]
 
   and locvarkind = [`Standard | `Const | `Argument | `Pattern | `LoopIndex]
@@ -2239,6 +2250,20 @@ end = struct
               (None, `Context (asset, Some (unloc fd.fd_name))) bds
           )  asset.as_fields; } *)
   end
+
+  module Import = struct
+    let proj = function `Import x -> Some x | _ -> None
+
+    let lookup (env : t) (name : ident) : importdecl option =
+      lookup_gen proj env name
+
+    let get (env : t) (name : ident) : importdecl =
+      Option.get (lookup env name)
+
+    let push (env : t) (ipt : importdecl) : t =
+      push env ~loc:(loc ipt.id_name) (unloc ipt.id_name) (`Import ipt)
+  end
+
 end
 
 type env = Env.t
@@ -5140,13 +5165,29 @@ let rec for_instruction_r
             A.TTentry (x, e, arg)
           end
 
-        | TTentry2 (a, contract_name, address_arg, name, arg) -> begin
+        | TTentry2 (a, cn, address_arg, en, arg) -> begin
             let a  = for_expr kind env ~ety:A.vtcurrency a in
-            let address_arg  = for_expr kind env address_arg in
-            let arg  = for_expr kind env arg in
-            (* ident * type_ * 'id term_gen * 'id term_gen *)
-            (*  *)
-            TTgen (a, unloc name, unloc contract_name, A.vtnat, address_arg, arg)
+            let address_arg  = for_expr kind env ~ety:A.vtaddress address_arg in
+
+            let import =
+              match Env.Import.lookup env (unloc cn) with
+              | None ->
+                Env.emit_error env (loc cn, UnknownImport (unloc cn));
+                bailout ()
+              | Some import -> import in
+
+            let pen = "%" ^ (unloc en) in
+
+            let etyp =
+              match List.assoc_opt pen import.id_entrypoints with
+              | None ->
+                Env.emit_error env (loc en, UnknownEntry (unloc en));
+                bailout ()
+              | Some entry -> entry in
+
+            let arg  = for_expr kind env arg ~ety:etyp in
+
+            TTgen (a, unloc en, unloc cn, A.vtnat, address_arg, arg)
           end
 
         | TTself (e, name, args) -> begin
@@ -5986,7 +6027,13 @@ let for_enum_decl (env : env) (decl : (PT.lident * PT.enum_decl) loced) =
 
 (* -------------------------------------------------------------------- *)
 let for_import_decl (env : env) (decls : (PT.lident * PT.lident) loced list) =
-  env, List.map ((fun x -> let x, y = unloc x in {id_name = x; id_path = y} )) decls
+  let importdecls = List.fold_right (fun (a : (PT.lident * PT.lident) loced) accu -> begin
+        let id, path = unloc a in
+        let importdecl = { id_name = id; id_path = path; id_entrypoints = ["%exec", A.vtnat] } in
+        importdecl::accu
+      end) decls [] in
+  let env = List.fold_left (fun env (x : importdecl) -> Env.Import.push env x) env importdecls in
+  env, importdecls
 
 (* -------------------------------------------------------------------- *)
 let for_enums_decl (env : env) (decls : (PT.lident * PT.enum_decl) loced list) =
