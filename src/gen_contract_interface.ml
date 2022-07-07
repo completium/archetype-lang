@@ -3,6 +3,17 @@ open Location
 module M = Model
 module T = Michelson
 
+type micheline = {
+  prim:   string option;
+  int:    string option;
+  bytes:  string option;
+  string: string option;
+  args:   micheline list;
+  annots: string list;
+  array:  micheline list;
+}
+[@@deriving yojson, show {with_path = false}]
+
 type type_ = {
   node: string;
   name: string option;
@@ -50,16 +61,16 @@ type decl_asset = {
   name: string;
   container_kind: string;
   fields: decl_asset_field list;
-  container_type_michelson: T.obj_micheline;
-  key_type_michelson: T.obj_micheline;
-  value_type_michelson: T.obj_micheline;
+  container_type_michelson: micheline;
+  key_type_michelson: micheline;
+  value_type_michelson: micheline;
 }
 [@@deriving yojson, show {with_path = false}]
 
 type decl_record = {
   name: string;
   fields: decl_record_field list;
-  type_michelson: T.obj_micheline;
+  type_michelson: micheline;
 }
 [@@deriving yojson, show {with_path = false}]
 
@@ -71,7 +82,7 @@ type decl_constructor = {
 type decl_enum = {
   name: string;
   constructors: decl_constructor list;
-  type_michelson: T.obj_micheline;
+  type_michelson: micheline;
 }
 [@@deriving yojson, show {with_path = false}]
 
@@ -230,9 +241,22 @@ let for_parameter (p : M.parameter) : parameter =
 let for_argument (a: M.argument) : argument =
   mk_argument (unloc (Tools.proj3_1 a)) (for_type (Tools.proj3_2 a))
 
-let to_michelson_type (model : M.model) (type_michelson : M.type_) : T.obj_micheline =
+let to_micheline (obj : T.obj_micheline) : micheline =
+  let rec aux (obj : T.obj_micheline) =
+  match obj with
+  | Oprim   p -> { prim = Some p.prim; int = None; bytes = None; string = None; args = List.map aux p.args; annots = p.annots; array = [] }
+  | Ostring v -> { prim = None; int = None; bytes = None; string = Some v; args = []; annots = []; array = [] }
+  | Obytes  v -> { prim = None; int = None; bytes = Some v; string = None; args = []; annots = []; array = [] }
+  | Oint    v -> { prim = None; int = Some v; bytes = None; string = None; args = []; annots = []; array = [] }
+  | Oarray  v -> { prim = None; int = None; bytes = None; string = None; args = []; annots = []; array = List.map aux v }
+  | Ovar    _ -> { prim = None; int = None; bytes = None; string = None; args = []; annots = []; array = [] }
+  in
+  aux obj
+
+let to_michelson_type (model : M.model) (type_michelson : M.type_) : micheline =
   let type_michelson = Gen_michelson.to_type model type_michelson  in
-  T.Utils.type_to_micheline type_michelson
+  let obj = T.Utils.type_to_micheline type_michelson in
+  to_micheline obj
 
 let for_decl_type (model : M.model) (low_model : M.model) (d : M.decl_node) (assets, enums, records, events) =
   let for_asset_item (asset  : M.asset) (x : M.asset_item)     = mk_decl_asset_field (unloc x.name) (for_type x.type_) (List.exists (String.equal (unloc x.name)) asset.keys) in
@@ -264,9 +288,8 @@ let for_decl_type (model : M.model) (low_model : M.model) (d : M.decl_node) (ass
   in
 
   let for_record (record : M.record) : decl_record =
-    let type_michelson = Gen_michelson.to_type model (M.trecord record.name)  in
-    let tm_obj = T.Utils.type_to_micheline type_michelson in
-    mk_decl_record (unloc record.name) (List.map for_record_field record.fields) tm_obj
+    let type_michelson = to_michelson_type model (M.trecord record.name) in
+    mk_decl_record (unloc record.name) (List.map for_record_field record.fields) type_michelson
   in
 
   let for_event  (event  : M.record) : decl_event  = mk_decl_event  (unloc event.name)  (List.map for_record_field event.fields) in
