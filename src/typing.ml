@@ -6043,7 +6043,7 @@ let for_import_decl (env : env) (decls : (PT.lident * PT.lident) loced list) =
             end
           | _ -> List.iter (fun err ->  Env.emit_error env (lo, Custom err)) errors; accu
         end
-        else accu
+        else (Env.emit_error env (lo, FileNotFound (unloc path)); accu)
       end) decls [] in
   let env = List.fold_left (fun env (x : importdecl) -> Env.Import.push env x) env importdecls in
   env, importdecls
