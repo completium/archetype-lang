@@ -770,8 +770,8 @@ type 'id fun_ =
 [@@deriving show {with_path = false}]
 
 type metadata_kind =
-| MKuri  of string loced
-| MKjson of string loced
+  | MKuri  of string loced
+  | MKjson of string loced
 [@@deriving show {with_path = false}]
 
 type 'id ast_struct = {
@@ -897,6 +897,31 @@ let mk_id type_ id : qualid =
     loc   = loc id;
     node  = Qident id;
     label = None; }
+
+let map_ptyp ft t =
+  match t with
+  | Tnamed n                   -> Tnamed n
+  | Tasset i                   -> Tasset i
+  | Trecord u                  -> Trecord u
+  | Tevent i                   -> Tevent i
+  | Tenum i                    -> Tenum i
+  | Tbuiltin vtyp              -> Tbuiltin vtyp
+  | Tcontainer (t, container)  -> Tcontainer (ft t, container)
+  | Tset t                     -> Tset (ft t)
+  | Tlist t                    -> Tlist (ft t)
+  | Tmap (kt, vt)              -> Tmap (ft kt, ft vt)
+  | Tbig_map (kt, vt)          -> Tbig_map (ft kt, ft vt)
+  | Titerable_big_map (kt, vt) -> Titerable_big_map (ft kt, ft vt)
+  | Tor (lt, rt)               -> Tor (ft lt, ft rt)
+  | Tlambda (it, rt)           -> Tlambda (ft it, ft rt)
+  | Ttuple lt                  -> Ttuple (List.map ft lt)
+  | Toption t                  -> Toption (ft t)
+  | Toperation                 -> Toperation
+  | Tcontract t                -> Tcontract (ft t)
+  | Ttrace trtyp               -> Ttrace trtyp
+  | Tticket t                  -> Tticket (ft t)
+  | Tsapling_state n           -> Tsapling_state n
+  | Tsapling_transaction n     -> Tsapling_transaction n
 
 module Utils : sig
 

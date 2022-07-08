@@ -1990,7 +1990,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
   A.mk_archetype () ~decls:((A.mk_darchetype model.name)::decls)
 
-let get_entrypoints_for_ast (path : string) : (string * B.ptyp) list * (string * B.ptyp * B.ptyp) list * string list =
+let get_entrypoints_for_ast (path : string) : (string * B.ptyp) list * (string * (B.ptyp * B.ptyp)) list * string list =
   let seek (obj : T.obj_micheline) prim : T.obj_micheline option =
     match obj with
     | T.Oarray l -> begin
@@ -2028,6 +2028,29 @@ let get_entrypoints_for_ast (path : string) : (string * B.ptyp) list * (string *
 
   let for_type (obj : T.obj_micheline) : B.ptyp =
 
+    let normalize_type (t : B.ptyp) =
+      let list_without_last l =
+        match List.rev l with
+        | _::t -> List.rev t
+        | _ -> l
+      in
+      let rec aux t =
+        match t with
+        | B.Ttuple l ->
+          let l = List.map aux l in
+          let def = B.Ttuple l in
+          if List.is_not_empty l
+          then begin
+            match List.last l with
+            | B.Ttuple l2 -> B.Ttuple (list_without_last l @ l2)
+            | _ -> def
+          end
+          else def
+        | _ -> B.map_ptyp aux t
+      in
+      aux t
+    in
+
     let rec aux (t : T.type_) =
       let f = aux in
       match t.node with
@@ -2064,8 +2087,7 @@ let get_entrypoints_for_ast (path : string) : (string * B.ptyp) list * (string *
       | Tchest                 -> B.Tbuiltin VTchest
       | Tchest_key             -> B.Tbuiltin VTchest_key
     in
-
-    aux (T.to_type obj)
+    aux (T.to_type obj) |> normalize_type
   in
 
   let ic = open_in path in
@@ -2075,5 +2097,5 @@ let get_entrypoints_for_ast (path : string) : (string * B.ptyp) list * (string *
     | Some parameters -> List.map (fun (i, t) -> (i, for_type t)) (split parameters), []
     | None -> [], ["Invalid tz file"]
   in
-  let views = List.map (fun (i, t, r) -> (i, for_type t, for_type r)) (seek_views obj) in
+  let views = List.map (fun (i, t, r) -> (i, (for_type t, for_type r))) (seek_views obj) in
   entrypoints, views, errors

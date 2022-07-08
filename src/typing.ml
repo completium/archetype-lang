@@ -1548,7 +1548,7 @@ type importdecl = {
   id_name        : A.lident;
   id_path        : A.lident;
   id_entrypoints : (ident * A.type_) list;
-  id_views       : (ident * A.type_ * A.type_) list;
+  id_views       : (ident * (A.type_ * A.type_)) list;
 }
 [@@deriving show {with_path = false}]
 
@@ -3746,6 +3746,21 @@ let rec for_xexpr
             end
           | _        -> assert false in
 
+        (* match unloc pthe with
+        | PT.Eapp ((Fident import_id), [addr]) when (Option.is_some (Env.Import.lookup env (unloc import_id))) -> begin
+            let importdecl = Env.Import.get env (unloc import_id) in
+            let a  = for_expr kind env ~ety:A.vtaddress addr in
+
+            let it, rt =
+              match List.assoc_opt (unloc m) import.id_views with
+              | None ->
+                Env.emit_error env (loc en, UnknownEntry (unloc en));
+                bailout ()
+              | Some v -> v in
+
+            a
+          end *)
+
         let the = for_xexpr env the in
 
         match the.A.type_ with
@@ -5188,8 +5203,10 @@ let rec for_instruction_r
               | None ->
                 Env.emit_error env (loc en, UnknownEntry (unloc en));
                 bailout ()
-              | Some entry -> entry in
+              | Some typ -> typ in
 
+            Format.eprintf "etyp: %a@\n" A.pp_ptyp etyp;
+            (* Format.eprintf "%a@\n" pp_ptyp etyp; *)
             let arg  = for_expr kind env arg ~ety:etyp in
 
             TTgen (a, unloc en, unloc cn, etyp, address_arg, arg)
