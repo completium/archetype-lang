@@ -435,6 +435,7 @@ let string_of_symbol = function
   | X (N N_order_operations) -> "order operations"
   | X (N N_order_operation) -> "an order operation"
   | X (N N_option_with_effect_) -> "a with effect option"
+  | X (N N_option_tentry_postfix_) -> "option_tentry_postfix_"
   | X (N N_option_state_is_) -> "an option state is"
   | X (N N_option_specification_fun_) -> "a specification function option"
   | X (N N_option_sourcedby_) -> "an option sourced by"

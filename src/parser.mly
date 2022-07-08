@@ -218,7 +218,6 @@
 %right THEN ELSE
 
 %nonassoc prec_var
-/*%nonassoc prec_var_question*/
 %nonassoc QUESTIONCOLONEQUAL COLONEQUAL PLUSEQUAL MINUSEQUAL MULTEQUAL DIVEQUAL AMPEQUAL PIPEEQUAL
 %right COLON
 
@@ -928,6 +927,9 @@ ident_typ_q:
  | MAKE_BIG_MAP        { Location.dumloc "make_big_map"        }
  | MAKE_ASSET          { Location.dumloc "make_asset"          }
 
+%inline tentry_postfix:
+| DOT ida=ident arga=paren(expr) { (ida, arga) }
+
 expr_r:
  | LPAREN RPAREN
      { Enothing }
@@ -1002,11 +1004,8 @@ expr_r:
  | TRANSFER x=simple_expr TO y=simple_expr CALL id=ident LESS t=type_t GREATER args=paren(expr)
      { Etransfer (TTcontract (x, y, id, t, args)) }
 
- | TRANSFER x=simple_expr TO ENTRY id=ident arg=simple_expr
-     { Etransfer (TTentry (x, id, arg)) }
-
- | TRANSFER x=simple_expr TO ENTRY ENTRY ida=ident arga=paren(expr) DOT id=ident arg=simple_expr
-     { Etransfer (TTentry2 (x, ida, arga, id, arg)) }
+ | TRANSFER x=simple_expr TO ENTRY id=ident arg=paren(expr) p=tentry_postfix?
+     { match p with | Some (ida, arga) -> Etransfer (TTentry2 (x, id, arg, ida, arga)) | None -> Etransfer (TTentry (x, id, arg)) }
 
  | TRANSFER x=simple_expr TO ENTRY SELF DOT id=ident args=paren(sl(COMMA, simple_expr))
      { Etransfer (TTself (x, id, args)) }
