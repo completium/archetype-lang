@@ -1548,6 +1548,7 @@ type importdecl = {
   id_name        : A.lident;
   id_path        : A.lident;
   id_entrypoints : (ident * A.type_) list;
+  id_views       : (ident * A.type_ * A.type_) list;
 }
 [@@deriving show {with_path = false}]
 
@@ -6031,22 +6032,23 @@ let for_enum_decl (env : env) (decl : (PT.lident * PT.enum_decl) loced) =
 
 (* -------------------------------------------------------------------- *)
 let for_import_decl (env : env) (decls : (PT.lident * PT.lident) loced list) =
-  let importdecls = List.fold_right (fun (a : (PT.lident * PT.lident) loced) accu -> begin
+  List.fold_left (fun (env, accu : env * importdecl list) (a : (PT.lident * PT.lident) loced) -> begin
         let lo, (id, path) = deloc a in
+
         if Core.is_valid_path (unloc path)
         then begin
-          let entrypoints, errors = Gen_decompile.get_entrypoints_for_ast (unloc path) in
+          let entrypoints, views, errors = Gen_decompile.get_entrypoints_for_ast (unloc path) in
           match errors with
           | [] -> begin
-              let importdecl = { id_name = id; id_path = path; id_entrypoints = entrypoints } in
-              importdecl::accu
+              let importdecl = { id_name = id; id_path = path; id_entrypoints = entrypoints; id_views = views } in
+              (if   check_and_emit_name_free env id
+               then Env.Import.push env importdecl
+               else env), importdecl::accu
             end
-          | _ -> List.iter (fun err ->  Env.emit_error env (lo, Custom err)) errors; accu
+          | _ -> List.iter (fun err ->  Env.emit_error env (lo, Custom err)) errors; (env, accu)
         end
-        else (Env.emit_error env (lo, FileNotFound (unloc path)); accu)
-      end) decls [] in
-  let env = List.fold_left (fun env (x : importdecl) -> Env.Import.push env x) env importdecls in
-  env, importdecls
+        else (Env.emit_error env (lo, FileNotFound (unloc path)); (env, accu))
+      end) (env, []) decls
 
 (* -------------------------------------------------------------------- *)
 let for_enums_decl (env : env) (decls : (PT.lident * PT.enum_decl) loced list) =

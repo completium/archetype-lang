@@ -1990,7 +1990,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
   A.mk_archetype () ~decls:((A.mk_darchetype model.name)::decls)
 
-let get_entrypoints_for_ast (path : string) : (string * B.ptyp) list * string list =
+let get_entrypoints_for_ast (path : string) : (string * B.ptyp) list * (string * B.ptyp * B.ptyp) list * string list =
   let seek (obj : T.obj_micheline) prim : T.obj_micheline option =
     match obj with
     | T.Oarray l -> begin
@@ -2000,6 +2000,17 @@ let get_entrypoints_for_ast (path : string) : (string * B.ptyp) list * string li
         | _ -> None
       end
     | _ -> None
+  in
+  let seek_views (obj : T.obj_micheline) : (string * T.obj_micheline * T.obj_micheline) list =
+    match obj with
+    | T.Oarray l ->
+      List.fold_right (
+        fun x accu ->
+          match x with
+          | T.Oprim {prim = "view"; args = Ostring id::i::r::_ } -> (id, i, r)::accu
+          | _ -> accu
+      ) l []
+    | _ -> []
   in
   let split (obj : T.obj_micheline) : (string * T.obj_micheline) list =
     let rec aux obj =
@@ -2059,6 +2070,10 @@ let get_entrypoints_for_ast (path : string) : (string * B.ptyp) list * string li
 
   let ic = open_in path in
   let obj, _ = parse_micheline (FIChannel (path, ic)) in
-  match seek obj "parameter" with
-  | Some parameters -> List.map (fun (i, t) -> (i, for_type t)) (split parameters), []
-  | None -> [], ["Invalid tz file"]
+  let entrypoints, errors =
+    match seek obj "parameter" with
+    | Some parameters -> List.map (fun (i, t) -> (i, for_type t)) (split parameters), []
+    | None -> [], ["Invalid tz file"]
+  in
+  let views = List.map (fun (i, t, r) -> (i, for_type t, for_type r)) (seek_views obj) in
+  entrypoints, views, errors

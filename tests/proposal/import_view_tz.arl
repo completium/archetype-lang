@@ -5,5 +5,6 @@ import contract_tz from "tests/michelson/view.tz"
 variable res : nat = 0
 
 entry exec () {
-  res := contract_tz(a).getN();
+  const a = caller;
+  res := contract_tz(a).getN(Unit);
 }
