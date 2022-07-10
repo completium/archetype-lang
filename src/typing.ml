@@ -4123,7 +4123,7 @@ let rec for_xexpr
 
         mk_sp
           (Some (A.Toption (A.Tcontract ty)))
-          (A.Pgetentrypoint (ty, id, b))
+          (A.Pcall (None, A.Cconst CgetEntrypoint, [ty], [AIdent id; AExpr b]))
       end
 
     | Ecallview (ty, a, b, c) -> begin

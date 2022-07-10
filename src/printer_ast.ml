@@ -217,7 +217,7 @@ let to_const = function
   | Cfail                  -> "fail"
   | Cbalance               -> "balance"
   | Csource                -> "source"
-  | Cselfaddress           -> "selfaddress"
+  | Cselfaddress           -> "self_address"
   | Cconditions            -> "conditions"
   | Centries               -> "entries"
   | Cnone                  -> "none"
@@ -273,6 +273,7 @@ let to_const = function
   | Cgreedyand             -> "greedy_and"
   | Cgreedyor              -> "greedy_or"
   | CmakeAsset             -> "make_asset"
+  | CgetEntrypoint         -> "get_entrypoint"
   | CcallView              -> "call_view"
   | CimportCallView        -> "import_call_view"
   (* set *)
@@ -659,15 +660,6 @@ let rec pp_pterm fmt (pterm : pterm) =
           pp_id id
       in
       (pp_no_paren pp) fmt id
-
-    | Pgetentrypoint (t, a, b) ->
-      let pp fmt (t, a, b) =
-        Format.fprintf fmt "get_entrypoint<%a>(%a, %a)"
-          pp_type  t
-          pp_id a
-          pp_pterm b
-      in
-      (pp_no_paren pp) fmt (t, a, b)
 
     | Pternary (c, a, b) ->
       let pp fmt (c, a, b) =
