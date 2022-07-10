@@ -198,6 +198,7 @@ type const =
   | CmakeAsset
   | CtoContainer
   | CputRemove
+  | CcallView
   | CimportCallView
   (* set *)
   | Csadd
@@ -399,7 +400,6 @@ type 'id term_node  =
   | Pcast of type_ * type_ * 'id term_gen
   | Pself of 'id
   | Pgetentrypoint of type_ * 'id * 'id term_gen
-  | Pcallview of type_ * 'id term_gen * 'id * 'id term_gen
   | Pternary of 'id term_gen * 'id term_gen * 'id term_gen
 [@@deriving show {with_path = false}]
 

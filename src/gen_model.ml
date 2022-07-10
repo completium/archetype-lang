@@ -443,8 +443,6 @@ let to_model (ast : A.ast) : M.model =
 
       | A.Pgetentrypoint (t, a, b) -> M.Mgetentrypoint (type_to_type t, a, f b)
 
-      | A.Pcallview (t, a, b, c) -> M.Mcallview (type_to_type t, f a, b,f c)
-
       | A.Pternary (c, a, b) -> begin
           let c = f c in
           let a = f a in
@@ -958,6 +956,12 @@ let to_model (ast : A.ast) : M.model =
       | A.Pcall (None, A.Cconst A.CmutezToNat, [], [AExpr x]) ->
         let fx = f x in
         M.Mmuteztonat (fx)
+
+      | A.Pcall (None, A.Cconst A.CcallView, [t], [AIdent id; AExpr addr; AExpr arg]) ->
+        let addr = f addr in
+        let arg = f arg in
+        let t = type_to_type t in
+        M.Mcallview (t, addr, id, arg)
 
       | A.Pcall (None, A.Cconst A.CimportCallView, [t], [AIdent id; AExpr addr; AExpr arg]) ->
         let addr = f addr in

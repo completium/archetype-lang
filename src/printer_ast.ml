@@ -273,6 +273,7 @@ let to_const = function
   | Cgreedyand             -> "greedy_and"
   | Cgreedyor              -> "greedy_or"
   | CmakeAsset             -> "make_asset"
+  | CcallView              -> "call_view"
   | CimportCallView        -> "import_call_view"
   (* set *)
   | Csadd                  -> "set_add"
@@ -667,16 +668,6 @@ let rec pp_pterm fmt (pterm : pterm) =
           pp_pterm b
       in
       (pp_no_paren pp) fmt (t, a, b)
-
-    | Pcallview (t, a, b, c) ->
-      let pp fmt (t, a, b, c) =
-        Format.fprintf fmt "call_view<%a>(%a, \"%a\", %a)"
-          pp_type  t
-          pp_pterm a
-          pp_id b
-          pp_pterm c
-      in
-      (pp_no_paren pp) fmt (t, a, b, c)
 
     | Pternary (c, a, b) ->
       let pp fmt (c, a, b) =

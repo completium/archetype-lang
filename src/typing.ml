@@ -4144,7 +4144,7 @@ let rec for_xexpr
         let rt = A.Toption ty in
         mk_sp
           (Some rt)
-          (A.Pcallview (ty, a, id, c))
+          (A.Pcall (None, A.Cconst CcallView, [ty], [AIdent id; AExpr a; AExpr c]))
       end
     | Eself      _
     | Evar       _
