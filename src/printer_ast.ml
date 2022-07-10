@@ -273,6 +273,7 @@ let to_const = function
   | Cgreedyand             -> "greedy_and"
   | Cgreedyor              -> "greedy_or"
   | CmakeAsset             -> "make_asset"
+  | CimportCallView        -> "import_call_view"
   (* set *)
   | Csadd                  -> "set_add"
   | Csremove               -> "set_remove"
@@ -428,12 +429,12 @@ let rec pp_pterm fmt (pterm : pterm) =
       (pp_with_paren pp) fmt (x, id, e)
 
     | Pcall (meth, kind, types, args) ->
-      let pp_types fmt l = Format.fprintf fmt "<%a>" (pp_list ", " pp_type_) l in
+      let pp_types fmt l = Format.fprintf fmt "<%a>" (pp_list ", " pp_type) l in
       let pp fmt (meth, kind, types, args) =
         Format.fprintf fmt "%a%a%a(%a)"
           (pp_option (pp_postfix "." pp_pterm)) meth
-          (pp_if (List.length types > 0) pp_types pp_void) types
           pp_call_kind kind
+          (pp_if (List.length types > 0) pp_types pp_void) types
           (pp_list ", " pp_term_arg) args
       in
       (pp_with_paren pp) fmt (meth, kind, types, args)
@@ -714,6 +715,8 @@ and pp_term_arg fmt = function
     Format.fprintf fmt "%s(%a)"
       k
       pp_id f
+
+  | AIdent id -> pp_id fmt id
 
 let pp_instruction_poly pp fmt i =
   pp fmt i.node

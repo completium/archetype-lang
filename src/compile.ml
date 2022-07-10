@@ -239,6 +239,7 @@ let toolchain ?(debug=false) model =
   let f = print_debug debug in
   model
   |> f "prune_formula" prune_formula
+  |> f "remove_import_mterm" remove_import_mterm
   |> f "getter_to_entry" (getter_to_entry ~extra:true)
   |> f "process_parameter" process_parameter
   |> f "test_mode" test_mode

@@ -1,10 +1,13 @@
-archetype import_contract
+archetype import_view_tz
 
 import contract_tz from "tests/michelson/view.tz"
 
 variable res : nat = 0
 
+view getN() : nat {
+  return 2
+}
+
 entry exec () {
-  const a = caller;
-  res := contract_tz(a).getN(Unit);
+  res := contract_tz(self_address).getN(Unit);
 }

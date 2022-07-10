@@ -686,6 +686,7 @@ let to_ir (model : M.model) : T.ir =
     | Mcallview (t, a, b, c)  -> begin
         T.Ibinop (Bview (unloc b, to_type model t), f c, f a)
       end
+    | Mimportcallview (_t, _a, _b, _c) -> emit_error (UnsupportedTerm ("Mimportcallview"))
     | Mself id                -> get_self_entrypoint (unloc id)
 
 

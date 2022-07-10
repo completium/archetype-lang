@@ -6586,3 +6586,16 @@ let process_michelson_create_contract (model : model) =
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
+
+let remove_import_mterm (model : model) =
+  let rec aux ctx (mt : mterm) : mterm =
+  let f = aux ctx in
+  match mt.node with
+  | Mimportcallview (t, a, b, c) -> begin
+    let cv = mk_mterm (Mcallview (t, f a, b, f c)) (toption mt.type_) in
+    let v = dumloc "_v" in
+    mk_mterm (Mmatchoption (cv, v, mk_mvar v mt.type_, failg (mk_tuple [mk_string "VIEW_NOT_FOUND"; mk_string (unloc b)]))) mt.type_
+  end
+  | _ -> map_mterm (aux ctx) mt
+in
+map_mterm_model aux model

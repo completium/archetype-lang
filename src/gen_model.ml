@@ -959,6 +959,12 @@ let to_model (ast : A.ast) : M.model =
         let fx = f x in
         M.Mmuteztonat (fx)
 
+      | A.Pcall (None, A.Cconst A.CimportCallView, [t], [AIdent id; AExpr addr; AExpr arg]) ->
+        let addr = f addr in
+        let arg = f arg in
+        let t = type_to_type t in
+        M.Mimportcallview (t, addr, id, arg)
+
       (* Fail *)
 
       | A.Pcall (aux, A.Cconst c, types, args) ->
@@ -967,7 +973,7 @@ let to_model (ast : A.ast) : M.model =
           (Printer_tools.pp_list ", " Printer_ast.pp_ptyp) types
           (List.length args)
           (Printer_tools.pp_list "; " (fun fmt x ->
-               let str = match x with | A.AExpr _ -> "AExpr" | A.AEffect _ -> "AEffect" | A.AFun _ -> "AFun" | A.ASorting _ -> "ASorting" in
+               let str = match x with | A.AExpr _ -> "AExpr" | A.AEffect _ -> "AEffect" | A.AFun _ -> "AFun" | A.ASorting _ -> "ASorting" | AIdent _ -> "AIdent" in
                Printer_tools.pp_str fmt str)) args
           (match aux with | Some _ -> "with aux" | _ -> "without aux");
         assert false
@@ -1273,7 +1279,7 @@ let to_model (ast : A.ast) : M.model =
           A.pp_const c
           (List.length args)
           (Printer_tools.pp_list "; " (fun fmt (x : A.pterm_arg) ->
-               let str = match x with | AExpr _ -> "AExpr" | AEffect _ -> "AEffect" | AFun _ -> "AFun" | ASorting _ -> "ASorting" in
+               let str = match x with | AExpr _ -> "AExpr" | AEffect _ -> "AEffect" | AFun _ -> "AFun" | ASorting _ -> "ASorting" | AIdent _ -> "AIdent" in
                Printer_tools.pp_str fmt str)) args
           (match aux with | Some _ -> "with aux" | _ -> "without aux");
         assert false

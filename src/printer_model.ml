@@ -425,6 +425,13 @@ let pp_mterm fmt (mt : mterm) =
         pp_id b
         f c
 
+    | Mimportcallview (t, a, b, c) ->
+      Format.fprintf fmt "import_call_view<%a>(%a, %a, %a)"
+        pp_type t
+        f a
+        pp_id b
+        f c
+
     | Mself id ->
       Format.fprintf fmt "self.%a"
         pp_id id

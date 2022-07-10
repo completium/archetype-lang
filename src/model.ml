@@ -247,7 +247,8 @@ type ('id, 'term) mterm_node  =
   | Memit             of 'id * 'term
   (* entrypoint *)
   | Mgetentrypoint    of type_ * 'id * 'term                 (* type * address * string *)
-  | Mcallview         of type_ * 'term * 'id * 'term         (* type * string * address * argument *)
+  | Mcallview         of type_ * 'term * 'id * 'term         (* type * address * string * argument *)
+  | Mimportcallview   of type_ * 'term * 'id * 'term         (* type * address * string * argument *)
   | Mself             of 'id                                 (* entryname *)
   (* operation *)
   | Moperations
@@ -1567,6 +1568,7 @@ let cmp_mterm_node
     (* entrypoint *)
     | Mgetentrypoint (t1, a1, s1), Mgetentrypoint (t2, a2, s2)                         -> cmp_type t1 t2 && cmpi a1 a2 && cmp s1 s2
     | Mcallview (t1, a1, b1, c1), Mcallview (t2, a2, b2, c2)                           -> cmp_type t1 t2 && cmp a1 a2 && cmpi b1 b2 && cmp c1 c2
+    | Mimportcallview (t1, a1, b1, c1), Mimportcallview (t2, a2, b2, c2)               -> cmp_type t1 t2 && cmp a1 a2 && cmpi b1 b2 && cmp c1 c2
     | Mself id1, Mself id2                                                             -> cmpi id1 id2
     (* operation *)
     | Moperations, Moperations                                                         -> true
@@ -2030,6 +2032,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   (* entrypoint *)
   | Mgetentrypoint (t, a, s)       -> Mgetentrypoint (ft t, g a, f s)
   | Mcallview (t, a, b, c)         -> Mcallview (ft t, f a, g b, f c)
+  | Mimportcallview (t, a, b, c)   -> Mimportcallview (ft t, f a, g b, f c)
   | Mself id                       -> Mself (g id)
   (* operation *)
   | Moperations                    -> Moperations
@@ -2490,6 +2493,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   (* entrypoint *)
   | Mgetentrypoint (_, _, s)              -> f accu s
   | Mcallview (_, a, _, c)                -> f (f accu a) c
+  | Mimportcallview (_, a, _, c)          -> f (f accu a) c
   | Mself _                               -> accu
   (* operation *)
   | Moperations                           -> accu
@@ -2988,6 +2992,11 @@ let fold_map_term
     let ae, aa = f accu a in
     let ce, ca = f aa c in
     g (Mcallview (t, ae, b, ce)), ca
+
+  | Mimportcallview (t, a, b, c) ->
+    let ae, aa = f accu a in
+    let ce, ca = f aa c in
+    g (Mimportcallview (t, ae, b, ce)), ca
 
   | Mself id ->
     g (Mself id), accu

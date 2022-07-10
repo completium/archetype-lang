@@ -198,6 +198,7 @@ type const =
   | CmakeAsset
   | CtoContainer
   | CputRemove
+  | CimportCallView
   (* set *)
   | Csadd
   | Csremove
@@ -407,6 +408,7 @@ and 'id term_arg =
   | AFun     of 'id * type_ * ('id * type_ * 'id term_gen) list * 'id term_gen
   | AEffect  of ('id * operator * 'id term_gen) list
   | ASorting of bool * 'id
+  | AIdent   of 'id
 [@@deriving show {with_path = false}]
 
 (* -------------------------------------------------------------------- *)

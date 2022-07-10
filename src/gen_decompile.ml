@@ -1605,9 +1605,10 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     (* entrypoint *)
 
-    | Mgetentrypoint (_t, _a, _s) -> assert false
-    | Mcallview (_t, _a, _b, _c)  -> assert false
-    | Mself _id                   -> assert false
+    | Mgetentrypoint (_t, _a, _s)      -> assert false
+    | Mcallview (_t, _a, _b, _c)       -> assert false
+    | Mimportcallview (_t, _a, _b, _c) -> assert false
+    | Mself _id                        -> assert false
 
 
     (* operation *)

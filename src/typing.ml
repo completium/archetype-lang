@@ -3728,96 +3728,114 @@ let rec for_xexpr
       end
 
     | Emethod (the, m, args) -> begin
-        let type_of_mthtype asset amap = function
-          | `T typ     -> Some typ
-          | `The       -> Some (A.Tasset asset.as_name)
-          | `Asset     -> Some (A.Tasset asset.as_name)
-          | `Coll      -> Some (A.Tcontainer (A.Tasset asset.as_name, A.Collection))
-          | `SubColl   -> Some (A.Tcontainer (A.Tasset asset.as_name, A.AssetView))
-          | `Container -> Some (A.Tcontainer (A.Tasset asset.as_name, A.AssetContainer))
-          | `OptVal    -> Some (A.Toption (A.Tcontainer (A.Tasset asset.as_name, A.AssetValue)))
-          | `Ref i     -> Mint.find_opt i amap
-          | `Pk        -> Some (asset.as_pkty)
-          | `OPk       -> Some (A.Toption asset.as_pkty)
-          | `PkOrAsset -> begin
-              match mode.em_kind with
-              | `Formula _ -> Some (A.Tasset asset.as_name)
-              | _ ->  Some (asset.as_pkty)
-            end
-          | _        -> assert false in
+        match unloc the, args with
+        | Eapp (Fident cn, [a]), [arg] when Option.is_some (Env.Import.lookup env (unloc cn)) -> begin
+            let view_id = unloc m in
+            let importdecl = Env.Import.get env (unloc cn) in
+            let a = for_xexpr ~ety:A.vtaddress env a in
 
-        (* match unloc pthe with
-        | PT.Eapp ((Fident import_id), [addr]) when (Option.is_some (Env.Import.lookup env (unloc import_id))) -> begin
-            let importdecl = Env.Import.get env (unloc import_id) in
-            let a  = for_expr kind env ~ety:A.vtaddress addr in
-
-            let it, rt =
-              match List.assoc_opt (unloc m) import.id_views with
+            let at, rt =
+              match List.assoc_opt view_id importdecl.id_views with
               | None ->
-                Env.emit_error env (loc en, UnknownEntry (unloc en));
+                Env.emit_error env (loc m, UnknownView view_id);
                 bailout ()
-              | Some v -> v in
+              | Some (at, rt) -> (at, rt) in
 
-            a
-          end *)
+            let arg = for_xexpr ~ety:at env arg in
 
-        let the = for_xexpr env the in
+            mk_sp (Some rt) (A.Pcall (None, A.Cconst CimportCallView, [rt], [AIdent m; AExpr a; AExpr arg]))
+          end
+        | _ -> begin
+            let type_of_mthtype asset amap = function
+              | `T typ     -> Some typ
+              | `The       -> Some (A.Tasset asset.as_name)
+              | `Asset     -> Some (A.Tasset asset.as_name)
+              | `Coll      -> Some (A.Tcontainer (A.Tasset asset.as_name, A.Collection))
+              | `SubColl   -> Some (A.Tcontainer (A.Tasset asset.as_name, A.AssetView))
+              | `Container -> Some (A.Tcontainer (A.Tasset asset.as_name, A.AssetContainer))
+              | `OptVal    -> Some (A.Toption (A.Tcontainer (A.Tasset asset.as_name, A.AssetValue)))
+              | `Ref i     -> Mint.find_opt i amap
+              | `Pk        -> Some (asset.as_pkty)
+              | `OPk       -> Some (A.Toption asset.as_pkty)
+              | `PkOrAsset -> begin
+                  match mode.em_kind with
+                  | `Formula _ -> Some (A.Tasset asset.as_name)
+                  | _ ->  Some (asset.as_pkty)
+                end
+              | _        -> assert false in
 
-        match the.A.type_ with
-        | None -> bailout () | Some ty ->
+            (* match unloc pthe with
+               | PT.Eapp ((Fident import_id), [addr]) when (Option.is_some (Env.Import.lookup env (unloc import_id))) -> begin
+                let importdecl = Env.Import.get env (unloc import_id) in
+                let a  = for_expr kind env ~ety:A.vtaddress addr in
 
-          match Type.as_asset_collection ty with
-          | Some _ -> begin
-              let infos = for_gen_method_call mode env (loc tope) (`Typed the, m, args) in
-              let the, (asset, c), method_, args, amap = Option.get_fdfl bailout infos in
-              let rty = Option.bind (type_of_mthtype asset amap) (snd method_.mth_sig) in
+                let it, rt =
+                  match List.assoc_opt (unloc m) import.id_views with
+                  | None ->
+                    Env.emit_error env (loc en, UnknownEntry (unloc en));
+                    bailout ()
+                  | Some v -> v in
+
+                a
+               end *)
+
+            let the = for_xexpr env the in
+
+            match the.A.type_ with
+            | None -> bailout () | Some ty ->
+
+              match Type.as_asset_collection ty with
+              | Some _ -> begin
+                  let infos = for_gen_method_call mode env (loc tope) (`Typed the, m, args) in
+                  let the, (asset, c), method_, args, amap = Option.get_fdfl bailout infos in
+                  let rty = Option.bind (type_of_mthtype asset amap) (snd method_.mth_sig) in
 
 
-              if Option.is_none rty then
-                Env.emit_error env (loc tope, VoidMethodInExpr);
+                  if Option.is_none rty then
+                    Env.emit_error env (loc tope, VoidMethodInExpr);
 
-              begin match method_.mth_place, mode.em_kind with
-                | `OnlyExec, `Formula _ ->
-                  Env.emit_error env (loc tope, InvalidMethodInFormula)
-                | `OnlyFormula, (`Expr _) ->
-                  Env.emit_error env (loc tope, InvalidMethodInExec)
-                | _, _ ->
-                  ()
-              end;
+                  begin match method_.mth_place, mode.em_kind with
+                    | `OnlyExec, `Formula _ ->
+                      Env.emit_error env (loc tope, InvalidMethodInFormula)
+                    | `OnlyFormula, (`Expr _) ->
+                      Env.emit_error env (loc tope, InvalidMethodInExec)
+                    | _, _ ->
+                      ()
+                  end;
 
-              begin match method_.mth_purity, mode.em_kind with
-                | `Effect _, `Formula _ ->
-                  Env.emit_error env (loc tope, UnpureInFormula)
-                | `Effect allowed, _ when not (List.mem c allowed) ->
-                  Env.emit_error env (loc tope, InvalidEffectForCtn (c, allowed))
-                | _, _ ->
-                  ()
-              end;
+                  begin match method_.mth_purity, mode.em_kind with
+                    | `Effect _, `Formula _ ->
+                      Env.emit_error env (loc tope, UnpureInFormula)
+                    | `Effect allowed, _ when not (List.mem c allowed) ->
+                      Env.emit_error env (loc tope, InvalidEffectForCtn (c, allowed))
+                    | _, _ ->
+                      ()
+                  end;
 
-              begin match method_.mth_map_type, ty with
-                | `Standard, Tcontainer (Tasset _, Collection) when (match asset.as_bm with | A.MKBigMap -> true | _ -> false) && not (is_form_kind mode.em_kind) ->
-                  Env.emit_error env (loc tope, InvalidMethodWithBigMap (unloc m))
-                | _ -> ()
-              end;
+                  begin match method_.mth_map_type, ty with
+                    | `Standard, Tcontainer (Tasset _, Collection) when (match asset.as_bm with | A.MKBigMap -> true | _ -> false) && not (is_form_kind mode.em_kind) ->
+                      Env.emit_error env (loc tope, InvalidMethodWithBigMap (unloc m))
+                    | _ -> ()
+                  end;
 
-              let rty =
-                match method_.mth_totality, mode.em_kind with
-                | `Partial, `Formula _ ->
-                  Option.map (fun x -> A.Toption x) rty
-                | _, _ ->
-                  rty in
+                  let rty =
+                    match method_.mth_totality, mode.em_kind with
+                    | `Partial, `Formula _ ->
+                      Option.map (fun x -> A.Toption x) rty
+                    | _, _ ->
+                      rty in
 
-              mk_sp rty (A.Pcall (Some the, A.Cconst method_.mth_name, [], args))
-            end
+                  mk_sp rty (A.Pcall (Some the, A.Cconst method_.mth_name, [], args))
+                end
 
-          | None ->
-            let infos =
-              for_api_call ~mode ~capture ?autoview env (`Typed the, m, args) in
-            let the, (name, _, sig_), args = Option.get_fdfl bailout infos in
-            let args = List.map (fun x -> A.AExpr x) args in
-            mk_sp (Some (snd sig_)) (A.Pcall (None, A.Cconst name, [], A.AExpr the :: args))
+              | None ->
+                let infos =
+                  for_api_call ~mode ~capture ?autoview env (`Typed the, m, args) in
+                let the, (name, _, sig_), args = Option.get_fdfl bailout infos in
+                let args = List.map (fun x -> A.AExpr x) args in
+                mk_sp (Some (snd sig_)) (A.Pcall (None, A.Cconst name, [], A.AExpr the :: args))
+          end
       end
-
     | Eif (c, et, Some ef) ->
       let c      = for_xexpr env ~ety:A.vtbool c in
       let et     = for_xexpr env et in
@@ -5205,7 +5223,7 @@ let rec for_instruction_r
                 bailout ()
               | Some typ -> typ in
 
-            Format.eprintf "etyp: %a@\n" A.pp_ptyp etyp;
+            (* Format.eprintf "etyp: %a@\n" A.pp_ptyp etyp; *)
             (* Format.eprintf "%a@\n" pp_ptyp etyp; *)
             let arg  = for_expr kind env arg ~ety:etyp in
 
