@@ -4,13 +4,15 @@ module M = Model
 module T = Michelson
 
 type micheline = {
-  prim:   string option;
-  int:    string option;
-  bytes:  string option;
-  string: string option;
-  args:   micheline list;
-  annots: string list;
-  array:  micheline list;
+  prim:     string option;
+  int:      string option;
+  bytes:    string option;
+  string:   string option;
+  args:     micheline list;
+  annots:   string list;
+  array:    micheline list;
+  var_id:   string option;
+  var_type: micheline option;
 }
 [@@deriving yojson, show {with_path = false}]
 
@@ -21,20 +23,11 @@ type type_ = {
 }
 [@@deriving yojson, show {with_path = false}]
 
-type expr_node =
-  | String of string
-[@@deriving yojson, show {with_path = false}]
-
-type expression = {
-  node: expr_node
-}
-[@@deriving yojson, show {with_path = false}]
-
 type parameter = {
   name: string;
   type_: type_  [@key "type"];
   const: bool;
-  default: expression option;
+  default: micheline option;
 }
 [@@deriving yojson, show {with_path = false}]
 
@@ -127,7 +120,7 @@ type contract_interface = {
   storage: decl_storage list;
   entrypoints: decl_entrypoint list;
   getters: decl_getter list;
-  errors: expression list;
+  errors: micheline list;
 }
 [@@deriving yojson, show {with_path = false}]
 
@@ -241,15 +234,22 @@ let for_parameter (p : M.parameter) : parameter =
 let for_argument (a: M.argument) : argument =
   mk_argument (unloc (Tools.proj3_1 a)) (for_type (Tools.proj3_2 a))
 
+let mk_prim p args annots = { prim = Some p; int = None;   bytes = None;  string = None;   args = args; annots = annots; array = []; var_id = None; var_type = None }
+let mk_string v           = { prim = None;   int = None;   bytes = None;  string = Some v; args = [];   annots = [];     array = []; var_id = None; var_type = None }
+let mk_bytes v            = { prim = None;   int = None;   bytes = Some v; string = None;  args = [];   annots = [];     array = []; var_id = None; var_type = None }
+let mk_int v              = { prim = None;   int = Some v; bytes = None;   string = None;  args = [];   annots = [];     array = []; var_id = None; var_type = None }
+let mk_array v            = { prim = None;   int = None;   bytes = None;   string = None;  args = [];   annots = [];     array = v;  var_id = None; var_type = None }
+let mk_var _v             = { prim = None;   int = None;   bytes = None;   string = None;  args = [];   annots = [];     array = []; var_id = None; var_type = None }
+
 let to_micheline (obj : T.obj_micheline) : micheline =
   let rec aux (obj : T.obj_micheline) =
-  match obj with
-  | Oprim   p -> { prim = Some p.prim; int = None; bytes = None; string = None; args = List.map aux p.args; annots = p.annots; array = [] }
-  | Ostring v -> { prim = None; int = None; bytes = None; string = Some v; args = []; annots = []; array = [] }
-  | Obytes  v -> { prim = None; int = None; bytes = Some v; string = None; args = []; annots = []; array = [] }
-  | Oint    v -> { prim = None; int = Some v; bytes = None; string = None; args = []; annots = []; array = [] }
-  | Oarray  v -> { prim = None; int = None; bytes = None; string = None; args = []; annots = []; array = List.map aux v }
-  | Ovar    _ -> { prim = None; int = None; bytes = None; string = None; args = []; annots = []; array = [] }
+    match obj with
+    | Oprim   p -> mk_prim p.prim (List.map aux p.args) p.annots
+    | Ostring v -> mk_string v
+    | Obytes  v -> mk_bytes v
+    | Oint    v -> mk_int v
+    | Oarray  v -> mk_array (List.map aux v)
+    | Ovar    v -> mk_var v
   in
   aux obj
 
@@ -321,13 +321,38 @@ let for_entrypoint (fs : M.function_struct) : decl_entrypoint =
 let for_getter (fs, rt : M.function_struct * M.type_) : decl_getter =
   mk_getter (unloc fs.name) (List.map for_argument fs.args) (for_type rt)
 
+let for_errors (model : M.model) : micheline list =
+  let mterm_to_micheline (mt : M.mterm) : micheline option =
+    match Gen_michelson.to_simple_data model mt with
+    | Some v -> (v |> Michelson.Utils.data_to_micheline |> to_micheline |> Option.some)
+    | None -> None
+  in
+  let mk_pair a b = mk_prim "Pair" [mk_string a; mk_string b] [] in
+  let rec aux (ctx : M.ctx_model) (accu : micheline list) (mt : M.mterm) : micheline list =
+    match mt.node with
+    | Mfail(Invalid v)              -> (match mterm_to_micheline v with | Some v -> v::accu | None -> accu)
+    | Mfail(InvalidCaller)          -> (mk_string M.fail_msg_INVALID_CALLER)::accu
+    | Mfail(InvalidSource)          -> (mk_string M.fail_msg_INVALID_SOURCE)::accu
+    | Mfail(InvalidCondition id)    -> (mk_pair M.fail_msg_INVALID_CONDITION id)::accu
+    | Mfail(NotFound)               -> (mk_string M.fail_msg_NOT_FOUND)::accu
+    | Mfail(AssetNotFound an)       -> (mk_pair M.fail_msg_ASSET_NOT_FOUND an)::accu
+    | Mfail(KeyExists an)           -> (mk_pair M.fail_msg_KEY_EXISTS an)::accu
+    | Mfail(KeyExistsOrNotFound an) -> (mk_pair M.fail_msg_KEY_EXISTS_OR_NOT_FOUND an)::accu
+    | Mfail(DivByZero)              -> (mk_string M.fail_msg_DIV_BY_ZERO)::accu
+    | Mfail(NatNegAssign)           -> (mk_string M.fail_msg_NAT_NEG_ASSIGN)::accu
+    | Mfail(NoTransfer)             -> (mk_string M.fail_msg_NO_TRANSFER)::accu
+    | Mfail(InvalidState)           -> (mk_string M.fail_msg_INVALID_STATE)::accu
+    | _ -> M.fold_term (aux ctx) accu mt
+  in
+  M.fold_model aux model []
+
 let model_to_contract_interface (model : M.model) (low_model : M.model) : contract_interface =
   let parameters = List.map for_parameter model.parameters in
   let types = for_decl_type model low_model model.decls in
   let storage = List.fold_right for_storage model.decls [] in
   let entrypoints = List.map for_entrypoint (List.fold_right (fun (x : M.function__) accu -> match x.node with | Entry fs -> fs::accu | _ -> accu) model.functions [])  in
   let getters = List.map for_getter (List.fold_right (fun (x : M.function__) accu -> match x.node with | Getter (fs, r) -> (fs, r)::accu | _ -> accu) model.functions [])  in
-  let errors = [] in
+  let errors = for_errors low_model in
   mk_contract_interface (unloc model.name) parameters types storage entrypoints getters errors
 
 let model_to_contract_interface_json (model : M.model) (low_model : M.model) : string =

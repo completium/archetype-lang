@@ -198,6 +198,47 @@ let rec to_type (model : M.model) ?annotation (t : M.type_) : T.type_ =
   | Tsapling_state n           -> T.mk_type ?annotation (T.Tsapling_state n)
   | Tsapling_transaction n     -> T.mk_type ?annotation (T.Tsapling_transaction n)
 
+let rec to_simple_data (model : M.model) (mt : M.mterm) : T.data option =
+  let f = to_simple_data model in
+  let dolist (l : M.mterm list) = List.fold_right (fun x accu -> match accu with | Some l -> (match f x with | Some v -> Some (v::l) | None -> None) | None -> None) l None in
+  let dolist2 (l : (M.mterm * M.mterm) list) = List.fold_right (fun (x, y) accu -> match accu with | Some l -> (match f x, f y with | Some v, Some w -> Some ((v, w)::l) | _ -> None) | None -> None) l None in
+  match mt.node with
+  | Munit                      -> Some (T.Dunit)
+  | Mbool      true            -> Some (T.Dtrue)
+  | Mbool      false           -> Some (T.Dfalse)
+  | Mint       n               -> Some (T.Dint n)
+  | Mnat       n               -> Some (T.Dint n)
+  | Mstring    s               -> Some (T.Dstring s)
+  | Mcurrency  (v, _)          -> Some (T.Dint v)
+  | Maddress   v               -> Some (T.Dstring v)
+  | Mdate      v               -> Some (T.Dint (Core.date_to_timestamp v))
+  | Mduration  n               -> Some (T.Dint (Core.duration_to_timestamp n))
+  | Mtimestamp v               -> Some (T.Dint v)
+  | Mbytes     b               -> Some (T.Dbytes b)
+  | Mchain_id  v               -> Some (T.Dstring v)
+  | Mkey       v               -> Some (T.Dstring v)
+  | Mkey_hash  v               -> Some (T.Dstring v)
+  | Msignature v               -> Some (T.Dstring v)
+  | Mbls12_381_fr   v          -> Some (T.Dbytes v)
+  | Mbls12_381_fr_n n          -> Some (T.Dint n)
+  | Mbls12_381_g1   v          -> Some (T.Dbytes v)
+  | Mbls12_381_g2   v          -> Some (T.Dbytes v)
+  | MsaplingStateEmpty _       -> Some (T.Dlist [])
+  | MsaplingTransaction (_, b) -> Some (T.Dbytes b)
+  | Mchest     b               -> Some (T.Dbytes b)
+  | Mchest_key b               -> Some (T.Dbytes b)
+  | Mnone                      -> Some (T.Dnone)
+  | Msome      v               -> let v = f v in (match v with | Some x -> Some (T.Dsome x) | None -> None)
+  | Mtuple     l               -> let v = dolist  l in (match v with | Some l -> Some (to_one_data l) | None -> None)
+  | Mlitset    l               -> let v = dolist  l in (match v with | Some l -> Some (T.Dlist l) | None -> None)
+  | Mlitlist   l               -> let v = dolist  l in (match v with | Some l -> Some (T.Dlist l) | None -> None)
+  | Mlitmap    (_, l)          -> let v = dolist2 l in (match v with | Some l -> Some (T.Dlist (List.map (fun (x, y) -> T.Delt (x, y)) l)) | None -> None)
+  | Muminus    v               -> let v = f v in (match v with | Some (Dint n) -> Some (T.Dint (Big_int.mult_int_big_int (-1) n)) | _ -> None)
+  | Mleft (_, x)               -> let x = f x in (match x with | Some x -> Some (T.Dleft x) | None -> None)
+  | Mright (_, x)              -> let x = f x in (match x with | Some x -> Some (T.Dright x) | None -> None)
+  | Mcast (_, _, v)            -> f v
+  | Mvar (x, Vparameter, _, _) -> Some (T.Dvar (unloc x, to_type model mt.type_))
+  | _ -> None
 
 let to_ir (model : M.model) : T.ir =
 
@@ -394,6 +435,10 @@ let to_ir (model : M.model) : T.ir =
     | Mlitmap    (_, l) -> T.Dlist (List.map (fun (x, y) -> T.Delt (to_data x, to_data y)) l)
     | Muminus    v      -> to_data v |> (function | T.Dint n -> T.Dint (Big_int.mult_int_big_int (-1) n) | _ -> assert false )
     | Mnow              -> T.Dint (Unix.time () |> int_of_float |> Big_int.big_int_of_int)
+    | Mleft (_, x)      -> T.Dleft (to_data x)
+    | Mright (_, x)     -> T.Dright (to_data x)
+    | Mcast (_, _, v)   -> to_data v
+    | Mvar (x, Vparameter, _, _) -> T.Dvar (unloc x, to_type model mt.type_)
     | Mlitrecord l      -> begin
         let data = List.map (to_data |@ snd) l in
         match M.get_ntype mt.type_ with
@@ -422,10 +467,6 @@ let to_ir (model : M.model) : T.ir =
           end
         | _ -> to_one_data data
       end
-    | Mleft (_, x)      -> T.Dleft (to_data x)
-    | Mright (_, x)     -> T.Dright (to_data x)
-    | Mcast (_, _, v)   -> to_data v
-    | Mvar (x, Vparameter, _, _) -> T.Dvar (unloc x, to_type model mt.type_)
     | Mlambda (_rt, id, _at, e) -> begin
         let env = mk_env () in
         let ir = mterm_to_intruction env e ~view:false in

@@ -7,7 +7,7 @@ variable res : nat = 0
 entry exec () {
   const a = caller;
   const n = 2;
-  transfer 0tz to entry contract_tz(a).exec(0);
+  transfer 0tz to entry contract_tz(a).exec(n);
 
   // const c : contract<nat> = import_decl(a).e;
   // transfer 0tz to entry c(n);
