@@ -2276,7 +2276,7 @@ end
 type env = Env.t
 
 module Micheline : sig
-  val parse      : string -> T.obj_micheline
+  val parse      : string -> T.obj_micheline option
   val seek       : T.obj_micheline -> string -> T.obj_micheline option
   val seek_views : T.obj_micheline -> (string * T.obj_micheline * T.obj_micheline) list
   val split      : T.obj_micheline -> (string * T.obj_micheline) list
@@ -2288,9 +2288,12 @@ module Micheline : sig
 end = struct
 
   let parse path =
-    let ic = open_in path in
-    let obj, _ = Gen_decompile.parse_micheline (FIChannel (path, ic)) in
-    obj
+    if Core.is_valid_path path
+    then
+      let ic = open_in path in
+      let obj, _ = Gen_decompile.parse_micheline (FIChannel (path, ic)) in
+      Some obj
+    else None
 
   let seek (obj : T.obj_micheline) prim : T.obj_micheline option =
     match obj with
@@ -3727,7 +3730,11 @@ let rec for_xexpr
           | _ -> (Env.emit_error env (loc path, StringLiteralExpected) ; bailout ())
         in
 
-        let content = Micheline.parse (unloc path) in
+        let content =
+          match Micheline.parse (unloc path) with
+          | Some v -> v
+          | None -> (Env.emit_error env (loc path, FileNotFound (unloc path)); bailout ())
+        in
 
         let storage_type =
           match Micheline.get_storage_type content with
@@ -6221,20 +6228,19 @@ let for_enum_decl (env : env) (decl : (PT.lident * PT.enum_decl) loced) =
 let for_import_decl (env : env) (decls : (PT.lident * PT.lident) loced list) =
   List.fold_left (fun (env, accu : env * importdecl list) (a : (PT.lident * PT.lident) loced) -> begin
         let lo, (id, path) = deloc a in
-        if Core.is_valid_path (unloc path)
-        then begin
-          let content     = Micheline.parse (unloc path) in
-          let views       = Micheline.get_views content in
-          match Micheline.get_entrypoints content with
-          | Some entrypoints -> begin
-              let importdecl = { id_name = id; id_path = path; id_content = content; id_entrypoints = entrypoints; id_views = views } in
-              (if   check_and_emit_name_free env id
-               then Env.Import.push env importdecl
-               else env), importdecl::accu
-            end
-          | None -> Env.emit_error env (lo, InvalidTzFile); (env, accu)
-        end
-        else (Env.emit_error env (lo, FileNotFound (unloc path)); (env, accu))
+        match Micheline.parse (unloc path) with
+        | Some content -> begin
+            let views       = Micheline.get_views content in
+            match Micheline.get_entrypoints content with
+            | Some entrypoints -> begin
+                let importdecl = { id_name = id; id_path = path; id_content = content; id_entrypoints = entrypoints; id_views = views } in
+                (if   check_and_emit_name_free env id
+                 then Env.Import.push env importdecl
+                 else env), importdecl::accu
+              end
+            | None -> Env.emit_error env (lo, InvalidTzFile); (env, accu)
+          end
+        | None ->(Env.emit_error env (lo, FileNotFound (unloc path)); (env, accu))
       end) (env, []) decls
 
 (* -------------------------------------------------------------------- *)
