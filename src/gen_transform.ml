@@ -6576,17 +6576,6 @@ let check_unused_variables (model : model) =
   List.iter for_function model.functions;
   model
 
-let process_michelson_create_contract (model : model) =
-  let rec aux ctx (mt : mterm) : mterm =
-    match mt.node with
-    | Mcreatecontract(CCpath path, d, a, v) ->
-      let ic = open_in path in
-      let obj, _ = Gen_decompile.parse_micheline (FIChannel (path, ic)) in
-      {mt with node = Mcreatecontract(CCcontent obj, d, a, v) }
-    | _ -> map_mterm (aux ctx) mt
-  in
-  map_mterm_model aux model
-
 let remove_import_mterm (model : model) =
   let rec aux ctx (mt : mterm) : mterm =
   let f = aux ctx in

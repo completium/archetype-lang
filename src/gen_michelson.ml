@@ -694,11 +694,7 @@ let to_ir (model : M.model) : T.ir =
 
     | Moperations                    -> vops
     | Mmakeoperation (v, e, a)       -> T.Iterop (Ttransfer_tokens, f a, f v, f e)
-    | Mcreatecontract (k, d, a, si)  -> begin
-        match k with
-        | CCcontent c -> T.Iunop (UforcePair, T.Iterop (Tcreate_contract c, f d, f a, f si))
-        | CCpath _ -> emit_error (UnsupportedTerm ("Mcreatecontract CCpath"))
-      end
+    | Mcreatecontract (ms, d, a, si) -> T.Iunop (UforcePair, T.Iterop (Tcreate_contract ms.ms_content, f d, f a, f si))
 
 
     (* literals *)

@@ -451,7 +451,12 @@ let to_model (ast : A.ast) : M.model =
         end
 
       | A.Pcreatecontract (ms, okh, amount, arg_storage) ->
-        M.Mcreatecontract (M.CCcontent ms.ms_content, f okh, f amount, f arg_storage)
+        let to_michelson_struct (ms : A.michelson_struct) =
+          M.{
+            ms_content = ms.ms_content
+          }
+        in
+        M.Mcreatecontract (to_michelson_struct ms, f okh, f amount, f arg_storage)
 
       (* | A.Pcall (Some p, A.Cconst A.Cbefore,    []) -> M.Msetbefore    (f p) *)
       (* | A.Pcall (Some p, A.Cconst A.Cunmoved,   []) -> M.Msetunmoved   (f p)

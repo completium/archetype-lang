@@ -285,7 +285,6 @@ let toolchain ?(debug=false) model =
   |> f "optimize" optimize
   |> f "generate_api_storage" generate_api_storage
   |> f "fill_stovars" fill_stovars
-  |> f "process_michelson_create_contract" process_michelson_create_contract
   |> patch_fa2
 
 let generate_target model =

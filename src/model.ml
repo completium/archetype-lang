@@ -218,11 +218,6 @@ type michelson_struct = {
 }
 [@@deriving show {with_path = false}]
 
-type create_contract_kind =
-  | CCpath    of string
-  | CCcontent of Michelson.obj_micheline
-[@@deriving show {with_path = false}]
-
 type ('id, 'term) mterm_node  =
   (* lambda *)
   | Mletin            of 'id list * 'term * type_ option * 'term * 'term option
@@ -258,7 +253,7 @@ type ('id, 'term) mterm_node  =
   (* operation *)
   | Moperations
   | Mmakeoperation    of 'term * 'term * 'term  (* value * address * args *)
-  | Mcreatecontract   of create_contract_kind * 'term * 'term * 'term  (* value * option key_hash * address * init storage *)
+  | Mcreatecontract   of michelson_struct * 'term * 'term * 'term  (* value * option key_hash * address * init storage *)
   (* literals *)
   | Mint              of Core.big_int
   | Mnat              of Core.big_int
@@ -1543,11 +1538,8 @@ let cmp_mterm_node
     match lhs, rhs with
     | _ -> false
   in
-  let cmp_create_contract_kind (lhs : create_contract_kind) (rhs : create_contract_kind) : bool =
-    match lhs, rhs with
-    | CCpath p1, CCpath p2 -> String.equal p1 p2
-    | CCcontent _, CCcontent _ -> true
-    | _ -> false
+  let cmp_michelson_struct (lhs : michelson_struct) (rhs : michelson_struct) : bool =
+    lhs = rhs
   in
   try
     match term1, term2 with
@@ -1585,7 +1577,7 @@ let cmp_mterm_node
     (* operation *)
     | Moperations, Moperations                                                         -> true
     | Mmakeoperation (v1, d1, a1), Mmakeoperation (v2, d2, a2)                         -> cmp v1 v2 && cmp d1 d2 && cmp a1 a2
-    | Mcreatecontract (k1, d1, a1, si1), Mcreatecontract (k2, d2, a2, si2)             -> cmp_create_contract_kind k1 k2 && cmp d1 d2 && cmp a1 a2 && cmp si1 si2
+    | Mcreatecontract (ms1, d1, a1, si1), Mcreatecontract (ms2, d2, a2, si2)           -> cmp_michelson_struct ms1 ms2 && cmp d1 d2 && cmp a1 a2 && cmp si1 si2
     (* literals *)
     | Mint v1, Mint v2                                                                 -> Big_int.eq_big_int v1 v2
     | Mnat v1, Mnat v2                                                                 -> Big_int.eq_big_int v1 v2
@@ -2049,7 +2041,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   (* operation *)
   | Moperations                    -> Moperations
   | Mmakeoperation (v, d, a)       -> Mmakeoperation (f v, f d, f a)
-  | Mcreatecontract (k, d, a, si)  -> Mcreatecontract (k, f d, f a, f si)
+  | Mcreatecontract (ms, d, a, si) -> Mcreatecontract (ms, f d, f a, f si)
   (* literals *)
   | Mint v                         -> Mint v
   | Mnat v                         -> Mnat v
@@ -3025,11 +3017,11 @@ let fold_map_term
     let ae, aa = f da a in
     g (Mmakeoperation (ve, de, ae)), aa
 
-  | Mcreatecontract (k, d, a, si) ->
+  | Mcreatecontract (ms, d, a, si) ->
     let de, da = f accu d in
     let ae, aa = f da a in
     let sie, sia = f aa si in
-    g (Mcreatecontract (k, de, ae, sie)), sia
+    g (Mcreatecontract (ms, de, ae, sie)), sia
 
   (* literals *)
 
