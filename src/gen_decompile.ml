@@ -1991,7 +1991,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
   A.mk_archetype () ~decls:((A.mk_darchetype model.name)::decls)
 
-let get_entrypoints_for_ast (path : string) : (string * B.ptyp) list * (string * (B.ptyp * B.ptyp)) list * string list =
+let get_entrypoints_for_ast (path : string) : T.obj_micheline * (string * B.ptyp) list * (string * (B.ptyp * B.ptyp)) list * string list =
   let seek (obj : T.obj_micheline) prim : T.obj_micheline option =
     match obj with
     | T.Oarray l -> begin
@@ -2099,4 +2099,4 @@ let get_entrypoints_for_ast (path : string) : (string * B.ptyp) list * (string *
     | None -> [], ["Invalid tz file"]
   in
   let views = List.map (fun (i, t, r) -> (i, (for_type t, for_type r))) (seek_views obj) in
-  entrypoints, views, errors
+  obj, entrypoints, views, errors

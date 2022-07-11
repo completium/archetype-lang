@@ -365,6 +365,11 @@ type vset =
   | Vnone
 [@@deriving show {with_path = false}]
 
+type michelson_struct = {
+  ms_content: Michelson.obj_micheline
+}
+[@@deriving show {with_path = false}]
+
 type 'id term_node  =
   | Pquantifer of quantifier * 'id * ('id term_gen option * type_) * 'id term_gen
   | Pif of ('id term_gen * 'id term_gen * 'id term_gen)
@@ -776,10 +781,23 @@ type metadata_kind =
   | MKjson of string loced
 [@@deriving show {with_path = false}]
 
+type import_kind_node =
+  | INMichelson of michelson_struct
+[@@deriving show {with_path = false}]
+
+type import_struct = {
+  name: lident;
+  path: lident;
+  kind_node: import_kind_node;
+  views: (ident * (type_ * type_)) list;
+  entrypoints: (ident * type_) list;
+}
+[@@deriving show {with_path = false}]
+
 type 'id ast_struct = {
   name           : 'id;
   parameters     : 'id parameter list;
-  imports        : ('id * 'id) list;
+  imports        : import_struct list;
   metadata       : metadata_kind option;
   decls          : 'id decl_ list;
   funs           : 'id fun_ list;

@@ -1547,6 +1547,7 @@ let allops : opinfo list =
 type importdecl = {
   id_name        : A.lident;
   id_path        : A.lident;
+  id_content     : Michelson.obj_micheline;
   id_entrypoints : (ident * A.type_) list;
   id_views       : (ident * (A.type_ * A.type_)) list;
 }
@@ -6069,13 +6070,12 @@ let for_enum_decl (env : env) (decl : (PT.lident * PT.enum_decl) loced) =
 let for_import_decl (env : env) (decls : (PT.lident * PT.lident) loced list) =
   List.fold_left (fun (env, accu : env * importdecl list) (a : (PT.lident * PT.lident) loced) -> begin
         let lo, (id, path) = deloc a in
-
         if Core.is_valid_path (unloc path)
         then begin
-          let entrypoints, views, errors = Gen_decompile.get_entrypoints_for_ast (unloc path) in
+          let content, entrypoints, views, errors = Gen_decompile.get_entrypoints_for_ast (unloc path) in
           match errors with
           | [] -> begin
-              let importdecl = { id_name = id; id_path = path; id_entrypoints = entrypoints; id_views = views } in
+              let importdecl = { id_name = id; id_path = path; id_content = content; id_entrypoints = entrypoints; id_views = views } in
               (if   check_and_emit_name_free env id
                then Env.Import.push env importdecl
                else env), importdecl::accu
@@ -7100,6 +7100,20 @@ let variables_of_vdecls fdecls =
   in List.map for1 (List.pmap (fun x -> x) fdecls)
 
 (* -------------------------------------------------------------------- *)
+let imports_of_vdecls idecls : A.import_struct list =
+  let for1 (decl : importdecl) : A.import_struct =
+    A.{
+      name = decl.id_name;
+      path = decl.id_path;
+      kind_node = INMichelson {ms_content = decl.id_content};
+      views = decl.id_views;
+      entrypoints = decl.id_entrypoints;
+    }
+
+  in List.map for1 idecls
+
+
+(* -------------------------------------------------------------------- *)
 let specifications_of_ispecifications =
   let env0 : A.lident A.specification = A.{
       predicates  = [];
@@ -7346,7 +7360,7 @@ let for_declarations ?init (env : env) (decls : (PT.declaration list) loced) : A
 
     A.mk_model
       ~parameters
-      ~imports:(List.map (fun x -> x.id_name, x.id_path) decls.imports)
+      ~imports:(imports_of_vdecls decls.imports)
       ?metadata
       ~decls:((
           List.map (fun x -> A.Dvariable x) (variables_of_vdecls decls.variables)                            @
