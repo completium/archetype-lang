@@ -450,6 +450,9 @@ let to_model (ast : A.ast) : M.model =
           | _ -> assert false
         end
 
+      | A.Pcreatecontract (ms, okh, amount, arg_storage) ->
+        M.Mcreatecontract (M.CCcontent ms.ms_content, f okh, f amount, f arg_storage)
+
       (* | A.Pcall (Some p, A.Cconst A.Cbefore,    []) -> M.Msetbefore    (f p) *)
       (* | A.Pcall (Some p, A.Cconst A.Cunmoved,   []) -> M.Msetunmoved   (f p)
          | A.Pcall (Some p, A.Cconst A.Cadded,     []) -> M.Msetadded     (f p)
@@ -923,14 +926,6 @@ let to_model (ast : A.ast) : M.model =
         let fb = f b in
         let fc = f c in
         M.Mmakeoperation (fa, fb, fc)
-
-      | A.Pcall (None, A.Cconst (A.Ccreatecontract), [], [AExpr k; AExpr d; AExpr a; AExpr si]) ->
-        let fk  = f k |> (fun x -> match x.node with | Mstring str -> str | _ -> assert false)  in
-        let fd  = f d  in
-        let fa  = f a  in
-        let fsi = f si in
-        M.Mcreatecontract (M.CCpath fk, fd, fa, fsi)
-
 
       (* Lambda *)
 

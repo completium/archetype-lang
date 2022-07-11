@@ -307,7 +307,6 @@ let to_const = function
   | Ccontracttoaddress     -> "contract_to_address"
   | Caddresstocontract     -> "address_to_contract"
   | Ckeytoaddress          -> "key_to_address"
-  | Ccreatecontract        -> "create_contract"
   (* voting *)
   | Ctotalvotingpower      -> "total_voting_power"
   | Cvotingpower           -> "voting_power"
@@ -669,6 +668,16 @@ let rec pp_pterm fmt (pterm : pterm) =
           pp_pterm b
       in
       (pp_no_paren pp) fmt (c, a, b)
+
+    | Pcreatecontract (ms, okh, amount, arg_storage) ->
+      let pp fmt (_ms, okh, amount, arg_storage) =
+        Format.fprintf fmt "create_contract(%a, %a, %a)"
+          pp_pterm okh
+          pp_pterm amount
+          pp_pterm arg_storage
+      in
+      (pp_no_paren pp) fmt (ms, okh, amount, arg_storage)
+
   in
   pp_struct_poly pp_node fmt pterm
 

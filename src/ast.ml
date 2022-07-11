@@ -232,7 +232,6 @@ type const =
   | Ccontracttoaddress
   | Caddresstocontract
   | Ckeytoaddress
-  | Ccreatecontract
   (* voting *)
   | Ctotalvotingpower
   | Cvotingpower
@@ -406,6 +405,7 @@ type 'id term_node  =
   | Pcast of type_ * type_ * 'id term_gen
   | Pself of 'id
   | Pternary of 'id term_gen * 'id term_gen * 'id term_gen
+  | Pcreatecontract of michelson_struct * 'id term_gen * 'id term_gen * 'id term_gen
 [@@deriving show {with_path = false}]
 
 and 'id term_arg =

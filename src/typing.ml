@@ -6,6 +6,7 @@ open Location
 module L  = Location
 module PT = ParseTree
 module A  = Ast
+module T  = Michelson
 
 (* -------------------------------------------------------------------- *)
 module Type : sig
@@ -643,7 +644,6 @@ type opsig = {
 (* -------------------------------------------------------------------- *)
 type error_desc =
   | TODO
-  | Custom                             of ident
   | AEntryExpected                     of A.ptyp
   | AlienPattern
   | AnonymousFieldInEffect
@@ -700,10 +700,10 @@ type error_desc =
   | InvalidEffectForCtn                of A.container * A.container list
   | InvalidEntryDescription
   | InvalidEntryExpression
+  | InvalidEventType
   | InvalidExpression
   | InvalidExpressionForEffect
   | InvalidExprressionForTupleAccess
-  | InvalidEventType
   | InvalidFailIdType                  of ident * A.ptyp * A.ptyp
   | InvalidFieldsCountInAssetOrRecordLiteral
   | InvalidFoldInit                    of A.ptyp
@@ -729,17 +729,17 @@ type error_desc =
   | InvalidShadowFieldAccess
   | InvalidShadowVariableAccess
   | InvalidSortingExpression
-  | InvalidSourcedByExpression
   | InvalidSourcedByAsset
+  | InvalidSourcedByExpression
   | InvalidStateExpression
   | InvalidStringValue
   | InvalidTezValueOverflow
+  | InvalidTypeDeclOpt
   | InvalidTypeForAddressToContract
   | InvalidTypeForBigMapKey
   | InvalidTypeForBigMapValue
   | InvalidTypeForCallview
   | InvalidTypeForContract
-  | InvalidTypeDeclOpt
   | InvalidTypeForDoFailIf
   | InvalidTypeForDoRequire
   | InvalidTypeForEntrypoint
@@ -748,20 +748,21 @@ type error_desc =
   | InvalidTypeForLambdaArgument
   | InvalidTypeForLambdaReturn
   | InvalidTypeForMake
-  | InvalidTypeForMapOperator          of A.ptyp
   | InvalidTypeForMapKey
+  | InvalidTypeForMapOperator          of A.ptyp
   | InvalidTypeForMapValue
-  | InvalidTypeForParameter
+  | InvalidTypeForOptionalAssign
   | InvalidTypeForOrLeft
   | InvalidTypeForOrRight
-  | InvalidTypeForOptionalAssign
+  | InvalidTypeForParameter
   | InvalidTypeForPk
   | InvalidTypeForSet
   | InvalidTypeForTuple
+  | InvalidTzFile
   | InvalidValueForCurrency
+  | InvalidValueForMemoSize
   | InvalidVariableForMethod
   | InvalidVarOrArgType
-  | InvalidValueForMemoSize
   | LabelInNonInvariant
   | LetInElseInInstruction
   | LetInElseOnNonOption
@@ -879,7 +880,6 @@ let pp_error_desc fmt e =
 
   match e with
   | TODO                               -> pp "TODO"
-  | Custom str                         -> pp "%s" str
   | AEntryExpected ty                  -> pp "Expecting an entry point, not a `%a'" Printer_ast.pp_ptyp ty
   | AlienPattern                       -> pp "This pattern does not belong to the enumeration"
   | AnonymousFieldInEffect             -> pp "Anonymous field in effect"
@@ -997,6 +997,7 @@ let pp_error_desc fmt e =
   | InvalidTypeForPk                   -> pp "Invalid type for primary key"
   | InvalidTypeForSet                  -> pp "Invalid type for set"
   | InvalidTypeForTuple                -> pp "Invalid type for tuple"
+  | InvalidTzFile                      -> pp "Invalid tz file"
   | InvalidValueForCurrency            -> pp "Invalid value for currency"
   | InvalidVariableForMethod           -> pp "Invalid variable for method"
   | InvalidVarOrArgType                -> pp "A variable / argument type cannot be an asset or a collection"
@@ -1486,7 +1487,7 @@ let cryptoops : opinfo list =
      op "voting_power"         A.Cvotingpower       `Total None [A.vtkeyhash]                                             (`Ty A.vtnat               ) Mint.empty;
      op "contract_to_address"  A.Ccontracttoaddress `Total None [A.Tcontract (A.Tnamed 0)]                                (`Ty A.vtaddress           ) Mint.empty;
      op "key_to_address"       A.Ckeytoaddress      `Total None [A.vtkey]                                                 (`Ty A.vtaddress           ) Mint.empty;
-     op "create_contract"      A.Ccreatecontract    `Total None [A.vtstring; A.Toption A.vtkeyhash; A.vtcurrency; A.Tnamed 0] (`Ty (A.Ttuple [A.Toperation; A.vtaddress])) Mint.empty;]
+    ]
 
 (* -------------------------------------------------------------------- *)
 let mathops : opinfo list =
@@ -2273,6 +2274,133 @@ end = struct
 end
 
 type env = Env.t
+
+module Micheline : sig
+  val parse      : string -> T.obj_micheline
+  val seek       : T.obj_micheline -> string -> T.obj_micheline option
+  val seek_views : T.obj_micheline -> (string * T.obj_micheline * T.obj_micheline) list
+  val split      : T.obj_micheline -> (string * T.obj_micheline) list
+  val for_type   : T.obj_micheline -> A.ptyp
+
+  val get_entrypoints  : T.obj_micheline -> (string * A.type_) list option
+  val get_views        : T.obj_micheline -> (string * (A.type_ * A.type_)) list
+  val get_storage_type : T.obj_micheline -> A.type_ option
+end = struct
+
+  let parse path =
+    let ic = open_in path in
+    let obj, _ = Gen_decompile.parse_micheline (FIChannel (path, ic)) in
+    obj
+
+  let seek (obj : T.obj_micheline) prim : T.obj_micheline option =
+    match obj with
+    | T.Oarray l -> begin
+        let op = List.fold_left (fun accu x -> match x with | T.Oprim p when String.equal p.prim prim -> Some p | _ -> accu) None l in
+        match op with
+        | Some p -> Some (List.nth p.args 0)
+        | _ -> None
+      end
+    | _ -> None
+
+  let seek_views (obj : T.obj_micheline) : (string * T.obj_micheline * T.obj_micheline) list =
+    match obj with
+    | T.Oarray l ->
+      List.fold_right (
+        fun x accu ->
+          match x with
+          | T.Oprim {prim = "view"; args = Ostring id::i::r::_ } -> (id, i, r)::accu
+          | _ -> accu
+      ) l []
+    | _ -> []
+
+  let split (obj : T.obj_micheline) : (string * T.obj_micheline) list =
+    let rec aux obj =
+      match obj with
+      | T.Oprim {prim = p; args = l} when String.equal p "or" -> List.map aux l |> List.flatten
+      | T.Oprim {annots=[a]} -> [a, obj]
+      | _ -> []
+    in
+
+    match obj with
+    | T.Oprim {prim = p} when String.equal p "or" -> aux obj
+    | T.Oprim p when not (List.is_empty p.annots) -> aux obj
+    | _ -> ["%default", obj]
+
+  let for_type (obj : T.obj_micheline) : A.ptyp =
+    let normalize_type (t : A.ptyp) =
+      let list_without_last l =
+        match List.rev l with
+        | _::t -> List.rev t
+        | _ -> l
+      in
+      let rec aux t =
+        match t with
+        | A.Ttuple l ->
+          let l = List.map aux l in
+          let def = A.Ttuple l in
+          if List.is_not_empty l
+          then begin
+            match List.last l with
+            | A.Ttuple l2 -> A.Ttuple (list_without_last l @ l2)
+            | _ -> def
+          end
+          else def
+        | _ -> A.map_ptyp aux t
+      in
+      aux t
+    in
+
+    let rec aux (t : T.type_) =
+      let f = aux in
+      match t.node with
+      | Tkey                   -> A.Tbuiltin VTkey
+      | Tunit                  -> A.Tbuiltin VTunit
+      | Tsignature             -> A.Tbuiltin VTsignature
+      | Toption    t           -> A.Toption (f t)
+      | Tlist      t           -> A.Tlist   (f t)
+      | Tset       t           -> A.Tset    (f t)
+      | Toperation             -> A.Toperation
+      | Tcontract  t           -> A.Tcontract (f t)
+      | Tpair      (lt, rt)    -> A.Ttuple [f lt; f rt]
+      | Tor        (lt, rt)    -> A.Tor (f lt, f rt)
+      | Tlambda    (at, rt)    -> A.Tlambda (f at, f rt)
+      | Tmap       (kt, vt)    -> A.Tmap (f kt, f vt)
+      | Tbig_map   (kt, vt)    -> A.Tbig_map (f kt, f vt)
+      | Tchain_id              -> A.Tbuiltin VTchainid
+      | Tint                   -> A.Tbuiltin VTint
+      | Tnat                   -> A.Tbuiltin VTnat
+      | Tstring                -> A.Tbuiltin VTstring
+      | Tbytes                 -> A.Tbuiltin VTbytes
+      | Tmutez                 -> A.Tbuiltin VTcurrency
+      | Tbool                  -> A.Tbuiltin VTbool
+      | Tkey_hash              -> A.Tbuiltin VTkeyhash
+      | Ttimestamp             -> A.Tbuiltin VTdate
+      | Taddress               -> A.Tbuiltin VTaddress
+      | Tticket t              -> A.Tticket (f t)
+      | Tsapling_transaction n -> A.Tsapling_transaction n
+      | Tsapling_state       n -> A.Tsapling_state n
+      | Tbls12_381_fr          -> A.Tbuiltin VTbls12_381_fr
+      | Tbls12_381_g1          -> A.Tbuiltin VTbls12_381_g1
+      | Tbls12_381_g2          -> A.Tbuiltin VTbls12_381_g2
+      | Tnever                 -> A.Tbuiltin VTnever
+      | Tchest                 -> A.Tbuiltin VTchest
+      | Tchest_key             -> A.Tbuiltin VTchest_key
+    in
+    aux (T.to_type obj) |> normalize_type
+
+  let get_entrypoints content =
+    match seek content "parameter" with
+    | Some parameters -> Some (List.map (fun (i, t) -> (i, for_type t)) (split parameters))
+    | None -> None
+
+  let get_views content = List.map (fun (i, t, r) -> (i, (for_type t, for_type r))) (seek_views content)
+
+  let get_storage_type content =
+    match seek content "storage" with
+    | Some v -> Some (for_type v)
+    | None -> None
+
+end
 
 let coreloc = { Location.dummy with loc_fname = "<stdlib>" }
 
@@ -3588,6 +3716,29 @@ let rec for_xexpr
       let args = List.map  (fun x -> A.AExpr x) args in
 
       mk_sp (Some A.vtbool) (A.Pcall (None, A.Cid f, [], args))
+
+    | Eapp (Fident {pldesc = "create_contract"}, [path; okh; amount; arg_storage]) -> begin
+        let okh = for_xexpr ~ety:(A.Toption A.vtkeyhash) env okh in
+        let amount = for_xexpr ~ety:(A.vtcurrency) env amount in
+
+        let path =
+          match path with
+          | {pldesc = PT.Eliteral(Lstring v) } -> mkloc (loc path) v
+          | _ -> (Env.emit_error env (loc path, StringLiteralExpected) ; bailout ())
+        in
+
+        let content = Micheline.parse (unloc path) in
+
+        let storage_type =
+          match Micheline.get_storage_type content with
+          | Some v -> v
+          | None -> (Env.emit_error env (loc path, InvalidTzFile) ; bailout ())
+        in
+
+        let arg_storage = for_xexpr ~ety:storage_type env arg_storage in
+
+        mk_sp (Some (A.Ttuple [A.Toperation; A.vtaddress])) (A.Pcreatecontract ({ms_content = content }, okh, amount, arg_storage))
+      end
 
     | Eapp (Fident f, args) when Env.Function.exists env (unloc f) ->
       let fun_ = Env.Function.get env (unloc f) in
@@ -6072,15 +6223,16 @@ let for_import_decl (env : env) (decls : (PT.lident * PT.lident) loced list) =
         let lo, (id, path) = deloc a in
         if Core.is_valid_path (unloc path)
         then begin
-          let content, entrypoints, views, errors = Gen_decompile.get_entrypoints_for_ast (unloc path) in
-          match errors with
-          | [] -> begin
+          let content     = Micheline.parse (unloc path) in
+          let views       = Micheline.get_views content in
+          match Micheline.get_entrypoints content with
+          | Some entrypoints -> begin
               let importdecl = { id_name = id; id_path = path; id_content = content; id_entrypoints = entrypoints; id_views = views } in
               (if   check_and_emit_name_free env id
                then Env.Import.push env importdecl
                else env), importdecl::accu
             end
-          | _ -> List.iter (fun err ->  Env.emit_error env (lo, Custom err)) errors; (env, accu)
+          | None -> Env.emit_error env (lo, InvalidTzFile); (env, accu)
         end
         else (Env.emit_error env (lo, FileNotFound (unloc path)); (env, accu))
       end) (env, []) decls
