@@ -213,6 +213,11 @@ type map_kind =
   | MKIterableBigMap
 [@@deriving show {with_path = false}]
 
+type michelson_struct = {
+  ms_content: Michelson.obj_micheline
+}
+[@@deriving show {with_path = false}]
+
 type create_contract_kind =
   | CCpath    of string
   | CCcontent of Michelson.obj_micheline
@@ -1024,9 +1029,16 @@ type extra = {
 }
 [@@deriving show {with_path = false}]
 
+type import_kind_node =
+  | INMichelson of michelson_struct
+[@@deriving show {with_path = false}]
+
 type import = {
   name: lident;
   path: lident;
+  kind_node: import_kind_node;
+  views: (ident * (type_ * type_)) list;
+  entrypoints: (ident * type_) list;
 }
 [@@deriving show {with_path = false}]
 

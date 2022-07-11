@@ -1670,6 +1670,16 @@ let to_model (ast : A.ast) : M.model =
     }
   in
 
+  let process_import (i : A.import_struct) : M.import =
+    M.{
+      name        = i.name;
+      path        = i.path;
+      kind_node   = (match i.kind_node with | A.INMichelson { ms_content } -> M.INMichelson { ms_content });
+      views       = List.map (fun (x, (y, z)) -> (x, (type_to_type y, type_to_type z))) i.views;
+      entrypoints = List.map (fun (x, y) -> (x, type_to_type y)) i.entrypoints;
+    }
+  in
+
   let process_decl_ (env : env) = function
     | A.Dvariable v -> process_var env v
     | A.Dasset    a -> process_asset env a
@@ -1687,6 +1697,7 @@ let to_model (ast : A.ast) : M.model =
   let env = mk_env () in
 
   let parameters = List.map (process_parameter env) ast.parameters in
+  let imports = List.map process_import ast.imports in
   let metadata = Option.map (function | A.MKuri x -> M.MKuri x | A.MKjson x -> M.MKjson x) ast.metadata in
   let decls = List.map (process_decl_ env) ast.decls in
   let functions = List.map (process_fun_ env) ast.funs in
@@ -1701,4 +1712,4 @@ let to_model (ast : A.ast) : M.model =
     |> (fun sec -> List.fold_left (fun accu x -> cont_security x accu) sec ast.securities)
   in
 
-  M.mk_model ~parameters ?metadata ~decls ~functions ~specification ~security ~loc:ast.loc name
+  M.mk_model ~parameters ~imports ?metadata ~decls ~functions ~specification ~security ~loc:ast.loc name
