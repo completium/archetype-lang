@@ -697,6 +697,7 @@ type error_desc =
   | InvalidAssetGetContainer           of A.container
   | InvalidCallByAsset
   | InvalidCallByExpression
+  | InvalidContractValueForCreateContract
   | InvalidEffectForCtn                of A.container * A.container list
   | InvalidEntryDescription
   | InvalidEntryExpression
@@ -934,6 +935,7 @@ let pp_error_desc fmt e =
   | InvalidAssetExpression             -> pp "Invalid asset expression"
   | InvalidAssetGetContainer c         -> pp "Operator `[]` is not available for %a" Printer_ast.pp_container c
   | InvalidCallByExpression            -> pp "Invalid 'Calledby' expression"
+  | InvalidContractValueForCreateContract -> pp "Invalid argument for `create_contract`"
   | InvalidCallByAsset                 -> pp "Invalid 'Calledby' asset, the key must be typed address"
   | InvalidEffectForCtn _              -> pp "Invalid effect for this container kind"
   | InvalidEntryDescription            -> pp "Invalid entry description"
@@ -3724,16 +3726,18 @@ let rec for_xexpr
         let okh = for_xexpr ~ety:(A.Toption A.vtkeyhash) env okh in
         let amount = for_xexpr ~ety:(A.vtcurrency) env amount in
 
-        let path =
-          match path with
-          | {pldesc = PT.Eliteral(Lstring v) } -> mkloc (loc path) v
-          | _ -> (Env.emit_error env (loc path, StringLiteralExpected) ; bailout ())
-        in
-
         let content =
-          match Micheline.parse (unloc path) with
-          | Some v -> v
-          | None -> (Env.emit_error env (loc path, FileNotFound (unloc path)); bailout ())
+          match path with
+          | {pldesc = PT.Eterm (_, id) } when Option.is_some (Env.Import.lookup env (unloc id))-> begin
+              let importdecl = Env.Import.get env (unloc id) in
+              importdecl.id_content
+            end
+          | {pldesc = PT.Eliteral(Lstring v) } -> begin
+              match Micheline.parse v with
+              | Some v -> v
+              | None -> (Env.emit_error env (loc path, FileNotFound v); bailout ())
+            end
+          | _ -> (Env.emit_error env (loc path, InvalidContractValueForCreateContract) ; bailout ())
         in
 
         let storage_type =

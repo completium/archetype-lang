@@ -1,0 +1,8 @@
+# 0
+{
+  storage unit;
+  parameter (unit %exec);
+  code { CDR;
+         NIL operation;
+         PAIR };
+}

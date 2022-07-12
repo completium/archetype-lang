@@ -1,0 +1,11 @@
+archetype test_create_contract
+
+import simple from "./tests/michelson/simple.tz"
+
+entry exec () {
+  const delegate : option<key_hash> = none;
+  const amount : tez = 0tz;
+  const storage_init : nat = 0;
+  const op_addr : (operation * address) = create_contract("./tests/michelson/simple_nat.tz", delegate, amount, storage_init);
+  operations := [op_addr[0]]
+}
