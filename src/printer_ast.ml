@@ -1243,7 +1243,7 @@ let pp_fun_args fmt args =
 
 let pp_function fmt (f : function_) =
   Format.fprintf fmt "%s %a%a : %a =@\n  @[%a%a@]@\n"
-    (match f.kind with | FKfunction -> "function" | FKgetter -> "getter" | FKview -> "view")
+    (match f.kind with | FKfunction -> "function" | FKgetter -> "getter" | FKview vv -> ((match vv with | VVonchain -> "onchain" | VVoffchain -> "offchain" | VVonoffchain -> "offchain onchain") ^ " view"))
     pp_id f.name
     pp_fun_args f.args
     pp_type f.return

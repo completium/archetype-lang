@@ -127,7 +127,9 @@
 %token NO_TRANSFER
 %token NONE
 %token NOT
+%token OFFCHAIN
 %token ON
+%token ONCHAIN
 %token OPTION
 %token OR
 %token OTHERWISE
@@ -410,6 +412,7 @@ namespace:
     body   = e;
     getter = false;
     view   = false;
+    view_visibility = VVnone;
   }
 }
 
@@ -433,11 +436,18 @@ function_decl:
     body   = e;
     getter = true;
     view   = false;
+    view_visibility = VVnone;
   }
 }
 
+%inline view_visibility:
+| ONCHAIN OFFCHAIN { VVonoffchain }
+| ONCHAIN          { VVonchain }
+| OFFCHAIN         { VVoffchain }
+|                  { VVnone}
+
 %inline view_gen:
- | VIEW id=ident xs=function_args
+ | vv=view_visibility VIEW id=ident xs=function_args
      r=function_return? LBRACE b=fun_body RBRACE {
   let (s, e) = b in
   {
@@ -448,6 +458,7 @@ function_decl:
     body   = e;
     getter = false;
     view   = true;
+    view_visibility = vv;
   }
 }
 

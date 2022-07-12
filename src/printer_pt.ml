@@ -1128,7 +1128,8 @@ let pp_specification_item fmt = function
 let pp_specification_items = pp_list "@\n@\n" pp_specification_item
 
 let pp_function fmt (f : s_function) =
-  Format.fprintf fmt "%s %a %a%a %a@\n"
+  Format.fprintf fmt "%s%s %a %a%a %a@\n"
+    (match f.view_visibility with | VVonoffchain -> "onchain offchain "  | VVonchain -> "onchain "  | VVoffchain -> "offchain "  | VVnone -> "")
     (if f.getter then "getter" else if f.view then "view" else "function")
     pp_id f.name
     pp_fun_args f.args

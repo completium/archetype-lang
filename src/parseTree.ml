@@ -272,6 +272,12 @@ and security_unloc = security_item list * exts
 
 and security = security_unloc loced
 
+and view_visibility =
+  | VVonchain
+  | VVoffchain
+  | VVonoffchain
+  | VVnone
+
 and s_function = {
   name  : lident;
   args  : args;
@@ -280,6 +286,7 @@ and s_function = {
   body  : expr;
   getter: bool;
   view  : bool;
+  view_visibility: view_visibility;
 }
 
 and entry_properties = {
@@ -574,8 +581,8 @@ let einvalid      ?(loc=dummy) _                  = mkloc loc (Einvalid)
 
 (* declarations utils *)
 
-let mk_s_function name args ret_t spec body getter view : s_function =
-  {name; args; ret_t; spec; body; getter; view}
+let mk_s_function name args ret_t spec body getter view view_visibility : s_function =
+  {name; args; ret_t; spec; body; getter; view; view_visibility}
 
 let mk_entry_properties ?(accept_transfer = (true, None)) ?sourcedby ?calledby ?state_is ?constants ?require ?failif ?spec_fun ?(functions = []) _ : entry_properties =
   { accept_transfer; sourcedby; calledby; state_is; constants; require; failif; spec_fun; functions }

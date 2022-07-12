@@ -405,7 +405,7 @@ let extract (m : M.model) (w3s : why3session) =
       | Entry  fn        -> unloc fn.name
       | Function (fn, _) -> unloc fn.name
       | Getter (fn, _)   -> unloc fn.name
-      | View (fn, _)     -> unloc fn.name
+      | View (fn, _, _)  -> unloc fn.name
     in
     match spec with
     | Some spec -> for_specification ~fname accu spec

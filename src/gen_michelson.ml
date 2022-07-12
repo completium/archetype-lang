@@ -1248,7 +1248,7 @@ let to_ir (model : M.model) : T.ir =
         | Entry fs -> (funs, entries @ [for_fs_entry env fs ~view:false], views)
         | Getter _ -> emit_error (UnsupportedTerm ("Getter"))
         | Function (fs, ret) -> funs @ [for_fs_fun env fs ret ~view:false], entries, views
-        | View (fs, ret) -> (funs, entries, views @ [for_fs_fun env fs ret ~view:true ])
+        | View (fs, ret, vv) -> (funs, entries, views @ (match vv with | M.VVonchain | M.VVonoffchain -> [for_fs_fun env fs ret ~view:true ] | _ -> []))
       ) ([], [], []) model.functions
   in
   let annot a (t : T.type_) = id{ t with annotation = Some (mk_fannot a)} in

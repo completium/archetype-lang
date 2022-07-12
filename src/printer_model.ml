@@ -2127,10 +2127,11 @@ let pp_argument fmt ((id, t, dv) : argument) =
     (pp_option (fun fmt -> Format.fprintf fmt " := %a" pp_mterm)) dv
 
 let pp_function fmt f =
+  let vv_to_str = function | VVonchain -> ""  | VVoffchain -> "offchain "  | VVonoffchain -> "onoffchain " in
   let k, fs, ret = match f.node with
     | Entry f         -> "entry",    f, None
     | Getter (f, a)   -> "getter",   f, Some a
-    | View (f, a)     -> "view",     f, Some a
+    | View (f, a, vv) -> (vv_to_str vv ^ "view"), f, Some a
     | Function (f, a) -> "function", f, Some a
   in
   Format.fprintf fmt "%a %a %a%a {@\n@[<v 2>  %a%a@]@\n}@\n"

@@ -6087,9 +6087,10 @@ let for_function
 
       if Option.is_some rty && not (List.exists Option.is_none args) then
         if check_and_emit_name_free env fdecl.name then
+          let to_visibility = function | PT.VVonchain | PT.VVnone -> A.VVonchain | PT.VVoffchain -> A.VVoffchain | PT.VVonoffchain -> A.VVonoffchain in
           (env, Some {
               fs_name  = fdecl.name;
-              fs_kind  = if fdecl.getter then FKgetter else if fdecl.view then FKview else FKfunction;
+              fs_kind  = if fdecl.getter then FKgetter else if fdecl.view then FKview (to_visibility fdecl.view_visibility) else FKfunction;
               fs_args  = List.pmap id args;
               fs_retty = Option.get rty;
               fs_body  = body;
@@ -6342,7 +6343,7 @@ let for_fun_specs (env : env) (specs : PT.specfun loced list) =
 
     | PT.SKview -> begin
         match Env.Function.lookup env (unloc x) with
-        | Some fund when fund.fs_kind = A.FKview ->
+        | Some fund when (match fund.fs_kind with A.FKview _ -> true | _ -> false) ->
           ()
 
         | _ ->

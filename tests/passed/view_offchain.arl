@@ -1,0 +1,11 @@
+archetype view_offchain
+
+variable n : option<nat> = none
+
+offchain view getN() : nat {
+  return 0
+}
+
+entry exec() {
+  n := call_view<nat>(self_address, "getN", Unit)
+}

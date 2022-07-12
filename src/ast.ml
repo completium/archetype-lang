@@ -637,10 +637,16 @@ type security = {
 }
 [@@deriving show {with_path = false}]
 
+type view_visibility =
+  | VVonchain
+  | VVonoffchain
+  | VVoffchain
+[@@deriving show {with_path = false}]
+
 type fun_kind =
   | FKfunction
   | FKgetter
-  | FKview
+  | FKview of view_visibility
 [@@deriving show {with_path = false}]
 
 type 'id function_struct = {

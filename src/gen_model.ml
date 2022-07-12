@@ -1417,10 +1417,11 @@ let to_model (ast : A.ast) : M.model =
     let loc   = function_.loc in
     let ret   = type_to_type function_.return in
     let spec : M.specification option = Option.map (to_specification env) function_.specification in
+    let to_vv = function | A.VVonchain -> M.VVonchain | A.VVoffchain -> M.VVoffchain | A.VVonoffchain -> M.VVonoffchain in
     let f     = match function_.kind with
       | FKfunction -> (fun x -> M.Function (x, ret))
-      | FKgetter -> (fun x -> M.Getter (x, ret))
-      | FKview -> (fun x -> M.View (x, ret))
+      | FKgetter   -> (fun x -> M.Getter (x, ret))
+      | FKview vv  -> (fun x -> M.View (x, ret, to_vv vv))
     in
     process_fun_gen name args body loc spec f
   in
