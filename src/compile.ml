@@ -142,6 +142,7 @@ let output (model : Model.model) : string =
         match !Options.target with
         | Michelson
         | MichelsonStorage
+        | OffchainViews
         | Javascript -> begin
             fun fmt model ->
               let ir = Gen_michelson.to_ir model in
@@ -185,6 +186,10 @@ let output (model : Model.model) : string =
                   | Javascript -> begin
                       let micheline = Michelson.Utils.to_micheline michelson storage_data in
                       Format.fprintf fmt "%a@\n@." Printer_michelson.pp_javascript micheline
+                    end
+                  | OffchainViews -> begin
+                      let offchain_views : Michelson.offchain_view list = Gen_michelson.generate_offchain_view ir in
+                      Format.fprintf fmt "[%a]@." (Printer_tools.pp_list "," Printer_michelson.pp_offchain_view) offchain_views
                     end
                   | _ -> assert false
                 end
@@ -288,7 +293,6 @@ let toolchain ?(debug=false) model =
   |> patch_fa2
 
 let generate_target model =
-
   let _print_model m =
     Format.eprintf "%a@\n" Printer_model.pp_model m;
     m
@@ -300,6 +304,7 @@ let generate_target model =
   match !Options.target with
   | Michelson
   | MichelsonStorage
+  | OffchainViews
   | Javascript ->
     model
     |> toolchain ~debug

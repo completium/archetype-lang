@@ -891,6 +891,30 @@ let pp_javascript fmt (micheline : Michelson.micheline) =
 
 (* -------------------------------------------------------------------------- *)
 
+let pp_opt_pp tag pp fmt o =
+  pp_option (fun fmt v -> Format.fprintf fmt "\"%s\":%a," tag pp v) fmt o
+
+let pp_michelson_storage_view_struct fmt (omsvsv : Michelson.michelson_storage_view_struct) =
+  pp_str fmt "{";
+  (pp_opt_pp "parameter" pp_obj_micheline) fmt omsvsv.parameter;
+  (pp_opt_pp "returnType" pp_obj_micheline) fmt omsvsv.returnType;
+  (pp_opt_pp "version" pp_str) fmt omsvsv.version;
+  Format.fprintf fmt "\"code\":%a" pp_obj_micheline omsvsv.code;
+  pp_str fmt "}"
+
+let pp_offchain_view_implem_kind fmt (o : offchain_view_implem_kind) =
+  match o with
+  | OVIKMichelsonStorageView v -> Format.fprintf fmt "{\"michelsonStorageView\":%a}" pp_michelson_storage_view_struct v
+  | OVIKRestApiQuery _ -> ()
+
+let pp_offchain_view fmt (ov : Michelson.offchain_view) =
+  Format.fprintf fmt
+    "{\"name\":\"%s\",\"implementations\":%a}"
+    ov.name
+    (pp_list "," pp_offchain_view_implem_kind) ov.implementations
+
+(* -------------------------------------------------------------------------- *)
+
 let string_of__of_pp pp x =
   Format.asprintf "%a@." pp x
 

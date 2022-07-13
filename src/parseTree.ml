@@ -163,6 +163,7 @@ and expr_unloc =
   | Eemit          of type_t * expr
   | Eself          of lident
   | Eternary       of expr * expr * expr
+  | Escope         of lident option * expr
   | Eany
   | Enothing
   | Eunit

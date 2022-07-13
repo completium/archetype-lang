@@ -2,6 +2,10 @@ archetype view_onchain
 
 variable n : option<nat> = none
 
+view get() : nat {
+  return 0
+}
+
 onchain view getonchain() : nat {
   return 0
 }
@@ -15,5 +19,5 @@ onchain offchain view getonoffchain() : nat {
 }
 
 entry exec() {
-  n := call_view<nat>(self_address, "getN", Unit)
+  n := call_view<nat>(self_address, "get", Unit)
 }

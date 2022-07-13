@@ -397,6 +397,14 @@ let rec pp_expr outer pos fmt a =
     in
     pp fmt (c, x, y)
 
+  | Escope (id, x) ->
+    let pp fmt (id, x) =
+      Format.fprintf fmt "%a::%a"
+        (pp_option pp_id) id
+        pp_simple_expr x
+    in
+    pp fmt (id, x)
+
   | Esqapp (i, e) ->
 
     let pp fmt (i, e) =

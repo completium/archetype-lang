@@ -1,6 +1,7 @@
 type target_lang =
   | Michelson
   | MichelsonStorage
+  | OffchainViews
   | Whyml
   | Javascript
   | Markdown
@@ -13,6 +14,7 @@ exception UnknownTarget of string
 let string_to_target_lang = function
   | "michelson"         -> Michelson
   | "michelson-storage" -> MichelsonStorage
+  | "offchain-views"    -> OffchainViews
   | "whyml"             -> Whyml
   | "javascript"        -> Javascript
   | "markdown"          -> Markdown

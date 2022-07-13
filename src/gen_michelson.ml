@@ -1172,7 +1172,7 @@ let to_ir (model : M.model) : T.ir =
 
   let env = mk_env () in
 
-  let funs, entries, views =
+  let funs, entries, views, offchain_views =
 
     let for_fs _env (fs : M.function_struct) ?(view= false) =
       let name = unloc fs.name in
@@ -1243,13 +1243,17 @@ let to_ir (model : M.model) : T.ir =
       T.mk_entry name args eargs body
     in
 
-    List.fold_left (fun (funs, entries, views) (x : M.function__) ->
+    let is_onchain_view vv = match vv with  | M.VVonchain  | M.VVonoffchain -> true | _ -> false in
+    let is_offchain_view vv = match vv with | M.VVoffchain | M.VVonoffchain -> true | _ -> false in
+    List.fold_left (fun (funs, entries, views, offchain_views) (x : M.function__) ->
         match x.node with
-        | Entry fs -> (funs, entries @ [for_fs_entry env fs ~view:false], views)
+        | Entry fs -> (funs, entries @ [for_fs_entry env fs ~view:false], views, offchain_views)
         | Getter _ -> emit_error (UnsupportedTerm ("Getter"))
-        | Function (fs, ret) -> funs @ [for_fs_fun env fs ret ~view:false], entries, views
-        | View (fs, ret, vv) -> (funs, entries, views @ (match vv with | M.VVonchain | M.VVonoffchain -> [for_fs_fun env fs ret ~view:true ] | _ -> []))
-      ) ([], [], []) model.functions
+        | Function (fs, ret) -> funs @ [for_fs_fun env fs ret ~view:false], entries, views, offchain_views
+        | View (fs, ret, vv) -> (funs, entries,
+                                 (views @ (if is_onchain_view  vv then [for_fs_fun env fs ret ~view:true ] else [])),
+                                 (offchain_views @ (if is_offchain_view vv then [for_fs_fun env fs ret ~view:true ] else [])))
+      ) ([], [], [], []) model.functions
   in
   let annot a (t : T.type_) = id{ t with annotation = Some (mk_fannot a)} in
   let parameter : T.type_ =
@@ -1285,7 +1289,7 @@ let to_ir (model : M.model) : T.ir =
 
   let name = unloc model.name in
   let parameters = List.map (fun (x : M.parameter) -> unloc x.name) model.parameters in
-  T.mk_ir name storage_type storage_data storage_list parameter funs views entries ~with_operations:with_operations ~parameters
+  T.mk_ir name storage_type storage_data storage_list parameter funs views offchain_views entries ~with_operations:with_operations ~parameters
 
 
 (* -------------------------------------------------------------------- *)
@@ -1871,6 +1875,109 @@ and process_data (d : T.data) : T.data =
   in
   aux d
 
+and build_view storage_list (v : T.func) : T.view_struct =
+  let id    = v.name in
+  let param : T.type_ = v.targ in
+  let ret   : T.type_ = v.tret in
+
+  let unfold_all = function
+    | []     -> []
+    | [_]    -> []
+    | [_; _] -> [T.cunpair]
+    | l      -> [T.cunpair_n (List.length l)]
+  in
+
+  let extract_storage_vars stovars =
+
+    (* Format.eprintf "extract_storage_vars: storage_list: [%a]@\n" (pp_list "; " (fun fmt (x, _, _) -> Format.fprintf fmt "%s" x) ) storage_list; *)
+    (* Format.eprintf "extract_storage_vars: stovars: [%a]@\n" (pp_list "; " (fun fmt x -> Format.fprintf fmt "%s" x) ) stovars; *)
+
+    let stos : (int * ident) list =
+      storage_list
+      |> List.mapi (fun i (x, _, _) -> (i, x))
+      |> List.filter (fun (_, x) -> List.mem x stovars)
+    in
+
+    (* Format.eprintf "extract_storage_vars: stos: [%a]@\n" (pp_list "; " (fun fmt (x, y) -> Format.fprintf fmt "(%i, %s)" x y) ) stos; *)
+
+    let rec doit (n : int) (s : int) (code, ids) stos : T.code list * ident list =
+      match stos with
+      | (k, id)::q -> begin
+          (* Format.eprintf "extract_storage_vars: k: %i@\n" k; *)
+          let found = k = n in
+          (* Format.eprintf "extract_storage_vars: found: %b@\n" found; *)
+          let last = n = s - 1 in
+          (* Format.eprintf "extract_storage_vars: last: %b@\n" last; *)
+          match found, last with
+          | false, false -> doit (n + 1) s (code @ [T.ccdr], ids) stos
+          | false, true  -> code @ [T.cdrop 1], ids
+          | true, false  -> doit (n + 1) s (code @ [T.cunpair; T.cswap], id::ids) q
+          | true, true   -> code, id::ids
+        end
+      | [] -> code @ [T.cdrop 1], ids
+    in
+
+    let n = List.length storage_list in
+    (* Format.eprintf "extract_storage_vars: n: %i@\n" n; *)
+    let code, ids = doit 0 n ([], []) stos in
+    code, ids
+  in
+
+  let env = mk_env () in
+
+  let fold_vars, env, nb_args =
+    match v.ctx.args, v.ctx.stovars with
+    | [], [] -> [T.cdrop 1], env, 0
+
+    | args, [] ->
+      let code = [T.ccar] @ unfold_all args in
+      let env = { env with vars = List.map fst args @ env.vars } in
+      code, env, List.length args
+
+    | [], stovars ->
+      let scode, svs = extract_storage_vars stovars in
+      (* Format.eprintf "RES: scode: @[%a@], sys: [%a]@\n" (pp_list "; " Printer_michelson.pp_code) scode (pp_list "; " pp_ident) svs; *)
+      let code = [T.ccdr] @ scode in
+      let env = { env with vars = svs @ env.vars } in
+      code, env, List.length svs
+
+    | args, stovars ->
+      let scode, svs = extract_storage_vars stovars in
+      let acode = unfold_all args in
+      let scode = match scode with | [] -> [] | _ -> [T.cdip (1, scode)] in
+      let code = [T.cunpair] @ scode @ acode in
+      let avs = List.map fst args in
+      let env = { env with vars = avs @ svs @ env.vars } in
+      code, env, List.length (svs @ avs)
+
+  in
+
+  let fold_vars = fold_vars @ [T.cunit] in
+
+  let env = add_var_env env fun_result in
+  (* print_env env; *)
+
+  let code, _env =
+    match v.body with
+    | Concrete (_args, instr) -> instruction_to_code env instr
+    | Abstract _ -> assert false
+  in
+
+  let post =
+    match nb_args with
+    | 0 -> []
+    | _ -> [T.cdip (1, [T.cdrop nb_args])]
+  in
+
+  let code = T.cseq (code::post) in
+
+  let body  : T.code  =
+    T.cseq (fold_vars @ [code])
+    |> T.Utils.flat
+    |> T.Utils.optim
+  in
+  T.mk_view_struct id param ret body
+
 and to_michelson (ir : T.ir) : T.michelson =
   let storage = ir.storage_type in
   (* let default = T.cseq [T.CDR; T.NIL (T.mk_type Toperation); T.PAIR ] in *)
@@ -1976,111 +2083,22 @@ and to_michelson (ir : T.ir) : T.michelson =
     |> T.Utils.optim
   in
 
-  let build_view storage_list (v : T.func) =
-    let id    = v.name in
-    let param : T.type_ = v.targ in
-    let ret   : T.type_ = v.tret in
-
-    let unfold_all = function
-      | []     -> []
-      | [_]    -> []
-      | [_; _] -> [T.cunpair]
-      | l      -> [T.cunpair_n (List.length l)]
-    in
-
-    let extract_storage_vars stovars =
-
-      (* Format.eprintf "extract_storage_vars: storage_list: [%a]@\n" (pp_list "; " (fun fmt (x, _, _) -> Format.fprintf fmt "%s" x) ) storage_list; *)
-      (* Format.eprintf "extract_storage_vars: stovars: [%a]@\n" (pp_list "; " (fun fmt x -> Format.fprintf fmt "%s" x) ) stovars; *)
-
-      let stos : (int * ident) list =
-        storage_list
-        |> List.mapi (fun i (x, _, _) -> (i, x))
-        |> List.filter (fun (_, x) -> List.mem x stovars)
-      in
-
-      (* Format.eprintf "extract_storage_vars: stos: [%a]@\n" (pp_list "; " (fun fmt (x, y) -> Format.fprintf fmt "(%i, %s)" x y) ) stos; *)
-
-      let rec doit (n : int) (s : int) (code, ids) stos : T.code list * ident list =
-        match stos with
-        | (k, id)::q -> begin
-            (* Format.eprintf "extract_storage_vars: k: %i@\n" k; *)
-            let found = k = n in
-            (* Format.eprintf "extract_storage_vars: found: %b@\n" found; *)
-            let last = n = s - 1 in
-            (* Format.eprintf "extract_storage_vars: last: %b@\n" last; *)
-            match found, last with
-            | false, false -> doit (n + 1) s (code @ [T.ccdr], ids) stos
-            | false, true  -> code @ [T.cdrop 1], ids
-            | true, false  -> doit (n + 1) s (code @ [T.cunpair; T.cswap], id::ids) q
-            | true, true   -> code, id::ids
-          end
-        | [] -> code @ [T.cdrop 1], ids
-      in
-
-      let n = List.length storage_list in
-      (* Format.eprintf "extract_storage_vars: n: %i@\n" n; *)
-      let code, ids = doit 0 n ([], []) stos in
-      code, ids
-    in
-
-    let env = mk_env () in
-
-    let fold_vars, env, nb_args =
-      match v.ctx.args, v.ctx.stovars with
-      | [], [] -> [T.cdrop 1], env, 0
-
-      | args, [] ->
-        let code = [T.ccar] @ unfold_all args in
-        let env = { env with vars = List.map fst args @ env.vars } in
-        code, env, List.length args
-
-      | [], stovars ->
-        let scode, svs = extract_storage_vars stovars in
-        (* Format.eprintf "RES: scode: @[%a@], sys: [%a]@\n" (pp_list "; " Printer_michelson.pp_code) scode (pp_list "; " pp_ident) svs; *)
-        let code = [T.ccdr] @ scode in
-        let env = { env with vars = svs @ env.vars } in
-        code, env, List.length svs
-
-      | args, stovars ->
-        let scode, svs = extract_storage_vars stovars in
-        let acode = unfold_all args in
-        let scode = match scode with | [] -> [] | _ -> [T.cdip (1, scode)] in
-        let code = [T.cunpair] @ scode @ acode in
-        let avs = List.map fst args in
-        let env = { env with vars = avs @ svs @ env.vars } in
-        code, env, List.length (svs @ avs)
-
-    in
-
-    let fold_vars = fold_vars @ [T.cunit] in
-
-    let env = add_var_env env fun_result in
-    (* print_env env; *)
-
-    let code, _env =
-      match v.body with
-      | Concrete (_args, instr) -> instruction_to_code env instr
-      | Abstract _ -> assert false
-    in
-
-    let post =
-      match nb_args with
-      | 0 -> []
-      | _ -> [T.cdip (1, [T.cdrop nb_args])]
-    in
-
-    let code = T.cseq (code::post) in
-
-    let body  : T.code  =
-      T.cseq (fold_vars @ [code])
-      |> T.Utils.flat
-      |> T.Utils.optim
-    in
-    T.mk_view_struct id param ret body
-  in
-
   let code = build_code () in
   let parameters = ir.parameters in
   let views = List.map (build_view ir.storage_list) ir.views in
   T.mk_michelson ~parameters ~views storage ir.parameter code
+
+and generate_offchain_view (ir : T.ir) : T.offchain_view list =
+  let mk (view_struct : T.view_struct) : T.offchain_view_implem_kind =
+    let res : T.michelson_storage_view_struct = {
+      code = T.Utils.code_to_micheline view_struct.body;
+      parameter = Some (T.Utils.type_to_micheline view_struct.param);
+      returnType = Some (T.Utils.type_to_micheline view_struct.ret);
+      annotations = [];
+      version = None;
+    }
+    in T.OVIKMichelsonStorageView res
+  in
+  let mk_offchain_view (vs : T.view_struct) : T.offchain_view = T.{ name = vs.id; implementations = [mk vs] } in
+  let l = List.map (build_view ir.storage_list) ir.offchain_views in
+  List.map mk_offchain_view l

@@ -1092,6 +1092,9 @@ simple_expr_r:
  | x=simple_expr DOT y=ident
      { Edot (x, y) }
 
+ | id=ident? COLONCOLON x=simple_expr PIPE
+     { Escope(id, x) }
+
  | i=simple_expr LBRACKET e=expr RBRACKET
      { Esqapp (i, e) }
 

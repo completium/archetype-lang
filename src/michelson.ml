@@ -431,6 +431,7 @@ type ir = {
   parameter: type_;
   funs: func list;
   views: func list;
+  offchain_views: func list;
   entries: entry list;
   parameters: ident list;
 }
@@ -458,6 +459,39 @@ type micheline = {
   storage: obj_micheline;
   parameters: ident list;
   views: obj_micheline list;
+}
+[@@deriving show {with_path = false}]
+
+type annotation_struct = {
+  name: string;
+  description: string;
+}
+[@@deriving show {with_path = false}]
+
+type michelson_storage_view_struct = {
+  code: obj_micheline;
+  parameter: obj_micheline option;
+  returnType: obj_micheline option;
+  annotations: annotation_struct list;
+  version: string option;
+}
+[@@deriving show {with_path = false}]
+
+type rest_api_query_struct = {
+  specificationUri: string;
+  baseUri: string;
+  path: string;
+}
+[@@deriving show {with_path = false}]
+
+type offchain_view_implem_kind =
+  | OVIKMichelsonStorageView of michelson_storage_view_struct
+  | OVIKRestApiQuery of rest_api_query_struct
+[@@deriving show {with_path = false}]
+
+type offchain_view = {
+  name: ident;
+  implementations: offchain_view_implem_kind list;
 }
 [@@deriving show {with_path = false}]
 
@@ -506,7 +540,7 @@ type dinstr =
   | DIWhile    of dexpr * dcode
   | DIIter     of dtyvar * dexpr * dcode
   | DILoop     of dtyvar * dcode
-(* | DICall     of ident * dexpr list *)
+  (* | DICall     of ident * dexpr list *)
 
 (* and dtyvar = dvar * type_ *)
 and dtyvar = dvar
@@ -552,8 +586,8 @@ let mk_func name targ tret ctx body : func =
 let mk_entry name args eargs body : entry =
   { name; args; eargs; body }
 
-let mk_ir ?(parameters = []) name storage_type storage_data storage_list ?(with_operations = false) parameter funs views entries : ir =
-  { name; storage_type; storage_data; storage_list; with_operations; parameter; funs; views; entries; parameters }
+let mk_ir ?(parameters = []) name storage_type storage_data storage_list ?(with_operations = false) parameter funs views offchain_views entries : ir =
+  { name; storage_type; storage_data; storage_list; with_operations; parameter; funs; views; offchain_views; entries; parameters }
 
 let mk_view_struct id param ret body : view_struct =
   { id; param; ret; body }
@@ -1378,7 +1412,8 @@ module Utils : sig
   val optim         : code -> code
   val replace_macro : code -> code
   val data_to_micheline : data -> obj_micheline
-  val type_to_micheline : type_ -> obj_micheline
+  val type_to_micheline : type_-> obj_micheline
+  val code_to_micheline : code -> obj_micheline
   val to_micheline : michelson -> data -> micheline
 
 end = struct
