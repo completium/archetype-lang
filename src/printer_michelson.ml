@@ -909,7 +909,7 @@ let pp_offchain_view_implem_kind fmt (o : offchain_view_implem_kind) =
 
 let pp_offchain_view fmt (ov : Michelson.offchain_view) =
   Format.fprintf fmt
-    "{\"name\":\"%s\",\"implementations\":%a}"
+    "{\"name\":\"%s\",\"implementations\":[%a]}"
     ov.name
     (pp_list "," pp_offchain_view_implem_kind) ov.implementations
 
