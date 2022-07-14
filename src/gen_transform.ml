@@ -5790,7 +5790,11 @@ let process_metadata (model : model) : model =
       | Mmetadata -> true
       | _ -> fold_term (aux ctx) accu mt
     in
-    fold_model aux model false
+    let with_offchain_view model =
+      let is_offchain = function | VVoffchain | VVonoffchain -> true | VVonchain -> false in
+      List.exists (fun f -> match f.node with | View (_, _, vv) -> is_offchain vv | _ -> false) model.functions
+    in
+    with_offchain_view model || fold_model aux model false
   in
 
   let js = match !Options.target with | Javascript -> true | _ -> false in
@@ -6578,13 +6582,13 @@ let check_unused_variables (model : model) =
 
 let remove_import_mterm (model : model) =
   let rec aux ctx (mt : mterm) : mterm =
-  let f = aux ctx in
-  match mt.node with
-  | Mimportcallview (t, a, b, c) -> begin
-    let cv = mk_mterm (Mcallview (t, f a, b, f c)) (toption mt.type_) in
-    let v = dumloc "_v" in
-    mk_mterm (Mmatchoption (cv, v, mk_mvar v mt.type_, failg (mk_tuple [mk_string "VIEW_NOT_FOUND"; mk_string (unloc b)]))) mt.type_
-  end
-  | _ -> map_mterm (aux ctx) mt
-in
-map_mterm_model aux model
+    let f = aux ctx in
+    match mt.node with
+    | Mimportcallview (t, a, b, c) -> begin
+        let cv = mk_mterm (Mcallview (t, f a, b, f c)) (toption mt.type_) in
+        let v = dumloc "_v" in
+        mk_mterm (Mmatchoption (cv, v, mk_mvar v mt.type_, failg (mk_tuple [mk_string "VIEW_NOT_FOUND"; mk_string (unloc b)]))) mt.type_
+      end
+    | _ -> map_mterm (aux ctx) mt
+  in
+  map_mterm_model aux model

@@ -1,0 +1,34 @@
+{
+  "name": "view_offchain_metadata",
+  "description": "desc view_offchain_metadata",
+  "views": [
+    {
+      "name": "get",
+      "implementations": [
+        {
+          "michelsonStorageView": {
+            "parameter": { "prim": "unit" },
+            "returnType": { "prim": "nat" },
+            "code": [
+              { "prim": "CDR" },
+              { "prim": "UNPAIR" },
+              { "prim": "SWAP" },
+              { "prim": "DROP", "args": [{ "int": "1" }] },
+              { "prim": "UNIT" },
+              { "prim": "DUP", "args": [{ "int": "2" }] },
+              { "prim": "SWAP" },
+              { "prim": "DROP", "args": [{ "int": "1" }] },
+              {
+                "prim": "DIP",
+                "args": [
+                  { "int": "1" },
+                  [{ "prim": "DROP", "args": [{ "int": "1" }] }]
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

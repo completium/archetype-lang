@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Added
-  - new feature
+  - Offchain views support (`-t offchain-views`)
 
 ## [1.3.2] - 2022-07-07
 ### Added

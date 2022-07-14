@@ -1,0 +1,56 @@
+{
+  "name": "view_offchain_metadata_nat",
+  "description": "desc view_offchain_metadata_nat",
+  "views": [
+    {
+      "name": "get_value",
+      "implementations": [
+        {
+          "michelsonStorageView": {
+            "parameter": { "prim": "nat" },
+            "returnType": { "prim": "string" },
+            "code": [
+              { "prim": "UNPAIR" },
+              {
+                "prim": "DIP",
+                "args": [
+                  { "int": "1" },
+                  [
+                    { "prim": "UNPAIR" },
+                    { "prim": "SWAP" },
+                    { "prim": "DROP", "args": [{ "int": "1" }] }
+                  ]
+                ]
+              },
+              { "prim": "UNIT" },
+              { "prim": "DUP", "args": [{ "int": "3" }] },
+              { "prim": "DUP", "args": [{ "int": "3" }] },
+              { "prim": "GET" },
+              {
+                "prim": "IF_NONE",
+                "args": [
+                  [
+                    {
+                      "prim": "PUSH",
+                      "args": [{ "prim": "string" }, { "string": "ERROR" }]
+                    }
+                  ],
+                  []
+                ]
+              },
+              { "prim": "SWAP" },
+              { "prim": "DROP", "args": [{ "int": "1" }] },
+              {
+                "prim": "DIP",
+                "args": [
+                  { "int": "1" },
+                  [{ "prim": "DROP", "args": [{ "int": "2" }] }]
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

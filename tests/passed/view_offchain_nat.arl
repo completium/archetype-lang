@@ -1,0 +1,13 @@
+archetype view_offchain_nat
+with metadata ""
+
+variable bm : big_map<nat, string> = [(0, "zero"); (1, "one"); (2, "two")]
+
+
+offchain view get_value(n : nat) : string {
+  return (bm[n] ? the : "ERROR")
+}
+
+entry %set(i : nat, s : string) {
+  bm.put(i, s)
+}
