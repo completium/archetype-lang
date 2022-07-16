@@ -1,0 +1,16 @@
+archetype invalid_instruction_fun_asset
+
+variable res : nat = 0
+
+asset my_asset {
+  a : nat;
+  b : string;
+}
+
+view f() : unit {
+  res := 2;
+  return Unit
+}
+
+entry exec () {
+}

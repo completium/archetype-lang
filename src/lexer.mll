@@ -284,7 +284,7 @@ and string buf = parse
   | "\\n"         { Buffer.add_char buf '\n'; string buf lexbuf }
   | "\\r"         { Buffer.add_char buf '\r'; string buf lexbuf }
   | "\\" (_ as c) { Buffer.add_char buf c   ; string buf lexbuf }
-  | newline       { Buffer.add_string buf (Lexing.lexeme lexbuf); string buf lexbuf }
+  | newline       { Lexing.new_line lexbuf; Buffer.add_string buf (Lexing.lexeme lexbuf); string buf lexbuf }
   | _ as c        { Buffer.add_char buf c   ; string buf lexbuf }
   | eof           { lex_error lexbuf "unterminated string"  }
 
