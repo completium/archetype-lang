@@ -670,7 +670,8 @@ type error_desc =
   | CannotInferCollectionType
   | CannotInitShadowField
   | CannotUpdatePKey
-  | CannotUseInstructionWithSideEffect
+  | CannotUseInstrWithSideEffectInFunction
+  | CannotUseInstrWithSideEffectInView
   | CollectionExpected
   | ContainerOfNonAsset
   | ContractInvariantInLocalSpec
@@ -912,7 +913,8 @@ let pp_error_desc fmt e =
   | CannotInferCollectionType          -> pp "Cannot infer collection type"
   | CannotInitShadowField              -> pp "Cannot initialize a shadow field"
   | CannotUpdatePKey                   -> pp "Cannot modify the primary key of asset"
-  | CannotUseInstructionWithSideEffect -> pp "Cannot use instruction with side effect"
+  | CannotUseInstrWithSideEffectInFunction -> pp "Cannot use instruction with side effect in function"
+  | CannotUseInstrWithSideEffectInView -> pp "Cannot use instruction with side effect in view"
   | CollectionExpected                 -> pp "Collection expected"
   | ContainerOfNonAsset                -> pp "The base type of a container must be an asset type"
   | ContractInvariantInLocalSpec       -> pp "Contract invariants at local levl are forbidden"
@@ -5229,7 +5231,10 @@ let rec for_instruction_r
           begin
             match kind with
             | `Concrete `Entry -> ()
-            | _ -> Env.emit_error env (loc i, CannotUseInstructionWithSideEffect);
+            | `Concrete `Function -> Env.emit_error env (loc i, CannotUseInstrWithSideEffectInFunction);
+            | `Concrete `View -> Env.emit_error env (loc i, CannotUseInstrWithSideEffectInView);
+            | `Concrete `Init -> ()
+            | `Ghost -> ()
           end
         in
 
@@ -5242,11 +5247,7 @@ let rec for_instruction_r
               let infos = for_gen_method_call (expr_mode kind) env (loc i) (`Typed the, m, args) in
               let the, (_assetdecl , c), method_, args, _ = Option.get_fdfl bailout infos in
 
-              begin
-                match kind with
-                | `Concrete `Entry -> ()
-                | _ -> Env.emit_error env (loc i, CannotUseInstructionWithSideEffect);
-              end;
+              check_side_effect();
               begin
                 match c, method_.mth_purity with
                 | ctn, `Effect allowed when not (List.mem ctn allowed) ->

@@ -18,4 +18,6 @@ view f() : unit {
 }
 
 entry exec () {
+  const p = length("toto");
+  const x = g();
 }
