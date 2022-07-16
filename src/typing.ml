@@ -660,6 +660,8 @@ type error_desc =
   | CannotAssignConstVar               of ident
   | CannotAssignLoopIndex              of ident
   | CannotAssignPatternVariable        of ident
+  | CannotAssignStorageVariableInFunction of ident
+  | CannotAssignStorageVariableInView  of ident
   | CannotCallFunctionInView
   | CannotCaptureVariables
   | CannotEffectConstVar
@@ -900,6 +902,8 @@ let pp_error_desc fmt e =
   | CannotAssignConstVar x             -> pp "Cannot assign to `%s' because it is a constant" x
   | CannotAssignLoopIndex x            -> pp "Cannot assign loop index `%s'" x
   | CannotAssignPatternVariable x      -> pp "Cannot assign pattern variable `%s'" x
+  | CannotAssignStorageVariableInFunction x -> pp "Cannot assign storage variable `%s' in function" x
+  | CannotAssignStorageVariableInView x -> pp "Cannot assign storage variable `%s' in view" x
   | CannotCaptureVariables             -> pp "Cannot capture variables in this context"
   | CannotCallFunctionInView           -> pp "Cannot call function in view"
   | CannotEffectConstVar               -> pp "Cannot apply an effect on constant variable"
@@ -5121,9 +5125,11 @@ let for_lvalue (kind : imode_t) (env : env) (e : PT.expr) : (A.lvalue * A.ptyp) 
 
       | Some (`Global vd) ->
         begin match vd.vr_kind, kind, vd.vr_core with
-          | `Variable, `Concrete _, _
+          | `Variable, `Concrete `Entry, _
           | `Ghost, `Ghost, _
           | _, _, Some (A.Coperations | A.Cmetadata) -> ()
+          | `Variable, `Concrete `Function, _ -> Env.emit_error env (loc e, CannotAssignStorageVariableInFunction (unloc x));
+          | `Variable, `Concrete `View, _ -> Env.emit_error env (loc e, CannotAssignStorageVariableInView (unloc x));
           | _, _, _ ->
             Env.emit_error env (loc e, ReadOnlyGlobal (unloc x));
         end;
@@ -5219,6 +5225,14 @@ let rec for_instruction_r
   try
     match unloc i with
     | Emethod (pthe, m, args) -> begin
+        let check_side_effect _ =
+          begin
+            match kind with
+            | `Concrete `Entry -> ()
+            | _ -> Env.emit_error env (loc i, CannotUseInstructionWithSideEffect);
+          end
+        in
+
         let the = for_expr kind env pthe in
 
         match the.A.type_ with
@@ -5228,17 +5242,17 @@ let rec for_instruction_r
               let infos = for_gen_method_call (expr_mode kind) env (loc i) (`Typed the, m, args) in
               let the, (_assetdecl , c), method_, args, _ = Option.get_fdfl bailout infos in
 
-              begin match c, method_.mth_purity with
+              begin
+                match kind with
+                | `Concrete `Entry -> ()
+                | _ -> Env.emit_error env (loc i, CannotUseInstructionWithSideEffect);
+              end;
+              begin
+                match c, method_.mth_purity with
                 | ctn, `Effect allowed when not (List.mem ctn allowed) ->
                   Env.emit_error env (loc i, InvalidEffectForCtn (ctn, allowed))
-                | _, _ -> ();
-
-                  match kind with
-                  | `Concrete `Entry -> ()
-                  | _ -> Env.emit_error env (loc i, CannotUseInstructionWithSideEffect);
-
+                | _, _ -> ()
               end;
-
 
               (* begin match assetdecl.as_bm, method_.mth_map_type with
                  | true, `Standard -> Env.emit_error env (loc i, InvalidMethodWithBigMap (unloc m))
@@ -5264,6 +5278,7 @@ let rec for_instruction_r
                   match the.node with
                   | Pvar (VTnone, Vnone, x) -> begin
                       (match Env.lookup_entry env (unloc x) with
+                       | Some (`Global _) -> check_side_effect();
                        | Some (`Local (_, kind)) -> begin
                            match kind with
                            | `Const -> Env.emit_error env (the.loc, CannotEffectConstVar);
@@ -5272,10 +5287,10 @@ let rec for_instruction_r
                        | _ -> ());
                       assign (`Var x)
                     end
-                  | Pconst Cmetadata -> assign (`Var (mkloc the.loc "metadata"))
-                  | Pconst Coperations -> assign (`Var (mkloc the.loc "operations"))
+                  | Pconst Cmetadata -> check_side_effect(); assign (`Var (mkloc the.loc "metadata"))
+                  | Pconst Coperations -> check_side_effect(); assign (`Var (mkloc the.loc "operations"))
                   | Pdot ({node = Pvar (VTnone, Vnone, _); type_ = Some (Trecord rn)} as x, fn) -> assign (`Field (rn, x, fn))
-                  | Pdot ({node = Pcall (Some {type_ = Some (Tcontainer ((Tasset _), Collection))}, Cconst Cget, [], [AExpr k]); type_ = Some (Tasset an | Tcontainer (Tasset an, AssetValue))}, fn) -> assign (`Asset (an, k, fn))
+                  | Pdot ({node = Pcall (Some {type_ = Some (Tcontainer ((Tasset _), Collection))}, Cconst Cget, [], [AExpr k]); type_ = Some (Tasset an | Tcontainer (Tasset an, AssetValue))}, fn) -> check_side_effect(); assign (`Asset (an, k, fn))
                   (* TODO: handle partition, issue: #245 *)
                   | _ -> Env.emit_error env (the.loc, InvalidVariableForMethod); aout
                 end else

@@ -13,4 +13,5 @@ view f() : unit {
 }
 
 entry exec () {
+  my_asset.add({1; "abc"});
 }

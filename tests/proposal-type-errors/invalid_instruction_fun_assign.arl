@@ -15,5 +15,8 @@ function f() : unit {
 }
 
 entry exec () {
+  var x = 0;
+  x := 0;
+  res := 2;
   const u = f()
 }
