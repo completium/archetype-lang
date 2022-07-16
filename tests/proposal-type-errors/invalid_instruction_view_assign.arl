@@ -8,6 +8,8 @@ asset my_asset {
 }
 
 view f() : unit {
+  var x = 0;
+  x := 0;
   res := 2;
   return Unit
 }

@@ -660,6 +660,7 @@ type error_desc =
   | CannotAssignConstVar               of ident
   | CannotAssignLoopIndex              of ident
   | CannotAssignPatternVariable        of ident
+  | CannotCallFunctionInView
   | CannotCaptureVariables
   | CannotEffectConstVar
   | CannotInfer
@@ -667,6 +668,7 @@ type error_desc =
   | CannotInferCollectionType
   | CannotInitShadowField
   | CannotUpdatePKey
+  | CannotUseInstructionWithSideEffect
   | CollectionExpected
   | ContainerOfNonAsset
   | ContractInvariantInLocalSpec
@@ -899,12 +901,14 @@ let pp_error_desc fmt e =
   | CannotAssignLoopIndex x            -> pp "Cannot assign loop index `%s'" x
   | CannotAssignPatternVariable x      -> pp "Cannot assign pattern variable `%s'" x
   | CannotCaptureVariables             -> pp "Cannot capture variables in this context"
+  | CannotCallFunctionInView           -> pp "Cannot call function in view"
   | CannotEffectConstVar               -> pp "Cannot apply an effect on constant variable"
   | CannotInfer                        -> pp "Cannot infer type"
   | CannotInferAnonAssetOrRecord       -> pp "Cannot infer anonymous asset or record"
   | CannotInferCollectionType          -> pp "Cannot infer collection type"
   | CannotInitShadowField              -> pp "Cannot initialize a shadow field"
   | CannotUpdatePKey                   -> pp "Cannot modify the primary key of asset"
+  | CannotUseInstructionWithSideEffect -> pp "Cannot use instruction with side effect"
   | CollectionExpected                 -> pp "Collection expected"
   | ContainerOfNonAsset                -> pp "The base type of a container must be an asset type"
   | ContractInvariantInLocalSpec       -> pp "Contract invariants at local levl are forbidden"
@@ -2880,7 +2884,8 @@ let for_literal (env : env) (_ety : A.type_ option) (topv : PT.literal loced) : 
     end
 
 (* -------------------------------------------------------------------- *)
-type imode_t = [`Ghost | `Concrete]
+type concrete_place = [`Init | `Entry | `Function | `View ]
+type imode_t = [`Ghost | `Concrete of concrete_place ]
 type ekind   = [`Expr of imode_t | `Formula of bool]
 
 type emode_t = {
@@ -3057,7 +3062,7 @@ let rec for_xexpr
               Env.emit_error env (loc tope, CannotCaptureVariables);
 
             begin match mode.em_kind, decl.vr_kind with
-              | `Expr `Concrete, `Ghost ->
+              | `Expr `Concrete _, `Ghost ->
                 Env.emit_error env (loc tope, InvalidShadowVariableAccess)
               | _, _ -> ()
             end;
@@ -3754,6 +3759,12 @@ let rec for_xexpr
     | Eapp (Fident f, args) when Env.Function.exists env (unloc f) ->
       let fun_ = Env.Function.get env (unloc f) in
       let args = match args with [{ pldesc = Etuple args }] -> args | _ -> args in
+
+      begin
+        match mode.em_kind with
+        | `Expr `Concrete `View -> Env.emit_error env (loc tope, CannotCallFunctionInView)
+        | _ -> ()
+      end;
 
       let tyargs =
         if List.length args <> List.length fun_.fs_args then begin
@@ -4824,7 +4835,7 @@ and for_arg_effect
             end else if List.exists (fun f -> unloc x = unloc f) asset.as_pk then begin
               Env.emit_error env (loc x, UpdateEffectOnPkey);
               map
-            end else if mode.em_kind = `Expr `Concrete && fghost then begin
+            end else if (match mode.em_kind with | `Expr `Concrete _ -> true | _ -> false) && fghost then begin
               Env.emit_error env (loc x, InvalidShadowFieldAccess);
               map
             end else
@@ -5086,7 +5097,7 @@ let for_args_decl ?can_asset (env : env) (xs : PT.args) =
   List.fold_left_map (for_arg_decl ?can_asset) env xs
 
 (* -------------------------------------------------------------------- *)
-let for_lvalue kind (env : env) (e : PT.expr) : (A.lvalue * A.ptyp) option =
+let for_lvalue (kind : imode_t) (env : env) (e : PT.expr) : (A.lvalue * A.ptyp) option =
   match unloc e with
   | Eterm ((None, None), x) -> begin
       match Env.lookup_entry env (unloc x) with
@@ -5110,7 +5121,7 @@ let for_lvalue kind (env : env) (e : PT.expr) : (A.lvalue * A.ptyp) option =
 
       | Some (`Global vd) ->
         begin match vd.vr_kind, kind, vd.vr_core with
-          | `Variable, `Concrete, _
+          | `Variable, `Concrete _, _
           | `Ghost, `Ghost, _
           | _, _, Some (A.Coperations | A.Cmetadata) -> ()
           | _, _, _ ->
@@ -5220,8 +5231,14 @@ let rec for_instruction_r
               begin match c, method_.mth_purity with
                 | ctn, `Effect allowed when not (List.mem ctn allowed) ->
                   Env.emit_error env (loc i, InvalidEffectForCtn (ctn, allowed))
-                | _, _ ->
-                  () end;
+                | _, _ -> ();
+
+                  match kind with
+                  | `Concrete `Entry -> ()
+                  | _ -> Env.emit_error env (loc i, CannotUseInstructionWithSideEffect);
+
+              end;
+
 
               (* begin match assetdecl.as_bm, method_.mth_map_type with
                  | true, `Standard -> Env.emit_error env (loc i, InvalidMethodWithBigMap (unloc m))
@@ -6049,7 +6066,8 @@ let for_function
   Env.inscope env (fun env ->
       let env, args = for_args_decl env fdecl.args in
       let rty       = Option.bind (for_type env) fdecl.ret_t in
-      let env, body = for_instruction ~ret:rty `Concrete env fdecl.body in
+      let place = match fdecl.getter, fdecl.view with | true, _ -> `Entry | _, true -> `View | _ -> `Function in
+      let env, body = for_instruction ~ret:rty (`Concrete place) env fdecl.body in
       let env, spec =
         let poenv = rty |> Option.fold (fun poenv rty ->
             let decl = {
@@ -6114,20 +6132,20 @@ let rec for_callby (env : env) kind (cb : PT.expr) =
     [mkloc (loc cb) (Some (A.mk_sp ~loc:(loc an) ~type_:(A.Tcontainer(Tasset an, Collection)) (A.Pvar (VTnone, Vnone, an))))]
 
   | _ ->
-    [mkloc (loc cb) (Some (for_expr `Concrete env ~ety:A.vtaddress cb))]
+    [mkloc (loc cb) (Some (for_expr (`Concrete `Entry) env ~ety:A.vtaddress cb))]
 
 (* -------------------------------------------------------------------- *)
 let for_entry (env : env) (act : PT.entry_properties) i_exts =
-  let fe = for_expr `Concrete env in
+  let fe = for_expr (`Concrete `Entry) env in
   let sourcedby = Option.map (fun (x, _, _) -> for_callby env `Sourced x) act.sourcedby , Option.bind (Option.map fe |@ proj3_2) act.sourcedby in
   let calledby  = Option.map (fun (x, _, _) -> for_callby env `Called x)  act.calledby  , Option.bind (Option.map fe |@ proj3_2) act.calledby  in
   let stateis   = Option.map (fun (x, o) -> for_named_state env x, Option.map fe o) act.state_is in
   let actfs     = fst act.accept_transfer, Option.map fe (snd act.accept_transfer) in
-  let env, cst  = Option.foldmap (for_cfs `Concrete) env (Option.fst act.constants) in
-  let env, req  = Option.foldmap (for_rfs `Concrete) env (Option.fst act.require) in
-  let env, fai  = Option.foldmap (for_rfs `Concrete) env (Option.fst act.failif) in
+  let env, cst  = Option.foldmap (for_cfs (`Concrete `Entry)) env (Option.fst act.constants) in
+  let env, req  = Option.foldmap (for_rfs (`Concrete `Entry)) env (Option.fst act.require) in
+  let env, fai  = Option.foldmap (for_rfs (`Concrete `Entry)) env (Option.fst act.failif) in
   let env, poeffect =
-    Option.foldmap (for_effect `Concrete) env (Option.fst i_exts) in
+    Option.foldmap (for_effect (`Concrete `Entry)) env (Option.fst i_exts) in
   let effect = Option.map snd poeffect in
   let env, funs = List.fold_left_map for_function env act.functions in
   let poenv  = Option.get_dfl env (Option.map fst poeffect) in
@@ -6141,7 +6159,7 @@ let for_transition ?enum (env : env) (state, when_, effect) =
   let tx_when   =
     Option.map (for_formula env) (Option.fst when_) in
   let env, tx_effect = snd_map (Option.map snd)
-      (Option.foldmap (for_effect `Concrete) env (Option.fst effect)) in
+      (Option.foldmap (for_effect (`Concrete `Entry)) env (Option.fst effect)) in
 
   env, { tx_state; tx_when; tx_effect; }
 
@@ -6258,7 +6276,7 @@ let for_var_decl (env : env) (decl : PT.variable_decl loced) =
   let (x, ty, pe, ctt, invs, _) = unloc decl in
 
   let ty   = for_type env ty in
-  let e    = Option.map (for_expr `Concrete env ?ety:ty) pe in
+  let e    = Option.map (for_expr (`Concrete `Init) env ?ety:ty) pe in
   let dty  =
     if   Option.is_some ty
     then ty
@@ -6622,7 +6640,7 @@ let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) xspec
             Env.emit_error env (xloc, MissingInitValueForShadowField);
           let fd_dfl =
             dfl |> Option.map
-              (for_expr `Concrete env ~ety:ctor.fd_type) in
+              (for_expr (`Concrete `Init) env ~ety:ctor.fd_type) in
           { ctor with fd_dfl }
         in
 
@@ -6658,7 +6676,7 @@ let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) xspec
               let init1 =
                 List.map2
                   (fun field (_, ie) ->
-                     for_expr `Concrete env ~ety:(ty_of_init_ty env field.fd_type) ie)
+                     for_expr (`Concrete `Init) env ~ety:(ty_of_init_ty env field.fd_type) ie)
                   adecl.as_fields init1 in
               Some init1
 
@@ -6679,7 +6697,7 @@ let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) xspec
             let init1 =
               List.fold_left (fun init1 ({pldesc = x; plloc = tloc}, e) ->
                   let { fd_type = fty } = Option.get (get_field x adecl) in
-                  let e = for_expr `Concrete env ~ety:(ty_of_init_ty env fty) e in
+                  let e = for_expr (`Concrete `Init) env ~ety:(ty_of_init_ty env fty) e in
                   Mid.update x (fun es -> Some ((e, tloc) :: (Option.get_dfl [] es))) init1
                 ) Mid.empty init1 in
 
@@ -6745,7 +6763,7 @@ let for_record_decl k (env : env) (decl : PT.record_decl loced) =
       ty |> Option.iter (fun ty ->
           if not (Type.Michelson.is_type ty) then
             Env.emit_error env (loc (fst pty), InvalidRecordFieldType));
-      let e  = e |> Option.map (for_expr `Concrete env ?ety:ty) in
+      let e  = e |> Option.map (for_expr (`Concrete `Init) env ?ety:ty) in
       (x, ty, e) in
     List.map for1 fields in
 
@@ -7437,7 +7455,7 @@ let for_parameters ?init env params =
         List.fold_left (fun (env, accu) p ->
             let pname, ptyp, pdv, const = unloc p in
             let ety = for_type env ptyp in
-            let dv = Option.map (for_xexpr (expr_mode `Concrete) ?ety env) pdv in
+            let dv = Option.map (for_xexpr (expr_mode (`Concrete `Init)) ?ety env) pdv in
             let typ =
               match ety with
               | Some x -> x
@@ -7482,7 +7500,7 @@ let for_parameters ?init env params =
               env, List.map2 (
                 fun (param : A.lident A.parameter) (init : PT.expr) ->
                   let ety = Some param.typ in
-                  let v = for_xexpr ?ety (expr_mode `Concrete) env init in
+                  let v = for_xexpr ?ety (expr_mode (`Concrete `Init)) env init in
                   { param with value = Some v }
               ) ps inits
             end

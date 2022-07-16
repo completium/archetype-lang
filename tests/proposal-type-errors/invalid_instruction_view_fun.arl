@@ -12,6 +12,7 @@ view g() : nat {
 }
 
 view f() : unit {
+  const p = length("toto");
   const x = g();
   return Unit
 }
