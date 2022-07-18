@@ -824,6 +824,7 @@ type error_desc =
   | UninitializedVar
   | UnknownAsset                       of ident
   | UnknownAssetToProperty             of ident
+  | UnknownCreateContractExtension     of ident
   | UnknownEntry                       of ident
   | UnknownEnum                        of ident
   | UnknownFailId                      of ident
@@ -832,6 +833,7 @@ type error_desc =
   | UnknownFunction                    of ident
   | UnknownGetter                      of ident
   | UnknownImport                      of ident
+  | UnknownImportExtension             of ident
   | UnknownView                        of ident
   | UnknownLabel                       of ident
   | UnknownLocalOrVariable             of ident
@@ -1068,6 +1070,7 @@ let pp_error_desc fmt e =
   | UninitializedVar                   -> pp "This variable declaration is missing an initializer"
   | UnknownAsset i                     -> pp "Unknown asset: %a" pp_ident i
   | UnknownAssetToProperty i           -> pp "Unknown asset to property: %a" pp_ident i
+  | UnknownCreateContractExtension i   -> pp "Unknown create contract extension : %a" pp_ident i
   | UnknownEntry i                     -> pp "Unknown entry: %a" pp_ident i
   | UnknownEnum i                      -> pp "Unknown enum: %a" pp_ident i
   | UnknownFailId s                    -> pp "Unknown fail id: %s" s
@@ -1076,6 +1079,7 @@ let pp_error_desc fmt e =
   | UnknownFunction  i                 -> pp "Unknown function name: %a" pp_ident i
   | UnknownGetter  i                   -> pp "Unknown getter name: %a" pp_ident i
   | UnknownImport i                    -> pp "Unknown import identifier name: %a" pp_ident i
+  | UnknownImportExtension i           -> pp "Unknown import extension : %a" pp_ident i
   | UnknownView  i                     -> pp "Unknown view name: %a" pp_ident i
   | UnknownLabel i                     -> pp "Unknown label: %a" pp_ident i
   | UnknownLocalOrVariable i           -> pp "Unknown local or variable: %a" pp_ident i
@@ -2688,6 +2692,11 @@ let for_type_exn ?pkey (env : env) =
         | Some ty -> ty
       end
 
+    | Trefscope (_i, _x) -> begin
+        Env.emit_error env (loc ty, TODO);
+        raise InvalidType
+      end
+
     | Tcontainer (ty, AssetKey) -> begin
         match doit ~canasset:true ty with
         | A.Tasset x -> begin
@@ -3744,9 +3753,14 @@ let rec for_xexpr
               importdecl.id_content
             end
           | {pldesc = PT.Eliteral(Lstring v) } -> begin
-              match Micheline.parse v with
-              | Some v -> v
-              | None -> (Env.emit_error env (loc path, FileNotFound v); bailout ())
+              let ext = Filename.extension v in
+              match ext with
+              | ".tz" -> begin
+                  match Micheline.parse v with
+                  | Some v -> v
+                  | None -> (Env.emit_error env (loc path, FileNotFound v); bailout ())
+                end
+              | _ -> Env.emit_error env (loc path, UnknownCreateContractExtension ext) ; bailout ()
             end
           | _ -> (Env.emit_error env (loc path, InvalidContractValueForCreateContract) ; bailout ())
         in
@@ -6268,19 +6282,24 @@ let for_enum_decl (env : env) (decl : (PT.lident * PT.enum_decl) loced) =
 let for_import_decl (env : env) (decls : (PT.lident * PT.lident) loced list) =
   List.fold_left (fun (env, accu : env * importdecl list) (a : (PT.lident * PT.lident) loced) -> begin
         let lo, (id, path) = deloc a in
-        match Micheline.parse (unloc path) with
-        | Some content -> begin
-            let views       = Micheline.get_views content in
-            match Micheline.get_entrypoints content with
-            | Some entrypoints -> begin
-                let importdecl = { id_name = id; id_path = path; id_content = content; id_entrypoints = entrypoints; id_views = views } in
-                (if   check_and_emit_name_free env id
-                 then Env.Import.push env importdecl
-                 else env), importdecl::accu
+        let ext = Filename.extension (unloc path) in
+        match ext with
+        | ".tz" -> begin
+            match Micheline.parse (unloc path) with
+            | Some content -> begin
+                let views       = Micheline.get_views content in
+                match Micheline.get_entrypoints content with
+                | Some entrypoints -> begin
+                    let importdecl = { id_name = id; id_path = path; id_content = content; id_entrypoints = entrypoints; id_views = views } in
+                    (if   check_and_emit_name_free env id
+                     then Env.Import.push env importdecl
+                     else env), importdecl::accu
+                  end
+                | None -> Env.emit_error env (lo, InvalidTzFile); (env, accu)
               end
-            | None -> Env.emit_error env (lo, InvalidTzFile); (env, accu)
+            | None ->(Env.emit_error env (lo, FileNotFound (unloc path)); (env, accu))
           end
-        | None ->(Env.emit_error env (lo, FileNotFound (unloc path)); (env, accu))
+        | _ -> (Env.emit_error env (loc path, UnknownImportExtension ext); (env, accu))
       end) (env, []) decls
 
 (* -------------------------------------------------------------------- *)

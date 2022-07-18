@@ -20,6 +20,7 @@ and container =
 
 and type_r =
   | Tref                 of lident
+  | Trefscope            of lident option * lident
   | Tcontainer           of type_t * container
   | Ttuple               of type_t list
   | Toption              of type_t

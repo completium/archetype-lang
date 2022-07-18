@@ -624,6 +624,7 @@ type_r:
 
 type_s_unloc:
 | x=ident                                                  { Tref x                   }
+| i=ident?      COLONCOLON x=ident                         { Trefscope (i, x)         }
 | c=container         LESS x=type_t GREATER                { Tcontainer (x, c)        }
 | OPTION              LESS x=type_t GREATER                { Toption x                }
 | LIST                LESS x=type_t GREATER                { Tlist x                  }
@@ -945,6 +946,9 @@ expr_r:
  | LPAREN RPAREN
      { Enothing }
 
+ | id=ident? COLONCOLON x=simple_expr
+     { Escope(id, x) }
+
  | c=expr QUESTION x=expr COLON y=expr %prec prec_tern
      { Eternary (c, x, y) }
 
@@ -1091,9 +1095,6 @@ simple_expr_r:
 
  | x=simple_expr DOT y=ident
      { Edot (x, y) }
-
- | id=ident? COLONCOLON x=simple_expr PIPE
-     { Escope(id, x) }
 
  | i=simple_expr LBRACKET e=expr RBRACKET
      { Esqapp (i, e) }

@@ -130,6 +130,12 @@ let rec pp_type fmt (e, a) =
         "%a"
         pp_id x
 
+    | Trefscope (i, x) ->
+      Format.fprintf fmt
+        "%a::%a"
+        (pp_option pp_id) i
+        pp_id x
+
     | Tcontainer (x, y) ->
       Format.fprintf fmt
         "%a<%a>"
