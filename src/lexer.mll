@@ -104,6 +104,7 @@
       "postcondition"       , POSTCONDITION       ;
       "predicate"           , PREDICATE           ;
       "record"              , RECORD              ;
+      "require_entrypoint"  , REQUIRE_ENTRYPOINT  ;
       "removed"             , REMOVED             ;
       "require"             , REQUIRE             ;
       "return"              , RETURN              ;

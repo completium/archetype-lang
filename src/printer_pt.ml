@@ -831,14 +831,15 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_colon pos pp) fmt (t, arg)
 
-  | Eentrypoint (t, a, b) ->
-    let pp fmt (t, a, b) =
-      Format.fprintf fmt "get_entrypoint<%a>(%a, %a)"
+  | Eentrypoint (t, a, b, c) ->
+    let pp fmt (t, a, b, c) =
+      Format.fprintf fmt "%s<%a>(%a, %a)"
+        (if c then "require_entrypoint" else "get_entrypoint")
         pp_type t
         (pp_expr e_default PNone) a
         (pp_expr e_default PNone) b
     in
-    (maybe_paren outer e_colon pos pp) fmt (t, a, b)
+    (maybe_paren outer e_colon pos pp) fmt (t, a, b, c)
 
   | Ecallview (t, a, b, c) ->
     let pp fmt (t, a, b, c) =

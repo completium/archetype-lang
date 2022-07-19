@@ -4301,7 +4301,7 @@ let rec for_xexpr
         mk_sp (Some (A.Tcontract rty)) (A.Pself name)
       end
 
-    | Eentrypoint (ty, a, b) -> begin
+    | Eentrypoint (ty, a, b, c) -> begin
         let ty = for_type_exn env ty in
         let a  = for_xexpr env ~ety:A.vtstring a in
         let b  = for_xexpr env ~ety:A.vtaddress b in
@@ -4315,9 +4315,15 @@ let rec for_xexpr
           | _ -> (Env.emit_error env (a.loc, StringLiteralExpected); bailout ())
         in
 
-        mk_sp
-          (Some (A.Toption (A.Tcontract ty)))
-          (A.Pcall (None, A.Cconst CgetEntrypoint, [ty], [AIdent id; AExpr b]))
+        if c
+        then
+          mk_sp
+            (Some (A.Tcontract ty))
+            (A.Pcall (None, A.Cconst CrequireEntrypoint, [ty], [AIdent id; AExpr b]))
+        else
+          mk_sp
+            (Some (A.Toption (A.Tcontract ty)))
+            (A.Pcall (None, A.Cconst CgetEntrypoint, [ty], [AIdent id; AExpr b]))
       end
 
     | Ecallview (ty, a, b, c) -> begin

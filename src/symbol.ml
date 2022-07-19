@@ -189,6 +189,7 @@ let string_of_token = function
   | ADDRESS s            -> Printf.sprintf "DURATION(%s)" s
   | ADDED                -> "ADDED"
   | ACCEPT_TRANSFER      -> "ACCEPT_TRANSFER"
+  | REQUIRE_ENTRYPOINT   -> ""
 
 let string_of_symbol = function
   | X (T T_XOR) -> "xor"
@@ -525,6 +526,7 @@ let string_of_symbol = function
   | X (N N_archetype) -> "archetype"
   | X (N N_archetype_r) -> "archetype"
   | X (N N_archetype_extension) -> "an extension"
+  | X (T T_REQUIRE_ENTRYPOINT) -> ""
 
 let string_of_item (p, i) =
   string_of_symbol (lhs p) ^ " -> "

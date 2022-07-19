@@ -199,6 +199,7 @@ type const =
   | CtoContainer
   | CputRemove
   | CgetEntrypoint
+  | CrequireEntrypoint
   | CcallView
   | CimportCallView
   (* set *)

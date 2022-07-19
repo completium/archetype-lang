@@ -655,7 +655,7 @@ let check_invalid_init_value (model : model) : model =
       aux () mt
     in
     match d with
-    | Dvar ({default = Some v}) -> for_mterm v
+    | Dvar ({default = Some v; kind = k}) when (match k with | VKvariable -> true | _ -> false) -> for_mterm v
     | Dasset a -> List.iter for_mterm a.init
     | _ -> ()
   in
@@ -5973,8 +5973,8 @@ let expr_to_instr (model : model) =
 
     | Massign (ValueAssign, _, ak, {node = Mlistprepend(t, c, k)}), tyinstr when is_compatible ak c  ->
       mk_mterm (Mlistinstrprepend (t, ak, k)) tyinstr
-    | Massign (ValueAssign, _, ak, {node = Mlistconcat(t, c, k)}), tyinstr when is_compatible ak c  ->
-      mk_mterm (Mlistinstrconcat (t, ak, k)) tyinstr
+    (* | Massign (ValueAssign, _, ak, {node = Mlistconcat(t, c, k)}), tyinstr when is_compatible ak c  ->
+      mk_mterm (Mlistinstrconcat (t, ak, k)) tyinstr *)
 
     | Massign (ValueAssign, _, ak, {node = Mmapput(mky, tk, vk, c, k, v)}), tyinstr when is_compatible ak c  ->
       mk_mterm (Mmapinstrput (mky, tk, vk, ak, k, v)) tyinstr

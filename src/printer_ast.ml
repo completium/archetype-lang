@@ -274,6 +274,7 @@ let to_const = function
   | Cgreedyor              -> "greedy_or"
   | CmakeAsset             -> "make_asset"
   | CgetEntrypoint         -> "get_entrypoint"
+  | CrequireEntrypoint     -> "require_entrypoint"
   | CcallView              -> "call_view"
   | CimportCallView        -> "import_call_view"
   (* set *)
