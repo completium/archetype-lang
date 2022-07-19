@@ -833,11 +833,12 @@ let rec pp_expr outer pos fmt a =
 
   | Eentrypoint (t, a, b, c) ->
     let pp fmt (t, a, b, c) =
-      Format.fprintf fmt "%s<%a>(%a, %a)"
-        (if c then "require_entrypoint" else "get_entrypoint")
+      Format.fprintf fmt "%s<%a>(%a, %a%a)"
+        (if Option.is_some c then "require_entrypoint" else "get_entrypoint")
         pp_type t
         (pp_expr e_default PNone) a
         (pp_expr e_default PNone) b
+        (pp_option (fun fmt x -> Format.fprintf fmt ", %a" (pp_expr e_default PNone) x)) c
     in
     (maybe_paren outer e_colon pos pp) fmt (t, a, b, c)
 

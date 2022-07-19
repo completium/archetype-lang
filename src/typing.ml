@@ -4305,6 +4305,7 @@ let rec for_xexpr
         let ty = for_type_exn env ty in
         let a  = for_xexpr env ~ety:A.vtstring a in
         let b  = for_xexpr env ~ety:A.vtaddress b in
+        let c  = Option.map (for_xexpr env) c in
 
         if not (Type.Michelson.is_type ty) then
           Env.emit_error env (loc tope, InvalidTypeForEntrypoint);
@@ -4315,12 +4316,12 @@ let rec for_xexpr
           | _ -> (Env.emit_error env (a.loc, StringLiteralExpected); bailout ())
         in
 
-        if c
-        then
+        match c with
+        | Some c ->
           mk_sp
             (Some (A.Tcontract ty))
-            (A.Pcall (None, A.Cconst CrequireEntrypoint, [ty], [AIdent id; AExpr b]))
-        else
+            (A.Pcall (None, A.Cconst CrequireEntrypoint, [ty], [AIdent id; AExpr b; AExpr c]))
+        | None ->
           mk_sp
             (Some (A.Toption (A.Tcontract ty)))
             (A.Pcall (None, A.Cconst CgetEntrypoint, [ty], [AIdent id; AExpr b]))

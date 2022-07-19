@@ -1173,10 +1173,10 @@ simple_expr_r:
      { Eself x }
 
  | GET_ENTRYPOINT LESS t=type_t GREATER LPAREN a=expr COMMA b=expr RPAREN
-     { Eentrypoint (t, a, b, false) }
+     { Eentrypoint (t, a, b, None) }
 
- | REQUIRE_ENTRYPOINT LESS t=type_t GREATER LPAREN a=expr COMMA b=expr RPAREN
-     { Eentrypoint (t, a, b, true) }
+ | REQUIRE_ENTRYPOINT LESS t=type_t GREATER LPAREN a=expr COMMA b=expr COMMA c=expr RPAREN
+     { Eentrypoint (t, a, b, Some c) }
 
  | CALL_VIEW LESS t=type_t GREATER LPAREN a=expr COMMA b=expr COMMA c=expr RPAREN
      { Ecallview (t, a, b, c) }

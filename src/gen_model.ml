@@ -959,13 +959,14 @@ let to_model (ast : A.ast) : M.model =
         let t = type_to_type t in
         M.Mgetentrypoint (t, id, arg)
 
-      | A.Pcall (None, A.Cconst A.CrequireEntrypoint, [t], [AIdent id; AExpr arg]) ->
+      | A.Pcall (None, A.Cconst A.CrequireEntrypoint, [t], [AIdent id; AExpr arg; AExpr err]) ->
         let arg = f arg in
+        let err = f err in
         let t = type_to_type t in
         let ma = M.mk_mterm (M.Mgetentrypoint (t, id, arg)) (M.toption (M.tcontract t)) in
         let idv = dumloc "_v" in
         let s = M.mk_mvar idv (M.tcontract t) in
-        M.Mmatchoption(ma, idv, s, M.fail "NOT_FOUND")
+        M.Mmatchoption(ma, idv, s, M.failg err)
 
       | A.Pcall (None, A.Cconst A.CcallView, [t], [AIdent id; AExpr addr; AExpr arg]) ->
         let addr = f addr in
