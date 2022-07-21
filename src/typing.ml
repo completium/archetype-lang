@@ -4347,7 +4347,6 @@ let rec for_xexpr
           (Some rt)
           (A.Pcall (None, A.Cconst CcallView, [ty], [AIdent id; AExpr a; AExpr c]))
       end
-    | Escope     _
     | Eself      _
     | Evar       _
     | Evaropt    _

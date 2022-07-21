@@ -947,9 +947,6 @@ expr_r:
  | LPAREN RPAREN
      { Enothing }
 
- | id=ident? COLONCOLON x=simple_expr
-     { Escope(id, x) }
-
  | c=expr QUESTION x=expr COLON y=expr %prec prec_tern
      { Eternary (c, x, y) }
 
