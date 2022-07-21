@@ -209,8 +209,8 @@ rule token = parse
   | "//"                  { comment_line lexbuf; token lexbuf }
   | "(*"                  { comment lexbuf; token lexbuf }
   | "/*"                  { comment2 lexbuf; token lexbuf }
-  | "`"                   { STRING_EXT (Buffer.contents (string_ext (Buffer.create 0) lexbuf)) }
-  | "\""                  { STRING (Buffer.contents (string (Buffer.create 0) lexbuf)) }
+  | "`"                   { let s, p = lexbuf.lex_start_pos, lexbuf.lex_start_p in let buf = string_ext (Buffer.create 0) lexbuf in lexbuf.lex_start_pos <- s; lexbuf.lex_start_p <- p; STRING_EXT (Buffer.contents buf) }
+  | "\""                  { let s, p = lexbuf.lex_start_pos, lexbuf.lex_start_p in let buf = string     (Buffer.create 0) lexbuf in lexbuf.lex_start_pos <- s; lexbuf.lex_start_p <- p; STRING     (Buffer.contents buf) }
   | "("                   { LPAREN }
   | ")"                   { RPAREN }
   | "[%%"                 { LBRACKETPERCENT }
