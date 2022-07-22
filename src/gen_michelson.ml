@@ -700,6 +700,10 @@ let to_ir (model : M.model) : T.ir =
         in
         T.Iassign (operations, T.Ireverse (T.toperation, (T.Ibinop (Bcons, op, T.Ireverse (T.toperation, vops)))))
       end
+    | Memit (e, value)  -> begin
+        let op = T.Iunop (Uemit((to_type model (M.tevent e)), Some ("%" ^ (unloc e))), f value) in
+        T.Iassign (operations, T.Ireverse (T.toperation, (T.Ibinop (Bcons, op, T.Ireverse (T.toperation, vops)))))
+      end
     (* | Memit (e, value) ->
        let zerotz : M.mterm = M.mk_tez 0 in
        let data : M.mterm =
@@ -716,7 +720,7 @@ let to_ir (model : M.model) : T.ir =
 
        let op = T.Iterop (Ttransfer_tokens, f zerotz, f data, f entry) in
        T.Iassign (operations, T.Ibinop (Bcons, op, vops)) *)
-    | Memit _                       -> T.iskip
+    (* | Memit _                       -> T.iskip *)
 
     (* entrypoint *)
 

@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `make_event` builtin
 ### Fixed
   - Generate error message for side effect instructions in functions and views
+### Changed
+  - BREAKING: `emit` instruction generates `EMIT` michelson instruction instead of a call to event well contrat
 
 ## [1.3.2] - 2022-07-07
 ### Added
