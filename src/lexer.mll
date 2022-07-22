@@ -88,6 +88,7 @@
       "match"               , MATCH               ;
       "make_asset"          , MAKE_ASSET          ;
       "make_big_map"        , MAKE_BIG_MAP        ;
+      "make_event"          , MAKE_EVENT          ;
       "make_list"           , MAKE_LIST           ;
       "make_map"            , MAKE_MAP            ;
       "make_set"            , MAKE_SET            ;

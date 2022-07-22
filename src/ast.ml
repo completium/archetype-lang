@@ -184,6 +184,7 @@ type const =
   | Cupdate
   | Cupdateall
   | Cmakeoperation
+  | Cmakeevent
   | Cnattostring
   | Cexec
   | Capply

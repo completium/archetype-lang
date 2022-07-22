@@ -277,6 +277,7 @@ let to_const = function
   | CrequireEntrypoint     -> "require_entrypoint"
   | CcallView              -> "call_view"
   | CimportCallView        -> "import_call_view"
+  | Cmakeevent             -> "make_event"
   (* set *)
   | Csadd                  -> "set_add"
   | Csremove               -> "set_remove"

@@ -754,6 +754,7 @@ type error_desc =
   | InvalidTypeForLambdaArgument
   | InvalidTypeForLambdaReturn
   | InvalidTypeForMake
+  | InvalidTypeForMakeEvent
   | InvalidTypeForMapKey
   | InvalidTypeForMapOperator          of A.ptyp
   | InvalidTypeForMapValue
@@ -1001,6 +1002,7 @@ let pp_error_desc fmt e =
   | InvalidTypeForLambdaArgument       -> pp "Invalid type for lambda argument"
   | InvalidTypeForLambdaReturn         -> pp "Invalid type for lambda return"
   | InvalidTypeForMake                 -> pp "Invalid type for Make"
+  | InvalidTypeForMakeEvent            -> pp "Invalid type for 'make_event'"
   | InvalidTypeForMapOperator ty       -> pp "Map operator should be applied to a list or an option, not %a" Printer_ast.pp_ptyp ty
   | InvalidTypeForMapKey               -> pp "Invalid type for map key"
   | InvalidTypeForMapValue             -> pp "Invalid type for map value"
@@ -2996,6 +2998,12 @@ let rec for_xexpr
   let mk_sp type_ node = A.mk_sp ~loc:(loc tope) ?type_ node in
   let dummy type_ : A.pterm = mk_sp type_ (A.Pvar (VTnone, Vnone, mkloc (loc tope) "<error>")) in
 
+  let require_literal_string (a : PT.expr) : A.lident =
+    match unloc a with
+    | Eliteral Lstring str -> mkloc (loc a) str
+    | _ -> (Env.emit_error env (loc a, StringLiteralExpected); bailout ())
+  in
+
   let doit () =
     match unloc tope with
     | Eterm ((vset, pvt), x) -> begin
@@ -3917,6 +3925,12 @@ let rec for_xexpr
             let vk = for_xexpr ~ety:asset.as_pkty env k in
             let vv = for_xexpr env v in
             mk_sp eta (A.Pcall (None, A.Cconst CmakeAsset, [Option.get eta], [AExpr vk; AExpr vv]))
+          end
+        | "make_event", [ty], [id; v] -> begin
+            let ty = (match for_type env ty with | Some ty -> ty | None -> Env.emit_error env (loc tope, InvalidTypeForMakeEvent); bailout()) in
+            let vv = for_xexpr ~ety:ty env v in
+            let id = require_literal_string id in
+            mk_sp (Some A.Toperation) (A.Pcall (None, A.Cconst Cmakeevent, [ty], [AIdent id; AExpr vv]))
           end
         | _ -> Env.emit_error env (loc tope, NoMatchingFunction (unloc id, [])); bailout ()
       end

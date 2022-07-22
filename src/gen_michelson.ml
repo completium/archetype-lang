@@ -735,6 +735,7 @@ let to_ir (model : M.model) : T.ir =
 
     | Moperations                    -> vops
     | Mmakeoperation (v, e, a)       -> T.Iterop (Ttransfer_tokens, f a, f v, f e)
+    | Mmakeevent (t, id, a)          -> T.Iunop (Uemit (to_type model t, Some (unloc id)), f a)
     | Mcreatecontract (ms, d, a, si) -> T.Iunop (UforcePair, T.Iterop (Tcreate_contract ms.ms_content, f d, f a, f si))
 
 
@@ -1471,6 +1472,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
     | T.UcarN n          -> T.ccarn n
     | T.UcdrN n          -> T.ccdrn n
     | T.UforcePair       -> T.cpair
+    | T.Uemit (t, id)    -> T.cemit (t, id)
   in
 
   let bin_op_to_code = function

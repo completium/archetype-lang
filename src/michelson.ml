@@ -154,6 +154,7 @@ and code_node =
   | CHAIN_ID
   | CONTRACT           of type_ * ident option
   | CREATE_CONTRACT    of obj_micheline
+  | EMIT               of type_ * ident option
   | IMPLICIT_ACCOUNT
   | LEVEL
   | NOW
@@ -272,6 +273,7 @@ and un_operator =
   | UcarN of int
   | UcdrN of int
   | UforcePair
+  | Uemit of type_ * ident option
 [@@deriving show {with_path = false}]
 
 and bin_operator =
@@ -739,6 +741,7 @@ let cbalance                      = mk_code  BALANCE
 let cchain_id                     = mk_code  CHAIN_ID
 let ccontract           (a, b)    = mk_code (CONTRACT (a, b))
 let ccreate_contract    c         = mk_code (CREATE_CONTRACT c)
+let cemit               (a, b)    = mk_code (EMIT (a, b))
 let cimplicit_account             = mk_code  IMPLICIT_ACCOUNT
 let clevel                        = mk_code  LEVEL
 let cnow                          = mk_code  NOW
@@ -1017,6 +1020,7 @@ let cmp_code (lhs : code) (rhs : code) =
     | SOURCE, SOURCE                                 -> true
     | TOTAL_VOTING_POWER, TOTAL_VOTING_POWER         -> true
     | TRANSFER_TOKENS, TRANSFER_TOKENS               -> true
+    | EMIT (t1, a1), EMIT (t2, a2)                   -> cmp_type t1 t2 && Option.cmp cmp_ident a1 a2
     | VOTING_POWER, VOTING_POWER                     -> true
     (* Operations on data structures *)
     | CAR, CAR                                       -> true
@@ -1241,6 +1245,7 @@ let map_code_gen (fc : code -> code) (fd : data -> data) (ft : type_ -> type_) (
     | SOURCE                   -> SOURCE
     | TOTAL_VOTING_POWER       -> TOTAL_VOTING_POWER
     | TRANSFER_TOKENS          -> TRANSFER_TOKENS
+    | EMIT (t, a)              -> EMIT (ft t, a)
     | VOTING_POWER             -> VOTING_POWER
     (* Operations on data structures *)
     | CAR                      -> CAR
@@ -1688,6 +1693,7 @@ end = struct
     | CHAIN_ID                 -> mk "CHAIN_ID"
     | CONTRACT (t, a)          -> mk ~args:[ft t] ~annots:(fan a) "CONTRACT"
     | CREATE_CONTRACT c        -> mk ~args:[c] "CREATE_CONTRACT"
+    | EMIT (t, a)              -> mk ~args:[ft t] ~annots:(fan a) "EMIT"
     | IMPLICIT_ACCOUNT         -> mk "IMPLICIT_ACCOUNT"
     | LEVEL                    -> mk "LEVEL"
     | NOW                      -> mk "NOW"

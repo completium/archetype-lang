@@ -1,0 +1,12 @@
+# 0
+{
+  storage unit;
+  parameter (unit %exec);
+  code { DROP;
+         UNIT;
+         NIL operation;
+         PUSH nat 2;
+         EMIT %sample nat;
+         CONS;
+         PAIR };
+}

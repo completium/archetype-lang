@@ -113,6 +113,7 @@
 %token LPAREN
 %token MAKE_ASSET
 %token MAKE_BIG_MAP
+%token MAKE_EVENT
 %token MAKE_LIST
 %token MAKE_MAP
 %token MAKE_SET
@@ -939,6 +940,7 @@ ident_typ_q:
  | MAKE_MAP            { Location.dumloc "make_map"            }
  | MAKE_BIG_MAP        { Location.dumloc "make_big_map"        }
  | MAKE_ASSET          { Location.dumloc "make_asset"          }
+ | MAKE_EVENT          { Location.dumloc "make_event"          }
 
 %inline tentry_postfix:
 | DOT ida=ident arga=paren(expr) { (ida, arga) }

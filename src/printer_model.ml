@@ -448,6 +448,12 @@ let pp_mterm fmt (mt : mterm) =
         f d
         f a
 
+    | Mmakeevent (t, id, a) ->
+      Format.fprintf fmt "make_event<%a>(%a, %a)"
+        pp_type t
+        pp_id id
+        f a
+
     | Mcreatecontract (_ms, d, a, si) ->
       Format.fprintf fmt "make_contract(%a, %a, %a)"
         f d

@@ -221,6 +221,7 @@ let to_michelson (input, env : T.obj_micheline * env) : T.michelson * env =
       | Oprim ({prim = "SET_DELEGATE"; _})                   -> T.mk_code T.SET_DELEGATE
       | Oprim ({prim = "SOURCE"; _})                         -> T.mk_code T.SOURCE
       | Oprim ({prim = "TRANSFER_TOKENS"; _})                -> T.mk_code T.TRANSFER_TOKENS
+      | Oprim ({prim = "EMIT"; args = t::_; annots = a})     -> T.mk_code (T.EMIT (to_type t, fa a))
       (* Operations on data structures *)
       | Oprim ({prim = "CAR"; args=[]; _})                   -> T.mk_code (T.CAR)
       | Oprim ({prim = "CDR"; args=[]; _})                   -> T.mk_code (T.CDR)
@@ -1615,6 +1616,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     | Moperations                       -> assert false
     | Mmakeoperation (_v, _d, _a)       -> assert false
+    | Mmakeevent (_t, _id, _a)          -> assert false
     | Mcreatecontract (_k, _d, _a, _si) -> assert false
 
 

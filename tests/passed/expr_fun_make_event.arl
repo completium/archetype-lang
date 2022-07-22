@@ -1,0 +1,6 @@
+archetype expr_fun_make_event
+
+entry exec() {
+  const op : operation = make_event<nat>("%sample", 2);
+  operations := prepend(operations, op);
+}

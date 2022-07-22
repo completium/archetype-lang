@@ -214,6 +214,7 @@ and pp_code fmt (i : code) =
   | CHAIN_ID                 -> pp "CHAIN_ID"
   | CONTRACT (t, a)          -> pp "CONTRACT%a %a" pp_annot a pp_type t
   | CREATE_CONTRACT c        -> pp "CREATE_CONTRACT@\n  @[%a@]" pp_concrete_michelson c
+  | EMIT (t, a)              -> pp "EMIT%a %a" pp_annot a pp_type t
   | IMPLICIT_ACCOUNT         -> pp "IMPLICIT_ACCOUNT"
   | LEVEL                    -> pp "LEVEL"
   | NOW                      -> pp "NOW"
@@ -457,6 +458,7 @@ let pp_uop f fmt (op, e) =
   | UcarN n      -> pp "carN(%i,%a)" n f e
   | UcdrN n      -> pp "carN(%i,%a)" n f e
   | UforcePair   -> pp "pair"
+  | Uemit (t, a) -> pp "emit%a<%a>(%a)"  (pp_option (fun fmt x -> Format.fprintf fmt "%%%a" pp_id x)) a pp_type t f e
 
 let pp_bop f fmt (op, lhs, rhs) =
   let pp s = Format.fprintf fmt s in
@@ -574,6 +576,7 @@ let rec pp_instruction fmt (i : instruction) =
       | UcarN n      -> pp "car(%i, %a)"      n f e
       | UcdrN n      -> pp "cdr(%i, %a)"      n f e
       | UforcePair   -> pp "pair(%a)"         f e
+      | Uemit (t, a) -> pp "emit%a<%a>(%a)"  (pp_option (fun fmt x -> Format.fprintf fmt "%%%a" pp_id x)) a pp_type t f e
     end
   | Ibinop (op, lhs, rhs) -> begin
       match op with

@@ -932,6 +932,9 @@ let to_model (ast : A.ast) : M.model =
         let fc = f c in
         M.Mmakeoperation (fa, fb, fc)
 
+      | A.Pcall (None, A.Cconst (A.Cmakeevent), [ty], [AIdent id; AExpr a]) ->
+        M.Mmakeevent (type_to_type ty, id, f a)
+
       (* Lambda *)
 
       | A.Pcall (None, A.Cconst (A.Cexec), [], [AExpr a; AExpr b]) ->
