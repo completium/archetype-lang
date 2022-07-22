@@ -389,6 +389,11 @@ and op_EDIV (stack : stack) =
   Some (M.toption (M.tpair (M.mk_type aout1) (M.mk_type aout2)) :: stack)
 
 (* -------------------------------------------------------------------- *)
+and op_EMIT (stack : stack) =
+  let _ty, stack = Stack.pop stack in (* TODO: check if type _ty is correct *)
+  Some (M.toperation :: stack)
+
+(* -------------------------------------------------------------------- *)
 and op_EMPTY_BIG_MAP (stack : stack) (kty : stack1) (vty : stack1) =
   Some (M.mk_type (M.Tbig_map (kty, vty)) :: stack)
 
@@ -1201,6 +1206,9 @@ and tycheck_r (stack : stack) (code : M.code_node) : stack option =
 
   | CREATE_CONTRACT _  ->
       assert false
+
+  | EMIT _ ->
+      op_EMIT stack
 
   | IMPLICIT_ACCOUNT ->
       op_IMPLICIT_ACCOUNT stack
