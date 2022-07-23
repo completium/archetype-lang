@@ -66,7 +66,6 @@ let set_options settings =
   Archetype.Options.opt_property_focused := process_string_empty "property_focused";
   Archetype.Options.opt_get_storage_values := process_boolean_false "get_storage_values";
   Archetype.Options.opt_with_parameters := process_boolean_false "with_parameters";
-  Archetype.Options.opt_event_well_address := process_string_empty "event_well_address";
   Archetype.Options.opt_contract_interface := process_boolean_false "contract_interface";
 
   (* Archetype.Options.opt_vids             := "vids" []; *)

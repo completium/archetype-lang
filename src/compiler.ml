@@ -99,7 +99,6 @@ let main () : unit =
       "--json", Arg.Set Options.opt_json, " Same as -j";
       "-rj", Arg.Set Options.opt_rjson, " Raw Json";
       "--raw-json", Arg.Set Options.opt_rjson, " Same as -rj";
-      "--event-well-address", Arg.String (fun s -> Options.opt_event_well_address := s), " Address of the event well contract";
       "--trace", Arg.Set Options.opt_trace, " Activate trace";
       "--expr", Arg.String (fun s -> Options.opt_expr := Some s), " ";
       "--type", Arg.String (fun s -> Options.opt_type := Some s), " ";

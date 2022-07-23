@@ -74,8 +74,6 @@ let opt_contract_interface = ref false
 
 let opt_property_focused = ref ""
 
-let opt_event_well_address = ref "KT19ij2bHXkhMALzoTZCG88FWgAHRR21247v" (* mainnet address *)
-
 let opt_vids : (string list) ref = ref []
 let add_vids s =
   opt_vids := s::!opt_vids
