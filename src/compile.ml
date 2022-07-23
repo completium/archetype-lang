@@ -143,6 +143,7 @@ let output (model : Model.model) : string =
         | Michelson
         | MichelsonStorage
         | OffchainViews
+        | ContractMetadata
         | Javascript -> begin
             fun fmt model ->
               let ir = Gen_michelson.to_ir model in
@@ -189,7 +190,11 @@ let output (model : Model.model) : string =
                     end
                   | OffchainViews -> begin
                       let offchain_views : Michelson.offchain_view list = Gen_michelson.generate_offchain_view ir in
-                      Format.fprintf fmt "[%a]@." (Printer_tools.pp_list "," Printer_michelson.pp_offchain_view) offchain_views
+                      Format.fprintf fmt "%s" (Gen_extra.generate_contract_metadata ~only_views:true model offchain_views)
+                    end
+                  | ContractMetadata -> begin
+                      let offchain_views : Michelson.offchain_view list = Gen_michelson.generate_offchain_view ir in
+                      Format.fprintf fmt "%s" (Gen_extra.generate_contract_metadata ~only_views:false model offchain_views)
                     end
                   | _ -> assert false
                 end
@@ -305,6 +310,7 @@ let generate_target model =
   | Michelson
   | MichelsonStorage
   | OffchainViews
+  | ContractMetadata
   | Javascript ->
     model
     |> toolchain ~debug

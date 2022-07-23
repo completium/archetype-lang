@@ -546,7 +546,7 @@ let rec pp_instruction fmt (i : instruction) =
       | Uint        -> pp "int(%a)"          f e
       | Unot        -> pp "not(%a)"          f e
       | Uabs        -> pp "abs(%a)"          f e
-      | Uisnat      -> pp "isnat(%a)"        f e
+      | Uisnat      -> pp "is_nat(%a)"       f e
       | Usome       -> pp "some(%a)"         f e
       | Usize       -> pp "size(%a)"         f e
       | Upack       -> pp "pack(%a)"         f e

@@ -1,0 +1,16 @@
+archetype with_metadata_uri
+with metadata `{
+  "symbol": "MTK",
+  "name": "MyToken",
+  "decimals": "1",
+  "description": "description of MyToken",
+  "thumbnailUri": "https://completium.com/img/logo_completium_128.png"
+}`
+
+entry exec () {
+  ()
+}
+
+offchain view get_something() : nat {
+  return 2
+}

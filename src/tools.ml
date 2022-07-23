@@ -600,3 +600,7 @@ let string_to_big_int str =
   let res = ref Big_int.zero_big_int in
   String.iter (fun x -> res := !res |> Big_int.mult_int_big_int 256 |> Big_int.add_int_big_int (Char.code x)) str;
   !res
+
+let minify_json input =
+  let json = Yojson.Raw.from_string input in
+  Yojson.Raw.to_string json

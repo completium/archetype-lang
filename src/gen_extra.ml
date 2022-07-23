@@ -259,3 +259,16 @@ let get_storage_values (model : Model.model) =
   let ir = Gen_michelson.to_ir model in
   let storage_values : storage_values = List.map (fun (id, _, v) -> {id = id; value = Format.asprintf "%a" Printer_michelson.pp_data v}) ir.storage_list in
   Yojson.Safe.to_string (storage_values_to_yojson storage_values)
+
+let generate_contract_metadata ?(only_views=false) (model : Model.model) offchain_views =
+  (match model.metadata with | Some MKjson v when not only_views -> unloc v | _ -> "{}")
+  |> String.trim
+  |> fun input ->
+  (match offchain_views with
+   | [] -> input
+   | _ -> begin
+       let offchain_views_value = Format.asprintf "\"views\":[%a]@." (Printer_tools.pp_list "," Printer_michelson.pp_offchain_view) offchain_views in
+       let sep = match input with | "{}" -> "" | _ -> "," in
+       (String.sub input 0 (String.length input - 1)) ^ sep ^ offchain_views_value ^ "}"
+     end)
+  |> Tools.minify_json

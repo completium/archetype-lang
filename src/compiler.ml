@@ -20,6 +20,7 @@ let main () : unit =
     | "michelson"         -> Options.target := Michelson
     | "michelson-storage" -> Options.target := MichelsonStorage
     | "offchain-views"    -> Options.target := OffchainViews
+    | "contract-metadata" -> Options.target := ContractMetadata
     | "whyml"             -> Options.target := Whyml
     | "javascript"        -> Options.target := Javascript
     | "markdown"          -> Options.target := Markdown

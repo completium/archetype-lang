@@ -7,6 +7,7 @@ type target_lang =
   | Markdown
   | BindingsJs
   | BindingsTs
+  | ContractMetadata
 [@@deriving show {with_path = false}]
 
 exception UnknownTarget of string
@@ -15,6 +16,7 @@ let string_to_target_lang = function
   | "michelson"         -> Michelson
   | "michelson-storage" -> MichelsonStorage
   | "offchain-views"    -> OffchainViews
+  | "contract-metadata" -> ContractMetadata
   | "whyml"             -> Whyml
   | "javascript"        -> Javascript
   | "markdown"          -> Markdown
