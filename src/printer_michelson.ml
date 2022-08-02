@@ -73,7 +73,7 @@ let rec pp_data fmt (d : data) =
   | Dnone           -> pp "None"
   | Dlist l         -> pp "{ %a }" (pp_list "; " pp_data) l
   | Delt (x, y)     -> pp "Elt %a %a" pp_data x pp_data y
-  | Dvar (x, _)     -> pp "%s" x
+  | Dvar (x, _, _)  -> pp "%s" x
   | DIrCode (_id, _c) -> pp "IrCode"
   | Dcode c         -> pp "{ %a }" pp_code c
 
@@ -727,7 +727,7 @@ let rec pp_obj_micheline fmt (o : obj_micheline) =
   | Ovar    x -> begin
       match x with
       | OMVfree   x -> Format.fprintf fmt "%s" x
-      | OMVint    x -> Format.fprintf fmt "{\"int\": %s.toString()}" x
+      | OMVint    (x, b) -> Format.fprintf fmt "{\"int\": %s%s}" x (if b then "" else ".toString()")
       | OMVstring x -> pp pp_b ("string", x)
       | OMVbytes  x -> pp pp_b ("bytes", x)
       | OMVif (x, a, b) -> Format.fprintf fmt "(%s ? %a : %a)" x pp_obj_micheline a pp_obj_micheline b

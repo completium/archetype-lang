@@ -237,7 +237,7 @@ let rec to_simple_data (model : M.model) (mt : M.mterm) : T.data option =
   | Mleft (_, x)               -> let x = f x in (match x with | Some x -> Some (T.Dleft x) | None -> None)
   | Mright (_, x)              -> let x = f x in (match x with | Some x -> Some (T.Dright x) | None -> None)
   | Mcast (_, _, v)            -> f v
-  | Mvar (x, Vparameter, _, _) -> Some (T.Dvar (unloc x, to_type model mt.type_))
+  | Mvar (x, Vparameter, _, _) -> Some (T.Dvar (unloc x, to_type model mt.type_, false))
   | _ -> None
 
 let to_ir (model : M.model) : T.ir =
@@ -438,7 +438,7 @@ let to_ir (model : M.model) : T.ir =
     | Mleft (_, x)      -> T.Dleft (to_data x)
     | Mright (_, x)     -> T.Dright (to_data x)
     | Mcast (_, _, v)   -> to_data v
-    | Mvar (x, Vparameter, _, _) -> T.Dvar (unloc x, to_type model mt.type_)
+    | Mvar (x, Vparameter, _, _) -> T.Dvar (unloc x, to_type model mt.type_, false)
     | Mlitrecord l      -> begin
         let data = List.map (to_data |@ snd) l in
         match M.get_ntype mt.type_ with
@@ -1856,7 +1856,7 @@ let rec instruction_to_code env (i : T.instruction) : T.code * env =
 
   | Iwildcard (ty, id) -> begin
       let id = "const_" ^ id ^ "__" in
-      let data : T.data = T.Dvar(id, ty) in
+      let data : T.data = T.Dvar(id, ty, true) in
       T.cpush (ty, data), inc_env env
     end
 

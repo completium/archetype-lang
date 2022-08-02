@@ -26,7 +26,7 @@ and obj_micheline =
 
 and obj_micheline_var =
   | OMVfree   of ident
-  | OMVint    of ident
+  | OMVint    of ident * bool
   | OMVstring of ident
   | OMVbytes  of ident
   | OMVif     of ident * obj_micheline * obj_micheline
@@ -84,7 +84,7 @@ type data =
   | Dnone
   | Dlist              of data list
   | Delt               of data * data
-  | Dvar               of ident * type_
+  | Dvar               of ident * type_ * bool
   | DIrCode            of ident * instruction
   | Dcode              of code
 [@@deriving show {with_path = false}]
@@ -1164,7 +1164,7 @@ let map_data (f : data -> data) = function
   | Dnone        -> Dnone
   | Dlist l      -> Dlist (List.map f l)
   | Delt (l, r)  -> Delt (f l, f r)
-  | Dvar (c, t)  -> Dvar (c, t)
+  | Dvar (c, t, b) -> Dvar (c, t, b)
   | DIrCode (id, c) -> DIrCode (id, c)
   | Dcode c      -> Dcode c
 
@@ -1581,7 +1581,7 @@ end = struct
     | Dnone        -> Oprim (mk_prim "None")
     | Dlist l      -> Oarray (List.map f l)
     | Delt (l, r)  -> Oprim (mk_prim ~args:[f l; f r] "Elt")
-    | Dvar (x, t)  -> begin
+    | Dvar (x, t, b)  -> begin
         match t.node with
         | Taddress                -> Ovar (OMVstring x)
         | Tbig_map   (_k, _v)     -> Ovar (OMVfree x)
@@ -1589,14 +1589,14 @@ end = struct
         | Tbytes                  -> Ovar (OMVbytes x)
         | Tchain_id               -> Ovar (OMVfree x)
         | Tcontract  _t           -> Ovar (OMVfree x)
-        | Tint                    -> Ovar (OMVint x)
+        | Tint                    -> Ovar (OMVint (x, b))
         | Tkey                    -> Ovar (OMVbytes x)
         | Tkey_hash               -> Ovar (OMVbytes x)
         | Tlambda    (_a, _r)     -> Ovar (OMVfree x)
         | Tlist      _t           -> Ovar (OMVfree x)
         | Tmap       (_k, _v)     -> Ovar (OMVfree x)
-        | Tmutez                  -> Ovar (OMVint x)
-        | Tnat                    -> Ovar (OMVint x)
+        | Tmutez                  -> Ovar (OMVint (x, b))
+        | Tnat                    -> Ovar (OMVint (x, b))
         | Toperation              -> Ovar (OMVfree x)
         | Toption    _t           -> Ovar (OMVfree x)
         | Tor        (_l, _r)     -> Ovar (OMVfree x)
@@ -1604,7 +1604,7 @@ end = struct
         | Tset       _t           -> Ovar (OMVfree x)
         | Tsignature              -> Ovar (OMVbytes x)
         | Tstring                 -> Ovar (OMVstring x)
-        | Ttimestamp              -> Ovar (OMVint x)
+        | Ttimestamp              -> Ovar (OMVint (x, b))
         | Tunit                   -> Oprim (mk_prim "Unit")
         | Tticket       _t        -> Ovar (OMVfree x)
         | Tsapling_state       _n -> Ovar (OMVfree x)
