@@ -334,10 +334,15 @@ let string_of_scope (s : scope) =
   | Removed -> "removed"
   | Stable  -> "stable"
 
+let pp_scope fmt = function
+  | SINone -> ()
+  | SIParent -> Format.fprintf fmt "::"
+  | SIId x -> Format.fprintf fmt "%a::" pp_id x
+
 let rec pp_expr outer pos fmt a =
   let e = unloc a in
   match e with
-  | Eterm ((vset, lbl), id) ->
+  | Eterm (scope, (vset, lbl), id) ->
     let pp_label fmt lbl =
       let s =
         match lbl with
@@ -353,7 +358,8 @@ let rec pp_expr outer pos fmt a =
         | VSRemoved -> "removed"
       in Format.fprintf fmt "%s." s in
 
-    Format.fprintf fmt "%a%a%a"
+    Format.fprintf fmt "%a%a%a%a"
+      pp_scope scope
       (pp_option pp_vset ) vset
       (pp_option pp_label) lbl
       pp_id id
@@ -366,13 +372,14 @@ let rec pp_expr outer pos fmt a =
     in
     pp fmt x
 
-  | Earray values ->
+  | Earray (scope, values) ->
 
-    let pp fmt values =
-      Format.fprintf fmt "[%a]"
+    let pp fmt (scope, values) =
+      Format.fprintf fmt "%a[%a]"
+        pp_scope scope
         (pp_list "; " (pp_expr e_simple PInfix)) values
     in
-    (maybe_paren outer e_default pos pp) fmt values
+    (maybe_paren outer e_default pos pp) fmt (scope, values)
 
 
   | Edot (lhs, rhs) ->
@@ -425,9 +432,9 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_default pos pp) fmt (e, l)
 
-  | Erecord l ->
+  | Erecord (scope, l) ->
 
-    let pp fmt l = pp_record_expr_internal fmt l in
+    let pp fmt l = pp_record_expr_internal fmt (scope, l) in
     (maybe_paren outer e_simple pos pp) fmt l
 
 
@@ -914,8 +921,9 @@ and pp_fun_args fmt args =
   Format.fprintf fmt " (%a)"
     (pp_list ", " pp_fun_ident_typ) args
 
-and pp_record_expr_internal fmt l =
-  Format.fprintf fmt "{%a}"
+and pp_record_expr_internal fmt (scope, l) =
+  Format.fprintf fmt "%a{%a}"
+    pp_scope scope
     (pp_list ";@ " (
         fun fmt (o, e) ->
           Format.fprintf fmt "%a%a"
@@ -1039,7 +1047,7 @@ let pp_asset_post_option fmt (apo : asset_post_option) =
       (pp_list ";@\n"
          (fun fmt x ->
             match unloc x with
-              Erecord l -> pp_record_expr_internal fmt l
+              Erecord (scope, l) -> pp_record_expr_internal fmt (scope, l)
             | _ -> assert false)) l
 
 let map_option f x =

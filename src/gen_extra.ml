@@ -112,7 +112,7 @@ let to_model_expr (e : PT.expr) : T.data =
     | Eliteral (Lpercent  n) -> cc [T.tpair T.tint T.tnat]; let n, d = string_to_big_int_percent n in Dpair (Dint n, Dint d)
     | Eunit
     | Enothing               -> cc [T.tunit]; Dunit
-    | Earray         l       -> begin
+    | Earray         (_scope, l)  -> begin
         let ll =
           match typ with
           | Some ({node = (T.Tset t | T.Tlist t); annotation = _}) -> List.map (f ~typ:t) l

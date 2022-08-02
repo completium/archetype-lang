@@ -9,6 +9,11 @@ let pp_lident fmt i = Format.fprintf fmt "%s" (unloc i)
 type lident = ident loced
 [@@deriving yojson, show {with_path = false}]
 
+and scope_import =
+  | SINone
+  | SIParent
+  | SIId of lident
+
 (* -------------------------------------------------------------------- *)
 and container =
   | Aggregate
@@ -120,10 +125,10 @@ and transfer_t =
   | TToperation of expr
 
 and expr_unloc =
-  | Eterm          of (var_vset option * var_label option) * lident
+  | Eterm          of scope_import * (var_vset option * var_label option) * lident
   | Eliteral       of literal
-  | Earray         of expr list
-  | Erecord        of record_item list
+  | Earray         of scope_import * expr list
+  | Erecord        of scope_import * record_item list
   | Etuple         of expr list
   | Edot           of expr * lident
   | Equestiondot   of expr * lident
@@ -541,9 +546,9 @@ let eduration v = mk_eliteral (Lduration v)
 let edate     v = mk_eliteral (Ldate v)
 let ebytes    v = mk_eliteral (Lbytes v)
 
-let eterm         ?(loc=dummy) ?temp ?delta id    = mkloc loc (Eterm ((delta, temp), id))
-let earray        ?(loc=dummy) l                  = mkloc loc (Earray l)
-let erecord       ?(loc=dummy) rl                 = mkloc loc (Erecord rl)
+let eterm         ?(loc=dummy) ?(s=SINone) ?temp ?delta id = mkloc loc (Eterm (s, (delta, temp), id))
+let earray        ?(loc=dummy) ?(s=SINone) l               = mkloc loc (Earray (s, l))
+let erecord       ?(loc=dummy) ?(s=SINone) rl              = mkloc loc (Erecord (s, rl))
 let etuple        ?(loc=dummy) l                  = mkloc loc (Etuple l)
 let edot          ?(loc=dummy) e id               = mkloc loc (Edot (e, id))
 let esqapp        ?(loc=dummy) e i                = mkloc loc (Esqapp (e, i))

@@ -3006,7 +3006,7 @@ let rec for_xexpr
 
   let doit () =
     match unloc tope with
-    | Eterm ((vset, pvt), x) -> begin
+    | Eterm (_, (vset, pvt), x) -> begin
         let vt, subenv =
           match pvt with
           | Some VLBefore ->
@@ -3144,7 +3144,7 @@ let rec for_xexpr
       let v = for_literal env ety (mkloc (loc tope) v) in
       mk_sp v.A.type_ (A.Plit v)
 
-    | Earray [] -> begin
+    | Earray (_, []) -> begin
         match ety with
         | Some (A.Tcontainer (_, _))
         | Some (A.Tset _ | A.Tlist _ | A.Tmap _ | A.Tbig_map _ | A.Titerable_big_map _) ->
@@ -3155,7 +3155,7 @@ let rec for_xexpr
           bailout ()
       end
 
-    | Earray (e :: es) -> begin
+    | Earray (_, (e :: es)) -> begin
         let elty = Option.bind Type.as_content_array ety in
         let e    = for_xexpr env ?ety:elty e in
         let elty = if Option.is_some e.A.type_ then e.A.type_ else elty in
@@ -3203,7 +3203,7 @@ let rec for_xexpr
           bailout ()
       end
 
-    | Erecord fields -> begin
+    | Erecord (_, fields) -> begin
         let module E = struct
           type state = {
             hasupdate : bool;
@@ -3756,7 +3756,7 @@ let rec for_xexpr
 
         let content =
           match path with
-          | {pldesc = PT.Eterm (_, id) } when Option.is_some (Env.Import.lookup env (unloc id))-> begin
+          | {pldesc = PT.Eterm (_, _, id) } when Option.is_some (Env.Import.lookup env (unloc id))-> begin
               let importdecl = Env.Import.get env (unloc id) in
               importdecl.id_content
             end
@@ -4797,10 +4797,10 @@ and for_gen_method_call mode env theloc (the, m, args)
       | `Cmp -> begin
           let asc, field =
             match unloc arg with
-            | Eterm ((None, None), f) ->
+            | Eterm (_, (None, None), f) ->
               (true, Some f)
             | Eapp (Fident { pldesc = ("asc" | "desc") as order },
-                    [{pldesc = Eterm ((None, None), f) }]) ->
+                    [{pldesc = Eterm (_, (None, None), f) }]) ->
               (order = "asc", Some f)
             | _ ->
               Env.emit_error env (loc arg, InvalidSortingExpression);
@@ -4845,7 +4845,7 @@ and for_arg_effect
     mode (env : env) ~(update : bool) (asset : assetdecl) (tope : PT.expr)
   =
   match unloc tope with
-  | Erecord fields ->
+  | Erecord (_, fields) ->
     let do1 map ((x, e) : PT.record_item) =
       match x with
       | None ->
@@ -4950,7 +4950,7 @@ and for_entry_description (env : env) (sa : PT.security_arg) : A.entry_descripti
 
   | Sapp (act, [{ pldesc = PT.Sident asset }]) -> begin
       let mode  = { em_kind = `Formula false; em_pred = false; } in
-      let asset = mkloc (loc asset) (PT.Eterm ((None, None), asset)) in
+      let asset = mkloc (loc asset) (PT.Eterm (SINone, (None, None), asset)) in
       let asset = for_asset_collection_expr mode env (`Parsed asset) in
 
       match snd asset with
@@ -5139,7 +5139,7 @@ let for_args_decl ?can_asset (env : env) (xs : PT.args) =
 (* -------------------------------------------------------------------- *)
 let for_lvalue (kind : imode_t) (env : env) (e : PT.expr) : (A.lvalue * A.ptyp) option =
   match unloc e with
-  | Eterm ((None, None), x) -> begin
+  | Eterm (_, (None, None), x) -> begin
       match Env.lookup_entry env (unloc x) with
       | Some (`Local (xty, kind)) -> begin
           match kind with
@@ -5176,7 +5176,7 @@ let for_lvalue (kind : imode_t) (env : env) (e : PT.expr) : (A.lvalue * A.ptyp) 
         None
     end
 
-  | Edot ({pldesc = Esqapp ({pldesc = Eterm ((None, None), asset)}, key)}, x) -> begin
+  | Edot ({pldesc = Esqapp ({pldesc = Eterm (_, (None, None), asset)}, key)}, x) -> begin
       let asset = Env.Asset.get env (unloc asset) in
       if List.exists (fun f -> unloc f = unloc x) asset.as_pk then begin
         Env.emit_error env (loc x, CannotUpdatePKey);
@@ -6074,7 +6074,7 @@ let rec for_state_formula ?enum (env : env) (st : PT.expr) : A.sexpr =
   let mk_sp = A.mk_sp ~loc:(loc st) in
 
   match unloc st with
-  | Eterm ((None, None), x) ->
+  | Eterm (_, (None, None), x) ->
     mk_sp (A.Sref (for_named_state ?enum env x))
 
   | Eapp (Foperator { pldesc = Logical Or }, [e1; e2]) ->
@@ -6175,7 +6175,7 @@ let rec for_callby (env : env) kind (cb : PT.expr) =
   | Eapp (Foperator { pldesc = Logical Or }, [e1; e2]) ->
     (for_callby env kind e1) @ (for_callby env kind e2)
 
-  | Eterm (_, an) when Env.Asset.exists env (unloc an)->
+  | Eterm (_, _, an) when Env.Asset.exists env (unloc an)->
     let asset = Env.Asset.get env (unloc an) in
     if (not (Type.is_address asset.as_pkty))
     then Env.emit_error env (loc cb, match kind with | `Called -> InvalidCallByAsset | `Sourced -> InvalidSourcedByAsset );
@@ -6722,7 +6722,7 @@ let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) xspec
     let adecls =
       let for1 adecl decl =
         let forinit = function
-          | { pldesc = PT.Erecord init1; plloc = thisloc }
+          | { pldesc = PT.Erecord (_, init1); plloc = thisloc }
             when List.for_all (fun (x, _) -> Option.is_none x) init1
             ->
             if List.length init1 <> List.length adecl.as_fields then begin
@@ -6735,7 +6735,7 @@ let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) xspec
                   adecl.as_fields init1 in
               Some init1
 
-          | { pldesc = PT.Erecord init1; plloc = _; }
+          | { pldesc = PT.Erecord (_, init1); plloc = _; }
             when List.for_all
                 (function (Some (PT.ValueAssign, _), _) -> true | _ -> false)
                 init1
@@ -6856,7 +6856,7 @@ let for_record_decl k (env : env) (decl : PT.record_decl loced) =
       match unloc e with
       | Etuple es ->
         RNode (List.map doit es)
-      | Eterm  ((None, None), x) ->
+      | Eterm  (_, (None, None), x) ->
         RLeaf x
       | _ ->
         raise (E.InvalidPacking (loc e, `Expr)) in

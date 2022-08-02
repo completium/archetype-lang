@@ -692,8 +692,8 @@ asset_post_option:
  | x=loc(record_expr_unloc) { x }
 
 %inline record_expr_unloc:
- | LBRACE xs=separated_nonempty_list(SEMI_COLON, record_item) RBRACE
-     { Erecord xs }
+ | s=scope LBRACE xs=separated_nonempty_list(SEMI_COLON, record_item) RBRACE
+     { Erecord (s, xs) }
 
 %inline asset_post_options:
  | xs=asset_post_option* { xs }
@@ -1077,6 +1077,11 @@ order_operations:
  | LPAREN RPAREN         { [] }
  | LPAREN xs=snl(COMMA, expr) RPAREN  { xs }
 
+%inline scope:
+ | x=ident COLONCOLON { SIId x }
+ |         COLONCOLON { SIParent }
+ |                    { SINone }
+
 %inline simple_expr:
  | x=loc(simple_expr_r) { x }
 
@@ -1105,23 +1110,23 @@ simple_expr_r:
  | x=simple_expr QUESTIONDOT y=ident
      { Equestiondot (x, y) }
 
- | LBRACKET RBRACKET
-     { Earray [] }
+ | s=scope LBRACKET RBRACKET
+     { Earray (s, []) }
 
- | LBRACKET e=expr RBRACKET
-     { Earray (split_seq e) }
+ | s=scope LBRACKET e=expr RBRACKET
+     { Earray (s, split_seq e) }
 
  | LBRACE e=simple_expr WITH xs=separated_list(SEMI_COLON, recupdate_item) RBRACE
      { Erecupdate (e, xs) }
 
- | LBRACE xs=separated_list(SEMI_COLON, record_item) RBRACE
-     { Erecord xs }
+ | s=scope LBRACE xs=separated_list(SEMI_COLON, record_item) RBRACE
+     { Erecord (s, xs) }
 
  | x=literal
      { Eliteral x }
 
- | vt=vt x=ident
-     { Eterm (vt, x) }
+ | s=scope vt=vt x=ident
+     { Eterm (s, vt, x) }
 
  | SOME x=paren(simple_expr)
      { Eoption (OSome x) }

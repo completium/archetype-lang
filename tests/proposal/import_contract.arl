@@ -5,7 +5,7 @@ import import_decl from "./tests/proposal/import_decl.arl"
 variable res : nat = 0
 
 entry exec () {
-  var r = import_decl.{n = 2; s = ""};
+  var r = import_decl::{n = 2; s = ""};
   res := r.n;
 
   const a = @KT1UZ512pdDcD36GjXLJEkVifeQz3TduZ9uw;
