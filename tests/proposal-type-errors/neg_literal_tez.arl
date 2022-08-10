@@ -1,0 +1,3 @@
+archetype neg_literal_tez
+
+variable  a : tez = -1tz
