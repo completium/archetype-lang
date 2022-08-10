@@ -1,0 +1,9 @@
+archetype test_create_contract_tz_with_path
+
+entry exec () {
+  const delegate : option<key_hash> = none;
+  const amount : tez = 0tz;
+  const storage_init : nat = 0;
+  const op_addr : (operation * address) = create_contract("./tests/passed/simple.arl", delegate, amount, storage_init);
+  operations := [op_addr[0]]
+}

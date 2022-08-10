@@ -1,4 +1,4 @@
-archetype test_create_contract
+archetype test_create_contract_tz_with_import
 
 import simple from "./tests/michelson/simple.tz"
 
