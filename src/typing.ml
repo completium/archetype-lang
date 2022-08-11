@@ -765,6 +765,7 @@ type error_desc =
   | InvalidTypeForPk
   | InvalidTypeForSet
   | InvalidTypeForTuple
+  | InvalidArlFile
   | InvalidTzFile
   | InvalidValueForCurrency
   | InvalidValueForMemoSize
@@ -1013,6 +1014,7 @@ let pp_error_desc fmt e =
   | InvalidTypeForPk                   -> pp "Invalid type for primary key"
   | InvalidTypeForSet                  -> pp "Invalid type for set"
   | InvalidTypeForTuple                -> pp "Invalid type for tuple"
+  | InvalidArlFile                     -> pp "Invalid arl file"
   | InvalidTzFile                      -> pp "Invalid tz file"
   | InvalidValueForCurrency            -> pp "Invalid value for currency"
   | InvalidVariableForMethod           -> pp "Invalid variable for method"
@@ -1566,7 +1568,8 @@ let allops : opinfo list =
 type importdecl = {
   id_name        : A.lident;
   id_path        : A.lident;
-  id_content     : Michelson.obj_micheline;
+  id_content     : Michelson.obj_micheline option;
+  id_ast         : A.ast option;
   id_entrypoints : (ident * A.type_) list;
   id_views       : (ident * (A.type_ * A.type_)) list;
 }
@@ -3758,7 +3761,9 @@ let rec for_xexpr
           match path with
           | {pldesc = PT.Eterm (_, _, id) } when Option.is_some (Env.Import.lookup env (unloc id))-> begin
               let importdecl = Env.Import.get env (unloc id) in
-              importdecl.id_content
+              match importdecl.id_content with
+              | Some v -> v
+              | None -> Env.emit_error env (loc path, TODO) ; bailout ()
             end
           | {pldesc = PT.Eliteral(Lstring v) } -> begin
               let ext = Filename.extension v in
@@ -5445,7 +5450,7 @@ let rec for_instruction_r
                 bailout ()
               | Some import -> import in
 
-            let pen = "%" ^ (unloc en) in
+            let pen = unloc en in
 
             let etyp =
               match List.assoc_opt pen import.id_entrypoints with
@@ -6299,30 +6304,6 @@ let for_enum_decl (env : env) (decl : (PT.lident * PT.enum_decl) loced) =
   env, (decl, inv)
 
 (* -------------------------------------------------------------------- *)
-let for_import_decl (env : env) (decls : (PT.lident * PT.lident) loced list) =
-  List.fold_left (fun (env, accu : env * importdecl list) (a : (PT.lident * PT.lident) loced) -> begin
-        let lo, (id, path) = deloc a in
-        let ext = Filename.extension (unloc path) in
-        match ext with
-        | ".tz" -> begin
-            match Micheline.parse (unloc path) with
-            | Some content -> begin
-                let views       = Micheline.get_views content in
-                match Micheline.get_entrypoints content with
-                | Some entrypoints -> begin
-                    let importdecl = { id_name = id; id_path = path; id_content = content; id_entrypoints = entrypoints; id_views = views } in
-                    (if   check_and_emit_name_free env id
-                     then Env.Import.push env importdecl
-                     else env), importdecl::accu
-                  end
-                | None -> Env.emit_error env (lo, InvalidTzFile); (env, accu)
-              end
-            | None ->(Env.emit_error env (lo, FileNotFound (unloc path)); (env, accu))
-          end
-        | _ -> (Env.emit_error env (loc path, UnknownImportExtension ext); (env, accu))
-      end) (env, []) decls
-
-(* -------------------------------------------------------------------- *)
 let for_enums_decl (env : env) (decls : (PT.lident * PT.enum_decl) loced list) =
   List.fold_left_map for_enum_decl env decls
 
@@ -7146,113 +7127,6 @@ type decls = {
   secspecs  : A.security list;
 }
 
-let for_grouped_declarations (env : env) (toploc, g) =
-  if not (List.is_empty g.gr_archetypes) then
-    Env.emit_error env (toploc, InvalidArcheTypeDecl);
-
-  if List.length g.gr_states > 1 then
-    Env.emit_error env (toploc, MultipleStateDeclaration);
-
-  let state, stinv, env =
-    let for1 { plloc = loc; pldesc = state } =
-      match for_core_enum_decl env (mkloc loc (fst state)) with
-      | env, Some state -> Some (env, loc, state)
-      | _  , None       -> None in
-
-    match List.pmap for1 g.gr_states with
-    | (env, loc, (init, ctors)) :: _ ->
-      let stinv = List.map proj3_3 ctors in
-      let ctors = List.map (fun (x, cty, _) -> (x, cty, [])) ctors in
-      let decl = { sd_name  = mkloc loc ("$" ^ statename);
-                   sd_state = true;
-                   sd_ctors = ctors;
-                   sd_init  = init; } in
-      let vdecl = { vr_name = (mkloc loc statename);
-                    vr_type = A.Tenum (mkloc loc ("$" ^ statename));
-                    vr_kind = `Constant;
-                    vr_invs = [];
-                    vr_def  = None;
-                    vr_core = Some Cstate; } in
-      let env = Env.State.push env decl in
-      let env = Env.Var.push env vdecl in
-      (Some decl, Some stinv, env)
-    | _ ->
-      (None, None, env) in
-
-  let env, imports      = for_import_decl    env g.gr_imports in
-  let env, enums        = for_enums_decl     env g.gr_enums   in
-  let env, records      = for_records_decl   env g.gr_records in
-  let env, events       = for_events_decl    env g.gr_events  in
-  let enums, especs     = List.split enums                    in
-  let env, variables    = for_vars_decl      env g.gr_vars    in
-  let variables, vspecs = List.split variables                in
-  let env, assets       = for_assets_decl    env g.gr_assets g.gr_specassets in
-
-  let () = for_asset_specs env g.gr_specassets in
-
-  let env, enums =
-    let check_enum_spec env (enum, spec) =
-      match spec with None -> env, enum | Some spec ->
-
-        let env, spec = List.fold_left_map for_lbls_formula env spec in
-
-        Option.foldmap (fun env enum ->
-            let sd_ctors =
-              List.map2 (fun (x, args, oinv) inv -> (x, args, oinv @ inv))
-                enum.sd_ctors spec in
-            let enum = { enum with sd_ctors } in
-            (Env.State.push env enum, enum)) env enum
-
-    in List.fold_left_map
-      check_enum_spec env
-      (List.combine (state :: enums) (stinv :: especs))
-  in
-
-  let env, variables =
-    let check_var_spec env (var, specs) =
-      let xspecs =
-        match var with
-        | Some var ->
-          List.pmap (fun { pldesc = ({ pldesc = xname }, xspec) } ->
-              if   xname = unloc var.vr_name
-              then Some xspec
-              else None) g.gr_specvars
-        | None -> [] in
-
-      let specs = List.flatten (Option.get_as_list specs @ xspecs) in
-
-      match specs with [] -> env, var | _ ->
-
-        let env, spec = for_lbls_formula env specs in
-        let spec = List.map (fun (label, term) ->
-            A.{ label; term; error = None; loc = term.A.loc }
-          ) spec in
-
-        Option.foldmap (fun env var ->
-            let var = { var with vr_invs = var.vr_invs @ spec } in
-            (Env.Var.push env var, var)) env var
-
-    in List.fold_left_map
-      check_var_spec env
-      (List.combine variables vspecs) in
-
-  let () = for_var_specs env g.gr_specvars in
-
-  let state = List.hd enums in
-  let enums = List.tl enums in
-
-  let env, specs     = for_specs_decl     env g.gr_specs     in
-  let env, functions = for_funs_decl      env g.gr_funs      g.gr_specfuns in
-  let env, acttxs    = for_acttxs_decl    env g.gr_acttxs    g.gr_specfuns in
-  let ()             = for_fun_specs      env g.gr_specfuns  in
-  let env, secspecs  = for_secs_decl      env g.gr_secs      in
-
-  let output =
-    { state    ; variables; enums   ; assets ; functions;
-      acttxs   ; specs    ; secspecs; records; events; imports }
-
-  in (env, output)
-
 (* -------------------------------------------------------------------- *)
 let enums_of_statedecl (enums : statedecl list) : A.enum list =
   let for1 tg =
@@ -7342,7 +7216,7 @@ let imports_of_vdecls idecls : A.import_struct list =
     A.{
       name = decl.id_name;
       path = decl.id_path;
-      kind_node = INMichelson {ms_content = decl.id_content};
+      kind_node = (match decl.id_content with | Some v -> INMichelson {ms_content = v} | None -> INArchetype);
       views = decl.id_views;
       entrypoints = decl.id_entrypoints;
     }
@@ -7583,7 +7457,192 @@ let sort_decl refs l =
     List.sort cmp l
 
 (* -------------------------------------------------------------------- *)
-let for_declarations ?init (env : env) (decls : (PT.declaration list) loced) : A.ast =
+let rec for_import_decl (env : env) (decls : (PT.lident * PT.lident) loced list) =
+  List.fold_left (fun (env, accu : env * importdecl list) (a : (PT.lident * PT.lident) loced) -> begin
+        let lo, (id, path) = deloc a in
+        let ext = Filename.extension (unloc path) in
+        match ext with
+        | ".tz" -> begin
+            match Micheline.parse (unloc path) with
+            | Some content -> begin
+                let views       = Micheline.get_views content in
+                match Micheline.get_entrypoints content with
+                | Some entrypoints -> begin
+                    let remove_percent str = if String.length str > 1 && String.get str 0 = '%' then String.sub str 1 (String.length str - 1) else str in
+                    let entrypoints = List.map (fun (name, args) -> (remove_percent name, args)) entrypoints in
+                    let importdecl = { id_name = id; id_path = path; id_content = Some content; id_ast = None; id_entrypoints = entrypoints; id_views = views } in
+                    (if   check_and_emit_name_free env id
+                     then Env.Import.push env importdecl
+                     else env), importdecl::accu
+                  end
+                | None -> Env.emit_error env (lo, InvalidTzFile); (env, accu)
+              end
+            | None -> (Env.emit_error env (lo, FileNotFound (unloc path)); (env, accu))
+          end
+        | ".arl" -> begin
+            let make_importdecl_from_ast (ast : A.ast) =
+              let entrypoints, views = List.fold_left (fun (accu_entrypoints, accu_views) v ->
+                  let args_to_type args =
+                    let l = List.fold_right (fun (x : A.lident A.decl_gen) accu -> match x.typ with | Some v -> v::accu | None -> []) args [] in
+                    match l with
+                    | [] -> A.vtunit
+                    | [v] -> v
+                    | vs -> A.Ttuple vs
+                  in
+                  match v with
+                  | A.Ffunction fs -> begin
+                      let name = unloc fs.name in
+                      let rt = fs.return in
+                      match fs.kind with
+                      | FKfunction -> (accu_entrypoints, accu_views)
+                      | FKgetter -> begin
+                          let typ_ = args_to_type fs.args in
+                          let typ_ = A.Ttuple [typ_; A.Tcontract rt] in
+                          ((name, typ_)::accu_entrypoints, accu_views)
+                        end
+                      | FKview (VVonchain | VVonoffchain )-> begin
+                          let typ_ = args_to_type fs.args in
+                          (accu_entrypoints, (name, (typ_, rt))::accu_views)
+                        end
+                      | FKview VVoffchain -> (accu_entrypoints, accu_views)
+                    end
+                  | A.Ftransaction ts -> begin
+                      let typ_ = args_to_type ts.args in
+                      ((unloc ts.name, typ_)::accu_entrypoints, accu_views)
+                    end)
+                  ([], []) ast.funs in
+              { id_name = id; id_path = path; id_content = None; id_ast = Some ast; id_entrypoints = entrypoints; id_views = views }
+            in
+            let filename = unloc path in
+            let opt = begin
+              try
+                let channel = open_in filename in
+                Some (Io.parse_archetype (Core.FIChannel (filename, channel)))
+              with
+                _ -> None
+            end
+            in
+            match opt with
+            | Some pt -> begin
+                let ast = typing empty pt in
+                let importdecl = make_importdecl_from_ast ast in
+                (if check_and_emit_name_free env id then Env.Import.push env importdecl else env), importdecl::accu
+              end
+            | None -> Env.emit_error env (lo, InvalidArlFile); (env, accu)
+          end
+        | _ -> (Env.emit_error env (loc path, UnknownImportExtension ext); (env, accu))
+      end) (env, []) decls
+
+(* -------------------------------------------------------------------- *)
+and for_grouped_declarations (env : env) (toploc, g) =
+  if not (List.is_empty g.gr_archetypes) then
+    Env.emit_error env (toploc, InvalidArcheTypeDecl);
+
+  if List.length g.gr_states > 1 then
+    Env.emit_error env (toploc, MultipleStateDeclaration);
+
+  let state, stinv, env =
+    let for1 { plloc = loc; pldesc = state } =
+      match for_core_enum_decl env (mkloc loc (fst state)) with
+      | env, Some state -> Some (env, loc, state)
+      | _  , None       -> None in
+
+    match List.pmap for1 g.gr_states with
+    | (env, loc, (init, ctors)) :: _ ->
+      let stinv = List.map proj3_3 ctors in
+      let ctors = List.map (fun (x, cty, _) -> (x, cty, [])) ctors in
+      let decl = { sd_name  = mkloc loc ("$" ^ statename);
+                   sd_state = true;
+                   sd_ctors = ctors;
+                   sd_init  = init; } in
+      let vdecl = { vr_name = (mkloc loc statename);
+                    vr_type = A.Tenum (mkloc loc ("$" ^ statename));
+                    vr_kind = `Constant;
+                    vr_invs = [];
+                    vr_def  = None;
+                    vr_core = Some Cstate; } in
+      let env = Env.State.push env decl in
+      let env = Env.Var.push env vdecl in
+      (Some decl, Some stinv, env)
+    | _ ->
+      (None, None, env) in
+
+  let env, imports      = for_import_decl    env g.gr_imports in
+  let env, enums        = for_enums_decl     env g.gr_enums   in
+  let env, records      = for_records_decl   env g.gr_records in
+  let env, events       = for_events_decl    env g.gr_events  in
+  let enums, especs     = List.split enums                    in
+  let env, variables    = for_vars_decl      env g.gr_vars    in
+  let variables, vspecs = List.split variables                in
+  let env, assets       = for_assets_decl    env g.gr_assets g.gr_specassets in
+
+  let () = for_asset_specs env g.gr_specassets in
+
+  let env, enums =
+    let check_enum_spec env (enum, spec) =
+      match spec with None -> env, enum | Some spec ->
+
+        let env, spec = List.fold_left_map for_lbls_formula env spec in
+
+        Option.foldmap (fun env enum ->
+            let sd_ctors =
+              List.map2 (fun (x, args, oinv) inv -> (x, args, oinv @ inv))
+                enum.sd_ctors spec in
+            let enum = { enum with sd_ctors } in
+            (Env.State.push env enum, enum)) env enum
+
+    in List.fold_left_map
+      check_enum_spec env
+      (List.combine (state :: enums) (stinv :: especs))
+  in
+
+  let env, variables =
+    let check_var_spec env (var, specs) =
+      let xspecs =
+        match var with
+        | Some var ->
+          List.pmap (fun { pldesc = ({ pldesc = xname }, xspec) } ->
+              if   xname = unloc var.vr_name
+              then Some xspec
+              else None) g.gr_specvars
+        | None -> [] in
+
+      let specs = List.flatten (Option.get_as_list specs @ xspecs) in
+
+      match specs with [] -> env, var | _ ->
+
+        let env, spec = for_lbls_formula env specs in
+        let spec = List.map (fun (label, term) ->
+            A.{ label; term; error = None; loc = term.A.loc }
+          ) spec in
+
+        Option.foldmap (fun env var ->
+            let var = { var with vr_invs = var.vr_invs @ spec } in
+            (Env.Var.push env var, var)) env var
+
+    in List.fold_left_map
+      check_var_spec env
+      (List.combine variables vspecs) in
+
+  let () = for_var_specs env g.gr_specvars in
+
+  let state = List.hd enums in
+  let enums = List.tl enums in
+
+  let env, specs     = for_specs_decl     env g.gr_specs     in
+  let env, functions = for_funs_decl      env g.gr_funs      g.gr_specfuns in
+  let env, acttxs    = for_acttxs_decl    env g.gr_acttxs    g.gr_specfuns in
+  let ()             = for_fun_specs      env g.gr_specfuns  in
+  let env, secspecs  = for_secs_decl      env g.gr_secs      in
+
+  let output =
+    { state    ; variables; enums   ; assets ; functions;
+      acttxs   ; specs    ; secspecs; records; events; imports }
+
+  in (env, output)
+
+(* -------------------------------------------------------------------- *)
+and for_declarations ?init (env : env) (decls : (PT.declaration list) loced) : A.ast =
   let sorted_decl_ids = List.map (PT.get_name |@ unloc) (unloc decls) in
   (* Format.printf "[%a]@\n" (Printer_tools.pp_list "; " (fun fmt x -> Format.fprintf fmt "%s" x)) _sorted_decl_ids; *)
   let toploc = loc decls in
@@ -7620,7 +7679,7 @@ let for_declarations ?init (env : env) (decls : (PT.declaration list) loced) : A
     { (A.mk_model (mkloc (loc decls) "<unknown>")) with loc = loc decls }
 
 (* -------------------------------------------------------------------- *)
-let typing ?init (env : env) (cmd : PT.archetype) =
+and typing ?init (env : env) (cmd : PT.archetype) =
 
   match unloc cmd with
   | Marchetype decls ->

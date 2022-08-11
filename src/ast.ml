@@ -791,6 +791,7 @@ type metadata_kind =
 
 type import_kind_node =
   | INMichelson of michelson_struct
+  | INArchetype
 [@@deriving show {with_path = false}]
 
 type import_struct = {

@@ -1687,7 +1687,7 @@ let to_model (ast : A.ast) : M.model =
     M.{
       name        = i.name;
       path        = i.path;
-      kind_node   = (match i.kind_node with | A.INMichelson { ms_content } -> M.INMichelson { ms_content });
+      kind_node   = (match i.kind_node with | A.INMichelson { ms_content } -> M.INMichelson { ms_content } | A.INArchetype -> M.INArchetype);
       views       = List.map (fun (x, (y, z)) -> (x, (type_to_type y, type_to_type z))) i.views;
       entrypoints = List.map (fun (x, y) -> (x, type_to_type y)) i.entrypoints;
     }
