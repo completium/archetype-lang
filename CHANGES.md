@@ -6,8 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Added
+  - Import for `tz` files
   - Offchain views support (`-t offchain-views`)
   - `make_event` builtin
+  - Contract interface for binding generation service
 ### Fixed
   - Generate error message for side effect instructions in functions and views
 
