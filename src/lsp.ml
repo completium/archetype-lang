@@ -240,6 +240,7 @@ let process_errors  ?status () =
 let process (kind : lsp_kind) (input : Core.from_input) : string =
   Options.quiet := true;
   Error.errors := [];
+  Error.warnings := [];
   match kind with
   | Outline -> (
       let pt = Io.parse_archetype input in
