@@ -116,7 +116,7 @@ type decl_getter = {
 type error_struct = {
   kind: string;
   args: string list;
-  expr: micheline option;
+  expr: micheline;
 }
 [@@deriving yojson, show {with_path = false}]
 
@@ -176,7 +176,7 @@ let mk_getter name args return : decl_getter =
 let mk_parameter name type_ const default : parameter =
   { name; type_; const; default }
 
-let mk_error_struct ?(args = []) ?expr kind : error_struct =
+let mk_error_struct ?(args = []) kind expr : error_struct =
   { kind; args; expr }
 
 let mk_contract_interface name parameters types storage entrypoints getters errors : contract_interface =
@@ -340,18 +340,21 @@ let for_errors (model : M.model) : error_struct list =
   let mk_pair a b = mk_prim "Pair" [mk_string a; mk_string b] [] in
   let rec aux (ctx : M.ctx_model) (accu : error_struct list) (mt : M.mterm) : error_struct list =
     match mt.node with
-    | Mfail(Invalid v)                -> (match mterm_to_micheline v with | Some v -> (mk_error_struct "Invalid" ~expr:v)::accu | None -> accu)
-    | Mfail(InvalidCaller)            -> (mk_error_struct "InvalidCaller"                  ~expr:(mk_string M.fail_msg_INVALID_CALLER))::accu
-    | Mfail(InvalidSource)            -> (mk_error_struct "InvalidSource"                  ~expr:(mk_string M.fail_msg_INVALID_SOURCE))::accu
-    | Mfail(InvalidCondition (id, v)) -> (mk_error_struct "InvalidCondition"    ~args:[id] ?expr:(match v with | None -> Some (mk_pair M.fail_msg_INVALID_CONDITION id) | Some v -> mterm_to_micheline v))::accu
-    | Mfail(NotFound)                 -> (mk_error_struct "NotFound"                       ~expr:(mk_string M.fail_msg_NOT_FOUND))::accu
-    | Mfail(AssetNotFound an)         -> (mk_error_struct "AssetNotFound"       ~args:[an] ~expr:(mk_pair M.fail_msg_ASSET_NOT_FOUND an))::accu
-    | Mfail(KeyExists an)             -> (mk_error_struct "KeyExists"           ~args:[an] ~expr:(mk_pair M.fail_msg_KEY_EXISTS an))::accu
-    | Mfail(KeyExistsOrNotFound an)   -> (mk_error_struct "KeyExistsOrNotFound" ~args:[an] ~expr:(mk_pair M.fail_msg_KEY_EXISTS_OR_NOT_FOUND an))::accu
-    | Mfail(DivByZero)                -> (mk_error_struct "DivByZero"                      ~expr:(mk_string M.fail_msg_DIV_BY_ZERO))::accu
-    | Mfail(NatNegAssign)             -> (mk_error_struct "NatNegAssign"                   ~expr:(mk_string M.fail_msg_NAT_NEG_ASSIGN))::accu
-    | Mfail(NoTransfer)               -> (mk_error_struct "NoTransfer"                     ~expr:(mk_string M.fail_msg_NO_TRANSFER))::accu
-    | Mfail(InvalidState)             -> (mk_error_struct "InvalidState"                   ~expr:(mk_string M.fail_msg_INVALID_STATE))::accu
+    | Mfail (fv) -> begin
+        match fv with
+        | Invalid v                -> (match mterm_to_micheline v with | Some v -> (mk_error_struct "Invalid" v)::accu | None -> accu)
+        | InvalidCaller            -> (mk_error_struct "InvalidCaller"       (mk_string M.fail_msg_INVALID_CALLER))::accu
+        | InvalidSource            -> (mk_error_struct "InvalidSource"       (mk_string M.fail_msg_INVALID_SOURCE))::accu
+        | InvalidCondition (id, v) -> let f = mk_error_struct "InvalidCondition" ~args:[id] in (match v with | None -> (f (mk_pair M.fail_msg_INVALID_CONDITION id))::accu | Some v -> (match mterm_to_micheline v with | Some v -> (f v)::accu | None -> accu))
+        | NotFound                 -> (mk_error_struct "NotFound"            (mk_string M.fail_msg_NOT_FOUND))::accu
+        | AssetNotFound an         -> (mk_error_struct "AssetNotFound"       ~args:[an] (mk_pair M.fail_msg_ASSET_NOT_FOUND an))::accu
+        | KeyExists an             -> (mk_error_struct "KeyExists"           ~args:[an] (mk_pair M.fail_msg_KEY_EXISTS an))::accu
+        | KeyExistsOrNotFound an   -> (mk_error_struct "KeyExistsOrNotFound" ~args:[an] (mk_pair M.fail_msg_KEY_EXISTS_OR_NOT_FOUND an) )::accu
+        | DivByZero                -> (mk_error_struct "DivByZero"           (mk_string M.fail_msg_DIV_BY_ZERO))::accu
+        | NatNegAssign             -> (mk_error_struct "NatNegAssign"        (mk_string M.fail_msg_NAT_NEG_ASSIGN))::accu
+        | NoTransfer               -> (mk_error_struct "NoTransfer"          (mk_string M.fail_msg_NO_TRANSFER))::accu
+        | InvalidState             -> (mk_error_struct "InvalidState"        (mk_string M.fail_msg_INVALID_STATE))::accu
+      end
     | _ -> M.fold_term (aux ctx) accu mt
   in
   M.fold_model aux model []
