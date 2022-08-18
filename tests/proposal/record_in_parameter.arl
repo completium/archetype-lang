@@ -1,0 +1,5 @@
+archetype mycontract(a : my_record)
+
+record my_record {
+    a : nat
+}
