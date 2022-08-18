@@ -385,7 +385,7 @@ let pp_mterm fmt (mt : mterm) =
         | Invalid e              -> f fmt e
         | InvalidCaller          -> pp "\"%s\"" fail_msg_INVALID_CALLER
         | InvalidSource          -> pp "\"%s\"" fail_msg_INVALID_SOURCE
-        | InvalidCondition id    -> pp "\"%s\", %a" fail_msg_INVALID_CONDITION pp_str id
+        | InvalidCondition (id, x) -> (match x with | None -> pp "\"%s\", %a" fail_msg_INVALID_CONDITION pp_str id | Some e -> f fmt e)
         | NotFound               -> pp "\"%s\"" fail_msg_NOT_FOUND
         | AssetNotFound id       -> pp "\"%s\", %a" fail_msg_ASSET_NOT_FOUND pp_str id
         | KeyExists id           -> pp "\"%s\", %a" fail_msg_KEY_EXISTS pp_str id

@@ -520,7 +520,7 @@ and 'id fail_type_gen =
   | Invalid of 'id mterm_gen
   | InvalidCaller
   | InvalidSource
-  | InvalidCondition of ident
+  | InvalidCondition of ident * 'id mterm_gen option
   | NotFound
   | AssetNotFound of ident
   | KeyExists of ident
@@ -1386,7 +1386,7 @@ let cmp_fail_type
   | Invalid mt1, Invalid mt2                         -> cmp mt1 mt2
   | InvalidCaller, InvalidCaller                     -> true
   | InvalidSource, InvalidSource                     -> true
-  | InvalidCondition c1, InvalidCondition c2         -> cmp_ident c1 c2
+  | InvalidCondition (c1, e1), InvalidCondition (c2, e2) -> cmp_ident c1 c2 && Option.cmp cmp e1 e2
   | NotFound, NotFound                               -> true
   | AssetNotFound an1, AssetNotFound an2             -> cmp_ident an1 an2
   | KeyExists an1, KeyExists an2                     -> cmp_ident an1 an2

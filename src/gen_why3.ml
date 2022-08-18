@@ -1749,7 +1749,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                      Efail (idx, Some (map_mterm m ctx v))
                    | InvalidCaller         -> EInvalidCaller
                    | InvalidSource         -> EInvalidSource
-                   | InvalidCondition lbl  -> (EInvalidCondition lbl)
+                   | InvalidCondition (lbl, v) -> (match v with | None -> (EInvalidCondition lbl) | Some v -> (let idx = get_fail_idx m v.type_ in Efail (idx, Some (map_mterm m ctx v))))
                    | NotFound              -> ENotFound
                    | AssetNotFound _       -> ENotFound
                    | KeyExists _           -> EKeyExists
@@ -3000,7 +3000,7 @@ let fold_exns m body : term list =
     | M.Mfail InvalidCaller -> acc @ [Texn EInvalidCaller]
     | M.Mfail InvalidSource -> acc @ [Texn EInvalidSource]
     | M.Mfail NoTransfer -> acc @ [Texn ENoTransfer]
-    | M.Mfail (InvalidCondition lbl) -> acc @ [Texn (EInvalidCondition lbl)]
+    | M.Mfail (InvalidCondition (lbl, v)) -> acc @ (match v with | None -> [Texn (EInvalidCondition lbl)] | Some v -> [let idx = get_fail_idx m v.type_ in Texn (Efail (idx, None))])
     | M.Mfail InvalidState -> acc @ [Texn EInvalidState]
     | M.Mfail NatNegAssign -> acc @ [Texn ENatNegAssign]
     | M.Mfail Invalid v ->

@@ -667,7 +667,7 @@ let to_ir (model : M.model) : T.ir =
           | Invalid v              -> f v
           | InvalidCaller          -> T.istring M.fail_msg_INVALID_CALLER
           | InvalidSource          -> T.istring M.fail_msg_INVALID_SOURCE
-          | InvalidCondition lbl   -> T.ipair (T.istring M.fail_msg_INVALID_CONDITION) (T.istring lbl)
+          | InvalidCondition (lbl, v) -> (match v with | None -> T.ipair (T.istring M.fail_msg_INVALID_CONDITION) (T.istring lbl) | Some v -> f v)
           | NotFound               -> T.istring M.fail_msg_NOT_FOUND
           | AssetNotFound an       -> T.ipair (T.istring M.fail_msg_ASSET_NOT_FOUND) (T.istring an)
           | KeyExists an           -> T.ipair (T.istring M.fail_msg_KEY_EXISTS) (T.istring an)

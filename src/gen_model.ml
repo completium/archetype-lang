@@ -1521,14 +1521,7 @@ let to_model (ast : A.ast) : M.model =
         | `Require ->  M.mk_mterm (M.Mnot term) (M.tbool) ~loc:x.loc
         | `Failif -> term
       in
-      let fail_cond : M.mterm =
-        let a =
-          match x.error with
-          | Some v -> (M.Invalid (to_mterm env v))
-          | None   -> (M.InvalidCondition (x.label |> Option.get |> unloc))
-        in
-        fail a
-      in
+      let fail_cond : M.mterm = fail (M.InvalidCondition (x.label |> Option.get |> unloc, Option.map (to_mterm env) x.error)) in
       let cond_if = M.mk_mterm (M.Mif (cond, fail_cond, None)) M.tunit ~loc:x.loc in
       add_seq cond_if body
     in
