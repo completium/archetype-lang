@@ -5974,7 +5974,7 @@ let expr_to_instr (model : model) =
     | Massign (ValueAssign, _, ak, {node = Mlistprepend(t, c, k)}), tyinstr when is_compatible ak c  ->
       mk_mterm (Mlistinstrprepend (t, ak, k)) tyinstr
     (* | Massign (ValueAssign, _, ak, {node = Mlistconcat(t, c, k)}), tyinstr when is_compatible ak c  ->
-      mk_mterm (Mlistinstrconcat (t, ak, k)) tyinstr *)
+       mk_mterm (Mlistinstrconcat (t, ak, k)) tyinstr *)
 
     | Massign (ValueAssign, _, ak, {node = Mmapput(mky, tk, vk, c, k, v)}), tyinstr when is_compatible ak c  ->
       mk_mterm (Mmapinstrput (mky, tk, vk, ak, k, v)) tyinstr
@@ -6588,6 +6588,17 @@ let remove_import_mterm (model : model) =
         let cv = mk_mterm (Mcallview (t, f a, b, f c)) (toption mt.type_) in
         let v = dumloc "_v" in
         mk_mterm (Mmatchoption (cv, v, mk_mvar v mt.type_, failg (mk_tuple [mk_string "VIEW_NOT_FOUND"; mk_string (unloc b)]))) mt.type_
+      end
+    | _ -> map_mterm (aux ctx) mt
+  in
+  map_mterm_model aux model
+
+let process_fail (model : model) =
+  let rec aux ctx (mt : mterm) : mterm =
+    let f = aux ctx in
+    match mt.node with
+    | Mfail (InvalidCondition(_, Some v)) -> begin
+        {mt with node = Mfail (Invalid(f v))}
       end
     | _ -> map_mterm (aux ctx) mt
   in
