@@ -683,10 +683,14 @@ asset:
                          let os = match opts with | None -> [] | Some x -> x in
                          Dasset (x, fs, sfields, os, apo, None, exts) }
 
+%inline by_or_with:
+| BY {}
+| WITH {}
+
 asset_post_option:
 | WITH STATES x=ident                                               { APOstates x }
 | WITH xs=braced(label_exprs)                                       { APOconstraints (xs) }
-| INITIALIZED BY LBRACE l=separated_nonempty_list(SEMI_COLON, record_expr) RBRACE { APOinit l }
+| INITIALIZED by_or_with LBRACE l=separated_nonempty_list(SEMI_COLON, record_expr) RBRACE { APOinit l }
 
 %inline record_expr:
  | x=loc(record_expr_unloc) { x }
