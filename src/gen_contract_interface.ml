@@ -365,7 +365,7 @@ let model_to_contract_interface (model : M.model) (low_model : M.model) : contra
   let storage = List.fold_right for_storage model.decls [] in
   let entrypoints = List.map for_entrypoint (List.fold_right (fun (x : M.function__) accu -> match x.node with | Entry fs -> fs::accu | _ -> accu) model.functions [])  in
   let getters = List.map for_getter (List.fold_right (fun (x : M.function__) accu -> match x.node with | Getter (fs, r) -> (fs, r)::accu | _ -> accu) model.functions [])  in
-  let errors = for_errors low_model in
+  let errors = for_errors model in
   mk_contract_interface (unloc model.name) parameters types storage entrypoints getters errors
 
 let model_to_contract_interface_json (model : M.model) (low_model : M.model) : string =
