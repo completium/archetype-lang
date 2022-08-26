@@ -333,9 +333,24 @@ let for_getter (fs, rt : M.function_struct * M.type_) : decl_getter =
 
 let for_errors (model : M.model) : error_struct list =
   let mterm_to_micheline (mt : M.mterm) : micheline option =
-    match Gen_michelson.to_simple_data model mt with
-    | Some v -> (v |> Michelson.Utils.data_to_micheline |> to_micheline |> Option.some)
-    | None -> None
+    let f (mt : M.mterm) =
+      match Gen_michelson.to_simple_data model mt with
+      | Some v -> (v |> Michelson.Utils.data_to_micheline |> to_micheline |> Option.some)
+      | None -> None
+    in
+    let seek_mterm_from_storevar id : M.mterm option =
+      try
+        let m : M.var = M.Utils.get_var model id in
+        match m.kind with
+        | VKconstant -> m.default
+        | _ -> None
+      with
+      | _ -> None
+    in
+
+    match mt.node with
+    | Mvar (id, Vstorevar, Tnone, Dnone) -> (match seek_mterm_from_storevar (unloc id) with | Some v -> f v | None -> None)
+    | _ -> f mt
   in
   let mk_pair a b = mk_prim "Pair" [mk_string a; mk_string b] [] in
   let rec aux (ctx : M.ctx_model) (accu : error_struct list) (mt : M.mterm) : error_struct list =
