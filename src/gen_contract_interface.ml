@@ -370,6 +370,7 @@ let for_errors (model : M.model) : error_struct list =
         | NoTransfer               -> (mk_error_struct "NoTransfer"          (mk_string M.fail_msg_NO_TRANSFER))::accu
         | InvalidState             -> (mk_error_struct "InvalidState"        (mk_string M.fail_msg_INVALID_STATE))::accu
       end
+      | Mdeclvaropt (_, _, _, fa, _) -> (match fa with Some v -> (match mterm_to_micheline v with | Some v -> (mk_error_struct "Invalid" v)::accu | None -> accu) | None -> (mk_error_struct "Invalid" (mk_string Model.fail_msg_OPTION_IS_NONE))::accu)
     | _ -> M.fold_term (aux ctx) accu mt
   in
   M.fold_model aux model []
