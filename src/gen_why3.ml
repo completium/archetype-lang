@@ -1427,7 +1427,7 @@ let mk_trace_seq m t chs =
     Tseq ([dl t] @ (List.map mk_trace chs))
   else t
 
-let map_mpattern (p : M.lident M.pattern_node) =
+let map_mpattern (p : M.pattern_node) =
   match p with
   | M.Pwild -> Twild
   | M.Pconst (i, _) -> Tconst (map_lident i) (* FIXME: matchwith *)
@@ -1698,7 +1698,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       Tif (map_mterm m ctx c, map_mterm m ctx t, Option.map (map_mterm m ctx) e)
 
     | Mmatchwith (t, l) ->
-      Tmatch (map_mterm m ctx t, List.map (fun ((p : M.lident M.pattern_gen), e) ->
+      Tmatch (map_mterm m ctx t, List.map (fun ((p : M.pattern), e) ->
           (map_mpattern p.node, map_mterm m ctx e)
         ) l)
 
@@ -1869,7 +1869,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       Tif (map_mterm m ctx c, map_mterm m ctx t, Some (map_mterm m ctx e))
 
     | Mexprmatchwith (t, l) ->
-      Tmatch (map_mterm m ctx t, List.map (fun ((p : M.lident M.pattern_gen), e) ->
+      Tmatch (map_mterm m ctx t, List.map (fun ((p : M.pattern), e) ->
           (map_mpattern p.node, map_mterm m ctx e)
         ) l)
 

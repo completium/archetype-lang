@@ -121,7 +121,7 @@ let to_model (ast : A.ast) : M.model =
     | A.OrAssign     -> M.OrAssign
   in
 
-  let to_pattern_node (n : A.lident A.pattern_node) : 'id M.pattern_node =
+  let to_pattern_node (n : A.lident A.pattern_node) : M.pattern_node =
     match n with
     | A.Mconst (id, xs) -> M.Pconst (id, xs)
     | A.Mwild -> M.Pwild

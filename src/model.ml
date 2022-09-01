@@ -5,6 +5,13 @@ open Location
 type lident = ident Location.loced
 [@@deriving show {with_path = false}]
 
+(* type namespace = lident list *)
+
+(* type path = namespace * lident *)
+
+type mident = lident
+[@@deriving show {with_path = false}]
+
 type currency =
   (* | Tz
      | Mtz *)
@@ -94,26 +101,20 @@ type ntype =
 and type_ = ntype * lident option
 [@@deriving show {with_path = false}]
 
-type 'id pattern_node =
+type pattern_node =
   | Pwild
-  | Pconst of 'id * lident list
+  | Pconst of mident * lident list
 [@@deriving show {with_path = false}]
 
-type 'id pattern_gen = {
-  node: 'id pattern_node;
+type pattern = {
+  node: pattern_node;
   loc : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-type pattern = lident pattern_gen
-[@@deriving show {with_path = false}]
-
-type 'id for_ident_gen =
-  | FIsimple of 'id
-  | FIdouble of 'id * 'id
-[@@deriving show {with_path = false}]
-
-type for_ident = lident for_ident_gen
+type for_ident =
+  | FIsimple of mident
+  | FIdouble of mident * mident
 [@@deriving show {with_path = false}]
 
 type comparison_operator =
@@ -145,11 +146,11 @@ type sort_kind =
   | SKdesc
 [@@deriving show {with_path = false}]
 
-type ('id, 'term) assign_kind_gen =
-  | Avar         of 'id
-  | Avarstore    of 'id
-  | Aasset       of 'id * 'id * 'term (* asset name * field name * key *)
-  | Arecord      of 'term * 'id * 'id (* record * record name * field name *)
+type 'term assign_kind_gen =
+  | Avar         of mident
+  | Avarstore    of mident
+  | Aasset       of mident * mident * 'term (* asset name * field name * key *)
+  | Arecord      of 'term * mident * mident (* record * record name * field name *)
   | Atuple       of 'term * int * int (* tuple * index * length *)
   | Astate
   | Aassetstate of ident * 'term     (* asset name * key *)
@@ -218,42 +219,42 @@ type michelson_struct = {
 }
 [@@deriving show {with_path = false}]
 
-type ('id, 'term) mterm_node  =
+type 'term mterm_node  =
   (* lambda *)
-  | Mletin            of 'id list * 'term * type_ option * 'term * 'term option
-  | Mdeclvar          of 'id list * type_ option * 'term * bool
-  | Mdeclvaropt       of 'id list * type_ option * 'term * 'term option * bool
-  | Mapp              of 'id * 'term list
+  | Mletin            of mident list * 'term * type_ option * 'term * 'term option
+  | Mdeclvar          of mident list * type_ option * 'term * bool
+  | Mdeclvaropt       of mident list * type_ option * 'term * 'term option * bool
+  | Mapp              of mident * 'term list
   (* assign *)
-  | Massign           of (assignment_operator * type_ * ('id, 'term) assign_kind_gen * 'term) (* assignment kind value*)
-  | Massignopt        of (assignment_operator * type_ * ('id, 'term) assign_kind_gen * 'term * 'term) (* assignment kind value*)
+  | Massign           of (assignment_operator * type_ * 'term assign_kind_gen * 'term) (* assignment kind value*)
+  | Massignopt        of (assignment_operator * type_ * 'term assign_kind_gen * 'term * 'term) (* assignment kind value*)
   (* control *)
   | Mif               of ('term * 'term * 'term option)
-  | Mmatchwith        of 'term * ('id pattern_gen * 'term) list
-  | Minstrmatchoption of 'term * 'id * 'term * 'term
-  | Minstrmatchor     of 'term * 'id * 'term * 'id * 'term
-  | Minstrmatchlist   of 'term * 'id * 'id * 'term * 'term
-  | Mfor              of ('id for_ident_gen * 'term iter_container_kind_gen * 'term * ident option)
-  | Miter             of ('id * 'term * 'term * 'term * ident option * bool (* true of id is nat else int *))
+  | Mmatchwith        of 'term * (pattern * 'term) list
+  | Minstrmatchoption of 'term * mident * 'term * 'term
+  | Minstrmatchor     of 'term * mident * 'term * mident * 'term
+  | Minstrmatchlist   of 'term * mident * mident * 'term * 'term
+  | Mfor              of (for_ident * 'term iter_container_kind_gen * 'term * ident option)
+  | Miter             of (mident * 'term * 'term * 'term * ident option * bool (* true of id is nat else int *))
   | Mwhile            of ('term * 'term * ident option)
   | Mseq              of 'term list
   | Mreturn           of 'term
-  | Mlabel            of 'id
-  | Mmark             of 'id * 'term
+  | Mlabel            of mident
+  | Mmark             of mident * 'term
   (* effect *)
-  | Mfail             of 'id fail_type_gen
+  | Mfail             of fail_type
   | Mfailsome         of 'term
   | Mtransfer         of 'term transfer_kind_gen
-  | Memit             of 'id * 'term
+  | Memit             of mident * 'term
   (* entrypoint *)
-  | Mgetentrypoint    of type_ * 'id * 'term                 (* type * address * string *)
-  | Mcallview         of type_ * 'term * 'id * 'term         (* type * address * string * argument *)
-  | Mimportcallview   of type_ * 'term * 'id * 'term         (* type * address * string * argument *)
-  | Mself             of 'id                                 (* entryname *)
+  | Mgetentrypoint    of type_ * mident * 'term                 (* type * address * string *)
+  | Mcallview         of type_ * 'term * mident * 'term         (* type * address * string * argument *)
+  | Mimportcallview   of type_ * 'term * mident * 'term         (* type * address * string * argument *)
+  | Mself             of mident                                 (* entryname *)
   (* operation *)
   | Moperations
   | Mmakeoperation    of 'term * 'term * 'term  (* value * address * args *)
-  | Mmakeevent        of type_ * 'id * 'term    (* type * id * arg *)
+  | Mmakeevent        of type_ * mident * 'term    (* type * id * arg *)
   | Mcreatecontract   of michelson_struct * 'term * 'term * 'term  (* value * option key_hash * address * init storage *)
   (* literals *)
   | Mint              of Core.big_int
@@ -282,14 +283,14 @@ type ('id, 'term) mterm_node  =
   | Mchest_key        of string
   (* control expression *)
   | Mexprif           of 'term * 'term * 'term
-  | Mexprmatchwith    of 'term * ('id pattern_gen * 'term) list
-  | Mmatchoption      of 'term * 'id * 'term * 'term
-  | Mmatchor          of 'term * 'id * 'term * 'id * 'term
-  | Mmatchlist        of 'term * 'id * 'id * 'term * 'term
+  | Mexprmatchwith    of 'term * (pattern * 'term) list
+  | Mmatchoption      of 'term * mident * 'term * 'term
+  | Mmatchor          of 'term * mident * 'term * mident * 'term
+  | Mmatchlist        of 'term * mident * mident * 'term * 'term
   | Mternarybool      of 'term * 'term * 'term
   | Mternaryoption    of 'term * 'term * 'term
-  | Mfold             of 'term * 'id * 'term
-  | Mmap              of 'term * 'id * 'term
+  | Mfold             of 'term * mident * 'term
+  | Mmap              of 'term * mident * 'term
   | Mexeclambda       of 'term * 'term
   | Mapplylambda      of 'term * 'term
   (* composite type constructors *)
@@ -305,11 +306,11 @@ type ('id, 'term) mterm_node  =
   | Mlitmap           of map_kind * ('term * 'term) list
   | Mlitrecord        of (ident * 'term) list
   | Mlitevent         of (ident * 'term) list
-  | Mlambda           of type_ * 'id * type_ * 'term
+  | Mlambda           of type_ * mident * type_ * 'term
   (* access *)
-  | Mdot              of 'term * 'id
-  | Mdotassetfield    of 'id * 'term * 'id
-  | Mquestionoption   of 'term * 'id
+  | Mdot              of 'term * mident
+  | Mdotassetfield    of mident * 'term * mident
+  | Mquestionoption   of 'term * mident
   (* comparison operators *)
   | Mequal            of type_ * 'term * 'term
   | Mnequal           of type_ * 'term * 'term
@@ -349,9 +350,9 @@ type ('id, 'term) mterm_node  =
   | Mremoveif         of ident * 'term container_kind_gen * (ident * type_) list * 'term * 'term list (* asset_name, view, lambda (args, body, apply_args) *)
   | Mclear            of ident * 'term container_kind_gen
   | Mset              of ident * ident list * 'term * 'term (*asset_name * field_name modified * ... *)
-  | Mupdate           of ident * 'term * ('id * assignment_operator * 'term) list
-  | Mupdateall        of ident * 'term container_kind_gen * ('id * assignment_operator * 'term) list
-  | Maddupdate        of ident * 'term container_kind_gen * 'term * ('id * assignment_operator * 'term) list
+  | Mupdate           of ident * 'term * (mident * assignment_operator * 'term) list
+  | Mupdateall        of ident * 'term container_kind_gen * (mident * assignment_operator * 'term) list
+  | Maddupdate        of ident * 'term container_kind_gen * 'term * (mident * assignment_operator * 'term) list
   | Mputremove        of ident * 'term container_kind_gen * 'term * 'term
   (* asset api expression *)
   | Mget              of ident * 'term container_kind_gen * 'term
@@ -376,10 +377,10 @@ type ('id, 'term) mterm_node  =
   | Msetupdate        of type_ * 'term * 'term * 'term
   | Msetcontains      of type_ * 'term * 'term
   | Msetlength        of type_ * 'term
-  | Msetfold          of type_ * 'id   * 'id   * 'term * 'term * 'term
+  | Msetfold          of type_ * mident   * mident   * 'term * 'term * 'term
   (* set api instruction *)
-  | Msetinstradd      of type_ * ('id, 'term) assign_kind_gen * 'term
-  | Msetinstrremove   of type_ * ('id, 'term) assign_kind_gen * 'term
+  | Msetinstradd      of type_ * 'term assign_kind_gen * 'term
+  | Msetinstrremove   of type_ * 'term assign_kind_gen * 'term
   (* list api expression *)
   | Mlistprepend      of type_ * 'term * 'term
   | Mlistlength       of type_ * 'term
@@ -387,10 +388,10 @@ type ('id, 'term) mterm_node  =
   | Mlistnth          of type_ * 'term * 'term
   | Mlistreverse      of type_ * 'term
   | Mlistconcat       of type_ * 'term * 'term
-  | Mlistfold         of type_ * 'id   * 'id   * 'term * 'term * 'term
+  | Mlistfold         of type_ * mident   * mident   * 'term * 'term * 'term
   (* list api instruction *)
-  | Mlistinstrprepend of type_ * ('id, 'term) assign_kind_gen * 'term
-  | Mlistinstrconcat  of type_ * ('id, 'term) assign_kind_gen * 'term
+  | Mlistinstrprepend of type_ * 'term assign_kind_gen * 'term
+  | Mlistinstrconcat  of type_ * 'term assign_kind_gen * 'term
   (* map api expression *)
   | Mmapput           of map_kind * type_ * type_ * 'term * 'term * 'term
   | Mmapremove        of map_kind * type_ * type_ * 'term * 'term
@@ -399,11 +400,11 @@ type ('id, 'term) mterm_node  =
   | Mmapgetopt        of map_kind * type_ * type_ * 'term * 'term
   | Mmapcontains      of map_kind * type_ * type_ * 'term * 'term
   | Mmaplength        of map_kind * type_ * type_ * 'term
-  | Mmapfold          of map_kind * type_ * 'id   * 'id   * 'id   * 'term * 'term * 'term
+  | Mmapfold          of map_kind * type_ * mident   * mident   * mident   * 'term * 'term * 'term
   (* map api instruction *)
-  | Mmapinstrput      of map_kind * type_ * type_ * ('id, 'term) assign_kind_gen * 'term * 'term
-  | Mmapinstrremove   of map_kind * type_ * type_ * ('id, 'term) assign_kind_gen * 'term
-  | Mmapinstrupdate   of map_kind * type_ * type_ * ('id, 'term) assign_kind_gen * 'term * 'term
+  | Mmapinstrput      of map_kind * type_ * type_ * 'term assign_kind_gen * 'term * 'term
+  | Mmapinstrremove   of map_kind * type_ * type_ * 'term assign_kind_gen * 'term
+  | Mmapinstrupdate   of map_kind * type_ * type_ * 'term assign_kind_gen * 'term * 'term
   (* builtin functions *)
   | Mmin              of 'term * 'term
   | Mmax              of 'term * 'term
@@ -459,8 +460,8 @@ type ('id, 'term) mterm_node  =
   | Mmetadata
   | Mlevel
   (* variable *)
-  | Mvar              of 'id * 'term var_kind_gen * temp * delta
-  | Menumval          of 'id * 'term list * ident  (* value * args * ident of enum *)
+  | Mvar              of mident * 'term var_kind_gen * temp * delta
+  | Menumval          of mident * 'term list * ident  (* value * args * ident of enum *)
   (* rational *)
   | Mrateq            of 'term * 'term
   | Mratcmp           of comparison_operator * 'term * 'term
@@ -475,8 +476,8 @@ type ('id, 'term) mterm_node  =
   | Minttodate        of 'term
   | Mmuteztonat       of 'term
   (* quantifiers *)
-  | Mforall           of 'id * type_ * 'term option * 'term
-  | Mexists           of 'id * type_ * 'term option * 'term
+  | Mforall           of mident * type_ * 'term option * 'term
+  | Mexists           of mident * type_ * 'term option * 'term
   (* formula operators *)
   | Mimply            of 'term * 'term
   | Mequiv            of 'term * 'term
@@ -493,7 +494,7 @@ type ('id, 'term) mterm_node  =
   | Mdiff             of ident * 'term * 'term
 [@@deriving show {with_path = false}]
 
-and assign_kind = (lident, mterm) assign_kind_gen
+and assign_kind = mterm assign_kind_gen
 
 and var_kind = mterm var_kind_gen
 
@@ -503,24 +504,24 @@ and iter_container_kind = mterm iter_container_kind_gen
 
 and transfer_kind = mterm transfer_kind_gen
 
-and 'id mterm_gen = {
-  node: ('id, 'id mterm_gen) mterm_node;
+and mterm_gen = {
+  node: mterm_gen mterm_node;
   type_: type_;
   loc : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-and mterm = lident mterm_gen
+and mterm = mterm_gen
 [@@deriving show {with_path = false}]
 
-and mterm__node = (lident, mterm) mterm_node
+and mterm__node = mterm mterm_node
 [@@deriving show {with_path = false}]
 
-and 'id fail_type_gen =
-  | Invalid of 'id mterm_gen
+and fail_type =
+  | Invalid of mterm
   | InvalidCaller
   | InvalidSource
-  | InvalidCondition of ident * 'id mterm_gen option
+  | InvalidCondition of ident * mterm option
   | NotFound
   | AssetNotFound of ident
   | KeyExists of ident
@@ -529,9 +530,6 @@ and 'id fail_type_gen =
   | NatNegAssign
   | NoTransfer
   | InvalidState
-[@@deriving show {with_path = false}]
-
-and fail_type = lident fail_type_gen
 [@@deriving show {with_path = false}]
 
 and api_container_kind =
@@ -633,14 +631,11 @@ and security_entry =
   | Sentry of lident list
 [@@deriving show {with_path = false}]
 
-type 'id label_term_gen = {
-  label : 'id;
-  term : 'id mterm_gen;
+type label_term = {
+  label : mident;
+  term : mterm;
   loc  : Location.t [@opaque];
 }
-[@@deriving show {with_path = false}]
-
-type label_term = lident label_term_gen
 [@@deriving show {with_path = false}]
 
 (* type 'id item_field_type =
@@ -661,34 +656,25 @@ type model_type =
   | MTenum of ident
 [@@deriving show {with_path = false}]
 
-type 'id storage_item_gen = {
-  id          : 'id;
+type storage_item = {
+  id          : mident;
   model_type  : model_type;
   typ         : type_;
   const       : bool;
   ghost       : bool;
-  default     : 'id mterm_gen; (* initial value *)
+  default     : mterm; (* initial value *)
   loc         : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-type storage_item = lident storage_item_gen
+type storage = storage_item list
 [@@deriving show {with_path = false}]
 
-type 'id storage_gen = 'id storage_item_gen list
-[@@deriving show {with_path = false}]
-
-type storage = lident storage_gen
-[@@deriving show {with_path = false}]
-
-type 'id enum_item_gen = {
-  name: 'id;
+type enum_item = {
+  name: mident;
   args: type_ list;
-  invariants : 'id label_term_gen list;
+  invariants : label_term list;
 }
-[@@deriving show {with_path = false}]
-
-type enum_item = lident enum_item_gen
 [@@deriving show {with_path = false}]
 
 type variable_kind =
@@ -696,56 +682,45 @@ type variable_kind =
   | VKvariable
 [@@deriving show {with_path = false}]
 
-type 'id var_gen = {
-  name: 'id;
+type var = {
+  name: mident;
   type_: type_;
   original_type: type_;
   kind: variable_kind;
-  default: 'id mterm_gen option;
-  invariants: 'id label_term_gen list;
+  default: mterm option;
+  invariants: label_term list;
   loc: Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-type var = lident var_gen
-
-type 'id enum_gen = {
-  name: 'id;
-  values: 'id enum_item_gen list;
-  initial: 'id;
+type enum = {
+  name: mident;
+  values: enum_item list;
+  initial: mident;
 }
 [@@deriving show {with_path = false}]
 
-type enum = lident enum_gen
-[@@deriving show {with_path = false}]
-
-type 'id asset_item_gen = {
-  name: 'id;
+type asset_item = {
+  name: mident;
   type_: type_;
   original_type: type_;
-  default: 'id mterm_gen option;
+  default: mterm option;
   shadow: bool;
   loc: Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-type asset_item = lident asset_item_gen
-[@@deriving show {with_path = false}]
-
-type 'id asset_gen = {
-  name: 'id;
-  values: 'id asset_item_gen list;
+type asset = {
+  name: mident;
+  values: asset_item list;
   keys: ident list;
-  sort: 'id list;
+  sort: mident list;
   map_kind: map_kind;
   state: lident option;
-  invariants  : lident label_term_gen list;
-  init: 'id mterm_gen list;
+  invariants  : label_term list;
+  init: mterm list;
   loc: Location.t [@opaque];
 }
-[@@deriving show {with_path = false}]
-
-type asset = lident asset_gen
 [@@deriving show {with_path = false}]
 
 type position =
@@ -753,54 +728,42 @@ type position =
   | Pnode of position list
 [@@deriving show {with_path = false}]
 
-type 'id record_field_gen = {
-  name: 'id;
+type record_field = {
+  name: mident;
   type_: type_;
   loc: Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-type record_field = lident record_field_gen
-[@@deriving show {with_path = false}]
-
-type 'id record_gen = {
-  name: 'id;
-  fields: 'id record_field_gen list;
+type record = {
+  name: mident;
+  fields: record_field list;
   pos: position;
   loc: Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-type record = lident record_gen
-[@@deriving show {with_path = false}]
-
-type 'id function_ = {
-  name: 'id;
+type function_ = {
+  name: mident;
 }
 [@@deriving show {with_path = false}]
 
-type 'id entry = {
-  name: 'id;
+type entry = {
+  name: mident;
 }
 [@@deriving show {with_path = false}]
 
-type 'id argument_gen = 'id * type_ * 'id mterm_gen option
+type argument = mident * type_ * mterm option
 [@@deriving show {with_path = false}]
 
-type argument = lident argument_gen
-[@@deriving show {with_path = false}]
-
-type 'id function_struct_gen = {
-  name:  'id;
-  args:  'id argument_gen list;
-  eargs: 'id argument_gen list;
+type function_struct = {
+  name:  mident;
+  args:  argument list;
+  eargs: argument list;
   stovars: ident list;
-  body:  'id mterm_gen;
+  body:  mterm;
   loc :  Location.t [@opaque];
 }
-[@@deriving show {with_path = false}]
-
-type function_struct = lident function_struct_gen
 [@@deriving show {with_path = false}]
 
 type view_visibility =
@@ -809,79 +772,58 @@ type view_visibility =
   | VVonoffchain
 [@@deriving show {with_path = false}]
 
-type 'id function_node_gen =
-  | Function           of 'id function_struct_gen * type_ (* fun * return type *)
-  | Getter             of 'id function_struct_gen * type_
-  | View               of 'id function_struct_gen * type_ * view_visibility
-  | Entry              of 'id function_struct_gen
+type function_node =
+  | Function           of function_struct * type_ (* fun * return type *)
+  | Getter             of function_struct * type_
+  | View               of function_struct * type_ * view_visibility
+  | Entry              of function_struct
 [@@deriving show {with_path = false}]
 
-type function_node = lident function_node_gen
-[@@deriving show {with_path = false}]
-
-type 'id signature_gen = {
-  name: 'id;
-  args: 'id argument_gen list;
+type signature = {
+  name: mident;
+  args: argument list;
   ret: type_ option;
 }
 [@@deriving show {with_path = false}]
 
-type signature = lident signature_gen
-[@@deriving show {with_path = false}]
-
-type 'id variable_gen = {
-  decl : 'id argument_gen;
+type variable = {
+  decl : argument;
   kind : variable_kind;
   loc  : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-type variable = lident variable_gen
-[@@deriving show {with_path = false}]
-
-type 'id predicate_gen = {
-  name : 'id;
-  args : ('id * type_) list;
-  body : 'id mterm_gen;
+type predicate = {
+  name : mident;
+  args : (mident * type_) list;
+  body : mterm;
   loc  : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-type predicate = lident predicate_gen
-[@@deriving show {with_path = false}]
-
-type 'id definition_gen = {
-  name : 'id;
+type definition = {
+  name : mident;
   typ  : type_;
-  var  : 'id;
-  body : 'id mterm_gen;
+  var  : mident;
+  body : mterm;
   loc  : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-type definition = lident definition_gen
-[@@deriving show {with_path = false}]
-
-type 'id invariant_gen = {
-  label: 'id;
-  formulas: 'id mterm_gen list;
+type invariant = {
+  label: mident;
+  formulas: mterm list;
 }
 [@@deriving show {with_path = false}]
 
-type invariant = lident invariant_gen
-[@@deriving show {with_path = false}]
-
-type 'id fail_gen = {
-  label: 'id;
-  fid: 'id option;
-  arg: 'id;
+type fail = {
+  label: mident;
+  fid: mident option;
+  arg: mident;
   atype: type_;
-  formula: 'id mterm_gen;
+  formula: mterm;
   loc: Location.t [@opaque];
 }
-[@@deriving show {with_path = false}]
-
-type fail = lident fail_gen
 [@@deriving show {with_path = false}]
 
 type spec_mode =
@@ -889,41 +831,34 @@ type spec_mode =
   | Assert
 [@@deriving show {with_path = false}]
 
-type 'id postcondition_gen = {
-  name: 'id;
+type postcondition = {
+  name: mident;
   mode: spec_mode;
-  formula: 'id mterm_gen;
-  invariants: ('id invariant_gen) list;
-  uses: 'id list;
+  formula: mterm;
+  invariants: invariant list;
+  uses: mident list;
 }
 [@@deriving show {with_path = false}]
 
-type postcondition = lident postcondition_gen
-[@@deriving show {with_path = false}]
-
-
-type 'id assert_gen = {
-  name: 'id;
-  label: 'id;
-  formula: 'id mterm_gen;
-  invariants: 'id invariant_gen list;
-  uses: 'id list;
+type assert_ = {
+  name: mident;
+  label: mident;
+  formula: mterm;
+  invariants: invariant list;
+  uses: mident list;
 }
 [@@deriving show {with_path = false}]
 
-type assert_ = lident assert_gen
-[@@deriving show {with_path = false}]
-
-type 'id specification_gen = {
-  predicates     : 'id predicate_gen list;
-  definitions    : 'id definition_gen list;
-  lemmas         : 'id label_term_gen list;
-  theorems       : 'id label_term_gen list;
-  fails          : 'id fail_gen list;
-  variables      : 'id variable_gen list;
-  invariants     : ('id * 'id label_term_gen list) list;
-  effects        : 'id mterm_gen list;
-  postconditions : 'id postcondition_gen list;
+type specification = {
+  predicates     : predicate list;
+  definitions    : definition list;
+  lemmas         : label_term list;
+  theorems       : label_term list;
+  fails          : fail list;
+  variables      : variable list;
+  invariants     : (mident * label_term list) list;
+  effects        : mterm list;
+  postconditions : postcondition list;
   loc            : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -959,40 +894,28 @@ type security = {
 }
 [@@deriving show {with_path = false}]
 
-type specification = lident specification_gen
-[@@deriving show {with_path = false}]
-
-type 'id function__gen = {
-  node:  'id function_node_gen;
-  spec: 'id specification_gen option;
+type function__ = {
+  node:  function_node;
+  spec: specification option;
 }
 [@@deriving show {with_path = false}]
 
-type function__ = lident function__gen
+type decl_node =
+  | Dvar    of var
+  | Denum   of enum
+  | Dasset  of asset
+  | Drecord of record
+  | Devent  of record
 [@@deriving show {with_path = false}]
 
-type 'id decl_node_gen =
-  | Dvar of 'id var_gen
-  | Denum of 'id enum_gen
-  | Dasset of 'id asset_gen
-  | Drecord of 'id record_gen
-  | Devent of 'id record_gen
-[@@deriving show {with_path = false}]
-
-type decl_node = lident decl_node_gen
-[@@deriving show {with_path = false}]
-
-type 'id parameter_gen = {
-  name    : 'id;
+type parameter = {
+  name    : mident;
   typ     : type_;
-  default : 'id mterm_gen option;
-  value   : 'id mterm_gen option;
+  default : mterm option;
+  value   : mterm option;
   const   : bool;
   loc     : Location.t [@opaque];
 }
-[@@deriving show {with_path = false}]
-
-type parameter = lident parameter_gen
 [@@deriving show {with_path = false}]
 
 type metadata_kind =
@@ -1045,17 +968,17 @@ type import = {
 }
 [@@deriving show {with_path = false}]
 
-type 'id model_gen = {
+type model = {
   name          : lident;
-  parameters    : 'id parameter_gen list;
+  parameters    : parameter list;
   imports       : import list;
   metadata      : metadata_kind option;
   api_items     : api_storage list;
   api_verif     : api_verif list;
-  decls         : 'id decl_node_gen list;
-  storage       : 'id storage_gen;
-  functions     : 'id function__gen list;
-  specification : 'id specification_gen;
+  decls         : decl_node list;
+  storage       : storage;
+  functions     : function__ list;
+  specification : specification;
   security      : security;
   extra         : extra;
   loc           : Location.t [@opaque];
@@ -1068,16 +991,13 @@ type property =
   | PsecurityPredicate of security_item
 [@@deriving show {with_path = false}]
 
-type model = lident model_gen
-[@@deriving show {with_path = false}]
-
-let mk_pattern ?(loc = Location.dummy) node : 'id pattern_gen =
+let mk_pattern ?(loc = Location.dummy) node : pattern =
   { node; loc}
 
-let mk_mterm ?(loc = Location.dummy) node type_ : 'id mterm_gen =
+let mk_mterm ?(loc = Location.dummy) node type_ : mterm =
   { node; type_; loc}
 
-let mk_label_term ?(loc = Location.dummy) term label : 'id label_term_gen =
+let mk_label_term ?(loc = Location.dummy) term label : label_term =
   { label; term; loc }
 
 let mk_variable ?(loc = Location.dummy) decl kind =
@@ -1113,37 +1033,37 @@ let mk_security_item ?(loc = Location.dummy) label predicate : security_item =
 let mk_security ?(items = []) ?(loc = Location.dummy) () : security =
   { items; loc }
 
-let mk_var ?(invariants=[]) ?default ?(loc = Location.dummy) name type_ original_type kind : 'id var_gen =
+let mk_var ?(invariants=[]) ?default ?(loc = Location.dummy) name type_ original_type kind : var =
   { name; type_; default; kind; invariants; original_type; loc }
 
-let mk_enum ?(values = []) name initial : 'id enum_gen =
+let mk_enum ?(values = []) name initial : enum =
   { name; values; initial }
 
-let mk_enum_item ?(args = []) ?(invariants = []) name : 'id enum_item_gen =
+let mk_enum_item ?(args = []) ?(invariants = []) name : enum_item =
   { name; args; invariants }
 
-let mk_asset ?(values = []) ?(sort=[]) ?(map_kind = MKMap) ?state ?(keys = []) ?(invariants = []) ?(init = []) ?(loc = Location.dummy) name : 'id asset_gen =
+let mk_asset ?(values = []) ?(sort=[]) ?(map_kind = MKMap) ?state ?(keys = []) ?(invariants = []) ?(init = []) ?(loc = Location.dummy) name : asset =
   { name; values; sort; map_kind; state; keys; invariants; init; loc }
 
-let mk_asset_item ?default ?(shadow=false) ?(loc = Location.dummy) name type_ original_type : 'id asset_item_gen =
+let mk_asset_item ?default ?(shadow=false) ?(loc = Location.dummy) name type_ original_type : asset_item =
   { name; type_; original_type; default; shadow; loc }
 
-let mk_record ?(fields = []) ?(pos = Pnode []) ?(loc = Location.dummy) name : 'id record_gen =
+let mk_record ?(fields = []) ?(pos = Pnode []) ?(loc = Location.dummy) name : record =
   { name; fields; pos; loc }
 
-let mk_record_field ?(loc = Location.dummy) name type_ : 'id record_field_gen =
+let mk_record_field ?(loc = Location.dummy) name type_ : record_field =
   { name; type_; loc }
 
-let mk_storage_item ?(const=false) ?(ghost = false) ?(loc = Location.dummy) id model_type typ default : 'id storage_item_gen =
+let mk_storage_item ?(const=false) ?(ghost = false) ?(loc = Location.dummy) id model_type typ default : storage_item =
   { id; model_type; typ; const; ghost; default; loc }
 
 let mk_function_struct ?(args = []) ?(eargs = []) ?(stovars = []) ?(loc = Location.dummy) name body : function_struct =
   { name; args; eargs; stovars; body; loc }
 
-let mk_function ?spec node : 'id function__gen =
+let mk_function ?spec node : function__ =
   { node; spec }
 
-let mk_signature ?(args = []) ?ret name : 'id signature_gen =
+let mk_signature ?(args = []) ?ret name : signature =
   { name; args; ret }
 
 let mk_api_item node_item api_loc =
@@ -1380,8 +1300,8 @@ let cmp_security_entry s1 s2 =
 
 let cmp_fail_type
     (cmp : 'term -> 'term -> bool)
-    (ft1 : 'id fail_type_gen)
-    (ft2 : 'id fail_type_gen) : bool =
+    (ft1 : fail_type)
+    (ft2 : fail_type) : bool =
   match ft1, ft2 with
   | Invalid mt1, Invalid mt2                         -> cmp mt1 mt2
   | InvalidCaller, InvalidCaller                     -> true
@@ -1442,8 +1362,8 @@ and cmp_type
 
 let cmp_pattern_node
     (cmpi  : 'id -> 'id -> bool)
-    (p1    : 'id pattern_node)
-    (p2    : 'id pattern_node)
+    (p1    : pattern_node)
+    (p2    : pattern_node)
   : bool =
   match p1, p2 with
   | Pconst (c1, xs1), Pconst (c2, xs2) ->
@@ -1454,15 +1374,15 @@ let cmp_pattern_node
   | _ -> false
 
 let cmp_pattern
-    (p1 : 'id pattern_gen)
-    (p2 : 'id pattern_gen)
+    (p1 : pattern)
+    (p2 : pattern)
   : bool =
   cmp_pattern_node cmp_lident p1.node p2.node
 
 let cmp_for_ident
     (cmpi  : 'id -> 'id -> bool)
-    (fi1 : 'id for_ident_gen)
-    (fi2 : 'id for_ident_gen)
+    (fi1 : for_ident)
+    (fi2 : for_ident)
   : bool =
   match fi1, fi2 with
   | FIsimple i1, FIsimple i2 -> cmpi i1 i2
@@ -1472,8 +1392,8 @@ let cmp_for_ident
 let cmp_mterm_node
     (cmp   : 'term -> 'term -> bool)
     (cmpi  : 'id -> 'id -> bool)
-    (term1 : ('id, 'term) mterm_node)
-    (term2 : ('id, 'term) mterm_node)
+    (term1 : 'term mterm_node)
+    (term2 : 'term mterm_node)
   : bool =
   let cmp_assign_kind (lhs : assign_kind) (rhs : assign_kind) : bool =
     match lhs, rhs with
@@ -2016,7 +1936,7 @@ let map_transfer_kind (fi : ident -> ident) (ft : type_ -> type_) f = function
   | TKself (x, id, args)    -> TKself (f x, fi id, List.map (fun (id, v) -> fi id, f v) args)
   | TKoperation x           -> TKoperation (f x)
 
-let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ -> type_) (f : 'id mterm_gen -> 'id mterm_gen) = function
+let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ -> type_) (f : mterm -> mterm) = function
   (* lambda *)
   | Mletin (i, a, t, b, o)         -> Mletin (List.map g i, f a, Option.map ft t, f b, Option.map f o)
   | Mdeclvar (i, t, v, c)          -> Mdeclvar (List.map g i, Option.map ft t, f v, c)
@@ -2302,32 +2222,32 @@ let map_mterm
     type_ = ft mt.type_;
   }
 
-type ('id, 't) ctx_model_gen = {
+type 't ctx_model_gen = {
   formula: bool;
-  fs : 'id function_struct_gen option;
-  label: 'id option;
-  spec_id : 'id option;
-  invariant_id : 'id option;
+  fs : function_struct option;
+  label: mident option;
+  spec_id : mident option;
+  invariant_id : mident option;
   custom: 't;
 }
 
-type ctx_model = (lident, unit) ctx_model_gen
+type ctx_model = unit ctx_model_gen
 
-let mk_ctx_model ?(formula = false) ?fs ?label ?spec_id ?invariant_id custom : ('id, 't) ctx_model_gen =
+let mk_ctx_model ?(formula = false) ?fs ?label ?spec_id ?invariant_id custom : 't ctx_model_gen =
   { formula; fs; label; spec_id; invariant_id; custom}
 
-let map_mterm_model_exec custom (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (model : model) : model =
-  let map_storage_item (ctx : ('id, 't) ctx_model_gen) (si : storage_item) : storage_item = (
+let map_mterm_model_exec custom (f : 't ctx_model_gen -> mterm -> mterm) (model : model) : model =
+  let map_storage_item (ctx : 't ctx_model_gen) (si : storage_item) : storage_item = (
     { si with
       default = f ctx si.default;
     }
   ) in
-  let map_function_struct (ctx : ('id, 't) ctx_model_gen) (fs : function_struct) : function_struct =
+  let map_function_struct (ctx : 't ctx_model_gen) (fs : function_struct) : function_struct =
     let ctx = { ctx with fs = Some fs } in
     let body = f ctx fs.body in
     { fs with body = body }
   in
-  let map_function (ctx : ('id, 't) ctx_model_gen) (fun_ : function__) : function__ = (
+  let map_function (ctx : 't ctx_model_gen) (fun_ : function__) : function__ = (
     let node = match fun_.node with
       | Function (fs, ret)     -> Function (map_function_struct ctx fs, ret)
       | Getter   (fs, ret)     -> Getter   (map_function_struct ctx fs, ret)
@@ -2345,38 +2265,38 @@ let map_mterm_model_exec custom (f : ('id, 't) ctx_model_gen -> mterm -> mterm) 
     storage = storage;
   }
 
-let map_specification (ctx : ('id, 't) ctx_model_gen) (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (v : specification) : specification = (
-  let map_label_term (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (lt : label_term) : label_term =
+let map_specification (ctx : 't ctx_model_gen) (f : 't ctx_model_gen -> mterm -> mterm) (v : specification) : specification = (
+  let map_label_term (f : 't ctx_model_gen -> mterm -> mterm) (lt : label_term) : label_term =
     let ctx = { ctx with label = Some lt.label } in
     { lt with
       term = f ctx lt.term }
   in
 
-  let map_predicate (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (p : predicate) : predicate =
+  let map_predicate (f : 't ctx_model_gen -> mterm -> mterm) (p : predicate) : predicate =
     { p with
       args = List.map (fun (x, y) -> (x, y)) p.args;
       body = f ctx p.body;
     }
   in
 
-  let map_definition (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (d : definition) : definition =
+  let map_definition (f : 't ctx_model_gen -> mterm -> mterm) (d : definition) : definition =
     { d with
       body = f ctx d.body
     }
   in
 
-  let map_invariantt (f : ('id, 't) ctx_model_gen -> mterm -> mterm) ((it_id, it_lt) : 'id * 'id label_term_gen list) : 'id * 'id label_term_gen list =
+  let map_invariantt (f : 't ctx_model_gen -> mterm -> mterm) ((it_id, it_lt) : 'id * label_term list) : 'id * label_term list =
     (it_id, List.map (map_label_term f) it_lt)
   in
 
-  let map_invariant (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (spec : invariant) : invariant =
+  let map_invariant (f : 't ctx_model_gen -> mterm -> mterm) (spec : invariant) : invariant =
     let ctx = {ctx with invariant_id = Some spec.label } in
     { spec with
       formulas = List.map (f ctx) spec.formulas;
     }
   in
 
-  let map_postcondition (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (spec : postcondition) : postcondition =
+  let map_postcondition (f : 't ctx_model_gen -> mterm -> mterm) (spec : postcondition) : postcondition =
     let ctx = { ctx with spec_id = Some spec.name} in
     { spec with
       formula = f ctx spec.formula;
@@ -2384,7 +2304,7 @@ let map_specification (ctx : ('id, 't) ctx_model_gen) (f : ('id, 't) ctx_model_g
     }
   in
 
-  let map_variable (_f : ('id, 't) ctx_model_gen -> mterm -> mterm) (spec : variable) : variable =
+  let map_variable (_f : 't ctx_model_gen -> mterm -> mterm) (spec : variable) : variable =
     spec
   in
 
@@ -2401,10 +2321,10 @@ let map_specification (ctx : ('id, 't) ctx_model_gen) (f : ('id, 't) ctx_model_g
   }
 )
 
-let map_mterm_model_formula custom (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (model : model) : model =
-  let ctx : ('id, 't) ctx_model_gen = mk_ctx_model custom in
+let map_mterm_model_formula custom (f : 't ctx_model_gen -> mterm -> mterm) (model : model) : model =
+  let ctx : 't ctx_model_gen = mk_ctx_model custom in
 
-  let map_function (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (fun_ : function__) : function__ =
+  let map_function (f : 't ctx_model_gen -> mterm -> mterm) (fun_ : function__) : function__ =
     let fs : function_struct =
       match fun_.node with
       | Function (fs, _) -> fs
@@ -2424,12 +2344,12 @@ let map_mterm_model_formula custom (f : ('id, 't) ctx_model_gen -> mterm -> mter
   }
 
 
-let map_mterm_model_gen custom (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (model : model) : model =
+let map_mterm_model_gen custom (f : 't ctx_model_gen -> mterm -> mterm) (model : model) : model =
   model
   |> map_mterm_model_exec custom f
   |> map_mterm_model_formula custom f
 
-let map_mterm_model (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (model : model) : model =
+let map_mterm_model (f : 't ctx_model_gen -> mterm -> mterm) (model : model) : model =
   map_mterm_model_gen () f model
 
 let fold_assign_kind f accu = function
@@ -2476,7 +2396,7 @@ let fold_transfer_kind f accu = function
   | TKself (x, _, args)    -> List.fold_left f (f accu x) (List.map snd args)
   | TKoperation x          -> f accu x
 
-let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_gen) : 'a =
+let fold_term (f : 'a -> mterm -> 'a) (accu : 'a) (term : mterm) : 'a =
   let opt f accu x = match x with | Some v -> f accu v | None -> accu in
   match term.node with
   (* lambda *)
@@ -2843,10 +2763,10 @@ let fold_map_transfer_kind f accu = function
     TKoperation xe, xa
 
 let fold_map_term
-    (g : ('id, 'id mterm_gen) mterm_node -> 'id mterm_gen)
-    (f : 'a -> 'id mterm_gen -> 'id mterm_gen * 'a)
+    (g : mterm mterm_node -> mterm)
+    (f : 'a -> mterm -> mterm * 'a)
     (accu : 'a)
-    (term : 'id mterm_gen) : 'id mterm_gen * 'a =
+    (term : mterm) : mterm * 'a =
 
   match term.node with
   (* lambda *)
@@ -4111,37 +4031,37 @@ let fold_map_term
 
 let fold_left g l accu = List.fold_left (fun accu x -> g x accu) accu l
 
-let fold_label_term (ctx : ('id, 't) ctx_model_gen) (f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (lt : 'id label_term_gen) (accu : 'a) : 'a =
+let fold_label_term (ctx : 't ctx_model_gen) (f : 't ctx_model_gen -> 'a -> mterm -> 'a) (lt : label_term) (accu : 'a) : 'a =
   let ctx = { ctx with label = Some lt.label } in
   f ctx accu lt.term
 
-let fold_specification (ctx : ('id, 't) ctx_model_gen) (f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (v : 'id specification_gen) (accu : 'a) : 'a =
+let fold_specification (ctx : 't ctx_model_gen) (f : 't ctx_model_gen -> 'a -> mterm -> 'a) (v : specification) (accu : 'a) : 'a =
 
-  let fold_predicate (ctx : ('id, 't) ctx_model_gen) (f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (p : 'id predicate_gen) (accu : 'a) : 'a =
+  let fold_predicate (ctx : 't ctx_model_gen) (f : 't ctx_model_gen -> 'a -> mterm -> 'a) (p : predicate) (accu : 'a) : 'a =
     accu
     |> fun x -> f ctx x p.body
   in
-  let fold_definition (ctx : ('id, 't) ctx_model_gen) (f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (d : 'id definition_gen) (accu : 'a) : 'a =
+  let fold_definition (ctx : 't ctx_model_gen) (f : 't ctx_model_gen -> 'a -> mterm -> 'a) (d : definition) (accu : 'a) : 'a =
     f ctx accu d.body
   in
 
-  let fold_invariantt (ctx : ('id, 't) ctx_model_gen) (f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (it : 'id * 'id label_term_gen list) (accu : 'a) : 'a =
+  let fold_invariantt (ctx : 't ctx_model_gen) (f : 't ctx_model_gen -> 'a -> mterm -> 'a) (it : 'id * label_term list) (accu : 'a) : 'a =
     List.fold_left (fun accu x -> fold_label_term ctx f x accu) accu (snd it)
   in
 
-  let fold_invariant (ctx : ('id, 't) ctx_model_gen) (f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (spec : 'id invariant_gen) (accu : 'a) : 'a =
+  let fold_invariant (ctx : 't ctx_model_gen) (f : 't ctx_model_gen -> 'a -> mterm -> 'a) (spec : invariant) (accu : 'a) : 'a =
     let ctx = {ctx with invariant_id = Some spec.label } in
     List.fold_left (f ctx) accu spec.formulas
   in
 
-  let fold_postcondition (ctx : ('id, 't) ctx_model_gen) (f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (spec : 'id postcondition_gen) (accu : 'a) : 'a =
+  let fold_postcondition (ctx : 't ctx_model_gen) (f : 't ctx_model_gen -> 'a -> mterm -> 'a) (spec : postcondition) (accu : 'a) : 'a =
     let ctx = { ctx with spec_id = Some spec.name} in
     accu
     |> (fun x -> f ctx x spec.formula)
-    |> (fun x -> List.fold_left (fun accu (x : 'id invariant_gen) -> fold_invariant ctx f x accu) x spec.invariants)
+    |> (fun x -> List.fold_left (fun accu (x : invariant) -> fold_invariant ctx f x accu) x spec.invariants)
   in
 
-  let fold_variable (_ctx : ('id, 't) ctx_model_gen) (_f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (_spec : 'id variable_gen) (accu : 'a) : 'a =
+  let fold_variable (_ctx : 't ctx_model_gen) (_f : 't ctx_model_gen -> 'a -> mterm -> 'a) (_spec : variable) (accu : 'a) : 'a =
     accu
   in
 
@@ -4156,9 +4076,9 @@ let fold_specification (ctx : ('id, 't) ctx_model_gen) (f : ('id, 't) ctx_model_
   |> (fun x -> List.fold_left (fun accu x -> f ctx accu x) x v.effects)
   |> fold_left (fold_postcondition ctx f) v.postconditions
 
-let fold_model (f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (m : 'id model_gen) (accu : 'a) : 'a =
+let fold_model (f : 't ctx_model_gen -> 'a -> mterm -> 'a) (m : model) (accu : 'a) : 'a =
   let fold_mterm_option f x accu = match x with | Some v -> f accu v | _ -> accu in
-  let fold_decl (ctx : ('id, 't) ctx_model_gen) (f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (d : 'id decl_node_gen) (accu : 'a) : 'a = (
+  let fold_decl (ctx : 't ctx_model_gen) (f : 't ctx_model_gen -> 'a -> mterm -> 'a) (d : decl_node) (accu : 'a) : 'a = (
     match d with
     | Dvar s ->
       accu
@@ -4174,7 +4094,7 @@ let fold_model (f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (m : '
     | _ -> accu
   ) in
 
-  let fold_entry (ctx : ('id, 't) ctx_model_gen) (f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (a : 'id function__gen) (accu : 'a) : 'a = (
+  let fold_entry (ctx : 't ctx_model_gen) (f : 't ctx_model_gen -> 'a -> mterm -> 'a) (a : function__) (accu : 'a) : 'a = (
     let accu : 'a = (
       match a.node with
       | Function (fs, _)
@@ -4182,7 +4102,7 @@ let fold_model (f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (m : '
       | View (fs, _, _)
       | Entry fs -> f {ctx with fs = Some fs} accu fs.body
     ) in
-    Option.map_dfl (fun (x : 'id specification_gen) -> fold_specification ctx f x accu) accu a.spec
+    Option.map_dfl (fun (x : specification) -> fold_specification ctx f x accu) accu a.spec
   ) in
 
   let ctx : ctx_model = mk_ctx_model () in
@@ -4898,7 +4818,7 @@ end = struct
     with
     | Not_found -> false
 
-  let get_asset_containers (m : model) (asset : ident) : (ident * type_ * (lident mterm_gen option)) list =
+  let get_asset_containers (m : model) (asset : ident) : (ident * type_ * (mterm option)) list =
     try
       let asset = get_asset m asset in
       List.fold_left (fun acc (v : asset_item) ->
@@ -5131,11 +5051,11 @@ end = struct
   (* returns asset name * invariant name * invariant term *)
   let get_storage_invariants (m : model) (asset_name : ident option) : (ident * ident * mterm) list =
     try
-      let assets : lident asset_gen list = get_assets m in
-      let assets : lident asset_gen list =
+      let assets : asset list = get_assets m in
+      let assets : asset list =
         begin
           match asset_name with
-          | Some asset_name -> List.filter (fun (x : lident asset_gen) -> cmp_ident (unloc x.name) asset_name) assets
+          | Some asset_name -> List.filter (fun (x : asset) -> cmp_ident (unloc x.name) asset_name) assets
           | _ -> assets
         end
       in
