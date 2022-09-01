@@ -2154,7 +2154,7 @@ let pp_parameters fmt = function
       fun fmt (param : parameter) ->
         Format.fprintf fmt "%a%a : %a%a"
           (pp_do_if param.const (fun fmt _ -> pp_str fmt "const ")) ()
-          pp_id param.name
+          pp_mid param.name
           pp_type param.typ
           (pp_option (fun fmt x -> Format.fprintf fmt " = %a" pp_mterm x)) param.default)) params
 

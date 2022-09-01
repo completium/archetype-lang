@@ -106,7 +106,7 @@ let rec to_type (model : M.model) ?annotation (t : M.type_) : T.type_ =
     let lt = List.map (fun (x : M.record_field) ->
         match snd x.type_ with
         | Some _ -> x.type_
-        | None -> fst x.type_, Some (dumloc (mk_fannot (unloc x.name)))) r.fields in
+        | None -> fst x.type_, Some (dumloc (mk_fannot (M.unloc_mident x.name)))) r.fields in
     match r.pos with
     | Pnode [] -> T.mk_type ?annotation (to_one_type (List.map to_type lt) |> fun x -> x.node)
     | p -> begin
@@ -138,7 +138,7 @@ let rec to_type (model : M.model) ?annotation (t : M.type_) : T.type_ =
     match e_opt with
     | Some e when  List.for_all (fun (x : M.enum_item) -> List.is_empty x.args) e.values -> begin
         let lt = List.map (fun (x : M.enum_item) : T.type_ ->
-            T.mk_type ~annotation:(mk_fannot (unloc x.name)) (to_one_type (List.map to_type x.args) |> fun x -> x.node)
+            T.mk_type ~annotation:(mk_fannot (M.unloc_mident x.name)) (to_one_type (List.map to_type x.args) |> fun x -> x.node)
           ) e.values
         in
         T.mk_type ?annotation (to_one_type_or lt |> fun x -> x.node)
@@ -237,7 +237,7 @@ let rec to_simple_data (model : M.model) (mt : M.mterm) : T.data option =
   | Mleft (_, x)               -> let x = f x in (match x with | Some x -> Some (T.Dleft x) | None -> None)
   | Mright (_, x)              -> let x = f x in (match x with | Some x -> Some (T.Dright x) | None -> None)
   | Mcast (_, _, v)            -> f v
-  | Mvar (x, Vparameter, _, _) -> Some (T.Dvar (unloc x, to_type model mt.type_, false))
+  | Mvar (x, Vparameter, _, _) -> Some (T.Dvar (M.unloc_mident x, to_type model mt.type_, false))
   | _ -> None
 
 let to_ir (model : M.model) : T.ir =
@@ -386,15 +386,15 @@ let to_ir (model : M.model) : T.ir =
 
   let instr_update (ak : M.assign_kind) (op : T.aoperator) =
     match ak with
-    | Avar id       -> T.Iupdate (Uvar (unloc id), op)
-    | Avarstore id  -> T.Iupdate (Uvar (unloc id), op)
+    | Avar id       -> T.Iupdate (Uvar (M.unloc_mident id), op)
+    | Avarstore id  -> T.Iupdate (Uvar (M.unloc_mident id), op)
     | Aasset _      -> emit_error (UnsupportedTerm "Aasset")
     | Arecord ({node = Mvar(id, _, _, _)}, rn, fn) -> begin
-        let l = Model.Utils.get_record_pos model (unloc rn) (unloc fn) in
-        T.Iupdate (Urec (unloc id, l), op)
+        let l = Model.Utils.get_record_pos model (M.unloc_mident rn) (M.unloc_mident fn) in
+        T.Iupdate (Urec (M.unloc_mident id, l), op)
       end
     | Arecord _     -> emit_error (UnsupportedTerm "Arecord")
-    | Atuple ({node = Mvar(id, _, _, _)}, n, l) -> T.Iupdate (Urec (unloc id, [n, l]), op)
+    | Atuple ({node = Mvar(id, _, _, _)}, n, l) -> T.Iupdate (Urec (M.unloc_mident id, [n, l]), op)
     | Atuple _     -> emit_error (UnsupportedTerm "Atuple")
     | Astate        -> emit_error (UnsupportedTerm "Astate")
     | Aassetstate _ -> emit_error (UnsupportedTerm "Aassetstate")
@@ -438,7 +438,7 @@ let to_ir (model : M.model) : T.ir =
     | Mleft (_, x)      -> T.Dleft (to_data x)
     | Mright (_, x)     -> T.Dright (to_data x)
     | Mcast (_, _, v)   -> to_data v
-    | Mvar (x, Vparameter, _, _) -> T.Dvar (unloc x, to_type model mt.type_, false)
+    | Mvar (x, Vparameter, _, _) -> T.Dvar (M.unloc_mident x, to_type model mt.type_, false)
     | Mlitrecord l      -> begin
         let data = List.map (to_data |@ snd) l in
         match M.get_ntype mt.type_ with
@@ -470,7 +470,7 @@ let to_ir (model : M.model) : T.ir =
     | Mlambda (_rt, id, _at, e) -> begin
         let env = mk_env () in
         let ir = mterm_to_intruction env e ~view:false in
-        T.DIrCode (unloc id, ir)
+        T.DIrCode (M.unloc_mident id, ir)
       end
     | _ -> Format.printf "%a@." M.pp_mterm mt; assert false
 
@@ -532,7 +532,7 @@ let to_ir (model : M.model) : T.ir =
     in
 
     let access_record (e : M.mterm) fn =
-      let fn = unloc fn in
+      let fn = M.unloc_mident fn in
       match M.get_ntype e.type_ with
       | M.Trecord rn -> begin
           let rn = unloc rn in
@@ -586,37 +586,37 @@ let to_ir (model : M.model) : T.ir =
 
     (* lambda *)
 
-    | Mletin ([id], v, _, b, _) -> let is_unit = match M.get_ntype mtt.type_ with Tunit -> true | _ -> false in T.IletIn (unloc id, f v, f b, is_unit)
+    | Mletin ([id], v, _, b, _) -> let is_unit = match M.get_ntype mtt.type_ with Tunit -> true | _ -> false in T.IletIn (M.unloc_mident id, f v, f b, is_unit)
     | Mletin _                  -> emit_error (UnsupportedTerm ("Mletin"))
     | Mdeclvar _                -> emit_error (UnsupportedTerm ("Mdeclvar"))
     | Mdeclvaropt _             -> emit_error (UnsupportedTerm ("Mdeclvaropt"))
     | Mapp (e, args)            -> begin
         let eargs =
-          match List.assoc_opt (unloc e) !extra_args with
+          match List.assoc_opt (M.unloc_mident e) !extra_args with
           | Some l -> List.map (fun (id, _t) -> T.Ivar id) l
           | _ -> []
         in
-        T.Icall (unloc e, List.map f args @ eargs, false)
+        T.Icall (M.unloc_mident e, List.map f args @ eargs, false)
       end
 
     (* assign *)
 
-    | Massign (_op, _, Avar id, v)                 -> T.Iassign (unloc id, f v)
-    | Massign (_op, _, Avarstore id, v)            -> T.Iassign (unloc id, f v)
+    | Massign (_op, _, Avar id, v)                 -> T.Iassign (M.unloc_mident id, f v)
+    | Massign (_op, _, Avarstore id, v)            -> T.Iassign (M.unloc_mident id, f v)
     | Massign (_op, _, Aasset (_an, _fn, _k), _v)  -> emit_error (UnsupportedTerm ("Massign: Aasset"))
     | Massign (_op, _, Arecord ({node = Mvar (id, _, _, _); type_ = t}, _rn, fn), v) -> begin
-        let id = unloc id in
+        let id = M.unloc_mident id in
         let rn =
           match M.get_ntype t with
           | M.Trecord rn -> unloc rn
           | _ -> assert false
         in
-        let ru = make_ru rn (unloc fn) v in
+        let ru = make_ru rn (M.unloc_mident fn) v in
         let a = T.Irecupdate (T.Ivar id, ru) in
         T.Iassign (id, a)
       end
     | Massign (_op, _, Arecord _, _v)              -> emit_error (UnsupportedTerm ("Record is not a var"))
-    | Massign (_op, _, Atuple ({node = Mvar (id, _, _, _)}, n, l), v)    -> let id = unloc id in T.Iassigntuple (id, n, l, f v)
+    | Massign (_op, _, Atuple ({node = Mvar (id, _, _, _)}, n, l), v)    -> let id = M.unloc_mident id in T.Iassigntuple (id, n, l, f v)
     | Massign (_op, _, Atuple _, _v)               -> emit_error (UnsupportedTerm ("Tuple is not a var"))
     | Massign (_op, _, Astate, _x)                 -> emit_error (UnsupportedTerm ("Massign: Astate"))
     | Massign (_op, _, Aassetstate (_an, _k), _v)  -> emit_error (UnsupportedTerm ("Massign: Aassetstate"))
@@ -628,16 +628,16 @@ let to_ir (model : M.model) : T.ir =
     | Mif (c, t, Some e)         -> T.Iif (f c, f t, f e, T.tunit)
     | Mif (c, t, None)           -> T.Iif (f c, f t, T.iskip, T.tunit)
     | Mmatchwith (_e, _l)        -> emit_error (UnsupportedTerm ("Mmatchwith"))
-    | Minstrmatchoption (x, i, ve, ne)       -> T.Iifnone (f x, f ne, unloc i, f ve, T.tunit)
-    | Minstrmatchor (x, lid, le, rid, re)    -> T.Iifleft (f x, unloc lid, f le, unloc rid, f re, T.tunit)
-    | Minstrmatchlist (x, hid, tid, hte, ee) -> T.Iifcons (f x, unloc hid, unloc tid, f hte, f ee, T.tunit)
+    | Minstrmatchoption (x, i, ve, ne)       -> T.Iifnone (f x, f ne, M.unloc_mident i, f ve, T.tunit)
+    | Minstrmatchor (x, lid, le, rid, re)    -> T.Iifleft (f x, M.unloc_mident lid, f le, M.unloc_mident rid, f re, T.tunit)
+    | Minstrmatchlist (x, hid, tid, hte, ee) -> T.Iifcons (f x, M.unloc_mident hid, M.unloc_mident tid, f hte, f ee, T.tunit)
     | Mfor (id, c, b, _)         -> begin
         let ids =
           match id with
           | M.FIsimple x      -> [x]
           | M.FIdouble (x, y) -> [x; y]
         in
-        let ids = List.map unloc ids in
+        let ids = List.map M.unloc_mident ids in
         let c =
           match c with
           | ICKcoll  _ -> emit_error (UnsupportedTerm ("ICKcoll"))
@@ -721,21 +721,21 @@ let to_ir (model : M.model) : T.ir =
     (* entrypoint *)
 
     | Mgetentrypoint (t, id, d)  ->
-      let annot = get_entrypoint_annot (unloc id) in
+      let annot = get_entrypoint_annot (M.unloc_mident id) in
       T.Iunop (Ucontract (to_type model t, annot), f d)
 
     | Mcallview (t, a, b, c)  -> begin
-        T.Ibinop (Bview (unloc b, to_type model t), f c, f a)
+        T.Ibinop (Bview (M.unloc_mident b, to_type model t), f c, f a)
       end
     | Mimportcallview (_t, _a, _b, _c) -> emit_error (UnsupportedTerm ("Mimportcallview"))
-    | Mself id                -> get_self_entrypoint (unloc id)
+    | Mself id                -> get_self_entrypoint (M.unloc_mident id)
 
 
     (* operation *)
 
     | Moperations                    -> vops
     | Mmakeoperation (v, e, a)       -> T.Iterop (Ttransfer_tokens, f a, f v, f e)
-    | Mmakeevent (t, id, a)          -> T.Iunop (Uemit (to_type model t, Some (unloc id)), f a)
+    | Mmakeevent (t, id, a)          -> T.Iunop (Uemit (to_type model t, Some (M.unloc_mident id)), f a)
     | Mcreatecontract (ms, d, a, si) -> T.Iunop (UforcePair, T.Iterop (Tcreate_contract ms.ms_content, f d, f a, f si))
 
 
@@ -771,13 +771,13 @@ let to_ir (model : M.model) : T.ir =
 
     | Mexprif (c, t, e)                      -> T.Iif (f c, f t, f e, ft mtt.type_)
     | Mexprmatchwith (_e, _l)                -> emit_error (UnsupportedTerm ("Mexprmatchwith"))
-    | Mmatchoption (x, i, ve, ne)            -> T.Iifnone (f x, f ne, unloc i, f ve, ft mtt.type_)
-    | Mmatchor (x, lid, le, rid, re)         -> T.Iifleft (f x, unloc lid, f le, unloc rid, f re, ft mtt.type_)
-    | Mmatchlist (x, hid, tid, hte, ee)      -> T.Iifcons (f x, unloc hid, unloc tid, f hte, f ee, ft mtt.type_)
+    | Mmatchoption (x, i, ve, ne)            -> T.Iifnone (f x, f ne, M.unloc_mident i, f ve, ft mtt.type_)
+    | Mmatchor (x, lid, le, rid, re)         -> T.Iifleft (f x, M.unloc_mident lid, f le, M.unloc_mident rid, f re, ft mtt.type_)
+    | Mmatchlist (x, hid, tid, hte, ee)      -> T.Iifcons (f x, M.unloc_mident hid, M.unloc_mident tid, f hte, f ee, ft mtt.type_)
     | Mternarybool (_c, _a, _b)              -> emit_error (UnsupportedTerm ("Mternarybool"))
     | Mternaryoption (_c, _a, _b)            -> emit_error (UnsupportedTerm ("Mternaryoption"))
-    | Mfold (e, i, l)                        -> T.Iloopleft (f e, unloc i, f l)
-    | Mmap (e, i, l)                         -> T.Imap_ (f e, unloc i, f l)
+    | Mfold (e, i, l)                        -> T.Iloopleft (f e, M.unloc_mident i, f l)
+    | Mmap (e, i, l)                         -> T.Imap_ (f e, M.unloc_mident i, f l)
     | Mexeclambda (l, a)                     -> T.Ibinop (Bexec, f a, f l)
     | Mapplylambda (l, a)                    -> T.Ibinop (Bapply, f a, f l)
 
@@ -851,7 +851,7 @@ let to_ir (model : M.model) : T.ir =
           in
           T.Irecord ri
       end
-    | Mlambda (rt, id, at, e) -> T.Ilambda (ft rt, unloc id, ft at, f e)
+    | Mlambda (rt, id, at, e) -> T.Ilambda (ft rt, M.unloc_mident id, ft at, f e)
 
     (* access *)
 
@@ -958,7 +958,7 @@ let to_ir (model : M.model) : T.ir =
     | Msetupdate (_, c, b, v)       -> T.Iterop (Tupdate, f v, f b, f c)
     | Msetcontains (_, c, k)        -> T.Ibinop (Bmem, f k, f c)
     | Msetlength (_, c)             -> T.Iunop  (Usize, f c)
-    | Msetfold (_, ix, ia, c, a, b) -> T.Ifold (unloc ix, None, unloc ia, f c, f a, T.Iassign (unloc ia, f b))
+    | Msetfold (_, ix, ia, c, a, b) -> T.Ifold (M.unloc_mident ix, None, M.unloc_mident ia, f c, f a, T.Iassign (M.unloc_mident ia, f b))
 
     (* set api instruction *)
 
@@ -973,7 +973,7 @@ let to_ir (model : M.model) : T.ir =
     | Mlistnth (t, c, a)         -> let b = T.BlistNth (to_type model t) in add_builtin b; T.Icall (get_fun_name b, [f c; f a], is_inline b)
     | Mlistreverse (t, l)        -> T.Ireverse (to_type model t, f l)
     | Mlistconcat _              -> emit_error (UnsupportedTerm ("Mlistconcat"))
-    | Mlistfold (_, ix, ia, c, a, b) -> T.Ifold (unloc ix, None, unloc ia, f c, f a, T.Iassign (unloc ia, f b))
+    | Mlistfold (_, ix, ia, c, a, b) -> T.Ifold (M.unloc_mident ix, None, M.unloc_mident ia, f c, f a, T.Iassign (M.unloc_mident ia, f b))
 
     (* list api instruction *)
 
@@ -990,7 +990,7 @@ let to_ir (model : M.model) : T.ir =
     | Mmapgetopt (_, _, _, c, k)     -> T.Ibinop (Bget, f k, f c)
     | Mmapcontains (_, _, _, c, k)   -> T.Ibinop (Bmem, f k, f c)
     | Mmaplength (_, _, _, c)        -> T.Iunop (Usize, f c)
-    | Mmapfold (_, _, ik, iv, ia, c, a, b) -> T.Ifold (unloc ik, Some (unloc iv), unloc ia, f c, f a, T.Iassign (unloc ia, f b))
+    | Mmapfold (_, _, ik, iv, ia, c, a, b) -> T.Ifold (M.unloc_mident ik, Some (M.unloc_mident iv), M.unloc_mident ia, f c, f a, T.Iassign (M.unloc_mident ia, f b))
 
     (* map api instruction *)
 
@@ -1079,15 +1079,15 @@ let to_ir (model : M.model) : T.ir =
     (* variable *)
 
     | Mvar (_an, Vassetstate _k, _, _) -> assert false
-    | Mvar (v, Vstorevar, _, _)        -> T.Ivar (unloc v)
-    | Mvar (v, Vstorecol, _, _)        -> T.Ivar (unloc v)
+    | Mvar (v, Vstorevar, _, _)        -> T.Ivar (M.unloc_mident v)
+    | Mvar (v, Vstorecol, _, _)        -> T.Ivar (M.unloc_mident v)
     | Mvar (_v, Vdefinition, _, _)     -> assert false
-    | Mvar (v, Vlocal, _, _)           -> T.Ivar (unloc v)
-    | Mvar (v, Vparam, _, _)           -> T.Ivar (unloc v)
+    | Mvar (v, Vlocal, _, _)           -> T.Ivar (M.unloc_mident v)
+    | Mvar (v, Vparam, _, _)           -> T.Ivar (M.unloc_mident v)
     | Mvar (_v, Vfield, _, _)          -> assert false
     | Mvar (_, Vthe, _, _)             -> assert false
     | Mvar (_, Vstate, _, _)           -> assert false
-    | Mvar (v, Vparameter, _, _)       -> T.Iwildcard (ft mtt.type_, unloc v)
+    | Mvar (v, Vparameter, _, _)       -> T.Iwildcard (ft mtt.type_, M.unloc_mident v)
     | Menumval (_id, _args, _e)        -> assert false
 
     (* rational *)
@@ -1160,7 +1160,7 @@ let to_ir (model : M.model) : T.ir =
 
   let storage_list = List.map (
       fun (si : M.storage_item) ->
-        (unloc si.id), to_type model ~annotation:(mk_fannot (unloc si.id)) si.typ, to_data si.default)
+        (M.unloc_mident si.id), to_type model ~annotation:(mk_fannot (M.unloc_mident si.id)) si.typ, to_data si.default)
       model.storage
   in
 
@@ -1176,9 +1176,9 @@ let to_ir (model : M.model) : T.ir =
   let funs, entries, views, offchain_views =
 
     let for_fs _env (fs : M.function_struct) ?(view= false) =
-      let name = unloc fs.name in
-      let args = List.map (fun (id, t, _) -> unloc id, to_type model t) fs.args in
-      let eargs = List.map (fun (id, t, _) -> unloc id, to_type model t) fs.eargs in
+      let name = M.unloc_mident fs.name in
+      let args = List.map (fun (id, t, _) -> M.unloc_mident id, to_type model t) fs.args in
+      let eargs = List.map (fun (id, t, _) -> M.unloc_mident id, to_type model t) fs.eargs in
       let env = {function_p = Some (name, args)} in
       let body = mterm_to_intruction env fs.body ~view in
       name, args, eargs, body
@@ -1216,7 +1216,7 @@ let to_ir (model : M.model) : T.ir =
         | Mratdur _                          -> (doit accu mt (T.Bratdur   ))
 
         | Mapp (fid, _)                   ->
-          let fid  = unloc fid in
+          let fid  = M.unloc_mident fid in
           let targs, tret = MapString.find fid !mapargs in
           let eargs = match List.assoc_opt fid !extra_args with None -> [] | Some l -> l in
           (fid, T.tlambda targs tret)::(eargs @ M.fold_term aux accu mt) |> List.dedup
@@ -1227,7 +1227,7 @@ let to_ir (model : M.model) : T.ir =
     in
 
     let for_fs_fun env (fs : M.function_struct) ret ?(view : bool = false) : T.func =
-      let fid = unloc fs.name in
+      let fid = M.unloc_mident fs.name in
       let tret = to_type model ret in
       let name, args, _eargs, body = for_fs env fs ~view in
       let eargs = get_extra_args fs.body in
@@ -1289,7 +1289,7 @@ let to_ir (model : M.model) : T.ir =
   let funs = List.fold_left (fun accu x -> (get_builtin_fun x)::accu) funs !builtins in
 
   let name = unloc model.name in
-  let parameters = List.map (fun (x : M.parameter) -> unloc x.name) model.parameters in
+  let parameters = List.map (fun (x : M.parameter) -> M.unloc_mident x.name) model.parameters in
   T.mk_ir name storage_type storage_data storage_list parameter funs views offchain_views entries ~with_operations:with_operations ~parameters
 
 

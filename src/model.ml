@@ -5,11 +5,13 @@ open Location
 type lident = ident Location.loced
 [@@deriving show {with_path = false}]
 
-(* type namespace = lident list *)
+type namespace = lident list
+[@@deriving show {with_path = false}]
 
-(* type path = namespace * lident *)
+type path = namespace * lident
+[@@deriving show {with_path = false}]
 
-type mident = lident
+type mident = path
 [@@deriving show {with_path = false}]
 
 type currency =
@@ -991,6 +993,12 @@ type property =
   | PsecurityPredicate of security_item
 [@@deriving show {with_path = false}]
 
+let mk_mident ?(namespace = []) id : mident =
+  (namespace, id)
+
+let unloc_mident (id : mident) : ident =
+  unloc (snd id)
+
 let mk_pattern ?(loc = Location.dummy) node : pattern =
   { node; loc}
 
@@ -1021,7 +1029,7 @@ let mk_postcondition ?(invariants = []) ?(uses = []) name mode formula =
 let mk_assert ?(invariants = []) ?(uses = []) name label formula =
   { name; label; formula; invariants; uses }
 
-let mk_specification ?(predicates = []) ?(definitions = []) ?(lemmas = []) ?(theorems = []) ?(fails = []) ?(variables = []) ?(invariants = []) ?(effects = []) ?(postconditions = []) ?(loc = Location.dummy) () =
+let mk_specification ?(predicates = []) ?(definitions = []) ?(lemmas = []) ?(theorems = []) ?(fails = []) ?(variables = []) ?(invariants = []) ?(effects = []) ?(postconditions = []) ?(loc = Location.dummy) () : specification =
   { predicates; definitions; lemmas; theorems; fails; variables; invariants; effects; postconditions; loc}
 
 let mk_security_predicate ?(loc = Location.dummy) s_node : security_predicate =
@@ -1186,7 +1194,7 @@ let mlevel        = mk_mterm Mlevel       tnat
 let mk_mvar id t = mk_mterm (Mvar(id, Vlocal, Tnone, Dnone )) t
 let mk_pvar id t = mk_mterm (Mvar(id, Vparam, Tnone, Dnone )) t
 let mk_svar id t = mk_mterm (Mvar(id, Vstorevar, Tnone, Dnone )) t
-let mk_state_var _ = mk_mterm (Mvar(dumloc "", Vstate, Tnone, Dnone )) ((Tenum (dumloc "state")), None)
+let mk_state_var _ = mk_mterm (Mvar(mk_mident (dumloc ""), Vstate, Tnone, Dnone )) ((Tenum (dumloc "state")), None)
 
 let mk_enum_value  ?(args=[]) id e = mk_mterm (Menumval(id, args, unloc e)) (mktype (Tenum e))
 let mk_state_value id = mk_enum_value id (dumloc "state")
@@ -1248,7 +1256,7 @@ let skip    = seq []
 let operations = mk_mterm Moperations (tlist toperation)
 
 let mk_get_entrypoint (ty: type_) (entry_name: lident) (addr : mterm) : mterm =
-  mk_mterm (Mgetentrypoint (ty, entry_name, addr)) (toption (tcontract ty))
+  mk_mterm (Mgetentrypoint (ty, mk_mident entry_name, addr)) (toption (tcontract ty))
 let mk_mkoperation a b c = mk_mterm (Mmakeoperation (a, b, c)) toperation
 let mk_mkevent     a b c = mk_mterm (Mmakeevent (a, b, c)) toperation
 let mk_transfer_op op = mk_mterm (Mtransfer (TKoperation op)) tunit
@@ -1281,6 +1289,9 @@ let cmp_ident (i1 : ident) (i2 : ident) : bool = String.equal i1 i2
 let cmp_big_int (n1 : Core.big_int) (n2 : Core.big_int) : bool = Big_int.compare_big_int n1 n2 = 0
 let cmp_int (n1 : int) (n2 : int) : bool = n1 = n2
 let cmp_lident (i1 : lident) (i2 : lident) : bool = cmp_ident (Location.unloc i1) (Location.unloc i2)
+let cmp_namespace (n1 : namespace) (n2 : namespace) : bool = List.for_all2 cmp_lident n1 n2
+let cmp_path (p1 : path) (p2 : path) : bool = cmp_namespace (fst p1) (fst p2) && cmp_lident (snd p1) (snd p2)
+let cmp_mident (i1 : mident) (i2 : mident) : bool = cmp_path i1 i2
 let cmp_bool (b1 : bool) (b2 : bool) : bool = b1 = b2
 let cmp_assign_op (op1 : assignment_operator) (op2 : assignment_operator) : bool = op1 = op2
 let cmp_currency (c1 : currency) (c2 : currency) : bool = c1 = c2
@@ -1361,15 +1372,14 @@ and cmp_type
   else b
 
 let cmp_pattern_node
-    (cmpi  : 'id -> 'id -> bool)
     (p1    : pattern_node)
     (p2    : pattern_node)
   : bool =
   match p1, p2 with
   | Pconst (c1, xs1), Pconst (c2, xs2) ->
-    cmpi c1 c2
+    cmp_mident c1 c2
     && List.length xs1 = List.length xs2
-    && List.for_all2 cmpi xs1 xs2
+    && List.for_all2 cmp_lident xs1 xs2
   | Pwild, Pwild -> true
   | _ -> false
 
@@ -1377,7 +1387,7 @@ let cmp_pattern
     (p1 : pattern)
     (p2 : pattern)
   : bool =
-  cmp_pattern_node cmp_lident p1.node p2.node
+  cmp_pattern_node p1.node p2.node
 
 let cmp_for_ident
     (cmpi  : 'id -> 'id -> bool)
@@ -1506,7 +1516,7 @@ let cmp_mterm_node
     (* operation *)
     | Moperations, Moperations                                                         -> true
     | Mmakeoperation (v1, d1, a1), Mmakeoperation (v2, d2, a2)                         -> cmp v1 v2 && cmp d1 d2 && cmp a1 a2
-    | Mmakeevent (t1, id1, a1), Mmakeevent (t2, id2, a2)                               -> cmp_type t1 t2 && cmp_lident id1 id2 && cmp a1 a2
+    | Mmakeevent (t1, id1, a1), Mmakeevent (t2, id2, a2)                               -> cmp_type t1 t2 && cmp_mident id1 id2 && cmp a1 a2
     | Mcreatecontract (ms1, d1, a1, si1), Mcreatecontract (ms2, d2, a2, si2)           -> cmp_michelson_struct ms1 ms2 && cmp d1 d2 && cmp a1 a2 && cmp si1 si2
     (* literals *)
     | Mint v1, Mint v2                                                                 -> Big_int.eq_big_int v1 v2
@@ -1629,7 +1639,7 @@ let cmp_mterm_node
     | Msetupdate (t1, c1, b1, v1), Msetupdate (t2, c2, b2, v2)                         -> cmp_type t1 t2 && cmp c1 c2 && cmp b1 b2 && cmp v1 v2
     | Msetcontains (t1, c1, a1), Msetcontains (t2, c2, a2)                             -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
     | Msetlength (t1, c1), Msetlength (t2, c2)                                         -> cmp_type t1 t2 && cmp c1 c2
-    | Msetfold (t1, ix1, ia1, c1, a1, b1), Msetfold (t2, ix2, ia2, c2, a2, b2)         -> cmp_type t1 t2 && cmp_lident ix1 ix2 && cmp_lident ia1 ia2 && cmp c1 c2 && cmp a1 a2 && cmp b1 b2
+    | Msetfold (t1, ix1, ia1, c1, a1, b1), Msetfold (t2, ix2, ia2, c2, a2, b2)         -> cmp_type t1 t2 && cmp_mident ix1 ix2 && cmp_mident ia1 ia2 && cmp c1 c2 && cmp a1 a2 && cmp b1 b2
     (* set api instruction *)
     | Msetinstradd (t1, ak1, a1),    Msetinstradd (t2, ak2, a2)                        -> cmp_type t1 t2 && cmp_assign_kind ak1 ak2 && cmp a1 a2
     | Msetinstrremove (t1, ak1, a1), Msetinstrremove (t2, ak2, a2)                     -> cmp_type t1 t2 && cmp_assign_kind ak1 ak2 && cmp a1 a2
@@ -1640,7 +1650,7 @@ let cmp_mterm_node
     | Mlistnth (t1, c1, a1), Mlistnth (t2, c2, a2)                                     -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
     | Mlistreverse (t1, l1), Mlistreverse (t2, l2)                                     -> cmp_type t1 t2 && cmp l1 l2
     | Mlistconcat (t1, l1, m1), Mlistconcat (t2, l2, m2)                               -> cmp_type t1 t2 && cmp l1 l2 && cmp m1 m2
-    | Mlistfold (t1, ix1, ia1, c1, a1, b1), Mlistfold (t2, ix2, ia2, c2, a2, b2)       -> cmp_type t1 t2 && cmp_lident ix1 ix2 && cmp_lident ia1 ia2 && cmp c1 c2 && cmp a1 a2 && cmp b1 b2
+    | Mlistfold (t1, ix1, ia1, c1, a1, b1), Mlistfold (t2, ix2, ia2, c2, a2, b2)       -> cmp_type t1 t2 && cmp_mident ix1 ix2 && cmp_mident ia1 ia2 && cmp c1 c2 && cmp a1 a2 && cmp b1 b2
     (* list api instruction *)
     | Mlistinstrprepend (t1, ak1, a1), Mlistinstrprepend (t2, ak2, a2)                 -> cmp_type t1 t2 && cmp_assign_kind ak1 ak2 && cmp a1 a2
     | Mlistinstrconcat (t1, ak1, a1),  Mlistinstrconcat (t2, ak2, a2)                  -> cmp_type t1 t2 && cmp_assign_kind ak1 ak2 && cmp a1 a2
@@ -1652,7 +1662,7 @@ let cmp_mterm_node
     | Mmapgetopt (mk1, tk1, tv1, c1, k1), Mmapgetopt (mk2, tk2, tv2, c2, k2)                       -> cmp_map_kind mk1 mk2 && cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2
     | Mmapcontains (mk1, tk1, tv1, c1, k1), Mmapcontains (mk2, tk2, tv2, c2, k2)                   -> cmp_map_kind mk1 mk2 && cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2 && cmp k1 k2
     | Mmaplength (mk1, tk1, tv1, c1), Mmaplength (mk2, tk2, tv2, c2)                               -> cmp_map_kind mk1 mk2 && cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp c1 c2
-    | Mmapfold (mk1, t1, ik1, iv1, ia1, c1, a1, b1), Mmapfold (mk2, t2, ik2, iv2, ia2, c2, a2, b2) -> cmp_map_kind mk1 mk2 && cmp_type t1 t2 && cmp_lident ik1 ik2 && cmp_lident iv1 iv2 && cmp_lident ia1 ia2 && cmp c1 c2 && cmp a1 a2 && cmp b1 b2
+    | Mmapfold (mk1, t1, ik1, iv1, ia1, c1, a1, b1), Mmapfold (mk2, t2, ik2, iv2, ia2, c2, a2, b2) -> cmp_map_kind mk1 mk2 && cmp_type t1 t2 && cmp_mident ik1 ik2 && cmp_mident iv1 iv2 && cmp_mident ia1 ia2 && cmp c1 c2 && cmp a1 a2 && cmp b1 b2
     (* map api instruction *)
     | Mmapinstrput (mk1, tk1, tv1, ak1, k1, v1), Mmapinstrput (mk2, tk2, tv2, ak2, k2, v2)         -> cmp_map_kind mk1 mk2 && cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp_assign_kind ak1 ak2 && cmp k1 k2 && cmp v1 v2
     | Mmapinstrremove (mk1, tk1, tv1, ak1, k1), Mmapinstrremove (mk2, tk2, tv2, ak2, k2)           -> cmp_map_kind mk1 mk2 && cmp_type tk1 tk2 && cmp_type tv1 tv2 && cmp_assign_kind ak1 ak2 && cmp k1 k2
@@ -1708,7 +1718,7 @@ let cmp_mterm_node
     | Mbalance, Mbalance                                                               -> true
     | Msource, Msource                                                                 -> true
     | Mselfaddress, Mselfaddress                                                       -> true
-    | Mselfchainid, Mselfchainid                                                      -> true
+    | Mselfchainid, Mselfchainid                                                       -> true
     | Mmetadata, Mmetadata                                                             -> true
     | Mlevel, Mlevel                                                                   -> true
     (* variable *)
@@ -1749,7 +1759,7 @@ let cmp_mterm_node
     _ -> false
 
 let rec cmp_mterm (term1 : mterm) (term2 : mterm) : bool =
-  cmp_mterm_node cmp_mterm cmp_lident term1.node term2.node
+  cmp_mterm_node cmp_mterm cmp_mident term1.node term2.node
 
 let cmp_container_kind lhs rhs =
   match lhs, rhs with
@@ -4150,7 +4160,8 @@ type kind_ident =
   | KImterm (* mterm *)
 
 let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (for_mterm : mterm -> mterm) (model : model) : model =
-  let g k (id : lident) = {id with pldesc=(f k id.pldesc)} in
+  let g k (id : mident) = (fst id, {(snd id) with pldesc=(f k (snd id).pldesc)}) in
+  let h k (id : lident) = {id with pldesc=(f k id.pldesc)} in
 
   let for_parameter (p : parameter) : parameter =
     {
@@ -4291,7 +4302,7 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
         keys          = List.map (f KIassetfield) a.keys;
         sort          = List.map (g KIassetfield) a.sort;
         map_kind      = a.map_kind;
-        state         = Option.map (g KIassetstate) a.state;
+        state         = Option.map (h KIassetstate) a.state;
         invariants    = List.map for_label_term a.invariants;
         init          = List.map for_mterm a.init;
         loc           = a.loc;
@@ -4447,11 +4458,11 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
             | ADiterate  id -> ADiterate  (f KIsecurityad id)
             | ADcall     id -> ADcall     (f KIsecurityad id)
           in
-          let for_security_role (sr : security_role) : security_role = g KIsecurityrole sr in
+          let for_security_role (sr : security_role) : security_role = h KIsecurityrole sr in
           let for_security_entry (sa : security_entry) =
             match sa with
             | Sany     -> Sany
-            | Sentry l -> Sentry (List.map (g KIsecurityentry) l)
+            | Sentry l -> Sentry (List.map (h KIsecurityentry) l)
           in
           match sn with
           | SonlyByRole         (ad, srl)     -> SonlyByRole         (for_entry_description ad, List.map for_security_role srl)
@@ -4470,7 +4481,7 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
         }
       in
       {
-        label     = g KIlabel si.label;
+        label     = h KIlabel si.label;
         predicate = for_security_predicate si.predicate;
         loc       = si.loc;
       }
@@ -4481,7 +4492,7 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
     }
   in
   {
-    name          = g KIarchetype model.name;
+    name          = h KIarchetype model.name;
     parameters    = List.map for_parameter model.parameters;
     imports       = List.map id model.imports;
     metadata      = Option.map for_metadata model.metadata;
@@ -4497,6 +4508,7 @@ let map_model (f : kind_ident -> ident -> ident) (for_type : type_ -> type_) (fo
   }
 
 let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : model =
+  let h k (id : mident) = (fst id, {(snd id) with pldesc=(f k (snd id).pldesc)}) in
   let g k (id : lident) = {id with pldesc=(f k id.pldesc)} in
   let rec for_type (t : type_) : type_ =
     let for_ntype (nt : ntype) : ntype =
@@ -4531,7 +4543,7 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
     mktype ?annot:(get_atype t) (for_ntype (get_ntype t))
   in
   let rec for_mterm (mt : mterm) : mterm =
-    let node : mterm__node = map_term_node_internal (f KImterm) (g KImterm) for_type for_mterm mt.node in
+    let node : mterm__node = map_term_node_internal (f KImterm) (h KImterm) for_type for_mterm mt.node in
     mk_mterm node (for_type mt.type_)
   in
   map_model f for_type for_mterm model
@@ -4779,16 +4791,16 @@ end = struct
   let get_records m = m.decls |> List.filter is_record |> List.map dest_record
   let get_events  m = m.decls |> List.filter is_event  |> List.map dest_event
 
-  let get_var   m id : var   = get_vars m   |> List.find (fun (x : var)   -> cmp_ident id (unloc x.name))
-  let get_enum  m id : enum  = get_enums m  |> List.find (fun (x : enum)  -> cmp_ident id (unloc x.name))
-  let get_enum_opt m id : enum option  = get_enums m |> List.find_opt (fun (x : enum)  -> cmp_ident id (unloc x.name))
+  let get_var   m id : var   = get_vars m   |> List.find (fun (x : var)   -> cmp_ident id (unloc_mident x.name))
+  let get_enum  m id : enum  = get_enums m  |> List.find (fun (x : enum)  -> cmp_ident id (unloc_mident x.name))
+  let get_enum_opt m id : enum option  = get_enums m |> List.find_opt (fun (x : enum)  -> cmp_ident id (unloc_mident x.name))
   let get_enum_values m id : ident list  = get_enums m
-                                           |> List.find (fun (x : enum)  -> cmp_ident id (unloc x.name))
+                                           |> List.find (fun (x : enum)  -> cmp_ident id (unloc_mident x.name))
                                            |> fun e -> e.values
-                                                       |> List.map (fun (v : enum_item) -> unloc (v.name))
-  let get_asset  m id : asset = get_assets m |> List.find (fun (x : asset) -> cmp_ident id (unloc x.name))
-  let get_record m id : record = get_records m |> List.find (fun (x : record) -> cmp_ident id (unloc x.name))
-  let get_event  m id : record = get_events m |> List.find (fun (x : record) -> cmp_ident id (unloc x.name))
+                                                       |> List.map (fun (v : enum_item) -> unloc_mident (v.name))
+  let get_asset  m id : asset = get_assets m |> List.find (fun (x : asset) -> cmp_ident id (unloc_mident x.name))
+  let get_record m id : record = get_records m |> List.find (fun (x : record) -> cmp_ident id (unloc_mident x.name))
+  let get_event  m id : record = get_events m |> List.find (fun (x : record) -> cmp_ident id (unloc_mident x.name))
 
   let get_containers_internal f m : (ident * ident * type_) list =
     get_assets m |> List.fold_left (fun acc (asset : asset) ->
@@ -4796,7 +4808,7 @@ end = struct
             let t : type_ = v.original_type in
             match t with
             | _ when f t ->
-              acc @ [unloc asset.name, unloc v.name, t]
+              acc @ [unloc_mident asset.name, unloc_mident v.name, t]
             | _ -> acc
           ) [] asset.values)
       ) []
@@ -4823,7 +4835,7 @@ end = struct
       let asset = get_asset m asset in
       List.fold_left (fun acc (v : asset_item) ->
           match get_ntype v.type_ with
-          | Tcontainer ((Tasset _, _), (Partition | Aggregate)) -> acc @ [unloc v.name, v.type_, v.default]
+          | Tcontainer ((Tasset _, _), (Partition | Aggregate)) -> acc @ [unloc_mident v.name, v.type_, v.default]
           | _ -> acc
         ) [] asset.values
     with
@@ -4837,8 +4849,8 @@ end = struct
   let get_asset_field (m : model) (asset_name, field_name : ident * ident) : ident * type_ * mterm option =
     try
       let asset = get_asset m asset_name in
-      List.find (fun (x : asset_item) -> String.equal (unloc x.name) field_name) asset.values
-      |> (fun (x : asset_item) -> unloc x.name, x.type_, x.default)
+      List.find (fun (x : asset_item) -> String.equal (unloc_mident x.name) field_name) asset.values
+      |> (fun (x : asset_item) -> unloc_mident x.name, x.type_, x.default)
     with
     | Not_found -> emit_error (AssetFieldNotFound (asset_name, field_name))
 
@@ -4860,7 +4872,7 @@ end = struct
     let seek_original_type () : type_ =
       try
         let asset = get_asset model asset_name in
-        List.find (fun (x : asset_item) -> String.equal (unloc x.name) field_name) asset.values
+        List.find (fun (x : asset_item) -> String.equal (unloc_mident x.name) field_name) asset.values
         |> (fun (x : asset_item) -> x.original_type)
       with
       | Not_found -> emit_error (AssetFieldNotFound (asset_name, field_name))
@@ -4895,13 +4907,13 @@ end = struct
     let s = get_storage model in
     let items = s in
     (List.fold_left (fun accu (x : storage_item) ->
-         accu || String.equal id (Location.unloc x.id)
+         accu || String.equal id (unloc_mident x.id)
        ) false items)
 
   let get_field_list (model : model) (asset_name : ident) : ident list =
     try
       let asset = get_asset model asset_name in
-      List.map (fun (x : asset_item) -> unloc x.name) asset.values
+      List.map (fun (x : asset_item) -> unloc_mident x.name) asset.values
     with
     | Not_found -> []
 
@@ -4922,9 +4934,9 @@ end = struct
   let is_local_assigned (id : ident) (b : mterm) =
     let rec rec_search_assign _ (t : mterm) =
       match t.node with
-      | Massign (_, _, Avar i,_) when String.equal (unloc i) id -> raise FoundAssign
-      | Massign (_, _, Arecord ({ node = (Mvar (i, _, _, _)) }, _, _), _) when String.equal (unloc i) id -> raise FoundAssign
-      | Massign (_, _, Atuple ({ node = (Mvar (i, _, _, _)) }, _, _), _) when String.equal (unloc i) id -> raise FoundAssign
+      | Massign (_, _, Avar i,_) when String.equal (unloc_mident i) id -> raise FoundAssign
+      | Massign (_, _, Arecord ({ node = (Mvar (i, _, _, _)) }, _, _), _) when String.equal (unloc_mident i) id -> raise FoundAssign
+      | Massign (_, _, Atuple ({ node = (Mvar (i, _, _, _)) }, _, _), _) when String.equal (unloc_mident i) id -> raise FoundAssign
       | _ -> fold_term rec_search_assign false t in
     try rec_search_assign false b
     with FoundAssign -> true
@@ -5000,7 +5012,7 @@ end = struct
 
   let dest_varlocal (t : mterm) =
     match t.node with
-    |  Mvar (i, Vlocal, _, _) -> unloc i
+    |  Mvar (i, Vlocal, _, _) -> unloc_mident i
     | _ -> assert false
 
   let is_container t =
@@ -5011,10 +5023,10 @@ end = struct
 
   let get_key_pos (m : model) (n : ident) : int =
     get_assets m |> List.fold_left (fun acc (info : asset) ->
-        if String.equal n (unloc info.name) then
+        if String.equal n (unloc_mident info.name) then
           let (k,_) = get_asset_key m n in
           (List.fold_left (fun acc (i : asset_item) ->
-               if String.equal (unloc i.name) k then
+               if String.equal (unloc_mident i.name) k then
                  succ acc
                else
                  acc
@@ -5027,10 +5039,10 @@ end = struct
   let get_loop_invariants m (acc : (ident * mterm) list) (i : ident) : (ident * mterm) list =
     let internal_get (ctx : ctx_model) (acc : (ident * mterm) list) t =
       match ctx.invariant_id with
-      | Some v when cmp_ident i (unloc v) ->
+      | Some v when cmp_ident i (unloc_mident v) ->
         begin
           match ctx.spec_id with
-          | Some l -> acc @ [unloc l,t]
+          | Some l -> acc @ [unloc_mident l,t]
           | _ -> acc
         end
       | _ -> acc in
@@ -5039,7 +5051,7 @@ end = struct
   let get_formula m acc (i : ident) : mterm option =
     let internal_get (ctx : ctx_model) (acc : mterm option) t =
       match acc, ctx.spec_id with
-      | None, Some v when cmp_ident i (unloc v) -> Some t
+      | None, Some v when cmp_ident i (unloc_mident v) -> Some t
       | _ -> acc in
     fold_model internal_get m acc
 
@@ -5055,7 +5067,7 @@ end = struct
       let assets : asset list =
         begin
           match asset_name with
-          | Some asset_name -> List.filter (fun (x : asset) -> cmp_ident (unloc x.name) asset_name) assets
+          | Some asset_name -> List.filter (fun (x : asset) -> cmp_ident (unloc_mident x.name) asset_name) assets
           | _ -> assets
         end
       in
@@ -5063,9 +5075,9 @@ end = struct
       |>
       List.map (fun (asset : asset) ->
           List.map (fun (lt : label_term) ->
-              let inv_name = Tools.Option.fold (fun _ l -> unloc l) "" (Some lt.label) in
+              let inv_name = Tools.Option.fold (fun _ l -> unloc_mident l) "" (Some lt.label) in
               let inv_term = lt.term in
-              [unloc asset.name, inv_name, inv_term]
+              [unloc_mident asset.name, inv_name, inv_term]
             ) asset.invariants
         )
       |> List.flatten
@@ -5074,7 +5086,7 @@ end = struct
     | Not_found -> []
 
   let is_field_storage (m : model) (id : ident) : bool =
-    let l : ident list = List.map (fun (x : storage_item) -> unloc x.id) m.storage in
+    let l : ident list = List.map (fun (x : storage_item) -> unloc_mident x.id) m.storage in
     List.mem id l
 
   let with_trace (_m : model) : bool = true
@@ -5105,38 +5117,38 @@ end = struct
       List.map
         (fun (f : function__) ->
            match f.node with
-           | Function (fs, _)    -> unloc fs.name, fs
-           | Getter   (fs, _)    -> unloc fs.name, fs
-           | View     (fs, _, _) -> unloc fs.name, fs
-           | Entry     fs        -> unloc fs.name, fs)
+           | Function (fs, _)    -> unloc_mident fs.name, fs
+           | Getter   (fs, _)    -> unloc_mident fs.name, fs
+           | View     (fs, _, _) -> unloc_mident fs.name, fs
+           | Entry     fs        -> unloc_mident fs.name, fs)
         m.functions
     in
     let fun_id_list = List.map fst fun_ids in
     let rec extract_fun_id accu (mt : mterm) : ident list =
       let l = fold_term extract_fun_id accu mt in
       match mt.node with
-      | Mapp (id, _args) when (List.exists (fun x -> (String.equal (unloc id) x)) fun_id_list) ->
-        l @ [unloc id]
+      | Mapp (id, _args) when (List.exists (fun x -> (String.equal (unloc_mident id) x)) fun_id_list) ->
+        l @ [unloc_mident id]
       | _ -> l
     in
     List.map (fun (name, fs : ident * function_struct) -> name, extract_fun_id [] fs.body) fun_ids
 
   let retrieve_all_properties (m : model) : (ident * property) list =
     let fold_decl = function
-      | Dasset r -> List.map (fun (x : label_term) -> (unloc x.label, PstorageInvariant (x, unloc r.name))) r.invariants
+      | Dasset r -> List.map (fun (x : label_term) -> (unloc_mident x.label, PstorageInvariant (x, unloc_mident r.name))) r.invariants
       | _ -> []
     in
     let fold_specification (fun_id : ident option) (sp : specification): (ident * property) list =
       []
-      |> (@) (List.map (fun (pc : postcondition) -> (unloc pc.name, Ppostcondition (pc, fun_id))) sp.postconditions)
+      |> (@) (List.map (fun (pc : postcondition) -> (unloc_mident pc.name, Ppostcondition (pc, fun_id))) sp.postconditions)
     in
     let fold_function (f : function__) : (ident * property) list =
       let name =
         match f.node with
-        | Entry     fs        -> unloc fs.name
-        | Getter   (fs, _)    -> unloc fs.name
-        | View     (fs, _, _) -> unloc fs.name
-        | Function (fs, _)    -> unloc fs.name
+        | Entry     fs        -> unloc_mident fs.name
+        | Getter   (fs, _)    -> unloc_mident fs.name
+        | View     (fs, _, _) -> unloc_mident fs.name
+        | Function (fs, _)    -> unloc_mident fs.name
       in
       []
       |> (@) (Option.map_dfl (fold_specification (Some name)) [] f.spec)
@@ -5156,8 +5168,8 @@ end = struct
     match c.node with
     | Mvar(an, Vparam, t, d) ->
       begin
-        let l, an = deloc an in
-        let idparam = mkloc l (an ^ "_values") in
+        let l, an = deloc (snd an) in
+        let idparam = mk_mident (mkloc l (an ^ "_values")) in
         Some (mk_mterm (Mvar(idparam, Vparam, t, d) ) (mktype (Tmap(tint, tasset (dumloc "myasset")))))
       end
     | _ -> None
@@ -5212,8 +5224,8 @@ end = struct
       let rec aux (mt : mterm) : mterm =
         match mt.node with
         | Mvar(v, Vstorevar, _, _)
-        | Mvar(v, Vlocal, _, _) when is_const (unloc v) ->
-          let dv = get_value (unloc v) in
+        | Mvar(v, Vlocal, _, _) when is_const (unloc_mident v) ->
+          let dv = get_value (unloc_mident v) in
           aux dv
         | _ -> map_mterm aux mt
       in
@@ -5686,7 +5698,7 @@ end = struct
       ) false m.api_items
 
   let get_asset_collection (an : ident) : mterm =
-    mk_mterm (Mvar (dumloc an, Vstorecol, Tnone, Dnone)) (mktype (Tcontainer (mktype (Tasset (dumloc an)), Collection)))
+    mk_mterm (Mvar (mk_mident (dumloc an), Vstorecol, Tnone, Dnone)) (mktype (Tcontainer (mktype (Tasset (dumloc an)), Collection)))
 
   let is_asset_single_field (model : model) (an : ident) : bool =
     get_asset model an |> fun x -> x.values |> List.filter (fun (x : asset_item) -> not x.shadow) |> List.length = 1
@@ -5696,7 +5708,7 @@ end = struct
 
   let get_labeled_value_from (model : model) (an : ident) (values : mterm list) : (ident * mterm) list =
     let asset = get_asset model an in
-    List.map2 (fun (x : asset_item) (y : mterm) -> unloc x.name, y) asset.values values
+    List.map2 (fun (x : asset_item) (y : mterm) -> unloc_mident x.name, y) asset.values values
 
   let add_api_storage_in_list (l : api_storage list) (i :  api_storage) =
     let res, l = List.fold_left (fun (res, accu) (x : api_storage) ->
@@ -5748,7 +5760,7 @@ end = struct
            in
            let asset_list : ident list = List.fold_left (fun accu (x : decl_node) ->
                match x with
-               | Dasset r -> accu @ [unloc r.name]
+               | Dasset r -> accu @ [unloc_mident r.name]
                | _ -> accu
              ) [] model.decls in
            let get_idx (i : api_storage) = List.index_of (fun x -> String.equal (get_asset_name i.node_item) x) asset_list in
@@ -6034,7 +6046,7 @@ end = struct
       let an = unloc an in
       let asset : asset = get_asset model an in
       let asset_key = match asset.keys with [k] -> k | _ -> emit_error (SeveralAssetKeys an) in
-      let assoc_fields = List.map2 (fun (ai : asset_item) (x : mterm) -> (unloc ai.name, x)) asset.values l in
+      let assoc_fields = List.map2 (fun (ai : asset_item) (x : mterm) -> (unloc_mident ai.name, x)) asset.values l in
       List.find (fun (id, _) -> (String.equal asset_key id)) assoc_fields |> snd
     | _ -> raise Not_found
 
@@ -6043,13 +6055,13 @@ end = struct
   let get_function (model : model) (id : ident) : function_struct =
     model.functions
     |> List.map (fun x -> match x.node with | Function (fs, _) | Getter (fs, _) | View (fs, _, _) | Entry fs -> fs)
-    |> List.find (fun (x : function_struct) -> String.equal (unloc x.name) id)
+    |> List.find (fun (x : function_struct) -> String.equal (unloc_mident x.name) id)
 
   let get_asset_partitions (model : model) asset_name : (ident * ident) list =
     let asset = get_asset model asset_name in
     List.fold_left (fun accu (x : asset_item) ->
         match get_ntype x.original_type with
-        | Tcontainer ((Tasset an, _), Partition) -> (unloc x.name, unloc an)::accu
+        | Tcontainer ((Tasset an, _), Partition) -> (unloc_mident x.name, unloc an)::accu
         | _ -> accu
       ) [] asset.values
 
@@ -6060,11 +6072,11 @@ end = struct
 
   let get_specification (model : model) (name : ident) =
     let rec get_entry_spec = function
-      | (s, (f:function_struct))::_ when String.compare (unloc f.name) name = 0 -> s
+      | (s, (f:function_struct))::_ when String.compare (unloc_mident f.name) name = 0 -> s
       | _::tl -> get_entry_spec tl
       | [] -> None in
     let rec get_function_spec = function
-      | (s, (f:function_struct),_)::_ when String.compare (unloc f.name) name = 0 -> s
+      | (s, (f:function_struct),_)::_ when String.compare (unloc_mident f.name) name = 0 -> s
       | _::tl -> get_function_spec tl
       | [] -> None in
     match get_entry_spec (get_entries model) with
@@ -6075,7 +6087,7 @@ end = struct
     List.map (fun (x) -> match x.node with | Entry fs | Getter (fs, _) | View (fs, _, _) | Function (fs, _) -> fs) model.functions
 
   let get_fs (model : model) (id : ident) : function_struct =
-    List.find (fun (x : function_struct) -> String.equal id (unloc x.name)) (get_fss model)
+    List.find (fun (x : function_struct) -> String.equal id (unloc_mident x.name)) (get_fss model)
 
   let extract_assign_kind (mt : mterm) : assign_kind list =
     let rec aux accu (t : mterm) =
@@ -6141,15 +6153,15 @@ end = struct
     let rec aux env accu (t : mterm) =
       match t.node with
       | Mletin (ids, a, _, b, o) ->
-        let f = aux (env @ (List.map unloc ids)) in
+        let f = aux (env @ (List.map unloc_mident ids)) in
         let tmp = f (f accu a) b in
         Option.map_dfl (f tmp) tmp o
       | Mforall (id, _, c, b) ->
-        let f = aux (env @ [unloc id]) in
+        let f = aux (env @ [unloc_mident id]) in
         f (Option.fold f accu c) b
-      | Mvar (id, Vlocal, _, _)  when not (List.exists (String.equal (unloc id)) env) -> (unloc id)::accu
-      | Mvar (id, Vstorevar, _, _) -> (unloc id)::accu
-      | Mvar (id, Vstorecol, _, _) -> (unloc id)::accu
+      | Mvar (id, Vlocal, _, _)  when not (List.exists (String.equal (unloc_mident id)) env) -> (unloc_mident id)::accu
+      | Mvar (id, Vstorevar, _, _) -> (unloc_mident id)::accu
+      | Mvar (id, Vstorecol, _, _) -> (unloc_mident id)::accu
       | Mvar (_,  Vstate, _, _)    -> "state"::accu
       | Mnow                       -> "now"::accu
       | Mtransferred               -> "transferred"::accu
@@ -6180,7 +6192,7 @@ end = struct
   let get_record_pos model rn fn =
     let r : record = get_record model rn in
     let fields_length = List.length r.fields in
-    let fields_index  = List.index_of (fun (f : record_field) -> String.equal fn (unloc f.name)) r.fields in
+    let fields_index  = List.index_of (fun (f : record_field) -> String.equal fn (unloc_mident f.name)) r.fields in
     if (fields_index == -1)
     then assert false;
     match r.pos with
