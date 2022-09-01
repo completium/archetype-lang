@@ -239,10 +239,10 @@ let rec for_type (t : M.type_) : type_ =
   | Ttrace _                       -> assert false
 
 let for_parameter (p : M.parameter) : parameter =
-  mk_parameter (unloc p.name) (for_type p.typ) p.const None
+  mk_parameter (M.unloc_mident p.name) (for_type p.typ) p.const None
 
 let for_argument (a: M.argument) : argument =
-  mk_argument (unloc (Tools.proj3_1 a)) (for_type (Tools.proj3_2 a))
+  mk_argument (M.unloc_mident (Tools.proj3_1 a)) (for_type (Tools.proj3_2 a))
 
 let mk_prim p args annots = { prim = Some p; int = None;   bytes = None;  string = None;   args = args; annots = annots; array = []; var_id = None; var_type = None }
 let mk_string v           = { prim = None;   int = None;   bytes = None;  string = Some v; args = [];   annots = [];     array = []; var_id = None; var_type = None }
@@ -269,40 +269,40 @@ let to_michelson_type (model : M.model) (type_michelson : M.type_) : micheline =
   to_micheline obj
 
 let for_decl_type (model : M.model) (low_model : M.model) (d : M.decl_node) (assets, enums, records, events) =
-  let for_asset_item (asset  : M.asset) (x : M.asset_item)     = mk_decl_asset_field (unloc x.name) (for_type x.type_) (List.exists (String.equal (unloc x.name)) asset.keys) in
-  let for_record_field (x : M.record_field) = mk_decl_record_field (unloc x.name) (for_type x.type_) in
-  let for_enum_item (x : M.enum_item)       = mk_decl_constructor (unloc x.name) (List.map for_type x.args) in
+  let for_asset_item (asset  : M.asset) (x : M.asset_item)     = mk_decl_asset_field (M.unloc_mident x.name) (for_type x.type_) (List.exists (String.equal (M.unloc_mident x.name)) asset.keys) in
+  let for_record_field (x : M.record_field) = mk_decl_record_field (M.unloc_mident x.name) (for_type x.type_) in
+  let for_enum_item (x : M.enum_item)       = mk_decl_constructor (M.unloc_mident x.name) (List.map for_type x.args) in
   let for_map_kind = function | M.MKMap -> "map" | M.MKBigMap -> "big_map" | M.MKIterableBigMap -> "iterable_big_map" in
 
   let ft x = to_michelson_type low_model x in
   let for_asset  (asset  : M.asset)  : decl_asset =
     let odasset : M.odel_asset = List.fold_left (fun accu x ->
         match x with
-        | M.ODAsset x when String.equal x.name (unloc asset.name)-> Some x
+        | M.ODAsset x when String.equal x.name (M.unloc_mident asset.name)-> Some x
         | _-> accu) None low_model.extra.original_decls |> Option.get
     in
     let container_type = ft odasset.container_type in
     let key_type       = ft odasset.key_type in
     let value_type     = ft odasset.value_type in
-    mk_decl_asset (unloc asset.name)  (for_map_kind asset.map_kind) (List.map (for_asset_item asset) asset.values) container_type key_type value_type
+    mk_decl_asset (M.unloc_mident asset.name)  (for_map_kind asset.map_kind) (List.map (for_asset_item asset) asset.values) container_type key_type value_type
   in
 
   let for_enum (enum : M.enum) : decl_enum   =
     let odasset : M.odel_enum = List.fold_left (fun accu x ->
         match x with
-        | M.ODEnum x when String.equal x.name (unloc enum.name)-> Some x
+        | M.ODEnum x when String.equal x.name (M.unloc_mident enum.name)-> Some x
         | _-> accu) None low_model.extra.original_decls |> Option.get
     in
     let michelson_type = ft odasset.current_type in
-    mk_decl_enum (unloc enum.name) (List.map for_enum_item enum.values) michelson_type
+    mk_decl_enum (M.unloc_mident enum.name) (List.map for_enum_item enum.values) michelson_type
   in
 
   let for_record (record : M.record) : decl_record =
     let type_michelson = to_michelson_type model (M.trecord record.name) in
-    mk_decl_record (unloc record.name) (List.map for_record_field record.fields) type_michelson
+    mk_decl_record (M.unloc_mident record.name) (List.map for_record_field record.fields) type_michelson
   in
 
-  let for_event  (event  : M.record) : decl_event  = mk_decl_event  (unloc event.name)  (List.map for_record_field event.fields) in
+  let for_event  (event  : M.record) : decl_event  = mk_decl_event  (M.unloc_mident event.name)  (List.map for_record_field event.fields) in
 
   match d with
   | Dvar _       -> (assets, enums, records, events)
@@ -316,8 +316,8 @@ let for_decl_type (model : M.model) (low_model : M.model) (ds : M.decl_node list
   mk_decl_type assets enums records events
 
 let for_storage (d : M.decl_node) accu =
-  let for_var (var : M.var) : decl_storage = mk_storage (unloc var.name) (for_type var.type_) (match var.kind with | VKconstant -> true | _ -> false) in
-  let for_asset (asset : M.asset) : decl_storage = mk_storage (unloc asset.name) (mk_type "asset" (Some (unloc asset.name)) []) false in
+  let for_var (var : M.var) : decl_storage = mk_storage (M.unloc_mident var.name) (for_type var.type_) (match var.kind with | VKconstant -> true | _ -> false) in
+  let for_asset (asset : M.asset) : decl_storage = mk_storage (M.unloc_mident asset.name) (mk_type "asset" (Some (M.unloc_mident asset.name)) []) false in
   match d with
   | Dvar var     -> (for_var var)::accu
   | Denum _      -> accu
@@ -326,10 +326,10 @@ let for_storage (d : M.decl_node) accu =
   | Devent _     -> accu
 
 let for_entrypoint (fs : M.function_struct) : decl_entrypoint =
-  mk_entrypoint (unloc fs.name) (List.map for_argument fs.args)
+  mk_entrypoint (M.unloc_mident fs.name) (List.map for_argument fs.args)
 
 let for_getter (fs, rt : M.function_struct * M.type_) : decl_getter =
-  mk_getter (unloc fs.name) (List.map for_argument fs.args) (for_type rt)
+  mk_getter (M.unloc_mident fs.name) (List.map for_argument fs.args) (for_type rt)
 
 let for_errors (model : M.model) : error_struct list =
   let mterm_to_micheline (mt : M.mterm) : micheline option =
@@ -349,7 +349,7 @@ let for_errors (model : M.model) : error_struct list =
     in
 
     match mt.node with
-    | Mvar (id, Vstorevar, Tnone, Dnone) -> (match seek_mterm_from_storevar (unloc id) with | Some v -> f v | None -> None)
+    | Mvar (id, Vstorevar, Tnone, Dnone) -> (match seek_mterm_from_storevar (M.unloc_mident id) with | Some v -> f v | None -> None)
     | _ -> f mt
   in
   let mk_pair a b = mk_prim "Pair" [mk_string a; mk_string b] [] in

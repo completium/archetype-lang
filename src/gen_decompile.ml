@@ -1309,7 +1309,7 @@ end = struct
       let tunknown = tunit in
       let mk_map = MKMap in
       match e with
-      | Dvar v          -> mk_mvar (dumloc (for_dvar v)) tunit
+      | Dvar v          -> mk_mvar (M.mk_mident (dumloc (for_dvar v))) tunit
       | Ddata (t, d)    -> for_data ~t d
       | Depair (e1, e2) -> mk_pair (for_expr e1) (for_expr e2)
       | Dfun (`Uop Ueq, [Dfun (`Bop Bcompare, [a; b])]) -> mk_mterm (Mequal  (tint, f a, f b)) tbool
@@ -1400,7 +1400,7 @@ end = struct
         | DIAssign (x, e) ->
           let id = for_dvar x in
           let e = g e in
-          mk_mterm (Massign (ValueAssign, tunit, Avar (dumloc id), e)) tunit
+          mk_mterm (Massign (ValueAssign, tunit, Avar (M.mk_mident (dumloc id)), e)) tunit
 
         | DIIf (c, (b1, b2)) ->
           mk_mterm (Mif (g c, seq b1, Some (seq b2))) tunit
@@ -1426,7 +1426,7 @@ end = struct
                pp_branch) bs *)
 
         | DIMatch (c, [("left", _lv, lc) ; ("right", _rv, rc)]) ->
-          mk_mterm (Minstrmatchor (g c, dumloc "_", seq rc, dumloc "_", seq lc)) tunit
+          mk_mterm (Minstrmatchor (g c, M.mk_mident (dumloc "_"), seq rc, M.mk_mident (dumloc "_"), seq lc)) tunit
 
         | DIFailwith e -> failg (for_expr e)
         | _ -> assert false
@@ -1437,7 +1437,7 @@ end = struct
 
   let decompile (dprogram, env : dprogram * env) =
     let code = for_code dprogram.code in
-    let functions = [mk_function (Entry (mk_function_struct (dumloc "default") code ~args:[dumloc "arg", for_type dprogram.parameter, None])) ] in
+    let functions = [mk_function (Entry (mk_function_struct (M.mk_mident (dumloc "default")) code ~args:[M.mk_mident (dumloc "arg"), for_type dprogram.parameter, None])) ] in
 
     let storage_list = get_storage_list dprogram.storage in
 
@@ -1445,7 +1445,7 @@ end = struct
       List.mapi (fun n (_id, t) ->
           (* let id = if String.length id > 0 then String.sub id 1 (String.length id - 1) else id in *)
           let id = Format.asprintf "sto_%d" (n + 1)  in
-          M.mk_storage_item (dumloc id) MTvar (for_type t) (for_data ~t:t (get_default_value t))
+          M.mk_storage_item (M.mk_mident (dumloc id)) MTvar (for_type t) (for_data ~t:t (get_default_value t))
         ) storage_list
     in
     let model = M.mk_model (dumloc dprogram.name) ~functions:functions ~storage:storage in
@@ -1552,8 +1552,8 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     (* assign *)
 
-    | Massign (op, _, Avar id, v)                   -> A.eassign (for_op op) (A.eterm id) (f v)
-    | Massign (op, _, Avarstore id, v)              -> A.eassign (for_op op) (A.eterm id) (f v)
+    | Massign (op, _, Avar id, v)                   -> A.eassign (for_op op) (A.eterm (snd id)) (f v)
+    | Massign (op, _, Avarstore id, v)              -> A.eassign (for_op op) (A.eterm (snd id)) (f v)
     | Massign (_op, _, Aasset (_an, _fn, _k), _v)   -> assert false
     | Massign (_op, _, Arecord (_lv, _rn, _fn), _v) -> assert false
     | Massign (_op, _, Atuple (_lv, _n, _l), _v)    -> assert false
@@ -1570,8 +1570,8 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
 
     | Minstrmatchor (e, xl, bl, xr, br) ->
       A.ematchwith (f e) [
-        ([dumloc (A.Pref (dumloc A.PLeft , [xl]))], f bl);
-        ([dumloc (A.Pref (dumloc A.PRight, [xr]))], f br)
+        ([dumloc (A.Pref (dumloc A.PLeft , [snd xl]))], f bl);
+        ([dumloc (A.Pref (dumloc A.PRight, [snd xr]))], f br)
       ]
 
     | Minstrmatchlist   _        -> assert false
@@ -1893,19 +1893,19 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     (* variable *)
 
     | Mvar (_an, Vassetstate _k, _t, _d) -> assert false
-    | Mvar(v, Vstorevar, t, d)           -> A.eterm v ?temp:(for_temp t) ?delta:(for_delta d)
-    | Mvar(v, Vstorecol, t, d)           -> A.eterm v ?temp:(for_temp t) ?delta:(for_delta d)
+    | Mvar(v, Vstorevar, t, d)           -> A.eterm (snd v) ?temp:(for_temp t) ?delta:(for_delta d)
+    | Mvar(v, Vstorecol, t, d)           -> A.eterm (snd v) ?temp:(for_temp t) ?delta:(for_delta d)
     | Mvar(_v, Vdefinition, _t, _d)      -> assert false
-    | Mvar(v, Vlocal, t, d)              -> A.eterm v ?temp:(for_temp t) ?delta:(for_delta d)
-    | Mvar(v, Vparam, t, d)              -> A.eterm v ?temp:(for_temp t) ?delta:(for_delta d)
+    | Mvar(v, Vlocal, t, d)              -> A.eterm (snd v) ?temp:(for_temp t) ?delta:(for_delta d)
+    | Mvar(v, Vparam, t, d)              -> A.eterm (snd v) ?temp:(for_temp t) ?delta:(for_delta d)
     | Mvar(_v, Vfield, _t, _d)           -> assert false
     | Mvar(_, Vthe, _t, _d)              -> assert false
     | Mvar(_, Vstate, _t, _d)            -> assert false
-    | Mvar(v, Vparameter, t, d)          -> A.eterm v ?temp:(for_temp t) ?delta:(for_delta d)
+    | Mvar(v, Vparameter, t, d)          -> A.eterm (snd v) ?temp:(for_temp t) ?delta:(for_delta d)
     | Menumval (id, args, _e)             -> begin
         match args with
-        | [] -> A.eterm id
-        | _  -> A.eapp (A.Fident id) []
+        | [] -> A.eterm (snd id)
+        | _  -> A.eapp (A.Fident (snd id)) []
       end
 
     (* rational *)
@@ -1964,7 +1964,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
     let t  = for_type si.typ in
     let dv = for_expr si.default in
     match si.model_type with
-    | MTvar -> A.mk_variable (A.mk_variable_decl ~dv:dv id t VKvariable)
+    | MTvar -> A.mk_variable (A.mk_variable_decl ~dv:dv (snd id) t VKvariable)
     | _ -> assert false
   in
 
@@ -1980,7 +1980,7 @@ let to_archetype (model, _env : M.model * env) : A.archetype =
         let args = List.map (fun (id, t, _) -> (id, for_type t, None) ) fs.args in
 
         let ep = A.mk_entry_properties () in
-        let ed = A.mk_entry_decl ~args:args id ep ~body:(body, exts) in
+        let ed = A.mk_entry_decl ~args:(List.map (fun (x, y, z) -> (snd x, y, z)) args) (snd id) ep ~body:(body, exts) in
 
         A.mk_entry ed
       end
