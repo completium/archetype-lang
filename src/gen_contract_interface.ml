@@ -293,7 +293,7 @@ let for_decl_type (model : M.model) (low_model : M.model) (d : M.decl_node) (ass
           match List.rev kts with
           | [] -> assert false
           | f::t ->
-            let mk_pair x y = mk_prim "Pair" [x; y] [] in
+            let mk_pair x y = mk_prim "pair" [x; y] [] in
             List.fold_left (fun accu x -> mk_pair (ft x) accu) (ft f) t
         end
     in
