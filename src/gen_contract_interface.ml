@@ -281,8 +281,29 @@ let for_decl_type (model : M.model) (low_model : M.model) (d : M.decl_node) (ass
         | M.ODAsset x when String.equal x.name (M.unloc_mident asset.name)-> Some x
         | _-> accu) None low_model.extra.original_decls |> Option.get
     in
-    let container_type = ft odasset.container_type in
-    let key_type       = ft odasset.key_type in
+    let key_type =
+      let an = asset.name in
+      let f (t : M.type_) (annot : string) : M.type_ = M.mktype (fst t) ~annot:(dumloc annot) in
+      match asset.keys with
+      | []    -> assert false
+      | [_]   -> ft odasset.key_type
+      | ks    -> begin
+          let kts = List.map (fun x -> let _, ty, _ = M.Utils.get_asset_field model (unloc an, x) in f ty ("%" ^ x)) ks in
+          match List.rev kts with
+          | [] -> assert false
+          | f::t ->
+            let mk_pair x y = mk_prim "pair" [x; y] [] in
+            List.fold_left (fun accu x -> mk_pair (ft x) accu) (ft f) t
+        end
+    in
+    let container_type =
+      let ct = odasset.container_type in
+      match M.get_ntype ct with
+      | Tset _ -> mk_prim "set" [key_type] []
+      | Tmap (_, vt) -> mk_prim "map" [key_type; ft vt] []
+      | Tbig_map (_, vt) -> mk_prim "big_map" [key_type; ft vt] []
+      | _ -> ft ct
+    in
     let value_type     = ft odasset.value_type in
     mk_decl_asset (M.unloc_mident asset.name)  (for_map_kind asset.map_kind) (List.map (for_asset_item asset) asset.values) container_type key_type value_type
   in
@@ -370,7 +391,7 @@ let for_errors (model : M.model) : error_struct list =
         | NoTransfer               -> (mk_error_struct "NoTransfer"          (mk_string M.fail_msg_NO_TRANSFER))::accu
         | InvalidState             -> (mk_error_struct "InvalidState"        (mk_string M.fail_msg_INVALID_STATE))::accu
       end
-      | Mdeclvaropt (_, _, _, fa, _) -> (match fa with Some v -> (match mterm_to_micheline v with | Some v -> (mk_error_struct "Invalid" v)::accu | None -> accu) | None -> (mk_error_struct "Invalid" (mk_string Model.fail_msg_OPTION_IS_NONE))::accu)
+    | Mdeclvaropt (_, _, _, fa, _) -> (match fa with Some v -> (match mterm_to_micheline v with | Some v -> (mk_error_struct "Invalid" v)::accu | None -> accu) | None -> (mk_error_struct "Invalid" (mk_string Model.fail_msg_OPTION_IS_NONE))::accu)
     | _ -> M.fold_term (aux ctx) accu mt
   in
   M.fold_model aux model []
