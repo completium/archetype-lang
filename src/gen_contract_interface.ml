@@ -281,7 +281,6 @@ let for_decl_type (model : M.model) (low_model : M.model) (d : M.decl_node) (ass
         | M.ODAsset x when String.equal x.name (unloc asset.name)-> Some x
         | _-> accu) None low_model.extra.original_decls |> Option.get
     in
-    let container_type = ft odasset.container_type in
     let key_type =
       let an = asset.name in
       let f (t : M.type_) (annot : string) : M.type_ = M.mktype (fst t) ~annot:(dumloc annot) in
@@ -296,6 +295,14 @@ let for_decl_type (model : M.model) (low_model : M.model) (d : M.decl_node) (ass
             let mk_pair x y = mk_prim "pair" [x; y] [] in
             List.fold_left (fun accu x -> mk_pair (ft x) accu) (ft f) t
         end
+    in
+    let container_type =
+      let ct = odasset.container_type in
+      match M.get_ntype ct with
+      | Tset _ -> mk_prim "set" [key_type] []
+      | Tmap (_, vt) -> mk_prim "map" [key_type; ft vt] []
+      | Tbig_map (_, vt) -> mk_prim "big_map" [key_type; ft vt] []
+      | _ -> ft ct
     in
     let value_type     = ft odasset.value_type in
     mk_decl_asset (unloc asset.name)  (for_map_kind asset.map_kind) (List.map (for_asset_item asset) asset.values) container_type key_type value_type
