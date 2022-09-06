@@ -78,7 +78,7 @@ let compute_env model =
   let consts =
     List.fold_right (fun (x : decl_node) accu ->
         match x with
-        | Dvar v when ((function | VKconstant -> true | _ -> false) v.kind) -> (unloc v.name, Option.get v.default)::accu
+        | Dvar v when ((function | VKconstant -> true | _ -> false) v.kind) -> (Model.unloc_mident v.name, Option.get v.default)::accu
         | _ -> accu
       ) model.decls [] in
   mk_env ~update_preds:update_preds ~select_preds:select_preds ~sum_preds:sum_preds ~removeif_preds:removeif_preds ~consts:consts ()
