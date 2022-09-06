@@ -184,8 +184,8 @@ let rec to_type (model : M.model) ?annotation (t : M.type_) : T.type_ =
   | Tbig_map (k, v)            -> T.mk_type ?annotation (T.Tbig_map (to_type k, to_type v))
   | Titerable_big_map (_k, _v) -> assert false
   | Tor (l, r)                 -> T.mk_type ?annotation (T.Tor (to_type l, to_type r))
-  | Trecord id                 -> let t = process_record M.Utils.get_record id in T.mk_type ?annotation t.node
-  | Tevent id                  -> let t = process_record M.Utils.get_event id in T.mk_type ?annotation t.node
+  | Trecord id                 -> let t = process_record M.Utils.get_record (snd id) in T.mk_type ?annotation t.node
+  | Tevent id                  -> let t = process_record M.Utils.get_event (snd id) in T.mk_type ?annotation t.node
   | Tlambda (a, r)             -> T.mk_type ?annotation (Tlambda (to_type a, to_type r))
   | Tunit                      -> T.mk_type ?annotation (T.Tunit)
   | Toperation                 -> T.mk_type ?annotation (T.Toperation)
@@ -845,8 +845,8 @@ let to_ir (model : M.model) : T.ir =
                 end
             in
             match M.get_ntype mtt.type_ with
-            | M.Trecord rn -> doit M.Utils.get_record rn
-            | M.Tevent  rn -> doit M.Utils.get_event  rn
+            | M.Trecord rn -> doit M.Utils.get_record (snd rn)
+            | M.Tevent  rn -> doit M.Utils.get_event  (snd rn)
             | _ -> mk_default ()
           in
           T.Irecord ri

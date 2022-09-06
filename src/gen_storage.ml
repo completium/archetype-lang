@@ -1,4 +1,4 @@
-open Location
+(* open Location *)
 open Model
 
 exception Anomaly of string
@@ -57,7 +57,7 @@ let generate_storage (model : model) : model =
       | Tlist _                  -> mk_mterm (Mlitlist []) ty
       | Toption _                -> mk_mterm (Mnone) ty
       | Tasset v
-      | Tenum v                  -> emit_error (NoInitExprFor (unloc v))
+      | Tenum v                  -> emit_error (NoInitExprFor (unloc_mident v))
       | Ttuple _                 -> emit_error (NoInitExprFor "tuple")
       | Tset _                   -> mk_mterm   (Mlitset []) ty
       | Tmap (_, _)              -> mk_mterm   (Mlitmap (MKMap, [])) ty

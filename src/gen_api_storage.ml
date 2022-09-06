@@ -1,5 +1,4 @@
 open Tools
-open Location
 open Ident
 open Model
 
